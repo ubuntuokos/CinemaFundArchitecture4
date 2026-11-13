@@ -38,6 +38,8 @@ struct AudioState {
     packets: HashMap<usize, Arc<Vec<Vec<f32>>>>,
     order: Vec<usize>,
     last_decoded: Option<usize>,
+    /// Saved decoder states for exact jumps (AMR).
+    checkpoints: crate::audio::Checkpoints,
 }
 
 /// One playable audio track with its own decoder state and timing tables.
@@ -115,6 +117,13 @@ fn audio_starts(file: &MkvFile, bytes: &crate::Src, ti: usize, rate: i64) -> Vec
         });
         return contiguous_starts(packets, stamp_tolerance(t, rate));
     }
+    if matches!(&t.codec, Codec::Other(id) if id == "A_TTA1") {
+        // TTA packets are whole frames of 256 × rate / 245 samples (the last one shorter)
+        let full = 256 * rate / 245;
+        let last = t.samples.len().saturating_sub(1);
+        let packets = t.samples.iter().enumerate().map(|(i, s)| PacketTime { stamp: at(s.pts), stamped: own_stamp(s), samples: (i < last).then_some(full) });
+        return contiguous_starts(packets, stamp_tolerance(t, rate));
+    }
     if let Some(Ok(c)) = acm_codec(t) {
         // G.711 / ADPCM packets hold whole frames or blocks: they run on like PCM
         let channels = t.audio.as_ref().map_or(1, |a| a.channels.max(1));
@@ -190,17 +199,38 @@ fn audio_info(t: &cfa4_matroska::Track) -> Option<AudioStreamInfo> {
         rate = crate::audio::OPUS_RATE;
         channels = h.channels as u32;
     }
+    let amr = amr_track(t);
+    if let Some(wide) = amr {
+        rate = if wide { cfa4_amr::wb::SAMPLE_RATE } else { cfa4_amr::nb::SAMPLE_RATE };
+        channels = 1;
+    }
     let (rate, channels) = cfa4_media::bounded_audio_dimensions(rate, channels).ok()?;
     // an `A_MS/ACM` track may leave BitDepth out: its WAVEFORMATEX has the sample size
     let bits = match &t.codec {
         Codec::Pcm { bits, .. } => a.bit_depth.or(Some(u64::from(*bits))),
         _ => a.bit_depth,
     };
-    let codec = match acm_codec(t) {
-        Some(Ok(c)) => c.name().to_string(),
+    let codec = match (amr, acm_codec(t)) {
+        (Some(wide), _) => if wide { "AMR-WB" } else { "AMR-NB" }.to_string(),
+        (_, Some(Ok(c))) => c.name().to_string(),
         _ => codec_label(&t.codec),
     };
     Some(AudioStreamInfo { sample_rate: rate, channels, codec, bits_per_sample: bits.map(|b| b as u32), speakers: Vec::new() })
+}
+
+/// Whether the track is AMR, and wideband: `A_AMR/NB` / `A_AMR/WB`, or an `A_MS/ACM` track
+/// with ffmpeg's AMR format tags (0x0038 / 0x0057 narrowband, 0x0058 wideband).
+fn amr_track(t: &cfa4_matroska::Track) -> Option<bool> {
+    match &t.codec {
+        Codec::Other(id) if id == "A_AMR/NB" => Some(false),
+        Codec::Other(id) if id == "A_AMR/WB" => Some(true),
+        Codec::Other(id) if id == "A_MS/ACM" => match t.codec_private.get(..2).map(|b| u16::from_le_bytes([b[0], b[1]])) {
+            Some(0x38 | 0x57) => Some(false),
+            Some(0x58) => Some(true),
+            _ => None,
+        },
+        _ => None,
+    }
 }
 
 /// The G.711 / G.722 / ADPCM codec of an `A_MS/ACM` track's `WAVEFORMATEX` (`CodecPrivate`);
@@ -345,8 +375,10 @@ fn sample_entry(c: &Codec, private: &[u8], v: Option<&cfa4_matroska::VideoInfo>,
             crate::ffv1::sample_entry(bitmap_info_header.get(40..).unwrap_or_default(), w, h)
         }
         Codec::Other(id) if id == "V_FFV1" => crate::ffv1::sample_entry(private, w, h),
+        Codec::Other(id) if id == "V_DIRAC" => crate::dirac::sample_entry(w, h),
         // Huffyuv: the VfW BITMAPINFOHEADER sets the stream up (bit count, extradata)
         Codec::VfwFourcc { fourcc, bitmap_info_header } if fourcc.eq_ignore_ascii_case(b"HFYU") => crate::huffyuv::sample_entry(bitmap_info_header, w, h),
+        Codec::VfwFourcc { fourcc, .. } if crate::canopus::codec(fourcc).is_some() => crate::canopus::sample_entry(crate::canopus::codec(fourcc)?, w, h),
         // Ut Video: the extradata follows the VfW BITMAPINFOHEADER
         Codec::VfwFourcc { fourcc, bitmap_info_header } if crate::utvideo::is_utvideo(fourcc) => {
             crate::utvideo::sample_entry(*fourcc, bitmap_info_header.get(40..).unwrap_or_default(), w, h)
@@ -415,7 +447,12 @@ fn codec_label(c: &Codec) -> String {
         Codec::Other(id) if id == "V_MPEG1" => "MPEG-1 Video".into(),
         Codec::VfwFourcc { fourcc, .. } if crate::utvideo::is_utvideo(fourcc) => "Ut Video".into(),
         Codec::VfwFourcc { fourcc, .. } if fourcc.eq_ignore_ascii_case(b"HFYU") => "Huffyuv".into(),
+        Codec::VfwFourcc { fourcc, .. } if crate::canopus::codec(fourcc).is_some() => {
+            crate::canopus::codec(fourcc).map_or("Canopus", crate::canopus::label).into()
+        }
         Codec::Other(id) if id == "V_FFV1" => "FFV1".into(),
+        Codec::Other(id) if id == "V_DIRAC" => "VC-2 / Dirac".into(),
+        Codec::Other(id) if id == "A_TTA1" => "TTA".into(),
         Codec::VfwFourcc { fourcc, .. } if fourcc.eq_ignore_ascii_case(b"FFV1") => "FFV1".into(),
         other => other.name().to_string(),
     }
@@ -544,7 +581,8 @@ impl MkvSource {
                     Codec::TrueHd => crate::audio::truehd_preroll(ainfo.sample_rate),
                     _ => 0,
                 };
-                let state = Mutex::new(AudioState { decoder: None, packets: HashMap::new(), order: Vec::new(), last_decoded: None });
+                let state =
+                    Mutex::new(AudioState { decoder: None, packets: HashMap::new(), order: Vec::new(), last_decoded: None, checkpoints: Default::default() });
                 Some(MkvAudio { track: i, state, starts, preroll })
             })
             .collect();
@@ -585,9 +623,16 @@ impl MkvSource {
     fn audio_decoder(&self, t: &cfa4_matroska::Track, ainfo: &AudioStreamInfo) -> crate::Result<PacketDecoder> {
         use symphonia::core::codecs::audio::well_known::{CODEC_ID_FLAC, CODEC_ID_MP3, CODEC_ID_VORBIS};
         let rate = ainfo.sample_rate;
+        if let Some(wide) = amr_track(t) {
+            return Ok(PacketDecoder::amr(wide));
+        }
         if let Some(c) = acm_codec(t) {
             let c = c.map_err(|e| CodecError::Unsupported(e.to_string()))?;
             return PacketDecoder::adpcm(c, ainfo.channels as usize);
+        }
+        if matches!(&t.codec, Codec::Other(id) if id == "A_TTA1") {
+            let bits = ainfo.bits_per_sample.unwrap_or(16);
+            return PacketDecoder::tta(u16::try_from(ainfo.channels).unwrap_or(0), u16::try_from(bits).unwrap_or(0), rate);
         }
         match &t.codec {
             Codec::Aac { asc } => PacketDecoder::aac(asc, rate),
@@ -638,17 +683,27 @@ impl MkvSource {
                 // a packet, more for DTS, or `SeekPreRoll` worth for Opus).
                 if st.last_decoded.is_none_or(|l| l + 1 != i) {
                     let d = st.decoder.as_mut().ok_or_else(|| CodecError::Decode("no audio decoder".into()))?;
-                    d.reset();
-                    let from = if a.preroll > 0 {
-                        a.starts.partition_point(|&x| x <= pk_start.saturating_sub(a.preroll)).saturating_sub(1)
-                    } else {
-                        i.saturating_sub(d.pre_roll_packets())
+                    // Codecs that never converge after a jump (AMR) restart from a saved state.
+                    let from = match st.checkpoints.restore(d, i) {
+                        Some(from) => from,
+                        None => {
+                            d.reset();
+                            if a.preroll > 0 {
+                                a.starts.partition_point(|&x| x <= pk_start.saturating_sub(a.preroll)).saturating_sub(1)
+                            } else {
+                                i.saturating_sub(d.pre_roll_packets())
+                            }
+                        }
                     };
                     for j in from..i {
+                        st.checkpoints.record(d, j);
                         if let Ok(prev) = self.read(ti, j) {
                             let _ = d.decode(&prev, 0);
                         }
                     }
+                }
+                if let Some(d) = st.decoder.as_ref() {
+                    st.checkpoints.record(d, i);
                 }
                 let r = st.decoder.as_mut().ok_or_else(|| CodecError::Decode("no audio decoder".into()))?.decode(&data, pk_start.max(0) as u64);
                 st.last_decoded = Some(i);

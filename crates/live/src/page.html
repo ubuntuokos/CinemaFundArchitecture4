@@ -1,0 +1,59 @@
+<!doctype html>
+<html>
+<head>
+<meta charset="utf-8">
+<title>CFA4 Live</title>
+<!-- CFA4 live graphics for OBS's Browser Source: the program picture (transparent PNG), double
+     buffered so it never flickers, and in the embedded audio mode the cue's sound in step. -->
+<style>
+html, body { margin: 0; background: transparent; overflow: hidden; width: 100%; height: 100%; }
+img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: contain; visibility: hidden; }
+</style>
+</head>
+<body>
+<img id="a" alt=""><img id="b" alt="">
+<audio id="snd" preload="auto"></audio>
+<script>
+"use strict";
+const imgs = [document.getElementById("a"), document.getElementById("b")];
+const snd = document.getElementById("snd");
+let front = 0, seq = -1, audioSeq = -1, busy = false;
+function load(img, src) {
+  return new Promise((done) => { img.onload = done; img.onerror = done; img.src = src; });
+}
+async function tick() {
+  if (busy) return;
+  busy = true;
+  try {
+    const s = await (await fetch("status.json", { cache: "no-store" })).json();
+    if (s.seq !== seq) {
+      const back = imgs[1 - front];
+      await load(back, "frame.png?" + s.seq);
+      back.style.visibility = "visible";
+      imgs[front].style.visibility = "hidden";
+      front = 1 - front;
+      seq = s.seq;
+    }
+    if (s.audioMode === "embedded" && s.audio) {
+      if (s.audioSeq !== audioSeq) { audioSeq = s.audioSeq; snd.src = "audio?" + s.audioSeq; }
+      if (s.onAir && !s.held) {
+        const want = Number(s.audioTime) || 0;
+        if (Math.abs(snd.currentTime - want) > 0.3) snd.currentTime = want;
+        if (snd.paused) snd.play().catch(() => {});
+      } else if (!snd.paused) {
+        snd.pause();
+      }
+    } else if (!snd.paused) {
+      snd.pause();
+    }
+  } catch (e) {
+    // CFA4 closed or restarting: keep the last picture and try again
+  } finally {
+    busy = false;
+  }
+}
+setInterval(tick, 40);
+tick();
+</script>
+</body>
+</html>

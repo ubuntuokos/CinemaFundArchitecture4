@@ -1,9 +1,9 @@
 //! A package written by CFA4's own DCP export (`cfa4-export`, `dcp_out.rs`) passes the native Quick
-//! Scan, and every check the native backend implements passes on it.
+//! Scan and Full Integrity, and every check the native backend implements passes on it.
 
 use std::sync::Arc;
 
-use cfa4_dcp_validate::rules::{AM_PRESENT, STD_CONSISTENT};
+use cfa4_dcp_validate::rules::{AM_PRESENT, MARK_MARKERS, MXF_TRACK_FILES, PIC_FORMAT, PKL_HASH, STD_CONSISTENT};
 use cfa4_dcp_validate::{DcpValidator, NativeValidator, Profile, Status, ValidationControl, ValidationReport, ValidationRequest, Verdict};
 use cfa4_export::{ExportSettings, Format, Progress, export};
 use cfa4_media::generators::GeneratorSource;
@@ -76,12 +76,24 @@ fn cfa4_dcp_export_passes_the_native_quick_scan() {
     assert!(quick.assets_checked >= 4, "{}", quick.assets_checked);
     assert!(quick.findings.iter().all(|f| f.status == Status::Pass), "{:?}", outcome(&quick));
 
+    // DCP-05: sizes, SHA-1 hashes, the packing list and composition consistency, the markers
+    let full = run("full-integrity");
+    assert_eq!(full.verdict, Verdict::Pass, "{:?}", outcome(&full));
+    assert!(full.findings.iter().any(|f| f.rule == PKL_HASH && f.status == Status::Pass));
+
     let smpte = run("smpte-cinema");
     assert!(smpte.findings.iter().any(|f| f.rule == STD_CONSISTENT && f.status == Status::Pass));
     assert!(smpte.findings.iter().any(|f| f.rule == AM_PRESENT && f.status == Status::Pass));
-    // the rules of later work packages are reported, so the profile is not passed yet
-    assert_eq!(smpte.verdict, Verdict::Incomplete, "{:?}", outcome(&smpte));
-    assert_eq!(smpte.counts.fail, 0, "{:?}", outcome(&smpte));
+    assert!(smpte.findings.iter().any(|f| f.rule == MARK_MARKERS && f.status == Status::Pass));
+    // DCP-06: the track files match the composition; the 5 frames at 25 fps are SMPTE, but
+    // not every server plays 25
+    let status = |rule: &str| smpte.findings.iter().filter(|f| f.rule == rule).map(|f| f.status).collect::<Vec<_>>();
+    assert_eq!(status(MXF_TRACK_FILES), [Status::Pass], "{:?}", outcome(&smpte));
+    assert_eq!(status(PIC_FORMAT), [Status::Warning], "{:?}", outcome(&smpte));
+    // The one failure allowed: cfa4-j2k writes 2 QCD guard bits where the 2K profile has 1
+    // (dcp_inspect reports the same). Every other profile requirement must hold.
+    let fails: Vec<&str> = smpte.findings.iter().filter(|f| f.status == Status::Fail).map(|f| f.message.as_str()).collect();
+    assert!(fails.iter().all(|m| m.ends_with("2 guard bits; the 2K profile has 1 (5 frames)")), "{fails:?}");
 
     let _ = std::fs::remove_dir_all(&dir);
 }

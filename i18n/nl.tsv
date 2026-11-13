@@ -290,6 +290,7 @@
 	Overlay	Overlay
 	Overwrite	Overschrijven
 	PCM (uncompressed)	PCM (ongecomprimeerd)
+	MP2 (MPEG-1 Layer II)	MP2 (MPEG-1 Layer II)
 	Panner	Panner
 	Paste Attributes…	Kenmerken plakken…
 	Paste Insert	Invoegend plakken
@@ -1823,6 +1824,16 @@
 	SMPTE DCP folder: JPEG 2000 3996×2160 (1.85:1), 5.1 24-bit 48 kHz PCM	SMPTE DCP-map: JPEG 2000 3996×2160 (1,85:1), 5.1 24-bit 48 kHz PCM
 	DCP 4K Scope	DCP 4K Scope
 	SMPTE DCP folder: JPEG 2000 4096×1716 (2.39:1), 5.1 24-bit 48 kHz PCM	SMPTE DCP-map: JPEG 2000 4096×1716 (2,39:1), 5.1 24-bit 48 kHz PCM
+	IMF App 2E (Interoperable Master Package)	IMF App 2E (Interoperable Master Package)
+	IMF App 2E HD	IMF App 2E HD
+	SMPTE IMF folder: JPEG 2000 1920×1080, 5.1 24-bit 48 kHz PCM	SMPTE IMF-map: JPEG 2000 1920×1080, 5.1 24-bit 48 kHz PCM
+	IMF App 2E UHD	IMF App 2E UHD
+	SMPTE IMF folder: JPEG 2000 3840×2160, 5.1 24-bit 48 kHz PCM	SMPTE IMF-map: JPEG 2000 3840×2160, 5.1 24-bit 48 kHz PCM
+	Episode	Aflevering
+	Event highlights	Hoogtepunten van evenement
+	Event	Evenement
+	Lossless (reversible JPEG 2000)	Verliesvrij (omkeerbare JPEG 2000)
+	Package language	Pakkettaal
 	4:2:0 (Main Profile)	4:2:0 (Main Profile)
 	4:2:2 (4:2:2 Profile)	4:2:2 (4:2:2 Profile)
 	B pictures	B-beelden
@@ -1976,6 +1987,9 @@
 	AV1 Main (10-bit for HDR)	AV1 Main (10-bit voor HDR)
 	10-bit RGB	10-bit RGB
 	12-bit X'Y'Z'	12-bit X'Y'Z'
+	10-bit R'G'B' 4:4:4	10-bit R'G'B' 4:4:4
+	JPEG 2000 IMF lossy	JPEG 2000 IMF met verlies
+	JPEG 2000 IMF reversible	JPEG 2000 IMF omkeerbaar
 	16-bit half float	16-bit halve precisie
 	linear	lineair
 	uncompressed	ongecomprimeerd
@@ -3241,8 +3255,16 @@
 	MXF OP1a H.264	MXF OP1a H.264
 	MXF OP1a ProRes 422 HQ	MXF OP1a ProRes 422 HQ
 	MXF OP1a, DNxHR HQ (8-bit 4:2:2), 24-bit 48 kHz PCM, start timecode	MXF OP1a, DNxHR HQ (8-bit 4:2:2), 24-bit 48 kHz PCM, begintijdcode
+	MXF OP1a MPEG-2 HD 4:2:2 50 Mbit/s	MXF OP1a MPEG-2 HD 4:2:2 50 Mbit/s
+	MXF OP1a, MPEG-2 4:2:2 Profile long GOP (12 pictures, IBBP) at 50 Mbit/s in the XDCAM HD422 style, 24-bit 48 kHz PCM; HD frame sizes	MXF OP1a, MPEG-2 4:2:2 Profile long GOP (12 beelden, IBBP) met 50 Mbit/s in XDCAM HD422-stijl, 24-bit 48 kHz PCM; HD-beeldformaten
 	MXF OP1a, H.264 High long GOP (0.3 bits per pixel), 24-bit 48 kHz PCM	MXF OP1a, H.264 High lange GOP (0,3 bits per pixel), 24-bit 48 kHz PCM
+	MXF OP1a D-10 (IMX) 50 Mbit/s 525/29.97	MXF OP1a D-10 (IMX) 50 Mbit/s 525/29.97
+	MXF OP1a D-10 (IMX) 50 Mbit/s 625/25	MXF OP1a D-10 (IMX) 50 Mbit/s 625/25
+	MXF OP1a type D-10 (IMX 50): intra-only MPEG-2 4:2:2P@ML at 50 Mbit/s, 720x486 at 29.97 fps (4:3), four 24-bit 48 kHz audio channels	MXF OP1a type D-10 (IMX 50): alleen-intra MPEG-2 4:2:2P@ML met 50 Mbit/s, 720x486 bij 29,97 fps (4:3), vier 24-bit 48 kHz audiokanalen
+	MXF OP1a type D-10 (IMX 50): intra-only MPEG-2 4:2:2P@ML at 50 Mbit/s, 720x576 at 25 fps (4:3), four 24-bit 48 kHz audio channels	MXF OP1a type D-10 (IMX 50): alleen-intra MPEG-2 4:2:2P@ML met 50 Mbit/s, 720x576 bij 25 fps (4:3), vier 24-bit 48 kHz audiokanalen
 	MXF OP1a, ProRes 422 HQ, 24-bit 48 kHz PCM, start timecode	MXF OP1a, ProRes 422 HQ, 24-bit 48 kHz PCM, begintijdcode
+	MXF OP1a XDCAM HD422 (RDD 9) 50 Mbit/s	MXF OP1a XDCAM HD422 (RDD 9) 50 Mbit/s
+	MXF OP1a in the SMPTE RDD 9 layout: MPEG-2 4:2:2 Profile long GOP (12 pictures, IBBP) at 50 Mbit/s, 1920x1080 or 1280x720 progressive, four 24-bit 48 kHz channels as per-channel AES3 elements	MXF OP1a in de SMPTE RDD 9-indeling: MPEG-2 4:2:2 Profile long GOP (12 beelden, IBBP) met 50 Mbit/s, 1920x1080 of 1280x720 progressief, vier 24-bit 48 kHz kanalen als AES3-elementen per kanaal
 	Main	Main
 	Mark In (Hover Scrub)	In-punt markeren (scrubben bij aanwijzen)
 	Mark Out (Hover Scrub)	Uitpunt markeren (scrubben bij aanwijzen)
@@ -3583,6 +3605,8 @@
 	Analyze Source for Smart Cut	Bron analyseren voor slim knippen
 	Plan Smart Cut	Slim knippen plannen
 	Run Smart Cut	Slim knippen uitvoeren
+	DASH Manifest	DASH-manifest
+	Also write a DASH manifest (.mpd)	Ook een DASH-manifest (.mpd) schrijven
 	No sequence open. Double-click a sequence in the Project panel.	Geen reeks open. Dubbelklik op een reeks in het projectpaneel.
 	English (US)	English (US)
 	English (UK)	English (UK)
@@ -4138,3 +4162,426 @@ export.summary	Low	laag
 	not supported by CFA4 sequences yet: {what}	nog niet ondersteund door CFA4-reeksen: {what}
 	{rate} fps	{rate} fps
 	{w} × {h}, display {dn}:{dd}, pixels {pn}:{pd}	{w} × {h}, weergave {dn}:{dd}, pixels {pn}:{pd}
+# Qt GUI: Tools menu (#868)
+	Video Tools	Videogereedschappen
+	Audio Tools	Audiogereedschappen
+	Publication Tools	Publicatiegereedschappen
+	Smart Export…	Slim exporteren…
+# Diagonal Slide and the missing transition variants (#153)
+	From North-West	Vanuit het noordwesten
+	From North-East	Vanuit het noordoosten
+	From South-East	Vanuit het zuidoosten
+	From South-West	Vanuit het zuidwesten
+# Enhance folder: Skin Smoothing and Low Light (#166)
+	Enhance	Verbeteren
+	Skin Smoothing	Huid verzachten
+	Keep Texture	Textuur behouden
+	Skin Tone	Huidtint
+	Smooth Entire Image	Hele beeld verzachten
+	Low Light	Weinig licht
+	Max Brightening	Maximale verheldering
+	Show Illumination	Belichting tonen
+# Easing presets, Film Gate, Particles, Keyhole, Burn Away, Check Text Legibility (#182)
+	Easing Presets	Easing-voorinstellingen
+	Sine	Sinus
+	Exponential	Exponentieel
+	Circular	Cirkelvormig
+	Elastic	Elastisch
+	Film Gate	Filmvenster
+	Gate Weave	Venstertrilling
+	Weave Rotation	Trillingsrotatie
+	Particles	Deeltjes
+	Emitter Position	Positie van bron
+	Birth Rate	Ontstaanssnelheid
+	Lifetime (seconds)	Levensduur (seconden)
+	Velocity Random	Willekeurige snelheid
+	Gravity	Zwaartekracht
+	Particle Size	Deeltjesgrootte
+	Keyhole	Sleutelgat
+	Burn Away	Wegbranden
+	Burn Size	Brandgrootte
+	Ember Width	Breedte van gloeirand
+	Ember Color	Kleur van gloeirand
+	Check Text Legibility	Leesbaarheid van tekst controleren
+	Clear Legibility Markers	Leesbaarheidsmarkeringen wissen
+	Text legibility: no problems found	Leesbaarheid van tekst: geen problemen gevonden
+	Text legibility: {count} problems marked on the timeline (orange markers)	Leesbaarheid van tekst: {count} problemen gemarkeerd op de tijdlijn (oranje markeringen)
+# Glitch folder: Bit Crush, Block Glitch, Databend, VHS, Scan Line Jitter, Tile Jitter (#353)
+	Bit Crush	Bitreductie
+	Bits per Channel	Bits per kanaal
+	Ordered Dither	Geordende dithering
+	Dither Cell Size	Celgrootte van dithering
+	Block Glitch	Blokglitch
+	Blocks Moved	Verplaatste blokken
+	Max Distance	Maximale afstand
+	Snap to Grid	Uitlijnen op raster
+	Swap Blocks	Blokken verwisselen
+	Changes per Second	Wijzigingen per seconde
+	Databend	Datavervorming
+	Breaks	Breuken
+	Shift	Verschuiving
+	Color Damage	Kleurschade
+	VHS	VHS
+	Color Bleed	Kleurvervloeiing
+	Wobble	Schommeling
+	Snow	Sneeuw
+	Tracking Bar	Trackingbalk
+	Head Switching	Kopwisseling
+	Scan Line Jitter	Lijnjitter
+	Jitter	Jitter
+	Interval	Interval
+	Infinite	Oneindig
+	Periodic	Periodiek
+	Tile Jitter	Tegeljitter
+	Tiles	Tegels
+	Band Direction	Richting van banden
+	Jitter Direction	Richting van jitter
+# Creative Looks: Halftone and Dither (#354)
+	Halftone	Halftoon
+	Dither	Dithering
+	Pattern	Patroon
+	Cell Size	Celgrootte
+	Cyan Angle	Hoek cyaan
+	Magenta Angle	Hoek magenta
+	Yellow Angle	Hoek geel
+	Black Angle	Hoek zwart
+	Monochrome Angle	Hoek monochroom
+	Sharpness	Scherpte
+	Ink Color	Inktkleur
+	Paper Color	Papierkleur
+	Color (CMYK)	Kleur (CMYK)
+	Dot	Punt
+	Line	Lijn
+	Bayer 2×2	Bayer 2×2
+	Bayer 4×4	Bayer 4×4
+	Bayer 8×8	Bayer 8×8
+	Pixel Size	Pixelgrootte
+	Palette	Palet
+	Input Colors	Invoerkleuren
+	Green Phosphor	Groene fosfor
+	Amber Monitor	Amberkleurige monitor
+	Game Boy	Game Boy
+	CGA	CGA
+	EGA	EGA
+	ZX Spectrum	ZX Spectrum
+	PICO-8	PICO-8
+
+# Credits workspace (stáblista)
+	Credits from a Spreadsheet	Aftiteling uit een spreadsheet
+	A .ods, .xlsx or CSV credits sheet	Een aftitelingsblad in .ods, .xlsx of CSV
+	The spreadsheet's folder	De map van de spreadsheet
+	Built-in styles	Ingebouwde stijlen
+	Spreadsheet	Spreadsheet
+	Sheet	Blad
+	Pictures	Afbeeldingen
+	Styling	Opmaak
+	Page	Pagina
+	Warnings	Waarschuwingen
+	Moment in the page	Moment op de pagina
+	Place at Playhead	Plaatsen bij afspeelkop
+	Spreadsheets (*.ods *.xlsx *.csv *.tsv *.txt)	Spreadsheets (*.ods *.xlsx *.csv *.tsv *.txt)
+	Credits styling (*.json)	Aftitelingsopmaak (*.json)
+	Card	Kaart
+	Credits Spreadsheet	Aftitelingsspreadsheet
+	Reading…	Lezen…
+	(one table)	(één tabel)
+	Total: {time}	Totaal: {time}
+	Row {row}: {message}	Rij {row}: {message}
+	Choose a credits spreadsheet.	Kies een aftitelingsspreadsheet.
+	No preview	Geen voorbeeld
+	Placing…	Plaatsen…
+	Placed {n} pages on the timeline.	{n} pagina's op de tijdlijn geplaatst.
+	Credits Page Picture	Afbeelding van aftitelingspagina
+	Preview Credits	Voorbeeld van aftiteling
+	Credits Styles	Aftitelingsstijlen
+	Spreadsheets and credits files (*.ods *.xlsx *.csv *.tsv *.txt *.cfa4credits)	Spreadsheets en aftitelingsbestanden (*.ods *.xlsx *.csv *.tsv *.txt *.cfa4credits)
+	CFA4 credits file (*.cfa4credits)	CFA4-aftitelingsbestand (*.cfa4credits)
+	Save as Credits File…	Opslaan als aftitelingsbestand…
+	Spreadsheet, worksheet, styling and the table in one file, to open on any machine	Spreadsheet, werkblad, opmaak en tabel in één bestand, te openen op elke computer
+	Saved: {path}	Opgeslagen: {path}
+	Added	Toegevoegd
+	Removed	Verwijderd
+	Changed	Gewijzigd
+	(empty row)	(lege rij)
+	Refresh Credits from Spreadsheet	Aftiteling vernieuwen uit spreadsheet
+	Change	Wijziging
+	Before → After	Voor → Na
+	Select None	Niets selecteren
+	Keep my edits on the pages (where their block is unchanged)	Mijn bewerkingen op de pagina's behouden (waar hun blok ongewijzigd is)
+	Locate Spreadsheet…	Spreadsheet zoeken…
+	Comparing…	Vergelijken…
+	{n} changes in {file} since the credits were placed. Untick what you do not want.	{n} wijzigingen in {file} sinds de aftiteling is geplaatst. Vink uit wat u niet wilt.
+	The spreadsheet {file} has not changed since the credits were placed.	De spreadsheet {file} is niet gewijzigd sinds de aftiteling is geplaatst.
+	{n} layers were edited by hand on the pages.	{n} lagen zijn met de hand bewerkt op de pagina's.
+	Accepting every change would replace these, because their block changed: {names}	Alle wijzigingen accepteren vervangt deze, omdat hun blok is gewijzigd: {names}
+	Refreshing…	Vernieuwen…
+	Refreshed: {n} changes applied, {kept} hand edits kept.	Vernieuwd: {n} wijzigingen toegepast, {kept} handmatige bewerkingen behouden.
+	Refresh Credits from Spreadsheet…	Aftiteling vernieuwen uit spreadsheet…
+	Save Credits File…	Aftitelingsbestand opslaan…
+	Compare Credits with Spreadsheet	Aftiteling vergelijken met spreadsheet
+	“{name}” appears twice in the same block	“{name}” komt twee keer voor in hetzelfde blok
+	“{name}” is written as “{other}” in row {otherRow}	“{name}” is in rij {otherRow} geschreven als “{other}”
+	The font “{font}” is not installed; another font is used	Het lettertype “{font}” is niet geïnstalleerd; er wordt een ander lettertype gebruikt
+	The font “{font}” has no “{chars}”; another font draws them	Het lettertype “{font}” heeft geen “{chars}”; een ander lettertype tekent ze
+	“{text}” is outside the title-safe area	“{text}” valt buiten het titelveilige gebied
+	“{text}” is too dark on black (contrast {ratio}:1; at least 4.5:1 is needed)	“{text}” is te donker op zwart (contrast {ratio}:1; minstens 4,5:1 is nodig)
+	“{text}” is {px} px high; 24 px or more reads well	“{text}” is {px} px hoog; 24 px of meer leest goed
+	The roll moves {speed} px per frame; a whole number does not shimmer	De rol beweegt {speed} px per frame; een geheel getal flikkert niet
+	A line crosses the frame in {seconds} s; at least 6 s reads well	Een regel doorkruist het beeld in {seconds} s; minstens 6 s leest goed
+	The card holds for only {seconds} s after its fades	De kaart blijft na de overgangen maar {seconds} s staan
+	This page starts {seconds} s before the previous one ends	Deze pagina begint {seconds} s voordat de vorige eindigt
+	“{file}” is shown at {percent} % of its pixels; it will look soft	“{file}” wordt getoond op {percent} % van zijn pixels; het oogt zacht
+	{more} more of the same	Nog {more} van hetzelfde
+	Page {page}: {message}	Pagina {page}: {message}
+	Checks and warnings	Controles en waarschuwingen
+	Checks: {errors} errors, {warnings} warnings	Controles: {errors} fouten, {warnings} waarschuwingen
+	Check Credits	Aftiteling controleren
+	The whole music ({time})	De hele muziek ({time})
+	Until the sound ends ({time})	Tot het geluid eindigt ({time})
+	To the last bar line ({time})	Tot de laatste maatstreep ({time})
+	Fit Credits to Music	Aftiteling aan muziek aanpassen
+	Fit Credits to Music…	Aftiteling aan muziek aanpassen…
+	Analyse Music for Credits	Muziek analyseren voor aftiteling
+	Length:	Lengte:
+	Cards last whole beats (cuts on the beat)	Kaarten duren hele tellen (overgangen op de tel)
+	Start the credits where the music starts	De aftiteling laten beginnen waar de muziek begint
+	Length of the credits	Lengte van de aftiteling
+	Remove Fitting	Aanpassing verwijderen
+	Listening to the music…	Muziek beluisteren…
+	Length: {time}	Lengte: {time}
+	the sound ends at {time}	het geluid eindigt op {time}
+	tempo {bpm} BPM	tempo {bpm} BPM
+	the credits without fitting: {time}	de aftiteling zonder aanpassing: {time}
+	Select a credits page on the timeline.	Selecteer een aftitelingspagina op de tijdlijn.
+	Fitting…	Aanpassen…
+	The credits now last {time}.	De aftiteling duurt nu {time}.
+	Fitting removed.	Aanpassing verwijderd.
+	Fit to This Length	Aan deze lengte aanpassen
+	No music to measure ({problem}); type the length.	Geen muziek om te meten ({problem}); typ de lengte.
+	The text moves {speed} px per frame; a whole number does not shimmer	De tekst beweegt {speed} px per frame; een geheel getal flikkert niet
+	Crawl	Lichtkrant
+	Picture: {file}	Afbeelding: {file}
+	Video: {file}	Video: {file}
+	Looped video: {file}	Herhaalde video: {file}
+	Into the next	Naar de volgende
+	Safe areas and spines	Veilige gebieden en assen
+	Action safe (93 %), title safe (90 %), the centre and the page's spines	Actieveilig (93 %), titelveilig (90 %), het midden en de assen van de pagina
+	Baseline grid	Basislijnraster
+	Lines one gap unit apart, moving with the page	Lijnen één afstandseenheid uit elkaar, die met de pagina meebewegen
+	“{text}” does not stand out from the background (contrast {ratio}:1; at least 4.5:1 is needed)	“{text}” steekt niet af tegen de achtergrond (contrast {ratio}:1; minstens 4,5:1 is nodig)
+	A picture or video is behind the text: check the contrast by eye	Achter de tekst staat een afbeelding of video: controleer het contrast op het oog
+	A ready look: styles, backgrounds, transitions and timing. A styling file, if given, wins.	Een kant-en-klare look: stijlen, achtergronden, overgangen en timing. Een opgegeven opmaakbestand gaat voor.
+	New Spreadsheet from Template…	Nieuwe spreadsheet uit sjabloon…
+	built in	ingebouwd
+	mine	eigen
+	this project	dit project
+	Template	Sjabloon
+	Choose a template first.	Kies eerst een sjabloon.
+	Name of the template:	Naam van het sjabloon:
+	Template saved: {name}	Sjabloon opgeslagen: {name}
+	Apply Credits Template…	Aftitelingssjabloon toepassen…
+	Template:	Sjabloon:
+	Credits Templates	Aftitelingssjablonen
+	CSV (*.csv)	CSV (*.csv)
+	Spreadsheets, credits files and Cinecred projects (*.ods *.xlsx *.csv *.tsv *.txt *.cfa4credits Styling.toml)	Spreadsheets, aftitelingsbestanden en Cinecred-projecten (*.ods *.xlsx *.csv *.tsv *.txt *.cfa4credits Styling.toml)
+	Cinecred Project…	Cinecred-project…
+	Open a Cinecred project folder (Styling.toml and its credits spreadsheet)	Een Cinecred-projectmap openen (Styling.toml en de bijbehorende aftitelingsspreadsheet)
+	(empty block)	(leeg blok)
+	Apply Template…	Sjabloon toepassen…
+	Change them in the spreadsheet; the credits follow when you save it.	Wijzig ze in de spreadsheet; de aftiteling volgt wanneer u die opslaat.
+	Compact View	Compacte weergave
+	Compare the selected credits on the timeline with their spreadsheet, row by row	De geselecteerde aftiteling op de tijdlijn rij voor rij vergelijken met de spreadsheet
+	Fit the selected credits to the music under them	De geselecteerde aftiteling aanpassen aan de muziek eronder
+	Fit to Music…	Aanpassen aan muziek…
+	Full View	Volledige weergave
+	Give the selected credits on the timeline another template	De geselecteerde aftiteling op de tijdlijn een ander sjabloon geven
+	Names	Namen
+	No pages	Geen pagina's
+	Refresh Placed Credits…	Geplaatste aftiteling vernieuwen…
+	Show everything: blocks, properties, the pages along time, checks and the credits tools	Alles tonen: blokken, eigenschappen, de pagina's in de tijd, controles en de aftitelingshulpmiddelen
+	Spine	As
+	Tails	Einde
+	The blocks of the chosen page; choose one to see it in the preview	De blokken van de gekozen pagina; kies er een om die in het voorbeeld te zien
+	The pages along time; click one to choose it	De pagina's in de tijd; klik op een pagina om die te kiezen
+	{n} more	Nog {n}
+	Block	Blok
+	parallel	parallel
+# MPEG-2 export audio (#268): a product name, kept as is
+	Dolby Digital (AC-3)	Dolby Digital (AC-3)
+	In the page (OBS takes it from the Browser Source)	In de pagina (OBS haalt het uit de browserbron)
+	Separate (a media source in OBS)	Apart (een mediabron in OBS)
+	No sound	Geen geluid
+	credits	aftiteling
+	graphic	afbeelding
+	{n} pages	{n} pagina's
+	Live Graphics	Live-graphics
+	Prepared cues; double-click one to put it in preview	Voorbereide cues; dubbelklik op een cue om die in het voorbeeld te zetten
+	Add Credits…	Aftiteling toevoegen…
+	A credits spreadsheet, credits file or Cinecred project as a cue	Een aftitelingsspreadsheet, aftitelingsbestand of Cinecred-project als cue
+	Add Selected Graphic	Geselecteerde afbeelding toevoegen
+	The graphic clip selected on the timeline (a title, a lower third) as a cue	De afbeeldingsclip die op de tijdlijn is geselecteerd (een titel, een onderbalk) als cue
+	Cues	Cues
+	TAKE	TAKE
+	The preview cue goes on air from its first page	De voorbeeld-cue gaat vanaf de eerste pagina in de uitzending
+	PREVIOUS	VORIGE
+	The page before (on the first page: from its start)	De vorige pagina (op de eerste pagina: vanaf het begin)
+	NEXT	VOLGENDE
+	The next page; after the last one, the preview cue	De volgende pagina; na de laatste de voorbeeld-cue
+	HOLD	VASTHOUDEN
+	Stop the program where it is	Het programma stoppen waar het is
+	CONTINUE	DOORGAAN
+	Go on from where it stopped	Doorgaan vanaf waar het stopte
+	UPDATE	BIJWERKEN
+	Read the spreadsheet (or the clip) again; on air it changes at once	De spreadsheet (of de clip) opnieuw lezen; in de uitzending verandert het meteen
+	OUT	UIT
+	Take everything off air	Alles uit de uitzending halen
+	Start Live Page	Livepagina starten
+	Serve the program on this computer for OBS's Browser Source (127.0.0.1 only)	Het programma op deze computer aanbieden aan de browserbron van OBS (alleen 127.0.0.1)
+	not running	niet actief
+	OBS ▸ Tools ▸ WebSocket Server Settings	OBS ▸ Extra ▸ WebSocket-serverinstellingen
+	Connect to OBS	Verbinden met OBS
+	Connect to OBS on this computer and point its “CFA4 Live” Browser Source at the live page	Verbinden met OBS op deze computer en de browserbron “CFA4 Live” naar de livepagina laten wijzen
+	Port	Poort
+	Password	Wachtwoord
+	Live page	Livepagina
+	Sound	Geluid
+	OBS	OBS
+	Nothing in preview	Niets in voorbeeld
+	page {page} of {pages}	pagina {page} van {pages}
+	held	vastgehouden
+	ended	afgelopen
+	Off air	Niet in de uitzending
+	Stop Live Page	Livepagina stoppen
+	Connected to OBS {version}; source “{source}”	Verbonden met OBS {version}; bron “{source}”
+	Point OBS Again	OBS opnieuw instellen
+	Select a graphic clip on the timeline first.	Selecteer eerst een afbeeldingsclip op de tijdlijn.
+	Connecting to OBS…	Verbinden met OBS…
+	Live Graphics…	Live-graphics…
+	PREVIEW	VOORBEELD
+	PROGRAM	PROGRAMMA
+	a picture or video tag stands alone in a body cell (or with one name, as a portrait); the other tags were removed	een afbeeldings- of videotag staat alleen in een bodycel (of met één naam, als portret); de andere tags zijn verwijderd
+	the page gap is not a duration; the page style's is used	de paginatussenruimte is geen duur; die van de paginastijl wordt gebruikt
+	the page runtime is not a positive duration; the page style's is used	de looptijd van de pagina is geen positieve duur; die van de paginastijl wordt gebruikt
+	background “{file}” was not found; it is left out	achtergrond “{file}” is niet gevonden; die wordt weggelaten
+	card page {page} is taller than the frame; use a roll page	kaartpagina {page} is hoger dan het beeld; gebruik een rolpagina
+	colour “{colour}” of letter style “{style}” is not #rrggbb; it is left out	kleur “{colour}” van letterstijl “{style}” is geen #rrggbb; die wordt weggelaten
+	colour “{colour}” is not #rrggbb; black is used	kleur “{colour}” is geen #rrggbb; zwart wordt gebruikt
+	colour “{colour}” is not #rrggbb; white is used	kleur “{colour}” is geen #rrggbb; wit wordt gebruikt
+	content style “{style}” does not exist; “{used}” is used	inhoudsstijl “{style}” bestaat niet; “{used}” wordt gebruikt
+	letter style “{style}” does not exist; the text keeps the block's style	letterstijl “{style}” bestaat niet; de tekst houdt de stijl van het blok
+	page gap “{value}” is not a duration	paginatussenruimte “{value}” is geen duur
+	page runtime “{value}” is not a duration	paginalooptijd “{value}” is geen duur
+	page style “{style}” does not exist; a roll page is used	paginastijl “{style}” bestaat niet; er wordt een rolpagina gebruikt
+	page {page}: the background names no file; it is left out	pagina {page}: de achtergrond noemt geen bestand; die wordt weggelaten
+	page {page}: the runtime is reached by changing the roll speed (the page has no gaps between blocks to stretch)	pagina {page}: de looptijd wordt bereikt door de rolsnelheid te wijzigen (de pagina heeft geen ruimtes tussen blokken om op te rekken)
+	page {page}: the runtime is reached by changing the roll speed (the credits are too long even without gaps)	pagina {page}: de looptijd wordt bereikt door de rolsnelheid te wijzigen (de aftiteling is zelfs zonder ruimtes te lang)
+	page {page}: the runtime is reached by changing the roll speed (the gaps would have to grow more than 20-fold)	pagina {page}: de looptijd wordt bereikt door de rolsnelheid te wijzigen (de ruimtes zouden meer dan 20 keer zo groot moeten worden)
+	page {page}: the transition needs the pages to touch (page gap 0); it is left out	pagina {page}: de overgang vereist dat de pagina's aansluiten (paginatussenruimte 0); die wordt weggelaten
+	page {page}: there is no transition “{name}”; the pages cut	pagina {page}: er is geen overgang “{name}”; de pagina's wisselen met een harde las
+	spine position “{value}” is not supported (a pixel offset, optionally “parallel”, is)	aspositie “{value}” wordt niet ondersteund (een verschuiving in pixels, eventueel met “parallel”, wel)
+	vertical gap “{value}” is not a number	verticale ruimte “{value}” is geen getal
+	picture “{file}” was not found or cannot be read; it is left out	afbeelding “{file}” is niet gevonden of kan niet worden gelezen; die wordt weggelaten
+	video “{file}” was not found or cannot be read; it is left out	video “{file}” is niet gevonden of kan niet worden gelezen; die wordt weggelaten
+	there is no roll page without its own runtime to stretch; the length cannot change	er is geen rolpagina zonder eigen looptijd om op te rekken; de lengte kan niet veranderen
+	the cards and gaps alone are {seconds} s; the asked length is shorter, so the roll pages keep their natural length	de kaarten en ruimtes alleen al zijn {seconds} s; de gevraagde lengte is korter, dus de rolpagina's houden hun natuurlijke lengte
+	letter style “{style}”: only the first coloured layer is used (no outlines, shadows or stripes)	letterstijl “{style}”: alleen de eerste gekleurde laag wordt gebruikt (geen contouren, schaduwen of strepen)
+	the whole-credits runtime is not carried over; use Fit Credits to Music (or a length) instead	de looptijd van de hele aftiteling wordt niet overgenomen; gebruik in plaats daarvan Aftiteling aan muziek aanpassen (of een lengte)
+	page style “{style}”: fade curves become linear fades	paginastijl “{style}”: vervagingscurven worden lineair
+	content style “{style}” has no head in Cinecred; heads written in the sheet are still shown	inhoudsstijl “{style}” heeft in Cinecred geen begin; begins die in het blad staan, worden toch getoond
+	content style “{style}”: sorting the names is not carried over	inhoudsstijl “{style}”: het sorteren van de namen wordt niet overgenomen
+	transition curves are not carried over	overgangscurven worden niet overgenomen
+	picture styles (pictures keep their own size) are not carried over	afbeeldingsstijlen (afbeeldingen houden hun eigen formaat) worden niet overgenomen
+	video (tape) styles are not carried over	video- (band)stijlen worden niet overgenomen
+	the Cinecred project has {n} credits spreadsheets; “{name}” is used (choose another in the Spreadsheet field)	het Cinecred-project heeft {n} aftitelingsspreadsheets; “{name}” wordt gebruikt (kies een andere in het veld Spreadsheet)
+# Media QC: Quality Check window and the export queue's QC state (docs/media-qc.md)
+	Add Finding	Bevinding toevoegen
+	Add as Finding	Als bevinding toevoegen
+	Are colour and contrast acceptable?	Zijn kleur en contrast aanvaardbaar?
+	Automatic Checks	Automatische controles
+	Bounds	Grenzen
+	Check	Controle
+	Check Now	Nu controleren
+	Check quality after export	Kwaliteit controleren na export
+	Checking…	Controleren…
+	Contact Sheet	Contactblad
+	Critical	Kritiek
+	Fail	Afgekeurd
+	Finding {row}: the time code is not a time in this file (HH:MM:SS:FF).	Bevinding {row}: de tijdcode is geen tijd in dit bestand (HH:MM:SS:FF).
+	Findings	Bevindingen
+	Human Review	Menselijke beoordeling
+	Incomplete	Onvolledig
+	Is there a visible picture defect?	Is er een zichtbaar beelddefect?
+	Is there audible distortion?	Is er hoorbare vervorming?
+	Is there unwanted noise?	Is er ongewenste ruis?
+	Major	Ernstig
+	Message	Bericht
+	Minor	Gering
+	No contact sheet	Geen contactblad
+	Not answered	Niet beantwoord
+	Not checked	Niet gecontroleerd
+	Not run	Niet uitgevoerd
+	Note	Opmerking
+	Pass	Goedgekeurd
+	Passed	Goedgekeurd
+	Passed with warnings	Goedgekeurd met waarschuwingen
+	Profile: {id} v{version}	Profiel: {id} v{version}
+	Quality Check	Kwaliteitscontrole
+	Quality Check…	Kwaliteitscontrole…
+	Remove Finding	Bevinding verwijderen
+	Report: {path}	Rapport: {path}
+	Review complete	Beoordeling voltooid
+	Reviewer	Beoordelaar
+	Run the media quality check on the finished file (docs/media-qc.md)	De mediakwaliteitscontrole uitvoeren op het voltooide bestand (docs/media-qc.md)
+	Save Review	Beoordeling opslaan
+	Select a finished export in the queue	Selecteer een voltooide export in de wachtrij
+	Severity	Ernst
+	The engine is not running.	De engine draait niet.
+	Time code	Tijdcode
+	Unsure	Onzeker
+	accept	aanvaardbaar
+	the engine did not start the check	de engine heeft de controle niet gestart
+	the engine sent no report	de engine heeft geen rapport gestuurd
+	MXF OP1a Uncompressed 10-bit 4:2:2 (v210)	MXF OP1a ongecomprimeerd 10-bit 4:2:2 (v210)
+	MXF OP1a, uncompressed 10-bit Y'CbCr 4:2:2 in the v210 layout (SMPTE ST 384), 24-bit 48 kHz PCM, start timecode	MXF OP1a, ongecomprimeerd 10-bit Y'CbCr 4:2:2 in de v210-indeling (SMPTE ST 384), 24-bit 48 kHz PCM, starttijdcode
+	Write the captions as ANC data (CEA-608/708, 29.97 fps)	Ondertiteling als ANC-gegevens schrijven (CEA-608/708, 29,97 fps)
+	Load KDM…	KDM laden…
+	Forget DCP Keys	DCP-sleutels vergeten
+	Load KDM	KDM laden
+	KDM file	KDM-bestand
+	Private key (PEM)	Privésleutel (PEM)
+	{title}: {count} keys loaded	{title}: {count} sleutels geladen
+	The keys stay in memory only, until Forget DCP Keys or the end of the session.	De sleutels blijven alleen in het geheugen, tot DCP-sleutels vergeten of het einde van de sessie.
+	DCP keys forgotten	DCP-sleutels vergeten
+	Choose the KDM file and the private key.	Kies het KDM-bestand en de privésleutel.
+
+# Settings ▸ Timecode Sync (TC-4)
+	Timecode Sync	Timecodesynchronisatie
+	TimecodeSync	Timecodesynchronisatie
+	Chase	Volgen
+	Follow external timecode during playback	Externe timecode volgen tijdens afspelen
+	Lock after	Vergrendelen na
+	Keep playing without signal for	Doorspelen zonder signaal gedurende
+	External frame rate	Externe framesnelheid
+	Offset (added to the external timecode)	Verschuiving (opgeteld bij de externe timecode)
+	LTC	LTC
+	LTC input device	LTC-invoerapparaat
+	LTC input channel	LTC-invoerkanaal
+	Send LTC during playback	LTC verzenden tijdens afspelen
+	LTC output device	LTC-uitvoerapparaat
+	LTC output channel	LTC-uitvoerkanaal
+	LTC level	LTC-niveau
+	dBFS	dBFS
+	MIDI Timecode	MIDI-timecode
+	MTC input port (empty = CFA4 port)	MTC-invoerpoort (leeg = CFA4-poort)
+	Send MIDI Timecode during playback	MIDI-timecode verzenden tijdens afspelen
+	MTC output port (empty = CFA4 port)	MTC-uitvoerpoort (leeg = CFA4-poort)
+	Send timecode ahead of the picture by	Timecode vóór het beeld verzenden met
+	LTC (audio input)	LTC (audio-invoer)
+	MIDI Timecode (MIDI input)	MIDI-timecode (MIDI-invoer)
+	Same as the sequence	Zelfde als de reeks
+	29.97 fps drop-frame	29,97 fps drop-frame
+	29.97 fps non-drop	29,97 fps non-drop
+	Timecode Sync Status	Status timecodesynchronisatie
+	Chase External Timecode	Externe timecode volgen
+	Send LTC	LTC verzenden
+	Send MIDI Timecode	MIDI-timecode verzenden

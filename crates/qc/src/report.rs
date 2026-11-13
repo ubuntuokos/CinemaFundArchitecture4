@@ -5,9 +5,12 @@
 //! let a missing, skipped or failed mandatory result pass:
 //!
 //! 1. a mandatory check FAIL, or a critical human finding → [`Verdict::Fail`];
-//! 2. otherwise a mandatory check NOT_RUN or missing, a required human review not done, a render
-//!    that did not finish, or a cancelled run → [`Verdict::Incomplete`];
-//! 3. otherwise any WARN, an optional check FAIL, or a major/minor human finding → [`Verdict::Warn`];
+//! 2. otherwise a mandatory check NOT_RUN or missing, a required human review not done (or done
+//!    with a guided question unanswered or "unsure", or a problem answered without a finding that
+//!    gives its severity), a render that did not finish, or a cancelled run →
+//!    [`Verdict::Incomplete`];
+//! 3. otherwise any WARN, an optional check FAIL, a major/minor human finding, or a problem
+//!    answered without a finding in an optional review → [`Verdict::Warn`];
 //! 4. otherwise [`Verdict::Pass`].
 //!
 //! The render's own outcome is kept in [`QcReport::render`], apart from the QC result: a render
@@ -29,6 +32,8 @@ pub const MAX_EVENTS: usize = 1000;
 pub const MAX_REVIEW_ITEMS: usize = 1000;
 /// Longest free text kept (descriptions, notes, reasons), in characters.
 pub const MAX_TEXT: usize = 4000;
+/// Reason prefix of a result that does not apply ([`CheckResult::not_applicable`]).
+pub const NOT_APPLICABLE: &str = "not applicable: ";
 
 fn clip(s: &str) -> String {
     s.chars().take(MAX_TEXT).collect()
@@ -246,6 +251,19 @@ impl CheckResult {
         r
     }
 
+    /// The check does not apply: the render plan rules out what it measures (no audio in a
+    /// video-only export) and the file agrees. PASS without a value, with the reason.
+    pub fn not_applicable(id: &str, spec: &CheckSpec, reason: &str) -> CheckResult {
+        let mut r = CheckResult::base(id, spec, Status::Pass);
+        r.reason = Some(clip(&format!("{NOT_APPLICABLE}{reason}")));
+        r
+    }
+
+    /// A [`CheckResult::not_applicable`] result.
+    pub fn is_not_applicable(&self) -> bool {
+        self.status == Status::Pass && self.value.is_none() && self.reason.as_deref().is_some_and(|r| r.starts_with(NOT_APPLICABLE))
+    }
+
     /// The check could not run, and why.
     pub fn not_run(id: &str, spec: &CheckSpec, reason: &str) -> CheckResult {
         let mut r = CheckResult::base(id, spec, Status::NotRun);
@@ -316,6 +334,12 @@ pub const QUESTIONS: &[(&str, &str)] = &[
     ("audio.distortion", "Is there audible distortion?"),
     ("audio.noise", "Is there unwanted noise?"),
 ];
+
+/// The answer to a guided question that reports a problem (colour and contrast are asked the
+/// other way round).
+pub fn problem_answer(question: &str) -> AnswerValue {
+    if question == "picture.colorContrast" { AnswerValue::No } else { AnswerValue::Yes }
+}
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Default, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
@@ -445,7 +469,7 @@ impl QcReport {
                 && r.status != Status::NotRun
             {
                 r.status = evaluate(spec, v);
-            } else if catalog::check(&r.id).is_some_and(|c| c.measure == Measure::Value) && r.status != Status::NotRun {
+            } else if catalog::check(&r.id).is_some_and(|c| c.measure == Measure::Value) && r.status != Status::NotRun && !r.is_not_applicable() {
                 r.status = Status::NotRun;
                 r.reason = Some("no measured value".into());
             }
@@ -520,8 +544,25 @@ impl QcReport {
                 Severity::Info => {}
             }
         }
-        if self.human_review_requirement == Requirement::Mandatory && self.human.as_ref().is_none_or(|h| h.state != ReviewState::Done) {
+        let review_required = self.human_review_requirement == Requirement::Mandatory;
+        if review_required && self.human.as_ref().is_none_or(|h| h.state != ReviewState::Done) {
             incomplete.push("human review: not done".into());
+        }
+        // A finished review vouches for the file only when every guided question is answered,
+        // and a problem the person reported carries a severity (a finding).
+        if let Some(h) = self.human.as_ref().filter(|h| h.state == ReviewState::Done) {
+            for (id, _) in QUESTIONS {
+                match h.answers.iter().find(|a| a.question == *id).map(|a| a.answer) {
+                    None | Some(AnswerValue::Unsure) if review_required => {
+                        incomplete.push(format!("human review: `{id}` not answered"));
+                    }
+                    Some(a) if a == problem_answer(id) && findings.is_empty() => {
+                        let text = format!("human review: `{id}` reports a problem but no finding gives its severity");
+                        if review_required { &mut incomplete } else { &mut warn }.push(text);
+                    }
+                    _ => {}
+                }
+            }
         }
         if let Some(r) = &self.render
             && r.status != RenderStatus::Done
@@ -577,7 +618,11 @@ impl QcReport {
             {
                 return Err(Error::InvalidReport(format!("`{}`: status does not match its value and bounds", c.id)));
             }
-            if catalog::check(&c.id).is_some_and(|i| i.measure == Measure::Value) && c.status != Status::NotRun && (c.value.is_none() || c.pass.is_none()) {
+            if catalog::check(&c.id).is_some_and(|i| i.measure == Measure::Value)
+                && c.status != Status::NotRun
+                && !c.is_not_applicable()
+                && (c.value.is_none() || c.pass.is_none())
+            {
                 return Err(Error::InvalidReport(format!("`{}`: a result without a value or bounds", c.id)));
             }
         }

@@ -87,7 +87,9 @@ Replies on stdout, one per request, in order: `{"id": 7, "ok": true, "result": �
 `{"id": 7, "ok": false, "error": "…"}`. A reply with `"binary": N` is followed by exactly `N` raw
 bytes. Lines with an `event` key and no `id` are notifications:
 `projectChanged {revision}`, `toast {message, error}`, `openSequence {item}`, `openSource {item}`,
-`revealInProject {item}`. A line that is not a request gets an error reply with `id: null`; a
+`revealInProject {item}`, and while external timecode sync chases (Settings ▸ Timecode Sync)
+`timecodeSync.locate {time, seconds, play}` (go to `time` and play or hold) and
+`timecodeSync.stop`. A line that is not a request gets an error reply with `id: null`; a
 line longer than 4 MiB is skipped with an error reply.
 
 | Method | Params | Result |
@@ -113,6 +115,7 @@ line longer than 4 MiB is skipped with an error reply.
 | `project.panel` | `{bin?, mode?: list\|icon\|freeform, expanded?: [bin], filter?, width?}` | `{bin, root, parent, project, path, mode, columns, sort, iconSort, total, selection, rows, truncated, preview, open, cards, freeform}`: one Project panel view of a bin, as egui's Project panel reads it: List rows (sub-bins first, twirled open when in `expanded`, the Metadata Display columns' `cells`) or Icon cards (Sort Icons order), each item with its type icon, label colour, duration, In/Out, poster frame and offline / proxy badges; `preview` is the first selected item for the Preview Area, `open` how a double-click opens a bin; in Freeform, `cards` are the bin's clip cards laid out for `width` (`project.freeform.layout`, kept to the search's matches) and `freeform` the Freeform View Options |
 | `time.parse` | `{text, target?, time?}` | `{time, frame}`: a timecode typed into a monitor, read as Premiere does (`01:02:03:04`, `1.2.3.4`, bare digits as right-aligned `HHMMSSFF`, `+15` / `-1.00` relative to the monitor's frame: `time`, the shown one, else the engine's playhead) at the sequence's or the Source clip's rate (drop-frame when the sequence counts it, as the GUI shows it) |
 | `media.peaks` | `{item, start, end (media ticks), buckets ≤ 20000, stream?}` | `{item, buckets, start, end, hasAudio}` + `buckets` (min, max) pairs, f32le, the extremes over all channels of audio stream `stream` (default 0; a clip's `audioStream` in `sequence.inspect`) (≤ 600 s per call) |
+| `timecodeSync.transport` | `{playing, time \| seconds \| frame, speed?}` | `{active}`: the player's transport, sent whenever it starts, stops, seeks or changes speed; LTC and MIDI Timecode output follow it and chase compares it with the external clock (`active`: a sync device is open) |
 | `session.state` | – | `{dirty, revision, path, canUndo, canRedo, playhead}` |
 | `app.quit` | – | `{quit: true}`, then the session ends (as stdin EOF does) |
 
@@ -165,7 +168,7 @@ removed: `docs/plans/CFA4-QT6-FINISH-001.md`.
 | `python/cfa4_qt/theme.py`, `branding.py`, `desktop_entry.py` | egui's design tokens, CFA4 logo, user desktop entry |
 | `python/cfa4_qt/status_bar.py`, `hot_number.py`, `calc.py`, `timecode.py`, `dialogs.py` | shared widgets and helpers |
 | `python/cfa4_qt/credits.py`, `export_summary.py` | About credits, export summary lines |
-| `python/cfa4_qt/panels/` | one module per panel or dialog (Project, Media Browser, Timeline, monitors, Effect Controls, mixers, Lumetri, Essential Graphics / Sound, Text, Export, Preferences, …) |
+| `python/cfa4_qt/panels/` | one module per panel or dialog (Project, Media Browser, Timeline, monitors, Effect Controls, mixers, Lumetri, Essential Graphics / Sound, Text, Export, Credits ([credits.md](credits.md)), Preferences, …) |
 | `python/cfa4_qt/i18n.py`, top-level `i18n/*.tsv` | translations: one catalog per language shared with egui (full Hungarian; the Qt-only strings in a "Qt GUI" section of the other ten) |
 | `python/tests/test_qt_gui.py` | framing, registry, i18n, window against a fake and the real engine |
 | `python/tests/test_qt_translations.py` | every finished language covers the Qt strings, placeholders kept |
@@ -173,7 +176,8 @@ removed: `docs/plans/CFA4-QT6-FINISH-001.md`.
 ## Export window
 
 File ▸ Export ▸ Media… (and `export.queue.add`, Ctrl+M) opens a non-modal Export window. It
-lists the engine's presets (`export.presets.list`) and formats (`export.formats`), shows what
+lists the engine's presets (`export.presets.list`) and formats (`export.formats`; a format that
+cannot be exported here is greyed out with the engine's `reason` as its tooltip), shows what
 the current choice resolves to (`export.resolve`: size, rate, bitrate, sound, frames; whether the video is HDR, the encoder that writes it, the audio codec used and the sample sizes it can store) and sends
 the export to the engine's queue (`export.queue.add`), which the engine server encodes between
 requests; the queue table polls `export.queue.list` for status, progress and remaining time,
@@ -194,3 +198,16 @@ Target Bitrate and Maximum Bitrate are in Mbps as in egui and show the preset's 
 adaptive (Match Source) preset shows "Adaptive (n bits per pixel)" with Set, which sends a fixed
 `bitrateKbps`. Key Frame Distance (H.264 / H.265 / AV1) is off or a distance in frames
 (`settings.keyframeDistance`); MPEG-2 keeps its own GOP length field (`export.mpeg2Gop`).
+
+**Quality check** ([media-qc.md](media-qc.md)). "Check quality after export" sends
+`"qc": "delivery-web"` with the export; the queue's Quality column shows each item's QC state
+(from `export.queue.list`), apart from its render status. Quality Check… (or a double-click on a
+finished item) opens the Quality Check window: it runs `qc.run` when the item was not checked
+(followed in `jobs.list`), then shows the engine's verified report (`qc.report.get`): verdict,
+reasons, every check with status, value and bounds, the time-coded events, and the contact
+sheet. Human Review asks the engine's guided questions and takes findings (description,
+severity, time code, note); an automatic event can be copied into a finding with its time code.
+Save Review stores the review in the report (`qc.review.save`), and the engine recomputes the
+verdict. The window measures nothing itself and never changes the project. Playing the export at
+a flagged time code needs a preview that does not import the file into the project; it is not
+there yet. `test_real_engine_quality_check_through_the_export_window` covers the round trip.

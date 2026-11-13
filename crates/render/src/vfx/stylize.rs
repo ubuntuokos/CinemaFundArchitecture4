@@ -9,7 +9,7 @@ use rayon::prelude::*;
 use super::*;
 
 /// Brush Strokes: a painterly look from short directional strokes (angle jittered per cell).
-pub fn brush_strokes(img: &mut Image, e: &EffectInstance, cx: &FxCtx) {
+pub fn brush_strokes(img: &mut Image, e: &EffectInstance, cx: &FxCtx<'_>) {
     let base_ang = fv(e, "angle", cx).to_radians();
     let size = (fv(e, "size", cx) * cx.px_scale).max(0.0);
     let len = fv(e, "length", cx) * cx.px_scale;
@@ -71,7 +71,7 @@ pub fn brush_strokes(img: &mut Image, e: &EffectInstance, cx: &FxCtx) {
 }
 
 /// Color Emboss: emboss relief that keeps the picture's colours.
-pub fn color_emboss(img: &mut Image, e: &EffectInstance, cx: &FxCtx) {
+pub fn color_emboss(img: &mut Image, e: &EffectInstance, cx: &FxCtx<'_>) {
     let dir = (fv(e, "direction", cx) as f64).to_radians();
     let relief = fv(e, "relief", cx) * cx.px_scale.max(0.25);
     let contrast = fv(e, "contrast", cx) / 100.0;
@@ -89,7 +89,7 @@ pub fn color_emboss(img: &mut Image, e: &EffectInstance, cx: &FxCtx) {
 }
 
 /// Roughen Edges: fractal-eroded alpha edges (Roughen, Cut, Spiky, Rusty, Photocopy…).
-pub fn roughen_edges(img: &mut Image, e: &EffectInstance, cx: &FxCtx) {
+pub fn roughen_edges(img: &mut Image, e: &EffectInstance, cx: &FxCtx<'_>) {
     let kind = chv(e, "edge_type");
     let border = fv(e, "border", cx) * cx.px_scale;
     if border < 0.5 {
@@ -158,7 +158,7 @@ pub fn roughen_edges(img: &mut Image, e: &EffectInstance, cx: &FxCtx) {
 
 /// Long Shadow: an extruded, optionally fading shadow behind the layer's alpha. The per-pixel
 /// step distance to the shape along the shadow direction is found by doubling (min-plus).
-pub fn long_shadow(img: &mut Image, e: &EffectInstance, cx: &FxCtx) {
+pub fn long_shadow(img: &mut Image, e: &EffectInstance, cx: &FxCtx<'_>) {
     let ang = (fv(e, "angle", cx) as f64).to_radians();
     let len = fv(e, "length", cx) * cx.px_scale;
     if len < 0.5 {
@@ -260,7 +260,7 @@ pub(crate) fn distance_to(inside: &[bool], w: usize, h: usize) -> Vec<f32> {
 }
 
 /// Stroke: a solid outline around the layer's alpha (outside, centred or inside the edge).
-pub fn stroke(img: &mut Image, e: &EffectInstance, cx: &FxCtx) {
+pub fn stroke(img: &mut Image, e: &EffectInstance, cx: &FxCtx<'_>) {
     let width = fv(e, "width", cx) * cx.px_scale;
     if width <= 0.0 {
         return;
@@ -303,7 +303,7 @@ pub fn stroke(img: &mut Image, e: &EffectInstance, cx: &FxCtx) {
 }
 
 /// Gradient (26.2): linear / radial / reflected / diamond ramp with midpoint and scatter.
-pub fn gradient(img: &mut Image, e: &EffectInstance, cx: &FxCtx) {
+pub fn gradient(img: &mut Image, e: &EffectInstance, cx: &FxCtx<'_>) {
     let s = pv(e, "start", cx, img);
     let en = pv(e, "end", cx, img);
     let sc = cv(e, "start_color", cx);
@@ -338,7 +338,7 @@ pub fn gradient(img: &mut Image, e: &EffectInstance, cx: &FxCtx) {
 }
 
 /// Block Dissolve (Legacy): random blocks disappear as Transition Completion rises.
-pub fn block_dissolve(img: &mut Image, e: &EffectInstance, cx: &FxCtx) {
+pub fn block_dissolve(img: &mut Image, e: &EffectInstance, cx: &FxCtx<'_>) {
     let c = fv(e, "completion", cx) / 100.0;
     if c <= 0.0 {
         return;
@@ -380,7 +380,7 @@ fn wipe_alpha(g: f32, c: f32, soft: f32) -> f32 {
 
 /// Gradient Wipe (Legacy): reveals by the luminance of a gradient layer (another track, or this
 /// layer's own luminance).
-pub fn gradient_wipe(img: &mut Image, e: &EffectInstance, cx: &FxCtx) {
+pub fn gradient_wipe(img: &mut Image, e: &EffectInstance, cx: &FxCtx<'_>) {
     let c = fv(e, "completion", cx) / 100.0;
     if c <= 0.0 {
         return;
@@ -420,7 +420,7 @@ pub fn gradient_wipe(img: &mut Image, e: &EffectInstance, cx: &FxCtx) {
 }
 
 /// Linear Wipe (Legacy): a straight edge sweeps across at Wipe Angle.
-pub fn linear_wipe(img: &mut Image, e: &EffectInstance, cx: &FxCtx) {
+pub fn linear_wipe(img: &mut Image, e: &EffectInstance, cx: &FxCtx<'_>) {
     let c = fv(e, "completion", cx) / 100.0;
     if c <= 0.0 {
         return;
@@ -443,6 +443,83 @@ pub fn linear_wipe(img: &mut Image, e: &EffectInstance, cx: &FxCtx) {
             }
         }
     });
+}
+
+/// Most particles drawn in one frame, and most pixel visits for all of them together.
+const MAX_PARTICLES: usize = 20_000;
+const MAX_PARTICLE_WORK: f64 = 4.0e7;
+
+/// Particles (CFA4): particle `i` is born at `i / rate` seconds into the clip and flies on a
+/// seeded path under gravity until its lifetime ends, so every frame is a pure function of time.
+pub fn particles(img: &mut Image, e: &EffectInstance, cx: &FxCtx<'_>) {
+    let finite = |v: f32, lo: f32, hi: f32, def: f32| if v.is_finite() { v.clamp(lo, hi) } else { def };
+    let k = if cx.px_scale.is_finite() && cx.px_scale > 0.0 { cx.px_scale } else { 1.0 };
+    let emitter = pv(e, "emitter", cx, img);
+    let rate = finite(fv(e, "rate", cx), 0.0, 500.0, 0.0) as f64;
+    let life = finite(fv(e, "life", cx), 0.05, 10.0, 2.0) as f64;
+    let dir = (finite(fv(e, "direction", cx), -1.0e6, 1.0e6, 0.0) as f64).to_radians();
+    let spread = (finite(fv(e, "spread", cx), 0.0, 360.0, 60.0) as f64).to_radians();
+    let speed = finite(fv(e, "speed", cx), 0.0, 5000.0, 300.0) as f64 * k as f64;
+    let speed_random = finite(fv(e, "speed_random", cx), 0.0, 100.0, 30.0) as f64 / 100.0;
+    let gravity = finite(fv(e, "gravity", cx), -5000.0, 5000.0, 200.0) as f64 * k as f64;
+    let radius = (finite(fv(e, "size", cx), 0.0, 200.0, 6.0) * k / 2.0).max(0.5);
+    let rgba = cv(e, "color", cx);
+    let color = lin(rgba);
+    let opacity = if rgba[3].is_finite() { rgba[3].clamp(0.0, 1.0) } else { 1.0 };
+    let fade = bv(e, "fade");
+    let seed = finite(fv(e, "seed", cx), 0.0, 1.0e6, 0.0) as u64;
+    if !bv(e, "composite") {
+        img.px.fill(0.0);
+    }
+    let t = cx.seconds;
+    if !t.is_finite() || t < 0.0 || rate <= 0.0 || !emitter.x.is_finite() || !emitter.y.is_finite() {
+        return;
+    }
+    // the newest particles first, within the frame's budget
+    let last = (t * rate).floor();
+    let first = ((t - life) * rate).ceil().max(0.0);
+    let area = ((2.0 * radius + 2.0) as f64).powi(2);
+    let budget = (MAX_PARTICLE_WORK / area).clamp(1.0, MAX_PARTICLES as f64);
+    let count = (last - first + 1.0).clamp(0.0, budget);
+    let first = last - count + 1.0;
+    let (w, h) = (img.w, img.h);
+    for n in 0..count as u64 {
+        let i = first + n as f64;
+        let age = t - i / rate;
+        if !(0.0..life).contains(&age) {
+            continue;
+        }
+        let mut rng = Rng(seed.wrapping_mul(0x2545_F491_4F6C_DD1D) ^ (i as u64).wrapping_mul(0x9E37_79B9));
+        let a = dir + spread * (rng.next() as f64 - 0.5);
+        let v = speed * (1.0 + speed_random * rng.signed() as f64).max(0.0);
+        let x = emitter.x + a.sin() * v * age;
+        let y = emitter.y - a.cos() * v * age + 0.5 * gravity * age * age;
+        let alpha = opacity * if fade { (1.0 - age / life) as f32 } else { 1.0 };
+        if !x.is_finite() || !y.is_finite() || alpha <= 0.0 {
+            continue;
+        }
+        let (cx_, cy_) = (x as f32, y as f32);
+        let x0 = (cx_ - radius - 1.0).floor().max(0.0) as usize;
+        let x1 = ((cx_ + radius + 1.0).ceil().max(0.0) as usize).min(w);
+        let y0 = (cy_ - radius - 1.0).floor().max(0.0) as usize;
+        let y1 = ((cy_ + radius + 1.0).ceil().max(0.0) as usize).min(h);
+        for py in y0..y1 {
+            for px in x0..x1 {
+                let d = ((px as f32 + 0.5 - cx_).powi(2) + (py as f32 + 0.5 - cy_).powi(2)).sqrt();
+                // soft round dot: solid core, one-pixel antialiased rim
+                let cover = (radius + 0.5 - d).clamp(0.0, 1.0) * alpha;
+                if cover <= 0.0 {
+                    continue;
+                }
+                let Some(p) = img.px.get_mut((py * w + px) * 4..(py * w + px) * 4 + 4) else { continue };
+                let keep = 1.0 - cover;
+                p[0] = color[0] * cover + p[0] * keep;
+                p[1] = color[1] * cover + p[1] * keep;
+                p[2] = color[2] * cover + p[2] * keep;
+                p[3] = cover + p[3] * keep;
+            }
+        }
+    }
 }
 
 struct Rng(u64);
@@ -492,7 +569,7 @@ fn bolt(a: (f32, f32), b: (f32, f32), segs: usize, amp: f32, levels: usize, deta
 }
 
 /// Lightning (obsolete): a seeded, re-striking bolt with branches, glow and core colours.
-pub fn lightning(img: &mut Image, e: &EffectInstance, cx: &FxCtx) {
+pub fn lightning(img: &mut Image, e: &EffectInstance, cx: &FxCtx<'_>) {
     let s = pv(e, "start", cx, img);
     let en = pv(e, "end", cx, img);
     let segs = fv(e, "segments", cx).clamp(1.0, 100.0) as usize;
@@ -569,7 +646,7 @@ pub fn lightning(img: &mut Image, e: &EffectInstance, cx: &FxCtx) {
 }
 
 /// Cell Pattern (obsolete): Worley (cellular) noise patterns.
-pub fn cell_pattern(img: &mut Image, e: &EffectInstance, cx: &FxCtx) {
+pub fn cell_pattern(img: &mut Image, e: &EffectInstance, cx: &FxCtx<'_>) {
     let pat = chv(e, "pattern");
     let invert = bv(e, "invert");
     let contrast = fv(e, "contrast", cx) / 100.0;
@@ -626,7 +703,7 @@ pub fn cell_pattern(img: &mut Image, e: &EffectInstance, cx: &FxCtx) {
 }
 
 /// Checkerboard (obsolete): a checkerboard of Color and transparency.
-pub fn checkerboard(img: &mut Image, e: &EffectInstance, cx: &FxCtx) {
+pub fn checkerboard(img: &mut Image, e: &EffectInstance, cx: &FxCtx<'_>) {
     let a = pv(e, "anchor", cx, img);
     let cw = (fv(e, "width", cx) * cx.px_scale).max(1.0);
     let ch = if bv(e, "square") { cw } else { (fv(e, "height", cx) * cx.px_scale).max(1.0) };
@@ -661,7 +738,7 @@ pub fn checkerboard(img: &mut Image, e: &EffectInstance, cx: &FxCtx) {
 }
 
 /// Ellipse (obsolete): an anti-aliased elliptical ring, Inside Color at its core.
-pub fn ellipse(img: &mut Image, e: &EffectInstance, cx: &FxCtx) {
+pub fn ellipse(img: &mut Image, e: &EffectInstance, cx: &FxCtx<'_>) {
     let c = pv(e, "center", cx, img);
     let (rx, ry) = ((fv(e, "width", cx) * cx.px_scale / 2.0).max(0.5), (fv(e, "height", cx) * cx.px_scale / 2.0).max(0.5));
     let th = (fv(e, "thickness", cx) * cx.px_scale).max(0.5);
@@ -689,7 +766,7 @@ pub fn ellipse(img: &mut Image, e: &EffectInstance, cx: &FxCtx) {
 }
 
 /// Paint Bucket (obsolete): flood fill from Fill Point within Tolerance.
-pub fn paint_bucket(img: &mut Image, e: &EffectInstance, cx: &FxCtx) {
+pub fn paint_bucket(img: &mut Image, e: &EffectInstance, cx: &FxCtx<'_>) {
     let pt = pv(e, "point", cx, img);
     let (w, h) = (img.w, img.h);
     let (sx, sy) = (pt.x.floor() as isize, pt.y.floor() as isize);
@@ -773,7 +850,7 @@ pub fn paint_bucket(img: &mut Image, e: &EffectInstance, cx: &FxCtx) {
 }
 
 /// Write-on (obsolete): paints the animated Brush Position's path up to now.
-pub fn write_on(img: &mut Image, e: &EffectInstance, cx: &FxCtx) {
+pub fn write_on(img: &mut Image, e: &EffectInstance, cx: &FxCtx<'_>) {
     let Some(param) = e.param("brush") else { return };
     let col = lin(cv(e, "color", cx));
     let r = (fv(e, "size", cx) * cx.px_scale / 2.0).max(0.5);

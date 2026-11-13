@@ -5,6 +5,10 @@ Smart Cut (WP-10, docs/plans/CFA4-SMART-CUT-RENDER-R1.md): every format's packag
 MPEG-2 transport stream on its GOP boundaries with CFA4's own Rust code, verifies the copy and
 reads the result back; no package carries or depends on GOPchop.
 
+Media QC (stage G, docs/plans/MEDIA-QC-2026-10-27.md): every format's packaged CLI checks an MP4
+with the built-in `delivery-web` profile (`cfa4-cli qc`). A sound file decodes, a truncated one
+and one that misses its render plan FAIL, and no file passes without a human review.
+
 Does NOT certify actual system .deb install, Flatpak sandbox launch, GPU/GUI,
 AppImage AppRun, legal redistribution, or complete dlopen dependency inventory.
 All extracted files, trial prefix installs and imported bundle data are temporary.
@@ -14,13 +18,13 @@ from __future__ import annotations
 import argparse
 import json
 import os
-from pathlib import Path
 import re
 import shutil
 import subprocess
 import sys
 import tarfile
 import tempfile
+from pathlib import Path
 
 from verify_cfa4_packages import APP_ID, AuditError, repo_version, verify_package_set
 
@@ -62,7 +66,7 @@ def library_inventory(exe: Path, *, env: dict[str, str]) -> dict:
     if not exe.is_file():
         raise AuditError(f"missing executable: {exe}")
     result = invoke(["ldd", str(exe)], env=env)
-    missing = re.findall(r"^\s*(\S+)\s*=>\s*not found\b", result, flags=re.M)
+    missing = re.findall(r"^\s*(\S+)\s*=>\s*not found\b", result, flags=re.MULTILINE)
     if missing:
         raise AuditError(f"missing ELF runtime dependencies for {exe.name}: {missing}")
     return {"executable": exe.name, "missing": [], "ldd": result.strip()}
@@ -204,6 +208,98 @@ def check_frame_accurate(output: Path, planned: dict, done: dict, back: dict) ->
             "reencoded": report["reencoded"], "min_psnr": psnr}
 
 
+# The QC fixture: 4 s at 25 fps, MPEG-2 video (no encoder licence question) and AAC in MP4.
+QC_FRAMES = 100
+# `cfa4-cli qc` exit codes (apps/cfa4-cli/src/qc.rs): the verdict, never 1 (error) or 2 (usage)
+QC_EXIT = {"PASS": 0, "WARN": 3, "FAIL": 4, "INCOMPLETE": 5}
+QC_REPORT_SCHEMA = "cfa4-qc-report/1"
+
+
+def make_qc_fixture(ffmpeg: str, work: Path, env: dict[str, str]) -> Path:
+    """An MP4 the QC reads sample by sample: MPEG-2 video and AAC audio."""
+    source = work / "qc-source.mp4"
+    invoke([
+        ffmpeg, "-v", "error", "-y",
+        "-f", "lavfi", "-i", "testsrc2=size=176x144:rate=25",
+        "-f", "lavfi", "-i", "sine=frequency=440:sample_rate=48000", "-t", "4",
+        "-c:v", "mpeg2video", "-g", "10", "-c:a", "aac", "-b:a", "128k",
+        "-movflags", "+faststart", str(source),
+    ], env=env, timeout=60)
+    if not source.is_file() or source.stat().st_size == 0:
+        raise AuditError("ffmpeg wrote no QC fixture")
+    return source
+
+
+def run_qc(cli: Path, media: Path, out: Path, env: dict[str, str],
+           expect: Path | None = None) -> dict:
+    """`cfa4-cli qc media --out out`: the report, checked against the exit code."""
+    args = [str(cli), "qc", str(media), "--profile", "delivery-web", "--out", str(out)]
+    if expect is not None:
+        args += ["--expect", str(expect)]
+    try:
+        result = subprocess.run(args, env=env, capture_output=True, text=True, timeout=180,
+                                check=False)
+    except (OSError, subprocess.TimeoutExpired) as exc:
+        raise AuditError(f"QC smoke: unable to run {cli.name} qc: {exc}") from exc
+    said = (result.stderr + result.stdout)[-1500:]
+    if result.returncode not in QC_EXIT.values():
+        raise AuditError(f"QC smoke: {cli.name} qc exited {result.returncode}: {said}")
+    try:
+        report = json.loads(out.read_text(encoding="utf-8"))
+    except (OSError, ValueError) as exc:
+        raise AuditError(f"QC smoke: no readable report for {media.name}: {exc}") from exc
+    if not isinstance(report, dict) or report.get("schema") != QC_REPORT_SCHEMA:
+        raise AuditError(f"QC smoke: the report is not {QC_REPORT_SCHEMA}: {str(report)[:300]}")
+    profile = report.get("profile") or {}
+    if profile.get("id") != "delivery-web" or not re.fullmatch(r"[0-9a-f]{64}", str(profile.get("sha256"))):
+        raise AuditError(f"QC smoke: the report names no built-in profile: {profile}")
+    verdict = (report.get("summary") or {}).get("verdict")
+    if QC_EXIT.get(verdict) != result.returncode:
+        raise AuditError(f"QC smoke: verdict {verdict} but exit code {result.returncode}")
+    # crates/format/src/atomic.rs writes `.<name>.<pid>-<n>.tmp` and renames it over the report
+    leftovers = sorted(p.name for p in out.parent.iterdir()
+                       if p.name.startswith(f".{out.name}.") and p.name.endswith(".tmp"))
+    if leftovers:
+        raise AuditError(f"QC smoke: the report was not written atomically: {leftovers}")
+    return report
+
+
+def qc_status(report: dict, check: str) -> str:
+    for c in report.get("checks") or []:
+        if isinstance(c, dict) and c.get("id") == check:
+            return str(c.get("status"))
+    return "MISSING"
+
+
+def qc_smoke(cli: Path, source: Path, work: Path, env: dict[str, str]) -> dict:
+    """The packaged CLI's QC: the profile is built in, the decoders run, a broken file and a
+    render-plan mismatch FAIL, and nothing PASSes without a human review."""
+    work.mkdir(parents=True, exist_ok=True)
+    sound = run_qc(cli, source, work / "sound.cfa4qc.json", env)
+    if qc_status(sound, "probe.open") != "PASS" or qc_status(sound, "integrity.decode") != "PASS":
+        raise AuditError("QC smoke: the packaged decoders did not read the fixture: "
+                         f"{(sound.get('summary') or {}).get('reasons')}")
+    if sound["summary"]["verdict"] == "PASS":
+        raise AuditError("QC smoke: a file without a human review PASSed")
+    plan = work / "plan.json"
+    plan.write_text(json.dumps({"frames": QC_FRAMES + 1}), encoding="utf-8")
+    mismatch = run_qc(cli, source, work / "mismatch.cfa4qc.json", env, expect=plan)
+    if qc_status(mismatch, "integrity.frameCount") != "FAIL" or mismatch["summary"]["verdict"] != "FAIL":
+        raise AuditError("QC smoke: a frame count that misses the render plan did not FAIL")
+    truncated = work / "truncated.mp4"
+    data = source.read_bytes()
+    truncated.write_bytes(data[: len(data) * 6 // 10])
+    broken = run_qc(cli, truncated, work / "truncated.cfa4qc.json", env)
+    if qc_status(broken, "integrity.decode") != "FAIL" or broken["summary"]["verdict"] != "FAIL":
+        raise AuditError("QC smoke: a truncated file did not FAIL its decode check")
+    return {
+        "scope": "MEDIA_QC_DELIVERY_WEB_IN_PACKAGED_CLI",
+        "profile_sha256": sound["profile"]["sha256"],
+        "verdicts": {"sound": sound["summary"]["verdict"], "frame_count_mismatch": "FAIL",
+                     "truncated": "FAIL"},
+    }
+
+
 def assert_no_gopchop(root: Path, what: str) -> None:
     """Smart Cut is CFA4's own code: no package ships GOPchop (WP-10 gate)."""
     found = sorted(str(p.relative_to(root)) for p in root.rglob("*") if "gopchop" in p.name.lower())
@@ -212,7 +308,7 @@ def assert_no_gopchop(root: Path, what: str) -> None:
 
 
 def stage_tarball(archive_path: Path, target: Path, version: str,
-                  env: dict[str, str], fixture: Path) -> dict:
+                  env: dict[str, str], fixture: Path, qc_fixture: Path) -> dict:
     stage = target / "tar-source"
     stage.mkdir()
     # Already inspected by verify_package_set; tarfile data filter also rejects
@@ -232,13 +328,14 @@ def stage_tarball(archive_path: Path, target: Path, version: str,
         "scope": "PREFIX_INSTALL_AND_CLI_SMOKE_NOT_GUI",
         **cli_smoke(binaries[1], version, env),
         "smart_cut": smart_cut_smoke(binaries[1], fixture, target / "tar-smart-cut", env),
+        "qc": qc_smoke(binaries[1], qc_fixture, target / "tar-qc", env),
         "libraries": [library_inventory(path, env=env) for path in binaries],
         "cleanup": "isolated temporary prefix deleted by TemporaryDirectory",
     }
 
 
 def stage_deb(package: Path, target: Path, version: str,
-              env: dict[str, str], fixture: Path) -> dict:
+              env: dict[str, str], fixture: Path, qc_fixture: Path) -> dict:
     stage = target / "deb-unpacked"
     stage.mkdir()
     invoke(["dpkg-deb", "--extract", str(package), str(stage)], env=env)
@@ -251,13 +348,14 @@ def stage_deb(package: Path, target: Path, version: str,
         "scope": "DEB_UNPACK_AND_CLI_SMOKE_NOT_DPKG_INSTALL",
         **cli_smoke(binaries[1], version, env),
         "smart_cut": smart_cut_smoke(binaries[1], fixture, target / "deb-smart-cut", env),
+        "qc": qc_smoke(binaries[1], qc_fixture, target / "deb-qc", env),
         "libraries": [library_inventory(path, env=env) for path in binaries],
         "cleanup": "temporary extracted FHS tree removed",
     }
 
 
 def stage_appimage(package: Path, target: Path, version: str,
-                   env: dict[str, str], fixture: Path) -> dict:
+                   env: dict[str, str], fixture: Path, qc_fixture: Path) -> dict:
     work = target / "appimage-unpacked"
     work.mkdir()
     invoke([str(package), "--appimage-extract"], cwd=work, env=env, timeout=120)
@@ -270,6 +368,7 @@ def stage_appimage(package: Path, target: Path, version: str,
         "scope": "APPIMAGE_EXTRACT_AND_CLI_SMOKE_NOT_APPRUN",
         **cli_smoke(binaries[1], version, env),
         "smart_cut": smart_cut_smoke(binaries[1], fixture, target / "appimage-smart-cut", env),
+        "qc": qc_smoke(binaries[1], qc_fixture, target / "appimage-qc", env),
         "libraries": [library_inventory(path, env=env) for path in binaries],
         "cleanup": "temporary AppDir extracted files removed",
     }
@@ -295,7 +394,7 @@ def stage_flatpak(package: Path, target: Path, env: dict[str, str]) -> dict:
 
 
 def flatpak_payload(target: Path, ref: str, version: str, env: dict[str, str],
-                    fixture: Path) -> dict:
+                    fixture: Path, qc_fixture: Path) -> dict:
     """The bundle's /app tree, checked out of the private repo: the same CLI and Smart Cut smoke
     on the host (not inside the Flatpak sandbox or runtime)."""
     repo = target / "private-flatpak-repo"
@@ -308,6 +407,7 @@ def flatpak_payload(target: Path, ref: str, version: str, env: dict[str, str],
         "scope": "CHECKOUT_AND_CLI_SMOKE_ON_HOST_NOT_FLATPAK_SANDBOX",
         **cli_smoke(cli, version, env),
         "smart_cut": smart_cut_smoke(cli, fixture, target / "flatpak-smart-cut", env),
+        "qc": qc_smoke(cli, qc_fixture, target / "flatpak-qc", env),
     }
 
 
@@ -333,16 +433,18 @@ def audit(dist: Path, version: str) -> dict:
     with tempfile.TemporaryDirectory(prefix="cfa4-f5-staging-") as tmp:
         root = Path(tmp)
         env = isolated_env(root)
-        fixture = make_smart_cut_fixture(fixture_ffmpeg(), root, env)
+        ffmpeg = fixture_ffmpeg()
+        fixture = make_smart_cut_fixture(ffmpeg, root, env)
+        qc_fixture = make_qc_fixture(ffmpeg, root, env)
         flatpak = stage_flatpak(dist / f"{basename}.flatpak", root, env)
-        flatpak["payload"] = flatpak_payload(root, flatpak["ref"], version, env, fixture)
+        flatpak["payload"] = flatpak_payload(root, flatpak["ref"], version, env, fixture, qc_fixture)
         result = {
             "schema": "CFA4_F5_STAGING_V1",
             "build_version": version,
             "structure": structure["status"],
-            "tarball": stage_tarball(dist / f"{basename}.tar.gz", root, version, env, fixture),
-            "deb": stage_deb(dist / f"{basename}.deb", root, version, env, fixture),
-            "appimage": stage_appimage(dist / f"{basename}.AppImage", root, version, env, fixture),
+            "tarball": stage_tarball(dist / f"{basename}.tar.gz", root, version, env, fixture, qc_fixture),
+            "deb": stage_deb(dist / f"{basename}.deb", root, version, env, fixture, qc_fixture),
+            "appimage": stage_appimage(dist / f"{basename}.AppImage", root, version, env, fixture, qc_fixture),
             "flatpak": flatpak,
             "status": "PASS_STAGING_ONLY",
             "not_proven": [

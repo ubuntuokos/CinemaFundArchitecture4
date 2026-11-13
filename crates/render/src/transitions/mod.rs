@@ -154,6 +154,23 @@ impl Tx<'_> {
             _ => (1.0, 0.0),
         }
     }
+    /// Full-frame displacement for the eight-way `direction` of Slide: the cardinal
+    /// directions as [`Tx::dir`] × [`Tx::travel`], the diagonals (4–7: from north-west,
+    /// north-east, south-east, south-west) one frame width and one frame height at once.
+    pub fn shift8(&self) -> (f32, f32) {
+        let (w, h) = (self.wf.max(1.0), self.hf.max(1.0));
+        match self.choice("direction") {
+            4 => (w, h),
+            5 => (-w, h),
+            6 => (-w, -h),
+            7 => (w, -h),
+            _ => {
+                let (dx, dy) = self.dir();
+                let travel = self.travel();
+                (dx * travel, dy * travel)
+            }
+        }
+    }
     /// Frame extent along the direction of travel.
     pub fn travel(&self) -> f32 {
         let (dx, dy) = self.dir();
@@ -421,7 +438,7 @@ pub(crate) fn temporal(x: f32, y: f32, p: f32, shutter: f32, n: usize, f: &(impl
     scale4(acc, 1.0 / n as f32)
 }
 /// Motion-blur settings from the `motion_blur` param: (shutter in progress units, samples).
-pub(crate) fn shutter(t: &Tx, max: f32) -> (f32, usize) {
+pub(crate) fn shutter(t: &Tx<'_>, max: f32) -> (f32, usize) {
     let mb = t.frac("motion_blur").clamp(0.0, 1.0);
     if mb <= 0.0 { (0.0, 1) } else { (max * mb, ((mb * 12.0).ceil() as usize).clamp(2, 12)) }
 }

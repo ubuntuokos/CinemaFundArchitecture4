@@ -21,6 +21,7 @@ from PySide6.QtWidgets import (
     QDockWidget,
     QFileDialog,
     QHBoxLayout,
+    QInputDialog,
     QLabel,
     QLineEdit,
     QMainWindow,
@@ -45,6 +46,9 @@ from .media_backends import MediaBackendsDialog
 from .panels.about import AboutDialog
 from .panels.clip_dialogs import DIALOGS as CLIP_DIALOGS
 from .panels.clip_dialogs import ClipDialog
+from .panels.credits import CreditsDialog
+from .panels.credits_fit import CreditsFitDialog
+from .panels.credits_refresh import CreditsRefreshDialog
 from .panels.effect_controls import EffectControlsPanel
 from .panels.effects import EffectsPanel
 from .panels.essential_graphics import EssentialGraphicsPanel
@@ -55,6 +59,8 @@ from .panels.export_dialogs import EXPORT_DIALOGS, ExportSettingsDialog
 from .panels.fx_editor import FxEditor, target_key
 from .panels.home import HomePage
 from .panels.info import InfoPanel, MarkersPanel, MetadataPanel, NotesPanel
+from .panels.kdm_dialog import KdmDialog
+from .panels.live import LiveDialog
 from .panels.lumetri import LumetriColorPanel
 from .panels.media_browser import MediaBrowserPanel
 from .panels.media_dialogs import (
@@ -94,6 +100,7 @@ from .panels.tts import TextToSpeechPanel
 from .panels.voiceover import VoiceOverRecorder, VoiceOverSettingsDialog
 from .status_bar import JobStatus, tool_hint
 from .timecode import TICKS_PER_SECOND
+from .tools_menu import build_tools_menu
 from .window_menu import Workspaces, bind_free, build_window_menu, window_commands
 
 # egui's EXPORT_SAVE_DIALOGS: exports that ask where to save (filter label, extension)
@@ -138,6 +145,7 @@ SOURCE_COMMANDS = frozenset({
     "media.relink", "media.replaceFootage", "media.makeOffline", "media.offlineAll", "media.autoRelink", "media.linkMedia",
     "media.findMissing", "media.refreshChanged", "media.refreshGrowingFiles", "media.attachProxies", "media.detachProxies",
     "media.toggleProxies", "media.enableProxies", "media.reconnectFullRes", "clip.interpretFootage", "edit.undo", "edit.redo",
+    "dcp.loadKdm", "dcp.clearKeys",
 })
 
 # panels docked around the Program monitor, in the order they are created
@@ -289,6 +297,10 @@ class MainWindow(QMainWindow):
         self.media_backends_dialog: MediaBackendsDialog | None = None
         # the header mode (egui's ``ui.mode``): Import shows the Home page over the panels
         self.mode = "Edit"
+        self.credits_dialog: CreditsDialog | None = None
+        self.live_dialog: LiveDialog | None = None
+        self.credits_refresh: CreditsRefreshDialog | None = None
+        self.credits_fit: CreditsFitDialog | None = None
         # the monitor that keyboard commands with a `target` act on (the focused panel, as egui)
         self.active_monitor = "program"
         self._closing = False
@@ -853,6 +865,14 @@ class MainWindow(QMainWindow):
         self.restricted_codecs_action = QAction(tr("Restricted Codecs…"), self)
         self.restricted_codecs_action.setObjectName("qt.help.restrictedCodecs")
         self.restricted_codecs_action.triggered.connect(self.open_restricted_codecs)
+        # encrypted DCPs (#933, #1029): Qt-only File menu items over dcp.loadKdm / dcp.clearKeys
+        self.kdm_dialog: KdmDialog | None = None
+        self.load_kdm_action = QAction(tr("Load KDM…"), self)
+        self.load_kdm_action.setObjectName("qt.file.loadKdm")
+        self.load_kdm_action.triggered.connect(self.open_kdm)
+        self.forget_keys_action = QAction(tr("Forget DCP Keys"), self)
+        self.forget_keys_action.setObjectName("qt.file.forgetDcpKeys")
+        self.forget_keys_action.triggered.connect(self.forget_dcp_keys)
         # J / K / L shuttle, slow shuttle, Play Around and Play In to Out on the focused monitor,
         # dynamic trimming in trim mode (egui's playback.*)
         self.shuttle_actions: list[tuple[QAction, str]] = []
@@ -997,7 +1017,7 @@ class MainWindow(QMainWindow):
     def _build_menus(self) -> None:
         self.registry.build_menus(
             self.menuBar(), self, {
-                "File": [self.quit_action],
+                "File": [self.load_kdm_action, self.forget_keys_action, self.quit_action],
                 "Sequence": [self.play_action, *(a for a, _k in self.shuttle_actions)],
                 "Edit": [self.shortcuts_action, self.preferences_menu.menuAction()],
                 "View": [self.fit_action, self.multicam_actions[0][0], self.dynamic_waveforms_action],
@@ -1046,10 +1066,17 @@ class MainWindow(QMainWindow):
         window_menu = QMenu(tr("Window"), self.menuBar())
         self._window_menu = window_menu
         window_menu.setObjectName("menu.Window")
+        # Tools (Video / Audio / Publication Tools), before Window; rebuilt with the menus
+        if getattr(self, "_tools_menu", None) is not None:
+            self._tools_menu.deleteLater()
+        tools_menu = self._tools_menu = QMenu(tr("Tools"), self.menuBar())
+        build_tools_menu(self, tools_menu)
         help_action = menus.get("menu.Help")
         if help_action is not None:
+            self.menuBar().insertMenu(help_action, tools_menu)
             self.menuBar().insertMenu(help_action, window_menu)
         else:
+            self.menuBar().addMenu(tools_menu)
             self.menuBar().addMenu(window_menu)
         window_shortcuts = build_window_menu(
             self, window_menu, self.docks, self.monitor, self.workspaces, self.restore_layout, self.reset_layout
@@ -2049,11 +2076,19 @@ class MainWindow(QMainWindow):
         self.engine.execute(
             command,
             params or {},
-            on_reply=lambda _r, _b, c=command: self._command_done(c),
+            on_reply=lambda r, _b, c=command: self._command_done(c, r),
             on_error=lambda m, c=command: self._command_failed(c, m),
         )
 
-    def _command_done(self, command: str) -> None:
+    def _command_done(self, command: str, result: Any = None) -> None:
+        if command == "graphics.checkLegibility" and isinstance(result, dict):
+            # egui's status line for Graphics and Titles ▸ Check Text Legibility
+            count = result.get("count")
+            count = count if isinstance(count, int) and not isinstance(count, bool) else 0
+            text = (tr("Text legibility: no problems found") if count == 0
+                    else fmt("Text legibility: {count} problems marked on the timeline (orange markers)", count=count))
+            self.events.log(text, source=command)
+            self.statusBar().showMessage(text, 6000)
         if command in SOURCE_COMMANDS:
             # the item keeps its id but shows other media (or comes back online): cached
             # thumbnails and waveforms keyed by that id are stale
@@ -2087,6 +2122,18 @@ class MainWindow(QMainWindow):
 
     def ui_command(self, cid: str, params: dict[str, Any] | None = None) -> bool:
         """egui's UI commands (voice-over, multi-camera, docking, …): True when ``cid`` was one."""
+        if cid == "live.window" and not params:
+            # Graphics and Titles ▸ Live Graphics…: the Live window
+            self.open_live()
+            return True
+        if cid == "graphics.credits.import" and not params:
+            # from the menu or a key, the Credits window; an agent's parameters import directly
+            self.open_credits()
+            return True
+        if cid == "graphics.credits.refresh" and not params:
+            # the row-by-row review window; an agent's parameters refresh directly
+            self.open_credits_refresh()
+            return True
         if cid == "history.deleteRedoable" and not params:
             # the History panel menu or its key asks for OK first, as in Premiere (upstream #3075);
             # with parameters (an agent) the command runs as it is
@@ -2170,6 +2217,8 @@ class MainWindow(QMainWindow):
             self.generate_waveforms(dict(params or {}))
         elif (cid in EXPORT_SAVES or cid == "file.mediaPropertiesFile") and not (params or {}).get("path"):
             self.pick_and_run(cid, dict(params or {}))
+        elif cid == "dcp.loadKdm" and not params:
+            self.open_kdm()
         elif cid == "media.linkMedia" and not params:
             self.open_link_media(menu=True)
         elif cid in ("media.makeOffline", "media.createProxies", "file.projectManager") and not params:
@@ -2400,6 +2449,12 @@ class MainWindow(QMainWindow):
         if self.ui_command(cmd.id):
             # a menu item or key whose dialog or file manager is the frontend's (clip and menu
             # dialogs, Sequence Settings…, Reveal in Finder…), as from ``invoke``
+            return
+        if cmd.id == "graphics.credits.fit":
+            self.open_credits_fit()
+            return
+        if cmd.id == "graphics.credits.template.apply":
+            self.choose_credits_template()
             return
         if self.active_monitor == "source" and cmd.id in SOURCE_STEPS and self.source_monitor.has_content():
             step = SOURCE_STEPS[cmd.id]
@@ -2995,6 +3050,82 @@ class MainWindow(QMainWindow):
 
     def open_restricted_codecs(self) -> None:
         self._media_backends().show_restricted()
+
+    def open_kdm(self) -> None:
+        """File ▸ Load KDM…: the KDM and private key dialog (``dcp.loadKdm``)."""
+        if self.kdm_dialog is None:
+            self.kdm_dialog = KdmDialog(self.engine, self, changed=lambda: self._command_done("dcp.loadKdm"))
+        self.kdm_dialog.show()
+        self.kdm_dialog.raise_()
+
+    def forget_dcp_keys(self) -> None:
+        """File ▸ Forget DCP Keys: ``dcp.clearKeys``; encrypted clips go silent / black again."""
+
+        def got(_r: Any, _b: bytes | None) -> None:
+            self.statusBar().showMessage(tr("DCP keys forgotten"), 4000)
+            self._command_done("dcp.clearKeys")
+
+        self.engine.execute("dcp.clearKeys", {}, on_reply=got, on_error=lambda m: self._command_failed("dcp.clearKeys", m))
+
+    # ----- credits -----
+    def open_credits(self, path: str | None = None) -> None:
+        """Graphics and Titles ▸ Import Credits Spreadsheet…: the Credits window."""
+        if self.credits_dialog is None:
+            self.credits_dialog = CreditsDialog(self.engine, self)
+            self.credits_dialog.imported.connect(lambda _n: self.schedule_refresh())
+            self.credits_dialog.tool_requested.connect(self.invoke)
+        self.credits_dialog.open_with(path)
+
+    def open_live(self) -> None:
+        """Graphics and Titles ▸ Live Graphics…: cues, PREVIEW / PROGRAM, TAKE … OUT, the live page
+        for OBS."""
+        if self.live_dialog is None:
+            self.live_dialog = LiveDialog(self.engine, self, selected_clips=lambda: [c for c in (self.sequence or {}).get("selection") or [] if isinstance(c, int)])
+        self.live_dialog.open_window()
+
+    def open_credits_file(self, path: str) -> None:
+        """A credits file, template or spreadsheet opened from the file manager or the command
+        line: the full Credits workspace with it (a template is chosen, with its sample sheet)."""
+        self.open_credits()
+        dlg = self.credits_dialog
+        if dlg is None:
+            return
+        dlg.set_full_view(True)
+        if path.lower().endswith(".cfa4credtpl"):
+            dlg.use_template_file(path)
+        else:
+            dlg.path.setText(path)
+            dlg.refresh()
+
+    def open_credits_refresh(self, clip: int | None = None) -> None:
+        """Graphics and Titles ▸ Refresh Credits from Spreadsheet…: the changes, row by row."""
+        if self.credits_refresh is None:
+            self.credits_refresh = CreditsRefreshDialog(self.engine, self)
+            self.credits_refresh.refreshed.connect(lambda _r: self.schedule_refresh())
+        self.credits_refresh.open_for(clip)
+
+    def choose_credits_template(self) -> None:
+        """Graphics and Titles ▸ Apply Credits Template…: pick a template for the selected
+        credits; the engine replaces their pages in one undo step."""
+
+        def chosen(result: Any, _b: bytes | None) -> None:
+            items = [t for t in (result or {}).get("templates") or [] if isinstance(t, dict)] if isinstance(result, dict) else []
+            if not items:
+                return
+            names = [str(t.get("name")) for t in items]
+            name, ok = QInputDialog.getItem(self, tr("Apply Credits Template…"), tr("Template:"), names, 0, False)
+            if ok and name in names:
+                tid = items[names.index(name)].get("id")
+                self.execute("graphics.credits.template.apply", {"id": tid})
+
+        self.engine.execute("graphics.credits.templates", {}, on_reply=chosen, on_error=lambda m: self.statusBar().showMessage(m, 6000))
+
+    def open_credits_fit(self) -> None:
+        """Graphics and Titles ▸ Fit Credits to Music…: lengths from the music, then fit."""
+        if self.credits_fit is None:
+            self.credits_fit = CreditsFitDialog(self.engine, self)
+            self.credits_fit.fitted.connect(lambda _r: self.schedule_refresh())
+        self.credits_fit.open_for(self.sequence)
 
     def _export_finished(self, path: str, ok: bool) -> None:
         text = (tr("Export finished: {path}") if ok else tr("Export failed: {path}")).replace("{path}", path)

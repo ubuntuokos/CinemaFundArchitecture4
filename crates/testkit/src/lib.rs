@@ -4,12 +4,15 @@
 //!   `CFA4_REQUIRE_ORACLES=1`, fail — when they are missing ([`require_ffmpeg!`] & co.).
 //! - [`fixtures`]: the shared fixture directory (`<workspace>/target/fixtures/<crate>`) and
 //!   collision-free temporary names for concurrent generators.
+//! - [`av2`]: the pinned AVM `avmdec` as the AV2 oracle and the hashed AV2 corpus manifest
+//!   (`CFA4_REQUIRE_AV2_ORACLE=1` turns its skips into failures).
 //! - [`golden`]: RGBA8 images, PNG I/O, image-difference metrics and golden-file checks
 //!   (`CFA4_BLESS=1` regenerates references).
 //!
 //! ffmpeg/ffprobe are external test oracles and fixture generators only; they are never linked
 //! or shipped (AGENTS.md §2).
 
+pub mod av2;
 pub mod deadline;
 pub mod fixtures;
 pub mod golden;

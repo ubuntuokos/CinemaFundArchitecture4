@@ -257,7 +257,7 @@ pub fn merge_ranges(mut r: Vec<TimeRange>) -> Vec<TimeRange> {
 
 /// Ripple-delete every range on every unlocked track (and sync-locked caption tracks), right to
 /// left so earlier ranges keep their positions. Returns the total time removed.
-pub fn ripple_delete_ranges(seq: &mut Sequence, ranges: Vec<TimeRange>, ctx: &mut EditCtx) -> Tick {
+pub fn ripple_delete_ranges(seq: &mut Sequence, ranges: Vec<TimeRange>, ctx: &mut EditCtx<'_>) -> Tick {
     let tracks: Vec<TrackId> = seq.all_tracks().filter(|t| !t.locked).map(|t| t.id).collect();
     let mut total = Tick::ZERO;
     for r in merge_ranges(ranges).into_iter().rev() {
@@ -408,7 +408,7 @@ pub fn caption_blocks(words: &[SeqWord], rules: &CaptionRules, rate: FrameRate) 
 }
 
 /// Caption blocks as captions (ids from `ctx`).
-pub fn blocks_to_captions(blocks: &[CaptionBlock], ctx: &mut EditCtx) -> Vec<Caption> {
+pub fn blocks_to_captions(blocks: &[CaptionBlock], ctx: &mut EditCtx<'_>) -> Vec<Caption> {
     blocks
         .iter()
         .map(|b| Caption {

@@ -335,7 +335,7 @@ impl H264Decoder {
         };
         let color = vui_color(p.width, p.height, p.color.primaries, p.color.matrix, p.color.transfer, p.color.full_range);
         let par = sar_par(p.sar);
-        let frame = VideoFrame { width: p.width, height: p.height, data, color, par, pts: cfa4_time::Tick::ZERO };
+        let frame = VideoFrame { width: p.width, height: p.height, data, color, par, pts: cfa4_time::Tick::ZERO, layout: Default::default() };
         DecodedFrame { pts: p.pts, frame, draft }
     }
 }
@@ -454,7 +454,7 @@ impl HevcDecoder {
         };
         let color = vui_color(p.width, p.height, p.color.primaries, p.color.matrix, p.color.transfer, p.color.full_range);
         let par = sar_par(p.sar);
-        let frame = VideoFrame { width: p.width, height: p.height, data, color, par, pts: cfa4_time::Tick::ZERO };
+        let frame = VideoFrame { width: p.width, height: p.height, data, color, par, pts: cfa4_time::Tick::ZERO, layout: Default::default() };
         DecodedFrame { pts: p.pts, frame, draft: p.draft }
     }
 }
@@ -517,15 +517,7 @@ pub struct Vp9Decoder {
 
 /// Colour primaries from an ISO/IEC 23091-2 code.
 pub(crate) fn primaries_from_code(c: u8) -> Option<cfa4_color::Primaries> {
-    use cfa4_color::Primaries;
-    match c {
-        1 => Some(Primaries::Bt709),
-        5 => Some(Primaries::Bt601_625),
-        6 => Some(Primaries::Bt601_525),
-        9 => Some(Primaries::Bt2020),
-        12 => Some(Primaries::P3D65),
-        _ => None,
-    }
+    cfa4_color::Primaries::from_code(c)
 }
 
 impl Vp9Decoder {
@@ -549,14 +541,17 @@ impl Vp9Decoder {
         let color = crate::hw_frame::vp9_color(p.width, p.height, p.color.color_space, p.color.full_range, self.transfer, self.primaries);
         let (pts, draft) = (p.pts, p.draft);
         if p.color.color_space == 7 {
-            // RGB (profiles 1 / 3, 4:4:4): the planes carry G, B, R.
-            let shift = p.bit_depth - 8;
-            let mut rgba = Vec::with_capacity(w * h * 4);
-            for i in 0..w * h {
-                rgba.extend_from_slice(&[(p.v.get(i) >> shift) as u8, (p.y.get(i) >> shift) as u8, (p.u.get(i) >> shift) as u8, 255]);
-            }
-            let mut frame = VideoFrame::rgba8(p.width, p.height, rgba);
-            frame.color = cfa4_color::ColorInfo { range: Range::Full, transfer: cfa4_color::Transfer::Srgb, ..color };
+            // RGB (profiles 1 / 3, 4:4:4): the planes carry G, B, R; 10 / 12 bits stay planar
+            // R'G'B' (CFA4-PROCODEC-002 1b)
+            let plane = |pl: &Plane| -> Vec<u16> {
+                match pl {
+                    Plane::U8(v) => v.iter().take(w * h).map(|&x| u16::from(x)).collect(),
+                    Plane::U16(v) => v.iter().take(w * h).copied().collect(),
+                }
+            };
+            let data = crate::j2k::rgb_data([plane(&p.v), plane(&p.y), plane(&p.u)], p.bit_depth, None);
+            let color = cfa4_color::ColorInfo { range: Range::Full, transfer: cfa4_color::Transfer::Srgb, ..color };
+            let frame = VideoFrame { width: p.width, height: p.height, data, color, par: (1, 1), pts: cfa4_time::Tick::ZERO, layout: Default::default() };
             return Some(DecodedFrame { pts, frame, draft });
         }
         // 4:4:0 has no frame format of its own: chroma rows are repeated to 4:4:4.
@@ -594,7 +589,11 @@ impl Vp9Decoder {
         // render_size (the intended display size) is not applied: the container's display
         // dimensions / pixel aspect describe the presentation.
         let par = (1, 1);
-        Some(DecodedFrame { pts, frame: VideoFrame { width: p.width, height: p.height, data, color, par, pts: cfa4_time::Tick::ZERO }, draft })
+        Some(DecodedFrame {
+            pts,
+            frame: VideoFrame { width: p.width, height: p.height, data, color, par, pts: cfa4_time::Tick::ZERO, layout: Default::default() },
+            draft,
+        })
     }
 }
 
@@ -649,7 +648,7 @@ impl Vp8Decoder {
         // color_space 0 is BT.601 YUV (RFC 6386 9.2), studio swing; a container's Colour wins
         let color = cfa4_color::ColorInfo { matrix: cfa4_color::Matrix::Bt601, ..cfa4_color::ColorInfo::REC709 };
         let data = PixelData::Yuv8 { planes: [Arc::new(p.y), Arc::new(p.u), Arc::new(p.v)], chroma: Chroma::C420, alpha: None };
-        let frame = VideoFrame { width: p.width, height: p.height, data, color, par: (1, 1), pts: cfa4_time::Tick::ZERO };
+        let frame = VideoFrame { width: p.width, height: p.height, data, color, par: (1, 1), pts: cfa4_time::Tick::ZERO, layout: Default::default() };
         DecodedFrame { pts: p.pts, frame, draft: false }
     }
 }
@@ -719,7 +718,11 @@ impl Av1Decoder {
         } else {
             cfa4_frame::PixelData::Yuv16 { planes: [Arc::new(y), Arc::new(u), Arc::new(v)], chroma, bits: p.bit_depth as u32, alpha: None }
         };
-        DecodedFrame { pts, frame: VideoFrame { width: p.width, height: p.height, data, color, par: (1, 1), pts: cfa4_time::Tick::ZERO }, draft }
+        DecodedFrame {
+            pts,
+            frame: VideoFrame { width: p.width, height: p.height, data, color, par: (1, 1), pts: cfa4_time::Tick::ZERO, layout: Default::default() },
+            draft,
+        }
     }
 }
 
@@ -803,6 +806,14 @@ impl VideoDecoder for ProResDecoder {
             color,
             par: (1, 1),
             pts: cfa4_time::Tick::ZERO,
+            layout: cfa4_frame::FrameLayout {
+                field_order: match f.interlace {
+                    cfa4_prores::Interlace::Progressive => cfa4_frame::FieldOrder::Progressive,
+                    cfa4_prores::Interlace::TopFieldFirst => cfa4_frame::FieldOrder::TopFirst,
+                    cfa4_prores::Interlace::BottomFieldFirst => cfa4_frame::FieldOrder::BottomFirst,
+                },
+                ..Default::default()
+            },
         };
         Ok(vec![DecodedFrame { pts, frame, draft: false }])
     }
@@ -859,7 +870,7 @@ pub fn apv_to_video_frame(f: cfa4_apv::Frame) -> VideoFrame {
     } else {
         cfa4_frame::PixelData::Yuv16 { planes: [Arc::new(f.y), Arc::new(cb), Arc::new(cr)], chroma, bits: f.bit_depth as u32, alpha: f.alpha.map(Arc::new) }
     };
-    VideoFrame { width: f.width, height: f.height, data, color, par: (1, 1), pts: cfa4_time::Tick::ZERO }
+    VideoFrame { width: f.width, height: f.height, data, color, par: (1, 1), pts: cfa4_time::Tick::ZERO, layout: Default::default() }
 }
 
 impl VideoDecoder for ApvDecoder {
@@ -886,8 +897,9 @@ pub fn apv_factory(e: &SampleEntry) -> Option<Result<Box<dyn VideoDecoder>>> {
 /// Our DNxHD / DNxHR (VC-3) decoder (every frame is intra; macroblock rows decode in parallel).
 pub struct DnxDecoder;
 
-/// Convert a decoded VC-3 frame to a [`VideoFrame`]. RGB (4:4:4) frames are converted to
-/// BT.709 video-range Y'CbCr 4:4:4 at the coded depth.
+/// Convert a decoded VC-3 frame to a [`VideoFrame`]. RGB (4:4:4) frames stay R'G'B': their
+/// video-range codes are expanded to full range at the coded depth (one code to one code, so
+/// nothing is lost) and returned as planar R'G'B' (RGBA8 at 8 bits).
 pub fn dnx_to_video_frame(f: cfa4_dnx::Frame) -> VideoFrame {
     use std::sync::Arc;
     let chroma = match f.chroma {
@@ -900,38 +912,65 @@ pub fn dnx_to_video_frame(f: cfa4_dnx::Frame) -> VideoFrame {
         color.matrix = cfa4_color::Matrix::Bt2020Ncl;
         color.primaries = cfa4_color::Primaries::Bt2020;
     }
-    let (mut y, mut cb, mut cr) = (f.y, f.cb, f.cr);
-    if f.rgb {
-        // planes hold G, B, R (video range); derive Y'CbCr with the stream's matrix
-        let (kr, kb) = color.matrix.kr_kb();
-        let kg = 1.0 - kr - kb;
-        let s = (1u32 << (f.bit_depth - 8)) as f32;
-        let max = ((1u32 << f.bit_depth) - 1) as f32;
-        let c = 224.0 / 219.0;
-        for i in 0..y.len() {
-            let (g, b, r) = (y[i] as f32, cb[i] as f32, cr[i] as f32);
-            let yy = kr * r + kg * g + kb * b;
-            let u = (b - yy) / (2.0 * (1.0 - kb)) * c + 128.0 * s;
-            let v = (r - yy) / (2.0 * (1.0 - kr)) * c + 128.0 * s;
-            y[i] = (yy + 0.5).clamp(0.0, max) as u16;
-            cb[i] = (u + 0.5).clamp(0.0, max) as u16;
-            cr[i] = (v + 0.5).clamp(0.0, max) as u16;
-        }
-    }
-    let par = match f.par {
-        (n, d) if n > 0 && d > 0 => (n as u32, d as u32),
-        // thin rasters (1440 / 960 wide) are anamorphic 16:9
-        _ if matches!(f.cid, 1244 | 1259 | 1260) => (4, 3),
-        _ if f.cid == 1258 => (4, 3),
-        _ => (1, 1),
+    let field_order = match f.interlace {
+        cfa4_dnx::Interlace::Progressive => cfa4_frame::FieldOrder::Progressive,
+        cfa4_dnx::Interlace::TopFieldFirst => cfa4_frame::FieldOrder::TopFirst,
     };
+    let layout = cfa4_frame::FrameLayout { field_order, ..Default::default() };
+    let par = dnx_par(&f);
+    if f.rgb {
+        color.range = cfa4_color::Range::Full;
+        let data = dnx_rgb_data(f.y, f.cb, f.cr, f.alpha, f.bit_depth, f.width as usize * f.height as usize);
+        return VideoFrame { width: f.width, height: f.height, data, color, par, pts: cfa4_time::Tick::ZERO, layout };
+    }
+    let (y, cb, cr) = (f.y, f.cb, f.cr);
     let data = if f.bit_depth == 8 {
         let to8 = |p: Vec<u16>| Arc::new(p.into_iter().map(|v| v as u8).collect::<Vec<u8>>());
         cfa4_frame::PixelData::Yuv8 { planes: [to8(y), to8(cb), to8(cr)], chroma, alpha: f.alpha.map(to8) }
     } else {
         cfa4_frame::PixelData::Yuv16 { planes: [Arc::new(y), Arc::new(cb), Arc::new(cr)], chroma, bits: f.bit_depth as u32, alpha: f.alpha.map(Arc::new) }
     };
-    VideoFrame { width: f.width, height: f.height, data, color, par, pts: cfa4_time::Tick::ZERO }
+    VideoFrame { width: f.width, height: f.height, data, color, par, pts: cfa4_time::Tick::ZERO, layout }
+}
+
+/// Pixel aspect ratio of a VC-3 frame: signalled, or implied by the thin rasters.
+fn dnx_par(f: &cfa4_dnx::Frame) -> (u32, u32) {
+    match f.par {
+        (n, d) if n > 0 && d > 0 => (n as u32, d as u32),
+        // thin rasters (1440 / 960 wide) are anamorphic 16:9
+        _ if matches!(f.cid, 1244 | 1259 | 1260 | 1258) => (4, 3),
+        _ => (1, 1),
+    }
+}
+
+/// Full-range R'G'B' pixel data of `n` pixels from VC-3 planes in coded order G, B, R
+/// (video range, `bits` deep) and a full-range alpha. Video range spans fewer codes than full
+/// range, so the expansion keeps every code distinct; codes outside video range clip.
+fn dnx_rgb_data(g: Vec<u16>, b: Vec<u16>, r: Vec<u16>, alpha: Option<Vec<u16>>, bits: u8, n: usize) -> cfa4_frame::PixelData {
+    use std::sync::Arc;
+    let bits = u32::from(bits.clamp(8, 16));
+    let s = f64::from(1u32 << (bits - 8));
+    let max = f64::from((1u32 << bits) - 1);
+    let (lo, span) = (16.0 * s, 219.0 * s);
+    let full = |p: Vec<u16>| -> Vec<u16> {
+        let mut out: Vec<u16> = p.into_iter().take(n).map(|v| ((f64::from(v) - lo) / span * max).round().clamp(0.0, max) as u16).collect();
+        out.resize(n, 0);
+        out
+    };
+    let alpha = alpha.map(|mut a| {
+        a.resize(n, (max as u16).max(1));
+        a
+    });
+    let (r, g, b) = (full(r), full(g), full(b));
+    if bits == 8 {
+        let mut rgba = Vec::with_capacity(n * 4);
+        for i in 0..n {
+            let a = alpha.as_ref().map_or(255, |a| a[i].min(255) as u8);
+            rgba.extend_from_slice(&[r[i] as u8, g[i] as u8, b[i] as u8, a]);
+        }
+        return cfa4_frame::PixelData::Rgba8(Arc::new(rgba));
+    }
+    cfa4_frame::PixelData::Rgb16 { planes: [Arc::new(r), Arc::new(g), Arc::new(b)], bits, alpha: alpha.map(Arc::new) }
 }
 
 impl VideoDecoder for DnxDecoder {
@@ -955,8 +994,8 @@ pub fn dnx_factory(e: &SampleEntry) -> Option<Result<Box<dyn VideoDecoder>>> {
     matches!(e.codec, CodecConfig::Dnx { .. }).then(|| Ok(Box::new(DnxDecoder) as Box<dyn VideoDecoder>))
 }
 
-/// Our DV decoder (`cfa4-dv`: DV25 / DVCAM, DVCPRO 25; every frame is intra, video segments
-/// decode in parallel).
+/// Our DV decoder (`cfa4-dv`: DV25 / DVCAM, DVCPRO 25 / 50, DVCPRO HD; every frame is intra,
+/// video segments decode in parallel).
 pub struct DvDecoder {
     dec: cfa4_dv::Decoder,
 }
@@ -974,6 +1013,12 @@ pub fn dv_color(system: cfa4_dv::System) -> cfa4_color::ColorInfo {
         cfa4_dv::System::Lines625 => cfa4_color::Primaries::Bt601_625,
     };
     cfa4_color::ColorInfo { matrix: cfa4_color::Matrix::Bt601, primaries, ..cfa4_color::ColorInfo::REC709 }
+}
+
+/// Colour of a DV profile: BT.709 for DVCPRO HD (SMPTE 370M), [`dv_color`] for standard
+/// definition.
+pub fn dv_profile_color(p: &cfa4_dv::Profile) -> cfa4_color::ColorInfo {
+    if p.format == cfa4_dv::Format::DvcproHd { cfa4_color::ColorInfo::REC709 } else { dv_color(p.system) }
 }
 
 /// What a container's stream info shows for DV, read from its first frame: the format name, the
@@ -1000,7 +1045,7 @@ pub fn dv_stream_info(first_frame: &[u8]) -> Option<DvStreamInfo> {
         cfa4_dv::ChromaFormat::Yuv411 | cfa4_dv::ChromaFormat::Yuv422 => "YUV 4:2:2 8-bit",
     }
     .to_string();
-    Some(DvStreamInfo { par: profile.sample_aspect(), color: dv_color(profile.system), codec, pixel_format, profile })
+    Some(DvStreamInfo { par: profile.sample_aspect(), color: dv_profile_color(&profile), codec, pixel_format, profile })
 }
 
 /// Convert a decoded DV picture to a [`VideoFrame`]. CFA4 has no 4:1:1 frame type (owner
@@ -1008,7 +1053,7 @@ pub fn dv_stream_info(first_frame: &[u8]) -> Option<DvStreamInfo> {
 pub fn dv_to_video_frame(p: cfa4_dv::Picture) -> VideoFrame {
     use std::sync::Arc;
     let par = p.profile.sample_aspect();
-    let color = dv_color(p.profile.system);
+    let color = dv_profile_color(&p.profile);
     let (chroma, cb, cr) = match p.chroma_422() {
         Some((cb, cr)) => (cfa4_frame::Chroma::C422, cb, cr),
         None => {
@@ -1020,7 +1065,11 @@ pub fn dv_to_video_frame(p: cfa4_dv::Picture) -> VideoFrame {
         }
     };
     let data = cfa4_frame::PixelData::Yuv8 { planes: [Arc::new(p.y), Arc::new(cb), Arc::new(cr)], chroma, alpha: None };
-    VideoFrame { width: p.width, height: p.height, data, color, par, pts: cfa4_time::Tick::ZERO }
+    // standard-definition DV is interlaced, bottom field first (IEC 61834-2, SMPTE 314M); the HD
+    // profiles say nothing here and keep the default
+    let field_order = if p.profile.format == cfa4_dv::Format::DvcproHd { cfa4_frame::FieldOrder::Progressive } else { cfa4_frame::FieldOrder::BottomFirst };
+    let layout = cfa4_frame::FrameLayout { field_order, ..Default::default() };
+    VideoFrame { width: p.width, height: p.height, data, color, par, pts: cfa4_time::Tick::ZERO, layout }
 }
 
 impl VideoDecoder for DvDecoder {
@@ -1054,8 +1103,8 @@ pub fn dv_factory(e: &SampleEntry) -> Option<Result<Box<dyn VideoDecoder>>> {
 pub struct CineformDecoder;
 
 /// Convert a decoded CineForm frame to a [`VideoFrame`]: 4:2:2 YUV as is (video range, BT.601
-/// for SD and BT.709 above), full-range RGB(A) as video-range BT.709 Y'CbCr 4:4:4 at the coded
-/// depth with straight alpha.
+/// for SD and BT.709 above), full-range RGB(A) as R'G'B' at the coded depth (planar
+/// [`cfa4_frame::PixelData::Rgb16`] above 8 bits) with straight alpha.
 pub fn cineform_to_video_frame(f: cfa4_cineform::Frame) -> Result<VideoFrame> {
     use std::sync::Arc;
     let bits = u32::from(f.bit_depth);
@@ -1065,36 +1114,19 @@ pub fn cineform_to_video_frame(f: cfa4_cineform::Frame) -> Result<VideoFrame> {
     };
     let alpha = planes.next();
     let mut color = cfa4_color::ColorInfo::REC709;
-    let (planes, chroma) = match f.format {
+    let data = match f.format {
         cfa4_cineform::EncodedFormat::Yuv422 => {
             // the bitstream carries no matrix: BT.601 for SD, BT.709 for HD, as other decoders do
             color.matrix = cfa4_frame::default_matrix(f.width, f.height);
-            ([a, b, c], cfa4_frame::Chroma::C422)
+            cfa4_frame::PixelData::Yuv16 { planes: [Arc::new(a), Arc::new(b), Arc::new(c)], chroma: cfa4_frame::Chroma::C422, bits, alpha: alpha.map(Arc::new) }
         }
         _ => {
-            // planes hold full-range R, G, B: video-range Y'CbCr 4:4:4 at the coded depth, so
-            // a container colour description (which rarely signals full range) still applies
-            let (kr, kb) = color.matrix.kr_kb();
-            let kg = 1.0 - kr - kb;
-            let max = ((1u32 << bits) - 1) as f32;
-            let s = (1u32 << bits.saturating_sub(8)) as f32;
-            let (ys, cs) = (219.0 * s / max, 224.0 * s / max);
-            let n = a.len().min(b.len()).min(c.len());
-            let (mut y, mut cb, mut cr) = (vec![0u16; n], vec![0u16; n], vec![0u16; n]);
-            let rgb = a.iter().zip(&b).zip(&c);
-            for (((&r, &g), &bl), ((y, cb), cr)) in rgb.zip(y.iter_mut().zip(cb.iter_mut()).zip(cr.iter_mut())) {
-                let (r, g, bl) = (f32::from(r), f32::from(g), f32::from(bl));
-                let yy = kr * r + kg * g + kb * bl;
-                *y = (16.0 * s + yy * ys + 0.5).clamp(0.0, max) as u16;
-                *cb = (128.0 * s + (bl - yy) / (2.0 * (1.0 - kb)) * cs + 0.5).clamp(0.0, max) as u16;
-                *cr = (128.0 * s + (r - yy) / (2.0 * (1.0 - kr)) * cs + 0.5).clamp(0.0, max) as u16;
-            }
-            ([y, cb, cr], cfa4_frame::Chroma::C444)
+            // planes hold full-range R, G, B (CFA4-PROCODEC-002 1b: kept as they are)
+            color.range = cfa4_color::Range::Full;
+            crate::j2k::rgb_data([a, b, c], bits, alpha)
         }
     };
-    let [y, cb, cr] = planes;
-    let data = cfa4_frame::PixelData::Yuv16 { planes: [Arc::new(y), Arc::new(cb), Arc::new(cr)], chroma, bits, alpha: alpha.map(Arc::new) };
-    Ok(VideoFrame { width: f.width, height: f.height, data, color, par: (1, 1), pts: cfa4_time::Tick::ZERO })
+    Ok(VideoFrame { width: f.width, height: f.height, data, color, par: (1, 1), pts: cfa4_time::Tick::ZERO, layout: Default::default() })
 }
 
 impl VideoDecoder for CineformDecoder {
@@ -1181,6 +1213,16 @@ pub fn mpeg2_to_video_frame(p: cfa4_mpeg2v::Picture) -> VideoFrame {
         color,
         par: if par.0 > 0 && par.1 > 0 { par } else { (1, 1) },
         pts: cfa4_time::Tick::ZERO,
+        // ISO/IEC 13818-2: a picture that is not a progressive frame is two fields in the order
+        // top_field_first says; chroma sits at type 0 (MPEG-2 4:2:0)
+        layout: cfa4_frame::FrameLayout {
+            field_order: match (p.progressive_frame, p.top_field_first) {
+                (true, _) => cfa4_frame::FieldOrder::Progressive,
+                (false, true) => cfa4_frame::FieldOrder::TopFirst,
+                (false, false) => cfa4_frame::FieldOrder::BottomFirst,
+            },
+            chroma_location: cfa4_frame::ChromaLocation::Left,
+        },
     }
 }
 
@@ -1433,6 +1475,7 @@ impl RawVideoDecoder {
             color: vui_color(self.width, self.height, 2, 2, 2, false),
             par: (1, 1),
             pts: cfa4_time::Tick::ZERO,
+            layout: Default::default(),
         }
     }
 

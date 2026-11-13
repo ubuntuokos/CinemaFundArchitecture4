@@ -7,6 +7,8 @@
 //! previous one holds [`SEGMENT_SECONDS`], so every segment decodes on its own
 //! (`EXT-X-INDEPENDENT-SEGMENTS`). Sound segment `n` holds the AAC access units starting before
 //! the end of picture segment `n`; a segment is cut only once the sound has caught up with it.
+//! With [`ExportSettings::dash_manifest`] a DASH manifest (`<stem>.mpd`) over the same segments
+//! goes next to the playlists.
 
 use std::collections::VecDeque;
 use std::fmt::Write as _;
@@ -14,6 +16,7 @@ use std::fmt::Write as _;
 use cfa4_isobmff::{Brand, CodecConfig, FragmentedWriter, SampleEntry, TrackConfig, WriteSample, WriterOptions};
 use cfa4_time::FrameRate;
 
+use crate::dash_out::{DashMedia, DashRepresentation, dash_files, dash_mpd};
 use crate::{EncodedPacket, ExportError, ExportSettings, Result, write_output};
 
 /// Target segment length (Apple's HLS authoring guidance).
@@ -104,6 +107,8 @@ pub(crate) struct HlsSetup<'a> {
 struct Segment {
     name: String,
     seconds: f64,
+    /// Duration in the track's timescale (the DASH `SegmentTimeline`).
+    duration: u64,
     bytes: u64,
 }
 
@@ -113,6 +118,7 @@ struct AudioRendition {
     frag: FragmentedWriter<Vec<u8>>,
     track: usize,
     channels: u32,
+    sample_rate: u32,
     segments: Vec<Segment>,
     /// Decode time where the next sound segment starts.
     seg_start: u64,
@@ -143,20 +149,21 @@ pub(crate) struct HlsMux {
     segments: Vec<Segment>,
     /// Bytes written (playlists included at the end).
     bytes: u64,
-    codecs: String,
+    /// `CODECS` of the picture alone (the sound is `mp4a.40.2`).
+    video_codecs: String,
     width: u32,
     height: u32,
     rate: FrameRate,
 }
 
 impl HlsMux {
-    pub fn new(s: HlsSetup) -> Result<Self> {
+    pub fn new(s: HlsSetup<'_>) -> Result<Self> {
         let files = hls_files(&s.settings.path, s.height);
         let mut opts = WriterOptions::new(Brand::Mp4);
         opts.metadata = s.settings.metadata.udta();
         opts.chapters = s.chapters;
         let mut frag = FragmentedWriter::new(Vec::new(), opts.clone());
-        let mut codecs = video_codecs(&s.video);
+        let codecs = video_codecs(&s.video);
         let vt = frag.add_track(TrackConfig::new(s.video, s.video_timescale)).map_err(mux_err)?;
         frag.write_init_segment().map_err(mux_err)?;
         let init = std::mem::take(frag.get_mut());
@@ -166,13 +173,12 @@ impl HlsMux {
                 let channels = entry.audio.as_ref().map_or(2, |a| a.channels);
                 let mut c = TrackConfig::new(entry, sr);
                 c.media_start = Some(i64::from(priming));
-                codecs += ",mp4a.40.2";
                 let mut frag = FragmentedWriter::new(Vec::new(), opts);
                 let track = frag.add_track(c).map_err(mux_err)?;
                 frag.write_init_segment().map_err(mux_err)?;
                 let init = std::mem::take(frag.get_mut());
                 bytes = bytes.saturating_add(write_output(s.settings, &files.audio_init, init)?);
-                (Some(AudioRendition { frag, track, channels, segments: Vec::new(), seg_start: 0 }), u64::from(sr.max(1)))
+                (Some(AudioRendition { frag, track, channels, sample_rate: sr, segments: Vec::new(), seg_start: 0 }), u64::from(sr.max(1)))
             }
             None => (None, 1),
         };
@@ -194,7 +200,7 @@ impl HlsMux {
             seg_start: 0,
             segments: Vec::new(),
             bytes,
-            codecs,
+            video_codecs: codecs,
             width: s.width,
             height: s.height,
             rate: s.rate,
@@ -256,8 +262,9 @@ impl HlsMux {
             let path = self.files.segment(self.segments.len());
             let n = write_output(&self.settings, &path, data)?;
             self.bytes = self.bytes.saturating_add(n);
-            let seconds = last.saturating_sub(self.seg_start) as f64 / self.v_ts as f64;
-            self.segments.push(Segment { name: file_name(&path), seconds, bytes: n });
+            let duration = last.saturating_sub(self.seg_start);
+            let seconds = duration as f64 / self.v_ts as f64;
+            self.segments.push(Segment { name: file_name(&path), seconds, duration, bytes: n });
             self.seg_start = last;
         }
         self.audio_segment(end)
@@ -281,8 +288,9 @@ impl HlsMux {
         let path = self.files.audio_segment(a.segments.len());
         let n = write_output(&self.settings, &path, data)?;
         self.bytes = self.bytes.saturating_add(n);
-        let seconds = last.saturating_sub(a.seg_start) as f64 / self.a_ts as f64;
-        a.segments.push(Segment { name: file_name(&path), seconds, bytes: n });
+        let duration = last.saturating_sub(a.seg_start);
+        let seconds = duration as f64 / self.a_ts as f64;
+        a.segments.push(Segment { name: file_name(&path), seconds, duration, bytes: n });
         a.seg_start = last;
         Ok(())
     }
@@ -305,8 +313,45 @@ impl HlsMux {
             extra.extend([self.files.audio_media.clone(), self.files.audio_init.clone()]);
             extra.extend((0..a.segments.len()).map(|n| self.files.audio_segment(n)));
         }
+        if self.settings.dash_manifest {
+            let mpd = self.dash_manifest();
+            let path = dash_files(&self.files.multivariant);
+            self.bytes = self.bytes.saturating_add(write_output(&self.settings, &path, mpd.into_bytes())?);
+            extra.push(path);
+        }
         self.bytes = self.bytes.saturating_add(write_output(&self.settings, &self.files.multivariant, multivariant.into_bytes())?);
         Ok((self.bytes, extra))
+    }
+
+    /// The DASH manifest over the same init and media segments as the playlists.
+    fn dash_manifest(&self) -> String {
+        let segments = |s: &[Segment]| s.iter().map(|s| s.duration).collect::<Vec<u64>>();
+        let mut reps = vec![DashRepresentation {
+            id: "video".into(),
+            media: DashMedia::Video { width: self.width, height: self.height, frame_rate: (self.rate.num, self.rate.den) },
+            codecs: self.video_codecs.clone(),
+            bandwidth: rates(&self.segments).0,
+            timescale: u32::try_from(self.v_ts).unwrap_or(u32::MAX),
+            init: file_name(&self.files.init),
+            segment_prefix: file_name(&self.files.segment_prefix),
+            start: 0,
+            segments: segments(&self.segments),
+        }];
+        if let Some(a) = &self.audio {
+            reps.push(DashRepresentation {
+                id: "audio".into(),
+                media: DashMedia::Audio { sample_rate: a.sample_rate, channels: u16::try_from(a.channels).unwrap_or(2) },
+                codecs: AUDIO_CODECS.into(),
+                bandwidth: rates(&a.segments).0,
+                timescale: a.sample_rate.max(1),
+                init: file_name(&self.files.audio_init),
+                segment_prefix: file_name(&self.files.audio_segment_prefix),
+                start: 0,
+                segments: segments(&a.segments),
+            });
+        }
+        let seconds: f64 = self.segments.iter().map(|s| s.seconds).sum();
+        dash_mpd(seconds, &reps)
     }
 
     fn multivariant_playlist(&self) -> String {
@@ -328,7 +373,7 @@ impl HlsMux {
             "#EXT-X-STREAM-INF:BANDWIDTH={},AVERAGE-BANDWIDTH={},CODECS=\"{}\",RESOLUTION={}x{},FRAME-RATE={:.3}",
             v_peak.saturating_add(a_peak).max(1),
             v_avg.saturating_add(a_avg).max(1),
-            self.codecs,
+            if self.audio.is_some() { format!("{},{AUDIO_CODECS}", self.video_codecs) } else { self.video_codecs.clone() },
             self.width,
             self.height,
             if fps.is_finite() { fps } else { 0.0 },
@@ -343,6 +388,9 @@ impl HlsMux {
 
 /// `GROUP-ID` of the sound rendition.
 const AUDIO_GROUP: &str = "audio";
+
+/// RFC 6381 codecs entry of the sound (AAC-LC).
+const AUDIO_CODECS: &str = "mp4a.40.2";
 
 /// Peak and average bits per second of a rendition's segments.
 fn rates(segments: &[Segment]) -> (u64, u64) {

@@ -334,6 +334,7 @@
 	Overlay	Ülekate
 	Overwrite	Kirjuta üle
 	PCM (uncompressed)	PCM (tihendamata)
+	MP2 (MPEG-1 Layer II)	MP2 (MPEG-1 kiht II)
 	Panels	Paneelid
 	Panner	Panoraamija
 	Paste Attributes…	Kleebi atribuudid…
@@ -2025,6 +2026,16 @@
 	SMPTE DCP folder: JPEG 2000 3996×2160 (1.85:1), 5.1 24-bit 48 kHz PCM	SMPTE DCP kaust: JPEG 2000 3996×2160 (1,85:1), 5.1 24-bitine 48 kHz PCM
 	DCP 4K Scope	DCP 4K Scope
 	SMPTE DCP folder: JPEG 2000 4096×1716 (2.39:1), 5.1 24-bit 48 kHz PCM	SMPTE DCP kaust: JPEG 2000 4096×1716 (2,39:1), 5.1 24-bitine 48 kHz PCM
+	IMF App 2E (Interoperable Master Package)	IMF App 2E (Interoperable Master Package)
+	IMF App 2E HD	IMF App 2E HD
+	SMPTE IMF folder: JPEG 2000 1920×1080, 5.1 24-bit 48 kHz PCM	SMPTE IMF kaust: JPEG 2000 1920×1080, 5.1 24-bitine 48 kHz PCM
+	IMF App 2E UHD	IMF App 2E UHD
+	SMPTE IMF folder: JPEG 2000 3840×2160, 5.1 24-bit 48 kHz PCM	SMPTE IMF kaust: JPEG 2000 3840×2160, 5.1 24-bitine 48 kHz PCM
+	Episode	Episood
+	Event highlights	Sündmuse kokkuvõte
+	Event	Sündmus
+	Lossless (reversible JPEG 2000)	Kadudeta (pööratav JPEG 2000)
+	Package language	Paketi keel
 	4:2:0 (Main Profile)	4:2:0 (Main Profile)
 	4:2:2 (4:2:2 Profile)	4:2:2 (4:2:2 Profile)
 	B pictures	B-pildid
@@ -2197,6 +2208,9 @@
 	AV1 Main (10-bit for HDR)	AV1 Main (HDR jaoks 10-bitine)
 	10-bit RGB	10-bitine RGB
 	12-bit X'Y'Z'	12-bitine X'Y'Z'
+	10-bit R'G'B' 4:4:4	10-bitine R'G'B' 4:4:4
+	JPEG 2000 IMF lossy	JPEG 2000 IMF kadudega
+	JPEG 2000 IMF reversible	JPEG 2000 IMF pööratav
 	16-bit half float	16-bitine poolujukoma
 	linear	lineaarne
 	uncompressed	tihendamata
@@ -3568,8 +3582,16 @@
 	MXF OP1a H.264	MXF OP1a H.264
 	MXF OP1a ProRes 422 HQ	MXF OP1a ProRes 422 HQ
 	MXF OP1a, DNxHR HQ (8-bit 4:2:2), 24-bit 48 kHz PCM, start timecode	MXF OP1a, DNxHR HQ (8-bitine 4:2:2), 24-bitine 48 kHz PCM, algusajakood
+	MXF OP1a MPEG-2 HD 4:2:2 50 Mbit/s	MXF OP1a MPEG-2 HD 4:2:2 50 Mbit/s
+	MXF OP1a, MPEG-2 4:2:2 Profile long GOP (12 pictures, IBBP) at 50 Mbit/s in the XDCAM HD422 style, 24-bit 48 kHz PCM; HD frame sizes	MXF OP1a, MPEG-2 4:2:2 Profile pikk GOP (12 kaadrit, IBBP) 50 Mbit/s XDCAM HD422 stiilis, 24-bitine 48 kHz PCM; HD-kaadrisuurused
 	MXF OP1a, H.264 High long GOP (0.3 bits per pixel), 24-bit 48 kHz PCM	MXF OP1a, H.264 High pikk GOP (0,3 bitti piksli kohta), 24-bitine 48 kHz PCM
+	MXF OP1a D-10 (IMX) 50 Mbit/s 525/29.97	MXF OP1a D-10 (IMX) 50 Mbit/s 525/29.97
+	MXF OP1a D-10 (IMX) 50 Mbit/s 625/25	MXF OP1a D-10 (IMX) 50 Mbit/s 625/25
+	MXF OP1a type D-10 (IMX 50): intra-only MPEG-2 4:2:2P@ML at 50 Mbit/s, 720x486 at 29.97 fps (4:3), four 24-bit 48 kHz audio channels	MXF OP1a tüüp D-10 (IMX 50): ainult intra MPEG-2 4:2:2P@ML 50 Mbit/s, 720x486 29,97 fps (4:3), neli 24-bitist 48 kHz helikanalit
+	MXF OP1a type D-10 (IMX 50): intra-only MPEG-2 4:2:2P@ML at 50 Mbit/s, 720x576 at 25 fps (4:3), four 24-bit 48 kHz audio channels	MXF OP1a tüüp D-10 (IMX 50): ainult intra MPEG-2 4:2:2P@ML 50 Mbit/s, 720x576 25 fps (4:3), neli 24-bitist 48 kHz helikanalit
 	MXF OP1a, ProRes 422 HQ, 24-bit 48 kHz PCM, start timecode	MXF OP1a, ProRes 422 HQ, 24-bitine 48 kHz PCM, algusajakood
+	MXF OP1a XDCAM HD422 (RDD 9) 50 Mbit/s	MXF OP1a XDCAM HD422 (RDD 9) 50 Mbit/s
+	MXF OP1a in the SMPTE RDD 9 layout: MPEG-2 4:2:2 Profile long GOP (12 pictures, IBBP) at 50 Mbit/s, 1920x1080 or 1280x720 progressive, four 24-bit 48 kHz channels as per-channel AES3 elements	MXF OP1a SMPTE RDD 9 paigutuses: MPEG-2 4:2:2 Profile pikk GOP (12 kaadrit, IBBP) 50 Mbit/s, 1920x1080 või 1280x720 progressiivne, neli 24-bitist 48 kHz kanalit kanalipõhiste AES3-elementidena
 	Main	Peamine
 	Mark In (Hover Scrub)	Märgi algus (hõljumisega kerimine)
 	Mark Out (Hover Scrub)	Märgi lõpp (hõljumisega kerimine)
@@ -3911,6 +3933,8 @@
 	Analyze Source for Smart Cut	Analüüsi allikat nutika lõikamise jaoks
 	Plan Smart Cut	Planeeri nutikas lõikamine
 	Run Smart Cut	Käivita nutikas lõikamine
+	DASH Manifest	DASH-manifest
+	Also write a DASH manifest (.mpd)	Kirjuta ka DASH-manifest (.mpd)
 	No sequence open. Double-click a sequence in the Project panel.	Ükski jada pole avatud. Topeltklõpsa jada paneelil Projekt.
 	English (US)	Inglise keel (USA)
 	English (UK)	Inglise keel (Ühendkuningriik)
@@ -4140,3 +4164,426 @@ export.summary	Low	madal
 	not supported by CFA4 sequences yet: {what}	CFA4 jadad ei toeta veel: {what}
 	{rate} fps	{rate} fps
 	{w} × {h}, display {dn}:{dd}, pixels {pn}:{pd}	{w} × {h}, kuva {dn}:{dd}, pikslid {pn}:{pd}
+# Qt GUI: Tools menu (#868)
+	Video Tools	Videotööriistad
+	Audio Tools	Helitööriistad
+	Publication Tools	Avaldamistööriistad
+	Smart Export…	Nutikas eksport…
+# Diagonal Slide and the missing transition variants (#153)
+	From North-West	Loodest
+	From North-East	Kirdest
+	From South-East	Kagust
+	From South-West	Edelast
+# Enhance folder: Skin Smoothing and Low Light (#166)
+	Enhance	Täiustamine
+	Skin Smoothing	Naha silumine
+	Keep Texture	Säilita tekstuur
+	Skin Tone	Nahatoon
+	Smooth Entire Image	Silu kogu pilti
+	Low Light	Vähene valgus
+	Max Brightening	Suurim heledamaks muutmine
+	Show Illumination	Näita valgustust
+# Easing presets, Film Gate, Particles, Keyhole, Burn Away, Check Text Legibility (#182)
+	Easing Presets	Sujuvuse eelseaded
+	Sine	Siinus
+	Exponential	Eksponentsiaalne
+	Circular	Ringjas
+	Elastic	Elastne
+	Film Gate	Filmiaken
+	Gate Weave	Akna võbelus
+	Weave Rotation	Võbeluse pööre
+	Particles	Osakesed
+	Emitter Position	Kiirguri asukoht
+	Birth Rate	Tekkesagedus
+	Lifetime (seconds)	Eluiga (sekundites)
+	Velocity Random	Kiiruse juhuslikkus
+	Gravity	Gravitatsioon
+	Particle Size	Osakeste suurus
+	Keyhole	Võtmeauk
+	Burn Away	Põletus
+	Burn Size	Põletuse suurus
+	Ember Width	Hõõguva serva laius
+	Ember Color	Hõõguva serva värv
+	Check Text Legibility	Kontrolli teksti loetavust
+	Clear Legibility Markers	Eemalda loetavuse markerid
+	Text legibility: no problems found	Teksti loetavus: probleeme ei leitud
+	Text legibility: {count} problems marked on the timeline (orange markers)	Teksti loetavus: {count} probleemi on ajateljel märgitud (oranžid markerid)
+# Glitch folder: Bit Crush, Block Glitch, Databend, VHS, Scan Line Jitter, Tile Jitter (#353)
+	Bit Crush	Bitisügavuse vähendus
+	Bits per Channel	Bitti kanali kohta
+	Ordered Dither	Korrastatud ditherdus
+	Dither Cell Size	Ditherduse lahtri suurus
+	Block Glitch	Plokitõrge
+	Blocks Moved	Liigutatud plokid
+	Max Distance	Suurim kaugus
+	Snap to Grid	Tõmba ruudustikule
+	Swap Blocks	Vaheta plokid
+	Changes per Second	Muudatusi sekundis
+	Databend	Andmerikkumine
+	Breaks	Katkestused
+	Shift	Nihe
+	Color Damage	Värvikahjustus
+	VHS	VHS
+	Color Bleed	Värvide valgumine
+	Wobble	Võnkumine
+	Snow	Lumi
+	Tracking Bar	Jälgimisriba
+	Head Switching	Peade vahetus
+	Scan Line Jitter	Ridade värin
+	Jitter	Värin
+	Interval	Intervall
+	Infinite	Lõputu
+	Periodic	Perioodiline
+	Tile Jitter	Paanide värin
+	Tiles	Paanid
+	Band Direction	Ribade suund
+	Jitter Direction	Värina suund
+# Creative Looks: Halftone and Dither (#354)
+	Halftone	Pooltoon
+	Dither	Ditherdus
+	Pattern	Muster
+	Cell Size	Lahtri suurus
+	Cyan Angle	Tsüaani nurk
+	Magenta Angle	Magenta nurk
+	Yellow Angle	Kollase nurk
+	Black Angle	Musta nurk
+	Monochrome Angle	Ühevärvi nurk
+	Sharpness	Teravus
+	Ink Color	Tindi värv
+	Paper Color	Paberi värv
+	Color (CMYK)	Värv (CMYK)
+	Dot	Punkt
+	Line	Joon
+	Bayer 2×2	Bayer 2×2
+	Bayer 4×4	Bayer 4×4
+	Bayer 8×8	Bayer 8×8
+	Pixel Size	Piksli suurus
+	Palette	Palett
+	Input Colors	Sisendvärvid
+	Green Phosphor	Roheline luminofoor
+	Amber Monitor	Merevaigukarva monitor
+	Game Boy	Game Boy
+	CGA	CGA
+	EGA	EGA
+	ZX Spectrum	ZX Spectrum
+	PICO-8	PICO-8
+
+# Credits workspace (stáblista)
+	Credits from a Spreadsheet	Tiitrid tabelist
+	A .ods, .xlsx or CSV credits sheet	Tiitrite tabel vormingus .ods, .xlsx või CSV
+	The spreadsheet's folder	Tabeli kaust
+	Built-in styles	Sisseehitatud stiilid
+	Spreadsheet	Tabel
+	Sheet	Leht
+	Pictures	Pildid
+	Styling	Stiil
+	Page	Leht
+	Warnings	Hoiatused
+	Moment in the page	Hetk lehel
+	Place at Playhead	Paiguta esitusnäidiku kohale
+	Spreadsheets (*.ods *.xlsx *.csv *.tsv *.txt)	Tabelid (*.ods *.xlsx *.csv *.tsv *.txt)
+	Credits styling (*.json)	Tiitrite stiil (*.json)
+	Card	Kaart
+	Credits Spreadsheet	Tiitrite tabel
+	Reading…	Lugemine…
+	(one table)	(üks tabel)
+	Total: {time}	Kokku: {time}
+	Row {row}: {message}	Rida {row}: {message}
+	Choose a credits spreadsheet.	Vali tiitrite tabel.
+	No preview	Eelvaade puudub
+	Placing…	Paigutamine…
+	Placed {n} pages on the timeline.	Ajaskaalale paigutati lehti: {n}.
+	Credits Page Picture	Tiitrilehe pilt
+	Preview Credits	Tiitrite eelvaade
+	Credits Styles	Tiitrite stiilid
+	Spreadsheets and credits files (*.ods *.xlsx *.csv *.tsv *.txt *.cfa4credits)	Tabelid ja tiitrifailid (*.ods *.xlsx *.csv *.tsv *.txt *.cfa4credits)
+	CFA4 credits file (*.cfa4credits)	CFA4 tiitrifail (*.cfa4credits)
+	Save as Credits File…	Salvesta tiitrifailina…
+	Spreadsheet, worksheet, styling and the table in one file, to open on any machine	Tabel, leht, stiil ja read ühes failis, mida saab avada igas arvutis
+	Saved: {path}	Salvestatud: {path}
+	Added	Lisatud
+	Removed	Eemaldatud
+	Changed	Muudetud
+	(empty row)	(tühi rida)
+	Refresh Credits from Spreadsheet	Värskenda tiitreid tabelist
+	Change	Muudatus
+	Before → After	Enne → Pärast
+	Select None	Tühista valik
+	Keep my edits on the pages (where their block is unchanged)	Säilita minu muudatused lehtedel (kus nende plokk pole muutunud)
+	Locate Spreadsheet…	Otsi tabel üles…
+	Comparing…	Võrdlemine…
+	{n} changes in {file} since the credits were placed. Untick what you do not want.	Muudatusi failis {file} pärast tiitrite paigutamist: {n}. Eemalda linnuke sellelt, mida ei soovi.
+	The spreadsheet {file} has not changed since the credits were placed.	Tabel {file} pole pärast tiitrite paigutamist muutunud.
+	{n} layers were edited by hand on the pages.	Käsitsi muudetud kihte lehtedel: {n}.
+	Accepting every change would replace these, because their block changed: {names}	Kõigi muudatuste vastuvõtmine asendaks need, sest nende plokk muutus: {names}
+	Refreshing…	Värskendamine…
+	Refreshed: {n} changes applied, {kept} hand edits kept.	Värskendatud: rakendatud muudatusi {n}, säilitatud käsitsi muudatusi {kept}.
+	Refresh Credits from Spreadsheet…	Värskenda tiitreid tabelist…
+	Save Credits File…	Salvesta tiitrifail…
+	Compare Credits with Spreadsheet	Võrdle tiitreid tabeliga
+	“{name}” appears twice in the same block	„{name}“ esineb samas plokis kaks korda
+	“{name}” is written as “{other}” in row {otherRow}	„{name}“ on real {otherRow} kirjutatud kujul „{other}“
+	The font “{font}” is not installed; another font is used	Fonti „{font}“ pole paigaldatud; kasutatakse teist fonti
+	The font “{font}” has no “{chars}”; another font draws them	Fondis „{font}“ pole märke „{chars}“; need joonistab teine font
+	“{text}” is outside the title-safe area	„{text}“ on väljaspool tiitrite ohutut ala
+	“{text}” is too dark on black (contrast {ratio}:1; at least 4.5:1 is needed)	„{text}“ on mustal liiga tume (kontrast {ratio}:1; vaja on vähemalt 4,5:1)
+	“{text}” is {px} px high; 24 px or more reads well	„{text}“ on {px} px kõrge; 24 px või rohkem on hästi loetav
+	The roll moves {speed} px per frame; a whole number does not shimmer	Kerimine liigub {speed} px kaadri kohta; täisarv ei virvenda
+	A line crosses the frame in {seconds} s; at least 6 s reads well	Rida läbib kaadri {seconds} s-ga; vähemalt 6 s on hästi loetav
+	The card holds for only {seconds} s after its fades	Kaart püsib pärast üleminekuid vaid {seconds} s
+	This page starts {seconds} s before the previous one ends	See leht algab {seconds} s enne eelmise lõppu
+	“{file}” is shown at {percent} % of its pixels; it will look soft	„{file}“ kuvatakse {percent} % pikslitest; see paistab pehme
+	{more} more of the same	Veel {more} samasugust
+	Page {page}: {message}	Leht {page}: {message}
+	Checks and warnings	Kontrollid ja hoiatused
+	Checks: {errors} errors, {warnings} warnings	Kontrollid: vigu {errors}, hoiatusi {warnings}
+	Check Credits	Kontrolli tiitreid
+	The whole music ({time})	Kogu muusika ({time})
+	Until the sound ends ({time})	Kuni heli lõpuni ({time})
+	To the last bar line ({time})	Viimase taktijooneni ({time})
+	Fit Credits to Music	Sobita tiitrid muusikaga
+	Fit Credits to Music…	Sobita tiitrid muusikaga…
+	Analyse Music for Credits	Analüüsi muusikat tiitrite jaoks
+	Length:	Pikkus:
+	Cards last whole beats (cuts on the beat)	Kaardid kestavad täislööke (lõiked löögil)
+	Start the credits where the music starts	Alusta tiitreid sealt, kus algab muusika
+	Length of the credits	Tiitrite pikkus
+	Remove Fitting	Eemalda sobitus
+	Listening to the music…	Muusika kuulamine…
+	Length: {time}	Pikkus: {time}
+	the sound ends at {time}	heli lõpeb ajal {time}
+	tempo {bpm} BPM	tempo {bpm} BPM
+	the credits without fitting: {time}	tiitrid ilma sobituseta: {time}
+	Select a credits page on the timeline.	Vali ajaskaalal tiitrileht.
+	Fitting…	Sobitamine…
+	The credits now last {time}.	Tiitrid kestavad nüüd {time}.
+	Fitting removed.	Sobitus eemaldatud.
+	Fit to This Length	Sobita selle pikkusega
+	No music to measure ({problem}); type the length.	Pole muusikat, mida mõõta ({problem}); sisesta pikkus.
+	The text moves {speed} px per frame; a whole number does not shimmer	Tekst liigub {speed} px kaadri kohta; täisarv ei virvenda
+	Crawl	Jooksev tekst
+	Picture: {file}	Pilt: {file}
+	Video: {file}	Video: {file}
+	Looped video: {file}	Korduv video: {file}
+	Into the next	Järgmisse
+	Safe areas and spines	Ohutud alad ja teljed
+	Action safe (93 %), title safe (90 %), the centre and the page's spines	Tegevuse ohuala (93 %), tiitrite ohuala (90 %), kese ja lehe teljed
+	Baseline grid	Põhijoonte ruudustik
+	Lines one gap unit apart, moving with the page	Jooned ühe vaheühiku kaugusel, liiguvad koos lehega
+	“{text}” does not stand out from the background (contrast {ratio}:1; at least 4.5:1 is needed)	„{text}“ ei eristu taustast (kontrast {ratio}:1; vaja on vähemalt 4,5:1)
+	A picture or video is behind the text: check the contrast by eye	Teksti taga on pilt või video: kontrolli kontrasti silmaga
+	A ready look: styles, backgrounds, transitions and timing. A styling file, if given, wins.	Valmis välimus: stiilid, taustad, üleminekud ja ajastus. Antud stiilifail on ülimuslik.
+	New Spreadsheet from Template…	Uus tabel mallist…
+	built in	sisseehitatud
+	mine	minu oma
+	this project	see projekt
+	Template	Mall
+	Choose a template first.	Vali kõigepealt mall.
+	Name of the template:	Malli nimi:
+	Template saved: {name}	Mall salvestatud: {name}
+	Apply Credits Template…	Rakenda tiitrite mall…
+	Template:	Mall:
+	Credits Templates	Tiitrite mallid
+	CSV (*.csv)	CSV (*.csv)
+	Spreadsheets, credits files and Cinecred projects (*.ods *.xlsx *.csv *.tsv *.txt *.cfa4credits Styling.toml)	Tabelid, tiitrifailid ja Cinecredi projektid (*.ods *.xlsx *.csv *.tsv *.txt *.cfa4credits Styling.toml)
+	Cinecred Project…	Cinecredi projekt…
+	Open a Cinecred project folder (Styling.toml and its credits spreadsheet)	Ava Cinecredi projekti kaust (Styling.toml ja selle tiitrite tabel)
+	(empty block)	(tühi plokk)
+	Apply Template…	Rakenda mall…
+	Change them in the spreadsheet; the credits follow when you save it.	Muuda neid tabelis; tiitrid järgnevad, kui selle salvestad.
+	Compact View	Kompaktne vaade
+	Compare the selected credits on the timeline with their spreadsheet, row by row	Võrdle ajaskaalal valitud tiitreid nende tabeliga rida-realt
+	Fit the selected credits to the music under them	Sobita valitud tiitrid nende all oleva muusikaga
+	Fit to Music…	Sobita muusikaga…
+	Full View	Täisvaade
+	Give the selected credits on the timeline another template	Anna ajaskaalal valitud tiitritele teine mall
+	Names	Nimed
+	No pages	Lehti pole
+	Refresh Placed Credits…	Värskenda paigutatud tiitreid…
+	Show everything: blocks, properties, the pages along time, checks and the credits tools	Näita kõike: plokid, omadused, lehed ajas, kontrollid ja tiitrite tööriistad
+	Spine	Telg
+	Tails	Lõpp
+	The blocks of the chosen page; choose one to see it in the preview	Valitud lehe plokid; vali üks, et seda eelvaates näha
+	The pages along time; click one to choose it	Lehed ajas; klõpsa ühel, et see valida
+	{n} more	Veel {n}
+	Block	Plokk
+	parallel	paralleelne
+# MPEG-2 export audio (#268): a product name, kept as is
+	Dolby Digital (AC-3)	Dolby Digital (AC-3)
+	In the page (OBS takes it from the Browser Source)	Lehel (OBS võtab selle brauseriallikast)
+	Separate (a media source in OBS)	Eraldi (meediaallikas OBS-is)
+	No sound	Heli puudub
+	credits	tiitrid
+	graphic	graafika
+	{n} pages	Lehti: {n}
+	Live Graphics	Otsegraafika
+	Prepared cues; double-click one to put it in preview	Ettevalmistatud elemendid; topeltklõpsa ühel, et see eelvaatesse panna
+	Add Credits…	Lisa tiitrid…
+	A credits spreadsheet, credits file or Cinecred project as a cue	Tiitrite tabel, tiitrifail või Cinecredi projekt elemendina
+	Add Selected Graphic	Lisa valitud graafika
+	The graphic clip selected on the timeline (a title, a lower third) as a cue	Ajaskaalal valitud graafikaklipp (pealkiri, alumine kolmandik) elemendina
+	Cues	Elemendid
+	TAKE	EETRISSE
+	The preview cue goes on air from its first page	Eelvaate element läheb eetrisse oma esimeselt lehelt
+	PREVIOUS	EELMINE
+	The page before (on the first page: from its start)	Eelmine leht (esimesel lehel: selle algusest)
+	NEXT	JÄRGMINE
+	The next page; after the last one, the preview cue	Järgmine leht; pärast viimast eelvaate element
+	HOLD	PEATA
+	Stop the program where it is	Peata programm seal, kus see on
+	CONTINUE	JÄTKA
+	Go on from where it stopped	Jätka sealt, kus see peatus
+	UPDATE	UUENDA
+	Read the spreadsheet (or the clip) again; on air it changes at once	Loe tabel (või klipp) uuesti; eetris muutub see kohe
+	OUT	VÄLJA
+	Take everything off air	Võta kõik eetrist maha
+	Start Live Page	Käivita otseleht
+	Serve the program on this computer for OBS's Browser Source (127.0.0.1 only)	Paku programmi selles arvutis OBS-i brauseriallikale (ainult 127.0.0.1)
+	not running	ei tööta
+	OBS ▸ Tools ▸ WebSocket Server Settings	OBS ▸ Tööriistad ▸ WebSocketi serveri sätted
+	Connect to OBS	Ühenda OBS-iga
+	Connect to OBS on this computer and point its “CFA4 Live” Browser Source at the live page	Ühenda selle arvuti OBS-iga ja suuna selle brauseriallikas „CFA4 Live“ otselehele
+	Port	Port
+	Password	Parool
+	Live page	Otseleht
+	Sound	Heli
+	OBS	OBS
+	Nothing in preview	Eelvaates pole midagi
+	page {page} of {pages}	leht {page}/{pages}
+	held	peatatud
+	ended	lõppenud
+	Off air	Eetrist väljas
+	Stop Live Page	Peata otseleht
+	Connected to OBS {version}; source “{source}”	Ühendatud: OBS {version}; allikas „{source}“
+	Point OBS Again	Suuna OBS uuesti
+	Select a graphic clip on the timeline first.	Vali kõigepealt ajaskaalal graafikaklipp.
+	Connecting to OBS…	Ühendamine OBS-iga…
+	Live Graphics…	Otsegraafika…
+	PREVIEW	EELVAADE
+	PROGRAM	PROGRAMM
+	a picture or video tag stands alone in a body cell (or with one name, as a portrait); the other tags were removed	pildi- või videosilt on põhilahtris üksi (või ühe nimega, portreena); teised sildid eemaldati
+	the page gap is not a duration; the page style's is used	lehevahe ei ole kestus; kasutatakse lehestiili oma
+	the page runtime is not a positive duration; the page style's is used	lehe kestus pole positiivne; kasutatakse lehestiili oma
+	background “{file}” was not found; it is left out	tausta „{file}“ ei leitud; see jäetakse välja
+	card page {page} is taller than the frame; use a roll page	kaardileht {page} on kaadrist kõrgem; kasuta keritavat lehte
+	colour “{colour}” of letter style “{style}” is not #rrggbb; it is left out	tähestiili „{style}“ värv „{colour}“ pole #rrggbb; see jäetakse välja
+	colour “{colour}” is not #rrggbb; black is used	värv „{colour}“ pole #rrggbb; kasutatakse musta
+	colour “{colour}” is not #rrggbb; white is used	värv „{colour}“ pole #rrggbb; kasutatakse valget
+	content style “{style}” does not exist; “{used}” is used	sisustiili „{style}“ pole olemas; kasutatakse „{used}“
+	letter style “{style}” does not exist; the text keeps the block's style	tähestiili „{style}“ pole olemas; tekst säilitab ploki stiili
+	page gap “{value}” is not a duration	lehevahe „{value}“ ei ole kestus
+	page runtime “{value}” is not a duration	lehe kestus „{value}“ ei ole kestus
+	page style “{style}” does not exist; a roll page is used	lehestiili „{style}“ pole olemas; kasutatakse keritavat lehte
+	page {page}: the background names no file; it is left out	leht {page}: taust ei nimeta faili; see jäetakse välja
+	page {page}: the runtime is reached by changing the roll speed (the page has no gaps between blocks to stretch)	leht {page}: kestus saavutatakse kerimiskiirust muutes (lehel pole plokkide vahel venitatavaid vahesid)
+	page {page}: the runtime is reached by changing the roll speed (the credits are too long even without gaps)	leht {page}: kestus saavutatakse kerimiskiirust muutes (tiitrid on ka ilma vahedeta liiga pikad)
+	page {page}: the runtime is reached by changing the roll speed (the gaps would have to grow more than 20-fold)	leht {page}: kestus saavutatakse kerimiskiirust muutes (vahed peaksid kasvama üle 20 korra)
+	page {page}: the transition needs the pages to touch (page gap 0); it is left out	leht {page}: üleminek nõuab, et lehed puutuksid (lehevahe 0); see jäetakse välja
+	page {page}: there is no transition “{name}”; the pages cut	leht {page}: üleminekut „{name}“ pole; lehed vahetuvad lõikega
+	spine position “{value}” is not supported (a pixel offset, optionally “parallel”, is)	telje asukohta „{value}“ ei toetata (toetatakse pikslinihet, soovi korral koos „parallel“)
+	vertical gap “{value}” is not a number	vertikaalne vahe „{value}“ ei ole arv
+	picture “{file}” was not found or cannot be read; it is left out	pilti „{file}“ ei leitud või ei saa lugeda; see jäetakse välja
+	video “{file}” was not found or cannot be read; it is left out	videot „{file}“ ei leitud või ei saa lugeda; see jäetakse välja
+	there is no roll page without its own runtime to stretch; the length cannot change	pole keritavat lehte ilma oma kestuseta, mida venitada; pikkust ei saa muuta
+	the cards and gaps alone are {seconds} s; the asked length is shorter, so the roll pages keep their natural length	ainuüksi kaardid ja vahed on {seconds} s; soovitud pikkus on lühem, seega keritavad lehed säilitavad loomuliku pikkuse
+	letter style “{style}”: only the first coloured layer is used (no outlines, shadows or stripes)	tähestiil „{style}“: kasutatakse ainult esimest värvilist kihti (piirjooni, varje ega triipe pole)
+	the whole-credits runtime is not carried over; use Fit Credits to Music (or a length) instead	kogu tiitrite kestust üle ei kanta; kasuta selle asemel käsku Sobita tiitrid muusikaga (või pikkust)
+	page style “{style}”: fade curves become linear fades	lehestiil „{style}“: hajutuskõverad muutuvad lineaarseteks
+	content style “{style}” has no head in Cinecred; heads written in the sheet are still shown	sisustiilil „{style}“ pole Cinecredis pead; tabelisse kirjutatud pead kuvatakse siiski
+	content style “{style}”: sorting the names is not carried over	sisustiil „{style}“: nimede sortimist üle ei kanta
+	transition curves are not carried over	üleminekukõveraid üle ei kanta
+	picture styles (pictures keep their own size) are not carried over	pildistiile (pildid säilitavad oma suuruse) üle ei kanta
+	video (tape) styles are not carried over	video- (lindi-) stiile üle ei kanta
+	the Cinecred project has {n} credits spreadsheets; “{name}” is used (choose another in the Spreadsheet field)	Cinecredi projektil on tiitrite tabeleid: {n}; kasutatakse „{name}“ (vali muu väljal Tabel)
+# Media QC: Quality Check window and the export queue's QC state (docs/media-qc.md)
+	Add Finding	Lisa leid
+	Add as Finding	Lisa leiuna
+	Are colour and contrast acceptable?	Kas värv ja kontrast on vastuvõetavad?
+	Automatic Checks	Automaatsed kontrollid
+	Bounds	Piirid
+	Check	Kontroll
+	Check Now	Kontrolli kohe
+	Check quality after export	Kontrolli kvaliteeti pärast eksporti
+	Checking…	Kontrollimine…
+	Contact Sheet	Kontaktleht
+	Critical	Kriitiline
+	Fail	Läbikukkunud
+	Finding {row}: the time code is not a time in this file (HH:MM:SS:FF).	Leid {row}: ajakood ei ole selle faili aeg (HH:MM:SS:FF).
+	Findings	Leiud
+	Human Review	Inimese ülevaatus
+	Incomplete	Puudulik
+	Is there a visible picture defect?	Kas pildil on nähtav viga?
+	Is there audible distortion?	Kas on kuulda moonutust?
+	Is there unwanted noise?	Kas on soovimatut müra?
+	Major	Oluline
+	Message	Teade
+	Minor	Väike
+	No contact sheet	Kontaktleht puudub
+	Not answered	Vastamata
+	Not checked	Kontrollimata
+	Not run	Ei käivitatud
+	Note	Märkus
+	Pass	Läbitud
+	Passed	Läbitud
+	Passed with warnings	Läbitud hoiatustega
+	Profile: {id} v{version}	Profiil: {id} v{version}
+	Quality Check	Kvaliteedikontroll
+	Quality Check…	Kvaliteedikontroll…
+	Remove Finding	Eemalda leid
+	Report: {path}	Aruanne: {path}
+	Review complete	Ülevaatus lõpetatud
+	Reviewer	Ülevaataja
+	Run the media quality check on the finished file (docs/media-qc.md)	Käivita valmis failil meedia kvaliteedikontroll (docs/media-qc.md)
+	Save Review	Salvesta ülevaatus
+	Select a finished export in the queue	Vali järjekorrast lõpetatud eksport
+	Severity	Raskusaste
+	The engine is not running.	Mootor ei tööta.
+	Time code	Ajakood
+	Unsure	Ebakindel
+	accept	lubatud
+	the engine did not start the check	mootor ei käivitanud kontrolli
+	the engine sent no report	mootor ei saatnud aruannet
+	MXF OP1a Uncompressed 10-bit 4:2:2 (v210)	MXF OP1a tihendamata 10-bitine 4:2:2 (v210)
+	MXF OP1a, uncompressed 10-bit Y'CbCr 4:2:2 in the v210 layout (SMPTE ST 384), 24-bit 48 kHz PCM, start timecode	MXF OP1a, tihendamata 10-bitine Y'CbCr 4:2:2 v210 paigutuses (SMPTE ST 384), 24-bitine 48 kHz PCM, algusajakood
+	Write the captions as ANC data (CEA-608/708, 29.97 fps)	Kirjuta subtiitrid ANC-andmetena (CEA-608/708, 29,97 fps)
+	Load KDM…	Laadi KDM…
+	Forget DCP Keys	Unusta DCP võtmed
+	Load KDM	Laadi KDM
+	KDM file	KDM-fail
+	Private key (PEM)	Privaatvõti (PEM)
+	{title}: {count} keys loaded	{title}: laaditud {count} võtit
+	The keys stay in memory only, until Forget DCP Keys or the end of the session.	Võtmed on ainult mälus, kuni valikuni Unusta DCP võtmed või seansi lõpuni.
+	DCP keys forgotten	DCP võtmed unustatud
+	Choose the KDM file and the private key.	Vali KDM-fail ja privaatvõti.
+
+# Settings ▸ Timecode Sync (TC-4)
+	Timecode Sync	Ajakoodi sünkroonimine
+	TimecodeSync	Ajakoodi sünkroonimine
+	Chase	Järgimine
+	Follow external timecode during playback	Järgi taasesitusel välist ajakoodi
+	Lock after	Lukusta pärast
+	Keep playing without signal for	Jätka ilma signaalita
+	External frame rate	Väline kaadrisagedus
+	Offset (added to the external timecode)	Nihe (liidetakse välisele ajakoodile)
+	LTC	LTC
+	LTC input device	LTC sisendseade
+	LTC input channel	LTC sisendkanal
+	Send LTC during playback	Saada taasesitusel LTC-d
+	LTC output device	LTC väljundseade
+	LTC output channel	LTC väljundkanal
+	LTC level	LTC tase
+	dBFS	dBFS
+	MIDI Timecode	MIDI-ajakood
+	MTC input port (empty = CFA4 port)	MTC sisendport (tühi = CFA4 port)
+	Send MIDI Timecode during playback	Saada taasesitusel MIDI-ajakoodi
+	MTC output port (empty = CFA4 port)	MTC väljundport (tühi = CFA4 port)
+	Send timecode ahead of the picture by	Saada ajakood pildist varem
+	LTC (audio input)	LTC (helisisend)
+	MIDI Timecode (MIDI input)	MIDI-ajakood (MIDI-sisend)
+	Same as the sequence	Sama mis jadal
+	29.97 fps drop-frame	29,97 fps drop-frame
+	29.97 fps non-drop	29,97 fps non-drop
+	Timecode Sync Status	Ajakoodi sünkroonimise olek
+	Chase External Timecode	Järgi välist ajakoodi
+	Send LTC	Saada LTC
+	Send MIDI Timecode	Saada MIDI-ajakood

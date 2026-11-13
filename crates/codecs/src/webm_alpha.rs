@@ -223,7 +223,7 @@ pub(crate) fn set_alpha(frame: &mut VideoFrame, a: &VideoFrame) {
     };
     match &mut frame.data {
         PixelData::Yuv8 { alpha, .. } => *alpha = Some(Arc::new(codes.iter().map(|&v| rescale(v, 8) as u8).collect())),
-        PixelData::Yuv16 { alpha, bits, .. } => {
+        PixelData::Yuv16 { alpha, bits, .. } | PixelData::Rgb16 { alpha, bits, .. } => {
             let to = *bits;
             *alpha = Some(Arc::new(codes.iter().map(|&v| rescale(v, to) as u16).collect()));
         }
@@ -246,14 +246,14 @@ mod tests {
         let n = (w * h) as usize;
         let c = n / 4;
         let data = PixelData::Yuv8 { planes: [Arc::new(luma), Arc::new(vec![128; c]), Arc::new(vec![128; c])], chroma: Chroma::C420, alpha: None };
-        VideoFrame { width: w, height: h, data, color: Default::default(), par: (1, 1), pts: cfa4_time::Tick::ZERO }
+        VideoFrame { width: w, height: h, data, color: Default::default(), par: (1, 1), pts: cfa4_time::Tick::ZERO, layout: Default::default() }
     }
 
     fn yuv16(w: u32, h: u32, bits: u32) -> VideoFrame {
         let n = (w * h) as usize;
         let data =
             PixelData::Yuv16 { planes: [Arc::new(vec![0; n]), Arc::new(vec![0; n / 4]), Arc::new(vec![0; n / 4])], chroma: Chroma::C420, bits, alpha: None };
-        VideoFrame { width: w, height: h, data, color: Default::default(), par: (1, 1), pts: cfa4_time::Tick::ZERO }
+        VideoFrame { width: w, height: h, data, color: Default::default(), par: (1, 1), pts: cfa4_time::Tick::ZERO, layout: Default::default() }
     }
 
     #[test]

@@ -1,28 +1,31 @@
 # cfa4-dv
 
-DV video decoder in pure Rust: consumer DV / DVCAM (IEC 61834-2, 25 Mbit/s) and DVCPRO 25
-(SMPTE 314M). Layer L0: depends only on `thiserror` and (optional, feature `threads`, default
+DV video decoder in pure Rust: consumer DV / DVCAM (IEC 61834-2, 25 Mbit/s), DVCPRO 25 and
+DVCPRO 50 (SMPTE 314M) and DVCPRO HD (SMPTE 370M). Layer L0: depends only on `thiserror` and (optional, feature `threads`, default
 on) `rayon`. No `unsafe`, no panics on damaged input.
 
 The crate decodes DIF frames (step DV-1 of the DV/DVCPRO plan). `cfa4-codecs` imports them
 (DV-2) from raw `.dv` / `.dif` files (`DifSource`), type-2 AVI, MOV / MP4 and MXF; 4:1:1 enters
 the engine as 4:2:2, and the stream info's aspect, sampling and colour come from the first
-frame (`cfa4_codecs::video::dv_stream_info`). DVCPRO 50 and DVCPRO HD are DV-3. DV-4 adds the audio
-(`decode_audio`, raw `.dv` files play it); type-1 AVI is still to do.
+frame (`cfa4_codecs::video::dv_stream_info`). DVCPRO 50 and DVCPRO HD are DV-3 (`pro.rs`). DV-4
+adds the audio (`decode_audio`): raw `.dv` files and type-1 AVI files (`iavs`, video and the
+sound inside its DIF frames) play it.
 
 ## Sources and licence
 
 | Source | Edition / revision | Used for |
 |---|---|---|
 | libdv | 1.0.0 (Ubuntu `libdv_1.0.0.orig.tar.gz`, sha256 `a305734033a9c25541a59e8dd1c254409953269ea7c710c39e540bd8853389ba`), LGPL-2.1-or-later | AC VLC table (`vlc.c`), zigzag orders and area maps (`parse.c`, `quant.c`), quantisation step table and class offsets (`quant.c`), weighting constants (`weighting.c`), macroblock placement (`place.c`), the three-pass bit distribution (`parse.c`), audio shuffle tables, samples-per-frame minimums, AAUX source pack fields and 12-bit expansion (`audio.c`, `dv_types.h`) |
-| IEC 61834-2, SMPTE 314M | not consulted directly (not purchased) | libdv implements these; the DIF structure, VAUX packs and the 2-4-8 transform follow their published structure |
+| FFmpeg | n7.1.1, `libavcodec/dv.c`, `dv_internal.h`, `dvdec.c`, LGPL-2.1-or-later | DVCPRO 50 / HD only (`pro.rs`): macroblock coordinates of 4:2:2 SD, 1080i and 720p, the skipped segments of 1080i50 / 720p50, the 720p half-frame shift, the DV100 quantiser steps and weights, the 8-block layout and field / last-row placement. Owner-approved exception to the FFmpeg-only-in-tests rule (2026-11-11), as for the DTS port (#83) |
+| IEC 61834-2, SMPTE 314M, SMPTE 370M | not consulted directly (not purchased) | libdv implements these; the DIF structure, VAUX packs and the 2-4-8 transform follow their published structure |
 
-`vlc.rs`, `quant.rs`, `layout.rs`, `segment.rs` and `audio.rs` are derived from libdv and keep its licence
-(LGPL-2.1-or-later, `COPYING.LGPL-2.1`); the rest of the crate is GPL-3.0-or-later. The port is
+`vlc.rs`, `quant.rs`, `layout.rs`, `segment.rs` and `audio.rs` are derived from libdv and `pro.rs`
+from FFmpeg; they keep their licence (LGPL-2.1-or-later, `COPYING.LGPL-2.1`); the rest of the crate
+is GPL-3.0-or-later. The port is
 recorded in `docs/licensing.md` §5. The IDCTs (`idct.rs`) are written from the transform
 definitions (orthonormal 8-8 DCT; 2-4-8 as two 4x8 DCTs of the field sum and difference), not
-from libdv's AAN code. FFmpeg's DV code was not read; ffmpeg is used only as an external fixture
-generator and test oracle.
+from libdv's AAN code. For 25 Mbit/s DV FFmpeg's code was not read; only `pro.rs` ports it.
+ffmpeg is also the external fixture generator and test oracle.
 
 ## API
 
@@ -57,8 +60,15 @@ intra-only and independent.
 - A missing or wrong-type DIF video block conceals its macroblock with mid-grey
   (`Picture::concealed`); invalid codes and blocks without end of block are counted
   (`Picture::errors`, `Decoder::errors`). Truncated frames are refused.
-- DVCPRO 50 (signal type 4) and DVCPRO HD (0x14, 0x15, 0x18) are recognised by `probe` and
-  refused by `decode` with `Error::Unsupported`.
+- DVCPRO 50 (signal type 4): 4:2:2 at 720x480 / 720x576 in two channels, 16x8 macroblocks.
+- DVCPRO HD (signal type 0x14, 0x18): 1080i (1280x1080 at 59.94 Hz, 1440x1080 at 50 Hz, four
+  channels) and 720p (960x720 at 59.94 or 50 frames/s, two channels), 4:2:2, BT.709 in
+  `cfa4-codecs`. Eight blocks per macroblock, DV100 quantiser and weights, 8x8 DCT only;
+  field-coded macroblocks (DCT mode bit of Y0) and the 32x8 macroblocks of the last 1080 row
+  are placed as FFmpeg does. The coded size is anamorphic: `Profile::sample_aspect` gives 3:2
+  (1280) or 4:3 (1440, 960) for the 16:9 picture.
+- Signal type 0x15 is recognised by `probe` and refused by `decode` with `Error::Unsupported`
+  (FFmpeg has no profile for it either).
 
 ## Audio
 
@@ -70,6 +80,15 @@ expanded to 16 bits and has a second channel pair when the second half's source 
 audio. Samples marked damaged (`0x8000`) repeat the sample before them (`Audio::errors`).
 Pre-emphasis is reported (`AudioFormat::emphasis`) but not undone; 20-bit audio is not supported.
 
+## Time code
+
+`timecode(frame)` returns the frame's SMPTE time code (`Timecode`: hours, minutes, seconds,
+frames, drop-frame flag) from the first valid time code pack (`0x13`) in the subcode sync blocks;
+packs holding `0xFF` or non-BCD digits are skipped. The pack layout (BCD fields, flag bits masked
+off) follows the published SMPTE 12M field order; nothing is taken from libdv or FFmpeg.
+`cfa4-codecs` uses the first frame's time code as the start timecode of raw `.dv` files and of
+type-1 and type-2 DV AVI files.
+
 ## Tests
 
 - Unit tests: VLC table completeness, scan/area tables, IDCT round trips against the forward
@@ -79,7 +98,9 @@ Pre-emphasis is reported (`AudioFormat::emphasis`) but not undone; 20-bit audio 
   (625): every sample and every frame's sample count equal ffmpeg's decode; damaged samples,
   truncation and garbage never panic.
 - `tests/oracle.rs`: six ffmpeg-encoded fixtures (525 4:1:1, 625 4:2:0 16:9, DVCPRO 25 625,
-  interlaced 2-4-8 at 525 and 625, noise with heavy bit spilling) decoded within ±3 of ffmpeg's
-  decode, PSNR ≥ 48 dB (measured: max diff 2, PSNR 57-65 dB), no coding errors; bit flips,
+  interlaced 2-4-8 at 525 and 625, noise with heavy bit spilling) and six DVCPRO ones (50 at
+  625, and at 525 with 2-4-8 and 16:9; HD 1080i50 interlaced, 1080i60, 720p50, 720p60 noise)
+  decoded within ±3 of ffmpeg's decode, PSNR ≥ 48 dB (measured: max diff 2, PSNR 57-74 dB), no
+  coding errors; bit flips,
   an erased DIF sequence and truncation never panic. `cargo xtask fixtures dv` generates the
   fixtures into `target/fixtures/dv`.

@@ -52,7 +52,7 @@ pub enum CoeffType {
 }
 
 impl FilterCoeffs {
-    pub fn read(reader: &mut BsIoSliceReader, coeff_type: CoeffType) -> Result<Self> {
+    pub fn read(reader: &mut BsIoSliceReader<'_>, coeff_type: CoeffType) -> Result<Self> {
         let mut fc = Self { order: reader.get_n(4)?, ..Default::default() };
 
         if coeff_type == CoeffType::A && fc.order > 8 {

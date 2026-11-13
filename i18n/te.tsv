@@ -332,6 +332,7 @@
 	Overlay	ఓవర్‌లే
 	Overwrite	ఓవర్‌రైట్
 	PCM (uncompressed)	PCM (కుదించని)
+	MP2 (MPEG-1 Layer II)	MP2 (MPEG-1 లేయర్ II)
 	Panner	ప్యానర్
 	Paste	అతికించు
 	Paste Attributes…	లక్షణాలను అతికించు…
@@ -2019,6 +2020,16 @@
 	SMPTE DCP folder: JPEG 2000 3996×2160 (1.85:1), 5.1 24-bit 48 kHz PCM	SMPTE DCP ఫోల్డర్: JPEG 2000 3996×2160 (1.85:1), 5.1 24-బిట్ 48 kHz PCM
 	DCP 4K Scope	DCP 4K Scope
 	SMPTE DCP folder: JPEG 2000 4096×1716 (2.39:1), 5.1 24-bit 48 kHz PCM	SMPTE DCP ఫోల్డర్: JPEG 2000 4096×1716 (2.39:1), 5.1 24-బిట్ 48 kHz PCM
+	IMF App 2E (Interoperable Master Package)	IMF App 2E (ఇంటర్‌ఆపరబుల్ మాస్టర్ ప్యాకేజ్)
+	IMF App 2E HD	IMF App 2E HD
+	SMPTE IMF folder: JPEG 2000 1920×1080, 5.1 24-bit 48 kHz PCM	SMPTE IMF ఫోల్డర్: JPEG 2000 1920×1080, 5.1 24-బిట్ 48 kHz PCM
+	IMF App 2E UHD	IMF App 2E UHD
+	SMPTE IMF folder: JPEG 2000 3840×2160, 5.1 24-bit 48 kHz PCM	SMPTE IMF ఫోల్డర్: JPEG 2000 3840×2160, 5.1 24-బిట్ 48 kHz PCM
+	Episode	ఎపిసోడ్
+	Event highlights	ఈవెంట్ ముఖ్యాంశాలు
+	Event	ఈవెంట్
+	Lossless (reversible JPEG 2000)	నష్టరహితం (రివర్సిబుల్ JPEG 2000)
+	Package language	ప్యాకేజీ భాష
 	4:2:0 (Main Profile)	4:2:0 (Main Profile)
 	4:2:2 (4:2:2 Profile)	4:2:2 (4:2:2 Profile)
 	B pictures	B చిత్రాలు
@@ -2184,6 +2195,9 @@
 	AV1 Main (10-bit for HDR)	AV1 Main (HDR కోసం 10-బిట్)
 	10-bit RGB	10-బిట్ RGB
 	12-bit X'Y'Z'	12-బిట్ X'Y'Z'
+	10-bit R'G'B' 4:4:4	10-బిట్ R'G'B' 4:4:4
+	JPEG 2000 IMF lossy	JPEG 2000 IMF నష్టసహితం
+	JPEG 2000 IMF reversible	JPEG 2000 IMF రివర్సిబుల్
 	16-bit half float	16-బిట్ హాఫ్ ఫ్లోట్
 	linear	లీనియర్
 	uncompressed	కుదించని
@@ -3551,8 +3565,16 @@
 	MXF OP1a H.264	MXF OP1a H.264
 	MXF OP1a ProRes 422 HQ	MXF OP1a ProRes 422 HQ
 	MXF OP1a, DNxHR HQ (8-bit 4:2:2), 24-bit 48 kHz PCM, start timecode	MXF OP1a, DNxHR HQ (8-బిట్ 4:2:2), 24-బిట్ 48 kHz PCM, ప్రారంభ టైమ్‌కోడ్
+	MXF OP1a MPEG-2 HD 4:2:2 50 Mbit/s	MXF OP1a MPEG-2 HD 4:2:2 50 Mbit/s
+	MXF OP1a, MPEG-2 4:2:2 Profile long GOP (12 pictures, IBBP) at 50 Mbit/s in the XDCAM HD422 style, 24-bit 48 kHz PCM; HD frame sizes	MXF OP1a, MPEG-2 4:2:2 Profile లాంగ్ GOP (12 చిత్రాలు, IBBP), 50 Mbit/s, XDCAM HD422 శైలిలో, 24-బిట్ 48 kHz PCM; HD ఫ్రేమ్ పరిమాణాలు
 	MXF OP1a, H.264 High long GOP (0.3 bits per pixel), 24-bit 48 kHz PCM	MXF OP1a, H.264 High long GOP (పిక్సెల్‌కు 0.3 బిట్‌లు), 24-బిట్ 48 kHz PCM
+	MXF OP1a D-10 (IMX) 50 Mbit/s 525/29.97	MXF OP1a D-10 (IMX) 50 Mbit/s 525/29.97
+	MXF OP1a D-10 (IMX) 50 Mbit/s 625/25	MXF OP1a D-10 (IMX) 50 Mbit/s 625/25
+	MXF OP1a type D-10 (IMX 50): intra-only MPEG-2 4:2:2P@ML at 50 Mbit/s, 720x486 at 29.97 fps (4:3), four 24-bit 48 kHz audio channels	MXF OP1a రకం D-10 (IMX 50): ఇంట్రా మాత్రమే MPEG-2 4:2:2P@ML, 50 Mbit/s, 720x486, 29.97 fps (4:3), నాలుగు 24-బిట్ 48 kHz ఆడియో ఛానెల్‌లు
+	MXF OP1a type D-10 (IMX 50): intra-only MPEG-2 4:2:2P@ML at 50 Mbit/s, 720x576 at 25 fps (4:3), four 24-bit 48 kHz audio channels	MXF OP1a రకం D-10 (IMX 50): ఇంట్రా మాత్రమే MPEG-2 4:2:2P@ML, 50 Mbit/s, 720x576, 25 fps (4:3), నాలుగు 24-బిట్ 48 kHz ఆడియో ఛానెల్‌లు
 	MXF OP1a, ProRes 422 HQ, 24-bit 48 kHz PCM, start timecode	MXF OP1a, ProRes 422 HQ, 24-బిట్ 48 kHz PCM, ప్రారంభ టైమ్‌కోడ్
+	MXF OP1a XDCAM HD422 (RDD 9) 50 Mbit/s	MXF OP1a XDCAM HD422 (RDD 9) 50 Mbit/s
+	MXF OP1a in the SMPTE RDD 9 layout: MPEG-2 4:2:2 Profile long GOP (12 pictures, IBBP) at 50 Mbit/s, 1920x1080 or 1280x720 progressive, four 24-bit 48 kHz channels as per-channel AES3 elements	SMPTE RDD 9 అమరికలో MXF OP1a: MPEG-2 4:2:2 Profile లాంగ్ GOP (12 చిత్రాలు, IBBP), 50 Mbit/s, 1920x1080 లేదా 1280x720 ప్రోగ్రెసివ్, ఒక్కో ఛానెల్‌కు వేరే AES3 ఎలిమెంట్‌గా నాలుగు 24-బిట్ 48 kHz ఛానెల్‌లు
 	Main	ప్రధాన
 	Mark In (Hover Scrub)	ఇన్ గుర్తించు (హోవర్ స్క్రబ్)
 	Mark Out (Hover Scrub)	అవుట్ గుర్తించు (హోవర్ స్క్రబ్)
@@ -3895,6 +3917,8 @@
 	Analyze Source for Smart Cut	స్మార్ట్ కట్ కోసం సోర్స్‌ను విశ్లేషించు
 	Plan Smart Cut	స్మార్ట్ కట్ ప్రణాళిక
 	Run Smart Cut	స్మార్ట్ కట్ అమలు చేయి
+	DASH Manifest	DASH మ్యానిఫెస్ట్
+	Also write a DASH manifest (.mpd)	DASH మ్యానిఫెస్ట్ (.mpd) కూడా రాయండి
 	No sequence open. Double-click a sequence in the Project panel.	సీక్వెన్స్ ఏదీ తెరవబడలేదు. ప్రాజెక్ట్ ప్యానెల్‌లోని సీక్వెన్స్‌పై రెండుసార్లు క్లిక్ చేయండి.
 	English (US)	ఇంగ్లీష్ (US)
 	English (UK)	ఇంగ్లీష్ (UK)
@@ -4144,3 +4168,426 @@ export.summary	Low	తక్కువ
 	not supported by CFA4 sequences yet: {what}	CFA4 సీక్వెన్స్‌లలో ఇంకా మద్దతు లేదు: {what}
 	{rate} fps	{rate} fps
 	{w} × {h}, display {dn}:{dd}, pixels {pn}:{pd}	{w} × {h}, ప్రదర్శన {dn}:{dd}, పిక్సెల్‌లు {pn}:{pd}
+# Qt GUI: Tools menu (#868)
+	Video Tools	వీడియో సాధనాలు
+	Audio Tools	ఆడియో సాధనాలు
+	Publication Tools	ప్రచురణ సాధనాలు
+	Smart Export…	స్మార్ట్ ఎగుమతి…
+# Diagonal Slide and the missing transition variants (#153)
+	From North-West	వాయవ్యం నుండి
+	From North-East	ఈశాన్యం నుండి
+	From South-East	ఆగ్నేయం నుండి
+	From South-West	నైరుతి నుండి
+# Enhance folder: Skin Smoothing and Low Light (#166)
+	Enhance	మెరుగుపరచు
+	Skin Smoothing	చర్మం మృదువుగా చేయడం
+	Keep Texture	ఆకృతిని ఉంచు
+	Skin Tone	చర్మపు రంగు
+	Smooth Entire Image	మొత్తం చిత్రాన్ని మృదువుగా చేయి
+	Low Light	తక్కువ వెలుతురు
+	Max Brightening	గరిష్ఠ ప్రకాశవంతం
+	Show Illumination	ప్రకాశాన్ని చూపు
+# Easing presets, Film Gate, Particles, Keyhole, Burn Away, Check Text Legibility (#182)
+	Easing Presets	ఈజింగ్ ప్రీసెట్‌లు
+	Sine	సైన్
+	Exponential	ఎక్స్‌పోనెన్షియల్
+	Circular	వృత్తాకార
+	Elastic	ఎలాస్టిక్
+	Film Gate	ఫిల్మ్ గేట్
+	Gate Weave	గేట్ వీవ్
+	Weave Rotation	వీవ్ భ్రమణం
+	Particles	కణాలు
+	Emitter Position	ఉద్గారిణి స్థానం
+	Birth Rate	జనన రేటు
+	Lifetime (seconds)	జీవితకాలం (సెకన్లు)
+	Velocity Random	వేగం యాదృచ్ఛికత
+	Gravity	గురుత్వాకర్షణ
+	Particle Size	కణ పరిమాణం
+	Keyhole	తాళం రంధ్రం
+	Burn Away	కాలిపోవడం
+	Burn Size	కాలే పరిమాణం
+	Ember Width	నిప్పు అంచు వెడల్పు
+	Ember Color	నిప్పు అంచు రంగు
+	Check Text Legibility	వచనం చదవగలతను తనిఖీ చేయి
+	Clear Legibility Markers	చదవగలత మార్కర్లను తొలగించు
+	Text legibility: no problems found	వచనం చదవగలత: సమస్యలు ఏవీ కనబడలేదు
+	Text legibility: {count} problems marked on the timeline (orange markers)	వచనం చదవగలత: టైమ్‌లైన్‌లో {count} సమస్యలు గుర్తించబడ్డాయి (నారింజ మార్కర్లు)
+# Glitch folder: Bit Crush, Block Glitch, Databend, VHS, Scan Line Jitter, Tile Jitter (#353)
+	Bit Crush	బిట్ క్రష్
+	Bits per Channel	ఛానెల్‌కు బిట్‌లు
+	Ordered Dither	క్రమబద్ధ డిథర్
+	Dither Cell Size	డిథర్ సెల్ పరిమాణం
+	Block Glitch	బ్లాక్ గ్లిచ్
+	Blocks Moved	కదిలిన బ్లాక్‌లు
+	Max Distance	గరిష్ఠ దూరం
+	Snap to Grid	గ్రిడ్‌కు అతికించు
+	Swap Blocks	బ్లాక్‌లను మార్చు
+	Changes per Second	సెకనుకు మార్పులు
+	Databend	డేటాబెండ్
+	Breaks	విరామాలు
+	Shift	జరుపు
+	Color Damage	రంగు దెబ్బతినడం
+	VHS	VHS
+	Color Bleed	రంగు కారడం
+	Wobble	ఊగిసలాట
+	Snow	మంచు
+	Tracking Bar	ట్రాకింగ్ పట్టీ
+	Head Switching	హెడ్ స్విచింగ్
+	Scan Line Jitter	స్కాన్ లైన్ కంపనం
+	Jitter	కంపనం
+	Interval	వ్యవధి
+	Infinite	అనంతం
+	Periodic	ఆవర్తన
+	Tile Jitter	టైల్ కంపనం
+	Tiles	టైల్‌లు
+	Band Direction	పట్టీల దిశ
+	Jitter Direction	కంపనం దిశ
+# Creative Looks: Halftone and Dither (#354)
+	Halftone	హాఫ్‌టోన్
+	Dither	డిథర్
+	Pattern	నమూనా
+	Cell Size	సెల్ పరిమాణం
+	Cyan Angle	సయాన్ కోణం
+	Magenta Angle	మెజెంటా కోణం
+	Yellow Angle	పసుపు కోణం
+	Black Angle	నలుపు కోణం
+	Monochrome Angle	ఏకవర్ణ కోణం
+	Sharpness	పదును
+	Ink Color	సిరా రంగు
+	Paper Color	కాగితం రంగు
+	Color (CMYK)	రంగు (CMYK)
+	Dot	చుక్క
+	Line	గీత
+	Bayer 2×2	Bayer 2×2
+	Bayer 4×4	Bayer 4×4
+	Bayer 8×8	Bayer 8×8
+	Pixel Size	పిక్సెల్ పరిమాణం
+	Palette	పాలెట్
+	Input Colors	ఇన్‌పుట్ రంగులు
+	Green Phosphor	ఆకుపచ్చ ఫాస్ఫర్
+	Amber Monitor	కాషాయ మానిటర్
+	Game Boy	Game Boy
+	CGA	CGA
+	EGA	EGA
+	ZX Spectrum	ZX Spectrum
+	PICO-8	PICO-8
+
+# Credits workspace (stáblista)
+	Credits from a Spreadsheet	స్ప్రెడ్‌షీట్ నుండి క్రెడిట్స్
+	A .ods, .xlsx or CSV credits sheet	.ods, .xlsx లేదా CSV క్రెడిట్స్ షీట్
+	The spreadsheet's folder	స్ప్రెడ్‌షీట్ ఫోల్డర్
+	Built-in styles	అంతర్నిర్మిత శైలులు
+	Spreadsheet	స్ప్రెడ్‌షీట్
+	Sheet	షీట్
+	Pictures	చిత్రాలు
+	Styling	శైలి
+	Page	పేజీ
+	Warnings	హెచ్చరికలు
+	Moment in the page	పేజీలో క్షణం
+	Place at Playhead	ప్లేహెడ్ వద్ద ఉంచు
+	Spreadsheets (*.ods *.xlsx *.csv *.tsv *.txt)	స్ప్రెడ్‌షీట్‌లు (*.ods *.xlsx *.csv *.tsv *.txt)
+	Credits styling (*.json)	క్రెడిట్స్ శైలి (*.json)
+	Card	కార్డ్
+	Credits Spreadsheet	క్రెడిట్స్ స్ప్రెడ్‌షీట్
+	Reading…	చదువుతోంది…
+	(one table)	(ఒకే పట్టిక)
+	Total: {time}	మొత్తం: {time}
+	Row {row}: {message}	వరుస {row}: {message}
+	Choose a credits spreadsheet.	క్రెడిట్స్ స్ప్రెడ్‌షీట్‌ను ఎంచుకోండి.
+	No preview	ప్రివ్యూ లేదు
+	Placing…	ఉంచుతోంది…
+	Placed {n} pages on the timeline.	టైమ్‌లైన్‌లో {n} పేజీలు ఉంచబడ్డాయి.
+	Credits Page Picture	క్రెడిట్స్ పేజీ చిత్రం
+	Preview Credits	క్రెడిట్స్ ప్రివ్యూ
+	Credits Styles	క్రెడిట్స్ శైలులు
+	Spreadsheets and credits files (*.ods *.xlsx *.csv *.tsv *.txt *.cfa4credits)	స్ప్రెడ్‌షీట్‌లు మరియు క్రెడిట్స్ ఫైళ్లు (*.ods *.xlsx *.csv *.tsv *.txt *.cfa4credits)
+	CFA4 credits file (*.cfa4credits)	CFA4 క్రెడిట్స్ ఫైల్ (*.cfa4credits)
+	Save as Credits File…	క్రెడిట్స్ ఫైల్‌గా సేవ్ చేయి…
+	Spreadsheet, worksheet, styling and the table in one file, to open on any machine	స్ప్రెడ్‌షీట్, వర్క్‌షీట్, శైలి మరియు పట్టిక ఒకే ఫైల్‌లో, ఏ కంప్యూటర్‌లోనైనా తెరవడానికి
+	Saved: {path}	సేవ్ చేయబడింది: {path}
+	Added	జోడించబడింది
+	Removed	తీసివేయబడింది
+	Changed	మార్చబడింది
+	(empty row)	(ఖాళీ వరుస)
+	Refresh Credits from Spreadsheet	స్ప్రెడ్‌షీట్ నుండి క్రెడిట్స్‌ను రిఫ్రెష్ చేయి
+	Change	మార్పు
+	Before → After	ముందు → తర్వాత
+	Select None	ఏదీ ఎంచుకోవద్దు
+	Keep my edits on the pages (where their block is unchanged)	పేజీలపై నా సవరణలను ఉంచు (వాటి బ్లాక్ మారని చోట)
+	Locate Spreadsheet…	స్ప్రెడ్‌షీట్‌ను గుర్తించు…
+	Comparing…	పోల్చుతోంది…
+	{n} changes in {file} since the credits were placed. Untick what you do not want.	క్రెడిట్స్ ఉంచినప్పటి నుండి {file}లో {n} మార్పులు. మీకు వద్దనివాటి ఎంపికను తీసివేయండి.
+	The spreadsheet {file} has not changed since the credits were placed.	క్రెడిట్స్ ఉంచినప్పటి నుండి స్ప్రెడ్‌షీట్ {file} మారలేదు.
+	{n} layers were edited by hand on the pages.	పేజీలపై {n} లేయర్‌లు చేతితో సవరించబడ్డాయి.
+	Accepting every change would replace these, because their block changed: {names}	అన్ని మార్పులను అంగీకరిస్తే వీటి బ్లాక్ మారినందున ఇవి భర్తీ అవుతాయి: {names}
+	Refreshing…	రిఫ్రెష్ చేస్తోంది…
+	Refreshed: {n} changes applied, {kept} hand edits kept.	రిఫ్రెష్ అయింది: {n} మార్పులు వర్తింపజేయబడ్డాయి, {kept} చేతి సవరణలు ఉంచబడ్డాయి.
+	Refresh Credits from Spreadsheet…	స్ప్రెడ్‌షీట్ నుండి క్రెడిట్స్‌ను రిఫ్రెష్ చేయి…
+	Save Credits File…	క్రెడిట్స్ ఫైల్‌ను సేవ్ చేయి…
+	Compare Credits with Spreadsheet	క్రెడిట్స్‌ను స్ప్రెడ్‌షీట్‌తో పోల్చు
+	“{name}” appears twice in the same block	“{name}” ఒకే బ్లాక్‌లో రెండుసార్లు ఉంది
+	“{name}” is written as “{other}” in row {otherRow}	వరుస {otherRow}లో “{name}” “{other}”గా రాయబడింది
+	The font “{font}” is not installed; another font is used	ఫాంట్ “{font}” ఇన్‌స్టాల్ కాలేదు; మరో ఫాంట్ వాడబడుతుంది
+	The font “{font}” has no “{chars}”; another font draws them	ఫాంట్ “{font}”లో “{chars}” లేవు; వాటిని మరో ఫాంట్ గీస్తుంది
+	“{text}” is outside the title-safe area	“{text}” టైటిల్-సేఫ్ ప్రాంతం వెలుపల ఉంది
+	“{text}” is too dark on black (contrast {ratio}:1; at least 4.5:1 is needed)	“{text}” నలుపుపై చాలా చీకటిగా ఉంది (కాంట్రాస్ట్ {ratio}:1; కనీసం 4.5:1 అవసరం)
+	“{text}” is {px} px high; 24 px or more reads well	“{text}” ఎత్తు {px} px; 24 px లేదా అంతకంటే ఎక్కువ బాగా చదవబడుతుంది
+	The roll moves {speed} px per frame; a whole number does not shimmer	రోల్ ఒక్కో ఫ్రేమ్‌కు {speed} px కదులుతుంది; పూర్ణ సంఖ్య మిణుకుమనదు
+	A line crosses the frame in {seconds} s; at least 6 s reads well	ఒక వరుస ఫ్రేమ్‌ను {seconds} s లో దాటుతుంది; కనీసం 6 s బాగా చదవబడుతుంది
+	The card holds for only {seconds} s after its fades	ఫేడ్‌ల తర్వాత కార్డ్ కేవలం {seconds} s నిలుస్తుంది
+	This page starts {seconds} s before the previous one ends	ఈ పేజీ మునుపటిది ముగియడానికి {seconds} s ముందే మొదలవుతుంది
+	“{file}” is shown at {percent} % of its pixels; it will look soft	“{file}” దాని పిక్సెల్‌లలో {percent} % వద్ద చూపబడుతుంది; మసకగా కనిపిస్తుంది
+	{more} more of the same	ఇలాంటివి మరో {more}
+	Page {page}: {message}	పేజీ {page}: {message}
+	Checks and warnings	తనిఖీలు మరియు హెచ్చరికలు
+	Checks: {errors} errors, {warnings} warnings	తనిఖీలు: {errors} లోపాలు, {warnings} హెచ్చరికలు
+	Check Credits	క్రెడిట్స్ తనిఖీ చేయి
+	The whole music ({time})	మొత్తం సంగీతం ({time})
+	Until the sound ends ({time})	శబ్దం ముగిసే వరకు ({time})
+	To the last bar line ({time})	చివరి బార్ లైన్ వరకు ({time})
+	Fit Credits to Music	క్రెడిట్స్‌ను సంగీతానికి సరిపోల్చు
+	Fit Credits to Music…	క్రెడిట్స్‌ను సంగీతానికి సరిపోల్చు…
+	Analyse Music for Credits	క్రెడిట్స్ కోసం సంగీతాన్ని విశ్లేషించు
+	Length:	నిడివి:
+	Cards last whole beats (cuts on the beat)	కార్డ్‌లు పూర్తి బీట్‌లు ఉంటాయి (బీట్‌పై కట్‌లు)
+	Start the credits where the music starts	సంగీతం మొదలయ్యే చోట క్రెడిట్స్ ప్రారంభించు
+	Length of the credits	క్రెడిట్స్ నిడివి
+	Remove Fitting	సరిపోల్చడాన్ని తీసివేయి
+	Listening to the music…	సంగీతాన్ని వింటోంది…
+	Length: {time}	నిడివి: {time}
+	the sound ends at {time}	శబ్దం {time} వద్ద ముగుస్తుంది
+	tempo {bpm} BPM	టెంపో {bpm} BPM
+	the credits without fitting: {time}	సరిపోల్చకుండా క్రెడిట్స్: {time}
+	Select a credits page on the timeline.	టైమ్‌లైన్‌లో క్రెడిట్స్ పేజీని ఎంచుకోండి.
+	Fitting…	సరిపోల్చుతోంది…
+	The credits now last {time}.	క్రెడిట్స్ ఇప్పుడు {time} ఉంటాయి.
+	Fitting removed.	సరిపోల్చడం తీసివేయబడింది.
+	Fit to This Length	ఈ నిడివికి సరిపోల్చు
+	No music to measure ({problem}); type the length.	కొలవడానికి సంగీతం లేదు ({problem}); నిడివిని టైప్ చేయండి.
+	The text moves {speed} px per frame; a whole number does not shimmer	టెక్స్ట్ ఒక్కో ఫ్రేమ్‌కు {speed} px కదులుతుంది; పూర్ణ సంఖ్య మిణుకుమనదు
+	Crawl	క్రాల్
+	Picture: {file}	చిత్రం: {file}
+	Video: {file}	వీడియో: {file}
+	Looped video: {file}	లూప్ వీడియో: {file}
+	Into the next	తదుపరిలోకి
+	Safe areas and spines	సురక్షిత ప్రాంతాలు మరియు అక్షాలు
+	Action safe (93 %), title safe (90 %), the centre and the page's spines	యాక్షన్ సేఫ్ (93 %), టైటిల్ సేఫ్ (90 %), మధ్య భాగం మరియు పేజీ అక్షాలు
+	Baseline grid	బేస్‌లైన్ గ్రిడ్
+	Lines one gap unit apart, moving with the page	ఒక గ్యాప్ యూనిట్ దూరంలో గీతలు, పేజీతో కదులుతాయి
+	“{text}” does not stand out from the background (contrast {ratio}:1; at least 4.5:1 is needed)	“{text}” నేపథ్యం నుండి ప్రత్యేకంగా కనిపించదు (కాంట్రాస్ట్ {ratio}:1; కనీసం 4.5:1 అవసరం)
+	A picture or video is behind the text: check the contrast by eye	టెక్స్ట్ వెనుక చిత్రం లేదా వీడియో ఉంది: కాంట్రాస్ట్‌ను కంటితో తనిఖీ చేయండి
+	A ready look: styles, backgrounds, transitions and timing. A styling file, if given, wins.	సిద్ధమైన రూపం: శైలులు, నేపథ్యాలు, పరివర్తనలు మరియు సమయం. శైలి ఫైల్ ఇస్తే అదే వర్తిస్తుంది.
+	New Spreadsheet from Template…	టెంప్లేట్ నుండి కొత్త స్ప్రెడ్‌షీట్…
+	built in	అంతర్నిర్మిత
+	mine	నాది
+	this project	ఈ ప్రాజెక్ట్
+	Template	టెంప్లేట్
+	Choose a template first.	ముందుగా టెంప్లేట్‌ను ఎంచుకోండి.
+	Name of the template:	టెంప్లేట్ పేరు:
+	Template saved: {name}	టెంప్లేట్ సేవ్ చేయబడింది: {name}
+	Apply Credits Template…	క్రెడిట్స్ టెంప్లేట్‌ను వర్తింపజేయి…
+	Template:	టెంప్లేట్:
+	Credits Templates	క్రెడిట్స్ టెంప్లేట్‌లు
+	CSV (*.csv)	CSV (*.csv)
+	Spreadsheets, credits files and Cinecred projects (*.ods *.xlsx *.csv *.tsv *.txt *.cfa4credits Styling.toml)	స్ప్రెడ్‌షీట్‌లు, క్రెడిట్స్ ఫైళ్లు మరియు Cinecred ప్రాజెక్ట్‌లు (*.ods *.xlsx *.csv *.tsv *.txt *.cfa4credits Styling.toml)
+	Cinecred Project…	Cinecred ప్రాజెక్ట్…
+	Open a Cinecred project folder (Styling.toml and its credits spreadsheet)	Cinecred ప్రాజెక్ట్ ఫోల్డర్‌ను తెరువు (Styling.toml మరియు దాని క్రెడిట్స్ స్ప్రెడ్‌షీట్)
+	(empty block)	(ఖాళీ బ్లాక్)
+	Apply Template…	టెంప్లేట్‌ను వర్తింపజేయి…
+	Change them in the spreadsheet; the credits follow when you save it.	వాటిని స్ప్రెడ్‌షీట్‌లో మార్చండి; మీరు సేవ్ చేసినప్పుడు క్రెడిట్స్ అనుసరిస్తాయి.
+	Compact View	కాంపాక్ట్ వీక్షణ
+	Compare the selected credits on the timeline with their spreadsheet, row by row	టైమ్‌లైన్‌లో ఎంచుకున్న క్రెడిట్స్‌ను వాటి స్ప్రెడ్‌షీట్‌తో వరుసవారీగా పోల్చు
+	Fit the selected credits to the music under them	ఎంచుకున్న క్రెడిట్స్‌ను వాటి కింద ఉన్న సంగీతానికి సరిపోల్చు
+	Fit to Music…	సంగీతానికి సరిపోల్చు…
+	Full View	పూర్తి వీక్షణ
+	Give the selected credits on the timeline another template	టైమ్‌లైన్‌లో ఎంచుకున్న క్రెడిట్స్‌కు మరో టెంప్లేట్ ఇవ్వు
+	Names	పేర్లు
+	No pages	పేజీలు లేవు
+	Refresh Placed Credits…	ఉంచిన క్రెడిట్స్‌ను రిఫ్రెష్ చేయి…
+	Show everything: blocks, properties, the pages along time, checks and the credits tools	అన్నీ చూపించు: బ్లాక్‌లు, లక్షణాలు, కాలక్రమంలో పేజీలు, తనిఖీలు మరియు క్రెడిట్స్ సాధనాలు
+	Spine	అక్షం
+	Tails	ముగింపు
+	The blocks of the chosen page; choose one to see it in the preview	ఎంచుకున్న పేజీ బ్లాక్‌లు; ప్రివ్యూలో చూడటానికి ఒకదాన్ని ఎంచుకోండి
+	The pages along time; click one to choose it	కాలక్రమంలో పేజీలు; ఎంచుకోవడానికి ఒకదానిపై క్లిక్ చేయండి
+	{n} more	మరో {n}
+	Block	బ్లాక్
+	parallel	సమాంతరం
+# MPEG-2 export audio (#268): a product name, kept as is
+	Dolby Digital (AC-3)	Dolby Digital (AC-3)
+	In the page (OBS takes it from the Browser Source)	పేజీలో (OBS దాన్ని బ్రౌజర్ సోర్స్ నుండి తీసుకుంటుంది)
+	Separate (a media source in OBS)	వేరుగా (OBSలో మీడియా సోర్స్)
+	No sound	శబ్దం లేదు
+	credits	క్రెడిట్స్
+	graphic	గ్రాఫిక్
+	{n} pages	{n} పేజీలు
+	Live Graphics	లైవ్ గ్రాఫిక్స్
+	Prepared cues; double-click one to put it in preview	సిద్ధం చేసిన క్యూలు; ప్రివ్యూలో పెట్టడానికి ఒకదానిపై డబుల్-క్లిక్ చేయండి
+	Add Credits…	క్రెడిట్స్ జోడించు…
+	A credits spreadsheet, credits file or Cinecred project as a cue	క్రెడిట్స్ స్ప్రెడ్‌షీట్, క్రెడిట్స్ ఫైల్ లేదా Cinecred ప్రాజెక్ట్ క్యూగా
+	Add Selected Graphic	ఎంచుకున్న గ్రాఫిక్‌ను జోడించు
+	The graphic clip selected on the timeline (a title, a lower third) as a cue	టైమ్‌లైన్‌లో ఎంచుకున్న గ్రాఫిక్ క్లిప్ (టైటిల్, లోయర్ థర్డ్) క్యూగా
+	Cues	క్యూలు
+	TAKE	ప్రసారం
+	The preview cue goes on air from its first page	ప్రివ్యూ క్యూ దాని మొదటి పేజీ నుండి ప్రసారమవుతుంది
+	PREVIOUS	మునుపటి
+	The page before (on the first page: from its start)	ముందరి పేజీ (మొదటి పేజీలో: దాని ప్రారంభం నుండి)
+	NEXT	తదుపరి
+	The next page; after the last one, the preview cue	తదుపరి పేజీ; చివరిది తర్వాత ప్రివ్యూ క్యూ
+	HOLD	ఆపు
+	Stop the program where it is	ప్రోగ్రామ్‌ను ఉన్నచోటే ఆపు
+	CONTINUE	కొనసాగించు
+	Go on from where it stopped	ఆగిన చోటు నుండి కొనసాగించు
+	UPDATE	నవీకరించు
+	Read the spreadsheet (or the clip) again; on air it changes at once	స్ప్రెడ్‌షీట్‌ను (లేదా క్లిప్‌ను) మళ్లీ చదువు; ప్రసారంలో వెంటనే మారుతుంది
+	OUT	తీసివేయి
+	Take everything off air	ప్రసారం నుండి అన్నింటినీ తీసివేయి
+	Start Live Page	లైవ్ పేజీని ప్రారంభించు
+	Serve the program on this computer for OBS's Browser Source (127.0.0.1 only)	OBS బ్రౌజర్ సోర్స్ కోసం ఈ కంప్యూటర్‌లో ప్రోగ్రామ్‌ను అందించు (127.0.0.1 మాత్రమే)
+	not running	నడవడం లేదు
+	OBS ▸ Tools ▸ WebSocket Server Settings	OBS ▸ Tools ▸ WebSocket Server Settings
+	Connect to OBS	OBSకి కనెక్ట్ చేయి
+	Connect to OBS on this computer and point its “CFA4 Live” Browser Source at the live page	ఈ కంప్యూటర్‌లోని OBSకి కనెక్ట్ చేసి, దాని “CFA4 Live” బ్రౌజర్ సోర్స్‌ను లైవ్ పేజీ వైపు చూపించు
+	Port	పోర్ట్
+	Password	పాస్‌వర్డ్
+	Live page	లైవ్ పేజీ
+	Sound	శబ్దం
+	OBS	OBS
+	Nothing in preview	ప్రివ్యూలో ఏమీ లేదు
+	page {page} of {pages}	{pages}లో పేజీ {page}
+	held	ఆపబడింది
+	ended	ముగిసింది
+	Off air	ప్రసారంలో లేదు
+	Stop Live Page	లైవ్ పేజీని ఆపు
+	Connected to OBS {version}; source “{source}”	OBS {version}కి కనెక్ట్ అయింది; సోర్స్ “{source}”
+	Point OBS Again	OBSని మళ్లీ సూచించు
+	Select a graphic clip on the timeline first.	ముందుగా టైమ్‌లైన్‌లో గ్రాఫిక్ క్లిప్‌ను ఎంచుకోండి.
+	Connecting to OBS…	OBSకి కనెక్ట్ అవుతోంది…
+	Live Graphics…	లైవ్ గ్రాఫిక్స్…
+	PREVIEW	ప్రివ్యూ
+	PROGRAM	ప్రోగ్రామ్
+	a picture or video tag stands alone in a body cell (or with one name, as a portrait); the other tags were removed	చిత్రం లేదా వీడియో ట్యాగ్ బాడీ సెల్‌లో ఒంటరిగా ఉంటుంది (లేదా ఒక పేరుతో, పోర్ట్రెయిట్‌గా); ఇతర ట్యాగ్‌లు తీసివేయబడ్డాయి
+	the page gap is not a duration; the page style's is used	పేజీ ఖాళీ వ్యవధి కాదు; పేజీ శైలిలోనిది వాడబడుతుంది
+	the page runtime is not a positive duration; the page style's is used	పేజీ నిడివి ధనాత్మక వ్యవధి కాదు; పేజీ శైలిలోనిది వాడబడుతుంది
+	background “{file}” was not found; it is left out	నేపథ్యం “{file}” కనబడలేదు; వదిలివేయబడింది
+	card page {page} is taller than the frame; use a roll page	కార్డ్ పేజీ {page} ఫ్రేమ్ కంటే ఎత్తుగా ఉంది; రోల్ పేజీని వాడండి
+	colour “{colour}” of letter style “{style}” is not #rrggbb; it is left out	అక్షర శైలి “{style}” యొక్క రంగు “{colour}” #rrggbb కాదు; వదిలివేయబడింది
+	colour “{colour}” is not #rrggbb; black is used	రంగు “{colour}” #rrggbb కాదు; నలుపు వాడబడుతుంది
+	colour “{colour}” is not #rrggbb; white is used	రంగు “{colour}” #rrggbb కాదు; తెలుపు వాడబడుతుంది
+	content style “{style}” does not exist; “{used}” is used	కంటెంట్ శైలి “{style}” లేదు; “{used}” వాడబడుతుంది
+	letter style “{style}” does not exist; the text keeps the block's style	అక్షర శైలి “{style}” లేదు; టెక్స్ట్ బ్లాక్ శైలినే ఉంచుకుంటుంది
+	page gap “{value}” is not a duration	పేజీ ఖాళీ “{value}” వ్యవధి కాదు
+	page runtime “{value}” is not a duration	పేజీ నిడివి “{value}” వ్యవధి కాదు
+	page style “{style}” does not exist; a roll page is used	పేజీ శైలి “{style}” లేదు; రోల్ పేజీ వాడబడుతుంది
+	page {page}: the background names no file; it is left out	పేజీ {page}: నేపథ్యం ఏ ఫైల్‌నూ పేర్కొనలేదు; వదిలివేయబడింది
+	page {page}: the runtime is reached by changing the roll speed (the page has no gaps between blocks to stretch)	పేజీ {page}: రోల్ వేగాన్ని మార్చడం ద్వారా నిడివి చేరుకుంటుంది (పేజీలో బ్లాక్‌ల మధ్య సాగదీయడానికి ఖాళీలు లేవు)
+	page {page}: the runtime is reached by changing the roll speed (the credits are too long even without gaps)	పేజీ {page}: రోల్ వేగాన్ని మార్చడం ద్వారా నిడివి చేరుకుంటుంది (ఖాళీలు లేకున్నా క్రెడిట్స్ చాలా పొడవుగా ఉన్నాయి)
+	page {page}: the runtime is reached by changing the roll speed (the gaps would have to grow more than 20-fold)	పేజీ {page}: రోల్ వేగాన్ని మార్చడం ద్వారా నిడివి చేరుకుంటుంది (ఖాళీలు 20 రెట్లకు మించి పెరగాల్సి వస్తుంది)
+	page {page}: the transition needs the pages to touch (page gap 0); it is left out	పేజీ {page}: పరివర్తనకు పేజీలు తాకాలి (పేజీ ఖాళీ 0); వదిలివేయబడింది
+	page {page}: there is no transition “{name}”; the pages cut	పేజీ {page}: “{name}” అనే పరివర్తన లేదు; పేజీలు కట్‌తో మారుతాయి
+	spine position “{value}” is not supported (a pixel offset, optionally “parallel”, is)	అక్ష స్థానం “{value}”కి మద్దతు లేదు (పిక్సెల్ ఆఫ్‌సెట్‌కు, ఐచ్ఛికంగా “parallel”తో, మద్దతు ఉంది)
+	vertical gap “{value}” is not a number	నిలువు ఖాళీ “{value}” సంఖ్య కాదు
+	picture “{file}” was not found or cannot be read; it is left out	చిత్రం “{file}” కనబడలేదు లేదా చదవలేము; వదిలివేయబడింది
+	video “{file}” was not found or cannot be read; it is left out	వీడియో “{file}” కనబడలేదు లేదా చదవలేము; వదిలివేయబడింది
+	there is no roll page without its own runtime to stretch; the length cannot change	సాగదీయడానికి సొంత నిడివి లేని రోల్ పేజీ లేదు; నిడివి మారదు
+	the cards and gaps alone are {seconds} s; the asked length is shorter, so the roll pages keep their natural length	కార్డ్‌లు మరియు ఖాళీలు మాత్రమే {seconds} s; అడిగిన నిడివి తక్కువ కాబట్టి రోల్ పేజీలు సహజ నిడివిని ఉంచుకుంటాయి
+	letter style “{style}”: only the first coloured layer is used (no outlines, shadows or stripes)	అక్షర శైలి “{style}”: మొదటి రంగు లేయర్ మాత్రమే వాడబడుతుంది (అవుట్‌లైన్‌లు, నీడలు లేదా చారలు లేవు)
+	the whole-credits runtime is not carried over; use Fit Credits to Music (or a length) instead	మొత్తం క్రెడిట్స్ నిడివి బదిలీ కాదు; బదులుగా క్రెడిట్స్‌ను సంగీతానికి సరిపోల్చు (లేదా ఒక నిడివి) వాడండి
+	page style “{style}”: fade curves become linear fades	పేజీ శైలి “{style}”: ఫేడ్ వక్రాలు రేఖీయ ఫేడ్‌లుగా మారతాయి
+	content style “{style}” has no head in Cinecred; heads written in the sheet are still shown	కంటెంట్ శైలి “{style}”కి Cinecredలో మొదలు లేదు; షీట్‌లో రాసిన మొదలులు ఇంకా చూపబడతాయి
+	content style “{style}”: sorting the names is not carried over	కంటెంట్ శైలి “{style}”: పేర్ల క్రమం బదిలీ కాదు
+	transition curves are not carried over	పరివర్తన వక్రాలు బదిలీ కావు
+	picture styles (pictures keep their own size) are not carried over	చిత్ర శైలులు (చిత్రాలు తమ పరిమాణాన్ని ఉంచుకుంటాయి) బదిలీ కావు
+	video (tape) styles are not carried over	వీడియో (టేప్) శైలులు బదిలీ కావు
+	the Cinecred project has {n} credits spreadsheets; “{name}” is used (choose another in the Spreadsheet field)	Cinecred ప్రాజెక్ట్‌లో {n} క్రెడిట్స్ స్ప్రెడ్‌షీట్‌లు ఉన్నాయి; “{name}” వాడబడుతుంది (స్ప్రెడ్‌షీట్ ఫీల్డ్‌లో మరొకటి ఎంచుకోండి)
+# Media QC: Quality Check window and the export queue's QC state (docs/media-qc.md)
+	Add Finding	అన్వేషణను జోడించు
+	Add as Finding	అన్వేషణగా జోడించు
+	Are colour and contrast acceptable?	రంగు, కాంట్రాస్ట్ ఆమోదయోగ్యంగా ఉన్నాయా?
+	Automatic Checks	స్వయంచాలక తనిఖీలు
+	Bounds	పరిమితులు
+	Check	తనిఖీ
+	Check Now	ఇప్పుడే తనిఖీ చేయి
+	Check quality after export	ఎగుమతి తర్వాత నాణ్యతను తనిఖీ చేయి
+	Checking…	తనిఖీ చేస్తోంది…
+	Contact Sheet	కాంటాక్ట్ షీట్
+	Critical	క్లిష్టమైనది
+	Fail	విఫలం
+	Finding {row}: the time code is not a time in this file (HH:MM:SS:FF).	అన్వేషణ {row}: టైమ్ కోడ్ ఈ ఫైల్‌లోని సమయం కాదు (HH:MM:SS:FF).
+	Findings	అన్వేషణలు
+	Human Review	మానవ సమీక్ష
+	Incomplete	అసంపూర్ణం
+	Is there a visible picture defect?	కనిపించే చిత్ర లోపం ఉందా?
+	Is there audible distortion?	వినిపించే వక్రీకరణ ఉందా?
+	Is there unwanted noise?	అవాంఛిత శబ్దం ఉందా?
+	Major	ప్రధానమైనది
+	Message	సందేశం
+	Minor	చిన్నది
+	No contact sheet	కాంటాక్ట్ షీట్ లేదు
+	Not answered	సమాధానం ఇవ్వలేదు
+	Not checked	తనిఖీ చేయలేదు
+	Not run	అమలు కాలేదు
+	Note	గమనిక
+	Pass	ఉత్తీర్ణం
+	Passed	ఉత్తీర్ణమైంది
+	Passed with warnings	హెచ్చరికలతో ఉత్తీర్ణమైంది
+	Profile: {id} v{version}	ప్రొఫైల్: {id} v{version}
+	Quality Check	నాణ్యత తనిఖీ
+	Quality Check…	నాణ్యత తనిఖీ…
+	Remove Finding	అన్వేషణను తీసివేయి
+	Report: {path}	నివేదిక: {path}
+	Review complete	సమీక్ష పూర్తయింది
+	Reviewer	సమీక్షకుడు
+	Run the media quality check on the finished file (docs/media-qc.md)	పూర్తయిన ఫైల్‌పై మీడియా నాణ్యత తనిఖీని అమలు చేయి (docs/media-qc.md)
+	Save Review	సమీక్షను సేవ్ చేయి
+	Select a finished export in the queue	క్యూలో పూర్తయిన ఎగుమతిని ఎంచుకోండి
+	Severity	తీవ్రత
+	The engine is not running.	ఇంజిన్ నడవడం లేదు.
+	Time code	టైమ్ కోడ్
+	Unsure	ఖచ్చితంగా తెలియదు
+	accept	ఆమోదయోగ్యం
+	the engine did not start the check	ఇంజిన్ తనిఖీని ప్రారంభించలేదు
+	the engine sent no report	ఇంజిన్ నివేదికను పంపలేదు
+	MXF OP1a Uncompressed 10-bit 4:2:2 (v210)	MXF OP1a కంప్రెస్ చేయని 10-బిట్ 4:2:2 (v210)
+	MXF OP1a, uncompressed 10-bit Y'CbCr 4:2:2 in the v210 layout (SMPTE ST 384), 24-bit 48 kHz PCM, start timecode	MXF OP1a, v210 లేఅవుట్‌లో కంప్రెస్ చేయని 10-బిట్ Y'CbCr 4:2:2 (SMPTE ST 384), 24-బిట్ 48 kHz PCM, ప్రారంభ టైమ్‌కోడ్
+	Write the captions as ANC data (CEA-608/708, 29.97 fps)	ఉపశీర్షికలను ANC డేటాగా వ్రాయండి (CEA-608/708, 29.97 fps)
+	Load KDM…	KDM లోడ్ చేయి…
+	Forget DCP Keys	DCP కీలను మర్చిపో
+	Load KDM	KDM లోడ్ చేయి
+	KDM file	KDM ఫైల్
+	Private key (PEM)	ప్రైవేట్ కీ (PEM)
+	{title}: {count} keys loaded	{title}: {count} కీలు లోడ్ అయ్యాయి
+	The keys stay in memory only, until Forget DCP Keys or the end of the session.	కీలు మెమరీలో మాత్రమే ఉంటాయి, DCP కీలను మర్చిపో లేదా సెషన్ ముగిసే వరకు.
+	DCP keys forgotten	DCP కీలు మర్చిపోబడ్డాయి
+	Choose the KDM file and the private key.	KDM ఫైల్‌ను మరియు ప్రైవేట్ కీని ఎంచుకోండి.
+
+# Settings ▸ Timecode Sync (TC-4)
+	Timecode Sync	టైమ్‌కోడ్ సమకాలీకరణ
+	TimecodeSync	టైమ్‌కోడ్ సమకాలీకరణ
+	Chase	అనుసరించు
+	Follow external timecode during playback	ప్లేబ్యాక్ సమయంలో బాహ్య టైమ్‌కోడ్‌ను అనుసరించు
+	Lock after	ఇంత తర్వాత లాక్ చేయి
+	Keep playing without signal for	సిగ్నల్ లేకుండా ఇంతసేపు ప్లే చేయి
+	External frame rate	బాహ్య ఫ్రేమ్ రేట్
+	Offset (added to the external timecode)	ఆఫ్‌సెట్ (బాహ్య టైమ్‌కోడ్‌కు కలుపుతారు)
+	LTC	LTC
+	LTC input device	LTC ఇన్‌పుట్ పరికరం
+	LTC input channel	LTC ఇన్‌పుట్ ఛానెల్
+	Send LTC during playback	ప్లేబ్యాక్ సమయంలో LTC పంపు
+	LTC output device	LTC అవుట్‌పుట్ పరికరం
+	LTC output channel	LTC అవుట్‌పుట్ ఛానెల్
+	LTC level	LTC స్థాయి
+	dBFS	dBFS
+	MIDI Timecode	MIDI టైమ్‌కోడ్
+	MTC input port (empty = CFA4 port)	MTC ఇన్‌పుట్ పోర్ట్ (ఖాళీ = CFA4 పోర్ట్)
+	Send MIDI Timecode during playback	ప్లేబ్యాక్ సమయంలో MIDI టైమ్‌కోడ్ పంపు
+	MTC output port (empty = CFA4 port)	MTC అవుట్‌పుట్ పోర్ట్ (ఖాళీ = CFA4 పోర్ట్)
+	Send timecode ahead of the picture by	చిత్రం కంటే ఇంత ముందుగా టైమ్‌కోడ్ పంపు
+	LTC (audio input)	LTC (ఆడియో ఇన్‌పుట్)
+	MIDI Timecode (MIDI input)	MIDI టైమ్‌కోడ్ (MIDI ఇన్‌పుట్)
+	Same as the sequence	సీక్వెన్స్‌లాగే
+	29.97 fps drop-frame	29.97 fps డ్రాప్-ఫ్రేమ్
+	29.97 fps non-drop	29.97 fps నాన్-డ్రాప్
+	Timecode Sync Status	టైమ్‌కోడ్ సమకాలీకరణ స్థితి
+	Chase External Timecode	బాహ్య టైమ్‌కోడ్‌ను అనుసరించు
+	Send LTC	LTC పంపు
+	Send MIDI Timecode	MIDI టైమ్‌కోడ్ పంపు

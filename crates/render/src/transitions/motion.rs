@@ -41,7 +41,7 @@ impl<'a> Layer<'a> {
 }
 
 /// Composite the layers seen through screen pixel (x, y), nearest last.
-pub(crate) fn composite(layers: &[Layer], eye: V3, x: f32, y: f32) -> [f32; 4] {
+pub(crate) fn composite(layers: &[Layer<'_>], eye: V3, x: f32, y: f32) -> [f32; 4] {
     const MAX: usize = 8;
     let mut hits = [(0.0f32, [0.0f32; 4]); MAX];
     let mut nh = 0;
@@ -88,7 +88,7 @@ fn cross(a: V3, b: V3) -> V3 {
 fn scene<'a>(t: &Tx<'a>, focal: f32, blur: (f32, usize), build: impl Fn(f32) -> Vec<Layer<'a>> + Sync) -> Image {
     let (sh, n) = blur;
     let qs: Vec<f32> = if n <= 1 || sh <= 0.0 { vec![t.p] } else { (0..n).map(|i| (t.p + (i as f32 / (n - 1) as f32 - 0.5) * sh).clamp(0.0, 1.0)).collect() };
-    let scenes: Vec<Vec<Layer>> = qs.iter().map(|&q| build(q)).collect();
+    let scenes: Vec<Vec<Layer<'_>>> = qs.iter().map(|&q| build(q)).collect();
     let e = eye(t.wf, t.hf, focal);
     let inv = 1.0 / scenes.len() as f32;
     paint(t.w, t.h, |x, y| {
@@ -103,7 +103,7 @@ fn scene<'a>(t: &Tx<'a>, focal: f32, blur: (f32, usize), build: impl Fn(f32) -> 
     })
 }
 
-fn center3(t: &Tx) -> V3 {
+fn center3(t: &Tx<'_>) -> V3 {
     [t.wf / 2.0, t.hf / 2.0, 0.0]
 }
 
@@ -123,7 +123,7 @@ fn spring(x: f32, bounce: f32) -> f32 {
     f(x) + x * (1.0 - f(1.0))
 }
 
-pub(super) fn apply(id: &str, t: &Tx) -> Option<Image> {
+pub(super) fn apply(id: &str, t: &Tx<'_>) -> Option<Image> {
     let c = center3(t);
     let (w, h) = (t.wf, t.hf);
     let (dx, dy) = t.dir();
@@ -139,10 +139,13 @@ pub(super) fn apply(id: &str, t: &Tx) -> Option<Image> {
                 Layer::new(Card::flat().translate([dx * travel * (e - 1.0), dy * travel * (e - 1.0), 0.0]), t.b),
             ]
         }),
-        "slide" => scene(t, far, shutter(t, 0.12), |q| {
-            let e = ease_in_out(q);
-            vec![Layer::new(Card::flat(), t.a), Layer::new(Card::flat().translate([dx * travel * (e - 1.0), dy * travel * (e - 1.0), 0.0]), t.b)]
-        }),
+        "slide" => {
+            let (ox, oy) = t.shift8();
+            scene(t, far, shutter(t, 0.12), move |q| {
+                let e = ease_in_out(q);
+                vec![Layer::new(Card::flat(), t.a), Layer::new(Card::flat().translate([ox * (e - 1.0), oy * (e - 1.0), 0.0]), t.b)]
+            })
+        }
         "split" => {
             let vertical_cut = t.choice("orientation") == 0;
             scene(t, far, shutter(t, 0.12), move |q| {
@@ -572,25 +575,36 @@ pub(super) fn apply(id: &str, t: &Tx) -> Option<Image> {
         }
         // ---------------- Smart Tools (camera-style) ----------------
         "motion_camera" => {
-            let zoom = t.frac("zoom");
+            // a negative Zoom pulls the camera back (A shrinks, B arrives from larger)
+            let zoom = t.frac("zoom").max(-0.9);
+            let pull_back = zoom < 0.0;
             let rot = t.num("rotation").to_radians();
             let mb = t.frac("motion_blur");
             let p = t.p;
             let k = mid_mix(p);
             // A pushes in and turns; B arrives from the same push, settling to rest
+            let zb0 = if pull_back { 1.0 / (1.0 + zoom) - 1.0 } else { zoom };
             let (za, ra) = (1.0 + zoom * ease_in(p.min(0.7) / 0.7), rot * ease_in(p));
-            let (zb, rb) = (1.0 + zoom * (1.0 - ease_out(((p - 0.3) / 0.7).clamp(0.0, 1.0))), -rot * (1.0 - ease_out(p)));
+            let (zb, rb) = (1.0 + zb0 * (1.0 - ease_out(((p - 0.3) / 0.7).clamp(0.0, 1.0))), -rot * (1.0 - ease_out(p)));
             let blur = mb * bell(p) * 0.35;
             let n = super::taps(blur * w * 0.3);
             paint(t.w, t.h, |x, y| {
+                // the sample and how much of the pixel lies inside the source frame
                 let sample = |img: &Image, z: f32, r: f32| {
                     let (s, co) = (-r).sin_cos();
                     let (ux, uy) = ((x - w / 2.0) / z, (y - h / 2.0) / z);
                     let (lx, ly) = (ux * co - uy * s + w / 2.0, ux * s + uy * co + h / 2.0);
-                    zoom_blur(img, lx, ly, w / 2.0, h / 2.0, blur, n)
+                    let cov = ((lx.min(w - lx).min(ly).min(h - ly)) * z + 0.5).clamp(0.0, 1.0);
+                    (zoom_blur(img, lx, ly, w / 2.0, h / 2.0, blur, n), cov)
                 };
-                let a = if k < 1.0 { sample(t.a, za, ra) } else { [0.0; 4] };
-                let b = if k > 0.0 { sample(t.b, zb, rb) } else { [0.0; 4] };
+                let b = if k > 0.0 || pull_back { sample(t.b, zb, rb).0 } else { [0.0; 4] };
+                let a = if k < 1.0 {
+                    let (a, cov) = sample(t.a, za, ra);
+                    // a shrunken A leaves its surroundings to B instead of smeared edge pixels
+                    if pull_back { mix(b, a, cov) } else { a }
+                } else {
+                    [0.0; 4]
+                };
                 mix(a, b, k)
             })
         }
@@ -611,7 +625,7 @@ pub(super) fn apply(id: &str, t: &Tx) -> Option<Image> {
 
 /// Page Peel: the corner lifts and rolls over a cylinder of radius `r`; the peeled part lies
 /// face-down on top of the page (its back shows a washed-out mirror of A) and B shows beneath.
-fn page_peel(t: &Tx) -> Image {
+fn page_peel(t: &Tx<'_>) -> Image {
     let (w, h) = (t.wf, t.hf);
     let r = t.px("radius").max(1.0);
     let shadow = t.flag("shadow");

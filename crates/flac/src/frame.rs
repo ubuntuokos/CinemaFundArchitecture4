@@ -151,7 +151,7 @@ fn write_subframe(w: &mut BitWriter, x: &[i32], sub: &Subframe, bps: u8) {
 }
 
 /// One complete frame.
-pub fn write(spec: &FrameSpec) -> Vec<u8> {
+pub fn write(spec: &FrameSpec<'_>) -> Vec<u8> {
     let block = spec.channels.first().map_or(0, |c| c.0.len());
     let (bs_code, bs_extra) = block_size_code(u16::try_from(block).unwrap_or(u16::MAX));
     let channel_code = match spec.stereo {

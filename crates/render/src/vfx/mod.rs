@@ -15,6 +15,7 @@ mod blur;
 mod color;
 pub(crate) use color::cdl;
 pub(crate) mod distort;
+mod glitch;
 mod immersive;
 mod lights;
 mod stylize;
@@ -181,7 +182,7 @@ impl FxEnv for ItemEnv<'_> {
 pub(crate) fn def_value(e: &EffectInstance, id: &str) -> Option<ParamValue> {
     e.def().and_then(|d| d.param(id)).map(|p| p.default.clone())
 }
-pub(crate) fn fv(e: &EffectInstance, id: &str, cx: &FxCtx) -> f32 {
+pub(crate) fn fv(e: &EffectInstance, id: &str, cx: &FxCtx<'_>) -> f32 {
     e.f64_at(id, cx.t) as f32
 }
 pub(crate) fn bv(e: &EffectInstance, id: &str) -> bool {
@@ -193,7 +194,7 @@ pub(crate) fn chv(e: &EffectInstance, id: &str) -> u32 {
         _ => 0,
     }
 }
-pub(crate) fn cv(e: &EffectInstance, id: &str, cx: &FxCtx) -> [f32; 4] {
+pub(crate) fn cv(e: &EffectInstance, id: &str, cx: &FxCtx<'_>) -> [f32; 4] {
     e.param(id).and_then(|p| p.value_at(cx.t).as_color()).or_else(|| def_value(e, id).and_then(|v| v.as_color())).unwrap_or([1.0; 4])
 }
 pub(crate) fn tv(e: &EffectInstance, id: &str) -> String {
@@ -204,13 +205,13 @@ pub(crate) fn tv(e: &EffectInstance, id: &str) -> String {
 }
 /// A point parameter in working pixels. Auto (NaN) components use the effect's auto position
 /// (`cfa4_project::effect::auto_point`) or the layer centre.
-pub(crate) fn pv(e: &EffectInstance, id: &str, cx: &FxCtx, img: &Image) -> Vec2 {
+pub(crate) fn pv(e: &EffectInstance, id: &str, cx: &FxCtx<'_>, img: &Image) -> Vec2 {
     let v = e.param(id).map(|p| p.vec2_at(cx.t)).or_else(|| def_value(e, id).and_then(|v| v.as_vec2())).unwrap_or(Vec2::new(f64::NAN, f64::NAN));
     let (fx, fy) = cfa4_project::effect::auto_point(&e.effect, id).unwrap_or((0.5, 0.5));
     Vec2::new(if v.x.is_nan() { img.w as f64 * fx } else { v.x * cx.px_scale as f64 }, if v.y.is_nan() { img.h as f64 * fy } else { v.y * cx.px_scale as f64 })
 }
 /// A point offset parameter (no auto position) in working pixels.
-pub(crate) fn offv(e: &EffectInstance, id: &str, cx: &FxCtx) -> Vec2 {
+pub(crate) fn offv(e: &EffectInstance, id: &str, cx: &FxCtx<'_>) -> Vec2 {
     let v = e.param(id).map(|p| p.vec2_at(cx.t)).or_else(|| def_value(e, id).and_then(|v| v.as_vec2())).unwrap_or_default();
     let k = cx.px_scale as f64;
     Vec2::new(if v.x.is_nan() { 0.0 } else { v.x * k }, if v.y.is_nan() { 0.0 } else { v.y * k })
@@ -439,7 +440,7 @@ pub(crate) fn ease(kind: u32, t: f64) -> f64 {
 
 /// Progress through the clip (0 at its first frame, 1 at its last) when an environment is
 /// available, else 0.
-pub(crate) fn clip_progress(cx: &FxCtx) -> f64 {
+pub(crate) fn clip_progress(cx: &FxCtx<'_>) -> f64 {
     match cx.env {
         Some(env) => {
             let d = env.clip_seconds();
@@ -452,7 +453,7 @@ pub(crate) fn clip_progress(cx: &FxCtx) -> f64 {
 // ------------------------------------------------------------------ dispatch
 
 /// Apply `e` if it is one of the effects implemented here; returns `false` for anything else.
-pub fn apply(img: &mut Image, e: &EffectInstance, cx: &FxCtx) -> bool {
+pub fn apply(img: &mut Image, e: &EffectInstance, cx: &FxCtx<'_>) -> bool {
     let alias = |img: &mut Image, base: &str| {
         let mut a = e.clone();
         a.effect = base.to_string();
@@ -485,6 +486,7 @@ pub fn apply(img: &mut Image, e: &EffectInstance, cx: &FxCtx) -> bool {
         "spin" => distort::spin(img, e, cx),
         "wiggle" => distort::wiggle(img, e, cx),
         "camera_shake" => distort::camera_shake(img, e, cx),
+        "film_gate" => distort::film_gate(img, e, cx),
         "transform" if bv(e, "shutter_override") && fv(e, "shutter_angle", cx) > 0.5 => distort::transform_fx(img, e, cx),
         "spacer" => distort::spacer(img, e, cx),
         "clone" => distort::clone_fx(img, e, cx),
@@ -509,6 +511,7 @@ pub fn apply(img: &mut Image, e: &EffectInstance, cx: &FxCtx) -> bool {
         "long_shadow" => stylize::long_shadow(img, e, cx),
         "stroke" => stylize::stroke(img, e, cx),
         "gradient" => stylize::gradient(img, e, cx),
+        "particles" => stylize::particles(img, e, cx),
         "block_dissolve" => stylize::block_dissolve(img, e, cx),
         "gradient_wipe_legacy" => stylize::gradient_wipe(img, e, cx),
         "linear_wipe_legacy" => stylize::linear_wipe(img, e, cx),
@@ -518,6 +521,13 @@ pub fn apply(img: &mut Image, e: &EffectInstance, cx: &FxCtx) -> bool {
         "ellipse" => stylize::ellipse(img, e, cx),
         "paint_bucket" => stylize::paint_bucket(img, e, cx),
         "write_on" => stylize::write_on(img, e, cx),
+        // Glitch (CFA4's own folder)
+        "bit_crush" => glitch::bit_crush(img, e, cx),
+        "block_glitch" => glitch::block_glitch(img, e, cx),
+        "databend" => glitch::databend(img, e, cx),
+        "vhs" => glitch::vhs(img, e, cx),
+        "scan_line_jitter" => glitch::scan_line_jitter(img, e, cx),
+        "tile_jitter" => glitch::tile_jitter(img, e, cx),
         // Time / analysis
         "posterize_time" => temporal::posterize_time(img, e, cx),
         "echo" => temporal::echo(img, e, cx),

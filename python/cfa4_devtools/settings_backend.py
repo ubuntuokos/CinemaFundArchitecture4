@@ -112,6 +112,11 @@ def _str(value: Any, default: str = "") -> str:
     return value if isinstance(value, str) else default
 
 
+def _obj(value: Any) -> dict[str, Any]:
+    """``value`` if it is a JSON object, else an empty one."""
+    return value if isinstance(value, dict) else {}
+
+
 @dataclass(frozen=True)
 class Choice:
     value: str
@@ -137,7 +142,7 @@ class Field:
     def parse(raw: Any) -> Field | None:
         if not isinstance(raw, dict) or not isinstance(raw.get("key"), str):
             return None
-        kind = raw.get("kind") if isinstance(raw.get("kind"), dict) else {}
+        kind = _obj(raw.get("kind"))
         choices: list[Choice] = []
         for c in kind.get("choices") or []:
             if isinstance(c, dict) and isinstance(c.get("value"), str):
@@ -436,8 +441,8 @@ class Codecs:
                      r.get("exportFormat") if isinstance(r.get("exportFormat"), str) else None)
             for r in raw["codecs"] if isinstance(r, dict) and isinstance(r.get("codec"), str)
         )
-        hw = raw.get("hardwareDecoder") if isinstance(raw.get("hardwareDecoder"), dict) else {}
-        gst = raw.get("gstreamer") if isinstance(raw.get("gstreamer"), dict) else {}
+        hw = _obj(raw.get("hardwareDecoder"))
+        gst = _obj(raw.get("gstreamer"))
         return Codecs(
             rows,
             Backend(hw.get("backend") if isinstance(hw.get("backend"), str) else None, _str(hw.get("reason"))),

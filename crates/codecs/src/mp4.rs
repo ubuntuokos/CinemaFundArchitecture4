@@ -32,6 +32,8 @@ struct AudioState {
     packets: HashMap<usize, Arc<DecodedAudioPacket>>,
     order: Vec<usize>,
     last_decoded: Option<usize>,
+    /// Saved decoder states for exact jumps (AMR).
+    checkpoints: crate::audio::Checkpoints,
 }
 
 /// One playable audio track with its own decoder state and timing tables.
@@ -155,6 +157,16 @@ fn clean_aperture(c: CleanAperture, (w, h): (u32, u32)) -> Option<Region> {
 /// unspecified, or all of it when there is none (ffmpeg writes MP4 without `colr` by default),
 /// comes from the stream's own description: `vpcC` / `apvC`, or the SPS VUI in `avcC` / `hvcC`
 /// and the sequence header in `av1C`. The rest defaults by frame size.
+/// The colour a track's `colr` box signals (resolved with the bitstream's, as playback applies
+/// it to decoded YUV frames), or `None` without one: then the decoder's own colour stands.
+pub fn container_color(entry: &cfa4_isobmff::SampleEntry, w: u32, h: u32) -> Option<ColorInfo> {
+    entry
+        .video
+        .as_ref()
+        .is_some_and(|v| matches!(v.color, Some(cfa4_isobmff::ColorInfo::Nclx { .. } | cfa4_isobmff::ColorInfo::Nclc { .. })))
+        .then(|| color_from(entry, w, h))
+}
+
 fn color_from(entry: &cfa4_isobmff::SampleEntry, w: u32, h: u32) -> ColorInfo {
     use crate::stream_color::ColorCodes;
     use cfa4_isobmff::ColorInfo as Colr;
@@ -402,7 +414,8 @@ impl Mp4Source {
                     Some(CodecConfig::TrueHd { .. }) => (t.edit_offset, crate::audio::truehd_preroll(ainfo.sample_rate)),
                     _ => (t.edit_offset, 0),
                 };
-                let state = Mutex::new(AudioState { decoder: None, packets: HashMap::new(), order: Vec::new(), last_decoded: None });
+                let state =
+                    Mutex::new(AudioState { decoder: None, packets: HashMap::new(), order: Vec::new(), last_decoded: None, checkpoints: Default::default() });
                 Some(Mp4Audio { track: i, state, starts, offset, preroll })
             })
             .collect();
@@ -452,17 +465,27 @@ impl Mp4Source {
                 // a packet, more for DTS, or `OPUS_PRE_ROLL` worth for Opus).
                 if st.last_decoded.is_none_or(|l| l + 1 != i) {
                     let d = st.decoder.as_mut().ok_or_else(|| CodecError::Decode("no audio decoder".into()))?;
-                    d.reset();
-                    let from = if a.preroll > 0 {
-                        a.starts.partition_point(|&x| x <= pk_start.saturating_sub(a.preroll)).saturating_sub(1)
-                    } else {
-                        i.saturating_sub(d.pre_roll_packets())
+                    // Codecs that never converge after a jump (AMR) restart from a saved state.
+                    let from = match st.checkpoints.restore(d, i) {
+                        Some(from) => from,
+                        None => {
+                            d.reset();
+                            if a.preroll > 0 {
+                                a.starts.partition_point(|&x| x <= pk_start.saturating_sub(a.preroll)).saturating_sub(1)
+                            } else {
+                                i.saturating_sub(d.pre_roll_packets())
+                            }
+                        }
                     };
                     for j in from..i {
+                        st.checkpoints.record(d, j);
                         if let Ok(prev) = self.read(ti, j) {
                             let _ = d.decode(&prev, 0);
                         }
                     }
+                }
+                if let Some(d) = st.decoder.as_ref() {
+                    st.checkpoints.record(d, i);
                 }
                 let result = st.decoder.as_mut().ok_or_else(|| CodecError::Decode("no audio decoder".into()))?.decode(&data, pk_start.max(0) as u64);
                 st.last_decoded = Some(i);
@@ -627,6 +650,9 @@ fn audio_stream_info(t: &cfa4_isobmff::Track, bytes: &crate::Src) -> Option<Audi
         ),
         CodecConfig::Pcm(p) => (p.sample_rate as u32, p.channels, Some(p.bits as u32)),
         CodecConfig::Opus(o) => (crate::audio::OPUS_RATE, (o.output_channels as u32).max(1), None),
+        // 3GPP TS 26.244 writes 2 channels into AMR sample entries; the codec is mono
+        CodecConfig::Unknown { fourcc, .. } if fourcc.0 == *b"samr" => (cfa4_amr::nb::SAMPLE_RATE, 1, None),
+        CodecConfig::Unknown { fourcc, .. } if fourcc.0 == *b"sawb" => (cfa4_amr::wb::SAMPLE_RATE, 1, None),
         _ => (if ap.sample_rate > 0.0 { ap.sample_rate as u32 } else { t.timescale }, ap.channels.max(1), None),
     };
     let codec = match &entry.codec {
@@ -676,6 +702,10 @@ fn codec_label(c: &CodecConfig) -> String {
         CodecConfig::Unknown { fourcc, .. } if fourcc.0 == *b"2vuy" => "Uncompressed YUV 4:2:2".into(),
         CodecConfig::Unknown { fourcc, .. } if fourcc.0 == *b"v210" => "Uncompressed YUV 4:2:2 10-bit".into(),
         CodecConfig::Unknown { fourcc, .. } if fourcc.0 == *b"a3ds" => "Auro-CX (unsupported)".into(),
+        CodecConfig::Av2 { .. } => "AV2 (unsupported)".into(),
+        CodecConfig::Unknown { fourcc, .. } if fourcc.0 == *b"drac" => "VC-2 / Dirac".into(),
+        CodecConfig::Unknown { fourcc, .. } if fourcc.0 == *b"samr" => "AMR-NB".into(),
+        CodecConfig::Unknown { fourcc, .. } if fourcc.0 == *b"sawb" => "AMR-WB".into(),
         CodecConfig::Av1(c) => format!("AV1 ({} Profile)", ["Main", "High", "Professional"].get(c.seq_profile as usize).unwrap_or(&"Main")),
         CodecConfig::Apv(a) => match cfa4_apv::Profile::from_idc(a.profile_idc) {
             Some(p) => p.name().into(),

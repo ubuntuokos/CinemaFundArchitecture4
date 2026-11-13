@@ -342,6 +342,7 @@
 	Overlay	Prekrivanje
 	Overwrite	Prepiši
 	PCM (uncompressed)	PCM (nestisnjeno)
+	MP2 (MPEG-1 Layer II)	MP2 (MPEG-1 plast II)
 	Panels	Plošče
 	Panner	Panoramiranje
 	Paste	Prilepi
@@ -2050,6 +2051,16 @@
 	SMPTE DCP folder: JPEG 2000 3996×2160 (1.85:1), 5.1 24-bit 48 kHz PCM	Mapa SMPTE DCP: JPEG 2000 3996 × 2160 (1,85 : 1), 5.1 24-bitni 48 kHz PCM
 	DCP 4K Scope	DCP 4K Scope
 	SMPTE DCP folder: JPEG 2000 4096×1716 (2.39:1), 5.1 24-bit 48 kHz PCM	Mapa SMPTE DCP: JPEG 2000 4096 × 1716 (2,39 : 1), 5.1 24-bitni 48 kHz PCM
+	IMF App 2E (Interoperable Master Package)	IMF App 2E (Interoperable Master Package)
+	IMF App 2E HD	IMF App 2E HD
+	SMPTE IMF folder: JPEG 2000 1920×1080, 5.1 24-bit 48 kHz PCM	Mapa SMPTE IMF: JPEG 2000 1920 × 1080, 5.1 24-bitni 48 kHz PCM
+	IMF App 2E UHD	IMF App 2E UHD
+	SMPTE IMF folder: JPEG 2000 3840×2160, 5.1 24-bit 48 kHz PCM	Mapa SMPTE IMF: JPEG 2000 3840 × 2160, 5.1 24-bitni 48 kHz PCM
+	Episode	Epizoda
+	Event highlights	Vrhunci dogodka
+	Event	Dogodek
+	Lossless (reversible JPEG 2000)	Brez izgub (reverzibilni JPEG 2000)
+	Package language	Jezik paketa
 	4:2:0 (Main Profile)	4:2:0 (Main Profile)
 	4:2:2 (4:2:2 Profile)	4:2:2 (4:2:2 Profile)
 	B pictures	Slike B
@@ -2219,6 +2230,9 @@
 	AV1 Main (10-bit for HDR)	AV1 Main (10-bitno za HDR)
 	10-bit RGB	10-bitni RGB
 	12-bit X'Y'Z'	12-bitni X'Y'Z'
+	10-bit R'G'B' 4:4:4	10-bitni R'G'B' 4:4:4
+	JPEG 2000 IMF lossy	JPEG 2000 IMF z izgubami
+	JPEG 2000 IMF reversible	JPEG 2000 IMF reverzibilni
 	16-bit half float	16-bitna polovična plavajoča vejica
 	linear	linearno
 	uncompressed	nestisnjeno
@@ -3601,8 +3615,16 @@
 	MXF OP1a H.264	MXF OP1a H.264
 	MXF OP1a ProRes 422 HQ	MXF OP1a ProRes 422 HQ
 	MXF OP1a, DNxHR HQ (8-bit 4:2:2), 24-bit 48 kHz PCM, start timecode	MXF OP1a, DNxHR HQ (8-bitno 4:2:2), 24-bitni 48 kHz PCM, začetna časovna koda
+	MXF OP1a MPEG-2 HD 4:2:2 50 Mbit/s	MXF OP1a MPEG-2 HD 4:2:2 50 Mbit/s
+	MXF OP1a, MPEG-2 4:2:2 Profile long GOP (12 pictures, IBBP) at 50 Mbit/s in the XDCAM HD422 style, 24-bit 48 kHz PCM; HD frame sizes	MXF OP1a, MPEG-2 4:2:2 Profile, dolgi GOP (12 slik, IBBP), 50 Mbit/s v slogu XDCAM HD422, 24-bitni PCM 48 kHz; velikosti slik HD
 	MXF OP1a, H.264 High long GOP (0.3 bits per pixel), 24-bit 48 kHz PCM	MXF OP1a, H.264 High dolgi GOP (0,3 bita na slikovno piko), 24-bitni 48 kHz PCM
+	MXF OP1a D-10 (IMX) 50 Mbit/s 525/29.97	MXF OP1a D-10 (IMX) 50 Mbit/s 525/29.97
+	MXF OP1a D-10 (IMX) 50 Mbit/s 625/25	MXF OP1a D-10 (IMX) 50 Mbit/s 625/25
+	MXF OP1a type D-10 (IMX 50): intra-only MPEG-2 4:2:2P@ML at 50 Mbit/s, 720x486 at 29.97 fps (4:3), four 24-bit 48 kHz audio channels	MXF OP1a vrste D-10 (IMX 50): MPEG-2 4:2:2P@ML samo intra, 50 Mbit/s, 720x486 pri 29,97 sl./s (4:3), štirje 24-bitni zvočni kanali 48 kHz
+	MXF OP1a type D-10 (IMX 50): intra-only MPEG-2 4:2:2P@ML at 50 Mbit/s, 720x576 at 25 fps (4:3), four 24-bit 48 kHz audio channels	MXF OP1a vrste D-10 (IMX 50): MPEG-2 4:2:2P@ML samo intra, 50 Mbit/s, 720x576 pri 25 sl./s (4:3), štirje 24-bitni zvočni kanali 48 kHz
 	MXF OP1a, ProRes 422 HQ, 24-bit 48 kHz PCM, start timecode	MXF OP1a, ProRes 422 HQ, 24-bitni 48 kHz PCM, začetna časovna koda
+	MXF OP1a XDCAM HD422 (RDD 9) 50 Mbit/s	MXF OP1a XDCAM HD422 (RDD 9) 50 Mbit/s
+	MXF OP1a in the SMPTE RDD 9 layout: MPEG-2 4:2:2 Profile long GOP (12 pictures, IBBP) at 50 Mbit/s, 1920x1080 or 1280x720 progressive, four 24-bit 48 kHz channels as per-channel AES3 elements	MXF OP1a v razporeditvi SMPTE RDD 9: MPEG-2 4:2:2 Profile, dolgi GOP (12 slik, IBBP), 50 Mbit/s, 1920x1080 ali 1280x720 progresivno, štirje 24-bitni kanali 48 kHz kot elementi AES3 za vsak kanal
 	Main	Glavno
 	Mark In (Hover Scrub)	Označi začetek (drsenje ob lebdenju)
 	Mark Out (Hover Scrub)	Označi konec (drsenje ob lebdenju)
@@ -3945,6 +3967,8 @@
 	Analyze Source for Smart Cut	Analiziraj vir za pametni rez
 	Plan Smart Cut	Načrtuj pametni rez
 	Run Smart Cut	Izvedi pametni rez
+	DASH Manifest	Manifest DASH
+	Also write a DASH manifest (.mpd)	Zapiši tudi manifest DASH (.mpd)
 	No sequence open. Double-click a sequence in the Project panel.	Nobena sekvenca ni odprta. Dvokliknite sekvenco na plošči Projekt.
 	English (US)	Angleščina (ZDA)
 	English (UK)	Angleščina (Združeno kraljestvo)
@@ -4141,3 +4165,426 @@ export.summary	Low	nizka
 	not supported by CFA4 sequences yet: {what}	sekvence CFA4 še ne podpirajo: {what}
 	{rate} fps	{rate} fps
 	{w} × {h}, display {dn}:{dd}, pixels {pn}:{pd}	{w} × {h}, prikaz {dn}:{dd}, slikovne pike {pn}:{pd}
+# Qt GUI: Tools menu (#868)
+	Video Tools	Video orodja
+	Audio Tools	Zvočna orodja
+	Publication Tools	Orodja za objavo
+	Smart Export…	Pametni izvoz…
+# Diagonal Slide and the missing transition variants (#153)
+	From North-West	S severozahoda
+	From North-East	S severovzhoda
+	From South-East	Z jugovzhoda
+	From South-West	Z jugozahoda
+# Enhance folder: Skin Smoothing and Low Light (#166)
+	Enhance	Izboljšanje
+	Skin Smoothing	Glajenje kože
+	Keep Texture	Ohrani teksturo
+	Skin Tone	Ton kože
+	Smooth Entire Image	Zgladi celo sliko
+	Low Light	Šibka svetloba
+	Max Brightening	Največja osvetlitev
+	Show Illumination	Pokaži osvetljenost
+# Easing presets, Film Gate, Particles, Keyhole, Burn Away, Check Text Legibility (#182)
+	Easing Presets	Prednastavitve blaženja
+	Sine	Sinusno
+	Exponential	Eksponentno
+	Circular	Krožno
+	Elastic	Elastično
+	Film Gate	Filmsko okence
+	Gate Weave	Nihanje okenca
+	Weave Rotation	Vrtenje nihanja
+	Particles	Delci
+	Emitter Position	Položaj oddajnika
+	Birth Rate	Hitrost nastajanja
+	Lifetime (seconds)	Življenjska doba (sekunde)
+	Velocity Random	Naključnost hitrosti
+	Gravity	Težnost
+	Particle Size	Velikost delcev
+	Keyhole	Ključavnica
+	Burn Away	Izžiganje
+	Burn Size	Velikost izžiga
+	Ember Width	Širina žerjavice
+	Ember Color	Barva žerjavice
+	Check Text Legibility	Preveri berljivost besedila
+	Clear Legibility Markers	Počisti oznake berljivosti
+	Text legibility: no problems found	Berljivost besedila: ni najdenih težav
+	Text legibility: {count} problems marked on the timeline (orange markers)	Berljivost besedila: na časovnici označenih težav: {count} (oranžne oznake)
+# Glitch folder: Bit Crush, Block Glitch, Databend, VHS, Scan Line Jitter, Tile Jitter (#353)
+	Bit Crush	Zmanjšanje bitov
+	Bits per Channel	Bitov na kanal
+	Ordered Dither	Urejeno razprševanje
+	Dither Cell Size	Velikost celice razprševanja
+	Block Glitch	Bločna motnja
+	Blocks Moved	Premaknjeni bloki
+	Max Distance	Največja razdalja
+	Snap to Grid	Pripni na mrežo
+	Swap Blocks	Zamenjaj bloke
+	Changes per Second	Sprememb na sekundo
+	Databend	Okvara podatkov
+	Breaks	Prelomi
+	Shift	Zamik
+	Color Damage	Poškodba barv
+	VHS	VHS
+	Color Bleed	Razlivanje barv
+	Wobble	Opletanje
+	Snow	Sneg
+	Tracking Bar	Trak sledenja
+	Head Switching	Preklop glav
+	Scan Line Jitter	Tresenje vrstic
+	Jitter	Tresenje
+	Interval	Interval
+	Infinite	Neskončno
+	Periodic	Periodično
+	Tile Jitter	Tresenje ploščic
+	Tiles	Ploščice
+	Band Direction	Smer pasov
+	Jitter Direction	Smer tresenja
+# Creative Looks: Halftone and Dither (#354)
+	Halftone	Polton
+	Dither	Razprševanje
+	Pattern	Vzorec
+	Cell Size	Velikost celice
+	Cyan Angle	Kot cijan
+	Magenta Angle	Kot magenta
+	Yellow Angle	Kot rumene
+	Black Angle	Kot črne
+	Monochrome Angle	Kot enobarvnega
+	Sharpness	Ostrina
+	Ink Color	Barva črnila
+	Paper Color	Barva papirja
+	Color (CMYK)	Barva (CMYK)
+	Dot	Pika
+	Line	Črta
+	Bayer 2×2	Bayer 2×2
+	Bayer 4×4	Bayer 4×4
+	Bayer 8×8	Bayer 8×8
+	Pixel Size	Velikost slikovne pike
+	Palette	Paleta
+	Input Colors	Vhodne barve
+	Green Phosphor	Zeleni fosfor
+	Amber Monitor	Jantarni monitor
+	Game Boy	Game Boy
+	CGA	CGA
+	EGA	EGA
+	ZX Spectrum	ZX Spectrum
+	PICO-8	PICO-8
+
+# Credits workspace (stáblista)
+	Credits from a Spreadsheet	Odjavna špica iz preglednice
+	A .ods, .xlsx or CSV credits sheet	Preglednica odjavne špice v obliki .ods, .xlsx ali CSV
+	The spreadsheet's folder	Mapa preglednice
+	Built-in styles	Vgrajeni slogi
+	Spreadsheet	Preglednica
+	Sheet	List
+	Pictures	Slike
+	Styling	Slog
+	Page	Stran
+	Warnings	Opozorila
+	Moment in the page	Trenutek na strani
+	Place at Playhead	Postavi na predvajalno glavo
+	Spreadsheets (*.ods *.xlsx *.csv *.tsv *.txt)	Preglednice (*.ods *.xlsx *.csv *.tsv *.txt)
+	Credits styling (*.json)	Slog odjavne špice (*.json)
+	Card	Kartica
+	Credits Spreadsheet	Preglednica odjavne špice
+	Reading…	Branje…
+	(one table)	(ena tabela)
+	Total: {time}	Skupaj: {time}
+	Row {row}: {message}	Vrstica {row}: {message}
+	Choose a credits spreadsheet.	Izberite preglednico odjavne špice.
+	No preview	Ni predogleda
+	Placing…	Postavljanje…
+	Placed {n} pages on the timeline.	Na časovnico postavljenih strani: {n}.
+	Credits Page Picture	Slika strani odjavne špice
+	Preview Credits	Predogled odjavne špice
+	Credits Styles	Slogi odjavne špice
+	Spreadsheets and credits files (*.ods *.xlsx *.csv *.tsv *.txt *.cfa4credits)	Preglednice in datoteke odjavne špice (*.ods *.xlsx *.csv *.tsv *.txt *.cfa4credits)
+	CFA4 credits file (*.cfa4credits)	Datoteka odjavne špice CFA4 (*.cfa4credits)
+	Save as Credits File…	Shrani kot datoteko odjavne špice…
+	Spreadsheet, worksheet, styling and the table in one file, to open on any machine	Preglednica, list, slog in tabela v eni datoteki, ki jo odprete na katerem koli računalniku
+	Saved: {path}	Shranjeno: {path}
+	Added	Dodano
+	Removed	Odstranjeno
+	Changed	Spremenjeno
+	(empty row)	(prazna vrstica)
+	Refresh Credits from Spreadsheet	Osveži odjavno špico iz preglednice
+	Change	Sprememba
+	Before → After	Prej → Potem
+	Select None	Prekliči izbor
+	Keep my edits on the pages (where their block is unchanged)	Ohrani moje urejanje na straneh (kjer se njihov blok ni spremenil)
+	Locate Spreadsheet…	Poišči preglednico…
+	Comparing…	Primerjanje…
+	{n} changes in {file} since the credits were placed. Untick what you do not want.	Spremembe v {file} od postavitve odjavne špice: {n}. Odkljukajte, česar ne želite.
+	The spreadsheet {file} has not changed since the credits were placed.	Preglednica {file} se od postavitve odjavne špice ni spremenila.
+	{n} layers were edited by hand on the pages.	Ročno urejene plasti na straneh: {n}.
+	Accepting every change would replace these, because their block changed: {names}	Sprejem vseh sprememb bi zamenjal te, ker se je njihov blok spremenil: {names}
+	Refreshing…	Osveževanje…
+	Refreshed: {n} changes applied, {kept} hand edits kept.	Osveženo: uveljavljene spremembe: {n}, ohranjena ročna urejanja: {kept}.
+	Refresh Credits from Spreadsheet…	Osveži odjavno špico iz preglednice…
+	Save Credits File…	Shrani datoteko odjavne špice…
+	Compare Credits with Spreadsheet	Primerjaj odjavno špico s preglednico
+	“{name}” appears twice in the same block	»{name}« se v istem bloku pojavi dvakrat
+	“{name}” is written as “{other}” in row {otherRow}	»{name}« je v vrstici {otherRow} zapisano kot »{other}«
+	The font “{font}” is not installed; another font is used	Pisava »{font}« ni nameščena; uporabi se druga pisava
+	The font “{font}” has no “{chars}”; another font draws them	Pisava »{font}« nima »{chars}«; izriše jih druga pisava
+	“{text}” is outside the title-safe area	»{text}« je zunaj varnega območja za napise
+	“{text}” is too dark on black (contrast {ratio}:1; at least 4.5:1 is needed)	»{text}« je na črni pretemno (kontrast {ratio}:1; potrebno je vsaj 4,5:1)
+	“{text}” is {px} px high; 24 px or more reads well	»{text}« je visok {px} px; od 24 px naprej se dobro bere
+	The roll moves {speed} px per frame; a whole number does not shimmer	Pomik je {speed} px na sličico; celo število ne utripa
+	A line crosses the frame in {seconds} s; at least 6 s reads well	Vrstica prečka sliko v {seconds} s; vsaj 6 s se dobro bere
+	The card holds for only {seconds} s after its fades	Kartica po pretapanjih ostane le {seconds} s
+	This page starts {seconds} s before the previous one ends	Ta stran se začne {seconds} s pred koncem prejšnje
+	“{file}” is shown at {percent} % of its pixels; it will look soft	»{file}« je prikazan pri {percent} % svojih slikovnih pik; videti bo mehko
+	{more} more of the same	Še {more} enakih
+	Page {page}: {message}	Stran {page}: {message}
+	Checks and warnings	Preverjanja in opozorila
+	Checks: {errors} errors, {warnings} warnings	Preverjanja: napake {errors}, opozorila {warnings}
+	Check Credits	Preveri odjavno špico
+	The whole music ({time})	Vsa glasba ({time})
+	Until the sound ends ({time})	Do konca zvoka ({time})
+	To the last bar line ({time})	Do zadnje taktnice ({time})
+	Fit Credits to Music	Prilagodi odjavno špico glasbi
+	Fit Credits to Music…	Prilagodi odjavno špico glasbi…
+	Analyse Music for Credits	Analiziraj glasbo za odjavno špico
+	Length:	Dolžina:
+	Cards last whole beats (cuts on the beat)	Kartice trajajo cele dobe (rezi na dobo)
+	Start the credits where the music starts	Začni odjavno špico tam, kjer se začne glasba
+	Length of the credits	Dolžina odjavne špice
+	Remove Fitting	Odstrani prilagoditev
+	Listening to the music…	Poslušanje glasbe…
+	Length: {time}	Dolžina: {time}
+	the sound ends at {time}	zvok se konča pri {time}
+	tempo {bpm} BPM	tempo {bpm} BPM
+	the credits without fitting: {time}	odjavna špica brez prilagoditve: {time}
+	Select a credits page on the timeline.	Izberite stran odjavne špice na časovnici.
+	Fitting…	Prilagajanje…
+	The credits now last {time}.	Odjavna špica zdaj traja {time}.
+	Fitting removed.	Prilagoditev odstranjena.
+	Fit to This Length	Prilagodi tej dolžini
+	No music to measure ({problem}); type the length.	Ni glasbe za merjenje ({problem}); vnesite dolžino.
+	The text moves {speed} px per frame; a whole number does not shimmer	Besedilo se premakne za {speed} px na sličico; celo število ne utripa
+	Crawl	Tekoči napis
+	Picture: {file}	Slika: {file}
+	Video: {file}	Video: {file}
+	Looped video: {file}	Video v zanki: {file}
+	Into the next	V naslednjo
+	Safe areas and spines	Varna območja in osi
+	Action safe (93 %), title safe (90 %), the centre and the page's spines	Varno območje dogajanja (93 %), napisov (90 %), sredina in osi strani
+	Baseline grid	Mreža osnovnic
+	Lines one gap unit apart, moving with the page	Črte na razdalji ene enote razmika, ki se premikajo s stranjo
+	“{text}” does not stand out from the background (contrast {ratio}:1; at least 4.5:1 is needed)	»{text}« ne izstopa iz ozadja (kontrast {ratio}:1; potrebno je vsaj 4,5:1)
+	A picture or video is behind the text: check the contrast by eye	Za besedilom je slika ali video: kontrast preverite na oko
+	A ready look: styles, backgrounds, transitions and timing. A styling file, if given, wins.	Pripravljen videz: slogi, ozadja, prehodi in časovna razporeditev. Podana datoteka sloga ima prednost.
+	New Spreadsheet from Template…	Nova preglednica iz predloge…
+	built in	vgrajena
+	mine	moja
+	this project	ta projekt
+	Template	Predloga
+	Choose a template first.	Najprej izberite predlogo.
+	Name of the template:	Ime predloge:
+	Template saved: {name}	Predloga shranjena: {name}
+	Apply Credits Template…	Uporabi predlogo odjavne špice…
+	Template:	Predloga:
+	Credits Templates	Predloge odjavne špice
+	CSV (*.csv)	CSV (*.csv)
+	Spreadsheets, credits files and Cinecred projects (*.ods *.xlsx *.csv *.tsv *.txt *.cfa4credits Styling.toml)	Preglednice, datoteke odjavne špice in projekti Cinecred (*.ods *.xlsx *.csv *.tsv *.txt *.cfa4credits Styling.toml)
+	Cinecred Project…	Projekt Cinecred…
+	Open a Cinecred project folder (Styling.toml and its credits spreadsheet)	Odpri mapo projekta Cinecred (Styling.toml in njegova preglednica odjavne špice)
+	(empty block)	(prazen blok)
+	Apply Template…	Uporabi predlogo…
+	Change them in the spreadsheet; the credits follow when you save it.	Spremenite jih v preglednici; odjavna špica sledi, ko jo shranite.
+	Compact View	Strnjen pogled
+	Compare the selected credits on the timeline with their spreadsheet, row by row	Primerjaj izbrano odjavno špico na časovnici z njeno preglednico, vrstico za vrstico
+	Fit the selected credits to the music under them	Prilagodi izbrano odjavno špico glasbi pod njo
+	Fit to Music…	Prilagodi glasbi…
+	Full View	Poln pogled
+	Give the selected credits on the timeline another template	Izbrani odjavni špici na časovnici dodeli drugo predlogo
+	Names	Imena
+	No pages	Ni strani
+	Refresh Placed Credits…	Osveži postavljeno odjavno špico…
+	Show everything: blocks, properties, the pages along time, checks and the credits tools	Pokaži vse: bloke, lastnosti, strani skozi čas, preverjanja in orodja odjavne špice
+	Spine	Os
+	Tails	Konec
+	The blocks of the chosen page; choose one to see it in the preview	Bloki izbrane strani; izberite enega, da ga vidite v predogledu
+	The pages along time; click one to choose it	Strani skozi čas; kliknite eno, da jo izberete
+	{n} more	Še {n}
+	Block	Blok
+	parallel	vzporedno
+# MPEG-2 export audio (#268): a product name, kept as is
+	Dolby Digital (AC-3)	Dolby Digital (AC-3)
+	In the page (OBS takes it from the Browser Source)	Na strani (OBS ga vzame iz vira brskalnika)
+	Separate (a media source in OBS)	Ločeno (medijski vir v OBS)
+	No sound	Brez zvoka
+	credits	odjavna špica
+	graphic	grafika
+	{n} pages	Strani: {n}
+	Live Graphics	Grafika v živo
+	Prepared cues; double-click one to put it in preview	Pripravljeni elementi; dvokliknite enega, da ga postavite v predogled
+	Add Credits…	Dodaj odjavno špico…
+	A credits spreadsheet, credits file or Cinecred project as a cue	Preglednica odjavne špice, datoteka odjavne špice ali projekt Cinecred kot element
+	Add Selected Graphic	Dodaj izbrano grafiko
+	The graphic clip selected on the timeline (a title, a lower third) as a cue	Grafični posnetek, izbran na časovnici (naslov, spodnja tretjina), kot element
+	Cues	Elementi
+	TAKE	V ETER
+	The preview cue goes on air from its first page	Element iz predogleda gre v eter s svoje prve strani
+	PREVIOUS	PREJŠNJA
+	The page before (on the first page: from its start)	Prejšnja stran (na prvi strani: od njenega začetka)
+	NEXT	NASLEDNJA
+	The next page; after the last one, the preview cue	Naslednja stran; po zadnji element iz predogleda
+	HOLD	ZADRŽI
+	Stop the program where it is	Ustavi program, kjer je
+	CONTINUE	NADALJUJ
+	Go on from where it stopped	Nadaljuj, kjer se je ustavilo
+	UPDATE	POSODOBI
+	Read the spreadsheet (or the clip) again; on air it changes at once	Znova preberi preglednico (ali posnetek); v etru se spremeni takoj
+	OUT	IZ ETRA
+	Take everything off air	Umakni vse iz etra
+	Start Live Page	Zaženi stran v živo
+	Serve the program on this computer for OBS's Browser Source (127.0.0.1 only)	Streži program na tem računalniku za vir brskalnika v OBS (samo 127.0.0.1)
+	not running	ne teče
+	OBS ▸ Tools ▸ WebSocket Server Settings	OBS ▸ Orodja ▸ Nastavitve strežnika WebSocket
+	Connect to OBS	Poveži z OBS
+	Connect to OBS on this computer and point its “CFA4 Live” Browser Source at the live page	Poveži z OBS na tem računalniku in usmeri njegov vir brskalnika »CFA4 Live« na stran v živo
+	Port	Vrata
+	Password	Geslo
+	Live page	Stran v živo
+	Sound	Zvok
+	OBS	OBS
+	Nothing in preview	V predogledu ni ničesar
+	page {page} of {pages}	stran {page} od {pages}
+	held	zadržano
+	ended	končano
+	Off air	Izven etra
+	Stop Live Page	Ustavi stran v živo
+	Connected to OBS {version}; source “{source}”	Povezano z OBS {version}; vir »{source}«
+	Point OBS Again	Znova usmeri OBS
+	Select a graphic clip on the timeline first.	Najprej izberite grafični posnetek na časovnici.
+	Connecting to OBS…	Povezovanje z OBS…
+	Live Graphics…	Grafika v živo…
+	PREVIEW	PREDOGLED
+	PROGRAM	PROGRAM
+	a picture or video tag stands alone in a body cell (or with one name, as a portrait); the other tags were removed	oznaka slike ali videa stoji sama v celici telesa (ali z enim imenom, kot portret); druge oznake so bile odstranjene
+	the page gap is not a duration; the page style's is used	razmik strani ni trajanje; uporabi se tisti iz sloga strani
+	the page runtime is not a positive duration; the page style's is used	trajanje strani ni pozitivno; uporabi se tisto iz sloga strani
+	background “{file}” was not found; it is left out	ozadja »{file}« ni bilo mogoče najti; izpuščeno je
+	card page {page} is taller than the frame; use a roll page	stran kartice {page} je višja od slike; uporabite drsečo stran
+	colour “{colour}” of letter style “{style}” is not #rrggbb; it is left out	barva »{colour}« sloga črk »{style}« ni #rrggbb; izpuščena je
+	colour “{colour}” is not #rrggbb; black is used	barva »{colour}« ni #rrggbb; uporabi se črna
+	colour “{colour}” is not #rrggbb; white is used	barva »{colour}« ni #rrggbb; uporabi se bela
+	content style “{style}” does not exist; “{used}” is used	slog vsebine »{style}« ne obstaja; uporabi se »{used}«
+	letter style “{style}” does not exist; the text keeps the block's style	slog črk »{style}« ne obstaja; besedilo ohrani slog bloka
+	page gap “{value}” is not a duration	razmik strani »{value}« ni trajanje
+	page runtime “{value}” is not a duration	trajanje strani »{value}« ni trajanje
+	page style “{style}” does not exist; a roll page is used	slog strani »{style}« ne obstaja; uporabi se drseča stran
+	page {page}: the background names no file; it is left out	stran {page}: ozadje ne navaja datoteke; izpuščeno je
+	page {page}: the runtime is reached by changing the roll speed (the page has no gaps between blocks to stretch)	stran {page}: trajanje se doseže s spremembo hitrosti drsenja (stran nima razmikov med bloki, ki bi jih lahko raztegnili)
+	page {page}: the runtime is reached by changing the roll speed (the credits are too long even without gaps)	stran {page}: trajanje se doseže s spremembo hitrosti drsenja (odjavna špica je predolga tudi brez razmikov)
+	page {page}: the runtime is reached by changing the roll speed (the gaps would have to grow more than 20-fold)	stran {page}: trajanje se doseže s spremembo hitrosti drsenja (razmiki bi morali zrasti več kot 20-krat)
+	page {page}: the transition needs the pages to touch (page gap 0); it is left out	stran {page}: prehod zahteva, da se strani stikata (razmik 0); izpuščen je
+	page {page}: there is no transition “{name}”; the pages cut	stran {page}: prehoda »{name}« ni; strani se zamenjata z rezom
+	spine position “{value}” is not supported (a pixel offset, optionally “parallel”, is)	položaj osi »{value}« ni podprt (podprt je zamik v slikovnih pikah, po želji s »parallel«)
+	vertical gap “{value}” is not a number	navpični razmik »{value}« ni število
+	picture “{file}” was not found or cannot be read; it is left out	slike »{file}« ni bilo mogoče najti ali prebrati; izpuščena je
+	video “{file}” was not found or cannot be read; it is left out	videa »{file}« ni bilo mogoče najti ali prebrati; izpuščen je
+	there is no roll page without its own runtime to stretch; the length cannot change	ni drseče strani brez lastnega trajanja, ki bi jo raztegnili; dolžina se ne more spremeniti
+	the cards and gaps alone are {seconds} s; the asked length is shorter, so the roll pages keep their natural length	že kartice in razmiki trajajo {seconds} s; zahtevana dolžina je krajša, zato drseče strani ohranijo naravno dolžino
+	letter style “{style}”: only the first coloured layer is used (no outlines, shadows or stripes)	slog črk »{style}«: uporabi se le prva barvna plast (brez obrob, senc ali črt)
+	the whole-credits runtime is not carried over; use Fit Credits to Music (or a length) instead	trajanje celotne odjavne špice se ne prenese; namesto tega uporabite Prilagodi odjavno špico glasbi (ali dolžino)
+	page style “{style}”: fade curves become linear fades	slog strani »{style}«: krivulje pojemanja postanejo linearne
+	content style “{style}” has no head in Cinecred; heads written in the sheet are still shown	slog vsebine »{style}« v Cinecredu nima glave; glave, zapisane v preglednici, so še vedno prikazane
+	content style “{style}”: sorting the names is not carried over	slog vsebine »{style}«: razvrščanje imen se ne prenese
+	transition curves are not carried over	krivulje prehodov se ne prenesejo
+	picture styles (pictures keep their own size) are not carried over	slogi slik (slike ohranijo svojo velikost) se ne prenesejo
+	video (tape) styles are not carried over	slogi videa (traku) se ne prenesejo
+	the Cinecred project has {n} credits spreadsheets; “{name}” is used (choose another in the Spreadsheet field)	projekt Cinecred ima preglednic odjavne špice: {n}; uporabi se »{name}« (drugo izberite v polju Preglednica)
+# Media QC: Quality Check window and the export queue's QC state (docs/media-qc.md)
+	Add Finding	Dodaj ugotovitev
+	Add as Finding	Dodaj kot ugotovitev
+	Are colour and contrast acceptable?	Sta barva in kontrast sprejemljiva?
+	Automatic Checks	Samodejna preverjanja
+	Bounds	Meje
+	Check	Preverjanje
+	Check Now	Preveri zdaj
+	Check quality after export	Preveri kakovost po izvozu
+	Checking…	Preverjanje …
+	Contact Sheet	Kontaktni list
+	Critical	Kritično
+	Fail	Ni opravljeno
+	Finding {row}: the time code is not a time in this file (HH:MM:SS:FF).	Ugotovitev {row}: časovna koda ni čas v tej datoteki (HH:MM:SS:FF).
+	Findings	Ugotovitve
+	Human Review	Človeški pregled
+	Incomplete	Nepopolno
+	Is there a visible picture defect?	Ali je na sliki vidna napaka?
+	Is there audible distortion?	Ali je slišno popačenje?
+	Is there unwanted noise?	Ali je prisoten neželen šum?
+	Major	Večje
+	Message	Sporočilo
+	Minor	Manjše
+	No contact sheet	Ni kontaktnega lista
+	Not answered	Brez odgovora
+	Not checked	Ni preverjeno
+	Not run	Ni zagnano
+	Note	Opomba
+	Pass	Opravljeno
+	Passed	Opravljeno
+	Passed with warnings	Opravljeno z opozorili
+	Profile: {id} v{version}	Profil: {id} v{version}
+	Quality Check	Preverjanje kakovosti
+	Quality Check…	Preverjanje kakovosti …
+	Remove Finding	Odstrani ugotovitev
+	Report: {path}	Poročilo: {path}
+	Review complete	Pregled končan
+	Reviewer	Pregledovalec
+	Run the media quality check on the finished file (docs/media-qc.md)	Zaženi preverjanje kakovosti medijev na dokončani datoteki (docs/media-qc.md)
+	Save Review	Shrani pregled
+	Select a finished export in the queue	V čakalni vrsti izberite dokončan izvoz
+	Severity	Resnost
+	The engine is not running.	Pogon ne teče.
+	Time code	Časovna koda
+	Unsure	Negotovo
+	accept	sprejemljivo
+	the engine did not start the check	pogon ni začel preverjanja
+	the engine sent no report	pogon ni poslal poročila
+	MXF OP1a Uncompressed 10-bit 4:2:2 (v210)	MXF OP1a nestisnjeno 10-bitno 4:2:2 (v210)
+	MXF OP1a, uncompressed 10-bit Y'CbCr 4:2:2 in the v210 layout (SMPTE ST 384), 24-bit 48 kHz PCM, start timecode	MXF OP1a, nestisnjen 10-bitni Y'CbCr 4:2:2 v postavitvi v210 (SMPTE ST 384), 24-bitni PCM 48 kHz, začetna časovna koda
+	Write the captions as ANC data (CEA-608/708, 29.97 fps)	Zapiši podnapise kot podatke ANC (CEA-608/708, 29,97 sl./s)
+	Load KDM…	Naloži KDM…
+	Forget DCP Keys	Pozabi ključe DCP
+	Load KDM	Naloži KDM
+	KDM file	Datoteka KDM
+	Private key (PEM)	Zasebni ključ (PEM)
+	{title}: {count} keys loaded	{title}: naloženih ključev: {count}
+	The keys stay in memory only, until Forget DCP Keys or the end of the session.	Ključi ostanejo samo v pomnilniku, do ukaza Pozabi ključe DCP ali konca seje.
+	DCP keys forgotten	Ključi DCP pozabljeni
+	Choose the KDM file and the private key.	Izberite datoteko KDM in zasebni ključ.
+
+# Settings ▸ Timecode Sync (TC-4)
+	Timecode Sync	Sinhronizacija časovne kode
+	TimecodeSync	Sinhronizacija časovne kode
+	Chase	Sledenje
+	Follow external timecode during playback	Med predvajanjem sledi zunanji časovni kodi
+	Lock after	Zakleni po
+	Keep playing without signal for	Brez signala predvajaj še
+	External frame rate	Zunanja hitrost sličic
+	Offset (added to the external timecode)	Zamik (prišteje se zunanji časovni kodi)
+	LTC	LTC
+	LTC input device	Vhodna naprava LTC
+	LTC input channel	Vhodni kanal LTC
+	Send LTC during playback	Med predvajanjem pošiljaj LTC
+	LTC output device	Izhodna naprava LTC
+	LTC output channel	Izhodni kanal LTC
+	LTC level	Raven LTC
+	dBFS	dBFS
+	MIDI Timecode	Časovna koda MIDI
+	MTC input port (empty = CFA4 port)	Vhodna vrata MTC (prazno = vrata CFA4)
+	Send MIDI Timecode during playback	Med predvajanjem pošiljaj časovno kodo MIDI
+	MTC output port (empty = CFA4 port)	Izhodna vrata MTC (prazno = vrata CFA4)
+	Send timecode ahead of the picture by	Pošlji časovno kodo pred sliko za
+	LTC (audio input)	LTC (zvočni vhod)
+	MIDI Timecode (MIDI input)	Časovna koda MIDI (vhod MIDI)
+	Same as the sequence	Enako kot zaporedje
+	29.97 fps drop-frame	29,97 fps drop-frame
+	29.97 fps non-drop	29,97 fps non-drop
+	Timecode Sync Status	Stanje sinhronizacije časovne kode
+	Chase External Timecode	Sledi zunanji časovni kodi
+	Send LTC	Pošlji LTC
+	Send MIDI Timecode	Pošlji časovno kodo MIDI

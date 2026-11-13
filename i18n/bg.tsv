@@ -300,6 +300,7 @@
 	Output file	Изходен файл
 	Overwrite	Презаписване
 	PCM (uncompressed)	PCM (некомпресиран)
+	MP2 (MPEG-1 Layer II)	MP2 (MPEG-1 слой II)
 	Panner	Панорамиране
 	Paste Attributes…	Поставяне на атрибути…
 	Paste Insert	Поставяне с вмъкване
@@ -1857,6 +1858,16 @@
 	SMPTE DCP folder: JPEG 2000 3996×2160 (1.85:1), 5.1 24-bit 48 kHz PCM	SMPTE DCP папка: JPEG 2000 3996×2160 (1,85:1), 5.1 24-битов 48 kHz PCM
 	DCP 4K Scope	DCP 4K Scope
 	SMPTE DCP folder: JPEG 2000 4096×1716 (2.39:1), 5.1 24-bit 48 kHz PCM	SMPTE DCP папка: JPEG 2000 4096×1716 (2,39:1), 5.1 24-битов 48 kHz PCM
+	IMF App 2E (Interoperable Master Package)	IMF App 2E (взаимно съвместим мастър пакет)
+	IMF App 2E HD	IMF App 2E HD
+	SMPTE IMF folder: JPEG 2000 1920×1080, 5.1 24-bit 48 kHz PCM	SMPTE IMF папка: JPEG 2000 1920×1080, 5.1 24-битов 48 kHz PCM
+	IMF App 2E UHD	IMF App 2E UHD
+	SMPTE IMF folder: JPEG 2000 3840×2160, 5.1 24-bit 48 kHz PCM	SMPTE IMF папка: JPEG 2000 3840×2160, 5.1 24-битов 48 kHz PCM
+	Episode	Епизод
+	Event highlights	Акценти от събитие
+	Event	Събитие
+	Lossless (reversible JPEG 2000)	Без загуби (обратим JPEG 2000)
+	Package language	Език на пакета
 	4:2:0 (Main Profile)	4:2:0 (Main Profile)
 	4:2:2 (4:2:2 Profile)	4:2:2 (4:2:2 Profile)
 	B pictures	B кадри
@@ -2011,6 +2022,9 @@
 	AV1 Main (10-bit for HDR)	AV1 Main (10-битов за HDR)
 	10-bit RGB	10-битов RGB
 	12-bit X'Y'Z'	12-битов X'Y'Z'
+	10-bit R'G'B' 4:4:4	10-битов R'G'B' 4:4:4
+	JPEG 2000 IMF lossy	JPEG 2000 IMF със загуби
+	JPEG 2000 IMF reversible	JPEG 2000 IMF обратим
 	16-bit half float	16-битова половинна плаваща запетая
 	linear	линейно
 	uncompressed	некомпресирано
@@ -3295,8 +3309,16 @@
 	MXF OP1a H.264	MXF OP1a H.264
 	MXF OP1a ProRes 422 HQ	MXF OP1a ProRes 422 HQ
 	MXF OP1a, DNxHR HQ (8-bit 4:2:2), 24-bit 48 kHz PCM, start timecode	MXF OP1a, DNxHR HQ (8-битов 4:2:2), 24-битов 48 kHz PCM, начален времеви код
+	MXF OP1a MPEG-2 HD 4:2:2 50 Mbit/s	MXF OP1a MPEG-2 HD 4:2:2 50 Mbit/s
+	MXF OP1a, MPEG-2 4:2:2 Profile long GOP (12 pictures, IBBP) at 50 Mbit/s in the XDCAM HD422 style, 24-bit 48 kHz PCM; HD frame sizes	MXF OP1a, MPEG-2 4:2:2 Profile, дълъг GOP (12 кадъра, IBBP), 50 Mbit/s в стила на XDCAM HD422, 24-битов PCM 48 kHz; HD размери на кадъра
 	MXF OP1a, H.264 High long GOP (0.3 bits per pixel), 24-bit 48 kHz PCM	MXF OP1a, H.264 High дълъг GOP (0,3 бита на пиксел), 24-битов 48 kHz PCM
+	MXF OP1a D-10 (IMX) 50 Mbit/s 525/29.97	MXF OP1a D-10 (IMX) 50 Mbit/s 525/29.97
+	MXF OP1a D-10 (IMX) 50 Mbit/s 625/25	MXF OP1a D-10 (IMX) 50 Mbit/s 625/25
+	MXF OP1a type D-10 (IMX 50): intra-only MPEG-2 4:2:2P@ML at 50 Mbit/s, 720x486 at 29.97 fps (4:3), four 24-bit 48 kHz audio channels	MXF OP1a тип D-10 (IMX 50): само интра MPEG-2 4:2:2P@ML, 50 Mbit/s, 720x486 при 29,97 кадъра/s (4:3), четири 24-битови аудиоканала 48 kHz
+	MXF OP1a type D-10 (IMX 50): intra-only MPEG-2 4:2:2P@ML at 50 Mbit/s, 720x576 at 25 fps (4:3), four 24-bit 48 kHz audio channels	MXF OP1a тип D-10 (IMX 50): само интра MPEG-2 4:2:2P@ML, 50 Mbit/s, 720x576 при 25 кадъра/s (4:3), четири 24-битови аудиоканала 48 kHz
 	MXF OP1a, ProRes 422 HQ, 24-bit 48 kHz PCM, start timecode	MXF OP1a, ProRes 422 HQ, 24-битов 48 kHz PCM, начален времеви код
+	MXF OP1a XDCAM HD422 (RDD 9) 50 Mbit/s	MXF OP1a XDCAM HD422 (RDD 9) 50 Mbit/s
+	MXF OP1a in the SMPTE RDD 9 layout: MPEG-2 4:2:2 Profile long GOP (12 pictures, IBBP) at 50 Mbit/s, 1920x1080 or 1280x720 progressive, four 24-bit 48 kHz channels as per-channel AES3 elements	MXF OP1a в оформлението SMPTE RDD 9: MPEG-2 4:2:2 Profile, дълъг GOP (12 кадъра, IBBP), 50 Mbit/s, 1920x1080 или 1280x720 прогресивно, четири 24-битови канала 48 kHz като отделни AES3 елементи за всеки канал
 	Main	Основен
 	Mark In (Hover Scrub)	Маркиране на начало (преглед при посочване)
 	Mark Out (Hover Scrub)	Маркиране на край (преглед при посочване)
@@ -3638,6 +3660,8 @@
 	Analyze Source for Smart Cut	Анализиране на източника за интелигентен срез
 	Plan Smart Cut	Планиране на интелигентен срез
 	Run Smart Cut	Изпълнение на интелигентен срез
+	DASH Manifest	Манифест DASH
+	Also write a DASH manifest (.mpd)	Записване и на манифест DASH (.mpd)
 	No sequence open. Double-click a sequence in the Project panel.	Няма отворена последователност. Щракнете двукратно върху последователност в панела „Проект“.
 	English (US)	Английски (САЩ)
 	English (UK)	Английски (Обединеното кралство)
@@ -4141,3 +4165,426 @@ export.summary	Low	ниско
 	not supported by CFA4 sequences yet: {what}	все още не се поддържа от последователностите в CFA4: {what}
 	{rate} fps	{rate} fps
 	{w} × {h}, display {dn}:{dd}, pixels {pn}:{pd}	{w} × {h}, показване {dn}:{dd}, пиксели {pn}:{pd}
+# Qt GUI: Tools menu (#868)
+	Video Tools	Видеоинструменти
+	Audio Tools	Аудиоинструменти
+	Publication Tools	Инструменти за публикуване
+	Smart Export…	Интелигентно експортиране…
+# Diagonal Slide and the missing transition variants (#153)
+	From North-West	От северозапад
+	From North-East	От североизток
+	From South-East	От югоизток
+	From South-West	От югозапад
+# Enhance folder: Skin Smoothing and Low Light (#166)
+	Enhance	Подобряване
+	Skin Smoothing	Изглаждане на кожата
+	Keep Texture	Запазване на текстурата
+	Skin Tone	Цвят на кожата
+	Smooth Entire Image	Изглаждане на цялото изображение
+	Low Light	Слаба светлина
+	Max Brightening	Максимално изсветляване
+	Show Illumination	Показване на осветеността
+# Easing presets, Film Gate, Particles, Keyhole, Burn Away, Check Text Legibility (#182)
+	Easing Presets	Готови плавни преходи
+	Sine	Синусоидално
+	Exponential	Експоненциално
+	Circular	Кръгово
+	Elastic	Еластично
+	Film Gate	Филмов прозорец
+	Gate Weave	Трептене на прозореца
+	Weave Rotation	Завъртане при трептенето
+	Particles	Частици
+	Emitter Position	Позиция на излъчвателя
+	Birth Rate	Честота на раждане
+	Lifetime (seconds)	Живот (секунди)
+	Velocity Random	Случайност на скоростта
+	Gravity	Гравитация
+	Particle Size	Размер на частиците
+	Keyhole	Ключалка
+	Burn Away	Изгаряне
+	Burn Size	Размер на изгарянето
+	Ember Width	Ширина на жаравата
+	Ember Color	Цвят на жаравата
+	Check Text Legibility	Проверка на четливостта на текста
+	Clear Legibility Markers	Изчистване на маркерите за четливост
+	Text legibility: no problems found	Четливост на текста: не са открити проблеми
+	Text legibility: {count} problems marked on the timeline (orange markers)	Четливост на текста: {count} проблема са маркирани на времевата линия (оранжеви маркери)
+# Glitch folder: Bit Crush, Block Glitch, Databend, VHS, Scan Line Jitter, Tile Jitter (#353)
+	Bit Crush	Намаляване на битовете
+	Bits per Channel	Битове на канал
+	Ordered Dither	Подредено разсейване
+	Dither Cell Size	Размер на клетката на разсейването
+	Block Glitch	Блоков глич
+	Blocks Moved	Преместени блокове
+	Max Distance	Максимално разстояние
+	Snap to Grid	Прилепване към мрежата
+	Swap Blocks	Размяна на блокове
+	Changes per Second	Промени в секунда
+	Databend	Повреда на данните
+	Breaks	Прекъсвания
+	Shift	Отместване
+	Color Damage	Повреда на цвета
+	VHS	VHS
+	Color Bleed	Преливане на цвета
+	Wobble	Люлеене
+	Snow	Сняг
+	Tracking Bar	Лента на трекинга
+	Head Switching	Превключване на главите
+	Scan Line Jitter	Трептене на редовете
+	Jitter	Трептене
+	Interval	Интервал
+	Infinite	Безкрайно
+	Periodic	Периодично
+	Tile Jitter	Трептене на плочките
+	Tiles	Плочки
+	Band Direction	Посока на лентите
+	Jitter Direction	Посока на трептенето
+# Creative Looks: Halftone and Dither (#354)
+	Halftone	Полутон
+	Dither	Разсейване
+	Pattern	Шарка
+	Cell Size	Размер на клетката
+	Cyan Angle	Ъгъл на синьозеленото
+	Magenta Angle	Ъгъл на пурпурното
+	Yellow Angle	Ъгъл на жълтото
+	Black Angle	Ъгъл на черното
+	Monochrome Angle	Монохромен ъгъл
+	Sharpness	Острота
+	Ink Color	Цвят на мастилото
+	Paper Color	Цвят на хартията
+	Color (CMYK)	Цвят (CMYK)
+	Dot	Точка
+	Line	Линия
+	Bayer 2×2	Bayer 2×2
+	Bayer 4×4	Bayer 4×4
+	Bayer 8×8	Bayer 8×8
+	Pixel Size	Размер на пиксела
+	Palette	Палитра
+	Input Colors	Входни цветове
+	Green Phosphor	Зелен фосфор
+	Amber Monitor	Кехлибарен монитор
+	Game Boy	Game Boy
+	CGA	CGA
+	EGA	EGA
+	ZX Spectrum	ZX Spectrum
+	PICO-8	PICO-8
+
+# Credits workspace (stáblista)
+	Credits from a Spreadsheet	Надписи от таблица
+	A .ods, .xlsx or CSV credits sheet	Таблица с надписи във формат .ods, .xlsx или CSV
+	The spreadsheet's folder	Папката на таблицата
+	Built-in styles	Вградени стилове
+	Spreadsheet	Таблица
+	Sheet	Лист
+	Pictures	Изображения
+	Styling	Стил
+	Page	Страница
+	Warnings	Предупреждения
+	Moment in the page	Момент в страницата
+	Place at Playhead	Поставяне при главата за възпроизвеждане
+	Spreadsheets (*.ods *.xlsx *.csv *.tsv *.txt)	Таблици (*.ods *.xlsx *.csv *.tsv *.txt)
+	Credits styling (*.json)	Стил на надписите (*.json)
+	Card	Карта
+	Credits Spreadsheet	Таблица с надписи
+	Reading…	Четене…
+	(one table)	(една таблица)
+	Total: {time}	Общо: {time}
+	Row {row}: {message}	Ред {row}: {message}
+	Choose a credits spreadsheet.	Изберете таблица с надписи.
+	No preview	Няма визуализация
+	Placing…	Поставяне…
+	Placed {n} pages on the timeline.	Поставени страници във времевата линия: {n}.
+	Credits Page Picture	Изображение на страница с надписи
+	Preview Credits	Визуализация на надписите
+	Credits Styles	Стилове на надписите
+	Spreadsheets and credits files (*.ods *.xlsx *.csv *.tsv *.txt *.cfa4credits)	Таблици и файлове с надписи (*.ods *.xlsx *.csv *.tsv *.txt *.cfa4credits)
+	CFA4 credits file (*.cfa4credits)	Файл с надписи на CFA4 (*.cfa4credits)
+	Save as Credits File…	Запазване като файл с надписи…
+	Spreadsheet, worksheet, styling and the table in one file, to open on any machine	Таблицата, листът, стилът и редовете в един файл, който се отваря на всяка машина
+	Saved: {path}	Запазено: {path}
+	Added	Добавено
+	Removed	Премахнато
+	Changed	Променено
+	(empty row)	(празен ред)
+	Refresh Credits from Spreadsheet	Обновяване на надписите от таблицата
+	Change	Промяна
+	Before → After	Преди → След
+	Select None	Без избор
+	Keep my edits on the pages (where their block is unchanged)	Запазване на моите редакции в страниците (където блокът им не е променен)
+	Locate Spreadsheet…	Намиране на таблицата…
+	Comparing…	Сравняване…
+	{n} changes in {file} since the credits were placed. Untick what you do not want.	Промени в {file}, откакто надписите са поставени: {n}. Махнете отметката от нежеланите.
+	The spreadsheet {file} has not changed since the credits were placed.	Таблицата {file} не е променяна, откакто надписите са поставени.
+	{n} layers were edited by hand on the pages.	Ръчно редактирани слоеве в страниците: {n}.
+	Accepting every change would replace these, because their block changed: {names}	Приемането на всички промени ще замени тези, защото блокът им е променен: {names}
+	Refreshing…	Обновяване…
+	Refreshed: {n} changes applied, {kept} hand edits kept.	Обновено: приложени промени: {n}, запазени ръчни редакции: {kept}.
+	Refresh Credits from Spreadsheet…	Обновяване на надписите от таблицата…
+	Save Credits File…	Запазване на файл с надписи…
+	Compare Credits with Spreadsheet	Сравняване на надписите с таблицата
+	“{name}” appears twice in the same block	„{name}“ се среща два пъти в един и същ блок
+	“{name}” is written as “{other}” in row {otherRow}	„{name}“ е изписано като „{other}“ на ред {otherRow}
+	The font “{font}” is not installed; another font is used	Шрифтът „{font}“ не е инсталиран; използва се друг шрифт
+	The font “{font}” has no “{chars}”; another font draws them	Шрифтът „{font}“ няма „{chars}“; изобразява ги друг шрифт
+	“{text}” is outside the title-safe area	„{text}“ е извън безопасната зона за надписи
+	“{text}” is too dark on black (contrast {ratio}:1; at least 4.5:1 is needed)	„{text}“ е твърде тъмно на черно (контраст {ratio}:1; нужно е поне 4,5:1)
+	“{text}” is {px} px high; 24 px or more reads well	„{text}“ е висок {px} px; от 24 px нагоре се чете добре
+	The roll moves {speed} px per frame; a whole number does not shimmer	Ролът се движи с {speed} px на кадър; при цяло число не трепти
+	A line crosses the frame in {seconds} s; at least 6 s reads well	Ред пресича кадъра за {seconds} s; поне 6 s се чете добре
+	The card holds for only {seconds} s after its fades	Картата остава само {seconds} s след преливанията
+	This page starts {seconds} s before the previous one ends	Тази страница започва {seconds} s преди края на предишната
+	“{file}” is shown at {percent} % of its pixels; it will look soft	„{file}“ се показва при {percent} % от пикселите си; ще изглежда размито
+	{more} more of the same	Още {more} от същото
+	Page {page}: {message}	Страница {page}: {message}
+	Checks and warnings	Проверки и предупреждения
+	Checks: {errors} errors, {warnings} warnings	Проверки: грешки {errors}, предупреждения {warnings}
+	Check Credits	Проверка на надписите
+	The whole music ({time})	Цялата музика ({time})
+	Until the sound ends ({time})	До края на звука ({time})
+	To the last bar line ({time})	До последната тактова черта ({time})
+	Fit Credits to Music	Напасване на надписите към музиката
+	Fit Credits to Music…	Напасване на надписите към музиката…
+	Analyse Music for Credits	Анализ на музиката за надписите
+	Length:	Дължина:
+	Cards last whole beats (cuts on the beat)	Картите траят цели удари (смяна в ритъм)
+	Start the credits where the music starts	Надписите да започват с музиката
+	Length of the credits	Дължина на надписите
+	Remove Fitting	Премахване на напасването
+	Listening to the music…	Слушане на музиката…
+	Length: {time}	Дължина: {time}
+	the sound ends at {time}	звукът свършва в {time}
+	tempo {bpm} BPM	темпо {bpm} BPM
+	the credits without fitting: {time}	надписите без напасване: {time}
+	Select a credits page on the timeline.	Изберете страница с надписи във времевата линия.
+	Fitting…	Напасване…
+	The credits now last {time}.	Надписите вече траят {time}.
+	Fitting removed.	Напасването е премахнато.
+	Fit to This Length	Напасване към тази дължина
+	No music to measure ({problem}); type the length.	Няма музика за измерване ({problem}); въведете дължината.
+	The text moves {speed} px per frame; a whole number does not shimmer	Текстът се движи с {speed} px на кадър; при цяло число не трепти
+	Crawl	Бягащ текст
+	Picture: {file}	Изображение: {file}
+	Video: {file}	Видео: {file}
+	Looped video: {file}	Видео в цикъл: {file}
+	Into the next	Към следващата
+	Safe areas and spines	Безопасни зони и оси
+	Action safe (93 %), title safe (90 %), the centre and the page's spines	Безопасна зона за действие (93 %), за надписи (90 %), центърът и осите на страницата
+	Baseline grid	Мрежа на базовите линии
+	Lines one gap unit apart, moving with the page	Линии през една единица разстояние, движещи се със страницата
+	“{text}” does not stand out from the background (contrast {ratio}:1; at least 4.5:1 is needed)	„{text}“ не се откроява от фона (контраст {ratio}:1; нужно е поне 4,5:1)
+	A picture or video is behind the text: check the contrast by eye	Зад текста има изображение или видео: проверете контраста на око
+	A ready look: styles, backgrounds, transitions and timing. A styling file, if given, wins.	Готов облик: стилове, фонове, преходи и тайминг. Ако е зададен файл със стил, той има предимство.
+	New Spreadsheet from Template…	Нова таблица от шаблон…
+	built in	вграден
+	mine	мой
+	this project	този проект
+	Template	Шаблон
+	Choose a template first.	Първо изберете шаблон.
+	Name of the template:	Име на шаблона:
+	Template saved: {name}	Шаблонът е запазен: {name}
+	Apply Credits Template…	Прилагане на шаблон за надписи…
+	Template:	Шаблон:
+	Credits Templates	Шаблони за надписи
+	CSV (*.csv)	CSV (*.csv)
+	Spreadsheets, credits files and Cinecred projects (*.ods *.xlsx *.csv *.tsv *.txt *.cfa4credits Styling.toml)	Таблици, файлове с надписи и проекти на Cinecred (*.ods *.xlsx *.csv *.tsv *.txt *.cfa4credits Styling.toml)
+	Cinecred Project…	Проект на Cinecred…
+	Open a Cinecred project folder (Styling.toml and its credits spreadsheet)	Отваряне на папка на проект на Cinecred (Styling.toml и таблицата с надписи)
+	(empty block)	(празен блок)
+	Apply Template…	Прилагане на шаблон…
+	Change them in the spreadsheet; the credits follow when you save it.	Променете ги в таблицата; надписите се обновяват, когато я запазите.
+	Compact View	Компактен изглед
+	Compare the selected credits on the timeline with their spreadsheet, row by row	Сравняване на избраните надписи във времевата линия с таблицата им, ред по ред
+	Fit the selected credits to the music under them	Напасване на избраните надписи към музиката под тях
+	Fit to Music…	Напасване към музиката…
+	Full View	Пълен изглед
+	Give the selected credits on the timeline another template	Друг шаблон за избраните надписи във времевата линия
+	Names	Имена
+	No pages	Няма страници
+	Refresh Placed Credits…	Обновяване на поставените надписи…
+	Show everything: blocks, properties, the pages along time, checks and the credits tools	Показване на всичко: блокове, свойства, страниците във времето, проверки и инструментите за надписи
+	Spine	Ос
+	Tails	Край
+	The blocks of the chosen page; choose one to see it in the preview	Блоковете на избраната страница; изберете един, за да го видите във визуализацията
+	The pages along time; click one to choose it	Страниците във времето; щракнете върху една, за да я изберете
+	{n} more	Още {n}
+	Block	Блок
+	parallel	паралелно
+# MPEG-2 export audio (#268): a product name, kept as is
+	Dolby Digital (AC-3)	Dolby Digital (AC-3)
+	In the page (OBS takes it from the Browser Source)	В страницата (OBS го взема от източника „Браузър“)
+	Separate (a media source in OBS)	Отделно (медиен източник в OBS)
+	No sound	Без звук
+	credits	надписи
+	graphic	графика
+	{n} pages	Страници: {n}
+	Live Graphics	Графика на живо
+	Prepared cues; double-click one to put it in preview	Подготвени елементи; щракнете двукратно върху един, за да отиде във визуализацията
+	Add Credits…	Добавяне на надписи…
+	A credits spreadsheet, credits file or Cinecred project as a cue	Таблица с надписи, файл с надписи или проект на Cinecred като елемент
+	Add Selected Graphic	Добавяне на избраната графика
+	The graphic clip selected on the timeline (a title, a lower third) as a cue	Избраният във времевата линия графичен клип (заглавие, надпис в долната трета) като елемент
+	Cues	Елементи
+	TAKE	ЕФИР
+	The preview cue goes on air from its first page	Елементът от визуализацията излиза в ефир от първата си страница
+	PREVIOUS	ПРЕДИШНА
+	The page before (on the first page: from its start)	Предишната страница (на първата страница: от началото ѝ)
+	NEXT	СЛЕДВАЩА
+	The next page; after the last one, the preview cue	Следващата страница; след последната – елементът от визуализацията
+	HOLD	ЗАДРЪЖ
+	Stop the program where it is	Спиране на програмата там, където е
+	CONTINUE	ПРОДЪЛЖИ
+	Go on from where it stopped	Продължаване оттам, където е спряло
+	UPDATE	ОБНОВИ
+	Read the spreadsheet (or the clip) again; on air it changes at once	Повторно четене на таблицата (или клипа); в ефир се сменя веднага
+	OUT	ИЗВЪН ЕФИР
+	Take everything off air	Сваляне на всичко от ефир
+	Start Live Page	Стартиране на страницата на живо
+	Serve the program on this computer for OBS's Browser Source (127.0.0.1 only)	Предаване на програмата на този компютър за източника „Браузър“ на OBS (само 127.0.0.1)
+	not running	не работи
+	OBS ▸ Tools ▸ WebSocket Server Settings	OBS ▸ Tools ▸ WebSocket Server Settings
+	Connect to OBS	Свързване с OBS
+	Connect to OBS on this computer and point its “CFA4 Live” Browser Source at the live page	Свързване с OBS на този компютър и насочване на източника му „CFA4 Live“ към страницата на живо
+	Port	Порт
+	Password	Парола
+	Live page	Страница на живо
+	Sound	Звук
+	OBS	OBS
+	Nothing in preview	Нищо във визуализацията
+	page {page} of {pages}	страница {page} от {pages}
+	held	задържано
+	ended	приключи
+	Off air	Извън ефир
+	Stop Live Page	Спиране на страницата на живо
+	Connected to OBS {version}; source “{source}”	Свързано с OBS {version}; източник „{source}“
+	Point OBS Again	Повторно насочване на OBS
+	Select a graphic clip on the timeline first.	Първо изберете графичен клип във времевата линия.
+	Connecting to OBS…	Свързване с OBS…
+	Live Graphics…	Графика на живо…
+	PREVIEW	ВИЗУАЛИЗАЦИЯ
+	PROGRAM	ПРОГРАМА
+	a picture or video tag stands alone in a body cell (or with one name, as a portrait); the other tags were removed	таг за изображение или видео стои сам в клетка от тялото (или с едно име, като портрет); другите тагове са премахнати
+	the page gap is not a duration; the page style's is used	разстоянието между страниците не е продължителност; използва се това от стила на страницата
+	the page runtime is not a positive duration; the page style's is used	продължителността на страницата не е положителна; използва се тази от стила на страницата
+	background “{file}” was not found; it is left out	фонът „{file}“ не е намерен; пропуска се
+	card page {page} is taller than the frame; use a roll page	страницата-карта {page} е по-висока от кадъра; използвайте рол страница
+	colour “{colour}” of letter style “{style}” is not #rrggbb; it is left out	цветът „{colour}“ на стила на буквите „{style}“ не е #rrggbb; пропуска се
+	colour “{colour}” is not #rrggbb; black is used	цветът „{colour}“ не е #rrggbb; използва се черно
+	colour “{colour}” is not #rrggbb; white is used	цветът „{colour}“ не е #rrggbb; използва се бяло
+	content style “{style}” does not exist; “{used}” is used	стилът на съдържанието „{style}“ не съществува; използва се „{used}“
+	letter style “{style}” does not exist; the text keeps the block's style	стилът на буквите „{style}“ не съществува; текстът запазва стила на блока
+	page gap “{value}” is not a duration	разстоянието между страниците „{value}“ не е продължителност
+	page runtime “{value}” is not a duration	продължителността на страницата „{value}“ не е продължителност
+	page style “{style}” does not exist; a roll page is used	стилът на страницата „{style}“ не съществува; използва се рол страница
+	page {page}: the background names no file; it is left out	страница {page}: фонът не посочва файл; пропуска се
+	page {page}: the runtime is reached by changing the roll speed (the page has no gaps between blocks to stretch)	страница {page}: продължителността се постига чрез промяна на скоростта на рола (страницата няма разстояния между блоковете за разтягане)
+	page {page}: the runtime is reached by changing the roll speed (the credits are too long even without gaps)	страница {page}: продължителността се постига чрез промяна на скоростта на рола (надписите са твърде дълги дори без разстояния)
+	page {page}: the runtime is reached by changing the roll speed (the gaps would have to grow more than 20-fold)	страница {page}: продължителността се постига чрез промяна на скоростта на рола (разстоянията би трябвало да нараснат над 20 пъти)
+	page {page}: the transition needs the pages to touch (page gap 0); it is left out	страница {page}: преходът изисква страниците да се допират (разстояние 0); пропуска се
+	page {page}: there is no transition “{name}”; the pages cut	страница {page}: няма преход „{name}“; страниците се сменят с рязане
+	spine position “{value}” is not supported (a pixel offset, optionally “parallel”, is)	позицията на оста „{value}“ не се поддържа (поддържа се отместване в пиксели, по избор с „parallel“)
+	vertical gap “{value}” is not a number	вертикалното разстояние „{value}“ не е число
+	picture “{file}” was not found or cannot be read; it is left out	изображението „{file}“ не е намерено или не може да се прочете; пропуска се
+	video “{file}” was not found or cannot be read; it is left out	видеото „{file}“ не е намерено или не може да се прочете; пропуска се
+	there is no roll page without its own runtime to stretch; the length cannot change	няма рол страница без собствена продължителност, която да се разтегне; дължината не може да се промени
+	the cards and gaps alone are {seconds} s; the asked length is shorter, so the roll pages keep their natural length	само картите и разстоянията са {seconds} s; исканата дължина е по-къса, затова рол страниците запазват естествената си дължина
+	letter style “{style}”: only the first coloured layer is used (no outlines, shadows or stripes)	стил на буквите „{style}“: използва се само първият цветен слой (без контури, сенки и ивици)
+	the whole-credits runtime is not carried over; use Fit Credits to Music (or a length) instead	продължителността на целите надписи не се пренася; използвайте вместо това „Напасване на надписите към музиката“ (или дължина)
+	page style “{style}”: fade curves become linear fades	стил на страницата „{style}“: кривите на затихване стават линейни
+	content style “{style}” has no head in Cinecred; heads written in the sheet are still shown	стилът на съдържанието „{style}“ няма начало в Cinecred; началата, написани в таблицата, пак се показват
+	content style “{style}”: sorting the names is not carried over	стил на съдържанието „{style}“: подреждането на имената не се пренася
+	transition curves are not carried over	кривите на преходите не се пренасят
+	picture styles (pictures keep their own size) are not carried over	стиловете на изображенията (изображенията запазват размера си) не се пренасят
+	video (tape) styles are not carried over	стиловете на видео (лента) не се пренасят
+	the Cinecred project has {n} credits spreadsheets; “{name}” is used (choose another in the Spreadsheet field)	проектът на Cinecred има таблици с надписи: {n}; използва се „{name}“ (изберете друга в полето „Таблица“)
+# Media QC: Quality Check window and the export queue's QC state (docs/media-qc.md)
+	Add Finding	Добавяне на забележка
+	Add as Finding	Добавяне като забележка
+	Are colour and contrast acceptable?	Приемливи ли са цветът и контрастът?
+	Automatic Checks	Автоматични проверки
+	Bounds	Граници
+	Check	Проверка
+	Check Now	Провери сега
+	Check quality after export	Проверка на качеството след експорт
+	Checking…	Проверка…
+	Contact Sheet	Контактен лист
+	Critical	Критична
+	Fail	Неуспех
+	Finding {row}: the time code is not a time in this file (HH:MM:SS:FF).	Забележка {row}: времевият код не е момент в този файл (HH:MM:SS:FF).
+	Findings	Забележки
+	Human Review	Проверка от човек
+	Incomplete	Непълна
+	Is there a visible picture defect?	Има ли видим дефект в картината?
+	Is there audible distortion?	Има ли чуваемо изкривяване?
+	Is there unwanted noise?	Има ли нежелан шум?
+	Major	Сериозна
+	Message	Съобщение
+	Minor	Незначителна
+	No contact sheet	Няма контактен лист
+	Not answered	Без отговор
+	Not checked	Не е проверено
+	Not run	Не е изпълнена
+	Note	Бележка
+	Pass	Успех
+	Passed	Успешно
+	Passed with warnings	Успешно с предупреждения
+	Profile: {id} v{version}	Профил: {id} v{version}
+	Quality Check	Проверка на качеството
+	Quality Check…	Проверка на качеството…
+	Remove Finding	Премахване на забележка
+	Report: {path}	Отчет: {path}
+	Review complete	Прегледът е завършен
+	Reviewer	Проверяващ
+	Run the media quality check on the finished file (docs/media-qc.md)	Проверка на качеството на медията в готовия файл (docs/media-qc.md)
+	Save Review	Запазване на прегледа
+	Select a finished export in the queue	Изберете завършен експорт в опашката
+	Severity	Сериозност
+	The engine is not running.	Двигателят не работи.
+	Time code	Времеви код
+	Unsure	Не съм сигурен
+	accept	допустимо
+	the engine did not start the check	двигателят не стартира проверката
+	the engine sent no report	двигателят не изпрати отчет
+	MXF OP1a Uncompressed 10-bit 4:2:2 (v210)	MXF OP1a некомпресиран 10-битов 4:2:2 (v210)
+	MXF OP1a, uncompressed 10-bit Y'CbCr 4:2:2 in the v210 layout (SMPTE ST 384), 24-bit 48 kHz PCM, start timecode	MXF OP1a, некомпресиран 10-битов Y'CbCr 4:2:2 в подредба v210 (SMPTE ST 384), 24-битов PCM 48 kHz, начален тайм код
+	Write the captions as ANC data (CEA-608/708, 29.97 fps)	Записване на надписите като ANC данни (CEA-608/708, 29,97 fps)
+	Load KDM…	Зареждане на KDM…
+	Forget DCP Keys	Забравяне на DCP ключовете
+	Load KDM	Зареждане на KDM
+	KDM file	KDM файл
+	Private key (PEM)	Частен ключ (PEM)
+	{title}: {count} keys loaded	{title}: заредени ключове: {count}
+	The keys stay in memory only, until Forget DCP Keys or the end of the session.	Ключовете остават само в паметта, до „Забравяне на DCP ключовете“ или края на сесията.
+	DCP keys forgotten	DCP ключовете са забравени
+	Choose the KDM file and the private key.	Изберете KDM файла и частния ключ.
+
+# Settings ▸ Timecode Sync (TC-4)
+	Timecode Sync	Синхронизация на тайм код
+	TimecodeSync	Синхронизация на тайм код
+	Chase	Следване
+	Follow external timecode during playback	Следване на външен тайм код при възпроизвеждане
+	Lock after	Заключване след
+	Keep playing without signal for	Продължаване без сигнал за
+	External frame rate	Външна кадрова честота
+	Offset (added to the external timecode)	Отместване (добавя се към външния тайм код)
+	LTC	LTC
+	LTC input device	Входно устройство за LTC
+	LTC input channel	Входен канал за LTC
+	Send LTC during playback	Изпращане на LTC при възпроизвеждане
+	LTC output device	Изходно устройство за LTC
+	LTC output channel	Изходен канал за LTC
+	LTC level	Ниво на LTC
+	dBFS	dBFS
+	MIDI Timecode	MIDI тайм код
+	MTC input port (empty = CFA4 port)	Входен MTC порт (празно = порт на CFA4)
+	Send MIDI Timecode during playback	Изпращане на MIDI тайм код при възпроизвеждане
+	MTC output port (empty = CFA4 port)	Изходен MTC порт (празно = порт на CFA4)
+	Send timecode ahead of the picture by	Изпращане на тайм кода преди картината с
+	LTC (audio input)	LTC (аудиовход)
+	MIDI Timecode (MIDI input)	MIDI тайм код (MIDI вход)
+	Same as the sequence	Като последователността
+	29.97 fps drop-frame	29,97 fps drop-frame
+	29.97 fps non-drop	29,97 fps non-drop
+	Timecode Sync Status	Състояние на синхронизацията на тайм код
+	Chase External Timecode	Следване на външен тайм код
+	Send LTC	Изпращане на LTC
+	Send MIDI Timecode	Изпращане на MIDI тайм код

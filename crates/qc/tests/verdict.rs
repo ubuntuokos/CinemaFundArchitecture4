@@ -39,7 +39,14 @@ fn review_done() -> HumanReview {
     HumanReview {
         state: ReviewState::Done,
         reviewer: Some("QC".into()),
-        answers: vec![Answer { question: "picture.defect".into(), answer: AnswerValue::No, note: String::new() }],
+        answers: cfa4_qc::report::QUESTIONS
+            .iter()
+            .map(|(id, _)| Answer {
+                question: (*id).into(),
+                answer: if *id == "picture.colorContrast" { AnswerValue::Yes } else { AnswerValue::No },
+                note: String::new(),
+            })
+            .collect(),
         findings: vec![],
     }
 }
@@ -179,6 +186,37 @@ fn human_review_rules() {
     let mut review = review_done();
     review.findings.push(finding(Severity::Minor));
     assert_eq!(base.with_review(review).unwrap().summary.verdict, Verdict::Warn);
+
+    // a finished review vouches for the file only with every question answered
+    let mut review = review_done();
+    review.answers.retain(|a| a.question != "audio.noise");
+    let r = base.with_review(review).unwrap();
+    assert_eq!(r.summary.verdict, Verdict::Incomplete, "{:?}", r.summary.reasons);
+    assert!(r.summary.reasons.iter().any(|x| x.contains("`audio.noise` not answered")), "{:?}", r.summary.reasons);
+    let mut review = review_done();
+    review.answers[2].answer = AnswerValue::Unsure;
+    assert_eq!(base.with_review(review).unwrap().summary.verdict, Verdict::Incomplete);
+    // a problem answered without a finding has no severity yet: never PASS
+    for (k, problem) in [(0, AnswerValue::Yes), (1, AnswerValue::No), (2, AnswerValue::Yes), (3, AnswerValue::Yes)] {
+        let mut review = review_done();
+        review.answers[k].answer = problem;
+        let r = base.with_review(review.clone()).unwrap();
+        assert_eq!(r.summary.verdict, Verdict::Incomplete, "{:?}", r.summary.reasons);
+        // the finding decides: minor warns, critical fails
+        review.findings.push(finding(Severity::Minor));
+        assert_eq!(base.with_review(review.clone()).unwrap().summary.verdict, Verdict::Warn);
+        review.findings[0].severity = Severity::Critical;
+        assert_eq!(base.with_review(review).unwrap().summary.verdict, Verdict::Fail);
+    }
+    // an optional review that reports a problem without a finding warns
+    let mut po = p.clone();
+    po.human_review = Requirement::Optional;
+    let optional = QcReport::assemble(&po, output(), parts(all_pass(&po))).unwrap();
+    assert_eq!(optional.summary.verdict, Verdict::Pass);
+    let mut review = review_done();
+    review.answers[0].answer = AnswerValue::Yes;
+    review.answers.pop();
+    assert_eq!(optional.with_review(review).unwrap().summary.verdict, Verdict::Warn, "unanswered is fine when optional; the problem warns");
 
     // unknown questions are refused
     let mut review = review_done();

@@ -88,6 +88,12 @@ fn ffprobe_json(args: &[&str], path: &str) -> Option<serde_json::Value> {
     Some(serde_json::from_slice(&out.stdout).unwrap())
 }
 
+/// Whether `ffprobe -demuxers` lists `name` (the name column only).
+fn ffprobe_has_demuxer(ffprobe: &Path, name: &str) -> bool {
+    let Ok(out) = std::process::Command::new(ffprobe).args(["-hide_banner", "-demuxers"]).output() else { return false };
+    String::from_utf8_lossy(&out.stdout).lines().any(|l| l.split_whitespace().nth(1).is_some_and(|n| n.split(',').any(|n| n == name)))
+}
+
 fn files_in(dir: &Path) -> Vec<String> {
     let mut v: Vec<String> = std::fs::read_dir(dir).unwrap().flatten().map(|e| e.file_name().to_string_lossy().to_string()).collect();
     v.sort();
@@ -395,6 +401,17 @@ fn openexr_sequences() {
         let first = dir.0.join(&want[0]);
         let bytes = std::fs::read(&first).unwrap();
         assert_eq!(&bytes[..4], &[0x76, 0x2F, 0x31, 0x01]);
+        // every frame carries its time code (consecutive) and the frame rate
+        let timing: Vec<(Option<i64>, FrameRate)> = want
+            .iter()
+            .map(|f| {
+                let src = cfa4_media::open_bytes("f.exr", std::fs::read(dir.0.join(f)).unwrap().into(), &[]).unwrap();
+                (src.info().start_timecode, src.info().video.as_ref().unwrap().frame_rate)
+            })
+            .collect();
+        let t0 = timing[0].0.expect("time code");
+        assert_eq!(timing.iter().map(|t| t.0).collect::<Vec<_>>(), vec![Some(t0), Some(t0 + 1), Some(t0 + 2)]);
+        assert!(timing.iter().all(|t| t.1 == timing[0].1));
         let Some(ffmpeg) = cfa4_testkit::ffmpeg_or_skip("OpenEXR sequences") else { continue };
         let out = std::process::Command::new(ffmpeg)
             .args(["-v", "error", "-i"])
@@ -434,7 +451,7 @@ fn openexr_sequences_compress() {
         let path = dir.0.join("c000.exr");
         let bytes = std::fs::read(&path).unwrap();
         let at = bytes.windows(24).position(|w| w == b"compression\0compression\0").unwrap() + 28;
-        assert_eq!(bytes[at], [0, 1, 2, 3][files.len()], "{c:?}");
+        assert_eq!(bytes[at], [0, 1, 2, 3, 4][files.len()], "{c:?}");
         files.push((c, path, bytes.len(), dir));
     }
     let plain = files[0].2;
@@ -1277,7 +1294,7 @@ fn metadata_and_quicktime_multiplexer() {
 #[test]
 fn interlaced_output_is_rejected_honestly() {
     let (p, seq, m) = matte([0.0, 0.0, 1.0, 1.0], 160, 90, None);
-    let s = ExportSettings { format: Format::ProRes, path: "unused.mov".into(), field_order: FieldOrder::UpperFirst, ..Default::default() };
+    let s = ExportSettings { format: Format::DnxHr, path: "unused.mov".into(), field_order: FieldOrder::UpperFirst, ..Default::default() };
     let e = export(&p, seq, &s, &m, &Progress::default()).unwrap_err();
     assert!(e.to_string().contains("progressive"), "{e}");
 }
@@ -1312,11 +1329,21 @@ fn builtin_presets_are_valid_and_unique() {
     for p in &all {
         p.settings.validate().unwrap();
         assert!(p.builtin && !p.category.is_empty() && !p.description.is_empty(), "{}", p.name);
+        // a preset is only offered when an encoder and a container path exist for it
+        assert!(available(p.settings.format) && unavailable_reason(p.settings.format).is_none(), "{}", p.name);
     }
     assert_eq!(presets::find_builtin("match source - adaptive high bitrate").unwrap().name, presets::DEFAULT_PRESET);
     let json = serde_json::to_value(&all[0]).unwrap();
     let back: ExportPreset = serde_json::from_value(json).unwrap();
     assert_eq!(back.settings.adaptive_bitrate, Some(0.2));
+}
+
+/// CFA4-PROCODEC-002 WP0: every listed format has an encoder in this build, so none carries a reason.
+#[test]
+fn unavailable_formats_say_why() {
+    for f in Format::ALL {
+        assert_eq!(unavailable_reason(f), None, "{}", f.label());
+    }
 }
 
 /// #108: the default 320 kbps is more than AAC can carry in stereo at 22.05 kHz (6 bits per sample
@@ -1386,7 +1413,7 @@ fn h265_is_a_format_with_a_built_in_encoder() {
     }
     assert_eq!(Format::from_name(Format::Hevc.id()), Some(Format::Hevc));
     assert_eq!((Format::Hevc.extension(), Format::Hevc.label()), ("mp4", "H.265 (HEVC)"));
-    assert!(Format::ALL.contains(&Format::Hevc) && Format::ALL.len() == 27);
+    assert!(Format::ALL.contains(&Format::Hevc) && Format::ALL.len() == 28);
     let s: ExportSettings = serde_json::from_value(serde_json::json!({"format": "hevc"})).unwrap();
     assert_eq!(s.format, Format::Hevc);
     assert_eq!(serde_json::to_value(&s).unwrap()["format"], "hevc");
@@ -2044,4 +2071,95 @@ fn chapters_reach_webm() {
     let s = ExportSettings { format: Format::WebM, path: off.clone(), range, bitrate_kbps: 300, chapters: false, ..Default::default() };
     export(&p, seq, &s, &m, &Progress::default()).unwrap();
     assert!(cfa4_matroska::open(&std::fs::read(&off).unwrap()[..]).unwrap().chapters.is_empty());
+}
+
+#[test]
+fn hls_writes_a_dash_manifest_when_asked() {
+    let (p, seq, m) = matte_secs([0.2, 0.5, 0.8, 1.0], 64, 36, Some(-6.0), 3);
+    let dir = Scratch::new("hls-dash");
+    let path = dir.path("Demo.m3u8");
+    let mpd = dash_files(&path);
+    assert_eq!(mpd, dir.path("Demo.mpd"));
+    let s = ExportSettings { format: Format::Hls, path: path.clone(), bitrate_kbps: 300, ..Default::default() };
+    let r = export(&p, seq, &s, &m, &Progress::default()).unwrap();
+    assert!(!Path::new(&mpd).exists() && !r.extra_files.contains(&mpd), "off by default");
+
+    let s = ExportSettings { dash_manifest: true, ..s };
+    let r = export(&p, seq, &s, &m, &Progress::default()).unwrap();
+    assert_eq!(r.extra_files.last(), Some(&mpd));
+    let x = std::fs::read_to_string(&mpd).unwrap();
+    assert!(x.contains("profiles=\"urn:mpeg:dash:profile:isoff-live:2011\" type=\"static\""), "{x}");
+    assert!(x.contains("initialization=\"Demo_36p_init.mp4\" media=\"Demo_36p_$Number%05d$.m4s\""), "{x}");
+    assert!(x.contains("initialization=\"Demo_audio_init.mp4\" media=\"Demo_audio_$Number%05d$.m4s\""), "{x}");
+    assert!(x.contains("width=\"64\" height=\"36\" frameRate=\"24\"") && x.contains("codecs=\"mp4a.40.2\""), "{x}");
+}
+
+/// The segment durations (seconds) of each `SegmentTimeline` in an MPD, in document order.
+fn mpd_timelines(mpd: &str) -> Vec<Vec<f64>> {
+    let attr = |tag: &str, name: &str| -> Option<u64> {
+        let at = tag.find(&format!(" {name}=\""))? + name.len() + 3;
+        tag[at..].split('"').next()?.parse().ok()
+    };
+    let mut out = Vec::new();
+    for template in mpd.split("<SegmentTemplate").skip(1) {
+        let timescale = attr(template, "timescale").unwrap() as f64;
+        let mut durations = Vec::new();
+        for s in template.split("<S ").skip(1) {
+            let s = format!(" {}", s.split("/>").next().unwrap());
+            let d = attr(&s, "d").unwrap() as f64 / timescale;
+            durations.extend(std::iter::repeat_n(d, 1 + attr(&s, "r").unwrap_or(0) as usize));
+        }
+        out.push(durations);
+    }
+    out
+}
+
+/// The `#EXTINF` durations of a media playlist.
+fn extinf(playlist: &str) -> Vec<f64> {
+    playlist.lines().filter_map(|l| l.strip_prefix("#EXTINF:")).map(|l| l.trim_end_matches(',').parse().unwrap()).collect()
+}
+
+#[test]
+fn dash_manifest_matches_the_hls_playlists() {
+    let (p, seq, m) = matte_secs([0.2, 0.5, 0.8, 1.0], 64, 36, Some(-6.0), 13);
+    let dir = Scratch::new("hls-dash-match");
+    let path = dir.path("Demo.m3u8");
+    // a key frame every two seconds: segments are cut at 6 and 12 s
+    let s =
+        ExportSettings { format: Format::Hls, path: path.clone(), bitrate_kbps: 300, keyframe_distance: Some(48), dash_manifest: true, ..Default::default() };
+    export(&p, seq, &s, &m, &Progress::default()).unwrap();
+    let files = hls_files(&path, 36);
+    let mpd = std::fs::read_to_string(dash_files(&path)).unwrap();
+    assert!(mpd.contains("mediaPresentationDuration=\"PT13S\""), "{mpd}");
+
+    // the same segments, of the same lengths, as the HLS media playlists (video first, then sound)
+    let timelines = mpd_timelines(&mpd);
+    let playlists = [extinf(&std::fs::read_to_string(&files.media).unwrap()), extinf(&std::fs::read_to_string(&files.audio_media).unwrap())];
+    assert_eq!(timelines.len(), 2, "{mpd}");
+    for (dash, hls) in timelines.iter().zip(&playlists) {
+        assert_eq!(dash.len(), hls.len(), "{mpd}");
+        for (d, h) in dash.iter().zip(hls) {
+            assert!((d - h).abs() < 1e-4, "{d} vs {h}\n{mpd}");
+        }
+    }
+    assert_eq!(timelines[0].len(), 3);
+    for n in 0..3 {
+        assert!(Path::new(&files.segment(n)).exists() && Path::new(&files.audio_segment(n)).exists());
+    }
+
+    // ffprobe opens the manifest: one H.264 and one AAC stream, about 13 seconds. ffmpeg's DASH
+    // demuxer needs libxml2; the CI's FFmpeg 9.0.2 is built without it (--disable-autodetect),
+    // so this part is skipped there even with CFA4_REQUIRE_ORACLES=1: the timelines above are
+    // the check that counts, and the local ffprobe (distribution builds have libxml2) adds this one.
+    let Some(ffprobe) = cfa4_testkit::ffprobe_or_skip("export settings") else { return };
+    if !ffprobe_has_demuxer(&ffprobe, "dash") {
+        eprintln!("SKIPPED (dash_manifest_matches_the_hls_playlists): this ffprobe has no dash demuxer (built without libxml2)");
+        return;
+    }
+    let Some(v) = ffprobe_json(&["-show_streams", "-show_format"], &dash_files(&path)) else { return };
+    let codecs: Vec<&str> = v["streams"].as_array().unwrap().iter().map(|s| s["codec_name"].as_str().unwrap()).collect();
+    assert_eq!(codecs, ["h264", "aac"], "{v}");
+    assert_eq!(v["format"]["format_name"], "dash", "{v}");
+    let secs: f64 = v["format"]["duration"].as_str().unwrap().parse().unwrap();
+    assert!((secs - 13.0).abs() < 0.1, "{v}");
 }

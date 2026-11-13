@@ -39,12 +39,18 @@ enum VCodec {
     Hevc,
     /// Hap: the FourCC.
     Hap([u8; 4]),
+    /// Canopus HQ / HQA (`CUVC`) or HQX (`CHQX`).
+    Canopus(cfa4_canopus::Codec),
     /// FFV1 with its configuration record (`BITMAPINFOHEADER` extra bytes).
     Ffv1(Vec<u8>),
+    /// VC-2 / Dirac.
+    Dirac,
     /// Huffyuv with its (reduced) `BITMAPINFOHEADER`.
     Huffyuv(Vec<u8>),
     /// Ut Video: the FourCC and the extradata.
     UtVideo([u8; 4], Vec<u8>),
+    /// Matrox MPEG-2 I-frame (`MMES`, `M701`–`M705`): intra-only MPEG-2, every chunk a picture.
+    Mpeg2,
     Raw(RawFormat),
     /// No decoder: the codec's name.
     Unsupported(String),
@@ -60,6 +66,9 @@ fn video_codec(b: &BitmapInfo) -> (VCodec, String) {
     if let Some(raw) = RawFormat::from_avi(b.compression, b.bit_count) {
         return (VCodec::Raw(raw), raw.label().into());
     }
+    if let Some(c) = crate::canopus::codec(&b.compression) {
+        return (VCodec::Canopus(c), crate::canopus::label(c).into());
+    }
     let mut f = b.compression;
     f.make_ascii_uppercase();
     match &f {
@@ -70,10 +79,12 @@ fn video_codec(b: &BitmapInfo) -> (VCodec, String) {
         _ if crate::utvideo::is_utvideo(&b.compression) => (VCodec::UtVideo(b.compression, b.extra.clone()), "Ut Video".into()),
         b"HFYU" => (VCodec::Huffyuv(crate::huffyuv::bitmap_info_header(b.bit_count, &b.extra)), "Huffyuv".into()),
         b"FFV1" => (VCodec::Ffv1(b.extra.clone()), "FFV1".into()),
+        b"DRAC" => (VCodec::Dirac, "VC-2 / Dirac".into()),
         b"DIVX" | b"DX50" | b"XVID" | b"FMP4" | b"MP4V" | b"M4S2" | b"3IV2" | b"DIV3" | b"MP43" | b"MP42" => {
             (VCodec::Unsupported("MPEG-4 Part 2 (DivX / Xvid)".into()), "MPEG-4 Part 2 (DivX / Xvid)".into())
         }
         _ if crate::hap::is_hap(&b.compression) => (VCodec::Hap(b.compression), "Hap".into()),
+        b"MMES" | b"M701" | b"M702" | b"M703" | b"M704" | b"M705" => (VCodec::Mpeg2, "MPEG-2 (Matrox I-frame)".into()),
         b"DVSD" | b"DV25" | b"DV50" | b"DVHD" | b"DVSL" | b"CDVC" | b"DVCP" | b"DVPP" => (VCodec::Dv, "DV".into()),
         _ => {
             let name = fourcc_text(b.compression);
@@ -278,6 +289,7 @@ impl AviSource {
             return Err(CodecError::Unsupported("no playable streams".into()));
         }
         // video: frame slots, pictures and key frames
+        let mut dv_timecode = None;
         let (mut vcodec, mut vframes, mut vslots, mut rate, mut bottom_up, mut video) =
             (VCodec::Unsupported(String::new()), Vec::new(), 0i64, FrameRate::new(25, 1), false, None);
         if let Some(vs) = vstream.and_then(|i| file.streams.get(i)) {
@@ -376,6 +388,19 @@ impl AviSource {
                     (info.width, info.height) = (d.profile.width, d.profile.height);
                 }
             }
+            // DV: the time code of the first frame's subcode, counted at the rate of the frames'
+            // own system (525/60 or 625/50). The AVI header's rate/scale is the writer's choice
+            // and need not be an exact x/1001 (a copy by ffmpeg 9.0 counts the drop-frame label
+            // as non-drop through it), while the drop-frame flag only counts at x/1001.
+            if codec == VCodec::Dv
+                && let Some(c) = vframes.first().and_then(|f| vs.chunks.get(f.chunk))
+                && let Ok(first) = cfa4_media::reader::read_range(&*bytes.0, c.offset, (c.size as usize).min(crate::dif::MAX_FRAME_BYTES))
+            {
+                let tc_rate = crate::video::dv_stream_info(&first)
+                    .map(|d| d.profile.frame_rate())
+                    .map_or(info.frame_rate, |(n, d)| FrameRate::new(i64::from(n), i64::from(d)));
+                dv_timecode = crate::dif::start_timecode(&first, tc_rate);
+            }
             video = Some(info);
             vcodec = codec;
         }
@@ -451,7 +476,7 @@ impl AviSource {
         if audios.is_empty()
             && let Some(vs) = vstream.and_then(|i| file.streams.get(i)).filter(|s| is_iavs(s))
             && let Some(c) = vframes.first().and_then(|f| vs.chunks.get(f.chunk))
-            && let Ok(first) = cfa4_media::reader::read_range(&*bytes.0, c.offset, c.size as usize)
+            && let Ok(first) = cfa4_media::reader::read_range(&*bytes.0, c.offset, (c.size as usize).min(crate::dif::MAX_FRAME_BYTES))
         {
             dv_audio = crate::dif::DvAudio::scan(&first, vframes.len(), |i| {
                 let c = vframes.get(i).and_then(|f| vs.chunks.get(f.chunk))?;
@@ -480,7 +505,7 @@ impl AviSource {
             video,
             audio_streams,
             container: "AVI".into(),
-            start_timecode: None,
+            start_timecode: dv_timecode,
             file_size: Some(bytes.0.len()),
         };
         let mut vorder: Vec<usize> = (0..vframes.len()).collect();
@@ -604,9 +629,16 @@ impl VideoSamples for AviVideo<'_> {
             VCodec::H264 => Ok(Box::new(crate::video::H264Decoder::annexb())),
             VCodec::Hevc => Ok(Box::new(crate::video::HevcDecoder::annexb())),
             VCodec::Hap(fourcc) => make_video_decoder(&crate::hap::sample_entry(*fourcc, w, h)),
+            VCodec::Canopus(c) => make_video_decoder(&crate::canopus::sample_entry(*c, w, h)),
             VCodec::Ffv1(record) => make_video_decoder(&crate::ffv1::sample_entry(record, w, h)),
+            VCodec::Dirac => make_video_decoder(&crate::dirac::sample_entry(w, h)),
             VCodec::Huffyuv(bih) => make_video_decoder(&crate::huffyuv::sample_entry(bih, w, h)),
             VCodec::UtVideo(fourcc, extra) => make_video_decoder(&crate::utvideo::sample_entry(*fourcc, extra, w, h)),
+            VCodec::Mpeg2 => {
+                // primed with the first picture's sequence header, so any picture decodes on its own
+                let header = self.read(0).ok().and_then(|d| crate::video::mpeg2_sequence_header(&d)).unwrap_or_default();
+                Ok(Box::new(crate::video::Mpeg2Decoder::new(header)))
+            }
             VCodec::Raw(f) => Ok(Box::new(RawVideoDecoder::new(*f, v.width, v.height, self.src.bottom_up)?)),
             VCodec::Unsupported(name) => Err(CodecError::Unsupported(format!("no decoder for {name} video"))),
         }

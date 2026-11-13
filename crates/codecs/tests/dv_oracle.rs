@@ -1,5 +1,5 @@
 //! DV in every container CFA4 imports it from (raw `.dv`, AVI `dvsd`, QuickTime `dvc `/`dvcp`/
-//! `dvpp`, MXF), against ffmpeg: ffmpeg's `dvvideo` encoder writes the files and its decoder is the
+//! `dvpp`/`dv5p`/`dvhp`, MXF), DVCPRO 50 and DVCPRO HD included, against ffmpeg: ffmpeg's `dvvideo` encoder writes the files and its decoder is the
 //! oracle. The DCT is not bit-exact by definition (our float IDCT against ffmpeg's integer one), so
 //! samples match within a small tolerance; frame count, size, sampling and aspect are exact.
 //! 4:1:1 enters CFA4 as 4:2:2 (owner decision, 2026-11-01): every other 4:2:2 chroma sample is a
@@ -59,6 +59,58 @@ const SPECS: &[Spec] = &[
     Spec { name: "dv_pal_420.mov", lavfi: PAL, pix_fmt: "yuv420p", extra: &[], size: (720, 576), rate: (25, 1), container: "", par: (16, 15) },
     Spec { name: "dvcpro_pal_411.mov", lavfi: PAL, pix_fmt: "yuv411p", extra: &[], size: (720, 576), rate: (25, 1), container: "", par: (16, 15) },
     Spec { name: "dv_pal_420.mxf", lavfi: PAL, pix_fmt: "yuv420p", extra: &[], size: (720, 576), rate: (25, 1), container: "", par: (16, 15) },
+    // DVCPRO 50 and DVCPRO HD (4:2:2; HD is BT.709 and anamorphic 16:9)
+    Spec { name: "dvcpro50_pal.mov", lavfi: PAL, pix_fmt: "yuv422p", extra: &[], size: (720, 576), rate: (25, 1), container: "", par: (16, 15) },
+    Spec {
+        name: "dvcpro50_ntsc_wide.dv",
+        lavfi: NTSC,
+        pix_fmt: "yuv422p",
+        extra: &["-aspect", "16:9"],
+        size: (720, 480),
+        rate: (30000, 1001),
+        container: "DV",
+        par: (32, 27),
+    },
+    Spec {
+        name: "dvcprohd_1080i50.dv",
+        lavfi: "testsrc2=size=1440x1080:rate=25",
+        pix_fmt: "yuv422p",
+        extra: &[],
+        size: (1440, 1080),
+        rate: (25, 1),
+        container: "DV",
+        par: (4, 3),
+    },
+    Spec {
+        name: "dvcprohd_1080i50.avi",
+        lavfi: "testsrc2=size=1440x1080:rate=25",
+        pix_fmt: "yuv422p",
+        extra: &[],
+        size: (1440, 1080),
+        rate: (25, 1),
+        container: "AVI",
+        par: (4, 3),
+    },
+    Spec {
+        name: "dvcprohd_1080i60.mxf",
+        lavfi: "testsrc2=size=1280x1080:rate=30000/1001",
+        pix_fmt: "yuv422p",
+        extra: &[],
+        size: (1280, 1080),
+        rate: (30000, 1001),
+        container: "",
+        par: (3, 2),
+    },
+    Spec {
+        name: "dvcprohd_720p60.mov",
+        lavfi: "testsrc2=size=960x720:rate=60000/1001",
+        pix_fmt: "yuv422p",
+        extra: &[],
+        size: (960, 720),
+        rate: (60000, 1001),
+        container: "",
+        par: (4, 3),
+    },
 ];
 
 fn args(s: &Spec) -> Vec<&'static str> {
@@ -88,7 +140,9 @@ fn check(ff: &Path, s: &Spec, src: &SharedSource) {
     assert!(v.codec.starts_with("DV"), "{}: codec {}", s.name, v.codec);
     let want_fmt = if s.pix_fmt == "yuv420p" { "YUV 4:2:0 8-bit" } else { "YUV 4:2:2 8-bit" };
     assert_eq!(v.pixel_format, want_fmt, "{}", s.name);
-    assert_eq!(v.color.matrix, cfa4_color::Matrix::Bt601, "{}", s.name);
+    let hd = s.size.1 >= 720;
+    let matrix = if hd { cfa4_color::Matrix::Bt709 } else { cfa4_color::Matrix::Bt601 };
+    assert_eq!(v.color.matrix, matrix, "{}", s.name);
     // QuickTime's time scale can round the NTSC frame duration: within half a frame
     let want = Tick::from_rational(FRAMES, s.rate.1, s.rate.0);
     let half = Tick::from_rational(1, s.rate.1, 2 * s.rate.0);
@@ -97,7 +151,11 @@ fn check(ff: &Path, s: &Spec, src: &SharedSource) {
     let file = dir().join(s.name);
     let raw = ffmpeg_frames(ff, &file, s.pix_fmt);
     let (w, h) = (s.size.0 as usize, s.size.1 as usize);
-    let (cw, ch) = if s.pix_fmt == "yuv420p" { (w / 2, h / 2) } else { (w / 4, h) };
+    let (cw, ch) = match s.pix_fmt {
+        "yuv420p" => (w / 2, h / 2),
+        "yuv422p" => (w / 2, h),
+        _ => (w / 4, h),
+    };
     let per = w * h + 2 * cw * ch;
     assert_eq!(raw.len(), per * FRAMES as usize, "{}: ffmpeg frame count", s.name);
     // in reverse order: every frame is intra, random access needs no warm-up
@@ -111,7 +169,7 @@ fn check(ff: &Path, s: &Spec, src: &SharedSource) {
             let even = |pl: &[u8]| pl.iter().step_by(2).map(|&v| u16::from(v)).collect::<Vec<_>>();
             vec![p[0].iter().map(|&v| u16::from(v)).collect(), even(&p[1]), even(&p[2])]
         } else {
-            assert_eq!(*chroma, Chroma::C420, "{}", s.name);
+            assert_eq!(*chroma, if s.pix_fmt == "yuv422p" { Chroma::C422 } else { Chroma::C420 }, "{}", s.name);
             planes(&f)
         };
         let k = k as usize;
@@ -350,4 +408,44 @@ fn type1_dv_avi_audio_matches_raw_dv() {
     let avi = cfa4_codecs::open_bytes("type1.avi", type1_avi(&frames, (30000, 1001)).into()).unwrap();
     let dv = cfa4_codecs::open_bytes(SPECS[0].name, silent.clone().into()).unwrap();
     assert_eq!(avi.info().audio_streams.len(), dv.info().audio_streams.len());
+}
+
+/// The start timecode of raw DV and of DV AVI (type 1 and type 2) comes from the first frame's
+/// subcode time code pack, which ffmpeg's DV muxer writes from `-timecode`; the drop-frame flag
+/// is honoured at 29.97. An AVI written by ffmpeg's `dvvideo` encoder alone has no time code pack.
+#[test]
+fn dv_start_timecode_from_subcode() {
+    let ff = cfa4_testkit::require_ffmpeg!();
+    for (name, lavfi, pix, tc, df) in [("dv_ntsc_tc_df.dv", NTSC, "yuv411p", "01:02:03;04", true), ("dv_pal_tc.dv", PAL, "yuv420p", "10:20:30:12", false)] {
+        let args = ["-f", "lavfi", "-i", lavfi, "-frames:v", "4", "-c:v", "dvvideo", "-pix_fmt", pix, "-timecode", tc, "-f", "dv"];
+        let file = fixture(&ff, name, &args).unwrap_or_else(|| panic!("could not generate {name}"));
+        let raw = std::fs::read(&file).unwrap();
+        let dv = cfa4_codecs::open_bytes(name, raw.clone().into()).unwrap();
+        let rate = dv.info().video.clone().unwrap().frame_rate;
+        let start = dv.info().start_timecode.unwrap_or_else(|| panic!("{name}: no start timecode"));
+        // CFA4 writes every drop-frame separator as `;`, ffmpeg only the last
+        assert_eq!(cfa4_time::format_timecode_frames(start, rate, df), tc.replace(':', if df { ";" } else { ":" }), "{name}");
+        // type 2: ffmpeg copies the frames into a `dvsd` stream
+        let avi_name = name.replace(".dv", ".avi");
+        let avi_file = fixture(&ff, &avi_name, &["-i", file.to_str().unwrap(), "-c", "copy"]).unwrap_or_else(|| panic!("could not generate {avi_name}"));
+        let avi = cfa4_codecs::open_bytes(&avi_name, bytes(&avi_file)).unwrap();
+        assert_eq!(avi.info().start_timecode, Some(start), "{avi_name}");
+        // the AVI header's rate is the writer's choice (FFmpeg 9.0 does not keep 30000/1001 on a
+        // copy): the count follows the frames' own system, so 2997/100 counts the same
+        let mut odd = std::fs::read(&avi_file).unwrap();
+        let strh = odd.windows(12).position(|w| &w[..4] == b"strh" && &w[8..] == b"vids").unwrap_or_else(|| panic!("{avi_name}: no video strh"));
+        odd[strh + 28..strh + 32].copy_from_slice(&100u32.to_le_bytes()); // dwScale
+        odd[strh + 32..strh + 36].copy_from_slice(&2997u32.to_le_bytes()); // dwRate
+        let odd = cfa4_codecs::open_bytes(&avi_name, odd.into()).unwrap();
+        assert_eq!(odd.info().start_timecode, Some(start), "{avi_name}: rate 2997/100");
+        // type 1: whole DIF frames in an `iavs` stream
+        let ranges = cfa4_dv::frames(&raw).unwrap();
+        let frames: Vec<&[u8]> = ranges.iter().map(|r| &raw[r.clone()]).collect();
+        let (n, d) = (rate.num as u32, rate.den as u32);
+        let t1 = cfa4_codecs::open_bytes("type1_tc.avi", type1_avi(&frames, (n, d)).into()).unwrap();
+        assert_eq!(t1.info().start_timecode, Some(start), "{name}: type-1 AVI");
+    }
+    let plain = make(&ff, &SPECS[3]);
+    let src = cfa4_codecs::open_bytes(SPECS[3].name, bytes(&plain)).unwrap();
+    assert_eq!(src.info().start_timecode, None, "{}", SPECS[3].name);
 }

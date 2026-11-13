@@ -101,6 +101,49 @@ enum Inner {
     TrueHd(Box<cfa4_truehd::cfa4::Decoder>),
     /// G.711, G.722, IMA and Microsoft ADPCM (`cfa4-adpcm`).
     Adpcm(Box<cfa4_adpcm::Decoder>),
+    /// AMR-NB and AMR-WB (`cfa4-amr`): packets hold storage-format frames.
+    Amr(cfa4_amr::Decoder),
+    /// TTA (`cfa4-tta`): each packet is one frame with its CRC.
+    Tta(cfa4_tta::Decoder),
+}
+
+/// Packets between two saved decoder states (see [`Checkpoints`]).
+pub const CHECKPOINT_INTERVAL: usize = 250;
+
+/// Decoder states saved every [`CHECKPOINT_INTERVAL`] packets, for codecs whose state never
+/// converges after a jump: AMR's long-term predictor carries any difference on for as long as
+/// the speech is voiced, so no fixed pre-roll gives the continuous decode back. A jump restores
+/// the nearest earlier state (decoding from the start when there is none yet) and decodes
+/// forward, so every read equals playback from the start.
+#[derive(Default)]
+pub struct Checkpoints(std::collections::BTreeMap<usize, PacketDecoder>);
+
+impl Checkpoints {
+    /// Prepares `d` for a jump to packet `i`: the first packet to decode, or `None` when `d`'s
+    /// codec does not use checkpoints (the caller resets and pre-rolls as usual).
+    pub fn restore(&self, d: &mut PacketDecoder, i: usize) -> Option<usize> {
+        d.snapshot()?;
+        match self.0.range(..=i).next_back().and_then(|(&k, cp)| Some((k, cp.snapshot()?))) {
+            Some((k, cp)) => {
+                *d = cp;
+                Some(k)
+            }
+            None => {
+                d.reset();
+                Some(0)
+            }
+        }
+    }
+
+    /// Call before decoding packet `next`: saves `d`'s state at every interval.
+    pub fn record(&mut self, d: &PacketDecoder, next: usize) {
+        if next.is_multiple_of(CHECKPOINT_INTERVAL)
+            && !self.0.contains_key(&next)
+            && let Some(cp) = d.snapshot()
+        {
+            self.0.insert(next, cp);
+        }
+    }
 }
 
 /// G.722 packets decoded before a random-access target: its adaptive quantizers and predictors
@@ -271,6 +314,23 @@ impl PacketDecoder {
         let d = cfa4_adpcm::Decoder::new(codec, channels).map_err(|e| CodecError::Unsupported(e.to_string()))?;
         Ok(Self { inner: Inner::Adpcm(Box::new(d)), channels })
     }
+    /// A copy of the decoder state, for codecs that seek through [`Checkpoints`] (AMR).
+    pub fn snapshot(&self) -> Option<Self> {
+        match &self.inner {
+            Inner::Amr(d) => Some(Self { inner: Inner::Amr(d.clone()), channels: self.channels }),
+            _ => None,
+        }
+    }
+    /// AMR wideband (`wide`) or narrowband, mono.
+    pub fn amr(wide: bool) -> Self {
+        Self { inner: Inner::Amr(cfa4_amr::Decoder::new(wide)), channels: 1 }
+    }
+    /// TTA (Matroska `A_TTA1`) with the track's channels, bits per sample and rate.
+    pub fn tta(channels: u16, bits: u16, sample_rate: u32) -> Result<Self> {
+        let info = cfa4_tta::Info { format: cfa4_tta::FORMAT_SIMPLE, channels, bits, sample_rate, samples: u32::MAX };
+        let d = cfa4_tta::Decoder::new(info, None).map_err(|e| CodecError::Unsupported(format!("TTA: {e}")))?;
+        Ok(Self { inner: Inner::Tta(d), channels: usize::from(channels) })
+    }
     /// Whether this decodes Opus (which needs [`OPUS_PRE_ROLL`] of pre-roll after a seek).
     pub fn is_opus(&self) -> bool {
         matches!(self.inner, Inner::Opus { .. })
@@ -287,6 +347,8 @@ impl PacketDecoder {
             // the decoder needs the STREAMINFO body: `dfLa` holds it after the 4-byte block header
             C::Flac(f) => Self::new(CODEC_ID_FLAC, rate, f.metadata_blocks.get(4..38).map(<[u8]>::to_vec)),
             C::Opus(o) => Self::opus(cfa4_opus::OpusHead::from_dops(&o.to_bytes()).map_err(|e| CodecError::Unsupported(format!("Opus: {e}")))?),
+            C::Unknown { fourcc, .. } if fourcc.0 == *b"samr" => Ok(Self::amr(false)),
+            C::Unknown { fourcc, .. } if fourcc.0 == *b"sawb" => Ok(Self::amr(true)),
             C::Unknown { fourcc, .. } if fourcc.0 == *b"a3ds" => Err(CodecError::Unsupported(AURO_CX_UNSUPPORTED.into())),
             other => Err(CodecError::Unsupported(format!("{} audio", other.name()))),
         }
@@ -363,6 +425,17 @@ impl PacketDecoder {
                 let planes = d.decode(data).map_err(|e| CodecError::Decode(e.to_string()))?;
                 return Ok(planes.into_iter().map(|p| p.into_iter().map(|s| f32::from(s) / 32768.0).collect()).collect());
             }
+            Inner::Tta(d) => {
+                let planes = d.decode_packet(data).map_err(|e| CodecError::Decode(format!("TTA: {e}")))?;
+                let info = *d.info();
+                return Ok(planes.into_iter().map(|p| p.into_iter().map(|v| info.to_f32(v)).collect()).collect());
+            }
+            Inner::Amr(d) => {
+                let mut pcm = Vec::new();
+                d.decode_packet(data, &mut pcm).map_err(|e| CodecError::Decode(format!("AMR: {e}")))?;
+                self.channels = 1;
+                return Ok(vec![pcm.into_iter().map(|s| f32::from(s) / 32768.0).collect()]);
+            }
             Inner::Mpa(d) => {
                 // a packet holds one frame or several; a damaged first frame is an error, damage
                 // after a good frame ends the packet
@@ -424,7 +497,8 @@ impl PacketDecoder {
             Inner::Dts(d) => d.reset(),
             Inner::TrueHd(d) => d.reset(),
             Inner::Adpcm(d) => d.reset(),
-            Inner::AacPending | Inner::MpegPending(_) => {}
+            Inner::Amr(d) => d.reset(),
+            Inner::AacPending | Inner::MpegPending(_) | Inner::Tta(_) => {}
         }
     }
 }
@@ -495,7 +569,7 @@ pub enum FixedFrames<'a> {
 /// syncframes of the program we decode in `first`. `None` when it is not known: an AAC
 /// configuration our decoder does not read, a header that does not parse, or a header whose rate
 /// is not `rate`.
-pub fn fixed_packet_samples(codec: FixedFrames, first: &[u8], rate: u32) -> Option<i64> {
+pub fn fixed_packet_samples(codec: FixedFrames<'_>, first: &[u8], rate: u32) -> Option<i64> {
     let mpegts = match codec {
         FixedFrames::Aac(asc) => {
             let Ok(dec) = cfa4_aac::Decoder::new(asc) else {
@@ -677,13 +751,13 @@ pub struct LatmConfig {
 
 const AAC_RATES: [u32; 13] = [96_000, 88_200, 64_000, 48_000, 44_100, 32_000, 24_000, 22_050, 16_000, 12_000, 11_025, 8_000, 7_350];
 
-fn latm_value(r: &mut cfa4_bitstream::BitReader) -> Option<u32> {
+fn latm_value(r: &mut cfa4_bitstream::BitReader<'_>) -> Option<u32> {
     let n = r.read_bits(2).ok()? + 1;
     r.read_bits(8 * n).ok()
 }
 
 /// StreamMuxConfig after `audioMuxVersion`, leaving the reader after it.
-fn stream_mux_config(r: &mut cfa4_bitstream::BitReader) -> Option<LatmConfig> {
+fn stream_mux_config(r: &mut cfa4_bitstream::BitReader<'_>) -> Option<LatmConfig> {
     let version = r.read_bits(1).ok()?;
     let version_a = if version == 1 { r.read_bits(1).ok()? } else { 0 };
     if version_a != 0 {
@@ -1004,6 +1078,50 @@ impl AudioFileSource {
             };
             return Ok(Self { info, rate, samples });
         }
+        if matches!(ext.as_str(), "amr" | "awb") {
+            let (pcm, rate) = cfa4_amr::decode_file(&bytes).map_err(|e| CodecError::Decode(format!("{name}: {e}")))?;
+            let wide = rate == cfa4_amr::wb::SAMPLE_RATE;
+            let samples = vec![pcm.into_iter().map(|s| f32::from(s) / 32768.0).collect::<Vec<f32>>()];
+            let frames = samples.first().map_or(0, Vec::len);
+            let info = MediaInfo {
+                name: name.to_string(),
+                kind: MediaKind::AudioOnly,
+                duration: Tick::from_units(frames as i64, i64::from(rate)),
+                video: None,
+                audio_streams: vec![AudioStreamInfo {
+                    sample_rate: rate,
+                    channels: 1,
+                    codec: if wide { "AMR-WB" } else { "AMR-NB" }.into(),
+                    ..AudioStreamInfo::default()
+                }],
+                container: "AMR".into(),
+                start_timecode: None,
+                file_size: Some(bytes.len() as u64),
+            };
+            return Ok(Self { info, rate, samples });
+        }
+        if ext == "tta" {
+            let (tta, planes) = cfa4_tta::decode_file(&bytes, None).map_err(|e| CodecError::Decode(format!("{name}: {e}")))?;
+            let samples: Vec<Vec<f32>> = planes.into_iter().map(|p| p.into_iter().map(|v| tta.to_f32(v)).collect()).collect();
+            let frames = samples.first().map_or(0, Vec::len);
+            let info = MediaInfo {
+                name: name.to_string(),
+                kind: MediaKind::AudioOnly,
+                duration: Tick::from_units(frames as i64, i64::from(tta.sample_rate)),
+                video: None,
+                audio_streams: vec![AudioStreamInfo {
+                    sample_rate: tta.sample_rate,
+                    channels: samples.len() as u32,
+                    codec: "TTA".into(),
+                    bits_per_sample: Some(u32::from(tta.bits)),
+                    ..AudioStreamInfo::default()
+                }],
+                container: "TTA".into(),
+                start_timecode: None,
+                file_size: Some(bytes.len() as u64),
+            };
+            return Ok(Self { info, rate: tta.sample_rate, samples });
+        }
         if ext == "aac" {
             let (rate, samples) = decode_adts(&bytes)?.ok_or_else(|| CodecError::Decode(format!("{name}: no ADTS AAC frames")))?;
             let frames = samples.first().map_or(0, Vec::len);
@@ -1288,7 +1406,7 @@ impl MediaSource for AudioFileSource {
 
 pub fn opener(name: &str, bytes: Arc<[u8]>) -> Option<std::result::Result<SharedSource, MediaError>> {
     let ext = name.rsplit('.').next().unwrap_or("").to_ascii_lowercase();
-    if !matches!(ext.as_str(), "mp3" | "mp2" | "aac" | "dts" | "dtshd" | "flac" | "ogg" | "oga" | "aif" | "aiff" | "aifc") {
+    if !matches!(ext.as_str(), "mp3" | "mp2" | "aac" | "dts" | "dtshd" | "flac" | "ogg" | "oga" | "aif" | "aiff" | "aifc" | "amr" | "awb" | "tta") {
         return None;
     }
     Some(AudioFileSource::decode(name, bytes).map(|s| Arc::new(s) as SharedSource).map_err(Into::into))

@@ -36,6 +36,7 @@ mod probe;
 mod qc;
 mod serve;
 mod serve_graphics;
+mod serve_live;
 mod serve_lumetri;
 mod serve_media_browser;
 mod serve_multicam;
@@ -43,6 +44,7 @@ mod serve_project;
 mod serve_scopes;
 mod serve_shm;
 mod serve_shuttle;
+mod serve_tcsync;
 mod serve_text;
 mod serve_tts;
 mod settings_cmd;
@@ -92,7 +94,7 @@ SUBCOMMANDS
   import <file>...              import media into the project
   export <out> [--preset name] [--format f] [--range r] [--start s --end s] [--settings json]
          [--gpu-rendering auto|off]
-         [--scale f] [--quality 0-100] [--no-audio] [--queue] [--allow-offline]
+         [--scale f] [--quality 0-100] [--no-audio] [--dash] [--queue] [--allow-offline]
                                 export the active sequence and wait for it to finish: with an
                                 export preset (`export --list-presets`; built-in or the user's), or
                                 a format (h264|hevc|prores|dnxhr|apv|mjpeg|mxf-op1a|mxf-opatom|mpeg2|dcp|png|tiff|bmp|gif|wav|aiff|aac, guessed
@@ -100,7 +102,8 @@ SUBCOMMANDS
                                 range in seconds; --settings is ExportSettings JSON merged over the
                                 preset; --scale renders at a fraction of the frame size (0.5 =
                                 half); --quality 0-100 for the formats that take one; --no-audio
-                                leaves the sound out; --queue adds to the export queue and runs it
+                                leaves the sound out; --dash also writes a DASH manifest (.mpd)
+                                next to an HLS export; --queue adds to the export queue and runs it
                                 instead. Offline media (missing, made offline, unreadable) renders
                                 as placeholder frames: the export then lists it in `offlineMedia`,
                                 warns on stderr and exits 1, unless --allow-offline accepts it
@@ -110,11 +113,13 @@ SUBCOMMANDS
   probe <media> [--image-sequence]
                                 media info as JSON, with MXF / Ogg / BWF details; with
                                 --image-sequence <media> is the first numbered still of a sequence
-  qc <media> [--profile ID|file.toml] [--expect plan.json] [--out report.json] [--no-decode]
-                                media QC (docs/media-qc.md): input and integrity checks with a QC
-                                profile (default delivery-web) against an optional render plan;
-                                prints the cfa4-qc-report/1 JSON, or saves it with --out. Exit
-                                code: 0 PASS, 3 WARN, 4 FAIL, 5 INCOMPLETE
+  qc <media> [--profile ID|file.toml] [--expect plan.json] [--out report.json]
+     [--contact-sheet sheet.png] [--no-decode]
+                                media QC (docs/media-qc.md): input, integrity, audio and picture
+                                checks with a QC profile (default delivery-web) against an
+                                optional render plan; prints the cfa4-qc-report/1 JSON, or saves
+                                it with --out; --contact-sheet writes the frame overview PNG.
+                                Exit code: 0 PASS, 3 WARN, 4 FAIL, 5 INCOMPLETE
   bench-decode <media> [--frames N]
   settings schema [category]    the Settings schema (groups, categories, fields, values) as JSON
   settings get [key]            the saved preferences of the data directory, or one key
@@ -122,6 +127,7 @@ SUBCOMMANDS
   settings reset [category]     a category (or everything) back to its defaults
   hardware                      GPU / NPU inventory, backend chain per workload, vendor coverage
   codecs                        what this machine decodes and encodes (software, hardware, GStreamer)
+  codecs --markdown             the codec capability catalog as the table in docs/codec-parity.md
   media-backends                engine + FFmpeg / GStreamer backends, status, restricted codecs
   mcp                           MCP server on stdio (headless, or --bridge to the live app)
   serve [--autosave]            headless engine server for the CFA4 Qt 6 GUI: JSON lines on
@@ -153,11 +159,11 @@ EXIT STATUS
 
 /// Writes one diagnostic line to `w`, dropping any write error. `eprintln!` panics (exit 101) when stderr's
 /// reader is gone, which would turn a usage error, a failure or a finished export into a crash.
-fn write_diag(w: &mut dyn std::io::Write, msg: std::fmt::Arguments) {
+fn write_diag(w: &mut dyn std::io::Write, msg: std::fmt::Arguments<'_>) {
     let _ = writeln!(w, "{msg}");
 }
 
-fn diag(msg: std::fmt::Arguments) {
+fn diag(msg: std::fmt::Arguments<'_>) {
     write_diag(&mut std::io::stderr(), msg);
 }
 
@@ -383,8 +389,10 @@ async fn cli() {
             }
         }
         "qc" => {
-            let path = a.pos(1).unwrap_or_else(|| usage("qc <media> [--profile ID|file.toml] [--expect plan.json] [--out report.json] [--no-decode]"));
-            let report = qc::run(path, a.opt("--profile"), a.opt("--expect"), !a.flag("--no-decode")).unwrap_or_else(|e| fail(e));
+            let path = a.pos(1).unwrap_or_else(|| {
+                usage("qc <media> [--profile ID|file.toml] [--expect plan.json] [--out report.json] [--contact-sheet sheet.png] [--no-decode]")
+            });
+            let report = qc::run(path, a.opt("--profile"), a.opt("--expect"), !a.flag("--no-decode"), a.opt("--contact-sheet")).unwrap_or_else(|e| fail(e));
             match a.opt("--out") {
                 Some(out) => {
                     qc::save(&report, out).unwrap_or_else(|e| fail(e));
@@ -549,6 +557,9 @@ async fn cli() {
             if a.flag("--no-audio") {
                 p["audio"] = json!(false);
             }
+            if a.flag("--dash") {
+                p["dashManifest"] = json!(true);
+            }
             if let Some(v) = a.opt("--gpu-rendering") {
                 p["gpuRendering"] = json!(v); // off | auto (validated by the export command)
             }
@@ -621,6 +632,7 @@ async fn cli() {
             }
         }
         "hardware" => print(&a, &settings_cmd::hardware()),
+        "codecs" if a.flag("--markdown") => print!("{}", codecs_cmd::markdown()),
         "codecs" => print(&a, &codecs_cmd::codecs()),
         "media-backends" => {
             let dir = a.opt("--data-dir").map(std::path::PathBuf::from).or_else(cfa4_engine::autosave::default_data_dir);

@@ -373,7 +373,7 @@ pub(crate) fn write(doc: &Document, report: &mut Report) -> Result<Vec<u8>> {
     Ok(w.b.finish())
 }
 
-fn descriptor(w: &mut W, s: &Source, len: i64) -> u32 {
+fn descriptor(w: &mut W<'_>, s: &Source, len: i64) -> u32 {
     let aiff = s.embedded.is_none() && s.path.as_deref().is_some_and(|p| matches!(crate::common::extension(p).as_str(), "aif" | "aiff" | "aifc"));
     let d = w.obj(if aiff { b"AIFD" } else { b"WAVD" });
     w.b.set(d, "OMFI:MDFL:IsOMFI", "omfi:Boolean", &[s.embedded.is_some() as u8]);

@@ -16,8 +16,8 @@ use serde_json::{Value, json};
 
 use crate::{EngineError, Result, Session};
 
-type Run = fn(&mut Session, &Value) -> Result<Value>;
-type Enabled = fn(&Session) -> std::result::Result<(), String>;
+pub(crate) type Run = fn(&mut Session, &Value) -> Result<Value>;
+pub(crate) type Enabled = fn(&Session) -> std::result::Result<(), String>;
 
 /// Metadata + implementation for one command.
 pub struct CommandSpec {
@@ -690,7 +690,7 @@ fn with_groups(s: &Session, clips: &[ClipId]) -> Vec<ClipId> {
 
 /// The delta a trim of `clips` (a clip and its linked partners) can apply together: `delta`
 /// clamped by each one's media and neighbours.
-fn clamp_trim_linked(q: &cfa4_project::Sequence, clips: &[ClipId], edge: Edge, mode: TrimMode, delta: Tick, ctx: &edit::EditCtx) -> Result<Tick> {
+fn clamp_trim_linked(q: &cfa4_project::Sequence, clips: &[ClipId], edge: Edge, mode: TrimMode, delta: Tick, ctx: &edit::EditCtx<'_>) -> Result<Tick> {
     let mut d = delta;
     let mut any = false;
     for c in clips {
@@ -738,7 +738,7 @@ fn with_links_p(s: &Session, p: &Value, clip: ClipId) -> Vec<ClipId> {
 /// The delta a roll of every cut in `pairs` can apply together: `delta` clamped by each pair's
 /// media and the frame left in each clip, each tried on a copy of `q`. 0 when a pair would roll
 /// by another amount (a clip whose Out point is past the end of its media rolls the other way).
-fn clamp_roll_linked(q: &cfa4_project::Sequence, pairs: &[(ClipId, ClipId)], delta: Tick, ctx: &mut edit::EditCtx) -> Result<Tick> {
+fn clamp_roll_linked(q: &cfa4_project::Sequence, pairs: &[(ClipId, ClipId)], delta: Tick, ctx: &mut edit::EditCtx<'_>) -> Result<Tick> {
     let mut d = delta;
     for &(pl, pr) in pairs {
         let mut probe = q.clone();
@@ -1545,6 +1545,14 @@ fn build() -> Vec<CommandSpec> {
                     }
                     continue;
                 }
+                // Broadcast MXF: closed captions in the ANC data become a caption track; the
+                // picture and sound still import as media below.
+                if let Some(r) = crate::captions::import_anc_captions(s, &path) {
+                    match r {
+                        Ok(r) => reports.extend(r),
+                        Err(e) => errors.push(format!("{path}: {e}")),
+                    }
+                }
                 // Media files through the host's reader (no whole-file read) when it has one.
                 let streamed = cfa4_media::is_importable(std::path::Path::new(&path)) && s.services.reader(&path).is_some();
                 let read = if streamed { Ok(Vec::new()) } else { s.services.read_file(&path) };
@@ -1833,7 +1841,7 @@ fn build() -> Vec<CommandSpec> {
             "Media…",
             ["File", "Export"],
             None,
-            r#"{"path":str,"preset":str?,"settings":ExportSettings?,"format":"h264|hevc|prores|dnxhr|apv|cineform|mjpeg|mxf-op1a|mxf-opatom|mpeg2|dcp|png|tiff|bmp|jpg|tga|dpx|exr|gif|wav|aiff|aac|flac"?,"audioCodec":"auto|aac|pcm|flac"?,"flacLevel":0..8=5,"width":u32?,"height":u32?,"fps":f64?,"bitrateKbps":u32?,"bitrateMode":"cbr|vbr1Pass|vbr2Pass|crf"?,"crf":0..51=23,"hardwareEncoding":"off|auto"?,"scale":f32=1,"audio":bool=true,"quality":0..100,"burnCaptions":bool=false,"alpha":bool=false,"exrCompression":"none|rle|zips|zip"?,"captionSidecar":"srt|vtt"?,"loudnessLufs":f64?,"proresProfile":"proxy|lt|standard|hq|4444|4444xq"?,"dnxProfile":"lb|sq|hq|hqx"?,"apvProfile":"422-10|422-12|444-10|444-12"?,"cineformProfile":"422|444|4444"?,"cineformQuality":"filmscan3|filmscan2|filmscan1|high|medium|low"?,"mxfVideoCodec":"dnxhr|proRes|h264"?,"mpeg2Container":"ps|ts|m2ts|es"?,"mpeg2Chroma":"420|422"?,"mpeg2Quantizer":1..31?,"mpeg2BFrames":0..7?,"dcpResolution":"2k|4k"?,"dcpAspect":"flat|scope|full"?,"dcpContentKind":"feature|trailer|teaser|short|advertisement|test|transitional|rating|policy|psa"?,"dcpImmersive":"off|bed|file"?,"dcpIabSource":str?,"dcpIabFallback":"5.1|mix|none"?,"dcpLanguage":str?,"fieldOrder":"progressive|upperFirst|lowerFirst"?,"sequence":id?,"range":"entire|inOut|workArea|custom"?,"startSeconds":f64?,"endSeconds":f64?,"wait":bool=false}"#,
+            r#"{"path":str,"preset":str?,"settings":ExportSettings?,"format":"h264|hevc|prores|dnxhr|apv|cineform|mjpeg|mxf-op1a|mxf-opatom|mpeg2|dcp|imf|png|tiff|bmp|jpg|tga|dpx|exr|gif|wav|aiff|aac|flac"?,"audioCodec":"auto|aac|pcm|flac|opus|ac3|mp2"?,"flacLevel":0..8=5,"width":u32?,"height":u32?,"fps":f64?,"bitrateKbps":u32?,"bitrateMode":"cbr|vbr1Pass|vbr2Pass|crf"?,"crf":0..51=23,"hardwareEncoding":"off|auto"?,"scale":f32=1,"audio":bool=true,"quality":0..100,"burnCaptions":bool=false,"dashManifest":bool=false,"alpha":bool=false,"exrCompression":"none|rle|zips|zip|piz"?,"captionSidecar":"srt|vtt"?,"loudnessLufs":f64?,"proresProfile":"proxy|lt|standard|hq|4444|4444xq"?,"dnxProfile":"lb|sq|hq|hqx"?,"apvProfile":"422-10|422-12|444-10|444-12"?,"cineformProfile":"422|444|4444"?,"cineformQuality":"filmscan3|filmscan2|filmscan1|high|medium|low"?,"mxfVideoCodec":"dnxhr|proRes|h264|mpeg2|d10|xdcamHd422|v210|uyvy"?,"mxfAncCaptions":bool=false,"mpeg2Container":"ps|ts|m2ts|es"?,"mpeg2Chroma":"420|422"?,"mpeg2Quantizer":1..31?,"mpeg2BFrames":0..7?,"dcpResolution":"2k|4k"?,"dcpAspect":"flat|scope|full"?,"dcpContentKind":"feature|trailer|teaser|short|advertisement|test|transitional|rating|policy|psa"?,"dcpImmersive":"off|bed|file"?,"dcpIabSource":str?,"dcpIabFallback":"5.1|mix|none"?,"dcpLanguage":str?,"imfLossless":bool?,"imfContentKind":"feature|trailer|teaser|short|advertisement|test|transitional|rating|psa|episode|highlights|event"?,"fieldOrder":"progressive|upperFirst|lowerFirst"?,"sequence":id?,"range":"entire|inOut|workArea|custom"?,"startSeconds":f64?,"endSeconds":f64?,"wait":bool=false}"#,
             has_seq,
             crate::export_tools::export_media
         ),
@@ -3634,7 +3642,7 @@ fn build() -> Vec<CommandSpec> {
             "Keyframe Interpolation",
             [],
             None,
-            r#"{"clip":id,"effect":str|index,"param":str,"mediaTime":ticks,"interpolation":"linear|bezier|autoBezier|continuousBezier|hold|easeIn|easeOut"}"#,
+            r#"{"clip":id,"effect":str|index,"param":str,"mediaTime":ticks,"interpolation":"linear|bezier|autoBezier|continuousBezier|hold|easeIn|easeOut|sine|expo|circ|overshoot|elastic|bounce"}"#,
             has_seq,
             |s, p| keyframe_op(s, p, "interp")
         ),
@@ -3840,6 +3848,7 @@ fn build() -> Vec<CommandSpec> {
     crate::sequence_tools::splice(&mut v);
     v.extend(crate::captions::commands());
     v.extend(crate::settings::commands());
+    v.extend(crate::timecode_sync::commands());
     v.extend(crate::mixer::commands());
     v.extend(crate::multicam::commands());
     v.extend(crate::essential_sound::commands());
@@ -3847,9 +3856,12 @@ fn build() -> Vec<CommandSpec> {
     v.extend(crate::graphics::commands());
     v.extend(crate::graphic_templates::commands());
     v.extend(crate::credits::commands());
+    v.extend(crate::live::commands());
     v.extend(crate::dialog_defaults::commands());
+    v.extend(crate::legibility::commands());
     v.extend(crate::shortcuts::commands());
     v.extend(crate::relink::commands());
+    v.extend(crate::kdm::commands());
     v.extend(crate::proxies::commands());
     v.extend(crate::project_manager::commands());
     v.extend(crate::masks::commands());
@@ -3860,6 +3872,7 @@ fn build() -> Vec<CommandSpec> {
     v.extend(crate::sequence_profiles::commands());
     v.extend(crate::export_tools::commands());
     v.extend(crate::smart_cut::commands());
+    v.extend(crate::qc::commands());
     v.extend(crate::transcript::commands());
     v.extend(crate::panels::commands());
     v.extend(crate::scopes::commands());
@@ -3994,6 +4007,12 @@ fn keyframe_op(s: &mut Session, p: &Value, op: &str) -> Result<Value> {
                     "hold" => cfa4_project::Interpolation::Hold,
                     "easein" => cfa4_project::Interpolation::EaseIn,
                     "easeout" => cfa4_project::Interpolation::EaseOut,
+                    "sine" => cfa4_project::Interpolation::Sine,
+                    "expo" => cfa4_project::Interpolation::Expo,
+                    "circ" => cfa4_project::Interpolation::Circ,
+                    "overshoot" => cfa4_project::Interpolation::Overshoot,
+                    "elastic" => cfa4_project::Interpolation::Elastic,
+                    "bounce" => cfa4_project::Interpolation::Bounce,
                     _ => cfa4_project::Interpolation::Linear,
                 };
                 let k = prm.keyframes.iter_mut().find(|k| k.time == at).ok_or_else(|| bad("keyframe", "no keyframe at that time"))?;
@@ -4167,7 +4186,7 @@ fn store_cut(s: &mut Session, cut: Option<Clipboard>) -> usize {
 /// `tracks` (the targeted ones) in `range`, cut at its edges and held the way Copy holds them.
 /// Extract also cuts sync-locked tracks only to keep them in sync; that material is not copied.
 /// Reads the sequence before the edit; None when the range has no clips on those tracks.
-fn cut_range(q: &cfa4_project::Sequence, tracks: &[TrackId], range: TimeRange, ctx: &mut edit::EditCtx, with_markers: bool) -> Option<Clipboard> {
+fn cut_range(q: &cfa4_project::Sequence, tracks: &[TrackId], range: TimeRange, ctx: &mut edit::EditCtx<'_>, with_markers: bool) -> Option<Clipboard> {
     let mut links = std::collections::HashMap::new();
     let mut clips = Vec::new();
     for (kind, list) in [(TrackKind::Video, &q.video_tracks), (TrackKind::Audio, &q.audio_tracks)] {
@@ -4207,11 +4226,13 @@ fn paste(s: &mut Session, insert: bool) -> Result<Value> {
         // pasted clips get groups of their own, as their links: sharing the originals' group
         // would select (and so drag or delete) the originals with them
         let mut groups = std::collections::HashMap::new();
+        let mut ids = std::collections::HashMap::new();
         for (kind, ti, item) in clip {
             let tracks = q.tracks(kind);
             let Some(t) = tracks.get(ti).or(tracks.last()) else { continue };
             let mut it = item.clone();
             it.id = ClipId(ctx.alloc());
+            ids.insert(item.id, it.id);
             it.start += at;
             if let Some(l) = it.link {
                 it.link = Some(*links.entry(l).or_insert_with(|| ctx.alloc()));
@@ -4221,6 +4242,8 @@ fn paste(s: &mut Session, insert: bool) -> Result<Value> {
             }
             placements.push((t.id, it));
         }
+        // pasted credits pages form a credits group of their own
+        cfa4_project::graphic_design::remap_copied_credits(placements.iter_mut().map(|(_, it)| it), &ids, || ctx.alloc());
         let end = placements.iter().map(|p| p.1.end()).max().unwrap_or(at);
         let ids = if insert { edit::insert(q, placements, ctx)? } else { edit::overwrite(q, placements, ctx)? };
         if insert && st.ripple_sequence_markers {
@@ -4464,6 +4487,12 @@ fn interpolation_id(i: cfa4_project::Interpolation) -> &'static str {
         I::ContinuousBezier => "continuousBezier",
         I::EaseIn => "easeIn",
         I::EaseOut => "easeOut",
+        I::Sine => "sine",
+        I::Expo => "expo",
+        I::Circ => "circ",
+        I::Overshoot => "overshoot",
+        I::Elastic => "elastic",
+        I::Bounce => "bounce",
     }
 }
 

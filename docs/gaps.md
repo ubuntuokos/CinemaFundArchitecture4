@@ -199,14 +199,14 @@ distributions are not targets.
   incl. R3D NE, ARRIRAW, Sony RAW / X-OCN, Canon RAW, BRAW, ProRes RAW; #345, #383), DCP
   composition (CPL) import (#101; JPEG 2000 MXF picture tracks import since #77), interlaced and
   stereoscopic JPEG 2000 MXF (#102), JPEG XS MXF, the rest of CinemaDNG (lossy / JPEG XL DNG, MXF-wrapped, opcode lists, Raw
-  settings; DNG frames and folders import since #1065); stills: PSD, EXR beyond scan-line RLE / ZIP / PXR24 (PIZ, B44, DWA,
+  settings; DNG frames and folders import since #1065); stills: PSD, EXR beyond scan-line RLE / ZIP / PXR24 / PIZ (B44, DWA,
   tiled, multi-part, deep), AVIF / JPEG items inside HEIF,
   AI / EPS, and the rarer DPX layout, run-length encoding (Targa and DPX stills and sequences import
   since #821, packed 10/12-bit and Y'CbCr DPX since #841, deeper than 8 bits kept at 8); transparent
   video (#402); Sony start timecode in `rtmd` (#460); stereo 3D flag (#500); MKV multi-audio (#601).
 - **CFA4 candidates after GPL-3.0-or-later** ([ADR 0003](adr/ADR-0003-aswf-and-conversion-sources.md) §6):
   LibRaw (LGPL-2.1 / CDDL-1.0) for camera RAW, libheif (LGPL-3.0) for HEIF / HEIC, both also
-  through OpenImageIO; OpenEXR for PIZ / B44 / DWA, tiled, multi-part and deep EXR. Candidates are not commitments: each needs its own ADR (FFI rule, own engine as fallback).
+  through OpenImageIO; OpenEXR for B44 / DWA, tiled, multi-part and deep EXR. Candidates are not commitments: each needs its own ADR (FFI rule, own engine as fallback).
 - **Estimate:** 120–200 h (camera RAW alone 60–100 h, and some SDKs have licences we cannot use:
   clean-room from public specs only where specs exist). Docs: [codec-parity.md](codec-parity.md),
   [file-format-parity.md](file-format-parity.md).
@@ -233,6 +233,11 @@ distributions are not targets.
   Enhance Speech, Auto Reframe beyond heuristics, auto colour, Auto-Tag Audio Types.
 - **Have:** local Whisper transcription (off in releases, G19), Kokoro-82M text-to-speech
   narration (#278), scene edit detection, colour match.
+- **Candidates from the glitch-effect review (2026-10-30):** a subject-masked glitch (Pixel Sort,
+  Block Glitch or Databend only on a person or object) needs the same segmentation model as Object
+  Mask; the reviewed example, h43lb1t0/PixelSorter, uses YOLOv8 (AGPL-3.0), which CFA4 cannot ship,
+  so it needs an openly licensed model. Beat-synced glitch bursts (keyframing the Glitch effects on
+  music onsets) need no model beyond beat detection.
 - **Needs:** openly licensed models we can ship. **150–300 h.**
 - **Candidates from the marketing-video review (2026-10-26)** (ideas only, for the AI plan; the
   non-AI parts of that review are implemented, see [marketing-tools.md](marketing-tools.md)):
@@ -247,13 +252,25 @@ distributions are not targets.
     Hosted services (Veo, Kling, Seedance, Suno, ElevenLabs) are out (local-first, licences);
     only openly licensed local models qualify. Kokoro TTS narration exists already.
   - *Poster or still to motion:* animate a single image into a short promo (image-to-video).
+- **CFA4 candidates** (from the 2026-10-26 repository reviews; each needs its model's licence and
+  weights checked before it ships, and a menu entry like every effect):
+  - *Word Highlight captions* (karaoke style: the spoken word lights up). Needs word timings
+    from the local Whisper transcription (`crates/speech`, G19); the styling itself is not AI.
+  - *Low Light* enhancement: SGZ / Semantic-Guided LLIE (MIT, ~53 KB ONNX); alternatives
+    TBEFN (BSD-3) and URetinex-Net (MIT). Zero-DCE, SCI and RUAS have no licence and are out.
+  - *Face-limited Skin Smoothing*: YuNet face detection (libfacedetection, BSD-3) to restrict the
+    existing Skin Smoothing effect to faces.
+  - *Background blur / replace*: Robust Video Matting (GPL-3.0) for the subject matte; MODNet
+    (Apache-2.0) as the fallback.
+  - *AI foley*: MMAudio (code MIT, weights CC BY-NC 4.0): blocked until a commercially usable
+    model exists (see [kdenlive-parity.md](kdenlive-parity.md) 12.1).
 
 ## G13. Delivery formats
 
 - **Missing:** AV1 hardware export (software AV1 export exists, 8-bit and 10-bit HDR, #95), DVD / Blu-ray (#244, #245), MPEG-2
   field pictures / dual prime (#274), P-STD / T-STD buffer models in the multiplexer (#277), field-aware scaling and field-rate rendering for interlaced export (#275), MP2 audio (#267), JPEG 2000 MXF
-  (the `cfa4-j2k` encoder with the DCI 2K / 4K profiles exists, #81; SMPTE DCP export is done, #115),
-  AS-10 / AS-11, XDCAM HD MXF, P2, PIZ / PXR24 / B44 / DWA OpenEXR compression, MP3 audio,
+  (the `cfa4-j2k` encoder with the DCI 2K / 4K and IMF profiles exists, #81, #931; SMPTE DCP export is done, #115; IMF App 2E package export, #1011),
+  AS-10 / AS-11, XDCAM HD MXF, P2, PXR24 / B44 / DWA OpenEXR compression, MP3 audio,
   AC-3 / E-AC-3 audio (the `cfa4-ac3` encoder exists, #86; export wiring #119),
   interlaced encoding other than MPEG-2, smart render; HEVC B pictures, SAO, 2-pass and 4:2:2 / 4:4:4 encoding
   (#171–#180).
@@ -265,7 +282,7 @@ distributions are not targets.
   sequences (half float, linear; uncompressed, RLE, ZIPS or ZIP; #806, #874); AAC Audio
   (audio-only `.m4a`, or ADTS `.aac`; #814); Opus Audio (`.opus`, own CELT encoder, #99); WebM (VP9 + Opus, own encoders, #149); ProRes 4444 / 4444 XQ in the export UI (#342);
   H.265 software encoder (Main / Main 10 HDR, CRF / CBR / VBR, parallel slices; hardware
-  encoders go first where present; #94); HLS (H.264 + AAC CMAF segments, one rendition; #100, ABR ladder #230). Chapter markers export as chapters: `chpl` plus a QuickTime chapter track in MP4/MOV/M4A, `chpl` in the HLS init segments, Matroska `Chapters` in WebM (`ExportSettings::chapters`, on by default).
+  encoders go first where present; #94); HLS (H.264 + AAC CMAF segments, one rendition; #100, ABR ladder #230), optionally with a DASH manifest over the same segments (`ExportSettings::dash_manifest`, CLI `export --dash`). Chapter markers export as chapters: `chpl` plus a QuickTime chapter track in MP4/MOV/M4A, `chpl` in the HLS init segments, Matroska `Chapters` in WebM (`ExportSettings::chapters`, on by default).
 - **CFA4 candidates after GPL-3.0-or-later** (ADR 0003 §6): x264 for a higher-quality software H.264 encoder,
   LAME (LGPL) for MP3 audio. H.264 / HEVC / AAC patents are a separate question from the licence. Candidates are not commitments: each needs its own ADR (FFI rule, own engine as fallback).
 - **Estimate:** 60–110 h. Doc: [file-format-parity.md](file-format-parity.md).
@@ -366,4 +383,5 @@ distributions are not targets.
 | 2026-10-24 | minor | G10, G11, G13, G18: CFA4 candidates after the GPL-3.0-or-later switch and the closed plug-in decision (ADR 0003) |
 | 2026-10-27 | minor | Ubuntu 26.04 is the only target (macOS, Windows and RPM dropped): G3, G4, G5, G8 and G9 rewritten, G4 40–80 → 30–60 h, G5 120–200 → 100–170 h, G9 50–90 → 30–60 h |
 | 2026-10-26 | minor | G10: JPEG 2000 MXF import, DCP picture tracks included (#77) |
+| 2026-10-26 | minor | G12: AI candidates from the repository reviews (word-highlight captions, low light, face detection, background matting, foley) |
 | 2026-11-11 | minor | G1: `cfa4-metrics` (CIEDE2000 ΔE, SSIM) as the harness's scoring layer |
