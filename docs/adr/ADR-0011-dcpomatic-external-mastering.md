@@ -1,7 +1,8 @@
 # ADR 0011 – DCP-o-matic bekötése külső DCP-mesterelő háttérként
 
-**Dátum:** 2026-11-13 · **Állapot:** elfogadva (a tulajdonos, `ubuntuokos` kérte 2026-11-13-án:
-„A DCP-o-matic beépítése a CFA4-be”; a 4. pont döntéseit ugyanaznap jóváhagyta) ·
+**Dátum:** 2026-11-13 · **Állapot:** javasolt, **a tulajdonos jóváhagyására vár** (a tulajdonos,
+`ubuntuokos` 2026-11-13-án kérte a DCP-o-matic beépítését, és a projektszálban ugyanaznap igent
+mondott a titkosított DCP-re, a KDM-re és a Qt-panelre; magát az ADR-t még nem hagyta jóvá) ·
 **Kapcsolódik:** [ADR 0001](0001-platform-ffi.md) (FFI, 2026-11-07-i kiegészítés: nem Rust
 komponensek), [ADR 0005](ADR-0005-media-backends.md) (kiegészítő médiahátterek),
 [DCP-00 audit](../audit/DCP-00-CAPABILITY-AUDIT-2026-10-27.md), a `cfa4-dcp-inspect` minta
@@ -53,7 +54,7 @@ a licenc egyik bekötési módot sem zárja ki.
    (Interop, több tartalom, 3D, a DCP-o-matic saját skálázása, színkonverziója és
    hangkiosztása). A szokásos munkafolyamat: mesterfájl exportja a CFA4-ből (pl. ProRes 4444 vagy
    TIFF-sorozat + WAV), majd `dcpomatic.makeDcp` erre a fájlra.
-4. **Tulajdonosi döntések (2026-11-13, a 4. pont kérdéseire: „igen, igen”):**
+4. **A tulajdonos válaszai a projektszálban (2026-11-13, „igen, igen”; az ADR jóváhagyása ettől külön):**
    - **Titkosított DCP és KDM-készítés: igen.** Ez a 2026-11-12-i döntést (#933: a CFA4 maga a
      titkosított DCP-t csak lejátssza és importálja) nem változtatja meg, hanem kiegészíti: a
      titkosítást és a KDM-et a DCP-o-matic készíti, külön folyamatban. A `dcpomatic.makeDcp`
