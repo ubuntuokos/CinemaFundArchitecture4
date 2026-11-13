@@ -128,9 +128,9 @@ are exempt):
 | L0 codecs stay standalone | L0 crates other than `time`, `geom`, `color`, `bitstream`, `testkit` may depend on no workspace crate except `cfa4-bitstream`. External crates such as `thiserror` and `rayon` are allowed. |
 | No UI/OS crates below L5 | `egui`, `eframe`, `egui-wgpu`, `winit`, `rfd`, `cpal`, `muda` are allowed only in L5 and L6. |
 
-`cargo xtask wasm` (opt-in, not a CI or release gate) runs `cargo check --target
-wasm32-unknown-unknown` on every L0–L4 crate and the egui UI. CFA4 is Linux-only: the browser app
-`apps/cfa4-web` was removed (#286). `unsafe_code = "forbid"` applies workspace-wide, except in `platform`
+`cargo xtask wasm` (opt-in legacy, not a CI or release gate; nothing needs to build for wasm32) runs
+`cargo check --target wasm32-unknown-unknown` on every L0–L4 crate and the egui UI. CFA4 is Linux-only:
+the browser app `apps/cfa4-web` was removed (#286). `unsafe_code = "forbid"` applies workspace-wide, except in `platform`
 (`deny`, allowed only on its FFI modules; [ADR 0001](adr/0001-platform-ffi.md)).
 
 ## 2. Time base
