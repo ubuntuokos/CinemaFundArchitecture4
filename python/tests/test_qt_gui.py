@@ -14845,7 +14845,9 @@ def test_monitor_picture_falls_back_to_raster_without_opengl(app, monkeypatch):
 
 def _openssl_kdm(tmp_path: Path) -> bool:
     """A recipient key (``key.pem``), another key (``other.pem``) and a KDM (``kdm.xml``) for the
-    first, built with the openssl command line (ST 430-1 RSA-OAEP SHA-1 CipherData)."""
+    first, built with the openssl command line (ST 430-1 RSA-OAEP SHA-1 CipherData); with xmlsec1
+    also ``plain.xml``, the same KDM signed by a self-signed certificate that does not keep ST 430-2
+    (intact content, untrusted chain)."""
     import shutil
     import subprocess
 
@@ -14867,15 +14869,39 @@ def _openssl_kdm(tmp_path: Path) -> bool:
     b64 = base64.b64encode((tmp_path / "c.bin").read_bytes()).decode()
     (tmp_path / "kdm.xml").write_text(
         '<?xml version="1.0" encoding="UTF-8"?>\n'
-        '<DCinemaSecurityMessage xmlns="http://www.smpte-ra.org/schemas/430-3/2006/ETM">'
-        "<AuthenticatedPublic><AnnotationText>Reel 1 KDM</AnnotationText><RequiredExtensions>"
+        '<DCinemaSecurityMessage xmlns="http://www.smpte-ra.org/schemas/430-3/2006/ETM" xmlns:dsig="http://www.w3.org/2000/09/xmldsig#">'
+        '<AuthenticatedPublic Id="ID_AuthenticatedPublic"><AnnotationText>Reel 1 KDM</AnnotationText><RequiredExtensions>'
         '<KDMRequiredExtensions xmlns="http://www.smpte-ra.org/schemas/430-1/2006/KDM">'
         "<CompositionPlaylistId>urn:uuid:11111111-1111-1111-1111-111111111111</CompositionPlaylistId>"
         "<ContentTitleText>Encrypted Test</ContentTitleText></KDMRequiredExtensions></RequiredExtensions></AuthenticatedPublic>"
-        '<AuthenticatedPrivate><enc:EncryptedKey xmlns:enc="http://www.w3.org/2001/04/xmlenc#"><enc:CipherData>'
+        '<AuthenticatedPrivate Id="ID_AuthenticatedPrivate"><enc:EncryptedKey xmlns:enc="http://www.w3.org/2001/04/xmlenc#"><enc:CipherData>'
         f"<enc:CipherValue>{b64}</enc:CipherValue></enc:CipherData></enc:EncryptedKey></AuthenticatedPrivate>"
         "</DCinemaSecurityMessage>",
         encoding="utf-8",
+    )
+    xmlsec = shutil.which("xmlsec1")
+    if xmlsec is None:
+        return True
+    run("genpkey", "-algorithm", "RSA", "-pkeyopt", "rsa_keygen_bits:2048", "-out", "signer.key")
+    run("req", "-x509", "-new", "-key", "signer.key", "-sha256", "-days", "30", "-subj", "/O=test/CN=CS.signer", "-out", "signer.pem")
+    sig = (
+        "<dsig:Signature><dsig:SignedInfo>"
+        '<dsig:CanonicalizationMethod Algorithm="http://www.w3.org/TR/2001/REC-xml-c14n-20010315#WithComments"/>'
+        '<dsig:SignatureMethod Algorithm="http://www.w3.org/2001/04/xmldsig-more#rsa-sha256"/>'
+        + "".join(
+            f'<dsig:Reference URI="#ID_Authenticated{p}"><dsig:DigestMethod Algorithm="http://www.w3.org/2001/04/xmlenc#sha256"/>'
+            "<dsig:DigestValue/></dsig:Reference>"
+            for p in ("Public", "Private")
+        )
+        + "</dsig:SignedInfo><dsig:SignatureValue/><dsig:KeyInfo><dsig:X509Data><dsig:X509Certificate/></dsig:X509Data></dsig:KeyInfo>"
+        "</dsig:Signature>"
+    )
+    text = (tmp_path / "kdm.xml").read_text(encoding="utf-8")
+    (tmp_path / "template.xml").write_text(text.replace("</DCinemaSecurityMessage>", sig + "</DCinemaSecurityMessage>"), encoding="utf-8")
+    subprocess.run(
+        [xmlsec, "--sign", "--privkey-pem", "signer.key,signer.pem", "--id-attr:Id", "AuthenticatedPublic", "--id-attr:Id",
+         "AuthenticatedPrivate", "--output", "plain.xml", "template.xml"],
+        cwd=tmp_path, check=True, capture_output=True,
     )
     return True
 
@@ -14886,6 +14912,12 @@ def test_kdm_dialog_describes_the_reply_never_a_key():
     text = describe({"title": "Film", "composition": "1111", "keys": [{"keyId": "5a5a", "type": "MDIK", "notValidBefore": "a", "notValidAfter": "b"}]})
     assert text.splitlines()[0] == "Film: 1 keys loaded" and "MDIK  5a5a  a – b" in text and "CPL 1111" in text
     assert describe(None) == "" and describe({"keys": "x"}).startswith("KDM: 0 keys")
+    # #1075: how the signature check went
+    ok = describe({"title": "F", "keys": [], "signature": {"valid": True, "chain": ["leaf", "root"]}})
+    assert ok.splitlines()[-1] == "Signature verified: leaf ← root"
+    bad = describe({"title": "F", "keys": [], "signature": {"valid": False, "problem": "the KDM is not signed"}})
+    assert bad.splitlines()[-1] == "Signature not verified: the KDM is not signed"
+    assert describe({"keys": [], "signature": {"valid": False}}).endswith("Signature not verified: ?")
 
 
 def test_real_engine_load_kdm_dialog(app, tmp_path: Path):
@@ -14916,9 +14948,28 @@ def test_real_engine_load_kdm_dialog(app, tmp_path: Path):
         dlg.load()
         assert wait_until(app, lambda: "not made for this private key" in dlg.result.toPlainText(), 20_000), dlg.result.toPlainText()
         dlg.key_path.setText(str(tmp_path / "key.pem"))
+        # #1028: an unsigned KDM is refused, also with the box ticked
+        assert not dlg.allow_unverified.isChecked()
+        for tick in (False, True):
+            dlg.allow_unverified.setChecked(tick)
+            dlg.result.clear()
+            dlg.load()
+            assert wait_until(app, lambda: "not signed" in dlg.result.toPlainText(), 20_000), dlg.result.toPlainText()
+            assert "not loaded" in dlg.result.toPlainText()
+        if not (tmp_path / "plain.xml").exists():
+            assert not os.environ.get("CFA4_REQUIRE_ORACLES"), "xmlsec1 not found"
+            pytest.skip("xmlsec1 not found")
+        # an intact KDM whose certificate chain does not keep ST 430-2: refused until the box is ticked
+        dlg.kdm_path.setText(str(tmp_path / "plain.xml"))
+        dlg.allow_unverified.setChecked(False)
+        dlg.load()
+        assert wait_until(app, lambda: "certificate chain does not check out" in dlg.result.toPlainText(), 20_000), dlg.result.toPlainText()
+        dlg.allow_unverified.setChecked(True)
         dlg.load()
         assert wait_until(app, lambda: dlg.result.toPlainText().startswith("Encrypted Test: 1 keys loaded"), 20_000), dlg.result.toPlainText()
         assert "MDAK" in dlg.result.toPlainText() and "5a5a5a5a-5a5a" in dlg.result.toPlainText()
+        last = dlg.result.toPlainText().splitlines()[-1]
+        assert last.startswith("Signature not verified: certificate CS.signer") and "ST 430-2" in last, last
         got: list = []
         engine.execute("dcp.keys", {}, on_reply=lambda r, _b: got.append(r))
         assert wait_until(app, lambda: got, 10_000) and got[0]["keyIds"] == ["5a5a5a5a-5a5a-5a5a-5a5a-5a5a5a5a5a5a"]

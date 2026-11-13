@@ -4530,3 +4530,6 @@ export.summary	Low	తక్కువ
 	The keys stay in memory only, until Forget DCP Keys or the end of the session.	కీలు మెమరీలో మాత్రమే ఉంటాయి, DCP కీలను మర్చిపో లేదా సెషన్ ముగిసే వరకు.
 	DCP keys forgotten	DCP కీలు మర్చిపోబడ్డాయి
 	Choose the KDM file and the private key.	KDM ఫైల్‌ను మరియు ప్రైవేట్ కీని ఎంచుకోండి.
+	Load even if the certificate chain is not verified	ధృవీకరించని సర్టిఫికెట్ గొలుసుతోనూ లోడ్ చేయండి
+	Signature verified: {chain}	సంతకం ధృవీకరించబడింది: {chain}
+	Signature not verified: {problem}	సంతకం ధృవీకరించబడలేదు: {problem}

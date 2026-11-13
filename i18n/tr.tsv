@@ -4525,3 +4525,6 @@ export.summary	Low	düşük
 	The keys stay in memory only, until Forget DCP Keys or the end of the session.	Anahtarlar yalnızca bellekte kalır; DCP Anahtarlarını Unut komutuna veya oturumun sonuna kadar.
 	DCP keys forgotten	DCP anahtarları unutuldu
 	Choose the KDM file and the private key.	KDM dosyasını ve özel anahtarı seçin.
+	Load even if the certificate chain is not verified	Doğrulanmamış sertifika zinciriyle de yükle
+	Signature verified: {chain}	İmza doğrulandı: {chain}
+	Signature not verified: {problem}	İmza doğrulanmadı: {problem}

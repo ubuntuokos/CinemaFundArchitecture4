@@ -4526,3 +4526,6 @@ export.summary	Low	matala
 	The keys stay in memory only, until Forget DCP Keys or the end of the session.	Avaimet ovat vain muistissa, kunnes valitaan Unohda DCP-avaimet tai istunto päättyy.
 	DCP keys forgotten	DCP-avaimet unohdettu
 	Choose the KDM file and the private key.	Valitse KDM-tiedosto ja yksityinen avain.
+	Load even if the certificate chain is not verified	Lataa myös vahvistamattomalla varmenneketjulla
+	Signature verified: {chain}	Allekirjoitus vahvistettu: {chain}
+	Signature not verified: {problem}	Allekirjoitusta ei vahvistettu: {problem}

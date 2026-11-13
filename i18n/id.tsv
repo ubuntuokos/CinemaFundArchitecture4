@@ -4532,3 +4532,6 @@
 	The keys stay in memory only, until Forget DCP Keys or the end of the session.	Kunci hanya disimpan di memori, sampai Lupakan Kunci DCP atau akhir sesi.
 	DCP keys forgotten	Kunci DCP dilupakan
 	Choose the KDM file and the private key.	Pilih file KDM dan kunci privat.
+	Load even if the certificate chain is not verified	Muat juga dengan rantai sertifikat yang belum diverifikasi
+	Signature verified: {chain}	Tanda tangan terverifikasi: {chain}
+	Signature not verified: {problem}	Tanda tangan tidak terverifikasi: {problem}
