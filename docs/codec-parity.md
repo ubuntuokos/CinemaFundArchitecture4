@@ -2,7 +2,7 @@
 
 > **Nem cél / Non-goal (2026-10-30):** a Windows-, macOS- és Android-paritás nem cél. A CFA4 kizárólag Ubuntu/Kubuntu 26.04 AMD64-re készül; a célalkalmazás más platformokon elérhető funkciói csak a Linuxra átültethető részükben számítanak. Az Apple-formátumok (ProRes, Apple Log, QuickTime/MOV) támogatása formátum, nem platform, ezért marad. / Windows, macOS and Android parity is not a goal; CFA4 targets Ubuntu 26.04 AMD64 only. Apple formats stay supported.
 
-> **Last reviewed:** 2026-10-10 · **Last updated:** 2026-10-27 · **Change:** minor (Ubuntu 26.04 only: VideoToolbox and Windows hardware paths removed) · **Target:** Adobe Premiere Pro 2026 (26.5.2) and Media Encoder 2026
+> **Last reviewed:** 2026-10-10 · **Last updated:** 2026-11-11 · **Change:** minor (Dolby Atmos in E-AC-3 and Auro-3D rows; the only status for cinema codecs) · **Target:** Adobe Premiere Pro 2026 (26.5.2) and Media Encoder 2026
 
 Video and audio codecs, decode and encode, with fidelity and how each is tested. Containers,
 project and interchange files are in [file-format-parity.md](file-format-parity.md); hardware
@@ -13,7 +13,9 @@ from public specifications or ported from licence-compatible projects (the catal
 Premiere's list comes from Adobe's published supported-formats pages and the names of the
 installed bundle's `MediaIO/systempresets` and `Frameworks` entries (listings only, never their
 contents). Percent is ready-for-real-work for that codec: depth, profiles, speed. The plan for
-Dolby, DTS, JPEG 2000 / DCP and OpenMAX is in [cinema-codecs.md](cinema-codecs.md).
+Dolby, DTS, JPEG 2000 / DCP and OpenMAX specifications, licences and patents are in
+[cinema-codecs.md](cinema-codecs.md); their status is tracked only here and in
+[file-format-parity.md](file-format-parity.md).
 
 ## Capability catalog (generated)
 
@@ -118,6 +120,8 @@ fidelity and the remaining work.
 | E-AC-3 (Dolby Digital Plus) | decode + encode | own decoder (ATSC A/52 Annex E, #647): independent substream, 1–6 blocks, spectral extension, 7.1 and other layouts from dependent substreams with custom channel maps; **no** adaptive hybrid transform or enhanced coupling | own encoder (#86): 1.0–5.1, 32–1024 kb/s, six-block frames; no 7.1 / spectral extension (#120); **not yet in export** (#119) | SNR vs ffmpeg 65–91 dB (raw, MP4, MOV, Matroska, TS); 7.1 72–86 dB | 85% | 5–10 h |
 | DTS, DTS-HD MA / HRA, DTS:X | decode | `cfa4-dts`, FFmpeg's decoder via the harletty-bridge `dca` port, LGPL-2.1-or-later (#83): core up to 5.1, Master Audio lossless up to 7.1 / 192 kHz, High Resolution core + XXCH, the DTS:X bed; in Matroska, MP4, MPEG-TS / Blu-ray; **no** DTS:X heights on their own speakers (#130), Express / 14-bit / DTS-ES XCh / raw `.dts` (#132) | none | core bit-exact vs ffmpeg (raw, Matroska, MP4, TS, random access); Master Audio unverified here (#131) | 70% | — |
 | Dolby TrueHD, MLP | decode | `cfa4-truehd`, ported from the Apache-2.0 `truehd` crate (G10): 2-, 6- and 8-channel presentations (7.1 / 5.1 bed of Atmos streams), 44.1–192 kHz, raw `.thd` / `.mlp`, Matroska, MP4, Blu-ray MPEG-TS / m2ts (the interleaved AC-3 core left out, #85); Atmos objects rendered to 2.0 / 5.1 / 7.1 / 7.1.4 via `Decoder::with_objects` (#84; synthetic tests only, real streams #124; not yet wired into the app, #123); **no** E-AC-3 JOC (#126) | none | bit-exact vs ffmpeg and the encoder input (mono to 5.1, 48 / 96 kHz; 5.1 in BDAV with an AC-3 core), also after a seek; 7.1 untested (no free encoder, #111) | 80% | — |
+| Dolby Atmos in E-AC-3 (JOC) | not checked | none: the 5.1 / 7.1 bed plays (#126); Atmos in TrueHD is under Dolby TrueHD | none | — | 0% | 40–60 h |
+| Auro-3D (Auro-Codec in 24-bit PCM) | not checked | `cfa4-auro` (#299), ported from the Apache-2.0 `auro` crate: detection and height decoding (8.0 … 13.1) from a bit-exact carrier (DTS-HD MA, FLAC, WAV, PCM in Matroska / MP4 / MXF); **no** Auro-CX (#322) | none | ported unit tests, synthetic carriers, fuzzing; real DTS-HD MA, FLAC and PCM carriers with `CFA4_AURO_DIR` | ahead | — |
 | MP3 / MP2 | decode + MP3 encode | MP3: symphonia (MPL-2.0); MP1 / MP2: own decoder (ISO/IEC 11172-3 / 13818-3, #809) and MP2 encoder (mono / stereo / dual channel, every sampling frequency and allowed bit rate; #267, joint stereo #878; MP2 audio in the MPEG-2 program / transport stream export), also the bit rate / mode combinations ffmpeg writes by default (mono 384 kbit/s); in raw, MP4, MOV (#800), Matroska, TS, PS | **none** | MP1 / MP2: SNR vs ffmpeg 73–84 dB; our MP2 streams decode in ffmpeg with CRCs checked; MP2 in MP4 / MOV within 1e-4 of ffmpeg, also after a seek (#800) | 65% | 10–20 h (MP3 encoder) |
 | IAB (SMPTE ST 2098-2, DCP / IMF immersive audio) | — | own decoder (`cfa4-iab`, #82): PCM and DLC assets at 48 / 96 kHz, every frame rate incl. the 1001 cadence, Beds, conditional Beds, BedRemap, Objects; rendered to 2.0 / 5.1 / 7.1 / 7.1.4 (MXF playback: 7.1); in MXF frame- or clip-wrapped | own writer (PCM, DLC) | DLC lossless round trips; no third-party IAB stream tested yet | 60% | 10–20 h (real streams #107, layouts and decorrelation #108, IMF export #109) |
 | Opus | — (not a Premiere import format) | own decoder, RFC 8251 range-exact | own CELT encoder (#99): fullband 20 ms, CBR, mono / stereo (intensity + dual stereo), Opus Audio (Ogg) and WebM export; **no** VBR (#207), psychoacoustic tuning (#208), SILK / hybrid (#209), other frame sizes or rates (#210), surround (#211), Opus in MP4 / Matroska outside WebM (#212) | conformance vectors; encoder: libopus decodes every stream (78–82 dB agreement with our decoder, matching final range), source SNR within 1–1.6 dB of libopus CBR at the same rate | ahead | 30–60 h (encoder follow-ups) |
@@ -149,6 +153,7 @@ fidelity and the remaining work.
 | 2026-11-11 | minor | Speex decode (`cfa4-speex`, codec backlog CB-6.1) |
 | 2026-11-11 | minor | SMPTE VC-2 decode (`cfa4-dirac`, codec backlog CB-7.2) |
 | 2026-11-11 | minor | AMR-NB and AMR-WB decode (`cfa4-amr`, codec backlog CB-6.2) |
+| 2026-11-11 | minor | Dolby Atmos in E-AC-3 (JOC) and Auro-3D rows, moved from [cinema-codecs.md](cinema-codecs.md), which no longer keeps its own status |
 | 2026-11-10 | minor | MP2 (MPEG-1/2 Layer II) encoder in `cfa4-mpa` (#267) |
 | 2026-11-09 | minor | H.264 monochrome (4:0:0) decode, 8 and 10 bits (#279) |
 | 2026-11-09 | minor | G.711, G.722, IMA and Microsoft ADPCM decode (`cfa4-adpcm`, codec backlog CB-4.1, CB-4.2) |

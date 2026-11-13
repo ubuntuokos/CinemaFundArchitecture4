@@ -75,7 +75,7 @@ pub(crate) fn convert(p: cfa4_dirac::Picture, v: &cfa4_dirac::VideoParameters) -
     let par = (u32::try_from(v.pixel_aspect_ratio.0).unwrap_or(1), u32::try_from(v.pixel_aspect_ratio.1).unwrap_or(1));
     let par = if par.0 == 0 || par.1 == 0 { (1, 1) } else { par };
     let color = crate::stream_color::resolve(p.width, p.height, &[color_codes(v)]);
-    Ok(VideoFrame { width: p.width, height: p.height, data, color, par, pts: cfa4_time::Tick::ZERO })
+    Ok(VideoFrame { width: p.width, height: p.height, data, color, par, pts: cfa4_time::Tick::ZERO, layout: Default::default() })
 }
 
 #[derive(Default)]
