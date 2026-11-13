@@ -4516,6 +4516,8 @@ export.summary	Low	düşük
 	accept	kabul
 	the engine did not start the check	motor denetimi başlatmadı
 	the engine sent no report	motor rapor göndermedi
+	MXF OP1a Uncompressed 10-bit 4:2:2 (v210)	MXF OP1a sıkıştırılmamış 10 bit 4:2:2 (v210)
+	MXF OP1a, uncompressed 10-bit Y'CbCr 4:2:2 in the v210 layout (SMPTE ST 384), 24-bit 48 kHz PCM, start timecode	MXF OP1a, v210 düzeninde sıkıştırılmamış 10 bit Y'CbCr 4:2:2 (SMPTE ST 384), 24 bit 48 kHz PCM, başlangıç zaman kodu
 	Load KDM…	KDM Yükle…
 	Forget DCP Keys	DCP Anahtarlarını Unut
 	Load KDM	KDM Yükle

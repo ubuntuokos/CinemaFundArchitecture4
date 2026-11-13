@@ -4518,6 +4518,8 @@ export.summary	Low	დაბალი
 	accept	მისაღები
 	the engine did not start the check	ძრავამ შემოწმება არ დაიწყო
 	the engine sent no report	ძრავამ ანგარიში არ გამოგზავნა
+	MXF OP1a Uncompressed 10-bit 4:2:2 (v210)	MXF OP1a შეუკუმშავი 10-ბიტიანი 4:2:2 (v210)
+	MXF OP1a, uncompressed 10-bit Y'CbCr 4:2:2 in the v210 layout (SMPTE ST 384), 24-bit 48 kHz PCM, start timecode	MXF OP1a, შეუკუმშავი 10-ბიტიანი Y'CbCr 4:2:2 v210 განლაგებით (SMPTE ST 384), 24-ბიტიანი 48 kHz PCM, საწყისი დროის კოდი
 	Load KDM…	KDM-ის ჩატვირთვა…
 	Forget DCP Keys	DCP გასაღებების დავიწყება
 	Load KDM	KDM-ის ჩატვირთვა

@@ -4521,6 +4521,8 @@ export.summary	Low	తక్కువ
 	accept	ఆమోదయోగ్యం
 	the engine did not start the check	ఇంజిన్ తనిఖీని ప్రారంభించలేదు
 	the engine sent no report	ఇంజిన్ నివేదికను పంపలేదు
+	MXF OP1a Uncompressed 10-bit 4:2:2 (v210)	MXF OP1a కంప్రెస్ చేయని 10-బిట్ 4:2:2 (v210)
+	MXF OP1a, uncompressed 10-bit Y'CbCr 4:2:2 in the v210 layout (SMPTE ST 384), 24-bit 48 kHz PCM, start timecode	MXF OP1a, v210 లేఅవుట్‌లో కంప్రెస్ చేయని 10-బిట్ Y'CbCr 4:2:2 (SMPTE ST 384), 24-బిట్ 48 kHz PCM, ప్రారంభ టైమ్‌కోడ్
 	Load KDM…	KDM లోడ్ చేయి…
 	Forget DCP Keys	DCP కీలను మర్చిపో
 	Load KDM	KDM లోడ్ చేయి

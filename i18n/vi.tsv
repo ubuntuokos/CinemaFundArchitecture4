@@ -4515,6 +4515,8 @@ export.summary	Low	thấp
 	accept	chấp nhận
 	the engine did not start the check	engine không bắt đầu kiểm tra
 	the engine sent no report	engine không gửi báo cáo
+	MXF OP1a Uncompressed 10-bit 4:2:2 (v210)	MXF OP1a không nén 10-bit 4:2:2 (v210)
+	MXF OP1a, uncompressed 10-bit Y'CbCr 4:2:2 in the v210 layout (SMPTE ST 384), 24-bit 48 kHz PCM, start timecode	MXF OP1a, Y'CbCr 4:2:2 10-bit không nén theo bố cục v210 (SMPTE ST 384), PCM 24-bit 48 kHz, mã thời gian bắt đầu
 	Load KDM…	Tải KDM…
 	Forget DCP Keys	Quên khóa DCP
 	Load KDM	Tải KDM

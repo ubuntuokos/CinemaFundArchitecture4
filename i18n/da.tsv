@@ -4517,6 +4517,8 @@ export.summary	Low	lav
 	accept	acceptabelt
 	the engine did not start the check	motoren startede ikke kontrollen
 	the engine sent no report	motoren sendte ingen rapport
+	MXF OP1a Uncompressed 10-bit 4:2:2 (v210)	MXF OP1a ukomprimeret 10-bit 4:2:2 (v210)
+	MXF OP1a, uncompressed 10-bit Y'CbCr 4:2:2 in the v210 layout (SMPTE ST 384), 24-bit 48 kHz PCM, start timecode	MXF OP1a, ukomprimeret 10-bit Y'CbCr 4:2:2 i v210-layout (SMPTE ST 384), 24-bit 48 kHz PCM, starttidskode
 	Load KDM…	Indlæs KDM…
 	Forget DCP Keys	Glem DCP-nøgler
 	Load KDM	Indlæs KDM

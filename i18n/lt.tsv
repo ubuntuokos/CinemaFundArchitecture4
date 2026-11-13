@@ -4518,6 +4518,8 @@ export.summary	Low	žema
 	accept	priimtina
 	the engine did not start the check	variklis nepradėjo patikrinimo
 	the engine sent no report	variklis neatsiuntė ataskaitos
+	MXF OP1a Uncompressed 10-bit 4:2:2 (v210)	MXF OP1a nesuspaustas 10 bitų 4:2:2 (v210)
+	MXF OP1a, uncompressed 10-bit Y'CbCr 4:2:2 in the v210 layout (SMPTE ST 384), 24-bit 48 kHz PCM, start timecode	MXF OP1a, nesuspaustas 10 bitų Y'CbCr 4:2:2 v210 išdėstymu (SMPTE ST 384), 24 bitų 48 kHz PCM, pradinis laiko kodas
 	Load KDM…	Įkelti KDM…
 	Forget DCP Keys	Pamiršti DCP raktus
 	Load KDM	Įkelti KDM

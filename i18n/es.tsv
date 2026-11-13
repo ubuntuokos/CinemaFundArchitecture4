@@ -4522,6 +4522,8 @@
 	accept	aceptable
 	the engine did not start the check	el motor no inició la comprobación
 	the engine sent no report	el motor no envió ningún informe
+	MXF OP1a Uncompressed 10-bit 4:2:2 (v210)	MXF OP1a sin compresión 10 bits 4:2:2 (v210)
+	MXF OP1a, uncompressed 10-bit Y'CbCr 4:2:2 in the v210 layout (SMPTE ST 384), 24-bit 48 kHz PCM, start timecode	MXF OP1a, Y'CbCr 4:2:2 de 10 bits sin compresión en formato v210 (SMPTE ST 384), PCM de 24 bits a 48 kHz, código de tiempo inicial
 	Load KDM…	Cargar KDM…
 	Forget DCP Keys	Olvidar claves DCP
 	Load KDM	Cargar KDM

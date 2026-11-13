@@ -4517,6 +4517,8 @@ export.summary	Low	nizak
 	accept	prihvatljivo
 	the engine did not start the check	mašina nije pokrenula proveru
 	the engine sent no report	mašina nije poslala izveštaj
+	MXF OP1a Uncompressed 10-bit 4:2:2 (v210)	MXF OP1a nekompresovano 10-bitno 4:2:2 (v210)
+	MXF OP1a, uncompressed 10-bit Y'CbCr 4:2:2 in the v210 layout (SMPTE ST 384), 24-bit 48 kHz PCM, start timecode	MXF OP1a, nekompresovani 10-bitni Y'CbCr 4:2:2 u rasporedu v210 (SMPTE ST 384), 24-bitni PCM 48 kHz, početni vremenski kod
 	Load KDM…	Učitaj KDM…
 	Forget DCP Keys	Zaboravi DCP ključeve
 	Load KDM	Učitaj KDM
