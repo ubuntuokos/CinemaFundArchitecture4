@@ -104,6 +104,58 @@ fn exr_stills_match_ffmpeg() {
     }
 }
 
+/// The time code and frame rate OpenImageIO (the OpenEXR library) writes: the still and a
+/// two-frame sequence start at 01:02:03:04 at 24 fps; at 29.97 the drop-frame flag counts.
+#[test]
+fn exr_time_code_and_rate_from_openexr() {
+    let tool = |args: &[&str]| std::process::Command::new("oiiotool").args(args).status().is_ok_and(|s| s.success());
+    if !tool(&["--version"]) {
+        eprintln!("SKIPPED: oiiotool is not installed");
+        return;
+    }
+    let d = dir().join("timecode");
+    std::fs::create_dir_all(&d).unwrap();
+    let write = |file: &str, tc: &str, fps: &str| {
+        let p = d.join(file);
+        let ok = tool(&[
+            "--pattern",
+            "constant:color=0.5,0.25,0.125",
+            "16x8",
+            "3",
+            "-d",
+            "half",
+            "--attrib:type=timecode",
+            "smpte:TimeCode",
+            tc,
+            "--attrib:type=rational",
+            "FramesPerSecond",
+            fps,
+            "-o",
+            p.to_string_lossy().as_ref(),
+        ]);
+        assert!(ok, "oiiotool writes {file}");
+        p
+    };
+    let a = write("tc_0001.exr", "01:02:03:04", "24/1");
+    write("tc_0002.exr", "01:02:03:05", "24/1");
+    let still = cfa4_media::open_bytes("tc_0001.exr", std::fs::read(&a).unwrap().into(), &[]).unwrap();
+    let want = cfa4_time::fields_to_frames(1, 2, 3, 4, FrameRate::new(24, 1), false);
+    assert_eq!(still.info().start_timecode, Some(want));
+    assert_eq!(still.info().video.as_ref().unwrap().frame_rate, FrameRate::new(24, 1));
+
+    let first = a.to_string_lossy().to_string();
+    let names = vec!["tc_0001.exr".to_string(), "tc_0002.exr".to_string()];
+    let frames = sequence_frames(&Numbered::parse(&first).unwrap(), &names);
+    let seq = ImageSequenceSource::new("tc", frames, FrameRate::FPS_25, Arc::new(|p: &str| std::fs::read(p))).unwrap();
+    assert_eq!(seq.info().start_timecode, Some(want));
+    assert_eq!(seq.info().video.as_ref().unwrap().frame_rate, FrameRate::new(24, 1), "the file's rate, not the default");
+
+    let df = write("df.exr", "00:01:00;02", "30000/1001");
+    let s = cfa4_media::open_bytes("df.exr", std::fs::read(&df).unwrap().into(), &[]).unwrap();
+    assert_eq!(s.info().video.as_ref().unwrap().frame_rate, FrameRate::FPS_29_97);
+    assert_eq!(s.info().start_timecode, Some(1800), "00:01:00;02 drop-frame");
+}
+
 #[test]
 fn exr_sequence_plays_linear_float_frames() {
     let ff = cfa4_testkit::require_ffmpeg!();

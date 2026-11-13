@@ -263,6 +263,14 @@ impl Pipeline {
 
     /// Output frame `f` as straight sRGB RGBA8 at the output size, or for HDR exports the encoded
     /// R'G'B' floats (3 per pixel).
+    /// The time code of output frame `f`: the sequence's (its start time code plus the time of
+    /// `f`), counted at the export rate, as the timecode overlay shows it.
+    pub fn still_timing(&self, f: i64) -> crate::StillTiming {
+        let start = self.seq_rate.tick_of(self.start_tc);
+        let t = self.rate.tick_of(f);
+        crate::StillTiming { frame: self.rate.frame_at(cfa4_time::Tick(start.0.saturating_add(t.0))), rate: self.rate, drop_frame: self.drop_frame }
+    }
+
     pub fn frame(&self, f: i64, sources: &dyn SourceProvider) -> (Vec<u8>, Vec<f32>) {
         let t = self.rate.tick_of(f);
         // The registered GPU renderer goes first; `None` (no adapter, a plan the GPU cannot

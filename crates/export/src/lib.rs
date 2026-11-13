@@ -67,6 +67,7 @@ pub use mxf_out::opatom_audio_paths;
 pub use pcm::{image_sequence_path, write_aiff, write_wav};
 pub use pipeline::{Pipeline, limit_rgba8};
 pub use presets::{ExportPreset, builtin_presets};
+pub use raster::StillTiming;
 pub use settings::*;
 use std::sync::atomic::{AtomicBool, AtomicU64, Ordering};
 use std::sync::{Arc, Mutex, OnceLock, RwLock};
@@ -3077,6 +3078,22 @@ pub fn encode_still_with_quality(format: Format, rgba: Vec<u8>, w: u32, h: u32, 
 
 /// [`encode_still_with_quality`] with the OpenEXR compression (ignored by the other formats).
 pub fn encode_still_with(format: Format, rgba: Vec<u8>, w: u32, h: u32, alpha: bool, quality: u8, exr: ExrCompression) -> Result<Vec<u8>> {
+    encode_still_timed(format, rgba, w, h, alpha, quality, exr, None)
+}
+
+/// [`encode_still_with`] for a frame of a sequence: OpenEXR also records its time code and the
+/// frame rate (ignored by the other formats).
+#[allow(clippy::too_many_arguments)]
+pub fn encode_still_timed(
+    format: Format,
+    rgba: Vec<u8>,
+    w: u32,
+    h: u32,
+    alpha: bool,
+    quality: u8,
+    exr: ExrCompression,
+    timing: Option<StillTiming>,
+) -> Result<Vec<u8>> {
     let enc = |e: image::ImageError| ExportError::Encode(e.to_string());
     let mut out = std::io::Cursor::new(Vec::new());
     match format {
@@ -3093,7 +3110,7 @@ pub fn encode_still_with(format: Format, rgba: Vec<u8>, w: u32, h: u32, alpha: b
         }
         Format::TgaSequence => return raster::tga(&rgba, w, h, alpha),
         Format::DpxSequence => return raster::dpx(&rgba, w, h),
-        Format::ExrSequence => return raster::exr(&rgba, w, h, alpha, exr),
+        Format::ExrSequence => return raster::exr_with(&rgba, w, h, alpha, exr, timing),
         Format::PngSequence if alpha => {
             image::ImageEncoder::write_image(image::codecs::png::PngEncoder::new(&mut out), &rgba, w, h, image::ExtendedColorType::Rgba8).map_err(enc)?
         }
@@ -3268,7 +3285,7 @@ fn export_here(project: &Arc<Project>, seq: ItemId, settings: &ExportSettings, s
                     let written: Vec<Result<u64>> = (f..end)
                         .into_par_iter()
                         .map(|fi| {
-                            let data = encode_still_with(
+                            let data = encode_still_timed(
                                 settings.format,
                                 pipe.frame(fi, sources).0,
                                 w,
@@ -3276,6 +3293,7 @@ fn export_here(project: &Arc<Project>, seq: ItemId, settings: &ExportSettings, s
                                 settings.alpha,
                                 settings.quality,
                                 settings.exr_compression,
+                                Some(pipe.still_timing(fi)),
                             )?;
                             write_output(settings, &pcm::image_sequence_path(&settings.path, (fi - f0) as u64, count), data)
                         })
