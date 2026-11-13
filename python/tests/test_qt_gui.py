@@ -2393,7 +2393,7 @@ EGUI_EXPORT_IDS: frozenset[str] = frozenset({
     "export.effects.timecodeOverlay", "export.effects.videoLimiter", "export.effects.videoLimiter.max",
     "export.effects.videoLimiter.min", "export.estimate", "export.fileName", "export.format", "export.gpuRendering",
     "export.location", "export.location.browse", "export.multiplexer", "export.preset", "export.preset.more",
-    "export.preview", "export.queue.clear", "export.queue.start", "export.queue.stop", "export.range",
+    "export.preview", "export.problem", "export.queue.clear", "export.queue.start", "export.queue.stop", "export.range",
     "export.range.end", "export.range.start", "export.scaling", "export.sendToQueue", "export.summary",
     "export.video.alpha", "export.video.apvProfile", "export.video.aspect", "export.video.bitrateMode",
     "export.video.cineformProfile", "export.video.cineformQuality", "export.video.crf", "export.video.dashManifest", "export.video.dnxProfile",
@@ -14949,6 +14949,7 @@ def test_kdm_dialog_describes_the_reply_never_a_key():
     assert describe(None) == "" and describe({"keys": "x"}).startswith("KDM: 0 keys")
 
 
+@pytest.mark.skipif(REAL is None, reason="Rust engine not built (cargo build -p cfa4-cli)")
 def test_real_engine_load_kdm_dialog(app, tmp_path: Path):
     """File ▸ Load KDM… (#1029): a wrong private key shows the engine's message, the right one the
     KDM's title and key types (never the key); Forget DCP Keys empties the key ring."""
