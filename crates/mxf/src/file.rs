@@ -1573,9 +1573,19 @@ impl MxfFile {
     }
 }
 
-/// Decrypts an Encrypted Triplet value of a track with context `e` (key from the key ring).
+/// Decrypts an Encrypted Triplet value of a track with context `e` (key from the key ring). When
+/// the KDM gave no MIC key and the triplets carry a MIC, the key that earlier editions of ST
+/// 429-6 derive from the content key (Annex B) is tried: once it matches, it joins the key ring
+/// and every later triplet of that key is checked with it.
 fn decrypt(e: &crate::crypt::Encryption, v: &[u8]) -> Result<Vec<u8>> {
-    let key = crate::crypt::key(&e.key_id).ok_or_else(|| Error::Encrypted(crate::crypt::uuid_text(&e.key_id)))?;
+    let mut key = crate::crypt::key(&e.key_id).ok_or_else(|| Error::Encrypted(crate::crypt::uuid_text(&e.key_id)))?;
+    if key.mic.is_none() && e.mic {
+        let legacy = crate::crypt::legacy_mic_key(&key.cipher);
+        if crate::crypt::mic_matches(v, &legacy) {
+            crate::crypt::add_key(e.key_id, crate::crypt::ContentKey { cipher: [0; 16], mic: Some(legacy) });
+            key.mic = Some(legacy);
+        }
+    }
     crate::crypt::decrypt(v, &key)
 }
 

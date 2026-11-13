@@ -388,6 +388,11 @@ fn transport_stream_mpeg2_and_mp2() {
     assert!(v.codec.starts_with("MPEG-2 Video (Main@"), "{}", v.codec);
     assert_eq!(v.pixel_format, "YUV 4:2:0 8-bit, interlaced (upper field first)");
     assert_eq!((v.width, v.height, v.par), (720, 576, (1, 1)));
+    // CFA4-PROCODEC-002 1a: the field order travels with every decoded frame, and the chroma
+    // siting is MPEG-2's type 0
+    let first = src.video_frame(FrameRequest { time: cfa4_time::Tick::ZERO, scale: 1.0 }).unwrap();
+    assert_eq!(first.layout.field_order, cfa4_frame::FieldOrder::TopFirst);
+    assert_eq!(first.layout.chroma_location, cfa4_frame::ChromaLocation::Left);
     let (worst, psnr) = check_video(&ff, &f, 4, 12);
     assert!(psnr >= 58.0, "PSNR {psnr}");
     println!("ts_mpeg2_mp2: video max diff {worst}, PSNR {psnr:.2} dB");
@@ -403,6 +408,8 @@ fn transport_stream_h264_and_aac() {
     let f = make(&ff, "ts_h264_aac.ts");
     let src = open(&f);
     assert_eq!(src.info().video.as_ref().unwrap().codec, "H.264");
+    let first = src.video_frame(FrameRequest { time: cfa4_time::Tick::ZERO, scale: 1.0 }).unwrap();
+    assert_eq!(first.layout.field_order, cfa4_frame::FieldOrder::Progressive);
     check_video(&ff, &f, 0, 10);
     let e = check_audio(&ff, &f, 1e-4);
     println!("ts_h264_aac: AAC max error {e:.2e}");

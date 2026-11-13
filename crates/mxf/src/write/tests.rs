@@ -1450,6 +1450,80 @@ fn j2k_sub_descriptor_from_hostile_codestreams() {
     assert!(J2kSubDescriptor::from_codestream(b"not j2k").is_none());
 }
 
+/// One CDP-like ANC packet on VANC line 9 for frame `i` (DID 61h, SDID 01h).
+fn anc_packet(i: usize) -> crate::AncPacket {
+    crate::AncPacket { line: 9, wrapping: 0x01, coding: 4, words: vec![0x61, 0x01, 4, 0x96, 0x69, i as u8, 0x74] }
+}
+
+#[test]
+fn anc_data_track_round_trips_through_read_anc() {
+    // OP1a UYVY pictures with a PCM track, and RDD 9 with reordered pictures and a KAG
+    for rdd9 in [false, true] {
+        let rate = Rational::new(30000, 1001);
+        let mut cfg = if rdd9 { rdd9_config(rate, 2) } else { WriterConfig::new(Pattern::Op1a, rate, PackageIds::from_seed("anc", "ANC Clip")) };
+        if !rdd9 {
+            cfg.picture = Some(PictureDesc::new(PictureCoding::Uncompressed { layout: crate::UncompressedLayout::Uyvy8 }, 16, 2));
+            cfg.sound = vec![SoundDesc { sample_rate: 48_000, channels: 2, bits: 16 }];
+        }
+        cfg.anc = true;
+        let mut w = MxfWriter::new(Cursor::new(Vec::new()), cfg).unwrap();
+        let n = 7;
+        for i in 0..n {
+            // frame 3 carries no ANC packet; frame 5 none pushed at all (an empty element)
+            if i != 5 {
+                let packets = if i == 3 { Vec::new() } else { vec![anc_packet(i)] };
+                w.push_anc(&crate::anc_element(&packets)).unwrap();
+            }
+            if rdd9 {
+                w.push_sound(0, &vec![0; 1602 * 6]).unwrap();
+                w.push_picture(&d10_picture(i, 3000), rdd9_frame(i)).unwrap();
+            } else {
+                w.push_sound(0, &vec![0; 1602 * 4]).unwrap();
+                w.push_picture(&[0x80; 64], FrameInfo::intra()).unwrap();
+            }
+        }
+        let f = w.finish().unwrap().into_inner();
+        assert!(crate::has_anc(&f));
+        let a = crate::read_anc(&f[..]).unwrap();
+        assert_eq!(a.edit_rate, rate);
+        assert!(a.warnings.is_empty(), "{:?}", a.warnings);
+        assert_eq!(a.frames.len(), n, "rdd9 {rdd9}");
+        let with: Vec<usize> = (0..n).filter(|&i| !a.frames[i].is_empty()).collect();
+        assert_eq!(with, vec![0, 1, 2, 4, 6], "rdd9 {rdd9}");
+        assert_eq!(a.frames[0][0].words, anc_packet(0).words);
+        assert_eq!(a.frames[6][0].words, anc_packet(6).words);
+        assert_eq!((a.frames[0][0].line, a.frames[0][0].coding), (9, 4));
+        // the picture and sound tracks are still read as before
+        let m = open(&f).unwrap();
+        assert!(m.warnings.is_empty(), "{:?}", m.warnings);
+        let pic = m.track_of_kind(TrackKind::Picture).unwrap();
+        assert_eq!(m.tracks[pic].samples.len(), n);
+        assert!(m.track_of_kind(TrackKind::Sound).is_some());
+    }
+}
+
+#[test]
+fn anc_data_track_is_refused_where_it_does_not_fit() {
+    let ids = || PackageIds::from_seed("anc", "ANC Clip");
+    let mut atom = WriterConfig::new(Pattern::OpAtom, Rational::new(25, 1), ids());
+    atom.picture = Some(PictureDesc::new(PictureCoding::Vc3 { cid: 1272 }, 64, 36));
+    atom.anc = true;
+    assert!(MxfWriter::new(Cursor::new(Vec::new()), atom).is_err());
+    let mut sound_only = WriterConfig::new(Pattern::Op1a, Rational::new(25, 1), ids());
+    sound_only.sound = vec![SoundDesc { sample_rate: 48_000, channels: 2, bits: 16 }];
+    sound_only.anc = true;
+    assert!(MxfWriter::new(Cursor::new(Vec::new()), sound_only).is_err());
+    let mut d10 = WriterConfig::new(Pattern::Op1a, Rational::new(25, 1), ids());
+    d10.picture = Some(PictureDesc::new(PictureCoding::D10 { mbps: 50, lines: 625 }, 720, 608));
+    d10.anc = true;
+    assert!(MxfWriter::new(Cursor::new(Vec::new()), d10).is_err());
+    // without an ANC track push_anc is an error
+    let mut plain = WriterConfig::new(Pattern::Op1a, Rational::new(25, 1), ids());
+    plain.picture = Some(PictureDesc::new(PictureCoding::Vc3 { cid: 1272 }, 64, 36));
+    let mut w = MxfWriter::new(Cursor::new(Vec::new()), plain).unwrap();
+    assert!(w.push_anc(&[0, 0]).is_err());
+}
+
 /// #1011: the CPL EssenceDescriptor of an IMF picture track file (RegXML, ST 2067-2 6.8): the
 /// RGBA descriptor with its JPEG 2000 sub-descriptor nested, values in the ST 2001-1 forms.
 #[test]

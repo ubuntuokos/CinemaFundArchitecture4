@@ -95,6 +95,7 @@ szabadalommal védett formátumot.
 | Matroska / WebM | olvasás, írás | `crates/matroska` | alap | függőben | | |
 | MXF | olvasás, írás | `crates/mxf` | alap | függőben | | |
 | MPEG-2 TS / PS (AVCHD, VOB) | olvasás | `crates/mpegts` | alap | függőben | | |
+| SMPTE ST 2110-20 (tömörítetlen kép RTP-n, RFC 4175), RTP, SDP | csomagolás, bontás | `crates/st2110` | alap | függőben | | |
 | AVI / OpenDML | olvasás | `crates/avi`; FFmpeg-háttér | alap | függőben | | |
 | Ogg | olvasás | `crates/ogg` | alap | függőben | | |
 | ASF | olvasás | FFmpeg-háttér; GStreamer | alap | függőben | | |

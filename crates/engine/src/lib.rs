@@ -70,6 +70,7 @@ mod smart_render;
 pub mod social;
 pub mod source_monitor;
 pub mod sync;
+pub mod timecode_sync;
 pub mod transcript;
 pub mod trim;
 pub mod variants;
@@ -493,6 +494,8 @@ pub struct Session {
     pub mcrec: multicam::Recorder,
     /// Voice-over recording: the input device and the take in progress.
     pub voiceover: voiceover::VoiceOver,
+    /// External timecode sync: what the devices report (Settings ▸ Timecode Sync).
+    pub timecode_sync: timecode_sync::SyncRuntime,
     /// The last `tts.preview` result, for the host to play (Text to Speech ▸ Preview).
     pub tts_preview: Option<Arc<cfa4_tts::Audio>>,
     /// Synthesized narrations (`tts.render` fills it from a background job).
@@ -609,6 +612,7 @@ impl Session {
             mixrec: Default::default(),
             mcrec: Default::default(),
             voiceover: Default::default(),
+            timecode_sync: Default::default(),
             tts_preview: None,
             tts_cache: Default::default(),
             trim_play: Default::default(),
