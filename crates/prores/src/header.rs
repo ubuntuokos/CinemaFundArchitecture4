@@ -49,7 +49,7 @@ impl FrameHeader {
         let data = &data[..frame_size];
         let h = &data[8..];
         let mut r = BitReader::new(h);
-        let rd = |r: &mut BitReader, n: u32| r.read_bits(n).map_err(|_| Error::Truncated);
+        let rd = |r: &mut BitReader<'_>, n: u32| r.read_bits(n).map_err(|_| Error::Truncated);
         let header_size = rd(&mut r, 16)? as u16;
         if (header_size as usize) < 20 || 8 + header_size as usize > data.len() {
             return Err(Error::Invalid("bad frame header size"));

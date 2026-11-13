@@ -303,7 +303,7 @@ fn metadata_namespace(namespace: Option<&str>) -> bool {
 }
 
 /// Significant TTML agents are children of head or of head's metadata children (TTML1 §12.1.5).
-fn speaker_names(root: roxmltree::Node) -> HashMap<String, String> {
+fn speaker_names(root: roxmltree::Node<'_, '_>) -> HashMap<String, String> {
     let mut out = HashMap::new();
     let content_namespace = root.tag_name().namespace();
     let Some(head) = root.children().find(|n| n.is_element() && n.tag_name().name() == "head" && n.tag_name().namespace() == content_namespace) else {
@@ -340,7 +340,7 @@ fn speaker_names(root: roxmltree::Node) -> HashMap<String, String> {
     out
 }
 
-fn speaker(n: roxmltree::Node, names: &HashMap<String, String>) -> Option<String> {
+fn speaker(n: roxmltree::Node<'_, '_>, names: &HashMap<String, String>) -> Option<String> {
     let refs = n.attributes().find(|a| a.name() == "agent" && metadata_namespace(a.namespace())).map(|a| a.value()).or_else(|| n.attribute("agent"));
     refs.map(|refs| {
         // The project stores one speaker label. Keep document-defined long names and repeated
@@ -382,7 +382,7 @@ fn speaker(n: roxmltree::Node, names: &HashMap<String, String>) -> Option<String
     })
 }
 
-fn timing(root: roxmltree::Node) -> Result<Timing> {
+fn timing(root: roxmltree::Node<'_, '_>) -> Result<Timing> {
     let invalid =
         |name: &str| Error::Syntax { line: root.document().text_pos_at(root.range().start).row as usize, msg: format!("invalid TTML timing parameter {name}") };
     let integer = |name: &str, default| match attr(root, name) {
@@ -487,7 +487,7 @@ struct Fmt {
     underline: bool,
 }
 
-fn style_of(n: roxmltree::Node, styles: &std::collections::HashMap<String, Fmt>, parent: Fmt) -> Fmt {
+fn style_of(n: roxmltree::Node<'_, '_>, styles: &std::collections::HashMap<String, Fmt>, parent: Fmt) -> Fmt {
     let mut f = parent;
     if let Some(refs) = attr(n, "style") {
         for r in refs.split_whitespace() {
@@ -502,7 +502,7 @@ fn style_of(n: roxmltree::Node, styles: &std::collections::HashMap<String, Fmt>,
     f
 }
 
-fn own_fmt(n: roxmltree::Node, f: &mut Fmt) {
+fn own_fmt(n: roxmltree::Node<'_, '_>, f: &mut Fmt) {
     if let Some(v) = attr(n, "fontStyle") {
         f.italic = v.trim() == "italic" || v.trim() == "oblique";
     }
@@ -536,7 +536,7 @@ impl Out {
 }
 
 /// Collect a `<p>`'s (or `<span>`'s) text with `<i>`/`<b>`/`<u>` tags, collapsing whitespace.
-fn collect(n: roxmltree::Node, styles: &std::collections::HashMap<String, Fmt>, fmt: Fmt, out: &mut Out) {
+fn collect(n: roxmltree::Node<'_, '_>, styles: &std::collections::HashMap<String, Fmt>, fmt: Fmt, out: &mut Out) {
     for c in n.children() {
         if c.is_text() {
             for ch in c.text().unwrap_or("").chars() {
@@ -621,7 +621,7 @@ struct Scope {
 }
 
 /// Whether `n` has timing attributes of its own.
-fn has_timing(n: roxmltree::Node) -> bool {
+fn has_timing(n: roxmltree::Node<'_, '_>) -> bool {
     ["begin", "end", "dur"].into_iter().any(|k| attr(n, k).is_some())
 }
 
@@ -636,7 +636,7 @@ struct Times {
     bad: bool,
 }
 
-fn times(n: roxmltree::Node, parent: Scope, tm: Timing, doc: &mut Document) -> Times {
+fn times(n: roxmltree::Node<'_, '_>, parent: Scope, tm: Timing, doc: &mut Document) -> Times {
     let mut bad = false;
     let mut p = |k: &str, doc: &mut Document| -> Option<Tick> {
         let v = attr(n, k)?;
@@ -659,7 +659,15 @@ fn times(n: roxmltree::Node, parent: Scope, tm: Timing, doc: &mut Document) -> T
     Times { begin, end, bad }
 }
 
-fn walk(n: roxmltree::Node, parent: Scope, tm: &Timing, styles: &HashMap<String, Fmt>, speakers: &HashMap<String, String>, fmt: Fmt, doc: &mut Document) {
+fn walk(
+    n: roxmltree::Node<'_, '_>,
+    parent: Scope,
+    tm: &Timing,
+    styles: &HashMap<String, Fmt>,
+    speakers: &HashMap<String, String>,
+    fmt: Fmt,
+    doc: &mut Document,
+) {
     for c in n.children().filter(|c| c.is_element()) {
         let f = style_of(c, styles, fmt);
         match c.tag_name().name() {
@@ -675,7 +683,7 @@ fn walk(n: roxmltree::Node, parent: Scope, tm: &Timing, styles: &HashMap<String,
                 let (b, e) = (t.begin.unwrap_or(parent.begin), t.end);
                 let cue_speaker = speaker(c, speakers);
                 let id = c.attributes().find(|a| a.name() == "id").map(|a| a.value().to_string());
-                let spans: Vec<roxmltree::Node> = c.children().filter(|x| x.is_element() && x.tag_name().name() == "span" && has_timing(*x)).collect();
+                let spans: Vec<roxmltree::Node<'_, '_>> = c.children().filter(|x| x.is_element() && x.tag_name().name() == "span" && has_timing(*x)).collect();
                 // a timed paragraph, or one without timed spans in a container with an end, is one cue
                 let whole = if has_timing(c) || spans.is_empty() { e } else { None };
                 match whole {

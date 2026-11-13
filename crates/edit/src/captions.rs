@@ -35,7 +35,7 @@ fn neighbours(t: &CaptionTrack, id: ClipId) -> (Tick, Tick) {
 
 /// Add a caption at `start`. The duration is cut short at the next caption; fails if a caption
 /// already covers `start` or less than one frame would remain.
-pub fn add_caption(seq: &mut Sequence, track: TrackId, start: Tick, duration: Tick, text: &str, ctx: &mut EditCtx) -> Result<ClipId> {
+pub fn add_caption(seq: &mut Sequence, track: TrackId, start: Tick, duration: Tick, text: &str, ctx: &mut EditCtx<'_>) -> Result<ClipId> {
     let start = start.max(Tick::ZERO);
     let t = track_mut(seq, track)?;
     if t.caption_at(start).is_some() {
@@ -54,7 +54,7 @@ pub fn add_caption(seq: &mut Sequence, track: TrackId, start: Tick, duration: Ti
 
 /// Split caption `id` at `t` (strictly inside it); both halves keep the text. Returns the new
 /// (right) caption.
-pub fn split_caption(seq: &mut Sequence, id: ClipId, t: Tick, ctx: &mut EditCtx) -> Result<ClipId> {
+pub fn split_caption(seq: &mut Sequence, id: ClipId, t: Tick, ctx: &mut EditCtx<'_>) -> Result<ClipId> {
     let tid = owner(seq, id)?;
     let min = ctx.min_duration;
     let new_id = ClipId(ctx.alloc());
@@ -76,7 +76,7 @@ pub fn split_caption(seq: &mut Sequence, id: ClipId, t: Tick, ctx: &mut EditCtx)
 
 /// Split every caption strictly containing `t` on unlocked caption tracks (all when `tracks` is
 /// empty). Returns the new captions.
-pub fn split_captions_at(seq: &mut Sequence, tracks: &[TrackId], t: Tick, ctx: &mut EditCtx) -> Vec<ClipId> {
+pub fn split_captions_at(seq: &mut Sequence, tracks: &[TrackId], t: Tick, ctx: &mut EditCtx<'_>) -> Vec<ClipId> {
     let ids: Vec<ClipId> = seq
         .caption_tracks
         .iter()
@@ -132,7 +132,7 @@ pub fn set_caption(seq: &mut Sequence, id: ClipId, text: Option<&str>, speaker: 
 }
 
 /// Set a caption's in and out points directly (Captions panel timecode fields).
-pub fn set_caption_times(seq: &mut Sequence, id: ClipId, start: Tick, end: Tick, ctx: &EditCtx) -> Result<()> {
+pub fn set_caption_times(seq: &mut Sequence, id: ClipId, start: Tick, end: Tick, ctx: &EditCtx<'_>) -> Result<()> {
     let tid = owner(seq, id)?;
     let tr = track_mut(seq, tid)?;
     if end - start < ctx.min_duration || start < Tick::ZERO {
@@ -150,7 +150,7 @@ pub fn set_caption_times(seq: &mut Sequence, id: ClipId, start: Tick, end: Tick,
 
 /// Trim a caption edge by `delta`, limited by its neighbours and a one-frame minimum. Returns the
 /// delta applied.
-pub fn trim_caption(seq: &mut Sequence, id: ClipId, edge: Edge, delta: Tick, ctx: &EditCtx) -> Result<Tick> {
+pub fn trim_caption(seq: &mut Sequence, id: ClipId, edge: Edge, delta: Tick, ctx: &EditCtx<'_>) -> Result<Tick> {
     let tid = owner(seq, id)?;
     let tr = track_mut(seq, tid)?;
     let (prev, next) = neighbours(tr, id);
@@ -219,7 +219,7 @@ pub fn move_captions(seq: &mut Sequence, ids: &[ClipId], delta: Tick) -> Result<
 /// Place copies of `captions` on `track`, overwriting what lies under them (captions there are cut
 /// back, split or removed), as Paste and Option-drag do. The copies keep their text, speaker and
 /// settings at their own `start`/`duration`, and get new ids (returned in time order).
-pub fn overwrite_captions(seq: &mut Sequence, track: TrackId, captions: &[Caption], ctx: &mut EditCtx) -> Result<Vec<ClipId>> {
+pub fn overwrite_captions(seq: &mut Sequence, track: TrackId, captions: &[Caption], ctx: &mut EditCtx<'_>) -> Result<Vec<ClipId>> {
     let min = ctx.min_duration;
     let mut placed: Vec<Caption> = captions.iter().filter(|c| c.duration >= min).cloned().collect();
     if placed.is_empty() {
@@ -248,7 +248,7 @@ pub fn overwrite_captions(seq: &mut Sequence, track: TrackId, captions: &[Captio
 
 /// Clear `a..b` on a caption track without closing the gap: captions inside go, captions across an
 /// edge are cut back, a caption across the whole range is split. Pieces shorter than `min` go.
-fn clear_range(tr: &mut CaptionTrack, a: Tick, b: Tick, min: Tick, ctx: &mut EditCtx) {
+fn clear_range(tr: &mut CaptionTrack, a: Tick, b: Tick, min: Tick, ctx: &mut EditCtx<'_>) {
     let mut out = Vec::with_capacity(tr.captions.len() + 1);
     for c in tr.captions.drain(..) {
         let (s, e) = (c.start, c.end());
@@ -311,7 +311,7 @@ pub fn shift_from(tr: &mut CaptionTrack, at: Tick, delta: Tick) {
 }
 
 /// Open a gap of `dur` at `at` (insert edit): a caption straddling `at` is split.
-pub fn insert_gap(tr: &mut CaptionTrack, at: Tick, dur: Tick, ctx: &mut EditCtx) {
+pub fn insert_gap(tr: &mut CaptionTrack, at: Tick, dur: Tick, ctx: &mut EditCtx<'_>) {
     if let Some(c) = tr.caption_at(at).filter(|c| c.start < at).cloned() {
         let mut right = c.clone();
         right.id = ClipId(ctx.alloc());

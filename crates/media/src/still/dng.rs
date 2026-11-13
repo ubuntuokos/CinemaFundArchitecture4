@@ -85,12 +85,7 @@ pub fn still(name: &str, bytes: &[u8]) -> Result<StillSource> {
 /// The frame rate and start time code (in frames at that rate) of a CinemaDNG sequence whose first
 /// frame is `info`: the FrameRate tag when present (else `default`), the TimeCodes tag when present.
 pub fn sequence_timing(info: &cfa4_dng::Info, default: FrameRate) -> (FrameRate, Option<i64>) {
-    let rate = info.frame_rate.map(|(n, d)| FrameRate::new(n, d).sane()).unwrap_or(default);
-    let tc = info.timecode.map(|t| {
-        let drop = t.drop_frame && rate.supports_drop_frame();
-        cfa4_time::fields_to_frames(i64::from(t.hours), i64::from(t.minutes), i64::from(t.seconds), i64::from(t.frames), rate, drop)
-    });
-    (rate, tc)
+    super::Timing { frame_rate: info.frame_rate, timecode: info.timecode }.resolve(default)
 }
 
 #[cfg(test)]
