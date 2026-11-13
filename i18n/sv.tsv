@@ -4526,7 +4526,7 @@ export.summary	Low	låg
 	The keys stay in memory only, until Forget DCP Keys or the end of the session.	Nycklarna finns bara i minnet, tills Glöm DCP-nycklar eller sessionens slut.
 	DCP keys forgotten	DCP-nycklarna glömda
 	Choose the KDM file and the private key.	Välj KDM-filen och den privata nyckeln.
-	Load even with an unverified signature	Läs in även med en overifierad signatur
+	Load even if the certificate chain is not verified	Läs in även med en overifierad certifikatkedja
 	Signature verified: {chain}	Signaturen verifierad: {chain}
 	Signature not verified: {problem}	Signaturen inte verifierad: {problem}
 	KDM required	KDM krävs

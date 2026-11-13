@@ -4529,7 +4529,7 @@
 	The keys stay in memory only, until Forget DCP Keys or the end of the session.	Les clés restent uniquement en mémoire, jusqu’à « Oublier les clés DCP » ou la fin de la session.
 	DCP keys forgotten	Clés DCP oubliées
 	Choose the KDM file and the private key.	Choisissez le fichier KDM et la clé privée.
-	Load even with an unverified signature	Charger même avec une signature non vérifiée
+	Load even if the certificate chain is not verified	Charger même avec une chaîne de certificats non vérifiée
 	Signature verified: {chain}	Signature vérifiée : {chain}
 	Signature not verified: {problem}	Signature non vérifiée : {problem}
 	KDM required	KDM requis

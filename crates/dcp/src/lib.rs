@@ -33,6 +33,10 @@ pub mod x509;
 mod xml;
 pub mod xmldsig;
 
+#[cfg(any(test, feature = "test-util"))]
+#[doc(hidden)]
+pub mod testing;
+
 pub use assetmap::{AssetMap, AssetMapAsset, Chunk, VolumeIndex};
 pub use cpl::{AssetKind, Composition, ContentVersion, Marker, Rating, Reel, ReelAsset, ScreenAspectRatio};
 pub use pkl::{PackingList, PackingListAsset};

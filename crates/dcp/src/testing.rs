@@ -1,0 +1,141 @@
+//! Test helpers shared with other crates' tests (feature `test-util`): an XML-signed document
+//! maker built on the openssl and xmlsec1 command lines (oracles only, skipped when missing). The
+//! certificate chain keeps ST 430-2 (dnQualifier thumbprints, roles, key usage, path lengths,
+//! AuthorityKeyIdentifier), or, for tests of non-conforming chains, only plain X.509.
+
+#![allow(clippy::unwrap_used, clippy::expect_used, clippy::panic)]
+
+use base64::Engine as _;
+use std::path::{Path, PathBuf};
+use std::process::Command;
+
+/// A signing chain (root, intermediate, signer) with its keys in a temporary directory.
+pub struct Signed {
+    pub dir: PathBuf,
+}
+
+fn tool(name: &str, arg: &str) -> bool {
+    let ok = Command::new(name).arg(arg).output().is_ok_and(|o| o.status.success());
+    if !ok {
+        assert!(std::env::var_os("CFA4_REQUIRE_ORACLES").is_none(), "{name} not found");
+        eprintln!("SKIPPED: {name} not found");
+    }
+    ok
+}
+
+fn run(dir: &Path, prog: &str, args: &[&str]) {
+    let out = Command::new(prog).current_dir(dir).args(args).output().unwrap();
+    assert!(out.status.success(), "{prog} {args:?}: {}", String::from_utf8_lossy(&out.stderr));
+}
+
+/// Extensions of ST 430-2 conforming certificates (5.2): CAs sign certificates only and have a
+/// path length; leaves sign and encipher; everyone names its issuer's key.
+const EXT: &str = "[v3root]\nbasicConstraints=critical,CA:TRUE,pathlen:1\nkeyUsage=critical,keyCertSign,cRLSign\nsubjectKeyIdentifier=hash\nauthorityKeyIdentifier=keyid:always\n\
+[v3ca]\nbasicConstraints=critical,CA:TRUE,pathlen:0\nkeyUsage=critical,keyCertSign,cRLSign\nsubjectKeyIdentifier=hash\nauthorityKeyIdentifier=keyid:always\n\
+[v3leaf]\nbasicConstraints=critical,CA:FALSE\nkeyUsage=critical,digitalSignature,keyEncipherment\nsubjectKeyIdentifier=hash\nauthorityKeyIdentifier=keyid:always\n";
+
+/// Plain X.509 extensions without what ST 430-2 adds (no path length, no AuthorityKeyIdentifier).
+const PLAIN_EXT: &str = "[v3root]\nbasicConstraints=critical,CA:TRUE\nkeyUsage=critical,keyCertSign,cRLSign\n\
+[v3ca]\nbasicConstraints=critical,CA:TRUE\nkeyUsage=critical,keyCertSign,cRLSign\n\
+[v3leaf]\nbasicConstraints=critical,CA:FALSE\nkeyUsage=critical,digitalSignature,keyEncipherment\n";
+
+/// The template: a KDM-shaped Signature that xmlsec1 fills in (ST 430-3 algorithms).
+pub const TEMPLATE_SIGNATURE: &str = r##"<dsig:Signature>
+    <dsig:SignedInfo>
+      <dsig:CanonicalizationMethod Algorithm="http://www.w3.org/TR/2001/REC-xml-c14n-20010315#WithComments"/>
+      <dsig:SignatureMethod Algorithm="http://www.w3.org/2001/04/xmldsig-more#rsa-sha256"/>
+      <dsig:Reference URI="#ID_AuthenticatedPublic"><dsig:DigestMethod Algorithm="http://www.w3.org/2001/04/xmlenc#sha256"/><dsig:DigestValue/></dsig:Reference>
+      <dsig:Reference URI="#ID_AuthenticatedPrivate"><dsig:DigestMethod Algorithm="http://www.w3.org/2001/04/xmlenc#sha256"/><dsig:DigestValue/></dsig:Reference>
+    </dsig:SignedInfo>
+    <dsig:SignatureValue/>
+    <dsig:KeyInfo><dsig:X509Data><dsig:X509Certificate/></dsig:X509Data></dsig:KeyInfo>
+  </dsig:Signature>"##;
+
+/// The serial number of the signer's certificate.
+pub const SIGNER_SERIAL: &str = "12345678901234567890";
+
+impl Signed {
+    /// A root (`.root`), an intermediate (`.inter`) and a signer (`CS.signer`, serial
+    /// [`SIGNER_SERIAL`]) keeping ST 430-2, or `None` without openssl and xmlsec1.
+    pub fn new(name: &str) -> Option<Signed> {
+        Signed::make(name, true)
+    }
+
+    /// The same chain as plain X.509: no dnQualifier, path lengths or AuthorityKeyIdentifier.
+    pub fn non_conforming(name: &str) -> Option<Signed> {
+        Signed::make(name, false)
+    }
+
+    fn make(name: &str, st430: bool) -> Option<Signed> {
+        if !tool("openssl", "version") || !tool("xmlsec1", "--version") {
+            return None;
+        }
+        let dir = std::env::temp_dir().join(format!("cfa4-xmldsig-{name}-{}", std::process::id()));
+        std::fs::create_dir_all(&dir).unwrap();
+        std::fs::write(dir.join("ext.cnf"), if st430 { EXT } else { PLAIN_EXT }).unwrap();
+        for (k, cn) in [("root", ".root"), ("inter", ".inter"), ("leaf", "CS.signer")] {
+            run(&dir, "openssl", &["genpkey", "-algorithm", "RSA", "-pkeyopt", "rsa_keygen_bits:2048", "-out", &format!("{k}.key")]);
+            // the subject, with the public key thumbprint as dnQualifier (ST 430-2 5.3.1, 5.4)
+            let mut dn = format!("[req]\ndistinguished_name=dn\nprompt=no\n[dn]\nO=test\nOU=cfa4\nCN={cn}\n");
+            if st430 {
+                run(&dir, "openssl", &["rsa", "-in", &format!("{k}.key"), "-RSAPublicKey_out", "-outform", "DER", "-out", &format!("{k}.rsa")]);
+                use sha1::Digest as _;
+                let tp = base64::engine::general_purpose::STANDARD.encode(sha1::Sha1::digest(std::fs::read(dir.join(format!("{k}.rsa"))).unwrap()));
+                dn.push_str(&format!("dnQualifier={tp}\n"));
+            }
+            std::fs::write(dir.join(format!("{k}.cnf")), dn).unwrap();
+        }
+        let ext = |e: &'static str| ["-extfile", "ext.cnf", "-extensions", e];
+        let mut root =
+            vec!["req", "-x509", "-new", "-key", "root.key", "-sha256", "-days", "3650", "-config", "root.cnf", "-set_serial", "1", "-out", "root.pem"];
+        root.extend(["-extensions", "v3root"]);
+        // req reads the extensions from its own config: append them there
+        let mut root_cnf = std::fs::read_to_string(dir.join("root.cnf")).unwrap();
+        root_cnf.push_str(if st430 { EXT } else { PLAIN_EXT });
+        std::fs::write(dir.join("root.cnf"), root_cnf).unwrap();
+        run(&dir, "openssl", &root);
+        for (k, ca, serial, days, e) in [("inter", "root", "2", "3000", "v3ca"), ("leaf", "inter", SIGNER_SERIAL, "2000", "v3leaf")] {
+            run(&dir, "openssl", &["req", "-new", "-key", &format!("{k}.key"), "-config", &format!("{k}.cnf"), "-out", &format!("{k}.csr")]);
+            let (csr, pem, cakey) = (format!("{k}.csr"), format!("{ca}.pem"), format!("{ca}.key"));
+            let out = format!("{k}.pem");
+            let mut args = vec!["x509", "-req", "-in", &csr, "-CA", &pem, "-CAkey", &cakey, "-set_serial", serial, "-sha256", "-days", days, "-out", &out];
+            args.extend(ext(e));
+            run(&dir, "openssl", &args);
+        }
+        Some(Signed { dir })
+    }
+
+    /// The signer certificate's thumbprint, as a KDM's encrypted key blocks name it.
+    pub fn signer_thumbprint(&self) -> [u8; 20] {
+        run(&self.dir, "openssl", &["x509", "-in", "leaf.pem", "-outform", "DER", "-out", "leaf.der"]);
+        crate::x509::Certificate::from_der(&std::fs::read(self.dir.join("leaf.der")).unwrap()).unwrap().thumbprint()
+    }
+
+    /// `xml` (with a Signature template) signed by the signer, the chain in KeyInfo.
+    pub fn sign(&self, xml: &str) -> String {
+        std::fs::write(self.dir.join("in.xml"), xml).unwrap();
+        run(
+            &self.dir,
+            "xmlsec1",
+            &[
+                "--sign",
+                "--privkey-pem",
+                "leaf.key,leaf.pem,inter.pem,root.pem",
+                "--id-attr:Id",
+                "AuthenticatedPublic",
+                "--id-attr:Id",
+                "AuthenticatedPrivate",
+                "--output",
+                "out.xml",
+                "in.xml",
+            ],
+        );
+        std::fs::read_to_string(self.dir.join("out.xml")).unwrap()
+    }
+}
+
+impl Drop for Signed {
+    fn drop(&mut self) {
+        let _ = std::fs::remove_dir_all(&self.dir);
+    }
+}

@@ -4527,7 +4527,7 @@ export.summary	Low	ниско
 	The keys stay in memory only, until Forget DCP Keys or the end of the session.	Ключовете остават само в паметта, до „Забравяне на DCP ключовете“ или края на сесията.
 	DCP keys forgotten	DCP ключовете са забравени
 	Choose the KDM file and the private key.	Изберете KDM файла и частния ключ.
-	Load even with an unverified signature	Зареждане дори с непроверен подпис
+	Load even if the certificate chain is not verified	Зареждане дори при непроверена верига от сертификати
 	Signature verified: {chain}	Подписът е проверен: {chain}
 	Signature not verified: {problem}	Подписът не е проверен: {problem}
 	KDM required	Необходим е KDM
