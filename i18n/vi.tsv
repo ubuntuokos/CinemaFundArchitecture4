@@ -4559,3 +4559,5 @@ export.summary	Low	thấp
 	Chase External Timecode	Bám theo timecode bên ngoài
 	Send LTC	Gửi LTC
 	Send MIDI Timecode	Gửi timecode MIDI
+	Add Studio Scene	Thêm cảnh studio
+	Live	Trực tiếp

@@ -4562,3 +4562,5 @@ export.summary	Low	დაბალი
 	Chase External Timecode	გარე დროის კოდისთვის მიყოლა
 	Send LTC	LTC-ის გაგზავნა
 	Send MIDI Timecode	MIDI დროის კოდის გაგზავნა
+	Add Studio Scene	სტუდიის სცენის დამატება
+	Live	პირდაპირი

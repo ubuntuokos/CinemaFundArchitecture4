@@ -4556,3 +4556,5 @@ export.summary	Low	alacsony
 	Chase External Timecode	Külső időkód követése
 	Send LTC	LTC küldése
 	Send MIDI Timecode	MIDI-időkód küldése
+	Add Studio Scene	Stúdiójelenet hozzáadása
+	Live	Élő
