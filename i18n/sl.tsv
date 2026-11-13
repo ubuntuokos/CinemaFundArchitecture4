@@ -4520,7 +4520,7 @@ export.summary	Low	nizka
 	the engine sent no report	pogon ni poslal poročila
 	MXF OP1a Uncompressed 10-bit 4:2:2 (v210)	MXF OP1a nestisnjeno 10-bitno 4:2:2 (v210)
 	MXF OP1a, uncompressed 10-bit Y'CbCr 4:2:2 in the v210 layout (SMPTE ST 384), 24-bit 48 kHz PCM, start timecode	MXF OP1a, nestisnjen 10-bitni Y'CbCr 4:2:2 v postavitvi v210 (SMPTE ST 384), 24-bitni PCM 48 kHz, začetna časovna koda
-	Write the captions as ANC data (CEA-608/708, 29.97 fps)	Zapiši podnapise kot podatke ANC (CEA-608/708, 29,97 sl./s)
+	Write the captions as ANC data (CEA-608/708)	Zapiši podnapise kot podatke ANC (CEA-608/708)
 	Load KDM…	Naloži KDM…
 	Forget DCP Keys	Pozabi ključe DCP
 	Load KDM	Naloži KDM

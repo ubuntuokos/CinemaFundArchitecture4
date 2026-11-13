@@ -4515,7 +4515,7 @@
 	the engine sent no report	引擎未发送报告
 	MXF OP1a Uncompressed 10-bit 4:2:2 (v210)	MXF OP1a 无压缩 10 位 4:2:2 (v210)
 	MXF OP1a, uncompressed 10-bit Y'CbCr 4:2:2 in the v210 layout (SMPTE ST 384), 24-bit 48 kHz PCM, start timecode	MXF OP1a，v210 布局的无压缩 10 位 Y'CbCr 4:2:2（SMPTE ST 384），24 位 48 kHz PCM，起始时间码
-	Write the captions as ANC data (CEA-608/708, 29.97 fps)	将字幕写为 ANC 数据（CEA-608/708，29.97 fps）
+	Write the captions as ANC data (CEA-608/708)	将字幕写为 ANC 数据（CEA-608/708）
 	Load KDM…	加载 KDM…
 	Forget DCP Keys	清除 DCP 密钥
 	Load KDM	加载 KDM

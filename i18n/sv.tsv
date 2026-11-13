@@ -4519,7 +4519,7 @@ export.summary	Low	låg
 	the engine sent no report	motorn skickade ingen rapport
 	MXF OP1a Uncompressed 10-bit 4:2:2 (v210)	MXF OP1a okomprimerad 10-bitars 4:2:2 (v210)
 	MXF OP1a, uncompressed 10-bit Y'CbCr 4:2:2 in the v210 layout (SMPTE ST 384), 24-bit 48 kHz PCM, start timecode	MXF OP1a, okomprimerad 10-bitars Y'CbCr 4:2:2 i v210-layout (SMPTE ST 384), 24-bitars 48 kHz PCM, starttidkod
-	Write the captions as ANC data (CEA-608/708, 29.97 fps)	Skriv undertexterna som ANC-data (CEA-608/708, 29,97 bild/s)
+	Write the captions as ANC data (CEA-608/708)	Skriv undertexterna som ANC-data (CEA-608/708)
 	Load KDM…	Läs in KDM…
 	Forget DCP Keys	Glöm DCP-nycklar
 	Load KDM	Läs in KDM

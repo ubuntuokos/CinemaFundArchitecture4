@@ -524,7 +524,7 @@ class ExportDialog(QDialog):
         self.dash_manifest = QCheckBox(tr("Also write a DASH manifest (.mpd)"), self)
         self.dash_manifest.setObjectName("export.video.dashManifest")
         # MXF OP1a: the caption track as closed captions in an ANC data track (ST 436-1, CEA-608/708)
-        self.mxf_anc = QCheckBox(tr("Write the captions as ANC data (CEA-608/708, 29.97 fps)"), self)
+        self.mxf_anc = QCheckBox(tr("Write the captions as ANC data (CEA-608/708)"), self)
         self.mxf_anc.setObjectName("export.video.mxfAncCaptions")
         self.quality = QSpinBox(self)
         self.quality.setObjectName("export.video.quality")
