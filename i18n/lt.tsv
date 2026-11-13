@@ -4527,6 +4527,6 @@ export.summary	Low	žema
 	The keys stay in memory only, until Forget DCP Keys or the end of the session.	Raktai laikomi tik atmintyje, kol pasirenkama Pamiršti DCP raktus arba baigiasi seansas.
 	DCP keys forgotten	DCP raktai pamiršti
 	Choose the KDM file and the private key.	Pasirinkite KDM failą ir privatųjį raktą.
-	Load even with an unverified signature	Įkelti net su nepatikrintu parašu
+	Load even if the certificate chain is not verified	Įkelti net su nepatikrinta sertifikatų grandine
 	Signature verified: {chain}	Parašas patikrintas: {chain}
 	Signature not verified: {problem}	Parašas nepatikrintas: {problem}

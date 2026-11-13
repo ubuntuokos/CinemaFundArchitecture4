@@ -2,9 +2,10 @@
 
 The user picks a KDM (SMPTE ST 430-1 XML) and the PEM private key of its recipient; the engine's
 ``dcp.loadKdm`` decrypts the content keys into memory, and the encrypted track files play from
-then on. The engine checks the KDM's signature and certificate chain and refuses a KDM that does
-not check out unless "Load even with an unverified signature" is ticked (``allowUnverified``,
-#1028 / #1075). The dialog shows what the KDM holds (title, key types, validity) and how the
+then on. The engine checks the KDM's signature and certificate chain (ST 430-1 / 430-2 / 430-3). An unsigned
+KDM, or one changed after signing, is always refused; one whose content is intact but whose
+certificate chain does not check out loads only when "Load even if the certificate chain is not
+verified" is ticked (``allowUnverified``, #1028 / #1075, owner decision 2026-11-13). The dialog shows what the KDM holds (title, key types, validity) and how the
 signature check went, never a key. Forget DCP Keys (``dcp.clearKeys``) drops them again. Keys are
 never written anywhere.
 
@@ -84,7 +85,7 @@ class KdmDialog(QDialog):
             row.addWidget(edit, 1)
             row.addWidget(browse)
             form.addRow(label, row)
-        self.allow_unverified = QCheckBox(tr("Load even with an unverified signature"), self)
+        self.allow_unverified = QCheckBox(tr("Load even if the certificate chain is not verified"), self)
         self.allow_unverified.setObjectName("kdm.allowUnverified")
         form.addRow("", self.allow_unverified)
         note = QLabel(tr("The keys stay in memory only, until Forget DCP Keys or the end of the session."), self)

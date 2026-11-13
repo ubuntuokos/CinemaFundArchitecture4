@@ -4534,6 +4534,6 @@
 	The keys stay in memory only, until Forget DCP Keys or the end of the session.	As chaves ficam apenas na memória, até Esquecer chaves DCP ou o fim da sessão.
 	DCP keys forgotten	Chaves DCP esquecidas
 	Choose the KDM file and the private key.	Escolha o arquivo KDM e a chave privada.
-	Load even with an unverified signature	Carregar mesmo com assinatura não verificada
+	Load even if the certificate chain is not verified	Carregar mesmo com cadeia de certificados não verificada
 	Signature verified: {chain}	Assinatura verificada: {chain}
 	Signature not verified: {problem}	Assinatura não verificada: {problem}
