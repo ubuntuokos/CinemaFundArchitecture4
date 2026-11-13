@@ -59,6 +59,7 @@ pub mod relink;
 pub mod remix;
 pub mod scene_detect;
 pub mod scopes;
+mod segments;
 pub mod sequence_extras;
 pub mod sequence_tools;
 pub mod settings;
@@ -1442,6 +1443,8 @@ mod ripple_head_tests;
 mod roll_linked_tests;
 #[cfg(test)]
 mod scopes_tests;
+#[cfg(test)]
+mod segments_tests;
 #[cfg(test)]
 mod sequence_inspect_tests;
 #[cfg(test)]
