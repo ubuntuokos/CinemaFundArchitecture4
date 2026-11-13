@@ -4557,3 +4557,56 @@
 	Chase External Timecode	追随外部时间码
 	Send LTC	发送 LTC
 	Send MIDI Timecode	发送 MIDI 时间码
+# CFA4-LOSSLESS-MEDIA-TOOLS-001: segments, Find Segments, joined Smart Cut, frame export options
+	Find Segments	查找片段
+	Find Segments…	查找片段…
+	Comment…	注释…
+	Comment:	注释:
+	The analysis stopped.	分析已停止。
+	No segments. Add a range marker in the Source monitor, or use Find Segments…	没有片段。请在源监视器中添加范围标记，或使用“查找片段…”
+	Remove Segment	移除片段
+	Black pictures	黑场画面
+	{count} segments written and verified	已写入并校验 {count} 个片段
+	These files already exist and will be replaced: {files}. Continue?	以下文件已存在，将被替换：{files}。是否继续？
+	{count} subclips made from the segments	已从片段创建 {count} 个子剪辑
+	Segment	片段
+	Silence	静音
+	Analyzing…	正在分析…
+	Analyzing… {percent}%	正在分析… {percent}%
+	Silence below (dBFS):	静音阈值 (dBFS)：
+	To Timeline	放到时间线
+	Sequence Markers	序列标记
+	Join the segments into one file	将片段合并为一个文件
+	{count} segments placed on the timeline	已将 {count} 个片段放到时间线上
+	Shortest silence (s):	最短静音（秒）：
+	Segment {n}: {why}	片段 {n}：{why}
+	Source Clip Segments	源剪辑的片段
+	{count} segments found	找到 {count} 个片段
+	{count} files: {copied} frames copied, {reencoded} frames re-encoded	{count} 个文件：复制 {copied} 帧，重新编码 {reencoded} 帧
+	This clip has no segments: add range markers in the Source monitor first.	此剪辑没有片段：请先在源监视器中添加范围标记。
+	Black level (%):	黑电平 (%)：
+	Quality:	质量：
+	Black share of the picture (%):	画面中黑色的比例 (%)：
+	{count} segments added to the clip	已向剪辑添加 {count} 个片段
+	Last frame	最后一帧
+	First frame	第一帧
+	Marked range	标记的范围
+	Original	原始
+	Segment names as chapters	将片段名称用作章节
+	Add as Segments	添加为片段
+	The engine did not start the analysis.	引擎没有启动分析。
+	Range:	范围：
+	(no clip in the Source monitor)	（源监视器中没有剪辑）
+	Segment name:	片段名称：
+	{count} segments joined into {path} and verified	已将 {count} 个片段合并到 {path} 并校验
+	Shortest black (s):	最短黑场（秒）：
+	Segments (range markers)	片段（范围标记）
+	(only the first ones are listed)	（只列出前面的部分）
+	Check at least one segment.	请至少勾选一个片段。
+	Make Subclips	创建子剪辑
+	Shortest shot (frames):	最短镜头（帧）：
+	Row {n}: the first and last frame must be whole numbers	第 {n} 行：第一帧和最后一帧必须是整数
+	Size:	大小：
+	{count} segments joined into one file: {copied} frames copied, {reencoded} frames re-encoded	已将 {count} 个片段合并为一个文件：复制 {copied} 帧，重新编码 {reencoded} 帧
+	{name} ({frames} frames)	{name}（{frames} 帧）
+	Scene changes	场景切换

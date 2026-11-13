@@ -16,6 +16,7 @@ from PySide6.QtWidgets import (
     QFormLayout,
     QFrame,
     QHBoxLayout,
+    QInputDialog,
     QLabel,
     QLineEdit,
     QMenu,
@@ -72,6 +73,10 @@ class MarkerList(QWidget):
 
     go = Signal(object)  # marker start, ticks
     recolor = Signal(object, str)  # marker id, label
+    # the Source clip's segments (CFA4-LOSSLESS-MEDIA-TOOLS-001 K2): rename, comment, remove
+    rename = Signal(object)  # marker id
+    comment = Signal(object)  # marker id
+    remove = Signal(object)  # marker id
 
     ROW = 38
 
@@ -82,6 +87,7 @@ class MarkerList(QWidget):
         self.markers: list[dict[str, Any]] = []
         self.frame = 1
         self.empty = ""
+        self.segments = False
         self._hover = -1
 
     def set_markers(self, markers: list[dict[str, Any]], frame: int, empty: str) -> None:
@@ -177,6 +183,15 @@ class MarkerList(QWidget):
             a.setCheckable(True)
             a.setChecked(m.get("color") == name)
             a.triggered.connect(lambda _c=False, mid=marker_id, n=name: self.recolor.emit(mid, n))
+        if self.segments:
+            for key, label, signal in (
+                ("rename", N_("Rename…"), self.rename),
+                ("comment", N_("Comment…"), self.comment),
+                ("remove", N_("Remove Segment"), self.remove),
+            ):
+                a = menu.addAction(tr(label))
+                a.setObjectName(f"markers.menu.{key}")
+                a.triggered.connect(lambda _c=False, mid=marker_id, sig=signal: sig.emit(mid))
         return menu
 
 
@@ -191,6 +206,13 @@ class MarkersPanel(QWidget):
         self.setObjectName("panel.Markers")
         self.hidden: set[str] = set()
         self.sequence: dict[str, Any] | None = None
+        self.source: dict[str, Any] | None = None
+        # the active sequence's markers, or the Source clip's segments (its range markers, K2)
+        self.view = QComboBox(self)
+        self.view.setObjectName("markers.view")
+        self.view.addItem(tr("Sequence Markers"), "program")
+        self.view.addItem(tr("Source Clip Segments"), "source")
+        self.view.currentIndexChanged.connect(lambda _i: self._show())
         chips = QHBoxLayout()
         chips.setContentsMargins(6, 6, 6, 2)
         chips.setSpacing(2)
@@ -207,8 +229,11 @@ class MarkersPanel(QWidget):
             self.chips[name] = b
         chips.addStretch(1)
         self.list = MarkerList(self)
-        self.list.go.connect(lambda t: self.command.emit("playhead.set", {"time": t}))
-        self.list.recolor.connect(lambda mid, n: self.command.emit("markers.edit", {"target": "program", "marker": mid, "color": n}))
+        self.list.go.connect(self._go)
+        self.list.recolor.connect(lambda mid, n: self.command.emit("markers.edit", {"target": self.target(), "marker": mid, "color": n}))
+        self.list.rename.connect(lambda mid: self._ask(mid, "name", tr("Segment name:")))
+        self.list.comment.connect(lambda mid: self._ask(mid, "comment", tr("Comment:")))
+        self.list.remove.connect(self._remove)
         scroll = QScrollArea(self)
         scroll.setWidgetResizable(True)
         scroll.setFrameShape(QFrame.Shape.NoFrame)
@@ -216,6 +241,10 @@ class MarkersPanel(QWidget):
         layout = QVBoxLayout(self)
         layout.setContentsMargins(0, 0, 0, 0)
         layout.setSpacing(2)
+        top = QHBoxLayout()
+        top.setContentsMargins(6, 6, 6, 0)
+        top.addWidget(self.view, 1)
+        layout.addLayout(top)
         layout.addLayout(chips)
         layout.addWidget(scroll, 1)
         self._paint_chips()
@@ -229,12 +258,48 @@ class MarkersPanel(QWidget):
                 f"QToolButton {{ background: {c if on else 'transparent'}; border: 1px solid {c}; border-radius: 3px; margin: 2px; }}"
             )
 
+    def target(self) -> str:
+        return "source" if self.view.currentData() == "source" else "program"
+
+    def _go(self, t: int) -> None:
+        if self.target() == "source":
+            self.command.emit("source.setPlayhead", {"time": t})
+        else:
+            self.command.emit("playhead.set", {"time": t})
+
+    def _segment(self, marker_id: Any) -> dict[str, Any]:
+        return next((m for m in self.list.markers if m.get("id") == marker_id), {})
+
+    def _ask(self, marker_id: Any, key: str, label: str) -> None:
+        current = str(self._segment(marker_id).get(key) or "")
+        text, ok = QInputDialog.getText(self, tr("Source Clip Segments"), label, text=current)
+        if ok and text != current:
+            self.command.emit("markers.edit", {"target": "source", "marker": marker_id, key: text})
+
+    def _remove(self, marker_id: Any) -> None:
+        item = (self.source or {}).get("item")
+        if item is not None:
+            self.command.emit("segments.remove", {"item": item, "segments": [marker_id]})
+
+    def set_source(self, source: dict[str, Any] | None) -> None:
+        """The Source monitor's state (its clip, frame rate and markers)."""
+        self.source = source
+        if self.target() == "source":
+            self._show()
+
+    def _show(self) -> None:
+        self.set_state(self.sequence, sorted(self.hidden))
+
     def set_state(self, sequence: dict[str, Any] | None, hidden: list[Any] | None) -> None:
         self.sequence = sequence
         self.hidden = {str(h) for h in hidden or []}
         # a hidden colour hides every label drawn in it, as egui compares the marker colours
         hidden_rgb = {MARKER_RGB.get(h, DEFAULT_MARKER_RGB) for h in self.hidden}
         self._paint_chips()
+        self.list.segments = self.target() == "source"
+        if self.list.segments:
+            self._show_segments(hidden_rgb)
+            return
         if sequence is None:
             self.list.set_markers([], 1, tr("(no sequence)"))
             return
@@ -242,6 +307,22 @@ class MarkersPanel(QWidget):
         shown = [m for m in markers if MARKER_RGB.get(str(m.get("color")), DEFAULT_MARKER_RGB) not in hidden_rgb]
         empty = tr("No markers. Press M to add one.") if not markers else tr("All markers are hidden by the colour filter.")
         self.list.set_markers(shown, frame_ticks(sequence.get("settings")), empty)
+
+    def _show_segments(self, hidden_rgb: set[Any]) -> None:
+        from .monitor import ticks_per_frame_from_fps
+
+        source = self.source
+        if source is None:
+            self.list.set_markers([], 1, tr("(no clip in the Source monitor)"))
+            return
+        markers = [m for m in source.get("markers") or [] if isinstance(m, dict) and int(m.get("duration") or 0) > 0]
+        markers.sort(key=lambda m: (int(m.get("start") or 0), int(m.get("id") or 0)))
+        shown = [m for m in markers if MARKER_RGB.get(str(m.get("color")), DEFAULT_MARKER_RGB) not in hidden_rgb]
+        if not markers:
+            empty = tr("No segments. Add a range marker in the Source monitor, or use Find Segments…")
+        else:
+            empty = tr("All markers are hidden by the colour filter.")
+        self.list.set_markers(shown, ticks_per_frame_from_fps(source.get("fps")), empty)
 
 
 # ----- Metadata -----

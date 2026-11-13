@@ -364,3 +364,84 @@ fn chapters_from_ffmpeg() {
     let want = vec![Chapter { start_100ns: 0, title: "Első".into() }, Chapter { start_100ns: 15_000_000, title: "Two".into() }];
     assert_eq!(f.metadata.chapters, want);
 }
+
+/// ffmpeg's decoded output of `path`: the picture hashes (framemd5), or the number of bytes.
+fn decoded(path: &Path, args: &[&str]) -> Vec<String> {
+    let o = std::process::Command::new(ffmpeg().unwrap()).args(["-v", "error", "-i"]).arg(path).args(args).arg("-").output().unwrap();
+    assert!(o.status.success(), "{}", String::from_utf8_lossy(&o.stderr));
+    if args.contains(&"framemd5") {
+        // stream, dts, pts, duration, size, hash: the hash is the picture
+        String::from_utf8_lossy(&o.stdout).lines().filter(|l| !l.starts_with('#')).filter_map(|l| l.rsplit(',').next().map(|h| h.trim().to_string())).collect()
+    } else {
+        vec![o.stdout.len().to_string()]
+    }
+}
+
+fn format_duration(path: &Path) -> f64 {
+    probe_json(path, &["-show_format"]).and_then(|v| v["format"]["duration"].as_str().and_then(|d| d.parse().ok())).unwrap_or(0.0)
+}
+
+/// Joined parts as ffmpeg reads them (CFA4-LOSSLESS-MEDIA-TOOLS-001 K1): every packet of every
+/// part, clean decoding, the parts' lengths added up, a part with an edit list (ffmpeg's own
+/// stream-copy cut) and PCM in MOV.
+#[test]
+fn joined_parts_ffprobe() {
+    let (Some(a), Some(b), Some(mov), Some(_)) = (fixture("h264_bframes.mp4"), fixture("editlist_cut.mp4"), fixture("h264.mov"), ffprobe()) else {
+        return;
+    };
+    for (name, parts) in [("joined.mp4", vec![a.clone(), b.clone(), a.clone()]), ("joined.mov", vec![mov.clone(), mov.clone()])] {
+        let data: Vec<Vec<u8>> = parts.iter().map(|p| std::fs::read(p).unwrap()).collect();
+        let refs: Vec<&[u8]> = data.iter().map(Vec::as_slice).collect();
+        let joined = concat(&refs).unwrap();
+        let out = out_dir().join(name);
+        std::fs::write(&out, &joined.bytes).unwrap();
+        decode_clean(&out);
+        // every sample of every part is in the file once
+        let counts: Vec<u64> =
+            (0..joined.samples.len()).map(|i| data.iter().map(|d| open(d.as_slice()).unwrap().tracks[i].samples.len() as u64).sum()).collect();
+        assert_eq!(joined.samples, counts, "{name}: samples per track");
+        // ffmpeg shows the parts' pictures one after the other, and the parts' sound
+        let pictures = |p: &Path| decoded(p, &["-map", "0:v", "-f", "framemd5"]);
+        let want: Vec<String> = parts.iter().flat_map(|p| pictures(p)).collect();
+        assert_eq!(pictures(&out), want, "{name}: the decoded pictures");
+        let sound = |p: &Path| decoded(p, &["-map", "0:a", "-f", "s16le"])[0].parse::<f64>().unwrap();
+        let want_sound: f64 = parts.iter().map(|p| sound(p)).sum();
+        // within one 1024-sample frame of 48 kHz stereo s16 at each joint
+        assert!((sound(&out) - want_sound).abs() <= 4096.0 * parts.len() as f64, "{name}: {} vs {want_sound} bytes of sound", sound(&out));
+        let want: f64 = parts.iter().map(|p| format_duration(p)).sum();
+        let got = format_duration(&out);
+        assert!((got - want).abs() < 0.05, "{name}: {got} s, the parts last {want} s");
+        assert_eq!(joined.starts.len(), parts.len());
+    }
+}
+
+#[test]
+fn parts_of_other_streams_are_refused() {
+    let (Some(a), Some(h)) = (fixture("h264_bframes.mp4"), fixture("hevc.mp4")) else { return };
+    let (a, h) = (std::fs::read(a).unwrap(), std::fs::read(h).unwrap());
+    let e = concat(&[a.as_slice(), h.as_slice()]).unwrap_err().to_string();
+    assert!(e.contains("part 2"), "{e}");
+    assert!(concat(&[]).is_err());
+    assert!(concat(&[a.as_slice(), b"not a movie".as_slice()]).is_err());
+}
+
+/// Chapters put into a finished file by `replace_chapters` (the Smart Cut path, K14), as ffprobe
+/// reads them, with every packet unchanged.
+#[test]
+fn replaced_chapters_ffprobe() {
+    let (Some(src), Some(_)) = (fixture("h264_bframes.mp4"), ffprobe()) else { return };
+    let data = std::fs::read(&src).unwrap();
+    let chapters = vec![Chapter { start_100ns: 0, title: "Eleje".into() }, Chapter { start_100ns: 10_000_000, title: "Második".into() }];
+    let out = out_dir().join("replaced_chapters.mp4");
+    std::fs::write(&out, replace_chapters(&data, &chapters).unwrap()).unwrap();
+    decode_clean(&out);
+    assert_same_packets(&src, &out);
+    let probed = probe_json(&out, &["-show_chapters"]).unwrap();
+    let probed = probed["chapters"].as_array().unwrap();
+    assert_eq!(probed.len(), chapters.len());
+    for (p, c) in probed.iter().zip(&chapters) {
+        let start: f64 = p["start_time"].as_str().unwrap().parse().unwrap();
+        assert!((start - c.start_100ns as f64 / 1e7).abs() < 1e-6, "{p}");
+        assert_eq!(p["tags"]["title"].as_str(), Some(c.title.as_str()));
+    }
+}

@@ -4559,3 +4559,56 @@ export.summary	Low	laag
 	Chase External Timecode	Externe timecode volgen
 	Send LTC	LTC verzenden
 	Send MIDI Timecode	MIDI-timecode verzenden
+# CFA4-LOSSLESS-MEDIA-TOOLS-001: segments, Find Segments, joined Smart Cut, frame export options
+	Find Segments	Segmenten zoeken
+	Find Segments…	Segmenten zoeken…
+	Comment…	Opmerking…
+	Comment:	Opmerking:
+	The analysis stopped.	De analyse is gestopt.
+	No segments. Add a range marker in the Source monitor, or use Find Segments…	Geen segmenten. Voeg een bereikmarkering toe in de bronmonitor of gebruik Segmenten zoeken…
+	Remove Segment	Segment verwijderen
+	Black pictures	Zwarte beelden
+	{count} segments written and verified	{count} segmenten geschreven en gecontroleerd
+	These files already exist and will be replaced: {files}. Continue?	Deze bestanden bestaan al en worden vervangen: {files}. Doorgaan?
+	{count} subclips made from the segments	{count} subclips gemaakt van de segmenten
+	Segment	Segment
+	Silence	Stilte
+	Analyzing…	Analyseren…
+	Analyzing… {percent}%	Analyseren… {percent}%
+	Silence below (dBFS):	Stilte onder (dBFS):
+	To Timeline	Naar tijdlijn
+	Sequence Markers	Sequentiemarkeringen
+	Join the segments into one file	Segmenten samenvoegen tot één bestand
+	{count} segments placed on the timeline	{count} segmenten op de tijdlijn geplaatst
+	Shortest silence (s):	Kortste stilte (s):
+	Segment {n}: {why}	Segment {n}: {why}
+	Source Clip Segments	Segmenten van de bronclip
+	{count} segments found	{count} segmenten gevonden
+	{count} files: {copied} frames copied, {reencoded} frames re-encoded	{count} bestanden: {copied} frames gekopieerd, {reencoded} frames opnieuw gecodeerd
+	This clip has no segments: add range markers in the Source monitor first.	Deze clip heeft geen segmenten: voeg eerst bereikmarkeringen toe in de bronmonitor.
+	Black level (%):	Zwartniveau (%):
+	Quality:	Kwaliteit:
+	Black share of the picture (%):	Aandeel zwart in het beeld (%):
+	{count} segments added to the clip	{count} segmenten aan de clip toegevoegd
+	Last frame	Laatste frame
+	First frame	Eerste frame
+	Marked range	Gemarkeerd bereik
+	Original	Origineel
+	Segment names as chapters	Segmentnamen als hoofdstukken
+	Add as Segments	Toevoegen als segmenten
+	The engine did not start the analysis.	De engine heeft de analyse niet gestart.
+	Range:	Bereik:
+	(no clip in the Source monitor)	(geen clip in de bronmonitor)
+	Segment name:	Segmentnaam:
+	{count} segments joined into {path} and verified	{count} segmenten samengevoegd tot {path} en gecontroleerd
+	Shortest black (s):	Kortste zwart (s):
+	Segments (range markers)	Segmenten (bereikmarkeringen)
+	(only the first ones are listed)	(alleen de eerste worden getoond)
+	Check at least one segment.	Vink minstens één segment aan.
+	Make Subclips	Subclips maken
+	Shortest shot (frames):	Kortste shot (frames):
+	Row {n}: the first and last frame must be whole numbers	Rij {n}: het eerste en laatste frame moeten gehele getallen zijn
+	Size:	Grootte:
+	{count} segments joined into one file: {copied} frames copied, {reencoded} frames re-encoded	{count} segmenten samengevoegd tot één bestand: {copied} frames gekopieerd, {reencoded} frames opnieuw gecodeerd
+	{name} ({frames} frames)	{name} ({frames} frames)
+	Scene changes	Scènewisselingen

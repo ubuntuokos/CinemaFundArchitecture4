@@ -4561,3 +4561,56 @@ export.summary	Low	төмен
 	Chase External Timecode	Сыртқы уақыт кодына ілесу
 	Send LTC	LTC жіберу
 	Send MIDI Timecode	MIDI уақыт кодын жіберу
+# CFA4-LOSSLESS-MEDIA-TOOLS-001: segments, Find Segments, joined Smart Cut, frame export options
+	Find Segments	Сегменттерді табу
+	Find Segments…	Сегменттерді табу…
+	Comment…	Түсініктеме…
+	Comment:	Түсініктеме:
+	The analysis stopped.	Талдау тоқтатылды.
+	No segments. Add a range marker in the Source monitor, or use Find Segments…	Сегменттер жоқ. Дереккөз мониторында ауқым маркерін қосыңыз немесе «Сегменттерді табу…» пәрменін пайдаланыңыз
+	Remove Segment	Сегментті жою
+	Black pictures	Қара кадрлар
+	{count} segments written and verified	Жазылған және тексерілген сегменттер: {count}
+	These files already exist and will be replaced: {files}. Continue?	Бұл файлдар бұрыннан бар және ауыстырылады: {files}. Жалғастыру керек пе?
+	{count} subclips made from the segments	Сегменттерден жасалған ішкі клиптер: {count}
+	Segment	Сегмент
+	Silence	Тыныштық
+	Analyzing…	Талдау…
+	Analyzing… {percent}%	Талдау… {percent}%
+	Silence below (dBFS):	Тыныштық деңгейі төмен (dBFS):
+	To Timeline	Уақыт сызығына
+	Sequence Markers	Тізбек маркерлері
+	Join the segments into one file	Сегменттерді бір файлға біріктіру
+	{count} segments placed on the timeline	Уақыт сызығына орналастырылған сегменттер: {count}
+	Shortest silence (s):	Ең қысқа тыныштық (с):
+	Segment {n}: {why}	Сегмент {n}: {why}
+	Source Clip Segments	Дереккөз клипінің сегменттері
+	{count} segments found	Табылған сегменттер: {count}
+	{count} files: {copied} frames copied, {reencoded} frames re-encoded	Файлдар: {count}; көшірілген кадрлар: {copied}, қайта кодталған кадрлар: {reencoded}
+	This clip has no segments: add range markers in the Source monitor first.	Бұл клипте сегменттер жоқ: алдымен дереккөз мониторында ауқым маркерлерін қосыңыз.
+	Black level (%):	Қара деңгейі (%):
+	Quality:	Сапа:
+	Black share of the picture (%):	Кескіндегі қараның үлесі (%):
+	{count} segments added to the clip	Клипке қосылған сегменттер: {count}
+	Last frame	Соңғы кадр
+	First frame	Бірінші кадр
+	Marked range	Белгіленген ауқым
+	Original	Түпнұсқа
+	Segment names as chapters	Сегмент атаулары тараулар ретінде
+	Add as Segments	Сегменттер ретінде қосу
+	The engine did not start the analysis.	Қозғалтқыш талдауды бастамады.
+	Range:	Ауқым:
+	(no clip in the Source monitor)	(дереккөз мониторында клип жоқ)
+	Segment name:	Сегмент атауы:
+	{count} segments joined into {path} and verified	Сегменттер ({count}) {path} файлына біріктіріліп, тексерілді
+	Shortest black (s):	Ең қысқа қара (с):
+	Segments (range markers)	Сегменттер (ауқым маркерлері)
+	(only the first ones are listed)	(тек алғашқылары көрсетілген)
+	Check at least one segment.	Кемінде бір сегментті белгілеңіз.
+	Make Subclips	Ішкі клиптер жасау
+	Shortest shot (frames):	Ең қысқа түсірілім (кадрлар):
+	Row {n}: the first and last frame must be whole numbers	{n}-жол: бірінші және соңғы кадр бүтін сан болуы керек
+	Size:	Өлшем:
+	{count} segments joined into one file: {copied} frames copied, {reencoded} frames re-encoded	Сегменттер ({count}) бір файлға біріктірілді; көшірілген кадрлар: {copied}, қайта кодталған кадрлар: {reencoded}
+	{name} ({frames} frames)	{name} (кадрлар: {frames})
+	Scene changes	Сахна ауысулары

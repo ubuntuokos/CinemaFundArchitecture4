@@ -13,7 +13,7 @@ vagy a `target/fixtures/` alatt), médiát nem commitolunk; az FFmpeg csak orák
 
 | Terület | Eredmény |
 |---|---|
-| Veszteségmentes vágás | PASS |
+| Veszteségmentes vágás | PASS (F4-ben kiegészítve: összefűzött kimenet, FFmpeg-orákulummal) |
 | Kulcsképkockák | PASS |
 | Újrakódolás | PASS |
 | Hang | PASS |
@@ -21,7 +21,7 @@ vagy a `target/fixtures/` alatt), médiát nem commitolunk; az FFmpeg csak orák
 | Elemzések | PASS |
 | CSV/EDL | PASS |
 | Hibatűrés | PASS (F4-ben kiegészítve: sérült forrás, teli lemez) |
-| Adatvédelem | PASS (F4-ben kiegészítve: az eredeti fájl bájtra azonos) |
+| Adatvédelem | PASS (F4-ben kiegészítve: az eredeti fájl bájtra azonos; létező célfájl csak megerősítéssel) |
 | Teljesítmény | **Nem mérhető itt** – a referenciagépen kell mérni (5. pont) |
 
 ## 2. Területek és tesztek
@@ -35,6 +35,17 @@ vagy a `target/fixtures/` alatt), médiát nem commitolunk; az FFmpeg csak orák
   `a_project_media_item_is_cut_on_its_marked_range`.
 - `crates/engine/src/segments_tests.rs`: `segments_are_cut_one_file_each_in_the_chosen_order`
   (több tartomány, egy fájl tartományonként).
+- Összefűzött kimenet (K1, „egyenkénti és összefűzött kimenettel”): `export.start` /
+  `segments.export` `"join": true` paraméterrel; a tartományok a memóriában vágódnak és
+  ellenőrződnek, a `cfa4_isobmff::concat` újrakódolás nélkül fűzi őket egy fájlba (tartományonként
+  egy edit-lista-bejegyzés, így a hang szinkronja és a B-képkockás időbélyegek megmaradnak), majd
+  visszaolvassa a fájlt, és minden mintát összevet a részekkel. Tesztek:
+  `joined_ranges_are_one_verified_file_with_every_sample`,
+  `a_join_of_re_encoded_ranges_needs_the_confirmation_and_stays_verified`,
+  `bad_join_requests_are_refused_before_writing`; FFmpeg-orákulum (`crates/isobmff/tests/oracle_mux.rs`):
+  `joined_parts_ffprobe` (H.264 + AAC, köztük az FFmpeg saját edit listás vágása, valamint MOV + PCM:
+  a dekódolt képek képkockára azonosak a részek egymás utáni dekódolásával, a hossz a részek
+  összege), `parts_of_other_streams_are_refused`.
 - FFmpeg-orákulum (`crates/export`): `ffmpeg_decodes_the_copy_to_the_source_pictures`,
   `ffmpeg_decodes_hevc_cuts_to_the_source_pictures`, `ffmpeg_decodes_av1_cuts_to_the_source_pictures`.
 - WP-09 kiegészítők: `one_stream_in_other_timescales_is_cut_to_the_same_samples`,
@@ -46,7 +57,8 @@ vagy a `target/fixtures/` alatt), médiát nem commitolunk; az FFmpeg csak orák
 
 Minden írás előtt a motor visszaolvassa és ellenőrzi a kimenetet (`verified: true`); a fejezetek
 (K14) a vágás után is a helyükön vannak: `the_chapters_inside_the_cut_are_kept_and_moved`,
-`replacing_chapters_keeps_the_samples_and_refuses_odd_files`.
+`replacing_chapters_keeps_the_samples_and_refuses_odd_files`, és az ffprobe is ugyanígy olvassa
+őket (`replaced_chapters_ffprobe`: kezdőidő és cím egyezik, minden csomag változatlan).
 
 ### 2.2 Kulcsképkockák – kért és tényleges határ, csendes igazítás nélkül
 
@@ -79,6 +91,9 @@ Minden írás előtt a motor visszaolvassa és ellenőrzi a kimenetet (`verified
 
 - **Új (F4):** `segments_are_saved_with_the_project_and_come_back` – a szegmensek `file.saveAs` után
   `file.open`-nel változatlanul visszajönnek, és a visszatöltött projektből is vághatók.
+- `listed_segments_are_removed_renamed_and_labelled_in_undo_steps` (`segments.remove`,
+  `markers.edit` a forráson); Qt: a Jelölők panel „A forrásklip szegmensei” nézete
+  (`test_markers_panel_shows_and_edits_the_source_segments`).
 - `range_markers_are_listed_in_time_order_and_point_markers_are_not_segments`,
   `segments_become_named_subclips_in_one_undo_step`,
   `segments_are_placed_back_to_back_on_the_timeline` (átadás az idővonalra, egy visszavonási lépés),
@@ -129,13 +144,19 @@ Minden írás előtt a motor visszaolvassa és ellenőrzi a kimenetet (`verified
   képpontos vágás után a forrás bájtra azonos; a forrásfájl nem lehet a kimenet.
 - A többi tesztben is: `a_full_disk_in_the_middle_of_a_batch_names_what_was_written` és a
   szegmenselemzés (`…without_changing_the_project`).
+- Létező célfájl csak megerősítéssel íródik felül (7. pont): a köteg terve `existing` listában
+  jelzi a már létező kimeneteket, és az `export.start` `"overwrite": true` nélkül semmit nem ír
+  (`existing_output_files_are_replaced_only_when_asked`); a Qt-ablak rákérdez.
 - A CFA4 hálózatot nem használ ezekhez a műveletekhez, adatot nem küld ki.
 
 ## 3. Grafikus felület (Qt6)
 
 `python/tests/test_qt_gui.py` (a koordinációs szabály szerint fut, de még nem blokkol): a Smart Cut
 panel, a szegmenskereső párbeszédablak, a jelölők CSV/EDL importja és exportja, valamint a
-képkockamentés minősége és mérete. Eredmény: zöld.
+képkockamentés minősége és mérete, a szegmensek összefűzése (ffprobe-bal ellenőrizve: 75 kép, a
+szegmensnevek fejezetként) és a Jelölők panel szegmensnézete. Eredmény: zöld. A projekt 52 új
+felületi szövege a magyar mellett mind a 31 további nyelvi katalógusba bekerült
+(`test_qt_translations.py`: zöld).
 
 ## 4. Minőségkapuk
 
@@ -159,3 +180,18 @@ fejlesztőkörnyezetben nem végezhető el hitelesen, ezért itt **nincs** mér�
    fájlmérettel, a GPU a tiszta másolásnál tétlen.
 
 Az eredményt a referenciagépen futtatva ehhez a jelentéshez kell hozzáfűzni.
+
+## 6. Licencellenőrzés (11. pont, 9. kritérium)
+
+- **Új külső függőség nincs:** a `Cargo.lock` a `main`-hez képest változatlan. Az egyetlen
+  függőségváltozás az `image` crate `webp` funkciójának bekapcsolása (`crates/export/Cargo.toml`,
+  K7); az általa használt `image-webp` 0.2.4 (MIT OR Apache-2.0) már korábban is a
+  `Cargo.lock`-ban volt. A `cargo deny check licenses` a CI-ban fut (`ci-linux.yml`
+  és `cfa4-gate.yml`).
+- **FFmpeg:** az új képességek nem használják; csak a tesztekben orákulum (`ffmpeg_or_skip`). Új
+  FFmpeg-opció nincs.
+- **Clean-room (AGENTS.md §2):** a LosslessCut (GPL-2.0-only) kódja, felületi szövegei, ikonjai
+  és gyorsbillentyű-táblái nem kerültek át; a felületi szövegek saját megfogalmazások, a magyar
+  katalógusban (`i18n/hu.tsv`). A LosslessCut neve a termékben nem jelenik meg.
+- **Nyitott:** a terv 8. pontja szerint a végleges licencmegfelelőséget jogi ellenőrzés
+  támasztja alá; ez a tulajdonos döntése, fejlesztői feladat nincs benne.

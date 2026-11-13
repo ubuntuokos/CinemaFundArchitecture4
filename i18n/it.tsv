@@ -4559,3 +4559,56 @@
 	Chase External Timecode	Segui timecode esterno
 	Send LTC	Invia LTC
 	Send MIDI Timecode	Invia timecode MIDI
+# CFA4-LOSSLESS-MEDIA-TOOLS-001: segments, Find Segments, joined Smart Cut, frame export options
+	Find Segments	Trova segmenti
+	Find Segments…	Trova segmenti…
+	Comment…	Commento…
+	Comment:	Commento:
+	The analysis stopped.	L’analisi si è interrotta.
+	No segments. Add a range marker in the Source monitor, or use Find Segments…	Nessun segmento. Aggiungi un marcatore di intervallo nel monitor sorgente o usa Trova segmenti…
+	Remove Segment	Rimuovi segmento
+	Black pictures	Immagini nere
+	{count} segments written and verified	{count} segmenti scritti e verificati
+	These files already exist and will be replaced: {files}. Continue?	Questi file esistono già e verranno sostituiti: {files}. Continuare?
+	{count} subclips made from the segments	{count} sottoclip creati dai segmenti
+	Segment	Segmento
+	Silence	Silenzio
+	Analyzing…	Analisi in corso…
+	Analyzing… {percent}%	Analisi in corso… {percent}%
+	Silence below (dBFS):	Silenzio sotto (dBFS):
+	To Timeline	Nella timeline
+	Sequence Markers	Marcatori della sequenza
+	Join the segments into one file	Unisci i segmenti in un unico file
+	{count} segments placed on the timeline	{count} segmenti inseriti nella timeline
+	Shortest silence (s):	Silenzio più breve (s):
+	Segment {n}: {why}	Segmento {n}: {why}
+	Source Clip Segments	Segmenti della clip sorgente
+	{count} segments found	{count} segmenti trovati
+	{count} files: {copied} frames copied, {reencoded} frames re-encoded	{count} file: {copied} fotogrammi copiati, {reencoded} fotogrammi ricodificati
+	This clip has no segments: add range markers in the Source monitor first.	Questa clip non ha segmenti: aggiungi prima dei marcatori di intervallo nel monitor sorgente.
+	Black level (%):	Livello del nero (%):
+	Quality:	Qualità:
+	Black share of the picture (%):	Quota di nero nell’immagine (%):
+	{count} segments added to the clip	{count} segmenti aggiunti alla clip
+	Last frame	Ultimo fotogramma
+	First frame	Primo fotogramma
+	Marked range	Intervallo contrassegnato
+	Original	Originale
+	Segment names as chapters	Nomi dei segmenti come capitoli
+	Add as Segments	Aggiungi come segmenti
+	The engine did not start the analysis.	Il motore non ha avviato l’analisi.
+	Range:	Intervallo:
+	(no clip in the Source monitor)	(nessuna clip nel monitor sorgente)
+	Segment name:	Nome del segmento:
+	{count} segments joined into {path} and verified	{count} segmenti uniti in {path} e verificati
+	Shortest black (s):	Nero più breve (s):
+	Segments (range markers)	Segmenti (marcatori di intervallo)
+	(only the first ones are listed)	(sono elencati solo i primi)
+	Check at least one segment.	Seleziona almeno un segmento.
+	Make Subclips	Crea sottoclip
+	Shortest shot (frames):	Inquadratura più breve (fotogrammi):
+	Row {n}: the first and last frame must be whole numbers	Riga {n}: il primo e l’ultimo fotogramma devono essere numeri interi
+	Size:	Dimensione:
+	{count} segments joined into one file: {copied} frames copied, {reencoded} frames re-encoded	{count} segmenti uniti in un unico file: {copied} fotogrammi copiati, {reencoded} fotogrammi ricodificati
+	{name} ({frames} frames)	{name} ({frames} fotogrammi)
+	Scene changes	Cambi di scena

@@ -378,7 +378,7 @@ fn plan_single(s: &mut Session, p: &Value) -> Result<Value> {
 
 fn start(s: &mut Session, p: &Value) -> Result<Value> {
     if crate::smart_cut_ranges::has_ranges(p) {
-        return crate::smart_cut_ranges::start(s, p, plan_single, start_single);
+        return crate::smart_cut_ranges::start(s, p, crate::smart_cut_ranges::Steps { plan: plan_single, start: start_single, cut });
     }
     start_single(s, p)
 }
@@ -392,6 +392,21 @@ fn start_single(s: &mut Session, p: &Value) -> Result<Value> {
     let (path, _) = source_p(s, p, cmd)?;
     if crate::smart_cut_mpeg::is_mpeg(s, &path) {
         return crate::smart_cut_mpeg::start(s, p);
+    }
+    let (bytes, mut result) = cut(s, p)?;
+    let output = result["output"].as_str().unwrap_or_default().to_string();
+    s.services.write_file(&output, &bytes).map_err(|e| EngineError::Other(format!("{output}: {e}")))?;
+    result["bytes"] = json!(bytes.len());
+    Ok(result)
+}
+
+/// One range of an MP4 / MOV source cut, verified and kept in memory: the file's bytes and the
+/// result `export.start` reports for it (without writing it).
+fn cut(s: &mut Session, p: &Value) -> Result<(Vec<u8>, Value)> {
+    let cmd = "export.start";
+    let (path, _) = source_p(s, p, cmd)?;
+    if crate::smart_cut_mpeg::is_mpeg(s, &path) {
+        return Err(bad(cmd, format!("{path}: an MPEG program or transport stream is cut into one file per range; joining ranges needs an MP4 or MOV source")));
     }
     let output = str_p(p, "output").filter(|o| !o.is_empty()).map(str::to_string).ok_or_else(|| bad(cmd, "`output` (the file to write) is required"))?;
     let encoding = encoding_p(p, cmd)?;
@@ -447,11 +462,11 @@ fn start_single(s: &mut Session, p: &Value) -> Result<Value> {
     };
     // the source's chapters inside the cut, moved onto its timeline (K14)
     let (bytes, chapters) = with_chapters(&src, &plan, bytes)?;
-    s.services.write_file(&output, &bytes).map_err(|e| EngineError::Other(format!("{output}: {e}")))?;
     let summary = summary(&plan);
     let mut audio = audio_json(&audio);
     audio["verified"] = json!(audio_reports);
-    Ok(json!({"output": output, "bytes": bytes.len(), "report": report, "verified": true, "summary": summary, "audio": audio, "chapters": chapters}))
+    let result = json!({"output": output, "bytes": bytes.len(), "report": report, "verified": true, "summary": summary, "audio": audio, "chapters": chapters});
+    Ok((bytes, result))
 }
 
 /// The cut file with the source's chapters that fall inside the cut (CFA4-LOSSLESS-MEDIA-TOOLS-001
@@ -497,14 +512,14 @@ pub(crate) fn commands() -> Vec<CommandSpec> {
         spec(
             "export.plan",
             "Plan Smart Cut",
-            r#"{"path":str,"in":time,"out":time (exclusive)}|{"item":id,"in":media time?,"out":media time? (default: the marked range)},"mode":"gop-boundary"|"frame-accurate"="gop-boundary","guarantee":"bit-exact"|"compatible"="bit-exact","output":str?,"scope":"source"|"timeline"="source","crf":number=16,"audio":bool=true}; several ranges: {"path"|"item",…,"ranges":[{"in":time,"out":time,"output":str?,"name":str?}],"output":"pattern with {n} and {name}"?} → {ranges:[plan…], summary (totals), problems:[{range,problem}]}; timeline: {"scope":"timeline","sequence":id?,"output":str?,"guarantee":…,"crf":…} → {plan, summary, audio?:{tracks:[{trackId,codec}],dropped:[{trackId,reason}]}, boundaryReencode?:{ready,problem}, timelineRender?:{ready,problem}}"#,
+            r#"{"path":str,"in":time,"out":time (exclusive)}|{"item":id,"in":media time?,"out":media time? (default: the marked range)},"mode":"gop-boundary"|"frame-accurate"="gop-boundary","guarantee":"bit-exact"|"compatible"="bit-exact","output":str?,"scope":"source"|"timeline"="source","crf":number=16,"audio":bool=true}; several ranges: {"path"|"item",…,"ranges":[{"in":time,"out":time,"output":str?,"name":str?}],"output":"pattern with {n} and {name}"?,"join":bool=false (the ranges one after the other in the one "output" file)} → {ranges:[plan…], summary (totals), problems:[{range,problem}], join?, output?}; timeline: {"scope":"timeline","sequence":id?,"output":str?,"guarantee":…,"crf":…} → {plan, summary, audio?:{tracks:[{trackId,codec}],dropped:[{trackId,reason}]}, boundaryReencode?:{ready,problem}, timelineRender?:{ready,problem}}"#,
             plan,
             false,
         ),
         spec(
             "export.start",
             "Run Smart Cut",
-            r#"{"path":str,"in":time,"out":time}|{"item":id,"in":media time?,"out":media time?},"output":str,"mode":…,"guarantee":…,"confirm":bool (required when the plan re-encodes),"crf":number=16,"audio":bool=true}; several ranges: {…,"ranges":[{"in","out","output"?,"name"?}],"output":"pattern with {n}"?,"confirm":bool (once for the batch)} → {ranges:[result…], summary, verified}: every range is planned before anything is written; timeline: {"scope":"timeline","sequence":id?,"output":str,"confirm":bool,…} → {output, bytes, report, verified, audio?:{tracks,dropped,verified:[{trackId,codec,samples,payloadBytes,syncErrorNs}]}}"#,
+            r#"{"path":str,"in":time,"out":time}|{"item":id,"in":media time?,"out":media time?},"output":str,"mode":…,"guarantee":…,"confirm":bool (required when the plan re-encodes),"crf":number=16,"audio":bool=true}; several ranges: {…,"ranges":[{"in","out","output"?,"name"?}],"output":"pattern with {n}"?,"confirm":bool (once for the batch),"join":bool=false,"segmentChapters":bool=false} → {ranges:[result…], summary, verified}: every range is planned before anything is written; with "join" the ranges are cut in memory, joined without re-encoding into the one "output" file (MP4 / MOV), read back and written once → {output, bytes, join, ranges:[result… with start100ns], samples:[per track], duration100ns, chapters, verified}; timeline: {"scope":"timeline","sequence":id?,"output":str,"confirm":bool,…} → {output, bytes, report, verified, audio?:{tracks,dropped,verified:[{trackId,codec,samples,payloadBytes,syncErrorNs}]}}"#,
             start,
             true,
         ),

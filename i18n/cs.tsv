@@ -4559,3 +4559,56 @@ export.summary	Low	nízká
 	Chase External Timecode	Sledovat externí časový kód
 	Send LTC	Odesílat LTC
 	Send MIDI Timecode	Odesílat časový kód MIDI
+# CFA4-LOSSLESS-MEDIA-TOOLS-001: segments, Find Segments, joined Smart Cut, frame export options
+	Find Segments	Najít segmenty
+	Find Segments…	Najít segmenty…
+	Comment…	Komentář…
+	Comment:	Komentář:
+	The analysis stopped.	Analýza se zastavila.
+	No segments. Add a range marker in the Source monitor, or use Find Segments…	Žádné segmenty. Přidej značku rozsahu ve zdrojovém monitoru nebo použij Najít segmenty…
+	Remove Segment	Odebrat segment
+	Black pictures	Černé snímky
+	{count} segments written and verified	Zapsané a ověřené segmenty: {count}
+	These files already exist and will be replaced: {files}. Continue?	Tyto soubory už existují a budou nahrazeny: {files}. Pokračovat?
+	{count} subclips made from the segments	Ze segmentů vytvořené podklipy: {count}
+	Segment	Segment
+	Silence	Ticho
+	Analyzing…	Analyzuje se…
+	Analyzing… {percent}%	Analyzuje se… {percent} %
+	Silence below (dBFS):	Ticho pod (dBFS):
+	To Timeline	Na časovou osu
+	Sequence Markers	Značky sekvence
+	Join the segments into one file	Spojit segmenty do jednoho souboru
+	{count} segments placed on the timeline	Segmenty umístěné na časovou osu: {count}
+	Shortest silence (s):	Nejkratší ticho (s):
+	Segment {n}: {why}	Segment {n}: {why}
+	Source Clip Segments	Segmenty zdrojového klipu
+	{count} segments found	Nalezené segmenty: {count}
+	{count} files: {copied} frames copied, {reencoded} frames re-encoded	Soubory: {count}; zkopírované snímky: {copied}, znovu kódované snímky: {reencoded}
+	This clip has no segments: add range markers in the Source monitor first.	Tento klip nemá segmenty: nejdřív přidej značky rozsahu ve zdrojovém monitoru.
+	Black level (%):	Úroveň černé (%):
+	Quality:	Kvalita:
+	Black share of the picture (%):	Podíl černé v obraze (%):
+	{count} segments added to the clip	Segmenty přidané ke klipu: {count}
+	Last frame	Poslední snímek
+	First frame	První snímek
+	Marked range	Označený rozsah
+	Original	Původní
+	Segment names as chapters	Názvy segmentů jako kapitoly
+	Add as Segments	Přidat jako segmenty
+	The engine did not start the analysis.	Jádro analýzu nespustilo.
+	Range:	Rozsah:
+	(no clip in the Source monitor)	(ve zdrojovém monitoru není klip)
+	Segment name:	Název segmentu:
+	{count} segments joined into {path} and verified	Segmenty ({count}) spojeny do {path} a ověřeny
+	Shortest black (s):	Nejkratší černá (s):
+	Segments (range markers)	Segmenty (značky rozsahu)
+	(only the first ones are listed)	(jsou uvedeny jen první)
+	Check at least one segment.	Zaškrtni alespoň jeden segment.
+	Make Subclips	Vytvořit podklipy
+	Shortest shot (frames):	Nejkratší záběr (snímky):
+	Row {n}: the first and last frame must be whole numbers	Řádek {n}: první a poslední snímek musí být celá čísla
+	Size:	Velikost:
+	{count} segments joined into one file: {copied} frames copied, {reencoded} frames re-encoded	Segmenty ({count}) spojeny do jednoho souboru; zkopírované snímky: {copied}, znovu kódované snímky: {reencoded}
+	{name} ({frames} frames)	{name} (snímky: {frames})
+	Scene changes	Změny scény

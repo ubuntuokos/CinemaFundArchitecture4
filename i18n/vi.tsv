@@ -4559,3 +4559,56 @@ export.summary	Low	thấp
 	Chase External Timecode	Bám theo timecode bên ngoài
 	Send LTC	Gửi LTC
 	Send MIDI Timecode	Gửi timecode MIDI
+# CFA4-LOSSLESS-MEDIA-TOOLS-001: segments, Find Segments, joined Smart Cut, frame export options
+	Find Segments	Tìm phân đoạn
+	Find Segments…	Tìm phân đoạn…
+	Comment…	Ghi chú…
+	Comment:	Ghi chú:
+	The analysis stopped.	Phân tích đã dừng.
+	No segments. Add a range marker in the Source monitor, or use Find Segments…	Không có phân đoạn. Hãy thêm điểm đánh dấu vùng trong màn hình nguồn hoặc dùng Tìm phân đoạn…
+	Remove Segment	Xóa phân đoạn
+	Black pictures	Khung hình đen
+	{count} segments written and verified	Đã ghi và kiểm tra {count} phân đoạn
+	These files already exist and will be replaced: {files}. Continue?	Các tệp này đã tồn tại và sẽ bị thay thế: {files}. Tiếp tục?
+	{count} subclips made from the segments	Đã tạo {count} clip con từ các phân đoạn
+	Segment	Phân đoạn
+	Silence	Khoảng lặng
+	Analyzing…	Đang phân tích…
+	Analyzing… {percent}%	Đang phân tích… {percent}%
+	Silence below (dBFS):	Khoảng lặng dưới (dBFS):
+	To Timeline	Vào dòng thời gian
+	Sequence Markers	Điểm đánh dấu chuỗi
+	Join the segments into one file	Ghép các phân đoạn thành một tệp
+	{count} segments placed on the timeline	Đã đặt {count} phân đoạn lên dòng thời gian
+	Shortest silence (s):	Khoảng lặng ngắn nhất (giây):
+	Segment {n}: {why}	Phân đoạn {n}: {why}
+	Source Clip Segments	Các phân đoạn của clip nguồn
+	{count} segments found	Đã tìm thấy {count} phân đoạn
+	{count} files: {copied} frames copied, {reencoded} frames re-encoded	{count} tệp: đã sao chép {copied} khung hình, mã hóa lại {reencoded} khung hình
+	This clip has no segments: add range markers in the Source monitor first.	Clip này không có phân đoạn: hãy thêm điểm đánh dấu vùng trong màn hình nguồn trước.
+	Black level (%):	Mức đen (%):
+	Quality:	Chất lượng:
+	Black share of the picture (%):	Tỉ lệ màu đen trong hình (%):
+	{count} segments added to the clip	Đã thêm {count} phân đoạn vào clip
+	Last frame	Khung hình cuối
+	First frame	Khung hình đầu
+	Marked range	Vùng đã đánh dấu
+	Original	Gốc
+	Segment names as chapters	Dùng tên phân đoạn làm chương
+	Add as Segments	Thêm làm phân đoạn
+	The engine did not start the analysis.	Bộ máy chưa bắt đầu phân tích.
+	Range:	Vùng:
+	(no clip in the Source monitor)	(không có clip trong màn hình nguồn)
+	Segment name:	Tên phân đoạn:
+	{count} segments joined into {path} and verified	Đã ghép {count} phân đoạn vào {path} và kiểm tra
+	Shortest black (s):	Đoạn đen ngắn nhất (giây):
+	Segments (range markers)	Phân đoạn (điểm đánh dấu vùng)
+	(only the first ones are listed)	(chỉ liệt kê những mục đầu tiên)
+	Check at least one segment.	Hãy chọn ít nhất một phân đoạn.
+	Make Subclips	Tạo clip con
+	Shortest shot (frames):	Cảnh quay ngắn nhất (khung hình):
+	Row {n}: the first and last frame must be whole numbers	Hàng {n}: khung hình đầu và cuối phải là số nguyên
+	Size:	Kích thước:
+	{count} segments joined into one file: {copied} frames copied, {reencoded} frames re-encoded	Đã ghép {count} phân đoạn thành một tệp: sao chép {copied} khung hình, mã hóa lại {reencoded} khung hình
+	{name} ({frames} frames)	{name} ({frames} khung hình)
+	Scene changes	Chuyển cảnh

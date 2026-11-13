@@ -8,9 +8,16 @@
 //!   is a pattern that must contain `{n}` (the range's 1-based number) and may contain `{name}`.
 //! - `export.start` plans **every** range before it writes anything: a range that cannot run, a
 //!   re-encode without `"confirm": true` (one confirmation for the whole batch) or a boundary
-//!   re-encoder that refuses stops the batch with nothing written. Each written file goes through
+//!   re-encoder that refuses stops the batch with nothing written, and so does an output file
+//!   that already exists, unless the batch runs with `"overwrite": true` (the plan lists them
+//!   under `existing`). Each written file goes through
 //!   the single-range path, so it is verified and written atomically; if a later range still fails
 //!   while writing, the error names the files already written (they are complete and verified).
+//! - `"join": true` writes the ranges one after the other into the one `output` file instead
+//!   (MP4 / MOV sources): every range is cut and verified in memory, the parts are joined without
+//!   re-encoding ([`cfa4_isobmff::concat`], which reads the file back and compares every sample),
+//!   and the file is written once. `"segmentChapters": true` makes the ranges' names (or their
+//!   numbers) the joined file's chapters instead of the source's chapters inside the ranges.
 
 use std::collections::BTreeSet;
 
@@ -23,6 +30,23 @@ use crate::{EngineError, Result, Session};
 pub(crate) const MAX_RANGES: usize = 1000;
 
 type Single = fn(&mut Session, &Value) -> Result<Value>;
+type Cut = fn(&mut Session, &Value) -> Result<(Vec<u8>, Value)>;
+
+/// The single-range steps the batch is made of.
+pub(crate) struct Steps {
+    pub plan: Single,
+    pub start: Single,
+    /// One range cut and verified in memory (for `join`).
+    pub cut: Cut,
+}
+
+fn join_p(p: &Value, cmd: &str) -> Result<bool> {
+    match p.get("join") {
+        None | Some(Value::Null) => Ok(false),
+        Some(Value::Bool(b)) => Ok(*b),
+        Some(_) => Err(bad(cmd, "`join` must be true or false")),
+    }
+}
 
 /// Whether `p` asks for several ranges.
 pub(crate) fn has_ranges(p: &Value) -> bool {
@@ -47,6 +71,15 @@ fn range_params(p: &Value, cmd: &str, with_output: bool) -> Result<Vec<Value>> {
     let mut common: Map<String, Value> = base.clone();
     common.remove("ranges");
     let pattern = str_p(p, "output").filter(|o| !o.is_empty()).map(str::to_string);
+    let join = join_p(p, cmd)?;
+    if join && pattern.as_deref().is_some_and(|o| o.contains("{n}") || o.contains("{name}")) {
+        return Err(bad(cmd, "`join` writes one file: its `output` is a file name, not a pattern with {n} or {name}"));
+    }
+    if join && with_output && pattern.is_none() {
+        return Err(bad(cmd, "`join` needs the `output` file the ranges are joined into"));
+    }
+    common.remove("join");
+    common.remove("segmentChapters");
     let mut out = Vec::with_capacity(ranges.len());
     let mut outputs = BTreeSet::new();
     for (i, r) in ranges.iter().enumerate() {
@@ -68,6 +101,13 @@ fn range_params(p: &Value, cmd: &str, with_output: bool) -> Result<Vec<Value>> {
             Some(Value::String(s)) => Some(s.as_str()),
             Some(_) => return Err(bad(cmd, format!("range {n}: `name` must be a string"))),
         };
+        if join && r.get("output").is_some_and(|o| !o.is_null()) {
+            return Err(bad(cmd, format!("range {n}: with `join` the ranges have no `output` of their own")));
+        }
+        if join {
+            out.push(Value::Object(q));
+            continue;
+        }
         let output = match r.get("output") {
             Some(Value::String(o)) if !o.is_empty() => Some(o.clone()),
             None | Some(Value::Null) => match &pattern {
@@ -137,6 +177,16 @@ fn cannot_run(r: &Value) -> Option<String> {
     None
 }
 
+/// The files the batch would write that already exist (in the order they would be written).
+fn existing(s: &Session, p: &Value, cmd: &str) -> Result<Vec<String>> {
+    let outputs: Vec<String> = if join_p(p, cmd)? {
+        str_p(p, "output").filter(|o| !o.is_empty()).map(str::to_string).into_iter().collect()
+    } else {
+        range_params(p, cmd, false)?.iter().filter_map(|q| q.get("output").and_then(Value::as_str).map(str::to_string)).collect()
+    };
+    Ok(outputs.into_iter().filter(|o| s.services.file_size(o).is_ok()).collect())
+}
+
 /// `export.plan` with `ranges`: the plan of every range and the totals.
 pub(crate) fn plan(s: &mut Session, p: &Value, single: Single) -> Result<Value> {
     let cmd = "export.plan";
@@ -153,16 +203,22 @@ pub(crate) fn plan(s: &mut Session, p: &Value, single: Single) -> Result<Value> 
     }
     let summary = totals(&plans);
     let problems: Vec<Value> = plans.iter().filter_map(|r| cannot_run(r).map(|why| json!({"range": r["range"], "problem": why}))).collect();
-    Ok(json!({"ranges": plans, "summary": summary, "problems": problems}))
+    let mut out = json!({"ranges": plans, "summary": summary, "problems": problems});
+    if join_p(p, cmd)? {
+        out["join"] = json!(true);
+        out["output"] = p.get("output").cloned().unwrap_or(Value::Null);
+    }
+    out["existing"] = json!(existing(s, p, cmd)?);
+    Ok(out)
 }
 
 /// `export.start` with `ranges`: every range planned and checked first, then written one by one.
-pub(crate) fn start(s: &mut Session, p: &Value, single_plan: Single, single_start: Single) -> Result<Value> {
+pub(crate) fn start(s: &mut Session, p: &Value, steps: Steps) -> Result<Value> {
     let cmd = "export.start";
     let params = range_params(p, cmd, true)?;
     let mut plans = Vec::with_capacity(params.len());
     for (i, q) in params.iter().enumerate() {
-        plans.push(single_plan(s, q).map_err(|e| EngineError::Other(format!("range {}: {e}", i + 1)))?);
+        plans.push((steps.plan)(s, q).map_err(|e| EngineError::Other(format!("range {}: {e}", i + 1)))?);
     }
     for (i, r) in plans.iter().enumerate() {
         if let Some(why) = cannot_run(r) {
@@ -182,9 +238,29 @@ pub(crate) fn start(s: &mut Session, p: &Value, single_plan: Single, single_star
             ),
         ));
     }
+    // the source itself is never an output (plan 1.1 §7), whatever else the batch says
+    let (source, _) = crate::smart_cut::source_p(s, &params[0], cmd)?;
+    let outputs = params.iter().filter_map(|q| q.get("output").and_then(Value::as_str));
+    if outputs.into_iter().any(|o| o == source) {
+        return Err(bad(cmd, "the output must not be the source file; nothing was written"));
+    }
+    let taken = existing(s, p, cmd)?;
+    if !taken.is_empty() && !bool_p(p, "overwrite").unwrap_or(false) {
+        return Err(bad(
+            cmd,
+            format!(
+                "{} already exist: {}; run the batch with \"overwrite\": true to replace them; nothing was written",
+                if taken.len() == 1 { "this file" } else { "these files" },
+                taken.join(", ")
+            ),
+        ));
+    }
+    if join_p(p, cmd)? {
+        return join(s, p, &params, steps.cut, summary);
+    }
     let mut written: Vec<Value> = Vec::with_capacity(params.len());
     for (i, q) in params.iter().enumerate() {
-        match single_start(s, q) {
+        match (steps.start)(s, q) {
             Ok(mut r) => {
                 r["range"] = json!(i + 1);
                 written.push(r);
@@ -197,4 +273,69 @@ pub(crate) fn start(s: &mut Session, p: &Value, single_plan: Single, single_star
         }
     }
     Ok(json!({"ranges": written, "summary": summary, "verified": true}))
+}
+
+/// `export.start` with `ranges` and `"join": true`: the ranges cut in memory, joined, written once.
+fn join(s: &mut Session, p: &Value, params: &[Value], cut: Cut, summary: Value) -> Result<Value> {
+    let cmd = "export.start";
+    let output = str_p(p, "output").unwrap_or_default().to_string();
+    let segment_chapters = match p.get("segmentChapters") {
+        None | Some(Value::Null) => false,
+        Some(Value::Bool(b)) => *b,
+        Some(_) => return Err(bad(cmd, "`segmentChapters` must be true or false")),
+    };
+    let mut parts = Vec::with_capacity(params.len());
+    let mut results = Vec::with_capacity(params.len());
+    for (i, q) in params.iter().enumerate() {
+        let (bytes, mut r) = cut(s, q).map_err(|e| EngineError::Other(format!("range {}: {e}; nothing was written", i + 1)))?;
+        if let Some(r) = r.as_object_mut() {
+            r.remove("output");
+        }
+        r["range"] = json!(i + 1);
+        parts.push(bytes);
+        results.push(r);
+    }
+    let refs: Vec<&[u8]> = parts.iter().map(Vec::as_slice).collect();
+    let joined = cfa4_isobmff::concat(&refs).map_err(|e| EngineError::Other(format!("{e}; nothing was written")))?;
+    drop(parts);
+    let at = |t: u64| -> i64 { i64::try_from(u128::from(t) * 10_000_000 / u128::from(joined.timescale.max(1))).unwrap_or(i64::MAX) };
+    let mut bytes = joined.bytes;
+    if segment_chapters {
+        let ranges = p.get("ranges").and_then(Value::as_array).cloned().unwrap_or_default();
+        let chapters: Vec<cfa4_isobmff::Chapter> = joined
+            .starts
+            .iter()
+            .enumerate()
+            .map(|(i, &t)| {
+                let name = ranges.get(i).and_then(|r| r.get("name")).and_then(Value::as_str).map(str::trim).filter(|n| !n.is_empty());
+                cfa4_isobmff::Chapter { start_100ns: at(t).max(0) as u64, title: name.map_or_else(|| format!("{}", i + 1), str::to_string) }
+            })
+            .collect();
+        let other = |e: cfa4_isobmff::Error| EngineError::Other(format!("joined chapters: {e}; nothing was written"));
+        let before = cfa4_isobmff::open(bytes.as_slice()).map_err(other)?;
+        let with = cfa4_isobmff::replace_chapters(&bytes, &chapters).map_err(other)?;
+        let after = cfa4_isobmff::open(with.as_slice()).map_err(other)?;
+        if after.tracks != before.tracks || after.metadata.chapters.len() != chapters.len().min(cfa4_isobmff::MAX_CHAPTERS) {
+            return Err(EngineError::Other("joined chapters: the file read back is not as planned; nothing was written".into()));
+        }
+        bytes = with;
+    }
+    s.services.write_file(&output, &bytes).map_err(|e| EngineError::Other(format!("{output}: {e}")))?;
+    let chapters: Vec<Value> = cfa4_isobmff::open(bytes.as_slice())
+        .map(|f| f.metadata.chapters.iter().map(|c| json!({"start100ns": c.start_100ns, "title": c.title})).collect())
+        .unwrap_or_default();
+    for (r, &t) in results.iter_mut().zip(&joined.starts) {
+        r["start100ns"] = json!(at(t));
+    }
+    Ok(json!({
+        "output": output,
+        "bytes": bytes.len(),
+        "join": true,
+        "ranges": results,
+        "summary": summary,
+        "samples": joined.samples,
+        "duration100ns": at(joined.duration),
+        "chapters": chapters,
+        "verified": true,
+    }))
 }

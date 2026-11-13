@@ -2055,6 +2055,7 @@ class MainWindow(QMainWindow):
     def _on_source(self, result: Any, _b: bytes | None) -> None:
         self.source_state = result if isinstance(result, dict) else None
         self.source_monitor.set_source(self.source_state, self.revision)
+        self.markers.set_source(self.source_state)
         if self.source_monitor.source is None and self.active_monitor == "source":
             self.active_monitor = "program"
 

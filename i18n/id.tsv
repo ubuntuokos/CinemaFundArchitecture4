@@ -4567,3 +4567,56 @@
 	Chase External Timecode	Ikuti Timecode Eksternal
 	Send LTC	Kirim LTC
 	Send MIDI Timecode	Kirim Timecode MIDI
+# CFA4-LOSSLESS-MEDIA-TOOLS-001: segments, Find Segments, joined Smart Cut, frame export options
+	Find Segments	Cari Segmen
+	Find Segments…	Cari Segmen…
+	Comment…	Komentar…
+	Comment:	Komentar:
+	The analysis stopped.	Analisis dihentikan.
+	No segments. Add a range marker in the Source monitor, or use Find Segments…	Tidak ada segmen. Tambahkan penanda rentang di monitor sumber, atau gunakan Cari Segmen…
+	Remove Segment	Hapus Segmen
+	Black pictures	Gambar hitam
+	{count} segments written and verified	{count} segmen ditulis dan diverifikasi
+	These files already exist and will be replaced: {files}. Continue?	File berikut sudah ada dan akan diganti: {files}. Lanjutkan?
+	{count} subclips made from the segments	{count} subklip dibuat dari segmen
+	Segment	Segmen
+	Silence	Hening
+	Analyzing…	Menganalisis…
+	Analyzing… {percent}%	Menganalisis… {percent}%
+	Silence below (dBFS):	Hening di bawah (dBFS):
+	To Timeline	Ke Timeline
+	Sequence Markers	Penanda Sekuens
+	Join the segments into one file	Gabungkan segmen menjadi satu file
+	{count} segments placed on the timeline	{count} segmen ditempatkan di timeline
+	Shortest silence (s):	Hening terpendek (dtk):
+	Segment {n}: {why}	Segmen {n}: {why}
+	Source Clip Segments	Segmen Klip Sumber
+	{count} segments found	{count} segmen ditemukan
+	{count} files: {copied} frames copied, {reencoded} frames re-encoded	{count} file: {copied} frame disalin, {reencoded} frame dienkode ulang
+	This clip has no segments: add range markers in the Source monitor first.	Klip ini tidak punya segmen: tambahkan dulu penanda rentang di monitor sumber.
+	Black level (%):	Tingkat hitam (%):
+	Quality:	Kualitas:
+	Black share of the picture (%):	Porsi hitam dalam gambar (%):
+	{count} segments added to the clip	{count} segmen ditambahkan ke klip
+	Last frame	Frame terakhir
+	First frame	Frame pertama
+	Marked range	Rentang yang ditandai
+	Original	Asli
+	Segment names as chapters	Nama segmen sebagai bab
+	Add as Segments	Tambahkan sebagai Segmen
+	The engine did not start the analysis.	Mesin tidak memulai analisis.
+	Range:	Rentang:
+	(no clip in the Source monitor)	(tidak ada klip di monitor sumber)
+	Segment name:	Nama segmen:
+	{count} segments joined into {path} and verified	{count} segmen digabung ke {path} dan diverifikasi
+	Shortest black (s):	Hitam terpendek (dtk):
+	Segments (range markers)	Segmen (penanda rentang)
+	(only the first ones are listed)	(hanya yang pertama yang dicantumkan)
+	Check at least one segment.	Centang setidaknya satu segmen.
+	Make Subclips	Buat Subklip
+	Shortest shot (frames):	Shot terpendek (frame):
+	Row {n}: the first and last frame must be whole numbers	Baris {n}: frame pertama dan terakhir harus bilangan bulat
+	Size:	Ukuran:
+	{count} segments joined into one file: {copied} frames copied, {reencoded} frames re-encoded	{count} segmen digabung menjadi satu file: {copied} frame disalin, {reencoded} frame dienkode ulang
+	{name} ({frames} frames)	{name} ({frames} frame)
+	Scene changes	Pergantian adegan

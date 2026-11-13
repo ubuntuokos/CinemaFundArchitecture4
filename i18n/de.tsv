@@ -4566,3 +4566,56 @@
 	Chase External Timecode	Externem Timecode folgen
 	Send LTC	LTC senden
 	Send MIDI Timecode	MIDI-Timecode senden
+# CFA4-LOSSLESS-MEDIA-TOOLS-001: segments, Find Segments, joined Smart Cut, frame export options
+	Find Segments	Segmente suchen
+	Find Segments…	Segmente suchen…
+	Comment…	Kommentar…
+	Comment:	Kommentar:
+	The analysis stopped.	Die Analyse wurde angehalten.
+	No segments. Add a range marker in the Source monitor, or use Find Segments…	Keine Segmente. Füge im Quellmonitor eine Bereichsmarke hinzu oder nutze „Segmente suchen…“
+	Remove Segment	Segment entfernen
+	Black pictures	Schwarze Bilder
+	{count} segments written and verified	{count} Segmente geschrieben und geprüft
+	These files already exist and will be replaced: {files}. Continue?	Diese Dateien gibt es schon und sie werden ersetzt: {files}. Fortfahren?
+	{count} subclips made from the segments	{count} Subclips aus den Segmenten erstellt
+	Segment	Segment
+	Silence	Stille
+	Analyzing…	Analyse läuft…
+	Analyzing… {percent}%	Analyse läuft… {percent} %
+	Silence below (dBFS):	Stille unter (dBFS):
+	To Timeline	In die Zeitleiste
+	Sequence Markers	Sequenzmarken
+	Join the segments into one file	Segmente zu einer Datei zusammenfügen
+	{count} segments placed on the timeline	{count} Segmente in die Zeitleiste gesetzt
+	Shortest silence (s):	Kürzeste Stille (s):
+	Segment {n}: {why}	Segment {n}: {why}
+	Source Clip Segments	Segmente des Quellclips
+	{count} segments found	{count} Segmente gefunden
+	{count} files: {copied} frames copied, {reencoded} frames re-encoded	{count} Dateien: {copied} Frames kopiert, {reencoded} Frames neu kodiert
+	This clip has no segments: add range markers in the Source monitor first.	Dieser Clip hat keine Segmente: Füge zuerst im Quellmonitor Bereichsmarken hinzu.
+	Black level (%):	Schwarzwert (%):
+	Quality:	Qualität:
+	Black share of the picture (%):	Schwarzanteil des Bildes (%):
+	{count} segments added to the clip	{count} Segmente zum Clip hinzugefügt
+	Last frame	Letzter Frame
+	First frame	Erster Frame
+	Marked range	Markierter Bereich
+	Original	Original
+	Segment names as chapters	Segmentnamen als Kapitel
+	Add as Segments	Als Segmente hinzufügen
+	The engine did not start the analysis.	Die Engine hat die Analyse nicht gestartet.
+	Range:	Bereich:
+	(no clip in the Source monitor)	(kein Clip im Quellmonitor)
+	Segment name:	Segmentname:
+	{count} segments joined into {path} and verified	{count} Segmente zu {path} zusammengefügt und geprüft
+	Shortest black (s):	Kürzestes Schwarz (s):
+	Segments (range markers)	Segmente (Bereichsmarken)
+	(only the first ones are listed)	(nur die ersten werden aufgelistet)
+	Check at least one segment.	Wähle mindestens ein Segment aus.
+	Make Subclips	Subclips erstellen
+	Shortest shot (frames):	Kürzeste Einstellung (Frames):
+	Row {n}: the first and last frame must be whole numbers	Zeile {n}: Erster und letzter Frame müssen ganze Zahlen sein
+	Size:	Größe:
+	{count} segments joined into one file: {copied} frames copied, {reencoded} frames re-encoded	{count} Segmente zu einer Datei zusammengefügt: {copied} Frames kopiert, {reencoded} Frames neu kodiert
+	{name} ({frames} frames)	{name} ({frames} Frames)
+	Scene changes	Szenenwechsel

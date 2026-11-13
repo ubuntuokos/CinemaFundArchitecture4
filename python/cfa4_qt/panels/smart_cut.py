@@ -18,11 +18,13 @@ segment can run. "Find Segments…" proposes segments from scene changes, black 
 
 from __future__ import annotations
 
+import os
 from collections.abc import Callable
 from typing import Any
 
 from PySide6.QtCore import Qt
 from PySide6.QtWidgets import (
+    QCheckBox,
     QComboBox,
     QDialog,
     QFileDialog,
@@ -69,6 +71,13 @@ def default_pattern(path: str) -> str:
     return f"{stem.removesuffix('_cut')}_{{n}}-{{name}}.{ext}"
 
 
+def default_joined(path: str) -> str:
+    """``clip.mp4`` → ``clip_joined.mp4``: the segments one after the other in one file (MP4 / MOV)."""
+    out = default_output(path)
+    stem, _dot, ext = out.rpartition(".")
+    return f"{stem.removesuffix('_cut')}_joined.{ext if ext in ('mp4', 'm4v', 'mov') else 'mp4'}"
+
+
 def segment_label(segment: dict[str, Any], rate: tuple[int, int] | None) -> str:
     """A segment's line in the list: its name (or "Segment"), and its length in frames when the
     frame rate is known."""
@@ -110,7 +119,11 @@ def ranges_text(result: dict[str, Any]) -> tuple[str, str | None]:
     """The totals of a plan of several segments and, when one of them cannot run, why."""
     summary = result.get("summary") or {}
     copied, reencoded = int(summary.get("copiedFrames") or 0), int(summary.get("reencodedFrames") or 0)
-    text = fmt("{count} files: {copied} frames copied, {reencoded} frames re-encoded", count=int(summary.get("ranges") or 0), copied=copied, reencoded=reencoded)
+    count = int(summary.get("ranges") or 0)
+    if result.get("join"):
+        text = fmt("{count} segments joined into one file: {copied} frames copied, {reencoded} frames re-encoded", count=count, copied=copied, reencoded=reencoded)
+    else:
+        text = fmt("{count} files: {copied} frames copied, {reencoded} frames re-encoded", count=count, copied=copied, reencoded=reencoded)
     problems = [p for p in result.get("problems") or [] if isinstance(p, dict)]
     if problems:
         return text, "; ".join(fmt("Segment {n}: {why}", n=p.get("range", "?"), why=str(p.get("problem") or "")) for p in problems)
@@ -123,6 +136,7 @@ class SmartCutDialog(QDialog):
     def __init__(self, parent: QWidget, engine: EngineClient, item: int, said: Callable[[str], None]) -> None:
         super().__init__(parent)
         self.setObjectName("source.smartCut")
+        self._chosen_output = ""
         self.setWindowTitle(tr("Smart Cut Source"))
         self.engine = engine
         self.item = item
@@ -170,7 +184,6 @@ class SmartCutDialog(QDialog):
         self.segment_list = QListWidget(self.segments_box)
         self.segment_list.setObjectName("source.smartCut.segments")
         self.segment_list.itemChanged.connect(lambda _i: self.replan())
-        seg.addWidget(self.segment_list, 1)
         moves = QVBoxLayout()
         for name, label, step in (("segmentUp", N_("Up"), -1), ("segmentDown", N_("Down"), 1)):
             b = QPushButton(tr(label), self.segments_box)
@@ -195,6 +208,18 @@ class SmartCutDialog(QDialog):
         moves.addWidget(self.find)
         moves.addStretch(1)
         seg.addLayout(moves)
+        joins = QVBoxLayout()
+        joins.addWidget(self.segment_list, 1)
+        seg.insertLayout(0, joins, 1)
+        # one file per segment, or the segments one after the other in one file (K1)
+        self.join = QCheckBox(tr("Join the segments into one file"), self.segments_box)
+        self.join.setObjectName("source.smartCut.join")
+        self.join.toggled.connect(self._join_changed)
+        joins.addWidget(self.join)
+        self.segment_chapters = QCheckBox(tr("Segment names as chapters"), self.segments_box)
+        self.segment_chapters.setObjectName("source.smartCut.segmentChapters")
+        self.segment_chapters.setEnabled(False)
+        joins.addWidget(self.segment_chapters)
         self.segments_box.hide()
         lay.addWidget(self.segments_box)
         self.summary = QLabel("", self)
@@ -259,13 +284,29 @@ class SmartCutDialog(QDialog):
     def segments_mode(self) -> bool:
         return self.source.currentData() == "segments"
 
+    def joined(self) -> bool:
+        return self.segments_mode() and self.join.isChecked()
+
+    def _default_output(self, path: str) -> str:
+        if not self.segments_mode():
+            return default_output(path)
+        return default_joined(path) if self.join.isChecked() else default_pattern(path)
+
+    def _set_default_output(self) -> None:
+        path = str((self.analysis or {}).get("path") or "")
+        current = self.output.text().strip()
+        if path and current in ("", default_output(path), default_pattern(path), default_joined(path)):
+            self.output.setText(self._default_output(path))
+
+    def _join_changed(self, on: bool) -> None:
+        self.segment_chapters.setEnabled(on)
+        self._set_default_output()
+        self.replan()
+
     def _source_changed(self) -> None:
         segments = self.segments_mode()
         self.segments_box.setVisible(segments)
-        path = str((self.analysis or {}).get("path") or "")
-        current = self.output.text().strip()
-        if path and current in ("", default_output(path), default_pattern(path)):
-            self.output.setText(default_pattern(path) if segments else default_output(path))
+        self._set_default_output()
         if segments and self.segment_list.count() == 0:
             self.engine.execute("segments.list", {"item": self.item}, on_reply=lambda r, _b: self._listed(r), on_error=self._fail)
             return
@@ -346,13 +387,17 @@ class SmartCutDialog(QDialog):
 
     def params(self) -> dict[str, Any]:
         if self.segments_mode():
-            return {
+            params: dict[str, Any] = {
                 "item": self.item,
                 "segments": self.chosen_segments(),
                 "mode": self.mode.currentData(),
                 "guarantee": self.guarantee.currentData(),
                 "output": self.output.text().strip() or None,
             }
+            if self.join.isChecked():
+                params["join"] = True
+                params["segmentChapters"] = self.segment_chapters.isChecked()
+            return params
         return {"item": self.item, "mode": self.mode.currentData(), "guarantee": self.guarantee.currentData(), "output": self.output.text().strip() or None}
 
     def replan(self) -> None:
@@ -391,6 +436,8 @@ class SmartCutDialog(QDialog):
     def browse(self) -> None:
         path, _f = QFileDialog.getSaveFileName(self, tr("Smart Cut Source"), self.output.text(), OUTPUT_FILTER)
         if path:
+            # the file dialog has already asked about replacing an existing file
+            self._chosen_output = path
             self.output.setText(path)
             self.replan()
 
@@ -399,6 +446,21 @@ class SmartCutDialog(QDialog):
         if not params["output"]:
             self._fail(tr("Choose the output file."))
             return
+        # an existing file is replaced only once the user says so (plan 1.1 §7)
+        if self.segments_mode():
+            taken = [str(x) for x in (self.plan or {}).get("existing") or []]
+        else:
+            taken = [params["output"]] if params["output"] != self._chosen_output and os.path.exists(params["output"]) else []
+        if taken:
+            asked = QMessageBox.question(
+                self,
+                tr("Smart Cut Source"),
+                fmt("These files already exist and will be replaced: {files}. Continue?", files=", ".join(taken)),
+            )
+            if asked != QMessageBox.StandardButton.Yes:
+                return
+            if self.segments_mode():
+                params["overwrite"] = True
         summary = (self.plan or {}).get("summary") or {}
         if summary.get("requiresConfirmation"):
             asked = QMessageBox.question(
@@ -418,7 +480,10 @@ class SmartCutDialog(QDialog):
             result = result if isinstance(result, dict) else {}
             if segments:
                 count = len(result.get("ranges") or [])
-                self.said(fmt("{count} segments written and verified", count=count))
+                if result.get("join"):
+                    self.said(fmt("{count} segments joined into {path} and verified", count=count, path=str(result.get("output") or params["output"])))
+                else:
+                    self.said(fmt("{count} segments written and verified", count=count))
                 self.accept()
                 return
             report = result.get("report") or {}

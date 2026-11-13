@@ -14,6 +14,9 @@
 //!   the marker, so the segment keeps its link to the source file and its media times.
 //!   `segments.toTimeline` also places those subclips back to back on the active sequence
 //!   (`timeline.place` with `items`; `time`, `track`, `insert` pass through).
+//! - `segments.remove {"item"?, "segments":[marker id]}` deletes the listed segments in one undo
+//!   step (the list is required: nothing is removed by default). Renaming, comments and colours
+//!   are `markers.edit` with `"target": "source"`.
 
 use std::collections::BTreeSet;
 
@@ -174,6 +177,22 @@ fn to_subclips(s: &mut Session, p: &Value) -> Result<Value> {
     Ok(json!({"subclips": made.iter().map(|(m, id)| json!({"marker": m, "item": id.0})).collect::<Vec<_>>()}))
 }
 
+fn remove(s: &mut Session, p: &Value) -> Result<Value> {
+    let cmd = "segments.remove";
+    if !p.get("segments").is_some_and(Value::is_array) {
+        return Err(bad(cmd, "`segments` (the marker ids to remove) is required"));
+    }
+    let (item, chosen) = chosen(s, p, cmd)?;
+    let media = source_view(s, item).ok_or_else(|| bad(cmd, format!("no media item {}", item.0)))?.media;
+    let ids: BTreeSet<u64> = chosen.iter().map(|m| m.id.0).collect();
+    s.edit("Remove Segments", |pr, _| {
+        let list = crate::source_monitor::marker_list(pr, media)?;
+        list.retain(|m| !ids.contains(&m.id.0));
+        Ok(())
+    })?;
+    Ok(json!({"item": item.0, "removed": ids.into_iter().collect::<Vec<_>>()}))
+}
+
 fn to_timeline(s: &mut Session, p: &Value) -> Result<Value> {
     let cmd = "segments.toTimeline";
     if s.active_sequence().is_none() {
@@ -207,7 +226,7 @@ pub(crate) fn commands() -> Vec<CommandSpec> {
             label: "Plan Segment Export",
             menu: &[],
             shortcut: None,
-            params: r#"{"item":id?,"segments":[marker id]? (default: all, time order),"output":"pattern with {n} and {name}"?,"mode":…,"guarantee":…,"crf":…,"audio":…} → export.plan with ranges, each with its marker"#,
+            params: r#"{"item":id?,"segments":[marker id]? (default: all, time order),"output":"pattern with {n} and {name}"?,"mode":…,"guarantee":…,"crf":…,"audio":…,"join":bool?} → export.plan with ranges, each with its marker"#,
             enabled: always,
             run: plan,
             journal: false,
@@ -217,9 +236,19 @@ pub(crate) fn commands() -> Vec<CommandSpec> {
             label: "Export Segments…",
             menu: &[],
             shortcut: None,
-            params: r#"{"item":id?,"segments":[marker id]?,"output":"pattern with {n} and {name}","mode":…,"guarantee":…,"confirm":bool (once for the batch),"crf":…,"audio":…} → export.start with ranges: one verified file per segment, nothing written unless every segment can run"#,
+            params: r#"{"item":id?,"segments":[marker id]?,"output":"pattern with {n} and {name}","mode":…,"guarantee":…,"confirm":bool (once for the batch),"crf":…,"audio":…,"join":bool?,"segmentChapters":bool?} → export.start with ranges: one verified file per segment (or, with "join", the segments one after the other in one file), nothing written unless every segment can run"#,
             enabled: always,
             run: export,
+            journal: true,
+        },
+        CommandSpec {
+            id: "segments.remove",
+            label: "Remove Segments",
+            menu: &[],
+            shortcut: None,
+            params: r#"{"item":id?,"segments":[marker id]} → {item, removed:[marker id]} (one undo step; the list is required)"#,
+            enabled: always,
+            run: remove,
             journal: true,
         },
         CommandSpec {

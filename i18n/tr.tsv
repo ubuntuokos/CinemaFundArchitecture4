@@ -4560,3 +4560,56 @@ export.summary	Low	düşük
 	Chase External Timecode	Harici Zaman Kodunu Takip Et
 	Send LTC	LTC Gönder
 	Send MIDI Timecode	MIDI Zaman Kodu Gönder
+# CFA4-LOSSLESS-MEDIA-TOOLS-001: segments, Find Segments, joined Smart Cut, frame export options
+	Find Segments	Segmentleri Bul
+	Find Segments…	Segmentleri Bul…
+	Comment…	Yorum…
+	Comment:	Yorum:
+	The analysis stopped.	Analiz durdu.
+	No segments. Add a range marker in the Source monitor, or use Find Segments…	Segment yok. Kaynak monitörde bir aralık işaretçisi ekle ya da Segmentleri Bul… komutunu kullan
+	Remove Segment	Segmenti Kaldır
+	Black pictures	Siyah görüntüler
+	{count} segments written and verified	{count} segment yazıldı ve doğrulandı
+	These files already exist and will be replaced: {files}. Continue?	Bu dosyalar zaten var ve değiştirilecek: {files}. Devam edilsin mi?
+	{count} subclips made from the segments	Segmentlerden {count} alt klip oluşturuldu
+	Segment	Segment
+	Silence	Sessizlik
+	Analyzing…	Analiz ediliyor…
+	Analyzing… {percent}%	Analiz ediliyor… %{percent}
+	Silence below (dBFS):	Şunun altındaki sessizlik (dBFS):
+	To Timeline	Zaman Çizelgesine
+	Sequence Markers	Sekans İşaretçileri
+	Join the segments into one file	Segmentleri tek dosyada birleştir
+	{count} segments placed on the timeline	{count} segment zaman çizelgesine yerleştirildi
+	Shortest silence (s):	En kısa sessizlik (sn):
+	Segment {n}: {why}	Segment {n}: {why}
+	Source Clip Segments	Kaynak Klibin Segmentleri
+	{count} segments found	{count} segment bulundu
+	{count} files: {copied} frames copied, {reencoded} frames re-encoded	{count} dosya: {copied} kare kopyalandı, {reencoded} kare yeniden kodlandı
+	This clip has no segments: add range markers in the Source monitor first.	Bu klibin segmenti yok: önce kaynak monitörde aralık işaretçileri ekle.
+	Black level (%):	Siyah seviyesi (%):
+	Quality:	Kalite:
+	Black share of the picture (%):	Görüntüdeki siyah payı (%):
+	{count} segments added to the clip	Klibe {count} segment eklendi
+	Last frame	Son kare
+	First frame	İlk kare
+	Marked range	İşaretli aralık
+	Original	Özgün
+	Segment names as chapters	Segment adları bölüm olarak
+	Add as Segments	Segment Olarak Ekle
+	The engine did not start the analysis.	Motor analizi başlatmadı.
+	Range:	Aralık:
+	(no clip in the Source monitor)	(kaynak monitörde klip yok)
+	Segment name:	Segment adı:
+	{count} segments joined into {path} and verified	{count} segment {path} içinde birleştirildi ve doğrulandı
+	Shortest black (s):	En kısa siyah (sn):
+	Segments (range markers)	Segmentler (aralık işaretçileri)
+	(only the first ones are listed)	(yalnızca ilkler listelenir)
+	Check at least one segment.	En az bir segment işaretle.
+	Make Subclips	Alt Klip Oluştur
+	Shortest shot (frames):	En kısa çekim (kare):
+	Row {n}: the first and last frame must be whole numbers	Satır {n}: ilk ve son kare tam sayı olmalı
+	Size:	Boyut:
+	{count} segments joined into one file: {copied} frames copied, {reencoded} frames re-encoded	{count} segment tek dosyada birleştirildi: {copied} kare kopyalandı, {reencoded} kare yeniden kodlandı
+	{name} ({frames} frames)	{name} ({frames} kare)
+	Scene changes	Sahne değişimleri

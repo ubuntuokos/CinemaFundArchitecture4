@@ -4559,3 +4559,56 @@ export.summary	Low	низак
 	Chase External Timecode	Прати спољни временски код
 	Send LTC	Шаљи LTC
 	Send MIDI Timecode	Шаљи MIDI временски код
+# CFA4-LOSSLESS-MEDIA-TOOLS-001: segments, Find Segments, joined Smart Cut, frame export options
+	Find Segments	Пронађи сегменте
+	Find Segments…	Пронађи сегменте…
+	Comment…	Коментар…
+	Comment:	Коментар:
+	The analysis stopped.	Анализа је заустављена.
+	No segments. Add a range marker in the Source monitor, or use Find Segments…	Нема сегмената. Додај маркер опсега у монитору извора или користи „Пронађи сегменте…“
+	Remove Segment	Уклони сегмент
+	Black pictures	Црне слике
+	{count} segments written and verified	Уписани и проверени сегменти: {count}
+	These files already exist and will be replaced: {files}. Continue?	Ове датотеке већ постоје и биће замењене: {files}. Наставити?
+	{count} subclips made from the segments	Од сегмената направљени потклипови: {count}
+	Segment	Сегмент
+	Silence	Тишина
+	Analyzing…	Анализира се…
+	Analyzing… {percent}%	Анализира се… {percent}%
+	Silence below (dBFS):	Тишина испод (dBFS):
+	To Timeline	На временску линију
+	Sequence Markers	Маркери секвенце
+	Join the segments into one file	Споји сегменте у једну датотеку
+	{count} segments placed on the timeline	Сегменти постављени на временску линију: {count}
+	Shortest silence (s):	Најкраћа тишина (s):
+	Segment {n}: {why}	Сегмент {n}: {why}
+	Source Clip Segments	Сегменти изворног клипа
+	{count} segments found	Пронађени сегменти: {count}
+	{count} files: {copied} frames copied, {reencoded} frames re-encoded	Датотеке: {count}; копирани кадрови: {copied}, поново кодирани кадрови: {reencoded}
+	This clip has no segments: add range markers in the Source monitor first.	Овај клип нема сегменте: прво додај маркере опсега у монитору извора.
+	Black level (%):	Ниво црне (%):
+	Quality:	Квалитет:
+	Black share of the picture (%):	Удео црне у слици (%):
+	{count} segments added to the clip	Сегменти додати клипу: {count}
+	Last frame	Последњи кадар
+	First frame	Први кадар
+	Marked range	Означени опсег
+	Original	Оригинал
+	Segment names as chapters	Називи сегмената као поглавља
+	Add as Segments	Додај као сегменте
+	The engine did not start the analysis.	Мотор није покренуо анализу.
+	Range:	Опсег:
+	(no clip in the Source monitor)	(нема клипа у монитору извора)
+	Segment name:	Назив сегмента:
+	{count} segments joined into {path} and verified	Сегменти ({count}) спојени у {path} и проверени
+	Shortest black (s):	Најкраћа црна (s):
+	Segments (range markers)	Сегменти (маркери опсега)
+	(only the first ones are listed)	(наведени су само први)
+	Check at least one segment.	Означи бар један сегмент.
+	Make Subclips	Направи потклипове
+	Shortest shot (frames):	Најкраћи кадар снимка (кадрови):
+	Row {n}: the first and last frame must be whole numbers	Ред {n}: први и последњи кадар морају бити цели бројеви
+	Size:	Величина:
+	{count} segments joined into one file: {copied} frames copied, {reencoded} frames re-encoded	Сегменти ({count}) спојени у једну датотеку; копирани кадрови: {copied}, поново кодирани кадрови: {reencoded}
+	{name} ({frames} frames)	{name} (кадрова: {frames})
+	Scene changes	Промене сцене

@@ -4562,3 +4562,56 @@ export.summary	Low	დაბალი
 	Chase External Timecode	გარე დროის კოდისთვის მიყოლა
 	Send LTC	LTC-ის გაგზავნა
 	Send MIDI Timecode	MIDI დროის კოდის გაგზავნა
+# CFA4-LOSSLESS-MEDIA-TOOLS-001: segments, Find Segments, joined Smart Cut, frame export options
+	Find Segments	სეგმენტების ძებნა
+	Find Segments…	სეგმენტების ძებნა…
+	Comment…	კომენტარი…
+	Comment:	კომენტარი:
+	The analysis stopped.	ანალიზი შეჩერდა.
+	No segments. Add a range marker in the Source monitor, or use Find Segments…	სეგმენტები არ არის. დაამატე დიაპაზონის მარკერი წყაროს მონიტორში ან გამოიყენე „სეგმენტების ძებნა…“
+	Remove Segment	სეგმენტის წაშლა
+	Black pictures	შავი კადრები
+	{count} segments written and verified	ჩაწერილი და შემოწმებული სეგმენტები: {count}
+	These files already exist and will be replaced: {files}. Continue?	ეს ფაილები უკვე არსებობს და ჩანაცვლდება: {files}. გავაგრძელო?
+	{count} subclips made from the segments	სეგმენტებიდან შექმნილი ქვეკლიპები: {count}
+	Segment	სეგმენტი
+	Silence	სიჩუმე
+	Analyzing…	მიმდინარეობს ანალიზი…
+	Analyzing… {percent}%	მიმდინარეობს ანალიზი… {percent}%
+	Silence below (dBFS):	სიჩუმე ქვემოთ (dBFS):
+	To Timeline	დროის ხაზზე
+	Sequence Markers	მიმდევრობის მარკერები
+	Join the segments into one file	სეგმენტების ერთ ფაილად გაერთიანება
+	{count} segments placed on the timeline	დროის ხაზზე განთავსებული სეგმენტები: {count}
+	Shortest silence (s):	უმოკლესი სიჩუმე (წმ):
+	Segment {n}: {why}	სეგმენტი {n}: {why}
+	Source Clip Segments	წყარო კლიპის სეგმენტები
+	{count} segments found	ნაპოვნი სეგმენტები: {count}
+	{count} files: {copied} frames copied, {reencoded} frames re-encoded	ფაილები: {count}; დაკოპირებული კადრები: {copied}, ხელახლა კოდირებული კადრები: {reencoded}
+	This clip has no segments: add range markers in the Source monitor first.	ამ კლიპს სეგმენტები არ აქვს: ჯერ დაამატე დიაპაზონის მარკერები წყაროს მონიტორში.
+	Black level (%):	შავის დონე (%):
+	Quality:	ხარისხი:
+	Black share of the picture (%):	შავის წილი გამოსახულებაში (%):
+	{count} segments added to the clip	კლიპს დაემატა სეგმენტები: {count}
+	Last frame	ბოლო კადრი
+	First frame	პირველი კადრი
+	Marked range	მონიშნული დიაპაზონი
+	Original	ორიგინალი
+	Segment names as chapters	სეგმენტების სახელები თავებად
+	Add as Segments	სეგმენტებად დამატება
+	The engine did not start the analysis.	ძრავამ ანალიზი არ დაიწყო.
+	Range:	დიაპაზონი:
+	(no clip in the Source monitor)	(წყაროს მონიტორში კლიპი არ არის)
+	Segment name:	სეგმენტის სახელი:
+	{count} segments joined into {path} and verified	სეგმენტები ({count}) გაერთიანდა ფაილში {path} და შემოწმდა
+	Shortest black (s):	უმოკლესი შავი (წმ):
+	Segments (range markers)	სეგმენტები (დიაპაზონის მარკერები)
+	(only the first ones are listed)	(ნაჩვენებია მხოლოდ პირველები)
+	Check at least one segment.	მონიშნე ერთი სეგმენტი მაინც.
+	Make Subclips	ქვეკლიპების შექმნა
+	Shortest shot (frames):	უმოკლესი კადრი (კადრები):
+	Row {n}: the first and last frame must be whole numbers	სტრიქონი {n}: პირველი და ბოლო კადრი მთელი რიცხვები უნდა იყოს
+	Size:	ზომა:
+	{count} segments joined into one file: {copied} frames copied, {reencoded} frames re-encoded	სეგმენტები ({count}) გაერთიანდა ერთ ფაილად; დაკოპირებული კადრები: {copied}, ხელახლა კოდირებული კადრები: {reencoded}
+	{name} ({frames} frames)	{name} (კადრები: {frames})
+	Scene changes	სცენის ცვლილებები

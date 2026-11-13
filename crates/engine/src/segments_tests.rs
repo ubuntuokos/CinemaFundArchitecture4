@@ -151,3 +151,30 @@ fn segments_are_placed_back_to_back_on_the_timeline() {
     assert_eq!(clips, [(Tick(0), RATE.tick_of(5)), (RATE.tick_of(5), RATE.tick_of(10))]);
     let _ = std::fs::remove_dir_all(&dir);
 }
+
+#[test]
+fn listed_segments_are_removed_renamed_and_labelled_in_undo_steps() {
+    let (mut s, item, dir) = with_markers("segments-remove", vec![marker(900, 0, 10, "a"), marker(901, 20, 10, "b"), marker(902, 40, 5, "c")]);
+    let names = |s: &mut crate::Session| -> Vec<String> {
+        s.execute("segments.list", json!({"item": item.0})).unwrap()["segments"]
+            .as_array()
+            .unwrap()
+            .iter()
+            .map(|m| m["name"].as_str().unwrap().to_string())
+            .collect()
+    };
+    // nothing is removed without a list
+    assert!(s.execute("segments.remove", json!({"item": item.0})).is_err());
+    assert!(s.execute("segments.remove", json!({"item": item.0, "segments": [999]})).is_err());
+    let r = s.execute("segments.remove", json!({"item": item.0, "segments": [901, 902]})).unwrap();
+    assert_eq!(r["removed"], json!([901, 902]));
+    assert_eq!(names(&mut s), ["a"]);
+    s.execute("edit.undo", json!({})).unwrap();
+    assert_eq!(names(&mut s), ["a", "b", "c"]);
+    // renamed, commented and labelled through the Source monitor's marker editing
+    s.execute("source.open", json!({"item": item.0})).unwrap();
+    s.execute("markers.edit", json!({"target": "source", "marker": 900, "name": "Eleje", "comment": "jó", "color": "Rose"})).unwrap();
+    let first = s.execute("segments.list", json!({"item": item.0})).unwrap()["segments"][0].clone();
+    assert_eq!((first["name"].as_str(), first["comment"].as_str()), (Some("Eleje"), Some("jó")));
+    let _ = std::fs::remove_dir_all(&dir);
+}

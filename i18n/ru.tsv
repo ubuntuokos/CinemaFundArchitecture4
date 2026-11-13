@@ -4544,3 +4544,56 @@
 	Chase External Timecode	Следовать за внешним тайм-кодом
 	Send LTC	Передавать LTC
 	Send MIDI Timecode	Передавать MIDI тайм-код
+# CFA4-LOSSLESS-MEDIA-TOOLS-001: segments, Find Segments, joined Smart Cut, frame export options
+	Find Segments	Найти сегменты
+	Find Segments…	Найти сегменты…
+	Comment…	Комментарий…
+	Comment:	Комментарий:
+	The analysis stopped.	Анализ остановлен.
+	No segments. Add a range marker in the Source monitor, or use Find Segments…	Сегментов нет. Добавьте маркер диапазона в мониторе источника или воспользуйтесь командой «Найти сегменты…»
+	Remove Segment	Удалить сегмент
+	Black pictures	Чёрные кадры
+	{count} segments written and verified	Записано и проверено сегментов: {count}
+	These files already exist and will be replaced: {files}. Continue?	Эти файлы уже существуют и будут заменены: {files}. Продолжить?
+	{count} subclips made from the segments	Создано подклипов из сегментов: {count}
+	Segment	Сегмент
+	Silence	Тишина
+	Analyzing…	Анализ…
+	Analyzing… {percent}%	Анализ… {percent}%
+	Silence below (dBFS):	Тишина ниже (дБFS):
+	To Timeline	На таймлайн
+	Sequence Markers	Маркеры эпизода
+	Join the segments into one file	Объединить сегменты в один файл
+	{count} segments placed on the timeline	Сегментов размещено на таймлайне: {count}
+	Shortest silence (s):	Самая короткая тишина (с):
+	Segment {n}: {why}	Сегмент {n}: {why}
+	Source Clip Segments	Сегменты исходного клипа
+	{count} segments found	Найдено сегментов: {count}
+	{count} files: {copied} frames copied, {reencoded} frames re-encoded	Файлов: {count}; скопировано кадров: {copied}, перекодировано кадров: {reencoded}
+	This clip has no segments: add range markers in the Source monitor first.	У этого клипа нет сегментов: сначала добавьте маркеры диапазона в мониторе источника.
+	Black level (%):	Уровень чёрного (%):
+	Quality:	Качество:
+	Black share of the picture (%):	Доля чёрного в кадре (%):
+	{count} segments added to the clip	Добавлено сегментов к клипу: {count}
+	Last frame	Последний кадр
+	First frame	Первый кадр
+	Marked range	Отмеченный диапазон
+	Original	Исходный
+	Segment names as chapters	Имена сегментов как главы
+	Add as Segments	Добавить как сегменты
+	The engine did not start the analysis.	Движок не запустил анализ.
+	Range:	Диапазон:
+	(no clip in the Source monitor)	(в мониторе источника нет клипа)
+	Segment name:	Имя сегмента:
+	{count} segments joined into {path} and verified	Сегменты ({count}) объединены в {path} и проверены
+	Shortest black (s):	Самый короткий чёрный участок (с):
+	Segments (range markers)	Сегменты (маркеры диапазона)
+	(only the first ones are listed)	(показаны только первые)
+	Check at least one segment.	Отметьте хотя бы один сегмент.
+	Make Subclips	Создать подклипы
+	Shortest shot (frames):	Самый короткий план (кадры):
+	Row {n}: the first and last frame must be whole numbers	Строка {n}: первый и последний кадр должны быть целыми числами
+	Size:	Размер:
+	{count} segments joined into one file: {copied} frames copied, {reencoded} frames re-encoded	Сегменты ({count}) объединены в один файл; скопировано кадров: {copied}, перекодировано кадров: {reencoded}
+	{name} ({frames} frames)	{name} (кадров: {frames})
+	Scene changes	Смены сцен

@@ -12,6 +12,7 @@
 
 mod bytes;
 mod codec;
+mod concat;
 mod demux;
 mod error;
 mod mux;
@@ -22,6 +23,7 @@ pub use codec::{
     AacConfig, ApvConfig, AudioParams, Av1Config, AvcConfig, BitRate, CleanAperture, CodecConfig, ColorInfo, FieldInfo, FlacConfig, HevcConfig, HevcNalArray,
     MasteringDisplay, OpusConfig, PcmConfig, SampleEntry, TimecodeConfig, VideoParams, VpcConfig, parse_asc,
 };
+pub use concat::{Joined, MAX_PARTS as MAX_JOINED_PARTS, concat};
 pub use demux::{Chapter, Edit, Metadata, Mp4File, Sample, SampleGroup, Track, TrackKind, open};
 pub use error::{Error, Result};
 pub use mux::{Brand, FragmentedWriter, MAX_CHAPTER_TITLE_BYTES, MAX_CHAPTERS, Mp4Writer, TrackConfig, WriteSample, WriterOptions, replace_chapters};

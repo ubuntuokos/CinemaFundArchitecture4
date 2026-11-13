@@ -2520,6 +2520,19 @@ export.summary	Low	alacsony
 	{count} segments placed on the timeline	{count} szegmens került az idővonalra
 	{count} subclips made from the segments	{count} alklip készült a szegmensekből
 	{count} segments written and verified	{count} szegmens kiírva és ellenőrizve
+	Join the segments into one file	A szegmensek összefűzése egy fájlba
+	Segment names as chapters	Szegmensnevek fejezetként
+	{count} segments joined into one file: {copied} frames copied, {reencoded} frames re-encoded	{count} szegmens egy fájlba fűzve: {copied} képkocka másolva, {reencoded} képkocka újrakódolva
+	{count} segments joined into {path} and verified	{count} szegmens összefűzve és ellenőrizve: {path}
+	These files already exist and will be replaced: {files}. Continue?	Ezek a fájlok már léteznek, és felülíródnak: {files}. Folytatod?
+	Sequence Markers	Szekvencia jelölői
+	Source Clip Segments	A forrásklip szegmensei
+	Comment…	Megjegyzés…
+	Comment:	Megjegyzés:
+	Remove Segment	Szegmens eltávolítása
+	Segment name:	Szegmens neve:
+	(no clip in the Source monitor)	(nincs klip a Forrásmonitorban)
+	No segments. Add a range marker in the Source monitor, or use Find Segments…	Nincs szegmens. Adj hozzá tartományjelölőt a Forrásmonitorban, vagy használd a Szegmensek keresése… parancsot.
 # Timeline GOP overlay (WP-08)
 	Show GOP Boundaries	GOP-határok megjelenítése
 # Export window Smart Export (WP-08)

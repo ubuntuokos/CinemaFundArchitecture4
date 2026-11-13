@@ -4561,3 +4561,56 @@ export.summary	Low	matala
 	Chase External Timecode	Seuraa ulkoista aikakoodia
 	Send LTC	Lähetä LTC
 	Send MIDI Timecode	Lähetä MIDI-aikakoodi
+# CFA4-LOSSLESS-MEDIA-TOOLS-001: segments, Find Segments, joined Smart Cut, frame export options
+	Find Segments	Etsi segmentit
+	Find Segments…	Etsi segmentit…
+	Comment…	Kommentti…
+	Comment:	Kommentti:
+	The analysis stopped.	Analyysi pysähtyi.
+	No segments. Add a range marker in the Source monitor, or use Find Segments…	Ei segmenttejä. Lisää aluemerkki lähdemonitorissa tai käytä Etsi segmentit… -toimintoa
+	Remove Segment	Poista segmentti
+	Black pictures	Mustat kuvat
+	{count} segments written and verified	{count} segmenttiä kirjoitettu ja tarkistettu
+	These files already exist and will be replaced: {files}. Continue?	Nämä tiedostot ovat jo olemassa ja ne korvataan: {files}. Jatketaanko?
+	{count} subclips made from the segments	{count} alaleikettä tehty segmenteistä
+	Segment	Segmentti
+	Silence	Hiljaisuus
+	Analyzing…	Analysoidaan…
+	Analyzing… {percent}%	Analysoidaan… {percent} %
+	Silence below (dBFS):	Hiljaisuus alle (dBFS):
+	To Timeline	Aikajanalle
+	Sequence Markers	Sekvenssin merkit
+	Join the segments into one file	Yhdistä segmentit yhdeksi tiedostoksi
+	{count} segments placed on the timeline	{count} segmenttiä sijoitettu aikajanalle
+	Shortest silence (s):	Lyhin hiljaisuus (s):
+	Segment {n}: {why}	Segmentti {n}: {why}
+	Source Clip Segments	Lähdeleikkeen segmentit
+	{count} segments found	{count} segmenttiä löytyi
+	{count} files: {copied} frames copied, {reencoded} frames re-encoded	{count} tiedostoa: {copied} kuvaa kopioitu, {reencoded} kuvaa koodattu uudelleen
+	This clip has no segments: add range markers in the Source monitor first.	Tällä leikkeellä ei ole segmenttejä: lisää ensin aluemerkkejä lähdemonitorissa.
+	Black level (%):	Mustan taso (%):
+	Quality:	Laatu:
+	Black share of the picture (%):	Mustan osuus kuvasta (%):
+	{count} segments added to the clip	{count} segmenttiä lisätty leikkeeseen
+	Last frame	Viimeinen kuva
+	First frame	Ensimmäinen kuva
+	Marked range	Merkitty alue
+	Original	Alkuperäinen
+	Segment names as chapters	Segmenttien nimet lukuina
+	Add as Segments	Lisää segmentteinä
+	The engine did not start the analysis.	Moottori ei käynnistänyt analyysia.
+	Range:	Alue:
+	(no clip in the Source monitor)	(ei leikettä lähdemonitorissa)
+	Segment name:	Segmentin nimi:
+	{count} segments joined into {path} and verified	{count} segmenttiä yhdistetty tiedostoon {path} ja tarkistettu
+	Shortest black (s):	Lyhin musta (s):
+	Segments (range markers)	Segmentit (aluemerkit)
+	(only the first ones are listed)	(vain ensimmäiset luetellaan)
+	Check at least one segment.	Valitse vähintään yksi segmentti.
+	Make Subclips	Tee alaleikkeet
+	Shortest shot (frames):	Lyhin otos (kuvaa):
+	Row {n}: the first and last frame must be whole numbers	Rivi {n}: ensimmäisen ja viimeisen kuvan on oltava kokonaislukuja
+	Size:	Koko:
+	{count} segments joined into one file: {copied} frames copied, {reencoded} frames re-encoded	{count} segmenttiä yhdistetty yhdeksi tiedostoksi: {copied} kuvaa kopioitu, {reencoded} kuvaa koodattu uudelleen
+	{name} ({frames} frames)	{name} ({frames} kuvaa)
+	Scene changes	Kohtausvaihdot

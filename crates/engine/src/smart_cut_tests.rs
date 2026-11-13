@@ -296,7 +296,7 @@ fn a_project_media_item_is_cut_on_its_marked_range() {
 
 /// [`source_mp4`] with an AAC track (stand-in packets of 1024 samples at 48 kHz, 2112 samples of
 /// priming hidden by its edit list) and a 16-bit mono PCM track, both as long as the video.
-fn av_mp4() -> Vec<u8> {
+pub(crate) fn av_mp4() -> Vec<u8> {
     use cfa4_isobmff::PcmConfig;
     let video = source_mp4();
     let v = cfa4_isobmff::open(video.as_slice()).unwrap();

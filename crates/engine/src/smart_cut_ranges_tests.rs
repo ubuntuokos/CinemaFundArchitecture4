@@ -3,7 +3,7 @@
 
 use serde_json::{Value, json};
 
-use crate::smart_cut_tests::{frame, session};
+use crate::smart_cut_tests::{av_mp4, frame, session};
 
 fn range(a: i64, b: i64) -> Value {
     json!({"in": frame(a), "out": frame(b)})
@@ -106,4 +106,96 @@ fn hostile_range_values_never_panic() {
             let _ = s.execute("export.start", p);
         }
     }
+}
+
+#[test]
+fn joined_ranges_are_one_verified_file_with_every_sample() {
+    let (mut s, files) = session();
+    files.0.lock().unwrap().insert("av.mp4".into(), av_mp4());
+    let p = json!({"path": "av.mp4", "output": "joined.mp4", "join": true, "segmentChapters": true, "ranges": [
+        {"in": frame(0), "out": frame(10), "name": "Eleje"},
+        {"in": frame(20), "out": frame(30)},
+    ]});
+    let plan = s.execute("export.plan", p.clone()).unwrap();
+    assert_eq!((plan["join"].clone(), plan["output"].clone()), (json!(true), json!("joined.mp4")));
+    let r = s.execute("export.start", p).unwrap();
+    assert_eq!(r["verified"], true, "{r}");
+    assert_eq!(r["ranges"].as_array().unwrap().len(), 2);
+    assert_eq!(r["ranges"][1]["start100ns"], 4_000_000, "{r}");
+    let out = cfa4_isobmff::open(files.0.lock().unwrap()["joined.mp4"].as_slice()).unwrap();
+    assert_eq!(out.tracks.len(), 3);
+    assert_eq!(out.tracks[0].samples.len(), 20, "both ranges' pictures");
+    assert_eq!(r["samples"][0], 20);
+    // the ranges' names (or numbers) are the chapters
+    let titles: Vec<(u64, &str)> = out.metadata.chapters.iter().map(|c| (c.start_100ns, c.title.as_str())).collect();
+    assert_eq!(titles, [(0, "Eleje"), (4_000_000, "2")]);
+    // nothing but the joined file was written
+    assert!(!files.0.lock().unwrap().keys().any(|k| k != "av.mp4" && k != "joined.mp4" && k != "clip.mp4"));
+}
+
+#[test]
+fn a_join_of_re_encoded_ranges_needs_the_confirmation_and_stays_verified() {
+    let (mut s, files) = session();
+    let p = json!({"path": "clip.mp4", "output": "j.mp4", "join": true, "mode": "frame-accurate", "ranges": [range(5, 15), range(25, 35)]});
+    let e = s.execute("export.start", p.clone()).unwrap_err().to_string();
+    assert!(e.contains("confirm") && e.contains("nothing was written"), "{e}");
+    let mut p = p;
+    p["confirm"] = json!(true);
+    match s.execute("export.start", p) {
+        Ok(r) => {
+            assert_eq!(r["verified"], true);
+            let out = cfa4_isobmff::open(files.0.lock().unwrap()["j.mp4"].as_slice()).unwrap();
+            assert_eq!(out.tracks[0].samples.len(), 20);
+        }
+        // re-encoded boundaries with other stream settings are refused, never joined
+        Err(e) => {
+            assert!(e.to_string().contains("stream settings") && e.to_string().contains("nothing was written"), "{e}");
+            assert!(!files.0.lock().unwrap().contains_key("j.mp4"));
+        }
+    }
+}
+
+#[test]
+fn bad_join_requests_are_refused_before_writing() {
+    let (mut s, files) = session();
+    for (p, why) in [
+        (json!({"path": "clip.mp4", "join": true, "ranges": [range(0, 10)]}), "needs the `output`"),
+        (json!({"path": "clip.mp4", "join": true, "output": "{n}.mp4", "ranges": [range(0, 10)]}), "not a pattern"),
+        (
+            json!({"path": "clip.mp4", "join": true, "output": "j.mp4", "ranges": [{"in": frame(0), "out": frame(10), "output": "x.mp4"}]}),
+            "no `output` of their own",
+        ),
+        (json!({"path": "clip.mp4", "join": "yes", "output": "j.mp4", "ranges": [range(0, 10)]}), "true or false"),
+        (json!({"path": "clip.mp4", "join": true, "segmentChapters": 1, "output": "j.mp4", "ranges": [range(0, 10)]}), "true or false"),
+        (json!({"path": "clip.mp4", "join": true, "output": "clip.mp4", "ranges": [range(0, 10)]}), "source"),
+    ] {
+        let e = s.execute("export.start", p).unwrap_err().to_string();
+        assert!(e.contains(why), "{why}: {e}");
+    }
+    assert_eq!(files.0.lock().unwrap().len(), 1, "nothing was written");
+}
+
+#[test]
+fn existing_output_files_are_replaced_only_when_asked() {
+    let (mut s, files) = session();
+    files.0.lock().unwrap().insert("2.mp4".into(), b"keep".to_vec());
+    files.0.lock().unwrap().insert("j.mp4".into(), b"keep".to_vec());
+    let batch = json!({"path": "clip.mp4", "output": "{n}.mp4", "ranges": [range(0, 10), range(20, 30)]});
+    let plan = s.execute("export.plan", batch.clone()).unwrap();
+    assert_eq!(plan["existing"], json!(["2.mp4"]));
+    let e = s.execute("export.start", batch.clone()).unwrap_err().to_string();
+    assert!(e.contains("2.mp4") && e.contains("overwrite") && e.contains("nothing was written"), "{e}");
+    assert!(!files.0.lock().unwrap().contains_key("1.mp4"));
+    assert_eq!(files.0.lock().unwrap()["2.mp4"], b"keep");
+    let joined = json!({"path": "clip.mp4", "output": "j.mp4", "join": true, "ranges": [range(0, 10)]});
+    assert_eq!(s.execute("export.plan", joined.clone()).unwrap()["existing"], json!(["j.mp4"]));
+    assert!(s.execute("export.start", joined.clone()).is_err());
+    let mut batch = batch;
+    batch["overwrite"] = json!(true);
+    s.execute("export.start", batch).unwrap();
+    assert_ne!(files.0.lock().unwrap()["2.mp4"], b"keep");
+    let mut joined = joined;
+    joined["overwrite"] = json!(true);
+    s.execute("export.start", joined).unwrap();
+    assert_ne!(files.0.lock().unwrap()["j.mp4"], b"keep");
 }

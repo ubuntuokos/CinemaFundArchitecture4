@@ -4553,3 +4553,56 @@
 	Chase External Timecode	외부 타임코드 체이스
 	Send LTC	LTC 보내기
 	Send MIDI Timecode	MIDI 타임코드 보내기
+# CFA4-LOSSLESS-MEDIA-TOOLS-001: segments, Find Segments, joined Smart Cut, frame export options
+	Find Segments	세그먼트 찾기
+	Find Segments…	세그먼트 찾기…
+	Comment…	주석…
+	Comment:	주석:
+	The analysis stopped.	분석이 중지되었습니다.
+	No segments. Add a range marker in the Source monitor, or use Find Segments…	세그먼트가 없습니다. 소스 모니터에서 범위 마커를 추가하거나 세그먼트 찾기…를 사용하세요
+	Remove Segment	세그먼트 제거
+	Black pictures	검은 화면
+	{count} segments written and verified	세그먼트 {count}개를 쓰고 검증했습니다
+	These files already exist and will be replaced: {files}. Continue?	다음 파일이 이미 있으며 바뀝니다: {files}. 계속할까요?
+	{count} subclips made from the segments	세그먼트로 하위 클립 {count}개를 만들었습니다
+	Segment	세그먼트
+	Silence	무음
+	Analyzing…	분석 중…
+	Analyzing… {percent}%	분석 중… {percent}%
+	Silence below (dBFS):	무음 기준 (dBFS):
+	To Timeline	타임라인으로
+	Sequence Markers	시퀀스 마커
+	Join the segments into one file	세그먼트를 하나의 파일로 합치기
+	{count} segments placed on the timeline	세그먼트 {count}개를 타임라인에 배치했습니다
+	Shortest silence (s):	가장 짧은 무음 (초):
+	Segment {n}: {why}	세그먼트 {n}: {why}
+	Source Clip Segments	소스 클립의 세그먼트
+	{count} segments found	세그먼트 {count}개를 찾았습니다
+	{count} files: {copied} frames copied, {reencoded} frames re-encoded	파일 {count}개: 프레임 {copied}개 복사, 프레임 {reencoded}개 재인코딩
+	This clip has no segments: add range markers in the Source monitor first.	이 클립에는 세그먼트가 없습니다. 먼저 소스 모니터에서 범위 마커를 추가하세요.
+	Black level (%):	검정 레벨 (%):
+	Quality:	품질:
+	Black share of the picture (%):	화면에서 검정이 차지하는 비율 (%):
+	{count} segments added to the clip	클립에 세그먼트 {count}개를 추가했습니다
+	Last frame	마지막 프레임
+	First frame	첫 프레임
+	Marked range	표시한 범위
+	Original	원본
+	Segment names as chapters	세그먼트 이름을 챕터로
+	Add as Segments	세그먼트로 추가
+	The engine did not start the analysis.	엔진이 분석을 시작하지 않았습니다.
+	Range:	범위:
+	(no clip in the Source monitor)	(소스 모니터에 클립이 없음)
+	Segment name:	세그먼트 이름:
+	{count} segments joined into {path} and verified	세그먼트 {count}개를 {path}(으)로 합치고 검증했습니다
+	Shortest black (s):	가장 짧은 검정 (초):
+	Segments (range markers)	세그먼트 (범위 마커)
+	(only the first ones are listed)	(처음 몇 개만 표시됨)
+	Check at least one segment.	세그먼트를 하나 이상 선택하세요.
+	Make Subclips	하위 클립 만들기
+	Shortest shot (frames):	가장 짧은 샷 (프레임):
+	Row {n}: the first and last frame must be whole numbers	{n}행: 첫 프레임과 마지막 프레임은 정수여야 합니다
+	Size:	크기:
+	{count} segments joined into one file: {copied} frames copied, {reencoded} frames re-encoded	세그먼트 {count}개를 하나의 파일로 합침: 프레임 {copied}개 복사, 프레임 {reencoded}개 재인코딩
+	{name} ({frames} frames)	{name} (프레임 {frames}개)
+	Scene changes	장면 전환
