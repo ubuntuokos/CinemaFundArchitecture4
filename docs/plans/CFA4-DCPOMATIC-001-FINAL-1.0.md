@@ -2,7 +2,7 @@
 
 **Dátum:** 2026-11-13  
 **Státusz:** **végleges, a tulajdonos által jóváhagyva (2026-11-13).** A projektszálban a jóváhagyó kérdés így szólt: „Jóváhagyod a tervet, a nyitott pontokban (D0, D1, D5, D7, D10) a javaslataimmal?” A válasz: „Igen, jóváhagyom”.  
-**Dokumentumazonosító:** CFA4-DCPOMATIC-001 · **Verzió:** 1.0 (végleges)  
+**Dokumentumazonosító:** CFA4-DCPOMATIC-001 · **Verzió:** 1.0 (végleges), 2026-11-13-i tulajdonosi kiegészítéssel (2. fázis elfogadása)  
 **Kapcsolódik:** [ADR 0011](../adr/ADR-0011-dcpomatic-external-mastering.md) (a bekötés módjáról; a 2. pontját, „a felhasználó telepíti”, e terv D2/D9 döntése váltja ki, az ADR-t az 1. fázis PR-je igazítja hozzá), [DCP-00 audit](../audit/DCP-00-CAPABILITY-AUDIT-2026-10-27.md), [DCP-VALIDATION](DCP-VALIDATION-2026-10-27.md), a `cfa4-dcp-inspect` minta
 
 > **Előzmény, őszintén.** A tulajdonos 2026-11-13-án ennyit kért: „A DCP-o-matic beépítése a CFA4-be”. Terv és jóváhagyás nélkül elkészült egy megvalósítás (PR #1173, piszkozat). Ez a CLAUDE.md 3. pontjával ellentétes. A D0 döntés szerint a PR piszkozat marad, és fázisonként ehhez a tervhez igazítjuk. A PR-ben lévő kódot ez a terv nem tekinti késznek, mert valódi DCP-o-matic-kal még nem futott (lásd 1. fázis).
@@ -75,7 +75,7 @@ Ez a fázis kódot nem ír a termékbe.
 
 **Tesztek:** hamis eszközökkel (shell-szkriptekkel) az argumentumok, a környezet, a haladás, a hibák, a megszakítás és az időtúllépés. A D10 CI-jobban valódi DCP-o-matic-kal is: mester → DCP → `cfa4-dcp-validate` hiba nélkül.
 
-**Elfogadás:** a CFA4 csak a saját mappájában lévő példányt találja meg, a PATH-on lévő vagy a felhasználó által telepített DCP-o-maticot nem (fejlesztéshez egy környezeti változó adhat meg buildmappát). Ha a példány hiányzik vagy sérült, a CFA4 többi része változatlanul működik, a `status` „nem elérhető”. Vele a CI-ben készült DCP átmegy a CFA4 ellenőrzésén SMPTE és Interop szerint is.
+**Elfogadás:** a CFA4 csak a saját mappájában lévő példányt találja meg, a PATH-on lévő vagy a felhasználó által telepített DCP-o-maticot nem (fejlesztéshez egy környezeti változó adhat meg buildmappát). Ha a példány hiányzik vagy sérült, a CFA4 többi része változatlanul működik, a `status` „nem elérhető”. Vele a CI-ben készült DCP átmegy a CFA4 ellenőrzésének `full-integrity` profilján SMPTE és Interop szerint is. *[A tulajdonos döntése, 2026-11-13, a DCPOM-01 audit után:]* a mozis profilok (`smpte-cinema`, `interop-cinema`) akkor kerülnek a feltételbe, ha a DCP-validáció projektje eldöntötte a két eltérést: az Interop asset map elemsorrendjét és a J2K MCT-t ([DCPOM-01](../audit/DCPOM-01-DCPOMATIC-SURVEY-2026-11-13.md) §3).
 
 ### 3. fázis – Titkosítás, KDM és feliratok (DCPOM-3)
 
