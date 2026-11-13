@@ -138,6 +138,7 @@ static ROWS: &[Row] = &[
     audio("AMR-NB / AMR-WB", &["amr"], Ported, Sw(""), NoEnc),
     audio("Speex", &["speex"], Ported, Sw("Ogg Speex"), NoEnc),
     audio("TTA (True Audio)", &["tta"], Ported, Sw(""), NoEnc),
+    audio("G.729 / G.729 Annex B", &["g729"], Ported, Sw(""), NoEnc),
     audio("ADPCM, G.711, G.722", &["adpcm"], Own, Sw(""), NoEnc),
     audio("IAB (SMPTE ST 2098-2)", &["iab"], Own, Sw("decode and render"), AudioTrack("IAB track in DCP exports")),
     audio("Auro-3D", &["auro"], Ported, Sw("side channel in 24-bit PCM"), NoEnc),

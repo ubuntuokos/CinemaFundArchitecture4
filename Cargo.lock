@@ -1193,6 +1193,7 @@ dependencies = [
  "cfa4-dv",
  "cfa4-ffv1",
  "cfa4-frame",
+ "cfa4-g729",
  "cfa4-h264",
  "cfa4-hap",
  "cfa4-hevc",
@@ -1517,6 +1518,14 @@ dependencies = [
  "rayon",
  "serde",
  "serde_json",
+]
+
+[[package]]
+name = "cfa4-g729"
+version = "0.10.0"
+dependencies = [
+ "cfa4-testkit",
+ "thiserror 2.0.21",
 ]
 
 [[package]]
