@@ -1926,6 +1926,14 @@ dependencies = [
 ]
 
 [[package]]
+name = "cfa4-st2110"
+version = "0.10.0"
+dependencies = [
+ "cfa4-testkit",
+ "thiserror 2.0.21",
+]
+
+[[package]]
 name = "cfa4-tcsync"
 version = "0.10.0"
 dependencies = [

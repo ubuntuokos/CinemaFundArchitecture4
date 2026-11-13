@@ -36,6 +36,7 @@ const LAYERS: &[(&str, u8)] = &[
     ("mxf", 0),
     ("cfb", 0),
     ("mpegts", 0),
+    ("st2110", 0),
     ("mpeg2v", 0),
     ("dv", 0),
     ("lcevc", 0),
