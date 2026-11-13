@@ -4509,3 +4509,35 @@
 	The keys stay in memory only, until Forget DCP Keys or the end of the session.	Ключі зберігаються лише в пам’яті, до команди «Забути ключі DCP» або кінця сеансу.
 	DCP keys forgotten	Ключі DCP забуто
 	Choose the KDM file and the private key.	Виберіть файл KDM і закритий ключ.
+
+# Settings ▸ Timecode Sync (TC-4)
+	Timecode Sync	Синхронізація тайм-коду
+	TimecodeSync	Синхронізація тайм-коду
+	Chase	Стеження
+	Follow external timecode during playback	Стежити за зовнішнім тайм-кодом під час відтворення
+	Lock after	Захоплення після
+	Keep playing without signal for	Продовжувати без сигналу протягом
+	External frame rate	Зовнішня частота кадрів
+	Offset (added to the external timecode)	Зсув (додається до зовнішнього тайм-коду)
+	LTC	LTC
+	LTC input device	Пристрій введення LTC
+	LTC input channel	Вхідний канал LTC
+	Send LTC during playback	Надсилати LTC під час відтворення
+	LTC output device	Пристрій виведення LTC
+	LTC output channel	Вихідний канал LTC
+	LTC level	Рівень LTC
+	dBFS	dBFS
+	MIDI Timecode	MIDI тайм-код
+	MTC input port (empty = CFA4 port)	Вхідний порт MTC (порожньо = порт CFA4)
+	Send MIDI Timecode during playback	Надсилати MIDI тайм-код під час відтворення
+	MTC output port (empty = CFA4 port)	Вихідний порт MTC (порожньо = порт CFA4)
+	Send timecode ahead of the picture by	Випередження тайм-коду відносно зображення
+	LTC (audio input)	LTC (аудіовхід)
+	MIDI Timecode (MIDI input)	MIDI тайм-код (вхід MIDI)
+	Same as the sequence	Як у послідовності
+	29.97 fps drop-frame	29,97 кадр/с drop-frame
+	29.97 fps non-drop	29,97 кадр/с non-drop
+	Timecode Sync Status	Стан синхронізації тайм-коду
+	Chase External Timecode	Стежити за зовнішнім тайм-кодом
+	Send LTC	Надсилати LTC
+	Send MIDI Timecode	Надсилати MIDI тайм-код

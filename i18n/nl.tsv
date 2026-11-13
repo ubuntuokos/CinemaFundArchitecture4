@@ -4524,3 +4524,35 @@ export.summary	Low	laag
 	The keys stay in memory only, until Forget DCP Keys or the end of the session.	De sleutels blijven alleen in het geheugen, tot DCP-sleutels vergeten of het einde van de sessie.
 	DCP keys forgotten	DCP-sleutels vergeten
 	Choose the KDM file and the private key.	Kies het KDM-bestand en de privésleutel.
+
+# Settings ▸ Timecode Sync (TC-4)
+	Timecode Sync	Timecodesynchronisatie
+	TimecodeSync	Timecodesynchronisatie
+	Chase	Volgen
+	Follow external timecode during playback	Externe timecode volgen tijdens afspelen
+	Lock after	Vergrendelen na
+	Keep playing without signal for	Doorspelen zonder signaal gedurende
+	External frame rate	Externe framesnelheid
+	Offset (added to the external timecode)	Verschuiving (opgeteld bij de externe timecode)
+	LTC	LTC
+	LTC input device	LTC-invoerapparaat
+	LTC input channel	LTC-invoerkanaal
+	Send LTC during playback	LTC verzenden tijdens afspelen
+	LTC output device	LTC-uitvoerapparaat
+	LTC output channel	LTC-uitvoerkanaal
+	LTC level	LTC-niveau
+	dBFS	dBFS
+	MIDI Timecode	MIDI-timecode
+	MTC input port (empty = CFA4 port)	MTC-invoerpoort (leeg = CFA4-poort)
+	Send MIDI Timecode during playback	MIDI-timecode verzenden tijdens afspelen
+	MTC output port (empty = CFA4 port)	MTC-uitvoerpoort (leeg = CFA4-poort)
+	Send timecode ahead of the picture by	Timecode vóór het beeld verzenden met
+	LTC (audio input)	LTC (audio-invoer)
+	MIDI Timecode (MIDI input)	MIDI-timecode (MIDI-invoer)
+	Same as the sequence	Zelfde als de reeks
+	29.97 fps drop-frame	29,97 fps drop-frame
+	29.97 fps non-drop	29,97 fps non-drop
+	Timecode Sync Status	Status timecodesynchronisatie
+	Chase External Timecode	Externe timecode volgen
+	Send LTC	LTC verzenden
+	Send MIDI Timecode	MIDI-timecode verzenden

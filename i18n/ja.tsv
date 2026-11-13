@@ -4533,3 +4533,35 @@
 	The keys stay in memory only, until Forget DCP Keys or the end of the session.	キーはメモリ上にのみ保持され、「DCP キーを破棄」またはセッション終了まで残ります。
 	DCP keys forgotten	DCP キーを破棄しました
 	Choose the KDM file and the private key.	KDM ファイルと秘密鍵を選択してください。
+
+# Settings ▸ Timecode Sync (TC-4)
+	Timecode Sync	タイムコード同期
+	TimecodeSync	タイムコード同期
+	Chase	チェイス
+	Follow external timecode during playback	再生中に外部タイムコードに追従
+	Lock after	ロックまでのフレーム数
+	Keep playing without signal for	信号なしで再生を続ける長さ
+	External frame rate	外部フレームレート
+	Offset (added to the external timecode)	オフセット（外部タイムコードに加算）
+	LTC	LTC
+	LTC input device	LTC 入力デバイス
+	LTC input channel	LTC 入力チャンネル
+	Send LTC during playback	再生中に LTC を送信
+	LTC output device	LTC 出力デバイス
+	LTC output channel	LTC 出力チャンネル
+	LTC level	LTC レベル
+	dBFS	dBFS
+	MIDI Timecode	MIDI タイムコード
+	MTC input port (empty = CFA4 port)	MTC 入力ポート（空 = CFA4 のポート）
+	Send MIDI Timecode during playback	再生中に MIDI タイムコードを送信
+	MTC output port (empty = CFA4 port)	MTC 出力ポート（空 = CFA4 のポート）
+	Send timecode ahead of the picture by	タイムコードを映像より先に送る時間
+	LTC (audio input)	LTC（オーディオ入力）
+	MIDI Timecode (MIDI input)	MIDI タイムコード（MIDI 入力）
+	Same as the sequence	シーケンスと同じ
+	29.97 fps drop-frame	29.97 fps ドロップフレーム
+	29.97 fps non-drop	29.97 fps ノンドロップ
+	Timecode Sync Status	タイムコード同期の状態
+	Chase External Timecode	外部タイムコードにチェイス
+	Send LTC	LTC を送信
+	Send MIDI Timecode	MIDI タイムコードを送信

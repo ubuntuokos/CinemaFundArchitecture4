@@ -4526,3 +4526,35 @@ export.summary	Low	matala
 	The keys stay in memory only, until Forget DCP Keys or the end of the session.	Avaimet ovat vain muistissa, kunnes valitaan Unohda DCP-avaimet tai istunto päättyy.
 	DCP keys forgotten	DCP-avaimet unohdettu
 	Choose the KDM file and the private key.	Valitse KDM-tiedosto ja yksityinen avain.
+
+# Settings ▸ Timecode Sync (TC-4)
+	Timecode Sync	Aikakoodin synkronointi
+	TimecodeSync	Aikakoodin synkronointi
+	Chase	Seuranta
+	Follow external timecode during playback	Seuraa ulkoista aikakoodia toiston aikana
+	Lock after	Lukitse kun kulunut
+	Keep playing without signal for	Jatka toistoa ilman signaalia
+	External frame rate	Ulkoinen kuvataajuus
+	Offset (added to the external timecode)	Siirtymä (lisätään ulkoiseen aikakoodiin)
+	LTC	LTC
+	LTC input device	LTC-tulolaite
+	LTC input channel	LTC-tulokanava
+	Send LTC during playback	Lähetä LTC toiston aikana
+	LTC output device	LTC-lähtölaite
+	LTC output channel	LTC-lähtökanava
+	LTC level	LTC-taso
+	dBFS	dBFS
+	MIDI Timecode	MIDI-aikakoodi
+	MTC input port (empty = CFA4 port)	MTC-tuloportti (tyhjä = CFA4:n portti)
+	Send MIDI Timecode during playback	Lähetä MIDI-aikakoodi toiston aikana
+	MTC output port (empty = CFA4 port)	MTC-lähtöportti (tyhjä = CFA4:n portti)
+	Send timecode ahead of the picture by	Lähetä aikakoodi kuvaa edellä
+	LTC (audio input)	LTC (äänitulo)
+	MIDI Timecode (MIDI input)	MIDI-aikakoodi (MIDI-tulo)
+	Same as the sequence	Sama kuin sekvenssissä
+	29.97 fps drop-frame	29,97 fps drop-frame
+	29.97 fps non-drop	29,97 fps non-drop
+	Timecode Sync Status	Aikakoodin synkronoinnin tila
+	Chase External Timecode	Seuraa ulkoista aikakoodia
+	Send LTC	Lähetä LTC
+	Send MIDI Timecode	Lähetä MIDI-aikakoodi

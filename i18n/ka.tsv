@@ -4527,3 +4527,35 @@ export.summary	Low	დაბალი
 	The keys stay in memory only, until Forget DCP Keys or the end of the session.	გასაღებები მხოლოდ მეხსიერებაში რჩება, DCP გასაღებების დავიწყებამდე ან სესიის დასრულებამდე.
 	DCP keys forgotten	DCP გასაღებები დავიწყებულია
 	Choose the KDM file and the private key.	აირჩიეთ KDM ფაილი და პირადი გასაღები.
+
+# Settings ▸ Timecode Sync (TC-4)
+	Timecode Sync	დროის კოდის სინქრონიზაცია
+	TimecodeSync	დროის კოდის სინქრონიზაცია
+	Chase	მიყოლა
+	Follow external timecode during playback	გარე დროის კოდისთვის მიყოლა დაკვრისას
+	Lock after	ჩაკეტვა შემდეგ
+	Keep playing without signal for	სიგნალის გარეშე დაკვრის გაგრძელება
+	External frame rate	გარე კადრების სიხშირე
+	Offset (added to the external timecode)	წანაცვლება (ემატება გარე დროის კოდს)
+	LTC	LTC
+	LTC input device	LTC შეტანის მოწყობილობა
+	LTC input channel	LTC შეტანის არხი
+	Send LTC during playback	LTC-ის გაგზავნა დაკვრისას
+	LTC output device	LTC გამოტანის მოწყობილობა
+	LTC output channel	LTC გამოტანის არხი
+	LTC level	LTC-ის დონე
+	dBFS	dBFS
+	MIDI Timecode	MIDI დროის კოდი
+	MTC input port (empty = CFA4 port)	MTC შეტანის პორტი (ცარიელი = CFA4-ის პორტი)
+	Send MIDI Timecode during playback	MIDI დროის კოდის გაგზავნა დაკვრისას
+	MTC output port (empty = CFA4 port)	MTC გამოტანის პორტი (ცარიელი = CFA4-ის პორტი)
+	Send timecode ahead of the picture by	დროის კოდის გაგზავნა გამოსახულებაზე ადრე
+	LTC (audio input)	LTC (აუდიო შეტანა)
+	MIDI Timecode (MIDI input)	MIDI დროის კოდი (MIDI შეტანა)
+	Same as the sequence	იგივე, რაც მიმდევრობაში
+	29.97 fps drop-frame	29,97 fps drop-frame
+	29.97 fps non-drop	29,97 fps non-drop
+	Timecode Sync Status	დროის კოდის სინქრონიზაციის მდგომარეობა
+	Chase External Timecode	გარე დროის კოდისთვის მიყოლა
+	Send LTC	LTC-ის გაგზავნა
+	Send MIDI Timecode	MIDI დროის კოდის გაგზავნა

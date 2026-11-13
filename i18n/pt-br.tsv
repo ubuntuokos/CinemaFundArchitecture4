@@ -4534,3 +4534,35 @@
 	The keys stay in memory only, until Forget DCP Keys or the end of the session.	As chaves ficam apenas na memória, até Esquecer chaves DCP ou o fim da sessão.
 	DCP keys forgotten	Chaves DCP esquecidas
 	Choose the KDM file and the private key.	Escolha o arquivo KDM e a chave privada.
+
+# Settings ▸ Timecode Sync (TC-4)
+	Timecode Sync	Sincronização de timecode
+	TimecodeSync	Sincronização de timecode
+	Chase	Seguir
+	Follow external timecode during playback	Seguir o timecode externo durante a reprodução
+	Lock after	Travar após
+	Keep playing without signal for	Continuar sem sinal por
+	External frame rate	Taxa de quadros externa
+	Offset (added to the external timecode)	Deslocamento (somado ao timecode externo)
+	LTC	LTC
+	LTC input device	Dispositivo de entrada LTC
+	LTC input channel	Canal de entrada LTC
+	Send LTC during playback	Enviar LTC durante a reprodução
+	LTC output device	Dispositivo de saída LTC
+	LTC output channel	Canal de saída LTC
+	LTC level	Nível do LTC
+	dBFS	dBFS
+	MIDI Timecode	Timecode MIDI
+	MTC input port (empty = CFA4 port)	Porta de entrada MTC (vazio = porta do CFA4)
+	Send MIDI Timecode during playback	Enviar timecode MIDI durante a reprodução
+	MTC output port (empty = CFA4 port)	Porta de saída MTC (vazio = porta do CFA4)
+	Send timecode ahead of the picture by	Enviar o timecode antes da imagem em
+	LTC (audio input)	LTC (entrada de áudio)
+	MIDI Timecode (MIDI input)	Timecode MIDI (entrada MIDI)
+	Same as the sequence	Igual à sequência
+	29.97 fps drop-frame	29,97 fps drop-frame
+	29.97 fps non-drop	29,97 fps non-drop
+	Timecode Sync Status	Status da sincronização de timecode
+	Chase External Timecode	Seguir timecode externo
+	Send LTC	Enviar LTC
+	Send MIDI Timecode	Enviar timecode MIDI

@@ -1379,6 +1379,7 @@ dependencies = [
  "cfa4-scopes",
  "cfa4-smart-edit",
  "cfa4-speech",
+ "cfa4-tcsync",
  "cfa4-testkit",
  "cfa4-text",
  "cfa4-time",

@@ -4527,3 +4527,35 @@ export.summary	Low	nizka
 	The keys stay in memory only, until Forget DCP Keys or the end of the session.	Ključi ostanejo samo v pomnilniku, do ukaza Pozabi ključe DCP ali konca seje.
 	DCP keys forgotten	Ključi DCP pozabljeni
 	Choose the KDM file and the private key.	Izberite datoteko KDM in zasebni ključ.
+
+# Settings ▸ Timecode Sync (TC-4)
+	Timecode Sync	Sinhronizacija časovne kode
+	TimecodeSync	Sinhronizacija časovne kode
+	Chase	Sledenje
+	Follow external timecode during playback	Med predvajanjem sledi zunanji časovni kodi
+	Lock after	Zakleni po
+	Keep playing without signal for	Brez signala predvajaj še
+	External frame rate	Zunanja hitrost sličic
+	Offset (added to the external timecode)	Zamik (prišteje se zunanji časovni kodi)
+	LTC	LTC
+	LTC input device	Vhodna naprava LTC
+	LTC input channel	Vhodni kanal LTC
+	Send LTC during playback	Med predvajanjem pošiljaj LTC
+	LTC output device	Izhodna naprava LTC
+	LTC output channel	Izhodni kanal LTC
+	LTC level	Raven LTC
+	dBFS	dBFS
+	MIDI Timecode	Časovna koda MIDI
+	MTC input port (empty = CFA4 port)	Vhodna vrata MTC (prazno = vrata CFA4)
+	Send MIDI Timecode during playback	Med predvajanjem pošiljaj časovno kodo MIDI
+	MTC output port (empty = CFA4 port)	Izhodna vrata MTC (prazno = vrata CFA4)
+	Send timecode ahead of the picture by	Pošlji časovno kodo pred sliko za
+	LTC (audio input)	LTC (zvočni vhod)
+	MIDI Timecode (MIDI input)	Časovna koda MIDI (vhod MIDI)
+	Same as the sequence	Enako kot zaporedje
+	29.97 fps drop-frame	29,97 fps drop-frame
+	29.97 fps non-drop	29,97 fps non-drop
+	Timecode Sync Status	Stanje sinhronizacije časovne kode
+	Chase External Timecode	Sledi zunanji časovni kodi
+	Send LTC	Pošlji LTC
+	Send MIDI Timecode	Pošlji časovno kodo MIDI
