@@ -45,7 +45,7 @@ fidelity and the remaining work.
 | MPEG-2 / MPEG-1 | video | `crates/mpeg2v` | own | yes: 4:2:2, interlaced | yes: MPEG-2 |
 | Motion JPEG | video | — | dependency | yes | yes: QuickTime (Motion JPEG) |
 | JPEG 2000 | video | `crates/j2k` | ported | yes: Part 1 and HTJ2K; DCP and IMF App 2E packages | yes: DCP (Digital Cinema Package) |
-| SMPTE VC-2 (Dirac) | video | `crates/dirac` | ported | yes: ST 2042-1 | no |
+| SMPTE VC-2, Dirac | video | `crates/dirac` | ported | yes: VC-2 (ST 2042-1) and the Dirac core syntax | no |
 | FFV1 | video | `crates/ffv1` | own | yes: versions 0, 1, 3, 8-16 bit | no |
 | Hap | video | `crates/hap` | own | yes | no |
 | Huffyuv | video | `crates/huffyuv` | own | yes | no |
@@ -75,6 +75,7 @@ fidelity and the remaining work.
 | TTA (True Audio) | audio | `crates/tta` | ported | yes | no |
 | G.729 / G.729 Annex B | audio | `crates/g729` | ported | yes | no |
 | iLBC | audio | `crates/ilbc` | ported | yes | no |
+| Musepack SV7 / SV8 | audio | `crates/musepack` | ported | yes | no |
 | ADPCM, G.711, G.722 | audio | `crates/adpcm` | own | yes | no |
 | IAB (SMPTE ST 2098-2) | audio | `crates/iab` | own | yes: decode and render | yes: IAB track in DCP exports |
 | Auro-3D | audio | `crates/auro` | ported | yes: side channel in 24-bit PCM | no |
