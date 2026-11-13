@@ -29,6 +29,9 @@ const IMPLEMENTED: &[&str] = &[
     CPL_DURATIONS,
     CPL_REEL_SYNC,
     STD_CONSISTENT,
+    MXF_TRACK_FILES,
+    J2K_CODESTREAM,
+    PIC_FORMAT,
     MARK_MARKERS,
 ];
 
@@ -159,6 +162,9 @@ impl Run<'_> {
             CPL_DURATIONS,
             CPL_REEL_SYNC,
             STD_CONSISTENT,
+            MXF_TRACK_FILES,
+            J2K_CODESTREAM,
+            PIC_FORMAT,
             MARK_MARKERS,
         ];
         self.control.report("discover", 0, 1);
@@ -227,6 +233,30 @@ impl Run<'_> {
         }
         let Some((pkls, cpls)) = self.documents(&am, &files) else { return };
         self.integrity(&am, &files, &pkls, &cpls);
+        if self.control.is_cancelled() {
+            return;
+        }
+        self.media(&files, &cpls);
+    }
+
+    /// DCP-06: the track files and picture codestreams. Only a profile with one of its rules reads
+    /// the track files, and only one with `DCP.J2K.001` reads every frame.
+    fn media(&mut self, files: &Files, cpls: &[(String, Composition)]) {
+        let profile = &self.request.profile;
+        if ![MXF_TRACK_FILES, J2K_CODESTREAM, PIC_FORMAT].iter().any(|r| profile.contains(r)) {
+            return;
+        }
+        let Some(m) = crate::media::check(cpls, files, profile.contains(J2K_CODESTREAM), self.control) else { return };
+        if cpls.is_empty() {
+            for r in [MXF_TRACK_FILES, J2K_CODESTREAM, PIC_FORMAT] {
+                self.findings.push(Finding::new(r, Status::Unchecked, "no composition playlist was read"));
+            }
+        }
+        self.rule(MXF_TRACK_FILES, m.mxf);
+        if let Some(j) = m.j2k {
+            self.rule(J2K_CODESTREAM, j);
+        }
+        self.rule(PIC_FORMAT, m.pic);
     }
 
     /// Records a pure rule's result: its findings, and its pass message when it has none.
