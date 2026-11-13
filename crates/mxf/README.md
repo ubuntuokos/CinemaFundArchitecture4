@@ -273,7 +273,11 @@ w.finish()?;
   elementary stream (ST 381-1: container `02 04 60`, element types 0x05 / 0x06, the MPEG video
   descriptor with SingleSequence, ConstantBframes, CodedContentType, LowDelay, ClosedGOP,
   IdenticalGOP, MaxGOP, BPictureCount, ProfileAndLevel and BitRate under dynamic tags, the RDD 9
-  Table 6 coding labels for MP@HL / MP@H-14 / 422P@HL long GOP; random access entries flagged
+  Table 6 coding labels for MP@HL / MP@H-14 / 422P@HL long GOP, and RDD 9's annex picture
+  values: whole-macroblock stored height (1088), the ST 274 / ST 296 signal standard and video
+  line map (42 or 26); `PictureDesc::field_dominance` writes interlaced pictures as separate
+  fields (544 stored, 540 sampled lines, line map 21 / 584, the field dominance, CodedContentType
+  interlaced); random access entries flagged
   with their sequence header, P and B entries with the naive prediction flags of ST 381-1 A.2;
   without `rdd9` no SDTI-CP system item or AES3 elements; with `WriterConfig::rdd9` the strict
   RDD 9 layout: per content package the ST 385 system item (bitmap 5Ch, the time code as the user
@@ -288,7 +292,8 @@ w.finish()?;
   compatible content package per frame: the ST 385 system item with the time code of the frame,
   the picture element padded to the SMPTE 356 frame size, one 8-channel AES3 element of ST 331
   (1920 samples, or 1601 / 1602 with the 5-sequence count), each item filled to the 512-byte KAG;
-  a constant-size index with three delta entries; CDCI descriptor with separate fields, the
+  a constant-size index with three delta entries; CDCI descriptor with separate fields (field 1
+  first unless `field_dominance` says 2), the
   vertical interval and BT.601 labels, generic sound descriptor of 4 or 8 channels), Broadcast
   Wave PCM (ST 382: container `02 06 01/02`, element types 0x01 / 0x02).
 - `write_opatom_pcm(&OpAtomPcm, &[i32])` builds a complete in-memory OP-Atom PCM file (AAF media

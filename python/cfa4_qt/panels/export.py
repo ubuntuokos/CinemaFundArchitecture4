@@ -1054,7 +1054,9 @@ class ExportDialog(QDialog):
         mxf_codec = self._choice("mxfVideoCodec")
         video = encoder_format(fmt, mxf_codec) == "mpeg2" and not (fmt in MXF_FORMATS and mxf_codec == "d10")
         self.container.setEnabled(fmt == "mpeg2")
-        self.rows.allow_interlaced(fmt == "mpeg2")  # only MPEG-2 export codes interlaced video (egui's Field Order)
+        # only MPEG-2 export codes interlaced video (egui's Field Order): MPEG-2 files and MPEG-2,
+        # XDCAM HD422 (1080i) or D-10 in MXF (#949)
+        self.rows.allow_interlaced(encoder_format(fmt, mxf_codec) == "mpeg2")
         for w in (self.gop, self.b_frames, self.quantizer):
             w.setEnabled(video)
         self.chroma.setEnabled(video and not (fmt in MXF_FORMATS and mxf_codec == "xdcamHd422"))
