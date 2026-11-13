@@ -12,7 +12,7 @@ license = { text = "GPL-3.0-or-later" }
 dependencies = []
 
 [project.optional-dependencies]
-dev = ["pytest>=8,<10", "ruff>=0.9,<1"]
+dev = ["pytest>=8,<10", "ruff>=0.9,<1", "mypy>=1.13"]
 qt = ["PySide6>=6.10,<7"]
 # Test oracle only (Apache-2.0): never imported by the product or shipped in packages.
 # docs/plans/OTIO-INTEGRATION-2026-10-24.md, OTIO-1.1.
@@ -30,6 +30,38 @@ include = ["cfa4_devtools*", "cfa4_qt*"]
 [tool.ruff]
 target-version = "py312"
 line-length = 120
+
+[tool.ruff.lint]
+select = [
+    "E",    # pycodestyle
+    "F",    # pyflakes
+    "UP",   # pyupgrade: outdated Python syntax
+    "B",    # flake8-bugbear: common bugs and outdated patterns
+    "TID",  # flake8-tidy-imports: banned modules
+    "YTT",  # flake8-2020: outdated version checks
+]
+ignore = [
+    "E501",   # line length is the formatter's job (`ruff format`, report-only in cfa4-gate until the
+              # remaining files are formatted); not enforced separately to avoid a mass reflow
+    "E402",   # Qt tests set QT_QPA_PLATFORM / skip markers before importing PySide6
+    "E731",   # existing lambda assignments in the Qt panels
+    "TID252", # relative imports inside the cfa4_qt / cfa4_devtools packages are the project style
+]
+
+[tool.ruff.lint.flake8-tidy-imports.banned-api]
+# CFA4's Qt binding is PySide6 (Qt 6) only.
+"PyQt5".msg = "Use PySide6 (Qt 6); PyQt5 is not allowed in CFA4."
+"PyQt6".msg = "Use PySide6 (Qt 6); PyQt6 is not allowed in CFA4."
+"PySide2".msg = "Use PySide6 (Qt 6); PySide2 is Qt 5."
+"PySide6.QtWidgets.QDesktopWidget".msg = "Qt 5 class removed in Qt 6; use QScreen."
+
+[tool.mypy]
+# Target configuration only: not a CI gate yet (strict mode reports ~3500 findings in python/ today).
+python_version = "3.12"
+strict = true
+warn_unused_ignores = true
+warn_redundant_casts = true
+disallow_untyped_defs = true
 
 [tool.pytest.ini_options]
 testpaths = ["python/tests"]
