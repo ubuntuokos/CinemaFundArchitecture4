@@ -94,7 +94,8 @@ Gazdát csak a tulajdonos jelölhet ki vagy válthat le. Fejlesztő munkamenet n
    (a) a fejlesztő kért ellenőrzést, vagyis a PR megjegyzései között
    (`GET /repos/{owner}/{repo}/issues/{n}/comments`, minden oldal) van `@coderabbitai review`;
    (b) a kért review be is fejeződött: a PR mostani fején a `CodeRabbit` nevű check-run
-   (`GET /repos/{owner}/{repo}/commits/{sha}/check-runs`) `success` eredménnyel („Finished”)
+   (`GET /repos/{owner}/{repo}/commits/{sha}/check-runs?check_name=CodeRabbit`, minden oldal;
+   több találatnál a legkésőbb indult számít) `success` eredménnyel („Finished”)
    zárult, és a `completed_at`-je később van, mint az utolsó `@coderabbitai review` kérés.
    (Megállapítás nélküli review-nál a CodeRabbit nem készít review-t, csak ezt a check-runt;
    kimerült keretnél a check-run `neutral`, „Review rate limited”, ez nem elég.) Ha a fej a

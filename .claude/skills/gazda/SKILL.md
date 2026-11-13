@@ -44,7 +44,8 @@ $ARGUMENTS
   beolvasztás előtt (köteg esetén minden kötegbe szánt eredeti PR-on) ellenőrizd mindhárom
   feltételt (`R=repos/ubuntuokos/CinemaFundArchitecture4`). Ha a keret elfogyott, a PR vár:
   (a) kérés: `gh api --paginate $R/issues/<n>/comments` – van `@coderabbitai review`;
-  (b) befejezett review: `gh api $R/commits/<fej-sha>/check-runs` – a `CodeRabbit` check-run
+  (b) befejezett review: `gh api --paginate "$R/commits/<fej-sha>/check-runs?check_name=CodeRabbit"` – a
+  legkésőbb indult `CodeRabbit` check-run
   `success` („Finished”, nem `neutral` „Review rate limited”), és `completed_at`-je az utolsó
   kérésnél későbbi;
   (c) nincs megválaszolatlan megállapítás: `gh api $R/pulls/<n>/ccr/review_threads` (a
