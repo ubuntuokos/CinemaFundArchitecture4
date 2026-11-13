@@ -15172,3 +15172,15 @@ def test_real_engine_check_text_legibility_reports_as_egui(app, tmp_path: Path):
         win._quit_confirmed = True
         win.close()
         engine.stop()
+
+
+def test_export_frame_quality_and_size_options():
+    """Export Frame sends the JPEG quality and a chosen size (K7 of CFA4-LOSSLESS-MEDIA-TOOLS-001);
+    the other formats are lossless and 0 keeps the frame's size."""
+    from cfa4_qt.panels.export_dialogs import frame_options, frame_path
+
+    assert frame_options("jpg", 80, 0, 0) == {"quality": 80}
+    assert frame_options("png", 80, 640, 0) == {"width": 640}
+    assert frame_options("webp", 50, 0, 360) == {"height": 360}
+    assert frame_path("/tmp", "still.webp", "png") == "/tmp/still.png"
+

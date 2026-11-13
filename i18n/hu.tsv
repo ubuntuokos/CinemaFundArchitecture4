@@ -4592,3 +4592,6 @@ export.summary	Low	alacsony
 	(only the first ones are listed)	(csak az elsők látszanak)
 	Row {n}: the first and last frame must be whole numbers	{n}. sor: az első és az utolsó képkocka csak egész szám lehet
 	{count} segments added to the clip	{count} szegmens hozzáadva a kliphez
+	Quality:	Minőség:
+	Size:	Méret:
+	Original	Eredeti

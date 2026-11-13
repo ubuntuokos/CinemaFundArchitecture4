@@ -621,8 +621,32 @@ fn export_frame(s: &mut Session, p: &Value) -> Result<Value> {
             .map_err(|_| bad("file.exportFrame", "depth must be 8 or 16"))?,
     };
     if !matches!(depth, 8 | 16) || (depth == 16 && !format.supports_16()) {
-        return Err(bad("file.exportFrame", "16-bit output requires PNG or TIFF; JPEG and BMP require 8-bit output"));
+        return Err(bad("file.exportFrame", "16-bit output requires PNG, TIFF, HEIC or HEIF; JPEG, BMP and WebP require 8-bit output"));
     }
+    // quality (JPEG) and output size (K7 of CFA4-LOSSLESS-MEDIA-TOOLS-001)
+    let quality = match p.get("quality") {
+        None | Some(Value::Null) => cfa4_export::still::DEFAULT_QUALITY,
+        Some(v) => v
+            .as_u64()
+            .filter(|q| (1..=100).contains(q))
+            .map(|q| q as u8)
+            .ok_or_else(|| bad("file.exportFrame", "quality must be a whole number from 1 to 100"))?,
+    };
+    if p.get("quality").is_some_and(|v| !v.is_null()) && !format.has_quality() {
+        return Err(bad("file.exportFrame", format!("{} is written without loss; `quality` applies to JPEG only", format.label())));
+    }
+    let side = |k: &str| -> Result<Option<u32>> {
+        match p.get(k) {
+            None | Some(Value::Null) => Ok(None),
+            Some(v) => v
+                .as_u64()
+                .and_then(|n| u32::try_from(n).ok())
+                .filter(|n| *n > 0)
+                .map(Some)
+                .ok_or_else(|| bad("file.exportFrame", format!("{k} must be a positive whole number of pixels"))),
+        }
+    };
+    let (want_w, want_h) = (side("width")?, side("height")?);
     let import = match p.get("import") {
         None => false,
         Some(v) => v.as_bool().ok_or_else(|| bad("file.exportFrame", "import must be true or false"))?,
@@ -660,7 +684,13 @@ fn export_frame(s: &mut Session, p: &Value) -> Result<Value> {
         u32::try_from(img.w).map_err(|_| bad("file.exportFrame", "image width exceeds limits"))?,
         u32::try_from(img.h).map_err(|_| bad("file.exportFrame", "image height exceeds limits"))?,
     );
-    let bytes = cfa4_export::still::encode(&img, format, depth).map_err(|e| EngineError::Other(e.to_string()))?;
+    let size = cfa4_export::still::fit_size(w, h, want_w, want_h);
+    if let Some((sw, sh)) = size {
+        cfa4_project::validate_frame_size(sw, sh).map_err(|e| bad("file.exportFrame", format!("output size {sw}×{sh}: {e}")))?;
+    }
+    let opts = cfa4_export::still::StillOptions { quality, size };
+    let bytes = cfa4_export::still::encode_with(&img, format, depth, opts).map_err(|e| EngineError::Other(e.to_string()))?;
+    let (w, h) = size.unwrap_or((w, h));
     s.services.write_file(&path, &bytes).map_err(|e| EngineError::Other(format!("{path}: {e}")))?;
     let mut out =
         json!({"path": path, "width": w, "height": h, "depth": depth, "target": if target.source { "source" } else { "program" }, "time": target.time.0});
@@ -810,7 +840,7 @@ pub fn commands() -> Vec<CommandSpec> {
             "file.exportFrame",
             "Export Frame",
             None,
-            r#"{"path":str?,"format":"png|jpeg|tiff|bmp"?,"depth":8|16?,"import":bool?,"target":"source|program"?,"item":id?,"sequence":id?,"time":ticks?}"#,
+            r#"{"path":str?,"format":"png|jpeg|tiff|bmp|heic|heif|webp"?,"depth":8|16?,"quality":1..100=95 (JPEG)?,"width":px?,"height":px? (one side keeps the aspect ratio),"import":bool?,"target":"source|program"?,"item":id?,"sequence":id?,"time":ticks?}"#,
             always,
             export_frame,
         ),
