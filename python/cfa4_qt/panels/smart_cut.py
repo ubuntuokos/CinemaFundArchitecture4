@@ -6,6 +6,13 @@ and verifies the cut (``export.start``). GOP Smart Cut is a Source monitor actio
 mode (SCE-001 v1.5). The dialog shows the plan before anything is written: the copied and
 re-encoded frames and, when the cut cannot run, why. A plan that re-encodes its boundaries asks
 for confirmation first.
+
+Segments (CFA4-LOSSLESS-MEDIA-TOOLS-001 K1–K3): the clip's range markers are its segments. With
+"Segments" chosen, the dialog lists them (checkable, in the order they are cut), plans and writes
+one verified file per checked segment (``segments.plan`` / ``segments.export``, an output pattern
+with ``{n}`` and ``{name}``), and makes subclips of them or places them on the timeline
+(``segments.toSubclips`` / ``segments.toTimeline``). Nothing is written unless every checked
+segment can run.
 """
 
 from __future__ import annotations
@@ -13,6 +20,7 @@ from __future__ import annotations
 from collections.abc import Callable
 from typing import Any
 
+from PySide6.QtCore import Qt
 from PySide6.QtWidgets import (
     QComboBox,
     QDialog,
@@ -21,6 +29,8 @@ from PySide6.QtWidgets import (
     QHBoxLayout,
     QLabel,
     QLineEdit,
+    QListWidget,
+    QListWidgetItem,
     QMessageBox,
     QPushButton,
     QVBoxLayout,
@@ -31,6 +41,7 @@ from ..engine import EngineClient
 from ..i18n import N_, fmt, tr
 
 MODES = (("gop-boundary", N_("At GOP boundaries (no re-encoding)")), ("frame-accurate", N_("Frame accurate (re-encode the boundaries)")))
+SOURCES = (("marked", N_("Marked range")), ("segments", N_("Segments (range markers)")))
 GUARANTEES = (("bit-exact", N_("Bit-exact copy")), ("compatible", N_("Compatible copy")))
 
 # the output extensions Smart Cut writes as they are (MP4 / MOV; MPEG program and transport streams)
@@ -50,8 +61,29 @@ def default_output(path: str) -> str:
     return f"{stem}_cut.{ext if ext in KEPT_EXTENSIONS else 'mp4'}"
 
 
+def default_pattern(path: str) -> str:
+    """``clip.mp4`` → ``clip_{n}-{name}.mp4``: one file per segment, numbered and named after it."""
+    out = default_output(path)
+    stem, _dot, ext = out.rpartition(".")
+    return f"{stem.removesuffix('_cut')}_{{n}}-{{name}}.{ext}"
+
+
+def segment_label(segment: dict[str, Any], rate: tuple[int, int] | None) -> str:
+    """A segment's line in the list: its name (or "Segment"), and its length in frames when the
+    frame rate is known."""
+    name = str(segment.get("name") or "").strip() or tr("Segment")
+    duration = segment.get("duration")
+    if rate and isinstance(duration, int) and duration > 0 and rate[0] > 0 and rate[1] > 0:
+        # ticks → frames: 254 016 000 000 ticks per second
+        frames = duration * rate[0] // (254_016_000_000 * rate[1])
+        return fmt("{name} ({frames} frames)", name=name, frames=frames)
+    return name
+
+
 def plan_text(result: dict[str, Any]) -> tuple[str, str | None]:
     """The plan summary and, when the plan cannot run, why (human readable; SCE-001 §10.4)."""
+    if isinstance(result.get("ranges"), list):
+        return ranges_text(result)
     summary = result.get("summary") or {}
     copied, reencoded = int(summary.get("copiedFrames") or 0), int(summary.get("reencodedFrames") or 0)
     text = fmt("{copied} frames copied, {reencoded} frames re-encoded", copied=copied, reencoded=reencoded)
@@ -70,6 +102,17 @@ def plan_text(result: dict[str, Any]) -> tuple[str, str | None]:
         blockers.append(str(boundary["problem"]))
     if not plan.get("executable", True) or blockers:
         return text, "; ".join(blockers) or tr("The cut cannot run.")
+    return text, None
+
+
+def ranges_text(result: dict[str, Any]) -> tuple[str, str | None]:
+    """The totals of a plan of several segments and, when one of them cannot run, why."""
+    summary = result.get("summary") or {}
+    copied, reencoded = int(summary.get("copiedFrames") or 0), int(summary.get("reencodedFrames") or 0)
+    text = fmt("{count} files: {copied} frames copied, {reencoded} frames re-encoded", count=int(summary.get("ranges") or 0), copied=copied, reencoded=reencoded)
+    problems = [p for p in result.get("problems") or [] if isinstance(p, dict)]
+    if problems:
+        return text, "; ".join(fmt("Segment {n}: {why}", n=p.get("range", "?"), why=str(p.get("problem") or "")) for p in problems)
     return text, None
 
 
@@ -92,6 +135,11 @@ class SmartCutDialog(QDialog):
         self.info.setWordWrap(True)
         lay.addWidget(self.info)
         form = QFormLayout()
+        self.source = QComboBox(self)
+        self.source.setObjectName("source.smartCut.source")
+        for key, label in SOURCES:
+            self.source.addItem(tr(label), key)
+        form.addRow(tr("Range:"), self.source)
         self.mode = QComboBox(self)
         self.mode.setObjectName("source.smartCut.mode")
         for key, label in MODES:
@@ -113,6 +161,35 @@ class SmartCutDialog(QDialog):
         out.addWidget(browse)
         form.addRow(tr("Output:"), out)
         lay.addLayout(form)
+        # the clip's segments (range markers), checkable, in the order they are cut
+        self.segments_box = QWidget(self)
+        seg = QHBoxLayout(self.segments_box)
+        seg.setContentsMargins(0, 0, 0, 0)
+        self.segment_list = QListWidget(self.segments_box)
+        self.segment_list.setObjectName("source.smartCut.segments")
+        self.segment_list.itemChanged.connect(lambda _i: self.replan())
+        seg.addWidget(self.segment_list, 1)
+        moves = QVBoxLayout()
+        for name, label, step in (("segmentUp", N_("Up"), -1), ("segmentDown", N_("Down"), 1)):
+            b = QPushButton(tr(label), self.segments_box)
+            b.setObjectName(f"source.smartCut.{name}")
+            b.setAutoDefault(False)
+            b.clicked.connect(lambda _c=False, d=step: self.move_segment(d))
+            moves.addWidget(b)
+        self.to_subclips = QPushButton(tr("Make Subclips"), self.segments_box)
+        self.to_subclips.setObjectName("source.smartCut.toSubclips")
+        self.to_subclips.setAutoDefault(False)
+        self.to_subclips.clicked.connect(lambda _c=False: self.send("segments.toSubclips"))
+        moves.addWidget(self.to_subclips)
+        self.to_timeline = QPushButton(tr("To Timeline"), self.segments_box)
+        self.to_timeline.setObjectName("source.smartCut.toTimeline")
+        self.to_timeline.setAutoDefault(False)
+        self.to_timeline.clicked.connect(lambda _c=False: self.send("segments.toTimeline"))
+        moves.addWidget(self.to_timeline)
+        moves.addStretch(1)
+        seg.addLayout(moves)
+        self.segments_box.hide()
+        lay.addWidget(self.segments_box)
         self.summary = QLabel("", self)
         self.summary.setObjectName("source.smartCut.plan")
         self.summary.setWordWrap(True)
@@ -137,6 +214,7 @@ class SmartCutDialog(QDialog):
         self.run.clicked.connect(self.start)
         row.addWidget(self.run)
         lay.addLayout(row)
+        self.source.currentIndexChanged.connect(lambda _i: self._source_changed())
         self.mode.currentIndexChanged.connect(lambda _i: self.replan())
         self.guarantee.currentIndexChanged.connect(lambda _i: self.replan())
         self.engine.execute("export.analyze", {"item": item}, on_reply=lambda r, _b: self._analyzed(r), on_error=self._fail)
@@ -170,7 +248,87 @@ class SmartCutDialog(QDialog):
             return
         self.replan()
 
+    # ----- segments -----
+    def segments_mode(self) -> bool:
+        return self.source.currentData() == "segments"
+
+    def _source_changed(self) -> None:
+        segments = self.segments_mode()
+        self.segments_box.setVisible(segments)
+        path = str((self.analysis or {}).get("path") or "")
+        current = self.output.text().strip()
+        if path and current in ("", default_output(path), default_pattern(path)):
+            self.output.setText(default_pattern(path) if segments else default_output(path))
+        if segments and self.segment_list.count() == 0:
+            self.engine.execute("segments.list", {"item": self.item}, on_reply=lambda r, _b: self._listed(r), on_error=self._fail)
+            return
+        self.replan()
+
+    def _listed(self, result: Any) -> None:
+        segments = [m for m in (result or {}).get("segments") or [] if isinstance(m, dict)] if isinstance(result, dict) else []
+        rate_json = (self.analysis or {}).get("frameRate") or {}
+        rate = (int(rate_json.get("num") or 0), int(rate_json.get("den") or 0)) if isinstance(rate_json, dict) else None
+        self.segment_list.blockSignals(True)
+        self.segment_list.clear()
+        for m in segments:
+            it = QListWidgetItem(segment_label(m, rate))
+            it.setData(Qt.ItemDataRole.UserRole, m.get("marker"))
+            it.setFlags(it.flags() | Qt.ItemFlag.ItemIsUserCheckable)
+            it.setCheckState(Qt.CheckState.Checked)
+            it.setToolTip(str(m.get("comment") or ""))
+            self.segment_list.addItem(it)
+        self.segment_list.blockSignals(False)
+        if not segments:
+            self.summary.setText("")
+            self._fail(tr("This clip has no segments: add range markers in the Source monitor first."))
+            return
+        self.replan()
+
+    def chosen_segments(self) -> list[int]:
+        out = []
+        for i in range(self.segment_list.count()):
+            it = self.segment_list.item(i)
+            marker = it.data(Qt.ItemDataRole.UserRole)
+            if it.checkState() == Qt.CheckState.Checked and isinstance(marker, int):
+                out.append(marker)
+        return out
+
+    def move_segment(self, step: int) -> None:
+        row = self.segment_list.currentRow()
+        to = row + step
+        if row < 0 or not 0 <= to < self.segment_list.count():
+            return
+        self.segment_list.blockSignals(True)
+        it = self.segment_list.takeItem(row)
+        self.segment_list.insertItem(to, it)
+        self.segment_list.setCurrentRow(to)
+        self.segment_list.blockSignals(False)
+        self.replan()
+
+    def send(self, command: str) -> None:
+        chosen = self.chosen_segments()
+        if not chosen:
+            self._fail(tr("Check at least one segment."))
+            return
+
+        def done(result: Any) -> None:
+            made = len((result or {}).get("subclips") or []) if isinstance(result, dict) else 0
+            if command == "segments.toTimeline":
+                self.said(fmt("{count} segments placed on the timeline", count=made))
+            else:
+                self.said(fmt("{count} subclips made from the segments", count=made))
+
+        self.engine.execute(command, {"item": self.item, "segments": chosen}, on_reply=lambda r, _b: done(r), on_error=self._fail)
+
     def params(self) -> dict[str, Any]:
+        if self.segments_mode():
+            return {
+                "item": self.item,
+                "segments": self.chosen_segments(),
+                "mode": self.mode.currentData(),
+                "guarantee": self.guarantee.currentData(),
+                "output": self.output.text().strip() or None,
+            }
         return {"item": self.item, "mode": self.mode.currentData(), "guarantee": self.guarantee.currentData(), "output": self.output.text().strip() or None}
 
     def replan(self) -> None:
@@ -178,6 +336,12 @@ class SmartCutDialog(QDialog):
             return
         self.error.hide()
         self.run.setEnabled(False)
+        segments = self.segments_mode()
+        if segments and not self.chosen_segments():
+            self.summary.setText("")
+            if self.segment_list.count():
+                self._fail(tr("Check at least one segment."))
+            return
         self._plan_request += 1
         request = self._plan_request
 
@@ -197,7 +361,7 @@ class SmartCutDialog(QDialog):
                 self.summary.setText("")
                 self._fail(message)
 
-        self.engine.execute("export.plan", self.params(), on_reply=lambda r, _b: got(r), on_error=failed)
+        self.engine.execute("segments.plan" if segments else "export.plan", self.params(), on_reply=lambda r, _b: got(r), on_error=failed)
 
     # ----- actions -----
     def browse(self) -> None:
@@ -224,8 +388,15 @@ class SmartCutDialog(QDialog):
         self.run.setEnabled(False)
         self.summary.setText(tr("Writing and verifying the cut…"))
 
+        segments = self.segments_mode()
+
         def done(result: Any) -> None:
             result = result if isinstance(result, dict) else {}
+            if segments:
+                count = len(result.get("ranges") or [])
+                self.said(fmt("{count} segments written and verified", count=count))
+                self.accept()
+                return
             report = result.get("report") or {}
             path = str(result.get("output") or params["output"])
             self.said(fmt("Smart Cut written and verified: {path} ({frames} frames)", path=path, frames=int(report.get("samples") or 0)))
@@ -235,4 +406,4 @@ class SmartCutDialog(QDialog):
             self.summary.setText("")
             self._fail(message)
 
-        self.engine.execute("export.start", params, on_reply=lambda r, _b: done(r), on_error=failed)
+        self.engine.execute("segments.export" if segments else "export.start", params, on_reply=lambda r, _b: done(r), on_error=failed)

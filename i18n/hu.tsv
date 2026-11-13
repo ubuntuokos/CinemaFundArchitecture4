@@ -2506,6 +2506,20 @@ export.summary	Low	alacsony
 	{codec} in {container}: {gops} GOPs, {points} clean cut points	{codec}, {container}: {gops} GOP, {points} tiszta vágási pont
 	{copied} frames copied, {reencoded} frames re-encoded	{copied} képkocka másolva, {reencoded} képkocka újrakódolva
 	{frames} frames at the boundaries are re-encoded. Continue?	A határokon {frames} képkocka újrakódolódik. Folytatod?
+	Marked range	Kijelölt tartomány
+	Segments (range markers)	Szegmensek (tartományjelölők)
+	Segment	Szegmens
+	{name} ({frames} frames)	{name} ({frames} képkocka)
+	{count} files: {copied} frames copied, {reencoded} frames re-encoded	{count} fájl: {copied} képkocka másolva, {reencoded} képkocka újrakódolva
+	Segment {n}: {why}	{n}. szegmens: {why}
+	Range:	Tartomány:
+	Make Subclips	Alklipek készítése
+	To Timeline	Az idővonalra
+	This clip has no segments: add range markers in the Source monitor first.	Ennek a klipnek nincsenek szegmensei: előbb adj hozzá tartományjelölőket a Forrásmonitorban.
+	Check at least one segment.	Jelölj be legalább egy szegmenst.
+	{count} segments placed on the timeline	{count} szegmens került az idővonalra
+	{count} subclips made from the segments	{count} alklip készült a szegmensekből
+	{count} segments written and verified	{count} szegmens kiírva és ellenőrizve
 # Timeline GOP overlay (WP-08)
 	Show GOP Boundaries	GOP-határok megjelenítése
 # Export window Smart Export (WP-08)

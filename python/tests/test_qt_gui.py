@@ -14156,6 +14156,83 @@ def test_real_engine_source_monitor_smart_cut(app, tmp_path: Path):
         win.close()
 
 
+@pytest.mark.skipif(REAL is None, reason="Rust engine not built (cargo build -p cfa4-cli)")
+def test_real_engine_smart_cut_segments(app, tmp_path: Path):
+    """Smart Cut Source ▸ Range: Segments (CFA4-LOSSLESS-MEDIA-TOOLS-001 K1–K3): the clip's range
+    markers are listed, cut into one verified file each in the listed order, and placed on the
+    timeline as subclips."""
+    import shutil
+    import subprocess
+
+    from cfa4_qt.main_window import MainWindow
+
+    ffmpeg = shutil.which("ffmpeg")
+    if ffmpeg is None:
+        pytest.skip("ffmpeg makes the H.264 clip")
+    clip = tmp_path / "seg.mp4"
+    args = [ffmpeg, "-y", "-v", "error", "-f", "lavfi", "-i", "testsrc2=size=128x96:rate=25", "-t", "4"]
+    args += ["-c:v", "libx264", "-g", "25", "-keyint_min", "25", "-sc_threshold", "0", "-bf", "0", "-pix_fmt", "yuv420p", str(clip)]
+    if subprocess.run(args, stdin=subprocess.DEVNULL, check=False).returncode != 0:
+        pytest.skip("ffmpeg could not make an H.264 clip")
+    settings = QtCore.QSettings(str(tmp_path / "s.ini"), QtCore.QSettings.Format.IniFormat)
+    engine = EngineClient(REAL, ["--demo", "--data-dir", str(tmp_path / "data")])
+    win = MainWindow(engine, settings)
+    win.resize(1280, 800)
+    win.show()
+    engine.start()
+    try:
+        assert wait_until(app, lambda: win.project is not None and len(win.registry.commands) > 100, 60_000)
+        win.execute("file.import", {"paths": [str(clip)]})
+        assert wait_until(app, lambda: any(i.get("name", "").startswith("seg") for i in _items(win.project or {})), 30_000)
+        item = next(i for i in _items(win.project) if i.get("name", "").startswith("seg"))
+        src = win.source_monitor
+        win.execute("source.open", {"item": item["item"]})
+        assert wait_until(app, lambda: src.has_content(), 60_000)
+        ft = src.frame()
+        # two segments on GOP boundaries: "intro" (frames 0–24) and "end" (frames 50–99)
+        win.execute("markers.add", {"target": "source", "time": 0, "name": "intro", "durationFrames": 25})
+        win.execute("markers.add", {"target": "source", "time": 50 * ft, "name": "end", "durationFrames": 50})
+        d = src.open_smart_cut()
+        assert d is not None
+        assert wait_until(app, lambda: d.analysis is not None, 30_000), d.error.text()
+        d.source.setCurrentIndex(d.source.findData("segments"))
+        assert wait_until(app, lambda: d.segment_list.count() == 2 and d.run.isEnabled(), 30_000), d.error.text()
+        assert d.segments_box.isVisible()
+        assert "75" in d.summary.text(), d.summary.text()
+        # "end" first
+        d.segment_list.setCurrentRow(1)
+        d.move_segment(-1)
+        assert d.segment_list.item(0).text().startswith("end")
+        assert wait_until(app, lambda: d.run.isEnabled(), 30_000), d.error.text()
+        d.output.setText(str(tmp_path / "{n}-{name}.mp4"))
+        said: list[str] = []
+        src.status.connect(said.append)
+        d.send("segments.toTimeline")
+        assert wait_until(app, lambda: any("timeline" in m for m in said), 30_000), said
+        d.run.click()
+        assert wait_until(app, lambda: any("verified" in m for m in said), 30_000), said
+        assert (tmp_path / "1-end.mp4").stat().st_size > 0
+        assert (tmp_path / "2-intro.mp4").stat().st_size > 0
+    finally:
+        engine.stop()
+        win.close()
+
+
+def test_smart_cut_segment_texts():
+    """The segment pattern, a segment's line and the totals of several segments (K1–K2)."""
+    from cfa4_qt.panels.smart_cut import default_pattern, plan_text, segment_label
+
+    assert default_pattern("/a/clip.mp4") == "/a/clip_{n}-{name}.mp4"
+    assert default_pattern("/a/clip.ts") == "/a/clip_{n}-{name}.ts"
+    assert segment_label({"name": "intro", "duration": 254_016_000_000}, (25, 1)) == "intro (25 frames)"
+    assert segment_label({"name": " ", "duration": 0}, (25, 1)) == "Segment"
+    assert segment_label({"name": "x", "duration": "bad"}, None) == "x"
+    text, problem = plan_text({"ranges": [{}, {}], "summary": {"ranges": 2, "copiedFrames": 75, "reencodedFrames": 0}, "problems": []})
+    assert problem is None and "2" in text and "75" in text
+    _text, problem = plan_text({"ranges": [{}], "summary": {"ranges": 1}, "problems": [{"range": 1, "problem": "mid-GOP"}]})
+    assert problem is not None and "mid-GOP" in problem
+
+
 def test_smart_cut_plan_text_names_the_audio():
     """The Smart Cut plan names the audio tracks copied with the video and why another is not
     (WP-09b)."""
