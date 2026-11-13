@@ -66,6 +66,7 @@ pub mod shortcut_presets;
 pub mod shortcuts;
 pub mod smart_cut;
 mod smart_cut_mpeg;
+mod smart_cut_ranges;
 mod smart_render;
 pub mod social;
 pub mod source_monitor;
@@ -1453,6 +1454,8 @@ mod settings_tests;
 mod shortcuts_tests;
 #[cfg(test)]
 mod smart_cut_mpeg_tests;
+#[cfg(test)]
+mod smart_cut_ranges_tests;
 #[cfg(test)]
 mod smart_cut_tests;
 #[cfg(test)]

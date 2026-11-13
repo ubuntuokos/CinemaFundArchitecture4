@@ -347,6 +347,14 @@ fn audio_json(audio: &Option<(CutInterval, AudioPlan)>) -> Value {
 }
 
 fn plan(s: &mut Session, p: &Value) -> Result<Value> {
+    if crate::smart_cut_ranges::has_ranges(p) {
+        return crate::smart_cut_ranges::plan(s, p, plan_single);
+    }
+    plan_single(s, p)
+}
+
+/// `export.plan` of one range (or of the timeline).
+fn plan_single(s: &mut Session, p: &Value) -> Result<Value> {
     let cmd = "export.plan";
     if timeline_scope(p, cmd)? {
         return crate::smart_render::plan(s, p);
@@ -369,6 +377,14 @@ fn plan(s: &mut Session, p: &Value) -> Result<Value> {
 }
 
 fn start(s: &mut Session, p: &Value) -> Result<Value> {
+    if crate::smart_cut_ranges::has_ranges(p) {
+        return crate::smart_cut_ranges::start(s, p, plan_single, start_single);
+    }
+    start_single(s, p)
+}
+
+/// `export.start` of one range (or of the timeline).
+fn start_single(s: &mut Session, p: &Value) -> Result<Value> {
     let cmd = "export.start";
     if timeline_scope(p, cmd)? {
         return crate::smart_render::start(s, p);
@@ -452,14 +468,14 @@ pub(crate) fn commands() -> Vec<CommandSpec> {
         spec(
             "export.plan",
             "Plan Smart Cut",
-            r#"{"path":str,"in":time,"out":time (exclusive)}|{"item":id,"in":media time?,"out":media time? (default: the marked range)},"mode":"gop-boundary"|"frame-accurate"="gop-boundary","guarantee":"bit-exact"|"compatible"="bit-exact","output":str?,"scope":"source"|"timeline"="source","crf":number=16,"audio":bool=true}; timeline: {"scope":"timeline","sequence":id?,"output":str?,"guarantee":…,"crf":…} → {plan, summary, audio?:{tracks:[{trackId,codec}],dropped:[{trackId,reason}]}, boundaryReencode?:{ready,problem}, timelineRender?:{ready,problem}}"#,
+            r#"{"path":str,"in":time,"out":time (exclusive)}|{"item":id,"in":media time?,"out":media time? (default: the marked range)},"mode":"gop-boundary"|"frame-accurate"="gop-boundary","guarantee":"bit-exact"|"compatible"="bit-exact","output":str?,"scope":"source"|"timeline"="source","crf":number=16,"audio":bool=true}; several ranges: {"path"|"item",…,"ranges":[{"in":time,"out":time,"output":str?,"name":str?}],"output":"pattern with {n} and {name}"?} → {ranges:[plan…], summary (totals), problems:[{range,problem}]}; timeline: {"scope":"timeline","sequence":id?,"output":str?,"guarantee":…,"crf":…} → {plan, summary, audio?:{tracks:[{trackId,codec}],dropped:[{trackId,reason}]}, boundaryReencode?:{ready,problem}, timelineRender?:{ready,problem}}"#,
             plan,
             false,
         ),
         spec(
             "export.start",
             "Run Smart Cut",
-            r#"{"path":str,"in":time,"out":time}|{"item":id,"in":media time?,"out":media time?},"output":str,"mode":…,"guarantee":…,"confirm":bool (required when the plan re-encodes),"crf":number=16,"audio":bool=true}; timeline: {"scope":"timeline","sequence":id?,"output":str,"confirm":bool,…} → {output, bytes, report, verified, audio?:{tracks,dropped,verified:[{trackId,codec,samples,payloadBytes,syncErrorNs}]}}"#,
+            r#"{"path":str,"in":time,"out":time}|{"item":id,"in":media time?,"out":media time?},"output":str,"mode":…,"guarantee":…,"confirm":bool (required when the plan re-encodes),"crf":number=16,"audio":bool=true}; several ranges: {…,"ranges":[{"in","out","output"?,"name"?}],"output":"pattern with {n}"?,"confirm":bool (once for the batch)} → {ranges:[result…], summary, verified}: every range is planned before anything is written; timeline: {"scope":"timeline","sequence":id?,"output":str,"confirm":bool,…} → {output, bytes, report, verified, audio?:{tracks,dropped,verified:[{trackId,codec,samples,payloadBytes,syncErrorNs}]}}"#,
             start,
             true,
         ),

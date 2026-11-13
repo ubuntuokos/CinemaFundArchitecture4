@@ -12,7 +12,7 @@ use serde_json::{Value, json};
 use crate::Session;
 
 #[derive(Default)]
-struct MemoryFiles(Mutex<BTreeMap<String, Vec<u8>>>);
+pub(crate) struct MemoryFiles(pub(crate) Mutex<BTreeMap<String, Vec<u8>>>);
 
 impl crate::Services for MemoryFiles {
     fn read_file(&self, path: &str) -> std::io::Result<Vec<u8>> {
@@ -25,7 +25,7 @@ impl crate::Services for MemoryFiles {
 }
 
 /// 40 pictures of H.264 at 25 fps, an IDR every 10, no B-frames (PTS = picture number).
-fn source_mp4() -> Vec<u8> {
+pub(crate) fn source_mp4() -> Vec<u8> {
     source_mp4_of(40)
 }
 
@@ -57,13 +57,13 @@ fn source_mp4_of(n: usize) -> Vec<u8> {
     mux.finish().unwrap().into_inner()
 }
 
-fn session() -> (Session, Arc<MemoryFiles>) {
+pub(crate) fn session() -> (Session, Arc<MemoryFiles>) {
     let files = Arc::new(MemoryFiles::default());
     files.0.lock().unwrap().insert("clip.mp4".into(), source_mp4());
     (Session::new(files.clone()), files)
 }
 
-fn frame(n: i64) -> Value {
+pub(crate) fn frame(n: i64) -> Value {
     json!({"frame": n})
 }
 
