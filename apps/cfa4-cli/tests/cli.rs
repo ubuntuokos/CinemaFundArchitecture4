@@ -79,6 +79,10 @@ fn probe_reports_mpeg_transport_and_program_streams() {
         assert_eq!(streams[0]["codec"], "MPEG-2 Video");
         assert!(streams[0]["pictures"]["I"].as_u64().unwrap() >= 1);
         assert_eq!(v["mpeg"]["format"], if fmt == "mpegts" { "MPEG-2 TS" } else { "MPEG-2 PS" });
+        // the complete stream list (K13), in ffprobe's vocabulary
+        let kinds: Vec<(&str, &str)> = v["streams"].as_array().unwrap().iter().map(|s| (s["type"].as_str().unwrap(), s["codec"].as_str().unwrap())).collect();
+        assert_eq!(kinds, [("video", "mpeg2video"), ("audio", "mp2")], "{v}");
+        assert_eq!(v["chapters"], json!([]), "{v}");
     }
     let _ = std::fs::remove_dir_all(&dir);
 }

@@ -27,6 +27,19 @@ caught or converted to `CodecError::Decode` there. The guard handles Rust unwind
 recover from a process abort or an allocation failure that aborts. It does not replace input
 validation or repair bugs inside a dependency.
 
+## Complete stream list (Media Cutter K13)
+
+`streams::stream_list(reader)` lists every stream a file carries, not only the ones CFA4 plays:
+video, audio, subtitle, data (QuickTime timecode and chapter-text tracks, unknown MPEG TS stream
+types) and attachment (Matroska fonts), each with its codec, container id, language, title,
+picture size, channels and sample rate, plus the file's chapters. It covers MP4 / MOV, Matroska /
+WebM, MPEG TS / PS, MXF, Ogg, AVI, WAV and FLAC; other files fall back to
+`streams::from_media_info`. Only headers, codec configuration and (MPEG TS / PS) each stream's
+first access unit are read; nothing is decoded. Codec names, stream ids and the stream order follow
+FFmpeg's vocabulary, so `tests/streams_oracle.rs` checks the list of thirteen ffmpeg-made files
+against `ffprobe` field by field. `cfa4-cli probe` and the `export.analyze` command return it as
+`streams` and `chapters`.
+
 ## Tests
 
 `src/audio_panic_tests.rs` wraps a real PCM decoder through Symphonia's public `Decoder` API

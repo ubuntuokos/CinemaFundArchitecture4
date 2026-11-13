@@ -130,6 +130,23 @@ fn mpeg_details(src: &cfa4_codecs::MpegSource) -> Value {
     })
 }
 
+/// The complete stream list and chapters (Media Cutter K13) added to a probe result: from the
+/// container where CFA4 lists it, else from the opened source's media info.
+fn add_streams(v: &mut Value, bytes: &Arc<[u8]>, info: &cfa4_media::MediaInfo) {
+    let reader = cfa4_media::reader::MemReader(bytes.clone());
+    let list = match cfa4_codecs::streams::stream_list(&reader) {
+        Some(Ok(l)) => l,
+        Some(Err(e)) => {
+            v["streamListError"] = json!(e);
+            cfa4_codecs::streams::from_media_info(info)
+        }
+        None => cfa4_codecs::streams::from_media_info(info),
+    };
+    let l = list.to_json();
+    v["streams"] = l["streams"].clone();
+    v["chapters"] = l["chapters"].clone();
+}
+
 /// Probe `path`; with `image_sequence`, `path` is the first frame of a numbered still sequence.
 pub fn probe(path: &str, image_sequence: bool) -> Result<Value, String> {
     if image_sequence {
@@ -157,15 +174,17 @@ pub fn probe(path: &str, image_sequence: bool) -> Result<Value, String> {
     let name = std::path::Path::new(path).file_name().map(|s| s.to_string_lossy().to_string()).unwrap_or_else(|| path.to_string());
     let head = &bytes[..bytes.len().min(70_000)];
     if cfa4_mxf::sniff(head) {
-        let src = cfa4_codecs::MxfSource::open(&name, bytes).map_err(|e| format!("{path}: {e}"))?;
+        let src = cfa4_codecs::MxfSource::open(&name, bytes.clone()).map_err(|e| format!("{path}: {e}"))?;
         let mut v = serde_json::to_value(cfa4_media::MediaSource::info(&src)).unwrap_or_default();
         v["mxf"] = mxf_details(&src);
+        add_streams(&mut v, &bytes, cfa4_media::MediaSource::info(&src));
         return Ok(v);
     }
     if cfa4_codecs::mpeg::sniff(head) {
-        let src = cfa4_codecs::MpegSource::open(&name, bytes).map_err(|e| format!("{path}: {e}"))?;
+        let src = cfa4_codecs::MpegSource::open(&name, bytes.clone()).map_err(|e| format!("{path}: {e}"))?;
         let mut v = serde_json::to_value(cfa4_media::MediaSource::info(&src)).unwrap_or_default();
         v["mpeg"] = mpeg_details(&src);
+        add_streams(&mut v, &bytes, cfa4_media::MediaSource::info(&src));
         return Ok(v);
     }
     if cfa4_ogg::sniff(head)
@@ -173,6 +192,7 @@ pub fn probe(path: &str, image_sequence: bool) -> Result<Value, String> {
     {
         let mut v = serde_json::to_value(cfa4_media::MediaSource::info(&src)).unwrap_or_default();
         v["ogg"] = ogg_details(&src);
+        add_streams(&mut v, &bytes, cfa4_media::MediaSource::info(&src));
         return Ok(v);
     }
     let native = cfa4_codecs::open_bytes(&name, bytes.clone());
@@ -188,8 +208,9 @@ pub fn probe(path: &str, image_sequence: bool) -> Result<Value, String> {
     if let Some(e) = native_error {
         v["engineError"] = json!(e);
     }
+    add_streams(&mut v, &bytes, src.info());
     if cfa4_media::wav::sniff(head)
-        && let Ok(w) = cfa4_media::wav::WavSource::parse(&name, bytes)
+        && let Ok(w) = cfa4_media::wav::WavSource::parse(&name, bytes.clone())
         && let Some(tr) = w.time_reference()
     {
         v["bwf"] = json!({"timeReference": tr});

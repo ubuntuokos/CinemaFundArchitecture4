@@ -58,6 +58,7 @@ cfa4-dirac = { workspace = true }
 cfa4-aac = { workspace = true }
 cfa4-opus = { workspace = true }
 rayon = { workspace = true }
+serde_json = { workspace = true }
 thiserror = { workspace = true }
 log = { workspace = true }
 # Decode timing counters (`gop_stats`); std's Instant panics on wasm32.

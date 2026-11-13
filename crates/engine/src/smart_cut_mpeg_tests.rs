@@ -89,6 +89,12 @@ fn mpeg_sources_are_analyzed_with_their_gops() {
         let media: Vec<i64> = r["accessPoints"].as_array().unwrap().iter().map(|p| p["mediaTime"].as_i64().unwrap()).collect();
         assert_eq!(media, [0, 10, 20, 30].map(|n| cfa4_time::FrameRate { num: 25, den: 1 }.tick_of(n).0), "{r}");
         assert_eq!(r["smartCut"]["allowed"], true, "{}", r["smartCut"]);
+        // K13: the audio stream is listed too, though Smart Cut indexes only the video
+        let streams = r["streams"].as_array().unwrap();
+        let kinds: Vec<(&str, &str)> = streams.iter().map(|s| (s["type"].as_str().unwrap(), s["codec"].as_str().unwrap())).collect();
+        let audio = if path == "clip.mpg" { "pcm_dvd" } else { "mp2" };
+        assert_eq!(kinds, [("video", "mpeg2video"), ("audio", audio)], "{r}");
+        assert_eq!((streams[1]["channels"].as_u64(), streams[1]["sampleRate"].as_u64()), (Some(2), Some(48_000)), "{r}");
     }
 }
 

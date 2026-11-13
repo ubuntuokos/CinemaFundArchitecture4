@@ -416,10 +416,33 @@ struct Trex {
     flags: u32,
 }
 
+/// QuickTime Macintosh language codes 0–138 (QuickTime File Format, "Language Code Values") as
+/// ISO 639-2 codes, in the spelling other readers (ffmpeg) report them; `""` for codes that have
+/// none.
+const MAC_LANGUAGES: [&str; 139] = [
+    "eng", "fra", "ger", "ita", "dut", "sve", "spa", "dan", "por", "nor", // 0
+    "heb", "jpn", "ara", "fin", "gre", "ice", "mlt", "tur", "hr", "chi", // 10
+    "urd", "hin", "tha", "kor", "lit", "pol", "hun", "est", "lav", "", // 20
+    "fo", "", "rus", "chi", "", "iri", "alb", "ron", "ces", "slk", // 30
+    "slv", "yid", "sr", "mac", "bul", "ukr", "bel", "uzb", "kaz", "aze", // 40
+    "aze", "arm", "geo", "mol", "kir", "tgk", "tuk", "mon", "", "pus", // 50
+    "kur", "kas", "snd", "tib", "nep", "san", "mar", "ben", "asm", "guj", // 60
+    "pa", "ori", "mal", "kan", "tam", "tel", "", "bur", "khm", "lao", // 70
+    "vie", "ind", "tgl", "may", "may", "amh", "tir", "orm", "som", "swa", // 80
+    "", "run", "", "mlg", "epo", "", "", "", "", "", // 90
+    "", "", "", "", "", "", "", "", "", "", // 100
+    "", "", "", "", "", "", "", "", "", "", // 110
+    "", "", "", "", "", "", "", "", "wel", "baq", // 120
+    "cat", "lat", "que", "grn", "aym", "tat", "uig", "dzo", "jav", // 130
+];
+
 fn parse_language(code: u16) -> String {
     if code < 0x400 {
         // QuickTime Macintosh language code.
-        return if code == 0 { "eng".into() } else { "und".into() };
+        return match MAC_LANGUAGES.get(usize::from(code)) {
+            Some(l) if !l.is_empty() => (*l).into(),
+            _ => "und".into(),
+        };
     }
     let c = |s: u16| (((code >> s) & 0x1F) as u8 + 0x60) as char;
     let s: String = [c(10), c(5), c(0)].into_iter().collect();
@@ -1033,6 +1056,9 @@ mod tests {
         // "und" = 0x55C4
         assert_eq!(parse_language(0x55C4), "und");
         assert_eq!(parse_language(0), "eng");
+        assert_eq!(parse_language(26), "hun");
+        assert_eq!(parse_language(29), "und");
+        assert_eq!(parse_language(0x3FF), "und");
         assert_eq!(parse_language(0x15C7), "eng");
     }
 
