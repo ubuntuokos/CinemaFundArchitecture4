@@ -1,6 +1,6 @@
 # Külső időkód-szinkron: LTC és MTC (chase és generate)
 
-**Állapot:** tervezet, tulajdonosi jóváhagyásra vár · **Dátum:** 2026-11-11 · **Tulajdonos:** ubuntuokos
+**Állapot:** a tulajdonos jóváhagyta, 2026-11-13 (D1–D3 a javaslatok szerint, 7. pont) · **Dátum:** 2026-11-11 · **Tulajdonos:** ubuntuokos
 
 ## 1. Cél
 
@@ -173,7 +173,11 @@ Egy fázis = egy PR, friss `main`-ből ([`docs/coordination.md`](../coordination
   képkocka nem tartható, a LTC-kimenet az engine által renderelt hangfolyamba kerül (TC-5-ben mérjük).
 - **88 nyitott PR:** a 30-as határ fölött vagyunk; ezt a munkát a tulajdonos kérte (2026-11-11).
 
-## 7. Nyitott tulajdonosi döntések
+## 7. Tulajdonosi döntések
+
+Eldöntve 2026-11-13-án: a tulajdonos a tervet változatlan szöveggel jóváhagyta, a D1–D3 a
+lenti javaslatok szerint érvényes (D1: igen; D2: külön választható kimeneti eszköz / csatorna;
+D3: igen, a TC-7 a projekt része).
 
 - **D1 – Chase v1 módja:** újraugrás (re-seek) driftnél, varispeed később. *Javaslat: igen.*
 - **D2 – LTC-kimenet helye:** külön választható kimeneti eszköz/csatorna (javasolt), vagy a
