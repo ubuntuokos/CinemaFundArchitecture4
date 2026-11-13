@@ -8,18 +8,22 @@ name: CFA4 CI cache warm-up (main only)
 # This workflow builds both on main and saves them there; the rust-release-tests
 # job in ci-linux.yml only restores them. Nothing here is a merge gate.
 on:
+  # Owner decision (2026-11-13): the Rust release dependencies are no longer rebuilt on every
+  # main merge that touches Cargo.lock or a Cargo.toml (several 20-30 minute rebuilds a day).
+  # They are refreshed once a night instead; until then the full jobs restore the previous
+  # night's cache (rust-cache falls back to the closest key) and compile only what changed.
+  # A push still warms the caches when the FFmpeg build scripts, the toolchain or this workflow
+  # change, because a cache miss there would rebuild FFmpeg or everything in every full run.
   push:
     branches: [main]
     paths:
       - scripts/ci/install-ffmpeg-9.0.2.sh
       - scripts/ci/install-ffmpeg-oracle-deps.sh
-      - Cargo.lock
-      - "**/Cargo.toml"
       - rust-toolchain.toml
       - .github/workflows/ci-cache-warm.yml
-  # GitHub evicts caches unused for 7 days: refresh weekly (Sunday 03:17 UTC).
+  # Nightly at 01:17 UTC (02:17 Budapest); also keeps the caches inside GitHub's 7-day eviction.
   schedule:
-    - cron: "17 3 * * 0"
+    - cron: "17 1 * * *"
   workflow_dispatch:
 
 permissions:
