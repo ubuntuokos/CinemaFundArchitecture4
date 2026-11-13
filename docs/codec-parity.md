@@ -45,7 +45,7 @@ fidelity and the remaining work.
 | MPEG-2 / MPEG-1 | video | `crates/mpeg2v` | own | yes: 4:2:2, interlaced | yes: MPEG-2 |
 | Motion JPEG | video | — | dependency | yes | yes: QuickTime (Motion JPEG) |
 | JPEG 2000 | video | `crates/j2k` | ported | yes: Part 1 and HTJ2K; DCP and IMF App 2E packages | yes: DCP (Digital Cinema Package) |
-| SMPTE VC-2 (Dirac) | video | `crates/dirac` | ported | yes: ST 2042-1 | no |
+| SMPTE VC-2, Dirac | video | `crates/dirac` | ported | yes: VC-2 (ST 2042-1) and the Dirac core syntax | no |
 | FFV1 | video | `crates/ffv1` | own | yes: versions 0, 1, 3, 8-16 bit | no |
 | Hap | video | `crates/hap` | own | yes | no |
 | Huffyuv | video | `crates/huffyuv` | own | yes | no |
