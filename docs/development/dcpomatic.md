@@ -1,22 +1,24 @@
-# DCP-o-matic – installing the optional DCP mastering backend
+# DCP-o-matic – the DCP mastering backend (part of CFA4 only)
 
 [ADR 0011](../adr/ADR-0011-dcpomatic-external-mastering.md) · crate:
 [`cfa4-dcpomatic`](../../crates/dcpomatic/README.md) · commands: `dcpomatic.status`,
 `dcpomatic.makeDcp`, `dcpomatic.makeKdm`.
 
+> **Status (2026-11-13):** the approved plan [CFA4-DCPOMATIC-001 v1.0](../plans/CFA4-DCPOMATIC-001-FINAL-1.0.md)
+> makes DCP-o-matic part of CFA4 only: the CFA4 package will ship its own pinned build (2.18.51) of the
+> command-line tools in `/usr/lib/cfa4/dcpomatic/`, off `PATH`, with no menu entry or GUI (phases 2 and 5).
+> Until then the draft code in PR #1173 still looks on `PATH` and in `CFA4_DCPOMATIC_BIN_DIR`.
+
 CFA4 runs DCP-o-matic's command-line tools (`dcpomatic2_create`, `dcpomatic2_cli`, and for KDMs
-`dcpomatic2_kdm_cli`) as separate programs. They are not part of CFA4 and are not in Ubuntu's archive, so install them yourself.
-Version **2.18.20 or newer** is needed.
+`dcpomatic2_kdm_cli`) as separate programs.
 
-## Install
+## Build for development
 
-- **Packages:** the DCP-o-matic project publishes `.deb` packages for current Ubuntu releases on
-  its download page (<https://dcpomatic.com/download>). Install the one for your release with
-  `sudo apt install ./dcpomatic_<version>_amd64.deb`; it puts both tools in `/usr/bin`.
-- **From source:** follow DCP-o-matic's `BUILD.md` (waf, libdcp, libsub, FFmpeg, wxWidgets for
-  the GUI tools). Point CFA4 at the build with
-  `export CFA4_DCPOMATIC_BIN_DIR=/path/to/dcpomatic/build/src/tools` and, for a build installed
-  into a prefix, `LD_LIBRARY_PATH=/prefix/lib`.
+Build the pinned tool chain from source as the [DCPOM-01 audit](../audit/DCPOM-01-DCPOMATIC-SURVEY-2026-11-13.md)
+did (script: [`DCPOM-01-build.sh`](../audit/DCPOM-01-build.sh); about 12 minutes on 4 cores). The tools
+need the patched OpenSSL binary `dcpomatic2_openssl` next to them. Point CFA4 at the build with
+`export CFA4_DCPOMATIC_BIN_DIR=$DCPOM_DIR/prefix/bin` and
+`LD_LIBRARY_PATH=$DCPOM_DIR/prefix/lib64`.
 
 Check it:
 

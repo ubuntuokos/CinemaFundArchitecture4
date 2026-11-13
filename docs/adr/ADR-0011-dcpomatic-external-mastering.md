@@ -41,12 +41,13 @@ a licenc egyik bekötési módot sem zárja ki.
    (csak `PATH`, `LD_LIBRARY_PATH`, locale), privát `HOME` / `TMPDIR` / munkakönyvtárral fut;
    a kimenet fájlba megy. Megszakítás: `SIGINT` a csoportnak, 5 s után `SIGKILL`; időtúllépés
    (alapból 48 óra): `SIGKILL`. A konzolos haladás (`NN%`) a hívóhoz jut.
-2. **A DCP-o-matic nem része a CFA4-nek.** Nem kerül a repóba, nem linkeljük, és a csomagok nem
-   viszik magukkal. A felhasználó telepíti (a DCP-o-matic saját csomagjai vagy forrásból
-   fordítás, `docs/development/dcpomatic.md`). Ha nincs telepítve, a háttér „nem elérhető”, a CFA4
-   többi része változatlanul működik. Legkisebb támogatott változat: **2.18.20**
-   (`--video-bit-rate`, `make-dcp`); a `dcpomatic2_cli --version` alapján ellenőrizzük. A KDM-ekhez
-   a `dcpomatic2_kdm_cli` is kell; nélküle csak a KDM-készítés nem elérhető.
+2. **A DCP-o-matic kizárólag a CFA4 része** (a [CFA4-DCPOMATIC-001 v1.0](../plans/CFA4-DCPOMATIC-001-FINAL-1.0.md) terv
+   D2/D9 döntése, a tulajdonos 2026-11-13-án hagyta jóvá; ez váltja ki ennek a pontnak a korábbi, „a felhasználó telepíti”
+   változatát). A CFA4 `.deb` a DCP-o-matic parancssori eszközeinek egy rögzített változatát (**2.18.51**, a
+   [DCPOM-01 audit](../audit/DCPOM-01-DCPOMATIC-SURVEY-2026-11-13.md) szerint) és saját könyvtárait egy privát
+   mappában viszi (`/usr/lib/cfa4/dcpomatic/`). Ez nincs a PATH-on, és nincs hozzá menüpont, `.desktop` fájl
+   vagy grafikus felület. A CFA4 csak ezt a példányt használja. Ha hiányzik vagy sérült, a háttér „nem
+   elérhető”, és a CFA4 többi része változatlanul működik. A futás továbbra is külön folyamat (1. pont).
 3. **Parancsok** (minden kliens, a Qt GUI is a `cfa4-cli serve`-en át): `dcpomatic.status`
    (telepítve van-e, hol, milyen változat) és `dcpomatic.makeDcp` (tartalomfájlok → DCP
    háttérfeladatként, `jobs.list` / `jobs.cancel`, vagy `wait`-tel azonnal). A CFA4 saját
@@ -67,8 +68,7 @@ a licenc egyik bekötési módot sem zárja ki.
      a CFA4 saját `dcp.loadKdm`-je le tudja játszani.
    - **Qt GUI-panel: igen.** Fájl ▸ DCP-o-matic… (`python/cfa4_qt/panels/dcpomatic_dialog.py`):
      DCP és KDM fül a fenti parancsokra építve; a fejléc a `dcpomatic.status` eredményét mutatja.
-   - **Csomagolás:** a .deb `Suggests: dcpomatic` sort kaphat (a DCP-o-matic nincs az Ubuntu
-     tárolóiban, ezért `Recommends` nem lehet). Ez nem része ennek az ADR-nek.
+   - **Csomagolás:** lásd a 2. pontot (szállított saját példány). A korábbi `Suggests: dcpomatic` javaslat elesett.
 5. **A DCP-o-matic beállításai** alapból a CFA4 saját könyvtárában vannak
    (`${XDG_CONFIG_HOME:-~/.config}/cfa4/dcpomatic`; a `--config` adja át, a `--config` opció
    nélküli `dcpomatic2_kdm_cli`-nek pedig egy privát `XDG_CONFIG_HOME/dcpomatic2` hivatkozás). Így
@@ -79,13 +79,15 @@ a licenc egyik bekötési módot sem zárja ki.
 
 ## Következmények
 
-- A CFA4 kódja GPL-3.0-or-later marad; a DCP-o-matic kódjából semmi sem kerül át, ezért a
-  `docs/licensing.md` §5 újrahasznosítási jegyzékébe nem kell sor.
+- A CFA4 kódja GPL-3.0-or-later marad. A DCP-o-matic kódjából semmi sem kerül át a CFA4 forrásába. A
+  szállított bináris példány viszont harmadik féltől származó komponens: a licencszövegei a csomagba, a
+  bejegyzése a `docs/licensing.md`-be és a `NOTICE`-ba kerül, és a pontos forrás a kiadás mellett elérhető
+  (terv, 5. fázis).
 - A Rust oldalon nincs `unsafe` és nincs C++; a rétegszabály (`cargo xtask layers`) a
   `dcpomatic` crate-et L3-ba sorolja, az `engine` (L4) használja.
 - Tesztek: a crate hamis eszközökkel (shell-szkriptek) ellenőrzi az argumentumokat, a privát
   környezetet, a haladást, a hibaüzeneteket, a megszakítást (a háttérben indított gyermek is
   leáll) és az időtúllépést. Valódi DCP-o-matic-kal futó körbejárási teszt (DCP-o-matic → CFA4
   `cfa4-dcp-validate`) a következő lépés, ahol a DCP-o-matic telepíthető.
-- A DCP-o-matic parancssora változhat; az adapter a 2.18.20 óta stabil opciókat használja, és
-  minden új főváltozatnál a tesztjeit a valódi eszközzel is le kell futtatni.
+- A DCP-o-matic parancssora változhat. A CFA4 egy rögzített változatot szállít (2.18.51), és minden
+  frissítéskor a DCPOM-01 audit lépéseit és a valódi eszközzel futó CI-jobot újra le kell futtatni.
