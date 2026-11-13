@@ -65,7 +65,7 @@ Gazdát csak a tulajdonos jelölhet ki vagy válthat le. Fejlesztő munkamenet n
    PR-megjegyzésben válaszolj, pontonként (például mert
    az `AGENTS.md` mást ír elő: ütközésnél mindig a CFA4 szabályai nyernek). Javítás után kérd
    újra (`@coderabbitai review`). A PR-t csak akkor add át a gazdának, ha a legutóbbi kérésedre
-   megérkezett a CodeRabbit review a PR mostani fejére, és nem maradt megválaszolatlan
+   a PR mostani fején a `CodeRabbit` check-run `success` lett (§3.4 b), és nem maradt megválaszolatlan
    CodeRabbit-szál (§3.4). A CodeRabbit javító funkcióit (Autofix, „Fix comments”,
    CI-javítás, ütközésfeloldás) nem indítod: a PR-ba csak te commitolsz. Dependabot-PR-on
    és köteg-PR-on nem kérsz CodeRabbit-ellenőrzést.
@@ -93,10 +93,12 @@ Gazdát csak a tulajdonos jelölhet ki vagy válthat le. Fejlesztő munkamenet n
    CodeRabbit nélkül nem engedi tovább:
    (a) a fejlesztő kért ellenőrzést, vagyis a PR megjegyzései között
    (`GET /repos/{owner}/{repo}/issues/{n}/comments`, minden oldal) van `@coderabbitai review`;
-   (b) a kért review be is fejeződött: van `coderabbitai[bot]` review
-   (`GET /repos/{owner}/{repo}/pulls/{n}/reviews`), amelynek `commit_id`-je a PR mostani feje, és
-   amely az utolsó `@coderabbitai review` kérésnél később érkezett. Ha a fej a review után
-   változott, a fejlesztőnek újra kell kérnie;
+   (b) a kért review be is fejeződött: a PR mostani fején a `CodeRabbit` nevű check-run
+   (`GET /repos/{owner}/{repo}/commits/{sha}/check-runs`) `success` eredménnyel („Finished”)
+   zárult, és a `completed_at`-je később van, mint az utolsó `@coderabbitai review` kérés.
+   (Megállapítás nélküli review-nál a CodeRabbit nem készít review-t, csak ezt a check-runt;
+   kimerült keretnél a check-run `neutral`, „Review rate limited”, ez nem elég.) Ha a fej a
+   review után változott, a fejlesztőnek újra kell kérnie;
    (c) nincs megválaszolatlan CodeRabbit-megállapítás: sem szál
    (`GET /repos/{owner}/{repo}/pulls/{n}/ccr/review_threads` a Claude Code munkamenetekben;
    máshol a GitHub GraphQL `pullRequest.reviewThreads { isResolved }`), sem a PR bármelyik
