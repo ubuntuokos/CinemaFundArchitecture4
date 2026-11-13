@@ -23,12 +23,12 @@ Design principles:
 
 ```text
  L6  apps/cfa4 · apps/cfa4-cli · apps/cfa4-studio-host
- L5  ui-egui · automation · tcsync-io · platform · gstreamer (cfa4-gstreamer, optional) · ffmpeg (cfa4-ffmpeg, optional) · obs (cfa4-obs)
+ L5  ui-egui · automation · tcsync-io · surface · platform · gstreamer (cfa4-gstreamer, optional) · ffmpeg (cfa4-ffmpeg, optional) · obs (cfa4-obs)
  L4  engine
  L3  render · gpu · export · smart-edit · qc · golden (test-only)
      DCP validation: dcp-validate · dcp-inspect
  L2  edit · codecs · interchange · captions · credits · speech · tts · tts-text
- L1  frame · media · project · audio-dsp · text · route (cfa4-route) · tcsync · metrics · live
+ L1  frame · media · project · audio-dsp · text · route (cfa4-route) · tcsync · surface-model · metrics · live
  L0  foundation: time · geom · color · bitstream · testkit (dev-dependency only)
      codecs/containers: isobmff · matroska · mxf · cfb · mpegts · st2110 · ogg · h264 · h264enc · hevc · vp9 · av1 · mpeg2v · dv · lcevc · prores · dnx · apv · dng · aac · ac3 · dts · mpa · opus
      documents: dcp
@@ -85,6 +85,7 @@ Crates are named `cfa4-<dir>` (`crates/time` is `cfa4-time`); new CFA4 crates ar
 | `project` | L1 | document model, effect definitions, keyframes |
 | `audio-dsp` | L1 | loudness metering (BS.1770 / R128), audio effects, channel layouts (BS.775 up/downmix, 5.1 panner), music remix analysis; no dependencies |
 | `tcsync` | L1 | external timecode sync: SMPTE LTC frame, biphase-mark encoder and decoder (either direction, varying speed); MIDI Timecode quarter-frame / full-frame generation and parsing; chase state machine (locate, lock, drift re-seek, freewheel, scrub) ([plan](plans/TIMECODE-SYNC-LTC-MTC-2026-11-11.md)); depends only on `time` |
+| `surface-model` | L1 | `cfa4-surface-model`: control surface types shared by the engine and the device I/O: `SurfaceEvent` / `SurfaceInput` (button, absolute 7/14-bit, relative with its encoding, jog, shuttle, touch, program change, pitch bend, SysEx, raw), `SurfaceFeedback`, `DeviceId`, device state and counters; serde only ([ADR 0012](adr/ADR-0012-control-surface.md)) |
 | `text` | L1 | text engine: font database (bundled OFL fonts + system fonts), shaping (harfrust), bidi, line breaking, paragraph layout, glyph/path rasteriser, strokes ([crates/text/README.md](../crates/text/README.md)) |
 | `route` | L1 | `cfa4-route`: compute router: per-task choice of backend and device (GPU, NPU, CPU) from the routing table (`routing.toml`), the `/sys` device probe and the user's preferences, with reasons and fallback order; backend catalogue (implemented / planned, vendor-locked) and the vendor-neutrality coverage report; no `unsafe`, no workspace dependencies ([ADR 0004](adr/ADR-0004-compute-routing.md), [README](../crates/route/README.md)) |
 | `metrics` | L1 | image fidelity metrics for output comparison (docs/gaps.md G1): CIEDE2000 ΔE between sRGB images, SSIM of planes; depends on `color` only ([README](../crates/metrics/README.md)) |
@@ -111,6 +112,7 @@ Crates are named `cfa4-<dir>` (`crates/time` is `cfa4-time`); new CFA4 crates ar
 | `ffmpeg` | L5 | `cfa4-ffmpeg`: FFmpeg (≥ 9.0.2, GPL-3 build) supplementary backend (feature `ffmpeg`): probe with licence and restricted-codec check, native-bit-depth decoding of what the engine cannot read yet, first fallback before GStreamer, `ffmpeg` route ([ADR 0005](adr/ADR-0005-media-backends.md), [README](../crates/ffmpeg/README.md)) |
 | `obs` | L5 | `cfa4-obs`: live studio core (CFA4-LIVE-STUDIO-001 S0): the `StudioBackend` trait, the libobs 33.0.1 binding (loaded at run time; `unsafe` only in `libobs::sys`, ADR 0001 addendum 2026-11-07), the pure-Rust software backend (the fallback), the shared-memory frame ring and the supervisor of `cfa4-studio-host` ([plan](plans/CFA4-LIVE-STUDIO-001.md), [README](../crates/obs/README.md)) |
 | `tcsync-io` | L5 | `cfa4-tcsync-io`: external timecode sync devices: LTC in and out through cpal (a chosen channel of a chosen device), MIDI Timecode in and out through the ALSA sequencer (client `CFA4`, ports `Timecode In` / `Timecode Out`), and the `SyncManager` that opens what the settings ask for, feeds the chase and returns locate / stop for the player; used by `cfa4-cli serve` ([plan](plans/TIMECODE-SYNC-LTC-MTC-2026-11-11.md)) |
+| `surface` | L5 | `cfa4-surface`: control surface devices: discovery of ALSA sequencer MIDI ports (not System, Midi Through or CFA4's own clients) and of Contour ShuttlePRO / ShuttleXpress through `/sys/class/hidraw` (no read permission is reported, not hidden); used by `cfa4-cli serve` (`surface.devices`) for Settings ▸ Control Surfaces; reading, hot-plug and feedback come next ([ADR 0012](adr/ADR-0012-control-surface.md)) |
 | `automation` | L5 | MCP server (`rmcp`, stdio), headless or bridged to the running app |
 | `platform` | L5 | OS media FFI only: hardware video decoding (NVDEC and VA-API H.264 / HEVC, with our own parsers and DPBs driving the stateless hardware; a no-op elsewhere) behind `codecs::VideoDecoder`, with transparent fallback to our decoders, and NVIDIA NVENC H.264 (opt-in) and H.265 (CFA4's only H.265 encoder; the format exists only where it does) encoding behind `export::VideoEncoder`; H.264 declines to the built-in encoder for what the hardware does not take. The one crate allowed `unsafe` ([ADR 0001](adr/0001-platform-ffi.md), [README](../crates/platform/README.md)) |
 | `cfa4` | L6 | desktop binary: eframe/wgpu window, cpal audio output, file dialogs, TCP control server |

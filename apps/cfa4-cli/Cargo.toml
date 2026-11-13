@@ -49,6 +49,7 @@ cfa4-ogg = { workspace = true }
 cfa4-automation = { workspace = true }
 cfa4-tcsync = { workspace = true }
 cfa4-tcsync-io = { workspace = true }
+cfa4-surface = { workspace = true }
 serde_json = { workspace = true }
 tokio = { version = "1", features = ["rt-multi-thread", "macros"] }
 # the GPU compositor's backends, so `frame.render` composites on the GPU when this binary is built
@@ -58,3 +59,4 @@ wgpu = { version = "30", default-features = false, features = ["wgsl", "vulkan",
 [dev-dependencies]
 cfa4-testkit = { workspace = true }
 cfa4-tts = { workspace = true }
+cfa4-surface-model = { workspace = true }

@@ -10,6 +10,7 @@ control (the preference key), ``settings.<key>.<value>`` (theme radio buttons),
 ``settings.<key>.browse`` (folders), ``settings.<key>.hex`` (colours),
 ``settings.favorite.<theme>`` (favourite stars), ``settings.labels.colors.<label>.name|color``,
 ``settings.labelPresets.<revert|import|export|folder|delete>``, ``settings.mediaCache.clean``,
+``settings.controlSurfaces.refresh``, ``settings.controlSurfaces.<n>.enabled|profile`` (the n-th device),
 ``settings.page``, ``settings.help``, ``settings.reset``, ``settings.cancel``, ``settings.ok``.
 """
 
@@ -320,6 +321,9 @@ class PreferencesDialog(QDialog):
         self.cache_info: dict[str, Any] | None = None
         self.label_presets: dict[str, Any] | None = None
         self.auto_save_status: dict[str, Any] | None = None
+        self.surfaces: dict[str, Any] | None = None  # surface.devices
+        self.surface_profiles: list[dict[str, Any]] | None = None  # controlSurfaces.profiles
+        self._surfaces_pending = self._surfaces_building = False
         self.label_w = LABEL_W  # narrower beside Label Colors (egui: at most 45 % of the width)
         self._enablers: list[tuple[QWidget, str]] = []
         self._watchers: list[Callable[[], None]] = []
@@ -791,6 +795,8 @@ class PreferencesDialog(QDialog):
             else:
                 show(self.cache_info)
             return label
+        if name == "controlSurfaces":
+            return self._control_surfaces(parent)
         if name == "outputMapping":
             label = self._note(parent, "", "settings.outputMapping")
 
@@ -928,6 +934,131 @@ class PreferencesDialog(QDialog):
             sw.picked.connect(lambda s, ck=ck: self.set_value(ck, s))
             grid.addWidget(sw, i, 1)
         return box
+
+    # ----- Control Surfaces -----
+    def _control_surfaces(self, parent: QWidget) -> QWidget:
+        """Settings ▸ Control Surfaces: the MIDI controllers and jog/shuttle devices of this
+        machine (``surface.devices``), each with Use and Profile; the choices go to the draft's
+        ``controlSurfaces.devices`` (OK applies them). Refresh looks for devices again."""
+        box = QGroupBox(tr("Devices"), parent)
+        v = QVBoxLayout(box)
+        if (self.surfaces is None or self.surface_profiles is None) and not self._surfaces_pending:
+            self._surfaces_pending = self._surfaces_building = True
+            try:
+                self._load_surfaces()  # an engine that answers at once fills both before this returns
+            finally:
+                self._surfaces_building = False
+        if self.surfaces is None or self.surface_profiles is None:
+            v.addWidget(self._note(box, "Looking for devices…", "settings.controlSurfaces.status"))
+            return box
+        devices = [d for d in self.surfaces.get("devices") or [] if isinstance(d, dict)]
+        grid = QGridLayout()
+        grid.setHorizontalSpacing(12)
+        grid.setVerticalSpacing(4)
+        for c, head in enumerate((tr("Use"), tr("Device"), tr("Type"), tr("Status"), tr("Profile"))):
+            h = QLabel(head, box)
+            h.setStyleSheet(f"color: {theme.current().text_dim}; font-weight: 600;")
+            grid.addWidget(h, 0, c)
+        types = {"midi": tr("MIDI"), "hid": tr("HID jog/shuttle"), "osc": tr("OSC")}
+        states = {"online": tr("Connected"), "offline": tr("Not connected"), "error": tr("Error"), "disabled": tr("Disabled")}
+        for n, d in enumerate(devices, start=1):
+            dev = str(d.get("device") or "")
+            setting = self._surface_setting(dev)
+            use = QCheckBox(box)
+            use.setObjectName(f"settings.controlSurfaces.{n}.enabled")
+            use.setChecked(bool(setting.get("enabled", d.get("enabled", True))))
+            use.toggled.connect(lambda on, i=dev: self._set_surface(i, "enabled", bool(on)))
+            grid.addWidget(use, n, 0)
+            name = QLabel(str(d.get("name") or dev), box)
+            name.setObjectName(f"settings.controlSurfaces.{n}.name")
+            name.setToolTip(fmt("{device} ({port})", device=dev, port=str(d.get("port") or "")))
+            grid.addWidget(name, n, 1)
+            grid.addWidget(QLabel(types.get(str(d.get("protocol") or ""), str(d.get("protocol") or "")), box), n, 2)
+            state = QLabel(states.get(str(d.get("state") or ""), str(d.get("state") or "")), box)
+            state.setObjectName(f"settings.controlSurfaces.{n}.state")
+            if d.get("error"):
+                state.setToolTip(str(d.get("error")))
+                state.setStyleSheet(f"color: {theme.current().text_dim};")
+            grid.addWidget(state, n, 3)
+            combo = QComboBox(box)
+            combo.setObjectName(f"settings.controlSurfaces.{n}.profile")
+            driver = str(d.get("driver") or "")
+            for p in self.surface_profiles:
+                if p.get("driver") == driver:
+                    combo.addItem(tr(str(p.get("name") or p.get("id"))), str(p.get("id") or ""))
+            current = str(setting.get("profile") or d.get("profile") or "")
+            i = combo.findData(current)
+            combo.setCurrentIndex(max(i, 0))
+            combo.activated.connect(lambda _i, i=dev, c=combo: self._set_surface(i, "profile", str(c.currentData() or "")))
+            grid.addWidget(combo, n, 4)
+        grid.setColumnStretch(1, 1)
+        v.addLayout(grid)
+        if not devices:
+            v.addWidget(self._note(box, "No MIDI controller or jog/shuttle device was found. Connect one and press Refresh.",
+                                   "settings.controlSurfaces.empty"))
+        for n, d in enumerate(devices, start=1):
+            if d.get("error"):
+                v.addWidget(self._note(box, fmt("{name}: {error}", name=str(d.get("name") or ""), error=str(d.get("error"))),
+                                       f"settings.controlSurfaces.{n}.error"))
+        for problem in self.surfaces.get("problems") or []:
+            v.addWidget(self._note(box, str(problem)))
+        row = QHBoxLayout()
+        row.addStretch(1)
+        refresh = self._button("settings.controlSurfaces.refresh", tr("Refresh"))
+        refresh.clicked.connect(self._refresh_surfaces)
+        row.addWidget(refresh)
+        v.addLayout(row)
+        return box
+
+    def _load_surfaces(self) -> None:
+        def devices(r: Any, _b: Any) -> None:
+            self.surfaces = r if isinstance(r, dict) else {"devices": []}
+            self._surfaces_loaded()
+
+        def profiles(r: Any, _b: Any) -> None:
+            got = r.get("profiles") if isinstance(r, dict) else None
+            self.surface_profiles = [p for p in got or [] if isinstance(p, dict)]
+            self._surfaces_loaded()
+
+        def failed(m: str) -> None:
+            self.surfaces = {"devices": [], "problems": [m]}
+            self._surfaces_loaded()
+
+        self.engine.call("surface.devices", {}, on_reply=devices, on_error=failed)
+        self.engine.execute("controlSurfaces.profiles", {}, on_reply=profiles,
+                            on_error=lambda m: profiles({"profiles": []}, None))
+
+    def _surfaces_loaded(self) -> None:
+        if self.surfaces is None or self.surface_profiles is None or not self._surfaces_pending:
+            return
+        self._surfaces_pending = False
+        if self._surfaces_building:
+            return  # answered while the page was being built: that build shows it
+        if self.page == "controlSurfaces":
+            try:
+                self._build_page()
+            except RuntimeError:
+                pass  # the dialog is closing
+
+    def _refresh_surfaces(self) -> None:
+        self.surfaces = None
+        self._surfaces_pending = False
+        self._build_page()
+
+    def _surface_setting(self, device: str) -> dict[str, Any]:
+        for d in get(self.values, "controlSurfaces.devices") or []:
+            if isinstance(d, dict) and d.get("device") == device:
+                return d
+        return {}
+
+    def _set_surface(self, device: str, key: str, value: Any) -> None:
+        devices = [dict(d) for d in get(self.values, "controlSurfaces.devices") or [] if isinstance(d, dict)]
+        entry = next((d for d in devices if d.get("device") == device), None)
+        if entry is None:
+            entry = {"device": device, "enabled": True, "profile": ""}
+            devices.append(entry)
+        entry[key] = value
+        put(self.values, "controlSurfaces.devices", devices)
 
     def _label_presets(self, parent: QWidget) -> QWidget:
         """Label Color Presets: picking one or Revert edits the draft (OK applies it); Import,
