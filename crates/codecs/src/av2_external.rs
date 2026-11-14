@@ -163,7 +163,7 @@ impl RawPicture {
         };
         DecodedFrame {
             pts: self.pts,
-            frame: VideoFrame { width: self.width, height: self.height, data, color, par: (1, 1), pts: cfa4_time::Tick::ZERO },
+            frame: VideoFrame { width: self.width, height: self.height, data, color, par: (1, 1), pts: cfa4_time::Tick::ZERO, layout: Default::default() },
             draft: false,
         }
     }

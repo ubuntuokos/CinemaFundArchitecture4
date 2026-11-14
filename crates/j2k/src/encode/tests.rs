@@ -416,11 +416,34 @@ fn htj2k_header_and_limits() {
     assert_eq!(cs[cap + 10 + 12], 0x40);
     let lossy = encode(&img, &EncodeOptions { ht: true, ..EncodeOptions::lossy(1.0) }).unwrap();
     assert_eq!(lossy[cap + 9] & 0x20, 0x20, "irreversible flag in Ccap15");
-    for opts in [
-        EncodeOptions { ht: true, max_bytes: Some(10_000), ..EncodeOptions::lossless() },
-        EncodeOptions { ht: true, max_component_bytes: Some(10_000), ..EncodeOptions::lossless() },
-        EncodeOptions { ht: true, ..EncodeOptions::cinema_2k(24) },
-    ] {
-        assert!(matches!(encode(&img, &opts), Err(Error::Unsupported(_))), "{opts:?}");
+    let dci = EncodeOptions { ht: true, ..EncodeOptions::cinema_2k(24) };
+    assert!(matches!(encode(&img, &dci), Err(Error::Unsupported(_))));
+}
+
+#[test]
+fn htj2k_meets_byte_limits_close_to_the_part_1_coder() {
+    let img = picture(160, 96, &[(10, false, 1, 1); 3], 11);
+    let full = encode(&img, &EncodeOptions { ht: true, ..EncodeOptions::lossless() }).unwrap().len();
+    let mut last = 0.0;
+    for limit in [full / 40, full / 12, full / 4, full / 2] {
+        for opts in [EncodeOptions::lossy(0.25), EncodeOptions::lossless()] {
+            let ht = EncodeOptions { ht: true, max_bytes: Some(limit), ..opts.clone() };
+            let cs = encode(&img, &ht).unwrap();
+            assert!(cs.len() <= limit, "{} > {limit}", cs.len());
+            let q_ht = psnr(&img, &decode(&cs).unwrap());
+            let q_p1 = psnr(&img, &decode(&encode(&img, &EncodeOptions { max_bytes: Some(limit), ..opts.clone() }).unwrap()).unwrap());
+            // whole bit-planes only (no fractional passes), so a little below Part 1
+            assert!(q_ht > q_p1 - 3.0, "limit {limit} reversible {}: HT {q_ht:.2} dB, Part 1 {q_p1:.2} dB", opts.reversible);
+            if !opts.reversible {
+                assert!(q_ht >= last, "{q_ht} after {last}");
+                last = q_ht;
+            }
+        }
     }
+    // per-component limits too
+    let opts = EncodeOptions { ht: true, max_component_bytes: Some(full / 10), ..EncodeOptions::lossy(0.25) };
+    assert!(psnr(&img, &decode(&encode(&img, &opts).unwrap()).unwrap()) > 25.0);
+    // a limit above the lossless size changes nothing
+    let roomy = encode(&img, &EncodeOptions { ht: true, max_bytes: Some(full * 2), ..EncodeOptions::lossless() }).unwrap();
+    assert_eq!(decode(&roomy).unwrap().components, img.components);
 }

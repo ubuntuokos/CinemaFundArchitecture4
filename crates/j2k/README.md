@@ -98,10 +98,15 @@ and decoder cannot disagree on them.
   MagSgn writers ported from OpenJPH 0.28.1 (`ojph_block_encoder.cpp`, the VLC encoder tables
   built from the decoder's `ht_tables.rs`); Rsiz bit 14, the CAP marker (Pcap Part 15, Ccap15:
   HT only, one HT set, no ROI, the irreversible flag and Bp from the largest Mb) and code-block
-  style 0x40. Lossless and fixed-step lossy, Part 1 profile only: rate control (a byte limit) and
-  the IMF HTJ2K profiles (ST 2067-21, edition to be decided) come later.
+  style 0x40. Lossless and fixed-step lossy, Part 1 profile only; the IMF HTJ2K profiles
+  (ST 2067-21, edition to be decided) come later. With a byte limit (`max_bytes`,
+  `max_component_bytes`) each code-block is also coded with its `s` lowest bit-planes dropped,
+  for every `s` up to its most significant one (missing MSBs Mb - 1 - s, the decoder puts the
+  magnitudes back at plane `s`); those codings are the block's truncation points, and the same
+  convex-hull rate control as Part 1 picks one per block. Whole planes only (no SigProp / MagRef
+  passes), so at equal size it is a little below the Part 1 coder (≤ 1.7 dB in the tests).
 
-Not yet (#117): several quality layers, tiles, rate-controlled HTJ2K, other code-block styles, SOP /
+Not yet (#117): several quality layers, tiles, HT refinement passes, other code-block styles, SOP /
 EPH / PLT, broadcast profiles. DCP / MXF export is #115, speed #116.
 
 In MXF the decoder runs through `cfa4-codecs` (`j2k.rs`): Y'CbCr, R'G'B' and gray components
