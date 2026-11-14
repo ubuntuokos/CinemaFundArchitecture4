@@ -59,6 +59,7 @@ cfa4-huffyuv = { workspace = true }
 cfa4-ffv1 = { workspace = true }
 cfa4-dirac = { workspace = true }
 cfa4-sstp = { workspace = true }
+cfa4-evc = { workspace = true }
 cfa4-aac = { workspace = true }
 cfa4-opus = { workspace = true }
 rayon = { workspace = true }

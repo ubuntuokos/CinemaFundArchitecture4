@@ -1191,6 +1191,7 @@ dependencies = [
  "cfa4-dnx",
  "cfa4-dts",
  "cfa4-dv",
+ "cfa4-evc",
  "cfa4-ffv1",
  "cfa4-frame",
  "cfa4-h264",
@@ -1410,6 +1411,14 @@ dependencies = [
  "serde_json",
  "thiserror 2.0.21",
  "web-time",
+]
+
+[[package]]
+name = "cfa4-evc"
+version = "0.10.0"
+dependencies = [
+ "cfa4-testkit",
+ "thiserror 2.0.21",
 ]
 
 [[package]]

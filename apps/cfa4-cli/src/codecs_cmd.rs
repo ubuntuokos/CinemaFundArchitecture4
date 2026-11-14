@@ -99,6 +99,7 @@ static ROWS: &[Row] = &[
         Fmt(Format::H264),
     ),
     video("HEVC / H.265", &["hevc"], Own, Sw("up to 12-bit 4:4:4; no RExt coding tools; encoder Main / Main 10 4:2:0"), true, Fmt(Format::Hevc)),
+    video("MPEG-5 EVC", &["evc"], Ported, Sw("Baseline profile: raw .evc streams and MP4 evc1"), false, NoEnc),
     video("AV1", &["av1"], Own, Sw("Main 8/10-bit"), false, Fmt(Format::Av1)),
     video("AV2", &["av2"], Own, Detect("bitstream parsing only"), false, NoEnc),
     video("VP8", &["vp8"], Own, Sw("RFC 6386"), false, NoEnc),

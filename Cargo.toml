@@ -58,6 +58,7 @@ cfa4-huffyuv = { path = "crates/huffyuv" }
 cfa4-ffv1 = { path = "crates/ffv1" }
 cfa4-canopus = { path = "crates/canopus" }
 cfa4-sstp = { path = "crates/sstp" }
+cfa4-evc = { path = "crates/evc" }
 cfa4-dirac = { path = "crates/dirac" }
 cfa4-vp9 = { path = "crates/vp9" }
 cfa4-prores = { path = "crates/prores" }
@@ -178,6 +179,9 @@ opt-level = 3
 opt-level = 3
 
 [profile.dev.package.cfa4-sstp]
+opt-level = 3
+
+[profile.dev.package.cfa4-evc]
 opt-level = 3
 
 [profile.dev.package.cfa4-huffyuv]

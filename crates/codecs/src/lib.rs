@@ -18,6 +18,7 @@
 //! - [`AudioFileSource`]: standalone compressed audio files (MP3, FLAC, AIFF, …).
 //! - [`DifSource`]: raw DV (`.dv`, `.dif`) files, decoded by `cfa4-dv`, frames read on demand.
 //! - [`RmSource`]: RealMedia (`.rm`, `.rmvb`) with RealVideo 1.0 / 2.0 / 3.0 / 4.0 video and Cook, ATRAC3, SIPR or RealAudio 1.0 / 2.0 audio.
+//! - [`EvcSource`]: raw MPEG-5 EVC Baseline (`.evc`) streams, pictures shown in their order count.
 //! - [`SstpSource`]: MPEG-4 Simple Studio Profile (Sony SR) elementary streams (`.m4v`), every picture intra.
 //! - [`Y4mSource`]: uncompressed YUV4MPEG2 (`.y4m`) video, frames read on demand.
 //! - [`openers`]: the openers to register with the engine's media pool.
@@ -33,6 +34,7 @@ pub mod avi;
 pub mod canopus;
 pub mod dif;
 pub mod dirac;
+pub mod evc;
 pub mod ffv1;
 pub mod gop;
 pub mod hap;
@@ -60,6 +62,7 @@ pub use apv::ApvSource;
 pub use audio::AudioFileSource;
 pub use avi::AviSource;
 pub use dif::DifSource;
+pub use evc::EvcSource;
 pub use gop::{FRAME_BUDGET, GopStats, cached_bytes, gop_stats, live_decoders, release_idle};
 pub use mkv::MkvSource;
 pub use mp4::Mp4Source;
@@ -97,7 +100,7 @@ impl From<CodecError> for cfa4_media::MediaError {
 }
 
 /// Our own (pure-Rust) decoders, in the order they are tried.
-const BUILTIN_FACTORIES: [VideoDecoderFactory; 19] = [
+const BUILTIN_FACTORIES: [VideoDecoderFactory; 20] = [
     video::h264_factory,
     video::hevc_factory,
     video::vp8_factory,
@@ -117,6 +120,7 @@ const BUILTIN_FACTORIES: [VideoDecoderFactory; 19] = [
     dirac::dirac_factory,
     huffyuv::huffyuv_factory,
     utvideo::utvideo_factory,
+    evc::evc_factory,
 ];
 
 fn factories() -> &'static RwLock<Vec<VideoDecoderFactory>> {
@@ -168,7 +172,7 @@ pub fn software_video_decoder(entry: &cfa4_isobmff::SampleEntry) -> Result<Box<d
 }
 
 /// Openers for the engine's media pool (MP4/MOV, Matroska/WebM, MXF, Ogg Opus/Vorbis, MPEG TS/PS and
-/// MPEG-1/2 and MPEG-4 Simple Studio Profile video elementary streams, APV raw bitstreams, YUV4MPEG2, raw DV, RealMedia, standalone audio).
+/// MPEG-1/2, MPEG-4 Simple Studio Profile and MPEG-5 EVC video elementary streams, APV raw bitstreams, YUV4MPEG2, raw DV, RealMedia, standalone audio).
 /// AV2 Annex B / IVF files are recognised and answered as unsupported ([`av2`]).
 pub fn openers() -> Vec<cfa4_media::Opener> {
     vec![
@@ -177,6 +181,7 @@ pub fn openers() -> Vec<cfa4_media::Opener> {
         mxf::opener,
         ogg::opener,
         sstp::opener,
+        evc::opener,
         mpeg::opener,
         apv::opener,
         avi::opener,
@@ -197,6 +202,7 @@ fn reader_registry() -> &'static RwLock<Vec<cfa4_media::ReaderOpener>> {
             mxf::reader_opener,
             ogg::reader_opener,
             sstp::reader_opener,
+            evc::reader_opener,
             mpeg::reader_opener,
             apv::reader_opener,
             y4m::reader_opener,
