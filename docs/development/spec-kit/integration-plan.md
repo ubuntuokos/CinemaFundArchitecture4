@@ -1,7 +1,7 @@
 # CFA4 – GitHub Spec Kit integrációs és fejlesztési terv
 
 **Azonosító:** CFA4-DEV-SPEC-KIT-001 · **Verzió:** TERV 1.2 · **Dátum:** 2026-11-01
-**Állapot:** a tulajdonos (ubuntuokos) 2026-11-01-én jóváhagyta, a D1′ és a D5–D10 döntéssel együtt (D9, D10: az SK-F1 tanulságai, 12:56); az 1.1-et ez váltja fel. Az SK-F1 indítását a tulajdonos 2026-11-01-én engedélyezte; a #450 beolvasztása után indul. A további fázisok külön engedélyhez kötöttek. 2026-11-06: az SK-F2 elfogadva, a D11 elfogadva, az SK-F3 engedélyezve. 2026-11-08: az SK-F3 elfogadva, az SK-F4 engedélyezve. 2026-11-09: az SK-F4 elfogadva.
+**Állapot:** a tulajdonos (ubuntuokos) 2026-11-01-én jóváhagyta, a D1′ és a D5–D10 döntéssel együtt (D9, D10: az SK-F1 tanulságai, 12:56); az 1.1-et ez váltja fel. Az SK-F1 indítását a tulajdonos 2026-11-01-én engedélyezte; a #450 beolvasztása után indul. A további fázisok külön engedélyhez kötöttek. 2026-11-06: az SK-F2 elfogadva, a D11 elfogadva, az SK-F3 engedélyezve. 2026-11-08: az SK-F3 elfogadva, az SK-F4 engedélyezve. 2026-11-09: az SK-F4 elfogadva. 2026-11-14: a D12 elfogadva, a pilotfeladat a G7 (D8), az SK-F5 engedélyezve.
 **Kiinduló állapot:** `main` @ `64d8f86` (2026-11-01 04:19 UTC, #438 beolvasztása).
 
 ## Változások 1.1 → 1.2
@@ -173,7 +173,7 @@ A `specs/` könyvtárak neve a CFA4-feladatazonosító, nem a Spec Kit sorszáma
 
 ## 6. Fázisok
 
-Az SK-F0–SK-F4 elkészült és elfogadott (SK-F3: 2026-11-08, SK-F4: 2026-11-09). Hátralévő külső feltétel: a költségbaseline (SK-F5).
+Az SK-F0–SK-F4 elkészült és elfogadott (SK-F3: 2026-11-08, SK-F4: 2026-11-09). Az SK-F5 a D12 szerint páros méréssel fut, a költségbaseline nem feltétele.
 
 | Fázis | Tartalom | Elfogadási tesztek | Külső előfeltétel |
 | --- | --- | --- | --- |
@@ -182,7 +182,7 @@ Az SK-F0–SK-F4 elkészült és elfogadott (SK-F3: 2026-11-08, SK-F4: 2026-11-0
 | SK-F2 · Hivatkozó constitution, preset | **kész, elfogadva 2026-11-06** (#457) | AC-SK-02, -03, -16 | – |
 | SK-F3 · Munkafolyamat-integráció | **kész, elfogadva 2026-11-08** (#691): D9-overlay, pontosított wrap | AC-SK-05, -06 | – |
 | SK-F4 · Biztonsági kapuk | **kész, elfogadva 2026-11-09** (#776): SK-07 blokkoló csonkok, `check-cfa4-policy.sh`, 9 negatív teszt; SK-04 bizonyítékmátrix | AC-SK-07 | engedélyezve 2026-11-08 |
-| SK-F5 · Pilot a pilotágon | egy új funkció tervezése (D8) | AC-SK-08, -09 | **költségbaseline** (BASELINE-COST-001, TC-10/AC-07) |
+| SK-F5 · Pilot a pilotágon | **kész** (`cfa4/spec-kit-pilot`): a G7 tervezése Spec Kittel és nélküle (D8, D12). **AC-SK-08 FAIL** (168%), AC-SK-09 részben; tulajdonosi döntésre vár ([SK-F5](../../audit/spec-kit/SK-F5-2026-11-14.md)) | AC-SK-08, -09 | engedélyezve 2026-11-14; költség: páros mérés (D12) |
 | SK-F6 · CI- és kiadási validáció | azonos PR-fejen | AC-SK-01, -10, -11, -12 | – |
 | SK-F7 · Spec Kit a `main`-re (D7) | kiválasztott munkafolyamatok aktiválása | – | külön tulajdonosi élesítési jóváhagyás |
 
@@ -201,7 +201,7 @@ Az SK-F0–SK-F4 elkészült és elfogadott (SK-F3: 2026-11-08, SK-F4: 2026-11-0
 
 - Az SK-F1 nem vár a #449-re és a #336-ra, mert a `main`-t nem érinti (D6).
 - Az SK-F2 a #449 után indul, mert a hivatkozó constitution a tisztított szabályfájlokra mutat.
-- Az SK-F3 a #336-tól független (D11); az SK-F5 a költségbaseline-ra vár.
+- Az SK-F3 a #336-tól független (D11); az SK-F5 a D12 szerint páros méréssel fut, nem vár a költségbaseline-ra.
 - A Qt6-munka és az upstream-szinkron (U0) előbbre való; a Spec Kit-munka egyiket sem tarthatja fel.
 
 ## 7. Költség és tokenkontextus
@@ -217,7 +217,7 @@ A Spec Kit nem növelheti sem a saját feladatainak, sem a többi munkamenetnek 
 | Új fizetős szolgáltatás, jogosulatlan modellhívás | 0 |
 | Kötelező tesztek csökkentése | nem engedélyezett |
 
-**Baseline-függőség.** Hitelesített baseline még nincs (BASELINE-COST-001, TC-10, AC-07: BLOCKED). A kontextus-többlet viszont baseline nélkül is mérhető: ugyanazon a `main`-en egy munkamenet Spec Kit-skillekkel és nélkülük. Ezért az AC-SK-15 már az SK-F1-ben lefuthat, az SK-F5 pilot viszont továbbra is a baseline-ra vár.
+**Baseline-függőség.** Hitelesített baseline még nincs (BASELINE-COST-001, TC-10, AC-07: BLOCKED). A kontextus-többlet viszont baseline nélkül is mérhető: ugyanazon a `main`-en egy munkamenet Spec Kit-skillekkel és nélkülük. Ezért az AC-SK-15 már az SK-F1-ben lefuthat. Az SK-F5-ben a költséget a D12 szerint páros mérés adja: ugyanazt a feladatot ugyanazzal a modellel egyszer Spec Kittel, egyszer a mostani módszerrel (plan mód) tervezzük meg, a különbség a kettő aránya. Ez a hitelesített baseline-t nem pótolja; az SK-F7 előtt a baseline-nal is össze kell vetni, ha addigra elkészül.
 
 Takarékossági szabályok: a Spec Kit nem indít ügynököt, ismételt ellenőrzést vagy EGM-review-t; a constitution rövid hivatkozó fájl, így nem duplázza az `AGENTS.md` tartalmát; a változatlan specifikációrészek nem generálódnak újra.
 
@@ -259,7 +259,7 @@ A Spec Kit Converge eredménye nem jelent kiadási készséget; az a CFA4 valid�
 | Eseménykezelők a `.claude/settings.json`-ban | `--events false`; a fájl létrejötte = leállás |
 | A gazdakapacitást elviszi | Előtte csak doksi-PR, fázisonként legfeljebb egy; a Qt6 és az upstream-szinkron előbbre való |
 | A szabályfájlok közben változnak | Az SK-F2 a #449 beolvasztása után indul; a constitution a `main` SHA-jára hivatkozik |
-| Költség nem mérhető baseline híján | SK-F5 csak a baseline után; a kontextus-többlet addig is mérhető |
+| Költség nem mérhető baseline híján | SK-F5: páros mérés (D12); a kontextus-többlet külön mérhető |
 | Upstream márkanév kerül be | AC-SK-14 |
 | Spec Kit-frissítés kompatibilitást tör | Rögzített tag, frissítés csak döntéssel (D3) |
 
@@ -276,10 +276,11 @@ Az integráció csak a fejlesztői környezetet érinti; a Spec Kit nem része a
 | D5 | Az SK-F0 jelentés (#370) elfogadása | Elfogadás; a K1–K3 azóta rendeződött, a K4 javítva | elfogadva 2026-11-01 |
 | D6 | Az SK-F1 függ az orkesztrációs F0-audit (#336) elfogadásától? | Nem: az SK-F1 eldobható worktree-ben fut, a `main`-re csak jelentés kerül. Az SK-F3-tól a #336 elfogadása feltétel marad | elfogadva 2026-11-01 |
 | D7 | Spec Kit-fájlok a `main`-en | Csak SK-F7-ben, külön jóváhagyással; a pilotág nem olvad be | elfogadva 2026-11-01 |
-| D8 | Pilotfeladat | Egy már jóváhagyott projekt (pl. Qt6-paritás) egy új funkciója, a projekt gazdájának tudtával; a választás az SK-F5 indításakor | elfogadva 2026-11-01 |
+| D8 | Pilotfeladat | Egy már jóváhagyott projekt (pl. Qt6-paritás) egy új funkciója, a projekt gazdájának tudtával; a választás az SK-F5 indításakor. **Kiválasztva 2026-11-14: G7, a `cargo xtask parity` bővítése** (`docs/gaps.md`) | elfogadva 2026-11-01 |
 | D9 | Beépített „Full SDD Cycle” workflow (SK-F1 9.1) | `specify workflow run speckit` tiltva; az SK-F3-ban CFA4-overlay veszi ki az `implement` lépést, vagy teszi kapu mögé | elfogadva 2026-11-01 |
 | D10 | `--force` a `specify init`-nél (SK-F1 E1) | A tiltás helyett: csak eldobható worktree-ben, utána kötelező teljes diff; meglévő fájl módosulása = leállás | elfogadva 2026-11-01 |
 | D11 | Az SK-F3 függ a #336 (orkesztrációs F0-audit) elfogadásától? | Nem: az SK-F3 eldobható worktree-ben fut, a `main`-re csak dokumentáció kerül (mint a D6-nál). A #336 a Spec Kit egyetlen fázisának sem feltétele | elfogadva 2026-11-06 |
+| D12 | Az SK-F5 költségmérése hitelesített baseline nélkül | Páros mérés a pilotban: ugyanaz a feladat, ugyanaz a modell, Spec Kittel és a mostani módszerrel; a baseline-nal az SK-F7 előtt kell összevetni, ha elkészül | elfogadva 2026-11-14 |
 
 Jóváhagyási csomag:
 
@@ -293,7 +294,7 @@ Jóváhagyási csomag:
 
 A Spec Kit akkor éri meg a CFA4-nek, ha egyetlen szabályt sem dupláz, egyetlen más munkamenetet sem terhel, és mérhetően nem drágítja a munkát. A sorrend:
 
-SK-F1 izolált próba – kész (#451) → SK-F2 hivatkozó constitution és preset – kész (#457) → SK-F3 munkafolyamat – kész (#691) → SK-F4 biztonsági kapuk – kész (#776) → költségbaseline → SK-F5 pilot → SK-F6 teljes validáció → SK-F7 külön élesítési döntés.
+SK-F1 izolált próba – kész (#451) → SK-F2 hivatkozó constitution és preset – kész (#457) → SK-F3 munkafolyamat – kész (#691) → SK-F4 biztonsági kapuk – kész (#776) → SK-F5 pilot páros költségméréssel (D12) – kész, AC-SK-08 FAIL, döntésre vár → SK-F6 teljes validáció → SK-F7 külön élesítési döntés.
 
 Ha az AC-SK-15 nem teljesül, a Spec Kit csak a pilotban marad használható, a `main`-re nem kerül.
 
