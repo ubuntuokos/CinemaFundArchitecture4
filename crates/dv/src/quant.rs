@@ -152,6 +152,14 @@ pub(crate) fn dequantise(dc: i32, amps: &[i16; 64], mode248: bool, class: u8, qn
     out
 }
 
+/// The dequantisation factors of one block setting (natural order) and the class-3 doubling:
+/// the encoder divides by `factor[p] * extra` to get the amplitude the decoder multiplies back.
+pub(crate) fn factors(mode248: bool, class: u8, qno: u8) -> (&'static [f32; 64], f32) {
+    let row = (usize::from(qno & 15) + usize::from(CLASS_OFFSET[usize::from(class & 3)])).min(21);
+    let extra = if class & 3 == 3 { 2.0 } else { 1.0 };
+    (&tables().factor[usize::from(mode248)][row], extra)
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
