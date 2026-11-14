@@ -574,9 +574,7 @@ fn place_pages(
         }
         let mut pics = Vec::new();
         for pic in &pg.pictures {
-            if let Some(c) = place_picture(s, &base, &mut items, pic, &pg, t, (frame_w, frame_h))? {
-                pics.push(c.0);
-            }
+            pics.extend(place_picture(s, &base, &mut items, pic, &pg, t, (frame_w, frame_h))?.into_iter().map(|c| c.0));
         }
         // the background is replaced with the page on a refresh
         let mut owned = pics.clone();
@@ -688,8 +686,6 @@ fn place_background(
     (fw, fh): (f64, f64),
 ) -> Result<Vec<ClipId>> {
     use cfa4_credits::{BackgroundFit, BackgroundKind as K};
-    // a looped video stops repeating after this many clips (a 2 s loop covers over 30 minutes)
-    const MAX_REPEATS: u64 = 1000;
     const CMD: &str = "graphics.credits.import";
     const LABEL: &str = "Import Credits";
     let dur = pg.duration;
@@ -725,28 +721,7 @@ fn place_background(
             // a video shorter than the page ends early, unless it loops: then it starts again
             // from the beginning (each run its own clip, on frame boundaries) until the page ends
             let media = s.project.item(item).map(|x| x.duration()).filter(|d| d.0 > 0 && bg.kind == K::Video);
-            let rate = s.sequence_rate();
-            let mut runs: Vec<(Tick, Tick)> = Vec::new();
-            match media {
-                Some(m) if bg.repeat && m < dur => {
-                    let end = t.0.saturating_add(dur.0);
-                    let mut at = t;
-                    while at.0 < end && (runs.len() as u64) < MAX_REPEATS {
-                        let next = Tick(at.0.saturating_add(m.0).min(end));
-                        let next = rate.snap(next).min(Tick(end));
-                        if next <= at {
-                            break;
-                        }
-                        runs.push((at, Tick(next.0 - at.0)));
-                        at = next;
-                    }
-                }
-                _ => {}
-            }
-            // not looped, or a video shorter than a frame: one clip, ending early when short
-            if runs.is_empty() {
-                runs.push((t, media.map_or(dur, |m| m.min(dur))));
-            }
+            let runs = video_runs(s.sequence_rate(), t, dur, media, bg.repeat);
             let name = std::path::Path::new(&bg.file).file_name().map(|n| n.to_string_lossy().into_owned()).unwrap_or_else(|| bg.file.clone());
             let (sw, sh) = s.project.source_size(item).map(|(w, h)| (f64::from(w), f64::from(h))).filter(|(w, h)| *w > 0.0 && *h > 0.0).unwrap_or((fw, fh));
             let k = match bg.fit {
@@ -1102,6 +1077,58 @@ fn refresh(s: &mut Session, p: &Value) -> Result<Value> {
     }))
 }
 
+/// A looped video stops repeating after this many clips (a 2 s loop covers over 30 minutes).
+const MAX_REPEATS: usize = 1000;
+
+/// Where the clips of a video go on a page that starts at `t` and lasts `dur` (`media`: the
+/// video's length): one clip, ending early when the video is shorter; or, when it loops, one clip
+/// per run, back to back on frame boundaries until the page ends (at most [`MAX_REPEATS`]).
+fn video_runs(rate: cfa4_time::FrameRate, t: Tick, dur: Tick, media: Option<Tick>, repeat: bool) -> Vec<(Tick, Tick)> {
+    let mut runs = Vec::new();
+    if let Some(m) = media.filter(|m| repeat && *m < dur) {
+        let end = t.0.saturating_add(dur.0);
+        let mut at = t;
+        while at.0 < end && runs.len() < MAX_REPEATS {
+            let next = rate.snap(Tick(at.0.saturating_add(m.0).min(end))).min(Tick(end));
+            if next <= at {
+                break;
+            }
+            runs.push((at, Tick(next.0 - at.0)));
+            at = next;
+        }
+    }
+    // not looped, or a video shorter than a frame: one clip, ending early when short
+    if runs.is_empty() {
+        runs.push((t, media.map_or(dur, |m| m.min(dur))));
+    }
+    runs
+}
+
+/// The part of a clip-time parameter from `off` for `len`, as clip time of a clip starting at
+/// `off`: the values at both ends and the keyframes between them (a looped video's runs move and
+/// fade exactly as one clip over the page would).
+fn slice_param(p: &Param, off: Tick, len: Tick) -> Param {
+    if p.keyframes.is_empty() {
+        return p.clone();
+    }
+    let end = Tick(off.0.saturating_add(len.0));
+    let at = |time: Tick, rel: Tick| {
+        // the segment leaving `time` keeps the interpolation of the keyframe it lies in
+        let from = p.keyframes.iter().rev().find(|k| k.time <= time).or(p.keyframes.first());
+        Keyframe {
+            time: rel,
+            value: p.value_at(time),
+            interp: from.map_or(Interpolation::Linear, |k| k.interp),
+            out_influence: from.map_or(1.0 / 3.0, |k| k.out_influence),
+            in_influence: from.map_or(1.0 / 3.0, |k| k.in_influence),
+        }
+    };
+    let mut keyframes = vec![at(off, Tick::ZERO)];
+    keyframes.extend(p.keyframes.iter().filter(|k| k.time > off && k.time < end).map(|k| Keyframe { time: Tick(k.time.0 - off.0), ..k.clone() }));
+    keyframes.push(at(end, len));
+    Param { value: p.value_at(off), keyframes }
+}
+
 /// Place one picture of a page as its own clip above the page: it rolls with a scroll page
 /// (linear Motion position keyframes that match the graphic's Roll exactly) or fades with a card.
 fn place_picture(
@@ -1112,23 +1139,23 @@ fn place_picture(
     pg: &cfa4_credits::PageOut,
     t: Tick,
     (frame_w, frame_h): (f64, f64),
-) -> Result<Option<ClipId>> {
+) -> Result<Vec<ClipId>> {
     const CMD: &str = "graphics.credits.import";
-    let Some(path) = picture_path(base.as_deref(), &pic.file) else { return Ok(None) };
+    let Some(path) = picture_path(base.as_deref(), &pic.file) else { return Ok(Vec::new()) };
     let item = match items.iter().find(|(p, _)| *p == path) {
         Some((_, i)) => *i,
         None => {
             let r = s.execute("file.import", json!({"paths": [path.to_string_lossy()]}))?;
-            let Some(i) = r["items"].as_array().and_then(|a| a.first()).and_then(Value::as_u64).map(ItemId) else { return Ok(None) };
+            let Some(i) = r["items"].as_array().and_then(|a| a.first()).and_then(Value::as_u64).map(ItemId) else { return Ok(Vec::new()) };
             items.push((path.clone(), i));
             i
         }
     };
     let dur = pg.duration;
-    // a video shorter than its page ends early (it is not looped)
-    let clip_dur = if pic.video { s.project.item(item).map(|x| x.duration()).filter(|d| d.0 > 0).map_or(dur, |m| m.min(dur)) } else { dur };
+    // a video shorter than its page ends early, unless it loops: then one clip per run
+    let media = pic.video.then(|| s.project.item(item).map(|x| x.duration()).filter(|d| d.0 > 0)).flatten();
+    let runs = video_runs(s.sequence_rate(), t, dur, media, pic.repeat);
     let name = std::path::Path::new(&pic.file).file_name().map(|n| n.to_string_lossy().into_owned()).unwrap_or_else(|| pic.file.clone());
-    let clip = place_video_clip(s, CMD, &name, &json!({"time": t.0}), "Import Credits", Vec::new(), move |_, _| (item, clip_dur))?;
     let src_h = s.project.source_size(item).map(|(_, h)| f64::from(h)).filter(|h| *h > 0.0).unwrap_or(pic.size.1);
     let scale = pic.size.1 / src_h * 100.0;
     let (cx, cy) = pic.center;
@@ -1166,38 +1193,59 @@ fn place_picture(
     let tr_in = half(pg.transition_in);
     let tr_out = half(pg.transition.as_ref().map(|(_, d)| *d).unwrap_or(Tick::ZERO));
     let (fin, fout) = if card { (Tick::ZERO, Tick::ZERO) } else { (tr_in, tr_out) };
-    s.edit_sequence("Import Credits", move |q, _, _| {
-        let (_, it) = q.find_item_mut(clip).ok_or(cfa4_edit::EditError::NoItem(clip))?;
-        if let Some(m) = it.effects.iter_mut().find(|e| e.effect == "motion") {
-            m.params.insert("position".into(), position);
-            m.params.insert("scale".into(), Param::new(ParamValue::Float(scale.clamp(0.0, 10_000.0))));
+    // the opacity over the whole page: the card's, or the fades across half of a transition
+    let mut opacity = card_opacity;
+    if fin.0 > 0 || fout.0 > 0 {
+        let mut k = vec![];
+        k.push(kf(Tick::ZERO, ParamValue::Float(if fin.0 > 0 { 0.0 } else { 100.0 })));
+        if fin.0 > 0 {
+            k.push(kf(fin, ParamValue::Float(100.0)));
         }
-        if let Some(op) = card_opacity
-            && let Some(o) = it.effects.iter_mut().find(|e| e.effect == "opacity")
-        {
-            o.params.insert("opacity".into(), op);
-        }
-        if (fin.0 > 0 || fout.0 > 0)
-            && let Some(o) = it.effects.iter_mut().find(|e| e.effect == "opacity")
-        {
-            let mut k = vec![];
-            k.push(kf(Tick::ZERO, ParamValue::Float(if fin.0 > 0 { 0.0 } else { 100.0 })));
-            if fin.0 > 0 {
-                k.push(kf(fin, ParamValue::Float(100.0)));
+        if fout.0 > 0 {
+            let start = Tick(dur.0.saturating_sub(fout.0));
+            if start > fin {
+                k.push(kf(start, ParamValue::Float(100.0)));
             }
-            if fout.0 > 0 {
-                let start = Tick(dur.0.saturating_sub(fout.0));
-                if start > fin {
-                    k.push(kf(start, ParamValue::Float(100.0)));
-                }
-                k.push(kf(dur, ParamValue::Float(0.0)));
-            }
-            k.dedup_by_key(|x| x.time);
-            o.params.insert("opacity".into(), Param { value: ParamValue::Float(100.0), keyframes: k });
+            k.push(kf(dur, ParamValue::Float(0.0)));
         }
-        Ok(())
-    })?;
-    Ok(Some(clip))
+        k.dedup_by_key(|x| x.time);
+        opacity = Some(Param { value: ParamValue::Float(100.0), keyframes: k });
+    }
+    let looped = runs.len() > 1;
+    let mut clips: Vec<ClipId> = Vec::with_capacity(runs.len());
+    for (at, len) in runs {
+        let mut pp = json!({"time": at.0});
+        // the later runs go on the track of the first, right after it
+        if let Some(tr) = clips.first().and_then(|c| clip_track(s, *c)) {
+            pp["track"] = json!(tr as u64);
+        }
+        let clip = match place_video_clip(s, CMD, &name, &pp, "Import Credits", Vec::new(), move |_, _| (item, len)) {
+            Ok(c) => c,
+            Err(_) if pp.get("track").is_some() => {
+                place_video_clip(s, CMD, &name, &json!({"time": at.0}), "Import Credits", Vec::new(), move |_, _| (item, len))?
+            }
+            Err(e) => return Err(e),
+        };
+        // each run moves and fades as its part of the page
+        let off = Tick(at.0 - t.0);
+        let position = if looped { slice_param(&position, off, len) } else { position.clone() };
+        let opacity = opacity.as_ref().map(|o| if looped { slice_param(o, off, len) } else { o.clone() });
+        s.edit_sequence("Import Credits", move |q, _, _| {
+            let (_, it) = q.find_item_mut(clip).ok_or(cfa4_edit::EditError::NoItem(clip))?;
+            if let Some(m) = it.effects.iter_mut().find(|e| e.effect == "motion") {
+                m.params.insert("position".into(), position);
+                m.params.insert("scale".into(), Param::new(ParamValue::Float(scale.clamp(0.0, 10_000.0))));
+            }
+            if let Some(op) = opacity
+                && let Some(o) = it.effects.iter_mut().find(|e| e.effect == "opacity")
+            {
+                o.params.insert("opacity".into(), op);
+            }
+            Ok(())
+        })?;
+        clips.push(clip);
+    }
+    Ok(clips)
 }
 
 /// A picture of one page at a moment, without changing the project: its background (a picture

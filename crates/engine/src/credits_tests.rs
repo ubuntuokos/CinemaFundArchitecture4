@@ -882,6 +882,71 @@ fn portraits_videos_and_card_entrances_with_the_real_engine() {
     assert!((at.x - face.x).abs() < 1e-6 && face.y < at.y);
 }
 
+#[test]
+fn a_looped_video_in_a_cell_rolls_and_fades_as_one_clip_would() {
+    use crate::media_test_util::make_movie;
+    let mut s = demo("credits-cell-loop");
+    let dir = tmp_dir("credits-cell-loop");
+    // a half-second loop (12 frames at 24 fps) on a scroll page and on a card with an entrance
+    make_movie(&dir.join("walk.mp4"), cfa4_media::DemoScene::Aurora, 320, 180, 12);
+    let styling = r#"{"pageStyles":[{"name":"In","behaviour":"card","cardFrames":100,"entrance":"slideLeft","fadeInFrames":12,"fadeOutFrames":12}]}"#;
+    let csv = "Body,Page Style\n{{Video walk.mp4 120 loop}},Scroll\nNagy Béla,\nKiss Anna,\n,\n,\n{{Videó walk.mp4 ismétlés}},In\n";
+    let undo = s.history.undo.len();
+    let v = s.execute("graphics.credits.import", json!({"csv": csv, "styling": styling, "pictureDir": dir})).unwrap();
+    assert_eq!(v["warnings"].as_array().unwrap().len(), 0, "{v}");
+    assert_eq!(s.history.undo.len(), undo + 1, "one undo step");
+    let media = cfa4_time::TICKS_PER_SECOND / 2;
+    for (k, behaviour) in [(0usize, "scroll"), (1, "card")] {
+        assert_eq!(v["clips"][k]["behaviour"], behaviour);
+        let page = item(&s, clips(&v)[k]);
+        let runs: Vec<TrackItem> = v["clips"][k]["pictures"].as_array().unwrap().iter().map(|c| item(&s, ClipId(c.as_u64().unwrap()))).collect();
+        assert!(runs.len() >= 4, "{behaviour}: {} runs", runs.len());
+        // back to back on one track above the page, never longer than the video, ending with the page
+        let track = track_of(&s, runs[0].id);
+        assert!(track > track_of(&s, page.id));
+        let mut at = page.start;
+        for r in &runs {
+            assert_eq!((track_of(&s, r.id), r.start), (track, at), "{behaviour}: back to back");
+            assert!(r.duration.0 > 0 && r.duration.0 <= media);
+            at = Tick(r.start.0 + r.duration.0);
+        }
+        assert_eq!(at, Tick(page.start.0 + page.duration.0), "{behaviour}: the loop ends with its page");
+        // across the page the runs move and fade as one clip over the page: at each run's ends,
+        // the same values as the run before ends with and the next starts with
+        let param = |r: &TrackItem, fx: &str, id: &str| r.effects.iter().find(|e| e.effect == fx).unwrap().params[id].clone();
+        for w in runs.windows(2) {
+            let (a, b) = (&w[0], &w[1]);
+            let (ParamValue::Vec2(end), ParamValue::Vec2(start)) =
+                (param(a, "motion", "position").value_at(a.duration), param(b, "motion", "position").value_at(Tick::ZERO))
+            else {
+                panic!()
+            };
+            assert!((end.x - start.x).abs() < 1e-6 && (end.y - start.y).abs() < 1e-6, "{behaviour}: {end:?} then {start:?}");
+            let (oa, ob) =
+                (param(a, "opacity", "opacity").value_at(a.duration).as_f64().unwrap(), param(b, "opacity", "opacity").value_at(Tick::ZERO).as_f64().unwrap());
+            assert!((oa - ob).abs() < 1e-6, "{behaviour}: opacity {oa} then {ob}");
+        }
+        let first = param(&runs[0], "opacity", "opacity");
+        let last = runs.last().unwrap();
+        match behaviour {
+            // the roll: from below the frame at the page's start to above it at its end
+            "scroll" => {
+                let (ParamValue::Vec2(a), ParamValue::Vec2(b)) =
+                    (param(&runs[0], "motion", "position").value_at(Tick::ZERO), param(last, "motion", "position").value_at(last.duration))
+                else {
+                    panic!()
+                };
+                assert!(a.y > b.y, "{a:?} rolls up to {b:?}");
+            }
+            // the card: fades in on the first run, out on the last
+            _ => {
+                assert_eq!(first.value_at(Tick::ZERO).as_f64(), Some(0.0));
+                assert_eq!(param(last, "opacity", "opacity").value_at(last.duration).as_f64(), Some(0.0));
+            }
+        }
+    }
+}
+
 // ----- C6: templates -----
 
 #[test]
