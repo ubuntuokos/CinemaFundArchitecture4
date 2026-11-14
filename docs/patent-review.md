@@ -39,6 +39,7 @@ szabadalommal védett formátumot.
 | LCEVC (MPEG-5 Part 2, ISO/IEC 23094-2) | csak felismerés (H.264 / HEVC SEI, MP4 `lvc1`, TS 0x36; a javítóréteget nem dekódolja) | `crates/lcevc` | alap | függőben | | |
 | MPEG-1 / MPEG-2 videó (H.262) | dekódolás | `crates/mpeg2v`; FFmpeg-háttér | alap | függőben | | |
 | MPEG-4 Part 2 (Visual) | dekódolás, kódolás | FFmpeg-háttér | alap | függőben | | |
+| MPEG-4 Part 2 Simple Studio Profile (Sony SR) | dekódolás | `crates/sstp` (az FFmpeg portja) | alap | függőben | | |
 | VC-1 / WMV | dekódolás | FFmpeg-háttér; GStreamer | alap | függőben | | |
 | DV / DVCPRO 25 / 50, DVCPRO HD (IEC 61834-2, SMPTE 314M, SMPTE 370M) | dekódolás | `crates/dv`; FFmpeg-háttér | alap | függőben | | |
 | AV1 | dekódolás | `crates/av1`; FFmpeg-háttér (dav1d) | alap | függőben | | |

@@ -56,7 +56,7 @@ fidelity and the remaining work.
 | Animated GIF | video | — | dependency | yes | yes: Animated GIF |
 | CinemaDNG / DNG | video | `crates/dng` | own | yes: uncompressed and lossless JPEG raw | no |
 | LCEVC | video | `crates/lcevc` | own | detect only: enhancement layer detected, not decoded | no |
-| MPEG-4 Part 2 | video | — | none | no | no |
+| MPEG-4 Part 2 | video | `crates/sstp` | ported | yes: Simple Studio Profile (Sony SR) only: raw .m4v streams and MXF | no |
 | WMV / VC-1 | video | — | none | no | no |
 | Camera RAW (R3D, ARRIRAW, BRAW…) | video | — | none | no | no |
 | JPEG XL | image | `crates/jxl` | ported | yes | no |
@@ -101,7 +101,7 @@ fidelity and the remaining work.
 | JPEG XS | decode (`libjpegxs`) | none | none | — | 0% | 20–40 h |
 | DV / DVCPRO / DV100 | decode + encode | own decoder `cfa4-dv` (DV-1): DV25 / DVCAM 525 4:1:1 and 625 4:2:0, DVCPRO 25 4:1:1, 8-8 and 2-4-8 DCT, 4:3 / 16:9; tables ported from libdv (LGPL-2.1-or-later); ~10 ms per frame single-threaded; imported from raw `.dv` / `.dif`, AVI (type 2), MOV / MP4 (`dvc `, `dvcp`, `dvpp`, …) and MXF, 4:1:1 as 4:2:2, aspect and BT.601 colour from the frame (DV-2); DVCPRO 50 (4:2:2) and DVCPRO HD 1080i (1280 / 1440 wide) and 720p (960 wide), BT.709, ported from FFmpeg (`pro.rs`, owner-approved exception, DV-3); DV audio (16-bit, 12-bit expanded, 2 / 4 channels, 48 / 44.1 / 32 kHz) from raw `.dv` and type-1 AVI (DV-4); type-1 AVI video; **not yet** encoder | none | within ±3 of ffmpeg (PSNR ≥ 57 dB) on 12 fixtures incl. 2-4-8, bit spilling, DVCPRO 50 and HD 1080i / 720p; 14 container fixtures (raw, AVI, MOV, MXF) within ±3; audio bit-exact against ffmpeg (4 fixtures), type-1 AVI audio equal to the raw file's; damaged-frame fuzzing | 60% | 4–8 h (encoder) |
 | LCEVC (MPEG-5 Part 2) | no | **detection only** (`cfa4-lcevc`, LCEVC-1): T.35 SEI in H.264 / HEVC (MP4, MOV, Matroska, MPEG-TS / PS), `lvc1` enhancement tracks, TS stream type 0x36; the base layer plays and the codec label says the enhancement is not decoded; decoding waits on the patent question (LCEVC-2 / LCEVC-3) | none | ffmpeg-encoded H.264 / HEVC with inserted LCEVC SEI in three containers; unit tests and damaged-input fuzzing | 10% | 40–75 h (decoder, after the patent decision) |
-| MPEG-4 Part 2 | decode | none | none | — | 0% | 10–20 h |
+| MPEG-4 Part 2 | decode | Simple Studio Profile only (`cfa4-sstp`, backlog CB-16.2, ported from FFmpeg n7.1.1; Sony HDCAM SR / SRMASTER): intra 10-bit 4:2:2, 4:4:4 and RGB, DCT (studio VLCs, quantiser matrices, non-linear quantiser scale, alternate scan) and lossless DPCM macroblocks, slices; raw elementary streams (`.m4v`, opened by content) and MPEG-4 Visual essence in MXF; **no** Simple / Advanced Simple Profile (DivX, Xvid, 3GP) and no studio P / B pictures | none | FATE DPCM sample bit-exact (local); synthetic streams (every macroblock random bits the strict decoder accepts) in 4:2:2, 4:4:4 and RGB with every precision, scan and quantiser option bit-exact against ffmpeg, directly, as raw streams through the media layer after jumps and in MXF; damaged streams without a panic | 20% | 10–20 h (Simple / Advanced Simple Profile) |
 | WMV / VC-1 | decode, encode on Windows | none | none | — | 0% | 20–35 h |
 | CinemaDNG / DNG | decode | own decoder (#1065): uncompressed and lossless JPEG raw, Bayer and LinearRaw, DNG colour model to linear Rec. 709 floats; folders of `.dng` frames as one clip with the CinemaDNG frame rate and time code; **no** lossy / JPEG XL DNG, MXF-wrapped CinemaDNG, opcode lists or Raw settings UI | — | raw samples bit-exact (and identical to LibRaw's on our synthetic files), processing against hand-computed values | 60% | 10–20 h |
 | Camera RAW: R3D (incl. R3D NE), ARRIRAW, Sony RAW / X-OCN, Canon RAW, BRAW (plug-in) | decode (vendor SDKs) | none (#383) | — | — | 0% | 50–90 h for the ones with public specs; vendor-SDK-only formats need an owner decision |
@@ -162,6 +162,7 @@ fidelity and the remaining work.
 | 2026-11-14 | minor | RealVideo 1.0 / 2.0 decode and the RealMedia demuxer (`cfa4-realvideo`, `cfa4-realmedia`, codec backlog CB-13.1) |
 | 2026-11-14 | minor | RealVideo 3.0 / 4.0 decode (`cfa4-realvideo::rv34`, codec backlog CB-13.2) |
 | 2026-11-14 | minor | ATRAC3plus decode in OpenMG and WAV (`cfa4-realaudio::atrac3p`, `cfa4-media::oma`, codec backlog CB-15.2) |
+| 2026-11-14 | minor | MPEG-4 Simple Studio Profile (Sony SR) decode in raw streams and MXF (`cfa4-sstp`, codec backlog CB-16.2) |
 | 2026-11-14 | minor | ATRAC9 decode in WAV (`cfa4-realaudio::atrac9`, codec backlog CB-16.1) |
 | 2026-11-14 | minor | ATRAC3 decode in WAV and RealMedia (`cfa4-realaudio`, codec backlog CB-15.1) |
 | 2026-11-14 | minor | RealAudio SIPR, 1.0 (14.4) and 2.0 (28.8) decode (`cfa4-realaudio`, codec backlog CB-14.2) |
