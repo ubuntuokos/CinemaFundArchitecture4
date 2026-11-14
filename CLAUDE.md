@@ -43,3 +43,57 @@ frontend (`crates/ui-egui`) stays only until the Qt6 GUI does everything it does
 - For UI work, **look at the result**: in the Qt6 GUI with `--smoke --screenshot`, in the egui app via the control channel's `ui.screenshot`; compare with `plan/premiere/screenshots/` (maintainer-local; see [`docs/agents.md`](docs/agents.md) §3).
 - Parallel agents: separate git worktrees and `CARGO_TARGET_DIR=target/agent-<name>`; keep every `Cargo.toml` valid at all times (the `crates/*` glob means one broken manifest breaks everyone).
 - Test fixtures: generate with ffmpeg into `target/fixtures/` (never commit media). See [`docs/testing.md`](docs/testing.md).
+
+# CFA4 (CinemaFundArchitecture4) — AI Agent Fejlesztési Szabályok
+
+## 1. Célplatform és Architektúra
+- **Célrendszer:** Kizárólag Ubuntu 26.04 x86_64 (AMD64).
+- **Tiltott platformok:** Tilos Windows, macOS, FreeBSD, Android, ARM64 vagy RISC-V specifikus kódot, feltételes fordítást (`#[cfg(target_os = ...)]`) vagy csomagolást írni.
+- **Tervezési elvek:** Olvasd el és tartsd be a `VISION.md` és az `AGENTS.md` előírásait.
+
+## 2. Szigorú Technológiai Verziók és Tiltólista (Elavult kód elleni védelem)
+
+### Rust (Backend & Engine)
+- **Verzió:** Kizárólag a `rust-toolchain.toml`-ban rögzített **Rust 1.97.1** szabványt használd.
+- **Szabályok:** Ne használj elavult (`#[deprecated]`) standard könyvtári vagy külső crate API-kat. A `clippy.toml` és `deny.toml` szabályai kötelező érvényűek.
+- **Upstream függetlenség:** Tilos a régi *FilmCraft* vagy *ArtCraft* neveket, logókat vagy hivatkozásokat használni (`python/tests/test_independence.py` ellenőrzi).
+
+### GUI (PySide6 / Qt6)
+- **Kötelező keretrendszer:** Kizárólag modern **PySide6 (Qt 6)** Widgets API-t használj.
+- **TILTÓLISTA:**
+  - **TILOS** új kódot írni a régi `egui` felülethez (az örökölt `egui` kód kivezetés alatt áll).
+  - **TILOS** PyQt5, PyQt6 vagy PySide2 szintaxist használni.
+  - **TILOS** elavult Qt5 metódusokat (pl. `exec_()`, `QDesktopWidget`, régi signal/slot szintaxis) alkalmazni. Használd a modern Qt6 megfelelőket (pl. `exec()`, `QScreen`).
+
+### Python Eszközök
+- **Környezet:** Minden Python parancsot kizárólag a `.venv/bin/` virtuális környezetből futtass.
+- **Szabvány:** Modern Python típusannotációkat (type hints) használj a `pyproject.toml` beállításainak megfelelően.
+
+### Média Backend
+- **Kötelező verziók:** Kizárólag **FFmpeg (≥ 9.0.2)** és rendszer szintű **GStreamer (LGPL-2.1-or-later)** API-kat használj az ADR 0002 és ADR 0005 döntések szerint.
+
+---
+
+## 3. Kötelező Önellenőrzési Protokoll (Verification Loop)
+
+Minden kódmódosítás után, **mielőtt késznek jelentenéd a feladatot**, kötelezően futtasd le az alábbi parancsokat a terminálban, és javíts minden hibát vagy figyelmeztetést:
+
+1. **Rust elavult kód és típusellenőrzés:**
+   ```bash
+   cargo clippy --workspace --all-targets -- -D warnings
+   ```
+2. **Rust függőségek és licencek ellenőrzése:**
+   ```bash
+   cargo deny check
+   ```
+3. **Python / PySide6 ellenőrzés és függetlenségi teszt:**
+   ```bash
+   .venv/bin/pytest python/tests/test_independence.py
+   .venv/bin/cfa4-doctor --strict
+   ```
+4. **Teljes Linux validáció (nagyobb módosításoknál):**
+   ```bash
+   bash scripts/dev/verify-linux.sh
+   ```
+
+*Megjegyzés: Ha bármelyik fenti parancs elavult függvényhívásra (`deprecated`) figyelmeztet, azonnal írd át a kódot a legújabb támogatott API-ra!*
