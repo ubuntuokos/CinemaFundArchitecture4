@@ -379,6 +379,11 @@ fn sample_entry(c: &Codec, private: &[u8], v: Option<&cfa4_matroska::VideoInfo>,
         // Huffyuv: the VfW BITMAPINFOHEADER sets the stream up (bit count, extradata)
         Codec::VfwFourcc { fourcc, bitmap_info_header } if fourcc.eq_ignore_ascii_case(b"HFYU") => crate::huffyuv::sample_entry(bitmap_info_header, w, h),
         Codec::VfwFourcc { fourcc, .. } if crate::canopus::codec(fourcc).is_some() => crate::canopus::sample_entry(crate::canopus::codec(fourcc)?, w, h),
+        // Lagarith: the VfW BITMAPINFOHEADER bit count sets the solid-frame layout
+        Codec::VfwFourcc { fourcc, bitmap_info_header } if crate::lagarith::is_lagarith(fourcc) => {
+            let bits = bitmap_info_header.get(14..16).map_or(24, |b| u16::from_le_bytes([b[0], b[1]]));
+            crate::lagarith::sample_entry(bits, w, h)
+        }
         // Ut Video: the extradata follows the VfW BITMAPINFOHEADER
         Codec::VfwFourcc { fourcc, bitmap_info_header } if crate::utvideo::is_utvideo(fourcc) => {
             crate::utvideo::sample_entry(*fourcc, bitmap_info_header.get(40..).unwrap_or_default(), w, h)
@@ -446,6 +451,7 @@ fn codec_label(c: &Codec) -> String {
         Codec::Other(id) if id == "V_MPEG2" => "MPEG-2 Video".into(),
         Codec::Other(id) if id == "V_MPEG1" => "MPEG-1 Video".into(),
         Codec::VfwFourcc { fourcc, .. } if crate::utvideo::is_utvideo(fourcc) => "Ut Video".into(),
+        Codec::VfwFourcc { fourcc, .. } if crate::lagarith::is_lagarith(fourcc) => "Lagarith".into(),
         Codec::VfwFourcc { fourcc, .. } if fourcc.eq_ignore_ascii_case(b"HFYU") => "Huffyuv".into(),
         Codec::VfwFourcc { fourcc, .. } if crate::canopus::codec(fourcc).is_some() => {
             crate::canopus::codec(fourcc).map_or("Canopus", crate::canopus::label).into()

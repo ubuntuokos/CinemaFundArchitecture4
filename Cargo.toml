@@ -54,6 +54,7 @@ cfa4-speex = { path = "crates/speex" }
 cfa4-amr = { path = "crates/amr" }
 cfa4-hap = { path = "crates/hap" }
 cfa4-utvideo = { path = "crates/utvideo" }
+cfa4-lagarith = { path = "crates/lagarith" }
 cfa4-huffyuv = { path = "crates/huffyuv" }
 cfa4-ffv1 = { path = "crates/ffv1" }
 cfa4-canopus = { path = "crates/canopus" }
@@ -171,6 +172,9 @@ opt-level = 3
 opt-level = 3
 
 [profile.dev.package.cfa4-utvideo]
+opt-level = 3
+
+[profile.dev.package.cfa4-lagarith]
 opt-level = 3
 
 [profile.dev.package."*"]

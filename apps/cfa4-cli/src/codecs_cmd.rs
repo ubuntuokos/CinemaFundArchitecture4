@@ -116,6 +116,7 @@ static ROWS: &[Row] = &[
     video("Huffyuv", &["huffyuv"], Own, Sw(""), false, NoEnc),
     video("Canopus HQ / HQA / HQX", &["canopus"], Ported, Sw(""), false, NoEnc),
     video("Ut Video", &["utvideo"], Own, Sw(""), false, NoEnc),
+    video("Lagarith", &["lagarith"], Ported, Sw(""), false, NoEnc),
     video("DV / DVCPRO", &["dv"], Ported, Sw("DV, DVCAM, DVCPRO 25 / 50, DVCPRO HD"), false, NoEnc),
     video("Animated GIF", &[], Dependency, Sw(""), false, Fmt(Format::Gif)),
     video("CinemaDNG / DNG", &["dng"], Own, Sw("uncompressed and lossless JPEG raw"), false, NoEnc),

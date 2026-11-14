@@ -1200,6 +1200,7 @@ dependencies = [
  "cfa4-iab",
  "cfa4-isobmff",
  "cfa4-j2k",
+ "cfa4-lagarith",
  "cfa4-lcevc",
  "cfa4-matroska",
  "cfa4-media",
@@ -1686,6 +1687,14 @@ dependencies = [
  "cfa4-testkit",
  "image",
  "rayon",
+ "thiserror 2.0.21",
+]
+
+[[package]]
+name = "cfa4-lagarith"
+version = "0.10.0"
+dependencies = [
+ "cfa4-testkit",
  "thiserror 2.0.21",
 ]
 
