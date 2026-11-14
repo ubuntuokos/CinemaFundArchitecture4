@@ -4673,3 +4673,24 @@ export.summary	Low	žema
 	AS-11 Core	AS-11 Core
 	AS-11 Parts	AS-11 dalys
 	AS-11 UK DPP	AS-11 UK DPP
+
+# Control Surfaces settings page (CS-1, #1187)
+	Devices	Įrenginiai
+	Use	Naudoti
+	Device	Įrenginys
+	MIDI	MIDI
+	HID jog/shuttle	HID jog/shuttle
+	OSC	OSC
+	Connected	Prijungtas
+	Not connected	Neprijungtas
+	Disabled	Išjungtas
+	{device} ({port})	{device} ({port})
+	{name}: {error}	{name}: {error}
+	Looking for devices…	Ieškoma įrenginių…
+	No MIDI controller or jog/shuttle device was found. Connect one and press Refresh.	Nerastas nei MIDI valdiklis, nei jog/shuttle įrenginys. Prijunkite vieną ir paspauskite Atnaujinti.
+	Control Surfaces	Valdymo pultai
+	Use control surfaces (MIDI controllers, jog/shuttle devices)	Naudoti valdymo pultus (MIDI valdiklius, jog/shuttle įrenginius)
+	Mapping controls to commands, MIDI Learn and the MIDI Monitor come in a later version; the choices here are remembered until then.	Valdiklių priskyrimas komandoms, MIDI Learn ir MIDI monitorius bus vėlesnėje versijoje; iki tol čia pasirinkti nustatymai įsimenami.
+	CFA4 ShuttlePRO	CFA4 ShuttlePRO
+	Kdenlive-style ShuttlePRO	Kdenlive stiliaus ShuttlePRO
+	Generic MIDI	Bendrasis MIDI

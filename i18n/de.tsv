@@ -4677,3 +4677,24 @@
 	AS-11 Core	AS-11 Core
 	AS-11 Parts	AS-11-Teile
 	AS-11 UK DPP	AS-11 UK DPP
+
+# Control Surfaces settings page (CS-1, #1187)
+	Devices	Geräte
+	Use	Verwenden
+	Device	Gerät
+	MIDI	MIDI
+	HID jog/shuttle	HID-Jog/Shuttle
+	OSC	OSC
+	Connected	Verbunden
+	Not connected	Nicht verbunden
+	Disabled	Deaktiviert
+	{device} ({port})	{device} ({port})
+	{name}: {error}	{name}: {error}
+	Looking for devices…	Geräte werden gesucht…
+	No MIDI controller or jog/shuttle device was found. Connect one and press Refresh.	Kein MIDI-Controller und kein Jog/Shuttle-Gerät gefunden. Schließen Sie eines an und klicken Sie auf Aktualisieren.
+	Control Surfaces	Steueroberflächen
+	Use control surfaces (MIDI controllers, jog/shuttle devices)	Steueroberflächen verwenden (MIDI-Controller, Jog/Shuttle-Geräte)
+	Mapping controls to commands, MIDI Learn and the MIDI Monitor come in a later version; the choices here are remembered until then.	Die Zuordnung von Bedienelementen zu Befehlen, MIDI Learn und der MIDI-Monitor folgen in einer späteren Version; die Auswahl hier bleibt bis dahin gespeichert.
+	CFA4 ShuttlePRO	CFA4 ShuttlePRO
+	Kdenlive-style ShuttlePRO	ShuttlePRO im Kdenlive-Stil
+	Generic MIDI	Generisches MIDI

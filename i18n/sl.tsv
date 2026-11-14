@@ -4673,3 +4673,24 @@ export.summary	Low	nizka
 	AS-11 Core	AS-11 Core
 	AS-11 Parts	Deli AS-11
 	AS-11 UK DPP	AS-11 UK DPP
+
+# Control Surfaces settings page (CS-1, #1187)
+	Devices	Naprave
+	Use	Uporabi
+	Device	Naprava
+	MIDI	MIDI
+	HID jog/shuttle	HID jog/shuttle
+	OSC	OSC
+	Connected	Povezano
+	Not connected	Ni povezano
+	Disabled	Onemogočeno
+	{device} ({port})	{device} ({port})
+	{name}: {error}	{name}: {error}
+	Looking for devices…	Iskanje naprav …
+	No MIDI controller or jog/shuttle device was found. Connect one and press Refresh.	Ni bilo najdenega krmilnika MIDI ali naprave jog/shuttle. Priključite eno in pritisnite Osveži.
+	Control Surfaces	Nadzorne površine
+	Use control surfaces (MIDI controllers, jog/shuttle devices)	Uporabi nadzorne površine (krmilniki MIDI, naprave jog/shuttle)
+	Mapping controls to commands, MIDI Learn and the MIDI Monitor come in a later version; the choices here are remembered until then.	Dodeljevanje kontrolnikov ukazom, MIDI Learn in monitor MIDI pridejo v poznejši različici; do takrat se izbire tukaj shranijo.
+	CFA4 ShuttlePRO	CFA4 ShuttlePRO
+	Kdenlive-style ShuttlePRO	ShuttlePRO v slogu Kdenlive
+	Generic MIDI	Splošni MIDI

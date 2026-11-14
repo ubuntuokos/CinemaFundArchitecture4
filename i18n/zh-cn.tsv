@@ -4668,3 +4668,24 @@
 	AS-11 Core	AS-11 Core
 	AS-11 Parts	AS-11 部分
 	AS-11 UK DPP	AS-11 UK DPP
+
+# Control Surfaces settings page (CS-1, #1187)
+	Devices	设备
+	Use	使用
+	Device	设备
+	MIDI	MIDI
+	HID jog/shuttle	HID 飞梭
+	OSC	OSC
+	Connected	已连接
+	Not connected	未连接
+	Disabled	已禁用
+	{device} ({port})	{device} ({port})
+	{name}: {error}	{name}: {error}
+	Looking for devices…	正在查找设备…
+	No MIDI controller or jog/shuttle device was found. Connect one and press Refresh.	未找到 MIDI 控制器或飞梭设备。请连接一个设备，然后按“刷新”。
+	Control Surfaces	控制台
+	Use control surfaces (MIDI controllers, jog/shuttle devices)	使用控制台（MIDI 控制器、飞梭设备）
+	Mapping controls to commands, MIDI Learn and the MIDI Monitor come in a later version; the choices here are remembered until then.	将控件映射到命令、MIDI Learn 和 MIDI 监视器将在后续版本中提供；在此之前，这里的选择会被记住。
+	CFA4 ShuttlePRO	CFA4 ShuttlePRO
+	Kdenlive-style ShuttlePRO	Kdenlive 风格 ShuttlePRO
+	Generic MIDI	通用 MIDI
