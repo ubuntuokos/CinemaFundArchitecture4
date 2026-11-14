@@ -4,10 +4,17 @@
 //!
 //! Keys are never written anywhere: not into the project, the journal (these commands are not
 //! journaled), settings or logs. They live until `dcp.clearKeys` or the end of the process.
+//!
+//! The KDM's XML signature and its signer's certificate chain are checked (#1028, ST 430-1 / 430-2
+//! / 430-3). An unsigned KDM, or one whose signed content does not check out (changed after
+//! signing), is always refused. One whose content is intact but whose certificate chain does not
+//! keep ST 430-2 (a test KDM, an expired or non-conforming certificate) is refused unless the
+//! caller passes `allowUnverified` (owner decision 2026-11-13); the answer always says how the
+//! check went.
 
 use serde_json::{Value, json};
 
-use crate::commands::{CommandSpec, always, bad, str_p};
+use crate::commands::{CommandSpec, always, bad, bool_p, str_p};
 use crate::{Result, Session};
 
 /// Largest KDM and private key files read.
@@ -37,6 +44,19 @@ pub(crate) fn load(s: &mut Session, p: &Value) -> Result<Value> {
     let key = cfa4_dcp::kdm::private_key_from_pem(&pem).map_err(|e| bad(CMD, e.to_string()))?;
     drop(pem);
     let kdm = cfa4_dcp::kdm::open_kdm(&xml, &key, chrono::DateTime::<chrono::Utc>::from(std::time::SystemTime::now())).map_err(|e| bad(CMD, e.to_string()))?;
+    let signature = match &kdm.signature {
+        cfa4_dcp::kdm::Signature::Valid { chain } => json!({"valid": true, "chain": chain}),
+        cfa4_dcp::kdm::Signature::Untrusted { chain, problem } => json!({"valid": false, "overridable": true, "chain": chain, "problem": problem}),
+        cfa4_dcp::kdm::Signature::Missing => json!({"valid": false, "overridable": false, "problem": "the KDM is not signed"}),
+        cfa4_dcp::kdm::Signature::Invalid(e) => json!({"valid": false, "overridable": false, "problem": e}),
+    };
+    let problem = signature["problem"].as_str().unwrap_or_default();
+    if !kdm.signature.is_valid() && !kdm.signature.is_overridable() {
+        return Err(bad(CMD, format!("the KDM's signed content does not check out ({problem}); its keys are not loaded")));
+    }
+    if kdm.signature.is_overridable() && !bool_p(p, "allowUnverified").unwrap_or(false) {
+        return Err(bad(CMD, format!("the KDM's certificate chain does not check out ({problem}); pass allowUnverified to load its keys anyway")));
+    }
     let mut keys = Vec::new();
     for k in &kdm.keys {
         let content = match k.key_type.as_str() {
@@ -55,6 +75,7 @@ pub(crate) fn load(s: &mut Session, p: &Value) -> Result<Value> {
         "composition": kdm.cpl_id.as_ref().map(uuid),
         "keys": keys,
         "loaded": cfa4_mxf::crypt::key_ids().len(),
+        "signature": signature,
     }))
 }
 
@@ -65,7 +86,7 @@ pub(crate) fn commands() -> Vec<CommandSpec> {
             label: "Load KDM",
             menu: &[],
             shortcut: None,
-            params: r#"{"kdm":str,"privateKey":str}"#,
+            params: r#"{"kdm":str,"privateKey":str,"allowUnverified":bool?}"#,
             enabled: always,
             run: load,
             journal: false,

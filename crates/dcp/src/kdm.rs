@@ -4,8 +4,10 @@
 //! [`open_kdm`] decrypts every `EncryptedKey` with the recipient's RSA private key and checks the
 //! informative validity rules of ST 430-1 7.2.3: the Structure ID, the composition named in the RSA
 //! block against the one in the public part, and the key validity window against the current time.
-//! The KDM's XML signature is not verified (#933 follow-up): the content keys only open with the
-//! recipient's own private key, which the user supplies.
+//! The KDM's XML signature (ST 430-3) is checked too, see [`Signature`]: the digests of
+//! `AuthenticatedPublic` and `AuthenticatedPrivate`, the signature value and the signer's
+//! certificate chain up to its self-signed root ([`crate::xmldsig`]). The result is reported, not
+//! enforced: whether to load the keys of a KDM whose signature fails is the caller's decision.
 //!
 //! Nothing here stores a key: the caller gets them in memory and decides what to do with them.
 
@@ -54,6 +56,8 @@ pub struct KdmKey {
     pub cpl_id: Uuid,
     pub not_before: String,
     pub not_after: String,
+    /// The Certificate Thumbprint of the KDM's signer this block names (ST 430-1 Table 6).
+    pub signer_thumbprint: [u8; 20],
     pub key: [u8; 16],
 }
 
@@ -69,6 +73,42 @@ impl std::fmt::Debug for KdmKey {
     }
 }
 
+/// The outcome of the KDM's signature check.
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub enum Signature {
+    /// The signature covers both authenticated parts and verifies with the signer's chain.
+    Valid {
+        /// Common names of the chain, signer first, root last.
+        chain: Vec<String>,
+    },
+    /// The signed content is intact (both parts covered, digests and signature value check out
+    /// with the signer's certificate), but the certificate chain does not keep ST 430-2: an
+    /// expired or non-conforming certificate, a missing issuer. Who signed it is not established.
+    Untrusted {
+        /// Common names of the chain as far as it was followed, signer first.
+        chain: Vec<String>,
+        /// What is wrong with it.
+        problem: String,
+    },
+    /// The KDM carries no signature.
+    Missing,
+    /// The signed content does not check out (changed after signing, a part not covered, a
+    /// signature that cannot be verified); the reason.
+    Invalid(String),
+}
+
+impl Signature {
+    pub fn is_valid(&self) -> bool {
+        matches!(self, Signature::Valid { .. })
+    }
+
+    /// Whether the content is intact and only the signer's chain is in question, the one case a
+    /// user may choose to accept (owner decision 2026-11-13, #1028).
+    pub fn is_overridable(&self) -> bool {
+        matches!(self, Signature::Untrusted { .. })
+    }
+}
+
 /// A decrypted KDM.
 #[derive(Clone, Debug)]
 pub struct Kdm {
@@ -79,6 +119,7 @@ pub struct Kdm {
     pub not_before: Option<String>,
     pub not_after: Option<String>,
     pub keys: Vec<KdmKey>,
+    pub signature: Signature,
 }
 
 /// Reads an RSA private key from PEM text (`RSA PRIVATE KEY` PKCS#1 or `PRIVATE KEY` PKCS#8).
@@ -125,7 +166,10 @@ pub fn open_kdm(xml: &str, key: &PrivateKey, now: DateTime<Utc>) -> Result<Kdm, 
         not_before: text(child(ext, "ContentKeysNotValidBefore")),
         not_after: text(child(ext, "ContentKeysNotValidAfter")),
         keys: Vec::new(),
+        signature: Signature::Missing,
     };
+    let (signature, signer) = check_signature(&doc, root, public, private, now);
+    kdm.signature = signature;
     for ek in descendants(private, "EncryptedKey") {
         let b64: String = text(descendants(ek, "CipherValue").next()).ok_or_else(|| KdmError::Invalid("EncryptedKey without a CipherValue".into()))?;
         let b64: String = b64.chars().filter(|c| !c.is_ascii_whitespace()).collect();
@@ -147,9 +191,50 @@ pub fn open_kdm(xml: &str, key: &PrivateKey, now: DateTime<Utc>) -> Result<Kdm, 
             return Err(KdmError::Expired(k.not_after.clone()));
         }
     }
-    // the RSA blocks are authoritative (ST 430-1 7.2.3)
+    // the RSA blocks are authoritative (ST 430-1 7.2.3), also on who signed: a signature by
+    // another certificate than the one they name does not establish the signer
     kdm.cpl_id = kdm.keys.first().map(|k| k.cpl_id);
+    if let (Some(tp), Signature::Valid { chain }) = (signer, &kdm.signature)
+        && kdm.keys.iter().any(|k| k.signer_thumbprint != tp)
+    {
+        let problem = "the encrypted key blocks name another signer certificate than the one that signed the KDM".to_string();
+        kdm.signature = Signature::Untrusted { chain: chain.clone(), problem };
+    }
     Ok(kdm)
+}
+
+/// The signature of the KDM: both authenticated parts must be among its references (ST 430-1 8).
+/// With it the signer certificate's thumbprint, when the signed content checked out.
+fn check_signature(
+    doc: &roxmltree::Document<'_>,
+    root: Node<'_, '_>,
+    public: Node<'_, '_>,
+    private: Node<'_, '_>,
+    now: DateTime<Utc>,
+) -> (Signature, Option<[u8; 20]>) {
+    let Some(sig) = root.children().find(|c| c.is_element() && c.tag_name().name() == "Signature" && c.tag_name().namespace() == Some(crate::xmldsig::DSIG_NS))
+    else {
+        return (Signature::Missing, None);
+    };
+    let serial = descendants(public, "Signer").next().and_then(|s| text(descendants(s, "X509SerialNumber").next()));
+    match crate::xmldsig::verify(doc, sig, serial.as_deref(), now) {
+        Ok(v) => {
+            for part in [public, private] {
+                let id = part.attribute("Id").unwrap_or_default();
+                if id.is_empty() || !v.references.iter().any(|r| r == id) {
+                    return (Signature::Invalid(format!("the signature does not cover {}", part.tag_name().name())), None);
+                }
+            }
+            let chain = v.chain.iter().map(crate::xmldsig::name).collect();
+            let signer = v.chain.first().map(crate::x509::Certificate::thumbprint);
+            let s = match v.chain_problem {
+                None => Signature::Valid { chain },
+                Some(problem) => Signature::Untrusted { chain, problem },
+            };
+            (s, signer)
+        }
+        Err(e) => (Signature::Invalid(e), None),
+    }
 }
 
 /// The fields of one decrypted `CipherData` block (ST 430-1 Table 6).
@@ -172,6 +257,7 @@ pub fn cipher_data(pt: &[u8]) -> Result<KdmKey, KdmError> {
         cpl_id: uuid(36),
         not_before: ascii(72, 25)?,
         not_after: ascii(97, 25)?,
+        signer_thumbprint: at(16, 20).try_into().unwrap_or([0; 20]),
         key: at(122, 16).try_into().unwrap_or([0; 16]),
     })
 }

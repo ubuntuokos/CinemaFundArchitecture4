@@ -128,7 +128,7 @@ roxmltree = "0.21"
 aes = "0.9"
 hmac = "0.13"
 sha1 = "0.11"
-rsa = { version = "0.10", default-features = false, features = ["std", "encoding"] }
+rsa = { version = "0.10", default-features = false, features = ["std", "encoding", "pkcs1v15"] }
 base64 = "0.22"
 cfa4-docpath = { version = "0.1.0", path = "vendor/cfa4-libs/docpath" }
 

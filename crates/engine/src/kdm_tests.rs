@@ -1,6 +1,8 @@
 //! #933: an encrypted D-Cinema sound track file imports, stays silent-with-an-error until its KDM
 //! and private key are loaded, then plays; the keys never reach the project or the journal. The
-//! KDM is built with the openssl command line (oracle; skipped when missing).
+//! KDM is built with the openssl command line and signed with xmlsec1 (oracles; skipped when
+//! missing). Unsigned and changed KDMs are always refused; one whose certificate chain does not
+//! keep ST 430-2 loads only with `allowUnverified` (owner decision 2026-11-13, #1028).
 
 use std::path::Path;
 use std::process::Command;
@@ -45,8 +47,12 @@ fn write_kdm(dir: &Path, key: &[u8; 16]) -> bool {
         eprintln!("SKIPPED: openssl not found");
         return false;
     }
+    // signed by an ST 430-2 chain, and by a plain X.509 one; the key blocks name the first
+    let (Some(good), Some(plain)) = (cfa4_dcp::testing::Signed::new("engine-kdm"), cfa4_dcp::testing::Signed::non_conforming("engine-kdm-plain")) else {
+        return false;
+    };
     let mut p = cfa4_dcp::kdm::STRUCTURE_ID.to_vec();
-    p.extend_from_slice(&[0x77; 20]);
+    p.extend_from_slice(&good.signer_thumbprint());
     p.extend_from_slice(&CPL);
     p.extend_from_slice(b"MDAK");
     p.extend_from_slice(&KEY_ID);
@@ -74,13 +80,18 @@ fn write_kdm(dir: &Path, key: &[u8; 16]) -> bool {
     let b64 = base64::engine::general_purpose::STANDARD.encode(std::fs::read(dir.join("c.bin")).unwrap());
     let xml = format!(
         r#"<?xml version="1.0" encoding="UTF-8"?>
-<DCinemaSecurityMessage xmlns="http://www.smpte-ra.org/schemas/430-3/2006/ETM">
+<DCinemaSecurityMessage xmlns="http://www.smpte-ra.org/schemas/430-3/2006/ETM" xmlns:dsig="http://www.w3.org/2000/09/xmldsig#">
 <AuthenticatedPublic Id="ID_AuthenticatedPublic"><MessageId>urn:uuid:22222222-2222-2222-2222-222222222222</MessageId><AnnotationText>Reel 1 KDM</AnnotationText>
 <RequiredExtensions><KDMRequiredExtensions xmlns="http://www.smpte-ra.org/schemas/430-1/2006/KDM"><CompositionPlaylistId>urn:uuid:11111111-1111-1111-1111-111111111111</CompositionPlaylistId><ContentTitleText>Encrypted Test</ContentTitleText></KDMRequiredExtensions></RequiredExtensions></AuthenticatedPublic>
 <AuthenticatedPrivate Id="ID_AuthenticatedPrivate"><enc:EncryptedKey xmlns:enc="http://www.w3.org/2001/04/xmlenc#"><enc:CipherData><enc:CipherValue>{b64}</enc:CipherValue></enc:CipherData></enc:EncryptedKey></AuthenticatedPrivate>
 </DCinemaSecurityMessage>"#
     );
-    std::fs::write(dir.join("kdm.xml"), xml).unwrap();
+    std::fs::write(dir.join("kdm.xml"), &xml).unwrap();
+    let template = xml.replace("</DCinemaSecurityMessage>", &format!("{}\n</DCinemaSecurityMessage>", cfa4_dcp::testing::TEMPLATE_SIGNATURE));
+    let signed = good.sign(&template);
+    std::fs::write(dir.join("signed.xml"), &signed).unwrap();
+    std::fs::write(dir.join("changed.xml"), signed.replace("Reel 1 KDM", "Reel 2 KDM")).unwrap();
+    std::fs::write(dir.join("plain.xml"), plain.sign(&template)).unwrap();
     true
 }
 
@@ -111,8 +122,31 @@ fn encrypted_dcp_audio_plays_after_its_kdm() {
     assert!(openssl(&dir, &["genpkey", "-algorithm", "RSA", "-pkeyopt", "rsa_keygen_bits:2048", "-out", "other.pem"]));
     let e = s.execute("dcp.loadKdm", json!({"kdm": s_path(&dir.join("kdm.xml")), "privateKey": s_path(&dir.join("other.pem"))})).unwrap_err();
     assert!(e.to_string().contains("not made for this private key"), "{e}");
-    // the right one
-    let r = s.execute("dcp.loadKdm", json!({"kdm": s_path(&dir.join("kdm.xml")), "privateKey": s_path(&dir.join("key.pem"))})).unwrap();
+    let load = |s: &mut Session, kdm: &str, allow: bool| {
+        s.execute("dcp.loadKdm", json!({"kdm": s_path(&dir.join(kdm)), "privateKey": s_path(&dir.join("key.pem")), "allowUnverified": allow}))
+    };
+    let none_loaded = |s: &mut Session| s.execute("dcp.keys", json!({})).unwrap()["keyIds"].as_array().unwrap().is_empty();
+    // the right key, but unsigned, or changed after signing: refused, even when asked to accept
+    for (kdm, why) in [("kdm.xml", "not signed"), ("changed.xml", "ID_AuthenticatedPublic")] {
+        for allow in [false, true] {
+            let e = load(&mut s, kdm, allow).unwrap_err().to_string();
+            assert!(e.contains(why) && e.contains("not loaded") && !e.contains("allowUnverified"), "{kdm} {allow}: {e}");
+            assert!(none_loaded(&mut s), "{kdm}: nothing loaded");
+        }
+    }
+    // a chain that does not keep ST 430-2: refused unless the user accepts it
+    let e = load(&mut s, "plain.xml", false).unwrap_err().to_string();
+    assert!(e.contains("certificate chain") && e.contains("ST 430-2") && e.contains("allowUnverified"), "{e}");
+    assert!(none_loaded(&mut s));
+    let r = load(&mut s, "plain.xml", true).unwrap();
+    assert_eq!(r["signature"]["valid"], false);
+    assert_eq!(r["signature"]["overridable"], true);
+    assert_eq!(r["signature"]["chain"][0], "CS.signer");
+    s.execute("dcp.clearKeys", json!({})).unwrap();
+    // a conforming chain loads as it is
+    let r = load(&mut s, "signed.xml", false).unwrap();
+    assert_eq!(r["signature"]["valid"], true);
+    assert_eq!(r["signature"]["chain"], json!(["CS.signer", ".inter", ".root"]));
     assert_eq!(r["title"], "Encrypted Test");
     assert_eq!(r["keys"][0]["type"], "MDAK");
     assert_eq!(r["keys"][0]["keyId"], "5a5a5a5a-5a5a-5a5a-5a5a-5a5a5a5a5a5a");
