@@ -1,7 +1,7 @@
 # CFA4-LINEART-001 – Animált vonalrajz-réteg Rustban (a stáblista-terv C12-je)
 
-**Verzió:** 1.0 (jóváhagyva)
-**Dátum:** 2026-11-12
+**Verzió:** 1.1 (jóváhagyva; 1.1: a rétegek pontosítása, IV.1 és IV.3)
+**Dátum:** 2026-11-14
 **Projekt:** CinemaFundArchitecture4 (CFA4)
 **Állapot:** a tulajdonos 2026-11-11-én döntött: a vonalrajzos animáció két lépcsőben kerül a
 CFA4-be. Az első lépcső (C11: ismétlődő videóháttér, külső eszközzel; #1015) ebben a kiadásban,
@@ -48,7 +48,10 @@ TypeScript + SVG, egy Claude-skill és egy kis könyvtár:
 
 ## IV. Felépítés
 
-1. **`cfa4-lineart` crate** (L2, csak a `cfa4-geom`-tól függ): tiszta számítás, idő → rajz.
+1. **`cfa4-lineart` crate** (L2; csak L0-s alapcrate-ektől függ: `cfa4-time`, `cfa4-geom`, és ha a
+   paletta színtípust használ, `cfa4-color`): tiszta számítás, idő → rajz. Az új crate bekerül az
+   `xtask` `LAYERS` táblájába (`("lineart", 2)`) ugyanabban a commitban, amelyik létrehozza;
+   `SAME_LAYER`-él nem kell hozzá (lásd 3. és 4. pont). Hívója csak a renderelő (L3).
    - `motion`: rugó, inga, szél, simítás; **determinisztikus**: rögzített 1/240 s lépésben
      integrál a klip elejétől, ellenőrzőpontokkal, így bármely időpont azonos eredményt ad
      előre- és hátrajátszásnál, ugrásnál és exportnál (a never-crash és a pontos idő szabálya).
@@ -66,9 +69,15 @@ TypeScript + SVG, egy Claude-skill és egy kis könyvtár:
 3. **Grafikus réteg:** új rétegtípus a grafikus klipekben (`LayerContent::LineArt`), saját
    paraméterekkel (figura vagy jelenet, méret, irány, sebesség, ruhaszínek, napszak, mag). Így a
    címek, az alsó harmadok és a stáblista is ugyanazzal a renderelővel használja, az élő grafika
-   (C10) pedig változtatás nélkül.
+   (C10) pedig változtatás nélkül. A `LayerContent` a `cfa4-project`-ben van, ami L1, ezért a
+   `LayerContent::LineArt` (és a `LineArtProps`) **csak egyszerű adatot** tárol (figura- vagy
+   jelenetazonosító szövegként, számok, színek, mag), a `cfa4-lineart` típusait nem; a
+   `cfa4-project` nem függ a `cfa4-lineart`-tól. Az adatból a renderelő (L3) kéri le a rajzot a
+   `cfa4-lineart`-tól. Ismeretlen azonosító hibát ad, nem pánikot (never-crash).
 4. **Stáblista:** az oldalstílus hátterének új fajtája (`"kind": "lineart"`, a jelenet és a
    paraméterei), és egy cellában figura (`{{LineArt walker …}}`), ami a nevekkel együtt halad.
+   A `cfa4-credits` (L2) ebből csak `LayerContent::LineArt` réteget állít elő, ezért nem függ a
+   `cfa4-lineart`-tól.
 
 ## V. Fázisok
 
