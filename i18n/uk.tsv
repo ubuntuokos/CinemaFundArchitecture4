@@ -4536,6 +4536,8 @@
 	Follow external timecode during playback	Стежити за зовнішнім тайм-кодом під час відтворення
 	Lock after	Захоплення після
 	Keep playing without signal for	Продовжувати без сигналу протягом
+	Varispeed: adjust the playback speed instead of seeking	Varispeed: підлаштовувати швидкість відтворення замість переходу
+	User bits	Користувацькі біти
 	External frame rate	Зовнішня частота кадрів
 	Offset (added to the external timecode)	Зсув (додається до зовнішнього тайм-коду)
 	LTC	LTC
