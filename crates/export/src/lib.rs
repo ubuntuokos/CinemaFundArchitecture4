@@ -3124,7 +3124,7 @@ pub fn encode_still_timed(
             .map_err(enc)?
         }
         Format::TgaSequence => return raster::tga(&rgba, w, h, alpha),
-        Format::DpxSequence => return raster::dpx_deep(&rgba, float, w, h),
+        Format::DpxSequence => return raster::dpx_deep(&rgba, float, w, h, timing),
         Format::ExrSequence => return raster::exr_with(&rgba, float, w, h, alpha, exr, timing),
         Format::PngSequence if alpha => {
             image::ImageEncoder::write_image(image::codecs::png::PngEncoder::new(&mut out), &rgba, w, h, image::ExtendedColorType::Rgba8).map_err(enc)?
