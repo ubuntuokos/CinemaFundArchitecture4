@@ -1372,6 +1372,9 @@
 	Changes are copied in the background a moment after each edit. If CFA4 quits unexpectedly, they are offered the next time it starts.	A változások minden szerkesztés után a háttérben másolódnak. Ha a CFA4 váratlanul kilép, a következő indításkor felajánlja őket.
 	Chinese	Kínai
 	Closed Captions	Feliratok
+	AS-11 Core	AS-11 Core
+	AS-11 Parts	AS-11 részek
+	AS-11 UK DPP	AS-11 UK DPP
 	Color Theme	Színtéma
 	Color…	Szín…
 	Crash Recovery	Összeomlás utáni helyreállítás

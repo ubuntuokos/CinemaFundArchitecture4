@@ -319,6 +319,17 @@ pub fn settings_from_params(s: &Session, p: &Value, cmd: &str) -> Result<(Option
     if let Some(v) = bool_p(p, "mxfAncCaptions") {
         settings.mxf_anc_captions = v;
     }
+    // AS-11 metadata in bmx's text forms (validated with the other settings)
+    for (key, field) in
+        [("mxfAs11Core", &mut settings.mxf_as11_core), ("mxfAs11Segments", &mut settings.mxf_as11_segments), ("mxfAs11Ukdpp", &mut settings.mxf_as11_ukdpp)]
+    {
+        if let Some(v) = str_p(p, key) {
+            if v.len() > 1 << 20 {
+                return Err(bad(cmd, format!("{key}: longer than 1 MiB")));
+            }
+            *field = v.to_string();
+        }
+    }
     if let Some(v) = str_p(p, "mpeg2Container") {
         let c = cfa4_export::Mpeg2Container::from_name(v).ok_or_else(|| bad(cmd, "mpeg2Container: ps | ts | m2ts | es"))?;
         settings.mpeg2_container = c.id().to_string();

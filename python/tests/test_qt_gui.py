@@ -15055,3 +15055,39 @@ def test_real_engine_check_text_legibility_reports_as_egui(app, tmp_path: Path):
         win._quit_confirmed = True
         win.close()
         engine.stop()
+
+
+def test_export_mxf_as11_fields_only_for_op1a(app):
+    """#96: the AS-11 Core, parts and UK DPP text fields show for MXF OP1a only and are sent as
+    ``mxfAs11Core`` / ``mxfAs11Segments`` / ``mxfAs11Ukdpp`` once edited."""
+    from cfa4_qt.panels.export import ExportDialog
+
+    class Engine:
+        running = False
+
+        def execute(self, command, params=None, on_reply=None, on_error=None):
+            return 0
+
+    dlg = ExportDialog(Engine())  # type: ignore[arg-type]
+    dlg._on_formats([{"id": "h264", "label": "H.264"}, {"id": "mxf-op1a", "label": "MXF OP1a"}, {"id": "mxf-opatom", "label": "MXF OP-Atom"}], None)
+    core = dlg.findChild(QtWidgets.QPlainTextEdit, "export.video.mxfAs11Core")
+    parts = dlg.findChild(QtWidgets.QPlainTextEdit, "export.video.mxfAs11Segments")
+    assert core is dlg.as11_text["mxfAs11Core"] and parts is dlg.as11_text["mxfAs11Segments"]
+    assert dlg.video_form.labelForField(core).text() == "AS-11 Core"
+    dlg.format.setCurrentIndex(dlg.format.findData("mxf-op1a"))
+    dlg._sync_format_rows()
+    assert not core.isHidden() and "mxfAs11Core" not in dlg.params()
+    core.setPlainText("SeriesTitle: S\nShimName: UK DPP HD")
+    parts.setPlainText("1/1 10:00:00:00 25")
+    p = dlg.params()
+    assert p["mxfAs11Core"] == "SeriesTitle: S\nShimName: UK DPP HD" and p["mxfAs11Segments"] == "1/1 10:00:00:00 25"
+    assert "mxfAs11Ukdpp" not in p
+    dlg.format.setCurrentIndex(dlg.format.findData("mxf-opatom"))
+    dlg._sync_format_rows()
+    assert core.isHidden() and "mxfAs11Core" not in dlg.params()
+    # a preset's AS-11 text shows until the field is edited here
+    dlg2 = ExportDialog(Engine())  # type: ignore[arg-type]
+    dlg2._show_settings({"mxfAs11Ukdpp": "ProductionNumber: P1"})
+    assert dlg2.as11_text["mxfAs11Ukdpp"].toPlainText() == "ProductionNumber: P1"
+    dlg.deleteLater()
+    dlg2.deleteLater()
