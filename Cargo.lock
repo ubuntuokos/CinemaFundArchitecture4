@@ -1822,6 +1822,7 @@ dependencies = [
 name = "cfa4-obs"
 version = "0.10.0"
 dependencies = [
+ "cfa4-st2110",
  "libloading 0.8.9",
  "log",
  "serde",

@@ -1,10 +1,13 @@
 //! Clean-room SMPTE ST 2110 essence formats for the CFA4 live studio (CFA4-LIVE-STUDIO-001 ST 2110
-//! addendum, phase T0).
+//! addendum, phases T0 and T1).
 //!
 //! - [`rtp`]: the RTP fixed header (RFC 3550) with ST 2110's constraints.
 //! - [`sdp`]: session descriptions (RFC 4566 / 8866) with `ts-refclk`, `mediaclk` and `fmtp`.
 //! - [`video`], [`mod@format`]: the ST 2110-20 video description (sampling, depth, pgroups, the
 //!   `fmtp` parameters with the -21 and -10:2022 additions).
+//! - [`clock`]: PTP (TAI) time, the media clock and RTP timestamps aligned to the SMPTE Epoch,
+//!   frame and field timestamps (59.94 Hz steps 1501/1502 exactly), `ptp4l` state from `pmc`, and
+//!   the sender's `ts-refclk` / `mediaclk` with and without a PTP lock.
 //! - [`pack`]: ST 2110-20 packetization (General and Block Packing Mode) and reassembly, and
 //!   conversion between sample planes and pgroup rows.
 //!
@@ -13,6 +16,7 @@
 
 #![cfg_attr(not(test), deny(clippy::unwrap_used, clippy::expect_used, clippy::panic, clippy::unimplemented, clippy::todo, clippy::unreachable))]
 
+pub mod clock;
 pub mod format;
 pub mod pack;
 pub mod rtp;
