@@ -39,6 +39,9 @@
 mod labels;
 #[cfg(test)]
 mod tests;
+mod timed_text;
+
+pub use timed_text::{MAX_TIMED_TEXT_RESOURCES, MIME_OPENTYPE, MIME_PNG, TimedTextConfig, TimedTextResource, write_timed_text};
 
 use std::collections::VecDeque;
 use std::io::{self, Seek, SeekFrom, Write};

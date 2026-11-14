@@ -103,3 +103,64 @@ fn hostile_documents_never_panic() {
         }
     }
 }
+
+fn options() -> ReelOptions {
+    ReelOptions {
+        id: "urn:uuid:7c5bd5b8-3b0f-4a3b-9b1e-1c2d3e4f5a6b".into(),
+        title: "Próba & <film>".into(),
+        issue_date: "2026-11-14T10:00:00+00:00".into(),
+        reel_number: 1,
+        language: "hu-HU".into(),
+        edit_rate: (24, 1),
+        font: Some(("font1".into(), "urn:uuid:3dec6dc0-39d0-498d-97d0-928d2eb78391".into())),
+        size: DEFAULT_SIZE,
+    }
+}
+
+/// #938: cues written as a SubtitleReel and read back: times, line order, formatting, escaping.
+#[test]
+fn written_reels_read_back() {
+    let cue = |s: Tick, e: Tick, t: &str| Cue { start: s, end: e, text: t.into(), ..Cue::default() };
+    let doc = Document {
+        cues: vec![
+            cue(secs(5, 0), secs(7, 12), "Első sor\nmásodik <b>sor</b>"),
+            cue(secs(8, 0), secs(10, 0), "<i>Dőlt</i> & <u>aláhúzott</u> <font color=\"red\">piros</font> a < b"),
+            cue(secs(10, 0), secs(10, 0), "egy egység"),
+            cue(secs(11, 0), secs(12, 0), "  \n<i></i>"),
+            cue(secs(3601, 3), secs(3602, 0), "egy óra után"),
+        ],
+        ..Document::default()
+    };
+    let x = write_reel(&doc, &options());
+    assert!(x.contains("<LoadFont ID=\"font1\">urn:uuid:3dec6dc0-39d0-498d-97d0-928d2eb78391</LoadFont>"), "{x}");
+    assert!(x.contains("<StartTime>00:00:00:00</StartTime>") && x.contains("<TimeCodeRate>24</TimeCodeRate>"));
+    assert!(x.contains("TimeIn=\"00:00:05:00\" TimeOut=\"00:00:07:12\""), "{x}");
+    assert!(x.contains("TimeIn=\"01:00:01:03\""), "{x}");
+    assert!(roxmltree::Document::parse(&x).is_ok(), "{x}");
+    let r = parse_reel(&x).unwrap();
+    assert_eq!(r.title.as_deref(), Some("Próba & <film>"));
+    assert_eq!(r.language.as_deref(), Some("hu-HU"));
+    assert_eq!(r.id.as_deref(), Some("urn:uuid:7c5bd5b8-3b0f-4a3b-9b1e-1c2d3e4f5a6b"));
+    let c = &r.document.cues;
+    assert_eq!(c.len(), 4, "{c:?}");
+    assert_eq!(c[0].text, "Első sor\nmásodik <b>sor</b>");
+    assert_eq!((c[0].start, c[0].end), (secs(5, 0), secs(7, 12)));
+    assert_eq!(c[1].text, "<i>Dőlt</i> & <u>aláhúzott</u> piros a < b", "other tags dropped");
+    // a zero-length cue keeps one edit unit
+    assert_eq!((c[2].start, c[2].end), (secs(10, 0), secs(10, 1)));
+    assert_eq!(c[3].start, secs(3601, 3));
+    assert!(r.document.warnings.is_empty(), "{:?}", r.document.warnings);
+    // spot numbers count the written subtitles
+    assert_eq!(c.iter().map(|c| c.id.clone().unwrap()).collect::<Vec<_>>(), ["1", "2", "3", "4"]);
+    // two lines: the first above the second
+    assert!(x.contains("Vposition=\"14.5\"") && x.contains("Vposition=\"8.0\""));
+    // no font: no LoadFont, no Font ID
+    let x = write_reel(&doc, &ReelOptions { font: None, ..options() });
+    assert!(!x.contains("LoadFont") && !x.contains(" ID=\""));
+    // 25 fps and a non-integer edit rate
+    let x = write_reel(&doc, &ReelOptions { edit_rate: (25, 1), ..options() });
+    assert!(x.contains("TimeIn=\"00:00:05:00\" TimeOut=\"00:00:07:13\""), "{x}");
+    let x = write_reel(&doc, &ReelOptions { edit_rate: (24000, 1001), ..options() });
+    let r = parse_reel(&x).unwrap();
+    assert!((r.document.cues[0].start.0 - secs(5, 0).0).abs() <= Tick::from_rational(1, 1001, 24000).0);
+}
