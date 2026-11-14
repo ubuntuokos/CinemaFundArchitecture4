@@ -10,6 +10,11 @@
 //! use ([`Transform`]): the software backend composites them here ([`compose`]), libobs places
 //! them as scene items of a CFA4 picture source.
 //!
+//! Moving pictures (S1b: a media file playing, the CFA4 live graphics program) are *feeds*: the
+//! engine writes their frames (straight RGBA) into a frame ring of their own
+//! ([`crate::ring::create_sized`]), and the host shows the newest one each program frame
+//! ([`Feeds`], [`crate::StudioBackend::update_layer`]). A feed with no frame yet is transparent.
+//!
 //! Everything in a [`HostScene`] comes from another process: [`HostScene::load`] checks every
 //! number and every file before anything is drawn, and a bad layer is an error, never a panic.
 
@@ -59,12 +64,14 @@ pub enum PictureRef {
     Color { rgba: [u8; 4], width: u32, height: u32 },
     /// A raw picture file: `width × height` straight RGBA8 pixels, rows packed, nothing else.
     Raw { path: String, width: u32, height: u32 },
+    /// A moving picture: a frame ring of `width × height` RGBA8 frames the engine keeps writing.
+    Feed { path: String, width: u32, height: u32 },
 }
 
 impl PictureRef {
     fn size(&self) -> (u32, u32) {
         match self {
-            PictureRef::Color { width, height, .. } | PictureRef::Raw { width, height, .. } => (*width, *height),
+            PictureRef::Color { width, height, .. } | PictureRef::Raw { width, height, .. } | PictureRef::Feed { width, height, .. } => (*width, *height),
         }
     }
 }
@@ -112,8 +119,11 @@ pub struct Picture {
 #[derive(Clone, Debug, PartialEq)]
 pub struct LoadedLayer {
     pub id: u64,
+    /// The picture now: a still, or a feed's newest frame (transparent before its first).
     pub picture: Picture,
     pub transform: Transform,
+    /// The frame ring of a moving picture ([`PictureRef::Feed`]).
+    pub feed: Option<std::path::PathBuf>,
 }
 
 /// A scene whose pictures are loaded and checked.
@@ -181,13 +191,91 @@ impl HostScene {
         }
         let mut layers = Vec::with_capacity(self.layers.len());
         for l in &self.layers {
-            let picture = match &l.picture {
-                PictureRef::Color { rgba, width, height } => solid(*rgba, *width, *height),
-                PictureRef::Raw { path, width, height } => read_raw(Path::new(path), *width, *height)?,
+            let (picture, feed) = match &l.picture {
+                PictureRef::Color { rgba, width, height } => (solid(*rgba, *width, *height), None),
+                PictureRef::Raw { path, width, height } => (read_raw(Path::new(path), *width, *height)?, None),
+                PictureRef::Feed { path, width, height } => {
+                    let reader = crate::ring::RingReader::open(Path::new(path))?;
+                    let newest = feed_picture(&reader, *width, *height)?;
+                    (newest.map_or_else(|| solid([0; 4], *width, *height), |(_, p)| p), Some(std::path::PathBuf::from(path)))
+                }
             };
-            layers.push(LoadedLayer { id: l.id, picture, transform: l.transform });
+            layers.push(LoadedLayer { id: l.id, picture, transform: l.transform, feed });
         }
         Ok(LoadedScene { revision: self.revision, layers })
+    }
+}
+
+/// The newest frame of a feed as a picture, with its number; `None` before the first frame. A
+/// frame of another size or format is an error (the feed is not the one the scene named).
+fn feed_picture(reader: &crate::ring::RingReader, width: u32, height: u32) -> Result<Option<(u64, Picture)>> {
+    let Some(f) = reader.latest()? else { return Ok(None) };
+    let fr = &f.frame;
+    if fr.format != PixelFormat::Rgba8 || fr.width != width || fr.height != height {
+        return Err(StudioError::Invalid(format!("feed frame {}x{} {:?}, expected {width}x{height} rgba8", fr.width, fr.height, fr.format)));
+    }
+    let row = width as usize * 4;
+    let rgba = if fr.stride as usize == row {
+        f.frame.data
+    } else {
+        let mut out = Vec::with_capacity(row * height as usize);
+        for r in 0..height as usize {
+            let start = r * fr.stride as usize;
+            out.extend_from_slice(fr.data.get(start..start + row).ok_or_else(|| StudioError::Ring("short feed frame".into()))?);
+        }
+        out
+    };
+    Ok(Some((f.seq, Picture { width, height, rgba: Arc::new(rgba) })))
+}
+
+/// The feeds of the shown scene: polled once per program frame for new pictures.
+#[derive(Default)]
+pub struct Feeds {
+    /// (layer index, reader, size, last frame number shown)
+    feeds: Vec<(usize, crate::ring::RingReader, (u32, u32), u64)>,
+}
+
+impl Feeds {
+    /// Opens the feeds of `scene`'s layers. A feed that cannot be opened is skipped (its layer
+    /// keeps the picture it was loaded with).
+    pub fn of(scene: &LoadedScene) -> Self {
+        let mut feeds = Vec::new();
+        for (i, l) in scene.layers.iter().enumerate() {
+            let Some(path) = &l.feed else { continue };
+            match crate::ring::RingReader::open(path) {
+                Ok(r) => {
+                    let seq = r.latest_seq().unwrap_or(0);
+                    feeds.push((i, r, (l.picture.width, l.picture.height), seq));
+                }
+                Err(e) => log::warn!("live studio: feed of layer {}: {e}", l.id),
+            }
+        }
+        Self { feeds }
+    }
+
+    /// Whether the scene has feeds.
+    pub fn is_empty(&self) -> bool {
+        self.feeds.is_empty()
+    }
+
+    /// The layers whose feed has a frame not shown yet, with that frame. A broken frame is
+    /// skipped (the layer keeps its picture).
+    pub fn poll(&mut self) -> Vec<(usize, Picture)> {
+        let mut out = Vec::new();
+        for (index, reader, (w, h), shown) in &mut self.feeds {
+            if reader.latest_seq().map_or(true, |seq| seq == *shown) {
+                continue;
+            }
+            match feed_picture(reader, *w, *h) {
+                Ok(Some((seq, pic))) => {
+                    *shown = seq;
+                    out.push((*index, pic));
+                }
+                Ok(None) => {}
+                Err(e) => log::debug!("live studio: feed frame skipped: {e}"),
+            }
+        }
+        out
     }
 }
 
@@ -251,25 +339,42 @@ impl Placement {
 
 /// Composites `scene` onto an opaque black canvas of `video`'s size, as BGRA8: each layer drawn
 /// over the ones below (straight alpha, sRGB values, as libobs blends SDR scenes), sampled
-/// bilinearly at pixel centres; a pixel belongs to a layer when its centre is inside it.
+/// bilinearly at pixel centres; a pixel belongs to a layer when its centre is inside it. The
+/// arithmetic is 8-bit fixed point (1/256 sample weights, rounded blends) and rows are drawn in
+/// parallel, so a full-HD scene with a playing video keeps up with 60 fps; a layer at a
+/// whole-pixel position, scale 1 and no rotation takes its texels as they are.
 pub fn compose(scene: &LoadedScene, video: &VideoSettings, pts_ns: u64) -> Frame {
+    use rayon::prelude::*;
     let (cw, ch) = (video.width, video.height);
-    let mut rgba = vec![0f32; cw as usize * ch as usize * 4];
-    for px in rgba.chunks_exact_mut(4) {
-        px[3] = 1.0;
-    }
+    let row = cw as usize * 4;
+    let mut data = vec![0u8; row * ch as usize];
+    data.par_chunks_mut(row).for_each(|r| {
+        for px in r.chunks_exact_mut(4) {
+            px[3] = 255;
+        }
+    });
     for layer in &scene.layers {
-        draw_layer(&mut rgba, cw, ch, layer);
-    }
-    let mut data = Vec::with_capacity(rgba.len());
-    for px in rgba.chunks_exact(4) {
-        let q = |v: f32| (v.clamp(0.0, 1.0) * 255.0).round() as u8;
-        data.extend_from_slice(&[q(px[2]), q(px[1]), q(px[0]), q(px[3])]);
+        draw_layer(&mut data, cw, ch, layer);
     }
     Frame { width: cw, height: ch, stride: video.stride(), format: PixelFormat::Bgra8, pts_ns, data }
 }
 
-fn draw_layer(canvas: &mut [f32], cw: u32, ch: u32, layer: &LoadedLayer) {
+/// Blends straight-alpha RGBA `s` over the BGRA canvas pixel `d` (rounded 8-bit arithmetic).
+fn blend(d: &mut [u8], s: [u32; 4]) {
+    let a = s[3];
+    if a == 0 {
+        return;
+    }
+    let mix = |src: u32, dst: u8| ((src * a + u32::from(dst) * (255 - a) + 127) / 255) as u8;
+    let (r, g, b) = (mix(s[0], d[2]), mix(s[1], d[1]), mix(s[2], d[0]));
+    d[0] = b;
+    d[1] = g;
+    d[2] = r;
+    d[3] = (a + (u32::from(d[3]) * (255 - a) + 127) / 255).min(255) as u8;
+}
+
+fn draw_layer(canvas: &mut [u8], cw: u32, ch: u32, layer: &LoadedLayer) {
+    use rayon::prelude::*;
     let pic = &layer.picture;
     let t = &layer.transform;
     let Some(pl) = Placement::new(t, pic.width, pic.height) else { return };
@@ -284,14 +389,17 @@ fn draw_layer(canvas: &mut [f32], cw: u32, ch: u32, layer: &LoadedLayer) {
     // the cropped region's last pixel, for clamping the bilinear taps
     let (max_x, max_y) = (cl + pl.w - 1.0, ct + pl.h - 1.0);
     let src = &pic.rgba;
-    let texel = |x: usize, y: usize| -> [f32; 4] {
+    let texel = |x: usize, y: usize| -> [u32; 4] {
         let i = (y * pw + x) * 4;
         match src.get(i..i + 4) {
-            Some(p) => [f32::from(p[0]) / 255.0, f32::from(p[1]) / 255.0, f32::from(p[2]) / 255.0, f32::from(p[3]) / 255.0],
-            None => [0.0; 4],
+            Some(p) => [u32::from(p[0]), u32::from(p[1]), u32::from(p[2]), u32::from(p[3])],
+            None => [0; 4],
         }
     };
-    for y in y0..y1 {
+    // pixel centres land on texel centres: the taps are the texel itself
+    let aligned = pl.a == 1.0 && pl.d == 1.0 && pl.b == 0.0 && pl.c == 0.0 && pl.tx.fract() == 0.0 && pl.ty.fract() == 0.0;
+    let row = cw as usize * 4;
+    canvas.par_chunks_mut(row).enumerate().skip(y0).take(y1 - y0).for_each(|(y, out)| {
         let cy = y as f64 + 0.5 - pl.ty;
         for x in x0..x1 {
             let cx = x as f64 + 0.5 - pl.tx;
@@ -300,33 +408,28 @@ fn draw_layer(canvas: &mut [f32], cw: u32, ch: u32, layer: &LoadedLayer) {
             if !(0.0..pl.w).contains(&u) || !(0.0..pl.h).contains(&v) {
                 continue;
             }
+            let Some(d) = out.get_mut(x * 4..x * 4 + 4) else { continue };
+            if aligned {
+                blend(d, texel((cl + u - 0.5) as usize, (ct + v - 0.5) as usize));
+                continue;
+            }
             // bilinear at the texel grid of the cropped picture (texel centres at +0.5)
             let sx = (cl + u - 0.5).clamp(cl, max_x);
             let sy = (ct + v - 0.5).clamp(ct, max_y);
             let (fx, fy) = (sx.floor(), sy.floor());
-            let (ax, ay) = ((sx - fx) as f32, (sy - fy) as f32);
+            let (wx, wy) = (((sx - fx) * 256.0) as u32, ((sy - fy) * 256.0) as u32);
             let (ix, iy) = (fx as usize, fy as usize);
             let (jx, jy) = ((ix + 1).min(max_x as usize).min(pw - 1), (iy + 1).min(max_y as usize).min(ph - 1));
             let (p00, p10, p01, p11) = (texel(ix, iy), texel(jx, iy), texel(ix, jy), texel(jx, jy));
-            let mut s = [0f32; 4];
+            let mut s = [0u32; 4];
             for k in 0..4 {
-                let top = p00[k] + (p10[k] - p00[k]) * ax;
-                let bottom = p01[k] + (p11[k] - p01[k]) * ax;
-                s[k] = top + (bottom - top) * ay;
+                let top = p00[k] * (256 - wx) + p10[k] * wx;
+                let bottom = p01[k] * (256 - wx) + p11[k] * wx;
+                s[k] = (top * (256 - wy) + bottom * wy + 32768) >> 16;
             }
-            let a = s[3];
-            if a <= 0.0 {
-                continue;
-            }
-            let i = (y * cw as usize + x) * 4;
-            if let Some(d) = canvas.get_mut(i..i + 4) {
-                for k in 0..3 {
-                    d[k] = s[k] * a + d[k] * (1.0 - a);
-                }
-                d[3] = a + d[3] * (1.0 - a);
-            }
+            blend(d, s);
         }
-    }
+    });
 }
 
 #[cfg(test)]
@@ -338,7 +441,7 @@ mod tests {
     }
 
     fn layer(id: u64, picture: Picture, transform: Transform) -> LoadedLayer {
-        LoadedLayer { id, picture, transform }
+        LoadedLayer { id, picture, transform, feed: None }
     }
 
     /// BGRA of the canvas pixel (x, y).
@@ -462,6 +565,65 @@ mod tests {
             ],
         };
         assert!(too_big.load().is_err(), "more than 1 GiB of pictures");
+        let _ = std::fs::remove_dir_all(&dir);
+    }
+
+    #[test]
+    fn feeds_show_their_newest_frame() {
+        use crate::StudioBackend;
+        let dir = std::env::temp_dir().join(format!("cfa4-obs-feed-{}", std::process::id()));
+        std::fs::create_dir_all(&dir).expect("dir");
+        let ring = crate::ring::create_sized(&dir, 17, 16).expect("ring");
+        let mut w = crate::ring::RingWriter::open(&ring, 1).expect("writer");
+        let frame = |v: u8| Frame { width: 17, height: 16, stride: 68, format: PixelFormat::Rgba8, pts_ns: 0, data: [v, 0, 0, 255].repeat(17 * 16) };
+        let feed = |w: u32, h: u32| HostScene {
+            revision: 1,
+            layers: vec![Layer {
+                id: 7,
+                picture: PictureRef::Feed { path: ring.to_string_lossy().into_owned(), width: w, height: h },
+                transform: Transform::default(),
+            }],
+        };
+        // before the first frame: transparent
+        let loaded = feed(17, 16).load().expect("load");
+        assert!(loaded.layers[0].picture.rgba.iter().all(|&b| b == 0));
+        assert_eq!(loaded.layers[0].feed.as_deref(), Some(ring.as_path()));
+        w.write(&frame(10)).expect("write");
+        let loaded = feed(17, 16).load().expect("load");
+        assert_eq!(loaded.layers[0].picture.rgba[..4], [10, 0, 0, 255]);
+        assert!(feed(18, 16).load().is_err(), "a feed of another size");
+        assert!(
+            HostScene {
+                revision: 1,
+                layers: vec![Layer {
+                    id: 1,
+                    picture: PictureRef::Feed { path: "/nonexistent".into(), width: 17, height: 16 },
+                    transform: Transform::default()
+                }]
+            }
+            .load()
+            .is_err()
+        );
+        // the poller hands over each new frame once
+        let mut feeds = Feeds::of(&loaded);
+        assert!(!feeds.is_empty());
+        assert!(feeds.poll().is_empty(), "the frame it was loaded with");
+        w.write(&frame(200)).expect("write");
+        let got = feeds.poll();
+        assert_eq!(got.len(), 1);
+        assert_eq!((got[0].0, got[0].1.rgba[..4].to_vec()), (0, vec![200, 0, 0, 255]));
+        assert!(feeds.poll().is_empty());
+        // the software backend recomposites with the new picture
+        let video = VideoSettings { width: 32, height: 16, fps_num: 200, fps_den: 1 };
+        let mut b = crate::software::SoftwareBackend::new(video).expect("backend");
+        b.set_scene(&loaded).expect("scene");
+        let f = b.next_frame(std::time::Duration::from_secs(1)).expect("ok").expect("frame");
+        assert_eq!(at(&f, 1, 1), [0, 0, 10, 255], "BGRA of the loaded frame");
+        b.update_layer(0, &got[0].1).expect("update");
+        b.update_layer(5, &got[0].1).expect("an index the scene lacks is ignored");
+        let f = b.next_frame(std::time::Duration::from_secs(1)).expect("ok").expect("frame");
+        assert_eq!(at(&f, 1, 1), [0, 0, 200, 255]);
+        assert_eq!(at(&f, 20, 1), [0, 0, 0, 255], "outside the 17-pixel layer");
         let _ = std::fs::remove_dir_all(&dir);
     }
 
