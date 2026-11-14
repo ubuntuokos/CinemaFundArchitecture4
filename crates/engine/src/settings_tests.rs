@@ -92,6 +92,7 @@ fn categories_follow_premiere_order() {
             "audioHardware",
             "autoSave",
             "color",
+            "controlSurfaces",
             "graphics",
             "labels",
             "media",

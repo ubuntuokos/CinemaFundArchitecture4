@@ -1159,6 +1159,8 @@ dependencies = [
  "cfa4-render",
  "cfa4-route",
  "cfa4-scopes",
+ "cfa4-surface",
+ "cfa4-surface-model",
  "cfa4-tcsync",
  "cfa4-tcsync-io",
  "cfa4-testkit",
@@ -2008,6 +2010,24 @@ version = "0.10.0"
 dependencies = [
  "cfa4-obs",
  "rustix 1.1.6",
+ "serde_json",
+]
+
+[[package]]
+name = "cfa4-surface"
+version = "0.10.0"
+dependencies = [
+ "alsa",
+ "cfa4-surface-model",
+ "serde",
+ "serde_json",
+]
+
+[[package]]
+name = "cfa4-surface-model"
+version = "0.10.0"
+dependencies = [
+ "serde",
  "serde_json",
 ]
 

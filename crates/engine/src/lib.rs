@@ -17,6 +17,7 @@ pub mod captions;
 pub mod clip_ops;
 pub mod color;
 pub mod commands;
+pub mod control_surfaces;
 pub mod credits;
 mod dcpomatic;
 pub mod delivery_check;

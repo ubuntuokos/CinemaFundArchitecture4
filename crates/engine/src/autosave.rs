@@ -180,6 +180,8 @@ pub struct Preferences {
     pub voice_over: crate::voiceover::VoiceOverPrefs,
     /// Settings ▸ Timecode Sync (LTC / MIDI Timecode chase and generate).
     pub timecode_sync: crate::timecode_sync::TimecodeSyncPrefs,
+    /// Settings ▸ Control Surfaces (MIDI controllers, jog/shuttle devices).
+    pub control_surfaces: crate::control_surfaces::ControlSurfacePrefs,
     /// Project panel: view, List view columns and sort, view presets, Freeform options.
     pub project_panel: crate::project_panel::ProjectPanelPrefs,
     /// Media Browser: Favorites, recent directories, file types, view, columns.
@@ -211,6 +213,7 @@ impl Default for Preferences {
             guides: Default::default(),
             voice_over: Default::default(),
             timecode_sync: Default::default(),
+            control_surfaces: Default::default(),
             project_panel: Default::default(),
             media_browser: Default::default(),
         }
@@ -403,6 +406,7 @@ impl AudioPrefs {
 impl Preferences {
     fn clamp(&mut self) {
         self.auto_save.clamp();
+        self.control_surfaces.clamp();
         self.audio.clamp();
         let secs = |v: f64| if v.is_finite() { v.clamp(0.0, 60.0) } else { 0.0 };
         self.playback.preroll_seconds = secs(self.playback.preroll_seconds);
