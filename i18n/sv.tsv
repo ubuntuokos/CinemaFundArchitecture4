@@ -4382,6 +4382,10 @@ export.summary	Low	låg
 	{n} more	{n} till
 	Block	Block
 	parallel	parallell
+	page {page}: a spine's vertical position works on card pages only; it is ignored	sida {page}: axelns lodräta läge gäller bara på kortsidor; det ignoreras
+	on a card: centered on {y} px	på ett kort: centrerad på {y} px
+	on a card: starts at {y} px	på ett kort: börjar vid {y} px
+	on a card: ends at {y} px	på ett kort: slutar vid {y} px
 # MPEG-2 export audio (#268): a product name, kept as is
 	Dolby Digital (AC-3)	Dolby Digital (AC-3)
 	In the page (OBS takes it from the Browser Source)	På sidan (OBS hämtar det från webbläsarkällan)
@@ -4454,7 +4458,12 @@ export.summary	Low	låg
 	page {page}: the runtime is reached by changing the roll speed (the gaps would have to grow more than 20-fold)	sida {page}: speltiden nås genom att ändra rullhastigheten (avstånden skulle behöva växa mer än 20 gånger)
 	page {page}: the transition needs the pages to touch (page gap 0); it is left out	sida {page}: övergången kräver att sidorna möts (sidavstånd 0); den utelämnas
 	page {page}: there is no transition “{name}”; the pages cut	sida {page}: det finns ingen övergång ”{name}”; sidorna klipps
-	spine position “{value}” is not supported (a pixel offset, optionally “parallel”, is)	axelpositionen ”{value}” stöds inte (en pixelförskjutning, eventuellt med ”parallel”, gör det)
+	spine position “{value}” is not supported (a pixel offset, optionally “parallel”, or “Hook N Bottom-Top dx dy” is)	axelpositionen ”{value}” stöds inte (en pixelförskjutning, eventuellt med ”parallel” / ”Hook N Bottom-Top dx dy”, gör det)
+	page {page}: the hook reaches back further than there are spines; it hooks onto the first spine, or starts its own	sida {page}: kroken når längre bakåt än det finns axlar; den hakar i den första axeln eller börjar en egen
+	hooked {n} spines back: its {from} meets this spine's {to}	krokad {n} axlar bakåt: dess {from} möter den här axelns {to}
+	top	överkant
+	middle	mitt
+	bottom	nederkant
 	vertical gap “{value}” is not a number	det lodräta avståndet ”{value}” är inget tal
 	picture “{file}” was not found or cannot be read; it is left out	bilden ”{file}” hittades inte eller kan inte läsas; den utelämnas
 	video “{file}” was not found or cannot be read; it is left out	videon ”{file}” hittades inte eller kan inte läsas; den utelämnas
@@ -4519,7 +4528,7 @@ export.summary	Low	låg
 	the engine sent no report	motorn skickade ingen rapport
 	MXF OP1a Uncompressed 10-bit 4:2:2 (v210)	MXF OP1a okomprimerad 10-bitars 4:2:2 (v210)
 	MXF OP1a, uncompressed 10-bit Y'CbCr 4:2:2 in the v210 layout (SMPTE ST 384), 24-bit 48 kHz PCM, start timecode	MXF OP1a, okomprimerad 10-bitars Y'CbCr 4:2:2 i v210-layout (SMPTE ST 384), 24-bitars 48 kHz PCM, starttidkod
-	Write the captions as ANC data (CEA-608/708, 29.97 fps)	Skriv undertexterna som ANC-data (CEA-608/708, 29,97 bild/s)
+	Write the captions as ANC data (CEA-608/708)	Skriv undertexterna som ANC-data (CEA-608/708)
 	Load KDM…	Läs in KDM…
 	Forget DCP Keys	Glöm DCP-nycklar
 	Load KDM	Läs in KDM
@@ -4529,6 +4538,13 @@ export.summary	Low	låg
 	The keys stay in memory only, until Forget DCP Keys or the end of the session.	Nycklarna finns bara i minnet, tills Glöm DCP-nycklar eller sessionens slut.
 	DCP keys forgotten	DCP-nycklarna glömda
 	Choose the KDM file and the private key.	Välj KDM-filen och den privata nyckeln.
+	Load even if the certificate chain is not verified	Läs in även med en overifierad certifikatkedja
+	Bundle: {loaded} of {total} KDMs loaded, {other} for other recipients	Paket: {loaded} av {total} KDM:er inlästa, {other} för andra mottagare
+	Not loaded: {path}: {problem}	Inte inläst: {path}: {problem}
+	Signature verified: {chain}	Signaturen verifierad: {chain}
+	Signature not verified: {problem}	Signaturen inte verifierad: {problem}
+	KDM required	KDM krävs
+	Encrypted: load the KDM with content key {keys}	Krypterad: läs in KDM:en med innehållsnyckeln {keys}
 
 # Settings ▸ Timecode Sync (TC-4)
 	Timecode Sync	Tidskodssynkronisering
@@ -4561,3 +4577,60 @@ export.summary	Low	låg
 	Chase External Timecode	Följ extern tidskod
 	Send LTC	Skicka LTC
 	Send MIDI Timecode	Skicka MIDI-tidskod
+# Auto Color, Auto Contrast, Auto Levels (EffectsSDK review)
+	Auto Color	Automatisk färg
+	Auto Contrast	Automatisk kontrast
+	Auto Levels	Automatiska nivåer
+	Temporal Smoothing (seconds)	Tidsutjämning (sekunder)
+	Scene Detect	Scendetektering
+	Black Clip	Svartklippning
+	White Clip	Vitklippning
+	Snap Neutral Midtones	Neutrala mellantoner
+# Layout presets: PiP corners, split screen (EffectsSDK review)
+	PiP 35% Upper Left	PiP 35 % uppe till vänster
+	Picture-in-picture: 35 % scale in the upper left	Bild-i-bild: 35 % skala uppe till vänster
+	PiP 35% Lower Left	PiP 35 % nere till vänster
+	Picture-in-picture: 35 % scale in the lower left	Bild-i-bild: 35 % skala nere till vänster
+	PiP 35% Lower Right	PiP 35 % nere till höger
+	Picture-in-picture: 35 % scale in the lower right	Bild-i-bild: 35 % skala nere till höger
+	Split Screen Left	Delad skärm vänster
+	Split screen: the middle half of the picture fills the left half of the frame	Delad skärm: bildens mittersta halva fyller rutans vänstra halva
+	Split Screen Right	Delad skärm höger
+	Split screen: the middle half of the picture fills the right half of the frame	Delad skärm: bildens mittersta halva fyller rutans högra halva
+# Creative Looks: CRT (P3)
+	CRT	CRT
+	Scanline Strength	Styrka på sveplinjer
+	Line Count	Antal linjer
+	Mask	Mask
+	Mask Strength	Maskstyrka
+	Corner Darkening	Mörkare hörn
+	Aperture Grille	Aperturgaller
+	Shadow Mask	Skuggmask
+	Slot Mask	Slitsmask
+# Creative Looks: Oil Paint (P4)
+	Oil Paint	Oljemålning
+	Detail	Detalj
+	Texture	Textur
+	Facet	Facetter
+	Daubs	Klickar
+	Dry Brush	Torr pensel
+	Fresco	Fresk
+	Knife	Palettkniv
+	Sponge	Svamp
+# Creative Looks: Pixel Sort (P5)
+	Pixel Sort	Pixelsortering
+	Sort By	Sortera efter
+	Lower Threshold	Nedre tröskel
+	Upper Threshold	Övre tröskel
+	Ascending	Stigande
+# Temporal Denoise (EffectsSDK review)
+	Temporal Denoise	Tidsbaserad brusreducering
+	Frames Each Side	Bildrutor på varje sida
+	Motion Threshold	Rörelsetröskel
+	Show Motion	Visa rörelse
+	No signal	Ingen signal
+	Locating	Söker position
+	Locked	Låst
+	Freewheel	Frihjul
+	Scrubbing	Skrubbar
+	Sending	Skickar

@@ -340,7 +340,9 @@ impl MxfSource {
         let mut members: Vec<(crate::Src, MxfFile)> = Vec::new();
         for (i, reader) in readers.into_iter().enumerate() {
             let bytes = crate::Src(reader);
-            match cfa4_mxf::open(&bytes) {
+            // the clips of an OP2x / OP3x edit list in their H.264 presentation order (#1008)
+            let order = |codec: Codec, heads: &[Vec<u8>]| if matches!(codec, Codec::Avc { .. }) { avc_presentation_order(heads) } else { None };
+            match cfa4_mxf::open_with_order(&bytes, &order) {
                 Ok(f) => {
                     for w in &f.warnings {
                         log::warn!("{name}: {w}");
@@ -852,6 +854,16 @@ impl VideoSamples for MxfVideo<'_> {
 impl MediaSource for MxfSource {
     fn info(&self) -> &MediaInfo {
         &self.info
+    }
+
+    fn missing_keys(&self) -> Vec<String> {
+        let mut ids: Vec<[u8; 16]> = Vec::new();
+        for id in std::iter::once(&self.file).chain(self.companions.iter().map(|c| &c.1)).flat_map(MxfFile::missing_keys) {
+            if !ids.contains(&id) {
+                ids.push(id);
+            }
+        }
+        ids.iter().map(cfa4_mxf::crypt::uuid_text).collect()
     }
 
     fn video_frame(&self, req: FrameRequest) -> Result<Arc<VideoFrame>, MediaError> {

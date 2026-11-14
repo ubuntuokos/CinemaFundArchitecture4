@@ -45,7 +45,7 @@ fn picture(w: usize, h: usize) -> Image {
 
 fn run(e: &EffectInstance, img: &Image, seconds: f64) -> Image {
     let mut o = img.clone();
-    assert!(crate::vfx::apply(&mut o, e, &cx(seconds)), "{} not dispatched", e.effect);
+    crate::effects::apply(&mut o, e, &cx(seconds));
     o
 }
 

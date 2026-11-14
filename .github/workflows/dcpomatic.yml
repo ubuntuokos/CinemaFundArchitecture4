@@ -1,0 +1,62 @@
+name: CFA4 DCP-o-matic (pinned build, real DCP)
+
+# Plan CFA4-DCPOMATIC-001 D10 and phase 2 acceptance: build the pinned DCP-o-matic 2.18.51
+# (command-line tools only, scripts/dev/build-dcpomatic.sh, cached), make a real DCP from a short
+# test master through `cfa4-dcpomatic`, and check it with CFA4's native validator, profile
+# `full-integrity`, SMPTE and Interop (crates/dcpomatic/tests/real_dcpomatic.rs).
+#
+# Non-blocking at first (D10): not a required check, `continue-on-error`. Runs only on
+# workflow_dispatch or the PR `cfa4-full-validation` label event (AGENTS.md CI rule), and on PRs
+# only when the DCP-o-matic backend changed.
+on:
+  workflow_dispatch:
+  pull_request:
+    types: [labeled]
+    paths:
+      - crates/dcpomatic/**
+      - scripts/dev/build-dcpomatic.sh
+      - .github/workflows/dcpomatic.yml
+
+permissions:
+  contents: read
+
+concurrency:
+  group: cfa4-dcpomatic-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  real-dcp:
+    if: github.event_name == 'workflow_dispatch' || (github.event_name == 'pull_request' && github.event.label.name == 'cfa4-full-validation')
+    name: DCP-o-matic 2.18.51 → DCP → full-integrity (non-blocking)
+    runs-on: ubuntu-26.04
+    timeout-minutes: 120
+    continue-on-error: true
+    env:
+      DCPOM_DIR: ${{ github.workspace }}/../dcpom
+    steps:
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - name: Test master tool (ffmpeg)
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends ffmpeg
+      - name: Cache the DCP-o-matic build
+        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        with:
+          path: ${{ github.workspace }}/../dcpom
+          key: cfa4-dcpomatic-2.18.51-ubuntu-26.04-${{ hashFiles('scripts/dev/build-dcpomatic.sh') }}
+      - name: Build (or verify cached) DCP-o-matic 2.18.51
+        run: bash scripts/dev/build-dcpomatic.sh
+      - name: Rust toolchain from rust-toolchain.toml
+        run: |
+          rustup show
+          cargo --version
+      - name: Real DCP through cfa4-dcpomatic, validated with full-integrity (SMPTE and Interop)
+        run: |
+          export CFA4_DCPOMATIC_BIN_DIR="$DCPOM_DIR/prefix/bin"
+          export LD_LIBRARY_PATH="$DCPOM_DIR/prefix/lib64:$DCPOM_DIR/prefix/lib"
+          cargo test --locked --release -p cfa4-dcpomatic --test real_dcpomatic -- --nocapture
+      - name: Fake-tool tests
+        run: cargo test --locked --release -p cfa4-dcpomatic

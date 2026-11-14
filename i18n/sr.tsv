@@ -4380,6 +4380,10 @@ export.summary	Low	низак
 	{n} more	Још {n}
 	Block	Блок
 	parallel	паралелно
+	page {page}: a spine's vertical position works on card pages only; it is ignored	страница {page}: вертикални положај осе важи само на страницама картица; занемарује се
+	on a card: centered on {y} px	на картици: центрирано на {y} px
+	on a card: starts at {y} px	на картици: почиње на {y} px
+	on a card: ends at {y} px	на картици: завршава се на {y} px
 # MPEG-2 export audio (#268): a product name, kept as is
 	Dolby Digital (AC-3)	Dolby Digital (AC-3)
 	In the page (OBS takes it from the Browser Source)	На страници (OBS га узима из извора прегледача)
@@ -4452,7 +4456,12 @@ export.summary	Low	низак
 	page {page}: the runtime is reached by changing the roll speed (the gaps would have to grow more than 20-fold)	страница {page}: трајање се постиже променом брзине померања (размаци би морали да порасту више од 20 пута)
 	page {page}: the transition needs the pages to touch (page gap 0); it is left out	страница {page}: прелаз захтева да се странице додирују (размак 0); изоставља се
 	page {page}: there is no transition “{name}”; the pages cut	страница {page}: нема прелаза „{name}”; странице се мењају резом
-	spine position “{value}” is not supported (a pixel offset, optionally “parallel”, is)	положај осе „{value}” није подржан (подржан је помак у пикселима, по жељи уз „parallel”)
+	spine position “{value}” is not supported (a pixel offset, optionally “parallel”, or “Hook N Bottom-Top dx dy” is)	положај осе „{value}” није подржан (подржан је помак у пикселима, по жељи уз „parallel” / „Hook N Bottom-Top dx dy”)
+	page {page}: the hook reaches back further than there are spines; it hooks onto the first spine, or starts its own	страница {page}: кука сеже даље уназад него што има оса; качи се на прву осу или започиње своју
+	hooked {n} spines back: its {from} meets this spine's {to}	закачено {n} оса уназад: њен {from} спаја се са {to} ове осе
+	top	горња ивица
+	middle	средина
+	bottom	доња ивица
 	vertical gap “{value}” is not a number	вертикални размак „{value}” није број
 	picture “{file}” was not found or cannot be read; it is left out	слика „{file}” није пронађена или се не може прочитати; изоставља се
 	video “{file}” was not found or cannot be read; it is left out	видео „{file}” није пронађен или се не може прочитати; изоставља се
@@ -4517,7 +4526,7 @@ export.summary	Low	низак
 	the engine sent no report	машина није послала извештај
 	MXF OP1a Uncompressed 10-bit 4:2:2 (v210)	MXF OP1a некомпресовано 10-битно 4:2:2 (v210)
 	MXF OP1a, uncompressed 10-bit Y'CbCr 4:2:2 in the v210 layout (SMPTE ST 384), 24-bit 48 kHz PCM, start timecode	MXF OP1a, некомпресовани 10-битни Y'CbCr 4:2:2 у распореду v210 (SMPTE ST 384), 24-битни PCM 48 kHz, почетни временски код
-	Write the captions as ANC data (CEA-608/708, 29.97 fps)	Упиши титлове као ANC податке (CEA-608/708, 29,97 fps)
+	Write the captions as ANC data (CEA-608/708)	Упиши титлове као ANC податке (CEA-608/708)
 	Load KDM…	Учитај KDM…
 	Forget DCP Keys	Заборави DCP кључеве
 	Load KDM	Учитај KDM
@@ -4527,6 +4536,13 @@ export.summary	Low	низак
 	The keys stay in memory only, until Forget DCP Keys or the end of the session.	Кључеви остају само у меморији, до команде Заборави DCP кључеве или краја сесије.
 	DCP keys forgotten	DCP кључеви заборављени
 	Choose the KDM file and the private key.	Изаберите KDM датотеку и приватни кључ.
+	Load even if the certificate chain is not verified	Учитај и са непровереним ланцем сертификата
+	Bundle: {loaded} of {total} KDMs loaded, {other} for other recipients	Пакет: учитано {loaded} од {total} KDM, {other} за друге примаоце
+	Not loaded: {path}: {problem}	Није учитано: {path}: {problem}
+	Signature verified: {chain}	Потпис проверен: {chain}
+	Signature not verified: {problem}	Потпис није проверен: {problem}
+	KDM required	Потребан је KDM
+	Encrypted: load the KDM with content key {keys}	Шифровано: учитајте KDM са кључем садржаја {keys}
 
 # Settings ▸ Timecode Sync (TC-4)
 	Timecode Sync	Синхронизација временског кода
@@ -4559,3 +4575,60 @@ export.summary	Low	низак
 	Chase External Timecode	Прати спољни временски код
 	Send LTC	Шаљи LTC
 	Send MIDI Timecode	Шаљи MIDI временски код
+# Auto Color, Auto Contrast, Auto Levels (EffectsSDK review)
+	Auto Color	Аутоматска боја
+	Auto Contrast	Аутоматски контраст
+	Auto Levels	Аутоматски нивои
+	Temporal Smoothing (seconds)	Временско изглађивање (секунде)
+	Scene Detect	Откривање сцена
+	Black Clip	Одсецање црне
+	White Clip	Одсецање беле
+	Snap Neutral Midtones	Неутрални средњи тонови
+# Layout presets: PiP corners, split screen (EffectsSDK review)
+	PiP 35% Upper Left	Слика у слици 35% горе лево
+	Picture-in-picture: 35 % scale in the upper left	Слика у слици: размера 35 % горе лево
+	PiP 35% Lower Left	Слика у слици 35% доле лево
+	Picture-in-picture: 35 % scale in the lower left	Слика у слици: размера 35 % доле лево
+	PiP 35% Lower Right	Слика у слици 35% доле десно
+	Picture-in-picture: 35 % scale in the lower right	Слика у слици: размера 35 % доле десно
+	Split Screen Left	Подељени екран лево
+	Split screen: the middle half of the picture fills the left half of the frame	Подељени екран: средња половина слике испуњава леву половину кадра
+	Split Screen Right	Подељени екран десно
+	Split screen: the middle half of the picture fills the right half of the frame	Подељени екран: средња половина слике испуњава десну половину кадра
+# Creative Looks: CRT (P3)
+	CRT	CRT
+	Scanline Strength	Јачина линија
+	Line Count	Број линија
+	Mask	Маска
+	Mask Strength	Јачина маске
+	Corner Darkening	Тамњење углова
+	Aperture Grille	Апертурна решетка
+	Shadow Mask	Маска сенке
+	Slot Mask	Маска са прорезима
+# Creative Looks: Oil Paint (P4)
+	Oil Paint	Уљана слика
+	Detail	Детаљи
+	Texture	Текстура
+	Facet	Фасете
+	Daubs	Мрље
+	Dry Brush	Сува четкица
+	Fresco	Фреска
+	Knife	Шпахтла
+	Sponge	Сунђер
+# Creative Looks: Pixel Sort (P5)
+	Pixel Sort	Сортирање пиксела
+	Sort By	Сортирај по
+	Lower Threshold	Доњи праг
+	Upper Threshold	Горњи праг
+	Ascending	Растуће
+# Temporal Denoise (EffectsSDK review)
+	Temporal Denoise	Временско уклањање шума
+	Frames Each Side	Сличица са сваке стране
+	Motion Threshold	Праг покрета
+	Show Motion	Прикажи покрет
+	No signal	Нема сигнала
+	Locating	Позиционирање
+	Locked	Синхронизовано
+	Freewheel	Слободан ход
+	Scrubbing	Померање
+	Sending	Слање

@@ -4383,6 +4383,10 @@ export.summary	Low	დაბალი
 	{n} more	კიდევ {n}
 	Block	ბლოკი
 	parallel	პარალელური
+	page {page}: a spine's vertical position works on card pages only; it is ignored	გვერდი {page}: ღერძის ვერტიკალური მდებარეობა მხოლოდ ბარათის გვერდებზე მოქმედებს; იგნორირებულია
+	on a card: centered on {y} px	ბარათზე: ცენტრი {y} px-ზე
+	on a card: starts at {y} px	ბარათზე: იწყება {y} px-ზე
+	on a card: ends at {y} px	ბარათზე: მთავრდება {y} px-ზე
 # MPEG-2 export audio (#268): a product name, kept as is
 	Dolby Digital (AC-3)	Dolby Digital (AC-3)
 	In the page (OBS takes it from the Browser Source)	გვერდზე (OBS მას ბრაუზერის წყაროდან იღებს)
@@ -4455,7 +4459,12 @@ export.summary	Low	დაბალი
 	page {page}: the runtime is reached by changing the roll speed (the gaps would have to grow more than 20-fold)	გვერდი {page}: ხანგრძლივობა მიიღწევა გადახვევის სიჩქარის შეცვლით (დაშორებები 20-ჯერ მეტად უნდა გაიზარდოს)
 	page {page}: the transition needs the pages to touch (page gap 0); it is left out	გვერდი {page}: გადასვლას სჭირდება, რომ გვერდები ერთმანეთს ეხებოდეს (დაშორება 0); გამოტოვებულია
 	page {page}: there is no transition “{name}”; the pages cut	გვერდი {page}: გადასვლა „{name}“ არ არსებობს; გვერდები ჭრით იცვლება
-	spine position “{value}” is not supported (a pixel offset, optionally “parallel”, is)	ღერძის პოზიცია „{value}“ არ არის მხარდაჭერილი (მხარდაჭერილია პიქსელური წანაცვლება, სურვილისამებრ „parallel“-ით)
+	spine position “{value}” is not supported (a pixel offset, optionally “parallel”, or “Hook N Bottom-Top dx dy” is)	ღერძის პოზიცია „{value}“ არ არის მხარდაჭერილი (მხარდაჭერილია პიქსელური წანაცვლება, სურვილისამებრ „parallel“ / „Hook N Bottom-Top dx dy“-ით)
+	page {page}: the hook reaches back further than there are spines; it hooks onto the first spine, or starts its own	გვერდი {page}: კაკალი უფრო შორს მიუთითებს უკან, ვიდრე ღერძებია; ის პირველ ღერძს ეკიდება ან საკუთარს იწყებს
+	hooked {n} spines back: its {from} meets this spine's {to}	ჩამოკიდებულია {n} ღერძით უკან: მისი {from} ხვდება ამ ღერძის {to}-ს
+	top	ზედა კიდე
+	middle	შუა
+	bottom	ქვედა კიდე
 	vertical gap “{value}” is not a number	ვერტიკალური დაშორება „{value}“ რიცხვი არ არის
 	picture “{file}” was not found or cannot be read; it is left out	სურათი „{file}“ ვერ მოიძებნა ან ვერ იკითხება; გამოტოვებულია
 	video “{file}” was not found or cannot be read; it is left out	ვიდეო „{file}“ ვერ მოიძებნა ან ვერ იკითხება; გამოტოვებულია
@@ -4520,7 +4529,7 @@ export.summary	Low	დაბალი
 	the engine sent no report	ძრავამ ანგარიში არ გამოგზავნა
 	MXF OP1a Uncompressed 10-bit 4:2:2 (v210)	MXF OP1a შეუკუმშავი 10-ბიტიანი 4:2:2 (v210)
 	MXF OP1a, uncompressed 10-bit Y'CbCr 4:2:2 in the v210 layout (SMPTE ST 384), 24-bit 48 kHz PCM, start timecode	MXF OP1a, შეუკუმშავი 10-ბიტიანი Y'CbCr 4:2:2 v210 განლაგებით (SMPTE ST 384), 24-ბიტიანი 48 kHz PCM, საწყისი დროის კოდი
-	Write the captions as ANC data (CEA-608/708, 29.97 fps)	სუბტიტრების ჩაწერა ANC მონაცემებად (CEA-608/708, 29,97 fps)
+	Write the captions as ANC data (CEA-608/708)	სუბტიტრების ჩაწერა ANC მონაცემებად (CEA-608/708)
 	Load KDM…	KDM-ის ჩატვირთვა…
 	Forget DCP Keys	DCP გასაღებების დავიწყება
 	Load KDM	KDM-ის ჩატვირთვა
@@ -4530,6 +4539,13 @@ export.summary	Low	დაბალი
 	The keys stay in memory only, until Forget DCP Keys or the end of the session.	გასაღებები მხოლოდ მეხსიერებაში რჩება, DCP გასაღებების დავიწყებამდე ან სესიის დასრულებამდე.
 	DCP keys forgotten	DCP გასაღებები დავიწყებულია
 	Choose the KDM file and the private key.	აირჩიეთ KDM ფაილი და პირადი გასაღები.
+	Load even if the certificate chain is not verified	ჩატვირთვა გადაუმოწმებელი სერტიფიკატების ჯაჭვითაც
+	Bundle: {loaded} of {total} KDMs loaded, {other} for other recipients	პაკეტი: ჩაიტვირთა {loaded} KDM {total}-დან, {other} სხვა მიმღებებისთვის
+	Not loaded: {path}: {problem}	არ ჩაიტვირთა: {path}: {problem}
+	Signature verified: {chain}	ხელმოწერა გადამოწმებულია: {chain}
+	Signature not verified: {problem}	ხელმოწერა არ არის გადამოწმებული: {problem}
+	KDM required	საჭიროა KDM
+	Encrypted: load the KDM with content key {keys}	დაშიფრულია: ჩატვირთეთ KDM შიგთავსის გასაღებით {keys}
 
 # Settings ▸ Timecode Sync (TC-4)
 	Timecode Sync	დროის კოდის სინქრონიზაცია
@@ -4562,3 +4578,60 @@ export.summary	Low	დაბალი
 	Chase External Timecode	გარე დროის კოდისთვის მიყოლა
 	Send LTC	LTC-ის გაგზავნა
 	Send MIDI Timecode	MIDI დროის კოდის გაგზავნა
+# Auto Color, Auto Contrast, Auto Levels (EffectsSDK review)
+	Auto Color	ავტომატური ფერი
+	Auto Contrast	ავტომატური კონტრასტი
+	Auto Levels	ავტომატური დონეები
+	Temporal Smoothing (seconds)	დროითი გასწორება (წამი)
+	Scene Detect	სცენების აღმოჩენა
+	Black Clip	შავის მოჭრა
+	White Clip	თეთრის მოჭრა
+	Snap Neutral Midtones	ნეიტრალური შუა ტონები
+# Layout presets: PiP corners, split screen (EffectsSDK review)
+	PiP 35% Upper Left	PiP 35% ზედა მარცხენა
+	Picture-in-picture: 35 % scale in the upper left	სურათი სურათში: 35 % მასშტაბი ზედა მარცხენა კუთხეში
+	PiP 35% Lower Left	PiP 35% ქვედა მარცხენა
+	Picture-in-picture: 35 % scale in the lower left	სურათი სურათში: 35 % მასშტაბი ქვედა მარცხენა კუთხეში
+	PiP 35% Lower Right	PiP 35% ქვედა მარჯვენა
+	Picture-in-picture: 35 % scale in the lower right	სურათი სურათში: 35 % მასშტაბი ქვედა მარჯვენა კუთხეში
+	Split Screen Left	გაყოფილი ეკრანი მარცხნივ
+	Split screen: the middle half of the picture fills the left half of the frame	გაყოფილი ეკრანი: სურათის შუა ნახევარი ავსებს კადრის მარცხენა ნახევარს
+	Split Screen Right	გაყოფილი ეკრანი მარჯვნივ
+	Split screen: the middle half of the picture fills the right half of the frame	გაყოფილი ეკრანი: სურათის შუა ნახევარი ავსებს კადრის მარჯვენა ნახევარს
+# Creative Looks: CRT (P3)
+	CRT	CRT
+	Scanline Strength	სკანირების ხაზების სიძლიერე
+	Line Count	ხაზების რაოდენობა
+	Mask	ნიღაბი
+	Mask Strength	ნიღბის სიძლიერე
+	Corner Darkening	კუთხეების დაბნელება
+	Aperture Grille	აპერტურული ბადე
+	Shadow Mask	ჩრდილის ნიღაბი
+	Slot Mask	ჭრილოვანი ნიღაბი
+# Creative Looks: Oil Paint (P4)
+	Oil Paint	ზეთის ფერწერა
+	Detail	დეტალიზაცია
+	Texture	ტექსტურა
+	Facet	წახნაგები
+	Daubs	მონასმები
+	Dry Brush	მშრალი ფუნჯი
+	Fresco	ფრესკა
+	Knife	შპატელი
+	Sponge	ღრუბელი
+# Creative Looks: Pixel Sort (P5)
+	Pixel Sort	პიქსელების დალაგება
+	Sort By	დალაგების კრიტერიუმი
+	Lower Threshold	ქვედა ზღვარი
+	Upper Threshold	ზედა ზღვარი
+	Ascending	ზრდადობით
+# Temporal Denoise (EffectsSDK review)
+	Temporal Denoise	დროითი ხმაურის შემცირება
+	Frames Each Side	კადრები თითოეულ მხარეს
+	Motion Threshold	მოძრაობის ზღვარი
+	Show Motion	მოძრაობის ჩვენება
+	No signal	სიგნალი არ არის
+	Locating	პოზიციონირება
+	Locked	სინქრონიზებული
+	Freewheel	თავისუფალი სვლა
+	Scrubbing	გადახვევა
+	Sending	გაგზავნა

@@ -139,23 +139,73 @@ fn rate_code(r: FrameRate) -> u8 {
     }
 }
 
+/// The frame rates SMPTE ST 334-2 caption distribution packets are defined for.
+pub const CDP_RATES: [FrameRate; 8] = [
+    FrameRate::FPS_23_976,
+    FrameRate::FPS_24,
+    FrameRate::FPS_25,
+    FrameRate::FPS_29_97,
+    FrameRate::FPS_30,
+    FrameRate::FPS_50,
+    FrameRate::FPS_59_94,
+    FrameRate::FPS_60,
+];
+
+/// cc_data triplets in each CDP at `rate` (SMPTE ST 334-2: the DTVCC channel's 9 600 bit/s
+/// divided over the frames), or None for a rate CDPs are not defined for.
+pub fn cc_count(rate: FrameRate) -> Option<usize> {
+    match rate {
+        FrameRate::FPS_23_976 | FrameRate::FPS_24 => Some(25),
+        FrameRate::FPS_25 => Some(24),
+        FrameRate::FPS_29_97 | FrameRate::FPS_30 => Some(20),
+        FrameRate::FPS_50 => Some(12),
+        FrameRate::FPS_59_94 | FrameRate::FPS_60 => Some(10),
+        _ => None,
+    }
+}
+
+/// CEA-608 field-1 triplets per CDP at `rate`: two below 29.97 fps, so the 608 channel keeps
+/// its 29.97 pair rate, otherwise one.
+fn f1_slots(rate: FrameRate) -> usize {
+    if matches!(rate, FrameRate::FPS_23_976 | FrameRate::FPS_24 | FrameRate::FPS_25) { 2 } else { 1 }
+}
+
+/// DTVCC triplets per CDP at `rate`: what is left after the field-1 and field-2 triplets.
+fn dtvcc_slots(rate: FrameRate) -> Option<usize> {
+    cc_count(rate)?.checked_sub(f1_slots(rate) + 1)
+}
+
 /// A CDP for one 29.97 fps frame, prefixed with the ancillary DID/SDID (`61 01`) and count.
 pub fn build_cdp(seq: u16, data: &FrameData) -> Vec<u8> {
-    let mut cc: Vec<u8> = Vec::with_capacity(CC_COUNT * 3);
-    match data.f1 {
-        Some((a, b)) => cc.extend_from_slice(&[0xfc, with_parity(a), with_parity(b)]),
-        None => cc.extend_from_slice(&[0xfc, 0x80, 0x80]),
+    build_cdp_at(RATE, seq, data.f1.as_slice(), &data.dtvcc).unwrap_or_default()
+}
+
+/// A CDP for one frame at `rate` (one of [`CDP_RATES`], else None), prefixed with the ancillary
+/// DID/SDID (`61 01`), count, and followed by the ST 291 checksum: up to [`f1_slots`] CEA-608
+/// field-1 pairs (without parity), a null field-2 pair and the DTVCC pairs that fit.
+pub fn build_cdp_at(rate: FrameRate, seq: u16, f1: &[(u8, u8)], dtvcc: &[(bool, u8, u8)]) -> Option<Vec<u8>> {
+    let count = cc_count(rate)?;
+    let mut cc: Vec<u8> = Vec::with_capacity(count * 3);
+    // An empty field-1 slot is a valid null pair at 29.97 fps, where the 608 pairs keep their
+    // frames; at other rates it is marked invalid, so the null does not come between the two
+    // copies of a doubled control code that the move to the new frames left in separate slots.
+    let empty = if rate == RATE { 0xfc } else { 0xf8 };
+    for k in 0..f1_slots(rate) {
+        match f1.get(k) {
+            Some(&(a, b)) => cc.extend_from_slice(&[0xfc, with_parity(a), with_parity(b)]),
+            None => cc.extend_from_slice(&[empty, 0x80, 0x80]),
+        }
     }
     cc.extend_from_slice(&[0xfd, 0x80, 0x80]);
-    for &(start, a, b) in data.dtvcc.iter().take(DTVCC_PAIRS) {
+    for &(start, a, b) in dtvcc.iter().take(dtvcc_slots(rate)?) {
         cc.extend_from_slice(&[if start { 0xff } else { 0xfe }, a, b]);
     }
-    while cc.len() < CC_COUNT * 3 {
+    while cc.len() < count * 3 {
         cc.extend_from_slice(&[0xfa, 0x00, 0x00]);
     }
     let len = 7 + 2 + cc.len() + 4;
     let [s1, s0] = seq.to_be_bytes();
-    let mut cdp = vec![0x96, 0x69, len as u8, rate_code(RATE) << 4 | 0x0f, 0x43, s1, s0, 0x72, 0xe0 | CC_COUNT as u8];
+    let mut cdp = vec![0x96, 0x69, len as u8, rate_code(rate) << 4 | 0x0f, 0x43, s1, s0, 0x72, 0xe0 | count as u8];
     cdp.extend_from_slice(&cc);
     cdp.extend_from_slice(&[0x74, s1, s0]);
     let sum: u32 = cdp.iter().map(|&b| b as u32).sum();
@@ -165,30 +215,65 @@ pub fn build_cdp(seq: u16, data: &FrameData) -> Vec<u8> {
     // SMPTE ST 291 ancillary checksum: low 8 bits of the sum of DID, SDID, data count and the user data words.
     let anc_sum: u32 = out.iter().map(|&b| b as u32).sum();
     out.push((anc_sum & 0xff) as u8);
+    Some(out)
+}
+
+/// Move a 29.97 fps schedule to the frames of `rate`: each frame's items go to the nearest
+/// frame of `rate`, never before items already placed (order is kept) and at most `cap` per
+/// frame, the rest carried to the following frames. At 29.97 fps nothing moves.
+fn remap<T>(src: BTreeMap<i64, Vec<T>>, rate: FrameRate, cap: usize) -> BTreeMap<i64, Vec<T>> {
+    let mut out: BTreeMap<i64, Vec<T>> = BTreeMap::new();
+    let cap = cap.max(1);
+    let mut fill = i64::MIN;
+    for (k, items) in src {
+        let mut f = rate.frame_at(rate.snap_nearest(RATE.tick_of(k))).max(fill);
+        for it in items {
+            while out.get(&f).is_some_and(|v| v.len() >= cap) {
+                f = f.saturating_add(1);
+            }
+            out.entry(f).or_default().push(it);
+        }
+        fill = f;
+    }
     out
 }
 
-/// Caption distribution packets for every frame of a 29.97 fps picture stream, for SMPTE ST 436-1
-/// ANC data in MXF: CEA-608 field 1 and CEA-708 service 1 of a document, scheduled as
-/// [`write`] schedules them, one CDP per frame (padding only where nothing is scheduled) with
-/// the sequence counter advancing every frame.
+/// Caption distribution packets for every frame of a picture stream, for SMPTE ST 436-1 ANC
+/// data in MXF: CEA-608 field 1 and CEA-708 service 1 of a document, scheduled as [`write`]
+/// schedules them (on the 29.97 fps grid, then moved to the stream's frames), one CDP per
+/// frame (padding only where nothing is scheduled) with the sequence counter advancing every
+/// frame.
 #[derive(Clone, Debug, Default)]
 pub struct CdpStream {
-    f1: BTreeMap<i64, (u8, u8)>,
+    rate: FrameRate,
+    f1: BTreeMap<i64, Vec<(u8, u8)>>,
     dtv: BTreeMap<i64, Vec<(bool, u8, u8)>>,
     seq: u16,
 }
 
 impl CdpStream {
+    /// The stream at 29.97 fps.
     pub fn new(doc: &Document) -> Self {
-        CdpStream { f1: scc::schedule(doc), dtv: schedule_708(doc), seq: 0 }
+        let f1 = scc::schedule(doc).into_iter().map(|(f, p)| (f, vec![p])).collect();
+        CdpStream { rate: RATE, f1, dtv: schedule_708(doc), seq: 0 }
+    }
+
+    /// The stream at `rate`, one of [`CDP_RATES`] (None for another rate).
+    pub fn new_at(doc: &Document, rate: FrameRate) -> Option<Self> {
+        let dtv_cap = dtvcc_slots(rate)?;
+        let base = Self::new(doc);
+        if rate == RATE {
+            return Some(base);
+        }
+        Some(CdpStream { rate, f1: remap(base.f1, rate, f1_slots(rate)), dtv: remap(base.dtv, rate, dtv_cap), seq: 0 })
     }
 
     /// The ancillary packet of frame `f` (frames counted from the document's zero): DID 61h,
     /// SDID 01h, the data count and the CDP, without the ST 291 checksum word.
     pub fn frame(&mut self, f: i64) -> Vec<u8> {
-        let data = FrameData { f1: self.f1.get(&f).copied(), dtvcc: self.dtv.get(&f).cloned().unwrap_or_default() };
-        let mut p = build_cdp(self.seq, &data);
+        let f1 = self.f1.get(&f).map_or(&[][..], Vec::as_slice);
+        let dtv = self.dtv.get(&f).map_or(&[][..], Vec::as_slice);
+        let mut p = build_cdp_at(self.rate, self.seq, f1, dtv).unwrap_or_default();
         self.seq = self.seq.wrapping_add(1);
         let dc = p.get(2).map_or(0, |&n| n as usize);
         p.truncate(3 + dc);
@@ -875,6 +960,61 @@ mod tests {
         let got: Vec<(i64, i64, &str)> = back.cues.iter().map(|c| (RATE.frame_at(c.start), RATE.frame_at(c.end), c.text.as_str())).collect();
         assert_eq!(got, vec![(30, 90, "Hello, world!"), (120, 150, "Second")]);
         assert_eq!(CdpStream::new(&Document::default()).last_frame(), None);
+    }
+
+    /// CDPs at every ST 334-2 rate: the rate code and cc_count of each, and the captions read
+    /// back from them, through CEA-608 and (with the 608 triplets marked invalid) through
+    /// CEA-708, near their times. Dense captions overflow a frame's DTVCC room and carry on.
+    #[test]
+    fn cdp_streams_at_every_rate_round_trip() {
+        let long: Vec<String> = (0..6).map(|k| format!("Caption number {k} of the dense\nrun, with a second row {k}")).collect();
+        let mut cues = vec![cue(30, 90, "Hello, world!"), cue(120, 150, "Second")];
+        for (k, text) in (0i64..).zip(&long) {
+            cues.push(cue(200 + 45 * k, 245 + 45 * k, text));
+        }
+        let doc = Document { cues, ..Default::default() };
+        let want: Vec<&str> = doc.cues.iter().map(|c| c.text.as_str()).collect();
+        assert_eq!(CdpStream::new_at(&doc, FrameRate::FPS_48).map(|_| ()), None);
+        assert_eq!(build_cdp_at(FrameRate::FPS_120, 0, &[], &[]), None);
+        let codes = [(1, 25), (2, 25), (3, 24), (4, 20), (5, 20), (6, 12), (7, 10), (8, 10)];
+        for (rate, (code, count)) in CDP_RATES.into_iter().zip(codes) {
+            let mut st = CdpStream::new_at(&doc, rate).unwrap();
+            let last = st.last_frame().unwrap();
+            let packets: Vec<(i64, Vec<u8>)> = (0..=last + 5).map(|f| (f, st.frame(f))).collect();
+            for (f, p) in &packets {
+                assert_eq!(p.len(), 3 + p[2] as usize);
+                assert_eq!(p[2] as usize, 13 + 3 * count, "{rate:?}");
+                assert_eq!(p[6], code << 4 | 0x0f, "{rate:?}");
+                assert_eq!(p[11], 0xe0 | count as u8);
+                assert_eq!(u16::from_be_bytes([p[8], p[9]]), *f as u16);
+                assert_eq!(p[3..].iter().map(|&x| x as u32).sum::<u32>() % 256, 0, "checksum");
+                assert_eq!(cc_triplets(p).unwrap().len(), count);
+            }
+            let close = |back: &Document, what: &str| {
+                let got: Vec<&str> = back.cues.iter().map(|c| c.text.as_str()).collect();
+                assert_eq!(got, want, "{what} at {rate:?}");
+                for (c, w) in back.cues.iter().zip(&doc.cues) {
+                    let d = (rate.frame_at(c.start) - rate.frame_at(w.start)).abs();
+                    assert!(d <= 2, "{what} at {rate:?}: start {d} frames off");
+                    let d = (rate.frame_at(c.end) - rate.frame_at(w.end)).abs();
+                    assert!(d <= 2, "{what} at {rate:?}: end {d} frames off");
+                }
+            };
+            close(&decode_cdps(packets.clone(), rate), "CEA-608");
+            let only708 = packets.into_iter().map(|(f, mut p)| {
+                for t in p[12..].chunks_mut(3) {
+                    if t[0] & 0xfb == 0xf8 {
+                        t[0] = 0xf8;
+                    }
+                }
+                (f, p)
+            });
+            close(&decode_cdps(only708, rate), "CEA-708");
+        }
+        // 29.97 fps is unchanged by the generalisation
+        let mut a = CdpStream::new(&doc);
+        let mut b = CdpStream::new_at(&doc, RATE).unwrap();
+        assert!((0..400).all(|f| a.frame(f) == b.frame(f)));
     }
 
     /// Keep separated short captions compact while preserving cues and valid CDP packets.

@@ -9,6 +9,10 @@ rust-version.workspace = true
 [lints]
 workspace = true
 
+[features]
+# test helpers for other crates' tests (crate::testing)
+test-util = []
+
 [dependencies]
 base64 = { workspace = true }
 chrono = { workspace = true }

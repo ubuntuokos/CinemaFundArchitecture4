@@ -1,6 +1,8 @@
 //! #933: an encrypted D-Cinema sound track file imports, stays silent-with-an-error until its KDM
 //! and private key are loaded, then plays; the keys never reach the project or the journal. The
-//! KDM is built with the openssl command line (oracle; skipped when missing).
+//! KDM is built with the openssl command line and signed with xmlsec1 (oracles; skipped when
+//! missing). Unsigned and changed KDMs are always refused; one whose certificate chain does not
+//! keep ST 430-2 loads only with `allowUnverified` (owner decision 2026-11-13, #1028).
 
 use std::path::Path;
 use std::process::Command;
@@ -18,6 +20,10 @@ const CPL: [u8; 16] = [0x11; 16];
 
 /// One second of 5.1 24-bit PCM in an encrypted D-Cinema sound track file.
 fn write_encrypted(path: &Path, key: &[u8; 16]) {
+    write_encrypted_with(path, key, &KEY_ID);
+}
+
+fn write_encrypted_with(path: &Path, key: &[u8; 16], key_id: &[u8; 16]) {
     let mut ids = PackageIds::from_seed("enc-snd", "Reel 1");
     ids.file = Umid::dcinema([0x22; 16]);
     let mut cfg = WriterConfig::new(Pattern::DCinema, Rational::new(24, 1), ids);
@@ -31,7 +37,7 @@ fn write_encrypted(path: &Path, key: &[u8; 16]) {
     }
     w.push_sound(0, &pcm).unwrap();
     let plain = w.finish().unwrap().into_inner();
-    std::fs::write(path, cfa4_mxf::testing::encrypt_track_file(&plain, key, &KEY_ID, &[0xC0; 16], 0, None)).unwrap();
+    std::fs::write(path, cfa4_mxf::testing::encrypt_track_file(&plain, key, key_id, &[0xC0; 16], 0, None)).unwrap();
 }
 
 fn openssl(dir: &Path, args: &[&str]) -> bool {
@@ -45,8 +51,12 @@ fn write_kdm(dir: &Path, key: &[u8; 16]) -> bool {
         eprintln!("SKIPPED: openssl not found");
         return false;
     }
+    // signed by an ST 430-2 chain, and by a plain X.509 one; the key blocks name the first
+    let (Some(good), Some(plain)) = (cfa4_dcp::testing::Signed::new("engine-kdm"), cfa4_dcp::testing::Signed::non_conforming("engine-kdm-plain")) else {
+        return false;
+    };
     let mut p = cfa4_dcp::kdm::STRUCTURE_ID.to_vec();
-    p.extend_from_slice(&[0x77; 20]);
+    p.extend_from_slice(&good.signer_thumbprint());
     p.extend_from_slice(&CPL);
     p.extend_from_slice(b"MDAK");
     p.extend_from_slice(&KEY_ID);
@@ -74,13 +84,18 @@ fn write_kdm(dir: &Path, key: &[u8; 16]) -> bool {
     let b64 = base64::engine::general_purpose::STANDARD.encode(std::fs::read(dir.join("c.bin")).unwrap());
     let xml = format!(
         r#"<?xml version="1.0" encoding="UTF-8"?>
-<DCinemaSecurityMessage xmlns="http://www.smpte-ra.org/schemas/430-3/2006/ETM">
+<DCinemaSecurityMessage xmlns="http://www.smpte-ra.org/schemas/430-3/2006/ETM" xmlns:dsig="http://www.w3.org/2000/09/xmldsig#">
 <AuthenticatedPublic Id="ID_AuthenticatedPublic"><MessageId>urn:uuid:22222222-2222-2222-2222-222222222222</MessageId><AnnotationText>Reel 1 KDM</AnnotationText>
 <RequiredExtensions><KDMRequiredExtensions xmlns="http://www.smpte-ra.org/schemas/430-1/2006/KDM"><CompositionPlaylistId>urn:uuid:11111111-1111-1111-1111-111111111111</CompositionPlaylistId><ContentTitleText>Encrypted Test</ContentTitleText></KDMRequiredExtensions></RequiredExtensions></AuthenticatedPublic>
 <AuthenticatedPrivate Id="ID_AuthenticatedPrivate"><enc:EncryptedKey xmlns:enc="http://www.w3.org/2001/04/xmlenc#"><enc:CipherData><enc:CipherValue>{b64}</enc:CipherValue></enc:CipherData></enc:EncryptedKey></AuthenticatedPrivate>
 </DCinemaSecurityMessage>"#
     );
-    std::fs::write(dir.join("kdm.xml"), xml).unwrap();
+    std::fs::write(dir.join("kdm.xml"), &xml).unwrap();
+    let template = xml.replace("</DCinemaSecurityMessage>", &format!("{}\n</DCinemaSecurityMessage>", cfa4_dcp::testing::TEMPLATE_SIGNATURE));
+    let signed = good.sign(&template);
+    std::fs::write(dir.join("signed.xml"), &signed).unwrap();
+    std::fs::write(dir.join("changed.xml"), signed.replace("Reel 1 KDM", "Reel 2 KDM")).unwrap();
+    std::fs::write(dir.join("plain.xml"), plain.sign(&template)).unwrap();
     true
 }
 
@@ -111,8 +126,31 @@ fn encrypted_dcp_audio_plays_after_its_kdm() {
     assert!(openssl(&dir, &["genpkey", "-algorithm", "RSA", "-pkeyopt", "rsa_keygen_bits:2048", "-out", "other.pem"]));
     let e = s.execute("dcp.loadKdm", json!({"kdm": s_path(&dir.join("kdm.xml")), "privateKey": s_path(&dir.join("other.pem"))})).unwrap_err();
     assert!(e.to_string().contains("not made for this private key"), "{e}");
-    // the right one
-    let r = s.execute("dcp.loadKdm", json!({"kdm": s_path(&dir.join("kdm.xml")), "privateKey": s_path(&dir.join("key.pem"))})).unwrap();
+    let load = |s: &mut Session, kdm: &str, allow: bool| {
+        s.execute("dcp.loadKdm", json!({"kdm": s_path(&dir.join(kdm)), "privateKey": s_path(&dir.join("key.pem")), "allowUnverified": allow}))
+    };
+    let none_loaded = |s: &mut Session| s.execute("dcp.keys", json!({})).unwrap()["keyIds"].as_array().unwrap().is_empty();
+    // the right key, but unsigned, or changed after signing: refused, even when asked to accept
+    for (kdm, why) in [("kdm.xml", "not signed"), ("changed.xml", "ID_AuthenticatedPublic")] {
+        for allow in [false, true] {
+            let e = load(&mut s, kdm, allow).unwrap_err().to_string();
+            assert!(e.contains(why) && e.contains("not loaded") && !e.contains("allowUnverified"), "{kdm} {allow}: {e}");
+            assert!(none_loaded(&mut s), "{kdm}: nothing loaded");
+        }
+    }
+    // a chain that does not keep ST 430-2: refused unless the user accepts it
+    let e = load(&mut s, "plain.xml", false).unwrap_err().to_string();
+    assert!(e.contains("certificate chain") && e.contains("ST 430-2") && e.contains("allowUnverified"), "{e}");
+    assert!(none_loaded(&mut s));
+    let r = load(&mut s, "plain.xml", true).unwrap();
+    assert_eq!(r["signature"]["valid"], false);
+    assert_eq!(r["signature"]["overridable"], true);
+    assert_eq!(r["signature"]["chain"][0], "CS.signer");
+    s.execute("dcp.clearKeys", json!({})).unwrap();
+    // a conforming chain loads as it is
+    let r = load(&mut s, "signed.xml", false).unwrap();
+    assert_eq!(r["signature"]["valid"], true);
+    assert_eq!(r["signature"]["chain"], json!(["CS.signer", ".inter", ".root"]));
     assert_eq!(r["title"], "Encrypted Test");
     assert_eq!(r["keys"][0]["type"], "MDAK");
     assert_eq!(r["keys"][0]["keyId"], "5a5a5a5a-5a5a-5a5a-5a5a-5a5a5a5a5a5a");
@@ -137,4 +175,86 @@ fn load_kdm_params_are_checked() {
     let mut s = Session::default();
     assert!(s.execute("dcp.loadKdm", json!({})).is_err());
     assert!(s.execute("dcp.loadKdm", json!({"kdm": "/nonexistent/kdm.xml", "privateKey": "/nonexistent/key.pem"})).is_err());
+}
+
+#[test]
+fn an_encrypted_clip_without_its_key_says_which_key_it_needs() {
+    // #1053: a Key ID no other test loads (the key ring is shared by the whole process)
+    let key_id = [0x6B; 16];
+    let dir = tmp_dir("kdm-needs-key");
+    let mxf = dir.join("enc_needs_key.mxf");
+    write_encrypted_with(&mxf, &cfa4_mxf::testing::test_key("needs-key"), &key_id);
+    let mut s = Session::default();
+    let r = s.execute("file.import", json!({"paths": [mxf.to_string_lossy()]})).unwrap();
+    let id = ItemId(r["items"][0].as_u64().unwrap());
+    s.execute("source.open", json!({"item": id.0})).unwrap();
+    let inspect = s.execute("source.inspect", json!({})).unwrap();
+    assert_eq!(inspect["needsKey"], json!(["6b6b6b6b-6b6b-6b6b-6b6b-6b6b6b6b6b6b"]));
+    assert_eq!(s.media.missing_keys(id), vec!["6b6b6b6b-6b6b-6b6b-6b6b-6b6b6b6b6b6b".to_string()]);
+    // a clip that is not encrypted needs no key
+    let plain = dir.join("plain.wav");
+    let data = vec![0u8; 4_800 * 4];
+    let mut wav = b"RIFF".to_vec();
+    wav.extend_from_slice(&(36 + data.len() as u32).to_le_bytes());
+    wav.extend_from_slice(b"WAVEfmt ");
+    for v in [16u32, 0x0002_0001, 48_000, 192_000, 0x0010_0004] {
+        wav.extend_from_slice(&v.to_le_bytes());
+    }
+    wav.extend_from_slice(b"data");
+    wav.extend_from_slice(&(data.len() as u32).to_le_bytes());
+    wav.extend_from_slice(&data);
+    std::fs::write(&plain, wav).unwrap();
+    let r = s.execute("file.import", json!({"paths": [plain.to_string_lossy()]})).unwrap();
+    let wav = ItemId(r["items"][0].as_u64().unwrap());
+    s.execute("source.open", json!({"item": wav.0})).unwrap();
+    assert_eq!(s.execute("source.inspect", json!({})).unwrap()["needsKey"], json!([]));
+    assert!(s.media.missing_keys(wav).is_empty());
+}
+
+/// #1144: a Key Delivery Bundle (ST 430-9) loads the KDMs made for the private key, each under
+/// the signature rule; KDMs for other recipients are skipped.
+#[test]
+fn kdm_bundle_loads_the_kdms_for_the_key() {
+    let (a, b) = (tmp_dir("kdb-a"), tmp_dir("kdb-b"));
+    let key = cfa4_mxf::testing::test_key("bundle");
+    if !write_kdm(&a, &key) || !write_kdm(&b, &key) {
+        return;
+    }
+    let read = |p: &Path| std::fs::read(p).unwrap();
+    let cpl = "11111111-1111-1111-1111-111111111111";
+    let catalog = cfa4_dcp::testing::catalog(&[("mine.xml", cpl), ("theirs.xml", cpl), ("changed.xml", cpl)]);
+    let (mine, theirs, changed) = (read(&a.join("signed.xml")), read(&b.join("signed.xml")), read(&a.join("changed.xml")));
+    let tar = cfa4_dcp::testing::ustar(&[
+        ("CATALOG", catalog.as_bytes()),
+        ("CONTENT/mine.xml", &mine),
+        ("CONTENT/theirs.xml", &theirs),
+        ("CONTENT/changed.xml", &changed),
+    ]);
+    std::fs::write(a.join("bundle.tar"), &tar).unwrap();
+    let mut s = Session::default();
+    s.execute("dcp.clearKeys", json!({})).unwrap();
+    let s_path = |p: &Path| p.to_string_lossy().to_string();
+    let r = s.execute("dcp.loadKdm", json!({"kdm": s_path(&a.join("bundle.tar")), "privateKey": s_path(&a.join("key.pem"))})).unwrap();
+    assert_eq!(r["title"], "Test bundle");
+    assert_eq!(r["bundle"]["kdms"], 3);
+    assert_eq!(r["kdms"].as_array().unwrap().len(), 1);
+    assert_eq!(r["kdms"][0]["path"], "mine.xml");
+    assert_eq!(r["kdms"][0]["signature"]["valid"], true);
+    assert_eq!(r["otherRecipients"], 1);
+    assert_eq!(r["refused"][0]["path"], "changed.xml");
+    assert!(r["refused"][0]["problem"].as_str().unwrap().contains("not loaded"), "{r}");
+    assert_eq!(r["keys"][0]["keyId"], "5a5a5a5a-5a5a-5a5a-5a5a-5a5a5a5a5a5a");
+    assert_eq!(s.execute("dcp.keys", json!({})).unwrap()["keyIds"][0], "5a5a5a5a-5a5a-5a5a-5a5a-5a5a5a5a5a5a");
+    let hex: String = key.iter().map(|b| format!("{b:02x}")).collect();
+    assert!(!r.to_string().contains(&hex), "the key itself is never returned");
+    s.execute("dcp.clearKeys", json!({})).unwrap();
+    // a bundle with nothing loadable for the key says why
+    let none = cfa4_dcp::testing::ustar(&[("CATALOG", catalog.as_bytes()), ("CONTENT/theirs.xml", &theirs), ("CONTENT/changed.xml", &changed)]);
+    std::fs::write(a.join("none.tar"), &none).unwrap();
+    let e = s.execute("dcp.loadKdm", json!({"kdm": s_path(&a.join("none.tar")), "privateKey": s_path(&a.join("key.pem"))})).unwrap_err().to_string();
+    assert!(e.contains("no KDM of the bundle") && e.contains("1 for other recipients") && e.contains("changed.xml"), "{e}");
+    assert!(s.execute("dcp.keys", json!({})).unwrap()["keyIds"].as_array().unwrap().is_empty());
+    // a damaged bundle is an error, not a panic
+    std::fs::write(a.join("cut.tar"), &tar[..700]).unwrap();
+    assert!(s.execute("dcp.loadKdm", json!({"kdm": s_path(&a.join("cut.tar")), "privateKey": s_path(&a.join("key.pem"))})).is_err());
 }
