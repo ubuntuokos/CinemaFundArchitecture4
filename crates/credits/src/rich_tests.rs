@@ -183,6 +183,56 @@ fn parallel_columns_start_at_the_same_top() {
     assert_eq!(c.warnings.len(), 1);
 }
 
+#[test]
+fn hooked_spines_hang_on_an_earlier_spine() {
+    use crate::sheet::{Hook, SpinePoint as P};
+    let st = Styling::default();
+    // the main column, a column hooked to its middle 600 px to the right, then the main column again
+    let sheet = "Head,Body,Spine Position\n\
+                 Camera,Anna,-300\n,Béla,\n,Cili,\n,Dóra,\n,,\n\
+                 Sound,Emil,Hook 1 Middle-Top 600 10\n,Feri,\n,,\n\
+                 Thanks,Everyone,-300\n";
+    let c = read(sheet.as_bytes(), &st).unwrap();
+    assert!(c.warnings.is_empty(), "{:?}", c.warnings);
+    let b = &c.pages[0].blocks;
+    assert_eq!(b[1].hook, Some(Hook { back: 1, from: P::Middle, to: P::Top, dx: 600.0, dy: 10.0 }));
+    assert!(b[2].hook.is_none() && b[2].spine_cell, "the same offset after a hook starts a spine again");
+    let l = layout(&c, &st, FRAME, &M).unwrap();
+    let pg = &l.pages[0];
+    let layers = &pg.layers;
+    let top_of = |t: &str| layers.iter().find(|e| text_of(e).contains(t)).map(|e| pos(e).1).unwrap();
+    let x_of = |t: &str| layers.iter().find(|e| text_of(e).contains(t)).map(|e| pos(e).0).unwrap();
+    // 600 px right of the main spine, its top 10 px below the main column's middle
+    assert!(x_of("Emil") > x_of("Anna") + 300.0, "{} vs {}", x_of("Emil"), x_of("Anna"));
+    // the main column is four 48-px lines (192 px): the hooked one starts at its middle + 10
+    assert!((top_of("Emil") - top_of("Anna") - (96.0 + 10.0)).abs() < 1e-6, "{} {}", top_of("Emil"), top_of("Anna"));
+    // what follows goes below both columns (the hooked one reaches lower: 106 + 96 px), plus the
+    // one-unit gap, on the main spine again
+    assert!((top_of("Everyone") - top_of("Anna") - (106.0 + 96.0 + 32.0)).abs() < 1e-6, "{}", top_of("Everyone"));
+    assert!((x_of("Everyone") - x_of("Anna")).abs() < 1e-6);
+    // the guides show the hooked spine where the hook put it
+    assert!(pg.spines.iter().any(|x| (x - (960.0 + 300.0)).abs() < 0.5), "{:?}", pg.spines);
+
+    // hooked above the top of the page (its bottom meets the first column's top): the page
+    // grows upwards, so nothing is above 0
+    let sheet = "Body,Spine Position\nAnna,0\nBéla,\n,\nEmil,Horog 1 Top-Bottom -400\nFeri,\n";
+    let c = read(sheet.as_bytes(), &st).unwrap();
+    assert_eq!(c.pages[0].blocks[1].hook.map(|h| (h.from, h.to, h.dx, h.dy)), Some((P::Top, P::Bottom, -400.0, 0.0)));
+    let l = layout(&c, &st, FRAME, &M).unwrap();
+    let pg = &l.pages[0];
+    let top_of = |t: &str| pg.layers.iter().find(|e| text_of(e).contains(t)).map(|e| pos(e).1).unwrap();
+    assert!(top_of("Emil") < top_of("Anna"), "the hooked column is above");
+    let lowest = pg.layers.iter().map(|e| pos(e).1).fold(f64::MAX, f64::min);
+    assert!(lowest >= 0.0, "{lowest}");
+
+    // the default connection is Bottom-Top; a hook with nothing before it is a warning
+    let c = read("Body,Spine Position\nAnna,Hook 1\nBéla,Hook 2 Bottom-Top 0 40\nCili,Hook 1 sideways\n".as_bytes(), &st).unwrap();
+    assert_eq!(c.pages[0].blocks[0].hook, Some(Hook { back: 1, from: P::Bottom, to: P::Top, dx: 0.0, dy: 0.0 }));
+    assert_eq!(c.warnings.len(), 1, "`Hook 1 sideways` is not a spine position: {:?}", c.warnings);
+    let l = layout(&c, &st, FRAME, &M).unwrap();
+    assert!(l.warnings.iter().any(|w| w.message.contains("the hook reaches back further than there are spines")), "{:?}", l.warnings);
+}
+
 /// Every picture is 300 × 400 (portrait); a video 1920 × 1080.
 struct P;
 impl Measure for P {

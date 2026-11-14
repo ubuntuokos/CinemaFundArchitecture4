@@ -51,6 +51,7 @@
   </supports>
   <provides>
     <binary>cfa4</binary>
+    <binary>cfa4-qt</binary>
     <mediatype>application/x-cfa4</mediatype>
   </provides>
   <content_rating type="oars-1.1"/>

@@ -815,7 +815,8 @@ impl DcpMux {
         x.push_str("        <MainMarkers>\n");
         x.push_str(&format!("          <Id>urn:uuid:{}</Id>\n", uuid_text(&uuid(&format!("{}|markers", self.seed)))));
         x.push_str(&format!("          <EditRate>{rate}</EditRate>\n          <IntrinsicDuration>{0}</IntrinsicDuration>\n", self.frames));
-        x.push_str(&format!("          <EntryPoint>0</EntryPoint>\n          <Duration>{}</Duration>\n", self.frames));
+        // no EntryPoint or Duration: optional in ST 429-7, rejected by libdcp's dcpverify
+        // (plan CFA4-DCPVAL-LIBDCP-001 v1.1 D6)
         x.push_str("          <MarkerList>\n");
         for (label, offset) in [("FFOC", 1), ("LFOC", self.frames.saturating_sub(1).max(1))] {
             x.push_str(&format!(

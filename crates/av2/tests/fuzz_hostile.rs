@@ -137,12 +137,18 @@ fn corpus_sequence_headers() {
             "Yuv444"
         } else if name.starts_with("400") {
             "Monochrome"
+        } else if name.starts_with("422") {
+            "Yuv422"
         } else {
             "Yuv420"
         };
         assert_eq!(chroma, want, "{name}");
         if name.contains("odd-size") {
             assert_eq!((w, ht), (66, 50), "{name}");
+        }
+        if name.contains("resize") {
+            // the sequence header keeps the full size; the frames are coded at half of it
+            assert_eq!((h.max_frame_width, h.max_frame_height), (352, 288), "{name}");
         }
     }
 }

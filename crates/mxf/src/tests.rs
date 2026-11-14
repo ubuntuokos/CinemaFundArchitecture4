@@ -625,6 +625,48 @@ fn long_gop_clips_keep_their_decoding_references_hidden() {
 }
 
 #[test]
+fn long_gop_clips_without_temporal_offsets_take_the_bitstream_order() {
+    // #1008: the same stored I0 P3 B1 B2 P6 B4 B5 packages as above, but the index marks the B
+    // pictures without temporal offsets; the presentation order comes from the bitstream (here
+    // from the picture's stored number, as the caller's codec parser would give it)
+    let (_, flags) = ipbb();
+    let avc = |p: u8, i: usize| vec![0, 0, 0, 1, 9, 0x10, p, i as u8];
+    let comps = [Comp::Clip { pkg: 0, start: 4, dur: 2 }, Comp::Clip { pkg: 1, start: 0, dur: 3 }];
+    let mut f = build_edit_list(&comps, [7, 7], avc, &[], &flags);
+    let lbl = [0x04, 0x01, 0x02, 0x02, 0x03, 0x06, 0x03, 0x00];
+    while let Some(at) = f.windows(8).position(|w| w == lbl) {
+        f[at..at + 8].copy_from_slice(&[0x04, 0x01, 0x02, 0x02, 0x01, 0x31, 0x40, 0x01]);
+    }
+    const DISPLAY_OF_STORED: [i64; 7] = [0, 3, 1, 2, 6, 4, 5];
+    let asked = std::cell::Cell::new(0);
+    let order = |codec: Codec, heads: &[Vec<u8>]| {
+        assert_eq!(codec, Codec::Avc { intra: false });
+        asked.set(asked.get() + 1);
+        heads.iter().map(|h| h.get(7).and_then(|&i| DISPLAY_OF_STORED.get(i as usize).copied())).collect::<Option<Vec<i64>>>()
+    };
+    let m = open_with_order(&f, &order).unwrap();
+    assert_eq!(asked.get(), 2, "once per clip");
+    assert!(m.warnings.iter().all(|w| !w.contains("stored order")), "{:?}", m.warnings);
+    let v = m.track_of_kind(TrackKind::Picture).unwrap();
+    let t = &m.tracks[v];
+    assert!(!t.needs_reorder);
+    assert_eq!(t.duration, Some(5));
+    let shown: Vec<Vec<u8>> = (0..5).map(|d| m.read_sample(&f, v, t.sample_at(d).unwrap()).unwrap()).collect();
+    let want = [(0, 5), (0, 6), (1, 0), (1, 2), (1, 3)];
+    for (d, (p, i)) in want.into_iter().enumerate() {
+        assert_eq!(shown[d], avc(p, i), "display {d}");
+    }
+    // without a bitstream order the stored order stays, with a warning
+    let m = open(&f).unwrap();
+    assert!(m.warnings.iter().any(|w| w.contains("stored order")), "{:?}", m.warnings);
+    // an order that is not one position per picture is not used
+    let m = open_with_order(&f, &|_, heads: &[Vec<u8>]| Some(vec![0; heads.len()])).unwrap();
+    assert!(m.warnings.iter().any(|w| w.contains("stored order")), "{:?}", m.warnings);
+    let m = open_with_order(&f, &|_, _: &[Vec<u8>]| Some(vec![i64::MAX, -1])).unwrap();
+    assert!(m.warnings.iter().any(|w| w.contains("stored order")), "{:?}", m.warnings);
+}
+
+#[test]
 fn hostile_edit_lists_never_panic() {
     for comps in [
         vec![Comp::Clip { pkg: 0, start: i64::MAX, dur: 3 }, Comp::Clip { pkg: 1, start: 0, dur: i64::MAX }],
