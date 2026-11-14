@@ -45,6 +45,7 @@ pub mod mpeg;
 pub mod mxf;
 pub mod ogg;
 mod stream_color;
+pub mod streams;
 pub mod utvideo;
 pub mod video;
 mod webm_alpha;
