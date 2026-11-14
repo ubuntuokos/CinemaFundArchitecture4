@@ -231,7 +231,7 @@ pub fn stream_list(src: &dyn ByteReader) -> Option<Result<StreamList, String>> {
         return Some(cfa4_mpegts::open(&s).map(|f| mpeg(&f, &s)).map_err(|e| e.to_string()));
     }
     if head.starts_with(b"RIFF") && head.get(8..12) == Some(b"WAVE") {
-        return wav(&head);
+        return wav(src);
     }
     if head.starts_with(b"fLaC") {
         return flac(&head).map(Ok);
@@ -573,10 +573,9 @@ fn mxf(f: &cfa4_mxf::MxfFile) -> StreamList {
         s.title = t.name.as_deref().and_then(some_text);
         if let Some(p) = &t.picture {
             let (w, h) = if p.display_width > 0 && p.display_height > 0 { (p.display_width, p.display_height) } else { (p.stored_width, p.stored_height) };
-            // separated fields (frame layout 1) describe one field: the frame is twice as tall
-            let h = if p.frame_layout == 1 { h.checked_mul(2) } else { Some(h) };
-            if let Some(h) = h {
-                s = s.size(w, h);
+            match mxf_frame_height(h, p.frame_layout) {
+                Some(h) => s = s.size(w, h),
+                None => l.warnings.push(format!("track {}: picture height {h} with separated fields overflows; size not listed", t.track_id)),
             }
         }
         if let Some(a) = &t.sound {
@@ -588,6 +587,12 @@ fn mxf(f: &cfa4_mxf::MxfFile) -> StreamList {
     l
 }
 
+/// The frame height of an MXF picture: separated fields (frame layout 1) describe one field, so
+/// the frame is twice as tall. `None` when that overflows (a corrupt descriptor).
+fn mxf_frame_height(height: u32, frame_layout: u8) -> Option<u32> {
+    if frame_layout == 1 { height.checked_mul(2) } else { Some(height) }
+}
+
 // ---------------------------------------------------------------- Ogg
 
 /// Pages read at most while looking for the first page of every logical stream.
@@ -595,7 +600,8 @@ const OGG_MAX_HEADER_PAGES: usize = 1024;
 
 /// The first packet of each logical stream of an Ogg file, by serial, in file order. Every stream
 /// begins with a beginning-of-stream page, and all of them precede the first data page (RFC 3533
-/// §4), so only the pages at the start of the file are read, never the whole file.
+/// §4), so only the pages at the start of the file are read, never the whole file. A chained
+/// file (another link after the first one ends) is described by its first link, as ffprobe does.
 fn ogg_first_packets(src: &dyn ByteReader) -> Result<Vec<(u32, Vec<u8>)>, String> {
     let len = src.len();
     let mut firsts: Vec<(u32, Vec<u8>)> = Vec::new();
@@ -773,19 +779,36 @@ fn wave_format_entry(format_tag: u16, bits: u16, extra: &[u8]) -> StreamEntry {
     s
 }
 
-/// A WAV file: its `fmt ` chunk, found in the first bytes.
-/// A WAV file: its `fmt ` chunk, found in the first bytes. `None` when it is not there (the
-/// caller falls back to the opened source); an error when it is too short to describe the audio.
-fn wav(head: &[u8]) -> Option<Result<StreamList, String>> {
-    let mut o = 12usize;
-    while o.checked_add(8).is_some_and(|e| e <= head.len()) {
-        let id = &head[o..o + 4];
-        let size = u32::from_le_bytes([head[o + 4], head[o + 5], head[o + 6], head[o + 7]]) as usize;
-        if id == b"fmt " {
+/// Chunks walked at most while looking for the WAV `fmt ` chunk.
+const WAV_MAX_CHUNKS: usize = 256;
+/// The largest `fmt ` chunk read (a WAVEFORMATEXTENSIBLE is 40 bytes).
+const WAV_MAX_FMT: u64 = 64 << 10;
+
+/// A WAV file: its `fmt ` chunk, found by walking the chunk headers from the source (a large
+/// `JUNK` or `bext` chunk before it is skipped, not read). `None` when there is none (the caller
+/// falls back to the opened source); an error when it is truncated or too short to describe the
+/// audio.
+fn wav(src: &dyn ByteReader) -> Option<Result<StreamList, String>> {
+    let len = src.len();
+    let mut o = 12u64;
+    for _ in 0..WAV_MAX_CHUNKS {
+        if o.checked_add(8).is_none_or(|e| e > len) {
+            return None;
+        }
+        let mut h = [0u8; 8];
+        if let Err(e) = src.read_at(o, &mut h) {
+            return Some(Err(e.to_string()));
+        }
+        let size = u64::from(u32::from_le_bytes([h[4], h[5], h[6], h[7]]));
+        if &h[..4] == b"fmt " {
             // WAVEFORMAT is 16 bytes (tag, channels, rate, byte rate, block align, bits)
-            let Some(b) = o.checked_add(8).and_then(|a| Some((a, a.checked_add(size)?))).and_then(|(a, e)| head.get(a..e)).filter(|b| b.len() >= 16) else {
+            if !(16..=WAV_MAX_FMT).contains(&size) || o + 8 + size > len {
                 return Some(Err(format!("truncated WAV fmt chunk at byte {o} ({size} bytes)")));
-            };
+            }
+            let mut b = vec![0u8; size as usize];
+            if let Err(e) = src.read_at(o + 8, &mut b) {
+                return Some(Err(e.to_string()));
+            }
             let le16 = |i: usize| u16::from_le_bytes([b[i], b[i + 1]]);
             let rate = u32::from_le_bytes([b[4], b[5], b[6], b[7]]);
             let extra = b.get(18..).unwrap_or_default();
@@ -817,23 +840,53 @@ mod tests {
         b
     }
 
-    #[test]
-    fn a_wav_fmt_chunk_is_read() {
+    fn mem(b: Vec<u8>) -> cfa4_media::reader::MemReader {
+        cfa4_media::reader::MemReader(b.into())
+    }
+
+    fn pcm_fmt() -> Vec<u8> {
         let mut fmt = vec![1, 0, 2, 0];
         fmt.extend(48_000u32.to_le_bytes());
         fmt.extend(192_000u32.to_le_bytes());
         fmt.extend([4, 0, 16, 0]);
-        let l = wav(&wav_head(16, &fmt)).unwrap().unwrap();
+        fmt
+    }
+
+    #[test]
+    fn a_wav_fmt_chunk_is_read() {
+        let l = wav(&mem(wav_head(16, &pcm_fmt()))).unwrap().unwrap();
         assert_eq!((l.streams[0].codec.as_deref(), l.streams[0].channels, l.streams[0].sample_rate), (Some("pcm_s16le"), Some(2), Some(48_000)));
+    }
+
+    #[test]
+    fn a_wav_fmt_chunk_after_a_large_junk_chunk_is_read() {
+        // the fmt chunk starts past the bytes read to recognise the container
+        let junk = HEAD as usize + 1001;
+        let mut b = b"RIFF\0\0\0\0WAVEJUNK".to_vec();
+        b.extend((junk as u32).to_le_bytes());
+        b.extend(vec![0; junk + 1]); // odd size: one pad byte
+        b.extend(b"fmt ");
+        b.extend(16u32.to_le_bytes());
+        b.extend(pcm_fmt());
+        let l = stream_list(&mem(b)).unwrap().unwrap();
+        assert_eq!((l.container.as_str(), l.streams[0].channels, l.streams[0].sample_rate), ("wav", Some(2), Some(48_000)));
     }
 
     #[test]
     fn a_truncated_wav_fmt_chunk_is_an_error() {
         // the chunk says 16 bytes but the file ends after 6; a chunk that says 6 is too short too
-        assert!(wav(&wav_head(16, &[1, 0, 2, 0, 0x80, 0xBB])).unwrap().is_err());
-        assert!(wav(&wav_head(6, &[1, 0, 2, 0, 0x80, 0xBB])).unwrap().is_err());
-        // no fmt chunk in the bytes read: not recognised, the caller falls back
-        assert!(wav(b"RIFF\0\0\0\0WAVE").is_none());
+        assert!(wav(&mem(wav_head(16, &[1, 0, 2, 0, 0x80, 0xBB]))).unwrap().is_err());
+        assert!(wav(&mem(wav_head(6, &[1, 0, 2, 0, 0x80, 0xBB]))).unwrap().is_err());
+        // no fmt chunk: not recognised, the caller falls back
+        assert!(wav(&mem(b"RIFF\0\0\0\0WAVE".to_vec())).is_none());
+    }
+
+    #[test]
+    fn an_overflowing_mxf_field_height_is_not_listed() {
+        assert_eq!(mxf_frame_height(288, 1), Some(576));
+        assert_eq!(mxf_frame_height(1080, 0), Some(1080));
+        assert_eq!(mxf_frame_height(0x8000_0001, 1), None);
+        assert_eq!(mxf_frame_height(0x8000_0001, 0), Some(0x8000_0001));
     }
 
     #[test]
@@ -851,6 +904,9 @@ mod tests {
         }
         let mut f = page(2, 7, b"OpusHead\x01\x02");
         f.extend(page(0, 7, b"data"));
+        // a chained file: the first link ends (EOS) and a new one begins (BOS). Like ffprobe, the
+        // list describes the first link; reading the next one would mean walking every page.
+        f.extend(page(4, 7, b"last"));
         f.extend(page(2, 9, b"late bos is not read"));
         let r = cfa4_media::reader::MemReader(f.into());
         let firsts = ogg_first_packets(&r).unwrap();
