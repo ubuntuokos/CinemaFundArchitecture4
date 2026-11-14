@@ -79,7 +79,7 @@ nélkül folytatódik.
 | Fázis | Tartalom | A terv pontja | Függ |
 |---|---|---|---|
 | C13–C15, törzsszélesség | folyamatban (#1188, #1196, C15) | 2.1 D | – |
-| C16 Címjelenetek a stáblista-dokumentumban | `Title`, `Opening`, `Chapter`, `LowerThird` oldaltípus: a táblázat egy sora egy `.fcgt` grafikát tölt ki (cím, alcím, név, szerep); főcím, nyitó képsor, fejezetcím, szereplőbemutató egy dokumentumban a stáblistával | 1.1, 15. | – |
+| C16 Címjelenetek a stáblista-dokumentumban | `Title`, `Opening`, `Chapter`, `LowerThird` oldaltípus: a táblázat egy sora egy `.fcgt` grafikát tölt ki (cím, alcím, név, szerep); főcím, nyitó képsor, fejezetcím, szereplőbemutató egy dokumentumban a stáblistával ; szinkronhangok (`Voice` oszlop, *szereplő – színész – hang* elrendezés, szinkronstáb blokk; 0.7, Q18) | 1.1, 15. | – |
 | C17 Sablonkezelő | a terv 10 kategóriája, előnézeti kép, `.cfa4credtpl` és `.fcgt` egy böngészőben, import/export; **az elkészült stáblista sablonként menthető** (Q16): a C6 *Mentés sablonként…* (`graphics.credits.template.save`, `clip`) kiterjesztése a C16–C22 minden elemére (oldaltípusok, hátterek és vonalrajz, átmenetek, mozgás, narrációs igazítás, a kézi módosításokból a stílus), a konkrét nevek helyett mintatáblázattal; **filmműfajonként legalább egy beépített sablon** (Q17), mindegyik szerkeszthető és új néven menthető (felhasználói vagy projekt-sablonként; a beépített változatlan marad) | 3.2 | C16 |
 | C18 Tipográfia | körív menti szöveg, perspektivikus szöveg, ragyogás és fényhatás, maszkolás szöveggel és szövegfelfedés, kulcsképkockázható betűnkénti és szavankénti animáció (a mai Typewriter / Word by Word előbeállítások mellett); a stílusok (`ContentStyle`, `LetterStyle`) is elérik | 2.1 B | – (a grafikai rendszerben) |
 | C19 Mozgás és kompozíció | kamera: 2.5D réteg-tér (mélység, perspektivikus kamera, kamerapálya kulcsképkockákkal; a teljes 3D jelenet a `VISION.md` 8. pontjának nyitott döntése); rétegenkénti keverési módok; objektumcsoport közös animációja és több objektum szinkronja; médiaréteg (kép, videó) a grafikán belül | 2.1 C, D | – |
@@ -180,6 +180,26 @@ felhasználói vagy projekt-sablonként (vagy `.cfa4credtpl` fájlként) kerül 
 változat nem íródik felül, így mindig visszaállítható. A sablonválasztóban a műfaj a terv 3.2
 tartalmi kategóriái mellett külön szűrő.
 
+### 0.7. Szinkronhangok a stáblistában (Q18, a C16 része)
+
+A tulajdonos döntése (2026-11-14): a stáblistában legyen lehetőség a **szinkronhang-színészek**
+feltüntetésére.
+
+- **Táblázat:** új oszlop `Voice` (magyarul `Hang`, `Szinkronhang`): a sorban a szereplő (Fej),
+  az eredeti színész (Törzs) mellett a szinkronhang. Ahol nincs eredeti színész (animációs film),
+  a Törzs maga a hang. Az oszlopnév minden támogatott nyelven (Q15).
+- **Elrendezés:** új tartalomstílus-mód: *szereplő – színész – hang* három oszlopban, vagy
+  *szereplő – hang* kettőben; a hang neve elé tehető címke (pl. „hangja:”), és külön betűstílus
+  adható neki. A pontsor (C5 `Leaders`) és a párhuzamos oszlopok ugyanúgy működnek.
+- **Szinkronstáb:** a beépített sablonokban külön *Magyar változat* / *Szinkron* blokkcsoport
+  (szinkronrendező, fordító, hangmérnök, vágó, gyártásvezető, a szinkronstúdió), amelyet a
+  tulajdonos nyelve szerinti címmel lehet elnevezni.
+- **Sablonok:** az animációs film, a családi és gyerekfilm és minden szinkronizált változathoz
+  készült műfaji sablon tartalmazza (0.6); a többi sablonban bekapcsolható.
+- **Ellenőrzés (C2):** ugyanaz a név a szereplő- és a hanglistában eltérő írásmóddal jelzést kap,
+  mint ma a blokkon belül.
+- **Élő grafika:** az alsó sávban (C16 `LowerThird`) is megjelenhet: „X szerepében: Y, hangja: Z”.
+
 ## 1. Megfeleltetés: a terv pontjai és a CFA4 mai állapota
 
 ### 1.1. A stáblista-terv fázisai (C1–C14) a terv pontjaiban
@@ -276,3 +296,4 @@ hiány egy fázishoz van kötve (→ C16–C21, 0.3).
 | Q15 | Milyen nyelveken érhető el az alkalmazás? | A CFA4 összes támogatott nyelvén | Eldöntve (tulajdonos, 2026-11-14): a CFA4 összes támogatott nyelvén (angol forrás + minden `i18n/*.tsv` katalógus) |
 | Q16 | Menthető-e az elkészült stáblista sablonként? | Igen | Eldöntve (tulajdonos, 2026-11-14): igen, minden elemével (C17); a sablon a tartalmat nem viszi, csak mintatáblázatot (terv 3.2) |
 | Q17 | Legyenek-e műfaji sablonok? | Igen | Eldöntve (tulajdonos, 2026-11-14): filmműfajonként legalább egy, szerkeszthető és új néven menthető (0.6, C17) |
+| Q18 | Legyen-e lehetőség a szinkronhang-színészekre? | Igen | Eldöntve (tulajdonos, 2026-11-14): igen (0.7, C16) |
