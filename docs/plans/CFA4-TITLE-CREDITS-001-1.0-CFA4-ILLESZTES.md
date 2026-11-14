@@ -14,6 +14,115 @@ kerül, és szükség esetén a terv új verziót kap (1.1).
 Állapotjelek: **kész** = a `main`-en, tesztekkel; **részben** = a képesség egy része megvan;
 **nincs** = nincs a CFA4-ben; **PR** = nyitott PR-ban, a tulajdonos összevonására vár.
 
+## 0. Illeszkedés a meglévő stáblista-generátorhoz (összefoglaló)
+
+**Röviden:** a CFA4-TITLE-CREDITS-001 nem új rendszer a stáblista-generátor mellett, hanem annak
+**folytatása és kiszélesítése**. A már majdnem kész stáblista-generátor (F10, C1–C15) a terv
+„Credits Core”-ja: ugyanaz a mag, ugyanaz a fájl, ugyanazok a parancsok, ugyanaz a Qt6
+munkaterület. A terv új részei erre épülnek rá, új C-fázisokként (javaslat, 0.3). A C1–C15
+semmilyen része nem íródik újra, és a futó munka (C13, C14, C15, egységes törzsszélesség) változás
+nélkül folytatódik.
+
+### 0.1. Ami ma a stáblista-generátor, az a terv melyik része
+
+```text
+ Adatbevitel                 Credits Core (a mag)                    Kimenet
+ ───────────                 ─────────────────────                   ───────
+ táblázat (CSV/XLSX/ODS) ─┐  crates/credits: blokkok, stílusok,      grafikus klipek az idővonalon
+ Cinecred-projekt (C7) ───┼─> oldalak, elrendezés, ellenőrzés (C2) ─> (Qt6 munkaterület, C8)
+ .cfa4credits (C1) ───────┤  engine: graphics.credits.* parancsok     ├─> export (normál render)
+ [később: Story,          │  .cfa4credits: forrás + stílus + sorok    └─> élő grafika (C10, crates/live)
+  BacklotHub] ────────────┘  + illesztés (C3) + sablon (C6)
+                                     │
+                 a közös CFA4-elemekre épül:
+                 crates/text (tipográfia) · grafikus rétegek és kulcsképkockák (mozgás)
+                 · idővonal (kompozíció, hang) · átmenet-rendszer (C4) · .fcgt sablonok
+```
+
+| A terv része | A stáblista-generátorban ma | Ami a tervből hozzájön |
+|---|---|---|
+| Credits Core (2.1 A, 3.1) | `crates/credits` + `graphics.credits.*`, `.cfa4credits` (C1) | a dokumentum ne csak stáblista-oldalakat, hanem címet, nyitó képsort, fejezetcímet, alsó sávot is tartalmazhasson (C16) |
+| Typography Engine (2.1 B) | a stílusok a `crates/text`-et használják (C5 betűstílus soron belül, C2 betű- és karakterellenőrzés) | körív, perspektíva, ragyogás, betűnkénti animáció a grafikákban, így a stílusokban is (C18) |
+| Motion Graphics (2.1 C) | mozgás-előbeállítások kártyára (C5), gördülés, futószöveg (C4), minden oldal kulcsképkockázható klip | kamera- és csoportanimáció mint stílus-beállítás (C18) |
+| Credits Composer (2.1 D) | háttér (C4), portré, kép, videó (C5), ismétlődő videó (C11, C13), gerincek (C14–C15) | médiaréteg a grafikán belül; ez a Composer hiányzó része (C18) |
+| Audio Sync (2.1 E) | igazítás a zenéhez, ütemre (C3) | igazítás narrációhoz, név megjelenése a kimondásakor (C19) |
+| Transition Engine (2.1 F) | átmenet az oldalak közt (C4) | új átmenettípusok a közös átmenet-rendszerben (C18) |
+| Template Manager (3.2) | `.cfa4credtpl`, négy beépített sablon (C6) | 10 tartalmi kategória, előnézeti kép, a `.fcgt` grafikasablonokkal egy böngészőben (C17) |
+| Story-híd (4) | táblázat-kapcsolat, eltérés, részleges elfogadás (C1) | ugyanez a mechanizmus más forrásra (C22, halasztva) |
+| Önálló alkalmazás (6) | `cfa4-qt --credits FÁJL` (C9) | saját menübejegyzés és ikon, projekt nélküli mentés (C21) |
+| Szerkesztő-integráció (7) | a munkaterület a szerkesztőben (C8), frissítés a kézi módosítások megtartásával (C1) | a kézi módosítás visszaírása a dokumentumba (C20) |
+| OBS, élő (8) | C10 kész | a folytatás a [CFA4-LIVE-STUDIO-001](CFA4-LIVE-STUDIO-001.md) |
+
+### 0.2. Ami nem változik
+
+- **Egy mag, egy fájl:** a `crates/credits` és a `.cfa4credits` marad; a terv `.cfa4credits`
+  kiterjesztése ugyanaz, mint a C1 fájljáé, ezért új formátum nem kell, csak a meglévő bővül
+  (új verzió, a régi fájlok megnyílnak).
+- **A táblázat marad az elsődleges adatbevitel**, a Cinecred-import (C7) a kompatibilitási
+  referencia (E1).
+- **Minden eredmény szerkeszthető grafikus klip** az idővonalon, egy visszavonási lépéssel; a
+  „Composer”, a „Motion” és a „Transition Engine” a CFA4 meglévő idővonala, grafikái és átmenetei,
+  nem külön motorok (E5).
+- **A Qt6 Stáblista-munkaterület (C8)** lesz a terv „munkafelülete”; a tervben felsorolt panelek
+  (réteglista, idővonal, kulcsképkocka-szerkesztő, előnézet, validáció) a CFA4 Qt6 felületének
+  meglévő paneljei.
+
+### 0.3. Javasolt folytatás (C-fázisokként, a tulajdonos döntéséig javaslat: Q13)
+
+| Fázis | Tartalom | A terv pontja | Függ |
+|---|---|---|---|
+| C13–C15, törzsszélesség | folyamatban (#1188, #1196, C15) | 2.1 D | – |
+| C16 Címjelenetek a stáblista-dokumentumban | `Title`, `Opening`, `Chapter`, `LowerThird` oldaltípus: a táblázat egy sora egy `.fcgt` grafikát tölt ki (cím, alcím, név, szerep); főcím, nyitó képsor, fejezetcím, szereplőbemutató egy dokumentumban a stáblistával | 1.1, 15. | – |
+| C17 Sablonkezelő | a terv 10 kategóriája, előnézeti kép, `.cfa4credtpl` és `.fcgt` egy böngészőben, import/export | 3.2 | C16 |
+| C18 Tipográfia és mozgás bővítése | körív, perspektíva, ragyogás, szöveges maszk, betűnkénti animátor, médiaréteg grafikában, új átmenetek; a stílusok is elérik | 2.1 B, C, D, F | – (a grafikai rendszerben) |
+| C19 Narrációhoz igazítás | a C3 kiterjesztése: stáblista hossza narrációhoz; név / kártya megjelenése a szóidőkhöz kötve | 2.1 E, 5.1 | szóidők a feliratozóból (E12) |
+| C20 Kétirányú kapcsolat | a szerkesztőben végzett kézi módosítás a stáblista-dokumentumba íródik; az elhelyezett stáblista egy objektumként kezelhető (csoport) | 7.1 | – |
+| C21 Önálló indítás | menübejegyzés, ikon, projekt nélküli munka, átadás a szerkesztőnek és vissza | 1., 6. | C16, C20 |
+| C22 Story / BacklotHub adatforrás | a C1 eltérés/frissítés más forrásból | 4. | Story- vagy BacklotHub-adat (halasztva) |
+| C12 Vonalrajz-réteg | a jövő évi kiadás, változatlanul | 2.1 C | – |
+
+A sorrend azt követi, hogy a terv első kiadási köréből (15.) mi hiányzik a legjobban: a címek és
+alsó sávok a stáblistával egy helyen (C16), a sablonkezelő (C17), az animált tipográfia (C18) és a
+narrációhoz igazított szöveg (C19).
+
+### 0.4. Hogyan épülnek össze: egy folyamat, a terv elemei a lépéseibe kötve
+
+A terv elemei nem a stáblista-generátor mellé kerülnek, hanem **a meglévő feldolgozási lánc
+lépéseibe**. Így minden új képesség automatikusan megkapja, amit a lánc már tud: kapcsolat a
+forráshoz és frissítés (C1), ellenőrzés (C2), igazítás (C3), sablon (C6), Qt6 munkaterület (C8),
+élő adás (C10).
+
+```text
+ 1. Forrás          2. Beolvasás         3. Stílus            4. Elrendezés        5. Elhelyezés            6. Kimenet
+ táblázat,          sheet.rs             style.rs             layout.rs            engine/credits.rs        idővonal → export
+ Cinecred,     ──>  sorok → oldalak, ──> oldal-, tartalom-, ──> oldalak képkockái ──> grafikus klipek,     ──> engine/live.rs →
+ .cfa4credits       blokkok              betűstílus                                háttér, kép, átmenet,     élő grafika, OBS
+ (doc.rs)                                                                         kulcsképkockák
+      ▲                                       mellettük: diff.rs (C1) · validate.rs (C2) · fit.rs (C3) · template.rs (C6)
+      │
+ [C22 Story / BacklotHub → ugyanolyan sorok]
+```
+
+| A terv eleme | Melyik lépésbe épül | Hogyan (javaslat) | Mit kap ingyen a lánctól |
+|---|---|---|---|
+| Címek, nyitó képsor, fejezetcím, alsó sáv (1.1; C16) | 3–5 | új oldaltípus a `Card` / `Scroll` / `Crawl` mellé (`style.rs` `Behaviour`): az oldal egy `.fcgt` grafikát tölt ki a blokk fej / törzs / láb mezőiből; a 4. lépés ilyenkor nem blokkokat rendez, hanem a sablon vezérlőit tölti; az 5. lépés ugyanúgy grafikus klipet tesz le | frissítés a táblázatból, ellenőrzés, igazítás a zenéhez, sablon, élő cue (egy alsó sáv élőben is adható) |
+| Typography Engine (2.1 B; C18) | 3 → a közös `crates/text` | az új szövegképességek (körív, perspektíva, ragyogás, betűnkénti animáció) a grafikus rétegbe kerülnek; a `ContentStyle` / `LetterStyle` új mezői ezekre képeződnek le | minden oldaltípus és az élő grafika is használja |
+| Motion Graphics, Transition (2.1 C, F; C18) | 5 | a kártyák mozgása ma is kulcsképkocka (`card_keys`); új mozgás- és átmenet-előbeállítás a stílusban, a közös átmenet-rendszerből | visszavonás, szerkesztés az Effect Controlsban |
+| Credits Composer (2.1 D) | 5 | a háttér, kép, videó, ismétlődő videó már itt kerül a klipek alá (C4, C5, C11, C13); a hiányzó médiaréteg a grafikán belül a grafikai rendszer bővítése | – |
+| Audio Sync, narráció (2.1 E, 5.1; C19) | `fit.rs` | a zenéhez igazítás (C3) általánosítása: a hossz forrása lehet narráció is, és egy blokk megjelenése egy kimondott szóhoz köthető (a szóidők a feliratozóból) | a meglévő „csak javasol, jóváhagyásra igazít” működés, egy visszavonás |
+| Projektformátum (3.1) | 1 (`doc.rs`) | a `.cfa4credits` új verziója: oldaltípusok, kézi módosítások (C20), narráció-hivatkozás; a régi fájlok megnyílnak | más gépen is megnyílik táblázat nélkül (C1) |
+| Template Manager (3.2; C17) | `template.rs` | kategória és előnézeti kép a `.cfa4credtpl`-ben, a `.fcgt` grafikasablonok egy listában | – |
+| Visszaírás a szerkesztőből (7.1; C20) | `diff.rs` → `doc.rs` | a C1 ma felismeri és megtartja a kézi módosítást; ezt a dokumentumba is el kell menteni | frissítéskor nem vész el |
+| Story-híd (4; C22) | 1 | egy adapter a Story / BacklotHub adataiból táblázatsorokat ad; onnan a lánc változatlan | eltérés soronként, részleges elfogadás, eredet megőrzése (C1) |
+| Önálló alkalmazás (6; C21) | Qt6 (`credits_workspace.py`) | ugyanaz a munkaterület, a `.cfa4credits` mint projekt | minden fenti |
+| Live Graphics (8) | 6 (`engine/live.rs`) | a C10 futtató a dokumentumból készít cue-kat; az új oldaltípusok (cím, alsó sáv) cue-ként is megjelennek | PREVIEW / TAKE / NEXT / UPDATE / OUT |
+
+Példa a kész állapotra: **egy** `.cfa4credits` dokumentum, **egy** táblázattal: az első oldala a
+főcím (`Title`), utána három alsó sáv a szereplőknek (`LowerThird`), egy fejezetcím, végül a
+gördülő stáblista. Egy paranccsal kerül az idővonalra, a zenéhez vagy a narrációhoz igazítva; ha a
+táblázat változik, egy frissítéssel mind cserélődik, a kézi módosítások megmaradnak; az alsó sávok
+ugyanebből élőben is adhatók.
+
 ## 1. Megfeleltetés: a terv pontjai és a CFA4 mai állapota
 
 ### 1.1. A stáblista-terv fázisai (C1–C14) a terv pontjaiban
@@ -102,3 +211,4 @@ kerül, és szükség esetén a terv új verziót kap (1.1).
 | Q10 | A narrációvezérelt animáció és a szavankénti kiemelés a feliratozó tervében készüljön-e (E12)? | Igen, a cím- és kreditgenerátor használja | nyitott |
 | Q11 | Megengedett-e a jóváhagyással indított, alkalmazáson belüli modell-letöltés (E13)? | Igen (a mai működés); automatikus telepítés nem | nyitott |
 | Q12 | Milyen azonosítót kapjanak a terv fázisai (E14)? | TC-F0…TC-F9; a megvalósítás C15-től | nyitott |
+| Q13 | Elfogadod-e a 0.3 szerinti folytatást (C16–C22) a meglévő stáblista-generátorra építve? | Igen, a C15 és a törzsszélesség után C16-tal | nyitott |
