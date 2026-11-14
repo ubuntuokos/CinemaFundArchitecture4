@@ -4543,6 +4543,13 @@
 	The keys stay in memory only, until Forget DCP Keys or the end of the session.	Die Schlüssel bleiben nur im Arbeitsspeicher, bis „DCP-Schlüssel vergessen“ oder bis zum Ende der Sitzung.
 	DCP keys forgotten	DCP-Schlüssel vergessen
 	Choose the KDM file and the private key.	Wählen Sie die KDM-Datei und den privaten Schlüssel.
+	Load even if the certificate chain is not verified	Auch mit ungeprüfter Zertifikatskette laden
+	Bundle: {loaded} of {total} KDMs loaded, {other} for other recipients	Paket: {loaded} von {total} KDMs geladen, {other} für andere Empfänger
+	Not loaded: {path}: {problem}	Nicht geladen: {path}: {problem}
+	Signature verified: {chain}	Signatur geprüft: {chain}
+	Signature not verified: {problem}	Signatur nicht geprüft: {problem}
+	KDM required	KDM erforderlich
+	Encrypted: load the KDM with content key {keys}	Verschlüsselt: Laden Sie die KDM mit dem Inhaltsschlüssel {keys}
 
 # Settings ▸ Timecode Sync (TC-4)
 	Timecode Sync	Timecode-Synchronisation
@@ -4575,3 +4582,60 @@
 	Chase External Timecode	Externem Timecode folgen
 	Send LTC	LTC senden
 	Send MIDI Timecode	MIDI-Timecode senden
+# Auto Color, Auto Contrast, Auto Levels (EffectsSDK review)
+	Auto Color	Auto-Farbe
+	Auto Contrast	Auto-Kontrast
+	Auto Levels	Auto-Tonwert
+	Temporal Smoothing (seconds)	Zeitliche Glättung (Sekunden)
+	Scene Detect	Szenenerkennung
+	Black Clip	Schwarz beschneiden
+	White Clip	Weiß beschneiden
+	Snap Neutral Midtones	Neutrale Mitteltöne ausrichten
+# Layout presets: PiP corners, split screen (EffectsSDK review)
+	PiP 35% Upper Left	Bild-im-Bild 35 % oben links
+	Picture-in-picture: 35 % scale in the upper left	Bild-im-Bild: 35 % Skalierung oben links
+	PiP 35% Lower Left	Bild-im-Bild 35 % unten links
+	Picture-in-picture: 35 % scale in the lower left	Bild-im-Bild: 35 % Skalierung unten links
+	PiP 35% Lower Right	Bild-im-Bild 35 % unten rechts
+	Picture-in-picture: 35 % scale in the lower right	Bild-im-Bild: 35 % Skalierung unten rechts
+	Split Screen Left	Geteilter Bildschirm links
+	Split screen: the middle half of the picture fills the left half of the frame	Geteilter Bildschirm: die mittlere Hälfte des Bildes füllt die linke Bildhälfte
+	Split Screen Right	Geteilter Bildschirm rechts
+	Split screen: the middle half of the picture fills the right half of the frame	Geteilter Bildschirm: die mittlere Hälfte des Bildes füllt die rechte Bildhälfte
+# Creative Looks: CRT (P3)
+	CRT	CRT
+	Scanline Strength	Zeilenstärke
+	Line Count	Zeilenanzahl
+	Mask	Maske
+	Mask Strength	Maskenstärke
+	Corner Darkening	Eckenabdunklung
+	Aperture Grille	Streifenmaske
+	Shadow Mask	Lochmaske
+	Slot Mask	Schlitzmaske
+# Creative Looks: Oil Paint (P4)
+	Oil Paint	Ölgemälde
+	Detail	Detail
+	Texture	Textur
+	Facet	Facetten
+	Daubs	Tupfer
+	Dry Brush	Trockener Pinsel
+	Fresco	Fresko
+	Knife	Spachtel
+	Sponge	Schwamm
+# Creative Looks: Pixel Sort (P5)
+	Pixel Sort	Pixelsortierung
+	Sort By	Sortieren nach
+	Lower Threshold	Untere Schwelle
+	Upper Threshold	Obere Schwelle
+	Ascending	Aufsteigend
+# Temporal Denoise (EffectsSDK review)
+	Temporal Denoise	Zeitliche Rauschminderung
+	Frames Each Side	Bilder je Seite
+	Motion Threshold	Bewegungsschwelle
+	Show Motion	Bewegung anzeigen
+	No signal	Kein Signal
+	Locating	Positionieren
+	Locked	Synchron
+	Freewheel	Freilauf
+	Scrubbing	Scrubben
+	Sending	Senden
