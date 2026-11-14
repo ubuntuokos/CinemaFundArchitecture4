@@ -4176,6 +4176,11 @@ export.summary	Low	laag
 	Burn Size	Brandgrootte
 	Ember Width	Breedte van gloeirand
 	Ember Color	Kleur van gloeirand
+	Tear Away	Afscheuren
+	Tear Roughness	Ruwheid van de scheur
+	Paper Edge Width	Breedte papierrand
+	Stamp Cut	Postzegeluitsnede
+	Perforations	Perforaties
 	Check Text Legibility	Leesbaarheid van tekst controleren
 	Clear Legibility Markers	Leesbaarheidsmarkeringen wissen
 	Text legibility: no problems found	Leesbaarheid van tekst: geen problemen gevonden

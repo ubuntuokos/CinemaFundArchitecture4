@@ -34,7 +34,7 @@ const TRANSFORMERS: &[&str] = &["Video Transitions", "Transformers"];
 const WIPE: &[&str] = &["Video Transitions", "Wipe"];
 
 /// CFA4's own transitions (not in Premiere's bin), shown in Premiere's folders beside its own.
-pub const CFA4_OWN_TRANSITIONS: &[&str] = &["keyhole", "burn_away"];
+pub const CFA4_OWN_TRANSITIONS: &[&str] = &["keyhole", "burn_away", "tear_away", "stamp_cut"];
 
 /// Direction choices (index 3, "From West", moves left → right).
 pub const DIR_OPTS: &[&str] = &["From North", "From East", "From South", "From West"];
@@ -274,6 +274,21 @@ pub(crate) fn video_transition_defs() -> Vec<EffectDef> {
         tr("split", "Split", SLIDE, m, vec![ch("orientation", "Orientation", AXIS_OPTS, 0), motion_blur()]),
         tr("stretch", "Stretch", SLIDE, m, vec![direction()]),
         tr("whip", "Whip", SLIDE, m, vec![direction(), num("blur", "Blur", 80.0, 100.0, "%")]),
+        // CFA4's own: A tears along a ragged seam and the halves pull apart, showing B.
+        tr(
+            "tear_away",
+            "Tear Away",
+            SLIDE,
+            m,
+            vec![
+                ch("orientation", "Orientation", AXIS_OPTS, 0),
+                num("roughness", "Tear Roughness", 40.0, 500.0, "px"),
+                num("edge_width", "Paper Edge Width", 10.0, 200.0, "px"),
+                colour("edge_color", "Paper Color", [0.96, 0.94, 0.88, 1.0]),
+                range("rotation", "Rotation", 6.0, 0.0, 45.0, "°"),
+                seed(),
+            ],
+        ),
         // ---- Smart Tools ----
         tr("motion_camera", "Motion Camera", SMART, m, vec![range("zoom", "Zoom", 40.0, -90.0, 200.0, "%"), angle("rotation", "Rotation", 8.0), motion_blur()]),
         tr("motion_tween", "Motion Tween", SMART, m, vec![range("scale", "Scale Match", 15.0, 0.0, 100.0, "%")]),
@@ -337,6 +352,17 @@ pub(crate) fn video_transition_defs() -> Vec<EffectDef> {
         tr("linear_wipe", "Linear Wipe", WIPE, m, with(vec![angle("angle", "Wipe Angle", 90.0), feather(0.0)], border())),
         // CFA4's own: an iris in the shape of a keyhole.
         tr("keyhole", "Keyhole", WIPE, m, with(vec![centre(), feather(0.0)], border())),
+        // CFA4's own: B arrives in a perforated postage-stamp shape whose tilt settles.
+        tr(
+            "stamp_cut",
+            "Stamp Cut",
+            WIPE,
+            m,
+            with(
+                vec![centre(), range("perforations", "Perforations", 14.0, 2.0, 60.0, ""), range("rotation", "Rotation", 8.0, -45.0, 45.0, "°"), feather(0.0)],
+                border(),
+            ),
+        ),
         tr(
             "neon_wipe",
             "Neon Wipe",
@@ -463,6 +489,8 @@ mod tests {
         // CFA4's own transitions sit in Premiere's folders, so the Effects panel lists them
         assert_eq!(at("keyhole"), &["Video Transitions", "Wipe"]);
         assert_eq!(at("burn_away"), &["Video Transitions", "Grunge & Distort"]);
+        assert_eq!(at("tear_away"), &["Video Transitions", "Slide"]);
+        assert_eq!(at("stamp_cut"), &["Video Transitions", "Wipe"]);
         for id in CFA4_OWN_TRANSITIONS {
             assert!(tree.iter().any(|(_, v)| v.contains(id)), "{id} is not in the transition tree");
         }
