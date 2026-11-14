@@ -4,6 +4,7 @@ place, with why a task waits before it starts, time left while it runs and cance
 from __future__ import annotations
 
 import os
+from collections.abc import Iterator
 from pathlib import Path
 from typing import Any
 
@@ -19,8 +20,14 @@ GIB = 1 << 30
 
 
 @pytest.fixture(scope="module")
-def app():
+def app() -> Iterator[Any]:
     yield QtWidgets.QApplication.instance() or QtWidgets.QApplication([])
+
+
+def child(group: Any, i: int) -> Any:
+    item = group.child(i)
+    assert item is not None
+    return item
 
 
 class FakeEngine:
@@ -29,11 +36,11 @@ class FakeEngine:
     def __init__(self) -> None:
         self.pending: list[tuple[str, dict[str, Any], Any, Any]] = []
 
-    def execute(self, command, params=None, on_reply=None, on_error=None):
+    def execute(self, command: str, params: dict[str, Any] | None = None, on_reply: Any = None, on_error: Any = None) -> int:
         self.pending.append((command, params or {}, on_reply, on_error))
         return len(self.pending)
 
-    def take(self, command):
+    def take(self, command: str) -> tuple[Any, Any]:
         for i, (c, _p, ok, err) in enumerate(self.pending):
             if c == command:
                 del self.pending[i]
@@ -57,7 +64,7 @@ TASKS = [
 ]
 
 
-def test_rows_from_hostile_replies_never_raise():
+def test_rows_from_hostile_replies_never_raise() -> None:
     for bad in (None, 3, "x", [None, 1, "a"], {"items": "no"}, [{"progress": "nan", "etaSeconds": float("inf")}]):
         tm.job_rows(bad)
         tm.export_rows(bad)
@@ -67,7 +74,7 @@ def test_rows_from_hostile_replies_never_raise():
     assert len(tm.job_rows([{"id": i} for i in range(tm.MAX_ROWS + 50)])) == tm.MAX_ROWS
 
 
-def test_rows_say_why_a_task_waits_and_how_long_one_runs():
+def test_rows_say_why_a_task_waits_and_how_long_one_runs() -> None:
     jobs = tm.job_rows(JOBS)
     assert [(r["state"], r["eta"]) for r in jobs] == [("running", "1:15"), ("waiting", ""), ("cancelled", "")]
     assert jobs[1]["detail"] == "not enough memory (needs 2.0 GiB)"
@@ -82,12 +89,12 @@ def test_rows_say_why_a_task_waits_and_how_long_one_runs():
     assert text.startswith("2 running · 2 waiting") and "Scene detection waits: not enough memory" in text
 
 
-def test_panel_shows_three_sources_cancels_and_survives_an_engine_without_the_queue(app, tmp_path: Path):
+def test_panel_shows_three_sources_cancels_and_survives_an_engine_without_the_queue(app: Any, tmp_path: Path) -> None:
     settings = QtCore.QSettings(str(tmp_path / "s.ini"), QtCore.QSettings.Format.IniFormat)
     engine = FakeEngine()
     panel = tm.TaskManagerPanel(engine)
     panel.attach_settings(settings)
-    sent: list[tuple[str, dict]] = []
+    sent: list[tuple[str, dict[str, Any]]] = []
     panel.command.connect(lambda c, p: sent.append((c, p)))
     panel.resize(800, 400)
     panel.show()
@@ -100,8 +107,8 @@ def test_panel_shows_three_sources_cancels_and_survives_an_engine_without_the_qu
     engine.take("tasks.list")[1]("unknown command `tasks.list`")
     jobs, exports, queue = (panel.groups[k] for k in ("jobs", "exports", "queue"))
     assert (jobs.childCount(), exports.childCount()) == (2, 2), "finished ones hidden"
-    assert jobs.child(1).text(1) == "Waiting for resources" and "memory" in jobs.child(1).text(2)
-    assert queue.childCount() == 1 and queue.child(0).text(0) == "Not reported by this engine yet."
+    assert child(jobs, 1).text(1) == "Waiting for resources" and "memory" in child(jobs, 1).text(2)
+    assert queue.childCount() == 1 and child(queue, 0).text(0) == "Not reported by this engine yet."
     assert "waiting" in panel.summary.text()
     ids = [p[0] for p in panel.tree.automation_parts()]
     assert "taskManager.job.2" in ids and "taskManager.export.8" in ids
@@ -117,13 +124,13 @@ def test_panel_shows_three_sources_cancels_and_survives_an_engine_without_the_qu
 
     panel.refresh()
     engine.take("tasks.list")[0](TASKS, None)
-    assert queue.childCount() == 2 and queue.child(1).text(1) == "Waiting for resources"
+    assert queue.childCount() == 2 and child(queue, 1).text(1) == "Waiting for resources"
     panel.watch(False)
     assert not panel.poll.isActive()
     panel.close()
 
 
-def test_task_manager_is_a_window_panel():
+def test_task_manager_is_a_window_panel() -> None:
     from cfa4_qt.window_menu import PANELS
 
     assert "Task Manager" in [p.title for p in PANELS]
@@ -133,7 +140,7 @@ MISSED = {"id": "queue-start-3", "label": "Start the export queue", "state": "pa
           "needsDecision": True, "decisions": ["runNow", "nextSlot", "cancel"], "waitingFor": []}
 
 
-def test_a_missed_start_offers_the_users_decisions(app):
+def test_a_missed_start_offers_the_users_decisions(app: Any) -> None:
     row = tm.task_rows([MISSED, {**MISSED, "id": "s", "state": "scheduled", "needsDecision": False, "decisions": []}])
     assert row[0]["state"] == "decide" and row[0]["detail"].startswith("Missed its start at ")
     assert [a[0] for a in row[0]["actions"]] == ["runNow", "nextSlot", "cancel"]
@@ -146,14 +153,14 @@ def test_a_missed_start_offers_the_users_decisions(app):
 
     engine = FakeEngine()
     panel = tm.TaskManagerPanel(engine)
-    sent: list[tuple[str, dict]] = []
+    sent: list[tuple[str, dict[str, Any]]] = []
     panel.command.connect(lambda c, p: sent.append((c, p)))
     panel.show()
     panel.refresh()
     engine.take("jobs.list")[0]([], None)
     engine.take("export.queue.list")[0]({"items": []}, None)
     engine.take("tasks.list")[0]([MISSED], None)
-    assert panel.groups["queue"].child(0).text(1) == "Needs your decision"
+    assert child(panel.groups["queue"], 0).text(1) == "Needs your decision"
     run = panel.findChild(QtWidgets.QToolButton, "taskManager.task.queue-start-3.runNow")
     assert run is not None and panel.findChild(QtWidgets.QToolButton, "taskManager.task.queue-start-3.cancel") is not None
     run.click()

@@ -94,7 +94,8 @@ def job_rows(jobs: Any) -> list[dict[str, Any]]:
             continue
         jid = j.get("id")
         done = j.get("finished") is True
-        result = j.get("result") if isinstance(j.get("result"), dict) else {}
+        raw_result = j.get("result")
+        result: dict[str, Any] = raw_result if isinstance(raw_result, dict) else {}
         err = result.get("error") if isinstance(result.get("error"), str) else None
         status = str(j.get("status") or "")
         waiting = not done and status.startswith("Waiting:")
@@ -272,7 +273,7 @@ class TaskManagerPanel(QWidget):
     def _toggled(self, on: bool) -> None:
         if self.settings is not None:
             self.settings.setValue("panels/taskManager/showFinished", bool(on))
-        self.render()
+        self.redraw()
 
     # ----- reading the engine -----
     def watch(self, shown: bool) -> None:
@@ -301,16 +302,16 @@ class TaskManagerPanel(QWidget):
         self.pending.discard(key)
         self.unavailable.pop(key, None)
         self.sources[key] = rows
-        self.render()
+        self.redraw()
 
     def set_unavailable(self, key: str, message: str) -> None:
         self.pending.discard(key)
         self.sources[key] = []
         self.unavailable[key] = message
-        self.render()
+        self.redraw()
 
     # ----- drawing -----
-    def render(self) -> None:
+    def redraw(self) -> None:
         show_finished = self.finished.isChecked()
         for key, _label in GROUPS:
             group = self.groups[key]
@@ -319,12 +320,16 @@ class TaskManagerPanel(QWidget):
                 note = tr("Not reported by this engine yet.") if key == "queue" else fmt("Not available: {why}", why=self.unavailable[key])
                 rows = [{"kind": key, "id": "unavailable", "name": note, "state": "", "detail": "", "eta": "", "finished": False, "actions": []}]
             while group.childCount() > len(rows):
-                group.removeChild(group.child(group.childCount() - 1))
+                last = group.child(group.childCount() - 1)
+                if last is None:
+                    break
+                group.removeChild(last)
             while group.childCount() < len(rows):
                 group.addChild(QTreeWidgetItem())
             for i, r in enumerate(rows):
                 item = group.child(i)
-                self._fill(item, r)
+                if item is not None:
+                    self._fill(item, r)
             live = sum(1 for r in self.sources[key] if not r["finished"])
             group.setText(1, fmt("{n} active", n=live) if live else "")
         self.summary.setText(summary(self.sources["jobs"] + self.sources["exports"]))
