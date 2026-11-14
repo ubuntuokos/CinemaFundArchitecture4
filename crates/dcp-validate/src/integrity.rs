@@ -26,7 +26,7 @@ const MARKER_LABELS: &[&str] = &["FFOC", "LFOC", "FFTC", "LFTC", "FFOI", "LFOI",
 /// Bytes read per step while hashing; cancellation and progress are checked between steps.
 const HASH_STEP: usize = 1 << 20;
 
-fn at(file: &str, element: Option<String>, pos: Option<Pos>, asset: Option<Uuid>) -> Location {
+pub(crate) fn at(file: &str, element: Option<String>, pos: Option<Pos>, asset: Option<Uuid>) -> Location {
     Location { file: Some(file.to_string()), element, line: pos.map(|p| p.line), column: pos.map(|p| p.column), asset }
 }
 
@@ -219,7 +219,7 @@ fn is_track_file(a: &ReelAsset) -> bool {
     }
 }
 
-fn asset_element(r: usize, a: &ReelAsset) -> Option<String> {
+pub(crate) fn asset_element(r: usize, a: &ReelAsset) -> Option<String> {
     Some(format!("ReelList/Reel[{}]/AssetList/{:?}", r + 1, a.kind))
 }
 
@@ -348,6 +348,20 @@ pub(crate) fn markers(cpls: &[(String, Composition)]) -> (Vec<Finding>, String) 
             let reel_len = reel.assets.iter().find(|a| a.kind != AssetKind::MainMarkers && a.edit_rate.is_some()).and_then(played);
             for a in reel.assets.iter().filter(|a| a.kind == AssetKind::MainMarkers) {
                 any = true;
+                // ST 429-7 allows both (GenericAssetType), but libdcp's dcpverify reports them as
+                // errors (UNEXPECTED_ENTRY_POINT, UNEXPECTED_DURATION); plan CFA4-DCPVAL-LIBDCP-001 v1.1 D7
+                let extra: Vec<&str> =
+                    [("EntryPoint", a.entry_point.is_some()), ("Duration", a.duration.is_some())].iter().filter(|e| e.1).map(|e| e.0).collect();
+                if !extra.is_empty() {
+                    out.push(
+                        Finding::new(
+                            MARK_MARKERS,
+                            Status::Warning,
+                            format!("MainMarkers has {}: the schema allows it, libdcp's dcpverify reports it as an error", extra.join(" and ")),
+                        )
+                        .at(at(path, asset_element(r, a), None, c.id)),
+                    );
+                }
                 let len = played(a).or(reel_len);
                 for m in &a.markers {
                     total += 1;

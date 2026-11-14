@@ -57,7 +57,7 @@ impl W {
 
 /// Parse the header fields from refresh_frame_context to header_size_in_bytes (profile 0
 /// layouts); returns the bit position after header_size_in_bytes.
-fn parse_tail(b: &mut Bits, error_res: bool, width: u32) -> usize {
+fn parse_tail(b: &mut Bits<'_>, error_res: bool, width: u32) -> usize {
     if !error_res {
         b.f(2);
     }

@@ -332,6 +332,7 @@ fn random_options_never_panic() {
             tile_part_per_component: r(2) == 0,
             tlm: r(2) == 0,
             profile: Profile::Part1,
+            ht: r(3) == 0,
         };
         let Ok(cs) = encode(&img, &opts) else { continue };
         let back = decode(&cs).unwrap();
@@ -380,4 +381,69 @@ fn refine_agrees_with_search() {
         };
         assert_eq!(refine(n, guess, ok).unwrap(), search(n, ok).unwrap(), "n {n} cut {cut} guess {guess:?}");
     }
+}
+
+#[test]
+fn htj2k_round_trips_and_matches_the_part_1_coder() {
+    let shapes: [&[(u8, bool, u8, u8)]; 5] =
+        [&[(8, false, 1, 1); 3], &[(1, false, 1, 1)], &[(16, false, 1, 1), (16, false, 2, 1), (16, false, 2, 1)], &[(12, true, 1, 1)], &[(10, false, 1, 2); 4]];
+    for (k, comps) in shapes.iter().enumerate() {
+        let img = picture(77, 45, comps, 7 + k as u32);
+        for cb in [(6, 6), (2, 2), (10, 2), (3, 7)] {
+            let ht = EncodeOptions { ht: true, code_block: cb, ..EncodeOptions::lossless() };
+            let back = decode(&encode(&img, &ht).unwrap()).unwrap();
+            assert_eq!(back.components, img.components, "{comps:?} {cb:?}");
+        }
+        // with every bit-plane coded, both block coders give the same reconstruction
+        let lossy = EncodeOptions::lossy(1.5);
+        let part1 = decode(&encode(&img, &lossy).unwrap()).unwrap();
+        let ht = decode(&encode(&img, &EncodeOptions { ht: true, ..lossy }).unwrap()).unwrap();
+        assert_eq!(ht.components, part1.components, "{comps:?} lossy");
+    }
+}
+
+#[test]
+fn htj2k_header_and_limits() {
+    let img = picture(64, 32, &[(8, false, 1, 1); 3], 3);
+    let cs = encode(&img, &EncodeOptions { ht: true, ..EncodeOptions::lossless() }).unwrap();
+    // SIZ Rsiz with bit 14, then CAP: Pcap with Part 15, Ccap15 reversible with Bp for B = 11
+    assert_eq!(&cs[0..4], &[0xFF, 0x4F, 0xFF, 0x51]);
+    assert_eq!(u16::from_be_bytes([cs[6], cs[7]]), 0x4000);
+    let cap = 4 + usize::from(u16::from_be_bytes([cs[4], cs[5]]));
+    assert_eq!(&cs[cap..cap + 10], &[0xFF, 0x50, 0, 8, 0, 2, 0, 0, 0, 3]);
+    // COD code-block style: HT
+    assert_eq!(&cs[cap + 10..cap + 12], &[0xFF, 0x52]);
+    assert_eq!(cs[cap + 10 + 12], 0x40);
+    let lossy = encode(&img, &EncodeOptions { ht: true, ..EncodeOptions::lossy(1.0) }).unwrap();
+    assert_eq!(lossy[cap + 9] & 0x20, 0x20, "irreversible flag in Ccap15");
+    let dci = EncodeOptions { ht: true, ..EncodeOptions::cinema_2k(24) };
+    assert!(matches!(encode(&img, &dci), Err(Error::Unsupported(_))));
+}
+
+#[test]
+fn htj2k_meets_byte_limits_close_to_the_part_1_coder() {
+    let img = picture(160, 96, &[(10, false, 1, 1); 3], 11);
+    let full = encode(&img, &EncodeOptions { ht: true, ..EncodeOptions::lossless() }).unwrap().len();
+    let mut last = 0.0;
+    for limit in [full / 40, full / 12, full / 4, full / 2] {
+        for opts in [EncodeOptions::lossy(0.25), EncodeOptions::lossless()] {
+            let ht = EncodeOptions { ht: true, max_bytes: Some(limit), ..opts.clone() };
+            let cs = encode(&img, &ht).unwrap();
+            assert!(cs.len() <= limit, "{} > {limit}", cs.len());
+            let q_ht = psnr(&img, &decode(&cs).unwrap());
+            let q_p1 = psnr(&img, &decode(&encode(&img, &EncodeOptions { max_bytes: Some(limit), ..opts.clone() }).unwrap()).unwrap());
+            // whole bit-planes only (no fractional passes), so a little below Part 1
+            assert!(q_ht > q_p1 - 3.0, "limit {limit} reversible {}: HT {q_ht:.2} dB, Part 1 {q_p1:.2} dB", opts.reversible);
+            if !opts.reversible {
+                assert!(q_ht >= last, "{q_ht} after {last}");
+                last = q_ht;
+            }
+        }
+    }
+    // per-component limits too
+    let opts = EncodeOptions { ht: true, max_component_bytes: Some(full / 10), ..EncodeOptions::lossy(0.25) };
+    assert!(psnr(&img, &decode(&encode(&img, &opts).unwrap()).unwrap()) > 25.0);
+    // a limit above the lossless size changes nothing
+    let roomy = encode(&img, &EncodeOptions { ht: true, max_bytes: Some(full * 2), ..EncodeOptions::lossless() }).unwrap();
+    assert_eq!(decode(&roomy).unwrap().components, img.components);
 }

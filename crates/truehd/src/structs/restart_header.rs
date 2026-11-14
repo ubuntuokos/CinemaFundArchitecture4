@@ -41,7 +41,7 @@ pub enum RestartSyncWord {
 }
 
 impl RestartSyncWord {
-    pub fn read(reader: &mut BsIoSliceReader) -> Result<Self> {
+    pub fn read(reader: &mut BsIoSliceReader<'_>) -> Result<Self> {
         let value = reader.get_n::<u16>(14)?;
         RestartSyncWord::try_from(value).map_err(Into::into)
     }
@@ -101,7 +101,7 @@ pub struct RestartHeader {
 }
 
 impl RestartHeader {
-    pub fn read(state: &mut ParserState, reader: &mut BsIoSliceReader) -> Result<Self> {
+    pub fn read(state: &mut ParserState, reader: &mut BsIoSliceReader<'_>) -> Result<Self> {
         let start_pos = reader.position()?;
 
         let mut rh = Self {
@@ -430,7 +430,7 @@ impl RestartHeader {
     /// Every substream present in the access unit takes part, including one whose segment
     /// the presentation mask skips: its restart header is never read, so the comparison
     /// would otherwise cover only the substreams a given presentation happens to need.
-    fn check_output_timing_matches(state: &mut ParserState, output_timing: u16, reader: &mut BsIoSliceReader) -> Result<()> {
+    fn check_output_timing_matches(state: &mut ParserState, output_timing: u16, reader: &mut BsIoSliceReader<'_>) -> Result<()> {
         let Some((reference, expected)) = state.au_output_timing else {
             state.au_output_timing = Some((state.substream_index, output_timing));
 
@@ -455,7 +455,7 @@ impl RestartHeader {
     /// Only the two block flags and the restart sync word stand between the segment start
     /// and `output_timing`, so a skipped segment can still be held to the rule. A segment
     /// that carries no restart header carries no `output_timing` to compare.
-    pub fn peek_output_timing(state: &mut ParserState, reader: &mut BsIoSliceReader) -> Result<()> {
+    pub fn peek_output_timing(state: &mut ParserState, reader: &mut BsIoSliceReader<'_>) -> Result<()> {
         if reader.available()? < 32 {
             return Ok(());
         }
@@ -542,7 +542,7 @@ impl Default for Guards {
 }
 
 impl Guards {
-    pub fn read(reader: &mut BsIoSliceReader) -> Result<Self> {
+    pub fn read(reader: &mut BsIoSliceReader<'_>) -> Result<Self> {
         let guards = reader.get_n(8)?;
         Ok(Self(guards))
     }

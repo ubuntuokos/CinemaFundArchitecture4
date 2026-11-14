@@ -98,6 +98,7 @@ from .panels.tools import ToolsPanel, tool_commands
 from .panels.tts import TextToSpeechPanel
 from .panels.voiceover import VoiceOverRecorder, VoiceOverSettingsDialog
 from .status_bar import JobStatus, tool_hint
+from .timecode_sync import TimecodeSyncLink
 from .timecode import TICKS_PER_SECOND
 from .tools_menu import build_tools_menu
 from .window_menu import Workspaces, bind_free, build_window_menu, window_commands
@@ -447,6 +448,10 @@ class MainWindow(QMainWindow):
         self.job_status = JobStatus(self)
         self.job_status.cancel.connect(lambda jid: self.execute("jobs.cancel", {"job": jid}))
         self.statusBar().addPermanentWidget(self.job_status)
+        # external timecode sync: the Program monitor's transport out, locate/stop in
+        self.timecode_sync = TimecodeSyncLink(engine, self.monitor, self)
+        self.statusBar().addPermanentWidget(self.timecode_sync.label)
+        self._tc_devices: dict[str, Any] = {}
         self.statusBar().addPermanentWidget(self.status_engine)
         self._show_tool_hint("selection")
         self.tools.tool_selected.connect(self._show_tool_hint)
@@ -1133,6 +1138,8 @@ class MainWindow(QMainWindow):
         self.engine.call("engine.commands", on_reply=self._on_commands)
         self.engine.execute("effects.list", {}, on_reply=self._on_effects_list)
         self.load_appearance()
+        self.refresh_timecode_devices()
+        self.timecode_sync.report()  # a restarted engine knows nothing of the player
         self.load_audio_output()
         self.refresh()
         recovery = hello.get("recovery")
@@ -1719,6 +1726,7 @@ class MainWindow(QMainWindow):
 
     def open_settings(self, page: str = "general") -> PreferencesDialog:
         """Edit ▸ Preferences ▸ <category> (egui's ``app.settings.<category>``)."""
+        self.refresh_timecode_devices()  # for the next opening too: the reply comes after this one
         dialog = PreferencesDialog(self, self.engine, page, devices=self.audio_devices, memory=self.memory_usage)
         dialog.applied.connect(self._settings_applied)
         dialog.setAttribute(Qt.WidgetAttribute.WA_DeleteOnClose)
@@ -1762,7 +1770,21 @@ class MainWindow(QMainWindow):
             "inputs": [d.description() for d in QMediaDevices.audioInputs()],
             "outputs": [d.description() for d in outputs],
             "outputChannels": default.maximumChannelCount() if not default.isNull() else 0,
+            # the engine's own device names for Settings ▸ Timecode Sync (LTC goes through the
+            # engine's audio layer, not Qt's): as of the last refresh_timecode_devices()
+            **self._tc_devices,
         }
+
+    def refresh_timecode_devices(self) -> None:
+        """Ask the engine for the LTC devices and MIDI ports Settings ▸ Timecode Sync lists."""
+        if not self.engine.running:
+            return
+
+        def got(result: Any, _b: bytes | None) -> None:
+            if isinstance(result, dict):
+                self._tc_devices = {k: [str(n) for n in v] for k, v in result.items() if isinstance(v, list)}
+
+        self.engine.call("timecodeSync.devices", {}, on_reply=got, on_error=lambda _m: None)
 
     def memory_usage(self) -> int:
         """Bytes of decoded pictures held for the Timeline, Project panel and Source monitor."""
@@ -1953,6 +1975,8 @@ class MainWindow(QMainWindow):
 
     def _on_event(self, ev: dict[str, Any]) -> None:
         kind = ev.get("event")
+        if self.timecode_sync.on_event(ev):
+            return
         if kind == "projectChanged":
             self.schedule_refresh()
         elif kind == "toast":
@@ -2065,11 +2089,19 @@ class MainWindow(QMainWindow):
         self.engine.execute(
             command,
             params or {},
-            on_reply=lambda _r, _b, c=command: self._command_done(c),
+            on_reply=lambda r, _b, c=command: self._command_done(c, r),
             on_error=lambda m, c=command: self._command_failed(c, m),
         )
 
-    def _command_done(self, command: str) -> None:
+    def _command_done(self, command: str, result: Any = None) -> None:
+        if command == "graphics.checkLegibility" and isinstance(result, dict):
+            # egui's status line for Graphics and Titles ▸ Check Text Legibility
+            count = result.get("count")
+            count = count if isinstance(count, int) and not isinstance(count, bool) else 0
+            text = (tr("Text legibility: no problems found") if count == 0
+                    else fmt("Text legibility: {count} problems marked on the timeline (orange markers)", count=count))
+            self.events.log(text, source=command)
+            self.statusBar().showMessage(text, 6000)
         if command in SOURCE_COMMANDS:
             # the item keeps its id but shows other media (or comes back online): cached
             # thumbnails and waveforms keyed by that id are stale

@@ -189,6 +189,8 @@ distributions are not targets.
   sequences (#828): scan-line, uncompressed / RLE / ZIPS / ZIP, half / float / uint, RGB(A) or
   luminance, decoded to linear float frames and bit-exact against ffmpeg; PXR24 (lossy 24-bit
   float, 16 lines per chunk) decodes too, bit-exact against OpenEXR (via OpenImageIO, #828).
+  A `chromaticities` attribute (ACES AP0 / AP1, P3, Rec.2020, custom) converts to the Rec.709
+  working primaries with Bradford white adaptation (CFA4-PROCODEC-002 WP3).
   IAB immersive audio (SMPTE ST 2098-2) in DCP / IMF MXF (#82): PCM and DLC lossless assets,
   Beds, remaps and Objects, rendered to 7.1 for playback.
 - **Missing:** DTS:X heights / objects on their own speakers (#130), DTS Express, 14-bit DTS,
@@ -199,14 +201,14 @@ distributions are not targets.
   incl. R3D NE, ARRIRAW, Sony RAW / X-OCN, Canon RAW, BRAW, ProRes RAW; #345, #383), DCP
   composition (CPL) import (#101; JPEG 2000 MXF picture tracks import since #77), interlaced and
   stereoscopic JPEG 2000 MXF (#102), JPEG XS MXF, the rest of CinemaDNG (lossy / JPEG XL DNG, MXF-wrapped, opcode lists, Raw
-  settings; DNG frames and folders import since #1065); stills: PSD, EXR beyond scan-line RLE / ZIP / PXR24 (PIZ, B44, DWA,
+  settings; DNG frames and folders import since #1065); stills: PSD, EXR beyond scan-line RLE / ZIP / PXR24 / PIZ (B44, DWA,
   tiled, multi-part, deep), AVIF / JPEG items inside HEIF,
   AI / EPS, and the rarer DPX layout, run-length encoding (Targa and DPX stills and sequences import
-  since #821, packed 10/12-bit and Y'CbCr DPX since #841, deeper than 8 bits kept at 8); transparent
+  since #821, packed 10/12-bit and Y'CbCr DPX since #841, read at their stored depth with time code and frame rate since #1155); transparent
   video (#402); Sony start timecode in `rtmd` (#460); stereo 3D flag (#500); MKV multi-audio (#601).
 - **CFA4 candidates after GPL-3.0-or-later** ([ADR 0003](adr/ADR-0003-aswf-and-conversion-sources.md) §6):
   LibRaw (LGPL-2.1 / CDDL-1.0) for camera RAW, libheif (LGPL-3.0) for HEIF / HEIC, both also
-  through OpenImageIO; OpenEXR for PIZ / B44 / DWA, tiled, multi-part and deep EXR. Candidates are not commitments: each needs its own ADR (FFI rule, own engine as fallback).
+  through OpenImageIO; OpenEXR for B44 / DWA, tiled, multi-part and deep EXR. Candidates are not commitments: each needs its own ADR (FFI rule, own engine as fallback).
 - **Estimate:** 120–200 h (camera RAW alone 60–100 h, and some SDKs have licences we cannot use:
   clean-room from public specs only where specs exist). Docs: [codec-parity.md](codec-parity.md),
   [file-format-parity.md](file-format-parity.md).
@@ -262,6 +264,14 @@ distributions are not targets.
     existing Skin Smoothing effect to faces.
   - *Background blur / replace*: Robust Video Matting (GPL-3.0) for the subject matte; MODNet
     (Apache-2.0) as the fallback.
+    The same matte also gives a *transparent background* (subject over the tracks below) and a
+    *screen recording as the background* (EffectsSDK review, 2026-11-13).
+  - *Portrait Lighting*: brighten the subject and darken the background (EffectsSDK review); needs
+    the subject matte above, the grading itself is not AI.
+  - *Face-framed Auto Reframe*: keep a detected face (YuNet, BSD-3) at a set share of the frame
+    ("smart zoom"); today's Auto Reframe follows a classical saliency centroid.
+  - *3D head avatars* driven by face tracking (EffectsSDK review): needs an openly licensed face
+    landmark / blendshape model and avatar assets; no candidate checked yet.
   - *AI foley*: MMAudio (code MIT, weights CC BY-NC 4.0): blocked until a commercially usable
     model exists (see [kdenlive-parity.md](kdenlive-parity.md) 12.1).
 
@@ -270,7 +280,7 @@ distributions are not targets.
 - **Missing:** AV1 hardware export (software AV1 export exists, 8-bit and 10-bit HDR, #95), DVD / Blu-ray (#244, #245), MPEG-2
   field pictures / dual prime (#274), P-STD / T-STD buffer models in the multiplexer (#277), field-aware scaling and field-rate rendering for interlaced export (#275), MP2 audio (#267), JPEG 2000 MXF
   (the `cfa4-j2k` encoder with the DCI 2K / 4K and IMF profiles exists, #81, #931; SMPTE DCP export is done, #115; IMF App 2E package export, #1011),
-  AS-10 / AS-11, XDCAM HD MXF, P2, PIZ / PXR24 / B44 / DWA OpenEXR compression, MP3 audio,
+  AS-10 / AS-11, XDCAM HD MXF, P2, PXR24 / B44 / DWA OpenEXR compression, MP3 audio,
   AC-3 / E-AC-3 audio (the `cfa4-ac3` encoder exists, #86; export wiring #119),
   interlaced encoding other than MPEG-2, smart render; HEVC B pictures, SAO, 2-pass and 4:2:2 / 4:4:4 encoding
   (#171–#180).

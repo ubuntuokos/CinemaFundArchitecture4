@@ -4380,6 +4380,10 @@ export.summary	Low	niska
 	{n} more	Jeszcze {n}
 	Block	Blok
 	parallel	równolegle
+	page {page}: a spine's vertical position works on card pages only; it is ignored	strona {page}: pionowe położenie osi działa tylko na stronach planszy; zostaje pominięte
+	on a card: centered on {y} px	na planszy: wyśrodkowana na {y} px
+	on a card: starts at {y} px	na planszy: zaczyna się na {y} px
+	on a card: ends at {y} px	na planszy: kończy się na {y} px
 # MPEG-2 export audio (#268): a product name, kept as is
 	Dolby Digital (AC-3)	Dolby Digital (AC-3)
 	In the page (OBS takes it from the Browser Source)	Na stronie (OBS pobiera go ze źródła przeglądarki)
@@ -4452,7 +4456,12 @@ export.summary	Low	niska
 	page {page}: the runtime is reached by changing the roll speed (the gaps would have to grow more than 20-fold)	strona {page}: czas osiągnięto zmianą prędkości przewijania (odstępy musiałyby wzrosnąć ponad 20-krotnie)
 	page {page}: the transition needs the pages to touch (page gap 0); it is left out	strona {page}: przejście wymaga stykających się stron (odstęp 0); zostaje pominięte
 	page {page}: there is no transition “{name}”; the pages cut	strona {page}: nie ma przejścia „{name}”; strony zmieniają się cięciem
-	spine position “{value}” is not supported (a pixel offset, optionally “parallel”, is)	pozycja osi „{value}” nie jest obsługiwana (obsługiwane jest przesunięcie w pikselach, opcjonalnie z „parallel”)
+	spine position “{value}” is not supported (a pixel offset, optionally “parallel”, or “Hook N Bottom-Top dx dy” is)	pozycja osi „{value}” nie jest obsługiwana (obsługiwane jest przesunięcie w pikselach, opcjonalnie z „parallel” / „Hook N Bottom-Top dx dy”)
+	page {page}: the hook reaches back further than there are spines; it hooks onto the first spine, or starts its own	strona {page}: hak sięga dalej wstecz, niż jest osi; zaczepia się o pierwszą oś lub zaczyna własną
+	hooked {n} spines back: its {from} meets this spine's {to}	zaczepione {n} osi wstecz: jej {from} styka się z {to} tej osi
+	top	góra
+	middle	środek
+	bottom	dół
 	vertical gap “{value}” is not a number	odstęp pionowy „{value}” nie jest liczbą
 	picture “{file}” was not found or cannot be read; it is left out	obrazu „{file}” nie znaleziono lub nie można go odczytać; zostaje pominięty
 	video “{file}” was not found or cannot be read; it is left out	wideo „{file}” nie znaleziono lub nie można go odczytać; zostaje pominięte
@@ -4517,7 +4526,7 @@ export.summary	Low	niska
 	the engine sent no report	silnik nie przesłał raportu
 	MXF OP1a Uncompressed 10-bit 4:2:2 (v210)	MXF OP1a bez kompresji 10-bit 4:2:2 (v210)
 	MXF OP1a, uncompressed 10-bit Y'CbCr 4:2:2 in the v210 layout (SMPTE ST 384), 24-bit 48 kHz PCM, start timecode	MXF OP1a, nieskompresowany 10-bitowy Y'CbCr 4:2:2 w układzie v210 (SMPTE ST 384), 24-bitowy PCM 48 kHz, początkowy kod czasowy
-	Write the captions as ANC data (CEA-608/708, 29.97 fps)	Zapisz napisy jako dane ANC (CEA-608/708, 29,97 kl./s)
+	Write the captions as ANC data (CEA-608/708)	Zapisz napisy jako dane ANC (CEA-608/708)
 	Load KDM…	Wczytaj KDM…
 	Forget DCP Keys	Zapomnij klucze DCP
 	Load KDM	Wczytaj KDM
@@ -4527,6 +4536,13 @@ export.summary	Low	niska
 	The keys stay in memory only, until Forget DCP Keys or the end of the session.	Klucze pozostają tylko w pamięci, do polecenia Zapomnij klucze DCP lub końca sesji.
 	DCP keys forgotten	Klucze DCP zapomniane
 	Choose the KDM file and the private key.	Wybierz plik KDM i klucz prywatny.
+	Load even if the certificate chain is not verified	Wczytaj także z niezweryfikowanym łańcuchem certyfikatów
+	Bundle: {loaded} of {total} KDMs loaded, {other} for other recipients	Pakiet: wczytano {loaded} z {total} KDM, {other} dla innych odbiorców
+	Not loaded: {path}: {problem}	Nie wczytano: {path}: {problem}
+	Signature verified: {chain}	Podpis zweryfikowany: {chain}
+	Signature not verified: {problem}	Podpis niezweryfikowany: {problem}
+	KDM required	Wymagany KDM
+	Encrypted: load the KDM with content key {keys}	Zaszyfrowane: wczytaj KDM z kluczem treści {keys}
 
 # Settings ▸ Timecode Sync (TC-4)
 	Timecode Sync	Synchronizacja kodu czasowego
@@ -4569,3 +4585,60 @@ export.summary	Low	niska
 	software backend: {reason}	zaplecze programowe: {reason}
 	Start studio	Uruchom studio
 	Stop studio	Zatrzymaj studio
+# Auto Color, Auto Contrast, Auto Levels (EffectsSDK review)
+	Auto Color	Automatyczny kolor
+	Auto Contrast	Automatyczny kontrast
+	Auto Levels	Automatyczne poziomy
+	Temporal Smoothing (seconds)	Wygładzanie czasowe (sekundy)
+	Scene Detect	Wykrywanie scen
+	Black Clip	Obcięcie czerni
+	White Clip	Obcięcie bieli
+	Snap Neutral Midtones	Neutralizuj półtony
+# Layout presets: PiP corners, split screen (EffectsSDK review)
+	PiP 35% Upper Left	Obraz w obrazie 35% lewy górny
+	Picture-in-picture: 35 % scale in the upper left	Obraz w obrazie: skala 35 % w lewym górnym rogu
+	PiP 35% Lower Left	Obraz w obrazie 35% lewy dolny
+	Picture-in-picture: 35 % scale in the lower left	Obraz w obrazie: skala 35 % w lewym dolnym rogu
+	PiP 35% Lower Right	Obraz w obrazie 35% prawy dolny
+	Picture-in-picture: 35 % scale in the lower right	Obraz w obrazie: skala 35 % w prawym dolnym rogu
+	Split Screen Left	Podzielony ekran z lewej
+	Split screen: the middle half of the picture fills the left half of the frame	Podzielony ekran: środkowa połowa obrazu wypełnia lewą połowę kadru
+	Split Screen Right	Podzielony ekran z prawej
+	Split screen: the middle half of the picture fills the right half of the frame	Podzielony ekran: środkowa połowa obrazu wypełnia prawą połowę kadru
+# Creative Looks: CRT (P3)
+	CRT	CRT
+	Scanline Strength	Siła linii
+	Line Count	Liczba linii
+	Mask	Maska
+	Mask Strength	Siła maski
+	Corner Darkening	Przyciemnienie narożników
+	Aperture Grille	Maskownica szczelinowa
+	Shadow Mask	Maska perforowana
+	Slot Mask	Maska szczelinowa
+# Creative Looks: Oil Paint (P4)
+	Oil Paint	Obraz olejny
+	Detail	Szczegółowość
+	Texture	Tekstura
+	Facet	Fasety
+	Daubs	Plamy
+	Dry Brush	Suchy pędzel
+	Fresco	Fresk
+	Knife	Szpachla
+	Sponge	Gąbka
+# Creative Looks: Pixel Sort (P5)
+	Pixel Sort	Sortowanie pikseli
+	Sort By	Sortuj według
+	Lower Threshold	Dolny próg
+	Upper Threshold	Górny próg
+	Ascending	Rosnąco
+# Temporal Denoise (EffectsSDK review)
+	Temporal Denoise	Czasowe odszumianie
+	Frames Each Side	Klatki z każdej strony
+	Motion Threshold	Próg ruchu
+	Show Motion	Pokaż ruch
+	No signal	Brak sygnału
+	Locating	Pozycjonowanie
+	Locked	Zsynchronizowano
+	Freewheel	Wolnobieg
+	Scrubbing	Przewijanie
+	Sending	Wysyłanie

@@ -134,7 +134,7 @@ pub struct SequenceHeader {
 }
 
 /// `uvlc()` (§ 4.11.3): at most `(1 << 32) - 1`.
-fn uvlc(r: &mut BitReader) -> Result<u32> {
+fn uvlc(r: &mut BitReader<'_>) -> Result<u32> {
     let mut leading_zeros = 0u32;
     while !r.read_bit()? {
         leading_zeros += 1;
@@ -147,7 +147,7 @@ fn uvlc(r: &mut BitReader) -> Result<u32> {
     Ok(value.saturating_add((1u32 << leading_zeros) - 1))
 }
 
-fn bits_u8(r: &mut BitReader, n: u32) -> Result<u8> {
+fn bits_u8(r: &mut BitReader<'_>, n: u32) -> Result<u8> {
     u8::try_from(r.read_bits(n)?).map_err(|_| Error::Invalid("field wider than 8 bits"))
 }
 

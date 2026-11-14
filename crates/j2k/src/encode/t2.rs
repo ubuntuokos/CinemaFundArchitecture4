@@ -144,7 +144,7 @@ pub(crate) struct Contribution<'a> {
 /// The packet of a precinct in layer 0: per band, its code-block grid width and its blocks'
 /// contributions (raster order, `None` for a block not included). The header, followed by the
 /// body with `body`, and the body's length.
-pub(crate) fn packet(bands: &[(usize, Vec<Option<Contribution>>)], body: bool) -> (Vec<u8>, usize) {
+pub(crate) fn packet(bands: &[(usize, Vec<Option<Contribution<'_>>>)], body: bool) -> (Vec<u8>, usize) {
     let mut w = BitWriter::new();
     let any = bands.iter().any(|(_, b)| b.iter().any(Option::is_some));
     if !any {

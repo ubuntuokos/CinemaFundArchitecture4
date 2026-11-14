@@ -63,8 +63,21 @@ pub(crate) fn tga(rgba: &[u8], w: u32, h: u32, alpha: bool) -> Result<Vec<u8>> {
 const DPX_HEADER: usize = 2048;
 
 /// A DPX file: 10-bit RGB (8-bit values widened by bit replication, so 0 → 0 and 255 → 1023).
+#[cfg(test)]
 pub(crate) fn dpx(rgba: &[u8], w: u32, h: u32) -> Result<Vec<u8>> {
+    dpx_deep(rgba, None, w, h)
+}
+
+/// A float sample (straight sRGB R'G'B', 0..1) as a `max`-scaled code; 0 for NaN.
+fn code(v: f32, max: f32) -> u32 {
+    if v.is_finite() { (v.clamp(0.0, 1.0) * max).round() as u32 } else { 0 }
+}
+
+/// [`dpx`] from the frame's R'G'B' floats (3 per pixel) when there are any, so that deep sources
+/// keep their 10 bits; `rgba` sets the frame's size either way.
+pub(crate) fn dpx_deep(rgba: &[u8], float: Option<&[f32]>, w: u32, h: u32) -> Result<Vec<u8>> {
     let n = checked_len(rgba, w, h)?;
+    let float = float.filter(|f| f.len() >= n / 4 * 3);
     // one 32-bit word per pixel; `n` is already `w * h * 4`
     let size = n.checked_add(DPX_HEADER).ok_or_else(|| ExportError::Encode("frame size".into()))?;
     let file_size = u32::try_from(size).map_err(|_| ExportError::Unsupported(format!("a {w}×{h} DPX frame exceeds 4 GB")))?;
@@ -128,8 +141,18 @@ pub(crate) fn dpx(rgba: &[u8], w: u32, h: u32) -> Result<Vec<u8>> {
     let mut out = Vec::with_capacity(size);
     out.extend_from_slice(&hd);
     let ten = |v: u8| (u32::from(v) << 2) | (u32::from(v) >> 6);
-    for &[r, g, b, _] in rgba.as_chunks::<4>().0 {
-        out.extend_from_slice(&((ten(r) << 22) | (ten(g) << 12) | (ten(b) << 2)).to_be_bytes());
+    match float {
+        Some(f) => {
+            for p in f[..n / 4 * 3].as_chunks::<3>().0 {
+                let [r, g, b] = p.map(|v| code(v, 1023.0));
+                out.extend_from_slice(&((r << 22) | (g << 12) | (b << 2)).to_be_bytes());
+            }
+        }
+        None => {
+            for &[r, g, b, _] in rgba[..n].as_chunks::<4>().0 {
+                out.extend_from_slice(&((ten(r) << 22) | (ten(g) << 12) | (ten(b) << 2)).to_be_bytes());
+            }
+        }
     }
     Ok(out)
 }
@@ -166,8 +189,51 @@ fn half(v: f32) -> u16 {
 
 /// An OpenEXR file: half-float scene-linear Rec.709 RGB, or RGBA with `alpha` (premultiplied, as
 /// EXR defines alpha; the frame's straight alpha is multiplied in after linearisation).
+#[cfg(test)]
 pub(crate) fn exr(rgba: &[u8], w: u32, h: u32, alpha: bool, compression: ExrCompression) -> Result<Vec<u8>> {
+    exr_with(rgba, None, w, h, alpha, compression, None)
+}
+
+/// The time code of a still in a sequence: `frame` counted at `rate` (drop-frame labels when
+/// `drop_frame` and the rate has them). OpenEXR writes it as the `timeCode` attribute and the rate
+/// as `framesPerSecond`.
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub struct StillTiming {
+    pub frame: i64,
+    pub rate: cfa4_time::FrameRate,
+    pub drop_frame: bool,
+}
+
+impl StillTiming {
+    /// SMPTE ST 12-1 time and flags as OpenEXR packs them: BCD frames (drop-frame flag in bit 6),
+    /// seconds, minutes and hours in bytes 0–3 of a little-endian word; hours wrap at 24. `None`
+    /// before 00:00:00:00.
+    pub fn packed(&self) -> Option<u32> {
+        let drop = self.drop_frame && self.rate.supports_drop_frame();
+        let (neg, h, m, s, f) = cfa4_time::frames_to_fields(self.frame, self.rate, drop);
+        if neg || f > 99 {
+            return None;
+        }
+        let bcd = |v: i64| ((v / 10) as u32) << 4 | (v % 10) as u32;
+        Some(bcd(f) | u32::from(drop) << 6 | bcd(s) << 8 | bcd(m) << 16 | bcd(h % 24) << 24)
+    }
+}
+
+/// [`exr`] with the time code and frame rate of a sequence frame, and from the frame's straight
+/// sRGB R'G'B' floats (3 per pixel) when there are any, so that deep sources keep their precision
+/// (the alpha still comes from `rgba`).
+pub(crate) fn exr_with(
+    rgba: &[u8],
+    float: Option<&[f32]>,
+    w: u32,
+    h: u32,
+    alpha: bool,
+    compression: ExrCompression,
+    timing: Option<StillTiming>,
+) -> Result<Vec<u8>> {
     let n = checked_len(rgba, w, h)?;
+    let float = float.filter(|f| f.len() >= n / 4 * 3);
+    let linear = |v: f32| if v.is_finite() { cfa4_color::srgb_to_linear(v.clamp(0.0, 1.0)) } else { 0.0 };
     let too_large = || ExportError::Unsupported(format!("an OpenEXR frame of {w}×{h} is too large"));
     let (Ok(x_max), Ok(y_max)) = (i32::try_from(w - 1), i32::try_from(h - 1)) else {
         return Err(too_large());
@@ -208,10 +274,22 @@ pub(crate) fn exr(rgba: &[u8], w: u32, h: u32, alpha: bool, compression: ExrComp
     attr(&mut hd, "compression", "compression", &[compression.code()]);
     attr(&mut hd, "dataWindow", "box2i", &window);
     attr(&mut hd, "displayWindow", "box2i", &window);
+    if let Some(t) = timing {
+        // a rational: signed numerator, unsigned denominator
+        if let (Ok(num), Ok(den)) = (i32::try_from(t.rate.num), u32::try_from(t.rate.den)) {
+            let fps: Vec<u8> = num.to_le_bytes().into_iter().chain(den.to_le_bytes()).collect();
+            attr(&mut hd, "framesPerSecond", "rational", &fps);
+        }
+    }
     attr(&mut hd, "lineOrder", "lineOrder", &[0]); // INCREASING_Y
     attr(&mut hd, "pixelAspectRatio", "float", &le(&[1.0]));
     attr(&mut hd, "screenWindowCenter", "v2f", &le(&[0.0, 0.0]));
     attr(&mut hd, "screenWindowWidth", "float", &le(&[1.0]));
+    if let Some(tc) = timing.and_then(|t| t.packed()) {
+        // time and flags, then user data (none)
+        let v: Vec<u8> = tc.to_le_bytes().into_iter().chain([0; 4]).collect();
+        attr(&mut hd, "timeCode", "timecode", &v);
+    }
     hd.push(0); // end of header
 
     // offset table (one entry per chunk), then the chunks: first y, data size, data
@@ -232,19 +310,29 @@ pub(crate) fn exr(rgba: &[u8], w: u32, h: u32, alpha: bool, compression: ExrComp
     let mut raw = Vec::with_capacity(line * lines);
     for (k, block) in rgba[..n].chunks(row * lines).enumerate() {
         raw.clear();
-        for src in block.chunks_exact(row) {
+        for (l, src) in block.chunks_exact(row).enumerate() {
+            let y = k * lines + l;
             // planar per line: every pixel of the first channel, then the next channel …
             for (x, &[r, g, b, a]) in src.as_chunks::<4>().0.iter().enumerate() {
                 let rgb = [b, g, r];
+                // linear B, G, R: from the floats when there are any
+                let deep = float.map(|f| {
+                    let i = (y * wn + x) * 3;
+                    [linear(f[i + 2]), linear(f[i + 1]), linear(f[i])]
+                });
                 if alpha {
                     let k = f32::from(a) / 255.0;
                     px[x] = half(k);
                     for (c, &v) in rgb.iter().enumerate() {
-                        px[(c + 1) * wn + x] = if a == 255 { opaque[v as usize] } else { half(lin[v as usize] * k) };
+                        px[(c + 1) * wn + x] = match deep {
+                            Some(d) => half(d[c] * k),
+                            None if a == 255 => opaque[v as usize],
+                            None => half(lin[v as usize] * k),
+                        };
                     }
                 } else {
                     for (c, &v) in rgb.iter().enumerate() {
-                        px[c * wn + x] = opaque[v as usize];
+                        px[c * wn + x] = deep.map_or(opaque[v as usize], |d| half(d[c]));
                     }
                 }
             }
@@ -254,6 +342,11 @@ pub(crate) fn exr(rgba: &[u8], w: u32, h: u32, alpha: bool, compression: ExrComp
             ExrCompression::None => None,
             ExrCompression::Rle => Some(rle(&predict(&raw))),
             ExrCompression::Zips | ExrCompression::Zip => Some(crate::deflate::zlib(&predict(&raw))),
+            ExrCompression::Piz => {
+                let rows = raw.len() / line;
+                let chans = vec![cfa4_media::still::exr::piz::PizChannel { width: wn, lines: rows, bytes: 2 }; names.len()];
+                Some(cfa4_media::still::exr::piz::compress(&raw, &chans).map_err(ExportError::Encode)?)
+            }
         };
         // a chunk that does not shrink is stored as it is (readers compare the sizes)
         let data = packed.as_deref().filter(|p| p.len() < raw.len()).unwrap_or(&raw);
@@ -492,7 +585,7 @@ mod tests {
         for alpha in [false, true] {
             let plain = exr(&px, w, h, alpha, ExrCompression::None).unwrap();
             let lines: Vec<&[u8]> = chunks(&plain, h as usize).into_iter().map(|(_, d)| d).collect();
-            for c in [ExrCompression::Rle, ExrCompression::Zips, ExrCompression::Zip] {
+            for c in [ExrCompression::Rle, ExrCompression::Zips, ExrCompression::Zip, ExrCompression::Piz] {
                 let f = exr(&px, w, h, alpha, c).unwrap();
                 let cmp = find(&f, b"compression\0compression\0") + 24;
                 assert_eq!(f[cmp + 4], c.code());
@@ -505,6 +598,10 @@ mod tests {
                         data.to_vec()
                     } else if c == ExrCompression::Rle {
                         unpredict(&unrle(data))
+                    } else if c == ExrCompression::Piz {
+                        let rows = want.len() / (w as usize * if alpha { 8 } else { 6 });
+                        let chans = vec![cfa4_media::still::exr::piz::PizChannel { width: w as usize, lines: rows, bytes: 2 }; if alpha { 4 } else { 3 }];
+                        cfa4_media::still::exr::piz::decompress(data, &chans, want.len()).unwrap()
                     } else {
                         unpredict(&crate::deflate::tests::inflate(data).unwrap())
                     };
@@ -548,6 +645,79 @@ mod tests {
                 }
             }
         }
+        let _ = std::fs::remove_dir_all(&dir);
+    }
+
+    /// OpenImageIO (the OpenEXR library, an external test oracle) reads our PIZ files: its
+    /// uncompressed re-write of them holds exactly the half floats of our uncompressed file.
+    #[test]
+    fn exr_piz_reads_in_openexr() {
+        let ok = |args: &[&std::ffi::OsStr]| std::process::Command::new("oiiotool").args(args).status().is_ok_and(|s| s.success());
+        if !ok(&["--version".as_ref()]) {
+            eprintln!("SKIPPED: oiiotool is not installed");
+            return;
+        }
+        let dir = cfa4_testkit::fixtures::workspace_root().join("target").join("export-tests").join(format!("exr-piz-{}", std::process::id()));
+        std::fs::create_dir_all(&dir).unwrap();
+        let decode = |b: Vec<u8>| match &cfa4_media::open_bytes("still.exr", b.into(), &[])
+            .unwrap()
+            .video_frame(cfa4_media::FrameRequest::full(cfa4_time::Tick(0)))
+            .unwrap()
+            .data
+        {
+            cfa4_frame::PixelData::RgbaF32(p) => p.to_vec(),
+            _ => panic!("EXR frames are float"),
+        };
+        let (px, w, h) = picture();
+        for alpha in [false, true] {
+            let ours = dir.join(format!("piz-{alpha}.exr"));
+            let theirs = dir.join(format!("plain-{alpha}.exr"));
+            std::fs::write(&ours, exr(&px, w, h, alpha, ExrCompression::Piz).unwrap()).unwrap();
+            assert!(
+                ok(&[ours.as_os_str(), "-d".as_ref(), "half".as_ref(), "--compression".as_ref(), "none".as_ref(), "-o".as_ref(), theirs.as_os_str()]),
+                "oiiotool reads our PIZ file"
+            );
+            let plain = decode(exr(&px, w, h, alpha, ExrCompression::None).unwrap());
+            assert_eq!(decode(std::fs::read(&theirs).unwrap()), plain, "alpha {alpha}");
+        }
+        let _ = std::fs::remove_dir_all(&dir);
+    }
+
+    /// The `timeCode` and `framesPerSecond` attributes: their packing, our reader, and OpenImageIO
+    /// (the OpenEXR library, an external test oracle; skipped when not installed).
+    #[test]
+    fn exr_records_time_code_and_rate() {
+        use cfa4_time::FrameRate;
+        let at = |frame, rate, drop_frame| StillTiming { frame, rate, drop_frame }.packed();
+        assert_eq!(at(25 * 3600, FrameRate::new(25, 1), false), Some(0x0100_0000));
+        // 1800 frames at 29.97 drop-frame is 00:01:00;02
+        assert_eq!(at(1800, FrameRate::FPS_29_97, true), Some(0x02 | 1 << 6 | 0x01 << 16));
+        assert_eq!(at(1800, FrameRate::FPS_29_97, false), Some(0x01 << 16), "00:01:00:00 non-drop");
+        assert_eq!(at(24 * 3600 * 25 + 5, FrameRate::new(24, 1), false), Some(0x05 | 0x01 << 24), "hours wrap at 24");
+        assert_eq!(at(-1, FrameRate::new(24, 1), false), None);
+
+        let (px, w, h) = picture();
+        let t = StillTiming { frame: 24 * 3723 + 4, rate: FrameRate::new(24, 1), drop_frame: false };
+        let f = exr_with(&px, None, w, h, false, ExrCompression::Zip, Some(t)).unwrap();
+        let src = cfa4_media::open_bytes("a.exr", f.clone().into(), &[]).unwrap();
+        assert_eq!(src.info().start_timecode, Some(t.frame), "01:02:03:04");
+        assert_eq!(src.info().video.as_ref().unwrap().frame_rate, FrameRate::new(24, 1));
+        let plain = cfa4_media::open_bytes("b.exr", exr(&px, w, h, false, ExrCompression::Zip).unwrap().into(), &[]).unwrap();
+        assert_eq!(plain.info().start_timecode, None);
+
+        if !std::process::Command::new("oiiotool").arg("--version").status().is_ok_and(|s| s.success()) {
+            eprintln!("SKIPPED: oiiotool is not installed");
+            return;
+        }
+        let dir = cfa4_testkit::fixtures::workspace_root().join("target").join("export-tests").join(format!("exr-tc-{}", std::process::id()));
+        std::fs::create_dir_all(&dir).unwrap();
+        let path = dir.join("tc.exr");
+        std::fs::write(&path, &f).unwrap();
+        let out = std::process::Command::new("oiiotool").args(["--info", "-v"]).arg(&path).output().unwrap();
+        let info = String::from_utf8_lossy(&out.stdout);
+        assert!(info.contains("smpte:TimeCode: 01:02:03:04"), "{info}");
+        // OpenImageIO 2.4 names it as stored; later versions as FramesPerSecond
+        assert!(info.to_lowercase().contains("framespersecond: 24/1"), "{info}");
         let _ = std::fs::remove_dir_all(&dir);
     }
 

@@ -4379,6 +4379,10 @@ export.summary	Low	低
 	{n} more	另有 {n} 項
 	Block	區塊
 	parallel	並列
+	page {page}: a spine's vertical position works on card pages only; it is ignored	第 {page} 頁：軸線的垂直位置只在字卡頁上有效；已忽略
+	on a card: centered on {y} px	字卡上：以 {y} px 為中心
+	on a card: starts at {y} px	字卡上：從 {y} px 開始
+	on a card: ends at {y} px	字卡上：到 {y} px 結束
 # MPEG-2 export audio (#268): a product name, kept as is
 	Dolby Digital (AC-3)	Dolby Digital (AC-3)
 	In the page (OBS takes it from the Browser Source)	在頁面中（OBS 從瀏覽器來源取得）
@@ -4451,7 +4455,12 @@ export.summary	Low	低
 	page {page}: the runtime is reached by changing the roll speed (the gaps would have to grow more than 20-fold)	第 {page} 頁：以改變捲動速度達成時長（間距必須放大超過 20 倍）
 	page {page}: the transition needs the pages to touch (page gap 0); it is left out	第 {page} 頁：轉場需要頁面相接（頁間距 0）；已略過
 	page {page}: there is no transition “{name}”; the pages cut	第 {page} 頁：沒有「{name}」轉場；頁面直接切換
-	spine position “{value}” is not supported (a pixel offset, optionally “parallel”, is)	不支援軸線位置「{value}」（支援像素位移，可選加「parallel」）
+	spine position “{value}” is not supported (a pixel offset, optionally “parallel”, or “Hook N Bottom-Top dx dy” is)	不支援軸線位置「{value}」（支援像素位移，可選加「parallel」 / 「Hook N Bottom-Top dx dy」）
+	page {page}: the hook reaches back further than there are spines; it hooks onto the first spine, or starts its own	第 {page} 頁：掛鉤回溯的軸數超過現有的軸；它掛到第一條軸上，或自成一條軸
+	hooked {n} spines back: its {from} meets this spine's {to}	掛在前面第 {n} 條軸上：那條軸的{from}與本軸的{to}相接
+	top	頂端
+	middle	中間
+	bottom	底端
 	vertical gap “{value}” is not a number	垂直間距「{value}」不是數字
 	picture “{file}” was not found or cannot be read; it is left out	找不到或無法讀取圖片「{file}」；已略過
 	video “{file}” was not found or cannot be read; it is left out	找不到或無法讀取影片「{file}」；已略過
@@ -4516,7 +4525,7 @@ export.summary	Low	低
 	the engine sent no report	引擎未傳送報告
 	MXF OP1a Uncompressed 10-bit 4:2:2 (v210)	MXF OP1a 未壓縮 10 位元 4:2:2 (v210)
 	MXF OP1a, uncompressed 10-bit Y'CbCr 4:2:2 in the v210 layout (SMPTE ST 384), 24-bit 48 kHz PCM, start timecode	MXF OP1a，v210 版面的未壓縮 10 位元 Y'CbCr 4:2:2（SMPTE ST 384），24 位元 48 kHz PCM，起始時間碼
-	Write the captions as ANC data (CEA-608/708, 29.97 fps)	將字幕寫為 ANC 資料（CEA-608/708，29.97 fps）
+	Write the captions as ANC data (CEA-608/708)	將字幕寫為 ANC 資料（CEA-608/708）
 	Load KDM…	載入 KDM…
 	Forget DCP Keys	清除 DCP 金鑰
 	Load KDM	載入 KDM
@@ -4526,6 +4535,13 @@ export.summary	Low	低
 	The keys stay in memory only, until Forget DCP Keys or the end of the session.	金鑰只保存在記憶體中，直到執行「清除 DCP 金鑰」或工作階段結束。
 	DCP keys forgotten	已清除 DCP 金鑰
 	Choose the KDM file and the private key.	請選擇 KDM 檔案和私密金鑰。
+	Load even if the certificate chain is not verified	即使憑證鏈未經驗證也載入
+	Bundle: {loaded} of {total} KDMs loaded, {other} for other recipients	套件：已載入 {total} 個 KDM 中的 {loaded} 個，{other} 個屬於其他接收者
+	Not loaded: {path}: {problem}	未載入：{path}：{problem}
+	Signature verified: {chain}	簽章已驗證：{chain}
+	Signature not verified: {problem}	簽章未驗證：{problem}
+	KDM required	需要 KDM
+	Encrypted: load the KDM with content key {keys}	已加密：請載入含有內容金鑰 {keys} 的 KDM
 
 # Settings ▸ Timecode Sync (TC-4)
 	Timecode Sync	時間碼同步
@@ -4568,3 +4584,60 @@ export.summary	Low	低
 	software backend: {reason}	軟體後端：{reason}
 	Start studio	啟動攝影棚
 	Stop studio	停止攝影棚
+# Auto Color, Auto Contrast, Auto Levels (EffectsSDK review)
+	Auto Color	自動色彩
+	Auto Contrast	自動對比
+	Auto Levels	自動色階
+	Temporal Smoothing (seconds)	時間平滑（秒）
+	Scene Detect	場景偵測
+	Black Clip	黑色修剪
+	White Clip	白色修剪
+	Snap Neutral Midtones	中間調中性化
+# Layout presets: PiP corners, split screen (EffectsSDK review)
+	PiP 35% Upper Left	畫中畫 35% 左上
+	Picture-in-picture: 35 % scale in the upper left	畫中畫：左上角 35% 縮放
+	PiP 35% Lower Left	畫中畫 35% 左下
+	Picture-in-picture: 35 % scale in the lower left	畫中畫：左下角 35% 縮放
+	PiP 35% Lower Right	畫中畫 35% 右下
+	Picture-in-picture: 35 % scale in the lower right	畫中畫：右下角 35% 縮放
+	Split Screen Left	分割畫面 左
+	Split screen: the middle half of the picture fills the left half of the frame	分割畫面：畫面中間的一半填滿畫框的左半邊
+	Split Screen Right	分割畫面 右
+	Split screen: the middle half of the picture fills the right half of the frame	分割畫面：畫面中間的一半填滿畫框的右半邊
+# Creative Looks: CRT (P3)
+	CRT	CRT
+	Scanline Strength	掃描線強度
+	Line Count	掃描線數
+	Mask	遮罩
+	Mask Strength	遮罩強度
+	Corner Darkening	四角暗化
+	Aperture Grille	柵條蔭罩
+	Shadow Mask	蔭罩
+	Slot Mask	槽形蔭罩
+# Creative Looks: Oil Paint (P4)
+	Oil Paint	油畫
+	Detail	細節
+	Texture	紋理
+	Facet	切面
+	Daubs	厚塗
+	Dry Brush	乾筆
+	Fresco	壁畫
+	Knife	刮刀
+	Sponge	海綿
+# Creative Looks: Pixel Sort (P5)
+	Pixel Sort	像素排序
+	Sort By	排序依據
+	Lower Threshold	下限臨界值
+	Upper Threshold	上限臨界值
+	Ascending	遞增
+# Temporal Denoise (EffectsSDK review)
+	Temporal Denoise	時間降噪
+	Frames Each Side	每側影格數
+	Motion Threshold	動態臨界值
+	Show Motion	顯示動態
+	No signal	無訊號
+	Locating	正在定位
+	Locked	已鎖定
+	Freewheel	自由運行
+	Scrubbing	拖曳中
+	Sending	正在傳送

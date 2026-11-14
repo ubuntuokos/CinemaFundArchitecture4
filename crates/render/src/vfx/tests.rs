@@ -48,7 +48,7 @@ fn picture(w: usize, h: usize) -> Image {
     img
 }
 
-fn run(id: &str, e: &EffectInstance, img: &Image, cx: &FxCtx) -> Image {
+fn run(id: &str, e: &EffectInstance, img: &Image, cx: &FxCtx<'_>) -> Image {
     let mut o = img.clone();
     crate::effects::apply(&mut o, e, cx);
     let _ = id;
@@ -124,18 +124,23 @@ const NEW_IDS: &[&str] = &[
     "metadata_burnin",
     "echo",
     "slit_scan",
+    "temporal_denoise",
     "bit_crush",
     "block_glitch",
     "databend",
     "vhs",
     "scan_line_jitter",
     "tile_jitter",
+    "pixel_sort",
     "lightning",
     "cell_pattern",
     "checkerboard",
     "ellipse",
     "paint_bucket",
     "write_on",
+    "auto_color",
+    "auto_contrast",
+    "auto_levels",
     "alpha_glow",
     "block_dissolve",
     "directional_blur_legacy",
@@ -246,6 +251,9 @@ fn neutral_parameters_are_identity() {
         ("skin_smoothing", vec![("texture", ParamValue::Float(100.0))]),
         ("skin_smoothing", vec![("radius", ParamValue::Float(0.0))]),
         ("low_light", vec![("amount", ParamValue::Float(0.0))]),
+        ("auto_color", vec![("blend", ParamValue::Float(100.0))]),
+        ("auto_contrast", vec![("blend", ParamValue::Float(100.0))]),
+        ("auto_levels", vec![("blend", ParamValue::Float(100.0))]),
         ("vr_blur", vec![]),
         ("vr_sharpen", vec![]),
         ("vr_denoise", vec![]),
@@ -265,6 +273,7 @@ fn neutral_parameters_are_identity() {
         ("posterize_time", vec![]),
         ("echo", vec![]),
         ("slit_scan", vec![]),
+        ("temporal_denoise", vec![]),
         ("film_gate", vec![("weave", ParamValue::Float(0.0)), ("weave_rotation", ParamValue::Float(0.0)), ("flicker", ParamValue::Float(0.0))]),
         ("bit_crush", vec![("bits", ParamValue::Float(16.0))]),
         ("block_glitch", vec![("count", ParamValue::Float(0.0))]),
@@ -1513,4 +1522,179 @@ fn film_gate_counts_exact_frame_boundaries_as_their_own_frame() {
         }
     }
     assert_eq!(super::distort::gate_frame(f64::NAN, 24.0), 0.0);
+}
+
+/// A horizontal ramp in display values from `a` (left) to `b` (right).
+fn ramp(w: usize, h: usize, a: [f32; 3], b: [f32; 3]) -> Image {
+    let mut img = Image::new(w, h);
+    for y in 0..h {
+        for x in 0..w {
+            let t = x as f32 / (w - 1) as f32;
+            let l = dec([a[0] + (b[0] - a[0]) * t, a[1] + (b[1] - a[1]) * t, a[2] + (b[2] - a[2]) * t]);
+            img.px[(y * w + x) * 4..(y * w + x) * 4 + 4].copy_from_slice(&[l[0], l[1], l[2], 1.0]);
+        }
+    }
+    img
+}
+
+#[test]
+fn auto_contrast_stretches_and_keeps_the_cast() {
+    // a dull, bluish ramp
+    let img = ramp(64, 4, [0.2, 0.25, 0.35], [0.6, 0.65, 0.75]);
+    let o = run("auto_contrast", &inst("auto_contrast"), &img, &cx());
+    let (l, r) = (enc_px(&o, 0, 2), enc_px(&o, 63, 2));
+    assert!(l[0] < 0.02 && r[2] > 0.98, "not stretched: {l:?} … {r:?}");
+    // one map for all channels: the blue cast is still there in the middle
+    let m = enc_px(&o, 32, 2);
+    assert!(m[2] - m[0] > 0.2, "cast removed: {m:?}");
+    // Blend With Original 50 %: halfway between the input and the full correction (display space)
+    let mut e = inst("auto_contrast");
+    setf(&mut e, "blend", 50.0);
+    let half = run("auto_contrast", &e, &img, &cx());
+    let (i, f, h) = (enc_px(&img, 10, 2)[1], enc_px(&o, 10, 2)[1], enc_px(&half, 10, 2)[1]);
+    assert!(close(h, (i + f) / 2.0, 2e-3), "blend: {i} {f} {h}");
+}
+
+#[test]
+fn auto_levels_stretches_each_channel() {
+    let img = ramp(64, 4, [0.2, 0.25, 0.35], [0.6, 0.65, 0.75]);
+    let o = run("auto_levels", &inst("auto_levels"), &img, &cx());
+    let (l, r, m) = (enc_px(&o, 0, 2), enc_px(&o, 63, 2), enc_px(&o, 32, 2));
+    assert!(l[..3].iter().all(|v| *v < 0.02), "black not neutral: {l:?}");
+    assert!(r[..3].iter().all(|v| *v > 0.98), "white not neutral: {r:?}");
+    assert!((m[2] - m[0]).abs() < 0.03, "cast kept: {m:?}");
+}
+
+#[test]
+fn auto_color_neutralises_the_ends_and_snaps_midtones() {
+    // shadows and highlights carry a warm cast, a red patch sits in the middle
+    let mut img = ramp(64, 8, [0.12, 0.08, 0.05], [0.95, 0.9, 0.82]);
+    for y in 0..8 {
+        for x in 28..36 {
+            let l = dec([0.8, 0.2, 0.2]);
+            img.px[(y * 64 + x) * 4..(y * 64 + x) * 4 + 4].copy_from_slice(&[l[0], l[1], l[2], 1.0]);
+        }
+    }
+    let o = run("auto_color", &inst("auto_color"), &img, &cx());
+    let (d, b) = (enc_px(&o, 0, 4), enc_px(&o, 63, 4));
+    assert!(d[0].max(d[1]).max(d[2]) - d[0].min(d[1]).min(d[2]) < 0.03, "shadows not neutral: {d:?}");
+    assert!(b[0].max(b[1]).max(b[2]) - b[0].min(b[1]).min(b[2]) < 0.03, "highlights not neutral: {b:?}");
+    let red = enc_px(&o, 32, 4);
+    assert!(red[0] > red[1] + 0.4, "the red patch lost its colour: {red:?}");
+
+    // neutral black and white, bluish greys between: only Snap Neutral Midtones fixes the greys
+    let mut img = solid(64, 8, [0.45, 0.5, 0.6]);
+    for y in 0..8 {
+        for (x, v) in [(0, 0.0), (1, 0.0), (62, 1.0), (63, 1.0)] {
+            img.px[(y * 64 + x) * 4..(y * 64 + x) * 4 + 4].copy_from_slice(&[v, v, v, 1.0]);
+        }
+    }
+    let mut e = inst("auto_color");
+    setf(&mut e, "black_clip", 0.0);
+    setf(&mut e, "white_clip", 0.0);
+    let plain = enc_px(&run("auto_color", &e, &img, &cx()), 32, 4);
+    assert!(plain[2] - plain[0] > 0.1, "midtones changed without the switch: {plain:?}");
+    set(&mut e, "snap_neutral", ParamValue::Bool(true));
+    let snapped = enc_px(&run("auto_color", &e, &img, &cx()), 32, 4);
+    assert!((snapped[2] - snapped[0]).abs() < 0.02 && (snapped[1] - snapped[0]).abs() < 0.02, "grey not snapped: {snapped:?}");
+}
+
+#[test]
+fn auto_effects_leave_a_flat_frame_alone() {
+    // a flat frame has no range to stretch: no noise blown up, no change
+    let img = solid(16, 16, [0.4, 0.3, 0.2]);
+    for id in ["auto_color", "auto_contrast", "auto_levels"] {
+        let o = run(id, &inst(id), &img, &cx());
+        assert!(max_diff(&o, &img) < 1e-6, "{id} changed a flat frame");
+    }
+    // and an empty or fully transparent one
+    for id in ["auto_color", "auto_contrast", "auto_levels"] {
+        let mut z = Image::new(4, 4);
+        crate::effects::apply(&mut z, &inst(id), &cx());
+        assert!(z.px.iter().all(|v| *v == 0.0), "{id}");
+        let mut none = Image::new(0, 0);
+        crate::effects::apply(&mut none, &inst(id), &cx());
+    }
+}
+
+#[test]
+fn auto_contrast_smoothing_stops_at_a_scene_cut() {
+    // a dark shot until 0.4 s, then a brighter one; the effect is looked at 0.5 s in
+    fn cut(x: f64, _y: f64, t: f64) -> [f32; 3] {
+        let u = (x / 63.0) as f32;
+        let v = if t < 0.4 { 0.1 + 0.3 * u } else { 0.3 + 0.6 * u };
+        let l = cfa4_color::srgb_to_linear(v);
+        [l, l, l]
+    }
+    let env = ClipEnv { w: 64, h: 4, fps: 24.0, secs: 2.0, now: 0.5, key: 5, seq: (64, 4), pic: cut };
+    let at = |smoothing: f64, scene: bool| {
+        let mut e = inst("auto_contrast");
+        setf(&mut e, "smoothing", smoothing);
+        set(&mut e, "scene_detect", ParamValue::Bool(scene));
+        let mut img = env.render(0.5, 1.0);
+        crate::effects::apply(&mut img, &e, &FxCtx { seconds: 0.5, env: Some(&env), ..cx() });
+        img
+    };
+    let alone = at(0.0, false);
+    // the window reaches back into the dark shot and drags the correction off
+    assert!(max_diff(&at(0.5, false), &alone) > 0.02, "smoothing had no effect");
+    // Scene Detect keeps the window inside the current shot (all its frames are the same)
+    assert!(max_diff(&at(0.5, true), &alone) < 1e-5, "smoothing crossed the cut");
+}
+
+/// Grey 0.5 with fresh noise every frame (±0.08 in display space).
+fn noisy(x: f64, y: f64, t: f64) -> [f32; 3] {
+    let f = (t * 24.0).round() as i64;
+    let v = 0.5 + (hash01(x as i64, y as i64, f, 21) - 0.5) * 0.16;
+    let l = cfa4_color::srgb_to_linear(v);
+    [l, l, l]
+}
+
+fn display_std(img: &Image) -> f32 {
+    let v: Vec<f32> = (0..img.h).flat_map(|y| (0..img.w).map(move |x| (x, y))).map(|(x, y)| enc_px(img, x, y)[0]).collect();
+    let n = v.len().max(1) as f32;
+    let mean = v.iter().sum::<f32>() / n;
+    (v.iter().map(|x| (x - mean) * (x - mean)).sum::<f32>() / n).sqrt()
+}
+
+#[test]
+fn temporal_denoise_settles_noise_that_changes_every_frame() {
+    let env = ClipEnv { w: 48, h: 32, fps: 24.0, secs: 2.0, now: 1.0, key: 9, seq: (48, 32), pic: noisy };
+    let src = env.render(1.0, 1.0);
+    let mut e = inst("temporal_denoise");
+    setf(&mut e, "amount", 100.0);
+    // the noise (±0.08) is well inside a generous threshold: every neighbour counts
+    setf(&mut e, "threshold", 30.0);
+    let mut img = src.clone();
+    crate::effects::apply(&mut img, &e, &FxCtx { seconds: 1.0, env: Some(&env), ..cx() });
+    let (before, after) = (display_std(&src), display_std(&img));
+    // five frames averaged: ideally √5 ≈ 2.2× quieter
+    assert!(after < before / 1.8, "noise {before} → {after}");
+    // Amount 0: untouched; no environment (adjustment layer, isolated render): untouched
+    setf(&mut e, "amount", 0.0);
+    let mut same = src.clone();
+    crate::effects::apply(&mut same, &e, &FxCtx { seconds: 1.0, env: Some(&env), ..cx() });
+    assert_eq!(max_diff(&same, &src), 0.0);
+}
+
+#[test]
+fn temporal_denoise_does_not_ghost_moving_things() {
+    fn moving(x: f64, _y: f64, t: f64) -> [f32; 3] {
+        let v = if (x - t * 100.0).abs() < 4.0 { 1.0 } else { 0.05 };
+        [v, v, v]
+    }
+    let env = ClipEnv { w: 96, h: 8, fps: 24.0, secs: 1.0, now: 0.5, key: 10, seq: (96, 8), pic: moving };
+    let src = env.render(0.5, 1.0);
+    let mut e = inst("temporal_denoise");
+    setf(&mut e, "amount", 100.0);
+    let mut img = src.clone();
+    crate::effects::apply(&mut img, &e, &FxCtx { seconds: 0.5, env: Some(&env), ..cx() });
+    // the bar is at x ≈ 50 now and moves ~4 px a frame: no trail before or behind it
+    assert!(max_diff(&img, &src) < 1e-3, "ghosting: {}", max_diff(&img, &src));
+    // Show Motion: white where the bar moves, black where the frame stands still
+    set(&mut e, "show_motion", ParamValue::Bool(true));
+    let mut m = src.clone();
+    crate::effects::apply(&mut m, &e, &FxCtx { seconds: 0.5, env: Some(&env), ..cx() });
+    assert!(enc_px(&m, 50, 4)[0] > 0.9, "bar not marked: {:?}", enc_px(&m, 50, 4));
+    assert!(enc_px(&m, 10, 4)[0] < 0.05, "still area marked: {:?}", enc_px(&m, 10, 4));
 }

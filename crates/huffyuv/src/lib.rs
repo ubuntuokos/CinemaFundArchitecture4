@@ -193,7 +193,7 @@ impl Decoder {
         (w as usize * k, self.height as usize / k)
     }
 
-    fn decode_yuv(&self, br: &mut BitReader) -> Result<Vec<Vec<u8>>> {
+    fn decode_yuv(&self, br: &mut BitReader<'_>) -> Result<Vec<Vec<u8>>> {
         let (w, h) = self.coded_size(self.width);
         let cw = w / 2;
         let mut y = vec![0u8; w * h];
@@ -237,7 +237,7 @@ impl Decoder {
         Ok(vec![y, u, v])
     }
 
-    fn decode_rgb(&self, br: &mut BitReader) -> Result<Vec<Vec<u8>>> {
+    fn decode_rgb(&self, br: &mut BitReader<'_>) -> Result<Vec<Vec<u8>>> {
         let (w, h) = self.coded_size(self.width);
         let n = w * h;
         let alpha = self.format == Format::Rgba;

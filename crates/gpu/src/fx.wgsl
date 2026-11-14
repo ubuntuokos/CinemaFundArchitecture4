@@ -68,6 +68,14 @@ const OP_SKIN_APPLY: u32 = 44u;
 const OP_SKIN_MASK: u32 = 45u;
 const OP_HALFTONE: u32 = 46u;
 const OP_DITHER: u32 = 47u;
+const OP_GLITCH_BIT_CRUSH: u32 = 48u;
+const OP_GLITCH_BLOCKS: u32 = 49u;
+const OP_GLITCH_DATABEND: u32 = 50u;
+const OP_GLITCH_VHS: u32 = 51u;
+const OP_GLITCH_SCAN: u32 = 52u;
+const OP_GLITCH_TILE: u32 = 53u;
+const OP_CRT: u32 = 54u;
+const OP_OIL_PAINT: u32 = 55u;
 
 fn size() -> vec2<i32> {
     return vec2<i32>(i32(u.i0.y), i32(u.i0.z));
@@ -476,6 +484,249 @@ fn dither_px(e: vec3<f32>, d: f32, off: u32, len: u32, levels: f32, spread: f32)
     return out;
 }
 
+// ---- Glitch folder (`cfa4_render::vfx::glitch`): glitchESP's hash and xorshift32 generator
+
+fn glitch_hash32(x0: u32) -> u32 {
+    var x = x0;
+    x ^= x >> 16u;
+    x *= 0x7feb352du;
+    x ^= x >> 15u;
+    x *= 0x846ca68bu;
+    return x ^ (x >> 16u);
+}
+
+// `glitch::state_at`
+fn glitch_state(base: u32, index: u32) -> u32 {
+    let s = glitch_hash32(base ^ (index * 0x85ebca6bu));
+    return select(s, 0x01234567u, s == 0u);
+}
+
+fn glitch_next(st: ptr<function, u32>) -> u32 {
+    var x = *st;
+    x ^= x << 13u;
+    x ^= x >> 17u;
+    x ^= x << 5u;
+    *st = x;
+    return x;
+}
+
+// uniform in [0, 1)
+fn glitch_f(st: ptr<function, u32>) -> f32 {
+    return f32(glitch_next(st) >> 8u) * (1.0 / 16777216.0);
+}
+
+// uniform integer in [lo, hi] (no draw when hi <= lo)
+fn glitch_range(st: ptr<function, u32>, lo: i32, hi: i32) -> i32 {
+    if hi <= lo {
+        return lo;
+    }
+    let span = u32(hi - lo) + 1u;
+    return lo + i32(glitch_next(st) % span);
+}
+
+var<private> GLITCH_BAYER: array<u32, 16> = array<u32, 16>(0u, 8u, 2u, 10u, 12u, 4u, 14u, 6u, 3u, 11u, 1u, 9u, 15u, 7u, 13u, 5u);
+
+fn rem_euclid_i(a: i32, n: i32) -> i32 {
+    let r = a % n;
+    return select(r, r + n, r < 0);
+}
+
+// `Image::unpremul`
+fn unpremul(p: vec4<f32>) -> vec3<f32> {
+    if p.a <= 1e-6 {
+        return vec3(0.0);
+    }
+    return p.rgb / p.a;
+}
+
+// Databend (`glitch::databend`) for one row: the breaks are rebuilt from the generator in every
+// invocation (at most 40, sorted stably by position like `sort_by_key`).
+fn glitch_databend_row(y: i32) {
+    let s = size();
+    let w = s.x;
+    var st = u.i1.x;
+    let n = clamp(u.i1.y, 1u, 40u);
+    let shift = clamp(u.p0.x, 0.0, 1.0);
+    let color = clamp(u.p0.y, 0.0, 1.0);
+    var at: array<u32, 40>;
+    var ord: array<u32, 40>;
+    for (var i = 0u; i < n; i++) {
+        at[i] = glitch_next(&st) >> 16u;
+        ord[i] = i;
+    }
+    for (var i = 1u; i < n; i++) {
+        let k = ord[i];
+        var j = i;
+        while j > 0u && at[ord[j - 1u]] > at[k] {
+            ord[j] = ord[j - 1u];
+            j--;
+        }
+        ord[j] = k;
+    }
+    var bshift: array<i32, 40>;
+    var bdc: array<vec3<f32>, 40>;
+    var bsmear: array<u32, 40>;
+    var bat: array<u32, 40>;
+    let max_shift = i32(shift * 96.0);
+    let max_c = i32(color * 10.0);
+    var sh = 0;
+    var dr = 0;
+    var dg = 0;
+    var db = 0;
+    for (var i = 0u; i < n; i++) {
+        let kind = glitch_next(&st) % 10u;
+        if kind == 0u {
+            sh = 0;
+            dr = 0;
+            dg = 0;
+            db = 0;
+        } else {
+            if max_shift > 0 {
+                sh += glitch_range(&st, -max_shift, max_shift);
+            }
+            if max_c > 0 {
+                dr = clamp(dr + glitch_range(&st, -max_c, max_c), -14, 14);
+                dg = clamp(dg + glitch_range(&st, -2 * max_c, 2 * max_c), -28, 28);
+                db = clamp(db + glitch_range(&st, -max_c, max_c), -14, 14);
+            }
+        }
+        bat[i] = at[ord[i]];
+        bshift[i] = sh;
+        bdc[i] = vec3(f32(dr) / 31.0, f32(dg) / 63.0, f32(db) / 31.0);
+        bsmear[i] = select(0u, 1u, kind == 1u && color > 0.0);
+    }
+    let bs = clamp(i32(u.i1.w), 1, max(w, s.y));
+    let cols = u32((w + bs - 1) / bs);
+    let total = cols * u32((s.y + bs - 1) / bs);
+    // (at · total) >> 16 without 64-bit integers: `at` has 16 bits
+    let t_hi = total >> 16u;
+    let t_lo = total & 0xFFFFu;
+    let first = u32(y / bs) * cols;
+    var i = 0u;
+    var cur = -1;
+    loop {
+        if i >= n {
+            break;
+        }
+        let blk = bat[i] * t_hi + ((bat[i] * t_lo) >> 16u);
+        if blk > first {
+            break;
+        }
+        cur = i32(i);
+        i++;
+    }
+    var x = 0;
+    // each round either ends the row or moves on to the next break
+    for (var guard = 0u; guard <= n + 1u && x < w; guard++) {
+        var end = w;
+        if i < n {
+            let blk = bat[i] * t_hi + ((bat[i] * t_lo) >> 16u);
+            if blk < first + cols {
+                end = min(i32(blk - min(blk, first)) * bs, w);
+            }
+        }
+        if end > x {
+            var sft = 0;
+            var dc = vec3(0.0);
+            var smear = false;
+            if cur >= 0 {
+                sft = bshift[cur];
+                dc = bdc[cur];
+                smear = bsmear[cur] != 0u;
+            }
+            let sx = rem_euclid_i(x + sft * w / 256, w);
+            for (var xx = x; xx < end; xx++) {
+                var j = sx;
+                if !smear {
+                    j = (sx + (xx - x)) % w;
+                }
+                var o = ld(vec2(j, y));
+                let a = o.a;
+                if a > 1e-6 && any(dc != vec3(0.0)) {
+                    let c = dec(enc(o.rgb / a) + dc);
+                    o = vec4(c * a, a);
+                }
+                textureStore(dst, vec2(xx, y), o);
+            }
+            x = end;
+        }
+        if x < w {
+            if i >= n {
+                break;
+            }
+            cur = i32(i);
+            i++;
+        }
+    }
+    // (the CPU leaves anything not covered as it was)
+    for (var xx = x; xx < w; xx++) {
+        textureStore(dst, vec2(xx, y), ld(vec2(xx, y)));
+    }
+}
+
+// VHS (`glitch::vhs`) for one row: the generator's draws in the CPU's order, then the row's
+// red/blue low-pass left to right.
+fn glitch_vhs_row(y: i32) {
+    let s = size();
+    let w = s.x;
+    let h = s.y;
+    var st = glitch_state(u.i1.x, u32(y));
+    let alpha = u.p0.x;
+    let wobble = clamp(u.p0.y, 0.0, f32(w));
+    var shift = i32(wobble * sin(f32(y) * u.p0.z + u.p0.w));
+    if wobble > 0.0 {
+        if (glitch_next(&st) & 7u) == 0u {
+            shift += glitch_range(&st, -1, 1);
+        }
+    }
+    var torn = false;
+    let head_rows = min(i32(u.i1.y), h);
+    let head_start = h - head_rows;
+    if head_rows > 0 && y >= head_start {
+        shift += (y - head_start) * 3 + glitch_range(&st, 0, max(i32(u.p2.z), 1));
+        torn = true;
+    }
+    let bar_top = i32(u.p1.x);
+    let bar_h = i32(u.p1.y);
+    if bar_h > 0 && y >= bar_top && y < bar_top + bar_h {
+        let j = max(i32(u.p1.z), 1);
+        shift += glitch_range(&st, -j, j);
+        torn = true;
+    }
+    let chance = u.p2.x + select(0.0, 0.6, torn);
+    var dashes = 0u;
+    if glitch_f(&st) < chance {
+        dashes = 1u + glitch_next(&st) % select(2u, 6u, torn);
+    }
+    var m0: array<i32, 6>;
+    var m1: array<i32, 6>;
+    var mc: array<f32, 6>;
+    for (var k = 0u; k < dashes; k++) {
+        let x0 = glitch_range(&st, 0, w - 1);
+        let len = glitch_range(&st, 2, max(i32(u.p1.w), 2));
+        m0[k] = x0;
+        m1[k] = x0 + len;
+        mc[k] = select(u.p2.w, 1.0, (glitch_next(&st) & 3u) != 0u);
+    }
+    var first = unpremul(ld(vec2(clamp(0 - shift, 0, w - 1), y)));
+    var r = first.x;
+    var b = first.z;
+    let d = select(1.0, u.p2.y, (y & 1) == 1);
+    for (var x = 0; x < w; x++) {
+        let sp = ld(vec2(clamp(x - shift, 0, w - 1), y));
+        let c = unpremul(sp);
+        r += (c.x - r) * alpha;
+        b += (c.z - b) * alpha;
+        var o = vec4(r * sp.a * d, sp.g * d, b * sp.a * d, sp.a);
+        for (var k = 0u; k < dashes; k++) {
+            if x >= m0[k] && x < m1[k] {
+                o = vec4(mc[k], mc[k], mc[k], 1.0);
+            }
+        }
+        textureStore(dst, vec2(x, y), o);
+    }
+}
+
 // ---- per-pixel colour effects on straight colour (`Image::map_rgb`)
 
 // ---- Six-Point Pin (`gpufx::six_point_source`)
@@ -483,6 +734,91 @@ fn dither_px(e: vec3<f32>, d: f32, off: u32, len: u32, levels: f32, spread: f32)
 const SIX_POINT_STEPS: i32 = 8;
 
 // A quadratic Bézier edge (start a, control c, end b) at t: xy = point, zw = derivative.
+// `gpufx::crt_warp`: tube coordinates of a pixel centre, x < -2 outside the curved screen.
+fn crt_warp(pc: vec2<f32>, w: f32, h: f32, curve: f32) -> vec2<f32> {
+    let uu = pc.x / w * 2.0 - 1.0;
+    let vv = pc.y / h * 2.0 - 1.0;
+    let cu = uu * (1.0 + curve * vv * vv);
+    let cv = vv * (1.0 + curve * uu * uu);
+    if abs(cu) > 1.0 || abs(cv) > 1.0 {
+        return vec2(-4.0, 0.0);
+    }
+    return vec2(cu, cv);
+}
+
+fn crt_odd(v: f32) -> bool {
+    return v - 2.0 * floor(v * 0.5) >= 1.0;
+}
+
+// `gpufx::crt_shade`
+fn crt_shade(c: vec2<f32>, pc: vec2<f32>, scan: f32, lines: f32, mask: u32, mask_amt: f32, pitch: f32, corner: f32) -> vec3<f32> {
+    let t = (c.y + 1.0) * 0.5 * lines;
+    let beam = 1.0 - scan * (1.0 - sin(3.14159265358979 * (t - floor(t))));
+    var m = vec3(1.0);
+    if mask > 0u && mask_amt > 0.0 {
+        let tx = pc.x / pitch;
+        let col = floor(tx);
+        var lit = true;
+        var sx = tx;
+        if mask == 2u {
+            if crt_odd(floor(pc.y / pitch * 2.0)) {
+                sx += 0.5;
+            }
+        } else if mask == 3u {
+            let ty = pc.y / pitch + select(0.0, 0.5, crt_odd(col));
+            lit = ty - floor(ty) >= 0.25;
+        }
+        let k = min(u32(floor((sx - floor(sx)) * 3.0)), 2u);
+        m = vec3(1.0 - mask_amt);
+        if lit {
+            m[k] = 1.0;
+        }
+    }
+    let rim = sqrt(sqrt(max((1.0 - c.x * c.x) * (1.0 - c.y * c.y), 0.0)));
+    return m * (beam * (1.0 - corner * (1.0 - rim)));
+}
+
+// `gpufx::oil_sectors`
+fn oil_sectors(style: u32, dx: i32, dy: i32, r: i32) -> u32 {
+    if style != 0u && dx * dx + dy * dy > r * r {
+        return 0u;
+    }
+    let e = dx >= 0; let n = dy >= 0; let w = dx <= 0; let s = dy <= 0;
+    if style == 0u || style == 4u {
+        return select(0u, 1u, e && n) | select(0u, 2u, w && n) | select(0u, 4u, w && s) | select(0u, 8u, e && s);
+    }
+    return select(0u, 1u, e && n && dx >= dy)
+        | select(0u, 2u, e && n && dy >= dx)
+        | select(0u, 4u, w && n && dy >= -dx)
+        | select(0u, 8u, w && n && -dx >= dy)
+        | select(0u, 16u, w && s && -dx >= -dy)
+        | select(0u, 32u, w && s && -dy >= -dx)
+        | select(0u, 64u, e && s && -dy >= dx)
+        | select(0u, 128u, e && s && dx >= -dy);
+}
+
+// `gpufx::oil_texture`
+fn oil_texture(style: u32, p: vec2<i32>, r: u32, seed: u32) -> f32 {
+    let weave = f32((u32(p.x) / 2u + u32(p.y) / 2u) % 2u) - 0.5;
+    let rf = f32(max(r, 1u));
+    switch style {
+        case 2u: {
+            let ix = i32(floor((f32(p.x) + 0.5) / (8.0 * rf)));
+            let iy = i32(floor((f32(p.y) + 0.5) / max(rf / 3.0, 1.0)));
+            return 0.2 * weave + grain_lattice(ix, iy, seed, 0u);
+        }
+        case 3u: {
+            return 0.2 * weave + grain_noise(p, 1.0 / (4.0 * rf), seed, 0u);
+        }
+        case 5u: {
+            return clamp(2.0 * grain_noise(p, 2.0 / rf, seed, 0u), -0.5, 0.5);
+        }
+        default: {
+            return 0.4 * weave;
+        }
+    }
+}
+
 fn bezier2(a: vec2<f32>, c: vec2<f32>, b: vec2<f32>, t: f32) -> vec4<f32> {
     let s = 1.0 - t;
     let m = 2.0 * t * (1.0 - t);
@@ -1052,6 +1388,104 @@ fn pixel(op: u32, p: vec2<i32>) -> vec4<f32> {
             }
             return vec4(dec(out + (e - out) * blend) * a, a);
         }
+        case OP_GLITCH_BIT_CRUSH: {
+            // `glitch::bit_crush` (on straight colour, like `Image::map_rgb`)
+            let o = ld(p);
+            let a = o.a;
+            if a <= 1e-6 {
+                return o;
+            }
+            let top = u.p0.x;
+            let cell = u.p0.y;
+            var t = 0.5;
+            if u.p0.z != 0.0 {
+                let bx = u32(f32(p.x) / cell) & 3u;
+                let by = u32(f32(p.y) / cell) & 3u;
+                t = (f32(GLITCH_BAYER[by * 4u + bx]) + 0.5) / 16.0;
+            }
+            let e = clamp(enc(o.rgb / a), vec3(0.0), vec3(1.0));
+            let q = min(floor(e * top + t), vec3(top)) / top;
+            return vec4(dec(q) * a, a);
+        }
+        case OP_GLITCH_BLOCKS: {
+            // `glitch::block_glitch`: replay the blocks; the last one written over this pixel wins
+            let count = min(u.i1.x, 400u);
+            let tw = clamp(i32(u.i1.y), 1, s.x);
+            let th = clamp(i32(u.i1.z), 1, s.y);
+            var st = u.i1.w;
+            let maxd = max(i32(u.p0.x), 0);
+            let snap = u.p0.y != 0.0;
+            let swap = u.p0.z != 0.0;
+            let xmax = s.x - tw;
+            let ymax = s.y - th;
+            var q = p;
+            for (var i = 0u; i < count; i++) {
+                let sx = glitch_range(&st, 0, xmax);
+                let sy = glitch_range(&st, 0, ymax);
+                var dx = clamp(sx + glitch_range(&st, -maxd, maxd), 0, xmax);
+                var dy = clamp(sy + glitch_range(&st, -maxd, maxd), 0, ymax);
+                let roll = glitch_f(&st);
+                if roll < 0.7 && snap {
+                    let gx = min(dx - dx % tw, xmax);
+                    let gy = min(dy - dy % th, ymax);
+                    if abs(gx - sx) <= maxd {
+                        dx = gx;
+                    }
+                    if abs(gy - sy) <= maxd {
+                        dy = gy;
+                    }
+                }
+                let in_d = p.x >= dx && p.x < dx + tw && p.y >= dy && p.y < dy + th;
+                let in_s = p.x >= sx && p.x < sx + tw && p.y >= sy && p.y < sy + th;
+                if in_d {
+                    q = p - vec2(dx, dy) + vec2(sx, sy);
+                } else if swap && in_s {
+                    q = p - vec2(sx, sy) + vec2(dx, dy);
+                }
+            }
+            return ld(q);
+        }
+        case OP_GLITCH_SCAN: {
+            // `glitch::scan_line_jitter`: a wrapped linear sample along the jittered line
+            let vertical = u.i1.z != 0u;
+            let line = select(p.y, p.x, vertical);
+            let n = select(s.x, s.y, vertical);
+            var st = glitch_state(u.i1.x, u32(line));
+            let r = glitch_f(&st) * 2.0 - 1.0;
+            var jit = 0.0;
+            if abs(r) >= u.p0.y {
+                jit = r * u.p0.x;
+            }
+            let pos = f32(select(p.x, p.y, vertical)) + 0.5 + jit * f32(n);
+            let f = pos - 0.5;
+            let i0f = floor(f);
+            let t = f - i0f;
+            let i0 = rem_euclid_i(i32(i0f), n);
+            let i1 = (i0 + 1) % n;
+            var a = vec4(0.0);
+            var b = vec4(0.0);
+            if vertical {
+                a = ld(vec2(p.x, i0));
+                b = ld(vec2(p.x, i1));
+            } else {
+                a = ld(vec2(i0, p.y));
+                b = ld(vec2(i1, p.y));
+            }
+            return a + (b - a) * t;
+        }
+        case OP_GLITCH_TILE: {
+            // `glitch::tile_jitter`: every other band slides (band parity from its floor, which is
+            // exact where `rem_euclid` is)
+            var band = pc.y / f32(s.y);
+            if u.p0.w == 0.0 {
+                band = pc.x / f32(s.x);
+            }
+            let fb = floor(band * u.p0.z);
+            if fb - 2.0 * floor(fb / 2.0) == 0.0 {
+                return sample_clamped(pc.x + u.p0.x, pc.y + u.p0.y);
+            }
+            return ld(p);
+        }
         case OP_DITHER: {
             let block = i32(max(u.i1.y, 1u));
             let b = p / vec2(block);
@@ -1085,6 +1519,72 @@ fn pixel(op: u32, p: vec2<i32>) -> vec4<f32> {
                 return vec4(0.0);
             }
             return vec4(dec(c) * a, a);
+        }
+        case OP_CRT: {
+            let curve = u.p1.x;
+            let c = crt_warp(pc, f32(s.x), f32(s.y), curve);
+            if c.x < -2.0 {
+                return vec4(0.0);
+            }
+            var q = ld(p);
+            if curve != 0.0 {
+                q = sample_clamped((c.x + 1.0) * 0.5 * f32(s.x), (c.y + 1.0) * 0.5 * f32(s.y));
+            }
+            let a = q.a;
+            if a <= 1e-6 {
+                return q;
+            }
+            let k = crt_shade(c, pc, u.p0.x, u.p0.y, u.i1.x, u.p0.z, u.p0.w, u.p1.y);
+            return vec4(dec(enc(q.rgb / a) * k * u.p1.z) * a, a);
+        }
+        case OP_OIL_PAINT: {
+            let style = u.i1.x;
+            let r = i32(clamp(u.i1.y, 1u, 24u));
+            let q = u.p0.x;
+            let n = select(8u, 4u, style == 0u || style == 4u);
+            var sum: array<vec4<f32>, 8>;
+            var sq: array<vec3<f32>, 8>;
+            var cnt: array<f32, 8>;
+            for (var dy = -r; dy <= r; dy++) {
+                for (var dx = -r; dx <= r; dx++) {
+                    let m = oil_sectors(style, dx, dy, r);
+                    if m == 0u {
+                        continue;
+                    }
+                    let c = ld(clamp(p + vec2(dx, dy), vec2(0), s - vec2(1)));
+                    for (var k = 0u; k < n; k++) {
+                        if ((m >> k) & 1u) == 1u {
+                            sum[k] += c;
+                            sq[k] += c.rgb * c.rgb;
+                            cnt[k] += 1.0;
+                        }
+                    }
+                }
+            }
+            var mean: array<vec4<f32>, 8>;
+            var sd: array<f32, 8>;
+            var lo = 3.4e38;
+            for (var k = 0u; k < n; k++) {
+                let c = max(cnt[k], 1.0);
+                mean[k] = sum[k] / c;
+                let v = sq[k] / c - mean[k].rgb * mean[k].rgb;
+                sd[k] = sqrt(max(v.x + v.y + v.z, 0.0));
+                lo = min(lo, sd[k]);
+            }
+            var o = vec4(0.0);
+            var wsum = 0.0;
+            for (var k = 0u; k < n; k++) {
+                let wk = 1.0 / (1.0 + powf(sd[k] / (lo + 1e-4), q));
+                o += mean[k] * wk;
+                wsum += wk;
+            }
+            o = o / max(wsum, 1e-12);
+            let a = o.a;
+            if a <= 1e-6 {
+                return vec4(0.0);
+            }
+            let t = 1.0 + u.p0.y * oil_texture(style, p, u32(r), u.i1.z);
+            return vec4(dec(enc(o.rgb / a) * t) * a, a);
         }
         case OP_FILM_GRAIN: {
             let o = ld(p);
@@ -1207,6 +1707,15 @@ fn fx_run(@builtin(global_invocation_id) id: vec3<u32>) {
     let lines = select(s.y, s.x, vertical);
     let line = i32(id.x);
     if line >= lines {
+        return;
+    }
+    // the Glitch folder's row effects (rows: i1.z = 0)
+    if u.i0.x == OP_GLITCH_DATABEND {
+        glitch_databend_row(line);
+        return;
+    }
+    if u.i0.x == OP_GLITCH_VHS {
+        glitch_vhs_row(line);
         return;
     }
     let r = i32(u.i1.x);

@@ -4365,6 +4365,10 @@
 	{n} more	Ещё {n}
 	Block	Блок
 	parallel	параллельно
+	page {page}: a spine's vertical position works on card pages only; it is ignored	страница {page}: вертикальное положение оси действует только на страницах-карточках; оно пропускается
+	on a card: centered on {y} px	на карточке: по центру на {y} px
+	on a card: starts at {y} px	на карточке: начинается с {y} px
+	on a card: ends at {y} px	на карточке: заканчивается на {y} px
 # MPEG-2 export audio (#268): a product name, kept as is
 	Dolby Digital (AC-3)	Dolby Digital (AC-3)
 	In the page (OBS takes it from the Browser Source)	На странице (OBS берёт её из источника-браузера)
@@ -4437,7 +4441,12 @@
 	page {page}: the runtime is reached by changing the roll speed (the gaps would have to grow more than 20-fold)	страница {page}: длительность достигается изменением скорости прокрутки (промежутки пришлось бы увеличить более чем в 20 раз)
 	page {page}: the transition needs the pages to touch (page gap 0); it is left out	страница {page}: для перехода страницы должны соприкасаться (пауза между страницами 0); он пропущен
 	page {page}: there is no transition “{name}”; the pages cut	страница {page}: перехода “{name}” нет; страницы сменяются склейкой
-	spine position “{value}” is not supported (a pixel offset, optionally “parallel”, is)	положение оси “{value}” не поддерживается (поддерживается смещение в пикселях, при желании с “parallel”)
+	spine position “{value}” is not supported (a pixel offset, optionally “parallel”, or “Hook N Bottom-Top dx dy” is)	положение оси “{value}” не поддерживается (поддерживается смещение в пикселях, при желании с “parallel” / “Hook N Bottom-Top dx dy”)
+	page {page}: the hook reaches back further than there are spines; it hooks onto the first spine, or starts its own	страница {page}: крючок ссылается дальше назад, чем есть осей; он цепляется за первую ось или начинает свою
+	hooked {n} spines back: its {from} meets this spine's {to}	зацеплено на {n} оси назад: её {from} встречается с {to} этой оси
+	top	верх
+	middle	середина
+	bottom	низ
 	vertical gap “{value}” is not a number	вертикальный промежуток “{value}” не является числом
 	picture “{file}” was not found or cannot be read; it is left out	изображение “{file}” не найдено или не читается; оно пропущено
 	video “{file}” was not found or cannot be read; it is left out	видео “{file}” не найдено или не читается; оно пропущено
@@ -4502,7 +4511,7 @@
 	the engine sent no report	движок не прислал отчёт
 	MXF OP1a Uncompressed 10-bit 4:2:2 (v210)	MXF OP1a без сжатия, 10 бит 4:2:2 (v210)
 	MXF OP1a, uncompressed 10-bit Y'CbCr 4:2:2 in the v210 layout (SMPTE ST 384), 24-bit 48 kHz PCM, start timecode	MXF OP1a, несжатый 10-битный Y'CbCr 4:2:2 в раскладке v210 (SMPTE ST 384), 24-битный PCM 48 кГц, начальный тайм-код
-	Write the captions as ANC data (CEA-608/708, 29.97 fps)	Записать субтитры как данные ANC (CEA-608/708, 29,97 к/с)
+	Write the captions as ANC data (CEA-608/708)	Записать субтитры как данные ANC (CEA-608/708)
 	Load KDM…	Загрузить KDM…
 	Forget DCP Keys	Забыть ключи DCP
 	Load KDM	Загрузить KDM
@@ -4512,6 +4521,13 @@
 	The keys stay in memory only, until Forget DCP Keys or the end of the session.	Ключи хранятся только в памяти, до команды «Забыть ключи DCP» или конца сеанса.
 	DCP keys forgotten	Ключи DCP забыты
 	Choose the KDM file and the private key.	Выберите файл KDM и закрытый ключ.
+	Load even if the certificate chain is not verified	Загружать и с непроверенной цепочкой сертификатов
+	Bundle: {loaded} of {total} KDMs loaded, {other} for other recipients	Пакет: загружено {loaded} из {total} KDM, {other} для других получателей
+	Not loaded: {path}: {problem}	Не загружено: {path}: {problem}
+	Signature verified: {chain}	Подпись проверена: {chain}
+	Signature not verified: {problem}	Подпись не проверена: {problem}
+	KDM required	Требуется KDM
+	Encrypted: load the KDM with content key {keys}	Зашифровано: загрузите KDM с ключом содержимого {keys}
 
 # Settings ▸ Timecode Sync (TC-4)
 	Timecode Sync	Синхронизация тайм-кода
@@ -4554,3 +4570,60 @@
 	software backend: {reason}	программный бэкенд: {reason}
 	Start studio	Запустить студию
 	Stop studio	Остановить студию
+# Auto Color, Auto Contrast, Auto Levels (EffectsSDK review)
+	Auto Color	Автоцвет
+	Auto Contrast	Автоконтраст
+	Auto Levels	Автоуровни
+	Temporal Smoothing (seconds)	Временное сглаживание (секунды)
+	Scene Detect	Обнаружение сцен
+	Black Clip	Отсечение чёрного
+	White Clip	Отсечение белого
+	Snap Neutral Midtones	Нейтральные средние тона
+# Layout presets: PiP corners, split screen (EffectsSDK review)
+	PiP 35% Upper Left	«Картинка в картинке» 35% слева вверху
+	Picture-in-picture: 35 % scale in the upper left	«Картинка в картинке»: масштаб 35 % в левом верхнем углу
+	PiP 35% Lower Left	«Картинка в картинке» 35% слева внизу
+	Picture-in-picture: 35 % scale in the lower left	«Картинка в картинке»: масштаб 35 % в левом нижнем углу
+	PiP 35% Lower Right	«Картинка в картинке» 35% справа внизу
+	Picture-in-picture: 35 % scale in the lower right	«Картинка в картинке»: масштаб 35 % в правом нижнем углу
+	Split Screen Left	Разделённый экран слева
+	Split screen: the middle half of the picture fills the left half of the frame	Разделённый экран: средняя половина изображения заполняет левую половину кадра
+	Split Screen Right	Разделённый экран справа
+	Split screen: the middle half of the picture fills the right half of the frame	Разделённый экран: средняя половина изображения заполняет правую половину кадра
+# Creative Looks: CRT (P3)
+	CRT	CRT
+	Scanline Strength	Сила строк
+	Line Count	Число строк
+	Mask	Маска
+	Mask Strength	Сила маски
+	Corner Darkening	Затемнение углов
+	Aperture Grille	Апертурная решётка
+	Shadow Mask	Теневая маска
+	Slot Mask	Щелевая маска
+# Creative Looks: Oil Paint (P4)
+	Oil Paint	Масляная живопись
+	Detail	Детализация
+	Texture	Текстура
+	Facet	Грани
+	Daubs	Мазки
+	Dry Brush	Сухая кисть
+	Fresco	Фреска
+	Knife	Мастихин
+	Sponge	Губка
+# Creative Looks: Pixel Sort (P5)
+	Pixel Sort	Сортировка пикселей
+	Sort By	Сортировать по
+	Lower Threshold	Нижний порог
+	Upper Threshold	Верхний порог
+	Ascending	По возрастанию
+# Temporal Denoise (EffectsSDK review)
+	Temporal Denoise	Временное шумоподавление
+	Frames Each Side	Кадров с каждой стороны
+	Motion Threshold	Порог движения
+	Show Motion	Показать движение
+	No signal	Нет сигнала
+	Locating	Поиск
+	Locked	Синхронизировано
+	Freewheel	Свободный ход
+	Scrubbing	Прокрутка
+	Sending	Отправка

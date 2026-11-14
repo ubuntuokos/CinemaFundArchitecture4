@@ -68,7 +68,7 @@ pub struct HfBlockContext {
 impl<Ctx> Bundle<Ctx> for HfBlockContext {
     type Error = crate::vardct::Error;
 
-    fn parse(bitstream: &mut Bitstream, _: Ctx) -> crate::vardct::Result<Self> {
+    fn parse(bitstream: &mut Bitstream<'_>, _: Ctx) -> crate::vardct::Result<Self> {
         let mut qf_thresholds = Vec::new();
         let mut lf_thresholds = [Vec::new(), Vec::new(), Vec::new()];
         let (num_block_clusters, block_ctx_map) = if bitstream.read_bool()? {
@@ -132,7 +132,7 @@ pub struct LfCoeff<S: Sample> {
 impl<S: Sample> Bundle<LfCoeffParams<'_, '_, '_>> for LfCoeff<S> {
     type Error = crate::vardct::Error;
 
-    fn parse(bitstream: &mut Bitstream, params: LfCoeffParams) -> Result<Self> {
+    fn parse(bitstream: &mut Bitstream<'_>, params: LfCoeffParams<'_, '_, '_>) -> Result<Self> {
         let LfCoeffParams { lf_group_idx, lf_width, lf_height, jpeg_upsampling, bits_per_sample, global_ma_config, allow_partial, tracker, pool } = params;
 
         let extra_precision = bitstream.read_bits(2)? as u8;

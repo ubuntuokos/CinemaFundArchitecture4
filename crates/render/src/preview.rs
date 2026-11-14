@@ -417,12 +417,14 @@ pub fn effect_cost_ms(id: &str) -> f64 {
         | "auto_reframe"
         | "echo"
         | "slit_scan"
+        | "temporal_denoise"
         | "echo_glow"
         | "glint"
         | "wonder_glow"
         | "edge_glow"
         | "volumetric_rays"
         | "brush_strokes"
+        | "pixel_sort"
         | "roughen_edges"
         | "lighting_effects"
         | "vr_blur"
@@ -499,7 +501,7 @@ fn layer_cost(project: &Project, it: &TrackItem, px: f64, force_cpu: bool) -> f6
     decode + path + item_fx_cost(it, px)
 }
 
-fn estimate_cost(project: &Project, seq: &Sequence, layers: &[Layer]) -> f64 {
+fn estimate_cost(project: &Project, seq: &Sequence, layers: &[Layer<'_>]) -> f64 {
     let px = (seq.settings.width as f64 * seq.settings.height as f64) / HD_PIXELS;
     let mut total = 0.0;
     for l in layers {

@@ -1,0 +1,17 @@
+[package]
+name = "cfa4-tcsync-io"
+description = "External timecode sync devices for CFA4: LTC in/out through cpal, MIDI Timecode through the ALSA sequencer, and the sync manager"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+rust-version.workspace = true
+
+[lints]
+workspace = true
+
+[dependencies]
+cfa4-tcsync = { workspace = true }
+cfa4-time = { workspace = true }
+cpal = "0.16"
+# the ALSA sequencer for MIDI Timecode; the same version cpal already builds on
+alsa = "0.9"

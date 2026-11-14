@@ -1,7 +1,7 @@
 """Validate CFA4 offline packaging policy, never install dependencies."""
-from pathlib import Path
 import subprocess
 import unittest
+from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[2]
 PREFLIGHT = ROOT / "scripts/release/check-cfa4-package-prereqs.sh"
@@ -19,7 +19,7 @@ class OfflinePackagingTests(unittest.TestCase):
     def test_reject_unsupported_rpm_without_touching_host(self):
         result = subprocess.run(
             ["bash", str(PREFLIGHT), "--formats", "rpm"],
-            capture_output=True, text=True,
+            capture_output=True, text=True, check=False,
         )
         self.assertEqual(result.returncode, 2)
         self.assertIn("unsupported CFA4 package format: rpm", result.stderr)

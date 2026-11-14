@@ -4382,6 +4382,10 @@ export.summary	Low	lav
 	{n} more	{n} mere
 	Block	Blok
 	parallel	parallel
+	page {page}: a spine's vertical position works on card pages only; it is ignored	side {page}: aksens lodrette placering virker kun på kortsider; den ignoreres
+	on a card: centered on {y} px	på et kort: centreret om {y} px
+	on a card: starts at {y} px	på et kort: begynder ved {y} px
+	on a card: ends at {y} px	på et kort: slutter ved {y} px
 # MPEG-2 export audio (#268): a product name, kept as is
 	Dolby Digital (AC-3)	Dolby Digital (AC-3)
 	In the page (OBS takes it from the Browser Source)	På siden (OBS tager den fra browserkilden)
@@ -4454,7 +4458,12 @@ export.summary	Low	lav
 	page {page}: the runtime is reached by changing the roll speed (the gaps would have to grow more than 20-fold)	side {page}: spilletiden nås ved at ændre rullehastigheden (afstandene skulle vokse mere end 20 gange)
 	page {page}: the transition needs the pages to touch (page gap 0); it is left out	side {page}: overgangen kræver, at siderne mødes (sideafstand 0); den udelades
 	page {page}: there is no transition “{name}”; the pages cut	side {page}: der findes ingen overgang “{name}”; siderne klippes
-	spine position “{value}” is not supported (a pixel offset, optionally “parallel”, is)	aksepositionen “{value}” understøttes ikke (en pixelforskydning, evt. med “parallel”, gør)
+	spine position “{value}” is not supported (a pixel offset, optionally “parallel”, or “Hook N Bottom-Top dx dy” is)	aksepositionen “{value}” understøttes ikke (en pixelforskydning, evt. med “parallel” / “Hook N Bottom-Top dx dy”, gør)
+	page {page}: the hook reaches back further than there are spines; it hooks onto the first spine, or starts its own	side {page}: krogen rækker længere tilbage, end der er akser; den hægtes på den første akse eller starter sin egen
+	hooked {n} spines back: its {from} meets this spine's {to}	hægtet {n} akser tilbage: dens {from} møder denne akses {to}
+	top	top
+	middle	midte
+	bottom	bund
 	vertical gap “{value}” is not a number	den lodrette afstand “{value}” er ikke et tal
 	picture “{file}” was not found or cannot be read; it is left out	billedet “{file}” blev ikke fundet eller kan ikke læses; det udelades
 	video “{file}” was not found or cannot be read; it is left out	videoen “{file}” blev ikke fundet eller kan ikke læses; den udelades
@@ -4519,7 +4528,7 @@ export.summary	Low	lav
 	the engine sent no report	motoren sendte ingen rapport
 	MXF OP1a Uncompressed 10-bit 4:2:2 (v210)	MXF OP1a ukomprimeret 10-bit 4:2:2 (v210)
 	MXF OP1a, uncompressed 10-bit Y'CbCr 4:2:2 in the v210 layout (SMPTE ST 384), 24-bit 48 kHz PCM, start timecode	MXF OP1a, ukomprimeret 10-bit Y'CbCr 4:2:2 i v210-layout (SMPTE ST 384), 24-bit 48 kHz PCM, starttidskode
-	Write the captions as ANC data (CEA-608/708, 29.97 fps)	Skriv undertekster som ANC-data (CEA-608/708, 29,97 fps)
+	Write the captions as ANC data (CEA-608/708)	Skriv undertekster som ANC-data (CEA-608/708)
 	Load KDM…	Indlæs KDM…
 	Forget DCP Keys	Glem DCP-nøgler
 	Load KDM	Indlæs KDM
@@ -4529,6 +4538,13 @@ export.summary	Low	lav
 	The keys stay in memory only, until Forget DCP Keys or the end of the session.	Nøglerne findes kun i hukommelsen, indtil Glem DCP-nøgler eller sessionens afslutning.
 	DCP keys forgotten	DCP-nøgler glemt
 	Choose the KDM file and the private key.	Vælg KDM-filen og den private nøgle.
+	Load even if the certificate chain is not verified	Indlæs også med en ubekræftet certifikatkæde
+	Bundle: {loaded} of {total} KDMs loaded, {other} for other recipients	Pakke: {loaded} af {total} KDM'er indlæst, {other} til andre modtagere
+	Not loaded: {path}: {problem}	Ikke indlæst: {path}: {problem}
+	Signature verified: {chain}	Signatur bekræftet: {chain}
+	Signature not verified: {problem}	Signatur ikke bekræftet: {problem}
+	KDM required	KDM påkrævet
+	Encrypted: load the KDM with content key {keys}	Krypteret: indlæs KDM'en med indholdsnøglen {keys}
 
 # Settings ▸ Timecode Sync (TC-4)
 	Timecode Sync	Tidskodesynkronisering
@@ -4571,3 +4587,60 @@ export.summary	Low	lav
 	software backend: {reason}	software-backend: {reason}
 	Start studio	Start studie
 	Stop studio	Stop studie
+# Auto Color, Auto Contrast, Auto Levels (EffectsSDK review)
+	Auto Color	Automatisk farve
+	Auto Contrast	Automatisk kontrast
+	Auto Levels	Automatiske niveauer
+	Temporal Smoothing (seconds)	Tidsudjævning (sekunder)
+	Scene Detect	Registrer scener
+	Black Clip	Sort klipning
+	White Clip	Hvid klipning
+	Snap Neutral Midtones	Neutraliser mellemtoner
+# Layout presets: PiP corners, split screen (EffectsSDK review)
+	PiP 35% Upper Left	PiP 35% øverst til venstre
+	Picture-in-picture: 35 % scale in the upper left	Billede i billede: 35 % skalering øverst til venstre
+	PiP 35% Lower Left	PiP 35% nederst til venstre
+	Picture-in-picture: 35 % scale in the lower left	Billede i billede: 35 % skalering nederst til venstre
+	PiP 35% Lower Right	PiP 35% nederst til højre
+	Picture-in-picture: 35 % scale in the lower right	Billede i billede: 35 % skalering nederst til højre
+	Split Screen Left	Delt skærm venstre
+	Split screen: the middle half of the picture fills the left half of the frame	Delt skærm: billedets midterste halvdel fylder venstre halvdel af rammen
+	Split Screen Right	Delt skærm højre
+	Split screen: the middle half of the picture fills the right half of the frame	Delt skærm: billedets midterste halvdel fylder højre halvdel af rammen
+# Creative Looks: CRT (P3)
+	CRT	CRT
+	Scanline Strength	Scanlinjestyrke
+	Line Count	Antal linjer
+	Mask	Maske
+	Mask Strength	Maskestyrke
+	Corner Darkening	Mørkere hjørner
+	Aperture Grille	Aperturegitter
+	Shadow Mask	Skyggemaske
+	Slot Mask	Spaltemaske
+# Creative Looks: Oil Paint (P4)
+	Oil Paint	Oliemaleri
+	Detail	Detaljer
+	Texture	Tekstur
+	Facet	Facetter
+	Daubs	Klatter
+	Dry Brush	Tør pensel
+	Fresco	Fresko
+	Knife	Paletkniv
+	Sponge	Svamp
+# Creative Looks: Pixel Sort (P5)
+	Pixel Sort	Pixelsortering
+	Sort By	Sortér efter
+	Lower Threshold	Nedre tærskel
+	Upper Threshold	Øvre tærskel
+	Ascending	Stigende
+# Temporal Denoise (EffectsSDK review)
+	Temporal Denoise	Tidsbaseret støjreduktion
+	Frames Each Side	Billeder på hver side
+	Motion Threshold	Bevægelsestærskel
+	Show Motion	Vis bevægelse
+	No signal	Intet signal
+	Locating	Søger
+	Locked	Låst
+	Freewheel	Frihjul
+	Scrubbing	Scrubber
+	Sending	Sender

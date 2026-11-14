@@ -4365,6 +4365,10 @@
 	{n} more	Ще {n}
 	Block	Блок
 	parallel	паралельно
+	page {page}: a spine's vertical position works on card pages only; it is ignored	сторінка {page}: вертикальне положення осі діє лише на сторінках-картках; його пропущено
+	on a card: centered on {y} px	на картці: по центру на {y} px
+	on a card: starts at {y} px	на картці: починається з {y} px
+	on a card: ends at {y} px	на картці: закінчується на {y} px
 # MPEG-2 export audio (#268): a product name, kept as is
 	Dolby Digital (AC-3)	Dolby Digital (AC-3)
 	In the page (OBS takes it from the Browser Source)	На сторінці (OBS бере її з джерела-браузера)
@@ -4437,7 +4441,12 @@
 	page {page}: the runtime is reached by changing the roll speed (the gaps would have to grow more than 20-fold)	сторінка {page}: тривалість досягається зміною швидкості прокручування (проміжки довелося б збільшити більш ніж у 20 разів)
 	page {page}: the transition needs the pages to touch (page gap 0); it is left out	сторінка {page}: для переходу сторінки мають торкатися одна одної (пауза між сторінками 0); його пропущено
 	page {page}: there is no transition “{name}”; the pages cut	сторінка {page}: переходу “{name}” немає; сторінки змінюються склейкою
-	spine position “{value}” is not supported (a pixel offset, optionally “parallel”, is)	положення осі “{value}” не підтримується (підтримується зміщення в пікселях, за бажанням із “parallel”)
+	spine position “{value}” is not supported (a pixel offset, optionally “parallel”, or “Hook N Bottom-Top dx dy” is)	положення осі “{value}” не підтримується (підтримується зміщення в пікселях, за бажанням із “parallel” / “Hook N Bottom-Top dx dy”)
+	page {page}: the hook reaches back further than there are spines; it hooks onto the first spine, or starts its own	сторінка {page}: гачок сягає далі назад, ніж є осей; він чіпляється за першу вісь або починає власну
+	hooked {n} spines back: its {from} meets this spine's {to}	зачеплено на {n} осі назад: її {from} зустрічається з {to} цієї осі
+	top	верх
+	middle	середина
+	bottom	низ
 	vertical gap “{value}” is not a number	вертикальний проміжок “{value}” не є числом
 	picture “{file}” was not found or cannot be read; it is left out	зображення “{file}” не знайдено або не читається; його пропущено
 	video “{file}” was not found or cannot be read; it is left out	відео “{file}” не знайдено або не читається; його пропущено
@@ -4502,7 +4511,7 @@
 	the engine sent no report	рушій не надіслав звіт
 	MXF OP1a Uncompressed 10-bit 4:2:2 (v210)	MXF OP1a без стиснення, 10 біт 4:2:2 (v210)
 	MXF OP1a, uncompressed 10-bit Y'CbCr 4:2:2 in the v210 layout (SMPTE ST 384), 24-bit 48 kHz PCM, start timecode	MXF OP1a, нестиснений 10-бітний Y'CbCr 4:2:2 у розкладці v210 (SMPTE ST 384), 24-бітний PCM 48 кГц, початковий таймкод
-	Write the captions as ANC data (CEA-608/708, 29.97 fps)	Записати субтитри як дані ANC (CEA-608/708, 29,97 кадр/с)
+	Write the captions as ANC data (CEA-608/708)	Записати субтитри як дані ANC (CEA-608/708)
 	Load KDM…	Завантажити KDM…
 	Forget DCP Keys	Забути ключі DCP
 	Load KDM	Завантажити KDM
@@ -4512,6 +4521,13 @@
 	The keys stay in memory only, until Forget DCP Keys or the end of the session.	Ключі зберігаються лише в пам’яті, до команди «Забути ключі DCP» або кінця сеансу.
 	DCP keys forgotten	Ключі DCP забуто
 	Choose the KDM file and the private key.	Виберіть файл KDM і закритий ключ.
+	Load even if the certificate chain is not verified	Завантажувати й з неперевіреним ланцюжком сертифікатів
+	Bundle: {loaded} of {total} KDMs loaded, {other} for other recipients	Пакет: завантажено {loaded} з {total} KDM, {other} для інших отримувачів
+	Not loaded: {path}: {problem}	Не завантажено: {path}: {problem}
+	Signature verified: {chain}	Підпис перевірено: {chain}
+	Signature not verified: {problem}	Підпис не перевірено: {problem}
+	KDM required	Потрібен KDM
+	Encrypted: load the KDM with content key {keys}	Зашифровано: завантажте KDM із ключем вмісту {keys}
 
 # Settings ▸ Timecode Sync (TC-4)
 	Timecode Sync	Синхронізація тайм-коду
@@ -4554,3 +4570,60 @@
 	software backend: {reason}	програмний бекенд: {reason}
 	Start studio	Запустити студію
 	Stop studio	Зупинити студію
+# Auto Color, Auto Contrast, Auto Levels (EffectsSDK review)
+	Auto Color	Автоколір
+	Auto Contrast	Автоконтраст
+	Auto Levels	Авторівні
+	Temporal Smoothing (seconds)	Часове згладжування (секунди)
+	Scene Detect	Виявлення сцен
+	Black Clip	Відсікання чорного
+	White Clip	Відсікання білого
+	Snap Neutral Midtones	Нейтральні середні тони
+# Layout presets: PiP corners, split screen (EffectsSDK review)
+	PiP 35% Upper Left	«Картинка в картинці» 35% ліворуч угорі
+	Picture-in-picture: 35 % scale in the upper left	«Картинка в картинці»: масштаб 35 % у лівому верхньому куті
+	PiP 35% Lower Left	«Картинка в картинці» 35% ліворуч унизу
+	Picture-in-picture: 35 % scale in the lower left	«Картинка в картинці»: масштаб 35 % у лівому нижньому куті
+	PiP 35% Lower Right	«Картинка в картинці» 35% праворуч унизу
+	Picture-in-picture: 35 % scale in the lower right	«Картинка в картинці»: масштаб 35 % у правому нижньому куті
+	Split Screen Left	Розділений екран ліворуч
+	Split screen: the middle half of the picture fills the left half of the frame	Розділений екран: середня половина зображення заповнює ліву половину кадру
+	Split Screen Right	Розділений екран праворуч
+	Split screen: the middle half of the picture fills the right half of the frame	Розділений екран: середня половина зображення заповнює праву половину кадру
+# Creative Looks: CRT (P3)
+	CRT	CRT
+	Scanline Strength	Сила рядків
+	Line Count	Кількість рядків
+	Mask	Маска
+	Mask Strength	Сила маски
+	Corner Darkening	Затемнення кутів
+	Aperture Grille	Апертурна ґратка
+	Shadow Mask	Тіньова маска
+	Slot Mask	Щілинна маска
+# Creative Looks: Oil Paint (P4)
+	Oil Paint	Олійний живопис
+	Detail	Деталізація
+	Texture	Текстура
+	Facet	Грані
+	Daubs	Мазки
+	Dry Brush	Суха кисть
+	Fresco	Фреска
+	Knife	Мастихін
+	Sponge	Губка
+# Creative Looks: Pixel Sort (P5)
+	Pixel Sort	Сортування пікселів
+	Sort By	Сортувати за
+	Lower Threshold	Нижній поріг
+	Upper Threshold	Верхній поріг
+	Ascending	За зростанням
+# Temporal Denoise (EffectsSDK review)
+	Temporal Denoise	Часове шумозаглушення
+	Frames Each Side	Кадрів з кожного боку
+	Motion Threshold	Поріг руху
+	Show Motion	Показати рух
+	No signal	Немає сигналу
+	Locating	Пошук
+	Locked	Синхронізовано
+	Freewheel	Вільний хід
+	Scrubbing	Прокручування
+	Sending	Надсилання

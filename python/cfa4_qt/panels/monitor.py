@@ -58,6 +58,7 @@ from PySide6.QtWidgets import (
     QLabel,
     QLineEdit,
     QMenu,
+    QPushButton,
     QSizePolicy,
     QToolButton,
     QVBoxLayout,
@@ -2003,6 +2004,16 @@ class SourceMonitor(Monitor):
         self.clips_button.setMenu(QMenu(self.clips_button))
         self.clips_button.menu().aboutToShow.connect(self._fill_clips_menu)
         self.controls.insertWidget(0, self.clips_button)
+        # an encrypted clip whose content keys are not loaded plays black and silent: say so over
+        # the picture, and open Load KDM on a click (#1053; ``source.inspect`` ``needsKey``)
+        self.kdm_button = QPushButton(tr("KDM required"), self)
+        self.kdm_button.setObjectName("source.kdmRequired")
+        self.kdm_button.setFocusPolicy(Qt.FocusPolicy.NoFocus)
+        self.kdm_button.setStyleSheet("QPushButton { background: #5C1016; color: white; padding: 3px 10px; }")
+        self.kdm_button.clicked.connect(lambda: self.run.emit("dcp.loadKdm", {}))
+        if isinstance(layout, QVBoxLayout):
+            layout.insertWidget(0, self.kdm_button)
+        self.kdm_button.hide()
         self._apply_wave()
 
     def _fill_clips_menu(self) -> None:
@@ -2113,8 +2124,20 @@ class SourceMonitor(Monitor):
                 self.playhead = int(self.source.get("start") or 0)
         if self.source is None or self.source.get("item") != previous:
             self.stop(notify=False)
+        self._show_needed_keys()
         self._content_changed()
         self._apply_wave()
+
+    def needed_keys(self) -> list[str]:
+        """The Key IDs the open clip waits for (``needsKey``; empty when it is not encrypted or
+        its keys are loaded)."""
+        keys = (self.source or {}).get("needsKey")
+        return [k for k in keys if isinstance(k, str)] if isinstance(keys, list) else []
+
+    def _show_needed_keys(self) -> None:
+        keys = self.needed_keys()
+        self.kdm_button.setVisible(bool(keys))
+        self.kdm_button.setToolTip(fmt("Encrypted: load the KDM with content key {keys}", keys=", ".join(keys)) if keys else "")
 
     def has_content(self) -> bool:
         return self.source is not None

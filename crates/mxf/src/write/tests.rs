@@ -3,7 +3,7 @@
 use std::io::Cursor;
 
 use super::*;
-use crate::{Codec, OperationalPattern, PartitionKind, TrackKind, Wrapping, open};
+use crate::{Codec, EssenceTrack, OperationalPattern, PartitionKind, SoundFormat, TrackKind, Wrapping, open};
 
 fn prores_like(i: usize) -> Vec<u8> {
     let mut v = vec![0, 0, 0, 40];
@@ -976,7 +976,14 @@ fn clip_wrapped_uncompressed_without_an_index_splits_by_picture_size() {
 /// element (start of stored data / start of line), a fill data element before the first line,
 /// then one picture element per stored line of `line` bytes.
 fn line_wrap(bytes: &[u8], line: usize) -> Vec<u8> {
+    line_wrap_with(bytes, line, &|_| None)
+}
+
+/// [`line_wrap`], with a VANC data element (ST 384 7.2, type 09h) of the samples `vanc(picture)`
+/// after a "start of line" system element for stored line 9, before each picture's first line.
+fn line_wrap_with(bytes: &[u8], line: usize, vanc: &dyn Fn(usize) -> Option<Vec<u8>>) -> Vec<u8> {
     let mut out = Vec::new();
+    let mut picture = 0;
     let mut at = 0;
     while at + 17 <= bytes.len() {
         let key: [u8; 16] = bytes[at..at + 16].try_into().unwrap();
@@ -994,11 +1001,21 @@ fn line_wrap(bytes: &[u8], line: usize) -> Vec<u8> {
                     let mut data = key;
                     data[12..16].copy_from_slice(&[0x17, 0x01, 0x08, 0x01]);
                     crate::testing::klv(&mut out, data, &[0xEE; 4]);
+                    if let Some(samples) = vanc(picture) {
+                        let mut sys = key;
+                        sys[5] = 0x05;
+                        sys[12..16].copy_from_slice(&[0x14, 0x01, 0x02, 0x00]);
+                        crate::testing::klv(&mut out, sys, &[0, 0, 0, 9, 0, 0, 0, 0]);
+                        let mut data = key;
+                        data[12..16].copy_from_slice(&[0x17, 0x02, 0x09, 0x01]);
+                        crate::testing::klv(&mut out, data, &samples);
+                    }
                 }
                 let mut pic = key;
                 pic[14] = 0x04;
                 crate::testing::klv(&mut out, pic, chunk);
             }
+            picture += 1;
         } else {
             out.extend_from_slice(&bytes[at..at + 16 + n + len as usize]);
         }
@@ -1051,6 +1068,82 @@ fn line_wrapped_uncompressed_pictures_are_gathered_line_by_line() {
     let f = open(&bare[..]).unwrap();
     assert_eq!(f.tracks[t].samples.len(), 3, "{:?}", f.warnings);
     assert_eq!(f.read_sample(&bare[..], t, 2).unwrap(), pictures[2]);
+}
+
+/// 10-bit ST 291 words of a packet: ancillary data flag, DID / SDID / DC and user data words
+/// with even parity in b8 and its inverse in b9, then the checksum.
+fn st291_words(did: u8, sdid: u8, udw: &[u8]) -> Vec<u16> {
+    let par = |b: u8| {
+        let p = u16::from(b.count_ones() % 2 == 1);
+        u16::from(b) | p << 8 | (1 - p) << 9
+    };
+    let mut w = vec![0, 0x3FF, 0x3FF, par(did), par(sdid), par(udw.len() as u8)];
+    w.extend(udw.iter().map(|&b| par(b)));
+    let sum = w[3..].iter().fold(0u16, |a, &x| a.wrapping_add(x & 0x1FF)) & 0x1FF;
+    w.push(sum | (!sum >> 8 & 1) << 9);
+    w
+}
+
+/// #1060: ST 291 packets in the line-wrapped VANC data elements of uncompressed pictures reach
+/// `read_anc`: in the luma samples of 8-bit UYVY and of v210, with the stored line of the system
+/// element before them and the frame of the start of stored data; a bad 10-bit checksum is not a
+/// packet, and a file without VANC packets reads as ANC data with empty frames.
+#[test]
+fn line_wrapped_vanc_packets_are_read_as_anc() {
+    let cdp = |seq: u8| vec![0x96, 0x69, 0x08, 0x4F, 0x43, 0x00, seq, 0x74];
+    for (layout, line) in [(crate::UncompressedLayout::Uyvy8, 96), (crate::UncompressedLayout::V210, 128)] {
+        let (bytes, _) = build_uncompressed(Pattern::Op1a, layout);
+        let samples = |picture: usize, corrupt: bool| -> Option<Vec<u8>> {
+            if picture == 1 {
+                return None;
+            }
+            let mut words = st291_words(0x61, 0x01, &cdp(picture as u8));
+            if corrupt {
+                let last = words.len() - 1;
+                words[last] ^= 1;
+            }
+            // the packet in the luma samples, colour difference samples at black
+            let eight = layout == crate::UncompressedLayout::Uyvy8;
+            // 8-bit samples carry the low 8 bits of each word
+            let black = if eight { 0x80 } else { 0x200 };
+            let mut seq: Vec<u16> = words.iter().flat_map(|&y| [black, if eight { y & 0xFF } else { y }]).collect();
+            while !seq.len().is_multiple_of(6) {
+                seq.push(black);
+            }
+            Some(match layout {
+                crate::UncompressedLayout::Uyvy8 => seq.iter().map(|&w| w as u8).collect(),
+                _ => seq.chunks(3).flat_map(|c| (u32::from(c[0]) | u32::from(c[1]) << 10 | u32::from(c[2]) << 20).to_le_bytes()).collect(),
+            })
+        };
+        let lined = line_wrap_with(&bytes, line, &|p| samples(p, false));
+        assert!(crate::has_anc(&lined[..lined.len().min(65_536)]), "{layout:?}");
+        let a = crate::read_anc(&lined[..]).unwrap();
+        assert_eq!(a.edit_rate, Rational::new(25, 1));
+        assert_eq!(a.frames.len(), 3, "{layout:?} {:?}", a.warnings);
+        assert!(a.frames[1].is_empty());
+        for f in [0, 2] {
+            let p = &a.frames[f];
+            assert_eq!(p.len(), 1, "{layout:?} frame {f}: {p:?}");
+            assert_eq!((p[0].line, p[0].wrapping, p[0].coding), (9, 1, if layout == crate::UncompressedLayout::Uyvy8 { 4 } else { 7 }));
+            assert!(p[0].is_cdp());
+            assert_eq!(p[0].user_data(), &cdp(f as u8)[..]);
+        }
+        assert_eq!(a.cdps().iter().map(|c| c.0).collect::<Vec<_>>(), vec![0, 2]);
+        // the pictures still read
+        let f = open(&lined[..]).unwrap();
+        assert_eq!(f.tracks.iter().find(|t| t.kind == TrackKind::Picture).map(|t| t.samples.len()), Some(3));
+        if layout == crate::UncompressedLayout::V210 {
+            let bad = crate::read_anc(&line_wrap_with(&bytes, line, &|p| samples(p, true))[..]).unwrap();
+            assert!(bad.frames.iter().all(Vec::is_empty), "{:?}", bad.frames);
+        }
+        let none = crate::read_anc(&line_wrap(&bytes, line)[..]).unwrap();
+        assert_eq!(none.frames.len(), 3);
+        assert!(none.cdps().is_empty());
+    }
+    // frame-wrapped uncompressed pictures have no ANC data
+    let (bytes, _) = build_uncompressed(Pattern::Op1a, crate::UncompressedLayout::Uyvy8);
+    assert!(!crate::has_anc(&bytes[..bytes.len().min(65_536)]));
+    assert!(crate::read_anc(&bytes[..]).is_err());
 }
 
 #[test]
@@ -1355,6 +1448,52 @@ fn j2k_sub_descriptor_from_hostile_codestreams() {
         }
     }
     assert!(J2kSubDescriptor::from_codestream(b"not j2k").is_none());
+}
+
+/// Edit list clips of 29.97 Hz AES3 sound (1601.6 sample frames per edit unit) start and end
+/// inside AES3 elements: the elements are cut there, exactly.
+#[test]
+fn edit_list_clips_cut_aes3_elements() {
+    let rate = Rational::new(30000, 1001);
+    let mut cfg = d10_config(30, 525, rate);
+    cfg.sound = vec![SoundDesc { sample_rate: 48_000, channels: 4, bits: 24 }];
+    let mut w = MxfWriter::new(Cursor::new(Vec::new()), cfg).unwrap();
+    let n = 12;
+    let total = 8008 * n / 5;
+    let mut a = 0;
+    for i in 0..n {
+        let k = 1500.min(total - a);
+        w.push_sound(0, &pcm24x4(a, k)).unwrap();
+        a += k;
+        w.push_picture(&d10_picture(i, 90_000), FrameInfo::intra()).unwrap();
+    }
+    w.push_sound(0, &pcm24x4(a, total - a)).unwrap();
+    let f = w.finish().unwrap().into_inner();
+    let mut m = open(&f).unwrap();
+    let ai = m.track_of_kind(TrackKind::Sound).unwrap();
+    let t = m.tracks[ai].clone();
+    assert_eq!(t.sound_format, SoundFormat::Aes3Element);
+    let orig = m.read_pcm(&f, ai, 0, total).unwrap();
+    // clip 1: edit units 1..4 = sample frames 1601..6405 (3 x 1601.6, floored); clip 2: 7..9 = 11211..14414, both inside elements
+    let clip = |start: i64, dur: i64| crate::file::Part {
+        track: EssenceTrack { start_position: start, duration: Some(dur), ..t.clone() },
+        gap_before: 0,
+        gap_after: 0,
+    };
+    let mut warnings = Vec::new();
+    let joined = crate::file::concat(vec![clip(1, 3), clip(7, 2)], &mut warnings).unwrap();
+    assert!(warnings.is_empty(), "{warnings:?}");
+    assert_eq!(joined.stored_sample_frames(), (6405 - 1601) + (14414 - 11211));
+    m.tracks[ai] = joined;
+    let got = m.read_pcm(&f, ai, 0, 4804 + 3203).unwrap();
+    for c in 0..4 {
+        assert_eq!(got[c][..4804], orig[c][1601..6405], "channel {c}, clip 1");
+        assert_eq!(got[c][4804..], orig[c][11211..14414], "channel {c}, clip 2");
+    }
+    // reads starting inside cut elements (1601 and 6405 are inside the 1602-frame elements
+    // 0..1602 and 4805..6406)
+    assert_eq!(m.read_pcm(&f, ai, 1, 3).unwrap()[2], orig[2][1602..1605]);
+    assert_eq!(m.read_pcm(&f, ai, 4802, 4).unwrap()[1], [&orig[1][6403..6405], &orig[1][11211..11213]].concat());
 }
 
 /// One CDP-like ANC packet on VANC line 9 for frame `i` (DID 61h, SDID 01h).

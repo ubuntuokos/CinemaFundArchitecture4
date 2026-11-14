@@ -401,6 +401,17 @@ fn openexr_sequences() {
         let first = dir.0.join(&want[0]);
         let bytes = std::fs::read(&first).unwrap();
         assert_eq!(&bytes[..4], &[0x76, 0x2F, 0x31, 0x01]);
+        // every frame carries its time code (consecutive) and the frame rate
+        let timing: Vec<(Option<i64>, FrameRate)> = want
+            .iter()
+            .map(|f| {
+                let src = cfa4_media::open_bytes("f.exr", std::fs::read(dir.0.join(f)).unwrap().into(), &[]).unwrap();
+                (src.info().start_timecode, src.info().video.as_ref().unwrap().frame_rate)
+            })
+            .collect();
+        let t0 = timing[0].0.expect("time code");
+        assert_eq!(timing.iter().map(|t| t.0).collect::<Vec<_>>(), vec![Some(t0), Some(t0 + 1), Some(t0 + 2)]);
+        assert!(timing.iter().all(|t| t.1 == timing[0].1));
         let Some(ffmpeg) = cfa4_testkit::ffmpeg_or_skip("OpenEXR sequences") else { continue };
         let out = std::process::Command::new(ffmpeg)
             .args(["-v", "error", "-i"])
@@ -440,7 +451,7 @@ fn openexr_sequences_compress() {
         let path = dir.0.join("c000.exr");
         let bytes = std::fs::read(&path).unwrap();
         let at = bytes.windows(24).position(|w| w == b"compression\0compression\0").unwrap() + 28;
-        assert_eq!(bytes[at], [0, 1, 2, 3][files.len()], "{c:?}");
+        assert_eq!(bytes[at], [0, 1, 2, 3, 4][files.len()], "{c:?}");
         files.push((c, path, bytes.len(), dir));
     }
     let plain = files[0].2;
@@ -1283,7 +1294,7 @@ fn metadata_and_quicktime_multiplexer() {
 #[test]
 fn interlaced_output_is_rejected_honestly() {
     let (p, seq, m) = matte([0.0, 0.0, 1.0, 1.0], 160, 90, None);
-    let s = ExportSettings { format: Format::ProRes, path: "unused.mov".into(), field_order: FieldOrder::UpperFirst, ..Default::default() };
+    let s = ExportSettings { format: Format::DnxHr, path: "unused.mov".into(), field_order: FieldOrder::UpperFirst, ..Default::default() };
     let e = export(&p, seq, &s, &m, &Progress::default()).unwrap_err();
     assert!(e.to_string().contains("progressive"), "{e}");
 }

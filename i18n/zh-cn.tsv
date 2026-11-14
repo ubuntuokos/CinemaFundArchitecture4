@@ -4378,6 +4378,10 @@
 	{n} more	另有 {n} 项
 	Block	块
 	parallel	并列
+	page {page}: a spine's vertical position works on card pages only; it is ignored	第 {page} 页:轴线的垂直位置只在卡片页上有效;已忽略
+	on a card: centered on {y} px	卡片上:以 {y} px 为中心
+	on a card: starts at {y} px	卡片上:从 {y} px 开始
+	on a card: ends at {y} px	卡片上:到 {y} px 结束
 # MPEG-2 export audio (#268): a product name, kept as is
 	Dolby Digital (AC-3)	Dolby Digital (AC-3)
 	In the page (OBS takes it from the Browser Source)	在页面中（OBS 从浏览器源获取）
@@ -4450,7 +4454,12 @@
 	page {page}: the runtime is reached by changing the roll speed (the gaps would have to grow more than 20-fold)	第 {page} 页:通过改变滚动速度来达到时长(间隔需要增大到 20 倍以上)
 	page {page}: the transition needs the pages to touch (page gap 0); it is left out	第 {page} 页:转场要求页面首尾相接(页间隔为 0);已忽略
 	page {page}: there is no transition “{name}”; the pages cut	第 {page} 页:不存在转场“{name}”;页面直接切换
-	spine position “{value}” is not supported (a pixel offset, optionally “parallel”, is)	不支持对齐轴位置“{value}”(支持像素偏移,可选加“parallel”)
+	spine position “{value}” is not supported (a pixel offset, optionally “parallel”, or “Hook N Bottom-Top dx dy” is)	不支持对齐轴位置“{value}”(支持像素偏移,可选加“parallel” / “Hook N Bottom-Top dx dy”)
+	page {page}: the hook reaches back further than there are spines; it hooks onto the first spine, or starts its own	第 {page} 页：挂钩回溯的轴数超过了已有的轴；它挂到第一条轴上，或自成一条轴
+	hooked {n} spines back: its {from} meets this spine's {to}	挂在前面第 {n} 条轴上：那条轴的{from}与本轴的{to}相接
+	top	顶部
+	middle	中部
+	bottom	底部
 	vertical gap “{value}” is not a number	垂直间距“{value}”不是数字
 	picture “{file}” was not found or cannot be read; it is left out	未找到图片“{file}”或无法读取;已忽略
 	video “{file}” was not found or cannot be read; it is left out	未找到视频“{file}”或无法读取;已忽略
@@ -4515,7 +4524,7 @@
 	the engine sent no report	引擎未发送报告
 	MXF OP1a Uncompressed 10-bit 4:2:2 (v210)	MXF OP1a 无压缩 10 位 4:2:2 (v210)
 	MXF OP1a, uncompressed 10-bit Y'CbCr 4:2:2 in the v210 layout (SMPTE ST 384), 24-bit 48 kHz PCM, start timecode	MXF OP1a，v210 布局的无压缩 10 位 Y'CbCr 4:2:2（SMPTE ST 384），24 位 48 kHz PCM，起始时间码
-	Write the captions as ANC data (CEA-608/708, 29.97 fps)	将字幕写为 ANC 数据（CEA-608/708，29.97 fps）
+	Write the captions as ANC data (CEA-608/708)	将字幕写为 ANC 数据（CEA-608/708）
 	Load KDM…	加载 KDM…
 	Forget DCP Keys	清除 DCP 密钥
 	Load KDM	加载 KDM
@@ -4525,6 +4534,13 @@
 	The keys stay in memory only, until Forget DCP Keys or the end of the session.	密钥只保存在内存中，直到执行“清除 DCP 密钥”或会话结束。
 	DCP keys forgotten	已清除 DCP 密钥
 	Choose the KDM file and the private key.	请选择 KDM 文件和私钥。
+	Load even if the certificate chain is not verified	即使证书链未经验证也加载
+	Bundle: {loaded} of {total} KDMs loaded, {other} for other recipients	包：已加载 {total} 个 KDM 中的 {loaded} 个，{other} 个属于其他接收方
+	Not loaded: {path}: {problem}	未加载：{path}：{problem}
+	Signature verified: {chain}	签名已验证：{chain}
+	Signature not verified: {problem}	签名未验证：{problem}
+	KDM required	需要 KDM
+	Encrypted: load the KDM with content key {keys}	已加密：请加载含有内容密钥 {keys} 的 KDM
 
 # Settings ▸ Timecode Sync (TC-4)
 	Timecode Sync	时间码同步
@@ -4567,3 +4583,60 @@
 	software backend: {reason}	软件后端：{reason}
 	Start studio	启动演播室
 	Stop studio	停止演播室
+# Auto Color, Auto Contrast, Auto Levels (EffectsSDK review)
+	Auto Color	自动颜色
+	Auto Contrast	自动对比度
+	Auto Levels	自动色阶
+	Temporal Smoothing (seconds)	时间平滑（秒）
+	Scene Detect	场景检测
+	Black Clip	黑色修剪
+	White Clip	白色修剪
+	Snap Neutral Midtones	中间调中性化
+# Layout presets: PiP corners, split screen (EffectsSDK review)
+	PiP 35% Upper Left	画中画 35% 左上
+	Picture-in-picture: 35 % scale in the upper left	画中画：左上角 35% 缩放
+	PiP 35% Lower Left	画中画 35% 左下
+	Picture-in-picture: 35 % scale in the lower left	画中画：左下角 35% 缩放
+	PiP 35% Lower Right	画中画 35% 右下
+	Picture-in-picture: 35 % scale in the lower right	画中画：右下角 35% 缩放
+	Split Screen Left	分屏 左
+	Split screen: the middle half of the picture fills the left half of the frame	分屏：画面中间的一半填满画框的左半边
+	Split Screen Right	分屏 右
+	Split screen: the middle half of the picture fills the right half of the frame	分屏：画面中间的一半填满画框的右半边
+# Creative Looks: CRT (P3)
+	CRT	CRT
+	Scanline Strength	扫描线强度
+	Line Count	扫描线数
+	Mask	遮罩
+	Mask Strength	遮罩强度
+	Corner Darkening	四角暗化
+	Aperture Grille	栅条荫罩
+	Shadow Mask	荫罩
+	Slot Mask	槽形荫罩
+# Creative Looks: Oil Paint (P4)
+	Oil Paint	油画
+	Detail	细节
+	Texture	纹理
+	Facet	切面
+	Daubs	厚涂
+	Dry Brush	干笔
+	Fresco	壁画
+	Knife	刮刀
+	Sponge	海绵
+# Creative Looks: Pixel Sort (P5)
+	Pixel Sort	像素排序
+	Sort By	排序依据
+	Lower Threshold	下限阈值
+	Upper Threshold	上限阈值
+	Ascending	升序
+# Temporal Denoise (EffectsSDK review)
+	Temporal Denoise	时间降噪
+	Frames Each Side	每侧帧数
+	Motion Threshold	运动阈值
+	Show Motion	显示运动
+	No signal	无信号
+	Locating	正在定位
+	Locked	已锁定
+	Freewheel	自由运行
+	Scrubbing	拖动中
+	Sending	正在发送

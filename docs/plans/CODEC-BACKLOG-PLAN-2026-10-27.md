@@ -1,6 +1,6 @@
 # Kodek-backlog végrehajtási terv
 
-> **Utolsó frissítés:** 2026-11-09 · **Változás:** minor (a H.266 / VVC kivéve, mert saját terve van, #721; az ütemterv a 22. héttől egy hellyel előrébb jött) · **Forrás:** [CODEC-BACKLOG-2026-10-27.md](CODEC-BACKLOG-2026-10-27.md)
+> **Utolsó frissítés:** 2026-11-13 · **Változás:** minor (a „kész” feltétel és a 📄 kapu szövege az AGENTS.md §2-höz igazítva) · **Forrás:** [CODEC-BACKLOG-2026-10-27.md](CODEC-BACKLOG-2026-10-27.md)
 
 A [CODEC-BACKLOG-2026-10-27.md](CODEC-BACKLOG-2026-10-27.md) 82 tétele heti ütemezésben. **Követelmény: minden héten
 legalább 2 tétel elkészül** (a tulajdonos döntése, 2026-10-27). Így a backlog 41 hét alatt fogy el:
@@ -11,7 +11,7 @@ backlognak meg kell várnia az M9 és a B3 lezárását, minden dátum ugyananny
 
 ## Mikor „kész” egy tétel
 
-1. Clean-room, saját pure-Rust dekóder nyilvános leírásból, `unsafe` nélkül ([AGENTS.md](../../AGENTS.md) §0, §2), új L0 crate-ben vagy a meglévőben. Az FFmpeg-tartalékon át működés nem elég (tulajdonosi döntés, 2026-11-08).
+1. Saját pure-Rust dekóder `unsafe` nélkül, nyilvános leírásból, vagy engedélyezett licencű megvalósítás nyilvántartott portjaként ([licensing.md](../licensing.md) §3, §5) ([AGENTS.md](../../AGENTS.md) §0, §2), új L0 crate-ben vagy a meglévőben. Az FFmpeg-tartalékon át működés nem elég (tulajdonosi döntés, 2026-11-08).
 2. Be van kötve az importba (a megfelelő konténerben: AVI, MOV, MKV, MP4, Ogg, nyers fájl).
 3. ffmpeg-orákulumteszt (bitpontos, vagy veszteséges hangnál SNR-határ), generált fixture-ökkel a `target/fixtures/` alatt.
 4. Crate-README, valamint egy sor a [codec-parity.md](../codec-parity.md)-ben; a tétel kikerül a [CODEC-BACKLOG-2026-10-27.md](CODEC-BACKLOG-2026-10-27.md)-ből.
@@ -24,7 +24,7 @@ Az enkódolás nem része a tételnek, csak ha a sor külön jelzi.
 | Jel | Jelentés | Határidő |
 |---|---|---|
 | ⚖️ | Licenc / szabadalom (MPEG-H, AC-4): tulajdonosi döntés kell | A 21. hétig (2027-03-22) |
-| 📄 | Nincs teljes nyilvános specifikáció, a clean-room szabály miatt tulajdonosi döntés kell | A K2-esekre a 9. hétig (2026-12-28), a K3-asokra a 22. hétig (2027-03-29) |
+| 📄 | Nincs teljes nyilvános specifikáció: tulajdonosi döntés kell (port engedélyezett licencű megvalósításból, vagy kimarad) | A K2-esekre a 9. hétig (2026-12-28), a K3-asokra a 22. hétig (2027-03-29) |
 
 Ha egy tételre a döntés nemleges vagy késik, az a hét a következő szabad tétellel telik meg, így a
 heti 2 tétel nem csúszik. A nemleges döntésű tételek kikerülnek a backlogból.
@@ -35,18 +35,18 @@ Sávok: K1 az 1–6. hét, K2 a 7–22. hét, K3 a 23–40. hét, K4 a 40–41. 
 
 | Hét | Kezdete | Sáv | 1. tétel | 2. tétel |
 |---|---|---|---|---|
-| 1 | 2026-11-02 | K1 | FFV1 | Huffyuv |
-| 2 | 2026-11-09 | K1 | Ut Video | MagicYUV |
-| 3 | 2026-11-16 | K1 | Lagarith 📄 | HAP |
-| 4 | 2026-11-23 | K1 | G.711 / G.722 | ADPCM (IMA, Microsoft) |
-| 5 | 2026-11-30 | K1 | WavPack | Monkey's Audio (APE) |
-| 6 | 2026-12-07 | K1 | Speex | AMR-NB / AMR-WB |
-| 7 | 2026-12-14 | K2 | Matrox MPEG-2 I-frame (ellenőrzés + teszt) | VC-2 |
-| 8 | 2026-12-21 | K2 | Dirac | Canopus HQ / HQX |
-| 9 | 2026-12-28 | K2 | TTA | Shorten |
-| 10 | 2027-01-04 | K2 | TAK 📄 | Musepack SV7 / SV8 |
-| 11 | 2027-01-11 | K2 | OptimFROG 📄 | G.729 |
-| 12 | 2027-01-18 | K2 | iLBC | EVS |
+| 1 | 2026-11-02 | K1 | ✅ FFV1 | ✅ Huffyuv |
+| 2 | 2026-11-09 | K1 | ✅ Ut Video | MagicYUV |
+| 3 | 2026-11-16 | K1 | Lagarith 📄 | ✅ HAP |
+| 4 | 2026-11-23 | K1 | ✅ G.711 / G.722 | ✅ ADPCM (IMA, Microsoft) |
+| 5 | 2026-11-30 | K1 | ✅ WavPack | ✅ Monkey's Audio (APE) |
+| 6 | 2026-12-07 | K1 | ✅ Speex | ✅ AMR-NB / AMR-WB |
+| 7 | 2026-12-14 | K2 | ✅ Matrox MPEG-2 I-frame (ellenőrzés + teszt) | ✅ VC-2 |
+| 8 | 2026-12-21 | K2 | ✅ Dirac | ✅ Canopus HQ / HQX |
+| 9 | 2026-12-28 | K2 | ✅ TTA | Shorten |
+| 10 | 2027-01-04 | K2 | TAK 📄 | ✅ Musepack SV7 / SV8 |
+| 11 | 2027-01-11 | K2 | OptimFROG 📄 | ✅ G.729 |
+| 12 | 2027-01-18 | K2 | ✅ iLBC | EVS |
 | 13 | 2027-01-25 | K2 | RealVideo RV10 / RV20 📄 | RealVideo RV30 / RV40 📄 |
 | 14 | 2027-02-01 | K2 | RealAudio Cook 📄 | RealAudio SIPR, 14.4 / 28.8 📄 |
 | 15 | 2027-02-08 | K2 | ATRAC3 📄 | ATRAC3plus 📄 |
@@ -86,6 +86,8 @@ valamelyik nem készült el, a következő hétre kell vinni a pótlással együ
 
 | Dátum | Változás | Összefoglaló |
 |---|---|---|
+| 2026-11-13 | patch | Pipálva (✅) a beolvasztott vagy zöld CI-vel a beolvasztási gazdának (#781) átadott tételek: FFV1, Huffyuv, Ut Video, HAP, G.711 / G.722, ADPCM, WavPack, APE, Speex, AMR, Matrox MPEG-2, VC-2, Dirac, Canopus HQ / HQX, TTA, Musepack, G.729, iLBC. Nyitott: MagicYUV és Shorten (tulajdonosi döntésre vár), a 📄 tételek |
+| 2026-11-13 | minor | A „kész” 1. feltétele és a 📄 kapu indoklása az AGENTS.md §2-höz igazítva (port megengedett, ha a licenc engedélyezett és nyilvántartott). Az ütemterv és a határidők nem változtak |
 | 2026-11-09 | minor | A Lagarith 📄 lett (nincs teljes nyilvános leírás, ffmpeg-kódoló sincs): a tulajdonos 2026-12-28-ig dönt róla, addig a 4. hét tételei (G.711 / G.722, ADPCM; #818) jöttek előre |
 | 2026-11-09 | minor | A H.266 / VVC kivéve: saját, jóváhagyott terve van (CFA4-VVC-PLAN-001, #721). 82 tétel, 41 hét (2027-08-15-ig); a 22. héttől minden tétel egy hellyel előrébb jött. A 2. hét MagicYUV-ja tulajdonosi döntésre vár, ezért a HAP (CB-3.2) előrejött |
 | 2026-11-08 | major | Áthelyezve a CFA4-AI_modules tárolóból a CinemaFundArchitecture4-be. Kivéve a CineForm, a JPEG XL, az AVIF, a DTS, a DTS-HD MA és a TrueHD (itt már megvan vagy tervben van); 83 tétel, 42 hét, a döntési határidők újraszámolva |
