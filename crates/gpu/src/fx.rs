@@ -68,6 +68,12 @@ const OP_SKIN_APPLY: u32 = 44;
 const OP_SKIN_MASK: u32 = 45;
 const OP_HALFTONE: u32 = 46;
 const OP_DITHER: u32 = 47;
+const OP_GLITCH_BIT_CRUSH: u32 = 48;
+const OP_GLITCH_BLOCKS: u32 = 49;
+const OP_GLITCH_DATABEND: u32 = 50;
+const OP_GLITCH_VHS: u32 = 51;
+const OP_GLITCH_SCAN: u32 = 52;
+const OP_GLITCH_TILE: u32 = 53;
 
 /// Working textures an op with explicit routing ([`Step::slots`]) may use: its input and four more.
 const SLOTS: usize = 5;
@@ -289,6 +295,55 @@ fn steps(op: &FxOp) -> Vec<Step> {
             }
             let spread = if len > 0 { 1.0 / (len as f32).cbrt() } else { 0.0 };
             out.push(step(OP_DITHER, [*pattern, (*block).max(1), off, len], &[*threshold, *levels, *blend, spread]));
+        }
+        FxOp::BitCrush { top, dither, cell } => out.push(step(OP_GLITCH_BIT_CRUSH, [0; 4], &[*top, *cell, f32::from(u8::from(*dither))])),
+        FxOp::BlockGlitch { count, tw, th, maxd, snap, swap, rng } => {
+            if *count > 0 {
+                let flag = |b: bool| f32::from(u8::from(b));
+                out.push(step(OP_GLITCH_BLOCKS, [*count, *tw, *th, *rng], &[*maxd as f32, flag(*snap), flag(*swap)]));
+            }
+        }
+        // one invocation per row (`fx_run`; i1.z = 0 picks rows)
+        FxOp::Databend { rng, breaks, shift, color, block } => {
+            if *shift > 0.0 || *color > 0.0 {
+                let mut s = step(OP_GLITCH_DATABEND, [*rng, *breaks, 0, *block], &[*shift, *color]);
+                s.run = true;
+                out.push(s);
+            }
+        }
+        FxOp::Vhs(v) => {
+            let base = cfa4_render::gpufx::stream_base(v.seed, v.frame, cfa4_render::gpufx::STREAM_VHS);
+            let mut s = step(
+                OP_GLITCH_VHS,
+                [base, v.head_rows, 0, 0],
+                &[
+                    v.alpha,
+                    v.wobble,
+                    v.inv_len,
+                    v.phase,
+                    v.bar_top as f32,
+                    v.bar_h as f32,
+                    v.bar_jitter as f32,
+                    v.dash_len as f32,
+                    v.snow,
+                    v.dim,
+                    v.head_jitter as f32,
+                    cfa4_render::gpufx::vhs_grey(),
+                ],
+            );
+            s.run = true;
+            out.push(s);
+        }
+        FxOp::ScanLineJitter { vertical, disp, thr, seed, tick } => {
+            if *disp > 0.0 {
+                let base = cfa4_render::gpufx::stream_base(*seed, *tick, cfa4_render::gpufx::STREAM_SCAN);
+                out.push(step(OP_GLITCH_SCAN, [base, 0, u32::from(*vertical), 0], &[*disp, *thr]));
+            }
+        }
+        FxOp::TileJitter { dx, dy, tiles, across } => {
+            if *dx != 0.0 || *dy != 0.0 {
+                out.push(step(OP_GLITCH_TILE, [0; 4], &[*dx, *dy, *tiles, f32::from(u8::from(*across))]));
+            }
         }
         FxOp::FilmGrain { amount, inv_cell, shadows, midtones, highlights, color, seed } => {
             if *amount > 0.0 {

@@ -16,6 +16,7 @@ use rayon::prelude::*;
 
 use crate::effects::{FxCtx, b, choice, color, dec, enc, f, gaussian_boxes, grade_space, on, point, text};
 use crate::image::Image;
+pub use crate::vfx::glitch::{STREAM_SCAN, STREAM_VHS, Vhs, stream_base, vhs_grey};
 
 /// A bilinear resample of the working image through an affine map (`Image::transformed` at a
 /// magnification or mild minification: no mip pre-filter).
@@ -199,6 +200,47 @@ pub enum FxOp {
         levels: f32,
         blend: f32,
     },
+    /// Bit Crush ([`crate::vfx::glitch::bit_crush`]): `top` = 2^bits − 1, Bayer cells of `cell` px.
+    BitCrush {
+        top: f32,
+        dither: bool,
+        cell: f32,
+    },
+    /// Block Glitch ([`crate::vfx::glitch::block_glitch`]): `rng` is the generator's start state.
+    BlockGlitch {
+        count: u32,
+        tw: u32,
+        th: u32,
+        maxd: i32,
+        snap: bool,
+        swap: bool,
+        rng: u32,
+    },
+    /// Databend ([`crate::vfx::glitch::databend`]).
+    Databend {
+        rng: u32,
+        breaks: u32,
+        shift: f32,
+        color: f32,
+        block: u32,
+    },
+    /// VHS ([`crate::vfx::glitch::vhs`]).
+    Vhs(Vhs),
+    /// Scan Line Jitter ([`crate::vfx::glitch::scan_line_jitter`]).
+    ScanLineJitter {
+        vertical: bool,
+        disp: f32,
+        thr: f32,
+        seed: u32,
+        tick: u32,
+    },
+    /// Tile Jitter ([`crate::vfx::glitch::tile_jitter`]).
+    TileJitter {
+        dx: f32,
+        dy: f32,
+        tiles: f32,
+        across: bool,
+    },
     FilmGrain {
         amount: f32,
         inv_cell: f32,
@@ -319,6 +361,12 @@ pub const GPU_EFFECTS: &[&str] = &[
     "skin_smoothing",
     "halftone",
     "dither",
+    "bit_crush",
+    "block_glitch",
+    "databend",
+    "vhs",
+    "scan_line_jitter",
+    "tile_jitter",
     "mirror",
     "offset",
     "asc_cdl",
@@ -741,6 +789,9 @@ impl FxOp {
     pub fn eval(e: &EffectInstance, cx: &FxCtx<'_>, w: usize, h: usize) -> Option<FxOp> {
         if !e.enabled {
             return None;
+        }
+        if let Some(op) = crate::vfx::glitch::eval(e, cx, w, h) {
+            return Some(op);
         }
         Some(match e.effect.as_str() {
             "brightness_contrast" => FxOp::BrightnessContrast { br: f(e, "brightness", cx) / 100.0 * 0.4, co: 1.0 + f(e, "contrast", cx) / 100.0 },
@@ -1223,6 +1274,12 @@ impl FxOp {
                 fin(&[*inv_cell, *soft, *blend]) && screens.iter().all(|s| fin(s)) && fin(ink) && fin(paper)
             }
             FxOp::Dither { threshold, levels, blend, .. } => fin(&[*threshold, *levels, *blend]),
+            FxOp::BitCrush { top, cell, .. } => fin(&[*top, *cell]),
+            FxOp::BlockGlitch { .. } => true,
+            FxOp::Databend { shift, color, .. } => fin(&[*shift, *color]),
+            FxOp::Vhs(v) => fin(&[v.alpha, v.wobble, v.inv_len, v.phase, v.snow, v.dim]),
+            FxOp::ScanLineJitter { disp, thr, .. } => fin(&[*disp, *thr]),
+            FxOp::TileJitter { dx, dy, tiles, .. } => fin(&[*dx, *dy, *tiles]),
             FxOp::FilmGrain { amount, inv_cell, shadows, midtones, highlights, color, .. } => {
                 fin(&[*amount, *inv_cell, *shadows, *midtones, *highlights, *color])
             }
@@ -1243,7 +1300,14 @@ impl FxOp {
         if img.w == 0 || img.h == 0 {
             return;
         }
+        use crate::vfx::glitch;
         match self {
+            FxOp::BitCrush { top, dither, cell } => glitch::bit_crush(img, *top, *dither, *cell),
+            FxOp::BlockGlitch { count, tw, th, maxd, snap, swap, rng } => glitch::block_glitch(img, *count, *tw, *th, *maxd, *snap, *swap, *rng),
+            FxOp::Databend { rng, breaks, shift, color, block } => glitch::databend(img, *rng, *breaks, *shift, *color, *block),
+            FxOp::Vhs(v) => glitch::vhs(img, v),
+            FxOp::ScanLineJitter { vertical, disp, thr, seed, tick } => glitch::scan_line_jitter(img, *vertical, *disp, *thr, *seed, *tick),
+            FxOp::TileJitter { dx, dy, tiles, across } => glitch::tile_jitter(img, *dx, *dy, *tiles, *across),
             FxOp::BrightnessContrast { br, co } => {
                 let (br, co) = (*br, *co);
                 img.map_rgb(|c, _, _| {
