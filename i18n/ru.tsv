@@ -4553,3 +4553,14 @@
 	Black Clip	Отсечение чёрного
 	White Clip	Отсечение белого
 	Snap Neutral Midtones	Нейтральные средние тона
+# Layout presets: PiP corners, split screen (EffectsSDK review)
+	PiP 35% Upper Left	«Картинка в картинке» 35% слева вверху
+	Picture-in-picture: 35 % scale in the upper left	«Картинка в картинке»: масштаб 35 % в левом верхнем углу
+	PiP 35% Lower Left	«Картинка в картинке» 35% слева внизу
+	Picture-in-picture: 35 % scale in the lower left	«Картинка в картинке»: масштаб 35 % в левом нижнем углу
+	PiP 35% Lower Right	«Картинка в картинке» 35% справа внизу
+	Picture-in-picture: 35 % scale in the lower right	«Картинка в картинке»: масштаб 35 % в правом нижнем углу
+	Split Screen Left	Разделённый экран слева
+	Split screen: the middle half of the picture fills the left half of the frame	Разделённый экран: средняя половина изображения заполняет левую половину кадра
+	Split Screen Right	Разделённый экран справа
+	Split screen: the middle half of the picture fills the right half of the frame	Разделённый экран: средняя половина изображения заполняет правую половину кадра

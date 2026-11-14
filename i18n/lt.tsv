@@ -4571,3 +4571,14 @@ export.summary	Low	žema
 	Black Clip	Juodos apkirpimas
 	White Clip	Baltos apkirpimas
 	Snap Neutral Midtones	Neutralūs vidutiniai tonai
+# Layout presets: PiP corners, split screen (EffectsSDK review)
+	PiP 35% Upper Left	PiP 35 % viršuje kairėje
+	Picture-in-picture: 35 % scale in the upper left	Vaizdas vaizde: 35 % mastelis viršuje kairėje
+	PiP 35% Lower Left	PiP 35 % apačioje kairėje
+	Picture-in-picture: 35 % scale in the lower left	Vaizdas vaizde: 35 % mastelis apačioje kairėje
+	PiP 35% Lower Right	PiP 35 % apačioje dešinėje
+	Picture-in-picture: 35 % scale in the lower right	Vaizdas vaizde: 35 % mastelis apačioje dešinėje
+	Split Screen Left	Padalytas ekranas kairėje
+	Split screen: the middle half of the picture fills the left half of the frame	Padalytas ekranas: vidurinė vaizdo pusė užpildo kairiąją kadro pusę
+	Split Screen Right	Padalytas ekranas dešinėje
+	Split screen: the middle half of the picture fills the right half of the frame	Padalytas ekranas: vidurinė vaizdo pusė užpildo dešiniąją kadro pusę

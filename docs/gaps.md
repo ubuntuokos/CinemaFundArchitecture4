@@ -264,6 +264,14 @@ distributions are not targets.
     existing Skin Smoothing effect to faces.
   - *Background blur / replace*: Robust Video Matting (GPL-3.0) for the subject matte; MODNet
     (Apache-2.0) as the fallback.
+    The same matte also gives a *transparent background* (subject over the tracks below) and a
+    *screen recording as the background* (EffectsSDK review, 2026-11-13).
+  - *Portrait Lighting*: brighten the subject and darken the background (EffectsSDK review); needs
+    the subject matte above, the grading itself is not AI.
+  - *Face-framed Auto Reframe*: keep a detected face (YuNet, BSD-3) at a set share of the frame
+    ("smart zoom"); today's Auto Reframe follows a classical saliency centroid.
+  - *3D head avatars* driven by face tracking (EffectsSDK review): needs an openly licensed face
+    landmark / blendshape model and avatar assets; no candidate checked yet.
   - *AI foley*: MMAudio (code MIT, weights CC BY-NC 4.0): blocked until a commercially usable
     model exists (see [kdenlive-parity.md](kdenlive-parity.md) 12.1).
 

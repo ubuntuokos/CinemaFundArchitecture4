@@ -4570,3 +4570,14 @@ export.summary	Low	låg
 	Black Clip	Svartklippning
 	White Clip	Vitklippning
 	Snap Neutral Midtones	Neutrala mellantoner
+# Layout presets: PiP corners, split screen (EffectsSDK review)
+	PiP 35% Upper Left	PiP 35 % uppe till vänster
+	Picture-in-picture: 35 % scale in the upper left	Bild-i-bild: 35 % skala uppe till vänster
+	PiP 35% Lower Left	PiP 35 % nere till vänster
+	Picture-in-picture: 35 % scale in the lower left	Bild-i-bild: 35 % skala nere till vänster
+	PiP 35% Lower Right	PiP 35 % nere till höger
+	Picture-in-picture: 35 % scale in the lower right	Bild-i-bild: 35 % skala nere till höger
+	Split Screen Left	Delad skärm vänster
+	Split screen: the middle half of the picture fills the left half of the frame	Delad skärm: bildens mittersta halva fyller rutans vänstra halva
+	Split Screen Right	Delad skärm höger
+	Split screen: the middle half of the picture fills the right half of the frame	Delad skärm: bildens mittersta halva fyller rutans högra halva

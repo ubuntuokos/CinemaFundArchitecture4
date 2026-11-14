@@ -4570,3 +4570,14 @@ export.summary	Low	χαμηλή
 	Black Clip	Αποκοπή μαύρου
 	White Clip	Αποκοπή λευκού
 	Snap Neutral Midtones	Ουδέτεροι μεσαίοι τόνοι
+# Layout presets: PiP corners, split screen (EffectsSDK review)
+	PiP 35% Upper Left	PiP 35% πάνω αριστερά
+	Picture-in-picture: 35 % scale in the upper left	Εικόνα σε εικόνα: κλίμακα 35 % πάνω αριστερά
+	PiP 35% Lower Left	PiP 35% κάτω αριστερά
+	Picture-in-picture: 35 % scale in the lower left	Εικόνα σε εικόνα: κλίμακα 35 % κάτω αριστερά
+	PiP 35% Lower Right	PiP 35% κάτω δεξιά
+	Picture-in-picture: 35 % scale in the lower right	Εικόνα σε εικόνα: κλίμακα 35 % κάτω δεξιά
+	Split Screen Left	Διαιρεμένη οθόνη αριστερά
+	Split screen: the middle half of the picture fills the left half of the frame	Διαιρεμένη οθόνη: το μεσαίο μισό της εικόνας γεμίζει το αριστερό μισό του κάδρου
+	Split Screen Right	Διαιρεμένη οθόνη δεξιά
+	Split screen: the middle half of the picture fills the right half of the frame	Διαιρεμένη οθόνη: το μεσαίο μισό της εικόνας γεμίζει το δεξί μισό του κάδρου

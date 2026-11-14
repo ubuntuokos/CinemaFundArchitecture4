@@ -4567,3 +4567,14 @@ export.summary	Low	低
 	Black Clip	黑色修剪
 	White Clip	白色修剪
 	Snap Neutral Midtones	中間調中性化
+# Layout presets: PiP corners, split screen (EffectsSDK review)
+	PiP 35% Upper Left	畫中畫 35% 左上
+	Picture-in-picture: 35 % scale in the upper left	畫中畫：左上角 35% 縮放
+	PiP 35% Lower Left	畫中畫 35% 左下
+	Picture-in-picture: 35 % scale in the lower left	畫中畫：左下角 35% 縮放
+	PiP 35% Lower Right	畫中畫 35% 右下
+	Picture-in-picture: 35 % scale in the lower right	畫中畫：右下角 35% 縮放
+	Split Screen Left	分割畫面 左
+	Split screen: the middle half of the picture fills the left half of the frame	分割畫面：畫面中間的一半填滿畫框的左半邊
+	Split Screen Right	分割畫面 右
+	Split screen: the middle half of the picture fills the right half of the frame	分割畫面：畫面中間的一半填滿畫框的右半邊

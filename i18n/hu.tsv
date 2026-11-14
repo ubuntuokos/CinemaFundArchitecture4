@@ -4565,3 +4565,14 @@ export.summary	Low	alacsony
 	Black Clip	Fekete vágása
 	White Clip	Fehér vágása
 	Snap Neutral Midtones	Semleges középtónusok
+# Layout presets: PiP corners, split screen (EffectsSDK review)
+	PiP 35% Upper Left	Kép a képben, 35%, bal felső
+	Picture-in-picture: 35 % scale in the upper left	Kép a képben: 35%-os méret bal felül
+	PiP 35% Lower Left	Kép a képben, 35%, bal alsó
+	Picture-in-picture: 35 % scale in the lower left	Kép a képben: 35%-os méret bal alul
+	PiP 35% Lower Right	Kép a képben, 35%, jobb alsó
+	Picture-in-picture: 35 % scale in the lower right	Kép a képben: 35%-os méret jobb alul
+	Split Screen Left	Osztott kép, bal
+	Split screen: the middle half of the picture fills the left half of the frame	Osztott kép: a kép középső fele kitölti a képkocka bal felét
+	Split Screen Right	Osztott kép, jobb
+	Split screen: the middle half of the picture fills the right half of the frame	Osztott kép: a kép középső fele kitölti a képkocka jobb felét

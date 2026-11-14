@@ -4571,3 +4571,14 @@ export.summary	Low	დაბალი
 	Black Clip	შავის მოჭრა
 	White Clip	თეთრის მოჭრა
 	Snap Neutral Midtones	ნეიტრალური შუა ტონები
+# Layout presets: PiP corners, split screen (EffectsSDK review)
+	PiP 35% Upper Left	PiP 35% ზედა მარცხენა
+	Picture-in-picture: 35 % scale in the upper left	სურათი სურათში: 35 % მასშტაბი ზედა მარცხენა კუთხეში
+	PiP 35% Lower Left	PiP 35% ქვედა მარცხენა
+	Picture-in-picture: 35 % scale in the lower left	სურათი სურათში: 35 % მასშტაბი ქვედა მარცხენა კუთხეში
+	PiP 35% Lower Right	PiP 35% ქვედა მარჯვენა
+	Picture-in-picture: 35 % scale in the lower right	სურათი სურათში: 35 % მასშტაბი ქვედა მარჯვენა კუთხეში
+	Split Screen Left	გაყოფილი ეკრანი მარცხნივ
+	Split screen: the middle half of the picture fills the left half of the frame	გაყოფილი ეკრანი: სურათის შუა ნახევარი ავსებს კადრის მარცხენა ნახევარს
+	Split Screen Right	გაყოფილი ეკრანი მარჯვნივ
+	Split screen: the middle half of the picture fills the right half of the frame	გაყოფილი ეკრანი: სურათის შუა ნახევარი ავსებს კადრის მარჯვენა ნახევარს

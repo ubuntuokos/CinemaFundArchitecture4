@@ -4562,3 +4562,14 @@
 	Black Clip	검정 클립
 	White Clip	흰색 클립
 	Snap Neutral Midtones	중간 톤 중립화
+# Layout presets: PiP corners, split screen (EffectsSDK review)
+	PiP 35% Upper Left	PiP 35% 왼쪽 위
+	Picture-in-picture: 35 % scale in the upper left	화면 속 화면: 왼쪽 위에 35 % 비율
+	PiP 35% Lower Left	PiP 35% 왼쪽 아래
+	Picture-in-picture: 35 % scale in the lower left	화면 속 화면: 왼쪽 아래에 35 % 비율
+	PiP 35% Lower Right	PiP 35% 오른쪽 아래
+	Picture-in-picture: 35 % scale in the lower right	화면 속 화면: 오른쪽 아래에 35 % 비율
+	Split Screen Left	분할 화면 왼쪽
+	Split screen: the middle half of the picture fills the left half of the frame	분할 화면: 영상의 가운데 절반이 프레임의 왼쪽 절반을 채움
+	Split Screen Right	분할 화면 오른쪽
+	Split screen: the middle half of the picture fills the right half of the frame	분할 화면: 영상의 가운데 절반이 프레임의 오른쪽 절반을 채움

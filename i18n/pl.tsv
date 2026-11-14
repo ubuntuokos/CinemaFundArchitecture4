@@ -4568,3 +4568,14 @@ export.summary	Low	niska
 	Black Clip	Obcięcie czerni
 	White Clip	Obcięcie bieli
 	Snap Neutral Midtones	Neutralizuj półtony
+# Layout presets: PiP corners, split screen (EffectsSDK review)
+	PiP 35% Upper Left	Obraz w obrazie 35% lewy górny
+	Picture-in-picture: 35 % scale in the upper left	Obraz w obrazie: skala 35 % w lewym górnym rogu
+	PiP 35% Lower Left	Obraz w obrazie 35% lewy dolny
+	Picture-in-picture: 35 % scale in the lower left	Obraz w obrazie: skala 35 % w lewym dolnym rogu
+	PiP 35% Lower Right	Obraz w obrazie 35% prawy dolny
+	Picture-in-picture: 35 % scale in the lower right	Obraz w obrazie: skala 35 % w prawym dolnym rogu
+	Split Screen Left	Podzielony ekran z lewej
+	Split screen: the middle half of the picture fills the left half of the frame	Podzielony ekran: środkowa połowa obrazu wypełnia lewą połowę kadru
+	Split Screen Right	Podzielony ekran z prawej
+	Split screen: the middle half of the picture fills the right half of the frame	Podzielony ekran: środkowa połowa obrazu wypełnia prawą połowę kadru

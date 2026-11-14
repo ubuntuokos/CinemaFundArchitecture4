@@ -4568,3 +4568,14 @@
 	Black Clip	Taglio del nero
 	White Clip	Taglio del bianco
 	Snap Neutral Midtones	Neutralizza toni medi
+# Layout presets: PiP corners, split screen (EffectsSDK review)
+	PiP 35% Upper Left	PiP 35% in alto a sinistra
+	Picture-in-picture: 35 % scale in the upper left	Picture-in-picture: scala 35 % in alto a sinistra
+	PiP 35% Lower Left	PiP 35% in basso a sinistra
+	Picture-in-picture: 35 % scale in the lower left	Picture-in-picture: scala 35 % in basso a sinistra
+	PiP 35% Lower Right	PiP 35% in basso a destra
+	Picture-in-picture: 35 % scale in the lower right	Picture-in-picture: scala 35 % in basso a destra
+	Split Screen Left	Schermo diviso a sinistra
+	Split screen: the middle half of the picture fills the left half of the frame	Schermo diviso: la metà centrale dell'immagine riempie la metà sinistra del fotogramma
+	Split Screen Right	Schermo diviso a destra
+	Split screen: the middle half of the picture fills the right half of the frame	Schermo diviso: la metà centrale dell'immagine riempie la metà destra del fotogramma

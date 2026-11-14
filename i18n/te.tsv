@@ -4574,3 +4574,14 @@ export.summary	Low	తక్కువ
 	Black Clip	నలుపు కత్తిరింపు
 	White Clip	తెలుపు కత్తిరింపు
 	Snap Neutral Midtones	మధ్య టోన్లను తటస్థం చేయి
+# Layout presets: PiP corners, split screen (EffectsSDK review)
+	PiP 35% Upper Left	PiP 35% పైన ఎడమ
+	Picture-in-picture: 35 % scale in the upper left	చిత్రంలో చిత్రం: పైన ఎడమవైపు 35 % స్కేల్
+	PiP 35% Lower Left	PiP 35% కింద ఎడమ
+	Picture-in-picture: 35 % scale in the lower left	చిత్రంలో చిత్రం: కింద ఎడమవైపు 35 % స్కేల్
+	PiP 35% Lower Right	PiP 35% కింద కుడి
+	Picture-in-picture: 35 % scale in the lower right	చిత్రంలో చిత్రం: కింద కుడివైపు 35 % స్కేల్
+	Split Screen Left	విభజిత తెర ఎడమ
+	Split screen: the middle half of the picture fills the left half of the frame	విభజిత తెర: చిత్రం మధ్య సగం ఫ్రేమ్ ఎడమ సగాన్ని నింపుతుంది
+	Split Screen Right	విభజిత తెర కుడి
+	Split screen: the middle half of the picture fills the right half of the frame	విభజిత తెర: చిత్రం మధ్య సగం ఫ్రేమ్ కుడి సగాన్ని నింపుతుంది

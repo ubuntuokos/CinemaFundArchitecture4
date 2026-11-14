@@ -4570,3 +4570,14 @@ export.summary	Low	төмен
 	Black Clip	Қараны кесу
 	White Clip	Ақты кесу
 	Snap Neutral Midtones	Бейтарап орта реңктер
+# Layout presets: PiP corners, split screen (EffectsSDK review)
+	PiP 35% Upper Left	PiP 35% жоғарғы солда
+	Picture-in-picture: 35 % scale in the upper left	Кескін ішіндегі кескін: жоғарғы солда 35% масштаб
+	PiP 35% Lower Left	PiP 35% төменгі солда
+	Picture-in-picture: 35 % scale in the lower left	Кескін ішіндегі кескін: төменгі солда 35% масштаб
+	PiP 35% Lower Right	PiP 35% төменгі оңда
+	Picture-in-picture: 35 % scale in the lower right	Кескін ішіндегі кескін: төменгі оңда 35% масштаб
+	Split Screen Left	Бөлінген экран сол жақ
+	Split screen: the middle half of the picture fills the left half of the frame	Бөлінген экран: кескіннің ортаңғы жартысы кадрдың сол жартысын толтырады
+	Split Screen Right	Бөлінген экран оң жақ
+	Split screen: the middle half of the picture fills the right half of the frame	Бөлінген экран: кескіннің ортаңғы жартысы кадрдың оң жартысын толтырады

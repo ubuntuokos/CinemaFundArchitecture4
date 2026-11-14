@@ -4568,3 +4568,14 @@ export.summary	Low	laag
 	Black Clip	Zwart afkappen
 	White Clip	Wit afkappen
 	Snap Neutral Midtones	Neutrale middentonen
+# Layout presets: PiP corners, split screen (EffectsSDK review)
+	PiP 35% Upper Left	PiP 35% linksboven
+	Picture-in-picture: 35 % scale in the upper left	Beeld-in-beeld: 35 % schaal linksboven
+	PiP 35% Lower Left	PiP 35% linksonder
+	Picture-in-picture: 35 % scale in the lower left	Beeld-in-beeld: 35 % schaal linksonder
+	PiP 35% Lower Right	PiP 35% rechtsonder
+	Picture-in-picture: 35 % scale in the lower right	Beeld-in-beeld: 35 % schaal rechtsonder
+	Split Screen Left	Gesplitst scherm links
+	Split screen: the middle half of the picture fills the left half of the frame	Gesplitst scherm: de middelste helft van het beeld vult de linkerhelft van het frame
+	Split Screen Right	Gesplitst scherm rechts
+	Split screen: the middle half of the picture fills the right half of the frame	Gesplitst scherm: de middelste helft van het beeld vult de rechterhelft van het frame

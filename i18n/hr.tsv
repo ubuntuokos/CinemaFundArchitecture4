@@ -4570,3 +4570,14 @@ export.summary	Low	niska
 	Black Clip	Odsijecanje crne
 	White Clip	Odsijecanje bijele
 	Snap Neutral Midtones	Neutralni srednji tonovi
+# Layout presets: PiP corners, split screen (EffectsSDK review)
+	PiP 35% Upper Left	PiP 35 % gore lijevo
+	Picture-in-picture: 35 % scale in the upper left	Slika u slici: mjerilo 35 % gore lijevo
+	PiP 35% Lower Left	PiP 35 % dolje lijevo
+	Picture-in-picture: 35 % scale in the lower left	Slika u slici: mjerilo 35 % dolje lijevo
+	PiP 35% Lower Right	PiP 35 % dolje desno
+	Picture-in-picture: 35 % scale in the lower right	Slika u slici: mjerilo 35 % dolje desno
+	Split Screen Left	Podijeljeni zaslon lijevo
+	Split screen: the middle half of the picture fills the left half of the frame	Podijeljeni zaslon: srednja polovica slike ispunjava lijevu polovicu kadra
+	Split Screen Right	Podijeljeni zaslon desno
+	Split screen: the middle half of the picture fills the right half of the frame	Podijeljeni zaslon: srednja polovica slike ispunjava desnu polovicu kadra

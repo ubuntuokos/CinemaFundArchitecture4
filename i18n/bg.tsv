@@ -4571,3 +4571,14 @@ export.summary	Low	ниско
 	Black Clip	Отрязване на черното
 	White Clip	Отрязване на бялото
 	Snap Neutral Midtones	Неутрални средни тонове
+# Layout presets: PiP corners, split screen (EffectsSDK review)
+	PiP 35% Upper Left	Картина в картината 35% горе вляво
+	Picture-in-picture: 35 % scale in the upper left	Картина в картината: мащаб 35 % горе вляво
+	PiP 35% Lower Left	Картина в картината 35% долу вляво
+	Picture-in-picture: 35 % scale in the lower left	Картина в картината: мащаб 35 % долу вляво
+	PiP 35% Lower Right	Картина в картината 35% долу вдясно
+	Picture-in-picture: 35 % scale in the lower right	Картина в картината: мащаб 35 % долу вдясно
+	Split Screen Left	Разделен екран вляво
+	Split screen: the middle half of the picture fills the left half of the frame	Разделен екран: средната половина на картината запълва лявата половина на кадъра
+	Split Screen Right	Разделен екран вдясно
+	Split screen: the middle half of the picture fills the right half of the frame	Разделен екран: средната половина на картината запълва дясната половина на кадъра

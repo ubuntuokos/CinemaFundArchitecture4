@@ -4571,3 +4571,14 @@ export.summary	Low	nizka
 	Black Clip	Rezanje črne
 	White Clip	Rezanje bele
 	Snap Neutral Midtones	Nevtralni srednji toni
+# Layout presets: PiP corners, split screen (EffectsSDK review)
+	PiP 35% Upper Left	SvS 35 % zgoraj levo
+	Picture-in-picture: 35 % scale in the upper left	Slika v sliki: merilo 35 % zgoraj levo
+	PiP 35% Lower Left	SvS 35 % spodaj levo
+	Picture-in-picture: 35 % scale in the lower left	Slika v sliki: merilo 35 % spodaj levo
+	PiP 35% Lower Right	SvS 35 % spodaj desno
+	Picture-in-picture: 35 % scale in the lower right	Slika v sliki: merilo 35 % spodaj desno
+	Split Screen Left	Razdeljen zaslon levo
+	Split screen: the middle half of the picture fills the left half of the frame	Razdeljen zaslon: srednja polovica slike zapolni levo polovico kadra
+	Split Screen Right	Razdeljen zaslon desno
+	Split screen: the middle half of the picture fills the right half of the frame	Razdeljen zaslon: srednja polovica slike zapolni desno polovico kadra
