@@ -48,3 +48,7 @@ bash "$(dirname "$0")/install-speex.sh" \
 # the AMR oracle tests skip without it)
 bash "$(dirname "$0")/install-amr-oracle.sh" \
   || echo "::warning::cfa4-amr-oracle build failed: the AMR oracle tests skip"
+# MPEG-5 EVC oracles `xevdb_app` / `xeveb_app` (xevd v0.8.0, xeve v0.7.1, Baseline builds from the
+# pinned upstream tags; the EVC oracle tests skip without them)
+bash "$(dirname "$0")/install-evc-oracle.sh" \
+  || echo "::warning::xevd / xeve build failed: the EVC oracle tests skip"
