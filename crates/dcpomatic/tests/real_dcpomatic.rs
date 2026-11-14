@@ -8,7 +8,7 @@
 use std::path::{Path, PathBuf};
 use std::process::Command;
 
-use cfa4_dcp_validate::{DcpValidator as _, NativeValidator, Profile, ValidationControl, ValidationRequest, Verdict};
+use cfa4_dcp_validate::{DcpValidator as _, NativeValidator, Profile, Status, ValidationControl, ValidationRequest, Verdict};
 use cfa4_dcpomatic::{Container, Content, ContentKind, Control, DcpRequest, Dcpomatic, ENV_BIN_DIR, MIN_VERSION, Resolution, Standard};
 
 /// Two seconds of 2K Flat ProRes 4444 with 24-bit PCM, as CFA4's `file.exportMedia` would hand over.
@@ -38,8 +38,12 @@ fn make_and_validate(d: &Dcpomatic, master: &Path, work: &Path, standard: Standa
     assert_eq!(out.version, MIN_VERSION, "the pinned build");
     let profile = Profile::builtin("full-integrity").expect("full-integrity profile");
     let report = NativeValidator.validate(&ValidationRequest::new(&out.dcp, profile), &ValidationControl::new()).expect("validation runs");
-    println!("{}", report.to_markdown());
-    assert_eq!(report.verdict, Verdict::Pass, "{tag}: {}", report.to_markdown());
+    // Only the rule ids and messages of what failed: the full report carries the package's
+    // document ids, which need not end up in CI logs.
+    let failed: Vec<String> =
+        report.findings.iter().filter(|f| f.status != Status::Pass).map(|f| format!("{} {:?}: {}", f.rule, f.status, f.message)).collect();
+    println!("{tag}: {:?}, {} findings, not passed: {failed:?}", report.verdict, report.findings.len());
+    assert_eq!(report.verdict, Verdict::Pass, "{tag}: {failed:?}");
 }
 
 #[test]
