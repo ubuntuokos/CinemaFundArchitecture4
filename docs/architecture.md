@@ -81,6 +81,7 @@ Crates are named `cfa4-<dir>` (`crates/time` is `cfa4-time`); new CFA4 crates ar
 | `g729` | L0 | ITU-T G.729 speech decoder with Annex B comfort noise, ported from bcg729 (GPL-3.0-or-later) ([README](../crates/g729/README.md)) |
 | `ilbc` | L0 | iLBC (RFC 3951) speech decoder, ported from WebRTC's fixed-point libilbc (BSD-3-Clause) ([README](../crates/ilbc/README.md)) |
 | `tta` | L0 | TTA (True Audio) lossless audio decoder, ported from libtta (LGPL-3.0) ([README](../crates/tta/README.md)) |
+| `musepack` | L0 | Musepack SV7 and SV8 audio decoder, ported from the reference library libmpcdec (BSD-3-Clause) in its floating-point build ([README](../crates/musepack/README.md)) |
 | `testkit` | L0 | test-only helpers, used only as a dev-dependency: ffmpeg/ffprobe discovery, fixture dirs, golden images ([testing.md](testing.md)) |
 | `frame` | L1 | `VideoFrame` (planar YUV / RGBA8 / linear RGBA f32, colour metadata), `AudioBuffer` |
 | `media` | L1 | `MediaSource` trait, probing/openers, frame cache, generators, stills, image sequences, WAV / Broadcast WAV (PCM, G.711, G.722, ADPCM) |

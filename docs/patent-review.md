@@ -91,6 +91,7 @@ szabadalommal védett formátumot.
 | iLBC | dekódolás; `.lbc` fájlok olvasása | `crates/ilbc` (a WebRTC libilbc portja) | alap | függőben | | |
 | TTA (True Audio) | dekódolás; `.tta` és Matroska olvasása | `crates/tta` (a libtta portja) | alap | függőben | | |
 | AMR-NB, AMR-WB | dekódolás | `crates/amr` (az opencore-amr portja) | alap | függőben | | |
+| Musepack SV7, SV8 | dekódolás; `.mpc` fájlok olvasása | `crates/musepack` (a libmpcdec portja) | alap | függőben | | |
 
 ## Konténerek
 

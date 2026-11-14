@@ -64,6 +64,7 @@ const LAYERS: &[(&str, u8)] = &[
     ("ilbc", 0),
     ("tta", 0),
     ("canopus", 0),
+    ("musepack", 0),
     ("vp9", 0),
     ("prores", 0),
     ("mjpeg", 0),
