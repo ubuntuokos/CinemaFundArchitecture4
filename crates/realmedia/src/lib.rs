@@ -98,7 +98,7 @@ pub struct Packet {
     /// File offset of that data packet.
     pub pos: u64,
     /// A video frame whose first slices were not read (it began before the position the reader
-    /// was moved to with [`Demuxer::seek`]).
+    /// was moved to with [`Demuxer::seek`]), or an audio packet cut short by the end of the file.
     pub partial: bool,
     pub data: Vec<u8>,
 }
@@ -186,6 +186,18 @@ impl<R: Read + Seek> Io<R> {
         if got != n {
             return Err(Error::Invalid("truncated data"));
         }
+        Ok(v)
+    }
+
+    /// Up to `n` bytes (`av_get_packet`: a packet cut short by the end of the file keeps what is
+    /// there).
+    fn read_vec_upto(&mut self, n: usize) -> Result<Vec<u8>> {
+        if n > MAX_ALLOC {
+            return Err(Error::Invalid("chunk too large"));
+        }
+        let mut v = vec![0u8; n];
+        let got = self.fill(&mut v)?;
+        v.truncate(got);
         Ok(v)
     }
 
@@ -467,13 +479,16 @@ impl<R: Read + Seek> Demuxer<R> {
             let is_video = matches!(self.header.streams.get(si).map(|s| &s.kind), Some(StreamKind::Video { .. }));
             if !is_video {
                 self.remaining_len = 0;
-                let data = self.io.read_vec(len)?;
+                let data = self.io.read_vec_upto(len)?;
+                if data.is_empty() {
+                    return Ok(None);
+                }
                 return Ok(Some(Packet {
                     stream: si,
                     timestamp_ms: self.current_ts,
                     keyframe: self.current_flags & 2 != 0,
                     pos: self.current_pos,
-                    partial: false,
+                    partial: data.len() < len,
                     data,
                 }));
             }

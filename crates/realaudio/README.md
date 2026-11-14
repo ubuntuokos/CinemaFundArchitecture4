@@ -1,15 +1,17 @@
 # cfa4-realaudio
 
-Pure-Rust (no `unsafe`) RealAudio decoders. So far **Cook** (RealAudio G2, FourCC `cook`), the
-audio codec of most RealMedia files. It is an L0 crate: it depends only on `thiserror`. Codec
-backlog item CB-14.1 ([plan](../../docs/plans/CODEC-BACKLOG-PLAN-2026-10-27.md)); the container
-and its packet deinterleaving are in [`cfa4-realmedia`](../realmedia/README.md).
+Pure-Rust (no `unsafe`) RealAudio decoders: **Cook** (RealAudio G2, FourCC `cook`), the audio
+codec of most RealMedia files; **SIPR** (ACELP.NET, `sipr`); **RealAudio 1.0** (14.4, `lpcJ`)
+and **RealAudio 2.0** (28.8, `28_8`). It is an L0 crate: it depends only on `thiserror`. Codec
+backlog items CB-14.1 and CB-14.2 ([plan](../../docs/plans/CODEC-BACKLOG-PLAN-2026-10-27.md));
+the container and its packet deinterleaving are in [`cfa4-realmedia`](../realmedia/README.md).
 
 ## Sources and licences
 
 | Source | Version, licence | Used for |
 |---|---|---|
 | FFmpeg | n7.1.1, LGPL-2.1-or-later, Sascha Sommer, Benjamin Larsson and the FFmpeg developers | `libavcodec/cook.c` (re-expressed in `cook.rs`), `cookdata.h` (generated into `tables.rs`), `libavutil/lfg.h` / `lfg.c` (the noise generator and its seed-0 state), `sinewin_tablegen.h` (the window), `get_bits.h` (the checked bit reader in `bits.rs`) |
+| FFmpeg | n7.1.1, LGPL-2.1-or-later, the FFmpeg project, Vitor Sessak, Vladimir Voroshilov, Reynaldo H. Verdejo Pinochet | `ra144.c` / `ra144dec.c` (`ra144.rs`, tables in `tables144.rs`), `ra288.c` / `ra288.h` (`ra288.rs`, `tables288.rs`), `sipr.c` / `sipr16k.c` / `siprdata.h` / `sipr16kdata.h` (`sipr.rs`, `tables_sipr.rs`), and the CELP helpers they use from `celp_filters.c`, `acelp_filters.c`, `acelp_vectors.c`, `acelp_pitch_delay.c`, `lsp.c`, `lpc_functions.h`, `libavutil/float_dsp.c` (`celp.rs`) |
 
 RealNetworks never published the format; FFmpeg's decoder is the reference. Porting it is an
 owner-approved exception to the FFmpeg-only-in-tests rule (as RealVideo, CB-13.1 / CB-13.2). The
@@ -25,6 +27,9 @@ ported code keeps FFmpeg's licence (`COPYING.LGPL-2.1`); CFA4's changes are GPL-
 | The inverse MDCT | in `f64` (`mdct.rs`); FFmpeg's `av_tx` result depends on its SIMD code, so samples match it to rounding (within 2·10⁻⁷ on the samples below) |
 | Output | planar `f32` in `[-1, 1]`; the first two frames give no output, as in FFmpeg |
 | Damaged frames | an error for the frame, never a panic |
+| RealAudio 1.0 (14.4) | done: 20-byte frames of 160 samples, fixed point, FFmpeg's 16-bit samples bit for bit |
+| RealAudio 2.0 (28.8) | done: 38-byte frames of 160 samples, FFmpeg's `f32` samples bit for bit (same `f32`/`f64` operation order) |
+| SIPR | done: 5.0, 6.5, 8.5 kbit/s (8 kHz) and 16 kbit/s (16 kHz), FFmpeg's `f32` samples bit for bit |
 
 The noise fill uses FFmpeg's lagged Fibonacci generator over the whole stream, so the exact
 samples depend on everything decoded before. `Decoder` is `Clone`: a clone is a checkpoint that
@@ -38,5 +43,12 @@ decodes on exactly like the original (the media source keeps one every 32 superb
   by us and decoded by ffmpeg: the same sample count, every sample within 10⁻⁶. ffmpeg has no
   Cook encoder, so these run where the samples are present. Damaged frames, random stream
   parameters and random RealAudio headers without a panic.
-- `crates/codecs/tests/realmedia_oracle.rs`: the same samples through the media source, read in
-  order and with jumps backwards.
+- `tests/ra144_oracle.rs`: streams from ffmpeg's `real_144` encoder (sine, pink noise, chirp,
+  near silence; these run in CI) and the FATE sample `real/ra3_in_rm_file.rm`: the same 16-bit
+  samples as ffmpeg's `ra_144` decoder. Random frames without a panic.
+- `tests/ra288_oracle.rs`: the FATE sample `real/ra_288.rm`, bit for bit.
+- `tests/sipr_oracle.rs`: the FATE samples `sipr/sipr_{5k0,6k5,8k5,16k}.rm` (from
+  <https://fate-suite.ffmpeg.org/sipr/>, in `target/fixtures/sipr`), bit for bit, all four modes.
+  ffmpeg has no 28.8 or SIPR encoder, so these run where the samples are present.
+- `crates/codecs/tests/realmedia_oracle.rs`: the same samples (and a 14.4 stream from ffmpeg's
+  encoder) through the media source, read in order and with jumps backwards.
