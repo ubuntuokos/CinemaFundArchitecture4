@@ -6,8 +6,11 @@
 //! checked against `ffprobe` (`tests/streams_oracle.rs`); where FFmpeg has no codec name for a
 //! stream (a QuickTime timecode track) the CFA4 name is given and `codec_tag` carries the FourCC.
 //!
-//! Reading the list never decodes media: only container headers, codec configuration and, for
-//! MPEG TS / PS streams, the first access unit of each stream are read.
+//! Reading the list never decodes media. For MP4 / MOV, Matroska, MXF, AVI, WAV, FLAC and Ogg
+//! only container headers and codec configuration are read (Ogg: its beginning-of-stream pages).
+//! MPEG TS / PS have no header that lists the streams with their properties: the demuxer
+//! (`cfa4_mpegts::open`) walks the packets of the whole file to find every stream and its access
+//! units, and the list then reads the first access unit of each stream for its parameters.
 
 use std::io;
 

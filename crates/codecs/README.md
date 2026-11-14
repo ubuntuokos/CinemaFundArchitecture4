@@ -34,8 +34,10 @@ video, audio, subtitle, data (QuickTime timecode and chapter-text tracks, unknow
 types) and attachment (Matroska fonts), each with its codec, container id, language, title,
 picture size, channels and sample rate, plus the file's chapters. It covers MP4 / MOV, Matroska /
 WebM, MPEG TS / PS, MXF, Ogg (read from its beginning-of-stream pages only), AVI, WAV and FLAC; other files fall back to
-`streams::from_media_info`. Only headers, codec configuration and (MPEG TS / PS) each stream's
-first access unit are read; nothing is decoded. Codec names, stream ids and the stream order follow
+`streams::from_media_info`. Nothing is decoded; only headers and codec configuration are read,
+except MPEG TS / PS, whose demuxer walks the whole file to find every stream (the list then reads
+each stream's first access unit). `tests/streams_fuzz.rs` mutation-fuzzes the readers.
+Codec names, stream ids and the stream order follow
 FFmpeg's vocabulary, so `tests/streams_oracle.rs` checks the list of fifteen ffmpeg-made files
 against `ffprobe` field by field. `cfa4-cli probe` and the `export.analyze` command return it as
 `streams` and `chapters`.
