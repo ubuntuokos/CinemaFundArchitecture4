@@ -1,0 +1,16 @@
+[package]
+name = "cfa4-shorten"
+description = "Pure-Rust Shorten (.shn) lossless audio decoder"
+version.workspace = true
+edition.workspace = true
+license = "GPL-3.0-or-later AND LGPL-2.1-or-later"
+rust-version.workspace = true
+
+[lints]
+workspace = true
+
+[dependencies]
+thiserror = { workspace = true }
+
+[dev-dependencies]
+cfa4-testkit = { workspace = true }

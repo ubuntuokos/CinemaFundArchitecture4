@@ -1100,6 +1100,29 @@ impl AudioFileSource {
             };
             return Ok(Self { info, rate, samples });
         }
+        if ext == "shn" {
+            let (shn, planes) = cfa4_shorten::decode_file(&bytes).map_err(|e| CodecError::Decode(format!("{name}: {e}")))?;
+            let samples: Vec<Vec<f32>> = planes.into_iter().map(|p| p.into_iter().map(|v| shn.to_f32(v)).collect()).collect();
+            let frames = samples.first().map_or(0, Vec::len);
+            let rate = shn.sample_rate.max(1);
+            let info = MediaInfo {
+                name: name.to_string(),
+                kind: MediaKind::AudioOnly,
+                duration: Tick::from_units(frames as i64, i64::from(rate)),
+                video: None,
+                audio_streams: vec![AudioStreamInfo {
+                    sample_rate: rate,
+                    channels: samples.len() as u32,
+                    codec: "Shorten".into(),
+                    bits_per_sample: Some(u32::from(shn.bits_per_sample)),
+                    ..AudioStreamInfo::default()
+                }],
+                container: "Shorten".into(),
+                start_timecode: None,
+                file_size: Some(bytes.len() as u64),
+            };
+            return Ok(Self { info, rate, samples });
+        }
         if ext == "g729" {
             let pcm = cfa4_g729::decode_file(&bytes).map_err(|e| CodecError::Decode(format!("{name}: {e}")))?;
             let rate = cfa4_g729::SAMPLE_RATE;
@@ -1462,7 +1485,7 @@ pub fn opener(name: &str, bytes: Arc<[u8]>) -> Option<std::result::Result<Shared
     let ext = name.rsplit('.').next().unwrap_or("").to_ascii_lowercase();
     if !matches!(
         ext.as_str(),
-        "mp3" | "mp2" | "aac" | "dts" | "dtshd" | "flac" | "ogg" | "oga" | "aif" | "aiff" | "aifc" | "amr" | "awb" | "tta" | "g729" | "lbc" | "mpc"
+        "mp3" | "mp2" | "aac" | "dts" | "dtshd" | "flac" | "ogg" | "oga" | "aif" | "aiff" | "aifc" | "amr" | "awb" | "tta" | "g729" | "lbc" | "mpc" | "shn"
     ) {
         return None;
     }

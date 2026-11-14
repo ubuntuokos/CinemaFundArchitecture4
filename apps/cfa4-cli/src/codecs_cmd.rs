@@ -138,6 +138,7 @@ static ROWS: &[Row] = &[
     audio("AMR-NB / AMR-WB", &["amr"], Ported, Sw(""), NoEnc),
     audio("Speex", &["speex"], Ported, Sw("Ogg Speex"), NoEnc),
     audio("TTA (True Audio)", &["tta"], Ported, Sw(""), NoEnc),
+    audio("Shorten", &["shorten"], Ported, Sw(""), NoEnc),
     audio("G.729 / G.729 Annex B", &["g729"], Ported, Sw(""), NoEnc),
     audio("iLBC", &["ilbc"], Ported, Sw(""), NoEnc),
     audio("Musepack SV7 / SV8", &["musepack"], Ported, Sw(""), NoEnc),

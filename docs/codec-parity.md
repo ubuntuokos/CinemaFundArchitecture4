@@ -73,6 +73,7 @@ fidelity and the remaining work.
 | AMR-NB / AMR-WB | audio | `crates/amr` | ported | yes | no |
 | Speex | audio | `crates/speex` | ported | yes: Ogg Speex | no |
 | TTA (True Audio) | audio | `crates/tta` | ported | yes | no |
+| Shorten | audio | `crates/shorten` | ported | yes | no |
 | G.729 / G.729 Annex B | audio | `crates/g729` | ported | yes | no |
 | iLBC | audio | `crates/ilbc` | ported | yes | no |
 | Musepack SV7 / SV8 | audio | `crates/musepack` | ported | yes | no |
@@ -137,6 +138,7 @@ fidelity and the remaining work.
 | G.711 μ-law / A-law, G.722 | not checked | own decoders (`cfa4-adpcm`, CB-4.1): G.711 in WAV, AVI, MOV (`ulaw`, `alaw`), Matroska (`A_MS/ACM`); G.722 at 64 kbit/s (ITU-T G.722 11/88) in WAV, AVI, Matroska | none | bit-exact vs ffmpeg in every container, also after a seek; G.722 also on random codewords | 90% | — |
 | IMA ADPCM, Microsoft ADPCM | not checked | own decoders (`cfa4-adpcm`, CB-4.2): IMA in WAV / AVI / Matroska blocks and QuickTime `ima4`, Microsoft ADPCM with custom coefficient sets; WAV read in place block by block | none | bit-exact vs ffmpeg in every container, also after a seek, and on random blocks | 90% | — |
 | TTA (True Audio) | not checked | own decoder ([`cfa4-tta`](../crates/tta/README.md), backlog CB-9.1, ported from libtta): 8 / 16 / 24 bits, 1–8 channels, password-protected streams; `.tta` and Matroska (`A_TTA1`) | none | bit-exact vs ffmpeg on 10 encoder fixtures; `.tta` and Matroska files sample for sample, also read from the middle | parity | — |
+| Shorten | not checked | own decoder ([`cfa4-shorten`](../crates/shorten/README.md), backlog CB-9.2, ported from FFmpeg n7.1.1): versions 0–3, fixed and quantised LPC predictors, running means, bit shifts, block-size changes, 8-bit unsigned and 16-bit PCM behind WAVE or AIFF headers (`.shn`) | none | same samples as ffmpeg's `shorten` decoder and lossless against the source on synthetic streams of every version and predictor (written by the test's own encoder), and on ffmpeg's FATE sample (local); through the media source also from the middle; 3000 damaged streams without a panic | — | — |
 | G.729, G.729 Annex B | not checked | own decoder ([`cfa4-g729`](../crates/g729/README.md), backlog CB-11.2, ported from bcg729 1.1.2): 8 kbit/s speech, Annex B SID frames and comfort noise, lost-frame concealment; raw `.g729` streams and ITU-T `.bit` bitstreams | none | bit-exact vs bcg729 on its decoder test patterns (the ITU-T G.729 and Annex B vectors, local); within 15 dB SNR of ffmpeg's separate decoder on synthetic streams; read through the media source also from the middle | — | — |
 | iLBC | not checked | own decoder ([`cfa4-ilbc`](../crates/ilbc/README.md), backlog CB-12.1, ported from WebRTC libilbc 3.0.4 without the enhancer, as ffmpeg decodes): 20 ms and 30 ms frames, lost-frame concealment; RFC 3952 `.lbc` files | none | bit-exact vs ffmpeg's `ilbc` decoder on synthetic 20 ms and 30 ms streams (from ffmpeg's initial state; ffmpeg zeroes the LSF history where RFC 3951 starts from the mean); read through the media source also from the middle | — | — |
 | AMR-NB, AMR-WB | not checked | own decoders (`cfa4-amr`, CB-6.2), ported from opencore-amr: every mode, DTX comfort noise, lost frames; `.amr` / `.awb`, 3GP / MP4 / MOV (`samr`, `sawb`), Matroska | none | bit-exact vs opencore-amr in every container, also after a seek (decoder checkpoints) | 90% | — |
@@ -155,6 +157,7 @@ fidelity and the remaining work.
 
 | Date | Change | Summary |
 |---|---|---|
+| 2026-11-14 | minor | Shorten decode (`cfa4-shorten`, codec backlog CB-9.2) |
 | 2026-11-13 | minor | G.729 / Annex B decode (`cfa4-g729`, codec backlog CB-11.2) |
 | 2026-11-13 | minor | iLBC decode (`cfa4-ilbc`, codec backlog CB-12.1) |
 | 2026-11-12 | minor | Generated capability catalog from `cfa4-cli codecs` (CFA4-PROCODEC-002 work package 0) |
