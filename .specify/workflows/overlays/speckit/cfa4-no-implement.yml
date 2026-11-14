@@ -1,0 +1,6 @@
+id: cfa4-no-implement
+extends: speckit
+priority: 1
+enabled: true
+edits:
+- remove: implement

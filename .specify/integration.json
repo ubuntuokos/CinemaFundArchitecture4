@@ -1,0 +1,20 @@
+{
+  "version": "1.2.5",
+  "integration_state_schema": 1,
+  "installed_integrations": [
+    "claude"
+  ],
+  "integration_settings": {
+    "claude": {
+      "script": "sh",
+      "raw_options": "--no-model-invocation --events false",
+      "parsed_options": {
+        "no_model_invocation": true,
+        "events": "false"
+      },
+      "invoke_separator": "-"
+    }
+  },
+  "integration": "claude",
+  "default_integration": "claude"
+}

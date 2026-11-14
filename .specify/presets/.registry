@@ -1,0 +1,29 @@
+{
+  "schema_version": "1.0",
+  "presets": {
+    "cfa4-policy": {
+      "version": "1.1.0",
+      "source": "local",
+      "manifest_hash": "sha256:13a553d39071ec10cee1c081a8d0b72c0f023f87a65b32ffdfb3404c556eb5a1",
+      "enabled": true,
+      "priority": 10,
+      "registered_commands": {
+        "claude": [
+          "speckit.specify",
+          "speckit.implement",
+          "speckit.taskstoissues",
+          "speckit.constitution"
+        ]
+      },
+      "registered_skills": {
+        "claude": [
+          "speckit-specify",
+          "speckit-implement",
+          "speckit-taskstoissues",
+          "speckit-constitution"
+        ]
+      },
+      "installed_at": "2026-11-14T08:55:05.578986+00:00"
+    }
+  }
+}
