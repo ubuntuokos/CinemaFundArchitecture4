@@ -16,7 +16,7 @@ use std::time::Duration;
 
 use web_time::Instant;
 
-use cfa4_credits::{Behaviour, PageOut};
+use cfa4_credits::PageOut;
 use cfa4_live::{AudioMode, FrameStore, LiveServer, ObsClient};
 use cfa4_project::{ClipId, ItemKind, MediaRef, TrackItem};
 use cfa4_time::Tick;
@@ -442,7 +442,7 @@ fn page_moment(s: &Session, cue: &Cue, page: usize, elapsed: Duration) -> (Tick,
     let d = cue.page_duration(page);
     let last = Tick(d.0.saturating_sub(fd.0).max(0));
     let t = rate.snap(ticks(elapsed));
-    let card = matches!(&cue.source, Source::Credits { .. }) && cue.pages.get(page).is_some_and(|p| p.behaviour == Behaviour::Card);
+    let card = matches!(&cue.source, Source::Credits { .. }) && cue.pages.get(page).is_some_and(|p| p.behaviour.is_card());
     if card && cue.hold_cards {
         // a card stays at its last full moment (before it fades out) until NEXT or OUT
         let fade_out = cue.pages.get(page).map_or(Tick::ZERO, |p| p.fade_out);
@@ -581,7 +581,7 @@ fn blit(dst: &mut [u8], dw: u32, dh: u32, src: &(u32, u32, Vec<u8>), rect: (f64,
 
 /// A card's fade at `t` for something that comes in `delay` after the page starts.
 fn card_alpha(pg: &PageOut, t: Tick, delay: Tick) -> f64 {
-    if pg.behaviour != Behaviour::Card {
+    if !pg.behaviour.is_card() {
         return 1.0;
     }
     let local = t.0 - delay.0;

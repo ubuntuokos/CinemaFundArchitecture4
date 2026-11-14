@@ -4561,3 +4561,11 @@ export.summary	Low	niska
 	Chase External Timecode	Prati vanjski vremenski kod
 	Send LTC	Šalji LTC
 	Send MIDI Timecode	Šalji MIDI vremenski kod
+# Credits: title, opening, chapter and lower-third pages filled from a graphics template (F10-C16)
+	Opening Credits	Uvodna špica
+	Chapter Title	Naslov poglavlja
+	Lower Third	Donji natpis
+	page {page}: graphics template “{template}” was not found; “{used}” is used	stranica {page}: grafički predložak „{template}” nije pronađen; koristi se „{used}”
+	page {page}: graphics template “{template}” has no field for all of the block's text; the rest is left out	stranica {page}: grafički predložak „{template}” nema polje za sav tekst bloka; ostatak se izostavlja
+	page {page}: template field “{control}” → “{part}” is not used (no such text control, or not head, body or tail)	stranica {page}: polje predloška „{control}” → „{part}” se ne koristi (nema takve tekstne kontrole ili nije zaglavlje, tijelo ili rep)
+	page {page}: pictures are left out on title, opening, chapter and lower-third pages	stranica {page}: slike se izostavljaju na stranicama naslova, uvodne špice, poglavlja i donjeg natpisa

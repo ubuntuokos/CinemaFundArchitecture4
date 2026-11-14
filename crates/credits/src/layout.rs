@@ -34,6 +34,12 @@ pub trait Measure {
     fn file_exists(&self, _file: &str) -> bool {
         true
     }
+
+    /// The graphics template a title, chapter or lower-third page names (id, name or `.fcgt`
+    /// path); the default finds only the built-in ones.
+    fn template(&self, key: &str) -> Option<cfa4_project::gtemplate::GraphicsTemplate> {
+        crate::scene::builtin_template(key)
+    }
 }
 
 /// A picture to show with a page, in graphic-canvas pixels where the page was laid out (before
@@ -652,7 +658,7 @@ pub fn block_key(b: &Block) -> u64 {
 
 /// A layer's key: its block, which repetition of that block it is (the first has none, so keys
 /// stay as they were before repetitions were counted), its place in the block and its name.
-fn piece_key(bk: u64, nth: usize, k: usize, name: &str) -> String {
+pub(crate) fn piece_key(bk: u64, nth: usize, k: usize, name: &str) -> String {
     if nth == 0 { format!("{bk:016x}/{k}/{name}") } else { format!("{bk:016x}#{nth}/{k}/{name}") }
 }
 
@@ -851,6 +857,10 @@ fn lay_page(ctx: &mut Ctx<'_>, styling: &Styling, page: &Page, frame: Frame, ind
             crate::style::PageStyle::default()
         }
     };
+    if ps.behaviour.uses_template() {
+        let (measure, nth) = (ctx.measure, ctx.occurrences.get(index).and_then(|o| o.first()).copied().unwrap_or(0));
+        return crate::scene::lay_scene(page, &ps, frame, (index, nth), (last, cut_in), measure, &mut |row, m| ctx.warn(row, m));
+    }
     let crawl = ps.behaviour == Behaviour::Crawl;
     let line_y = finite_or(ps.crawl_line, 0.85).clamp(0.0, 1.0) * h;
     let (mut pieces, mut content_h, elastic, content_w) = if crawl {
@@ -925,7 +935,8 @@ fn lay_page(ctx: &mut Ctx<'_>, styling: &Styling, page: &Page, frame: Frame, ind
             let n = ((w + content_w) / speed).ceil().clamp(1.0, 86_400.0 * 240.0) as i64;
             (0.0, runtime.unwrap_or_else(|| frames(rate, n)))
         }
-        Behaviour::Card => {
+        // template pages were laid out above (`scene`)
+        Behaviour::Card | Behaviour::Title | Behaviour::Opening | Behaviour::Chapter | Behaviour::LowerThird => {
             if content_h > h {
                 ctx.warn(page.row, format!("card page {} is taller than the frame; use a Scroll page", index + 1));
             }

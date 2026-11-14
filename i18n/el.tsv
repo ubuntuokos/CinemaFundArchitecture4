@@ -4561,3 +4561,11 @@ export.summary	Low	χαμηλή
 	Chase External Timecode	Παρακολούθηση εξωτερικού χρονοκώδικα
 	Send LTC	Αποστολή LTC
 	Send MIDI Timecode	Αποστολή χρονοκώδικα MIDI
+# Credits: title, opening, chapter and lower-third pages filled from a graphics template (F10-C16)
+	Opening Credits	Τίτλοι αρχής
+	Chapter Title	Τίτλος κεφαλαίου
+	Lower Third	Λεζάντα ονόματος
+	page {page}: graphics template “{template}” was not found; “{used}” is used	σελίδα {page}: το πρότυπο γραφικών “{template}” δεν βρέθηκε· χρησιμοποιείται το “{used}”
+	page {page}: graphics template “{template}” has no field for all of the block's text; the rest is left out	σελίδα {page}: το πρότυπο γραφικών “{template}” δεν έχει πεδίο για όλο το κείμενο του μπλοκ· το υπόλοιπο παραλείπεται
+	page {page}: template field “{control}” → “{part}” is not used (no such text control, or not head, body or tail)	σελίδα {page}: το πεδίο προτύπου “{control}” → “{part}” δεν χρησιμοποιείται (δεν υπάρχει τέτοιο στοιχείο κειμένου ή δεν είναι κεφαλίδα, κύριο σώμα ή υποσέλιδο)
+	page {page}: pictures are left out on title, opening, chapter and lower-third pages	σελίδα {page}: οι εικόνες παραλείπονται στις σελίδες τίτλου, τίτλων αρχής, κεφαλαίου και λεζάντας ονόματος

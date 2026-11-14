@@ -4568,3 +4568,11 @@
 	Chase External Timecode	外部タイムコードにチェイス
 	Send LTC	LTC を送信
 	Send MIDI Timecode	MIDI タイムコードを送信
+# Credits: title, opening, chapter and lower-third pages filled from a graphics template (F10-C16)
+	Opening Credits	オープニングクレジット
+	Chapter Title	チャプタータイトル
+	Lower Third	ローワーサード
+	page {page}: graphics template “{template}” was not found; “{used}” is used	ページ {page}: グラフィックテンプレート“{template}”が見つかりません。“{used}”を使用します
+	page {page}: graphics template “{template}” has no field for all of the block's text; the rest is left out	ページ {page}: グラフィックテンプレート“{template}”にはブロックの全テキスト用のフィールドがありません。残りは省略します
+	page {page}: template field “{control}” → “{part}” is not used (no such text control, or not head, body or tail)	ページ {page}: テンプレートフィールド“{control}”→“{part}”は使用されません（そのテキストコントロールがないか、ヘッド・本文・テールではありません）
+	page {page}: pictures are left out on title, opening, chapter and lower-third pages	ページ {page}: タイトル、オープニング、チャプター、ローワーサードのページでは画像を省略します

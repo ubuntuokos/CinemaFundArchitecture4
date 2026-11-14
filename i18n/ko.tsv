@@ -4553,3 +4553,11 @@
 	Chase External Timecode	외부 타임코드 체이스
 	Send LTC	LTC 보내기
 	Send MIDI Timecode	MIDI 타임코드 보내기
+# Credits: title, opening, chapter and lower-third pages filled from a graphics template (F10-C16)
+	Opening Credits	오프닝 크레디트
+	Chapter Title	챕터 제목
+	Lower Third	로어 서드
+	page {page}: graphics template “{template}” was not found; “{used}” is used	{page}페이지: 그래픽 템플릿 “{template}”을(를) 찾을 수 없어 “{used}”을(를) 사용합니다
+	page {page}: graphics template “{template}” has no field for all of the block's text; the rest is left out	{page}페이지: 그래픽 템플릿 “{template}”에 블록의 모든 텍스트를 넣을 필드가 없습니다. 나머지는 생략됩니다
+	page {page}: template field “{control}” → “{part}” is not used (no such text control, or not head, body or tail)	{page}페이지: 템플릿 필드 “{control}” → “{part}”은(는) 사용되지 않습니다(그런 텍스트 컨트롤이 없거나 머리, 본문, 꼬리가 아님)
+	page {page}: pictures are left out on title, opening, chapter and lower-third pages	{page}페이지: 제목, 오프닝, 챕터, 로어 서드 페이지에서는 그림이 생략됩니다

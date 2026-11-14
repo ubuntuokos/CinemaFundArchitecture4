@@ -4556,3 +4556,11 @@ export.summary	Low	alacsony
 	Chase External Timecode	Külső időkód követése
 	Send LTC	LTC küldése
 	Send MIDI Timecode	MIDI-időkód küldése
+# Credits: title, opening, chapter and lower-third pages filled from a graphics template (F10-C16)
+	Opening Credits	Nyitó képsor
+	Chapter Title	Fejezetcím
+	Lower Third	Alsó sáv
+	page {page}: graphics template “{template}” was not found; “{used}” is used	{page}. oldal: a(z) „{template}” grafikasablon nem található; helyette „{used}”
+	page {page}: graphics template “{template}” has no field for all of the block's text; the rest is left out	{page}. oldal: a(z) „{template}” grafikasablonban nincs mező a blokk minden szövegének; a többi kimarad
+	page {page}: template field “{control}” → “{part}” is not used (no such text control, or not head, body or tail)	{page}. oldal: a(z) „{control}” → „{part}” sablonmező nincs használva (nincs ilyen szövegvezérlő, vagy nem fej, törzs vagy láb)
+	page {page}: pictures are left out on title, opening, chapter and lower-third pages	{page}. oldal: a cím-, nyitó-, fejezetcím- és alsósáv-oldalakon a képek kimaradnak

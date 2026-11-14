@@ -4560,3 +4560,11 @@ export.summary	Low	düşük
 	Chase External Timecode	Harici Zaman Kodunu Takip Et
 	Send LTC	LTC Gönder
 	Send MIDI Timecode	MIDI Zaman Kodu Gönder
+# Credits: title, opening, chapter and lower-third pages filled from a graphics template (F10-C16)
+	Opening Credits	Açılış jeneriği
+	Chapter Title	Bölüm başlığı
+	Lower Third	Alt bant
+	page {page}: graphics template “{template}” was not found; “{used}” is used	sayfa {page}: “{template}” grafik şablonu bulunamadı; “{used}” kullanılıyor
+	page {page}: graphics template “{template}” has no field for all of the block's text; the rest is left out	sayfa {page}: “{template}” grafik şablonunda bloğun tüm metni için alan yok; kalanı çıkarıldı
+	page {page}: template field “{control}” → “{part}” is not used (no such text control, or not head, body or tail)	sayfa {page}: “{control}” → “{part}” şablon alanı kullanılmıyor (böyle bir metin denetimi yok ya da başlık, gövde veya kuyruk değil)
+	page {page}: pictures are left out on title, opening, chapter and lower-third pages	sayfa {page}: başlık, açılış jeneriği, bölüm ve alt bant sayfalarında resimler çıkarılır

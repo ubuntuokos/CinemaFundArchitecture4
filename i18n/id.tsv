@@ -4567,3 +4567,11 @@
 	Chase External Timecode	Ikuti Timecode Eksternal
 	Send LTC	Kirim LTC
 	Send MIDI Timecode	Kirim Timecode MIDI
+# Credits: title, opening, chapter and lower-third pages filled from a graphics template (F10-C16)
+	Opening Credits	Kredit pembuka
+	Chapter Title	Judul bab
+	Lower Third	Lower third
+	page {page}: graphics template “{template}” was not found; “{used}” is used	halaman {page}: templat grafis “{template}” tidak ditemukan; “{used}” dipakai
+	page {page}: graphics template “{template}” has no field for all of the block's text; the rest is left out	halaman {page}: templat grafis “{template}” tidak punya bidang untuk seluruh teks blok; sisanya dihilangkan
+	page {page}: template field “{control}” → “{part}” is not used (no such text control, or not head, body or tail)	halaman {page}: bidang templat “{control}” → “{part}” tidak dipakai (tidak ada kontrol teks itu, atau bukan kepala, badan, atau ekor)
+	page {page}: pictures are left out on title, opening, chapter and lower-third pages	halaman {page}: gambar dihilangkan pada halaman judul, kredit pembuka, bab, dan lower third

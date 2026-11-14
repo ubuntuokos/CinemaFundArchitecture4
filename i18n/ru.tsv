@@ -4544,3 +4544,11 @@
 	Chase External Timecode	Следовать за внешним тайм-кодом
 	Send LTC	Передавать LTC
 	Send MIDI Timecode	Передавать MIDI тайм-код
+# Credits: title, opening, chapter and lower-third pages filled from a graphics template (F10-C16)
+	Opening Credits	Начальные титры
+	Chapter Title	Название главы
+	Lower Third	Плашка
+	page {page}: graphics template “{template}” was not found; “{used}” is used	страница {page}: графический шаблон “{template}” не найден; используется “{used}”
+	page {page}: graphics template “{template}” has no field for all of the block's text; the rest is left out	страница {page}: в графическом шаблоне “{template}” нет поля для всего текста блока; остальное пропущено
+	page {page}: template field “{control}” → “{part}” is not used (no such text control, or not head, body or tail)	страница {page}: поле шаблона “{control}” → “{part}” не используется (нет такого текстового элемента или это не заголовок, основной текст или подпись)
+	page {page}: pictures are left out on title, opening, chapter and lower-third pages	страница {page}: на страницах заглавия, начальных титров, главы и плашки изображения пропускаются

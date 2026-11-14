@@ -74,7 +74,8 @@ Sizes are pixels of a 1080-pixel-high frame and scale with the sequence.
 
 - **Page styles:** `Scroll` (rolls from below to above the frame, 3 px per frame), `Card`
   (120 frames, 12-frame fades) and `Crawl` (a one-line ticker near the bottom, right to left,
-  4 px per frame).
+  4 px per frame); the template pages `Title`, `Opening`, `Chapter` and `LowerThird` (also
+  `Cím`, `Nyitó`, `Fejezetcím`, `Alsó sáv`), see [Titles and lower thirds](#titles-opening-credits-chapters-and-lower-thirds).
 - **Content styles:** `Gutter` (role left of the centre, names right; the default), `Centered`,
   `Heading`, `Title`, `Grid` (3 columns), `Bullets` (names run on with •), `Paragraphs`,
   `Leaders` (roles in one even left column, dots to the names).
@@ -111,7 +112,7 @@ style) and `leaderGap` (space on either side of the dots, default 16); for portr
 `slideRight`, `slideUp`, `slideDown`) moves it `entranceDistance` pixels (default 120) over
 `entranceFrames` (default 18, easing out) while it fades in, and `staggerFrames` brings each block
 in that many frames after the one before. Pictures and videos come in with their block. They are
-ordinary keyframes on the layers, editable afterwards. Page style fields: `behaviour` (`scroll`, `card`, `crawl`), `scrollPxPerFrame` (rolls
+ordinary keyframes on the layers, editable afterwards. Page style fields: `behaviour` (`scroll`, `card`, `crawl`, and `title`, `opening`, `chapter`, `lowerThird` with `template` and `fields`, see below), `scrollPxPerFrame` (rolls
 and crawls), `cardFrames`, `fadeInFrames`, `fadeOutFrames`, `gapAfterFrames`, `crawlLine`,
 `crawlGap`, `background`, `transition`, `transitionFrames` (see below).
 
@@ -180,6 +181,54 @@ action-safe (93 %) and title-safe (90 %) areas, the centre lines and the spines 
 blocks; *Baseline grid* draws lines one gap unit (`unitPx`) apart that move with the page. They
 are only in the picture, never in the credits.
 
+## Titles, opening credits, chapters and lower thirds
+
+One sheet can hold the whole film's text: the main title, the opening credits, a lower third for
+each person who speaks, chapter titles and the rolling end credits. A page whose style has the
+behaviour `title`, `opening`, `chapter` or `lowerThird` is not laid out as text: **each row with a
+name fills a graphics template** (`.fcgt`, the templates of Essential Graphics) and stands as a card
+of its own, one after another with the page style's gap. The head goes with the block's first row,
+a tail with the row it stands on.
+
+| Page style (built in) | Template it fills | Length, fades, gap after |
+|---|---|---|
+| `Title` (`Cím`) | *Title – Centered* (body: title, head: subtitle) | 150 frames, 18, 0 |
+| `Opening` (`Nyitó`) | *Title – Centered* | 120 frames, 12, 12 |
+| `Chapter` (`Fejezetcím`) | *Title – Boxed* (body: title) | 96 frames, 12, 0 |
+| `LowerThird` (`Alsó sáv`) | *Lower Third – Slab* (body: name, head: role) | 150 frames, 9, 25 |
+
+```csv
+Head,Body,Page Style
+a film by,THE LONG WAY HOME,Title
+Historian,Anna Kovács,LowerThird
+Archivist,Ben Ode,
+,Chapter One,Chapter
+Directed by,Jordan Lee,Scroll
+```
+
+A page style of your own names the template and, if needed, which text control takes which part:
+
+```json
+{ "pageStyles": [
+   { "name": "Names", "behaviour": "lowerThird", "template": "Lower Third – Rule",
+     "fields": { "name": "body", "role": "head" }, "cardFrames": 125, "gapAfterFrames": 50 } ] }
+```
+
+- `template`: a template's id or name (built in or installed), or a `.fcgt` file (next to the
+  sheet, or by path). Not found: the page type's built-in one is used, with a note.
+- `fields`: control id → `head`, `body` or `tail` (also `fej`, `törzs`, `láb`). Without it the
+  control called `name`, `title`, `heading`, `text`, `label` or `credits` (else the first text
+  control) takes the body, `role`, `subtitle`, `job` or `caption` (else the next one) the head, and
+  the next free one the tail. A part with no control is left out, with a note; an empty part hides
+  its layer (a title without a subtitle shows no empty line).
+- Fades, `runtime`, `Page Gap`, transitions and backgrounds work as on a card; layers the template
+  animates itself keep their own opacity, and a layer's own opacity (the slab's 92 %) is kept under
+  the fade. Pictures in such a row are left out, with a note.
+- Each graphic stays linked to its template (Essential Graphics ▸ Edit shows its controls) and to
+  the credits document: refreshing from the sheet replaces it, and hand edits in rows that did not
+  change are kept. Live graphics (C10) offer each of them as a cue, so a lower third can go on air.
+- The built-in credits template *Documentary* shows the whole structure.
+
 ## Cinecred projects
 
 A [Cinecred](https://cinecred.com) project folder opens in the Credits window like a spreadsheet
@@ -214,7 +263,7 @@ default style), as one undo step. Template files over 8 MiB are skipped.
 
 | Kind | Where | Licence |
 |---|---|---|
-| built in | in CFA4: *Classic Roll*, *Cards and Roll*, *News Crawl*, *Cast Portraits* (original designs) | MIT OR Apache-2.0 |
+| built in | in CFA4: *Classic Roll*, *Cards and Roll*, *News Crawl*, *Cast Portraits*, *Documentary* (original designs) | MIT OR Apache-2.0 |
 | user | `<data dir>/Credits Templates/*.cfa4credtpl` | what its `license` says |
 | project | kept in the project file | what its `license` says |
 
@@ -400,7 +449,7 @@ CFA4) and the running order (rundown) follow in their own plan,
 | Command | Menu | Params |
 |---|---|---|
 | `graphics.credits.import` | Graphics and Titles ▸ Import Credits Spreadsheet… | `path` (.csv/.tsv/.xlsx/.ods/.cfa4credits, or a Cinecred project folder / its `Styling.toml`, with `credits` to pick its spreadsheet) or `csv` (text), `sheet`, `pictureDir`, `styling`, `template` (its styling and fitting; `styling` wins), `time`, `track` (of each page's lowest clip: its background, else the page) → `{clips: [{clip, start, duration, behaviour, pictures, background, backgroundClips, transition}], group, end, sheet, warnings}` (`backgroundClips`: every clip of the background, several for a looped video); one undo step |
-| `graphics.credits.preview` | (query) | as above → `{pages: [{name, style, row, behaviour (scroll/card/crawl), duration, seconds, layers, contentHeight, contentWidth, background, transition: {effect, duration}, blocks: [{style, head, body (the first 40 cells), bodyCount, tails, pictures, row, lastRow, spine, parallel, at (0–1: the moment of the page that shows the block)}]}], duration, sheets, sheet, warnings, issues}` |
+| `graphics.credits.preview` | (query) | as above → `{pages: [{name, style, row, behaviour (scroll/card/crawl/title/opening/chapter/lowerThird), duration, seconds, layers, contentHeight, contentWidth, background, transition: {effect, duration}, blocks: [{style, head, body (the first 40 cells), bodyCount, tails, pictures, row, lastRow, spine, parallel, at (0–1: the moment of the page that shows the block)}]}], duration, sheets, sheet, warnings, issues}` |
 | `graphics.credits.thumbnail` | (query) | as preview, plus `page`, `at` (0–1, moment in the page), `width`, `guides`, `grid` → `{width, height, page, pages, time, pngBase64}`: the page's background (a picture or video as grey) and text with the roll, crawl or fades applied, pictures outlined, guides drawn |
 | `graphics.credits.validate` | (query; shown in the Credits window) | as preview, or `clip` for placed credits → `{errors, warnings, infos, issues: [{code, severity, page?, row?, values, message}]}` |
 | `graphics.credits.music` | (query; the Fit window) | `audio`?, `clip`? → `{audio, name, start, duration, soundEnd, bpm, beat, beats, suggestions: [{id: musicLength/soundEnd/lastBar, total}], credits, natural, fit}`; changes nothing |

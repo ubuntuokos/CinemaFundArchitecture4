@@ -316,6 +316,23 @@ renderelőjében, Chrome nélkül, a stáblistában, a címekben és az élő gr
 - **Ütemezés:** a jövő évi kiadás; részletes terve indulás előtt készül, a tulajdonos
   jóváhagyásával.
 
+### C16 – Címjelenetek a stáblista-dokumentumban (CFA4-TITLE-CREDITS-001, 0.3–0.4) – **C16a KÉSZ (2026-11-14)**
+
+A CFA4-TITLE-CREDITS-001 terv illesztési melléklete szerint (0.3, 0.4, Q13–Q15, Q18).
+
+- **C16a – oldaltípusok (kész):** új `Behaviour`: `title`, `opening`, `chapter`, `lowerThird`
+  (`crates/credits/src/scene.rs`). Az ilyen oldal minden névsora egy `.fcgt` grafikasablont tölt ki
+  (`template`: azonosító, név vagy fájl; `fields`: vezérlő → fej / törzs / láb), és önálló
+  kártyaként kerül le; a fej a blokk első sorával megy. Beépített oldalstílusok `Title`, `Opening`,
+  `Chapter`, `LowerThird` (magyarul is: `Cím`, `Nyitó`, `Fejezetcím`, `Alsó sáv`), beépített
+  stáblista-sablon *Documentary*. A lánc többi része változatlanul működik: frissítés a
+  táblázatból a kézi módosítások megtartásával (a kulcs a blokkból és a sablonréteg azonosítójából),
+  ellenőrzés (kártyahossz, címbiztos terület), igazítás a zenéhez (kártyaként), élő cue (C10).
+  Qt6: az oldalak listájában és az idővonal-sávon az új fajták, minden nyelven (34 katalógus), az
+  engine új figyelmeztetései a `credits_messages.py` NOTES-ában. egui-felület nem készül (Q14).
+- **C16b – szinkronhangok (Q18, 0.7):** `Voice` / `Hang` oszlop, *szereplő – színész – hang*
+  elrendezés címkével és saját betűstílussal, ellenőrzés az eltérő írásmódra, az alsó sávban is.
+
 ## 5. Sorrend és függőségek
 
 ```text

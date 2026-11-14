@@ -4557,3 +4557,11 @@
 	Chase External Timecode	追随外部时间码
 	Send LTC	发送 LTC
 	Send MIDI Timecode	发送 MIDI 时间码
+# Credits: title, opening, chapter and lower-third pages filled from a graphics template (F10-C16)
+	Opening Credits	片头字幕
+	Chapter Title	章节标题
+	Lower Third	下方字幕条
+	page {page}: graphics template “{template}” was not found; “{used}” is used	第 {page} 页：未找到图形模板“{template}”；改用“{used}”
+	page {page}: graphics template “{template}” has no field for all of the block's text; the rest is left out	第 {page} 页：图形模板“{template}”没有容纳该块全部文本的字段；其余部分已忽略
+	page {page}: template field “{control}” → “{part}” is not used (no such text control, or not head, body or tail)	第 {page} 页：模板字段“{control}”→“{part}”未使用（没有该文本控件，或不是标题、正文或尾注）
+	page {page}: pictures are left out on title, opening, chapter and lower-third pages	第 {page} 页：标题、片头、章节和下方字幕条页面上的图片会被忽略

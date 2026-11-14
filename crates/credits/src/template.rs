@@ -245,5 +245,34 @@ pub fn builtin_templates() -> Vec<CreditsTemplate> {
                 &["", "{{Pic fourth.jpg}} Fourth Actor", "", "", "", ""],
             ],
         ),
+        // F10-C16: a whole film in one sheet: the main title, opening credits, a lower third
+        // for each person who speaks, a chapter title and the end roll
+        builtin(
+            "documentary",
+            "Documentary",
+            "Main title, opening credits, a lower third per speaker, chapter titles and the end roll, all from one sheet.",
+            Styling {
+                default_page_style: "Roll".into(),
+                page_styles: vec![
+                    PageStyle { transition: "dissolve".into(), transition_frames: 18, ..page("Title", Behaviour::Title) },
+                    PageStyle { card_frames: 100, ..page("Opening", Behaviour::Opening) },
+                    PageStyle { card_frames: 150, fade_in_frames: 9, fade_out_frames: 9, gap_after_frames: 50, ..page("LowerThird", Behaviour::LowerThird) },
+                    PageStyle { card_frames: 96, ..page("Chapter", Behaviour::Chapter) },
+                    PageStyle { scroll_px_per_frame: 2.0, ..page("Roll", Behaviour::Scroll) },
+                ],
+                ..Styling::default()
+            },
+            &[
+                &header,
+                &["", "THE TITLE", "", "", "Title", ""],
+                &["a film by", "Name Surname", "", "", "Opening", ""],
+                &["Historian", "First Speaker", "", "", "LowerThird", ""],
+                &["Archivist", "Second Speaker", "", "", "", ""],
+                &["", "Chapter One", "", "", "Chapter", ""],
+                &["Directed by", "Name Surname", "", "Centered", "Roll", ""],
+                &["", "", "", "", "", ""],
+                &["Music", "Composer Name", "", "Gutter", "", ""],
+            ],
+        ),
     ]
 }

@@ -1075,3 +1075,47 @@ fn refresh_fit_and_template_name_the_new_group() {
     let t = s.execute("graphics.credits.template.apply", json!({"clip": g3, "id": id})).unwrap();
     assert_eq!(t["group"].as_u64(), t["clips"][0]["clip"].as_u64());
 }
+
+/// F10-C16: one sheet holds the main title, lower thirds and the roll; each title or lower third
+/// is a graphic filled from its row, linked to its template, and a refresh keeps hand edits.
+#[test]
+fn title_and_lower_third_pages_fill_graphics_templates() {
+    let mut s = demo("credits-scenes");
+    let dir = tmp_dir("credits-scenes");
+    // a template next to the sheet, by file name: the built-in rule lower third under a new id
+    let mut mine = cfa4_project::gtemplate::builtin_templates().into_iter().find(|t| t.id == "builtin:lower-third-rule").unwrap();
+    mine.id = "user:mine".into();
+    mine.name = "Mine".into();
+    std::fs::write(dir.join("mine.fcgt"), mine.to_json()).unwrap();
+    let sheet = dir.join("scenes.csv");
+    let csv = "Head,Body,Page Style\n\
+               a film by,THE LONG WAY HOME,Title\n\
+               Historian,Anna Kovács,Names\n\
+               Archivist,Ben Ode,\n\
+               Directed by,Jordan Lee,Scroll\n";
+    std::fs::write(&sheet, csv).unwrap();
+    let styling = json!({"pageStyles": [{"name": "Names", "behaviour": "lowerThird", "template": "mine.fcgt", "gapAfterFrames": 0}]});
+    let v = s.execute("graphics.credits.import", json!({"path": sheet, "styling": styling})).unwrap();
+    assert_eq!(v["warnings"].as_array().unwrap().len(), 0, "{v}");
+    let kinds: Vec<&str> = v["clips"].as_array().unwrap().iter().map(|c| c["behaviour"].as_str().unwrap()).collect();
+    assert_eq!(kinds, vec!["title", "lowerThird", "lowerThird", "scroll"]);
+    let c = clips(&v);
+    assert_eq!(texts(&s, c[0]), vec!["THE LONG WAY HOME", "a film by"]);
+    assert_eq!(texts(&s, c[1]), vec!["Anna Kovács", "Historian"]);
+    assert_eq!(texts(&s, c[2]), vec!["Ben Ode", "Archivist"]);
+    let g = item(&s, c[1]).graphic.unwrap();
+    assert_eq!(g.template.as_ref().map(|t| t.id.as_str()), Some("user:mine"));
+    assert_eq!(g.credits.as_ref().map(|l| l.page), Some(1));
+    // the lower thirds follow each other without a gap
+    assert_eq!(v["clips"][2]["start"].as_i64().unwrap(), v["clips"][1]["start"].as_i64().unwrap() + v["clips"][1]["duration"].as_i64().unwrap());
+
+    // a hand edit on Anna's lower third survives when only Ben's row changes
+    hand_edit(&mut s, c[1], "Historian", "Történész");
+    std::fs::write(&sheet, csv.replace("Archivist", "Curator")).unwrap();
+    let r = s.execute("graphics.credits.refresh", json!({"clip": c[1].0})).unwrap();
+    assert_eq!((r["keptEdits"].as_u64(), r["lostEdits"].as_u64()), (Some(1), Some(0)), "{r}");
+    let pages = group_pages(&s, r["clips"][0]["clip"].as_u64().unwrap());
+    assert_eq!(pages.len(), 4);
+    assert_eq!(texts(&s, pages[1].id), vec!["Anna Kovács", "Történész"]);
+    assert_eq!(texts(&s, pages[2].id), vec!["Ben Ode", "Curator"]);
+}

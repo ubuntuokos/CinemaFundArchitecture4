@@ -4562,3 +4562,11 @@ export.summary	Low	დაბალი
 	Chase External Timecode	გარე დროის კოდისთვის მიყოლა
 	Send LTC	LTC-ის გაგზავნა
 	Send MIDI Timecode	MIDI დროის კოდის გაგზავნა
+# Credits: title, opening, chapter and lower-third pages filled from a graphics template (F10-C16)
+	Opening Credits	საწყისი ტიტრები
+	Chapter Title	თავის სათაური
+	Lower Third	ქვედა ზოლი
+	page {page}: graphics template “{template}” was not found; “{used}” is used	გვერდი {page}: გრაფიკული შაბლონი „{template}“ ვერ მოიძებნა; გამოიყენება „{used}“
+	page {page}: graphics template “{template}” has no field for all of the block's text; the rest is left out	გვერდი {page}: გრაფიკულ შაბლონს „{template}“ არ აქვს ველი ბლოკის მთელი ტექსტისთვის; დანარჩენი გამოტოვებულია
+	page {page}: template field “{control}” → “{part}” is not used (no such text control, or not head, body or tail)	გვერდი {page}: შაბლონის ველი „{control}“ → „{part}“ არ გამოიყენება (ასეთი ტექსტური ელემენტი არ არსებობს, ან ეს არ არის თავი, ძირითადი ტექსტი ან ბოლო)
+	page {page}: pictures are left out on title, opening, chapter and lower-third pages	გვერდი {page}: სათაურის, საწყისი ტიტრების, თავისა და ქვედა ზოლის გვერდებზე სურათები გამოტოვებულია

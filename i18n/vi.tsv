@@ -4559,3 +4559,11 @@ export.summary	Low	thấp
 	Chase External Timecode	Bám theo timecode bên ngoài
 	Send LTC	Gửi LTC
 	Send MIDI Timecode	Gửi timecode MIDI
+# Credits: title, opening, chapter and lower-third pages filled from a graphics template (F10-C16)
+	Opening Credits	Phần mở đầu
+	Chapter Title	Tiêu đề chương
+	Lower Third	Dải chữ dưới
+	page {page}: graphics template “{template}” was not found; “{used}” is used	trang {page}: không tìm thấy mẫu đồ họa “{template}”; dùng “{used}”
+	page {page}: graphics template “{template}” has no field for all of the block's text; the rest is left out	trang {page}: mẫu đồ họa “{template}” không có trường cho toàn bộ văn bản của khối; phần còn lại bị bỏ
+	page {page}: template field “{control}” → “{part}” is not used (no such text control, or not head, body or tail)	trang {page}: trường mẫu “{control}” → “{part}” không được dùng (không có điều khiển văn bản đó, hoặc không phải đầu, thân hay đuôi)
+	page {page}: pictures are left out on title, opening, chapter and lower-third pages	trang {page}: hình ảnh bị bỏ trên các trang tiêu đề, phần mở đầu, chương và dải chữ dưới

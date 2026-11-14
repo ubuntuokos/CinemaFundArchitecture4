@@ -4561,3 +4561,11 @@ export.summary	Low	madal
 	Chase External Timecode	Järgi välist ajakoodi
 	Send LTC	Saada LTC
 	Send MIDI Timecode	Saada MIDI-ajakood
+# Credits: title, opening, chapter and lower-third pages filled from a graphics template (F10-C16)
+	Opening Credits	Algustiitrid
+	Chapter Title	Peatüki pealkiri
+	Lower Third	Nimeriba
+	page {page}: graphics template “{template}” was not found; “{used}” is used	lehekülg {page}: graafikamalli “{template}” ei leitud; kasutatakse malli “{used}”
+	page {page}: graphics template “{template}” has no field for all of the block's text; the rest is left out	lehekülg {page}: graafikamallis “{template}” pole välja kogu ploki tekstile; ülejäänu jäetakse välja
+	page {page}: template field “{control}” → “{part}” is not used (no such text control, or not head, body or tail)	lehekülg {page}: malli välja “{control}” → “{part}” ei kasutata (sellist tekstijuhtelementi pole või see pole päis, sisu ega jalus)
+	page {page}: pictures are left out on title, opening, chapter and lower-third pages	lehekülg {page}: pildid jäetakse välja pealkirja-, algustiitri-, peatüki- ja nimeribalehtedel

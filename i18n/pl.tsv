@@ -4559,3 +4559,11 @@ export.summary	Low	niska
 	Chase External Timecode	Podążaj za zewnętrznym kodem czasowym
 	Send LTC	Wysyłaj LTC
 	Send MIDI Timecode	Wysyłaj kod czasowy MIDI
+# Credits: title, opening, chapter and lower-third pages filled from a graphics template (F10-C16)
+	Opening Credits	Napisy początkowe
+	Chapter Title	Tytuł rozdziału
+	Lower Third	Belka dolna
+	page {page}: graphics template “{template}” was not found; “{used}” is used	strona {page}: nie znaleziono szablonu graficznego „{template}”; używany jest „{used}”
+	page {page}: graphics template “{template}” has no field for all of the block's text; the rest is left out	strona {page}: szablon graficzny „{template}” nie ma pola na cały tekst bloku; reszta jest pomijana
+	page {page}: template field “{control}” → “{part}” is not used (no such text control, or not head, body or tail)	strona {page}: pole szablonu „{control}” → „{part}” nie jest używane (brak takiej kontrolki tekstu albo to nie nagłówek, treść ani stopka)
+	page {page}: pictures are left out on title, opening, chapter and lower-third pages	strona {page}: obrazy są pomijane na stronach tytułu, napisów początkowych, rozdziału i belki dolnej

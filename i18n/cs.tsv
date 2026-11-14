@@ -4559,3 +4559,11 @@ export.summary	Low	nízká
 	Chase External Timecode	Sledovat externí časový kód
 	Send LTC	Odesílat LTC
 	Send MIDI Timecode	Odesílat časový kód MIDI
+# Credits: title, opening, chapter and lower-third pages filled from a graphics template (F10-C16)
+	Opening Credits	Úvodní titulky
+	Chapter Title	Název kapitoly
+	Lower Third	Jmenovka
+	page {page}: graphics template “{template}” was not found; “{used}” is used	strana {page}: grafická šablona „{template}“ nebyla nalezena; použije se „{used}“
+	page {page}: graphics template “{template}” has no field for all of the block's text; the rest is left out	strana {page}: grafická šablona „{template}“ nemá pole pro celý text bloku; zbytek se vynechá
+	page {page}: template field “{control}” → “{part}” is not used (no such text control, or not head, body or tail)	strana {page}: pole šablony „{control}“ → „{part}“ se nepoužije (takový textový ovládací prvek neexistuje, nebo to není hlavička, tělo ani pata)
+	page {page}: pictures are left out on title, opening, chapter and lower-third pages	strana {page}: na stránkách titulu, úvodních titulků, kapitoly a jmenovky se obrázky vynechávají

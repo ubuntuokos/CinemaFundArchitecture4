@@ -18,12 +18,42 @@ pub enum Behaviour {
     Scroll,
     /// A one-line ticker: the blocks stand side by side and run from right to left.
     Crawl,
+    /// A title: each block fills a graphics template (`.fcgt`, default: the centred title) and
+    /// stands as a card of its own.
+    Title,
+    /// An opening credit (*a film by …*): like [`Behaviour::Title`], one graphic per block.
+    Opening,
+    /// A chapter title between parts (default: the boxed title).
+    Chapter,
+    /// A lower third (name and role over the picture), one graphic per block.
+    #[serde(alias = "lowerthird", alias = "lower_third")]
+    LowerThird,
 }
 
 impl Behaviour {
-    /// Rolls and crawls move at a constant speed; cards stand still.
+    /// Rolls and crawls move at a constant speed; cards, titles and lower thirds stand still.
     pub fn moves(self) -> bool {
-        self != Behaviour::Card
+        matches!(self, Behaviour::Scroll | Behaviour::Crawl)
+    }
+
+    /// Shown, held and faded like a card (cards and the template pages).
+    pub fn is_card(self) -> bool {
+        !self.moves()
+    }
+
+    /// Each block fills a graphics template instead of being laid out as text.
+    pub fn uses_template(self) -> bool {
+        self.default_template().is_some()
+    }
+
+    /// The built-in graphics template a template page uses when its style names none.
+    pub fn default_template(self) -> Option<&'static str> {
+        match self {
+            Behaviour::Title | Behaviour::Opening => Some("builtin:title-centered"),
+            Behaviour::Chapter => Some("builtin:title-boxed"),
+            Behaviour::LowerThird => Some("builtin:lower-third-slab"),
+            Behaviour::Card | Behaviour::Scroll | Behaviour::Crawl => None,
+        }
     }
 }
 
@@ -135,6 +165,15 @@ pub struct PageStyle {
     pub entrance_distance: f64,
     /// Card: each block comes in this many frames after the one before (0 = all together).
     pub stagger_frames: u32,
+    /// Title, opening, chapter and lower-third pages: the graphics template each block fills
+    /// (id, name or `.fcgt` path; empty = the page type's built-in one).
+    #[serde(skip_serializing_if = "String::is_empty")]
+    pub template: String,
+    /// Which text control of the template takes which part of the block: control id → `head`,
+    /// `body` or `tail` (empty = by the controls' ids: the name or title takes the body, the role
+    /// or subtitle the head, the next free one the tail).
+    #[serde(skip_serializing_if = "std::collections::BTreeMap::is_empty")]
+    pub fields: std::collections::BTreeMap<String, String>,
 }
 
 impl Default for PageStyle {
@@ -156,6 +195,8 @@ impl Default for PageStyle {
             entrance_frames: 18,
             entrance_distance: 120.0,
             stagger_frames: 0,
+            template: String::new(),
+            fields: Default::default(),
         }
     }
 }
@@ -377,13 +418,39 @@ fn norm(s: &str) -> String {
     s.trim().to_lowercase()
 }
 
-/// The built-in page styles: `Scroll`, `Card` and `Crawl` (4 px per frame, near the bottom).
+/// The built-in page styles: `Scroll`, `Card` and `Crawl` (4 px per frame, near the bottom), and
+/// the template pages `Title`, `Opening`, `Chapter` and `LowerThird` (a second apart).
 pub fn builtin_page_styles() -> Vec<PageStyle> {
+    let tpl = |name: &str, behaviour: Behaviour, card_frames: u32, fade: u32, gap: i32| PageStyle {
+        name: name.into(),
+        behaviour,
+        card_frames,
+        fade_in_frames: fade,
+        fade_out_frames: fade,
+        gap_after_frames: gap,
+        ..PageStyle::default()
+    };
     vec![
         PageStyle::default(),
         PageStyle { name: "Card".into(), behaviour: Behaviour::Card, ..PageStyle::default() },
         PageStyle { name: "Crawl".into(), behaviour: Behaviour::Crawl, scroll_px_per_frame: 4.0, ..PageStyle::default() },
+        tpl("Title", Behaviour::Title, 150, 18, 0),
+        tpl("Opening", Behaviour::Opening, 120, 12, 12),
+        tpl("Chapter", Behaviour::Chapter, 96, 12, 0),
+        tpl("LowerThird", Behaviour::LowerThird, 150, 9, 25),
     ]
+}
+
+/// The built-in page style a Hungarian or spaced name stands for (`Alsó sáv`, `Lower Third`).
+fn builtin_page_alias(n: &str) -> Option<&'static str> {
+    let k: String = n.chars().filter(|c| !matches!(c, ' ' | '-' | '_')).collect();
+    Some(match k.as_str() {
+        "cím" | "főcím" => "Title",
+        "nyitó" | "nyitóképsor" | "openingcredits" | "openingtitles" => "Opening",
+        "fejezet" | "fejezetcím" | "chaptertitle" => "Chapter",
+        "lowerthird" | "alsósáv" | "alsóharmad" => "LowerThird",
+        _ => return None,
+    })
 }
 
 /// The video transition a page style's `transition` names, or `None` for a cut.
@@ -460,7 +527,8 @@ impl Styling {
     /// The page style called `name` (case-insensitive): the styling's own first, then a built-in.
     pub fn page_style(&self, name: &str) -> Option<PageStyle> {
         let n = norm(name);
-        self.page_styles.iter().find(|p| norm(&p.name) == n).cloned().or_else(|| builtin_page_styles().into_iter().find(|p| norm(&p.name) == n))
+        let builtin = builtin_page_alias(&n).map(str::to_lowercase).unwrap_or_else(|| n.clone());
+        self.page_styles.iter().find(|p| norm(&p.name) == n).cloned().or_else(|| builtin_page_styles().into_iter().find(|p| norm(&p.name) == builtin))
     }
 
     /// The inline style called `name` (case-insensitive; built-ins also by their Hungarian name):

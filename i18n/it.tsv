@@ -4559,3 +4559,11 @@
 	Chase External Timecode	Segui timecode esterno
 	Send LTC	Invia LTC
 	Send MIDI Timecode	Invia timecode MIDI
+# Credits: title, opening, chapter and lower-third pages filled from a graphics template (F10-C16)
+	Opening Credits	Titoli di testa
+	Chapter Title	Titolo del capitolo
+	Lower Third	Sottopancia
+	page {page}: graphics template “{template}” was not found; “{used}” is used	pagina {page}: il modello grafico “{template}” non è stato trovato; si usa “{used}”
+	page {page}: graphics template “{template}” has no field for all of the block's text; the rest is left out	pagina {page}: il modello grafico “{template}” non ha un campo per tutto il testo del blocco; il resto viene omesso
+	page {page}: template field “{control}” → “{part}” is not used (no such text control, or not head, body or tail)	pagina {page}: il campo del modello “{control}” → “{part}” non è usato (nessun controllo di testo con questo nome, oppure non è intestazione, corpo o coda)
+	page {page}: pictures are left out on title, opening, chapter and lower-third pages	pagina {page}: le immagini vengono omesse nelle pagine di titolo, titoli di testa, capitolo e sottopancia

@@ -4562,3 +4562,11 @@ export.summary	Low	žema
 	Chase External Timecode	Sekti išorinį laiko kodą
 	Send LTC	Siųsti LTC
 	Send MIDI Timecode	Siųsti MIDI laiko kodą
+# Credits: title, opening, chapter and lower-third pages filled from a graphics template (F10-C16)
+	Opening Credits	Pradiniai titrai
+	Chapter Title	Skyriaus pavadinimas
+	Lower Third	Apatinė juosta
+	page {page}: graphics template “{template}” was not found; “{used}” is used	{page} puslapis: grafikos šablonas „{template}“ nerastas; naudojamas „{used}“
+	page {page}: graphics template “{template}” has no field for all of the block's text; the rest is left out	{page} puslapis: grafikos šablone „{template}“ nėra lauko visam bloko tekstui; likusi dalis praleidžiama
+	page {page}: template field “{control}” → “{part}” is not used (no such text control, or not head, body or tail)	{page} puslapis: šablono laukas „{control}“ → „{part}“ nenaudojamas (tokio teksto valdiklio nėra arba tai ne antraštė, tekstas ar pabaiga)
+	page {page}: pictures are left out on title, opening, chapter and lower-third pages	{page} puslapis: titulo, pradinių titrų, skyriaus ir apatinės juostos puslapiuose paveikslėliai praleidžiami

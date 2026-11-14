@@ -4562,3 +4562,11 @@ export.summary	Low	ниско
 	Chase External Timecode	Следване на външен тайм код
 	Send LTC	Изпращане на LTC
 	Send MIDI Timecode	Изпращане на MIDI тайм код
+# Credits: title, opening, chapter and lower-third pages filled from a graphics template (F10-C16)
+	Opening Credits	Начални надписи
+	Chapter Title	Заглавие на глава
+	Lower Third	Долен надпис
+	page {page}: graphics template “{template}” was not found; “{used}” is used	страница {page}: графичният шаблон „{template}“ не е намерен; използва се „{used}“
+	page {page}: graphics template “{template}” has no field for all of the block's text; the rest is left out	страница {page}: графичният шаблон „{template}“ няма поле за целия текст на блока; останалото се пропуска
+	page {page}: template field “{control}” → “{part}” is not used (no such text control, or not head, body or tail)	страница {page}: полето на шаблона „{control}“ → „{part}“ не се използва (няма такава текстова контрола или не е глава, тяло или опашка)
+	page {page}: pictures are left out on title, opening, chapter and lower-third pages	страница {page}: картините се пропускат на страниците със заглавие, начални надписи, глава и долен надпис

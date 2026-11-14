@@ -4559,3 +4559,11 @@ export.summary	Low	laag
 	Chase External Timecode	Externe timecode volgen
 	Send LTC	LTC verzenden
 	Send MIDI Timecode	MIDI-timecode verzenden
+# Credits: title, opening, chapter and lower-third pages filled from a graphics template (F10-C16)
+	Opening Credits	Openingstitels
+	Chapter Title	Hoofdstuktitel
+	Lower Third	Onderbalk
+	page {page}: graphics template “{template}” was not found; “{used}” is used	pagina {page}: grafische sjabloon “{template}” is niet gevonden; “{used}” wordt gebruikt
+	page {page}: graphics template “{template}” has no field for all of the block's text; the rest is left out	pagina {page}: grafische sjabloon “{template}” heeft geen veld voor alle tekst van het blok; de rest wordt weggelaten
+	page {page}: template field “{control}” → “{part}” is not used (no such text control, or not head, body or tail)	pagina {page}: sjabloonveld “{control}” → “{part}” wordt niet gebruikt (geen tekstbesturing met die naam, of geen kop, hoofdtekst of staart)
+	page {page}: pictures are left out on title, opening, chapter and lower-third pages	pagina {page}: afbeeldingen worden weggelaten op titel-, openings-, hoofdstuk- en onderbalkpagina’s
