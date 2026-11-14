@@ -4539,6 +4539,13 @@ export.summary	Low	დაბალი
 	The keys stay in memory only, until Forget DCP Keys or the end of the session.	გასაღებები მხოლოდ მეხსიერებაში რჩება, DCP გასაღებების დავიწყებამდე ან სესიის დასრულებამდე.
 	DCP keys forgotten	DCP გასაღებები დავიწყებულია
 	Choose the KDM file and the private key.	აირჩიეთ KDM ფაილი და პირადი გასაღები.
+	Load even if the certificate chain is not verified	ჩატვირთვა გადაუმოწმებელი სერტიფიკატების ჯაჭვითაც
+	Bundle: {loaded} of {total} KDMs loaded, {other} for other recipients	პაკეტი: ჩაიტვირთა {loaded} KDM {total}-დან, {other} სხვა მიმღებებისთვის
+	Not loaded: {path}: {problem}	არ ჩაიტვირთა: {path}: {problem}
+	Signature verified: {chain}	ხელმოწერა გადამოწმებულია: {chain}
+	Signature not verified: {problem}	ხელმოწერა არ არის გადამოწმებული: {problem}
+	KDM required	საჭიროა KDM
+	Encrypted: load the KDM with content key {keys}	დაშიფრულია: ჩატვირთეთ KDM შიგთავსის გასაღებით {keys}
 
 # Settings ▸ Timecode Sync (TC-4)
 	Timecode Sync	დროის კოდის სინქრონიზაცია
@@ -4571,3 +4578,60 @@ export.summary	Low	დაბალი
 	Chase External Timecode	გარე დროის კოდისთვის მიყოლა
 	Send LTC	LTC-ის გაგზავნა
 	Send MIDI Timecode	MIDI დროის კოდის გაგზავნა
+# Auto Color, Auto Contrast, Auto Levels (EffectsSDK review)
+	Auto Color	ავტომატური ფერი
+	Auto Contrast	ავტომატური კონტრასტი
+	Auto Levels	ავტომატური დონეები
+	Temporal Smoothing (seconds)	დროითი გასწორება (წამი)
+	Scene Detect	სცენების აღმოჩენა
+	Black Clip	შავის მოჭრა
+	White Clip	თეთრის მოჭრა
+	Snap Neutral Midtones	ნეიტრალური შუა ტონები
+# Layout presets: PiP corners, split screen (EffectsSDK review)
+	PiP 35% Upper Left	PiP 35% ზედა მარცხენა
+	Picture-in-picture: 35 % scale in the upper left	სურათი სურათში: 35 % მასშტაბი ზედა მარცხენა კუთხეში
+	PiP 35% Lower Left	PiP 35% ქვედა მარცხენა
+	Picture-in-picture: 35 % scale in the lower left	სურათი სურათში: 35 % მასშტაბი ქვედა მარცხენა კუთხეში
+	PiP 35% Lower Right	PiP 35% ქვედა მარჯვენა
+	Picture-in-picture: 35 % scale in the lower right	სურათი სურათში: 35 % მასშტაბი ქვედა მარჯვენა კუთხეში
+	Split Screen Left	გაყოფილი ეკრანი მარცხნივ
+	Split screen: the middle half of the picture fills the left half of the frame	გაყოფილი ეკრანი: სურათის შუა ნახევარი ავსებს კადრის მარცხენა ნახევარს
+	Split Screen Right	გაყოფილი ეკრანი მარჯვნივ
+	Split screen: the middle half of the picture fills the right half of the frame	გაყოფილი ეკრანი: სურათის შუა ნახევარი ავსებს კადრის მარჯვენა ნახევარს
+# Creative Looks: CRT (P3)
+	CRT	CRT
+	Scanline Strength	სკანირების ხაზების სიძლიერე
+	Line Count	ხაზების რაოდენობა
+	Mask	ნიღაბი
+	Mask Strength	ნიღბის სიძლიერე
+	Corner Darkening	კუთხეების დაბნელება
+	Aperture Grille	აპერტურული ბადე
+	Shadow Mask	ჩრდილის ნიღაბი
+	Slot Mask	ჭრილოვანი ნიღაბი
+# Creative Looks: Oil Paint (P4)
+	Oil Paint	ზეთის ფერწერა
+	Detail	დეტალიზაცია
+	Texture	ტექსტურა
+	Facet	წახნაგები
+	Daubs	მონასმები
+	Dry Brush	მშრალი ფუნჯი
+	Fresco	ფრესკა
+	Knife	შპატელი
+	Sponge	ღრუბელი
+# Creative Looks: Pixel Sort (P5)
+	Pixel Sort	პიქსელების დალაგება
+	Sort By	დალაგების კრიტერიუმი
+	Lower Threshold	ქვედა ზღვარი
+	Upper Threshold	ზედა ზღვარი
+	Ascending	ზრდადობით
+# Temporal Denoise (EffectsSDK review)
+	Temporal Denoise	დროითი ხმაურის შემცირება
+	Frames Each Side	კადრები თითოეულ მხარეს
+	Motion Threshold	მოძრაობის ზღვარი
+	Show Motion	მოძრაობის ჩვენება
+	No signal	სიგნალი არ არის
+	Locating	პოზიციონირება
+	Locked	სინქრონიზებული
+	Freewheel	თავისუფალი სვლა
+	Scrubbing	გადახვევა
+	Sending	გაგზავნა

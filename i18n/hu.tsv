@@ -4535,6 +4535,13 @@ export.summary	Low	alacsony
 	The keys stay in memory only, until Forget DCP Keys or the end of the session.	A kulcsok csak a memóriában maradnak, a DCP kulcsok elfelejtéséig vagy a munkamenet végéig.
 	DCP keys forgotten	DCP kulcsok elfelejtve
 	Choose the KDM file and the private key.	Válassza ki a KDM fájlt és a privát kulcsot.
+	Load even if the certificate chain is not verified	Betöltés ellenőrizetlen tanúsítványlánccal is
+	Bundle: {loaded} of {total} KDMs loaded, {other} for other recipients	Csomag: {total} KDM-ből {loaded} betöltve, {other} más címzetté
+	Not loaded: {path}: {problem}	Nincs betöltve: {path}: {problem}
+	Signature verified: {chain}	Aláírás ellenőrizve: {chain}
+	Signature not verified: {problem}	Az aláírás nincs ellenőrizve: {problem}
+	KDM required	KDM szükséges
+	Encrypted: load the KDM with content key {keys}	Titkosított: töltse be a KDM-et a(z) {keys} tartalomkulccsal
 	Timecode Sync	Időkód-szinkron
 	TimecodeSync	Időkód-szinkron
 	Chase	Követés
@@ -4565,3 +4572,60 @@ export.summary	Low	alacsony
 	Chase External Timecode	Külső időkód követése
 	Send LTC	LTC küldése
 	Send MIDI Timecode	MIDI-időkód küldése
+# Auto Color, Auto Contrast, Auto Levels (EffectsSDK review)
+	Auto Color	Automatikus szín
+	Auto Contrast	Automatikus kontraszt
+	Auto Levels	Automatikus szintek
+	Temporal Smoothing (seconds)	Időbeli simítás (másodperc)
+	Scene Detect	Jelenetváltás észlelése
+	Black Clip	Fekete vágása
+	White Clip	Fehér vágása
+	Snap Neutral Midtones	Semleges középtónusok
+# Layout presets: PiP corners, split screen (EffectsSDK review)
+	PiP 35% Upper Left	Kép a képben, 35%, bal felső
+	Picture-in-picture: 35 % scale in the upper left	Kép a képben: 35%-os méret bal felül
+	PiP 35% Lower Left	Kép a képben, 35%, bal alsó
+	Picture-in-picture: 35 % scale in the lower left	Kép a képben: 35%-os méret bal alul
+	PiP 35% Lower Right	Kép a képben, 35%, jobb alsó
+	Picture-in-picture: 35 % scale in the lower right	Kép a képben: 35%-os méret jobb alul
+	Split Screen Left	Osztott kép, bal
+	Split screen: the middle half of the picture fills the left half of the frame	Osztott kép: a kép középső fele kitölti a képkocka bal felét
+	Split Screen Right	Osztott kép, jobb
+	Split screen: the middle half of the picture fills the right half of the frame	Osztott kép: a kép középső fele kitölti a képkocka jobb felét
+# Creative Looks: CRT (P3)
+	CRT	CRT
+	Scanline Strength	Pásztázósorok erőssége
+	Line Count	Sorok száma
+	Mask	Maszk
+	Mask Strength	Maszk erőssége
+	Corner Darkening	Sarkok sötétítése
+	Aperture Grille	Csíkmaszk
+	Shadow Mask	Árnyékmaszk
+	Slot Mask	Résmaszk
+# Creative Looks: Oil Paint (P4)
+	Oil Paint	Olajfestmény
+	Detail	Részletesség
+	Texture	Textúra
+	Facet	Fazetta
+	Daubs	Foltok
+	Dry Brush	Száraz ecset
+	Fresco	Freskó
+	Knife	Festőkés
+	Sponge	Szivacs
+# Creative Looks: Pixel Sort (P5)
+	Pixel Sort	Pixelrendezés
+	Sort By	Rendezés alapja
+	Lower Threshold	Alsó küszöb
+	Upper Threshold	Felső küszöb
+	Ascending	Növekvő
+# Temporal Denoise (EffectsSDK review)
+	Temporal Denoise	Időbeli zajcsökkentés
+	Frames Each Side	Képkocka oldalanként
+	Motion Threshold	Mozgásküszöb
+	Show Motion	Mozgás mutatása
+	No signal	Nincs jel
+	Locating	Keresés
+	Locked	Szinkronban
+	Freewheel	Szabadonfutás
+	Scrubbing	Léptetés
+	Sending	Küldés

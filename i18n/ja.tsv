@@ -4545,6 +4545,13 @@
 	The keys stay in memory only, until Forget DCP Keys or the end of the session.	キーはメモリ上にのみ保持され、「DCP キーを破棄」またはセッション終了まで残ります。
 	DCP keys forgotten	DCP キーを破棄しました
 	Choose the KDM file and the private key.	KDM ファイルと秘密鍵を選択してください。
+	Load even if the certificate chain is not verified	証明書チェーンが未検証でも読み込む
+	Bundle: {loaded} of {total} KDMs loaded, {other} for other recipients	バンドル: {total} 件中 {loaded} 件の KDM を読み込み、{other} 件は他の受信者用
+	Not loaded: {path}: {problem}	読み込まれていません: {path}: {problem}
+	Signature verified: {chain}	署名を検証済み: {chain}
+	Signature not verified: {problem}	署名は未検証: {problem}
+	KDM required	KDM が必要
+	Encrypted: load the KDM with content key {keys}	暗号化済み: コンテンツキー {keys} を含む KDM を読み込んでください
 
 # Settings ▸ Timecode Sync (TC-4)
 	Timecode Sync	タイムコード同期
@@ -4577,3 +4584,60 @@
 	Chase External Timecode	外部タイムコードにチェイス
 	Send LTC	LTC を送信
 	Send MIDI Timecode	MIDI タイムコードを送信
+# Auto Color, Auto Contrast, Auto Levels (EffectsSDK review)
+	Auto Color	自動カラー
+	Auto Contrast	自動コントラスト
+	Auto Levels	自動レベル補正
+	Temporal Smoothing (seconds)	時間的スムージング（秒）
+	Scene Detect	シーン検出
+	Black Clip	黒のクリップ
+	White Clip	白のクリップ
+	Snap Neutral Midtones	中間色をニュートラルに
+# Layout presets: PiP corners, split screen (EffectsSDK review)
+	PiP 35% Upper Left	PiP 35% 左上
+	Picture-in-picture: 35 % scale in the upper left	ピクチャーインピクチャー: スケール 35 % で左上に配置
+	PiP 35% Lower Left	PiP 35% 左下
+	Picture-in-picture: 35 % scale in the lower left	ピクチャーインピクチャー: スケール 35 % で左下に配置
+	PiP 35% Lower Right	PiP 35% 右下
+	Picture-in-picture: 35 % scale in the lower right	ピクチャーインピクチャー: スケール 35 % で右下に配置
+	Split Screen Left	分割画面 左
+	Split screen: the middle half of the picture fills the left half of the frame	分割画面: 映像の中央半分をフレームの左半分に配置
+	Split Screen Right	分割画面 右
+	Split screen: the middle half of the picture fills the right half of the frame	分割画面: 映像の中央半分をフレームの右半分に配置
+# Creative Looks: CRT (P3)
+	CRT	CRT
+	Scanline Strength	走査線の強さ
+	Line Count	走査線の数
+	Mask	マスク
+	Mask Strength	マスクの強さ
+	Corner Darkening	四隅の減光
+	Aperture Grille	アパーチャーグリル
+	Shadow Mask	シャドウマスク
+	Slot Mask	スロットマスク
+# Creative Looks: Oil Paint (P4)
+	Oil Paint	油絵
+	Detail	ディテール
+	Texture	テクスチャ
+	Facet	ファセット
+	Daubs	厚塗り
+	Dry Brush	ドライブラシ
+	Fresco	フレスコ
+	Knife	ペインティングナイフ
+	Sponge	スポンジ
+# Creative Looks: Pixel Sort (P5)
+	Pixel Sort	ピクセルソート
+	Sort By	並べ替えの基準
+	Lower Threshold	下限しきい値
+	Upper Threshold	上限しきい値
+	Ascending	昇順
+# Temporal Denoise (EffectsSDK review)
+	Temporal Denoise	時間的ノイズ除去
+	Frames Each Side	片側のフレーム数
+	Motion Threshold	動きのしきい値
+	Show Motion	動きを表示
+	No signal	信号なし
+	Locating	位置合わせ中
+	Locked	ロック
+	Freewheel	フリーホイール
+	Scrubbing	スクラブ中
+	Sending	送信中

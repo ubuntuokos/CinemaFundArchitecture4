@@ -4536,6 +4536,13 @@ export.summary	Low	низак
 	The keys stay in memory only, until Forget DCP Keys or the end of the session.	Кључеви остају само у меморији, до команде Заборави DCP кључеве или краја сесије.
 	DCP keys forgotten	DCP кључеви заборављени
 	Choose the KDM file and the private key.	Изаберите KDM датотеку и приватни кључ.
+	Load even if the certificate chain is not verified	Учитај и са непровереним ланцем сертификата
+	Bundle: {loaded} of {total} KDMs loaded, {other} for other recipients	Пакет: учитано {loaded} од {total} KDM, {other} за друге примаоце
+	Not loaded: {path}: {problem}	Није учитано: {path}: {problem}
+	Signature verified: {chain}	Потпис проверен: {chain}
+	Signature not verified: {problem}	Потпис није проверен: {problem}
+	KDM required	Потребан је KDM
+	Encrypted: load the KDM with content key {keys}	Шифровано: учитајте KDM са кључем садржаја {keys}
 
 # Settings ▸ Timecode Sync (TC-4)
 	Timecode Sync	Синхронизација временског кода
@@ -4568,3 +4575,60 @@ export.summary	Low	низак
 	Chase External Timecode	Прати спољни временски код
 	Send LTC	Шаљи LTC
 	Send MIDI Timecode	Шаљи MIDI временски код
+# Auto Color, Auto Contrast, Auto Levels (EffectsSDK review)
+	Auto Color	Аутоматска боја
+	Auto Contrast	Аутоматски контраст
+	Auto Levels	Аутоматски нивои
+	Temporal Smoothing (seconds)	Временско изглађивање (секунде)
+	Scene Detect	Откривање сцена
+	Black Clip	Одсецање црне
+	White Clip	Одсецање беле
+	Snap Neutral Midtones	Неутрални средњи тонови
+# Layout presets: PiP corners, split screen (EffectsSDK review)
+	PiP 35% Upper Left	Слика у слици 35% горе лево
+	Picture-in-picture: 35 % scale in the upper left	Слика у слици: размера 35 % горе лево
+	PiP 35% Lower Left	Слика у слици 35% доле лево
+	Picture-in-picture: 35 % scale in the lower left	Слика у слици: размера 35 % доле лево
+	PiP 35% Lower Right	Слика у слици 35% доле десно
+	Picture-in-picture: 35 % scale in the lower right	Слика у слици: размера 35 % доле десно
+	Split Screen Left	Подељени екран лево
+	Split screen: the middle half of the picture fills the left half of the frame	Подељени екран: средња половина слике испуњава леву половину кадра
+	Split Screen Right	Подељени екран десно
+	Split screen: the middle half of the picture fills the right half of the frame	Подељени екран: средња половина слике испуњава десну половину кадра
+# Creative Looks: CRT (P3)
+	CRT	CRT
+	Scanline Strength	Јачина линија
+	Line Count	Број линија
+	Mask	Маска
+	Mask Strength	Јачина маске
+	Corner Darkening	Тамњење углова
+	Aperture Grille	Апертурна решетка
+	Shadow Mask	Маска сенке
+	Slot Mask	Маска са прорезима
+# Creative Looks: Oil Paint (P4)
+	Oil Paint	Уљана слика
+	Detail	Детаљи
+	Texture	Текстура
+	Facet	Фасете
+	Daubs	Мрље
+	Dry Brush	Сува четкица
+	Fresco	Фреска
+	Knife	Шпахтла
+	Sponge	Сунђер
+# Creative Looks: Pixel Sort (P5)
+	Pixel Sort	Сортирање пиксела
+	Sort By	Сортирај по
+	Lower Threshold	Доњи праг
+	Upper Threshold	Горњи праг
+	Ascending	Растуће
+# Temporal Denoise (EffectsSDK review)
+	Temporal Denoise	Временско уклањање шума
+	Frames Each Side	Сличица са сваке стране
+	Motion Threshold	Праг покрета
+	Show Motion	Прикажи покрет
+	No signal	Нема сигнала
+	Locating	Позиционирање
+	Locked	Синхронизовано
+	Freewheel	Слободан ход
+	Scrubbing	Померање
+	Sending	Слање

@@ -4536,6 +4536,13 @@ export.summary	Low	thấp
 	The keys stay in memory only, until Forget DCP Keys or the end of the session.	Các khóa chỉ nằm trong bộ nhớ, cho đến khi chọn Quên khóa DCP hoặc kết thúc phiên.
 	DCP keys forgotten	Đã quên khóa DCP
 	Choose the KDM file and the private key.	Chọn tệp KDM và khóa riêng.
+	Load even if the certificate chain is not verified	Tải cả khi chuỗi chứng chỉ chưa được xác minh
+	Bundle: {loaded} of {total} KDMs loaded, {other} for other recipients	Gói: đã tải {loaded}/{total} KDM, {other} cho người nhận khác
+	Not loaded: {path}: {problem}	Chưa tải: {path}: {problem}
+	Signature verified: {chain}	Đã xác minh chữ ký: {chain}
+	Signature not verified: {problem}	Chưa xác minh chữ ký: {problem}
+	KDM required	Cần KDM
+	Encrypted: load the KDM with content key {keys}	Đã mã hóa: hãy tải KDM có khóa nội dung {keys}
 
 # Settings ▸ Timecode Sync (TC-4)
 	Timecode Sync	Đồng bộ timecode
@@ -4568,3 +4575,60 @@ export.summary	Low	thấp
 	Chase External Timecode	Bám theo timecode bên ngoài
 	Send LTC	Gửi LTC
 	Send MIDI Timecode	Gửi timecode MIDI
+# Auto Color, Auto Contrast, Auto Levels (EffectsSDK review)
+	Auto Color	Màu tự động
+	Auto Contrast	Tương phản tự động
+	Auto Levels	Mức tự động
+	Temporal Smoothing (seconds)	Làm mượt theo thời gian (giây)
+	Scene Detect	Phát hiện cảnh
+	Black Clip	Cắt đen
+	White Clip	Cắt trắng
+	Snap Neutral Midtones	Trung hòa tông trung bình
+# Layout presets: PiP corners, split screen (EffectsSDK review)
+	PiP 35% Upper Left	PiP 35% trên trái
+	Picture-in-picture: 35 % scale in the upper left	Hình trong hình: tỷ lệ 35 % ở góc trên trái
+	PiP 35% Lower Left	PiP 35% dưới trái
+	Picture-in-picture: 35 % scale in the lower left	Hình trong hình: tỷ lệ 35 % ở góc dưới trái
+	PiP 35% Lower Right	PiP 35% dưới phải
+	Picture-in-picture: 35 % scale in the lower right	Hình trong hình: tỷ lệ 35 % ở góc dưới phải
+	Split Screen Left	Chia màn hình trái
+	Split screen: the middle half of the picture fills the left half of the frame	Chia màn hình: nửa giữa của hình lấp đầy nửa trái khung hình
+	Split Screen Right	Chia màn hình phải
+	Split screen: the middle half of the picture fills the right half of the frame	Chia màn hình: nửa giữa của hình lấp đầy nửa phải khung hình
+# Creative Looks: CRT (P3)
+	CRT	CRT
+	Scanline Strength	Cường độ dòng quét
+	Line Count	Số dòng
+	Mask	Mặt nạ
+	Mask Strength	Cường độ mặt nạ
+	Corner Darkening	Làm tối góc
+	Aperture Grille	Lưới khe
+	Shadow Mask	Mặt nạ bóng
+	Slot Mask	Mặt nạ khe
+# Creative Looks: Oil Paint (P4)
+	Oil Paint	Tranh sơn dầu
+	Detail	Chi tiết
+	Texture	Kết cấu
+	Facet	Mặt cắt
+	Daubs	Vệt chấm
+	Dry Brush	Cọ khô
+	Fresco	Bích họa
+	Knife	Dao vẽ
+	Sponge	Bọt biển
+# Creative Looks: Pixel Sort (P5)
+	Pixel Sort	Sắp xếp điểm ảnh
+	Sort By	Sắp xếp theo
+	Lower Threshold	Ngưỡng dưới
+	Upper Threshold	Ngưỡng trên
+	Ascending	Tăng dần
+# Temporal Denoise (EffectsSDK review)
+	Temporal Denoise	Khử nhiễu theo thời gian
+	Frames Each Side	Số khung mỗi bên
+	Motion Threshold	Ngưỡng chuyển động
+	Show Motion	Hiện chuyển động
+	No signal	Không có tín hiệu
+	Locating	Đang định vị
+	Locked	Đã khóa
+	Freewheel	Chạy tự do
+	Scrubbing	Đang tua
+	Sending	Đang gửi
