@@ -12,6 +12,9 @@ is an error there, never a crash of CFA4.
   together with a new conformance run.
 - Build: `python3 scripts/dev/av2-decoder.py build` (into `target/av2-decoder/bin`; needs git,
   meson, ninja, nasm and a C compiler).
+- Fuzzing: `python3 scripts/dev/av2-decoder.py build --sanitize` (ASan + UBSan, into
+  `target/av2-decoder-asan`, never shipped), then `python3 scripts/dev/av2-decoder.py fuzz`
+  ([`docs/testing.md`](../../docs/testing.md)).
 - Use: build CFA4 with `--features cfa4-codecs/av2-external` and set `CFA4_AV2_DECODER` to the
   helper. This is AV2-LAB level; the router registration waits for G1 (plan X/7).
 
