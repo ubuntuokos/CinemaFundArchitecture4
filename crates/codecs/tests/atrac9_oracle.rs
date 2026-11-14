@@ -43,10 +43,16 @@ fn at9(channels: u16, rate: u32, extra: &[u8; 12], ba: usize, data: &[u8]) -> Ve
 
 /// `count` packets of `size` bytes that decode in strict mode one after another, each grown one
 /// block at a time from random bits.
-fn valid_packets(extra: &[u8; 12], size: usize, blocks: usize, count: usize, seed: u64) -> Vec<Vec<u8>> {
+fn valid_packets(extra: &[u8; 12], size: usize, blocks: usize, count: usize, seed: u64) -> (Vec<Vec<u8>>, cfa4_realaudio::atrac9::Decoder) {
     let mut rng = Rng(seed);
     let mut d = cfa4_realaudio::atrac9::Decoder::new(extra, size).unwrap();
     d.set_strict(true);
+    let out = more_packets(&mut d, size, blocks, count, &mut rng);
+    (out, d)
+}
+
+/// `count` more packets for the decoder state `d` (advanced past them).
+fn more_packets(d: &mut cfa4_realaudio::atrac9::Decoder, size: usize, blocks: usize, count: usize, rng: &mut Rng) -> Vec<Vec<u8>> {
     let mut out = Vec::new();
     'packet: while out.len() < count {
         let mut prefix: Vec<u8> = Vec::new();
@@ -77,6 +83,31 @@ fn valid_packets(extra: &[u8; 12], size: usize, blocks: usize, count: usize, see
         out.push(prefix);
     }
     out
+}
+
+/// A short last packet of `len` bytes for the state `d`: the start of a valid packet, whose
+/// sample count (FFmpeg 9 decodes a short packet's whole frames, then again from the first byte
+/// after them) the media layer can tell from the stream's start state, as it does when opening.
+fn short_packet(
+    d: &cfa4_realaudio::atrac9::Decoder,
+    fresh: &cfa4_realaudio::atrac9::Decoder,
+    size: usize,
+    blocks: usize,
+    len: usize,
+    rng: &mut Rng,
+) -> Vec<u8> {
+    for _ in 0..200 {
+        let mut c = d.clone();
+        let p = more_packets(&mut c, size, blocks, 1, rng).remove(0);
+        let tail = &p[..len];
+        let mut run = d.clone();
+        run.set_strict(false);
+        let Ok(o) = run.decode(tail) else { continue };
+        if !o[0].is_empty() && fresh.samples_in_packet(tail) == o[0].len() {
+            return tail.to_vec();
+        }
+    }
+    panic!("no short packet");
 }
 
 /// Our samples through `cfa4_codecs::open_bytes` against ffmpeg's, within 1e-5 of each packet's
@@ -118,11 +149,12 @@ fn synthetic_atrac9_in_wav_matches() {
         let extra = extradata(sri, layout, fs, sfi);
         let ba = fs << sfi;
         // 200 packets: past three 64-packet checkpoints
-        let packets = valid_packets(&extra, ba, blocks << sfi, 200, 0x5DEE_CE66_D1CE_4E5B ^ u64::from(layout));
+        let (packets, d) = valid_packets(&extra, ba, blocks << sfi, 200, 0x5DEE_CE66_D1CE_4E5B ^ u64::from(layout));
         let mut data = packets.concat();
-        // a short last packet: the whole frames it has room for (one, with two superframe frames)
+        // a short last packet of one and a half frames
         if sfi > 0 {
-            data.truncate(data.len() - ba + fs + fs / 2);
+            let fresh = cfa4_realaudio::atrac9::Decoder::new(&extra, ba).unwrap();
+            data.extend(short_packet(&d, &fresh, ba, blocks << sfi, fs + fs / 2, &mut Rng(u64::from(layout))));
         }
         let p = dir.join(format!("random_{layout}.at9"));
         std::fs::write(&p, at9(ch as u16, rate, &extra, ba, &data)).unwrap();
