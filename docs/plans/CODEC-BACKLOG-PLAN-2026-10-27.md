@@ -1,6 +1,6 @@
 # Kodek-backlog végrehajtási terv
 
-> **Utolsó frissítés:** 2026-11-13 · **Változás:** minor (a „kész” feltétel és a 📄 kapu szövege az AGENTS.md §2-höz igazítva) · **Forrás:** [CODEC-BACKLOG-2026-10-27.md](CODEC-BACKLOG-2026-10-27.md)
+> **Utolsó frissítés:** 2026-11-14 · **Változás:** minor (tulajdonosi döntések: a B csoportról, valamint a MagicYUV és a Shorten portja) · **Forrás:** [CODEC-BACKLOG-2026-10-27.md](CODEC-BACKLOG-2026-10-27.md)
 
 A [CODEC-BACKLOG-2026-10-27.md](CODEC-BACKLOG-2026-10-27.md) 82 tétele heti ütemezésben. **Követelmény: minden héten
 legalább 2 tétel elkészül** (a tulajdonos döntése, 2026-10-27). Így a backlog 41 hét alatt fogy el:
@@ -29,6 +29,22 @@ Az enkódolás nem része a tételnek, csak ha a sor külön jelzi.
 Ha egy tételre a döntés nemleges vagy késik, az a hét a következő szabad tétellel telik meg, így a
 heti 2 tétel nem csúszik. A nemleges döntésű tételek kikerülnek a backlogból.
 
+**Tulajdonosi döntés, 2026-11-14 (azok a 📄 tételek, amelyekhez az FFmpeg 9.0.2-ben sincs dekóder):**
+
+- **Kimarad:** OptimFROG (csak zárt gyártói SDK), Sony SR Codec (nincs nyilvános leírás, sem nyílt
+  megvalósítás), Bink 2 (nincs nyílt dekóder). A helyükre a fenti szabály szerint a következő
+  szabad tétel lép.
+- **🔎 Előbb forráskeresés, utána tulajdonosi döntés** (a K3-as határidőig, 2027-03-29): Nintendo
+  HVQM / HVQM4, Sofdec.Prime, BCSTM, PSP PMF-konténer (a PMF tartalma, a H.264 és az ATRAC3plus
+  külön tétel vagy már megvan). Ha van engedélyezett licencű forrás, port
+  ([AGENTS.md](../../AGENTS.md) §2); ha nincs, kimarad.
+- **A BFSTM mehet:** a BFSTM-demuxer és a DSP ADPCM az FFmpegből portolható; a tétel BCSTM-része 🔎.
+- **MagicYUV és Shorten: port** (tulajdonosi döntés, 2026-11-14). Nincs nyilvános specifikációjuk;
+  az FFmpeg 9.0.2 `libavcodec/magicyuv.c` és `libavcodec/shorten.c` LGPL-2.1-or-later, ezért a
+  portjuk megengedett ([AGENTS.md](../../AGENTS.md) §2, [licensing.md](../licensing.md) §3, a port
+  bekerül a §5 nyilvántartásba). A MagicYUV a következő tétel, a 2. hét helyén.
+- A többi 📄 tétel (amelyekhez van FFmpeg-dekóder) és a ⚖️ tételek döntése továbbra is nyitott.
+
 ## Ütemterv
 
 Sávok: K1 az 1–6. hét, K2 a 7–22. hét, K3 a 23–40. hét, K4 a 40–41. hét.
@@ -36,35 +52,35 @@ Sávok: K1 az 1–6. hét, K2 a 7–22. hét, K3 a 23–40. hét, K4 a 40–41. 
 | Hét | Kezdete | Sáv | 1. tétel | 2. tétel |
 |---|---|---|---|---|
 | 1 | 2026-11-02 | K1 | ✅ FFV1 | ✅ Huffyuv |
-| 2 | 2026-11-09 | K1 | ✅ Ut Video | MagicYUV |
+| 2 | 2026-11-09 | K1 | ✅ Ut Video | MagicYUV (port, következő tétel) |
 | 3 | 2026-11-16 | K1 | Lagarith 📄 | ✅ HAP |
 | 4 | 2026-11-23 | K1 | ✅ G.711 / G.722 | ✅ ADPCM (IMA, Microsoft) |
 | 5 | 2026-11-30 | K1 | ✅ WavPack | ✅ Monkey's Audio (APE) |
 | 6 | 2026-12-07 | K1 | ✅ Speex | ✅ AMR-NB / AMR-WB |
 | 7 | 2026-12-14 | K2 | ✅ Matrox MPEG-2 I-frame (ellenőrzés + teszt) | ✅ VC-2 |
 | 8 | 2026-12-21 | K2 | ✅ Dirac | ✅ Canopus HQ / HQX |
-| 9 | 2026-12-28 | K2 | ✅ TTA | Shorten |
+| 9 | 2026-12-28 | K2 | ✅ TTA | Shorten (port) |
 | 10 | 2027-01-04 | K2 | TAK 📄 | ✅ Musepack SV7 / SV8 |
-| 11 | 2027-01-11 | K2 | OptimFROG 📄 | ✅ G.729 |
+| 11 | 2027-01-11 | K2 | ~~OptimFROG~~ kimarad (2026-11-14) | ✅ G.729 |
 | 12 | 2027-01-18 | K2 | ✅ iLBC | EVS |
 | 13 | 2027-01-25 | K2 | RealVideo RV10 / RV20 📄 | RealVideo RV30 / RV40 📄 |
 | 14 | 2027-02-01 | K2 | RealAudio Cook 📄 | RealAudio SIPR, 14.4 / 28.8 📄 |
 | 15 | 2027-02-08 | K2 | ATRAC3 📄 | ATRAC3plus 📄 |
-| 16 | 2027-02-15 | K2 | ATRAC9 📄 | Sony SR Codec 📄 |
+| 16 | 2027-02-15 | K2 | ATRAC9 📄 | ~~Sony SR Codec~~ kimarad (2026-11-14) |
 | 17 | 2027-02-22 | K2 | MPEG-5 EVC | LCEVC |
 | 18 | 2027-03-01 | K2 | AVS1 / AVS+ | AVS2 |
 | 19 | 2027-03-08 | K2 | AVS3 | AVS Audio |
 | 20 | 2027-03-15 | K2 | AVS2 Audio | AVS3 Audio |
 | 21 | 2027-03-22 | K2 | Audio Vivid | DRA |
 | 22 | 2027-03-29 | K2 | MPEG-H 3D Audio ⚖️ | AC-4 ⚖️ |
-| 23 | 2027-04-05 | K3 | Bink Video 📄 | Bink 2 📄 |
+| 23 | 2027-04-05 | K3 | Bink Video 📄 | ~~Bink 2~~ kimarad (2026-11-14) |
 | 24 | 2027-04-12 | K3 | Bink Audio 📄 | Smacker + Smacker Audio 📄 |
 | 25 | 2027-04-19 | K3 | id RoQ 📄 | Interplay MVE + ACM 📄 |
 | 26 | 2027-04-26 | K3 | CRI ADX 📄 | CRI HCA 📄 |
-| 27 | 2027-05-03 | K3 | Sofdec.Prime 📄 | Sofdec2 (konténer) 📄 |
+| 27 | 2027-05-03 | K3 | Sofdec.Prime 📄🔎 | Sofdec2 (konténer) 📄 |
 | 28 | 2027-05-10 | K3 | Nintendo THP 📄 | Nintendo Mobiclip 📄 |
-| 29 | 2027-05-17 | K3 | Nintendo HVQM / HVQM4 📄 | Nintendo DSP ADPCM + BRSTM 📄 |
-| 30 | 2027-05-24 | K3 | BCSTM / BFSTM 📄 | PSP MPEG-4 AVC (PMF) 📄 |
+| 29 | 2027-05-17 | K3 | Nintendo HVQM / HVQM4 📄🔎 | Nintendo DSP ADPCM + BRSTM 📄 |
+| 30 | 2027-05-24 | K3 | BFSTM (port) + BCSTM 📄🔎 | PSP MPEG-4 AVC (PMF) 📄🔎 |
 | 31 | 2027-05-31 | K3 | Yamaha + OKI ADPCM 📄 | NTT TwinVQ 📄 |
 | 32 | 2027-06-07 | K3 | AMV Video 📄 | Cinepak 📄 |
 | 33 | 2027-06-14 | K3 | Intel Indeo 2 / 3 📄 | Intel Indeo 4 / 5 📄 |
@@ -86,6 +102,8 @@ valamelyik nem készült el, a következő hétre kell vinni a pótlással együ
 
 | Dátum | Változás | Összefoglaló |
 |---|---|---|
+| 2026-11-14 | minor | Tulajdonosi döntés: a MagicYUV és a Shorten az FFmpeg LGPL-2.1+ dekóderének portjaként készül; a MagicYUV a következő tétel |
+| 2026-11-14 | minor | Tulajdonosi döntés: az OptimFROG, a Sony SR Codec és a Bink 2 kimarad; a HVQM / HVQM4, a Sofdec.Prime, a BCSTM és a PMF előbb forráskeresés (🔎); a BFSTM portként mehet. Dátumok nem változtak |
 | 2026-11-13 | patch | Pipálva (✅) a beolvasztott vagy zöld CI-vel a beolvasztási gazdának (#781) átadott tételek: FFV1, Huffyuv, Ut Video, HAP, G.711 / G.722, ADPCM, WavPack, APE, Speex, AMR, Matrox MPEG-2, VC-2, Dirac, Canopus HQ / HQX, TTA, Musepack, G.729, iLBC. Nyitott: MagicYUV és Shorten (tulajdonosi döntésre vár), a 📄 tételek |
 | 2026-11-13 | minor | A „kész” 1. feltétele és a 📄 kapu indoklása az AGENTS.md §2-höz igazítva (port megengedett, ha a licenc engedélyezett és nyilvántartott). Az ütemterv és a határidők nem változtak |
 | 2026-11-09 | minor | A Lagarith 📄 lett (nincs teljes nyilvános leírás, ffmpeg-kódoló sincs): a tulajdonos 2026-12-28-ig dönt róla, addig a 4. hét tételei (G.711 / G.722, ADPCM; #818) jöttek előre |
