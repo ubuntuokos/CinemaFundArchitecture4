@@ -4591,6 +4591,16 @@ export.summary	Low	žema
 	Chase External Timecode	Sekti išorinį laiko kodą
 	Send LTC	Siųsti LTC
 	Send MIDI Timecode	Siųsti MIDI laiko kodą
+
+# Live studio preview (CFA4-LIVE-STUDIO-001 S0)
+	Live studio preview	Tiesioginės studijos peržiūra
+	Live studio: stopped	Tiesioginė studija: sustabdyta
+	Live studio: {state}	Tiesioginė studija: {state}
+	Live studio: {error}	Tiesioginė studija: {error}
+	restarted after {count} crashes (last: {exit})	paleista iš naujo po {count} strigčių (paskutinė: {exit})
+	software backend: {reason}	programinė posistemė: {reason}
+	Start studio	Paleisti studiją
+	Stop studio	Sustabdyti studiją
 # Auto Color, Auto Contrast, Auto Levels (EffectsSDK review)
 	Auto Color	Automatinė spalva
 	Auto Contrast	Automatinis kontrastas

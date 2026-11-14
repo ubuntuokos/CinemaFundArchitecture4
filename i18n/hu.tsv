@@ -4594,6 +4594,16 @@ export.summary	Low	alacsony
 	Chase External Timecode	Külső időkód követése
 	Send LTC	LTC küldése
 	Send MIDI Timecode	MIDI-időkód küldése
+
+# Live studio preview (CFA4-LIVE-STUDIO-001 S0)
+	Live studio preview	Élő stúdió előnézet
+	Live studio: stopped	Élő stúdió: leállítva
+	Live studio: {state}	Élő stúdió: {state}
+	Live studio: {error}	Élő stúdió: {error}
+	restarted after {count} crashes (last: {exit})	{count} összeomlás után újraindítva (utolsó: {exit})
+	software backend: {reason}	szoftveres háttér: {reason}
+	Start studio	Stúdió indítása
+	Stop studio	Stúdió leállítása
 # Auto Color, Auto Contrast, Auto Levels (EffectsSDK review)
 	Auto Color	Automatikus szín
 	Auto Contrast	Automatikus kontraszt

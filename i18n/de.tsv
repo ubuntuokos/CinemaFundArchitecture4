@@ -4595,6 +4595,16 @@
 	Chase External Timecode	Externem Timecode folgen
 	Send LTC	LTC senden
 	Send MIDI Timecode	MIDI-Timecode senden
+
+# Live studio preview (CFA4-LIVE-STUDIO-001 S0)
+	Live studio preview	Live-Studio-Vorschau
+	Live studio: stopped	Live-Studio: angehalten
+	Live studio: {state}	Live-Studio: {state}
+	Live studio: {error}	Live-Studio: {error}
+	restarted after {count} crashes (last: {exit})	nach {count} Abstürzen neu gestartet (zuletzt: {exit})
+	software backend: {reason}	Software-Backend: {reason}
+	Start studio	Studio starten
+	Stop studio	Studio anhalten
 # Auto Color, Auto Contrast, Auto Levels (EffectsSDK review)
 	Auto Color	Auto-Farbe
 	Auto Contrast	Auto-Kontrast
