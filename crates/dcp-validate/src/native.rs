@@ -36,6 +36,7 @@ const IMPLEMENTED: &[&str] = &[
     AUD_LOUDNESS,
     IAB_TRACK,
     MARK_MARKERS,
+    SUB_DOCUMENTS,
 ];
 
 /// The native validator. Stateless; one value can validate many packages from many threads.
@@ -172,6 +173,7 @@ impl Run<'_> {
             AUD_LOUDNESS,
             IAB_TRACK,
             MARK_MARKERS,
+            SUB_DOCUMENTS,
         ];
         self.control.report("discover", 0, 1);
         let maps = package::asset_maps(&self.root);
@@ -247,6 +249,24 @@ impl Run<'_> {
             return;
         }
         self.audio(&files, &cpls);
+        if self.control.is_cancelled() {
+            return;
+        }
+        self.subtitles(&files, &cpls);
+    }
+
+    /// DCP-08: the subtitle and caption documents with their fonts and images.
+    fn subtitles(&mut self, files: &Files, cpls: &[(String, Composition)]) {
+        if !self.request.profile.contains(SUB_DOCUMENTS) {
+            return;
+        }
+        if cpls.is_empty() {
+            self.findings.push(Finding::new(SUB_DOCUMENTS, Status::Unchecked, "no composition playlist was read"));
+            self.done.insert(SUB_DOCUMENTS);
+            return;
+        }
+        let Some(r) = crate::subtitles::check(&self.root, cpls, files, self.request.limits.document, self.control) else { return };
+        self.rule(SUB_DOCUMENTS, r);
     }
 
     /// DCP-07: sound, loudness and immersive audio. Measuring loudness reads every sample and
