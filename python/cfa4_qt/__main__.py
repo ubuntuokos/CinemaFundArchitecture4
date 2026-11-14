@@ -19,9 +19,49 @@ def credits_file(path: str | None) -> str | None:
     return str(Path(path).expanduser().resolve())
 
 
+def is_project(path: str) -> bool:
+    """Whether a launch file is a CFA4 project (`.fcproj`, any case: the MIME glob starts the app
+    for `CUT.FCPROJ` too), as egui's ``args::is_project``."""
+    return Path(path).suffix.lower() == ".fcproj" and Path(path).stem != ""
+
+
+def launch_files(files: list[str]) -> tuple[str | None, str | None, list[str]]:
+    """The launch files as egui's ``args::project_and_media``: the project to open (the first
+    `.fcproj`), the credits file to open in the Credits workspace (the first credits file or
+    template) and the media files to import (every other file), all made absolute. Media paths
+    keep their symlinks (``os.path.abspath``), so the paths saved in the project are the ones given."""
+    project = next((str(Path(f).expanduser().resolve()) for f in files if is_project(f)), None)
+    credits = next((c for c in map(credits_file, files) if c), None)
+    media = [os.path.abspath(os.path.expanduser(f)) for f in files if f and not is_project(f) and not credits_file(f)]
+    return project, credits, media
+
+
+def import_at_start(engine, window, paths: list[str]) -> None:
+    """egui's launch import: once the engine runs (and has opened the launch project, if any),
+    `file.import` with the media files given on the command line. Errors go to the status bar and
+    the Events panel like any command's; nothing is imported for an empty list."""
+    if not paths:
+        return
+    from PySide6.QtCore import QTimer
+
+    given = list(paths)
+
+    def started(_hello: dict) -> None:
+        QTimer.singleShot(0, lambda: window.execute("file.import", {"paths": given}))
+
+    engine.started.connect(started)
+
+
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(prog="cfa4-qt", description="CFA4 Qt 6 editor (Rust engine + PySide6)")
-    parser.add_argument("project", nargs="?", help="project file (.fcproj) to open, or a credits file (.cfa4credits) or template (.cfa4credtpl) to open in the Credits workspace")
+    parser.add_argument(
+        "files",
+        nargs="*",
+        metavar="FILE",
+        help="a project file (.fcproj) to open, a credits file (.cfa4credits) or template (.cfa4credtpl) to open in "
+        "the Credits workspace, and media files to import (as the egui editor: the first project opens, "
+        "every other file is imported)",
+    )
     parser.add_argument("--credits", metavar="FILE", help="open this credits file (.cfa4credits), template (.cfa4credtpl) or spreadsheet in the Credits workspace")
     parser.add_argument("--engine", help="path to cfa4-cli (default: PATH, then target/)")
     parser.add_argument("--demo", action="store_true", help="open the built-in demo project")
@@ -112,14 +152,12 @@ def main(argv: list[str] | None = None) -> int:
             return 1
         QMessageBox.critical(None, "CFA4", message)
         return 1
-    credits = credits_file(args.project)
-    if credits:
-        args.project = None
-    elif args.credits:
+    project, credits, media = launch_files(args.files)
+    if not credits and args.credits:
         credits = str(Path(args.credits).expanduser().resolve())
     engine_args: list[str] = []
-    if args.project:
-        engine_args += ["--project", str(Path(args.project).expanduser().resolve())]
+    if project:
+        engine_args += ["--project", project]
     elif args.demo:
         engine_args.append("--demo")
     if args.data_dir:
@@ -153,6 +191,7 @@ def main(argv: list[str] | None = None) -> int:
         # driving the app never steals the user's keyboard (egui's): opened without activating it
         window.setAttribute(Qt.WidgetAttribute.WA_ShowWithoutActivating)
     window.show()
+    import_at_start(engine, window, media)
     if credits:
         # once the engine has a sequence: the workspace lays out against its frame
         def open_credits(_hello: dict, path: str = credits) -> None:

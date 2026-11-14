@@ -4538,6 +4538,13 @@ export.summary	Low	låg
 	The keys stay in memory only, until Forget DCP Keys or the end of the session.	Nycklarna finns bara i minnet, tills Glöm DCP-nycklar eller sessionens slut.
 	DCP keys forgotten	DCP-nycklarna glömda
 	Choose the KDM file and the private key.	Välj KDM-filen och den privata nyckeln.
+	Load even if the certificate chain is not verified	Läs in även med en overifierad certifikatkedja
+	Bundle: {loaded} of {total} KDMs loaded, {other} for other recipients	Paket: {loaded} av {total} KDM:er inlästa, {other} för andra mottagare
+	Not loaded: {path}: {problem}	Inte inläst: {path}: {problem}
+	Signature verified: {chain}	Signaturen verifierad: {chain}
+	Signature not verified: {problem}	Signaturen inte verifierad: {problem}
+	KDM required	KDM krävs
+	Encrypted: load the KDM with content key {keys}	Krypterad: läs in KDM:en med innehållsnyckeln {keys}
 
 # Settings ▸ Timecode Sync (TC-4)
 	Timecode Sync	Tidskodssynkronisering
@@ -4570,3 +4577,60 @@ export.summary	Low	låg
 	Chase External Timecode	Följ extern tidskod
 	Send LTC	Skicka LTC
 	Send MIDI Timecode	Skicka MIDI-tidskod
+# Auto Color, Auto Contrast, Auto Levels (EffectsSDK review)
+	Auto Color	Automatisk färg
+	Auto Contrast	Automatisk kontrast
+	Auto Levels	Automatiska nivåer
+	Temporal Smoothing (seconds)	Tidsutjämning (sekunder)
+	Scene Detect	Scendetektering
+	Black Clip	Svartklippning
+	White Clip	Vitklippning
+	Snap Neutral Midtones	Neutrala mellantoner
+# Layout presets: PiP corners, split screen (EffectsSDK review)
+	PiP 35% Upper Left	PiP 35 % uppe till vänster
+	Picture-in-picture: 35 % scale in the upper left	Bild-i-bild: 35 % skala uppe till vänster
+	PiP 35% Lower Left	PiP 35 % nere till vänster
+	Picture-in-picture: 35 % scale in the lower left	Bild-i-bild: 35 % skala nere till vänster
+	PiP 35% Lower Right	PiP 35 % nere till höger
+	Picture-in-picture: 35 % scale in the lower right	Bild-i-bild: 35 % skala nere till höger
+	Split Screen Left	Delad skärm vänster
+	Split screen: the middle half of the picture fills the left half of the frame	Delad skärm: bildens mittersta halva fyller rutans vänstra halva
+	Split Screen Right	Delad skärm höger
+	Split screen: the middle half of the picture fills the right half of the frame	Delad skärm: bildens mittersta halva fyller rutans högra halva
+# Creative Looks: CRT (P3)
+	CRT	CRT
+	Scanline Strength	Styrka på sveplinjer
+	Line Count	Antal linjer
+	Mask	Mask
+	Mask Strength	Maskstyrka
+	Corner Darkening	Mörkare hörn
+	Aperture Grille	Aperturgaller
+	Shadow Mask	Skuggmask
+	Slot Mask	Slitsmask
+# Creative Looks: Oil Paint (P4)
+	Oil Paint	Oljemålning
+	Detail	Detalj
+	Texture	Textur
+	Facet	Facetter
+	Daubs	Klickar
+	Dry Brush	Torr pensel
+	Fresco	Fresk
+	Knife	Palettkniv
+	Sponge	Svamp
+# Creative Looks: Pixel Sort (P5)
+	Pixel Sort	Pixelsortering
+	Sort By	Sortera efter
+	Lower Threshold	Nedre tröskel
+	Upper Threshold	Övre tröskel
+	Ascending	Stigande
+# Temporal Denoise (EffectsSDK review)
+	Temporal Denoise	Tidsbaserad brusreducering
+	Frames Each Side	Bildrutor på varje sida
+	Motion Threshold	Rörelsetröskel
+	Show Motion	Visa rörelse
+	No signal	Ingen signal
+	Locating	Söker position
+	Locked	Låst
+	Freewheel	Frihjul
+	Scrubbing	Skrubbar
+	Sending	Skickar

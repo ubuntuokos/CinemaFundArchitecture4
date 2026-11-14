@@ -220,8 +220,18 @@ pub fn builtin_presets() -> Vec<EffectPreset> {
     spotlight.masks.push(m);
     let warm =
         effect("tint", &[("black", ParamValue::Color([0.08, 0.04, 0.02, 1.0])), ("white", ParamValue::Color([1.0, 0.93, 0.8, 1.0])), ("amount", f(35.0))]);
-    let mut pip = effect("motion", &[("scale", f(35.0)), ("position", ParamValue::Vec2(Vec2::new(1530.0, 270.0)))]);
-    pip.enabled = true;
+    // picture-in-picture at 35 % in a corner (Motion only), on a 1920 × 1080 source
+    let pip_at = |x: f64, y: f64| {
+        let mut m = effect("motion", &[("scale", f(35.0)), ("position", ParamValue::Vec2(Vec2::new(x, y)))]);
+        m.enabled = true;
+        m
+    };
+    // split screen: crop to the middle half, then move it into one half of the frame
+    let split = |x: f64| {
+        let mut m = effect("motion", &[("position", ParamValue::Vec2(Vec2::new(x, 540.0)))]);
+        m.enabled = true;
+        vec![effect("crop", &[("left", f(25.0)), ("right", f(25.0))]), m]
+    };
     vec![
         preset("Blur In", "Gaussian Blur from 60 to 0 over the first second", KeyframeMode::AnchorToIn, 10.0, vec![blur_in]),
         preset("Blur Out", "Gaussian Blur from 0 to 60 over the last second", KeyframeMode::AnchorToOut, 10.0, vec![blur_out]),
@@ -231,7 +241,18 @@ pub fn builtin_presets() -> Vec<EffectPreset> {
         preset("Soft Vignette", "Darkens outside a feathered oval mask", KeyframeMode::Scale, 10.0, vec![vignette]),
         preset("Spotlight", "Brightens inside a feathered circular mask", KeyframeMode::Scale, 10.0, vec![spotlight]),
         preset("Warm Tint", "Warm highlights, brown shadows", KeyframeMode::Scale, 10.0, vec![warm]),
-        preset("PiP 35% Upper Right", "Picture-in-picture: 35 % scale in the upper right", KeyframeMode::Scale, 10.0, vec![pip]),
+        preset("PiP 35% Upper Right", "Picture-in-picture: 35 % scale in the upper right", KeyframeMode::Scale, 10.0, vec![pip_at(1530.0, 270.0)]),
+        preset("PiP 35% Upper Left", "Picture-in-picture: 35 % scale in the upper left", KeyframeMode::Scale, 10.0, vec![pip_at(390.0, 270.0)]),
+        preset("PiP 35% Lower Left", "Picture-in-picture: 35 % scale in the lower left", KeyframeMode::Scale, 10.0, vec![pip_at(390.0, 810.0)]),
+        preset("PiP 35% Lower Right", "Picture-in-picture: 35 % scale in the lower right", KeyframeMode::Scale, 10.0, vec![pip_at(1530.0, 810.0)]),
+        preset("Split Screen Left", "Split screen: the middle half of the picture fills the left half of the frame", KeyframeMode::Scale, 10.0, split(480.0)),
+        preset(
+            "Split Screen Right",
+            "Split screen: the middle half of the picture fills the right half of the frame",
+            KeyframeMode::Scale,
+            10.0,
+            split(1440.0),
+        ),
     ]
 }
 

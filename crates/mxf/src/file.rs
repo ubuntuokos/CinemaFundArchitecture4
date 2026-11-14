@@ -1760,7 +1760,19 @@ impl MxfFile {
 
     /// Whether some track is encrypted and its content key is not in the key ring.
     pub fn needs_key(&self) -> bool {
-        self.tracks.iter().any(|t| t.encryption.is_some_and(|e| crate::crypt::key(&e.key_id).is_none()))
+        !self.missing_keys().is_empty()
+    }
+
+    /// The Key IDs of the encrypted tracks whose content key is not in the key ring, once each,
+    /// in track order: the keys a KDM has to bring (#1053).
+    pub fn missing_keys(&self) -> Vec<[u8; 16]> {
+        let mut ids: Vec<[u8; 16]> = Vec::new();
+        for e in self.tracks.iter().filter_map(|t| t.encryption) {
+            if crate::crypt::key(&e.key_id).is_none() && !ids.contains(&e.key_id) {
+                ids.push(e.key_id);
+            }
+        }
+        ids
     }
 }
 
