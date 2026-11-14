@@ -12,12 +12,17 @@
 //! [`BATCH`] messages; what does not fit is counted in `dropped`. MIDI clock and active sensing are
 //! left out unless the filter asks for them. Turning it off (or `surface.monitor` failing to find
 //! a sequencer) stops reading.
+//!
+//! `surface.learn {device?}` / `surface.learnCancel`: MIDI Learn (the next press is reported as a
+//! `surfaceLearn` event). Assignments (`controlSurfaces.devices[].bindings`) are read whenever a
+//! used device has one: a press of an assigned control is `{"event": "surfaceAction", command,
+//! params, device, control}`, which the GUI runs as it runs a menu item.
 
 use std::cell::RefCell;
 use std::time::{Duration, Instant};
 
 use cfa4_engine::Session;
-use cfa4_engine::control_surfaces::PROFILES;
+use cfa4_engine::control_surfaces::{ControlSurfacePrefs, PROFILES, Triggers};
 use cfa4_surface::midi_in::{MidiMessage, MidiReader};
 use cfa4_surface_model::midi::{self, Chatter};
 use serde_json::{Value, json};
@@ -93,14 +98,71 @@ impl Batcher {
     }
 }
 
-struct Monitor {
-    reader: MidiReader,
-    batcher: Batcher,
+/// Where the messages read go: the MIDI Monitor, MIDI Learn and the assignments.
+#[derive(Debug, Default)]
+pub struct Router {
+    /// The MIDI Monitor, while it is on.
+    pub monitor: Option<Batcher>,
+    /// MIDI Learn waits for a press on this device ("" = any device).
+    pub learn: Option<String>,
+    triggers: Triggers,
+}
+
+impl Router {
+    /// Whether anything needs the controllers read.
+    pub fn wants_reader(&self, prefs: &ControlSurfacePrefs) -> bool {
+        self.monitor.is_some() || self.learn.is_some() || prefs.maps_anything()
+    }
+
+    /// The events `messages` give at once (`surfaceLearn` when Learn caught a press, else
+    /// `surfaceAction` for an assigned control); the monitor collects them for its next batch.
+    pub fn route(&mut self, prefs: &ControlSurfacePrefs, messages: Vec<MidiMessage>, lost: u64) -> Vec<Value> {
+        let mut out = Vec::new();
+        for m in &messages {
+            let device = m.device.0.as_str();
+            let Some(control) = self.triggers.press(device, &midi::input(&m.raw)) else { continue };
+            if self.learn.as_deref().is_some_and(|d| d.is_empty() || d == device) {
+                self.learn = None;
+                out.push(json!({"event": "surfaceLearn", "state": "captured", "device": device, "control": control, "label": midi::control_label(&control)}));
+                continue; // a press caught by Learn runs nothing
+            }
+            if let Some(a) = prefs.action(device, &control) {
+                let params = if a.params.is_null() { json!({}) } else { a.params };
+                out.push(json!({"event": "surfaceAction", "command": a.command, "params": params, "device": device, "control": control}));
+            }
+        }
+        if let Some(b) = self.monitor.as_mut() {
+            b.push(messages, lost);
+        }
+        out
+    }
+}
+
+/// How long to wait before trying the sequencer again for the assignments after it failed.
+const RETRY: Duration = Duration::from_secs(10);
+
+#[derive(Default)]
+struct State {
+    reader: Option<MidiReader>,
     seen_lost: u64,
+    router: Router,
+    /// No reading for the assignments before this (the sequencer failed).
+    retry_at: Option<Instant>,
+}
+
+impl State {
+    /// Starts reading if it does not run yet (`surface.monitor`, `surface.learn` ask for it).
+    fn ensure_reader(&mut self) -> Result<(), String> {
+        if self.reader.is_none() {
+            self.reader = Some(MidiReader::start()?);
+            self.seen_lost = 0;
+        }
+        Ok(())
+    }
 }
 
 thread_local! {
-    static MONITOR: RefCell<Option<Monitor>> = const { RefCell::new(None) };
+    static STATE: RefCell<State> = RefCell::new(State::default());
 }
 
 /// `surface.monitor`: turns the MIDI Monitor on or off.
@@ -111,36 +173,74 @@ pub fn monitor(p: &Value) -> Result<Value, String> {
         clock: p.pointer("/filter/clock").and_then(Value::as_bool).unwrap_or(false),
         sense: p.pointer("/filter/sense").and_then(Value::as_bool).unwrap_or(false),
     };
-    MONITOR.with(|m| {
-        let mut m = m.borrow_mut();
+    STATE.with(|st| {
+        let mut st = st.borrow_mut();
         if !enabled {
-            *m = None; // dropping the reader stops its thread
+            st.router.monitor = None; // upkeep stops the reader when nothing else needs it
             return Ok(json!({"enabled": false}));
         }
-        match m.as_mut() {
-            Some(on) => on.batcher.filter = filter,
-            None => {
-                let reader = MidiReader::start()?;
-                *m = Some(Monitor { reader, batcher: Batcher { filter, ..Batcher::default() }, seen_lost: 0 });
-            }
+        st.ensure_reader()?;
+        match st.router.monitor.as_mut() {
+            Some(b) => b.filter = filter,
+            None => st.router.monitor = Some(Batcher { filter, ..Batcher::default() }),
         }
         Ok(json!({"enabled": true}))
     })
 }
 
-/// The monitor's events to send now (called by the serve loop after every request and timeout).
-pub fn upkeep() -> Vec<Value> {
-    MONITOR.with(|m| {
-        let mut m = m.borrow_mut();
-        let Some(on) = m.as_mut() else { return Vec::new() };
-        let lost = on.reader.dropped();
-        let new_lost = lost.saturating_sub(on.seen_lost);
-        on.seen_lost = lost;
-        on.batcher.push(on.reader.drain(cfa4_surface::midi_in::QUEUE), new_lost);
-        let mut out: Vec<Value> = on.batcher.flush(Instant::now()).into_iter().collect();
-        if !on.reader.running() {
-            out.push(json!({"event": "surfaceError", "code": "alsa_unavailable", "error": "MIDI: the sequencer stopped; the MIDI Monitor is off"}));
-            *m = None;
+/// `surface.learn {device?}`: the next press (on `device`, or on any controller) is reported as
+/// `{"event": "surfaceLearn", "state": "captured", device, control, label}` instead of running
+/// its assignment. The GUI puts it into its draft.
+pub fn learn(p: &Value) -> Result<Value, String> {
+    let device = p.get("device").and_then(Value::as_str).unwrap_or_default().to_string();
+    STATE.with(|st| {
+        let mut st = st.borrow_mut();
+        st.ensure_reader()?;
+        st.router.learn = Some(device);
+        Ok(json!({"state": "learning"}))
+    })
+}
+
+/// `surface.learnCancel`: stops waiting for a press.
+pub fn learn_cancel() -> Value {
+    STATE.with(|st| st.borrow_mut().router.learn = None);
+    json!({"state": "cancelled"})
+}
+
+/// The events to send now (called by the serve loop after every request and timeout): presses
+/// that run commands, Learn results and the monitor's batches. Reads the controllers only while
+/// something needs it.
+pub fn upkeep(s: &Session) -> Vec<Value> {
+    let prefs = &s.prefs.control_surfaces;
+    STATE.with(|st| {
+        let mut st = st.borrow_mut();
+        let now = Instant::now();
+        if !st.router.wants_reader(prefs) {
+            st.reader = None; // dropping the reader stops its thread
+            return Vec::new();
+        }
+        if st.reader.is_none() && st.retry_at.is_none_or(|t| now >= t) {
+            // only the assignments need it here (Monitor and Learn started it themselves)
+            if st.ensure_reader().is_err() {
+                st.retry_at = Some(now + RETRY);
+            }
+        }
+        let Some(reader) = st.reader.as_ref() else { return Vec::new() };
+        let lost = reader.dropped();
+        let messages = reader.drain(cfa4_surface::midi_in::QUEUE);
+        let running = reader.running();
+        let new_lost = lost.saturating_sub(st.seen_lost);
+        st.seen_lost = lost;
+        let mut out = st.router.route(prefs, messages, new_lost);
+        if let Some(e) = st.router.monitor.as_mut().and_then(|b| b.flush(now)) {
+            out.push(e);
+        }
+        if !running {
+            st.reader = None;
+            st.retry_at = Some(now + RETRY);
+            if st.router.monitor.take().is_some() || st.router.learn.take().is_some() {
+                out.push(json!({"event": "surfaceError", "code": "alsa_unavailable", "error": "MIDI: the sequencer stopped; the MIDI Monitor and MIDI Learn are off"}));
+            }
         }
         out
     })
@@ -148,7 +248,7 @@ pub fn upkeep() -> Vec<Value> {
 
 /// Stops reading (the session ends).
 pub fn shutdown() {
-    MONITOR.with(|m| *m.borrow_mut() = None);
+    STATE.with(|st| *st.borrow_mut() = State::default());
 }
 
 /// The reply of `surface.devices`.
@@ -203,7 +303,7 @@ mod tests {
     #[test]
     fn devices_carry_the_users_choices() {
         let mut s = Session::default();
-        s.prefs.control_surfaces.devices.push(DeviceSetting { device: "midi:a:b".into(), enabled: false, profile: String::new() });
+        s.prefs.control_surfaces.devices.push(DeviceSetting { device: "midi:a:b".into(), enabled: false, ..Default::default() });
         let found = Discovery { devices: vec![dev("midi:a:b", "generic-midi"), dev("hid:0b33:0030:usb-1", "hid-shuttle")], problems: vec!["MIDI: x".into()] };
         let v = with_settings(&s, found);
         assert_eq!(v["enabled"], true);
@@ -253,6 +353,59 @@ mod tests {
         assert_eq!(e["messages"][0]["decoded"], "SysEx (3 bytes) (first 3 shown)");
     }
 
+    #[test]
+    fn presses_run_assignments_and_learn_catches_one() {
+        use cfa4_engine::control_surfaces::{Binding, DeviceSetting};
+        use cfa4_surface_model::{ControlId, MidiKind};
+        let cc41 = ControlId::Midi { channel: 0, kind: MidiKind::Cc, number: 41 };
+        let mut prefs = ControlSurfacePrefs::default();
+        let mut r = Router::default();
+        assert!(!r.wants_reader(&prefs));
+        prefs.devices.push(DeviceSetting {
+            device: "midi:k:p".into(),
+            bindings: vec![Binding { control: cc41.clone(), command: "playback.toggle".into(), params: Value::Null }],
+            ..Default::default()
+        });
+        assert!(r.wants_reader(&prefs), "an assignment keeps the controllers read");
+        let press = |at| msg("midi:k:p", at, &[0xb0, 41, 127]);
+        let release = |at| msg("midi:k:p", at, &[0xb0, 41, 0]);
+        let out = r.route(&prefs, vec![press(1), press(2), release(3)], 0);
+        assert_eq!(
+            out,
+            vec![
+                json!({"event": "surfaceAction", "command": "playback.toggle", "params": {}, "device": "midi:k:p", "control": {"midi": {"channel": 0, "kind": "cc", "number": 41}}})
+            ]
+        );
+        assert!(r.route(&prefs, vec![msg("midi:k:p", 4, &[0xb0, 42, 127])], 0).is_empty(), "no assignment");
+        // Learn on another device ignores this one; on this device it takes the press instead of running it
+        r.learn = Some("midi:x:y".into());
+        assert_eq!(r.route(&prefs, vec![press(5), release(6)], 0).len(), 1);
+        r.learn = Some(String::new());
+        let out = r.route(&prefs, vec![msg("midi:k:p", 7, &[0x99, 36, 100]), press(8)], 0);
+        assert_eq!(
+            out[0],
+            json!({"event": "surfaceLearn", "state": "captured", "device": "midi:k:p", "control": {"midi": {"channel": 9, "kind": "note", "number": 36}}, "label": "Ch 10 Note 36"})
+        );
+        assert_eq!(out[1]["event"], "surfaceAction", "Learn takes one press only");
+        assert_eq!(r.learn, None);
+        // the monitor sees every message
+        r.monitor = Some(Batcher::default());
+        let _ = r.route(&prefs, vec![release(9), msg("midi:k:p", 10, &[0xfe])], 0);
+        let e = r.monitor.as_mut().and_then(|b| b.flush(Instant::now())).unwrap_or_default();
+        assert_eq!(e["messages"].as_array().map(Vec::len), Some(1));
+    }
+
+    /// Without a sequencer (CI) Learn is an error that says why; cancelling always works.
+    #[test]
+    fn learn_without_a_sequencer() {
+        match learn(&json!({})) {
+            Ok(v) => assert_eq!(v["state"], "learning"),
+            Err(e) => assert!(e.contains("ALSA sequencer"), "{e}"),
+        }
+        assert_eq!(learn_cancel()["state"], "cancelled");
+        assert!(upkeep(&Session::default()).is_empty());
+    }
+
     /// Without a sequencer (CI) turning the monitor on is an error that says why; off always works.
     #[test]
     fn monitor_on_and_off() {
@@ -261,9 +414,9 @@ mod tests {
             Ok(v) => assert_eq!(v["enabled"], true),
             Err(e) => assert!(e.contains("ALSA sequencer"), "{e}"),
         }
-        let _ = upkeep();
+        let _ = upkeep(&Session::default());
         assert_eq!(monitor(&json!({"enabled": false})).unwrap_or_default()["enabled"], false);
-        assert!(upkeep().is_empty());
+        assert!(upkeep(&Session::default()).is_empty());
     }
 
     /// In CI there is neither a sequencer nor hidraw: the reply is still a list.

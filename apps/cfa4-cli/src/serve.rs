@@ -817,8 +817,9 @@ pub fn handle(s: &mut Session, id: Value, method: &str, params: Value) -> Option
                 // unsaved changes of sessions that died: the GUI offers Recover / Not Now / Discard
                 "recovery": serde_json::to_value(s.recovery_candidates()).unwrap_or_default(),
                 // additive capabilities (the protocol number stays): `surface` = `surface.devices`,
-                // `surfaceMonitor` = `surface.monitor` and its `surfaceMonitor` events
-                "features": ["surface", "surfaceMonitor"],
+                // `surfaceMonitor` = `surface.monitor` and its `surfaceMonitor` events,
+                // `surfaceLearn` = `surface.learn` and the assignments' `surfaceAction` events
+                "features": ["surface", "surfaceMonitor", "surfaceLearn"],
             }),
         ),
         "engine.execute" => {
@@ -923,6 +924,11 @@ pub fn handle(s: &mut Session, id: Value, method: &str, params: Value) -> Option
             Ok(v) => Reply::ok(id, v),
             Err(e) => Reply::err(id, e),
         },
+        "surface.learn" => match crate::serve_surface::learn(&params) {
+            Ok(v) => Reply::ok(id, v),
+            Err(e) => Reply::err(id, e),
+        },
+        "surface.learnCancel" => Reply::ok(id, crate::serve_surface::learn_cancel()),
         "session.state" => Reply::ok(
             id,
             json!({
@@ -1034,7 +1040,7 @@ pub fn run(mut s: Session) {
         let (sync_events, sync_on) = std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| crate::serve_tcsync::upkeep(&mut s))).unwrap_or_default();
         syncing = sync_on;
         let mut broken = false;
-        let surface_events = std::panic::catch_unwind(crate::serve_surface::upkeep).unwrap_or_default();
+        let surface_events = std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| crate::serve_surface::upkeep(&s))).unwrap_or_default();
         let engine_events = s.drain_events().into_iter().map(|ev| event_json(&ev));
         for json in engine_events.chain(sync_events).chain(surface_events) {
             if write_reply(&mut out, &Reply { json, binary: None }).is_err() {

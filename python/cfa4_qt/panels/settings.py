@@ -298,6 +298,27 @@ def field_label(text: str, parent: QWidget, width: int = LABEL_W) -> QLabel:
     return label
 
 
+MIDI_KINDS = {"cc": "CC", "cc14": "CC", "note": "Note", "rpn": "RPN", "nrpn": "NRPN"}
+
+
+def control_label(control: Any) -> str:
+    """A control as the engine names it (``cfa4_surface_model::midi::control_label``): ``Ch 1 CC 16``."""
+    if isinstance(control, dict):
+        midi = control.get("midi")
+        if isinstance(midi, dict):
+            try:
+                ch = int(midi.get("channel") or 0) + 1
+            except (TypeError, ValueError):
+                ch = 1
+            kind = MIDI_KINDS.get(str(midi.get("kind")), str(midi.get("kind")))
+            suffix = " (14-bit)" if midi.get("kind") == "cc14" else ""
+            return f"Ch {ch} {kind} {midi.get('number')}{suffix}"
+        hid = control.get("hid")
+        if isinstance(hid, dict):
+            return str(hid.get("name") or "")
+    return str(control)
+
+
 class PreferencesDialog(QDialog):
     """``engine`` answers ``prefs.schema`` / ``prefs.get`` and runs edits; ``applied(changes)``
     after OK applied them. ``devices()`` gives the audio devices ``{"hosts", "inputs", "outputs",
@@ -306,9 +327,12 @@ class PreferencesDialog(QDialog):
     applied = Signal(dict)
 
     def __init__(self, parent: QWidget | None, engine: Any, page: str = "general",
-                 devices: Callable[[], dict[str, Any]] | None = None, memory: Callable[[], int] | None = None) -> None:
+                 devices: Callable[[], dict[str, Any]] | None = None, memory: Callable[[], int] | None = None,
+                 commands: Callable[[], list[tuple[str, str]]] | None = None) -> None:
         super().__init__(parent)
         self.engine = engine
+        # (id, label) of the commands a control surface button can run (Control Surfaces ▸ Assignments)
+        self.commands = commands or list
         self.devices = devices or dict
         self.memory = memory or (lambda: 0)
         self.setObjectName("settings")
@@ -329,10 +353,14 @@ class PreferencesDialog(QDialog):
         self.monitor_on = False
         self.monitor_error = ""
         self._monitor: dict[str, Any] = {}  # the monitor's widgets on the page shown now
+        self.assign_device = ""  # the device whose assignments the page shows
+        self.assign_command = ""  # the command Learn assigns
+        self.learning = False
+        self.learn_message = ""
         event = getattr(engine, "event", None)
         if event is not None:
             event.connect(self._engine_event)
-        self.finished.connect(lambda _r: self._stop_monitor())
+        self.finished.connect(lambda _r: self._stop_reading())
         self.label_w = LABEL_W  # narrower beside Label Colors (egui: at most 45 % of the width)
         self._enablers: list[tuple[QWidget, str]] = []
         self._watchers: list[Callable[[], None]] = []
@@ -954,6 +982,7 @@ class PreferencesDialog(QDialog):
         col = QVBoxLayout(page)
         col.setContentsMargins(0, 0, 0, 0)
         col.addWidget(self._surface_devices(page))
+        col.addWidget(self._assignments(page))
         col.addWidget(self._midi_monitor(page))
         return page
 
@@ -1027,6 +1056,150 @@ class PreferencesDialog(QDialog):
         row.addWidget(refresh)
         v.addLayout(row)
         return box
+
+    # ----- Assignments and MIDI Learn -----
+    def _midi_devices(self) -> list[dict[str, Any]]:
+        return [d for d in (self.surfaces or {}).get("devices") or [] if isinstance(d, dict) and d.get("protocol") == "midi"]
+
+    def _bindings(self, device: str) -> list[dict[str, Any]]:
+        return [b for b in self._surface_setting(device).get("bindings") or [] if isinstance(b, dict)]
+
+    def _assignments(self, parent: QWidget) -> QWidget:
+        """Assignments: what the buttons of a MIDI controller run. Pick a command, press Learn
+        and press a button (or push a fader past half way) on the controller; OK saves it and the
+        engine then sends the command whenever that control is pressed (``surfaceAction``)."""
+        box = QGroupBox(tr("Assignments"), parent)
+        box.setObjectName("settings.controlSurfaces.assign")
+        v = QVBoxLayout(box)
+        devices = self._midi_devices()
+        if not devices:
+            v.addWidget(self._note(box, "Connect a MIDI controller to assign commands to its buttons.",
+                                   "settings.controlSurfaces.assign.empty"))
+            return box
+        ids = [str(d.get("device") or "") for d in devices]
+        if self.assign_device not in ids:
+            self.assign_device = ids[0]
+        top = QHBoxLayout()
+        top.addWidget(QLabel(tr("Device"), box))
+        device = QComboBox(box)
+        device.setObjectName("settings.controlSurfaces.assign.device")
+        for d in devices:
+            device.addItem(str(d.get("name") or d.get("device")), str(d.get("device") or ""))
+        device.setCurrentIndex(max(device.findData(self.assign_device), 0))
+        device.activated.connect(lambda _i, c=device: self._pick_assign_device(str(c.currentData() or "")))
+        top.addWidget(device, 1)
+        v.addLayout(top)
+        labels = dict(self.commands())
+        grid = QGridLayout()
+        grid.setHorizontalSpacing(12)
+        bindings = self._bindings(self.assign_device)
+        for c, head in enumerate((tr("Control"), tr("Command"))):
+            h = QLabel(head, box)
+            h.setStyleSheet(f"color: {theme.current().text_dim}; font-weight: 600;")
+            grid.addWidget(h, 0, c)
+        for n, b in enumerate(bindings, start=1):
+            control = QLabel(control_label(b.get("control")), box)
+            control.setObjectName(f"settings.controlSurfaces.assign.{n}.control")
+            grid.addWidget(control, n, 0)
+            cid = str(b.get("command") or "")
+            command = QLabel(labels.get(cid) or cid, box)
+            command.setObjectName(f"settings.controlSurfaces.assign.{n}.command")
+            command.setToolTip(cid)
+            grid.addWidget(command, n, 1)
+            remove = QToolButton(box)
+            remove.setObjectName(f"settings.controlSurfaces.assign.{n}.remove")
+            remove.setText("✕")
+            remove.setToolTip(tr("Remove this assignment"))
+            remove.clicked.connect(lambda _c=False, b=b: self._remove_binding(b.get("control")))
+            grid.addWidget(remove, n, 2)
+        grid.setColumnStretch(1, 1)
+        v.addLayout(grid)
+        if not bindings:
+            v.addWidget(self._note(box, "No assignments yet.", "settings.controlSurfaces.assign.none"))
+        row = QHBoxLayout()
+        command = QComboBox(box)
+        command.setObjectName("settings.controlSurfaces.assign.command")
+        for cid, label in sorted(labels.items(), key=lambda kv: kv[1].casefold()):
+            command.addItem(label, cid)
+            command.setItemData(command.count() - 1, cid, Qt.ItemDataRole.ToolTipRole)
+        if self.assign_command and command.findData(self.assign_command) >= 0:
+            command.setCurrentIndex(command.findData(self.assign_command))
+        self.assign_command = str(command.currentData() or "")
+        command.activated.connect(lambda _i, c=command: setattr(self, "assign_command", str(c.currentData() or "")))
+        row.addWidget(command, 1)
+        learn = self._button("settings.controlSurfaces.assign.learn", tr("Cancel Learn") if self.learning else tr("Learn"))
+        learn.setCheckable(True)
+        learn.setChecked(self.learning)
+        learn.setEnabled(command.count() > 0)
+        learn.clicked.connect(self._toggle_learn)
+        row.addWidget(learn)
+        v.addLayout(row)
+        text = self.learn_message or ("Press or move a control on the controller…" if self.learning else
+                                      "Pick a command, press Learn, then press a button on the controller. OK saves the assignments.")
+        v.addWidget(self._note(box, text, "settings.controlSurfaces.assign.status"))
+        return box
+
+    def _pick_assign_device(self, device: str) -> None:
+        if device != self.assign_device:
+            self._cancel_learn()
+            self.assign_device = device
+            self.learn_message = ""
+            self._build_page()
+
+    def _set_bindings(self, device: str, bindings: list[dict[str, Any]]) -> None:
+        self._set_surface(device, "bindings", bindings)
+
+    def _remove_binding(self, control: Any) -> None:
+        self._set_bindings(self.assign_device, [b for b in self._bindings(self.assign_device) if b.get("control") != control])
+        self.learn_message = ""
+        self._build_page()
+
+    def _toggle_learn(self, on: bool) -> None:
+        if not on:
+            self._cancel_learn()
+            self.learn_message = ""
+            self._build_page()
+            return
+
+        def failed(m: str) -> None:
+            self.learning = False
+            self.learn_message = m
+            self._rebuild_if_shown()
+
+        self.learning = True
+        self.learn_message = ""
+        self._build_page()
+        self.engine.call("surface.learn", {"device": self.assign_device}, on_error=failed)
+
+    def _cancel_learn(self) -> None:
+        if self.learning:
+            self.learning = False
+            self.engine.call("surface.learnCancel", {})
+
+    def _learned(self, message: dict[str, Any]) -> None:
+        if not self.learning or message.get("state") != "captured" or message.get("device") != self.assign_device:
+            return
+        self.learning = False
+        control = message.get("control")
+        if not isinstance(control, dict) or not self.assign_command:
+            return
+        kept = [b for b in self._bindings(self.assign_device) if b.get("control") != control]
+        self._set_bindings(self.assign_device, [*kept, {"control": control, "command": self.assign_command}])
+        labels = dict(self.commands())
+        self.learn_message = fmt("{control} runs {command}.", control=control_label(control),
+                                 command=labels.get(self.assign_command) or self.assign_command)
+        self._rebuild_if_shown()
+
+    def _rebuild_if_shown(self) -> None:
+        if self.page == "controlSurfaces":
+            try:
+                self._build_page()
+            except RuntimeError:
+                pass  # the dialog is closing
+
+    def _stop_reading(self) -> None:
+        self._stop_monitor()
+        self._cancel_learn()
 
     # ----- MIDI Monitor -----
     MONITOR_LINES = 500
@@ -1122,13 +1295,23 @@ class PreferencesDialog(QDialog):
         return f"{at:9.3f}  {name[:24]:<24}  {str(m.get('raw') or ''):<11}  {m.get('decoded') or ''}"
 
     def _engine_event(self, message: Any) -> None:
-        if not isinstance(message, dict) or not self.monitor_on:
+        if not isinstance(message, dict):
             return
         kind = message.get("event")
+        if kind == "surfaceLearn":
+            self._learned(message)
+            return
         if kind == "surfaceError":
-            self.monitor_on = False
-            self.monitor_error = str(message.get("error") or "")
-            self._show_monitor_state()
+            if self.learning:
+                self.learning = False
+                self.learn_message = str(message.get("error") or "")
+                self._rebuild_if_shown()
+            if self.monitor_on:
+                self.monitor_on = False
+                self.monitor_error = str(message.get("error") or "")
+                self._show_monitor_state()
+            return
+        if not self.monitor_on:
             return
         if kind != "surfaceMonitor":
             return
@@ -1188,7 +1371,7 @@ class PreferencesDialog(QDialog):
         devices = [dict(d) for d in get(self.values, "controlSurfaces.devices") or [] if isinstance(d, dict)]
         entry = next((d for d in devices if d.get("device") == device), None)
         if entry is None:
-            entry = {"device": device, "enabled": True, "profile": ""}
+            entry = {"device": device, "enabled": True, "profile": "", "bindings": []}
             devices.append(entry)
         entry[key] = value
         put(self.values, "controlSurfaces.devices", devices)
