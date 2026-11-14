@@ -4383,6 +4383,10 @@ export.summary	Low	დაბალი
 	{n} more	კიდევ {n}
 	Block	ბლოკი
 	parallel	პარალელური
+	page {page}: a spine's vertical position works on card pages only; it is ignored	გვერდი {page}: ღერძის ვერტიკალური მდებარეობა მხოლოდ ბარათის გვერდებზე მოქმედებს; იგნორირებულია
+	on a card: centered on {y} px	ბარათზე: ცენტრი {y} px-ზე
+	on a card: starts at {y} px	ბარათზე: იწყება {y} px-ზე
+	on a card: ends at {y} px	ბარათზე: მთავრდება {y} px-ზე
 # MPEG-2 export audio (#268): a product name, kept as is
 	Dolby Digital (AC-3)	Dolby Digital (AC-3)
 	In the page (OBS takes it from the Browser Source)	გვერდზე (OBS მას ბრაუზერის წყაროდან იღებს)
@@ -4455,7 +4459,12 @@ export.summary	Low	დაბალი
 	page {page}: the runtime is reached by changing the roll speed (the gaps would have to grow more than 20-fold)	გვერდი {page}: ხანგრძლივობა მიიღწევა გადახვევის სიჩქარის შეცვლით (დაშორებები 20-ჯერ მეტად უნდა გაიზარდოს)
 	page {page}: the transition needs the pages to touch (page gap 0); it is left out	გვერდი {page}: გადასვლას სჭირდება, რომ გვერდები ერთმანეთს ეხებოდეს (დაშორება 0); გამოტოვებულია
 	page {page}: there is no transition “{name}”; the pages cut	გვერდი {page}: გადასვლა „{name}“ არ არსებობს; გვერდები ჭრით იცვლება
-	spine position “{value}” is not supported (a pixel offset, optionally “parallel”, is)	ღერძის პოზიცია „{value}“ არ არის მხარდაჭერილი (მხარდაჭერილია პიქსელური წანაცვლება, სურვილისამებრ „parallel“-ით)
+	spine position “{value}” is not supported (a pixel offset, optionally “parallel”, or “Hook N Bottom-Top dx dy” is)	ღერძის პოზიცია „{value}“ არ არის მხარდაჭერილი (მხარდაჭერილია პიქსელური წანაცვლება, სურვილისამებრ „parallel“ / „Hook N Bottom-Top dx dy“-ით)
+	page {page}: the hook reaches back further than there are spines; it hooks onto the first spine, or starts its own	გვერდი {page}: კაკალი უფრო შორს მიუთითებს უკან, ვიდრე ღერძებია; ის პირველ ღერძს ეკიდება ან საკუთარს იწყებს
+	hooked {n} spines back: its {from} meets this spine's {to}	ჩამოკიდებულია {n} ღერძით უკან: მისი {from} ხვდება ამ ღერძის {to}-ს
+	top	ზედა კიდე
+	middle	შუა
+	bottom	ქვედა კიდე
 	vertical gap “{value}” is not a number	ვერტიკალური დაშორება „{value}“ რიცხვი არ არის
 	picture “{file}” was not found or cannot be read; it is left out	სურათი „{file}“ ვერ მოიძებნა ან ვერ იკითხება; გამოტოვებულია
 	video “{file}” was not found or cannot be read; it is left out	ვიდეო „{file}“ ვერ მოიძებნა ან ვერ იკითხება; გამოტოვებულია

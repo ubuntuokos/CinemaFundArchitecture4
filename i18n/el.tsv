@@ -4382,6 +4382,10 @@ export.summary	Low	χαμηλή
 	{n} more	{n} ακόμη
 	Block	Μπλοκ
 	parallel	παράλληλα
+	page {page}: a spine's vertical position works on card pages only; it is ignored	σελίδα {page}: η κατακόρυφη θέση του άξονα ισχύει μόνο σε σελίδες κάρτας· αγνοείται
+	on a card: centered on {y} px	σε κάρτα: κεντραρισμένος στα {y} px
+	on a card: starts at {y} px	σε κάρτα: ξεκινά στα {y} px
+	on a card: ends at {y} px	σε κάρτα: τελειώνει στα {y} px
 # MPEG-2 export audio (#268): a product name, kept as is
 	Dolby Digital (AC-3)	Dolby Digital (AC-3)
 	In the page (OBS takes it from the Browser Source)	Στη σελίδα (το OBS τον παίρνει από την πηγή προγράμματος περιήγησης)
@@ -4454,7 +4458,12 @@ export.summary	Low	χαμηλή
 	page {page}: the runtime is reached by changing the roll speed (the gaps would have to grow more than 20-fold)	σελίδα {page}: η διάρκεια επιτυγχάνεται αλλάζοντας την ταχύτητα κύλισης (τα κενά θα έπρεπε να μεγαλώσουν πάνω από 20 φορές)
 	page {page}: the transition needs the pages to touch (page gap 0); it is left out	σελίδα {page}: η μετάβαση απαιτεί οι σελίδες να εφάπτονται (κενό σελίδας 0)· παραλείπεται
 	page {page}: there is no transition “{name}”; the pages cut	σελίδα {page}: δεν υπάρχει μετάβαση “{name}”· οι σελίδες αλλάζουν με κόψιμο
-	spine position “{value}” is not supported (a pixel offset, optionally “parallel”, is)	η θέση άξονα “{value}” δεν υποστηρίζεται (υποστηρίζεται μετατόπιση σε pixel, προαιρετικά με “parallel”)
+	spine position “{value}” is not supported (a pixel offset, optionally “parallel”, or “Hook N Bottom-Top dx dy” is)	η θέση άξονα “{value}” δεν υποστηρίζεται (υποστηρίζεται μετατόπιση σε pixel, προαιρετικά με “parallel” / “Hook N Bottom-Top dx dy”)
+	page {page}: the hook reaches back further than there are spines; it hooks onto the first spine, or starts its own	σελίδα {page}: το άγκιστρο φτάνει πιο πίσω απ’ όσους άξονες υπάρχουν· αγκιστρώνεται στον πρώτο άξονα ή ξεκινά δικό του
+	hooked {n} spines back: its {from} meets this spine's {to}	αγκιστρωμένος {n} άξονες πίσω: το {from} του συναντά το {to} αυτού του άξονα
+	top	πάνω άκρο
+	middle	μέση
+	bottom	κάτω άκρο
 	vertical gap “{value}” is not a number	το κατακόρυφο κενό “{value}” δεν είναι αριθμός
 	picture “{file}” was not found or cannot be read; it is left out	η εικόνα “{file}” δεν βρέθηκε ή δεν διαβάζεται· παραλείπεται
 	video “{file}” was not found or cannot be read; it is left out	το βίντεο “{file}” δεν βρέθηκε ή δεν διαβάζεται· παραλείπεται

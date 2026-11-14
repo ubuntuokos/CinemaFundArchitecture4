@@ -4382,6 +4382,10 @@ export.summary	Low	төмен
 	{n} more	Тағы {n}
 	Block	Блок
 	parallel	қатар
+	page {page}: a spine's vertical position works on card pages only; it is ignored	{page} бет: осьтің тік орны тек карта беттерінде жұмыс істейді; ескерілмейді
+	on a card: centered on {y} px	картада: {y} px бойынша ортада
+	on a card: starts at {y} px	картада: {y} px-тен басталады
+	on a card: ends at {y} px	картада: {y} px-те аяқталады
 # MPEG-2 export audio (#268): a product name, kept as is
 	Dolby Digital (AC-3)	Dolby Digital (AC-3)
 	In the page (OBS takes it from the Browser Source)	Бетте (OBS оны браузер көзінен алады)
@@ -4454,7 +4458,12 @@ export.summary	Low	төмен
 	page {page}: the runtime is reached by changing the roll speed (the gaps would have to grow more than 20-fold)	{page}-бет: ұзақтыққа жылжу жылдамдығын өзгерту арқылы жетеді (аралықтар 20 еседен артық өсуі керек еді)
 	page {page}: the transition needs the pages to touch (page gap 0); it is left out	{page}-бет: ауысу үшін беттер түйісуі керек (бет аралығы 0); ол алынып тасталды
 	page {page}: there is no transition “{name}”; the pages cut	{page}-бет: «{name}» ауысуы жоқ; беттер кесумен ауысады
-	spine position “{value}” is not supported (a pixel offset, optionally “parallel”, is)	«{value}» ось орны қолдау көрсетілмейді (пиксельмен ығысу қолданылады, қаласаңыз «parallel» белгісімен)
+	spine position “{value}” is not supported (a pixel offset, optionally “parallel”, or “Hook N Bottom-Top dx dy” is)	«{value}» ось орны қолдау көрсетілмейді (пиксельмен ығысу қолданылады, қаласаңыз «parallel» / «Hook N Bottom-Top dx dy» белгісімен)
+	page {page}: the hook reaches back further than there are spines; it hooks onto the first spine, or starts its own	{page}-бет: ілмек осьтер санынан әріге сілтейді; ол бірінші оське ілінеді немесе өз осін бастайды
+	hooked {n} spines back: its {from} meets this spine's {to}	{n} ось бұрын ілінген: оның {from} бөлігі осы осьтің {to} бөлігімен түйіседі
+	top	жоғарғы шеті
+	middle	ортасы
+	bottom	төменгі шеті
 	vertical gap “{value}” is not a number	«{value}» тік аралық сан емес
 	picture “{file}” was not found or cannot be read; it is left out	«{file}» суреті табылмады немесе оқылмайды; ол алынып тасталды
 	video “{file}” was not found or cannot be read; it is left out	«{file}» бейнесі табылмады немесе оқылмайды; ол алынып тасталды

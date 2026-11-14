@@ -4380,6 +4380,10 @@ export.summary	Low	thấp
 	{n} more	Thêm {n}
 	Block	Khối
 	parallel	song song
+	page {page}: a spine's vertical position works on card pages only; it is ignored	trang {page}: vị trí dọc của trục chỉ áp dụng trên trang thẻ; bị bỏ qua
+	on a card: centered on {y} px	trên thẻ: căn giữa tại {y} px
+	on a card: starts at {y} px	trên thẻ: bắt đầu tại {y} px
+	on a card: ends at {y} px	trên thẻ: kết thúc tại {y} px
 # MPEG-2 export audio (#268): a product name, kept as is
 	Dolby Digital (AC-3)	Dolby Digital (AC-3)
 	In the page (OBS takes it from the Browser Source)	Trong trang (OBS lấy từ nguồn trình duyệt)
@@ -4452,7 +4456,12 @@ export.summary	Low	thấp
 	page {page}: the runtime is reached by changing the roll speed (the gaps would have to grow more than 20-fold)	trang {page}: đạt thời lượng bằng cách đổi tốc độ cuộn (khoảng cách sẽ phải tăng hơn 20 lần)
 	page {page}: the transition needs the pages to touch (page gap 0); it is left out	trang {page}: chuyển cảnh cần các trang liền nhau (khoảng cách 0); bị bỏ qua
 	page {page}: there is no transition “{name}”; the pages cut	trang {page}: không có chuyển cảnh “{name}”; các trang cắt thẳng
-	spine position “{value}” is not supported (a pixel offset, optionally “parallel”, is)	vị trí trục “{value}” không được hỗ trợ (hỗ trợ độ lệch theo điểm ảnh, tùy chọn kèm “parallel”)
+	spine position “{value}” is not supported (a pixel offset, optionally “parallel”, or “Hook N Bottom-Top dx dy” is)	vị trí trục “{value}” không được hỗ trợ (hỗ trợ độ lệch theo điểm ảnh, tùy chọn kèm “parallel” / “Hook N Bottom-Top dx dy”)
+	page {page}: the hook reaches back further than there are spines; it hooks onto the first spine, or starts its own	trang {page}: móc trỏ lùi xa hơn số trục hiện có; nó móc vào trục đầu tiên hoặc bắt đầu trục riêng
+	hooked {n} spines back: its {from} meets this spine's {to}	móc vào trục cách {n} trục về trước: {from} của trục đó gặp {to} của trục này
+	top	đỉnh
+	middle	giữa
+	bottom	đáy
 	vertical gap “{value}” is not a number	khoảng cách dọc “{value}” không phải là số
 	picture “{file}” was not found or cannot be read; it is left out	không tìm thấy hoặc không đọc được hình “{file}”; bị bỏ qua
 	video “{file}” was not found or cannot be read; it is left out	không tìm thấy hoặc không đọc được video “{file}”; bị bỏ qua

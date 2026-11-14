@@ -4386,6 +4386,10 @@ export.summary	Low	తక్కువ
 	{n} more	మరో {n}
 	Block	బ్లాక్
 	parallel	సమాంతరం
+	page {page}: a spine's vertical position works on card pages only; it is ignored	పేజీ {page}: అక్షం నిలువు స్థానం కార్డ్ పేజీల్లో మాత్రమే పనిచేస్తుంది; దీన్ని విస్మరిస్తున్నాం
+	on a card: centered on {y} px	కార్డ్‌పై: {y} px వద్ద మధ్యలో
+	on a card: starts at {y} px	కార్డ్‌పై: {y} px వద్ద మొదలవుతుంది
+	on a card: ends at {y} px	కార్డ్‌పై: {y} px వద్ద ముగుస్తుంది
 # MPEG-2 export audio (#268): a product name, kept as is
 	Dolby Digital (AC-3)	Dolby Digital (AC-3)
 	In the page (OBS takes it from the Browser Source)	పేజీలో (OBS దాన్ని బ్రౌజర్ సోర్స్ నుండి తీసుకుంటుంది)
@@ -4458,7 +4462,12 @@ export.summary	Low	తక్కువ
 	page {page}: the runtime is reached by changing the roll speed (the gaps would have to grow more than 20-fold)	పేజీ {page}: రోల్ వేగాన్ని మార్చడం ద్వారా నిడివి చేరుకుంటుంది (ఖాళీలు 20 రెట్లకు మించి పెరగాల్సి వస్తుంది)
 	page {page}: the transition needs the pages to touch (page gap 0); it is left out	పేజీ {page}: పరివర్తనకు పేజీలు తాకాలి (పేజీ ఖాళీ 0); వదిలివేయబడింది
 	page {page}: there is no transition “{name}”; the pages cut	పేజీ {page}: “{name}” అనే పరివర్తన లేదు; పేజీలు కట్‌తో మారుతాయి
-	spine position “{value}” is not supported (a pixel offset, optionally “parallel”, is)	అక్ష స్థానం “{value}”కి మద్దతు లేదు (పిక్సెల్ ఆఫ్‌సెట్‌కు, ఐచ్ఛికంగా “parallel”తో, మద్దతు ఉంది)
+	spine position “{value}” is not supported (a pixel offset, optionally “parallel”, or “Hook N Bottom-Top dx dy” is)	అక్ష స్థానం “{value}”కి మద్దతు లేదు (పిక్సెల్ ఆఫ్‌సెట్‌కు, ఐచ్ఛికంగా “parallel” / “Hook N Bottom-Top dx dy”తో, మద్దతు ఉంది)
+	page {page}: the hook reaches back further than there are spines; it hooks onto the first spine, or starts its own	పేజీ {page}: హుక్ ఉన్న అక్షాల కంటే ఎక్కువ వెనక్కి చూపుతోంది; అది మొదటి అక్షానికి తగులుకుంటుంది లేదా తన సొంత అక్షాన్ని మొదలుపెడుతుంది
+	hooked {n} spines back: its {from} meets this spine's {to}	{n} అక్షాలు వెనక్కి తగిలించబడింది: దాని {from} ఈ అక్షం యొక్క {to}ను కలుస్తుంది
+	top	పైభాగం
+	middle	మధ్య
+	bottom	కిందిభాగం
 	vertical gap “{value}” is not a number	నిలువు ఖాళీ “{value}” సంఖ్య కాదు
 	picture “{file}” was not found or cannot be read; it is left out	చిత్రం “{file}” కనబడలేదు లేదా చదవలేము; వదిలివేయబడింది
 	video “{file}” was not found or cannot be read; it is left out	వీడియో “{file}” కనబడలేదు లేదా చదవలేము; వదిలివేయబడింది
