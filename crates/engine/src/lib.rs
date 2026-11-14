@@ -35,6 +35,7 @@ pub mod keyboard;
 mod keyframe_move;
 pub mod legibility;
 pub mod live;
+pub mod ltc_read;
 mod marker_export;
 pub mod masks;
 pub mod media_browser;

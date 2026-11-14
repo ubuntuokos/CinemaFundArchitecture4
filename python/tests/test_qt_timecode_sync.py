@@ -175,3 +175,27 @@ def test_real_engine_transport_devices_and_status(app: QtCore.QCoreApplication, 
         assert wait_until(app, poll, 20_000), st
     finally:
         engine.stop()
+
+
+def test_timecode_dialog_reads_ltc(app: QtCore.QCoreApplication) -> None:
+    """Clip ▸ Modify ▸ Timecode: Read from LTC Audio fills Set Timecode from the engine's
+    clip.readLtcTimecode (without applying it); an error shows in the dialog."""
+    from cfa4_qt.panels.clip_dialogs import ClipDialog
+
+    sent: list[tuple[str, dict[str, Any]]] = []
+    answer: dict[str, Any] = {"error": None, "result": {"timecode": "14:29:59:15", "applied": False}}
+
+    def run(command: str, params: dict[str, Any], then: Any) -> None:
+        sent.append((command, params))
+        then(answer["error"], answer["result"])
+
+    d = ClipDialog(None, {"command": "clip.modifyTimecode", "params": {"timecode": "00:00:00:00", "tapeName": "", "reset": False}}, run)
+    button = d.findChild(QtWidgets.QPushButton, "timecode.readLtc")
+    field = d.findChild(QtWidgets.QLineEdit, "timecode.timecode")
+    assert button is not None and field is not None
+    button.click()
+    assert sent == [("clip.readLtcTimecode", {"apply": False})]
+    assert field.text() == "14:29:59:15" and d.params["timecode"] == "14:29:59:15"
+    answer.update(error="no LTC timecode found in the first 60 s of the clip's audio", result=None)
+    button.click()
+    assert d.error.text().startswith("no LTC") and field.text() == "14:29:59:15" and button.isEnabled()
