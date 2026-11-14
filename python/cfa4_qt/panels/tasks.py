@@ -12,12 +12,14 @@ Three sources, each read on its own so that one an engine does not have yet neve
   says the queue is not reported yet and shows the other two.
 
 Each running or waiting job and export can be cancelled from its row (``jobs.cancel``,
-``export.queue.cancel``). The summary line on top says how many run, how many wait and the first
+``export.queue.cancel``). A task whose scheduled start was missed (the computer slept) asks the user
+on its row: run now, next slot or cancel (``tasks.decide``). The summary line on top says how many run, how many wait and the first
 reason one waits, so the user knows before a task starts why it does not start yet.
 """
 
 from __future__ import annotations
 
+from datetime import datetime
 from typing import Any
 
 from PySide6.QtCore import QRect, QSettings, Qt, QTimer, Signal
@@ -40,10 +42,13 @@ TASK_STATES = {
     "succeeded": N_("Done"),
     "failed": N_("Failed"),
     "cancelled": N_("Cancelled"),
+    "decide": N_("Needs your decision"),
 }
 TASK_CLASSES = {"interactive": N_("Interactive"), "background": N_("Background"), "speculative": N_("Speculative"), "finalRender": N_("Final render")}
 EXPORT_STATES = {"ready": N_("Ready"), "encoding": N_("Encoding"), "done": N_("Done"), "failed": N_("Failed"), "cancelled": N_("Cancelled")}
 WAITING = "waiting"
+# the user's choices on a task that has not started (``tasks.decide``), e.g. after a missed start
+DECISIONS = (("runNow", N_("Run now"), "▶"), ("nextSlot", N_("Next slot"), "⏭"), ("cancel", N_("Cancel"), "✕"))
 POLL_MS = 1000
 MAX_ROWS = 500  # per source: what an engine sends is untrusted
 
@@ -64,6 +69,21 @@ def _bytes(value: Any) -> str:
     if n is None or n <= 0:
         return ""
     return fmt("{n} GiB", n=f"{n / (1 << 30):.1f}") if n >= 1 << 30 else fmt("{n} MiB", n=f"{n / (1 << 20):.0f}")
+
+
+def _when(ms: Any) -> str:
+    """A UTC millisecond time in local time, or "" when it is not one."""
+    n = _number(ms)
+    if n is None or not 0 <= n < 253_402_300_800_000:  # up to the year 9999
+        return ""
+    try:
+        return datetime.fromtimestamp(n / 1000).strftime("%Y-%m-%d %H:%M")
+    except (OverflowError, OSError, ValueError):
+        return ""
+
+
+def _cancel(cmd: str, params: dict[str, Any]) -> list[tuple[str, str, str, str, dict[str, Any]]]:
+    return [("cancel", tr("Cancel"), "✕", cmd, params)]
 
 
 def job_rows(jobs: Any) -> list[dict[str, Any]]:
@@ -95,7 +115,7 @@ def job_rows(jobs: Any) -> list[dict[str, Any]]:
             "detail": detail,
             "eta": format_eta(eta) if eta is not None and eta >= 0 and state == "running" else "",
             "finished": done,
-            "action": None if done else ("jobs.cancel", {"job": jid}),
+            "actions": [] if done else _cancel("jobs.cancel", {"job": jid}),
         })
     return out
 
@@ -121,7 +141,7 @@ def export_rows(result: Any) -> list[dict[str, Any]]:
             "detail": detail,
             "eta": format_eta(eta) if eta is not None and eta >= 0 and status == "encoding" else "",
             "finished": done,
-            "action": None if done else ("export.queue.cancel", {"id": it.get("id")}),
+            "actions": [] if done else _cancel("export.queue.cancel", {"id": it.get("id")}),
         })
     return out
 
@@ -141,15 +161,24 @@ def task_rows(tasks: Any) -> list[dict[str, Any]]:
                 fmt("{n} CPU", n=f"{(_number(t.get('cpuMilli')) or 0) / 1000:g}") if (_number(t.get("cpuMilli")) or 0) > 0 else "",
             ) if p
         )
+        decide = t.get("needsDecision") is True and isinstance(t.get("id"), str)
+        offered = set(_strings(t.get("decisions")))
+        at = _when(t.get("startAt"))
+        if decide:
+            detail = fmt("Missed its start at {time}", time=at) if at else tr("Missed its start")
+        elif state == "scheduled" and at:
+            detail = fmt("Starts at {time}", time=at)
+        else:
+            detail = "; ".join(waiting_for) if waiting_for else asked
         out.append({
             "kind": "task",
             "id": t.get("id"),
             "name": str(t.get("label") or t.get("id") or "")[:200],
-            "state": state,
-            "detail": "; ".join(waiting_for) if waiting_for else asked,
+            "state": "decide" if decide else state,
+            "detail": detail,
             "eta": "",
             "finished": state in ("succeeded", "failed", "cancelled"),
-            "action": None,
+            "actions": [(key, tr(label), icon, "tasks.decide", {"id": t["id"], "action": key}) for key, label, icon in DECISIONS if key in offered] if decide else [],
         })
     return out
 
@@ -288,7 +317,7 @@ class TaskManagerPanel(QWidget):
             rows = [r for r in self.sources[key] if show_finished or not r["finished"]]
             if key in self.unavailable:
                 note = tr("Not reported by this engine yet.") if key == "queue" else fmt("Not available: {why}", why=self.unavailable[key])
-                rows = [{"kind": key, "id": "unavailable", "name": note, "state": "", "detail": "", "eta": "", "finished": False, "action": None}]
+                rows = [{"kind": key, "id": "unavailable", "name": note, "state": "", "detail": "", "eta": "", "finished": False, "actions": []}]
             while group.childCount() > len(rows):
                 group.removeChild(group.child(group.childCount() - 1))
             while group.childCount() < len(rows):
@@ -307,23 +336,31 @@ class TaskManagerPanel(QWidget):
         for col, text in enumerate((r["name"], state_label(r["state"]) if r["state"] else "", r["detail"], r["eta"])):
             item.setText(col, text)
         item.setToolTip(2, r["detail"])
-        action = r["action"]
+        actions = r["actions"]
         current = self.tree.itemWidget(item, ACTION_COL)
-        if action is None:
+        if not actions:
             if current is not None:
                 self.tree.removeItemWidget(item, ACTION_COL)
             return
-        if isinstance(current, QToolButton) and current.objectName() == f"{key}.cancel":
+        signature = f"{key}:" + ",".join(a[0] for a in actions)
+        if current is not None and current.property("signature") == signature:
             return
-        cmd, params = action
-        b = QToolButton()
-        b.setObjectName(f"{key}.cancel")
-        b.setText("✕")
-        b.setAutoRaise(True)
-        b.setToolTip(tr("Cancel"))
-        b.setAccessibleName(fmt("Cancel {name}", name=r["name"]))
-        b.clicked.connect(lambda _c=False, cmd=cmd, params=params: self._act(cmd, params))
-        self.tree.setItemWidget(item, ACTION_COL, b)
+        cell = QWidget()
+        cell.setProperty("signature", signature)
+        lay = QHBoxLayout(cell)
+        lay.setContentsMargins(0, 0, 0, 0)
+        lay.setSpacing(2)
+        for akey, label, icon, cmd, params in actions:
+            b = QToolButton(cell)
+            b.setObjectName(f"{key}.{akey}")
+            b.setText(icon)
+            b.setAutoRaise(True)
+            b.setToolTip(label)
+            b.setAccessibleName(f"{label}: {r['name']}")
+            b.clicked.connect(lambda _c=False, cmd=cmd, params=params: self._act(cmd, params))
+            lay.addWidget(b)
+        lay.addStretch(1)
+        self.tree.setItemWidget(item, ACTION_COL, cell)
 
     def _act(self, cmd: str, params: dict[str, Any]) -> None:
         self.command.emit(cmd, dict(params))

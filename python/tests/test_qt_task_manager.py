@@ -71,10 +71,10 @@ def test_rows_say_why_a_task_waits_and_how_long_one_runs():
     jobs = tm.job_rows(JOBS)
     assert [(r["state"], r["eta"]) for r in jobs] == [("running", "1:15"), ("waiting", ""), ("cancelled", "")]
     assert jobs[1]["detail"] == "not enough memory (needs 2.0 GiB)"
-    assert jobs[0]["action"] == ("jobs.cancel", {"job": 1}) and jobs[2]["action"] is None
+    assert [a[3:] for a in jobs[0]["actions"]] == [("jobs.cancel", {"job": 1})] and jobs[2]["actions"] == []
     exports = tm.export_rows(EXPORTS)
     assert [(r["state"], r["eta"]) for r in exports] == [("encoding", "1:01:40"), ("waiting", ""), ("done", "")]
-    assert exports[1]["detail"] == "VRAM: needs 6.0 GiB" and exports[1]["action"] == ("export.queue.cancel", {"id": 8})
+    assert exports[1]["detail"] == "VRAM: needs 6.0 GiB" and [a[3:] for a in exports[1]["actions"]] == [("export.queue.cancel", {"id": 8})]
     queue = tm.task_rows(TASKS)
     assert queue[0]["detail"] == "Final render · 4.0 GiB · 4 CPU" and queue[1]["detail"] == "not enough memory"
     assert [r["name"] for r in queue] == ["Export: Main", "job-2"], "the label, else the id"
@@ -127,3 +127,35 @@ def test_task_manager_is_a_window_panel():
     from cfa4_qt.window_menu import PANELS
 
     assert "Task Manager" in [p.title for p in PANELS]
+
+
+MISSED = {"id": "queue-start-3", "label": "Start the export queue", "state": "paused", "class": "finalRender", "startAt": 1_763_100_000_000,
+          "needsDecision": True, "decisions": ["runNow", "nextSlot", "cancel"], "waitingFor": []}
+
+
+def test_a_missed_start_offers_the_users_decisions(app):
+    row = tm.task_rows([MISSED, {**MISSED, "id": "s", "state": "scheduled", "needsDecision": False, "decisions": []}])
+    assert row[0]["state"] == "decide" and row[0]["detail"].startswith("Missed its start at ")
+    assert [a[0] for a in row[0]["actions"]] == ["runNow", "nextSlot", "cancel"]
+    assert row[0]["actions"][1][3:] == ("tasks.decide", {"id": "queue-start-3", "action": "nextSlot"})
+    assert row[1]["detail"].startswith("Starts at ") and row[1]["actions"] == []
+    # hostile: a decision the engine did not offer, a non-string id, an absurd time
+    odd = tm.task_rows([{**MISSED, "decisions": ["runNow", "explode"], "startAt": 1e30}, {**MISSED, "id": 5}])
+    assert [a[0] for a in odd[0]["actions"]] == ["runNow"] and odd[0]["detail"] == "Missed its start"
+    assert odd[1]["actions"] == [] and odd[1]["state"] == "paused"
+
+    engine = FakeEngine()
+    panel = tm.TaskManagerPanel(engine)
+    sent: list[tuple[str, dict]] = []
+    panel.command.connect(lambda c, p: sent.append((c, p)))
+    panel.show()
+    panel.refresh()
+    engine.take("jobs.list")[0]([], None)
+    engine.take("export.queue.list")[0]({"items": []}, None)
+    engine.take("tasks.list")[0]([MISSED], None)
+    assert panel.groups["queue"].child(0).text(1) == "Needs your decision"
+    run = panel.findChild(QtWidgets.QToolButton, "taskManager.task.queue-start-3.runNow")
+    assert run is not None and panel.findChild(QtWidgets.QToolButton, "taskManager.task.queue-start-3.cancel") is not None
+    run.click()
+    assert sent == [("tasks.decide", {"id": "queue-start-3", "action": "runNow"})]
+    panel.close()
