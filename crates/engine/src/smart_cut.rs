@@ -537,7 +537,16 @@ fn cut(s: &mut Session, p: &Value) -> Result<(Vec<u8>, Value)> {
                     }
                 })
                 .sum();
-            if sound > cap {
+            // and every sample read whole on the way (an uncompressed chunk may hold far more
+            // than the frames taken from it)
+            let largest_read = a
+                .tracks
+                .iter()
+                .filter_map(|t| src.file.tracks.get(t.track).and_then(|x| x.samples.get(t.first..=t.last)))
+                .flat_map(|v| v.iter().map(|x| u64::from(x.size)))
+                .max()
+                .unwrap_or(0);
+            if sound > cap || largest_read > cap {
                 return Err(too_large(cap));
             }
             let brand = if plan.plan.output_container == Container::Mov { Brand::Mov } else { Brand::Mp4 };

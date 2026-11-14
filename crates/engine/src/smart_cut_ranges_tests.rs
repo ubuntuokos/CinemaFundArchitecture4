@@ -246,8 +246,36 @@ fn the_memory_limit_counts_the_sound_and_the_chapters() {
         let e = cut(&mut s, "small.mp4", Some(need - 1)).unwrap_err().to_string();
         assert!(e.contains("maxBytes"), "{src}: {e}");
         assert!(!files.0.lock().unwrap().contains_key(&format!("{check}-small.mp4")), "{src}");
-        cut(&mut s, "exact.mp4", Some(need)).unwrap();
+        // enough for the file and for the largest uncompressed chunk read on the way
+        let bytes = files.0.lock().unwrap().get(src).cloned().unwrap();
+        let chunk = cfa4_isobmff::open(bytes.as_slice())
+            .unwrap()
+            .tracks
+            .iter()
+            .filter(|t| t.pcm_chunked)
+            .flat_map(|t| t.samples.iter().map(|x| u64::from(x.size)))
+            .max();
+        cut(&mut s, "exact.mp4", Some(need.max(chunk.unwrap_or(0)))).unwrap();
     }
+}
+
+/// A short cut of uncompressed sound still reads whole chunks: a chunk larger than the limit
+/// stops the cut before it is read, though the frames taken from it would fit.
+#[test]
+fn the_memory_limit_counts_the_sound_chunks_read_whole() {
+    let av = av_mp4();
+    let file = cfa4_isobmff::open(av.as_slice()).unwrap();
+    let pcm = file.tracks.iter().find(|t| t.pcm_chunked).expect("the fixture has uncompressed sound");
+    let largest = pcm.samples.iter().map(|x| u64::from(x.size)).max().unwrap();
+    let (mut s, files) = session();
+    files.0.lock().unwrap().insert("av.mp4".into(), av);
+    let short = json!({"path": "av.mp4", "in": frame(0), "out": frame(2), "output": "short.mp4"});
+    let need = s.execute("export.start", short).unwrap()["bytes"].as_u64().unwrap();
+    assert!(need < largest - 1, "the fixture's chunk ({largest} bytes) outweighs a two-frame cut ({need} bytes)");
+    let capped = json!({"path": "av.mp4", "in": frame(0), "out": frame(2), "output": "capped.mp4", "maxBytes": largest - 1});
+    let e = s.execute("export.start", capped).unwrap_err().to_string();
+    assert!(e.contains("maxBytes"), "{e}");
+    assert!(!files.0.lock().unwrap().contains_key("capped.mp4"));
 }
 
 #[cfg(unix)]
