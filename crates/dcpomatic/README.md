@@ -22,11 +22,13 @@ if let Ok(d) = Dcpomatic::locate() {
 }
 ```
 
-Engine commands: `dcpomatic.status` and `dcpomatic.makeDcp` (`crates/engine/src/dcpomatic.rs`).
-Encryption and KDMs come in phase DCPOM-3.
+Engine commands: `dcpomatic.status`, `dcpomatic.makeDcp` and `dcpomatic.makeKdm`
+(`crates/engine/src/dcpomatic.rs`). `DcpRequest::encrypt` makes an encrypted DCP, `DcpRequest::subtitles` adds
+subtitle files as an open subtitle track, and `Dcpomatic::make_kdm` (`KdmRequest`) makes KDMs from the film
+directory for a projector certificate.
 
 `Dcpomatic::locate` takes `dcpomatic2_create`, `dcpomatic2_cli` and the patched OpenSSL
-`dcpomatic2_openssl` (which makes the signing chain) from `PRIVATE_DIR`, or, for development, from
+`dcpomatic2_openssl` (which makes the signing chain), and `dcpomatic2_kdm_cli` if it is there, from `PRIVATE_DIR`, or, for development, from
 `CFA4_DCPOMATIC_BIN_DIR`. `PATH` is never searched. The version must be at least **2.18.51**
 (`MIN_VERSION`), read from `dcpomatic2_cli --version`.
 
@@ -35,7 +37,8 @@ Encryption and KDMs come in phase DCPOM-3.
 1. `dcpomatic2_create --config <cfg> --output <film> --name … --no-encrypt --dcp-content-type …
    --standard SMPTE|interop [--twok|--fourk] [--container-ratio 185|239|119|133|137|138|166|178] [--dcp-frame-rate N]
    [--audio-channels N] [--video-bit-rate N] --twod|--threed [per content: --left-eye|--right-eye,
-   --channel X, --gain dB] <absolute content paths>` writes the film directory.
+   --channel X, --gain dB] <absolute content paths> [subtitle files]` writes the film directory
+   (`--encrypt` instead of `--no-encrypt` for an encrypted DCP).
 2. `dcpomatic2_cli --config <cfg> --no-remote [--threads N] make-dcp <film>` encodes the DCP into it.
    Its job status (`Transcoding: 42%`) is read from its stdout and reported as progress.
 3. The DCP is the subfolder of the film directory that holds `ASSETMAP.xml` (SMPTE) or `ASSETMAP`
@@ -51,7 +54,11 @@ Encryption and KDMs come in phase DCPOM-3.
 - The request is checked before anything starts: the film directory must not exist, content must
   exist, frame rate one of 24/25/30/48/50/60, even channel count 2–16 large enough for the channel
   mapping, bit rate ≥ 10 Mbit/s, eyes only in 3D, UTF-8 paths.
-- `--no-encrypt` always (until DCPOM-3); `--no-remote` always, so no frame goes to network encoders.
+- `--no-remote` always, so no frame goes to network encoders.
+- KDMs: `dcpomatic2_kdm_cli --output <dir> --valid-from … --valid-duration "N unit" | --valid-to …
+  --formulation … --projector-certificate <pem> [--cinema-name, --screen-name,
+  --trusted-device-certificate, --disable-forensic-marking-*] create <film>`. The KDM tool has no
+  `--config`, so its private `XDG_CONFIG_HOME` holds a `dcpomatic2` link to the configuration folder.
 - DCP-o-matic's configuration (signing chain) lives in `${XDG_CONFIG_HOME:-~/.config}/cfa4/dcpomatic`
   unless `config_dir` says otherwise.
 
@@ -61,5 +68,7 @@ Encryption and KDMs come in phase DCPOM-3.
 private cleared environment, progress, version check, refused requests, engine errors with their
 last message, missing tools, cancel (a background child in the group stops too), timeout, the
 search (private folder or the development override, never `PATH`; the OpenSSL is required) and the container
-ids DCP-o-matic accepts. The CI job `.github/workflows/dcpomatic.yml` builds the pinned DCP-o-matic and checks a
-real DCP (SMPTE and Interop) with `cfa4-dcp-validate`'s `full-integrity` profile.
+ids DCP-o-matic accepts, KDM arguments and subtitle files. The CI job `.github/workflows/dcpomatic.yml` builds
+the pinned DCP-o-matic, checks a real DCP with a subtitle track (SMPTE and Interop) with `cfa4-dcp-validate`'s
+`full-integrity` profile, and runs the engine's encrypted DCP → KDM → playback test
+(`cfa4-engine`, `dcpomatic::real_tests`).

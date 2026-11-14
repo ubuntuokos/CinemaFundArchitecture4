@@ -208,9 +208,30 @@ pub(crate) fn run_version(program: &Path, timeout: Duration) -> Result<String, D
 
 /// One tool run to its end.
 pub(crate) fn run_step(program: &Path, args: &[String], deadline: Instant, timeout: Duration, control: &Control, phase: Phase) -> Result<(), DcpomaticError> {
+    run_tool(program, args, None, deadline, timeout, control, phase).map(|_| ())
+}
+
+/// One tool run to its end; returns its stdout. `config` is DCP-o-matic's configuration directory
+/// for a tool that has no `--config` option (`dcpomatic2_kdm_cli`): it reads
+/// `$XDG_CONFIG_HOME/dcpomatic2`, which becomes a link to `config` in the private directory.
+pub(crate) fn run_tool(
+    program: &Path,
+    args: &[String],
+    config: Option<&Path>,
+    deadline: Instant,
+    timeout: Duration,
+    control: &Control,
+    phase: Phase,
+) -> Result<String, DcpomaticError> {
     let scratch = Scratch::new()?;
     let (out, err) = (scratch.0.join("stdout"), scratch.0.join("stderr"));
     let mut c = command(program, &scratch);
+    if let Some(cfg) = config {
+        let xdg = scratch.0.join("xdg");
+        fs::DirBuilder::new().mode(0o700).create(&xdg)?;
+        std::os::unix::fs::symlink(cfg, xdg.join("dcpomatic2"))?;
+        c.env("XDG_CONFIG_HOME", &xdg);
+    }
     c.args(args).stdout(fs::File::create(&out)?).stderr(fs::File::create(&err)?);
     let mut child = spawn(c, program)?;
     let mut last = None;
@@ -227,7 +248,7 @@ pub(crate) fn run_step(program: &Path, args: &[String], deadline: Instant, timeo
         if e.is_empty() { last_message(&out) } else { e }
     };
     match outcome {
-        Outcome::Exited(Some(0)) => Ok(()),
+        Outcome::Exited(Some(0)) => Ok(fs::read_to_string(&out).unwrap_or_default()),
         Outcome::Exited(Some(code)) => Err(DcpomaticError::Engine(format!("{name} exited with {code}: {}", why()))),
         Outcome::Exited(None) => Err(DcpomaticError::Engine(format!("{name} was killed by a signal: {}", why()))),
         Outcome::Cancelled => Err(DcpomaticError::Cancelled),

@@ -215,6 +215,14 @@ pub struct DcpRequest {
     pub video_bit_rate_mbps: Option<u32>,
     #[serde(default)]
     pub three_d: bool,
+    /// Encrypt the track files (ST 429-6). The content keys stay in the film directory's
+    /// `metadata.xml`, so keep that directory: KDMs ([`crate::KdmRequest`]) are made from it.
+    #[serde(default)]
+    pub encrypt: bool,
+    /// Subtitle files (`.srt`, `.ssa`, `.ass`, or DCP subtitle `.xml`), each a subtitle track of
+    /// the DCP from the start of the composition, not burnt into the picture (D5).
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    pub subtitles: Vec<PathBuf>,
     /// `false`: the folder is named exactly `name`.
     #[serde(default = "yes")]
     pub isdcf_name: bool,
@@ -246,6 +254,8 @@ impl DcpRequest {
             audio_channels: None,
             video_bit_rate_mbps: None,
             three_d: false,
+            encrypt: false,
+            subtitles: Vec::new(),
             isdcf_name: true,
             threads: None,
             config_dir: None,
@@ -315,8 +325,7 @@ impl DcpRequest {
         push(&text(&film_dir)?);
         push("--name");
         push(name);
-        // encryption and KDMs come in phase DCPOM-3
-        push("--no-encrypt");
+        push(if self.encrypt { "--encrypt" } else { "--no-encrypt" });
         push("--dcp-content-type");
         push(self.content_kind.isdcf());
         push("--standard");
@@ -371,6 +380,17 @@ impl DcpRequest {
                 push(&g.to_string());
             }
             // absolute, so it starts with `/` and is never read as an option
+            push(&text(&path)?);
+        }
+        for s in &self.subtitles {
+            let path = absolute(s)?;
+            let ext = path.extension().and_then(|e| e.to_str()).map(str::to_ascii_lowercase);
+            if !matches!(ext.as_deref(), Some("srt" | "ssa" | "ass" | "xml")) {
+                return bad(format!("subtitle {} is not .srt, .ssa, .ass or DCP subtitle .xml", path.display()));
+            }
+            if !path.is_file() {
+                return bad(format!("subtitle {} does not exist", path.display()));
+            }
             push(&text(&path)?);
         }
 

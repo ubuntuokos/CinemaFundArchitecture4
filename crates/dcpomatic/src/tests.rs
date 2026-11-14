@@ -275,3 +275,157 @@ fn request_round_trips_through_json() {
     let min: DcpRequest = serde_json::from_str(r#"{"content":[{"path":"/x.mov"}],"filmDir":"/tmp/f","name":"N"}"#).unwrap();
     assert!(min.isdcf_name && min.standard == Standard::Smpte && min.content_kind == ContentKind::Test);
 }
+
+/// A fake `dcpomatic2_kdm_cli` in `d` next to the other tools: records its arguments and where
+/// `$XDG_CONFIG_HOME/dcpomatic2` points, writes one KDM into `--output` and runs `tail`.
+fn kdm_tool(d: &Path, tail: &str) -> Dcpomatic {
+    let dd = d.display();
+    script(
+        &d.join("dcpomatic2_kdm_cli"),
+        &format!(
+            r#"printf '%s\n' "$@" > '{dd}/kdm.args'
+readlink "$XDG_CONFIG_HOME/dcpomatic2" > '{dd}/kdm.config'
+out=""; prev=""
+for a in "$@"; do if [ "$prev" = "--output" ]; then out="$a"; fi; prev="$a"; done
+echo '<DCinemaSecurityMessage/>' > "$out/Test_KDM.xml"
+{tail}"#
+        ),
+    );
+    tools(d, "2.18.51", "", "").with_kdm_program(d.join("dcpomatic2_kdm_cli"))
+}
+
+fn encrypted_film(d: &Path) -> KdmRequest {
+    std::fs::create_dir_all(d.join("film")).unwrap();
+    std::fs::write(d.join("film/metadata.xml"), "<Metadata><Encrypted>1</Encrypted></Metadata>").unwrap();
+    std::fs::write(d.join("projector.pem"), "-----BEGIN CERTIFICATE-----\n").unwrap();
+    KdmRequest {
+        film_dir: d.join("film"),
+        projector_certificate: d.join("projector.pem"),
+        output: d.join("kdms"),
+        cinema: Some("Uránia".into()),
+        screen: Some("Nagyterem".into()),
+        valid_from: Some("2026-11-20 10:00:00".into()),
+        validity: Validity::For { count: 2, unit: ValidityUnit::Weeks },
+        formulation: Formulation::default(),
+        trusted_devices: Vec::new(),
+        disable_forensic_marking_picture: true,
+        disable_forensic_marking_audio: true,
+        config_dir: Some(d.join("config")),
+    }
+}
+
+#[test]
+fn encrypt_asks_for_an_encrypted_dcp() {
+    let d = dir("encrypt");
+    let mut r = request(&d);
+    r.encrypt = true;
+    tools(&d, "2.18.51", "", "").make_dcp(&r, &Control::new()).unwrap();
+    let a = args(&d, "create");
+    assert!(a.contains(&"--encrypt".to_string()) && !a.contains(&"--no-encrypt".to_string()), "{a:?}");
+}
+
+#[test]
+fn makes_a_kdm_from_the_film() {
+    let d = dir("kdm");
+    let t = kdm_tool(&d, "");
+    let out = t.make_kdm(&encrypted_film(&d)).unwrap();
+    assert_eq!(out.files, [d.join("kdms/Test_KDM.xml")]);
+    let s = |x: &str| x.to_string();
+    assert_eq!(
+        args(&d, "kdm"),
+        [
+            s("--output"),
+            d.join("kdms").display().to_string(),
+            s("--verbose"),
+            s("--valid-from"),
+            s("2026-11-20 10:00:00"),
+            s("--valid-duration"),
+            s("2 weeks"),
+            s("--formulation"),
+            s("modified-transitional-1"),
+            s("--projector-certificate"),
+            d.join("projector.pem").display().to_string(),
+            s("--cinema"),
+            s("Uránia"),
+            s("--screen"),
+            s("Nagyterem"),
+            s("--disable-forensic-marking-picture"),
+            s("--disable-forensic-marking-audio=0"),
+            s("create"),
+            d.join("film").display().to_string(),
+        ]
+    );
+    let cfg = std::fs::read_to_string(d.join("kdm.config")).unwrap();
+    assert_eq!(cfg.trim(), d.join("config").display().to_string(), "the KDM tool reads CFA4's DCP-o-matic configuration");
+}
+
+#[test]
+fn bad_kdm_requests_are_refused() {
+    let d = dir("kdm-invalid");
+    let t = kdm_tool(&d, "");
+    let check = |r: KdmRequest, want: &str| {
+        let e = t.make_kdm(&r).unwrap_err();
+        assert!(matches!(e, DcpomaticError::Invalid(ref m) if m.contains(want)), "{want}: {e}");
+    };
+    let mut r = encrypted_film(&d);
+    r.valid_from = Some("tomorrow".into());
+    check(r, "YYYY-MM-DD");
+    let mut r = encrypted_film(&d);
+    r.validity = Validity::Until("2026-11-19 10:00:00".into());
+    check(r, "not after");
+    let mut r = encrypted_film(&d);
+    r.validity = Validity::For { count: 0, unit: ValidityUnit::Days };
+    check(r, "at least 1");
+    let mut r = encrypted_film(&d);
+    r.cinema = Some("-x".into());
+    check(r, "starts with '-'");
+    let mut r = encrypted_film(&d);
+    r.projector_certificate = d.join("none.pem");
+    check(r, "does not exist");
+    let r = encrypted_film(&d);
+    std::fs::write(d.join("film/metadata.xml"), "<Metadata><Encrypted>0</Encrypted></Metadata>").unwrap();
+    check(r, "not encrypted");
+    assert!(!d.join("kdm.args").exists(), "nothing ran");
+}
+
+#[test]
+fn kdm_errors_and_missing_tool() {
+    let d = dir("kdm-fail");
+    let e = kdm_tool(&d, "echo 'could not read certificate' >&2; exit 1").make_kdm(&encrypted_film(&d)).unwrap_err();
+    assert!(matches!(e, DcpomaticError::Engine(ref m) if m.ends_with("could not read certificate")), "{e}");
+    let e = tools(&d, "2.18.51", "", "").make_kdm(&encrypted_film(&d)).unwrap_err();
+    assert!(matches!(e, DcpomaticError::Unavailable(_)), "{e}");
+}
+
+#[test]
+fn subtitle_files_become_content_after_the_picture() {
+    let d = dir("subs");
+    std::fs::write(d.join("en.srt"), "1\n00:00:01,000 --> 00:00:02,000\nHello\n").unwrap();
+    std::fs::write(d.join("notes.txt"), "x").unwrap();
+    let t = tools(&d, "2.18.51", "", "");
+    let mut r = request(&d);
+    r.subtitles = vec![d.join("en.srt")];
+    t.make_dcp(&r, &Control::new()).unwrap();
+    let a = args(&d, "create");
+    assert_eq!(a[a.len() - 2..], [d.join("master.mov").display().to_string(), d.join("en.srt").display().to_string()]);
+
+    let check = |subs: Vec<PathBuf>, want: &str| {
+        let mut r = request(&d);
+        r.film_dir = d.join("film2");
+        r.subtitles = subs;
+        let e = t.make_dcp(&r, &Control::new()).unwrap_err();
+        assert!(matches!(e, DcpomaticError::Invalid(ref m) if m.contains(want)), "{want}: {e}");
+    };
+    check(vec![d.join("notes.txt")], "not .srt");
+    check(vec![d.join("missing.srt")], "does not exist");
+}
+
+#[test]
+fn locate_takes_the_kdm_tool_when_it_is_there() {
+    let d = dir("locate-kdm");
+    tools(&d, "2.18.51", "", "");
+    script(&d.join(OPENSSL), "exit 0");
+    assert_eq!(Dcpomatic::locate_in(&d).unwrap().kdm_program(), None);
+    script(&d.join(KDM_CLI), "exit 0");
+    assert_eq!(Dcpomatic::locate_in(&d).unwrap().kdm_program(), Some(d.join(KDM_CLI).as_path()));
+}
