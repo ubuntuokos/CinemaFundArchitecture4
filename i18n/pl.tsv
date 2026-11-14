@@ -4136,6 +4136,32 @@ export.summary	Low	niska
 	Contains	Zawiera
 	Navigation	Nawigacja
 # Qt GUI strings from main, 2026-11-11 (MPEG-2 field order)
+
+# Qt GUI: sequence profiles (#886, port of #529). Same clean-room rule.
+	360° spherical video	Wideo sferyczne 360°
+	A profile is already called “{name}”.	Profil o nazwie „{name}” już istnieje.
+	Applied sequence profile “{name}”	Zastosowano profil sekwencji „{name}”
+	Apply to Sequence	Zastosuj do sekwencji
+	Built-in profiles are kept: this is saved as a new profile.	Wbudowane profile pozostają bez zmian: zostanie zapisany jako nowy profil.
+	CFA4 sequences are progressive: applying the profile keeps its size and rate	Sekwencje CFA4 są progresywne: zastosowanie profilu zachowuje jego rozmiar i liczbę klatek
+	Deleted sequence profile “{name}”	Usunięto profil sekwencji „{name}”
+	Display Aspect Ratio:	Proporcje obrazu:
+	Edit Sequence Profile	Edytuj profil sekwencji
+	Enter a description.	Wpisz opis.
+	Interlaced	Z przeplotem
+	New Sequence Profile	Nowy profil sekwencji
+	New…	Nowy…
+	Saved sequence profile “{name}”	Zapisano profil sekwencji „{name}”
+	Sequence Profiles	Profile sekwencji
+	Sequence Profiles…	Profile sekwencji…
+	The description must be at most {n} characters.	Opis może mieć najwyżej {n} znaków.
+	The display aspect ratio does not match the frame size and pixel aspect ratio.	Proporcje obrazu nie pasują do rozmiaru klatki i proporcji piksela.
+	The frame is too large.	Klatka jest za duża.
+	The frame rate must be at most 1000 fps.	Liczba klatek może wynosić najwyżej 1000 kl./s.
+	The pixel aspect ratio must be at most 8:1 either way.	Proporcje piksela nie mogą przekraczać 8:1 w żadną stronę.
+	not supported by CFA4 sequences yet: {what}	jeszcze nieobsługiwane w sekwencjach CFA4: {what}
+	{rate} fps	{rate} kl./s
+	{w} × {h}, display {dn}:{dd}, pixels {pn}:{pd}	{w} × {h}, obraz {dn}:{dd}, piksele {pn}:{pd}
 # Qt GUI: Tools menu (#868)
 	Video Tools	Narzędzia wideo
 	Audio Tools	Narzędzia audio

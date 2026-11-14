@@ -4136,6 +4136,32 @@ export.summary	Low	nízká
 	Navigation	Navigace
 	Panel	Panel
 # Qt GUI strings from main, 2026-11-11 (MPEG-2 field order)
+
+# Qt GUI: sequence profiles (#886, port of #529). Same clean-room rule.
+	360° spherical video	Sférické video 360°
+	A profile is already called “{name}”.	Profil s názvem „{name}“ už existuje.
+	Applied sequence profile “{name}”	Použit profil sekvence „{name}“
+	Apply to Sequence	Použít na sekvenci
+	Built-in profiles are kept: this is saved as a new profile.	Vestavěné profily zůstávají beze změny: uloží se jako nový profil.
+	CFA4 sequences are progressive: applying the profile keeps its size and rate	Sekvence CFA4 jsou progresivní: při použití profilu zůstane zachována jejich velikost a snímková frekvence
+	Deleted sequence profile “{name}”	Profil sekvence „{name}“ smazán
+	Display Aspect Ratio:	Poměr stran zobrazení:
+	Edit Sequence Profile	Upravit profil sekvence
+	Enter a description.	Zadejte popis.
+	Interlaced	Prokládané
+	New Sequence Profile	Nový profil sekvence
+	New…	Nový…
+	Saved sequence profile “{name}”	Profil sekvence „{name}“ uložen
+	Sequence Profiles	Profily sekvencí
+	Sequence Profiles…	Profily sekvencí…
+	The description must be at most {n} characters.	Popis může mít nejvýše {n} znaků.
+	The display aspect ratio does not match the frame size and pixel aspect ratio.	Poměr stran zobrazení neodpovídá velikosti snímku a poměru stran pixelu.
+	The frame is too large.	Snímek je příliš velký.
+	The frame rate must be at most 1000 fps.	Snímková frekvence může být nejvýše 1000 fps.
+	The pixel aspect ratio must be at most 8:1 either way.	Poměr stran pixelu nesmí v žádném směru překročit 8:1.
+	not supported by CFA4 sequences yet: {what}	sekvence CFA4 zatím nepodporují: {what}
+	{rate} fps	{rate} fps
+	{w} × {h}, display {dn}:{dd}, pixels {pn}:{pd}	{w} × {h}, zobrazení {dn}:{dd}, pixely {pn}:{pd}
 # Qt GUI: Tools menu (#868)
 	Video Tools	Video nástroje
 	Audio Tools	Zvukové nástroje

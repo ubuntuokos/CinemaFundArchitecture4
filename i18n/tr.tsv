@@ -4137,6 +4137,32 @@ export.summary	Low	düşük
 	Masks	Maskeler
 	Navigation	Gezinti
 # Qt GUI strings from main, 2026-11-11 (MPEG-2 field order)
+
+# Qt GUI: sequence profiles (#886, port of #529). Same clean-room rule.
+	360° spherical video	360° küresel video
+	A profile is already called “{name}”.	“{name}” adlı bir profil zaten var.
+	Applied sequence profile “{name}”	“{name}” sekans profili uygulandı
+	Apply to Sequence	Sekansa Uygula
+	Built-in profiles are kept: this is saved as a new profile.	Yerleşik profiller korunur: bu, yeni bir profil olarak kaydedilir.
+	CFA4 sequences are progressive: applying the profile keeps its size and rate	CFA4 sekansları aşamalıdır: profil uygulandığında boyutu ve hızı korunur
+	Deleted sequence profile “{name}”	“{name}” sekans profili silindi
+	Display Aspect Ratio:	Görüntü En Boy Oranı:
+	Edit Sequence Profile	Sekans Profilini Düzenle
+	Enter a description.	Bir açıklama girin.
+	Interlaced	Geçmeli
+	New Sequence Profile	Yeni Sekans Profili
+	New…	Yeni…
+	Saved sequence profile “{name}”	“{name}” sekans profili kaydedildi
+	Sequence Profiles	Sekans Profilleri
+	Sequence Profiles…	Sekans Profilleri…
+	The description must be at most {n} characters.	Açıklama en fazla {n} karakter olabilir.
+	The display aspect ratio does not match the frame size and pixel aspect ratio.	Görüntü en boy oranı kare boyutu ve piksel en boy oranıyla eşleşmiyor.
+	The frame is too large.	Kare çok büyük.
+	The frame rate must be at most 1000 fps.	Kare hızı en fazla 1000 fps olabilir.
+	The pixel aspect ratio must be at most 8:1 either way.	Piksel en boy oranı her iki yönde de en fazla 8:1 olabilir.
+	not supported by CFA4 sequences yet: {what}	CFA4 sekanslarında henüz desteklenmiyor: {what}
+	{rate} fps	{rate} fps
+	{w} × {h}, display {dn}:{dd}, pixels {pn}:{pd}	{w} × {h}, görüntü {dn}:{dd}, piksel {pn}:{pd}
 # Qt GUI: Tools menu (#868)
 	Video Tools	Video Araçları
 	Audio Tools	Ses Araçları

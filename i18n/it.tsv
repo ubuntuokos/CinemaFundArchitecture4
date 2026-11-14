@@ -4136,6 +4136,32 @@
 	None (RFC 5646 tag, e.g. en-US)	Nessuna (tag RFC 5646, ad es. it-IT)
 	ISDCF name	Nome ISDCF
 	Name the DCP folder by the Digital Cinema Naming Convention	Denomina la cartella DCP secondo la Digital Cinema Naming Convention
+
+# Qt GUI: sequence profiles (#886, port of #529). Same clean-room rule.
+	360° spherical video	Video sferico a 360°
+	A profile is already called “{name}”.	Esiste già un profilo chiamato «{name}».
+	Applied sequence profile “{name}”	Profilo sequenza «{name}» applicato
+	Apply to Sequence	Applica alla sequenza
+	Built-in profiles are kept: this is saved as a new profile.	I profili integrati restano invariati: verrà salvato come nuovo profilo.
+	CFA4 sequences are progressive: applying the profile keeps its size and rate	Le sequenze CFA4 sono progressive: applicando il profilo restano dimensioni e frequenza
+	Deleted sequence profile “{name}”	Profilo sequenza «{name}» eliminato
+	Display Aspect Ratio:	Proporzioni di visualizzazione:
+	Edit Sequence Profile	Modifica profilo sequenza
+	Enter a description.	Inserisci una descrizione.
+	Interlaced	Interlacciato
+	New Sequence Profile	Nuovo profilo sequenza
+	New…	Nuovo…
+	Saved sequence profile “{name}”	Profilo sequenza «{name}» salvato
+	Sequence Profiles	Profili sequenza
+	Sequence Profiles…	Profili sequenza…
+	The description must be at most {n} characters.	La descrizione può contenere al massimo {n} caratteri.
+	The display aspect ratio does not match the frame size and pixel aspect ratio.	Le proporzioni di visualizzazione non corrispondono alle dimensioni del fotogramma e alle proporzioni dei pixel.
+	The frame is too large.	Il fotogramma è troppo grande.
+	The frame rate must be at most 1000 fps.	La frequenza fotogrammi può essere al massimo 1000 fps.
+	The pixel aspect ratio must be at most 8:1 either way.	Le proporzioni dei pixel non possono superare 8:1 in nessuna direzione.
+	not supported by CFA4 sequences yet: {what}	non ancora supportato dalle sequenze CFA4: {what}
+	{rate} fps	{rate} fps
+	{w} × {h}, display {dn}:{dd}, pixels {pn}:{pd}	{w} × {h}, visualizzazione {dn}:{dd}, pixel {pn}:{pd}
 # Qt GUI: Tools menu (#868)
 	Video Tools	Strumenti video
 	Audio Tools	Strumenti audio

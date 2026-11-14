@@ -4142,6 +4142,32 @@ export.summary	Low	తక్కువ
 	Width	వెడల్పు
 	Application	అప్లికేషన్
 # Qt GUI strings from main, 2026-11-11 (MPEG-2 field order)
+
+# Qt GUI: sequence profiles (#886, port of #529). Same clean-room rule.
+	360° spherical video	360° గోళాకార వీడియో
+	A profile is already called “{name}”.	“{name}” అనే ప్రొఫైల్ ఇప్పటికే ఉంది.
+	Applied sequence profile “{name}”	సీక్వెన్స్ ప్రొఫైల్ “{name}” వర్తింపజేయబడింది
+	Apply to Sequence	సీక్వెన్స్‌కు వర్తింపజేయి
+	Built-in profiles are kept: this is saved as a new profile.	అంతర్నిర్మిత ప్రొఫైల్‌లు మారవు: ఇది కొత్త ప్రొఫైల్‌గా సేవ్ అవుతుంది.
+	CFA4 sequences are progressive: applying the profile keeps its size and rate	CFA4 సీక్వెన్స్‌లు ప్రోగ్రెసివ్: ప్రొఫైల్‌ను వర్తింపజేసినా వాటి పరిమాణం, రేటు మారవు
+	Deleted sequence profile “{name}”	సీక్వెన్స్ ప్రొఫైల్ “{name}” తొలగించబడింది
+	Display Aspect Ratio:	ప్రదర్శన కారక నిష్పత్తి:
+	Edit Sequence Profile	సీక్వెన్స్ ప్రొఫైల్‌ను సవరించు
+	Enter a description.	వివరణను నమోదు చేయండి.
+	Interlaced	ఇంటర్‌లేస్డ్
+	New Sequence Profile	కొత్త సీక్వెన్స్ ప్రొఫైల్
+	New…	కొత్తది…
+	Saved sequence profile “{name}”	సీక్వెన్స్ ప్రొఫైల్ “{name}” సేవ్ చేయబడింది
+	Sequence Profiles	సీక్వెన్స్ ప్రొఫైల్‌లు
+	Sequence Profiles…	సీక్వెన్స్ ప్రొఫైల్‌లు…
+	The description must be at most {n} characters.	వివరణ గరిష్ఠంగా {n} అక్షరాలు ఉండాలి.
+	The display aspect ratio does not match the frame size and pixel aspect ratio.	ప్రదర్శన కారక నిష్పత్తి ఫ్రేమ్ పరిమాణం, పిక్సెల్ కారక నిష్పత్తితో సరిపోలడం లేదు.
+	The frame is too large.	ఫ్రేమ్ చాలా పెద్దదిగా ఉంది.
+	The frame rate must be at most 1000 fps.	ఫ్రేమ్ రేటు గరిష్ఠంగా 1000 fps ఉండాలి.
+	The pixel aspect ratio must be at most 8:1 either way.	పిక్సెల్ కారక నిష్పత్తి ఏ దిశలోనైనా 8:1 మించకూడదు.
+	not supported by CFA4 sequences yet: {what}	CFA4 సీక్వెన్స్‌లలో ఇంకా మద్దతు లేదు: {what}
+	{rate} fps	{rate} fps
+	{w} × {h}, display {dn}:{dd}, pixels {pn}:{pd}	{w} × {h}, ప్రదర్శన {dn}:{dd}, పిక్సెల్‌లు {pn}:{pd}
 # Qt GUI: Tools menu (#868)
 	Video Tools	వీడియో సాధనాలు
 	Audio Tools	ఆడియో సాధనాలు

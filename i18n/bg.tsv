@@ -4139,6 +4139,32 @@ export.summary	Low	ниско
 	Contains	Съдържа
 	Navigation	Навигация
 # Qt GUI strings from main, 2026-11-11 (MPEG-2 field order)
+
+# Qt GUI: sequence profiles (#886, port of #529). Same clean-room rule.
+	360° spherical video	Сферично видео 360°
+	A profile is already called “{name}”.	Вече има профил с име „{name}“.
+	Applied sequence profile “{name}”	Приложен е профилът на последователност „{name}“
+	Apply to Sequence	Прилагане към последователността
+	Built-in profiles are kept: this is saved as a new profile.	Вградените профили се запазват: това се записва като нов профил.
+	CFA4 sequences are progressive: applying the profile keeps its size and rate	Последователностите в CFA4 са прогресивни: при прилагане на профила размерът и честотата им се запазват
+	Deleted sequence profile “{name}”	Изтрит е профилът на последователност „{name}“
+	Display Aspect Ratio:	Съотношение на страните на показване:
+	Edit Sequence Profile	Редактиране на профил на последователност
+	Enter a description.	Въведете описание.
+	Interlaced	Презредово
+	New Sequence Profile	Нов профил на последователност
+	New…	Нов…
+	Saved sequence profile “{name}”	Записан е профилът на последователност „{name}“
+	Sequence Profiles	Профили на последователности
+	Sequence Profiles…	Профили на последователности…
+	The description must be at most {n} characters.	Описанието може да е най-много {n} знака.
+	The display aspect ratio does not match the frame size and pixel aspect ratio.	Съотношението на страните на показване не съответства на размера на кадъра и съотношението на пиксела.
+	The frame is too large.	Кадърът е твърде голям.
+	The frame rate must be at most 1000 fps.	Честотата на кадрите може да е най-много 1000 fps.
+	The pixel aspect ratio must be at most 8:1 either way.	Съотношението на пиксела не може да надвишава 8:1 в никоя посока.
+	not supported by CFA4 sequences yet: {what}	все още не се поддържа от последователностите в CFA4: {what}
+	{rate} fps	{rate} fps
+	{w} × {h}, display {dn}:{dd}, pixels {pn}:{pd}	{w} × {h}, показване {dn}:{dd}, пиксели {pn}:{pd}
 # Qt GUI: Tools menu (#868)
 	Video Tools	Видеоинструменти
 	Audio Tools	Аудиоинструменти

@@ -4138,6 +4138,32 @@ export.summary	Low	låg
 	Contains	Innehåller
 	Navigation	Navigering
 # Qt GUI strings from main, 2026-11-11 (MPEG-2 field order)
+
+# Qt GUI: sequence profiles (#886, port of #529). Same clean-room rule.
+	360° spherical video	Sfärisk 360°-video
+	A profile is already called “{name}”.	Det finns redan en profil som heter ”{name}”.
+	Applied sequence profile “{name}”	Sekvensprofilen ”{name}” tillämpades
+	Apply to Sequence	Tillämpa på sekvens
+	Built-in profiles are kept: this is saved as a new profile.	Inbyggda profiler behålls: detta sparas som en ny profil.
+	CFA4 sequences are progressive: applying the profile keeps its size and rate	CFA4-sekvenser är progressiva: när profilen tillämpas behålls storlek och bildfrekvens
+	Deleted sequence profile “{name}”	Sekvensprofilen ”{name}” togs bort
+	Display Aspect Ratio:	Bildförhållande för visning:
+	Edit Sequence Profile	Redigera sekvensprofil
+	Enter a description.	Ange en beskrivning.
+	Interlaced	Sammanflätad
+	New Sequence Profile	Ny sekvensprofil
+	New…	Ny…
+	Saved sequence profile “{name}”	Sekvensprofilen ”{name}” sparades
+	Sequence Profiles	Sekvensprofiler
+	Sequence Profiles…	Sekvensprofiler…
+	The description must be at most {n} characters.	Beskrivningen får vara högst {n} tecken.
+	The display aspect ratio does not match the frame size and pixel aspect ratio.	Visningens bildförhållande stämmer inte med bildstorleken och pixelförhållandet.
+	The frame is too large.	Bilden är för stor.
+	The frame rate must be at most 1000 fps.	Bildfrekvensen får vara högst 1000 fps.
+	The pixel aspect ratio must be at most 8:1 either way.	Pixelförhållandet får inte överstiga 8:1 åt något håll.
+	not supported by CFA4 sequences yet: {what}	stöds ännu inte av CFA4-sekvenser: {what}
+	{rate} fps	{rate} fps
+	{w} × {h}, display {dn}:{dd}, pixels {pn}:{pd}	{w} × {h}, visning {dn}:{dd}, pixlar {pn}:{pd}
 # Qt GUI: Tools menu (#868)
 	Video Tools	Videoverktyg
 	Audio Tools	Ljudverktyg

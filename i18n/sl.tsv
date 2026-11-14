@@ -4139,6 +4139,32 @@ export.summary	Low	nizka
 	Star	Zvezda
 	Width	Širina
 # Qt GUI strings from main, 2026-11-11 (MPEG-2 field order)
+
+# Qt GUI: sequence profiles (#886, port of #529). Same clean-room rule.
+	360° spherical video	Sferični video 360°
+	A profile is already called “{name}”.	Profil z imenom »{name}« že obstaja.
+	Applied sequence profile “{name}”	Uporabljen profil sekvence »{name}«
+	Apply to Sequence	Uporabi za sekvenco
+	Built-in profiles are kept: this is saved as a new profile.	Vgrajeni profili ostanejo nespremenjeni: to se shrani kot nov profil.
+	CFA4 sequences are progressive: applying the profile keeps its size and rate	Sekvence CFA4 so progresivne: z uporabo profila se ohranita velikost in hitrost
+	Deleted sequence profile “{name}”	Izbrisan profil sekvence »{name}«
+	Display Aspect Ratio:	Razmerje stranic prikaza:
+	Edit Sequence Profile	Uredi profil sekvence
+	Enter a description.	Vnesite opis.
+	Interlaced	Prepleteno
+	New Sequence Profile	Nov profil sekvence
+	New…	Novo…
+	Saved sequence profile “{name}”	Shranjen profil sekvence »{name}«
+	Sequence Profiles	Profili sekvenc
+	Sequence Profiles…	Profili sekvenc…
+	The description must be at most {n} characters.	Opis je lahko dolg največ {n} znakov.
+	The display aspect ratio does not match the frame size and pixel aspect ratio.	Razmerje stranic prikaza se ne ujema z velikostjo sličice in razmerjem stranic slikovne pike.
+	The frame is too large.	Sličica je prevelika.
+	The frame rate must be at most 1000 fps.	Hitrost sličic je lahko največ 1000 fps.
+	The pixel aspect ratio must be at most 8:1 either way.	Razmerje stranic slikovne pike v nobeni smeri ne sme preseči 8:1.
+	not supported by CFA4 sequences yet: {what}	sekvence CFA4 še ne podpirajo: {what}
+	{rate} fps	{rate} fps
+	{w} × {h}, display {dn}:{dd}, pixels {pn}:{pd}	{w} × {h}, prikaz {dn}:{dd}, slikovne pike {pn}:{pd}
 # Qt GUI: Tools menu (#868)
 	Video Tools	Video orodja
 	Audio Tools	Zvočna orodja

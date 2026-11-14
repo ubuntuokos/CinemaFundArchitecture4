@@ -4134,6 +4134,32 @@
 	None (RFC 5646 tag, e.g. en-US)	无（RFC 5646 标签，例如 zh-CN）
 	ISDCF name	ISDCF 名称
 	Name the DCP folder by the Digital Cinema Naming Convention	按 Digital Cinema Naming Convention 命名 DCP 文件夹
+
+# Qt GUI: sequence profiles (#886, port of #529). Same clean-room rule.
+	360° spherical video	360° 球面视频
+	A profile is already called “{name}”.	已有名为“{name}”的配置文件。
+	Applied sequence profile “{name}”	已应用序列配置文件“{name}”
+	Apply to Sequence	应用到序列
+	Built-in profiles are kept: this is saved as a new profile.	内置配置文件保持不变：将另存为新的配置文件。
+	CFA4 sequences are progressive: applying the profile keeps its size and rate	CFA4 序列为逐行扫描：应用配置文件时保留其尺寸和帧速率
+	Deleted sequence profile “{name}”	已删除序列配置文件“{name}”
+	Display Aspect Ratio:	显示宽高比：
+	Edit Sequence Profile	编辑序列配置文件
+	Enter a description.	请输入描述。
+	Interlaced	隔行扫描
+	New Sequence Profile	新建序列配置文件
+	New…	新建…
+	Saved sequence profile “{name}”	已保存序列配置文件“{name}”
+	Sequence Profiles	序列配置文件
+	Sequence Profiles…	序列配置文件…
+	The description must be at most {n} characters.	描述最多 {n} 个字符。
+	The display aspect ratio does not match the frame size and pixel aspect ratio.	显示宽高比与帧尺寸和像素宽高比不匹配。
+	The frame is too large.	帧太大。
+	The frame rate must be at most 1000 fps.	帧速率最高为 1000 fps。
+	The pixel aspect ratio must be at most 8:1 either way.	像素宽高比在任一方向上都不能超过 8:1。
+	not supported by CFA4 sequences yet: {what}	CFA4 序列尚不支持：{what}
+	{rate} fps	{rate} fps
+	{w} × {h}, display {dn}:{dd}, pixels {pn}:{pd}	{w} × {h}，显示 {dn}:{dd}，像素 {pn}:{pd}
 # Qt GUI: Tools menu (#868)
 	Video Tools	视频工具
 	Audio Tools	音频工具

@@ -4138,6 +4138,32 @@ export.summary	Low	matala
 	Baseline	Perusviiva
 	Accent Color	Korostusväri
 # Qt GUI strings from main, 2026-11-11 (MPEG-2 field order)
+
+# Qt GUI: sequence profiles (#886, port of #529). Same clean-room rule.
+	360° spherical video	360° pallovideo
+	A profile is already called “{name}”.	Profiili nimeltä ”{name}” on jo olemassa.
+	Applied sequence profile “{name}”	Jakson profiili ”{name}” otettu käyttöön
+	Apply to Sequence	Käytä jaksoon
+	Built-in profiles are kept: this is saved as a new profile.	Sisäiset profiilit säilyvät: tämä tallennetaan uutena profiilina.
+	CFA4 sequences are progressive: applying the profile keeps its size and rate	CFA4:n jaksot ovat progressiivisia: profiilin käyttö säilyttää koon ja kuvanopeuden
+	Deleted sequence profile “{name}”	Jakson profiili ”{name}” poistettu
+	Display Aspect Ratio:	Näytön kuvasuhde:
+	Edit Sequence Profile	Muokkaa jakson profiilia
+	Enter a description.	Kirjoita kuvaus.
+	Interlaced	Lomitettu
+	New Sequence Profile	Uusi jakson profiili
+	New…	Uusi…
+	Saved sequence profile “{name}”	Jakson profiili ”{name}” tallennettu
+	Sequence Profiles	Jakson profiilit
+	Sequence Profiles…	Jakson profiilit…
+	The description must be at most {n} characters.	Kuvaus saa olla enintään {n} merkkiä.
+	The display aspect ratio does not match the frame size and pixel aspect ratio.	Näytön kuvasuhde ei vastaa kuvan kokoa ja pikselisuhdetta.
+	The frame is too large.	Kuva on liian suuri.
+	The frame rate must be at most 1000 fps.	Kuvanopeus saa olla enintään 1000 fps.
+	The pixel aspect ratio must be at most 8:1 either way.	Pikselisuhde saa olla enintään 8:1 kumpaankin suuntaan.
+	not supported by CFA4 sequences yet: {what}	CFA4:n jaksot eivät vielä tue: {what}
+	{rate} fps	{rate} fps
+	{w} × {h}, display {dn}:{dd}, pixels {pn}:{pd}	{w} × {h}, näyttö {dn}:{dd}, pikselit {pn}:{pd}
 # Qt GUI: Tools menu (#868)
 	Video Tools	Videotyökalut
 	Audio Tools	Äänityökalut

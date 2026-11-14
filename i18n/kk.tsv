@@ -4138,6 +4138,32 @@ export.summary	Low	төмен
 	Star	Жұлдыз
 	Width	Ені
 # Qt GUI strings from main, 2026-11-11 (MPEG-2 field order)
+
+# Qt GUI: sequence profiles (#886, port of #529). Same clean-room rule.
+	360° spherical video	360° сфералық бейне
+	A profile is already called “{name}”.	«{name}» атты профиль бұрыннан бар.
+	Applied sequence profile “{name}”	«{name}» тізбек профилі қолданылды
+	Apply to Sequence	Тізбекке қолдану
+	Built-in profiles are kept: this is saved as a new profile.	Кірістірілген профильдер өзгермейді: бұл жаңа профиль ретінде сақталады.
+	CFA4 sequences are progressive: applying the profile keeps its size and rate	CFA4 тізбектері прогрессивті: профильді қолданғанда өлшемі мен жиілігі сақталады
+	Deleted sequence profile “{name}”	«{name}» тізбек профилі жойылды
+	Display Aspect Ratio:	Көрсету арақатынасы:
+	Edit Sequence Profile	Тізбек профилін өңдеу
+	Enter a description.	Сипаттама енгізіңіз.
+	Interlaced	Жолаласпа
+	New Sequence Profile	Жаңа тізбек профилі
+	New…	Жаңа…
+	Saved sequence profile “{name}”	«{name}» тізбек профилі сақталды
+	Sequence Profiles	Тізбек профильдері
+	Sequence Profiles…	Тізбек профильдері…
+	The description must be at most {n} characters.	Сипаттама ең көбі {n} таңба болуы керек.
+	The display aspect ratio does not match the frame size and pixel aspect ratio.	Көрсету арақатынасы кадр өлшеміне және пиксель арақатынасына сәйкес келмейді.
+	The frame is too large.	Кадр тым үлкен.
+	The frame rate must be at most 1000 fps.	Кадр жиілігі ең көбі 1000 fps болуы керек.
+	The pixel aspect ratio must be at most 8:1 either way.	Пиксель арақатынасы ешбір бағытта 8:1-ден аспауы керек.
+	not supported by CFA4 sequences yet: {what}	CFA4 тізбектерінде әлі қолдау жоқ: {what}
+	{rate} fps	{rate} fps
+	{w} × {h}, display {dn}:{dd}, pixels {pn}:{pd}	{w} × {h}, көрсету {dn}:{dd}, пиксельдер {pn}:{pd}
 # Qt GUI: Tools menu (#868)
 	Video Tools	Бейне құралдары
 	Audio Tools	Аудио құралдары

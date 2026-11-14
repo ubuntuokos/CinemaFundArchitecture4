@@ -4135,6 +4135,32 @@ export.summary	Low	低
 	Contains	包含
 	Navigation	導覽
 # Qt GUI strings from main, 2026-11-11 (MPEG-2 field order)
+
+# Qt GUI: sequence profiles (#886, port of #529). Same clean-room rule.
+	360° spherical video	360° 球面影片
+	A profile is already called “{name}”.	已有名為「{name}」的設定檔。
+	Applied sequence profile “{name}”	已套用序列設定檔「{name}」
+	Apply to Sequence	套用至序列
+	Built-in profiles are kept: this is saved as a new profile.	內建設定檔保持不變：將另存為新的設定檔。
+	CFA4 sequences are progressive: applying the profile keeps its size and rate	CFA4 序列為逐行掃描：套用設定檔時會保留其尺寸與影格速率
+	Deleted sequence profile “{name}”	已刪除序列設定檔「{name}」
+	Display Aspect Ratio:	顯示長寬比：
+	Edit Sequence Profile	編輯序列設定檔
+	Enter a description.	請輸入描述。
+	Interlaced	交錯式
+	New Sequence Profile	新增序列設定檔
+	New…	新增…
+	Saved sequence profile “{name}”	已儲存序列設定檔「{name}」
+	Sequence Profiles	序列設定檔
+	Sequence Profiles…	序列設定檔…
+	The description must be at most {n} characters.	描述最多 {n} 個字元。
+	The display aspect ratio does not match the frame size and pixel aspect ratio.	顯示長寬比與影格尺寸及像素長寬比不符。
+	The frame is too large.	影格太大。
+	The frame rate must be at most 1000 fps.	影格速率最高為 1000 fps。
+	The pixel aspect ratio must be at most 8:1 either way.	像素長寬比在任一方向都不能超過 8:1。
+	not supported by CFA4 sequences yet: {what}	CFA4 序列尚不支援：{what}
+	{rate} fps	{rate} fps
+	{w} × {h}, display {dn}:{dd}, pixels {pn}:{pd}	{w} × {h}，顯示 {dn}:{dd}，像素 {pn}:{pd}
 # Qt GUI: Tools menu (#868)
 	Video Tools	視訊工具
 	Audio Tools	音訊工具

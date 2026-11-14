@@ -4136,6 +4136,32 @@ export.summary	Low	низак
 	Navigation	Навигација
 	Panel	Панел
 # Qt GUI strings from main, 2026-11-11 (MPEG-2 field order)
+
+# Qt GUI: sequence profiles (#886, port of #529). Same clean-room rule.
+	360° spherical video	Сферни видео од 360°
+	A profile is already called “{name}”.	Профил под именом „{name}“ већ постоји.
+	Applied sequence profile “{name}”	Примењен профил секвенце „{name}“
+	Apply to Sequence	Примени на секвенцу
+	Built-in profiles are kept: this is saved as a new profile.	Уграђени профили остају непромењени: ово се чува као нови профил.
+	CFA4 sequences are progressive: applying the profile keeps its size and rate	Секвенце у CFA4 су прогресивне: применом профила задржавају се величина и брзина
+	Deleted sequence profile “{name}”	Обрисан профил секвенце „{name}“
+	Display Aspect Ratio:	Однос страница приказа:
+	Edit Sequence Profile	Уреди профил секвенце
+	Enter a description.	Унесите опис.
+	Interlaced	Испреплетано
+	New Sequence Profile	Нови профил секвенце
+	New…	Ново…
+	Saved sequence profile “{name}”	Сачуван профил секвенце „{name}“
+	Sequence Profiles	Профили секвенце
+	Sequence Profiles…	Профили секвенце…
+	The description must be at most {n} characters.	Опис може имати највише {n} знакова.
+	The display aspect ratio does not match the frame size and pixel aspect ratio.	Однос страница приказа не одговара величини кадра и односу страница пиксела.
+	The frame is too large.	Кадар је превелик.
+	The frame rate must be at most 1000 fps.	Брзина кадрова може бити највише 1000 fps.
+	The pixel aspect ratio must be at most 8:1 either way.	Однос страница пиксела не сме бити већи од 8:1 ни у једном смеру.
+	not supported by CFA4 sequences yet: {what}	секвенце у CFA4 још не подржавају: {what}
+	{rate} fps	{rate} fps
+	{w} × {h}, display {dn}:{dd}, pixels {pn}:{pd}	{w} × {h}, приказ {dn}:{dd}, пиксели {pn}:{pd}
 # Qt GUI: Tools menu (#868)
 	Video Tools	Видео алати
 	Audio Tools	Аудио алати

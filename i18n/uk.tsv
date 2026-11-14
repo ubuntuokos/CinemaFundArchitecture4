@@ -4121,6 +4121,32 @@
 	ISDCF name	Ім’я ISDCF
 	Name the DCP folder by the Digital Cinema Naming Convention	Називати теку DCP за Digital Cinema Naming Convention
 # Qt GUI strings from main, 2026-11-11 (MPEG-2 field order)
+
+# Qt GUI: sequence profiles (#886, port of #529). Same clean-room rule.
+	360° spherical video	Сферичне відео 360°
+	A profile is already called “{name}”.	Профіль з назвою «{name}» уже існує.
+	Applied sequence profile “{name}”	Застосовано профіль послідовності «{name}»
+	Apply to Sequence	Застосувати до послідовності
+	Built-in profiles are kept: this is saved as a new profile.	Вбудовані профілі не змінюються: цей буде збережено як новий профіль.
+	CFA4 sequences are progressive: applying the profile keeps its size and rate	Послідовності CFA4 прогресивні: під час застосування профілю зберігаються його розмір і частота
+	Deleted sequence profile “{name}”	Профіль послідовності «{name}» видалено
+	Display Aspect Ratio:	Співвідношення сторін екрана:
+	Edit Sequence Profile	Змінити профіль послідовності
+	Enter a description.	Введіть опис.
+	Interlaced	Черезрядкова
+	New Sequence Profile	Новий профіль послідовності
+	New…	Створити…
+	Saved sequence profile “{name}”	Профіль послідовності «{name}» збережено
+	Sequence Profiles	Профілі послідовностей
+	Sequence Profiles…	Профілі послідовностей…
+	The description must be at most {n} characters.	Опис не може бути довшим за {n} символів.
+	The display aspect ratio does not match the frame size and pixel aspect ratio.	Співвідношення сторін екрана не відповідає розміру кадру та співвідношенню сторін пікселя.
+	The frame is too large.	Кадр завеликий.
+	The frame rate must be at most 1000 fps.	Частота кадрів не може перевищувати 1000 кадр/с.
+	The pixel aspect ratio must be at most 8:1 either way.	Співвідношення сторін пікселя не може перевищувати 8:1 у жодному напрямку.
+	not supported by CFA4 sequences yet: {what}	ще не підтримується в послідовностях CFA4: {what}
+	{rate} fps	{rate} кадр/с
+	{w} × {h}, display {dn}:{dd}, pixels {pn}:{pd}	{w} × {h}, екран {dn}:{dd}, пікселі {pn}:{pd}
 # Qt GUI: Tools menu (#868)
 	Video Tools	Відеоінструменти
 	Audio Tools	Аудіоінструменти

@@ -4121,6 +4121,32 @@
 	ISDCF name	Имя ISDCF
 	Name the DCP folder by the Digital Cinema Naming Convention	Называть папку DCP по Digital Cinema Naming Convention
 # Qt GUI strings from main, 2026-11-11 (MPEG-2 field order)
+
+# Qt GUI: sequence profiles (#886, port of #529). Same clean-room rule.
+	360° spherical video	Сферическое видео 360°
+	A profile is already called “{name}”.	Профиль с именем «{name}» уже существует.
+	Applied sequence profile “{name}”	Применён профиль эпизода «{name}»
+	Apply to Sequence	Применить к эпизоду
+	Built-in profiles are kept: this is saved as a new profile.	Встроенные профили не изменяются: этот будет сохранён как новый профиль.
+	CFA4 sequences are progressive: applying the profile keeps its size and rate	Эпизоды CFA4 прогрессивные: при применении профиля сохраняются его размер и частота
+	Deleted sequence profile “{name}”	Профиль эпизода «{name}» удалён
+	Display Aspect Ratio:	Соотношение сторон экрана:
+	Edit Sequence Profile	Изменить профиль эпизода
+	Enter a description.	Введите описание.
+	Interlaced	Чересстрочная
+	New Sequence Profile	Новый профиль эпизода
+	New…	Создать…
+	Saved sequence profile “{name}”	Профиль эпизода «{name}» сохранён
+	Sequence Profiles	Профили эпизодов
+	Sequence Profiles…	Профили эпизодов…
+	The description must be at most {n} characters.	Описание не может быть длиннее {n} символов.
+	The display aspect ratio does not match the frame size and pixel aspect ratio.	Соотношение сторон экрана не соответствует размеру кадра и соотношению сторон пикселя.
+	The frame is too large.	Кадр слишком большой.
+	The frame rate must be at most 1000 fps.	Частота кадров не может превышать 1000 кадр/с.
+	The pixel aspect ratio must be at most 8:1 either way.	Соотношение сторон пикселя не может превышать 8:1 ни в одну сторону.
+	not supported by CFA4 sequences yet: {what}	пока не поддерживается в эпизодах CFA4: {what}
+	{rate} fps	{rate} кадр/с
+	{w} × {h}, display {dn}:{dd}, pixels {pn}:{pd}	{w} × {h}, экран {dn}:{dd}, пиксели {pn}:{pd}
 # Qt GUI: Tools menu (#868)
 	Video Tools	Видеоинструменты
 	Audio Tools	Аудиоинструменты

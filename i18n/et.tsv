@@ -4138,6 +4138,32 @@ export.summary	Low	madal
 	Contains	Sisaldab
 	Navigation	Navigeerimine
 # Qt GUI strings from main, 2026-11-11 (MPEG-2 field order)
+
+# Qt GUI: sequence profiles (#886, port of #529). Same clean-room rule.
+	360° spherical video	360° sfääriline video
+	A profile is already called “{name}”.	Profiil nimega „{name}” on juba olemas.
+	Applied sequence profile “{name}”	Rakendati jada profiil „{name}”
+	Apply to Sequence	Rakenda jadale
+	Built-in profiles are kept: this is saved as a new profile.	Sisseehitatud profiilid jäävad alles: see salvestatakse uue profiilina.
+	CFA4 sequences are progressive: applying the profile keeps its size and rate	CFA4 jadad on progressiivsed: profiili rakendamisel säilivad nende suurus ja kaadrisagedus
+	Deleted sequence profile “{name}”	Kustutati jada profiil „{name}”
+	Display Aspect Ratio:	Kuva kuvasuhe:
+	Edit Sequence Profile	Muuda jada profiili
+	Enter a description.	Sisestage kirjeldus.
+	Interlaced	Põimitud
+	New Sequence Profile	Uus jada profiil
+	New…	Uus…
+	Saved sequence profile “{name}”	Salvestati jada profiil „{name}”
+	Sequence Profiles	Jada profiilid
+	Sequence Profiles…	Jada profiilid…
+	The description must be at most {n} characters.	Kirjeldus võib olla kuni {n} märki.
+	The display aspect ratio does not match the frame size and pixel aspect ratio.	Kuva kuvasuhe ei sobi kaadri suuruse ja piksli kuvasuhtega.
+	The frame is too large.	Kaader on liiga suur.
+	The frame rate must be at most 1000 fps.	Kaadrisagedus võib olla kuni 1000 fps.
+	The pixel aspect ratio must be at most 8:1 either way.	Piksli kuvasuhe ei tohi kummaski suunas ületada 8:1.
+	not supported by CFA4 sequences yet: {what}	CFA4 jadad ei toeta veel: {what}
+	{rate} fps	{rate} fps
+	{w} × {h}, display {dn}:{dd}, pixels {pn}:{pd}	{w} × {h}, kuva {dn}:{dd}, pikslid {pn}:{pd}
 # Qt GUI: Tools menu (#868)
 	Video Tools	Videotööriistad
 	Audio Tools	Helitööriistad

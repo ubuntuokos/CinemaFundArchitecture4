@@ -84,6 +84,7 @@ from .panels.recovery import RecoveryDialog, recovery_lines
 from .panels.reference import ReferenceMonitor
 from .panels.remix import RemixPropertiesDialog
 from .panels.scopes import ScopesPanel
+from .panels.sequence_profiles import SequenceProfiles
 from .panels.sequence_settings import Draft as SeqDraft
 from .panels.sequence_settings import SequenceSettingsDialog, count_sequences
 from .panels.sequence_settings import draft_from as seq_draft_from
@@ -959,6 +960,7 @@ class MainWindow(QMainWindow):
             ("view.dynamicAudioWaveforms", N_("Dynamic Audio Waveforms"), ["View"], ""),
             ("help.revealLogFiles", N_("Reveal Log Files…"), ["Help"], ""),
             ("help.systemCompatibilityReport", N_("System Compatibility Report…"), ["Help"], ""),
+            ("sequence.profilesDialog", N_("Sequence Profiles…"), ["Sequence"], ""),
             *((cid, dock_commands.LABELS[cid], [], "") for cid in dock_commands.COMMANDS),
             *((cid, label, ["View"], "") for cid, label in GUIDE_COMMANDS.items()),
             ("view.compare.setReference", N_("Set Comparison Reference"), [], ""),
@@ -1673,6 +1675,15 @@ class MainWindow(QMainWindow):
 
         self.engine.execute("file.projectSettings.general", {}, on_reply=lambda r, _b: show(r), on_error=lambda _m: show(None))
 
+    def open_sequence_profiles(self) -> None:
+        """Sequence ▸ Sequence Profiles… (``panels/sequence_profiles.py``)."""
+        dialog = SequenceProfiles(
+            self, self.engine, lambda text: self.statusBar().showMessage(text, 6000), self.schedule_refresh, self.sequence is not None
+        )
+        dialog.setAttribute(Qt.WidgetAttribute.WA_DeleteOnClose)
+        self.last_dialog = dialog
+        dialog.open()
+
     def open_remix_properties(self) -> None:
         """Remix Properties… of the selected remixed clip (egui's: the menu entry opens the
         dialog; with parameters the command applies directly)."""
@@ -2196,6 +2207,8 @@ class MainWindow(QMainWindow):
             self.dynamic_waveforms_action.setChecked(on if isinstance(on, bool) else not self.dynamic_waveforms_action.isChecked())
         elif cid == "help.systemCompatibilityReport":
             self.open_system_report()
+        elif cid == "sequence.profilesDialog":
+            self.open_sequence_profiles()
         elif cid == "help.revealLogFiles":
             self.reveal_log_files()
         elif cid in ("edit.editOriginal", "file.reveal"):

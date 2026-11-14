@@ -4138,6 +4138,32 @@ export.summary	Low	χαμηλή
 	Application	Εφαρμογή
 	Baseline	Γραμμή βάσης
 # Qt GUI strings from main, 2026-11-11 (MPEG-2 field order)
+
+# Qt GUI: sequence profiles (#886, port of #529). Same clean-room rule.
+	360° spherical video	Σφαιρικό βίντεο 360°
+	A profile is already called “{name}”.	Υπάρχει ήδη προφίλ με το όνομα «{name}».
+	Applied sequence profile “{name}”	Εφαρμόστηκε το προφίλ ακολουθίας «{name}»
+	Apply to Sequence	Εφαρμογή στην ακολουθία
+	Built-in profiles are kept: this is saved as a new profile.	Τα ενσωματωμένα προφίλ διατηρούνται: θα αποθηκευτεί ως νέο προφίλ.
+	CFA4 sequences are progressive: applying the profile keeps its size and rate	Οι ακολουθίες του CFA4 είναι προοδευτικές: η εφαρμογή του προφίλ διατηρεί το μέγεθος και τον ρυθμό τους
+	Deleted sequence profile “{name}”	Διαγράφηκε το προφίλ ακολουθίας «{name}»
+	Display Aspect Ratio:	Αναλογία διαστάσεων προβολής:
+	Edit Sequence Profile	Επεξεργασία προφίλ ακολουθίας
+	Enter a description.	Εισαγάγετε περιγραφή.
+	Interlaced	Πεπλεγμένη
+	New Sequence Profile	Νέο προφίλ ακολουθίας
+	New…	Νέο…
+	Saved sequence profile “{name}”	Αποθηκεύτηκε το προφίλ ακολουθίας «{name}»
+	Sequence Profiles	Προφίλ ακολουθίας
+	Sequence Profiles…	Προφίλ ακολουθίας…
+	The description must be at most {n} characters.	Η περιγραφή μπορεί να έχει έως {n} χαρακτήρες.
+	The display aspect ratio does not match the frame size and pixel aspect ratio.	Η αναλογία διαστάσεων προβολής δεν ταιριάζει με το μέγεθος καρέ και την αναλογία εικονοστοιχείου.
+	The frame is too large.	Το καρέ είναι πολύ μεγάλο.
+	The frame rate must be at most 1000 fps.	Ο ρυθμός καρέ μπορεί να είναι έως 1000 fps.
+	The pixel aspect ratio must be at most 8:1 either way.	Η αναλογία εικονοστοιχείου δεν μπορεί να ξεπερνά το 8:1 προς καμία κατεύθυνση.
+	not supported by CFA4 sequences yet: {what}	δεν υποστηρίζεται ακόμη από τις ακολουθίες του CFA4: {what}
+	{rate} fps	{rate} fps
+	{w} × {h}, display {dn}:{dd}, pixels {pn}:{pd}	{w} × {h}, προβολή {dn}:{dd}, εικονοστοιχεία {pn}:{pd}
 # Qt GUI: Tools menu (#868)
 	Video Tools	Εργαλεία βίντεο
 	Audio Tools	Εργαλεία ήχου

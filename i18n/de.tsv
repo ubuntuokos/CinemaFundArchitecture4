@@ -4143,6 +4143,32 @@
 	None (RFC 5646 tag, e.g. en-US)	Keine (RFC-5646-Tag, z. B. de-DE)
 	ISDCF name	ISDCF-Name
 	Name the DCP folder by the Digital Cinema Naming Convention	DCP-Ordner nach der Digital Cinema Naming Convention benennen
+
+# Qt GUI: sequence profiles (#886, port of #529). Same clean-room rule.
+	360° spherical video	360°-Kugelvideo
+	A profile is already called “{name}”.	Es gibt bereits ein Profil namens „{name}“.
+	Applied sequence profile “{name}”	Sequenzprofil „{name}“ angewendet
+	Apply to Sequence	Auf Sequenz anwenden
+	Built-in profiles are kept: this is saved as a new profile.	Integrierte Profile bleiben erhalten: Dies wird als neues Profil gespeichert.
+	CFA4 sequences are progressive: applying the profile keeps its size and rate	CFA4-Sequenzen sind progressiv: Beim Anwenden des Profils bleiben Größe und Bildrate erhalten
+	Deleted sequence profile “{name}”	Sequenzprofil „{name}“ gelöscht
+	Display Aspect Ratio:	Anzeige-Seitenverhältnis:
+	Edit Sequence Profile	Sequenzprofil bearbeiten
+	Enter a description.	Geben Sie eine Beschreibung ein.
+	Interlaced	Interlaced
+	New Sequence Profile	Neues Sequenzprofil
+	New…	Neu…
+	Saved sequence profile “{name}”	Sequenzprofil „{name}“ gespeichert
+	Sequence Profiles	Sequenzprofile
+	Sequence Profiles…	Sequenzprofile…
+	The description must be at most {n} characters.	Die Beschreibung darf höchstens {n} Zeichen lang sein.
+	The display aspect ratio does not match the frame size and pixel aspect ratio.	Das Anzeige-Seitenverhältnis passt nicht zu Bildgröße und Pixel-Seitenverhältnis.
+	The frame is too large.	Das Bild ist zu groß.
+	The frame rate must be at most 1000 fps.	Die Bildrate darf höchstens 1000 fps betragen.
+	The pixel aspect ratio must be at most 8:1 either way.	Das Pixel-Seitenverhältnis darf in keiner Richtung über 8:1 liegen.
+	not supported by CFA4 sequences yet: {what}	von CFA4-Sequenzen noch nicht unterstützt: {what}
+	{rate} fps	{rate} fps
+	{w} × {h}, display {dn}:{dd}, pixels {pn}:{pd}	{w} × {h}, Anzeige {dn}:{dd}, Pixel {pn}:{pd}
 # Qt GUI: Tools menu (#868)
 	Video Tools	Videowerkzeuge
 	Audio Tools	Audiowerkzeuge

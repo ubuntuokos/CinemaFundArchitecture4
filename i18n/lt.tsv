@@ -4139,6 +4139,32 @@ export.summary	Low	žema
 	Star	Žvaigždė
 	Width	Plotis
 # Qt GUI strings from main, 2026-11-11 (MPEG-2 field order)
+
+# Qt GUI: sequence profiles (#886, port of #529). Same clean-room rule.
+	360° spherical video	360° sferinis vaizdo įrašas
+	A profile is already called “{name}”.	Profilis pavadinimu „{name}“ jau yra.
+	Applied sequence profile “{name}”	Pritaikytas sekos profilis „{name}“
+	Apply to Sequence	Taikyti sekai
+	Built-in profiles are kept: this is saved as a new profile.	Įtaisytieji profiliai nekeičiami: tai bus įrašyta kaip naujas profilis.
+	CFA4 sequences are progressive: applying the profile keeps its size and rate	CFA4 sekos yra progresyviosios: pritaikius profilį jų dydis ir dažnis išlieka
+	Deleted sequence profile “{name}”	Ištrintas sekos profilis „{name}“
+	Display Aspect Ratio:	Rodymo kraštinių santykis:
+	Edit Sequence Profile	Redaguoti sekos profilį
+	Enter a description.	Įveskite aprašą.
+	Interlaced	Persipynęs
+	New Sequence Profile	Naujas sekos profilis
+	New…	Naujas…
+	Saved sequence profile “{name}”	Įrašytas sekos profilis „{name}“
+	Sequence Profiles	Sekų profiliai
+	Sequence Profiles…	Sekų profiliai…
+	The description must be at most {n} characters.	Aprašas gali būti ne ilgesnis nei {n} simbolių.
+	The display aspect ratio does not match the frame size and pixel aspect ratio.	Rodymo kraštinių santykis neatitinka kadro dydžio ir pikselio kraštinių santykio.
+	The frame is too large.	Kadras per didelis.
+	The frame rate must be at most 1000 fps.	Kadrų dažnis gali būti ne didesnis nei 1000 kadr./s.
+	The pixel aspect ratio must be at most 8:1 either way.	Pikselio kraštinių santykis jokia kryptimi negali viršyti 8:1.
+	not supported by CFA4 sequences yet: {what}	CFA4 sekos dar nepalaiko: {what}
+	{rate} fps	{rate} kadr./s
+	{w} × {h}, display {dn}:{dd}, pixels {pn}:{pd}	{w} × {h}, rodymas {dn}:{dd}, pikseliai {pn}:{pd}
 # Qt GUI: Tools menu (#868)
 	Video Tools	Vaizdo įrankiai
 	Audio Tools	Garso įrankiai

@@ -4136,6 +4136,32 @@ export.summary	Low	laag
 	Masks	Maskers
 	Panel	Paneel
 # Qt GUI strings from main, 2026-11-11 (MPEG-2 field order)
+
+# Qt GUI: sequence profiles (#886, port of #529). Same clean-room rule.
+	360° spherical video	Bolvormige 360°-video
+	A profile is already called “{name}”.	Er bestaat al een profiel met de naam ‘{name}’.
+	Applied sequence profile “{name}”	Reeksprofiel ‘{name}’ toegepast
+	Apply to Sequence	Toepassen op reeks
+	Built-in profiles are kept: this is saved as a new profile.	Ingebouwde profielen blijven behouden: dit wordt als nieuw profiel opgeslagen.
+	CFA4 sequences are progressive: applying the profile keeps its size and rate	CFA4-reeksen zijn progressief: bij het toepassen van het profiel blijven grootte en framesnelheid behouden
+	Deleted sequence profile “{name}”	Reeksprofiel ‘{name}’ verwijderd
+	Display Aspect Ratio:	Weergaveverhouding:
+	Edit Sequence Profile	Reeksprofiel bewerken
+	Enter a description.	Voer een beschrijving in.
+	Interlaced	Geïnterlinieerd
+	New Sequence Profile	Nieuw reeksprofiel
+	New…	Nieuw…
+	Saved sequence profile “{name}”	Reeksprofiel ‘{name}’ opgeslagen
+	Sequence Profiles	Reeksprofielen
+	Sequence Profiles…	Reeksprofielen…
+	The description must be at most {n} characters.	De beschrijving mag hoogstens {n} tekens lang zijn.
+	The display aspect ratio does not match the frame size and pixel aspect ratio.	De weergaveverhouding past niet bij de framegrootte en de pixelverhouding.
+	The frame is too large.	Het frame is te groot.
+	The frame rate must be at most 1000 fps.	De framesnelheid mag hoogstens 1000 fps zijn.
+	The pixel aspect ratio must be at most 8:1 either way.	De pixelverhouding mag in geen enkele richting groter zijn dan 8:1.
+	not supported by CFA4 sequences yet: {what}	nog niet ondersteund door CFA4-reeksen: {what}
+	{rate} fps	{rate} fps
+	{w} × {h}, display {dn}:{dd}, pixels {pn}:{pd}	{w} × {h}, weergave {dn}:{dd}, pixels {pn}:{pd}
 # Qt GUI: Tools menu (#868)
 	Video Tools	Videogereedschappen
 	Audio Tools	Audiogereedschappen

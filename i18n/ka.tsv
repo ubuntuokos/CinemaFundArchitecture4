@@ -4139,6 +4139,32 @@ export.summary	Low	დაბალი
 	Baseline	საბაზისო ხაზი
 	Accent Color	აქცენტის ფერი
 # Qt GUI strings from main, 2026-11-11 (MPEG-2 field order)
+
+# Qt GUI: sequence profiles (#886, port of #529). Same clean-room rule.
+	360° spherical video	360° სფერული ვიდეო
+	A profile is already called “{name}”.	პროფილი სახელით „{name}“ უკვე არსებობს.
+	Applied sequence profile “{name}”	გამოყენებულია თანმიმდევრობის პროფილი „{name}“
+	Apply to Sequence	თანმიმდევრობაზე გამოყენება
+	Built-in profiles are kept: this is saved as a new profile.	ჩაშენებული პროფილები უცვლელი რჩება: ეს შეინახება როგორც ახალი პროფილი.
+	CFA4 sequences are progressive: applying the profile keeps its size and rate	CFA4-ის თანმიმდევრობები პროგრესულია: პროფილის გამოყენებისას ზომა და სიხშირე უცვლელი რჩება
+	Deleted sequence profile “{name}”	წაიშალა თანმიმდევრობის პროფილი „{name}“
+	Display Aspect Ratio:	ჩვენების თანაფარდობა:
+	Edit Sequence Profile	თანმიმდევრობის პროფილის რედაქტირება
+	Enter a description.	შეიყვანეთ აღწერა.
+	Interlaced	ჩახლართული
+	New Sequence Profile	ახალი თანმიმდევრობის პროფილი
+	New…	ახალი…
+	Saved sequence profile “{name}”	შენახულია თანმიმდევრობის პროფილი „{name}“
+	Sequence Profiles	თანმიმდევრობის პროფილები
+	Sequence Profiles…	თანმიმდევრობის პროფილები…
+	The description must be at most {n} characters.	აღწერა შეიძლება იყოს მაქსიმუმ {n} სიმბოლო.
+	The display aspect ratio does not match the frame size and pixel aspect ratio.	ჩვენების თანაფარდობა არ შეესაბამება კადრის ზომასა და პიქსელის თანაფარდობას.
+	The frame is too large.	კადრი ზედმეტად დიდია.
+	The frame rate must be at most 1000 fps.	კადრების სიხშირე შეიძლება იყოს მაქსიმუმ 1000 fps.
+	The pixel aspect ratio must be at most 8:1 either way.	პიქსელის თანაფარდობა არცერთი მიმართულებით არ შეიძლება აღემატებოდეს 8:1-ს.
+	not supported by CFA4 sequences yet: {what}	CFA4-ის თანმიმდევრობებში ჯერ არ არის მხარდაჭერილი: {what}
+	{rate} fps	{rate} fps
+	{w} × {h}, display {dn}:{dd}, pixels {pn}:{pd}	{w} × {h}, ჩვენება {dn}:{dd}, პიქსელები {pn}:{pd}
 # Qt GUI: Tools menu (#868)
 	Video Tools	ვიდეო ხელსაწყოები
 	Audio Tools	აუდიო ხელსაწყოები

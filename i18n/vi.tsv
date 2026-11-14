@@ -4136,6 +4136,32 @@ export.summary	Low	thấp
 	Contains	Chứa
 	Navigation	Điều hướng
 # Qt GUI strings from main, 2026-11-11 (MPEG-2 field order)
+
+# Qt GUI: sequence profiles (#886, port of #529). Same clean-room rule.
+	360° spherical video	Video cầu 360°
+	A profile is already called “{name}”.	Đã có hồ sơ tên “{name}”.
+	Applied sequence profile “{name}”	Đã áp dụng hồ sơ chuỗi “{name}”
+	Apply to Sequence	Áp dụng cho chuỗi
+	Built-in profiles are kept: this is saved as a new profile.	Các hồ sơ có sẵn được giữ nguyên: mục này được lưu thành hồ sơ mới.
+	CFA4 sequences are progressive: applying the profile keeps its size and rate	Chuỗi CFA4 là quét liên tục: khi áp dụng hồ sơ, kích thước và tốc độ của chuỗi được giữ nguyên
+	Deleted sequence profile “{name}”	Đã xóa hồ sơ chuỗi “{name}”
+	Display Aspect Ratio:	Tỷ lệ khung hiển thị:
+	Edit Sequence Profile	Sửa hồ sơ chuỗi
+	Enter a description.	Nhập mô tả.
+	Interlaced	Quét xen kẽ
+	New Sequence Profile	Hồ sơ chuỗi mới
+	New…	Mới…
+	Saved sequence profile “{name}”	Đã lưu hồ sơ chuỗi “{name}”
+	Sequence Profiles	Hồ sơ chuỗi
+	Sequence Profiles…	Hồ sơ chuỗi…
+	The description must be at most {n} characters.	Mô tả tối đa {n} ký tự.
+	The display aspect ratio does not match the frame size and pixel aspect ratio.	Tỷ lệ khung hiển thị không khớp với kích thước khung hình và tỷ lệ điểm ảnh.
+	The frame is too large.	Khung hình quá lớn.
+	The frame rate must be at most 1000 fps.	Tốc độ khung hình tối đa là 1000 fps.
+	The pixel aspect ratio must be at most 8:1 either way.	Tỷ lệ điểm ảnh không được vượt quá 8:1 theo bất kỳ chiều nào.
+	not supported by CFA4 sequences yet: {what}	chuỗi CFA4 chưa hỗ trợ: {what}
+	{rate} fps	{rate} fps
+	{w} × {h}, display {dn}:{dd}, pixels {pn}:{pd}	{w} × {h}, hiển thị {dn}:{dd}, điểm ảnh {pn}:{pd}
 # Qt GUI: Tools menu (#868)
 	Video Tools	Công cụ video
 	Audio Tools	Công cụ âm thanh

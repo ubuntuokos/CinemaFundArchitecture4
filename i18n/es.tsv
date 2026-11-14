@@ -4143,6 +4143,32 @@
 	None (RFC 5646 tag, e.g. en-US)	Ninguno (etiqueta RFC 5646, p. ej. es-ES)
 	ISDCF name	Nombre ISDCF
 	Name the DCP folder by the Digital Cinema Naming Convention	Nombrar la carpeta DCP según la Digital Cinema Naming Convention
+
+# Qt GUI: sequence profiles (#886, port of #529). Same clean-room rule.
+	360° spherical video	Vídeo esférico de 360°
+	A profile is already called “{name}”.	Ya hay un perfil llamado «{name}».
+	Applied sequence profile “{name}”	Perfil de secuencia «{name}» aplicado
+	Apply to Sequence	Aplicar a la secuencia
+	Built-in profiles are kept: this is saved as a new profile.	Los perfiles integrados se conservan: se guardará como un perfil nuevo.
+	CFA4 sequences are progressive: applying the profile keeps its size and rate	Las secuencias de CFA4 son progresivas: al aplicar el perfil se conservan su tamaño y su velocidad
+	Deleted sequence profile “{name}”	Perfil de secuencia «{name}» eliminado
+	Display Aspect Ratio:	Relación de aspecto de visualización:
+	Edit Sequence Profile	Editar perfil de secuencia
+	Enter a description.	Introduzca una descripción.
+	Interlaced	Entrelazado
+	New Sequence Profile	Nuevo perfil de secuencia
+	New…	Nuevo…
+	Saved sequence profile “{name}”	Perfil de secuencia «{name}» guardado
+	Sequence Profiles	Perfiles de secuencia
+	Sequence Profiles…	Perfiles de secuencia…
+	The description must be at most {n} characters.	La descripción no puede superar los {n} caracteres.
+	The display aspect ratio does not match the frame size and pixel aspect ratio.	La relación de aspecto de visualización no coincide con el tamaño de fotograma y la relación de aspecto de píxel.
+	The frame is too large.	El fotograma es demasiado grande.
+	The frame rate must be at most 1000 fps.	La velocidad de fotogramas no puede superar los 1000 fps.
+	The pixel aspect ratio must be at most 8:1 either way.	La relación de aspecto de píxel no puede superar 8:1 en ningún sentido.
+	not supported by CFA4 sequences yet: {what}	aún no compatible con las secuencias de CFA4: {what}
+	{rate} fps	{rate} fps
+	{w} × {h}, display {dn}:{dd}, pixels {pn}:{pd}	{w} × {h}, visualización {dn}:{dd}, píxeles {pn}:{pd}
 # Qt GUI: Tools menu (#868)
 	Video Tools	Herramientas de vídeo
 	Audio Tools	Herramientas de audio

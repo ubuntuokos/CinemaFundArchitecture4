@@ -4146,6 +4146,32 @@
 	None (RFC 5646 tag, e.g. en-US)	Nenhum (tag RFC 5646, ex.: pt-BR)
 	ISDCF name	Nome ISDCF
 	Name the DCP folder by the Digital Cinema Naming Convention	Nomear a pasta do DCP pela Digital Cinema Naming Convention
+
+# Qt GUI: sequence profiles (#886, port of #529). Same clean-room rule.
+	360° spherical video	Vídeo esférico 360°
+	A profile is already called “{name}”.	Já existe um perfil chamado “{name}”.
+	Applied sequence profile “{name}”	Perfil de sequência “{name}” aplicado
+	Apply to Sequence	Aplicar à sequência
+	Built-in profiles are kept: this is saved as a new profile.	Os perfis integrados são mantidos: este será salvo como um novo perfil.
+	CFA4 sequences are progressive: applying the profile keeps its size and rate	As sequências do CFA4 são progressivas: aplicar o perfil mantém o tamanho e a taxa
+	Deleted sequence profile “{name}”	Perfil de sequência “{name}” excluído
+	Display Aspect Ratio:	Proporção de exibição:
+	Edit Sequence Profile	Editar perfil de sequência
+	Enter a description.	Insira uma descrição.
+	Interlaced	Entrelaçado
+	New Sequence Profile	Novo perfil de sequência
+	New…	Novo…
+	Saved sequence profile “{name}”	Perfil de sequência “{name}” salvo
+	Sequence Profiles	Perfis de sequência
+	Sequence Profiles…	Perfis de sequência…
+	The description must be at most {n} characters.	A descrição deve ter no máximo {n} caracteres.
+	The display aspect ratio does not match the frame size and pixel aspect ratio.	A proporção de exibição não corresponde ao tamanho do quadro e à proporção de pixel.
+	The frame is too large.	O quadro é grande demais.
+	The frame rate must be at most 1000 fps.	A taxa de quadros deve ser de no máximo 1000 fps.
+	The pixel aspect ratio must be at most 8:1 either way.	A proporção de pixel não pode passar de 8:1 em nenhum sentido.
+	not supported by CFA4 sequences yet: {what}	ainda não compatível com sequências do CFA4: {what}
+	{rate} fps	{rate} fps
+	{w} × {h}, display {dn}:{dd}, pixels {pn}:{pd}	{w} × {h}, exibição {dn}:{dd}, pixels {pn}:{pd}
 # Qt GUI: Tools menu (#868)
 	Video Tools	Ferramentas de vídeo
 	Audio Tools	Ferramentas de áudio
