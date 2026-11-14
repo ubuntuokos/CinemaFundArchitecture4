@@ -131,7 +131,9 @@ class WriteTest(unittest.TestCase):
         self.assertEqual(media["multi"]["path"], "/full/multi.mov", "the active reference")
         self.assertEqual(media["url"]["path"], "/footage/shot a.mov")
         self.assertEqual(media["relative"]["path"], f"{samples.BASE_DIR}/clips/b.mov")
-        self.assertEqual(media["red"], {"ref": "generator", "generator": "ColorMatte", "offline": False})
+        self.assertEqual(
+            media["red"], {"ref": "generator", "generator": "ColorMatte", "offline": False, "other_references": []}
+        )
         refs = samples.expect_timeline(otio, samples.references(otio))["tracks"][0]["items"]
         self.assertEqual({i["name"]: i["media"]["offline"] for i in refs}["missing"], True)
         fx = {i["name"]: i for i in samples.expect_timeline(otio, samples.time_effects(otio))["tracks"][0]["items"]}
@@ -152,8 +154,22 @@ class WriteTest(unittest.TestCase):
         clip = next(c for c in tl.find_clips() if c.name == "frames")
         self.assertEqual(
             samples.expect_media(otio, clip),
-            {"ref": "file", "path": "/frames/shot.0001.exr", "image_sequence": True, "offline": False},
+            {
+                "ref": "file",
+                "path": "/frames/shot.0001.exr",
+                "image_sequence": True,
+                "offline": False,
+                "other_references": [],
+            },
         )
+
+    def test_inactive_media_references_are_expected_back(self):
+        import opentimelineio as otio
+
+        tl = samples.media_paths(otio)
+        multi = next(c for c in tl.find_clips() if c.name == "multi")
+        media = samples.expect_media(otio, multi)
+        self.assertEqual((media["path"], media["other_references"]), ("/full/multi.mov", ["DEFAULT_MEDIA"]))
 
     def test_legacy_markers_read_back_at_the_same_time(self):
         import opentimelineio as otio
