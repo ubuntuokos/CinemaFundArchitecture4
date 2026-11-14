@@ -435,6 +435,43 @@ fn joined_parts_ffprobe() {
     }
 }
 
+/// `bytes` with the sound track's edit cut to a quarter of its length (the edit lists are found
+/// in track order; the fixture has one per track).
+fn with_short_sound_edit(bytes: &[u8]) -> Vec<u8> {
+    let file = open(bytes).unwrap();
+    let au = file.tracks.iter().position(|t| t.kind == TrackKind::Audio).unwrap();
+    let at: Vec<usize> = bytes.windows(4).enumerate().filter(|(_, w)| *w == b"elst").map(|(i, _)| i).collect();
+    assert_eq!(at.len(), file.tracks.len(), "one edit list per track");
+    let mut out = bytes.to_vec();
+    let e = at[au] + 4;
+    let entry = e + 8;
+    if out[e] == 1 {
+        let d = u64::from_be_bytes(out[entry..entry + 8].try_into().unwrap());
+        out[entry..entry + 8].copy_from_slice(&(d / 4).to_be_bytes());
+    } else {
+        let d = u32::from_be_bytes(out[entry..entry + 4].try_into().unwrap());
+        out[entry..entry + 4].copy_from_slice(&(d / 4).to_be_bytes());
+    }
+    out
+}
+
+/// Sound a part's own edit hides is never brought back by a join: a part whose sound ends
+/// early cannot be followed without moving the next part's sound, so the join is refused.
+#[test]
+fn sound_hidden_by_a_parts_edit_stays_hidden() {
+    let Some(mov) = fixture("h264.mov") else { return };
+    let full = std::fs::read(&mov).unwrap();
+    let short = with_short_sound_edit(&full);
+    let au = open(full.as_slice()).unwrap().tracks.iter().position(|t| t.kind == TrackKind::Audio).unwrap();
+    let e = concat(&[short.as_slice(), full.as_slice()]).unwrap_err().to_string();
+    assert!(e.contains("part 2") && e.contains("sound"), "{e}");
+    // as the last part, it simply ends early: less sound than the two full parts
+    let whole = concat(&[full.as_slice(), full.as_slice()]).unwrap();
+    let ended = concat(&[full.as_slice(), short.as_slice()]).unwrap();
+    let frames = |b: &[u8]| -> u64 { open(b).unwrap().tracks[au].samples.iter().map(|s| u64::from(s.duration)).sum() };
+    assert!(frames(&ended.bytes) < frames(&whole.bytes));
+}
+
 #[test]
 fn parts_of_other_streams_are_refused() {
     let (Some(a), Some(h)) = (fixture("h264_bframes.mp4"), fixture("hevc.mp4")) else { return };

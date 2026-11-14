@@ -213,3 +213,16 @@ fn a_subclip_is_analysed_and_segmented_only_within_its_range() {
     assert_eq!(spans(&segs), [frames(30, 60)], "kept inside the subclip: {segs}");
     let _ = std::fs::remove_dir_all(&dir);
 }
+
+#[test]
+fn a_short_last_audio_block_counts_only_its_own_samples() {
+    use crate::segment_detect::silent_spans;
+    // 48 kHz, blocks of 480 samples: one 24 fps frame (2 000 samples) is four full blocks and
+    // one of 80 samples, which is shorter than a 0.05 s (2 400 sample) minimum
+    let flags = [true; 5];
+    let ends = [480, 960, 1440, 1920, 2000];
+    assert!(silent_spans(&flags, &ends, 0, 480, 2400).is_empty());
+    assert_eq!(silent_spans(&flags, &ends, 0, 480, 2000), vec![(0, 2000)]);
+    assert_eq!(silent_spans(&[false, true, true, false], &[10, 20, 30, 40], 0, 10, 20), vec![(10, 30)]);
+    assert!(silent_spans(&[true], &[], 0, 10, 1).is_empty());
+}

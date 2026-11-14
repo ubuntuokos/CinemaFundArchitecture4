@@ -228,6 +228,14 @@ mod tests {
         assert!(e.contains("working memory"), "{e}");
     }
     #[test]
+    fn a_small_output_with_a_large_intermediate_is_refused() {
+        // 1×32768 out is small; the 32768×32768 intermediate of the two-pass resize is not
+        let img = Image { w: 32768, h: 1, px: vec![0.5; 32768 * 4] };
+        let opts = StillOptions { size: Some((1, 32768)), ..StillOptions::default() };
+        let e = encode_with(&img, StillFormat::Png, 8, opts).unwrap_err().to_string();
+        assert!(e.contains("working memory"), "{e}");
+    }
+    #[test]
     fn sixteen_bit_stills_preserve_sub_eight_bit_precision_and_alpha() {
         let img = Image { w: 2, h: 1, px: vec![0.101, 0.203, 0.307, 1.0, 0.101 / 2.0, 0.203 / 2.0, 0.307 / 2.0, 0.5] };
         for format in [StillFormat::Png, StillFormat::Tiff] {

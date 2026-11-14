@@ -119,7 +119,12 @@ fn read(s: &Session, path: &str, cmd: &str) -> Result<String> {
     if path.trim().is_empty() || path.contains('\0') {
         return Err(bad(cmd, "need a non-empty `path` without NUL characters"));
     }
-    let bytes = s.services.read_file(path).map_err(|e| EngineError::Other(format!("{path}: {e}")))?;
+    let io = |e: std::io::Error| EngineError::Other(format!("{path}: {e}"));
+    // Refuse a large file before reading it; check again after, in case it grew in between.
+    if s.services.file_size(path).map_err(io)? > MAX_BYTES as u64 {
+        return Err(bad(cmd, format!("{path} is larger than 16 MiB")));
+    }
+    let bytes = s.services.read_file(path).map_err(io)?;
     if bytes.len() > MAX_BYTES {
         return Err(bad(cmd, format!("{path} is larger than 16 MiB")));
     }
@@ -129,8 +134,10 @@ fn read(s: &Session, path: &str, cmd: &str) -> Result<String> {
 
 /// Most fields in one CSV record (`markers.exportCsv` writes 12).
 const MAX_FIELDS: usize = 256;
-/// Most characters in one CSV field.
-const MAX_FIELD_CHARS: usize = 64 * 1024;
+/// Most characters in one CSV field: as many as the file may hold, so any marker name or comment
+/// that `markers.exportCsv` writes into a file within [`MAX_BYTES`] reads back (the file limit
+/// already bounds the memory a field can take).
+const MAX_FIELD_CHARS: usize = MAX_BYTES;
 
 /// RFC 4180 records: quoted fields may hold commas, quotes (`""`) and line breaks. The limits
 /// (records, fields per record, characters per field) apply while parsing, so a hostile file is
@@ -308,7 +315,8 @@ fn csv_markers(s: &Session, t: &Target, text: &str, allow_rate_change: bool, cmd
             None => MarkerKind::Comment,
             Some(v) => kind_of(v).ok_or_else(|| row_bad(format!("unknown marker kind `{v}`")))?,
         };
-        let color = color_of(s, get(c_color).unwrap_or("")).ok_or_else(|| row_bad(format!("unknown marker colour `{}`", get(c_color).unwrap_or(""))))?;
+        let colour = unguard(get(c_color).unwrap_or(""));
+        let color = color_of(s, &colour).ok_or_else(|| row_bad(format!("unknown marker colour `{colour}`")))?;
         let text = |c: Option<usize>| c.and_then(|c| row.get(c)).map(|v| unguard(v)).unwrap_or_default();
         out.push(New { start, duration, name: text(c_name), comment: text(c_comment), kind, color });
     }

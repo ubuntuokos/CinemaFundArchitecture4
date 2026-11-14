@@ -160,7 +160,9 @@ Minden írás előtt a motor visszaolvassa és ellenőrzi a kimenetet (`verified
 `python/tests/test_qt_gui.py` (a koordinációs szabály szerint fut, de még nem blokkol): a Smart Cut
 panel, a szegmenskereső párbeszédablak, a jelölők CSV/EDL importja és exportja, valamint a
 képkockamentés minősége és mérete, a szegmensek összefűzése (ffprobe-bal ellenőrizve: 75 kép, a
-szegmensnevek fejezetként) és a Jelölők panel szegmensnézete. Eredmény: zöld. A projekt 52 új
+szegmensnevek fejezetként) és a Jelölők panel szegmensnézete. Eredmény: a projekt saját GUI-tesztjei
+(köztük 15 valós motoros teszt) zöldek; ez **részleges futás**, a teljes `test_qt_gui.py` nem futott le
+(lásd a 4. pontot). A projekt 52 új
 felületi szövege a magyar mellett mind a 31 további nyelvi katalógusba bekerült
 (`test_qt_translations.py`: zöld).
 

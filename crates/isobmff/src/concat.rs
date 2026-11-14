@@ -210,6 +210,8 @@ fn plan_track(files: &[Mp4File], shown: &[Vec<Presented>], i: usize, starts: &[u
         let at = lead_tr + written - i128::from(media_time);
         // error of starting the part with a sample of decode time `d`
         let err = |d: i64| at - begin + i128::from(x.start) - i128::from(d);
+        // the part's own edit hides sound outside [x.start, shown_end): never bring it back
+        let shown_end = i128::from(x.start) + i128::from(x.len);
         let mut part = Vec::new();
         if t.kind == TrackKind::Video {
             let e = err(t.samples[0].dts);
@@ -228,8 +230,8 @@ fn plan_track(files: &[Mp4File], shown: &[Vec<Presented>], i: usize, starts: &[u
                 media_end = media_end.max(base + i128::from(s.pts) + i128::from(s.duration));
             }
         } else if t.pcm_chunked {
-            let lo = i128::from(t.samples[0].pts);
-            let hi = t.samples.iter().map(|s| i128::from(s.pts) + i128::from(s.duration)).max().unwrap_or(lo);
+            let lo = i128::from(t.samples[0].pts).max(i128::from(x.start));
+            let hi = t.samples.iter().map(|s| i128::from(s.pts) + i128::from(s.duration)).max().unwrap_or(lo).min(shown_end).max(lo);
             let want = at - begin + i128::from(x.start);
             let p = want.clamp(lo, hi);
             max_error = max_error.max((want - p).unsigned_abs() as u64);
@@ -268,7 +270,7 @@ fn plan_track(files: &[Mp4File], shown: &[Vec<Presented>], i: usize, starts: &[u
             max_error = max_error.max(e.unsigned_abs() as u64);
             for (si, s) in t.samples.iter().enumerate().skip(j) {
                 let mid = lead_tr + written - i128::from(media_time) + i128::from(s.duration) / 2;
-                if mid >= end {
+                if mid >= end || i128::from(s.pts) + i128::from(s.duration) / 2 >= shown_end {
                     break;
                 }
                 part.push(Piece { si, from: 0, frames: 0 });

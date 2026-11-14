@@ -153,6 +153,8 @@ class SmartCutDialog(QDialog):
         self._replan_timer.setSingleShot(True)
         self._replan_timer.setInterval(REPLAN_MS)
         self._replan_timer.timeout.connect(self.replan)
+        # a marker's range or name can change while the dialog is open: the plan shown is then stale
+        self.engine.event.connect(self._on_engine_event)
         lay = QVBoxLayout(self)
         self.info = QLabel(tr("Analyzing the clip…"), self)
         self.info.setObjectName("source.smartCut.info")
@@ -210,11 +212,11 @@ class SmartCutDialog(QDialog):
         self.to_timeline.setAutoDefault(False)
         self.to_timeline.clicked.connect(lambda _c=False: self.send("segments.toTimeline"))
         moves.addWidget(self.to_timeline)
-        self.find = QPushButton(tr("Find Segments…"), self.segments_box)
-        self.find.setObjectName("source.smartCut.findSegments")
-        self.find.setAutoDefault(False)
-        self.find.clicked.connect(lambda _c=False: self.find_segments())
-        moves.addWidget(self.find)
+        self.find_button = QPushButton(tr("Find Segments…"), self.segments_box)
+        self.find_button.setObjectName("source.smartCut.findSegments")
+        self.find_button.setAutoDefault(False)
+        self.find_button.clicked.connect(lambda _c=False: self.find_segments())
+        moves.addWidget(self.find_button)
         moves.addStretch(1)
         seg.addLayout(moves)
         joins = QVBoxLayout()
@@ -292,7 +294,7 @@ class SmartCutDialog(QDialog):
 
     # ----- segments -----
     def segments_mode(self) -> bool:
-        return self.source.currentData() == "segments"
+        return bool(self.source.currentData() == "segments")
 
     def joined(self) -> bool:
         return self.segments_mode() and self.join.isChecked()
@@ -418,6 +420,16 @@ class SmartCutDialog(QDialog):
         self.plan = None
         self.planned = None
         self.run.setEnabled(False)
+
+    def _on_engine_event(self, ev: Any) -> None:
+        if not isinstance(ev, dict) or ev.get("event") != "projectChanged":
+            return
+        self._invalidate()
+        if self.segments_mode():
+            # the segments' ranges and names are read again, then planned again
+            self.reload_segments()
+        else:
+            self._replan_timer.start()
 
     def _output_edited(self) -> None:
         self._invalidate()

@@ -46,6 +46,11 @@ impl ByteSource for Reader {
 
 /// Whether `path` is an MPEG program or transport stream (MP4 / MOV names are never sniffed).
 pub(crate) fn is_mpeg(s: &Session, path: &str) -> bool {
+    // a batch asks for every range: the answer is kept for the batch like the opened source
+    crate::source_cache::opened(&format!("\0mpeg?{path}"), || Ok(sniff_mpeg(s, path))).is_ok_and(|b| *b)
+}
+
+fn sniff_mpeg(s: &Session, path: &str) -> bool {
     let lower = path.to_ascii_lowercase();
     if [".mp4", ".m4v", ".mov"].iter().any(|e| lower.ends_with(e)) {
         return false;
@@ -59,11 +64,9 @@ pub(crate) fn is_mpeg(s: &Session, path: &str) -> bool {
             head
         }
         Some(Err(_)) => return false,
-        None => match s.services.read_file(path) {
-            Ok(mut b) => {
-                b.truncate(4096);
-                b
-            }
+        // only the head, on hosts that can read part of a file
+        None => match s.services.read_range(path, 0, 4096) {
+            Ok(b) => b,
             Err(_) => return false,
         },
     };

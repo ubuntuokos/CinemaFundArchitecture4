@@ -15263,10 +15263,13 @@ def test_marker_imports_ask_for_a_file():
     assert EXPORT_SAVES["markers.exportEdl"][1] == "edl"
 
 
-class _StubEngine:
+class _StubEngine(QtCore.QObject):
     """Records the commands a dialog sends; the test answers them by hand."""
 
+    event = QtCore.Signal(object)
+
     def __init__(self) -> None:
+        super().__init__()
         self.sent: list[tuple[str, dict, object, object]] = []
 
     def execute(self, command: str, params: dict, on_reply=None, on_error=None) -> None:
@@ -15331,6 +15334,13 @@ def test_smart_cut_exports_only_a_plan_of_the_current_settings(app):
     engine.last("export.plan")[2](good, None)
     d.start()
     assert engine.last("export.start")[1]["output"] == "/m/third.mp4"
+    # a project change (a marker moved or renamed) drops the plan and plans again
+    engine.last("export.plan")[2](good, None)
+    plans = sum(c == "export.plan" for c, *_r in engine.sent)
+    engine.event.emit({"event": "toast", "message": "x"})
+    engine.event.emit({"event": "projectChanged", "revision": 9})
+    assert not d.run.isEnabled() and d.plan is None and not d.plan_current()
+    assert wait_until(app, lambda: sum(c == "export.plan" for c, *_r in engine.sent) == plans + 1, 5_000)
     parent.deleteLater()
 
 

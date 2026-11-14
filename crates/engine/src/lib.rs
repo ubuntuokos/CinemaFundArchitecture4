@@ -154,9 +154,9 @@ pub trait Services: Send + Sync {
     fn file_size(&self, path: &str) -> std::io::Result<u64> {
         self.read_file(path).map(|b| b.len() as u64)
     }
-    /// The path that names the same file however `path` is spelled (symbolic links and `..`
-    /// resolved; for a file that does not exist yet, its directory resolved), so two names of one
-    /// file compare equal. `None`: the host cannot tell; callers then compare the paths lexically.
+    /// A key that names the same file however `path` is spelled (symbolic links and `..`
+    /// resolved, hard links by the file's identity where the host has one; for a file that does
+    /// not exist yet, its directory resolved), so two names of one file compare equal. `None`: the host cannot tell; callers then compare the paths lexically.
     fn canonical_path(&self, _path: &str) -> Option<String> {
         None
     }
@@ -231,6 +231,12 @@ impl Services for FsServices {
     }
     fn canonical_path(&self, path: &str) -> Option<String> {
         let p = std::path::Path::new(path);
+        // an existing file is named by its device and inode, so hard links compare equal too
+        #[cfg(unix)]
+        if let Ok(m) = std::fs::metadata(p) {
+            use std::os::unix::fs::MetadataExt;
+            return Some(format!("\0inode:{}:{}", m.dev(), m.ino()));
+        }
         if let Ok(c) = std::fs::canonicalize(p) {
             return Some(c.to_string_lossy().into_owned());
         }

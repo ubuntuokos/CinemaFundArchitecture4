@@ -118,6 +118,19 @@ fn runs(flags: &[bool], min: usize) -> Vec<(usize, usize)> {
     out
 }
 
+/// The silent stretches, in samples, at least `min` samples long. Block `i` starts at
+/// `s0 + i * block` and ends at `ends[i]`, so a short last block counts only the samples it has.
+pub(crate) fn silent_spans(flags: &[bool], ends: &[i64], s0: i64, block: i64, min: i64) -> Vec<(i64, i64)> {
+    runs(flags, 1)
+        .into_iter()
+        .filter_map(|(a, b)| {
+            let start = s0.saturating_add((a as i64).saturating_mul(block));
+            let end = *ends.get(b.checked_sub(1)?)?;
+            (end.saturating_sub(start) >= min.max(1)).then_some((start, end))
+        })
+        .collect()
+}
+
 /// The share of black luma samples of an RGBA picture (Rec. 709 luma of the display values).
 fn black_share(rgba: &[u8], pixel: f64) -> f64 {
     let limit = pixel.clamp(0.0, 1.0) * 255.0;
@@ -219,6 +232,8 @@ fn analyse(w: &Work, tick: &mut dyn FnMut(u64, u64) -> bool) -> std::result::Res
             let total = u64::try_from(s1.saturating_sub(s0)).unwrap_or(0);
             let chunk = block.saturating_mul(i64::from(BLOCKS_PER_SECOND));
             let mut flags = Vec::new();
+            // the sample where each block ends (the last one read may be short)
+            let mut ends = Vec::new();
             let mut at = s0;
             while at < s1 {
                 if !tick(u64::try_from(at - s0).unwrap_or(0), total) {
@@ -232,6 +247,7 @@ fn analyse(w: &Work, tick: &mut dyn FnMut(u64, u64) -> bool) -> std::result::Res
                     let end = (k + block as usize).min(len);
                     let peak = buf.channels.iter().flat_map(|c| c.get(k..end).unwrap_or(&[]).iter()).fold(0f32, |m, v| m.max(v.abs()));
                     flags.push(peak < limit);
+                    ends.push(at + end as i64);
                     k = end;
                 }
                 if len < n as usize {
@@ -240,9 +256,9 @@ fn analyse(w: &Work, tick: &mut dyn FnMut(u64, u64) -> bool) -> std::result::Res
                 }
                 at += n;
             }
-            let min_blocks = usize::try_from(ceil_div(min.to_units_floor(rate), block)).unwrap_or(usize::MAX).max(1);
-            let time = |i: usize| Tick::from_units(s0.saturating_add((i as i64).saturating_mul(block)), rate).clamp(w.span.0, w.span.1);
-            Ok(capped(runs(&flags, min_blocks).into_iter().map(|(a, b)| (time(a), time(b))).filter(|(a, b)| b > a).collect()))
+            let time = |x: i64| Tick::from_units(x, rate).clamp(w.span.0, w.span.1);
+            let found = silent_spans(&flags, &ends, s0, block, min.to_units_floor(rate));
+            Ok(capped(found.into_iter().map(|(a, b)| (time(a), time(b))).filter(|(a, b)| b > a).collect()))
         }
     }
 }
@@ -370,7 +386,12 @@ fn start(s: &mut Session, p: &Value, kind: ScanKind, cmd: &str) -> Result<Value>
         run();
         return proposal_of(s, id, cmd);
     }
-    std::thread::Builder::new().name("cfa4-segment-scan".into()).spawn(run).map_err(|e| EngineError::Other(e.to_string()))?;
+    if let Err(e) = std::thread::Builder::new().name("cfa4-segment-scan".into()).spawn(run) {
+        // no thread will ever finish this analysis: leave no running job behind
+        s.jobs.retain(|j| j.id != id);
+        s.segment_scans.retain(|x| x.job != id);
+        return Err(EngineError::Other(e.to_string()));
+    }
     Ok(json!({"job": id, "item": item.0, "kind": kind.name(), "state": "running"}))
 }
 

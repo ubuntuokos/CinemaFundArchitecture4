@@ -3,7 +3,8 @@
 
 use serde_json::{Value, json};
 
-use crate::smart_cut_tests::{av_mp4, frame, session};
+use crate::Session;
+use crate::smart_cut_tests::{av_mp4, frame, session, source_mp4};
 
 fn range(a: i64, b: i64) -> Value {
     json!({"in": frame(a), "out": frame(b)})
@@ -206,4 +207,35 @@ fn existing_output_files_are_replaced_only_when_asked() {
     joined["overwrite"] = json!(true);
     s.execute("export.start", joined).unwrap();
     assert_ne!(files.0.lock().unwrap()["j.mp4"], b"keep");
+}
+
+#[test]
+fn a_join_stops_a_cut_as_soon_as_it_passes_the_memory_limit() {
+    let (mut s, files) = session();
+    let batch = json!({"path": "clip.mp4", "join": true, "output": "j.mp4", "maxBytes": 2000, "ranges": [range(0, 10), range(20, 30)]});
+    let e = s.execute("export.start", batch).unwrap_err().to_string();
+    assert!(e.contains("maxBytes") && e.contains("nothing was written"), "{e}");
+    assert!(!files.0.lock().unwrap().contains_key("j.mp4"));
+    // one range alone is held to its own limit too
+    let e =
+        s.execute("export.start", json!({"path": "clip.mp4", "in": frame(0), "out": frame(10), "output": "o.mp4", "maxBytes": 100})).unwrap_err().to_string();
+    assert!(e.contains("maxBytes"), "{e}");
+    assert!(!files.0.lock().unwrap().contains_key("o.mp4"));
+}
+
+#[cfg(unix)]
+#[test]
+fn a_hard_link_to_the_source_is_not_an_output() {
+    let dir = crate::media_test_util::tmp_dir("ranges-hardlink");
+    let src = dir.join("clip.mp4");
+    std::fs::write(&src, source_mp4()).unwrap();
+    let link = dir.join("link.mp4");
+    std::fs::hard_link(&src, &link).unwrap();
+    let mut s = Session::new(std::sync::Arc::new(crate::FsServices));
+    let (src, link) = (src.to_string_lossy().into_owned(), link.to_string_lossy().into_owned());
+    let batch = json!({"path": src, "ranges": [{"in": frame(0), "out": frame(10), "output": link}], "overwrite": true});
+    let e = s.execute("export.start", batch).unwrap_err().to_string();
+    assert!(e.contains("source"), "{e}");
+    assert_eq!(std::fs::read(&link).unwrap(), source_mp4(), "the source is untouched");
+    let _ = std::fs::remove_dir_all(&dir);
 }

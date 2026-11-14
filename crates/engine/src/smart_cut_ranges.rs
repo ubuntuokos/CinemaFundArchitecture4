@@ -304,20 +304,17 @@ fn join(s: &mut Session, p: &Value, params: &[Value], cut: Cut, summary: Value) 
     let mut parts = Vec::with_capacity(params.len());
     let mut results = Vec::with_capacity(params.len());
     let mut held = 0u64;
+    // the memory the parts may take: each cut stops as soon as it would pass what is left
+    let limit = crate::smart_cut::max_bytes_p(p, cmd)?.min(MAX_JOIN_BYTES);
     for (i, q) in params.iter().enumerate() {
-        let (bytes, mut r) = cut(s, q).map_err(|e| EngineError::Other(format!("range {}: {e}; nothing was written", i + 1)))?;
+        let mut q = q.clone();
+        q["maxBytes"] = json!(limit.saturating_sub(held).max(1));
+        let (bytes, mut r) = cut(s, &q).map_err(|e| EngineError::Other(format!("range {}: {e}; nothing was written", i + 1)))?;
         if let Some(r) = r.as_object_mut() {
             r.remove("output");
         }
         r["range"] = json!(i + 1);
         held += bytes.len() as u64;
-        if held > MAX_JOIN_BYTES {
-            return Err(EngineError::Other(format!(
-                "range {}: the joined ranges need more than {} GiB in memory; export them as separate files; nothing was written",
-                i + 1,
-                MAX_JOIN_BYTES >> 30
-            )));
-        }
         parts.push(bytes);
         results.push(r);
     }

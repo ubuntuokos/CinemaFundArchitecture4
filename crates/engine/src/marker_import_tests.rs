@@ -180,10 +180,6 @@ fn csv_limits_apply_while_the_file_is_read() {
     std::fs::write(&csv, wide).unwrap();
     let e = s.execute("markers.importCsv", json!({"path": csv, "item": item.0})).unwrap_err().to_string();
     assert!(e.contains("fields"), "{e}");
-    let long = format!("Name,Start Ticks\r\n\"{}\",0\r\n", "a".repeat(70 * 1024));
-    std::fs::write(&csv, long).unwrap();
-    let e = s.execute("markers.importCsv", json!({"path": csv, "item": item.0})).unwrap_err().to_string();
-    assert!(e.contains("longer than"), "{e}");
     let rows = format!("Name,Start Ticks\n{}", "A,0\n".repeat(100_001));
     std::fs::write(&csv, rows).unwrap();
     let e = s.execute("markers.importCsv", json!({"path": csv, "item": item.0})).unwrap_err().to_string();
@@ -201,5 +197,33 @@ fn csv_export_of_a_named_item_is_enabled_without_an_open_clip() {
     let csv = path(&dir, "named.csv");
     s.execute("markers.exportCsv", json!({"path": csv, "item": item.0})).unwrap();
     assert!(std::fs::read_to_string(&csv).unwrap().contains("\"a\""));
+    let _ = std::fs::remove_dir_all(&dir);
+}
+
+#[test]
+fn a_long_name_and_comment_survive_the_csv_round_trip() {
+    let long = Marker { comment: "c, \"q\"\n".repeat(20_000), ..marker(905, 0, 4, &"n".repeat(100_000)) };
+    let (mut s, item, dir) = with_markers("mimport-long", vec![long]);
+    let before = fields(&media_markers(&s, item));
+    let csv = path(&dir, "long.csv");
+    s.execute("markers.exportCsv", json!({"path": csv, "item": item.0})).unwrap();
+    clear(&mut s, item);
+    s.execute("markers.importCsv", json!({"path": csv, "item": item.0})).unwrap();
+    assert_eq!(fields(&media_markers(&s, item)), before);
+    let _ = std::fs::remove_dir_all(&dir);
+}
+
+#[test]
+fn a_guarded_custom_colour_name_comes_back() {
+    let (mut s, item, dir) = with_markers("mimport-colour", vec![Marker { color: Label::Iris, ..marker(906, 0, 2, "x") }]);
+    // the exporter guards a colour name that starts with `'`; the import must take it off again
+    s.prefs.labels.colors.entry(crate::settings::label_id(Label::Iris)).or_default().name = "'Iris".into();
+    let before = fields(&media_markers(&s, item));
+    let csv = path(&dir, "colour.csv");
+    s.execute("markers.exportCsv", json!({"path": csv, "item": item.0})).unwrap();
+    assert!(std::fs::read_to_string(&csv).unwrap().contains("''Iris"));
+    clear(&mut s, item);
+    s.execute("markers.importCsv", json!({"path": csv, "item": item.0})).unwrap();
+    assert_eq!(fields(&media_markers(&s, item)), before);
     let _ = std::fs::remove_dir_all(&dir);
 }

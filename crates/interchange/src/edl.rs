@@ -50,7 +50,8 @@ fn parse_tc(s: &str) -> Option<Tc> {
     if parts.len() != 4 || parts.iter().any(|p| p.is_empty() || !p.bytes().all(|b| b.is_ascii_digit())) {
         return None;
     }
-    let n: Vec<i64> = parts.iter().map(|p| p.parse().unwrap_or(0)).collect();
+    // a field too long for i64 is no timecode (never read as zero)
+    let n: Vec<i64> = parts.iter().map(|p| p.parse().ok()).collect::<Option<_>>()?;
     Some(Tc { h: n[0], m: n[1], s: n[2], f: n[3], df: s.contains(';') || s.contains(',') })
 }
 
@@ -1088,6 +1089,16 @@ mod tests {
         let damaged = format!("{ok}002  AX       V     C        00:00:03:00 00:0X:04:00 00:00:01:00 00:00:02:00\n");
         let e = source_ranges(&damaged, FrameRate::FPS_25).unwrap_err();
         assert!(e.contains("cannot be read") && e.contains("002"), "{e}");
+    }
+
+    #[test]
+    fn an_overflowing_timecode_field_is_refused() {
+        assert_eq!(parse_tc("01:02:03:04").map(|t| (t.h, t.f)), Some((1, 4)));
+        assert_eq!(parse_tc("99999999999999999999:00:00:00"), None);
+        assert_eq!(parse_tc("00:00:00:99999999999999999999"), None);
+        let ok = "TITLE: T\nFCM: NON-DROP FRAME\n\n001  AX       V     C        00:00:01:00 00:00:02:00 00:00:00:00 00:00:01:00\n";
+        let huge = format!("{ok}002  AX       V     C        00:00:03:00 99999999999999999999:00:04:00 00:00:01:00 00:00:02:00\n");
+        assert!(source_ranges(&huge, FrameRate::FPS_25).is_err());
     }
 
     #[test]
