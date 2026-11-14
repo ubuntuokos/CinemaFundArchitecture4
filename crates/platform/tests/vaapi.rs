@@ -74,24 +74,19 @@ fn hevc_fixture(ff: &std::path::Path, name: &str, pix_fmt: &str, params: &str) -
     )
 }
 
-/// The small fixtures: the shared H.264 High, HEVC Main (open GOP) and Main 10 ones and the
-/// feature fixtures above.
+/// The small fixtures: the own-encoder ones, the shared H.264 High, HEVC Main (open GOP) and Main 10
+/// ones and the feature fixtures above. Each codec's x264/x265 fixtures are skipped on their own
+/// when this ffmpeg lacks that encoder, so the other codec and the own-encoder fixtures still run.
 fn small_streams(ff: &std::path::Path) -> Vec<(String, Stream)> {
-    let mut out = Vec::new();
-    for name in ["h264_high.mp4", "hevc_main.mp4", "hevc_main10.mp4"] {
-        if let Some(path) = named(ff, name) {
-            out.push((name.to_string(), read_stream(&path)));
-        }
+    let made = |name: &str, path: Option<std::path::PathBuf>| (name.to_string(), read_stream(&path.unwrap_or_else(|| panic!("fixture {name}"))));
+    let mut out: Vec<_> = OWN_FIXTURES.iter().map(|name| (name.to_string(), read_stream(&own(ff, name)))).collect();
+    if cfa4_testkit::encoders_or_skip("vaapi bit exact (H.264 x264 fixtures)", ff, &["libx264"]) {
+        out.push(made("h264_high.mp4", named(ff, "h264_high.mp4")));
+        out.extend(H264.iter().map(|(name, profile, params)| made(name, h264_fixture(ff, name, profile, params))));
     }
-    for (name, profile, params) in H264 {
-        if let Some(path) = h264_fixture(ff, name, profile, params) {
-            out.push((name.to_string(), read_stream(&path)));
-        }
-    }
-    for (name, pix_fmt, params) in HEVC {
-        if let Some(path) = hevc_fixture(ff, name, pix_fmt, params) {
-            out.push((name.to_string(), read_stream(&path)));
-        }
+    if cfa4_testkit::encoders_or_skip("vaapi bit exact (HEVC x265 fixtures)", ff, &["libx265"]) {
+        out.extend(["hevc_main.mp4", "hevc_main10.mp4"].map(|name| made(name, named(ff, name))));
+        out.extend(HEVC.iter().map(|(name, pix_fmt, params)| made(name, hevc_fixture(ff, name, pix_fmt, params))));
     }
     out
 }
@@ -198,11 +193,7 @@ fn parity_streaming(name: &str, s: &Stream) {
 #[test]
 fn bit_exact_with_the_software_decoder() {
     let ff = cfa4_testkit::require_ffmpeg!();
-    if !cfa4_testkit::encoders_or_skip("vaapi bit exact", &ff, &["libx264", "libx265"]) {
-        return;
-    }
     let streams = small_streams(&ff);
-    assert!(streams.len() > H264.len(), "fixtures");
     for (name, s) in streams {
         parity(&name, &s);
     }
@@ -325,8 +316,7 @@ fn declines_what_the_hardware_path_does_not_take() {
         assert!(cfa4_platform::vaapi_factory(&s.entry).is_none(), "HEVC 4:2:2: declined");
     }
     // Settings ▸ Playback ▸ Hardware decoding Off
-    let Some(path) = named(&ff, "h264_high.mp4") else { return };
-    let s = read_stream(&path);
+    let s = read_stream(&own(&ff, "h264_cfa4.mp4"));
     cfa4_codecs::hw::set_hardware_decoding(false);
     let off = cfa4_platform::vaapi_factory(&s.entry).is_none();
     cfa4_codecs::hw::set_hardware_decoding(true);
@@ -427,8 +417,7 @@ fn damaged_samples_and_parameter_sets_never_crash_or_hang() {
 #[test]
 fn repeated_initialisation() {
     let ff = cfa4_testkit::require_ffmpeg!();
-    let Some(path) = named(&ff, "h264_high.mp4") else { return };
-    let s = read_stream(&path);
+    let s = read_stream(&own(&ff, "h264_cfa4.mp4"));
     let reference = decode_all(software(&s).as_mut(), &s.samples[..13]);
     for round in 0..40 {
         let Some(mut hw) = hardware(&s) else { return };
@@ -443,13 +432,13 @@ fn repeated_initialisation() {
 #[test]
 fn concurrent_decoders() {
     let ff = cfa4_testkit::require_ffmpeg!();
-    let mut paths: Vec<_> = named(&ff, "h264_high.mp4").into_iter().collect();
+    let mut paths = vec![own(&ff, "h264_cfa4.mp4")];
     for (name, profile, params) in H264.iter().take(3) {
         paths.extend(h264_fixture(&ff, name, profile, params));
     }
     let jobs: Vec<_> = paths
         .into_iter()
-        .chain(named(&ff, "h264_high.mp4"))
+        .chain([own(&ff, "h264_cfa4.mp4")])
         .map(|path| {
             std::thread::spawn(move || {
                 let s = read_stream(&path);
@@ -473,8 +462,7 @@ fn concurrent_decoders() {
 #[test]
 fn decoder_moves_between_threads() {
     let ff = cfa4_testkit::require_ffmpeg!();
-    let Some(path) = named(&ff, "h264_high.mp4") else { return };
-    let s = read_stream(&path);
+    let s = read_stream(&own(&ff, "h264_cfa4.mp4"));
     let Some(mut hw) = hardware(&s) else { return };
     let reference = decode_all(software(&s).as_mut(), &s.samples[..30]);
     let samples = s.samples.clone();

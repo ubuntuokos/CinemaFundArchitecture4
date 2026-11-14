@@ -149,16 +149,25 @@ fn skip_missing_encoder(context: &str, encoder: &str) {
     }
 }
 
-/// Whether `ffmpeg` has every encoder in `encoders`. Otherwise reports the skip, naming the first
-/// missing one (see [`RESTRICTED_ENCODERS`]), and returns `false`.
+/// Whether `ffmpeg` has every encoder in `encoders`. Otherwise reports the skip and returns
+/// `false`, naming a missing encoder that is not [restricted](RESTRICTED_ENCODERS) when there is
+/// one (so `CFA4_REQUIRE_ORACLES=1` fails for it), a restricted one only when every missing
+/// encoder is.
 pub fn encoders_or_skip(context: &str, ffmpeg: &Path, encoders: &[&str]) -> bool {
-    match encoders.iter().find(|enc| !ffmpeg_has_encoder(ffmpeg, enc)) {
+    let missing: Vec<&str> = encoders.iter().copied().filter(|enc| !ffmpeg_has_encoder(ffmpeg, enc)).collect();
+    match reported_missing_encoder(&missing) {
         None => true,
         Some(enc) => {
             skip_missing_encoder(context, enc);
             false
         }
     }
+}
+
+/// Which of the `missing` encoders a skip names: the first one that is not
+/// [restricted](RESTRICTED_ENCODERS), else the first one.
+fn reported_missing_encoder<'a>(missing: &[&'a str]) -> Option<&'a str> {
+    missing.iter().copied().find(|enc| !RESTRICTED_ENCODERS.contains(enc)).or_else(|| missing.first().copied())
 }
 
 /// [`encoders_or_skip`] for the restricted encoders named in the ffmpeg arguments `args`.
@@ -247,6 +256,14 @@ mod tests {
         assert!(encoders_output_lists(out, "libx265"));
         assert!(!encoders_output_lists(out, "libsvtav1"));
         assert!(!encoders_output_lists(out, "H.264"));
+    }
+
+    #[test]
+    fn a_missing_unrestricted_encoder_is_reported_before_a_restricted_one() {
+        assert_eq!(reported_missing_encoder(&[]), None);
+        assert_eq!(reported_missing_encoder(&["libx264", "mpeg2video"]), Some("mpeg2video"));
+        assert_eq!(reported_missing_encoder(&["libx265", "libx264"]), Some("libx265"));
+        assert_eq!(reported_missing_encoder(&["prores_ks", "libx264"]), Some("prores_ks"));
     }
     use std::ffi::OsString;
 

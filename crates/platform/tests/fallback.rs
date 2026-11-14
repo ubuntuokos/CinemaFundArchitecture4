@@ -48,8 +48,7 @@ fn hybrid(s: &Stream, fail_after: usize) -> HybridDecoder {
 #[test]
 fn failures_anywhere_continue_with_the_software_output() {
     let ff = cfa4_testkit::require_ffmpeg!();
-    for (name, _) in FIXTURES {
-        let Some(path) = named(&ff, name) else { continue };
+    for (name, path) in fallback_fixtures(&ff) {
         let s = read_stream(&path);
         let reference = decode_all(cfa4_codecs::software_video_decoder(&s.entry).unwrap().as_mut(), &s.samples);
         let syncs: Vec<usize> = (0..s.samples.len()).filter(|&i| s.sync[i]).collect();
@@ -81,8 +80,7 @@ fn failures_anywhere_continue_with_the_software_output() {
 #[test]
 fn changed_in_band_parameter_sets_switch_to_software() {
     let ff = cfa4_testkit::require_ffmpeg!();
-    let Some(path) = named(&ff, "h264_high.mp4") else { return };
-    let s = read_stream(&path);
+    let s = read_stream(&own(&ff, "h264_cfa4.mp4"));
     let info = NalStreamInfo::from_entry(&s.entry).unwrap().unwrap();
     let sps = info.parameter_sets[0].clone();
     let with_sps = |sps: &[u8], sample: &[u8]| {
@@ -170,13 +168,11 @@ fn damaged(sample: &[u8], nal_header: usize) -> Vec<u8> {
 #[test]
 fn a_sample_software_rejects_during_the_replay_loses_no_pictures() {
     let ff = cfa4_testkit::require_ffmpeg!();
-    if !cfa4_testkit::encoders_or_skip("software rejects during replay", &ff, &["libx264", "libx265"]) {
-        return;
-    }
+    // the own HEVC fixture has I and P pictures only, all of them references: no disposable one
+    let fixtures: Vec<_> = fallback_fixtures(&ff).into_iter().filter(|(name, _)| name != "hevc_cfa4.mp4").collect();
     let mut checked = 0;
-    for (name, _) in FIXTURES {
-        let Some(path) = named(&ff, name) else { continue };
-        let s = read_stream(&path);
+    for (name, path) in &fixtures {
+        let s = read_stream(path);
         let info = NalStreamInfo::from_entry(&s.entry).unwrap().unwrap();
         let header = if name.starts_with("hevc") { 2 } else { 1 };
         // the second restart point, and a disposable picture before it that is not the first sample
@@ -208,5 +204,5 @@ fn a_sample_software_rejects_during_the_replay_loses_no_pictures() {
         }
         checked += 1;
     }
-    assert_eq!(checked, FIXTURES.len(), "every fixture has a damaged-sample case");
+    assert_eq!(checked, fixtures.len(), "every fixture has a damaged-sample case");
 }

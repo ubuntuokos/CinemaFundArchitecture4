@@ -74,7 +74,10 @@ results. This oracle is separate from the product's supplementary FFmpeg backend
   H.264 and HEVC fixtures need libx264 and libx265. They are patent-restricted: CFA4's FFmpeg never
   contains them (docs/licensing.md §7; Ubuntu installs them at the user's own risk, `cfa4-restricted-extras`),
   so the tests whose fixtures need them print `SKIPPED` without them, even with `CFA4_REQUIRE_ORACLES=1`
-  (`cfa4_testkit::RESTRICTED_ENCODERS`, `encoders_or_skip`, `fixture_encoders_or_skip`). The VP9 and
+  (`cfa4_testkit::RESTRICTED_ENCODERS`, `encoders_or_skip`, `fixture_encoders_or_skip`). A test that must run
+  on every run, like the hardware-decoding fallback (`crates/platform/tests/fallback.rs`, ADR 0001), takes
+  its H.264 and HEVC streams from CFA4's own encoders instead (`cfa4-h264enc`, the `cfa4-hevc` encoder),
+  with ffmpeg supplying only the source pictures. The VP9 and
   AV1 fixtures (libvpx-vp9, libaom-av1; 360p, 1080p, 2160p, hidden alt-ref frames, two GOPs) need an ffmpeg with those encoders.
 - IMF packages (`crates/export/src/imf_tests.rs`) have two optional oracles that never run in CI:
   `CFA4_IMF_SCHEMAS` (a folder of the SMPTE XML schemas, checked with `xmllint`) and
