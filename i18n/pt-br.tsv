@@ -4536,7 +4536,7 @@
 	the engine sent no report	o mecanismo não enviou relatório
 	MXF OP1a Uncompressed 10-bit 4:2:2 (v210)	MXF OP1a sem compressão 10 bits 4:2:2 (v210)
 	MXF OP1a, uncompressed 10-bit Y'CbCr 4:2:2 in the v210 layout (SMPTE ST 384), 24-bit 48 kHz PCM, start timecode	MXF OP1a, Y'CbCr 4:2:2 de 10 bits sem compressão no layout v210 (SMPTE ST 384), PCM de 24 bits a 48 kHz, timecode inicial
-	Write the captions as ANC data (CEA-608/708, 29.97 fps)	Gravar as legendas como dados ANC (CEA-608/708, 29,97 fps)
+	Write the captions as ANC data (CEA-608/708)	Gravar as legendas como dados ANC (CEA-608/708)
 	Load KDM…	Carregar KDM…
 	Forget DCP Keys	Esquecer chaves DCP
 	Load KDM	Carregar KDM

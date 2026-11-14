@@ -4535,7 +4535,7 @@
 	the engine sent no report	エンジンがレポートを送信しませんでした
 	MXF OP1a Uncompressed 10-bit 4:2:2 (v210)	MXF OP1a 非圧縮 10 ビット 4:2:2 (v210)
 	MXF OP1a, uncompressed 10-bit Y'CbCr 4:2:2 in the v210 layout (SMPTE ST 384), 24-bit 48 kHz PCM, start timecode	MXF OP1a、v210 レイアウトの非圧縮 10 ビット Y'CbCr 4:2:2 (SMPTE ST 384)、24 ビット 48 kHz PCM、開始タイムコード
-	Write the captions as ANC data (CEA-608/708, 29.97 fps)	字幕を ANC データとして書き出す（CEA-608/708、29.97 fps）
+	Write the captions as ANC data (CEA-608/708)	字幕を ANC データとして書き出す（CEA-608/708）
 	Load KDM…	KDM を読み込む…
 	Forget DCP Keys	DCP キーを破棄
 	Load KDM	KDM を読み込む

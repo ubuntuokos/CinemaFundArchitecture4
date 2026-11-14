@@ -4525,7 +4525,7 @@ export.summary	Low	低
 	the engine sent no report	引擎未傳送報告
 	MXF OP1a Uncompressed 10-bit 4:2:2 (v210)	MXF OP1a 未壓縮 10 位元 4:2:2 (v210)
 	MXF OP1a, uncompressed 10-bit Y'CbCr 4:2:2 in the v210 layout (SMPTE ST 384), 24-bit 48 kHz PCM, start timecode	MXF OP1a，v210 版面的未壓縮 10 位元 Y'CbCr 4:2:2（SMPTE ST 384），24 位元 48 kHz PCM，起始時間碼
-	Write the captions as ANC data (CEA-608/708, 29.97 fps)	將字幕寫為 ANC 資料（CEA-608/708，29.97 fps）
+	Write the captions as ANC data (CEA-608/708)	將字幕寫為 ANC 資料（CEA-608/708）
 	Load KDM…	載入 KDM…
 	Forget DCP Keys	清除 DCP 金鑰
 	Load KDM	載入 KDM

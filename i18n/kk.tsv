@@ -4528,7 +4528,7 @@ export.summary	Low	төмен
 	the engine sent no report	қозғалтқыш есеп жібермеді
 	MXF OP1a Uncompressed 10-bit 4:2:2 (v210)	MXF OP1a сығылмаған 10 биттік 4:2:2 (v210)
 	MXF OP1a, uncompressed 10-bit Y'CbCr 4:2:2 in the v210 layout (SMPTE ST 384), 24-bit 48 kHz PCM, start timecode	MXF OP1a, сығылмаған 10 биттік Y'CbCr 4:2:2, v210 орналасуы (SMPTE ST 384), 24 биттік 48 кГц PCM, бастапқы уақыт коды
-	Write the captions as ANC data (CEA-608/708, 29.97 fps)	Субтитрлерді ANC деректері ретінде жазу (CEA-608/708, 29,97 fps)
+	Write the captions as ANC data (CEA-608/708)	Субтитрлерді ANC деректері ретінде жазу (CEA-608/708)
 	Load KDM…	KDM жүктеу…
 	Forget DCP Keys	DCP кілттерін ұмыту
 	Load KDM	KDM жүктеу

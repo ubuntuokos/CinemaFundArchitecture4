@@ -95,7 +95,7 @@ fn oracle_frame(path: &Path, n: i64, pix_fmt: &str) -> Vec<u8> {
 fn bytes_of(data: &PixelData) -> Vec<u8> {
     match data {
         PixelData::Yuv8 { planes, .. } => planes.iter().flat_map(|p| p.iter().copied()).collect(),
-        PixelData::Yuv16 { planes, .. } => planes.iter().flat_map(|p| p.iter().flat_map(|s| s.to_le_bytes())).collect(),
+        PixelData::Yuv16 { planes, .. } | PixelData::Rgb16 { planes, .. } => planes.iter().flat_map(|p| p.iter().flat_map(|s| s.to_le_bytes())).collect(),
         PixelData::Rgba8(d) => d.to_vec(),
         PixelData::RgbaF32(_) => Vec::new(),
     }
