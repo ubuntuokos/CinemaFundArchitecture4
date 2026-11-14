@@ -45,7 +45,9 @@ pub use anc::{
     AncData, AncPacket, Cea608Pair, MAX_ANC_ELEMENT_BYTES, MAX_ANC_FRAMES, ViLine, anc_element, has_anc, parse_anc_element, parse_vi_element, read_anc,
 };
 pub use essence::{Codec, PictureInfo, SoundFormat, SoundInfo, aes3_element_samples, decode_pcm};
-pub use file::{Chunk, EssenceTrack, MxfFile, OperationalPattern, Partition, PartitionKind, Sample, Timecode, TrackKind, Wrapping, open};
+pub use file::{
+    Chunk, EssenceTrack, MxfFile, OperationalPattern, Partition, PartitionKind, PresentationOrder, Sample, Timecode, TrackKind, Wrapping, open, open_with_order,
+};
 pub use index::{IndexEntry, IndexSegment};
 pub use klv::{Rational, Ul};
 pub use peek::{HeaderPeek, peek};

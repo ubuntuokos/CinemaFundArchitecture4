@@ -348,6 +348,20 @@ pub(crate) fn markers(cpls: &[(String, Composition)]) -> (Vec<Finding>, String) 
             let reel_len = reel.assets.iter().find(|a| a.kind != AssetKind::MainMarkers && a.edit_rate.is_some()).and_then(played);
             for a in reel.assets.iter().filter(|a| a.kind == AssetKind::MainMarkers) {
                 any = true;
+                // ST 429-7 allows both (GenericAssetType), but libdcp's dcpverify reports them as
+                // errors (UNEXPECTED_ENTRY_POINT, UNEXPECTED_DURATION); plan CFA4-DCPVAL-LIBDCP-001 v1.1 D7
+                let extra: Vec<&str> =
+                    [("EntryPoint", a.entry_point.is_some()), ("Duration", a.duration.is_some())].iter().filter(|e| e.1).map(|e| e.0).collect();
+                if !extra.is_empty() {
+                    out.push(
+                        Finding::new(
+                            MARK_MARKERS,
+                            Status::Warning,
+                            format!("MainMarkers has {}: the schema allows it, libdcp's dcpverify reports it as an error", extra.join(" and ")),
+                        )
+                        .at(at(path, asset_element(r, a), None, c.id)),
+                    );
+                }
                 let len = played(a).or(reel_len);
                 for m in &a.markers {
                     total += 1;

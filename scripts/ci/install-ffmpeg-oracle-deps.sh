@@ -37,6 +37,9 @@ sudo apt-get install -y --no-install-recommends gstreamer1.0-tools gstreamer1.0-
 # JPEG 2000 / HTJ2K oracles (the tests skip without them)
 sudo apt-get install -y --no-install-recommends libopenjp2-tools grokj2k-tools \
   || echo "::warning::libopenjp2-tools / grokj2k-tools unavailable: OpenJPEG and HTJ2K oracle tests skip"
+# XML Signature and Canonical XML oracles for the KDM signature tests (cfa4-dcp; they skip without them)
+sudo apt-get install -y --no-install-recommends xmlsec1 python3-lxml \
+  || echo "::warning::xmlsec1 / python3-lxml unavailable: the XML signature oracle tests skip"
 # Speex reference encoder / decoder (speexenc, speexdec 1.2.1, built from source) for the Speex
 # oracle tests (they skip without them)
 bash "$(dirname "$0")/install-speex.sh" \
