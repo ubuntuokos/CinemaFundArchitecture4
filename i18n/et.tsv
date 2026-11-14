@@ -4577,6 +4577,8 @@ export.summary	Low	madal
 	Chase External Timecode	Järgi välist ajakoodi
 	Send LTC	Saada LTC
 	Send MIDI Timecode	Saada MIDI-ajakood
+	Add Studio Scene	Lisa stuudiostseen
+	Live	Otse
 # Auto Color, Auto Contrast, Auto Levels (EffectsSDK review)
 	Auto Color	Automaatne värv
 	Auto Contrast	Automaatne kontrast

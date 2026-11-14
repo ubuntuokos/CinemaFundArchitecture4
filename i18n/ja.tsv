@@ -4584,6 +4584,8 @@
 	Chase External Timecode	外部タイムコードにチェイス
 	Send LTC	LTC を送信
 	Send MIDI Timecode	MIDI タイムコードを送信
+	Add Studio Scene	スタジオシーンを追加
+	Live	ライブ
 # Auto Color, Auto Contrast, Auto Levels (EffectsSDK review)
 	Auto Color	自動カラー
 	Auto Contrast	自動コントラスト

@@ -4572,6 +4572,8 @@ export.summary	Low	alacsony
 	Chase External Timecode	Külső időkód követése
 	Send LTC	LTC küldése
 	Send MIDI Timecode	MIDI-időkód küldése
+	Add Studio Scene	Stúdiójelenet hozzáadása
+	Live	Élő
 # Auto Color, Auto Contrast, Auto Levels (EffectsSDK review)
 	Auto Color	Automatikus szín
 	Auto Contrast	Automatikus kontraszt

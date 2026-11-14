@@ -4580,6 +4580,8 @@
 	Chase External Timecode	Suivre le timecode externe
 	Send LTC	Envoyer le LTC
 	Send MIDI Timecode	Envoyer le timecode MIDI
+	Add Studio Scene	Ajouter une scène de studio
+	Live	En direct
 # Auto Color, Auto Contrast, Auto Levels (EffectsSDK review)
 	Auto Color	Couleur automatique
 	Auto Contrast	Contraste automatique

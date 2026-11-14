@@ -1,11 +1,13 @@
-//! Live studio core (layer L5, CFA4-LIVE-STUDIO-001 phase S0).
+//! Live studio core (layer L5, CFA4-LIVE-STUDIO-001 phases S0–S1).
 //!
 //! The live studio composites scenes in real time. For now the work is done by **libobs** (the
 //! OBS Studio core, C, GPL-2.0-or-later) and later, part by part, by CFA4's own Rust code
 //! (plan §I.3, S12+). Both sit behind one trait, [`StudioBackend`], so a replacement changes
 //! the implementation and not the callers.
 //!
-//! - [`StudioBackend`]: what a compositor does (video settings, an empty scene, frames out).
+//! - [`StudioBackend`]: what a compositor does (video settings, a scene, frames out).
+//! - [`scene`]: the scene the engine sends (layers: a picture and its placement) and the software
+//!   compositor of it.
 //! - [`software::SoftwareBackend`]: the pure-Rust backend: always available, and the fallback
 //!   when libobs is missing or cannot start (no display, no GPU, wrong version).
 //! - [`libobs::LibObsBackend`]: the binding of the pinned CFA4 libobs build
@@ -24,6 +26,7 @@
 pub mod host;
 pub mod libobs;
 pub mod ring;
+pub mod scene;
 pub mod software;
 
 use serde::{Deserialize, Serialize};
@@ -211,8 +214,11 @@ pub trait StudioBackend: Send {
     fn version(&self) -> String;
     /// The video the backend produces.
     fn video(&self) -> VideoSettings;
-    /// Shows an empty scene on the program output (S0: the only scene there is).
+    /// Shows an empty scene on the program output.
     fn show_empty_scene(&mut self) -> Result<()>;
+    /// Shows `scene` on the program output instead of the one shown (S1). On an error the
+    /// shown scene stays.
+    fn set_scene(&mut self, scene: &scene::LoadedScene) -> Result<()>;
     /// Waits up to `timeout` for the next program frame. `Ok(None)` when none arrived in time.
     fn next_frame(&mut self, timeout: Duration) -> Result<Option<Frame>>;
     /// Stops the backend and frees what it holds. Called once; also done on drop.

@@ -4583,6 +4583,8 @@
 	Chase External Timecode	Ikuti Timecode Eksternal
 	Send LTC	Kirim LTC
 	Send MIDI Timecode	Kirim Timecode MIDI
+	Add Studio Scene	Tambah Adegan Studio
+	Live	Langsung
 # Auto Color, Auto Contrast, Auto Levels (EffectsSDK review)
 	Auto Color	Warna Otomatis
 	Auto Contrast	Kontras Otomatis

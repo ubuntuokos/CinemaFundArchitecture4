@@ -4575,6 +4575,8 @@ export.summary	Low	низак
 	Chase External Timecode	Прати спољни временски код
 	Send LTC	Шаљи LTC
 	Send MIDI Timecode	Шаљи MIDI временски код
+	Add Studio Scene	Додај сцену студија
+	Live	Уживо
 # Auto Color, Auto Contrast, Auto Levels (EffectsSDK review)
 	Auto Color	Аутоматска боја
 	Auto Contrast	Аутоматски контраст

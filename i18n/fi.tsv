@@ -4577,6 +4577,8 @@ export.summary	Low	matala
 	Chase External Timecode	Seuraa ulkoista aikakoodia
 	Send LTC	Lähetä LTC
 	Send MIDI Timecode	Lähetä MIDI-aikakoodi
+	Add Studio Scene	Lisää studiokohtaus
+	Live	Suora
 # Auto Color, Auto Contrast, Auto Levels (EffectsSDK review)
 	Auto Color	Automaattinen väri
 	Auto Contrast	Automaattinen kontrasti

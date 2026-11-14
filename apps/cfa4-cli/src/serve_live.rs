@@ -1,10 +1,16 @@
-//! The live studio host, driven from the engine (CFA4-LIVE-STUDIO-001 S0).
+//! The live studio host, driven from the engine (CFA4-LIVE-STUDIO-001 S0–S1).
 //!
 //! `live.studio.host.start` starts `cfa4-studio-host` (libobs in its own process) under the
 //! supervisor of `cfa4-obs`, which restarts it after a crash; `live.studio.frame` returns its
 //! newest program frame like `frame.render` does (RGBA, as bytes or through the `shm` ring), so
 //! the Qt6 GUI can show it with the monitor code it already has. A crash of the host is a status
 //! change here (`live.studio.host.status`), never an engine error.
+//!
+//! S1: the project's current studio scene (`live.studio.scene.*`, `cfa4_engine::studio`) goes to
+//! the host after every request that changed it ([`upkeep`], run by the serve loop): its sources
+//! are rendered with CFA4's own code (`cfa4_engine::studio::render_source`), cached by what they
+//! show, and handed over as raw RGBA files in a private directory (0700) next to the frame ring.
+//! A source that cannot be drawn is left out and listed in the status (`sceneProblems`).
 //!
 //! | method | params | result |
 //! |---|---|---|
@@ -13,13 +19,141 @@
 //! | `live.studio.host.stop` | – | `{state: "stopped"}` |
 //! | `live.studio.frame` | `{shm?}` | `{w, h, format: "rgba8", seq, ptsNs, backend, shm? \| shmError?}` + `w·h·4` bytes |
 
+use cfa4_engine::Session;
+use cfa4_engine::studio::{self, LayerPicture};
 use cfa4_obs::host::{HostOptions, Supervisor};
+use cfa4_obs::scene::{HostScene, Layer, PictureRef, Transform};
 use cfa4_obs::{BackendChoice, VideoSettings};
+use cfa4_project::StudioScene;
 use serde_json::{Value, json};
 use std::cell::RefCell;
+use std::collections::HashMap;
+use std::path::PathBuf;
 
 thread_local! {
     static HOST: RefCell<Option<Supervisor>> = const { RefCell::new(None) };
+    static SYNC: RefCell<SceneSync> = RefCell::new(SceneSync::default());
+}
+
+/// What the host was last given, and the rendered pictures by [`studio::picture_key`].
+#[derive(Default)]
+struct SceneSync {
+    /// The scene model last sent (`Some(None)`: the empty scene); `None`: nothing sent to this host.
+    sent: Option<Option<StudioScene>>,
+    revision: u64,
+    /// key → (picture, its raw file for the host)
+    cache: HashMap<String, (LayerPicture, Option<PathBuf>)>,
+    dir: Option<PathBuf>,
+    problems: Vec<(u64, String)>,
+}
+
+impl SceneSync {
+    /// The private directory of the layer pictures, created (0700) on first use.
+    fn dir(&mut self) -> Result<PathBuf, String> {
+        if let Some(d) = &self.dir {
+            return Ok(d.clone());
+        }
+        use std::os::unix::fs::DirBuilderExt;
+        let d = cfa4_obs::ring::default_dir().join(format!("cfa4-studio-layers-{}", std::process::id()));
+        std::fs::DirBuilder::new().recursive(true).mode(0o700).create(&d).map_err(|e| format!("{}: {e}", d.display()))?;
+        self.dir = Some(d.clone());
+        Ok(d)
+    }
+
+    fn clear(&mut self) {
+        if let Some(d) = self.dir.take() {
+            let _ = std::fs::remove_dir_all(d);
+        }
+        *self = SceneSync { revision: self.revision, ..SceneSync::default() };
+    }
+}
+
+fn picture_file(dir: &std::path::Path, key: &str) -> PathBuf {
+    use std::hash::{Hash, Hasher};
+    let mut h = std::collections::hash_map::DefaultHasher::new();
+    key.hash(&mut h);
+    dir.join(format!("{:016x}.rgba", h.finish()))
+}
+
+/// Sends the project's current studio scene to the host when it changed since the last call
+/// (or the host is new). Cheap when nothing changed: one comparison of the scene model.
+pub fn upkeep(s: &Session) {
+    let running = HOST.with(|h| h.borrow().is_some());
+    if !running {
+        return;
+    }
+    let want = s.project.studio.current_scene();
+    let unchanged = SYNC.with(|y| y.borrow().sent.as_ref().is_some_and(|sent| sent.as_ref() == want));
+    if unchanged {
+        return;
+    }
+    let scene = SYNC.with(|y| build_scene(&mut y.borrow_mut(), &s.project.studio));
+    HOST.with(|h| {
+        if let Some(sup) = h.borrow().as_ref() {
+            sup.set_scene(scene);
+        }
+    });
+    SYNC.with(|y| y.borrow_mut().sent = Some(want.cloned()));
+}
+
+fn build_scene(sync: &mut SceneSync, st: &cfa4_project::LiveStudio) -> HostScene {
+    let dir = sync.dir();
+    let mut used: Vec<String> = Vec::new();
+    let mut fresh: HashMap<String, (LayerPicture, Option<PathBuf>)> = HashMap::new();
+    let (layers, mut problems) = studio::program_layers(st, |kind| {
+        let key = studio::picture_key(kind);
+        let entry = match sync.cache.get(&key).or_else(|| fresh.get(&key)) {
+            Some(e) => e.clone(),
+            None => {
+                let pic = studio::render_source(kind)?;
+                let file = match &pic {
+                    LayerPicture::Color { .. } => None,
+                    LayerPicture::Pixels { width, height, rgba } => {
+                        let dir = dir.clone()?;
+                        let f = picture_file(&dir, &key);
+                        let raw = cfa4_obs::scene::Picture { width: *width, height: *height, rgba: rgba.clone() };
+                        cfa4_obs::scene::write_raw(&f, &raw).map_err(|e| e.to_string())?;
+                        Some(f)
+                    }
+                };
+                let e = (pic, file);
+                fresh.insert(key.clone(), e.clone());
+                e
+            }
+        };
+        used.push(key);
+        Ok(entry.0)
+    });
+    sync.cache.extend(fresh);
+    // the files of the layers, by source (program_layers keeps the order of `used`)
+    let mut keys = used.iter();
+    let mut host_layers = Vec::with_capacity(layers.len());
+    for l in &layers {
+        let Some(key) = keys.next() else { break };
+        let file = sync.cache.get(key).and_then(|e| e.1.clone());
+        let t = l.transform;
+        let transform = Transform { x: t.x, y: t.y, scale_x: t.scale_x, scale_y: t.scale_y, rotation: t.rotation, crop: t.crop };
+        let picture = match (&l.picture, file) {
+            (LayerPicture::Color { rgba, width, height }, _) => PictureRef::Color { rgba: *rgba, width: *width, height: *height },
+            (LayerPicture::Pixels { width, height, .. }, Some(f)) => PictureRef::Raw { path: f.to_string_lossy().into_owned(), width: *width, height: *height },
+            (LayerPicture::Pixels { .. }, None) => {
+                problems.push((l.source, "the picture could not be handed to the host".into()));
+                continue;
+            }
+        };
+        host_layers.push(Layer { id: l.source, picture, transform });
+    }
+    // forget (and delete) what this scene does not use, so the cache follows the scene
+    let keep: std::collections::HashSet<&String> = used.iter().collect();
+    let stale: Vec<String> = sync.cache.keys().filter(|k| !keep.contains(k)).cloned().collect();
+    for k in stale {
+        if let Some((_, Some(f))) = sync.cache.remove(&k) {
+            let _ = std::fs::remove_file(f);
+        }
+    }
+    sync.revision = sync.revision.saturating_add(1);
+    sync.problems = problems;
+    HostScene { revision: sync.revision, layers: host_layers }
 }
 
 fn u32_param(p: &Value, key: &str, default: u32) -> Result<u32, String> {
@@ -47,7 +181,12 @@ fn video_param(p: &Value) -> Result<VideoSettings, String> {
 }
 
 fn status_json(sup: &Supervisor) -> Value {
-    serde_json::to_value(sup.status()).unwrap_or_else(|e| json!({"error": e.to_string()}))
+    let mut v = serde_json::to_value(sup.status()).unwrap_or_else(|e| json!({"error": e.to_string()}));
+    if let Some(o) = v.as_object_mut() {
+        let problems: Vec<Value> = SYNC.with(|y| y.borrow().problems.iter().map(|(id, e)| json!({"source": id, "error": e})).collect());
+        o.insert("sceneProblems".into(), Value::Array(problems));
+    }
+    v
 }
 
 /// `live.studio.host.start`: (re)starts the host with the given video and backend.
@@ -65,6 +204,8 @@ pub fn start(p: &Value) -> Result<Value, String> {
     let sup = Supervisor::start(opts).map_err(|e| e.to_string())?;
     let status = status_json(&sup);
     HOST.with(|h| *h.borrow_mut() = Some(sup));
+    // the new host gets the current scene from the next upkeep
+    SYNC.with(|y| y.borrow_mut().sent = None);
     Ok(status)
 }
 
@@ -78,6 +219,7 @@ pub fn stop() -> Value {
     if let Some(mut sup) = HOST.with(|h| h.borrow_mut().take()) {
         sup.stop();
     }
+    SYNC.with(|y| y.borrow_mut().clear());
     json!({"state": "stopped"})
 }
 
@@ -142,6 +284,66 @@ mod tests {
         assert_eq!(status()["state"], "running");
         assert_eq!(stop()["state"], "stopped");
         assert!(frame().is_err());
+    }
+
+    /// S1: the project's current scene reaches the host after each change, and the host's
+    /// frames show it. Runs when `cfa4-studio-host` was built next to the test binary.
+    #[test]
+    fn the_current_scene_reaches_the_host_after_each_change() {
+        if !cfa4_obs::host::default_exe().is_file() {
+            eprintln!("skipped: cfa4-studio-host is not built");
+            return;
+        }
+        let mut s = Session::default();
+        let scene = s.execute("live.studio.scene.add", json!({"name": "Main"})).expect("scene");
+        let scene = scene["id"].as_u64().expect("id");
+        s.execute("live.studio.source.add", json!({"type": "color", "color": "#FF0000", "width": 64, "height": 36})).expect("red");
+        let text = s.execute("live.studio.source.add", json!({"type": "text", "text": "CFA4", "size": 12, "transform": {"x": 4, "y": 4}})).expect("text");
+        let text = text["source"]["id"].as_u64().expect("id");
+        s.execute("live.studio.source.add", json!({"type": "image", "path": "/nonexistent/cfa4.png"})).expect("missing picture");
+        start(&json!({"width": 64, "height": 36, "fps": "60", "backend": "software"})).expect("start");
+        let wait_rgba = |want: [u8; 4], x: usize, y: usize| {
+            let until = std::time::Instant::now() + std::time::Duration::from_secs(10);
+            loop {
+                if let Ok((_, bytes)) = frame() {
+                    let i = (y * 64 + x) * 4;
+                    if bytes.get(i..i + 4) == Some(&want[..]) {
+                        return;
+                    }
+                }
+                assert!(std::time::Instant::now() < until, "no frame with {want:?} at ({x}, {y})");
+                std::thread::sleep(std::time::Duration::from_millis(20));
+            }
+        };
+        upkeep(&s);
+        wait_rgba([255, 0, 0, 255], 60, 30);
+        let st = status();
+        assert_eq!(st["sceneLayers"], 2, "{st}");
+        assert_eq!(st["sceneProblems"][0]["error"].as_str().map(|e| e.contains("cfa4.png")), Some(true), "{st}");
+        let dir = SYNC.with(|y| y.borrow().dir.clone()).expect("layer directory");
+        assert_eq!(std::fs::read_dir(&dir).expect("dir").count(), 1, "one picture file: the text");
+        // nothing changed: nothing is sent
+        let rev = SYNC.with(|y| y.borrow().revision);
+        upkeep(&s);
+        assert_eq!(SYNC.with(|y| y.borrow().revision), rev);
+        // a change (and its undo) is shown
+        s.execute("live.studio.source.set", json!({"id": text, "visible": false})).expect("hide");
+        s.execute("live.studio.source.add", json!({"type": "color", "color": "#0000FF", "width": 8, "height": 8, "transform": {"x": 56, "y": 28}}))
+            .expect("blue");
+        upkeep(&s);
+        wait_rgba([0, 0, 255, 255], 60, 30);
+        assert_eq!(std::fs::read_dir(&dir).expect("dir").count(), 0, "the hidden text's file is gone");
+        s.undo();
+        upkeep(&s);
+        wait_rgba([255, 0, 0, 255], 60, 30);
+        // another scene with nothing in it: the empty scene
+        let other = s.execute("live.studio.scene.add", json!({})).expect("scene")["id"].as_u64().expect("id");
+        s.execute("live.studio.scene.select", json!({"id": other})).expect("select");
+        upkeep(&s);
+        wait_rgba([0, 0, 0, 255], 60, 30);
+        assert_ne!(other, scene);
+        assert_eq!(stop()["state"], "stopped");
+        assert!(!dir.exists(), "stopping removes the layer pictures");
     }
 
     #[test]

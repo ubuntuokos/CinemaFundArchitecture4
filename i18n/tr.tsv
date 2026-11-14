@@ -4576,6 +4576,8 @@ export.summary	Low	düşük
 	Chase External Timecode	Harici Zaman Kodunu Takip Et
 	Send LTC	LTC Gönder
 	Send MIDI Timecode	MIDI Zaman Kodu Gönder
+	Add Studio Scene	Stüdyo sahnesi ekle
+	Live	Canlı
 # Auto Color, Auto Contrast, Auto Levels (EffectsSDK review)
 	Auto Color	Otomatik Renk
 	Auto Contrast	Otomatik Kontrast

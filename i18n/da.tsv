@@ -4577,6 +4577,8 @@ export.summary	Low	lav
 	Chase External Timecode	Følg ekstern tidskode
 	Send LTC	Send LTC
 	Send MIDI Timecode	Send MIDI-tidskode
+	Add Studio Scene	Tilføj studiescene
+	Live	Live
 # Auto Color, Auto Contrast, Auto Levels (EffectsSDK review)
 	Auto Color	Automatisk farve
 	Auto Contrast	Automatisk kontrast

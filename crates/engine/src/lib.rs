@@ -70,6 +70,7 @@ mod smart_cut_mpeg;
 mod smart_render;
 pub mod social;
 pub mod source_monitor;
+pub mod studio;
 pub mod sync;
 pub mod timecode_sync;
 pub mod transcript;
