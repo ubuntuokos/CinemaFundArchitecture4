@@ -341,6 +341,8 @@ pub struct MxfFile {
     /// Problems recovered from (truncation, unresolved references…).
     pub warnings: Vec<String>,
     pub file_size: u64,
+    /// AMWA AS-11 descriptive metadata (Core, programme parts, UK DPP), when the file has it.
+    pub as11: Option<crate::as11::As11>,
 }
 
 /// An essence element found by the KLV walk.
@@ -997,7 +999,9 @@ pub fn open_with_order(src: &(impl ByteSource + ?Sized), order: &PresentationOrd
     if tracks.is_empty() {
         return Err(Error::Unsupported("no essence of the material package is stored in this file".into()));
     }
+    let as11 = crate::as11::read(&md, crate::as11::Clock { start: timecode.map_or(0, |t| t.start), base: timecode.map_or(25, |t| t.rounded_base) });
     Ok(MxfFile {
+        as11,
         run_in: w.run_in,
         operational_pattern: OperationalPattern::from_ul(&op_label),
         operational_pattern_label: op_label,
@@ -1134,6 +1138,15 @@ fn build_track(
                 .unwrap_or(crate::Rational::new(48_000, 1));
             t.sound = Some(SoundInfo { sample_rate: rate, bits: 24, ..Default::default() });
             build_pictures(src, &mut t, elements, index, warnings)?;
+        }
+        TrackKind::Sound if crate::essence::is_aac(container, desc.and_then(|d| d.ul(tag::SOUND_ESSENCE_CODING))) => {
+            // AAC (ST 381-4): the elements' audio frames are decoded as one stream, each element a
+            // sample (frame wrapping) or the whole stream in one (clip wrapping)
+            t.codec = Codec::Aac;
+            t.sound_format = SoundFormat::Other;
+            t.sound = Some(desc.map(|d| sound_info(d)).unwrap_or_default());
+            build_pictures(src, &mut t, elements, index, warnings)?;
+            t.wrapping = if elements.len() == 1 && r.duration.is_some_and(|d| d > 1) { Wrapping::Clip } else { Wrapping::Frame };
         }
         TrackKind::Sound if is_iab(desc.map(|d| &**d), container, key4, src, elements, encrypted) => {
             t.codec = Codec::Iab;

@@ -1,0 +1,741 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/ubuntuokos/CinemaFundArchitecture4/schemas/cfa4-surface-profile-1.json",
+  "title": "CFA4 control surface profile, version 1",
+  "description": "CFA4-CONTROL-SURFACE-001 F0 (2026-11-13). Stored in $XDG_DATA_HOME/cfa4/Control Surfaces/<name>.json; the active profile of a device is active-<device>.json. Written with cfa4_format::atomic_write. A file with a higher version is opened read-only.",
+  "type": "object",
+  "required": [
+    "format",
+    "version",
+    "id",
+    "name",
+    "driver",
+    "match",
+    "controls"
+  ],
+  "additionalProperties": false,
+  "properties": {
+    "format": {
+      "const": "cfa4-surface-profile"
+    },
+    "version": {
+      "type": "integer",
+      "minimum": 1,
+      "description": "1 for this schema. A reader that knows 1 opens a higher version read-only."
+    },
+    "id": {
+      "type": "string",
+      "pattern": "^[a-z0-9][a-z0-9._-]{0,63}$",
+      "description": "Stable machine id, e.g. cfa4.shuttlepro"
+    },
+    "name": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 128
+    },
+    "builtin": {
+      "type": "boolean",
+      "default": false,
+      "description": "Set only by CFA4 for profiles compiled into the binary; ignored when read from disk."
+    },
+    "modified": {
+      "type": "boolean",
+      "default": false,
+      "description": "active-<device>.json only: differs from the profile it started from (shortcuts.rs pattern)."
+    },
+    "basedOn": {
+      "type": "string",
+      "description": "id of the profile this one was copied from"
+    },
+    "driver": {
+      "enum": [
+        "hid-shuttle",
+        "generic-midi",
+        "osc"
+      ],
+      "description": "Which L5 decoder handles the device. Later phases add mcu, faderport, ..."
+    },
+    "match": {
+      "$ref": "#/$defs/match"
+    },
+    "device": {
+      "$ref": "#/$defs/deviceSettings"
+    },
+    "banks": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "count": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 128,
+          "default": 1
+        },
+        "size": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 128,
+          "default": 8,
+          "description": "Strips per bank"
+        }
+      }
+    },
+    "pickup": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "enabled": {
+          "type": "boolean",
+          "default": true
+        },
+        "threshold7": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 127,
+          "default": 10,
+          "description": "Ardour default: 10 MIDI steps"
+        },
+        "threshold14": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 16383,
+          "default": 1280
+        }
+      }
+    },
+    "feedback": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "enabled": {
+          "type": "boolean",
+          "default": true
+        },
+        "minIntervalMs": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 1000,
+          "default": 10
+        },
+        "echoSuppressMs": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 500,
+          "default": 50
+        }
+      }
+    },
+    "shuttle": {
+      "$ref": "#/$defs/shuttleSettings"
+    },
+    "contexts": {
+      "type": "array",
+      "description": "Named contexts besides the always-present 'global'. A binding with a context wins over a global one while that context is active.",
+      "items": {
+        "enum": [
+          "program",
+          "source",
+          "trim",
+          "timeline",
+          "mixer",
+          "learn"
+        ]
+      },
+      "uniqueItems": true
+    },
+    "controls": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/binding"
+      }
+    }
+  },
+  "$defs": {
+    "match": {
+      "type": "object",
+      "additionalProperties": false,
+      "minProperties": 1,
+      "properties": {
+        "usb": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": [
+              "vid",
+              "pid"
+            ],
+            "additionalProperties": false,
+            "properties": {
+              "vid": {
+                "type": "string",
+                "pattern": "^[0-9a-f]{4}$"
+              },
+              "pid": {
+                "type": "string",
+                "pattern": "^[0-9a-f]{4}$"
+              }
+            }
+          }
+        },
+        "midiPortName": {
+          "type": "string",
+          "description": "Regular expression matched against 'client:port' names of ALSA sequencer ports"
+        },
+        "oscSource": {
+          "type": "string"
+        },
+        "any": {
+          "type": "boolean",
+          "description": "Generic profile: offered for every device of the driver, never auto-selected"
+        }
+      }
+    },
+    "deviceSettings": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "inputChannel": {
+          "type": [
+            "integer",
+            "null"
+          ],
+          "minimum": 0,
+          "maximum": 15,
+          "description": "null = omni"
+        },
+        "outputChannel": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 15
+        },
+        "sendInitSysEx": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "pattern": "^F0( [0-9A-F]{2})* F7$"
+          }
+        }
+      }
+    },
+    "shuttleSettings": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "range": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 15,
+          "default": 7
+        },
+        "speeds": {
+          "type": "array",
+          "description": "Speed for positions 1..range (the reverse side mirrors it). |speed| is capped at CFA4's 8x.",
+          "items": {
+            "type": "number",
+            "exclusiveMinimum": 0,
+            "maximum": 8
+          },
+          "minItems": 1,
+          "maxItems": 15,
+          "default": [
+            0.5,
+            0.75,
+            1,
+            1.5,
+            2,
+            5,
+            8
+          ]
+        },
+        "jogFrames": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 100,
+          "default": 1
+        },
+        "slowJogMs": {
+          "type": [
+            "integer",
+            "null"
+          ],
+          "minimum": 50,
+          "maximum": 2000,
+          "default": null,
+          "description": "shuttle-go style slow jog threshold; null = off"
+        },
+        "sound": {
+          "enum": [
+            "follow-playback",
+            "mute"
+          ],
+          "default": "follow-playback",
+          "description": "N-01, owner decision 2026-11-13: follow the Qt playback rule (heard forward at 0.5-4x); mute silences shuttle playback"
+        }
+      }
+    },
+    "control": {
+      "description": "The physical control. Exactly one key.",
+      "oneOf": [
+        {
+          "type": "object",
+          "required": [
+            "midi"
+          ],
+          "additionalProperties": false,
+          "properties": {
+            "midi": {
+              "$ref": "#/$defs/midiControl"
+            }
+          }
+        },
+        {
+          "type": "object",
+          "required": [
+            "hid"
+          ],
+          "additionalProperties": false,
+          "properties": {
+            "hid": {
+              "$ref": "#/$defs/hidControl"
+            }
+          }
+        },
+        {
+          "type": "object",
+          "required": [
+            "evdev"
+          ],
+          "additionalProperties": false,
+          "properties": {
+            "evdev": {
+              "type": "object",
+              "required": [
+                "type",
+                "code"
+              ],
+              "additionalProperties": false,
+              "properties": {
+                "type": {
+                  "type": "integer",
+                  "minimum": 0,
+                  "maximum": 31
+                },
+                "code": {
+                  "type": "integer",
+                  "minimum": 0,
+                  "maximum": 1023
+                }
+              }
+            }
+          }
+        },
+        {
+          "type": "object",
+          "required": [
+            "osc"
+          ],
+          "additionalProperties": false,
+          "properties": {
+            "osc": {
+              "type": "string",
+              "pattern": "^/"
+            }
+          }
+        }
+      ]
+    },
+    "midiControl": {
+      "type": "object",
+      "required": [
+        "kind"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "channel": {
+          "type": [
+            "integer",
+            "null"
+          ],
+          "minimum": 0,
+          "maximum": 15,
+          "description": "null = any channel"
+        },
+        "kind": {
+          "enum": [
+            "cc",
+            "cc14",
+            "note",
+            "programChange",
+            "pitchBend",
+            "rpn",
+            "nrpn",
+            "sysex"
+          ]
+        },
+        "number": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 16383,
+          "description": "CC/note 0-127; cc14 = MSB controller 0-31; rpn/nrpn 0-16383; not used for pitchBend/sysex"
+        },
+        "sysex": {
+          "type": "string",
+          "pattern": "^F0( [0-9A-F]{2}| \\?\\?)* F7$",
+          "description": "kind sysex only: trigger pattern, ?? = any byte"
+        }
+      },
+      "allOf": [
+        {
+          "if": {
+            "properties": {
+              "kind": {
+                "enum": [
+                  "cc",
+                  "note",
+                  "programChange"
+                ]
+              }
+            }
+          },
+          "then": {
+            "properties": {
+              "number": {
+                "maximum": 127
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "kind": {
+                "const": "cc14"
+              }
+            }
+          },
+          "then": {
+            "required": [
+              "number"
+            ],
+            "properties": {
+              "number": {
+                "maximum": 31
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "kind": {
+                "enum": [
+                  "cc",
+                  "note",
+                  "rpn",
+                  "nrpn"
+                ]
+              }
+            }
+          },
+          "then": {
+            "required": [
+              "number"
+            ]
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "kind": {
+                "const": "sysex"
+              }
+            }
+          },
+          "then": {
+            "required": [
+              "sysex"
+            ]
+          }
+        }
+      ]
+    },
+    "hidControl": {
+      "type": "object",
+      "required": [
+        "name"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "name": {
+          "type": "string",
+          "pattern": "^(button[0-9]{1,2}|jog|shuttle)$",
+          "description": "Driver-level name (hid-shuttle: button1..button15, jog, shuttle)"
+        },
+        "usagePage": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 65535
+        },
+        "usage": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 65535
+        }
+      }
+    },
+    "binding": {
+      "type": "object",
+      "required": [
+        "control",
+        "mode",
+        "command"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "control": {
+          "$ref": "#/$defs/control"
+        },
+        "mode": {
+          "enum": [
+            "trigger",
+            "toggle",
+            "momentary",
+            "absolute",
+            "relative",
+            "encoder-left",
+            "encoder-right",
+            "encoder-2",
+            "encoder-binary",
+            "jog",
+            "shuttle"
+          ],
+          "description": "encoder-2 = two's complement (1..63 up, 127..65 down); encoder-left = sign bit 64 (Ardour 'left'); encoder-right = offset 64 (Ardour 'right'); encoder-binary = 1 up / 127 down step only. Final enum names to be unified before F1 (spec 10.3)."
+        },
+        "command": {
+          "type": "string",
+          "pattern": "^[a-zA-Z][a-zA-Z0-9]*(\\.[a-zA-Z0-9]+)+$",
+          "description": "Registered command id (engine or Qt UI command); audit warns on unknown ids"
+        },
+        "params": {
+          "type": "object",
+          "description": "Fixed parameters; the control value is added under 'value' (absolute: 0..1, relative: delta) unless 'valueParam' names another key"
+        },
+        "valueParam": {
+          "type": "string"
+        },
+        "release": {
+          "type": "object",
+          "description": "momentary only: what the release runs",
+          "required": [
+            "command"
+          ],
+          "additionalProperties": false,
+          "properties": {
+            "command": {
+              "type": "string"
+            },
+            "params": {
+              "type": "object"
+            }
+          }
+        },
+        "negative": {
+          "type": "object",
+          "description": "jog / relative / encoder modes: the command run once per step in the negative direction when 'command' takes no signed value (e.g. playhead.stepBack); without it the signed delta goes to 'command'",
+          "required": [
+            "command"
+          ],
+          "additionalProperties": false,
+          "properties": {
+            "command": {
+              "type": "string"
+            },
+            "params": {
+              "type": "object"
+            }
+          }
+        },
+        "context": {
+          "type": "string",
+          "default": "global"
+        },
+        "bank": {
+          "type": [
+            "integer",
+            "null"
+          ],
+          "minimum": 0,
+          "description": "null = every bank"
+        },
+        "strip": {
+          "type": "integer",
+          "minimum": 0,
+          "description": "Strip index inside the bank; the command receives strip + bank*size as 'track'"
+        },
+        "options": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "min": {
+              "type": "number",
+              "default": 0
+            },
+            "max": {
+              "type": "number",
+              "default": 1
+            },
+            "curve": {
+              "enum": [
+                "linear",
+                "log",
+                "db"
+              ],
+              "default": "linear"
+            },
+            "invert": {
+              "type": "boolean",
+              "default": false
+            },
+            "sensitivity": {
+              "type": "number",
+              "exclusiveMinimum": 0,
+              "default": 1
+            },
+            "pickup": {
+              "type": [
+                "boolean",
+                "null"
+              ],
+              "default": null,
+              "description": "null = profile default"
+            },
+            "feedback": {
+              "type": "boolean",
+              "default": true
+            }
+          }
+        }
+      },
+      "allOf": [
+        {
+          "if": {
+            "properties": {
+              "mode": {
+                "const": "momentary"
+              }
+            }
+          },
+          "then": {
+            "required": [
+              "release"
+            ]
+          }
+        }
+      ]
+    }
+  },
+  "examples": [
+    {
+      "format": "cfa4-surface-profile",
+      "version": 1,
+      "id": "cfa4.shuttlepro",
+      "name": "CFA4 ShuttlePRO",
+      "driver": "hid-shuttle",
+      "match": {
+        "usb": [
+          {
+            "vid": "0b33",
+            "pid": "0030"
+          },
+          {
+            "vid": "0b33",
+            "pid": "0020"
+          },
+          {
+            "vid": "0b33",
+            "pid": "0010"
+          }
+        ]
+      },
+      "shuttle": {
+        "range": 7,
+        "speeds": [
+          0.5,
+          0.75,
+          1,
+          1.5,
+          2,
+          5,
+          8
+        ],
+        "jogFrames": 1,
+        "sound": "follow-playback"
+      },
+      "contexts": [
+        "trim"
+      ],
+      "controls": [
+        {
+          "control": {
+            "hid": {
+              "name": "shuttle"
+            }
+          },
+          "mode": "shuttle",
+          "command": "playback.shuttleSpeed"
+        },
+        {
+          "control": {
+            "hid": {
+              "name": "jog"
+            }
+          },
+          "mode": "jog",
+          "command": "playhead.stepForward",
+          "negative": {
+            "command": "playhead.stepBack"
+          }
+        },
+        {
+          "control": {
+            "hid": {
+              "name": "jog"
+            }
+          },
+          "mode": "jog",
+          "command": "trim.nudge",
+          "context": "trim",
+          "valueParam": "frames"
+        },
+        {
+          "control": {
+            "hid": {
+              "name": "shuttle"
+            }
+          },
+          "mode": "shuttle",
+          "command": "trim.shuttle",
+          "context": "trim"
+        },
+        {
+          "control": {
+            "hid": {
+              "name": "button1"
+            }
+          },
+          "mode": "trigger",
+          "command": "playback.toggle"
+        },
+        {
+          "control": {
+            "hid": {
+              "name": "button2"
+            }
+          },
+          "mode": "trigger",
+          "command": "edit.undo"
+        }
+      ]
+    }
+  ]
+}

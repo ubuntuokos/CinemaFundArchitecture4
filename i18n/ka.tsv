@@ -1929,6 +1929,7 @@
 	Counter	მთვლელი
 	Typewriter	საბეჭდი მანქანა
 	Word by Word	სიტყვა-სიტყვით
+	Scramble	არევა
 	Animator	ანიმატორი
 	Animator Duration	ანიმატორის ხანგრძლივობა
 	Animator Delay	ანიმატორის დაყოვნება
@@ -2996,6 +2997,10 @@
 	Sharpen Amount	გამკვეთრების რაოდენობა
 	Shift Center To	ცენტრის გადატანა
 	Show Focus Area	ფოკუსის არის ჩვენება
+	Rack Focus	ფოკუსის გადატანა
+	Focus Point A	ფოკუსის წერტილი A
+	Focus Point B	ფოკუსის წერტილი B
+	Rack	გადატანა
 	Show Only Noise	მხოლოდ ხმაურის ჩვენება
 	Shrink	შეკუმშვა
 	Shutter Angle	ობტურატორის კუთხე
@@ -4179,6 +4184,11 @@ export.summary	Low	დაბალი
 	Burn Size	წვის ზომა
 	Ember Width	ნაღვერდლის სიგანე
 	Ember Color	ნაღვერდლის ფერი
+	Tear Away	მოგლეჯა
+	Tear Roughness	გახევის უხეშობა
+	Paper Edge Width	ქაღალდის კიდის სიგანე
+	Stamp Cut	მარკის ამოჭრა
+	Perforations	პერფორაცია
 	Check Text Legibility	ტექსტის წაკითხვადობის შემოწმება
 	Clear Legibility Markers	წაკითხვადობის მარკერების წაშლა
 	Text legibility: no problems found	ტექსტის წაკითხვადობა: პრობლემები ვერ მოიძებნა
@@ -4218,6 +4228,9 @@ export.summary	Low	დაბალი
 	Dither	დიზერინგი
 	Pattern	ნიმუში
 	Cell Size	უჯრის ზომა
+	Pixelate	პიქსელიზაცია
+	Cell Shape	უჯრის ფორმა
+	LED	LED
 	Cyan Angle	ცისფერის კუთხე
 	Magenta Angle	მეწამულის კუთხე
 	Yellow Angle	ყვითლის კუთხე
@@ -4578,6 +4591,16 @@ export.summary	Low	დაბალი
 	Chase External Timecode	გარე დროის კოდისთვის მიყოლა
 	Send LTC	LTC-ის გაგზავნა
 	Send MIDI Timecode	MIDI დროის კოდის გაგზავნა
+
+# Live studio preview (CFA4-LIVE-STUDIO-001 S0)
+	Live studio preview	პირდაპირი სტუდიის გადახედვა
+	Live studio: stopped	პირდაპირი სტუდია: გაჩერებულია
+	Live studio: {state}	პირდაპირი სტუდია: {state}
+	Live studio: {error}	პირდაპირი სტუდია: {error}
+	restarted after {count} crashes (last: {exit})	ხელახლა გაეშვა {count} ავარიის შემდეგ (ბოლო: {exit})
+	software backend: {reason}	პროგრამული ბექენდი: {reason}
+	Start studio	სტუდიის გაშვება
+	Stop studio	სტუდიის გაჩერება
 # Auto Color, Auto Contrast, Auto Levels (EffectsSDK review)
 	Auto Color	ავტომატური ფერი
 	Auto Contrast	ავტომატური კონტრასტი
@@ -4635,3 +4658,16 @@ export.summary	Low	დაბალი
 	Freewheel	თავისუფალი სვლა
 	Scrubbing	გადახვევა
 	Sending	გაგზავნა
+
+# DCP subtitle export (#938)
+	Subtitles from the first caption track	სუბტიტრები პირველი სუბტიტრების ბილიკიდან
+	The package language	პაკეტის ენა
+	Inter Regular (built in), or an OpenType / TrueType file	Inter Regular (ჩაშენებული) ან OpenType / TrueType ფაილი
+	Subtitle language	სუბტიტრების ენა
+	Subtitle font	სუბტიტრების შრიფტი
+	Fonts	შრიფტები
+
+# AS-11 metadata in MXF OP1a (#96)
+	AS-11 Core	AS-11 Core
+	AS-11 Parts	AS-11 ნაწილები
+	AS-11 UK DPP	AS-11 UK DPP

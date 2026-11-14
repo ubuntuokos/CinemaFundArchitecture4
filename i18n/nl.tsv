@@ -1869,6 +1869,7 @@
 	Counter	Teller
 	Typewriter	Typemachine
 	Word by Word	Woord voor woord
+	Scramble	Husselen
 	Animator	Animator
 	Animator Duration	Animatorduur
 	Animator Delay	Animatorvertraging
@@ -2900,6 +2901,10 @@
 	Sharpen Amount	Mate van verscherping
 	Shift Center To	Midden verschuiven naar
 	Show Focus Area	Focusgebied tonen
+	Rack Focus	Focusverlegging
+	Focus Point A	Focuspunt A
+	Focus Point B	Focuspunt B
+	Rack	Verlegging
 	Show Only Noise	Alleen ruis tonen
 	Shrink	Krimpen
 	Shutter Angle	Sluiterhoek
@@ -4176,6 +4181,11 @@ export.summary	Low	laag
 	Burn Size	Brandgrootte
 	Ember Width	Breedte van gloeirand
 	Ember Color	Kleur van gloeirand
+	Tear Away	Afscheuren
+	Tear Roughness	Ruwheid van de scheur
+	Paper Edge Width	Breedte papierrand
+	Stamp Cut	Postzegeluitsnede
+	Perforations	Perforaties
 	Check Text Legibility	Leesbaarheid van tekst controleren
 	Clear Legibility Markers	Leesbaarheidsmarkeringen wissen
 	Text legibility: no problems found	Leesbaarheid van tekst: geen problemen gevonden
@@ -4215,6 +4225,9 @@ export.summary	Low	laag
 	Dither	Dithering
 	Pattern	Patroon
 	Cell Size	Celgrootte
+	Pixelate	Pixeleren
+	Cell Shape	Celvorm
+	LED	LED
 	Cyan Angle	Hoek cyaan
 	Magenta Angle	Hoek magenta
 	Yellow Angle	Hoek geel
@@ -4575,6 +4588,16 @@ export.summary	Low	laag
 	Chase External Timecode	Externe timecode volgen
 	Send LTC	LTC verzenden
 	Send MIDI Timecode	MIDI-timecode verzenden
+
+# Live studio preview (CFA4-LIVE-STUDIO-001 S0)
+	Live studio preview	Voorbeeld livestudio
+	Live studio: stopped	Livestudio: gestopt
+	Live studio: {state}	Livestudio: {state}
+	Live studio: {error}	Livestudio: {error}
+	restarted after {count} crashes (last: {exit})	herstart na {count} crashes (laatste: {exit})
+	software backend: {reason}	software-backend: {reason}
+	Start studio	Studio starten
+	Stop studio	Studio stoppen
 # Auto Color, Auto Contrast, Auto Levels (EffectsSDK review)
 	Auto Color	Automatische kleur
 	Auto Contrast	Automatisch contrast
@@ -4632,3 +4655,16 @@ export.summary	Low	laag
 	Freewheel	Vrijloop
 	Scrubbing	Scrubben
 	Sending	Verzenden
+
+# DCP subtitle export (#938)
+	Subtitles from the first caption track	Ondertitels uit het eerste ondertitelspoor
+	The package language	De taal van het pakket
+	Inter Regular (built in), or an OpenType / TrueType file	Inter Regular (ingebouwd) of een OpenType-/TrueType-bestand
+	Subtitle language	Ondertiteltaal
+	Subtitle font	Ondertitellettertype
+	Fonts	Lettertypen
+
+# AS-11 metadata in MXF OP1a (#96)
+	AS-11 Core	AS-11 Core
+	AS-11 Parts	AS-11-delen
+	AS-11 UK DPP	AS-11 UK DPP

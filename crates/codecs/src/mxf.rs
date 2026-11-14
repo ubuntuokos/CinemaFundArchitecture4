@@ -11,7 +11,8 @@
 //! - Audio: every PCM sound track (Broadcast Wave / AES3, ST 382; ST 331 AES3 elements in D-10)
 //!   is presented as one multichannel stream, sample-exact. Without PCM, an Immersive Audio
 //!   (IAB, ST 2098-2) track of a DCP or IMF package is decoded with `cfa4-iab` and rendered to
-//!   7.1 (L R C LFE Lrs Rrs Lss Rss).
+//!   7.1 (L R C LFE Lrs Rrs Lss Rss). Without either, an AAC track (ST 381-4: ADTS or LATM/LOAS
+//!   frames; not ADIF) is decoded whole on first use with our AAC decoder.
 //! - Start timecode: the material package's timecode track.
 //! - OP-Atom clips over several files (Avid, P2): [`MxfSource::open_group`] opens the picture
 //!   file and the sound files of one clip as one source (the engine finds them by material package).
@@ -75,6 +76,61 @@ pub struct MxfSource {
     aframes: u64,
     /// An IAB track rendered to loudspeakers, when there is no PCM.
     iab: Option<IabAudio>,
+    /// An AAC track (ST 381-4), when there is neither PCM nor IAB.
+    aac: Option<AacAudio>,
+}
+
+/// Most essence bytes of an AAC track read for decoding (a few hours at broadcast bit rates).
+const MAX_AAC_ESSENCE: u64 = 1 << 30;
+
+/// An AAC sound track (ST 381-4), decoded whole on first use: its audio frames, in whatever
+/// wrapper they came (ADTS or LATM/LOAS), follow each other through the elements.
+struct AacAudio {
+    track: usize,
+    /// Output sample rate (HE-AAC: twice the core rate) and channels.
+    rate: u32,
+    channels: u32,
+    /// Sample frames of the whole stream.
+    frames: u64,
+    pcm: std::sync::OnceLock<std::result::Result<Arc<Vec<Vec<f32>>>, String>>,
+}
+
+impl AacAudio {
+    /// The essence of the track's elements, back to back.
+    fn essence(file: &MxfFile, bytes: &crate::Src, track: usize) -> std::result::Result<Vec<u8>, String> {
+        let t = file.tracks.get(track).ok_or("no AAC track")?;
+        let total = t.samples.iter().fold(0u64, |n, s| n.saturating_add(u64::from(s.size)));
+        if total > MAX_AAC_ESSENCE {
+            return Err(format!("{total} bytes of AAC essence is over the {MAX_AAC_ESSENCE} bytes read"));
+        }
+        let mut out = Vec::with_capacity(usize::try_from(total).unwrap_or(0));
+        for i in 0..t.samples.len() {
+            out.extend(file.read_sample(bytes, track, i).map_err(|e| e.to_string())?);
+        }
+        Ok(out)
+    }
+
+    /// The stream's rate, channels and length from its first frames; `None` without AAC frames
+    /// (an ADIF stream, or damaged essence).
+    fn probe(file: &MxfFile, bytes: &crate::Src, track: usize) -> std::result::Result<Option<AacAudio>, String> {
+        let units = crate::audio::aac_units(&Self::essence(file, bytes, track)?);
+        let probe = 8.min(units.len());
+        let Some((rate, pcm)) = crate::audio::decode_aac_units(&units, probe).map_err(|e| e.to_string())? else { return Ok(None) };
+        let per_unit = pcm.first().map_or(0, Vec::len) / probe.max(1);
+        let channels = u32::try_from(pcm.len()).unwrap_or(0);
+        Ok(Some(AacAudio { track, rate, channels, frames: (units.len() * per_unit) as u64, pcm: std::sync::OnceLock::new() }))
+    }
+
+    /// The decoded stream (decoded on first use; a damaged stream decodes to silence).
+    fn pcm(&self, file: &MxfFile, bytes: &crate::Src) -> std::result::Result<Arc<Vec<Vec<f32>>>, String> {
+        self.pcm
+            .get_or_init(|| {
+                let units = crate::audio::aac_units(&Self::essence(file, bytes, self.track)?);
+                let (_, pcm) = crate::audio::decode_aac_units(&units, usize::MAX).map_err(|e| e.to_string())?.ok_or("no AAC frame decodes")?;
+                Ok(Arc::new(pcm))
+            })
+            .clone()
+    }
 }
 
 /// An Immersive Audio Bitstream track, rendered frame by frame.
@@ -401,8 +457,19 @@ impl MxfSource {
         } else {
             None
         };
-        if vtrack.is_none() && atracks.is_empty() && iab.is_none() {
-            return Err(CodecError::Unsupported("MXF: no playable picture or PCM sound tracks".into()));
+        // AAC (ST 381-4), when there is neither PCM nor IAB
+        let aac = if atracks.is_empty() && iab.is_none() {
+            file.tracks.iter().enumerate().filter(|(_, t)| t.codec == Codec::Aac && !t.samples.is_empty()).find_map(|(i, t)| {
+                AacAudio::probe(&file, &bytes, i).map_err(|e| log::warn!("{name}: AAC track {}: {e}", t.track_id)).ok().flatten().or_else(|| {
+                    log::warn!("{name}: AAC track {}: no ADTS or LOAS frames (ADIF is not read)", t.track_id);
+                    None
+                })
+            })
+        } else {
+            None
+        };
+        if vtrack.is_none() && atracks.is_empty() && iab.is_none() && aac.is_none() {
+            return Err(CodecError::Unsupported("MXF: no playable picture or sound tracks".into()));
         }
         // Video
         let mut video = None;
@@ -659,6 +726,12 @@ impl MxfSource {
                 speakers: Vec::new(),
             });
         }
+        if let Some(a) = &aac
+            && let Ok((sr, channels)) = cfa4_media::bounded_audio_dimensions(a.rate, a.channels)
+        {
+            aframes = a.frames;
+            audio = Some(AudioStreamInfo { sample_rate: sr, channels, codec: "AAC".into(), bits_per_sample: None, speakers: Vec::new() });
+        }
         if aframes == u64::MAX {
             aframes = 0;
         }
@@ -700,6 +773,7 @@ impl MxfSource {
             companions,
             aframes,
             iab,
+            aac,
             file,
         })
     }
@@ -920,6 +994,14 @@ impl MediaSource for MxfSource {
                 at += len.max(1);
                 k += 1;
             }
+        } else if let (Some(aac), true) = (&self.aac, b > a) {
+            let pcm = aac.pcm(&self.file, &self.bytes).map_err(MediaError::Decode)?;
+            for (c, s) in pcm.iter().enumerate() {
+                let (Some(dst), Some(s)) = (src.get_mut(c), s.get(a as usize..(b as usize).min(s.len()))) else { continue };
+                if let Some(d) = dst.get_mut((a - s0) as usize..(a - s0) as usize + s.len()) {
+                    d.copy_from_slice(s);
+                }
+            }
         } else if b > a {
             let mut c0 = 0;
             for &(m, ti, first) in &self.atracks {
@@ -1040,6 +1122,106 @@ mod tests {
         let f = raw_frame(p, cfa4_color::ColorInfo::REC709);
         let PixelData::Yuv8 { planes, .. } = &f.data else { panic!("8-bit Y'CbCr expected") };
         assert_eq!((f.width, f.height, planes[0][0], planes[1][0]), (1, 1, 16, 128));
+    }
+
+    /// AAC frames of a 997 Hz stereo tone from our encoder (48 kHz, 128 kbit/s): the
+    /// AudioSpecificConfig and the raw data blocks.
+    fn aac_tone(frames: usize) -> (Vec<u8>, Vec<Vec<u8>>) {
+        let mut enc = cfa4_aac::Encoder::new(cfa4_aac::EncoderConfig::cbr(48_000, 2, 128_000)).unwrap();
+        let tone: Vec<f32> = (0..frames * 1024).map(|i| 0.5 * (i as f32 * 997.0 * std::f32::consts::TAU / 48_000.0).sin()).collect();
+        let mut units = enc.encode(&[&tone, &tone]);
+        units.extend(enc.flush());
+        (enc.audio_specific_config(), units)
+    }
+
+    /// An ADTS frame (ISO/IEC 13818-7 6.2, no CRC) of AAC-LC 48 kHz stereo.
+    fn adts(raw: &[u8]) -> Vec<u8> {
+        let len = raw.len() + 7;
+        let mut h = vec![0xFF, 0xF1, (1 << 6) | (3 << 2), (2 << 6) | (len >> 11) as u8, (len >> 3) as u8, ((len & 7) << 5) as u8 | 0x1F, 0xFC];
+        h.extend_from_slice(raw);
+        h
+    }
+
+    /// A LOAS frame (ISO/IEC 14496-3 1.7.2): AudioMuxElement with its StreamMuxConfig (version 0,
+    /// one program and layer, AAC-LC 48 kHz stereo, frame length type 0) and the payload.
+    fn loas(raw: &[u8]) -> Vec<u8> {
+        let mut bits: Vec<bool> = Vec::new();
+        let mut put = |v: u32, n: u32| (0..n).rev().for_each(|i| bits.push(v >> i & 1 == 1));
+        put(0, 1); // useSameStreamMux
+        put(0, 1); // audioMuxVersion
+        put(1, 1); // allStreamsSameTimeFraming
+        put(0, 6); // numSubFrames
+        put(0, 4); // numProgram
+        put(0, 3); // numLayer
+        put(2, 5); // AAC LC
+        put(3, 4); // 48 kHz
+        put(2, 4); // stereo
+        put(0, 3); // GASpecificConfig: 1024 frame, no core coder, no extension
+        put(0, 3); // frameLengthType
+        put(0xFF, 8); // latmBufferFullness
+        put(0, 1); // otherDataPresent
+        put(0, 1); // crcCheckPresent
+        let mut n = raw.len();
+        while n >= 255 {
+            put(255, 8);
+            n -= 255;
+        }
+        put(n as u32, 8);
+        for &b in raw {
+            put(u32::from(b), 8);
+        }
+        while !bits.len().is_multiple_of(8) {
+            bits.push(false);
+        }
+        let body: Vec<u8> = bits.chunks(8).map(|c| c.iter().fold(0u8, |a, &b| a << 1 | u8::from(b))).collect();
+        let mut f = vec![0x56, 0xE0 | (body.len() >> 8) as u8, body.len() as u8];
+        f.extend(body);
+        f
+    }
+
+    /// AAC in MXF (ST 381-4): ADTS frames frame wrapped (a varying number of frames per edit unit,
+    /// as at 25 fps), clip wrapped, and LOAS frames, decode to what the frames decode to alone.
+    #[test]
+    fn aac_sound_tracks_decode() {
+        let (_, units) = aac_tone(60);
+        let adts_stream: Vec<u8> = units.iter().flat_map(|u| adts(u)).collect();
+        let (rate, want) = crate::audio::decode_aac_units(&crate::audio::aac_units(&adts_stream), usize::MAX).unwrap().unwrap();
+        assert_eq!((rate, want.len()), (48_000, 2));
+        assert_eq!(want[0].len(), units.len() * 1024);
+        // 25 fps: 1920 samples an edit unit, so one or two frames per element
+        let mut elements: Vec<Vec<u8>> = Vec::new();
+        let (mut at, mut k) = (0usize, 0usize);
+        while k < units.len() {
+            let end = ((elements.len() + 1) * 1920).div_ceil(1024).min(units.len()).max(k + 1);
+            elements.push(units[k..end].iter().flat_map(|u| adts(u)).collect());
+            at += end - k;
+            k = end;
+        }
+        assert_eq!(at, units.len());
+        let loas_stream: Vec<Vec<u8>> = units.iter().map(|u| loas(u)).collect();
+        let files = [
+            ("frame-wrapped ADTS", cfa4_mxf::testing::build_aac((25, 1), 48_000, 2, 0x17, &elements, false)),
+            ("clip-wrapped ADTS", cfa4_mxf::testing::build_aac((48_000, 1), 48_000, 2, 0x17, std::slice::from_ref(&adts_stream), true)),
+            ("frame-wrapped LOAS", cfa4_mxf::testing::build_aac((25, 1), 48_000, 2, 0x18, &loas_stream, false)),
+        ];
+        for (what, f) in files {
+            let mx = cfa4_mxf::open(&f).unwrap();
+            assert_eq!(mx.tracks[0].codec, Codec::Aac, "{what}");
+            let src = MxfSource::open("aac.mxf", f.into()).unwrap();
+            let a = src.info().audio().unwrap().clone();
+            assert_eq!((a.sample_rate, a.channels, a.codec.as_str()), (48_000, 2, "AAC"), "{what}");
+            assert_eq!(src.info().duration, Tick::from_units(want[0].len() as i64, 48_000), "{what}");
+            for start in [0usize, 5000, want[0].len() - 300] {
+                let buf = src.audio(start as i64, 600, 48_000).unwrap();
+                for c in 0..2 {
+                    let n = 600.min(want[c].len() - start);
+                    assert_eq!(buf.channels[c][..n], want[c][start..start + n], "{what}: channel {c} from {start}");
+                }
+            }
+        }
+        // ADIF is not read: the file has no playable track
+        let adif = cfa4_mxf::testing::build_aac((25, 1), 48_000, 2, 0x16, &[b"ADIF....".to_vec()], false);
+        assert!(MxfSource::open("adif.mxf", adif.into()).is_err());
     }
 
     /// An Avid / P2 style clip: a picture file and two mono sound files sharing the material

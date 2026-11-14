@@ -1837,6 +1837,7 @@
 	Text Animator	Hoạt ảnh văn bản
 	Counter	Bộ đếm
 	Word by Word	Từng từ một
+	Scramble	Xáo trộn
 	Animator	Hoạt ảnh
 	Animator Duration	Thời lượng hoạt ảnh
 	Animator Delay	Độ trễ hoạt ảnh
@@ -2850,6 +2851,10 @@
 	Sharpen Amount	Mức làm nét
 	Shift Center To	Dời tâm đến
 	Show Focus Area	Hiện vùng lấy nét
+	Rack Focus	Chuyển tiêu điểm
+	Focus Point A	Điểm lấy nét A
+	Focus Point B	Điểm lấy nét B
+	Rack	Chuyển
 	Show Only Noise	Chỉ hiện nhiễu
 	Shrink	Thu nhỏ
 	Shutter Angle	Góc màn trập
@@ -4176,6 +4181,11 @@ export.summary	Low	thấp
 	Burn Size	Kích thước vùng cháy
 	Ember Width	Độ rộng viền than hồng
 	Ember Color	Màu viền than hồng
+	Tear Away	Xé rời
+	Tear Roughness	Độ nhám vết xé
+	Paper Edge Width	Độ rộng mép giấy
+	Stamp Cut	Cắt hình tem
+	Perforations	Lỗ răng cưa
 	Check Text Legibility	Kiểm tra độ dễ đọc của chữ
 	Clear Legibility Markers	Xóa điểm đánh dấu độ dễ đọc
 	Text legibility: no problems found	Độ dễ đọc của chữ: không có vấn đề
@@ -4215,6 +4225,9 @@ export.summary	Low	thấp
 	Dither	Dither
 	Pattern	Mẫu
 	Cell Size	Kích thước ô
+	Pixelate	Tạo điểm ảnh
+	Cell Shape	Hình dạng ô
+	LED	LED
 	Cyan Angle	Góc lục lam
 	Magenta Angle	Góc đỏ tươi
 	Yellow Angle	Góc vàng
@@ -4575,6 +4588,16 @@ export.summary	Low	thấp
 	Chase External Timecode	Bám theo timecode bên ngoài
 	Send LTC	Gửi LTC
 	Send MIDI Timecode	Gửi timecode MIDI
+
+# Live studio preview (CFA4-LIVE-STUDIO-001 S0)
+	Live studio preview	Xem trước phòng thu trực tiếp
+	Live studio: stopped	Phòng thu trực tiếp: đã dừng
+	Live studio: {state}	Phòng thu trực tiếp: {state}
+	Live studio: {error}	Phòng thu trực tiếp: {error}
+	restarted after {count} crashes (last: {exit})	đã khởi động lại sau {count} lần gặp sự cố (lần cuối: {exit})
+	software backend: {reason}	phần phụ trợ phần mềm: {reason}
+	Start studio	Khởi động phòng thu
+	Stop studio	Dừng phòng thu
 # Auto Color, Auto Contrast, Auto Levels (EffectsSDK review)
 	Auto Color	Màu tự động
 	Auto Contrast	Tương phản tự động
@@ -4632,3 +4655,16 @@ export.summary	Low	thấp
 	Freewheel	Chạy tự do
 	Scrubbing	Đang tua
 	Sending	Đang gửi
+
+# DCP subtitle export (#938)
+	Subtitles from the first caption track	Phụ đề từ rãnh phụ đề đầu tiên
+	The package language	Ngôn ngữ của gói
+	Inter Regular (built in), or an OpenType / TrueType file	Inter Regular (dựng sẵn) hoặc tệp OpenType / TrueType
+	Subtitle language	Ngôn ngữ phụ đề
+	Subtitle font	Phông chữ phụ đề
+	Fonts	Phông chữ
+
+# AS-11 metadata in MXF OP1a (#96)
+	AS-11 Core	AS-11 Core
+	AS-11 Parts	Phần AS-11
+	AS-11 UK DPP	AS-11 UK DPP

@@ -36,10 +36,22 @@ fi
 git fetch -q "$REMOTE" main
 base_sha="$(git rev-parse "$REMOTE/main")"
 
-# Következő szabad köteg-ágnév a mai napra.
+# Következő szabad köteg-ágnév a mai napra. Foglaltnak számít a még létező ág ÉS minden
+# korábbi köteg-PR feje (nyitott, lezárt vagy beolvasztott), mert a beolvasztott köteg ága
+# törlődik, és a nevét újra kiosztva két köteg CI-futásai összekeverednének.
 day="$(date -u +%Y%m%d)"
+owner="${REPO%%/*}"
+name_used() {
+  local name="$1" prs
+  git ls-remote --exit-code --heads "$REMOTE" "$name" >/dev/null 2>&1 && return 0
+  prs="$(gh api "repos/$REPO/pulls?state=all&head=$owner:$name&per_page=1" --jq 'length')" || {
+    echo "Nem sikerült lekérdezni a(z) $name köteg-PR-jait." >&2
+    exit 1
+  }
+  [[ "$prs" != "0" ]]
+}
 n=1
-while git ls-remote --exit-code --heads "$REMOTE" "koteg/$day-$n" >/dev/null 2>&1; do
+while name_used "koteg/$day-$n"; do
   n=$((n + 1))
 done
 branch="koteg/$day-$n"

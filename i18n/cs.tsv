@@ -1838,6 +1838,7 @@
 	Text Animator	Animátor textu
 	Counter	Počítadlo
 	Word by Word	Slovo po slově
+	Scramble	Zpřeházení
 	Animator	Animátor
 	Animator Duration	Délka animátoru
 	Animator Delay	Zpoždění animátoru
@@ -2846,6 +2847,10 @@
 	Sharpen Amount	Míra zostření
 	Shift Center To	Posunout střed na
 	Show Focus Area	Zobrazit oblast zaostření
+	Rack Focus	Přeostření
+	Focus Point A	Bod zaostření A
+	Focus Point B	Bod zaostření B
+	Rack	Přeostření (%)
 	Show Only Noise	Zobrazit jen šum
 	Shrink	Zmenšit
 	Shutter Angle	Úhel závěrky
@@ -4176,6 +4181,11 @@ export.summary	Low	nízká
 	Burn Size	Velikost propálení
 	Ember Width	Šířka žhavého okraje
 	Ember Color	Barva žhavého okraje
+	Tear Away	Odtržení
+	Tear Roughness	Drsnost trhliny
+	Paper Edge Width	Šířka papírového okraje
+	Stamp Cut	Výřez známky
+	Perforations	Perforace
 	Check Text Legibility	Zkontrolovat čitelnost textu
 	Clear Legibility Markers	Vymazat značky čitelnosti
 	Text legibility: no problems found	Čitelnost textu: nenalezeny žádné problémy
@@ -4215,6 +4225,9 @@ export.summary	Low	nízká
 	Dither	Rozptyl
 	Pattern	Vzor
 	Cell Size	Velikost buňky
+	Pixelate	Pixelizace
+	Cell Shape	Tvar buňky
+	LED	LED
 	Cyan Angle	Úhel azurové
 	Magenta Angle	Úhel purpurové
 	Yellow Angle	Úhel žluté
@@ -4575,6 +4588,16 @@ export.summary	Low	nízká
 	Chase External Timecode	Sledovat externí časový kód
 	Send LTC	Odesílat LTC
 	Send MIDI Timecode	Odesílat časový kód MIDI
+
+# Live studio preview (CFA4-LIVE-STUDIO-001 S0)
+	Live studio preview	Náhled živého studia
+	Live studio: stopped	Živé studio: zastaveno
+	Live studio: {state}	Živé studio: {state}
+	Live studio: {error}	Živé studio: {error}
+	restarted after {count} crashes (last: {exit})	restartováno po {count} pádech (poslední: {exit})
+	software backend: {reason}	softwarový backend: {reason}
+	Start studio	Spustit studio
+	Stop studio	Zastavit studio
 # Auto Color, Auto Contrast, Auto Levels (EffectsSDK review)
 	Auto Color	Automatická barva
 	Auto Contrast	Automatický kontrast
@@ -4632,3 +4655,16 @@ export.summary	Low	nízká
 	Freewheel	Volnoběh
 	Scrubbing	Posouvání
 	Sending	Odesílání
+
+# DCP subtitle export (#938)
+	Subtitles from the first caption track	Titulky z první stopy titulků
+	The package language	Jazyk balíčku
+	Inter Regular (built in), or an OpenType / TrueType file	Inter Regular (vestavěné) nebo soubor OpenType / TrueType
+	Subtitle language	Jazyk titulků
+	Subtitle font	Písmo titulků
+	Fonts	Písma
+
+# AS-11 metadata in MXF OP1a (#96)
+	AS-11 Core	AS-11 Core
+	AS-11 Parts	AS-11 části
+	AS-11 UK DPP	AS-11 UK DPP

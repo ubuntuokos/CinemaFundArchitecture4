@@ -1903,6 +1903,7 @@
 	Text Animator	Текстов аниматор
 	Counter	Брояч
 	Word by Word	Дума по дума
+	Scramble	Разбъркване
 	Animator	Аниматор
 	Animator Duration	Продължителност на аниматора
 	Animator Delay	Закъснение на аниматора
@@ -2954,6 +2955,10 @@
 	Sharpen Amount	Степен на изостряне
 	Shift Center To	Преместване на центъра до
 	Show Focus Area	Показване на областта на фокуса
+	Rack Focus	Пренасочване на фокуса
+	Focus Point A	Точка на фокус A
+	Focus Point B	Точка на фокус B
+	Rack	Пренасочване
 	Show Only Noise	Показване само на шума
 	Shrink	Свиване
 	Shutter Angle	Ъгъл на затвора
@@ -4179,6 +4184,11 @@ export.summary	Low	ниско
 	Burn Size	Размер на изгарянето
 	Ember Width	Ширина на жаравата
 	Ember Color	Цвят на жаравата
+	Tear Away	Откъсване
+	Tear Roughness	Грапавост на разкъсването
+	Paper Edge Width	Ширина на хартиения ръб
+	Stamp Cut	Пощенска марка
+	Perforations	Перфорация
 	Check Text Legibility	Проверка на четливостта на текста
 	Clear Legibility Markers	Изчистване на маркерите за четливост
 	Text legibility: no problems found	Четливост на текста: не са открити проблеми
@@ -4218,6 +4228,9 @@ export.summary	Low	ниско
 	Dither	Разсейване
 	Pattern	Шарка
 	Cell Size	Размер на клетката
+	Pixelate	Пикселизация
+	Cell Shape	Форма на клетката
+	LED	LED
 	Cyan Angle	Ъгъл на синьозеленото
 	Magenta Angle	Ъгъл на пурпурното
 	Yellow Angle	Ъгъл на жълтото
@@ -4578,6 +4591,16 @@ export.summary	Low	ниско
 	Chase External Timecode	Следване на външен тайм код
 	Send LTC	Изпращане на LTC
 	Send MIDI Timecode	Изпращане на MIDI тайм код
+
+# Live studio preview (CFA4-LIVE-STUDIO-001 S0)
+	Live studio preview	Преглед на студиото на живо
+	Live studio: stopped	Студио на живо: спряно
+	Live studio: {state}	Студио на живо: {state}
+	Live studio: {error}	Студио на живо: {error}
+	restarted after {count} crashes (last: {exit})	рестартирано след {count} срива (последен: {exit})
+	software backend: {reason}	софтуерна основа: {reason}
+	Start studio	Стартиране на студиото
+	Stop studio	Спиране на студиото
 # Auto Color, Auto Contrast, Auto Levels (EffectsSDK review)
 	Auto Color	Автоматичен цвят
 	Auto Contrast	Автоматичен контраст
@@ -4635,3 +4658,16 @@ export.summary	Low	ниско
 	Freewheel	Свободен ход
 	Scrubbing	Превъртане
 	Sending	Изпращане
+
+# DCP subtitle export (#938)
+	Subtitles from the first caption track	Субтитри от първата писта за надписи
+	The package language	Езикът на пакета
+	Inter Regular (built in), or an OpenType / TrueType file	Inter Regular (вграден) или файл OpenType / TrueType
+	Subtitle language	Език на субтитрите
+	Subtitle font	Шрифт на субтитрите
+	Fonts	Шрифтове
+
+# AS-11 metadata in MXF OP1a (#96)
+	AS-11 Core	AS-11 Core
+	AS-11 Parts	AS-11 части
+	AS-11 UK DPP	AS-11 UK DPP

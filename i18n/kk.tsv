@@ -2094,6 +2094,7 @@
 	Counter	Санауыш
 	Typewriter	Жазу машинкасы
 	Word by Word	Сөзбе-сөз
+	Scramble	Араластыру
 	Animator	Аниматор
 	Animator Duration	Аниматор ұзақтығы
 	Animator Delay	Аниматор кідірісі
@@ -3236,6 +3237,10 @@
 	Sharpen Amount	Айқындау мөлшері
 	Shift Center To	Орталықты мынаған жылжыту
 	Show Focus Area	Фокус аймағын көрсету
+	Rack Focus	Фокусты ауыстыру
+	Focus Point A	Фокус нүктесі A
+	Focus Point B	Фокус нүктесі B
+	Rack	Ауыстыру
 	Show Only Noise	Тек шуды көрсету
 	Shrink	Кішірейту
 	Shutter Angle	Ысырма бұрышы
@@ -4178,6 +4183,11 @@ export.summary	Low	төмен
 	Burn Size	Күю өлшемі
 	Ember Width	Шоқ жиегінің ені
 	Ember Color	Шоқ жиегінің түсі
+	Tear Away	Жыртып алу
+	Tear Roughness	Жыртықтың кедір-бұдырлығы
+	Paper Edge Width	Қағаз жиегінің ені
+	Stamp Cut	Марка қиындысы
+	Perforations	Перфорация
 	Check Text Legibility	Мәтіннің оқылуын тексеру
 	Clear Legibility Markers	Оқылу белгілерін тазалау
 	Text legibility: no problems found	Мәтіннің оқылуы: ақау табылмады
@@ -4217,6 +4227,9 @@ export.summary	Low	төмен
 	Dither	Дизеринг
 	Pattern	Өрнек
 	Cell Size	Ұяшық өлшемі
+	Pixelate	Пикселдеу
+	Cell Shape	Ұяшық пішіні
+	LED	LED
 	Cyan Angle	Көгілдір бұрышы
 	Magenta Angle	Қызыл күрең бұрышы
 	Yellow Angle	Сары бұрышы
@@ -4577,6 +4590,16 @@ export.summary	Low	төмен
 	Chase External Timecode	Сыртқы уақыт кодына ілесу
 	Send LTC	LTC жіберу
 	Send MIDI Timecode	MIDI уақыт кодын жіберу
+
+# Live studio preview (CFA4-LIVE-STUDIO-001 S0)
+	Live studio preview	Тікелей студияны алдын ала қарау
+	Live studio: stopped	Тікелей студия: тоқтатылды
+	Live studio: {state}	Тікелей студия: {state}
+	Live studio: {error}	Тікелей студия: {error}
+	restarted after {count} crashes (last: {exit})	{count} құлаудан кейін қайта іске қосылды (соңғысы: {exit})
+	software backend: {reason}	бағдарламалық бэкенд: {reason}
+	Start studio	Студияны іске қосу
+	Stop studio	Студияны тоқтату
 # Auto Color, Auto Contrast, Auto Levels (EffectsSDK review)
 	Auto Color	Автоматты түс
 	Auto Contrast	Автоматты контраст
@@ -4634,3 +4657,16 @@ export.summary	Low	төмен
 	Freewheel	Еркін жүріс
 	Scrubbing	Айналдыру
 	Sending	Жіберу
+
+# DCP subtitle export (#938)
+	Subtitles from the first caption track	Бірінші субтитр жолынан алынған субтитрлер
+	The package language	Пакет тілі
+	Inter Regular (built in), or an OpenType / TrueType file	Inter Regular (кірістірілген) немесе OpenType / TrueType файлы
+	Subtitle language	Субтитр тілі
+	Subtitle font	Субтитр қаріпі
+	Fonts	Қаріптер
+
+# AS-11 metadata in MXF OP1a (#96)
+	AS-11 Core	AS-11 Core
+	AS-11 Parts	AS-11 бөліктері
+	AS-11 UK DPP	AS-11 UK DPP

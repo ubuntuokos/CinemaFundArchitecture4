@@ -34,6 +34,9 @@ pub enum Codec {
     /// Immersive Audio Bitstream (SMPTE ST 2098-2; ST 429-18 in DCPs, ST 2067-201 in IMF): one
     /// IABitstream frame per edit unit.
     Iab,
+    /// MPEG-2 / MPEG-4 AAC (ST 381-4): the audio frames in the wrapper the encoder wrote (ADTS,
+    /// LATM/LOAS or ADIF), one or more per element.
+    Aac,
     Unknown,
 }
 
@@ -52,6 +55,7 @@ impl Codec {
             Codec::Pcm => "PCM",
             Codec::Aes3Element => "AES3 PCM",
             Codec::Iab => "IAB",
+            Codec::Aac => "AAC",
             Codec::Unknown => "unknown",
         }
     }
@@ -59,6 +63,14 @@ impl Codec {
     pub fn intra_only(&self) -> bool {
         matches!(self, Codec::Avc { intra: true } | Codec::Vc3 | Codec::ProRes { .. } | Codec::Jpeg2000 | Codec::Dv | Codec::Uncompressed | Codec::Iab)
     }
+}
+
+/// An AAC sound track (ST 381-4): the AAC essence container (Table 8: mapping kind 16h ADIF, 17h
+/// ADTS, 18h LATM/LOAS) or the AAC sound essence coding label (Table 5: MPEG audio compression,
+/// byte 14 03h MPEG-2 AAC or 04h MPEG-4 AAC).
+pub fn is_aac(container: Option<Ul>, coding: Option<Ul>) -> bool {
+    container.is_some_and(|c| c.is_smpte() && c.item_starts_with(&[0x0D, 0x01, 0x03, 0x01, 0x02]) && matches!(c.0[13], 0x16..=0x18))
+        || coding.is_some_and(|c| c.is_smpte() && c.item_starts_with(&[0x04, 0x02, 0x02, 0x02, 0x04]) && matches!(c.0[13], 0x03 | 0x04))
 }
 
 /// Identify a picture codec from the picture essence coding label and the essence container label.

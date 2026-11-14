@@ -98,6 +98,7 @@ The native backend implements these rules:
 | `DCP.AUD.001` | Sound track files (see below). |
 | `DCP.AUD.002` | Loudness (see below). |
 | `DCP.IAB.001` | Immersive audio track files (see below). |
+| `DCP.SUB.001` | Subtitle and caption documents (see below). |
 | `DCP.MARK.001` | Markers (see below). |
 
 `DCP.MARK.001` checks each composition's markers:
@@ -117,7 +118,7 @@ The native backend implements these rules:
 Tools differ on whether FFOC sits at offset 0 or 1 (CFA4's export writes 1), so both are accepted.
 
 If no packing list or composition playlist was read, the rules over them are `UNCHECKED`, never a
-vacuous pass. Subtitles come with DCP-08, and the signatures with DCP-10.
+vacuous pass. The signatures come with DCP-10.
 
 ### Track files and pictures (DCP-06)
 
@@ -196,6 +197,33 @@ Profile thresholds come with the profile files (DCP-11). Encrypted sound is `UNC
 IABitstream frame (`cfa4-iab`) of that frame rate with 24-bit audio. Every frame is parsed (progress
 stage `iab`). A package without immersive audio is `NOT_APPLICABLE`.
 
+### Subtitles and captions (DCP-08)
+
+`DCP.SUB.001` (ST 428-7, ST 429-5, Interop `DCSubtitle`) reads every `MainSubtitle`, `MainCaption`
+and `MainClosedCaption` asset of the compositions with `cfa4_dcp::subtitle`. A SMPTE asset is a
+timed text track file (`cfa4-mxf`); its fonts and images are the file's ancillary resources. An
+Interop asset is the XML file; its fonts and PNG images are files beside it, inside the package.
+Each document is read once, however many reels play it.
+
+- `FAIL`: the file is neither a subtitle document nor a timed text track file, or cannot be read;
+- `FAIL`: the reader found a missing, invalid or repeated element (a time that is not
+  `HH:MM:SS:EE`, a missing `SpotNumber` and the like);
+- `FAIL`: the document is of the other standard than its composition;
+- `FAIL`: SMPTE `Id` is not the track file's timed text resource id, Interop `SubtitleID` is not the
+  reel asset's `Id`;
+- `FAIL`: SMPTE `EditRate` is not the reel asset's;
+- `FAIL`: a font or image it loads is not in the package, or an image is not PNG;
+- `FAIL`: a `Font` names an id no `LoadFont` declares;
+- `FAIL`: a subtitle does not end after it starts, starts before `StartTime`, or ends after the reel
+  (`IntrinsicDuration` at the reel asset's `EditRate`);
+- `WARNING`: fades longer than the subtitle, subtitles out of time order or spot-number order, a
+  subtitle with neither text nor image.
+
+The same problem in many subtitles is one finding with a count. An encrypted asset is `UNCHECKED`.
+Not checked: the XML schemas beyond what the reader enforces, whether the fonts have a glyph for
+every character, and how the subtitles render. The local asdcplib build has no XML parser, so it
+cannot wrap timed text; the SMPTE tests use track files built with `cfa4-mxf`'s test builder.
+
 ### Comparison with dcp_inspect
 
 On CFA4 exports the rules were compared with dcp_inspect: a flipped byte, a grown file and a marker
@@ -252,6 +280,8 @@ The HTML report is DCP-15.
   - profiles and the verdict rules;
   - cancellation and progress;
   - the report.
+- `tests/subtitles.rs` builds small Interop and SMPTE packages with subtitles: a good one of each,
+  and each `DCP.SUB.001` failure and warning (ids, fonts, images, times, standard, edit rate).
 - `tests/export_round_trip.rs` writes a DCP with `cfa4-export` and runs three profiles on it:
   - Quick Scan and Full Integrity, including the hashes, must pass;
   - SMPTE Cinema: the track files and the sound pass, the picture format is a warning (25 fps), and the only

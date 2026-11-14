@@ -2357,6 +2357,10 @@
 	Show Clip Mismatch Warning dialog	显示剪辑不匹配警告对话框
 	Show Event Indicator	显示事件指示器
 	Show Focus Area	显示焦点区域
+	Rack Focus	移焦
+	Focus Point A	焦点 A
+	Focus Point B	焦点 B
+	Rack	移焦进度
 	Show Home	显示主页
 	Show Mask Tracker Preview	显示遮罩跟踪器预览
 	Show Only Noise	仅显示噪点
@@ -3622,6 +3626,7 @@
 	Social Deliverables…	社交媒体交付…
 	Counter	计数器
 	Word by Word	逐词
+	Scramble	乱码
 	Animator	动画器
 	Animator Duration	动画器持续时间
 	Animator Delay	动画器延迟
@@ -4174,6 +4179,11 @@
 	Burn Size	燃烧大小
 	Ember Width	余烬宽度
 	Ember Color	余烬颜色
+	Tear Away	撕开
+	Tear Roughness	撕裂粗糙度
+	Paper Edge Width	纸边宽度
+	Stamp Cut	邮票剪切
+	Perforations	齿孔
 	Check Text Legibility	检查文本可读性
 	Clear Legibility Markers	清除可读性标记
 	Text legibility: no problems found	文本可读性：未发现问题
@@ -4213,6 +4223,9 @@
 	Dither	抖动
 	Pattern	图案
 	Cell Size	网格大小
+	Pixelate	像素化
+	Cell Shape	单元形状
+	LED	LED
 	Cyan Angle	青色角度
 	Magenta Angle	洋红角度
 	Yellow Angle	黄色角度
@@ -4573,6 +4586,16 @@
 	Chase External Timecode	追随外部时间码
 	Send LTC	发送 LTC
 	Send MIDI Timecode	发送 MIDI 时间码
+
+# Live studio preview (CFA4-LIVE-STUDIO-001 S0)
+	Live studio preview	直播演播室预览
+	Live studio: stopped	直播演播室：已停止
+	Live studio: {state}	直播演播室：{state}
+	Live studio: {error}	直播演播室：{error}
+	restarted after {count} crashes (last: {exit})	在 {count} 次崩溃后已重新启动（最近一次：{exit}）
+	software backend: {reason}	软件后端：{reason}
+	Start studio	启动演播室
+	Stop studio	停止演播室
 # Auto Color, Auto Contrast, Auto Levels (EffectsSDK review)
 	Auto Color	自动颜色
 	Auto Contrast	自动对比度
@@ -4630,3 +4653,16 @@
 	Freewheel	自由运行
 	Scrubbing	拖动中
 	Sending	正在发送
+
+# DCP subtitle export (#938)
+	Subtitles from the first caption track	来自第一条字幕轨道的字幕
+	The package language	包的语言
+	Inter Regular (built in), or an OpenType / TrueType file	Inter Regular（内置）或 OpenType / TrueType 文件
+	Subtitle language	字幕语言
+	Subtitle font	字幕字体
+	Fonts	字体
+
+# AS-11 metadata in MXF OP1a (#96)
+	AS-11 Core	AS-11 Core
+	AS-11 Parts	AS-11 部分
+	AS-11 UK DPP	AS-11 UK DPP

@@ -1372,6 +1372,9 @@
 	Changes are copied in the background a moment after each edit. If CFA4 quits unexpectedly, they are offered the next time it starts.	A változások minden szerkesztés után a háttérben másolódnak. Ha a CFA4 váratlanul kilép, a következő indításkor felajánlja őket.
 	Chinese	Kínai
 	Closed Captions	Feliratok
+	AS-11 Core	AS-11 Core
+	AS-11 Parts	AS-11 részek
+	AS-11 UK DPP	AS-11 UK DPP
 	Color Theme	Színtéma
 	Color…	Szín…
 	Crash Recovery	Összeomlás utáni helyreállítás
@@ -2157,6 +2160,12 @@
 	Event	Esemény
 	Lossless (reversible JPEG 2000)	Veszteségmentes (reverzibilis JPEG 2000)
 	Package language	Csomag nyelve
+	Subtitles from the first caption track	Feliratok az első feliratsávból
+	The package language	A csomag nyelve
+	Inter Regular (built in), or an OpenType / TrueType file	Inter Regular (beépített), vagy egy OpenType / TrueType fájl
+	Subtitle language	Felirat nyelve
+	Subtitle font	Felirat betűkészlete
+	Fonts	Betűkészletek
 	4:2:0 (Main Profile)	4:2:0 (Main profil)
 	4:2:2 (4:2:2 Profile)	4:2:2 (4:2:2 profil)
 	B pictures	B-képek
@@ -2193,6 +2202,7 @@
 	Counter	Számláló
 	Typewriter	Írógép
 	Word by Word	Szóról szóra
+	Scramble	Betűkeverés
 	Animator	Animátor
 	Animator Duration	Animátor időtartama
 	Animator Delay	Animátor késleltetése
@@ -3391,6 +3401,10 @@ export.summary	Low	alacsony
 	Sharpen Amount	Élesítés mértéke
 	Shift Center To	Középpont áthelyezése ide
 	Show Focus Area	Fókuszterület megjelenítése
+	Rack Focus	Élességáthúzás
+	Focus Point A	A fókuszpont
+	Focus Point B	B fókuszpont
+	Rack	Áthúzás
 	Show Only Noise	Csak a zaj megjelenítése
 	Shrink	Zsugorodás
 	Shutter Angle	Zárszög
@@ -4175,6 +4189,11 @@ export.summary	Low	alacsony
 	Burn Size	Égés mérete
 	Ember Width	Parázsszegély szélessége
 	Ember Color	Parázsszegély színe
+	Tear Away	Széttépés
+	Tear Roughness	Tépés érdessége
+	Paper Edge Width	Papírszél szélessége
+	Stamp Cut	Bélyegkivágás
+	Perforations	Perforáció
 	Check Text Legibility	Szöveg olvashatóságának ellenőrzése
 	Clear Legibility Markers	Olvashatósági jelölők törlése
 	Text legibility: no problems found	Szöveg olvashatósága: nincs probléma
@@ -4214,6 +4233,9 @@ export.summary	Low	alacsony
 	Dither	Dither
 	Pattern	Minta
 	Cell Size	Cellaméret
+	Pixelate	Pixelesítés
+	Cell Shape	Cella alakja
+	LED	LED
 	Cyan Angle	Cián szöge
 	Magenta Angle	Bíbor szöge
 	Yellow Angle	Sárga szöge
@@ -4572,6 +4594,50 @@ export.summary	Low	alacsony
 	Chase External Timecode	Külső időkód követése
 	Send LTC	LTC küldése
 	Send MIDI Timecode	MIDI-időkód küldése
+
+# Live studio preview (CFA4-LIVE-STUDIO-001 S0)
+	Live studio preview	Élő stúdió előnézet
+	Live studio: stopped	Élő stúdió: leállítva
+	Live studio: {state}	Élő stúdió: {state}
+	Live studio: {error}	Élő stúdió: {error}
+	restarted after {count} crashes (last: {exit})	{count} összeomlás után újraindítva (utolsó: {exit})
+	software backend: {reason}	szoftveres háttér: {reason}
+	Start studio	Stúdió indítása
+	Stop studio	Stúdió leállítása
+	Task Manager	Feladatkezelő
+	Background jobs	Háttérfeladatok
+	Exports	Exportálások
+	Shared task queue	Közös feladatsor
+	Task	Feladat
+	State	Állapot
+	Details	Részletek
+	Time left	Hátralévő idő
+	Scheduled	Ütemezve
+	Queued	Sorban áll
+	Waiting for resources	Erőforrásra vár
+	Blocked	Blokkolva
+	Running	Fut
+	Paused	Szüneteltetve
+	Cancelling	Megszakítás folyamatban
+	Interactive	Interaktív
+	Speculative	Előzetes
+	Final render	Végső renderelés
+	Show finished	Befejezettek megjelenítése
+	Nothing is running.	Semmi sem fut.
+	Not reported by this engine yet.	Ez a motor még nem jelenti.
+	Not available: {why}	Nem érhető el: {why}
+	{name} waits: {why}	{name} vár: {why}
+	{running} running · {waiting} waiting	{running} fut · {waiting} vár
+	{n} active	{n} aktív
+	{n} CPU	{n} CPU
+	{n} GiB	{n} GiB
+	{n} MiB	{n} MiB
+	Needs your decision	Döntésre vár
+	Run now	Futtatás most
+	Next slot	Következő időpont
+	Missed its start	Lekéste az indulást
+	Missed its start at {time}	Lekéste az indulást ({time})
+	Starts at {time}	Indulás: {time}
 # Auto Color, Auto Contrast, Auto Levels (EffectsSDK review)
 	Auto Color	Automatikus szín
 	Auto Contrast	Automatikus kontraszt

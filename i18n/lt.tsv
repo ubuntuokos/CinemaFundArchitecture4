@@ -2085,6 +2085,7 @@
 	Counter	Skaitiklis
 	Typewriter	Rašomoji mašinėlė
 	Word by Word	Žodis po žodžio
+	Scramble	Maišymas
 	Animator	Animatorius
 	Animator Duration	Animatoriaus trukmė
 	Animator Delay	Animatoriaus delsa
@@ -3223,6 +3224,10 @@
 	Sharpen Amount	Ryškinimo kiekis
 	Shift Center To	Perkelti centrą į
 	Show Focus Area	Rodyti fokuso sritį
+	Rack Focus	Fokuso perkėlimas
+	Focus Point A	Fokuso taškas A
+	Focus Point B	Fokuso taškas B
+	Rack	Perkėlimas
 	Show Only Noise	Rodyti tik triukšmą
 	Shrink	Sutraukti
 	Shutter Angle	Užrakto kampas
@@ -4179,6 +4184,11 @@ export.summary	Low	žema
 	Burn Size	Išdeginimo dydis
 	Ember Width	Žarijų krašto plotis
 	Ember Color	Žarijų krašto spalva
+	Tear Away	Atplėšimas
+	Tear Roughness	Plyšio šiurkštumas
+	Paper Edge Width	Popieriaus krašto plotis
+	Stamp Cut	Pašto ženklo iškarpa
+	Perforations	Perforacija
 	Check Text Legibility	Tikrinti teksto įskaitomumą
 	Clear Legibility Markers	Išvalyti įskaitomumo žymes
 	Text legibility: no problems found	Teksto įskaitomumas: problemų nerasta
@@ -4218,6 +4228,9 @@ export.summary	Low	žema
 	Dither	Taškavimas
 	Pattern	Raštas
 	Cell Size	Langelio dydis
+	Pixelate	Pikselizavimas
+	Cell Shape	Langelio forma
+	LED	LED
 	Cyan Angle	Žydros kampas
 	Magenta Angle	Purpurinės kampas
 	Yellow Angle	Geltonos kampas
@@ -4578,6 +4591,16 @@ export.summary	Low	žema
 	Chase External Timecode	Sekti išorinį laiko kodą
 	Send LTC	Siųsti LTC
 	Send MIDI Timecode	Siųsti MIDI laiko kodą
+
+# Live studio preview (CFA4-LIVE-STUDIO-001 S0)
+	Live studio preview	Tiesioginės studijos peržiūra
+	Live studio: stopped	Tiesioginė studija: sustabdyta
+	Live studio: {state}	Tiesioginė studija: {state}
+	Live studio: {error}	Tiesioginė studija: {error}
+	restarted after {count} crashes (last: {exit})	paleista iš naujo po {count} strigčių (paskutinė: {exit})
+	software backend: {reason}	programinė posistemė: {reason}
+	Start studio	Paleisti studiją
+	Stop studio	Sustabdyti studiją
 # Auto Color, Auto Contrast, Auto Levels (EffectsSDK review)
 	Auto Color	Automatinė spalva
 	Auto Contrast	Automatinis kontrastas
@@ -4635,3 +4658,16 @@ export.summary	Low	žema
 	Freewheel	Laisvoji eiga
 	Scrubbing	Slinkimas
 	Sending	Siunčiama
+
+# DCP subtitle export (#938)
+	Subtitles from the first caption track	Subtitrai iš pirmojo subtitrų takelio
+	The package language	Paketo kalba
+	Inter Regular (built in), or an OpenType / TrueType file	Inter Regular (įtaisytas) arba OpenType / TrueType failas
+	Subtitle language	Subtitrų kalba
+	Subtitle font	Subtitrų šriftas
+	Fonts	Šriftai
+
+# AS-11 metadata in MXF OP1a (#96)
+	AS-11 Core	AS-11 Core
+	AS-11 Parts	AS-11 dalys
+	AS-11 UK DPP	AS-11 UK DPP

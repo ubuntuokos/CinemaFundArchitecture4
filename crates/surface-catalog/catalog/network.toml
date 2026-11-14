@@ -1,0 +1,40 @@
+# Network control (plan §2): OSC, Bitfocus Companion, phone or tablet remote. Off by default; local network only, with authentication (§8.1).
+format = "cfa4-surface-catalog"
+version = 1
+family = "network"
+
+[[model]]
+id = "osc.generic"
+vendor = "OSC"
+name = "Configurable addresses"
+kind = "network"
+goal = "FULL"
+adapter = "osc"
+phase = "M3"
+connection = ["network"]
+source = "Standard OSC"
+notes = ["Off by default."]
+
+[[model]]
+id = "bitfocus.companion"
+vendor = "Bitfocus"
+name = "Companion, Companion Satellite"
+kind = "network"
+goal = "BEST_EFFORT"
+adapter = "companion"
+phase = "M6"
+connection = ["network"]
+source = "Companion (MIT)"
+notes = ["Off by default."]
+
+[[model]]
+id = "cfa4.remote"
+vendor = "CFA4"
+name = "Phone / tablet remote"
+kind = "network"
+goal = "FULL"
+adapter = "remote"
+phase = "M7"
+connection = ["network"]
+source = "own"
+notes = ["Off by default; optional."]

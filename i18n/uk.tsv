@@ -2394,6 +2394,10 @@
 	Show Clip Mismatch Warning dialog	Показувати попередження про невідповідність кліпа
 	Show Event Indicator	Показувати індикатор подій
 	Show Focus Area	Показувати область фокуса
+	Rack Focus	Переведення фокуса
+	Focus Point A	Точка фокуса A
+	Focus Point B	Точка фокуса B
+	Rack	Переведення
 	Show Home	Показувати головну сторінку
 	Show Mask Tracker Preview	Показувати попередній перегляд трекінгу маски
 	Show Only Noise	Показувати лише шум
@@ -3634,6 +3638,7 @@
 	Social Deliverables…	Матеріали для соцмереж…
 	Counter	Лічильник
 	Word by Word	По словах
+	Scramble	Перемішування
 	Animator	Аніматор
 	Animator Duration	Тривалість аніматора
 	Animator Delay	Затримка аніматора
@@ -4161,6 +4166,11 @@
 	Burn Size	Розмір пропалу
 	Ember Width	Ширина жевріючого краю
 	Ember Color	Колір жевріючого краю
+	Tear Away	Відрив
+	Tear Roughness	Нерівність розриву
+	Paper Edge Width	Ширина паперового краю
+	Stamp Cut	Поштова марка
+	Perforations	Перфорація
 	Check Text Legibility	Перевірити читабельність тексту
 	Clear Legibility Markers	Видалити маркери читабельності
 	Text legibility: no problems found	Читабельність тексту: проблем не знайдено
@@ -4200,6 +4210,9 @@
 	Dither	Дизеринг
 	Pattern	Візерунок
 	Cell Size	Розмір комірки
+	Pixelate	Пікселізація
+	Cell Shape	Форма комірки
+	LED	LED
 	Cyan Angle	Кут блакитного
 	Magenta Angle	Кут пурпурового
 	Yellow Angle	Кут жовтого
@@ -4560,6 +4573,16 @@
 	Chase External Timecode	Стежити за зовнішнім тайм-кодом
 	Send LTC	Надсилати LTC
 	Send MIDI Timecode	Надсилати MIDI тайм-код
+
+# Live studio preview (CFA4-LIVE-STUDIO-001 S0)
+	Live studio preview	Попередній перегляд студії прямого ефіру
+	Live studio: stopped	Студія прямого ефіру: зупинена
+	Live studio: {state}	Студія прямого ефіру: {state}
+	Live studio: {error}	Студія прямого ефіру: {error}
+	restarted after {count} crashes (last: {exit})	перезапущена після {count} збоїв (останній: {exit})
+	software backend: {reason}	програмний бекенд: {reason}
+	Start studio	Запустити студію
+	Stop studio	Зупинити студію
 # Auto Color, Auto Contrast, Auto Levels (EffectsSDK review)
 	Auto Color	Автоколір
 	Auto Contrast	Автоконтраст
@@ -4617,3 +4640,16 @@
 	Freewheel	Вільний хід
 	Scrubbing	Прокручування
 	Sending	Надсилання
+
+# DCP subtitle export (#938)
+	Subtitles from the first caption track	Субтитри з першої доріжки субтитрів
+	The package language	Мова пакета
+	Inter Regular (built in), or an OpenType / TrueType file	Inter Regular (вбудований) або файл OpenType / TrueType
+	Subtitle language	Мова субтитрів
+	Subtitle font	Шрифт субтитрів
+	Fonts	Шрифти
+
+# AS-11 metadata in MXF OP1a (#96)
+	AS-11 Core	AS-11 Core
+	AS-11 Parts	Частини AS-11
+	AS-11 UK DPP	AS-11 UK DPP

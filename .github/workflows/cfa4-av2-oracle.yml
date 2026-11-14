@@ -6,7 +6,7 @@ name: CFA4 AV2 oracle (manual)
 # on workflow_dispatch or on a `cfa4-full-validation` label event of a PR that touches the AV2
 # harness; never on ordinary commits and never on a schedule (AGENTS.md). Not a required check.
 # Plan X/6 adds the early decoder (ADR 0010): the pinned dav2d and the cfa4-av2-decode helper,
-# checked against the same manifest.
+# checked against the same manifest. G1 adds an ASan+UBSan build of the helper and a fixed-seed fuzz run.
 
 on:
   pull_request:
@@ -41,10 +41,30 @@ jobs:
           persist-credentials: false
       - name: Ubuntu 26.04 host gate
         run: bash scripts/ci/require-ubuntu-2604.sh
+      # No Ubuntu ffmpeg: the corpus sources come only from CFA4's pinned FFmpeg 9.0.2
+      # (docs/testing.md §2). The -dev packages bring the shared libraries the prebuilt loads.
       - name: Build dependencies
         run: |
           sudo apt-get update
-          sudo apt-get install -y --no-install-recommends build-essential cmake ninja-build meson nasm git ffmpeg
+          sudo apt-get install -y --no-install-recommends build-essential cmake ninja-build meson nasm git \
+            curl xz-utils zlib1g-dev libva-dev libdrm-dev libvpl-dev \
+            libdav1d-dev libvpx-dev libopus-dev libwebp-dev libmp3lame-dev
+      - name: Install CFA4 FFmpeg 9.0.2 (prebuilt, SHA-256 pinned; GPL-3 base build, no x264/x265)
+        run: |
+          bash scripts/dev/fetch-ffmpeg-9.0.2.sh
+          echo /opt/cfa4/ffmpeg-9.0.2/bin >> "$GITHUB_PATH"
+      - name: Assert the corpus ffmpeg is the pinned 9.0.2
+        run: |
+          if dpkg-query -W -f='${Status}' ffmpeg 2>/dev/null | grep -q 'install ok installed'; then
+            echo "::error::The Ubuntu ffmpeg package is installed; the AV2 corpus must use only FFmpeg 9.0.2."
+            exit 1
+          fi
+          test "$(command -v ffmpeg)" = /opt/cfa4/ffmpeg-9.0.2/bin/ffmpeg
+          actual="$(ffmpeg -version | awk 'NR==1 {print $3}')"
+          if [[ "$actual" != "9.0.2" ]]; then
+            echo "::error::The AV2 corpus requires ffmpeg 9.0.2 (got $actual)."
+            exit 1
+          fi
       - name: Rust toolchain from rust-toolchain.toml
         run: rustup show
       - name: Build AVM v1.0.0 (oracle) into target/av2-oracle
@@ -65,3 +85,10 @@ jobs:
         env:
           CFA4_REQUIRE_AV2_ORACLE: "1"
         run: cargo test --locked -p cfa4-codecs --features av2-external --test av2_external -- --nocapture
+      - name: Build the helper with ASan and UBSan into target/av2-decoder-asan
+        run: python3 scripts/dev/av2-decoder.py build --sanitize
+      # Report only while the pinned dav2d has known fuzzing failures (AV2-00 audit, 13. pont):
+      # G1 needs this step to pass with 0 failures, and then continue-on-error goes away.
+      - name: Fuzz the sanitized helper (Main_420_10_IP0 corpus, fixed seed, 3000 rounds; report only)
+        continue-on-error: true
+        run: python3 scripts/dev/av2-decoder.py fuzz --rounds 3000

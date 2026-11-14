@@ -2065,6 +2065,7 @@
 	Text Animator	టెక్స్ట్ యానిమేటర్
 	Counter	కౌంటర్
 	Word by Word	పదం పదంగా
+	Scramble	కలగలుపు
 	Animator	యానిమేటర్
 	Animator Duration	యానిమేటర్ వ్యవధి
 	Animator Delay	యానిమేటర్ ఆలస్యం
@@ -3190,6 +3191,10 @@
 	Sharpen Amount	షార్పెన్ మొత్తం
 	Shift Center To	కేంద్రాన్ని దీనికి జరుపు
 	Show Focus Area	ఫోకస్ ప్రాంతాన్ని చూపు
+	Rack Focus	ర్యాక్ ఫోకస్
+	Focus Point A	ఫోకస్ బిందువు A
+	Focus Point B	ఫోకస్ బిందువు B
+	Rack	ర్యాక్
 	Show Only Noise	నాయిస్‌ను మాత్రమే చూపు
 	Shrink	కుదించు
 	Shutter Angle	షట్టర్ కోణం
@@ -4182,6 +4187,11 @@ export.summary	Low	తక్కువ
 	Burn Size	కాలే పరిమాణం
 	Ember Width	నిప్పు అంచు వెడల్పు
 	Ember Color	నిప్పు అంచు రంగు
+	Tear Away	చింపివేత
+	Tear Roughness	చిరుగు గరుకుదనం
+	Paper Edge Width	కాగితం అంచు వెడల్పు
+	Stamp Cut	స్టాంప్ కట్
+	Perforations	చిల్లులు
 	Check Text Legibility	వచనం చదవగలతను తనిఖీ చేయి
 	Clear Legibility Markers	చదవగలత మార్కర్లను తొలగించు
 	Text legibility: no problems found	వచనం చదవగలత: సమస్యలు ఏవీ కనబడలేదు
@@ -4221,6 +4231,9 @@ export.summary	Low	తక్కువ
 	Dither	డిథర్
 	Pattern	నమూనా
 	Cell Size	సెల్ పరిమాణం
+	Pixelate	పిక్సెలేట్
+	Cell Shape	సెల్ ఆకారం
+	LED	LED
 	Cyan Angle	సయాన్ కోణం
 	Magenta Angle	మెజెంటా కోణం
 	Yellow Angle	పసుపు కోణం
@@ -4581,6 +4594,16 @@ export.summary	Low	తక్కువ
 	Chase External Timecode	బాహ్య టైమ్‌కోడ్‌ను అనుసరించు
 	Send LTC	LTC పంపు
 	Send MIDI Timecode	MIDI టైమ్‌కోడ్ పంపు
+
+# Live studio preview (CFA4-LIVE-STUDIO-001 S0)
+	Live studio preview	లైవ్ స్టూడియో ప్రివ్యూ
+	Live studio: stopped	లైవ్ స్టూడియో: ఆపివేయబడింది
+	Live studio: {state}	లైవ్ స్టూడియో: {state}
+	Live studio: {error}	లైవ్ స్టూడియో: {error}
+	restarted after {count} crashes (last: {exit})	{count} క్రాష్‌ల తర్వాత మళ్లీ ప్రారంభించబడింది (చివరిది: {exit})
+	software backend: {reason}	సాఫ్ట్‌వేర్ బ్యాకెండ్: {reason}
+	Start studio	స్టూడియోను ప్రారంభించు
+	Stop studio	స్టూడియోను ఆపు
 # Auto Color, Auto Contrast, Auto Levels (EffectsSDK review)
 	Auto Color	స్వయంచాలక రంగు
 	Auto Contrast	స్వయంచాలక కాంట్రాస్ట్
@@ -4638,3 +4661,16 @@ export.summary	Low	తక్కువ
 	Freewheel	ఫ్రీవీల్
 	Scrubbing	స్క్రబ్ చేస్తోంది
 	Sending	పంపుతోంది
+
+# DCP subtitle export (#938)
+	Subtitles from the first caption track	మొదటి క్యాప్షన్ ట్రాక్ నుండి ఉపశీర్షికలు
+	The package language	ప్యాకేజీ భాష
+	Inter Regular (built in), or an OpenType / TrueType file	Inter Regular (అంతర్నిర్మిత), లేదా OpenType / TrueType ఫైల్
+	Subtitle language	ఉపశీర్షికల భాష
+	Subtitle font	ఉపశీర్షికల ఫాంట్
+	Fonts	ఫాంట్‌లు
+
+# AS-11 metadata in MXF OP1a (#96)
+	AS-11 Core	AS-11 Core
+	AS-11 Parts	AS-11 భాగాలు
+	AS-11 UK DPP	AS-11 UK DPP

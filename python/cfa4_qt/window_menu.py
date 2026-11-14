@@ -67,6 +67,7 @@ PANELS = (
     PanelEntry(N_("Text")),
     PanelEntry(N_("Events")),
     PanelEntry(N_("Progress")),
+    PanelEntry(N_("Task Manager")),
     PanelEntry(N_("Reference Monitor")),
     PanelEntry(N_("Timecode")),
     PanelEntry(N_("Project Notes")),

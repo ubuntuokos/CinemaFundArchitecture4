@@ -2832,6 +2832,10 @@
 	Show Event Indicator	이벤트 표시기 표시
 	Show finished jobs	완료된 작업 표시
 	Show Focus Area	초점 영역 표시
+	Rack Focus	랙 포커스
+	Focus Point A	초점 A
+	Focus Point B	초점 B
+	Rack	랙
 	Show graphs	그래프 표시
 	Show Guides	안내선 표시
 	Show Home	홈 표시
@@ -3632,6 +3636,7 @@
 	Social Deliverables…	소셜 미디어 출력…
 	Counter	카운터
 	Word by Word	단어별
+	Scramble	스크램블
 	Animator	애니메이터
 	Animator Duration	애니메이터 지속 시간
 	Animator Delay	애니메이터 지연
@@ -4170,6 +4175,11 @@
 	Burn Size	타는 크기
 	Ember Width	불씨 폭
 	Ember Color	불씨 색상
+	Tear Away	찢어내기
+	Tear Roughness	찢김 거칠기
+	Paper Edge Width	종이 가장자리 폭
+	Stamp Cut	우표 컷
+	Perforations	천공
 	Check Text Legibility	텍스트 가독성 검사
 	Clear Legibility Markers	가독성 마커 지우기
 	Text legibility: no problems found	텍스트 가독성: 문제가 없습니다
@@ -4209,6 +4219,9 @@
 	Dither	디더
 	Pattern	패턴
 	Cell Size	셀 크기
+	Pixelate	픽셀화
+	Cell Shape	셀 모양
+	LED	LED
 	Cyan Angle	시안 각도
 	Magenta Angle	마젠타 각도
 	Yellow Angle	노랑 각도
@@ -4569,6 +4582,16 @@
 	Chase External Timecode	외부 타임코드 체이스
 	Send LTC	LTC 보내기
 	Send MIDI Timecode	MIDI 타임코드 보내기
+
+# Live studio preview (CFA4-LIVE-STUDIO-001 S0)
+	Live studio preview	라이브 스튜디오 미리 보기
+	Live studio: stopped	라이브 스튜디오: 중지됨
+	Live studio: {state}	라이브 스튜디오: {state}
+	Live studio: {error}	라이브 스튜디오: {error}
+	restarted after {count} crashes (last: {exit})	{count}번 충돌 후 다시 시작됨 (마지막: {exit})
+	software backend: {reason}	소프트웨어 백엔드: {reason}
+	Start studio	스튜디오 시작
+	Stop studio	스튜디오 중지
 # Auto Color, Auto Contrast, Auto Levels (EffectsSDK review)
 	Auto Color	자동 색상
 	Auto Contrast	자동 대비
@@ -4626,3 +4649,16 @@
 	Freewheel	프리휠
 	Scrubbing	스크러빙
 	Sending	보내는 중
+
+# DCP subtitle export (#938)
+	Subtitles from the first caption track	첫 번째 자막 트랙의 자막
+	The package language	패키지 언어
+	Inter Regular (built in), or an OpenType / TrueType file	Inter Regular(기본 제공) 또는 OpenType / TrueType 파일
+	Subtitle language	자막 언어
+	Subtitle font	자막 글꼴
+	Fonts	글꼴
+
+# AS-11 metadata in MXF OP1a (#96)
+	AS-11 Core	AS-11 Core
+	AS-11 Parts	AS-11 파트
+	AS-11 UK DPP	AS-11 UK DPP

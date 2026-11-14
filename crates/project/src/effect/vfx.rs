@@ -29,6 +29,8 @@ pub const SLIT_DIRECTIONS: &[&str] = &["Top", "Bottom", "Left", "Right"];
 pub const GLITCH_AXES: &[&str] = &["Horizontal", "Vertical"];
 /// Glitch effects: always on, or pulsing on and off at the Frequency.
 pub const GLITCH_INTERVALS: &[&str] = &["Infinite", "Periodic"];
+/// Pixelate cell shapes (`cfa4_render` `vfx::pixelate`, in this order).
+pub const PIXELATE_SHAPES: &[&str] = &["Square", "Hexagon", "Circle", "Diamond", "Triangle", "LED"];
 pub const ECHO_OPERATORS: &[&str] = &["Add", "Maximum", "Minimum", "Screen", "Composite In Back", "Composite In Front", "Blend"];
 pub const SIMPLE_BLEND: &[&str] = &["Normal", "Add", "Screen", "Multiply", "Overlay"];
 
@@ -96,6 +98,8 @@ pub fn auto_point(effect: &str, param: &str) -> Option<(f64, f64)> {
         ("checkerboard", "anchor") => (0.0, 0.0),
         ("write_on", "brush") => (0.5, 0.5),
         ("volumetric_rays", "center") => (0.5, 0.25),
+        ("rack_focus", "focus_a") => (1.0 / 3.0, 0.5),
+        ("rack_focus", "focus_b") => (2.0 / 3.0, 0.5),
         _ => return None,
     })
 }
@@ -284,6 +288,23 @@ pub(super) fn defs() -> Vec<EffectDef> {
                 px("size", "Focus Size", 200.0, 4000.0, 1000.0),
                 px("feather", "Feather", 200.0, 4000.0, 1000.0),
                 px("amount", "Blur Amount", 20.0, 500.0, 100.0),
+                b("show", "Show Focus Area", false),
+            ],
+        ),
+        // CFA4's own: focus pulls from point A to point B as Rack goes 0 → 100 %.
+        video(
+            "rack_focus",
+            "Rack Focus",
+            BLUR,
+            vec![
+                ch("shape", "Focus Shape", &["Radial", "Linear"], 0),
+                pt("focus_a", "Focus Point A", f64::NAN, f64::NAN),
+                pt("focus_b", "Focus Point B", f64::NAN, f64::NAN),
+                pct("rack", "Rack", 0.0),
+                ang("angle", "Angle", 0.0),
+                px("size", "Focus Size", 150.0, 4000.0, 1000.0),
+                px("feather", "Feather", 300.0, 4000.0, 1000.0),
+                px("amount", "Blur Amount", 25.0, 500.0, 100.0),
                 b("show", "Show Focus Area", false),
             ],
         ),
@@ -806,6 +827,18 @@ pub(super) fn defs() -> Vec<EffectDef> {
                 pct("speed", "Speed", 35.0),
                 ch("interval", "Interval", GLITCH_INTERVALS, 0),
                 fs("frequency", "Frequency", 1.0, (0.0, 25.0), (0.0, 25.0), "", 2),
+            ],
+        ),
+        video(
+            "pixelate",
+            "Pixelate",
+            GLITCH,
+            vec![
+                ch("shape", "Cell Shape", PIXELATE_SHAPES, 1),
+                px("size", "Cell Size", 24.0, 1024.0, 200.0),
+                pct("gap", "Gap", 10.0),
+                col("background", "Background", [0.0, 0.0, 0.0, 1.0]),
+                pct("blend", "Blend With Original", 0.0),
             ],
         ),
         // ---- Time ----

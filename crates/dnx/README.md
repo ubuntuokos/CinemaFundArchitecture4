@@ -26,7 +26,8 @@ only as an external fixture generator and test oracle.
 | Alpha: DCT-coded and lossless differential RLE (Amendment 1 for HD CIDs) | done, not oracle-tested (no encoder produces it) |
 | CBR padding, VBR, scan-line indices, EOF signature / CRC flag | done |
 | Encoder: DNxHR LB, SQ, HQ (8-bit), HQX (10/12-bit), 444 (10/12-bit); CBR | done |
-| Encoder: DNxHD (HD CIDs), interlaced, alpha, VBR | not yet |
+| Encoder: DNxHD progressive HD CIDs 1235, 1237, 1238, 1250, 1251, 1252, 1253, 1256 | done (`tests/oracle_encode.rs`: ffmpeg decodes them within ±2 LSB) |
+| Encoder: interlaced and thin-raster DNxHD (1241–1244, 1258–1260), alpha, VBR | not yet |
 
 ## API
 
@@ -92,6 +93,9 @@ the prose of §7.3.1.2; we follow the prose (normative text takes precedence).
 - DNxHR LB/SQ/HQ (8-bit 4:2:2), HQX (10- or 12-bit 4:2:2) and 444 (10- or 12-bit 4:4:4,
   Y′CbCr or RGB), progressive, CBR at exactly the equation 7.1 frame size (e.g. 917 504 bytes
   for 1080p HQ, 606 208 for SQ). Input at any depth 8–16 is rescaled to the coded depth.
+- DNxHD, the progressive HD-profile IDs of Table C.1 (`Profile::Hd1235` … `Hd1256`): one fixed
+  raster (1920 × 1080 or 1280 × 720), depth and frame size each, header version 1; the same
+  transform, quantisation and rate control with the ID's weights and VLC tables.
 - Every macroblock is transformed once (orthonormal FDCT) and stored pre-divided by its weights.
   Rate control binary-searches the smallest uniform `qsf` whose frame fits the payload
   (including the 4-byte scan-line alignment), starting from the previous frame's value, then

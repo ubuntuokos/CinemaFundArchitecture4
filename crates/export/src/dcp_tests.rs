@@ -816,8 +816,16 @@ fn immersive_copy_honours_cancel() {
         dcp_iab_source: raw.to_string_lossy().to_string(),
         ..Default::default()
     };
-    let setup =
-        || DcpSetup { settings: &settings, title: "Cancel".into(), width: 1998, height: 1080, rate: FrameRate::new(25, 1), audio: false, active: (1998, 1080) };
+    let setup = || DcpSetup {
+        settings: &settings,
+        title: "Cancel".into(),
+        width: 1998,
+        height: 1080,
+        rate: FrameRate::new(25, 1),
+        audio: false,
+        active: (1998, 1080),
+        subtitles: None,
+    };
     for after in [0, 2, 5] {
         let mut mux = DcpMux::new(setup()).unwrap();
         mux.set_frames(8);
@@ -946,4 +954,139 @@ fn a_truehd_stream_without_objects_is_not_an_atmos_source() {
     };
     let err = export(&p, seq, &s, &m, &Progress::default()).unwrap_err().to_string();
     assert!(err.contains("not a Dolby Atmos stream"), "{err}");
+}
+
+/// The DCP test project with a caption track: cues at frames 2-6 (two lines, italics), 8-15 (cut
+/// at the last exported frame) and 20-30 (after the export, left out).
+fn project_with_captions() -> (Arc<Project>, ItemId, SourceMap) {
+    let (p, seq, m) = project();
+    let mut p = Arc::unwrap_or_clone(p);
+    let r = FrameRate::new(25, 1);
+    let tid = cfa4_project::TrackId(p.alloc_id());
+    let mut ct = cfa4_project::CaptionTrack::new(tid, "Feliratok".into(), cfa4_project::CaptionFormat::Subtitle);
+    for (from, to, text) in [(2, 6, "Helló <i>világ</i>\nmásodik sor"), (8, 15, "levágva & a < b"), (20, 30, "kimarad")] {
+        let id = cfa4_project::ClipId(p.alloc_id());
+        ct.captions.push(cfa4_project::Caption {
+            id,
+            start: r.tick_of(from),
+            duration: r.tick_of(to - from),
+            text: text.into(),
+            speaker: None,
+            cue_id: None,
+            settings: String::new(),
+        });
+    }
+    p.sequence_mut(seq).unwrap().caption_tracks.push(ct);
+    (Arc::new(p), seq, m)
+}
+
+/// #938: subtitles as an ST 428-7 reel in an ST 429-5 timed text track file with the font
+/// embedded, the CPL's `MainSubtitle` and the ST 429-16 subtitle language list.
+#[test]
+fn subtitles_in_a_timed_text_track_file() {
+    let (p, seq, m) = project_with_captions();
+    let dir = tmp("subtitles");
+    let s = ExportSettings {
+        format: Format::Dcp,
+        path: dir.clone(),
+        range: Some(TimeRange::new(Tick::ZERO, FrameRate::new(25, 1).tick_of(10))),
+        dcp_language: "en-US".into(),
+        dcp_subtitle_language: "hu-HU".into(),
+        dcp_subtitles: true,
+        ..Default::default()
+    };
+    let r = export(&p, seq, &s, &m, &Progress::default()).unwrap();
+    assert_eq!(r.extra_files.len(), 7, "{:?}", r.extra_files);
+    let sub_path = file(&dir, "sub_");
+    let sub = std::fs::read(&sub_path).unwrap();
+    assert!(cfa4_mxf::is_timed_text(&sub));
+    let tt = cfa4_mxf::open_timed_text(&sub).unwrap();
+    assert!(tt.warnings.is_empty(), "{:?}", tt.warnings);
+    assert_eq!((tt.edit_rate, tt.duration), (cfa4_mxf::Rational::new(25, 1), Some(10)));
+    assert_eq!(tt.namespace.as_deref(), Some(cfa4_captions::dcst::NAMESPACE_2010));
+    assert_eq!(tt.resources.len(), 1);
+    assert_eq!(tt.resources[0].mime.as_deref(), Some("application/x-font-opentype"));
+    assert_eq!(tt.read_resource(&sub, 0).unwrap(), cfa4_text::fonts::INTER_REGULAR, "the bundled font");
+    let xml = String::from_utf8(tt.read_document(&sub).unwrap()).unwrap();
+    let reel = cfa4_captions::dcst::parse_reel(&xml).unwrap();
+    assert_eq!(reel.language.as_deref(), Some("hu-HU"));
+    let uuid_bytes = |text: &str| -> Vec<u8> {
+        let hex = text.trim_start_matches("urn:uuid:").replace('-', "");
+        (0..16).map(|i| u8::from_str_radix(&hex[2 * i..2 * i + 2], 16).unwrap()).collect()
+    };
+    // the reel's Id is the descriptor's resource id, the LoadFont the font resource's id
+    assert_eq!(tt.resource_id.map(|u| u.to_vec()), Some(uuid_bytes(reel.id.as_deref().unwrap())));
+    let font_urn = xml.split("<LoadFont ID=\"font1\">").nth(1).and_then(|t| t.split('<').next()).unwrap();
+    assert_eq!(uuid_bytes(font_urn), tt.resources[0].id.to_vec());
+    let f = |n: i64| FrameRate::new(25, 1).tick_of(n);
+    let cues: Vec<(Tick, Tick, &str)> = reel.document.cues.iter().map(|c| (c.start, c.end, c.text.as_str())).collect();
+    assert_eq!(cues, [(f(2), f(6), "Helló <i>világ</i>\nmásodik sor"), (f(8), f(10), "levágva & a < b")]);
+
+    let cpl = std::fs::read_to_string(file(&dir, "cpl_")).unwrap();
+    let main = block(&cpl, "MainSubtitle").expect("MainSubtitle");
+    assert_eq!(element(main, "Language"), Some("hu-HU"));
+    assert_eq!(element(main, "Duration"), Some("10"));
+    assert_eq!(element(main, "EditRate"), Some("25 1"));
+    assert_eq!(
+        uuid_bytes(element(main, "Id").unwrap()),
+        sub[..].windows(32).find(|w| w[..12] == [0x06, 0x0A, 0x2B, 0x34, 0x01, 0x01, 0x01, 0x05, 0x01, 0x01, 0x0F, 0x20]).map(|w| w[16..].to_vec()).unwrap(),
+        "the file package UMID"
+    );
+    assert!(sub_path.ends_with(&format!("sub_{}.mxf", element(main, "Id").unwrap().trim_start_matches("urn:uuid:"))));
+    assert!(element(main, "Hash").is_some());
+    assert!(cpl.find("</MainSound>") < cpl.find("<MainSubtitle>") && cpl.find("</MainSubtitle>") < cpl.find("<meta:CompositionMetadataAsset"));
+    let meta = block(&cpl, "meta:CompositionMetadataAsset").unwrap();
+    assert_eq!(element(meta, "meta:MainSubtitleLanguageList"), Some("hu-HU"));
+    assert!(meta.find("</meta:MainPictureActiveArea>") < meta.find("<meta:MainSubtitleLanguageList>"));
+    let pkl = std::fs::read_to_string(file(&dir, "pkl_")).unwrap();
+    assert_eq!(pkl.split("<Asset>").count() - 1, 4, "CPL, picture, sound, subtitles");
+    let am = std::fs::read_to_string(Path::new(&dir).join("ASSETMAP.xml")).unwrap();
+    assert_eq!(am.matches("<Asset>").count(), 5);
+    if Command::new("xmllint").arg("--version").output().is_ok() {
+        let x = Path::new(&dir).join("reel.xml");
+        std::fs::write(&x, &xml).unwrap();
+        let out = Command::new("xmllint").args(["--noout"]).arg(&x).output().unwrap();
+        assert!(out.status.success(), "{}", String::from_utf8_lossy(&out.stderr));
+        let _ = std::fs::remove_file(&x);
+    }
+}
+
+/// #938: the subtitle settings: the language falls back to the package's and is needed; a font
+/// file of the user's is embedded, anything else is refused; no caption track is an error.
+#[test]
+fn subtitle_settings() {
+    let mut s = ExportSettings { format: Format::Dcp, dcp_subtitles: true, ..Default::default() };
+    assert!(s.validate().is_err(), "subtitles need a language");
+    s.dcp_language = "hu-HU".into();
+    assert!(s.validate().is_ok());
+    assert_eq!(crate::dcp_subtitle_language(&s), Some("hu-HU"));
+    s.dcp_subtitle_language = "en".into();
+    assert_eq!(crate::dcp_subtitle_language(&s), Some("en"));
+    assert_eq!(crate::dcp_isdcf_name(&s, "Film", "20261114"), "Film_FTR-1_F_HU-EN_51_2K_20261114_SMPTE_OV");
+    s.dcp_subtitles = false;
+    assert_eq!(crate::dcp_isdcf_name(&s, "Film", "20261114"), "Film_FTR-1_F_HU-XX_51_2K_20261114_SMPTE_OV");
+    s.dcp_subtitle_language = "magyar nyelv".into();
+    assert!(s.validate().is_err(), "a malformed tag is refused even when off");
+
+    // the font: a TrueType file of the user's, else refused
+    let font = Path::new(env!("CARGO_MANIFEST_DIR")).join("../../assets/fonts/Inter-Italic.ttf");
+    s.dcp_subtitle_font = font.to_string_lossy().into_owned();
+    assert_eq!(crate::dcp_out::subtitle_font(&s).unwrap(), std::fs::read(&font).unwrap());
+    s.dcp_subtitle_font = Path::new(env!("CARGO_MANIFEST_DIR")).join("Cargo.toml").to_string_lossy().into_owned();
+    assert!(matches!(crate::dcp_out::subtitle_font(&s), Err(ExportError::Unsupported(m)) if m.contains("not an OpenType")));
+    s.dcp_subtitle_font = "/nonexistent/font.ttf".into();
+    assert!(crate::dcp_out::subtitle_font(&s).is_err());
+
+    // a sequence without a caption track
+    let (p, seq, m) = project();
+    let s = ExportSettings {
+        format: Format::Dcp,
+        path: tmp("nosubs"),
+        range: Some(TimeRange::new(Tick::ZERO, FrameRate::new(25, 1).tick_of(2))),
+        dcp_language: "hu-HU".into(),
+        dcp_subtitles: true,
+        ..Default::default()
+    };
+    let e = export(&p, seq, &s, &m, &Progress::default()).unwrap_err();
+    assert!(e.to_string().contains("no caption track"), "{e}");
 }

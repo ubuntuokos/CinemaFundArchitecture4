@@ -2371,6 +2371,10 @@
 	Show Clip Mismatch Warning dialog	Mostra la finestra di avviso di mancata corrispondenza della clip
 	Show Event Indicator	Mostra indicatore eventi
 	Show Focus Area	Mostra area di messa a fuoco
+	Rack Focus	Cambio di fuoco
+	Focus Point A	Punto di fuoco A
+	Focus Point B	Punto di fuoco B
+	Rack	Cambio
 	Show Home	Mostra Home
 	Show Mask Tracker Preview	Mostra anteprima del tracciamento maschera
 	Show Only Noise	Mostra solo il rumore
@@ -3636,6 +3640,7 @@
 	Social Deliverables…	Consegne per i social…
 	Counter	Contatore
 	Word by Word	Parola per parola
+	Scramble	Rimescolamento
 	Animator	Animatore
 	Animator Duration	Durata animatore
 	Animator Delay	Ritardo animatore
@@ -4176,6 +4181,11 @@
 	Burn Size	Dimensione bruciatura
 	Ember Width	Larghezza della brace
 	Ember Color	Colore della brace
+	Tear Away	Strappo
+	Tear Roughness	Ruvidità dello strappo
+	Paper Edge Width	Larghezza bordo carta
+	Stamp Cut	Taglio a francobollo
+	Perforations	Perforazioni
 	Check Text Legibility	Verifica leggibilità del testo
 	Clear Legibility Markers	Cancella marcatori di leggibilità
 	Text legibility: no problems found	Leggibilità del testo: nessun problema trovato
@@ -4215,6 +4225,9 @@
 	Dither	Dithering
 	Pattern	Motivo
 	Cell Size	Dimensione cella
+	Pixelate	Pixelizzazione
+	Cell Shape	Forma cella
+	LED	LED
 	Cyan Angle	Angolo ciano
 	Magenta Angle	Angolo magenta
 	Yellow Angle	Angolo giallo
@@ -4575,6 +4588,16 @@
 	Chase External Timecode	Segui timecode esterno
 	Send LTC	Invia LTC
 	Send MIDI Timecode	Invia timecode MIDI
+
+# Live studio preview (CFA4-LIVE-STUDIO-001 S0)
+	Live studio preview	Anteprima dello studio dal vivo
+	Live studio: stopped	Studio dal vivo: fermo
+	Live studio: {state}	Studio dal vivo: {state}
+	Live studio: {error}	Studio dal vivo: {error}
+	restarted after {count} crashes (last: {exit})	riavviato dopo {count} arresti anomali (ultimo: {exit})
+	software backend: {reason}	backend software: {reason}
+	Start studio	Avvia studio
+	Stop studio	Ferma studio
 # Auto Color, Auto Contrast, Auto Levels (EffectsSDK review)
 	Auto Color	Colore automatico
 	Auto Contrast	Contrasto automatico
@@ -4632,3 +4655,16 @@
 	Freewheel	Ruota libera
 	Scrubbing	Scorrimento
 	Sending	Invio
+
+# DCP subtitle export (#938)
+	Subtitles from the first caption track	Sottotitoli dalla prima traccia sottotitoli
+	The package language	La lingua del pacchetto
+	Inter Regular (built in), or an OpenType / TrueType file	Inter Regular (integrato) o un file OpenType / TrueType
+	Subtitle language	Lingua dei sottotitoli
+	Subtitle font	Font dei sottotitoli
+	Fonts	Font
+
+# AS-11 metadata in MXF OP1a (#96)
+	AS-11 Core	AS-11 Core
+	AS-11 Parts	Parti AS-11
+	AS-11 UK DPP	AS-11 UK DPP
