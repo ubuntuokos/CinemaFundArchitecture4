@@ -24,11 +24,12 @@ code keeps FFmpeg's licence (`COPYING.LGPL-2.1`); CFA4's changes are GPL-3.0-or-
 | Video frames: whole, split over packets (FFmpeg's slice table), several in one packet | done |
 | Audio streams | listed with their type-specific data; packets returned as stored |
 | RealAudio headers (versions 3, 4, 5): codec, rate, channels, interleaving parameters, codec data | done (`audio::parse_audio_info`) |
-| Deinterleaving into codec frames: `genr` (Cook, ATRAC3), `Int4` (28.8), `sipr`, `vbrs` / `vbrf` (AAC), `Int0` | done (`audio::Deinterleaver`); Cook checked against ffmpeg |
+| Deinterleaving into codec frames: `genr` (Cook, ATRAC3), `Int4` (28.8), `sipr`, `vbrs` / `vbrf` (AAC), `Int0` | done (`audio::Deinterleaver`); `genr`, `Int4`, `sipr` and `Int0` checked against ffmpeg (Cook, 28.8, SIPR, 14.4) |
 | Old `.ra` files, RTSP/RDT, IVR | not supported |
 
 A frame whose first part lies before the position given to `Demuxer::seek` comes out flagged
-`partial`. Sizes in the file are capped (16 MiB per chunk or frame); a damaged packet is skipped
+`partial`, as does an audio packet cut short by the end of the file (it keeps what is there, as
+FFmpeg's `av_get_packet` does). Sizes in the file are capped (16 MiB per chunk or frame); a damaged packet is skipped
 and the reader resynchronises.
 
 ## Tests
@@ -38,5 +39,5 @@ and the reader resynchronises.
   a panic.
 - `crates/realvideo/tests/oracle.rs` and `crates/codecs/tests/realmedia_oracle.rs`: files from
   ffmpeg's RealMedia muxer and ffmpeg's FATE sample, through the decoder.
-- `crates/realaudio/tests/cook_oracle.rs`: the Cook FATE samples through `audio`, and random
-  RealAudio headers and packets without a panic.
+- `crates/realaudio/tests/{cook,ra144,ra288,sipr}_oracle.rs`: the RealAudio FATE samples (and
+  ffmpeg-encoded 14.4) through `audio`, and random RealAudio headers and packets without a panic.

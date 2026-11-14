@@ -1,18 +1,18 @@
-//! RealMedia files (`.rm`, `.rmvb`) with RealVideo 1.0 / 2.0 / 3.0 / 4.0 video and Cook audio:
-//! `cfa4-realmedia` demuxes, our `cfa4-realvideo` and `cfa4-realaudio` decode (CB-13.1, CB-13.2,
-//! CB-14.1).
+//! RealMedia files (`.rm`, `.rmvb`) with RealVideo 1.0 / 2.0 / 3.0 / 4.0 video and Cook, SIPR
+//! or RealAudio 1.0 / 2.0 audio: `cfa4-realmedia` demuxes, our `cfa4-realvideo` and
+//! `cfa4-realaudio` decode (CB-13.1, CB-13.2, CB-14.1, CB-14.2).
 //!
 //! RealMedia stamps packets in decode order, so the timeline is the frame count at the stream's
 //! frame rate: at open every video frame is located (file offset of its first data packet) and
 //! its display position worked out from the picture types (a B-frame is shown before the
 //! reference picture decoded just before it).
 //!
-//! Cook audio is indexed by interleaving superblock (the data packets one deinterleaving pass
-//! takes); its timeline is the frame count times the frame length, with the two frames the
-//! decoder needs to start up as silence (as in ffmpeg). Cook's noise fill draws on a random
-//! generator that runs through the whole stream, so a jump restores the nearest earlier decoder
-//! checkpoint and decodes forward: every read equals playback from the start. Other RealAudio
-//! codecs (ATRAC3, SIPR, RealAudio 1.0 / 2.0, AAC) are not decoded yet.
+//! Audio is indexed by interleaving superblock (the data packets one deinterleaving pass takes;
+//! one data packet for RealAudio 1.0); its timeline is the frame count times the frame length,
+//! with the two frames Cook needs to start up as silence (as in ffmpeg). The decoders carry state
+//! through the whole stream (Cook's noise generator, the CELP codecs' filter memories), so a jump
+//! restores the nearest earlier decoder checkpoint and decodes forward: every read equals
+//! playback from the start. ATRAC3 and AAC audio are not decoded yet.
 
 use std::collections::{BTreeMap, HashMap, VecDeque};
 use std::io::Cursor;
@@ -20,7 +20,7 @@ use std::sync::{Arc, Mutex};
 
 use cfa4_frame::{AudioBuffer, Chroma, PixelData, VideoFrame};
 use cfa4_media::{AudioStreamInfo, FrameRequest, MediaError, MediaInfo, MediaKind, MediaSource, SharedSource, VideoStreamInfo};
-use cfa4_realaudio::cook;
+use cfa4_realaudio::{cook, ra144, ra288, sipr};
 use cfa4_realmedia::audio::{AudioInfo, Deinterleaver, parse_audio_info};
 use cfa4_realmedia::{Demuxer, Header, StreamKind};
 use cfa4_realvideo::{PictType, Picture, rv34};
@@ -32,7 +32,8 @@ use crate::{CodecError, Result};
 
 /// Most video frames indexed (a day at 30 fps).
 const MAX_FRAMES: usize = 30 * 60 * 60 * 24;
-/// Most audio superblocks indexed (a day of 44.1 kHz Cook in the smallest superblocks).
+/// Most audio superblocks indexed (a day of 44.1 kHz Cook in the smallest superblocks; about
+/// three days of RealAudio 1.0).
 const MAX_BLOCKS: usize = 24 * 60 * 60 * 44_100 / 256;
 /// Audio superblocks between decoder checkpoints.
 const CHECKPOINT_BLOCKS: usize = 32;
@@ -138,26 +139,149 @@ struct VStream {
     cache: GopCache,
 }
 
+/// The RealAudio decoders.
+#[derive(Clone)]
+enum AudioDecoder {
+    Cook(Box<cook::Decoder>),
+    Ra144(Box<ra144::Decoder>),
+    Ra288(Box<ra288::Decoder>),
+    Sipr(Box<sipr::Decoder>),
+}
+
+impl AudioDecoder {
+    /// The decoder for a stream, or why it cannot be decoded.
+    fn new(info: &AudioInfo) -> std::result::Result<Self, String> {
+        let label = match &info.fourcc {
+            b"cook" => {
+                let p = cook::Params {
+                    channels: info.channels,
+                    sample_rate: info.sample_rate,
+                    block_align: info.block_align as usize,
+                    extradata: info.extradata.clone(),
+                };
+                return cook::Decoder::new(&p).map(|d| Self::Cook(Box::new(d))).map_err(|e| format!("Cook: {e}"));
+            }
+            b"lpcJ" => return Ok(Self::Ra144(Box::default())),
+            b"28_8" if info.block_align as usize == ra288::FRAME_SIZE => return Ok(Self::Ra288(Box::default())),
+            b"28_8" => return Err("RealAudio 2.0 (28.8): unsupported frame size".into()),
+            b"sipr" => {
+                return sipr::Decoder::new(info.block_align as usize).map(|d| Self::Sipr(Box::new(d))).map_err(|e| format!("RealAudio SIPR: {e}"));
+            }
+            b"atrc" => "ATRAC3".to_string(),
+            b"raac" | b"racp" => "AAC".to_string(),
+            f => format!("RealAudio {}", String::from_utf8_lossy(f)),
+        };
+        Err(format!("{label} audio is not decoded yet"))
+    }
+
+    fn label(&self) -> &'static str {
+        match self {
+            Self::Cook(_) => "Cook",
+            Self::Ra144(_) => "RealAudio 1.0 (14.4)",
+            Self::Ra288(_) => "RealAudio 2.0 (28.8)",
+            Self::Sipr(_) => "RealAudio SIPR",
+        }
+    }
+
+    fn channels(&self) -> usize {
+        match self {
+            Self::Cook(d) => d.channels(),
+            _ => 1,
+        }
+    }
+
+    /// Bytes and samples per channel of one codec frame (Cook: a whole deinterleaved frame).
+    fn frame(&self) -> (usize, usize) {
+        match self {
+            Self::Cook(d) => (usize::MAX, d.samples_per_channel()),
+            Self::Ra144(_) => (ra144::FRAME_SIZE, ra144::FRAME_SAMPLES),
+            Self::Ra288(_) => (ra288::FRAME_SIZE, ra288::FRAME_SAMPLES),
+            Self::Sipr(d) => (d.frame_size(), d.frame_samples()),
+        }
+    }
+
+    /// Samples per channel that `len` bytes out of the deinterleaver decode to.
+    fn samples_for(&self, len: usize) -> usize {
+        match self.frame() {
+            (usize::MAX, spc) => spc,
+            (fb, spc) => (len / fb.max(1)).saturating_mul(spc),
+        }
+    }
+
+    /// Decodes `data` (one frame out of the deinterleaver) onto the end of `out`; a damaged
+    /// frame and Cook's start-up frames give silence.
+    fn decode_into(&mut self, data: &[u8], out: &mut [Vec<f32>]) {
+        let (fb, spc) = self.frame();
+        let silence = |out: &mut [Vec<f32>]| {
+            for o in out.iter_mut() {
+                o.resize(o.len() + spc, 0.0);
+            }
+        };
+        if let Self::Cook(d) = self {
+            match d.decode(data) {
+                Ok(Some(fr)) => {
+                    for (c, o) in out.iter_mut().enumerate() {
+                        match fr.channels.get(c) {
+                            Some(s) => o.extend_from_slice(s),
+                            None => o.resize(o.len() + spc, 0.0),
+                        }
+                    }
+                }
+                _ => silence(out),
+            }
+            return;
+        }
+        let Some(o) = out.first_mut() else { return };
+        for f in data.chunks_exact(fb.max(1)) {
+            match self {
+                Self::Ra144(d) => match d.decode(f) {
+                    Ok(s) => o.extend(s.iter().map(|&v| f32::from(v) / 32768.0)),
+                    Err(_) => o.resize(o.len() + spc, 0.0),
+                },
+                Self::Ra288(d) => match d.decode(f) {
+                    Ok(s) => o.extend_from_slice(&s),
+                    Err(_) => o.resize(o.len() + spc, 0.0),
+                },
+                Self::Sipr(d) => match d.decode(f) {
+                    Ok(s) => o.extend_from_slice(&s),
+                    Err(_) => o.resize(o.len() + spc, 0.0),
+                },
+                Self::Cook(_) => {}
+            }
+        }
+    }
+}
+
 struct AudioState {
     /// The decoder and the superblock it decodes next.
-    dec: cook::Decoder,
+    dec: AudioDecoder,
     next: usize,
-    checkpoints: BTreeMap<usize, cook::Decoder>,
+    checkpoints: BTreeMap<usize, AudioDecoder>,
     blocks: HashMap<usize, Arc<Vec<Vec<f32>>>>,
     order: VecDeque<usize>,
 }
 
-/// The Cook stream of a file.
+/// The audio stream of a file.
 struct AStream {
     stream: usize,
     info: AudioInfo,
-    params: cook::Params,
+    sample_rate: u32,
     channels: usize,
-    /// Samples per channel of one superblock.
-    block_samples: usize,
     /// File offset of the data packet each complete superblock starts in.
     blocks: Vec<u64>,
+    /// First sample (per channel) of each superblock, and the total at the end.
+    starts: Vec<i64>,
     state: Mutex<AudioState>,
+}
+
+impl AStream {
+    /// Samples per channel of superblock `k`.
+    fn block_len(&self, k: usize) -> usize {
+        match (self.starts.get(k), self.starts.get(k + 1)) {
+            (Some(a), Some(b)) => usize::try_from(b.saturating_sub(*a)).unwrap_or(0),
+            _ => 0,
+        }
+    }
 }
 
 pub struct RmSource {
@@ -198,27 +322,6 @@ fn display_order(types: &[PictType]) -> Vec<i64> {
     pts
 }
 
-/// A Cook stream's decoder parameters, or why it cannot be decoded.
-fn cook_params(info: &AudioInfo) -> std::result::Result<cook::Params, String> {
-    let label = match &info.fourcc {
-        b"cook" => {
-            return Ok(cook::Params {
-                channels: info.channels,
-                sample_rate: info.sample_rate,
-                block_align: info.block_align as usize,
-                extradata: info.extradata.clone(),
-            });
-        }
-        b"atrc" => "ATRAC3".to_string(),
-        b"sipr" => "RealAudio SIPR".to_string(),
-        b"28_8" => "RealAudio 2.0 (28.8)".to_string(),
-        b"lpcJ" => "RealAudio 1.0 (14.4)".to_string(),
-        b"raac" | b"racp" => "AAC".to_string(),
-        f => format!("RealAudio {}", String::from_utf8_lossy(f)),
-    };
-    Err(format!("{label} audio is not decoded yet"))
-}
-
 impl RmSource {
     pub fn open(name: &str, bytes: Arc<[u8]>) -> Result<Self> {
         let mut dm = Demuxer::new(Cursor::new(bytes.clone())).map_err(container)?;
@@ -240,18 +343,15 @@ impl RmSource {
                 .map_err(|e| CodecError::Unsupported(format!("{name}: {}: {e}", label(codec))))?;
             vsetup = Some((stream, codec, width, height, fps, extradata));
         }
-        // the first audio stream; only Cook is decoded
+        // the first audio stream
         let mut asetup = None;
         let mut audio_refusal = None;
         if let Some((i, info)) = header.streams.iter().enumerate().find_map(|(i, s)| match &s.kind {
             StreamKind::Audio { codec_data } => Some((i, parse_audio_info(codec_data))),
             _ => None,
         }) {
-            match info.map_err(|e| e.to_string()).and_then(|a| cook_params(&a).map(|p| (a, p))) {
-                Ok((a, p)) => match cook::Decoder::new(&p) {
-                    Ok(d) => asetup = Some((i, a, p, d)),
-                    Err(e) => audio_refusal = Some(format!("Cook: {e}")),
-                },
+            match info.map_err(|e| e.to_string()).and_then(|a| AudioDecoder::new(&a).map(|d| (a, d))) {
+                Ok((a, d)) => asetup = Some((i, a, d)),
                 Err(e) => audio_refusal = Some(e),
             }
         }
@@ -274,6 +374,8 @@ impl RmSource {
         let mut last_pos = u64::MAX;
         let mut nth = 0u32;
         let mut blocks = Vec::new();
+        // samples per channel of each Int0 packet (blocked streams have a fixed superblock)
+        let mut packet_samples = Vec::new();
         let (mut fill, mut block_pos) = (0usize, 0u64);
         while places.len() < MAX_FRAMES && blocks.len() < MAX_BLOCKS {
             let p = match dm.next_packet() {
@@ -285,6 +387,7 @@ impl RmSource {
                 // the deinterleaver's sub-packet count: a superblock counts once it is complete
                 if !blocked {
                     blocks.push(p.pos);
+                    packet_samples.push(asetup.as_ref().map_or(0, |a| a.2.samples_for(p.data.len())));
                     continue;
                 }
                 if p.keyframe {
@@ -365,28 +468,37 @@ impl RmSource {
         }
         let mut audio = None;
         let mut audio_streams = Vec::new();
-        if let Some((stream, info, params, dec)) = asetup
+        if let Some((stream, info, dec)) = asetup
             && !blocks.is_empty()
         {
-            let frames_per_block =
-                if blocked { (usize::from(info.sub_packet_h) * info.audio_framesize as usize).checked_div(info.block_align as usize).unwrap_or(0) } else { 1 };
-            let block_samples = frames_per_block * dec.samples_per_channel();
+            let mut starts = Vec::with_capacity(blocks.len() + 1);
+            let mut total = 0i64;
+            starts.push(0);
+            for k in 0..blocks.len() {
+                let n = if blocked {
+                    let frames = (usize::from(info.sub_packet_h) * info.audio_framesize as usize).checked_div(info.block_align as usize).unwrap_or(0);
+                    frames.saturating_mul(dec.samples_for(info.block_align as usize))
+                } else {
+                    packet_samples.get(k).copied().unwrap_or(0)
+                };
+                total = total.saturating_add(i64::try_from(n).unwrap_or(i64::MAX));
+                starts.push(total);
+            }
             let channels = dec.channels();
-            let total = blocks.len() as i64 * block_samples as i64;
             duration = duration.max(Tick::from_rational(total, 1, i64::from(info.sample_rate.max(1))));
             audio_streams.push(AudioStreamInfo {
                 sample_rate: info.sample_rate,
                 channels: channels as u32,
-                codec: "Cook".into(),
+                codec: dec.label().into(),
                 bits_per_sample: None,
                 speakers: Vec::new(),
             });
             audio = Some(AStream {
                 stream,
-                params,
+                sample_rate: info.sample_rate,
                 channels,
-                block_samples,
                 blocks,
+                starts,
                 state: Mutex::new(AudioState {
                     dec: dec.clone(),
                     next: 0,
@@ -465,34 +577,20 @@ impl RmSource {
             st.dec = d.clone();
             st.next = j;
         }
-        let spc = st.dec.samples_per_channel();
         while st.next <= k {
             let n = st.next;
             if n.is_multiple_of(CHECKPOINT_BLOCKS) && !st.checkpoints.contains_key(&n) {
                 st.checkpoints.insert(n, st.dec.clone());
             }
-            let mut out = vec![Vec::with_capacity(a.block_samples); a.channels];
+            let len = a.block_len(n);
+            let mut out = vec![Vec::with_capacity(len); a.channels];
             // a damaged block decodes to silence; the decoder state goes on as ffmpeg's does
             let frames = self.audio_frames(a, n).unwrap_or_default();
             for f in &frames {
-                match st.dec.decode(f) {
-                    Ok(Some(fr)) => {
-                        for (c, o) in out.iter_mut().enumerate() {
-                            match fr.channels.get(c) {
-                                Some(s) => o.extend_from_slice(s),
-                                None => o.resize(o.len() + spc, 0.0),
-                            }
-                        }
-                    }
-                    _ => {
-                        for o in &mut out {
-                            o.resize(o.len() + spc, 0.0);
-                        }
-                    }
-                }
+                st.dec.decode_into(f, &mut out);
             }
             for o in &mut out {
-                o.resize(a.block_samples, 0.0);
+                o.resize(len, 0.0);
             }
             st.blocks.insert(n, Arc::new(out));
             st.order.push_back(n);
@@ -508,7 +606,7 @@ impl RmSource {
 
     fn read_audio(&self, start: i64, frames: usize, sample_rate: u32) -> std::result::Result<AudioBuffer, MediaError> {
         let a = self.audio.as_ref().ok_or(MediaError::NoStream("audio"))?;
-        let rate = a.params.sample_rate.max(1);
+        let rate = a.sample_rate.max(1);
         let ch = a.channels.max(1);
         let source_frames = cfa4_media::resample_source_frames(frames, rate, sample_rate)?;
         let need = source_frames.checked_add(2).ok_or_else(|| MediaError::Decode("audio source window overflows".into()))?;
@@ -518,11 +616,11 @@ impl RmSource {
         let s0 = (start as f64 * ratio).floor() as i64;
         let need_i64 = i64::try_from(need).unwrap_or(i64::MAX);
         let mut src: Vec<Vec<f32>> = vec![vec![0.0; need]; ch];
-        let bs = a.block_samples.max(1) as i64;
         let mut st = a.state.lock().unwrap_or_else(|e| e.into_inner());
-        let mut k = usize::try_from(s0.max(0) / bs).unwrap_or(usize::MAX);
+        // the superblock holding `s0`
+        let mut k = a.starts.partition_point(|&b| b <= s0.max(0)).saturating_sub(1);
         while k < a.blocks.len() {
-            let b_start = k as i64 * bs;
+            let b_start = a.starts.get(k).copied().unwrap_or(i64::MAX);
             if b_start >= s0.saturating_add(need_i64) {
                 break;
             }

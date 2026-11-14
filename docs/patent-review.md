@@ -65,6 +65,7 @@ szabadalommal védett formátumot.
 | RealVideo 1.0 / 2.0 (RV10, RV20) | dekódolás | `crates/realvideo` (az FFmpeg portja) | alap | függőben | | |
 | RealVideo 3.0 / 4.0 (RV30, RV40) | dekódolás | `crates/realvideo` `rv34` (az FFmpeg portja) | alap | függőben | | |
 | RealAudio Cook (RealAudio G2) | dekódolás | `crates/realaudio` (az FFmpeg portja) | alap | függőben | | |
+| RealAudio SIPR (ACELP.NET), RealAudio 1.0 (14.4, VSELP), RealAudio 2.0 (28.8, G.728-szerű LD-CELP) | dekódolás | `crates/realaudio` (az FFmpeg portja) | alap | függőben | | |
 | Canopus HQ, HQA, HQX | dekódolás | `crates/canopus` (az FFmpeg portja) | alap | függőben | | |
 | Hap (Hap, Hap Alpha, Hap Q, Hap Q Alpha, Hap Alpha-Only) | dekódolás | `crates/hap` | alap | függőben | | |
 

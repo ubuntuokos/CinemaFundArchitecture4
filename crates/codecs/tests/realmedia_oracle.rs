@@ -169,3 +169,61 @@ fn fate_cook_audio_matches() {
     compare_cook(&ff, "rv30.rm", 1);
     compare_cook(&ff, "spygames-2MB.rmvb", 2);
 }
+
+/// A mono RealAudio stream with no start-up delay through the media source: every sample equals
+/// ffmpeg's, read in order and with jumps backwards.
+fn compare_mono(ff: &Path, p: &Path, codec: &str, rate: u32) {
+    let file = p.file_name().and_then(|f| f.to_str()).unwrap_or("?");
+    let src = cfa4_codecs::open_bytes(file, bytes(p)).unwrap_or_else(|e| panic!("{file}: {e}"));
+    let a = src.info().audio_streams.first().cloned().unwrap_or_else(|| panic!("{file}: no audio"));
+    assert_eq!((a.codec.as_str(), a.channels, a.sample_rate), (codec, 1, rate), "{file}");
+    let want = ffmpeg_audio(ff, p, 1).remove(0);
+    let n = want.len();
+    assert!(n > 5000, "{file}: ffmpeg decoded {n} samples");
+    let check = |start: usize, len: usize| {
+        let got = src.audio(start as i64, len, rate).unwrap_or_else(|e| panic!("{file}: {e}"));
+        for (i, (x, y)) in got.channels[0].iter().zip(&want[start..start + len]).enumerate() {
+            assert!(x.to_bits() == y.to_bits(), "{file}: sample {} ours {x} ffmpeg {y}", start + i);
+        }
+    };
+    for s in (0..n).step_by(7000) {
+        check(s, 7000.min(n - s));
+    }
+    for s in (0..n).step_by(25_000).rev() {
+        check(s, 3000.min(n - s));
+    }
+}
+
+#[test]
+fn realaudio_1_encoded_matches() {
+    let Some(ff) = cfa4_testkit::ffmpeg_or_skip("realmedia RealAudio 1.0") else { return };
+    let p = cfa4_testkit::fixtures_dir("realmedia").join("ra144.rm");
+    let st = std::process::Command::new(&ff)
+        .args(["-v", "error", "-y", "-f", "lavfi", "-i", "aevalsrc=0.6*sin(2*PI*(200+300*t)*t)+0.1*sin(2*PI*1900*t):s=8000:d=6"])
+        .args(["-ac", "1", "-ar", "8000", "-c:a", "real_144", "-f", "rm"])
+        .arg(&p)
+        .status()
+        .unwrap();
+    assert!(st.success());
+    compare_mono(&ff, &p, "RealAudio 1.0 (14.4)", 8000);
+}
+
+#[test]
+fn fate_realaudio_lpc_matches() {
+    let Some(ff) = cfa4_testkit::ffmpeg_or_skip("realmedia RealAudio FATE") else { return };
+    for (dir, file, codec, rate) in [
+        ("real", "ra3_in_rm_file.rm", "RealAudio 1.0 (14.4)", 8000),
+        ("real", "ra_288.rm", "RealAudio 2.0 (28.8)", 8000),
+        ("sipr", "sipr_5k0.rm", "RealAudio SIPR", 8000),
+        ("sipr", "sipr_6k5.rm", "RealAudio SIPR", 8000),
+        ("sipr", "sipr_8k5.rm", "RealAudio SIPR", 8000),
+        ("sipr", "sipr_16k.rm", "RealAudio SIPR", 16_000),
+    ] {
+        let p = cfa4_testkit::fixtures_dir(dir).join(file);
+        if !p.exists() {
+            eprintln!("skipping: {} not present", p.display());
+            continue;
+        }
+        compare_mono(&ff, &p, codec, rate);
+    }
+}
