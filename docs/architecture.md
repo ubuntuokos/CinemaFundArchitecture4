@@ -61,6 +61,7 @@ Crates are named `cfa4-<dir>` (`crates/time` is `cfa4-time`); new CFA4 crates ar
 | `dirac` | L0 | SMPTE VC-2 (ST 2042-1) decoder, the intra subset of Dirac: low-delay and high-quality pictures, all seven wavelets, symmetric and asymmetric transforms, 4:4:4 / 4:2:2 / 4:2:0 up to 16 bits, field coding ([README](../crates/dirac/README.md)) |
 | `ffv1` | L0 | FFV1 (IETF RFC 9043) lossless video decoder: versions 0, 1, 3, Golomb Rice and range coding, YCbCr / RGB, 8-16 bit, slices ([README](../crates/ffv1/README.md)) |
 | `huffyuv` | L0 | Huffyuv (`HFYU`) lossless video decoder: YUY2, RGB24, RGBA; left, gradient and median prediction; interlaced ([README](../crates/huffyuv/README.md)) |
+| `lagarith` | L0 | Lagarith (`LAGS`) lossless video decoder: RGB24, RGBA, YUY2, YV12; range coder with zero runs; solid frames; ported from FFmpeg (LGPL-2.1-or-later, owner-approved exception) ([README](../crates/lagarith/README.md)) |
 | `utvideo` | L0 | Ut Video lossless video decoder: 8-bit YUV 4:2:0 / 4:2:2 / 4:4:4, RGB, RGBA; slices; left, gradient and median prediction ([README](../crates/utvideo/README.md)) |
 | `canopus` | L0 | Canopus HQ, HQA and HQX intra video decoder (8-bit 4:2:2 with alpha, 12-bit 4:2:2 / 4:4:4 with alpha), ported from FFmpeg (LGPL-2.1-or-later) ([README](../crates/canopus/README.md)) |
 | `apv` | L0 | Advanced Professional Video (IETF RFC 9924) decoder and encoder ([README](../crates/apv/README.md)) |
