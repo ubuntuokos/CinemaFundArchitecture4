@@ -4388,6 +4388,10 @@
 	{n} more	{n} lagi
 	Block	Blok
 	parallel	paralel
+	page {page}: a spine's vertical position works on card pages only; it is ignored	halaman {page}: posisi vertikal poros hanya berlaku di halaman kartu; diabaikan
+	on a card: centered on {y} px	di kartu: berpusat di {y} px
+	on a card: starts at {y} px	di kartu: mulai di {y} px
+	on a card: ends at {y} px	di kartu: berakhir di {y} px
 # MPEG-2 export audio (#268): a product name, kept as is
 	Dolby Digital (AC-3)	Dolby Digital (AC-3)
 	In the page (OBS takes it from the Browser Source)	Di halaman (OBS mengambilnya dari Browser Source)
@@ -4460,7 +4464,12 @@
 	page {page}: the runtime is reached by changing the roll speed (the gaps would have to grow more than 20-fold)	halaman {page}: durasi dicapai dengan mengubah kecepatan gulir (jarak harus membesar lebih dari 20 kali lipat)
 	page {page}: the transition needs the pages to touch (page gap 0); it is left out	halaman {page}: transisi mengharuskan halaman saling bersentuhan (jeda halaman 0); dilewati
 	page {page}: there is no transition “{name}”; the pages cut	halaman {page}: tidak ada transisi “{name}”; halaman berpindah dengan potongan langsung
-	spine position “{value}” is not supported (a pixel offset, optionally “parallel”, is)	posisi sumbu “{value}” tidak didukung (offset piksel, opsional dengan “parallel”, didukung)
+	spine position “{value}” is not supported (a pixel offset, optionally “parallel”, or “Hook N Bottom-Top dx dy” is)	posisi sumbu “{value}” tidak didukung (offset piksel, opsional dengan “parallel” / “Hook N Bottom-Top dx dy”, didukung)
+	page {page}: the hook reaches back further than there are spines; it hooks onto the first spine, or starts its own	halaman {page}: kait menjangkau lebih jauh ke belakang daripada jumlah sumbu; kait menempel pada sumbu pertama atau memulai sumbunya sendiri
+	hooked {n} spines back: its {from} meets this spine's {to}	dikaitkan {n} sumbu ke belakang: {from}-nya bertemu {to} sumbu ini
+	top	atas
+	middle	tengah
+	bottom	bawah
 	vertical gap “{value}” is not a number	jarak vertikal “{value}” bukan angka
 	picture “{file}” was not found or cannot be read; it is left out	gambar “{file}” tidak ditemukan atau tidak dapat dibaca; dilewati
 	video “{file}” was not found or cannot be read; it is left out	video “{file}” tidak ditemukan atau tidak dapat dibaca; dilewati
@@ -4525,7 +4534,7 @@
 	the engine sent no report	mesin tidak mengirim laporan
 	MXF OP1a Uncompressed 10-bit 4:2:2 (v210)	MXF OP1a tanpa kompresi 10-bit 4:2:2 (v210)
 	MXF OP1a, uncompressed 10-bit Y'CbCr 4:2:2 in the v210 layout (SMPTE ST 384), 24-bit 48 kHz PCM, start timecode	MXF OP1a, Y'CbCr 4:2:2 10-bit tanpa kompresi dalam tata letak v210 (SMPTE ST 384), PCM 24-bit 48 kHz, timecode awal
-	Write the captions as ANC data (CEA-608/708, 29.97 fps)	Tulis teks sebagai data ANC (CEA-608/708, 29,97 fps)
+	Write the captions as ANC data (CEA-608/708)	Tulis teks sebagai data ANC (CEA-608/708)
 	Load KDM…	Muat KDM…
 	Forget DCP Keys	Lupakan Kunci DCP
 	Load KDM	Muat KDM
@@ -4535,6 +4544,13 @@
 	The keys stay in memory only, until Forget DCP Keys or the end of the session.	Kunci hanya disimpan di memori, sampai Lupakan Kunci DCP atau akhir sesi.
 	DCP keys forgotten	Kunci DCP dilupakan
 	Choose the KDM file and the private key.	Pilih file KDM dan kunci privat.
+	Load even if the certificate chain is not verified	Muat juga dengan rantai sertifikat yang belum diverifikasi
+	Bundle: {loaded} of {total} KDMs loaded, {other} for other recipients	Paket: {loaded} dari {total} KDM dimuat, {other} untuk penerima lain
+	Not loaded: {path}: {problem}	Tidak dimuat: {path}: {problem}
+	Signature verified: {chain}	Tanda tangan terverifikasi: {chain}
+	Signature not verified: {problem}	Tanda tangan tidak terverifikasi: {problem}
+	KDM required	Perlu KDM
+	Encrypted: load the KDM with content key {keys}	Terenkripsi: muat KDM dengan kunci konten {keys}
 
 # Settings ▸ Timecode Sync (TC-4)
 	Timecode Sync	Sinkronisasi Timecode
@@ -4567,3 +4583,60 @@
 	Chase External Timecode	Ikuti Timecode Eksternal
 	Send LTC	Kirim LTC
 	Send MIDI Timecode	Kirim Timecode MIDI
+# Auto Color, Auto Contrast, Auto Levels (EffectsSDK review)
+	Auto Color	Warna Otomatis
+	Auto Contrast	Kontras Otomatis
+	Auto Levels	Level Otomatis
+	Temporal Smoothing (seconds)	Penghalusan Temporal (detik)
+	Scene Detect	Deteksi Adegan
+	Black Clip	Potong Hitam
+	White Clip	Potong Putih
+	Snap Neutral Midtones	Netralkan Nada Tengah
+# Layout presets: PiP corners, split screen (EffectsSDK review)
+	PiP 35% Upper Left	PiP 35% Kiri Atas
+	Picture-in-picture: 35 % scale in the upper left	Gambar-dalam-gambar: skala 35 % di kiri atas
+	PiP 35% Lower Left	PiP 35% Kiri Bawah
+	Picture-in-picture: 35 % scale in the lower left	Gambar-dalam-gambar: skala 35 % di kiri bawah
+	PiP 35% Lower Right	PiP 35% Kanan Bawah
+	Picture-in-picture: 35 % scale in the lower right	Gambar-dalam-gambar: skala 35 % di kanan bawah
+	Split Screen Left	Layar Terbagi Kiri
+	Split screen: the middle half of the picture fills the left half of the frame	Layar terbagi: separuh tengah gambar mengisi separuh kiri bingkai
+	Split Screen Right	Layar Terbagi Kanan
+	Split screen: the middle half of the picture fills the right half of the frame	Layar terbagi: separuh tengah gambar mengisi separuh kanan bingkai
+# Creative Looks: CRT (P3)
+	CRT	CRT
+	Scanline Strength	Kekuatan Garis Pindai
+	Line Count	Jumlah Garis
+	Mask	Masker
+	Mask Strength	Kekuatan Masker
+	Corner Darkening	Penggelapan Sudut
+	Aperture Grille	Kisi Aperture
+	Shadow Mask	Masker Bayangan
+	Slot Mask	Masker Celah
+# Creative Looks: Oil Paint (P4)
+	Oil Paint	Lukisan Minyak
+	Detail	Detail
+	Texture	Tekstur
+	Facet	Faset
+	Daubs	Sapuan
+	Dry Brush	Kuas Kering
+	Fresco	Fresko
+	Knife	Pisau Palet
+	Sponge	Spons
+# Creative Looks: Pixel Sort (P5)
+	Pixel Sort	Urutkan Piksel
+	Sort By	Urutkan Menurut
+	Lower Threshold	Ambang Bawah
+	Upper Threshold	Ambang Atas
+	Ascending	Naik
+# Temporal Denoise (EffectsSDK review)
+	Temporal Denoise	Pengurangan Derau Temporal
+	Frames Each Side	Bingkai di Tiap Sisi
+	Motion Threshold	Ambang Gerakan
+	Show Motion	Tampilkan Gerakan
+	No signal	Tidak ada sinyal
+	Locating	Mencari posisi
+	Locked	Terkunci
+	Freewheel	Freewheel
+	Scrubbing	Menggulir
+	Sending	Mengirim

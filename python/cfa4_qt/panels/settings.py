@@ -603,6 +603,9 @@ class PreferencesDialog(QDialog):
             h.addWidget(field_label(label, row, self.label_w))
             dev = self.devices() or {}
             names = dev.get({"hosts": "hosts", "inputs": "inputs", "outputs": "outputs"}.get(str(k.get("list")), "outputs")) or []
+            if key.startswith("timecodeSync."):
+                # LTC runs on the engine's audio devices, named as the engine names them
+                names = dev.get("ltcInputs" if k.get("list") == "inputs" else "ltcOutputs") or []
             opts = [("", tr("System Default")), *((str(n), str(n)) for n in names)]
             w = self._combo(row, key, choice_text(cur), opts, 300)
             h.addWidget(w)

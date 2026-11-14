@@ -283,6 +283,13 @@ impl MediaPool {
         })
     }
 
+    /// The Key IDs of the encrypted essence of item `item` whose content keys are not loaded
+    /// (#1053), read from its source when it is open (empty when it is not, or holds no
+    /// encrypted essence). Loading or forgetting keys drops the open sources, so this is current.
+    pub fn missing_keys(&self, item: ItemId) -> Vec<String> {
+        self.cached(item).map(|s| s.missing_keys()).unwrap_or_default()
+    }
+
     /// Why an item last rendered offline (None = online or not opened yet).
     pub fn offline_status(&self, item: ItemId) -> Option<OfflineStatus> {
         self.offline.read().unwrap_or_else(|e| e.into_inner()).get(&item).cloned()
@@ -599,6 +606,9 @@ impl MediaSource for UnsupportedAsSlate {
     fn carrier(&self) -> Option<SharedSource> {
         self.inner.carrier()
     }
+    fn missing_keys(&self) -> Vec<String> {
+        self.inner.missing_keys()
+    }
 }
 
 /// Consecutive failed video frames after which a monitor treats a source as damaged. A single
@@ -646,6 +656,9 @@ impl MediaSource for DamagedAsSlate {
     }
     fn audio_stream(&self, stream: usize, start: i64, frames: usize, sample_rate: u32) -> cfa4_media::Result<AudioBuffer> {
         self.inner.audio_stream(stream, start, frames, sample_rate)
+    }
+    fn missing_keys(&self) -> Vec<String> {
+        self.inner.missing_keys()
     }
 }
 

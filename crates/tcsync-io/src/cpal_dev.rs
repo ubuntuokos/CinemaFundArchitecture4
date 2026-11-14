@@ -27,6 +27,17 @@ fn find(devices: Result<impl Iterator<Item = cpal::Device>, cpal::DevicesError>,
     devices.ok()?.find(|d| d.name().is_ok_and(|n| n == name))
 }
 
+/// The input and output device names of `host` ("" = default host), as the LTC settings name them.
+pub fn device_names(host_name: &str) -> (Vec<String>, Vec<String>) {
+    let run = || {
+        let h = host(host_name);
+        let inputs: Vec<String> = h.input_devices().map(|it| it.filter_map(|d| d.name().ok()).collect()).unwrap_or_default();
+        let outputs: Vec<String> = h.output_devices().map(|it| it.filter_map(|d| d.name().ok()).collect()).unwrap_or_default();
+        (inputs, outputs)
+    };
+    std::panic::catch_unwind(run).unwrap_or_default()
+}
+
 type ErrorCell = Arc<Mutex<Option<String>>>;
 
 fn report(cell: &ErrorCell, message: String) {

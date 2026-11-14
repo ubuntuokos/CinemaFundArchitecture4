@@ -959,6 +959,7 @@ pub fn handle(s: &mut Session, id: Value, method: &str, params: Value) -> Option
             Ok(v) => Reply::ok(id, v),
             Err(e) => Reply::err(id, e),
         },
+        "timecodeSync.devices" => Reply::ok(id, crate::serve_tcsync::devices(s)),
         "app.quit" => return None,
         other => Reply::err(id, format!("unknown method `{other}`")),
     };

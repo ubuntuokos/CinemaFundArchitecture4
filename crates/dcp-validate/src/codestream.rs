@@ -7,12 +7,16 @@
 //!
 //! - one tile, image and tile origin at 0, three components of 12 bits, unsigned, not sub-sampled;
 //! - 2K at most 2048 × 1080 with 1-5 decomposition levels, 4K at most 4096 × 2160 with 1-6;
-//! - CPRL progression, one quality layer, the irreversible 9/7 wavelet, no multiple component
-//!   transform, 32 × 32 code-blocks with no code-block style flags, precincts of 128 × 128 at the
-//!   lowest resolution and 256 × 256 above;
+//! - CPRL progression, one quality layer, the irreversible 9/7 wavelet, 32 × 32 code-blocks with
+//!   no code-block style flags, precincts of 128 × 128 at the lowest resolution and 256 × 256 above;
 //! - scalar expounded quantization with 1 guard bit (2K) or 2 (4K);
 //! - one tile-part per component (2K: 3), and for 4K one more per component for the 4K resolution
 //!   (6), which the progression order change (POC) describes.
+//!
+//! The multiple component transform (MCT, the ICT on X'Y'Z') is not a profile failure. A frame
+//! with it passes; a frame without it is a remark (`WARNING`), because libdcp's `dcpverify` rejects
+//! such frames and the DCI DCSS (§4.3.2) has every decoder apply the inverse ICT. The ISO/IEC
+//! 15444-1 profile table itself was not checked (plan CFA4-DCPVAL-LIBDCP-001, D2 and D4).
 
 use cfa4_j2k::Header;
 
@@ -149,9 +153,6 @@ pub(crate) fn profile_problems(h: &Header, m: &Main) -> Vec<String> {
     if h.reversible {
         out.push("the reversible 5/3 wavelet; the profile uses the irreversible 9/7".into());
     }
-    if h.mct {
-        out.push("a multiple component transform; the profile codes X'Y'Z' without one".into());
-    }
     match &m.cod {
         None => out.push("no COD marker in the main header".into()),
         Some(c) => {
@@ -186,6 +187,13 @@ pub(crate) fn header_remarks(h: &Header, m: &Main) -> Vec<String> {
     let mut out = Vec::new();
     if !m.tlm {
         out.push("no TLM marker (tile-part lengths); servers find tile-parts without it, but more slowly".into());
+    }
+    if !h.mct {
+        out.push(
+            "no multiple component transform (ICT): libdcp's dcpverify rejects such a frame, and DCI decoders all apply \
+             the inverse ICT (DCSS §4.3.2)"
+                .into(),
+        );
     }
     if four_k(h) && !m.poc {
         out.push("a 4K frame without a POC marker: a 2K projector cannot take the 2K resolutions from it".into());

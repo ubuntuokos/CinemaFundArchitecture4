@@ -115,6 +115,18 @@ fn f16(v: f32) -> u16 {
 /// An EXR file: `chans` (alphabetical, as EXR stores them), data window `data`, display window
 /// `display`, compression `comp`; `value(channel index, x, y)` gives each sample.
 fn exr_file(chans: &[Chan], data: [i32; 4], display: [i32; 4], comp: u8, value: impl Fn(usize, i32, i32) -> f32) -> Vec<u8> {
+    exr_file_with(chans, data, display, comp, &[], value)
+}
+
+/// [`exr_file`] with extra header attributes (name, type, value).
+fn exr_file_with(
+    chans: &[Chan],
+    data: [i32; 4],
+    display: [i32; 4],
+    comp: u8,
+    extra: &[(&str, &str, Vec<u8>)],
+    value: impl Fn(usize, i32, i32) -> f32,
+) -> Vec<u8> {
     let mut f = MAGIC.to_vec();
     f.extend_from_slice(&2u32.to_le_bytes());
     let mut cl = Vec::new();
@@ -133,6 +145,9 @@ fn exr_file(chans: &[Chan], data: [i32; 4], display: [i32; 4], comp: u8, value: 
     attr(&mut f, "displayWindow", "box2i", &box2i(display));
     attr(&mut f, "lineOrder", "lineOrder", &[0]);
     attr(&mut f, "pixelAspectRatio", "float", &1f32.to_le_bytes());
+    for (n, t, v) in extra {
+        attr(&mut f, n, t, v);
+    }
     f.push(0);
     let lpc = match comp {
         3 | 5 => 16,
@@ -398,4 +413,59 @@ fn huge_scan_lines_are_refused_before_allocating() {
     let mut g = f.clone();
     g[at..at + 16].copy_from_slice(&box2i([0, 0, (1 << 26) - 1, 0]));
     assert!(decode("h.exr", &g).is_err());
+}
+
+fn chroma_attr(c: [f32; 8]) -> (&'static str, &'static str, Vec<u8>) {
+    ("chromaticities", "chromaticities", c.iter().flat_map(|v| v.to_le_bytes()).collect())
+}
+
+#[test]
+fn aces_chromaticities_convert_to_rec709() {
+    let ap0 = [0.7347, 0.2653, 0.0, 1.0, 0.0001, -0.0770, 0.32168, 0.33767];
+    // white, then pure AP0 red, green and blue
+    let px = |c: usize, x: i32, _y: i32| match (c, x) {
+        (0, _) => 1.0,
+        (_, 0) => 0.5,
+        (c, x) => f32::from(u8::from(4 - c as i32 == x)),
+    };
+    let f = exr_file_with(RGBA_HALF, [0, 0, 3, 0], [0, 0, 3, 0], 0, &[chroma_attr(ap0)], px);
+    let d = decode("aces.exr", &f).unwrap();
+    assert_eq!(d.pixel_format, "RGBA 16-bit float, ACES AP0");
+    let p = floats(&d);
+    // ACES white (0.5 grey) is Rec.709 white after the Bradford adaptation
+    for v in &p[..3] {
+        assert!((v - 0.5).abs() < 1e-3, "{:?}", &p[..4]);
+    }
+    // AP0 → Rec.709 (Bradford, D60 → D65); the published ACES-to-Rec.709 matrix rows sum to 1
+    let red = &p[4..7];
+    assert!((red[0] - 2.5217).abs() < 2e-3 && (red[1] + 0.2764).abs() < 2e-3 && (red[2] + 0.0156).abs() < 2e-3, "{red:?}");
+    let green = &p[8..11];
+    assert!((green[0] + 1.1341).abs() < 2e-3 && (green[1] - 1.3727).abs() < 2e-3, "{green:?}");
+    let blue = &p[12..15];
+    assert!((blue[0] + 0.3876).abs() < 2e-3 && (blue[2] - 1.1684).abs() < 2e-3, "{blue:?}");
+    // alpha is untouched
+    assert!(p.chunks(4).all(|q| q[3] == 1.0));
+}
+
+#[test]
+fn rec709_and_damaged_chromaticities_change_nothing() {
+    let rec709 = [0.64, 0.33, 0.30, 0.60, 0.15, 0.06, 0.3127, 0.3290];
+    let plain = decode("a.exr", &exr_file(RGBA_HALF, [0, 0, 3, 3], [0, 0, 3, 3], 0, pattern)).unwrap();
+    for c in [rec709, [0.64, 0.0, 0.30, 0.60, 0.15, 0.06, 0.3127, 0.3290], [f32::NAN; 8]] {
+        let d = decode("b.exr", &exr_file_with(RGBA_HALF, [0, 0, 3, 3], [0, 0, 3, 3], 0, &[chroma_attr(c)], pattern)).unwrap();
+        assert_eq!(floats(&d), floats(&plain));
+        assert_eq!(d.pixel_format, "RGBA 16-bit float");
+    }
+    // a short attribute is ignored, not an error
+    let short = ("chromaticities", "chromaticities", vec![0u8; 12]);
+    assert!(decode("c.exr", &exr_file_with(RGBA_HALF, [0, 0, 1, 1], [0, 0, 1, 1], 0, &[short], pattern)).is_ok());
+}
+
+#[test]
+fn luminance_files_ignore_chromaticities() {
+    let ap1 = [0.713, 0.293, 0.165, 0.830, 0.128, 0.044, 0.32168, 0.33767];
+    let f = exr_file_with(&[("Y", 1)], [0, 0, 1, 0], [0, 0, 1, 0], 0, &[chroma_attr(ap1)], |_, x, _| x as f32 + 0.5);
+    let d = decode("y.exr", &f).unwrap();
+    assert_eq!(floats(&d), &[0.5, 0.5, 0.5, 1.0, 1.5, 1.5, 1.5, 1.0]);
+    assert_eq!(d.pixel_format, "Y 16-bit float");
 }

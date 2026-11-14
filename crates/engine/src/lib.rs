@@ -19,6 +19,7 @@ pub mod color;
 pub mod commands;
 pub mod control_surfaces;
 pub mod credits;
+mod dcpomatic;
 pub mod delivery_check;
 pub mod demo;
 pub mod dialog_defaults;

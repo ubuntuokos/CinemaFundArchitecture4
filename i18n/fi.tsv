@@ -4382,6 +4382,10 @@ export.summary	Low	matala
 	{n} more	{n} lisää
 	Block	Lohko
 	parallel	rinnakkain
+	page {page}: a spine's vertical position works on card pages only; it is ignored	sivu {page}: akselin pystysijainti toimii vain korttisivuilla; se ohitetaan
+	on a card: centered on {y} px	kortilla: keskitetty kohtaan {y} px
+	on a card: starts at {y} px	kortilla: alkaa kohdasta {y} px
+	on a card: ends at {y} px	kortilla: päättyy kohtaan {y} px
 # MPEG-2 export audio (#268): a product name, kept as is
 	Dolby Digital (AC-3)	Dolby Digital (AC-3)
 	In the page (OBS takes it from the Browser Source)	Sivulla (OBS ottaa sen selainlähteestä)
@@ -4454,7 +4458,12 @@ export.summary	Low	matala
 	page {page}: the runtime is reached by changing the roll speed (the gaps would have to grow more than 20-fold)	sivu {page}: kesto saavutetaan rullausnopeutta muuttamalla (välien pitäisi kasvaa yli 20-kertaisiksi)
 	page {page}: the transition needs the pages to touch (page gap 0); it is left out	sivu {page}: siirtymä vaatii sivujen koskettavan toisiaan (sivuväli 0); se jätetään pois
 	page {page}: there is no transition “{name}”; the pages cut	sivu {page}: siirtymää ”{name}” ei ole; sivut leikataan
-	spine position “{value}” is not supported (a pixel offset, optionally “parallel”, is)	akselin sijaintia ”{value}” ei tueta (pikselisiirtymää tuetaan, valinnaisesti ”parallel”)
+	spine position “{value}” is not supported (a pixel offset, optionally “parallel”, or “Hook N Bottom-Top dx dy” is)	akselin sijaintia ”{value}” ei tueta (pikselisiirtymää tuetaan, valinnaisesti ”parallel” / ”Hook N Bottom-Top dx dy”)
+	page {page}: the hook reaches back further than there are spines; it hooks onto the first spine, or starts its own	sivu {page}: koukku ulottuu kauemmas taaksepäin kuin akseleita on; se koukkuu ensimmäiseen akseliin tai aloittaa omansa
+	hooked {n} spines back: its {from} meets this spine's {to}	koukutettu {n} akselia taaksepäin: sen {from} kohtaa tämän akselin kohdan {to}
+	top	yläreuna
+	middle	keskikohta
+	bottom	alareuna
 	vertical gap “{value}” is not a number	pystyväli ”{value}” ei ole luku
 	picture “{file}” was not found or cannot be read; it is left out	kuvaa ”{file}” ei löytynyt tai sitä ei voi lukea; se jätetään pois
 	video “{file}” was not found or cannot be read; it is left out	videota ”{file}” ei löytynyt tai sitä ei voi lukea; se jätetään pois
@@ -4519,7 +4528,7 @@ export.summary	Low	matala
 	the engine sent no report	moottori ei lähettänyt raporttia
 	MXF OP1a Uncompressed 10-bit 4:2:2 (v210)	MXF OP1a pakkaamaton 10-bittinen 4:2:2 (v210)
 	MXF OP1a, uncompressed 10-bit Y'CbCr 4:2:2 in the v210 layout (SMPTE ST 384), 24-bit 48 kHz PCM, start timecode	MXF OP1a, pakkaamaton 10-bittinen Y'CbCr 4:2:2 v210-asettelussa (SMPTE ST 384), 24-bittinen 48 kHz PCM, alkuaikakoodi
-	Write the captions as ANC data (CEA-608/708, 29.97 fps)	Kirjoita tekstitys ANC-datana (CEA-608/708, 29,97 fps)
+	Write the captions as ANC data (CEA-608/708)	Kirjoita tekstitys ANC-datana (CEA-608/708)
 	Load KDM…	Lataa KDM…
 	Forget DCP Keys	Unohda DCP-avaimet
 	Load KDM	Lataa KDM
@@ -4529,6 +4538,13 @@ export.summary	Low	matala
 	The keys stay in memory only, until Forget DCP Keys or the end of the session.	Avaimet ovat vain muistissa, kunnes valitaan Unohda DCP-avaimet tai istunto päättyy.
 	DCP keys forgotten	DCP-avaimet unohdettu
 	Choose the KDM file and the private key.	Valitse KDM-tiedosto ja yksityinen avain.
+	Load even if the certificate chain is not verified	Lataa myös vahvistamattomalla varmenneketjulla
+	Bundle: {loaded} of {total} KDMs loaded, {other} for other recipients	Paketti: {loaded}/{total} KDM:ää ladattu, {other} muille vastaanottajille
+	Not loaded: {path}: {problem}	Ei ladattu: {path}: {problem}
+	Signature verified: {chain}	Allekirjoitus vahvistettu: {chain}
+	Signature not verified: {problem}	Allekirjoitusta ei vahvistettu: {problem}
+	KDM required	KDM tarvitaan
+	Encrypted: load the KDM with content key {keys}	Salattu: lataa KDM, jossa on sisältöavain {keys}
 
 # Settings ▸ Timecode Sync (TC-4)
 	Timecode Sync	Aikakoodin synkronointi
@@ -4561,3 +4577,60 @@ export.summary	Low	matala
 	Chase External Timecode	Seuraa ulkoista aikakoodia
 	Send LTC	Lähetä LTC
 	Send MIDI Timecode	Lähetä MIDI-aikakoodi
+# Auto Color, Auto Contrast, Auto Levels (EffectsSDK review)
+	Auto Color	Automaattinen väri
+	Auto Contrast	Automaattinen kontrasti
+	Auto Levels	Automaattiset tasot
+	Temporal Smoothing (seconds)	Ajallinen tasoitus (sekuntia)
+	Scene Detect	Kohtausten tunnistus
+	Black Clip	Mustan leikkaus
+	White Clip	Valkoisen leikkaus
+	Snap Neutral Midtones	Neutraalit keskisävyt
+# Layout presets: PiP corners, split screen (EffectsSDK review)
+	PiP 35% Upper Left	PiP 35% ylhäällä vasemmalla
+	Picture-in-picture: 35 % scale in the upper left	Kuva kuvassa: 35 %:n skaalaus ylhäällä vasemmalla
+	PiP 35% Lower Left	PiP 35% alhaalla vasemmalla
+	Picture-in-picture: 35 % scale in the lower left	Kuva kuvassa: 35 %:n skaalaus alhaalla vasemmalla
+	PiP 35% Lower Right	PiP 35% alhaalla oikealla
+	Picture-in-picture: 35 % scale in the lower right	Kuva kuvassa: 35 %:n skaalaus alhaalla oikealla
+	Split Screen Left	Jaettu näyttö vasen
+	Split screen: the middle half of the picture fills the left half of the frame	Jaettu näyttö: kuvan keskimmäinen puolikas täyttää ruudun vasemman puolen
+	Split Screen Right	Jaettu näyttö oikea
+	Split screen: the middle half of the picture fills the right half of the frame	Jaettu näyttö: kuvan keskimmäinen puolikas täyttää ruudun oikean puolen
+# Creative Looks: CRT (P3)
+	CRT	CRT
+	Scanline Strength	Juovien voimakkuus
+	Line Count	Juovien määrä
+	Mask	Maski
+	Mask Strength	Maskin voimakkuus
+	Corner Darkening	Kulmien tummennus
+	Aperture Grille	Aukkoritilä
+	Shadow Mask	Varjomaski
+	Slot Mask	Rakomaski
+# Creative Looks: Oil Paint (P4)
+	Oil Paint	Öljymaalaus
+	Detail	Yksityiskohdat
+	Texture	Tekstuuri
+	Facet	Fasetit
+	Daubs	Täplät
+	Dry Brush	Kuiva sivellin
+	Fresco	Fresko
+	Knife	Palettiveitsi
+	Sponge	Sieni
+# Creative Looks: Pixel Sort (P5)
+	Pixel Sort	Pikselien lajittelu
+	Sort By	Lajitteluperuste
+	Lower Threshold	Alaraja
+	Upper Threshold	Yläraja
+	Ascending	Nouseva
+# Temporal Denoise (EffectsSDK review)
+	Temporal Denoise	Ajallinen kohinanpoisto
+	Frames Each Side	Kuvia kummallakin puolella
+	Motion Threshold	Liikkeen kynnys
+	Show Motion	Näytä liike
+	No signal	Ei signaalia
+	Locating	Paikannetaan
+	Locked	Lukittu
+	Freewheel	Vapaakäynti
+	Scrubbing	Selataan
+	Sending	Lähetetään
