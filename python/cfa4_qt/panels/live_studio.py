@@ -38,7 +38,9 @@ def rgba_image(meta: Any, data: bytes | memoryview | None) -> QImage | None:
     if not isinstance(meta, dict) or data is None or meta.get("format") != "rgba8":
         return None
     w, h = meta.get("w"), meta.get("h")
-    if not all(isinstance(v, int) and not isinstance(v, bool) and 0 < v <= MAX_SIDE for v in (w, h)):
+    if not (isinstance(w, int) and isinstance(h, int)):
+        return None
+    if not all(not isinstance(v, bool) and 0 < v <= MAX_SIDE for v in (w, h)):
         return None
     if len(data) != w * h * 4:
         return None

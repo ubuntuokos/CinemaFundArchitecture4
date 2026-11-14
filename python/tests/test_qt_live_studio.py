@@ -6,6 +6,8 @@ from __future__ import annotations
 
 import os
 import signal
+from collections.abc import Callable, Iterator
+from typing import Any
 
 import pytest
 
@@ -20,11 +22,11 @@ REAL = locate_engine()
 
 
 @pytest.fixture(scope="module")
-def app():
+def app() -> Iterator[Any]:
     yield QtWidgets.QApplication.instance() or QtWidgets.QApplication([])
 
 
-def wait_until(app, predicate, timeout_ms: int = 15_000) -> bool:
+def wait_until(app: Any, predicate: Callable[[], object], timeout_ms: int = 15_000) -> bool:
     timer = QtCore.QElapsedTimer()
     timer.start()
     while not predicate():
@@ -34,12 +36,12 @@ def wait_until(app, predicate, timeout_ms: int = 15_000) -> bool:
     return True
 
 
-def test_frames_are_checked_before_they_are_shown(app):
+def test_frames_are_checked_before_they_are_shown(app: Any) -> None:
     meta = {"w": 4, "h": 2, "format": "rgba8"}
     image = rgba_image(meta, bytes([10, 20, 30, 255]) * 8)
     assert image is not None and (image.width(), image.height()) == (4, 2)
     assert image.pixelColor(0, 0).red() == 10
-    for bad_meta, data in [
+    cases: list[tuple[Any, bytes | None]] = [
         (meta, bytes(31)),  # short
         ({**meta, "format": "bgra8"}, bytes(32)),
         ({**meta, "w": 0}, bytes(0)),
@@ -47,11 +49,12 @@ def test_frames_are_checked_before_they_are_shown(app):
         ({**meta, "h": 100_000}, bytes(32)),
         ("frame", bytes(32)),
         (meta, None),
-    ]:
+    ]
+    for bad_meta, data in cases:
         assert rgba_image(bad_meta, data) is None
 
 
-def test_status_lines():
+def test_status_lines() -> None:
     assert "stopped" in status_text(None).lower() or "leállítva" in status_text(None)
     line = status_text(
         {"state": "running", "backend": "libobs", "version": "33.0.1", "crashes": 2, "lastExit": "signal: 9 (SIGKILL)"}
@@ -62,7 +65,8 @@ def test_status_lines():
 
 
 @pytest.mark.skipif(REAL is None, reason="needs a built cfa4-cli (and cfa4-studio-host next to it)")
-def test_the_window_shows_the_empty_scene_and_survives_a_host_crash(app):
+def test_the_window_shows_the_empty_scene_and_survives_a_host_crash(app: Any) -> None:
+    assert REAL is not None
     engine = EngineClient(REAL)
     engine.start()
     window = LiveStudioPreview(engine)
@@ -78,7 +82,7 @@ def test_the_window_shows_the_empty_scene_and_survives_a_host_crash(app):
         assert not window.picture.pixmap().isNull()
 
         # kill the host: the engine restarts it, the window carries on showing frames
-        status: dict = {}
+        status: dict[str, Any] = {}
         engine.call("live.studio.host.status", {}, on_reply=lambda r, _b: status.update(r))
         assert wait_until(app, lambda: isinstance(status.get("pid"), int))
         os.kill(status["pid"], signal.SIGKILL)
