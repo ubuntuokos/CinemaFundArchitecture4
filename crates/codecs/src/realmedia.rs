@@ -1,11 +1,11 @@
-//! RealMedia files (`.rm`, `.rmvb`) with RealVideo 1.0 / 2.0 video: `cfa4-realmedia` demuxes,
-//! our `cfa4-realvideo` decodes (CB-13.1).
+//! RealMedia files (`.rm`, `.rmvb`) with RealVideo 1.0 / 2.0 / 3.0 / 4.0 video: `cfa4-realmedia`
+//! demuxes, our `cfa4-realvideo` decodes (CB-13.1, CB-13.2).
 //!
 //! RealMedia stamps packets in decode order, so the timeline is the frame count at the stream's
 //! frame rate: at open every video frame is located (file offset of its first data packet) and
 //! its display position worked out from the picture types (a B-frame is shown before the
 //! reference picture decoded just before it). Audio streams (Cook, ATRAC3, RealAudio 1.0/2.0, …)
-//! and RealVideo 3.0/4.0 are not decoded yet.
+//! are not decoded yet.
 
 use std::collections::HashMap;
 use std::io::Cursor;
@@ -14,7 +14,7 @@ use std::sync::Arc;
 use cfa4_frame::{Chroma, PixelData, VideoFrame};
 use cfa4_media::{FrameRequest, MediaError, MediaInfo, MediaKind, MediaSource, SharedSource, VideoStreamInfo};
 use cfa4_realmedia::{Demuxer, Header, StreamKind};
-use cfa4_realvideo::{Codec, PictType};
+use cfa4_realvideo::{PictType, Picture, rv34};
 use cfa4_time::{FrameRate, Tick};
 
 use crate::gop::{GopCache, VideoSamples};
@@ -28,18 +28,71 @@ pub fn sniff(head: &[u8]) -> bool {
     cfa4_realmedia::probe(head)
 }
 
+/// The RealVideo versions CFA4 decodes.
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+enum Codec {
+    /// RealVideo 1.0 / 2.0 (H.263 based).
+    Rv12(cfa4_realvideo::Codec),
+    /// RealVideo 3.0 / 4.0 (H.264 like).
+    Rv34(rv34::Codec),
+}
+
 fn codec_of(fourcc: &[u8; 4]) -> Option<Codec> {
     match fourcc {
-        b"RV10" => Some(Codec::Rv10),
-        b"RV20" => Some(Codec::Rv20),
+        b"RV10" => Some(Codec::Rv12(cfa4_realvideo::Codec::Rv10)),
+        b"RV20" => Some(Codec::Rv12(cfa4_realvideo::Codec::Rv20)),
+        b"RV30" => Some(Codec::Rv34(rv34::Codec::Rv30)),
+        b"RV40" => Some(Codec::Rv34(rv34::Codec::Rv40)),
         _ => None,
     }
 }
 
 fn label(codec: Codec) -> &'static str {
     match codec {
-        Codec::Rv10 => "RealVideo 1.0",
-        Codec::Rv20 => "RealVideo 2.0",
+        Codec::Rv12(cfa4_realvideo::Codec::Rv10) => "RealVideo 1.0",
+        Codec::Rv12(cfa4_realvideo::Codec::Rv20) => "RealVideo 2.0",
+        Codec::Rv34(rv34::Codec::Rv30) => "RealVideo 3.0",
+        Codec::Rv34(rv34::Codec::Rv40) => "RealVideo 4.0",
+    }
+}
+
+fn picture_type(codec: Codec, pkt: &[u8]) -> Option<PictType> {
+    match codec {
+        Codec::Rv12(c) => cfa4_realvideo::picture_type(c, pkt),
+        Codec::Rv34(c) => rv34::picture_type(c, pkt),
+    }
+}
+
+/// Either decoder.
+enum AnyDecoder {
+    Rv12(Box<cfa4_realvideo::Decoder>),
+    Rv34(Box<rv34::Decoder>),
+}
+
+impl AnyDecoder {
+    fn new(codec: Codec, width: u32, height: u32, extradata: &[u8]) -> std::result::Result<Self, cfa4_realvideo::Error> {
+        Ok(match codec {
+            Codec::Rv12(c) => Self::Rv12(Box::new(cfa4_realvideo::Decoder::new(c, width, height, extradata)?)),
+            Codec::Rv34(c) => Self::Rv34(Box::new(rv34::Decoder::new(c, width, height, extradata)?)),
+        })
+    }
+    fn decode(&mut self, pkt: &[u8]) -> std::result::Result<Option<Picture>, cfa4_realvideo::Error> {
+        match self {
+            Self::Rv12(d) => d.decode(pkt),
+            Self::Rv34(d) => d.decode(pkt),
+        }
+    }
+    fn flush(&mut self) -> Option<Picture> {
+        match self {
+            Self::Rv12(d) => d.flush(),
+            Self::Rv34(d) => d.flush(),
+        }
+    }
+    fn frames_started(&self) -> u64 {
+        match self {
+            Self::Rv12(d) => d.frames_started(),
+            Self::Rv34(d) => d.frames_started(),
+        }
     }
 }
 
@@ -114,10 +167,10 @@ impl RmSource {
             return Err(CodecError::Unsupported(format!("{name}: RealMedia without a video stream (RealAudio is not decoded yet)")));
         };
         let Some(codec) = codec_of(&fourcc) else {
-            return Err(CodecError::Unsupported(format!("{name}: RealMedia video {} (CFA4 decodes RealVideo 1.0 and 2.0)", String::from_utf8_lossy(&fourcc))));
+            return Err(CodecError::Unsupported(format!("{name}: RealMedia video {} (CFA4 decodes RealVideo 1.0 to 4.0)", String::from_utf8_lossy(&fourcc))));
         };
         // the decoder checks the stream parameters
-        cfa4_realvideo::Decoder::new(codec, u32::from(width), u32::from(height), &extradata)
+        AnyDecoder::new(codec, u32::from(width), u32::from(height), &extradata)
             .map_err(|e| CodecError::Unsupported(format!("{name}: {}: {e}", label(codec))))?;
         let mut types = Vec::new();
         let mut places = Vec::new();
@@ -132,7 +185,7 @@ impl RmSource {
             if p.stream != stream || p.partial {
                 continue;
             }
-            let Some(t) = cfa4_realvideo::picture_type(codec, &p.data) else { continue };
+            let Some(t) = picture_type(codec, &p.data) else { continue };
             nth = if p.pos == last_pos { nth.saturating_add(1) } else { 0 };
             last_pos = p.pos;
             places.push((p.pos, nth));
@@ -149,16 +202,19 @@ impl RmSource {
                 *slot = i;
             }
         }
-        // 16.16 fixed point; RealProducer writes whole rates, keep it exact when it is one
+        // 16.16 fixed point; RealProducer writes whole rates, keep it exact when it is one, and
+        // take a standard rate the field approximates (29.97 is 0x1DF852) as that rate
         let rate = if fps == 0 {
             FrameRate::new(25, 1)
         } else if fps & 0xFFFF == 0 {
             FrameRate::new(i64::from(fps >> 16), 1)
         } else {
-            FrameRate::new(i64::from(fps), 65536)
+            let exact = FrameRate::new(i64::from(fps), 65536);
+            FrameRate::COMMON.into_iter().find(|r| (r.as_f64() - exact.as_f64()).abs() < 0.005).unwrap_or(exact)
         };
         let frames = samples.len() as i64;
-        let duration = Tick::from_rational(frames, rate.den, rate.num);
+        // the start of the frame after the last, so every frame lies inside the duration
+        let duration = rate.tick_of(frames);
         let color = crate::stream_color::resolve(u32::from(width), u32::from(height), &[]);
         let bitrate = u64::try_from(duration.to_rational_round(1, 1)).ok().filter(|&s| s > 0).map(|s| bytes.len() as u64 * 8 / s);
         let info = MediaInfo {
@@ -218,10 +274,10 @@ impl RmSource {
     }
 }
 
-/// [`cfa4_realvideo::Decoder`] as a [`VideoDecoder`]: pictures come out in display order and
+/// [`cfa4_realvideo::Decoder`] or [`rv34::Decoder`] as a [`VideoDecoder`]: pictures come out in display order and
 /// are matched to their samples by decode index.
 pub struct RealVideoDecoder {
-    dec: cfa4_realvideo::Decoder,
+    dec: AnyDecoder,
     codec: Codec,
     width: u32,
     height: u32,
@@ -231,12 +287,12 @@ pub struct RealVideoDecoder {
 }
 
 impl RealVideoDecoder {
-    pub fn new(codec: Codec, width: u32, height: u32, extradata: &[u8], rate: FrameRate) -> Result<Self> {
-        let dec = cfa4_realvideo::Decoder::new(codec, width, height, extradata).map_err(|e| CodecError::Unsupported(format!("{}: {e}", label(codec))))?;
+    fn new(codec: Codec, width: u32, height: u32, extradata: &[u8], rate: FrameRate) -> Result<Self> {
+        let dec = AnyDecoder::new(codec, width, height, extradata).map_err(|e| CodecError::Unsupported(format!("{}: {e}", label(codec))))?;
         Ok(Self { dec, codec, width, height, extradata: extradata.to_vec(), rate, pts: HashMap::new() })
     }
 
-    fn frame(&mut self, p: cfa4_realvideo::Picture) -> Option<DecodedFrame> {
+    fn frame(&mut self, p: Picture) -> Option<DecodedFrame> {
         let pts = self.pts.remove(&p.decode_index)?;
         let color = crate::stream_color::resolve(p.width, p.height, &[]);
         let data = PixelData::Yuv8 { planes: [Arc::new(p.y), Arc::new(p.u), Arc::new(p.v)], chroma: Chroma::C420, alpha: None };
@@ -278,7 +334,7 @@ impl VideoDecoder for RealVideoDecoder {
         self.dec.flush().and_then(|p| self.frame(p)).into_iter().collect()
     }
     fn reset(&mut self) {
-        if let Ok(d) = cfa4_realvideo::Decoder::new(self.codec, self.width, self.height, &self.extradata) {
+        if let Ok(d) = AnyDecoder::new(self.codec, self.width, self.height, &self.extradata) {
             self.dec = d;
         }
         self.pts.clear();
@@ -287,10 +343,10 @@ impl VideoDecoder for RealVideoDecoder {
         "CFA4 RealVideo"
     }
     fn is_random_access(&self, sample: &[u8]) -> Option<bool> {
-        cfa4_realvideo::picture_type(self.codec, sample).map(|t| t == PictType::I)
+        picture_type(self.codec, sample).map(|t| t == PictType::I)
     }
     fn is_disposable(&self, sample: &[u8]) -> bool {
-        cfa4_realvideo::picture_type(self.codec, sample) == Some(PictType::B)
+        picture_type(self.codec, sample) == Some(PictType::B)
     }
 }
 

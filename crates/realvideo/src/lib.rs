@@ -12,7 +12,11 @@
 //!
 //! [`Decoder::decode`] takes one frame as the RealMedia demuxer assembles it (a slice count, a
 //! slice table and the slices); `cfa4-realmedia` produces them.
+//!
+//! **RealVideo 3.0** (`RV30`) and **RealVideo 4.0** (`RV40`), the H.264-like codecs, are in
+//! [`rv34`], which takes packets in the same layout.
 
+pub mod rv34;
 mod tables;
 
 use std::sync::Arc;

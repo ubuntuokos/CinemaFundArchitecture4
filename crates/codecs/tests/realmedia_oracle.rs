@@ -1,7 +1,8 @@
-//! RealMedia with RealVideo 1.0 / 2.0 (`cfa4-realmedia` + `cfa4-realvideo`) through the media
+//! RealMedia with RealVideo 1.0 to 4.0 (`cfa4-realmedia` + `cfa4-realvideo`) through the media
 //! source against ffmpeg: streams from ffmpeg's `rv10` / `rv20` encoders, and, when present,
 //! ffmpeg's FATE sample `real/G2_with_SVT_320_240.rm` (RealVideo 2.0 with B-frames, from
-//! `https://fate-suite.ffmpeg.org/real/`) in `target/fixtures/real`. Frames are requested last
+//! `https://fate-suite.ffmpeg.org/real/`) in `target/fixtures/real`, and the FATE samples `rv30.rm`
+//! (RealVideo 3.0) and `spygames-2MB.rmvb` (RealVideo 4.0) there. Frames are requested last
 //! to first, so every one of them is reached by seeking. ffmpeg runs with its simple IDCT, the one
 //! the decoder implements.
 
@@ -84,4 +85,17 @@ fn fate_rv20_with_b_frames_matches() {
         return;
     }
     compare(&ff, "G2_with_SVT_320_240.rm", &p, "RealVideo 2.0");
+}
+
+#[test]
+fn fate_rv30_and_rv40_match() {
+    let Some(ff) = cfa4_testkit::ffmpeg_or_skip("realmedia FATE") else { return };
+    for (file, label) in [("rv30.rm", "RealVideo 3.0"), ("spygames-2MB.rmvb", "RealVideo 4.0")] {
+        let p = cfa4_testkit::fixtures_dir("real").join(file);
+        if !p.exists() {
+            eprintln!("skipping: {} not present", p.display());
+            continue;
+        }
+        compare(&ff, file, &p, label);
+    }
 }
