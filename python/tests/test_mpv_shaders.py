@@ -14,7 +14,9 @@ import re
 import shutil
 import subprocess
 import tempfile
+from collections.abc import Callable
 from pathlib import Path
+from typing import Any
 
 import pytest
 
@@ -136,7 +138,11 @@ def backend() -> bool:
     return r.returncode == 0 and len(r.stdout) == 3 * 8 * 8 * 4
 
 
-def render(shader: Path, w: int, h: int, blue: float = 0.5) -> list[list[tuple[float, float, float]]]:
+RGB = tuple[float, float, float]
+Image = list[list[RGB]]
+
+
+def render(shader: Path, w: int, h: int, blue: float = 0.5) -> Image:
     """The coordinate ramp through `shader`. Once the backend works, any failure is the shader's."""
     r = run_ffmpeg(shader, w, h, ramp_frame(w, h, blue))
     size = w * h * 4
@@ -147,7 +153,11 @@ def render(shader: Path, w: int, h: int, blue: float = 0.5) -> list[list[tuple[f
         r.stderr.decode(errors="replace"),
     )
     px = r.stdout[2 * size :]
-    return [[tuple(px[(y * w + x) * 4 + k] / 255.0 for k in range(3)) for x in range(w)] for y in range(h)]
+    def at(x: int, y: int) -> RGB:
+        i = (y * w + x) * 4
+        return (px[i] / 255.0, px[i + 1] / 255.0, px[i + 2] / 255.0)
+
+    return [[at(x, y) for x in range(w)] for y in range(h)]
 
 
 def ramp(u: float, n: int) -> float:
@@ -155,14 +165,15 @@ def ramp(u: float, n: int) -> float:
     return min(max((u * n - 0.5) / (n - 1), 0.0), 1.0)
 
 
-def gpu(name: str, values: dict[str, float], w: int, h: int, tmp: Path, blue: float = 0.5):
+def gpu(name: str, values: dict[str, float], w: int, h: int, tmp: Path, blue: float = 0.5) -> Image:
     if not backend():
         pytest.skip("FFmpeg with libplacebo and a Vulkan device is needed")
     return render(with_params(name, values, tmp / name), w, h, blue)
 
 
-def compare(out, expect, skip=lambda x, y: False) -> None:
-    worst = (0.0, None)
+def compare(out: Image, expect: Callable[[int, int], RGB],
+            skip: Callable[[int, int], bool] = lambda x, y: False) -> None:
+    worst: tuple[float, Any] = (0.0, None)
     for y, row in enumerate(out):
         for x, got in enumerate(row):
             if skip(x, y):
@@ -183,7 +194,7 @@ def test_dual_projector_convergence_moves_only_the_second_view(tmp_path: Path) -
     def local(x: int) -> float:
         return (((x + 0.5) / w - 0.5) / 0.5 - 0.5 - shift / 100.0) / k + 0.5
 
-    def expect(x, y):
+    def expect(x: int, y: int) -> RGB:
         v = (y + 0.5) / h
         if x < w // 2:
             return (ramp((x + 0.5) / w, w), ramp(v, h), 0.5)
@@ -194,7 +205,7 @@ def test_dual_projector_convergence_moves_only_the_second_view(tmp_path: Path) -
         return (ramp(0.5 + min(max(lx, half), 1 - half) * 0.5, w), ramp(ly, h), 0.5)
 
     # the black border is a step: leave a texel either side of it out
-    def near_edge(x, y):
+    def near_edge(x: int, y: int) -> bool:
         lx, ly = local(x), ((y + 0.5) / h - 0.5) / k + 0.5
         step = 2.0 / (w * k)
         return x >= w // 2 and (min(abs(lx), abs(lx - 1)) < step or min(abs(ly), abs(ly - 1)) < 2.0 / (h * k))
@@ -223,7 +234,7 @@ def test_black_bar_filler_stretches_scope_over_the_bars(tmp_path: Path, warp: fl
     out = gpu("cfa4-black-bar-filler.glsl", {"content_aspect": 2.39, "warp": warp}, w, h, tmp_path)
     c = (w / h) / 2.39
 
-    def expect(x, y):
+    def expect(x: int, y: int) -> RGB:
         v = 0.5 + 0.5 * bar_profile(2 * (y + 0.5) / h - 1, c, warp)
         return (ramp((x + 0.5) / w, w), ramp(v, h), 0.5)
 
@@ -240,7 +251,7 @@ def test_black_bar_filler_uses_the_displayed_aspect_of_anamorphic_frames(tmp_pat
     out = gpu("cfa4-black-bar-filler.glsl", {"content_aspect": 2.39, "frame_aspect": 16 / 9}, w, h, tmp_path)
     c = (16 / 9) / 2.39
 
-    def expect(x, y):
+    def expect(x: int, y: int) -> RGB:
         v = 0.5 + 0.5 * bar_profile(2 * (y + 0.5) / h - 1, c, 1.0)
         return (ramp((x + 0.5) / w, w), ramp(v, h), 0.5)
 
@@ -272,11 +283,11 @@ def test_spot_correction_only_changes_the_spot(tmp_path: Path) -> None:
     }
     out = gpu("cfa4-spot-correction.glsl", values, w, h, tmp_path)
 
-    def smoothstep(e0, e1, x):
+    def smoothstep(e0: float, e1: float, x: float) -> float:
         t = min(max((x - e0) / (e1 - e0), 0.0), 1.0)
         return t * t * (3 - 2 * t)
 
-    def expect(x, y):
+    def expect(x: int, y: int) -> RGB:
         u, v = (x + 0.5) / w, (y + 0.5) / h
         r, g, b = ramp(u, w), ramp(v, h), 0.5
         d = math.hypot((u - cx) / rx, (v - cy) / ry)
@@ -293,7 +304,7 @@ def test_screenxizer_spreads_the_edges_over_the_side_screens(tmp_path: Path, cur
     s, k = 0.25, 0.7
     out = gpu("cfa4-screenxizer-cylinder.glsl", {"side_width": s, "main_source": k, "curve": curve}, w, h, tmp_path)
 
-    def src(u):
+    def src(u: float) -> float:
         if s <= u <= 1 - s:
             return 0.5 + (u - 0.5) / (1 - 2 * s) * k
         q = min(max((s - u) / s if u < s else (u - (1 - s)) / s, 0.0), 1.0)
