@@ -1,6 +1,6 @@
 # CFA4-BRANCH-OWNERSHIP-001 – egy ág, egy munkamenet: az ág-tulajdon technikai védelme
 
-**Állapot:** 1.0, javaslat. A tulajdonos jóváhagyására vár. Jóváhagyás előtt semmi nem épül meg belőle.
+**Állapot:** 1.0, jóváhagyva. A tulajdonos 2026-11-14-én a tervet jóváhagyta, a D1–D6 döntési pontok a javasolt alapértékkel érvényesek (5. fejezet). Következő lépés: BO-1.
 
 **Összefoglaló:** a „más PR-jához, ágához ne nyúlj” szabály (`docs/coordination.md` §1 és §2.4) ma csak
 írott szabály, és semmi nem állítja meg az ügynököt, amelyik mégis megszegi. A terv után minden PR-ágnak
@@ -103,7 +103,7 @@ commitot. Ahol a jelentés idegen commitot talál, a tulajdonos dönt (átadásn
 **T6 – Egy helyen a szabály.** A szabály csak a `docs/coordination.md`-ben áll (a 2026-11-01-i döntés: minden
 szabály egy helyen). Az `AGENTS.md` és a `CLAUDE.md` legfeljebb egy hivatkozást kap rá.
 
-## 5. Döntési pontok (a javasolt alapértékkel)
+## 5. Döntési pontok (a tulajdonos 2026-11-14-én a javaslatokkal együtt elfogadta)
 
 | # | Kérdés | Javaslat |
 |---|---|---|
@@ -132,7 +132,7 @@ A sorrendről a tulajdonos dönt; a lista mindent tartalmaz.
 
 | Lépés | Tartalom | Átadandó |
 |---|---|---|
-| BO-0 | Ez a terv jóváhagyásra | ez a PR |
+| BO-0 | Ez a terv (jóváhagyva 2026-11-14) | #1284 |
 | BO-1 | T5 jelentés a nyitott PR-okról (csak olvasás) | jelentés a `docs/plans` alá |
 | BO-2 | T2 szkript és tesztjei, munkafolyamat jelző módban | PR (CI, CodeRabbit: kell) |
 | BO-3 | T1 szabály és átadási eljárás, T6 hivatkozások | PR (szabályfájl, CodeRabbit: kell) |
