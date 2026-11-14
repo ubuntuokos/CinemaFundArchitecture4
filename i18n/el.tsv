@@ -4178,6 +4178,11 @@ export.summary	Low	χαμηλή
 	Burn Size	Μέγεθος καψίματος
 	Ember Width	Πλάτος θράκας
 	Ember Color	Χρώμα θράκας
+	Tear Away	Σκίσιμο
+	Tear Roughness	Τραχύτητα σκισίματος
+	Paper Edge Width	Πλάτος άκρης χαρτιού
+	Stamp Cut	Αποκοπή γραμματοσήμου
+	Perforations	Διάτρηση
 	Check Text Legibility	Έλεγχος αναγνωσιμότητας κειμένου
 	Clear Legibility Markers	Απαλοιφή δεικτών αναγνωσιμότητας
 	Text legibility: no problems found	Αναγνωσιμότητα κειμένου: δεν βρέθηκαν προβλήματα
