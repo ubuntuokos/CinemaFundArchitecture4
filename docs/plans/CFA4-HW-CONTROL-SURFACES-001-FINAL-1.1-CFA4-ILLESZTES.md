@@ -1,6 +1,6 @@
 # CFA4-HW-CONTROL-SURFACES-001 FINAL 1.1 – CFA4-illesztési melléklet
 
-**Dátum:** 2026-11-13 · **Állapot:** jóváhagyásra vár (M0 kapu) · **Terv:** CFA4-HW-CONTROL-SURFACES-001
+**Dátum:** 2026-11-13 · **Állapot:** jóváhagyva (tulajdonos, 2026-11-14: Q1–Q6 a javaslat szerint; az M0 kapu lezárva) · **Terv:** CFA4-HW-CONTROL-SURFACES-001
 FINAL 1.1 (<https://claude.ai/artifact/2YNfVud77rJovdg7C1RLvb>) · **Audit:**
 [`CFA4-HW-CONTROL-SURFACES-001-M0-AUDIT-2026-11-13.md`](../audit/hw/CFA4-HW-CONTROL-SURFACES-001-M0-AUDIT-2026-11-13.md) ·
 **Szomszédos projekt:** CFA4-CONTROL-SURFACE-001 ([ADR 0012](../adr/ADR-0012-control-surface.md), #1184, #1187, #1193)
@@ -37,9 +37,9 @@ adapterei és a hozzájuk tartozó lapok. Nem lesz két eszközkezelő a CFA4-be
 | # | Kérdés | Javaslat | Döntés |
 |---|---|---|---|
 | Q0 | Két külön rendszer vagy közös alap? | Közös alap | **Közös alap** (tulajdonos, 2026-11-13) |
-| Q1 | Ki felügyeli az adapter-gyermekfolyamatokat (E2)? | A `cfa4-surface` a `serve`-ben, a `cfa4-studio-host` mintájára; nincs külön registry-folyamat | |
-| Q2 | Hova kerül a katalógus és a státuszszámítás (E1)? | Új L1 crate: `cfa4-surface-catalog` | |
-| Q3 | Bővíthető-e a `DeviceId` sorozatszámos alakkal és a `SurfaceFeedback` képcélokkal (E4, E7)? | Igen, additívan, a CONTROL-SURFACE-001 jóváhagyásával | |
-| Q4 | Ki viszi a Mackie Control / HUI réteget (E9)? | A CONTROL-SURFACE-001 (MIDI-alapú) | |
-| Q5 | A lap magyar neve „Vezérlők” legyen „Vezérlőfelületek” helyett (E6)? | Igen, a 2026-10-31-i döntés szerint | |
-| Q6 | Az M2 első modellje az AKP153E (E12)? | Igen | |
+| Q1 | Ki felügyeli az adapter-gyermekfolyamatokat (E2)? | A `cfa4-surface` a `serve`-ben, a `cfa4-studio-host` mintájára; nincs külön registry-folyamat || Elfogadva a javaslat szerint (tulajdonos, 2026-11-14) |
+| Q2 | Hova kerül a katalógus és a státuszszámítás (E1)? | Új L1 crate: `cfa4-surface-catalog` || Elfogadva a javaslat szerint (tulajdonos, 2026-11-14) |
+| Q3 | Bővíthető-e a `DeviceId` sorozatszámos alakkal és a `SurfaceFeedback` képcélokkal (E4, E7)? | Igen, additívan, a CONTROL-SURFACE-001 jóváhagyásával || Elfogadva a javaslat szerint (tulajdonos, 2026-11-14) |
+| Q4 | Ki viszi a Mackie Control / HUI réteget (E9)? | A CONTROL-SURFACE-001 (MIDI-alapú) || Elfogadva a javaslat szerint (tulajdonos, 2026-11-14) |
+| Q5 | A lap magyar neve „Vezérlők” legyen „Vezérlőfelületek” helyett (E6)? | Igen, a 2026-10-31-i döntés szerint || Elfogadva a javaslat szerint (tulajdonos, 2026-11-14) |
+| Q6 | Az M2 első modellje az AKP153E (E12)? | Igen || Elfogadva a javaslat szerint (tulajdonos, 2026-11-14) |

@@ -162,4 +162,4 @@ tény, hogy a gyári vagy közösségi driver fut-e (a CFA4 ilyenkor nem nyitja 
 | Licencek | kész: `mirajazz` MPL-2.0 igazolva; minden függőség megfelel a `deny.toml`-nak |
 | Eszközlista | Elgato kész (+ XL, Modules igazolva; Studio nem); MiraBox, kiegészítők `UNCONFIRMED`; beszerzett eszköz: AJAZZ AKP153E → M2 első modellje |
 | Rendszerszintű utak | várt értékek; eszközön ellenőrizendő |
-| **Kapu** | **az illesztési melléklet tulajdonosi jóváhagyása** |
+| **Kapu** | **lezárva: az illesztési mellékletet a tulajdonos 2026-11-14-én jóváhagyta (Q1–Q6)** |
