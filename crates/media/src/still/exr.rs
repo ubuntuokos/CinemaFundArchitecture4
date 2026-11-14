@@ -7,7 +7,10 @@
 //! frame keeps them as 32-bit floats (values above 1.0 survive into effects and colour work).
 //!
 //! The `framesPerSecond` and `timeCode` attributes give a sequence its frame rate and start time
-//! code (a still's too).
+//! code (a still's too). A `chromaticities` attribute other than Rec.709 / D65 (ACES AP0 or AP1,
+//! P3, Rec.2020, …) is honoured: the decoder converts the pixels to the linear Rec.709 working
+//! primaries (normalised primary matrix per SMPTE RP 177, Bradford white adaptation), keeping
+//! values outside the Rec.709 gamut as negative or above-1.0 floats.
 //!
 //! The display window is the frame; pixels of the data window outside it are cut, and the parts of
 //! it the data window does not cover are transparent. Tiled, deep and multi-part files, chroma
@@ -218,6 +221,52 @@ struct Header {
     /// Offset of the line offset table.
     end: usize,
     timing: super::Timing,
+    /// The `chromaticities` attribute: R, G, B and white (x, y).
+    chromaticities: Option<[f64; 8]>,
+}
+
+/// Chromaticities of the common EXR colour spaces, for the media info (OpenEXR's default is
+/// Rec.709 / D65; ACES from SMPTE ST 2065-1 and S-2014-004).
+const NAMED_CHROMATICITIES: [(&str, [f64; 8]); 6] = [
+    ("Rec.709", [0.64, 0.33, 0.30, 0.60, 0.15, 0.06, 0.3127, 0.3290]),
+    ("ACES AP0", [0.7347, 0.2653, 0.0, 1.0, 0.0001, -0.0770, 0.32168, 0.33767]),
+    ("ACES AP1", [0.713, 0.293, 0.165, 0.830, 0.128, 0.044, 0.32168, 0.33767]),
+    ("P3-D65", [0.680, 0.320, 0.265, 0.690, 0.150, 0.060, 0.3127, 0.3290]),
+    ("DCI-P3", [0.680, 0.320, 0.265, 0.690, 0.150, 0.060, 0.314, 0.351]),
+    ("Rec.2020", [0.708, 0.292, 0.170, 0.797, 0.131, 0.046, 0.3127, 0.3290]),
+];
+
+fn same_chromaticities(a: &[f64; 8], b: &[f64; 8]) -> bool {
+    a.iter().zip(b).all(|(x, y)| (x - y).abs() < 5e-4)
+}
+
+/// The `chromaticities` attribute value (eight 32-bit floats), when every number is finite.
+fn chromaticities(v: &[u8]) -> Option<[f64; 8]> {
+    let mut c = [0.0; 8];
+    for (i, o) in c.iter_mut().enumerate() {
+        let f = f32::from_le_bytes(v.get(i * 4..i * 4 + 4)?.try_into().ok()?);
+        if !f.is_finite() {
+            return None;
+        }
+        *o = f64::from(f);
+    }
+    Some(c)
+}
+
+/// Linear RGB with chromaticities `c` → linear Rec.709 (D65 white). `None` when `c` is Rec.709 /
+/// D65 already, or does not describe a usable RGB space (the pixels are then taken as Rec.709).
+fn to_rec709(c: &[f64; 8]) -> Option<[[f32; 3]; 3]> {
+    use cfa4_color::spaces::{self, Gamut};
+    if same_chromaticities(c, &NAMED_CHROMATICITIES[0].1) || [c[1], c[3], c[5], c[7]].iter().any(|y| y.abs() < 1e-6) {
+        return None;
+    }
+    // normalised primary matrix (SMPTE RP 177); a primary may lie below the spectral locus with a
+    // negative y (ACES AP0 blue), which it handles
+    let to_xyz = spaces::npm([[c[0], c[1]], [c[2], c[3]], [c[4], c[5]]], [c[6], c[7]]);
+    let xyz = |x: f64, y: f64| [x / y, 1.0, (1.0 - x - y) / y];
+    let adapt = cfa4_dng::color::bradford(&xyz(c[6], c[7]), &xyz(spaces::D65[0], spaces::D65[1]))?;
+    let m = spaces::mul(&spaces::inverse(&Gamut::Bt709.to_xyz()), &spaces::mul(&adapt, &to_xyz));
+    m.iter().flatten().all(|v| v.is_finite()).then(|| m.map(|r| r.map(|v| v as f32)))
 }
 
 fn header(name: &str, b: &[u8]) -> Result<Header> {
@@ -236,6 +285,7 @@ fn header(name: &str, b: &[u8]) -> Result<Header> {
     }
     let (mut chans, mut code, mut data, mut display) = (None, None, None, None);
     let mut timing = super::Timing::default();
+    let mut chroma = None;
     let mut pos = 8;
     for _ in 0..MAX_ATTRIBUTES {
         let attr = cstr(b, &mut pos).ok_or_else(|| bad("header"))?;
@@ -254,7 +304,7 @@ fn header(name: &str, b: &[u8]) -> Result<Header> {
                     return Err(MediaError::Unsupported(format!("{name}: {what} compressed OpenEXR is not supported yet")));
                 }
             };
-            return Ok(Header { channels, compression, code, data, display: display.unwrap_or(data), end: pos, timing });
+            return Ok(Header { channels, compression, code, data, display: display.unwrap_or(data), end: pos, timing, chromaticities: chroma });
         }
         let ty = cstr(b, &mut pos).ok_or_else(|| bad("header"))?;
         let size = le32(b, pos).ok_or_else(|| bad("header"))? as usize;
@@ -274,6 +324,7 @@ fn header(name: &str, b: &[u8]) -> Result<Header> {
             // SMPTE ST 12-1 time and flags, packed as OpenEXR stores them (the same byte layout as
             // the CinemaDNG TimeCodes tag); the user data word that follows is not used
             ("timeCode", "timecode") => timing.timecode = value.get(..4).and_then(cfa4_dng::Timecode::from_bytes),
+            ("chromaticities", "chromaticities") => chroma = chromaticities(value),
             _ => {}
         }
     }
@@ -564,6 +615,17 @@ pub fn decode(name: &str, b: &[u8]) -> Result<Decoded> {
         }
         f
     };
+    // other primaries / white → the Rec.709 working primaries (alpha is untouched; the matrix is
+    // linear, so premultiplied values convert as they are)
+    let mut px = px;
+    let gamut = if rgb { h.chromaticities.as_ref().and_then(to_rec709) } else { None };
+    if let Some(m) = gamut {
+        px.par_chunks_mut(4).for_each(|p| {
+            if let [r, g, b, _] = p {
+                [*r, *g, *b] = cfa4_color::spaces::apply3(&m, [*r, *g, *b]);
+            }
+        });
+    }
     let has_alpha = px.par_chunks(4).any(|p| p.get(3).is_some_and(|&a| a < 1.0));
     let depth = match used.iter().max() {
         Some(PixelType::Float) => "32-bit float",
@@ -575,7 +637,14 @@ pub fn decode(name: &str, b: &[u8]) -> Result<Decoded> {
         (false, true) => "RGB",
         (false, false) => "Y",
     };
-    let pixel_format = format!("{layout} {depth}");
+    let space = match (&h.chromaticities, gamut) {
+        (Some(c), Some(_)) => {
+            let named = NAMED_CHROMATICITIES.iter().find(|(_, n)| same_chromaticities(c, n));
+            format!(", {}", named.map_or("custom primaries", |(n, _)| n))
+        }
+        _ => String::new(),
+    };
+    let pixel_format = format!("{layout} {depth}{space}");
     let mut frame = VideoFrame::rgba_f32(fw32, fh32, px);
     frame.color = LINEAR_709;
     Ok(Decoded { frame, has_alpha, pixel_format, timing: h.timing })

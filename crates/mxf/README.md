@@ -85,7 +85,7 @@ the picture and sound, from `MxfWriter::push_anc` (an empty element when none wa
 its own index slice. `anc_element(packets)` builds an element value with the 8-bit luma coding
 (04h). `cfa4-export` uses it for `ExportSettings::mxf_anc_captions`: the first caption track as
 one CDP per frame (`cfa4_captions::mcc::CdpStream`, CEA-608 field 1 and CEA-708 service 1) on
-VANC line 9, at 29.97 fps (other rates: #1065).
+VANC line 9, at every ST 334-2 rate (23.976, 24, 25, 29.97, 30, 50, 59.94, 60 fps).
 
 ## Peeking at the header
 
@@ -187,8 +187,11 @@ let pcm = mxf.read_pcm(&file, a, 48_000, 1920)?;       // planar f32, sample-exa
   pictures and plays silence in the gaps (#1008). AES3 elements (D-10) are cut exactly where a
   clip starts or ends inside one (29.97 Hz cadence): `Chunk::skip` counts the sample frames of
   the element before the clip. For OPxc (alternate packages), the first material package is
-  read. Long-GOP clips with B pictures and no index temporal offsets keep the stored order across
-  several clips, with a warning (#1008).
+  read. Long-GOP clips with B pictures and no index temporal offsets take their presentation
+  order from the bitstream: `open_with_order` hands each such clip's picture starts to the
+  caller's `PresentationOrder` (`cfa4-codecs` reads the H.264 picture order counts) before the
+  clips are cut. Without one (`open`, or a codec it cannot read) they keep the stored order, with
+  a warning (#1008).
 
 Not supported: external essence (OP-Atom
 material packages whose other tracks live in other files are opened track by track), partial
@@ -284,7 +287,11 @@ w.finish()?;
   elementary stream (ST 381-1: container `02 04 60`, element types 0x05 / 0x06, the MPEG video
   descriptor with SingleSequence, ConstantBframes, CodedContentType, LowDelay, ClosedGOP,
   IdenticalGOP, MaxGOP, BPictureCount, ProfileAndLevel and BitRate under dynamic tags, the RDD 9
-  Table 6 coding labels for MP@HL / MP@H-14 / 422P@HL long GOP; random access entries flagged
+  Table 6 coding labels for MP@HL / MP@H-14 / 422P@HL long GOP, and RDD 9's annex picture
+  values: whole-macroblock stored height (1088), the ST 274 / ST 296 signal standard and video
+  line map (42 or 26); `PictureDesc::field_dominance` writes interlaced pictures as separate
+  fields (544 stored, 540 sampled lines, line map 21 / 584, the field dominance, CodedContentType
+  interlaced); random access entries flagged
   with their sequence header, P and B entries with the naive prediction flags of ST 381-1 A.2;
   without `rdd9` no SDTI-CP system item or AES3 elements; with `WriterConfig::rdd9` the strict
   RDD 9 layout: per content package the ST 385 system item (bitmap 5Ch, the time code as the user
@@ -299,7 +306,8 @@ w.finish()?;
   compatible content package per frame: the ST 385 system item with the time code of the frame,
   the picture element padded to the SMPTE 356 frame size, one 8-channel AES3 element of ST 331
   (1920 samples, or 1601 / 1602 with the 5-sequence count), each item filled to the 512-byte KAG;
-  a constant-size index with three delta entries; CDCI descriptor with separate fields, the
+  a constant-size index with three delta entries; CDCI descriptor with separate fields (field 1
+  first unless `field_dominance` says 2), the
   vertical interval and BT.601 labels, generic sound descriptor of 4 or 8 channels), Broadcast
   Wave PCM (ST 382: container `02 06 01/02`, element types 0x01 / 0x02).
 - `write_opatom_pcm(&OpAtomPcm, &[i32])` builds a complete in-memory OP-Atom PCM file (AAF media
