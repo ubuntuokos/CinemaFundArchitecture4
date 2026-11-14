@@ -73,9 +73,10 @@ class Notifications:
 class StubEngine:
     """Answers at once, as the engine would; remembers every request."""
 
-    def __init__(self, devices: dict[str, Any], monitor_error: str = "") -> None:
+    def __init__(self, devices: dict[str, Any], monitor_error: str = "", learn_error: str = "") -> None:
         self.devices = devices
         self.monitor_error = monitor_error
+        self.learn_error = learn_error
         self.event = Notifications()
         self.sent: list[tuple[str, dict[str, Any]]] = []
         self.values: dict[str, Any] = {"controlSurfaces": {"enabled": True, "devices": []}}
@@ -90,6 +91,12 @@ class StubEngine:
                     on_error(self.monitor_error)
             elif on_reply:
                 on_reply({"enabled": bool((params or {}).get("enabled"))}, None)
+        if method == "surface.learn":
+            if self.learn_error:
+                if on_error:
+                    on_error(self.learn_error)
+            elif on_reply:
+                on_reply({"state": "learning"}, None)
         return len(self.sent)
 
     def execute(self, command: str, params: dict[str, Any] | None = None, on_reply=None, on_error=None) -> int:
@@ -135,8 +142,8 @@ def test_control_surfaces_page_lists_devices_and_applies_choices(app):
     sets = [p for m, p in engine.sent if m == "prefs.set"]
     assert len(sets) == 1
     devices = sets[0]["values"]["controlSurfaces.devices"]
-    assert {"device": "midi:nanoKONTROL2:nanoKONTROL2 _ CTRL", "enabled": False, "profile": ""} in devices
-    assert {"device": "hid:0b33:0030:usb-0000:00:14.0-3/input0", "enabled": True, "profile": "cfa4.shuttlepro.kdenlive"} in devices
+    assert {"device": "midi:nanoKONTROL2:nanoKONTROL2 _ CTRL", "enabled": False, "profile": "", "bindings": []} in devices
+    assert {"device": "hid:0b33:0030:usb-0000:00:14.0-3/input0", "enabled": True, "profile": "cfa4.shuttlepro.kdenlive", "bindings": []} in devices
 
 
 def test_control_surfaces_page_without_devices_and_refresh(app):
@@ -207,6 +214,90 @@ def test_midi_monitor_says_why_it_cannot_start(app):
     assert monitor_calls(engine) == [True], "nothing to stop"
 
 
+COMMANDS = [("playback.toggle", "Play/Stop"), ("edit.undo", "Undo"), ("markers.markIn", "Mark In")]
+NANO = "midi:nanoKONTROL2:nanoKONTROL2 _ CTRL"
+CC41 = {"midi": {"channel": 0, "kind": "cc", "number": 41}}
+
+
+def rows(d, what: str) -> list[str]:
+    return [w.text() for w in sorted((w for w in d.findChildren(QtWidgets.QLabel) if w.objectName().startswith("settings.controlSurfaces.assign.")
+                                      and w.objectName().endswith(f".{what}")), key=lambda w: w.objectName())]
+
+
+def test_learn_assigns_a_button_and_ok_saves_it(app):
+    engine = StubEngine(DEVICES)
+    d = PreferencesDialog(None, engine, "controlSurfaces", commands=lambda: COMMANDS)
+    # only MIDI devices are offered (HID assignments come with the jog/shuttle reader)
+    device = find(d, QtWidgets.QComboBox, "settings.controlSurfaces.assign.device")
+    assert [device.itemData(i) for i in range(device.count())] == [NANO]
+    assert find(d, QtWidgets.QLabel, "settings.controlSurfaces.assign.none")
+    command = find(d, QtWidgets.QComboBox, "settings.controlSurfaces.assign.command")
+    assert [command.itemData(i) for i in range(command.count())] == ["markers.markIn", "playback.toggle", "edit.undo"], "by label"
+    command.setCurrentIndex(command.findData("playback.toggle"))
+    command.activated.emit(command.currentIndex())
+    find(d, QtWidgets.QPushButton, "settings.controlSurfaces.assign.learn").click()
+    assert ("surface.learn", {"device": NANO}) in engine.sent
+    learn = find(d, QtWidgets.QPushButton, "settings.controlSurfaces.assign.learn")
+    assert learn.isChecked() and learn.text() == "Cancel Learn"
+    # another device's press, or the monitor's events, assign nothing
+    engine.event.emit({"event": "surfaceLearn", "state": "captured", "device": "midi:Other:Port", "control": CC41})
+    assert d.learning
+    engine.event.emit({"event": "surfaceLearn", "state": "captured", "device": NANO, "control": CC41, "label": "Ch 1 CC 41"})
+    assert not d.learning
+    assert rows(d, "control") == ["Ch 1 CC 41"] and rows(d, "command") == ["Play/Stop"]
+    assert "Ch 1 CC 41 runs Play/Stop" in find(d, QtWidgets.QLabel, "settings.controlSurfaces.assign.status").text()
+    # learning the same control again replaces its command
+    command = find(d, QtWidgets.QComboBox, "settings.controlSurfaces.assign.command")
+    assert command.currentData() == "playback.toggle", "the picked command stays"
+    command.setCurrentIndex(command.findData("edit.undo"))
+    command.activated.emit(command.currentIndex())
+    find(d, QtWidgets.QPushButton, "settings.controlSurfaces.assign.learn").click()
+    engine.event.emit({"event": "surfaceLearn", "state": "captured", "device": NANO, "control": CC41})
+    assert rows(d, "command") == ["Undo"]
+    note = {"midi": {"channel": 9, "kind": "note", "number": 36}}
+    find(d, QtWidgets.QPushButton, "settings.controlSurfaces.assign.learn").click()
+    engine.event.emit({"event": "surfaceLearn", "state": "captured", "device": NANO, "control": note})
+    assert rows(d, "control") == ["Ch 1 CC 41", "Ch 10 Note 36"]
+    find(d, QtWidgets.QToolButton, "settings.controlSurfaces.assign.1.remove").click()
+    assert rows(d, "control") == ["Ch 10 Note 36"]
+    assert not [m for m, _p in engine.sent if m == "prefs.set"], "a draft until OK"
+    find(d, QtWidgets.QPushButton, "settings.ok").click()
+    sets = [p for m, p in engine.sent if m == "prefs.set"]
+    assert sets[0]["values"]["controlSurfaces.devices"] == [
+        {"device": NANO, "enabled": True, "profile": "", "bindings": [{"control": note, "command": "edit.undo"}]}]
+    assert "surface.learnCancel" not in [m for m, _p in engine.sent], "nothing was waiting"
+
+
+def test_learn_cancel_errors_and_close(app):
+    engine = StubEngine(DEVICES, learn_error="MIDI: no ALSA sequencer (No such file or directory)")
+    d = PreferencesDialog(None, engine, "controlSurfaces", commands=lambda: COMMANDS)
+    find(d, QtWidgets.QPushButton, "settings.controlSurfaces.assign.learn").click()
+    assert not d.learning
+    assert "ALSA sequencer" in find(d, QtWidgets.QLabel, "settings.controlSurfaces.assign.status").text()
+    engine.learn_error = ""
+    find(d, QtWidgets.QPushButton, "settings.controlSurfaces.assign.learn").click()
+    find(d, QtWidgets.QPushButton, "settings.controlSurfaces.assign.learn").click()  # Cancel Learn
+    assert [m for m, _p in engine.sent if m.startswith("surface.learn")] == ["surface.learn", "surface.learn", "surface.learnCancel"]
+    # a press after cancelling assigns nothing
+    engine.event.emit({"event": "surfaceLearn", "state": "captured", "device": NANO, "control": CC41})
+    assert rows(d, "control") == []
+    # the sequencer going away ends Learn with its reason
+    find(d, QtWidgets.QPushButton, "settings.controlSurfaces.assign.learn").click()
+    engine.event.emit({"event": "surfaceError", "code": "alsa_unavailable", "error": "MIDI: the sequencer stopped"})
+    assert not d.learning and "sequencer stopped" in find(d, QtWidgets.QLabel, "settings.controlSurfaces.assign.status").text()
+    # closing while Learn waits cancels it
+    find(d, QtWidgets.QPushButton, "settings.controlSurfaces.assign.learn").click()
+    find(d, QtWidgets.QPushButton, "settings.cancel").click()
+    assert [m for m, _p in engine.sent if m.startswith("surface.learn")][-1] == "surface.learnCancel"
+
+
+def test_assignments_need_a_midi_controller(app):
+    engine = StubEngine({"enabled": True, "devices": [DEVICES["devices"][1]], "problems": []})
+    d = PreferencesDialog(None, engine, "controlSurfaces", commands=lambda: COMMANDS)
+    assert "Connect a MIDI controller" in find(d, QtWidgets.QLabel, "settings.controlSurfaces.assign.empty").text()
+    assert d.findChild(QtWidgets.QPushButton, "settings.controlSurfaces.assign.learn") is None
+
+
 def _real_engine() -> Path | None:
     from cfa4_qt.engine import locate_engine
 
@@ -231,14 +322,56 @@ def test_real_engine_reports_control_surfaces(app, tmp_path: Path):
         engine.call("surface.monitor", {"enabled": True}, on_reply=lambda r, _b: got.update(monitor=r),
                     on_error=lambda m: got.update(monitor={"error": m}))
         engine.call("surface.monitor", {"enabled": False}, on_reply=lambda r, _b: got.update(monitorOff=r))
+        engine.call("surface.learnCancel", {}, on_reply=lambda r, _b: got.update(learnCancel=r))
         deadline = time.monotonic() + 30
-        while len(got) < 5 and time.monotonic() < deadline:
+        while len(got) < 6 and time.monotonic() < deadline:
             app.processEvents()
             time.sleep(0.01)
-        assert {"surface", "surfaceMonitor"} <= set(got["hello"]["features"])
+        assert {"surface", "surfaceMonitor", "surfaceLearn"} <= set(got["hello"]["features"])
+        assert got["learnCancel"] == {"state": "cancelled"}
         assert got["monitor"].get("enabled") is True or "ALSA sequencer" in got["monitor"]["error"]
         assert got["monitorOff"] == {"enabled": False}
         assert isinstance(got["devices"]["devices"], list)
         assert {p["id"] for p in got["profiles"]["profiles"]} >= {"cfa4.shuttlepro", "cfa4.generic-midi"}
     finally:
+        engine.stop()
+
+
+@pytest.mark.skipif(_real_engine() is None, reason="Rust engine not built (cargo build -p cfa4-cli)")
+def test_main_window_runs_what_a_control_surface_asks(app, tmp_path: Path):
+    """``surfaceAction`` runs its command as the command's key would: a Qt-run command through its
+    action, an engine command through the menu path; an unknown one says so in the status bar."""
+    import time
+
+    from PySide6 import QtCore
+
+    from cfa4_qt.engine import EngineClient
+    from cfa4_qt.main_window import MainWindow
+
+    settings = QtCore.QSettings(str(tmp_path / "s.ini"), QtCore.QSettings.Format.IniFormat)
+    engine = EngineClient(_real_engine(), ["--demo", "--data-dir", str(tmp_path / "data")])
+    win = MainWindow(engine, settings)
+    engine.start()
+    try:
+        deadline = time.monotonic() + 60
+        while len(win.registry.commands) < 100 and time.monotonic() < deadline:
+            app.processEvents()
+            time.sleep(0.01)
+        offered = dict(win.surface_commands())
+        assert "playback.toggle" in offered and "edit.undo" in offered
+        assert all(not win.registry.commands[c].needs_params for c in offered if c in win.registry.commands)
+        fired: list[int] = []
+        win.registry.local_actions["playback.toggle"].triggered.connect(lambda *_: fired.append(1))
+        win._on_event({"event": "surfaceAction", "command": "playback.toggle", "params": {}, "device": NANO, "control": CC41})
+        assert fired == [1]
+        ran: list[tuple[str, dict]] = []
+        win.run_menu_command = lambda cid, params: ran.append((cid, params))
+        enabled = next(c for c, cmd in win.registry.commands.items() if cmd.enabled and not cmd.needs_params and c not in win.registry.local_actions)
+        win._on_event({"event": "surfaceAction", "command": enabled, "params": {}})
+        assert ran == [(enabled, {})]
+        win._on_event({"event": "surfaceAction", "command": "no.such.command"})
+        assert "no.such.command" in win.statusBar().currentMessage()
+    finally:
+        win._quit_confirmed = True
+        win.close()
         engine.stop()

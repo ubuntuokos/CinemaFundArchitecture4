@@ -4571,7 +4571,7 @@ export.summary	Low	alacsony
 	No MIDI controller or jog/shuttle device was found. Connect one and press Refresh.	Nem található MIDI-vezérlő vagy jog/shuttle eszköz. Csatlakoztasson egyet, majd nyomja meg a Frissítés gombot.
 	Control Surfaces	Vezérlőfelületek
 	Use control surfaces (MIDI controllers, jog/shuttle devices)	Vezérlőfelületek használata (MIDI-vezérlők, jog/shuttle eszközök)
-	Mapping controls to commands, MIDI Learn and the MIDI Monitor come in a later version; the choices here are remembered until then.	A vezérlők parancsokhoz rendelése, a MIDI Learn és a MIDI-monitor egy későbbi változatban érkezik; az itt megadott beállításokat addig is megjegyzi a program.
+	Assignments run when a button is pressed (a fader or knob counts as pressed past half way). Faders, knobs and jog wheels as continuous values, and the ShuttlePRO buttons, come in a later version.	A hozzárendelések gombnyomásra futnak (egy fader vagy forgatógomb a félúton túl számít lenyomásnak). A faderek, forgatógombok és jogkerekek folyamatos értékként, valamint a ShuttlePRO gombjai egy későbbi verzióban jönnek.
 	CFA4 ShuttlePRO	CFA4 ShuttlePRO
 	Kdenlive-style ShuttlePRO	Kdenlive-szerű ShuttlePRO
 	Generic MIDI	Általános MIDI
@@ -4581,3 +4581,14 @@ export.summary	Low	alacsony
 	Stop Monitor	Figyelés leállítása
 	Press Start Monitor, then move a control.	Nyomja meg a Figyelés indítása gombot, majd mozdítson meg egy kezelőszervet.
 	… {count} messages not shown (too many at once)	… {count} üzenet nem látszik (egyszerre túl sok érkezett)
+	Assignments	Hozzárendelések
+	Control	Kezelőszerv
+	Remove this assignment	Hozzárendelés törlése
+	No assignments yet.	Még nincs hozzárendelés.
+	Learn	Tanítás
+	Cancel Learn	Tanítás megszakítása
+	Press or move a control on the controller…	Nyomjon meg vagy mozdítson meg egy kezelőszervet a vezérlőn…
+	Pick a command, press Learn, then press a button on the controller. OK saves the assignments.	Válasszon parancsot, nyomja meg a Tanítás gombot, majd nyomjon meg egy gombot a vezérlőn. Az OK menti a hozzárendeléseket.
+	Connect a MIDI controller to assign commands to its buttons.	Csatlakoztasson egy MIDI-vezérlőt, hogy parancsokat rendelhessen a gombjaihoz.
+	{control} runs {command}.	{control}: {command}.
+	A control surface asked for {command}, which does not exist.	Egy vezérlő a(z) {command} parancsot kérte, de ilyen parancs nincs.

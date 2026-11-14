@@ -65,6 +65,25 @@ pub fn describe(raw: &[u8]) -> String {
     }
 }
 
+/// A short English name of a control, such as `Ch 1 CC 16` (channels counted from 1).
+pub fn control_label(c: &ControlId) -> String {
+    match c {
+        ControlId::Midi { channel, kind, number } => {
+            let ch = u16::from(*channel) + 1;
+            match kind {
+                MidiKind::Cc => format!("Ch {ch} CC {number}"),
+                MidiKind::Cc14 => format!("Ch {ch} CC {number} (14-bit)"),
+                MidiKind::Note => format!("Ch {ch} Note {number}"),
+                MidiKind::Rpn => format!("Ch {ch} RPN {number}"),
+                MidiKind::Nrpn => format!("Ch {ch} NRPN {number}"),
+            }
+        }
+        ControlId::Hid { name, .. } => name.clone(),
+        ControlId::Evdev { ev_type, code } => format!("evdev {ev_type}:{code}"),
+        ControlId::Osc { path } => path.clone(),
+    }
+}
+
 /// The bytes as the monitor shows them: `B0 10 40`.
 pub fn hex(raw: &[u8]) -> String {
     raw.iter().map(|b| format!("{b:02X}")).collect::<Vec<_>>().join(" ")
@@ -109,6 +128,13 @@ mod tests {
         assert_eq!(describe(&[0xb0, 16]), "incomplete message (2 bytes)");
         assert_eq!(describe(&[0x40]), "data byte 0x40 without a status");
         assert_eq!(describe(&[]), "(empty)");
+    }
+
+    #[test]
+    fn control_labels() {
+        assert_eq!(control_label(&ControlId::Midi { channel: 0, kind: MidiKind::Cc, number: 16 }), "Ch 1 CC 16");
+        assert_eq!(control_label(&ControlId::Midi { channel: 9, kind: MidiKind::Note, number: 36 }), "Ch 10 Note 36");
+        assert_eq!(control_label(&ControlId::hid_named("button3")), "button3");
     }
 
     #[test]

@@ -1225,7 +1225,9 @@ static CATEGORIES: &[Category] = &[
         rows: &[
             b("controlSurfaces.enabled", "Use control surfaces (MIDI controllers, jog/shuttle devices)", false),
             Row::Custom("controlSurfaces"),
-            Row::Note("Mapping controls to commands, MIDI Learn and the MIDI Monitor come in a later version; the choices here are remembered until then."),
+            Row::Note(
+                "Assignments run when a button is pressed (a fader or knob counts as pressed past half way). Faders, knobs and jog wheels as continuous values, and the ShuttlePRO buttons, come in a later version.",
+            ),
         ],
     },
     Category {
