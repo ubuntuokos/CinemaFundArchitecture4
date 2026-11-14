@@ -24,6 +24,8 @@ thiserror = { workspace = true }
 # The round trip: a package written by CFA4's own DCP export, validated by the native backend.
 cfa4-export = { workspace = true }
 cfa4-media = { workspace = true }
+# DCP-08: ST 429-5 timed text track files for the subtitle tests.
+cfa4-mxf = { workspace = true, features = ["test-util"] }
 cfa4-project = { workspace = true }
 cfa4-render = { workspace = true }
 cfa4-time = { workspace = true }

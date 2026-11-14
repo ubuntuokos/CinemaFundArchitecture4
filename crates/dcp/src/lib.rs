@@ -28,6 +28,7 @@ mod cpl;
 pub mod kdm;
 mod pkl;
 pub mod sha1;
+pub mod subtitle;
 mod xml;
 
 pub use assetmap::{AssetMap, AssetMapAsset, Chunk, VolumeIndex};
