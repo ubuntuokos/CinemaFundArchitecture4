@@ -130,6 +130,8 @@ Content style fields: `orientation` (`horizontal` = head beside the body, `verti
 `leading`), `headGap`, `tailGap`, `columnGap`, `paragraphGap`, `wrapWidth`, `flowSeparator`,
 `margin`, and for the horizontal orientation `headAlign` (`right` by default; `left` makes a
 column), `harmonizeHeads` (every head of the style on a page gets the widest one's width),
+`harmonizeBody` (grid layout, either orientation: every body column of the style on a page gets
+the widest column's width, so multi-column grids stand on the same columns and tails line up),
 `leader` (e.g. `" ."`: repeated from the head to the body, on the head's line, in its letter
 style) and `leaderGap` (space on either side of the dots, default 16); for portraits
 `portraitHeight`, `portraitSide` (`above`, `left`) and `portraitGap`.
@@ -450,5 +452,5 @@ broken JSON are errors.
 
 ## Not yet
 
-Online sheets (download as `.xlsx`), body-width harmonisation, writing Cinecred projects (only on request, per the plan), a
+Online sheets (download as `.xlsx`), writing Cinecred projects (only on request, per the plan), a
 line-art layer drawn by CFA4 itself (plan C12, next year's release).

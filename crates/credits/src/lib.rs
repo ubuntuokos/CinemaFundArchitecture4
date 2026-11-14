@@ -127,3 +127,6 @@ mod cinecred_tests;
 
 #[cfg(test)]
 mod card_tests;
+
+#[cfg(test)]
+mod body_width_tests;

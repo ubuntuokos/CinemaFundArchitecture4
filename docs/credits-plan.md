@@ -327,7 +327,7 @@ korábbi alá kerül; ha egy gerinc a lap teteje fölé kerül, a lap felfelé n
 horog figyelmeztetés; a segédvonalak és a tulajdonságok a horog szerinti helyet mutatják, a Qt6
 minden nyelven.
 
-Ami még hátra van a listából: az egységes törzsszélesség, az online táblázatok (a `cfa4-fetch`-re
+Ami még hátra van a listából: az egységes törzsszélesség (C15b), az online táblázatok (a `cfa4-fetch`-re
 vár), a Cinecred-projekt írása (csak kérésre).
 
 ### C15 – A kártya gerincének pontja – **KÉSZ (2026-11-14)**
@@ -344,6 +344,19 @@ Cinecredben). Gerincpozíció nélküli kártya ugyanúgy középre kerül, mint
 oldalon a függőleges rész figyelmeztetés, és nem hat. A segédvonalas bélyegkép a pontokat kis
 rombusszal jelöli (a képközépen nem), az előnézet `cardPoint` és `spinePoints` mezőt ad, a Qt6
 blokk-tulajdonságai minden nyelven mutatják a pontot. Kártyán a horgas gerinc (C14) a gyökérgerincével együtt mozog.
+
+### C15b – Egységes törzsszélesség – **KÉSZ (2026-11-14)**
+
+A „Not yet” lista pontja, a Cinecred nyilvános útmutatója szerint (cinecred.com/guide/content-style/
+grid-layout, „Harmonize Column Widths”; tisztaszobás: a forráskódját nem néztük): a tartalomstílus
+új `harmonizeBody` mezője a rácsos törzs minden oszlopát a stílus legszélesebb oszlopának
+szélességére hozza. A CFA4 rácsában egy blokk oszlopai eddig is egyforma szélesek voltak, így az
+egységesítés az oldal azonos stílusú blokkjai között hat: a többoszlopos rácsok ugyanazokra az
+oszlopokra kerülnek, vízszintes elrendezésben a lábak egy oszlopba állnak. Hatóköre az oldal, mint
+a `harmonizeHeads`-é. Ami nem készült el (az útmutató többi beállítása): más stílusokra kiterjesztés,
+bal/jobb igazítás eltérő oszlopszámnál, szellemcellák, a `@Break Harmonization` oszlop, a folyó
+elrendezés cellaszélessége (a CFA4 folyó törzse egyetlen bekezdés, nincsenek cellái) és a
+Cinecred-import megfelelő kulcsa. Új felületi szöveg és figyelmeztetés nincs.
 
 ### C12 – Animált vonalrajz-réteg Rustban, második lépcső (a jövő évi kiadásban) – **TERVEZET**
 
