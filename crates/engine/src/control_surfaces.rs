@@ -54,6 +54,17 @@ pub struct Binding {
 // `params` is JSON; equality of JSON values is total for what a preference file holds
 impl Eq for Binding {}
 
+/// Shuttle speeds of the built-in `CFA4 ShuttlePRO` profile for positions 1–7 (Ardour-like;
+/// F0 spec §4). Backwards is the same, negative.
+pub const SHUTTLE_ARDOUR: [f64; 7] = [0.5, 0.75, 1.0, 1.5, 2.0, 5.0, 8.0];
+
+/// Shuttle speeds of the `Kdenlive-style ShuttlePRO` profile (its 16× and 60× are capped at the
+/// player's 8×).
+pub const SHUTTLE_KDENLIVE: [f64; 7] = [1.0, 2.0, 4.0, 5.0, 8.0, 8.0, 8.0];
+
+/// Most frame steps one jog report runs (a fast spin is still bounded).
+pub const MAX_JOG_STEPS: u32 = 32;
+
 /// What a press asks the GUI to run.
 #[derive(Clone, Debug, PartialEq)]
 pub struct Action {
@@ -123,6 +134,32 @@ impl ControlSurfacePrefs {
             return None;
         }
         d.bindings.iter().find(|b| &b.control == control).map(|b| Action { command: b.command.clone(), params: b.params.clone() })
+    }
+
+    /// What a jog wheel or shuttle ring movement runs, by the device's profile: the shuttle
+    /// plays at the profile's speed for its position (0 = stop), the jog steps one frame per
+    /// click (at most [`MAX_JOG_STEPS`] per report). Empty when the device is not used.
+    pub fn motion(&self, device: &str, input: &SurfaceInput) -> Vec<Action> {
+        let d = self.device(device);
+        if !self.enabled || !d.enabled {
+            return Vec::new();
+        }
+        match input {
+            SurfaceInput::Shuttle { position, .. } => {
+                if *position == 0 {
+                    return vec![Action { command: "playback.stop".into(), params: Value::Null }];
+                }
+                let table = if d.profile == "cfa4.shuttlepro.kdenlive" { &SHUTTLE_KDENLIVE } else { &SHUTTLE_ARDOUR };
+                let i = usize::from(position.unsigned_abs().clamp(1, 7)) - 1;
+                let speed = if *position < 0 { -table[i] } else { table[i] };
+                vec![Action { command: "playback.shuttleSpeed".into(), params: json!({"speed": speed}) }]
+            }
+            SurfaceInput::Jog { delta, .. } => {
+                let command = if *delta > 0 { "playhead.stepForward" } else { "playhead.stepBack" };
+                (0..delta.unsigned_abs().min(MAX_JOG_STEPS)).map(|_| Action { command: command.into(), params: Value::Null }).collect()
+            }
+            _ => Vec::new(),
+        }
     }
 
     /// Whether any used device has an assignment (the host then keeps reading the devices).
@@ -272,6 +309,32 @@ mod tests {
         p.enabled = false;
         assert_eq!(p.action("midi:k:p", &cc(41)), None, "control surfaces off");
         assert!(!p.maps_anything());
+    }
+
+    #[test]
+    fn jog_and_shuttle_follow_the_profile() {
+        use cfa4_surface_model::ControlId;
+        let dev = "hid:0b33:0030:usb-1";
+        let shuttle = |position| SurfaceInput::Shuttle { control: ControlId::hid_named("shuttle"), position, range: 7 };
+        let jog = |delta| SurfaceInput::Jog { control: ControlId::hid_named("jog"), delta };
+        let mut p = ControlSurfacePrefs::default();
+        let speed = |p: &ControlSurfacePrefs, pos| p.motion(dev, &shuttle(pos)).first().map(|a| (a.command.clone(), a.params["speed"].as_f64()));
+        assert_eq!(speed(&p, 1), Some(("playback.shuttleSpeed".into(), Some(0.5))), "a device without settings uses the default profile");
+        assert_eq!(speed(&p, 7), Some(("playback.shuttleSpeed".into(), Some(8.0))));
+        assert_eq!(speed(&p, -3), Some(("playback.shuttleSpeed".into(), Some(-1.0))));
+        assert_eq!(speed(&p, 0), Some(("playback.stop".into(), None)));
+        p.devices.push(DeviceSetting { device: dev.into(), profile: "cfa4.shuttlepro.kdenlive".into(), ..Default::default() });
+        assert_eq!(speed(&p, 2), Some(("playback.shuttleSpeed".into(), Some(2.0))));
+        let steps = p.motion(dev, &jog(-3));
+        assert_eq!(steps.len(), 3);
+        assert!(steps.iter().all(|a| a.command == "playhead.stepBack"));
+        assert_eq!(p.motion(dev, &jog(200)).len(), MAX_JOG_STEPS as usize);
+        assert!(p.motion(dev, &SurfaceInput::Raw).is_empty());
+        p.devices[0].enabled = false;
+        assert!(p.motion(dev, &jog(1)).is_empty(), "a device not in use");
+        p.devices[0].enabled = true;
+        p.enabled = false;
+        assert!(p.motion(dev, &shuttle(3)).is_empty(), "control surfaces off");
     }
 
     #[test]

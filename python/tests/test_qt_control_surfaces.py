@@ -216,6 +216,7 @@ def test_midi_monitor_says_why_it_cannot_start(app):
 
 COMMANDS = [("playback.toggle", "Play/Stop"), ("edit.undo", "Undo"), ("markers.markIn", "Mark In")]
 NANO = "midi:nanoKONTROL2:nanoKONTROL2 _ CTRL"
+SHUTTLE = "hid:0b33:0030:usb-0000:00:14.0-3/input0"
 CC41 = {"midi": {"channel": 0, "kind": "cc", "number": 41}}
 
 
@@ -227,9 +228,9 @@ def rows(d, what: str) -> list[str]:
 def test_learn_assigns_a_button_and_ok_saves_it(app):
     engine = StubEngine(DEVICES)
     d = PreferencesDialog(None, engine, "controlSurfaces", commands=lambda: COMMANDS)
-    # only MIDI devices are offered (HID assignments come with the jog/shuttle reader)
+    # MIDI controllers and jog/shuttle devices are offered
     device = find(d, QtWidgets.QComboBox, "settings.controlSurfaces.assign.device")
-    assert [device.itemData(i) for i in range(device.count())] == [NANO]
+    assert [device.itemData(i) for i in range(device.count())] == [NANO, SHUTTLE]
     assert find(d, QtWidgets.QLabel, "settings.controlSurfaces.assign.none")
     command = find(d, QtWidgets.QComboBox, "settings.controlSurfaces.assign.command")
     assert [command.itemData(i) for i in range(command.count())] == ["markers.markIn", "playback.toggle", "edit.undo"], "by label"
@@ -291,10 +292,26 @@ def test_learn_cancel_errors_and_close(app):
     assert [m for m, _p in engine.sent if m.startswith("surface.learn")][-1] == "surface.learnCancel"
 
 
-def test_assignments_need_a_midi_controller(app):
-    engine = StubEngine({"enabled": True, "devices": [DEVICES["devices"][1]], "problems": []})
+def test_shuttlepro_buttons_are_learned_too(app):
+    engine = StubEngine(DEVICES)
     d = PreferencesDialog(None, engine, "controlSurfaces", commands=lambda: COMMANDS)
-    assert "Connect a MIDI controller" in find(d, QtWidgets.QLabel, "settings.controlSurfaces.assign.empty").text()
+    device = find(d, QtWidgets.QComboBox, "settings.controlSurfaces.assign.device")
+    device.setCurrentIndex(device.findData(SHUTTLE))
+    device.activated.emit(device.currentIndex())
+    find(d, QtWidgets.QPushButton, "settings.controlSurfaces.assign.learn").click()
+    assert ("surface.learn", {"device": SHUTTLE}) in engine.sent
+    button = {"hid": {"name": "button3", "usagePage": 0, "usage": 0}}
+    engine.event.emit({"event": "surfaceLearn", "state": "captured", "device": SHUTTLE, "control": button, "label": "button3"})
+    assert rows(d, "control") == ["Button 3"]
+    find(d, QtWidgets.QPushButton, "settings.ok").click()
+    saved = [p for m, p in engine.sent if m == "prefs.set"][0]["values"]["controlSurfaces.devices"]
+    assert saved == [{"device": SHUTTLE, "enabled": True, "profile": "", "bindings": [{"control": button, "command": "markers.markIn"}]}]
+
+
+def test_assignments_need_a_controller(app):
+    engine = StubEngine({"enabled": True, "devices": [], "problems": []})
+    d = PreferencesDialog(None, engine, "controlSurfaces", commands=lambda: COMMANDS)
+    assert "Connect a MIDI controller or a ShuttlePRO" in find(d, QtWidgets.QLabel, "settings.controlSurfaces.assign.empty").text()
     assert d.findChild(QtWidgets.QPushButton, "settings.controlSurfaces.assign.learn") is None
 
 
@@ -371,7 +388,43 @@ def test_main_window_runs_what_a_control_surface_asks(app, tmp_path: Path):
         assert ran == [(enabled, {})]
         win._on_event({"event": "surfaceAction", "command": "no.such.command"})
         assert "no.such.command" in win.statusBar().currentMessage()
+        # the shuttle ring plays the focused monitor at its speed; 0 stops
+        speeds: list[float] = []
+        win.focused_monitor().shuttle_to = speeds.append
+        win._on_event({"event": "surfaceAction", "command": "playback.shuttleSpeed", "params": {"speed": -1.5}})
+        win._on_event({"event": "surfaceAction", "command": "playback.shuttleSpeed", "params": {"speed": "fast"}})
+        assert speeds == [-1.5]
     finally:
         win._quit_confirmed = True
         win.close()
         engine.stop()
+
+
+def test_monitor_shuttle_to_plays_at_the_ring_speed(app):
+    """``Monitor.shuttle_to``: the speed, capped at 8×; the same speed again does not restart;
+    0 stops."""
+    from cfa4_qt.panels.monitor import Monitor
+
+    class Fake:
+        playing = False
+        speed = 0.0
+        stop_at = rest_at = 1
+
+        def __init__(self) -> None:
+            self.calls: list[tuple[str, float]] = []
+
+        def play(self, speed: float) -> None:
+            self.calls.append(("play", speed))
+            self.playing, self.speed = True, speed
+
+        def stop(self) -> None:
+            self.calls.append(("stop", 0.0))
+            self.playing = False
+
+    m = Fake()
+    Monitor.shuttle_to(m, 2.0)
+    Monitor.shuttle_to(m, 2.0)
+    Monitor.shuttle_to(m, -60)
+    Monitor.shuttle_to(m, 0)
+    assert m.calls == [("play", 2.0), ("play", -8.0), ("stop", 0.0)]
+    assert m.stop_at is None and m.rest_at is None

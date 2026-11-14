@@ -315,7 +315,10 @@ def control_label(control: Any) -> str:
             return f"Ch {ch} {kind} {midi.get('number')}{suffix}"
         hid = control.get("hid")
         if isinstance(hid, dict):
-            return str(hid.get("name") or "")
+            name = str(hid.get("name") or "")
+            if name.startswith("button") and name[6:].isdigit():
+                return fmt("Button {n}", n=name[6:])
+            return name
     return str(control)
 
 
@@ -1059,21 +1062,23 @@ class PreferencesDialog(QDialog):
 
     # ----- Assignments and MIDI Learn -----
     def _midi_devices(self) -> list[dict[str, Any]]:
-        return [d for d in (self.surfaces or {}).get("devices") or [] if isinstance(d, dict) and d.get("protocol") == "midi"]
+        """The devices whose buttons can be assigned: MIDI controllers and jog/shuttle devices."""
+        return [d for d in (self.surfaces or {}).get("devices") or [] if isinstance(d, dict) and d.get("protocol") in ("midi", "hid")]
 
     def _bindings(self, device: str) -> list[dict[str, Any]]:
         return [b for b in self._surface_setting(device).get("bindings") or [] if isinstance(b, dict)]
 
     def _assignments(self, parent: QWidget) -> QWidget:
-        """Assignments: what the buttons of a MIDI controller run. Pick a command, press Learn
-        and press a button (or push a fader past half way) on the controller; OK saves it and the
-        engine then sends the command whenever that control is pressed (``surfaceAction``)."""
+        """Assignments: what the buttons of a MIDI controller or a ShuttlePRO run. Pick a command,
+        press Learn and press a button (or push a fader past half way) on the controller; OK saves
+        it and the engine then sends the command whenever that control is pressed
+        (``surfaceAction``). A ShuttlePRO's jog wheel and shuttle ring follow its profile."""
         box = QGroupBox(tr("Assignments"), parent)
         box.setObjectName("settings.controlSurfaces.assign")
         v = QVBoxLayout(box)
         devices = self._midi_devices()
         if not devices:
-            v.addWidget(self._note(box, "Connect a MIDI controller to assign commands to its buttons.",
+            v.addWidget(self._note(box, "Connect a MIDI controller or a ShuttlePRO to assign commands to its buttons.",
                                    "settings.controlSurfaces.assign.empty"))
             return box
         ids = [str(d.get("device") or "") for d in devices]
