@@ -62,6 +62,7 @@ szabadalommal védett formátumot.
 | SMPTE VC-2 (ST 2042-1) | dekódolás; QuickTime / MP4, AVI és Matroska olvasása | `crates/dirac` (a BBC VC-2 referencia-pszeudokódjának portja) | alap | függőben | | |
 | Huffyuv (HFYU) | dekódolás | `crates/huffyuv` | alap | függőben | | |
 | Ut Video | dekódolás | `crates/utvideo` | alap | függőben | | |
+| RealVideo 1.0 / 2.0 (RV10, RV20) | dekódolás | `crates/realvideo` (az FFmpeg portja) | alap | függőben | | |
 | Canopus HQ, HQA, HQX | dekódolás | `crates/canopus` (az FFmpeg portja) | alap | függőben | | |
 | Hap (Hap, Hap Alpha, Hap Q, Hap Q Alpha, Hap Alpha-Only) | dekódolás | `crates/hap` | alap | függőben | | |
 
@@ -100,6 +101,7 @@ szabadalommal védett formátumot.
 | SMPTE ST 2110-20 (tömörítetlen kép RTP-n, RFC 4175), RTP, SDP | csomagolás, bontás | `crates/st2110` | alap | függőben | | |
 | AVI / OpenDML | olvasás | `crates/avi`; FFmpeg-háttér | alap | függőben | | |
 | Ogg | olvasás | `crates/ogg` | alap | függőben | | |
+| RealMedia (`.rm`, `.rmvb`) | olvasás | `crates/realmedia` (az FFmpeg portja) | alap | függőben | | |
 | ASF | olvasás | FFmpeg-háttér; GStreamer | alap | függőben | | |
 | AAF (Compound File Binary) | olvasás, írás | `crates/cfb` | alap | függőben | | |
 | Konténer- és kodekközpont | olvasás | `crates/codecs` (a fenti sorok formátumai) | alap | függőben | | |
