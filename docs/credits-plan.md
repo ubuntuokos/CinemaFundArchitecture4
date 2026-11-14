@@ -58,6 +58,10 @@ Elkészült és a `main`-en van (#36), illetve a `cfa4/credits-2` ágon:
 5. **Licenc:** a Cinecred (GPL-3.0-or-later) kódja a GPL-3-váltás óta felhasználható,
    fejléc-megőrzéssel és a [licensing.md §5](licensing.md) nyilvántartásba vétellel. Ahol
    egyszerűbb, saját megvalósítás készül (ahogy eddig).
+   *Megjegyzés (a tulajdonos döntése, 2026-11-14, [CFA4-TITLE-CREDITS-001 Q2](plans/CFA4-TITLE-CREDITS-001-1.0-CFA4-ILLESZTES.md)):*
+   a stáblista további munkája tisztaszobás: forrás csak a Cinecred nyilvános útmutatója
+   (cinecred.com/guide), a Cinecred forráskódja nem. A C7 korábbi nyilvántartási sora a
+   `licensing.md` §5-ben történeti adatként marad.
 
 ## 4. Fázisok
 
