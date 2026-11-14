@@ -255,8 +255,43 @@ fn left_of(x: f64, w: f64, a: Align) -> f64 {
     }
 }
 
-/// Lay out the body cells with their top at `top`, anchored at `x`. Returns the pieces.
-fn lay_body(ctx: &mut Ctx<'_>, b: &Block, cs: &ContentStyle, align: Align, x: f64, top: f64) -> Result<Vec<Piece>, CreditsError> {
+/// A grid body's columns as measured text layers (one layer for a single column). Cells of a
+/// row are padded to the row's line count so the columns stay in step.
+fn grid_columns(ctx: &mut Ctx<'_>, b: &Block, cs: &ContentStyle, align: Align) -> Result<Vec<(EffectInstance, [f64; 4])>, CreditsError> {
+    let n = (cs.columns.clamp(1, 16) as usize).min(b.body.len()).max(1);
+    if n == 1 {
+        return Ok(vec![ctx.text(b.row, "Body", &b.body.join("\n"), &cs.body, align, None)?]);
+    }
+    let mut cols: Vec<Vec<String>> = vec![Vec::new(); n];
+    for row in b.body.chunks(n) {
+        let lines = row.iter().map(|c| c.split('\n').count()).max().unwrap_or(1);
+        for j in 0..n {
+            let cell = row.get(j).map(String::as_str).unwrap_or("");
+            let have = cell.split('\n').count();
+            let mut c = cell.to_string();
+            for _ in have..lines {
+                c.push('\n');
+            }
+            if let Some(col) = cols.get_mut(j) {
+                col.push(c);
+            }
+        }
+    }
+    let mut measured = Vec::with_capacity(n);
+    for (j, col) in cols.iter().enumerate() {
+        measured.push(ctx.text(b.row, &format!("Body {}", j + 1), &col.join("\n"), &cs.body, align, None)?);
+    }
+    Ok(measured)
+}
+
+/// Whether a block's body is a grid of text whose column width a harmonised style shares.
+fn harmonised_grid(b: &Block, cs: &ContentStyle) -> bool {
+    cs.harmonize_body && cs.layout == BodyLayout::Grid && !b.body.is_empty() && b.pictures.is_empty() && !b.portraits.iter().any(Option::is_some)
+}
+
+/// Lay out the body cells with their top at `top`, anchored at `x`; `body_w`: the column width
+/// of a harmonised grid style (`None`: the block's own). Returns the pieces.
+fn lay_body(ctx: &mut Ctx<'_>, b: &Block, cs: &ContentStyle, align: Align, x: f64, top: f64, body_w: Option<f64>) -> Result<Vec<Piece>, CreditsError> {
     let s = ctx.s;
     let mut out = Vec::new();
     if b.body.is_empty() {
@@ -267,37 +302,18 @@ fn lay_body(ctx: &mut Ctx<'_>, b: &Block, cs: &ContentStyle, align: Align, x: f6
     }
     match cs.layout {
         BodyLayout::Grid => {
-            let n = (cs.columns.clamp(1, 16) as usize).min(b.body.len()).max(1);
+            let measured = grid_columns(ctx, b, cs, align)?;
+            let n = measured.len();
             if n == 1 {
-                let (e, bb) = ctx.text(b.row, "Body", &b.body.join("\n"), &cs.body, align, None)?;
-                out.push(Piece { row: 0, key: String::new(), layer: e, b: bb, x, top, pic: None });
+                if let Some((e, bb)) = measured.into_iter().next() {
+                    out.push(Piece { row: 0, key: String::new(), layer: e, b: bb, x, top, pic: None });
+                }
                 return Ok(out);
             }
-            // pad every cell of a row to the row's line count so the columns stay in step
-            let rows = b.body.chunks(n);
-            let mut cols: Vec<Vec<String>> = vec![Vec::new(); n];
-            for row in rows {
-                let lines = row.iter().map(|c| c.split('\n').count()).max().unwrap_or(1);
-                for j in 0..n {
-                    let cell = row.get(j).map(String::as_str).unwrap_or("");
-                    let have = cell.split('\n').count();
-                    let mut c = cell.to_string();
-                    for _ in have..lines {
-                        c.push('\n');
-                    }
-                    if let Some(col) = cols.get_mut(j) {
-                        col.push(c);
-                    }
-                }
-            }
-            let mut measured = Vec::with_capacity(n);
-            for (j, col) in cols.iter().enumerate() {
-                let (e, bb) = ctx.text(b.row, &format!("Body {}", j + 1), &col.join("\n"), &cs.body, align, None)?;
-                measured.push((e, bb));
-            }
             let gap = finite_or(cs.column_gap, 0.0).max(0.0) * s;
-            // equal column widths look tidier than ragged ones
-            let colw = measured.iter().map(|(_, bb)| bb[2] - bb[0]).fold(0.0f64, f64::max);
+            // equal column widths look tidier than ragged ones; a harmonised style's columns
+            // are as wide as the widest of the page
+            let colw = measured.iter().map(|(_, bb)| bb[2] - bb[0]).fold(body_w.unwrap_or(0.0), f64::max);
             let total = colw * n as f64 + gap * (n as f64 - 1.0);
             let mut left = left_of(x, total, align);
             for (e, bb) in measured {
@@ -453,8 +469,17 @@ fn lay_portraits(ctx: &mut Ctx<'_>, b: &Block, cs: &ContentStyle, align: Align, 
 const MAX_LEADER: usize = 2_000;
 
 /// Lay out one block with its top at `top`. `head_w`: the width the head column has (heads of a
-/// harmonised style); `None` = the head's own.
-fn lay_block(ctx: &mut Ctx<'_>, b: &Block, cs: &ContentStyle, spine_x: f64, top: f64, head_w: Option<f64>) -> Result<(Vec<Piece>, f64), CreditsError> {
+/// harmonised style); `None` = the head's own. `body_w`: the same for the body's grid columns.
+#[allow(clippy::too_many_arguments)]
+fn lay_block(
+    ctx: &mut Ctx<'_>,
+    b: &Block,
+    cs: &ContentStyle,
+    spine_x: f64,
+    top: f64,
+    head_w: Option<f64>,
+    body_w: Option<f64>,
+) -> Result<(Vec<Piece>, f64), CreditsError> {
     let s = ctx.s;
     let mut pieces = Vec::new();
     let head_gap = finite_or(cs.head_gap, 0.0).max(0.0) * s;
@@ -468,7 +493,7 @@ fn lay_block(ctx: &mut Ctx<'_>, b: &Block, cs: &ContentStyle, spine_x: f64, top:
                 y += p.height() + head_gap;
                 pieces.push(p);
             }
-            let body = if b.pictures.is_empty() { lay_body(ctx, b, cs, cs.align, spine_x, y)? } else { lay_pictures(ctx, b, cs, spine_x, cs.align, y) };
+            let body = if b.pictures.is_empty() { lay_body(ctx, b, cs, cs.align, spine_x, y, body_w)? } else { lay_pictures(ctx, b, cs, spine_x, cs.align, y) };
             if let Some(bt) = bottom(&body) {
                 y = bt;
             }
@@ -481,7 +506,7 @@ fn lay_block(ctx: &mut Ctx<'_>, b: &Block, cs: &ContentStyle, spine_x: f64, top:
         }
         Orientation::Horizontal => {
             let body = if b.pictures.is_empty() {
-                lay_body(ctx, b, cs, Align::Left, spine_x + head_gap / 2.0, top)?
+                lay_body(ctx, b, cs, Align::Left, spine_x + head_gap / 2.0, top, body_w)?
             } else {
                 lay_pictures(ctx, b, cs, spine_x + head_gap / 2.0, Align::Left, top)
             };
@@ -513,7 +538,13 @@ fn lay_block(ctx: &mut Ctx<'_>, b: &Block, cs: &ContentStyle, spine_x: f64, top:
                     }
                 }
             }
-            let right = body.iter().map(Piece::right).reduce(f64::max).unwrap_or(spine_x + head_gap / 2.0);
+            let mut right = body.iter().map(Piece::right).reduce(f64::max).unwrap_or(spine_x + head_gap / 2.0);
+            if let Some(w) = body_w.filter(|_| harmonised_grid(b, cs)) {
+                // tails stand after the harmonised columns, so they line up across blocks
+                let n = (cs.columns.clamp(1, 16) as usize).min(b.body.len()).max(1) as f64;
+                let gap = finite_or(cs.column_gap, 0.0).max(0.0) * s;
+                right = right.max(spine_x + head_gap / 2.0 + w * n + gap * (n - 1.0));
+            }
             let single_column = cs.layout == BodyLayout::Grid && body.len() == 1 && b.pictures.is_empty();
             pieces.extend(body);
             if !b.tails.is_empty() {
@@ -718,6 +749,20 @@ fn stack(ctx: &mut Ctx<'_>, styling: &Styling, page: &Page, w: f64, index: usize
             None => head_widths.push((cs.name.clone(), w)),
         }
     }
+    // the widest grid column of each style with harmonised bodies on the page
+    let mut body_widths: Vec<(String, f64)> = Vec::new();
+    for b in &page.blocks {
+        let Some(cs) = styling.content_style(&b.style) else { continue };
+        if !harmonised_grid(b, &cs) {
+            continue;
+        }
+        let align = if cs.orientation == Orientation::Horizontal { Align::Left } else { cs.align };
+        let w = grid_columns(ctx, b, &cs, align)?.iter().map(|(_, bb)| (bb[2] - bb[0]).max(0.0)).fold(0.0f64, f64::max);
+        match body_widths.iter_mut().find(|(n, _)| *n == cs.name) {
+            Some((_, m)) => *m = m.max(w),
+            None => body_widths.push((cs.name.clone(), w)),
+        }
+    }
     for (k, b) in page.blocks.iter().enumerate() {
         let cs = match styling.content_style(&b.style) {
             Some(c) => c,
@@ -762,7 +807,8 @@ fn stack(ctx: &mut Ctx<'_>, styling: &Styling, page: &Page, w: f64, index: usize
         prev_margin = margin;
         let spine_x = w / 2.0 + finite_or(b.spine, 0.0) * s;
         let head_w = head_widths.iter().find(|(n, _)| *n == cs.name).map(|(_, w)| *w);
-        let (mut ps_, bh) = lay_block(ctx, b, &cs, spine_x, y, head_w)?;
+        let body_w = body_widths.iter().find(|(n, _)| *n == cs.name).map(|(_, w)| *w).filter(|_| harmonised_grid(b, &cs));
+        let (mut ps_, bh) = lay_block(ctx, b, &cs, spine_x, y, head_w, body_w)?;
         let nth = ctx.occurrences.get(index).and_then(|v| v.get(k)).copied().unwrap_or(0);
         key_pieces(b, nth, &mut ps_);
         y += bh;
@@ -794,7 +840,7 @@ fn line(ctx: &mut Ctx<'_>, styling: &Styling, page: &Page, index: usize, line_y:
                 fallback.clone()
             }
         };
-        let (mut ps_, bh) = lay_block(ctx, b, &cs, 0.0, 0.0, None)?;
+        let (mut ps_, bh) = lay_block(ctx, b, &cs, 0.0, 0.0, None, None)?;
         if ps_.is_empty() {
             continue;
         }

@@ -124,3 +124,6 @@ mod template_tests;
 
 #[cfg(test)]
 mod cinecred_tests;
+
+#[cfg(test)]
+mod body_width_tests;

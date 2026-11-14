@@ -301,6 +301,19 @@ nem kerül a CFA4-be, a Chrome nem lesz függőség.
   ismétlődő háttérként vagy videócímkeként a stáblistába.
 - **Qt6:** a háttér a lapok listájában „Ismétlődő videó: …”, minden nyelven.
 
+### C15b – Egységes törzsszélesség – **KÉSZ (2026-11-14)**
+
+A „Not yet” lista pontja, a Cinecred nyilvános útmutatója szerint (cinecred.com/guide/content-style/
+grid-layout, „Harmonize Column Widths”; tisztaszobás: a forráskódját nem néztük): a tartalomstílus
+új `harmonizeBody` mezője a rácsos törzs minden oszlopát a stílus legszélesebb oszlopának
+szélességére hozza. A CFA4 rácsában egy blokk oszlopai eddig is egyforma szélesek voltak, így az
+egységesítés az oldal azonos stílusú blokkjai között hat: a többoszlopos rácsok ugyanazokra az
+oszlopokra kerülnek, vízszintes elrendezésben a lábak egy oszlopba állnak. Hatóköre az oldal, mint
+a `harmonizeHeads`-é. Ami nem készült el (az útmutató többi beállítása): más stílusokra kiterjesztés,
+bal/jobb igazítás eltérő oszlopszámnál, szellemcellák, a `@Break Harmonization` oszlop, a folyó
+elrendezés cellaszélessége (a CFA4 folyó törzse egyetlen bekezdés, nincsenek cellái) és a
+Cinecred-import megfelelő kulcsa. Új felületi szöveg és figyelmeztetés nincs.
+
 ### C12 – Animált vonalrajz-réteg Rustban, második lépcső (a jövő évi kiadásban) – **TERVEZET**
 
 A tulajdonos döntése (2026-11-11): a vonalrajzos animáció saját grafikai elemmé válik a CFA4
