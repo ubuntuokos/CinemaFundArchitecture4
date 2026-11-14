@@ -122,7 +122,7 @@ fn child<'a, 'i>(n: Node<'a, 'i>, name: &str) -> Option<Node<'a, 'i>> {
     n.children().find(|c| c.is_element() && c.tag_name().name() == name)
 }
 
-fn text(n: Option<Node>) -> Option<String> {
+fn text(n: Option<Node<'_, '_>>) -> Option<String> {
     n.and_then(|n| n.text()).map(|t| t.trim().to_string()).filter(|t| !t.is_empty())
 }
 
@@ -147,7 +147,7 @@ pub fn read_bundle(tar: &[u8]) -> Result<Bundle, KdmError> {
     b.annotation = text(child(root, "AnnotationText"));
     b.creator = text(child(root, "Creator"));
     let content = |p: &str| files.iter().find(|e| e.path == format!("CONTENT/{p}"));
-    let read = |e: &Entry, issues: &mut Vec<String>| -> Option<String> {
+    let read = |e: &Entry<'_>, issues: &mut Vec<String>| -> Option<String> {
         if e.data.len() > MAX_KDM_FILE {
             issues.push(format!("{}: over {MAX_KDM_FILE} bytes, skipped", e.path));
             return None;
