@@ -359,7 +359,10 @@ fn ffmpeg_decodes_the_copy_to_the_source_frames() {
         let (x, y) = (md5(&src, "0:a"), md5(&out, "0:a"));
         assert!(!x.is_empty());
         assert_eq!(y.len(), x.len() + primed, "{enc} audio");
-        assert_eq!(&y[primed..], x.as_slice(), "{enc} audio");
+        // the edit list also trims the encoder padding off the last AAC frame (FFmpeg 9 decodes it
+        // shortened); the transport stream keeps that frame whole, so the last frame is not compared
+        let whole = x.len() - 1;
+        assert_eq!(&y[primed..primed + whole], &x[..whole], "{enc} audio");
 
         // a copy cut 1.3 s in keeps the GOP before the cut and hides it with its edit list: a
         // transport stream would show it, so that is refused
