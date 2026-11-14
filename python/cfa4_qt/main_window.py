@@ -2089,11 +2089,19 @@ class MainWindow(QMainWindow):
         self.engine.execute(
             command,
             params or {},
-            on_reply=lambda _r, _b, c=command: self._command_done(c),
+            on_reply=lambda r, _b, c=command: self._command_done(c, r),
             on_error=lambda m, c=command: self._command_failed(c, m),
         )
 
-    def _command_done(self, command: str) -> None:
+    def _command_done(self, command: str, result: Any = None) -> None:
+        if command == "graphics.checkLegibility" and isinstance(result, dict):
+            # egui's status line for Graphics and Titles ▸ Check Text Legibility
+            count = result.get("count")
+            count = count if isinstance(count, int) and not isinstance(count, bool) else 0
+            text = (tr("Text legibility: no problems found") if count == 0
+                    else fmt("Text legibility: {count} problems marked on the timeline (orange markers)", count=count))
+            self.events.log(text, source=command)
+            self.statusBar().showMessage(text, 6000)
         if command in SOURCE_COMMANDS:
             # the item keeps its id but shows other media (or comes back online): cached
             # thumbnails and waveforms keyed by that id are stale

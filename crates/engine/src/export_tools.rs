@@ -1088,8 +1088,12 @@ fn resolve(s: &mut Session, p: &Value) -> Result<Value> {
         let title = project.item(seq).map(|i| i.name.clone()).unwrap_or_default();
         cfa4_export::dcp_isdcf_name(&settings, &title, &cfa4_export::dcp_isdcf_date())
     });
+    // settings the encoders cannot honour (egui's red `export.problem` line): said before Export is
+    // pressed, and the Export / Send to Queue buttons stay off while it is set
+    let problem = settings.validate().err().map(|e| e.to_string());
     Ok(json!({
         "dcpName": dcp_name,
+        "problem": problem,
         "preset": preset.map(|x| x.name),
         "hdr": hdr,
         "videoFormat": settings.video_format().id(),
