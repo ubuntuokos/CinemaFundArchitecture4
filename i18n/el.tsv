@@ -4561,3 +4561,12 @@ export.summary	Low	χαμηλή
 	Chase External Timecode	Παρακολούθηση εξωτερικού χρονοκώδικα
 	Send LTC	Αποστολή LTC
 	Send MIDI Timecode	Αποστολή χρονοκώδικα MIDI
+# Auto Color, Auto Contrast, Auto Levels (EffectsSDK review)
+	Auto Color	Αυτόματο χρώμα
+	Auto Contrast	Αυτόματη αντίθεση
+	Auto Levels	Αυτόματα επίπεδα
+	Temporal Smoothing (seconds)	Χρονική εξομάλυνση (δευτερόλεπτα)
+	Scene Detect	Ανίχνευση σκηνών
+	Black Clip	Αποκοπή μαύρου
+	White Clip	Αποκοπή λευκού
+	Snap Neutral Midtones	Ουδέτεροι μεσαίοι τόνοι

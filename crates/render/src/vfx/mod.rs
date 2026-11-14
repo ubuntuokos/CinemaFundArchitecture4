@@ -11,6 +11,7 @@
 //! Stabilizer (frames for analysis, sequence geometry) — read it through [`FxEnv`]; without an
 //! environment (isolated tests, adjustment layers) they leave the image unchanged.
 
+mod auto;
 mod blur;
 mod color;
 pub(crate) use color::cdl;
@@ -523,6 +524,9 @@ pub fn apply(img: &mut Image, e: &EffectInstance, cx: &FxCtx<'_>) -> bool {
         "write_on" => stylize::write_on(img, e, cx),
         // Glitch (CFA4's own folder)
         // Time / analysis
+        "auto_color" => auto::auto_correct(img, e, cx, auto::Mode::Color),
+        "auto_contrast" => auto::auto_correct(img, e, cx, auto::Mode::Contrast),
+        "auto_levels" => auto::auto_correct(img, e, cx, auto::Mode::Levels),
         "posterize_time" => temporal::posterize_time(img, e, cx),
         "echo" => temporal::echo(img, e, cx),
         "slit_scan" => temporal::slit_scan(img, e, cx),

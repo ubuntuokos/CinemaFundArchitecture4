@@ -4559,3 +4559,12 @@ export.summary	Low	thấp
 	Chase External Timecode	Bám theo timecode bên ngoài
 	Send LTC	Gửi LTC
 	Send MIDI Timecode	Gửi timecode MIDI
+# Auto Color, Auto Contrast, Auto Levels (EffectsSDK review)
+	Auto Color	Màu tự động
+	Auto Contrast	Tương phản tự động
+	Auto Levels	Mức tự động
+	Temporal Smoothing (seconds)	Làm mượt theo thời gian (giây)
+	Scene Detect	Phát hiện cảnh
+	Black Clip	Cắt đen
+	White Clip	Cắt trắng
+	Snap Neutral Midtones	Trung hòa tông trung bình

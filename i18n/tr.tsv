@@ -4560,3 +4560,12 @@ export.summary	Low	düşük
 	Chase External Timecode	Harici Zaman Kodunu Takip Et
 	Send LTC	LTC Gönder
 	Send MIDI Timecode	MIDI Zaman Kodu Gönder
+# Auto Color, Auto Contrast, Auto Levels (EffectsSDK review)
+	Auto Color	Otomatik Renk
+	Auto Contrast	Otomatik Kontrast
+	Auto Levels	Otomatik Düzeyler
+	Temporal Smoothing (seconds)	Zamansal Yumuşatma (saniye)
+	Scene Detect	Sahne Algılama
+	Black Clip	Siyah Kırpma
+	White Clip	Beyaz Kırpma
+	Snap Neutral Midtones	Orta Tonları Nötrle

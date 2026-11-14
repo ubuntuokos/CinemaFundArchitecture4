@@ -4544,3 +4544,12 @@
 	Chase External Timecode	Стежити за зовнішнім тайм-кодом
 	Send LTC	Надсилати LTC
 	Send MIDI Timecode	Надсилати MIDI тайм-код
+# Auto Color, Auto Contrast, Auto Levels (EffectsSDK review)
+	Auto Color	Автоколір
+	Auto Contrast	Автоконтраст
+	Auto Levels	Авторівні
+	Temporal Smoothing (seconds)	Часове згладжування (секунди)
+	Scene Detect	Виявлення сцен
+	Black Clip	Відсікання чорного
+	White Clip	Відсікання білого
+	Snap Neutral Midtones	Нейтральні середні тони

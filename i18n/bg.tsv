@@ -4562,3 +4562,12 @@ export.summary	Low	ниско
 	Chase External Timecode	Следване на външен тайм код
 	Send LTC	Изпращане на LTC
 	Send MIDI Timecode	Изпращане на MIDI тайм код
+# Auto Color, Auto Contrast, Auto Levels (EffectsSDK review)
+	Auto Color	Автоматичен цвят
+	Auto Contrast	Автоматичен контраст
+	Auto Levels	Автоматични нива
+	Temporal Smoothing (seconds)	Времево изглаждане (секунди)
+	Scene Detect	Откриване на сцени
+	Black Clip	Отрязване на черното
+	White Clip	Отрязване на бялото
+	Snap Neutral Midtones	Неутрални средни тонове

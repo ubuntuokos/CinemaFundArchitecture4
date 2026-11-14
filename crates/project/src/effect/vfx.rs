@@ -43,6 +43,22 @@ pub const LIGHT_IDS: [[&str; 8]; 5] = [
 ];
 const LIGHT_GROUPS: [&str; 5] = ["Light 1", "Light 2", "Light 3", "Light 4", "Light 5"];
 
+/// The shared controls of Auto Color, Auto Contrast and Auto Levels (`snap`: Auto Color's Snap
+/// Neutral Midtones switch).
+fn auto_params(snap: bool) -> Vec<ParamDef> {
+    let mut v = vec![
+        fs("smoothing", "Temporal Smoothing (seconds)", 0.0, (0.0, 10.0), (0.0, 10.0), "", 2),
+        b("scene_detect", "Scene Detect", false),
+        fs("black_clip", "Black Clip", 0.1, (0.0, 10.0), (0.0, 10.0), "%", 2),
+        fs("white_clip", "White Clip", 0.1, (0.0, 10.0), (0.0, 10.0), "%", 2),
+    ];
+    if snap {
+        v.push(b("snap_neutral", "Snap Neutral Midtones", false));
+    }
+    v.push(blend_orig());
+    v
+}
+
 fn pct(id: &'static str, label: &'static str, def: f64) -> ParamDef {
     f(id, label, def, 0.0, 100.0, "%")
 }
@@ -1092,6 +1108,10 @@ pub(super) fn defs() -> Vec<EffectDef> {
                 ch("style", "Paint Style", &["On Original Image", "On Transparent", "Reveal Original Image"], 0),
             ],
         ),
+        // Auto Color / Auto Contrast / Auto Levels: histogram-driven automatic corrections
+        video("auto_color", "Auto Color", OBSOLETE, auto_params(true)),
+        video("auto_contrast", "Auto Contrast", OBSOLETE, auto_params(false)),
+        video("auto_levels", "Auto Levels", OBSOLETE, auto_params(false)),
         // ---- Legacy bin ----
         video(
             "alpha_glow",

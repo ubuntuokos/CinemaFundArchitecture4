@@ -4556,3 +4556,12 @@ export.summary	Low	alacsony
 	Chase External Timecode	Külső időkód követése
 	Send LTC	LTC küldése
 	Send MIDI Timecode	MIDI-időkód küldése
+# Auto Color, Auto Contrast, Auto Levels (EffectsSDK review)
+	Auto Color	Automatikus szín
+	Auto Contrast	Automatikus kontraszt
+	Auto Levels	Automatikus szintek
+	Temporal Smoothing (seconds)	Időbeli simítás (másodperc)
+	Scene Detect	Jelenetváltás észlelése
+	Black Clip	Fekete vágása
+	White Clip	Fehér vágása
+	Snap Neutral Midtones	Semleges középtónusok

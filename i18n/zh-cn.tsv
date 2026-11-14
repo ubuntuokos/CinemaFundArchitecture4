@@ -4557,3 +4557,12 @@
 	Chase External Timecode	追随外部时间码
 	Send LTC	发送 LTC
 	Send MIDI Timecode	发送 MIDI 时间码
+# Auto Color, Auto Contrast, Auto Levels (EffectsSDK review)
+	Auto Color	自动颜色
+	Auto Contrast	自动对比度
+	Auto Levels	自动色阶
+	Temporal Smoothing (seconds)	时间平滑（秒）
+	Scene Detect	场景检测
+	Black Clip	黑色修剪
+	White Clip	白色修剪
+	Snap Neutral Midtones	中间调中性化

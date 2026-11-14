@@ -136,6 +136,9 @@ const NEW_IDS: &[&str] = &[
     "ellipse",
     "paint_bucket",
     "write_on",
+    "auto_color",
+    "auto_contrast",
+    "auto_levels",
     "alpha_glow",
     "block_dissolve",
     "directional_blur_legacy",
@@ -246,6 +249,9 @@ fn neutral_parameters_are_identity() {
         ("skin_smoothing", vec![("texture", ParamValue::Float(100.0))]),
         ("skin_smoothing", vec![("radius", ParamValue::Float(0.0))]),
         ("low_light", vec![("amount", ParamValue::Float(0.0))]),
+        ("auto_color", vec![("blend", ParamValue::Float(100.0))]),
+        ("auto_contrast", vec![("blend", ParamValue::Float(100.0))]),
+        ("auto_levels", vec![("blend", ParamValue::Float(100.0))]),
         ("vr_blur", vec![]),
         ("vr_sharpen", vec![]),
         ("vr_denoise", vec![]),
@@ -1513,4 +1519,122 @@ fn film_gate_counts_exact_frame_boundaries_as_their_own_frame() {
         }
     }
     assert_eq!(super::distort::gate_frame(f64::NAN, 24.0), 0.0);
+}
+
+/// A horizontal ramp in display values from `a` (left) to `b` (right).
+fn ramp(w: usize, h: usize, a: [f32; 3], b: [f32; 3]) -> Image {
+    let mut img = Image::new(w, h);
+    for y in 0..h {
+        for x in 0..w {
+            let t = x as f32 / (w - 1) as f32;
+            let l = dec([a[0] + (b[0] - a[0]) * t, a[1] + (b[1] - a[1]) * t, a[2] + (b[2] - a[2]) * t]);
+            img.px[(y * w + x) * 4..(y * w + x) * 4 + 4].copy_from_slice(&[l[0], l[1], l[2], 1.0]);
+        }
+    }
+    img
+}
+
+#[test]
+fn auto_contrast_stretches_and_keeps_the_cast() {
+    // a dull, bluish ramp
+    let img = ramp(64, 4, [0.2, 0.25, 0.35], [0.6, 0.65, 0.75]);
+    let o = run("auto_contrast", &inst("auto_contrast"), &img, &cx());
+    let (l, r) = (enc_px(&o, 0, 2), enc_px(&o, 63, 2));
+    assert!(l[0] < 0.02 && r[2] > 0.98, "not stretched: {l:?} … {r:?}");
+    // one map for all channels: the blue cast is still there in the middle
+    let m = enc_px(&o, 32, 2);
+    assert!(m[2] - m[0] > 0.2, "cast removed: {m:?}");
+    // Blend With Original 50 %: halfway between the input and the full correction (display space)
+    let mut e = inst("auto_contrast");
+    setf(&mut e, "blend", 50.0);
+    let half = run("auto_contrast", &e, &img, &cx());
+    let (i, f, h) = (enc_px(&img, 10, 2)[1], enc_px(&o, 10, 2)[1], enc_px(&half, 10, 2)[1]);
+    assert!(close(h, (i + f) / 2.0, 2e-3), "blend: {i} {f} {h}");
+}
+
+#[test]
+fn auto_levels_stretches_each_channel() {
+    let img = ramp(64, 4, [0.2, 0.25, 0.35], [0.6, 0.65, 0.75]);
+    let o = run("auto_levels", &inst("auto_levels"), &img, &cx());
+    let (l, r, m) = (enc_px(&o, 0, 2), enc_px(&o, 63, 2), enc_px(&o, 32, 2));
+    assert!(l[..3].iter().all(|v| *v < 0.02), "black not neutral: {l:?}");
+    assert!(r[..3].iter().all(|v| *v > 0.98), "white not neutral: {r:?}");
+    assert!((m[2] - m[0]).abs() < 0.03, "cast kept: {m:?}");
+}
+
+#[test]
+fn auto_color_neutralises_the_ends_and_snaps_midtones() {
+    // shadows and highlights carry a warm cast, a red patch sits in the middle
+    let mut img = ramp(64, 8, [0.12, 0.08, 0.05], [0.95, 0.9, 0.82]);
+    for y in 0..8 {
+        for x in 28..36 {
+            let l = dec([0.8, 0.2, 0.2]);
+            img.px[(y * 64 + x) * 4..(y * 64 + x) * 4 + 4].copy_from_slice(&[l[0], l[1], l[2], 1.0]);
+        }
+    }
+    let o = run("auto_color", &inst("auto_color"), &img, &cx());
+    let (d, b) = (enc_px(&o, 0, 4), enc_px(&o, 63, 4));
+    assert!(d[0].max(d[1]).max(d[2]) - d[0].min(d[1]).min(d[2]) < 0.03, "shadows not neutral: {d:?}");
+    assert!(b[0].max(b[1]).max(b[2]) - b[0].min(b[1]).min(b[2]) < 0.03, "highlights not neutral: {b:?}");
+    let red = enc_px(&o, 32, 4);
+    assert!(red[0] > red[1] + 0.4, "the red patch lost its colour: {red:?}");
+
+    // neutral black and white, bluish greys between: only Snap Neutral Midtones fixes the greys
+    let mut img = solid(64, 8, [0.45, 0.5, 0.6]);
+    for y in 0..8 {
+        for (x, v) in [(0, 0.0), (1, 0.0), (62, 1.0), (63, 1.0)] {
+            img.px[(y * 64 + x) * 4..(y * 64 + x) * 4 + 4].copy_from_slice(&[v, v, v, 1.0]);
+        }
+    }
+    let mut e = inst("auto_color");
+    setf(&mut e, "black_clip", 0.0);
+    setf(&mut e, "white_clip", 0.0);
+    let plain = enc_px(&run("auto_color", &e, &img, &cx()), 32, 4);
+    assert!(plain[2] - plain[0] > 0.1, "midtones changed without the switch: {plain:?}");
+    set(&mut e, "snap_neutral", ParamValue::Bool(true));
+    let snapped = enc_px(&run("auto_color", &e, &img, &cx()), 32, 4);
+    assert!((snapped[2] - snapped[0]).abs() < 0.02 && (snapped[1] - snapped[0]).abs() < 0.02, "grey not snapped: {snapped:?}");
+}
+
+#[test]
+fn auto_effects_leave_a_flat_frame_alone() {
+    // a flat frame has no range to stretch: no noise blown up, no change
+    let img = solid(16, 16, [0.4, 0.3, 0.2]);
+    for id in ["auto_color", "auto_contrast", "auto_levels"] {
+        let o = run(id, &inst(id), &img, &cx());
+        assert!(max_diff(&o, &img) < 1e-6, "{id} changed a flat frame");
+    }
+    // and an empty or fully transparent one
+    for id in ["auto_color", "auto_contrast", "auto_levels"] {
+        let mut z = Image::new(4, 4);
+        crate::effects::apply(&mut z, &inst(id), &cx());
+        assert!(z.px.iter().all(|v| *v == 0.0), "{id}");
+        let mut none = Image::new(0, 0);
+        crate::effects::apply(&mut none, &inst(id), &cx());
+    }
+}
+
+#[test]
+fn auto_contrast_smoothing_stops_at_a_scene_cut() {
+    // a dark shot until 0.4 s, then a brighter one; the effect is looked at 0.5 s in
+    fn cut(x: f64, _y: f64, t: f64) -> [f32; 3] {
+        let u = (x / 63.0) as f32;
+        let v = if t < 0.4 { 0.1 + 0.3 * u } else { 0.3 + 0.6 * u };
+        let l = cfa4_color::srgb_to_linear(v);
+        [l, l, l]
+    }
+    let env = ClipEnv { w: 64, h: 4, fps: 24.0, secs: 2.0, now: 0.5, key: 5, seq: (64, 4), pic: cut };
+    let at = |smoothing: f64, scene: bool| {
+        let mut e = inst("auto_contrast");
+        setf(&mut e, "smoothing", smoothing);
+        set(&mut e, "scene_detect", ParamValue::Bool(scene));
+        let mut img = env.render(0.5, 1.0);
+        crate::effects::apply(&mut img, &e, &FxCtx { seconds: 0.5, env: Some(&env), ..cx() });
+        img
+    };
+    let alone = at(0.0, false);
+    // the window reaches back into the dark shot and drags the correction off
+    assert!(max_diff(&at(0.5, false), &alone) > 0.02, "smoothing had no effect");
+    // Scene Detect keeps the window inside the current shot (all its frames are the same)
+    assert!(max_diff(&at(0.5, true), &alone) < 1e-5, "smoothing crossed the cut");
 }

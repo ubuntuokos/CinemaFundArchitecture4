@@ -4559,3 +4559,12 @@ export.summary	Low	nízká
 	Chase External Timecode	Sledovat externí časový kód
 	Send LTC	Odesílat LTC
 	Send MIDI Timecode	Odesílat časový kód MIDI
+# Auto Color, Auto Contrast, Auto Levels (EffectsSDK review)
+	Auto Color	Automatická barva
+	Auto Contrast	Automatický kontrast
+	Auto Levels	Automatické úrovně
+	Temporal Smoothing (seconds)	Časové vyhlazení (sekundy)
+	Scene Detect	Detekce scén
+	Black Clip	Oříznutí černé
+	White Clip	Oříznutí bílé
+	Snap Neutral Midtones	Neutralizovat střední tóny

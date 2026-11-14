@@ -4561,3 +4561,12 @@ export.summary	Low	matala
 	Chase External Timecode	Seuraa ulkoista aikakoodia
 	Send LTC	Lähetä LTC
 	Send MIDI Timecode	Lähetä MIDI-aikakoodi
+# Auto Color, Auto Contrast, Auto Levels (EffectsSDK review)
+	Auto Color	Automaattinen väri
+	Auto Contrast	Automaattinen kontrasti
+	Auto Levels	Automaattiset tasot
+	Temporal Smoothing (seconds)	Ajallinen tasoitus (sekuntia)
+	Scene Detect	Kohtausten tunnistus
+	Black Clip	Mustan leikkaus
+	White Clip	Valkoisen leikkaus
+	Snap Neutral Midtones	Neutraalit keskisävyt

@@ -4567,3 +4567,12 @@
 	Chase External Timecode	Ikuti Timecode Eksternal
 	Send LTC	Kirim LTC
 	Send MIDI Timecode	Kirim Timecode MIDI
+# Auto Color, Auto Contrast, Auto Levels (EffectsSDK review)
+	Auto Color	Warna Otomatis
+	Auto Contrast	Kontras Otomatis
+	Auto Levels	Level Otomatis
+	Temporal Smoothing (seconds)	Penghalusan Temporal (detik)
+	Scene Detect	Deteksi Adegan
+	Black Clip	Potong Hitam
+	White Clip	Potong Putih
+	Snap Neutral Midtones	Netralkan Nada Tengah

@@ -4561,3 +4561,12 @@ export.summary	Low	låg
 	Chase External Timecode	Följ extern tidskod
 	Send LTC	Skicka LTC
 	Send MIDI Timecode	Skicka MIDI-tidskod
+# Auto Color, Auto Contrast, Auto Levels (EffectsSDK review)
+	Auto Color	Automatisk färg
+	Auto Contrast	Automatisk kontrast
+	Auto Levels	Automatiska nivåer
+	Temporal Smoothing (seconds)	Tidsutjämning (sekunder)
+	Scene Detect	Scendetektering
+	Black Clip	Svartklippning
+	White Clip	Vitklippning
+	Snap Neutral Midtones	Neutrala mellantoner
