@@ -1640,6 +1640,7 @@ fn auto_contrast_smoothing_stops_at_a_scene_cut() {
     assert!(max_diff(&at(0.5, false), &alone) > 0.02, "smoothing had no effect");
     // Scene Detect keeps the window inside the current shot (all its frames are the same)
     assert!(max_diff(&at(0.5, true), &alone) < 1e-5, "smoothing crossed the cut");
+}
 
 /// Grey 0.5 with fresh noise every frame (±0.08 in display space).
 fn noisy(x: f64, y: f64, t: f64) -> [f32; 3] {
