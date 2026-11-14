@@ -1,0 +1,140 @@
+# MiraBox family (AJAZZ, MiraBox, SOOMFON, Redragon). Plan §2, §5.2 and the 2026-11-13 AJAZZ addition.
+# Adapter: `mirabox-family`, a child process on mirajazz (MPL-2.0). One long-lived connection per
+# device; initialisation and CRT DIS only once (the 2026-11-13 rule). USB ids come from the device
+# itself or the AJAZZ device matrix and stay UNCONFIRMED until a report confirms them.
+format = "cfa4-surface-catalog"
+version = 1
+family = "mirabox-family"
+
+[[model]]
+id = "ajazz.akp153e"
+vendor = "AJAZZ"
+name = "AKP153E"
+kind = "lcd_keypad"
+goal = "MODEL_DEPENDENT"
+adapter = "mirabox-family"
+phase = "M2"
+connection = ["usb"]
+source = "mirajazz (MPL-2.0), dependency of the adapter process"
+baseline = ["keys.press", "keys.release", "keys.image"]
+notes = [
+    "First M2 model: the device the owner has (2026-11-13).",
+    "USB ids, key image size and rotation are recorded by the wizard's identification step on first connection.",
+    "Output (key images, brightness) stays behind Experimental features until a cfa4-hil report.",
+]
+
+[[model.controls]]
+id = "keys"
+type = "lcd_key"
+count = 15
+rows = 3
+columns = 5
+features = { press = "UNTESTED", release = "UNTESTED", image = "UNTESTED", brightness = "UNTESTED" }
+
+[[model.controls]]
+id = "device"
+type = "device"
+features = { identify = "UNSUPPORTED", firmware_query = "UNTESTED", sleep = "UNTESTED", haptic = "NOT_APPLICABLE", hotplug = "UNTESTED" }
+
+[[model]]
+id = "ajazz.akp153"
+vendor = "AJAZZ"
+name = "AKP153"
+kind = "lcd_keypad"
+goal = "MODEL_DEPENDENT"
+adapter = "mirabox-family"
+phase = "M5"
+connection = ["usb"]
+
+[[model]]
+id = "ajazz.akp03"
+vendor = "AJAZZ"
+name = "AKP03 / AKP03E / AKP03R"
+kind = "lcd_keypad"
+goal = "MODEL_DEPENDENT"
+adapter = "mirabox-family"
+phase = "M5"
+connection = ["usb"]
+
+[[model]]
+id = "ajazz.akp05"
+vendor = "AJAZZ"
+name = "AKP05 / AKP05E"
+kind = "lcd_keypad"
+goal = "MODEL_DEPENDENT"
+adapter = "mirabox-family"
+phase = "M5"
+connection = ["usb"]
+notes = ["AKP05E demo SKU: same USB ids, output works but input does not (plan §11.2)."]
+
+[[model]]
+id = "ajazz.akp05e-pro"
+vendor = "AJAZZ"
+name = "AKP05E Pro"
+kind = "lcd_keypad"
+goal = "MODEL_DEPENDENT"
+adapter = "mirabox-family"
+phase = "M5"
+connection = ["usb"]
+
+[[model]]
+id = "ajazz.akp815"
+vendor = "AJAZZ"
+name = "AKP815"
+kind = "lcd_keypad"
+goal = "MODEL_DEPENDENT"
+adapter = "mirabox-family"
+phase = "M5"
+connection = ["usb"]
+notes = ["Not the mirajazz protocol (800×480 strip, its own v1 API): a separate model inside the adapter."]
+
+[[model]]
+id = "mirabox.hsv293s"
+vendor = "MiraBox"
+name = "HSV293S"
+kind = "lcd_keypad"
+goal = "MODEL_DEPENDENT"
+adapter = "mirabox-family"
+phase = "M5"
+connection = ["usb"]
+
+[[model]]
+id = "mirabox.n3"
+vendor = "MiraBox"
+name = "N3 / N3E / N3EN"
+kind = "lcd_keypad"
+goal = "MODEL_DEPENDENT"
+adapter = "mirabox-family"
+phase = "M5"
+connection = ["usb"]
+
+[[model]]
+id = "mirabox.n4"
+vendor = "MiraBox"
+name = "N4"
+kind = "lcd_keypad"
+goal = "MODEL_DEPENDENT"
+adapter = "mirabox-family"
+phase = "M5"
+connection = ["usb"]
+
+[[model]]
+id = "soomfon.stream-controller"
+vendor = "SOOMFON"
+name = "Stream Controller"
+kind = "lcd_keypad"
+goal = "MODEL_DEPENDENT"
+adapter = "mirabox-family"
+phase = "M5"
+connection = ["usb"]
+
+[[model]]
+id = "redragon.ss-550"
+vendor = "Redragon"
+name = "SS-550"
+kind = "lcd_keypad"
+goal = "MODEL_DEPENDENT"
+adapter = "mirabox-family"
+phase = "M5"
+connection = ["usb"]
+notes = ["Protocol not confirmed (plan §2)."]

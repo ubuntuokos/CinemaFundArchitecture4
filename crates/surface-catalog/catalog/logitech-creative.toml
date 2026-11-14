@@ -1,0 +1,24 @@
+# Logitech MX Creative Console (plan §2): no known open Linux solution; protocol study.
+format = "cfa4-surface-catalog"
+version = 1
+family = "logitech-creative"
+
+[[model]]
+id = "logitech.mx-creative-keypad"
+vendor = "Logitech"
+name = "MX Creative Console Keypad"
+kind = "lcd_keypad"
+goal = "BEST_EFFORT"
+phase = "PLANNED"
+connection = ["usb", "bluetooth"]
+notes = ["No known open Linux implementation; protocol study needed."]
+
+[[model]]
+id = "logitech.mx-creative-dialpad"
+vendor = "Logitech"
+name = "MX Creative Console Dialpad"
+kind = "dial"
+goal = "BEST_EFFORT"
+phase = "PLANNED"
+connection = ["bluetooth"]
+notes = ["No known open Linux implementation; protocol study needed."]

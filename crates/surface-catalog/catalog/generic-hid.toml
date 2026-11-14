@@ -1,0 +1,28 @@
+# Keyboards, macro pads, foot pedals and other standard HID devices (plan §2, M3–M4). Most also work indirectly through CFA4 shortcuts (§8.3).
+format = "cfa4-surface-catalog"
+version = 1
+family = "generic-hid"
+
+[[model]]
+id = "generic.qmk-via"
+vendor = "QMK / VIA / DIY HID"
+name = "Keyboards and macro pads"
+kind = "keyboard"
+goal = "INDIRECT"
+adapter = "qmk-via"
+phase = "M4"
+system_path = "kernel_hid_input"
+connection = ["usb"]
+source = "Kernel HID; VIA only to read the keymap"
+
+[[model]]
+id = "generic.usb-pedal"
+vendor = "USB foot pedals"
+name = "Transcription foot switches (e.g. Infinity USB)"
+kind = "pedal"
+goal = "FULL"
+adapter = "generic-hid"
+phase = "M3"
+connection = ["usb"]
+source = "Standard HID"
+notes = ["System path depends on the model: checked per device (M0 audit §6)."]
