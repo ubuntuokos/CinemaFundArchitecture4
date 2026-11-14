@@ -4451,7 +4451,12 @@ export.summary	Low	alacsony
 	page {page}: the runtime is reached by changing the roll speed (the gaps would have to grow more than 20-fold)	{page}. oldal: a hossz a gördülési sebesség módosításával érhető el (a közöknek több mint 20-szorosára kellene nőniük)
 	page {page}: the transition needs the pages to touch (page gap 0); it is left out	{page}. oldal: az átmenethez az oldalaknak érintkezniük kell (oldalköz 0); kimarad
 	page {page}: there is no transition “{name}”; the pages cut	{page}. oldal: nincs “{name}” átmenet; az oldalak vágással váltanak
-	spine position “{value}” is not supported (a pixel offset, optionally “parallel”, is)	a(z) “{value}” gerincpozíció nem támogatott (a képpontban megadott eltolás igen, opcionálisan “parallel” megjelöléssel)
+	spine position “{value}” is not supported (a pixel offset, optionally “parallel”, or “Hook N Bottom-Top dx dy” is)	a(z) “{value}” gerincpozíció nem támogatott (a képpontban megadott eltolás igen, opcionálisan “parallel” / “Hook N Bottom-Top dx dy” megjelöléssel)
+	page {page}: the hook reaches back further than there are spines; it hooks onto the first spine, or starts its own	{page}. oldal: a horog messzebbre mutat vissza, mint ahány gerinc van; az első gerincre akad, vagy saját gerincet kezd
+	hooked {n} spines back: its {from} meets this spine's {to}	{n} gerinccel korábbira akasztva: annak {from} ennek a gerincnek a(z) {to} részéhez illeszkedik
+	top	teteje
+	middle	közepe
+	bottom	alja
 	vertical gap “{value}” is not a number	a(z) “{value}” függőleges köz nem szám
 	picture “{file}” was not found or cannot be read; it is left out	a(z) “{file}” kép nem található vagy nem olvasható; kimarad
 	video “{file}” was not found or cannot be read; it is left out	a(z) “{file}” videó nem található vagy nem olvasható; kimarad

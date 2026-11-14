@@ -4455,7 +4455,12 @@ export.summary	Low	žema
 	page {page}: the runtime is reached by changing the roll speed (the gaps would have to grow more than 20-fold)	{page} puslapis: trukmė pasiekiama keičiant slinkimo greitį (tarpai turėtų padidėti daugiau nei 20 kartų)
 	page {page}: the transition needs the pages to touch (page gap 0); it is left out	{page} puslapis: perėjimui reikia, kad puslapiai liestųsi (tarpas 0); praleidžiamas
 	page {page}: there is no transition “{name}”; the pages cut	{page} puslapis: perėjimo „{name}“ nėra; puslapiai keičiasi kirpimu
-	spine position “{value}” is not supported (a pixel offset, optionally “parallel”, is)	ašies padėtis „{value}“ nepalaikoma (palaikomas poslinkis pikseliais, pasirinktinai su „parallel“)
+	spine position “{value}” is not supported (a pixel offset, optionally “parallel”, or “Hook N Bottom-Top dx dy” is)	ašies padėtis „{value}“ nepalaikoma (palaikomas poslinkis pikseliais, pasirinktinai su „parallel“ / „Hook N Bottom-Top dx dy“)
+	page {page}: the hook reaches back further than there are spines; it hooks onto the first spine, or starts its own	{page} puslapis: kablys siekia toliau atgal, nei yra ašių; jis kabinasi už pirmosios ašies arba pradeda savo
+	hooked {n} spines back: its {from} meets this spine's {to}	užkabinta {n} ašimis atgal: jos {from} susitinka su šios ašies {to}
+	top	viršus
+	middle	vidurys
+	bottom	apačia
 	vertical gap “{value}” is not a number	vertikalus tarpas „{value}“ nėra skaičius
 	picture “{file}” was not found or cannot be read; it is left out	paveikslėlis „{file}“ nerastas arba neperskaitomas; praleidžiamas
 	video “{file}” was not found or cannot be read; it is left out	vaizdo įrašas „{file}“ nerastas arba neperskaitomas; praleidžiamas

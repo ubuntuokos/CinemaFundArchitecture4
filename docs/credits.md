@@ -19,7 +19,7 @@ leading `@` is allowed, and Hungarian names work too.
 | Tail | Láb | Text after the body (e.g. a character name) |
 | Vertical Gap | Térköz | Space before the next block: `2` (units) or `40px`. An empty row = 1 unit |
 | Content Style | Stílus | Style of this and the following blocks |
-| Spine Position | Gerinc | Horizontal offset of the following blocks from the centre, pixels; `450 parallel` (`párhuzamos`) starts a column beside the previous one, from the same top |
+| Spine Position | Gerinc | Horizontal offset of the following blocks from the centre, pixels; `450 parallel` (`párhuzamos`) starts a column beside the previous one, from the same top; `Hook 1 Middle-Top 600 10` (`Horog`) hooks the following blocks onto an earlier spine |
 | Page Style | Oldal | Starts a new page with that style (`Scroll`, `Card`, or your own) |
 | Page Runtime | Játékidő | Page length: `00:00:12:00`, `12s`, `300f`. On a scroll page the speed is kept and the gaps between blocks stretch or shrink to fit (up to 20-fold); if they cannot, the speed changes, with a warning |
 | Page Gap | Oldalköz | Empty time after the page; negative overlaps the next page |
@@ -39,6 +39,18 @@ character styles, editable in Essential Graphics. An unknown name is a warning.
 column before them, starting at the same height: e.g. *Camera* at `-450`, then *Sound* at
 `450 parallel`. The column set ends at the next spine position without `parallel`; what follows
 goes below the longest column. On a roll with a `Page Runtime`, the first column's gaps stretch.
+
+**Hooked spines.** `Hook N From-To dx dy` (`Horog …`) hangs the following blocks on the spine
+`N` spines before them (`Hook 1`: the one just before; parallel and hooked spines count too):
+point `From` of that spine (`Top`, `Middle` or `Bottom`; `teteje`, `közepe`, `alja`) meets point
+`To` of the new one, which stands `dx` pixels right of it (negative: left) and is moved `dy`
+pixels down. Without a connection it is `Bottom-Top`; `dx` and `dy` are 0 when left out. E.g.
+`Hook 1 Middle-Top 600 10` starts a column 600 px right of the previous one, 10 px below its
+middle; `Hook 1 Top-Bottom -400` puts one above and to the left of the previous one (the page
+grows upwards to make room). The next `Spine Position` cell, even with the same offset, ends the
+hooked spine; what follows goes below everything before it. Its gaps do not stretch. A hook that
+reaches back further than there are spines is a warning: it hooks onto the first spine, or starts
+its own. The guides and the block's properties show hooked spines where the hook puts them.
 
 **Files.** `.ods` (LibreOffice), `.xlsx` (Excel, LibreOffice, Google Sheets download) and CSV /
 TSV (comma, semicolon or tab). A workbook's first sheet is used unless `sheet` names another (by
@@ -406,7 +418,7 @@ CFA4) and the running order (rundown) follow in their own plan,
 | Command | Menu | Params |
 |---|---|---|
 | `graphics.credits.import` | Graphics and Titles ▸ Import Credits Spreadsheet… | `path` (.csv/.tsv/.xlsx/.ods/.cfa4credits, or a Cinecred project folder / its `Styling.toml`, with `credits` to pick its spreadsheet) or `csv` (text), `sheet`, `pictureDir`, `styling`, `template` (its styling and fitting; `styling` wins), `time`, `track` (of each page's lowest clip: its background, else the page) → `{clips: [{clip, start, duration, behaviour, pictures, background, backgroundClips, transition}], group, end, sheet, warnings}` (`backgroundClips`: every clip of the background, several for a looped video); one undo step |
-| `graphics.credits.preview` | (query) | as above → `{pages: [{name, style, row, behaviour (scroll/card/crawl), duration, seconds, layers, contentHeight, contentWidth, background, transition: {effect, duration}, blocks: [{style, head, body (the first 40 cells), bodyCount, tails, pictures, row, lastRow, spine, parallel, at (0–1: the moment of the page that shows the block)}]}], duration, sheets, sheet, warnings, issues}` |
+| `graphics.credits.preview` | (query) | as above → `{pages: [{name, style, row, behaviour (scroll/card/crawl), duration, seconds, layers, contentHeight, contentWidth, background, transition: {effect, duration}, blocks: [{style, head, body (the first 40 cells), bodyCount, tails, pictures, row, lastRow, spine, parallel, at (0–1: the moment of the page that shows the block), hook (`{back, from, to, dx, dy}` or null)}]}], duration, sheets, sheet, warnings, issues}` |
 | `graphics.credits.thumbnail` | (query) | as preview, plus `page`, `at` (0–1, moment in the page), `width`, `guides`, `grid` → `{width, height, page, pages, time, pngBase64}`: the page's background (a picture or video as grey) and text with the roll, crawl or fades applied, pictures outlined, guides drawn |
 | `graphics.credits.validate` | (query; shown in the Credits window) | as preview, or `clip` for placed credits → `{errors, warnings, infos, issues: [{code, severity, page?, row?, values, message}]}` |
 | `graphics.credits.music` | (query; the Fit window) | `audio`?, `clip`? → `{audio, name, start, duration, soundEnd, bpm, beat, beats, suggestions: [{id: musicLength/soundEnd/lastBar, total}], credits, natural, fit}`; changes nothing |
@@ -428,6 +440,6 @@ broken JSON are errors.
 
 ## Not yet
 
-Online sheets (download as `.xlsx`), hooked and fused spines, body-width harmonisation, writing
-Cinecred projects (only on request, per the plan), a
+Online sheets (download as `.xlsx`), card spine positions with a vertical offset (`150 -50`, `Above`/`Below`),
+body-width harmonisation, writing Cinecred projects (only on request, per the plan), a
 line-art layer drawn by CFA4 itself (plan C12, next year's release).

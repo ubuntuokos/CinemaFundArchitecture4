@@ -4453,7 +4453,12 @@ export.summary	Low	düşük
 	page {page}: the runtime is reached by changing the roll speed (the gaps would have to grow more than 20-fold)	sayfa {page}: süreye kayma hızı değiştirilerek ulaşılıyor (boşlukların 20 kattan fazla büyümesi gerekirdi)
 	page {page}: the transition needs the pages to touch (page gap 0); it is left out	sayfa {page}: geçiş için sayfaların bitişik olması gerekir (sayfa aralığı 0); dışarıda bırakıldı
 	page {page}: there is no transition “{name}”; the pages cut	sayfa {page}: “{name}” geçişi yok; sayfalar kesmeyle değişir
-	spine position “{value}” is not supported (a pixel offset, optionally “parallel”, is)	“{value}” eksen konumu desteklenmiyor (piksel kaydırma, isteğe bağlı “parallel” ile, destekleniyor)
+	spine position “{value}” is not supported (a pixel offset, optionally “parallel”, or “Hook N Bottom-Top dx dy” is)	“{value}” eksen konumu desteklenmiyor (piksel kaydırma, isteğe bağlı “parallel” / “Hook N Bottom-Top dx dy” ile, destekleniyor)
+	page {page}: the hook reaches back further than there are spines; it hooks onto the first spine, or starts its own	sayfa {page}: kanca var olan eksenlerden daha geriye uzanıyor; ilk eksene takılır ya da kendi eksenini başlatır
+	hooked {n} spines back: its {from} meets this spine's {to}	{n} eksen geriye takılı: onun {from} kısmı bu eksenin {to} kısmıyla buluşur
+	top	üst
+	middle	orta
+	bottom	alt
 	vertical gap “{value}” is not a number	“{value}” dikey boşluğu bir sayı değil
 	picture “{file}” was not found or cannot be read; it is left out	“{file}” resmi bulunamadı veya okunamıyor; dışarıda bırakıldı
 	video “{file}” was not found or cannot be read; it is left out	“{file}” videosu bulunamadı veya okunamıyor; dışarıda bırakıldı

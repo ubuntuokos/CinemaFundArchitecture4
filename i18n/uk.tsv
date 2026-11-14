@@ -4437,7 +4437,12 @@
 	page {page}: the runtime is reached by changing the roll speed (the gaps would have to grow more than 20-fold)	сторінка {page}: тривалість досягається зміною швидкості прокручування (проміжки довелося б збільшити більш ніж у 20 разів)
 	page {page}: the transition needs the pages to touch (page gap 0); it is left out	сторінка {page}: для переходу сторінки мають торкатися одна одної (пауза між сторінками 0); його пропущено
 	page {page}: there is no transition “{name}”; the pages cut	сторінка {page}: переходу “{name}” немає; сторінки змінюються склейкою
-	spine position “{value}” is not supported (a pixel offset, optionally “parallel”, is)	положення осі “{value}” не підтримується (підтримується зміщення в пікселях, за бажанням із “parallel”)
+	spine position “{value}” is not supported (a pixel offset, optionally “parallel”, or “Hook N Bottom-Top dx dy” is)	положення осі “{value}” не підтримується (підтримується зміщення в пікселях, за бажанням із “parallel” / “Hook N Bottom-Top dx dy”)
+	page {page}: the hook reaches back further than there are spines; it hooks onto the first spine, or starts its own	сторінка {page}: гачок сягає далі назад, ніж є осей; він чіпляється за першу вісь або починає власну
+	hooked {n} spines back: its {from} meets this spine's {to}	зачеплено на {n} осі назад: її {from} зустрічається з {to} цієї осі
+	top	верх
+	middle	середина
+	bottom	низ
 	vertical gap “{value}” is not a number	вертикальний проміжок “{value}” не є числом
 	picture “{file}” was not found or cannot be read; it is left out	зображення “{file}” не знайдено або не читається; його пропущено
 	video “{file}” was not found or cannot be read; it is left out	відео “{file}” не знайдено або не читається; його пропущено

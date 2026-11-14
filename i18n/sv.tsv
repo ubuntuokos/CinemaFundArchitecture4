@@ -4454,7 +4454,12 @@ export.summary	Low	låg
 	page {page}: the runtime is reached by changing the roll speed (the gaps would have to grow more than 20-fold)	sida {page}: speltiden nås genom att ändra rullhastigheten (avstånden skulle behöva växa mer än 20 gånger)
 	page {page}: the transition needs the pages to touch (page gap 0); it is left out	sida {page}: övergången kräver att sidorna möts (sidavstånd 0); den utelämnas
 	page {page}: there is no transition “{name}”; the pages cut	sida {page}: det finns ingen övergång ”{name}”; sidorna klipps
-	spine position “{value}” is not supported (a pixel offset, optionally “parallel”, is)	axelpositionen ”{value}” stöds inte (en pixelförskjutning, eventuellt med ”parallel”, gör det)
+	spine position “{value}” is not supported (a pixel offset, optionally “parallel”, or “Hook N Bottom-Top dx dy” is)	axelpositionen ”{value}” stöds inte (en pixelförskjutning, eventuellt med ”parallel” / ”Hook N Bottom-Top dx dy”, gör det)
+	page {page}: the hook reaches back further than there are spines; it hooks onto the first spine, or starts its own	sida {page}: kroken når längre bakåt än det finns axlar; den hakar i den första axeln eller börjar en egen
+	hooked {n} spines back: its {from} meets this spine's {to}	krokad {n} axlar bakåt: dess {from} möter den här axelns {to}
+	top	överkant
+	middle	mitt
+	bottom	nederkant
 	vertical gap “{value}” is not a number	det lodräta avståndet ”{value}” är inget tal
 	picture “{file}” was not found or cannot be read; it is left out	bilden ”{file}” hittades inte eller kan inte läsas; den utelämnas
 	video “{file}” was not found or cannot be read; it is left out	videon ”{file}” hittades inte eller kan inte läsas; den utelämnas

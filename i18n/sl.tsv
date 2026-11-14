@@ -4455,7 +4455,12 @@ export.summary	Low	nizka
 	page {page}: the runtime is reached by changing the roll speed (the gaps would have to grow more than 20-fold)	stran {page}: trajanje se doseže s spremembo hitrosti drsenja (razmiki bi morali zrasti več kot 20-krat)
 	page {page}: the transition needs the pages to touch (page gap 0); it is left out	stran {page}: prehod zahteva, da se strani stikata (razmik 0); izpuščen je
 	page {page}: there is no transition “{name}”; the pages cut	stran {page}: prehoda »{name}« ni; strani se zamenjata z rezom
-	spine position “{value}” is not supported (a pixel offset, optionally “parallel”, is)	položaj osi »{value}« ni podprt (podprt je zamik v slikovnih pikah, po želji s »parallel«)
+	spine position “{value}” is not supported (a pixel offset, optionally “parallel”, or “Hook N Bottom-Top dx dy” is)	položaj osi »{value}« ni podprt (podprt je zamik v slikovnih pikah, po želji s »parallel« / »Hook N Bottom-Top dx dy«)
+	page {page}: the hook reaches back further than there are spines; it hooks onto the first spine, or starts its own	stran {page}: kavelj sega dlje nazaj, kot je osi; zatakne se na prvo os ali začne svojo
+	hooked {n} spines back: its {from} meets this spine's {to}	zataknjeno {n} osi nazaj: njen {from} se stika z {to} te osi
+	top	zgornji rob
+	middle	sredina
+	bottom	spodnji rob
 	vertical gap “{value}” is not a number	navpični razmik »{value}« ni število
 	picture “{file}” was not found or cannot be read; it is left out	slike »{file}« ni bilo mogoče najti ali prebrati; izpuščena je
 	video “{file}” was not found or cannot be read; it is left out	videa »{file}« ni bilo mogoče najti ali prebrati; izpuščen je

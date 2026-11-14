@@ -355,6 +355,15 @@ fn warnings_json(l: &Laid) -> Value {
     Value::Array(l.warnings.iter().map(|w| json!({"row": w.row, "message": w.message})).collect())
 }
 
+fn spine_point(p: cfa4_credits::sheet::SpinePoint) -> &'static str {
+    use cfa4_credits::sheet::SpinePoint as P;
+    match p {
+        P::Top => "top",
+        P::Middle => "middle",
+        P::Bottom => "bottom",
+    }
+}
+
 fn behaviour_name(b: cfa4_credits::Behaviour) -> &'static str {
     match b {
         cfa4_credits::Behaviour::Card => "card",
@@ -406,6 +415,8 @@ fn blocks_json(page: Option<&cfa4_credits::Page>, out: &cfa4_credits::PageOut, f
                     "lastRow": b.body_rows.iter().copied().max().unwrap_or(b.row).max(b.row),
                     "spine": b.spine,
                     "parallel": b.parallel,
+                    // a hooked spine: onto the spine `back` before, point `from` to `to`, moved by dx, dy
+                    "hook": b.hook.map(|h| json!({"back": h.back, "from": spine_point(h.from), "to": spine_point(h.to), "dx": h.dx, "dy": h.dy})),
                     "at": at,
                 })
             })

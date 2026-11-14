@@ -4454,7 +4454,12 @@ export.summary	Low	niska
 	page {page}: the runtime is reached by changing the roll speed (the gaps would have to grow more than 20-fold)	stranica {page}: trajanje se postiže promjenom brzine pomicanja (razmaci bi morali narasti više od 20 puta)
 	page {page}: the transition needs the pages to touch (page gap 0); it is left out	stranica {page}: prijelaz zahtijeva da se stranice dodiruju (razmak 0); izostavlja se
 	page {page}: there is no transition “{name}”; the pages cut	stranica {page}: nema prijelaza „{name}”; stranice se mijenjaju rezom
-	spine position “{value}” is not supported (a pixel offset, optionally “parallel”, is)	položaj osi „{value}” nije podržan (podržan je pomak u pikselima, po želji uz „parallel”)
+	spine position “{value}” is not supported (a pixel offset, optionally “parallel”, or “Hook N Bottom-Top dx dy” is)	položaj osi „{value}” nije podržan (podržan je pomak u pikselima, po želji uz „parallel” / „Hook N Bottom-Top dx dy”)
+	page {page}: the hook reaches back further than there are spines; it hooks onto the first spine, or starts its own	stranica {page}: kuka seže dalje unatrag nego što ima osi; kači se na prvu os ili započinje vlastitu
+	hooked {n} spines back: its {from} meets this spine's {to}	zakačeno {n} osi unatrag: njezin {from} spaja se s {to} ove osi
+	top	gornji rub
+	middle	sredina
+	bottom	donji rub
 	vertical gap “{value}” is not a number	okomiti razmak „{value}” nije broj
 	picture “{file}” was not found or cannot be read; it is left out	slika „{file}” nije pronađena ili se ne može pročitati; izostavlja se
 	video “{file}” was not found or cannot be read; it is left out	video „{file}” nije pronađen ili se ne može pročitati; izostavlja se

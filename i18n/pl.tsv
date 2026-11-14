@@ -4452,7 +4452,12 @@ export.summary	Low	niska
 	page {page}: the runtime is reached by changing the roll speed (the gaps would have to grow more than 20-fold)	strona {page}: czas osiągnięto zmianą prędkości przewijania (odstępy musiałyby wzrosnąć ponad 20-krotnie)
 	page {page}: the transition needs the pages to touch (page gap 0); it is left out	strona {page}: przejście wymaga stykających się stron (odstęp 0); zostaje pominięte
 	page {page}: there is no transition “{name}”; the pages cut	strona {page}: nie ma przejścia „{name}”; strony zmieniają się cięciem
-	spine position “{value}” is not supported (a pixel offset, optionally “parallel”, is)	pozycja osi „{value}” nie jest obsługiwana (obsługiwane jest przesunięcie w pikselach, opcjonalnie z „parallel”)
+	spine position “{value}” is not supported (a pixel offset, optionally “parallel”, or “Hook N Bottom-Top dx dy” is)	pozycja osi „{value}” nie jest obsługiwana (obsługiwane jest przesunięcie w pikselach, opcjonalnie z „parallel” / „Hook N Bottom-Top dx dy”)
+	page {page}: the hook reaches back further than there are spines; it hooks onto the first spine, or starts its own	strona {page}: hak sięga dalej wstecz, niż jest osi; zaczepia się o pierwszą oś lub zaczyna własną
+	hooked {n} spines back: its {from} meets this spine's {to}	zaczepione {n} osi wstecz: jej {from} styka się z {to} tej osi
+	top	góra
+	middle	środek
+	bottom	dół
 	vertical gap “{value}” is not a number	odstęp pionowy „{value}” nie jest liczbą
 	picture “{file}” was not found or cannot be read; it is left out	obrazu „{file}” nie znaleziono lub nie można go odczytać; zostaje pominięty
 	video “{file}” was not found or cannot be read; it is left out	wideo „{file}” nie znaleziono lub nie można go odczytać; zostaje pominięte
