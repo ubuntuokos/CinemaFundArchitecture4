@@ -66,6 +66,10 @@ nélkül folytatódik.
   nem külön motorok (E5).
 - **Csak Qt6 felület** (a tulajdonos döntése, 2026-11-14, Q14; összhangban a `credits-plan.md` 3.2-vel):
   a C16–C24 minden felülete a Qt6 GUI-ban (`python/cfa4_qt/`) készül; egui-felület nem készül.
+- **Minden támogatott nyelven** (a tulajdonos döntése, 2026-11-14, Q15): az alkalmazás és a C16–C24
+  minden új felületi szövege a CFA4 összes nyelvén elérhető: az angol forrás mellett az `i18n/` minden
+  katalógusában (ma 34 `.tsv`); az engine új figyelmeztetései a `credits_messages.py` NOTES-ába is
+  bekerülnek. Fordítás nélküli szöveg nem kerül a `main`-be.
 - **A Qt6 Stáblista-munkaterület (C8)** lesz a terv „munkafelülete”; a tervben felsorolt panelek
   (réteglista, idővonal, kulcsképkocka-szerkesztő, előnézet, validáció) a CFA4 Qt6 felületének
   meglévő paneljei.
@@ -246,3 +250,4 @@ hiány egy fázishoz van kötve (→ C16–C21, 0.3).
 | Q12 | Milyen azonosítót kapjanak a terv fázisai (E14)? | TC-F0…TC-F9; a megvalósítás C15-től | Elfogadva a javaslat szerint (tulajdonos, 2026-11-14) |
 | Q13 | Elfogadod-e a 0.3 szerinti folytatást (C16–C24) a meglévő stáblista-generátorra építve? | Igen, a C15 és a törzsszélesség után C16-tal | Elfogadva a javaslat szerint (tulajdonos, 2026-11-14), az 1.2 hiányainak pótlásával (C18–C21) |
 | Q14 | Milyen felület készül a C16–C24-hez? | Csak Qt6 | Eldöntve (tulajdonos, 2026-11-14): csak Qt6 GUI, egui nem készül |
+| Q15 | Milyen nyelveken érhető el az alkalmazás? | A CFA4 összes támogatott nyelvén | Eldöntve (tulajdonos, 2026-11-14): a CFA4 összes támogatott nyelvén (angol forrás + minden `i18n/*.tsv` katalógus) |
