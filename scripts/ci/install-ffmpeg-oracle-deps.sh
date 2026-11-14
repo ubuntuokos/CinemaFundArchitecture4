@@ -37,10 +37,6 @@ sudo apt-get install -y --no-install-recommends gstreamer1.0-tools gstreamer1.0-
 # JPEG 2000 / HTJ2K oracles (the tests skip without them)
 sudo apt-get install -y --no-install-recommends libopenjp2-tools grokj2k-tools \
   || echo "::warning::libopenjp2-tools / grokj2k-tools unavailable: OpenJPEG and HTJ2K oracle tests skip"
-# G.729 oracle `cfa4-g729-oracle` (bcg729 1.1.2, built from the pinned upstream tag; the
-# G.729 oracle tests skip without it)
-bash "$(dirname "$0")/install-g729-oracle.sh" \
-  || echo "::warning::cfa4-g729-oracle build failed: the G.729 oracle tests skip"
 # Speex reference encoder / decoder (speexenc, speexdec 1.2.1, built from source) for the Speex
 # oracle tests (they skip without them)
 bash "$(dirname "$0")/install-speex.sh" \
@@ -49,3 +45,7 @@ bash "$(dirname "$0")/install-speex.sh" \
 # the AMR oracle tests skip without it)
 bash "$(dirname "$0")/install-amr-oracle.sh" \
   || echo "::warning::cfa4-amr-oracle build failed: the AMR oracle tests skip"
+# G.729 oracle `cfa4-g729-oracle` (bcg729 1.1.2, built from the pinned upstream tag; the
+# G.729 oracle tests skip without it)
+bash "$(dirname "$0")/install-g729-oracle.sh" \
+  || echo "::warning::cfa4-g729-oracle build failed: the G.729 oracle tests skip"
