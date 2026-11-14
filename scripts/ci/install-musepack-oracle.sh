@@ -9,6 +9,8 @@
 # The decoder is built with -ffp-contract=off so the compiler does not fuse multiply-adds:
 # CFA4's decoder keeps libmpcdec's float operation order, and the comparison is exact.
 # -fcommon: the 2009 headers declare tables without `extern` (GCC 10 stopped merging those).
+# -std=gnu17 pins the dialect (GCC 15 defaults to C23). mpcenc passes mismatched pointer types,
+# which GCC 14 and later reject: -Wno-error=incompatible-pointer-types keeps them a warning.
 set -euo pipefail
 url=https://files.musepack.net/source/musepack_src_r475.tar.gz
 sha256=a4b1742f997f83e1056142d556a8c20845ba764b70365ff9ccf2e3f81c427b2b
@@ -20,10 +22,10 @@ curl -sSfL "$url" -o "$work/src.tar.gz"
 echo "$sha256  $work/src.tar.gz" | sha256sum -c --quiet -
 tar xzf "$work/src.tar.gz" -C "$work"
 s="$work/musepack_src_r475"
-gcc -O2 -ffp-contract=off -fcommon -o "$work/cfa4-mpc-oracle" "$here/musepack-oracle/cfa4-mpc-oracle.c" \
+gcc -std=gnu17 -O2 -ffp-contract=off -fcommon -o "$work/cfa4-mpc-oracle" "$here/musepack-oracle/cfa4-mpc-oracle.c" \
   "$s"/libmpcdec/{huffman,mpc_decoder,mpc_reader,streaminfo,mpc_bits_reader,mpc_demux,requant,synth_filter}.c \
   "$s/common/crc32.c" -I"$s/include" -lm
-gcc -O2 -DFAST_MATH -DCVD_FASTLOG -w -fcommon -o "$work/mpcenc" \
+gcc -std=gnu17 -O2 -DFAST_MATH -DCVD_FASTLOG -w -fcommon -Wno-error=incompatible-pointer-types -o "$work/mpcenc" \
   "$s"/mpcenc/{keyboard,mpcenc,pipeopen,stderr,wave_in,winmsg}.c "$s/common/tags.c" \
   "$s"/libmpcpsy/{ans,cvd,fft4g,fft_routines,profile,psy,psy_tab}.c "$s/common/fastmath.c" \
   "$s"/libmpcenc/{analy_filter,bitstream,encode_sv7,huffsv7,quant}.c "$s/common/crc32.c" \
