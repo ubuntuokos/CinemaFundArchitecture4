@@ -6,7 +6,7 @@
 > [CFA4-AI_modules ADR 0008](https://github.com/ubuntuokos/CFA4-AI_modules/blob/main/docs/adr/ADR-0008-ai-processing-layer.md)
 > (AI-feldolgozó réteg, F0–F6 kapuk), [`CFA4-TASKSTORE-PG-001`](CFA4-TASKSTORE-PG-001.md)
 > (PostgreSQL-adatréteg, `mi` séma), CFA4-ADAPTIVE-CAPABILITY-001 (ACS, tulajdonosi specifikáció,
-> 2026-11-07), [`CFA4-EVENT-FABRIC-001`](CFA4-EVENT-FABRIC-001-1.0.md),
+> 2026-11-07; [összevetése](CFA4-ADAPTIVE-CAPABILITY-001-OSSZEVETES.md)), [`CFA4-EVENT-FABRIC-001`](CFA4-EVENT-FABRIC-001-1.0.md),
 > [`ADR 0006`](../adr/ADR-0006-backlothub-postgresql.md) (BacklotHub PostgreSQL),
 > [CFA4-DEV-AI-ORCHESTRATION-001](../development/ai-orchestration/README.md) · **Donor:**
 > [FareedKhan-dev/train-llm-from-scratch](https://github.com/FareedKhan-dev/train-llm-from-scratch) (MIT)
