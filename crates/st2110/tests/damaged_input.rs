@@ -113,3 +113,26 @@ fn mangled_sdp_never_panics() {
         }
     }
 }
+
+#[test]
+fn mangled_pmc_output_never_panics_or_locks_by_accident() {
+    use cfa4_st2110::clock::{DEFAULT_LOCK_LIMIT_NS, PtpStatus};
+    let base = "\t\tmaster_offset -87\n\t\tgmPresent true\n\t\tgmIdentity 0c4f5a.fffe.10e2d4\n\t\tdomainNumber 127\n\t\tportState SLAVE\n";
+    let mut rng = Rng(7);
+    let mut locked = 0;
+    for _ in 0..5000 {
+        let mut b = base.as_bytes().to_vec();
+        for _ in 0..rng.below(3) + 1 {
+            let at = rng.below(b.len());
+            b[at] = b" .-0123456789abcdefSLAVEtrux\t\n"[rng.below(30)];
+        }
+        let Ok(text) = std::str::from_utf8(&b) else { continue };
+        if let Ok(s) = PtpStatus::parse_pmc(text)
+            && s.locked(DEFAULT_LOCK_LIMIT_NS)
+        {
+            locked += 1;
+            assert!(s.grandmaster.is_some() && s.domain.is_some());
+        }
+    }
+    assert!(locked < 5000);
+}
