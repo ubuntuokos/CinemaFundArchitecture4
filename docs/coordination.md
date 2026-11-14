@@ -70,6 +70,20 @@ Gazdát csak a tulajdonos jelölhet ki vagy válthat le. Fejlesztő munkamenet n
    CI-javítás, ütközésfeloldás) nem indítod: a PR-ba csak te commitolsz. Dependabot-PR-on
    és köteg-PR-on nem kérsz CodeRabbit-ellenőrzést.
 
+10. **Fejlesztés csak jóváhagyott terv alapján** (tulajdonosi döntés, 2026-11-14).
+    - Fejlesztés (kód, teszt, CI, csomagolás) csak akkor indulhat, ha a terve egyeztetve van
+      a tulajdonossal, és a tulajdonos jóváhagyta.
+    - A terv menet közben bármikor módosulhat. Módosítás után a fejlesztés **megáll**, és csak
+      a módosított terv tulajdonosi jóváhagyása után folytatható.
+    - Ha fejlesztés közben a fejlesztő munkamenet kér tervmódosítást, ahhoz is tulajdonosi
+      jóváhagyás kell. A kérés után a módosítással érintett munka megáll, és csak a jóváhagyás
+      után folytatható.
+    - Tervmódosítás az is, ha a munka eltérne a terv lépéseitől, sorrendjétől vagy átvételi
+      feltételeitől. Ilyenkor a munkamenet nem dönt maga: leírja a javasolt módosítást, és
+      jóváhagyást kér.
+    - A §2.8 szerinti választás a saját projekten belül csak a jóváhagyott terv keretein belül
+      érvényes.
+
 ## 3. A gazda munkamódja (minden `/gazda` hívásnál)
 
 0. **Minden hívás önálló.** A gazda a korábbi hívások eredményeire nem épít; minden tényt
