@@ -404,6 +404,27 @@ class ExportDialog(QDialog):
         self._iab_probed = ""
         for w in (self.dcp_immersive, self.dcp_iab_source, self.dcp_iab_browse, self.dcp_iab_fallback):
             w.setEnabled(False)
+        # DCP only: the first caption track as subtitles, an ST 429-5 timed text track file (#938)
+        self.dcp_subtitles = QCheckBox(tr("Subtitles from the first caption track"), self)
+        self.dcp_subtitles.setObjectName("export.dcpSubtitles")
+        self.dcp_subtitle_language = QComboBox(self)
+        self.dcp_subtitle_language.setObjectName("export.dcpSubtitleLanguage")
+        self.dcp_subtitle_language.setEditable(True)
+        self.dcp_subtitle_language.addItems(DCP_LANGUAGES)
+        line = self.dcp_subtitle_language.lineEdit()
+        if line is not None:
+            line.setPlaceholderText(tr("The package language"))
+        self.dcp_subtitle_font = QLineEdit(self)
+        self.dcp_subtitle_font.setObjectName("export.dcpSubtitleFont")
+        self.dcp_subtitle_font.setPlaceholderText(tr("Inter Regular (built in), or an OpenType / TrueType file"))
+        self.dcp_subtitle_font_browse = QPushButton(tr("Browse…"), self)
+        self.dcp_subtitle_font_browse.setObjectName("export.dcpSubtitleFontBrowse")
+        self.dcp_subtitle_font_browse.clicked.connect(self._browse_subtitle_font)
+        subtitle_font_row = QHBoxLayout()
+        subtitle_font_row.addWidget(self.dcp_subtitle_font, 1)
+        subtitle_font_row.addWidget(self.dcp_subtitle_font_browse)
+        for w in (self.dcp_subtitles, self.dcp_subtitle_language, self.dcp_subtitle_font, self.dcp_subtitle_font_browse):
+            w.setEnabled(False)
         # egui's Media File rows: File Name, then Location with its folder picker
         self.path = OutputPath(self, lambda: "" if self._package() else (self._extension() or None))
         browse = QPushButton("…", self)
@@ -573,6 +594,9 @@ class ExportDialog(QDialog):
         f.addRow(tr("DCP container"), self.dcp_aspect)
         f.addRow(tr("Content kind"), self.dcp_kind)
         f.addRow(tr("Package language"), self.dcp_language)
+        f.addRow("", self.dcp_subtitles)
+        f.addRow(tr("Subtitle language"), self.dcp_subtitle_language)
+        f.addRow(tr("Subtitle font"), subtitle_font_row)
         f.addRow("", self.imf_lossless)
         f.addRow(tr("Range"), range_row)
         f.addRow("", self.range_warning)
@@ -804,6 +828,9 @@ class ExportDialog(QDialog):
         self.dcp_iab_source.textChanged.connect(self._changed)
         self.dcp_iab_fallback.currentIndexChanged.connect(self._changed)
         self.dcp_language.currentTextChanged.connect(self._changed)
+        self.dcp_subtitles.toggled.connect(self._subtitles_changed)
+        self.dcp_subtitle_language.currentTextChanged.connect(self._changed)
+        self.dcp_subtitle_font.textChanged.connect(self._changed)
         self.imf_lossless.toggled.connect(self._changed)
         for key, c in (("bitrateMode", self.bitrate_mode), ("audioCodec", self.audio_codec), ("chroma", self.chroma)):
             c.currentIndexChanged.connect(lambda _i, k=key: self._touch(k))
@@ -981,6 +1008,8 @@ class ExportDialog(QDialog):
         self.dcp_iab_source.setText(str(preset.get("dcpIabSource") or ""))
         self.dcp_iab_fallback.setCurrentIndex(max(0, self.dcp_iab_fallback.findData(preset.get("dcpIabFallback") or "none")))
         self.dcp_language.setCurrentText(str(preset.get("dcpLanguage") or ""))
+        self.dcp_subtitles.setChecked(bool(preset.get("dcpSubtitles")))
+        self.dcp_subtitle_language.setCurrentText(str(preset.get("dcpSubtitleLanguage") or ""))
         self.imf_lossless.setChecked(bool(preset.get("imfLossless")))
         self.touched.clear()
         self.agent_settings = {}
@@ -1012,6 +1041,8 @@ class ExportDialog(QDialog):
             w.setEnabled(dcp or imf)
         self.imf_lossless.setEnabled(imf)
         self.dcp_isdcf.setEnabled(dcp and bool(self._dcp_name))
+        self.dcp_subtitles.setEnabled(dcp)
+        self._subtitles_changed()
         self._immersive_changed()
         if dcp:
             # fixed by the DCI specifications: container size, J2K data rate, 5.1 24-bit PCM
@@ -1206,6 +1237,18 @@ class ExportDialog(QDialog):
         else:
             self.dcp_iab_info.setText("")
         self._changed()
+
+    def _subtitles_changed(self) -> None:
+        """The subtitle language and font rows are for a DCP with subtitles only."""
+        on = self.dcp_subtitles.isEnabled() and self.dcp_subtitles.isChecked()
+        for w in (self.dcp_subtitle_language, self.dcp_subtitle_font, self.dcp_subtitle_font_browse):
+            w.setEnabled(on)
+        self._changed()
+
+    def _browse_subtitle_font(self) -> None:
+        path, _ = QFileDialog.getOpenFileName(self, tr("Subtitle font"), self.dcp_subtitle_font.text(), tr("Fonts") + " (*.ttf *.otf);;" + tr("All files") + " (*)")
+        if path:
+            self.dcp_subtitle_font.setText(path)
 
     def _browse_iab(self) -> None:
         path, _ = QFileDialog.getOpenFileName(
@@ -1403,6 +1446,12 @@ class ExportDialog(QDialog):
             if mode != "off":
                 p["dcpIabFallback"] = self.dcp_iab_fallback.currentData()
             p["dcpLanguage"] = self.dcp_language.currentText().strip()
+            p["dcpSubtitles"] = self.dcp_subtitles.isChecked()
+            if self.dcp_subtitles.isChecked():
+                p["dcpSubtitleLanguage"] = self.dcp_subtitle_language.currentText().strip()
+                font = self.dcp_subtitle_font.text().strip()
+                if font:
+                    p["dcpSubtitleFont"] = os.path.expanduser(font)
         if self.imf_lossless.isEnabled():
             p["imfContentKind"] = self.dcp_kind.currentData()
             p["imfLossless"] = self.imf_lossless.isChecked()

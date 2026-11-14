@@ -56,7 +56,7 @@ pub use timed_text::{AncillaryResource, MAX_RESOURCE_BYTES, Region, TimedText, i
 pub use uncompressed::UncompressedLayout;
 pub use write::{
     CodedKind, ColorSpace, FrameInfo, IabDesc, J2kSubDescriptor, McaLabel, McaTitles, MxfWriter, OpAtomPcm, PackageIds, Pattern, PictureCoding, PictureDesc,
-    SoundDesc, StartTimecode, Timestamp, Umid, WriterConfig, encode_pcm, write_opatom_pcm,
+    SoundDesc, StartTimecode, TimedTextConfig, TimedTextResource, Timestamp, Umid, WriterConfig, encode_pcm, write_opatom_pcm, write_timed_text,
 };
 
 use std::fmt;

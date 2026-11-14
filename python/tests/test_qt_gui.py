@@ -2974,7 +2974,7 @@ def test_real_engine_dcp_export_writes_a_package_folder(app, tmp_path: Path):
         dlg = win.export_dialog
         assert dlg is not None
         assert wait_until(app, lambda: dlg.preset.count() > 0 and dlg.format.count() > 0, 30_000)
-        assert not dlg.dcp_resolution.isEnabled()
+        assert not dlg.dcp_resolution.isEnabled() and not dlg.dcp_subtitles.isEnabled()
         assert "dcpResolution" not in dlg.params()
         dlg.preset.setCurrentIndex(dlg.preset.findData("DCP 2K Scope"))
         assert dlg.format.currentData() == "dcp" and dlg.dcp_resolution.isEnabled()
@@ -2997,6 +2997,19 @@ def test_real_engine_dcp_export_writes_a_package_folder(app, tmp_path: Path):
         assert wait_until(app, lambda: "RFC 5646" in dlg.summary.text(), 10_000), dlg.summary.text()
         assert not dlg.dcp_isdcf.isEnabled()
         dlg.dcp_language.setCurrentText("hu-HU")
+        # DCP subtitles (#938): the language and font rows follow the checkbox
+        assert dlg.dcp_subtitles.isEnabled() and not dlg.dcp_subtitles.isChecked()
+        assert not dlg.dcp_subtitle_language.isEnabled() and not dlg.dcp_subtitle_font.isEnabled()
+        assert dlg.params()["dcpSubtitles"] is False and "dcpSubtitleLanguage" not in dlg.params()
+        dlg.dcp_subtitles.setChecked(True)
+        assert dlg.dcp_subtitle_language.isEnabled() and dlg.dcp_subtitle_font_browse.isEnabled()
+        dlg.dcp_subtitle_language.setCurrentText("en")
+        dlg.dcp_subtitle_font.setText("~/fonts/sub.otf")
+        p = dlg.params()
+        assert (p["dcpSubtitles"], p["dcpSubtitleLanguage"], p["dcpSubtitleFont"]) == (True, "en", os.path.expanduser("~/fonts/sub.otf"))
+        assert wait_until(app, lambda: "_TLR-1_S_HU-EN_51_2K_" in dlg._dcp_name, 10_000), dlg._dcp_name
+        dlg.dcp_subtitles.setChecked(False)
+        assert not dlg.dcp_subtitle_font.isEnabled() and "dcpSubtitleFont" not in dlg.params()
 
         dlg.range.setCurrentIndex(dlg.range.findData("custom"))
         dlg.start.setValue(0.0)

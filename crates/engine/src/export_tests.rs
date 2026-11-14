@@ -1267,6 +1267,22 @@ fn dcp_language_param_and_isdcf_name() {
     assert!(s.execute("export.resolve", json!({"format": "h264"})).unwrap()["dcpName"].is_null());
 }
 
+/// #938: the DCP subtitle params: on/off, the language (checked; empty = the package's) and the
+/// font file; `export.resolve` names the subtitle language in the ISDCF name.
+#[test]
+fn dcp_subtitle_params() {
+    let s = demo();
+    let setting = |s: &Session, p: Value| crate::export_tools::settings_from_params(s, &p, "file.exportMedia").map(|(_, st)| st);
+    let st = setting(&s, json!({"path": "pkg", "format": "dcp", "dcpLanguage": "en-US", "dcpSubtitles": true, "dcpSubtitleLanguage": " hu ", "dcpSubtitleFont": " /fonts/a.otf "})).unwrap();
+    assert_eq!((st.dcp_subtitles, st.dcp_subtitle_language.as_str(), st.dcp_subtitle_font.as_str()), (true, "hu", "/fonts/a.otf"));
+    let e = setting(&s, json!({"path": "pkg", "format": "dcp", "dcpSubtitleLanguage": "Hungarian"})).unwrap_err().to_string();
+    assert!(e.contains("RFC 5646"), "{e}");
+    let mut s = s;
+    let r = s.execute("export.resolve", json!({"format": "dcp", "dcpLanguage": "en-US", "dcpSubtitles": true, "dcpSubtitleLanguage": "hu-HU"})).unwrap();
+    assert!(r["dcpName"].as_str().unwrap().contains("_EN-HU_51_2K_"), "{}", r["dcpName"]);
+    assert_eq!((r["settings"]["dcpSubtitles"].as_bool(), r["settings"]["dcpSubtitleLanguage"].as_str()), (Some(true), Some("hu-HU")));
+}
+
 /// #1011: the IMF params, the package folder path (no extension) and the resolved summary.
 #[test]
 fn imf_params() {
