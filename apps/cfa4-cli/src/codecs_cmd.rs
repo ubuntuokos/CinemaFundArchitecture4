@@ -193,6 +193,8 @@ const NOT_CODECS: &[&str] = &[
     "smart-edit",
     "speech",
     "st2110",
+    "surface",
+    "surface-model",
     "tcsync",
     "tcsync-io",
     "testkit",
