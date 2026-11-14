@@ -18,6 +18,7 @@ pub mod clip_ops;
 pub mod color;
 pub mod commands;
 pub mod credits;
+pub mod dcp_import;
 pub mod delivery_check;
 pub mod demo;
 pub mod dialog_defaults;
@@ -1357,6 +1358,8 @@ mod beat_markers_tests;
 mod clip_ops_tests;
 #[cfg(test)]
 mod color_tests;
+#[cfg(test)]
+mod dcp_import_tests;
 #[cfg(test)]
 mod effects_inspect_tests;
 #[cfg(test)]
