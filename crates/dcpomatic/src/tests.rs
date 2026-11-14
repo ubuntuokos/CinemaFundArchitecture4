@@ -346,6 +346,10 @@ fn makes_a_kdm_from_the_film() {
         std::fs::read_dir(d.join("kdms")).unwrap().filter_map(Result::ok).filter(|e| e.file_name().to_string_lossy().starts_with(".cfa4")).collect();
     assert!(left.is_empty(), "the run folder is removed: {left:?}");
     assert_eq!(std::fs::read_to_string(d.join("kdm.tz")).unwrap(), "UTC", "the times are UTC");
+    // a second run with the same KDM name keeps the first one
+    let again = t.make_kdm(&encrypted_film(&d)).unwrap();
+    assert_eq!(again.files, [d.join("kdms/Test_KDM (2).xml")]);
+    assert!(d.join("kdms/Test_KDM.xml").is_file());
     let s = |x: &str| x.to_string();
     let mut a = args(&d, "kdm");
     assert!(a[1].starts_with(&format!("{}/.cfa4-kdm-", d.join("kdms").display())), "the run writes into its own folder: {}", a[1]);

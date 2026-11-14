@@ -88,6 +88,8 @@ A KDM for one projector (its media block's certificate, a PEM file the cinema se
 }}}
 ```
 
+- The answer lists only the KDMs of this call. A KDM never replaces one already in `output`: a taken name
+  gets a ` (2)`, ` (3)`… suffix.
 - Times are UTC (`YYYY-MM-DD HH:MM:SS`); `validFrom` defaults to `now`. Give either `validFor` (`hours`,
   `days`, `weeks`, `years`) or `validUntil`.
 - `formulation`: `modifiedTransitional1` (default), `multipleModifiedTransitional1`, `dciAny`, `dciSpecific`

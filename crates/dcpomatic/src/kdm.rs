@@ -113,10 +113,12 @@ fn is_time(s: &str) -> bool {
 /// The largest `metadata.xml` read (a film's is a few kilobytes).
 const METADATA_MAX: u64 = 16 << 20;
 
-/// The film directory's `metadata.xml`: a regular file of at most [`METADATA_MAX`] bytes (a FIFO
-/// or device is refused before it is opened, so the read cannot block).
+/// The film directory's `metadata.xml`: a regular file of at most [`METADATA_MAX`] bytes. It is
+/// opened with `O_NONBLOCK`, so a FIFO put there (even between the check and the open) cannot
+/// block, and the opened file must be a regular file.
 fn read_metadata(film: &Path) -> Result<String, DcpomaticError> {
     use std::io::Read as _;
+    use std::os::unix::fs::OpenOptionsExt as _;
     let path = film.join("metadata.xml");
     let not_film = || DcpomaticError::Invalid(format!("{} is not a DCP-o-matic film directory (no metadata.xml)", film.display()));
     let too_big = || DcpomaticError::Invalid(format!("{} is larger than {METADATA_MAX} bytes", path.display()));
@@ -127,7 +129,7 @@ fn read_metadata(film: &Path) -> Result<String, DcpomaticError> {
     if meta.len() > METADATA_MAX {
         return Err(too_big());
     }
-    let file = std::fs::File::open(&path).map_err(|_| not_film())?;
+    let file = std::fs::OpenOptions::new().read(true).custom_flags(rustix::fs::OFlags::NONBLOCK.bits().cast_signed()).open(&path).map_err(|_| not_film())?;
     if !file.metadata().is_ok_and(|m| m.is_file()) {
         return Err(not_film());
     }
@@ -237,6 +239,25 @@ fn xml_files(dir: &Path) -> Vec<PathBuf> {
     v
 }
 
+/// Moves `file` into `dir` under its own name, or with ` (2)`, ` (3)`… before the extension when
+/// the name is taken. A hard link claims the name atomically, so two runs never get the same one.
+fn move_without_replacing(file: &Path, dir: &Path) -> Result<PathBuf, DcpomaticError> {
+    let stem = file.file_stem().map_or_else(|| "KDM".into(), |s| s.to_string_lossy().into_owned());
+    let ext = file.extension().map_or_else(String::new, |e| format!(".{}", e.to_string_lossy()));
+    for n in 1..=1000u32 {
+        let to = if n == 1 { dir.join(format!("{stem}{ext}")) } else { dir.join(format!("{stem} ({n}){ext}")) };
+        match std::fs::hard_link(file, &to) {
+            Ok(()) => {
+                std::fs::remove_file(file)?;
+                return Ok(to);
+            }
+            Err(e) if e.kind() == std::io::ErrorKind::AlreadyExists => {}
+            Err(e) => return Err(e.into()),
+        }
+    }
+    Err(DcpomaticError::Engine(format!("no free name for {stem}{ext} in {}", dir.display())))
+}
+
 impl Dcpomatic {
     /// Makes the KDM(s) for an encrypted DCP made by [`Dcpomatic::make_dcp`]. Returns the KDM
     /// files written into the output folder by this run.
@@ -251,7 +272,8 @@ impl Dcpomatic {
             create_private_dir(cfg)?;
         }
         // The tool writes into a folder of its own inside the output folder; only the KDMs of this
-        // run are moved out of it (replacing one of the same name) and returned.
+        // run are moved out of it and returned. A KDM never replaces one already there (another
+        // run's, maybe running now): a taken name gets a ` (2)`, ` (3)`… suffix.
         let run = process::Scratch::bare_in(&output, ".cfa4-kdm")?;
         set_value(&mut args, "--output", text(run.path())?);
         let timeout = Duration::from_secs(10 * 60);
@@ -259,10 +281,7 @@ impl Dcpomatic {
         process::run_tool(program, &args, config.as_deref(), &[("TZ", "UTC")], Instant::now() + timeout, timeout, &Control::new(), Phase::Kdm)?;
         let mut files = Vec::new();
         for f in xml_files(run.path()) {
-            let Some(name) = f.file_name() else { continue };
-            let to = output.join(name);
-            std::fs::rename(&f, &to)?;
-            files.push(to);
+            files.push(move_without_replacing(&f, &output)?);
         }
         drop(run);
         if files.is_empty() {
