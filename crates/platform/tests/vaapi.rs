@@ -21,6 +21,15 @@ use cfa4_platform::HybridDecoder;
 use cfa4_platform::vaapi::VaDecoder;
 use common::*;
 
+/// The hardware-decoding setting is process-wide, and the tests in this binary run in parallel:
+/// the test that turns it Off holds this lock for writing, every test that needs the VA-API path
+/// holds it for reading, so none of them sees the setting Off by accident.
+static HW_SWITCH: std::sync::RwLock<()> = std::sync::RwLock::new(());
+
+fn hw_setting_on() -> std::sync::RwLockReadGuard<'static, ()> {
+    HW_SWITCH.read().unwrap_or_else(|e| e.into_inner())
+}
+
 /// The hardware decoder for a stream, or `None` (skip) when this machine has none for it.
 fn hardware(s: &Stream) -> Option<Box<dyn VideoDecoder>> {
     match cfa4_platform::vaapi_factory(&s.entry) {
@@ -192,6 +201,7 @@ fn parity_streaming(name: &str, s: &Stream) {
 
 #[test]
 fn bit_exact_with_the_software_decoder() {
+    let _hw = hw_setting_on();
     let ff = cfa4_testkit::require_ffmpeg!();
     let streams = small_streams(&ff);
     for (name, s) in streams {
@@ -225,6 +235,7 @@ fn large(size: &str) {
 
 #[test]
 fn h264_1080p_and_2160p_are_bit_exact() {
+    let _hw = hw_setting_on();
     large("1920x1080");
     large("3840x2160");
 }
@@ -259,6 +270,7 @@ fn large_hevc(size: &str, pix_fmt: &str) {
 
 #[test]
 fn hevc_main_and_main10_1080p_and_2160p_are_bit_exact() {
+    let _hw = hw_setting_on();
     for size in ["1920x1080", "3840x2160"] {
         large_hevc(size, "yuv420p");
         large_hevc(size, "yuv420p10le");
@@ -267,6 +279,7 @@ fn hevc_main_and_main10_1080p_and_2160p_are_bit_exact() {
 
 #[test]
 fn mid_stream_failure_continues_in_software() {
+    let _hw = hw_setting_on();
     let ff = cfa4_testkit::require_ffmpeg!();
     for (name, s) in small_streams(&ff) {
         let name = name.as_str();
@@ -317,9 +330,13 @@ fn declines_what_the_hardware_path_does_not_take() {
     }
     // Settings ▸ Playback ▸ Hardware decoding Off
     let s = read_stream(&own(&ff, "h264_cfa4.mp4"));
-    cfa4_codecs::hw::set_hardware_decoding(false);
-    let off = cfa4_platform::vaapi_factory(&s.entry).is_none();
-    cfa4_codecs::hw::set_hardware_decoding(true);
+    let off = {
+        let _switch = HW_SWITCH.write().unwrap_or_else(|e| e.into_inner());
+        cfa4_codecs::hw::set_hardware_decoding(false);
+        let off = cfa4_platform::vaapi_factory(&s.entry).is_none();
+        cfa4_codecs::hw::set_hardware_decoding(true);
+        off
+    };
     assert!(off, "declined while hardware decoding is Off");
 }
 
@@ -339,6 +356,7 @@ fn bounded(what: &str, limit: Duration, f: impl FnOnce() + Send + 'static) {
 
 #[test]
 fn damaged_samples_and_parameter_sets_never_crash_or_hang() {
+    let _hw = hw_setting_on();
     let ff = cfa4_testkit::require_ffmpeg!();
     for (name, s) in small_streams(&ff) {
         let name = name.as_str();
@@ -416,6 +434,7 @@ fn damaged_samples_and_parameter_sets_never_crash_or_hang() {
 /// fails nor leaks VA-API objects into the next one.
 #[test]
 fn repeated_initialisation() {
+    let _hw = hw_setting_on();
     let ff = cfa4_testkit::require_ffmpeg!();
     let s = read_stream(&own(&ff, "h264_cfa4.mp4"));
     let reference = decode_all(software(&s).as_mut(), &s.samples[..13]);
@@ -431,6 +450,7 @@ fn repeated_initialisation() {
 /// pictures.
 #[test]
 fn concurrent_decoders() {
+    let _hw = hw_setting_on();
     let ff = cfa4_testkit::require_ffmpeg!();
     let mut paths = vec![own(&ff, "h264_cfa4.mp4")];
     for (name, profile, params) in H264.iter().take(3) {
@@ -461,6 +481,7 @@ fn concurrent_decoders() {
 /// A decoder used and moved between threads (decoders migrate between frame workers).
 #[test]
 fn decoder_moves_between_threads() {
+    let _hw = hw_setting_on();
     let ff = cfa4_testkit::require_ffmpeg!();
     let s = read_stream(&own(&ff, "h264_cfa4.mp4"));
     let Some(mut hw) = hardware(&s) else { return };
