@@ -1,4 +1,4 @@
-# ADR 0011 – H.266/VVC bekötése: VVdeC külön folyamatban, kódolás FFmpeg `libvvenc`-kel
+# ADR 0013 – H.266/VVC bekötése: VVdeC külön folyamatban, kódolás FFmpeg `libvvenc`-kel
 
 **Dátum:** 2026-11-14 · **Állapot:** javaslat (VVC-01, a tulajdonos jóváhagyására vár; G1 kapu) ·
 **Kapcsolódik:** [VVC terv v1.2](../plans/CFA4-VVC-PLAN-001-2026-11-07.md) 3., 4. és 7. fejezet,
