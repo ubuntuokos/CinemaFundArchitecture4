@@ -110,6 +110,9 @@ The native backend implements these rules:
 - `WARNING`: the composition has no markers;
 - `WARNING`: FFOC is later than frame 1;
 - `WARNING`: LFOC is not on the last frame.
+- `WARNING`: `MainMarkers` has an `EntryPoint` or a `Duration`. The ST 429-7 schema allows both, but libdcp's
+  `dcpverify` reports them as errors (`UNEXPECTED_ENTRY_POINT`, `UNEXPECTED_DURATION`); CFA4's export no longer
+  writes them (plan CFA4-DCPVAL-LIBDCP-001 v1.1, D6–D7).
 
 Tools differ on whether FFOC sits at offset 0 or 1 (CFA4's export writes 1), so both are accepted.
 
