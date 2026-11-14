@@ -95,6 +95,9 @@ The native backend implements these rules:
 | `DCP.MXF.001` | Track files (see below). |
 | `DCP.J2K.001` | Picture codestreams (see below). |
 | `DCP.PIC.001` | Picture format (see below). |
+| `DCP.AUD.001` | Sound track files (see below). |
+| `DCP.AUD.002` | Loudness (see below). |
+| `DCP.IAB.001` | Immersive audio track files (see below). |
 | `DCP.MARK.001` | Markers (see below). |
 
 `DCP.MARK.001` checks each composition's markers:
@@ -111,8 +114,7 @@ The native backend implements these rules:
 Tools differ on whether FFOC sits at offset 0 or 1 (CFA4's export writes 1), so both are accepted.
 
 If no packing list or composition playlist was read, the rules over them are `UNCHECKED`, never a
-vacuous pass. Sound and immersive audio come with DCP-07, subtitles with DCP-08, and the
-signatures with DCP-10.
+vacuous pass. Subtitles come with DCP-08, and the signatures with DCP-10.
 
 ### Track files and pictures (DCP-06)
 
@@ -165,6 +167,29 @@ An encrypted file's codestreams are `UNCHECKED`: they need the content key.
   are warnings;
 - `WARNING`: 4K stereoscopic pictures.
 
+### Sound and immersive audio (DCP-07)
+
+`DCP.AUD.001` (ST 428-2, ST 429-2), for every `MainSound` track file, `FAIL` when it is not linear
+PCM, not 48 or 96 kHz, not 24 bits, has 0 or more than 16 channels, or a block align other than
+channels × bytes a sample, and when a later reel of a composition changes the sample rate or the
+channel count. A channel count other than 6, 8 or 16 and a reel without sound in a composition
+with sound are `WARNING`. A composition without any sound is `NOT_APPLICABLE`. The MCA labels are
+not read yet (`cfa4-mxf` does not expose them).
+
+`DCP.AUD.002` (ITU-R BS.1770-4, EBU R128, measured with `cfa4-audio-dsp`) runs only when the
+profile has it, because it reads every sample (progress stage `loudness`, cancel between 32 768
+sample frames). Each composition is measured over the played range of its reels, in reel order:
+integrated loudness, loudness range, true and sample peak, length. Channels 1-6 are the programme
+(L, R, C, LFE, Ls, Rs; the LFE does not count, the surrounds weigh 1.41), and channels 7 and up
+(HI, VI-N, sync and the like) are not. Cinema has no single loudness target, so a measurement
+passes and the numbers are kept in the finding's evidence; a true peak above 0 dBTP is `WARNING`.
+Profile thresholds come with the profile files (DCP-11). Encrypted sound is `UNCHECKED`.
+
+`DCP.IAB.001` (ST 429-18, ST 2098-2), for every `AuxData` track file that holds immersive audio:
+`FAIL` when its edit rate or duration differs from the reel asset's, or a frame is not an
+IABitstream frame (`cfa4-iab`) of that frame rate with 24-bit audio. Every frame is parsed (progress
+stage `iab`). A package without immersive audio is `NOT_APPLICABLE`.
+
 ### Comparison with dcp_inspect
 
 On CFA4 exports the rules were compared with dcp_inspect: a flipped byte, a grown file and a marker
@@ -207,18 +232,21 @@ The HTML report is DCP-15.
 
 ## Tests
 
-- 37 unit tests use synthetic packages:
+- 40 unit tests use synthetic packages:
   - unsafe paths, `..` and symbolic links leading outside the package;
   - each DCP-05 rule, with a passing and a failing package (size, hash, ids, packing list and
     composition consistency, version files, durations, reel sync, markers, chunk length);
   - a cancel while hashing, and while reading frames;
   - track files written with `cfa4-mxf` around frames `cfa4-j2k` encoded: a DCI file that passes,
     and each `DCP.MXF.001`, `DCP.J2K.001` and `DCP.PIC.001` failure and warning;
+  - sound track files: a good one, 16 bits, 4 channels, a picture where sound belongs;
+  - loudness: a 1 kHz sine at -20 dBFS on one front channel measures -23.0 LUFS (BS.1770);
+  - immersive audio: a good IAB frame, a frame of another rate, a frame that is not IAB;
   - broken documents, a missing asset map, a missing packing list;
   - profiles and the verdict rules;
   - cancellation and progress;
   - the report.
 - `tests/export_round_trip.rs` writes a DCP with `cfa4-export` and runs three profiles on it:
   - Quick Scan and Full Integrity, including the hashes, must pass;
-  - SMPTE Cinema: the track files pass, the picture format is a warning (25 fps), and the only
+  - SMPTE Cinema: the track files and the sound pass, the picture format is a warning (25 fps), and the only
     failure allowed is the J2K guard bits above.

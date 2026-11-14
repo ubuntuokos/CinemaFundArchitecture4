@@ -35,18 +35,18 @@ Sávok: K1 az 1–6. hét, K2 a 7–22. hét, K3 a 23–40. hét, K4 a 40–41. 
 
 | Hét | Kezdete | Sáv | 1. tétel | 2. tétel |
 |---|---|---|---|---|
-| 1 | 2026-11-02 | K1 | FFV1 | Huffyuv |
-| 2 | 2026-11-09 | K1 | Ut Video | MagicYUV |
-| 3 | 2026-11-16 | K1 | Lagarith 📄 | HAP |
-| 4 | 2026-11-23 | K1 | G.711 / G.722 | ADPCM (IMA, Microsoft) |
-| 5 | 2026-11-30 | K1 | WavPack | Monkey's Audio (APE) |
-| 6 | 2026-12-07 | K1 | Speex | AMR-NB / AMR-WB |
-| 7 | 2026-12-14 | K2 | Matrox MPEG-2 I-frame (ellenőrzés + teszt) | VC-2 |
-| 8 | 2026-12-21 | K2 | Dirac | Canopus HQ / HQX |
-| 9 | 2026-12-28 | K2 | TTA | Shorten |
-| 10 | 2027-01-04 | K2 | TAK 📄 | Musepack SV7 / SV8 |
-| 11 | 2027-01-11 | K2 | OptimFROG 📄 | G.729 |
-| 12 | 2027-01-18 | K2 | iLBC | EVS |
+| 1 | 2026-11-02 | K1 | ✅ FFV1 | ✅ Huffyuv |
+| 2 | 2026-11-09 | K1 | ✅ Ut Video | MagicYUV |
+| 3 | 2026-11-16 | K1 | Lagarith 📄 | ✅ HAP |
+| 4 | 2026-11-23 | K1 | ✅ G.711 / G.722 | ✅ ADPCM (IMA, Microsoft) |
+| 5 | 2026-11-30 | K1 | ✅ WavPack | ✅ Monkey's Audio (APE) |
+| 6 | 2026-12-07 | K1 | ✅ Speex | ✅ AMR-NB / AMR-WB |
+| 7 | 2026-12-14 | K2 | ✅ Matrox MPEG-2 I-frame (ellenőrzés + teszt) | ✅ VC-2 |
+| 8 | 2026-12-21 | K2 | ✅ Dirac | ✅ Canopus HQ / HQX |
+| 9 | 2026-12-28 | K2 | ✅ TTA | Shorten |
+| 10 | 2027-01-04 | K2 | TAK 📄 | ✅ Musepack SV7 / SV8 |
+| 11 | 2027-01-11 | K2 | OptimFROG 📄 | ✅ G.729 |
+| 12 | 2027-01-18 | K2 | ✅ iLBC | EVS |
 | 13 | 2027-01-25 | K2 | RealVideo RV10 / RV20 📄 | RealVideo RV30 / RV40 📄 |
 | 14 | 2027-02-01 | K2 | RealAudio Cook 📄 | RealAudio SIPR, 14.4 / 28.8 📄 |
 | 15 | 2027-02-08 | K2 | ATRAC3 📄 | ATRAC3plus 📄 |
@@ -86,6 +86,7 @@ valamelyik nem készült el, a következő hétre kell vinni a pótlással együ
 
 | Dátum | Változás | Összefoglaló |
 |---|---|---|
+| 2026-11-13 | patch | Pipálva (✅) a beolvasztott vagy zöld CI-vel a beolvasztási gazdának (#781) átadott tételek: FFV1, Huffyuv, Ut Video, HAP, G.711 / G.722, ADPCM, WavPack, APE, Speex, AMR, Matrox MPEG-2, VC-2, Dirac, Canopus HQ / HQX, TTA, Musepack, G.729, iLBC. Nyitott: MagicYUV és Shorten (tulajdonosi döntésre vár), a 📄 tételek |
 | 2026-11-09 | minor | A Lagarith 📄 lett (nincs teljes nyilvános leírás, ffmpeg-kódoló sincs): a tulajdonos 2026-12-28-ig dönt róla, addig a 4. hét tételei (G.711 / G.722, ADPCM; #818) jöttek előre |
 | 2026-11-09 | minor | A H.266 / VVC kivéve: saját, jóváhagyott terve van (CFA4-VVC-PLAN-001, #721). 82 tétel, 41 hét (2027-08-15-ig); a 22. héttől minden tétel egy hellyel előrébb jött. A 2. hét MagicYUV-ja tulajdonosi döntésre vár, ezért a HAP (CB-3.2) előrejött |
 | 2026-11-08 | major | Áthelyezve a CFA4-AI_modules tárolóból a CinemaFundArchitecture4-be. Kivéve a CineForm, a JPEG XL, az AVIF, a DTS, a DTS-HD MA és a TrueHD (itt már megvan vagy tervben van); 83 tétel, 42 hét, a döntési határidők újraszámolva |

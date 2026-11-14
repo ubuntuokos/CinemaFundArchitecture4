@@ -4379,6 +4379,10 @@ export.summary	Low	低
 	{n} more	另有 {n} 項
 	Block	區塊
 	parallel	並列
+	page {page}: a spine's vertical position works on card pages only; it is ignored	第 {page} 頁：軸線的垂直位置只在字卡頁上有效；已忽略
+	on a card: centered on {y} px	字卡上：以 {y} px 為中心
+	on a card: starts at {y} px	字卡上：從 {y} px 開始
+	on a card: ends at {y} px	字卡上：到 {y} px 結束
 # MPEG-2 export audio (#268): a product name, kept as is
 	Dolby Digital (AC-3)	Dolby Digital (AC-3)
 	In the page (OBS takes it from the Browser Source)	在頁面中（OBS 從瀏覽器來源取得）
@@ -4451,7 +4455,12 @@ export.summary	Low	低
 	page {page}: the runtime is reached by changing the roll speed (the gaps would have to grow more than 20-fold)	第 {page} 頁：以改變捲動速度達成時長（間距必須放大超過 20 倍）
 	page {page}: the transition needs the pages to touch (page gap 0); it is left out	第 {page} 頁：轉場需要頁面相接（頁間距 0）；已略過
 	page {page}: there is no transition “{name}”; the pages cut	第 {page} 頁：沒有「{name}」轉場；頁面直接切換
-	spine position “{value}” is not supported (a pixel offset, optionally “parallel”, is)	不支援軸線位置「{value}」（支援像素位移，可選加「parallel」）
+	spine position “{value}” is not supported (a pixel offset, optionally “parallel”, or “Hook N Bottom-Top dx dy” is)	不支援軸線位置「{value}」（支援像素位移，可選加「parallel」 / 「Hook N Bottom-Top dx dy」）
+	page {page}: the hook reaches back further than there are spines; it hooks onto the first spine, or starts its own	第 {page} 頁：掛鉤回溯的軸數超過現有的軸；它掛到第一條軸上，或自成一條軸
+	hooked {n} spines back: its {from} meets this spine's {to}	掛在前面第 {n} 條軸上：那條軸的{from}與本軸的{to}相接
+	top	頂端
+	middle	中間
+	bottom	底端
 	vertical gap “{value}” is not a number	垂直間距「{value}」不是數字
 	picture “{file}” was not found or cannot be read; it is left out	找不到或無法讀取圖片「{file}」；已略過
 	video “{file}” was not found or cannot be read; it is left out	找不到或無法讀取影片「{file}」；已略過
@@ -4516,7 +4525,7 @@ export.summary	Low	低
 	the engine sent no report	引擎未傳送報告
 	MXF OP1a Uncompressed 10-bit 4:2:2 (v210)	MXF OP1a 未壓縮 10 位元 4:2:2 (v210)
 	MXF OP1a, uncompressed 10-bit Y'CbCr 4:2:2 in the v210 layout (SMPTE ST 384), 24-bit 48 kHz PCM, start timecode	MXF OP1a，v210 版面的未壓縮 10 位元 Y'CbCr 4:2:2（SMPTE ST 384），24 位元 48 kHz PCM，起始時間碼
-	Write the captions as ANC data (CEA-608/708, 29.97 fps)	將字幕寫為 ANC 資料（CEA-608/708，29.97 fps）
+	Write the captions as ANC data (CEA-608/708)	將字幕寫為 ANC 資料（CEA-608/708）
 	Load KDM…	載入 KDM…
 	Forget DCP Keys	清除 DCP 金鑰
 	Load KDM	載入 KDM

@@ -131,6 +131,9 @@ fn split_rows(b: Block) -> Vec<Block> {
             portraits: b.portraits.get(k).cloned().map(|p| vec![p]).unwrap_or_default(),
             body_rows: b.body_rows.get(k).copied().into_iter().collect(),
             parallel: false,
+            hook: if k == 0 { b.hook } else { None },
+            spine_cell: k == 0 && b.spine_cell,
+            card_point: b.card_point,
             row: if k == 0 { b.row } else { b.body_rows.get(k).copied().unwrap_or(b.row) },
         })
         .collect()
@@ -306,6 +309,7 @@ pub(crate) fn lay_scene(
         content_width: 0.0,
         content_top: 0.0,
         spines: vec![w / 2.0],
+        spine_points: Vec::new(),
         background,
         transition,
         transition_in: Tick::ZERO,

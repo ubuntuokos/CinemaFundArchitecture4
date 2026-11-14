@@ -40,7 +40,7 @@ pub mod validate;
 pub mod zip;
 
 pub use layout::{Frame, Laid, Measure, PageOut, PicturePlace, layout};
-pub use sheet::{Block, Credits, Gap, Page, Picture, TimeSpec, Warning, read_sheet};
+pub use sheet::{Block, CardAnchor, CardPoint, Credits, Gap, Page, Picture, TimeSpec, Warning, read_sheet};
 pub use style::{
     Align, Background, BackgroundFit, BackgroundKind, Behaviour, BodyLayout, ContentStyle, Entrance, LetterStyle, Orientation, PageStyle, PortraitSide, Styling,
 };
@@ -128,6 +128,12 @@ mod template_tests;
 
 #[cfg(test)]
 mod cinecred_tests;
+
+#[cfg(test)]
+mod card_tests;
+
+#[cfg(test)]
+mod body_width_tests;
 
 #[cfg(test)]
 mod scene_tests;

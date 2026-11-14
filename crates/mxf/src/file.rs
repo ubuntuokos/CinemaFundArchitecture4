@@ -902,6 +902,25 @@ pub(crate) fn best_metadata(w: &WalkResult) -> Result<(usize, Metadata)> {
 
 /// Open an MXF file: walk the KLV structure and resolve the essence tracks.
 pub fn open(src: &(impl ByteSource + ?Sized)) -> Result<MxfFile> {
+    open_with_order(src, &|_, _| None)
+}
+
+/// The presentation positions of a clip's stored pictures read from their bitstream: given the
+/// codec and the start of each stored picture (in stored order), the presentation position of
+/// each, or None when the bitstream does not tell (see [`open_with_order`]).
+pub type PresentationOrder<'a> = dyn Fn(Codec, &[Vec<u8>]) -> Option<Vec<i64>> + 'a;
+
+/// Bytes read from the start of each picture for [`PresentationOrder`] (parameter sets and the
+/// first slice header), and at most this many in all for one clip.
+const ORDER_HEAD: usize = 16 << 10;
+const ORDER_HEADS_TOTAL: usize = 256 << 20;
+
+/// Like [`open`]; `order` gives the presentation order of the clips of an edit list (OP2x / OP3x)
+/// whose index marks B pictures without temporal offsets, from their bitstream, so each clip's
+/// range and decoding references are cut in presentation order (#1008). The demuxer does not
+/// parse codecs: the caller does (`cfa4-codecs` reads the H.264 picture order counts). A single
+/// clip is left as built, with [`EssenceTrack::needs_reorder`] set for the caller.
+pub fn open_with_order(src: &(impl ByteSource + ?Sized), order: &PresentationOrder<'_>) -> Result<MxfFile> {
     let w = walk(src)?;
     let (meta_partition, md) = best_metadata(&w)?;
     let meta_partition = &meta_partition;
@@ -961,7 +980,10 @@ pub fn open(src: &(impl ByteSource + ?Sized)) -> Result<MxfFile> {
             // containers are told apart by body SID
             let by_sid = r.body_sid != 0 && w.elements.iter().any(|e| e.key.0[12..16] == key4 && e.body_sid == r.body_sid);
             let elements: Vec<Element> = w.elements.iter().filter(|e| e.key.0[12..16] == key4 && (!by_sid || e.body_sid == r.body_sid)).copied().collect();
-            let track = build_track(src, r, &elements, key4, &w.index, &w.line_starts, encryption, &mut warnings)?;
+            let mut track = build_track(src, r, &elements, key4, &w.index, &w.line_starts, encryption, &mut warnings)?;
+            if parts.len() > 1 && track.needs_reorder {
+                reorder_clip(src, &mut track, order);
+            }
             built.push(Part { track, gap_before: lost.saturating_add(r.gap_before), gap_after: r.gap_after });
             lost = 0;
         }
@@ -1159,6 +1181,34 @@ fn build_track(
         TrackKind::Data => {}
     }
     Ok(t)
+}
+
+/// Puts the stored pictures of `t` (B pictures, no temporal offsets) in the presentation order
+/// `order` reads from their bitstream; leaves `t` as it is when it cannot (encrypted essence, an
+/// unreadable bitstream, an order that is not one position per picture).
+fn reorder_clip(src: &(impl ByteSource + ?Sized), t: &mut EssenceTrack, order: &PresentationOrder<'_>) {
+    if t.encryption.is_some() || t.samples.is_empty() {
+        return;
+    }
+    let each = (ORDER_HEADS_TOTAL / t.samples.len()).min(ORDER_HEAD);
+    let heads: Vec<Vec<u8>> = t.samples.iter().map(|s| read_upto(src, s.offset, (s.size as usize).min(each)).unwrap_or_default()).collect();
+    let Some(pts) = order(t.codec, &heads) else { return };
+    let n = t.samples.len();
+    if pts.len() != n {
+        return;
+    }
+    let mut display = vec![usize::MAX; n];
+    for (i, &p) in pts.iter().enumerate() {
+        match usize::try_from(p).ok().and_then(|p| display.get_mut(p)) {
+            Some(d) if *d == usize::MAX => *d = i,
+            _ => return,
+        }
+    }
+    for (s, &p) in t.samples.iter_mut().zip(&pts) {
+        s.pts = p;
+    }
+    t.display_order = display;
+    t.needs_reorder = false;
 }
 
 /// One material track whose sequence holds several source clips (OP2x / OP3x): the clips' file

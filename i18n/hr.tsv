@@ -4382,6 +4382,10 @@ export.summary	Low	niska
 	{n} more	Još {n}
 	Block	Blok
 	parallel	paralelno
+	page {page}: a spine's vertical position works on card pages only; it is ignored	stranica {page}: okomiti položaj osi vrijedi samo na stranicama kartica; zanemaruje se
+	on a card: centered on {y} px	na kartici: centrirano na {y} px
+	on a card: starts at {y} px	na kartici: počinje na {y} px
+	on a card: ends at {y} px	na kartici: završava na {y} px
 # MPEG-2 export audio (#268): a product name, kept as is
 	Dolby Digital (AC-3)	Dolby Digital (AC-3)
 	In the page (OBS takes it from the Browser Source)	Na stranici (OBS ga uzima iz izvora preglednika)
@@ -4454,7 +4458,12 @@ export.summary	Low	niska
 	page {page}: the runtime is reached by changing the roll speed (the gaps would have to grow more than 20-fold)	stranica {page}: trajanje se postiže promjenom brzine pomicanja (razmaci bi morali narasti više od 20 puta)
 	page {page}: the transition needs the pages to touch (page gap 0); it is left out	stranica {page}: prijelaz zahtijeva da se stranice dodiruju (razmak 0); izostavlja se
 	page {page}: there is no transition “{name}”; the pages cut	stranica {page}: nema prijelaza „{name}”; stranice se mijenjaju rezom
-	spine position “{value}” is not supported (a pixel offset, optionally “parallel”, is)	položaj osi „{value}” nije podržan (podržan je pomak u pikselima, po želji uz „parallel”)
+	spine position “{value}” is not supported (a pixel offset, optionally “parallel”, or “Hook N Bottom-Top dx dy” is)	položaj osi „{value}” nije podržan (podržan je pomak u pikselima, po želji uz „parallel” / „Hook N Bottom-Top dx dy”)
+	page {page}: the hook reaches back further than there are spines; it hooks onto the first spine, or starts its own	stranica {page}: kuka seže dalje unatrag nego što ima osi; kači se na prvu os ili započinje vlastitu
+	hooked {n} spines back: its {from} meets this spine's {to}	zakačeno {n} osi unatrag: njezin {from} spaja se s {to} ove osi
+	top	gornji rub
+	middle	sredina
+	bottom	donji rub
 	vertical gap “{value}” is not a number	okomiti razmak „{value}” nije broj
 	picture “{file}” was not found or cannot be read; it is left out	slika „{file}” nije pronađena ili se ne može pročitati; izostavlja se
 	video “{file}” was not found or cannot be read; it is left out	video „{file}” nije pronađen ili se ne može pročitati; izostavlja se
@@ -4519,7 +4528,7 @@ export.summary	Low	niska
 	the engine sent no report	pogon nije poslao izvješće
 	MXF OP1a Uncompressed 10-bit 4:2:2 (v210)	MXF OP1a nekomprimirano 10-bitno 4:2:2 (v210)
 	MXF OP1a, uncompressed 10-bit Y'CbCr 4:2:2 in the v210 layout (SMPTE ST 384), 24-bit 48 kHz PCM, start timecode	MXF OP1a, nekomprimirani 10-bitni Y'CbCr 4:2:2 u rasporedu v210 (SMPTE ST 384), 24-bitni PCM 48 kHz, početni vremenski kod
-	Write the captions as ANC data (CEA-608/708, 29.97 fps)	Zapiši titlove kao ANC podatke (CEA-608/708, 29,97 fps)
+	Write the captions as ANC data (CEA-608/708)	Zapiši titlove kao ANC podatke (CEA-608/708)
 	Load KDM…	Učitaj KDM…
 	Forget DCP Keys	Zaboravi DCP ključeve
 	Load KDM	Učitaj KDM
