@@ -1725,6 +1725,7 @@ dependencies = [
  "cfa4-heif",
  "cfa4-hevc",
  "cfa4-jxl",
+ "cfa4-realaudio",
  "cfa4-testkit",
  "cfa4-time",
  "image",
