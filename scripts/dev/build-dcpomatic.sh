@@ -26,13 +26,17 @@ if [[ "${DCPOM_SKIP_APT:-0}" != 1 && ! -e $D/.done-apt ]]; then
   t apt
   S=; [[ $(id -u) == 0 ]] || S=sudo
   $S apt-get update -qq
-  $S apt-get install -y -qq --no-install-recommends build-essential pkg-config python3 git cmake perl \
-    libboost-all-dev libxml++2.6-dev libxmlsec1-dev libssl-dev libopenjp2-7-dev \
-    libavformat-dev libavcodec-dev libavfilter-dev libswscale-dev libswresample-dev libavutil-dev libavdevice-dev libpostproc-dev \
-    libsamplerate0-dev libglib2.0-dev libzip-dev libfontconfig1-dev libpangomm-1.4-dev libcairomm-1.0-dev \
-    libcurl4-openssl-dev libssh-dev libicu-dev libsndfile1-dev libsigc++-2.0-dev libxerces-c-dev \
-    libfmt-dev libnanomsg-dev libsqlite3-dev libpng-dev libjpeg-dev libfreetype-dev libharfbuzz-dev \
-    libpolkit-gobject-1-dev libasound2-dev gettext >/dev/null
+  pkgs=(build-essential pkg-config python3 git cmake perl
+    libboost-all-dev libxml++2.6-dev libxmlsec1-dev libssl-dev libopenjp2-7-dev
+    libavformat-dev libavcodec-dev libavfilter-dev libswscale-dev libswresample-dev libavutil-dev libavdevice-dev
+    libsamplerate0-dev libglib2.0-dev libzip-dev libfontconfig1-dev libpangomm-1.4-dev libcairomm-1.0-dev
+    libcurl4-openssl-dev libssh-dev libicu-dev libsndfile1-dev libsigc++-2.0-dev libxerces-c-dev
+    libfmt-dev libnanomsg-dev libsqlite3-dev libpng-dev libjpeg-dev libfreetype-dev libharfbuzz-dev
+    libpolkit-gobject-1-dev libasound2-dev gettext)
+  # FFmpeg 8 (Ubuntu 26.04) has no libpostproc; DCP-o-matic 2.18.51 builds without it
+  # (its wscript then sets DCPOMATIC_FFMPEG_8), FFmpeg 7 (Ubuntu 24.04) still wants it.
+  if apt-cache show libpostproc-dev >/dev/null 2>&1; then pkgs+=(libpostproc-dev); fi
+  $S apt-get install -y -qq --no-install-recommends "${pkgs[@]}" >/dev/null
   touch "$D/.done-apt"
 fi
 
