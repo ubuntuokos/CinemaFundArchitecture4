@@ -133,6 +133,10 @@ SUBCOMMANDS
   serve [--autosave]            headless engine server for the CFA4 Qt 6 GUI: JSON lines on
                                 stdin/stdout with binary frames (docs/qt-gui.md); --autosave
                                 starts auto-save and the crash-recovery journal in the data dir
+  surfaces --adapter mirabox-family
+                                control surface adapter child (AJAZZ / MiraBox decks): JSON
+                                lines on stdin/stdout, started by its supervisor; --probe lists
+                                the family's HID devices (vid, pid, usage, path) and exits
   help                          this text
   --version                     print the version
 
@@ -359,6 +363,30 @@ async fn main() {
     cli_trace("main is returning");
 }
 
+/// `cfa4-cli surfaces --adapter <family> [--probe]` (CFA4-HW-CONTROL-SURFACES-001): the adapter
+/// child process its supervisor starts, speaking `cfa4-surface-adapter` JSON lines on stdin /
+/// stdout; `--probe` lists the family's HID devices without opening them.
+async fn surfaces(a: &Args) {
+    if let Some(opt) = a.unknown_opt(&["--adapter", "--probe", "--compact"]) {
+        usage(format!("unknown surfaces option `{opt}`"));
+    }
+    let adapter = a.opt("--adapter").unwrap_or_else(|| usage("surfaces --adapter mirabox-family [--probe]"));
+    if adapter != cfa4_surface_adapters::MIRABOX_FAMILY {
+        fail(format!("unknown control surface adapter `{adapter}` (known: {})", cfa4_surface_adapters::MIRABOX_FAMILY));
+    }
+    if a.flag("--probe") {
+        let profiles = cfa4_surface_adapters::profile::builtin().unwrap_or_else(|e| fail(e));
+        match cfa4_surface_adapters::mirabox::probe(&profiles).await {
+            Ok(found) => print(a, &serde_json::to_value(&found).unwrap_or_default()),
+            Err(e) => fail(e),
+        }
+        return;
+    }
+    if let Err(e) = cfa4_surface_adapters::mirabox::run_stdio(env!("CARGO_PKG_VERSION")).await {
+        fail(e);
+    }
+}
+
 async fn cli() {
     // `std::env::args` panics on an argument that is not Unicode (a Linux file name in Latin-1)
     let a = Args::parse(std::env::args_os().skip(1).map(|a| a.to_string_lossy().into_owned()));
@@ -371,6 +399,11 @@ async fn cli() {
     // `--version` anywhere and `-V` as the subcommand, also after global options (`--demo --version`, #710).
     if a.wants_version() {
         outln!("CFA4 CLI {}", env!("CARGO_PKG_VERSION"));
+        return;
+    }
+    // a control surface adapter child process: it loads nothing of the media stack
+    if a.pos(0) == Some("surfaces") {
+        surfaces(&a).await;
         return;
     }
     register_hardware_decoders();
