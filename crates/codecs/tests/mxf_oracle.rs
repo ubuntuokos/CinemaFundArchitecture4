@@ -632,3 +632,52 @@ fn generate_fixtures() {
         });
     }
 }
+
+/// #1008: an OP3a edit list of two clips of the same H.264 long-GOP essence (B pictures, index
+/// without temporal offsets), the first starting inside a GOP: every presented picture is the one
+/// the OP1a file shows at that position, so each clip is cut in H.264 presentation order.
+#[test]
+fn h264_edit_list_clips_without_temporal_offsets_play_in_presentation_order() {
+    use cfa4_mxf::testing::{Comp, build_edit_list};
+    let ff = cfa4_testkit::require_ffmpeg!();
+    let f = make(&ff, "mxf_h264_bf2.mxf");
+    let op1a = open(&f);
+    let raw = std::fs::read(&f).unwrap();
+    let file = op1a.file();
+    let vi = file.track_of_kind(cfa4_mxf::TrackKind::Picture).unwrap();
+    let t = &file.tracks[vi];
+    let aus: Vec<Vec<u8>> = (0..t.samples.len()).map(|i| file.read_sample(&raw, vi, i).unwrap()).collect();
+    let flags: Vec<u8> = t
+        .samples
+        .iter()
+        .map(|s| {
+            if s.key {
+                0xC0
+            } else if s.b_picture {
+                0x33
+            } else {
+                0x22
+            }
+        })
+        .collect();
+    let n = aus.len();
+    let comps = [Comp::Clip { pkg: 0, start: 14, dur: 10 }, Comp::Clip { pkg: 1, start: 0, dur: 12 }];
+    let mut g = build_edit_list(&comps, [n, n], |_, i| aus[i].clone(), &[], &flags);
+    let patch = |g: &mut Vec<u8>, from: &[u8], to: &[u8]| {
+        while let Some(at) = g.windows(from.len()).position(|w| w == from) {
+            g[at..at + to.len()].copy_from_slice(to);
+        }
+    };
+    // H.264 picture coding and the fixture's 320x240 frame
+    patch(&mut g, &[0x04, 0x01, 0x02, 0x02, 0x03, 0x06, 0x03, 0x00], &[0x04, 0x01, 0x02, 0x02, 0x01, 0x31, 0x40, 0x01]);
+    patch(&mut g, &[0x32, 0x03, 0, 4, 0, 0, 0, 64], &[0x32, 0x03, 0, 4, 0, 0, 1, 64]);
+    patch(&mut g, &[0x32, 0x02, 0, 4, 0, 0, 0, 32], &[0x32, 0x02, 0, 4, 0, 0, 0, 240]);
+    let op3 = MxfSource::open("op3a.mxf", g.into()).unwrap();
+    assert!(op3.file().warnings.iter().all(|w| !w.contains("stored order")), "{:?}", op3.file().warnings);
+    let rate = FrameRate::FPS_25;
+    for d in 0..22i64 {
+        let want = op1a.video_frame(FrameRequest::full(rate.tick_of(if d < 10 { 14 + d } else { d - 10 }))).unwrap();
+        let got = op3.video_frame(FrameRequest::full(rate.tick_of(d))).unwrap();
+        assert_eq!(max_diff(&planes(&got), &planes(&want)), 0, "presentation {d}");
+    }
+}

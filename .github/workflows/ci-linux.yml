@@ -405,6 +405,45 @@ jobs:
           QT_QPA_PLATFORM: ""
           CFA4_REQUIRE_DISPLAY_SERVERS: "1"
 
+  # Owner decision 2026-11-14 (CFA4-TITLE-CREDITS-001, Q6): the Python checks also run on
+  # Python 3.14. Same steps as the gate's Python part, on 3.14; reported, but NOT blocking (not
+  # in full-validation-gate's `needs`) until the owner makes it a required check.
+  python-3-14:
+    if: github.event_name == 'workflow_dispatch' || github.event_name == 'merge_group' || (github.event_name == 'pull_request' && github.event.action == 'labeled' && github.event.label.name == 'cfa4-full-validation')
+    needs: platform-scope
+    name: Python 3.14 static checks and tests (non-blocking)
+    runs-on: ubuntu-26.04
+    timeout-minutes: 30
+    env:
+      QT_QPA_PLATFORM: offscreen
+    steps:
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - name: Headless Qt runtime libraries
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends \
+            libegl1 libgl1 libopengl0 libxkbcommon0 libxcb-cursor0
+      - name: Python
+        uses: actions/setup-python@6d4fd22b20465ccc0f7354476588e8df7c9ca0e0 # v7.1.0
+        with:
+          python-version: "3.14"
+      - name: Install Python development dependencies
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install --require-hashes -r requirements/linux-amd64.txt
+          python -m pip install --no-deps -e .
+      - name: Python static checks and tests
+        run: |
+          python --version
+          python -m compileall -q python
+          python -m ruff check python
+          python -m pytest -q python/tests --ignore=python/tests/test_qt_gui.py
+          python -m unittest discover -s packaging/linux -p 'test_*.py' -v
+          python -m cfa4_devtools.dependency_audit
+
   # Required status check for main (owner decision 2026-10-31, docs/coordination.md §3.4):
   # green only if every blocking full-validation job really ran and succeeded on this head.
   # A skipped job (no `cfa4-full-validation` label / no workflow_dispatch) fails the gate.

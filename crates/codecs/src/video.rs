@@ -945,9 +945,9 @@ fn dnx_par(f: &cfa4_dnx::Frame) -> (u32, u32) {
 
 /// Full-range R'G'B' pixel data of `n` pixels from VC-3 planes in coded order G, B, R
 /// (video range, `bits` deep) and a full-range alpha. Video range spans fewer codes than full
-/// range, so the expansion keeps every code distinct; codes outside video range clip.
+/// range, so the expansion keeps every code distinct; codes outside video range clip. Packed by
+/// the shared [`crate::j2k::rgb_data`] (RGBA at 8 bits, [`cfa4_frame::PixelData::Rgb16`] above).
 fn dnx_rgb_data(g: Vec<u16>, b: Vec<u16>, r: Vec<u16>, alpha: Option<Vec<u16>>, bits: u8, n: usize) -> cfa4_frame::PixelData {
-    use std::sync::Arc;
     let bits = u32::from(bits.clamp(8, 16));
     let s = f64::from(1u32 << (bits - 8));
     let max = f64::from((1u32 << bits) - 1);
@@ -958,19 +958,11 @@ fn dnx_rgb_data(g: Vec<u16>, b: Vec<u16>, r: Vec<u16>, alpha: Option<Vec<u16>>, 
         out
     };
     let alpha = alpha.map(|mut a| {
-        a.resize(n, (max as u16).max(1));
+        a.resize(n, max as u16);
+        a.iter_mut().for_each(|v| *v = (*v).min(max as u16));
         a
     });
-    let (r, g, b) = (full(r), full(g), full(b));
-    if bits == 8 {
-        let mut rgba = Vec::with_capacity(n * 4);
-        for i in 0..n {
-            let a = alpha.as_ref().map_or(255, |a| a[i].min(255) as u8);
-            rgba.extend_from_slice(&[r[i] as u8, g[i] as u8, b[i] as u8, a]);
-        }
-        return cfa4_frame::PixelData::Rgba8(Arc::new(rgba));
-    }
-    cfa4_frame::PixelData::Rgb16 { planes: [Arc::new(r), Arc::new(g), Arc::new(b)], bits, alpha: alpha.map(Arc::new) }
+    crate::j2k::rgb_data([full(r), full(g), full(b)], bits, alpha)
 }
 
 impl VideoDecoder for DnxDecoder {

@@ -2,17 +2,27 @@
 // (vc2_conformance 2.0.0, Copyright British Broadcasting Corporation, GPL-3.0-only); see
 // docs/licensing.md §5.
 
-//! Pure-Rust decoder for SMPTE ST 2042-1 VC-2, the intra-only, wavelet-based professional subset
-//! of the Dirac video codec: low-delay and high-quality pictures, every wavelet filter of the
-//! standard, symmetric and asymmetric transforms, custom and default quantisation matrices, 4:4:4
-//! / 4:2:2 / 4:2:0 at up to 16 bits, frame and field coding.
+//! Pure-Rust decoder for the Dirac video codec and SMPTE ST 2042-1 VC-2, its intra-only,
+//! wavelet-based professional subset.
 //!
-//! Ported from the normative pseudocode of ST 2042-1 as published in the BBC VC-2 conformance
-//! software (`vc2_conformance` 2.0.0 and `vc2_data_tables`, GPL-3.0-only). Dirac core syntax
-//! (arithmetic coding, motion compensation) and VC-2 picture fragments are rejected with
-//! [`Error::Unsupported`].
+//! - VC-2: low-delay and high-quality pictures, every wavelet filter of the standard, symmetric
+//!   and asymmetric transforms, custom and default quantisation matrices, 4:4:4 / 4:2:2 / 4:2:0
+//!   at up to 16 bits, frame and field coding. Ported from the normative pseudocode of ST 2042-1
+//!   as published in the BBC VC-2 conformance software (`vc2_conformance` 2.0.0 and
+//!   `vc2_data_tables`, GPL-3.0-only).
+//! - Dirac core syntax: intra and inter pictures with arithmetic or exp-Golomb coded
+//!   coefficients, one or two references, overlapped block motion compensation at every
+//!   motion vector precision, global motion, reference weights. Ported from FFmpeg n7.1.1
+//!   (`dirac_arith.c`, `diracdec.c`, `diracdsp.c`, LGPL-2.1-or-later, `COPYING.LGPL-2.1`).
+//!   Pictures come out in decode order with their picture numbers.
+//!
+//! Rejected with [`Error::Unsupported`]: VC-2 picture fragments, Dirac low-delay pictures,
+//! Dirac core field pictures, and inter pictures deeper than 8 bits or without arithmetic
+//! coding (as in FFmpeg).
 
+mod arith;
 mod bits;
+mod core;
 mod header;
 mod picture;
 mod tables;
@@ -93,16 +103,61 @@ pub fn is_vc2(data: &[u8]) -> bool {
     data.starts_with(PREFIX)
 }
 
+/// The parse codes of the pictures in `data` (a sample), up to 64 data units.
+fn picture_codes(data: &[u8]) -> Vec<u8> {
+    let mut codes = Vec::new();
+    let mut at = 0usize;
+    for _ in 0..64 {
+        let Some(u) = unit(data, at) else { break };
+        if u.parse_code & 0x08 == 0x08 {
+            codes.push(u.parse_code);
+        }
+        if u.next < PARSE_INFO_BYTES {
+            break;
+        }
+        at = at.saturating_add(u.next);
+    }
+    codes
+}
+
+/// Can decoding start at `data` (a sample)? Its first picture is a VC-2 picture or a Dirac intra
+/// reference picture.
+pub fn is_random_access(data: &[u8]) -> bool {
+    picture_codes(data).first().is_some_and(|&c| is_picture(c) || c & 0x8F == 0x0C)
+}
+
+/// Does `data` (a sample) hold pictures, none of them a reference for other pictures?
+pub fn is_non_reference(data: &[u8]) -> bool {
+    let codes = picture_codes(data);
+    !codes.is_empty() && codes.iter().all(|&c| c & 0x04 == 0 || is_picture(c))
+}
+
+/// Does `data` (a sample) hold a Dirac core syntax picture (coded in decode order, which may
+/// differ from display order)? VC-2 pictures come in display order.
+pub fn is_core_syntax(data: &[u8]) -> bool {
+    picture_codes(data).iter().any(|&c| c & 0x88 == 0x08)
+}
+
+/// Does `data` (a sample) hold a Dirac inter picture (one predicted from other pictures)?
+pub fn has_inter_picture(data: &[u8]) -> bool {
+    picture_codes(data).iter().any(|&c| c & 0x88 == 0x08 && c & 0x03 != 0)
+}
+
 /// A first field waiting for its second.
 struct Pending {
     picture_number: u32,
     planes: [Vec<u16>; 3],
 }
 
+/// Reference pictures held at most (FFmpeg's `MAX_REFERENCE_FRAMES`).
+const MAX_REFERENCES: usize = 8;
+
 #[derive(Default)]
 pub struct Decoder {
     seq: Option<Sequence>,
     pending: Option<Pending>,
+    refs: Vec<core::Reference>,
+    old_delta_quant: bool,
 }
 
 impl Decoder {
@@ -115,9 +170,10 @@ impl Decoder {
         self.seq.as_ref()
     }
 
-    /// Forget a first field waiting for its second (after a seek).
+    /// Forget a first field waiting for its second and the reference pictures (after a seek).
     pub fn reset(&mut self) {
         self.pending = None;
+        self.refs.clear();
     }
 
     /// Decode the data units in `data` (one or more, e.g. a container sample: a sequence header
@@ -140,7 +196,18 @@ impl Decoder {
             let mut step = u.next;
             match u.parse_code {
                 0x00 => self.seq = Some(header::parse(u.body)?),
-                0x10 => step = PARSE_INFO_BYTES,
+                0x10 => {
+                    step = PARSE_INFO_BYTES;
+                    self.refs.clear();
+                }
+                0x20 => {
+                    // encoder name: Schrödinger before 1.0.8 codes quantiser deltas differently
+                    if let Some(rest) = u.body.strip_prefix(&[1u8][..]).and_then(|r| r.strip_prefix(b"Schroedinger 1.0.")) {
+                        let digits: Vec<u8> = rest.iter().copied().take_while(u8::is_ascii_digit).collect();
+                        let minor = std::str::from_utf8(&digits).ok().and_then(|d| d.parse::<u32>().ok());
+                        self.old_delta_quant = minor.is_some_and(|m| m <= 7);
+                    }
+                }
                 c if c & 0xF8 == 0x20 || c & 0xF8 == 0x30 => {}
                 0xC8 | 0xE8 => {
                     let seq = self.seq.as_ref().ok_or(Error::NoSequenceHeader)?;
@@ -153,7 +220,37 @@ impl Decoder {
                     }
                 }
                 0xCC | 0xEC => return Err(Error::Unsupported("VC-2 picture fragments")),
-                c if is_picture(c) || c & 0x08 == 0x08 => return Err(Error::Unsupported("Dirac core syntax pictures")),
+                c if c & 0x88 == 0x08 => {
+                    let seq = self.seq.as_ref().ok_or(Error::NoSequenceHeader)?;
+                    if seq.fields {
+                        return Err(Error::Unsupported("Dirac core syntax field pictures"));
+                    }
+                    let kind = core::Kind::new(c, self.old_delta_quant);
+                    let (hdr, planes, used) = core::decode(seq, kind, u.body, &mut self.refs)?;
+                    if step == 0 {
+                        step = PARSE_INFO_BYTES + used;
+                    }
+                    if kind.reference {
+                        if let Some(r) = hdr.retire.filter(|&r| r != hdr.number) {
+                            self.refs.retain(|p| p.number != r);
+                        }
+                        if self.refs.len() >= MAX_REFERENCES {
+                            self.refs.remove(0);
+                        }
+                        self.refs.push(core::Reference::new(hdr.number, &planes));
+                    }
+                    let v = &seq.video;
+                    out.push(Picture {
+                        width: v.frame_width,
+                        height: v.frame_height,
+                        chroma: v.chroma,
+                        luma_depth: seq.luma_depth,
+                        color_diff_depth: seq.color_diff_depth,
+                        picture_number: hdr.number,
+                        planes,
+                    });
+                }
+                c if is_picture(c) || c & 0x08 == 0x08 => return Err(Error::Unsupported("Dirac low-delay pictures")),
                 _ => return Err(Error::Invalid("unknown parse code")),
             }
             if step == 0 {
@@ -215,9 +312,9 @@ mod tests {
         let mut pic = b"BBCD\xE8\0\0\0\0\0\0\0\0".to_vec();
         pic.extend_from_slice(&[0; 16]);
         assert_eq!(d.decode(&pic).unwrap_err(), Error::NoSequenceHeader);
-        // Dirac core syntax
+        // a Dirac core syntax picture, likewise
         let mut core = b"BBCD\x0C\0\0\0\0\0\0\0\0".to_vec();
         core.extend_from_slice(&[0; 16]);
-        assert!(matches!(d.decode(&core), Err(Error::Unsupported(_))));
+        assert_eq!(d.decode(&core).unwrap_err(), Error::NoSequenceHeader);
     }
 }

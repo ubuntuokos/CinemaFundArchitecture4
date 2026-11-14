@@ -112,7 +112,16 @@ cross-check ([AV2 plan](plans/AV2-CODEC-PLAN-2026-10-29.md) II.3, X/3).
   pinned commit into `target/av2-oracle/avm-<ref>/bin` with an `AVM_COMMIT` stamp (nothing is
   installed system-wide). `python3 scripts/dev/av2-oracle.py corpus` makes the sources with ffmpeg,
   encodes the vectors into `target/fixtures/av2/vectors` and removes any bitstream whose SHA-256
-  differs from the manifest. `manifest --from <AV2-00 evidence>` refreshes the hashes.
+  differs from the manifest. `manifest --from <AV2-00 evidence>` refreshes the hashes. A new
+  vector goes into the manifest with empty hashes; `corpus --allow-drift` encodes it, then
+  `hash NAME...` fills its reference from `avmdec` v1.0.0 and refuses it unless the
+  `av2-normative` build agrees.
+- The corpus (13 vectors): 4:2:0 8/10 bit, intra only, film grain, 2×2 tiles, odd size, a key
+  frame every 4 frames (`420-8bit-kf4`: seeks across keys and a non-key start), RAS frames,
+  fixed 1/2 resize, 4:2:2 8/10 bit, 4:4:4 and 4:0:0. Multistream and several operating points
+  are not in it: `avmenc` v1.0.0 makes neither from its command line (`--operating-points-count`
+  leaves the stream unchanged), and `cfa4-av2` rejects such streams as unsupported (synthetic
+  tests).
 - `cfa4_testkit::av2` finds the oracle (`CFA4_AVMDEC`, else `CFA4_AVM_PREFIX` or the default
   prefix; the stamp must name the pinned commit, and `PATH` is never searched), checks corpus
   bitstreams against the manifest, hashes Y4M output and compares it frame by frame and plane by
@@ -125,7 +134,10 @@ cross-check ([AV2 plan](plans/AV2-CODEC-PLAN-2026-10-29.md) II.3, X/3).
   `target/av2-decoder/bin` (`DAV2D_COMMIT` stamp). `cargo test -p cfa4-codecs --features
   av2-external --test av2_external` decodes the corpus through the helper and the Rust adapter
   and compares with the manifest: the `Main_420_10_IP0` vectors must be bit-exact, the others are
-  reported (dav2d's 4:4:4 inter mismatch is known). The same test checks that a crashing,
+  reported (dav2d's 4:4:4 and 4:2:2 8-bit inter mismatches are known). A `Main_420_10_IP0` vector
+  the pinned dav2d cannot decode is listed with its reason in `KNOWN_DAV2D_GAPS` (today
+  `420-8bit-ras`); it is printed as a G1 blocker, and the test fails once it passes so that the
+  list is kept honest. It also seeks across key frames and starts decoding on a non-key unit. The same test checks that a crashing,
   hanging or garbage-writing helper is an error, and feeds mutated units to the real helper.
   `CFA4_AV2_DECODER` overrides the helper path.
 - CI: `.github/workflows/cfa4-av2-oracle.yml` (Ubuntu 26.04) runs only on `workflow_dispatch` or
