@@ -137,6 +137,8 @@ static ROWS: &[Row] = &[
     audio("ALAC, Vorbis", &[], Dependency, Sw(""), NoEnc),
     audio("AMR-NB / AMR-WB", &["amr"], Ported, Sw(""), NoEnc),
     audio("Speex", &["speex"], Ported, Sw("Ogg Speex"), NoEnc),
+    audio("WavPack", &["wavpack"], Ported, Sw("lossless and hybrid"), NoEnc),
+    audio("Monkey's Audio (APE)", &["ape"], Ported, Sw(""), NoEnc),
     audio("TTA (True Audio)", &["tta"], Ported, Sw(""), NoEnc),
     audio("ADPCM, G.711, G.722", &["adpcm"], Own, Sw(""), NoEnc),
     audio("IAB (SMPTE ST 2098-2)", &["iab"], Own, Sw("decode and render"), AudioTrack("IAB track in DCP exports")),

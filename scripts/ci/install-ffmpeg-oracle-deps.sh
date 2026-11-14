@@ -37,6 +37,13 @@ sudo apt-get install -y --no-install-recommends gstreamer1.0-tools gstreamer1.0-
 # JPEG 2000 / HTJ2K oracles (the tests skip without them)
 sudo apt-get install -y --no-install-recommends libopenjp2-tools grokj2k-tools \
   || echo "::warning::libopenjp2-tools / grokj2k-tools unavailable: OpenJPEG and HTJ2K oracle tests skip"
+# Reference WavPack encoder / decoder (hybrid, float and extra-mode oracles; the tests skip without them)
+sudo apt-get install -y --no-install-recommends wavpack \
+  || echo "::warning::wavpack unavailable: the reference WavPack oracle tests skip"
+# Reference Monkey's Audio `mac`, built from the pinned SDK (APE oracles; the tests skip without it)
+sudo apt-get install -y --no-install-recommends unzip \
+  && bash "$(dirname "$0")/install-monkeys-audio.sh" \
+  || echo "::warning::Monkey's Audio SDK build failed: the APE oracle tests skip"
 # Speex reference encoder / decoder (speexenc, speexdec 1.2.1, built from source) for the Speex
 # oracle tests (they skip without them)
 bash "$(dirname "$0")/install-speex.sh" \

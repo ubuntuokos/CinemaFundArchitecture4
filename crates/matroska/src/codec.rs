@@ -37,6 +37,9 @@ pub enum Codec {
     Flac { private: Vec<u8> },
     /// `A_PCM/INT/LIT`, `A_PCM/INT/BIG`, `A_PCM/FLOAT/IEEE`. Bit depth comes from the Audio element.
     Pcm { float: bool, big_endian: bool, bits: u16 },
+    /// `A_WAVPACK4`; `version` is the stream version from `CodecPrivate` (frames carry the
+    /// blocks with their headers shortened, see `cfa4_wavpack::matroska_blocks`).
+    WavPack { version: u16 },
     /// `A_AC3`.
     Ac3,
     /// `A_EAC3`.
@@ -88,6 +91,7 @@ impl Codec {
                 };
                 if *bits == 8 { format!("pcm_{k}8") } else { format!("pcm_{k}{bits}{}", if *big_endian { "be" } else { "le" }) }
             }
+            Codec::WavPack { .. } => "wavpack".into(),
             Codec::Ac3 => "ac3".into(),
             Codec::Eac3 => "eac3".into(),
             Codec::Dts => "dts".into(),
@@ -205,6 +209,8 @@ pub(crate) fn map_codec(id: &str, private: &[u8], audio: Option<&crate::AudioInf
             Codec::Pcm { float: id == "A_PCM/FLOAT/IEEE", big_endian: id == "A_PCM/INT/BIG", bits }
         }
         "A_MS/ACM" => wave_format_pcm(private).unwrap_or(Codec::Other(id.to_string())),
+        // CodecPrivate holds the 16-bit stream version; ffmpeg assumes 0x403 without one
+        "A_WAVPACK4" => Codec::WavPack { version: private.get(..2).map_or(0x403, |v| u16::from_le_bytes([v[0], v[1]])) },
         "A_AC3" | "A_AC3/BSID9" | "A_AC3/BSID10" => Codec::Ac3,
         "A_EAC3" => Codec::Eac3,
         "A_DTS" | "A_DTS/LOSSLESS" => Codec::Dts,

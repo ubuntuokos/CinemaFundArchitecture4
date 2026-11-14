@@ -72,6 +72,8 @@ fidelity and the remaining work.
 | ALAC, Vorbis | audio | — | dependency | yes | no |
 | AMR-NB / AMR-WB | audio | `crates/amr` | ported | yes | no |
 | Speex | audio | `crates/speex` | ported | yes: Ogg Speex | no |
+| WavPack | audio | `crates/wavpack` | ported | yes: lossless and hybrid | no |
+| Monkey's Audio (APE) | audio | `crates/ape` | ported | yes | no |
 | TTA (True Audio) | audio | `crates/tta` | ported | yes | no |
 | ADPCM, G.711, G.722 | audio | `crates/adpcm` | own | yes | no |
 | IAB (SMPTE ST 2098-2) | audio | `crates/iab` | own | yes: decode and render | yes: IAB track in DCP exports |
@@ -130,6 +132,8 @@ fidelity and the remaining work.
 | Opus | — (not a Premiere import format) | own decoder, RFC 8251 range-exact | own CELT encoder (#99): fullband 20 ms, CBR, mono / stereo (intensity + dual stereo), Opus Audio (Ogg) and WebM export; **no** VBR (#207), psychoacoustic tuning (#208), SILK / hybrid (#209), other frame sizes or rates (#210), surround (#211), Opus in MP4 / Matroska outside WebM (#212) | conformance vectors; encoder: libopus decodes every stream (78–82 dB agreement with our decoder, matching final range), source SNR within 1–1.6 dB of libopus CBR at the same rate | ahead | 30–60 h (encoder follow-ups) |
 | FLAC, ALAC, Vorbis | partial | decode (symphonia); FLAC in MP4 silent (#603) | none | — | 70% | 3–6 h |
 | WMA | decode on Windows | none | none | — | 0% | 10–20 h |
+| WavPack | not checked | own decoder (`cfa4-wavpack`, CB-5.1): lossless and hybrid (lossy, no `.wvc`), 8–32-bit integer and 32-bit float, 1–8+ channels, `.wv` and Matroska; **no** DSD, pre-4.0 files or correction files | none | bit-exact vs ffmpeg and the reference `wvunpack` (35 files: every compression mode, extra modes, hybrid with noise shaping), in `.wv` and Matroska also after a seek | — | — |
+| Monkey's Audio (APE) | not checked | own decoder (`cfa4-ape`, CB-5.2): format version 3.99 and later (every encoder since 2004), compression levels fast to insane, 8/16/24/32-bit integer and 32-bit float, 1–32 channels, `.ape` files; **no** files older than 3.99 | none | bit-exact vs the reference `mac -d` (30 files: every level and sample format, mono to 8 channels, multi-frame) and vs ffmpeg; through the media source also after a seek | — | — |
 | Speex | not checked | own decoder (`cfa4-speex`, CB-6.1): narrowband, wideband and ultra-wideband, every submode, VBR / ABR / DTX, several frames per packet, in-band stereo, in Ogg (`.spx`) | none | bit-exact vs the reference `speexdec` (31 files: every narrowband quality, wideband and ultra-wideband qualities, VBR, DTX, stereo), through the media source also after a seek | — | — |
 | G.711 μ-law / A-law, G.722 | not checked | own decoders (`cfa4-adpcm`, CB-4.1): G.711 in WAV, AVI, MOV (`ulaw`, `alaw`), Matroska (`A_MS/ACM`); G.722 at 64 kbit/s (ITU-T G.722 11/88) in WAV, AVI, Matroska | none | bit-exact vs ffmpeg in every container, also after a seek; G.722 also on random codewords | 90% | — |
 | IMA ADPCM, Microsoft ADPCM | not checked | own decoders (`cfa4-adpcm`, CB-4.2): IMA in WAV / AVI / Matroska blocks and QuickTime `ima4`, Microsoft ADPCM with custom coefficient sets; WAV read in place block by block | none | bit-exact vs ffmpeg in every container, also after a seek, and on random blocks | 90% | — |
@@ -160,6 +164,8 @@ fidelity and the remaining work.
 | 2026-11-11 | minor | SMPTE VC-2 decode (`cfa4-dirac`, codec backlog CB-7.2) |
 | 2026-11-11 | minor | AMR-NB and AMR-WB decode (`cfa4-amr`, codec backlog CB-6.2) |
 | 2026-11-11 | minor | Dolby Atmos in E-AC-3 (JOC) and Auro-3D rows, moved from [cinema-codecs.md](cinema-codecs.md), which no longer keeps its own status |
+| 2026-11-11 | minor | Monkey's Audio decode (`cfa4-ape`, codec backlog CB-5.2) |
+| 2026-11-10 | minor | WavPack decode (`cfa4-wavpack`, codec backlog CB-5.1) |
 | 2026-11-10 | minor | MP2 (MPEG-1/2 Layer II) encoder in `cfa4-mpa` (#267) |
 | 2026-11-09 | minor | H.264 monochrome (4:0:0) decode, 8 and 10 bits (#279) |
 | 2026-11-09 | minor | G.711, G.722, IMA and Microsoft ADPCM decode (`cfa4-adpcm`, codec backlog CB-4.1, CB-4.2) |

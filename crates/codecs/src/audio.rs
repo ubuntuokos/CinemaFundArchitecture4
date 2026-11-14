@@ -99,6 +99,9 @@ enum Inner {
     Mpa(Box<cfa4_mpa::Decoder>),
     /// Dolby TrueHD and MLP (`cfa4-truehd`, ported from the Apache-2.0 `truehd` crate).
     TrueHd(Box<cfa4_truehd::cfa4::Decoder>),
+    /// WavPack in Matroska (`cfa4-wavpack`): each packet is one self-contained block sequence
+    /// with shortened headers; the format comes from the first packet.
+    WavPack { version: u16, info: Option<cfa4_wavpack::Info> },
     /// G.711, G.722, IMA and Microsoft ADPCM (`cfa4-adpcm`).
     Adpcm(Box<cfa4_adpcm::Decoder>),
     /// AMR-NB and AMR-WB (`cfa4-amr`): packets hold storage-format frames.
@@ -306,6 +309,10 @@ impl PacketDecoder {
     }
     /// Dolby TrueHD and MLP. After a reset nothing decodes until the next major sync: callers
     /// pre-roll [`cfa4_truehd::cfa4::MAJOR_SYNC_INTERVAL`] access units (see [`truehd_preroll`]).
+    /// WavPack (`A_WAVPACK4`) of stream `version`.
+    pub fn wavpack(version: u16) -> Self {
+        Self { inner: Inner::WavPack { version, info: None }, channels: 0 }
+    }
     pub fn truehd() -> Self {
         Self { inner: Inner::TrueHd(Box::default()), channels: 0 }
     }
@@ -421,6 +428,19 @@ impl PacketDecoder {
                 self.channels = out.len();
                 return Ok(out);
             }
+            Inner::WavPack { version, info } => {
+                let blocks = cfa4_wavpack::matroska_blocks(*version, data).map_err(|e| CodecError::Decode(format!("WavPack: {e}")))?;
+                let first = blocks.first().ok_or_else(|| CodecError::Decode("WavPack: empty frame".into()))?;
+                let i = match info {
+                    Some(i) => *i,
+                    None => *info.insert(cfa4_wavpack::Info::probe(first).map_err(|e| CodecError::Unsupported(format!("WavPack: {e}")))?),
+                };
+                let refs: Vec<&[u8]> = blocks.iter().map(Vec::as_slice).collect();
+                let planes = cfa4_wavpack::Decoder::new(i).decode_frame(&refs).map_err(|e| CodecError::Decode(format!("WavPack: {e}")))?;
+                let out: Vec<Vec<f32>> = planes.into_iter().map(|p| p.into_iter().map(|v| i.to_f32(v)).collect()).collect();
+                self.channels = out.len();
+                return Ok(out);
+            }
             Inner::Adpcm(d) => {
                 let planes = d.decode(data).map_err(|e| CodecError::Decode(e.to_string()))?;
                 return Ok(planes.into_iter().map(|p| p.into_iter().map(|s| f32::from(s) / 32768.0).collect()).collect());
@@ -498,7 +518,7 @@ impl PacketDecoder {
             Inner::TrueHd(d) => d.reset(),
             Inner::Adpcm(d) => d.reset(),
             Inner::Amr(d) => d.reset(),
-            Inner::AacPending | Inner::MpegPending(_) | Inner::Tta(_) => {}
+            Inner::AacPending | Inner::MpegPending(_) | Inner::WavPack { .. } | Inner::Tta(_) => {}
         }
     }
 }
@@ -1100,6 +1120,50 @@ impl AudioFileSource {
             };
             return Ok(Self { info, rate, samples });
         }
+        if ext == "wv" {
+            let (wv, planes) = cfa4_wavpack::decode_file(&bytes).map_err(|e| CodecError::Decode(format!("{name}: {e}")))?;
+            let samples: Vec<Vec<f32>> = planes.into_iter().map(|p| p.into_iter().map(|v| wv.to_f32(v)).collect()).collect();
+            let frames = samples.first().map_or(0, Vec::len);
+            let info = MediaInfo {
+                name: name.to_string(),
+                kind: MediaKind::AudioOnly,
+                duration: Tick::from_units(frames as i64, i64::from(wv.sample_rate)),
+                video: None,
+                audio_streams: vec![AudioStreamInfo {
+                    sample_rate: wv.sample_rate,
+                    channels: samples.len() as u32,
+                    codec: "WavPack".into(),
+                    bits_per_sample: Some(wv.bits),
+                    ..AudioStreamInfo::default()
+                }],
+                container: "WavPack".into(),
+                start_timecode: None,
+                file_size: Some(bytes.len() as u64),
+            };
+            return Ok(Self { info, rate: wv.sample_rate, samples });
+        }
+        if ext == "ape" {
+            let (ape, planes) = cfa4_ape::decode_file(&bytes).map_err(|e| CodecError::Decode(format!("{name}: {e}")))?;
+            let samples: Vec<Vec<f32>> = planes.into_iter().map(|p| p.into_iter().map(|v| ape.to_f32(v)).collect()).collect();
+            let frames = samples.first().map_or(0, Vec::len);
+            let info = MediaInfo {
+                name: name.to_string(),
+                kind: MediaKind::AudioOnly,
+                duration: Tick::from_units(frames as i64, i64::from(ape.sample_rate)),
+                video: None,
+                audio_streams: vec![AudioStreamInfo {
+                    sample_rate: ape.sample_rate,
+                    channels: samples.len() as u32,
+                    codec: "Monkey's Audio".into(),
+                    bits_per_sample: Some(u32::from(ape.bits)),
+                    ..AudioStreamInfo::default()
+                }],
+                container: "Monkey's Audio".into(),
+                start_timecode: None,
+                file_size: Some(bytes.len() as u64),
+            };
+            return Ok(Self { info, rate: ape.sample_rate, samples });
+        }
         if ext == "tta" {
             let (tta, planes) = cfa4_tta::decode_file(&bytes, None).map_err(|e| CodecError::Decode(format!("{name}: {e}")))?;
             let samples: Vec<Vec<f32>> = planes.into_iter().map(|p| p.into_iter().map(|v| tta.to_f32(v)).collect()).collect();
@@ -1406,7 +1470,10 @@ impl MediaSource for AudioFileSource {
 
 pub fn opener(name: &str, bytes: Arc<[u8]>) -> Option<std::result::Result<SharedSource, MediaError>> {
     let ext = name.rsplit('.').next().unwrap_or("").to_ascii_lowercase();
-    if !matches!(ext.as_str(), "mp3" | "mp2" | "aac" | "dts" | "dtshd" | "flac" | "ogg" | "oga" | "aif" | "aiff" | "aifc" | "amr" | "awb" | "tta") {
+    if !matches!(
+        ext.as_str(),
+        "mp3" | "mp2" | "aac" | "dts" | "dtshd" | "flac" | "ogg" | "oga" | "aif" | "aiff" | "aifc" | "amr" | "awb" | "wv" | "ape" | "tta"
+    ) {
         return None;
     }
     Some(AudioFileSource::decode(name, bytes).map(|s| Arc::new(s) as SharedSource).map_err(Into::into))

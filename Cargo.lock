@@ -1025,6 +1025,14 @@ dependencies = [
 ]
 
 [[package]]
+name = "cfa4-ape"
+version = "0.10.0"
+dependencies = [
+ "cfa4-testkit",
+ "thiserror 2.0.21",
+]
+
+[[package]]
 name = "cfa4-apv"
 version = "0.10.0"
 dependencies = [
@@ -1178,6 +1186,7 @@ dependencies = [
  "cfa4-ac3",
  "cfa4-adpcm",
  "cfa4-amr",
+ "cfa4-ape",
  "cfa4-apv",
  "cfa4-auro",
  "cfa4-av1",
@@ -1218,6 +1227,7 @@ dependencies = [
  "cfa4-utvideo",
  "cfa4-vp8",
  "cfa4-vp9",
+ "cfa4-wavpack",
  "image",
  "log",
  "rayon",
@@ -2129,6 +2139,14 @@ dependencies = [
  "cfa4-bitstream",
  "cfa4-testkit",
  "rayon",
+ "thiserror 2.0.21",
+]
+
+[[package]]
+name = "cfa4-wavpack"
+version = "0.10.0"
+dependencies = [
+ "cfa4-testkit",
  "thiserror 2.0.21",
 ]
 

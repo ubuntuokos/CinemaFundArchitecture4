@@ -74,6 +74,8 @@ cfa4-av1 = { path = "crates/av1" }
 cfa4-av2 = { path = "crates/av2" }
 cfa4-aac = { path = "crates/aac" }
 cfa4-flac = { path = "crates/flac" }
+cfa4-wavpack = { path = "crates/wavpack" }
+cfa4-ape = { path = "crates/ape" }
 cfa4-opus = { path = "crates/opus" }
 cfa4-h264enc = { path = "crates/h264enc" }
 cfa4-audio-dsp = { path = "crates/audio-dsp" }
@@ -214,6 +216,12 @@ opt-level = 3
 opt-level = 3
 
 [profile.dev.package.cfa4-flac]
+opt-level = 3
+
+[profile.dev.package.cfa4-wavpack]
+opt-level = 3
+
+[profile.dev.package.cfa4-ape]
 opt-level = 3
 
 # Audio effects: realtime-factor tests and long convolution / spectral runs.
