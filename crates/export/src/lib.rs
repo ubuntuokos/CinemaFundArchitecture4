@@ -57,7 +57,8 @@ pub use audio_out::LoudnessReport;
 pub use dash_out::{DashMedia, DashRepresentation, dash_files, dash_mpd};
 pub use dcp_iab::{DcpImmersive, IabFallback, IabSourceInfo, fsk_sync, probe_iab_source};
 pub use dcp_out::{
-    DCP_CONTENT_KINDS, DcpAspect, DcpResolution, dcdm_code, dcp_content_kind, dcp_isdcf_date, dcp_isdcf_name, dcp_language, dcp_rate, rgba_to_xyz12,
+    DCP_CONTENT_KINDS, DcpAspect, DcpResolution, dcdm_code, dcp_content_kind, dcp_isdcf_date, dcp_isdcf_name, dcp_language, dcp_rate, dcp_subtitle_language,
+    rgba_to_xyz12,
 };
 pub use hls_out::{HlsFiles, SEGMENT_SECONDS as HLS_SEGMENT_SECONDS, hls_files};
 pub use imf_out::{IMF_CONTENT_KINDS, IMF_MAX_SIZE, IMF_RATES, imf_content_kind, imf_profile, imf_rate, rgba_to_rgb10};
@@ -500,6 +501,17 @@ pub struct ExportSettings {
     /// IMF exports use it too (MCA labels, the CPL locale).
     #[serde(default)]
     pub dcp_language: String,
+    /// DCP: write the sequence's first caption track as subtitles (#938): an ST 428-7 subtitle
+    /// reel in an ST 429-5 timed text track file, the CPL's `MainSubtitle`.
+    #[serde(default)]
+    pub dcp_subtitles: bool,
+    /// DCP subtitle language, an RFC 5646 tag (empty = [`ExportSettings::dcp_language`]).
+    #[serde(default)]
+    pub dcp_subtitle_language: String,
+    /// DCP subtitle font: an OpenType / TrueType file embedded in the timed text track file
+    /// (empty = the bundled Inter Regular, SIL OFL 1.1).
+    #[serde(default)]
+    pub dcp_subtitle_font: String,
     /// IMF: reversible (lossless) JPEG 2000 instead of the lossy IMF profile.
     #[serde(default)]
     pub imf_lossless: bool,
@@ -788,6 +800,9 @@ impl Default for ExportSettings {
             dcp_iab_source: String::new(),
             dcp_iab_fallback: String::new(),
             dcp_language: String::new(),
+            dcp_subtitles: false,
+            dcp_subtitle_language: String::new(),
+            dcp_subtitle_font: String::new(),
             imf_lossless: false,
             imf_content_kind: String::new(),
             sdr: false,

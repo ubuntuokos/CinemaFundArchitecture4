@@ -1685,3 +1685,77 @@ fn imf_sample_regxml() {
     let x = crate::regxml::essence_descriptor(&f).unwrap();
     assert!(x.contains("<r1:InstanceID>urn:uuid:"), "{x}");
 }
+
+/// ST 429-5: the document clip-wrapped, each resource in its own generic stream partition, read
+/// back by the timed text reader; the header peek sees the D-Cinema file package; cutting the
+/// file anywhere never panics.
+#[test]
+fn timed_text_track_file_round_trips() {
+    let doc = br#"<?xml version="1.0" encoding="UTF-8"?><SubtitleReel xmlns="http://www.smpte-ra.org/schemas/428-7/2010/DCST"><Id>urn:uuid:11111111-1111-4111-8111-111111111111</Id></SubtitleReel>"#;
+    let font: Vec<u8> = b"\x00\x01\x00\x00".iter().copied().chain((0..5000u32).map(|i| (i * 7) as u8)).collect();
+    let png = b"\x89PNG\r\n\x1a\nfake".to_vec();
+    let ids = PackageIds { material: Umid::dcinema([7; 16]), file: Umid::dcinema([9; 16]), material_name: "Reel".into(), file_name: "Reel subtitle".into() };
+    let cfg = TimedTextConfig::new(Rational::new(25, 1), 250, [0x11; 16], "http://www.smpte-ra.org/schemas/428-7/2010/DCST", ids);
+    let resources = vec![
+        TimedTextResource { id: [0x21; 16], mime: MIME_OPENTYPE.into(), data: font.clone() },
+        TimedTextResource { id: [0x22; 16], mime: MIME_PNG.into(), data: png.clone() },
+    ];
+    let f = write_timed_text(&cfg, doc, &resources).unwrap();
+    assert!(crate::is_timed_text(&f));
+    let tt = crate::open_timed_text(&f).unwrap();
+    assert!(tt.warnings.is_empty(), "{:?}", tt.warnings);
+    assert_eq!((tt.edit_rate, tt.duration, tt.resource_id), (Rational::new(25, 1), Some(250), Some([0x11; 16])));
+    assert_eq!(tt.ucs_encoding.as_deref(), Some("UTF-8"));
+    assert_eq!(tt.namespace.as_deref(), Some("http://www.smpte-ra.org/schemas/428-7/2010/DCST"));
+    assert_eq!(tt.read_document(&f).unwrap(), doc);
+    assert_eq!(tt.resources.len(), 2);
+    assert_eq!((tt.resources[0].id, tt.resources[0].stream_id, tt.resources[0].mime.as_deref()), ([0x21; 16], 2, Some(MIME_OPENTYPE)));
+    assert_eq!((tt.resources[1].id, tt.resources[1].stream_id, tt.resources[1].mime.as_deref()), ([0x22; 16], 3, Some(MIME_PNG)));
+    assert_eq!(tt.read_resource(&f, 0).unwrap(), font);
+    assert_eq!(tt.read_resource(&f, 1).unwrap(), png);
+    let peek = crate::peek(&f).unwrap();
+    assert_eq!(peek.operational_pattern, OperationalPattern::Atom);
+    assert_eq!(peek.file_packages.first().map(|u| u[16..].to_vec()), Some(vec![9u8; 16]));
+    // the random index pack lists every partition: header, body, two generic streams, footer
+    let rip_len = u32::from_be_bytes(f[f.len() - 4..].try_into().unwrap()) as usize;
+    let rip = &f[f.len() - rip_len..];
+    assert_eq!(rip[..16], RIP_KEY);
+    let pairs: Vec<(u32, u64)> = rip[20..rip_len - 4]
+        .chunks_exact(12)
+        .map(|c| (u32::from_be_bytes(c[..4].try_into().unwrap()), u64::from_be_bytes(c[4..].try_into().unwrap())))
+        .collect();
+    assert_eq!(pairs.iter().map(|p| p.0).collect::<Vec<_>>(), [0, 1, 2, 3, 0]);
+    for (sid, off) in &pairs {
+        let k = &f[*off as usize..*off as usize + 16];
+        assert_eq!(k[..13], partition_key(2, 4)[..13], "partition pack at {off}");
+        let body_sid = u32::from_be_bytes(f[*off as usize + 20 + 60..*off as usize + 20 + 64].try_into().unwrap());
+        assert_eq!(body_sid, *sid);
+        if *sid >= 2 {
+            assert_eq!(k[14], 0x11, "generic stream partition");
+            // the resource KLV follows the pack directly (ST 429-5 6.1)
+            let pack_len = 20 + u32::from_be_bytes([0, f[*off as usize + 17], f[*off as usize + 18], f[*off as usize + 19]]) as usize;
+            assert_eq!(f[*off as usize + pack_len..*off as usize + pack_len + 16], GENERIC_STREAM_ELEMENT);
+        }
+    }
+    // a resource id may not repeat, nor be the document's
+    let dup = vec![resources[0].clone(), TimedTextResource { id: [0x21; 16], ..resources[1].clone() }];
+    assert!(write_timed_text(&cfg, doc, &dup).is_err());
+    let own = vec![TimedTextResource { id: [0x11; 16], ..resources[0].clone() }];
+    assert!(write_timed_text(&cfg, doc, &own).is_err());
+    assert!(write_timed_text(&TimedTextConfig { edit_rate: Rational::new(0, 1), ..cfg.clone() }, doc, &[]).is_err());
+    // without resources: header, body, footer
+    let bare = write_timed_text(&cfg, doc, &[]).unwrap();
+    assert!(crate::open_timed_text(&bare).unwrap().resources.is_empty());
+    for cut in (0..f.len()).step_by(97) {
+        let _ = crate::open_timed_text(&f[..cut]);
+        let _ = crate::peek(&f[..cut]);
+    }
+    if std::process::Command::new("ffprobe").arg("-version").output().is_ok() {
+        let p = std::env::temp_dir().join(format!("cfa4-tt-{}.mxf", std::process::id()));
+        std::fs::write(&p, &f).unwrap();
+        let out =
+            std::process::Command::new("ffprobe").args(["-v", "error", "-show_entries", "format=format_name", "-of", "csv=p=0"]).arg(&p).output().unwrap();
+        let _ = std::fs::remove_file(&p);
+        assert!(out.status.success() && String::from_utf8_lossy(&out.stdout).trim() == "mxf", "{}", String::from_utf8_lossy(&out.stderr));
+    }
+}

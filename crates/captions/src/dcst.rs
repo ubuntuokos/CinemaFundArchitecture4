@@ -220,5 +220,168 @@ pub fn parse_reel(text: &str) -> Result<Reel> {
     Ok(reel)
 }
 
+/// The ST 428-7:2010 namespace (also of the 2014 edition).
+pub const NAMESPACE_2010: &str = "http://www.smpte-ra.org/schemas/428-7/2010/DCST";
+
+/// Font size of [`write_reel`] (points, ST 428-7 6.2.2: as DCP authoring tools default).
+pub const DEFAULT_SIZE: u32 = 42;
+/// Distance of the bottom line from the bottom edge and between lines (percent of the screen
+/// height) for the default size.
+const BOTTOM: f64 = 8.0;
+const LINE_STEP: f64 = 6.5;
+
+/// What [`write_reel`] writes besides the cues.
+#[derive(Clone, Debug, PartialEq)]
+pub struct ReelOptions {
+    /// The reel's `urn:uuid:`.
+    pub id: String,
+    pub title: String,
+    /// `IssueDate` (xs:dateTime).
+    pub issue_date: String,
+    pub reel_number: u32,
+    /// `Language` (an RFC 5646 / xs:language tag).
+    pub language: String,
+    /// `EditRate` (numerator, denominator; positive).
+    pub edit_rate: (i64, i64),
+    /// `LoadFont`: the font's `ID` in the document and its resource `urn:uuid:`.
+    pub font: Option<(String, String)>,
+    /// Font size in points.
+    pub size: u32,
+}
+
+fn escape(s: &str) -> String {
+    let mut o = String::with_capacity(s.len());
+    for c in s.chars() {
+        match c {
+            '&' => o.push_str("&amp;"),
+            '<' => o.push_str("&lt;"),
+            '>' => o.push_str("&gt;"),
+            '"' => o.push_str("&quot;"),
+            c if c.is_control() => {}
+            c => o.push(c),
+        }
+    }
+    o
+}
+
+/// A cue line as runs of text with their `<i>`/`<b>`/`<u>` formatting; other tags are dropped.
+fn runs(line: &str) -> Vec<(Fmt, String)> {
+    let mut out: Vec<(Fmt, String)> = Vec::new();
+    let mut f = Fmt::default();
+    let mut rest = line;
+    while !rest.is_empty() {
+        let (text, after) = match rest.find('<') {
+            Some(i) => (rest.get(..i).unwrap_or(""), rest.get(i..).unwrap_or("")),
+            None => (rest, ""),
+        };
+        if !text.is_empty() {
+            match out.last_mut() {
+                Some((lf, t)) if *lf == f => t.push_str(text),
+                _ => out.push((f, text.to_string())),
+            }
+        }
+        rest = after;
+        if rest.is_empty() {
+            break;
+        }
+        let Some(end) = rest.find('>') else {
+            // a lone '<' is text
+            match out.last_mut() {
+                Some((lf, t)) if *lf == f => t.push_str(rest),
+                _ => out.push((f, rest.to_string())),
+            }
+            break;
+        };
+        let tag = rest.get(1..end).unwrap_or("").trim().to_ascii_lowercase();
+        let (close, name) = match tag.strip_prefix('/') {
+            Some(n) => (true, n.trim().to_string()),
+            None => (false, tag.split(|c: char| c.is_whitespace() || c == '.').next().unwrap_or("").to_string()),
+        };
+        match name.as_str() {
+            "i" => f.italic = !close,
+            "b" => f.bold = !close,
+            "u" => f.underline = !close,
+            _ => {}
+        }
+        rest = rest.get(end + 1..).unwrap_or("");
+    }
+    out
+}
+
+/// Write cues as an ST 428-7 `SubtitleReel` (2010 namespace): times from `StartTime`
+/// `00:00:00:00` at the edit rate, each cue line a `Text` centred at the bottom of the screen
+/// (the last line [`BOTTOM`] percent up), `<i>`/`<b>`/`<u>` as `Font` attributes, cues snapped to
+/// edit units and at least one unit long. Cues that start before zero are cut at zero; empty
+/// cues are left out.
+pub fn write_reel(doc: &Document, o: &ReelOptions) -> String {
+    let (num, den) = (o.edit_rate.0.max(1), o.edit_rate.1.max(1));
+    let tc_rate = ((2 * num + den) / (2 * den)).max(1);
+    let units = |t: Tick| t.to_rational_round(den, num).max(0);
+    let tc = |u: i64| {
+        let (s, e) = (u / tc_rate, u % tc_rate);
+        format!("{:02}:{:02}:{:02}:{:02}", (s / 3600).min(99), s / 60 % 60, s % 60, e)
+    };
+    let mut x = String::from("<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n");
+    x.push_str(&format!("<SubtitleReel xmlns=\"{NAMESPACE_2010}\" xmlns:xs=\"http://www.w3.org/2001/XMLSchema\">\n"));
+    x.push_str(&format!("  <Id>{}</Id>\n", escape(&o.id)));
+    x.push_str(&format!("  <ContentTitleText>{}</ContentTitleText>\n", escape(&o.title)));
+    x.push_str(&format!("  <IssueDate>{}</IssueDate>\n", escape(&o.issue_date)));
+    x.push_str(&format!("  <ReelNumber>{}</ReelNumber>\n", o.reel_number.max(1)));
+    if !o.language.is_empty() {
+        x.push_str(&format!("  <Language>{}</Language>\n", escape(&o.language)));
+    }
+    x.push_str(&format!("  <EditRate>{num} {den}</EditRate>\n  <TimeCodeRate>{tc_rate}</TimeCodeRate>\n  <StartTime>00:00:00:00</StartTime>\n"));
+    let font_id = match &o.font {
+        Some((id, urn)) => {
+            x.push_str(&format!("  <LoadFont ID=\"{}\">{}</LoadFont>\n", escape(id), escape(urn)));
+            format!(" ID=\"{}\"", escape(id))
+        }
+        None => String::new(),
+    };
+    let size = o.size.clamp(1, 1000);
+    x.push_str("  <SubtitleList>\n");
+    x.push_str(&format!(
+        "    <Font{font_id} Size=\"{size}\" Color=\"FFFFFFFF\" Effect=\"border\" EffectColor=\"FF000000\" Weight=\"normal\" Italic=\"no\" Underline=\"no\" Script=\"normal\" AspectAdjust=\"1.0\">\n"
+    ));
+    // the line step grows with the font size
+    let step = LINE_STEP * f64::from(size) / f64::from(DEFAULT_SIZE);
+    let mut spot = 0u32;
+    for c in &doc.cues {
+        let lines: Vec<Vec<(Fmt, String)>> = c.text.lines().map(runs).filter(|r| r.iter().any(|(_, t)| !t.trim().is_empty())).collect();
+        if lines.is_empty() {
+            continue;
+        }
+        let t_in = units(c.start);
+        let t_out = units(c.end).max(t_in + 1);
+        spot += 1;
+        x.push_str(&format!(
+            "      <Subtitle SpotNumber=\"{spot}\" TimeIn=\"{}\" TimeOut=\"{}\" FadeUpTime=\"00:00:00:00\" FadeDownTime=\"00:00:00:00\">\n",
+            tc(t_in),
+            tc(t_out)
+        ));
+        let n = lines.len();
+        for (i, line) in lines.iter().enumerate() {
+            let v = BOTTOM + step * (n - 1 - i) as f64;
+            x.push_str(&format!("        <Text Valign=\"bottom\" Vposition=\"{v:.1}\" Halign=\"center\" Hposition=\"0\" Direction=\"ltr\">"));
+            for (f, t) in line {
+                let attrs: String = [(f.italic, " Italic=\"yes\""), (f.bold, " Weight=\"bold\""), (f.underline, " Underline=\"yes\"")]
+                    .into_iter()
+                    .filter(|a| a.0)
+                    .map(|a| a.1)
+                    .collect();
+                if attrs.is_empty() {
+                    x.push_str(&escape(t));
+                } else {
+                    x.push_str(&format!("<Font{attrs}>{}</Font>", escape(t)));
+                }
+            }
+            x.push_str("</Text>\n");
+        }
+        x.push_str("      </Subtitle>\n");
+    }
+    x.push_str("    </Font>\n  </SubtitleList>\n</SubtitleReel>\n");
+    x
+}
+
 #[cfg(test)]
 mod tests;

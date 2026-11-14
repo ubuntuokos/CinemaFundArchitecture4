@@ -2157,6 +2157,12 @@
 	Event	Esemény
 	Lossless (reversible JPEG 2000)	Veszteségmentes (reverzibilis JPEG 2000)
 	Package language	Csomag nyelve
+	Subtitles from the first caption track	Feliratok az első feliratsávból
+	The package language	A csomag nyelve
+	Inter Regular (built in), or an OpenType / TrueType file	Inter Regular (beépített), vagy egy OpenType / TrueType fájl
+	Subtitle language	Felirat nyelve
+	Subtitle font	Felirat betűkészlete
+	Fonts	Betűkészletek
 	4:2:0 (Main Profile)	4:2:0 (Main profil)
 	4:2:2 (4:2:2 Profile)	4:2:2 (4:2:2 profil)
 	B pictures	B-képek

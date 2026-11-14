@@ -98,6 +98,56 @@ fn cfa4_dcp_export_passes_the_native_quick_scan() {
     let _ = std::fs::remove_dir_all(&dir);
 }
 
+/// #938: with subtitles the package holds a timed text track file (ST 429-5) and the CPL a
+/// `MainSubtitle`; the native checks still pass and the subtitle track file is one of the track
+/// files checked against the composition.
+#[test]
+fn cfa4_dcp_export_with_subtitles_passes() {
+    let (p, seq, m) = project();
+    let mut p = Arc::unwrap_or_clone(p);
+    let r = FrameRate::new(25, 1);
+    let tid = cfa4_project::TrackId(p.alloc_id());
+    let mut ct = cfa4_project::CaptionTrack::new(tid, "Feliratok".into(), cfa4_project::CaptionFormat::Subtitle);
+    for (k, (from, to, text)) in [(1, 3, "Első"), (3, 6, "Második\n<i>sor</i>")].into_iter().enumerate() {
+        ct.captions.push(cfa4_project::Caption {
+            id: cfa4_project::ClipId(1_000 + k as u64),
+            start: r.tick_of(from),
+            duration: r.tick_of(to - from),
+            text: text.into(),
+            speaker: None,
+            cue_id: None,
+            settings: String::new(),
+        });
+    }
+    p.sequence_mut(seq).unwrap().caption_tracks.push(ct);
+    let p = Arc::new(p);
+    let dir = std::env::temp_dir().join(format!("cfa4-dcp-validate-subtitles-{}", std::process::id()));
+    let _ = std::fs::remove_dir_all(&dir);
+    let s = ExportSettings {
+        format: Format::Dcp,
+        path: dir.to_string_lossy().into_owned(),
+        range: Some(TimeRange::new(Tick::ZERO, r.tick_of(5))),
+        dcp_content_kind: "test".into(),
+        dcp_language: "hu-HU".into(),
+        dcp_subtitles: true,
+        ..Default::default()
+    };
+    export(&p, seq, &s, &m, &Progress::default()).unwrap();
+    let run = |profile: &str| NativeValidator.validate(&ValidationRequest::new(&dir, Profile::builtin(profile).unwrap()), &ValidationControl::new()).unwrap();
+    let quick = run("quick-scan");
+    assert_eq!(quick.verdict, Verdict::Pass, "{:?}", outcome(&quick));
+    // picture, sound, subtitles, CPL, PKL
+    assert!(quick.assets_checked >= 5, "{}", quick.assets_checked);
+    let full = run("full-integrity");
+    assert_eq!(full.verdict, Verdict::Pass, "{:?}", outcome(&full));
+    let smpte = run("smpte-cinema");
+    let status = |rule: &str| smpte.findings.iter().filter(|f| f.rule == rule).map(|f| f.status).collect::<Vec<_>>();
+    assert_eq!(status(MXF_TRACK_FILES), [Status::Pass], "{:?}", outcome(&smpte));
+    let fails: Vec<&str> = smpte.findings.iter().filter(|f| f.status == Status::Fail).map(|f| f.message.as_str()).collect();
+    assert!(fails.iter().all(|m| m.ends_with("2 guard bits; the 2K profile has 1 (5 frames)")), "{fails:?}");
+    let _ = std::fs::remove_dir_all(&dir);
+}
+
 /// Rule and status of every finding, for assertion messages. The report text is not printed: it
 /// holds the package's ids, and test logs are not the place for them.
 fn outcome(r: &ValidationReport) -> Vec<(&str, Status)> {
