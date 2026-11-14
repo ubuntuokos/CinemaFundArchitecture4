@@ -4561,3 +4561,9 @@ export.summary	Low	төмен
 	Chase External Timecode	Сыртқы уақыт кодына ілесу
 	Send LTC	LTC жіберу
 	Send MIDI Timecode	MIDI уақыт кодын жіберу
+	No signal	Сигнал жоқ
+	Locating	Орынды іздеу
+	Locked	Синхрондалған
+	Freewheel	Еркін жүріс
+	Scrubbing	Айналдыру
+	Sending	Жіберу

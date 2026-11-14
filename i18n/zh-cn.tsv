@@ -4557,3 +4557,9 @@
 	Chase External Timecode	追随外部时间码
 	Send LTC	发送 LTC
 	Send MIDI Timecode	发送 MIDI 时间码
+	No signal	无信号
+	Locating	正在定位
+	Locked	已锁定
+	Freewheel	自由运行
+	Scrubbing	拖动中
+	Sending	正在发送

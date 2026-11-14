@@ -4559,3 +4559,9 @@ export.summary	Low	niska
 	Chase External Timecode	Podążaj za zewnętrznym kodem czasowym
 	Send LTC	Wysyłaj LTC
 	Send MIDI Timecode	Wysyłaj kod czasowy MIDI
+	No signal	Brak sygnału
+	Locating	Pozycjonowanie
+	Locked	Zsynchronizowano
+	Freewheel	Wolnobieg
+	Scrubbing	Przewijanie
+	Sending	Wysyłanie

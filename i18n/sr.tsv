@@ -4559,3 +4559,9 @@ export.summary	Low	низак
 	Chase External Timecode	Прати спољни временски код
 	Send LTC	Шаљи LTC
 	Send MIDI Timecode	Шаљи MIDI временски код
+	No signal	Нема сигнала
+	Locating	Позиционирање
+	Locked	Синхронизовано
+	Freewheel	Слободан ход
+	Scrubbing	Померање
+	Sending	Слање

@@ -4561,3 +4561,9 @@ export.summary	Low	matala
 	Chase External Timecode	Seuraa ulkoista aikakoodia
 	Send LTC	Lähetä LTC
 	Send MIDI Timecode	Lähetä MIDI-aikakoodi
+	No signal	Ei signaalia
+	Locating	Paikannetaan
+	Locked	Lukittu
+	Freewheel	Vapaakäynti
+	Scrubbing	Selataan
+	Sending	Lähetetään

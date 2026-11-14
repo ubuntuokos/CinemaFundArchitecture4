@@ -4561,3 +4561,9 @@ export.summary	Low	χαμηλή
 	Chase External Timecode	Παρακολούθηση εξωτερικού χρονοκώδικα
 	Send LTC	Αποστολή LTC
 	Send MIDI Timecode	Αποστολή χρονοκώδικα MIDI
+	No signal	Χωρίς σήμα
+	Locating	Εντοπισμός
+	Locked	Συγχρονισμένο
+	Freewheel	Ελεύθερη λειτουργία
+	Scrubbing	Κύλιση
+	Sending	Αποστολή

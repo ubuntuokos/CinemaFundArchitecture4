@@ -4558,3 +4558,9 @@ export.summary	Low	低
 	Chase External Timecode	追隨外部時間碼
 	Send LTC	傳送 LTC
 	Send MIDI Timecode	傳送 MIDI 時間碼
+	No signal	無訊號
+	Locating	正在定位
+	Locked	已鎖定
+	Freewheel	自由運行
+	Scrubbing	拖曳中
+	Sending	正在傳送

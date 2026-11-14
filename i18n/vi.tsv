@@ -4559,3 +4559,9 @@ export.summary	Low	thấp
 	Chase External Timecode	Bám theo timecode bên ngoài
 	Send LTC	Gửi LTC
 	Send MIDI Timecode	Gửi timecode MIDI
+	No signal	Không có tín hiệu
+	Locating	Đang định vị
+	Locked	Đã khóa
+	Freewheel	Chạy tự do
+	Scrubbing	Đang tua
+	Sending	Đang gửi

@@ -4560,3 +4560,9 @@ export.summary	Low	düşük
 	Chase External Timecode	Harici Zaman Kodunu Takip Et
 	Send LTC	LTC Gönder
 	Send MIDI Timecode	MIDI Zaman Kodu Gönder
+	No signal	Sinyal yok
+	Locating	Konumlanıyor
+	Locked	Kilitli
+	Freewheel	Serbest çalışma
+	Scrubbing	Kaydırılıyor
+	Sending	Gönderiliyor

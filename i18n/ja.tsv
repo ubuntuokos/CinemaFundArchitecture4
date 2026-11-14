@@ -4568,3 +4568,9 @@
 	Chase External Timecode	外部タイムコードにチェイス
 	Send LTC	LTC を送信
 	Send MIDI Timecode	MIDI タイムコードを送信
+	No signal	信号なし
+	Locating	位置合わせ中
+	Locked	ロック
+	Freewheel	フリーホイール
+	Scrubbing	スクラブ中
+	Sending	送信中

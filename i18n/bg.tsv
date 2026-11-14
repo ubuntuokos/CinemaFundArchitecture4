@@ -4562,3 +4562,9 @@ export.summary	Low	ниско
 	Chase External Timecode	Следване на външен тайм код
 	Send LTC	Изпращане на LTC
 	Send MIDI Timecode	Изпращане на MIDI тайм код
+	No signal	Няма сигнал
+	Locating	Позициониране
+	Locked	Синхронизирано
+	Freewheel	Свободен ход
+	Scrubbing	Превъртане
+	Sending	Изпращане
