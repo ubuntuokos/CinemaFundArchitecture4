@@ -25,20 +25,29 @@ const GRACE: Duration = Duration::from_secs(5);
 /// How much of the end of stdout is read for the progress.
 const TAIL: u64 = 4096;
 
-/// A private directory, removed when dropped.
-struct Scratch(PathBuf);
+/// A private (0700) directory, removed with everything in it when dropped.
+pub(crate) struct Scratch(PathBuf);
 
 impl Scratch {
     fn new() -> std::io::Result<Scratch> {
-        static N: AtomicU64 = AtomicU64::new(0);
-        let nanos = SystemTime::now().duration_since(UNIX_EPOCH).map_or(0, |d| d.as_nanos());
-        let dir = std::env::temp_dir().join(format!("cfa4-dcpomatic-{}-{nanos}-{}", std::process::id(), N.fetch_add(1, Ordering::Relaxed)));
-        fs::DirBuilder::new().mode(0o700).create(&dir)?;
-        let s = Scratch(dir);
+        let s = Scratch::bare_in(&std::env::temp_dir(), "cfa4-dcpomatic")?;
         for sub in ["home", "tmp"] {
             fs::DirBuilder::new().mode(0o700).create(s.0.join(sub))?;
         }
         Ok(s)
+    }
+
+    /// A new empty private directory inside `parent`, named `<tag>-<pid>-<time>-<n>`.
+    pub(crate) fn bare_in(parent: &Path, tag: &str) -> std::io::Result<Scratch> {
+        static N: AtomicU64 = AtomicU64::new(0);
+        let nanos = SystemTime::now().duration_since(UNIX_EPOCH).map_or(0, |d| d.as_nanos());
+        let dir = parent.join(format!("{tag}-{}-{nanos}-{}", std::process::id(), N.fetch_add(1, Ordering::Relaxed)));
+        fs::DirBuilder::new().mode(0o700).create(&dir)?;
+        Ok(Scratch(dir))
+    }
+
+    pub(crate) fn path(&self) -> &Path {
+        &self.0
     }
 }
 
@@ -208,24 +217,27 @@ pub(crate) fn run_version(program: &Path, timeout: Duration) -> Result<String, D
 
 /// One tool run to its end.
 pub(crate) fn run_step(program: &Path, args: &[String], deadline: Instant, timeout: Duration, control: &Control, phase: Phase) -> Result<(), DcpomaticError> {
-    run_tool(program, args, None, deadline, timeout, control, phase).map(|_| ())
+    run_tool(program, args, None, &[], deadline, timeout, control, phase)
 }
 
-/// One tool run to its end; returns its stdout. `config` is DCP-o-matic's configuration directory
-/// for a tool that has no `--config` option (`dcpomatic2_kdm_cli`): it reads
-/// `$XDG_CONFIG_HOME/dcpomatic2`, which becomes a link to `config` in the private directory.
+/// One tool run to its end. `config` is DCP-o-matic's configuration directory for a tool that
+/// has no `--config` option (`dcpomatic2_kdm_cli`): it reads `$XDG_CONFIG_HOME/dcpomatic2`,
+/// which becomes a link to `config` in the private directory. `env` is set on top of the
+/// cleared environment.
 pub(crate) fn run_tool(
     program: &Path,
     args: &[String],
     config: Option<&Path>,
+    env: &[(&str, &str)],
     deadline: Instant,
     timeout: Duration,
     control: &Control,
     phase: Phase,
-) -> Result<String, DcpomaticError> {
+) -> Result<(), DcpomaticError> {
     let scratch = Scratch::new()?;
     let (out, err) = (scratch.0.join("stdout"), scratch.0.join("stderr"));
     let mut c = command(program, &scratch);
+    c.envs(env.iter().copied());
     if let Some(cfg) = config {
         let xdg = scratch.0.join("xdg");
         fs::DirBuilder::new().mode(0o700).create(&xdg)?;
@@ -248,7 +260,7 @@ pub(crate) fn run_tool(
         if e.is_empty() { last_message(&out) } else { e }
     };
     match outcome {
-        Outcome::Exited(Some(0)) => Ok(fs::read_to_string(&out).unwrap_or_default()),
+        Outcome::Exited(Some(0)) => Ok(()),
         Outcome::Exited(Some(code)) => Err(DcpomaticError::Engine(format!("{name} exited with {code}: {}", why()))),
         Outcome::Exited(None) => Err(DcpomaticError::Engine(format!("{name} was killed by a signal: {}", why()))),
         Outcome::Cancelled => Err(DcpomaticError::Cancelled),

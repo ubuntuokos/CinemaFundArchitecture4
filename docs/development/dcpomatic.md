@@ -62,14 +62,16 @@ default. Two jobs never write into the same `output` folder at once.
 
 ## Subtitles
 
-`"subtitles": ["/work/film.srt"]` (or one path) adds subtitle files (`.srt`, `.ssa`, `.ass`, or a DCP subtitle
-`.xml`) as an open subtitle track: not burnt into the picture, starting at the beginning of the film. In a
+`"subtitles": ["/work/film.srt"]` (or one path) adds a subtitle file (`.srt`, `.ssa`, `.ass`, or a DCP subtitle
+`.xml`) as an open subtitle track: not burnt into the picture, starting at the beginning of the film. Only one
+file is taken (`dcpomatic2_create` would place a second one after the end of the first). In a
 SMPTE DCP it is a `sub_*.mxf` track file, in an Interop DCP an XML file in its own folder; the CPL lists it
 either way.
 
 ## Encrypted DCPs and KDMs
 
-`"encrypt": true` encrypts the picture, sound and subtitle track files. The answer then has
+`"encrypt": true` encrypts the picture, sound and subtitle track files. The film directory, whose
+`metadata.xml` holds the content keys, is made readable only by its owner (mode 0700). The answer then has
 `"encrypted": true` and a `keepFilmDir` note: the content keys exist only in the film folder (`filmDir`), and
 every KDM is made from it, so keep that folder (privately) for as long as KDMs are needed.
 

@@ -61,10 +61,8 @@ fn a_real_dcp_passes_full_integrity() {
         return;
     }
     let d = Dcpomatic::locate().expect("the DCP-o-matic build in CFA4_DCPOMATIC_BIN_DIR");
-    let Some(master) = master() else {
-        eprintln!("skipped: ffmpeg could not make the test master");
-        return;
-    };
+    // with a DCP-o-matic build the run is on, so a failing preparation fails the test
+    let master = master().expect("ffmpeg could not make the test master (its error is above)");
     let work = std::env::temp_dir().join(format!("cfa4-dcpom2-real-{}", std::process::id()));
     let _ = std::fs::remove_dir_all(&work);
     std::fs::create_dir_all(&work).expect("work dir");

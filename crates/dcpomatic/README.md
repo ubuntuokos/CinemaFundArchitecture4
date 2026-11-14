@@ -24,7 +24,7 @@ if let Ok(d) = Dcpomatic::locate() {
 
 Engine commands: `dcpomatic.status`, `dcpomatic.makeDcp` and `dcpomatic.makeKdm`
 (`crates/engine/src/dcpomatic.rs`). `DcpRequest::encrypt` makes an encrypted DCP, `DcpRequest::subtitles` adds
-subtitle files as an open subtitle track, and `Dcpomatic::make_kdm` (`KdmRequest`) makes KDMs from the film
+a subtitle file as an open subtitle track, and `Dcpomatic::make_kdm` (`KdmRequest`) makes KDMs from the film
 directory for a projector certificate.
 
 `Dcpomatic::locate` takes `dcpomatic2_create`, `dcpomatic2_cli` and the patched OpenSSL
@@ -56,7 +56,7 @@ directory for a projector certificate.
   mapping, bit rate ≥ 10 Mbit/s, eyes only in 3D, UTF-8 paths.
 - `--no-remote` always, so no frame goes to network encoders.
 - KDMs: `dcpomatic2_kdm_cli --output <dir> --valid-from … --valid-duration "N unit" | --valid-to …
-  --formulation … --projector-certificate <pem> [--cinema-name, --screen-name,
+  --formulation … --projector-certificate <pem> [--cinema, --screen,
   --trusted-device-certificate, --disable-forensic-marking-*] create <film>`. The KDM tool has no
   `--config`, so its private `XDG_CONFIG_HOME` holds a `dcpomatic2` link to the configuration folder.
 - DCP-o-matic's configuration (signing chain) lives in `${XDG_CONFIG_HOME:-~/.config}/cfa4/dcpomatic`

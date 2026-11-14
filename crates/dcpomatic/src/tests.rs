@@ -285,6 +285,7 @@ fn kdm_tool(d: &Path, tail: &str) -> Dcpomatic {
         &format!(
             r#"printf '%s\n' "$@" > '{dd}/kdm.args'
 readlink "$XDG_CONFIG_HOME/dcpomatic2" > '{dd}/kdm.config'
+printf '%s' "$TZ" > '{dd}/kdm.tz'
 out=""; prev=""
 for a in "$@"; do if [ "$prev" = "--output" ]; then out="$a"; fi; prev="$a"; done
 echo '<DCinemaSecurityMessage/>' > "$out/Test_KDM.xml"
@@ -319,20 +320,38 @@ fn encrypt_asks_for_an_encrypted_dcp() {
     let d = dir("encrypt");
     let mut r = request(&d);
     r.encrypt = true;
-    tools(&d, "2.18.51", "", "").make_dcp(&r, &Control::new()).unwrap();
+    let out = tools(&d, "2.18.51", "", "").make_dcp(&r, &Control::new()).unwrap();
     let a = args(&d, "create");
     assert!(a.contains(&"--encrypt".to_string()) && !a.contains(&"--no-encrypt".to_string()), "{a:?}");
+    // the content keys in metadata.xml: written inside a private staging folder, moved into place
+    let staged = &a[a.iter().position(|x| x == "--output").unwrap() + 1];
+    assert!(staged.starts_with(&format!("{}/.cfa4-dcpomatic-stage-", d.display())) && staged.ends_with("/film"), "{staged}");
+    assert_eq!(out.film_dir, d.join("film"));
+    assert!(d.join("film/metadata.xml").is_file());
+    assert_eq!(std::fs::metadata(d.join("film")).unwrap().permissions().mode() & 0o777, 0o700);
+    let left: Vec<_> = std::fs::read_dir(&d).unwrap().filter_map(Result::ok).filter(|e| e.file_name().to_string_lossy().starts_with(".cfa4")).collect();
+    assert!(left.is_empty(), "the staging folder is removed: {left:?}");
 }
 
 #[test]
 fn makes_a_kdm_from_the_film() {
     let d = dir("kdm");
     let t = kdm_tool(&d, "");
+    std::fs::create_dir_all(d.join("kdms")).unwrap();
+    std::fs::write(d.join("kdms/Earlier_KDM.xml"), "<earlier/>").unwrap();
     let out = t.make_kdm(&encrypted_film(&d)).unwrap();
-    assert_eq!(out.files, [d.join("kdms/Test_KDM.xml")]);
+    assert_eq!(out.files, [d.join("kdms/Test_KDM.xml")], "only this run's KDMs");
+    assert!(d.join("kdms/Earlier_KDM.xml").is_file());
+    let left: Vec<_> =
+        std::fs::read_dir(d.join("kdms")).unwrap().filter_map(Result::ok).filter(|e| e.file_name().to_string_lossy().starts_with(".cfa4")).collect();
+    assert!(left.is_empty(), "the run folder is removed: {left:?}");
+    assert_eq!(std::fs::read_to_string(d.join("kdm.tz")).unwrap(), "UTC", "the times are UTC");
     let s = |x: &str| x.to_string();
+    let mut a = args(&d, "kdm");
+    assert!(a[1].starts_with(&format!("{}/.cfa4-kdm-", d.join("kdms").display())), "the run writes into its own folder: {}", a[1]);
+    a[1] = d.join("kdms").display().to_string();
     assert_eq!(
-        args(&d, "kdm"),
+        a,
         [
             s("--output"),
             d.join("kdms").display().to_string(),
@@ -385,6 +404,14 @@ fn bad_kdm_requests_are_refused() {
     let r = encrypted_film(&d);
     std::fs::write(d.join("film/metadata.xml"), "<Metadata><Encrypted>0</Encrypted></Metadata>").unwrap();
     check(r, "not encrypted");
+    let r = encrypted_film(&d);
+    std::fs::remove_file(d.join("film/metadata.xml")).unwrap();
+    assert!(std::process::Command::new("mkfifo").arg(d.join("film/metadata.xml")).status().unwrap().success());
+    check(r, "not a DCP-o-matic film directory");
+    std::fs::remove_file(d.join("film/metadata.xml")).unwrap();
+    let r = encrypted_film(&d);
+    std::fs::File::create(d.join("film/metadata.xml")).unwrap().set_len(17 << 20).unwrap();
+    check(r, "larger than");
     assert!(!d.join("kdm.args").exists(), "nothing ran");
 }
 
@@ -418,6 +445,8 @@ fn subtitle_files_become_content_after_the_picture() {
     };
     check(vec![d.join("notes.txt")], "not .srt");
     check(vec![d.join("missing.srt")], "does not exist");
+    std::fs::write(d.join("hu.srt"), "1\n00:00:01,000 --> 00:00:02,000\nSzia\n").unwrap();
+    check(vec![d.join("en.srt"), d.join("hu.srt")], "only one subtitle file");
 }
 
 #[test]

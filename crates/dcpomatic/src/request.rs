@@ -219,8 +219,9 @@ pub struct DcpRequest {
     /// `metadata.xml`, so keep that directory: KDMs ([`crate::KdmRequest`]) are made from it.
     #[serde(default)]
     pub encrypt: bool,
-    /// Subtitle files (`.srt`, `.ssa`, `.ass`, or DCP subtitle `.xml`), each a subtitle track of
-    /// the DCP from the start of the composition, not burnt into the picture (D5).
+    /// At most one subtitle file (`.srt`, `.ssa`, `.ass`, or DCP subtitle `.xml`): a subtitle track
+    /// of the DCP from the start of the composition, not burnt into the picture (D5). More are
+    /// refused, since `dcpomatic2_create` places each one after the end of the previous one.
     #[serde(default, skip_serializing_if = "Vec::is_empty")]
     pub subtitles: Vec<PathBuf>,
     /// `false`: the folder is named exactly `name`.
@@ -382,6 +383,9 @@ impl DcpRequest {
             // absolute, so it starts with `/` and is never read as an option
             push(&text(&path)?);
         }
+        if self.subtitles.len() > 1 {
+            return bad("only one subtitle file is supported (dcpomatic2_create would place each after the end of the previous one)".into());
+        }
         for s in &self.subtitles {
             let path = absolute(s)?;
             let ext = path.extension().and_then(|e| e.to_str()).map(str::to_ascii_lowercase);
@@ -408,7 +412,7 @@ impl DcpRequest {
         cli.push("make-dcp".into());
         cli.push(text(&film_dir)?);
 
-        Ok(Plan { film_dir, config_dir, create_args: create, cli_args: cli })
+        Ok(Plan { film_dir, config_dir, create_args: create, cli_args: cli, encrypt: self.encrypt })
     }
 }
 
@@ -419,6 +423,16 @@ pub(crate) struct Plan {
     pub config_dir: Option<PathBuf>,
     pub create_args: Vec<String>,
     pub cli_args: Vec<String>,
+    pub encrypt: bool,
+}
+
+/// Puts `value` after `flag` in `args` (the flag is there: the request built it).
+pub(crate) fn set_value(args: &mut [String], flag: &str, value: String) {
+    if let Some(i) = args.iter().position(|a| a == flag)
+        && let Some(v) = args.get_mut(i + 1)
+    {
+        *v = value;
+    }
 }
 
 pub(crate) fn absolute(p: &Path) -> Result<PathBuf, DcpomaticError> {

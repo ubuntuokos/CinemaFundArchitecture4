@@ -7,7 +7,7 @@ use std::time::{Duration, Instant};
 
 use serde::{Deserialize, Serialize};
 
-use crate::request::{absolute, default_config_dir, text};
+use crate::request::{absolute, default_config_dir, set_value, text};
 use crate::{Control, Dcpomatic, DcpomaticError, KDM_CLI, Phase, create_private_dir, process};
 
 /// The KDM formulation (`--formulation`).
@@ -110,6 +110,35 @@ fn is_time(s: &str) -> bool {
         })
 }
 
+/// The largest `metadata.xml` read (a film's is a few kilobytes).
+const METADATA_MAX: u64 = 16 << 20;
+
+/// The film directory's `metadata.xml`: a regular file of at most [`METADATA_MAX`] bytes (a FIFO
+/// or device is refused before it is opened, so the read cannot block).
+fn read_metadata(film: &Path) -> Result<String, DcpomaticError> {
+    use std::io::Read as _;
+    let path = film.join("metadata.xml");
+    let not_film = || DcpomaticError::Invalid(format!("{} is not a DCP-o-matic film directory (no metadata.xml)", film.display()));
+    let too_big = || DcpomaticError::Invalid(format!("{} is larger than {METADATA_MAX} bytes", path.display()));
+    let meta = std::fs::metadata(&path).map_err(|_| not_film())?;
+    if !meta.is_file() {
+        return Err(not_film());
+    }
+    if meta.len() > METADATA_MAX {
+        return Err(too_big());
+    }
+    let file = std::fs::File::open(&path).map_err(|_| not_film())?;
+    if !file.metadata().is_ok_and(|m| m.is_file()) {
+        return Err(not_film());
+    }
+    let mut s = String::new();
+    file.take(METADATA_MAX + 1).read_to_string(&mut s).map_err(|_| not_film())?;
+    if s.len() as u64 > METADATA_MAX {
+        return Err(too_big());
+    }
+    Ok(s)
+}
+
 fn name_ok(s: &str) -> bool {
     !s.trim().is_empty() && !s.chars().any(char::is_control) && !s.starts_with('-')
 }
@@ -118,8 +147,7 @@ impl KdmRequest {
     pub(crate) fn args(&self) -> Result<(Vec<String>, PathBuf, Option<PathBuf>), DcpomaticError> {
         let bad = |m: String| Err(DcpomaticError::Invalid(m));
         let film = absolute(&self.film_dir)?;
-        let metadata = std::fs::read_to_string(film.join("metadata.xml"))
-            .map_err(|_| DcpomaticError::Invalid(format!("{} is not a DCP-o-matic film directory (no metadata.xml)", film.display())))?;
+        let metadata = read_metadata(&film)?;
         if !metadata.contains("<Encrypted>1</Encrypted>") {
             return bad(format!("the DCP in {} is not encrypted; KDMs are only for encrypted DCPs", film.display()));
         }
@@ -216,18 +244,27 @@ impl Dcpomatic {
         let Some(program) = &self.kdm else {
             return Err(DcpomaticError::Unavailable(format!("{KDM_CLI} was not found next to {}", self.cli.display())));
         };
-        let (args, output, config) = request.args()?;
+        let (mut args, output, config) = request.args()?;
         self.version()?;
         std::fs::create_dir_all(&output)?;
         if let Some(cfg) = &config {
             create_private_dir(cfg)?;
         }
-        // DCP-o-matic overwrites a KDM of the same name, so "new" means written during this run
-        let started = std::time::SystemTime::now() - Duration::from_secs(2);
+        // The tool writes into a folder of its own inside the output folder; only the KDMs of this
+        // run are moved out of it (replacing one of the same name) and returned.
+        let run = process::Scratch::bare_in(&output, ".cfa4-kdm")?;
+        set_value(&mut args, "--output", text(run.path())?);
         let timeout = Duration::from_secs(10 * 60);
-        process::run_tool(program, &args, config.as_deref(), Instant::now() + timeout, timeout, &Control::new(), Phase::Kdm)?;
-        let files: Vec<PathBuf> =
-            xml_files(&output).into_iter().filter(|f| std::fs::metadata(f).and_then(|m| m.modified()).is_ok_and(|t| t >= started)).collect();
+        // The times are UTC: DCP-o-matic reads them (and `now`) as local time.
+        process::run_tool(program, &args, config.as_deref(), &[("TZ", "UTC")], Instant::now() + timeout, timeout, &Control::new(), Phase::Kdm)?;
+        let mut files = Vec::new();
+        for f in xml_files(run.path()) {
+            let Some(name) = f.file_name() else { continue };
+            let to = output.join(name);
+            std::fs::rename(&f, &to)?;
+            files.push(to);
+        }
+        drop(run);
         if files.is_empty() {
             return Err(DcpomaticError::Engine(format!("{KDM_CLI} finished but wrote no KDM into {}", output.display())));
         }

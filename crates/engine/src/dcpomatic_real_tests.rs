@@ -3,7 +3,8 @@
 //! and CFA4 playing the encrypted sound track after `dcp.loadKdm` with the test private key.
 //!
 //! Runs only when `CFA4_DCPOMATIC_BIN_DIR` names a DCP-o-matic build (the CI job
-//! `dcpomatic.yml`) and `ffmpeg` and `openssl` are there; otherwise it says so and passes.
+//! `dcpomatic.yml`) otherwise it says so and passes. With
+//! a build, `ffmpeg` and `openssl` failing fails the test.
 
 use std::path::{Path, PathBuf};
 use std::process::Command;
@@ -14,12 +15,14 @@ use serde_json::json;
 use crate::Session;
 use crate::media_test_util::tmp_dir;
 
-fn run(dir: &Path, program: &str, args: &[&str]) -> bool {
-    Command::new(program).current_dir(dir).args(args).output().is_ok_and(|o| o.status.success())
+/// Runs `program`; the error has its exit status and stderr.
+fn run(dir: &Path, program: &str, args: &[&str]) -> Result<(), String> {
+    let o = Command::new(program).current_dir(dir).args(args).output().map_err(|e| format!("{program} cannot be started: {e}"))?;
+    if o.status.success() { Ok(()) } else { Err(format!("{program} {}: {}", o.status, String::from_utf8_lossy(&o.stderr).trim())) }
 }
 
 /// One second of 2K Flat ProRes with a 1 kHz tone, as `file.exportMedia` would hand over.
-fn master(dir: &Path) -> Option<PathBuf> {
+fn master(dir: &Path) -> Result<PathBuf, String> {
     let out = dir.join("master.mov");
     let args = [
         "-v",
@@ -39,11 +42,11 @@ fn master(dir: &Path) -> Option<PathBuf> {
         "pcm_s24le",
         "master.mov",
     ];
-    run(dir, "ffmpeg", &args).then_some(out)
+    run(dir, "ffmpeg", &args).map(|()| out)
 }
 
 /// A test recipient: an RSA key and a self-signed certificate standing in for a projector.
-fn recipient(dir: &Path) -> bool {
+fn recipient(dir: &Path) -> Result<(), String> {
     run(
         dir,
         "openssl",
@@ -80,14 +83,9 @@ fn encrypted_dcp_and_kdm_from_dcpomatic_play_in_cfa4() {
         return;
     }
     let dir = tmp_dir("dcpom3-real");
-    let Some(master) = master(&dir) else {
-        eprintln!("skipped: ffmpeg could not make the test master");
-        return;
-    };
-    if !recipient(&dir) {
-        eprintln!("skipped: openssl could not make the test certificate");
-        return;
-    }
+    // with a DCP-o-matic build the run is on, so a failing preparation fails the test
+    let master = master(&dir).unwrap_or_else(|e| panic!("the test master: {e}"));
+    recipient(&dir).unwrap_or_else(|e| panic!("the test certificate: {e}"));
     let p = |x: &Path| x.display().to_string();
     let mut s = Session::default();
     s.execute("dcp.clearKeys", json!({})).unwrap();

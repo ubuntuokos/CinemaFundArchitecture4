@@ -264,10 +264,39 @@ impl Dcpomatic {
         }
 
         control.report(Phase::Create, 0.0);
-        process::run_step(&self.create, &plan.create_args, deadline, self.timeout, control, Phase::Create).map_err(cleanup)?;
-        if !film.join("metadata.xml").is_file() {
+        // An encrypted film's metadata.xml holds the content keys in clear. DCP-o-matic writes it
+        // inside a 0700 staging folder next to the film directory, which is made 0700 and then
+        // moved into place, so no other local user can read the keys at any moment.
+        let stage = match (plan.encrypt, film.parent(), film.file_name()) {
+            (false, _, _) => None,
+            (true, Some(parent), Some(leaf)) => {
+                let st = process::Scratch::bare_in(parent, ".cfa4-dcpomatic-stage")?;
+                let made = st.path().join(leaf);
+                Some((st, made))
+            }
+            (true, _, _) => return Err(DcpomaticError::Invalid(format!("{} has no parent folder", film.display()))),
+        };
+        let mut create_args = plan.create_args.clone();
+        let made = match &stage {
+            Some((_, made)) => {
+                request::set_value(&mut create_args, "--output", request::text(made)?);
+                made.clone()
+            }
+            None => film.clone(),
+        };
+        process::run_step(&self.create, &create_args, deadline, self.timeout, control, Phase::Create).map_err(cleanup)?;
+        if !made.join("metadata.xml").is_file() {
             return Err(DcpomaticError::Engine(format!("{CREATE} finished but wrote no film directory at {}", film.display())));
         }
+        if stage.is_some() {
+            use std::os::unix::fs::PermissionsExt as _;
+            std::fs::set_permissions(&made, std::fs::Permissions::from_mode(0o700))?;
+            if film.exists() {
+                return Err(DcpomaticError::Engine(format!("{} appeared while the film was being created", film.display())));
+            }
+            std::fs::rename(&made, &film)?;
+        }
+        drop(stage);
         control.report(Phase::Create, 1.0);
 
         control.report(Phase::Encode, 0.0);
