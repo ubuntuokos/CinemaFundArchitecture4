@@ -1353,6 +1353,18 @@ class Monitor(QWidget):
         self.stop_at = self.rest_at = None
         self.play(speed)
 
+    def shuttle_to(self, speed: float) -> None:
+        """A shuttle ring (ShuttlePRO, ``playback.shuttleSpeed``): play at ``speed`` (negative:
+        backwards, at most 8×), 0 stops. The sound follows the J/L rule (heard at 0.5–4× forward)."""
+        speed = min(MAX_SPEED, max(-MAX_SPEED, float(speed)))
+        if speed == 0:
+            self.stop()
+            return
+        if self.playing and self.speed == speed:
+            return
+        self.stop_at = self.rest_at = None
+        self.play(speed)
+
     def play_in_to_out(self) -> None:
         """Play the marked range once and rest at Out (egui's playback.inToOut)."""
         if not self.has_content():

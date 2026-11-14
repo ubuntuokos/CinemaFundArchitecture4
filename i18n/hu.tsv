@@ -4571,7 +4571,7 @@ export.summary	Low	alacsony
 	No MIDI controller or jog/shuttle device was found. Connect one and press Refresh.	Nem található MIDI-vezérlő vagy jog/shuttle eszköz. Csatlakoztasson egyet, majd nyomja meg a Frissítés gombot.
 	Control Surfaces	Vezérlőfelületek
 	Use control surfaces (MIDI controllers, jog/shuttle devices)	Vezérlőfelületek használata (MIDI-vezérlők, jog/shuttle eszközök)
-	Assignments run when a button is pressed (a fader or knob counts as pressed past half way). Faders, knobs and jog wheels as continuous values, and the ShuttlePRO buttons, come in a later version.	A hozzárendelések gombnyomásra futnak (egy fader vagy forgatógomb a félúton túl számít lenyomásnak). A faderek, forgatógombok és jogkerekek folyamatos értékként, valamint a ShuttlePRO gombjai egy későbbi verzióban jönnek.
+	Assignments run when a button is pressed (a fader or knob counts as pressed past half way). A ShuttlePRO's shuttle ring plays at its profile's speeds and its jog wheel steps frame by frame. Faders, knobs and encoders as continuous values come in a later version.	A hozzárendelések gombnyomásra futnak (egy fader vagy forgatógomb a félúton túl számít lenyomásnak). A ShuttlePRO shuttle-gyűrűje a profil sebességeivel játszik le, a jog-tárcsája képkockánként léptet. A faderek, forgatógombok és enkóderek folyamatos értékként egy későbbi verzióban jönnek.
 	CFA4 ShuttlePRO	CFA4 ShuttlePRO
 	Kdenlive-style ShuttlePRO	Kdenlive-szerű ShuttlePRO
 	Generic MIDI	Általános MIDI
@@ -4589,6 +4589,7 @@ export.summary	Low	alacsony
 	Cancel Learn	Tanítás megszakítása
 	Press or move a control on the controller…	Nyomjon meg vagy mozdítson meg egy kezelőszervet a vezérlőn…
 	Pick a command, press Learn, then press a button on the controller. OK saves the assignments.	Válasszon parancsot, nyomja meg a Tanítás gombot, majd nyomjon meg egy gombot a vezérlőn. Az OK menti a hozzárendeléseket.
-	Connect a MIDI controller to assign commands to its buttons.	Csatlakoztasson egy MIDI-vezérlőt, hogy parancsokat rendelhessen a gombjaihoz.
+	Connect a MIDI controller or a ShuttlePRO to assign commands to its buttons.	Csatlakoztasson egy MIDI-vezérlőt vagy egy ShuttlePRO-t, hogy parancsokat rendelhessen a gombjaihoz.
 	{control} runs {command}.	{control}: {command}.
 	A control surface asked for {command}, which does not exist.	Egy vezérlő a(z) {command} parancsot kérte, de ilyen parancs nincs.
+	Button {n}	{n}. gomb

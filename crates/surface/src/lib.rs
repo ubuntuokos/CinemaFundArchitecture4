@@ -10,10 +10,11 @@
 //! without `/sys/class/hidraw` gives an empty list for that part and a note in
 //! [`Discovery::problems`].
 //!
-//! [`midi_in::MidiReader`] reads the MIDI controllers (the MIDI Monitor). Reading the HID devices
-//! and feedback come in the next steps.
+//! [`midi_in::MidiReader`] reads the MIDI controllers, [`hid_in::HidReader`] a jog/shuttle
+//! device. Feedback comes in a later step.
 
 pub mod hid;
+pub mod hid_in;
 pub mod midi;
 pub mod midi_in;
 

@@ -19,12 +19,16 @@
 //! params, device, control}`, which the GUI runs as it runs a menu item.
 
 use std::cell::RefCell;
+use std::collections::HashMap;
+use std::path::Path;
 use std::time::{Duration, Instant};
 
 use cfa4_engine::Session;
-use cfa4_engine::control_surfaces::{ControlSurfacePrefs, PROFILES, Triggers};
+use cfa4_engine::control_surfaces::{Action, ControlSurfacePrefs, PROFILES, Triggers};
+use cfa4_surface::hid_in::{HidInput, HidReader};
 use cfa4_surface::midi_in::{MidiMessage, MidiReader};
 use cfa4_surface_model::midi::{self, Chatter};
+use cfa4_surface_model::{ControlId, SurfaceInput};
 use serde_json::{Value, json};
 
 /// Most messages in one `surfaceMonitor` event.
@@ -119,27 +123,52 @@ impl Router {
     pub fn route(&mut self, prefs: &ControlSurfacePrefs, messages: Vec<MidiMessage>, lost: u64) -> Vec<Value> {
         let mut out = Vec::new();
         for m in &messages {
-            let device = m.device.0.as_str();
-            let Some(control) = self.triggers.press(device, &midi::input(&m.raw)) else { continue };
-            if self.learn.as_deref().is_some_and(|d| d.is_empty() || d == device) {
-                self.learn = None;
-                out.push(json!({"event": "surfaceLearn", "state": "captured", "device": device, "control": control, "label": midi::control_label(&control)}));
-                continue; // a press caught by Learn runs nothing
-            }
-            if let Some(a) = prefs.action(device, &control) {
-                let params = if a.params.is_null() { json!({}) } else { a.params };
-                out.push(json!({"event": "surfaceAction", "command": a.command, "params": params, "device": device, "control": control}));
-            }
+            self.input(prefs, &m.device.0, &midi::input(&m.raw), &mut out);
         }
         if let Some(b) = self.monitor.as_mut() {
             b.push(messages, lost);
         }
         out
     }
+
+    /// The events of jog/shuttle inputs: buttons as [`Router::route`] handles MIDI presses, the
+    /// jog wheel and the shuttle ring by the device's profile.
+    pub fn route_hid(&mut self, prefs: &ControlSurfacePrefs, inputs: &[HidInput]) -> Vec<Value> {
+        let mut out = Vec::new();
+        for i in inputs {
+            self.input(prefs, &i.device.0, &i.input, &mut out);
+        }
+        out
+    }
+
+    fn input(&mut self, prefs: &ControlSurfacePrefs, device: &str, input: &SurfaceInput, out: &mut Vec<Value>) {
+        let action = |a: Action, control: &ControlId| {
+            let params = if a.params.is_null() { json!({}) } else { a.params };
+            json!({"event": "surfaceAction", "command": a.command, "params": params, "device": device, "control": control})
+        };
+        if let Some(control) = input.control()
+            && matches!(input, SurfaceInput::Jog { .. } | SurfaceInput::Shuttle { .. })
+        {
+            out.extend(prefs.motion(device, input).into_iter().map(|a| action(a, control)));
+            return;
+        }
+        let Some(control) = self.triggers.press(device, input) else { return };
+        if self.learn.as_deref().is_some_and(|d| d.is_empty() || d == device) {
+            self.learn = None;
+            out.push(json!({"event": "surfaceLearn", "state": "captured", "device": device, "control": control, "label": midi::control_label(&control)}));
+            return; // a press caught by Learn runs nothing
+        }
+        if let Some(a) = prefs.action(device, &control) {
+            out.push(action(a, &control));
+        }
+    }
 }
 
 /// How long to wait before trying the sequencer again for the assignments after it failed.
 const RETRY: Duration = Duration::from_secs(10);
+
+/// How often the jog/shuttle devices are looked for (plugged in, unplugged, permission fixed).
+const HID_SCAN: Duration = Duration::from_secs(2);
 
 #[derive(Default)]
 struct State {
@@ -148,6 +177,31 @@ struct State {
     router: Router,
     /// No reading for the assignments before this (the sequencer failed).
     retry_at: Option<Instant>,
+    /// The jog/shuttle devices read now, by device id.
+    hid: HashMap<String, HidReader>,
+    hid_scanned: Option<Instant>,
+}
+
+impl State {
+    /// Starts reading the jog/shuttle devices that are plugged in, readable and used; stops the
+    /// ones unplugged or no longer used.
+    fn keep_hid(&mut self, prefs: &ControlSurfacePrefs, now: Instant) {
+        self.hid.retain(|id, r| r.running() && prefs.enabled && prefs.device(id).enabled);
+        if !prefs.enabled || self.hid_scanned.is_some_and(|t| now.duration_since(t) < HID_SCAN) {
+            return;
+        }
+        self.hid_scanned = Some(now);
+        let Ok(found) = cfa4_surface::hid::scan(Path::new("/sys/class/hidraw"), Path::new("/dev")) else { return };
+        for d in found {
+            if d.error.is_some() || self.hid.contains_key(&d.device.0) || !prefs.device(&d.device.0).enabled {
+                continue;
+            }
+            let buttons = d.vid.zip(d.pid).and_then(|(v, p)| cfa4_surface::hid::known(v, p)).map_or(15, |k| k.3);
+            if let Ok(r) = HidReader::start(d.device.clone(), Path::new(&d.port), buttons) {
+                self.hid.insert(d.device.0.clone(), r);
+            }
+        }
+    }
 }
 
 impl State {
@@ -195,7 +249,9 @@ pub fn learn(p: &Value) -> Result<Value, String> {
     let device = p.get("device").and_then(Value::as_str).unwrap_or_default().to_string();
     STATE.with(|st| {
         let mut st = st.borrow_mut();
-        st.ensure_reader()?;
+        if !device.starts_with("hid:") {
+            st.ensure_reader()?; // a jog/shuttle device is read whenever it is used
+        }
         st.router.learn = Some(device);
         Ok(json!({"state": "learning"}))
     })
@@ -215,35 +271,45 @@ pub fn upkeep(s: &Session) -> Vec<Value> {
     STATE.with(|st| {
         let mut st = st.borrow_mut();
         let now = Instant::now();
-        if !st.router.wants_reader(prefs) {
-            st.reader = None; // dropping the reader stops its thread
-            return Vec::new();
-        }
-        if st.reader.is_none() && st.retry_at.is_none_or(|t| now >= t) {
-            // only the assignments need it here (Monitor and Learn started it themselves)
-            if st.ensure_reader().is_err() {
-                st.retry_at = Some(now + RETRY);
-            }
-        }
-        let Some(reader) = st.reader.as_ref() else { return Vec::new() };
-        let lost = reader.dropped();
-        let messages = reader.drain(cfa4_surface::midi_in::QUEUE);
-        let running = reader.running();
-        let new_lost = lost.saturating_sub(st.seen_lost);
-        st.seen_lost = lost;
-        let mut out = st.router.route(prefs, messages, new_lost);
-        if let Some(e) = st.router.monitor.as_mut().and_then(|b| b.flush(now)) {
-            out.push(e);
-        }
-        if !running {
-            st.reader = None;
-            st.retry_at = Some(now + RETRY);
-            if st.router.monitor.take().is_some() || st.router.learn.take().is_some() {
-                out.push(json!({"event": "surfaceError", "code": "alsa_unavailable", "error": "MIDI: the sequencer stopped; the MIDI Monitor and MIDI Learn are off"}));
-            }
-        }
+        let mut out = midi_upkeep(&mut st, prefs, now);
+        st.keep_hid(prefs, now);
+        let inputs: Vec<HidInput> = st.hid.values().flat_map(|r| r.drain(cfa4_surface::hid_in::QUEUE)).collect();
+        out.extend(st.router.route_hid(prefs, &inputs));
         out
     })
+}
+
+fn midi_upkeep(st: &mut State, prefs: &ControlSurfacePrefs, now: Instant) -> Vec<Value> {
+    if !st.router.wants_reader(prefs) {
+        st.reader = None; // dropping the reader stops its thread
+        return Vec::new();
+    }
+    if st.reader.is_none() && st.retry_at.is_none_or(|t| now >= t) {
+        // only the assignments need it here (Monitor and Learn started it themselves)
+        if st.ensure_reader().is_err() {
+            st.retry_at = Some(now + RETRY);
+        }
+    }
+    let Some(reader) = st.reader.as_ref() else { return Vec::new() };
+    let lost = reader.dropped();
+    let messages = reader.drain(cfa4_surface::midi_in::QUEUE);
+    let running = reader.running();
+    let new_lost = lost.saturating_sub(st.seen_lost);
+    st.seen_lost = lost;
+    let mut out = st.router.route(prefs, messages, new_lost);
+    if let Some(e) = st.router.monitor.as_mut().and_then(|b| b.flush(now)) {
+        out.push(e);
+    }
+    if !running {
+        st.reader = None;
+        st.retry_at = Some(now + RETRY);
+        if st.router.monitor.take().is_some() || st.router.learn.take().is_some() {
+            out.push(
+                json!({"event": "surfaceError", "code": "alsa_unavailable", "error": "MIDI: the sequencer stopped; the MIDI Monitor and MIDI Learn are off"}),
+            );
+        }
+    }
+    out
 }
 
 /// Stops reading (the session ends).
@@ -395,6 +461,46 @@ mod tests {
         assert_eq!(e["messages"].as_array().map(Vec::len), Some(1));
     }
 
+    #[test]
+    fn jog_shuttle_and_their_buttons() {
+        use cfa4_engine::control_surfaces::{Binding, DeviceSetting};
+        use cfa4_surface_model::{DeviceId, MonoNs};
+        let dev = "hid:0b33:0030:usb-1";
+        let hid = |input| HidInput { device: DeviceId(dev.into()), at: MonoNs(0), input, raw: vec![] };
+        let button = |pressed| SurfaceInput::Button { control: ControlId::hid_named("button3"), pressed };
+        let mut prefs = ControlSurfacePrefs::default();
+        let mut r = Router::default();
+        let out = r.route_hid(
+            &prefs,
+            &[
+                hid(SurfaceInput::Shuttle { control: ControlId::hid_named("shuttle"), position: 4, range: 7 }),
+                hid(SurfaceInput::Jog { control: ControlId::hid_named("jog"), delta: 2 }),
+                hid(button(true)),
+            ],
+        );
+        assert_eq!(
+            out[0],
+            json!({"event": "surfaceAction", "command": "playback.shuttleSpeed", "params": {"speed": 1.5}, "device": dev, "control": {"hid": {"name": "shuttle", "usagePage": 0, "usage": 0}}})
+        );
+        assert_eq!(out[1]["command"], "playhead.stepForward");
+        assert_eq!(out[2]["command"], "playhead.stepForward");
+        assert_eq!(out.len(), 3, "a button without an assignment runs nothing");
+        // Learn takes a button; the jog and the shuttle keep working meanwhile
+        let _ = r.route_hid(&prefs, &[hid(button(false))]);
+        r.learn = Some(dev.into());
+        let out = r.route_hid(&prefs, &[hid(SurfaceInput::Jog { control: ControlId::hid_named("jog"), delta: -1 }), hid(button(true))]);
+        assert_eq!(out[0]["command"], "playhead.stepBack");
+        assert_eq!(out[1]["event"], "surfaceLearn");
+        assert_eq!(out[1]["label"], "button3");
+        prefs.devices.push(DeviceSetting {
+            device: dev.into(),
+            bindings: vec![Binding { control: ControlId::hid_named("button3"), command: "markers.markIn".into(), params: Value::Null }],
+            ..Default::default()
+        });
+        let _ = r.route_hid(&prefs, &[hid(button(false))]);
+        assert_eq!(r.route_hid(&prefs, &[hid(button(true))])[0]["command"], "markers.markIn");
+    }
+
     /// Without a sequencer (CI) Learn is an error that says why; cancelling always works.
     #[test]
     fn learn_without_a_sequencer() {
@@ -402,6 +508,8 @@ mod tests {
             Ok(v) => assert_eq!(v["state"], "learning"),
             Err(e) => assert!(e.contains("ALSA sequencer"), "{e}"),
         }
+        assert_eq!(learn_cancel()["state"], "cancelled");
+        assert_eq!(learn(&json!({"device": "hid:0b33:0030:usb-1"})).unwrap_or_default()["state"], "learning", "HID needs no sequencer");
         assert_eq!(learn_cancel()["state"], "cancelled");
         assert!(upkeep(&Session::default()).is_empty());
     }

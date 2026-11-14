@@ -2293,6 +2293,14 @@ class MainWindow(QMainWindow):
         would (a disabled command does nothing)."""
         cid = str(ev.get("command") or "")
         params = ev.get("params") if isinstance(ev.get("params"), dict) else {}
+        if cid == "playback.shuttleSpeed":
+            # the shuttle ring: a speed rather than a key's step (spec §4)
+            try:
+                speed = float(params.get("speed") or 0)
+            except (TypeError, ValueError):
+                return
+            self.focused_monitor().shuttle_to(speed)
+            return
         local = self.registry.local_actions.get(cid)
         if local is not None and not params:
             local.trigger()

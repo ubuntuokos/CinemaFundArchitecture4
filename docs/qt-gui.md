@@ -90,7 +90,10 @@ bytes. Lines with an `event` key and no `id` are notifications:
 `revealInProject {item}`, and while external timecode sync chases (Settings ▸ Timecode Sync)
 `timecodeSync.locate {time, seconds, play}` (go to `time` and play or hold) and
 `timecodeSync.stop`; from control surfaces `surfaceAction {command, params, device, control}` (a
-button with an assignment was pressed: the GUI runs `command` as its key would), `surfaceLearn`,
+button with an assignment was pressed: the GUI runs `command` as its key would; a ShuttlePRO's
+jog wheel sends `playhead.stepForward` / `playhead.stepBack` once per click, its shuttle ring
+`playback.stop` at rest and otherwise `playback.shuttleSpeed {speed}`, which the GUI plays on the
+focused monitor at that speed by the profile's table), `surfaceLearn`,
 `surfaceMonitor` and `surfaceError` (see `surface.learn` and `surface.monitor`). A line that is not a request gets an error reply with `id: null`; a
 line longer than 4 MiB is skipped with an error reply.
 

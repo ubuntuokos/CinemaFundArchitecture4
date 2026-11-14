@@ -1978,6 +1978,7 @@ version = "0.10.0"
 dependencies = [
  "alsa",
  "cfa4-surface-model",
+ "rustix 1.1.6",
  "serde",
  "serde_json",
 ]
