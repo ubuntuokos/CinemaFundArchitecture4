@@ -153,6 +153,13 @@ pub const HALFTONE_PATTERNS: &[&str] = &["Dot", "Line"];
 pub const DITHER_PATTERNS: &[&str] = &["Bayer 2×2", "Bayer 4×4", "Bayer 8×8", "Noise"];
 /// Dither palettes (`gpufx::DITHER_PALETTES`, in this order after "Input").
 pub const DITHER_PALETTES: &[&str] = &["Input Colors", "Black & White", "Green Phosphor", "Amber Monitor", "Game Boy", "CGA", "EGA", "ZX Spectrum", "PICO-8"];
+/// CRT phosphor masks (`gpufx::FxOp::Crt`, in this order).
+pub const CRT_MASKS: &[&str] = &["None", "Aperture Grille", "Shadow Mask", "Slot Mask"];
+/// Oil Paint brush styles (`gpufx::FxOp::OilPaint`, in this order).
+pub const OIL_STYLES: &[&str] = &["Facet", "Daubs", "Dry Brush", "Fresco", "Knife", "Sponge"];
+/// Pixel Sort keys and directions.
+pub const PIXEL_SORT_KEYS: &[&str] = &["Brightness", "Hue", "Saturation"];
+pub const PIXEL_SORT_ORDERS: &[&str] = &["Ascending", "Descending"];
 /// The view a Stereoscopic 3D effect keeps.
 pub const STEREO_EYES: &[&str] = &["Left", "Right"];
 
@@ -673,6 +680,46 @@ fn build_effects() -> Vec<EffectDef> {
                 fs("threshold", "Threshold", 0.0, (-50.0, 50.0), (-50.0, 50.0), "%", 1),
                 ch("palette", "Palette", DITHER_PALETTES, 0),
                 fs("levels", "Levels", 4.0, (2.0, 16.0), (2.0, 16.0), "", 0),
+                fs("blend", "Blend With Original", 0.0, (0.0, 100.0), (0.0, 100.0), "%", 1),
+            ],
+        ),
+        video(
+            "crt",
+            "CRT",
+            CREATIVE_LOOKS,
+            vec![
+                fs("scanlines", "Scanline Strength", 50.0, (0.0, 100.0), (0.0, 100.0), "%", 1),
+                fs("line_count", "Line Count", 240.0, (60.0, 1080.0), (60.0, 1080.0), "", 0),
+                ch("mask", "Mask", CRT_MASKS, 1),
+                fs("mask_strength", "Mask Strength", 30.0, (0.0, 100.0), (0.0, 100.0), "%", 1),
+                fs("curvature", "Curvature", 10.0, (0.0, 100.0), (0.0, 100.0), "%", 1),
+                fs("corner_darkening", "Corner Darkening", 30.0, (0.0, 100.0), (0.0, 100.0), "%", 1),
+                fs("flicker", "Flicker", 5.0, (0.0, 100.0), (0.0, 100.0), "%", 1),
+                fs("seed", "Random Seed", 1.0, (1.0, 9999.0), (1.0, 100.0), "", 0),
+            ],
+        ),
+        video(
+            "oil_paint",
+            "Oil Paint",
+            CREATIVE_LOOKS,
+            vec![
+                ch("style", "Style", OIL_STYLES, 1),
+                fs("brush_size", "Brush Size", 6.0, (1.0, 12.0), (1.0, 12.0), "px", 0),
+                fs("detail", "Detail", 50.0, (0.0, 100.0), (0.0, 100.0), "%", 1),
+                fs("texture", "Texture", 20.0, (0.0, 100.0), (0.0, 100.0), "%", 1),
+                fs("seed", "Random Seed", 1.0, (1.0, 9999.0), (1.0, 100.0), "", 0),
+            ],
+        ),
+        video(
+            "pixel_sort",
+            "Pixel Sort",
+            CREATIVE_LOOKS,
+            vec![
+                ang("angle", "Angle", 0.0),
+                ch("sort_by", "Sort By", PIXEL_SORT_KEYS, 0),
+                fs("lower", "Lower Threshold", 25.0, (0.0, 100.0), (0.0, 100.0), "%", 1),
+                fs("upper", "Upper Threshold", 80.0, (0.0, 100.0), (0.0, 100.0), "%", 1),
+                ch("order", "Order", PIXEL_SORT_ORDERS, 0),
                 fs("blend", "Blend With Original", 0.0, (0.0, 100.0), (0.0, 100.0), "%", 1),
             ],
         ),
