@@ -9,8 +9,10 @@
 //! [`CodecError`] here, never a crash of CFA4 (AGENTS.md § 0). The protocol and the process
 //! handling are shared with the AV2 helper: see [`crate::external_decoder`].
 //!
-//! Samples are access units in Annex B form (start codes). MP4 samples (length prefixed) are
-//! turned into Annex B with [`cfa4_vvc::to_annexb`] before they reach the decoder.
+//! Samples are access units in Annex B form (start codes). MP4 samples (`vvc1` / `vvi1`, length
+//! prefixed) go through [`Mp4VvcDecoder`], which turns them into Annex B and puts the parameter
+//! sets of the `vvcC` record in front of the first unit and of every random-access unit that does
+//! not carry its own.
 
 use std::path::{Path, PathBuf};
 use std::time::Duration;
@@ -77,6 +79,70 @@ impl VideoDecoder for ExternalVvcDecoder {
 /// leading pictures of a CRA are left out by the decoder, as for HEVC ([`crate::gop`]).
 pub fn is_random_access_unit(au: &[u8]) -> bool {
     cfa4_vvc::au_info(&annexb_nals(au)).irap
+}
+
+/// VVC in MP4 (`vvc1` / `vvi1`) through the helper.
+pub struct Mp4VvcDecoder {
+    inner: ExternalVvcDecoder,
+    length_size: usize,
+    /// The `vvcC` NAL units (parameter sets, SEI), Annex B framed.
+    params: Vec<u8>,
+    /// The next unit gets the parameter sets whatever it is (after start and reset).
+    need_params: bool,
+}
+
+impl Mp4VvcDecoder {
+    /// Start the helper at `path` for samples described by `cfg`.
+    pub fn new(path: &Path, threads: usize, cfg: &cfa4_isobmff::VvcConfig) -> Result<Mp4VvcDecoder> {
+        let inner = ExternalVvcDecoder::new(path, threads)?;
+        Ok(Mp4VvcDecoder { inner, length_size: usize::from(cfg.length_size), params: cfa4_vvc::to_annexb(cfg.nalus()), need_params: true })
+    }
+
+    /// Time the helper gets to answer one request (default one minute).
+    pub fn set_request_timeout(&mut self, timeout: Duration) {
+        self.inner.set_request_timeout(timeout);
+    }
+
+    fn nals<'a>(&self, sample: &'a [u8]) -> Result<Vec<&'a [u8]>> {
+        cfa4_bitstream::length_prefixed_nals(sample, self.length_size).map_err(|e| CodecError::Decode(format!("VVC sample: {e}")))
+    }
+}
+
+impl VideoDecoder for Mp4VvcDecoder {
+    fn decode(&mut self, sample: &[u8], pts: i64) -> Result<Vec<DecodedFrame>> {
+        let nals = self.nals(sample)?;
+        let info = cfa4_vvc::au_info(&nals);
+        let mut au = Vec::with_capacity(sample.len() + self.params.len() + 4 * nals.len());
+        if self.need_params || (info.irap && !info.has_sps) {
+            au.extend_from_slice(&self.params);
+        }
+        au.extend_from_slice(&cfa4_vvc::to_annexb(nals));
+        self.need_params = false;
+        self.inner.decode(&au, pts)
+    }
+    fn flush(&mut self) -> Vec<DecodedFrame> {
+        self.inner.flush()
+    }
+    fn reset(&mut self) {
+        self.inner.reset();
+        self.need_params = true;
+    }
+    fn name(&self) -> &str {
+        self.inner.name()
+    }
+    fn is_random_access(&self, sample: &[u8]) -> Option<bool> {
+        Some(self.nals(sample).is_ok_and(|n| cfa4_vvc::au_info(&n).irap))
+    }
+    fn is_disposable(&self, sample: &[u8]) -> bool {
+        self.nals(sample).is_ok_and(|n| cfa4_vvc::au_info(&n).non_ref)
+    }
+}
+
+/// Decoder factory for `vvc1` / `vvi1` sample entries: the helper in [`DECODER_ENV`], if set.
+pub fn vvc_factory(e: &cfa4_isobmff::SampleEntry) -> Option<Result<Box<dyn VideoDecoder>>> {
+    let cfa4_isobmff::CodecConfig::Vvc(cfg) = &e.codec else { return None };
+    let helper = configured_helper()?;
+    Some(Mp4VvcDecoder::new(&helper, 0, cfg).map(|d| Box::new(d) as Box<dyn VideoDecoder>))
 }
 
 #[cfg(test)]

@@ -2,6 +2,7 @@
 
 use crate::bytes::{BoxBuf, Cur, FourCc, boxes};
 use crate::error::{Error, Result};
+use crate::vvcc::VvcConfig;
 use cfa4_bitstream::BitReader;
 
 /// One sample description (an entry of `stsd`).
@@ -171,6 +172,8 @@ pub enum CodecConfig {
         av2c: Vec<u8>,
     },
     Vp9(VpcConfig),
+    /// H.266/VVC (`vvc1`, `vvi1`): the `vvcC` record. `vvi1` samples may carry parameter sets.
+    Vvc(VvcConfig),
     /// Apple ProRes; fourcc is `apch`/`apcn`/`apcs`/`apco`/`ap4h`/`ap4x`.
     ProRes {
         fourcc: FourCc,
@@ -235,6 +238,7 @@ impl CodecConfig {
             CodecConfig::Hevc(_) => "hevc",
             CodecConfig::Av1(_) => "av1",
             CodecConfig::Av2 { .. } => "av2",
+            CodecConfig::Vvc(_) => "vvc",
             CodecConfig::Vp9(_) => "vp9",
             CodecConfig::ProRes { .. } => "prores",
             CodecConfig::Jpeg { .. } => "mjpeg",
@@ -873,6 +877,8 @@ fn is_video_fourcc(f: &[u8; 4]) -> bool {
             | b"hev1"
             | b"av01"
             | b"av02"
+            | b"vvc1"
+            | b"vvi1"
             | b"vp09"
             | b"vp08"
             | b"apch"
@@ -994,6 +1000,7 @@ pub(crate) fn parse_sample_entry(format: FourCc, payload: &[u8], handler: FourCc
                 b"hvcC" if matches!(f, b"hvc1" | b"hev1") => codec = Some(CodecConfig::Hevc(HevcConfig::parse(p)?)),
                 b"av1C" if f == b"av01" => codec = Some(CodecConfig::Av1(Av1Config::parse(p)?)),
                 b"av2C" if f == b"av02" => codec = Some(CodecConfig::Av2 { av2c: p.to_vec() }),
+                b"vvcC" if matches!(f, b"vvc1" | b"vvi1") => codec = Some(CodecConfig::Vvc(VvcConfig::parse(p)?)),
                 b"vpcC" if f == b"vp09" => codec = Some(CodecConfig::Vp9(VpcConfig::parse(p)?)),
                 b"apvC" if f == b"apv1" => codec = Some(CodecConfig::Apv(ApvConfig::parse(p)?)),
                 b"colr" => v.color = parse_colr(p).ok(),
@@ -1345,6 +1352,10 @@ impl SampleEntry {
     pub fn av2(av2c: Vec<u8>, width: u16, height: u16) -> Self {
         Self::video(FourCc(*b"av02"), CodecConfig::Av2 { av2c }, width, height)
     }
+    /// VVC entry (`vvc1`: parameter sets only in `vvcC`).
+    pub fn vvc(cfg: VvcConfig, width: u16, height: u16) -> Self {
+        Self::video(FourCc(*b"vvc1"), CodecConfig::Vvc(cfg), width, height)
+    }
     /// ProRes entry; `fourcc` one of `apch`/`apcn`/`apcs`/`apco`/`ap4h`/`ap4x`.
     pub fn prores(fourcc: FourCc, width: u16, height: u16) -> Self {
         let mut e = Self::video(fourcc, CodecConfig::ProRes { fourcc }, width, height);
@@ -1469,6 +1480,7 @@ impl SampleEntry {
                 CodecConfig::Hevc(c) => b.leaf(b"hvcC", &c.to_bytes()),
                 CodecConfig::Av1(c) => b.leaf(b"av1C", &c.to_bytes()),
                 CodecConfig::Av2 { av2c } if !av2c.is_empty() => b.leaf(b"av2C", av2c),
+                CodecConfig::Vvc(c) => b.leaf(b"vvcC", &c.to_bytes()),
                 CodecConfig::Vp9(c) => b.leaf(b"vpcC", &c.to_bytes()),
                 CodecConfig::Apv(c) => b.leaf(b"apvC", &c.to_bytes()),
                 _ => {}
@@ -1695,6 +1707,20 @@ mod tests {
         let bare = roundtrip(&SampleEntry::av2(Vec::new(), 64, 48), false, b"vide");
         assert_eq!(bare.codec, CodecConfig::Av2 { av2c: Vec::new() });
         assert_eq!(bare.video.map(|v| (v.width, v.height)), Some((64, 48)));
+    }
+
+    /// VVC-02: `vvc1` + `vvcC` is parsed and written back unchanged.
+    #[test]
+    fn vvc1_entry_round_trips() {
+        let cfg = VvcConfig {
+            length_size: 4,
+            operating_point: None,
+            arrays: vec![crate::VvcNalArray { completeness: true, nal_type: 15, nalus: vec![vec![0x00, 0x79, 0x00, 0x8d]] }],
+        };
+        let e = SampleEntry::vvc(cfg, 1920, 1080);
+        let back = roundtrip(&e, false, b"vide");
+        assert_eq!(back, e);
+        assert_eq!(back.codec.name(), "vvc");
     }
 
     #[test]

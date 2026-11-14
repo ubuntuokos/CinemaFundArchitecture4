@@ -140,7 +140,10 @@ cross-check ([AV2 plan](plans/AV2-CODEC-PLAN-2026-10-29.md) II.3, X/3).
   path). `cargo test -p cfa4-codecs --features vvc-external --test vvc_external` decodes a VVenC
   stream (FFmpeg `libvvenc` fixture in `target/fixtures/vvc/`) through the helper and compares
   every picture with FFmpeg's own VVC decoder, starts decoding at a later random-access unit,
-  and feeds mutated units to the real helper. VVdeC and `libvvenc` are restricted components
+  and feeds mutated units to the real helper. The same test file checks the `vvcC` record of a
+  `libvvenc` MP4 against its SPS and decodes the MP4 samples; `--test vvc_mp4_source` opens the
+  MP4 as a media source and compares frames requested by time (with seeks back and across
+  random-access units) with FFmpeg's. VVdeC and `libvvenc` are restricted components
   (`cfa4-restricted-extras`), so without them the tests print `SKIPPED`, also under
   `CFA4_REQUIRE_ORACLES`. The JVET conformance run against VTM is the G2 entry condition.
 - CI: `.github/workflows/cfa4-av2-oracle.yml` (Ubuntu 26.04) runs only on `workflow_dispatch` or

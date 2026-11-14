@@ -119,7 +119,14 @@ const BUILTIN_FACTORIES: [VideoDecoderFactory; 19] = [
 
 fn factories() -> &'static RwLock<Vec<VideoDecoderFactory>> {
     static F: std::sync::OnceLock<RwLock<Vec<VideoDecoderFactory>>> = std::sync::OnceLock::new();
-    F.get_or_init(|| RwLock::new(BUILTIN_FACTORIES.to_vec()))
+    F.get_or_init(|| {
+        #[allow(unused_mut)]
+        let mut v = BUILTIN_FACTORIES.to_vec();
+        // VVC through the VVdeC helper (ADR 0013): only with the feature and CFA4_VVC_DECODER.
+        #[cfg(feature = "vvc-external")]
+        v.push(vvc_external::vvc_factory);
+        RwLock::new(v)
+    })
 }
 
 /// Register a video decoder factory (tried before previously registered ones).
@@ -146,10 +153,15 @@ pub fn make_video_decoder(entry: &cfa4_isobmff::SampleEntry) -> Result<Box<dyn V
     Err(no_decoder(entry))
 }
 
+/// Why VVC does not decode: the VVdeC helper is a restricted component and its router
+/// registration waits for the G2 gate (ADR 0013).
+pub const VVC_UNSUPPORTED: &str = "H.266/VVC video is recognised, but decoding it needs the VVdeC helper (cfa4-restricted-extras), which is not enabled yet";
+
 /// The error for a sample entry no factory takes: AV2 is named as recognised (AV2 plan X/4).
 fn no_decoder(entry: &cfa4_isobmff::SampleEntry) -> CodecError {
     match entry.codec {
         cfa4_isobmff::CodecConfig::Av2 { .. } => CodecError::Unsupported(av2::unsupported_message(av2::Framing::Mp4)),
+        cfa4_isobmff::CodecConfig::Vvc(_) => CodecError::Unsupported(VVC_UNSUPPORTED.into()),
         _ => CodecError::Unsupported(format!("no decoder for {} video", entry.codec.name())),
     }
 }

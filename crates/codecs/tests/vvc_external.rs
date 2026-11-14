@@ -189,6 +189,100 @@ fn hostile_units_through_the_real_helper_do_not_crash() {
     assert_eq!(n, FRAMES);
 }
 
+/// The same content encoded straight into MP4 (`vvc1` + `vvcC`), so the samples carry the
+/// encoder's presentation times (a remux of the raw stream would only have decode order).
+fn mp4_fixture(ff: &Path, annexb: &Path) -> PathBuf {
+    let out = annexb.with_extension("mp4"); // the file vvc_mp4_source.rs uses too
+    generate(&out, |tmp| {
+        Command::new(ff)
+            .args(["-hide_banner", "-loglevel", "error", "-y", "-f", "lavfi", "-i"])
+            .arg(format!("testsrc2=size={WIDTH}x{HEIGHT}:rate=24"))
+            .args(["-frames:v", &FRAMES.to_string(), "-pix_fmt", "yuv420p10le", "-c:v", "libvvenc", "-preset", "faster", "-qp", "32"])
+            .args(["-vvenc-params", "IntraPeriod=8", "-tag:v", "vvc1", "-f", "mp4"])
+            .arg(tmp)
+            .stdin(Stdio::null())
+            .status()
+            .is_ok_and(|s| s.success())
+    })
+    .expect("ffmpeg with libvvenc failed to encode the MP4 fixture")
+}
+
+/// The `vvcC` record FFmpeg writes agrees with the stream, and the MP4 source names the codec.
+/// Needs no helper: without it, decoding is refused with a clear message.
+#[test]
+fn mp4_vvc_track_is_recognised() {
+    let ctx = "vvc_external::mp4_vvc_track_is_recognised";
+    let Some((ff, path)) = fixture(ctx) else { return };
+    let mp4 = mp4_fixture(&ff, &path);
+    let bytes: std::sync::Arc<[u8]> = std::fs::read(&mp4).unwrap().into();
+    let file = cfa4_isobmff::open(bytes.clone()).unwrap();
+    let track = file.tracks.iter().find(|t| t.kind == cfa4_isobmff::TrackKind::Video).unwrap();
+    assert_eq!(track.samples.len(), FRAMES);
+    let cfa4_isobmff::CodecConfig::Vvc(cfg) = &track.entries[0].codec else { panic!("not a vvc1 entry: {:?}", track.entries[0].codec.name()) };
+    assert_eq!(cfg.length_size, 4);
+    let sps = cfa4_vvc::Sps::parse(cfg.sps().first().expect("an SPS in vvcC")).unwrap();
+    assert_eq!((sps.width, sps.height, sps.bit_depth), (WIDTH, HEIGHT, 10));
+    if let Some(op) = &cfg.operating_point {
+        assert_eq!((op.ptl.general_profile_idc, op.chroma_format_idc, op.bit_depth), (1, 1, 10));
+    }
+    // the record written back is the record read
+    assert_eq!(cfa4_isobmff::VvcConfig::parse(&cfg.to_bytes()).unwrap(), *cfg);
+
+    let src = cfa4_codecs::open_bytes("fixture.mp4", bytes).unwrap();
+    let info = src.info().video.clone().unwrap();
+    assert_eq!((info.width, info.height), (WIDTH, HEIGHT));
+    assert_eq!(info.codec, "VVC (Main 10)");
+    assert_eq!(info.pixel_format, "YUV 4:2:0 10-bit");
+    if vvc_external::configured_helper().is_none() {
+        let err = src.video_frame(cfa4_media::FrameRequest::full(cfa4_time::Tick::ZERO)).unwrap_err().to_string();
+        assert!(err.contains("VVdeC"), "{err}");
+    }
+}
+
+/// MP4 samples (length prefixed, parameter sets in `vvcC`) decode to FFmpeg's pictures.
+#[test]
+fn mp4_samples_decode_like_ffmpeg() {
+    let ctx = "vvc_external::mp4_samples_decode_like_ffmpeg";
+    let Some(helper) = helper() else {
+        return eprintln!("SKIPPED ({ctx}): cfa4-vvc-decode not built (scripts/dev/vvc-decoder.py build)");
+    };
+    let Some((ff, path)) = fixture(ctx) else { return };
+    let mp4 = mp4_fixture(&ff, &path);
+    let want = ffmpeg_frames(&ff, &mp4);
+    let bytes: std::sync::Arc<[u8]> = std::fs::read(&mp4).unwrap().into();
+    let file = cfa4_isobmff::open(bytes.clone()).unwrap();
+    let vi = file.tracks.iter().position(|t| t.kind == cfa4_isobmff::TrackKind::Video).unwrap();
+    let track = &file.tracks[vi];
+    let cfa4_isobmff::CodecConfig::Vvc(cfg) = &track.entries[0].codec else { panic!("not a vvc1 entry") };
+    let mut dec = vvc_external::Mp4VvcDecoder::new(&helper, 0, cfg).unwrap();
+    let samples: Vec<Vec<u8>> = (0..track.samples.len()).map(|i| file.read_sample(&bytes, vi, i).unwrap()).collect();
+    assert!(dec.is_random_access(&samples[0]) == Some(true) && dec.is_random_access(&samples[1]) == Some(false));
+
+    for pass in 0..2 {
+        let mut frames = Vec::new();
+        for (s, sample) in track.samples.iter().zip(&samples) {
+            frames.extend(dec.decode(sample, s.pts).unwrap());
+        }
+        frames.extend(dec.flush());
+        assert_eq!(frames.len(), FRAMES, "pass {pass}");
+        let mut pts: Vec<i64> = frames.iter().map(|f| f.pts).collect();
+        let mut sample_pts: Vec<i64> = track.samples.iter().map(|s| s.pts).collect();
+        assert!(
+            pts.windows(2).all(|w| w[0] < w[1]),
+            "pictures leave in presentation order: {pts:?}, samples {:?}",
+            track.samples.iter().map(|s| s.pts).collect::<Vec<_>>()
+        );
+        pts.sort_unstable();
+        sample_pts.sort_unstable();
+        assert_eq!(pts, sample_pts);
+        for (k, (f, w)) in frames.iter().zip(&want).enumerate() {
+            assert!(packed(f) == *w, "pass {pass}: output picture {k} differs from FFmpeg's");
+        }
+        // a reset puts the parameter sets in front of the next unit again
+        dec.reset();
+    }
+}
+
 /// A helper that greets with another codec's tag is refused.
 #[test]
 fn an_av2_helper_is_not_a_vvc_helper() {
