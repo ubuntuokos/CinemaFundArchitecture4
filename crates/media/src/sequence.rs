@@ -219,7 +219,8 @@ impl MediaSource for ImageSequenceSource {
 }
 
 /// Decode one frame file: OpenEXR, Radiance HDR, JPEG XL and DNG camera raw as linear floats (DNG with its metadata, for
-/// the sequence's timing), every other format through the still decoders as RGBA8. Returns the
+/// the sequence's timing), DPX at its stored depth with its time code and frame rate, every other
+/// format through the still decoders as RGBA8. Returns the
 /// frame, whether it has alpha, and its pixel format for the media info.
 fn decode_frame(name: &str, bytes: &[u8]) -> Result<(VideoFrame, bool, String, crate::still::Timing)> {
     if crate::still::exr::sniff(bytes) {
@@ -237,6 +238,10 @@ fn decode_frame(name: &str, bytes: &[u8]) -> Result<(VideoFrame, bool, String, c
     if crate::still::dng::sniff(bytes) {
         let d = crate::still::dng::decode(name, bytes)?;
         return Ok((d.frame, false, d.pixel_format, crate::still::Timing { frame_rate: d.info.frame_rate, timecode: d.info.timecode }));
+    }
+    if crate::dpx::sniff(bytes) {
+        let d = crate::dpx::decode_deep(name, bytes)?;
+        return Ok((d.frame, d.has_alpha, d.pixel_format, d.timing));
     }
     let img = crate::still::decode_raster(name, bytes)?;
     let pixel_format = if img.has_alpha { "RGBA 8-bit" } else { "RGB 8-bit" }.to_string();

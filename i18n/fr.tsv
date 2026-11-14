@@ -4385,6 +4385,10 @@
 	{n} more	{n} de plus
 	Block	Bloc
 	parallel	parallèle
+	page {page}: a spine's vertical position works on card pages only; it is ignored	page {page} : la position verticale d’un axe ne vaut que sur les pages carte ; elle est ignorée
+	on a card: centered on {y} px	sur une carte : centré sur {y} px
+	on a card: starts at {y} px	sur une carte : commence à {y} px
+	on a card: ends at {y} px	sur une carte : finit à {y} px
 # MPEG-2 export audio (#268): a product name, kept as is
 	Dolby Digital (AC-3)	Dolby Digital (AC-3)
 	In the page (OBS takes it from the Browser Source)	Dans la page (OBS le prend de la source navigateur)
@@ -4457,7 +4461,12 @@
 	page {page}: the runtime is reached by changing the roll speed (the gaps would have to grow more than 20-fold)	page {page} : la durée est atteinte en modifiant la vitesse de défilement (les espaces devraient être multipliés par plus de 20)
 	page {page}: the transition needs the pages to touch (page gap 0); it is left out	page {page} : la transition exige que les pages se touchent (intervalle entre pages 0) ; elle est omise
 	page {page}: there is no transition “{name}”; the pages cut	page {page} : la transition “{name}” n’existe pas ; les pages s’enchaînent en coupe franche
-	spine position “{value}” is not supported (a pixel offset, optionally “parallel”, is)	la position d’axe “{value}” n’est pas prise en charge (un décalage en pixels, éventuellement avec “parallel”, l’est)
+	spine position “{value}” is not supported (a pixel offset, optionally “parallel”, or “Hook N Bottom-Top dx dy” is)	la position d’axe “{value}” n’est pas prise en charge (un décalage en pixels, éventuellement avec “parallel” / “Hook N Bottom-Top dx dy”, l’est)
+	page {page}: the hook reaches back further than there are spines; it hooks onto the first spine, or starts its own	page {page} : le crochet remonte plus loin qu’il n’y a d’axes ; il s’accroche au premier axe ou en commence un
+	hooked {n} spines back: its {from} meets this spine's {to}	accroché {n} axes plus haut : son {from} rejoint le {to} de cet axe
+	top	haut
+	middle	milieu
+	bottom	bas
 	vertical gap “{value}” is not a number	l’espace vertical “{value}” n’est pas un nombre
 	picture “{file}” was not found or cannot be read; it is left out	l’image “{file}” est introuvable ou illisible ; elle est omise
 	video “{file}” was not found or cannot be read; it is left out	la vidéo “{file}” est introuvable ou illisible ; elle est omise
@@ -4522,7 +4531,7 @@
 	the engine sent no report	le moteur n’a envoyé aucun rapport
 	MXF OP1a Uncompressed 10-bit 4:2:2 (v210)	MXF OP1a non compressé 10 bits 4:2:2 (v210)
 	MXF OP1a, uncompressed 10-bit Y'CbCr 4:2:2 in the v210 layout (SMPTE ST 384), 24-bit 48 kHz PCM, start timecode	MXF OP1a, Y'CbCr 4:2:2 10 bits non compressé au format v210 (SMPTE ST 384), PCM 24 bits 48 kHz, timecode de début
-	Write the captions as ANC data (CEA-608/708, 29.97 fps)	Écrire les sous-titres en données ANC (CEA-608/708, 29,97 i/s)
+	Write the captions as ANC data (CEA-608/708)	Écrire les sous-titres en données ANC (CEA-608/708)
 	Load KDM…	Charger un KDM…
 	Forget DCP Keys	Oublier les clés DCP
 	Load KDM	Charger le KDM
@@ -4532,6 +4541,13 @@
 	The keys stay in memory only, until Forget DCP Keys or the end of the session.	Les clés restent uniquement en mémoire, jusqu’à « Oublier les clés DCP » ou la fin de la session.
 	DCP keys forgotten	Clés DCP oubliées
 	Choose the KDM file and the private key.	Choisissez le fichier KDM et la clé privée.
+	Load even if the certificate chain is not verified	Charger même avec une chaîne de certificats non vérifiée
+	Bundle: {loaded} of {total} KDMs loaded, {other} for other recipients	Lot : {loaded} KDM chargés sur {total}, {other} pour d'autres destinataires
+	Not loaded: {path}: {problem}	Non chargé : {path} : {problem}
+	Signature verified: {chain}	Signature vérifiée : {chain}
+	Signature not verified: {problem}	Signature non vérifiée : {problem}
+	KDM required	KDM requis
+	Encrypted: load the KDM with content key {keys}	Chiffré : chargez le KDM contenant la clé de contenu {keys}
 
 # Settings ▸ Timecode Sync (TC-4)
 	Timecode Sync	Synchronisation du timecode
@@ -4564,3 +4580,60 @@
 	Chase External Timecode	Suivre le timecode externe
 	Send LTC	Envoyer le LTC
 	Send MIDI Timecode	Envoyer le timecode MIDI
+# Auto Color, Auto Contrast, Auto Levels (EffectsSDK review)
+	Auto Color	Couleur automatique
+	Auto Contrast	Contraste automatique
+	Auto Levels	Niveaux automatiques
+	Temporal Smoothing (seconds)	Lissage temporel (secondes)
+	Scene Detect	Détection de scène
+	Black Clip	Écrêtage du noir
+	White Clip	Écrêtage du blanc
+	Snap Neutral Midtones	Neutraliser les tons moyens
+# Layout presets: PiP corners, split screen (EffectsSDK review)
+	PiP 35% Upper Left	PiP 35 % en haut à gauche
+	Picture-in-picture: 35 % scale in the upper left	Image dans l'image : échelle de 35 % en haut à gauche
+	PiP 35% Lower Left	PiP 35 % en bas à gauche
+	Picture-in-picture: 35 % scale in the lower left	Image dans l'image : échelle de 35 % en bas à gauche
+	PiP 35% Lower Right	PiP 35 % en bas à droite
+	Picture-in-picture: 35 % scale in the lower right	Image dans l'image : échelle de 35 % en bas à droite
+	Split Screen Left	Écran partagé à gauche
+	Split screen: the middle half of the picture fills the left half of the frame	Écran partagé : la moitié centrale de l'image remplit la moitié gauche du cadre
+	Split Screen Right	Écran partagé à droite
+	Split screen: the middle half of the picture fills the right half of the frame	Écran partagé : la moitié centrale de l'image remplit la moitié droite du cadre
+# Creative Looks: CRT (P3)
+	CRT	CRT
+	Scanline Strength	Intensité des lignes
+	Line Count	Nombre de lignes
+	Mask	Masque
+	Mask Strength	Intensité du masque
+	Corner Darkening	Assombrissement des coins
+	Aperture Grille	Grille d’ouverture
+	Shadow Mask	Masque perforé
+	Slot Mask	Masque à fentes
+# Creative Looks: Oil Paint (P4)
+	Oil Paint	Peinture à l’huile
+	Detail	Détail
+	Texture	Texture
+	Facet	Facettes
+	Daubs	Touches
+	Dry Brush	Pinceau sec
+	Fresco	Fresque
+	Knife	Couteau
+	Sponge	Éponge
+# Creative Looks: Pixel Sort (P5)
+	Pixel Sort	Tri de pixels
+	Sort By	Trier par
+	Lower Threshold	Seuil inférieur
+	Upper Threshold	Seuil supérieur
+	Ascending	Croissant
+# Temporal Denoise (EffectsSDK review)
+	Temporal Denoise	Débruitage temporel
+	Frames Each Side	Images de chaque côté
+	Motion Threshold	Seuil de mouvement
+	Show Motion	Afficher le mouvement
+	No signal	Aucun signal
+	Locating	Positionnement
+	Locked	Verrouillé
+	Freewheel	Roue libre
+	Scrubbing	Défilement
+	Sending	Envoi
