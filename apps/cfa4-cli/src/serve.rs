@@ -816,6 +816,8 @@ pub fn handle(s: &mut Session, id: Value, method: &str, params: Value) -> Option
                 "autosave": s.persistence.is_some(),
                 // unsaved changes of sessions that died: the GUI offers Recover / Not Now / Discard
                 "recovery": serde_json::to_value(s.recovery_candidates()).unwrap_or_default(),
+                // additive capabilities (the protocol number stays): `surface` = `surface.devices`
+                "features": ["surface"],
             }),
         ),
         "engine.execute" => {
@@ -915,6 +917,7 @@ pub fn handle(s: &mut Session, id: Value, method: &str, params: Value) -> Option
             Ok((meta, bytes)) => Reply::with_binary(id, meta, bytes),
             Err(e) => Reply::err(id, e),
         },
+        "surface.devices" => Reply::ok(id, crate::serve_surface::devices(s)),
         "session.state" => Reply::ok(
             id,
             json!({

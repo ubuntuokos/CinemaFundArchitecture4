@@ -1438,7 +1438,7 @@ def test_real_engine_preferences_dialog_and_favourite_themes_as_egui(app, tmp_pa
         assert win.menuBar().findChild(QtGui.QAction, "app.settings.general").shortcut().toString() == "Ctrl+,"
         d = opened("timeline")
         assert d.objectName() == "settings" and d.findChild(QtWidgets.QPushButton, "settings.category.timeline").isChecked()
-        assert len([b for b in d.findChildren(QtWidgets.QPushButton) if b.objectName().startswith("settings.category.")]) == 17  # with Media Backends (ADR 0005)
+        assert len([b for b in d.findChildren(QtWidgets.QPushButton) if b.objectName().startswith("settings.category.")]) == 19  # every category of prefs.schema, Control Surfaces (ADR-0012) included
         scroll = d.findChild(QtWidgets.QComboBox, "settings.timeline.autoScroll")
         scroll.setCurrentIndex(scroll.findData("smoothScroll"))
         d.findChild(QtWidgets.QPushButton, "settings.cancel").click()

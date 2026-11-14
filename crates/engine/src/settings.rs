@@ -1219,6 +1219,16 @@ static CATEGORIES: &[Category] = &[
         ],
     },
     Category {
+        id: "controlSurfaces",
+        group: "hardware",
+        title: "Control Surfaces",
+        rows: &[
+            b("controlSurfaces.enabled", "Use control surfaces (MIDI controllers, jog/shuttle devices)", false),
+            Row::Custom("controlSurfaces"),
+            Row::Note("Mapping controls to commands, MIDI Learn and the MIDI Monitor come in a later version; the choices here are remembered until then."),
+        ],
+    },
+    Category {
         id: "graphics",
         group: "editing",
         title: "Graphics",
