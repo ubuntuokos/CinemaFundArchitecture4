@@ -166,7 +166,7 @@ vonalrajz (C12). A beépített sablonok saját tervezésűek, MIT/Apache licenc�
 szabad licencű betűtípussal (`AGENTS.md` §1.9), minden nyelven elnevezve (Q15).
 
 Javasolt műfajlista (bővíthető): dráma, vígjáték, akció, thriller és krimi, horror, sci-fi,
-fantasy, romantikus, animációs és családi, dokumentumfilm, történelmi és kosztümös, háborús,
+fantasy, romantikus, animációs film, családi és gyerekfilm, dokumentumfilm, történelmi és kosztümös, háborús,
 western, zenés és musical, táncfilm, paródia, rövidfilm és fesztiválfilm, élő műsor és közvetítés, híradó, valóságshow (e három az Élő grafikában, C10, cue-ként is betölthető: főcím, alsó sávok, futószöveg, stáblista).
 
 **A műfajlista bővíthető** (a tulajdonos döntése, 2026-11-14): a felhasználó a sablonkezelőben
