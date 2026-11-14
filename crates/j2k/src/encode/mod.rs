@@ -251,7 +251,9 @@ impl EncodeOptions {
             progression: Progression::Cprl,
             code_block: (5, 5),
             precincts: vec![(7, 7), (8, 8)],
-            mct: false,
+            // the ICT on X'Y'Z': libdcp's dcpverify requires it and every DCI decoder applies its
+            // inverse (DCSS §4.3.2); plan CFA4-DCPVAL-LIBDCP-001
+            mct: true,
             step: 1.0,
             max_bytes: Some(250_000_000 / 8 / fps),
             max_component_bytes: Some(200_000_000 / 8 / fps),
@@ -769,14 +771,7 @@ fn validate(image: &Image, opts: &EncodeOptions) -> Result<()> {
         Profile::Cinema4k => (4096, 2160, 1..=6),
     };
     let dci = image.components.len() == 3 && image.components.iter().all(|p| p.precision == 12 && !p.signed && p.dx == 1 && p.dy == 1);
-    if !dci
-        || w > max_w
-        || h > max_h
-        || !levels.contains(&opts.levels)
-        || opts.reversible
-        || opts.mct
-        || opts.code_block != (5, 5)
-        || opts.progression != Progression::Cprl
+    if !dci || w > max_w || h > max_h || !levels.contains(&opts.levels) || opts.reversible || opts.code_block != (5, 5) || opts.progression != Progression::Cprl
     {
         return Err(Error::Invalid("image or options outside the Digital Cinema profile"));
     }

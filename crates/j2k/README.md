@@ -80,8 +80,9 @@ and decoder cannot disagree on them.
 - Guard bits are chosen so that every subband's largest index fits; samples outside a
   component's range are clamped.
 - `EncodeOptions::cinema_2k(fps)` / `cinema_4k(fps)`: Rsiz 3 / 4, 12-bit X'Y'Z' (the caller
-  converts), 9/7, 5 / 6 levels, 32×32 code-blocks, CPRL, precincts 128 at resolution 0 and 256
-  above, a tile-part per component (4K: the 4K resolution in its own progression by POC, so six
+  converts), 9/7, 5 / 6 levels, the ICT on the three components (MCT = 1, which libdcp's
+  `dcpverify` requires; `mct: false` is still accepted), 32×32 code-blocks, CPRL, precincts 128 at
+  resolution 0 and 256 above, a tile-part per component (4K: the 4K resolution in its own progression by POC, so six
   tile-parts), TLM; at most 250 Mbit/s per frame and 200 Mbit/s per component (1 302 083 and
   1 041 666 bytes at 24 fps). The image and options are checked against the profile.
 
