@@ -15383,3 +15383,34 @@ def test_smart_cut_writes_nothing_when_the_project_changes_during_a_question(app
     assert not any(c == "export.start" for c, *_r in engine.sent)
     assert not d.run.isEnabled() and d.plan is None
     parent.deleteLater()
+
+
+def test_smart_cut_keeps_the_segment_order_and_checks_when_the_list_is_read_again(app):
+    """Smart Cut: segments read again after a project change keep the order and the checks the
+    user gave them; a removed segment goes, a new one follows, checked."""
+    from cfa4_qt.panels.smart_cut import SmartCutDialog
+
+    parent = QtWidgets.QWidget()
+    engine = _StubEngine()
+    d = SmartCutDialog(parent, engine, 7, lambda _t: None)
+    engine.last("export.analyze")[2]({"path": "/m/clip.mp4", "codec": "h264", "container": "mp4", "smartCut": {"allowed": True}}, None)
+    d.source.setCurrentIndex(d.source.findData("segments"))
+
+    def seg(marker: int) -> dict:
+        return {"marker": marker, "name": f"s{marker}", "start": marker * 1000, "end": marker * 1000 + 500}
+
+    engine.last("segments.list")[2]({"segments": [seg(1), seg(2), seg(3)]}, None)
+    assert d.chosen_segments() == [1, 2, 3]
+    d.segment_list.setCurrentRow(2)
+    d.move_segment(-2)
+    d.segment_list.item(1).setCheckState(QtCore.Qt.CheckState.Unchecked)
+    assert d.chosen_segments() == [3, 2]
+    lists = sum(c == "segments.list" for c, *_r in engine.sent)
+    engine.event.emit({"event": "projectChanged", "revision": 3})
+    assert sum(c == "segments.list" for c, *_r in engine.sent) == lists + 1
+    engine.last("segments.list")[2]({"segments": [seg(1), seg(3), seg(4)]}, None)
+    order = [d.segment_list.item(i).data(QtCore.Qt.ItemDataRole.UserRole) for i in range(d.segment_list.count())]
+    assert order == [3, 1, 4]
+    assert d.chosen_segments() == [3, 4]
+    assert d.segment_list.currentItem().data(QtCore.Qt.ItemDataRole.UserRole) == 3
+    parent.deleteLater()

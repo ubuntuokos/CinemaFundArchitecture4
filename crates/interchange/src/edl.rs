@@ -288,6 +288,11 @@ pub fn source_ranges(text: &str, rate: FrameRate) -> std::result::Result<Vec<Sou
         let Some(l) = ev.lines.last() else { continue };
         let df = ev.df || l.tcs[0].df;
         let frames = |t: Tc| fields_to_frames(t.h, t.m, t.s, t.f, rate, df && rate.supports_drop_frame());
+        // a frame count past i64 would be saturated into a wrong range: refuse it instead
+        let nominal = |t: &Tc| (i128::from(t.h) * 3600 + i128::from(t.m) * 60 + i128::from(t.s)) * i128::from(base) + i128::from(t.f);
+        if l.tcs[..2].iter().any(|t| i64::try_from(nominal(t)).is_err()) {
+            return Err(format!("event {}: its source timecode is too large to count in frames", l.num));
+        }
         out.push(SourceRange {
             event: l.num.clone(),
             reel: l.reel.clone(),
@@ -1099,6 +1104,16 @@ mod tests {
         let ok = "TITLE: T\nFCM: NON-DROP FRAME\n\n001  AX       V     C        00:00:01:00 00:00:02:00 00:00:00:00 00:00:01:00\n";
         let huge = format!("{ok}002  AX       V     C        00:00:03:00 99999999999999999999:00:04:00 00:00:01:00 00:00:02:00\n");
         assert!(source_ranges(&huge, FrameRate::FPS_25).is_err());
+    }
+
+    #[test]
+    fn a_timecode_past_the_frame_count_is_refused() {
+        // every field fits i64, but the frame count does not: never a saturated range
+        let ok = "TITLE: T\nFCM: NON-DROP FRAME\n\n001  AX       V     C        00:00:01:00 00:00:02:00 00:00:00:00 00:00:01:00\n";
+        assert_eq!(source_ranges(ok, FrameRate::FPS_25).unwrap().len(), 1);
+        let huge = format!("{ok}002  AX       V     C        00:00:03:00 9223372036854775807:00:04:00 00:00:01:00 00:00:02:00\n");
+        let e = source_ranges(&huge, FrameRate::FPS_25).unwrap_err();
+        assert!(e.contains("event 002") && e.contains("too large"), "{e}");
     }
 
     #[test]

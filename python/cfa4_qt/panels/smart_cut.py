@@ -328,15 +328,28 @@ class SmartCutDialog(QDialog):
         segments = [m for m in (result or {}).get("segments") or [] if isinstance(m, dict)] if isinstance(result, dict) else []
         rate_json = (self.analysis or {}).get("frameRate") or {}
         rate = (int(rate_json.get("num") or 0), int(rate_json.get("den") or 0)) if isinstance(rate_json, dict) else None
+        # a list read again keeps the user's order and checks: segments still there stay where
+        # they were, as they were; new ones follow, checked
+        before: dict[Any, bool] = {}
+        for i in range(self.segment_list.count()):
+            old = self.segment_list.item(i)
+            before[old.data(Qt.ItemDataRole.UserRole)] = old.checkState() == Qt.CheckState.Checked
+        place = {marker: i for i, marker in enumerate(before)}
+        segments.sort(key=lambda m: place.get(m.get("marker"), len(place)))
+        current = self.segment_list.currentItem()
+        current_marker = current.data(Qt.ItemDataRole.UserRole) if current is not None else None
         self.segment_list.blockSignals(True)
         self.segment_list.clear()
         for m in segments:
             it = QListWidgetItem(segment_label(m, rate))
             it.setData(Qt.ItemDataRole.UserRole, m.get("marker"))
             it.setFlags(it.flags() | Qt.ItemFlag.ItemIsUserCheckable)
-            it.setCheckState(Qt.CheckState.Checked)
+            checked = before.get(m.get("marker"), True)
+            it.setCheckState(Qt.CheckState.Checked if checked else Qt.CheckState.Unchecked)
             it.setToolTip(str(m.get("comment") or ""))
             self.segment_list.addItem(it)
+            if current_marker is not None and m.get("marker") == current_marker:
+                self.segment_list.setCurrentItem(it)
         self.segment_list.blockSignals(False)
         if not segments:
             self.summary.setText("")

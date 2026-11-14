@@ -430,22 +430,22 @@ pub(crate) fn max_bytes_p(p: &Value, cmd: &str) -> Result<u64> {
     }
 }
 
-fn too_large(cap: u64) -> EngineError {
+pub(crate) fn too_large(cap: u64) -> EngineError {
     EngineError::Other(format!("the cut would need more than {cap} bytes of memory (`maxBytes`; joined ranges: export them as separate files)"))
 }
 
 /// An in-memory file that refuses to grow past `cap` bytes, so a cut too large for the memory it
 /// may use stops while it is written, not after.
-struct Capped {
+pub(crate) struct Capped {
     inner: Cursor<Vec<u8>>,
     cap: u64,
 }
 
 impl Capped {
-    fn new(cap: u64) -> Self {
+    pub(crate) fn new(cap: u64) -> Self {
         Self { inner: Cursor::new(Vec::new()), cap }
     }
-    fn into_inner(self) -> Vec<u8> {
+    pub(crate) fn into_inner(self) -> Vec<u8> {
         self.inner.into_inner()
     }
 }

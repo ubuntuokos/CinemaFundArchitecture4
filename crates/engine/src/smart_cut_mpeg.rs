@@ -287,8 +287,12 @@ pub(crate) fn start(s: &mut Session, p: &Value) -> Result<Value> {
     let source = src.copy_source(bool_p(p, "audio").unwrap_or(true));
     let other = |e: SmartCutError| EngineError::Other(e.to_string());
     let read_back = || EngineError::Other("Smart Cut verification read back another file than was written".into());
+    // the file is built in memory: it stops growing at `maxBytes`, as the MP4 path does
+    let cap = crate::smart_cut::max_bytes_p(p, cmd)?;
+    let capped = || crate::smart_cut::Capped::new(cap);
     let (bytes, audio, dropped, report) = if reencodes {
-        let (bytes, report) = execute_mpeg_boundary_reencode(&plan.plan, stream, &source, format, &encoding, Vec::new()).map_err(other)?;
+        let (out, report) = execute_mpeg_boundary_reencode(&plan.plan, stream, &source, format, &encoding, capped()).map_err(other)?;
+        let bytes = out.into_inner();
         let verified = verify_mpeg_boundary_reencode(&plan.plan, stream, &source, format, &encoding, &bytes).map_err(other)?;
         if (verified.samples, verified.copied, verified.reencoded, &verified.audio) != (report.samples, report.copied, report.reencoded, &report.audio) {
             return Err(read_back());
@@ -297,7 +301,8 @@ pub(crate) fn start(s: &mut Session, p: &Value) -> Result<Value> {
         let value = serde_json::to_value(&verified).map_err(|e| EngineError::Other(e.to_string()))?;
         (bytes, verified.audio, verified.dropped, value)
     } else {
-        let (bytes, report) = execute_mpeg_copy(&plan.plan, stream, &source, format, Vec::new()).map_err(other)?;
+        let (out, report) = execute_mpeg_copy(&plan.plan, stream, &source, format, capped()).map_err(other)?;
+        let bytes = out.into_inner();
         let verified = verify_mpeg_copy(&plan.plan, stream, &source, format, &bytes).map_err(other)?;
         if verified != report {
             return Err(read_back());

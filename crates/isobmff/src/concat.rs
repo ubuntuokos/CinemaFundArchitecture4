@@ -230,7 +230,10 @@ fn plan_track(files: &[Mp4File], shown: &[Vec<Presented>], i: usize, starts: &[u
                 media_end = media_end.max(base + i128::from(s.pts) + i128::from(s.duration));
             }
         } else if t.pcm_chunked {
-            let lo = i128::from(t.samples[0].pts).max(i128::from(x.start));
+            // the joined edit already skips part 1's hidden start (`media_time`); later parts
+            // have no edit of their own, so their hidden start is left out here
+            let pts0 = i128::from(t.samples[0].pts);
+            let lo = if k == 0 { pts0 } else { pts0.max(i128::from(x.start)) };
             let hi = t.samples.iter().map(|s| i128::from(s.pts) + i128::from(s.duration)).max().unwrap_or(lo).min(shown_end).max(lo);
             let want = at - begin + i128::from(x.start);
             let p = want.clamp(lo, hi);

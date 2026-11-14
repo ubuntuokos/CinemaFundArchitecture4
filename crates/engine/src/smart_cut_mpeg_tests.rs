@@ -147,6 +147,27 @@ fn mpeg_cuts_the_executor_cannot_run_are_refused_before_writing() {
     assert!(matches!(f.format, cfa4_mpegts::Format::Ps { .. }));
 }
 
+/// `maxBytes` holds for an MPEG cut too: a file one byte over it is refused before anything
+/// is written, both copied and with re-encoded boundaries.
+#[test]
+fn the_memory_limit_holds_for_mpeg_cuts() {
+    let (mut s, files) = session();
+    let copy = json!({"path": "clip.ts", "in": frame(10), "out": frame(30), "output": "copy.ts"});
+    let fa = json!({"path": "clip.ts", "in": frame(5), "out": frame(33), "mode": "frame-accurate", "output": "fa.ts", "confirm": true});
+    for p in [copy, fa] {
+        let out = p["output"].as_str().unwrap().to_string();
+        let need = s.execute("export.start", p.clone()).unwrap()["bytes"].as_u64().unwrap();
+        files.0.lock().unwrap().remove(&out);
+        let mut capped = p.clone();
+        capped["maxBytes"] = json!(need - 1);
+        let e = s.execute("export.start", capped.clone()).unwrap_err().to_string();
+        assert!(e.contains("maxBytes"), "{out}: {e}");
+        assert!(!files.0.lock().unwrap().contains_key(&out), "{out}: nothing was written");
+        capped["maxBytes"] = json!(need);
+        assert_eq!(s.execute("export.start", capped).unwrap()["bytes"].as_u64(), Some(need), "{out}");
+    }
+}
+
 /// The Source monitor's MPEG clip: media time 0 is the first presented picture.
 #[test]
 fn a_project_mpeg_item_is_cut_on_its_marked_range() {

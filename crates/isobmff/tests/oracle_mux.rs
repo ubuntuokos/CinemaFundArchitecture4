@@ -472,6 +472,50 @@ fn sound_hidden_by_a_parts_edit_stays_hidden() {
     assert!(frames(&ended.bytes) < frames(&whole.bytes));
 }
 
+/// `bytes` with the sound's edit starting `skip` sound samples later and ending where it did.
+fn with_late_sound_start(bytes: &[u8], skip: u64) -> Vec<u8> {
+    let file = open(bytes).unwrap();
+    let au = file.tracks.iter().position(|t| t.kind == TrackKind::Audio).unwrap();
+    let shorter = skip * u64::from(file.timescale) / u64::from(file.tracks[au].timescale);
+    let at: Vec<usize> = bytes.windows(4).enumerate().filter(|(_, w)| *w == b"elst").map(|(i, _)| i).collect();
+    assert_eq!(at.len(), file.tracks.len(), "one edit list per track");
+    let mut out = bytes.to_vec();
+    let e = at[au] + 4;
+    let entry = e + 8;
+    if out[e] == 1 {
+        let d = u64::from_be_bytes(out[entry..entry + 8].try_into().unwrap());
+        out[entry..entry + 8].copy_from_slice(&(d - shorter).to_be_bytes());
+        let m = i64::from_be_bytes(out[entry + 8..entry + 16].try_into().unwrap());
+        out[entry + 8..entry + 16].copy_from_slice(&(m + skip as i64).to_be_bytes());
+    } else {
+        let d = u32::from_be_bytes(out[entry..entry + 4].try_into().unwrap());
+        out[entry..entry + 4].copy_from_slice(&(d - shorter as u32).to_be_bytes());
+        let m = i32::from_be_bytes(out[entry + 4..entry + 8].try_into().unwrap());
+        out[entry + 4..entry + 8].copy_from_slice(&(m + skip as i32).to_be_bytes());
+    }
+    out
+}
+
+/// The first part's hidden sound start is skipped once, by the joined edit: its stored sound
+/// is not trimmed again, so the joined sound starts where the part's own did.
+#[test]
+fn the_first_parts_hidden_sound_start_is_skipped_once() {
+    let Some(mov) = fixture("h264.mov") else { return };
+    let full = std::fs::read(&mov).unwrap();
+    let file = open(full.as_slice()).unwrap();
+    let au = file.tracks.iter().position(|t| t.kind == TrackKind::Audio).unwrap();
+    if !file.tracks[au].pcm_chunked {
+        return;
+    }
+    // a hundredth of a second: well within a picture of the next part
+    let skip = u64::from(file.tracks[au].timescale) / 100;
+    let late = with_late_sound_start(&full, skip);
+    let frames = |b: &[u8]| -> u64 { open(b).unwrap().tracks[au].samples.iter().map(|s| u64::from(s.duration)).sum() };
+    let whole = concat(&[full.as_slice(), full.as_slice()]).unwrap();
+    let joined = concat(&[late.as_slice(), full.as_slice()]).unwrap();
+    assert_eq!(frames(&joined.bytes), frames(&whole.bytes), "part 1's sound is kept whole");
+}
+
 #[test]
 fn parts_of_other_streams_are_refused() {
     let (Some(a), Some(h)) = (fixture("h264_bframes.mp4"), fixture("hevc.mp4")) else { return };
