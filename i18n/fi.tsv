@@ -4382,6 +4382,10 @@ export.summary	Low	matala
 	{n} more	{n} lisää
 	Block	Lohko
 	parallel	rinnakkain
+	page {page}: a spine's vertical position works on card pages only; it is ignored	sivu {page}: akselin pystysijainti toimii vain korttisivuilla; se ohitetaan
+	on a card: centered on {y} px	kortilla: keskitetty kohtaan {y} px
+	on a card: starts at {y} px	kortilla: alkaa kohdasta {y} px
+	on a card: ends at {y} px	kortilla: päättyy kohtaan {y} px
 # MPEG-2 export audio (#268): a product name, kept as is
 	Dolby Digital (AC-3)	Dolby Digital (AC-3)
 	In the page (OBS takes it from the Browser Source)	Sivulla (OBS ottaa sen selainlähteestä)
@@ -4454,7 +4458,12 @@ export.summary	Low	matala
 	page {page}: the runtime is reached by changing the roll speed (the gaps would have to grow more than 20-fold)	sivu {page}: kesto saavutetaan rullausnopeutta muuttamalla (välien pitäisi kasvaa yli 20-kertaisiksi)
 	page {page}: the transition needs the pages to touch (page gap 0); it is left out	sivu {page}: siirtymä vaatii sivujen koskettavan toisiaan (sivuväli 0); se jätetään pois
 	page {page}: there is no transition “{name}”; the pages cut	sivu {page}: siirtymää ”{name}” ei ole; sivut leikataan
-	spine position “{value}” is not supported (a pixel offset, optionally “parallel”, is)	akselin sijaintia ”{value}” ei tueta (pikselisiirtymää tuetaan, valinnaisesti ”parallel”)
+	spine position “{value}” is not supported (a pixel offset, optionally “parallel”, or “Hook N Bottom-Top dx dy” is)	akselin sijaintia ”{value}” ei tueta (pikselisiirtymää tuetaan, valinnaisesti ”parallel” / ”Hook N Bottom-Top dx dy”)
+	page {page}: the hook reaches back further than there are spines; it hooks onto the first spine, or starts its own	sivu {page}: koukku ulottuu kauemmas taaksepäin kuin akseleita on; se koukkuu ensimmäiseen akseliin tai aloittaa omansa
+	hooked {n} spines back: its {from} meets this spine's {to}	koukutettu {n} akselia taaksepäin: sen {from} kohtaa tämän akselin kohdan {to}
+	top	yläreuna
+	middle	keskikohta
+	bottom	alareuna
 	vertical gap “{value}” is not a number	pystyväli ”{value}” ei ole luku
 	picture “{file}” was not found or cannot be read; it is left out	kuvaa ”{file}” ei löytynyt tai sitä ei voi lukea; se jätetään pois
 	video “{file}” was not found or cannot be read; it is left out	videota ”{file}” ei löytynyt tai sitä ei voi lukea; se jätetään pois
