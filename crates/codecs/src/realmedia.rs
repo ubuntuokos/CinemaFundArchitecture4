@@ -1,18 +1,27 @@
-//! RealMedia files (`.rm`, `.rmvb`) with RealVideo 1.0 / 2.0 / 3.0 / 4.0 video: `cfa4-realmedia`
-//! demuxes, our `cfa4-realvideo` decodes (CB-13.1, CB-13.2).
+//! RealMedia files (`.rm`, `.rmvb`) with RealVideo 1.0 / 2.0 / 3.0 / 4.0 video and Cook audio:
+//! `cfa4-realmedia` demuxes, our `cfa4-realvideo` and `cfa4-realaudio` decode (CB-13.1, CB-13.2,
+//! CB-14.1).
 //!
 //! RealMedia stamps packets in decode order, so the timeline is the frame count at the stream's
 //! frame rate: at open every video frame is located (file offset of its first data packet) and
 //! its display position worked out from the picture types (a B-frame is shown before the
-//! reference picture decoded just before it). Audio streams (Cook, ATRAC3, RealAudio 1.0/2.0, …)
-//! are not decoded yet.
+//! reference picture decoded just before it).
+//!
+//! Cook audio is indexed by interleaving superblock (the data packets one deinterleaving pass
+//! takes); its timeline is the frame count times the frame length, with the two frames the
+//! decoder needs to start up as silence (as in ffmpeg). Cook's noise fill draws on a random
+//! generator that runs through the whole stream, so a jump restores the nearest earlier decoder
+//! checkpoint and decodes forward: every read equals playback from the start. Other RealAudio
+//! codecs (ATRAC3, SIPR, RealAudio 1.0 / 2.0, AAC) are not decoded yet.
 
-use std::collections::HashMap;
+use std::collections::{BTreeMap, HashMap, VecDeque};
 use std::io::Cursor;
-use std::sync::Arc;
+use std::sync::{Arc, Mutex};
 
-use cfa4_frame::{Chroma, PixelData, VideoFrame};
-use cfa4_media::{FrameRequest, MediaError, MediaInfo, MediaKind, MediaSource, SharedSource, VideoStreamInfo};
+use cfa4_frame::{AudioBuffer, Chroma, PixelData, VideoFrame};
+use cfa4_media::{AudioStreamInfo, FrameRequest, MediaError, MediaInfo, MediaKind, MediaSource, SharedSource, VideoStreamInfo};
+use cfa4_realaudio::cook;
+use cfa4_realmedia::audio::{AudioInfo, Deinterleaver, parse_audio_info};
 use cfa4_realmedia::{Demuxer, Header, StreamKind};
 use cfa4_realvideo::{PictType, Picture, rv34};
 use cfa4_time::{FrameRate, Tick};
@@ -23,6 +32,12 @@ use crate::{CodecError, Result};
 
 /// Most video frames indexed (a day at 30 fps).
 const MAX_FRAMES: usize = 30 * 60 * 60 * 24;
+/// Most audio superblocks indexed (a day of 44.1 kHz Cook in the smallest superblocks).
+const MAX_BLOCKS: usize = 24 * 60 * 60 * 44_100 / 256;
+/// Audio superblocks between decoder checkpoints.
+const CHECKPOINT_BLOCKS: usize = 32;
+/// Decoded audio superblocks kept.
+const AUDIO_CACHE_BLOCKS: usize = 48;
 
 pub fn sniff(head: &[u8]) -> bool {
     cfa4_realmedia::probe(head)
@@ -109,10 +124,8 @@ struct Sample {
     pict: PictType,
 }
 
-pub struct RmSource {
-    info: MediaInfo,
-    bytes: Arc<[u8]>,
-    header: Header,
+/// The video stream of a file.
+struct VStream {
     stream: usize,
     codec: Codec,
     width: u32,
@@ -122,7 +135,37 @@ pub struct RmSource {
     samples: Vec<Sample>,
     /// Sample index of each display position.
     by_pts: Vec<usize>,
-    video: GopCache,
+    cache: GopCache,
+}
+
+struct AudioState {
+    /// The decoder and the superblock it decodes next.
+    dec: cook::Decoder,
+    next: usize,
+    checkpoints: BTreeMap<usize, cook::Decoder>,
+    blocks: HashMap<usize, Arc<Vec<Vec<f32>>>>,
+    order: VecDeque<usize>,
+}
+
+/// The Cook stream of a file.
+struct AStream {
+    stream: usize,
+    info: AudioInfo,
+    params: cook::Params,
+    channels: usize,
+    /// Samples per channel of one superblock.
+    block_samples: usize,
+    /// File offset of the data packet each complete superblock starts in.
+    blocks: Vec<u64>,
+    state: Mutex<AudioState>,
+}
+
+pub struct RmSource {
+    info: MediaInfo,
+    bytes: Arc<[u8]>,
+    header: Header,
+    video: Option<VStream>,
+    audio: Option<AStream>,
 }
 
 fn container(e: impl std::fmt::Display) -> CodecError {
@@ -155,6 +198,27 @@ fn display_order(types: &[PictType]) -> Vec<i64> {
     pts
 }
 
+/// A Cook stream's decoder parameters, or why it cannot be decoded.
+fn cook_params(info: &AudioInfo) -> std::result::Result<cook::Params, String> {
+    let label = match &info.fourcc {
+        b"cook" => {
+            return Ok(cook::Params {
+                channels: info.channels,
+                sample_rate: info.sample_rate,
+                block_align: info.block_align as usize,
+                extradata: info.extradata.clone(),
+            });
+        }
+        b"atrc" => "ATRAC3".to_string(),
+        b"sipr" => "RealAudio SIPR".to_string(),
+        b"28_8" => "RealAudio 2.0 (28.8)".to_string(),
+        b"lpcJ" => "RealAudio 1.0 (14.4)".to_string(),
+        b"raac" | b"racp" => "AAC".to_string(),
+        f => format!("RealAudio {}", String::from_utf8_lossy(f)),
+    };
+    Err(format!("{label} audio is not decoded yet"))
+}
+
 impl RmSource {
     pub fn open(name: &str, bytes: Arc<[u8]>) -> Result<Self> {
         let mut dm = Demuxer::new(Cursor::new(bytes.clone())).map_err(container)?;
@@ -163,65 +227,119 @@ impl RmSource {
             StreamKind::Video { fourcc, width, height, fps_16_16, extradata } => Some((i, *fourcc, *width, *height, *fps_16_16, extradata.clone())),
             _ => None,
         });
-        let Some((stream, fourcc, width, height, fps, extradata)) = found else {
-            return Err(CodecError::Unsupported(format!("{name}: RealMedia without a video stream (RealAudio is not decoded yet)")));
-        };
-        let Some(codec) = codec_of(&fourcc) else {
-            return Err(CodecError::Unsupported(format!("{name}: RealMedia video {} (CFA4 decodes RealVideo 1.0 to 4.0)", String::from_utf8_lossy(&fourcc))));
-        };
-        // the decoder checks the stream parameters
-        AnyDecoder::new(codec, u32::from(width), u32::from(height), &extradata)
-            .map_err(|e| CodecError::Unsupported(format!("{name}: {}: {e}", label(codec))))?;
+        let mut vsetup = None;
+        if let Some((stream, fourcc, width, height, fps, extradata)) = found {
+            let Some(codec) = codec_of(&fourcc) else {
+                return Err(CodecError::Unsupported(format!(
+                    "{name}: RealMedia video {} (CFA4 decodes RealVideo 1.0 to 4.0)",
+                    String::from_utf8_lossy(&fourcc)
+                )));
+            };
+            // the decoder checks the stream parameters
+            AnyDecoder::new(codec, u32::from(width), u32::from(height), &extradata)
+                .map_err(|e| CodecError::Unsupported(format!("{name}: {}: {e}", label(codec))))?;
+            vsetup = Some((stream, codec, width, height, fps, extradata));
+        }
+        // the first audio stream; only Cook is decoded
+        let mut asetup = None;
+        let mut audio_refusal = None;
+        if let Some((i, info)) = header.streams.iter().enumerate().find_map(|(i, s)| match &s.kind {
+            StreamKind::Audio { codec_data } => Some((i, parse_audio_info(codec_data))),
+            _ => None,
+        }) {
+            match info.map_err(|e| e.to_string()).and_then(|a| cook_params(&a).map(|p| (a, p))) {
+                Ok((a, p)) => match cook::Decoder::new(&p) {
+                    Ok(d) => asetup = Some((i, a, p, d)),
+                    Err(e) => audio_refusal = Some(format!("Cook: {e}")),
+                },
+                Err(e) => audio_refusal = Some(e),
+            }
+        }
+        if vsetup.is_none() && asetup.is_none() {
+            let why = audio_refusal.unwrap_or_else(|| "no video or audio stream".into());
+            return Err(CodecError::Unsupported(format!("{name}: RealMedia: {why}")));
+        }
+        let vstream = vsetup.as_ref().map(|v| v.0);
+        let vcodec = vsetup.as_ref().map(|v| v.1);
+        let astream = asetup.as_ref().map(|a| a.0);
+        let sub_h = asetup.as_ref().map_or(0, |a| usize::from(a.1.sub_packet_h));
+        let blocked = asetup.as_ref().is_some_and(|a| {
+            matches!(
+                a.1.interleaver,
+                cfa4_realmedia::audio::Interleaver::Genr | cfa4_realmedia::audio::Interleaver::Int4 | cfa4_realmedia::audio::Interleaver::Sipr
+            )
+        });
         let mut types = Vec::new();
         let mut places = Vec::new();
         let mut last_pos = u64::MAX;
         let mut nth = 0u32;
-        while places.len() < MAX_FRAMES {
+        let mut blocks = Vec::new();
+        let (mut fill, mut block_pos) = (0usize, 0u64);
+        while places.len() < MAX_FRAMES && blocks.len() < MAX_BLOCKS {
             let p = match dm.next_packet() {
                 Ok(Some(p)) => p,
                 // a damaged tail ends the index
                 Ok(None) | Err(_) => break,
             };
-            if p.stream != stream || p.partial {
+            if Some(p.stream) == astream {
+                // the deinterleaver's sub-packet count: a superblock counts once it is complete
+                if !blocked {
+                    blocks.push(p.pos);
+                    continue;
+                }
+                if p.keyframe {
+                    fill = 0;
+                }
+                if fill == 0 {
+                    block_pos = p.pos;
+                }
+                fill += 1;
+                if fill >= sub_h {
+                    fill = 0;
+                    blocks.push(block_pos);
+                }
                 continue;
             }
+            if Some(p.stream) != vstream || p.partial {
+                continue;
+            }
+            let Some(codec) = vcodec else { continue };
             let Some(t) = picture_type(codec, &p.data) else { continue };
             nth = if p.pos == last_pos { nth.saturating_add(1) } else { 0 };
             last_pos = p.pos;
             places.push((p.pos, nth));
             types.push(t);
         }
-        if places.is_empty() {
-            return Err(container(format!("{name}: no video frames")));
-        }
-        let pts = display_order(&types);
-        let samples: Vec<Sample> = places.iter().zip(&types).zip(&pts).map(|((&(pos, nth), &pict), &pts)| Sample { pos, nth, pts, pict }).collect();
-        let mut by_pts = vec![0usize; samples.len()];
-        for (i, s) in samples.iter().enumerate() {
-            if let Some(slot) = usize::try_from(s.pts).ok().and_then(|p| by_pts.get_mut(p)) {
-                *slot = i;
+        let mut duration = Tick::ZERO;
+        let mut video = None;
+        let mut video_info = None;
+        if let Some((stream, codec, width, height, fps, extradata)) = vsetup {
+            if places.is_empty() {
+                return Err(container(format!("{name}: no video frames")));
             }
-        }
-        // 16.16 fixed point; RealProducer writes whole rates, keep it exact when it is one, and
-        // take a standard rate the field approximates (29.97 is 0x1DF852) as that rate
-        let rate = if fps == 0 {
-            FrameRate::new(25, 1)
-        } else if fps & 0xFFFF == 0 {
-            FrameRate::new(i64::from(fps >> 16), 1)
-        } else {
-            let exact = FrameRate::new(i64::from(fps), 65536);
-            FrameRate::COMMON.into_iter().find(|r| (r.as_f64() - exact.as_f64()).abs() < 0.005).unwrap_or(exact)
-        };
-        let frames = samples.len() as i64;
-        // the start of the frame after the last, so every frame lies inside the duration
-        let duration = rate.tick_of(frames);
-        let color = crate::stream_color::resolve(u32::from(width), u32::from(height), &[]);
-        let bitrate = u64::try_from(duration.to_rational_round(1, 1)).ok().filter(|&s| s > 0).map(|s| bytes.len() as u64 * 8 / s);
-        let info = MediaInfo {
-            name: name.to_string(),
-            kind: MediaKind::Movie,
-            duration,
-            video: Some(VideoStreamInfo {
+            let pts = display_order(&types);
+            let samples: Vec<Sample> = places.iter().zip(&types).zip(&pts).map(|((&(pos, nth), &pict), &pts)| Sample { pos, nth, pts, pict }).collect();
+            let mut by_pts = vec![0usize; samples.len()];
+            for (i, s) in samples.iter().enumerate() {
+                if let Some(slot) = usize::try_from(s.pts).ok().and_then(|p| by_pts.get_mut(p)) {
+                    *slot = i;
+                }
+            }
+            // 16.16 fixed point; RealProducer writes whole rates, keep it exact when it is one,
+            // and take a standard rate the field approximates (29.97 is 0x1DF852) as that rate
+            let rate = if fps == 0 {
+                FrameRate::new(25, 1)
+            } else if fps & 0xFFFF == 0 {
+                FrameRate::new(i64::from(fps >> 16), 1)
+            } else {
+                let exact = FrameRate::new(i64::from(fps), 65536);
+                FrameRate::COMMON.into_iter().find(|r| (r.as_f64() - exact.as_f64()).abs() < 0.005).unwrap_or(exact)
+            };
+            // the start of the frame after the last, so every frame lies inside the duration
+            duration = rate.tick_of(samples.len() as i64);
+            let color = crate::stream_color::resolve(u32::from(width), u32::from(height), &[]);
+            let bitrate = u64::try_from(duration.to_rational_round(1, 1)).ok().filter(|&s| s > 0).map(|s| bytes.len() as u64 * 8 / s);
+            video_info = Some(VideoStreamInfo {
                 width: u32::from(width),
                 height: u32::from(height),
                 frame_rate: rate,
@@ -232,37 +350,78 @@ impl RmSource {
                 has_alpha: false,
                 bitrate,
                 hdr: None,
-            }),
-            audio_streams: Vec::new(),
+            });
+            video = Some(VStream {
+                stream,
+                codec,
+                width: u32::from(width),
+                height: u32::from(height),
+                extradata,
+                rate,
+                samples,
+                by_pts,
+                cache: GopCache::new(None),
+            });
+        }
+        let mut audio = None;
+        let mut audio_streams = Vec::new();
+        if let Some((stream, info, params, dec)) = asetup
+            && !blocks.is_empty()
+        {
+            let frames_per_block =
+                if blocked { (usize::from(info.sub_packet_h) * info.audio_framesize as usize).checked_div(info.block_align as usize).unwrap_or(0) } else { 1 };
+            let block_samples = frames_per_block * dec.samples_per_channel();
+            let channels = dec.channels();
+            let total = blocks.len() as i64 * block_samples as i64;
+            duration = duration.max(Tick::from_rational(total, 1, i64::from(info.sample_rate.max(1))));
+            audio_streams.push(AudioStreamInfo {
+                sample_rate: info.sample_rate,
+                channels: channels as u32,
+                codec: "Cook".into(),
+                bits_per_sample: None,
+                speakers: Vec::new(),
+            });
+            audio = Some(AStream {
+                stream,
+                params,
+                channels,
+                block_samples,
+                blocks,
+                state: Mutex::new(AudioState {
+                    dec: dec.clone(),
+                    next: 0,
+                    checkpoints: BTreeMap::from([(0, dec)]),
+                    blocks: HashMap::new(),
+                    order: VecDeque::new(),
+                }),
+                info,
+            });
+        }
+        if video.is_none() && audio.is_none() {
+            return Err(container(format!("{name}: no audio frames")));
+        }
+        let info = MediaInfo {
+            name: name.to_string(),
+            kind: if video.is_some() { MediaKind::Movie } else { MediaKind::AudioOnly },
+            duration,
+            video: video_info,
+            audio_streams,
             container: "RealMedia".into(),
             start_timecode: None,
             file_size: Some(bytes.len() as u64),
         };
-        Ok(Self {
-            info,
-            bytes,
-            header,
-            stream,
-            codec,
-            width: u32::from(width),
-            height: u32::from(height),
-            extradata,
-            rate,
-            samples,
-            by_pts,
-            video: GopCache::new(None),
-        })
+        Ok(Self { info, bytes, header, video, audio })
     }
 
-    fn read(&self, i: usize) -> Result<Vec<u8>> {
-        let s = self.samples.get(i).ok_or_else(|| container("frame index out of range"))?;
+    fn read(&self, v: &VStream, i: usize) -> Result<Vec<u8>> {
+        let s = v.samples.get(i).ok_or_else(|| container("frame index out of range"))?;
         let mut dm = Demuxer::from_header(Cursor::new(self.bytes.clone()), self.header.clone()).map_err(container)?;
         dm.seek(s.pos).map_err(container)?;
         let mut seen = 0u32;
         // bounded: the frame starts in the packet at `pos`
         for _ in 0..4096 {
             let Some(p) = dm.next_packet().map_err(container)? else { break };
-            if p.stream != self.stream || p.partial || p.pos != s.pos {
+            if p.stream != v.stream || p.partial || p.pos != s.pos {
                 continue;
             }
             if seen == s.nth {
@@ -271,6 +430,129 @@ impl RmSource {
             seen += 1;
         }
         Err(container("video frame not found"))
+    }
+
+    /// The codec frames of audio superblock `k`.
+    fn audio_frames(&self, a: &AStream, k: usize) -> Result<Vec<Vec<u8>>> {
+        let pos = *a.blocks.get(k).ok_or_else(|| container("audio block out of range"))?;
+        let mut dm = Demuxer::from_header(Cursor::new(self.bytes.clone()), self.header.clone()).map_err(container)?;
+        dm.seek(pos).map_err(container)?;
+        let mut di = Deinterleaver::new(&a.info);
+        // bounded: a superblock is at most a few hundred data packets
+        for _ in 0..65_536 {
+            let Some(p) = dm.next_packet().map_err(container)? else { break };
+            if p.stream != a.stream {
+                continue;
+            }
+            let frames = di.push(&p);
+            if !frames.is_empty() {
+                return Ok(frames.into_iter().map(|f| f.data).collect());
+            }
+        }
+        Err(container("audio block not found"))
+    }
+
+    /// Decoded superblock `k` (planar), decoding forward from the nearest checkpoint.
+    fn audio_block(&self, a: &AStream, st: &mut AudioState, k: usize) -> Result<Arc<Vec<Vec<f32>>>> {
+        if let Some(b) = st.blocks.get(&k) {
+            return Ok(b.clone());
+        }
+        // restore a checkpoint unless the decoder is already between it and `k`
+        if (st.next > k || k - st.next > CHECKPOINT_BLOCKS)
+            && let Some((&j, d)) = st.checkpoints.range(..=k).next_back()
+            && !(j <= st.next && st.next <= k)
+        {
+            st.dec = d.clone();
+            st.next = j;
+        }
+        let spc = st.dec.samples_per_channel();
+        while st.next <= k {
+            let n = st.next;
+            if n.is_multiple_of(CHECKPOINT_BLOCKS) && !st.checkpoints.contains_key(&n) {
+                st.checkpoints.insert(n, st.dec.clone());
+            }
+            let mut out = vec![Vec::with_capacity(a.block_samples); a.channels];
+            // a damaged block decodes to silence; the decoder state goes on as ffmpeg's does
+            let frames = self.audio_frames(a, n).unwrap_or_default();
+            for f in &frames {
+                match st.dec.decode(f) {
+                    Ok(Some(fr)) => {
+                        for (c, o) in out.iter_mut().enumerate() {
+                            match fr.channels.get(c) {
+                                Some(s) => o.extend_from_slice(s),
+                                None => o.resize(o.len() + spc, 0.0),
+                            }
+                        }
+                    }
+                    _ => {
+                        for o in &mut out {
+                            o.resize(o.len() + spc, 0.0);
+                        }
+                    }
+                }
+            }
+            for o in &mut out {
+                o.resize(a.block_samples, 0.0);
+            }
+            st.blocks.insert(n, Arc::new(out));
+            st.order.push_back(n);
+            while st.order.len() > AUDIO_CACHE_BLOCKS {
+                if let Some(old) = st.order.pop_front() {
+                    st.blocks.remove(&old);
+                }
+            }
+            st.next = n + 1;
+        }
+        st.blocks.get(&k).cloned().ok_or_else(|| container("audio block not decoded"))
+    }
+
+    fn read_audio(&self, start: i64, frames: usize, sample_rate: u32) -> std::result::Result<AudioBuffer, MediaError> {
+        let a = self.audio.as_ref().ok_or(MediaError::NoStream("audio"))?;
+        let rate = a.params.sample_rate.max(1);
+        let ch = a.channels.max(1);
+        let source_frames = cfa4_media::resample_source_frames(frames, rate, sample_rate)?;
+        let need = source_frames.checked_add(2).ok_or_else(|| MediaError::Decode("audio source window overflows".into()))?;
+        cfa4_media::validate_audio_buffer_shape(ch, need)?;
+        cfa4_media::validate_audio_buffer_shape(ch, frames)?;
+        let ratio = f64::from(rate) / f64::from(sample_rate.max(1));
+        let s0 = (start as f64 * ratio).floor() as i64;
+        let need_i64 = i64::try_from(need).unwrap_or(i64::MAX);
+        let mut src: Vec<Vec<f32>> = vec![vec![0.0; need]; ch];
+        let bs = a.block_samples.max(1) as i64;
+        let mut st = a.state.lock().unwrap_or_else(|e| e.into_inner());
+        let mut k = usize::try_from(s0.max(0) / bs).unwrap_or(usize::MAX);
+        while k < a.blocks.len() {
+            let b_start = k as i64 * bs;
+            if b_start >= s0.saturating_add(need_i64) {
+                break;
+            }
+            let blk = self.audio_block(a, &mut st, k)?;
+            for (c, dst) in src.iter_mut().enumerate() {
+                let Some(chan) = blk.get(c) else { continue };
+                for (i, v) in chan.iter().enumerate() {
+                    let pos = b_start + i as i64 - s0;
+                    if let Some(d) = usize::try_from(pos).ok().and_then(|p| dst.get_mut(p)) {
+                        *d = *v;
+                    }
+                }
+            }
+            k += 1;
+        }
+        drop(st);
+        let frac = s0 as f64 - start as f64 * ratio;
+        let mut out = AudioBuffer::silence(sample_rate, ch, frames);
+        for (c, o) in out.channels.iter_mut().enumerate() {
+            let Some(s) = src.get(c) else { continue };
+            for (k, d) in o.iter_mut().enumerate() {
+                let pos = k as f64 * ratio - frac;
+                let i0 = pos.floor().max(0.0) as usize;
+                let f = (pos - i0 as f64) as f32;
+                let x = s.get(i0).copied().unwrap_or(0.0);
+                let y = s.get(i0 + 1).copied().unwrap_or(x);
+                *d = x + (y - x) * f;
+            }
+        }
+        Ok(out)
     }
 }
 
@@ -350,19 +632,19 @@ impl VideoDecoder for RealVideoDecoder {
     }
 }
 
-struct RmVideo<'a>(&'a RmSource);
+struct RmVideo<'a>(&'a RmSource, &'a VStream);
 
 impl VideoSamples for RmVideo<'_> {
     fn count(&self) -> usize {
-        self.0.samples.len()
+        self.1.samples.len()
     }
     fn pts(&self, i: usize) -> i64 {
-        self.0.samples.get(i).map_or(0, |s| s.pts)
+        self.1.samples.get(i).map_or(0, |s| s.pts)
     }
     /// The I-frame at or before `i`; for a B-frame decoded right after that I-frame (it also
     /// needs the reference picture before it), the I-frame before that.
     fn sync_before(&self, i: usize) -> usize {
-        let s = &self.0.samples;
+        let s = &self.1.samples;
         let is_i = |k: usize| s.get(k).is_some_and(|x| x.pict == PictType::I);
         let prev_i = |from: usize| (0..=from).rev().find(|&k| is_i(k)).unwrap_or(0);
         let sync = prev_i(i.min(s.len().saturating_sub(1)));
@@ -370,15 +652,15 @@ impl VideoSamples for RmVideo<'_> {
         if leading && sync > 0 { prev_i(sync - 1) } else { sync }
     }
     fn sample_at(&self, t: i64) -> Option<usize> {
-        let last = self.0.by_pts.len().checked_sub(1)?;
+        let last = self.1.by_pts.len().checked_sub(1)?;
         let t = usize::try_from(t.max(0)).ok()?.min(last);
-        self.0.by_pts.get(t).copied()
+        self.1.by_pts.get(t).copied()
     }
     fn read(&self, i: usize) -> Result<Vec<u8>> {
-        self.0.read(i)
+        self.0.read(self.1, i)
     }
     fn make_decoder(&self) -> Result<Box<dyn VideoDecoder>> {
-        let s = self.0;
+        let s = self.1;
         Ok(Box::new(RealVideoDecoder::new(s.codec, s.width, s.height, &s.extradata, s.rate)?))
     }
 }
@@ -389,14 +671,15 @@ impl MediaSource for RmSource {
     }
 
     fn video_frame(&self, req: FrameRequest) -> std::result::Result<Arc<VideoFrame>, MediaError> {
+        let v = self.video.as_ref().ok_or(MediaError::NoStream("video"))?;
         let t = req.time.max(Tick::ZERO);
-        let target = self.rate.frame_at(t);
-        let late = cfa4_media::cancel::catch_up().map(|m| self.rate.frame_at(t - m));
-        Ok(self.video.frame_late(&RmVideo(self), target, late)?)
+        let target = v.rate.frame_at(t);
+        let late = cfa4_media::cancel::catch_up().map(|m| v.rate.frame_at(t - m));
+        Ok(v.cache.frame_late(&RmVideo(self, v), target, late)?)
     }
 
-    fn audio(&self, _start: i64, _frames: usize, _sample_rate: u32) -> std::result::Result<cfa4_frame::AudioBuffer, MediaError> {
-        Err(MediaError::NoStream("audio"))
+    fn audio(&self, start: i64, frames: usize, sample_rate: u32) -> std::result::Result<AudioBuffer, MediaError> {
+        self.read_audio(start, frames, sample_rate)
     }
 }
 
