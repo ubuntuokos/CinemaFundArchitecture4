@@ -81,8 +81,12 @@ if [ "$TEST" = 1 ]; then
   flatpak install --user -y --noninteractive --no-pull --no-related --reinstall "$OUT"
   flatpak info --user "$APP_ID"
   flatpak run --command=cfa4-cli "$APP_ID" --version
-  # the Qt GUI's bundled PySide6 loads inside the sandbox
-  flatpak run --command=python3 "$APP_ID" -c 'import sys; sys.path[:0] = ["/app/lib/cfa4/python", "/app/lib/cfa4/pyside6"]; from PySide6 import QtCore, QtWidgets, QtMultimedia; assert QtCore.__file__.startswith("/app/lib/cfa4/pyside6"), QtCore.__file__; print("PySide6", QtCore.qVersion())'
+  # the Qt GUI's bundled PySide6 loads inside the sandbox: every module the GUI imports (as
+  # stage-pyside6.py's MODULES), so a library the runtime lacks (libgssapi_krb5 for QtNetwork,
+  # hence the krb5 module) fails here and not at the user's first start
+  flatpak run --command=python3 "$APP_ID" -c 'import sys; sys.path[:0] = ["/app/lib/cfa4/python", "/app/lib/cfa4/pyside6"]; from PySide6 import QtCore, QtGui, QtWidgets, QtNetwork, QtTest, QtMultimedia, QtDBus; assert QtCore.__file__.startswith("/app/lib/cfa4/pyside6"), QtCore.__file__; print("PySide6", QtCore.qVersion())'
+  # and the GUI itself starts with its engine (the bundle's command), without a display
+  flatpak run --env=QT_QPA_PLATFORM=offscreen "$APP_ID" --demo --no-autosave --smoke
 
   flatpak run --command=sh "$APP_ID" -c 'ls /app/share/applications /app/share/metainfo /app/share/mime/packages /app/share/icons/hicolor/scalable/apps'
 fi

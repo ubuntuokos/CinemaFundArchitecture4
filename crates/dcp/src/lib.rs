@@ -24,12 +24,20 @@
 #![cfg_attr(not(test), deny(clippy::unwrap_used, clippy::expect_used, clippy::panic, clippy::unimplemented, clippy::todo, clippy::unreachable))]
 
 mod assetmap;
+mod c14n;
 mod cpl;
+pub mod kdb;
 pub mod kdm;
 mod pkl;
 pub mod sha1;
 pub mod subtitle;
+pub mod x509;
 mod xml;
+pub mod xmldsig;
+
+#[cfg(any(test, feature = "test-util"))]
+#[doc(hidden)]
+pub mod testing;
 
 pub use assetmap::{AssetMap, AssetMapAsset, Chunk, VolumeIndex};
 pub use cpl::{AssetKind, Composition, ContentVersion, Marker, Rating, Reel, ReelAsset, ScreenAspectRatio};

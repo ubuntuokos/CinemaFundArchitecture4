@@ -4536,6 +4536,13 @@
 	The keys stay in memory only, until Forget DCP Keys or the end of the session.	Le chiavi restano solo in memoria, fino a Dimentica chiavi DCP o alla fine della sessione.
 	DCP keys forgotten	Chiavi DCP dimenticate
 	Choose the KDM file and the private key.	Scegli il file KDM e la chiave privata.
+	Load even if the certificate chain is not verified	Carica anche con catena di certificati non verificata
+	Bundle: {loaded} of {total} KDMs loaded, {other} for other recipients	Pacchetto: {loaded} KDM su {total} caricati, {other} per altri destinatari
+	Not loaded: {path}: {problem}	Non caricato: {path}: {problem}
+	Signature verified: {chain}	Firma verificata: {chain}
+	Signature not verified: {problem}	Firma non verificata: {problem}
+	KDM required	KDM richiesto
+	Encrypted: load the KDM with content key {keys}	Crittografato: carica il KDM con la chiave di contenuto {keys}
 
 # Settings ▸ Timecode Sync (TC-4)
 	Timecode Sync	Sincronizzazione timecode
@@ -4568,3 +4575,60 @@
 	Chase External Timecode	Segui timecode esterno
 	Send LTC	Invia LTC
 	Send MIDI Timecode	Invia timecode MIDI
+# Auto Color, Auto Contrast, Auto Levels (EffectsSDK review)
+	Auto Color	Colore automatico
+	Auto Contrast	Contrasto automatico
+	Auto Levels	Livelli automatici
+	Temporal Smoothing (seconds)	Smussatura temporale (secondi)
+	Scene Detect	Rilevamento scene
+	Black Clip	Taglio del nero
+	White Clip	Taglio del bianco
+	Snap Neutral Midtones	Neutralizza toni medi
+# Layout presets: PiP corners, split screen (EffectsSDK review)
+	PiP 35% Upper Left	PiP 35% in alto a sinistra
+	Picture-in-picture: 35 % scale in the upper left	Picture-in-picture: scala 35 % in alto a sinistra
+	PiP 35% Lower Left	PiP 35% in basso a sinistra
+	Picture-in-picture: 35 % scale in the lower left	Picture-in-picture: scala 35 % in basso a sinistra
+	PiP 35% Lower Right	PiP 35% in basso a destra
+	Picture-in-picture: 35 % scale in the lower right	Picture-in-picture: scala 35 % in basso a destra
+	Split Screen Left	Schermo diviso a sinistra
+	Split screen: the middle half of the picture fills the left half of the frame	Schermo diviso: la metà centrale dell'immagine riempie la metà sinistra del fotogramma
+	Split Screen Right	Schermo diviso a destra
+	Split screen: the middle half of the picture fills the right half of the frame	Schermo diviso: la metà centrale dell'immagine riempie la metà destra del fotogramma
+# Creative Looks: CRT (P3)
+	CRT	CRT
+	Scanline Strength	Intensità linee
+	Line Count	Numero di linee
+	Mask	Maschera
+	Mask Strength	Intensità maschera
+	Corner Darkening	Scurimento angoli
+	Aperture Grille	Griglia di apertura
+	Shadow Mask	Maschera d’ombra
+	Slot Mask	Maschera a fessura
+# Creative Looks: Oil Paint (P4)
+	Oil Paint	Pittura a olio
+	Detail	Dettaglio
+	Texture	Texture
+	Facet	Sfaccettature
+	Daubs	Pennellate
+	Dry Brush	Pennello asciutto
+	Fresco	Affresco
+	Knife	Spatola
+	Sponge	Spugna
+# Creative Looks: Pixel Sort (P5)
+	Pixel Sort	Ordinamento pixel
+	Sort By	Ordina per
+	Lower Threshold	Soglia inferiore
+	Upper Threshold	Soglia superiore
+	Ascending	Crescente
+# Temporal Denoise (EffectsSDK review)
+	Temporal Denoise	Riduzione rumore temporale
+	Frames Each Side	Fotogrammi per lato
+	Motion Threshold	Soglia di movimento
+	Show Motion	Mostra movimento
+	No signal	Nessun segnale
+	Locating	Posizionamento
+	Locked	Agganciato
+	Freewheel	Ruota libera
+	Scrubbing	Scorrimento
+	Sending	Invio

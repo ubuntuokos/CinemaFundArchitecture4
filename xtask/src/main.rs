@@ -111,6 +111,7 @@ const LAYERS: &[(&str, u8)] = &[
     ("export", 3),
     ("dcp-validate", 3),
     ("dcp-inspect", 3),
+    ("dcpomatic", 3),
     ("smart-edit", 3),
     ("format", 3),
     ("engine", 4),

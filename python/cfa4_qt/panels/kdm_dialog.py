@@ -1,12 +1,17 @@
 """File ▸ Load KDM…: the content keys of an encrypted DCP (#933, #1029).
 
-The user picks a KDM (SMPTE ST 430-1 XML) and the PEM private key of its recipient; the engine's
+The user picks a KDM (SMPTE ST 430-1 XML), or a Key Delivery Bundle of KDMs (ST 430-9 ``.tar``,
+#1144), and the PEM private key of its recipient; the engine's
 ``dcp.loadKdm`` decrypts the content keys into memory, and the encrypted track files play from
-then on. The dialog shows what the KDM holds (title, key types, validity), never a key. Forget DCP
-Keys (``dcp.clearKeys``) drops them again. Keys are never written anywhere.
+then on. The engine checks the KDM's signature and certificate chain (ST 430-1 / 430-2 / 430-3). An unsigned
+KDM, or one changed after signing, is always refused; one whose content is intact but whose
+certificate chain does not check out loads only when "Load even if the certificate chain is not
+verified" is ticked (``allowUnverified``, #1028 / #1075, owner decision 2026-11-13). The dialog shows what the KDM holds (title, key types, validity) and how the
+signature check went, never a key. Forget DCP Keys (``dcp.clearKeys``) drops them again. Keys are
+never written anywhere.
 
 Automation ids: ``kdm.kdmPath``, ``kdm.kdmBrowse``, ``kdm.keyPath``, ``kdm.keyBrowse``,
-``kdm.load``, ``kdm.forget``, ``kdm.result``, ``kdm.close``.
+``kdm.allowUnverified``, ``kdm.load``, ``kdm.forget``, ``kdm.result``, ``kdm.close``.
 """
 
 from __future__ import annotations
@@ -16,6 +21,7 @@ from collections.abc import Callable
 from typing import Any
 
 from PySide6.QtWidgets import (
+    QCheckBox,
     QDialog,
     QDialogButtonBox,
     QFileDialog,
@@ -33,7 +39,8 @@ from ..i18n import fmt, tr
 
 
 def describe(r: Any) -> str:
-    """The engine's ``dcp.loadKdm`` reply as text: title, then one line per key (never the key)."""
+    """The engine's ``dcp.loadKdm`` reply as text: title, one line per key (never the key), the
+    composition, then how the signature check went (the signer's chain, or the problem)."""
     if not isinstance(r, dict):
         return ""
     title = str(r.get("title") or r.get("annotation") or "KDM")
@@ -44,6 +51,22 @@ def describe(r: Any) -> str:
             lines.append(f"{k.get('type', '?')}  {k.get('keyId', '')}  {k.get('notValidBefore', '')} – {k.get('notValidAfter', '')}")
     if isinstance(r.get("composition"), str):
         lines.append(f"CPL {r['composition']}")
+    sig = r.get("signature")
+    if isinstance(sig, dict):
+        if sig.get("valid") is True:
+            chain = sig.get("chain") if isinstance(sig.get("chain"), list) else []
+            lines.append(fmt("Signature verified: {chain}", chain=" ← ".join(str(c) for c in chain)))
+        else:
+            lines.append(fmt("Signature not verified: {problem}", problem=str(sig.get("problem") or "?")))
+    # #1144: a Key Delivery Bundle: how many of its KDMs were for this key, and which were refused
+    bundle = r.get("bundle")
+    if isinstance(bundle, dict):
+        kdms = r.get("kdms") if isinstance(r.get("kdms"), list) else []
+        total, other = bundle.get("kdms", 0), r.get("otherRecipients", 0)
+        lines.append(fmt("Bundle: {loaded} of {total} KDMs loaded, {other} for other recipients", loaded=len(kdms), total=total, other=other))
+        for x in r.get("refused") if isinstance(r.get("refused"), list) else []:
+            if isinstance(x, dict):
+                lines.append(fmt("Not loaded: {path}: {problem}", path=str(x.get("path", "?")), problem=str(x.get("problem", "?"))))
     return "\n".join(lines)
 
 
@@ -62,7 +85,7 @@ class KdmDialog(QDialog):
         self.key_path.setObjectName("kdm.keyPath")
         form = QFormLayout()
         for edit, label, name, filt in (
-            (self.kdm_path, tr("KDM file"), "kdm.kdmBrowse", "KDM (*.xml)"),
+            (self.kdm_path, tr("KDM file"), "kdm.kdmBrowse", "KDM (*.xml *.tar)"),
             (self.key_path, tr("Private key (PEM)"), "kdm.keyBrowse", "PEM (*.pem *.key)"),
         ):
             browse = QPushButton(tr("Browse…"), self)
@@ -72,6 +95,9 @@ class KdmDialog(QDialog):
             row.addWidget(edit, 1)
             row.addWidget(browse)
             form.addRow(label, row)
+        self.allow_unverified = QCheckBox(tr("Load even if the certificate chain is not verified"), self)
+        self.allow_unverified.setObjectName("kdm.allowUnverified")
+        form.addRow("", self.allow_unverified)
         note = QLabel(tr("The keys stay in memory only, until Forget DCP Keys or the end of the session."), self)
         note.setWordWrap(True)
         self.result = QPlainTextEdit(self)
@@ -105,7 +131,9 @@ class KdmDialog(QDialog):
         if not kdm or not key:
             self.result.setPlainText(tr("Choose the KDM file and the private key."))
             return
-        params = {"kdm": os.path.expanduser(kdm), "privateKey": os.path.expanduser(key)}
+        params: dict[str, Any] = {"kdm": os.path.expanduser(kdm), "privateKey": os.path.expanduser(key)}
+        if self.allow_unverified.isChecked():
+            params["allowUnverified"] = True
         self.load_button.setEnabled(False)
 
         def got(r: Any, _b: bytes | None) -> None:

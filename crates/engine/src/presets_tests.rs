@@ -257,3 +257,36 @@ fn export_and_import_go_through_host_services() {
     assert_eq!(s2.presets.user.len(), 1);
     assert!(s2.execute("presets.import", json!({"path": "/exports/missing.prfpset"})).is_err());
 }
+
+#[test]
+fn layout_presets_place_the_picture_in_every_corner_and_half() {
+    let (s, clips) = demo();
+    let it = item(&s, clips[0]);
+    let all = crate::presets::builtin_presets();
+    let find = |name: &str| all.iter().find(|p| p.name == name).unwrap_or_else(|| panic!("missing {name}"));
+    // positions scale with the target frame (here a 960 × 540 sequence)
+    let pos = |fx: &[cfa4_project::EffectInstance]| {
+        fx.iter().find(|e| e.effect == "motion").and_then(|m| m.param("position")).and_then(|p| p.value.as_vec2()).unwrap()
+    };
+    for (name, x, y) in [
+        ("PiP 35% Upper Left", 195.0, 135.0),
+        ("PiP 35% Upper Right", 765.0, 135.0),
+        ("PiP 35% Lower Left", 195.0, 405.0),
+        ("PiP 35% Lower Right", 765.0, 405.0),
+        ("Split Screen Left", 240.0, 270.0),
+        ("Split Screen Right", 720.0, 270.0),
+    ] {
+        let fx = crate::presets::instantiate(find(name), &it, (960, 540));
+        let p = pos(&fx);
+        assert!((p.x - x).abs() < 1e-6 && (p.y - y).abs() < 1e-6, "{name}: {p:?}");
+    }
+    // split screen keeps the middle half: 25 % cropped from each side, before Motion
+    let fx = crate::presets::instantiate(find("Split Screen Left"), &it, (960, 540));
+    let crop = fx.iter().find(|e| e.effect == "crop").unwrap();
+    assert_eq!(crop.param("left").unwrap().value, ParamValue::Float(25.0));
+    assert_eq!(crop.param("right").unwrap().value, ParamValue::Float(25.0));
+    // and the preset applies to a clip through the command like the others
+    let (mut s, clips) = demo();
+    s.execute("presets.apply", json!({"preset": "Split Screen Right", "clips": [clips[0].0]})).unwrap();
+    assert!(item(&s, clips[0]).effect("crop").is_some());
+}

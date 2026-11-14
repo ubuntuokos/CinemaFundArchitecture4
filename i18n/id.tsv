@@ -4544,6 +4544,13 @@
 	The keys stay in memory only, until Forget DCP Keys or the end of the session.	Kunci hanya disimpan di memori, sampai Lupakan Kunci DCP atau akhir sesi.
 	DCP keys forgotten	Kunci DCP dilupakan
 	Choose the KDM file and the private key.	Pilih file KDM dan kunci privat.
+	Load even if the certificate chain is not verified	Muat juga dengan rantai sertifikat yang belum diverifikasi
+	Bundle: {loaded} of {total} KDMs loaded, {other} for other recipients	Paket: {loaded} dari {total} KDM dimuat, {other} untuk penerima lain
+	Not loaded: {path}: {problem}	Tidak dimuat: {path}: {problem}
+	Signature verified: {chain}	Tanda tangan terverifikasi: {chain}
+	Signature not verified: {problem}	Tanda tangan tidak terverifikasi: {problem}
+	KDM required	Perlu KDM
+	Encrypted: load the KDM with content key {keys}	Terenkripsi: muat KDM dengan kunci konten {keys}
 
 # Settings ▸ Timecode Sync (TC-4)
 	Timecode Sync	Sinkronisasi Timecode
@@ -4576,3 +4583,60 @@
 	Chase External Timecode	Ikuti Timecode Eksternal
 	Send LTC	Kirim LTC
 	Send MIDI Timecode	Kirim Timecode MIDI
+# Auto Color, Auto Contrast, Auto Levels (EffectsSDK review)
+	Auto Color	Warna Otomatis
+	Auto Contrast	Kontras Otomatis
+	Auto Levels	Level Otomatis
+	Temporal Smoothing (seconds)	Penghalusan Temporal (detik)
+	Scene Detect	Deteksi Adegan
+	Black Clip	Potong Hitam
+	White Clip	Potong Putih
+	Snap Neutral Midtones	Netralkan Nada Tengah
+# Layout presets: PiP corners, split screen (EffectsSDK review)
+	PiP 35% Upper Left	PiP 35% Kiri Atas
+	Picture-in-picture: 35 % scale in the upper left	Gambar-dalam-gambar: skala 35 % di kiri atas
+	PiP 35% Lower Left	PiP 35% Kiri Bawah
+	Picture-in-picture: 35 % scale in the lower left	Gambar-dalam-gambar: skala 35 % di kiri bawah
+	PiP 35% Lower Right	PiP 35% Kanan Bawah
+	Picture-in-picture: 35 % scale in the lower right	Gambar-dalam-gambar: skala 35 % di kanan bawah
+	Split Screen Left	Layar Terbagi Kiri
+	Split screen: the middle half of the picture fills the left half of the frame	Layar terbagi: separuh tengah gambar mengisi separuh kiri bingkai
+	Split Screen Right	Layar Terbagi Kanan
+	Split screen: the middle half of the picture fills the right half of the frame	Layar terbagi: separuh tengah gambar mengisi separuh kanan bingkai
+# Creative Looks: CRT (P3)
+	CRT	CRT
+	Scanline Strength	Kekuatan Garis Pindai
+	Line Count	Jumlah Garis
+	Mask	Masker
+	Mask Strength	Kekuatan Masker
+	Corner Darkening	Penggelapan Sudut
+	Aperture Grille	Kisi Aperture
+	Shadow Mask	Masker Bayangan
+	Slot Mask	Masker Celah
+# Creative Looks: Oil Paint (P4)
+	Oil Paint	Lukisan Minyak
+	Detail	Detail
+	Texture	Tekstur
+	Facet	Faset
+	Daubs	Sapuan
+	Dry Brush	Kuas Kering
+	Fresco	Fresko
+	Knife	Pisau Palet
+	Sponge	Spons
+# Creative Looks: Pixel Sort (P5)
+	Pixel Sort	Urutkan Piksel
+	Sort By	Urutkan Menurut
+	Lower Threshold	Ambang Bawah
+	Upper Threshold	Ambang Atas
+	Ascending	Naik
+# Temporal Denoise (EffectsSDK review)
+	Temporal Denoise	Pengurangan Derau Temporal
+	Frames Each Side	Bingkai di Tiap Sisi
+	Motion Threshold	Ambang Gerakan
+	Show Motion	Tampilkan Gerakan
+	No signal	Tidak ada sinyal
+	Locating	Mencari posisi
+	Locked	Terkunci
+	Freewheel	Freewheel
+	Scrubbing	Menggulir
+	Sending	Mengirim
