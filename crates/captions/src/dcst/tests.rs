@@ -50,8 +50,43 @@ fn text_subtitles_become_cues() {
     assert_eq!(c[0].id.as_deref(), Some("1"));
     assert_eq!(c[1].text, "<i>Dőlt <b>és vastag</b></i>");
     assert_eq!(c[2].text, "漢字 end");
-    assert_eq!(r.image_subtitles, 1);
+    assert_eq!(r.images.len(), 1);
+    assert!(r.document.warnings.is_empty(), "{:?}", r.document.warnings);
+    // the cue-only parse still says what it left out
+    assert_eq!(parse(REEL).unwrap().warnings.len(), 1);
+}
+
+/// #936: image subtitles keep their resource, times, fades and position.
+#[test]
+fn image_subtitles_are_listed_with_position_and_fades() {
+    let x = r#"<SubtitleReel xmlns="http://www.smpte-ra.org/schemas/428-7/2014/DCST" IntrinsicPictureResolution="2K">
+      <EditRate>24 1</EditRate><TimeCodeRate>24</TimeCodeRate><StartTime>00:00:00:00</StartTime><SubtitleList>
+      <Subtitle SpotNumber="7" TimeIn="00:00:01:00" TimeOut="00:00:03:00" FadeUpTime="00:00:00:06" FadeDownTime="00:00:00:00">
+        <Image Valign="bottom" Vposition="10" Halign="left" Hposition="5">urn:uuid:aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee</Image>
+        <Image>urn:uuid:00112233-4455-6677-8899-aabbccddeeff</Image>
+        <Image>urn:uuid:not-a-uuid</Image>
+      </Subtitle></SubtitleList></SubtitleReel>"#;
+    let r = parse_reel(x).unwrap();
+    assert_eq!(r.intrinsic_resolution.as_deref(), Some("2K"));
+    assert_eq!(r.images.len(), 2);
     assert_eq!(r.document.warnings.len(), 1, "{:?}", r.document.warnings);
+    let a = &r.images[0];
+    assert_eq!((a.start, a.end), (secs(1, 0), secs(3, 0)));
+    assert_eq!((a.fade_in, a.fade_out), (secs(0, 6), Tick::ZERO));
+    assert_eq!(a.resource, [0xaa, 0xaa, 0xaa, 0xaa, 0xbb, 0xbb, 0xcc, 0xcc, 0xdd, 0xdd, 0xee, 0xee, 0xee, 0xee, 0xee, 0xee]);
+    assert_eq!(a.spot.as_deref(), Some("7"));
+    // left edge 5% in, bottom edge 10% up: a 200 x 100 image over 2000 x 1000
+    assert_eq!(a.centre((2000.0, 1000.0), (200.0, 100.0)), (200.0, 850.0));
+    // defaults: centred; the fades are the subtitle's
+    let b = &r.images[1];
+    assert_eq!((b.h_align, b.v_align), (Align::Center, Align::Center));
+    assert_eq!((b.fade_in, b.fade_out), (a.fade_in, a.fade_out));
+    // a subtitle without fade times fades over two units each way
+    let d = &parse_reel(REEL).unwrap().images[0];
+    assert_eq!((d.fade_in, d.fade_out), (secs(0, 2), secs(0, 2)));
+    assert_eq!(b.centre((2000.0, 1000.0), (200.0, 100.0)), (1000.0, 500.0));
+    assert_eq!(parse_uuid("00112233-4455-6677-8899-AABBCCDDEEFF"), Some(b.resource));
+    assert_eq!(parse_uuid("urn:uuid:0011223344556677-8899-aabbccddeeff00"), None);
 }
 
 #[test]

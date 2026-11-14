@@ -7,11 +7,16 @@
 //! `<i>`/`<b>`/`<u>` tags; ruby keeps its base text (`Rb`); `Space` is one space; control codes are
 //! dropped (§6.3). Times are subtitle time codes `HH:MM:SS:E+` counted in `TimeCodeRate` units
 //! and measured from `StartTime` (default `01:00:00:00`, §5.10), at the `EditRate` (§4.2.5).
-//! Image subtitles (`Image`, PNG) have no text: they are counted and reported.
+//! Image subtitles (`Image`, PNG) have no text: they are listed in [`Reel::images`] with their
+//! times, fades (§6.1.4-6.1.5, default two units) and position (§6.2.1-6.2.4) for the caller to
+//! place the PNG resources they name.
 
 use cfa4_time::Tick;
 
 use crate::{Cue, Document, Error, Result};
+
+/// Image subtitles kept per reel (a feature reel has a few thousand at most).
+pub const MAX_IMAGES: usize = 20_000;
 
 /// A parsed subtitle reel.
 #[derive(Clone, Debug, Default, PartialEq)]
@@ -23,8 +28,82 @@ pub struct Reel {
     pub language: Option<String>,
     /// `Id` (`urn:uuid:…`).
     pub id: Option<String>,
-    /// Subtitles given as PNG images (not converted to cues).
-    pub image_subtitles: usize,
+    /// Subtitles given as PNG images (not converted to cues), in document order.
+    pub images: Vec<ImageSubtitle>,
+    /// `IntrinsicPictureResolution` (§5.1.1): the picture size the PNGs were made for, e.g. `4K`.
+    pub intrinsic_resolution: Option<String>,
+}
+
+/// Which edge (or the centre) of an image a position is measured from (`Halign`/`Valign`).
+#[derive(Clone, Copy, Debug, Default, PartialEq, Eq)]
+pub enum Align {
+    /// `left` / `top`.
+    Start,
+    #[default]
+    Center,
+    /// `right` / `bottom`.
+    End,
+}
+
+/// An `Image` subtitle (ST 428-7 §6.2): a PNG resource shown over the picture.
+#[derive(Clone, Debug, PartialEq)]
+pub struct ImageSubtitle {
+    pub start: Tick,
+    pub end: Tick,
+    /// `FadeUpTime` / `FadeDownTime`.
+    pub fade_in: Tick,
+    pub fade_out: Tick,
+    /// UUID of the PNG resource (the element's `urn:uuid:` body).
+    pub resource: [u8; 16],
+    pub h_align: Align,
+    /// `Hposition`, percent of the picture width.
+    pub h_position: f64,
+    pub v_align: Align,
+    /// `Vposition`, percent of the picture height.
+    pub v_position: f64,
+    /// `SpotNumber` of the subtitle.
+    pub spot: Option<String>,
+}
+
+impl ImageSubtitle {
+    /// Centre of an `image`-sized picture over a `frame`-sized one, in pixels from the top left
+    /// (Tables 4 and 5).
+    pub fn centre(&self, frame: (f64, f64), image: (f64, f64)) -> (f64, f64) {
+        let place = |align: Align, pos: f64, f: f64, i: f64| match align {
+            Align::Start => f * pos / 100.0 + i / 2.0,
+            Align::Center => f / 2.0 + f * pos / 100.0,
+            Align::End => f - f * pos / 100.0 - i / 2.0,
+        };
+        (place(self.h_align, self.h_position, frame.0, image.0), place(self.v_align, self.v_position, frame.1, image.1))
+    }
+}
+
+/// The 16 bytes of a `urn:uuid:` (or bare) UUID.
+pub fn parse_uuid(s: &str) -> Option<[u8; 16]> {
+    let s = s.trim();
+    let s = s.strip_prefix("urn:uuid:").unwrap_or(s);
+    let hex: Vec<u8> = s.bytes().filter(|b| *b != b'-').collect();
+    if hex.len() != 32 || s.len() != 36 {
+        return None;
+    }
+    let mut out = [0u8; 16];
+    for (o, pair) in out.iter_mut().zip(hex.chunks(2)) {
+        *o = u8::from_str_radix(std::str::from_utf8(pair).ok()?, 16).ok()?;
+    }
+    Some(out)
+}
+
+fn align(v: Option<&str>, start: &str, end: &str) -> Align {
+    match v.map(str::trim) {
+        Some(x) if x == start => Align::Start,
+        Some(x) if x == end => Align::End,
+        _ => Align::Center,
+    }
+}
+
+fn percent(v: Option<&str>) -> f64 {
+    // a position outside the picture is clamped to a picture width/height away
+    v.and_then(|v| v.trim().parse::<f64>().ok()).filter(|v| v.is_finite()).unwrap_or(0.0).clamp(-100.0, 100.0)
 }
 
 /// Whether `text` is a DCDM subtitle document (root element `SubtitleReel`).
@@ -45,9 +124,15 @@ pub fn sniff(text: &str) -> bool {
     name.rsplit(':').next() == Some("SubtitleReel")
 }
 
-/// Parse a DCDM subtitle document into cues.
+/// Parse a DCDM subtitle document into cues (image subtitles are reported in the warnings).
 pub fn parse(text: &str) -> Result<Document> {
-    parse_reel(text).map(|r| r.document)
+    parse_reel(text).map(|r| {
+        let mut doc = r.document;
+        if !r.images.is_empty() {
+            doc.warnings.push(format!("{} image subtitle(s) (PNG) not imported as text", r.images.len()));
+        }
+        doc
+    })
 }
 
 fn child<'a, 'i>(n: roxmltree::Node<'a, 'i>, name: &str) -> Option<roxmltree::Node<'a, 'i>> {
@@ -149,7 +234,13 @@ pub fn parse_reel(text: &str) -> Result<Reel> {
     if root.tag_name().name() != "SubtitleReel" {
         return Err(Error::NotFormat("D-Cinema subtitle"));
     }
-    let mut reel = Reel { title: child_text(root, "ContentTitleText"), language: child_text(root, "Language"), id: child_text(root, "Id"), ..Reel::default() };
+    let mut reel = Reel {
+        title: child_text(root, "ContentTitleText"),
+        language: child_text(root, "Language"),
+        id: child_text(root, "Id"),
+        intrinsic_resolution: root.attribute("IntrinsicPictureResolution").map(|v| v.trim().to_string()).filter(|v| !v.is_empty()),
+        ..Reel::default()
+    };
     let doc = &mut reel.document;
     let (num, den) = match child_text(root, "EditRate") {
         Some(s) => edit_rate(&s).ok_or_else(|| Error::Syntax { line: 1, msg: format!("bad EditRate \"{s}\"") })?,
@@ -202,19 +293,42 @@ pub fn parse_reel(text: &str) -> Result<Reel> {
                 lines.push((line_y(t), s));
             }
         }
-        if lines.is_empty() {
-            if sub.descendants().any(|n| n.is_element() && n.tag_name().name() == "Image") {
-                reel.image_subtitles += 1;
+        // fades: two units unless given (§6.1.4-6.1.5), shared by the subtitle's images
+        let fade = |name: &str| match sub.attribute(name) {
+            Some(v) => time_code(v, tc_rate).unwrap_or(2),
+            None => 2,
+        };
+        let (fade_in, fade_out) = (fade("FadeUpTime"), fade("FadeDownTime"));
+        for img in sub.descendants().filter(|n| n.is_element() && n.tag_name().name() == "Image") {
+            let Some(resource) = img.text().and_then(parse_uuid) else {
+                doc.warnings.push(format!("line {}: image subtitle without a valid urn:uuid skipped", xml.text_pos_at(img.range().start).row));
+                continue;
+            };
+            if reel.images.len() >= MAX_IMAGES {
+                doc.warnings.push(format!("more than {MAX_IMAGES} image subtitles; the rest skipped"));
+                break;
             }
+            reel.images.push(ImageSubtitle {
+                start: at(t_in),
+                end: at(t_out),
+                fade_in: Tick::from_rational(fade_in, den, num),
+                fade_out: Tick::from_rational(fade_out, den, num),
+                resource,
+                h_align: align(img.attribute("Halign"), "left", "right"),
+                h_position: percent(img.attribute("Hposition")),
+                v_align: align(img.attribute("Valign"), "top", "bottom"),
+                v_position: percent(img.attribute("Vposition")),
+                spot: sub.attribute("SpotNumber").map(str::to_string),
+            });
+        }
+        if lines.is_empty() {
             continue;
         }
         lines.sort_by(|a, b| a.0.total_cmp(&b.0));
         let text = lines.into_iter().map(|l| l.1).collect::<Vec<_>>().join("\n");
         doc.cues.push(Cue { start: at(t_in), end: at(t_out), text, id: sub.attribute("SpotNumber").map(str::to_string), ..Cue::default() });
     }
-    if reel.image_subtitles > 0 {
-        doc.warnings.push(format!("{} image subtitle(s) (PNG) not imported as text", reel.image_subtitles));
-    }
+    reel.images.retain(|i| i.end > i.start);
     doc.cues.retain(|c| c.end > c.start);
     doc.cues.sort_by_key(|c| (c.start, c.end));
     Ok(reel)
