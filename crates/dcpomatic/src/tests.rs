@@ -286,9 +286,13 @@ fn kdm_tool(d: &Path, tail: &str) -> Dcpomatic {
             r#"printf '%s\n' "$@" > '{dd}/kdm.args'
 readlink "$XDG_CONFIG_HOME/dcpomatic2" > '{dd}/kdm.config'
 printf '%s' "$TZ" > '{dd}/kdm.tz'
-out=""; prev=""
-for a in "$@"; do if [ "$prev" = "--output" ]; then out="$a"; fi; prev="$a"; done
-echo '<DCinemaSecurityMessage/>' > "$out/Test_KDM.xml"
+out=""; screen=""; prev=""
+for a in "$@"; do
+  if [ "$prev" = "--output" ]; then out="$a"; fi
+  if [ "$prev" = "--screen" ]; then screen="$a"; fi
+  prev="$a"
+done
+echo "<DCinemaSecurityMessage>$screen</DCinemaSecurityMessage>" > "$out/Test_KDM.xml"
 {tail}"#
         ),
     );
@@ -346,10 +350,6 @@ fn makes_a_kdm_from_the_film() {
         std::fs::read_dir(d.join("kdms")).unwrap().filter_map(Result::ok).filter(|e| e.file_name().to_string_lossy().starts_with(".cfa4")).collect();
     assert!(left.is_empty(), "the run folder is removed: {left:?}");
     assert_eq!(std::fs::read_to_string(d.join("kdm.tz")).unwrap(), "UTC", "the times are UTC");
-    // a second run with the same KDM name keeps the first one
-    let again = t.make_kdm(&encrypted_film(&d)).unwrap();
-    assert_eq!(again.files, [d.join("kdms/Test_KDM (2).xml")]);
-    assert!(d.join("kdms/Test_KDM.xml").is_file());
     let s = |x: &str| x.to_string();
     let mut a = args(&d, "kdm");
     assert!(a[1].starts_with(&format!("{}/.cfa4-kdm-", d.join("kdms").display())), "the run writes into its own folder: {}", a[1]);
@@ -380,6 +380,14 @@ fn makes_a_kdm_from_the_film() {
     );
     let cfg = std::fs::read_to_string(d.join("kdm.config")).unwrap();
     assert_eq!(cfg.trim(), d.join("config").display().to_string(), "the KDM tool reads CFA4's DCP-o-matic configuration");
+    // a second run with the same KDM name (another screen) keeps the first one
+    let mut r = encrypted_film(&d);
+    r.screen = Some("Kisterem".into());
+    let again = t.make_kdm(&r).unwrap();
+    assert_eq!(again.files, [d.join("kdms/Test_KDM (2).xml")]);
+    let read = |n: &str| std::fs::read_to_string(d.join("kdms").join(n)).unwrap();
+    assert_eq!(read("Test_KDM.xml").trim(), "<DCinemaSecurityMessage>Nagyterem</DCinemaSecurityMessage>");
+    assert_eq!(read("Test_KDM (2).xml").trim(), "<DCinemaSecurityMessage>Kisterem</DCinemaSecurityMessage>");
 }
 
 #[test]
