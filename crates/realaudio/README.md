@@ -2,9 +2,12 @@
 
 Pure-Rust (no `unsafe`) RealAudio decoders: **Cook** (RealAudio G2, FourCC `cook`), the audio
 codec of most RealMedia files; **SIPR** (ACELP.NET, `sipr`); **RealAudio 1.0** (14.4, `lpcJ`)
-and **RealAudio 2.0** (28.8, `28_8`). It is an L0 crate: it depends only on `thiserror`. Codec
-backlog items CB-14.1 and CB-14.2 ([plan](../../docs/plans/CODEC-BACKLOG-PLAN-2026-10-27.md));
-the container and its packet deinterleaving are in [`cfa4-realmedia`](../realmedia/README.md).
+and **RealAudio 2.0** (28.8, `28_8`); and **ATRAC3** (Sony, RealMedia `atrc` and WAV `.at3`),
+which shares Cook's bit reader, prefix codes and IMDCT. It is an L0 crate: it depends only on
+`thiserror`. Codec backlog items CB-14.1, CB-14.2 and CB-15.1
+([plan](../../docs/plans/CODEC-BACKLOG-PLAN-2026-10-27.md)); the RealMedia container and its
+packet deinterleaving are in [`cfa4-realmedia`](../realmedia/README.md), the WAV reader in
+`cfa4-media`.
 
 ## Sources and licences
 
@@ -12,6 +15,7 @@ the container and its packet deinterleaving are in [`cfa4-realmedia`](../realmed
 |---|---|---|
 | FFmpeg | n7.1.1, LGPL-2.1-or-later, Sascha Sommer, Benjamin Larsson and the FFmpeg developers | `libavcodec/cook.c` (re-expressed in `cook.rs`), `cookdata.h` (generated into `tables.rs`), `libavutil/lfg.h` / `lfg.c` (the noise generator and its seed-0 state), `sinewin_tablegen.h` (the window), `get_bits.h` (the checked bit reader in `bits.rs`) |
 | FFmpeg | n7.1.1, LGPL-2.1-or-later, the FFmpeg project, Vitor Sessak, Vladimir Voroshilov, Reynaldo H. Verdejo Pinochet | `ra144.c` / `ra144dec.c` (`ra144.rs`, tables in `tables144.rs`), `ra288.c` / `ra288.h` (`ra288.rs`, `tables288.rs`), `sipr.c` / `sipr16k.c` / `siprdata.h` / `sipr16kdata.h` (`sipr.rs`, `tables_sipr.rs`), and the CELP helpers they use from `celp_filters.c`, `acelp_filters.c`, `acelp_vectors.c`, `acelp_pitch_delay.c`, `lsp.c`, `lpc_functions.h`, `libavutil/float_dsp.c` (`celp.rs`) |
+| FFmpeg | n7.1.1, LGPL-2.1-or-later, Maxim Poliakovski, Benjamin Larsson | `atrac3.c`, `atrac3data.h`, `atrac.c`, `atrac.h` (`atrac3.rs`) |
 
 RealNetworks never published the format; FFmpeg's decoder is the reference. Porting it is an
 owner-approved exception to the FFmpeg-only-in-tests rule (as RealVideo, CB-13.1 / CB-13.2). The
@@ -30,6 +34,7 @@ ported code keeps FFmpeg's licence (`COPYING.LGPL-2.1`); CFA4's changes are GPL-
 | RealAudio 1.0 (14.4) | done: 20-byte frames of 160 samples, fixed point, FFmpeg's 16-bit samples bit for bit |
 | RealAudio 2.0 (28.8) | done: 38-byte frames of 160 samples, FFmpeg's `f32` samples bit for bit (same `f32`/`f64` operation order) |
 | SIPR | done: 5.0, 6.5, 8.5 kbit/s (8 kHz) and 16 kbit/s (16 kHz), FFmpeg's `f32` samples bit for bit |
+| ATRAC3 | done: single channels and joint stereo, 1 to 8 channels, tonal components, gain control, QMF synthesis; WAV (14-byte extra data) and RealMedia (scrambled) streams; within 3·10⁻⁷ of FFmpeg (the IMDCT, as for Cook). ATRAC3 AL is not supported |
 
 The noise fill uses FFmpeg's lagged Fibonacci generator over the whole stream, so the exact
 samples depend on everything decoded before. `Decoder` is `Clone`: a clone is a checkpoint that
@@ -50,5 +55,10 @@ decodes on exactly like the original (the media source keeps one every 32 superb
 - `tests/sipr_oracle.rs`: the FATE samples `sipr/sipr_{5k0,6k5,8k5,16k}.rm` (from
   <https://fate-suite.ffmpeg.org/sipr/>, in `target/fixtures/sipr`), bit for bit, all four modes.
   ffmpeg has no 28.8 or SIPR encoder, so these run where the samples are present.
+- `tests/atrac3_oracle.rs`: the FATE samples `atrac3/mc_sich_at3_{066,105,132}_small.wav` (from
+  <https://fate-suite.ffmpeg.org/atrac3/>, in `target/fixtures/atrac3`), every sample within 10⁻⁶
+  of ffmpeg. Unit tests: bad parameters refused, random frames in six layouts without a panic.
 - `crates/codecs/tests/realmedia_oracle.rs`: the same samples (and a 14.4 stream from ffmpeg's
-  encoder) through the media source, read in order and with jumps backwards.
+  encoder) through the media source, read in order and with jumps backwards; ATRAC3 both in WAV
+  and in RealMedia files built from the WAV frames (ffmpeg's muxer cannot write ATRAC3; ffmpeg
+  decodes the built files too).

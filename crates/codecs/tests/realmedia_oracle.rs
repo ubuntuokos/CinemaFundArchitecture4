@@ -227,3 +227,173 @@ fn fate_realaudio_lpc_matches() {
         compare_mono(&ff, &p, codec, rate);
     }
 }
+
+/// (channels, block_align, fmt extra data, data chunk) of a WAV file.
+fn wav_parts(d: &[u8]) -> (u16, usize, Vec<u8>, Vec<u8>) {
+    let mut pos = 12;
+    let (mut ch, mut ba, mut extra, mut data) = (0, 0, Vec::new(), Vec::new());
+    while pos + 8 <= d.len() {
+        let id = &d[pos..pos + 4];
+        let len = u32::from_le_bytes([d[pos + 4], d[pos + 5], d[pos + 6], d[pos + 7]]) as usize;
+        let body = &d[pos + 8..(pos + 8 + len).min(d.len())];
+        if id == b"fmt " {
+            ch = u16::from_le_bytes([body[2], body[3]]);
+            ba = usize::from(u16::from_le_bytes([body[12], body[13]]));
+            let cb = usize::from(u16::from_le_bytes([body[16], body[17]]));
+            extra = body[18..18 + cb].to_vec();
+        } else if id == b"data" {
+            data = body.to_vec();
+        }
+        pos += 8 + len + (len & 1);
+    }
+    (ch, ba, extra, data)
+}
+
+/// A RealMedia file with one ATRAC3 stream (RealAudio 5 header, `genr` interleaving, scrambled
+/// frames, as RealProducer writes them) carrying `frames` (`ba` bytes each, joint stereo when
+/// `joint`); ffmpeg's muxer cannot write ATRAC3, so the file is built here.
+fn atrac3_rm(frames: &[&[u8]], ba: usize, channels: u16, joint: bool) -> Vec<u8> {
+    let be16 = |v: &mut Vec<u8>, x: u16| v.extend_from_slice(&x.to_be_bytes());
+    let be32 = |v: &mut Vec<u8>, x: u32| v.extend_from_slice(&x.to_be_bytes());
+    let (h, sps) = (4usize, ba);
+    let w = 2 * sps;
+    let per_sb = h * w / ba;
+    // type-specific data
+    let mut ts = b".ra\xfd".to_vec();
+    be16(&mut ts, 5);
+    be16(&mut ts, 0);
+    ts.extend_from_slice(b".ra5");
+    be32(&mut ts, 0);
+    be16(&mut ts, 5);
+    be32(&mut ts, 0x4e);
+    be16(&mut ts, 0); // flavor
+    be32(&mut ts, sps as u32); // coded frame size
+    be32(&mut ts, 0);
+    be32(&mut ts, 0);
+    be32(&mut ts, 0);
+    be16(&mut ts, h as u16);
+    be16(&mut ts, w as u16);
+    be16(&mut ts, sps as u16);
+    be16(&mut ts, 0);
+    ts.extend_from_slice(&[0; 6]);
+    be16(&mut ts, 44_100);
+    be32(&mut ts, 16);
+    be16(&mut ts, channels);
+    ts.extend_from_slice(b"genratrc");
+    be16(&mut ts, 0);
+    ts.push(0);
+    ts.push(0);
+    let mut extra = Vec::new();
+    be32(&mut extra, 4);
+    be16(&mut extra, 1024 * channels);
+    be16(&mut extra, 0x88E);
+    be16(&mut extra, if joint { 0x12 } else { 2 });
+    be32(&mut ts, extra.len() as u32);
+    ts.extend_from_slice(&extra);
+    // packets
+    let key = [0x53u8, 0x7F, 0x61, 0x03];
+    let mut packets = Vec::new();
+    for (k, sb) in frames.chunks_exact(per_sb).enumerate() {
+        let buf: Vec<u8> = sb.iter().flat_map(|f| f.iter().enumerate().map(|(i, b)| b ^ key[i % 4])).collect();
+        let t = (k * per_sb * 1024 * 1000 / 44_100) as u32;
+        for y in 0..h {
+            let mut payload = Vec::new();
+            for x in 0..w / sps {
+                let pos = sps * (h * x + h.div_ceil(2) * (y & 1) + (y >> 1));
+                payload.extend_from_slice(&buf[pos..pos + sps]);
+            }
+            let mut p = Vec::new();
+            be16(&mut p, 0);
+            be16(&mut p, (12 + payload.len()) as u16);
+            be16(&mut p, 0);
+            be32(&mut p, t);
+            p.push(0);
+            p.push(if y == 0 { 2 } else { 0 });
+            p.extend_from_slice(&payload);
+            packets.push(p);
+        }
+    }
+    let mut f = b".RMF".to_vec();
+    be32(&mut f, 18);
+    be16(&mut f, 0);
+    be32(&mut f, 0);
+    be32(&mut f, 4);
+    f.extend_from_slice(b"PROP");
+    be32(&mut f, 50);
+    be16(&mut f, 0);
+    for x in [0, 0, 0, 0, packets.len() as u32, 1000, 0, 0, 0] {
+        be32(&mut f, x);
+    }
+    be16(&mut f, 1);
+    be16(&mut f, 0);
+    let mime = b"audio/x-pn-realaudio";
+    let mut m = b"MDPR".to_vec();
+    be32(&mut m, 0);
+    be16(&mut m, 0);
+    be16(&mut m, 0);
+    for x in [0, 0, 0, 0, 0, 0, 1000] {
+        be32(&mut m, x);
+    }
+    m.push(5);
+    m.extend_from_slice(b"Audio");
+    m.push(mime.len() as u8);
+    m.extend_from_slice(mime);
+    be32(&mut m, ts.len() as u32);
+    m.extend_from_slice(&ts);
+    let n = m.len() as u32;
+    m[4..8].copy_from_slice(&n.to_be_bytes());
+    f.extend_from_slice(&m);
+    let body: usize = packets.iter().map(Vec::len).sum();
+    f.extend_from_slice(b"DATA");
+    be32(&mut f, (18 + body) as u32);
+    be16(&mut f, 0);
+    be32(&mut f, packets.len() as u32);
+    be32(&mut f, 0);
+    for p in &packets {
+        f.extend_from_slice(p);
+    }
+    f
+}
+
+/// ATRAC3 in RealMedia (built from ffmpeg's FATE WAV samples) and in WAV through the media
+/// source against ffmpeg: every sample within 10⁻⁶ (the MDCT rounds differently), read in order
+/// and with jumps backwards.
+#[test]
+fn fate_atrac3_in_rm_and_wav_matches() {
+    let Some(ff) = cfa4_testkit::ffmpeg_or_skip("realmedia ATRAC3") else { return };
+    for name in ["mc_sich_at3_066_small.wav", "mc_sich_at3_105_small.wav", "mc_sich_at3_132_small.wav"] {
+        let wav = cfa4_testkit::fixtures_dir("atrac3").join(name);
+        if !wav.exists() {
+            eprintln!("skipping: {} not present", wav.display());
+            continue;
+        }
+        let (ch, ba, extra, data) = wav_parts(&bytes(&wav));
+        let joint = u16::from_le_bytes([extra[6], extra[7]]) != 0;
+        let frames: Vec<&[u8]> = data.chunks_exact(ba).collect();
+        let rm = cfa4_testkit::fixtures_dir("realmedia").join(name.replace(".wav", ".rm"));
+        std::fs::write(&rm, atrac3_rm(&frames, ba, ch, joint)).unwrap();
+        for (p, container) in [(&rm, "RealMedia"), (&wav, "WAV")] {
+            let file = p.file_name().and_then(|f| f.to_str()).unwrap_or("?").to_string();
+            let src = cfa4_codecs::open_bytes(&file, bytes(p)).unwrap_or_else(|e| panic!("{file}: {e}"));
+            let a = src.info().audio_streams.first().cloned().unwrap_or_else(|| panic!("{file}: no audio"));
+            assert_eq!((a.codec.as_str(), a.channels, a.sample_rate), ("ATRAC3", u32::from(ch), 44_100), "{file} ({container})");
+            let want = ffmpeg_audio(&ff, p, usize::from(ch));
+            let n = want[0].len();
+            assert!(n > 50_000, "{file}: ffmpeg decoded {n} samples");
+            let check = |start: usize, len: usize| {
+                let got = src.audio(start as i64, len, 44_100).unwrap_or_else(|e| panic!("{file}: {e}"));
+                for (c, (g, w)) in got.channels.iter().zip(&want).enumerate() {
+                    for (i, (x, y)) in g.iter().zip(&w[start..start + len]).enumerate() {
+                        assert!((x - y).abs() < 1e-6, "{file} ({container}): channel {c} sample {} ours {x} ffmpeg {y}", start + i);
+                    }
+                }
+            };
+            for s in (0..n).step_by(9000) {
+                check(s, 9000.min(n - s));
+            }
+            for s in (0..n).step_by(40_000).rev() {
+                check(s, 5000.min(n - s));
+            }
+        }
+    }
+}

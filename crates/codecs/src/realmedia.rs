@@ -1,6 +1,6 @@
-//! RealMedia files (`.rm`, `.rmvb`) with RealVideo 1.0 / 2.0 / 3.0 / 4.0 video and Cook, SIPR
-//! or RealAudio 1.0 / 2.0 audio: `cfa4-realmedia` demuxes, our `cfa4-realvideo` and
-//! `cfa4-realaudio` decode (CB-13.1, CB-13.2, CB-14.1, CB-14.2).
+//! RealMedia files (`.rm`, `.rmvb`) with RealVideo 1.0 / 2.0 / 3.0 / 4.0 video and Cook, ATRAC3,
+//! SIPR or RealAudio 1.0 / 2.0 audio: `cfa4-realmedia` demuxes, our `cfa4-realvideo` and
+//! `cfa4-realaudio` decode (CB-13.1, CB-13.2, CB-14.1, CB-14.2, CB-15.1).
 //!
 //! RealMedia stamps packets in decode order, so the timeline is the frame count at the stream's
 //! frame rate: at open every video frame is located (file offset of its first data packet) and
@@ -12,7 +12,7 @@
 //! with the two frames Cook needs to start up as silence (as in ffmpeg). The decoders carry state
 //! through the whole stream (Cook's noise generator, the CELP codecs' filter memories), so a jump
 //! restores the nearest earlier decoder checkpoint and decodes forward: every read equals
-//! playback from the start. ATRAC3 and AAC audio are not decoded yet.
+//! playback from the start. AAC audio is not decoded yet.
 
 use std::collections::{BTreeMap, HashMap, VecDeque};
 use std::io::Cursor;
@@ -20,7 +20,7 @@ use std::sync::{Arc, Mutex};
 
 use cfa4_frame::{AudioBuffer, Chroma, PixelData, VideoFrame};
 use cfa4_media::{AudioStreamInfo, FrameRequest, MediaError, MediaInfo, MediaKind, MediaSource, SharedSource, VideoStreamInfo};
-use cfa4_realaudio::{cook, ra144, ra288, sipr};
+use cfa4_realaudio::{atrac3, cook, ra144, ra288, sipr};
 use cfa4_realmedia::audio::{AudioInfo, Deinterleaver, parse_audio_info};
 use cfa4_realmedia::{Demuxer, Header, StreamKind};
 use cfa4_realvideo::{PictType, Picture, rv34};
@@ -146,6 +146,7 @@ enum AudioDecoder {
     Ra144(Box<ra144::Decoder>),
     Ra288(Box<ra288::Decoder>),
     Sipr(Box<sipr::Decoder>),
+    Atrac3(Box<atrac3::Decoder>),
 }
 
 impl AudioDecoder {
@@ -167,7 +168,10 @@ impl AudioDecoder {
             b"sipr" => {
                 return sipr::Decoder::new(info.block_align as usize).map(|d| Self::Sipr(Box::new(d))).map_err(|e| format!("RealAudio SIPR: {e}"));
             }
-            b"atrc" => "ATRAC3".to_string(),
+            b"atrc" => {
+                let p = atrac3::Params { channels: info.channels, block_align: info.block_align as usize, extradata: info.extradata.clone() };
+                return atrac3::Decoder::new(&p).map(|d| Self::Atrac3(Box::new(d))).map_err(|e| format!("ATRAC3: {e}"));
+            }
             b"raac" | b"racp" => "AAC".to_string(),
             f => format!("RealAudio {}", String::from_utf8_lossy(f)),
         };
@@ -180,12 +184,14 @@ impl AudioDecoder {
             Self::Ra144(_) => "RealAudio 1.0 (14.4)",
             Self::Ra288(_) => "RealAudio 2.0 (28.8)",
             Self::Sipr(_) => "RealAudio SIPR",
+            Self::Atrac3(_) => "ATRAC3",
         }
     }
 
     fn channels(&self) -> usize {
         match self {
             Self::Cook(d) => d.channels(),
+            Self::Atrac3(d) => d.channels(),
             _ => 1,
         }
     }
@@ -197,6 +203,7 @@ impl AudioDecoder {
             Self::Ra144(_) => (ra144::FRAME_SIZE, ra144::FRAME_SAMPLES),
             Self::Ra288(_) => (ra288::FRAME_SIZE, ra288::FRAME_SAMPLES),
             Self::Sipr(d) => (d.frame_size(), d.frame_samples()),
+            Self::Atrac3(d) => (d.block_align(), d.samples_per_channel()),
         }
     }
 
@@ -231,6 +238,22 @@ impl AudioDecoder {
             }
             return;
         }
+        if let Self::Atrac3(d) = self {
+            for f in data.chunks_exact(fb.max(1)) {
+                match d.decode(f) {
+                    Ok(p) => {
+                        for (c, o) in out.iter_mut().enumerate() {
+                            match p.get(c) {
+                                Some(s) => o.extend_from_slice(s),
+                                None => o.resize(o.len() + spc, 0.0),
+                            }
+                        }
+                    }
+                    Err(_) => silence(out),
+                }
+            }
+            return;
+        }
         let Some(o) = out.first_mut() else { return };
         for f in data.chunks_exact(fb.max(1)) {
             match self {
@@ -246,7 +269,7 @@ impl AudioDecoder {
                     Ok(s) => o.extend_from_slice(&s),
                     Err(_) => o.resize(o.len() + spc, 0.0),
                 },
-                Self::Cook(_) => {}
+                Self::Cook(_) | Self::Atrac3(_) => {}
             }
         }
     }
