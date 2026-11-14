@@ -82,6 +82,7 @@ only). "Tested" names the evidence.
 |---|---|---|---|---|---|
 | SRT, WebVTT, SCC | read + write | yes | yes | frame-exact, property-tested | 95% |
 | MCC (608 + 708), EBU STL, TTML / IMSC1, DFXP | read + write | yes | yes | frame-exact | 90% |
+| D-Cinema subtitles (ST 428-7 XML, DCP timed text MXF) | — | yes: text as captions, PNG image subtitles as positioned still clips with their fades (#936) | — | engine import tests | 80% |
 | 608 / 708 embedded in the video stream | write (MXF, H.264 SEI) | no | **no** | — | 0% |
 | Burn-in | yes | — | yes | golden tests | 95% |
 

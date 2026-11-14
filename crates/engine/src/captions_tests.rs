@@ -419,3 +419,96 @@ fn mxf_line21_and_cea608_packets_import_per_channel() {
     assert!(!q.caption_tracks.iter().any(|t| t.name.starts_with("mixed (SERVICE")));
     let _ = std::fs::remove_dir_all(&dir);
 }
+
+/// #936: PNG image subtitles in a DCP timed text track file (and beside a subtitle XML) import as
+/// still clips on new video tracks above the others: at their times, positioned by their
+/// alignment, with their fades as Opacity keyframes; overlapping ones get a track each, a missing
+/// resource is a warning, and the whole import is one undo step.
+#[test]
+fn dcp_image_subtitles_import_as_positioned_still_clips() {
+    use cfa4_project::ParamValue;
+    const IMAGE_REEL: &str = r#"<?xml version="1.0" encoding="UTF-8"?>
+<SubtitleReel xmlns="http://www.smpte-ra.org/schemas/428-7/2010/DCST">
+  <Language>hu</Language>
+  <EditRate>24 1</EditRate>
+  <TimeCodeRate>24</TimeCodeRate>
+  <StartTime>00:00:00:00</StartTime>
+  <SubtitleList>
+    <Subtitle SpotNumber="1" TimeIn="00:00:01:00" TimeOut="00:00:03:00">
+      <Image Valign="bottom" Vposition="10">urn:uuid:20202020-2020-2020-2020-202020202020</Image>
+    </Subtitle>
+    <Subtitle SpotNumber="2" TimeIn="00:00:02:00" TimeOut="00:00:04:00" FadeUpTime="00:00:00:00" FadeDownTime="00:00:00:00">
+      <Image Valign="top" Vposition="5" Halign="left" Hposition="10">urn:uuid:20202020-2020-2020-2020-202020202020</Image>
+    </Subtitle>
+    <Subtitle SpotNumber="3" TimeIn="00:00:05:00" TimeOut="00:00:06:00">
+      <Image>urn:uuid:99999999-9999-9999-9999-999999999999</Image>
+    </Subtitle>
+  </SubtitleList>
+</SubtitleReel>
+"#;
+    let mut png = Vec::new();
+    image::RgbaImage::from_pixel(200, 50, image::Rgba([255, 255, 255, 200])).write_to(&mut std::io::Cursor::new(&mut png), image::ImageFormat::Png).unwrap();
+    let dir = std::env::temp_dir().join(format!("fc-dcst-png-{}", std::process::id()));
+    let _ = std::fs::remove_dir_all(&dir);
+    std::fs::create_dir_all(&dir).unwrap();
+    let mxf = dir.join("sub_img.mxf");
+    std::fs::write(&mxf, cfa4_mxf::testing::build_timed_text(IMAGE_REEL.as_bytes(), &[("image/png", &png)])).unwrap();
+    let mut s = demo();
+    let tracks_before = s.active_sequence().unwrap().video_tracks.len();
+    let captions_before = s.active_sequence().unwrap().caption_tracks.len();
+    let r = s.execute("file.import", json!({"paths": [mxf.to_string_lossy()]})).unwrap();
+    let doc = &r["documents"][0];
+    assert_eq!(doc["images"], 2, "{r}");
+    assert_eq!(doc["imageTracks"], 2, "overlapping subtitles take a track each: {r}");
+    assert!(doc["warnings"].as_array().unwrap().iter().any(|w| w.as_str().unwrap().contains("99999999")), "{r}");
+    let extracted = dir.join("sub_img_20202020-2020-2020-2020-202020202020.png");
+    assert_eq!(std::fs::read(&extracted).unwrap(), png, "the PNG is written beside the MXF");
+    let q = s.active_sequence().unwrap();
+    assert_eq!(q.caption_tracks.len(), captions_before, "no text, no caption track");
+    assert_eq!(q.video_tracks.len(), tracks_before + 2);
+    let (w, h) = (f64::from(q.settings.width), f64::from(q.settings.height));
+    let first = &q.video_tracks[tracks_before];
+    assert_eq!(first.name, "sub_img (hu)");
+    let clip = &first.items[0];
+    assert_eq!(clip.start, q.settings.frame_rate.snap_nearest(Tick(TICKS_PER_SECOND)));
+    assert_eq!(clip.duration, q.settings.frame_rate.snap_nearest(Tick(2 * TICKS_PER_SECOND)));
+    let motion = clip.effects.iter().find(|e| e.effect == "motion").unwrap();
+    let ParamValue::Vec2(pos) = motion.param("position").unwrap().value else { panic!() };
+    // centred, bottom edge 10 % above the bottom
+    assert_eq!((pos.x, pos.y), (w / 2.0, h - h * 0.1 - 25.0));
+    let ParamValue::Vec2(anchor) = motion.param("anchor").unwrap().value else { panic!() };
+    assert_eq!((anchor.x, anchor.y), (100.0, 25.0));
+    // the default two-unit fades
+    let fades = &clip.effects.iter().find(|e| e.effect == "opacity").unwrap().param("opacity").unwrap().keyframes;
+    let k: Vec<f64> = fades.iter().map(|k| if let ParamValue::Float(v) = k.value { v } else { -1.0 }).collect();
+    assert_eq!(k, vec![0.0, 100.0, 100.0, 0.0]);
+    assert_eq!(fades[1].time, q.settings.frame_rate.snap_nearest(Tick::from_rational(2, 1, 24)));
+    let second = &q.video_tracks[tracks_before + 1].items[0];
+    let ParamValue::Vec2(pos) = second.effects.iter().find(|e| e.effect == "motion").unwrap().param("position").unwrap().value else { panic!() };
+    assert_eq!((pos.x, pos.y), (w * 0.1 + 100.0, h * 0.05 + 25.0));
+    assert!(second.effects.iter().find(|e| e.effect == "opacity").unwrap().param("opacity").unwrap().keyframes.is_empty(), "no fades");
+    // one undo step takes it all back
+    s.execute("edit.undo", json!({})).unwrap();
+    assert_eq!(s.active_sequence().unwrap().video_tracks.len(), tracks_before);
+    // importing again uses the PNG already written
+    s.execute("file.import", json!({"paths": [mxf.to_string_lossy()]})).unwrap();
+    assert!(!dir.join("sub_img_20202020-2020-2020-2020-202020202020 (2).png").exists());
+    // a subtitle XML finds its PNGs by UUID beside it
+    std::fs::write(dir.join("reel.xml"), IMAGE_REEL).unwrap();
+    std::fs::write(dir.join("20202020-2020-2020-2020-202020202020.png"), &png).unwrap();
+    let r = s.execute("file.import", json!({"paths": [dir.join("reel.xml").to_string_lossy()]})).unwrap();
+    assert_eq!(r["documents"][0]["images"], 2, "{r}");
+    let _ = std::fs::remove_dir_all(&dir);
+}
+
+#[test]
+fn fade_keyframes_share_a_short_clip() {
+    use super::fade_keyframes;
+    let t = |n: i64| Tick(n);
+    assert_eq!(fade_keyframes(t(100), t(0), t(0)), vec![]);
+    assert_eq!(fade_keyframes(t(100), t(10), t(0)), vec![(t(0), 0.0), (t(10), 100.0)]);
+    assert_eq!(fade_keyframes(t(100), t(0), t(10)), vec![(t(0), 100.0), (t(90), 100.0), (t(100), 0.0)]);
+    // 60 + 60 in 100: 50 each, no plateau
+    assert_eq!(fade_keyframes(t(100), t(60), t(60)), vec![(t(0), 0.0), (t(50), 100.0), (t(100), 0.0)]);
+    assert_eq!(fade_keyframes(t(100), t(i64::MAX), t(-5)), vec![(t(0), 0.0), (t(100), 100.0)]);
+}

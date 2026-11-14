@@ -127,23 +127,52 @@ pub fn is_dcst(path: &str, bytes: &[u8]) -> bool {
 
 /// A timed text XML document (ST 428-7 D-Cinema subtitles or IMSC1 TTML) as captions, with the
 /// format name and the reel's language.
-fn parse_timed_text(xml: &[u8]) -> std::result::Result<(Document, &'static str, Option<String>), String> {
+/// A parsed timed text document: its cues, the image subtitles to place (ST 428-7 only), the
+/// format name and the language.
+struct TimedTextDoc {
+    doc: Document,
+    format: &'static str,
+    language: Option<String>,
+    images: Vec<cfa4_captions::dcst::ImageSubtitle>,
+    intrinsic_resolution: Option<String>,
+}
+
+fn parse_timed_text(xml: &[u8]) -> std::result::Result<TimedTextDoc, String> {
     let text = cfa4_captions::decode_text(xml);
     if cfa4_captions::dcst::sniff(&text) {
         let reel = cfa4_captions::dcst::parse_reel(&text).map_err(|e| e.to_string())?;
-        return Ok((reel.document, "D-Cinema subtitles (ST 428-7)", reel.language));
+        return Ok(TimedTextDoc {
+            doc: reel.document,
+            format: "D-Cinema subtitles (ST 428-7)",
+            language: reel.language,
+            images: reel.images,
+            intrinsic_resolution: reel.intrinsic_resolution,
+        });
     }
     let doc = cfa4_captions::ttml::parse(&text).map_err(|e| e.to_string())?;
-    Ok((doc, "IMSC1 / TTML", None))
+    Ok(TimedTextDoc { doc, format: "IMSC1 / TTML", language: None, images: Vec::new(), intrinsic_resolution: None })
 }
 
-/// Import a D-Cinema subtitle XML file (ST 428-7) as a caption track.
+/// Import a D-Cinema subtitle XML file (ST 428-7) as a caption track. Its image subtitles come
+/// from the PNG files named by their UUID (`<uuid>.png`) beside the XML.
 pub fn import_dcst(s: &mut Session, path: &str, bytes: &[u8]) -> Result<Value> {
-    let (doc, format, _) = parse_timed_text(bytes).map_err(|e| EngineError::Other(format!("{path}: {e}")))?;
-    import_document(s, path, doc, format, CaptionFormat::Subtitle, false, None)
+    let td = parse_timed_text(bytes).map_err(|e| EngineError::Other(format!("{path}: {e}")))?;
+    let dir = std::path::Path::new(path).parent().map(std::path::Path::to_path_buf).unwrap_or_default();
+    s.edit_group("Import Subtitles", |s| {
+        import_reel(s, path, td, None, &mut |s, id| {
+            let png = dir.join(format!("{}.png", uuid_text(&id))).to_string_lossy().into_owned();
+            let size = s.services.file_size(&png).map_err(|e| format!("{png}: {e}"))?;
+            if size > MAX_SUBTITLE_PNG {
+                return Err(format!("{png}: larger than {MAX_SUBTITLE_PNG} bytes"));
+            }
+            let bytes = s.services.read_file(&png).map_err(|e| format!("{png}: {e}"))?;
+            Ok((png, bytes))
+        })
+    })
 }
 
-/// Import a DCP or IMF timed text track file (SMPTE ST 429-5 / ST 2067-2 MXF) as a caption track.
+/// Import a DCP or IMF timed text track file (SMPTE ST 429-5 / ST 2067-2 MXF) as a caption track;
+/// its PNG image subtitles are written beside it and placed on video tracks above the others.
 /// `None` when `path` is not an MXF timed text track file (other MXF files import as media).
 pub fn import_timed_text_mxf(s: &mut Session, path: &str) -> Option<Result<Value>> {
     let ext = std::path::Path::new(path).extension().and_then(|e| e.to_str()).map(str::to_ascii_lowercase);
@@ -169,21 +198,247 @@ pub fn import_timed_text_mxf(s: &mut Session, path: &str) -> Option<Result<Value
     }
     let parsed = cfa4_mxf::open_timed_text(src.as_ref()).map_err(|e| e.to_string()).and_then(|tt| {
         let xml = tt.read_document(src.as_ref()).map_err(|e| e.to_string())?;
-        let (mut doc, format, language) = parse_timed_text(&xml)?;
-        doc.warnings.extend(tt.warnings);
-        Ok((doc, format, language))
+        let mut td = parse_timed_text(&xml)?;
+        td.doc.warnings.extend(tt.warnings.iter().cloned());
+        Ok((td, tt))
     });
     Some(match parsed {
-        Ok((doc, format, language)) => {
+        Ok((td, tt)) => {
             let stem = std::path::Path::new(path).file_stem().map(|n| n.to_string_lossy().to_string()).unwrap_or_else(|| "Subtitles".into());
-            let name = match language {
+            let name = match &td.language {
                 Some(l) => format!("{stem} ({l})"),
                 None => stem,
             };
-            import_document(s, path, doc, format, CaptionFormat::Subtitle, false, Some(&name))
+            s.edit_group("Import Subtitles", |s| {
+                import_reel(s, path, td, Some(&name), &mut |s, id| {
+                    let i = tt.resources.iter().position(|r| r.id == id).ok_or_else(|| format!("resource urn:uuid:{} is not in the file", uuid_text(&id)))?;
+                    if tt.resources.get(i).and_then(|r| r.data).is_some_and(|d| d.size > MAX_SUBTITLE_PNG) {
+                        return Err(format!("resource urn:uuid:{} is larger than {MAX_SUBTITLE_PNG} bytes", uuid_text(&id)));
+                    }
+                    let bytes = tt.read_resource(src.as_ref(), i).map_err(|e| e.to_string())?;
+                    if !bytes.starts_with(PNG_MAGIC) {
+                        return Err(format!("resource urn:uuid:{} is not a PNG image", uuid_text(&id)));
+                    }
+                    let out = write_extracted(s, path, &uuid_text(&id), &bytes).map_err(|e| e.to_string())?;
+                    Ok((out, bytes))
+                })
+            })
         }
         Err(e) => Err(EngineError::Other(format!("{path}: {e}"))),
     })
+}
+
+/// The largest PNG subtitle image read (a 4K RGBA frame compresses well below this).
+const MAX_SUBTITLE_PNG: u64 = 64 << 20;
+const PNG_MAGIC: &[u8] = b"\x89PNG\r\n\x1a\n";
+/// Video tracks made for overlapping image subtitles at most.
+const MAX_IMAGE_TRACKS: usize = 8;
+
+/// `xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx` in lower case.
+fn uuid_text(id: &[u8; 16]) -> String {
+    let h: String = id.iter().map(|b| format!("{b:02x}")).collect();
+    format!("{}-{}-{}-{}-{}", &h[..8], &h[8..12], &h[12..16], &h[16..20], &h[20..])
+}
+
+/// Write a PNG extracted from the timed text file `path` beside it as `<stem>_<uuid>.png` (`" (N)"`
+/// added when another file has that name); an identical file already there is used as it is.
+fn write_extracted(s: &Session, path: &str, uuid: &str, bytes: &[u8]) -> Result<String> {
+    let original = std::path::Path::new(path);
+    let stem = original.file_stem().map(|n| n.to_string_lossy().to_string()).unwrap_or_else(|| "subtitle".into());
+    for number in 1..=1_000 {
+        let name = if number == 1 { format!("{stem}_{uuid}.png") } else { format!("{stem}_{uuid} ({number}).png") };
+        let candidate = original.with_file_name(name).to_string_lossy().into_owned();
+        if s.services.file_size(&candidate).is_ok_and(|n| n == bytes.len() as u64) && s.services.read_file(&candidate).is_ok_and(|b| b == bytes) {
+            return Ok(candidate);
+        }
+        match s.services.write_file_new(&candidate, bytes) {
+            Ok(()) => return Ok(candidate),
+            Err(e) if e.kind() == std::io::ErrorKind::AlreadyExists => {}
+            Err(e) => return Err(EngineError::Other(format!("{candidate}: {e}"))),
+        }
+    }
+    Err(EngineError::Other(format!("{path}: no unused subtitle image file name after 1000 attempts")))
+}
+
+/// A PNG subtitle resource by UUID: the file it is in and its bytes.
+type FetchPng<'a> = dyn FnMut(&Session, [u8; 16]) -> std::result::Result<(String, Vec<u8>), String> + 'a;
+
+/// Import a parsed timed text document: its cues as a caption track (also when it has neither
+/// cues nor images, so the import is visible), its image subtitles as still clips on new video
+/// tracks above the others.
+fn import_reel(s: &mut Session, path: &str, td: TimedTextDoc, name: Option<&str>, fetch: &mut FetchPng<'_>) -> Result<Value> {
+    let TimedTextDoc { doc, format, images, intrinsic_resolution, .. } = td;
+    let stem = std::path::Path::new(path).file_stem().map(|n| n.to_string_lossy().to_string()).unwrap_or_else(|| "Subtitles".into());
+    let mut report = if !doc.cues.is_empty() || images.is_empty() {
+        import_document(s, path, doc, format, CaptionFormat::Subtitle, false, name)?
+    } else {
+        let seq = target_sequence(s, &stem)?;
+        json!({"format": format, "sequence": seq.0, "captions": 0, "warnings": doc.warnings})
+    };
+    if images.is_empty() {
+        return Ok(report);
+    }
+    let (placed, tracks, warnings) = place_images(s, name.unwrap_or(&stem), &images, intrinsic_resolution.as_deref(), fetch)?;
+    report["images"] = json!(placed);
+    report["imageTracks"] = json!(tracks);
+    if let Some(w) = report["warnings"].as_array_mut() {
+        w.extend(warnings.into_iter().map(Value::from));
+    }
+    Ok(report)
+}
+
+/// The active sequence, or a new one named `stem` when there is none.
+fn target_sequence(s: &mut Session, stem: &str) -> Result<cfa4_project::ItemId> {
+    if let Some(id) = s.state.active_sequence.filter(|id| s.project.sequence(*id).is_some()) {
+        return Ok(id);
+    }
+    let id = s.edit("New Sequence", |p, _| Ok(p.new_sequence(stem, SequenceSettings::default(), 3, 3, None)))?;
+    s.state.active_sequence = Some(id);
+    s.state.open_sequences.push(id);
+    Ok(id)
+}
+
+/// Scale (percent) for PNGs made for `intrinsic` (`2K`/`4K`, ST 428-7 §5.1.1) shown in a
+/// `width`-pixel-wide sequence: 200 for 2K images in a 4K sequence, 50 the other way round.
+fn image_scale(intrinsic: Option<&str>, width: u32) -> f64 {
+    let four_k = width > 3000;
+    match intrinsic.map(|r| r.trim().to_ascii_uppercase()) {
+        Some(r) if r == "2K" && four_k => 200.0,
+        Some(r) if r == "4K" && !four_k => 50.0,
+        _ => 100.0,
+    }
+}
+
+/// Import the PNG of each image subtitle (one bin) and place them in the active sequence: each
+/// at its times on the first new video track free there, positioned by its alignment, with its
+/// fades as Opacity keyframes. Returns the clips placed, the tracks added and the warnings.
+fn place_images(
+    s: &mut Session,
+    name: &str,
+    images: &[cfa4_captions::dcst::ImageSubtitle],
+    intrinsic: Option<&str>,
+    fetch: &mut FetchPng<'_>,
+) -> Result<(usize, usize, Vec<String>)> {
+    use cfa4_project::{Keyframe, ParamValue, TrackKind};
+    use cfa4_time::TimeRange;
+    let mut warnings = Vec::new();
+    let seq_id = s.state.active_sequence.ok_or(EngineError::NoSequence)?;
+    let bin_name = format!("{name} images");
+    let bin = s.edit(&format!("New Bin {bin_name}"), |p, _| Ok(p.add_bin(&bin_name, None)))?;
+    // `None`: the resource failed (warned once; the subtitles that use it are skipped)
+    let mut items: std::collections::HashMap<[u8; 16], Option<cfa4_project::ItemId>> = std::collections::HashMap::new();
+    for img in images {
+        if items.contains_key(&img.resource) {
+            continue;
+        }
+        let item = match fetch(s, img.resource) {
+            Ok((file, bytes)) => match crate::commands::import_bytes(s, &file, bytes.into(), Some(bin)) {
+                Ok(id) => Some(id),
+                Err(e) => {
+                    warnings.push(format!("{file}: {e}"));
+                    None
+                }
+            },
+            Err(e) => {
+                warnings.push(e);
+                None
+            }
+        };
+        items.insert(img.resource, item);
+    }
+    let (placed, tracks, skipped) = s.edit("Place Subtitle Images", |p, _| {
+        let (w, h, rate) = {
+            let q = p.sequence(seq_id).ok_or(EngineError::NoSequence)?;
+            (q.settings.width, q.settings.height, q.settings.frame_rate)
+        };
+        let scale = image_scale(intrinsic, w);
+        let frame = rate.frame_duration();
+        let mut tracks: Vec<cfa4_project::Track> = Vec::new();
+        let (mut placed, mut skipped) = (0usize, 0usize);
+        for img in images {
+            let Some(&Some(item)) = items.get(&img.resource) else { continue };
+            let start = rate.snap_nearest(img.start);
+            let dur = Tick(rate.snap_nearest(img.end).0.saturating_sub(start.0)).max(frame);
+            let range = TimeRange::new(start, dur);
+            let free = tracks.iter().position(|t| !t.items.iter().any(|i| i.range().overlaps(&range)));
+            let at = match free {
+                Some(i) => i,
+                None if tracks.len() < MAX_IMAGE_TRACKS => {
+                    let label = if tracks.is_empty() { name.to_string() } else { format!("{name} {}", tracks.len() + 1) };
+                    tracks.push(cfa4_project::Track::new(cfa4_project::TrackId(p.alloc_id()), TrackKind::Video, label));
+                    tracks.len() - 1
+                }
+                None => {
+                    skipped += 1;
+                    continue;
+                }
+            };
+            let Some(mut ti) = p.make_track_item(item, TrackKind::Video, start, TimeRange::new(Tick::ZERO, dur), rate) else { continue };
+            let (iw, ih) = p.source_size(item).unwrap_or((w, h));
+            let k = scale / 100.0;
+            let (cx, cy) = img.centre((f64::from(w), f64::from(h)), (f64::from(iw) * k, f64::from(ih) * k));
+            if let Some(m) = ti.effects.iter_mut().find(|e| e.effect == "motion") {
+                if let Some(pp) = m.param_mut("position") {
+                    pp.value = ParamValue::Vec2(cfa4_geom::Vec2::new(cx, cy));
+                }
+                if let Some(sp) = m.param_mut("scale") {
+                    sp.value = ParamValue::Float(scale);
+                }
+            }
+            if let Some(o) = ti.effects.iter_mut().find(|e| e.effect == "opacity").and_then(|o| o.param_mut("opacity")) {
+                o.keyframes = fade_keyframes(ti.duration, rate.snap_nearest(img.fade_in), rate.snap_nearest(img.fade_out))
+                    .into_iter()
+                    .map(|(t, v)| Keyframe::new(t, ParamValue::Float(v)))
+                    .collect();
+            }
+            for e in &mut ti.effects {
+                cfa4_project::resolve_auto_points(e, (w, h), (iw, ih));
+            }
+            if let Some(spot) = &img.spot {
+                ti.name = format!("{} #{spot}", ti.name);
+            }
+            if let Some(t) = tracks.get_mut(at) {
+                t.items.push(ti);
+                placed += 1;
+            }
+        }
+        let added = tracks.len();
+        let q = p.sequence_mut(seq_id).ok_or(EngineError::NoSequence)?;
+        for mut t in tracks {
+            t.sort();
+            q.video_tracks.push(t);
+        }
+        q.check().map_err(EngineError::Other)?;
+        Ok((placed, added, skipped))
+    })?;
+    if skipped > 0 {
+        warnings.push(format!("{skipped} image subtitle(s) overlap more than {MAX_IMAGE_TRACKS} others and were not placed"));
+    }
+    Ok((placed, tracks, warnings))
+}
+
+/// Opacity keyframes (clip time, percent) for fades of `fade_in` and `fade_out` in a `dur`-long
+/// clip: 0 % at the start and end, 100 % between; fades longer than the clip share it.
+fn fade_keyframes(dur: Tick, fade_in: Tick, fade_out: Tick) -> Vec<(Tick, f64)> {
+    let d = dur.0.max(0);
+    let (mut fi, mut fo) = (fade_in.0.clamp(0, d), fade_out.0.clamp(0, d));
+    if fi.saturating_add(fo) > d {
+        // in proportion; i128 so the product cannot overflow
+        fi = (i128::from(fi) * i128::from(d) / i128::from(fi.saturating_add(fo)).max(1)) as i64;
+        fo = d - fi;
+    }
+    let mut k = Vec::new();
+    if fi > 0 {
+        k.push((Tick::ZERO, 0.0));
+    }
+    k.push((Tick(fi), 100.0));
+    if fo > 0 {
+        if d - fo > fi {
+            k.push((Tick(d - fo), 100.0));
+        }
+        k.push((Tick(d), 0.0));
+    }
+    if k.len() == 1 { Vec::new() } else { k }
 }
 
 /// Import the closed captions carried in an MXF file's ANC data (SMPTE ST 436-1) as caption
@@ -317,15 +572,7 @@ fn import_document(
 ) -> Result<Value> {
     let stem = std::path::Path::new(path).file_stem().map(|n| n.to_string_lossy().to_string()).unwrap_or_else(|| "Captions".into());
     let track_name = name.map(str::to_string).unwrap_or_else(|| stem.clone());
-    let seq_id = match s.state.active_sequence.filter(|id| s.project.sequence(*id).is_some()) {
-        Some(id) => id,
-        None => {
-            let id = s.edit("New Sequence", |p, _| Ok(p.new_sequence(&stem, SequenceSettings::default(), 3, 3, None)))?;
-            s.state.active_sequence = Some(id);
-            s.state.open_sequences.push(id);
-            id
-        }
-    };
+    let seq_id = target_sequence(s, &stem)?;
     let rate = s.project.sequence(seq_id).map(|q| q.settings.frame_rate).unwrap_or_default();
     doc.snap_to_frames(rate);
     let n = doc.cues.len();
