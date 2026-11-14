@@ -1,6 +1,6 @@
 # CFA4-BRANCH-OWNERSHIP-001 – egy ág, egy munkamenet: az ág-tulajdon technikai védelme
 
-**Állapot:** 1.4, végleges, a tulajdonos jóváhagyására kész. A változatok a 9. fejezetben. Jóváhagyás után a következő lépés: BO-1.
+**Állapot:** 1.4, jóváhagyva. A tulajdonos 2026-11-14-én a végleges szöveget jóváhagyta, és elrendelte a beolvasztását. A változatok a 9. fejezetben. Következő lépés: BO-1.
 
 **Összefoglaló:** a „más PR-jához, ágához ne nyúlj” szabály (`docs/coordination.md` §1 és §2.4) ma csak
 írott szabály, és semmi nem állítja meg az ügynököt, amelyik mégis megszegi. A terv után minden PR-ágnak
@@ -207,4 +207,4 @@ A sorrendről a tulajdonos dönt; a lista mindent tartalmaz.
 | 1.1 | 2026-11-14 | Tulajdonosi kérésre: a gazda beolvasztásra átveheti a PR-t (3. fejezet, T1, T2, T4, D6). |
 | 1.2 | 2026-11-14 | Tulajdonosi döntés: a CodeRabbit a gazda előtt fut, hibátlan PR megy a gazdához, hibát a fejlesztő javít (T7, D7); D8 javaslat. |
 | 1.3 | 2026-11-14 | Tulajdonosi döntés: kérésre a gazda is javíthat, ha a fejlesztő túlterhelt és a PR-ra máshol szükség van (D7 kivétele). |
-| 1.4 | 2026-11-14 | D8 a javaslat szerint elfogadva; végleges szöveg jóváhagyásra. |
+| 1.4 | 2026-11-14 | D8 a javaslat szerint elfogadva; a végleges szöveget a tulajdonos jóváhagyta. |
