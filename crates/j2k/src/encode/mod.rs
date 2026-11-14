@@ -12,8 +12,13 @@
 //! profiles (T.800 Amd. 1, SMPTE ST 429-4 / DCI): 12-bit X'Y'Z', 9/7, 32×32 code-blocks, CPRL,
 //! 128 / 256 precincts, one tile-part per component (and per progression for 4K), TLM, and the
 //! DCI byte limits per frame and per component.
+//!
+//! With [`EncodeOptions::ht`] the code-blocks are coded with the HTJ2K block coder instead
+//! (ITU-T T.814 | ISO/IEC 15444-15, [`ht`]): one HT cleanup pass per code-block with all its
+//! bit-planes, Rsiz bit 14 and the CAP marker. Rate control does not apply to it yet.
 
 mod dwt;
+mod ht;
 mod t1;
 mod t2;
 
@@ -205,6 +210,11 @@ pub struct EncodeOptions {
     /// A TLM marker (A.7.1) with the tile-part lengths.
     pub tlm: bool,
     pub profile: Profile,
+    /// HTJ2K (ITU-T T.814): the high-throughput block coder for every code-block. Part 1 profile
+    /// only (DCI has no HT; the IMF HTJ2K profiles are not written yet). With a byte limit each
+    /// code-block is coded once per bit-plane it may stop at (its HT cleanup pass at that plane)
+    /// and rate control picks one of those codings.
+    pub ht: bool,
 }
 
 impl EncodeOptions {
@@ -223,6 +233,7 @@ impl EncodeOptions {
             tile_part_per_component: false,
             tlm: false,
             profile: Profile::Part1,
+            ht: false,
         }
     }
 
@@ -247,6 +258,7 @@ impl EncodeOptions {
             tile_part_per_component: true,
             tlm: true,
             profile,
+            ht: false,
         }
     }
 
@@ -284,6 +296,7 @@ impl EncodeOptions {
             tile_part_per_component: true,
             tlm: true,
             profile: Profile::Imf(profile),
+            ht: false,
         }
     }
 }
@@ -312,6 +325,9 @@ struct Job {
 struct Coded {
     c: usize,
     zero: u32,
+    /// HTJ2K with a byte limit: one independent coding per truncation point of `enc.passes`
+    /// (missing MSBs, cleanup pass); a selection of `n` passes means the `n`-th coding.
+    ht: Vec<(u32, Vec<u8>)>,
     enc: t1::Encoded,
     hull: Vec<(u32, usize, f64)>,
 }
@@ -408,6 +424,9 @@ fn encode_with(image: &Image, opts: &EncodeOptions, early: bool) -> Result<Vec<u
                     let band = res.bands.get(bi).ok_or(Error::Invalid("subband"))?;
                     for cb in &pb.blocks {
                         let rect = Rect { u0: cb.x0 - band.rect.u0, v0: cb.y0 - band.rect.v0, u1: cb.x1 - band.rect.u0, v1: cb.y1 - band.rect.v0 };
+                        if opts.ht && band.mb > crate::t1::MAX_PLANES {
+                            return Err(Error::Unsupported("HTJ2K subband with more than 30 bit-planes"));
+                        }
                         let limit = if band.mb >= 30 { (1 << 30) - 1 } else { (1u32 << band.mb) - 1 };
                         jobs.push(Job { c, r, bi, rect, band_w: band.rect.w(), orient: band.orient, step: band.step, limit });
                     }
@@ -424,12 +443,14 @@ fn encode_with(image: &Image, opts: &EncodeOptions, early: bool) -> Result<Vec<u
     };
     // `stop`: the slope (weighted distortion per byte) below which a block's bit-planes are left
     // uncoded
+    let limited = opts.max_bytes.is_some() || opts.max_component_bytes.is_some();
     let code = |j: &Job, stop: f64| -> Result<Coded> {
         let cf = coeffs.get(j.c).ok_or(Error::Invalid("component"))?;
         let mb = comps.get(j.c).and_then(|tc| tc.res.get(j.r)).and_then(|res| res.bands.get(j.bi)).map_or(0, |b| b.mb);
         let w = weight(j);
-        let enc = code_block(cf, j, if stop.is_finite() && stop > 0.0 { stop / w.max(1e-30) } else { 0.0 })?;
-        Ok(Coded { c: j.c, zero: mb.saturating_sub(enc.planes), hull: hull(&enc.passes, w), enc })
+        let (enc, alts) = code_block(cf, j, opts.ht, limited, if stop.is_finite() && stop > 0.0 { stop / w.max(1e-30) } else { 0.0 })?;
+        let ht = alts.into_iter().map(|(planes, data)| (mb.saturating_sub(planes), data)).collect();
+        Ok(Coded { c: j.c, zero: mb.saturating_sub(enc.planes), hull: hull(&enc.passes, w), enc, ht })
     };
     let mut coded = if !early || (opts.max_bytes.is_none() && opts.max_component_bytes.is_none()) {
         map(&jobs, |j| code(j, 0.0))?
@@ -702,6 +723,10 @@ fn validate(image: &Image, opts: &EncodeOptions) -> Result<()> {
     if samples > MAX_SAMPLES {
         return Err(Error::TooLarge);
     }
+    // DCI is Part 1 only; the IMF HTJ2K profiles (ST 2067-21) are not written yet
+    if opts.ht && opts.profile != Profile::Part1 {
+        return Err(Error::Unsupported("HTJ2K with a Digital Cinema or IMF profile"));
+    }
     let (xcb, ycb) = opts.code_block;
     if !(2..=10).contains(&xcb) || !(2..=10).contains(&ycb) || xcb + ycb > 12 {
         return Err(Error::Invalid("code-block size"));
@@ -878,7 +903,10 @@ fn component_weights(n: usize, mct: bool, reversible: bool) -> Vec<f64> {
 }
 
 /// Quantizes and codes one code-block, down to the bit-plane `stop` allows ([`t1::encode`]).
-fn code_block(cf: &Coeffs, j: &Job, stop: f64) -> Result<t1::Encoded> {
+/// HTJ2K: one cleanup pass with every bit-plane; with `limited` (a byte limit), also one coding
+/// per coarser plane it could stop at, returned as (coded planes, codeword), coarsest first, the
+/// passes of the [`t1::Encoded`] being their truncation points.
+fn code_block(cf: &Coeffs, j: &Job, ht: bool, limited: bool, stop: f64) -> Result<(t1::Encoded, Vec<(u32, Vec<u8>)>)> {
     let (w, h) = (j.rect.w(), j.rect.h());
     let mut q = Vec::with_capacity(w * h);
     let mut exact = Vec::with_capacity(w * h);
@@ -911,7 +939,54 @@ fn code_block(cf: &Coeffs, j: &Job, stop: f64) -> Result<t1::Encoded> {
             }
         }
     }
-    Ok(t1::encode(&q, &exact, w, h, j.orient, stop))
+    if ht {
+        if !limited {
+            // one cleanup pass with every bit-plane: the decoder takes Mb - 1 missing MSBs
+            return Ok((
+                match ht::encode(&q, w, h)? {
+                    Some(data) => {
+                        let dist = exact.iter().map(|&x| f64::from(x).powi(2)).sum();
+                        t1::Encoded { passes: vec![t1::Pass { len: data.len(), dist }], data, planes: 1, truncated: false }
+                    }
+                    None => t1::Encoded::default(),
+                },
+                Vec::new(),
+            ));
+        }
+        return ht_codings(&q, &exact, w, h);
+    }
+    Ok((t1::encode(&q, &exact, w, h, j.orient, stop), Vec::new()))
+}
+
+/// The HTJ2K codings of a block for rate control: for each plane `s` from the most significant
+/// non-zero one down to 0, the cleanup pass of the indices with their `s` lowest bits dropped (the
+/// decoder then takes Mb - 1 - s missing MSBs and puts each magnitude back at plane `s`, in the
+/// middle of its interval), and the squared error it removes from the all-zero block.
+fn ht_codings(q: &[i32], exact: &[f32], w: usize, h: usize) -> Result<(t1::Encoded, Vec<(u32, Vec<u8>)>)> {
+    let top = 32 - q.iter().map(|v| v.unsigned_abs()).max().unwrap_or(0).leading_zeros();
+    let energy: f64 = exact.iter().map(|&x| f64::from(x).powi(2)).sum();
+    let (mut passes, mut alts) = (Vec::new(), Vec::new());
+    let mut coarse = vec![0i32; q.len()];
+    for s in (0..top).rev() {
+        for (o, &v) in coarse.iter_mut().zip(q) {
+            let m = (v.unsigned_abs() >> s) as i32;
+            *o = if v < 0 { -m } else { m };
+        }
+        let Some(data) = ht::encode(&coarse, w, h)? else { continue };
+        let scale = f64::from(1u32 << s);
+        let error: f64 = coarse
+            .iter()
+            .zip(exact)
+            .map(|(&m, &x)| {
+                let r = if m == 0 { 0.0 } else { (f64::from(m.unsigned_abs()) + 0.5) * scale };
+                (f64::from(x).abs() - r).powi(2)
+            })
+            .sum();
+        passes.push(t1::Pass { len: data.len(), dist: energy - error });
+        alts.push((1 + s, data));
+    }
+    let enc = t1::Encoded { passes, data: Vec::new(), planes: 1, truncated: false };
+    Ok((enc, alts))
 }
 
 /// The convex hull of a block's truncation points (0, 0), (len_k, w·dist_k): (passes, bytes,
@@ -1000,7 +1075,7 @@ fn main_header(image: &Image, opts: &EncodeOptions, quants: &[Quant], mct: bool)
         Profile::Cinema2k => 3,
         Profile::Cinema4k => 4,
         Profile::Imf(imf) => imf.rsiz(),
-    };
+    } | if opts.ht { 0x4000 } else { 0 };
     marker(&mut o, 0xFF51, |s| {
         s.extend(rsiz.to_be_bytes());
         for v in [image.width, image.height, 0, 0, image.width, image.height, 0, 0] {
@@ -1011,6 +1086,22 @@ fn main_header(image: &Image, opts: &EncodeOptions, quants: &[Quant], mct: bool)
             s.extend([(p.precision - 1) | if p.signed { 0x80 } else { 0 }, p.dx, p.dy]);
         }
     })?;
+    // CAP (T.814 A.3): Part 15 only, HT code-blocks only, one HT set each, no ROI, the
+    // irreversible flag and the largest subband magnitude bits Mb (B) as Bp
+    if opts.ht {
+        let b = quants.iter().flat_map(|q| q.steps.iter().map(move |&(e, _)| u32::from(q.guard) + u32::from(e))).max().unwrap_or(1).saturating_sub(1);
+        let bp = match b {
+            0..=8 => 0,
+            9..=27 => b - 8,
+            28..=47 => 13 + (b >> 2),
+            _ => 31,
+        } as u16;
+        let ccap15 = if opts.reversible { 0 } else { 0x20 } | bp;
+        marker(&mut o, 0xFF50, |s| {
+            s.extend(0x0002_0000u32.to_be_bytes());
+            s.extend(ccap15.to_be_bytes());
+        })?;
+    }
     // COD
     let defined = !opts.precincts.is_empty();
     marker(&mut o, 0xFF52, |s| {
@@ -1018,7 +1109,8 @@ fn main_header(image: &Image, opts: &EncodeOptions, quants: &[Quant], mct: bool)
         s.push(opts.progression as u8);
         s.extend(1u16.to_be_bytes());
         s.push(u8::from(mct));
-        s.extend([opts.levels, opts.code_block.0 - 2, opts.code_block.1 - 2, 0, u8::from(opts.reversible)]);
+        let style = if opts.ht { crate::ht::STYLE_HT } else { 0 };
+        s.extend([opts.levels, opts.code_block.0 - 2, opts.code_block.1 - 2, style, u8::from(opts.reversible)]);
         if defined {
             for r in 0..=usize::from(opts.levels) {
                 let (x, y) = opts.precincts.get(r).or(opts.precincts.last()).copied().unwrap_or((15, 15));
@@ -1115,7 +1207,12 @@ fn assemble(
             let blocks = (start..start + pb.blocks.len())
                 .map(|i| {
                     let (b, &n) = (coded.get(i)?, sel.get(i)?);
-                    let len = b.enc.passes.get((n as usize).checked_sub(1)?)?.len;
+                    let k = (n as usize).checked_sub(1)?;
+                    if !b.ht.is_empty() {
+                        let (zero, data) = b.ht.get(k)?;
+                        return Some(Contribution { zero: *zero, passes: 1, data });
+                    }
+                    let len = b.enc.passes.get(k)?.len;
                     Some(Contribution { zero: b.zero, passes: n, data: b.enc.data.get(..len)? })
                 })
                 .collect();

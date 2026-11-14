@@ -24,6 +24,7 @@ cfa4-avi = { workspace = true }
 cfa4-adpcm = { workspace = true }
 cfa4-speex = { workspace = true }
 cfa4-amr = { workspace = true }
+cfa4-musepack = { workspace = true }
 cfa4-isobmff = { workspace = true }
 cfa4-matroska = { workspace = true }
 cfa4-mxf = { workspace = true }
@@ -31,6 +32,9 @@ cfa4-iab = { workspace = true }
 cfa4-mpegts = { workspace = true }
 cfa4-mpeg2v = { workspace = true }
 cfa4-ac3 = { workspace = true }
+cfa4-tta = { workspace = true }
+cfa4-g729 = { workspace = true }
+cfa4-ilbc = { workspace = true }
 cfa4-dts = { workspace = true }
 cfa4-truehd = { workspace = true }
 cfa4-mpa = { workspace = true }
@@ -49,6 +53,7 @@ cfa4-cineform = { workspace = true }
 cfa4-av1 = { workspace = true }
 cfa4-apv = { workspace = true }
 cfa4-hap = { workspace = true }
+cfa4-canopus = { workspace = true }
 cfa4-utvideo = { workspace = true }
 cfa4-huffyuv = { workspace = true }
 cfa4-ffv1 = { workspace = true }
@@ -66,6 +71,7 @@ symphonia = { version = "0.6.1", default-features = false, features = ["aac", "m
 
 [dev-dependencies]
 cfa4-ac3 = { workspace = true, features = ["test-util"] }
+cfa4-mxf = { workspace = true, features = ["test-util"] }
 cfa4-auro = { workspace = true }
 cfa4-testkit = { workspace = true }
 serde_json = { workspace = true }

@@ -127,7 +127,7 @@ const SLOPE_CODES: [(u8, u16, f32); 15] = [
 ];
 
 /// Decode a prefix code from a table sorted by code length.
-fn read_code(br: &mut BitReader, table: &[(u8, u16, f32)]) -> Result<f32> {
+fn read_code(br: &mut BitReader<'_>, table: &[(u8, u16, f32)]) -> Result<f32> {
     let (mut code, mut len) = (0u32, 0u8);
     for &(size, c, v) in table {
         while len < size {
@@ -158,7 +158,7 @@ pub struct TimeParams {
     pub delta_tmin: u32,
 }
 
-fn read_time_delta(br: &mut BitReader, max_values: u32) -> Result<u32> {
+fn read_time_delta(br: &mut BitReader<'_>, max_values: u32) -> Result<u32> {
     let mut z = 1u32;
     while (1u32 << z) < 2 * max_values && z < 16 {
         z += 1;
@@ -177,7 +177,7 @@ fn read_time_delta(br: &mut BitReader, max_values: u32) -> Result<u32> {
     })
 }
 
-fn initial_gain(br: &mut BitReader, profile: u8) -> Result<f32> {
+fn initial_gain(br: &mut BitReader<'_>, profile: u8) -> Result<f32> {
     Ok(match profile {
         GAIN_CODING_PROFILE_REGULAR => {
             let sign = br.read_flag()?;
@@ -194,7 +194,7 @@ fn initial_gain(br: &mut BitReader, profile: u8) -> Result<f32> {
 }
 
 /// `drcGainSequence()` → nodes, with the node-reservoir reordering of libxaac.
-fn gain_sequence(br: &mut BitReader, gs: &GainSet, tp: TimeParams) -> Result<Vec<Node>> {
+fn gain_sequence(br: &mut BitReader<'_>, gs: &GainSet, tp: TimeParams) -> Result<Vec<Node>> {
     let n = tp.frame_size as i32;
     let delta_tmin = gs.time_delta_min.unwrap_or(tp.delta_tmin).max(1);
     let time_offset = if !gs.time_alignment { -1 } else { -(delta_tmin as i32) + (delta_tmin as i32 - 1) / 2 };

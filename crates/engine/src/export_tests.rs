@@ -926,15 +926,15 @@ fn crf_param_picks_constant_quality() {
 
 #[test]
 fn exr_compression_param_is_parsed_and_defaults_to_none() {
-    use cfa4_export::ExrCompression::{None as Plain, Rle, Zip, Zips};
+    use cfa4_export::ExrCompression::{None as Plain, Piz, Rle, Zip, Zips};
     let s = demo();
     let setting = |p: Value| crate::export_tools::settings_from_params(&s, &p, "file.exportMedia").map(|(_, st)| st.exr_compression);
     assert_eq!(setting(json!({"path": "x.exr", "format": "exr"})).unwrap(), Plain);
-    for (name, want) in [("none", Plain), ("rle", Rle), ("zips", Zips), ("zip", Zip)] {
+    for (name, want) in [("none", Plain), ("rle", Rle), ("zips", Zips), ("zip", Zip), ("piz", Piz)] {
         assert_eq!(setting(json!({"path": "x.exr", "format": "exr", "exrCompression": name})).unwrap(), want);
     }
-    let e = setting(json!({"path": "x.exr", "format": "exr", "exrCompression": "piz"})).unwrap_err().to_string();
-    assert!(e.contains("none | rle | zips | zip"), "{e}");
+    let e = setting(json!({"path": "x.exr", "format": "exr", "exrCompression": "dwaa"})).unwrap_err().to_string();
+    assert!(e.contains("none | rle | zips | zip | piz"), "{e}");
     let old: cfa4_export::ExportSettings = serde_json::from_value(json!({"format": "exr"})).unwrap();
     assert_eq!(old.exr_compression, Plain);
 }
@@ -1328,7 +1328,8 @@ fn dash_manifest_is_a_parameter() {
 
 /// #1004: MXF OP1a with `mxfAncCaptions` carries the caption track as ST 436-1 ANC data (one CDP
 /// per frame on VANC line 9): our reader gives the cues back, ffprobe sees the data stream next
-/// to the picture, and other rates, OP-Atom and D-10 are refused.
+/// to the picture, the other ST 334-2 rates (#1065) work too, and other rates, OP-Atom and D-10 are
+/// refused.
 #[test]
 fn mxf_op1a_writes_captions_as_anc_data() {
     let dir = Scratch::new("mxf-anc");
@@ -1368,9 +1369,21 @@ fn mxf_op1a_writes_captions_as_anc_data() {
         q[key] = value;
         assert!(s.execute("file.exportMedia", q).is_err(), "{key}");
     }
+    // #1065: the other ST 334-2 rates carry captions too (here 25 fps); others are refused
     let mut s25 = Session::default();
     s25.execute("file.newSequence", json!({"name":"ANC 25", "fps":25, "width":320, "height":180, "video":1, "audio":1})).unwrap();
     s25.execute("captions.import", json!({"path": vtt})).unwrap();
-    let err = s25.execute("file.exportMedia", p).unwrap_err().to_string();
-    assert!(err.contains("29.97"), "{err}");
+    s25.execute("file.exportMedia", p.clone()).unwrap();
+    let anc = cfa4_mxf::read_anc(&std::fs::read(&out).unwrap()[..]).unwrap();
+    assert_eq!(anc.edit_rate, cfa4_mxf::Rational::new(25, 1));
+    assert_eq!(anc.frames.len(), 75);
+    let rate = cfa4_time::FrameRate::FPS_25;
+    let doc = cfa4_captions::mcc::decode_cdps(anc.cdps().into_iter().map(|(f, p)| (f as i64, p)), rate);
+    let got: Vec<(i64, i64, &str)> = doc.cues.iter().map(|c| (rate.frame_at(c.start), rate.frame_at(c.end), c.text.as_str())).collect();
+    assert_eq!(got, vec![(12, 37, "Hello ANC"), (50, 70, "Second line")]);
+    let mut s48 = Session::default();
+    s48.execute("file.newSequence", json!({"name":"ANC 48", "fps":48, "width":320, "height":180, "video":1, "audio":1})).unwrap();
+    s48.execute("captions.import", json!({"path": vtt})).unwrap();
+    let err = s48.execute("file.exportMedia", p).unwrap_err().to_string();
+    assert!(err.contains("59.94"), "{err}");
 }

@@ -160,7 +160,7 @@ fn vr_blur_image(img: &mut Image, sigma: f32) {
     crate::effects::gaussian(img, 0.0, sigma, true);
 }
 
-pub fn apply(img: &mut Image, e: &EffectInstance, cx: &FxCtx) {
+pub fn apply(img: &mut Image, e: &EffectInstance, cx: &FxCtx<'_>) {
     let layout = chv(e, "frame_layout");
     match e.effect.as_str() {
         "vr_blur" => {

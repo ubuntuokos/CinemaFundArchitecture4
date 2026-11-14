@@ -8,7 +8,7 @@ Historical sources and target-specific transitive entries in Cargo.lock may rema
 ## Responsibility boundaries
 
 - **Rust 1.97 / Cargo:** existing inherited media engine, codec implementations, project model, rendering, export and `cfa4-cli`.
-- **Python 3.12+:** developer tooling and orchestration. Project CI exercises Python 3.13; newer Linux distributions can use a supported version.
+- **Python 3.12+:** developer tooling and orchestration. Project CI exercises Python 3.13, and Python 3.14 in a non-blocking job (`python-3-14`, owner decision 2026-11-14); newer Linux distributions can use a supported version.
 - **Qt 6 / PySide6:** the CFA4 editor GUI (`cfa4-qt`, `python/cfa4_qt/`), driving the Rust engine through `cfa4-cli serve` ([docs/qt-gui.md](../qt-gui.md)). All new UI work goes here. What it already does compared with egui: [docs/qt-parity.md](../qt-parity.md).
 - **Existing egui desktop app:** still the complete editor, **frozen** (bug and security fixes only). It is deleted only when the Qt 6 GUI does point by point everything it does and the owner approves.
 - **FFmpeg (≥ 9.0.2):** a supplementary media backend next to the own Rust engine, chosen by the automatic task router (`cfa4-ffmpeg` crate, `crates/ffmpeg`, GPL-3 build, [ADR 0005](../adr/ADR-0005-media-backends.md)). The pinned FFmpeg/ffprobe 9.0.2 CLI (`scripts/ci/install-ffmpeg-9.0.2.sh`) remains a separate test oracle.
@@ -45,6 +45,15 @@ The Qt system headers/tools (Qt Widgets, Qt Multimedia, Qt Designer, CMake) are 
 PySide6 provides its own Qt shared libraries via the wheel, so do not combine the wheel's
 libraries with the distro's Qt binaries in a single process.
 
+Python checks, as in CI (`cfa4-gate`):
+
+~~~bash
+.venv/bin/python -m ruff check python
+.venv/bin/python -m mypy   # strict; blocking. Files still to be fixed are listed in pyproject.toml
+                           # ([[tool.mypy.overrides]]); the list may only shrink, new files must pass
+.venv/bin/python -m pytest -q python/tests --ignore=python/tests/test_qt_gui.py
+~~~
+
 ## Developer tools / commands
 
 ~~~bash
@@ -62,15 +71,15 @@ bash scripts/dev/verify-linux.sh    # full local checks, explicit opt-in
 
 `cfa4-doctor` is read-only and reports the actual installed versions. `--strict` fails on
 missing Linux/Rust/Cargo/Python/Qt/FFmpeg prerequisites. The GUI shell queries
-`cfa4-cli --version` when the executable exists; it does not yet edit videos.
+`cfa4-cli --version` when the executable exists. The Qt GUI itself edits through the engine
+(`cfa4-cli serve`); what it already does is tracked in [docs/qt-parity.md](../qt-parity.md).
 
 The CI workflow `.github/workflows/ci-linux.yml` runs only the inexpensive
 `platform-scope` shell/configuration gate on pull requests and main pushes.
 To avoid repeated unnecessary builds, all Rust, FFmpeg, vendored crate, CLI,
 Python and Qt6 jobs run **only** on explicit GitHub Actions `workflow_dispatch`
 or when the `cfa4-full-validation` label is **added** to a pull request.
-Until this workflow exists on the default branch, use the PR label; for a later
-rerun, remove the label and add it again. Ordinary pushes to labeled PRs do not
+For a later rerun, remove the label and add it again. Ordinary pushes to labeled PRs do not
 trigger expensive jobs. Before a merge or release, explicitly run the entire
 workflow and confirm all mandatory jobs pass; a green static gate alone
 does not qualify as full CI validation. An unrun, skipped, or failing job is
@@ -213,17 +222,17 @@ It writes `target/audit/runtime-deps/<UTC>/runtime-deps.json` and `runtime-deps.
 version per namespace (`objdump -T`), and the `dlopen` library names that `ldd` cannot see. It
 installs nothing. A report from any other host is marked as not valid F9 evidence.
 
-Latest measurement (2026-10-25, Ubuntu 26.04.1, `d0cf06e`): glibc ≥ 2.43, libgcc_s, ALSA;
-see `docs/audit/F2-01-RUNTIME-DEPS-2026-10-25.md`.
+Latest measurement (2026-11-08, GitHub-hosted Ubuntu 26.04.1 runner, valid F9 evidence): glibc ≥ 2.43
+(unchanged); see `docs/audit/F2-01-RUNTIME-DEPS-2026-11-08.md` (previous: `F2-01-RUNTIME-DEPS-2026-10-25.md`).
 
 ## Remaining tasks (intentionally not claimed as implemented)
 
-1. Integrate Rust engine commands with a Qt controller (error/timeouts and project lifecycle).
-2. Port the actual NLE GUI from egui to Qt6 in incremental, tested modules.
-3. Establish Linux-only package identifiers, icon/brand assets and packaging pipeline.
+1. ~~Integrate Rust engine commands with a Qt controller~~ (done: `cfa4-cli serve`, [docs/qt-gui.md](../qt-gui.md)).
+2. Port the actual NLE GUI from egui to Qt6 in incremental, tested modules (in progress: [docs/qt-parity.md](../qt-parity.md)).
+3. ~~Linux-only package identifiers and icon/brand assets~~ (done: `io.github.ubuntuokos.cfa4`, `assets/cfa4`);
+   the packaging pipeline exists (`packaging/linux`, `cfa4-release-candidate.yml`), publication is still on hold (see above).
 4. Run full real-hardware import/edit/export checks on Ubuntu target systems.
 5. ~~Audit/remove unused macOS/Windows source paths and dependencies safely after tests pass~~ (done 2026-10-27); FreeBSD/WASM leftovers remain.
 6. Add offline/vendored dependency support and version/lock policy for Python packages.
 
-See also `docs/audit/BASELINE-2026-10-20.md` on the separate audit branch / draft PR
-until it is merged.
+The 2026-10-20 static baseline audit (PR #2) was closed without merging; its report is not on `main`.

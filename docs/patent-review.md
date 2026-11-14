@@ -52,7 +52,7 @@ szabadalommal védett formátumot.
 | Apple ProRes | dekódolás, kódolás | `crates/prores` | alap | függőben | | |
 | DNxHD / DNxHR (VC-3) | dekódolás, kódolás | `crates/dnx` | alap | függőben | | |
 | JPEG 2000 (Part 1) | dekódolás, kódolás (DCI 2K / 4K profilok) | `crates/j2k` | alap | függőben | | |
-| HTJ2K (JPEG 2000 Part 15) | dekódolás | `crates/j2k` (az OpenJPH blokkdekódolójának portja) | alap | függőben | | |
+| HTJ2K (JPEG 2000 Part 15) | dekódolás, kódolás | `crates/j2k` (az OpenJPH blokkdekódolójának és blokk-kódolójának portja) | alap | függőben | | |
 | GoPro CineForm (CFHD) | dekódolás, kódolás | `crates/cineform` (a CineForm SDK portja) | alap | függőben | | |
 | JPEG XL | dekódolás | `crates/jxl` (a jxl-oxide portja) | alap | függőben | | |
 | HEIF / HEIC állókép | olvasás (a képelemek HEVC-dekódolása a `crates/hevc` sorában) | `crates/heif` | alap | függőben | | |
@@ -60,8 +60,10 @@ szabadalommal védett formátumot.
 | DNG / CinemaDNG (lossless JPEG) | dekódolás | `crates/dng` | alap | függőben | | |
 | FFV1 (RFC 9043) | dekódolás | `crates/ffv1` | alap | függőben | | |
 | SMPTE VC-2 (ST 2042-1) | dekódolás; QuickTime / MP4, AVI és Matroska olvasása | `crates/dirac` (a BBC VC-2 referencia-pszeudokódjának portja) | alap | függőben | | |
+| Dirac (core szintaxis) | dekódolás; QuickTime / MP4, AVI és Matroska olvasása | `crates/dirac` (az FFmpeg Dirac-dekódolójának portja) | alap | függőben | | |
 | Huffyuv (HFYU) | dekódolás | `crates/huffyuv` | alap | függőben | | |
 | Ut Video | dekódolás | `crates/utvideo` | alap | függőben | | |
+| Canopus HQ, HQA, HQX | dekódolás | `crates/canopus` (az FFmpeg portja) | alap | függőben | | |
 | Hap (Hap, Hap Alpha, Hap Q, Hap Q Alpha, Hap Alpha-Only) | dekódolás | `crates/hap` | alap | függőben | | |
 
 ## Hang
@@ -85,7 +87,11 @@ szabadalommal védett formátumot.
 | Speex | dekódolás; Ogg Speex (`.spx`) olvasása | `crates/speex` (a libspeex portja) | alap | függőben | | |
 | SMPTE LTC időkód (ST 12-1) és MIDI Timecode (MTC) | dekódolás, kódolás (hangjel, MIDI-üzenetek) | `crates/tcsync` | alap | függőben | | |
 | G.711 (µ-law, A-law), G.722, IMA ADPCM, Microsoft ADPCM | dekódolás | `crates/adpcm` | alap | függőben | | |
+| G.729, G.729 Annex B | dekódolás; nyers `.g729` fájlok olvasása | `crates/g729` (a bcg729 portja) | alap | függőben | | |
+| iLBC | dekódolás; `.lbc` fájlok olvasása | `crates/ilbc` (a WebRTC libilbc portja) | alap | függőben | | |
+| TTA (True Audio) | dekódolás; `.tta` és Matroska olvasása | `crates/tta` (a libtta portja) | alap | függőben | | |
 | AMR-NB, AMR-WB | dekódolás | `crates/amr` (az opencore-amr portja) | alap | függőben | | |
+| Musepack SV7, SV8 | dekódolás; `.mpc` fájlok olvasása | `crates/musepack` (a libmpcdec portja) | alap | függőben | | |
 
 ## Konténerek
 

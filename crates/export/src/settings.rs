@@ -21,8 +21,10 @@ pub enum Scaling {
     StretchToFill,
 }
 
-/// Field order of the encoded video. Only MPEG-2 export codes interlaced frames; the other
-/// encoders write progressive ones.
+/// Field order of the encoded video. Only MPEG-2 and ProRes export code interlaced frames
+/// ([`crate::Format::codes_interlaced`]; in MXF MPEG-2, XDCAM HD422 or D-10); the other encoders
+/// write progressive ones. The frames are rendered progressively and coded as interlaced (no
+/// field-rate rendering yet).
 #[derive(Clone, Copy, Debug, Default, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub enum FieldOrder {
@@ -145,12 +147,14 @@ pub enum MxfVideoCodec {
     Mpeg2,
     /// Type D-10 / IMX (ST 386): intra-only MPEG-2 4:2:2P@ML at 30, 40 or 50 Mbit/s (the
     /// bitrate setting), 720 × 576 at 25 fps or 720 × 486 / 480 at 29.97 fps, with up to eight
-    /// 16- or 24-bit 48 kHz audio channels in one AES3 element. OP1a only.
+    /// 16- or 24-bit 48 kHz audio channels in one AES3 element. OP1a only. An interlaced field
+    /// order codes interlaced pictures (upper field first); progressive codes PsF pictures.
     #[serde(rename = "d10", alias = "D10")]
     D10,
     /// XDCAM HD422 (SMPTE RDD 9): MPEG-2 4:2:2P@HL long GOP at 1920 × 1080 or 1280 × 720 in
     /// RDD 9's OP1a layout (system items, one AES3 element per channel, body partitions every
-    /// five seconds), up to eight 16- or 24-bit 48 kHz channels. Progressive pictures only.
+    /// five seconds), up to eight 16- or 24-bit 48 kHz channels. 1080i at 25 or 29.97 fps with an
+    /// interlaced field order (separate fields, RDD 9 Annex), otherwise progressive.
     #[serde(rename = "xdcamHd422", alias = "XdcamHd422")]
     XdcamHd422,
     /// Uncompressed 10-bit Y'CbCr 4:2:2 in the `v210` layout (ST 384, ST 377-1 G.2.25 label
@@ -211,16 +215,20 @@ pub enum ExrCompression {
     Zips,
     /// zlib (deflate) per block of 16 scan lines (ZIP_COMPRESSION).
     Zip,
+    /// Wavelet and Huffman coding per block of 32 scan lines (PIZ_COMPRESSION); the usual choice
+    /// for grainy film scans and renders.
+    Piz,
 }
 
 impl ExrCompression {
-    pub const ALL: [ExrCompression; 4] = [ExrCompression::None, ExrCompression::Rle, ExrCompression::Zips, ExrCompression::Zip];
+    pub const ALL: [ExrCompression; 5] = [ExrCompression::None, ExrCompression::Rle, ExrCompression::Zips, ExrCompression::Zip, ExrCompression::Piz];
     pub fn label(self) -> &'static str {
         match self {
             ExrCompression::None => "None",
             ExrCompression::Rle => "RLE",
             ExrCompression::Zips => "ZIP (1 scan line)",
             ExrCompression::Zip => "ZIP (16 scan lines)",
+            ExrCompression::Piz => "PIZ",
         }
     }
     /// The value of the OpenEXR `compression` attribute.
@@ -230,11 +238,16 @@ impl ExrCompression {
             ExrCompression::Rle => 1,
             ExrCompression::Zips => 2,
             ExrCompression::Zip => 3,
+            ExrCompression::Piz => 4,
         }
     }
     /// Scan lines per chunk.
     pub(crate) fn lines(self) -> usize {
-        if self == ExrCompression::Zip { 16 } else { 1 }
+        match self {
+            ExrCompression::Zip => 16,
+            ExrCompression::Piz => 32,
+            _ => 1,
+        }
     }
 }
 

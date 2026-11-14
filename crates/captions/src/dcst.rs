@@ -54,7 +54,7 @@ fn child<'a, 'i>(n: roxmltree::Node<'a, 'i>, name: &str) -> Option<roxmltree::No
     n.children().find(|c| c.is_element() && c.tag_name().name() == name)
 }
 
-fn child_text(n: roxmltree::Node, name: &str) -> Option<String> {
+fn child_text(n: roxmltree::Node<'_, '_>, name: &str) -> Option<String> {
     child(n, name).and_then(|c| c.text()).map(str::trim).filter(|s| !s.is_empty()).map(str::to_string)
 }
 
@@ -82,7 +82,7 @@ struct Fmt {
     underline: bool,
 }
 
-fn font_fmt(n: roxmltree::Node, parent: Fmt) -> Fmt {
+fn font_fmt(n: roxmltree::Node<'_, '_>, parent: Fmt) -> Fmt {
     let mut f = parent;
     if let Some(v) = n.attribute("Italic") {
         f.italic = v.trim() != "no";
@@ -97,7 +97,7 @@ fn font_fmt(n: roxmltree::Node, parent: Fmt) -> Fmt {
 }
 
 /// Text of a `Text` element and its children, with format tags.
-fn collect(n: roxmltree::Node, fmt: Fmt, out: &mut String) {
+fn collect(n: roxmltree::Node<'_, '_>, fmt: Fmt, out: &mut String) {
     for c in n.children() {
         if c.is_text() {
             out.extend(c.text().unwrap_or("").chars().filter(|ch| !ch.is_control()));
@@ -132,7 +132,7 @@ fn collect(n: roxmltree::Node, fmt: Fmt, out: &mut String) {
 }
 
 /// Screen height position of a line (0 top, 100 bottom) from `Valign`/`Vposition`.
-fn line_y(n: roxmltree::Node) -> f64 {
+fn line_y(n: roxmltree::Node<'_, '_>) -> f64 {
     let v = n.attribute("Vposition").and_then(|v| v.trim().parse::<f64>().ok()).filter(|v| v.is_finite()).unwrap_or(0.0);
     match n.attribute("Valign").map(str::trim) {
         Some("top") => v,
@@ -182,7 +182,7 @@ pub fn parse_reel(text: &str) -> Result<Reel> {
         let mut lines: Vec<(f64, String)> = Vec::new();
         for t in sub.descendants().filter(|n| n.is_element() && n.tag_name().name() == "Text") {
             // formatting from every enclosing Font element (they may wrap whole subtitle lists)
-            let mut fonts: Vec<roxmltree::Node> = t.ancestors().skip(1).filter(|a| a.is_element() && a.tag_name().name() == "Font").collect();
+            let mut fonts: Vec<roxmltree::Node<'_, '_>> = t.ancestors().skip(1).filter(|a| a.is_element() && a.tag_name().name() == "Font").collect();
             fonts.reverse();
             let fmt = fonts.into_iter().fold(Fmt::default(), |f, n| font_fmt(n, f));
             let mut s = String::new();

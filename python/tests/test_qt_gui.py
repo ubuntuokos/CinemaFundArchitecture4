@@ -2393,7 +2393,7 @@ EGUI_EXPORT_IDS: frozenset[str] = frozenset({
     "export.effects.timecodeOverlay", "export.effects.videoLimiter", "export.effects.videoLimiter.max",
     "export.effects.videoLimiter.min", "export.estimate", "export.fileName", "export.format", "export.gpuRendering",
     "export.location", "export.location.browse", "export.multiplexer", "export.preset", "export.preset.more",
-    "export.preview", "export.queue.clear", "export.queue.start", "export.queue.stop", "export.range",
+    "export.preview", "export.problem", "export.queue.clear", "export.queue.start", "export.queue.stop", "export.range",
     "export.range.end", "export.range.start", "export.scaling", "export.sendToQueue", "export.summary",
     "export.video.alpha", "export.video.apvProfile", "export.video.aspect", "export.video.bitrateMode",
     "export.video.cineformProfile", "export.video.cineformQuality", "export.video.crf", "export.video.dashManifest", "export.video.dnxProfile",
@@ -2574,7 +2574,7 @@ def test_export_mxf_anc_captions_switch_only_for_op1a(app):
     dlg = ExportDialog(Engine())  # type: ignore[arg-type]
     dlg._on_formats([{"id": "h264", "label": "H.264"}, {"id": "mxf-op1a", "label": "MXF OP1a"}, {"id": "mxf-opatom", "label": "MXF OP-Atom"}], None)
     box = dlg.findChild(QtWidgets.QCheckBox, "export.video.mxfAncCaptions")
-    assert box is dlg.mxf_anc and box.text() == "Write the captions as ANC data (CEA-608/708, 29.97 fps)"
+    assert box is dlg.mxf_anc and box.text() == "Write the captions as ANC data (CEA-608/708)"
     assert dlg.video_form.labelForField(box).text() == "Closed Captions"
     dlg.format.setCurrentIndex(dlg.format.findData("mxf-op1a"))
     dlg._sync_format_rows()
@@ -2918,7 +2918,7 @@ def test_real_engine_mpeg2_export_picks_the_container(app, tmp_path: Path):
         assert dlg.params()["mpeg2BFrames"] == 0
         dlg.b_frames.setValue(2)
         # progressive unless an interlaced field order is chosen: egui's one Field Order row
-        # (export.video.fieldOrder), its interlaced orders open for MPEG-2 only
+        # (export.video.fieldOrder), its interlaced orders open for MPEG-2 and ProRes
         fo = dlg.rows.field_order
         assert dlg.findChild(QtWidgets.QComboBox, "export.fieldOrder") is None, "one Field Order control"
         assert fo.currentData() == "progressive" and "fieldOrder" not in p.get("settings", {}) and "fieldOrder" not in p
@@ -3453,7 +3453,9 @@ def test_real_engine_effect_controls_lane_as_egui(app, tmp_path: Path):
     def run_menu(name: str) -> None:
         def pick() -> None:
             menu = ec.last_menu
-            action = next(a for a in menu.actions() if a.objectName() == name)
+            found = [a for a in menu.actions() if a.objectName() == name]
+            found += [a for sub in menu.actions() if sub.menu() for a in sub.menu().actions() if a.objectName() == name]
+            action = found[0]
             menu.close()
             action.trigger()
         QtCore.QTimer.singleShot(50, pick)
@@ -3538,6 +3540,26 @@ def test_real_engine_effect_controls_lane_as_egui(app, tmp_path: Path):
         send(lane, QtCore.QEvent.Type.MouseButtonPress, pts["scale@0"]["pos"], QtCore.Qt.MouseButton.RightButton,
              QtCore.Qt.MouseButton.RightButton)
         assert wait_until(app, lambda: min(keys("scale"), key=lambda k: k["time"])["interpolation"] == "hold", 10_000)
+        # egui's Easing Presets submenu: CFA4's fixed curves (no influence handles), one undo step each
+        menu_shown: list[list[str]] = []
+
+        def presets_then(name: str) -> None:
+            def look() -> None:
+                sub = next(a.menu() for a in ec.last_menu.actions() if a.menu())
+                menu_shown.append([sub.objectName(), *(a.objectName() for a in sub.actions())])
+            QtCore.QTimer.singleShot(30, look)
+            run_menu(name)
+
+        steps = win.history.list.count()
+        presets_then("effectControls.keyframeMenu.elastic")
+        send(lane, QtCore.QEvent.Type.MouseButtonPress, pts["scale@0"]["pos"], QtCore.Qt.MouseButton.RightButton,
+             QtCore.Qt.MouseButton.RightButton)
+        assert menu_shown and menu_shown[0] == ["effectControls.keyframeMenu.easingPresets"] + [
+            f"effectControls.keyframeMenu.{k}" for k in ("sine", "expo", "circ", "overshoot", "elastic", "bounce")], menu_shown
+        assert wait_until(app, lambda: min(keys("scale"), key=lambda k: k["time"])["interpolation"] == "elastic", 10_000)
+        assert wait_until(app, lambda: win.history.list.count() == steps + 1, 10_000)
+        from cfa4_qt.panels.effect_controls import eases
+        assert eases("elastic") == (False, False) and eases("bezier") == (True, True)
 
         # value and velocity graphs: a keyframe drags vertically for its value, a Bezier
         # influence handle horizontally; Esc abandons a drag
@@ -8272,6 +8294,15 @@ def test_real_engine_export_per_format_settings_as_egui(app, tmp_path: Path):
         assert dlg.gop.isEnabled() and not dlg.chroma.isEnabled() and not dlg.container.isEnabled()
         assert dlg.params()["mxfVideoCodec"] == "xdcamHd422"
         assert resolved()["mxfVideoCodec"] == "xdcamHd422"
+        # MPEG-2 in MXF codes interlaced video (1080i, interlaced D-10): the field orders open;
+        # ProRes in MXF stays progressive
+        fo = dlg.rows.field_order
+        assert all(fo.model().item(i).isEnabled() for i in range(fo.count()))
+        pick(c["mxfVideoCodec"], "d10")
+        assert fo.model().item(1).isEnabled()
+        pick(c["mxfVideoCodec"], "proRes")
+        assert not fo.model().item(1).isEnabled()
+        pick(c["mxfVideoCodec"], "xdcamHd422")
         # uncompressed (#946): no encoder rows, the MPEG-2 settings off
         for codec in ("v210", "uyvy"):
             pick(c["mxfVideoCodec"], codec)
@@ -14588,7 +14619,7 @@ def test_real_engine_credits_window_opens_a_cinecred_project(app, tmp_path: Path
 
 
 def test_credits_workspace_strip_and_block_helpers(app):
-    from cfa4_qt.panels.credits_workspace import TimelineStrip, block_label, page_spans
+    from cfa4_qt.panels.credits_workspace import TimelineStrip, block_label, page_spans, spine_text
 
     pages = [{"duration": 100, "gapAfter": 0}, {"duration": 50, "gapAfter": -20}, {"duration": 30}, {"duration": "x"}]
     assert page_spans(pages) == [(0.0, 100.0), (100.0, 150.0), (130.0, 160.0), (160.0, 160.0)]
@@ -14608,6 +14639,11 @@ def test_credits_workspace_strip_and_block_helpers(app):
     assert block_label({"head": "Cast", "body": ["A", "B"], "bodyCount": 2}) == "Cast  (+2)"
     assert block_label({"body": ["A", "B"], "bodyCount": 5}) == "A  (+4)"
     assert block_label({}) and block_label({"body": [None, 3]})
+    # a spine: its offset, parallel, or where a hook puts it (bad values do not break it)
+    assert spine_text({"spine": -450, "parallel": True}) == "-450 px (parallel)"
+    hooked = {"spine": 0, "hook": {"back": 2, "from": "middle", "to": "top", "dx": 600, "dy": 10}}
+    assert spine_text(hooked) == "hooked 2 spines back: its middle meets this spine's top (+600, +10 px)"
+    assert spine_text({"hook": {"back": 1, "from": "?", "to": None, "dx": "x"}}) == "hooked 1 spines back: its top meets this spine's top"
 
 
 @pytest.mark.skipif(REAL is None, reason="Rust engine not built (cargo build -p cfa4-cli)")
@@ -14857,6 +14893,26 @@ def test_credits_engine_notes_are_translated():
         assert any(p.match(filled) for p, _t in NOTES), literal
 
 
+def test_credits_card_point_text(app):
+    """C15: a card spine's point follows its offset in the block's properties, in the user's
+    language; a block without one, or with bad values, does not break it."""
+    from cfa4_qt.i18n import TR
+    from cfa4_qt.panels.credits_workspace import card_point_text
+
+    assert card_point_text({"spine": -150}) == ""
+    assert card_point_text({"cardPoint": {"y": -50, "anchor": "middle"}}) == ", on a card: centered on -50 px"
+    assert card_point_text({"cardPoint": {"y": 50, "anchor": "below"}}) == ", on a card: starts at +50 px"
+    assert card_point_text({"cardPoint": {"y": "x", "anchor": "above"}}) == ", on a card: ends at +0 px"
+    assert card_point_text({"cardPoint": {"anchor": None}}) == ", on a card: centered on +0 px"
+    TR.set_language("hu")
+    try:
+        assert card_point_text({"cardPoint": {"y": 50, "anchor": "below"}}) == ", kártyán: a(z) +50 px-től lefelé"
+        TR.set_language("en-gb")
+        assert card_point_text({"cardPoint": {"y": 0, "anchor": "middle"}}) == ", on a card: centred on +0 px"
+    finally:
+        TR.set_language("en")
+
+
 def test_monitor_picture_falls_back_to_raster_without_opengl(app, monkeypatch):
     """qt-parity 5.5: ``CFA4_QT_MONITOR_GL=1`` asks for the OpenGL picture, but where no GL
     context can be made (Qt's ``offscreen`` platform here) the monitor keeps the raster view; either
@@ -14927,6 +14983,7 @@ def test_kdm_dialog_describes_the_reply_never_a_key():
     assert describe(None) == "" and describe({"keys": "x"}).startswith("KDM: 0 keys")
 
 
+@pytest.mark.skipif(REAL is None, reason="Rust engine not built (cargo build -p cfa4-cli)")
 def test_real_engine_load_kdm_dialog(app, tmp_path: Path):
     """File ▸ Load KDM… (#1029): a wrong private key shows the engine's message, the right one the
     KDM's title and key types (never the key); Forget DCP Keys empties the key ring."""
@@ -14967,6 +15024,33 @@ def test_real_engine_load_kdm_dialog(app, tmp_path: Path):
         engine.execute("dcp.keys", {}, on_reply=lambda r, _b: got.append(r))
         assert wait_until(app, lambda: got, 10_000) and got[0]["keyIds"] == []
         dlg.close()
+    finally:
+        win._quit_confirmed = True
+        win.close()
+        engine.stop()
+
+
+@pytest.mark.skipif(REAL is None, reason="Rust engine not built (cargo build -p cfa4-cli)")
+def test_real_engine_check_text_legibility_reports_as_egui(app, tmp_path: Path):
+    """Graphics and Titles ▸ Check Text Legibility (``graphics.checkLegibility``) comes from the
+    engine's registry; its result goes to the status line and the Events panel in egui's words."""
+    from cfa4_qt.main_window import MainWindow
+
+    settings = QtCore.QSettings(str(tmp_path / "s.ini"), QtCore.QSettings.Format.IniFormat)
+    engine = EngineClient(REAL, ["--demo", "--data-dir", str(tmp_path / "data")])
+    win = MainWindow(engine, settings)
+    win.resize(1600, 1000)
+    win.show()
+    engine.start()
+    try:
+        assert wait_until(app, lambda: win.sequence is not None and len(win.registry.commands) > 100, 60_000)
+        cmd = win.registry.commands.get("graphics.checkLegibility")
+        assert cmd is not None and "Graphics and Titles" in cmd.menu, cmd
+        win.statusBar().clearMessage()
+        win.run_menu_command("graphics.checkLegibility", {})
+        assert wait_until(app, lambda: win.statusBar().currentMessage().startswith("Text legibility: "), 20_000), win.statusBar().currentMessage()
+        msg = win.statusBar().currentMessage()
+        assert msg == "Text legibility: no problems found" or "problems marked on the timeline" in msg, msg
     finally:
         win._quit_confirmed = True
         win.close()

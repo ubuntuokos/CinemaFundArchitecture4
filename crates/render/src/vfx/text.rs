@@ -38,7 +38,7 @@ pub(crate) fn draw_text(img: &mut Image, text: &str, family: &str, pos: Vec2, px
 }
 
 /// Simple Text: a single block of text burned into the clip.
-pub fn simple_text(img: &mut Image, e: &EffectInstance, cx: &FxCtx) {
+pub fn simple_text(img: &mut Image, e: &EffectInstance, cx: &FxCtx<'_>) {
     let text = tv(e, "text");
     let pos = pv(e, "position", cx, img);
     let size = (fv(e, "size", cx) * cx.px_scale).max(2.0);
@@ -49,7 +49,7 @@ pub fn simple_text(img: &mut Image, e: &EffectInstance, cx: &FxCtx) {
 }
 
 /// The text a Metadata & Timecode Burn-in shows.
-pub(crate) fn burnin_text(e: &EffectInstance, cx: &FxCtx) -> String {
+pub(crate) fn burnin_text(e: &EffectInstance, cx: &FxCtx<'_>) -> String {
     let body = match chv(e, "source") {
         0 => cx.timecode.to_string(),
         1 => cx.env.map_or_else(|| cx.timecode.to_string(), |env| env.media_timecode()),
@@ -66,7 +66,7 @@ pub(crate) fn burnin_text(e: &EffectInstance, cx: &FxCtx) -> String {
 }
 
 /// Metadata & Timecode Burn-in: sequence / media timecode, names or frame count in a box.
-pub fn metadata_burnin(img: &mut Image, e: &EffectInstance, cx: &FxCtx) {
+pub fn metadata_burnin(img: &mut Image, e: &EffectInstance, cx: &FxCtx<'_>) {
     let text = burnin_text(e, cx);
     let size = (fv(e, "size", cx) / 100.0 * img.h as f32).max(6.0);
     let (w, h) = (img.w as f64, img.h as f64);

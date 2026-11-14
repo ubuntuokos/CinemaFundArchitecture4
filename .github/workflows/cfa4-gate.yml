@@ -27,7 +27,7 @@ concurrency:
 env:
   CARGO_DENY_VERSION: "0.20.2"
   CARGO_DENY_SHA256: "9f12ed4c49936e09b48bf862b595cde2fe64fcbd9d74dfacac6131ca824c8d5f"
-  RUFF_VERSION: "0.17.3"
+  RUFF_VERSION: "0.17.4"
   ZIZMOR_VERSION: "1.32.0"
   ACTIONLINT_PY_VERSION: "1.7.12.25"
 
@@ -104,6 +104,40 @@ jobs:
         continue-on-error: true
         run: ruff format --check python
 
+  python-typing:
+    # CFA4-PY-TYPING-001 T0: mypy --strict is blocking. Files that still fail are on the exception list
+    # in pyproject.toml ([[tool.mypy.overrides]]), which may only shrink (check-mypy-ratchet.py).
+    name: Python typing (mypy)
+    runs-on: ubuntu-26.04
+    timeout-minutes: 15
+    steps:
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - name: Base branch pyproject.toml (for the exception-list ratchet)
+        if: github.event_name == 'pull_request' || github.event_name == 'merge_group'
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+          ref: ${{ github.event.pull_request.base.sha || github.event.merge_group.base_sha }}
+          path: base
+          sparse-checkout: pyproject.toml
+          sparse-checkout-cone-mode: false
+      - name: Python
+        uses: actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1 # v6.3.0
+        with:
+          python-version: "3.13"
+      - name: Install the locked dependencies (mypy, and PySide6 for its type stubs)
+        run: |
+          python -m pip install --require-hashes -r requirements/linux-amd64.txt
+          python -m pip install --no-deps -e .
+      - name: mypy --strict (blocking; settings and exception list in pyproject.toml)
+        run: python -m mypy
+      - name: The exception list did not grow (blocking)
+        if: github.event_name == 'pull_request' || github.event_name == 'merge_group'
+        run: python scripts/ci/check-mypy-ratchet.py pyproject.toml base/pyproject.toml
+
   workflows:
     name: Workflow security (actionlint, zizmor)
     runs-on: ubuntu-26.04
@@ -127,7 +161,7 @@ jobs:
   cfa4-gate:
     name: cfa4-gate
     if: always()
-    needs: [rust-fmt, rust-deps, python, workflows]
+    needs: [rust-fmt, rust-deps, python, python-typing, workflows]
     runs-on: ubuntu-26.04
     timeout-minutes: 2
     steps:

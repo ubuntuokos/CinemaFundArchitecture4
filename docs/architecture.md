@@ -23,10 +23,10 @@ Design principles:
 
 ```text
  L6  apps/cfa4 · apps/cfa4-cli · apps/cfa4-studio-host
- L5  ui-egui · automation · platform · gstreamer (cfa4-gstreamer, optional) · ffmpeg (cfa4-ffmpeg, optional) · obs (cfa4-obs)
+ L5  ui-egui · automation · tcsync-io · platform · gstreamer (cfa4-gstreamer, optional) · ffmpeg (cfa4-ffmpeg, optional) · obs (cfa4-obs)
  L4  engine
  L3  render · gpu · export · smart-edit · qc · golden (test-only)
-     DCP validation: dcp-validate · dcp-inspect
+     DCP validation: dcp-validate · dcp-inspect · DCP mastering: dcpomatic
  L2  edit · codecs · interchange · captions · credits · speech · tts · tts-text
  L1  frame · media · project · audio-dsp · text · route (cfa4-route) · tcsync · metrics · live
  L0  foundation: time · geom · color · bitstream · testkit (dev-dependency only)
@@ -58,10 +58,11 @@ Crates are named `cfa4-<dir>` (`crates/time` is `cfa4-time`); new CFA4 crates ar
 | `prores` | L0 | ProRes decoder and encoder |
 | `dnx` | L0 | DNxHD / DNxHR (SMPTE ST 2019-1 VC-3) decoder and DNxHR encoder |
 | `hap` | L0 | Hap video decoder: `Hap1`, `Hap5`, `HapY`, `HapM`, `HapA`; Snappy, chunks, DXT1 / DXT5 / RGTC1 / scaled YCoCg textures to RGBA ([README](../crates/hap/README.md)) |
-| `dirac` | L0 | SMPTE VC-2 (ST 2042-1) decoder, the intra subset of Dirac: low-delay and high-quality pictures, all seven wavelets, symmetric and asymmetric transforms, 4:4:4 / 4:2:2 / 4:2:0 up to 16 bits, field coding ([README](../crates/dirac/README.md)) |
+| `dirac` | L0 | Dirac and SMPTE VC-2 (ST 2042-1) decoder: VC-2 low-delay and high-quality pictures, all seven wavelets, symmetric and asymmetric transforms, 4:4:4 / 4:2:2 / 4:2:0 up to 16 bits, field coding; Dirac core syntax with arithmetic coding and overlapped block motion compensation ([README](../crates/dirac/README.md)) |
 | `ffv1` | L0 | FFV1 (IETF RFC 9043) lossless video decoder: versions 0, 1, 3, Golomb Rice and range coding, YCbCr / RGB, 8-16 bit, slices ([README](../crates/ffv1/README.md)) |
 | `huffyuv` | L0 | Huffyuv (`HFYU`) lossless video decoder: YUY2, RGB24, RGBA; left, gradient and median prediction; interlaced ([README](../crates/huffyuv/README.md)) |
 | `utvideo` | L0 | Ut Video lossless video decoder: 8-bit YUV 4:2:0 / 4:2:2 / 4:4:4, RGB, RGBA; slices; left, gradient and median prediction ([README](../crates/utvideo/README.md)) |
+| `canopus` | L0 | Canopus HQ, HQA and HQX intra video decoder (8-bit 4:2:2 with alpha, 12-bit 4:2:2 / 4:4:4 with alpha), ported from FFmpeg (LGPL-2.1-or-later) ([README](../crates/canopus/README.md)) |
 | `apv` | L0 | Advanced Professional Video (IETF RFC 9924) decoder and encoder ([README](../crates/apv/README.md)) |
 | `jxl` | L0 | JPEG XL decoder (ISO/IEC 18181): safe port of jxl-oxide, VarDCT and Modular, all restoration filters, patches, splines, noise; first frame of a file to interleaved floats; animation, ICC colour and encoder: #138–#141 ([README](../crates/jxl/README.md)) |
 | `dng` | L0 | DNG / CinemaDNG camera RAW decoder: TIFF container, uncompressed and lossless JPEG raw data, DNG processing to linear Rec. 709 ([README](../crates/dng/README.md)) |
@@ -77,6 +78,10 @@ Crates are named `cfa4-<dir>` (`crates/time` is `cfa4-time`); new CFA4 crates ar
 | `speex` | L0 | Speex decoder (narrowband, wideband, ultra-wideband, VBR / DTX, in-band stereo), ported from the BSD-3-Clause libspeex 1.2.1 ([README](../crates/speex/README.md)) |
 | `adpcm` | L0 | G.711 μ-law / A-law, G.722, IMA ADPCM (WAV, QuickTime `ima4`) and Microsoft ADPCM decoders ([README](../crates/adpcm/README.md)) |
 | `amr` | L0 | AMR-NB and AMR-WB speech decoders, ported from opencore-amr (Apache-2.0) ([README](../crates/amr/README.md)) |
+| `g729` | L0 | ITU-T G.729 speech decoder with Annex B comfort noise, ported from bcg729 (GPL-3.0-or-later) ([README](../crates/g729/README.md)) |
+| `ilbc` | L0 | iLBC (RFC 3951) speech decoder, ported from WebRTC's fixed-point libilbc (BSD-3-Clause) ([README](../crates/ilbc/README.md)) |
+| `tta` | L0 | TTA (True Audio) lossless audio decoder, ported from libtta (LGPL-3.0) ([README](../crates/tta/README.md)) |
+| `musepack` | L0 | Musepack SV7 and SV8 audio decoder, ported from the reference library libmpcdec (BSD-3-Clause) in its floating-point build ([README](../crates/musepack/README.md)) |
 | `testkit` | L0 | test-only helpers, used only as a dev-dependency: ffmpeg/ffprobe discovery, fixture dirs, golden images ([testing.md](testing.md)) |
 | `frame` | L1 | `VideoFrame` (planar YUV / RGBA8 / linear RGBA f32, colour metadata), `AudioBuffer` |
 | `media` | L1 | `MediaSource` trait, probing/openers, frame cache, generators, stills, image sequences, WAV / Broadcast WAV (PCM, G.711, G.722, ADPCM) |
@@ -102,12 +107,14 @@ Crates are named `cfa4-<dir>` (`crates/time` is `cfa4-time`); new CFA4 crates ar
 | `export` | L3 | render → encode → mux pipeline, progress/cancel |
 | `dcp-validate` | L3 | DCP validation API (DCP-03): `DcpValidator` trait, seven result states and the package verdict, versioned profiles, `cfa4-dcp-report/1` JSON / Markdown report, safe package discovery, native backend ([README](../crates/dcp-validate/README.md)) |
 | `dcp-inspect` | L3 | DCP validation backend (DCP-04) that runs the isolated dcp_inspect reference engine as a separate process: argument array, own process group, private `HOME`/`TMPDIR`, timeout and cancel, `--dump-result` mapped onto the rule catalogue ([README](../crates/dcp-inspect/README.md)) |
+| `dcpomatic` | L3 | DCP mastering with the DCP-o-matic build CFA4 ships (plan [CFA4-DCPOMATIC-001](plans/CFA4-DCPOMATIC-001-FINAL-1.0.md), ADR 0011): `dcpomatic2_create` and `dcpomatic2_cli make-dcp` as separate processes from `/usr/lib/cfa4/dcpomatic/` only (never `PATH`), argument array, own process group, private `HOME`/`TMPDIR`, timeout, cancel and progress ([README](../crates/dcpomatic/README.md)) |
 | `smart-edit` | L3 | `cfa4-smart-edit`: Smart Cut / Smart Render planning: media capability registry (WP-01), later GOP index and render plans; decides, never executes ([plan](plans/CFA4-SMART-CUT-RENDER-R1.md), [baseline](audit/smart-edit-baseline.md), [README](../crates/smart-edit/README.md)) |
 | `engine` | L4 | `Session`, command registry, undo history, media pool, jobs, interchange glue |
 | `ui-egui` | L5 | the egui frontend: docking, panels, timeline, monitors, playback, control-channel handlers |
 | `gstreamer` | L5 | `cfa4-gstreamer`: optional GStreamer backend (feature `gstreamer`): installation probe with plugin licences, media discovery; supplements the Rust engine ([ADR 0002](adr/ADR-0002-gstreamer-backend.md), [README](../crates/gstreamer/README.md)) |
 | `ffmpeg` | L5 | `cfa4-ffmpeg`: FFmpeg (≥ 9.0.2, GPL-3 build) supplementary backend (feature `ffmpeg`): probe with licence and restricted-codec check, native-bit-depth decoding of what the engine cannot read yet, first fallback before GStreamer, `ffmpeg` route ([ADR 0005](adr/ADR-0005-media-backends.md), [README](../crates/ffmpeg/README.md)) |
 | `obs` | L5 | `cfa4-obs`: live studio core (CFA4-LIVE-STUDIO-001 S0): the `StudioBackend` trait, the libobs 33.0.1 binding (loaded at run time; `unsafe` only in `libobs::sys`, ADR 0001 addendum 2026-11-07), the pure-Rust software backend (the fallback), the shared-memory frame ring and the supervisor of `cfa4-studio-host` ([plan](plans/CFA4-LIVE-STUDIO-001.md), [README](../crates/obs/README.md)) |
+| `tcsync-io` | L5 | `cfa4-tcsync-io`: external timecode sync devices: LTC in and out through cpal (a chosen channel of a chosen device), MIDI Timecode in and out through the ALSA sequencer (client `CFA4`, ports `Timecode In` / `Timecode Out`), and the `SyncManager` that opens what the settings ask for, feeds the chase and returns locate / stop for the player; used by `cfa4-cli serve` ([plan](plans/TIMECODE-SYNC-LTC-MTC-2026-11-11.md)) |
 | `automation` | L5 | MCP server (`rmcp`, stdio), headless or bridged to the running app |
 | `platform` | L5 | OS media FFI only: hardware video decoding (NVDEC and VA-API H.264 / HEVC, with our own parsers and DPBs driving the stateless hardware; a no-op elsewhere) behind `codecs::VideoDecoder`, with transparent fallback to our decoders, and NVIDIA NVENC H.264 (opt-in) and H.265 (CFA4's only H.265 encoder; the format exists only where it does) encoding behind `export::VideoEncoder`; H.264 declines to the built-in encoder for what the hardware does not take. The one crate allowed `unsafe` ([ADR 0001](adr/0001-platform-ffi.md), [README](../crates/platform/README.md)) |
 | `cfa4` | L6 | desktop binary: eframe/wgpu window, cpal audio output, file dialogs, TCP control server |
@@ -128,9 +135,9 @@ are exempt):
 | L0 codecs stay standalone | L0 crates other than `time`, `geom`, `color`, `bitstream`, `testkit` may depend on no workspace crate except `cfa4-bitstream`. External crates such as `thiserror` and `rayon` are allowed. |
 | No UI/OS crates below L5 | `egui`, `eframe`, `egui-wgpu`, `winit`, `rfd`, `cpal`, `muda` are allowed only in L5 and L6. |
 
-`cargo xtask wasm` (opt-in, not a CI or release gate) runs `cargo check --target
-wasm32-unknown-unknown` on every L0–L4 crate and the egui UI. CFA4 is Linux-only: the browser app
-`apps/cfa4-web` was removed (#286). `unsafe_code = "forbid"` applies workspace-wide, except in `platform`
+`cargo xtask wasm` (opt-in legacy, not a CI or release gate; nothing needs to build for wasm32) runs
+`cargo check --target wasm32-unknown-unknown` on every L0–L4 crate and the egui UI. CFA4 is Linux-only:
+the browser app `apps/cfa4-web` was removed (#286). `unsafe_code = "forbid"` applies workspace-wide, except in `platform`
 (`deny`, allowed only on its FFI modules; [ADR 0001](adr/0001-platform-ffi.md)).
 
 ## 2. Time base

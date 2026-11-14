@@ -182,6 +182,9 @@ pub struct Chunk {
     /// Index of the chunk's first sample frame in the track.
     pub first_sample: u64,
     pub samples: u64,
+    /// AES3 elements (ST 331): sample frames of the element before the chunk's first one (an
+    /// edit list clip that starts inside the element). Always 0 for PCM chunks.
+    pub skip: u64,
 }
 
 /// A track of the file (source) package with essence in this file, as presented by the material
@@ -221,6 +224,11 @@ pub struct EssenceTrack {
     pub needs_reorder: bool,
     /// Random-access flags came from an index table.
     pub indexed: bool,
+    /// Blank stretches of an OP2x / OP3x edit list (fillers, and clips whose essence is not in
+    /// the file) as (presentation edit unit, length), ascending and apart. The stored essence
+    /// (`display_order`, `chunks`, `duration`) holds only the rest; [`Self::essence_position`]
+    /// maps between the two. Empty for every other file.
+    pub gaps: Vec<(i64, i64)>,
     /// Line-wrapped pictures: the (offset, size) of each line element of the picture whose
     /// sample starts at the key's offset. A sample in here is read piece by piece.
     pub line_pieces: std::collections::BTreeMap<u64, Vec<(u64, u32)>>,
@@ -251,6 +259,58 @@ impl EssenceTrack {
     pub fn sync_before(&self, i: usize) -> usize {
         let i = i.min(self.samples.len().saturating_sub(1));
         (0..=i).rev().find(|&k| self.samples[k].key).unwrap_or(0)
+    }
+    /// Edit units of blank presentation (the sum of [`Self::gaps`]).
+    pub fn gap_edit_units(&self) -> i64 {
+        self.gaps.iter().fold(0i64, |a, g| a.saturating_add(g.1.max(0)))
+    }
+    /// The essence position (edit units of the stored essence, from its first presented one) of
+    /// presentation edit unit `p`, or `None` when `p` falls in a gap.
+    pub fn essence_position(&self, p: i64) -> Option<i64> {
+        let mut shift = 0i64;
+        for &(at, len) in &self.gaps {
+            if p < at {
+                break;
+            }
+            if p < at.saturating_add(len) {
+                return None;
+            }
+            shift = shift.saturating_add(len);
+        }
+        Some(p.saturating_sub(shift))
+    }
+    /// The sound sample frames `[a, b)` of the presentation as runs `(presentation start, essence
+    /// start, length)` of stored sample frames (counted from the first presented one); the frames
+    /// between runs are blank. Gap edges are rounded to whole sample frames.
+    pub fn sound_runs(&self, a: u64, b: u64) -> Vec<(u64, u64, u64)> {
+        let (n, d) = self.samples_per_edit_unit();
+        let (n, d) = (i128::from(n.max(1)), i128::from(d.max(1)));
+        let frames = |eu: i64| u64::try_from(i128::from(eu.max(0)) * n / d).unwrap_or(u64::MAX);
+        // the presented essence: from the first presented edit unit, for the duration
+        let stored = self.stored_sample_frames().saturating_sub(frames(self.first_edit_unit()));
+        let total = self.duration.map_or(stored, |du| frames(du).min(stored));
+        let mut out = Vec::new();
+        let (mut pos, mut ess) = (0u64, 0u64);
+        let run = |out: &mut Vec<(u64, u64, u64)>, pos: u64, ess: u64, end: u64| {
+            // presentation [pos, end) holds essence from `ess`, as far as there is essence
+            let end = end.min(pos.saturating_add(total.saturating_sub(ess)));
+            let (x, y) = (a.max(pos), b.min(end));
+            if x < y {
+                out.push((x, ess.saturating_add(x - pos), y - x));
+            }
+        };
+        for &(at, len) in &self.gaps {
+            let g0 = frames(at).max(pos);
+            let g1 = frames(at.saturating_add(len)).max(g0);
+            run(&mut out, pos, ess, g0);
+            ess = ess.saturating_add(g0 - pos);
+            pos = g1;
+            if pos >= b {
+                return out;
+            }
+        }
+        run(&mut out, pos, ess, u64::MAX);
+        out
     }
     /// The stored sample presented at display position `d`.
     pub fn sample_at(&self, d: i64) -> Option<usize> {
@@ -310,6 +370,9 @@ pub(crate) struct WalkResult {
     /// File offsets of the line-wrapped uncompressed picture system elements that start the
     /// stored data of a picture (ST 384 7.3, element identifier 01h).
     pub(crate) line_starts: Vec<u64>,
+    /// Line-wrapped VANC / HANC data elements (ST 384 7.2, types 09h / 0Ah): their value offset
+    /// and the line number of the system element before them (ST 384 Table 4).
+    pub(crate) anc_lines: Vec<(u64, u32)>,
     pub(crate) warnings: Vec<String>,
 }
 
@@ -349,11 +412,14 @@ pub(crate) fn walk(src: &(impl ByteSource + ?Sized)) -> Result<WalkResult> {
         elements: Vec::new(),
         generic_streams: Vec::new(),
         line_starts: Vec::new(),
+        anc_lines: Vec::new(),
         warnings: Vec::new(),
     };
     let mut win = Window { src, off: 0, buf: Vec::new() };
     let mut pos = run_in;
     let mut cur_meta: Option<usize> = None;
+    // the line number of the last line-wrapped system element (ST 384 Table 4)
+    let mut line: Option<u32> = None;
     let mut resync_budget = 64 << 20;
     while pos + 17 <= len {
         let hdr = win.get(pos, 25)?.to_vec();
@@ -452,6 +518,14 @@ pub(crate) fn walk(src: &(impl ByteSource + ?Sized)) -> Result<WalkResult> {
                 if key.0[12..16] == [0x14, 0x01, 0x01, 0x00] {
                     w.line_starts.push(pos);
                 }
+                if key.0[12..14] == [0x14, 0x01] && matches!(key.0[14], 0x01 | 0x02) {
+                    // the pack's line number is in the 25 header bytes read (4-byte BER length)
+                    let at = (vstart - pos) as usize;
+                    line = hdr.get(at..at + 4).filter(|_| vlen >= 4).and_then(|b| b.try_into().ok()).map(u32::from_be_bytes);
+                }
+                if key.0[12] == 0x17 && matches!(key.0[14], 0x09 | 0x0A) && w.anc_lines.len() < MAX_LINE_ANC_ELEMENTS {
+                    w.anc_lines.push((vstart, line.unwrap_or(0)));
+                }
             }
             KeyClass::Other if key.item_starts_with(&GENERIC_STREAM_DATA_ITEM) => {
                 cur_meta = None;
@@ -472,6 +546,9 @@ pub(crate) fn walk(src: &(impl ByteSource + ?Sized)) -> Result<WalkResult> {
 const GENERIC_STREAM_DATA_ITEM: [u8; 5] = [0x0D, 0x01, 0x05, 0x09, 0x01];
 
 /// Generic container picture / sound / data / compound items (not system items).
+/// Line-wrapped VANC / HANC data elements whose line numbers are kept.
+const MAX_LINE_ANC_ELEMENTS: usize = 1 << 20;
+
 fn is_essence_item(k: &Ul) -> bool {
     matches!(k.0[12], 0x05 | 0x06 | 0x07 | 0x15 | 0x16 | 0x17 | 0x18) || crate::klv::is_dcp_iab_element(k)
 }
@@ -629,6 +706,11 @@ struct TrackRef {
     sub_descriptors: Vec<Arc<Set>>,
     body_sid: u32,
     index_sid: u32,
+    /// Edit units of filler (or of clips whose essence is not in this file) played before this
+    /// clip in an OP2x / OP3x edit list, in this track's edit rate.
+    gap_before: i64,
+    /// The same after the last clip of the edit list.
+    gap_after: i64,
 }
 
 fn umid_of(s: &Set, t: u16) -> Option<[u8; 32]> {
@@ -699,6 +781,8 @@ fn resolve_tracks(md: &Metadata, warnings: &mut Vec<String>) -> (Vec<Vec<TrackRe
                 sub_descriptors: subs,
                 body_sid,
                 index_sid,
+                gap_before: 0,
+                gap_after: 0,
             });
         }
         None
@@ -713,18 +797,39 @@ fn resolve_tracks(md: &Metadata, warnings: &mut Vec<String>) -> (Vec<Vec<TrackRe
             // clips into one or more file packages, played one after another (ST 377-1 B.1,
             // ST 392 / ST 393 / ST 407 / ST 408).
             let clips: Vec<&Set> = comps.iter().copied().filter(|c| c.kind() == Some(st::SOURCE_CLIP)).collect();
-            let fillers: i64 = comps.iter().filter(|c| c.kind() == Some(st::FILLER)).filter_map(|c| c.i(tag::DURATION)).filter(|d| *d > 0).sum();
-            if fillers > 0 && !clips.is_empty() {
-                warnings.push(format!("material track {mtid}: {fillers} edit units of filler are left out (the clips play back to back)"));
-            }
             let single = clips.len() == 1;
+            let mrate = t.rational(tag::EDIT_RATE).unwrap_or_default();
+            // durations are in the material track's edit rate; convert when the file track's differs
+            let conv = |v: i64, to: Rational| -> i64 {
+                if mrate.is_valid() && to.is_valid() && mrate != to {
+                    i64::try_from(i128::from(v) * i128::from(to.num) * i128::from(mrate.den) / (i128::from(to.den) * i128::from(mrate.num)).max(1))
+                        .unwrap_or(i64::MAX)
+                } else {
+                    v
+                }
+            };
             let mut parts: Vec<TrackRef> = Vec::new();
-            for clip in clips {
-                let Some(umid) = umid_of(clip, tag::SOURCE_PACKAGE_ID) else { continue };
+            // fillers, and clips whose essence is not here, play as blank (material edit units)
+            let mut pending: i64 = 0;
+            for c in comps.iter().copied() {
+                let blank = c.i(tag::DURATION).filter(|d| *d > 0).unwrap_or(0);
+                if c.kind() == Some(st::FILLER) {
+                    pending = pending.saturating_add(blank);
+                    continue;
+                }
+                if c.kind() != Some(st::SOURCE_CLIP) {
+                    continue;
+                }
+                let clip = c;
+                let Some(umid) = umid_of(clip, tag::SOURCE_PACKAGE_ID) else {
+                    pending = pending.saturating_add(blank);
+                    continue;
+                };
                 let Some(pkg) = file_pkg(&umid) else {
                     if kind != TrackKind::Data {
                         warnings.push(format!("material track {mtid} refers to a package not in this file"));
                     }
+                    pending = pending.saturating_add(blank);
                     continue;
                 };
                 let src_track = clip.u(tag::SOURCE_TRACK_ID).map(|v| v as u32);
@@ -733,19 +838,22 @@ fn resolve_tracks(md: &Metadata, warnings: &mut Vec<String>) -> (Vec<Vec<TrackRe
                     continue;
                 }
                 let duration = clip.i(tag::DURATION).or_else(|| seq.filter(|_| single).and_then(|s| s.i(tag::DURATION))).filter(|d| *d >= 0);
-                // durations are in the material track's edit rate; convert when the file track's differs
-                let mrate = t.rational(tag::EDIT_RATE).unwrap_or_default();
                 if let Some(mut tr) = file_track(pkg, Some(kind), src_track, clip.i(tag::START_POSITION).unwrap_or(0), duration, t.string(tag::TRACK_NAME)) {
-                    if mrate.is_valid() && tr.edit_rate.is_valid() && mrate != tr.edit_rate {
-                        let conv = |v: i64| (v as i128 * tr.edit_rate.num as i128 * mrate.den as i128 / (tr.edit_rate.den as i128 * mrate.num as i128)) as i64;
-                        tr.duration = tr.duration.map(conv);
-                        tr.start_position = conv(tr.start_position);
-                    }
+                    let rate = tr.edit_rate;
+                    tr.duration = tr.duration.map(|v| conv(v, rate));
+                    tr.start_position = conv(tr.start_position, rate);
+                    tr.gap_before = conv(pending, rate);
+                    pending = 0;
                     if timecode.is_none() {
                         timecode = package_timecode(md, pkg);
                     }
                     parts.push(tr);
+                } else {
+                    pending = pending.saturating_add(blank);
                 }
+            }
+            if let Some(last) = parts.last_mut() {
+                last.gap_after = conv(pending, last.edit_rate);
             }
             let duplicate =
                 |o: &Vec<TrackRef>| o.len() == 1 && parts.len() == 1 && o[0].track_id == parts[0].track_id && o[0].track_number == parts[0].track_number;
@@ -794,6 +902,25 @@ pub(crate) fn best_metadata(w: &WalkResult) -> Result<(usize, Metadata)> {
 
 /// Open an MXF file: walk the KLV structure and resolve the essence tracks.
 pub fn open(src: &(impl ByteSource + ?Sized)) -> Result<MxfFile> {
+    open_with_order(src, &|_, _| None)
+}
+
+/// The presentation positions of a clip's stored pictures read from their bitstream: given the
+/// codec and the start of each stored picture (in stored order), the presentation position of
+/// each, or None when the bitstream does not tell (see [`open_with_order`]).
+pub type PresentationOrder<'a> = dyn Fn(Codec, &[Vec<u8>]) -> Option<Vec<i64>> + 'a;
+
+/// Bytes read from the start of each picture for [`PresentationOrder`] (parameter sets and the
+/// first slice header), and at most this many in all for one clip.
+const ORDER_HEAD: usize = 16 << 10;
+const ORDER_HEADS_TOTAL: usize = 256 << 20;
+
+/// Like [`open`]; `order` gives the presentation order of the clips of an edit list (OP2x / OP3x)
+/// whose index marks B pictures without temporal offsets, from their bitstream, so each clip's
+/// range and decoding references are cut in presentation order (#1008). The demuxer does not
+/// parse codecs: the caller does (`cfa4-codecs` reads the H.264 picture order counts). A single
+/// clip is left as built, with [`EssenceTrack::needs_reorder`] set for the caller.
+pub fn open_with_order(src: &(impl ByteSource + ?Sized), order: &PresentationOrder<'_>) -> Result<MxfFile> {
     let w = walk(src)?;
     let (meta_partition, md) = best_metadata(&w)?;
     let meta_partition = &meta_partition;
@@ -823,6 +950,8 @@ pub fn open(src: &(impl ByteSource + ?Sized)) -> Result<MxfFile> {
     };
     for parts in &refs {
         let mut built = Vec::new();
+        // a clip without essence here plays as blank: its length joins the next gap
+        let mut lost = 0i64;
         for r in parts {
             let number = r.track_number.to_be_bytes();
             let mut key4 = all_numbers.iter().find(|n| **n == number).copied();
@@ -841,6 +970,7 @@ pub fn open(src: &(impl ByteSource + ?Sized)) -> Result<MxfFile> {
             }
             let Some(key4) = key4 else {
                 warnings.push(format!("no essence in this file for track {} (number {:08x})", r.track_id, r.track_number));
+                lost = lost.saturating_add(r.gap_before).saturating_add(r.duration.unwrap_or(0).max(0)).saturating_add(r.gap_after);
                 continue;
             };
             if !claimed.contains(&key4) {
@@ -850,11 +980,18 @@ pub fn open(src: &(impl ByteSource + ?Sized)) -> Result<MxfFile> {
             // containers are told apart by body SID
             let by_sid = r.body_sid != 0 && w.elements.iter().any(|e| e.key.0[12..16] == key4 && e.body_sid == r.body_sid);
             let elements: Vec<Element> = w.elements.iter().filter(|e| e.key.0[12..16] == key4 && (!by_sid || e.body_sid == r.body_sid)).copied().collect();
-            built.push(build_track(src, r, &elements, key4, &w.index, &w.line_starts, encryption, &mut warnings)?);
+            let mut track = build_track(src, r, &elements, key4, &w.index, &w.line_starts, encryption, &mut warnings)?;
+            if parts.len() > 1 && track.needs_reorder {
+                reorder_clip(src, &mut track, order);
+            }
+            built.push(Part { track, gap_before: lost.saturating_add(r.gap_before), gap_after: r.gap_after });
+            lost = 0;
         }
-        let mut built = built.into_iter();
-        if let Some(first) = built.next() {
-            tracks.push(concat(first, built.collect(), &mut warnings));
+        if let Some(last) = built.last_mut() {
+            last.gap_after = last.gap_after.saturating_add(lost);
+        }
+        if let Some(t) = concat(built, &mut warnings) {
+            tracks.push(t);
         }
     }
     if tracks.is_empty() {
@@ -933,6 +1070,7 @@ fn build_track(
         temporal_offsets: false,
         needs_reorder: false,
         indexed: false,
+        gaps: Vec::new(),
         line_pieces: Default::default(),
         encryption: None,
     };
@@ -1034,7 +1172,7 @@ fn build_track(
                     SoundFormat::Aes3Element => plain.saturating_sub(4) / 32,
                     _ => plain / fb.max(1),
                 };
-                t.chunks.push(Chunk { offset: e.value_offset, size: e.size, first_sample: first, samples: n });
+                t.chunks.push(Chunk { offset: e.value_offset, size: e.size, first_sample: first, samples: n, skip: 0 });
                 first += n;
             }
             t.wrapping = if elements.len() == 1 && r.duration.is_some_and(|d| d > 1) { Wrapping::Clip } else { Wrapping::Frame };
@@ -1045,16 +1183,60 @@ fn build_track(
     Ok(t)
 }
 
+/// Puts the stored pictures of `t` (B pictures, no temporal offsets) in the presentation order
+/// `order` reads from their bitstream; leaves `t` as it is when it cannot (encrypted essence, an
+/// unreadable bitstream, an order that is not one position per picture).
+fn reorder_clip(src: &(impl ByteSource + ?Sized), t: &mut EssenceTrack, order: &PresentationOrder<'_>) {
+    if t.encryption.is_some() || t.samples.is_empty() {
+        return;
+    }
+    let each = (ORDER_HEADS_TOTAL / t.samples.len()).min(ORDER_HEAD);
+    let heads: Vec<Vec<u8>> = t.samples.iter().map(|s| read_upto(src, s.offset, (s.size as usize).min(each)).unwrap_or_default()).collect();
+    let Some(pts) = order(t.codec, &heads) else { return };
+    let n = t.samples.len();
+    if pts.len() != n {
+        return;
+    }
+    let mut display = vec![usize::MAX; n];
+    for (i, &p) in pts.iter().enumerate() {
+        match usize::try_from(p).ok().and_then(|p| display.get_mut(p)) {
+            Some(d) if *d == usize::MAX => *d = i,
+            _ => return,
+        }
+    }
+    for (s, &p) in t.samples.iter_mut().zip(&pts) {
+        s.pts = p;
+    }
+    t.display_order = display;
+    t.needs_reorder = false;
+}
+
 /// One material track whose sequence holds several source clips (OP2x / OP3x): the clips' file
 /// package tracks played back to back as one track. Each clip contributes its presented range
 /// (from its start position, for its duration); pictures before that range that the first
-/// presented picture needs for decoding are kept as hidden (never presented) samples. Clips whose
-/// essence differs from the first clip's (codec, edit rate, picture size, sound format) are left
-/// out with a warning.
-fn concat(first: EssenceTrack, rest: Vec<EssenceTrack>, warnings: &mut Vec<String>) -> EssenceTrack {
-    if rest.is_empty() {
-        return first;
+/// presented picture needs for decoding are kept as hidden (never presented) samples. Fillers,
+/// clips whose essence is not in the file and clips whose essence differs from the first clip's
+/// (codec, edit rate, picture size, sound format; with a warning) become [`EssenceTrack::gaps`].
+/// A single clip without gaps is returned as built.
+/// One clip of an edit list with the blank edit units around it.
+pub(crate) struct Part {
+    pub(crate) track: EssenceTrack,
+    pub(crate) gap_before: i64,
+    pub(crate) gap_after: i64,
+}
+
+pub(crate) fn concat(parts: Vec<Part>, warnings: &mut Vec<String>) -> Option<EssenceTrack> {
+    let mut gapped: Vec<(EssenceTrack, i64)> = Vec::with_capacity(parts.len());
+    let mut tail = 0i64;
+    for p in parts {
+        gapped.push((p.track, p.gap_before.max(0)));
+        tail = tail.saturating_add(p.gap_after.max(0));
     }
+    if gapped.len() == 1 && tail == 0 && gapped.first().is_some_and(|g| g.1 == 0) {
+        return gapped.pop().map(|g| g.0);
+    }
+    let mut gapped = gapped.into_iter();
+    let (first, first_gap) = gapped.next()?;
     let signature = |t: &EssenceTrack| {
         (
             t.kind,
@@ -1065,16 +1247,23 @@ fn concat(first: EssenceTrack, rest: Vec<EssenceTrack>, warnings: &mut Vec<Strin
             t.sound.as_ref().map(|s| (s.sample_rate, s.channels, s.bits, s.frame_bytes())),
         )
     };
-    let mut parts = vec![first];
-    for t in rest {
-        if signature(&t) == signature(&parts[0]) {
-            parts.push(t);
+    let sig = signature(&first);
+    // each kept clip with the blank edit units before it; a clip with other essence is blank too
+    let mut parts: Vec<(EssenceTrack, i64)> = vec![(first, first_gap)];
+    let mut pending = 0i64;
+    for (t, gap) in gapped {
+        pending = pending.saturating_add(gap);
+        if signature(&t) == sig {
+            parts.push((t, pending));
+            pending = 0;
         } else {
-            warnings.push(format!("track {}: a clip with different essence ({}) is left out of the edit list", parts[0].track_id, t.codec.name()));
+            warnings.push(format!("track {}: a clip with different essence ({}) plays as blank", t.track_id, t.codec.name()));
+            pending = pending.saturating_add(t.duration.unwrap_or(0).max(0));
         }
     }
-    let mut out = parts[0].clone();
-    for t in &parts[1..] {
+    tail = tail.saturating_add(pending);
+    let mut out = parts[0].0.clone();
+    for (t, _) in parts.iter().skip(1) {
         out.line_pieces.extend(t.line_pieces.iter().map(|(k, v)| (*k, v.clone())));
     }
     out.origin = 0;
@@ -1082,18 +1271,34 @@ fn concat(first: EssenceTrack, rest: Vec<EssenceTrack>, warnings: &mut Vec<Strin
     out.samples = Vec::new();
     out.display_order = Vec::new();
     out.chunks = Vec::new();
-    out.temporal_offsets = parts.iter().any(|t| t.temporal_offsets);
-    out.indexed = parts.iter().all(|t| t.indexed);
+    out.gaps = Vec::new();
+    out.temporal_offsets = parts.iter().any(|t| t.0.temporal_offsets);
+    out.indexed = parts.iter().all(|t| t.0.indexed);
     out.needs_reorder = false;
-    if parts.iter().any(|t| t.needs_reorder) {
+    if parts.len() > 1 && parts.iter().any(|t| t.0.needs_reorder) {
         warnings.push(format!("track {}: B pictures without index temporal offsets across several clips: the stored order is used", out.track_id));
+    } else {
+        out.needs_reorder = parts.iter().any(|t| t.0.needs_reorder);
     }
+    // presentation position, gaps included
+    let mut pos: i64 = 0;
+    let add_gap = |gaps: &mut Vec<(i64, i64)>, pos: &mut i64, len: i64| {
+        if len <= 0 {
+            return;
+        }
+        match gaps.last_mut() {
+            Some(g) if g.0.saturating_add(g.1) == *pos => g.1 = g.1.saturating_add(len),
+            _ => gaps.push((*pos, len)),
+        }
+        *pos = pos.saturating_add(len);
+    };
+    let mut gaps = Vec::new();
     let chunked = out.kind == TrackKind::Sound && matches!(out.sound_format, SoundFormat::Pcm | SoundFormat::Aes3Element);
     let mut total: i64 = 0;
     if chunked {
         let mut next = 0u64;
-        let mut partial = false;
-        for t in &parts {
+        for (t, gap) in &parts {
+            add_gap(&mut gaps, &mut pos, *gap);
             let (n, d) = t.samples_per_edit_unit();
             let (n, d) = (i128::from(n.max(1)), i128::from(d.max(1)));
             let frames = |eu: i64| u64::try_from(i128::from(eu.max(0)) * n / d).unwrap_or(u64::MAX);
@@ -1107,27 +1312,27 @@ fn concat(first: EssenceTrack, rest: Vec<EssenceTrack>, warnings: &mut Vec<Strin
                 if ce <= a || cs >= b {
                     continue;
                 }
+                let (x, y) = (a.max(cs), b.min(ce));
                 if t.sound_format == SoundFormat::Pcm {
-                    let (x, y) = (a.max(cs), b.min(ce));
                     let offset = c.offset.saturating_add((x - cs).saturating_mul(fb));
-                    out.chunks.push(Chunk { offset, size: (y - x).saturating_mul(fb), first_sample: next, samples: y - x });
+                    out.chunks.push(Chunk { offset, size: (y - x).saturating_mul(fb), first_sample: next, samples: y - x, skip: 0 });
                     next = next.saturating_add(y - x);
                 } else {
-                    // AES3 elements are not cut: a clip boundary inside one keeps the whole element
-                    partial |= cs < a || ce > b;
-                    out.chunks.push(Chunk { first_sample: next, ..*c });
-                    next = next.saturating_add(c.samples);
+                    // an AES3 element is decoded whole; a clip boundary inside it skips the
+                    // sample frames before it and stops at the one after it
+                    out.chunks.push(Chunk { first_sample: next, samples: y - x, skip: c.skip.saturating_add(x - cs), ..*c });
+                    next = next.saturating_add(y - x);
                 }
             }
-            total = total.saturating_add(i64::try_from(i128::from(len) * d / n).unwrap_or(i64::MAX));
-        }
-        if partial {
-            warnings.push(format!("track {}: a clip boundary falls inside an AES3 element: the whole element is played", out.track_id));
+            let eu = i64::try_from(i128::from(len) * d / n).unwrap_or(i64::MAX);
+            total = total.saturating_add(eu);
+            pos = pos.saturating_add(eu);
         }
         out.wrapping = Wrapping::Frame;
     } else {
         let mut hidden = i64::MIN / 2;
-        for t in &parts {
+        for (t, gap) in &parts {
+            add_gap(&mut gaps, &mut pos, *gap);
             let first = usize::try_from(t.first_edit_unit()).unwrap_or(0).min(t.display_order.len());
             let avail = t.display_order.len() - first;
             let count = t.duration.and_then(|d| usize::try_from(d).ok()).map_or(avail, |d| d.min(avail));
@@ -1149,10 +1354,13 @@ fn concat(first: EssenceTrack, rest: Vec<EssenceTrack>, warnings: &mut Vec<Strin
             }
             out.display_order.extend(shown.iter().map(|&s| at + (s - start)));
             total = total.saturating_add(count as i64);
+            pos = pos.saturating_add(count as i64);
         }
     }
+    add_gap(&mut gaps, &mut pos, tail);
+    out.gaps = gaps;
     out.duration = Some(total);
-    out
+    Some(out)
 }
 
 /// An Immersive Audio track: the IAB descriptor, the IAB essence container or element key
@@ -1521,7 +1729,7 @@ impl MxfFile {
                     SoundFormat::Aes3Element => {
                         let v = self.read_encrypted_chunk(src, t, c)?;
                         let all = decode_pcm(&v, SoundFormat::Aes3Element, ch, si.bits, 0)?;
-                        let s0 = (a - c.first_sample) as usize;
+                        let s0 = usize::try_from(c.skip.saturating_add(a - c.first_sample)).unwrap_or(usize::MAX);
                         all.into_iter().map(|p| p.get(s0..).map(<[f32]>::to_vec).unwrap_or_default()).collect()
                     }
                     SoundFormat::Iab | SoundFormat::Other => return Err(Error::Unsupported("sound essence coding".into())),

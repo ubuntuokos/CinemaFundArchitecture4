@@ -109,7 +109,7 @@ struct SliceState {
     last: Motion,
 }
 
-fn dc_reset(p: &PicParams) -> i32 {
+fn dc_reset(p: &PicParams<'_>) -> i32 {
     1 << (7 + p.pce.intra_dc_precision)
 }
 
@@ -120,7 +120,7 @@ type R<T> = std::result::Result<T, SliceError>;
 
 /// Decode one slice (`data`: the bytes after its start code) into `t`. `row`: the slice's
 /// macroblock row; `single_row`: MPEG-2 slices may not leave their row.
-pub(crate) fn decode_slice(p: &PicParams, data: &[u8], row: usize, single_row: bool, t: &mut Target) -> R<()> {
+pub(crate) fn decode_slice(p: &PicParams<'_>, data: &[u8], row: usize, single_row: bool, t: &mut Target<'_>) -> R<()> {
     let tb = tables();
     let mut b = Bits::new(data);
     if p.vertical_size_extension {
@@ -186,7 +186,7 @@ pub(crate) fn decode_slice(p: &PicParams, data: &[u8], row: usize, single_row: b
     }
 }
 
-fn qscale(p: &PicParams, code: usize) -> i32 {
+fn qscale(p: &PicParams<'_>, code: usize) -> i32 {
     if !p.mpeg2 {
         code as i32
     } else if p.pce.q_scale_type {
@@ -198,7 +198,7 @@ fn qscale(p: &PicParams, code: usize) -> i32 {
 
 /// A skipped macroblock (§7.6.6): P pictures predict from the same position with a zero vector;
 /// B pictures repeat the previous macroblock's prediction.
-fn skipped_mb(p: &PicParams, st: &mut SliceState, addr: usize, buf: &mut MbBuf, t: &mut Target) -> R<()> {
+fn skipped_mb(p: &PicParams<'_>, st: &mut SliceState, addr: usize, buf: &mut MbBuf, t: &mut Target<'_>) -> R<()> {
     st.dc_pred = [dc_reset(p); 3];
     let m = match p.ptype {
         PictureType::P => {
@@ -233,7 +233,7 @@ fn skipped_mb(p: &PicParams, st: &mut SliceState, addr: usize, buf: &mut MbBuf, 
 }
 
 #[allow(clippy::too_many_arguments)]
-fn macroblock(p: &PicParams, st: &mut SliceState, b: &mut Bits, addr: usize, buf: &mut MbBuf, blk: &mut [i32; 64], t: &mut Target) -> R<()> {
+fn macroblock(p: &PicParams<'_>, st: &mut SliceState, b: &mut Bits<'_>, addr: usize, buf: &mut MbBuf, blk: &mut [i32; 64], t: &mut Target<'_>) -> R<()> {
     let tb = tables();
     let ti = match p.ptype {
         PictureType::I => 0,
@@ -374,7 +374,7 @@ fn macroblock(p: &PicParams, st: &mut SliceState, b: &mut Bits, addr: usize, buf
 
 /// Decode and dequantise one block into `blk` (raster order). Returns whether only the DC
 /// coefficient is non-zero.
-fn block(p: &PicParams, st: &mut SliceState, b: &mut Bits, cc: usize, intra: bool, blk: &mut [i32; 64]) -> R<bool> {
+fn block(p: &PicParams<'_>, st: &mut SliceState, b: &mut Bits<'_>, cc: usize, intra: bool, blk: &mut [i32; 64]) -> R<bool> {
     let tb = tables();
     blk.fill(0);
     let scan = &SCAN[p.pce.alternate_scan as usize];
@@ -477,7 +477,7 @@ pub(crate) fn wrap_vector(pred: i32, delta: i32, f: i32) -> i32 {
 }
 
 #[inline(always)]
-fn dequant(p: &PicParams, level: i32, qs: i32, w: i32, intra: bool) -> i32 {
+fn dequant(p: &PicParams<'_>, level: i32, qs: i32, w: i32, intra: bool) -> i32 {
     if p.mpeg2 {
         let k = if intra { 0 } else { level.signum() };
         ((2 * level + k) * w * qs / 32).clamp(-2048, 2047)
@@ -502,7 +502,7 @@ fn reference<'a>(p: &PicParams<'a>, s: usize, sel: usize) -> Option<&'a Frame> {
 }
 
 /// Form the prediction of a non-intra macroblock in `buf` (§7.6).
-fn predict_mb(p: &PicParams, m: &Motion, mbx: usize, mby: usize, buf: &mut MbBuf) {
+fn predict_mb(p: &PicParams<'_>, m: &Motion, mbx: usize, mby: usize, buf: &mut MbBuf) {
     let (cbw, cbh) = p.cmb();
     let frame_pic = p.frame_picture();
     let mut avg = false;
@@ -579,7 +579,7 @@ fn dual_vector(v: [i32; 2], dmv: [i32; 2], m: i32, e: i32) -> [i32; 2] {
 /// field of a frame macroblock).
 #[allow(clippy::too_many_arguments)]
 fn pred_block(
-    p: &PicParams,
+    p: &PicParams<'_>,
     buf: &mut MbBuf,
     f: &Frame,
     field: Option<usize>,
@@ -607,7 +607,18 @@ fn pred_block(
 
 /// 16x8 motion compensation in a field picture: half `r` (0 upper, 1 lower) of the macroblock.
 #[allow(clippy::too_many_arguments)]
-fn pred_half(p: &PicParams, buf: &mut MbBuf, f: &Frame, field: usize, mv: [i32; 2], mbx: usize, mby: usize, r: usize, (cbw, cbh): (usize, usize), avg: bool) {
+fn pred_half(
+    p: &PicParams<'_>,
+    buf: &mut MbBuf,
+    f: &Frame,
+    field: usize,
+    mv: [i32; 2],
+    mbx: usize,
+    mby: usize,
+    r: usize,
+    (cbw, cbh): (usize, usize),
+    avg: bool,
+) {
     let (x, y) = ((mbx * 16) as i32 + (mv[0] >> 1), (mby * 16 + r * 8) as i32 + (mv[1] >> 1));
     predict(&mut buf.y, r * 8 * 16, 16, f.plane(0, Some(field)), x, y, mv[0] & 1 != 0, mv[1] & 1 != 0, 16, 8, avg);
     let cmv = [if p.shx == 1 { mv[0] / 2 } else { mv[0] }, if p.shy == 1 { mv[1] / 2 } else { mv[1] }];

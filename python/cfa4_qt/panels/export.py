@@ -117,7 +117,7 @@ FORMAT_CHOICES: tuple[tuple[str, str, str, tuple[tuple[str, str], ...]], ...] = 
         ("filmscan3", N_("Film Scan 3")), ("filmscan2", N_("Film Scan 2")), ("filmscan1", N_("Film Scan 1")),
         ("high", N_("High")), ("medium", N_("Medium")), ("low", N_("Low")))),
     ("exrCompression", N_("Compression"), "export.video.exrCompression", (
-        ("none", N_("None")), ("rle", "RLE"), ("zips", N_("ZIP (1 scan line)")), ("zip", N_("ZIP (16 scan lines)")))),
+        ("none", N_("None")), ("rle", "RLE"), ("zips", N_("ZIP (1 scan line)")), ("zip", N_("ZIP (16 scan lines)")), ("piz", "PIZ"))),
 )
 # what the engine encodes with when the setting is empty or unknown (`prores_profile()` & co.)
 FORMAT_DEFAULTS = {"mxfVideoCodec": "dnxhr", "proresProfile": "hq", "dnxProfile": "hq", "apvProfile": "422-10", "cineformProfile": "422",
@@ -524,7 +524,7 @@ class ExportDialog(QDialog):
         self.dash_manifest = QCheckBox(tr("Also write a DASH manifest (.mpd)"), self)
         self.dash_manifest.setObjectName("export.video.dashManifest")
         # MXF OP1a: the caption track as closed captions in an ANC data track (ST 436-1, CEA-608/708)
-        self.mxf_anc = QCheckBox(tr("Write the captions as ANC data (CEA-608/708, 29.97 fps)"), self)
+        self.mxf_anc = QCheckBox(tr("Write the captions as ANC data (CEA-608/708)"), self)
         self.mxf_anc.setObjectName("export.video.mxfAncCaptions")
         self.quality = QSpinBox(self)
         self.quality.setObjectName("export.video.quality")
@@ -618,6 +618,13 @@ class ExportDialog(QDialog):
         self.summary.setObjectName("export.summary")
         self.summary.setWordWrap(True)
         self.summary.setTextInteractionFlags(Qt.TextInteractionFlag.TextSelectableByMouse)
+
+        # egui's red `export.problem` line: settings the encoders cannot honour, said before Export
+        self.problem = QLabel(self)
+        self.problem.setObjectName("export.problem")
+        self.problem.setWordWrap(True)
+        self.problem.setStyleSheet("color: #d04040")
+        self.problem.setVisible(False)
 
         self.export_button = QPushButton(tr("Export"), self)
         self.export_button.setObjectName("export.button")
@@ -756,6 +763,7 @@ class ExportDialog(QDialog):
         sc.addWidget(scroll, 1)
         sc.addWidget(self.no_sequence, 1)
         sc.addWidget(self.summary)
+        sc.addWidget(self.problem)
         sc.addLayout(buttons)
         # egui's columns: the queue on the left (300 px there), the settings and preview beside it
         self.splitter = splitter = QSplitter(Qt.Orientation.Horizontal, self)
@@ -1054,7 +1062,10 @@ class ExportDialog(QDialog):
         mxf_codec = self._choice("mxfVideoCodec")
         video = encoder_format(fmt, mxf_codec) == "mpeg2" and not (fmt in MXF_FORMATS and mxf_codec == "d10")
         self.container.setEnabled(fmt == "mpeg2")
-        self.rows.allow_interlaced(fmt == "mpeg2")  # only MPEG-2 export codes interlaced video (egui's Field Order)
+        # MPEG-2 and ProRes code interlaced video (egui's Field Order); in MXF MPEG-2, XDCAM HD422
+        # (1080i) or D-10 (#949)
+        mxf_mpeg2 = fmt in MXF_FORMATS and encoder_format(fmt, mxf_codec) == "mpeg2"
+        self.rows.allow_interlaced(fmt in ("mpeg2", "prores") or mxf_mpeg2)
         for w in (self.gop, self.b_frames, self.quantizer):
             w.setEnabled(video)
         self.chroma.setEnabled(video and not (fmt in MXF_FORMATS and mxf_codec == "xdcamHd422"))
@@ -1462,8 +1473,11 @@ class ExportDialog(QDialog):
         self.summary.setText(" · ".join(parts))
         self.summary.setStyleSheet("")
         self.range_warning.setVisible(bool(r.get("warnings")))
-        self.export_button.setEnabled(True)
-        self.queue_button.setEnabled(True)
+        problem = str(r.get("problem") or "")
+        self.problem.setText(problem)
+        self.problem.setVisible(bool(problem))
+        self.export_button.setEnabled(not problem)
+        self.queue_button.setEnabled(not problem)
         self._dcp_name = str(r.get("dcpName") or "")
         self.dcp_isdcf.setEnabled(self._dcp() and bool(self._dcp_name))
 
@@ -1502,6 +1516,7 @@ class ExportDialog(QDialog):
         self.summary.setText(message)
         self.summary.setStyleSheet("color: #d04040")
         self.range_warning.setVisible(False)
+        self.problem.setVisible(False)
         self.export_button.setEnabled(False)
         self.queue_button.setEnabled(False)
 

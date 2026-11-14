@@ -546,9 +546,9 @@ struct GraphState {
     latency: usize,
 }
 
-fn build_state(plan: &Plan, sr: u32) -> GraphState {
+fn build_state(plan: &Plan<'_>, sr: u32) -> GraphState {
     let mk =
-        |v: &[Insert], w: usize| -> Vec<Box<dyn AudioEffect>> { v.iter().filter_map(|i| cfa4_audio_dsp::create_effect(i.map.dsp, sr as f32, w)).collect() };
+        |v: &[Insert<'_>], w: usize| -> Vec<Box<dyn AudioEffect>> { v.iter().filter_map(|i| cfa4_audio_dsp::create_effect(i.map.dsp, sr as f32, w)).collect() };
     let mut strips: Vec<StripState> = plan
         .strips
         .iter()
@@ -632,7 +632,7 @@ fn convert_width(buf: &Bus, layout: Layout, to: usize) -> Bus {
 
 /// Run `chain` over `buf` (input-time samples from `x0`) with parameters at content time
 /// `x - lat` updated on the absolute [`PARAM_BLOCK`] grid.
-fn run_inserts(chain: &mut [Box<dyn AudioEffect>], ins: &[Insert], buf: &mut Bus, x0: i64, lat: usize, sr: u32) {
+fn run_inserts(chain: &mut [Box<dyn AudioEffect>], ins: &[Insert<'_>], buf: &mut Bus, x0: i64, lat: usize, sr: u32) {
     if chain.is_empty() {
         return;
     }
@@ -686,7 +686,7 @@ fn apply_gain(buf: &mut Bus, g: Option<f32>, per: &[f32]) {
 }
 
 /// Apply a pan/balance lane (values −100 … 100) with `law`.
-fn apply_pan(buf: &mut Bus, lane: &Lane, c0: i64, sr: u32, law: fn(f32) -> (f32, f32), scratch: &mut [f32]) {
+fn apply_pan(buf: &mut Bus, lane: &Lane<'_>, c0: i64, sr: u32, law: fn(f32) -> (f32, f32), scratch: &mut [f32]) {
     match lane.fill(c0, sr, scratch, |v| v as f32) {
         Some(p) => {
             let (gl, gr) = law(p / 100.0);
@@ -749,7 +749,16 @@ fn pan_surround(buf: &Bus, layout: Layout, out_w: usize, tr: &Track, id: TrackId
 }
 
 #[allow(clippy::too_many_arguments)]
-fn run_strip(plan: &Plan, si: usize, st: &mut StripState, mut buf: Bus, x0: i64, skip: usize, sr: u32, ovs: &HashMap<(TrackId, String), Override>) -> StripOut {
+fn run_strip(
+    plan: &Plan<'_>,
+    si: usize,
+    st: &mut StripState,
+    mut buf: Bus,
+    x0: i64,
+    skip: usize,
+    sr: u32,
+    ovs: &HashMap<(TrackId, String), Override>,
+) -> StripOut {
     let s = &plan.strips[si];
     let tr: &Track = &s.track;
     let id = tr.id;
