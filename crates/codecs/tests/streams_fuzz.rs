@@ -23,6 +23,10 @@ impl Rng {
     }
 }
 
+fn opus_head() -> Vec<u8> {
+    b"OpusHead\x01\x02\x38\x01\x80\xbb\x00\x00\x00\x00\x00".to_vec()
+}
+
 fn ogg_page(flags: u8, serial: u32, body: &[u8]) -> Vec<u8> {
     let mut p = b"OggS\0".to_vec();
     p.push(flags);
@@ -39,16 +43,16 @@ fn ogg_page(flags: u8, serial: u32, body: &[u8]) -> Vec<u8> {
 }
 
 fn ogg_seed() -> Vec<u8> {
-    let mut opus = b"OpusHead\x01\x02\x38\x01\x80\xbb\x00\x00\x00\x00\x00".to_vec();
-    opus.truncate(19);
+    let opus = opus_head();
     let mut vorbis = b"\x01vorbis\0\0\0\0\x02".to_vec();
     vorbis.extend(44_100u32.to_le_bytes());
-    vorbis.extend([0; 13]);
+    vorbis.extend([0; 12]); // bitrates
+    vorbis.extend([0xB8, 1]); // block sizes 256 and 2048, framing bit
     let mut flac = b"\x7fFLAC\x01\x00\x00\x01fLaC\x00\x00\x00\x22".to_vec();
     flac.extend([0x10, 0x00, 0x10, 0x00, 0, 0, 0, 0, 0, 0, 0x0A, 0xC4, 0x42, 0xF0, 0, 0, 0, 0]);
     flac.extend([0; 16]);
     let mut theora = b"\x80theora\x03\x02\x01\x00\x14\x00\x0f\x00\x01\x40\x00\x00\xf0".to_vec();
-    theora.extend([0; 20]);
+    theora.extend([0; 22]); // 42 bytes
     let mut f = ogg_page(2, 1, &opus);
     f.extend(ogg_page(2, 2, &vorbis));
     f.extend(ogg_page(2, 3, &flac));
@@ -213,4 +217,86 @@ fn an_ogg_page_cut_after_its_first_packet_is_an_error() {
     p.extend([2, opus.len() as u8, 255]); // two segments: the OpusHead, then 255 bytes
     p.extend(opus);
     assert!(matches!(stream_list(&MemReader(p.into())), Some(Err(_))));
+}
+
+fn is_err(b: Vec<u8>) -> bool {
+    matches!(stream_list(&MemReader(b.into())), Some(Err(_)))
+}
+
+/// A whole first beginning-of-stream page followed by a second page header cut short is an error,
+/// not a list of the first stream; a clean end after whole pages is not.
+#[test]
+fn an_ogg_file_cut_inside_its_second_page_header_is_an_error() {
+    let first = ogg_page(2, 1, &opus_head());
+    let mut f = first.clone();
+    f.extend(&ogg_page(2, 2, &opus_head())[..20]);
+    assert!(is_err(f));
+    let l = stream_list(&MemReader(first.into())).expect("ogg").expect("a whole page lists");
+    assert_eq!(l.streams.len(), 1);
+}
+
+/// An OpusHead shorter than its 19 bytes, or whose channel mapping is missing or names a stream
+/// that is not there, is an error.
+#[test]
+fn a_damaged_opus_head_is_an_error() {
+    assert!(is_err(ogg_page(2, 1, &opus_head()[..10])));
+    // mapping family 1 (2 channels): stream and coupled counts and the mapping must follow
+    let mut family1 = opus_head();
+    family1[18] = 1;
+    assert!(is_err(ogg_page(2, 1, &family1)));
+    family1.extend([1, 1, 0, 1]);
+    assert!(!is_err(ogg_page(2, 1, &family1)), "a whole family 1 mapping lists");
+    let n = family1.len();
+    family1[n - 1] = 2; // stream 2 of 2
+    assert!(is_err(ogg_page(2, 1, &family1)));
+    // family 0 carries at most two channels
+    let mut many = opus_head();
+    many[9] = 6;
+    assert!(is_err(ogg_page(2, 1, &many)));
+}
+
+/// Ogg-wrapped FLAC whose first metadata block is not STREAMINFO is an error, as in a native file.
+#[test]
+fn an_ogg_flac_header_without_streaminfo_is_an_error() {
+    let mut flac = b"\x7fFLAC\x01\x00\x00\x01fLaC\x84\x00\x00\x22".to_vec();
+    flac.extend([0x10, 0x00, 0x10, 0x00, 0, 0, 0, 0, 0, 0, 0x0A, 0xC4, 0x42, 0xF0, 0, 0, 0, 0]);
+    flac.extend([0; 16]);
+    assert!(is_err(ogg_page(2, 1, &flac)));
+    flac[13] = 0x80; // the same block as STREAMINFO lists
+    assert!(!is_err(ogg_page(2, 1, &flac)));
+}
+
+/// Vorbis and Theora identification headers cut short or inconsistent are errors.
+#[test]
+fn damaged_vorbis_and_theora_headers_are_errors() {
+    let seed = ogg_seed();
+    let ok = stream_list(&MemReader(seed.into())).expect("ogg").expect("seed lists");
+    assert_eq!(ok.streams.len(), 5);
+    let mut vorbis = b"\x01vorbis\0\0\0\0\x02".to_vec();
+    vorbis.extend(44_100u32.to_le_bytes());
+    vorbis.extend([0; 12]);
+    vorbis.extend([0xB8, 1]);
+    assert!(!is_err(ogg_page(2, 1, &vorbis)));
+    assert!(is_err(ogg_page(2, 1, &vorbis[..29])), "no framing byte");
+    vorbis[29] = 0;
+    assert!(is_err(ogg_page(2, 1, &vorbis)), "framing bit clear");
+    let mut theora = b"\x80theora\x03\x02\x01\x00\x14\x00\x0f\x00\x01\x40\x00\x00\xf0".to_vec();
+    theora.extend([0; 22]);
+    assert!(!is_err(ogg_page(2, 1, &theora)));
+    assert!(is_err(ogg_page(2, 1, &theora[..30])), "cut short");
+    theora[16] = 0x41; // picture 321 wide in a 320-wide frame
+    assert!(is_err(ogg_page(2, 1, &theora)));
+}
+
+/// A WAV extensible format without its 22 extra bytes, or with no channels, is an error.
+#[test]
+fn a_damaged_wav_fmt_is_an_error() {
+    assert!(!is_err(wav_seed()));
+    let mut short_ext = wav_seed();
+    // cbSize (after the 16 WAVEFORMAT bytes of the fmt payload at byte 34) says 10, not 22
+    short_ext[50] = 10;
+    assert!(is_err(short_ext));
+    let mut no_channels = wav_seed();
+    no_channels[36] = 0;
+    assert!(is_err(no_channels));
 }
