@@ -189,6 +189,7 @@ const NOT_CODECS: &[&str] = &[
     "qc",
     "render",
     "route",
+    "sandbox",
     "scopes",
     "smart-edit",
     "speech",

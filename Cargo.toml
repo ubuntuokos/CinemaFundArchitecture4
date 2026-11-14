@@ -5,6 +5,8 @@ default-members = ["crates/*", "apps/*", "xtask"]
 # Cargo does not expand globs here: each vendored crate is named, so `--workspace` does not
 # build their tests (their dev-dependencies stay out of Cargo.lock; scripts/dev/test-vendored-ui.sh).
 exclude = [
+    # CFA4-SECURITY-001 B2: cargo-fuzz targets, their own workspace (nightly + libFuzzer; fuzz/README.md)
+    "fuzz",
     "vendor/cfa4-libs/docpath",
     "vendor/cfa4-libs/ui",
     "vendor/ffmpeg-bindings/rsmedia",
@@ -114,6 +116,7 @@ rsmedia = { version = "0.7.1", path = "vendor/ffmpeg-bindings/rsmedia", default-
 rsmpeg = { version = "0.18.1", path = "vendor/ffmpeg-bindings/rsmpeg", default-features = false, features = ["ffmpeg9", "link_system_ffmpeg"] }
 rusty_ffmpeg = { version = "0.18.1", path = "vendor/ffmpeg-bindings/rusty_ffmpeg" }
 cfa4-metrics = { path = "crates/metrics" }
+cfa4-sandbox = { path = "crates/sandbox" }
 
 # foundation
 thiserror = "2"

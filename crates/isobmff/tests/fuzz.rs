@@ -166,3 +166,18 @@ fn truncations_never_panic() {
         }
     }
 }
+
+/// CFA4-SECURITY-001 B2 fuzz finding: a top-level box with a 64-bit size near u64::MAX made the
+/// box walk's `offset + 8` overflow (a panic with overflow checks, a wrapped bound without them).
+#[test]
+fn huge_64bit_box_size_is_an_error_not_an_overflow() {
+    let mut f = Vec::new();
+    f.extend_from_slice(b"\0\0\0\x10ftypisom\0\0\x02\0");
+    // size32 == 1: a 64-bit size follows; this one runs the offset past the end of the file
+    f.extend_from_slice(&1u32.to_be_bytes());
+    f.extend_from_slice(b"free");
+    f.extend_from_slice(&(u64::MAX - 4).to_be_bytes());
+    f.extend_from_slice(&[0; 32]);
+    let r = std::panic::catch_unwind(|| open(f.as_slice()));
+    assert!(matches!(r, Ok(Err(_))), "an error, not a panic");
+}
