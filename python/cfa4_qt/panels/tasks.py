@@ -7,8 +7,8 @@ Three sources, each read on its own so that one an engine does not have yet neve
   left and status; a job that waits for resources says why in its status (``Waiting: …``).
 - ``export.queue.list``: the export queue; an export held back for resources lists the reasons in
   ``waitingFor``.
-- ``tasks.list``: the shared task queue (``cfa4-tasks``): state, class, the RAM and CPU it asked
-  for and what it waits for. An engine without the queue answers with an error; the panel then
+- ``tasks.list``: the shared task queue (``cfa4-tasks``): its name (``label``, else the id), state,
+  class, the RAM and CPU it asked for and what it waits for. An engine without the queue answers with an error; the panel then
   says the queue is not reported yet and shows the other two.
 
 Each running or waiting job and export can be cancelled from its row (``jobs.cancel``,
@@ -144,7 +144,7 @@ def task_rows(tasks: Any) -> list[dict[str, Any]]:
         out.append({
             "kind": "task",
             "id": t.get("id"),
-            "name": str(t.get("id") or ""),
+            "name": str(t.get("label") or t.get("id") or "")[:200],
             "state": state,
             "detail": "; ".join(waiting_for) if waiting_for else asked,
             "eta": "",

@@ -52,7 +52,7 @@ EXPORTS = {"items": [
     {"id": 9, "sequenceName": "Old", "status": "done"},
 ]}
 TASKS = [
-    {"id": "export-1", "state": "running", "class": "finalRender", "ramBytes": 4 * GIB, "cpuMilli": 4000, "waitingFor": []},
+    {"id": "export-1", "label": "Export: Main", "state": "running", "class": "finalRender", "ramBytes": 4 * GIB, "cpuMilli": 4000, "waitingFor": []},
     {"id": "job-2", "state": "waiting", "class": "background", "ramBytes": 2 * GIB, "cpuMilli": 1000, "waitingFor": ["not enough memory"]},
 ]
 
@@ -77,6 +77,7 @@ def test_rows_say_why_a_task_waits_and_how_long_one_runs():
     assert exports[1]["detail"] == "VRAM: needs 6.0 GiB" and exports[1]["action"] == ("export.queue.cancel", {"id": 8})
     queue = tm.task_rows(TASKS)
     assert queue[0]["detail"] == "Final render · 4.0 GiB · 4 CPU" and queue[1]["detail"] == "not enough memory"
+    assert [r["name"] for r in queue] == ["Export: Main", "job-2"], "the label, else the id"
     text = tm.summary(jobs + exports)
     assert text.startswith("2 running · 2 waiting") and "Scene detection waits: not enough memory" in text
 
