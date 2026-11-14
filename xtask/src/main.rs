@@ -61,6 +61,7 @@ const LAYERS: &[(&str, u8)] = &[
     ("ffv1", 0),
     ("dirac", 0),
     ("tta", 0),
+    ("tak", 0),
     ("canopus", 0),
     ("vp9", 0),
     ("prores", 0),

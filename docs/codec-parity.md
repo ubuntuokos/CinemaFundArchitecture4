@@ -73,6 +73,7 @@ fidelity and the remaining work.
 | AMR-NB / AMR-WB | audio | `crates/amr` | ported | yes | no |
 | Speex | audio | `crates/speex` | ported | yes: Ogg Speex | no |
 | TTA (True Audio) | audio | `crates/tta` | ported | yes | no |
+| TAK | audio | `crates/tak` | ported | yes | no |
 | ADPCM, G.711, G.722 | audio | `crates/adpcm` | own | yes | no |
 | IAB (SMPTE ST 2098-2) | audio | `crates/iab` | own | yes: decode and render | yes: IAB track in DCP exports |
 | Auro-3D | audio | `crates/auro` | ported | yes: side channel in 24-bit PCM | no |
@@ -134,6 +135,7 @@ fidelity and the remaining work.
 | G.711 μ-law / A-law, G.722 | not checked | own decoders (`cfa4-adpcm`, CB-4.1): G.711 in WAV, AVI, MOV (`ulaw`, `alaw`), Matroska (`A_MS/ACM`); G.722 at 64 kbit/s (ITU-T G.722 11/88) in WAV, AVI, Matroska | none | bit-exact vs ffmpeg in every container, also after a seek; G.722 also on random codewords | 90% | — |
 | IMA ADPCM, Microsoft ADPCM | not checked | own decoders (`cfa4-adpcm`, CB-4.2): IMA in WAV / AVI / Matroska blocks and QuickTime `ima4`, Microsoft ADPCM with custom coefficient sets; WAV read in place block by block | none | bit-exact vs ffmpeg in every container, also after a seek, and on random blocks | 90% | — |
 | TTA (True Audio) | not checked | own decoder ([`cfa4-tta`](../crates/tta/README.md), backlog CB-9.1, ported from libtta): 8 / 16 / 24 bits, 1–8 channels, password-protected streams; `.tta` and Matroska (`A_TTA1`) | none | bit-exact vs ffmpeg on 10 encoder fixtures; `.tta` and Matroska files sample for sample, also read from the middle | parity | — |
+| TAK | not checked | own decoder ([`cfa4-tak`](../crates/tak/README.md), backlog CB-10.1, ported from FFmpeg n7.1.1): mono / stereo and multichannel codecs, 8 / 16 / 24 bits, 1–6 channels, LPC subframes, windowed residual codes, every decorrelation mode; `.tak` files | none | same samples as ffmpeg's `tak` decoder on ffmpeg's FATE sample (local) and on 64 synthetic streams of random syntax (the test's own encoder; 480 checked once), lossless against the source on 8 more; through the media source also from the middle; 2400 damaged streams without a panic | — | — |
 | AMR-NB, AMR-WB | not checked | own decoders (`cfa4-amr`, CB-6.2), ported from opencore-amr: every mode, DTX comfort noise, lost frames; `.amr` / `.awb`, 3GP / MP4 / MOV (`samr`, `sawb`), Matroska | none | bit-exact vs opencore-amr in every container, also after a seek (decoder checkpoints) | 90% | — |
 
 ## Summary
@@ -150,6 +152,7 @@ fidelity and the remaining work.
 
 | Date | Change | Summary |
 |---|---|---|
+| 2026-11-14 | minor | TAK decode (`cfa4-tak`, codec backlog CB-10.1) |
 | 2026-11-12 | minor | Generated capability catalog from `cfa4-cli codecs` (CFA4-PROCODEC-002 work package 0) |
 | 2026-11-12 | minor | Canopus HQ / HQA / HQX decode (`cfa4-canopus`, codec backlog CB-8.2) |
 | 2026-11-12 | minor | AV2 early decoder behind a feature flag: out-of-process dav2d helper and Rust adapter, bit-exact with the AVM oracle on the `Main_420_10_IP0` corpus (AV2 plan X/6) |
