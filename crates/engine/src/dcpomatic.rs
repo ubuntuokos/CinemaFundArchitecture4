@@ -85,9 +85,12 @@ struct FilmDirClaim(PathBuf);
 impl FilmDirClaim {
     fn take(cmd: &str, dir: &Path) -> Result<Self> {
         let key = film_dir_key(dir);
-        if !FILM_DIRS.lock().unwrap_or_else(PoisonError::into_inner).insert(key.clone()) {
-            return Err(bad(cmd, format!("output: another DCP-o-matic job is already writing into {}", dir.display())));
+        let mut held = FILM_DIRS.lock().unwrap_or_else(PoisonError::into_inner);
+        // the same folder, or one inside the other: a cancelled job removes its whole folder
+        if held.iter().any(|h| h.starts_with(&key) || key.starts_with(h)) {
+            return Err(bad(cmd, format!("output: another DCP-o-matic job is already writing into or around {}", dir.display())));
         }
+        held.insert(key.clone());
         Ok(Self(key))
     }
 }

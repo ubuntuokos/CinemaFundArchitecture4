@@ -99,7 +99,10 @@ fn the_same_film_folder_is_one_claim_through_dot_dot_and_links() {
     for other in [base.join("sub/../film"), base.join("link/film"), base.join("sub/../link/./film"), base.join("film/x/..")] {
         assert!(FilmDirClaim::take(cmd, &other).is_err(), "{} is the same folder", other.display());
     }
+    assert!(FilmDirClaim::take(cmd, &film.join("inner")).is_err(), "a folder inside a held one");
+    assert!(FilmDirClaim::take(cmd, &base).is_err(), "a folder around a held one");
     assert!(FilmDirClaim::take(cmd, &base.join("sub/film")).is_ok(), "another folder");
+    assert!(FilmDirClaim::take(cmd, &base.join("filmx")).is_ok(), "a sibling with the same prefix");
     drop(first);
     let _ = std::fs::remove_dir_all(&base);
 }
