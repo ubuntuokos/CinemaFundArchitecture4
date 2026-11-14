@@ -37,6 +37,7 @@ cfa4-smart-edit = { workspace = true }
 cfa4-isobmff = { workspace = true }
 cfa4-mxf = { workspace = true }
 cfa4-dcp = { workspace = true }
+cfa4-dcpomatic = { workspace = true }
 cfa4-format = { workspace = true }
 cfa4-interchange = { workspace = true }
 cfa4-captions = { workspace = true }
