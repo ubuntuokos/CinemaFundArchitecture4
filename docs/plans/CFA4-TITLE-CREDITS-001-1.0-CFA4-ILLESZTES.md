@@ -80,7 +80,7 @@ nélkül folytatódik.
 |---|---|---|---|
 | C13–C15, törzsszélesség | folyamatban (#1188, #1196, C15) | 2.1 D | – |
 | C16 Címjelenetek a stáblista-dokumentumban | `Title`, `Opening`, `Chapter`, `LowerThird` oldaltípus: a táblázat egy sora egy `.fcgt` grafikát tölt ki (cím, alcím, név, szerep); főcím, nyitó képsor, fejezetcím, szereplőbemutató egy dokumentumban a stáblistával | 1.1, 15. | – |
-| C17 Sablonkezelő | a terv 10 kategóriája, előnézeti kép, `.cfa4credtpl` és `.fcgt` egy böngészőben, import/export; **az elkészült stáblista sablonként menthető** (Q16): a C6 *Mentés sablonként…* (`graphics.credits.template.save`, `clip`) kiterjesztése a C16–C22 minden elemére (oldaltípusok, hátterek és vonalrajz, átmenetek, mozgás, narrációs igazítás, a kézi módosításokból a stílus), a konkrét nevek helyett mintatáblázattal | 3.2 | C16 |
+| C17 Sablonkezelő | a terv 10 kategóriája, előnézeti kép, `.cfa4credtpl` és `.fcgt` egy böngészőben, import/export; **az elkészült stáblista sablonként menthető** (Q16): a C6 *Mentés sablonként…* (`graphics.credits.template.save`, `clip`) kiterjesztése a C16–C22 minden elemére (oldaltípusok, hátterek és vonalrajz, átmenetek, mozgás, narrációs igazítás, a kézi módosításokból a stílus), a konkrét nevek helyett mintatáblázattal; **filmműfajonként legalább egy beépített sablon** (Q17), mindegyik szerkeszthető és új néven menthető (felhasználói vagy projekt-sablonként; a beépített változatlan marad) | 3.2 | C16 |
 | C18 Tipográfia | körív menti szöveg, perspektivikus szöveg, ragyogás és fényhatás, maszkolás szöveggel és szövegfelfedés, kulcsképkockázható betűnkénti és szavankénti animáció (a mai Typewriter / Word by Word előbeállítások mellett); a stílusok (`ContentStyle`, `LetterStyle`) is elérik | 2.1 B | – (a grafikai rendszerben) |
 | C19 Mozgás és kompozíció | kamera: 2.5D réteg-tér (mélység, perspektivikus kamera, kamerapálya kulcsképkockákkal; a teljes 3D jelenet a `VISION.md` 8. pontjának nyitott döntése); rétegenkénti keverési módok; objektumcsoport közös animációja és több objektum szinkronja; médiaréteg (kép, videó) a grafikán belül | 2.1 C, D | – |
 | C20 Átmenetek | fény-, elmosásos, maszkos, kameramozgásos és tipográfiai átmenet a közös átmenet-rendszerben, külön szerkeszthető objektumként; oldalak közt a stílusból is | 2.1 F | C18, C19 |
@@ -156,6 +156,23 @@ A vonalrajzos stáblista ugyanebbe a láncba épül, és a terv több pontját i
   a Papercut vizsgálata ugyanezt a mintát követheti.
 - **Ütemezés:** a LINEART saját terv és saját munkamenet marad (D7); az új terv nem változtat
   rajta, csak hivatkozik rá.
+
+### 0.6. Műfaji sablonok (Q17, a C17 része)
+
+A tulajdonos döntése (2026-11-14): **filmműfajonként legalább egy-egy** beépített sablon készül,
+amely szerkeszthető és új néven elmenthető. Mindegyik a teljes láncot használja: főcím és nyitó
+képsor (C16), alsó sávok, fejezetcím, záró stáblista, háttér, átmenet, mozgás, és ahol illik,
+vonalrajz (C12). A beépített sablonok saját tervezésűek, MIT/Apache licencűek (C6), saját vagy
+szabad licencű betűtípussal (`AGENTS.md` §1.9), minden nyelven elnevezve (Q15).
+
+Javasolt műfajlista (bővíthető): dráma, vígjáték, akció, thriller és krimi, horror, sci-fi,
+fantasy, romantikus, animációs és családi, dokumentumfilm, történelmi és kosztümös, háborús,
+western, zenés és musical, rövidfilm és fesztiválfilm.
+
+Szerkesztés és mentés: a beépített sablon megnyitva szerkeszthető, mentéskor **új néven**
+felhasználói vagy projekt-sablonként (vagy `.cfa4credtpl` fájlként) kerül el; a beépített
+változat nem íródik felül, így mindig visszaállítható. A sablonválasztóban a műfaj a terv 3.2
+tartalmi kategóriái mellett külön szűrő.
 
 ## 1. Megfeleltetés: a terv pontjai és a CFA4 mai állapota
 
@@ -252,3 +269,4 @@ hiány egy fázishoz van kötve (→ C16–C21, 0.3).
 | Q14 | Milyen felület készül a C16–C24-hez? | Csak Qt6 | Eldöntve (tulajdonos, 2026-11-14): csak Qt6 GUI, egui nem készül |
 | Q15 | Milyen nyelveken érhető el az alkalmazás? | A CFA4 összes támogatott nyelvén | Eldöntve (tulajdonos, 2026-11-14): a CFA4 összes támogatott nyelvén (angol forrás + minden `i18n/*.tsv` katalógus) |
 | Q16 | Menthető-e az elkészült stáblista sablonként? | Igen | Eldöntve (tulajdonos, 2026-11-14): igen, minden elemével (C17); a sablon a tartalmat nem viszi, csak mintatáblázatot (terv 3.2) |
+| Q17 | Legyenek-e műfaji sablonok? | Igen | Eldöntve (tulajdonos, 2026-11-14): filmműfajonként legalább egy, szerkeszthető és új néven menthető (0.6, C17) |
