@@ -4605,3 +4605,8 @@ export.summary	Low	laag
 	Lower Threshold	Ondergrens
 	Upper Threshold	Bovengrens
 	Ascending	Oplopend
+# Temporal Denoise (EffectsSDK review)
+	Temporal Denoise	Tijdelijke ruisonderdrukking
+	Frames Each Side	Frames aan elke kant
+	Motion Threshold	Bewegingsdrempel
+	Show Motion	Beweging tonen

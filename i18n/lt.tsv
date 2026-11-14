@@ -4608,3 +4608,8 @@ export.summary	Low	žema
 	Lower Threshold	Apatinė riba
 	Upper Threshold	Viršutinė riba
 	Ascending	Didėjančiai
+# Temporal Denoise (EffectsSDK review)
+	Temporal Denoise	Laikinis triukšmo šalinimas
+	Frames Each Side	Kadrų kiekvienoje pusėje
+	Motion Threshold	Judesio slenkstis
+	Show Motion	Rodyti judesį

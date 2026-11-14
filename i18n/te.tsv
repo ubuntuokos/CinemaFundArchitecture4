@@ -4611,3 +4611,8 @@ export.summary	Low	తక్కువ
 	Lower Threshold	దిగువ పరిమితి
 	Upper Threshold	ఎగువ పరిమితి
 	Ascending	ఆరోహణ
+# Temporal Denoise (EffectsSDK review)
+	Temporal Denoise	కాలపరమైన శబ్ద తొలగింపు
+	Frames Each Side	ప్రతి వైపు ఫ్రేమ్‌లు
+	Motion Threshold	కదలిక పరిమితి
+	Show Motion	కదలికను చూపు

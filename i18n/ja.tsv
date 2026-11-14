@@ -4614,3 +4614,8 @@
 	Lower Threshold	下限しきい値
 	Upper Threshold	上限しきい値
 	Ascending	昇順
+# Temporal Denoise (EffectsSDK review)
+	Temporal Denoise	時間的ノイズ除去
+	Frames Each Side	片側のフレーム数
+	Motion Threshold	動きのしきい値
+	Show Motion	動きを表示

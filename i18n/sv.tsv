@@ -4607,3 +4607,8 @@ export.summary	Low	låg
 	Lower Threshold	Nedre tröskel
 	Upper Threshold	Övre tröskel
 	Ascending	Stigande
+# Temporal Denoise (EffectsSDK review)
+	Temporal Denoise	Tidsbaserad brusreducering
+	Frames Each Side	Bildrutor på varje sida
+	Motion Threshold	Rörelsetröskel
+	Show Motion	Visa rörelse

@@ -4607,3 +4607,8 @@ export.summary	Low	χαμηλή
 	Lower Threshold	Κάτω κατώφλι
 	Upper Threshold	Άνω κατώφλι
 	Ascending	Αύξουσα
+# Temporal Denoise (EffectsSDK review)
+	Temporal Denoise	Χρονική αποθορυβοποίηση
+	Frames Each Side	Καρέ σε κάθε πλευρά
+	Motion Threshold	Κατώφλι κίνησης
+	Show Motion	Εμφάνιση κίνησης

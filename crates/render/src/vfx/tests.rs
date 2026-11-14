@@ -124,6 +124,7 @@ const NEW_IDS: &[&str] = &[
     "metadata_burnin",
     "echo",
     "slit_scan",
+    "temporal_denoise",
     "bit_crush",
     "block_glitch",
     "databend",
@@ -272,6 +273,7 @@ fn neutral_parameters_are_identity() {
         ("posterize_time", vec![]),
         ("echo", vec![]),
         ("slit_scan", vec![]),
+        ("temporal_denoise", vec![]),
         ("film_gate", vec![("weave", ParamValue::Float(0.0)), ("weave_rotation", ParamValue::Float(0.0)), ("flicker", ParamValue::Float(0.0))]),
         ("bit_crush", vec![("bits", ParamValue::Float(16.0))]),
         ("block_glitch", vec![("count", ParamValue::Float(0.0))]),
@@ -1638,4 +1640,60 @@ fn auto_contrast_smoothing_stops_at_a_scene_cut() {
     assert!(max_diff(&at(0.5, false), &alone) > 0.02, "smoothing had no effect");
     // Scene Detect keeps the window inside the current shot (all its frames are the same)
     assert!(max_diff(&at(0.5, true), &alone) < 1e-5, "smoothing crossed the cut");
+
+/// Grey 0.5 with fresh noise every frame (±0.08 in display space).
+fn noisy(x: f64, y: f64, t: f64) -> [f32; 3] {
+    let f = (t * 24.0).round() as i64;
+    let v = 0.5 + (hash01(x as i64, y as i64, f, 21) - 0.5) * 0.16;
+    let l = cfa4_color::srgb_to_linear(v);
+    [l, l, l]
+}
+
+fn display_std(img: &Image) -> f32 {
+    let v: Vec<f32> = (0..img.h).flat_map(|y| (0..img.w).map(move |x| (x, y))).map(|(x, y)| enc_px(img, x, y)[0]).collect();
+    let n = v.len().max(1) as f32;
+    let mean = v.iter().sum::<f32>() / n;
+    (v.iter().map(|x| (x - mean) * (x - mean)).sum::<f32>() / n).sqrt()
+}
+
+#[test]
+fn temporal_denoise_settles_noise_that_changes_every_frame() {
+    let env = ClipEnv { w: 48, h: 32, fps: 24.0, secs: 2.0, now: 1.0, key: 9, seq: (48, 32), pic: noisy };
+    let src = env.render(1.0, 1.0);
+    let mut e = inst("temporal_denoise");
+    setf(&mut e, "amount", 100.0);
+    // the noise (±0.08) is well inside a generous threshold: every neighbour counts
+    setf(&mut e, "threshold", 30.0);
+    let mut img = src.clone();
+    crate::effects::apply(&mut img, &e, &FxCtx { seconds: 1.0, env: Some(&env), ..cx() });
+    let (before, after) = (display_std(&src), display_std(&img));
+    // five frames averaged: ideally √5 ≈ 2.2× quieter
+    assert!(after < before / 1.8, "noise {before} → {after}");
+    // Amount 0: untouched; no environment (adjustment layer, isolated render): untouched
+    setf(&mut e, "amount", 0.0);
+    let mut same = src.clone();
+    crate::effects::apply(&mut same, &e, &FxCtx { seconds: 1.0, env: Some(&env), ..cx() });
+    assert_eq!(max_diff(&same, &src), 0.0);
+}
+
+#[test]
+fn temporal_denoise_does_not_ghost_moving_things() {
+    fn moving(x: f64, _y: f64, t: f64) -> [f32; 3] {
+        let v = if (x - t * 100.0).abs() < 4.0 { 1.0 } else { 0.05 };
+        [v, v, v]
+    }
+    let env = ClipEnv { w: 96, h: 8, fps: 24.0, secs: 1.0, now: 0.5, key: 10, seq: (96, 8), pic: moving };
+    let src = env.render(0.5, 1.0);
+    let mut e = inst("temporal_denoise");
+    setf(&mut e, "amount", 100.0);
+    let mut img = src.clone();
+    crate::effects::apply(&mut img, &e, &FxCtx { seconds: 0.5, env: Some(&env), ..cx() });
+    // the bar is at x ≈ 50 now and moves ~4 px a frame: no trail before or behind it
+    assert!(max_diff(&img, &src) < 1e-3, "ghosting: {}", max_diff(&img, &src));
+    // Show Motion: white where the bar moves, black where the frame stands still
+    set(&mut e, "show_motion", ParamValue::Bool(true));
+    let mut m = src.clone();
+    crate::effects::apply(&mut m, &e, &FxCtx { seconds: 0.5, env: Some(&env), ..cx() });
+    assert!(enc_px(&m, 50, 4)[0] > 0.9, "bar not marked: {:?}", enc_px(&m, 50, 4));
+    assert!(enc_px(&m, 10, 4)[0] < 0.05, "still area marked: {:?}", enc_px(&m, 10, 4));
 }

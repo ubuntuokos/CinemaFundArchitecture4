@@ -4603,3 +4603,8 @@
 	Lower Threshold	下限阈值
 	Upper Threshold	上限阈值
 	Ascending	升序
+# Temporal Denoise (EffectsSDK review)
+	Temporal Denoise	时间降噪
+	Frames Each Side	每侧帧数
+	Motion Threshold	运动阈值
+	Show Motion	显示运动

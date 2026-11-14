@@ -4590,3 +4590,8 @@
 	Lower Threshold	Нижний порог
 	Upper Threshold	Верхний порог
 	Ascending	По возрастанию
+# Temporal Denoise (EffectsSDK review)
+	Temporal Denoise	Временное шумоподавление
+	Frames Each Side	Кадров с каждой стороны
+	Motion Threshold	Порог движения
+	Show Motion	Показать движение

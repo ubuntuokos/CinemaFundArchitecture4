@@ -4606,3 +4606,8 @@ export.summary	Low	düşük
 	Lower Threshold	Alt eşik
 	Upper Threshold	Üst eşik
 	Ascending	Artan
+# Temporal Denoise (EffectsSDK review)
+	Temporal Denoise	Zamansal Gürültü Azaltma
+	Frames Each Side	Her Yandaki Kare
+	Motion Threshold	Hareket Eşiği
+	Show Motion	Hareketi Göster

@@ -4612,3 +4612,8 @@
 	Lower Threshold	Umbral inferior
 	Upper Threshold	Umbral superior
 	Ascending	Ascendente
+# Temporal Denoise (EffectsSDK review)
+	Temporal Denoise	Reducción de ruido temporal
+	Frames Each Side	Fotogramas a cada lado
+	Motion Threshold	Umbral de movimiento
+	Show Motion	Mostrar movimiento

@@ -4607,3 +4607,8 @@ export.summary	Low	madal
 	Lower Threshold	Alumine lävi
 	Upper Threshold	Ülemine lävi
 	Ascending	Kasvav
+# Temporal Denoise (EffectsSDK review)
+	Temporal Denoise	Ajaline mürasummutus
+	Frames Each Side	Kaadreid kummalgi pool
+	Motion Threshold	Liikumise lävi
+	Show Motion	Näita liikumist

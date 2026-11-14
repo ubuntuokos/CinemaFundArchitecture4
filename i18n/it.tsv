@@ -4605,3 +4605,8 @@
 	Lower Threshold	Soglia inferiore
 	Upper Threshold	Soglia superiore
 	Ascending	Crescente
+# Temporal Denoise (EffectsSDK review)
+	Temporal Denoise	Riduzione rumore temporale
+	Frames Each Side	Fotogrammi per lato
+	Motion Threshold	Soglia di movimento
+	Show Motion	Mostra movimento

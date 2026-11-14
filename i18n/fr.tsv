@@ -4610,3 +4610,8 @@
 	Lower Threshold	Seuil inférieur
 	Upper Threshold	Seuil supérieur
 	Ascending	Croissant
+# Temporal Denoise (EffectsSDK review)
+	Temporal Denoise	Débruitage temporel
+	Frames Each Side	Images de chaque côté
+	Motion Threshold	Seuil de mouvement
+	Show Motion	Afficher le mouvement

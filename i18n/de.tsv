@@ -4612,3 +4612,8 @@
 	Lower Threshold	Untere Schwelle
 	Upper Threshold	Obere Schwelle
 	Ascending	Aufsteigend
+# Temporal Denoise (EffectsSDK review)
+	Temporal Denoise	Zeitliche Rauschminderung
+	Frames Each Side	Bilder je Seite
+	Motion Threshold	Bewegungsschwelle
+	Show Motion	Bewegung anzeigen

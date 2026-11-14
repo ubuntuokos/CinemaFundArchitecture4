@@ -4607,3 +4607,8 @@ export.summary	Low	nizak
 	Lower Threshold	Donji prag
 	Upper Threshold	Gornji prag
 	Ascending	Rastuće
+# Temporal Denoise (EffectsSDK review)
+	Temporal Denoise	Vremensko uklanjanje šuma
+	Frames Each Side	Sličica sa svake strane
+	Motion Threshold	Prag pokreta
+	Show Motion	Prikaži pokret

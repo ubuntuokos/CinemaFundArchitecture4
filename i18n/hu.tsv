@@ -4602,3 +4602,8 @@ export.summary	Low	alacsony
 	Lower Threshold	Alsó küszöb
 	Upper Threshold	Felső küszöb
 	Ascending	Növekvő
+# Temporal Denoise (EffectsSDK review)
+	Temporal Denoise	Időbeli zajcsökkentés
+	Frames Each Side	Képkocka oldalanként
+	Motion Threshold	Mozgásküszöb
+	Show Motion	Mozgás mutatása

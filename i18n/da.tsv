@@ -4607,3 +4607,8 @@ export.summary	Low	lav
 	Lower Threshold	Nedre tærskel
 	Upper Threshold	Øvre tærskel
 	Ascending	Stigende
+# Temporal Denoise (EffectsSDK review)
+	Temporal Denoise	Tidsbaseret støjreduktion
+	Frames Each Side	Billeder på hver side
+	Motion Threshold	Bevægelsestærskel
+	Show Motion	Vis bevægelse

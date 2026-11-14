@@ -4605,3 +4605,8 @@ export.summary	Low	niska
 	Lower Threshold	Dolny próg
 	Upper Threshold	Górny próg
 	Ascending	Rosnąco
+# Temporal Denoise (EffectsSDK review)
+	Temporal Denoise	Czasowe odszumianie
+	Frames Each Side	Klatki z każdej strony
+	Motion Threshold	Próg ruchu
+	Show Motion	Pokaż ruch

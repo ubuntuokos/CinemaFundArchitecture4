@@ -4605,3 +4605,8 @@ export.summary	Low	низак
 	Lower Threshold	Доњи праг
 	Upper Threshold	Горњи праг
 	Ascending	Растуће
+# Temporal Denoise (EffectsSDK review)
+	Temporal Denoise	Временско уклањање шума
+	Frames Each Side	Сличица са сваке стране
+	Motion Threshold	Праг покрета
+	Show Motion	Прикажи покрет

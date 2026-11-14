@@ -4613,3 +4613,8 @@
 	Lower Threshold	Ambang Bawah
 	Upper Threshold	Ambang Atas
 	Ascending	Naik
+# Temporal Denoise (EffectsSDK review)
+	Temporal Denoise	Pengurangan Derau Temporal
+	Frames Each Side	Bingkai di Tiap Sisi
+	Motion Threshold	Ambang Gerakan
+	Show Motion	Tampilkan Gerakan

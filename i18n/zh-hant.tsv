@@ -4604,3 +4604,8 @@ export.summary	Low	低
 	Lower Threshold	下限臨界值
 	Upper Threshold	上限臨界值
 	Ascending	遞增
+# Temporal Denoise (EffectsSDK review)
+	Temporal Denoise	時間降噪
+	Frames Each Side	每側影格數
+	Motion Threshold	動態臨界值
+	Show Motion	顯示動態

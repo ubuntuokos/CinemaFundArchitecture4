@@ -4605,3 +4605,8 @@ export.summary	Low	thấp
 	Lower Threshold	Ngưỡng dưới
 	Upper Threshold	Ngưỡng trên
 	Ascending	Tăng dần
+# Temporal Denoise (EffectsSDK review)
+	Temporal Denoise	Khử nhiễu theo thời gian
+	Frames Each Side	Số khung mỗi bên
+	Motion Threshold	Ngưỡng chuyển động
+	Show Motion	Hiện chuyển động

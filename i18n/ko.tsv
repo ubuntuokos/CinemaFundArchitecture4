@@ -4599,3 +4599,8 @@
 	Lower Threshold	하한 임계값
 	Upper Threshold	상한 임계값
 	Ascending	오름차순
+# Temporal Denoise (EffectsSDK review)
+	Temporal Denoise	시간적 노이즈 제거
+	Frames Each Side	양쪽 프레임 수
+	Motion Threshold	움직임 임계값
+	Show Motion	움직임 표시

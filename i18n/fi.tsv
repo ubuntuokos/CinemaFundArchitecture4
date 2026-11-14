@@ -4607,3 +4607,8 @@ export.summary	Low	matala
 	Lower Threshold	Alaraja
 	Upper Threshold	Yläraja
 	Ascending	Nouseva
+# Temporal Denoise (EffectsSDK review)
+	Temporal Denoise	Ajallinen kohinanpoisto
+	Frames Each Side	Kuvia kummallakin puolella
+	Motion Threshold	Liikkeen kynnys
+	Show Motion	Näytä liike
