@@ -1,6 +1,6 @@
 # Kodek-backlog végrehajtási terv
 
-> **Utolsó frissítés:** 2026-11-14 · **Változás:** minor (tulajdonosi döntés a B csoportról: 3 tétel kimarad, 4 forráskeresésre vár) · **Forrás:** [CODEC-BACKLOG-2026-10-27.md](CODEC-BACKLOG-2026-10-27.md)
+> **Utolsó frissítés:** 2026-11-14 · **Változás:** minor (tulajdonosi döntések: a B csoportról, valamint a MagicYUV és a Shorten portja) · **Forrás:** [CODEC-BACKLOG-2026-10-27.md](CODEC-BACKLOG-2026-10-27.md)
 
 A [CODEC-BACKLOG-2026-10-27.md](CODEC-BACKLOG-2026-10-27.md) 82 tétele heti ütemezésben. **Követelmény: minden héten
 legalább 2 tétel elkészül** (a tulajdonos döntése, 2026-10-27). Így a backlog 41 hét alatt fogy el:
@@ -39,6 +39,10 @@ heti 2 tétel nem csúszik. A nemleges döntésű tételek kikerülnek a backlog
   külön tétel vagy már megvan). Ha van engedélyezett licencű forrás, port
   ([AGENTS.md](../../AGENTS.md) §2); ha nincs, kimarad.
 - **A BFSTM mehet:** a BFSTM-demuxer és a DSP ADPCM az FFmpegből portolható; a tétel BCSTM-része 🔎.
+- **MagicYUV és Shorten: port** (tulajdonosi döntés, 2026-11-14). Nincs nyilvános specifikációjuk;
+  az FFmpeg 9.0.2 `libavcodec/magicyuv.c` és `libavcodec/shorten.c` LGPL-2.1-or-later, ezért a
+  portjuk megengedett ([AGENTS.md](../../AGENTS.md) §2, [licensing.md](../licensing.md) §3, a port
+  bekerül a §5 nyilvántartásba). A MagicYUV a következő tétel, a 2. hét helyén.
 - A többi 📄 tétel (amelyekhez van FFmpeg-dekóder) és a ⚖️ tételek döntése továbbra is nyitott.
 
 ## Ütemterv
@@ -48,14 +52,14 @@ Sávok: K1 az 1–6. hét, K2 a 7–22. hét, K3 a 23–40. hét, K4 a 40–41. 
 | Hét | Kezdete | Sáv | 1. tétel | 2. tétel |
 |---|---|---|---|---|
 | 1 | 2026-11-02 | K1 | FFV1 | Huffyuv |
-| 2 | 2026-11-09 | K1 | Ut Video | MagicYUV |
+| 2 | 2026-11-09 | K1 | Ut Video | MagicYUV (port, következő tétel) |
 | 3 | 2026-11-16 | K1 | Lagarith 📄 | HAP |
 | 4 | 2026-11-23 | K1 | G.711 / G.722 | ADPCM (IMA, Microsoft) |
 | 5 | 2026-11-30 | K1 | WavPack | Monkey's Audio (APE) |
 | 6 | 2026-12-07 | K1 | Speex | AMR-NB / AMR-WB |
 | 7 | 2026-12-14 | K2 | Matrox MPEG-2 I-frame (ellenőrzés + teszt) | VC-2 |
 | 8 | 2026-12-21 | K2 | Dirac | Canopus HQ / HQX |
-| 9 | 2026-12-28 | K2 | TTA | Shorten |
+| 9 | 2026-12-28 | K2 | TTA | Shorten (port) |
 | 10 | 2027-01-04 | K2 | TAK 📄 | Musepack SV7 / SV8 |
 | 11 | 2027-01-11 | K2 | ~~OptimFROG~~ kimarad (2026-11-14) | G.729 |
 | 12 | 2027-01-18 | K2 | iLBC | EVS |
@@ -98,6 +102,7 @@ valamelyik nem készült el, a következő hétre kell vinni a pótlással együ
 
 | Dátum | Változás | Összefoglaló |
 |---|---|---|
+| 2026-11-14 | minor | Tulajdonosi döntés: a MagicYUV és a Shorten az FFmpeg LGPL-2.1+ dekóderének portjaként készül; a MagicYUV a következő tétel |
 | 2026-11-14 | minor | Tulajdonosi döntés: az OptimFROG, a Sony SR Codec és a Bink 2 kimarad; a HVQM / HVQM4, a Sofdec.Prime, a BCSTM és a PMF előbb forráskeresés (🔎); a BFSTM portként mehet. Dátumok nem változtak |
 | 2026-11-09 | minor | A Lagarith 📄 lett (nincs teljes nyilvános leírás, ffmpeg-kódoló sincs): a tulajdonos 2026-12-28-ig dönt róla, addig a 4. hét tételei (G.711 / G.722, ADPCM; #818) jöttek előre |
 | 2026-11-09 | minor | A H.266 / VVC kivéve: saját, jóváhagyott terve van (CFA4-VVC-PLAN-001, #721). 82 tétel, 41 hét (2027-08-15-ig); a 22. héttől minden tétel egy hellyel előrébb jött. A 2. hét MagicYUV-ja tulajdonosi döntésre vár, ezért a HAP (CB-3.2) előrejött |
