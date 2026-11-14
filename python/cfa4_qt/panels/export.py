@@ -619,6 +619,13 @@ class ExportDialog(QDialog):
         self.summary.setWordWrap(True)
         self.summary.setTextInteractionFlags(Qt.TextInteractionFlag.TextSelectableByMouse)
 
+        # egui's red `export.problem` line: settings the encoders cannot honour, said before Export
+        self.problem = QLabel(self)
+        self.problem.setObjectName("export.problem")
+        self.problem.setWordWrap(True)
+        self.problem.setStyleSheet("color: #d04040")
+        self.problem.setVisible(False)
+
         self.export_button = QPushButton(tr("Export"), self)
         self.export_button.setObjectName("export.button")
         self.export_button.setDefault(True)
@@ -756,6 +763,7 @@ class ExportDialog(QDialog):
         sc.addWidget(scroll, 1)
         sc.addWidget(self.no_sequence, 1)
         sc.addWidget(self.summary)
+        sc.addWidget(self.problem)
         sc.addLayout(buttons)
         # egui's columns: the queue on the left (300 px there), the settings and preview beside it
         self.splitter = splitter = QSplitter(Qt.Orientation.Horizontal, self)
@@ -1462,8 +1470,11 @@ class ExportDialog(QDialog):
         self.summary.setText(" · ".join(parts))
         self.summary.setStyleSheet("")
         self.range_warning.setVisible(bool(r.get("warnings")))
-        self.export_button.setEnabled(True)
-        self.queue_button.setEnabled(True)
+        problem = str(r.get("problem") or "")
+        self.problem.setText(problem)
+        self.problem.setVisible(bool(problem))
+        self.export_button.setEnabled(not problem)
+        self.queue_button.setEnabled(not problem)
         self._dcp_name = str(r.get("dcpName") or "")
         self.dcp_isdcf.setEnabled(self._dcp() and bool(self._dcp_name))
 
@@ -1502,6 +1513,7 @@ class ExportDialog(QDialog):
         self.summary.setText(message)
         self.summary.setStyleSheet("color: #d04040")
         self.range_warning.setVisible(False)
+        self.problem.setVisible(False)
         self.export_button.setEnabled(False)
         self.queue_button.setEnabled(False)
 
