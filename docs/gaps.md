@@ -204,7 +204,7 @@ distributions are not targets.
   settings; DNG frames and folders import since #1065); stills: PSD, EXR beyond scan-line RLE / ZIP / PXR24 / PIZ (B44, DWA,
   tiled, multi-part, deep), AVIF / JPEG items inside HEIF,
   AI / EPS, and the rarer DPX layout, run-length encoding (Targa and DPX stills and sequences import
-  since #821, packed 10/12-bit and Y'CbCr DPX since #841, deeper than 8 bits kept at 8); transparent
+  since #821, packed 10/12-bit and Y'CbCr DPX since #841, read at their stored depth with time code and frame rate since #1155); transparent
   video (#402); Sony start timecode in `rtmd` (#460); stereo 3D flag (#500); MKV multi-audio (#601).
 - **CFA4 candidates after GPL-3.0-or-later** ([ADR 0003](adr/ADR-0003-aswf-and-conversion-sources.md) §6):
   LibRaw (LGPL-2.1 / CDDL-1.0) for camera RAW, libheif (LGPL-3.0) for HEIF / HEIC, both also
