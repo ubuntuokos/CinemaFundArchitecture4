@@ -135,6 +135,19 @@ cross-check ([AV2 plan](plans/AV2-CODEC-PLAN-2026-10-29.md) II.3, X/3).
   list is kept honest. It also seeks across key frames and starts decoding on a non-key unit. The same test checks that a crashing,
   hanging or garbage-writing helper is an error, and feeds mutated units to the real helper.
   `CFA4_AV2_DECODER` overrides the helper path.
+- Fuzzing the native helper (G1): `python3 scripts/dev/av2-decoder.py build --sanitize` builds
+  dav2d and the helper with ASan and UBSan into `target/av2-decoder-asan` (never shipped), and
+  `python3 scripts/dev/av2-decoder.py fuzz [--rounds N] [--seed N] [--all]` drives it with
+  mutated corpus units (bit flips, special bytes, truncation, splices, garbage, duplicated
+  tails) interleaved with `RSET`/`FLSH`. A sanitizer report, an exit other than 0 or a reply
+  that takes more than 20 s fails the run; the request sequence and stderr of each failure are
+  kept in `target/av2-fuzz/failures`. By default only the `Main_420_10_IP0` vectors are used:
+  the unmutated `422-10bit` vector already makes ASan report a heap read overflow in dav2d
+  `18641bb` loop restoration (`lr_apply_tmpl.c:213`), outside the committed scope; `--all`
+  includes it. `replay <file>.requests` sends a kept failure to a helper again (`--helper` picks
+  the release build). The AV2 oracle workflow runs 3000 rounds with a fixed seed, as a
+  report-only step while the pinned dav2d has known failures (AV2-00 audit, 13. pont); G1 needs
+  it at 0.
 - CI: `.github/workflows/cfa4-av2-oracle.yml` (Ubuntu 26.04) runs only on `workflow_dispatch` or
   on a `cfa4-full-validation` label event of a PR that touches the harness or the decoder. It is
   not a required check.
