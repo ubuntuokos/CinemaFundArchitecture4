@@ -79,7 +79,7 @@ nélkül folytatódik.
 | C20 Kétirányú kapcsolat | a szerkesztőben végzett kézi módosítás a stáblista-dokumentumba íródik; az elhelyezett stáblista egy objektumként kezelhető (csoport) | 7.1 | – |
 | C21 Önálló indítás | menübejegyzés, ikon, projekt nélküli munka, átadás a szerkesztőnek és vissza | 1., 6. | C16, C20 |
 | C22 Story / BacklotHub adatforrás | a C1 eltérés/frissítés más forrásból | 4. | Story- vagy BacklotHub-adat (halasztva) |
-| C12 Vonalrajz-réteg | a jövő évi kiadás, változatlanul | 2.1 C | – |
+| C12 Vonalrajz-réteg | [CFA4-LINEART-001](CFA4-LINEART-001.md), a jövő évi kiadás, változatlanul | 2.1 C, D | – (a C16 oldaltípusai is használják) |
 
 A sorrend azt követi, hogy a terv első kiadási köréből (15.) mi hiányzik a legjobban: a címek és
 alsó sávok a stáblistával egy helyen (C16), a sablonkezelő (C17), az animált tipográfia (C18) és a
@@ -115,6 +115,7 @@ forráshoz és frissítés (C1), ellenőrzés (C2), igazítás (C3), sablon (C6)
 | Visszaírás a szerkesztőből (7.1; C20) | `diff.rs` → `doc.rs` | a C1 ma felismeri és megtartja a kézi módosítást; ezt a dokumentumba is el kell menteni | frissítéskor nem vész el |
 | Story-híd (4; C22) | 1 | egy adapter a Story / BacklotHub adataiból táblázatsorokat ad; onnan a lánc változatlan | eltérés soronként, részleges elfogadás, eredet megőrzése (C1) |
 | Önálló alkalmazás (6; C21) | Qt6 (`credits_workspace.py`) | ugyanaz a munkaterület, a `.cfa4credits` mint projekt | minden fenti |
+| Vonalrajz-animáció (2.1 C, D; C11–C12, [CFA4-LINEART-001](CFA4-LINEART-001.md)) | 2, 3, 5 | ma (C11): ismétlődő videóháttér a külső eszközzel renderelt animációból; a jövő évi kiadásban saját grafikus réteg (`LayerContent::LineArt`): a 3. lépésben háttérfajta (`"kind": "lineart"`), a 2. lépésben cellacímke (`{{LineArt walker …}}`), az 5. lépésben ugyanaz a grafikus klip | címekben, alsó sávokban, élő grafikában változtatás nélkül; frissítés, ellenőrzés (a kontraszt a napszak-palettához mérhető) |
 | Live Graphics (8) | 6 (`engine/live.rs`) | a C10 futtató a dokumentumból készít cue-kat; az új oldaltípusok (cím, alsó sáv) cue-ként is megjelennek | PREVIEW / TAKE / NEXT / UPDATE / OUT |
 
 Példa a kész állapotra: **egy** `.cfa4credits` dokumentum, **egy** táblázattal: az első oldala a
@@ -122,6 +123,29 @@ főcím (`Title`), utána három alsó sáv a szereplőknek (`LowerThird`), egy 
 gördülő stáblista. Egy paranccsal kerül az idővonalra, a zenéhez vagy a narrációhoz igazítva; ha a
 táblázat változik, egy frissítéssel mind cserélődik, a kézi módosítások megmaradnak; az alsó sávok
 ugyanebből élőben is adhatók.
+
+### 0.5. A vonalrajzos stáblista helye (C11, C12 = CFA4-LINEART-001)
+
+A vonalrajzos stáblista ugyanebbe a láncba épül, és a terv több pontját is lefedi:
+
+- **Most (C11, kész):** a vonalrajz-animáció külső eszközzel MP4-be renderelve, a stáblista
+  oldalstílusában ismétlődő videóháttérként (`loop`); a C13 óta cellában is (`{{Video … loop}}`).
+  Ez a terv 2.1 D „háttér” és „animált objektum” elemének első formája.
+- **A jövő évi kiadásban (C12, [CFA4-LINEART-001](CFA4-LINEART-001.md), jóváhagyva):** a CFA4
+  maga rajzolja, **grafikus rétegként** (`LayerContent::LineArt`). Mivel réteg, nem
+  stáblista-specifikus elem, a terv minden megjelenési formájában ugyanaz: stáblista-háttér és
+  -cella (a nevekkel haladó figura), cím és alsó sáv (C16 oldaltípusai is használhatják), élő
+  grafika (C10). Ezzel a terv 2.1 C „Motion Graphics” elemének „2D grafikai animáció” pontja is
+  teljesül.
+- **Kapcsolódás az új fázisokhoz:** a LINEART D6 kulcskockázható mozdulatai (megáll, köszön,
+  továbbmegy) a C19 narrációhoz igazítással köthetők egy kimondott névhez; a napszak-paletta a C2
+  kontrasztellenőrzését mérhetővé teszi mozgó háttér előtt.
+- **Minta a donorokhoz (E11):** a LINEART a terv 9–10. pontjában kért donorkezelés kész példája:
+  MIT licenc, csak a matematika kerül át Rustra, a figurák saját tervezésűek, a rajzolás a CFA4
+  saját renderelőjében, külső böngésző vagy renderelőmotor nélkül. A Cinematic Skill, a sand3d és
+  a Papercut vizsgálata ugyanezt a mintát követheti.
+- **Ütemezés:** a LINEART saját terv és saját munkamenet marad (D7); az új terv nem változtat
+  rajta, csak hivatkozik rá.
 
 ## 1. Megfeleltetés: a terv pontjai és a CFA4 mai állapota
 
@@ -140,7 +164,7 @@ ugyanebből élőben is adhatók.
 | C9 csomagolás és együttélés (saját MIME, Cinecreddel együtt próbálva) | kész | 14, 12 F9 (részben) |
 | C10 élő grafika (cue-k, PREVIEW/TAKE/NEXT/HOLD/UPDATE/OUT, Browser Source, obs-websocket) | kész | 8, 8.1, 8.2 |
 | C11 ismétlődő videóháttér (vonalrajz, 1. lépcső) | kész | 2.1 D (háttér, animált objektum) |
-| C12 vonalrajz-réteg Rustban | tervezet (jövő évi kiadás) | 2.1 C (2D grafikai animáció) |
+| C12 vonalrajz-réteg Rustban | jóváhagyott terv: [CFA4-LINEART-001](CFA4-LINEART-001.md) (jövő évi kiadás) | 2.1 C (2D grafikai animáció), 2.1 D (animált objektum) |
 | C13 ismétlődő videó cellában (`{{Video walk.mp4 loop}}`) | PR #1188 | 2.1 D |
 | C14 horgas gerincek (`Hook N From-To dx dy`) | PR #1196 | 2.1 D (elrendezés) |
 
@@ -190,7 +214,7 @@ ugyanebből élőben is adhatók.
 | E8 | Python helye (11., 10.) | „Python csak indokolt, izolált segédfolyamatokban”; Blender és Python nem kerülhet a Qt6 főfolyamatba | A Qt6-felület maga PySide6 (Python) a főfolyamatban ([`qt-gui.md`](../qt-gui.md)); az üzleti logika a Rust-motorban fut (`cfa4-cli serve`); `requires-python >= 3.12`, a CI 3.13-at futtat | A szöveg pontosítása: „üzleti logika Rustban; Python a Qt6-felületben (PySide6) és izolált segédfolyamatokban; Blender soha nem a felület folyamatában”. A Python 3.14-et a CI-mátrixba érdemes felvenni. Döntés: Q6 |
 | E9 | Sablonkategóriák (3.2) | 10 tartalmi kategória, előnézeti kép | `.cfa4credtpl`: beépített / felhasználói / projekt; a `.fcgt` saját `category` mezővel | A forrás szerinti hármas maradjon, mellé a terv 10 tartalmi kategóriája és előnézeti kép a sablonválasztóban. Döntés: Q7 |
 | E10 | Visszaírás a kreditprojektbe (7.1) | a szerkesztőben végzett módosítás visszakerül az eredeti kreditprojektbe | C1: a kézi módosítást a frissítés megtartja, de a táblázatba vagy a `.cfa4credits`-be nem ír vissza; a CFA4-ben a táblázat a forrás | A táblázat maradjon az igazság forrása; a kézi módosítás a stáblista-dokumentumban tárolódjon (mentéskor a `.cfa4credits`-be), a táblázatba visszaírás csak kérésre. Döntés: Q8 |
-| E11 | Donorok (9., 10.) | Cinematic Skill, sand3d, Papercut Explainer vizsgálata; Skia-renderelés vizsgálata | A repóban nincs róluk vizsgálat; a licencük nincs nyilvántartva; a CFA4 saját renderelőt használ, Skia nem függőség; a 3D mélysége a `VISION.md` 8. pontjában nyitott | Az F0 donorvizsgálata külön dokumentum: első a licenc (GPL-3.0-kompatibilitás, [`licensing.md`](../licensing.md)), kódátvétel csak tulajdonosi döntés után, az [`AGENTS.md`](../../AGENTS.md) §2 szerint. Döntés: Q9 |
+| E11 | Donorok (9., 10.) | Cinematic Skill, sand3d, Papercut Explainer vizsgálata; Skia-renderelés vizsgálata | A repóban nincs róluk vizsgálat; a licencük nincs nyilvántartva; a CFA4 saját renderelőt használ, Skia nem függőség; a 3D mélysége a `VISION.md` 8. pontjában nyitott | Az F0 donorvizsgálata külön dokumentum, a [CFA4-LINEART-001](CFA4-LINEART-001.md) mintájára (0.5): első a licenc (GPL-3.0-kompatibilitás, [`licensing.md`](../licensing.md)), kódátvétel csak tulajdonosi döntés után, az [`AGENTS.md`](../../AGENTS.md) §2 szerint. Döntés: Q9 |
 | E12 | Narrációvezérelt animáció és szavankénti kiemelés (5.1–5.2) | a generátor része | A feliratozó tervének része ([SUBTITLE-STUDIO 1.2](SUBTITLE-STUDIO-PLAN-001-FINAL-1.2.md) F6 karaoke, 6. caption → narráció szerződés); a [`gaps.md`](../gaps.md) „Word Highlight captions” jelöltje; a szóidőket a `crates/speech` adja | Egy helyen készüljön (feliratozó + szóidők), a cím- és kreditgenerátor azt használja. Döntés: Q10 |
 | E13 | AI-modellek telepítése (11., 13.10) | a CFA4 csak letöltési hivatkozást, ajánlott helyet és tárhelyigényt adhat | A beszédfelismerés modelljeit és a Kokoro-hangcsomagot (336 MB) a CFA4 tölti le, de csak a felhasználó jóváhagyása után (`transcript.downloadModel`, `tts.downloadVoices`) | Ha a terv a jóváhagyott, alkalmazáson belüli letöltést is tiltja, az a meglévő funkciókat érinti; javaslat: „automatikusan nem, a felhasználó jóváhagyásával igen”. Döntés: Q11 |
 | E14 | Fázisnevek (12.) | F0–F9 | A CFA4-ben az F-azonosítók foglaltak (ADR F8 Qt6, ADR F10 stáblista; a feliratozó F0–F6 fázisai) | A terv fázisai kapjanak saját előtagot (pl. TC-F0…TC-F9), a megvalósítás pedig folytassa a C-számozást (C15-től). Döntés: Q12 |
