@@ -45,3 +45,7 @@ bash "$(dirname "$0")/install-speex.sh" \
 # the AMR oracle tests skip without it)
 bash "$(dirname "$0")/install-amr-oracle.sh" \
   || echo "::warning::cfa4-amr-oracle build failed: the AMR oracle tests skip"
+# G.729 oracle `cfa4-g729-oracle` (bcg729 1.1.2, built from the pinned upstream tag; the
+# G.729 oracle tests skip without it)
+bash "$(dirname "$0")/install-g729-oracle.sh" \
+  || echo "::warning::cfa4-g729-oracle build failed: the G.729 oracle tests skip"
