@@ -22,6 +22,10 @@ struct Case {
     args: &'static str,
 }
 
+/// Encoders a case may lack and still pass when oracles are required: the CI ffmpeg is built
+/// without them (`scripts/ci/install-ffmpeg-9.0.2.sh`), and another case covers the container.
+const OPTIONAL_ENCODERS: &[&str] = &["libtheora"];
+
 const V: &str = "-f lavfi -i testsrc2=size=320x240:rate=25:duration=1";
 
 fn cases() -> Vec<Case> {
@@ -62,7 +66,9 @@ fn cases() -> Vec<Case> {
             encoders: &["mjpeg", "pcm_s16le"],
             args: "{V} {A48} -map 0 -map 1 -c:v mjpeg -c:a pcm_s16le -ac 2 -metadata:s:a:0 title=Hang",
         },
-        Case { file: "full.ogg", encoders: &["libtheora", "libvorbis"], args: "{V} {A44} -map 0 -map 1 -c:v libtheora -c:a libvorbis" },
+        // ffmpeg's own Vorbis and FLAC encoders, so CI's ffmpeg (no libvorbis) makes it too
+        Case { file: "audio.ogg", encoders: &["vorbis", "flac"], args: "{A44} {A48} -map 0 -map 1 -c:a:0 vorbis -strict -2 -ac:a:0 2 -c:a:1 flac" },
+        Case { file: "theora.ogg", encoders: &["libtheora"], args: "{V} -c:v libtheora" },
         Case { file: "full.opus", encoders: &["libopus"], args: "{A48} -c:a libopus -ac 2" },
         Case { file: "flac.oga", encoders: &["flac"], args: "{A44} -c:a flac -ac 2 -f ogg" },
         Case {
@@ -227,7 +233,12 @@ fn stream_list_matches_ffprobe() {
     let mut checked = 0;
     for case in cases() {
         if let Some(missing) = case.encoders.iter().find(|e| !cfa4_testkit::ffmpeg_has_encoder(&ff, e)) {
-            cfa4_testkit::skip(&format!("stream list oracle, {}", case.file), &format!("ffmpeg has no {missing} encoder"));
+            let context = format!("stream list oracle, {}", case.file);
+            if OPTIONAL_ENCODERS.contains(missing) {
+                eprintln!("SKIPPED ({context}): ffmpeg has no {missing} encoder (optional case)");
+            } else {
+                cfa4_testkit::skip(&context, &format!("ffmpeg has no {missing} encoder"));
+            }
             continue;
         }
         let Some(file) = make(&ff, &case, &dir) else {

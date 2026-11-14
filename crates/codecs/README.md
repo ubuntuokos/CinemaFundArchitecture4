@@ -36,7 +36,7 @@ picture size, channels and sample rate, plus the file's chapters. It covers MP4 
 WebM, MPEG TS / PS, MXF, Ogg (read from its beginning-of-stream pages only), AVI, WAV and FLAC; other files fall back to
 `streams::from_media_info`. Only headers, codec configuration and (MPEG TS / PS) each stream's
 first access unit are read; nothing is decoded. Codec names, stream ids and the stream order follow
-FFmpeg's vocabulary, so `tests/streams_oracle.rs` checks the list of fourteen ffmpeg-made files
+FFmpeg's vocabulary, so `tests/streams_oracle.rs` checks the list of fifteen ffmpeg-made files
 against `ffprobe` field by field. `cfa4-cli probe` and the `export.analyze` command return it as
 `streams` and `chapters`.
 
