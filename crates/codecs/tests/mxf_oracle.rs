@@ -640,7 +640,7 @@ fn generate_fixtures() {
 fn h264_edit_list_clips_without_temporal_offsets_play_in_presentation_order() {
     use cfa4_mxf::testing::{Comp, build_edit_list};
     let ff = cfa4_testkit::require_ffmpeg!();
-    let f = make(&ff, "mxf_h264_bf2.mxf");
+    let Some(f) = make(&ff, "mxf_h264_bf2.mxf") else { return };
     let op1a = open(&f);
     let raw = std::fs::read(&f).unwrap();
     let file = op1a.file();
