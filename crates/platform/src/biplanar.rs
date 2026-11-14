@@ -37,7 +37,7 @@ fn row(plane: &[u8], stride: usize, y: usize, x: usize, len: usize) -> Result<&[
 /// Copy the picture at `g.crop` out of `src` into a planar 4:2:0 frame (deinterleaving chroma,
 /// shifting 10-bit samples down from the high bits). Errors when the surface is smaller than the
 /// rectangle needs.
-pub fn to_frame(src: &Biplanar, g: &Geometry) -> Result<VideoFrame, String> {
+pub fn to_frame(src: &Biplanar<'_>, g: &Geometry) -> Result<VideoFrame, String> {
     let (cx, cy, w, h) = g.crop;
     let (ox, oy, w, h) = (cx as usize, cy as usize, w as usize, h as usize);
     if w == 0 || h == 0 || !matches!(g.bits, 8 | 10) {
@@ -78,7 +78,7 @@ pub fn to_frame(src: &Biplanar, g: &Geometry) -> Result<VideoFrame, String> {
         }
         PixelData::Yuv16 { planes: [Arc::new(yp), Arc::new(u), Arc::new(v)], chroma: Chroma::C420, bits: g.bits, alpha: None }
     };
-    Ok(VideoFrame { width: w as u32, height: h as u32, data, color: g.color, par: g.par, pts: cfa4_time::Tick::ZERO })
+    Ok(VideoFrame { width: w as u32, height: h as u32, data, color: g.color, par: g.par, pts: cfa4_time::Tick::ZERO, layout: Default::default() })
 }
 
 #[cfg(test)]

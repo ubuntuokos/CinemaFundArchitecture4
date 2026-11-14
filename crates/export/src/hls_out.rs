@@ -157,7 +157,7 @@ pub(crate) struct HlsMux {
 }
 
 impl HlsMux {
-    pub fn new(s: HlsSetup) -> Result<Self> {
+    pub fn new(s: HlsSetup<'_>) -> Result<Self> {
         let files = hls_files(&s.settings.path, s.height);
         let mut opts = WriterOptions::new(Brand::Mp4);
         opts.metadata = s.settings.metadata.udta();

@@ -112,7 +112,7 @@ pub struct Cut {
 /// `end`; afterwards through edits inside the recorded range are healed, so pressing the angle that
 /// is already showing adds no edit. Locked tracks are skipped. Returns the number of edit points
 /// in the recorded range after the pass.
-pub fn record(seq: &mut Sequence, tracks: &[TrackId], source: ItemId, cuts: &[Cut], end: Tick, ctx: &mut EditCtx) -> usize {
+pub fn record(seq: &mut Sequence, tracks: &[TrackId], source: ItemId, cuts: &[Cut], end: Tick, ctx: &mut EditCtx<'_>) -> usize {
     let mut cuts: Vec<Cut> = cuts.iter().copied().filter(|c| c.time < end).collect();
     cuts.sort_by_key(|c| c.time);
     // two presses at one time: the later wins
@@ -154,7 +154,7 @@ pub fn record(seq: &mut Sequence, tracks: &[TrackId], source: ItemId, cuts: &[Cu
 /// the parts of `source_track`'s items inside the clip's source range, moved to timeline time.
 /// Inner links are remapped through `links` (so a flattened video/audio pair stays linked).
 /// Fails for clips with a speed change, reverse or frame hold (no exact flattening).
-pub fn flatten_items(outer: &TrackItem, source_track: &Track, ctx: &mut EditCtx, links: &mut HashMap<u64, u64>) -> Result<Vec<TrackItem>> {
+pub fn flatten_items(outer: &TrackItem, source_track: &Track, ctx: &mut EditCtx<'_>, links: &mut HashMap<u64, u64>) -> Result<Vec<TrackItem>> {
     if (outer.speed - 1.0).abs() > 1e-9 || outer.reverse || outer.frame_hold.is_some() {
         return Err(EditError::Other("can't flatten a clip with a speed change, reverse or frame hold".into()));
     }
@@ -196,7 +196,7 @@ pub fn flatten_items(outer: &TrackItem, source_track: &Track, ctx: &mut EditCtx,
 
 /// Replace a multi-camera clip on `track` by `pieces` (from [`flatten_items`]); pieces whose
 /// track is not `track` go to the tracks given with them. Returns the new ids.
-pub fn replace_with(seq: &mut Sequence, clip: ClipId, pieces: Vec<(TrackId, TrackItem)>, ctx: &mut EditCtx) -> Result<Vec<ClipId>> {
+pub fn replace_with(seq: &mut Sequence, clip: ClipId, pieces: Vec<(TrackId, TrackItem)>, ctx: &mut EditCtx<'_>) -> Result<Vec<ClipId>> {
     let (tid, _) = seq.find_item(clip).ok_or(EditError::NoItem(clip))?;
     let t = seq.track_mut(tid).ok_or(EditError::NoTrack(tid))?;
     if t.locked {

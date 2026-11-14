@@ -69,7 +69,7 @@ pub struct AccessUnit {
 }
 
 impl AccessUnit {
-    pub fn read(state: &mut ParserState, reader: &mut BsIoSliceReader) -> Result<Self> {
+    pub fn read(state: &mut ParserState, reader: &mut BsIoSliceReader<'_>) -> Result<Self> {
         let access_unit = Timer::start();
         state.is_major_sync = false;
 
@@ -246,7 +246,7 @@ impl AccessUnit {
     /// FBA only, and only at a major sync: elsewhere a substream may still hold the bit
     /// from its last restart header. A substream the presentation mask skipped is left out
     /// for the same reason, since nothing read a bit for it here.
-    fn check_hires_output_timing_matches(state: &mut ParserState, substreams: usize, reader: &mut BsIoSliceReader) -> Result<()> {
+    fn check_hires_output_timing_matches(state: &mut ParserState, substreams: usize, reader: &mut BsIoSliceReader<'_>) -> Result<()> {
         if state.format_sync != MAJOR_SYNC_FBA || !state.is_major_sync {
             return Ok(());
         }
@@ -347,7 +347,7 @@ impl AccessUnit {
     /// runs of short gaps, and a relaxation of them for a spliced stream, but their
     /// triggering conditions are not established, so they are not implemented here; the
     /// history is kept so that they can be.
-    fn check_restart_gap(state: &mut ParserState, reader: &mut BsIoSliceReader) -> Result<()> {
+    fn check_restart_gap(state: &mut ParserState, reader: &mut BsIoSliceReader<'_>) -> Result<()> {
         let gap = state.au_counter - state.last_major_sync_index;
 
         state.restart_gap.rotate_right(1);

@@ -36,6 +36,7 @@ const LAYERS: &[(&str, u8)] = &[
     ("mxf", 0),
     ("cfb", 0),
     ("mpegts", 0),
+    ("st2110", 0),
     ("mpeg2v", 0),
     ("dv", 0),
     ("lcevc", 0),
@@ -59,6 +60,8 @@ const LAYERS: &[(&str, u8)] = &[
     ("huffyuv", 0),
     ("ffv1", 0),
     ("dirac", 0),
+    ("tta", 0),
+    ("canopus", 0),
     ("vp9", 0),
     ("prores", 0),
     ("mjpeg", 0),
@@ -82,6 +85,7 @@ const LAYERS: &[(&str, u8)] = &[
     ("text", 1),
     ("route", 1),
     ("tcsync", 1),
+    ("tcsync-io", 5),
     ("metrics", 1),
     ("live", 1),
     ("edit", 2),
@@ -110,10 +114,12 @@ const LAYERS: &[(&str, u8)] = &[
     ("platform", 5),
     ("gstreamer", 5),
     ("ffmpeg", 5),
+    ("obs", 5),
     ("ui-egui", 5),
     ("automation", 5),
     ("cfa4", 6),
     ("cli", 6),
+    ("studio-host", 6),
 ];
 
 /// L0 crates that are not codecs/containers (no `bitstream`-only restriction).

@@ -140,7 +140,7 @@ fn descendants<'a, 'i>(n: Node<'a, 'i>, name: &'a str) -> impl Iterator<Item = N
     n.descendants().filter(move |c| c.is_element() && c.tag_name().name() == name)
 }
 
-fn text(n: Option<Node>) -> Option<String> {
+fn text(n: Option<Node<'_, '_>>) -> Option<String> {
     n.and_then(|n| n.text()).map(|t| t.trim().to_string()).filter(|t| !t.is_empty())
 }
 

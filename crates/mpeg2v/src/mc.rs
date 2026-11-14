@@ -44,7 +44,7 @@ pub(crate) struct RefPlane<'a> {
 /// this keeps corrupt ones safe).
 #[allow(clippy::too_many_arguments)]
 #[inline]
-pub(crate) fn predict(dst: &mut [u8], doff: usize, dstride: usize, src: RefPlane, x: i32, y: i32, hx: bool, hy: bool, bw: usize, bh: usize, avg: bool) {
+pub(crate) fn predict(dst: &mut [u8], doff: usize, dstride: usize, src: RefPlane<'_>, x: i32, y: i32, hx: bool, hy: bool, bw: usize, bh: usize, avg: bool) {
     let (ex, ey) = (hx as i32, hy as i32);
     let inside = x >= 0 && y >= 0 && (x + bw as i32 + ex) as usize <= src.w && (y + bh as i32 + ey) as usize <= src.h;
     let mut tmp = [0u8; 16];

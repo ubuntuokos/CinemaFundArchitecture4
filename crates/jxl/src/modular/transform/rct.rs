@@ -12,7 +12,7 @@ use crate::modular::Sample;
 
 type FnRow<S> = fn(&mut [&mut [S]; 3]);
 
-pub fn inverse_rct<S: Sample, const TYPE: u32>(permutation: u32, mut grids: [&mut MutableSubgrid<S>; 3], pool: &JxlThreadPool) {
+pub fn inverse_rct<S: Sample, const TYPE: u32>(permutation: u32, mut grids: [&mut MutableSubgrid<'_, S>; 3], pool: &JxlThreadPool) {
     let grid16 = grids.each_mut().map(|g| S::try_as_mutable_subgrid_i16(g));
     if let [Some(a), Some(b), Some(c)] = grid16 {
         let grids = [a, b, c];
@@ -30,7 +30,7 @@ pub fn inverse_rct<S: Sample, const TYPE: u32>(permutation: u32, mut grids: [&mu
 }
 
 #[inline(never)]
-fn run_rows<S: Sample>(permutation: u32, grids: [&mut MutableSubgrid<S>; 3], f: FnRow<S>, pool: &JxlThreadPool) {
+fn run_rows<S: Sample>(permutation: u32, grids: [&mut MutableSubgrid<'_, S>; 3], f: FnRow<S>, pool: &JxlThreadPool) {
     struct RctJob<'g, S: Sample> {
         grids: [MutableSubgrid<'g, S>; 3],
     }

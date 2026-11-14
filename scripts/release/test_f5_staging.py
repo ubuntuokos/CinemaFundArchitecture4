@@ -1,10 +1,10 @@
 """F5 isolated runtime helpers: lightweight tests with no actual media binary."""
 import json
 import os
-from pathlib import Path
 import sys
 import tempfile
 import unittest
+from pathlib import Path
 from unittest.mock import patch
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
@@ -32,30 +32,29 @@ class F5StagingTests(unittest.TestCase):
         with tempfile.TemporaryDirectory() as tmp:
             exe = Path(tmp) / "cfa4"
             exe.write_bytes(b"fake-ELF")
-            with patch.object(f5, "invoke", return_value="libbroken.so => not found\n"):
-                with self.assertRaisesRegex(AuditError, "missing ELF runtime dependencies"):
-                    f5.library_inventory(exe, env=os.environ)
+            with (
+                patch.object(f5, "invoke", return_value="libbroken.so => not found\n"),
+                self.assertRaisesRegex(AuditError, "missing ELF runtime dependencies"),
+            ):
+                f5.library_inventory(exe, env=os.environ)
 
     def test_flatpak_ref_rejects_wrong_architecture(self):
-        with tempfile.TemporaryDirectory() as tmp:
-            with patch.object(f5, "invoke", side_effect=[
-                "",
-                "",
-                "app/io.github.ubuntuokos.cfa4/aarch64/stable\n",
-            ]):
-                with self.assertRaisesRegex(AuditError, "unexpected app refs"):
-                    f5.stage_flatpak(Path(tmp) / "fixture.flatpak", Path(tmp), os.environ)
+        with tempfile.TemporaryDirectory() as tmp, patch.object(f5, "invoke", side_effect=[
+            "",
+            "",
+            "app/io.github.ubuntuokos.cfa4/aarch64/stable\n",
+        ]), self.assertRaisesRegex(AuditError, "unexpected app refs"):
+            f5.stage_flatpak(Path(tmp) / "fixture.flatpak", Path(tmp), os.environ)
 
     def test_flatpak_ref_accepts_exact_cfa4_amd64_id(self):
-        with tempfile.TemporaryDirectory() as tmp:
-            with patch.object(f5, "invoke", side_effect=[
-                "",
-                "",
-                "app/io.github.ubuntuokos.cfa4/x86_64/stable\n",
-            ]):
-                result = f5.stage_flatpak(Path(tmp) / "fixture.flatpak", Path(tmp), os.environ)
-                self.assertIn("/x86_64/", result["ref"])
-                self.assertIn("NOT_FLATPAK_INSTALL", result["scope"])
+        with tempfile.TemporaryDirectory() as tmp, patch.object(f5, "invoke", side_effect=[
+            "",
+            "",
+            "app/io.github.ubuntuokos.cfa4/x86_64/stable\n",
+        ]):
+            result = f5.stage_flatpak(Path(tmp) / "fixture.flatpak", Path(tmp), os.environ)
+            self.assertIn("/x86_64/", result["ref"])
+            self.assertIn("NOT_FLATPAK_INSTALL", result["scope"])
 
     def fake_cli(self, tmp: Path, results: list[dict], *, write: int | None = None) -> Path:
         """A stand-in `cfa4-cli run` that prints `results` and writes the cut file."""
