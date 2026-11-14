@@ -1,7 +1,7 @@
 # CFA4-TITLE-CREDITS-001 1.0 – CFA4-illesztési melléklet
 
 **Dátum:** 2026-11-14 · **Állapot:** a terv javasolt; a tulajdonos 2026-11-14-én elfogadta az E1–E14 javaslatait (Q1–Q12)
-és döntött az 1.2 hiányainak pótlásáról; a Q13 sorrend-része nyitott · **Terv:** [`CFA4-TITLE-CREDITS-001-1.0.md`](CFA4-TITLE-CREDITS-001-1.0.md) ·
+és döntött az 1.2 hiányainak pótlásáról; a 3. pont javaslatai (Q1–Q13) mind elfogadva · **Terv:** [`CFA4-TITLE-CREDITS-001-1.0.md`](CFA4-TITLE-CREDITS-001-1.0.md) ·
 **Meglévő terv:** [`docs/credits-plan.md`](../credits-plan.md) (F10, C1–C14), [ADR F10](../adr/ADR-F10-CREDITS-SPREADSHEET-2026-10-23.md),
 [`docs/credits.md`](../credits.md)
 
@@ -68,7 +68,7 @@ nélkül folytatódik.
   (réteglista, idővonal, kulcsképkocka-szerkesztő, előnézet, validáció) a CFA4 Qt6 felületének
   meglévő paneljei.
 
-### 0.3. Javasolt folytatás (C-fázisokként, a tulajdonos döntéséig javaslat: Q13)
+### 0.3. Folytatás C-fázisokként (elfogadva: Q13, tulajdonos, 2026-11-14)
 
 | Fázis | Tartalom | A terv pontja | Függ |
 |---|---|---|---|
@@ -242,4 +242,4 @@ hiány egy fázishoz van kötve (→ C16–C21, 0.3).
 | Q10 | A narrációvezérelt animáció és a szavankénti kiemelés a feliratozó tervében készüljön-e (E12)? | Igen, a cím- és kreditgenerátor használja | Elfogadva a javaslat szerint (tulajdonos, 2026-11-14) |
 | Q11 | Megengedett-e a jóváhagyással indított, alkalmazáson belüli modell-letöltés (E13)? | Igen (a mai működés); automatikus telepítés nem | Elfogadva a javaslat szerint (tulajdonos, 2026-11-14) |
 | Q12 | Milyen azonosítót kapjanak a terv fázisai (E14)? | TC-F0…TC-F9; a megvalósítás C15-től | Elfogadva a javaslat szerint (tulajdonos, 2026-11-14) |
-| Q13 | Elfogadod-e a 0.3 szerinti folytatást (C16–C24) a meglévő stáblista-generátorra építve? | Igen, a C15 és a törzsszélesség után C16-tal | részben eldöntve (tulajdonos, 2026-11-14): az 1.2 hiányait pótolni kell (C16, C18–C21); a sorrend és a C17, C22–C24 nyitott |
+| Q13 | Elfogadod-e a 0.3 szerinti folytatást (C16–C24) a meglévő stáblista-generátorra építve? | Igen, a C15 és a törzsszélesség után C16-tal | Elfogadva a javaslat szerint (tulajdonos, 2026-11-14), az 1.2 hiányainak pótlásával (C18–C21) |
