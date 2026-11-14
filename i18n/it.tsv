@@ -4565,7 +4565,7 @@
 	Comment…	Commento…
 	Comment:	Commento:
 	The analysis stopped.	L’analisi si è interrotta.
-	No segments. Add a range marker in the Source monitor, or use Find Segments…	Nessun segmento. Aggiungi un marcatore di intervallo nel monitor sorgente o usa Trova segmenti…
+	No segments yet: add a range marker in the Source monitor, or use Find Segments… there.	Nessun segmento. Aggiungi un marcatore di intervallo nel monitor sorgente o usa Trova segmenti.
 	Remove Segment	Rimuovi segmento
 	Black pictures	Immagini nere
 	{count} segments written and verified	{count} segmenti scritti e verificati
@@ -4612,3 +4612,7 @@
 	{count} segments joined into one file: {copied} frames copied, {reencoded} frames re-encoded	{count} segmenti uniti in un unico file: {copied} fotogrammi copiati, {reencoded} fotogrammi ricodificati
 	{name} ({frames} frames)	{name} ({frames} fotogrammi)
 	Scene changes	Cambi di scena
+	Import Markers from CSV…	Importa marcatori da CSV…
+	Export Segments as EDL…	Esporta segmenti come EDL…
+	Import Segments from EDL…	Importa segmenti da EDL…
+	Segments to Subclips	Segmenti in sottoclip

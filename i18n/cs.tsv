@@ -4565,7 +4565,7 @@ export.summary	Low	nízká
 	Comment…	Komentář…
 	Comment:	Komentář:
 	The analysis stopped.	Analýza se zastavila.
-	No segments. Add a range marker in the Source monitor, or use Find Segments…	Žádné segmenty. Přidej značku rozsahu ve zdrojovém monitoru nebo použij Najít segmenty…
+	No segments yet: add a range marker in the Source monitor, or use Find Segments… there.	Žádné segmenty. Přidej značku rozsahu ve zdrojovém monitoru nebo použij Najít segmenty.
 	Remove Segment	Odebrat segment
 	Black pictures	Černé snímky
 	{count} segments written and verified	Zapsané a ověřené segmenty: {count}
@@ -4612,3 +4612,7 @@ export.summary	Low	nízká
 	{count} segments joined into one file: {copied} frames copied, {reencoded} frames re-encoded	Segmenty ({count}) spojeny do jednoho souboru; zkopírované snímky: {copied}, znovu kódované snímky: {reencoded}
 	{name} ({frames} frames)	{name} (snímky: {frames})
 	Scene changes	Změny scény
+	Import Markers from CSV…	Importovat značky z CSV…
+	Export Segments as EDL…	Exportovat segmenty jako EDL…
+	Import Segments from EDL…	Importovat segmenty z EDL…
+	Segments to Subclips	Segmenty na podklipy

@@ -4564,7 +4564,7 @@ export.summary	Low	低
 	Comment…	註解…
 	Comment:	註解：
 	The analysis stopped.	分析已停止。
-	No segments. Add a range marker in the Source monitor, or use Find Segments…	沒有片段。請在來源監視器中加入範圍標記，或使用「尋找片段…」
+	No segments yet: add a range marker in the Source monitor, or use Find Segments… there.	沒有片段。請在來源監視器中加入範圍標記，或使用「尋找片段…」
 	Remove Segment	移除片段
 	Black pictures	黑畫面
 	{count} segments written and verified	已寫入並驗證 {count} 個片段
@@ -4611,3 +4611,7 @@ export.summary	Low	低
 	{count} segments joined into one file: {copied} frames copied, {reencoded} frames re-encoded	已將 {count} 個片段合併為一個檔案：複製 {copied} 個影格，重新編碼 {reencoded} 個影格
 	{name} ({frames} frames)	{name}（{frames} 個影格）
 	Scene changes	場景切換
+	Import Markers from CSV…	從 CSV 匯入標記…
+	Export Segments as EDL…	將片段匯出為 EDL…
+	Import Segments from EDL…	從 EDL 匯入片段…
+	Segments to Subclips	片段轉為子剪輯

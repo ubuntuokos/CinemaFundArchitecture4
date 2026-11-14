@@ -198,3 +198,18 @@ fn a_running_analysis_reports_its_state_and_can_be_stopped() {
     }
     let _ = std::fs::remove_dir_all(&dir);
 }
+
+#[test]
+fn a_subclip_is_analysed_and_segmented_only_within_its_range() {
+    let (mut s, item, dir) = session("segdetect-subclip");
+    // a subclip of frames 30–60 that does not restrict trims (the Source monitor shows all media)
+    let range = TimeRange::from_bounds(RATE.tick_of(30), RATE.tick_of(60));
+    let sub = s.edit("sub", |pr, _| Ok(pr.add_item("sub", Label::Iris, ItemKind::Subclip { parent: item, range, restrict_trims: false }, None))).unwrap();
+    let r = s.execute("segments.detectScenes", json!({"item": sub.0, "wait": true})).unwrap();
+    assert_eq!(spans(&r), [frames(30, 48), frames(48, 60)], "{r}");
+    let added = s.execute("segments.add", json!({"item": sub.0, "segments": [{"in": 0, "out": RATE.tick_of(72).0}]})).unwrap();
+    assert_eq!(added["markers"].as_array().unwrap().len(), 1, "{added}");
+    let segs = s.execute("segments.list", json!({"item": item.0})).unwrap();
+    assert_eq!(spans(&segs), [frames(30, 60)], "kept inside the subclip: {segs}");
+    let _ = std::fs::remove_dir_all(&dir);
+}

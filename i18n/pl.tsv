@@ -4565,7 +4565,7 @@ export.summary	Low	niska
 	Comment…	Komentarz…
 	Comment:	Komentarz:
 	The analysis stopped.	Analiza została zatrzymana.
-	No segments. Add a range marker in the Source monitor, or use Find Segments…	Brak segmentów. Dodaj znacznik zakresu w monitorze źródła albo użyj polecenia Znajdź segmenty…
+	No segments yet: add a range marker in the Source monitor, or use Find Segments… there.	Brak segmentów. Dodaj znacznik zakresu w monitorze źródła albo użyj polecenia Znajdź segmenty.
 	Remove Segment	Usuń segment
 	Black pictures	Czarne obrazy
 	{count} segments written and verified	Zapisano i sprawdzono segmenty: {count}
@@ -4612,3 +4612,7 @@ export.summary	Low	niska
 	{count} segments joined into one file: {copied} frames copied, {reencoded} frames re-encoded	Połączono segmenty ({count}) w jeden plik; skopiowane klatki: {copied}, ponownie zakodowane klatki: {reencoded}
 	{name} ({frames} frames)	{name} (klatki: {frames})
 	Scene changes	Zmiany scen
+	Import Markers from CSV…	Importuj znaczniki z CSV…
+	Export Segments as EDL…	Eksportuj segmenty jako EDL…
+	Import Segments from EDL…	Importuj segmenty z EDL…
+	Segments to Subclips	Segmenty na podklipy

@@ -4571,7 +4571,7 @@ export.summary	Low	తక్కువ
 	Comment…	వ్యాఖ్య…
 	Comment:	వ్యాఖ్య:
 	The analysis stopped.	విశ్లేషణ ఆగిపోయింది.
-	No segments. Add a range marker in the Source monitor, or use Find Segments…	విభాగాలు లేవు. సోర్స్ మానిటర్‌లో పరిధి మార్కర్‌ను జోడించండి, లేదా విభాగాలను కనుగొను… ఉపయోగించండి
+	No segments yet: add a range marker in the Source monitor, or use Find Segments… there.	విభాగాలు లేవు. సోర్స్ మానిటర్‌లో పరిధి మార్కర్‌ను జోడించండి, లేదా విభాగాలను కనుగొను… ఉపయోగించండి
 	Remove Segment	విభాగాన్ని తీసివేయి
 	Black pictures	నలుపు చిత్రాలు
 	{count} segments written and verified	{count} విభాగాలు వ్రాయబడి ధృవీకరించబడ్డాయి
@@ -4618,3 +4618,7 @@ export.summary	Low	తక్కువ
 	{count} segments joined into one file: {copied} frames copied, {reencoded} frames re-encoded	{count} విభాగాలు ఒకే ఫైల్‌గా కలుపబడ్డాయి: {copied} ఫ్రేమ్‌లు కాపీ చేయబడ్డాయి, {reencoded} ఫ్రేమ్‌లు మళ్లీ ఎన్‌కోడ్ చేయబడ్డాయి
 	{name} ({frames} frames)	{name} ({frames} ఫ్రేమ్‌లు)
 	Scene changes	దృశ్య మార్పులు
+	Import Markers from CSV…	CSV నుండి మార్కర్లను దిగుమతి చేయి…
+	Export Segments as EDL…	విభాగాలను EDLగా ఎగుమతి చేయి…
+	Import Segments from EDL…	EDL నుండి విభాగాలను దిగుమతి చేయి…
+	Segments to Subclips	విభాగాలను ఉపక్లిప్‌లుగా

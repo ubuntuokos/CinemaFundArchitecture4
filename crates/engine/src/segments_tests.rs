@@ -149,6 +149,14 @@ fn segments_are_placed_back_to_back_on_the_timeline() {
         .collect();
     clips.sort();
     assert_eq!(clips, [(Tick(0), RATE.tick_of(5)), (RATE.tick_of(5), RATE.tick_of(10))]);
+    // one undo step takes back the subclips and the placing
+    let items = s.project.items.len();
+    assert!(s.undo().is_some());
+    assert_eq!(s.project.items.len(), items - 2, "the subclips are gone with the placing");
+    // when the placing is refused, no subclip stays behind and the history is as before
+    let (before, undo) = (s.project.items.len(), s.history.undo.len());
+    assert!(s.execute("segments.toTimeline", json!({"item": item.0, "segments": [900], "time": 0, "track": 999})).is_err());
+    assert_eq!((s.project.items.len(), s.history.undo.len()), (before, undo));
     let _ = std::fs::remove_dir_all(&dir);
 }
 

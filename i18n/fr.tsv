@@ -4570,7 +4570,7 @@
 	Comment…	Commentaire…
 	Comment:	Commentaire :
 	The analysis stopped.	L’analyse s’est arrêtée.
-	No segments. Add a range marker in the Source monitor, or use Find Segments…	Aucun segment. Ajoutez un repère de plage dans le moniteur source ou utilisez Rechercher des segments…
+	No segments yet: add a range marker in the Source monitor, or use Find Segments… there.	Aucun segment. Ajoutez un repère de plage dans le moniteur source ou utilisez Rechercher des segments.
 	Remove Segment	Supprimer le segment
 	Black pictures	Images noires
 	{count} segments written and verified	{count} segments écrits et vérifiés
@@ -4617,3 +4617,7 @@
 	{count} segments joined into one file: {copied} frames copied, {reencoded} frames re-encoded	{count} segments assemblés en un seul fichier : {copied} images copiées, {reencoded} images réencodées
 	{name} ({frames} frames)	{name} ({frames} images)
 	Scene changes	Changements de plan
+	Import Markers from CSV…	Importer des marqueurs depuis un CSV…
+	Export Segments as EDL…	Exporter les segments au format EDL…
+	Import Segments from EDL…	Importer des segments depuis une EDL…
+	Segments to Subclips	Segments en sous-éléments

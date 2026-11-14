@@ -72,6 +72,7 @@ class SegmentFinderDialog(QDialog):
         self.said = said
         self.job: int | None = None
         self.proposal: dict[str, Any] | None = None
+        self.closed = False  # replies that arrive after the dialog closed change nothing
         self._timer = QTimer(self)
         self._timer.setSingleShot(True)
         self._timer.setInterval(POLL_MS)
@@ -168,6 +169,8 @@ class SegmentFinderDialog(QDialog):
 
     # ----- analysis -----
     def _fail(self, message: str) -> None:
+        if self.closed:
+            return
         self.error.setText(message)
         self.error.show()
         self.analyse.setEnabled(True)
@@ -182,6 +185,12 @@ class SegmentFinderDialog(QDialog):
         self.engine.execute(command, self.params(), on_reply=lambda r, _b: self._started(r), on_error=self._fail)
 
     def _started(self, result: Any) -> None:
+        if self.closed:
+            # closed while the analysis was starting: the job it started is not wanted
+            job = result.get("job") if isinstance(result, dict) else None
+            if isinstance(job, int) and not isinstance(job, bool):
+                self._cancel(job)
+            return
         if not isinstance(result, dict) or not isinstance(result.get("job"), int):
             self._fail(tr("The engine did not start the analysis."))
             return
@@ -189,11 +198,11 @@ class SegmentFinderDialog(QDialog):
         self._got(result)
 
     def _poll(self) -> None:
-        if self.job is not None:
+        if self.job is not None and not self.closed:
             self.engine.execute("segments.proposal", {"job": self.job}, on_reply=lambda r, _b: self._got(r), on_error=self._fail)
 
     def _got(self, result: Any) -> None:
-        if not isinstance(result, dict) or result.get("job") != self.job:
+        if self.closed or not isinstance(result, dict) or result.get("job") != self.job:
             return
         state = result.get("state")
         if state == "running":
@@ -265,14 +274,20 @@ class SegmentFinderDialog(QDialog):
             return
 
         def done(result: Any) -> None:
+            if self.closed:
+                return
             added = len((result or {}).get("markers") or []) if isinstance(result, dict) else 0
             self.said(fmt("{count} segments added to the clip", count=added))
             self.accept()
 
         self.engine.execute("segments.add", {"item": self.item, "segments": chosen}, on_reply=lambda r, _b: done(r), on_error=self._fail)
 
+    def _cancel(self, job: int) -> None:
+        self.engine.execute("jobs.cancel", {"job": job}, on_reply=lambda _r, _b: None, on_error=lambda _m: None)
+
     def reject(self) -> None:
         self._timer.stop()
+        self.closed = True
         if self.job is not None and (self.proposal is None or self.proposal.get("job") != self.job):
-            self.engine.execute("jobs.cancel", {"job": self.job}, on_reply=lambda _r, _b: None, on_error=lambda _m: None)
+            self._cancel(self.job)
         super().reject()

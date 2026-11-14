@@ -100,7 +100,9 @@ pub(crate) fn target(s: &Session, p: &Value, cmd: &str) -> Result<Target> {
 
 /// Enabled when there is a sequence or a Source clip to take the markers from.
 pub(crate) fn has_target(s: &Session) -> std::result::Result<(), String> {
-    if s.state.active_sequence.is_some() || s.state.source_item.is_some() { Ok(()) } else { Err("open a sequence or a Source clip first".into()) }
+    // an explicit `item` names any media item of the project, so one is enough
+    let media = || s.project.items.values().any(|i| matches!(i.kind, cfa4_project::ItemKind::Media(_)));
+    if s.state.active_sequence.is_some() || s.state.source_item.is_some() || media() { Ok(()) } else { Err("open a sequence or a Source clip first".into()) }
 }
 
 /// A marker to add, before it has an id.
@@ -125,55 +127,91 @@ fn read(s: &Session, path: &str, cmd: &str) -> Result<String> {
     Ok(text.strip_prefix('\u{feff}').map(str::to_string).unwrap_or(text))
 }
 
-/// RFC 4180 records: quoted fields may hold commas, quotes (`""`) and line breaks. `None` when a
-/// quoted field is never closed (a cut-off file).
-fn csv_records(text: &str) -> Option<Vec<Vec<String>>> {
+/// Most fields in one CSV record (`markers.exportCsv` writes 12).
+const MAX_FIELDS: usize = 256;
+/// Most characters in one CSV field.
+const MAX_FIELD_CHARS: usize = 64 * 1024;
+
+/// RFC 4180 records: quoted fields may hold commas, quotes (`""`) and line breaks. The limits
+/// (records, fields per record, characters per field) apply while parsing, so a hostile file is
+/// refused before it is held in memory. An error when a quoted field is never closed (a cut-off
+/// file) or a limit is passed.
+fn csv_records(text: &str) -> std::result::Result<Vec<Vec<String>>, String> {
     let mut rows = Vec::new();
     let mut row = Vec::new();
     let mut field = String::new();
+    let mut chars_in_field = 0usize;
     let mut quoted = false;
     let mut chars = text.chars().peekable();
+    let end_field = |row: &mut Vec<String>, field: &mut String, rows: &Vec<Vec<String>>| -> std::result::Result<(), String> {
+        if row.len() >= MAX_FIELDS {
+            return Err(format!("row {} has more than {MAX_FIELDS} fields", rows.len() + 1));
+        }
+        row.push(std::mem::take(field));
+        Ok(())
+    };
     while let Some(c) = chars.next() {
+        let mut push = |field: &mut String, c: char| {
+            chars_in_field += 1;
+            if chars_in_field > MAX_FIELD_CHARS {
+                return Err(format!("row {} has a field longer than {MAX_FIELD_CHARS} characters", rows.len() + 1));
+            }
+            field.push(c);
+            Ok(())
+        };
         if quoted {
             match c {
                 '"' if chars.peek() == Some(&'"') => {
                     chars.next();
-                    field.push('"');
+                    push(&mut field, '"')?;
                 }
                 '"' => quoted = false,
-                _ => field.push(c),
+                _ => push(&mut field, c)?,
             }
             continue;
         }
         match c {
             '"' => quoted = true,
-            ',' => row.push(std::mem::take(&mut field)),
+            ',' => {
+                end_field(&mut row, &mut field, &rows)?;
+                chars_in_field = 0;
+            }
             '\r' if chars.peek() == Some(&'\n') => {}
             '\n' | '\r' => {
-                row.push(std::mem::take(&mut field));
+                end_field(&mut row, &mut field, &rows)?;
+                chars_in_field = 0;
                 if row.iter().any(|f| !f.is_empty()) {
+                    // the header and at most MAX_MARKERS markers
+                    if rows.len() > MAX_MARKERS {
+                        return Err(format!("the CSV has more than {MAX_MARKERS} rows"));
+                    }
                     rows.push(std::mem::take(&mut row));
                 } else {
                     row.clear();
                 }
             }
-            _ => field.push(c),
+            _ => push(&mut field, c)?,
         }
     }
     if quoted {
-        return None;
+        return Err("a quoted CSV field is never closed (is the file cut off?)".into());
     }
-    row.push(field);
+    end_field(&mut row, &mut field, &rows)?;
     if row.iter().any(|f| !f.is_empty()) {
+        if rows.len() > MAX_MARKERS {
+            return Err(format!("the CSV has more than {MAX_MARKERS} rows"));
+        }
         rows.push(row);
     }
-    Some(rows)
+    Ok(rows)
 }
 
-/// A text field as `markers.exportCsv` wrote it, without its spreadsheet-formula guard.
+/// A text field as `markers.exportCsv` wrote it, without its spreadsheet-formula guard (the
+/// exact inverse of [`crate::marker_export::needs_guard`]: a `'` the exporter added is always
+/// followed by text that needs the guard, and any other `'` is kept).
 fn unguard(v: &str) -> String {
     match v.strip_prefix('\'') {
-        Some(rest) if rest.trim_start().starts_with(['=', '+', '-', '@']) => rest.to_string(),
+        Some(rest) if crate::marker_export::needs_guard(rest) => rest.to_string(),
         _ => v.to_string(),
     }
 }
@@ -210,7 +248,7 @@ fn same_rate(a: FrameRate, b: FrameRate) -> bool {
 }
 
 fn csv_markers(s: &Session, t: &Target, text: &str, allow_rate_change: bool, cmd: &str) -> Result<Vec<New>> {
-    let rows = csv_records(text).ok_or_else(|| bad(cmd, "a quoted CSV field is never closed (is the file cut off?); nothing was imported"))?;
+    let rows = csv_records(text).map_err(|e| bad(cmd, format!("{e}; nothing was imported")))?;
     let Some((header, rows)) = rows.split_first() else {
         return Err(bad(cmd, "the CSV is empty"));
     };
@@ -322,8 +360,10 @@ fn write(s: &mut Session, t: &Target, label: &str, new: Vec<New>, cmd: &str) -> 
             Holder::Media(id) => &mut pr.item_mut(id).and_then(|i| i.as_media_mut()).ok_or_else(|| bad(cmd, format!("no media item {}", id.0)))?.markers,
         };
         let mut added = Vec::new();
+        // the markers already there (and those added now), looked up in constant time
+        let mut there: std::collections::HashSet<(Tick, Tick, String)> = list.iter().map(|x| (x.start, x.duration, x.name.clone())).collect();
         for (m, id) in new.into_iter().zip(ids) {
-            if list.iter().any(|x| x.start == m.start && x.duration == m.duration && x.name == m.name) {
+            if !there.insert((m.start, m.duration, m.name.clone())) {
                 continue;
             }
             list.push(Marker { id: MarkerId(id), start: m.start, duration: m.duration, name: m.name, comment: m.comment, kind: m.kind, color: m.color });

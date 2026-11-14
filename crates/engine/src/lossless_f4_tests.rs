@@ -21,8 +21,15 @@ fn segments_are_saved_with_the_project_and_come_back() {
     t.execute("file.open", json!({"path": path})).unwrap();
     assert_eq!(t.execute("segments.list", json!({"item": item.0})).unwrap()["segments"], before);
     // and they still cut and go to the timeline after the reload
-    let r = t.execute("segments.plan", json!({"item": item.0, "output": dir.join("{n}.mp4").to_string_lossy()})).unwrap();
+    let output = dir.join("{n}.mp4").to_string_lossy().into_owned();
+    let r = t.execute("segments.plan", json!({"item": item.0, "output": output})).unwrap();
     assert_eq!(r["summary"]["ranges"], 2, "{r}");
+    let r = t.execute("segments.export", json!({"item": item.0, "output": output})).unwrap();
+    assert_eq!(r["verified"], true, "{r}");
+    for n in 1..=2 {
+        let f = dir.join(format!("{n}.mp4"));
+        assert!(std::fs::metadata(&f).is_ok_and(|m| m.len() > 0), "{} written after the reload", f.display());
+    }
     let _ = std::fs::remove_dir_all(&dir);
 }
 
@@ -104,10 +111,11 @@ fn a_damaged_source_is_refused_and_never_panics() {
         let _ = s.execute("export.analyze", json!({"path": path}));
         let _ = s.execute("export.plan", json!({"path": path, "in": frame(10), "out": frame(30)}));
         let r = s.execute("export.start", json!({"path": path, "in": frame(10), "out": frame(30), "output": "o.mp4"}));
-        // a damaged file either is refused or is cut and verified; it never writes an unverified file
-        if let Ok(v) = r {
-            assert_eq!(v["verified"], true, "{path}: {v}");
+        // a damaged file either is refused (and nothing is written) or is cut and verified
+        match r {
+            Ok(v) => assert_eq!(v["verified"], true, "{path}: {v}"),
+            Err(e) => assert!(!files.0.lock().unwrap().contains_key("o.mp4"), "{path}: refused ({e}) yet o.mp4 was written"),
         }
+        let _ = files.0.lock().unwrap().remove("o.mp4");
     }
-    let _ = files.0.lock().unwrap().remove("o.mp4");
 }

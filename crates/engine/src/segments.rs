@@ -198,15 +198,18 @@ fn to_timeline(s: &mut Session, p: &Value) -> Result<Value> {
     if s.active_sequence().is_none() {
         return Err(bad(cmd, "open a sequence first"));
     }
-    let made = make_subclips(s, p, cmd)?;
-    let mut q = json!({"items": made.iter().map(|(_, id)| id.0).collect::<Vec<_>>()});
-    for k in ["time", "frame", "seconds", "track", "audioTrack", "insert", "video", "audio"] {
-        if let Some(v) = p.get(k) {
-            q[k] = v.clone();
+    // one undo step, all or nothing: when the placing fails, the subclips are not kept either
+    s.edit_group("Segments to Timeline", |s| {
+        let made = make_subclips(s, p, cmd)?;
+        let mut q = json!({"items": made.iter().map(|(_, id)| id.0).collect::<Vec<_>>()});
+        for k in ["time", "frame", "seconds", "track", "audioTrack", "insert", "video", "audio"] {
+            if let Some(v) = p.get(k) {
+                q[k] = v.clone();
+            }
         }
-    }
-    let placed = s.execute("timeline.place", q)?;
-    Ok(json!({"subclips": made.iter().map(|(m, id)| json!({"marker": m, "item": id.0})).collect::<Vec<_>>(), "placed": placed}))
+        let placed = s.execute("timeline.place", q)?;
+        Ok(json!({"subclips": made.iter().map(|(m, id)| json!({"marker": m, "item": id.0})).collect::<Vec<_>>(), "placed": placed}))
+    })
 }
 
 pub(crate) fn commands() -> Vec<CommandSpec> {

@@ -89,10 +89,24 @@ pub fn fit_size(w: u32, h: u32, width: Option<u32>, height: Option<u32>) -> Opti
     }
 }
 
+/// Most pixels of the intermediate image a resize builds (it scales one direction, then the
+/// other: source width × output height or output width × source height, 16 bytes a pixel), 1 GiB.
+const MAX_RESIZE_PIXELS: u64 = 64 * 1024 * 1024;
+
 /// The image at another size (Lanczos on the premultiplied linear values, so edges keep no halo).
 fn resized(image: &Image, (w, h): (u32, u32)) -> Result<Image> {
     let bad = || ExportError::Encode("invalid still image dimensions or pixel buffer".into());
     cfa4_project::validate_frame_size(w, h).map_err(|e| ExportError::Unsupported(format!("output size {w}×{h}: {e}")))?;
+    let (sw, sh) = (image.w as u64, image.h as u64);
+    let (dw, dh) = (u64::from(w), u64::from(h));
+    if sw.saturating_mul(dh).max(dw.saturating_mul(sh)).max(dw.saturating_mul(dh)) > MAX_RESIZE_PIXELS {
+        return Err(ExportError::Unsupported(format!(
+            "resizing {}×{} to {w}×{h} needs more than {} megapixels of working memory; choose a smaller size",
+            image.w,
+            image.h,
+            MAX_RESIZE_PIXELS >> 20
+        )));
+    }
     let src: image::ImageBuffer<image::Rgba<f32>, Vec<f32>> =
         image::ImageBuffer::from_raw(u32::try_from(image.w).map_err(|_| bad())?, u32::try_from(image.h).map_err(|_| bad())?, image.px.clone())
             .ok_or_else(bad)?;
@@ -206,6 +220,13 @@ fn encode_at(image: &Image, format: StillFormat, depth: u8, quality: u8) -> Resu
 #[cfg(test)]
 mod tests {
     use super::*;
+    #[test]
+    fn a_resize_too_large_for_memory_is_refused_before_it_starts() {
+        let img = Image { w: 8192, h: 1, px: vec![0.5; 8192 * 4] };
+        let opts = StillOptions { size: Some((8192, 8200)), ..StillOptions::default() };
+        let e = encode_with(&img, StillFormat::Png, 8, opts).unwrap_err().to_string();
+        assert!(e.contains("working memory"), "{e}");
+    }
     #[test]
     fn sixteen_bit_stills_preserve_sub_eight_bit_precision_and_alpha() {
         let img = Image { w: 2, h: 1, px: vec![0.101, 0.203, 0.307, 1.0, 0.101 / 2.0, 0.203 / 2.0, 0.307 / 2.0, 0.5] };

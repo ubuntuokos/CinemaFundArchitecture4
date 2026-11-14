@@ -4568,7 +4568,7 @@ export.summary	Low	დაბალი
 	Comment…	კომენტარი…
 	Comment:	კომენტარი:
 	The analysis stopped.	ანალიზი შეჩერდა.
-	No segments. Add a range marker in the Source monitor, or use Find Segments…	სეგმენტები არ არის. დაამატე დიაპაზონის მარკერი წყაროს მონიტორში ან გამოიყენე „სეგმენტების ძებნა…“
+	No segments yet: add a range marker in the Source monitor, or use Find Segments… there.	სეგმენტები არ არის. დაამატე დიაპაზონის მარკერი წყაროს მონიტორში ან გამოიყენე „სეგმენტების ძებნა…“
 	Remove Segment	სეგმენტის წაშლა
 	Black pictures	შავი კადრები
 	{count} segments written and verified	ჩაწერილი და შემოწმებული სეგმენტები: {count}
@@ -4615,3 +4615,7 @@ export.summary	Low	დაბალი
 	{count} segments joined into one file: {copied} frames copied, {reencoded} frames re-encoded	სეგმენტები ({count}) გაერთიანდა ერთ ფაილად; დაკოპირებული კადრები: {copied}, ხელახლა კოდირებული კადრები: {reencoded}
 	{name} ({frames} frames)	{name} (კადრები: {frames})
 	Scene changes	სცენის ცვლილებები
+	Import Markers from CSV…	მარკერების იმპორტი CSV-დან…
+	Export Segments as EDL…	სეგმენტების ექსპორტი EDL-ად…
+	Import Segments from EDL…	სეგმენტების იმპორტი EDL-დან…
+	Segments to Subclips	სეგმენტები ქვეკლიპებად

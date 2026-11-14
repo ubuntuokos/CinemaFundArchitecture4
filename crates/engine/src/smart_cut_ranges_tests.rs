@@ -126,6 +126,7 @@ fn joined_ranges_are_one_verified_file_with_every_sample() {
     assert_eq!(out.tracks.len(), 3);
     assert_eq!(out.tracks[0].samples.len(), 20, "both ranges' pictures");
     assert_eq!(r["samples"][0], 20);
+    assert!(r["maxSyncError100ns"].as_u64().is_some(), "{r}");
     // the ranges' names (or numbers) are the chapters
     let titles: Vec<(u64, &str)> = out.metadata.chapters.iter().map(|c| (c.start_100ns, c.title.as_str())).collect();
     assert_eq!(titles, [(0, "Eleje"), (4_000_000, "2")]);
@@ -168,6 +169,13 @@ fn bad_join_requests_are_refused_before_writing() {
         (json!({"path": "clip.mp4", "join": "yes", "output": "j.mp4", "ranges": [range(0, 10)]}), "true or false"),
         (json!({"path": "clip.mp4", "join": true, "segmentChapters": 1, "output": "j.mp4", "ranges": [range(0, 10)]}), "true or false"),
         (json!({"path": "clip.mp4", "join": true, "output": "clip.mp4", "ranges": [range(0, 10)]}), "source"),
+        // other spellings of the same files
+        (json!({"path": "clip.mp4", "join": true, "output": "./clip.mp4", "ranges": [range(0, 10)]}), "source"),
+        (json!({"path": "clip.mp4", "join": true, "output": "sub/../clip.mp4", "ranges": [range(0, 10)]}), "source"),
+        (
+            json!({"path": "clip.mp4", "ranges": [{"in": frame(0), "out": frame(10), "output": "a/1.mp4"}, {"in": frame(20), "out": frame(30), "output": "a/./1.mp4"}]}),
+            "another range",
+        ),
     ] {
         let e = s.execute("export.start", p).unwrap_err().to_string();
         assert!(e.contains(why), "{why}: {e}");

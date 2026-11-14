@@ -4550,7 +4550,7 @@
 	Comment…	Коментар…
 	Comment:	Коментар:
 	The analysis stopped.	Аналіз зупинено.
-	No segments. Add a range marker in the Source monitor, or use Find Segments…	Сегментів немає. Додайте маркер діапазону в моніторі джерела або скористайтеся командою «Знайти сегменти…»
+	No segments yet: add a range marker in the Source monitor, or use Find Segments… there.	Сегментів немає. Додайте маркер діапазону в моніторі джерела або скористайтеся командою «Знайти сегменти…»
 	Remove Segment	Вилучити сегмент
 	Black pictures	Чорні кадри
 	{count} segments written and verified	Записано й перевірено сегментів: {count}
@@ -4597,3 +4597,7 @@
 	{count} segments joined into one file: {copied} frames copied, {reencoded} frames re-encoded	Сегменти ({count}) об’єднано в один файл; скопійовано кадрів: {copied}, перекодовано кадрів: {reencoded}
 	{name} ({frames} frames)	{name} (кадрів: {frames})
 	Scene changes	Зміни сцен
+	Import Markers from CSV…	Імпорт маркерів із CSV…
+	Export Segments as EDL…	Експорт сегментів у EDL…
+	Import Segments from EDL…	Імпорт сегментів з EDL…
+	Segments to Subclips	Сегменти в підкліпи

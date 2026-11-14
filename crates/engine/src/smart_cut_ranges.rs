@@ -123,7 +123,7 @@ fn range_params(p: &Value, cmd: &str, with_output: bool) -> Result<Vec<Value>> {
         };
         match output {
             Some(o) => {
-                if !outputs.insert(o.clone()) {
+                if !outputs.insert(crate::smart_cut::lexical_path(&o)) {
                     return Err(bad(cmd, format!("range {n}: `{o}` is the output of another range too")));
                 }
                 q.insert("output".into(), Value::String(o));
@@ -190,6 +190,8 @@ fn existing(s: &Session, p: &Value, cmd: &str) -> Result<Vec<String>> {
 /// `export.plan` with `ranges`: the plan of every range and the totals.
 pub(crate) fn plan(s: &mut Session, p: &Value, single: Single) -> Result<Value> {
     let cmd = "export.plan";
+    // the source is read and indexed once for every range
+    let _batch = crate::source_cache::batch();
     let mut plans = Vec::new();
     for (i, q) in range_params(p, cmd, false)?.iter().enumerate() {
         let mut r = single(s, q).map_err(|e| EngineError::Other(format!("range {}: {e}", i + 1)))?;
@@ -215,6 +217,8 @@ pub(crate) fn plan(s: &mut Session, p: &Value, single: Single) -> Result<Value> 
 /// `export.start` with `ranges`: every range planned and checked first, then written one by one.
 pub(crate) fn start(s: &mut Session, p: &Value, steps: Steps) -> Result<Value> {
     let cmd = "export.start";
+    // the source is read and indexed once for every range, plans and cuts alike
+    let _batch = crate::source_cache::batch();
     let params = range_params(p, cmd, true)?;
     let mut plans = Vec::with_capacity(params.len());
     for (i, q) in params.iter().enumerate() {
@@ -239,10 +243,20 @@ pub(crate) fn start(s: &mut Session, p: &Value, steps: Steps) -> Result<Value> {
         ));
     }
     // the source itself is never an output (plan 1.1 §7), whatever else the batch says
+    // compared as the files they name, so another spelling of a path (`./`, `..`, a symbolic
+    // link) is caught too
     let (source, _) = crate::smart_cut::source_p(s, &params[0], cmd)?;
-    let outputs = params.iter().filter_map(|q| q.get("output").and_then(Value::as_str));
-    if outputs.into_iter().any(|o| o == source) {
-        return Err(bad(cmd, "the output must not be the source file; nothing was written"));
+    let key = |o: &str| crate::smart_cut::path_key(s, o);
+    let source = key(&source);
+    let mut seen = BTreeSet::new();
+    for (i, o) in params.iter().enumerate().filter_map(|(i, q)| q.get("output").and_then(Value::as_str).map(|o| (i, o))) {
+        let k = key(o);
+        if k == source {
+            return Err(bad(cmd, "the output must not be the source file; nothing was written"));
+        }
+        if !join_p(p, cmd)? && !seen.insert(k) {
+            return Err(bad(cmd, format!("range {}: `{o}` is the same file as the output of another range; nothing was written", i + 1)));
+        }
     }
     let taken = existing(s, p, cmd)?;
     if !taken.is_empty() && !bool_p(p, "overwrite").unwrap_or(false) {
@@ -275,6 +289,9 @@ pub(crate) fn start(s: &mut Session, p: &Value, steps: Steps) -> Result<Value> {
     Ok(json!({"ranges": written, "summary": summary, "verified": true}))
 }
 
+/// Most bytes of cut ranges a join holds in memory (the joined file is built next to them).
+const MAX_JOIN_BYTES: u64 = 2 << 30;
+
 /// `export.start` with `ranges` and `"join": true`: the ranges cut in memory, joined, written once.
 fn join(s: &mut Session, p: &Value, params: &[Value], cut: Cut, summary: Value) -> Result<Value> {
     let cmd = "export.start";
@@ -286,12 +303,21 @@ fn join(s: &mut Session, p: &Value, params: &[Value], cut: Cut, summary: Value) 
     };
     let mut parts = Vec::with_capacity(params.len());
     let mut results = Vec::with_capacity(params.len());
+    let mut held = 0u64;
     for (i, q) in params.iter().enumerate() {
         let (bytes, mut r) = cut(s, q).map_err(|e| EngineError::Other(format!("range {}: {e}; nothing was written", i + 1)))?;
         if let Some(r) = r.as_object_mut() {
             r.remove("output");
         }
         r["range"] = json!(i + 1);
+        held += bytes.len() as u64;
+        if held > MAX_JOIN_BYTES {
+            return Err(EngineError::Other(format!(
+                "range {}: the joined ranges need more than {} GiB in memory; export them as separate files; nothing was written",
+                i + 1,
+                MAX_JOIN_BYTES >> 30
+            )));
+        }
         parts.push(bytes);
         results.push(r);
     }
@@ -335,6 +361,7 @@ fn join(s: &mut Session, p: &Value, params: &[Value], cut: Cut, summary: Value) 
         "summary": summary,
         "samples": joined.samples,
         "duration100ns": at(joined.duration),
+        "maxSyncError100ns": joined.max_sync_error_100ns,
         "chapters": chapters,
         "verified": true,
     }))

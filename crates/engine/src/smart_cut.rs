@@ -135,6 +135,28 @@ pub(crate) fn source_p(s: &Session, p: &Value, cmd: &str) -> Result<(String, Opt
     Ok((path, Some(view)))
 }
 
+/// `path` with `.` dropped and `..` and repeated separators folded, without touching the disk.
+pub(crate) fn lexical_path(path: &str) -> String {
+    use std::path::Component;
+    let mut out: Vec<Component<'_>> = Vec::new();
+    for c in std::path::Path::new(path).components() {
+        match c {
+            Component::CurDir => {}
+            Component::ParentDir if matches!(out.last(), Some(Component::Normal(_))) => {
+                out.pop();
+            }
+            Component::ParentDir if matches!(out.last(), Some(Component::RootDir | Component::Prefix(_))) => {}
+            c => out.push(c),
+        }
+    }
+    out.iter().collect::<std::path::PathBuf>().to_string_lossy().into_owned()
+}
+
+/// What identifies the file `path` names: the host's resolved path, or the lexical one.
+pub(crate) fn path_key(s: &Session, path: &str) -> String {
+    s.services.canonical_path(path).unwrap_or_else(|| lexical_path(path))
+}
+
 fn container_of(path: &str, quicktime: bool) -> Container {
     if quicktime || path.to_ascii_lowercase().ends_with(".mov") { Container::Mov } else { Container::Mp4 }
 }
@@ -277,9 +299,9 @@ pub(crate) fn range_p(p: &Value, cmd: &str, src: &CutSource<'_>) -> Result<(Tick
 }
 
 /// The plan of the range named in `p`.
-fn plan_of(s: &Session, p: &Value, cmd: &str) -> Result<(Source, SmartCutPlan)> {
+fn plan_of(s: &Session, p: &Value, cmd: &str) -> Result<(std::rc::Rc<Source>, SmartCutPlan)> {
     let (path, view) = source_p(s, p, cmd)?;
-    let src = open_source(s, &path, cmd)?;
+    let src = crate::source_cache::opened(&path, || open_source(s, &path, cmd))?;
     let map = |t: Tick| src.stream_time(t);
     let (in_point, out_point) = range_p(p, cmd, &CutSource { path: &path, view: view.as_ref(), rate: src.rate(), stream_time: &map })?;
     let mode = mode_p(p, cmd)?;
@@ -411,7 +433,7 @@ fn cut(s: &mut Session, p: &Value) -> Result<(Vec<u8>, Value)> {
     let output = str_p(p, "output").filter(|o| !o.is_empty()).map(str::to_string).ok_or_else(|| bad(cmd, "`output` (the file to write) is required"))?;
     let encoding = encoding_p(p, cmd)?;
     let (src, plan) = plan_of(s, p, cmd)?;
-    if output == src.path {
+    if path_key(s, &output) == path_key(s, &src.path) {
         return Err(bad(cmd, "the output must not be the source file"));
     }
     let reencodes = plan.plan.requires_confirmation();

@@ -389,17 +389,37 @@ fn joined_parts_ffprobe() {
     let (Some(a), Some(b), Some(mov), Some(_)) = (fixture("h264_bframes.mp4"), fixture("editlist_cut.mp4"), fixture("h264.mov"), ffprobe()) else {
         return;
     };
-    for (name, parts) in [("joined.mp4", vec![a.clone(), b.clone(), a.clone()]), ("joined.mov", vec![mov.clone(), mov.clone()])] {
+    // pictures that do not continue the previous part (another start) are refused, never shifted
+    let (da, db) = (std::fs::read(&a).unwrap(), std::fs::read(&b).unwrap());
+    let e = concat(&[da.as_slice(), db.as_slice()]).unwrap_err().to_string();
+    assert!(e.contains("part 2") && e.contains("separate files"), "{e}");
+    for (name, parts) in [("joined.mp4", vec![a.clone(), a.clone(), a.clone()]), ("joined.mov", vec![mov.clone(), mov.clone()])] {
         let data: Vec<Vec<u8>> = parts.iter().map(|p| std::fs::read(p).unwrap()).collect();
         let refs: Vec<&[u8]> = data.iter().map(Vec::as_slice).collect();
         let joined = concat(&refs).unwrap();
         let out = out_dir().join(name);
         std::fs::write(&out, &joined.bytes).unwrap();
         decode_clean(&out);
-        // every sample of every part is in the file once
-        let counts: Vec<u64> =
-            (0..joined.samples.len()).map(|i| data.iter().map(|d| open(d.as_slice()).unwrap().tracks[i].samples.len() as u64).sum()).collect();
-        assert_eq!(joined.samples, counts, "{name}: samples per track");
+        // every picture of every part is in the file once; the sound stays with the pictures
+        let first = open(data[0].as_slice()).unwrap();
+        let v = first.tracks.iter().position(|t| t.kind == TrackKind::Video).unwrap();
+        let pictures: u64 = data.iter().map(|d| open(d.as_slice()).unwrap().tracks[v].samples.len() as u64).sum();
+        assert_eq!(joined.samples[v], pictures, "{name}: pictures");
+        let frame = u64::from(first.tracks[v].samples[0].duration) * 10_000_000 / u64::from(first.tracks[v].timescale);
+        assert!(joined.max_sync_error_100ns <= frame, "{name}: sound {} x 100 ns off", joined.max_sync_error_100ns);
+        // the parts' sound has its own start (AAC priming) or is uncompressed (sliced to the frame)
+        let au = first.tracks.iter().position(|t| t.kind == TrackKind::Audio).unwrap();
+        let primed = first.tracks[au].edits.iter().any(|e| e.media_time > 0);
+        assert!(primed || first.tracks[au].pcm_chunked, "{name}: the fixture covers primed or uncompressed sound");
+        // CFA4's own reader shows every part's first picture where the part starts
+        let back = open(joined.bytes.as_slice()).unwrap();
+        let t = &back.tracks[v];
+        assert!(t.edits.iter().filter(|e| e.media_time >= 0).count() <= 1, "{name}: one edit");
+        let per_part = first.tracks[v].samples.len();
+        let shown = |k: usize| t.samples[k * per_part..(k + 1) * per_part].iter().map(|s| s.pts).min().unwrap() + t.edit_offset;
+        for (k, at) in joined.starts.iter().enumerate() {
+            assert_eq!(shown(k) as u64 * u64::from(joined.timescale) / u64::from(t.timescale), *at, "{name}: part {} starts", k + 1);
+        }
         // ffmpeg shows the parts' pictures one after the other, and the parts' sound
         let pictures = |p: &Path| decoded(p, &["-map", "0:v", "-f", "framemd5"]);
         let want: Vec<String> = parts.iter().flat_map(|p| pictures(p)).collect();

@@ -4567,7 +4567,7 @@ export.summary	Low	låg
 	Comment…	Kommentar…
 	Comment:	Kommentar:
 	The analysis stopped.	Analysen stoppades.
-	No segments. Add a range marker in the Source monitor, or use Find Segments…	Inga segment. Lägg till en intervallmarkör i källmonitorn eller använd Hitta segment…
+	No segments yet: add a range marker in the Source monitor, or use Find Segments… there.	Inga segment. Lägg till en intervallmarkör i källmonitorn eller använd Hitta segment.
 	Remove Segment	Ta bort segment
 	Black pictures	Svarta bilder
 	{count} segments written and verified	{count} segment skrivna och kontrollerade
@@ -4614,3 +4614,7 @@ export.summary	Low	låg
 	{count} segments joined into one file: {copied} frames copied, {reencoded} frames re-encoded	{count} segment ihopfogade till en fil: {copied} bildrutor kopierade, {reencoded} bildrutor omkodade
 	{name} ({frames} frames)	{name} ({frames} bildrutor)
 	Scene changes	Scenbyten
+	Import Markers from CSV…	Importera markörer från CSV…
+	Export Segments as EDL…	Exportera segment som EDL…
+	Import Segments from EDL…	Importera segment från EDL…
+	Segments to Subclips	Segment till delklipp

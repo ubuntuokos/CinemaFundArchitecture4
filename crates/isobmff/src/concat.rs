@@ -1,13 +1,17 @@
 //! Joining MP4 / MOV files of the same streams one after the other without re-encoding
 //! (CFA4-LOSSLESS-MEDIA-TOOLS-001 K1: several cut ranges of one source as one file).
 //!
-//! Every sample of every part is copied unchanged. Each part keeps its own presentation: the
-//! joined track's edit list has one entry per part (merged where a part continues the previous
-//! one), so a part's leading gap, its audio priming and a track shorter than the part stay exactly
-//! as they were. Parts are refused, never adapted, when their tracks do not match (another track
-//! layout, timescale or sample description), when a part is fragmented, or when an edit list is
-//! more than a leading gap and one edit at normal speed. The written file is read back and every
-//! sample is compared with its part before it is returned.
+//! Every written sample is copied unchanged. Each joined track has a single edit (part 1's leading
+//! gap and one edit at normal speed), because CFA4's own reader and many players apply only the
+//! first edit of a list. Pictures are copied whole and each part must continue the previous one
+//! exactly (no leading gap, no shortened end, the same reordering delay); otherwise the join is
+//! refused. Sound starts each part with the sample nearest to where the part begins and ends where
+//! it ends (uncompressed sound to the frame), so a part's priming and tail are left out and the
+//! sound stays within one picture of the pictures. Parts are refused, never adapted, when their
+//! tracks do not match (another track layout, timescale or sample description), when a part is
+//! fragmented, or when an edit list is more than a leading gap and one edit at normal speed. The
+//! written file is read back and every written sample is compared with its part before it is
+//! returned.
 
 use std::io::Cursor;
 
@@ -34,6 +38,9 @@ pub struct Joined {
     pub duration: u64,
     /// Samples written per track.
     pub samples: Vec<u64>,
+    /// Largest distance between where a part's sound is shown and where it belongs, in 100 ns
+    /// units (sound starts each part with its nearest sample; at most one picture's duration).
+    pub max_sync_error_100ns: u64,
 }
 
 fn fail(msg: impl Into<String>) -> Error {
@@ -135,28 +142,157 @@ fn check_tracks(first: &Mp4File, part: &Mp4File, k: usize) -> Result<()> {
     Ok(())
 }
 
-/// Push an edit, merging it with the previous one where it continues it.
-fn push_edit(edits: &mut Vec<Edit>, e: Edit, movie_ts: u32, track_ts: u32) {
-    if e.segment_duration == 0 {
-        return;
+/// One stretch of a source sample written to the joined track: the whole sample, or for
+/// uncompressed sound `frames` frames from frame `from` of the chunk.
+#[derive(Clone, Copy)]
+struct Piece {
+    si: usize,
+    from: u64,
+    frames: u64,
+}
+
+/// The pieces of one track: per part, what is written; how far the written sound is from where
+/// the part shows it (worst case, in the track's timescale).
+struct TrackPlan {
+    pieces: Vec<Vec<Piece>>,
+    /// Concatenated media time of the first shown sample (`media_time` of the one edit).
+    media_time: i64,
+    /// Leading gap of part 1, in the joined movie timescale.
+    lead: u64,
+    /// End of the last presented media tick written (concatenated media time).
+    media_end: i64,
+    max_error: u64,
+}
+
+/// Bytes of one frame of a chunked uncompressed sound sample.
+fn frame_bytes(t: &Track, si: usize) -> Result<u64> {
+    let s = &t.samples[si];
+    if s.duration == 0 || !u64::from(s.size).is_multiple_of(u64::from(s.duration)) {
+        return Err(fail(format!("track {}: a sound chunk is not a whole number of frames", t.id)));
     }
-    if let Some(prev) = edits.last_mut() {
-        if prev.media_time < 0 && e.media_time < 0 {
-            prev.segment_duration += e.segment_duration;
-            return;
-        }
-        // exact only when the previous segment is a whole number of media ticks
-        let exact = (u128::from(prev.segment_duration) * u128::from(track_ts)) % u128::from(movie_ts.max(1)) == 0;
-        if prev.media_time >= 0
-            && e.media_time >= 0
-            && exact
-            && prev.media_time.saturating_add(rescale(prev.segment_duration, movie_ts, track_ts) as i64) == e.media_time
-        {
-            prev.segment_duration += e.segment_duration;
-            return;
-        }
+    Ok(u64::from(s.size) / u64::from(s.duration))
+}
+
+/// Plan which samples of every part one track writes. The joined track has a single edit (CFA4's
+/// own reader and many players apply only the first one), so every part's media must follow the
+/// previous part's: pictures are copied whole and must continue exactly; sound starts each part
+/// with the sample (for uncompressed sound, the frame) closest to where the part begins and ends it
+/// where the part ends, so its priming and tail are left out and it stays within `tol` of the
+/// pictures.
+#[allow(clippy::too_many_arguments)]
+fn plan_track(files: &[Mp4File], shown: &[Vec<Presented>], i: usize, starts: &[u64], lengths: &[u64], movie_ts: u32, tol: u64) -> Result<TrackPlan> {
+    let n = i + 1;
+    let ts = files[0].tracks[i].timescale;
+    let to_track = |v: u64| i128::from(rescale(v, movie_ts, ts));
+    // exact for the main picture track; others may round by one movie tick
+    let slack: i128 = if ts == movie_ts { 0 } else { i128::from(rescale(1, movie_ts, ts).max(1)) };
+    let lead = rescale(shown[0][i].lead, files[0].timescale, movie_ts);
+    let lead_tr = to_track(lead);
+    let first = &files[0].tracks[i];
+    let media_time = shown[0][i].start - first.samples[0].dts;
+    if media_time < 0 {
+        return Err(fail(format!("track {n}: part 1 shows media before its first sample")));
     }
-    edits.push(e);
+    let mut written: i128 = 0;
+    let mut pieces = Vec::with_capacity(files.len());
+    let mut max_error = 0u64;
+    let mut media_end: i128 = 0;
+    for (k, f) in files.iter().enumerate() {
+        let t = &f.tracks[i];
+        let x = &shown[k][i];
+        if x.len == 0 {
+            return Err(fail(format!("part {}: track {n} shows nothing", k + 1)));
+        }
+        let part_lead = rescale(x.lead, f.timescale, movie_ts);
+        let begin = to_track(starts[k] + part_lead);
+        let end = to_track(starts[k] + lengths[k]);
+        // where the next written media is shown in the joined timeline
+        let at = lead_tr + written - i128::from(media_time);
+        // error of starting the part with a sample of decode time `d`
+        let err = |d: i64| at - begin + i128::from(x.start) - i128::from(d);
+        let mut part = Vec::new();
+        if t.kind == TrackKind::Video {
+            let e = err(t.samples[0].dts);
+            if e.abs() > slack {
+                return Err(fail(format!(
+                    "part {}: its pictures do not continue part {} (a leading gap, a shortened end or another reordering delay); export the ranges as separate files",
+                    k + 1,
+                    k
+                )));
+            }
+            max_error = max_error.max(e.unsigned_abs() as u64);
+            let base = written - i128::from(t.samples[0].dts);
+            for (si, s) in t.samples.iter().enumerate() {
+                part.push(Piece { si, from: 0, frames: 0 });
+                written += i128::from(s.duration);
+                media_end = media_end.max(base + i128::from(s.pts) + i128::from(s.duration));
+            }
+        } else if t.pcm_chunked {
+            let lo = i128::from(t.samples[0].pts);
+            let hi = t.samples.iter().map(|s| i128::from(s.pts) + i128::from(s.duration)).max().unwrap_or(lo);
+            let want = at - begin + i128::from(x.start);
+            let p = want.clamp(lo, hi);
+            max_error = max_error.max((want - p).unsigned_abs() as u64);
+            if (want - p).unsigned_abs() > tol.into() {
+                return Err(fail(format!("part {}: the sound of track {n} does not reach the part's start; export the ranges as separate files", k + 1)));
+            }
+            let mut left = (end - at).min(hi - p).max(0);
+            let mut pos = p;
+            for (si, s) in t.samples.iter().enumerate() {
+                let (s0, s1) = (i128::from(s.pts), i128::from(s.pts) + i128::from(s.duration));
+                if left == 0 {
+                    break;
+                }
+                if s1 <= pos {
+                    continue;
+                }
+                let from = (pos - s0).max(0);
+                let frames = (s1 - s0 - from).min(left);
+                frame_bytes(t, si)?;
+                part.push(Piece { si, from: from as u64, frames: frames as u64 });
+                written += frames;
+                left -= frames;
+                pos = s0 + from + frames;
+            }
+        } else {
+            // the sample whose start is closest to where the part begins
+            let j = t.samples.iter().enumerate().min_by_key(|(_, s)| err(s.dts).abs()).map_or(0, |(j, _)| j);
+            let e = err(t.samples[j].dts);
+            if e.unsigned_abs() > tol.into() {
+                return Err(fail(format!(
+                    "part {}: the sound of track {n} would be {} ms off the pictures; export the ranges as separate files",
+                    k + 1,
+                    e.unsigned_abs() * 1000 / u128::from(ts.max(1))
+                )));
+            }
+            max_error = max_error.max(e.unsigned_abs() as u64);
+            for (si, s) in t.samples.iter().enumerate().skip(j) {
+                let mid = lead_tr + written - i128::from(media_time) + i128::from(s.duration) / 2;
+                if mid >= end {
+                    break;
+                }
+                part.push(Piece { si, from: 0, frames: 0 });
+                written += i128::from(s.duration);
+            }
+        }
+        media_end = media_end.max(written);
+        pieces.push(part);
+    }
+    let media_end = i64::try_from(media_end).map_err(|_| fail("media too long"))?;
+    Ok(TrackPlan { pieces, media_time, lead, media_end, max_error })
+}
+
+/// The bytes a piece writes.
+fn piece_data(f: &Mp4File, part: &[u8], i: usize, p: Piece) -> Result<Vec<u8>> {
+    let mut data = f.read_sample(part, i, p.si)?;
+    let t = &f.tracks[i];
+    if t.pcm_chunked {
+        let fb = frame_bytes(t, p.si)?;
+        let a = usize::try_from(p.from * fb).map_err(|_| fail("sound chunk too large"))?;
+        let b = usize::try_from((p.from + p.frames) * fb).map_err(|_| fail("sound chunk too large"))?;
+        data = data.get(a..b).ok_or_else(|| fail("sound chunk shorter than its frames"))?.to_vec();
+    }
+    Ok(data)
 }
 
 /// Join `parts` (whole MP4 / MOV files) one after the other.
@@ -191,46 +327,48 @@ pub fn concat(parts: &[&[u8]]) -> Result<Joined> {
         shown.push(p);
         lengths.push(len);
     }
+    let mut starts = Vec::with_capacity(files.len());
+    let mut total = 0u64;
+    for len in &lengths {
+        starts.push(total);
+        total = total.saturating_add(*len);
+    }
 
-    // the edit list of every joined track
-    let last = files.len() - 1;
-    let mut offsets = vec![0i64; first.tracks.len()];
-    let mut edits: Vec<Vec<Edit>> = vec![Vec::new(); first.tracks.len()];
-    for (k, f) in files.iter().enumerate() {
-        for (i, t) in f.tracks.iter().enumerate() {
-            let x = &shown[k][i];
-            let part_len = lengths[k];
-            let lead = rescale(x.lead, f.timescale, movie_ts).min(part_len);
-            let mut seg = rescale(x.len, t.timescale, movie_ts).min(part_len - lead);
-            // a track that ends within one movie tick of the part's end runs to it (no gap)
-            if part_len - lead - seg <= 1 && x.len > 0 {
-                seg = part_len - lead;
-            }
-            push_edit(&mut edits[i], Edit { segment_duration: lead, media_time: -1, media_rate: NORMAL_RATE }, movie_ts, t.timescale);
-            if x.len > 0 {
-                let media_time = offsets[i].checked_add(x.start).ok_or_else(|| fail("media time overflow"))?;
-                push_edit(&mut edits[i], Edit { segment_duration: seg, media_time, media_rate: NORMAL_RATE }, movie_ts, t.timescale);
-            }
-            let rest = part_len - lead - if x.len > 0 { seg } else { 0 };
-            if k != last {
-                push_edit(&mut edits[i], Edit { segment_duration: rest, media_time: -1, media_rate: NORMAL_RATE }, movie_ts, t.timescale);
-            }
-            let media: u64 = t.samples.iter().map(|s| u64::from(s.duration)).sum();
-            offsets[i] = offsets[i].checked_add(i64::try_from(media).map_err(|_| fail("media too long"))?).ok_or_else(|| fail("media too long"))?;
+    // the samples every track writes and its single edit
+    let frame = video.map(|v| u64::from(first.tracks[v].samples[0].duration));
+    let mut plans = Vec::with_capacity(first.tracks.len());
+    let mut edits: Vec<Vec<Edit>> = Vec::with_capacity(first.tracks.len());
+    let mut max_error_100ns = 0u64;
+    for (i, t) in first.tracks.iter().enumerate() {
+        let tol = match frame {
+            Some(d) => rescale(d, movie_ts, t.timescale),
+            None => u64::from(t.samples[0].duration),
         }
+        .max(1);
+        let plan = plan_track(&files, &shown, i, &starts, &lengths, movie_ts, tol)?;
+        max_error_100ns = max_error_100ns.max(rescale(plan.max_error, t.timescale, HUNDRED_NS));
+        let mut e = Vec::new();
+        if plan.lead > 0 {
+            e.push(Edit { segment_duration: plan.lead, media_time: -1, media_rate: NORMAL_RATE });
+        }
+        let room = total - plan.lead.min(total);
+        let media = rescale(u64::try_from(plan.media_end - plan.media_time).unwrap_or(0), t.timescale, movie_ts);
+        // a track that ends within one movie tick of the end runs to it (no gap)
+        let seg = if room.abs_diff(media) <= 1 { room } else { media.min(room) };
+        if seg > 0 {
+            e.push(Edit { segment_duration: seg, media_time: plan.media_time, media_rate: NORMAL_RATE });
+        }
+        edits.push(e);
+        plans.push(plan);
     }
 
     // the parts' chapters, moved to where each part starts
-    let mut starts = Vec::with_capacity(files.len());
-    let mut at = 0u64;
     let mut chapters: Vec<Chapter> = Vec::new();
-    for (f, len) in files.iter().zip(&lengths) {
-        starts.push(at);
-        let base = rescale(at, movie_ts, HUNDRED_NS);
+    for (f, at) in files.iter().zip(&starts) {
+        let base = rescale(*at, movie_ts, HUNDRED_NS);
         for c in &f.metadata.chapters {
             chapters.push(Chapter { start_100ns: c.start_100ns.saturating_add(base), title: c.title.clone() });
         }
-        at = at.saturating_add(*len);
     }
     chapters.truncate(MAX_CHAPTERS);
 
@@ -255,28 +393,28 @@ pub fn concat(parts: &[&[u8]]) -> Result<Joined> {
     for (k, f) in files.iter().enumerate() {
         let mut next = vec![0usize; f.tracks.len()];
         loop {
-            let pick = f
-                .tracks
-                .iter()
-                .enumerate()
-                .filter(|(i, t)| next[*i] < t.samples.len())
-                .min_by_key(|(i, t)| i128::from(t.samples[next[*i]].dts) * i128::from(movie_ts) / i128::from(t.timescale.max(1)));
-            let Some((i, t)) = pick else { break };
-            let s = t.samples[next[i]];
-            let data = f.read_sample(parts[k], i, next[i]).map_err(|e| fail(format!("part {}: {e}", k + 1)))?;
+            let pick = (0..f.tracks.len()).filter(|i| next[*i] < plans[*i].pieces[k].len()).min_by_key(|i| {
+                let t = &f.tracks[*i];
+                let p = plans[*i].pieces[k][next[*i]];
+                (i128::from(t.samples[p.si].dts) + i128::from(p.from)) * i128::from(movie_ts) / i128::from(t.timescale.max(1))
+            });
+            let Some(i) = pick else { break };
+            let p = plans[i].pieces[k][next[i]];
+            let s = f.tracks[i].samples[p.si];
+            let data = piece_data(f, parts[k], i, p).map_err(|e| fail(format!("part {}: {e}", k + 1)))?;
             let offset = i32::try_from(s.pts - s.dts).map_err(|_| fail("composition offset out of range"))?;
             w.write_sample(i, WriteSample { data: &data, duration: s.duration, composition_offset: offset, is_sync: s.is_sync })?;
             next[i] += 1;
         }
     }
     let bytes = w.finish()?.into_inner();
-    let samples = verify(&bytes, &files, parts, &edits, &chapters)?;
-    Ok(Joined { bytes, timescale: movie_ts, starts, duration: at, samples })
+    let samples = verify(&bytes, &files, parts, &plans, &edits, &chapters)?;
+    Ok(Joined { bytes, timescale: movie_ts, starts, duration: total, samples, max_sync_error_100ns: max_error_100ns })
 }
 
-/// Read the joined file back: every sample of every part, in order and unchanged, the planned
-/// edit lists and chapters, the first part's sample descriptions.
-fn verify(bytes: &[u8], files: &[Mp4File], parts: &[&[u8]], edits: &[Vec<Edit>], chapters: &[Chapter]) -> Result<Vec<u64>> {
+/// Read the joined file back: every planned sample of every part, in order and unchanged, the
+/// planned single edit of every track, the chapters, the first part's sample descriptions.
+fn verify(bytes: &[u8], files: &[Mp4File], parts: &[&[u8]], plans: &[TrackPlan], edits: &[Vec<Edit>], chapters: &[Chapter]) -> Result<Vec<u64>> {
     let out = open(bytes).map_err(|e| fail(format!("the joined file cannot be read back: {e}")))?;
     let first = &files[0];
     if out.tracks.len() != first.tracks.len() {
@@ -291,12 +429,16 @@ fn verify(bytes: &[u8], files: &[Mp4File], parts: &[&[u8]], edits: &[Vec<Edit>],
         if t.edits != edits[i] {
             return Err(fail(format!("verification: track {n} has another edit list than planned")));
         }
+        let lead = rescale(plans[i].lead, out.timescale, t.timescale) as i64;
+        if !edits[i].iter().any(|e| e.media_time >= 0) || t.edit_offset != lead - plans[i].media_time {
+            return Err(fail(format!("verification: track {n} is not shown from where planned")));
+        }
         if first.tracks[i].pcm_chunked {
             // uncompressed sound is regrouped into chunks: its bytes, in order, are what counts
             let mut want = Vec::new();
             for (k, f) in files.iter().enumerate() {
-                for si in 0..f.tracks[i].samples.len() {
-                    want.extend(f.read_sample(parts[k], i, si)?);
+                for p in &plans[i].pieces[k] {
+                    want.extend(piece_data(f, parts[k], i, *p)?);
                 }
             }
             let mut got = Vec::with_capacity(want.len());
@@ -311,20 +453,20 @@ fn verify(bytes: &[u8], files: &[Mp4File], parts: &[&[u8]], edits: &[Vec<Edit>],
         }
         let mut j = 0usize;
         for (k, f) in files.iter().enumerate() {
-            let src = &f.tracks[i];
-            for (si, s) in src.samples.iter().enumerate() {
+            for p in &plans[i].pieces[k] {
+                let s = &f.tracks[i].samples[p.si];
                 let o = t.samples.get(j).ok_or_else(|| fail(format!("verification: track {n} is missing samples of part {}", k + 1)))?;
                 if o.duration != s.duration || o.pts - o.dts != s.pts - s.dts || o.is_sync != s.is_sync || o.size != s.size {
-                    return Err(fail(format!("verification: track {n}, part {}: sample {} differs", k + 1, si + 1)));
+                    return Err(fail(format!("verification: track {n}, part {}: sample {} differs", k + 1, p.si + 1)));
                 }
-                if out.read_sample(bytes, i, j)? != f.read_sample(parts[k], i, si)? {
-                    return Err(fail(format!("verification: track {n}, part {}: the data of sample {} differs", k + 1, si + 1)));
+                if out.read_sample(bytes, i, j)? != f.read_sample(parts[k], i, p.si)? {
+                    return Err(fail(format!("verification: track {n}, part {}: the data of sample {} differs", k + 1, p.si + 1)));
                 }
                 j += 1;
             }
         }
         if j != t.samples.len() {
-            return Err(fail(format!("verification: track {n} has more samples than its parts")));
+            return Err(fail(format!("verification: track {n} has more samples than planned")));
         }
         counts.push(j as u64);
     }

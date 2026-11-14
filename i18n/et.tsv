@@ -4567,7 +4567,7 @@ export.summary	Low	madal
 	Comment…	Kommentaar…
 	Comment:	Kommentaar:
 	The analysis stopped.	Analüüs peatus.
-	No segments. Add a range marker in the Source monitor, or use Find Segments…	Lõike pole. Lisa allikamonitoris vahemikumarker või kasuta käsku Leia lõigud…
+	No segments yet: add a range marker in the Source monitor, or use Find Segments… there.	Lõike pole. Lisa allikamonitoris vahemikumarker või kasuta käsku Leia lõigud.
 	Remove Segment	Eemalda lõik
 	Black pictures	Mustad kaadrid
 	{count} segments written and verified	Kirjutatud ja kontrollitud lõike: {count}
@@ -4614,3 +4614,7 @@ export.summary	Low	madal
 	{count} segments joined into one file: {copied} frames copied, {reencoded} frames re-encoded	Lõigud ({count}) ühendati üheks failiks; kopeeritud kaadreid: {copied}, uuesti kodeeritud kaadreid: {reencoded}
 	{name} ({frames} frames)	{name} (kaadreid: {frames})
 	Scene changes	Stseenivahetused
+	Import Markers from CSV…	Impordi markerid CSV-st…
+	Export Segments as EDL…	Ekspordi segmendid EDL-ina…
+	Import Segments from EDL…	Impordi segmendid EDL-ist…
+	Segments to Subclips	Segmendid alamklippideks

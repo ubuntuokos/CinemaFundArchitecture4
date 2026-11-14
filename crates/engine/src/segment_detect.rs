@@ -277,10 +277,19 @@ fn item_of(s: &Session, p: &Value, cmd: &str) -> Result<ItemId> {
     }
 }
 
+/// The media span an item covers: a subclip's own range (also when its trims are not restricted
+/// and the Source monitor shows the whole parent media), otherwise the item's.
+fn bounds(view: &crate::clip_ops::SourceView) -> (Tick, Tick) {
+    match view.subclip {
+        Some((r, _)) => (r.start.max(Tick::ZERO), r.end()),
+        None => (view.start.max(Tick::ZERO), view.end),
+    }
+}
+
 /// The source span to analyse: the item's (a subclip's range), narrowed by `in` / `out`.
 fn span_of(s: &Session, p: &Value, item: ItemId, cmd: &str) -> Result<(crate::clip_ops::SourceView, (Tick, Tick))> {
     let view = source_view(s, item).ok_or_else(|| bad(cmd, format!("no media item {}", item.0)))?;
-    let (lo, hi) = (view.start.max(Tick::ZERO), view.end);
+    let (lo, hi) = bounds(&view);
     let a = tick_or_time_p(p, "in", view.rate, false, cmd)?.unwrap_or(lo).clamp(lo, hi);
     let b = tick_or_time_p(p, "out", view.rate, false, cmd)?.unwrap_or(hi).clamp(lo, hi);
     if b <= a {
@@ -345,9 +354,17 @@ fn start(s: &mut Session, p: &Value, kind: ScanKind, cmd: &str) -> Result<Value>
     let run = crate::export_tools::guard_job(job.progress.clone(), job.result.clone(), run);
     s.jobs.push(job);
     s.segment_scans.push(Scan { job: id, item, kind, span, found });
-    if s.segment_scans.len() > KEEP {
-        let drop = s.segment_scans.len() - KEEP;
-        s.segment_scans.drain(..drop);
+    // keep the last KEEP analyses, but never one still running (its result would be lost)
+    let running = |s: &Session, job: u64| s.jobs.iter().any(|j| j.id == job && !j.progress.finished.load(std::sync::atomic::Ordering::Relaxed));
+    let mut over = s.segment_scans.len().saturating_sub(KEEP);
+    let mut i = 0;
+    while over > 0 && i < s.segment_scans.len() {
+        if running(s, s.segment_scans[i].job) {
+            i += 1;
+        } else {
+            s.segment_scans.remove(i);
+            over -= 1;
+        }
     }
     if crate::commands::bool_p(p, "wait").unwrap_or(false) || cfg!(target_arch = "wasm32") {
         run();
@@ -420,7 +437,7 @@ fn add(s: &mut Session, p: &Value) -> Result<Value> {
     if list.len() > MAX_SEGMENTS {
         return Err(bad(cmd, format!("at most {MAX_SEGMENTS} segments per command")));
     }
-    let (lo, hi) = (view.start.max(Tick::ZERO), view.end);
+    let (lo, hi) = bounds(&view);
     let mut planned = Vec::with_capacity(list.len());
     for (i, v) in list.iter().enumerate() {
         let n = i + 1;

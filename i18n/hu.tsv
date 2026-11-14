@@ -2532,7 +2532,7 @@ export.summary	Low	alacsony
 	Remove Segment	Szegmens eltávolítása
 	Segment name:	Szegmens neve:
 	(no clip in the Source monitor)	(nincs klip a Forrásmonitorban)
-	No segments. Add a range marker in the Source monitor, or use Find Segments…	Nincs szegmens. Adj hozzá tartományjelölőt a Forrásmonitorban, vagy használd a Szegmensek keresése… parancsot.
+	No segments yet: add a range marker in the Source monitor, or use Find Segments… there.	Nincs szegmens. Adj hozzá tartományjelölőt a Forrásmonitorban, vagy használd a Szegmensek keresése… parancsot.
 # Timeline GOP overlay (WP-08)
 	Show GOP Boundaries	GOP-határok megjelenítése
 # Export window Smart Export (WP-08)
@@ -4611,3 +4611,4 @@ export.summary	Low	alacsony
 	Import Markers from CSV…	Jelölők importálása CSV-ből…
 	Import Segments from EDL…	Szegmensek importálása EDL-ből…
 	Export Segments as EDL…	Szegmensek exportálása EDL-be…
+	Segments to Subclips	Szegmensekből alklipek

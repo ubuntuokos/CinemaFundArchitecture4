@@ -77,7 +77,7 @@ pub(crate) fn export(s: &mut Session, p: &Value) -> Result<Value> {
             csv.push('"');
             // Quoting alone does not stop spreadsheet formulas. Escape only arbitrary text,
             // including formulas preceded by whitespace; numeric/timecode fields stay numeric.
-            if matches!(i, 0 | 2 | 3 | 5) && field.trim_start().starts_with(['=', '+', '-', '@']) {
+            if matches!(i, 0 | 2 | 3 | 5) && needs_guard(field) {
                 csv.push('\'');
             }
             for ch in field.chars() {
@@ -92,6 +92,13 @@ pub(crate) fn export(s: &mut Session, p: &Value) -> Result<Value> {
     }
     s.services.write_file(path, csv.as_bytes()).map_err(|e| EngineError::Other(format!("{path}: {e}")))?;
     Ok(json!({"path": path, "markers": t.markers.len(), "bytes": csv.len()}))
+}
+
+/// Whether a text field gets the leading `'` that keeps spreadsheets from running it as a formula:
+/// text that reads as a formula, and text that itself starts with `'` (so the import, which takes
+/// one `'` off only before a formula character or another `'`, gives back exactly the text).
+pub(crate) fn needs_guard(field: &str) -> bool {
+    field.starts_with('\'') || field.trim_start().starts_with(['=', '+', '-', '@'])
 }
 
 #[cfg(test)]

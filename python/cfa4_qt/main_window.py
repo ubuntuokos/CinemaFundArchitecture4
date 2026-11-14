@@ -1572,6 +1572,8 @@ class MainWindow(QMainWindow):
                 path += ext
         if not path:
             return
+        if cid == "markers.importCsv":
+            params = self.marker_import_params(params)
 
         def got(r: Any, _b: bytes | None) -> None:
             self.schedule_refresh()
@@ -1579,6 +1581,16 @@ class MainWindow(QMainWindow):
                 self._show_menu_dialog({"command": "file.mediaProperties", "params": {}, "info": [r]})
 
         self.engine.execute(cid, {**params, "path": path}, on_reply=got, on_error=lambda m: self._command_failed(cid, m))
+
+    def marker_import_params(self, params: dict[str, Any]) -> dict[str, Any]:
+        """Import Markers from CSV goes to the focused monitor's holder: the Source clip (its
+        segments) when the Source monitor is focused and shows one, else the active sequence. A
+        target or item the caller named is kept."""
+        if "target" in params or "item" in params:
+            return params
+        if self.focused_monitor() is self.source_monitor:
+            return {**params, "target": "source"}
+        return params
 
     # ----- media management dialogs (egui's media_dialogs) -----
     def _link_media_open(self) -> bool:

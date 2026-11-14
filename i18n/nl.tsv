@@ -4565,7 +4565,7 @@ export.summary	Low	laag
 	Comment…	Opmerking…
 	Comment:	Opmerking:
 	The analysis stopped.	De analyse is gestopt.
-	No segments. Add a range marker in the Source monitor, or use Find Segments…	Geen segmenten. Voeg een bereikmarkering toe in de bronmonitor of gebruik Segmenten zoeken…
+	No segments yet: add a range marker in the Source monitor, or use Find Segments… there.	Geen segmenten. Voeg een bereikmarkering toe in de bronmonitor of gebruik Segmenten zoeken.
 	Remove Segment	Segment verwijderen
 	Black pictures	Zwarte beelden
 	{count} segments written and verified	{count} segmenten geschreven en gecontroleerd
@@ -4612,3 +4612,7 @@ export.summary	Low	laag
 	{count} segments joined into one file: {copied} frames copied, {reencoded} frames re-encoded	{count} segmenten samengevoegd tot één bestand: {copied} frames gekopieerd, {reencoded} frames opnieuw gecodeerd
 	{name} ({frames} frames)	{name} ({frames} frames)
 	Scene changes	Scènewisselingen
+	Import Markers from CSV…	Markeringen importeren uit CSV…
+	Export Segments as EDL…	Segmenten exporteren als EDL…
+	Import Segments from EDL…	Segmenten importeren uit EDL…
+	Segments to Subclips	Segmenten naar subclips

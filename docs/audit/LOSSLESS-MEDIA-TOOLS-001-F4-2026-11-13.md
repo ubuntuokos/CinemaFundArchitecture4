@@ -37,15 +37,19 @@ vagy a `target/fixtures/` alatt), médiát nem commitolunk; az FFmpeg csak orák
   (több tartomány, egy fájl tartományonként).
 - Összefűzött kimenet (K1, „egyenkénti és összefűzött kimenettel”): `export.start` /
   `segments.export` `"join": true` paraméterrel; a tartományok a memóriában vágódnak és
-  ellenőrződnek, a `cfa4_isobmff::concat` újrakódolás nélkül fűzi őket egy fájlba (tartományonként
-  egy edit-lista-bejegyzés, így a hang szinkronja és a B-képkockás időbélyegek megmaradnak), majd
-  visszaolvassa a fájlt, és minden mintát összevet a részekkel. Tesztek:
+  ellenőrződnek, a `cfa4_isobmff::concat` újrakódolás nélkül fűzi őket egy fájlba. Sávonként
+  **egyetlen** edit-bejegyzés van (a CFA4 saját olvasója és sok lejátszó csak az elsőt alkalmazza): a
+  képeknek pontosan folytatniuk kell az előző részt (különben a kérés elutasítva, „külön fájlokba”), a
+  hang minden részt a rész elejéhez legközelebbi mintával kezd és a rész végén zár (PCM képkockára
+  pontosan), így a priming és a farok kimarad, a szinkronhiba legfeljebb egy kép
+  (`maxSyncError100ns`). Végül visszaolvassa a fájlt, és minden kiírt mintát összevet a részekkel. Tesztek:
   `joined_ranges_are_one_verified_file_with_every_sample`,
   `a_join_of_re_encoded_ranges_needs_the_confirmation_and_stays_verified`,
   `bad_join_requests_are_refused_before_writing`; FFmpeg-orákulum (`crates/isobmff/tests/oracle_mux.rs`):
-  `joined_parts_ffprobe` (H.264 + AAC, köztük az FFmpeg saját edit listás vágása, valamint MOV + PCM:
-  a dekódolt képek képkockára azonosak a részek egymás utáni dekódolásával, a hossz a részek
-  összege), `parts_of_other_streams_are_refused`.
+  `joined_parts_ffprobe` (H.264 + AAC primingdal, valamint MOV + PCM: a dekódolt képek képkockára
+  azonosak a részek egymás utáni dekódolásával, a hossz a részek összege, a CFA4 saját olvasója minden
+  rész első képét a rész kezdetén mutatja; az FFmpeg saját edit listás vágása, amely nem folytatja az
+  előző részt, elutasítva), `parts_of_other_streams_are_refused`.
 - FFmpeg-orákulum (`crates/export`): `ffmpeg_decodes_the_copy_to_the_source_pictures`,
   `ffmpeg_decodes_hevc_cuts_to_the_source_pictures`, `ffmpeg_decodes_av1_cuts_to_the_source_pictures`.
 - WP-09 kiegészítők: `one_stream_in_other_timescales_is_cut_to_the_same_samples`,
@@ -90,7 +94,8 @@ Minden írás előtt a motor visszaolvassa és ellenőrzi a kimenetet (`verified
 ### 2.5 Szegmensek – mentés, visszatöltés, átadás az idővonalra
 
 - **Új (F4):** `segments_are_saved_with_the_project_and_come_back` – a szegmensek `file.saveAs` után
-  `file.open`-nel változatlanul visszajönnek, és a visszatöltött projektből is vághatók.
+  `file.open`-nel változatlanul visszajönnek, és a visszatöltött projektből a teszt ténylegesen ki
+  is exportálja őket (`segments.export`, mindkét fájl kiíródik és ellenőrzött).
 - `listed_segments_are_removed_renamed_and_labelled_in_undo_steps` (`segments.remove`,
   `markers.edit` a forráson); Qt: a Jelölők panel „A forrásklip szegmensei” nézete
   (`test_markers_panel_shows_and_edits_the_source_segments`).
@@ -130,8 +135,9 @@ Minden írás előtt a motor visszaolvassa és ellenőrzi a kimenetet (`verified
 ### 2.8 Hibatűrés – sérült fájlok, megszakítás, teli lemez
 
 - **Új (F4):** `a_damaged_source_is_refused_and_never_panics` – félbevágott, üres, bitenként sérült
-  és hiányzó forrás: az `export.analyze`, az `export.plan` és az `export.start` sem omlik össze, és
-  ellenőrizetlen fájl nem íródik ki.
+  és hiányzó forrás: az `export.analyze`, az `export.plan` és az `export.start` sem omlik össze;
+  elutasításkor a teszt azt is ellenőrzi, hogy az `o.mp4` nem jött létre, sikeres vágásnál pedig
+  hogy az eredmény ellenőrzött.
 - **Új (F4):** `a_full_disk_in_the_middle_of_a_batch_names_what_was_written` – ha a második
   tartománynál megtelik a lemez, a hiba megnevezi a tartományt, az okot és a már kiírt fájlt.
 - Megszakítás: `a_cancelled_copy_leaves_nothing_behind`, `a_dropped_output_leaves_nothing_and_keeps_the_old_file`,
@@ -162,8 +168,11 @@ felületi szövege a magyar mellett mind a 31 további nyelvi katalógusba beker
 
 `cargo xtask fmt-check`, `cargo clippy --workspace --exclude cfa4-ui --all-targets --release -- -D warnings`,
 `cargo xtask layers`, `cargo xtask assets`, `cargo test --release` (engine, export, isobmff,
-interchange), `ruff check python`, `pytest -q python/tests --ignore=python/tests/test_qt_gui.py` és a
-Qt GUI-tesztek: zöld. A pontos számok a PR #1124 leírásában vannak.
+interchange), `ruff check python` és `pytest -q python/tests --ignore=python/tests/test_qt_gui.py`:
+zöld. A Qt GUI-tesztekből (`test_qt_gui.py`) **csak a projekt saját tesztjei futottak** (Smart Cut,
+szegmensek, Jelölők panel, Szegmenskereső, jelölő-CSV: zöld); a teljes fájl nem futott le a felhős
+környezet időkorlátján belül, és a koordinációs szabály szerint (§3.4) nem blokkoló. A pontos számok
+a PR #1124 leírásában vannak.
 
 ## 5. Teljesítmény – a referenciagépen mérendő
 

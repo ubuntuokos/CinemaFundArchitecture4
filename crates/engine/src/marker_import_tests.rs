@@ -35,19 +35,22 @@ fn clear(s: &mut crate::Session, item: cfa4_project::ItemId) {
 #[test]
 fn segments_go_out_as_csv_and_come_back_unchanged() {
     let tricky = Marker { comment: "line 1\r\nline 2, \"quoted\"".into(), kind: MarkerKind::Chapter, color: Label::Rose, ..marker(901, 20, 10, "=SUM(A1)") };
-    let (mut s, item, dir) = with_markers("mimport-csv", vec![marker(900, 0, 10, "intro, 日本語"), tricky, marker(902, 35, 0, "point")]);
+    // text that starts with an apostrophe comes back as it was, guarded or not
+    let quoted = Marker { comment: "'=not a formula".into(), ..marker(903, 30, 2, "'tis") };
+    let (mut s, item, dir) =
+        with_markers("mimport-csv", vec![marker(900, 0, 10, "intro, 日本語"), tricky, marker(902, 35, 0, "point"), quoted, marker(904, 32, 1, "''@x")]);
     let before = fields(&media_markers(&s, item));
     let csv = path(&dir, "seg.csv");
     s.execute("markers.exportCsv", json!({"path": csv, "item": item.0})).unwrap();
     clear(&mut s, item);
     let undo = s.history.undo.len();
     let r = s.execute("markers.importCsv", json!({"path": csv, "item": item.0})).unwrap();
-    assert_eq!(r["markers"].as_array().unwrap().len(), 3, "{r}");
+    assert_eq!(r["markers"].as_array().unwrap().len(), 5, "{r}");
     assert_eq!(fields(&media_markers(&s, item)), before);
     assert_eq!(s.history.undo.len(), undo + 1, "one undo step");
     // importing the same file again adds nothing
     let again = s.execute("markers.importCsv", json!({"path": csv, "item": item.0})).unwrap();
-    assert_eq!(again["skipped"], 3, "{again}");
+    assert_eq!(again["skipped"], 5, "{again}");
     let _ = std::fs::remove_dir_all(&dir);
 }
 
@@ -167,4 +170,36 @@ fn bad_files_and_hostile_values_are_refused_without_panicking() {
     assert!(media_markers(&s, item).is_empty());
     let _ = std::fs::remove_dir_all(&dir);
     let _: Option<Value> = None;
+}
+
+#[test]
+fn csv_limits_apply_while_the_file_is_read() {
+    let (mut s, item, dir) = with_markers("mimport-limits", vec![]);
+    let csv = path(&dir, "big.csv");
+    let wide = format!("Name,Start Ticks{}\r\nA,0\r\n", ",x".repeat(300));
+    std::fs::write(&csv, wide).unwrap();
+    let e = s.execute("markers.importCsv", json!({"path": csv, "item": item.0})).unwrap_err().to_string();
+    assert!(e.contains("fields"), "{e}");
+    let long = format!("Name,Start Ticks\r\n\"{}\",0\r\n", "a".repeat(70 * 1024));
+    std::fs::write(&csv, long).unwrap();
+    let e = s.execute("markers.importCsv", json!({"path": csv, "item": item.0})).unwrap_err().to_string();
+    assert!(e.contains("longer than"), "{e}");
+    let rows = format!("Name,Start Ticks\n{}", "A,0\n".repeat(100_001));
+    std::fs::write(&csv, rows).unwrap();
+    let e = s.execute("markers.importCsv", json!({"path": csv, "item": item.0})).unwrap_err().to_string();
+    assert!(e.contains("rows"), "{e}");
+    assert!(media_markers(&s, item).is_empty());
+    let _ = std::fs::remove_dir_all(&dir);
+}
+
+#[test]
+fn csv_export_of_a_named_item_is_enabled_without_an_open_clip() {
+    let (mut s, item, dir) = with_markers("mimport-enabled", vec![marker(900, 0, 10, "a")]);
+    s.state.source_item = None;
+    s.state.active_sequence = None;
+    assert!(crate::marker_import::has_target(&s).is_ok(), "a media item can be named with `item`");
+    let csv = path(&dir, "named.csv");
+    s.execute("markers.exportCsv", json!({"path": csv, "item": item.0})).unwrap();
+    assert!(std::fs::read_to_string(&csv).unwrap().contains("\"a\""));
+    let _ = std::fs::remove_dir_all(&dir);
 }

@@ -4566,7 +4566,7 @@ export.summary	Low	düşük
 	Comment…	Yorum…
 	Comment:	Yorum:
 	The analysis stopped.	Analiz durdu.
-	No segments. Add a range marker in the Source monitor, or use Find Segments…	Segment yok. Kaynak monitörde bir aralık işaretçisi ekle ya da Segmentleri Bul… komutunu kullan
+	No segments yet: add a range marker in the Source monitor, or use Find Segments… there.	Segment yok. Kaynak monitörde bir aralık işaretçisi ekle ya da Segmentleri Bul… komutunu kullan
 	Remove Segment	Segmenti Kaldır
 	Black pictures	Siyah görüntüler
 	{count} segments written and verified	{count} segment yazıldı ve doğrulandı
@@ -4613,3 +4613,7 @@ export.summary	Low	düşük
 	{count} segments joined into one file: {copied} frames copied, {reencoded} frames re-encoded	{count} segment tek dosyada birleştirildi: {copied} kare kopyalandı, {reencoded} kare yeniden kodlandı
 	{name} ({frames} frames)	{name} ({frames} kare)
 	Scene changes	Sahne değişimleri
+	Import Markers from CSV…	İşaretçileri CSV'den İçe Aktar…
+	Export Segments as EDL…	Segmentleri EDL Olarak Dışa Aktar…
+	Import Segments from EDL…	Segmentleri EDL'den İçe Aktar…
+	Segments to Subclips	Segmentlerden Alt Klipler

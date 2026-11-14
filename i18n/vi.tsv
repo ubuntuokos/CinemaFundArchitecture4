@@ -4565,7 +4565,7 @@ export.summary	Low	thấp
 	Comment…	Ghi chú…
 	Comment:	Ghi chú:
 	The analysis stopped.	Phân tích đã dừng.
-	No segments. Add a range marker in the Source monitor, or use Find Segments…	Không có phân đoạn. Hãy thêm điểm đánh dấu vùng trong màn hình nguồn hoặc dùng Tìm phân đoạn…
+	No segments yet: add a range marker in the Source monitor, or use Find Segments… there.	Không có phân đoạn. Hãy thêm điểm đánh dấu vùng trong màn hình nguồn hoặc dùng Tìm phân đoạn.
 	Remove Segment	Xóa phân đoạn
 	Black pictures	Khung hình đen
 	{count} segments written and verified	Đã ghi và kiểm tra {count} phân đoạn
@@ -4612,3 +4612,7 @@ export.summary	Low	thấp
 	{count} segments joined into one file: {copied} frames copied, {reencoded} frames re-encoded	Đã ghép {count} phân đoạn thành một tệp: sao chép {copied} khung hình, mã hóa lại {reencoded} khung hình
 	{name} ({frames} frames)	{name} ({frames} khung hình)
 	Scene changes	Chuyển cảnh
+	Import Markers from CSV…	Nhập điểm đánh dấu từ CSV…
+	Export Segments as EDL…	Xuất phân đoạn thành EDL…
+	Import Segments from EDL…	Nhập phân đoạn từ EDL…
+	Segments to Subclips	Phân đoạn thành clip con

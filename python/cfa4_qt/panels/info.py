@@ -319,7 +319,7 @@ class MarkersPanel(QWidget):
         markers.sort(key=lambda m: (int(m.get("start") or 0), int(m.get("id") or 0)))
         shown = [m for m in markers if MARKER_RGB.get(str(m.get("color")), DEFAULT_MARKER_RGB) not in hidden_rgb]
         if not markers:
-            empty = tr("No segments. Add a range marker in the Source monitor, or use Find Segments…")
+            empty = tr("No segments yet: add a range marker in the Source monitor, or use Find Segments… there.")
         else:
             empty = tr("All markers are hidden by the colour filter.")
         self.list.set_markers(shown, ticks_per_frame_from_fps(source.get("fps")), empty)

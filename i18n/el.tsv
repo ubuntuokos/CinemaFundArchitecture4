@@ -4567,7 +4567,7 @@ export.summary	Low	χαμηλή
 	Comment…	Σχόλιο…
 	Comment:	Σχόλιο:
 	The analysis stopped.	Η ανάλυση σταμάτησε.
-	No segments. Add a range marker in the Source monitor, or use Find Segments…	Δεν υπάρχουν τμήματα. Πρόσθεσε δείκτη περιοχής στην οθόνη προέλευσης ή χρησιμοποίησε την Εύρεση τμημάτων…
+	No segments yet: add a range marker in the Source monitor, or use Find Segments… there.	Δεν υπάρχουν τμήματα. Πρόσθεσε δείκτη περιοχής στην οθόνη προέλευσης ή χρησιμοποίησε την Εύρεση τμημάτων.
 	Remove Segment	Αφαίρεση τμήματος
 	Black pictures	Μαύρες εικόνες
 	{count} segments written and verified	Γράφτηκαν και επαληθεύτηκαν τμήματα: {count}
@@ -4614,3 +4614,7 @@ export.summary	Low	χαμηλή
 	{count} segments joined into one file: {copied} frames copied, {reencoded} frames re-encoded	Τα τμήματα ({count}) ενώθηκαν σε ένα αρχείο· αντιγράφηκαν καρέ: {copied}, επανακωδικοποιήθηκαν καρέ: {reencoded}
 	{name} ({frames} frames)	{name} (καρέ: {frames})
 	Scene changes	Αλλαγές σκηνής
+	Import Markers from CSV…	Εισαγωγή δεικτών από CSV…
+	Export Segments as EDL…	Εξαγωγή τμημάτων ως EDL…
+	Import Segments from EDL…	Εισαγωγή τμημάτων από EDL…
+	Segments to Subclips	Τμήματα σε υποκλίπ

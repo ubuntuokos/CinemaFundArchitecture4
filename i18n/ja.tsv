@@ -4574,7 +4574,7 @@
 	Comment…	コメント…
 	Comment:	コメント:
 	The analysis stopped.	解析を停止しました。
-	No segments. Add a range marker in the Source monitor, or use Find Segments…	セグメントがありません。ソースモニターで範囲マーカーを追加するか、「セグメントを検索…」を使ってください
+	No segments yet: add a range marker in the Source monitor, or use Find Segments… there.	セグメントがありません。ソースモニターで範囲マーカーを追加するか、「セグメントを検索…」を使ってください
 	Remove Segment	セグメントを削除
 	Black pictures	黒画面
 	{count} segments written and verified	{count} 個のセグメントを書き出して検証しました
@@ -4621,3 +4621,7 @@
 	{count} segments joined into one file: {copied} frames copied, {reencoded} frames re-encoded	{count} 個のセグメントを 1 つのファイルに結合: {copied} フレームをコピー、{reencoded} フレームを再エンコード
 	{name} ({frames} frames)	{name} ({frames} フレーム)
 	Scene changes	シーンチェンジ
+	Import Markers from CSV…	CSV からマーカーを読み込み…
+	Export Segments as EDL…	セグメントを EDL として書き出し…
+	Import Segments from EDL…	EDL からセグメントを読み込み…
+	Segments to Subclips	セグメントをサブクリップに

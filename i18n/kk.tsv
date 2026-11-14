@@ -4567,7 +4567,7 @@ export.summary	Low	төмен
 	Comment…	Түсініктеме…
 	Comment:	Түсініктеме:
 	The analysis stopped.	Талдау тоқтатылды.
-	No segments. Add a range marker in the Source monitor, or use Find Segments…	Сегменттер жоқ. Дереккөз мониторында ауқым маркерін қосыңыз немесе «Сегменттерді табу…» пәрменін пайдаланыңыз
+	No segments yet: add a range marker in the Source monitor, or use Find Segments… there.	Сегменттер жоқ. Дереккөз мониторында ауқым маркерін қосыңыз немесе «Сегменттерді табу…» пәрменін пайдаланыңыз
 	Remove Segment	Сегментті жою
 	Black pictures	Қара кадрлар
 	{count} segments written and verified	Жазылған және тексерілген сегменттер: {count}
@@ -4614,3 +4614,7 @@ export.summary	Low	төмен
 	{count} segments joined into one file: {copied} frames copied, {reencoded} frames re-encoded	Сегменттер ({count}) бір файлға біріктірілді; көшірілген кадрлар: {copied}, қайта кодталған кадрлар: {reencoded}
 	{name} ({frames} frames)	{name} (кадрлар: {frames})
 	Scene changes	Сахна ауысулары
+	Import Markers from CSV…	Белгілерді CSV-дан импорттау…
+	Export Segments as EDL…	Сегменттерді EDL ретінде экспорттау…
+	Import Segments from EDL…	Сегменттерді EDL-дан импорттау…
+	Segments to Subclips	Сегменттерден ішкі клиптер

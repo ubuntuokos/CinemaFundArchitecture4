@@ -4573,7 +4573,7 @@
 	Comment…	Komentar…
 	Comment:	Komentar:
 	The analysis stopped.	Analisis dihentikan.
-	No segments. Add a range marker in the Source monitor, or use Find Segments…	Tidak ada segmen. Tambahkan penanda rentang di monitor sumber, atau gunakan Cari Segmen…
+	No segments yet: add a range marker in the Source monitor, or use Find Segments… there.	Tidak ada segmen. Tambahkan penanda rentang di monitor sumber, atau gunakan Cari Segmen.
 	Remove Segment	Hapus Segmen
 	Black pictures	Gambar hitam
 	{count} segments written and verified	{count} segmen ditulis dan diverifikasi
@@ -4620,3 +4620,7 @@
 	{count} segments joined into one file: {copied} frames copied, {reencoded} frames re-encoded	{count} segmen digabung menjadi satu file: {copied} frame disalin, {reencoded} frame dienkode ulang
 	{name} ({frames} frames)	{name} ({frames} frame)
 	Scene changes	Pergantian adegan
+	Import Markers from CSV…	Impor Penanda dari CSV…
+	Export Segments as EDL…	Ekspor Segmen sebagai EDL…
+	Import Segments from EDL…	Impor Segmen dari EDL…
+	Segments to Subclips	Segmen ke Subklip

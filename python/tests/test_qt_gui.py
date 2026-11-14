@@ -14146,6 +14146,9 @@ def test_real_engine_source_monitor_smart_cut(app, tmp_path: Path):
         assert "50" in d.summary.text(), d.summary.text()
         out = tmp_path / "gop_cut.mp4"
         d.output.setText(str(out))
+        # Export runs only a plan of the output it writes
+        assert wait_until(app, lambda: d.run.isEnabled(), 30_000), d.error.text()
+        assert d.planned is not None and d.planned["output"] == str(out)
         said: list[str] = []
         src.status.connect(said.append)
         d.run.click()
@@ -14207,6 +14210,7 @@ def test_real_engine_smart_cut_segments(app, tmp_path: Path):
         assert d.segment_list.item(0).text().startswith("end")
         assert wait_until(app, lambda: d.run.isEnabled(), 30_000), d.error.text()
         d.output.setText(str(tmp_path / "{n}-{name}.mp4"))
+        assert wait_until(app, lambda: d.run.isEnabled() and d.plan_current(), 30_000), d.error.text()
         said: list[str] = []
         src.status.connect(said.append)
         d.send("segments.toTimeline")
@@ -14227,6 +14231,7 @@ def test_real_engine_smart_cut_segments(app, tmp_path: Path):
         d.segment_chapters.setChecked(True)
         assert wait_until(app, lambda: "one file" in d.summary.text() and d.run.isEnabled(), 30_000), (d.summary.text(), d.error.text())
         d.output.setText(str(tmp_path / "joined.mp4"))
+        assert wait_until(app, lambda: d.run.isEnabled() and d.plan_current(), 30_000), d.error.text()
         d.run.click()
         assert wait_until(app, lambda: any("joined" in m for m in said), 30_000), (said, d.error.text())
         probe = shutil.which("ffprobe")
@@ -15256,3 +15261,90 @@ def test_marker_imports_ask_for_a_file():
     assert IMPORT_OPENS["markers.importCsv"][1] == "csv"
     assert IMPORT_OPENS["markers.importEdl"][1] == "edl"
     assert EXPORT_SAVES["markers.exportEdl"][1] == "edl"
+
+
+class _StubEngine:
+    """Records the commands a dialog sends; the test answers them by hand."""
+
+    def __init__(self) -> None:
+        self.sent: list[tuple[str, dict, object, object]] = []
+
+    def execute(self, command: str, params: dict, on_reply=None, on_error=None) -> None:
+        self.sent.append((command, dict(params), on_reply, on_error))
+
+    def last(self, command: str) -> tuple:
+        return next(s for s in reversed(self.sent) if s[0] == command)
+
+
+def test_find_segments_closed_before_the_job_starts_cancels_it(app):
+    """Find Segments closed while the analysis is starting: the job that starts anyway is
+    cancelled, and its replies change nothing on the closed dialog."""
+    from cfa4_qt.panels.segment_finder import SegmentFinderDialog
+
+    parent = QtWidgets.QWidget()
+    engine = _StubEngine()
+    d = SegmentFinderDialog(parent, engine, 7, 25.0, lambda _t: None)
+    d.start()
+    _c, _p, started, _e = engine.last("segments.detectScenes")
+    d.reject()
+    assert not any(c == "jobs.cancel" for c, *_r in engine.sent)  # no job id yet
+    state = d.state.text()
+    started({"job": 5, "state": "running", "progress": {"done": 1, "total": 2}}, None)
+    assert engine.last("jobs.cancel")[1] == {"job": 5}
+    assert d.job is None and d.state.text() == state and not d._timer.isActive()
+    d._got({"job": 5, "state": "done", "segments": [{"in": 0, "out": 10}]})
+    d._fail("late")
+    assert d.table.rowCount() == 0 and not d.error.isVisible()
+    assert not any(c == "segments.proposal" for c, *_r in engine.sent)
+    parent.deleteLater()
+
+
+def test_smart_cut_exports_only_a_plan_of_the_current_settings(app):
+    """Smart Cut: a new output path (or any setting) drops the plan shown and plans again; an
+    answer for the old settings is ignored, and Export runs only a plan of the current ones."""
+    from cfa4_qt.panels.smart_cut import SmartCutDialog
+
+    parent = QtWidgets.QWidget()
+    engine = _StubEngine()
+    d = SmartCutDialog(parent, engine, 7, lambda _t: None)
+    engine.last("export.analyze")[2]({"path": "/m/clip.mp4", "codec": "h264", "container": "mp4", "smartCut": {"allowed": True}}, None)
+    _c, first, plan_reply, _e = engine.last("export.plan")
+    assert first["output"] == "/m/clip_cut.mp4"
+    good = {"summary": {"copiedFrames": 50, "reencodedFrames": 0}, "plan": {"executable": True}}
+    plan_reply(good, None)
+    assert d.run.isEnabled() and d.plan_current()
+    plans = sum(c == "export.plan" for c, *_r in engine.sent)
+    d.output.setText("/m/other.mp4")
+    assert not d.run.isEnabled() and d.plan is None and not d.plan_current()
+    plan_reply(good, None)  # the old plan's answer, late: ignored
+    assert not d.run.isEnabled() and d.plan is None
+    # Export with a stale plan plans first and writes nothing
+    d.start()
+    assert not any(c == "export.start" for c, *_r in engine.sent)
+    _c, second, plan_reply, _e = engine.last("export.plan")
+    assert second["output"] == "/m/other.mp4" and sum(c == "export.plan" for c, *_r in engine.sent) == plans + 1
+    plan_reply(good, None)
+    assert d.run.isEnabled() and d.plan_current()
+    # typing plans again once it pauses
+    d.output.setText("/m/third.mp4")
+    assert wait_until(app, lambda: engine.last("export.plan")[1]["output"] == "/m/third.mp4", 5_000)
+    engine.last("export.plan")[2](good, None)
+    d.start()
+    assert engine.last("export.start")[1]["output"] == "/m/third.mp4"
+    parent.deleteLater()
+
+
+def test_marker_csv_import_goes_to_the_focused_monitor():
+    """Markers ▸ Import Markers from CSV…: to the Source clip when the Source monitor is focused
+    and shows one, else to the sequence; a target the caller named is kept."""
+    from types import SimpleNamespace
+
+    from cfa4_qt.main_window import MainWindow
+
+    source, program = object(), object()
+    win = SimpleNamespace(source_monitor=source, focused_monitor=lambda: source)
+    assert MainWindow.marker_import_params(win, {"x": 1}) == {"x": 1, "target": "source"}
+    assert MainWindow.marker_import_params(win, {"target": "program"}) == {"target": "program"}
+    assert MainWindow.marker_import_params(win, {"item": 3}) == {"item": 3}
+    win.focused_monitor = lambda: program
+    assert MainWindow.marker_import_params(win, {}) == {}

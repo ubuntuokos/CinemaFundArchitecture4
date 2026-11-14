@@ -4567,7 +4567,7 @@ export.summary	Low	matala
 	Comment…	Kommentti…
 	Comment:	Kommentti:
 	The analysis stopped.	Analyysi pysähtyi.
-	No segments. Add a range marker in the Source monitor, or use Find Segments…	Ei segmenttejä. Lisää aluemerkki lähdemonitorissa tai käytä Etsi segmentit… -toimintoa
+	No segments yet: add a range marker in the Source monitor, or use Find Segments… there.	Ei segmenttejä. Lisää aluemerkki lähdemonitorissa tai käytä Etsi segmentit… -toimintoa
 	Remove Segment	Poista segmentti
 	Black pictures	Mustat kuvat
 	{count} segments written and verified	{count} segmenttiä kirjoitettu ja tarkistettu
@@ -4614,3 +4614,7 @@ export.summary	Low	matala
 	{count} segments joined into one file: {copied} frames copied, {reencoded} frames re-encoded	{count} segmenttiä yhdistetty yhdeksi tiedostoksi: {copied} kuvaa kopioitu, {reencoded} kuvaa koodattu uudelleen
 	{name} ({frames} frames)	{name} ({frames} kuvaa)
 	Scene changes	Kohtausvaihdot
+	Import Markers from CSV…	Tuo merkit CSV-tiedostosta…
+	Export Segments as EDL…	Vie segmentit EDL-tiedostona…
+	Import Segments from EDL…	Tuo segmentit EDL-tiedostosta…
+	Segments to Subclips	Segmentit alaleikkeiksi

@@ -193,9 +193,9 @@ pub(crate) fn analyze(s: &mut Session, _p: &Value, path: &str, view: Option<&Sou
 }
 
 /// The plan of the range named in `p`, and the output stream format.
-fn plan_of(s: &Session, p: &Value, cmd: &str) -> Result<(Source, SmartCutPlan, MuxFormat)> {
+fn plan_of(s: &Session, p: &Value, cmd: &str) -> Result<(std::rc::Rc<Source>, SmartCutPlan, MuxFormat)> {
     let (path, view) = source_p(s, p, cmd)?;
-    let src = open_source(s, &path, cmd)?;
+    let src = crate::source_cache::opened(&path, || open_source(s, &path, cmd))?;
     let map = |t: Tick| src.stream_time(t);
     let (mut in_point, mut out_point) = range_p(p, cmd, &CutSource { path: &path, view: view.as_ref(), rate: src.rate(), stream_time: &map })?;
     if view.is_none() {
@@ -264,7 +264,7 @@ pub(crate) fn start(s: &mut Session, p: &Value) -> Result<Value> {
     let output = str_p(p, "output").filter(|o| !o.is_empty()).map(str::to_string).ok_or_else(|| bad(cmd, "`output` (the file to write) is required"))?;
     let encoding = encoding_p(p, cmd)?;
     let (src, plan, format) = plan_of(s, p, cmd)?;
-    if output == src.path {
+    if crate::smart_cut::path_key(s, &output) == crate::smart_cut::path_key(s, &src.path) {
         return Err(bad(cmd, "the output must not be the source file"));
     }
     let reencodes = plan.plan.requires_confirmation();

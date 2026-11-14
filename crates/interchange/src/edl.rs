@@ -238,7 +238,7 @@ fn parse(text: &str, report: &mut Report) -> Parsed {
         if upper.starts_with(">>>") || upper.starts_with("REM") {
             continue;
         }
-        report.warn(format!("unrecognised EDL line ignored: {}", l.chars().take(60).collect::<String>()));
+        report.warn(format!("{UNREAD}{}", l.chars().take(60).collect::<String>()));
     }
     p
 }
@@ -259,12 +259,22 @@ pub struct SourceRange {
     pub src_out: i64,
 }
 
+/// How the report names a line the parser could not read.
+const UNREAD: &str = "unrecognised EDL line ignored: ";
+
 /// The source ranges of an EDL's events, against `rate`. Refused (instead of converted) when the
 /// list cannot have been written at `rate`: a frame field at or above the rate's timecode base, or
-/// drop-frame timecode for a rate without drop frame.
+/// drop-frame timecode for a rate without drop frame, and when a line cannot be read (it could be
+/// an event).
 pub fn source_ranges(text: &str, rate: FrameRate) -> std::result::Result<Vec<SourceRange>, String> {
     let mut report = Report::default();
     let p = parse(text, &mut report);
+    // a line that is not read could be an event: refuse rather than return fewer ranges (a split
+    // line only moves sound, so the source ranges stay exact without it)
+    let unread: Vec<&str> = report.entries.iter().filter(|e| e.message.starts_with(UNREAD)).map(|e| e.message.as_str()).collect();
+    if let Some(first) = unread.first() {
+        return Err(format!("{} line(s) of the EDL cannot be read ({first})", unread.len()));
+    }
     let base = rate.timecode_base();
     if p.max_ff >= base {
         return Err(format!("the EDL counts frames up to {}, which {} fps timecode cannot hold: it was written at another frame rate", p.max_ff, rate.label()));
@@ -1070,6 +1080,15 @@ fn edl_transition(e: &cfa4_project::EffectInstance, report: &mut Report) -> (Str
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn source_ranges_refuse_a_line_they_cannot_read() {
+        let ok = "TITLE: T\nFCM: NON-DROP FRAME\n\n001  AX       V     C        00:00:01:00 00:00:02:00 00:00:00:00 00:00:01:00\n";
+        assert_eq!(source_ranges(ok, FrameRate::FPS_25).unwrap().len(), 1);
+        let damaged = format!("{ok}002  AX       V     C        00:00:03:00 00:0X:04:00 00:00:01:00 00:00:02:00\n");
+        let e = source_ranges(&damaged, FrameRate::FPS_25).unwrap_err();
+        assert!(e.contains("cannot be read") && e.contains("002"), "{e}");
+    }
 
     #[test]
     fn channels() {

@@ -72,6 +72,7 @@ mod smart_cut_mpeg;
 mod smart_cut_ranges;
 mod smart_render;
 pub mod social;
+mod source_cache;
 pub mod source_monitor;
 pub mod sync;
 pub mod timecode_sync;
@@ -153,6 +154,12 @@ pub trait Services: Send + Sync {
     fn file_size(&self, path: &str) -> std::io::Result<u64> {
         self.read_file(path).map(|b| b.len() as u64)
     }
+    /// The path that names the same file however `path` is spelled (symbolic links and `..`
+    /// resolved; for a file that does not exist yet, its directory resolved), so two names of one
+    /// file compare equal. `None`: the host cannot tell; callers then compare the paths lexically.
+    fn canonical_path(&self, _path: &str) -> Option<String> {
+        None
+    }
     /// Up to `len` bytes of a file starting at `offset` (fewer at the end of the file).
     fn read_range(&self, path: &str, offset: u64, len: usize) -> std::io::Result<Vec<u8>> {
         let b = self.read_file(path)?;
@@ -221,6 +228,15 @@ impl Services for FsServices {
             Err(e) => return Err(e),
         }
         cfa4_format::atomic_write_new(path, data)
+    }
+    fn canonical_path(&self, path: &str) -> Option<String> {
+        let p = std::path::Path::new(path);
+        if let Ok(c) = std::fs::canonicalize(p) {
+            return Some(c.to_string_lossy().into_owned());
+        }
+        let name = p.file_name()?;
+        let dir = p.parent().filter(|d| !d.as_os_str().is_empty()).unwrap_or_else(|| std::path::Path::new("."));
+        std::fs::canonicalize(dir).ok().map(|d| d.join(name).to_string_lossy().into_owned())
     }
     fn file_size(&self, path: &str) -> std::io::Result<u64> {
         let m = std::fs::metadata(path)?;

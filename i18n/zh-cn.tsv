@@ -4563,7 +4563,7 @@
 	Comment…	注释…
 	Comment:	注释:
 	The analysis stopped.	分析已停止。
-	No segments. Add a range marker in the Source monitor, or use Find Segments…	没有片段。请在源监视器中添加范围标记，或使用“查找片段…”
+	No segments yet: add a range marker in the Source monitor, or use Find Segments… there.	没有片段。请在源监视器中添加范围标记，或使用“查找片段…”
 	Remove Segment	移除片段
 	Black pictures	黑场画面
 	{count} segments written and verified	已写入并校验 {count} 个片段
@@ -4610,3 +4610,7 @@
 	{count} segments joined into one file: {copied} frames copied, {reencoded} frames re-encoded	已将 {count} 个片段合并为一个文件：复制 {copied} 帧，重新编码 {reencoded} 帧
 	{name} ({frames} frames)	{name}（{frames} 帧）
 	Scene changes	场景切换
+	Import Markers from CSV…	从 CSV 导入标记…
+	Export Segments as EDL…	将片段导出为 EDL…
+	Import Segments from EDL…	从 EDL 导入片段…
+	Segments to Subclips	片段转为子剪辑

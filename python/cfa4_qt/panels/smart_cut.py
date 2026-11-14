@@ -22,7 +22,7 @@ import os
 from collections.abc import Callable
 from typing import Any
 
-from PySide6.QtCore import Qt
+from PySide6.QtCore import Qt, QTimer
 from PySide6.QtWidgets import (
     QCheckBox,
     QComboBox,
@@ -50,6 +50,8 @@ GUARANTEES = (("bit-exact", N_("Bit-exact copy")), ("compatible", N_("Compatible
 # the output extensions Smart Cut writes as they are (MP4 / MOV; MPEG program and transport streams)
 KEPT_EXTENSIONS = ("mp4", "m4v", "mov", "mpg", "mpeg", "ts", "m2t", "m2ts", "mts")
 OUTPUT_FILTER = "MP4 / MOV (*.mp4 *.m4v *.mov);;MPEG-PS / MPEG-TS (*.mpg *.mpeg *.ts *.m2ts *.mts)"
+# typing in the output field plans again once the typing pauses
+REPLAN_MS = 300
 
 
 def default_output(path: str) -> str:
@@ -143,8 +145,14 @@ class SmartCutDialog(QDialog):
         self.said = said
         self.analysis: dict[str, Any] | None = None
         self.plan: dict[str, Any] | None = None
+        # the parameters `plan` was made for: Export runs only a plan of the current settings
+        self.planned: dict[str, Any] | None = None
         self.finder: QDialog | None = None
         self._plan_request = 0
+        self._replan_timer = QTimer(self)
+        self._replan_timer.setSingleShot(True)
+        self._replan_timer.setInterval(REPLAN_MS)
+        self._replan_timer.timeout.connect(self.replan)
         lay = QVBoxLayout(self)
         self.info = QLabel(tr("Analyzing the clip…"), self)
         self.info.setObjectName("source.smartCut.info")
@@ -169,6 +177,7 @@ class SmartCutDialog(QDialog):
         out = QHBoxLayout()
         self.output = QLineEdit(self)
         self.output.setObjectName("source.smartCut.output")
+        self.output.textChanged.connect(lambda _t: self._output_edited())
         out.addWidget(self.output, 1)
         browse = QPushButton(tr("Browse…"), self)
         browse.setObjectName("source.smartCut.browse")
@@ -219,6 +228,7 @@ class SmartCutDialog(QDialog):
         self.segment_chapters = QCheckBox(tr("Segment names as chapters"), self.segments_box)
         self.segment_chapters.setObjectName("source.smartCut.segmentChapters")
         self.segment_chapters.setEnabled(False)
+        self.segment_chapters.toggled.connect(lambda _on: self.replan())
         joins.addWidget(self.segment_chapters)
         self.segments_box.hide()
         lay.addWidget(self.segments_box)
@@ -400,24 +410,42 @@ class SmartCutDialog(QDialog):
             return params
         return {"item": self.item, "mode": self.mode.currentData(), "guarantee": self.guarantee.currentData(), "output": self.output.text().strip() or None}
 
+    def _invalidate(self) -> None:
+        """The settings changed: the plan shown no longer applies, and an answer still on its way
+        for the old settings is dropped."""
+        self._replan_timer.stop()
+        self._plan_request += 1
+        self.plan = None
+        self.planned = None
+        self.run.setEnabled(False)
+
+    def _output_edited(self) -> None:
+        self._invalidate()
+        self._replan_timer.start()
+
+    def plan_current(self) -> bool:
+        """Whether the plan shown was made for the current settings."""
+        return self.plan is not None and self.planned is not None and self.planned == self.params()
+
     def replan(self) -> None:
+        self._invalidate()
         if self.analysis is None or not (self.analysis.get("smartCut") or {}).get("allowed"):
             return
         self.error.hide()
-        self.run.setEnabled(False)
         segments = self.segments_mode()
         if segments and not self.chosen_segments():
             self.summary.setText("")
             if self.segment_list.count():
                 self._fail(tr("Check at least one segment."))
             return
-        self._plan_request += 1
         request = self._plan_request
+        params = self.params()
 
         def got(result: Any) -> None:
             if request != self._plan_request or not isinstance(result, dict):
                 return
             self.plan = result
+            self.planned = params
             text, problem = plan_text(result)
             self.summary.setText(text)
             if problem:
@@ -430,7 +458,7 @@ class SmartCutDialog(QDialog):
                 self.summary.setText("")
                 self._fail(message)
 
-        self.engine.execute("segments.plan" if segments else "export.plan", self.params(), on_reply=lambda r, _b: got(r), on_error=failed)
+        self.engine.execute("segments.plan" if segments else "export.plan", params, on_reply=lambda r, _b: got(r), on_error=failed)
 
     # ----- actions -----
     def browse(self) -> None:
@@ -445,6 +473,10 @@ class SmartCutDialog(QDialog):
         params = self.params()
         if not params["output"]:
             self._fail(tr("Choose the output file."))
+            return
+        if not self.plan_current():
+            # the settings changed since the plan was made: plan them, then the user exports
+            self.replan()
             return
         # an existing file is replaced only once the user says so (plan 1.1 §7)
         if self.segments_mode():

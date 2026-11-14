@@ -4568,7 +4568,7 @@ export.summary	Low	žema
 	Comment…	Komentaras…
 	Comment:	Komentaras:
 	The analysis stopped.	Analizė sustabdyta.
-	No segments. Add a range marker in the Source monitor, or use Find Segments…	Segmentų nėra. Šaltinio monitoriuje pridėk intervalo žymeklį arba naudok „Rasti segmentus…“
+	No segments yet: add a range marker in the Source monitor, or use Find Segments… there.	Segmentų nėra. Šaltinio monitoriuje pridėk intervalo žymeklį arba naudok „Rasti segmentus…“
 	Remove Segment	Pašalinti segmentą
 	Black pictures	Juodi kadrai
 	{count} segments written and verified	Įrašyta ir patikrinta segmentų: {count}
@@ -4615,3 +4615,7 @@ export.summary	Low	žema
 	{count} segments joined into one file: {copied} frames copied, {reencoded} frames re-encoded	Segmentai ({count}) sujungti į vieną failą; nukopijuota kadrų: {copied}, perkoduota kadrų: {reencoded}
 	{name} ({frames} frames)	{name} (kadrų: {frames})
 	Scene changes	Scenų kaita
+	Import Markers from CSV…	Importuoti žymes iš CSV…
+	Export Segments as EDL…	Eksportuoti segmentus kaip EDL…
+	Import Segments from EDL…	Importuoti segmentus iš EDL…
+	Segments to Subclips	Segmentai į poklipus

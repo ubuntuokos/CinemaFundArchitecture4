@@ -4567,7 +4567,7 @@ export.summary	Low	niska
 	Comment…	Komentar…
 	Comment:	Komentar:
 	The analysis stopped.	Analiza je zaustavljena.
-	No segments. Add a range marker in the Source monitor, or use Find Segments…	Nema segmenata. Dodaj oznaku raspona u monitoru izvora ili upotrijebi „Pronađi segmente…“
+	No segments yet: add a range marker in the Source monitor, or use Find Segments… there.	Nema segmenata. Dodaj oznaku raspona u monitoru izvora ili upotrijebi „Pronađi segmente…“
 	Remove Segment	Ukloni segment
 	Black pictures	Crne slike
 	{count} segments written and verified	Zapisani i provjereni segmenti: {count}
@@ -4614,3 +4614,7 @@ export.summary	Low	niska
 	{count} segments joined into one file: {copied} frames copied, {reencoded} frames re-encoded	Segmenti ({count}) spojeni u jednu datoteku; kopirani okviri: {copied}, ponovno kodirani okviri: {reencoded}
 	{name} ({frames} frames)	{name} (okvira: {frames})
 	Scene changes	Promjene scene
+	Import Markers from CSV…	Uvezi oznake iz CSV-a…
+	Export Segments as EDL…	Izvezi segmente kao EDL…
+	Import Segments from EDL…	Uvezi segmente iz EDL-a…
+	Segments to Subclips	Segmenti u podisječke

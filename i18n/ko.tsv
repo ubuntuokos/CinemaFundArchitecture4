@@ -4559,7 +4559,7 @@
 	Comment…	주석…
 	Comment:	주석:
 	The analysis stopped.	분석이 중지되었습니다.
-	No segments. Add a range marker in the Source monitor, or use Find Segments…	세그먼트가 없습니다. 소스 모니터에서 범위 마커를 추가하거나 세그먼트 찾기…를 사용하세요
+	No segments yet: add a range marker in the Source monitor, or use Find Segments… there.	세그먼트가 없습니다. 소스 모니터에서 범위 마커를 추가하거나 세그먼트 찾기…를 사용하세요
 	Remove Segment	세그먼트 제거
 	Black pictures	검은 화면
 	{count} segments written and verified	세그먼트 {count}개를 쓰고 검증했습니다
@@ -4606,3 +4606,7 @@
 	{count} segments joined into one file: {copied} frames copied, {reencoded} frames re-encoded	세그먼트 {count}개를 하나의 파일로 합침: 프레임 {copied}개 복사, 프레임 {reencoded}개 재인코딩
 	{name} ({frames} frames)	{name} (프레임 {frames}개)
 	Scene changes	장면 전환
+	Import Markers from CSV…	CSV에서 마커 가져오기…
+	Export Segments as EDL…	세그먼트를 EDL로 내보내기…
+	Import Segments from EDL…	EDL에서 세그먼트 가져오기…
+	Segments to Subclips	세그먼트를 하위 클립으로
