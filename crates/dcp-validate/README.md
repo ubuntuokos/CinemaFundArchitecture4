@@ -143,7 +143,7 @@ every picture file in the clear. `FAIL` when a frame breaks the 2K or 4K digital
 
 - `Rsiz` (3 for 2K, 4 for 4K), size, one tile at origin 0;
 - three 12-bit unsigned components without sub-sampling;
-- 1-5 decomposition levels (2K) or 1-6 (4K), CPRL, one layer, 9/7 wavelet, no MCT;
+- 1-5 decomposition levels (2K) or 1-6 (4K), CPRL, one layer, 9/7 wavelet;
 - 32 × 32 code-blocks without style flags, precincts 128 × 128 then 256 × 256;
 - scalar expounded quantization with 1 guard bit (2K) or 2 (4K);
 - 3 tile-parts (2K) or 6 (4K);
@@ -151,8 +151,11 @@ every picture file in the clear. `FAIL` when a frame breaks the 2K or 4K digital
 - more bytes than the DCI limit at the image rate: 250 Mbit/s a frame, 200 Mbit/s a component
   (above 48 images a second this is a `WARNING`).
 
-A missing TLM marker, a 4K frame without a POC marker and a codestream that does not end with EOC
-are `WARNING`. The same problem in many frames is one finding with the first frame and a count.
+A missing TLM marker, a 4K frame without a POC marker, a frame without the multiple component
+transform (MCT) and a codestream that does not end with EOC are `WARNING`. The MCT (the ICT on
+X'Y'Z') is allowed: libdcp's `dcpverify` requires it and the DCI DCSS (§4.3.2) has every decoder
+apply the inverse ICT; the ISO/IEC 15444-1 profile table itself was not checked
+([CFA4-DCPVAL-LIBDCP-001](../../docs/plans/CFA4-DCPVAL-LIBDCP-001-FINAL-1.0.md), D2 and D4). The same problem in many frames is one finding with the first frame and a count.
 An encrypted file's codestreams are `UNCHECKED`: they need the content key.
 
 `DCP.PIC.001` (DCI, ST 428-21, ST 429-7, ST 429-10):
