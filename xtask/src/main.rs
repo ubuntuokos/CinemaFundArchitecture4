@@ -78,6 +78,7 @@ const LAYERS: &[(&str, u8)] = &[
     ("dng", 0),
     ("av1", 0),
     ("av2", 0),
+    ("vvc", 0),
     ("aac", 0),
     ("flac", 0),
     ("opus", 0),
