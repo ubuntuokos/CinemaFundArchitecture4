@@ -30,6 +30,19 @@ impl<'a> Bits<'a> {
         v
     }
 
+    /// The next `n` bits without consuming them.
+    pub(crate) fn show(&self, n: u32) -> u32 {
+        let mut v = 0u32;
+        for i in 0..n as usize {
+            v = (v << 1) | self.bit_at(self.pos + i);
+        }
+        v
+    }
+
+    pub(crate) fn skip(&mut self, n: u32) {
+        self.pos = (self.pos + n as usize).min(self.limit);
+    }
+
     pub(crate) fn get1(&mut self) -> bool {
         self.get(1) != 0
     }
