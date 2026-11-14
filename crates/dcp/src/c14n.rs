@@ -17,7 +17,7 @@ const MAX_DEPTH: usize = 256;
 
 /// The canonical form of `apex` and its descendants (a document subset), without `skip` (and its
 /// descendants: the enveloped-signature transform). Comments are kept when `with_comments`.
-pub(crate) fn canonicalize(apex: Node, with_comments: bool, skip: Option<NodeId>) -> Result<Vec<u8>, String> {
+pub(crate) fn canonicalize(apex: Node<'_, '_>, with_comments: bool, skip: Option<NodeId>) -> Result<Vec<u8>, String> {
     if !apex.is_element() {
         return Err("only an element can be canonicalized".into());
     }
@@ -35,14 +35,14 @@ struct C14n<'i> {
 
 impl C14n<'_> {
     /// The element's qualified name as written in the source.
-    fn qname<'a>(&'a self, n: Node) -> &'a str {
+    fn qname<'a>(&'a self, n: Node<'_, '_>) -> &'a str {
         let start = n.range().start.saturating_add(1);
         let rest = self.input.get(start..).unwrap_or_default();
         let end = rest.find(|c: char| c.is_ascii_whitespace() || c == '/' || c == '>').unwrap_or(rest.len());
         rest.get(..end).unwrap_or_default()
     }
 
-    fn element(&self, n: Node, rendered: &BTreeMap<String, String>, apex: bool, depth: usize, out: &mut Vec<u8>) -> Result<(), String> {
+    fn element(&self, n: Node<'_, '_>, rendered: &BTreeMap<String, String>, apex: bool, depth: usize, out: &mut Vec<u8>) -> Result<(), String> {
         if depth > MAX_DEPTH {
             return Err(format!("elements nested deeper than {MAX_DEPTH}"));
         }

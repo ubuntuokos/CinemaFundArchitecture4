@@ -205,7 +205,13 @@ pub fn open_kdm(xml: &str, key: &PrivateKey, now: DateTime<Utc>) -> Result<Kdm, 
 
 /// The signature of the KDM: both authenticated parts must be among its references (ST 430-1 8).
 /// With it the signer certificate's thumbprint, when the signed content checked out.
-fn check_signature(doc: &roxmltree::Document, root: Node, public: Node, private: Node, now: DateTime<Utc>) -> (Signature, Option<[u8; 20]>) {
+fn check_signature(
+    doc: &roxmltree::Document<'_>,
+    root: Node<'_, '_>,
+    public: Node<'_, '_>,
+    private: Node<'_, '_>,
+    now: DateTime<Utc>,
+) -> (Signature, Option<[u8; 20]>) {
     let Some(sig) = root.children().find(|c| c.is_element() && c.tag_name().name() == "Signature" && c.tag_name().namespace() == Some(crate::xmldsig::DSIG_NS))
     else {
         return (Signature::Missing, None);
