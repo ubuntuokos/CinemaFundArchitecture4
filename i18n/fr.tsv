@@ -4650,3 +4650,16 @@
 	Freewheel	Roue libre
 	Scrubbing	Défilement
 	Sending	Envoi
+
+# DCP subtitle export (#938)
+	Subtitles from the first caption track	Sous-titres de la première piste de sous-titres
+	The package language	La langue du paquet
+	Inter Regular (built in), or an OpenType / TrueType file	Inter Regular (intégrée) ou un fichier OpenType / TrueType
+	Subtitle language	Langue des sous-titres
+	Subtitle font	Police des sous-titres
+	Fonts	Polices
+
+# AS-11 metadata in MXF OP1a (#96)
+	AS-11 Core	AS-11 Core
+	AS-11 Parts	Parties AS-11
+	AS-11 UK DPP	AS-11 UK DPP

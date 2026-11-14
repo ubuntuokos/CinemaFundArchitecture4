@@ -4646,3 +4646,16 @@ export.summary	Low	düşük
 	Freewheel	Serbest çalışma
 	Scrubbing	Kaydırılıyor
 	Sending	Gönderiliyor
+
+# DCP subtitle export (#938)
+	Subtitles from the first caption track	İlk altyazı izinden altyazılar
+	The package language	Paketin dili
+	Inter Regular (built in), or an OpenType / TrueType file	Inter Regular (yerleşik) veya bir OpenType / TrueType dosyası
+	Subtitle language	Altyazı dili
+	Subtitle font	Altyazı yazı tipi
+	Fonts	Yazı tipleri
+
+# AS-11 metadata in MXF OP1a (#96)
+	AS-11 Core	AS-11 Core
+	AS-11 Parts	AS-11 bölümleri
+	AS-11 UK DPP	AS-11 UK DPP

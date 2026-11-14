@@ -4645,3 +4645,16 @@ export.summary	Low	низак
 	Freewheel	Слободан ход
 	Scrubbing	Померање
 	Sending	Слање
+
+# DCP subtitle export (#938)
+	Subtitles from the first caption track	Титлови са прве стазе титлова
+	The package language	Језик пакета
+	Inter Regular (built in), or an OpenType / TrueType file	Inter Regular (уграђени) или датотека OpenType / TrueType
+	Subtitle language	Језик титлова
+	Subtitle font	Фонт титлова
+	Fonts	Фонтови
+
+# AS-11 metadata in MXF OP1a (#96)
+	AS-11 Core	AS-11 Core
+	AS-11 Parts	AS-11 делови
+	AS-11 UK DPP	AS-11 UK DPP

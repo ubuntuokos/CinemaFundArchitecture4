@@ -4654,3 +4654,16 @@
 	Freewheel	フリーホイール
 	Scrubbing	スクラブ中
 	Sending	送信中
+
+# DCP subtitle export (#938)
+	Subtitles from the first caption track	最初のキャプショントラックからの字幕
+	The package language	パッケージの言語
+	Inter Regular (built in), or an OpenType / TrueType file	Inter Regular (組み込み)、または OpenType / TrueType ファイル
+	Subtitle language	字幕の言語
+	Subtitle font	字幕のフォント
+	Fonts	フォント
+
+# AS-11 metadata in MXF OP1a (#96)
+	AS-11 Core	AS-11 Core
+	AS-11 Parts	AS-11 パート
+	AS-11 UK DPP	AS-11 UK DPP

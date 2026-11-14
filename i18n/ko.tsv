@@ -4639,3 +4639,16 @@
 	Freewheel	프리휠
 	Scrubbing	스크러빙
 	Sending	보내는 중
+
+# DCP subtitle export (#938)
+	Subtitles from the first caption track	첫 번째 자막 트랙의 자막
+	The package language	패키지 언어
+	Inter Regular (built in), or an OpenType / TrueType file	Inter Regular(기본 제공) 또는 OpenType / TrueType 파일
+	Subtitle language	자막 언어
+	Subtitle font	자막 글꼴
+	Fonts	글꼴
+
+# AS-11 metadata in MXF OP1a (#96)
+	AS-11 Core	AS-11 Core
+	AS-11 Parts	AS-11 파트
+	AS-11 UK DPP	AS-11 UK DPP

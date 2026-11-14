@@ -4651,3 +4651,16 @@ export.summary	Low	తక్కువ
 	Freewheel	ఫ్రీవీల్
 	Scrubbing	స్క్రబ్ చేస్తోంది
 	Sending	పంపుతోంది
+
+# DCP subtitle export (#938)
+	Subtitles from the first caption track	మొదటి క్యాప్షన్ ట్రాక్ నుండి ఉపశీర్షికలు
+	The package language	ప్యాకేజీ భాష
+	Inter Regular (built in), or an OpenType / TrueType file	Inter Regular (అంతర్నిర్మిత), లేదా OpenType / TrueType ఫైల్
+	Subtitle language	ఉపశీర్షికల భాష
+	Subtitle font	ఉపశీర్షికల ఫాంట్
+	Fonts	ఫాంట్‌లు
+
+# AS-11 metadata in MXF OP1a (#96)
+	AS-11 Core	AS-11 Core
+	AS-11 Parts	AS-11 భాగాలు
+	AS-11 UK DPP	AS-11 UK DPP

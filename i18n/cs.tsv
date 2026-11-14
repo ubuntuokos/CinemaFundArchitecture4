@@ -4645,3 +4645,16 @@ export.summary	Low	nízká
 	Freewheel	Volnoběh
 	Scrubbing	Posouvání
 	Sending	Odesílání
+
+# DCP subtitle export (#938)
+	Subtitles from the first caption track	Titulky z první stopy titulků
+	The package language	Jazyk balíčku
+	Inter Regular (built in), or an OpenType / TrueType file	Inter Regular (vestavěné) nebo soubor OpenType / TrueType
+	Subtitle language	Jazyk titulků
+	Subtitle font	Písmo titulků
+	Fonts	Písma
+
+# AS-11 metadata in MXF OP1a (#96)
+	AS-11 Core	AS-11 Core
+	AS-11 Parts	AS-11 části
+	AS-11 UK DPP	AS-11 UK DPP

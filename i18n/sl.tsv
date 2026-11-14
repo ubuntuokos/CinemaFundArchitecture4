@@ -4648,3 +4648,16 @@ export.summary	Low	nizka
 	Freewheel	Prosti tek
 	Scrubbing	Drsenje
 	Sending	Pošiljanje
+
+# DCP subtitle export (#938)
+	Subtitles from the first caption track	Podnapisi s prve sledi podnapisov
+	The package language	Jezik paketa
+	Inter Regular (built in), or an OpenType / TrueType file	Inter Regular (vgrajena) ali datoteka OpenType / TrueType
+	Subtitle language	Jezik podnapisov
+	Subtitle font	Pisava podnapisov
+	Fonts	Pisave
+
+# AS-11 metadata in MXF OP1a (#96)
+	AS-11 Core	AS-11 Core
+	AS-11 Parts	Deli AS-11
+	AS-11 UK DPP	AS-11 UK DPP

@@ -4647,3 +4647,16 @@ export.summary	Low	matala
 	Freewheel	Vapaakäynti
 	Scrubbing	Selataan
 	Sending	Lähetetään
+
+# DCP subtitle export (#938)
+	Subtitles from the first caption track	Tekstitykset ensimmäiseltä tekstitysraidalta
+	The package language	Paketin kieli
+	Inter Regular (built in), or an OpenType / TrueType file	Inter Regular (sisäänrakennettu) tai OpenType- / TrueType-tiedosto
+	Subtitle language	Tekstityskieli
+	Subtitle font	Tekstitysfontti
+	Fonts	Fontit
+
+# AS-11 metadata in MXF OP1a (#96)
+	AS-11 Core	AS-11 Core
+	AS-11 Parts	AS-11-osat
+	AS-11 UK DPP	AS-11 UK DPP

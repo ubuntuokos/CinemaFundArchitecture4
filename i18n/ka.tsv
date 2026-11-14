@@ -4648,3 +4648,16 @@ export.summary	Low	დაბალი
 	Freewheel	თავისუფალი სვლა
 	Scrubbing	გადახვევა
 	Sending	გაგზავნა
+
+# DCP subtitle export (#938)
+	Subtitles from the first caption track	სუბტიტრები პირველი სუბტიტრების ბილიკიდან
+	The package language	პაკეტის ენა
+	Inter Regular (built in), or an OpenType / TrueType file	Inter Regular (ჩაშენებული) ან OpenType / TrueType ფაილი
+	Subtitle language	სუბტიტრების ენა
+	Subtitle font	სუბტიტრების შრიფტი
+	Fonts	შრიფტები
+
+# AS-11 metadata in MXF OP1a (#96)
+	AS-11 Core	AS-11 Core
+	AS-11 Parts	AS-11 ნაწილები
+	AS-11 UK DPP	AS-11 UK DPP

@@ -4645,3 +4645,16 @@ export.summary	Low	thấp
 	Freewheel	Chạy tự do
 	Scrubbing	Đang tua
 	Sending	Đang gửi
+
+# DCP subtitle export (#938)
+	Subtitles from the first caption track	Phụ đề từ rãnh phụ đề đầu tiên
+	The package language	Ngôn ngữ của gói
+	Inter Regular (built in), or an OpenType / TrueType file	Inter Regular (dựng sẵn) hoặc tệp OpenType / TrueType
+	Subtitle language	Ngôn ngữ phụ đề
+	Subtitle font	Phông chữ phụ đề
+	Fonts	Phông chữ
+
+# AS-11 metadata in MXF OP1a (#96)
+	AS-11 Core	AS-11 Core
+	AS-11 Parts	Phần AS-11
+	AS-11 UK DPP	AS-11 UK DPP

@@ -4630,3 +4630,16 @@
 	Freewheel	Свободный ход
 	Scrubbing	Прокрутка
 	Sending	Отправка
+
+# DCP subtitle export (#938)
+	Subtitles from the first caption track	Субтитры из первой дорожки субтитров
+	The package language	Язык пакета
+	Inter Regular (built in), or an OpenType / TrueType file	Inter Regular (встроенный) или файл OpenType / TrueType
+	Subtitle language	Язык субтитров
+	Subtitle font	Шрифт субтитров
+	Fonts	Шрифты
+
+# AS-11 metadata in MXF OP1a (#96)
+	AS-11 Core	AS-11 Core
+	AS-11 Parts	Части AS-11
+	AS-11 UK DPP	AS-11 UK DPP

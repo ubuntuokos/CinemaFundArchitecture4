@@ -4647,3 +4647,16 @@ export.summary	Low	төмен
 	Freewheel	Еркін жүріс
 	Scrubbing	Айналдыру
 	Sending	Жіберу
+
+# DCP subtitle export (#938)
+	Subtitles from the first caption track	Бірінші субтитр жолынан алынған субтитрлер
+	The package language	Пакет тілі
+	Inter Regular (built in), or an OpenType / TrueType file	Inter Regular (кірістірілген) немесе OpenType / TrueType файлы
+	Subtitle language	Субтитр тілі
+	Subtitle font	Субтитр қаріпі
+	Fonts	Қаріптер
+
+# AS-11 metadata in MXF OP1a (#96)
+	AS-11 Core	AS-11 Core
+	AS-11 Parts	AS-11 бөліктері
+	AS-11 UK DPP	AS-11 UK DPP

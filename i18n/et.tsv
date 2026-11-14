@@ -4647,3 +4647,16 @@ export.summary	Low	madal
 	Freewheel	Vabajooks
 	Scrubbing	Kerimine
 	Sending	Saatmine
+
+# DCP subtitle export (#938)
+	Subtitles from the first caption track	Subtiitrid esimeselt pealdiserajalt
+	The package language	Paketi keel
+	Inter Regular (built in), or an OpenType / TrueType file	Inter Regular (sisseehitatud) või OpenType / TrueType fail
+	Subtitle language	Subtiitrite keel
+	Subtitle font	Subtiitrite font
+	Fonts	Fondid
+
+# AS-11 metadata in MXF OP1a (#96)
+	AS-11 Core	AS-11 Core
+	AS-11 Parts	AS-11 osad
+	AS-11 UK DPP	AS-11 UK DPP

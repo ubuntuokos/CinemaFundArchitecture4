@@ -4645,3 +4645,16 @@
 	Freewheel	Ruota libera
 	Scrubbing	Scorrimento
 	Sending	Invio
+
+# DCP subtitle export (#938)
+	Subtitles from the first caption track	Sottotitoli dalla prima traccia sottotitoli
+	The package language	La lingua del pacchetto
+	Inter Regular (built in), or an OpenType / TrueType file	Inter Regular (integrato) o un file OpenType / TrueType
+	Subtitle language	Lingua dei sottotitoli
+	Subtitle font	Font dei sottotitoli
+	Fonts	Font
+
+# AS-11 metadata in MXF OP1a (#96)
+	AS-11 Core	AS-11 Core
+	AS-11 Parts	Parti AS-11
+	AS-11 UK DPP	AS-11 UK DPP

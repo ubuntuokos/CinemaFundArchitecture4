@@ -4653,3 +4653,16 @@
 	Freewheel	Freewheel
 	Scrubbing	Menggulir
 	Sending	Mengirim
+
+# DCP subtitle export (#938)
+	Subtitles from the first caption track	Subtitel dari trek takarir pertama
+	The package language	Bahasa paket
+	Inter Regular (built in), or an OpenType / TrueType file	Inter Regular (bawaan), atau berkas OpenType / TrueType
+	Subtitle language	Bahasa subtitel
+	Subtitle font	Font subtitel
+	Fonts	Font
+
+# AS-11 metadata in MXF OP1a (#96)
+	AS-11 Core	AS-11 Core
+	AS-11 Parts	Bagian AS-11
+	AS-11 UK DPP	AS-11 UK DPP

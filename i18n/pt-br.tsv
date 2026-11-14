@@ -4655,3 +4655,16 @@
 	Freewheel	Roda livre
 	Scrubbing	Navegando
 	Sending	Enviando
+
+# DCP subtitle export (#938)
+	Subtitles from the first caption track	Legendas da primeira faixa de legendas
+	The package language	O idioma do pacote
+	Inter Regular (built in), or an OpenType / TrueType file	Inter Regular (integrada) ou um arquivo OpenType / TrueType
+	Subtitle language	Idioma das legendas
+	Subtitle font	Fonte das legendas
+	Fonts	Fontes
+
+# AS-11 metadata in MXF OP1a (#96)
+	AS-11 Core	AS-11 Core
+	AS-11 Parts	Partes AS-11
+	AS-11 UK DPP	AS-11 UK DPP

@@ -4647,3 +4647,16 @@ export.summary	Low	χαμηλή
 	Freewheel	Ελεύθερη λειτουργία
 	Scrubbing	Κύλιση
 	Sending	Αποστολή
+
+# DCP subtitle export (#938)
+	Subtitles from the first caption track	Υπότιτλοι από το πρώτο κανάλι λεζάντων
+	The package language	Η γλώσσα του πακέτου
+	Inter Regular (built in), or an OpenType / TrueType file	Inter Regular (ενσωματωμένη) ή ένα αρχείο OpenType / TrueType
+	Subtitle language	Γλώσσα υποτίτλων
+	Subtitle font	Γραμματοσειρά υποτίτλων
+	Fonts	Γραμματοσειρές
+
+# AS-11 metadata in MXF OP1a (#96)
+	AS-11 Core	AS-11 Core
+	AS-11 Parts	Τμήματα AS-11
+	AS-11 UK DPP	AS-11 UK DPP

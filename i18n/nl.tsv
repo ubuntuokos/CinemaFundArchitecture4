@@ -4645,3 +4645,16 @@ export.summary	Low	laag
 	Freewheel	Vrijloop
 	Scrubbing	Scrubben
 	Sending	Verzenden
+
+# DCP subtitle export (#938)
+	Subtitles from the first caption track	Ondertitels uit het eerste ondertitelspoor
+	The package language	De taal van het pakket
+	Inter Regular (built in), or an OpenType / TrueType file	Inter Regular (ingebouwd) of een OpenType-/TrueType-bestand
+	Subtitle language	Ondertiteltaal
+	Subtitle font	Ondertitellettertype
+	Fonts	Lettertypen
+
+# AS-11 metadata in MXF OP1a (#96)
+	AS-11 Core	AS-11 Core
+	AS-11 Parts	AS-11-delen
+	AS-11 UK DPP	AS-11 UK DPP

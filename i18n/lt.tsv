@@ -4648,3 +4648,16 @@ export.summary	Low	žema
 	Freewheel	Laisvoji eiga
 	Scrubbing	Slinkimas
 	Sending	Siunčiama
+
+# DCP subtitle export (#938)
+	Subtitles from the first caption track	Subtitrai iš pirmojo subtitrų takelio
+	The package language	Paketo kalba
+	Inter Regular (built in), or an OpenType / TrueType file	Inter Regular (įtaisytas) arba OpenType / TrueType failas
+	Subtitle language	Subtitrų kalba
+	Subtitle font	Subtitrų šriftas
+	Fonts	Šriftai
+
+# AS-11 metadata in MXF OP1a (#96)
+	AS-11 Core	AS-11 Core
+	AS-11 Parts	AS-11 dalys
+	AS-11 UK DPP	AS-11 UK DPP

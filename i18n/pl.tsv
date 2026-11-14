@@ -4645,3 +4645,16 @@ export.summary	Low	niska
 	Freewheel	Wolnobieg
 	Scrubbing	Przewijanie
 	Sending	Wysyłanie
+
+# DCP subtitle export (#938)
+	Subtitles from the first caption track	Napisy z pierwszej ścieżki napisów
+	The package language	Język pakietu
+	Inter Regular (built in), or an OpenType / TrueType file	Inter Regular (wbudowana) lub plik OpenType / TrueType
+	Subtitle language	Język napisów
+	Subtitle font	Czcionka napisów
+	Fonts	Czcionki
+
+# AS-11 metadata in MXF OP1a (#96)
+	AS-11 Core	AS-11 Core
+	AS-11 Parts	Części AS-11
+	AS-11 UK DPP	AS-11 UK DPP

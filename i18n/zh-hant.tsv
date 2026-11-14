@@ -4644,3 +4644,16 @@ export.summary	Low	低
 	Freewheel	自由運行
 	Scrubbing	拖曳中
 	Sending	正在傳送
+
+# DCP subtitle export (#938)
+	Subtitles from the first caption track	來自第一條字幕軌道的字幕
+	The package language	套件的語言
+	Inter Regular (built in), or an OpenType / TrueType file	Inter Regular（內建）或 OpenType / TrueType 檔案
+	Subtitle language	字幕語言
+	Subtitle font	字幕字型
+	Fonts	字型
+
+# AS-11 metadata in MXF OP1a (#96)
+	AS-11 Core	AS-11 Core
+	AS-11 Parts	AS-11 部分
+	AS-11 UK DPP	AS-11 UK DPP

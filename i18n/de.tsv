@@ -4652,3 +4652,16 @@
 	Freewheel	Freilauf
 	Scrubbing	Scrubben
 	Sending	Senden
+
+# DCP subtitle export (#938)
+	Subtitles from the first caption track	Untertitel aus der ersten Untertitelspur
+	The package language	Die Sprache des Pakets
+	Inter Regular (built in), or an OpenType / TrueType file	Inter Regular (integriert) oder eine OpenType-/TrueType-Datei
+	Subtitle language	Untertitelsprache
+	Subtitle font	Untertitelschrift
+	Fonts	Schriften
+
+# AS-11 metadata in MXF OP1a (#96)
+	AS-11 Core	AS-11 Core
+	AS-11 Parts	AS-11-Teile
+	AS-11 UK DPP	AS-11 UK DPP

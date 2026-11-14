@@ -4648,3 +4648,16 @@ export.summary	Low	ниско
 	Freewheel	Свободен ход
 	Scrubbing	Превъртане
 	Sending	Изпращане
+
+# DCP subtitle export (#938)
+	Subtitles from the first caption track	Субтитри от първата писта за надписи
+	The package language	Езикът на пакета
+	Inter Regular (built in), or an OpenType / TrueType file	Inter Regular (вграден) или файл OpenType / TrueType
+	Subtitle language	Език на субтитрите
+	Subtitle font	Шрифт на субтитрите
+	Fonts	Шрифтове
+
+# AS-11 metadata in MXF OP1a (#96)
+	AS-11 Core	AS-11 Core
+	AS-11 Parts	AS-11 части
+	AS-11 UK DPP	AS-11 UK DPP

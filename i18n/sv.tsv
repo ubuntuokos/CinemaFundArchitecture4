@@ -4647,3 +4647,16 @@ export.summary	Low	låg
 	Freewheel	Frihjul
 	Scrubbing	Skrubbar
 	Sending	Skickar
+
+# DCP subtitle export (#938)
+	Subtitles from the first caption track	Undertexter från det första textningsspåret
+	The package language	Paketets språk
+	Inter Regular (built in), or an OpenType / TrueType file	Inter Regular (inbyggt) eller en OpenType-/TrueType-fil
+	Subtitle language	Undertextspråk
+	Subtitle font	Teckensnitt för undertexter
+	Fonts	Teckensnitt
+
+# AS-11 metadata in MXF OP1a (#96)
+	AS-11 Core	AS-11 Core
+	AS-11 Parts	AS-11-delar
+	AS-11 UK DPP	AS-11 UK DPP
