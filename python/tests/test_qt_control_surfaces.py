@@ -233,7 +233,10 @@ def test_learn_assigns_a_button_and_ok_saves_it(app):
     assert [device.itemData(i) for i in range(device.count())] == [NANO, SHUTTLE]
     assert find(d, QtWidgets.QLabel, "settings.controlSurfaces.assign.none")
     command = find(d, QtWidgets.QComboBox, "settings.controlSurfaces.assign.command")
-    assert [command.itemData(i) for i in range(command.count())] == ["markers.markIn", "playback.toggle", "edit.undo"], "by label"
+    keys = [command.itemData(i) for i in range(command.count())]
+    assert keys[:3] == ["markers.markIn", "playback.toggle", "edit.undo"], "by label"
+    assert keys[3] is None, "a separator before the mixer strips"
+    assert keys[4:6] == ["mixer.stripVolume|Mix", "mixer.stripVolume|A1"] and "mixer.stripPan|A16" in keys
     command.setCurrentIndex(command.findData("playback.toggle"))
     command.activated.emit(command.currentIndex())
     find(d, QtWidgets.QPushButton, "settings.controlSurfaces.assign.learn").click()
@@ -306,6 +309,51 @@ def test_shuttlepro_buttons_are_learned_too(app):
     find(d, QtWidgets.QPushButton, "settings.ok").click()
     saved = [p for m, p in engine.sent if m == "prefs.set"][0]["values"]["controlSurfaces.devices"]
     assert saved == [{"device": SHUTTLE, "enabled": True, "profile": "", "bindings": [{"control": button, "command": "markers.markIn"}]}]
+
+
+def test_a_fader_is_learned_onto_a_mixer_strip(app):
+    engine = StubEngine(DEVICES)
+    d = PreferencesDialog(None, engine, "controlSurfaces", commands=lambda: COMMANDS)
+    command = find(d, QtWidgets.QComboBox, "settings.controlSurfaces.assign.command")
+    command.setCurrentIndex(command.findData("mixer.stripVolume|A2"))
+    command.activated.emit(command.currentIndex())
+    find(d, QtWidgets.QPushButton, "settings.controlSurfaces.assign.learn").click()
+    fader = {"midi": {"channel": 0, "kind": "cc", "number": 0}}
+    engine.event.emit({"event": "surfaceLearn", "state": "captured", "device": NANO, "control": fader})
+    assert rows(d, "control") == ["Ch 1 CC 0"] and rows(d, "command") == ["A2 Volume (fader)"]
+    find(d, QtWidgets.QPushButton, "settings.ok").click()
+    saved = [p for m, p in engine.sent if m == "prefs.set"][0]["values"]["controlSurfaces.devices"]
+    assert saved[0]["bindings"] == [{"control": fader, "command": "mixer.stripVolume", "params": {"strip": "A2"}}]
+    # the saved assignment shows with its strip when the dialog opens again
+    engine.values = {"controlSurfaces": {"enabled": True, "devices": saved}}
+    again = PreferencesDialog(None, engine, "controlSurfaces", commands=lambda: COMMANDS)
+    assert rows(again, "command") == ["A2 Volume (fader)"]
+
+
+def test_mixer_strip_follows_a_fader(app):
+    """``TrackMixerPanel.surface_value``: touch with the fader's taper (volume) or -100..100
+    (pan), one release after the control rests; an unknown strip does nothing."""
+    from PySide6 import QtTest
+
+    from cfa4_qt.panels.mixer import TrackMixerPanel, pos_to_db
+
+    m = TrackMixerPanel()
+    m.strips_data = [{"id": 7, "ref": "A1", "kind": "audio"}, {"id": 0, "ref": "Mix", "kind": "mix"}]
+    m.now = 1234
+    sent: list[tuple[str, dict]] = []
+    m.command.connect(lambda c, p: sent.append((c, p)))
+    m.SURFACE_RELEASE_MS = 50
+    assert m.surface_value("volume", "A1", 0.76)
+    assert m.surface_value("volume", "A1", 1.0)
+    assert m.surface_value("pan", "Mix", 0.25)
+    assert not m.surface_value("volume", "A9", 0.5)
+    assert sent[0] == ("mixer.touch", {"strip": 7, "lane": "volume", "value": pos_to_db(0.76), "time": 1234})
+    assert abs(sent[0][1]["value"]) < 0.01, "0.76 of the way is 0 dB on the taper"
+    assert abs(sent[1][1]["value"] - 15.0) < 1e-9, "the top is +15 dB"
+    assert sent[2] == ("mixer.touch", {"strip": 0, "lane": "pan", "value": -50.0, "time": 1234})
+    QtTest.QTest.qWait(200)
+    releases = [p for c, p in sent if c == "mixer.release"]
+    assert sorted((p["strip"], p["lane"]) for p in releases) == [(0, "pan"), (7, "volume")], "one release per moved lane"
 
 
 def test_assignments_need_a_controller(app):
@@ -394,6 +442,13 @@ def test_main_window_runs_what_a_control_surface_asks(app, tmp_path: Path):
         win._on_event({"event": "surfaceAction", "command": "playback.shuttleSpeed", "params": {"speed": -1.5}})
         win._on_event({"event": "surfaceAction", "command": "playback.shuttleSpeed", "params": {"speed": "fast"}})
         assert speeds == [-1.5]
+        # a fader or knob moves its mixer strip
+        moved: list[tuple] = []
+        win.mixer.surface_value = lambda *a: moved.append(a)
+        win._on_event({"event": "surfaceAction", "command": "mixer.stripVolume", "params": {"strip": "A1", "value": 0.5}})
+        win._on_event({"event": "surfaceAction", "command": "mixer.stripPan", "params": {"strip": "Mix", "value": 1}})
+        win._on_event({"event": "surfaceAction", "command": "mixer.stripPan", "params": {"strip": "Mix"}})
+        assert moved == [("volume", "A1", 0.5), ("pan", "Mix", 1.0)]
     finally:
         win._quit_confirmed = True
         win.close()

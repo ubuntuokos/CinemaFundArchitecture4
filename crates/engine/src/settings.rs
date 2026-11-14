@@ -1226,7 +1226,7 @@ static CATEGORIES: &[Category] = &[
             b("controlSurfaces.enabled", "Use control surfaces (MIDI controllers, jog/shuttle devices)", false),
             Row::Custom("controlSurfaces"),
             Row::Note(
-                "Assignments run when a button is pressed (a fader or knob counts as pressed past half way). A ShuttlePRO's shuttle ring plays at its profile's speeds and its jog wheel steps frame by frame. Faders, knobs and encoders as continuous values come in a later version.",
+                "Assignments run when a button is pressed (a fader or knob counts as pressed past half way); a fader or knob assigned to a mixer strip moves its volume or pan. A ShuttlePRO's shuttle ring plays at its profile's speeds and its jog wheel steps frame by frame. Endless encoders and feedback to the controller (lights, motor faders) come in a later version.",
             ),
         ],
     },

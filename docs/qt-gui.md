@@ -93,7 +93,7 @@ bytes. Lines with an `event` key and no `id` are notifications:
 button with an assignment was pressed: the GUI runs `command` as its key would; a ShuttlePRO's
 jog wheel sends `playhead.stepForward` / `playhead.stepBack` once per click, its shuttle ring
 `playback.stop` at rest and otherwise `playback.shuttleSpeed {speed}`, which the GUI plays on the
-focused monitor at that speed by the profile's table), `surfaceLearn`,
+focused monitor at that speed by the profile's table; a fader or knob assigned to a mixer strip sends `mixer.stripVolume` / `mixer.stripPan {strip: "A1"…"Mix", value: 0..1}`, at most once per pass per control, which the Audio Track Mixer applies as a touch, with the on-screen fader's taper, and releases after 0.5 s at rest), `surfaceLearn`,
 `surfaceMonitor` and `surfaceError` (see `surface.learn` and `surface.monitor`). A line that is not a request gets an error reply with `id: null`; a
 line longer than 4 MiB is skipped with an error reply.
 

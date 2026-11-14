@@ -62,6 +62,11 @@ pub const SHUTTLE_ARDOUR: [f64; 7] = [0.5, 0.75, 1.0, 1.5, 2.0, 5.0, 8.0];
 /// player's 8×).
 pub const SHUTTLE_KDENLIVE: [f64; 7] = [1.0, 2.0, 4.0, 5.0, 8.0, 8.0, 8.0];
 
+/// GUI targets that follow a control's value instead of running on a press: an Audio Track
+/// Mixer strip's volume or pan (`params.strip`: `A1`, `A2`, … or `Mix`). The action carries the
+/// control's position as `value` in 0..=1.
+pub const VALUE_COMMANDS: &[&str] = &["mixer.stripVolume", "mixer.stripPan"];
+
 /// Most frame steps one jog report runs (a fast spin is still bounded).
 pub const MAX_JOG_STEPS: u32 = 32;
 
@@ -134,6 +139,25 @@ impl ControlSurfacePrefs {
             return None;
         }
         d.bindings.iter().find(|b| &b.control == control).map(|b| Action { command: b.command.clone(), params: b.params.clone() })
+    }
+
+    /// What moving `control` sets, when it is assigned to a [`VALUE_COMMANDS`] target: the
+    /// target's params plus `value` (the position in 0..=1). `None` for a press-type assignment,
+    /// an input without a position, or a device not in use.
+    pub fn value(&self, device: &str, control: &ControlId, input: &SurfaceInput) -> Option<Action> {
+        let SurfaceInput::Absolute { value, bits, .. } = input else { return None };
+        if !self.enabled {
+            return None;
+        }
+        let d = self.devices.iter().find(|d| d.device == device && d.enabled)?;
+        let b = d.bindings.iter().find(|b| &b.control == control && VALUE_COMMANDS.contains(&b.command.as_str()))?;
+        let max = (1u32 << u32::from(*bits).clamp(1, 16)) - 1;
+        let v = f64::from(*value).min(f64::from(max)) / f64::from(max);
+        let mut params = if b.params.is_object() { b.params.clone() } else { json!({}) };
+        if let Some(o) = params.as_object_mut() {
+            o.insert("value".into(), json!(v));
+        }
+        Some(Action { command: b.command.clone(), params })
     }
 
     /// What a jog wheel or shuttle ring movement runs, by the device's profile: the shuttle
@@ -335,6 +359,33 @@ mod tests {
         p.devices[0].enabled = true;
         p.enabled = false;
         assert!(p.motion(dev, &shuttle(3)).is_empty(), "control surfaces off");
+    }
+
+    #[test]
+    fn faders_follow_their_value_target() {
+        let dev = "midi:k:p";
+        let fader = |v| SurfaceInput::Absolute { control: cc(0), value: v, bits: 7 };
+        let mut p = ControlSurfacePrefs {
+            enabled: true,
+            devices: vec![DeviceSetting {
+                device: dev.into(),
+                bindings: vec![
+                    Binding { control: cc(0), command: "mixer.stripVolume".into(), params: json!({"strip": "A1"}) },
+                    bind(cc(41), "playback.toggle"),
+                ],
+                ..Default::default()
+            }],
+        };
+        let a = p.value(dev, &cc(0), &fader(127));
+        assert_eq!(a, Some(Action { command: "mixer.stripVolume".into(), params: json!({"strip": "A1", "value": 1.0}) }));
+        assert_eq!(p.value(dev, &cc(0), &fader(0)).map(|a| a.params["value"].clone()), Some(json!(0.0)));
+        let wide = SurfaceInput::Absolute { control: cc(0), value: 8192, bits: 14 };
+        let half = p.value(dev, &cc(0), &wide).and_then(|a| a.params["value"].as_f64()).unwrap_or_default();
+        assert!((half - 0.5).abs() < 0.001, "{half}");
+        assert_eq!(p.value(dev, &cc(41), &fader(127)), None, "a press-type assignment");
+        assert_eq!(p.value(dev, &cc(0), &SurfaceInput::Button { control: cc(0), pressed: true }), None);
+        p.enabled = false;
+        assert_eq!(p.value(dev, &cc(0), &fader(1)), None);
     }
 
     #[test]

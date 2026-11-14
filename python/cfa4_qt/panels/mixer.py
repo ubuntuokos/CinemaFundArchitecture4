@@ -16,7 +16,7 @@ import itertools
 import math
 from typing import Any
 
-from PySide6.QtCore import QPointF, QRectF, QSize, Qt, Signal
+from PySide6.QtCore import QPointF, QRectF, QSize, Qt, QTimer, Signal
 from PySide6.QtGui import QColor, QFont, QIcon, QMouseEvent, QPainter, QPaintEvent, QPen, QPixmap, QWheelEvent
 from PySide6.QtWidgets import QHBoxLayout, QLabel, QMenu, QScrollArea, QToolButton, QVBoxLayout, QWidget
 
@@ -692,6 +692,8 @@ class TrackMixerPanel(QWidget):
         self.scroll.setWidget(self.strips_box)
         self.scroll.setFrameShape(QScrollArea.Shape.NoFrame)
         self.strips: list[Strip] = []
+        # control surface faders and knobs being moved: (strip id, lane) → the timer that releases them
+        self._surface_touch: dict[tuple[Any, str], QTimer] = {}
         body = QHBoxLayout()
         body.setContentsMargins(0, 0, 0, 0)
         body.setSpacing(0)
@@ -895,6 +897,36 @@ class TrackMixerPanel(QWidget):
 
 
 
+
+
+    # ----- control surfaces -----
+    SURFACE_RELEASE_MS = 500
+
+    def surface_value(self, lane: str, strip: str, value: float) -> bool:
+        """A control surface fader or knob assigned to ``strip`` (``A1``, ``Mix``…) moved to
+        ``value`` (0..1): ``volume`` follows the on-screen fader's taper, ``pan`` goes -100..100.
+        It touches the lane as a mouse drag does (so automation writes in Latch/Touch/Write) and
+        releases it when the control has rested for a moment. False when there is no such strip."""
+        data = next((d for d in self.strips_data if str(d.get("ref")) == strip), None)
+        if data is None or lane not in ("volume", "pan"):
+            return False
+        v = min(1.0, max(0.0, float(value)))
+        target = pos_to_db(v) if lane == "volume" else round(v * 200.0 - 100.0, 1)
+        sid = data.get("id")
+        self.command.emit("mixer.touch", {"strip": sid, "lane": lane, "value": target, "time": self.now})
+        key = (sid, lane)
+        timer = self._surface_touch.get(key)
+        if timer is None:
+            timer = QTimer(self)
+            timer.setSingleShot(True)
+            timer.timeout.connect(lambda k=key: self._surface_release(k))
+            self._surface_touch[key] = timer
+        timer.start(self.SURFACE_RELEASE_MS)
+        return True
+
+    def _surface_release(self, key: tuple[Any, str]) -> None:
+        self._surface_touch.pop(key, None)
+        self.command.emit("mixer.release", {"strip": key[0], "lane": key[1], "time": self.now})
 
 
 CLIP_STRIP_MIN_W = 66
