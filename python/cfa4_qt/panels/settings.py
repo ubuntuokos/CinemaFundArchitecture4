@@ -298,6 +298,23 @@ def field_label(text: str, parent: QWidget, width: int = LABEL_W) -> QLabel:
     return label
 
 
+# the Audio Track Mixer strips a fader or knob can follow (engine VALUE_COMMANDS)
+VALUE_STRIPS = ("Mix", *(f"A{n}" for n in range(1, 17)))
+
+
+def value_targets() -> list[tuple[str, str]]:
+    """(key, label) of the value targets; the key is ``command|strip``."""
+    out = [(f"mixer.stripVolume|{s}", fmt("{strip} Volume (fader)", strip=s)) for s in VALUE_STRIPS]
+    return out + [(f"mixer.stripPan|{s}", fmt("{strip} Pan (knob)", strip=s)) for s in VALUE_STRIPS]
+
+
+def binding_key(b: dict[str, Any]) -> str:
+    """The command combo's key of an assignment (``command|strip`` for a value target)."""
+    params = b.get("params") if isinstance(b.get("params"), dict) else {}
+    strip = params.get("strip")
+    return f"{b.get('command')}|{strip}" if strip else str(b.get("command") or "")
+
+
 MIDI_KINDS = {"cc": "CC", "cc14": "CC", "note": "Note", "rpn": "RPN", "nrpn": "NRPN"}
 
 
@@ -1095,6 +1112,7 @@ class PreferencesDialog(QDialog):
         top.addWidget(device, 1)
         v.addLayout(top)
         labels = dict(self.commands())
+        values = dict(value_targets())
         grid = QGridLayout()
         grid.setHorizontalSpacing(12)
         bindings = self._bindings(self.assign_device)
@@ -1106,8 +1124,8 @@ class PreferencesDialog(QDialog):
             control = QLabel(control_label(b.get("control")), box)
             control.setObjectName(f"settings.controlSurfaces.assign.{n}.control")
             grid.addWidget(control, n, 0)
-            cid = str(b.get("command") or "")
-            command = QLabel(labels.get(cid) or cid, box)
+            cid = binding_key(b)
+            command = QLabel(labels.get(cid) or values.get(cid) or cid, box)
             command.setObjectName(f"settings.controlSurfaces.assign.{n}.command")
             command.setToolTip(cid)
             grid.addWidget(command, n, 1)
@@ -1127,6 +1145,11 @@ class PreferencesDialog(QDialog):
         for cid, label in sorted(labels.items(), key=lambda kv: kv[1].casefold()):
             command.addItem(label, cid)
             command.setItemData(command.count() - 1, cid, Qt.ItemDataRole.ToolTipRole)
+        if labels:
+            # faders and knobs: the mixer strips, after the commands
+            command.insertSeparator(command.count())
+            for key, label in value_targets():
+                command.addItem(label, key)
         if self.assign_command and command.findData(self.assign_command) >= 0:
             command.setCurrentIndex(command.findData(self.assign_command))
         self.assign_command = str(command.currentData() or "")
@@ -1140,7 +1163,8 @@ class PreferencesDialog(QDialog):
         row.addWidget(learn)
         v.addLayout(row)
         text = self.learn_message or ("Press or move a control on the controller…" if self.learning else
-                                      "Pick a command, press Learn, then press a button on the controller. OK saves the assignments.")
+                                      "Pick a command (or a mixer strip for a fader or knob), press Learn, then press the button "
+                                      "or move the control past half way. OK saves the assignments.")
         v.addWidget(self._note(box, text, "settings.controlSurfaces.assign.status"))
         return box
 
@@ -1189,8 +1213,12 @@ class PreferencesDialog(QDialog):
         if not isinstance(control, dict) or not self.assign_command:
             return
         kept = [b for b in self._bindings(self.assign_device) if b.get("control") != control]
-        self._set_bindings(self.assign_device, [*kept, {"control": control, "command": self.assign_command}])
-        labels = dict(self.commands())
+        command, _, strip = self.assign_command.partition("|")
+        binding: dict[str, Any] = {"control": control, "command": command}
+        if strip:
+            binding["params"] = {"strip": strip}
+        self._set_bindings(self.assign_device, [*kept, binding])
+        labels = {**dict(self.commands()), **dict(value_targets())}
         self.learn_message = fmt("{control} runs {command}.", control=control_label(control),
                                  command=labels.get(self.assign_command) or self.assign_command)
         self._rebuild_if_shown()

@@ -2293,6 +2293,14 @@ class MainWindow(QMainWindow):
         would (a disabled command does nothing)."""
         cid = str(ev.get("command") or "")
         params = ev.get("params") if isinstance(ev.get("params"), dict) else {}
+        if cid in ("mixer.stripVolume", "mixer.stripPan"):
+            # a fader or knob: the Audio Track Mixer strip follows it
+            try:
+                value = float(params.get("value"))
+            except (TypeError, ValueError):
+                return
+            self.mixer.surface_value("volume" if cid == "mixer.stripVolume" else "pan", str(params.get("strip") or ""), value)
+            return
         if cid == "playback.shuttleSpeed":
             # the shuttle ring: a speed rather than a key's step (spec §4)
             try:

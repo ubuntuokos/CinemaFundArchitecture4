@@ -122,9 +122,11 @@ impl Router {
     /// `surfaceAction` for an assigned control); the monitor collects them for its next batch.
     pub fn route(&mut self, prefs: &ControlSurfacePrefs, messages: Vec<MidiMessage>, lost: u64) -> Vec<Value> {
         let mut out = Vec::new();
+        let mut values = Values::default();
         for m in &messages {
-            self.input(prefs, &m.device.0, &midi::input(&m.raw), &mut out);
+            self.input(prefs, &m.device.0, &midi::input(&m.raw), &mut out, &mut values);
         }
+        out.extend(values.0.into_iter().map(|(_, v)| v));
         if let Some(b) = self.monitor.as_mut() {
             b.push(messages, lost);
         }
@@ -135,17 +137,27 @@ impl Router {
     /// jog wheel and the shuttle ring by the device's profile.
     pub fn route_hid(&mut self, prefs: &ControlSurfacePrefs, inputs: &[HidInput]) -> Vec<Value> {
         let mut out = Vec::new();
+        let mut values = Values::default();
         for i in inputs {
-            self.input(prefs, &i.device.0, &i.input, &mut out);
+            self.input(prefs, &i.device.0, &i.input, &mut out, &mut values);
         }
+        out.extend(values.0.into_iter().map(|(_, v)| v));
         out
     }
 
-    fn input(&mut self, prefs: &ControlSurfacePrefs, device: &str, input: &SurfaceInput, out: &mut Vec<Value>) {
+    fn input(&mut self, prefs: &ControlSurfacePrefs, device: &str, input: &SurfaceInput, out: &mut Vec<Value>, values: &mut Values) {
         let action = |a: Action, control: &ControlId| {
             let params = if a.params.is_null() { json!({}) } else { a.params };
             json!({"event": "surfaceAction", "command": a.command, "params": params, "device": device, "control": control})
         };
+        // a fader or knob on a value target: only its last position in this pass is sent
+        if self.learn.is_none()
+            && let Some(control) = input.control()
+            && let Some(a) = prefs.value(device, control, input)
+        {
+            values.set(device, control, action(a, control));
+            return;
+        }
         if let Some(control) = input.control()
             && matches!(input, SurfaceInput::Jog { .. } | SurfaceInput::Shuttle { .. })
         {
@@ -160,6 +172,20 @@ impl Router {
         }
         if let Some(a) = prefs.action(device, &control) {
             out.push(action(a, &control));
+        }
+    }
+}
+
+/// The value actions of one pass, the last one per control (continuous values are coalesced,
+/// F0 spec §3), in the order the controls first moved.
+#[derive(Default)]
+struct Values(Vec<((String, ControlId), Value)>);
+
+impl Values {
+    fn set(&mut self, device: &str, control: &ControlId, event: Value) {
+        match self.0.iter_mut().find(|((d, c), _)| d == device && c == control) {
+            Some((_, v)) => *v = event,
+            None => self.0.push(((device.to_string(), control.clone()), event)),
         }
     }
 }
@@ -499,6 +525,29 @@ mod tests {
         });
         let _ = r.route_hid(&prefs, &[hid(button(false))]);
         assert_eq!(r.route_hid(&prefs, &[hid(button(true))])[0]["command"], "markers.markIn");
+    }
+
+    #[test]
+    fn fader_values_are_coalesced_and_learnable() {
+        use cfa4_engine::control_surfaces::{Binding, DeviceSetting};
+        let fader = ControlId::Midi { channel: 0, kind: cfa4_surface_model::MidiKind::Cc, number: 0 };
+        let mut prefs = ControlSurfacePrefs::default();
+        prefs.devices.push(DeviceSetting {
+            device: "midi:k:p".into(),
+            bindings: vec![Binding { control: fader, command: "mixer.stripPan".into(), params: json!({"strip": "Mix"}) }],
+            ..Default::default()
+        });
+        let mut r = Router::default();
+        let moves: Vec<MidiMessage> = [10u8, 40, 90, 127].iter().map(|v| msg("midi:k:p", 1, &[0xb0, 0, *v])).collect();
+        let out = r.route(&prefs, moves, 0);
+        assert_eq!(out.len(), 1, "one event per control per pass");
+        assert_eq!(out[0]["command"], "mixer.stripPan");
+        assert_eq!(out[0]["params"], json!({"strip": "Mix", "value": 1.0}));
+        // a fader moved past half way is learnable even when it already has a value target
+        r.learn = Some(String::new());
+        let out = r.route(&prefs, vec![msg("midi:k:p", 2, &[0xb0, 0, 0]), msg("midi:k:p", 3, &[0xb0, 0, 100])], 0);
+        assert_eq!(out.len(), 1);
+        assert_eq!(out[0]["event"], "surfaceLearn");
     }
 
     /// Without a sequencer (CI) Learn is an error that says why; cancelling always works.

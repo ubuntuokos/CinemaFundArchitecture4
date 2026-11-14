@@ -4571,7 +4571,7 @@ export.summary	Low	alacsony
 	No MIDI controller or jog/shuttle device was found. Connect one and press Refresh.	Nem található MIDI-vezérlő vagy jog/shuttle eszköz. Csatlakoztasson egyet, majd nyomja meg a Frissítés gombot.
 	Control Surfaces	Vezérlőfelületek
 	Use control surfaces (MIDI controllers, jog/shuttle devices)	Vezérlőfelületek használata (MIDI-vezérlők, jog/shuttle eszközök)
-	Assignments run when a button is pressed (a fader or knob counts as pressed past half way). A ShuttlePRO's shuttle ring plays at its profile's speeds and its jog wheel steps frame by frame. Faders, knobs and encoders as continuous values come in a later version.	A hozzárendelések gombnyomásra futnak (egy fader vagy forgatógomb a félúton túl számít lenyomásnak). A ShuttlePRO shuttle-gyűrűje a profil sebességeivel játszik le, a jog-tárcsája képkockánként léptet. A faderek, forgatógombok és enkóderek folyamatos értékként egy későbbi verzióban jönnek.
+	Assignments run when a button is pressed (a fader or knob counts as pressed past half way); a fader or knob assigned to a mixer strip moves its volume or pan. A ShuttlePRO's shuttle ring plays at its profile's speeds and its jog wheel steps frame by frame. Endless encoders and feedback to the controller (lights, motor faders) come in a later version.	A hozzárendelések gombnyomásra futnak (egy fader vagy forgatógomb a félúton túl számít lenyomásnak); a keverősávhoz rendelt fader vagy forgatógomb a sáv hangerejét vagy panorámáját mozgatja. A ShuttlePRO shuttle-gyűrűje a profil sebességeivel játszik le, a jog-tárcsája képkockánként léptet. A végtelenített enkóderek és a vezérlőnek küldött visszajelzés (fények, motoros faderek) egy későbbi verzióban jönnek.
 	CFA4 ShuttlePRO	CFA4 ShuttlePRO
 	Kdenlive-style ShuttlePRO	Kdenlive-szerű ShuttlePRO
 	Generic MIDI	Általános MIDI
@@ -4588,8 +4588,10 @@ export.summary	Low	alacsony
 	Learn	Tanítás
 	Cancel Learn	Tanítás megszakítása
 	Press or move a control on the controller…	Nyomjon meg vagy mozdítson meg egy kezelőszervet a vezérlőn…
-	Pick a command, press Learn, then press a button on the controller. OK saves the assignments.	Válasszon parancsot, nyomja meg a Tanítás gombot, majd nyomjon meg egy gombot a vezérlőn. Az OK menti a hozzárendeléseket.
+	Pick a command (or a mixer strip for a fader or knob), press Learn, then press the button or move the control past half way. OK saves the assignments.	Válasszon parancsot (fader vagy forgatógomb esetén keverősávot), nyomja meg a Tanítás gombot, majd nyomja meg a gombot, vagy mozdítsa a kezelőszervet félúton túl. Az OK menti a hozzárendeléseket.
 	Connect a MIDI controller or a ShuttlePRO to assign commands to its buttons.	Csatlakoztasson egy MIDI-vezérlőt vagy egy ShuttlePRO-t, hogy parancsokat rendelhessen a gombjaihoz.
 	{control} runs {command}.	{control}: {command}.
 	A control surface asked for {command}, which does not exist.	Egy vezérlő a(z) {command} parancsot kérte, de ilyen parancs nincs.
 	Button {n}	{n}. gomb
+	{strip} Volume (fader)	{strip} hangerő (fader)
+	{strip} Pan (knob)	{strip} panoráma (forgatógomb)
