@@ -22,7 +22,7 @@ pub enum Scaling {
 }
 
 /// Field order of the encoded video. Only MPEG-2 and ProRes export code interlaced frames
-/// ([`crate::Format::codes_interlaced`]; in MXF MPEG-2, XDCAM HD422 or D-10); the other encoders
+/// ([`ExportSettings::codes_interlaced`]; in MXF MPEG-2, XDCAM HD422, D-10 or ProRes); the other encoders
 /// write progressive ones. The frames are rendered progressively and coded as interlaced (no
 /// field-rate rendering yet).
 #[derive(Clone, Copy, Debug, Default, PartialEq, Eq, Serialize, Deserialize)]
@@ -579,6 +579,13 @@ impl ExportSettings {
             Format::Hls => Format::H264,
             f => f,
         }
+    }
+
+    /// Whether the export codes interlaced video ([`ExportSettings::field_order`]): MPEG-2 files
+    /// and ProRes ([`Format::codes_interlaced`]); in MXF MPEG-2 (also XDCAM HD422 and D-10), whose
+    /// separate-field layout the writer has, and ProRes field pictures.
+    pub fn codes_interlaced(&self) -> bool {
+        if self.format.is_mxf() { matches!(self.video_format(), Format::Mpeg2 | Format::ProRes) } else { self.format.codes_interlaced() }
     }
 
     /// Whether the output can carry an alpha channel ([`ExportSettings::alpha`]): PNG, TIFF,

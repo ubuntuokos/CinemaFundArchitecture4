@@ -1063,9 +1063,9 @@ class ExportDialog(QDialog):
         video = encoder_format(fmt, mxf_codec) == "mpeg2" and not (fmt in MXF_FORMATS and mxf_codec == "d10")
         self.container.setEnabled(fmt == "mpeg2")
         # MPEG-2 and ProRes code interlaced video (egui's Field Order); in MXF MPEG-2, XDCAM HD422
-        # (1080i) or D-10 (#949)
-        mxf_mpeg2 = fmt in MXF_FORMATS and encoder_format(fmt, mxf_codec) == "mpeg2"
-        self.rows.allow_interlaced(fmt in ("mpeg2", "prores") or mxf_mpeg2)
+        # (1080i), D-10 (#949) or ProRes
+        mxf_interlaced = fmt in MXF_FORMATS and (encoder_format(fmt, mxf_codec) == "mpeg2" or mxf_codec == "proRes")
+        self.rows.allow_interlaced(fmt in ("mpeg2", "prores") or mxf_interlaced)
         for w in (self.gop, self.b_frames, self.quantizer):
             w.setEnabled(video)
         self.chroma.setEnabled(video and not (fmt in MXF_FORMATS and mxf_codec == "xdcamHd422"))

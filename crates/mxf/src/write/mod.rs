@@ -426,8 +426,9 @@ pub struct PictureDesc {
     /// narrow range of QE.1.
     pub full_range: bool,
     /// Interlaced pictures: the field first in time (ST 377-1 G.2.13; 1 the upper, 2 the lower),
-    /// written as separate fields with that field dominance. `None`: progressive frames. Type D-10
-    /// is always separate fields, field 1 first unless this says 2.
+    /// written as separate fields with that field dominance (MPEG-2 frames, or ProRes edit units
+    /// holding both field pictures). `None`: progressive frames. Type D-10 is always separate
+    /// fields, field 1 first unless this says 2.
     pub field_dominance: Option<u8>,
 }
 
@@ -2000,6 +2001,9 @@ impl<W: Write + Seek> MxfWriter<W> {
                             (true, 1080, 2) => (21, 584),
                             (true, 1080, _) => (42, 0),
                             (true, 720, _) => (26, 0),
+                            // ProRes field pictures: ST 274 (1080) or ITU-R BT.656 (576)
+                            (false, 1080, 2) => (21, 584),
+                            (false, 576, 2) => (23, 336),
                             _ => (0, 0),
                         };
                         s.u8(0x320C, u8::from(fields == 2))
