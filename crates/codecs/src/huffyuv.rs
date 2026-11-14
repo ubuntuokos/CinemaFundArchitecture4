@@ -51,7 +51,7 @@ pub(crate) fn convert(p: cfa4_huffyuv::Picture) -> Result<VideoFrame> {
             // Huffyuv signals no matrix or range: the size-based default, studio swing
             let color = crate::stream_color::resolve(p.width, p.height, &[]);
             let data = PixelData::Yuv8 { planes: [Arc::new(y), Arc::new(u), Arc::new(v)], chroma: Chroma::C422, alpha: None };
-            Ok(VideoFrame { width: p.width, height: p.height, data, color, par: (1, 1), pts: cfa4_time::Tick::ZERO })
+            Ok(VideoFrame { width: p.width, height: p.height, data, color, par: (1, 1), pts: cfa4_time::Tick::ZERO, layout: Default::default() })
         }
         cfa4_huffyuv::Format::Rgb | cfa4_huffyuv::Format::Rgba => {
             let (r, g, b) = (next()?, next()?, next()?);

@@ -272,9 +272,16 @@ failed write reports an error. The menu opens the normal save dialog; cancelling
 
 ## 3. Verifying UI work
 
-For any UI change, look at the result:
+For any UI change, look at the result.
 
-1. `cargo run --release -p cfa4 -- --control 9876`
+**Qt 6 GUI** (where new UI work goes, [qt-gui.md](qt-gui.md)): build the engine
+(`cargo build --release -p cfa4-cli`), then run
+`QT_QPA_PLATFORM=offscreen .venv/bin/cfa4-qt --demo --smoke --screenshot qt.png` and open the PNG;
+`python/tests/test_qt_gui.py` drives the GUI in tests.
+
+**egui editor** (frozen; bug fixes only):
+
+1. Set `CFA4_CONTROL_TOKEN` (§2), then `cargo run --release -p cfa4 -- --control 9876`
 2. Drive the feature through the control channel or the MCP bridge: commands, then clicks and drags
    by automation id.
 3. Assert on `ui.inspect`, `ui.elements` and `sequence.inspect`.
@@ -308,7 +315,7 @@ everything you need to contribute is in the public docs above. Ask a maintainer 
    and crate README.
 2. **Plan tests first.** Write down the acceptance test before writing code.
 3. **Implement and test.**
-4. **Verify.** Run all gates (`cargo xtask ci`). For UI work, run the app with `--control`, drive it
+4. **Verify.** Run all gates (`cargo xtask ci`, then the tests: `cargo test --workspace --exclude cfa4-ui --release`; [contributing.md §3](contributing.md#3-quality-gates)). For UI work, run the app with `--control`, drive it
    and look at the screenshots (§3).
 5. **Record.** Update the crate README (behaviour decisions, test results, limitations) and
    the progress docs when a milestone moves (ROADMAP.md, docs/roadmap.md, the relevant parity doc
@@ -329,7 +336,7 @@ Don't block on choices you can make yourself:
 - **Ask a human only about:**
   - licences outside the allowlist;
   - spending money;
-  - publishing or pushing;
+  - publishing a release, or pushing to `main` (merging is the merge coordinator's, [coordination.md](coordination.md));
   - personal data;
   - destructive git operations;
   - anything AGENTS.md leaves unclear ("when in doubt, leave it out").
@@ -347,7 +354,7 @@ A feature is done when:
 - [ ] the UI is wired: menu, panel control and shortcut;
 - [ ] every new interactive widget has an automation id;
 - [ ] you have driven it through the control channel and reviewed a screenshot;
-- [ ] all gates pass (`cargo xtask ci`), and new assets have sidecars;
+- [ ] all gates pass (`cargo xtask ci` and the tests, [contributing.md §3](contributing.md#3-quality-gates)), and new assets have sidecars;
 - [ ] the crate README and the progress docs (ROADMAP.md, docs/gaps.md, the parity docs) are updated where relevant;
 - [ ] it is committed with its task id.
 

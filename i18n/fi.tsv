@@ -4517,6 +4517,9 @@ export.summary	Low	matala
 	accept	hyväksyttävä
 	the engine did not start the check	moottori ei käynnistänyt tarkistusta
 	the engine sent no report	moottori ei lähettänyt raporttia
+	MXF OP1a Uncompressed 10-bit 4:2:2 (v210)	MXF OP1a pakkaamaton 10-bittinen 4:2:2 (v210)
+	MXF OP1a, uncompressed 10-bit Y'CbCr 4:2:2 in the v210 layout (SMPTE ST 384), 24-bit 48 kHz PCM, start timecode	MXF OP1a, pakkaamaton 10-bittinen Y'CbCr 4:2:2 v210-asettelussa (SMPTE ST 384), 24-bittinen 48 kHz PCM, alkuaikakoodi
+	Write the captions as ANC data (CEA-608/708, 29.97 fps)	Kirjoita tekstitys ANC-datana (CEA-608/708, 29,97 fps)
 	Load KDM…	Lataa KDM…
 	Forget DCP Keys	Unohda DCP-avaimet
 	Load KDM	Lataa KDM
@@ -4529,3 +4532,35 @@ export.summary	Low	matala
 	Load even if the certificate chain is not verified	Lataa myös vahvistamattomalla varmenneketjulla
 	Signature verified: {chain}	Allekirjoitus vahvistettu: {chain}
 	Signature not verified: {problem}	Allekirjoitusta ei vahvistettu: {problem}
+
+# Settings ▸ Timecode Sync (TC-4)
+	Timecode Sync	Aikakoodin synkronointi
+	TimecodeSync	Aikakoodin synkronointi
+	Chase	Seuranta
+	Follow external timecode during playback	Seuraa ulkoista aikakoodia toiston aikana
+	Lock after	Lukitse kun kulunut
+	Keep playing without signal for	Jatka toistoa ilman signaalia
+	External frame rate	Ulkoinen kuvataajuus
+	Offset (added to the external timecode)	Siirtymä (lisätään ulkoiseen aikakoodiin)
+	LTC	LTC
+	LTC input device	LTC-tulolaite
+	LTC input channel	LTC-tulokanava
+	Send LTC during playback	Lähetä LTC toiston aikana
+	LTC output device	LTC-lähtölaite
+	LTC output channel	LTC-lähtökanava
+	LTC level	LTC-taso
+	dBFS	dBFS
+	MIDI Timecode	MIDI-aikakoodi
+	MTC input port (empty = CFA4 port)	MTC-tuloportti (tyhjä = CFA4:n portti)
+	Send MIDI Timecode during playback	Lähetä MIDI-aikakoodi toiston aikana
+	MTC output port (empty = CFA4 port)	MTC-lähtöportti (tyhjä = CFA4:n portti)
+	Send timecode ahead of the picture by	Lähetä aikakoodi kuvaa edellä
+	LTC (audio input)	LTC (äänitulo)
+	MIDI Timecode (MIDI input)	MIDI-aikakoodi (MIDI-tulo)
+	Same as the sequence	Sama kuin sekvenssissä
+	29.97 fps drop-frame	29,97 fps drop-frame
+	29.97 fps non-drop	29,97 fps non-drop
+	Timecode Sync Status	Aikakoodin synkronoinnin tila
+	Chase External Timecode	Seuraa ulkoista aikakoodia
+	Send LTC	Lähetä LTC
+	Send MIDI Timecode	Lähetä MIDI-aikakoodi

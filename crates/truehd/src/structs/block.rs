@@ -61,7 +61,7 @@ impl Default for Block {
 }
 
 impl BlockHeader {
-    fn read(state: &mut ParserState, reader: &mut BsIoSliceReader) -> Result<Self> {
+    fn read(state: &mut ParserState, reader: &mut BsIoSliceReader<'_>) -> Result<Self> {
         let samples_per_au = state.samples_per_au;
         let restart = &mut state.substream_state_mut()?.restart;
         let max_shift = restart.max_shift;
@@ -174,7 +174,7 @@ impl BlockHeader {
 }
 
 impl Block {
-    pub fn read(state: &mut ParserState, reader: &mut BsIoSliceReader) -> Result<Self> {
+    pub fn read(state: &mut ParserState, reader: &mut BsIoSliceReader<'_>) -> Result<Self> {
         let header_setup = Timer::start();
         let mut b = Block::default();
 

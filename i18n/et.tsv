@@ -4517,6 +4517,9 @@ export.summary	Low	madal
 	accept	lubatud
 	the engine did not start the check	mootor ei käivitanud kontrolli
 	the engine sent no report	mootor ei saatnud aruannet
+	MXF OP1a Uncompressed 10-bit 4:2:2 (v210)	MXF OP1a tihendamata 10-bitine 4:2:2 (v210)
+	MXF OP1a, uncompressed 10-bit Y'CbCr 4:2:2 in the v210 layout (SMPTE ST 384), 24-bit 48 kHz PCM, start timecode	MXF OP1a, tihendamata 10-bitine Y'CbCr 4:2:2 v210 paigutuses (SMPTE ST 384), 24-bitine 48 kHz PCM, algusajakood
+	Write the captions as ANC data (CEA-608/708, 29.97 fps)	Kirjuta subtiitrid ANC-andmetena (CEA-608/708, 29,97 fps)
 	Load KDM…	Laadi KDM…
 	Forget DCP Keys	Unusta DCP võtmed
 	Load KDM	Laadi KDM
@@ -4529,3 +4532,35 @@ export.summary	Low	madal
 	Load even if the certificate chain is not verified	Laadi ka kontrollimata sertifikaadiahelaga
 	Signature verified: {chain}	Allkiri kontrollitud: {chain}
 	Signature not verified: {problem}	Allkiri kontrollimata: {problem}
+
+# Settings ▸ Timecode Sync (TC-4)
+	Timecode Sync	Ajakoodi sünkroonimine
+	TimecodeSync	Ajakoodi sünkroonimine
+	Chase	Järgimine
+	Follow external timecode during playback	Järgi taasesitusel välist ajakoodi
+	Lock after	Lukusta pärast
+	Keep playing without signal for	Jätka ilma signaalita
+	External frame rate	Väline kaadrisagedus
+	Offset (added to the external timecode)	Nihe (liidetakse välisele ajakoodile)
+	LTC	LTC
+	LTC input device	LTC sisendseade
+	LTC input channel	LTC sisendkanal
+	Send LTC during playback	Saada taasesitusel LTC-d
+	LTC output device	LTC väljundseade
+	LTC output channel	LTC väljundkanal
+	LTC level	LTC tase
+	dBFS	dBFS
+	MIDI Timecode	MIDI-ajakood
+	MTC input port (empty = CFA4 port)	MTC sisendport (tühi = CFA4 port)
+	Send MIDI Timecode during playback	Saada taasesitusel MIDI-ajakoodi
+	MTC output port (empty = CFA4 port)	MTC väljundport (tühi = CFA4 port)
+	Send timecode ahead of the picture by	Saada ajakood pildist varem
+	LTC (audio input)	LTC (helisisend)
+	MIDI Timecode (MIDI input)	MIDI-ajakood (MIDI-sisend)
+	Same as the sequence	Sama mis jadal
+	29.97 fps drop-frame	29,97 fps drop-frame
+	29.97 fps non-drop	29,97 fps non-drop
+	Timecode Sync Status	Ajakoodi sünkroonimise olek
+	Chase External Timecode	Järgi välist ajakoodi
+	Send LTC	Saada LTC
+	Send MIDI Timecode	Saada MIDI-ajakood

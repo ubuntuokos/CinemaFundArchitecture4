@@ -4523,6 +4523,9 @@
 	accept	dapat diterima
 	the engine did not start the check	mesin tidak memulai pemeriksaan
 	the engine sent no report	mesin tidak mengirim laporan
+	MXF OP1a Uncompressed 10-bit 4:2:2 (v210)	MXF OP1a tanpa kompresi 10-bit 4:2:2 (v210)
+	MXF OP1a, uncompressed 10-bit Y'CbCr 4:2:2 in the v210 layout (SMPTE ST 384), 24-bit 48 kHz PCM, start timecode	MXF OP1a, Y'CbCr 4:2:2 10-bit tanpa kompresi dalam tata letak v210 (SMPTE ST 384), PCM 24-bit 48 kHz, timecode awal
+	Write the captions as ANC data (CEA-608/708, 29.97 fps)	Tulis teks sebagai data ANC (CEA-608/708, 29,97 fps)
 	Load KDM…	Muat KDM…
 	Forget DCP Keys	Lupakan Kunci DCP
 	Load KDM	Muat KDM
@@ -4535,3 +4538,35 @@
 	Load even if the certificate chain is not verified	Muat juga dengan rantai sertifikat yang belum diverifikasi
 	Signature verified: {chain}	Tanda tangan terverifikasi: {chain}
 	Signature not verified: {problem}	Tanda tangan tidak terverifikasi: {problem}
+
+# Settings ▸ Timecode Sync (TC-4)
+	Timecode Sync	Sinkronisasi Timecode
+	TimecodeSync	Sinkronisasi Timecode
+	Chase	Ikuti
+	Follow external timecode during playback	Ikuti timecode eksternal saat pemutaran
+	Lock after	Kunci setelah
+	Keep playing without signal for	Tetap putar tanpa sinyal selama
+	External frame rate	Frame rate eksternal
+	Offset (added to the external timecode)	Offset (ditambahkan ke timecode eksternal)
+	LTC	LTC
+	LTC input device	Perangkat input LTC
+	LTC input channel	Kanal input LTC
+	Send LTC during playback	Kirim LTC saat pemutaran
+	LTC output device	Perangkat output LTC
+	LTC output channel	Kanal output LTC
+	LTC level	Level LTC
+	dBFS	dBFS
+	MIDI Timecode	Timecode MIDI
+	MTC input port (empty = CFA4 port)	Port input MTC (kosong = port CFA4)
+	Send MIDI Timecode during playback	Kirim Timecode MIDI saat pemutaran
+	MTC output port (empty = CFA4 port)	Port output MTC (kosong = port CFA4)
+	Send timecode ahead of the picture by	Kirim timecode mendahului gambar sebesar
+	LTC (audio input)	LTC (input audio)
+	MIDI Timecode (MIDI input)	Timecode MIDI (input MIDI)
+	Same as the sequence	Sama dengan sequence
+	29.97 fps drop-frame	29,97 fps drop-frame
+	29.97 fps non-drop	29,97 fps non-drop
+	Timecode Sync Status	Status Sinkronisasi Timecode
+	Chase External Timecode	Ikuti Timecode Eksternal
+	Send LTC	Kirim LTC
+	Send MIDI Timecode	Kirim Timecode MIDI

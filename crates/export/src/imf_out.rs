@@ -147,7 +147,7 @@ impl VideoEncoder for ImfEncoder {
     fn timescale(&self) -> u32 {
         u32::try_from(self.rate.num).unwrap_or(24)
     }
-    fn encode(&mut self, f: &EncoderFrame) -> Result<Vec<EncodedPacket>> {
+    fn encode(&mut self, f: &EncoderFrame<'_>) -> Result<Vec<EncodedPacket>> {
         self.pending.push((f.width, f.height, f.rgba.to_vec()));
         if self.pending.len() >= self.batch { self.drain() } else { Ok(Vec::new()) }
     }
@@ -337,7 +337,7 @@ pub(crate) struct ImfMux {
 }
 
 impl ImfMux {
-    pub fn new(s: ImfSetup) -> Result<Self> {
+    pub fn new(s: ImfSetup<'_>) -> Result<Self> {
         let settings = s.settings;
         let dir = settings.path.clone();
         if settings.sink.is_none() {

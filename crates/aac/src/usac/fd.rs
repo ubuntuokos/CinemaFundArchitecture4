@@ -37,7 +37,7 @@ impl IcsInfo {
         if self.seq.is_short() { 8 } else { 1 }
     }
 
-    pub fn parse(br: &mut BitReader, last: WinSeq, num_bands_long: usize, num_bands_short: usize) -> Result<IcsInfo> {
+    pub fn parse(br: &mut BitReader<'_>, last: WinSeq, num_bands_long: usize, num_bands_short: usize) -> Result<IcsInfo> {
         let seq = WinSeq::select(br.read_bits(2)?, last);
         let kbd = br.read_flag()?;
         let mut info = IcsInfo { seq, kbd, num_groups: 1, group_len: [1, 0, 0, 0, 0, 0, 0, 0], ..Default::default() };
@@ -85,7 +85,7 @@ pub struct Tns {
 
 impl Tns {
     /// `tns_data()` in USAC (filter order 4 bits for long windows).
-    pub fn parse(br: &mut BitReader, info: &IcsInfo, num_bands: usize) -> Result<Tns> {
+    pub fn parse(br: &mut BitReader<'_>, info: &IcsInfo, num_bands: usize) -> Result<Tns> {
         let short = info.seq.is_short();
         let (nf_bits, len_bits, order_bits) = if short { (1, 4, 3) } else { (2, 6, 4) };
         let mut t = Tns::default();
@@ -212,8 +212,8 @@ pub struct FdParams<'a> {
 /// signalling of the core coder (`Common` data is passed in `common_tns`).
 #[allow(clippy::too_many_arguments)]
 pub fn fd_channel_stream(
-    br: &mut BitReader,
-    p: &FdParams,
+    br: &mut BitReader<'_>,
+    p: &FdParams<'_>,
     st: &mut FdState,
     last: WinSeq,
     common: Option<IcsInfo>,
@@ -358,7 +358,7 @@ pub struct CplxPred {
 }
 
 /// `ms_mask_present` + `ms_used` / `cplx_pred_data()`.
-pub fn read_stereo_mask(br: &mut BitReader, info: &IcsInfo, max_sfb_ste: usize, num_bands: usize, indep: bool, cs: &mut CplxState) -> Result<StereoMask> {
+pub fn read_stereo_mask(br: &mut BitReader<'_>, info: &IcsInfo, max_sfb_ste: usize, num_bands: usize, indep: bool, cs: &mut CplxState) -> Result<StereoMask> {
     let mask = br.read_bits(2)?;
     let res = match mask {
         0 => StereoMask::None,

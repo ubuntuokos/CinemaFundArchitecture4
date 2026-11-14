@@ -17,7 +17,7 @@ pub struct WipeStyle {
 }
 
 impl WipeStyle {
-    pub(crate) fn of(t: &Tx) -> Self {
+    pub(crate) fn of(t: &Tx<'_>) -> Self {
         let aa = [0.5, 1.0, 1.75, 2.5][t.choice("antialias").min(3) as usize] * t.scale.clamp(0.25, 1.0);
         WipeStyle { feather: t.px("feather"), border: t.px("border_width"), border_color: t.color("border_color"), aa }
     }
@@ -63,7 +63,7 @@ fn field_range(w: f32, h: f32, field: &(impl Fn(f32, f32) -> f32 + Sync)) -> (f3
 }
 
 /// The sweeping wipe: B where `field < T(p)` (field in pixels).
-pub(crate) fn field_wipe(t: &Tx, st: WipeStyle, field: impl Fn(f32, f32) -> f32 + Sync) -> Image {
+pub(crate) fn field_wipe(t: &Tx<'_>, st: WipeStyle, field: impl Fn(f32, f32) -> f32 + Sync) -> Image {
     let (lo, hi) = field_range(t.wf, t.hf, &field);
     let m = st.margin() + (hi - lo) * 0.01;
     let thr = lo - m + t.p * (hi - lo + 2.0 * m);
@@ -156,7 +156,7 @@ fn rot(x: f32, y: f32, deg: f32) -> (f32, f32) {
     (x * c + y * s, -x * s + y * c)
 }
 
-pub(super) fn apply(id: &str, t: &Tx) -> Option<Image> {
+pub(super) fn apply(id: &str, t: &Tx<'_>) -> Option<Image> {
     let st = WipeStyle::of(t);
     let (cx, cy) = t.center();
     let (w, h) = (t.wf, t.hf);

@@ -386,7 +386,7 @@ impl SliceHeader {
     }
 }
 
-fn parse_pwt(r: &mut BitReader, sh: &SliceHeader, sps: &Sps) -> Result<PredWeightTable> {
+fn parse_pwt(r: &mut BitReader<'_>, sh: &SliceHeader, sps: &Sps) -> Result<PredWeightTable> {
     let mut t = PredWeightTable { luma_log2_denom: r.read_ue()?, ..Default::default() };
     ensure!(t.luma_log2_denom <= 7, "luma_log2_weight_denom out of range");
     let chroma = sps.chroma_array_type() != 0;

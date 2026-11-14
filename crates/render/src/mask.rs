@@ -186,7 +186,7 @@ pub fn scale_by(img: &mut Image, cov: &[f32]) {
 }
 
 /// Apply an effect limited to its masks (Premiere: a masked effect only applies inside the mask).
-pub fn apply_effect(img: &mut Image, e: &EffectInstance, cx: &crate::effects::FxCtx) {
+pub fn apply_effect(img: &mut Image, e: &EffectInstance, cx: &crate::effects::FxCtx<'_>) {
     if !e.enabled || e.masks.is_empty() {
         crate::effects::apply(img, e, cx);
         return;

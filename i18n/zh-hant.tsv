@@ -4514,6 +4514,9 @@ export.summary	Low	低
 	accept	可接受
 	the engine did not start the check	引擎未開始檢查
 	the engine sent no report	引擎未傳送報告
+	MXF OP1a Uncompressed 10-bit 4:2:2 (v210)	MXF OP1a 未壓縮 10 位元 4:2:2 (v210)
+	MXF OP1a, uncompressed 10-bit Y'CbCr 4:2:2 in the v210 layout (SMPTE ST 384), 24-bit 48 kHz PCM, start timecode	MXF OP1a，v210 版面的未壓縮 10 位元 Y'CbCr 4:2:2（SMPTE ST 384），24 位元 48 kHz PCM，起始時間碼
+	Write the captions as ANC data (CEA-608/708, 29.97 fps)	將字幕寫為 ANC 資料（CEA-608/708，29.97 fps）
 	Load KDM…	載入 KDM…
 	Forget DCP Keys	清除 DCP 金鑰
 	Load KDM	載入 KDM
@@ -4526,3 +4529,35 @@ export.summary	Low	低
 	Load even if the certificate chain is not verified	即使憑證鏈未經驗證也載入
 	Signature verified: {chain}	簽章已驗證：{chain}
 	Signature not verified: {problem}	簽章未驗證：{problem}
+
+# Settings ▸ Timecode Sync (TC-4)
+	Timecode Sync	時間碼同步
+	TimecodeSync	時間碼同步
+	Chase	追隨
+	Follow external timecode during playback	播放時追隨外部時間碼
+	Lock after	鎖定前影格數
+	Keep playing without signal for	無訊號時繼續播放
+	External frame rate	外部影格速率
+	Offset (added to the external timecode)	偏移（加到外部時間碼上）
+	LTC	LTC
+	LTC input device	LTC 輸入裝置
+	LTC input channel	LTC 輸入聲道
+	Send LTC during playback	播放時傳送 LTC
+	LTC output device	LTC 輸出裝置
+	LTC output channel	LTC 輸出聲道
+	LTC level	LTC 電平
+	dBFS	dBFS
+	MIDI Timecode	MIDI 時間碼
+	MTC input port (empty = CFA4 port)	MTC 輸入連接埠（留空 = CFA4 連接埠）
+	Send MIDI Timecode during playback	播放時傳送 MIDI 時間碼
+	MTC output port (empty = CFA4 port)	MTC 輸出連接埠（留空 = CFA4 連接埠）
+	Send timecode ahead of the picture by	時間碼提前於畫面傳送
+	LTC (audio input)	LTC（音訊輸入）
+	MIDI Timecode (MIDI input)	MIDI 時間碼（MIDI 輸入）
+	Same as the sequence	與序列相同
+	29.97 fps drop-frame	29.97 fps 丟格
+	29.97 fps non-drop	29.97 fps 不丟格
+	Timecode Sync Status	時間碼同步狀態
+	Chase External Timecode	追隨外部時間碼
+	Send LTC	傳送 LTC
+	Send MIDI Timecode	傳送 MIDI 時間碼
