@@ -770,6 +770,38 @@ fn thumbnail_shows_the_background_and_guides() {
 }
 
 #[test]
+fn card_spine_points_are_previewed_and_drawn_as_diamonds() {
+    let mut s = demo("credits-card-points");
+    let csv = "Body,Page Style,Spine Position\nA,Card,-400 -200\nB,,300 100 Below\nC,,\n";
+    let v = s.execute("graphics.credits.preview", json!({"csv": csv})).unwrap();
+    assert_eq!(v["warnings"].as_array().unwrap().len(), 0, "{v}");
+    let page = &v["pages"][0];
+    let blocks = page["blocks"].as_array().unwrap();
+    assert_eq!(blocks[0]["cardPoint"], json!({"y": -200.0, "anchor": "middle"}));
+    assert_eq!(blocks[1]["cardPoint"], json!({"y": 100.0, "anchor": "below"}));
+    assert_eq!(page["spinePoints"].as_array().unwrap().len(), 2);
+    // on a scroll page the point is a warning
+    let v = s.execute("graphics.credits.preview", json!({"csv": "Body,Spine Position\nA,0 50 Above\n"})).unwrap();
+    assert_eq!(v["warnings"][0]["message"], "page 1: a spine's vertical position works on card pages only; it is ignored", "{v}");
+    assert_eq!(v["pages"][0]["spinePoints"], json!([]));
+    // the guides mark each point with a diamond: its tip, 12 px above the point
+    let shot = |s: &mut Session, guides: bool| {
+        let v = s.execute("graphics.credits.thumbnail", json!({"csv": csv, "width": 960, "guides": guides})).unwrap();
+        let png = cfa4_project::gtemplate::base64_decode(v["pngBase64"].as_str().unwrap()).unwrap();
+        image::load_from_memory(&png).unwrap().to_rgba8()
+    };
+    let (plain, guided) = (shot(&mut s, false), shot(&mut s, true));
+    let (w, h) = guided.dimensions();
+    let k = f64::from(h) / 1080.0;
+    let tip = |x: f64, y: f64| (((960.0 + x) * k).round() as u32, ((540.0 + y - 12.0) * k).round() as u32);
+    for (x, y) in [(-400.0, -200.0), (300.0, 100.0)] {
+        let (px, py) = tip(x, y);
+        assert!(px < w && py < h);
+        assert_ne!(plain.get_pixel(px, py), guided.get_pixel(px, py), "diamond tip at ({px}, {py})");
+    }
+}
+
+#[test]
 fn transitions_join_pages_with_and_without_backgrounds_and_take_their_pictures_along() {
     let mut s = demo("credits-look-mixed");
     let dir = tmp_dir("credits-look-mixed");

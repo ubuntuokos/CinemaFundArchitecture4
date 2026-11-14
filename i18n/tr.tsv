@@ -4381,6 +4381,10 @@ export.summary	Low	düşük
 	{n} more	{n} tane daha
 	Block	Blok
 	parallel	paralel
+	page {page}: a spine's vertical position works on card pages only; it is ignored	sayfa {page}: eksenin dikey konumu yalnızca kart sayfalarında geçerlidir; yok sayılır
+	on a card: centered on {y} px	kartta: {y} px üzerinde ortalı
+	on a card: starts at {y} px	kartta: {y} px'te başlar
+	on a card: ends at {y} px	kartta: {y} px'te biter
 # MPEG-2 export audio (#268): a product name, kept as is
 	Dolby Digital (AC-3)	Dolby Digital (AC-3)
 	In the page (OBS takes it from the Browser Source)	Sayfada (OBS bunu Tarayıcı Kaynağından alır)

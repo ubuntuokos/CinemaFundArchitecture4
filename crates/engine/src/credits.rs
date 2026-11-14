@@ -355,6 +355,14 @@ fn warnings_json(l: &Laid) -> Value {
     Value::Array(l.warnings.iter().map(|w| json!({"row": w.row, "message": w.message})).collect())
 }
 
+fn card_anchor(a: cfa4_credits::CardAnchor) -> &'static str {
+    match a {
+        cfa4_credits::CardAnchor::Middle => "middle",
+        cfa4_credits::CardAnchor::Below => "below",
+        cfa4_credits::CardAnchor::Above => "above",
+    }
+}
+
 fn behaviour_name(b: cfa4_credits::Behaviour) -> &'static str {
     match b {
         cfa4_credits::Behaviour::Card => "card",
@@ -406,6 +414,8 @@ fn blocks_json(page: Option<&cfa4_credits::Page>, out: &cfa4_credits::PageOut, f
                     "lastRow": b.body_rows.iter().copied().max().unwrap_or(b.row).max(b.row),
                     "spine": b.spine,
                     "parallel": b.parallel,
+                    // a card spine's point: y below the frame centre and which part stands there
+                    "cardPoint": b.card_point.map(|c| json!({"y": c.y, "anchor": card_anchor(c.anchor)})),
                     "at": at,
                 })
             })
@@ -434,6 +444,7 @@ fn preview(s: &mut Session, p: &Value) -> Result<Value> {
             "layers": pg.layers.len(),
             "contentHeight": pg.content_height,
             "contentWidth": pg.content_width,
+            "spinePoints": pg.spine_points.iter().map(|(x, y)| json!([x, y])).collect::<Vec<_>>(),
             "background": look_json(pg).0,
             "transition": look_json(pg).1,
         })).collect::<Vec<_>>(),
@@ -1302,6 +1313,11 @@ fn thumbnail(s: &mut Session, p: &Value) -> Result<Value> {
         for x in pg.spines.iter().filter(|x| (*x - fw / 2.0).abs() > 0.5) {
             lines.push(Guide::V(*x, SPINE));
         }
+        // a card spine's point: a small diamond (not at the frame centre, where the centre lines
+        // already cross)
+        for &(x, y) in pg.spine_points.iter().filter(|(x, y)| (x - fw / 2.0).abs() > 0.5 || (y - fh / 2.0).abs() > 0.5) {
+            lines.push(Guide::Diamond(x, y, 12.0 * fh / 1080.0, SPINE));
+        }
     }
     draw_guides(&mut rgba, w as usize, h as usize, k, &lines);
     let png = cfa4_export::encode_png(rgba, w, h).map_err(|x| EngineError::Other(x.to_string()))?;
@@ -1313,6 +1329,8 @@ enum Guide {
     H(f64, [u8; 4]),
     V(f64, [u8; 4]),
     Rect(f64, f64, f64, f64, [u8; 4]),
+    /// A diamond's centre and radius.
+    Diamond(f64, f64, f64, [u8; 4]),
 }
 
 const ACTION_SAFE: [u8; 4] = [80, 200, 255, 200];
@@ -1348,6 +1366,7 @@ fn draw_guides(rgba: &mut [u8], w: usize, h: usize, k: f64, guides: &[Guide]) {
         }
     };
     let mut vlines: Vec<(f64, f64, f64, [u8; 4])> = Vec::new();
+    let mut diamonds: Vec<(f64, f64, f64, [u8; 4])> = Vec::new();
     let fw = w as f64 / k.max(1e-9);
     let fh = h as f64 / k.max(1e-9);
     for g in guides {
@@ -1359,6 +1378,26 @@ fn draw_guides(rgba: &mut [u8], w: usize, h: usize, k: f64, guides: &[Guide]) {
                 hline(y1, x0, x1, c);
                 vlines.push((x0, y0, y1, c));
                 vlines.push((x1, y0, y1, c));
+            }
+            Guide::Diamond(x, y, r, c) => diamonds.push((x, y, r, c)),
+        }
+    }
+    for (x, y, r, c) in diamonds {
+        let (cx, cy, r) = ((x * k).round(), (y * k).round(), (r * k).round().clamp(3.0, 200.0) as i64);
+        if !(cx.is_finite() && cy.is_finite()) || cx.abs() > 1e6 || cy.abs() > 1e6 {
+            continue;
+        }
+        let (cx, cy) = (cx as i64, cy as i64);
+        for dy in -r..=r {
+            let dx = r - dy.abs();
+            for px_x in if dx == 0 { vec![cx] } else { vec![cx - dx, cx + dx] } {
+                let py = cy + dy;
+                if (0..w as i64).contains(&px_x) && (0..h as i64).contains(&py) {
+                    let i = (py as usize * w + px_x as usize) * 4;
+                    if let Some(px) = rgba.get_mut(i..i + 4) {
+                        blend(px, c);
+                    }
+                }
             }
         }
     }

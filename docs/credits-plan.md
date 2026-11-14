@@ -301,6 +301,21 @@ nem kerül a CFA4-be, a Chrome nem lesz függőség.
   ismétlődő háttérként vagy videócímkeként a stáblistába.
 - **Qt6:** a háttér a lapok listájában „Ismétlődő videó: …”, minden nyelven.
 
+### C15 – A kártya gerincének pontja – **KÉSZ (2026-11-14)**
+
+A „Not yet” lista következő pontja (Cinecred-hűség), a Cinecred nyilvános útmutatója szerint
+(cinecred.com/guide/credits-spreadsheet, „Spine Position”; tisztaszobás: a forráskódját nem
+néztük): kártyaoldalon a `Spine Position` cella vízszintes és opcionálisan függőleges eltolást ad
+a képközéptől (`150 -50`, képpontban, negatív: balra, fel); a gerinc alapból függőlegesen a pont
+körül középre kerül, `Below` (`alatta`) esetén a pontból indul lefelé, `Above` (`fölötte`) esetén
+ott ér véget. Minden gerinc (a párhuzamos oszlopaival együtt, mint egy egység) a saját pontjára
+kerül, nem az előző alá: ez a korábbi viselkedést változtatja meg azokon a kártyákon, ahol több
+vízszintes gerincpozíció volt (eddig egymás alá rakódtak, most egymás mellett állnak, mint a
+Cinecredben). Gerincpozíció nélküli kártya ugyanúgy középre kerül, mint eddig. Gördülő és úszó
+oldalon a függőleges rész figyelmeztetés, és nem hat. A segédvonalas bélyegkép a pontokat kis
+rombusszal jelöli (a képközépen nem), az előnézet `cardPoint` és `spinePoints` mezőt ad, a Qt6
+blokk-tulajdonságai minden nyelven mutatják a pontot.
+
 ### C12 – Animált vonalrajz-réteg Rustban, második lépcső (a jövő évi kiadásban) – **TERVEZET**
 
 A tulajdonos döntése (2026-11-11): a vonalrajzos animáció saját grafikai elemmé válik a CFA4

@@ -14879,6 +14879,26 @@ def test_credits_engine_notes_are_translated():
         assert any(p.match(filled) for p, _t in NOTES), literal
 
 
+def test_credits_card_point_text(app):
+    """C15: a card spine's point follows its offset in the block's properties, in the user's
+    language; a block without one, or with bad values, does not break it."""
+    from cfa4_qt.i18n import TR
+    from cfa4_qt.panels.credits_workspace import card_point_text
+
+    assert card_point_text({"spine": -150}) == ""
+    assert card_point_text({"cardPoint": {"y": -50, "anchor": "middle"}}) == ", on a card: centered on -50 px"
+    assert card_point_text({"cardPoint": {"y": 50, "anchor": "below"}}) == ", on a card: starts at +50 px"
+    assert card_point_text({"cardPoint": {"y": "x", "anchor": "above"}}) == ", on a card: ends at +0 px"
+    assert card_point_text({"cardPoint": {"anchor": None}}) == ", on a card: centered on +0 px"
+    TR.set_language("hu")
+    try:
+        assert card_point_text({"cardPoint": {"y": 50, "anchor": "below"}}) == ", kártyán: a(z) +50 px-től lefelé"
+        TR.set_language("en-gb")
+        assert card_point_text({"cardPoint": {"y": 0, "anchor": "middle"}}) == ", on a card: centred on +0 px"
+    finally:
+        TR.set_language("en")
+
+
 def test_monitor_picture_falls_back_to_raster_without_opengl(app, monkeypatch):
     """qt-parity 5.5: ``CFA4_QT_MONITOR_GL=1`` asks for the OpenGL picture, but where no GL
     context can be made (Qt's ``offscreen`` platform here) the monitor keeps the raster view; either

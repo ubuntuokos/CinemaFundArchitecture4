@@ -4386,6 +4386,10 @@ export.summary	Low	తక్కువ
 	{n} more	మరో {n}
 	Block	బ్లాక్
 	parallel	సమాంతరం
+	page {page}: a spine's vertical position works on card pages only; it is ignored	పేజీ {page}: అక్షం నిలువు స్థానం కార్డ్ పేజీల్లో మాత్రమే పనిచేస్తుంది; దీన్ని విస్మరిస్తున్నాం
+	on a card: centered on {y} px	కార్డ్‌పై: {y} px వద్ద మధ్యలో
+	on a card: starts at {y} px	కార్డ్‌పై: {y} px వద్ద మొదలవుతుంది
+	on a card: ends at {y} px	కార్డ్‌పై: {y} px వద్ద ముగుస్తుంది
 # MPEG-2 export audio (#268): a product name, kept as is
 	Dolby Digital (AC-3)	Dolby Digital (AC-3)
 	In the page (OBS takes it from the Browser Source)	పేజీలో (OBS దాన్ని బ్రౌజర్ సోర్స్ నుండి తీసుకుంటుంది)

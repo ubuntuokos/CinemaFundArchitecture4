@@ -194,7 +194,7 @@ class PropertiesPanel(QWidget):
             "cells": str(count) if isinstance(count, int) else "",
             "tails": str(b.get("tails")) if isinstance(b.get("tails"), int) and b.get("tails") else "",
             "pictures": str(b.get("pictures")) if isinstance(b.get("pictures"), int) and b.get("pictures") else "",
-            "spine": (f"{_num(b.get('spine')):+g} px" + (f" ({tr('parallel')})" if b.get("parallel") else "")) if b else "",
+            "spine": (f"{_num(b.get('spine')):+g} px" + (f" ({tr('parallel')})" if b.get("parallel") else "") + card_point_text(b)) if b else "",
         }
         for key, _l in BLOCK_FIELDS:
             self.fields[f"block.{key}"].setText(values[key])
@@ -204,6 +204,22 @@ class PropertiesPanel(QWidget):
         if more > 0:
             text += "\n" + tr("{n} more").replace("{n}", str(more))
         self.block_text.setText(text)
+
+
+CARD_ANCHORS = {
+    "middle": N_("on a card: centered on {y} px"),
+    "below": N_("on a card: starts at {y} px"),
+    "above": N_("on a card: ends at {y} px"),
+}
+
+
+def card_point_text(b: dict[str, Any]) -> str:
+    """Where a card page puts a block's spine vertically (``, …`` after its offset), or nothing."""
+    point = b.get("cardPoint")
+    if not isinstance(point, dict):
+        return ""
+    template = CARD_ANCHORS.get(str(point.get("anchor")), CARD_ANCHORS["middle"])
+    return ", " + tr(template).replace("{y}", f"{_num(point.get('y')):+g}")
 
 
 def block_label(block: dict[str, Any]) -> str:

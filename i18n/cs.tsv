@@ -4380,6 +4380,10 @@ export.summary	Low	nízká
 	{n} more	Dalších {n}
 	Block	Blok
 	parallel	souběžně
+	page {page}: a spine's vertical position works on card pages only; it is ignored	stránka {page}: svislá poloha osy platí jen na stránkách karet; ignoruje se
+	on a card: centered on {y} px	na kartě: na středu v {y} px
+	on a card: starts at {y} px	na kartě: začíná v {y} px
+	on a card: ends at {y} px	na kartě: končí v {y} px
 # MPEG-2 export audio (#268): a product name, kept as is
 	Dolby Digital (AC-3)	Dolby Digital (AC-3)
 	In the page (OBS takes it from the Browser Source)	Ve stránce (OBS jej převezme ze zdroje Prohlížeč)

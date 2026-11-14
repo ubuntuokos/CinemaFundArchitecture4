@@ -19,7 +19,7 @@ leading `@` is allowed, and Hungarian names work too.
 | Tail | Láb | Text after the body (e.g. a character name) |
 | Vertical Gap | Térköz | Space before the next block: `2` (units) or `40px`. An empty row = 1 unit |
 | Content Style | Stílus | Style of this and the following blocks |
-| Spine Position | Gerinc | Horizontal offset of the following blocks from the centre, pixels; `450 parallel` (`párhuzamos`) starts a column beside the previous one, from the same top |
+| Spine Position | Gerinc | Horizontal offset of the following blocks from the centre, pixels; `450 parallel` (`párhuzamos`) starts a column beside the previous one, from the same top; on a card page also a vertical offset, `150 -50`, optionally with `Below` / `Above` (`alatta` / `fölötte`) |
 | Page Style | Oldal | Starts a new page with that style (`Scroll`, `Card`, or your own) |
 | Page Runtime | Játékidő | Page length: `00:00:12:00`, `12s`, `300f`. On a scroll page the speed is kept and the gaps between blocks stretch or shrink to fit (up to 20-fold); if they cannot, the speed changes, with a warning |
 | Page Gap | Oldalköz | Empty time after the page; negative overlaps the next page |
@@ -39,6 +39,16 @@ character styles, editable in Essential Graphics. An unknown name is a warning.
 column before them, starting at the same height: e.g. *Camera* at `-450`, then *Sound* at
 `450 parallel`. The column set ends at the next spine position without `parallel`; what follows
 goes below the longest column. On a roll with a `Page Runtime`, the first column's gaps stretch.
+
+**Spines on a card.** On a card page every spine stands at its own point instead of below the
+one before: `Spine Position` gives the point's horizontal and, optionally, vertical offset from
+the frame centre in pixels (negative: left, up), and the spine is centred on it vertically.
+Append `Below` (`alatta`) to start the spine at the point, or `Above` (`fölötte`) to end it
+there. E.g. `-150` on one block and `150 -50` on the next set them side by side, the second 50 px
+higher; `0 50 Below` starts a spine 50 px under the middle. A spine's parallel columns go with it.
+A card without spine positions is centred as before. On scroll and crawl pages the vertical part
+is a warning and is ignored. With guides on, the thumbnail marks each point that is not the frame
+centre with a small diamond; the block's properties show the point.
 
 **Files.** `.ods` (LibreOffice), `.xlsx` (Excel, LibreOffice, Google Sheets download) and CSV /
 TSV (comma, semicolon or tab). A workbook's first sheet is used unless `sheet` names another (by
@@ -400,8 +410,8 @@ CFA4) and the running order (rundown) follow in their own plan,
 | Command | Menu | Params |
 |---|---|---|
 | `graphics.credits.import` | Graphics and Titles ▸ Import Credits Spreadsheet… | `path` (.csv/.tsv/.xlsx/.ods/.cfa4credits, or a Cinecred project folder / its `Styling.toml`, with `credits` to pick its spreadsheet) or `csv` (text), `sheet`, `pictureDir`, `styling`, `template` (its styling and fitting; `styling` wins), `time`, `track` (of each page's lowest clip: its background, else the page) → `{clips: [{clip, start, duration, behaviour, pictures, background, backgroundClips, transition}], group, end, sheet, warnings}` (`backgroundClips`: every clip of the background, several for a looped video); one undo step |
-| `graphics.credits.preview` | (query) | as above → `{pages: [{name, style, row, behaviour (scroll/card/crawl), duration, seconds, layers, contentHeight, contentWidth, background, transition: {effect, duration}, blocks: [{style, head, body (the first 40 cells), bodyCount, tails, pictures, row, lastRow, spine, parallel, at (0–1: the moment of the page that shows the block)}]}], duration, sheets, sheet, warnings, issues}` |
-| `graphics.credits.thumbnail` | (query) | as preview, plus `page`, `at` (0–1, moment in the page), `width`, `guides`, `grid` → `{width, height, page, pages, time, pngBase64}`: the page's background (a picture or video as grey) and text with the roll, crawl or fades applied, pictures outlined, guides drawn |
+| `graphics.credits.preview` | (query) | as above → `{pages: [{name, style, row, behaviour (scroll/card/crawl), duration, seconds, layers, contentHeight, contentWidth, background, transition: {effect, duration}, blocks: [{style, head, body (the first 40 cells), bodyCount, tails, pictures, row, lastRow, spine, parallel, cardPoint ({y, anchor: middle/below/above} or null), at (0–1: the moment of the page that shows the block)}], spinePoints (a card's spine points, [x, y] frame pixels)}], duration, sheets, sheet, warnings, issues}` |
+| `graphics.credits.thumbnail` | (query) | as preview, plus `page`, `at` (0–1, moment in the page), `width`, `guides`, `grid` → `{width, height, page, pages, time, pngBase64}`: the page's background (a picture or video as grey) and text with the roll, crawl or fades applied, pictures outlined, guides drawn (a card's spine points as diamonds) |
 | `graphics.credits.validate` | (query; shown in the Credits window) | as preview, or `clip` for placed credits → `{errors, warnings, infos, issues: [{code, severity, page?, row?, values, message}]}` |
 | `graphics.credits.music` | (query; the Fit window) | `audio`?, `clip`? → `{audio, name, start, duration, soundEnd, bpm, beat, beats, suggestions: [{id: musicLength/soundEnd/lastBar, total}], credits, natural, fit}`; changes nothing |
 | `graphics.credits.fit` | Graphics and Titles ▸ Fit Credits to Music… | `clip`?, `total` / `seconds` / `use` (a suggestion id, default `musicLength`), `audio`?, `cardsOnBeat`, `alignToAudio`, `off` → `{clips, group, end, fit, report: {natural, target, result, scrollPages}, warnings}`; one undo step |
