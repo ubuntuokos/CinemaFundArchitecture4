@@ -1035,6 +1035,15 @@ dependencies = [
 ]
 
 [[package]]
+name = "cfa4-atracenc"
+version = "0.10.0"
+dependencies = [
+ "cfa4-realaudio",
+ "cfa4-testkit",
+ "thiserror 2.0.21",
+]
+
+[[package]]
 name = "cfa4-audio-dsp"
 version = "0.10.0"
 dependencies = [

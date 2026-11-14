@@ -73,6 +73,7 @@ cfa4-tta = { path = "crates/tta" }
 cfa4-realvideo = { path = "crates/realvideo" }
 cfa4-realmedia = { path = "crates/realmedia" }
 cfa4-realaudio = { path = "crates/realaudio" }
+cfa4-atracenc = { path = "crates/atracenc" }
 cfa4-av1 = { path = "crates/av1" }
 cfa4-av2 = { path = "crates/av2" }
 cfa4-aac = { path = "crates/aac" }
@@ -171,6 +172,9 @@ opt-level = 3
 opt-level = 3
 
 [profile.dev.package.cfa4-realaudio]
+opt-level = 3
+
+[profile.dev.package.cfa4-atracenc]
 opt-level = 3
 
 [profile.dev.package.cfa4-canopus]
