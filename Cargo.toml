@@ -69,7 +69,10 @@ cfa4-dcp-validate = { path = "crates/dcp-validate" }
 cfa4-dcp-inspect = { path = "crates/dcp-inspect" }
 cfa4-apv = { path = "crates/apv" }
 cfa4-dng = { path = "crates/dng" }
+cfa4-g729 = { path = "crates/g729" }
+cfa4-ilbc = { path = "crates/ilbc" }
 cfa4-tta = { path = "crates/tta" }
+cfa4-musepack = { path = "crates/musepack" }
 cfa4-av1 = { path = "crates/av1" }
 cfa4-av2 = { path = "crates/av2" }
 cfa4-aac = { path = "crates/aac" }
@@ -161,10 +164,19 @@ opt-level = 3
 [profile.dev.package.cfa4-dirac]
 opt-level = 3
 
+[profile.dev.package.cfa4-g729]
+opt-level = 3
+
+[profile.dev.package.cfa4-ilbc]
+opt-level = 3
+
 [profile.dev.package.cfa4-tta]
 opt-level = 3
 
 [profile.dev.package.cfa4-canopus]
+opt-level = 3
+
+[profile.dev.package.cfa4-musepack]
 opt-level = 3
 
 [profile.dev.package.cfa4-huffyuv]

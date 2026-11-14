@@ -425,6 +425,10 @@ pub struct PictureDesc {
     /// [`Pattern::Imf`] R'G'B': full-range quantization (ST 2067-21 QE.2) instead of the
     /// narrow range of QE.1.
     pub full_range: bool,
+    /// Interlaced pictures: the field first in time (ST 377-1 G.2.13; 1 the upper, 2 the lower),
+    /// written as separate fields with that field dominance. `None`: progressive frames. Type D-10
+    /// is always separate fields, field 1 first unless this says 2.
+    pub field_dominance: Option<u8>,
 }
 
 impl PictureDesc {
@@ -454,6 +458,7 @@ impl PictureDesc {
             j2k: None,
             rgb: false,
             full_range: false,
+            field_dominance: None,
         }
     }
 
@@ -1841,7 +1846,9 @@ impl<W: Write + Seek> MxfWriter<W> {
         let iab_primer = if cfg.iab.is_some() { IAB_PRIMER } else { &[] };
         let mca_primer = if cfg.mca.is_empty() { &[] } else { MCA_PRIMER };
         let mpeg_primer = if matches!(cfg.picture.as_ref().map(|p| p.coding), Some(PictureCoding::Mpeg2 { .. })) { MPEG_PRIMER } else { &[] };
-        let d10_primer = if self.d10.is_some() { D10_PRIMER } else { &[] };
+        // the field and signal standard properties: D-10, MPEG-2 (RDD 9) and interlaced pictures
+        let fields = cfg.picture.as_ref().is_some_and(|p| p.field_dominance.is_some());
+        let d10_primer = if self.d10.is_some() || !mpeg_primer.is_empty() || fields { D10_PRIMER } else { &[] };
         let as11_primer = if self.as11.is_some() { crate::as11::primer() } else { Vec::new() };
         let primer: Vec<Vec<u8>> = PRIMER
             .iter()
@@ -2016,28 +2023,51 @@ impl<W: Write + Seek> MxfWriter<W> {
                             .p(0x3201, &p.coding.coding_label())
                             .p(0x3210, &TC_470)
                             .p(0x321A, &CE_601)
-                            .u8(0x3212, 1)
+                            .u8(0x3212, p.field_dominance.unwrap_or(1))
                             .u8(0x3303, 4);
                     } else {
-                        s.u8(0x320C, 0)
+                        // separate fields code the height of one field; MPEG-2 stores whole
+                        // macroblocks (RDD 9 Annex: 1088 or 544 stored lines for 1080 sampled)
+                        let fields = u32::from(p.field_dominance.is_some()) + 1;
+                        let sampled = p.height / fields;
+                        let stored = if mpeg.is_some() { p.height.div_ceil(16 * fields) * 16 } else { sampled };
+                        // ST 377-1 G.2.16 / RDD 9: the first line of each field (ST 274 / ST 296)
+                        let line_map: (u32, u32) = match (mpeg.is_some(), p.height, fields) {
+                            (true, 1080, 2) => (21, 584),
+                            (true, 1080, _) => (42, 0),
+                            (true, 720, _) => (26, 0),
+                            _ => (0, 0),
+                        };
+                        s.u8(0x320C, u8::from(fields == 2))
                             .u32(0x3203, p.width)
-                            .u32(0x3202, p.height)
+                            .u32(0x3202, stored)
                             .u32(0x3205, p.width)
-                            .u32(0x3204, p.height)
+                            .u32(0x3204, sampled)
                             .u32(0x3209, p.width)
-                            .u32(0x3208, p.height)
+                            .u32(0x3208, sampled)
                             .rat(0x320E, p.aspect)
-                            .p(0x320D, &batch(&[&0u32.to_be_bytes(), &0u32.to_be_bytes()], 4))
+                            .p(0x320D, &batch(&[&line_map.0.to_be_bytes(), &line_map.1.to_be_bytes()], 4))
                             .p(0x3201, &p.coding.coding_label())
                             .p(0x3210, &tcl)
                             .p(0x321A, &ce)
                             .p(0x3219, &cp);
+                        if mpeg.is_some() {
+                            // RDD 9 Annex: ST 274 (1080) or ST 296 (720) signal standard
+                            match p.height {
+                                1080 => s.u8(0x3215, 4),
+                                720 => s.u8(0x3215, 5),
+                                _ => &mut s,
+                            };
+                        }
+                        if let Some(f) = p.field_dominance {
+                            s.u8(0x3212, f);
+                        }
                     }
                     s.u32(0x3301, depth).u32(0x3302, p.subsampling.0).u32(0x3308, p.subsampling.1).u32(0x3304, black).u32(0x3305, white).u32(0x3306, range);
                     if let Some((pl, max_gop, b, closed, bit_rate)) = mpeg {
                         s.u8(TAG_MPEG, 1)
                             .u8(TAG_MPEG + 1, 0)
-                            .u8(TAG_MPEG + 2, 1)
+                            .u8(TAG_MPEG + 2, if p.field_dominance.is_some() { 2 } else { 1 })
                             .u8(TAG_MPEG + 3, u8::from(b == 0))
                             .u8(TAG_MPEG + 4, u8::from(closed))
                             .u8(TAG_MPEG + 5, 0)

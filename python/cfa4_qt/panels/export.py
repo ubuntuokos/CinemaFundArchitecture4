@@ -525,7 +525,7 @@ class ExportDialog(QDialog):
         self.dash_manifest = QCheckBox(tr("Also write a DASH manifest (.mpd)"), self)
         self.dash_manifest.setObjectName("export.video.dashManifest")
         # MXF OP1a: the caption track as closed captions in an ANC data track (ST 436-1, CEA-608/708)
-        self.mxf_anc = QCheckBox(tr("Write the captions as ANC data (CEA-608/708, 29.97 fps)"), self)
+        self.mxf_anc = QCheckBox(tr("Write the captions as ANC data (CEA-608/708)"), self)
         self.mxf_anc.setObjectName("export.video.mxfAncCaptions")
         # MXF OP1a: AMWA AS-11 metadata in bmx's text forms (empty Core = no AS-11 metadata)
         self.as11_text: dict[str, QPlainTextEdit] = {}
@@ -1083,7 +1083,10 @@ class ExportDialog(QDialog):
         mxf_codec = self._choice("mxfVideoCodec")
         video = encoder_format(fmt, mxf_codec) == "mpeg2" and not (fmt in MXF_FORMATS and mxf_codec == "d10")
         self.container.setEnabled(fmt == "mpeg2")
-        self.rows.allow_interlaced(fmt in ("mpeg2", "prores"))  # MPEG-2 and ProRes code interlaced video (egui's Field Order)
+        # MPEG-2 and ProRes code interlaced video (egui's Field Order); in MXF MPEG-2, XDCAM HD422
+        # (1080i) or D-10 (#949)
+        mxf_mpeg2 = fmt in MXF_FORMATS and encoder_format(fmt, mxf_codec) == "mpeg2"
+        self.rows.allow_interlaced(fmt in ("mpeg2", "prores") or mxf_mpeg2)
         for w in (self.gop, self.b_frames, self.quantizer):
             w.setEnabled(video)
         self.chroma.setEnabled(video and not (fmt in MXF_FORMATS and mxf_codec == "xdcamHd422"))

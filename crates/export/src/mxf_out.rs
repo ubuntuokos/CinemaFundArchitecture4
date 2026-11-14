@@ -7,7 +7,7 @@ use cfa4_mxf::{
 };
 use cfa4_time::FrameRate;
 
-use crate::{ColorSignal, EncodedPacket, ExportError, ExportSettings, Format, H264Profile, MpegVideoInfo, MxfVideoCodec, Out, Result};
+use crate::{ColorSignal, EncodedPacket, ExportError, ExportSettings, FieldOrder, Format, H264Profile, MpegVideoInfo, MxfVideoCodec, Out, Result};
 
 /// Paths of the OP-Atom audio files for an export to `path` with `channels` channels.
 pub fn opatom_audio_paths(path: &str, channels: usize) -> Vec<String> {
@@ -37,6 +37,7 @@ fn picture(settings: &ExportSettings, w: u32, h: u32, rate: FrameRate, mpeg: Opt
         // the display aspect ratio of the active picture: 16:9 when the pixel aspect says so
         let wide = settings.pixel_aspect.is_some_and(|(n, dn)| dn > 0 && u64::from(w) * u64::from(n) * 9 >= u64::from(h) * u64::from(dn) * 15);
         d.aspect = if wide { Rational::new(16, 9) } else { Rational::new(4, 3) };
+        d.field_dominance = (settings.field_order != FieldOrder::Progressive).then_some(1);
         return Ok(d);
     }
     let coding = match settings.video_format() {
@@ -50,6 +51,18 @@ fn picture(settings: &ExportSettings, w: u32, h: u32, rate: FrameRate, mpeg: Opt
             }
             if settings.mxf_video_codec == MxfVideoCodec::XdcamHd422 && (m.profile_and_level != 0x82 || !matches!((w, h), (1920, 1080) | (1280, 720))) {
                 return Err(ExportError::Unsupported(format!("XDCAM HD422 (RDD 9) pictures are 1920x1080 or 1280x720 in the 4:2:2 Profile; not {w}x{h}")));
+            }
+            if settings.field_order != FieldOrder::Progressive {
+                // ST 274 interlaced: 1080 lines; RDD 9 has 1080i at 25 and 29.97 frames per second
+                if h != 1080 {
+                    return Err(ExportError::Unsupported(format!("interlaced MPEG-2 in MXF is 1080 lines (1920x1080 or 1440x1080), not {w}x{h}")));
+                }
+                if settings.mxf_video_codec == MxfVideoCodec::XdcamHd422 && !matches!((rate.num, rate.den), (25, 1) | (30000, 1001)) {
+                    return Err(ExportError::Unsupported(format!(
+                        "XDCAM HD422 (RDD 9) 1080i runs at 25 or 29.97 fps (50i / 59.94i), not {} fps",
+                        rate.label()
+                    )));
+                }
             }
             PictureCoding::Mpeg2 {
                 profile_and_level: m.profile_and_level,
@@ -83,6 +96,11 @@ fn picture(settings: &ExportSettings, w: u32, h: u32, rate: FrameRate, mpeg: Opt
         _ => PictureCoding::Vc3 { cid: crate::dnx_profile(&settings.dnx_profile).cid() },
     };
     let mut d = PictureDesc::new(coding, w, h);
+    d.field_dominance = match settings.field_order {
+        FieldOrder::Progressive => None,
+        FieldOrder::UpperFirst => Some(1),
+        FieldOrder::LowerFirst => Some(2),
+    };
     d.color = match settings.signal {
         s if s == ColorSignal::PQ => ColorSpace::Rec2020Pq,
         s if s == ColorSignal::HLG => ColorSpace::Rec2020Hlg,
@@ -168,14 +186,14 @@ impl MxfMux {
         }
         let cdp = match s.captions.as_ref().filter(|_| !atom) {
             Some(doc) => {
-                if s.rate != cfa4_captions::mcc::RATE {
+                let Some(st) = cfa4_captions::mcc::CdpStream::new_at(doc, s.rate) else {
                     return Err(ExportError::Unsupported(format!(
-                        "closed captions in MXF (ANC) are written at 29.97 fps for now (#1065), not {}",
+                        "closed captions in MXF (ANC) need 23.976, 24, 25, 29.97, 30, 50, 59.94 or 60 fps (SMPTE ST 334-2), not {}",
                         s.rate.label()
                     )));
-                }
+                };
                 cfg.anc = true;
-                Some(cfa4_captions::mcc::CdpStream::new(doc))
+                Some(st)
             }
             None => None,
         };
