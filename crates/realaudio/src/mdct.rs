@@ -2,7 +2,7 @@
 //! `AV_TX_FULL_IMDCT`): `N` coefficients to `2N` samples,
 //! `y[n] = scale · Σ X[k] cos(π/N (n + ½ + N/2)(k + ½))`, computed through a DCT-IV with an
 //! `N/2`-point complex FFT in `f64` (FFmpeg's own result depends on its SIMD code, so the output
-//! matches it to rounding).
+//! matches it to rounding). `av_tx` with scale `s` is this transform with scale `-s`.
 
 use std::f64::consts::PI;
 
