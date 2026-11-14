@@ -4530,6 +4530,8 @@ export.summary	Low	niska
 	Load even if the certificate chain is not verified	Wczytaj także z niezweryfikowanym łańcuchem certyfikatów
 	Signature verified: {chain}	Podpis zweryfikowany: {chain}
 	Signature not verified: {problem}	Podpis niezweryfikowany: {problem}
+	KDM required	Wymagany KDM
+	Encrypted: load the KDM with content key {keys}	Zaszyfrowane: wczytaj KDM z kluczem treści {keys}
 
 # Settings ▸ Timecode Sync (TC-4)
 	Timecode Sync	Synchronizacja kodu czasowego

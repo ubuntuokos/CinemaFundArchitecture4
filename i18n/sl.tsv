@@ -4533,6 +4533,8 @@ export.summary	Low	nizka
 	Load even if the certificate chain is not verified	Naloži tudi z nepreverjeno verigo potrdil
 	Signature verified: {chain}	Podpis preverjen: {chain}
 	Signature not verified: {problem}	Podpis ni preverjen: {problem}
+	KDM required	Potreben je KDM
+	Encrypted: load the KDM with content key {keys}	Šifrirano: naložite KDM s ključem vsebine {keys}
 
 # Settings ▸ Timecode Sync (TC-4)
 	Timecode Sync	Sinhronizacija časovne kode

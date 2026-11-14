@@ -4530,6 +4530,8 @@ export.summary	Low	nízká
 	Load even if the certificate chain is not verified	Načíst i s neověřeným řetězcem certifikátů
 	Signature verified: {chain}	Podpis ověřen: {chain}
 	Signature not verified: {problem}	Podpis neověřen: {problem}
+	KDM required	Vyžaduje KDM
+	Encrypted: load the KDM with content key {keys}	Šifrováno: načtěte KDM s klíčem obsahu {keys}
 
 # Settings ▸ Timecode Sync (TC-4)
 	Timecode Sync	Synchronizace časového kódu

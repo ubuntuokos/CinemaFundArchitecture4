@@ -4533,6 +4533,8 @@ export.summary	Low	დაბალი
 	Load even if the certificate chain is not verified	ჩატვირთვა გადაუმოწმებელი სერტიფიკატების ჯაჭვითაც
 	Signature verified: {chain}	ხელმოწერა გადამოწმებულია: {chain}
 	Signature not verified: {problem}	ხელმოწერა არ არის გადამოწმებული: {problem}
+	KDM required	საჭიროა KDM
+	Encrypted: load the KDM with content key {keys}	დაშიფრულია: ჩატვირთეთ KDM შიგთავსის გასაღებით {keys}
 
 # Settings ▸ Timecode Sync (TC-4)
 	Timecode Sync	დროის კოდის სინქრონიზაცია

@@ -4538,6 +4538,8 @@
 	Load even if the certificate chain is not verified	Muat juga dengan rantai sertifikat yang belum diverifikasi
 	Signature verified: {chain}	Tanda tangan terverifikasi: {chain}
 	Signature not verified: {problem}	Tanda tangan tidak terverifikasi: {problem}
+	KDM required	Perlu KDM
+	Encrypted: load the KDM with content key {keys}	Terenkripsi: muat KDM dengan kunci konten {keys}
 
 # Settings ▸ Timecode Sync (TC-4)
 	Timecode Sync	Sinkronisasi Timecode

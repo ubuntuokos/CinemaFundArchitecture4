@@ -4530,6 +4530,8 @@ export.summary	Low	низак
 	Load even if the certificate chain is not verified	Учитај и са непровереним ланцем сертификата
 	Signature verified: {chain}	Потпис проверен: {chain}
 	Signature not verified: {problem}	Потпис није проверен: {problem}
+	KDM required	Потребан је KDM
+	Encrypted: load the KDM with content key {keys}	Шифровано: учитајте KDM са кључем садржаја {keys}
 
 # Settings ▸ Timecode Sync (TC-4)
 	Timecode Sync	Синхронизација временског кода

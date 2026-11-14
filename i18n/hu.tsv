@@ -4529,6 +4529,8 @@ export.summary	Low	alacsony
 	Load even if the certificate chain is not verified	Betöltés ellenőrizetlen tanúsítványlánccal is
 	Signature verified: {chain}	Aláírás ellenőrizve: {chain}
 	Signature not verified: {problem}	Az aláírás nincs ellenőrizve: {problem}
+	KDM required	KDM szükséges
+	Encrypted: load the KDM with content key {keys}	Titkosított: töltse be a KDM-et a(z) {keys} tartalomkulccsal
 	Timecode Sync	Időkód-szinkron
 	TimecodeSync	Időkód-szinkron
 	Chase	Követés

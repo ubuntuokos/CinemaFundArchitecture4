@@ -2936,6 +2936,9 @@ fn build() -> Vec<CommandSpec> {
                 o.insert("hasAudio".into(), json!(media.is_some_and(|m| m.has_audio())));
                 o.insert("selected".into(), json!({"start": range.start.0, "duration": range.duration.0}));
                 o.insert("recent".into(), json!(recent));
+                // an encrypted clip whose content keys are not loaded: the monitor offers Load KDM (#1053)
+                let missing = s.media.source_for(&s.project, v.media, &*s.services).map(|src| src.missing_keys()).unwrap_or_default();
+                o.insert("needsKey".into(), json!(missing));
             }
             Ok(out)
         }),

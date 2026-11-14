@@ -4536,6 +4536,8 @@ export.summary	Low	తక్కువ
 	Load even if the certificate chain is not verified	ధృవీకరించని సర్టిఫికెట్ గొలుసుతోనూ లోడ్ చేయండి
 	Signature verified: {chain}	సంతకం ధృవీకరించబడింది: {chain}
 	Signature not verified: {problem}	సంతకం ధృవీకరించబడలేదు: {problem}
+	KDM required	KDM అవసరం
+	Encrypted: load the KDM with content key {keys}	ఎన్‌క్రిప్ట్ చేయబడింది: కంటెంట్ కీ {keys} ఉన్న KDM ను లోడ్ చేయండి
 
 # Settings ▸ Timecode Sync (TC-4)
 	Timecode Sync	టైమ్‌కోడ్ సమకాలీకరణ

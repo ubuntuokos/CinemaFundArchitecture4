@@ -4532,6 +4532,8 @@ export.summary	Low	låg
 	Load even if the certificate chain is not verified	Läs in även med en overifierad certifikatkedja
 	Signature verified: {chain}	Signaturen verifierad: {chain}
 	Signature not verified: {problem}	Signaturen inte verifierad: {problem}
+	KDM required	KDM krävs
+	Encrypted: load the KDM with content key {keys}	Krypterad: läs in KDM:en med innehållsnyckeln {keys}
 
 # Settings ▸ Timecode Sync (TC-4)
 	Timecode Sync	Tidskodssynkronisering

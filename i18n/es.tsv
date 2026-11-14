@@ -4537,6 +4537,8 @@
 	Load even if the certificate chain is not verified	Cargar también con una cadena de certificados no verificada
 	Signature verified: {chain}	Firma verificada: {chain}
 	Signature not verified: {problem}	Firma no verificada: {problem}
+	KDM required	Se requiere KDM
+	Encrypted: load the KDM with content key {keys}	Cifrado: cargue el KDM con la clave de contenido {keys}
 
 # Settings ▸ Timecode Sync (TC-4)
 	Timecode Sync	Sincronización de código de tiempo

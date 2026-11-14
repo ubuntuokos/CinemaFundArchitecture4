@@ -4524,6 +4524,8 @@
 	Load even if the certificate chain is not verified	인증서 체인이 확인되지 않아도 불러오기
 	Signature verified: {chain}	서명 확인됨: {chain}
 	Signature not verified: {problem}	서명 확인 안 됨: {problem}
+	KDM required	KDM 필요
+	Encrypted: load the KDM with content key {keys}	암호화됨: 콘텐츠 키 {keys}가 든 KDM을 불러오십시오
 
 # Settings ▸ Timecode Sync (TC-4)
 	Timecode Sync	타임코드 동기화

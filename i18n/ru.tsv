@@ -4515,6 +4515,8 @@
 	Load even if the certificate chain is not verified	Загружать и с непроверенной цепочкой сертификатов
 	Signature verified: {chain}	Подпись проверена: {chain}
 	Signature not verified: {problem}	Подпись не проверена: {problem}
+	KDM required	Требуется KDM
+	Encrypted: load the KDM with content key {keys}	Зашифровано: загрузите KDM с ключом содержимого {keys}
 
 # Settings ▸ Timecode Sync (TC-4)
 	Timecode Sync	Синхронизация тайм-кода

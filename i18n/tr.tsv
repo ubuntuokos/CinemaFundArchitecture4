@@ -4531,6 +4531,8 @@ export.summary	Low	düşük
 	Load even if the certificate chain is not verified	Doğrulanmamış sertifika zinciriyle de yükle
 	Signature verified: {chain}	İmza doğrulandı: {chain}
 	Signature not verified: {problem}	İmza doğrulanmadı: {problem}
+	KDM required	KDM gerekli
+	Encrypted: load the KDM with content key {keys}	Şifreli: {keys} içerik anahtarını taşıyan KDM'yi yükleyin
 
 # Settings ▸ Timecode Sync (TC-4)
 	Timecode Sync	Zaman Kodu Eşitleme

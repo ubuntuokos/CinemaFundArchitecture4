@@ -20,6 +20,10 @@ const CPL: [u8; 16] = [0x11; 16];
 
 /// One second of 5.1 24-bit PCM in an encrypted D-Cinema sound track file.
 fn write_encrypted(path: &Path, key: &[u8; 16]) {
+    write_encrypted_with(path, key, &KEY_ID);
+}
+
+fn write_encrypted_with(path: &Path, key: &[u8; 16], key_id: &[u8; 16]) {
     let mut ids = PackageIds::from_seed("enc-snd", "Reel 1");
     ids.file = Umid::dcinema([0x22; 16]);
     let mut cfg = WriterConfig::new(Pattern::DCinema, Rational::new(24, 1), ids);
@@ -33,7 +37,7 @@ fn write_encrypted(path: &Path, key: &[u8; 16]) {
     }
     w.push_sound(0, &pcm).unwrap();
     let plain = w.finish().unwrap().into_inner();
-    std::fs::write(path, cfa4_mxf::testing::encrypt_track_file(&plain, key, &KEY_ID, &[0xC0; 16], 0, None)).unwrap();
+    std::fs::write(path, cfa4_mxf::testing::encrypt_track_file(&plain, key, key_id, &[0xC0; 16], 0, None)).unwrap();
 }
 
 fn openssl(dir: &Path, args: &[&str]) -> bool {
@@ -171,4 +175,38 @@ fn load_kdm_params_are_checked() {
     let mut s = Session::default();
     assert!(s.execute("dcp.loadKdm", json!({})).is_err());
     assert!(s.execute("dcp.loadKdm", json!({"kdm": "/nonexistent/kdm.xml", "privateKey": "/nonexistent/key.pem"})).is_err());
+}
+
+#[test]
+fn an_encrypted_clip_without_its_key_says_which_key_it_needs() {
+    // #1053: a Key ID no other test loads (the key ring is shared by the whole process)
+    let key_id = [0x6B; 16];
+    let dir = tmp_dir("kdm-needs-key");
+    let mxf = dir.join("enc_needs_key.mxf");
+    write_encrypted_with(&mxf, &cfa4_mxf::testing::test_key("needs-key"), &key_id);
+    let mut s = Session::default();
+    let r = s.execute("file.import", json!({"paths": [mxf.to_string_lossy()]})).unwrap();
+    let id = ItemId(r["items"][0].as_u64().unwrap());
+    s.execute("source.open", json!({"item": id.0})).unwrap();
+    let inspect = s.execute("source.inspect", json!({})).unwrap();
+    assert_eq!(inspect["needsKey"], json!(["6b6b6b6b-6b6b-6b6b-6b6b-6b6b6b6b6b6b"]));
+    assert_eq!(s.media.missing_keys(id), vec!["6b6b6b6b-6b6b-6b6b-6b6b-6b6b6b6b6b6b".to_string()]);
+    // a clip that is not encrypted needs no key
+    let plain = dir.join("plain.wav");
+    let data = vec![0u8; 4_800 * 4];
+    let mut wav = b"RIFF".to_vec();
+    wav.extend_from_slice(&(36 + data.len() as u32).to_le_bytes());
+    wav.extend_from_slice(b"WAVEfmt ");
+    for v in [16u32, 0x0002_0001, 48_000, 192_000, 0x0010_0004] {
+        wav.extend_from_slice(&v.to_le_bytes());
+    }
+    wav.extend_from_slice(b"data");
+    wav.extend_from_slice(&(data.len() as u32).to_le_bytes());
+    wav.extend_from_slice(&data);
+    std::fs::write(&plain, wav).unwrap();
+    let r = s.execute("file.import", json!({"paths": [plain.to_string_lossy()]})).unwrap();
+    let wav = ItemId(r["items"][0].as_u64().unwrap());
+    s.execute("source.open", json!({"item": wav.0})).unwrap();
+    assert_eq!(s.execute("source.inspect", json!({})).unwrap()["needsKey"], json!([]));
+    assert!(s.media.missing_keys(wav).is_empty());
 }

@@ -4532,6 +4532,8 @@ export.summary	Low	matala
 	Load even if the certificate chain is not verified	Lataa myös vahvistamattomalla varmenneketjulla
 	Signature verified: {chain}	Allekirjoitus vahvistettu: {chain}
 	Signature not verified: {problem}	Allekirjoitusta ei vahvistettu: {problem}
+	KDM required	KDM tarvitaan
+	Encrypted: load the KDM with content key {keys}	Salattu: lataa KDM, jossa on sisältöavain {keys}
 
 # Settings ▸ Timecode Sync (TC-4)
 	Timecode Sync	Aikakoodin synkronointi

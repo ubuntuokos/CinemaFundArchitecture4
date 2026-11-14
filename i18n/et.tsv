@@ -4532,6 +4532,8 @@ export.summary	Low	madal
 	Load even if the certificate chain is not verified	Laadi ka kontrollimata sertifikaadiahelaga
 	Signature verified: {chain}	Allkiri kontrollitud: {chain}
 	Signature not verified: {problem}	Allkiri kontrollimata: {problem}
+	KDM required	KDM on vajalik
+	Encrypted: load the KDM with content key {keys}	Krüptitud: laadi KDM sisuvõtmega {keys}
 
 # Settings ▸ Timecode Sync (TC-4)
 	Timecode Sync	Ajakoodi sünkroonimine

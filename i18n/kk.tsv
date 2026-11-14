@@ -4532,6 +4532,8 @@ export.summary	Low	төмен
 	Load even if the certificate chain is not verified	Тексерілмеген сертификаттар тізбегімен де жүктеу
 	Signature verified: {chain}	Қолтаңба тексерілді: {chain}
 	Signature not verified: {problem}	Қолтаңба тексерілмеді: {problem}
+	KDM required	KDM қажет
+	Encrypted: load the KDM with content key {keys}	Шифрланған: {keys} мазмұн кілті бар KDM жүктеңіз
 
 # Settings ▸ Timecode Sync (TC-4)
 	Timecode Sync	Уақыт кодын синхрондау
