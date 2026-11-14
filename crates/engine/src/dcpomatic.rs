@@ -84,12 +84,44 @@ struct FilmDirClaim(PathBuf);
 
 impl FilmDirClaim {
     fn take(cmd: &str, dir: &Path) -> Result<Self> {
-        let key = std::path::absolute(dir).unwrap_or_else(|_| dir.to_path_buf());
+        let key = film_dir_key(dir);
         if !FILM_DIRS.lock().unwrap_or_else(PoisonError::into_inner).insert(key.clone()) {
             return Err(bad(cmd, format!("output: another DCP-o-matic job is already writing into {}", dir.display())));
         }
         Ok(Self(key))
     }
+}
+
+/// One key per folder on disk, however it is written: the deepest existing ancestor is
+/// canonicalized (so `..` and symbolic links resolve), the not yet existing rest is appended with
+/// `.` dropped and `..` taken off lexically.
+fn film_dir_key(dir: &Path) -> PathBuf {
+    use std::path::Component;
+    let abs = std::path::absolute(dir).unwrap_or_else(|_| dir.to_path_buf());
+    let mut base = abs.as_path();
+    let mut rest = Vec::new();
+    let mut key = loop {
+        if let Ok(c) = base.canonicalize() {
+            break c;
+        }
+        match (base.parent(), base.components().next_back()) {
+            (Some(parent), Some(last)) => {
+                rest.push(last);
+                base = parent;
+            }
+            _ => break base.to_path_buf(),
+        }
+    };
+    for c in rest.into_iter().rev() {
+        match c {
+            Component::ParentDir => {
+                key.pop();
+            }
+            Component::Normal(n) => key.push(n),
+            _ => {}
+        }
+    }
+    key
 }
 
 impl Drop for FilmDirClaim {

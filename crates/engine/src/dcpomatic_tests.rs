@@ -85,3 +85,21 @@ fn a_film_folder_is_held_by_one_job_at_a_time() {
     drop(first);
     assert!(FilmDirClaim::take(cmd, &dir).is_ok(), "released when the job ends");
 }
+
+#[cfg(unix)]
+#[test]
+fn the_same_film_folder_is_one_claim_through_dot_dot_and_links() {
+    let cmd = "dcpomatic.makeDcp";
+    let base = std::env::temp_dir().join(format!("cfa4-dcpom-claim-links-{}", std::process::id()));
+    let _ = std::fs::remove_dir_all(&base);
+    std::fs::create_dir_all(base.join("sub")).unwrap();
+    std::os::unix::fs::symlink(&base, base.join("link")).unwrap();
+    let film = base.join("film");
+    let first = FilmDirClaim::take(cmd, &film).unwrap();
+    for other in [base.join("sub/../film"), base.join("link/film"), base.join("sub/../link/./film"), base.join("film/x/..")] {
+        assert!(FilmDirClaim::take(cmd, &other).is_err(), "{} is the same folder", other.display());
+    }
+    assert!(FilmDirClaim::take(cmd, &base.join("sub/film")).is_ok(), "another folder");
+    drop(first);
+    let _ = std::fs::remove_dir_all(&base);
+}
