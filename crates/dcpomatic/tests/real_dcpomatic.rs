@@ -1,5 +1,6 @@
-//! The pinned DCP-o-matic itself (plan CFA4-DCPOMATIC-001, phase 2 acceptance): a short master →
-//! `Dcpomatic::make_dcp` → CFA4's native validator, `full-integrity` profile, SMPTE and Interop.
+//! The pinned DCP-o-matic itself (plan CFA4-DCPOMATIC-001, phase 2 acceptance, with phase 3's
+//! subtitle track): a short master and an SRT file → `Dcpomatic::make_dcp` → CFA4's native
+//! validator, `full-integrity` profile, SMPTE and Interop.
 //!
 //! Runs only when [`ENV_BIN_DIR`] names a DCP-o-matic build (the CI job `dcpomatic.yml`, or a
 //! development build: `docs/development/dcpomatic.md`) and `ffmpeg` can make the master;
@@ -25,7 +26,7 @@ fn master() -> Option<PathBuf> {
     })
 }
 
-fn make_and_validate(d: &Dcpomatic, master: &Path, work: &Path, standard: Standard) {
+fn make_and_validate(d: &Dcpomatic, master: &Path, subtitles: &Path, work: &Path, standard: Standard) {
     let tag = format!("{standard:?}").to_lowercase();
     let mut r = DcpRequest::new(vec![Content::new(master)], work.join(&tag), format!("CFA4 DCPOM2 {tag}"));
     r.content_kind = ContentKind::Test;
@@ -34,8 +35,15 @@ fn make_and_validate(d: &Dcpomatic, master: &Path, work: &Path, standard: Standa
     r.container = Some(Container::Flat);
     r.frame_rate = Some(24);
     r.config_dir = Some(work.join("config"));
+    r.subtitles = vec![subtitles.to_path_buf()];
     let out = d.make_dcp(&r, &Control::new()).unwrap_or_else(|e| panic!("{tag}: {e}"));
     assert_eq!(out.version, MIN_VERSION, "the pinned build");
+    let files: Vec<String> =
+        std::fs::read_dir(&out.dcp).expect("DCP folder").filter_map(Result::ok).map(|e| e.file_name().to_string_lossy().into_owned()).collect();
+    // The CPL names the subtitle track (SMPTE: a sub_*.mxf; Interop: an XML file in its own folder).
+    let cpl = files.iter().find(|f| f.starts_with("cpl_")).unwrap_or_else(|| panic!("{tag}: a CPL in {files:?}"));
+    let cpl = std::fs::read_to_string(out.dcp.join(cpl)).expect("CPL");
+    assert!(cpl.contains("MainSubtitle"), "{tag}: the subtitle track is in the CPL");
     let profile = Profile::builtin("full-integrity").expect("full-integrity profile");
     let report = NativeValidator.validate(&ValidationRequest::new(&out.dcp, profile), &ValidationControl::new()).expect("validation runs");
     // Only the rule ids and messages of what failed: the full report carries the package's
@@ -53,14 +61,14 @@ fn a_real_dcp_passes_full_integrity() {
         return;
     }
     let d = Dcpomatic::locate().expect("the DCP-o-matic build in CFA4_DCPOMATIC_BIN_DIR");
-    let Some(master) = master() else {
-        eprintln!("skipped: ffmpeg could not make the test master");
-        return;
-    };
+    // with a DCP-o-matic build the run is on, so a failing preparation fails the test
+    let master = master().expect("ffmpeg could not make the test master (its error is above)");
     let work = std::env::temp_dir().join(format!("cfa4-dcpom2-real-{}", std::process::id()));
     let _ = std::fs::remove_dir_all(&work);
     std::fs::create_dir_all(&work).expect("work dir");
-    make_and_validate(&d, &master, &work, Standard::Smpte);
-    make_and_validate(&d, &master, &work, Standard::Interop);
+    let srt = work.join("subtitles.srt");
+    std::fs::write(&srt, "1\n00:00:00,500 --> 00:00:01,500\nCFA4 \u{e1}rv\u{ed}zt\u{171}r\u{151}\n").expect("subtitle file");
+    make_and_validate(&d, &master, &srt, &work, Standard::Smpte);
+    make_and_validate(&d, &master, &srt, &work, Standard::Interop);
     let _ = std::fs::remove_dir_all(&work);
 }

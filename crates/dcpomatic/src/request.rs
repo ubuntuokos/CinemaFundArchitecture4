@@ -215,6 +215,15 @@ pub struct DcpRequest {
     pub video_bit_rate_mbps: Option<u32>,
     #[serde(default)]
     pub three_d: bool,
+    /// Encrypt the track files (ST 429-6). The content keys stay in the film directory's
+    /// `metadata.xml`, so keep that directory: KDMs ([`crate::KdmRequest`]) are made from it.
+    #[serde(default)]
+    pub encrypt: bool,
+    /// At most one subtitle file (`.srt`, `.ssa`, `.ass`, or DCP subtitle `.xml`): a subtitle track
+    /// of the DCP from the start of the composition, not burnt into the picture (D5). More are
+    /// refused, since `dcpomatic2_create` places each one after the end of the previous one.
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    pub subtitles: Vec<PathBuf>,
     /// `false`: the folder is named exactly `name`.
     #[serde(default = "yes")]
     pub isdcf_name: bool,
@@ -246,6 +255,8 @@ impl DcpRequest {
             audio_channels: None,
             video_bit_rate_mbps: None,
             three_d: false,
+            encrypt: false,
+            subtitles: Vec::new(),
             isdcf_name: true,
             threads: None,
             config_dir: None,
@@ -315,8 +326,7 @@ impl DcpRequest {
         push(&text(&film_dir)?);
         push("--name");
         push(name);
-        // encryption and KDMs come in phase DCPOM-3
-        push("--no-encrypt");
+        push(if self.encrypt { "--encrypt" } else { "--no-encrypt" });
         push("--dcp-content-type");
         push(self.content_kind.isdcf());
         push("--standard");
@@ -373,6 +383,20 @@ impl DcpRequest {
             // absolute, so it starts with `/` and is never read as an option
             push(&text(&path)?);
         }
+        if self.subtitles.len() > 1 {
+            return bad("only one subtitle file is supported (dcpomatic2_create would place each after the end of the previous one)".into());
+        }
+        for s in &self.subtitles {
+            let path = absolute(s)?;
+            let ext = path.extension().and_then(|e| e.to_str()).map(str::to_ascii_lowercase);
+            if !matches!(ext.as_deref(), Some("srt" | "ssa" | "ass" | "xml")) {
+                return bad(format!("subtitle {} is not .srt, .ssa, .ass or DCP subtitle .xml", path.display()));
+            }
+            if !path.is_file() {
+                return bad(format!("subtitle {} does not exist", path.display()));
+            }
+            push(&text(&path)?);
+        }
 
         let mut cli: Vec<String> = Vec::new();
         if let Some(cfg) = &config_dir {
@@ -388,7 +412,7 @@ impl DcpRequest {
         cli.push("make-dcp".into());
         cli.push(text(&film_dir)?);
 
-        Ok(Plan { film_dir, config_dir, create_args: create, cli_args: cli })
+        Ok(Plan { film_dir, config_dir, create_args: create, cli_args: cli, encrypt: self.encrypt })
     }
 }
 
@@ -399,6 +423,16 @@ pub(crate) struct Plan {
     pub config_dir: Option<PathBuf>,
     pub create_args: Vec<String>,
     pub cli_args: Vec<String>,
+    pub encrypt: bool,
+}
+
+/// Puts `value` after `flag` in `args` (the flag is there: the request built it).
+pub(crate) fn set_value(args: &mut [String], flag: &str, value: String) {
+    if let Some(i) = args.iter().position(|a| a == flag)
+        && let Some(v) = args.get_mut(i + 1)
+    {
+        *v = value;
+    }
 }
 
 pub(crate) fn absolute(p: &Path) -> Result<PathBuf, DcpomaticError> {
