@@ -4383,6 +4383,10 @@ export.summary	Low	ниско
 	{n} more	Още {n}
 	Block	Блок
 	parallel	паралелно
+	page {page}: a spine's vertical position works on card pages only; it is ignored	страница {page}: вертикалното положение на оста действа само на страници-карти; пренебрегва се
+	on a card: centered on {y} px	на карта: центрирана на {y} px
+	on a card: starts at {y} px	на карта: започва от {y} px
+	on a card: ends at {y} px	на карта: завършва на {y} px
 # MPEG-2 export audio (#268): a product name, kept as is
 	Dolby Digital (AC-3)	Dolby Digital (AC-3)
 	In the page (OBS takes it from the Browser Source)	В страницата (OBS го взема от източника „Браузър“)
@@ -4455,7 +4459,12 @@ export.summary	Low	ниско
 	page {page}: the runtime is reached by changing the roll speed (the gaps would have to grow more than 20-fold)	страница {page}: продължителността се постига чрез промяна на скоростта на рола (разстоянията би трябвало да нараснат над 20 пъти)
 	page {page}: the transition needs the pages to touch (page gap 0); it is left out	страница {page}: преходът изисква страниците да се допират (разстояние 0); пропуска се
 	page {page}: there is no transition “{name}”; the pages cut	страница {page}: няма преход „{name}“; страниците се сменят с рязане
-	spine position “{value}” is not supported (a pixel offset, optionally “parallel”, is)	позицията на оста „{value}“ не се поддържа (поддържа се отместване в пиксели, по избор с „parallel“)
+	spine position “{value}” is not supported (a pixel offset, optionally “parallel”, or “Hook N Bottom-Top dx dy” is)	позицията на оста „{value}“ не се поддържа (поддържа се отместване в пиксели, по избор с „parallel“ / „Hook N Bottom-Top dx dy“)
+	page {page}: the hook reaches back further than there are spines; it hooks onto the first spine, or starts its own	страница {page}: куката сочи по-назад, отколкото има оси; закача се за първата ос или започва своя
+	hooked {n} spines back: its {from} meets this spine's {to}	закачена {n} оси назад: нейният {from} среща {to} на тази ос
+	top	горен край
+	middle	среда
+	bottom	долен край
 	vertical gap “{value}” is not a number	вертикалното разстояние „{value}“ не е число
 	picture “{file}” was not found or cannot be read; it is left out	изображението „{file}“ не е намерено или не може да се прочете; пропуска се
 	video “{file}” was not found or cannot be read; it is left out	видеото „{file}“ не е намерено или не може да се прочете; пропуска се

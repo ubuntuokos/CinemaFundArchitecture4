@@ -4387,6 +4387,10 @@
 	{n} more	{n} más
 	Block	Bloque
 	parallel	paralelo
+	page {page}: a spine's vertical position works on card pages only; it is ignored	página {page}: la posición vertical de un eje solo funciona en páginas de tarjeta; se ignora
+	on a card: centered on {y} px	en una tarjeta: centrado en {y} px
+	on a card: starts at {y} px	en una tarjeta: empieza en {y} px
+	on a card: ends at {y} px	en una tarjeta: termina en {y} px
 # MPEG-2 export audio (#268): a product name, kept as is
 	Dolby Digital (AC-3)	Dolby Digital (AC-3)
 	In the page (OBS takes it from the Browser Source)	En la página (OBS lo toma de la fuente de navegador)
@@ -4459,7 +4463,12 @@
 	page {page}: the runtime is reached by changing the roll speed (the gaps would have to grow more than 20-fold)	página {page}: la duración se alcanza cambiando la velocidad de desplazamiento (los espacios tendrían que crecer más de 20 veces)
 	page {page}: the transition needs the pages to touch (page gap 0); it is left out	página {page}: la transición requiere que las páginas se toquen (intervalo entre páginas 0); se omite
 	page {page}: there is no transition “{name}”; the pages cut	página {page}: no existe la transición “{name}”; las páginas se cortan
-	spine position “{value}” is not supported (a pixel offset, optionally “parallel”, is)	la posición del eje “{value}” no es compatible (sí lo es un desplazamiento en píxeles, opcionalmente con “parallel”)
+	spine position “{value}” is not supported (a pixel offset, optionally “parallel”, or “Hook N Bottom-Top dx dy” is)	la posición del eje “{value}” no es compatible (sí lo es un desplazamiento en píxeles, opcionalmente con “parallel” / “Hook N Bottom-Top dx dy”)
+	page {page}: the hook reaches back further than there are spines; it hooks onto the first spine, or starts its own	página {page}: el gancho retrocede más ejes de los que hay; se engancha al primer eje o empieza uno propio
+	hooked {n} spines back: its {from} meets this spine's {to}	enganchado {n} ejes atrás: su {from} se une con el {to} de este eje
+	top	borde superior
+	middle	centro
+	bottom	borde inferior
 	vertical gap “{value}” is not a number	el espacio vertical “{value}” no es un número
 	picture “{file}” was not found or cannot be read; it is left out	no se encontró la imagen “{file}” o no se puede leer; se omite
 	video “{file}” was not found or cannot be read; it is left out	no se encontró el vídeo “{file}” o no se puede leer; se omite

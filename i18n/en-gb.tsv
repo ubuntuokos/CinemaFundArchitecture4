@@ -214,3 +214,5 @@
 	Paper Color	Paper Colour
 	Color (CMYK)	Colour (CMYK)
 	Input Colors	Input Colours
+# Credits: a card spine's point in the block's properties (F10-C15)
+	on a card: centered on {y} px	on a card: centred on {y} px

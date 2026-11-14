@@ -4380,6 +4380,10 @@ export.summary	Low	низак
 	{n} more	Још {n}
 	Block	Блок
 	parallel	паралелно
+	page {page}: a spine's vertical position works on card pages only; it is ignored	страница {page}: вертикални положај осе важи само на страницама картица; занемарује се
+	on a card: centered on {y} px	на картици: центрирано на {y} px
+	on a card: starts at {y} px	на картици: почиње на {y} px
+	on a card: ends at {y} px	на картици: завршава се на {y} px
 # MPEG-2 export audio (#268): a product name, kept as is
 	Dolby Digital (AC-3)	Dolby Digital (AC-3)
 	In the page (OBS takes it from the Browser Source)	На страници (OBS га узима из извора прегледача)
@@ -4452,7 +4456,12 @@ export.summary	Low	низак
 	page {page}: the runtime is reached by changing the roll speed (the gaps would have to grow more than 20-fold)	страница {page}: трајање се постиже променом брзине померања (размаци би морали да порасту више од 20 пута)
 	page {page}: the transition needs the pages to touch (page gap 0); it is left out	страница {page}: прелаз захтева да се странице додирују (размак 0); изоставља се
 	page {page}: there is no transition “{name}”; the pages cut	страница {page}: нема прелаза „{name}”; странице се мењају резом
-	spine position “{value}” is not supported (a pixel offset, optionally “parallel”, is)	положај осе „{value}” није подржан (подржан је помак у пикселима, по жељи уз „parallel”)
+	spine position “{value}” is not supported (a pixel offset, optionally “parallel”, or “Hook N Bottom-Top dx dy” is)	положај осе „{value}” није подржан (подржан је помак у пикселима, по жељи уз „parallel” / „Hook N Bottom-Top dx dy”)
+	page {page}: the hook reaches back further than there are spines; it hooks onto the first spine, or starts its own	страница {page}: кука сеже даље уназад него што има оса; качи се на прву осу или започиње своју
+	hooked {n} spines back: its {from} meets this spine's {to}	закачено {n} оса уназад: њен {from} спаја се са {to} ове осе
+	top	горња ивица
+	middle	средина
+	bottom	доња ивица
 	vertical gap “{value}” is not a number	вертикални размак „{value}” није број
 	picture “{file}” was not found or cannot be read; it is left out	слика „{file}” није пронађена или се не може прочитати; изоставља се
 	video “{file}” was not found or cannot be read; it is left out	видео „{file}” није пронађен или се не може прочитати; изоставља се

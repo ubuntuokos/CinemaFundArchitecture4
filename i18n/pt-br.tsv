@@ -4390,6 +4390,10 @@
 	{n} more	mais {n}
 	Block	Bloco
 	parallel	paralelo
+	page {page}: a spine's vertical position works on card pages only; it is ignored	página {page}: a posição vertical de um eixo só vale em páginas de cartão; ela é ignorada
+	on a card: centered on {y} px	em um cartão: centralizado em {y} px
+	on a card: starts at {y} px	em um cartão: começa em {y} px
+	on a card: ends at {y} px	em um cartão: termina em {y} px
 # MPEG-2 export audio (#268): a product name, kept as is
 	Dolby Digital (AC-3)	Dolby Digital (AC-3)
 	In the page (OBS takes it from the Browser Source)	Na página (o OBS pega da fonte de navegador)
@@ -4462,7 +4466,12 @@
 	page {page}: the runtime is reached by changing the roll speed (the gaps would have to grow more than 20-fold)	página {page}: a duração é atingida alterando a velocidade de rolagem (os espaços teriam de crescer mais de 20 vezes)
 	page {page}: the transition needs the pages to touch (page gap 0); it is left out	página {page}: a transição exige que as páginas se toquem (intervalo entre páginas 0); ela é omitida
 	page {page}: there is no transition “{name}”; the pages cut	página {page}: não existe a transição “{name}”; as páginas passam com corte seco
-	spine position “{value}” is not supported (a pixel offset, optionally “parallel”, is)	a posição do eixo “{value}” não é compatível (um deslocamento em pixels, opcionalmente com “parallel”, é)
+	spine position “{value}” is not supported (a pixel offset, optionally “parallel”, or “Hook N Bottom-Top dx dy” is)	a posição do eixo “{value}” não é compatível (um deslocamento em pixels, opcionalmente com “parallel” / “Hook N Bottom-Top dx dy”, é)
+	page {page}: the hook reaches back further than there are spines; it hooks onto the first spine, or starts its own	página {page}: o gancho volta mais eixos do que existem; ele se prende ao primeiro eixo ou começa um próprio
+	hooked {n} spines back: its {from} meets this spine's {to}	enganchado {n} eixos atrás: o {from} dele encontra o {to} deste eixo
+	top	topo
+	middle	meio
+	bottom	base
 	vertical gap “{value}” is not a number	o espaço vertical “{value}” não é um número
 	picture “{file}” was not found or cannot be read; it is left out	a imagem “{file}” não foi encontrada ou não pode ser lida; ela é omitida
 	video “{file}” was not found or cannot be read; it is left out	o vídeo “{file}” não foi encontrado ou não pode ser lido; ele é omitido
