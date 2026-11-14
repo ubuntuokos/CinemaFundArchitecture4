@@ -1,0 +1,5 @@
+A tulajdonos döntései (2026-11-14):
+- Q1: a `--area panels` a Qt6 GUI paneljeit méri (minden új UI-munka ott folyik, az egui be van fagyasztva).
+- Q2: racsni – minden terület `--min` küszöbe a bevezetéskor mért értékről indul, és csak felfelé mozdulhat.
+- Q3: a commitolt referencialista csak olyan neveket tartalmazhat, amelyek már a commitolt CFA4-dokumentációban szerepelnek (pl. docs/target-app-parity.md, docs/keyboard.md, effektlisták); új külső anyag nem kerül be, a `plan/premiere/` tartalmából semmi.
+- Jóváhagyás: a tulajdonos 2026-11-14-én a G7-et a CFA4-DEV-SPEC-KIT-001 SK-F5 pilotfeladataként tervezésre jóváhagyta (csak tervezés, kód nincs).

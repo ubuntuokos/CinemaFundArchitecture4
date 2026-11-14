@@ -1,0 +1,11 @@
+CFA4-PARITY-G7 – a `cargo xtask parity` mérőeszköz bővítése (docs/gaps.md G7).
+
+Ma a `cargo xtask parity` a menüsort (#781), valamint az Effects panel effektjeit és átmeneteit (`--area effects`, `--area transitions`, #831) méri egy referencialistához képest; a referencia alapértelmezésben a helyi, gitignore-olt `plan/premiere/` alatti JSON. A G7 hiányai:
+
+1. További mért területek: parancsok (a `crates/engine` parancsregisztere) és panelek.
+2. Hűségi szintek a jelentésben: pontos (exact), közelítő (approximate), csonk (stub).
+3. A repóba commitolható, Adobe-asset-mentes referencialista (csak saját szöveges útvonalak, AGENTS.md §1–2 szerint), hogy a mérés `plan/` nélkül is fusson.
+4. CI-job, amely a `--min` küszöb alatt hibát ad.
+5. Commitolt `docs/parity-checklist.md`.
+
+Részletek: docs/gaps.md G7, docs/target-app-parity.md, xtask forrása. Csak tervezés: követelmények, terv és feladatlista; kódot most nem írunk.
