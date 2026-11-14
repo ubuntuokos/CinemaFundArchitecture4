@@ -375,9 +375,17 @@ impl Decoder {
         self.frame_count << self.frame_log2
     }
 
-    /// Samples per channel of a packet of `len` bytes (a short one holds fewer frames).
+    /// Samples per channel of the first part of a packet of `len` bytes (a short one holds
+    /// fewer frames; see [`Decoder::decode`] for what follows them).
     pub fn samples_in(&self, len: usize) -> usize {
         (len / self.avg_frame_size).min(self.frame_count) << self.frame_log2
+    }
+
+    /// Samples per channel that [`Decoder::decode`] gives for `packet` from this state (a short
+    /// packet's count depends on its content), 0 for a damaged one.
+    pub fn samples_in_packet(&self, packet: &[u8]) -> usize {
+        let mut d = self.clone();
+        d.decode(packet).ok().and_then(|o| o.first().map(Vec::len)).unwrap_or(0)
     }
 
     /// Refuse frames whose decoding FFmpeg leaves undefined (reads past the packet's end).
@@ -396,8 +404,45 @@ impl Decoder {
         self.blocks_decoded
     }
 
-    /// Decodes one packet into planar samples ([`Decoder::samples_in`] per channel).
+    /// Decodes one packet into planar samples ([`Decoder::samples_per_channel`] per channel).
+    ///
+    /// A short packet (less than a superframe) decodes as FFmpeg 9 does: the whole frames it
+    /// has room for, then the same again from the first byte after them, until fewer than a
+    /// frame's bytes are left.
     pub fn decode(&mut self, packet: &[u8]) -> Result<Vec<Vec<f32>>> {
+        let mut out = self.decode_part(packet)?;
+        let full = out.first().map_or(0, Vec::len) >= self.samples_per_channel();
+        if full {
+            return Ok(out);
+        }
+        let mut rest = packet;
+        let (blocks, mut bits) = (self.blocks_decoded, self.bits_used);
+        loop {
+            // FFmpeg's decoder reports the bytes it read; the rest is decoded again
+            let used = self.bits_used / 8;
+            rest = rest.get(used..).unwrap_or(&[]);
+            if used == 0 || rest.len() < self.avg_frame_size {
+                break;
+            }
+            let start = packet.len() - rest.len();
+            match self.decode_part(rest) {
+                Ok(more) => {
+                    for (o, m) in out.iter_mut().zip(more) {
+                        o.extend(m);
+                    }
+                    bits = start * 8 + self.bits_used;
+                }
+                // FFmpeg drops the rest of a packet after an error
+                Err(e) if self.strict => return Err(e),
+                Err(_) => break,
+            }
+        }
+        self.blocks_decoded = blocks;
+        self.bits_used = bits;
+        Ok(out)
+    }
+
+    fn decode_part(&mut self, packet: &[u8]) -> Result<Vec<Vec<f32>>> {
         let frames = (packet.len() / self.avg_frame_size).min(self.frame_count);
         if frames == 0 {
             return invalid("ATRAC9 packet too short");

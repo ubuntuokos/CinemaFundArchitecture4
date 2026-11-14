@@ -219,7 +219,7 @@ impl WavSource {
                 let p = cfa4_realaudio::atrac3::Params { channels: ch, block_align: usize::from(align), extradata: extra.clone() };
                 Atrac::Three(Box::new(cfa4_realaudio::atrac3::Decoder::new(&p).map_err(unsupported)?))
             };
-            let (encoding, frames) = atrac_encoding(d, u64::from(align), dlen);
+            let (encoding, frames) = atrac_encoding(d, u64::from(align), dlen, |at, len| read_range(&*reader, off.saturating_add(at), len).unwrap_or_default());
             let label = match &encoding {
                 Encoding::Atrac { checkpoints, .. } => checkpoints.lock().unwrap_or_else(PoisonError::into_inner).first().map_or("ATRAC", Atrac::label),
                 _ => "ATRAC",
@@ -388,14 +388,18 @@ impl WavSource {
 
 /// The encoding and frame count of an ATRAC stream of `dlen` bytes in `block`-byte frames
 /// (ATRAC3plus decodes a short last frame and ATRAC9 the whole frames of a short last packet, as
-/// FFmpeg's do).
-fn atrac_encoding(d: Atrac, block: u64, dlen: u64) -> (Encoding, u64) {
+/// FFmpeg's do); `tail` reads the short last packet.
+fn atrac_encoding(d: Atrac, block: u64, dlen: u64, tail: impl FnOnce(u64, usize) -> Vec<u8>) -> (Encoding, u64) {
     let spf = d.samples_per_channel() as u64;
     let frames = match &d {
         Atrac::Plus(_) => dlen.div_ceil(block.max(1)).saturating_mul(spf),
         Atrac::Three(_) => (dlen / block.max(1)).saturating_mul(spf),
-        // a short last packet holds the whole frames it has room for
-        Atrac::Nine(n) => (dlen / block.max(1)).saturating_mul(spf).saturating_add(n.samples_in(usize::try_from(dlen % block.max(1)).unwrap_or(0)) as u64),
+        // a short last packet: what the decoder makes of it (from the stream's start state)
+        Atrac::Nine(n) => {
+            let short = dlen % block.max(1);
+            let last = if short > 0 { n.samples_in_packet(&tail(dlen - short, usize::try_from(short).unwrap_or(0))) as u64 } else { 0 };
+            (dlen / block.max(1)).saturating_mul(spf).saturating_add(last)
+        }
     };
     (Encoding::Atrac { block, spf, checkpoints: Mutex::new(vec![d]) }, frames)
 }
@@ -415,7 +419,7 @@ impl WavSource {
             Atrac::Nine(d) => d.block_align(),
         } as u64;
         let codec = d.label().to_string();
-        let (encoding, frames) = atrac_encoding(d, block, data_len);
+        let (encoding, frames) = atrac_encoding(d, block, data_len, |at, len| read_range(&*reader, data_off.saturating_add(at), len).unwrap_or_default());
         let info = MediaInfo {
             name: name.into(),
             kind: MediaKind::AudioOnly,
