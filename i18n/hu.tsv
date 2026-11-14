@@ -4629,3 +4629,6 @@ export.summary	Low	alacsony
 	Freewheel	Szabadonfutás
 	Scrubbing	Léptetés
 	Sending	Küldés
+	Read from LTC Audio	Beolvasás LTC-hangból
+	Find SMPTE LTC on the clip's audio and use the timecode it gives the first frame	SMPTE LTC keresése a klip hangjában, és az első képkockára adódó időkód használata
+	Read Timecode from LTC Audio	Időkód beolvasása LTC-hangból

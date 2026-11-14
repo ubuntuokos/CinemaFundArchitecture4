@@ -4617,3 +4617,6 @@
 	Freewheel	Вільний хід
 	Scrubbing	Прокручування
 	Sending	Надсилання
+	Read from LTC Audio	Зчитати зі звуку LTC
+	Find SMPTE LTC on the clip's audio and use the timecode it gives the first frame	Знайти SMPTE LTC у звуці кліпу й узяти тайм-код, який він дає першому кадру
+	Read Timecode from LTC Audio	Зчитати тайм-код зі звуку LTC
