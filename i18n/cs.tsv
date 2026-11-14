@@ -4380,6 +4380,10 @@ export.summary	Low	nízká
 	{n} more	Dalších {n}
 	Block	Blok
 	parallel	souběžně
+	page {page}: a spine's vertical position works on card pages only; it is ignored	stránka {page}: svislá poloha osy platí jen na stránkách karet; ignoruje se
+	on a card: centered on {y} px	na kartě: na středu v {y} px
+	on a card: starts at {y} px	na kartě: začíná v {y} px
+	on a card: ends at {y} px	na kartě: končí v {y} px
 # MPEG-2 export audio (#268): a product name, kept as is
 	Dolby Digital (AC-3)	Dolby Digital (AC-3)
 	In the page (OBS takes it from the Browser Source)	Ve stránce (OBS jej převezme ze zdroje Prohlížeč)
@@ -4452,7 +4456,12 @@ export.summary	Low	nízká
 	page {page}: the runtime is reached by changing the roll speed (the gaps would have to grow more than 20-fold)	stránka {page}: doby se dosáhne změnou rychlosti rolování (mezery by musely narůst více než dvacetkrát)
 	page {page}: the transition needs the pages to touch (page gap 0); it is left out	stránka {page}: přechod vyžaduje, aby na sebe stránky navazovaly (mezera 0); vynechá se
 	page {page}: there is no transition “{name}”; the pages cut	stránka {page}: přechod „{name}“ neexistuje; stránky se střihnou
-	spine position “{value}” is not supported (a pixel offset, optionally “parallel”, is)	poloha osy „{value}“ není podporována (podporován je posun v pixelech, volitelně s „parallel“)
+	spine position “{value}” is not supported (a pixel offset, optionally “parallel”, or “Hook N Bottom-Top dx dy” is)	poloha osy „{value}“ není podporována (podporován je posun v pixelech, volitelně s „parallel“ / „Hook N Bottom-Top dx dy“)
+	page {page}: the hook reaches back further than there are spines; it hooks onto the first spine, or starts its own	strana {page}: háček sahá dál, než kolik je os; zahákne se na první osu, nebo začne vlastní
+	hooked {n} spines back: its {from} meets this spine's {to}	zaháknuto o {n} os zpět: její {from} se setkává s {to} této osy
+	top	horní okraj
+	middle	střed
+	bottom	dolní okraj
 	vertical gap “{value}” is not a number	svislá mezera „{value}“ není číslo
 	picture “{file}” was not found or cannot be read; it is left out	obrázek „{file}“ nebyl nalezen nebo jej nelze načíst; vynechá se
 	video “{file}” was not found or cannot be read; it is left out	video „{file}“ nebylo nalezeno nebo jej nelze načíst; vynechá se
@@ -4517,7 +4526,7 @@ export.summary	Low	nízká
 	the engine sent no report	engine neposlal protokol
 	MXF OP1a Uncompressed 10-bit 4:2:2 (v210)	MXF OP1a nekomprimované 10bit 4:2:2 (v210)
 	MXF OP1a, uncompressed 10-bit Y'CbCr 4:2:2 in the v210 layout (SMPTE ST 384), 24-bit 48 kHz PCM, start timecode	MXF OP1a, nekomprimované 10bitové Y'CbCr 4:2:2 v rozložení v210 (SMPTE ST 384), 24bitové PCM 48 kHz, počáteční časový kód
-	Write the captions as ANC data (CEA-608/708, 29.97 fps)	Zapsat titulky jako data ANC (CEA-608/708, 29,97 fps)
+	Write the captions as ANC data (CEA-608/708)	Zapsat titulky jako data ANC (CEA-608/708)
 	Load KDM…	Načíst KDM…
 	Forget DCP Keys	Zapomenout klíče DCP
 	Load KDM	Načíst KDM
@@ -4527,6 +4536,13 @@ export.summary	Low	nízká
 	The keys stay in memory only, until Forget DCP Keys or the end of the session.	Klíče zůstávají jen v paměti, do příkazu Zapomenout klíče DCP nebo do konce relace.
 	DCP keys forgotten	Klíče DCP zapomenuty
 	Choose the KDM file and the private key.	Vyberte soubor KDM a soukromý klíč.
+	Load even if the certificate chain is not verified	Načíst i s neověřeným řetězcem certifikátů
+	Bundle: {loaded} of {total} KDMs loaded, {other} for other recipients	Balíček: načteno {loaded} z {total} KDM, {other} pro jiné příjemce
+	Not loaded: {path}: {problem}	Nenačteno: {path}: {problem}
+	Signature verified: {chain}	Podpis ověřen: {chain}
+	Signature not verified: {problem}	Podpis neověřen: {problem}
+	KDM required	Vyžaduje KDM
+	Encrypted: load the KDM with content key {keys}	Šifrováno: načtěte KDM s klíčem obsahu {keys}
 
 # Settings ▸ Timecode Sync (TC-4)
 	Timecode Sync	Synchronizace časového kódu
@@ -4559,3 +4575,60 @@ export.summary	Low	nízká
 	Chase External Timecode	Sledovat externí časový kód
 	Send LTC	Odesílat LTC
 	Send MIDI Timecode	Odesílat časový kód MIDI
+# Auto Color, Auto Contrast, Auto Levels (EffectsSDK review)
+	Auto Color	Automatická barva
+	Auto Contrast	Automatický kontrast
+	Auto Levels	Automatické úrovně
+	Temporal Smoothing (seconds)	Časové vyhlazení (sekundy)
+	Scene Detect	Detekce scén
+	Black Clip	Oříznutí černé
+	White Clip	Oříznutí bílé
+	Snap Neutral Midtones	Neutralizovat střední tóny
+# Layout presets: PiP corners, split screen (EffectsSDK review)
+	PiP 35% Upper Left	Obraz v obraze 35% vlevo nahoře
+	Picture-in-picture: 35 % scale in the upper left	Obraz v obraze: měřítko 35 % vlevo nahoře
+	PiP 35% Lower Left	Obraz v obraze 35% vlevo dole
+	Picture-in-picture: 35 % scale in the lower left	Obraz v obraze: měřítko 35 % vlevo dole
+	PiP 35% Lower Right	Obraz v obraze 35% vpravo dole
+	Picture-in-picture: 35 % scale in the lower right	Obraz v obraze: měřítko 35 % vpravo dole
+	Split Screen Left	Rozdělená obrazovka vlevo
+	Split screen: the middle half of the picture fills the left half of the frame	Rozdělená obrazovka: prostřední polovina obrazu vyplní levou polovinu snímku
+	Split Screen Right	Rozdělená obrazovka vpravo
+	Split screen: the middle half of the picture fills the right half of the frame	Rozdělená obrazovka: prostřední polovina obrazu vyplní pravou polovinu snímku
+# Creative Looks: CRT (P3)
+	CRT	CRT
+	Scanline Strength	Síla řádků
+	Line Count	Počet řádků
+	Mask	Maska
+	Mask Strength	Síla masky
+	Corner Darkening	Ztmavení rohů
+	Aperture Grille	Aperturní mřížka
+	Shadow Mask	Stínová maska
+	Slot Mask	Štěrbinová maska
+# Creative Looks: Oil Paint (P4)
+	Oil Paint	Olejomalba
+	Detail	Detail
+	Texture	Textura
+	Facet	Fasety
+	Daubs	Tahy
+	Dry Brush	Suchý štětec
+	Fresco	Freska
+	Knife	Špachtle
+	Sponge	Houba
+# Creative Looks: Pixel Sort (P5)
+	Pixel Sort	Řazení pixelů
+	Sort By	Řadit podle
+	Lower Threshold	Dolní práh
+	Upper Threshold	Horní práh
+	Ascending	Vzestupně
+# Temporal Denoise (EffectsSDK review)
+	Temporal Denoise	Časové odšumění
+	Frames Each Side	Snímků na každou stranu
+	Motion Threshold	Práh pohybu
+	Show Motion	Zobrazit pohyb
+	No signal	Žádný signál
+	Locating	Vyhledávání
+	Locked	Synchronizováno
+	Freewheel	Volnoběh
+	Scrubbing	Posouvání
+	Sending	Odesílání
