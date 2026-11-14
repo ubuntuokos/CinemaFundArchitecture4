@@ -92,10 +92,10 @@ fn cfa4_dcp_export_passes_the_native_quick_scan() {
     assert_eq!(status(PIC_FORMAT), [Status::Warning], "{:?}", outcome(&smpte));
     // DCP-07: 6 channels of 24-bit PCM at 48 kHz
     assert_eq!(status(AUD_PCM), [Status::Pass], "{:?}", outcome(&smpte));
-    // The one failure allowed: cfa4-j2k writes 2 QCD guard bits where the 2K profile has 1
-    // (dcp_inspect reports the same). Every other profile requirement must hold.
+    // Every profile requirement holds, the 2K guard bits included (cfa4-j2k writes 1 since plan
+    // CFA4-DCPVAL-LIBDCP-001 v1.1 phase 6)
     let fails: Vec<&str> = smpte.findings.iter().filter(|f| f.status == Status::Fail).map(|f| f.message.as_str()).collect();
-    assert!(fails.iter().all(|m| m.ends_with("2 guard bits; the 2K profile has 1 (5 frames)")), "{fails:?}");
+    assert!(fails.is_empty(), "{fails:?}");
 
     let _ = std::fs::remove_dir_all(&dir);
 }

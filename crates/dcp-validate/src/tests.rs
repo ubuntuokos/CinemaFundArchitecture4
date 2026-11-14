@@ -615,19 +615,11 @@ fn chunk_length_is_the_file_length() {
     assert_eq!(statuses(&r, AM_FILE_EXISTS), [Status::Pass]);
 }
 
-/// One 1998 × 1080 frame of the 2K DCI profile. `cfa4-j2k` writes 2 guard bits where the 2K
-/// profile has 1, so the QCD is set to 1 here, and it codes cinema frames without the multiple
-/// component transform, so the COD's MCT flag is set (the checks do not decode the samples).
+/// One 1998 × 1080 frame of the 2K DCI profile, as `cfa4-j2k` writes it (1 guard bit, the
+/// multiple component transform; plan CFA4-DCPVAL-LIBDCP-001 phases 4 and 6).
 fn frame_2k() -> Vec<u8> {
     static FRAME: std::sync::OnceLock<Vec<u8>> = std::sync::OnceLock::new();
-    FRAME
-        .get_or_init(|| {
-            let mut cs = encoded_2k();
-            set_marker_byte(&mut cs, 0xFF5C, 0, 1 << 5 | 2);
-            set_marker_byte(&mut cs, 0xFF52, 4, 1);
-            cs
-        })
-        .clone()
+    FRAME.get_or_init(encoded_2k).clone()
 }
 
 /// The frame as `cfa4-j2k` writes it.
@@ -732,8 +724,13 @@ fn track_files_must_match_their_reel_assets() {
 
 #[test]
 fn codestreams_follow_the_dci_profile() {
-    // as cfa4-j2k writes it: 2 guard bits
-    let r = media("j2k-guard", track_file(3, &[encoded_2k()], 24, (1998, 1080)), vec![]);
+    // as cfa4-j2k writes it: the profile holds
+    let r = media("j2k-cfa4", track_file(3, &[encoded_2k()], 24, (1998, 1080)), vec![]);
+    assert!(messages(&r, J2K_CODESTREAM, Status::Fail).is_empty(), "{:?}", outcome(&r));
+    // 2 guard bits (cfa4-j2k before plan CFA4-DCPVAL-LIBDCP-001 v1.1 phase 6)
+    let mut two = frame_2k();
+    set_marker_byte(&mut two, 0xFF5C, 0, 2 << 5 | 2);
+    let r = media("j2k-guard", track_file(3, &[two], 24, (1998, 1080)), vec![]);
     assert_eq!(messages(&r, J2K_CODESTREAM, Status::Fail), ["'picture.mxf' frame 0: 2 guard bits; the 2K profile has 1"]);
     assert_eq!(statuses(&r, MXF_TRACK_FILES), [Status::Pass]);
 

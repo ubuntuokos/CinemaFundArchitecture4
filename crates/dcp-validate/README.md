@@ -204,8 +204,9 @@ outside its reel. Both backends report the same failures.
 For DCP-06 the export's picture file was replaced by files asdcplib 2.13.3 wrapped from the same
 frames: one for another asset, one with MXF Interop labels, one stereoscopic. dcp_inspect and the
 native backend report the same problems: the asset id, the edit rate, the labels of the other
-standard, the stereoscopic file in a `MainPicture`. On the export itself both report the J2K QCD
-guard bits: CFA4's encoder writes 2 where the 2K profile has 1.
+standard, the stereoscopic file in a `MainPicture`. On the export itself both reported the J2K QCD
+guard bits then: CFA4's encoder wrote 2 where the 2K profile has 1. It writes 1 since plan
+CFA4-DCPVAL-LIBDCP-001 v1.1 phase 6.
 
 ## Report
 
@@ -254,5 +255,5 @@ The HTML report is DCP-15.
   - the report.
 - `tests/export_round_trip.rs` writes a DCP with `cfa4-export` and runs three profiles on it:
   - Quick Scan and Full Integrity, including the hashes, must pass;
-  - SMPTE Cinema: the track files and the sound pass, the picture format is a warning (25 fps), and the only
-    failure allowed is the J2K guard bits above.
+  - SMPTE Cinema: the track files and the sound pass, the picture format is a warning (25 fps), and
+    nothing fails.
