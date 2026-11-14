@@ -4607,6 +4607,8 @@
 	software backend: {reason}	ソフトウェアバックエンド: {reason}
 	Start studio	スタジオを開始
 	Stop studio	スタジオを停止
+	Add Studio Scene	スタジオシーンを追加
+	Live	ライブ
 # Auto Color, Auto Contrast, Auto Levels (EffectsSDK review)
 	Auto Color	自動カラー
 	Auto Contrast	自動コントラスト

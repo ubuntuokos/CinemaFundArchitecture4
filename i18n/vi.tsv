@@ -4598,6 +4598,8 @@ export.summary	Low	thấp
 	software backend: {reason}	phần phụ trợ phần mềm: {reason}
 	Start studio	Khởi động phòng thu
 	Stop studio	Dừng phòng thu
+	Add Studio Scene	Thêm cảnh studio
+	Live	Trực tiếp
 # Auto Color, Auto Contrast, Auto Levels (EffectsSDK review)
 	Auto Color	Màu tự động
 	Auto Contrast	Tương phản tự động

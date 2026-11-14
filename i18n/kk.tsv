@@ -4600,6 +4600,8 @@ export.summary	Low	төмен
 	software backend: {reason}	бағдарламалық бэкенд: {reason}
 	Start studio	Студияны іске қосу
 	Stop studio	Студияны тоқтату
+	Add Studio Scene	Студия сахнасын қосу
+	Live	Тікелей
 # Auto Color, Auto Contrast, Auto Levels (EffectsSDK review)
 	Auto Color	Автоматты түс
 	Auto Contrast	Автоматты контраст

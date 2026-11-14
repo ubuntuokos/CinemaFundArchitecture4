@@ -4598,6 +4598,8 @@ export.summary	Low	низак
 	software backend: {reason}	софтверска позадина: {reason}
 	Start studio	Покрени студио
 	Stop studio	Заустави студио
+	Add Studio Scene	Додај сцену студија
+	Live	Уживо
 # Auto Color, Auto Contrast, Auto Levels (EffectsSDK review)
 	Auto Color	Аутоматска боја
 	Auto Contrast	Аутоматски контраст

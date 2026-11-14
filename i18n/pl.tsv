@@ -4598,6 +4598,8 @@ export.summary	Low	niska
 	software backend: {reason}	zaplecze programowe: {reason}
 	Start studio	Uruchom studio
 	Stop studio	Zatrzymaj studio
+	Add Studio Scene	Dodaj scenę studia
+	Live	Na żywo
 # Auto Color, Auto Contrast, Auto Levels (EffectsSDK review)
 	Auto Color	Automatyczny kolor
 	Auto Contrast	Automatyczny kontrast

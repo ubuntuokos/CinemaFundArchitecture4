@@ -4598,6 +4598,8 @@
 	software backend: {reason}	backend software: {reason}
 	Start studio	Avvia studio
 	Stop studio	Ferma studio
+	Add Studio Scene	Aggiungi scena studio
+	Live	Dal vivo
 # Auto Color, Auto Contrast, Auto Levels (EffectsSDK review)
 	Auto Color	Colore automatico
 	Auto Contrast	Contrasto automatico

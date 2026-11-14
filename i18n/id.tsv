@@ -4606,6 +4606,8 @@
 	software backend: {reason}	backend perangkat lunak: {reason}
 	Start studio	Mulai studio
 	Stop studio	Hentikan studio
+	Add Studio Scene	Tambah Adegan Studio
+	Live	Langsung
 # Auto Color, Auto Contrast, Auto Levels (EffectsSDK review)
 	Auto Color	Warna Otomatis
 	Auto Contrast	Kontras Otomatis

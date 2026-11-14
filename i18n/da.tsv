@@ -4600,6 +4600,8 @@ export.summary	Low	lav
 	software backend: {reason}	software-backend: {reason}
 	Start studio	Start studie
 	Stop studio	Stop studie
+	Add Studio Scene	Tilføj studiescene
+	Live	Live
 # Auto Color, Auto Contrast, Auto Levels (EffectsSDK review)
 	Auto Color	Automatisk farve
 	Auto Contrast	Automatisk kontrast

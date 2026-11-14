@@ -4600,6 +4600,8 @@ export.summary	Low	låg
 	software backend: {reason}	programvarubakände: {reason}
 	Start studio	Starta studio
 	Stop studio	Stoppa studio
+	Add Studio Scene	Lägg till studioscen
+	Live	Live
 # Auto Color, Auto Contrast, Auto Levels (EffectsSDK review)
 	Auto Color	Automatisk färg
 	Auto Contrast	Automatisk kontrast

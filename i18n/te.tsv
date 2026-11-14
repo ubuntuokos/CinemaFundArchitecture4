@@ -4604,6 +4604,8 @@ export.summary	Low	తక్కువ
 	software backend: {reason}	సాఫ్ట్‌వేర్ బ్యాకెండ్: {reason}
 	Start studio	స్టూడియోను ప్రారంభించు
 	Stop studio	స్టూడియోను ఆపు
+	Add Studio Scene	స్టూడియో దృశ్యాన్ని జోడించు
+	Live	ప్రత్యక్షం
 # Auto Color, Auto Contrast, Auto Levels (EffectsSDK review)
 	Auto Color	స్వయంచాలక రంగు
 	Auto Contrast	స్వయంచాలక కాంట్రాస్ట్

@@ -4601,6 +4601,8 @@ export.summary	Low	žema
 	software backend: {reason}	programinė posistemė: {reason}
 	Start studio	Paleisti studiją
 	Stop studio	Sustabdyti studiją
+	Add Studio Scene	Pridėti studijos sceną
+	Live	Tiesiogiai
 # Auto Color, Auto Contrast, Auto Levels (EffectsSDK review)
 	Auto Color	Automatinė spalva
 	Auto Contrast	Automatinis kontrastas

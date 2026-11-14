@@ -4597,6 +4597,8 @@ export.summary	Low	低
 	software backend: {reason}	軟體後端：{reason}
 	Start studio	啟動攝影棚
 	Stop studio	停止攝影棚
+	Add Studio Scene	新增攝影棚場景
+	Live	直播
 # Auto Color, Auto Contrast, Auto Levels (EffectsSDK review)
 	Auto Color	自動色彩
 	Auto Contrast	自動對比

@@ -4598,6 +4598,8 @@ export.summary	Low	nízká
 	software backend: {reason}	softwarový backend: {reason}
 	Start studio	Spustit studio
 	Stop studio	Zastavit studio
+	Add Studio Scene	Přidat scénu studia
+	Live	Živě
 # Auto Color, Auto Contrast, Auto Levels (EffectsSDK review)
 	Auto Color	Automatická barva
 	Auto Contrast	Automatický kontrast

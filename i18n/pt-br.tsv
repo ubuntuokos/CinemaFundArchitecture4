@@ -4608,6 +4608,8 @@
 	software backend: {reason}	back-end de software: {reason}
 	Start studio	Iniciar estúdio
 	Stop studio	Parar estúdio
+	Add Studio Scene	Adicionar cena de estúdio
+	Live	Ao vivo
 # Auto Color, Auto Contrast, Auto Levels (EffectsSDK review)
 	Auto Color	Cor automática
 	Auto Contrast	Contraste automático

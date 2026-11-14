@@ -4603,6 +4603,8 @@
 	software backend: {reason}	moteur logiciel : {reason}
 	Start studio	Démarrer le studio
 	Stop studio	Arrêter le studio
+	Add Studio Scene	Ajouter une scène de studio
+	Live	En direct
 # Auto Color, Auto Contrast, Auto Levels (EffectsSDK review)
 	Auto Color	Couleur automatique
 	Auto Contrast	Contraste automatique

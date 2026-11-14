@@ -4599,6 +4599,8 @@ export.summary	Low	düşük
 	software backend: {reason}	yazılım arka ucu: {reason}
 	Start studio	Stüdyoyu başlat
 	Stop studio	Stüdyoyu durdur
+	Add Studio Scene	Stüdyo sahnesi ekle
+	Live	Canlı
 # Auto Color, Auto Contrast, Auto Levels (EffectsSDK review)
 	Auto Color	Otomatik Renk
 	Auto Contrast	Otomatik Kontrast

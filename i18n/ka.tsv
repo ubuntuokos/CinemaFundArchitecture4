@@ -4601,6 +4601,8 @@ export.summary	Low	დაბალი
 	software backend: {reason}	პროგრამული ბექენდი: {reason}
 	Start studio	სტუდიის გაშვება
 	Stop studio	სტუდიის გაჩერება
+	Add Studio Scene	სტუდიის სცენის დამატება
+	Live	პირდაპირი
 # Auto Color, Auto Contrast, Auto Levels (EffectsSDK review)
 	Auto Color	ავტომატური ფერი
 	Auto Contrast	ავტომატური კონტრასტი

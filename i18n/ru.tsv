@@ -4583,6 +4583,8 @@
 	software backend: {reason}	программный бэкенд: {reason}
 	Start studio	Запустить студию
 	Stop studio	Остановить студию
+	Add Studio Scene	Добавить сцену студии
+	Live	Прямой эфир
 # Auto Color, Auto Contrast, Auto Levels (EffectsSDK review)
 	Auto Color	Автоцвет
 	Auto Contrast	Автоконтраст

@@ -4592,6 +4592,8 @@
 	software backend: {reason}	소프트웨어 백엔드: {reason}
 	Start studio	스튜디오 시작
 	Stop studio	스튜디오 중지
+	Add Studio Scene	스튜디오 장면 추가
+	Live	라이브
 # Auto Color, Auto Contrast, Auto Levels (EffectsSDK review)
 	Auto Color	자동 색상
 	Auto Contrast	자동 대비
