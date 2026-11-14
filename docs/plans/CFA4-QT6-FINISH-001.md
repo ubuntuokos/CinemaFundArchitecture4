@@ -55,8 +55,8 @@ bizonyítékkal lesz ✅ (teszt a `python/tests/`-ben vagy rögzített kézi ell
 A tulajdonos gépén (gépeken) fut, mert valódi asztal kell hozzá. Egy fejlesztő munkamenet előkészíti:
 
 1. **Ellenőrzőlista** `docs/development/qt-desktop-checks.md` néven: asztalonként egy táblázat.
-   **Első kör (D3): csak KDE Plasma (Kubuntu 26.04)**, Wayland-munkamenetben, és X11-ben is, ha a
-   rendszer felkínálja. A többi asztal (GNOME, Xfce, LXQt, MATE, Budgie, Cinnamon; a lista a 26.04
+   **Első kör (D3): csak KDE Plasma (Kubuntu 26.04)**, Wayland- és X11-munkamenetben is: az X11-
+   kompatibilitás egyelőre marad (tulajdonosi döntés, 2026-11-14), ezért mindkettő kötelező. A többi asztal (GNOME, Xfce, LXQt, MATE, Budgie, Cinnamon; a lista a 26.04
    kiadási jegyzéke szerint ellenőrizendő) csak a KDE sikeres próbaüzeme után, külön lépésben.
 2. **Pontok asztalonként:** indulás; a tálca neve és ikonja (asztali bejegyzés); 100 / 125 / 150 / 200 %
    skálázás; több monitor eltérő skálázással; panelek dokkolása, lebegtetése, fülek; natív fájlpárbeszédek
@@ -66,7 +66,7 @@ A tulajdonos gépén (gépeken) fut, mert valódi asztal kell hozzá. Egy fejles
    hogy a kézi munka rövidebb legyen.
 4. A talált hibák javítása témánként külön PR-ban.
 
-**Átvétel:** a KDE Plasma kitöltött sora a listában, a hibák javítva vagy a tulajdonos döntésével
+**Átvétel:** a KDE Plasma kitöltött sorai (Wayland és X11) a listában, a hibák javítva vagy a tulajdonos döntésével
 elfogadva, és a KDE-próbaüzem sikeresen lezárva; ezután az 1.9 Qt-oszlopa ✅. A többi asztal köre ezután
 külön lépés, amelynek indításáról a tulajdonos dönt.
 
@@ -192,7 +192,8 @@ a Qt6 GUI elkészültét várják), valamint a csomagkiadás (F9) egésze.
 - **D2 – 5.5 terjedelme: eldőlt** (tulajdonosi döntés, 2026-11-14): a GPU-mérés után dönt a
   tulajdonos. Előbb a mérés és az 1. lépés (textúrafeltöltés), majd az eredmény alapján dől el,
   kell-e a dmabuf is.
-- **D3 – 1.9 asztallistája: eldőlt** (tulajdonosi döntés, 2026-11-14): egyelőre csak KDE Plasma;
-  a többi asztal csak akkor, ha a KDE már túl van a sikeres próbaüzemen (lásd Q2).
+- **D3 – 1.9 asztallistája: eldőlt** (tulajdonosi döntés, 2026-11-14): egyelőre csak KDE Plasma,
+  Waylanden és X11-en is (az X11-kompatibilitás egyelőre marad); a többi asztal csak akkor, ha a KDE
+  már túl van a sikeres próbaüzemen (lásd Q2).
 - **Q4.3: eldőlt** (tulajdonosi döntés, 2026-11-12 és 2026-11-14): a csomagok semmilyen úton nem
   indítanak egui-t (lásd Q4.3).
