@@ -271,6 +271,8 @@ fn two_k_flat_package() {
     assert!(cpl.find("<MainMarkers>") < cpl.find("<MainPicture>"));
     assert!(markers.contains("<Label>FFOC</Label>\n              <Offset>1</Offset>"), "{markers}");
     assert!(markers.contains("<Label>LFOC</Label>\n              <Offset>9</Offset>"), "{markers}");
+    // no EntryPoint or Duration in the markers: libdcp's dcpverify rejects them (plan v1.1 D6)
+    assert!(!markers.contains("<EntryPoint>") && !markers.contains("<Duration>"), "{markers}");
     // ST 429-16 composition metadata with the RDD 52 constraints profile and the 5.1 MCA labels
     let meta = block(&cpl, "meta:CompositionMetadataAsset").expect("composition metadata");
     assert_eq!(element(meta, "meta:MainSoundConfiguration"), Some("51/L,R,C,LFE,Ls,Rs"));

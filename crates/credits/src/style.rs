@@ -303,6 +303,10 @@ pub struct ContentStyle {
     /// Horizontal orientation: every head of this style on a page gets the widest one's width,
     /// so with `headAlign: left` the heads form one even column.
     pub harmonize_heads: bool,
+    /// Grid layout: every body column of this style on a page gets the widest column's width
+    /// (Cinecred's "Harmonize Column Widths"), so tails and multi-column grids line up across
+    /// blocks.
+    pub harmonize_body: bool,
     /// Horizontal orientation: a leader (e.g. `.` or ` .`) repeated from the end of the head to
     /// the body; empty = none.
     pub leader: String,
@@ -334,6 +338,7 @@ impl Default for ContentStyle {
             margin: 0.0,
             head_align: Align::Right,
             harmonize_heads: false,
+            harmonize_body: false,
             leader: String::new(),
             leader_gap: 16.0,
             portrait_height: 220.0,

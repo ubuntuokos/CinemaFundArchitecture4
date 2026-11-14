@@ -551,6 +551,14 @@ fn encoded_codestreams_decode_in_openjpeg_and_ffmpeg() {
         ("ht_wide_blocks", &rgb8, EncodeOptions { ht: true, code_block: (10, 2), levels: 2, mct: false, ..EncodeOptions::lossless() }, true),
         ("ht_lossy", &rgb8, EncodeOptions { ht: true, ..EncodeOptions::lossy(2.0) }, false),
         ("ht_lossy_12bit", &rgb12, EncodeOptions { ht: true, ..EncodeOptions::lossy(0.5) }, false),
+        // HTJ2K under a byte limit: cleanup passes at coarser planes (fewer missing MSBs signalled)
+        ("ht_lossy_budget", &rgb8, EncodeOptions { ht: true, max_bytes: Some(6_000), ..EncodeOptions::lossy(0.5) }, false),
+        (
+            "ht_lossless_budget",
+            &rgb12,
+            EncodeOptions { ht: true, max_bytes: Some(12_000), max_component_bytes: Some(5_000), ..EncodeOptions::lossless() },
+            false,
+        ),
     ];
     for (name, img, opts, lossless) in cases {
         let data = cfa4_j2k::encode(img, &opts).unwrap_or_else(|e| panic!("{name}: {e}"));
