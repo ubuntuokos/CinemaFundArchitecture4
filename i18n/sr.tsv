@@ -4527,6 +4527,9 @@ export.summary	Low	низак
 	The keys stay in memory only, until Forget DCP Keys or the end of the session.	Кључеви остају само у меморији, до команде Заборави DCP кључеве или краја сесије.
 	DCP keys forgotten	DCP кључеви заборављени
 	Choose the KDM file and the private key.	Изаберите KDM датотеку и приватни кључ.
+	Load even if the certificate chain is not verified	Учитај и са непровереним ланцем сертификата
+	Signature verified: {chain}	Потпис проверен: {chain}
+	Signature not verified: {problem}	Потпис није проверен: {problem}
 
 # Settings ▸ Timecode Sync (TC-4)
 	Timecode Sync	Синхронизација временског кода

@@ -4527,6 +4527,9 @@ export.summary	Low	niska
 	The keys stay in memory only, until Forget DCP Keys or the end of the session.	Klucze pozostają tylko w pamięci, do polecenia Zapomnij klucze DCP lub końca sesji.
 	DCP keys forgotten	Klucze DCP zapomniane
 	Choose the KDM file and the private key.	Wybierz plik KDM i klucz prywatny.
+	Load even if the certificate chain is not verified	Wczytaj także z niezweryfikowanym łańcuchem certyfikatów
+	Signature verified: {chain}	Podpis zweryfikowany: {chain}
+	Signature not verified: {problem}	Podpis niezweryfikowany: {problem}
 
 # Settings ▸ Timecode Sync (TC-4)
 	Timecode Sync	Synchronizacja kodu czasowego

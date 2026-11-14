@@ -4527,6 +4527,9 @@ export.summary	Low	nízká
 	The keys stay in memory only, until Forget DCP Keys or the end of the session.	Klíče zůstávají jen v paměti, do příkazu Zapomenout klíče DCP nebo do konce relace.
 	DCP keys forgotten	Klíče DCP zapomenuty
 	Choose the KDM file and the private key.	Vyberte soubor KDM a soukromý klíč.
+	Load even if the certificate chain is not verified	Načíst i s neověřeným řetězcem certifikátů
+	Signature verified: {chain}	Podpis ověřen: {chain}
+	Signature not verified: {problem}	Podpis neověřen: {problem}
 
 # Settings ▸ Timecode Sync (TC-4)
 	Timecode Sync	Synchronizace časového kódu
