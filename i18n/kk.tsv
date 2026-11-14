@@ -4217,6 +4217,9 @@ export.summary	Low	төмен
 	Dither	Дизеринг
 	Pattern	Өрнек
 	Cell Size	Ұяшық өлшемі
+	Pixelate	Пикселдеу
+	Cell Shape	Ұяшық пішіні
+	LED	LED
 	Cyan Angle	Көгілдір бұрышы
 	Magenta Angle	Қызыл күрең бұрышы
 	Yellow Angle	Сары бұрышы

@@ -4217,6 +4217,9 @@ export.summary	Low	lav
 	Dither	Dithering
 	Pattern	Mønster
 	Cell Size	Cellestørrelse
+	Pixelate	Pixelering
+	Cell Shape	Celleform
+	LED	LED
 	Cyan Angle	Cyan vinkel
 	Magenta Angle	Magenta vinkel
 	Yellow Angle	Gul vinkel

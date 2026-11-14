@@ -4220,6 +4220,9 @@
 	Dither	Tramage
 	Pattern	Motif
 	Cell Size	Taille de cellule
+	Pixelate	Pixellisation
+	Cell Shape	Forme des cellules
+	LED	LED
 	Cyan Angle	Angle du cyan
 	Magenta Angle	Angle du magenta
 	Yellow Angle	Angle du jaune
