@@ -606,13 +606,15 @@ fn chunk_length_is_the_file_length() {
 }
 
 /// One 1998 × 1080 frame of the 2K DCI profile. `cfa4-j2k` writes 2 guard bits where the 2K
-/// profile has 1, so the QCD is set to 1 here.
+/// profile has 1, so the QCD is set to 1 here, and it codes cinema frames without the multiple
+/// component transform, so the COD's MCT flag is set (the checks do not decode the samples).
 fn frame_2k() -> Vec<u8> {
     static FRAME: std::sync::OnceLock<Vec<u8>> = std::sync::OnceLock::new();
     FRAME
         .get_or_init(|| {
             let mut cs = encoded_2k();
             set_marker_byte(&mut cs, 0xFF5C, 0, 1 << 5 | 2);
+            set_marker_byte(&mut cs, 0xFF52, 4, 1);
             cs
         })
         .clone()
@@ -724,6 +726,14 @@ fn codestreams_follow_the_dci_profile() {
     let r = media("j2k-guard", track_file(3, &[encoded_2k()], 24, (1998, 1080)), vec![]);
     assert_eq!(messages(&r, J2K_CODESTREAM, Status::Fail), ["'picture.mxf' frame 0: 2 guard bits; the 2K profile has 1"]);
     assert_eq!(statuses(&r, MXF_TRACK_FILES), [Status::Pass]);
+
+    // without the multiple component transform: a warning, not a failure (plan CFA4-DCPVAL-LIBDCP-001, D2)
+    let mut no_mct = frame_2k();
+    set_marker_byte(&mut no_mct, 0xFF52, 4, 0);
+    let r = media("j2k-no-mct", track_file(3, &[no_mct], 24, (1998, 1080)), vec![]);
+    assert!(messages(&r, J2K_CODESTREAM, Status::Fail).is_empty(), "{:?}", outcome(&r));
+    let w = messages(&r, J2K_CODESTREAM, Status::Warning);
+    assert!(w.len() == 1 && w[0].contains("no multiple component transform"), "{w:?}");
 
     // not the cinema profile, in both frames
     let mut part1 = frame_2k();
