@@ -883,11 +883,9 @@ impl ExportSettings {
             let codec = if self.audio_codec() == AudioCodec::Flac { "FLAC" } else { self.format.label() };
             return Err(ExportError::Unsupported(format!("{codec} audio has no {} samples: choose 16, 24 or 32 bit", sample_format.label())));
         }
-        // MXF: MPEG-2 (also XDCAM HD422 and D-10) only, whose separate-field layout the writer has
-        let interlaced = if self.format.is_mxf() { self.video_format() == Format::Mpeg2 } else { self.format.codes_interlaced() };
-        if self.field_order != FieldOrder::Progressive && self.has_video() && !interlaced {
+        if self.field_order != FieldOrder::Progressive && self.has_video() && !self.codes_interlaced() {
             return Err(ExportError::Unsupported(format!(
-                "{} field order: only MPEG-2 and ProRes export (in MXF: MPEG-2, XDCAM HD422, D-10) code interlaced video; the other encoders write progressive frames",
+                "{} field order: only MPEG-2 and ProRes export (in MXF: MPEG-2, XDCAM HD422, D-10, ProRes) code interlaced video; the other encoders write progressive frames",
                 self.field_order.label()
             )));
         }
