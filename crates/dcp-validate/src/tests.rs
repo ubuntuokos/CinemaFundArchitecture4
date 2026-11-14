@@ -122,11 +122,12 @@ fn quick_scan_of_a_good_package_passes() {
 fn incomplete_checks_never_pass() {
     let d = dir("incomplete");
     package_with(&d, GOOD, Edit { picture: Some(good_track_file()), ..Edit::default() });
-    let r = validate(&d, "smpte-cinema");
+    let r = validate(&d, "security");
     assert_eq!(r.verdict, Verdict::Incomplete, "{:?}", outcome(&r));
-    assert_eq!(statuses(&r, AUD_PCM), [Status::Unchecked]);
-    assert!(r.findings.iter().any(|f| f.rule == AUD_PCM && f.message.contains("DCP-07")));
+    assert_eq!(statuses(&r, SIG_SIGNATURE), [Status::Unchecked]);
+    assert!(r.findings.iter().any(|f| f.rule == SIG_SIGNATURE && f.message.contains("DCP-10")));
     // every profile rule is reported
+    let r = validate(&d, "smpte-cinema");
     let p = Profile::builtin("smpte-cinema").unwrap();
     for pr in &p.rules {
         assert!(r.findings.iter().any(|f| f.rule == pr.rule), "{} missing", pr.rule);
@@ -605,13 +606,15 @@ fn chunk_length_is_the_file_length() {
 }
 
 /// One 1998 × 1080 frame of the 2K DCI profile. `cfa4-j2k` writes 2 guard bits where the 2K
-/// profile has 1, so the QCD is set to 1 here.
+/// profile has 1, so the QCD is set to 1 here, and it codes cinema frames without the multiple
+/// component transform, so the COD's MCT flag is set (the checks do not decode the samples).
 fn frame_2k() -> Vec<u8> {
     static FRAME: std::sync::OnceLock<Vec<u8>> = std::sync::OnceLock::new();
     FRAME
         .get_or_init(|| {
             let mut cs = encoded_2k();
             set_marker_byte(&mut cs, 0xFF5C, 0, 1 << 5 | 2);
+            set_marker_byte(&mut cs, 0xFF52, 4, 1);
             cs
         })
         .clone()
@@ -724,6 +727,14 @@ fn codestreams_follow_the_dci_profile() {
     assert_eq!(messages(&r, J2K_CODESTREAM, Status::Fail), ["'picture.mxf' frame 0: 2 guard bits; the 2K profile has 1"]);
     assert_eq!(statuses(&r, MXF_TRACK_FILES), [Status::Pass]);
 
+    // without the multiple component transform: a warning, not a failure (plan CFA4-DCPVAL-LIBDCP-001, D2)
+    let mut no_mct = frame_2k();
+    set_marker_byte(&mut no_mct, 0xFF52, 4, 0);
+    let r = media("j2k-no-mct", track_file(3, &[no_mct], 24, (1998, 1080)), vec![]);
+    assert!(messages(&r, J2K_CODESTREAM, Status::Fail).is_empty(), "{:?}", outcome(&r));
+    let w = messages(&r, J2K_CODESTREAM, Status::Warning);
+    assert!(w.len() == 1 && w[0].contains("no multiple component transform"), "{w:?}");
+
     // not the cinema profile, in both frames
     let mut part1 = frame_2k();
     set_marker_byte(&mut part1, 0xFF51, 1, 0);
@@ -803,4 +814,119 @@ fn cancel_while_reading_frames_interrupts() {
     let r = NativeValidator.validate(&ValidationRequest::new(&d, Profile::builtin("smpte-cinema").unwrap()), &c).unwrap();
     assert_eq!(r.verdict, Verdict::Interrupted);
     assert_eq!(statuses(&r, MXF_TRACK_FILES), [Status::Interrupted]);
+}
+
+/// A D-Cinema track file for the asset `uuid(3)` at 24 fps, made by `cfg` and filled by `fill`.
+fn dcinema_file(cfg: impl FnOnce(&mut cfa4_mxf::WriterConfig), fill: impl FnOnce(&mut cfa4_mxf::MxfWriter<std::io::Cursor<Vec<u8>>>)) -> Vec<u8> {
+    use cfa4_mxf::{MxfWriter, PackageIds, Pattern, Rational, Umid, WriterConfig};
+    let asset = cfa4_dcp::Uuid::parse(&uuid(3)).unwrap().0;
+    let ids = PackageIds { material: Umid::dcinema([7; 16]), file: Umid::dcinema(asset), material_name: "T".into(), file_name: "T".into() };
+    let mut c = WriterConfig::new(Pattern::DCinema, Rational::new(24, 1), ids);
+    cfg(&mut c);
+    let mut w = MxfWriter::new(std::io::Cursor::new(Vec::new()), c).unwrap();
+    fill(&mut w);
+    w.finish().unwrap().into_inner()
+}
+
+/// `units` edit units of `channels`-channel PCM at 48 kHz and `bits`: a 1 kHz sine of amplitude
+/// `level` on the first channel, silence on the others.
+fn sound_file(units: usize, channels: u32, bits: u32, level: f32) -> Vec<u8> {
+    let n = units * 2000;
+    let mut planar = vec![vec![0f32; n]; channels as usize];
+    for (i, s) in planar[0].iter_mut().enumerate() {
+        *s = level * (2.0 * std::f32::consts::PI * 1000.0 * i as f32 / 48_000.0).sin();
+    }
+    let pcm = cfa4_mxf::encode_pcm(&planar, bits);
+    dcinema_file(|c| c.sound = vec![cfa4_mxf::SoundDesc { sample_rate: 48_000, channels, bits }], |w| w.push_sound(0, &pcm).unwrap())
+}
+
+/// The CPL's picture as a `units`-long main sound.
+fn as_sound(units: usize) -> Vec<(&'static str, String)> {
+    vec![
+        ("<MainPicture>", "<MainSound>".into()),
+        (PICTURE_TIMING, format!("<EditRate>24 1</EditRate><IntrinsicDuration>{units}</IntrinsicDuration><Duration>{units}</Duration>")),
+        ("<FrameRate>24 1</FrameRate><ScreenAspectRatio>1998 1080</ScreenAspectRatio></MainPicture>", "</MainSound>".into()),
+    ]
+}
+
+fn sound(name: &str, file: Vec<u8>, units: usize) -> ValidationReport {
+    edited(name, Edit { picture: Some(file), cpl: as_sound(units), ..Edit::default() }, "delivery-preflight")
+}
+
+#[test]
+fn sound_track_files() {
+    let r = sound("aud-good", sound_file(48, 6, 24, 0.1), 48);
+    assert_eq!(statuses(&r, MXF_TRACK_FILES), [Status::Pass], "{:?}", outcome(&r));
+    assert_eq!(statuses(&r, AUD_PCM), [Status::Pass]);
+    assert_eq!(statuses(&r, IAB_TRACK), [Status::NotApplicable]);
+    // the reel has no picture now, so the picture rules have nothing to check
+    assert_eq!(statuses(&r, J2K_CODESTREAM), [Status::Pass]);
+
+    let r = sound("aud-16", sound_file(1, 6, 16, 0.1), 1);
+    assert_eq!(messages(&r, AUD_PCM, Status::Fail), ["'picture.mxf' has 16 bits a sample; D-Cinema sound has 24"]);
+    let r = sound("aud-4ch", sound_file(1, 4, 24, 0.1), 1);
+    assert_eq!(messages(&r, AUD_PCM, Status::Warning), ["'picture.mxf' has 4 channels, not one of the ST 429-2 configurations (6, 8, 16)"]);
+    // a picture where the composition expects sound
+    // a composition without sound
+    let r = edited("aud-silent", Edit { picture: Some(good_track_file()), ..Edit::default() }, "smpte-cinema");
+    assert_eq!(statuses(&r, AUD_PCM), [Status::NotApplicable]);
+    let r = sound("aud-picture", good_track_file(), 1);
+    assert_eq!(statuses(&r, AUD_PCM), [Status::Unchecked]);
+    assert!(statuses(&r, MXF_TRACK_FILES).contains(&Status::Fail));
+}
+
+#[test]
+fn loudness_is_measured() {
+    // BS.1770: a 1 kHz sine at -20 dBFS peak on one front channel is -23.0 LUFS
+    let r = sound("aud-loud", sound_file(48, 6, 24, 0.1), 48);
+    let f = r.findings.iter().find(|f| f.rule == AUD_LOUDNESS).unwrap();
+    assert_eq!(f.status, Status::Pass, "{f:?}");
+    let lufs: f64 = f.message.strip_prefix("integrated ").and_then(|m| m.split(' ').next()).unwrap().parse().unwrap();
+    assert!((lufs + 23.0).abs() < 0.2, "{lufs}");
+    assert!(f.evidence.as_deref().unwrap().contains("2.0 s, 6 channels at 48000 Hz"));
+    // the LFE does not count
+    assert_eq!(crate::audio::weights(8), [1.0, 1.0, 1.0, 0.0, 1.41, 1.41, 0.0, 0.0]);
+    // a composition without sound
+    let r = edited("aud-none", Edit { picture: Some(good_track_file()), ..Edit::default() }, "delivery-preflight");
+    assert_eq!(statuses(&r, AUD_LOUDNESS), [Status::NotApplicable]);
+}
+
+#[test]
+fn immersive_audio_frames() {
+    use cfa4_iab::{Frame, FrameRate};
+    let frame = |rate| Frame {
+        version: 1,
+        sample_rate: 48_000,
+        bit_depth: 24,
+        frame_rate: rate,
+        frame_index: 0,
+        max_rendered: 0,
+        beds: vec![],
+        objects: vec![],
+        audio: vec![],
+        authoring_tool: None,
+        user_data: vec![],
+    };
+    let file = |frames: Vec<Vec<u8>>| {
+        dcinema_file(
+            |c| c.iab = Some(cfa4_mxf::IabDesc { version: 1, max_channels: 0, max_objects: 0, first_frame: 0, sample_rate: 48_000 }),
+            |w| {
+                for f in &frames {
+                    w.push_data(f).unwrap();
+                }
+            },
+        )
+    };
+    let aux = vec![
+        ("<MainPicture>", "<AuxData>".into()),
+        ("<FrameRate>24 1</FrameRate><ScreenAspectRatio>1998 1080</ScreenAspectRatio></MainPicture>", "</AuxData>".into()),
+    ];
+    let good = cfa4_iab::write(&frame(FrameRate::R24)).unwrap();
+    let r = edited("iab-good", Edit { picture: Some(file(vec![good])), cpl: aux.clone(), ..Edit::default() }, "delivery-preflight");
+    assert_eq!(statuses(&r, IAB_TRACK), [Status::Pass], "{:?}", outcome(&r));
+    let wrong = cfa4_iab::write(&frame(FrameRate::R25)).unwrap();
+    let r = edited("iab-rate", Edit { picture: Some(file(vec![wrong])), cpl: aux.clone(), ..Edit::default() }, "delivery-preflight");
+    assert_eq!(messages(&r, IAB_TRACK, Status::Fail), ["'picture.mxf' frame 0: the IAFrame rate is 25/1, the track's edit rate 24 1"]);
+    let r = edited("iab-junk", Edit { picture: Some(file(vec![vec![0; 32]])), cpl: aux, ..Edit::default() }, "delivery-preflight");
+    assert!(messages(&r, IAB_TRACK, Status::Fail)[0].contains("is not an IABitstream frame"));
 }
