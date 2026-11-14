@@ -53,7 +53,7 @@ pub(crate) fn convert(p: cfa4_utvideo::Picture) -> Result<VideoFrame> {
                 cfa4_utvideo::Matrix::Bt709 => cfa4_color::Matrix::Bt709,
             };
             let data = PixelData::Yuv8 { planes: [Arc::new(y), Arc::new(u), Arc::new(v)], chroma, alpha: None };
-            Ok(VideoFrame { width: p.width, height: p.height, data, color, par: (1, 1), pts: cfa4_time::Tick::ZERO })
+            Ok(VideoFrame { width: p.width, height: p.height, data, color, par: (1, 1), pts: cfa4_time::Tick::ZERO, layout: Default::default() })
         }
         cfa4_utvideo::Format::Rgb | cfa4_utvideo::Format::Rgba => {
             let (r, g, b) = (next()?, next()?, next()?);

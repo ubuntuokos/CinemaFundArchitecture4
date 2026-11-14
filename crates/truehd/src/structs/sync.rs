@@ -100,7 +100,7 @@ pub struct FormatInfo {
 }
 
 impl FormatInfo {
-    fn read(state: &mut ParserState, reader: &mut BsIoSliceReader) -> Result<Self> {
+    fn read(state: &mut ParserState, reader: &mut BsIoSliceReader<'_>) -> Result<Self> {
         let fi = match state.format_sync {
             MAJOR_SYNC_FBA => Self::read_fba(reader)?,
             MAJOR_SYNC_FBB => Self::read_fbb(reader)?,
@@ -135,7 +135,7 @@ impl FormatInfo {
         Ok(())
     }
 
-    fn read_fba(reader: &mut BsIoSliceReader) -> Result<Self> {
+    fn read_fba(reader: &mut BsIoSliceReader<'_>) -> Result<Self> {
         let mut fi = Self {
             _quantization_word_length_1: 2,
             audio_sampling_frequency_1: reader.get_n(4)?,
@@ -154,7 +154,7 @@ impl FormatInfo {
         Ok(fi)
     }
 
-    fn read_fbb(reader: &mut BsIoSliceReader) -> Result<Self> {
+    fn read_fbb(reader: &mut BsIoSliceReader<'_>) -> Result<Self> {
         let mut fi = Self {
             _quantization_word_length_1: reader.get_n(4)?,
             _quantization_word_length_2: reader.get_n(4)?,
@@ -217,7 +217,7 @@ pub struct MajorSyncInfo {
 }
 
 impl MajorSyncInfo {
-    pub fn read(state: &mut ParserState, reader: &mut BsIoSliceReader) -> Result<Self> {
+    pub fn read(state: &mut ParserState, reader: &mut BsIoSliceReader<'_>) -> Result<Self> {
         let start_pos = reader.position()?;
 
         let mut ms = Self { format_sync: reader.get_n(32)?, ..Default::default() };
@@ -447,7 +447,7 @@ impl MajorSyncInfo {
     ///
     /// Everything here describes the stream's configuration rather than the access unit, so
     /// it is checked once and again whenever the configuration changes, not per major sync.
-    fn check_fbb_substream_info(state: &mut ParserState, reader: &mut BsIoSliceReader, ms: &Self) -> Result<()> {
+    fn check_fbb_substream_info(state: &mut ParserState, reader: &mut BsIoSliceReader<'_>, ms: &Self) -> Result<()> {
         let substream_info = ms.substream_info & 0xF;
 
         if state.has_parsed_au {

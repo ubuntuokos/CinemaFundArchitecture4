@@ -4518,6 +4518,9 @@ export.summary	Low	nizka
 	accept	sprejemljivo
 	the engine did not start the check	pogon ni začel preverjanja
 	the engine sent no report	pogon ni poslal poročila
+	MXF OP1a Uncompressed 10-bit 4:2:2 (v210)	MXF OP1a nestisnjeno 10-bitno 4:2:2 (v210)
+	MXF OP1a, uncompressed 10-bit Y'CbCr 4:2:2 in the v210 layout (SMPTE ST 384), 24-bit 48 kHz PCM, start timecode	MXF OP1a, nestisnjen 10-bitni Y'CbCr 4:2:2 v postavitvi v210 (SMPTE ST 384), 24-bitni PCM 48 kHz, začetna časovna koda
+	Write the captions as ANC data (CEA-608/708, 29.97 fps)	Zapiši podnapise kot podatke ANC (CEA-608/708, 29,97 sl./s)
 	Load KDM…	Naloži KDM…
 	Forget DCP Keys	Pozabi ključe DCP
 	Load KDM	Naloži KDM
@@ -4532,3 +4535,35 @@ export.summary	Low	nizka
 	Signature not verified: {problem}	Podpis ni preverjen: {problem}
 	KDM required	Potreben je KDM
 	Encrypted: load the KDM with content key {keys}	Šifrirano: naložite KDM s ključem vsebine {keys}
+
+# Settings ▸ Timecode Sync (TC-4)
+	Timecode Sync	Sinhronizacija časovne kode
+	TimecodeSync	Sinhronizacija časovne kode
+	Chase	Sledenje
+	Follow external timecode during playback	Med predvajanjem sledi zunanji časovni kodi
+	Lock after	Zakleni po
+	Keep playing without signal for	Brez signala predvajaj še
+	External frame rate	Zunanja hitrost sličic
+	Offset (added to the external timecode)	Zamik (prišteje se zunanji časovni kodi)
+	LTC	LTC
+	LTC input device	Vhodna naprava LTC
+	LTC input channel	Vhodni kanal LTC
+	Send LTC during playback	Med predvajanjem pošiljaj LTC
+	LTC output device	Izhodna naprava LTC
+	LTC output channel	Izhodni kanal LTC
+	LTC level	Raven LTC
+	dBFS	dBFS
+	MIDI Timecode	Časovna koda MIDI
+	MTC input port (empty = CFA4 port)	Vhodna vrata MTC (prazno = vrata CFA4)
+	Send MIDI Timecode during playback	Med predvajanjem pošiljaj časovno kodo MIDI
+	MTC output port (empty = CFA4 port)	Izhodna vrata MTC (prazno = vrata CFA4)
+	Send timecode ahead of the picture by	Pošlji časovno kodo pred sliko za
+	LTC (audio input)	LTC (zvočni vhod)
+	MIDI Timecode (MIDI input)	Časovna koda MIDI (vhod MIDI)
+	Same as the sequence	Enako kot zaporedje
+	29.97 fps drop-frame	29,97 fps drop-frame
+	29.97 fps non-drop	29,97 fps non-drop
+	Timecode Sync Status	Stanje sinhronizacije časovne kode
+	Chase External Timecode	Sledi zunanji časovni kodi
+	Send LTC	Pošlji LTC
+	Send MIDI Timecode	Pošlji časovno kodo MIDI

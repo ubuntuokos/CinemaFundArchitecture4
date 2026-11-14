@@ -4522,6 +4522,9 @@
 	accept	annehmbar
 	the engine did not start the check	die Engine hat die Prüfung nicht gestartet
 	the engine sent no report	die Engine hat keinen Bericht gesendet
+	MXF OP1a Uncompressed 10-bit 4:2:2 (v210)	MXF OP1a Unkomprimiert 10 Bit 4:2:2 (v210)
+	MXF OP1a, uncompressed 10-bit Y'CbCr 4:2:2 in the v210 layout (SMPTE ST 384), 24-bit 48 kHz PCM, start timecode	MXF OP1a, unkomprimiertes 10-Bit-Y'CbCr 4:2:2 im v210-Layout (SMPTE ST 384), 24-Bit-PCM mit 48 kHz, Start-Timecode
+	Write the captions as ANC data (CEA-608/708, 29.97 fps)	Untertitel als ANC-Daten schreiben (CEA-608/708, 29,97 fps)
 	Load KDM…	KDM laden…
 	Forget DCP Keys	DCP-Schlüssel vergessen
 	Load KDM	KDM laden
@@ -4536,3 +4539,35 @@
 	Signature not verified: {problem}	Signatur nicht geprüft: {problem}
 	KDM required	KDM erforderlich
 	Encrypted: load the KDM with content key {keys}	Verschlüsselt: Laden Sie die KDM mit dem Inhaltsschlüssel {keys}
+
+# Settings ▸ Timecode Sync (TC-4)
+	Timecode Sync	Timecode-Synchronisation
+	TimecodeSync	Timecode-Synchronisation
+	Chase	Nachführen
+	Follow external timecode during playback	Externem Timecode bei der Wiedergabe folgen
+	Lock after	Einrasten nach
+	Keep playing without signal for	Ohne Signal weiterspielen für
+	External frame rate	Externe Framerate
+	Offset (added to the external timecode)	Versatz (zum externen Timecode addiert)
+	LTC	LTC
+	LTC input device	LTC-Eingabegerät
+	LTC input channel	LTC-Eingangskanal
+	Send LTC during playback	LTC bei der Wiedergabe senden
+	LTC output device	LTC-Ausgabegerät
+	LTC output channel	LTC-Ausgangskanal
+	LTC level	LTC-Pegel
+	dBFS	dBFS
+	MIDI Timecode	MIDI-Timecode
+	MTC input port (empty = CFA4 port)	MTC-Eingangsport (leer = CFA4-Port)
+	Send MIDI Timecode during playback	MIDI-Timecode bei der Wiedergabe senden
+	MTC output port (empty = CFA4 port)	MTC-Ausgangsport (leer = CFA4-Port)
+	Send timecode ahead of the picture by	Timecode dem Bild vorauseilend senden um
+	LTC (audio input)	LTC (Audioeingang)
+	MIDI Timecode (MIDI input)	MIDI-Timecode (MIDI-Eingang)
+	Same as the sequence	Wie die Sequenz
+	29.97 fps drop-frame	29,97 fps Drop-Frame
+	29.97 fps non-drop	29,97 fps Non-Drop
+	Timecode Sync Status	Status der Timecode-Synchronisation
+	Chase External Timecode	Externem Timecode folgen
+	Send LTC	LTC senden
+	Send MIDI Timecode	MIDI-Timecode senden

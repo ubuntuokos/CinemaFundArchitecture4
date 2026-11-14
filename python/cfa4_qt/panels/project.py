@@ -403,7 +403,7 @@ def project_row_parts(view: QAbstractItemView, prefix: str, rows: list[tuple[Any
     vp = view.viewport()
     shown = vp.geometry()
     out: list[tuple[str, QRectF, str]] = []
-    for it, bin_id, item_id, depth in rows:
+    for it, bin_id, item_id, _depth in rows:
         r = view.visualItemRect(it).translated(vp.pos())
         vis = r.intersected(shown)
         if vis.isEmpty():
@@ -2063,7 +2063,7 @@ class ManagePresetsDialog(QDialog):
         self.names: list[str | None] = [None] * PRESET_SLOTS
         self.list = QListWidget(self)
         self.list.setObjectName("project.managePresets.slots")
-        for i in range(PRESET_SLOTS):
+        for _ in range(PRESET_SLOTS):
             self.list.addItem(QListWidgetItem())
         self.name = QLineEdit(self)
         self.name.setObjectName("project.managePresets.name")
@@ -2425,7 +2425,7 @@ class ProjectPanel(QWidget):
                     self.close_tab(self.stack.indexOf(v))
             for t in wanted[keep:]:
                 self.open_bin(self.main, t["bin"], "newWindow" if t["floating"] else "newTab")
-            for (v, _f, _w), t in zip(self._opened(), wanted):
+            for (v, _f, _w), t in zip(self._opened(), wanted, strict=False):
                 if (v.own_mode, v.own_size) != (t["view"], t["iconSize"]):
                     v.own_mode, v.own_size = t["view"], t["iconSize"]
                     v.refresh()

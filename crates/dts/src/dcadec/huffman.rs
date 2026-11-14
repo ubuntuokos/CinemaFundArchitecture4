@@ -93,7 +93,7 @@ impl Vlc {
     /// Decode one symbol, reading bits MSB-first. Returns `None` on bitstream
     /// underrun or an invalid (non-prefix) code.
     #[inline]
-    pub(crate) fn get(&self, gb: &mut BitReader) -> Option<i32> {
+    pub(crate) fn get(&self, gb: &mut BitReader<'_>) -> Option<i32> {
         if self.max_len == 0 {
             return None;
         }
@@ -182,7 +182,7 @@ mod tests {
     }
 
     /// The bit-by-bit walk the tables replaced, kept as the reference.
-    fn get_reference(pairs: &[[u8; 2]], offset: i32, gb: &mut BitReader) -> Option<i32> {
+    fn get_reference(pairs: &[[u8; 2]], offset: i32, gb: &mut BitReader<'_>) -> Option<i32> {
         let mut map = std::collections::HashMap::new();
         let mut max_len = 0u8;
         let mut acc: u64 = 0;

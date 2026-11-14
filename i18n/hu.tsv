@@ -4514,6 +4514,9 @@ export.summary	Low	alacsony
 	the engine sent no report	a motor nem küldött jelentést
 	The engine is not running.	A motor nem fut.
 	Finding {row}: the time code is not a time in this file (HH:MM:SS:FF).	Észrevétel {row}: az időkód nem létező időpont ebben a fájlban (ÓÓ:PP:MM:KK).
+	MXF OP1a Uncompressed 10-bit 4:2:2 (v210)	MXF OP1a tömörítetlen 10 bites 4:2:2 (v210)
+	MXF OP1a, uncompressed 10-bit Y'CbCr 4:2:2 in the v210 layout (SMPTE ST 384), 24-bit 48 kHz PCM, start timecode	MXF OP1a, tömörítetlen 10 bites Y'CbCr 4:2:2 v210 elrendezésben (SMPTE ST 384), 24 bites 48 kHz-es PCM, kezdő időkód
+	Write the captions as ANC data (CEA-608/708, 29.97 fps)	Feliratok írása ANC-adatként (CEA-608/708, 29,97 fps)
 	Load KDM…	KDM betöltése…
 	Forget DCP Keys	DCP kulcsok elfelejtése
 	Load KDM	KDM betöltése
@@ -4528,3 +4531,33 @@ export.summary	Low	alacsony
 	Signature not verified: {problem}	Az aláírás nincs ellenőrizve: {problem}
 	KDM required	KDM szükséges
 	Encrypted: load the KDM with content key {keys}	Titkosított: töltse be a KDM-et a(z) {keys} tartalomkulccsal
+	Timecode Sync	Időkód-szinkron
+	TimecodeSync	Időkód-szinkron
+	Chase	Követés
+	Follow external timecode during playback	Külső időkód követése lejátszáskor
+	Lock after	Zárolás ennyi után
+	Keep playing without signal for	Jel nélkül tovább játszik
+	External frame rate	Külső képkockasebesség
+	Offset (added to the external timecode)	Eltolás (a külső időkódhoz adva)
+	LTC	LTC
+	LTC input device	LTC-bemeneti eszköz
+	LTC input channel	LTC-bemeneti csatorna
+	Send LTC during playback	LTC küldése lejátszáskor
+	LTC output device	LTC-kimeneti eszköz
+	LTC output channel	LTC-kimeneti csatorna
+	LTC level	LTC-szint
+	dBFS	dBFS
+	MIDI Timecode	MIDI-időkód
+	MTC input port (empty = CFA4 port)	MTC-bemeneti port (üres = CFA4-port)
+	Send MIDI Timecode during playback	MIDI-időkód küldése lejátszáskor
+	MTC output port (empty = CFA4 port)	MTC-kimeneti port (üres = CFA4-port)
+	Send timecode ahead of the picture by	Időkód küldése a kép előtt ennyivel
+	LTC (audio input)	LTC (hangbemenet)
+	MIDI Timecode (MIDI input)	MIDI-időkód (MIDI-bemenet)
+	Same as the sequence	Mint a szekvencia
+	29.97 fps drop-frame	29,97 fps drop-frame
+	29.97 fps non-drop	29,97 fps non-drop
+	Timecode Sync Status	Időkód-szinkron állapota
+	Chase External Timecode	Külső időkód követése
+	Send LTC	LTC küldése
+	Send MIDI Timecode	MIDI-időkód küldése

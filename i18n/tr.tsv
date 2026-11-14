@@ -4516,6 +4516,9 @@ export.summary	Low	düşük
 	accept	kabul
 	the engine did not start the check	motor denetimi başlatmadı
 	the engine sent no report	motor rapor göndermedi
+	MXF OP1a Uncompressed 10-bit 4:2:2 (v210)	MXF OP1a sıkıştırılmamış 10 bit 4:2:2 (v210)
+	MXF OP1a, uncompressed 10-bit Y'CbCr 4:2:2 in the v210 layout (SMPTE ST 384), 24-bit 48 kHz PCM, start timecode	MXF OP1a, v210 düzeninde sıkıştırılmamış 10 bit Y'CbCr 4:2:2 (SMPTE ST 384), 24 bit 48 kHz PCM, başlangıç zaman kodu
+	Write the captions as ANC data (CEA-608/708, 29.97 fps)	Altyazıları ANC verisi olarak yaz (CEA-608/708, 29,97 fps)
 	Load KDM…	KDM Yükle…
 	Forget DCP Keys	DCP Anahtarlarını Unut
 	Load KDM	KDM Yükle
@@ -4530,3 +4533,35 @@ export.summary	Low	düşük
 	Signature not verified: {problem}	İmza doğrulanmadı: {problem}
 	KDM required	KDM gerekli
 	Encrypted: load the KDM with content key {keys}	Şifreli: {keys} içerik anahtarını taşıyan KDM'yi yükleyin
+
+# Settings ▸ Timecode Sync (TC-4)
+	Timecode Sync	Zaman Kodu Eşitleme
+	TimecodeSync	Zaman Kodu Eşitleme
+	Chase	Takip
+	Follow external timecode during playback	Oynatma sırasında harici zaman kodunu takip et
+	Lock after	Kilitlenme süresi
+	Keep playing without signal for	Sinyal olmadan oynatmayı sürdürme süresi
+	External frame rate	Harici kare hızı
+	Offset (added to the external timecode)	Kaydırma (harici zaman koduna eklenir)
+	LTC	LTC
+	LTC input device	LTC giriş aygıtı
+	LTC input channel	LTC giriş kanalı
+	Send LTC during playback	Oynatma sırasında LTC gönder
+	LTC output device	LTC çıkış aygıtı
+	LTC output channel	LTC çıkış kanalı
+	LTC level	LTC düzeyi
+	dBFS	dBFS
+	MIDI Timecode	MIDI Zaman Kodu
+	MTC input port (empty = CFA4 port)	MTC giriş bağlantı noktası (boş = CFA4 bağlantı noktası)
+	Send MIDI Timecode during playback	Oynatma sırasında MIDI Zaman Kodu gönder
+	MTC output port (empty = CFA4 port)	MTC çıkış bağlantı noktası (boş = CFA4 bağlantı noktası)
+	Send timecode ahead of the picture by	Zaman kodunu görüntüden şu kadar önce gönder
+	LTC (audio input)	LTC (ses girişi)
+	MIDI Timecode (MIDI input)	MIDI Zaman Kodu (MIDI girişi)
+	Same as the sequence	Sekansla aynı
+	29.97 fps drop-frame	29,97 fps drop-frame
+	29.97 fps non-drop	29,97 fps non-drop
+	Timecode Sync Status	Zaman Kodu Eşitleme Durumu
+	Chase External Timecode	Harici Zaman Kodunu Takip Et
+	Send LTC	LTC Gönder
+	Send MIDI Timecode	MIDI Zaman Kodu Gönder

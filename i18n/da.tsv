@@ -4517,6 +4517,9 @@ export.summary	Low	lav
 	accept	acceptabelt
 	the engine did not start the check	motoren startede ikke kontrollen
 	the engine sent no report	motoren sendte ingen rapport
+	MXF OP1a Uncompressed 10-bit 4:2:2 (v210)	MXF OP1a ukomprimeret 10-bit 4:2:2 (v210)
+	MXF OP1a, uncompressed 10-bit Y'CbCr 4:2:2 in the v210 layout (SMPTE ST 384), 24-bit 48 kHz PCM, start timecode	MXF OP1a, ukomprimeret 10-bit Y'CbCr 4:2:2 i v210-layout (SMPTE ST 384), 24-bit 48 kHz PCM, starttidskode
+	Write the captions as ANC data (CEA-608/708, 29.97 fps)	Skriv undertekster som ANC-data (CEA-608/708, 29,97 fps)
 	Load KDM…	Indlæs KDM…
 	Forget DCP Keys	Glem DCP-nøgler
 	Load KDM	Indlæs KDM
@@ -4531,3 +4534,35 @@ export.summary	Low	lav
 	Signature not verified: {problem}	Signatur ikke bekræftet: {problem}
 	KDM required	KDM påkrævet
 	Encrypted: load the KDM with content key {keys}	Krypteret: indlæs KDM'en med indholdsnøglen {keys}
+
+# Settings ▸ Timecode Sync (TC-4)
+	Timecode Sync	Tidskodesynkronisering
+	TimecodeSync	Tidskodesynkronisering
+	Chase	Følg
+	Follow external timecode during playback	Følg ekstern tidskode under afspilning
+	Lock after	Lås efter
+	Keep playing without signal for	Fortsæt afspilning uden signal i
+	External frame rate	Ekstern billedhastighed
+	Offset (added to the external timecode)	Forskydning (lægges til den eksterne tidskode)
+	LTC	LTC
+	LTC input device	LTC-inputenhed
+	LTC input channel	LTC-inputkanal
+	Send LTC during playback	Send LTC under afspilning
+	LTC output device	LTC-outputenhed
+	LTC output channel	LTC-outputkanal
+	LTC level	LTC-niveau
+	dBFS	dBFS
+	MIDI Timecode	MIDI-tidskode
+	MTC input port (empty = CFA4 port)	MTC-inputport (tom = CFA4-port)
+	Send MIDI Timecode during playback	Send MIDI-tidskode under afspilning
+	MTC output port (empty = CFA4 port)	MTC-outputport (tom = CFA4-port)
+	Send timecode ahead of the picture by	Send tidskode foran billedet med
+	LTC (audio input)	LTC (lydinput)
+	MIDI Timecode (MIDI input)	MIDI-tidskode (MIDI-input)
+	Same as the sequence	Samme som sekvensen
+	29.97 fps drop-frame	29,97 fps drop-frame
+	29.97 fps non-drop	29,97 fps non-drop
+	Timecode Sync Status	Status for tidskodesynkronisering
+	Chase External Timecode	Følg ekstern tidskode
+	Send LTC	Send LTC
+	Send MIDI Timecode	Send MIDI-tidskode

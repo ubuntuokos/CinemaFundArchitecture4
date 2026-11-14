@@ -98,7 +98,7 @@ impl VideoEncoder for NvencEncoder {
         u32::try_from(self.rate.num).unwrap_or(u32::MAX)
     }
 
-    fn encode(&mut self, f: &EncoderFrame) -> Result<Vec<EncodedPacket>> {
+    fn encode(&mut self, f: &EncoderFrame<'_>) -> Result<Vec<EncodedPacket>> {
         if f.width != self.w || f.height != self.h {
             return Err(ExportError::Encode(format!("NVENC: a {}x{} picture for a {}x{} encoder", f.width, f.height, self.w, self.h)));
         }

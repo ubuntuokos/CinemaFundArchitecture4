@@ -51,12 +51,13 @@ pub fn ffmpeg_audio_f32(ff: &Path, file: &Path, extra: &[&str]) -> Vec<f32> {
     ffmpeg_out(ff, &args).as_chunks::<4>().0.iter().map(|b| f32::from_le_bytes([b[0], b[1], b[2], b[3]])).collect()
 }
 
-/// Our frame's three planes widened to u16 (and their sizes).
+/// Our frame's three planes widened to u16 (and their sizes): Y'CbCr, or R, G, B.
 pub fn planes(f: &VideoFrame) -> Vec<Vec<u16>> {
     match &f.data {
         PixelData::Yuv8 { planes, .. } => planes.iter().map(|p| p.iter().map(|&v| v as u16).collect()).collect(),
-        PixelData::Yuv16 { planes, .. } => planes.iter().map(|p| p.to_vec()).collect(),
-        _ => panic!("expected a YUV frame"),
+        PixelData::Yuv16 { planes, .. } | PixelData::Rgb16 { planes, .. } => planes.iter().map(|p| p.to_vec()).collect(),
+        PixelData::Rgba8(px) => (0..3).map(|c| px.chunks(4).map(|p| u16::from(p[c])).collect()).collect(),
+        PixelData::RgbaF32(_) => panic!("expected an integer frame"),
     }
 }
 

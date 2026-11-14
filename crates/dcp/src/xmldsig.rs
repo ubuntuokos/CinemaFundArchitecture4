@@ -53,7 +53,7 @@ fn algorithm<'a>(n: Option<Node<'a, '_>>, what: &str) -> Result<&'a str, String>
     n.and_then(|n| n.attribute("Algorithm")).ok_or_else(|| format!("{what} has no Algorithm"))
 }
 
-fn b64(n: Option<Node>, what: &str) -> Result<Vec<u8>, String> {
+fn b64(n: Option<Node<'_, '_>>, what: &str) -> Result<Vec<u8>, String> {
     let t: String = n.and_then(|n| n.text()).unwrap_or_default().chars().filter(|c| !c.is_ascii_whitespace()).collect();
     if t.is_empty() {
         return Err(format!("{what} is empty"));
@@ -82,7 +82,7 @@ fn c14n_comments(alg: &str) -> Result<bool, String> {
 /// given, picks the signer's certificate; otherwise it is the one that signs no other. An error
 /// means the signed content could not be verified (changed, malformed, or no signer key); a chain
 /// that does not check out is `Verified::chain_problem`.
-pub fn verify(doc: &Document, sig: Node, signer_serial: Option<&str>, now: DateTime<Utc>) -> Result<Verified, String> {
+pub fn verify(doc: &Document<'_>, sig: Node<'_, '_>, signer_serial: Option<&str>, now: DateTime<Utc>) -> Result<Verified, String> {
     let si = ds_child(sig, "SignedInfo").ok_or("Signature without SignedInfo")?;
     let canon = c14n_comments(algorithm(ds_child(si, "CanonicalizationMethod"), "CanonicalizationMethod")?)?;
     let alg = match algorithm(ds_child(si, "SignatureMethod"), "SignatureMethod")? {
