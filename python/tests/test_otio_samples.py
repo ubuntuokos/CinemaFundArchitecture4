@@ -7,12 +7,14 @@ test ``oracle_samples``.
 
 from __future__ import annotations
 
+import importlib
 import importlib.util
 import json
 import tempfile
 import unittest
 from pathlib import Path
 from types import SimpleNamespace
+from typing import Any
 from unittest.mock import patch
 
 from cfa4_devtools import otio_samples as samples
@@ -22,28 +24,28 @@ HAVE_OTIO = importlib.util.find_spec("opentimelineio") is not None
 
 
 class TicksTest(unittest.TestCase):
-    def test_common_rates_are_exact(self):
+    def test_common_rates_are_exact(self) -> None:
         self.assertEqual(samples.ticks_of(SimpleNamespace(value=25, rate=25)), samples.TICKS_PER_SECOND)
         self.assertEqual(
             samples.ticks_of(SimpleNamespace(value=30000, rate=samples.NTSC)), 1001 * samples.TICKS_PER_SECOND
         )
         self.assertEqual(samples.ticks_of(SimpleNamespace(value=1, rate=48_000)), samples.TICKS_PER_SECOND // 48_000)
 
-    def test_non_positive_rate_is_an_error(self):
+    def test_non_positive_rate_is_an_error(self) -> None:
         with self.assertRaises(ValueError):
             samples.ticks_of(SimpleNamespace(value=1, rate=0))
 
 
 class FilePathTest(unittest.TestCase):
-    def test_paths_as_cfa4_opens_them(self):
+    def test_paths_as_cfa4_opens_them(self) -> None:
         self.assertEqual(samples.file_path("file:///footage/shot%20a.mov"), "/footage/shot a.mov")
         self.assertEqual(samples.file_path("/abs/x.mov"), "/abs/x.mov")
         self.assertEqual(samples.file_path("clips/b.mov"), f"{samples.BASE_DIR}/clips/b.mov")
 
 
 class LegacyMarkerTest(unittest.TestCase):
-    def test_marker2_becomes_marker1_with_range(self):
-        doc = {
+    def test_marker2_becomes_marker1_with_range(self) -> None:
+        doc: dict[str, Any] = {
             "OTIO_SCHEMA": "Clip.1",
             "markers": [{"OTIO_SCHEMA": "Marker.2", "name": "m", "comment": "c", "marked_range": {"x": 1}}],
         }
@@ -53,7 +55,7 @@ class LegacyMarkerTest(unittest.TestCase):
 
 
 class MissingLibraryTest(unittest.TestCase):
-    def test_missing_library_exits_with_2(self):
+    def test_missing_library_exits_with_2(self) -> None:
         with (
             patch.object(samples, "load_otio", side_effect=OracleError("not installed")),
             tempfile.TemporaryDirectory() as d,
@@ -63,7 +65,7 @@ class MissingLibraryTest(unittest.TestCase):
 
 @unittest.skipUnless(HAVE_OTIO, "opentimelineio is not installed")
 class WriteTest(unittest.TestCase):
-    def test_samples_cover_every_schema_the_reader_handles(self):
+    def test_samples_cover_every_schema_the_reader_handles(self) -> None:
         with tempfile.TemporaryDirectory() as d:
             manifest = samples.write(Path(d))
             text = "".join((Path(d) / s["file"]).read_text(encoding="utf-8") for s in manifest["samples"])
@@ -90,8 +92,8 @@ class WriteTest(unittest.TestCase):
         ):
             self.assertIn(f'"OTIO_SCHEMA": "{schema}"', text, schema)
 
-    def test_expectations_follow_otio_timing(self):
-        import opentimelineio as otio
+    def test_expectations_follow_otio_timing(self) -> None:
+        otio: Any = importlib.import_module("opentimelineio")
 
         tl = samples.expect_timeline(otio, samples.transitions(otio))
         # interleaved V1, A1, V2, A2 come out grouped by kind, each kind in order
@@ -109,8 +111,8 @@ class WriteTest(unittest.TestCase):
         self.assertEqual((inner["name"], inner["markers"]), ("Inner", []))
         self.assertEqual(inner["start_ticks"], 5 * samples.TICKS_PER_SECOND // 25)
 
-    def test_start_timecode_and_media_time_markers(self):
-        import opentimelineio as otio
+    def test_start_timecode_and_media_time_markers(self) -> None:
+        otio: Any = importlib.import_module("opentimelineio")
 
         tl = samples.expect_timeline(otio, samples.start_timecode(otio, 30))
         self.assertEqual((tl["rate"], tl["start_timecode"]), (30, 30 * 3600))
@@ -123,8 +125,8 @@ class WriteTest(unittest.TestCase):
             [[54 * samples.TICKS_PER_SECOND // 30, 12 * samples.TICKS_PER_SECOND // 30]],
         )
 
-    def test_media_expectations(self):
-        import opentimelineio as otio
+    def test_media_expectations(self) -> None:
+        otio: Any = importlib.import_module("opentimelineio")
 
         items = samples.expect_timeline(otio, samples.media_paths(otio))["tracks"][0]["items"]
         media = {i["name"]: i["media"] for i in items}
@@ -138,15 +140,15 @@ class WriteTest(unittest.TestCase):
         self.assertEqual((fx["fast"]["speed"], fx["reverse"]["reverse"], fx["hold"]["frame_hold"]), (2.0, True, True))
         self.assertFalse(fx["disabled"]["enabled"])
 
-    def test_bare_track_is_one_sequence_named_after_it(self):
-        import opentimelineio as otio
+    def test_bare_track_is_one_sequence_named_after_it(self) -> None:
+        otio: Any = importlib.import_module("opentimelineio")
 
         (tl,) = samples.timelines_of(otio, samples.bare_track(otio))
         want = samples.expect_timeline(otio, tl)
         self.assertEqual((want["name"], want["rate"], want["start_timecode"]), ("Solo", 30, 0))
 
-    def test_legacy_markers_read_back_at_the_same_time(self):
-        import opentimelineio as otio
+    def test_legacy_markers_read_back_at_the_same_time(self) -> None:
+        otio: Any = importlib.import_module("opentimelineio")
 
         tl = samples.edit(otio)
         new = otio.adapters.read_from_string(samples.serialise(otio, tl, None))

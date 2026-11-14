@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import json
 from pathlib import Path
+from typing import Any
 
 import pytest
 from cfa4_devtools.third_party_licenses import NoticeError, collect, main, render, shipped_package_ids
@@ -23,8 +24,8 @@ def _crate(tmp: Path, name: str, files: dict[str, str]) -> Path:
     return crate / "Cargo.toml"
 
 
-def _metadata(tmp: Path) -> dict:
-    def pkg(name: str, manifest: Path, license: str | None = "MIT OR Apache-2.0", source: str | None = "registry") -> dict:
+def _metadata(tmp: Path) -> dict[str, Any]:
+    def pkg(name: str, manifest: Path, license: str | None = "MIT OR Apache-2.0", source: str | None = "registry") -> dict[str, Any]:
         return {"id": f"{name}-id", "name": name, "version": "1.0.0", "license": license, "source": source,
                 "repository": f"https://example.invalid/{name}", "authors": [f"{name} authors"],
                 "manifest_path": str(manifest), "license_file": None}
@@ -43,7 +44,7 @@ def _metadata(tmp: Path) -> dict:
     ]
     normal = [{"kind": None, "target": None}]
 
-    def dep(name: str, kinds: list[dict] | None = None) -> dict:
+    def dep(name: str, kinds: list[dict[str, Any]] | None = None) -> dict[str, Any]:
         return {"pkg": f"{name}-id", "dep_kinds": kinds or normal}
 
     nodes = [
@@ -112,7 +113,7 @@ def test_missing_root_and_oversized_file_are_errors(tmp_path: Path) -> None:
         collect(meta)
 
 
-def test_cli_writes_the_file_and_strict_fails_without_licence_files(tmp_path: Path, capsys) -> None:
+def test_cli_writes_the_file_and_strict_fails_without_licence_files(tmp_path: Path, capsys: pytest.CaptureFixture[str]) -> None:
     meta = tmp_path / "metadata.json"
     crates = tmp_path / "crates"
     crates.mkdir()
