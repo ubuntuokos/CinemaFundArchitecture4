@@ -2393,7 +2393,7 @@ EGUI_EXPORT_IDS: frozenset[str] = frozenset({
     "export.effects.timecodeOverlay", "export.effects.videoLimiter", "export.effects.videoLimiter.max",
     "export.effects.videoLimiter.min", "export.estimate", "export.fileName", "export.format", "export.gpuRendering",
     "export.location", "export.location.browse", "export.multiplexer", "export.preset", "export.preset.more",
-    "export.preview", "export.queue.clear", "export.queue.start", "export.queue.stop", "export.range",
+    "export.preview", "export.problem", "export.queue.clear", "export.queue.start", "export.queue.stop", "export.range",
     "export.range.end", "export.range.start", "export.scaling", "export.sendToQueue", "export.summary",
     "export.video.alpha", "export.video.apvProfile", "export.video.aspect", "export.video.bitrateMode",
     "export.video.cineformProfile", "export.video.cineformQuality", "export.video.crf", "export.video.dashManifest", "export.video.dnxProfile",
@@ -3453,7 +3453,9 @@ def test_real_engine_effect_controls_lane_as_egui(app, tmp_path: Path):
     def run_menu(name: str) -> None:
         def pick() -> None:
             menu = ec.last_menu
-            action = next(a for a in menu.actions() if a.objectName() == name)
+            found = [a for a in menu.actions() if a.objectName() == name]
+            found += [a for sub in menu.actions() if sub.menu() for a in sub.menu().actions() if a.objectName() == name]
+            action = found[0]
             menu.close()
             action.trigger()
         QtCore.QTimer.singleShot(50, pick)
@@ -3538,6 +3540,26 @@ def test_real_engine_effect_controls_lane_as_egui(app, tmp_path: Path):
         send(lane, QtCore.QEvent.Type.MouseButtonPress, pts["scale@0"]["pos"], QtCore.Qt.MouseButton.RightButton,
              QtCore.Qt.MouseButton.RightButton)
         assert wait_until(app, lambda: min(keys("scale"), key=lambda k: k["time"])["interpolation"] == "hold", 10_000)
+        # egui's Easing Presets submenu: CFA4's fixed curves (no influence handles), one undo step each
+        menu_shown: list[list[str]] = []
+
+        def presets_then(name: str) -> None:
+            def look() -> None:
+                sub = next(a.menu() for a in ec.last_menu.actions() if a.menu())
+                menu_shown.append([sub.objectName(), *(a.objectName() for a in sub.actions())])
+            QtCore.QTimer.singleShot(30, look)
+            run_menu(name)
+
+        steps = win.history.list.count()
+        presets_then("effectControls.keyframeMenu.elastic")
+        send(lane, QtCore.QEvent.Type.MouseButtonPress, pts["scale@0"]["pos"], QtCore.Qt.MouseButton.RightButton,
+             QtCore.Qt.MouseButton.RightButton)
+        assert menu_shown and menu_shown[0] == ["effectControls.keyframeMenu.easingPresets"] + [
+            f"effectControls.keyframeMenu.{k}" for k in ("sine", "expo", "circ", "overshoot", "elastic", "bounce")], menu_shown
+        assert wait_until(app, lambda: min(keys("scale"), key=lambda k: k["time"])["interpolation"] == "elastic", 10_000)
+        assert wait_until(app, lambda: win.history.list.count() == steps + 1, 10_000)
+        from cfa4_qt.panels.effect_controls import eases
+        assert eases("elastic") == (False, False) and eases("bezier") == (True, True)
 
         # value and velocity graphs: a keyframe drags vertically for its value, a Bezier
         # influence handle horizontally; Esc abandons a drag
@@ -14936,6 +14958,7 @@ def test_kdm_dialog_describes_the_reply_never_a_key():
     assert describe(None) == "" and describe({"keys": "x"}).startswith("KDM: 0 keys")
 
 
+@pytest.mark.skipif(REAL is None, reason="Rust engine not built (cargo build -p cfa4-cli)")
 def test_real_engine_load_kdm_dialog(app, tmp_path: Path):
     """File ▸ Load KDM… (#1029): a wrong private key shows the engine's message, the right one the
     KDM's title and key types (never the key); Forget DCP Keys empties the key ring."""
@@ -14976,6 +14999,33 @@ def test_real_engine_load_kdm_dialog(app, tmp_path: Path):
         engine.execute("dcp.keys", {}, on_reply=lambda r, _b: got.append(r))
         assert wait_until(app, lambda: got, 10_000) and got[0]["keyIds"] == []
         dlg.close()
+    finally:
+        win._quit_confirmed = True
+        win.close()
+        engine.stop()
+
+
+@pytest.mark.skipif(REAL is None, reason="Rust engine not built (cargo build -p cfa4-cli)")
+def test_real_engine_check_text_legibility_reports_as_egui(app, tmp_path: Path):
+    """Graphics and Titles ▸ Check Text Legibility (``graphics.checkLegibility``) comes from the
+    engine's registry; its result goes to the status line and the Events panel in egui's words."""
+    from cfa4_qt.main_window import MainWindow
+
+    settings = QtCore.QSettings(str(tmp_path / "s.ini"), QtCore.QSettings.Format.IniFormat)
+    engine = EngineClient(REAL, ["--demo", "--data-dir", str(tmp_path / "data")])
+    win = MainWindow(engine, settings)
+    win.resize(1600, 1000)
+    win.show()
+    engine.start()
+    try:
+        assert wait_until(app, lambda: win.sequence is not None and len(win.registry.commands) > 100, 60_000)
+        cmd = win.registry.commands.get("graphics.checkLegibility")
+        assert cmd is not None and "Graphics and Titles" in cmd.menu, cmd
+        win.statusBar().clearMessage()
+        win.run_menu_command("graphics.checkLegibility", {})
+        assert wait_until(app, lambda: win.statusBar().currentMessage().startswith("Text legibility: "), 20_000), win.statusBar().currentMessage()
+        msg = win.statusBar().currentMessage()
+        assert msg == "Text legibility: no problems found" or "problems marked on the timeline" in msg, msg
     finally:
         win._quit_confirmed = True
         win.close()
