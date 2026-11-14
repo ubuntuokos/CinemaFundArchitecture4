@@ -14610,7 +14610,7 @@ def test_real_engine_credits_window_opens_a_cinecred_project(app, tmp_path: Path
 
 
 def test_credits_workspace_strip_and_block_helpers(app):
-    from cfa4_qt.panels.credits_workspace import TimelineStrip, block_label, page_spans
+    from cfa4_qt.panels.credits_workspace import TimelineStrip, block_label, page_spans, spine_text
 
     pages = [{"duration": 100, "gapAfter": 0}, {"duration": 50, "gapAfter": -20}, {"duration": 30}, {"duration": "x"}]
     assert page_spans(pages) == [(0.0, 100.0), (100.0, 150.0), (130.0, 160.0), (160.0, 160.0)]
@@ -14630,6 +14630,11 @@ def test_credits_workspace_strip_and_block_helpers(app):
     assert block_label({"head": "Cast", "body": ["A", "B"], "bodyCount": 2}) == "Cast  (+2)"
     assert block_label({"body": ["A", "B"], "bodyCount": 5}) == "A  (+4)"
     assert block_label({}) and block_label({"body": [None, 3]})
+    # a spine: its offset, parallel, or where a hook puts it (bad values do not break it)
+    assert spine_text({"spine": -450, "parallel": True}) == "-450 px (parallel)"
+    hooked = {"spine": 0, "hook": {"back": 2, "from": "middle", "to": "top", "dx": 600, "dy": 10}}
+    assert spine_text(hooked) == "hooked 2 spines back: its middle meets this spine's top (+600, +10 px)"
+    assert spine_text({"hook": {"back": 1, "from": "?", "to": None, "dx": "x"}}) == "hooked 1 spines back: its top meets this spine's top"
 
 
 @pytest.mark.skipif(REAL is None, reason="Rust engine not built (cargo build -p cfa4-cli)")
@@ -14877,6 +14882,26 @@ def test_credits_engine_notes_are_translated():
         if literal.startswith("{what}"):
             filled = "picture" + filled[1:]
         assert any(p.match(filled) for p, _t in NOTES), literal
+
+
+def test_credits_card_point_text(app):
+    """C15: a card spine's point follows its offset in the block's properties, in the user's
+    language; a block without one, or with bad values, does not break it."""
+    from cfa4_qt.i18n import TR
+    from cfa4_qt.panels.credits_workspace import card_point_text
+
+    assert card_point_text({"spine": -150}) == ""
+    assert card_point_text({"cardPoint": {"y": -50, "anchor": "middle"}}) == ", on a card: centered on -50 px"
+    assert card_point_text({"cardPoint": {"y": 50, "anchor": "below"}}) == ", on a card: starts at +50 px"
+    assert card_point_text({"cardPoint": {"y": "x", "anchor": "above"}}) == ", on a card: ends at +0 px"
+    assert card_point_text({"cardPoint": {"anchor": None}}) == ", on a card: centered on +0 px"
+    TR.set_language("hu")
+    try:
+        assert card_point_text({"cardPoint": {"y": 50, "anchor": "below"}}) == ", kártyán: a(z) +50 px-től lefelé"
+        TR.set_language("en-gb")
+        assert card_point_text({"cardPoint": {"y": 0, "anchor": "middle"}}) == ", on a card: centred on +0 px"
+    finally:
+        TR.set_language("en")
 
 
 def test_monitor_picture_falls_back_to_raster_without_opengl(app, monkeypatch):

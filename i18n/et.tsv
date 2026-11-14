@@ -4382,6 +4382,10 @@ export.summary	Low	madal
 	{n} more	Veel {n}
 	Block	Plokk
 	parallel	paralleelne
+	page {page}: a spine's vertical position works on card pages only; it is ignored	leht {page}: telje püstasend kehtib ainult kaardilehtedel; seda eiratakse
+	on a card: centered on {y} px	kaardil: keskel kohal {y} px
+	on a card: starts at {y} px	kaardil: algab kohalt {y} px
+	on a card: ends at {y} px	kaardil: lõpeb kohal {y} px
 # MPEG-2 export audio (#268): a product name, kept as is
 	Dolby Digital (AC-3)	Dolby Digital (AC-3)
 	In the page (OBS takes it from the Browser Source)	Lehel (OBS võtab selle brauseriallikast)
@@ -4454,7 +4458,12 @@ export.summary	Low	madal
 	page {page}: the runtime is reached by changing the roll speed (the gaps would have to grow more than 20-fold)	leht {page}: kestus saavutatakse kerimiskiirust muutes (vahed peaksid kasvama üle 20 korra)
 	page {page}: the transition needs the pages to touch (page gap 0); it is left out	leht {page}: üleminek nõuab, et lehed puutuksid (lehevahe 0); see jäetakse välja
 	page {page}: there is no transition “{name}”; the pages cut	leht {page}: üleminekut „{name}“ pole; lehed vahetuvad lõikega
-	spine position “{value}” is not supported (a pixel offset, optionally “parallel”, is)	telje asukohta „{value}“ ei toetata (toetatakse pikslinihet, soovi korral koos „parallel“)
+	spine position “{value}” is not supported (a pixel offset, optionally “parallel”, or “Hook N Bottom-Top dx dy” is)	telje asukohta „{value}“ ei toetata (toetatakse pikslinihet, soovi korral koos „parallel“ / „Hook N Bottom-Top dx dy“)
+	page {page}: the hook reaches back further than there are spines; it hooks onto the first spine, or starts its own	lehekülg {page}: konks ulatub kaugemale tagasi, kui telgi on; see haakub esimese teljega või alustab oma
+	hooked {n} spines back: its {from} meets this spine's {to}	haagitud {n} telge tagasi: selle {from} kohtub selle telje {to}ga
+	top	ülaserv
+	middle	keskkoht
+	bottom	alaserv
 	vertical gap “{value}” is not a number	vertikaalne vahe „{value}“ ei ole arv
 	picture “{file}” was not found or cannot be read; it is left out	pilti „{file}“ ei leitud või ei saa lugeda; see jäetakse välja
 	video “{file}” was not found or cannot be read; it is left out	videot „{file}“ ei leitud või ei saa lugeda; see jäetakse välja

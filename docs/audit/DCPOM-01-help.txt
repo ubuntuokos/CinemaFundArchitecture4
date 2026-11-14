@@ -1,0 +1,130 @@
+### dcpomatic2_create --help (2.18.51)
+Create a film directory (ready for making a DCP) or metadata file from some content files.
+A film directory will be created if -o or --output is specified, otherwise a metadata file
+will be written to stdout.
+
+Syntax: dcpomatic2_create [OPTION] <CONTENT> [OPTION] [<CONTENT> ...]
+  -v, --version                 show DCP-o-matic version
+  -h, --help                    show this help
+  -n, --name <name>             film name
+  -t, --template <name>         template name
+      --no-encrypt              make an unencrypted DCP
+  -e, --encrypt                 make an encrypted DCP
+  -c, --dcp-content-type <type> FTR, SHR, TLR, TST, XSN, RTG, TSR, POL, PSA or ADV
+  -f, --dcp-frame-rate <rate>   set DCP video frame rate (otherwise guessed from content)
+      --container-ratio <ratio> 119, 133, 137, 138, 166, 178, 185 or 239
+  -s, --still-length <n>        number of seconds that still content should last
+      --auto-crop-threshold <n> threshold to use for 'black' when auto-cropping
+      --standard <standard>     SMPTE or interop (default SMPTE)
+      --no-use-isdcf-name       do not use an ISDCF name; use the specified name unmodified
+      --config <dir>            directory containing config.xml and cinemas.sqlite3
+      --twok                    make a 2K DCP instead of choosing a resolution based on the content
+      --fourk                   make a 4K DCP instead of choosing a resolution based on the content
+  -a, --audio-channels <n>      specify the number of audio channels in the DCP
+  -o, --output <dir>            output directory
+      --twod                    make a 2D DCP
+      --threed                  make a 3D DCP
+      --video-bit-rate <Mbit/s> J2K bandwidth in Mbit/s
+      --left-eye                next piece of content is for the left eye
+      --right-eye               next piece of content is for the right eye
+      --auto-crop               next piece of content should be auto-cropped
+      --fill-crop               next piece of content should be cropped to fit the container
+                                (e.g. to crop the letterboxing from a scope-in-flat image)
+      --colourspace             next piece of content is in the given colourspace: srgb, rec601, rec709, p3, p3-d65, p3-d60, rec1886, rec2020, sgamut3
+      --colorspace              same as --colourspace
+      --channel <channel>       next piece of content should be mapped to audio channel L, R, C, Lfe, Ls, Rs, BsL, BsR, HI, VI
+      --gain                    next piece of content should have the given audio gain (in dB)
+      --fade-in <seconds>       next piece of content should have the given fade-in (in seconds)
+      --fade-out <seconds>      next piece of content should have the given fade-out (in seconds)
+      --cpl <id>                CPL ID to use from the next piece of content (which is a DCP)
+      --kdm <file>              KDM for next piece of content
+
+
+### dcpomatic2_cli --help
+Syntax: dcpomatic2_cli [OPTION] [COMMAND] [<PARAMETER>]
+
+Commands:
+
+  make-dcp <FILM>                   make DCP from the given film; default if no other command is specified
+  list-servers                      display a list of encoding servers that DCP-o-matic can use (until Ctrl-C)
+  dump <FILM>                       show a summary of the film's settings
+  convert-screen-db <in> <out>      convert a given XML screen database to SQLite
+
+Options:
+
+  -v, --version                     show DCP-o-matic version
+  -h, --help                        show this help
+  -f, --flags                       show flags passed to C++ compiler on build
+  -n, --no-progress                 do not print progress to stdout
+  -r, --no-remote                   do not use any remote servers
+  -t, --threads                     specify number of local encoding threads (overriding configuration)
+  -j, --json <port>                 run a JSON server on the specified port
+  -k, --keep-going                  keep running even when the job is complete
+  -s, --servers <file>              specify servers to use in a text file
+  -l, --list-servers                just display a list of encoding servers that DCP-o-matic is configured to use; don't encode
+                                      (deprecated - use the list-servers command instead)
+  -d, --dcp-path                    echo DCP's path to stdout on successful completion (implies -n)
+  -c, --config <dir>                directory containing config.xml and cinemas.xml
+      --dump                        just dump a summary of the film's settings; don't encode
+                                      (deprecated - use the dump command instead)
+      --no-check                    don't check project's content files for changes before making the DCP
+      --export-format <format>      export project to a file, rather than making a DCP: specify mov or mp4
+      --export-filename <filename>  filename to export to with --export-format
+      --hints                       analyze film for hints before encoding and abort if any are found
+
+e.g.
+
+  dcpomatic2_cli -t 4 make-dcp my_great_movie
+
+  dcpomatic2_cli config grok-licence 12345ABCD
+
+  dcpomatic2_cli convert-screen-db database.xml database.sqlite3
+
+### dcpomatic2_kdm_cli --help
+Syntax: dcpomatic2_kdm_cli [OPTION] [COMMAND] <FILM|CPL-ID|TITLE|DKDM>
+
+Commands:
+
+    create                       create KDMs; default if no other command is specified
+    list-cinemas                 list known cinemas from DCP-o-matic settings
+    list-dkdm-cpls               list CPLs for which DCP-o-matic has DKDMs
+    add-dkdm                     add DKDM to DCP-o-matic's list
+    dump-decryption-certificate  write the DCP-o-matic KDM decryption certificate to the console
+
+Parameters:
+
+    FILM    a folder containing a DCP-o-matic project
+    CPL-ID  CPL ID of a DKDM on DCP-o-matic's list
+    TITLE   ContentTitleText of a DKDM on DCP-o-matic's list
+    DKDM    a DKDM file
+
+  -h, --help                               show this help
+  -o, --output <path>                      output file or directory
+  -K, --filename-format <format>           filename format for KDMs
+  -Z, --container-name-format <format>     filename format for ZIP containers
+  -f, --valid-from <time>                  valid from time (in local time zone of the cinema) (e.g. "2013-09-28 01:41:51") or "now"
+  -t, --valid-to <time>                    valid to time (in local time zone of the cinema) (e.g. "2014-09-28T01:41:51")
+  -d, --valid-duration <duration>          valid duration (e.g. "1 day", "4 hours", "2 weeks")
+  -F, --formulation <formulation>          modified-transitional-1, multiple-modified-transitional-1, dci-any or dci-specific [default modified-transitional-1]
+  -p, --disable-forensic-marking-picture   disable forensic marking of pictures essences
+  -a, --disable-forensic-marking-audio     disable forensic marking of audio essences (optionally above a given channel, e.g 12)
+  -e, --email                              email KDMs to cinemas
+  -z, --zip                                ZIP each cinema's KDMs into its own file
+  -v, --verbose                            be verbose
+  -c, --cinema <name|email>                cinema name (when using -C) or name/email (to filter cinemas)
+  -S, --screen <name>                      screen name (when using -C) or screen name (to filter screens when using -c)
+  -C, --projector-certificate <file>       file containing projector certificate
+  -T, --trusted-device-certificate <file>  file containing a trusted device's certificate
+      --trusted-device-chain <file>        file containing a trusted device's chain; the leaf certificate will be used
+      --decryption-key <file>              file containing the private key which can decrypt the given DKDM
+                                           (DCP-o-matic's configured private key will be used otherwise)
+      --cinemas-file <file>                use the given file as a list of cinemas instead of the current configuration
+
+CPL-ID must be the ID of a CPL that is mentioned in DCP-o-matic's DKDM list.
+
+For example:
+
+Create KDMs for my_great_movie to play in all of Fred's Cinema's screens for the next two weeks and zip them up.
+(Fred's Cinema must have been set up in DCP-o-matic's KDM window)
+
+	dcpomatic2_kdm_cli -c "Fred's Cinema" -f now -d "2 weeks" -z my_great_movie
