@@ -1309,25 +1309,49 @@ fn decode_raw_dts(bytes: &[u8]) -> Result<Option<(u32, &'static str, Vec<Vec<f32
 }
 
 fn decode_adts(bytes: &[u8]) -> Result<Option<(u32, Vec<Vec<f32>>)>> {
-    let mut frames: Vec<(Vec<u8>, &[u8])> = Vec::new();
-    let mut p = id3v2_len(bytes);
+    decode_aac_units(&aac_units(bytes.get(id3v2_len(bytes)..).unwrap_or_default()), usize::MAX)
+}
+
+/// The AAC access units of an ADTS or LOAS (LATM, ISO/IEC 14496-3 §1.7.2 AudioSyncStream)
+/// stream, whichever sync word comes first: (AudioSpecificConfig, raw data block) each. Damaged
+/// data is skipped up to the next frame header.
+pub(crate) fn aac_units(bytes: &[u8]) -> Vec<(Vec<u8>, Vec<u8>)> {
+    let mut units = Vec::new();
+    let mut latm: Option<LatmConfig> = None;
+    let mut p = 0usize;
     while let Some(rest) = bytes.get(p..).filter(|r| r.len() >= 7) {
-        match adts_frame_len(rest).and_then(|len| Some((len, adts_split(rest.get(..len)?)?))) {
-            Some((len, f)) => {
-                frames.push(f);
-                p += len;
-            }
-            None => p += 1,
+        if let Some((len, (asc, raw))) = adts_frame_len(rest).and_then(|len| Some((len, adts_split(rest.get(..len)?)?))) {
+            units.push((asc, raw.to_vec()));
+            p += len;
+            continue;
         }
+        // LOAS: 11-bit sync word 0x2B7, 13-bit audioMuxLengthBytes, then the AudioMuxElement
+        if rest[0] == 0x56 && rest[1] & 0xE0 == 0xE0 {
+            let len = 3 + ((usize::from(rest[1] & 0x1F) << 8) | usize::from(rest[2]));
+            if let Some(unit) = rest.get(..len).and_then(|f| latm_split(f, &mut latm)) {
+                units.push(unit);
+                p += len;
+                continue;
+            }
+        }
+        p += 1;
     }
-    let Some(asc) = frames.first().map(|f| f.0.clone()) else { return Ok(None) };
-    let Some(rate) = aac_output_rate(&asc, frames.iter().take(8).map(|f| f.1)) else { return Ok(None) };
+    units
+}
+
+/// AAC access units decoded with our AAC decoder (HE-AAC upsampled to its output rate), at most
+/// `max_units` of them: (output sample rate, planar samples). Units with another configuration
+/// than the first are skipped, and a unit that does not decode keeps its duration as silence.
+/// `Ok(None)` when nothing decodes; an error past [`MAX_ADTS_SAMPLES`].
+pub(crate) fn decode_aac_units(units: &[(Vec<u8>, Vec<u8>)], max_units: usize) -> Result<Option<(u32, Vec<Vec<f32>>)>> {
+    let Some(asc) = units.first().map(|f| f.0.clone()) else { return Ok(None) };
+    let Some(rate) = aac_output_rate(&asc, units.iter().take(8).map(|f| f.1.as_slice())) else { return Ok(None) };
     let mut dec = PacketDecoder::aac(&asc, rate)?;
     let mut out: Vec<Vec<f32>> = Vec::new();
     let mut total = 0usize;
     let mut last = 0usize;
-    for (cfg, payload) in frames {
-        if cfg != asc {
+    for (cfg, payload) in units.iter().take(max_units) {
+        if *cfg != asc {
             continue;
         }
         let decoded = dec.decode(payload, 0).ok().filter(|c| out.is_empty() || c.len() == out.len());
@@ -1350,7 +1374,7 @@ fn decode_adts(bytes: &[u8]) -> Result<Option<(u32, Vec<Vec<f32>>)>> {
         }
         total = total.saturating_add(last.saturating_mul(out.len()));
         if total > MAX_ADTS_SAMPLES {
-            return Err(CodecError::Unsupported("AAC file too long to import as raw ADTS (over 4 GiB decoded): remux it to .m4a".into()));
+            return Err(CodecError::Unsupported("AAC stream too long to import (over 4 GiB decoded): remux it to .m4a".into()));
         }
     }
     Ok(out.first().is_some_and(|c| !c.is_empty()).then_some((rate, out)))

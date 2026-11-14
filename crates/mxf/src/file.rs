@@ -1113,6 +1113,15 @@ fn build_track(
             t.sound = Some(SoundInfo { sample_rate: rate, bits: 24, ..Default::default() });
             build_pictures(src, &mut t, elements, index, warnings)?;
         }
+        TrackKind::Sound if crate::essence::is_aac(container, desc.and_then(|d| d.ul(tag::SOUND_ESSENCE_CODING))) => {
+            // AAC (ST 381-4): the elements' audio frames are decoded as one stream, each element a
+            // sample (frame wrapping) or the whole stream in one (clip wrapping)
+            t.codec = Codec::Aac;
+            t.sound_format = SoundFormat::Other;
+            t.sound = Some(desc.map(|d| sound_info(d)).unwrap_or_default());
+            build_pictures(src, &mut t, elements, index, warnings)?;
+            t.wrapping = if elements.len() == 1 && r.duration.is_some_and(|d| d > 1) { Wrapping::Clip } else { Wrapping::Frame };
+        }
         TrackKind::Sound if is_iab(desc.map(|d| &**d), container, key4, src, elements, encrypted) => {
             t.codec = Codec::Iab;
             t.sound_format = SoundFormat::Iab;
