@@ -1,8 +1,8 @@
 //! OpenTimelineIO JSON (`.otio`).
 //!
 //! Schemas read and written: `Timeline.1`, `Stack.1`, `Track.1`, `Clip.1`/`Clip.2`, `Gap.1`,
-//! `Transition.1`, `Marker.1`/`Marker.2`, `ExternalReference.1`, `MissingReference.1`,
-//! `GeneratorReference.1`, `LinearTimeWarp.1`, `FreezeFrame.1`, `Effect.1`, `RationalTime.1`,
+//! `Transition.1`, `Marker.1`/`Marker.2`, `ExternalReference.1`, `ImageSequenceReference.1`,
+//! `MissingReference.1`, `GeneratorReference.1`, `LinearTimeWarp.1`, `FreezeFrame.1`, `Effect.1`, `RationalTime.1`,
 //! `TimeRange.1` and `SerializableCollection.1` (several timelines).
 //!
 //! Times are written as frames at the sequence rate (`rate` is the exact rate as a float, e.g.
@@ -14,7 +14,8 @@
 
 use std::collections::{BTreeMap, HashMap};
 
-use cfa4_media::{Generator, MediaInfo};
+use cfa4_media::sequence::Numbered;
+use cfa4_media::{Generator, MediaInfo, MediaKind};
 use cfa4_project::{
     ClipId, EffectInstance, ItemId, ItemKind, Label, Marker, MarkerId, MarkerKind, MediaRef, ParamValue, Project, Sequence, SequenceSettings, Track, TrackItem,
     TrackKind, Transition, TransitionAlign, TransitionId,
@@ -296,7 +297,12 @@ impl Exp<'_, '_> {
                     Some(base) => relative_path(path, base).unwrap_or_else(|| abs_url(path)),
                     None => abs_url(path),
                 };
-                json!({"OTIO_SCHEMA": "ExternalReference.1", "name": name, "target_url": url, "available_range": avail, "available_image_bounds": null, "metadata": meta})
+                match Numbered::parse(path).filter(|_| m.info.kind == MediaKind::ImageSequence) {
+                    Some(n) => image_sequence_json(&n, &url, &name, m.frame_rate(), avail, meta),
+                    None => {
+                        json!({"OTIO_SCHEMA": "ExternalReference.1", "name": name, "target_url": url, "available_range": avail, "available_image_bounds": null, "metadata": meta})
+                    }
+                }
             }
         }
     }
@@ -372,6 +378,43 @@ impl Exp<'_, '_> {
             "metadata": metadata(meta["cfa4"].clone(), &it.interchange),
         })
     }
+}
+
+/// An image sequence as OTIO's pattern (OTIO-2.3, H3): `url` is the first frame's URL, so its
+/// directory part is the base; prefix, suffix and padding come from the file name as CFA4 reads it.
+/// CFA4 plays every frame and holds the previous frame for a missing one.
+fn image_sequence_json(n: &Numbered, url: &str, name: &str, rate: FrameRate, avail: Value, meta: Value) -> Value {
+    let base = match url.rfind('/') {
+        Some(i) => &url[..=i],
+        None => "./",
+    };
+    json!({
+        "OTIO_SCHEMA": "ImageSequenceReference.1",
+        "name": name,
+        "target_url_base": base,
+        "name_prefix": n.prefix,
+        "name_suffix": n.suffix,
+        "start_frame": n.number,
+        "frame_step": 1,
+        "rate": rate.as_f64(),
+        "frame_zero_padding": n.digits,
+        "missing_frame_policy": "hold",
+        "available_range": avail,
+        "available_image_bounds": null,
+        "metadata": meta,
+    })
+}
+
+/// The first frame's URL of an `ImageSequenceReference` (OTIO joins the base and the file name with
+/// `/`), or `None` without a base.
+fn image_sequence_first(r: &Value) -> Option<String> {
+    let base = r.get("target_url_base").and_then(Value::as_str).filter(|b| !b.trim().is_empty())?;
+    let text = |k: &str| r.get(k).and_then(Value::as_str).unwrap_or("");
+    let start = r.get("start_frame").and_then(Value::as_i64).unwrap_or(1);
+    let pad = r.get("frame_zero_padding").and_then(Value::as_u64).unwrap_or(0).min(18) as usize;
+    let number = if start < 0 { format!("-{:0pad$}", start.unsigned_abs()) } else { format!("{start:0pad$}") };
+    let sep = if base.ends_with('/') { "" } else { "/" };
+    Some(format!("{base}{sep}{}{number}{}", text("name_prefix"), text("name_suffix")))
 }
 
 fn abs_url(path: &str) -> String {
@@ -794,14 +837,18 @@ impl Imp<'_, '_> {
             let n = name_of(r);
             if n.is_empty() { clip_name.to_string() } else { n }
         };
-        let spec = MediaSpec {
+        let mut spec = MediaSpec {
             duration: avail.map(|a| a.1),
             video: (kind == TrackKind::Video).then(|| (1920, 1080, FrameRate::default())),
             audio: (kind == TrackKind::Audio).then_some((48_000, 2)),
             start_tc: None,
             kind: None,
         };
-        let url = r.get("target_url").and_then(Value::as_str).or_else(|| r.get("target_url_base").and_then(Value::as_str)).unwrap_or("");
+        let first_frame = (schema_name(r) == "ImageSequenceReference").then(|| image_sequence_first(r)).flatten();
+        if let Some(first) = &first_frame {
+            self.image_sequence_spec(r, first, &mut spec);
+        }
+        let url = first_frame.as_deref().or_else(|| r.get("target_url").and_then(Value::as_str)).unwrap_or("");
         let id = match schema_name(r) {
             // Kdenlive writes an empty `target_url` for media it could not find: that is missing media,
             // not the project folder.
@@ -877,6 +924,27 @@ impl Imp<'_, '_> {
             }
         };
         Some(id)
+    }
+
+    /// An `ImageSequenceReference` is CFA4 image-sequence media (OTIO-2.3, H3): its first frame,
+    /// played at the reference's rate. What CFA4 cannot do is reported.
+    fn image_sequence_spec(&mut self, r: &Value, first: &str, spec: &mut MediaSpec) {
+        let name = file_name(first);
+        if Numbered::parse(first).is_none() {
+            self.report.warn(format!("OTIO image sequence {name}: not numbered still images CFA4 can play; imported as one file"));
+            return;
+        }
+        let rate = r.get("rate").and_then(Value::as_f64).filter(|r| *r > 0.0).map(rate_from_f64);
+        spec.kind = Some(MediaKind::ImageSequence);
+        spec.audio = None;
+        let (w, h, r0) = spec.video.unwrap_or((1920, 1080, FrameRate::default()));
+        spec.video = Some((w, h, rate.unwrap_or(r0)));
+        if let Some(step) = r.get("frame_step").and_then(Value::as_i64).filter(|s| *s != 1) {
+            self.report.warn(format!("OTIO image sequence {name}: frame step {step} is not supported; every frame is played"));
+        }
+        if r.get("missing_frame_policy").and_then(Value::as_str) == Some("black") {
+            self.report.warn(format!("OTIO image sequence {name}: missing frames show the previous frame, not black"));
+        }
     }
 
     fn fill_media(&mut self, id: ItemId, info: Option<MediaInfo>, meta: Option<&Value>, kind: TrackKind) {
