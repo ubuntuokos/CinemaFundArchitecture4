@@ -4571,3 +4571,60 @@ export.summary	Low	ниско
 	Chase External Timecode	Следване на външен тайм код
 	Send LTC	Изпращане на LTC
 	Send MIDI Timecode	Изпращане на MIDI тайм код
+# CFA4-LOSSLESS-MEDIA-TOOLS-001: segments, Find Segments, joined Smart Cut, frame export options
+	Find Segments	Търсене на сегменти
+	Find Segments…	Търсене на сегменти…
+	Comment…	Коментар…
+	Comment:	Коментар:
+	The analysis stopped.	Анализът спря.
+	No segments yet: add a range marker in the Source monitor, or use Find Segments… there.	Няма сегменти. Добави маркер за диапазон в монитора на източника или използвай „Търсене на сегменти…“
+	Remove Segment	Премахване на сегмента
+	Black pictures	Черни кадри
+	{count} segments written and verified	Записани и проверени сегменти: {count}
+	These files already exist and will be replaced: {files}. Continue?	Тези файлове вече съществуват и ще бъдат заменени: {files}. Продължаване?
+	{count} subclips made from the segments	Създадени подклипове от сегментите: {count}
+	Segment	Сегмент
+	Silence	Тишина
+	Analyzing…	Анализиране…
+	Analyzing… {percent}%	Анализиране… {percent}%
+	Silence below (dBFS):	Тишина под (dBFS):
+	To Timeline	Към времевата линия
+	Sequence Markers	Маркери на секвенцията
+	Join the segments into one file	Обединяване на сегментите в един файл
+	{count} segments placed on the timeline	Поставени сегменти на времевата линия: {count}
+	Shortest silence (s):	Най-кратка тишина (s):
+	Segment {n}: {why}	Сегмент {n}: {why}
+	Source Clip Segments	Сегменти на изходния клип
+	{count} segments found	Намерени сегменти: {count}
+	{count} files: {copied} frames copied, {reencoded} frames re-encoded	Файлове: {count}; копирани кадри: {copied}, прекодирани кадри: {reencoded}
+	This clip has no segments: add range markers in the Source monitor first.	Този клип няма сегменти: първо добави маркери за диапазон в монитора на източника.
+	Black level (%):	Ниво на черното (%):
+	Quality:	Качество:
+	Black share of the picture (%):	Дял на черното в кадъра (%):
+	{count} segments added to the clip	Добавени сегменти към клипа: {count}
+	Last frame	Последен кадър
+	First frame	Първи кадър
+	Marked range	Маркиран диапазон
+	Original	Оригинален
+	Segment names as chapters	Имената на сегментите като глави
+	Add as Segments	Добавяне като сегменти
+	The engine did not start the analysis.	Двигателят не стартира анализа.
+	Range:	Диапазон:
+	(no clip in the Source monitor)	(няма клип в монитора на източника)
+	Segment name:	Име на сегмента:
+	{count} segments joined into {path} and verified	Сегментите ({count}) са обединени в {path} и проверени
+	Shortest black (s):	Най-кратко черно (s):
+	Segments (range markers)	Сегменти (маркери за диапазон)
+	(only the first ones are listed)	(показани са само първите)
+	Check at least one segment.	Отметни поне един сегмент.
+	Make Subclips	Създаване на подклипове
+	Shortest shot (frames):	Най-кратък план (кадри):
+	Row {n}: the first and last frame must be whole numbers	Ред {n}: първият и последният кадър трябва да са цели числа
+	Size:	Размер:
+	{count} segments joined into one file: {copied} frames copied, {reencoded} frames re-encoded	Сегментите ({count}) са обединени в един файл; копирани кадри: {copied}, прекодирани кадри: {reencoded}
+	{name} ({frames} frames)	{name} (кадри: {frames})
+	Scene changes	Смени на сцената
+	Import Markers from CSV…	Импортиране на маркери от CSV…
+	Export Segments as EDL…	Експортиране на сегментите като EDL…
+	Import Segments from EDL…	Импортиране на сегменти от EDL…
+	Segments to Subclips	Сегменти в подклипове

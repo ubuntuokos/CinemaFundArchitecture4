@@ -2506,6 +2506,33 @@ export.summary	Low	alacsony
 	{codec} in {container}: {gops} GOPs, {points} clean cut points	{codec}, {container}: {gops} GOP, {points} tiszta vágási pont
 	{copied} frames copied, {reencoded} frames re-encoded	{copied} képkocka másolva, {reencoded} képkocka újrakódolva
 	{frames} frames at the boundaries are re-encoded. Continue?	A határokon {frames} képkocka újrakódolódik. Folytatod?
+	Marked range	Kijelölt tartomány
+	Segments (range markers)	Szegmensek (tartományjelölők)
+	Segment	Szegmens
+	{name} ({frames} frames)	{name} ({frames} képkocka)
+	{count} files: {copied} frames copied, {reencoded} frames re-encoded	{count} fájl: {copied} képkocka másolva, {reencoded} képkocka újrakódolva
+	Segment {n}: {why}	{n}. szegmens: {why}
+	Range:	Tartomány:
+	Make Subclips	Alklipek készítése
+	To Timeline	Az idővonalra
+	This clip has no segments: add range markers in the Source monitor first.	Ennek a klipnek nincsenek szegmensei: előbb adj hozzá tartományjelölőket a Forrásmonitorban.
+	Check at least one segment.	Jelölj be legalább egy szegmenst.
+	{count} segments placed on the timeline	{count} szegmens került az idővonalra
+	{count} subclips made from the segments	{count} alklip készült a szegmensekből
+	{count} segments written and verified	{count} szegmens kiírva és ellenőrizve
+	Join the segments into one file	A szegmensek összefűzése egy fájlba
+	Segment names as chapters	Szegmensnevek fejezetként
+	{count} segments joined into one file: {copied} frames copied, {reencoded} frames re-encoded	{count} szegmens egy fájlba fűzve: {copied} képkocka másolva, {reencoded} képkocka újrakódolva
+	{count} segments joined into {path} and verified	{count} szegmens összefűzve és ellenőrizve: {path}
+	These files already exist and will be replaced: {files}. Continue?	Ezek a fájlok már léteznek, és felülíródnak: {files}. Folytatod?
+	Sequence Markers	Szekvencia jelölői
+	Source Clip Segments	A forrásklip szegmensei
+	Comment…	Megjegyzés…
+	Comment:	Megjegyzés:
+	Remove Segment	Szegmens eltávolítása
+	Segment name:	Szegmens neve:
+	(no clip in the Source monitor)	(nincs klip a Forrásmonitorban)
+	No segments yet: add a range marker in the Source monitor, or use Find Segments… there.	Nincs szegmens. Adj hozzá tartományjelölőt a Forrásmonitorban, vagy használd a Szegmensek keresése… parancsot.
 # Timeline GOP overlay (WP-08)
 	Show GOP Boundaries	GOP-határok megjelenítése
 # Export window Smart Export (WP-08)
@@ -4565,3 +4592,32 @@ export.summary	Low	alacsony
 	Chase External Timecode	Külső időkód követése
 	Send LTC	LTC küldése
 	Send MIDI Timecode	MIDI-időkód küldése
+	Find Segments	Szegmensek keresése
+	Find Segments…	Szegmensek keresése…
+	Scene changes	Jelenetváltások
+	Black pictures	Fekete képek
+	Silence	Csend
+	Shortest shot (frames):	Legrövidebb snitt (képkocka):
+	Black level (%):	Feketeszint (%):
+	Black share of the picture (%):	Fekete aránya a képen (%):
+	Shortest black (s):	Legrövidebb fekete (mp):
+	Silence below (dBFS):	Csend e szint alatt (dBFS):
+	Shortest silence (s):	Legrövidebb csend (mp):
+	Analyzing…	Elemzés folyamatban…
+	First frame	Első képkocka
+	Last frame	Utolsó képkocka
+	Add as Segments	Hozzáadás szegmensként
+	The engine did not start the analysis.	A motor nem indította el az elemzést.
+	Analyzing… {percent}%	Elemzés folyamatban… {percent}%
+	The analysis stopped.	Az elemzés leállt.
+	{count} segments found	{count} szegmens található
+	(only the first ones are listed)	(csak az elsők látszanak)
+	Row {n}: the first and last frame must be whole numbers	{n}. sor: az első és az utolsó képkocka csak egész szám lehet
+	{count} segments added to the clip	{count} szegmens hozzáadva a kliphez
+	Quality:	Minőség:
+	Size:	Méret:
+	Original	Eredeti
+	Import Markers from CSV…	Jelölők importálása CSV-ből…
+	Import Segments from EDL…	Szegmensek importálása EDL-ből…
+	Export Segments as EDL…	Szegmensek exportálása EDL-be…
+	Segments to Subclips	Szegmensekből alklipek

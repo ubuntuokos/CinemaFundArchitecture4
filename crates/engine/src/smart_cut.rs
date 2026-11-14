@@ -135,6 +135,28 @@ pub(crate) fn source_p(s: &Session, p: &Value, cmd: &str) -> Result<(String, Opt
     Ok((path, Some(view)))
 }
 
+/// `path` with `.` dropped and `..` and repeated separators folded, without touching the disk.
+pub(crate) fn lexical_path(path: &str) -> String {
+    use std::path::Component;
+    let mut out: Vec<Component<'_>> = Vec::new();
+    for c in std::path::Path::new(path).components() {
+        match c {
+            Component::CurDir => {}
+            Component::ParentDir if matches!(out.last(), Some(Component::Normal(_))) => {
+                out.pop();
+            }
+            Component::ParentDir if matches!(out.last(), Some(Component::RootDir | Component::Prefix(_))) => {}
+            c => out.push(c),
+        }
+    }
+    out.iter().collect::<std::path::PathBuf>().to_string_lossy().into_owned()
+}
+
+/// What identifies the file `path` names: the host's resolved path, or the lexical one.
+pub(crate) fn path_key(s: &Session, path: &str) -> String {
+    s.services.canonical_path(path).unwrap_or_else(|| lexical_path(path))
+}
+
 fn container_of(path: &str, quicktime: bool) -> Container {
     if quicktime || path.to_ascii_lowercase().ends_with(".mov") { Container::Mov } else { Container::Mp4 }
 }
@@ -277,9 +299,9 @@ pub(crate) fn range_p(p: &Value, cmd: &str, src: &CutSource<'_>) -> Result<(Tick
 }
 
 /// The plan of the range named in `p`.
-fn plan_of(s: &Session, p: &Value, cmd: &str) -> Result<(Source, SmartCutPlan)> {
+fn plan_of(s: &Session, p: &Value, cmd: &str) -> Result<(std::rc::Rc<Source>, SmartCutPlan)> {
     let (path, view) = source_p(s, p, cmd)?;
-    let src = open_source(s, &path, cmd)?;
+    let src = crate::source_cache::opened(&path, || open_source(s, &path, cmd))?;
     let map = |t: Tick| src.stream_time(t);
     let (in_point, out_point) = range_p(p, cmd, &CutSource { path: &path, view: view.as_ref(), rate: src.rate(), stream_time: &map })?;
     let mode = mode_p(p, cmd)?;
@@ -347,6 +369,14 @@ fn audio_json(audio: &Option<(CutInterval, AudioPlan)>) -> Value {
 }
 
 fn plan(s: &mut Session, p: &Value) -> Result<Value> {
+    if crate::smart_cut_ranges::has_ranges(p) {
+        return crate::smart_cut_ranges::plan(s, p, plan_single);
+    }
+    plan_single(s, p)
+}
+
+/// `export.plan` of one range (or of the timeline).
+fn plan_single(s: &mut Session, p: &Value) -> Result<Value> {
     let cmd = "export.plan";
     if timeline_scope(p, cmd)? {
         return crate::smart_render::plan(s, p);
@@ -369,6 +399,14 @@ fn plan(s: &mut Session, p: &Value) -> Result<Value> {
 }
 
 fn start(s: &mut Session, p: &Value) -> Result<Value> {
+    if crate::smart_cut_ranges::has_ranges(p) {
+        return crate::smart_cut_ranges::start(s, p, crate::smart_cut_ranges::Steps { plan: plan_single, start: start_single, cut });
+    }
+    start_single(s, p)
+}
+
+/// `export.start` of one range (or of the timeline).
+fn start_single(s: &mut Session, p: &Value) -> Result<Value> {
     let cmd = "export.start";
     if timeline_scope(p, cmd)? {
         return crate::smart_render::start(s, p);
@@ -377,10 +415,71 @@ fn start(s: &mut Session, p: &Value) -> Result<Value> {
     if crate::smart_cut_mpeg::is_mpeg(s, &path) {
         return crate::smart_cut_mpeg::start(s, p);
     }
+    let (bytes, mut result) = cut(s, p)?;
+    let output = result["output"].as_str().unwrap_or_default().to_string();
+    s.services.write_file(&output, &bytes).map_err(|e| EngineError::Other(format!("{output}: {e}")))?;
+    result["bytes"] = json!(bytes.len());
+    Ok(result)
+}
+
+/// `maxBytes`: the most bytes a cut file may have (none: no limit of its own).
+pub(crate) fn max_bytes_p(p: &Value, cmd: &str) -> Result<u64> {
+    match p.get("maxBytes") {
+        None | Some(Value::Null) => Ok(u64::MAX),
+        Some(v) => v.as_u64().filter(|&n| n > 0).ok_or_else(|| bad(cmd, "`maxBytes` must be a positive whole number")),
+    }
+}
+
+fn too_large(cap: u64) -> EngineError {
+    EngineError::Other(format!("the cut would need more than {cap} bytes of memory (`maxBytes`; joined ranges: export them as separate files)"))
+}
+
+/// An in-memory file that refuses to grow past `cap` bytes, so a cut too large for the memory it
+/// may use stops while it is written, not after.
+struct Capped {
+    inner: Cursor<Vec<u8>>,
+    cap: u64,
+}
+
+impl Capped {
+    fn new(cap: u64) -> Self {
+        Self { inner: Cursor::new(Vec::new()), cap }
+    }
+    fn into_inner(self) -> Vec<u8> {
+        self.inner.into_inner()
+    }
+}
+
+impl std::io::Write for Capped {
+    fn write(&mut self, buf: &[u8]) -> std::io::Result<usize> {
+        if self.inner.position().saturating_add(buf.len() as u64) > self.cap {
+            return Err(std::io::Error::new(std::io::ErrorKind::OutOfMemory, too_large(self.cap).to_string()));
+        }
+        self.inner.write(buf)
+    }
+    fn flush(&mut self) -> std::io::Result<()> {
+        self.inner.flush()
+    }
+}
+
+impl std::io::Seek for Capped {
+    fn seek(&mut self, pos: std::io::SeekFrom) -> std::io::Result<u64> {
+        self.inner.seek(pos)
+    }
+}
+
+/// One range of an MP4 / MOV source cut, verified and kept in memory: the file's bytes and the
+/// result `export.start` reports for it (without writing it).
+fn cut(s: &mut Session, p: &Value) -> Result<(Vec<u8>, Value)> {
+    let cmd = "export.start";
+    let (path, _) = source_p(s, p, cmd)?;
+    if crate::smart_cut_mpeg::is_mpeg(s, &path) {
+        return Err(bad(cmd, format!("{path}: an MPEG program or transport stream is cut into one file per range; joining ranges needs an MP4 or MOV source")));
+    }
     let output = str_p(p, "output").filter(|o| !o.is_empty()).map(str::to_string).ok_or_else(|| bad(cmd, "`output` (the file to write) is required"))?;
     let encoding = encoding_p(p, cmd)?;
     let (src, plan) = plan_of(s, p, cmd)?;
-    if output == src.path {
+    if path_key(s, &output) == path_key(s, &src.path) {
         return Err(bad(cmd, "the output must not be the source file"));
     }
     let reencodes = plan.plan.requires_confirmation();
@@ -399,8 +498,9 @@ fn start(s: &mut Session, p: &Value) -> Result<Value> {
     let stream = src.stream().ok_or_else(|| EngineError::Other(format!("{}: no stream was indexed", src.path)))?;
     let source = copy_source(&src);
     let other = |e: SmartCutError| EngineError::Other(e.to_string());
+    let cap = max_bytes_p(p, cmd)?;
     let (bytes, report) = if reencodes {
-        let (out, report) = execute_mp4_boundary_reencode(&plan.plan, stream, &source, &encoding, Cursor::new(Vec::new())).map_err(other)?;
+        let (out, report) = execute_mp4_boundary_reencode(&plan.plan, stream, &source, &encoding, Capped::new(cap)).map_err(other)?;
         let bytes = out.into_inner();
         let verified = verify_mp4_boundary_reencode(&plan.plan, stream, &source, &encoding, bytes.as_slice()).map_err(other)?;
         if (verified.samples, verified.copied, verified.reencoded) != (report.samples, report.copied, report.reencoded) {
@@ -409,7 +509,7 @@ fn start(s: &mut Session, p: &Value) -> Result<Value> {
         // the verified report carries the measured quality of the re-encoded pictures
         (bytes, serde_json::to_value(&verified).map_err(|e| EngineError::Other(e.to_string()))?)
     } else {
-        let (out, report) = execute_mp4_copy(&plan.plan, stream, &source, Cursor::new(Vec::new())).map_err(other)?;
+        let (out, report) = execute_mp4_copy(&plan.plan, stream, &source, Capped::new(cap)).map_err(other)?;
         let bytes = out.into_inner();
         let verified = verify_mp4_copy(&plan.plan, stream, &source, bytes.as_slice()).map_err(other)?;
         if verified != report {
@@ -422,6 +522,33 @@ fn start(s: &mut Session, p: &Value) -> Result<Value> {
     let mut audio_reports = Vec::new();
     let bytes = match &audio {
         Some((interval, a)) if !a.tracks.is_empty() => {
+            // the sound's bytes are known from the index: sound over the limit stops the cut
+            // before it is read and muxed (the video is already within it; the finished file is
+            // checked below), so the memory held stays a small multiple of the limit
+            let sound: u64 = a
+                .tracks
+                .iter()
+                .map(|t| {
+                    let Some(track) = src.file.tracks.get(t.track) else { return 0 };
+                    match (t.pcm, track.entries.first().map(|e| &e.codec)) {
+                        // uncompressed sound: only the frames written, not the whole chunks read
+                        (Some((_, frames)), Some(CodecConfig::Pcm(p))) => frames.saturating_mul(u64::from(p.bytes_per_frame())),
+                        _ => track.samples.get(t.first..=t.last).map_or(0, |v| v.iter().map(|x| u64::from(x.size)).sum::<u64>()),
+                    }
+                })
+                .sum();
+            // and every sample read whole on the way (an uncompressed chunk may hold far more
+            // than the frames taken from it)
+            let largest_read = a
+                .tracks
+                .iter()
+                .filter_map(|t| src.file.tracks.get(t.track).and_then(|x| x.samples.get(t.first..=t.last)))
+                .flat_map(|v| v.iter().map(|x| u64::from(x.size)))
+                .max()
+                .unwrap_or(0);
+            if sound > cap || largest_read > cap {
+                return Err(too_large(cap));
+            }
             let brand = if plan.plan.output_container == Container::Mov { Brand::Mov } else { Brand::Mp4 };
             let with_audio = mux_with_audio(&bytes, &src.file, &*src.bytes, a, *interval, brand).map_err(other)?;
             audio_reports = verify_audio_copy(&with_audio, &bytes, &src.file, &*src.bytes, a, *interval).map_err(other)?;
@@ -429,11 +556,46 @@ fn start(s: &mut Session, p: &Value) -> Result<Value> {
         }
         _ => bytes,
     };
-    s.services.write_file(&output, &bytes).map_err(|e| EngineError::Other(format!("{output}: {e}")))?;
+    if bytes.len() as u64 > cap {
+        return Err(too_large(cap));
+    }
+    // the source's chapters inside the cut, moved onto its timeline (K14)
+    let (bytes, chapters) = with_chapters(&src, &plan, bytes)?;
+    if bytes.len() as u64 > cap {
+        return Err(too_large(cap));
+    }
     let summary = summary(&plan);
     let mut audio = audio_json(&audio);
     audio["verified"] = json!(audio_reports);
-    Ok(json!({"output": output, "bytes": bytes.len(), "report": report, "verified": true, "summary": summary, "audio": audio}))
+    let result = json!({"output": output, "bytes": bytes.len(), "report": report, "verified": true, "summary": summary, "audio": audio, "chapters": chapters});
+    Ok((bytes, result))
+}
+
+/// The cut file with the source's chapters that fall inside the cut (CFA4-LOSSLESS-MEDIA-TOOLS-001
+/// K14), read back to check that the chapters are there and nothing else changed.
+fn with_chapters(src: &Source, plan: &SmartCutPlan, bytes: Vec<u8>) -> Result<(Vec<u8>, Value)> {
+    let (Some(track), Some(first)) = (src.file.tracks.get(src.track), plan.plan.segments.first()) else {
+        return Ok((bytes, json!([])));
+    };
+    if src.file.metadata.chapters.is_empty() {
+        return Ok((bytes, json!([])));
+    }
+    let duration = u64::try_from(plan.plan.expected_duration.value).unwrap_or(0);
+    let chapters = cfa4_export::audio_copy::cut_chapters(&src.file.metadata.chapters, CutInterval::of_video(track, first.source_in.value, duration));
+    let other = |e: cfa4_isobmff::Error| EngineError::Other(format!("Smart Cut chapters: {e}"));
+    let before = cfa4_isobmff::open(bytes.as_slice()).map_err(other)?;
+    let out = cfa4_isobmff::replace_chapters(&bytes, &chapters).map_err(other)?;
+    let after = cfa4_isobmff::open(out.as_slice()).map_err(other)?;
+    let mut expected = chapters.clone();
+    expected.truncate(cfa4_isobmff::MAX_CHAPTERS);
+    if after.tracks != before.tracks
+        || after.metadata.chapters.len() != expected.len()
+        || after.metadata.chapters.iter().zip(&expected).any(|(a, b)| a.start_100ns != b.start_100ns)
+    {
+        return Err(EngineError::Other("Smart Cut verification: the chapters were not written as planned".into()));
+    }
+    let list: Vec<Value> = after.metadata.chapters.iter().map(|c| json!({"start100ns": c.start_100ns, "title": c.title})).collect();
+    Ok((out, Value::Array(list)))
 }
 
 fn spec(id: &'static str, label: &'static str, params: &'static str, run: Run, journal: bool) -> CommandSpec {
@@ -452,14 +614,14 @@ pub(crate) fn commands() -> Vec<CommandSpec> {
         spec(
             "export.plan",
             "Plan Smart Cut",
-            r#"{"path":str,"in":time,"out":time (exclusive)}|{"item":id,"in":media time?,"out":media time? (default: the marked range)},"mode":"gop-boundary"|"frame-accurate"="gop-boundary","guarantee":"bit-exact"|"compatible"="bit-exact","output":str?,"scope":"source"|"timeline"="source","crf":number=16,"audio":bool=true}; timeline: {"scope":"timeline","sequence":id?,"output":str?,"guarantee":…,"crf":…} → {plan, summary, audio?:{tracks:[{trackId,codec}],dropped:[{trackId,reason}]}, boundaryReencode?:{ready,problem}, timelineRender?:{ready,problem}}"#,
+            r#"{"path":str,"in":time,"out":time (exclusive)}|{"item":id,"in":media time?,"out":media time? (default: the marked range)},"mode":"gop-boundary"|"frame-accurate"="gop-boundary","guarantee":"bit-exact"|"compatible"="bit-exact","output":str?,"scope":"source"|"timeline"="source","crf":number=16,"audio":bool=true,"maxBytes":int? (refuse a cut whose file would be larger, before it is held in memory)}; several ranges: {"path"|"item",…,"ranges":[{"in":time,"out":time,"output":str?,"name":str?}],"output":"pattern with {n} and {name}"?,"join":bool=false (the ranges one after the other in the one "output" file)} → {ranges:[plan…], summary (totals), problems:[{range,problem}], join?, output?}; timeline: {"scope":"timeline","sequence":id?,"output":str?,"guarantee":…,"crf":…} → {plan, summary, audio?:{tracks:[{trackId,codec}],dropped:[{trackId,reason}]}, boundaryReencode?:{ready,problem}, timelineRender?:{ready,problem}}"#,
             plan,
             false,
         ),
         spec(
             "export.start",
             "Run Smart Cut",
-            r#"{"path":str,"in":time,"out":time}|{"item":id,"in":media time?,"out":media time?},"output":str,"mode":…,"guarantee":…,"confirm":bool (required when the plan re-encodes),"crf":number=16,"audio":bool=true}; timeline: {"scope":"timeline","sequence":id?,"output":str,"confirm":bool,…} → {output, bytes, report, verified, audio?:{tracks,dropped,verified:[{trackId,codec,samples,payloadBytes,syncErrorNs}]}}"#,
+            r#"{"path":str,"in":time,"out":time}|{"item":id,"in":media time?,"out":media time?},"output":str,"mode":…,"guarantee":…,"confirm":bool (required when the plan re-encodes),"crf":number=16,"audio":bool=true}; several ranges: {…,"ranges":[{"in","out","output"?,"name"?}],"output":"pattern with {n}"?,"confirm":bool (once for the batch),"join":bool=false,"segmentChapters":bool=false,"maxBytes":int? (with "join": the most the joined ranges may hold in memory, at most 2 GiB)} → {ranges:[result…], summary, verified}: every range is planned before anything is written; with "join" the ranges are cut in memory, joined without re-encoding into the one "output" file (MP4 / MOV), read back and written once → {output, bytes, join, ranges:[result… with start100ns], samples:[per track], duration100ns, chapters, verified}; timeline: {"scope":"timeline","sequence":id?,"output":str,"confirm":bool,…} → {output, bytes, report, verified, audio?:{tracks,dropped,verified:[{trackId,codec,samples,payloadBytes,syncErrorNs}]}}"#,
             start,
             true,
         ),

@@ -5136,9 +5136,11 @@ def test_tools_menu_groups_video_audio_and_publication_tools(app, fake_engine: P
         video, audio, publication = subs
         video.aboutToShow.emit()
         ids = {a.objectName(): a for a in video.actions() if not a.isSeparator()}
-        assert list(ids) == ["tools.video.smartCut", "tools.video.smartExport", "tools.video.showGopMarks"]
+        assert list(ids) == ["tools.video.smartCut", "tools.video.findSegments", "tools.video.smartExport", "tools.video.showGopMarks"]
         assert not ids["tools.video.smartCut"].isEnabled()  # no clip in the Source monitor
+        assert not ids["tools.video.findSegments"].isEnabled()
         ids["tools.video.smartCut"].trigger()  # says what to do instead of failing
+        ids["tools.video.findSegments"].trigger()
         # the GOP boundary marks follow the timeline's own toggle both ways
         gop = ids["tools.video.showGopMarks"]
         assert not gop.isChecked()
@@ -14153,6 +14155,9 @@ def test_real_engine_source_monitor_smart_cut(app, tmp_path: Path):
         assert "50" in d.summary.text(), d.summary.text()
         out = tmp_path / "gop_cut.mp4"
         d.output.setText(str(out))
+        # Export runs only a plan of the output it writes
+        assert wait_until(app, lambda: d.run.isEnabled(), 30_000), d.error.text()
+        assert d.planned is not None and d.planned["output"] == str(out)
         said: list[str] = []
         src.status.connect(said.append)
         d.run.click()
@@ -14163,6 +14168,220 @@ def test_real_engine_source_monitor_smart_cut(app, tmp_path: Path):
     finally:
         engine.stop()
         win.close()
+
+
+@pytest.mark.skipif(REAL is None, reason="Rust engine not built (cargo build -p cfa4-cli)")
+def test_real_engine_smart_cut_segments(app, tmp_path: Path):
+    """Smart Cut Source ▸ Range: Segments (CFA4-LOSSLESS-MEDIA-TOOLS-001 K1–K3): the clip's range
+    markers are listed, cut into one verified file each in the listed order, and placed on the
+    timeline as subclips."""
+    import shutil
+    import subprocess
+
+    from cfa4_qt.main_window import MainWindow
+
+    ffmpeg = shutil.which("ffmpeg")
+    if ffmpeg is None:
+        pytest.skip("ffmpeg makes the H.264 clip")
+    clip = tmp_path / "seg.mp4"
+    args = [ffmpeg, "-y", "-v", "error", "-f", "lavfi", "-i", "testsrc2=size=128x96:rate=25", "-t", "4"]
+    args += ["-c:v", "libx264", "-g", "25", "-keyint_min", "25", "-sc_threshold", "0", "-bf", "0", "-pix_fmt", "yuv420p", str(clip)]
+    if subprocess.run(args, stdin=subprocess.DEVNULL, check=False).returncode != 0:
+        pytest.skip("ffmpeg could not make an H.264 clip")
+    settings = QtCore.QSettings(str(tmp_path / "s.ini"), QtCore.QSettings.Format.IniFormat)
+    engine = EngineClient(REAL, ["--demo", "--data-dir", str(tmp_path / "data")])
+    win = MainWindow(engine, settings)
+    win.resize(1280, 800)
+    win.show()
+    engine.start()
+    try:
+        assert wait_until(app, lambda: win.project is not None and len(win.registry.commands) > 100, 60_000)
+        win.execute("file.import", {"paths": [str(clip)]})
+        assert wait_until(app, lambda: any(i.get("name", "").startswith("seg") for i in _items(win.project or {})), 30_000)
+        item = next(i for i in _items(win.project) if i.get("name", "").startswith("seg"))
+        src = win.source_monitor
+        win.execute("source.open", {"item": item["item"]})
+        assert wait_until(app, lambda: src.has_content(), 60_000)
+        ft = src.frame()
+        # two segments on GOP boundaries: "intro" (frames 0–24) and "end" (frames 50–99)
+        win.execute("markers.add", {"target": "source", "time": 0, "name": "intro", "durationFrames": 25})
+        win.execute("markers.add", {"target": "source", "time": 50 * ft, "name": "end", "durationFrames": 50})
+        d = src.open_smart_cut()
+        assert d is not None
+        assert wait_until(app, lambda: d.analysis is not None, 30_000), d.error.text()
+        d.source.setCurrentIndex(d.source.findData("segments"))
+        assert wait_until(app, lambda: d.segment_list.count() == 2 and d.run.isEnabled(), 30_000), d.error.text()
+        assert d.segments_box.isVisible()
+        assert "75" in d.summary.text(), d.summary.text()
+        # "end" first
+        d.segment_list.setCurrentRow(1)
+        d.move_segment(-1)
+        assert d.segment_list.item(0).text().startswith("end")
+        assert wait_until(app, lambda: d.run.isEnabled(), 30_000), d.error.text()
+        d.output.setText(str(tmp_path / "{n}-{name}.mp4"))
+        assert wait_until(app, lambda: d.run.isEnabled() and d.plan_current(), 30_000), d.error.text()
+        said: list[str] = []
+        src.status.connect(said.append)
+        d.send("segments.toTimeline")
+        assert wait_until(app, lambda: any("timeline" in m for m in said), 30_000), said
+        d.run.click()
+        assert wait_until(app, lambda: any("verified" in m for m in said), 30_000), said
+        assert (tmp_path / "1-end.mp4").stat().st_size > 0
+        assert (tmp_path / "2-intro.mp4").stat().st_size > 0
+        # the same segments joined into one file, their names as chapters
+        d = src.open_smart_cut()
+        assert d is not None
+        assert wait_until(app, lambda: d.analysis is not None, 30_000), d.error.text()
+        d.source.setCurrentIndex(d.source.findData("segments"))
+        assert wait_until(app, lambda: d.segment_list.count() == 2 and d.run.isEnabled(), 30_000), d.error.text()
+        assert not d.segment_chapters.isEnabled()
+        d.join.setChecked(True)
+        assert d.segment_chapters.isEnabled() and d.output.text().endswith("_joined.mp4"), d.output.text()
+        d.segment_chapters.setChecked(True)
+        assert wait_until(app, lambda: "one file" in d.summary.text() and d.run.isEnabled(), 30_000), (d.summary.text(), d.error.text())
+        d.output.setText(str(tmp_path / "joined.mp4"))
+        assert wait_until(app, lambda: d.run.isEnabled() and d.plan_current(), 30_000), d.error.text()
+        d.run.click()
+        assert wait_until(app, lambda: any("joined" in m for m in said), 30_000), (said, d.error.text())
+        probe = shutil.which("ffprobe")
+        if probe is not None:
+            out = subprocess.run([probe, "-v", "error", "-count_frames", "-show_entries", "stream=nb_read_frames:chapter_tags=title", "-of", "json", str(tmp_path / "joined.mp4")], capture_output=True, text=True, check=True)
+            info = json.loads(out.stdout)
+            assert info["streams"][0]["nb_read_frames"] == "75", info
+            # a new dialog lists the segments in time order again
+            assert [c["tags"]["title"] for c in info["chapters"]] == ["intro", "end"], info
+    finally:
+        engine.stop()
+        win.close()
+
+
+@pytest.mark.skipif(REAL is None, reason="Rust engine not built (cargo build -p cfa4-cli)")
+def test_real_engine_find_segments(app, tmp_path: Path):
+    """Tools ▸ Video Tools ▸ Find Segments… (CFA4-LOSSLESS-MEDIA-TOOLS-001 K4–K5): the black second
+    of a clip is proposed, corrected (renamed, one frame shorter) and added as a segment; nothing
+    changes before that."""
+    import shutil
+    import subprocess
+
+    from cfa4_qt.main_window import MainWindow
+
+    ffmpeg = shutil.which("ffmpeg")
+    if ffmpeg is None:
+        pytest.skip("ffmpeg makes the clip")
+    clip = tmp_path / "blk.mp4"
+    args = [ffmpeg, "-y", "-v", "error", "-f", "lavfi", "-i", "testsrc2=size=128x96:rate=25:d=2", "-f", "lavfi", "-i", "color=black:size=128x96:rate=25:d=1"]
+    args += ["-f", "lavfi", "-i", "testsrc2=size=128x96:rate=25:d=1", "-filter_complex", "[0][1][2]concat=n=3:v=1:a=0", "-c:v", "libx264", "-pix_fmt", "yuv420p", str(clip)]
+    if subprocess.run(args, stdin=subprocess.DEVNULL, check=False).returncode != 0:
+        pytest.skip("ffmpeg could not make the clip")
+    settings = QtCore.QSettings(str(tmp_path / "s.ini"), QtCore.QSettings.Format.IniFormat)
+    engine = EngineClient(REAL, ["--demo", "--data-dir", str(tmp_path / "data")])
+    win = MainWindow(engine, settings)
+    win.resize(1280, 800)
+    win.show()
+    engine.start()
+    try:
+        assert wait_until(app, lambda: win.project is not None and len(win.registry.commands) > 100, 60_000)
+        win.execute("file.import", {"paths": [str(clip)]})
+        assert wait_until(app, lambda: any(i.get("name", "").startswith("blk") for i in _items(win.project or {})), 30_000)
+        item = next(i for i in _items(win.project) if i.get("name", "").startswith("blk"))
+        src = win.source_monitor
+        win.execute("source.open", {"item": item["item"]})
+        assert wait_until(app, lambda: src.has_content(), 60_000)
+        d = src.open_find_segments()
+        assert d is not None
+        d.kind.setCurrentIndex(d.kind.findData("black"))
+        assert d.fields["blackSeconds"].isVisible() and not d.fields["sensitivity"].isVisible()
+        d.start()
+        assert wait_until(app, lambda: d.accept_button.isEnabled(), 60_000), d.error.text()
+        assert d.table.rowCount() == 1, d.state.text()
+        assert (d.table.item(0, 1).text(), d.table.item(0, 2).text()) == ("50", "74")
+        d.table.item(0, 0).setText("leader")
+        d.table.item(0, 2).setText("73")
+        said: list[str] = []
+        src.status.connect(said.append)
+        d.add()
+        assert wait_until(app, lambda: any("added" in m for m in said), 30_000), (said, d.error.text())
+        got: list = []
+        engine.execute("segments.list", {"item": item["item"]}, on_reply=lambda r, _b: got.append(r), on_error=got.append)
+        assert wait_until(app, lambda: bool(got), 30_000)
+        segments = got[0]["segments"]
+        ft = src.frame()
+        assert [(m["name"], m["in"], m["out"]) for m in segments] == [("leader", 50 * ft, 74 * ft)], segments
+    finally:
+        engine.stop()
+        win.close()
+
+
+def test_find_segment_values():
+    """Frames shown for the boundaries found, and the engine parameters of each analysis."""
+    from cfa4_qt.panels.segment_finder import kind_params, to_frame
+
+    tps = 254_016_000_000
+    assert to_frame(50 * tps // 25, 25.0) == 50
+    # NTSC frame starts round to their frame
+    assert to_frame(-(-1001 * 7 * tps // 30000), 30000 / 1001) == 7
+    assert to_frame(5, 0.0) == 0
+    values = {"sensitivity": 40.0, "minShotFrames": 3.0, "pixelThreshold": 10.0, "pictureThreshold": 98.0, "blackSeconds": 0.5, "thresholdDb": -50.0, "silenceSeconds": 1.0}
+    assert kind_params("scenes", values) == {"sensitivity": 40.0, "minShotFrames": 3}
+    assert kind_params("black", values) == {"pixelThreshold": 0.1, "pictureThreshold": 0.98, "minSeconds": 0.5}
+    assert kind_params("silence", values) == {"thresholdDb": -50.0, "minSeconds": 1.0}
+
+
+def test_smart_cut_segment_texts():
+    """The segment pattern, a segment's line and the totals of several segments (K1–K2)."""
+    from cfa4_qt.panels.smart_cut import default_joined, default_pattern, plan_text, segment_label
+
+    assert default_pattern("/a/clip.mp4") == "/a/clip_{n}-{name}.mp4"
+    assert default_joined("/a/clip.mov") == "/a/clip_joined.mov"
+    assert default_joined("/a/clip.ts") == "/a/clip_joined.mp4"
+    text, _problem = plan_text({"join": True, "ranges": [{}, {}], "summary": {"ranges": 2, "copiedFrames": 75}, "problems": []})
+    assert "one file" in text
+    assert default_pattern("/a/clip.ts") == "/a/clip_{n}-{name}.ts"
+    assert segment_label({"name": "intro", "duration": 254_016_000_000}, (25, 1)) == "intro (25 frames)"
+    assert segment_label({"name": " ", "duration": 0}, (25, 1)) == "Segment"
+    assert segment_label({"name": "x", "duration": "bad"}, None) == "x"
+    text, problem = plan_text({"ranges": [{}, {}], "summary": {"ranges": 2, "copiedFrames": 75, "reencodedFrames": 0}, "problems": []})
+    assert problem is None and "2" in text and "75" in text
+    _text, problem = plan_text({"ranges": [{}], "summary": {"ranges": 1}, "problems": [{"range": 1, "problem": "mid-GOP"}]})
+    assert problem is not None and "mid-GOP" in problem
+
+
+def test_markers_panel_shows_and_edits_the_source_segments(app, monkeypatch):
+    """Markers panel ▸ Source Clip Segments (CFA4-LOSSLESS-MEDIA-TOOLS-001 K2): the Source clip's
+    range markers in time order, renamed, commented, labelled and removed through engine commands."""
+    from cfa4_qt.panels.info import MarkersPanel
+
+    panel = MarkersPanel()
+    sent: list[tuple[str, dict]] = []
+    panel.command.connect(lambda c, p: sent.append((c, p)))
+    tps = 254_016_000_000
+    source = {"item": 7, "fps": 25.0, "markers": [
+        {"id": 2, "start": 50 * tps // 25, "duration": 25 * tps // 25, "name": "end", "comment": "", "color": "Green"},
+        {"id": 1, "start": 0, "duration": 25 * tps // 25, "name": "intro", "comment": "x", "color": "Green"},
+        {"id": 3, "start": 10 * tps // 25, "duration": 0, "name": "point", "color": "Green"},
+    ]}
+    panel.set_source(source)
+    panel.set_state(None, [])
+    assert panel.list.markers == []  # the sequence view is unchanged
+    panel.view.setCurrentIndex(panel.view.findData("source"))
+    assert [m["name"] for m in panel.list.markers] == ["intro", "end"]  # segments only, in time order
+    names = [a.objectName() for a in panel.list.menu_for(0).actions()]
+    assert {"markers.menu.rename", "markers.menu.comment", "markers.menu.remove"} <= set(names)
+    monkeypatch.setattr(QtWidgets.QInputDialog, "getText", staticmethod(lambda *_a, **_k: ("Eleje", True)))
+    next(a for a in panel.list.menu_for(0).actions() if a.objectName() == "markers.menu.rename").trigger()
+    next(a for a in panel.list.menu_for(1).actions() if a.objectName() == "markers.menu.remove").trigger()
+    panel.list.recolor.emit(1, "Rose")
+    panel.list.go.emit(0)
+    assert sent == [
+        ("markers.edit", {"target": "source", "marker": 1, "name": "Eleje"}),
+        ("segments.remove", {"item": 7, "segments": [2]}),
+        ("markers.edit", {"target": "source", "marker": 1, "color": "Rose"}),
+        ("source.setPlayhead", {"time": 0}),
+    ]
+    panel.set_source(None)
+    assert panel.list.markers == []
+    panel.view.setCurrentIndex(panel.view.findData("program"))
+    assert not panel.list.segments
 
 
 def test_smart_cut_plan_text_names_the_audio():
@@ -15055,3 +15274,146 @@ def test_real_engine_check_text_legibility_reports_as_egui(app, tmp_path: Path):
         win._quit_confirmed = True
         win.close()
         engine.stop()
+
+
+def test_export_frame_quality_and_size_options():
+    """Export Frame sends the JPEG quality and a chosen size (K7 of CFA4-LOSSLESS-MEDIA-TOOLS-001);
+    the other formats are lossless and 0 keeps the frame's size."""
+    from cfa4_qt.panels.export_dialogs import frame_options, frame_path
+
+    assert frame_options("jpg", 80, 0, 0) == {"quality": 80}
+    assert frame_options("png", 80, 640, 0) == {"width": 640}
+    assert frame_options("webp", 50, 0, 360) == {"height": 360}
+    assert frame_path("/tmp", "still.webp", "png") == "/tmp/still.png"
+
+
+def test_marker_imports_ask_for_a_file():
+    """Markers ▸ Import Markers from CSV… / Import Segments from EDL… ask which file to read, and
+    Export Segments as EDL… where to save (K6)."""
+    from cfa4_qt.main_window import EXPORT_SAVES, IMPORT_OPENS
+
+    assert IMPORT_OPENS["markers.importCsv"][1] == "csv"
+    assert IMPORT_OPENS["markers.importEdl"][1] == "edl"
+    assert EXPORT_SAVES["markers.exportEdl"][1] == "edl"
+
+
+class _StubEngine(QtCore.QObject):
+    """Records the commands a dialog sends; the test answers them by hand."""
+
+    event = QtCore.Signal(object)
+
+    def __init__(self) -> None:
+        super().__init__()
+        self.sent: list[tuple[str, dict, object, object]] = []
+
+    def execute(self, command: str, params: dict, on_reply=None, on_error=None) -> None:
+        self.sent.append((command, dict(params), on_reply, on_error))
+
+    def last(self, command: str) -> tuple:
+        return next(s for s in reversed(self.sent) if s[0] == command)
+
+
+def test_find_segments_closed_before_the_job_starts_cancels_it(app):
+    """Find Segments closed while the analysis is starting: the job that starts anyway is
+    cancelled, and its replies change nothing on the closed dialog."""
+    from cfa4_qt.panels.segment_finder import SegmentFinderDialog
+
+    parent = QtWidgets.QWidget()
+    engine = _StubEngine()
+    d = SegmentFinderDialog(parent, engine, 7, 25.0, lambda _t: None)
+    d.start()
+    _c, _p, started, _e = engine.last("segments.detectScenes")
+    d.reject()
+    assert not any(c == "jobs.cancel" for c, *_r in engine.sent)  # no job id yet
+    state = d.state.text()
+    started({"job": 5, "state": "running", "progress": {"done": 1, "total": 2}}, None)
+    assert engine.last("jobs.cancel")[1] == {"job": 5}
+    assert d.job is None and d.state.text() == state and not d._timer.isActive()
+    d._got({"job": 5, "state": "done", "segments": [{"in": 0, "out": 10}]})
+    d._fail("late")
+    assert d.table.rowCount() == 0 and not d.error.isVisible()
+    assert not any(c == "segments.proposal" for c, *_r in engine.sent)
+    parent.deleteLater()
+
+
+def test_smart_cut_exports_only_a_plan_of_the_current_settings(app):
+    """Smart Cut: a new output path (or any setting) drops the plan shown and plans again; an
+    answer for the old settings is ignored, and Export runs only a plan of the current ones."""
+    from cfa4_qt.panels.smart_cut import SmartCutDialog
+
+    parent = QtWidgets.QWidget()
+    engine = _StubEngine()
+    d = SmartCutDialog(parent, engine, 7, lambda _t: None)
+    engine.last("export.analyze")[2]({"path": "/m/clip.mp4", "codec": "h264", "container": "mp4", "smartCut": {"allowed": True}}, None)
+    _c, first, plan_reply, _e = engine.last("export.plan")
+    assert first["output"] == "/m/clip_cut.mp4"
+    good = {"summary": {"copiedFrames": 50, "reencodedFrames": 0}, "plan": {"executable": True}}
+    plan_reply(good, None)
+    assert d.run.isEnabled() and d.plan_current()
+    plans = sum(c == "export.plan" for c, *_r in engine.sent)
+    d.output.setText("/m/other.mp4")
+    assert not d.run.isEnabled() and d.plan is None and not d.plan_current()
+    plan_reply(good, None)  # the old plan's answer, late: ignored
+    assert not d.run.isEnabled() and d.plan is None
+    # Export with a stale plan plans first and writes nothing
+    d.start()
+    assert not any(c == "export.start" for c, *_r in engine.sent)
+    _c, second, plan_reply, _e = engine.last("export.plan")
+    assert second["output"] == "/m/other.mp4" and sum(c == "export.plan" for c, *_r in engine.sent) == plans + 1
+    plan_reply(good, None)
+    assert d.run.isEnabled() and d.plan_current()
+    # typing plans again once it pauses
+    d.output.setText("/m/third.mp4")
+    assert wait_until(app, lambda: engine.last("export.plan")[1]["output"] == "/m/third.mp4", 5_000)
+    engine.last("export.plan")[2](good, None)
+    d.start()
+    assert engine.last("export.start")[1]["output"] == "/m/third.mp4"
+    # a project change (a marker moved or renamed) drops the plan and plans again
+    engine.last("export.plan")[2](good, None)
+    plans = sum(c == "export.plan" for c, *_r in engine.sent)
+    engine.event.emit({"event": "toast", "message": "x"})
+    engine.event.emit({"event": "projectChanged", "revision": 9})
+    assert not d.run.isEnabled() and d.plan is None and not d.plan_current()
+    assert wait_until(app, lambda: sum(c == "export.plan" for c, *_r in engine.sent) == plans + 1, 5_000)
+    parent.deleteLater()
+
+
+def test_marker_csv_import_goes_to_the_focused_monitor():
+    """Markers ▸ Import Markers from CSV…: to the Source clip when the Source monitor is focused
+    and shows one, else to the sequence; a target the caller named is kept."""
+    from types import SimpleNamespace
+
+    from cfa4_qt.main_window import MainWindow
+
+    source, program = object(), object()
+    win = SimpleNamespace(source_monitor=source, focused_monitor=lambda: source)
+    assert MainWindow.marker_import_params(win, {"x": 1}) == {"x": 1, "target": "source"}
+    assert MainWindow.marker_import_params(win, {"target": "program"}) == {"target": "program"}
+    assert MainWindow.marker_import_params(win, {"item": 3}) == {"item": 3}
+    win.focused_monitor = lambda: program
+    assert MainWindow.marker_import_params(win, {}) == {}
+
+
+def test_smart_cut_writes_nothing_when_the_project_changes_during_a_question(app, monkeypatch):
+    """Smart Cut: a project change while a confirmation is open (a marker renamed, so another
+    file name) drops the plan, and the confirmed export does not run on it."""
+    from cfa4_qt.panels import smart_cut
+    from cfa4_qt.panels.smart_cut import SmartCutDialog
+
+    parent = QtWidgets.QWidget()
+    engine = _StubEngine()
+    d = SmartCutDialog(parent, engine, 7, lambda _t: None)
+    engine.last("export.analyze")[2]({"path": "/m/clip.mp4", "codec": "h264", "container": "mp4", "smartCut": {"allowed": True}}, None)
+    plan = {"summary": {"copiedFrames": 40, "reencodedFrames": 10, "requiresConfirmation": True}, "plan": {"executable": True}}
+    engine.last("export.plan")[2](plan, None)
+    assert d.plan_current()
+
+    def changed_while_asking(*_a: object) -> object:
+        engine.event.emit({"event": "projectChanged", "revision": 2})
+        return QtWidgets.QMessageBox.StandardButton.Yes
+
+    monkeypatch.setattr(smart_cut.QMessageBox, "question", changed_while_asking)
+    d.start()
+    assert not any(c == "export.start" for c, *_r in engine.sent)
+    assert not d.run.isEnabled() and d.plan is None
+    parent.deleteLater()

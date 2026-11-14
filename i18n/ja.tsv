@@ -4577,3 +4577,60 @@
 	Chase External Timecode	外部タイムコードにチェイス
 	Send LTC	LTC を送信
 	Send MIDI Timecode	MIDI タイムコードを送信
+# CFA4-LOSSLESS-MEDIA-TOOLS-001: segments, Find Segments, joined Smart Cut, frame export options
+	Find Segments	セグメントを検索
+	Find Segments…	セグメントを検索…
+	Comment…	コメント…
+	Comment:	コメント:
+	The analysis stopped.	解析を停止しました。
+	No segments yet: add a range marker in the Source monitor, or use Find Segments… there.	セグメントがありません。ソースモニターで範囲マーカーを追加するか、「セグメントを検索…」を使ってください
+	Remove Segment	セグメントを削除
+	Black pictures	黒画面
+	{count} segments written and verified	{count} 個のセグメントを書き出して検証しました
+	These files already exist and will be replaced: {files}. Continue?	次のファイルは既に存在し、置き換えられます: {files}。続行しますか?
+	{count} subclips made from the segments	セグメントから {count} 個のサブクリップを作成しました
+	Segment	セグメント
+	Silence	無音
+	Analyzing…	解析中…
+	Analyzing… {percent}%	解析中… {percent}%
+	Silence below (dBFS):	無音のしきい値 (dBFS):
+	To Timeline	タイムラインへ
+	Sequence Markers	シーケンスマーカー
+	Join the segments into one file	セグメントを 1 つのファイルに結合
+	{count} segments placed on the timeline	{count} 個のセグメントをタイムラインに配置しました
+	Shortest silence (s):	最短の無音 (秒):
+	Segment {n}: {why}	セグメント {n}: {why}
+	Source Clip Segments	ソースクリップのセグメント
+	{count} segments found	{count} 個のセグメントが見つかりました
+	{count} files: {copied} frames copied, {reencoded} frames re-encoded	{count} 個のファイル: {copied} フレームをコピー、{reencoded} フレームを再エンコード
+	This clip has no segments: add range markers in the Source monitor first.	このクリップにはセグメントがありません: 先にソースモニターで範囲マーカーを追加してください。
+	Black level (%):	黒レベル (%):
+	Quality:	品質:
+	Black share of the picture (%):	画面に占める黒の割合 (%):
+	{count} segments added to the clip	{count} 個のセグメントをクリップに追加しました
+	Last frame	最終フレーム
+	First frame	最初のフレーム
+	Marked range	マークした範囲
+	Original	元のサイズ
+	Segment names as chapters	セグメント名をチャプターにする
+	Add as Segments	セグメントとして追加
+	The engine did not start the analysis.	エンジンが解析を開始しませんでした。
+	Range:	範囲:
+	(no clip in the Source monitor)	(ソースモニターにクリップがありません)
+	Segment name:	セグメント名:
+	{count} segments joined into {path} and verified	{count} 個のセグメントを {path} に結合して検証しました
+	Shortest black (s):	最短の黒 (秒):
+	Segments (range markers)	セグメント (範囲マーカー)
+	(only the first ones are listed)	(最初のものだけを表示しています)
+	Check at least one segment.	少なくとも 1 つのセグメントをチェックしてください。
+	Make Subclips	サブクリップを作成
+	Shortest shot (frames):	最短のショット (フレーム):
+	Row {n}: the first and last frame must be whole numbers	{n} 行目: 最初と最後のフレームは整数でなければなりません
+	Size:	サイズ:
+	{count} segments joined into one file: {copied} frames copied, {reencoded} frames re-encoded	{count} 個のセグメントを 1 つのファイルに結合: {copied} フレームをコピー、{reencoded} フレームを再エンコード
+	{name} ({frames} frames)	{name} ({frames} フレーム)
+	Scene changes	シーンチェンジ
+	Import Markers from CSV…	CSV からマーカーを読み込み…
+	Export Segments as EDL…	セグメントを EDL として書き出し…
+	Import Segments from EDL…	EDL からセグメントを読み込み…
+	Segments to Subclips	セグメントをサブクリップに

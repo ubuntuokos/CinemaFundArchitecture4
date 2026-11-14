@@ -36,6 +36,7 @@ mod keyframe_move;
 pub mod legibility;
 pub mod live;
 mod marker_export;
+mod marker_import;
 pub mod masks;
 pub mod media_browser;
 pub mod media_pool;
@@ -60,6 +61,8 @@ pub mod relink;
 pub mod remix;
 pub mod scene_detect;
 pub mod scopes;
+pub mod segment_detect;
+mod segments;
 pub mod sequence_extras;
 pub mod sequence_tools;
 pub mod settings;
@@ -67,8 +70,10 @@ pub mod shortcut_presets;
 pub mod shortcuts;
 pub mod smart_cut;
 mod smart_cut_mpeg;
+mod smart_cut_ranges;
 mod smart_render;
 pub mod social;
+mod source_cache;
 pub mod source_monitor;
 pub mod sync;
 pub mod timecode_sync;
@@ -150,6 +155,12 @@ pub trait Services: Send + Sync {
     fn file_size(&self, path: &str) -> std::io::Result<u64> {
         self.read_file(path).map(|b| b.len() as u64)
     }
+    /// A key that names the same file however `path` is spelled (symbolic links and `..`
+    /// resolved, hard links by the file's identity where the host has one; for a file that does
+    /// not exist yet, its directory resolved), so two names of one file compare equal. `None`: the host cannot tell; callers then compare the paths lexically.
+    fn canonical_path(&self, _path: &str) -> Option<String> {
+        None
+    }
     /// Up to `len` bytes of a file starting at `offset` (fewer at the end of the file).
     fn read_range(&self, path: &str, offset: u64, len: usize) -> std::io::Result<Vec<u8>> {
         let b = self.read_file(path)?;
@@ -218,6 +229,21 @@ impl Services for FsServices {
             Err(e) => return Err(e),
         }
         cfa4_format::atomic_write_new(path, data)
+    }
+    fn canonical_path(&self, path: &str) -> Option<String> {
+        let p = std::path::Path::new(path);
+        // an existing file is named by its device and inode, so hard links compare equal too
+        #[cfg(unix)]
+        if let Ok(m) = std::fs::metadata(p) {
+            use std::os::unix::fs::MetadataExt;
+            return Some(format!("\0inode:{}:{}", m.dev(), m.ino()));
+        }
+        if let Ok(c) = std::fs::canonicalize(p) {
+            return Some(c.to_string_lossy().into_owned());
+        }
+        let name = p.file_name()?;
+        let dir = p.parent().filter(|d| !d.as_os_str().is_empty()).unwrap_or_else(|| std::path::Path::new("."));
+        std::fs::canonicalize(dir).ok().map(|d| d.join(name).to_string_lossy().into_owned())
     }
     fn file_size(&self, path: &str) -> std::io::Result<u64> {
         let m = std::fs::metadata(path)?;
@@ -515,6 +541,8 @@ pub struct Session {
     pub mask_jobs: Vec<masks::PendingTrack>,
     /// Scene Edit Detection jobs whose results are applied when they finish.
     pub scene_jobs: Vec<scene_detect::PendingScene>,
+    /// Segment analyses of a source (`segments.detect*`) and their proposals (the last few).
+    pub segment_scans: Vec<segment_detect::Scan>,
     /// Effect presets (built-in + the user's, persisted in the data directory).
     pub presets: presets::PresetLibrary,
     /// Export presets (built-in + the user's, persisted in the data directory) and favourites.
@@ -623,6 +651,7 @@ impl Session {
             media_jobs: Vec::new(),
             mask_jobs: Vec::new(),
             scene_jobs: Vec::new(),
+            segment_scans: Vec::new(),
             presets: Default::default(),
             export_presets: Default::default(),
             export_queue: Default::default(),
@@ -1389,6 +1418,8 @@ mod linked_trim_tests;
 #[cfg(test)]
 mod locked_clip_edits_tests;
 #[cfg(test)]
+mod lossless_f4_tests;
+#[cfg(test)]
 mod masks_tests;
 #[cfg(test)]
 mod media_browser_tests;
@@ -1443,6 +1474,10 @@ mod roll_linked_tests;
 #[cfg(test)]
 mod scopes_tests;
 #[cfg(test)]
+mod segment_detect_tests;
+#[cfg(test)]
+mod segments_tests;
+#[cfg(test)]
 mod sequence_inspect_tests;
 #[cfg(test)]
 mod sequence_tabs_tests;
@@ -1454,6 +1489,8 @@ mod settings_tests;
 mod shortcuts_tests;
 #[cfg(test)]
 mod smart_cut_mpeg_tests;
+#[cfg(test)]
+mod smart_cut_ranges_tests;
 #[cfg(test)]
 mod smart_cut_tests;
 #[cfg(test)]

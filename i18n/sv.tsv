@@ -4570,3 +4570,60 @@ export.summary	Low	låg
 	Chase External Timecode	Följ extern tidskod
 	Send LTC	Skicka LTC
 	Send MIDI Timecode	Skicka MIDI-tidskod
+# CFA4-LOSSLESS-MEDIA-TOOLS-001: segments, Find Segments, joined Smart Cut, frame export options
+	Find Segments	Hitta segment
+	Find Segments…	Hitta segment…
+	Comment…	Kommentar…
+	Comment:	Kommentar:
+	The analysis stopped.	Analysen stoppades.
+	No segments yet: add a range marker in the Source monitor, or use Find Segments… there.	Inga segment. Lägg till en intervallmarkör i källmonitorn eller använd Hitta segment.
+	Remove Segment	Ta bort segment
+	Black pictures	Svarta bilder
+	{count} segments written and verified	{count} segment skrivna och kontrollerade
+	These files already exist and will be replaced: {files}. Continue?	De här filerna finns redan och ersätts: {files}. Fortsätta?
+	{count} subclips made from the segments	{count} delklipp skapade av segmenten
+	Segment	Segment
+	Silence	Tystnad
+	Analyzing…	Analyserar…
+	Analyzing… {percent}%	Analyserar… {percent} %
+	Silence below (dBFS):	Tystnad under (dBFS):
+	To Timeline	Till tidslinjen
+	Sequence Markers	Sekvensmarkörer
+	Join the segments into one file	Foga ihop segmenten till en fil
+	{count} segments placed on the timeline	{count} segment placerade på tidslinjen
+	Shortest silence (s):	Kortaste tystnad (s):
+	Segment {n}: {why}	Segment {n}: {why}
+	Source Clip Segments	Källklippets segment
+	{count} segments found	{count} segment hittades
+	{count} files: {copied} frames copied, {reencoded} frames re-encoded	{count} filer: {copied} bildrutor kopierade, {reencoded} bildrutor omkodade
+	This clip has no segments: add range markers in the Source monitor first.	Klippet har inga segment: lägg först till intervallmarkörer i källmonitorn.
+	Black level (%):	Svartnivå (%):
+	Quality:	Kvalitet:
+	Black share of the picture (%):	Andel svart i bilden (%):
+	{count} segments added to the clip	{count} segment tillagda i klippet
+	Last frame	Sista bildrutan
+	First frame	Första bildrutan
+	Marked range	Markerat intervall
+	Original	Original
+	Segment names as chapters	Segmentnamn som kapitel
+	Add as Segments	Lägg till som segment
+	The engine did not start the analysis.	Motorn startade inte analysen.
+	Range:	Intervall:
+	(no clip in the Source monitor)	(inget klipp i källmonitorn)
+	Segment name:	Segmentnamn:
+	{count} segments joined into {path} and verified	{count} segment ihopfogade till {path} och kontrollerade
+	Shortest black (s):	Kortaste svart (s):
+	Segments (range markers)	Segment (intervallmarkörer)
+	(only the first ones are listed)	(bara de första visas)
+	Check at least one segment.	Markera minst ett segment.
+	Make Subclips	Skapa delklipp
+	Shortest shot (frames):	Kortaste tagning (bildrutor):
+	Row {n}: the first and last frame must be whole numbers	Rad {n}: första och sista bildrutan måste vara heltal
+	Size:	Storlek:
+	{count} segments joined into one file: {copied} frames copied, {reencoded} frames re-encoded	{count} segment ihopfogade till en fil: {copied} bildrutor kopierade, {reencoded} bildrutor omkodade
+	{name} ({frames} frames)	{name} ({frames} bildrutor)
+	Scene changes	Scenbyten
+	Import Markers from CSV…	Importera markörer från CSV…
+	Export Segments as EDL…	Exportera segment som EDL…
+	Import Segments from EDL…	Importera segment från EDL…
+	Segments to Subclips	Segment till delklipp

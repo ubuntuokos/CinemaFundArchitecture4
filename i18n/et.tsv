@@ -4570,3 +4570,60 @@ export.summary	Low	madal
 	Chase External Timecode	Järgi välist ajakoodi
 	Send LTC	Saada LTC
 	Send MIDI Timecode	Saada MIDI-ajakood
+# CFA4-LOSSLESS-MEDIA-TOOLS-001: segments, Find Segments, joined Smart Cut, frame export options
+	Find Segments	Leia lõigud
+	Find Segments…	Leia lõigud…
+	Comment…	Kommentaar…
+	Comment:	Kommentaar:
+	The analysis stopped.	Analüüs peatus.
+	No segments yet: add a range marker in the Source monitor, or use Find Segments… there.	Lõike pole. Lisa allikamonitoris vahemikumarker või kasuta käsku Leia lõigud.
+	Remove Segment	Eemalda lõik
+	Black pictures	Mustad kaadrid
+	{count} segments written and verified	Kirjutatud ja kontrollitud lõike: {count}
+	These files already exist and will be replaced: {files}. Continue?	Need failid on juba olemas ja asendatakse: {files}. Kas jätkata?
+	{count} subclips made from the segments	Lõikudest loodud alamklippe: {count}
+	Segment	Lõik
+	Silence	Vaikus
+	Analyzing…	Analüüsimine…
+	Analyzing… {percent}%	Analüüsimine… {percent}%
+	Silence below (dBFS):	Vaikus alla (dBFS):
+	To Timeline	Ajateljele
+	Sequence Markers	Jada markerid
+	Join the segments into one file	Ühenda lõigud üheks failiks
+	{count} segments placed on the timeline	Ajateljele paigutatud lõike: {count}
+	Shortest silence (s):	Lühim vaikus (s):
+	Segment {n}: {why}	Lõik {n}: {why}
+	Source Clip Segments	Allikaklipi lõigud
+	{count} segments found	Leitud lõike: {count}
+	{count} files: {copied} frames copied, {reencoded} frames re-encoded	Faile: {count}; kopeeritud kaadreid: {copied}, uuesti kodeeritud kaadreid: {reencoded}
+	This clip has no segments: add range markers in the Source monitor first.	Sellel klipil pole lõike: lisa esmalt allikamonitoris vahemikumarkerid.
+	Black level (%):	Musta tase (%):
+	Quality:	Kvaliteet:
+	Black share of the picture (%):	Musta osakaal pildis (%):
+	{count} segments added to the clip	Klipile lisatud lõike: {count}
+	Last frame	Viimane kaader
+	First frame	Esimene kaader
+	Marked range	Märgitud vahemik
+	Original	Algne
+	Segment names as chapters	Lõikude nimed peatükkidena
+	Add as Segments	Lisa lõikudena
+	The engine did not start the analysis.	Mootor ei käivitanud analüüsi.
+	Range:	Vahemik:
+	(no clip in the Source monitor)	(allikamonitoris pole klippi)
+	Segment name:	Lõigu nimi:
+	{count} segments joined into {path} and verified	Lõigud ({count}) ühendati faili {path} ja kontrolliti
+	Shortest black (s):	Lühim must (s):
+	Segments (range markers)	Lõigud (vahemikumarkerid)
+	(only the first ones are listed)	(loetletud on ainult esimesed)
+	Check at least one segment.	Märgi vähemalt üks lõik.
+	Make Subclips	Loo alamklipid
+	Shortest shot (frames):	Lühim võte (kaadrid):
+	Row {n}: the first and last frame must be whole numbers	Rida {n}: esimene ja viimane kaader peavad olema täisarvud
+	Size:	Suurus:
+	{count} segments joined into one file: {copied} frames copied, {reencoded} frames re-encoded	Lõigud ({count}) ühendati üheks failiks; kopeeritud kaadreid: {copied}, uuesti kodeeritud kaadreid: {reencoded}
+	{name} ({frames} frames)	{name} (kaadreid: {frames})
+	Scene changes	Stseenivahetused
+	Import Markers from CSV…	Impordi markerid CSV-st…
+	Export Segments as EDL…	Ekspordi segmendid EDL-ina…
+	Import Segments from EDL…	Impordi segmendid EDL-ist…
+	Segments to Subclips	Segmendid alamklippideks

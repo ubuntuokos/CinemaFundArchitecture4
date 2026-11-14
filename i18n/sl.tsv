@@ -4571,3 +4571,60 @@ export.summary	Low	nizka
 	Chase External Timecode	Sledi zunanji časovni kodi
 	Send LTC	Pošlji LTC
 	Send MIDI Timecode	Pošlji časovno kodo MIDI
+# CFA4-LOSSLESS-MEDIA-TOOLS-001: segments, Find Segments, joined Smart Cut, frame export options
+	Find Segments	Poišči segmente
+	Find Segments…	Poišči segmente…
+	Comment…	Komentar…
+	Comment:	Komentar:
+	The analysis stopped.	Analiza se je ustavila.
+	No segments yet: add a range marker in the Source monitor, or use Find Segments… there.	Ni segmentov. Dodaj oznako obsega v monitorju vira ali uporabi »Poišči segmente…«
+	Remove Segment	Odstrani segment
+	Black pictures	Črne slike
+	{count} segments written and verified	Zapisani in preverjeni segmenti: {count}
+	These files already exist and will be replaced: {files}. Continue?	Te datoteke že obstajajo in bodo zamenjane: {files}. Nadaljujem?
+	{count} subclips made from the segments	Iz segmentov narejeni podposnetki: {count}
+	Segment	Segment
+	Silence	Tišina
+	Analyzing…	Analiziranje …
+	Analyzing… {percent}%	Analiziranje … {percent} %
+	Silence below (dBFS):	Tišina pod (dBFS):
+	To Timeline	Na časovnico
+	Sequence Markers	Oznake sekvence
+	Join the segments into one file	Združi segmente v eno datoteko
+	{count} segments placed on the timeline	Segmenti, postavljeni na časovnico: {count}
+	Shortest silence (s):	Najkrajša tišina (s):
+	Segment {n}: {why}	Segment {n}: {why}
+	Source Clip Segments	Segmenti izvornega posnetka
+	{count} segments found	Najdeni segmenti: {count}
+	{count} files: {copied} frames copied, {reencoded} frames re-encoded	Datoteke: {count}; kopirane sličice: {copied}, ponovno kodirane sličice: {reencoded}
+	This clip has no segments: add range markers in the Source monitor first.	Ta posnetek nima segmentov: najprej dodaj oznake obsega v monitorju vira.
+	Black level (%):	Raven črne (%):
+	Quality:	Kakovost:
+	Black share of the picture (%):	Delež črne v sliki (%):
+	{count} segments added to the clip	Segmenti, dodani posnetku: {count}
+	Last frame	Zadnja sličica
+	First frame	Prva sličica
+	Marked range	Označeni obseg
+	Original	Izvirnik
+	Segment names as chapters	Imena segmentov kot poglavja
+	Add as Segments	Dodaj kot segmente
+	The engine did not start the analysis.	Pogon ni zagnal analize.
+	Range:	Obseg:
+	(no clip in the Source monitor)	(v monitorju vira ni posnetka)
+	Segment name:	Ime segmenta:
+	{count} segments joined into {path} and verified	Segmenti ({count}) združeni v {path} in preverjeni
+	Shortest black (s):	Najkrajša črna (s):
+	Segments (range markers)	Segmenti (oznake obsega)
+	(only the first ones are listed)	(navedeni so le prvi)
+	Check at least one segment.	Označi vsaj en segment.
+	Make Subclips	Naredi podposnetke
+	Shortest shot (frames):	Najkrajši kader (sličice):
+	Row {n}: the first and last frame must be whole numbers	Vrstica {n}: prva in zadnja sličica morata biti celi števili
+	Size:	Velikost:
+	{count} segments joined into one file: {copied} frames copied, {reencoded} frames re-encoded	Segmenti ({count}) združeni v eno datoteko; kopirane sličice: {copied}, ponovno kodirane sličice: {reencoded}
+	{name} ({frames} frames)	{name} (sličic: {frames})
+	Scene changes	Menjave prizorov
+	Import Markers from CSV…	Uvozi oznake iz CSV …
+	Export Segments as EDL…	Izvozi segmente kot EDL …
+	Import Segments from EDL…	Uvozi segmente iz EDL …
+	Segments to Subclips	Segmenti v podposnetke

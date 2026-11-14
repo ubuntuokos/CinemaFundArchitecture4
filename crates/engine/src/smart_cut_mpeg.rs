@@ -46,6 +46,11 @@ impl ByteSource for Reader {
 
 /// Whether `path` is an MPEG program or transport stream (MP4 / MOV names are never sniffed).
 pub(crate) fn is_mpeg(s: &Session, path: &str) -> bool {
+    // a batch asks for every range: the answer is kept for the batch like the opened source
+    crate::source_cache::opened(&format!("\0mpeg?{path}"), || Ok(sniff_mpeg(s, path))).is_ok_and(|b| *b)
+}
+
+fn sniff_mpeg(s: &Session, path: &str) -> bool {
     let lower = path.to_ascii_lowercase();
     if [".mp4", ".m4v", ".mov"].iter().any(|e| lower.ends_with(e)) {
         return false;
@@ -59,11 +64,9 @@ pub(crate) fn is_mpeg(s: &Session, path: &str) -> bool {
             head
         }
         Some(Err(_)) => return false,
-        None => match s.services.read_file(path) {
-            Ok(mut b) => {
-                b.truncate(4096);
-                b
-            }
+        // only the head, on hosts that can read part of a file
+        None => match s.services.read_range(path, 0, 4096) {
+            Ok(b) => b,
             Err(_) => return false,
         },
     };
@@ -193,9 +196,9 @@ pub(crate) fn analyze(s: &mut Session, _p: &Value, path: &str, view: Option<&Sou
 }
 
 /// The plan of the range named in `p`, and the output stream format.
-fn plan_of(s: &Session, p: &Value, cmd: &str) -> Result<(Source, SmartCutPlan, MuxFormat)> {
+fn plan_of(s: &Session, p: &Value, cmd: &str) -> Result<(std::rc::Rc<Source>, SmartCutPlan, MuxFormat)> {
     let (path, view) = source_p(s, p, cmd)?;
-    let src = open_source(s, &path, cmd)?;
+    let src = crate::source_cache::opened(&path, || open_source(s, &path, cmd))?;
     let map = |t: Tick| src.stream_time(t);
     let (mut in_point, mut out_point) = range_p(p, cmd, &CutSource { path: &path, view: view.as_ref(), rate: src.rate(), stream_time: &map })?;
     if view.is_none() {
@@ -264,7 +267,7 @@ pub(crate) fn start(s: &mut Session, p: &Value) -> Result<Value> {
     let output = str_p(p, "output").filter(|o| !o.is_empty()).map(str::to_string).ok_or_else(|| bad(cmd, "`output` (the file to write) is required"))?;
     let encoding = encoding_p(p, cmd)?;
     let (src, plan, format) = plan_of(s, p, cmd)?;
-    if output == src.path {
+    if crate::smart_cut::path_key(s, &output) == crate::smart_cut::path_key(s, &src.path) {
         return Err(bad(cmd, "the output must not be the source file"));
     }
     let reencodes = plan.plan.requires_confirmation();

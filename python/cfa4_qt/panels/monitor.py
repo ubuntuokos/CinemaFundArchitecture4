@@ -84,6 +84,7 @@ from .monitor_view import (
     res_label,
     social_safe_rect,
 )
+from .segment_finder import SegmentFinderDialog
 from .smart_cut import SmartCutDialog
 from .time_bar import ScrubBar
 from .timeline_media import TimelineMedia
@@ -2033,6 +2034,16 @@ class SourceMonitor(Monitor):
             self.status.emit(tr("Open a video clip in the Source monitor first."))
             return None
         return self._show_dialog(SmartCutDialog(self.window(), self.engine, item, self.status.emit))
+
+    def open_find_segments(self) -> QDialog | None:
+        """Find scene changes, black or silence in the clip and add the accepted ones as its
+        segments (Tools ▸ Video Tools ▸ Find Segments…, ``tools_menu.py``)."""
+        item = (self.source or {}).get("item")
+        if not isinstance(item, int) or not self.has_video():
+            self.status.emit(tr("Open a video clip in the Source monitor first."))
+            return None
+        fps = float((self.source or {}).get("fps") or 0.0)
+        return self._show_dialog(SegmentFinderDialog(self.window(), self.engine, item, fps, self.status.emit, has_audio=self.has_audio()))
 
     def has_video(self) -> bool:
         return (self.source or {}).get("hasVideo") is not False

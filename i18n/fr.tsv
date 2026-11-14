@@ -4573,3 +4573,60 @@
 	Chase External Timecode	Suivre le timecode externe
 	Send LTC	Envoyer le LTC
 	Send MIDI Timecode	Envoyer le timecode MIDI
+# CFA4-LOSSLESS-MEDIA-TOOLS-001: segments, Find Segments, joined Smart Cut, frame export options
+	Find Segments	Rechercher des segments
+	Find Segments…	Rechercher des segments…
+	Comment…	Commentaire…
+	Comment:	Commentaire :
+	The analysis stopped.	L’analyse s’est arrêtée.
+	No segments yet: add a range marker in the Source monitor, or use Find Segments… there.	Aucun segment. Ajoutez un repère de plage dans le moniteur source ou utilisez Rechercher des segments.
+	Remove Segment	Supprimer le segment
+	Black pictures	Images noires
+	{count} segments written and verified	{count} segments écrits et vérifiés
+	These files already exist and will be replaced: {files}. Continue?	Ces fichiers existent déjà et seront remplacés : {files}. Continuer ?
+	{count} subclips made from the segments	{count} sous-éléments créés à partir des segments
+	Segment	Segment
+	Silence	Silence
+	Analyzing…	Analyse en cours…
+	Analyzing… {percent}%	Analyse en cours… {percent} %
+	Silence below (dBFS):	Silence sous (dBFS) :
+	To Timeline	Vers la timeline
+	Sequence Markers	Repères de séquence
+	Join the segments into one file	Assembler les segments en un seul fichier
+	{count} segments placed on the timeline	{count} segments placés dans la timeline
+	Shortest silence (s):	Silence le plus court (s) :
+	Segment {n}: {why}	Segment {n} : {why}
+	Source Clip Segments	Segments du clip source
+	{count} segments found	{count} segments trouvés
+	{count} files: {copied} frames copied, {reencoded} frames re-encoded	{count} fichiers : {copied} images copiées, {reencoded} images réencodées
+	This clip has no segments: add range markers in the Source monitor first.	Ce clip n’a aucun segment : ajoutez d’abord des repères de plage dans le moniteur source.
+	Black level (%):	Niveau de noir (%) :
+	Quality:	Qualité :
+	Black share of the picture (%):	Part de noir dans l’image (%) :
+	{count} segments added to the clip	{count} segments ajoutés au clip
+	Last frame	Dernière image
+	First frame	Première image
+	Marked range	Plage marquée
+	Original	Originale
+	Segment names as chapters	Noms des segments comme chapitres
+	Add as Segments	Ajouter comme segments
+	The engine did not start the analysis.	Le moteur n’a pas lancé l’analyse.
+	Range:	Plage :
+	(no clip in the Source monitor)	(aucun clip dans le moniteur source)
+	Segment name:	Nom du segment :
+	{count} segments joined into {path} and verified	{count} segments assemblés dans {path} et vérifiés
+	Shortest black (s):	Noir le plus court (s) :
+	Segments (range markers)	Segments (repères de plage)
+	(only the first ones are listed)	(seuls les premiers sont listés)
+	Check at least one segment.	Cochez au moins un segment.
+	Make Subclips	Créer des sous-éléments
+	Shortest shot (frames):	Plan le plus court (images) :
+	Row {n}: the first and last frame must be whole numbers	Ligne {n} : la première et la dernière image doivent être des nombres entiers
+	Size:	Taille :
+	{count} segments joined into one file: {copied} frames copied, {reencoded} frames re-encoded	{count} segments assemblés en un seul fichier : {copied} images copiées, {reencoded} images réencodées
+	{name} ({frames} frames)	{name} ({frames} images)
+	Scene changes	Changements de plan
+	Import Markers from CSV…	Importer des marqueurs depuis un CSV…
+	Export Segments as EDL…	Exporter les segments au format EDL…
+	Import Segments from EDL…	Importer des segments depuis une EDL…
+	Segments to Subclips	Segments en sous-éléments

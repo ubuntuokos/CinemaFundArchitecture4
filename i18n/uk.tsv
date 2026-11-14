@@ -4553,3 +4553,60 @@
 	Chase External Timecode	Стежити за зовнішнім тайм-кодом
 	Send LTC	Надсилати LTC
 	Send MIDI Timecode	Надсилати MIDI тайм-код
+# CFA4-LOSSLESS-MEDIA-TOOLS-001: segments, Find Segments, joined Smart Cut, frame export options
+	Find Segments	Знайти сегменти
+	Find Segments…	Знайти сегменти…
+	Comment…	Коментар…
+	Comment:	Коментар:
+	The analysis stopped.	Аналіз зупинено.
+	No segments yet: add a range marker in the Source monitor, or use Find Segments… there.	Сегментів немає. Додайте маркер діапазону в моніторі джерела або скористайтеся командою «Знайти сегменти…»
+	Remove Segment	Вилучити сегмент
+	Black pictures	Чорні кадри
+	{count} segments written and verified	Записано й перевірено сегментів: {count}
+	These files already exist and will be replaced: {files}. Continue?	Ці файли вже існують і будуть замінені: {files}. Продовжити?
+	{count} subclips made from the segments	Створено підкліпів із сегментів: {count}
+	Segment	Сегмент
+	Silence	Тиша
+	Analyzing…	Аналіз…
+	Analyzing… {percent}%	Аналіз… {percent}%
+	Silence below (dBFS):	Тиша нижче (дБFS):
+	To Timeline	На таймлайн
+	Sequence Markers	Маркери послідовності
+	Join the segments into one file	Об’єднати сегменти в один файл
+	{count} segments placed on the timeline	Сегментів розміщено на таймлайні: {count}
+	Shortest silence (s):	Найкоротша тиша (с):
+	Segment {n}: {why}	Сегмент {n}: {why}
+	Source Clip Segments	Сегменти вихідного кліпу
+	{count} segments found	Знайдено сегментів: {count}
+	{count} files: {copied} frames copied, {reencoded} frames re-encoded	Файлів: {count}; скопійовано кадрів: {copied}, перекодовано кадрів: {reencoded}
+	This clip has no segments: add range markers in the Source monitor first.	Цей кліп не має сегментів: спершу додайте маркери діапазону в моніторі джерела.
+	Black level (%):	Рівень чорного (%):
+	Quality:	Якість:
+	Black share of the picture (%):	Частка чорного в кадрі (%):
+	{count} segments added to the clip	Додано сегментів до кліпу: {count}
+	Last frame	Останній кадр
+	First frame	Перший кадр
+	Marked range	Позначений діапазон
+	Original	Оригінальний
+	Segment names as chapters	Назви сегментів як розділи
+	Add as Segments	Додати як сегменти
+	The engine did not start the analysis.	Рушій не запустив аналіз.
+	Range:	Діапазон:
+	(no clip in the Source monitor)	(у моніторі джерела немає кліпу)
+	Segment name:	Назва сегмента:
+	{count} segments joined into {path} and verified	Сегменти ({count}) об’єднано в {path} і перевірено
+	Shortest black (s):	Найкоротша чорна ділянка (с):
+	Segments (range markers)	Сегменти (маркери діапазону)
+	(only the first ones are listed)	(показано лише перші)
+	Check at least one segment.	Позначте принаймні один сегмент.
+	Make Subclips	Створити підкліпи
+	Shortest shot (frames):	Найкоротший план (кадри):
+	Row {n}: the first and last frame must be whole numbers	Рядок {n}: перший і останній кадр мають бути цілими числами
+	Size:	Розмір:
+	{count} segments joined into one file: {copied} frames copied, {reencoded} frames re-encoded	Сегменти ({count}) об’єднано в один файл; скопійовано кадрів: {copied}, перекодовано кадрів: {reencoded}
+	{name} ({frames} frames)	{name} (кадрів: {frames})
+	Scene changes	Зміни сцен
+	Import Markers from CSV…	Імпорт маркерів із CSV…
+	Export Segments as EDL…	Експорт сегментів у EDL…
+	Import Segments from EDL…	Імпорт сегментів з EDL…
+	Segments to Subclips	Сегменти в підкліпи

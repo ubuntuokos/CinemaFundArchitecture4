@@ -4574,3 +4574,60 @@ export.summary	Low	తక్కువ
 	Chase External Timecode	బాహ్య టైమ్‌కోడ్‌ను అనుసరించు
 	Send LTC	LTC పంపు
 	Send MIDI Timecode	MIDI టైమ్‌కోడ్ పంపు
+# CFA4-LOSSLESS-MEDIA-TOOLS-001: segments, Find Segments, joined Smart Cut, frame export options
+	Find Segments	విభాగాలను కనుగొను
+	Find Segments…	విభాగాలను కనుగొను…
+	Comment…	వ్యాఖ్య…
+	Comment:	వ్యాఖ్య:
+	The analysis stopped.	విశ్లేషణ ఆగిపోయింది.
+	No segments yet: add a range marker in the Source monitor, or use Find Segments… there.	విభాగాలు లేవు. సోర్స్ మానిటర్‌లో పరిధి మార్కర్‌ను జోడించండి, లేదా విభాగాలను కనుగొను… ఉపయోగించండి
+	Remove Segment	విభాగాన్ని తీసివేయి
+	Black pictures	నలుపు చిత్రాలు
+	{count} segments written and verified	{count} విభాగాలు వ్రాయబడి ధృవీకరించబడ్డాయి
+	These files already exist and will be replaced: {files}. Continue?	ఈ ఫైళ్లు ఇప్పటికే ఉన్నాయి, వాటిని భర్తీ చేస్తాం: {files}. కొనసాగించాలా?
+	{count} subclips made from the segments	విభాగాల నుండి {count} ఉప క్లిప్‌లు చేయబడ్డాయి
+	Segment	విభాగం
+	Silence	నిశ్శబ్దం
+	Analyzing…	విశ్లేషిస్తోంది…
+	Analyzing… {percent}%	విశ్లేషిస్తోంది… {percent}%
+	Silence below (dBFS):	దీని కంటే తక్కువ నిశ్శబ్దం (dBFS):
+	To Timeline	టైమ్‌లైన్‌కు
+	Sequence Markers	సీక్వెన్స్ మార్కర్లు
+	Join the segments into one file	విభాగాలను ఒకే ఫైల్‌గా కలుపు
+	{count} segments placed on the timeline	{count} విభాగాలు టైమ్‌లైన్‌పై ఉంచబడ్డాయి
+	Shortest silence (s):	అతి చిన్న నిశ్శబ్దం (సె):
+	Segment {n}: {why}	విభాగం {n}: {why}
+	Source Clip Segments	సోర్స్ క్లిప్ విభాగాలు
+	{count} segments found	{count} విభాగాలు కనుగొనబడ్డాయి
+	{count} files: {copied} frames copied, {reencoded} frames re-encoded	{count} ఫైళ్లు: {copied} ఫ్రేమ్‌లు కాపీ చేయబడ్డాయి, {reencoded} ఫ్రేమ్‌లు మళ్లీ ఎన్‌కోడ్ చేయబడ్డాయి
+	This clip has no segments: add range markers in the Source monitor first.	ఈ క్లిప్‌కు విభాగాలు లేవు: ముందుగా సోర్స్ మానిటర్‌లో పరిధి మార్కర్లను జోడించండి.
+	Black level (%):	నలుపు స్థాయి (%):
+	Quality:	నాణ్యత:
+	Black share of the picture (%):	చిత్రంలో నలుపు వాటా (%):
+	{count} segments added to the clip	క్లిప్‌కు {count} విభాగాలు జోడించబడ్డాయి
+	Last frame	చివరి ఫ్రేమ్
+	First frame	మొదటి ఫ్రేమ్
+	Marked range	గుర్తించిన పరిధి
+	Original	అసలు
+	Segment names as chapters	విభాగాల పేర్లు అధ్యాయాలుగా
+	Add as Segments	విభాగాలుగా జోడించు
+	The engine did not start the analysis.	ఇంజిన్ విశ్లేషణను ప్రారంభించలేదు.
+	Range:	పరిధి:
+	(no clip in the Source monitor)	(సోర్స్ మానిటర్‌లో క్లిప్ లేదు)
+	Segment name:	విభాగం పేరు:
+	{count} segments joined into {path} and verified	{count} విభాగాలు {path}లో కలుపబడి ధృవీకరించబడ్డాయి
+	Shortest black (s):	అతి చిన్న నలుపు (సె):
+	Segments (range markers)	విభాగాలు (పరిధి మార్కర్లు)
+	(only the first ones are listed)	(మొదటివి మాత్రమే చూపబడ్డాయి)
+	Check at least one segment.	కనీసం ఒక విభాగాన్ని ఎంచుకోండి.
+	Make Subclips	ఉప క్లిప్‌లు చేయి
+	Shortest shot (frames):	అతి చిన్న షాట్ (ఫ్రేమ్‌లు):
+	Row {n}: the first and last frame must be whole numbers	వరుస {n}: మొదటి, చివరి ఫ్రేమ్‌లు పూర్ణ సంఖ్యలు కావాలి
+	Size:	పరిమాణం:
+	{count} segments joined into one file: {copied} frames copied, {reencoded} frames re-encoded	{count} విభాగాలు ఒకే ఫైల్‌గా కలుపబడ్డాయి: {copied} ఫ్రేమ్‌లు కాపీ చేయబడ్డాయి, {reencoded} ఫ్రేమ్‌లు మళ్లీ ఎన్‌కోడ్ చేయబడ్డాయి
+	{name} ({frames} frames)	{name} ({frames} ఫ్రేమ్‌లు)
+	Scene changes	దృశ్య మార్పులు
+	Import Markers from CSV…	CSV నుండి మార్కర్లను దిగుమతి చేయి…
+	Export Segments as EDL…	విభాగాలను EDLగా ఎగుమతి చేయి…
+	Import Segments from EDL…	EDL నుండి విభాగాలను దిగుమతి చేయి…
+	Segments to Subclips	విభాగాలను ఉపక్లిప్‌లుగా

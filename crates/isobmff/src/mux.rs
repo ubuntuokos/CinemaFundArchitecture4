@@ -604,6 +604,80 @@ fn write_chpl(b: &mut BoxBuf, chapters: &[Chapter]) {
     b.end(m);
 }
 
+/// The boxes of `data` at one level: (kind, start, header length, end). `None` when a size is
+/// malformed. A size of 0 runs to the end.
+fn boxes(data: &[u8]) -> Option<Vec<([u8; 4], usize, usize, usize)>> {
+    let mut out = Vec::new();
+    let mut at = 0usize;
+    while at < data.len() {
+        let head = data.get(at..at.checked_add(8)?)?;
+        let kind: [u8; 4] = head[4..8].try_into().ok()?;
+        let (size, header) = match u32::from_be_bytes(head[0..4].try_into().ok()?) {
+            0 => (data.len() - at, 8),
+            1 => (usize::try_from(u64::from_be_bytes(data.get(at + 8..at + 16)?.try_into().ok()?)).ok()?, 16),
+            n => (n as usize, 8),
+        };
+        if size < header {
+            return None;
+        }
+        let end = at.checked_add(size).filter(|e| *e <= data.len())?;
+        out.push((kind, at, header, end));
+        at = end;
+    }
+    Some(out)
+}
+
+/// `file` (a finished MP4 / MOV whose `moov` comes after its media data, as
+/// [`Mp4Writer::finish`] writes it) with its Nero `chpl` chapters replaced by `chapters` (none:
+/// removed). Only `moov/udta` changes: the media data and every sample offset stay as they are.
+pub fn replace_chapters(file: &[u8], chapters: &[Chapter]) -> Result<Vec<u8>> {
+    let malformed = || Error::Mux("the file's boxes are malformed".into());
+    let top = boxes(file).ok_or_else(malformed)?;
+    let moovs: Vec<_> = top.iter().filter(|b| &b.0 == b"moov").collect();
+    let [moov] = moovs.as_slice() else {
+        return Err(Error::Mux(format!("the file has {} moov boxes, expected 1", moovs.len())));
+    };
+    if moov.3 != file.len() {
+        return Err(Error::Mux("chapters can only be replaced when the moov box is last".into()));
+    }
+    let body = &file[moov.1 + moov.2..moov.3];
+    let children = boxes(body).ok_or_else(malformed)?;
+    let mut b = BoxBuf::new();
+    let m = b.start(b"moov");
+    let mut had_udta = false;
+    for (kind, start, header, end) in &children {
+        if kind != b"udta" {
+            b.bytes(&body[*start..*end]);
+            continue;
+        }
+        had_udta = true;
+        let inner = &body[start + header..*end];
+        let kept: Vec<_> = boxes(inner).ok_or_else(malformed)?.into_iter().filter(|x| &x.0 != b"chpl").collect();
+        if kept.is_empty() && chapters.is_empty() {
+            continue;
+        }
+        let u = b.start(b"udta");
+        for (_, a, _, e) in kept {
+            b.bytes(&inner[a..e]);
+        }
+        write_chpl(&mut b, chapters);
+        b.end(u);
+    }
+    if !had_udta && !chapters.is_empty() {
+        let u = b.start(b"udta");
+        write_chpl(&mut b, chapters);
+        b.end(u);
+    }
+    if u32::try_from(b.buf.len()).is_err() {
+        return Err(Error::Mux("the moov box would exceed 4 GiB".into()));
+    }
+    b.end(m);
+    let mut out = Vec::with_capacity(moov.1 + b.buf.len());
+    out.extend_from_slice(&file[..moov.1]);
+    out.extend_from_slice(&b.buf);
+    Ok(out)
+}
+
 fn validate_track(cfg: &TrackConfig) -> Result<Option<u32>> {
     if cfg.timescale == 0 {
         return Err(Error::Mux("timescale must be non-zero".into()));

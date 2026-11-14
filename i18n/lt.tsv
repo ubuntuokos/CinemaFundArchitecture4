@@ -4571,3 +4571,60 @@ export.summary	Low	žema
 	Chase External Timecode	Sekti išorinį laiko kodą
 	Send LTC	Siųsti LTC
 	Send MIDI Timecode	Siųsti MIDI laiko kodą
+# CFA4-LOSSLESS-MEDIA-TOOLS-001: segments, Find Segments, joined Smart Cut, frame export options
+	Find Segments	Rasti segmentus
+	Find Segments…	Rasti segmentus…
+	Comment…	Komentaras…
+	Comment:	Komentaras:
+	The analysis stopped.	Analizė sustabdyta.
+	No segments yet: add a range marker in the Source monitor, or use Find Segments… there.	Segmentų nėra. Šaltinio monitoriuje pridėk intervalo žymeklį arba naudok „Rasti segmentus…“
+	Remove Segment	Pašalinti segmentą
+	Black pictures	Juodi kadrai
+	{count} segments written and verified	Įrašyta ir patikrinta segmentų: {count}
+	These files already exist and will be replaced: {files}. Continue?	Šie failai jau yra ir bus pakeisti: {files}. Tęsti?
+	{count} subclips made from the segments	Iš segmentų sukurta poklipų: {count}
+	Segment	Segmentas
+	Silence	Tyla
+	Analyzing…	Analizuojama…
+	Analyzing… {percent}%	Analizuojama… {percent} %
+	Silence below (dBFS):	Tyla žemiau (dBFS):
+	To Timeline	Į laiko juostą
+	Sequence Markers	Sekos žymekliai
+	Join the segments into one file	Sujungti segmentus į vieną failą
+	{count} segments placed on the timeline	Į laiko juostą įdėta segmentų: {count}
+	Shortest silence (s):	Trumpiausia tyla (s):
+	Segment {n}: {why}	Segmentas {n}: {why}
+	Source Clip Segments	Šaltinio klipo segmentai
+	{count} segments found	Rasta segmentų: {count}
+	{count} files: {copied} frames copied, {reencoded} frames re-encoded	Failų: {count}; nukopijuota kadrų: {copied}, perkoduota kadrų: {reencoded}
+	This clip has no segments: add range markers in the Source monitor first.	Šis klipas neturi segmentų: pirmiausia šaltinio monitoriuje pridėk intervalo žymeklių.
+	Black level (%):	Juodos lygis (%):
+	Quality:	Kokybė:
+	Black share of the picture (%):	Juodos dalis vaizde (%):
+	{count} segments added to the clip	Prie klipo pridėta segmentų: {count}
+	Last frame	Paskutinis kadras
+	First frame	Pirmas kadras
+	Marked range	Pažymėtas intervalas
+	Original	Originalus
+	Segment names as chapters	Segmentų pavadinimai kaip skyriai
+	Add as Segments	Pridėti kaip segmentus
+	The engine did not start the analysis.	Variklis nepradėjo analizės.
+	Range:	Intervalas:
+	(no clip in the Source monitor)	(šaltinio monitoriuje nėra klipo)
+	Segment name:	Segmento pavadinimas:
+	{count} segments joined into {path} and verified	Segmentai ({count}) sujungti į {path} ir patikrinti
+	Shortest black (s):	Trumpiausia juoda (s):
+	Segments (range markers)	Segmentai (intervalo žymekliai)
+	(only the first ones are listed)	(rodomi tik pirmieji)
+	Check at least one segment.	Pažymėk bent vieną segmentą.
+	Make Subclips	Sukurti poklipius
+	Shortest shot (frames):	Trumpiausias planas (kadrai):
+	Row {n}: the first and last frame must be whole numbers	Eilutė {n}: pirmas ir paskutinis kadras turi būti sveikieji skaičiai
+	Size:	Dydis:
+	{count} segments joined into one file: {copied} frames copied, {reencoded} frames re-encoded	Segmentai ({count}) sujungti į vieną failą; nukopijuota kadrų: {copied}, perkoduota kadrų: {reencoded}
+	{name} ({frames} frames)	{name} (kadrų: {frames})
+	Scene changes	Scenų kaita
+	Import Markers from CSV…	Importuoti žymes iš CSV…
+	Export Segments as EDL…	Eksportuoti segmentus kaip EDL…
+	Import Segments from EDL…	Importuoti segmentus iš EDL…
+	Segments to Subclips	Segmentai į poklipus

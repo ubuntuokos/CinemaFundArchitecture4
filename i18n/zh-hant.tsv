@@ -4567,3 +4567,60 @@ export.summary	Low	低
 	Chase External Timecode	追隨外部時間碼
 	Send LTC	傳送 LTC
 	Send MIDI Timecode	傳送 MIDI 時間碼
+# CFA4-LOSSLESS-MEDIA-TOOLS-001: segments, Find Segments, joined Smart Cut, frame export options
+	Find Segments	尋找片段
+	Find Segments…	尋找片段…
+	Comment…	註解…
+	Comment:	註解：
+	The analysis stopped.	分析已停止。
+	No segments yet: add a range marker in the Source monitor, or use Find Segments… there.	沒有片段。請在來源監視器中加入範圍標記，或使用「尋找片段…」
+	Remove Segment	移除片段
+	Black pictures	黑畫面
+	{count} segments written and verified	已寫入並驗證 {count} 個片段
+	These files already exist and will be replaced: {files}. Continue?	以下檔案已存在，將被取代：{files}。要繼續嗎？
+	{count} subclips made from the segments	已從片段建立 {count} 個子剪輯
+	Segment	片段
+	Silence	靜音
+	Analyzing…	正在分析…
+	Analyzing… {percent}%	正在分析… {percent}%
+	Silence below (dBFS):	靜音臨界值 (dBFS)：
+	To Timeline	放到時間軸
+	Sequence Markers	序列標記
+	Join the segments into one file	將片段合併為一個檔案
+	{count} segments placed on the timeline	已將 {count} 個片段放到時間軸上
+	Shortest silence (s):	最短靜音（秒）：
+	Segment {n}: {why}	片段 {n}：{why}
+	Source Clip Segments	來源剪輯的片段
+	{count} segments found	找到 {count} 個片段
+	{count} files: {copied} frames copied, {reencoded} frames re-encoded	{count} 個檔案：複製 {copied} 個影格，重新編碼 {reencoded} 個影格
+	This clip has no segments: add range markers in the Source monitor first.	此剪輯沒有片段：請先在來源監視器中加入範圍標記。
+	Black level (%):	黑色位準 (%)：
+	Quality:	品質：
+	Black share of the picture (%):	畫面中黑色的比例 (%)：
+	{count} segments added to the clip	已將 {count} 個片段加入剪輯
+	Last frame	最後一個影格
+	First frame	第一個影格
+	Marked range	已標記的範圍
+	Original	原始
+	Segment names as chapters	將片段名稱作為章節
+	Add as Segments	加入為片段
+	The engine did not start the analysis.	引擎沒有啟動分析。
+	Range:	範圍：
+	(no clip in the Source monitor)	（來源監視器中沒有剪輯）
+	Segment name:	片段名稱：
+	{count} segments joined into {path} and verified	已將 {count} 個片段合併到 {path} 並驗證
+	Shortest black (s):	最短黑畫面（秒）：
+	Segments (range markers)	片段（範圍標記）
+	(only the first ones are listed)	（只列出前面的項目）
+	Check at least one segment.	請至少勾選一個片段。
+	Make Subclips	建立子剪輯
+	Shortest shot (frames):	最短鏡頭（影格）：
+	Row {n}: the first and last frame must be whole numbers	第 {n} 列：第一個和最後一個影格必須是整數
+	Size:	大小：
+	{count} segments joined into one file: {copied} frames copied, {reencoded} frames re-encoded	已將 {count} 個片段合併為一個檔案：複製 {copied} 個影格，重新編碼 {reencoded} 個影格
+	{name} ({frames} frames)	{name}（{frames} 個影格）
+	Scene changes	場景切換
+	Import Markers from CSV…	從 CSV 匯入標記…
+	Export Segments as EDL…	將片段匯出為 EDL…
+	Import Segments from EDL…	從 EDL 匯入片段…
+	Segments to Subclips	片段轉為子剪輯

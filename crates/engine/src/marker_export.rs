@@ -1,4 +1,6 @@
-//! Sequence review notes as a spreadsheet-safe CSV, using the host's atomic file service.
+//! Sequence review notes, or a media item's segments (`item` / `"target": "source"`), as a
+//! spreadsheet-safe CSV, using the host's atomic file service. `markers.importCsv` reads it back
+//! ([`crate::marker_import`]).
 
 use cfa4_project::Label;
 use cfa4_time::{Tick, format_timecode_frames};
@@ -21,16 +23,15 @@ pub(crate) fn export(s: &mut Session, p: &Value) -> Result<Value> {
         .and_then(Value::as_str)
         .filter(|v| !v.trim().is_empty() && !v.contains('\0'))
         .ok_or_else(|| bad(CMD, "need a non-empty `path` without NUL characters"))?;
-    let seq = s.active_sequence().ok_or(EngineError::NoSequence)?;
-    seq.settings.validate().map_err(|e| bad(CMD, e))?;
-    let name = s.state.active_sequence.and_then(|id| s.project.item(id)).map(|i| i.name.as_str()).unwrap_or("Sequence");
-    if seq.markers.len() > MAX_MARKERS {
+    let t = crate::marker_import::target(s, p, CMD)?;
+    let name = t.name.as_str();
+    if t.markers.len() > MAX_MARKERS {
         return Err(bad(CMD, "too many markers (maximum 100000)"));
     }
     // Bound the worst-case quoted output before sorting or allocating it. 1024 covers numeric,
     // timecode and enum fields; arbitrary text may double in size when every character is a quote.
     let mut bound = 512usize;
-    for m in &seq.markers {
+    for m in &t.markers {
         let row = name
             .len()
             .checked_add(m.name.len())
@@ -40,8 +41,8 @@ pub(crate) fn export(s: &mut Session, p: &Value) -> Result<Value> {
             .and_then(|n| n.checked_add(1024));
         bound = row.and_then(|n| bound.checked_add(n)).filter(|n| *n <= MAX_BYTES).ok_or_else(|| bad(CMD, "marker report exceeds the 16 MiB limit"))?;
     }
-    let rate = seq.settings.frame_rate;
-    let mut markers: Vec<_> = seq.markers.iter().collect();
+    let rate = t.rate;
+    let mut markers: Vec<_> = t.markers.iter().collect();
     markers.sort_by_key(|m| (m.start, m.id));
     let mut csv =
         String::from("Sequence,Marker ID,Name,Comment,Kind,Color,Start Timecode,End Timecode,Duration Frames,Start Ticks,Duration Ticks,Frame Rate\r\n");
@@ -50,9 +51,10 @@ pub(crate) fn export(s: &mut Session, p: &Value) -> Result<Value> {
             return Err(bad(CMD, format!("marker {} has a negative start or duration", m.id.0)));
         }
         let end = m.start.0.checked_add(m.duration.0).ok_or_else(|| bad(CMD, format!("marker {} end overflows", m.id.0)))?;
+        let (start_tc, drop_frame) = (t.start_tc, t.drop_frame);
         let tc = |t: Tick| -> Result<String> {
-            let frame = rate.frame_at(t).checked_add(seq.start_timecode).ok_or_else(|| bad(CMD, "sequence timecode overflows"))?;
-            Ok(format_timecode_frames(frame, rate, seq.settings.drop_frame))
+            let frame = rate.frame_at(t).checked_add(start_tc).ok_or_else(|| bad(CMD, "timecode overflows"))?;
+            Ok(format_timecode_frames(frame, rate, drop_frame))
         };
         let fields = [
             name.to_string(),
@@ -75,7 +77,7 @@ pub(crate) fn export(s: &mut Session, p: &Value) -> Result<Value> {
             csv.push('"');
             // Quoting alone does not stop spreadsheet formulas. Escape only arbitrary text,
             // including formulas preceded by whitespace; numeric/timecode fields stay numeric.
-            if matches!(i, 0 | 2 | 3 | 5) && field.trim_start().starts_with(['=', '+', '-', '@']) {
+            if matches!(i, 0 | 2 | 3 | 5) && needs_guard(field) {
                 csv.push('\'');
             }
             for ch in field.chars() {
@@ -89,7 +91,14 @@ pub(crate) fn export(s: &mut Session, p: &Value) -> Result<Value> {
         csv.push_str("\r\n");
     }
     s.services.write_file(path, csv.as_bytes()).map_err(|e| EngineError::Other(format!("{path}: {e}")))?;
-    Ok(json!({"path": path, "markers": seq.markers.len(), "bytes": csv.len()}))
+    Ok(json!({"path": path, "markers": t.markers.len(), "bytes": csv.len()}))
+}
+
+/// Whether a text field gets the leading `'` that keeps spreadsheets from running it as a formula:
+/// text that reads as a formula, and text that itself starts with `'` (so the import, which takes
+/// one `'` off only before a formula character or another `'`, gives back exactly the text).
+pub(crate) fn needs_guard(field: &str) -> bool {
+    field.starts_with('\'') || field.trim_start().starts_with(['=', '+', '-', '@'])
 }
 
 #[cfg(test)]

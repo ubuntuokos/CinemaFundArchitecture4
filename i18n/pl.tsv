@@ -4568,3 +4568,60 @@ export.summary	Low	niska
 	Chase External Timecode	Podążaj za zewnętrznym kodem czasowym
 	Send LTC	Wysyłaj LTC
 	Send MIDI Timecode	Wysyłaj kod czasowy MIDI
+# CFA4-LOSSLESS-MEDIA-TOOLS-001: segments, Find Segments, joined Smart Cut, frame export options
+	Find Segments	Znajdź segmenty
+	Find Segments…	Znajdź segmenty…
+	Comment…	Komentarz…
+	Comment:	Komentarz:
+	The analysis stopped.	Analiza została zatrzymana.
+	No segments yet: add a range marker in the Source monitor, or use Find Segments… there.	Brak segmentów. Dodaj znacznik zakresu w monitorze źródła albo użyj polecenia Znajdź segmenty.
+	Remove Segment	Usuń segment
+	Black pictures	Czarne obrazy
+	{count} segments written and verified	Zapisano i sprawdzono segmenty: {count}
+	These files already exist and will be replaced: {files}. Continue?	Te pliki już istnieją i zostaną zastąpione: {files}. Kontynuować?
+	{count} subclips made from the segments	Utworzono podklipy z segmentów: {count}
+	Segment	Segment
+	Silence	Cisza
+	Analyzing…	Analizowanie…
+	Analyzing… {percent}%	Analizowanie… {percent}%
+	Silence below (dBFS):	Cisza poniżej (dBFS):
+	To Timeline	Na oś czasu
+	Sequence Markers	Znaczniki sekwencji
+	Join the segments into one file	Połącz segmenty w jeden plik
+	{count} segments placed on the timeline	Umieszczono segmenty na osi czasu: {count}
+	Shortest silence (s):	Najkrótsza cisza (s):
+	Segment {n}: {why}	Segment {n}: {why}
+	Source Clip Segments	Segmenty klipu źródłowego
+	{count} segments found	Znalezione segmenty: {count}
+	{count} files: {copied} frames copied, {reencoded} frames re-encoded	Pliki: {count}; skopiowane klatki: {copied}, ponownie zakodowane klatki: {reencoded}
+	This clip has no segments: add range markers in the Source monitor first.	Ten klip nie ma segmentów: najpierw dodaj znaczniki zakresu w monitorze źródła.
+	Black level (%):	Poziom czerni (%):
+	Quality:	Jakość:
+	Black share of the picture (%):	Udział czerni w obrazie (%):
+	{count} segments added to the clip	Dodano segmenty do klipu: {count}
+	Last frame	Ostatnia klatka
+	First frame	Pierwsza klatka
+	Marked range	Zaznaczony zakres
+	Original	Oryginalny
+	Segment names as chapters	Nazwy segmentów jako rozdziały
+	Add as Segments	Dodaj jako segmenty
+	The engine did not start the analysis.	Silnik nie uruchomił analizy.
+	Range:	Zakres:
+	(no clip in the Source monitor)	(brak klipu w monitorze źródła)
+	Segment name:	Nazwa segmentu:
+	{count} segments joined into {path} and verified	Połączono segmenty ({count}) w {path} i sprawdzono
+	Shortest black (s):	Najkrótsza czerń (s):
+	Segments (range markers)	Segmenty (znaczniki zakresu)
+	(only the first ones are listed)	(wyświetlane są tylko pierwsze)
+	Check at least one segment.	Zaznacz co najmniej jeden segment.
+	Make Subclips	Utwórz podklipy
+	Shortest shot (frames):	Najkrótsze ujęcie (klatki):
+	Row {n}: the first and last frame must be whole numbers	Wiersz {n}: pierwsza i ostatnia klatka muszą być liczbami całkowitymi
+	Size:	Rozmiar:
+	{count} segments joined into one file: {copied} frames copied, {reencoded} frames re-encoded	Połączono segmenty ({count}) w jeden plik; skopiowane klatki: {copied}, ponownie zakodowane klatki: {reencoded}
+	{name} ({frames} frames)	{name} (klatki: {frames})
+	Scene changes	Zmiany scen
+	Import Markers from CSV…	Importuj znaczniki z CSV…
+	Export Segments as EDL…	Eksportuj segmenty jako EDL…
+	Import Segments from EDL…	Importuj segmenty z EDL…
+	Segments to Subclips	Segmenty na podklipy

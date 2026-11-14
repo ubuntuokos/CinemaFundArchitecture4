@@ -4570,3 +4570,60 @@ export.summary	Low	χαμηλή
 	Chase External Timecode	Παρακολούθηση εξωτερικού χρονοκώδικα
 	Send LTC	Αποστολή LTC
 	Send MIDI Timecode	Αποστολή χρονοκώδικα MIDI
+# CFA4-LOSSLESS-MEDIA-TOOLS-001: segments, Find Segments, joined Smart Cut, frame export options
+	Find Segments	Εύρεση τμημάτων
+	Find Segments…	Εύρεση τμημάτων…
+	Comment…	Σχόλιο…
+	Comment:	Σχόλιο:
+	The analysis stopped.	Η ανάλυση σταμάτησε.
+	No segments yet: add a range marker in the Source monitor, or use Find Segments… there.	Δεν υπάρχουν τμήματα. Πρόσθεσε δείκτη περιοχής στην οθόνη προέλευσης ή χρησιμοποίησε την Εύρεση τμημάτων.
+	Remove Segment	Αφαίρεση τμήματος
+	Black pictures	Μαύρες εικόνες
+	{count} segments written and verified	Γράφτηκαν και επαληθεύτηκαν τμήματα: {count}
+	These files already exist and will be replaced: {files}. Continue?	Αυτά τα αρχεία υπάρχουν ήδη και θα αντικατασταθούν: {files}. Συνέχεια;
+	{count} subclips made from the segments	Δημιουργήθηκαν υποκλίπ από τα τμήματα: {count}
+	Segment	Τμήμα
+	Silence	Σιγή
+	Analyzing…	Ανάλυση…
+	Analyzing… {percent}%	Ανάλυση… {percent}%
+	Silence below (dBFS):	Σιγή κάτω από (dBFS):
+	To Timeline	Στη γραμμή χρόνου
+	Sequence Markers	Δείκτες ακολουθίας
+	Join the segments into one file	Ένωση των τμημάτων σε ένα αρχείο
+	{count} segments placed on the timeline	Τμήματα που τοποθετήθηκαν στη γραμμή χρόνου: {count}
+	Shortest silence (s):	Συντομότερη σιγή (s):
+	Segment {n}: {why}	Τμήμα {n}: {why}
+	Source Clip Segments	Τμήματα του κλιπ προέλευσης
+	{count} segments found	Βρέθηκαν τμήματα: {count}
+	{count} files: {copied} frames copied, {reencoded} frames re-encoded	Αρχεία: {count}· αντιγράφηκαν καρέ: {copied}, επανακωδικοποιήθηκαν καρέ: {reencoded}
+	This clip has no segments: add range markers in the Source monitor first.	Αυτό το κλιπ δεν έχει τμήματα: πρόσθεσε πρώτα δείκτες περιοχής στην οθόνη προέλευσης.
+	Black level (%):	Επίπεδο μαύρου (%):
+	Quality:	Ποιότητα:
+	Black share of the picture (%):	Ποσοστό μαύρου στην εικόνα (%):
+	{count} segments added to the clip	Τμήματα που προστέθηκαν στο κλιπ: {count}
+	Last frame	Τελευταίο καρέ
+	First frame	Πρώτο καρέ
+	Marked range	Σημειωμένη περιοχή
+	Original	Αρχικό
+	Segment names as chapters	Ονόματα τμημάτων ως κεφάλαια
+	Add as Segments	Προσθήκη ως τμήματα
+	The engine did not start the analysis.	Η μηχανή δεν ξεκίνησε την ανάλυση.
+	Range:	Περιοχή:
+	(no clip in the Source monitor)	(κανένα κλιπ στην οθόνη προέλευσης)
+	Segment name:	Όνομα τμήματος:
+	{count} segments joined into {path} and verified	Τα τμήματα ({count}) ενώθηκαν στο {path} και επαληθεύτηκαν
+	Shortest black (s):	Συντομότερο μαύρο (s):
+	Segments (range markers)	Τμήματα (δείκτες περιοχής)
+	(only the first ones are listed)	(εμφανίζονται μόνο τα πρώτα)
+	Check at least one segment.	Επίλεξε τουλάχιστον ένα τμήμα.
+	Make Subclips	Δημιουργία υποκλίπ
+	Shortest shot (frames):	Συντομότερο πλάνο (καρέ):
+	Row {n}: the first and last frame must be whole numbers	Γραμμή {n}: το πρώτο και το τελευταίο καρέ πρέπει να είναι ακέραιοι
+	Size:	Μέγεθος:
+	{count} segments joined into one file: {copied} frames copied, {reencoded} frames re-encoded	Τα τμήματα ({count}) ενώθηκαν σε ένα αρχείο· αντιγράφηκαν καρέ: {copied}, επανακωδικοποιήθηκαν καρέ: {reencoded}
+	{name} ({frames} frames)	{name} (καρέ: {frames})
+	Scene changes	Αλλαγές σκηνής
+	Import Markers from CSV…	Εισαγωγή δεικτών από CSV…
+	Export Segments as EDL…	Εξαγωγή τμημάτων ως EDL…
+	Import Segments from EDL…	Εισαγωγή τμημάτων από EDL…
+	Segments to Subclips	Τμήματα σε υποκλίπ

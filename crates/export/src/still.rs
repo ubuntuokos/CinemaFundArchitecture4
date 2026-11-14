@@ -10,9 +10,11 @@ pub enum StillFormat {
     Jpeg,
     Heic,
     Heif,
+    /// Lossless WebP (CFA4-LOSSLESS-MEDIA-TOOLS-001 K7).
+    WebP,
 }
 impl StillFormat {
-    pub const ALL: [Self; 6] = [Self::Png, Self::Jpeg, Self::Tiff, Self::Bmp, Self::Heic, Self::Heif];
+    pub const ALL: [Self; 7] = [Self::Png, Self::Jpeg, Self::Tiff, Self::Bmp, Self::Heic, Self::Heif, Self::WebP];
     pub fn parse(name: &str) -> Result<Self> {
         match name.to_ascii_lowercase().as_str() {
             "png" => Ok(Self::Png),
@@ -21,7 +23,8 @@ impl StillFormat {
             "jpg" | "jpeg" => Ok(Self::Jpeg),
             "heic" => Ok(Self::Heic),
             "heif" | "hif" => Ok(Self::Heif),
-            _ => Err(ExportError::Unsupported("still format must be png, jpeg, tiff, bmp, heic or heif".into())),
+            "webp" => Ok(Self::WebP),
+            _ => Err(ExportError::Unsupported("still format must be png, jpeg, tiff, bmp, heic, heif or webp".into())),
         }
     }
     pub fn label(self) -> &'static str {
@@ -32,6 +35,7 @@ impl StillFormat {
             Self::Jpeg => "JPEG",
             Self::Heic => "HEIC",
             Self::Heif => "HEIF",
+            Self::WebP => "WebP",
         }
     }
     pub fn extension(self) -> &'static str {
@@ -42,17 +46,93 @@ impl StillFormat {
             Self::Jpeg => "jpg",
             Self::Heic => "heic",
             Self::Heif => "heif",
+            Self::WebP => "webp",
         }
     }
     pub fn supports_16(self) -> bool {
         matches!(self, Self::Png | Self::Tiff | Self::Heic | Self::Heif)
     }
+    /// Whether `quality` changes the output (JPEG; the others are lossless).
+    pub fn has_quality(self) -> bool {
+        self == Self::Jpeg
+    }
+}
+
+/// JPEG quality when none is asked for.
+pub const DEFAULT_QUALITY: u8 = 95;
+
+/// How a still is written besides its format and depth (K7).
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub struct StillOptions {
+    /// JPEG quality, 1–100.
+    pub quality: u8,
+    /// Output size; `None` keeps the frame's own.
+    pub size: Option<(u32, u32)>,
+}
+
+impl Default for StillOptions {
+    fn default() -> Self {
+        Self { quality: DEFAULT_QUALITY, size: None }
+    }
+}
+
+/// The output size for a requested `width` and/or `height`: one side alone keeps the aspect ratio
+/// (rounded, at least 1 pixel); both set it exactly.
+pub fn fit_size(w: u32, h: u32, width: Option<u32>, height: Option<u32>) -> Option<(u32, u32)> {
+    let scaled =
+        |a: u32, b: u32, to: u32| -> u32 { ((u64::from(b) * u64::from(to) + u64::from(a) / 2) / u64::from(a.max(1))).clamp(1, u64::from(u32::MAX)) as u32 };
+    match (width, height) {
+        (None, None) => None,
+        (Some(x), Some(y)) => Some((x, y)),
+        (Some(x), None) => Some((x, scaled(w, h, x))),
+        (None, Some(y)) => Some((scaled(h, w, y), y)),
+    }
+}
+
+/// Most pixels of the intermediate image a resize builds (it scales one direction, then the
+/// other: source width × output height or output width × source height, 16 bytes a pixel), 1 GiB.
+const MAX_RESIZE_PIXELS: u64 = 64 * 1024 * 1024;
+
+/// The image at another size (Lanczos on the premultiplied linear values, so edges keep no halo).
+fn resized(image: &Image, (w, h): (u32, u32)) -> Result<Image> {
+    let bad = || ExportError::Encode("invalid still image dimensions or pixel buffer".into());
+    cfa4_project::validate_frame_size(w, h).map_err(|e| ExportError::Unsupported(format!("output size {w}×{h}: {e}")))?;
+    let (sw, sh) = (image.w as u64, image.h as u64);
+    let (dw, dh) = (u64::from(w), u64::from(h));
+    if sw.saturating_mul(dh).max(dw.saturating_mul(sh)).max(dw.saturating_mul(dh)) > MAX_RESIZE_PIXELS {
+        return Err(ExportError::Unsupported(format!(
+            "resizing {}×{} to {w}×{h} needs more than {} megapixels of working memory; choose a smaller size",
+            image.w,
+            image.h,
+            MAX_RESIZE_PIXELS >> 20
+        )));
+    }
+    let src: image::ImageBuffer<image::Rgba<f32>, Vec<f32>> =
+        image::ImageBuffer::from_raw(u32::try_from(image.w).map_err(|_| bad())?, u32::try_from(image.h).map_err(|_| bad())?, image.px.clone())
+            .ok_or_else(bad)?;
+    let out = image::imageops::resize(&src, w, h, image::imageops::FilterType::Lanczos3);
+    Ok(Image { w: w as usize, h: h as usize, px: out.into_raw() })
+}
+
+/// [`encode`] with a JPEG quality and an output size.
+pub fn encode_with(image: &Image, format: StillFormat, depth: u8, opts: StillOptions) -> Result<Vec<u8>> {
+    if !(1..=100).contains(&opts.quality) {
+        return Err(ExportError::Unsupported("quality must be 1 to 100".into()));
+    }
+    match opts.size {
+        Some(size) if size != (image.w as u32, image.h as u32) => encode_at(&resized(image, size)?, format, depth, opts.quality),
+        _ => encode_at(image, format, depth, opts.quality),
+    }
 }
 
 /// Quantize the original float image directly, never pad an 8-bit image to 16 bits.
 pub fn encode(image: &Image, format: StillFormat, depth: u8) -> Result<Vec<u8>> {
+    encode_at(image, format, depth, DEFAULT_QUALITY)
+}
+
+fn encode_at(image: &Image, format: StillFormat, depth: u8, quality: u8) -> Result<Vec<u8>> {
     if !matches!(depth, 8 | 16) || (depth == 16 && !format.supports_16()) {
-        return Err(ExportError::Unsupported("16-bit stills require PNG, TIFF, HEIC or HEIF; JPEG and BMP support 8 bits per channel".into()));
+        return Err(ExportError::Unsupported("16-bit stills require PNG, TIFF, HEIC or HEIF; JPEG, BMP and WebP support 8 bits per channel".into()));
     }
     let bad = || ExportError::Encode("invalid still image dimensions or pixel buffer".into());
     let w = u32::try_from(image.w).map_err(|_| bad())?;
@@ -68,7 +148,7 @@ pub fn encode(image: &Image, format: StillFormat, depth: u8) -> Result<Vec<u8>> 
     if matches!(format, StillFormat::Heic | StillFormat::Heif) {
         #[cfg(all(target_os = "linux", target_arch = "x86_64"))]
         {
-            let png = encode(image, StillFormat::Png, depth)?;
+            let png = encode_at(image, StillFormat::Png, depth, quality)?;
             return cfa4_media::still::heif::encode_png(&png).map_err(|e| ExportError::Encode(e.to_string()));
         }
         #[cfg(not(all(target_os = "linux", target_arch = "x86_64")))]
@@ -87,7 +167,19 @@ pub fn encode(image: &Image, format: StillFormat, depth: u8) -> Result<Vec<u8>> 
                 })
                 .collect();
             let mut out = Vec::new();
-            image::ImageEncoder::write_image(image::codecs::jpeg::JpegEncoder::new_with_quality(&mut out, 95), &rgb, w, h, image::ExtendedColorType::Rgb8)
+            image::ImageEncoder::write_image(
+                image::codecs::jpeg::JpegEncoder::new_with_quality(&mut out, quality.clamp(1, 100)),
+                &rgb,
+                w,
+                h,
+                image::ExtendedColorType::Rgb8,
+            )
+            .map_err(err)?;
+            return Ok(out);
+        }
+        if format == StillFormat::WebP {
+            let mut out = Vec::new();
+            image::ImageEncoder::write_image(image::codecs::webp::WebPEncoder::new_lossless(&mut out), &rgba, w, h, image::ExtendedColorType::Rgba8)
                 .map_err(err)?;
             return Ok(out);
         }
@@ -129,6 +221,21 @@ pub fn encode(image: &Image, format: StillFormat, depth: u8) -> Result<Vec<u8>> 
 mod tests {
     use super::*;
     #[test]
+    fn a_resize_too_large_for_memory_is_refused_before_it_starts() {
+        let img = Image { w: 8192, h: 1, px: vec![0.5; 8192 * 4] };
+        let opts = StillOptions { size: Some((8192, 8200)), ..StillOptions::default() };
+        let e = encode_with(&img, StillFormat::Png, 8, opts).unwrap_err().to_string();
+        assert!(e.contains("working memory"), "{e}");
+    }
+    #[test]
+    fn a_small_output_with_a_large_intermediate_is_refused() {
+        // 1×32768 out is small; the 32768×32768 intermediate of the two-pass resize is not
+        let img = Image { w: 32768, h: 1, px: vec![0.5; 32768 * 4] };
+        let opts = StillOptions { size: Some((1, 32768)), ..StillOptions::default() };
+        let e = encode_with(&img, StillFormat::Png, 8, opts).unwrap_err().to_string();
+        assert!(e.contains("working memory"), "{e}");
+    }
+    #[test]
     fn sixteen_bit_stills_preserve_sub_eight_bit_precision_and_alpha() {
         let img = Image { w: 2, h: 1, px: vec![0.101, 0.203, 0.307, 1.0, 0.101 / 2.0, 0.203 / 2.0, 0.307 / 2.0, 0.5] };
         for format in [StillFormat::Png, StillFormat::Tiff] {
@@ -162,6 +269,36 @@ mod tests {
                 let decoded = cfa4_media::still::heif::decode("export.heic", &encoded).expect("libheif HEIC output must decode");
                 assert_eq!((decoded.width, decoded.height), (64, 64));
             }
+        }
+    }
+
+    #[test]
+    fn webp_is_lossless_jpeg_quality_and_the_size_are_chosen() {
+        let mut image = Image::filled(8, 4, [0.2, 0.3, 0.4, 1.0]);
+        image.px[0] = 0.9;
+        let webp = encode(&image, StillFormat::WebP, 8).unwrap();
+        let back = image::load_from_memory(&webp).unwrap().to_rgba8();
+        assert_eq!(back.into_raw(), image.to_rgba8(), "WebP is written without loss");
+        assert!(encode(&image, StillFormat::WebP, 16).is_err());
+        let big = Image::filled(64, 64, [0.5, 0.2, 0.7, 1.0]);
+        let q = |quality| encode_with(&big, StillFormat::Jpeg, 8, StillOptions { quality, size: None }).unwrap().len();
+        assert!(q(20) < q(100), "a lower quality writes a smaller file");
+        let small = encode_with(&big, StillFormat::Png, 8, StillOptions { size: Some((16, 8)), ..Default::default() }).unwrap();
+        assert_eq!(image::load_from_memory(&small).unwrap().dimensions_tuple(), (16, 8));
+        assert!(encode_with(&big, StillFormat::Jpeg, 8, StillOptions { quality: 0, size: None }).is_err());
+        assert!(encode_with(&big, StillFormat::Png, 8, StillOptions { size: Some((0, 8)), ..Default::default() }).is_err());
+        assert_eq!(fit_size(1920, 1080, Some(640), None), Some((640, 360)));
+        assert_eq!(fit_size(1920, 1080, None, Some(1)), Some((2, 1)));
+        assert_eq!(fit_size(1920, 1080, None, None), None);
+        assert_eq!(StillFormat::parse("WEBP").unwrap(), StillFormat::WebP);
+    }
+
+    trait Dims {
+        fn dimensions_tuple(&self) -> (u32, u32);
+    }
+    impl Dims for image::DynamicImage {
+        fn dimensions_tuple(&self) -> (u32, u32) {
+            (self.width(), self.height())
         }
     }
 
