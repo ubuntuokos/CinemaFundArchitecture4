@@ -4538,6 +4538,13 @@ export.summary	Low	төмен
 	The keys stay in memory only, until Forget DCP Keys or the end of the session.	Кілттер тек жадта сақталады, «DCP кілттерін ұмыту» командасына немесе сеанс соңына дейін.
 	DCP keys forgotten	DCP кілттері ұмытылды
 	Choose the KDM file and the private key.	KDM файлын және жеке кілтті таңдаңыз.
+	Load even if the certificate chain is not verified	Тексерілмеген сертификаттар тізбегімен де жүктеу
+	Bundle: {loaded} of {total} KDMs loaded, {other} for other recipients	Бума: {total} KDM ішінен {loaded} жүктелді, {other} басқа алушыларға
+	Not loaded: {path}: {problem}	Жүктелмеді: {path}: {problem}
+	Signature verified: {chain}	Қолтаңба тексерілді: {chain}
+	Signature not verified: {problem}	Қолтаңба тексерілмеді: {problem}
+	KDM required	KDM қажет
+	Encrypted: load the KDM with content key {keys}	Шифрланған: {keys} мазмұн кілті бар KDM жүктеңіз
 
 # Settings ▸ Timecode Sync (TC-4)
 	Timecode Sync	Уақыт кодын синхрондау
@@ -4570,3 +4577,60 @@ export.summary	Low	төмен
 	Chase External Timecode	Сыртқы уақыт кодына ілесу
 	Send LTC	LTC жіберу
 	Send MIDI Timecode	MIDI уақыт кодын жіберу
+# Auto Color, Auto Contrast, Auto Levels (EffectsSDK review)
+	Auto Color	Автоматты түс
+	Auto Contrast	Автоматты контраст
+	Auto Levels	Автоматты деңгейлер
+	Temporal Smoothing (seconds)	Уақыттық тегістеу (секунд)
+	Scene Detect	Сахналарды анықтау
+	Black Clip	Қараны кесу
+	White Clip	Ақты кесу
+	Snap Neutral Midtones	Бейтарап орта реңктер
+# Layout presets: PiP corners, split screen (EffectsSDK review)
+	PiP 35% Upper Left	PiP 35% жоғарғы солда
+	Picture-in-picture: 35 % scale in the upper left	Кескін ішіндегі кескін: жоғарғы солда 35% масштаб
+	PiP 35% Lower Left	PiP 35% төменгі солда
+	Picture-in-picture: 35 % scale in the lower left	Кескін ішіндегі кескін: төменгі солда 35% масштаб
+	PiP 35% Lower Right	PiP 35% төменгі оңда
+	Picture-in-picture: 35 % scale in the lower right	Кескін ішіндегі кескін: төменгі оңда 35% масштаб
+	Split Screen Left	Бөлінген экран сол жақ
+	Split screen: the middle half of the picture fills the left half of the frame	Бөлінген экран: кескіннің ортаңғы жартысы кадрдың сол жартысын толтырады
+	Split Screen Right	Бөлінген экран оң жақ
+	Split screen: the middle half of the picture fills the right half of the frame	Бөлінген экран: кескіннің ортаңғы жартысы кадрдың оң жартысын толтырады
+# Creative Looks: CRT (P3)
+	CRT	CRT
+	Scanline Strength	Жолақтар күші
+	Line Count	Жолдар саны
+	Mask	Маска
+	Mask Strength	Маска күші
+	Corner Darkening	Бұрыштарды күңгірттеу
+	Aperture Grille	Апертуралық тор
+	Shadow Mask	Көлеңкелі маска
+	Slot Mask	Саңылаулы маска
+# Creative Looks: Oil Paint (P4)
+	Oil Paint	Майлы бояу
+	Detail	Егжей-тегжей
+	Texture	Текстура
+	Facet	Қырлар
+	Daubs	Жағындылар
+	Dry Brush	Құрғақ қылқалам
+	Fresco	Фреска
+	Knife	Шпатель
+	Sponge	Губка
+# Creative Looks: Pixel Sort (P5)
+	Pixel Sort	Пикселдерді сұрыптау
+	Sort By	Сұрыптау негізі
+	Lower Threshold	Төменгі шек
+	Upper Threshold	Жоғарғы шек
+	Ascending	Өсу бойынша
+# Temporal Denoise (EffectsSDK review)
+	Temporal Denoise	Уақыттық шуды азайту
+	Frames Each Side	Әр жақтағы кадрлар
+	Motion Threshold	Қозғалыс шегі
+	Show Motion	Қозғалысты көрсету
+	No signal	Сигнал жоқ
+	Locating	Орынды іздеу
+	Locked	Синхрондалған
+	Freewheel	Еркін жүріс
+	Scrubbing	Айналдыру
+	Sending	Жіберу

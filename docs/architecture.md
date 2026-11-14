@@ -16,8 +16,10 @@ Design principles:
    background readers (playback, export) hold a snapshot without locking.
 5. **CPU reference, GPU fast path.** The CPU compositor is the oracle. The GPU path is tested
    against it.
-6. **Pure Rust, clean-room.** Codecs and containers are written from public specifications
-   (see [AGENTS.md](../AGENTS.md)).
+6. **Pure Rust, from public specifications.** Codecs and containers are written from public
+   specifications by default; a port of an implementation with a permitted licence, recorded in
+   the reused-code register, is allowed ([AGENTS.md](../AGENTS.md) §2,
+   [licensing.md](licensing.md) §3, §5).
 
 ## 1. Layers
 

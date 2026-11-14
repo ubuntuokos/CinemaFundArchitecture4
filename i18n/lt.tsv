@@ -4539,6 +4539,13 @@ export.summary	Low	žema
 	The keys stay in memory only, until Forget DCP Keys or the end of the session.	Raktai laikomi tik atmintyje, kol pasirenkama Pamiršti DCP raktus arba baigiasi seansas.
 	DCP keys forgotten	DCP raktai pamiršti
 	Choose the KDM file and the private key.	Pasirinkite KDM failą ir privatųjį raktą.
+	Load even if the certificate chain is not verified	Įkelti net su nepatikrinta sertifikatų grandine
+	Bundle: {loaded} of {total} KDMs loaded, {other} for other recipients	Paketas: įkelta {loaded} iš {total} KDM, {other} kitiems gavėjams
+	Not loaded: {path}: {problem}	Neįkelta: {path}: {problem}
+	Signature verified: {chain}	Parašas patikrintas: {chain}
+	Signature not verified: {problem}	Parašas nepatikrintas: {problem}
+	KDM required	Reikia KDM
+	Encrypted: load the KDM with content key {keys}	Užšifruota: įkelkite KDM su turinio raktu {keys}
 
 # Settings ▸ Timecode Sync (TC-4)
 	Timecode Sync	Laiko kodo sinchronizavimas
@@ -4571,3 +4578,60 @@ export.summary	Low	žema
 	Chase External Timecode	Sekti išorinį laiko kodą
 	Send LTC	Siųsti LTC
 	Send MIDI Timecode	Siųsti MIDI laiko kodą
+# Auto Color, Auto Contrast, Auto Levels (EffectsSDK review)
+	Auto Color	Automatinė spalva
+	Auto Contrast	Automatinis kontrastas
+	Auto Levels	Automatiniai lygiai
+	Temporal Smoothing (seconds)	Laikinis glotninimas (sekundės)
+	Scene Detect	Scenų aptikimas
+	Black Clip	Juodos apkirpimas
+	White Clip	Baltos apkirpimas
+	Snap Neutral Midtones	Neutralūs vidutiniai tonai
+# Layout presets: PiP corners, split screen (EffectsSDK review)
+	PiP 35% Upper Left	PiP 35 % viršuje kairėje
+	Picture-in-picture: 35 % scale in the upper left	Vaizdas vaizde: 35 % mastelis viršuje kairėje
+	PiP 35% Lower Left	PiP 35 % apačioje kairėje
+	Picture-in-picture: 35 % scale in the lower left	Vaizdas vaizde: 35 % mastelis apačioje kairėje
+	PiP 35% Lower Right	PiP 35 % apačioje dešinėje
+	Picture-in-picture: 35 % scale in the lower right	Vaizdas vaizde: 35 % mastelis apačioje dešinėje
+	Split Screen Left	Padalytas ekranas kairėje
+	Split screen: the middle half of the picture fills the left half of the frame	Padalytas ekranas: vidurinė vaizdo pusė užpildo kairiąją kadro pusę
+	Split Screen Right	Padalytas ekranas dešinėje
+	Split screen: the middle half of the picture fills the right half of the frame	Padalytas ekranas: vidurinė vaizdo pusė užpildo dešiniąją kadro pusę
+# Creative Looks: CRT (P3)
+	CRT	CRT
+	Scanline Strength	Skleidimo linijų stiprumas
+	Line Count	Linijų skaičius
+	Mask	Kaukė
+	Mask Strength	Kaukės stiprumas
+	Corner Darkening	Kampų patamsinimas
+	Aperture Grille	Apertūrinės grotelės
+	Shadow Mask	Šešėlinė kaukė
+	Slot Mask	Plyšinė kaukė
+# Creative Looks: Oil Paint (P4)
+	Oil Paint	Aliejinė tapyba
+	Detail	Detalumas
+	Texture	Tekstūra
+	Facet	Briaunos
+	Daubs	Tepinėliai
+	Dry Brush	Sausas teptukas
+	Fresco	Freska
+	Knife	Mentelė
+	Sponge	Kempinė
+# Creative Looks: Pixel Sort (P5)
+	Pixel Sort	Pikselių rikiavimas
+	Sort By	Rikiuoti pagal
+	Lower Threshold	Apatinė riba
+	Upper Threshold	Viršutinė riba
+	Ascending	Didėjančiai
+# Temporal Denoise (EffectsSDK review)
+	Temporal Denoise	Laikinis triukšmo šalinimas
+	Frames Each Side	Kadrų kiekvienoje pusėje
+	Motion Threshold	Judesio slenkstis
+	Show Motion	Rodyti judesį
+	No signal	Nėra signalo
+	Locating	Ieškoma pozicijos
+	Locked	Sinchronizuota
+	Freewheel	Laisvoji eiga
+	Scrubbing	Slinkimas
+	Sending	Siunčiama
