@@ -1,6 +1,6 @@
 # Cinema-grade codecs: Dolby, DTS, OpenMAX, JPEG 2000 / DCP
 
-> **Last updated:** 2026-11-11 · **Change:** minor (the clean-room text aligned with AGENTS.md §2: porting a permitted, registered implementation is allowed)
+> **Last updated:** 2026-11-13 · **Change:** minor (DCP row: encryption reading exists, writing pending decision D3 of the CineCert plan)
 
 Which public specification each cinema-grade format needs and which licence or patent constraint
 applies. Every row follows [AGENTS.md](../AGENTS.md) §2: codecs are written in Rust
@@ -30,7 +30,7 @@ status column; it was not updated when the JPEG 2000, DTS and TrueHD decoders la
 | DTS-HD Master Audio (XLL) | ETSI TS 102 114 v1.4+ (extension substream) | DTS trademark may not be used | [codec-parity.md](codec-parity.md) (DTS) |
 | Auro-3D (Auro-Codec in 24-bit PCM) | **no public specification**; ported from harletty-bridge `auro` (Apache-2.0) | US 8,620,465 B2 in force (owner accepted the risk, #299) | [codec-parity.md](codec-parity.md) (Auro-3D) |
 | JPEG 2000 (MXF, DCP) | ITU-T T.800 / ISO/IEC 15444-1, SMPTE ST 422 (MXF), ST 429 (DCP) | royalty-free by design | [codec-parity.md](codec-parity.md) (JPEG 2000) |
-| DCP packaging | SMPTE ST 429-2/-3/-7/-8/-9 | open; encryption (KDM) out of scope | [file-format-parity.md](file-format-parity.md) (DCP) |
+| DCP packaging | SMPTE ST 429-2/-3/-7/-8/-9 | open; encryption: reading only (ST 429-6 track files, ST 430-1/-3 KDMs), writing encrypted DCPs and issuing KDMs out of scope until the owner decides (CineCert plan D3) | [file-format-parity.md](file-format-parity.md) (DCP); plan [CFA4-CINECERT-001](plans/CFA4-CINECERT-001-v2.3.md), status [CINECERT-WP00](audit/CINECERT-WP00-GAP-MATRIX-2026-11-13.md) |
 | ProRes, DNxHD / DNxHR | — | — | [codec-parity.md](codec-parity.md) |
 | OpenEXR, DPX | OpenEXR file layout docs | BSD-3-Clause | [file-format-parity.md](file-format-parity.md) (OpenEXR, DPX) |
 | OpenMAX IL hardware codecs | Khronos OpenMAX IL 1.1.2 | the API is open; components are vendor drivers | probe only, by design: see below |
