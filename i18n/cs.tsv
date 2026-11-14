@@ -4225,6 +4225,9 @@ export.summary	Low	nízká
 	Dither	Rozptyl
 	Pattern	Vzor
 	Cell Size	Velikost buňky
+	Pixelate	Pixelizace
+	Cell Shape	Tvar buňky
+	LED	LED
 	Cyan Angle	Úhel azurové
 	Magenta Angle	Úhel purpurové
 	Yellow Angle	Úhel žluté

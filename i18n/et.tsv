@@ -4227,6 +4227,9 @@ export.summary	Low	madal
 	Dither	Ditherdus
 	Pattern	Muster
 	Cell Size	Lahtri suurus
+	Pixelate	Pikseldamine
+	Cell Shape	Lahtri kuju
+	LED	LED
 	Cyan Angle	Tsüaani nurk
 	Magenta Angle	Magenta nurk
 	Yellow Angle	Kollase nurk

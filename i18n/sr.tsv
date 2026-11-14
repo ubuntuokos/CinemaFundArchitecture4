@@ -4225,6 +4225,9 @@ export.summary	Low	низак
 	Dither	Распршивање
 	Pattern	Узорак
 	Cell Size	Величина ћелије
+	Pixelate	Пикселизација
+	Cell Shape	Облик ћелије
+	LED	LED
 	Cyan Angle	Угао цијан
 	Magenta Angle	Угао магента
 	Yellow Angle	Угао жуте

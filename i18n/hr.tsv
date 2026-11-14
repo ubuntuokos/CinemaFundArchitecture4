@@ -4227,6 +4227,9 @@ export.summary	Low	niska
 	Dither	Raspršivanje
 	Pattern	Uzorak
 	Cell Size	Veličina ćelije
+	Pixelate	Pikselizacija
+	Cell Shape	Oblik ćelije
+	LED	LED
 	Cyan Angle	Kut cijan
 	Magenta Angle	Kut magenta
 	Yellow Angle	Kut žute

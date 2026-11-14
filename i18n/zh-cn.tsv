@@ -4223,6 +4223,9 @@
 	Dither	抖动
 	Pattern	图案
 	Cell Size	网格大小
+	Pixelate	像素化
+	Cell Shape	单元形状
+	LED	LED
 	Cyan Angle	青色角度
 	Magenta Angle	洋红角度
 	Yellow Angle	黄色角度

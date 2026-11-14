@@ -4225,6 +4225,9 @@ export.summary	Low	niska
 	Dither	Dithering
 	Pattern	Wzór
 	Cell Size	Rozmiar komórki
+	Pixelate	Pikselizacja
+	Cell Shape	Kształt komórki
+	LED	LED
 	Cyan Angle	Kąt cyjanu
 	Magenta Angle	Kąt magenty
 	Yellow Angle	Kąt żółtego

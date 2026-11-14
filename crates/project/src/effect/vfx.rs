@@ -29,6 +29,8 @@ pub const SLIT_DIRECTIONS: &[&str] = &["Top", "Bottom", "Left", "Right"];
 pub const GLITCH_AXES: &[&str] = &["Horizontal", "Vertical"];
 /// Glitch effects: always on, or pulsing on and off at the Frequency.
 pub const GLITCH_INTERVALS: &[&str] = &["Infinite", "Periodic"];
+/// Pixelate cell shapes (`cfa4_render` `vfx::pixelate`, in this order).
+pub const PIXELATE_SHAPES: &[&str] = &["Square", "Hexagon", "Circle", "Diamond", "Triangle", "LED"];
 pub const ECHO_OPERATORS: &[&str] = &["Add", "Maximum", "Minimum", "Screen", "Composite In Back", "Composite In Front", "Blend"];
 pub const SIMPLE_BLEND: &[&str] = &["Normal", "Add", "Screen", "Multiply", "Overlay"];
 
@@ -825,6 +827,18 @@ pub(super) fn defs() -> Vec<EffectDef> {
                 pct("speed", "Speed", 35.0),
                 ch("interval", "Interval", GLITCH_INTERVALS, 0),
                 fs("frequency", "Frequency", 1.0, (0.0, 25.0), (0.0, 25.0), "", 2),
+            ],
+        ),
+        video(
+            "pixelate",
+            "Pixelate",
+            GLITCH,
+            vec![
+                ch("shape", "Cell Shape", PIXELATE_SHAPES, 1),
+                px("size", "Cell Size", 24.0, 1024.0, 200.0),
+                pct("gap", "Gap", 10.0),
+                col("background", "Background", [0.0, 0.0, 0.0, 1.0]),
+                pct("blend", "Blend With Original", 0.0),
             ],
         ),
         // ---- Time ----

@@ -4228,6 +4228,9 @@ export.summary	Low	ниско
 	Dither	Разсейване
 	Pattern	Шарка
 	Cell Size	Размер на клетката
+	Pixelate	Пикселизация
+	Cell Shape	Форма на клетката
+	LED	LED
 	Cyan Angle	Ъгъл на синьозеленото
 	Magenta Angle	Ъгъл на пурпурното
 	Yellow Angle	Ъгъл на жълтото

@@ -4228,6 +4228,9 @@ export.summary	Low	žema
 	Dither	Taškavimas
 	Pattern	Raštas
 	Cell Size	Langelio dydis
+	Pixelate	Pikselizavimas
+	Cell Shape	Langelio forma
+	LED	LED
 	Cyan Angle	Žydros kampas
 	Magenta Angle	Purpurinės kampas
 	Yellow Angle	Geltonos kampas

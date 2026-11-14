@@ -4225,6 +4225,9 @@
 	Dither	Dithering
 	Pattern	Motivo
 	Cell Size	Dimensione cella
+	Pixelate	Pixelizzazione
+	Cell Shape	Forma cella
+	LED	LED
 	Cyan Angle	Angolo ciano
 	Magenta Angle	Angolo magenta
 	Yellow Angle	Angolo giallo

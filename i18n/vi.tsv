@@ -4225,6 +4225,9 @@ export.summary	Low	thấp
 	Dither	Dither
 	Pattern	Mẫu
 	Cell Size	Kích thước ô
+	Pixelate	Tạo điểm ảnh
+	Cell Shape	Hình dạng ô
+	LED	LED
 	Cyan Angle	Góc lục lam
 	Magenta Angle	Góc đỏ tươi
 	Yellow Angle	Góc vàng

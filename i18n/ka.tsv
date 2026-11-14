@@ -4228,6 +4228,9 @@ export.summary	Low	დაბალი
 	Dither	დიზერინგი
 	Pattern	ნიმუში
 	Cell Size	უჯრის ზომა
+	Pixelate	პიქსელიზაცია
+	Cell Shape	უჯრის ფორმა
+	LED	LED
 	Cyan Angle	ცისფერის კუთხე
 	Magenta Angle	მეწამულის კუთხე
 	Yellow Angle	ყვითლის კუთხე

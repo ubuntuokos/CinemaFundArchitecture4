@@ -4227,6 +4227,9 @@ export.summary	Low	låg
 	Dither	Dithering
 	Pattern	Mönster
 	Cell Size	Cellstorlek
+	Pixelate	Pixelera
+	Cell Shape	Cellform
+	LED	LED
 	Cyan Angle	Cyanvinkel
 	Magenta Angle	Magentavinkel
 	Yellow Angle	Gul vinkel

@@ -4225,6 +4225,9 @@ export.summary	Low	laag
 	Dither	Dithering
 	Pattern	Patroon
 	Cell Size	Celgrootte
+	Pixelate	Pixeleren
+	Cell Shape	Celvorm
+	LED	LED
 	Cyan Angle	Hoek cyaan
 	Magenta Angle	Hoek magenta
 	Yellow Angle	Hoek geel
