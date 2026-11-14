@@ -129,6 +129,7 @@ BLOCK_FIELDS = (
     ("rows", N_("Rows")),
     ("cells", N_("Names")),
     ("tails", N_("Tails")),
+    ("voices", N_("Voices")),
     ("pictures", N_("Pictures")),
     ("spine", N_("Spine")),
 )
@@ -202,6 +203,7 @@ class PropertiesPanel(QWidget):
             "rows": rows,
             "cells": str(count) if isinstance(count, int) else "",
             "tails": str(b.get("tails")) if isinstance(b.get("tails"), int) and b.get("tails") else "",
+            "voices": str(b.get("voices")) if isinstance(b.get("voices"), int) and b.get("voices") else "",
             "pictures": str(b.get("pictures")) if isinstance(b.get("pictures"), int) and b.get("pictures") else "",
             "spine": (spine_text(b) + card_point_text(b)) if b else "",
         }

@@ -31,6 +31,8 @@ pub enum Part {
     Head,
     Body,
     Tail,
+    /// The `Voice` column: who dubs the character.
+    Voice,
 }
 
 impl Part {
@@ -40,6 +42,7 @@ impl Part {
             "head" | "fej" | "fejléc" | "szerep" => Part::Head,
             "body" | "törzs" | "név" | "nevek" => Part::Body,
             "tail" | "láb" | "farok" => Part::Tail,
+            "voice" | "hang" | "szinkronhang" => Part::Voice,
             _ => return None,
         })
     }
@@ -49,6 +52,7 @@ impl Part {
             Part::Head => b.head.clone().unwrap_or_default(),
             Part::Body => b.body.join("\n"),
             Part::Tail => b.tails.iter().map(|(_, t)| t.as_str()).collect::<Vec<_>>().join("\n"),
+            Part::Voice => b.voices.iter().map(|(_, t)| t.as_str()).collect::<Vec<_>>().join("\n"),
         };
         crate::markup::plain(&raw).trim().to_string()
     }
@@ -57,6 +61,8 @@ impl Part {
 /// Control ids that take the body, then the head, when the page style maps none.
 const BODY_IDS: [&str; 6] = ["name", "title", "heading", "text", "label", "credits"];
 const HEAD_IDS: [&str; 4] = ["role", "subtitle", "job", "caption"];
+/// Control ids that take the voice; without one it joins the head (`role, voice: name`).
+const VOICE_IDS: [&str; 3] = ["voice", "dub", "dubbing"];
 
 /// Which text control (index into `t.controls`) takes which part. Unknown control ids or parts
 /// in `fields` are reported through `bad`.
@@ -74,6 +80,10 @@ pub fn assign(t: &GraphicsTemplate, fields: &std::collections::BTreeMap<String, 
         return out;
     }
     let mut free = text;
+    // the voice only by name: it never takes the next free control
+    if let Some(k) = VOICE_IDS.iter().find_map(|id| free.iter().position(|i| t.controls.get(*i).is_some_and(|c| c.id.eq_ignore_ascii_case(id)))) {
+        out.push((free.remove(k), Part::Voice));
+    }
     let mut take = |ids: &[&str]| -> Option<usize> {
         let k = ids
             .iter()
@@ -127,6 +137,7 @@ fn split_rows(b: Block) -> Vec<Block> {
             head: if k == 0 { b.head.clone() } else { None },
             body: b.body.get(k).cloned().into_iter().collect(),
             tails: b.tails.iter().filter(|(i, _)| *i == k || (k + 1 == n && *i >= n)).map(|(_, t)| (0, t.clone())).collect(),
+            voices: b.voices.iter().filter(|(i, _)| *i == k || (k + 1 == n && *i >= n)).map(|(_, t)| (0, t.clone())).collect(),
             pictures: if k == 0 { b.pictures.clone() } else { Vec::new() },
             portraits: b.portraits.get(k).cloned().map(|p| vec![p]).unwrap_or_default(),
             body_rows: b.body_rows.get(k).copied().into_iter().collect(),
@@ -161,6 +172,7 @@ fn static_opacity(e: &EffectInstance) -> Option<f64> {
 pub(crate) fn lay_scene(
     page: &Page,
     ps: &PageStyle,
+    styling: &Styling,
     frame: Frame,
     (index, nth): (usize, usize),
     (last, cut_in): (bool, bool),
@@ -192,12 +204,29 @@ pub(crate) fn lay_scene(
         warn(page.row, format!("page {}: template field `{c}` → `{p}` is not used (no such text control, or not head, body or tail)", index + 1));
     }
     let filled: Vec<Part> = assigned.iter().map(|(_, p)| *p).collect();
-    if [Part::Head, Part::Body, Part::Tail].iter().any(|p| !filled.contains(p) && !p.text(block).is_empty()) {
+    // without a voice field the voice joins the head (`Detective, voice: Anna Kovács`), with the
+    // content style's label
+    let voice = Part::Voice.text(block);
+    let label = styling.content_style(&block.style).map(|c| c.voice_label).unwrap_or_default();
+    let voice_in_head = !voice.is_empty() && !filled.contains(&Part::Voice) && ps.fields.is_empty() && filled.contains(&Part::Head);
+    let text_of = |part: Part| -> String {
+        match part {
+            Part::Head if voice_in_head => {
+                let voiced = voice.lines().map(|v| format!("{label}{v}")).collect::<Vec<_>>().join(", ");
+                let head = part.text(block);
+                if head.is_empty() { voiced } else { format!("{head}, {voiced}") }
+            }
+            Part::Voice => voice.lines().map(|v| format!("{label}{v}")).collect::<Vec<_>>().join("\n"),
+            _ => part.text(block),
+        }
+    };
+    let missing = |p: &Part| !filled.contains(p) && !p.text(block).is_empty() && !(*p == Part::Voice && voice_in_head);
+    if [Part::Head, Part::Body, Part::Tail, Part::Voice].iter().any(missing) {
         warn(block.row, format!("page {}: graphics template `{}` has no field for all of the block's text; the rest is left out", index + 1, t.name));
     }
     for (ci, part) in &assigned {
         let Some(ctl) = t.controls.get(*ci) else { continue };
-        let value = part.text(block);
+        let value = text_of(*part);
         if let Some(e) = layers.iter_mut().find(|e| layer_uid(e) == ctl.layer) {
             // an empty part hides its layer, so a title without a subtitle shows no blank line
             e.enabled = !value.is_empty();

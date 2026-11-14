@@ -4642,3 +4642,5 @@ export.summary	Low	төмен
 	Freewheel	Еркін жүріс
 	Scrubbing	Айналдыру
 	Sending	Жіберу
+# Credits: voices (the Voice column) in the block's properties (F10-C16)
+	Voices	Дауыстар

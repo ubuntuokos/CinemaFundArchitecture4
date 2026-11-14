@@ -4639,3 +4639,5 @@ export.summary	Low	低
 	Freewheel	自由運行
 	Scrubbing	拖曳中
 	Sending	正在傳送
+# Credits: voices (the Voice column) in the block's properties (F10-C16)
+	Voices	配音

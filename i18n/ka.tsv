@@ -4643,3 +4643,5 @@ export.summary	Low	დაბალი
 	Freewheel	თავისუფალი სვლა
 	Scrubbing	გადახვევა
 	Sending	გაგზავნა
+# Credits: voices (the Voice column) in the block's properties (F10-C16)
+	Voices	ხმები

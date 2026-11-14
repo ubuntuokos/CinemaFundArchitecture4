@@ -4637,3 +4637,5 @@ export.summary	Low	alacsony
 	Freewheel	Szabadonfutás
 	Scrubbing	Léptetés
 	Sending	Küldés
+# Credits: voices (the Voice column) in the block's properties (F10-C16)
+	Voices	Hangok

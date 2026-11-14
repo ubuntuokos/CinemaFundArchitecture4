@@ -4638,3 +4638,5 @@
 	Freewheel	自由运行
 	Scrubbing	拖动中
 	Sending	正在发送
+# Credits: voices (the Voice column) in the block's properties (F10-C16)
+	Voices	配音

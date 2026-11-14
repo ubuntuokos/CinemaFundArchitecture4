@@ -4643,3 +4643,5 @@ export.summary	Low	ниско
 	Freewheel	Свободен ход
 	Scrubbing	Превъртане
 	Sending	Изпращане
+# Credits: voices (the Voice column) in the block's properties (F10-C16)
+	Voices	Гласове

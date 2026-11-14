@@ -450,6 +450,7 @@ fn blocks_json(page: Option<&cfa4_credits::Page>, out: &cfa4_credits::PageOut, f
                     "body": b.body.iter().take(PREVIEW_BODY_CELLS).map(|c| cell_text(c)).collect::<Vec<_>>(),
                     "bodyCount": b.body.len(),
                     "tails": b.tails.len(),
+                    "voices": b.voices.len(),
                     "pictures": b.pictures.len() + b.portraits.iter().filter(|x| x.is_some()).count(),
                     "row": b.row,
                     "lastRow": b.body_rows.iter().copied().max().unwrap_or(b.row).max(b.row),
@@ -1772,7 +1773,7 @@ fn styles(_: &mut Session, p: &Value) -> Result<Value> {
         "contentStyles": contents,
         "inlineStyles": inline,
         "starter": serde_json::to_value(&starter).unwrap_or(Value::Null),
-        "columns": ["Head", "Body", "Tail", "Vertical Gap", "Content Style", "Spine Position", "Page Style", "Page Runtime", "Page Gap"],
+        "columns": ["Head", "Body", "Tail", "Vertical Gap", "Content Style", "Spine Position", "Page Style", "Page Runtime", "Page Gap", "Voice"],
     }))
 }
 
