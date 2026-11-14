@@ -19,7 +19,7 @@ leading `@` is allowed, and Hungarian names work too.
 | Tail | Láb | Text after the body (e.g. a character name) |
 | Vertical Gap | Térköz | Space before the next block: `2` (units) or `40px`. An empty row = 1 unit |
 | Content Style | Stílus | Style of this and the following blocks |
-| Spine Position | Gerinc | Horizontal offset of the following blocks from the centre, pixels; `450 parallel` (`párhuzamos`) starts a column beside the previous one, from the same top |
+| Spine Position | Gerinc | Horizontal offset of the following blocks from the centre, pixels; `450 parallel` (`párhuzamos`) starts a column beside the previous one, from the same top; `Hook 1 Middle-Top 600 10` (`Horog`) hooks the following blocks onto an earlier spine; on a card page also a vertical offset, `150 -50`, optionally with `Below` / `Above` (`alatta` / `fölötte`) |
 | Page Style | Oldal | Starts a new page with that style (`Scroll`, `Card`, or your own) |
 | Page Runtime | Játékidő | Page length: `00:00:12:00`, `12s`, `300f`. On a scroll page the speed is kept and the gaps between blocks stretch or shrink to fit (up to 20-fold); if they cannot, the speed changes, with a warning |
 | Page Gap | Oldalköz | Empty time after the page; negative overlaps the next page |
@@ -40,6 +40,28 @@ column before them, starting at the same height: e.g. *Camera* at `-450`, then *
 `450 parallel`. The column set ends at the next spine position without `parallel`; what follows
 goes below the longest column. On a roll with a `Page Runtime`, the first column's gaps stretch.
 
+**Hooked spines.** `Hook N From-To dx dy` (`Horog …`) hangs the following blocks on the spine
+`N` spines before them (`Hook 1`: the one just before; parallel and hooked spines count too):
+point `From` of that spine (`Top`, `Middle` or `Bottom`; `teteje`, `közepe`, `alja`) meets point
+`To` of the new one, which stands `dx` pixels right of it (negative: left) and is moved `dy`
+pixels down. Without a connection it is `Bottom-Top`; `dx` and `dy` are 0 when left out. E.g.
+`Hook 1 Middle-Top 600 10` starts a column 600 px right of the previous one, 10 px below its
+middle; `Hook 1 Top-Bottom -400` puts one above and to the left of the previous one (the page
+grows upwards to make room). The next `Spine Position` cell, even with the same offset, ends the
+hooked spine; what follows goes below everything before it. Its gaps do not stretch. A hook that
+reaches back further than there are spines is a warning: it hooks onto the first spine, or starts
+its own. The guides and the block's properties show hooked spines where the hook puts them.
+
+**Spines on a card.** On a card page every spine stands at its own point instead of below the
+one before: `Spine Position` gives the point's horizontal and, optionally, vertical offset from
+the frame centre in pixels (negative: left, up), and the spine is centred on it vertically.
+Append `Below` (`alatta`) to start the spine at the point, or `Above` (`fölötte`) to end it
+there. E.g. `-150` on one block and `150 -50` on the next set them side by side, the second 50 px
+higher; `0 50 Below` starts a spine 50 px under the middle. A spine's parallel and hooked spines go with it.
+A card without spine positions is centred as before. On scroll and crawl pages the vertical part
+is a warning and is ignored. With guides on, the thumbnail marks each point that is not the frame
+centre with a small diamond; the block's properties show the point.
+
 **Files.** `.ods` (LibreOffice), `.xlsx` (Excel, LibreOffice, Google Sheets download) and CSV /
 TSV (comma, semicolon or tab). A workbook's first sheet is used unless `sheet` names another (by
 name or number). Stored values are read, not display formats: write durations as text (`12s`,
@@ -56,8 +78,13 @@ warning and is left out.
 
 **Videos.** `{{Video intro.mp4}}` (`{{Videó …}}`, `{{Mozgókép …}}`, with an optional height like
 pictures) puts a video in the credits the same way: its own clip that moves with the roll or comes
-in with the card, playing from its start; a video shorter than its page ends early. Its size is
-read from the file (a file over 256 MiB is taken as 16:9).
+in with the card, playing from its start; a video shorter than its page ends early, unless a
+loop word follows its name – `{{Video walk.mp4 loop}}`, `{{Videó séta.mp4 120 ismétlés}}` (`loop`,
+`ismétlés` or `ismételve`, before or after the height): then it starts again from its beginning
+until the page ends, each run its own clip right after the one before on one track (on frame
+boundaries, at most 1000), moving and fading as one clip over the page would; the page's
+`pictures` list names every run. Its size is read from the file (a file over 256 MiB is taken as
+16:9).
 
 **Portraits.** A body cell with one picture tag and a name – `{{Pic anna.jpg}} Kiss Anna` – is a
 name with its portrait. A block with portraits is a grid of faces with the names under them
@@ -103,6 +130,8 @@ Content style fields: `orientation` (`horizontal` = head beside the body, `verti
 `leading`), `headGap`, `tailGap`, `columnGap`, `paragraphGap`, `wrapWidth`, `flowSeparator`,
 `margin`, and for the horizontal orientation `headAlign` (`right` by default; `left` makes a
 column), `harmonizeHeads` (every head of the style on a page gets the widest one's width),
+`harmonizeBody` (grid layout, either orientation: every body column of the style on a page gets
+the widest column's width, so multi-column grids stand on the same columns and tails line up),
 `leader` (e.g. `" ."`: repeated from the head to the body, on the head's line, in its letter
 style) and `leaderGap` (space on either side of the dots, default 16); for portraits
 `portraitHeight`, `portraitSide` (`above`, `left`) and `portraitGap`.
@@ -152,7 +181,8 @@ does not run the tool; use it on its own:
      "background": { "kind": "video", "file": "walk.mp4", "loop": true, "fit": "fill", "opacity": 70 } }
    ```
 3. Import or refresh. The loop runs under the whole page; its opacity and blur stay editable. For
-   a figure that should move with the names instead, put it in a cell as `{{Video walk.mp4}}`.
+   a figure that should move with the names instead, put it in a cell as
+   `{{Video walk.mp4 loop}}`.
 
 Keep the text readable over moving pictures (the contrast check cannot measure them: check by
 eye, or lower the background's opacity). A line-art layer drawn by CFA4 itself is planned for
@@ -400,8 +430,8 @@ CFA4) and the running order (rundown) follow in their own plan,
 | Command | Menu | Params |
 |---|---|---|
 | `graphics.credits.import` | Graphics and Titles ▸ Import Credits Spreadsheet… | `path` (.csv/.tsv/.xlsx/.ods/.cfa4credits, or a Cinecred project folder / its `Styling.toml`, with `credits` to pick its spreadsheet) or `csv` (text), `sheet`, `pictureDir`, `styling`, `template` (its styling and fitting; `styling` wins), `time`, `track` (of each page's lowest clip: its background, else the page) → `{clips: [{clip, start, duration, behaviour, pictures, background, backgroundClips, transition}], group, end, sheet, warnings}` (`backgroundClips`: every clip of the background, several for a looped video); one undo step |
-| `graphics.credits.preview` | (query) | as above → `{pages: [{name, style, row, behaviour (scroll/card/crawl), duration, seconds, layers, contentHeight, contentWidth, background, transition: {effect, duration}, blocks: [{style, head, body (the first 40 cells), bodyCount, tails, pictures, row, lastRow, spine, parallel, at (0–1: the moment of the page that shows the block)}]}], duration, sheets, sheet, warnings, issues}` |
-| `graphics.credits.thumbnail` | (query) | as preview, plus `page`, `at` (0–1, moment in the page), `width`, `guides`, `grid` → `{width, height, page, pages, time, pngBase64}`: the page's background (a picture or video as grey) and text with the roll, crawl or fades applied, pictures outlined, guides drawn |
+| `graphics.credits.preview` | (query) | as above → `{pages: [{name, style, row, behaviour (scroll/card/crawl), duration, seconds, layers, contentHeight, contentWidth, background, transition: {effect, duration}, blocks: [{style, head, body (the first 40 cells), bodyCount, tails, pictures, row, lastRow, spine, parallel, cardPoint ({y, anchor: middle/below/above} or null; null on a hooked spine), at (0–1: the moment of the page that shows the block), hook (`{back, from, to, dx, dy}` or null)}], spinePoints (a card's spine points, [x, y] frame pixels)}], duration, sheets, sheet, warnings, issues}` |
+| `graphics.credits.thumbnail` | (query) | as preview, plus `page`, `at` (0–1, moment in the page), `width`, `guides`, `grid` → `{width, height, page, pages, time, pngBase64}`: the page's background (a picture or video as grey) and text with the roll, crawl or fades applied, pictures outlined, guides drawn (a card's spine points as diamonds) |
 | `graphics.credits.validate` | (query; shown in the Credits window) | as preview, or `clip` for placed credits → `{errors, warnings, infos, issues: [{code, severity, page?, row?, values, message}]}` |
 | `graphics.credits.music` | (query; the Fit window) | `audio`?, `clip`? → `{audio, name, start, duration, soundEnd, bpm, beat, beats, suggestions: [{id: musicLength/soundEnd/lastBar, total}], credits, natural, fit}`; changes nothing |
 | `graphics.credits.fit` | Graphics and Titles ▸ Fit Credits to Music… | `clip`?, `total` / `seconds` / `use` (a suggestion id, default `musicLength`), `audio`?, `cardsOnBeat`, `alignToAudio`, `off` → `{clips, group, end, fit, report: {natural, target, result, scrollPages}, warnings}`; one undo step |
@@ -422,6 +452,5 @@ broken JSON are errors.
 
 ## Not yet
 
-Online sheets (download as `.xlsx`), hooked and fused spines, body-width harmonisation, looping a
-video in a cell (`{{Video …}}`), writing Cinecred projects (only on request, per the plan), a
+Online sheets (download as `.xlsx`), writing Cinecred projects (only on request, per the plan), a
 line-art layer drawn by CFA4 itself (plan C12, next year's release).

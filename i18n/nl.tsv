@@ -4380,6 +4380,10 @@ export.summary	Low	laag
 	{n} more	Nog {n}
 	Block	Blok
 	parallel	parallel
+	page {page}: a spine's vertical position works on card pages only; it is ignored	pagina {page}: de verticale positie van een as werkt alleen op kaartpagina’s; ze wordt genegeerd
+	on a card: centered on {y} px	op een kaart: gecentreerd op {y} px
+	on a card: starts at {y} px	op een kaart: begint op {y} px
+	on a card: ends at {y} px	op een kaart: eindigt op {y} px
 # MPEG-2 export audio (#268): a product name, kept as is
 	Dolby Digital (AC-3)	Dolby Digital (AC-3)
 	In the page (OBS takes it from the Browser Source)	In de pagina (OBS haalt het uit de browserbron)
@@ -4452,7 +4456,12 @@ export.summary	Low	laag
 	page {page}: the runtime is reached by changing the roll speed (the gaps would have to grow more than 20-fold)	pagina {page}: de looptijd wordt bereikt door de rolsnelheid te wijzigen (de ruimtes zouden meer dan 20 keer zo groot moeten worden)
 	page {page}: the transition needs the pages to touch (page gap 0); it is left out	pagina {page}: de overgang vereist dat de pagina's aansluiten (paginatussenruimte 0); die wordt weggelaten
 	page {page}: there is no transition “{name}”; the pages cut	pagina {page}: er is geen overgang “{name}”; de pagina's wisselen met een harde las
-	spine position “{value}” is not supported (a pixel offset, optionally “parallel”, is)	aspositie “{value}” wordt niet ondersteund (een verschuiving in pixels, eventueel met “parallel”, wel)
+	spine position “{value}” is not supported (a pixel offset, optionally “parallel”, or “Hook N Bottom-Top dx dy” is)	aspositie “{value}” wordt niet ondersteund (een verschuiving in pixels, eventueel met “parallel” / “Hook N Bottom-Top dx dy”, wel)
+	page {page}: the hook reaches back further than there are spines; it hooks onto the first spine, or starts its own	pagina {page}: de haak reikt verder terug dan er assen zijn; hij haakt aan de eerste as of begint een eigen as
+	hooked {n} spines back: its {from} meets this spine's {to}	{n} assen terug gehaakt: de {from} daarvan raakt de {to} van deze as
+	top	bovenkant
+	middle	midden
+	bottom	onderkant
 	vertical gap “{value}” is not a number	verticale ruimte “{value}” is geen getal
 	picture “{file}” was not found or cannot be read; it is left out	afbeelding “{file}” is niet gevonden of kan niet worden gelezen; die wordt weggelaten
 	video “{file}” was not found or cannot be read; it is left out	video “{file}” is niet gevonden of kan niet worden gelezen; die wordt weggelaten
@@ -4517,7 +4526,7 @@ export.summary	Low	laag
 	the engine sent no report	de engine heeft geen rapport gestuurd
 	MXF OP1a Uncompressed 10-bit 4:2:2 (v210)	MXF OP1a ongecomprimeerd 10-bit 4:2:2 (v210)
 	MXF OP1a, uncompressed 10-bit Y'CbCr 4:2:2 in the v210 layout (SMPTE ST 384), 24-bit 48 kHz PCM, start timecode	MXF OP1a, ongecomprimeerd 10-bit Y'CbCr 4:2:2 in de v210-indeling (SMPTE ST 384), 24-bit 48 kHz PCM, starttijdcode
-	Write the captions as ANC data (CEA-608/708, 29.97 fps)	Ondertiteling als ANC-gegevens schrijven (CEA-608/708, 29,97 fps)
+	Write the captions as ANC data (CEA-608/708)	Ondertiteling als ANC-gegevens schrijven (CEA-608/708)
 	Load KDM…	KDM laden…
 	Forget DCP Keys	DCP-sleutels vergeten
 	Load KDM	KDM laden
@@ -4527,6 +4536,13 @@ export.summary	Low	laag
 	The keys stay in memory only, until Forget DCP Keys or the end of the session.	De sleutels blijven alleen in het geheugen, tot DCP-sleutels vergeten of het einde van de sessie.
 	DCP keys forgotten	DCP-sleutels vergeten
 	Choose the KDM file and the private key.	Kies het KDM-bestand en de privésleutel.
+	Load even if the certificate chain is not verified	Ook laden met een niet-geverifieerde certificaatketen
+	Bundle: {loaded} of {total} KDMs loaded, {other} for other recipients	Bundel: {loaded} van {total} KDM's geladen, {other} voor andere ontvangers
+	Not loaded: {path}: {problem}	Niet geladen: {path}: {problem}
+	Signature verified: {chain}	Handtekening geverifieerd: {chain}
+	Signature not verified: {problem}	Handtekening niet geverifieerd: {problem}
+	KDM required	KDM vereist
+	Encrypted: load the KDM with content key {keys}	Versleuteld: laad de KDM met inhoudssleutel {keys}
 
 # Settings ▸ Timecode Sync (TC-4)
 	Timecode Sync	Timecodesynchronisatie
@@ -4559,3 +4575,60 @@ export.summary	Low	laag
 	Chase External Timecode	Externe timecode volgen
 	Send LTC	LTC verzenden
 	Send MIDI Timecode	MIDI-timecode verzenden
+# Auto Color, Auto Contrast, Auto Levels (EffectsSDK review)
+	Auto Color	Automatische kleur
+	Auto Contrast	Automatisch contrast
+	Auto Levels	Automatische niveaus
+	Temporal Smoothing (seconds)	Tijdelijke afvlakking (seconden)
+	Scene Detect	Scènedetectie
+	Black Clip	Zwart afkappen
+	White Clip	Wit afkappen
+	Snap Neutral Midtones	Neutrale middentonen
+# Layout presets: PiP corners, split screen (EffectsSDK review)
+	PiP 35% Upper Left	PiP 35% linksboven
+	Picture-in-picture: 35 % scale in the upper left	Beeld-in-beeld: 35 % schaal linksboven
+	PiP 35% Lower Left	PiP 35% linksonder
+	Picture-in-picture: 35 % scale in the lower left	Beeld-in-beeld: 35 % schaal linksonder
+	PiP 35% Lower Right	PiP 35% rechtsonder
+	Picture-in-picture: 35 % scale in the lower right	Beeld-in-beeld: 35 % schaal rechtsonder
+	Split Screen Left	Gesplitst scherm links
+	Split screen: the middle half of the picture fills the left half of the frame	Gesplitst scherm: de middelste helft van het beeld vult de linkerhelft van het frame
+	Split Screen Right	Gesplitst scherm rechts
+	Split screen: the middle half of the picture fills the right half of the frame	Gesplitst scherm: de middelste helft van het beeld vult de rechterhelft van het frame
+# Creative Looks: CRT (P3)
+	CRT	CRT
+	Scanline Strength	Sterkte scanlijnen
+	Line Count	Aantal lijnen
+	Mask	Masker
+	Mask Strength	Maskersterkte
+	Corner Darkening	Hoeken verdonkeren
+	Aperture Grille	Aperture grille
+	Shadow Mask	Schaduwmasker
+	Slot Mask	Sleufmasker
+# Creative Looks: Oil Paint (P4)
+	Oil Paint	Olieverf
+	Detail	Detail
+	Texture	Textuur
+	Facet	Facetten
+	Daubs	Klodders
+	Dry Brush	Droge kwast
+	Fresco	Fresco
+	Knife	Paletmes
+	Sponge	Spons
+# Creative Looks: Pixel Sort (P5)
+	Pixel Sort	Pixels sorteren
+	Sort By	Sorteren op
+	Lower Threshold	Ondergrens
+	Upper Threshold	Bovengrens
+	Ascending	Oplopend
+# Temporal Denoise (EffectsSDK review)
+	Temporal Denoise	Tijdelijke ruisonderdrukking
+	Frames Each Side	Frames aan elke kant
+	Motion Threshold	Bewegingsdrempel
+	Show Motion	Beweging tonen
+	No signal	Geen signaal
+	Locating	Positioneren
+	Locked	Vergrendeld
+	Freewheel	Vrijloop
+	Scrubbing	Scrubben
+	Sending	Verzenden

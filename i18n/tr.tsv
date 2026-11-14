@@ -4381,6 +4381,10 @@ export.summary	Low	düşük
 	{n} more	{n} tane daha
 	Block	Blok
 	parallel	paralel
+	page {page}: a spine's vertical position works on card pages only; it is ignored	sayfa {page}: eksenin dikey konumu yalnızca kart sayfalarında geçerlidir; yok sayılır
+	on a card: centered on {y} px	kartta: {y} px üzerinde ortalı
+	on a card: starts at {y} px	kartta: {y} px'te başlar
+	on a card: ends at {y} px	kartta: {y} px'te biter
 # MPEG-2 export audio (#268): a product name, kept as is
 	Dolby Digital (AC-3)	Dolby Digital (AC-3)
 	In the page (OBS takes it from the Browser Source)	Sayfada (OBS bunu Tarayıcı Kaynağından alır)
@@ -4453,7 +4457,12 @@ export.summary	Low	düşük
 	page {page}: the runtime is reached by changing the roll speed (the gaps would have to grow more than 20-fold)	sayfa {page}: süreye kayma hızı değiştirilerek ulaşılıyor (boşlukların 20 kattan fazla büyümesi gerekirdi)
 	page {page}: the transition needs the pages to touch (page gap 0); it is left out	sayfa {page}: geçiş için sayfaların bitişik olması gerekir (sayfa aralığı 0); dışarıda bırakıldı
 	page {page}: there is no transition “{name}”; the pages cut	sayfa {page}: “{name}” geçişi yok; sayfalar kesmeyle değişir
-	spine position “{value}” is not supported (a pixel offset, optionally “parallel”, is)	“{value}” eksen konumu desteklenmiyor (piksel kaydırma, isteğe bağlı “parallel” ile, destekleniyor)
+	spine position “{value}” is not supported (a pixel offset, optionally “parallel”, or “Hook N Bottom-Top dx dy” is)	“{value}” eksen konumu desteklenmiyor (piksel kaydırma, isteğe bağlı “parallel” / “Hook N Bottom-Top dx dy” ile, destekleniyor)
+	page {page}: the hook reaches back further than there are spines; it hooks onto the first spine, or starts its own	sayfa {page}: kanca var olan eksenlerden daha geriye uzanıyor; ilk eksene takılır ya da kendi eksenini başlatır
+	hooked {n} spines back: its {from} meets this spine's {to}	{n} eksen geriye takılı: onun {from} kısmı bu eksenin {to} kısmıyla buluşur
+	top	üst
+	middle	orta
+	bottom	alt
 	vertical gap “{value}” is not a number	“{value}” dikey boşluğu bir sayı değil
 	picture “{file}” was not found or cannot be read; it is left out	“{file}” resmi bulunamadı veya okunamıyor; dışarıda bırakıldı
 	video “{file}” was not found or cannot be read; it is left out	“{file}” videosu bulunamadı veya okunamıyor; dışarıda bırakıldı
@@ -4518,7 +4527,7 @@ export.summary	Low	düşük
 	the engine sent no report	motor rapor göndermedi
 	MXF OP1a Uncompressed 10-bit 4:2:2 (v210)	MXF OP1a sıkıştırılmamış 10 bit 4:2:2 (v210)
 	MXF OP1a, uncompressed 10-bit Y'CbCr 4:2:2 in the v210 layout (SMPTE ST 384), 24-bit 48 kHz PCM, start timecode	MXF OP1a, v210 düzeninde sıkıştırılmamış 10 bit Y'CbCr 4:2:2 (SMPTE ST 384), 24 bit 48 kHz PCM, başlangıç zaman kodu
-	Write the captions as ANC data (CEA-608/708, 29.97 fps)	Altyazıları ANC verisi olarak yaz (CEA-608/708, 29,97 fps)
+	Write the captions as ANC data (CEA-608/708)	Altyazıları ANC verisi olarak yaz (CEA-608/708)
 	Load KDM…	KDM Yükle…
 	Forget DCP Keys	DCP Anahtarlarını Unut
 	Load KDM	KDM Yükle
@@ -4528,6 +4537,13 @@ export.summary	Low	düşük
 	The keys stay in memory only, until Forget DCP Keys or the end of the session.	Anahtarlar yalnızca bellekte kalır; DCP Anahtarlarını Unut komutuna veya oturumun sonuna kadar.
 	DCP keys forgotten	DCP anahtarları unutuldu
 	Choose the KDM file and the private key.	KDM dosyasını ve özel anahtarı seçin.
+	Load even if the certificate chain is not verified	Doğrulanmamış sertifika zinciriyle de yükle
+	Bundle: {loaded} of {total} KDMs loaded, {other} for other recipients	Paket: {total} KDM'den {loaded} tanesi yüklendi, {other} tanesi başka alıcılar için
+	Not loaded: {path}: {problem}	Yüklenmedi: {path}: {problem}
+	Signature verified: {chain}	İmza doğrulandı: {chain}
+	Signature not verified: {problem}	İmza doğrulanmadı: {problem}
+	KDM required	KDM gerekli
+	Encrypted: load the KDM with content key {keys}	Şifreli: {keys} içerik anahtarını taşıyan KDM'yi yükleyin
 
 # Settings ▸ Timecode Sync (TC-4)
 	Timecode Sync	Zaman Kodu Eşitleme
@@ -4560,3 +4576,60 @@ export.summary	Low	düşük
 	Chase External Timecode	Harici Zaman Kodunu Takip Et
 	Send LTC	LTC Gönder
 	Send MIDI Timecode	MIDI Zaman Kodu Gönder
+# Auto Color, Auto Contrast, Auto Levels (EffectsSDK review)
+	Auto Color	Otomatik Renk
+	Auto Contrast	Otomatik Kontrast
+	Auto Levels	Otomatik Düzeyler
+	Temporal Smoothing (seconds)	Zamansal Yumuşatma (saniye)
+	Scene Detect	Sahne Algılama
+	Black Clip	Siyah Kırpma
+	White Clip	Beyaz Kırpma
+	Snap Neutral Midtones	Orta Tonları Nötrle
+# Layout presets: PiP corners, split screen (EffectsSDK review)
+	PiP 35% Upper Left	PiP %35 Sol Üst
+	Picture-in-picture: 35 % scale in the upper left	Resim içinde resim: sol üstte %35 ölçek
+	PiP 35% Lower Left	PiP %35 Sol Alt
+	Picture-in-picture: 35 % scale in the lower left	Resim içinde resim: sol altta %35 ölçek
+	PiP 35% Lower Right	PiP %35 Sağ Alt
+	Picture-in-picture: 35 % scale in the lower right	Resim içinde resim: sağ altta %35 ölçek
+	Split Screen Left	Bölünmüş Ekran Sol
+	Split screen: the middle half of the picture fills the left half of the frame	Bölünmüş ekran: görüntünün orta yarısı karenin sol yarısını doldurur
+	Split Screen Right	Bölünmüş Ekran Sağ
+	Split screen: the middle half of the picture fills the right half of the frame	Bölünmüş ekran: görüntünün orta yarısı karenin sağ yarısını doldurur
+# Creative Looks: CRT (P3)
+	CRT	CRT
+	Scanline Strength	Tarama çizgisi gücü
+	Line Count	Çizgi sayısı
+	Mask	Maske
+	Mask Strength	Maske gücü
+	Corner Darkening	Köşe kararması
+	Aperture Grille	Açıklık ızgarası
+	Shadow Mask	Gölge maskesi
+	Slot Mask	Yarık maskesi
+# Creative Looks: Oil Paint (P4)
+	Oil Paint	Yağlı boya
+	Detail	Ayrıntı
+	Texture	Doku
+	Facet	Faset
+	Daubs	Lekeler
+	Dry Brush	Kuru fırça
+	Fresco	Fresk
+	Knife	Spatula
+	Sponge	Sünger
+# Creative Looks: Pixel Sort (P5)
+	Pixel Sort	Piksel sıralama
+	Sort By	Sıralama ölçütü
+	Lower Threshold	Alt eşik
+	Upper Threshold	Üst eşik
+	Ascending	Artan
+# Temporal Denoise (EffectsSDK review)
+	Temporal Denoise	Zamansal Gürültü Azaltma
+	Frames Each Side	Her Yandaki Kare
+	Motion Threshold	Hareket Eşiği
+	Show Motion	Hareketi Göster
+	No signal	Sinyal yok
+	Locating	Konumlanıyor
+	Locked	Kilitli
+	Freewheel	Serbest çalışma
+	Scrubbing	Kaydırılıyor
+	Sending	Gönderiliyor
