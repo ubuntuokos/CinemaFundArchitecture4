@@ -140,10 +140,10 @@ static ROWS: &[Row] = &[
     audio("Speex", &["speex"], Ported, Sw("Ogg Speex"), NoEnc),
     audio("TTA (True Audio)", &["tta"], Ported, Sw(""), NoEnc),
     audio(
-        "RealAudio Cook / SIPR / 1.0 (14.4) / 2.0 (28.8), ATRAC3, ATRAC3plus",
+        "RealAudio Cook / SIPR / 1.0 (14.4) / 2.0 (28.8), ATRAC3, ATRAC3plus, ATRAC9",
         &["realaudio"],
         Ported,
-        Sw("in RealMedia (.rm, .rmvb); ATRAC3 also in WAV (.wav, .at3), ATRAC3plus in WAV and OpenMG (.at3, .oma, .aa3)"),
+        Sw("in RealMedia (.rm, .rmvb); ATRAC3 also in WAV (.wav, .at3), ATRAC3plus in WAV and OpenMG (.at3, .oma, .aa3), ATRAC9 in WAV (.at9)"),
         NoEnc,
     ),
     audio("ADPCM, G.711, G.722", &["adpcm"], Own, Sw(""), NoEnc),

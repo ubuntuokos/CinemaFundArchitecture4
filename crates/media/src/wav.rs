@@ -3,8 +3,8 @@
 //! full `riff` crate (all BWF metadata, AIFF) will replace this.
 //!
 //! Compressed WAV: G.711 μ-law / A-law, G.722, IMA ADPCM and Microsoft ADPCM decode through
-//! `cfa4-adpcm`, ATRAC3 (format 0x0270) and ATRAC3plus (`WAVE_FORMAT_EXTENSIBLE` with Sony's
-//! GUID; both Sony's `.at3`) through `cfa4-realaudio`, still read in place (block by block; G.722
+//! `cfa4-adpcm`, ATRAC3 (format 0x0270), ATRAC3plus and ATRAC9 (`WAVE_FORMAT_EXTENSIBLE` with
+//! Sony's GUIDs; Sony's `.at3` and `.at9`) through `cfa4-realaudio`, still read in place (block by block; G.722
 //! and ATRAC from periodic decoder checkpoints). The ATRAC streams of OpenMG files
 //! ([`crate::oma`]) are read the same way.
 
@@ -36,18 +36,22 @@ const MAX_SPAN_BYTES: u64 = 4 << 20;
 const FMT_MAX: u64 = 1024;
 /// G.722 data bytes between two decoder checkpoints (2 s at 64 kbit/s).
 const G722_CHECKPOINT: u64 = 16_384;
-/// ATRAC frames between two decoder checkpoints (about 1.5 s of ATRAC3, 3 s of ATRAC3plus).
+/// ATRAC packets between two decoder checkpoints (about 1.5 s of ATRAC3, 3 s of ATRAC3plus,
+/// 0.3 to 1.4 s of ATRAC9).
 const ATRAC_CHECKPOINT: u64 = 64;
 /// WAVE_FORMAT_SONY_SCX (ATRAC3).
 const TAG_ATRAC3: u16 = 0x0270;
 /// The `WAVE_FORMAT_EXTENSIBLE` sub-format of ATRAC3plus (E923AABF-CB58-4471-A119-FFFA01E4CE62).
 const ATRAC3P_GUID: [u8; 16] = [0xBF, 0xAA, 0x23, 0xE9, 0x58, 0xCB, 0x71, 0x44, 0xA1, 0x19, 0xFF, 0xFA, 0x01, 0xE4, 0xCE, 0x62];
+/// The `WAVE_FORMAT_EXTENSIBLE` sub-format of ATRAC9 (47E142D2-36BA-4D8D-88FC-61654F8C836C).
+const ATRAC9_GUID: [u8; 16] = [0xD2, 0x42, 0xE1, 0x47, 0xBA, 0x36, 0x8D, 0x4D, 0x88, 0xFC, 0x61, 0x65, 0x4F, 0x8C, 0x83, 0x6C];
 
 /// An ATRAC decoder state (cloned at checkpoints).
 #[derive(Clone)]
 pub(crate) enum Atrac {
     Three(Box<cfa4_realaudio::atrac3::Decoder>),
     Plus(Box<cfa4_realaudio::atrac3p::Decoder>),
+    Nine(Box<cfa4_realaudio::atrac9::Decoder>),
 }
 
 impl Atrac {
@@ -56,6 +60,7 @@ impl Atrac {
         match self {
             Atrac::Three(d) => d.decode(f).ok(),
             Atrac::Plus(d) => d.decode(f).ok(),
+            Atrac::Nine(d) => d.decode(f).ok(),
         }
     }
 
@@ -63,6 +68,7 @@ impl Atrac {
         match self {
             Atrac::Three(d) => d.samples_per_channel(),
             Atrac::Plus(d) => d.samples_per_channel(),
+            Atrac::Nine(d) => d.samples_per_channel(),
         }
     }
 
@@ -70,6 +76,7 @@ impl Atrac {
         match self {
             Atrac::Three(_) => "ATRAC3",
             Atrac::Plus(_) => "ATRAC3plus",
+            Atrac::Nine(_) => "ATRAC9",
         }
     }
 }
@@ -84,7 +91,7 @@ enum Encoding {
     /// G.722 (mono, two frames per byte): decoder states at every [`G722_CHECKPOINT`] bytes,
     /// found as reads reach them.
     G722 { checkpoints: Mutex<Vec<cfa4_adpcm::g722::Decoder>> },
-    /// ATRAC3 or ATRAC3plus frames of `block` bytes (`spf` frames each): decoder states at every
+    /// ATRAC3, ATRAC3plus or ATRAC9 packets of `block` bytes (`spf` frames each): decoder states at every
     /// [`ATRAC_CHECKPOINT`] frames, found as reads reach them (the overlap, gain control and
     /// filter bank memories carry from frame to frame).
     Atrac { block: u64, spf: u64, checkpoints: Mutex<Vec<Atrac>> },
@@ -131,6 +138,7 @@ impl WavSource {
         let mut ixml_tr = None;
         let mut ds64_data = None;
         let mut atrac3p = false;
+        let mut atrac9 = false;
         for _ in 0..MAX_CHUNKS {
             let Some(body) = pos.checked_add(8).filter(|&b| b <= len) else { break };
             let mut hdr = [0u8; 8];
@@ -158,6 +166,7 @@ impl WavSource {
                     let bits = le16(&b, 14);
                     if tag == 0xFFFE && clen >= 40 {
                         atrac3p = b.get(24..40) == Some(&ATRAC3P_GUID[..]);
+                        atrac9 = b.get(24..40) == Some(&ATRAC9_GUID[..]);
                         tag = le16(&b, 24);
                     }
                     // cbSize bytes after the 18-byte WAVEFORMATEX
@@ -184,7 +193,7 @@ impl WavSource {
             }
             pos = body + clen + (clen & 1);
         }
-        let (tag, ch, rate, bits, align, extra) = fmt.ok_or_else(|| MediaError::Decode(format!("{name}: missing fmt chunk")))?;
+        let (tag, mut ch, mut rate, bits, align, extra) = fmt.ok_or_else(|| MediaError::Decode(format!("{name}: missing fmt chunk")))?;
         let (off, dlen) = data.ok_or_else(|| MediaError::Decode(format!("{name}: missing data chunk")))?;
         if ch == 0 || rate == 0 || u32::from(ch) > crate::MAX_AUDIO_CHANNELS || rate > crate::MAX_AUDIO_SAMPLE_RATE {
             return Err(MediaError::Unsupported(format!("{name}: WAV format tag {tag}, {ch} channels at {rate} Hz")));
@@ -194,9 +203,17 @@ impl WavSource {
             let frame_bytes = u64::from(ch) * u64::from(bits / 8);
             let label = if float { "PCM float" } else { "PCM" };
             (Encoding::Pcm { bits, float }, dlen / frame_bytes, label.to_string(), Some(u32::from(bits)))
-        } else if tag == TAG_ATRAC3 || atrac3p {
+        } else if tag == TAG_ATRAC3 || atrac3p || atrac9 {
             let unsupported = |e: cfa4_realaudio::Error| MediaError::Unsupported(format!("{name}: {e}"));
-            let d = if atrac3p {
+            let d = if atrac9 {
+                // FFmpeg's extradata: what follows the 22 extensible bytes; the configuration
+                // names the layout and rate, which win over the header's
+                let e = extra.get(22..).unwrap_or(&[]);
+                let d = cfa4_realaudio::atrac9::Decoder::new(e, usize::from(align)).map_err(unsupported)?;
+                ch = u16::try_from(d.channels()).unwrap_or(ch);
+                rate = d.sample_rate();
+                Atrac::Nine(Box::new(d))
+            } else if atrac3p {
                 Atrac::Plus(Box::new(cfa4_realaudio::atrac3p::Decoder::new(ch, usize::from(align)).map_err(unsupported)?))
             } else {
                 let p = cfa4_realaudio::atrac3::Params { channels: ch, block_align: usize::from(align), extradata: extra.clone() };
@@ -370,14 +387,17 @@ impl WavSource {
 }
 
 /// The encoding and frame count of an ATRAC stream of `dlen` bytes in `block`-byte frames
-/// (ATRAC3plus decodes a short last frame, as FFmpeg's does).
+/// (ATRAC3plus decodes a short last frame and ATRAC9 the whole frames of a short last packet, as
+/// FFmpeg's do).
 fn atrac_encoding(d: Atrac, block: u64, dlen: u64) -> (Encoding, u64) {
     let spf = d.samples_per_channel() as u64;
-    let blocks = match d {
-        Atrac::Plus(_) => dlen.div_ceil(block.max(1)),
-        Atrac::Three(_) => dlen / block.max(1),
+    let frames = match &d {
+        Atrac::Plus(_) => dlen.div_ceil(block.max(1)).saturating_mul(spf),
+        Atrac::Three(_) => (dlen / block.max(1)).saturating_mul(spf),
+        // a short last packet holds the whole frames it has room for
+        Atrac::Nine(n) => (dlen / block.max(1)).saturating_mul(spf).saturating_add(n.samples_in(usize::try_from(dlen % block.max(1)).unwrap_or(0)) as u64),
     };
-    (Encoding::Atrac { block, spf, checkpoints: Mutex::new(vec![d]) }, blocks.saturating_mul(spf))
+    (Encoding::Atrac { block, spf, checkpoints: Mutex::new(vec![d]) }, frames)
 }
 
 impl WavSource {
@@ -387,10 +407,12 @@ impl WavSource {
         let channels = match &d {
             Atrac::Three(d) => d.channels(),
             Atrac::Plus(d) => d.channels(),
+            Atrac::Nine(d) => d.channels(),
         };
         let block = match &d {
             Atrac::Three(d) => d.block_align(),
             Atrac::Plus(d) => d.block_align(),
+            Atrac::Nine(d) => d.block_align(),
         } as u64;
         let codec = d.label().to_string();
         let (encoding, frames) = atrac_encoding(d, block, data_len);

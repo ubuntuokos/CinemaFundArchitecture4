@@ -67,6 +67,7 @@ szabadalommal védett formátumot.
 | RealAudio Cook (RealAudio G2) | dekódolás | `crates/realaudio` (az FFmpeg portja) | alap | függőben | | |
 | ATRAC3 (Sony) | dekódolás | `crates/realaudio` (az FFmpeg portja) | alap | függőben | | |
 | ATRAC3plus (Sony) | dekódolás | `crates/realaudio` `atrac3p` (az FFmpeg portja) | alap | függőben | | |
+| ATRAC9 (Sony) | dekódolás | `crates/realaudio` `atrac9` (az FFmpeg portja) | alap | függőben | | |
 | RealAudio SIPR (ACELP.NET), RealAudio 1.0 (14.4, VSELP), RealAudio 2.0 (28.8, G.728-szerű LD-CELP) | dekódolás | `crates/realaudio` (az FFmpeg portja) | alap | függőben | | |
 | Canopus HQ, HQA, HQX | dekódolás | `crates/canopus` (az FFmpeg portja) | alap | függőben | | |
 | Hap (Hap, Hap Alpha, Hap Q, Hap Q Alpha, Hap Alpha-Only) | dekódolás | `crates/hap` | alap | függőben | | |
