@@ -186,3 +186,31 @@ fn mpeg_ts_and_ps_stream_lists_survive_mutation() {
     fuzz("mpeg-ts", mpeg_seed(cfa4_mpegts::MuxFormat::Ts), 1500);
     fuzz("mpeg-ps", mpeg_seed(cfa4_mpegts::MuxFormat::Ps), 1500);
 }
+
+/// A FLAC file cut inside STREAMINFO, or with a wrong first block, is an error, not a list.
+#[test]
+fn a_damaged_flac_streaminfo_is_an_error() {
+    let seed = flac_seed();
+    let err = |b: Vec<u8>| matches!(stream_list(&MemReader(b.into())), Some(Err(_)));
+    assert!(err(seed[..21].to_vec()), "cut inside STREAMINFO");
+    let mut wrong_type = seed.clone();
+    wrong_type[4] = 0x84; // last block, type 4 (VORBIS_COMMENT)
+    assert!(err(wrong_type), "first block not STREAMINFO");
+    let mut wrong_size = seed.clone();
+    wrong_size[7] = 0x21; // 33 bytes
+    assert!(err(wrong_size), "STREAMINFO not 34 bytes");
+}
+
+/// An Ogg beginning-of-stream page whose lacing names a second segment the file lacks is an error,
+/// though its first packet is all there.
+#[test]
+fn an_ogg_page_cut_after_its_first_packet_is_an_error() {
+    let opus = b"OpusHead\x01\x02\x38\x01\x80\xbb\x00\x00\x00\x00\x00";
+    let mut p = b"OggS\0\x02".to_vec();
+    p.extend([0; 8]);
+    p.extend(1u32.to_le_bytes());
+    p.extend([0; 8]);
+    p.extend([2, opus.len() as u8, 255]); // two segments: the OpusHead, then 255 bytes
+    p.extend(opus);
+    assert!(matches!(stream_list(&MemReader(p.into())), Some(Err(_))));
+}

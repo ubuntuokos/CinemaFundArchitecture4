@@ -237,7 +237,7 @@ pub fn stream_list(src: &dyn ByteReader) -> Option<Result<StreamList, String>> {
         return wav(src);
     }
     if head.starts_with(b"fLaC") {
-        return flac(&head).map(Ok);
+        return Some(flac(&head));
     }
     None
 }
@@ -639,7 +639,8 @@ fn ogg_first_packets(src: &dyn ByteReader) -> Result<Vec<(u32, Vec<u8>)>, String
             None => body_len,
         };
         let body_at = pos + 27 + nseg as u64;
-        if body_at + first_len > len {
+        // the whole page must be there, not only its first packet (a page cut after it is damaged)
+        if body_at.checked_add(body_len).is_none_or(|end| end > len) {
             return Err(format!("truncated Ogg page at byte {pos}"));
         }
         let mut packet = vec![0; first_len as usize];
@@ -684,10 +685,25 @@ fn ogg(src: &dyn ByteReader) -> Result<StreamList, String> {
 
 /// (sample rate, channels) of a FLAC `fLaC` + STREAMINFO block.
 fn flac_streaminfo(b: &[u8]) -> Option<(u32, u32)> {
-    let si = b.strip_prefix(b"fLaC")?.get(4..)?;
-    let rate = (u32::from(*si.get(10)?) << 12) | (u32::from(*si.get(11)?) << 4) | (u32::from(*si.get(12)?) >> 4);
-    let ch = ((u32::from(*si.get(12)?) >> 1) & 7) + 1;
-    Some((rate, ch))
+    flac_streaminfo_checked(b).ok()
+}
+
+/// (sample rate, channels) of a FLAC `fLaC` + STREAMINFO block, checking that the first metadata
+/// block is a STREAMINFO (type 0) of its 34 bytes and that all of them are there.
+fn flac_streaminfo_checked(b: &[u8]) -> Result<(u32, u32), String> {
+    let rest = b.strip_prefix(b"fLaC").ok_or("no fLaC marker")?;
+    let header = rest.get(..4).ok_or("truncated FLAC metadata block header")?;
+    if header[0] & 0x7F != 0 {
+        return Err(format!("the first FLAC metadata block is type {}, not STREAMINFO", header[0] & 0x7F));
+    }
+    let size = u32::from_be_bytes([0, header[1], header[2], header[3]]);
+    if size != 34 {
+        return Err(format!("FLAC STREAMINFO is {size} bytes, not 34"));
+    }
+    let si = rest.get(4..4 + 34).ok_or("truncated FLAC STREAMINFO")?;
+    let rate = (u32::from(si[10]) << 12) | (u32::from(si[11]) << 4) | (u32::from(si[12]) >> 4);
+    let ch = ((u32::from(si[12]) >> 1) & 7) + 1;
+    Ok((rate, ch))
 }
 
 // ---------------------------------------------------------------- AVI / WAV / FLAC
@@ -825,11 +841,12 @@ fn wav(src: &dyn ByteReader) -> Option<Result<StreamList, String>> {
     None
 }
 
-fn flac(head: &[u8]) -> Option<StreamList> {
-    let (rate, ch) = flac_streaminfo(head)?;
+/// A FLAC file (it starts with `fLaC`): its STREAMINFO, or an error when that is damaged.
+fn flac(head: &[u8]) -> Result<StreamList, String> {
+    let (rate, ch) = flac_streaminfo_checked(head)?;
     let mut l = StreamList { container: "flac".into(), ..StreamList::default() };
     l.push(StreamEntry::new(StreamType::Audio).codec("flac").audio(ch, rate));
-    Some(l)
+    Ok(l)
 }
 
 #[cfg(test)]
