@@ -1201,6 +1201,7 @@ dependencies = [
  "cfa4-isobmff",
  "cfa4-j2k",
  "cfa4-lcevc",
+ "cfa4-magicyuv",
  "cfa4-matroska",
  "cfa4-media",
  "cfa4-mpa",
@@ -1700,6 +1701,15 @@ dependencies = [
  "base64 0.22.1",
  "serde_json",
  "sha2 0.10.9",
+]
+
+[[package]]
+name = "cfa4-magicyuv"
+version = "0.10.0"
+dependencies = [
+ "cfa4-avi",
+ "cfa4-testkit",
+ "thiserror 2.0.21",
 ]
 
 [[package]]

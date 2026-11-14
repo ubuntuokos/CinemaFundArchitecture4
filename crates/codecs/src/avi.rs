@@ -47,6 +47,8 @@ enum VCodec {
     Dirac,
     /// Huffyuv with its (reduced) `BITMAPINFOHEADER`.
     Huffyuv(Vec<u8>),
+    /// MagicYUV (every frame carries its own header).
+    MagicYuv,
     /// Ut Video: the FourCC and the extradata.
     UtVideo([u8; 4], Vec<u8>),
     /// Matrox MPEG-2 I-frame (`MMES`, `M701`–`M705`): intra-only MPEG-2, every chunk a picture.
@@ -77,6 +79,7 @@ fn video_codec(b: &BitmapInfo) -> (VCodec, String) {
         b"CFHD" => (VCodec::Cineform, "GoPro CineForm".into()),
         b"HEVC" | b"H265" | b"HEV1" | b"HVC1" | b"X265" => (VCodec::Hevc, "HEVC".into()),
         _ if crate::utvideo::is_utvideo(&b.compression) => (VCodec::UtVideo(b.compression, b.extra.clone()), "Ut Video".into()),
+        _ if crate::magicyuv::is_magicyuv(&b.compression) => (VCodec::MagicYuv, "MagicYUV".into()),
         b"HFYU" => (VCodec::Huffyuv(crate::huffyuv::bitmap_info_header(b.bit_count, &b.extra)), "Huffyuv".into()),
         b"FFV1" => (VCodec::Ffv1(b.extra.clone()), "FFV1".into()),
         b"DRAC" => (VCodec::Dirac, "VC-2 / Dirac".into()),
@@ -633,6 +636,7 @@ impl VideoSamples for AviVideo<'_> {
             VCodec::Ffv1(record) => make_video_decoder(&crate::ffv1::sample_entry(record, w, h)),
             VCodec::Dirac => make_video_decoder(&crate::dirac::sample_entry(w, h)),
             VCodec::Huffyuv(bih) => make_video_decoder(&crate::huffyuv::sample_entry(bih, w, h)),
+            VCodec::MagicYuv => make_video_decoder(&crate::magicyuv::sample_entry(w, h)),
             VCodec::UtVideo(fourcc, extra) => make_video_decoder(&crate::utvideo::sample_entry(*fourcc, extra, w, h)),
             VCodec::Mpeg2 => {
                 // primed with the first picture's sequence header, so any picture decodes on its own
