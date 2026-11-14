@@ -58,7 +58,7 @@ Crates are named `cfa4-<dir>` (`crates/time` is `cfa4-time`); new CFA4 crates ar
 | `prores` | L0 | ProRes decoder and encoder |
 | `dnx` | L0 | DNxHD / DNxHR (SMPTE ST 2019-1 VC-3) decoder and DNxHR encoder |
 | `hap` | L0 | Hap video decoder: `Hap1`, `Hap5`, `HapY`, `HapM`, `HapA`; Snappy, chunks, DXT1 / DXT5 / RGTC1 / scaled YCoCg textures to RGBA ([README](../crates/hap/README.md)) |
-| `dirac` | L0 | SMPTE VC-2 (ST 2042-1) decoder, the intra subset of Dirac: low-delay and high-quality pictures, all seven wavelets, symmetric and asymmetric transforms, 4:4:4 / 4:2:2 / 4:2:0 up to 16 bits, field coding ([README](../crates/dirac/README.md)) |
+| `dirac` | L0 | Dirac and SMPTE VC-2 (ST 2042-1) decoder: VC-2 low-delay and high-quality pictures, all seven wavelets, symmetric and asymmetric transforms, 4:4:4 / 4:2:2 / 4:2:0 up to 16 bits, field coding; Dirac core syntax with arithmetic coding and overlapped block motion compensation ([README](../crates/dirac/README.md)) |
 | `ffv1` | L0 | FFV1 (IETF RFC 9043) lossless video decoder: versions 0, 1, 3, Golomb Rice and range coding, YCbCr / RGB, 8-16 bit, slices ([README](../crates/ffv1/README.md)) |
 | `huffyuv` | L0 | Huffyuv (`HFYU`) lossless video decoder: YUY2, RGB24, RGBA; left, gradient and median prediction; interlaced ([README](../crates/huffyuv/README.md)) |
 | `utvideo` | L0 | Ut Video lossless video decoder: 8-bit YUV 4:2:0 / 4:2:2 / 4:4:4, RGB, RGBA; slices; left, gradient and median prediction ([README](../crates/utvideo/README.md)) |
@@ -78,7 +78,10 @@ Crates are named `cfa4-<dir>` (`crates/time` is `cfa4-time`); new CFA4 crates ar
 | `speex` | L0 | Speex decoder (narrowband, wideband, ultra-wideband, VBR / DTX, in-band stereo), ported from the BSD-3-Clause libspeex 1.2.1 ([README](../crates/speex/README.md)) |
 | `adpcm` | L0 | G.711 μ-law / A-law, G.722, IMA ADPCM (WAV, QuickTime `ima4`) and Microsoft ADPCM decoders ([README](../crates/adpcm/README.md)) |
 | `amr` | L0 | AMR-NB and AMR-WB speech decoders, ported from opencore-amr (Apache-2.0) ([README](../crates/amr/README.md)) |
+| `g729` | L0 | ITU-T G.729 speech decoder with Annex B comfort noise, ported from bcg729 (GPL-3.0-or-later) ([README](../crates/g729/README.md)) |
+| `ilbc` | L0 | iLBC (RFC 3951) speech decoder, ported from WebRTC's fixed-point libilbc (BSD-3-Clause) ([README](../crates/ilbc/README.md)) |
 | `tta` | L0 | TTA (True Audio) lossless audio decoder, ported from libtta (LGPL-3.0) ([README](../crates/tta/README.md)) |
+| `musepack` | L0 | Musepack SV7 and SV8 audio decoder, ported from the reference library libmpcdec (BSD-3-Clause) in its floating-point build ([README](../crates/musepack/README.md)) |
 | `testkit` | L0 | test-only helpers, used only as a dev-dependency: ffmpeg/ffprobe discovery, fixture dirs, golden images ([testing.md](testing.md)) |
 | `frame` | L1 | `VideoFrame` (planar YUV / RGBA8 / linear RGBA f32, colour metadata), `AudioBuffer` |
 | `media` | L1 | `MediaSource` trait, probing/openers, frame cache, generators, stills, image sequences, WAV / Broadcast WAV (PCM, G.711, G.722, ADPCM) |

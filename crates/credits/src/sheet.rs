@@ -10,7 +10,8 @@
 //! - **Vertical Gap**: an empty row is one gap unit; a number in this column between two blocks
 //!   replaces that gap (`2` = two units, `40px` = 40 pixels).
 //! - **Content Style** applies to this and every following block until another is named.
-//! - **Spine Position**: horizontal offset (pixels from the frame centre) of the following blocks.
+//! - **Spine Position**: horizontal offset (pixels from the frame centre) of the following blocks;
+//!   on a card page also a vertical one, with `Below` / `Above` (see [`CardPoint`]).
 //! - **Page Style** starts a new page with that style.
 //! - **Page Runtime** sets the current page's duration; **Page Gap** the empty time after it.
 //!   Durations are timecodes (`00:00:12:00`), seconds (`12s`, `1.5s`) or frames (`300f`).
@@ -137,8 +138,92 @@ pub struct Block {
     /// Starts a parallel column: the block stands beside the column before it, from the same
     /// top (`Spine Position` `-400 parallel` / `párhuzamos`).
     pub parallel: bool,
+    /// Starts a spine hooked onto an earlier one (`Spine Position` `Hook 1 Bottom-Top 0 40`).
+    pub hook: Option<Hook>,
+    /// A `Spine Position` cell came before the block (since the block before it): after a
+    /// hooked spine, that starts a new spine even at the same offset.
+    pub spine_cell: bool,
+    /// Where a card page puts the spine vertically (`Spine Position` `150 -50`, `0 50 Below`);
+    /// `None` when the cell gave no vertical position or anchor. Scroll and crawl pages ignore it.
+    pub card_point: Option<CardPoint>,
     /// 1-based row of the block's first cell.
     pub row: usize,
+}
+
+/// A point along a spine (a column of blocks): its top, middle or bottom.
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub enum SpinePoint {
+    Top,
+    Middle,
+    Bottom,
+}
+
+impl SpinePoint {
+    fn parse(w: &str) -> Option<Self> {
+        match w {
+            "top" | "teteje" | "fent" => Some(Self::Top),
+            "middle" | "közepe" | "közép" => Some(Self::Middle),
+            "bottom" | "alja" | "lent" => Some(Self::Bottom),
+            _ => None,
+        }
+    }
+}
+
+/// A spine hooked onto an earlier spine of its page: point `from` of the spine `back` spines
+/// before it meets point `to` of this one, moved by `dx`, `dy` (1080-high pixels; `dx` is
+/// where this spine stands from the other's).
+#[derive(Clone, Copy, Debug, PartialEq)]
+pub struct Hook {
+    pub back: u32,
+    pub from: SpinePoint,
+    pub to: SpinePoint,
+    pub dx: f64,
+    pub dy: f64,
+}
+
+/// A hook in a `Spine Position` cell: `Hook N`, then optionally `From-To` (`Bottom-Top` when
+/// left out) and a horizontal and a vertical distance in pixels (`Horog` works too).
+fn parse_hook(s: &str) -> Option<Hook> {
+    let t = s.trim().to_lowercase().replace(',', ".");
+    let mut words = t.split_whitespace();
+    if !matches!(words.next()?, "hook" | "horog") {
+        return None;
+    }
+    let back: u32 = words.next()?.parse().ok().filter(|n| (1..=1000).contains(n))?;
+    let mut rest: Vec<&str> = words.collect();
+    let (mut from, mut to) = (SpinePoint::Bottom, SpinePoint::Top);
+    if let Some((a, b)) = rest.first().and_then(|w| w.split_once('-')).and_then(|(a, b)| SpinePoint::parse(a).zip(SpinePoint::parse(b))) {
+        (from, to) = (a, b);
+        rest.remove(0);
+    }
+    let num = |w: &str| w.strip_suffix("px").unwrap_or(w).parse::<f64>().ok().filter(|v| v.is_finite() && v.abs() <= 100_000.0);
+    let (dx, dy) = match rest.as_slice() {
+        [] => (0.0, 0.0),
+        [x] => (num(x)?, 0.0),
+        [x, y] => (num(x)?, num(y)?),
+        _ => return None,
+    };
+    Some(Hook { back, from, to, dx, dy })
+}
+
+/// Which part of a card spine stands at its point.
+#[derive(Clone, Copy, Debug, Default, PartialEq, Eq)]
+pub enum CardAnchor {
+    /// The spine is centred vertically on the point (the default).
+    #[default]
+    Middle,
+    /// The spine starts at the point and runs down (`Below` / `alatta`).
+    Below,
+    /// The spine ends at the point (`Above` / `fölötte`).
+    Above,
+}
+
+/// A card spine's point: `y` pixels below the frame centre (1080-high pixels; negative is up)
+/// and which part of the spine stands there.
+#[derive(Clone, Copy, Debug, Default, PartialEq)]
+pub struct CardPoint {
+    pub y: f64,
+    pub anchor: CardAnchor,
 }
 
 /// A picture tag: `{{Pic file}}` or `{{Pic file 120}}` (height in pixels of a 1080-high frame;
@@ -150,11 +235,22 @@ pub struct Picture {
     pub height: Option<f64>,
     /// A video (`{{Video …}}`), placed and moved like a picture, playing from its start.
     pub video: bool,
+    /// A video that starts again from its beginning until its page ends (`{{Video walk.mp4 loop}}`);
+    /// otherwise a video shorter than its page ends early.
+    pub repeat: bool,
 }
 
 const PIC_TAGS: [&str; 4] = ["pic", "picture", "kép", "logo"];
 /// Tags of a video in a cell.
 const VIDEO_TAGS: [&str; 3] = ["video", "videó", "mozgókép"];
+/// Words after a video's file name that loop it.
+const LOOP_WORDS: [&str; 3] = ["loop", "ismétlés", "ismételve"];
+
+/// A picture height after the file name (`120`, `120px`, `120,5`), within 0–10 000.
+fn picture_height(word: &str) -> Option<f64> {
+    let n = word.strip_suffix("px").unwrap_or(word).replace(',', ".");
+    n.parse::<f64>().ok().filter(|v| v.is_finite() && *v > 0.0 && *v <= 10_000.0)
+}
 
 /// Take the picture tags out of a cell: the rest of the cell and the pictures, in order.
 pub fn take_pictures(cell: &str) -> (String, Vec<Picture>) {
@@ -169,19 +265,23 @@ pub fn take_pictures(cell: &str) -> (String, Vec<Picture>) {
         let lower = word.to_lowercase();
         let video = VIDEO_TAGS.contains(&lower.as_str()) || crate::cinecred::is_video_word(&lower);
         if (video || PIC_TAGS.contains(&lower.as_str()) || crate::cinecred::is_pic_word(&lower)) && !arg.trim().is_empty() && pics.len() < 64 {
-            let arg = arg.trim();
-            let (file, height) = match arg.rsplit_once(char::is_whitespace) {
-                Some((f, h)) => {
-                    let n = h.trim().to_lowercase();
-                    match n.strip_suffix("px").unwrap_or(&n).replace(',', ".").parse::<f64>() {
-                        Ok(v) if v.is_finite() && v > 0.0 && v <= 10_000.0 => (f.trim(), Some(v)),
-                        _ => (arg, None),
-                    }
+            // after the file name: an optional height and, for a video, a loop word (either order)
+            let mut file = arg.trim();
+            let (mut height, mut repeat) = (None, false);
+            for _ in 0..2 {
+                let Some((f, word)) = file.rsplit_once(char::is_whitespace) else { break };
+                let w = word.trim().to_lowercase();
+                if video && !repeat && LOOP_WORDS.contains(&w.as_str()) {
+                    repeat = true;
+                } else if let Some(v) = height.is_none().then(|| picture_height(&w)).flatten() {
+                    height = Some(v);
+                } else {
+                    break;
                 }
-                None => (arg, None),
-            };
+                file = f.trim_end();
+            }
             out.push_str(rest.get(..i).unwrap_or(""));
-            pics.push(Picture { file: file.to_string(), height, video });
+            pics.push(Picture { file: file.to_string(), height, video, repeat });
         } else {
             out.push_str(rest.get(..i + 2 + j + 2).unwrap_or(""));
         }
@@ -253,18 +353,29 @@ fn parse_gap(s: &str) -> Option<Gap> {
     Some(if px { Gap::Px(v) } else { Gap::Units(v) })
 }
 
-/// A spine position: a pixel offset, optionally `parallel` (`párhuzamos`) to the column before.
-fn parse_spine(s: &str) -> Option<(f64, bool)> {
+/// A spine position: a pixel offset, optionally `parallel` (`párhuzamos`) to the column before;
+/// or a horizontal and a vertical offset (`150 -50`), optionally with `Below` / `Above`
+/// (`alatta` / `fölötte`), for a card page. Returns the horizontal offset, whether it is
+/// parallel, and the card point when a vertical offset or an anchor was given.
+fn parse_spine(s: &str) -> Option<(f64, bool, Option<CardPoint>)> {
     let t = s.trim().to_lowercase().replace(',', ".");
-    let last = t.split_whitespace().last().unwrap_or("").to_string();
-    let (t, parallel) = if last == "parallel" || last == "párhuzamos" || crate::cinecred::is_parallel_word(&last) {
-        (t.get(..t.len() - last.len()).unwrap_or("").trim().to_string(), true)
-    } else {
-        (t.clone(), false)
+    let mut words: Vec<&str> = t.split_whitespace().collect();
+    let last = words.last().copied().unwrap_or("");
+    let parallel = last == "parallel" || last == "párhuzamos" || crate::cinecred::is_parallel_word(last);
+    let anchor = match last {
+        "below" | "alatta" | "alá" => Some(CardAnchor::Below),
+        "above" | "fölötte" | "felette" | "fölé" => Some(CardAnchor::Above),
+        _ => None,
     };
-    let n = t.strip_suffix("px").unwrap_or(&t).trim();
-    let v: f64 = n.parse().ok()?;
-    (v.is_finite() && v.abs() <= 100_000.0).then_some((v, parallel))
+    if parallel || anchor.is_some() {
+        words.pop();
+    }
+    let num = |w: &str| w.strip_suffix("px").unwrap_or(w).trim().parse::<f64>().ok().filter(|v| v.is_finite() && v.abs() <= 100_000.0);
+    match (words.as_slice(), parallel) {
+        ([x], _) => Some((num(x)?, parallel, anchor.map(|anchor| CardPoint { y: 0.0, anchor }))),
+        ([x, y], false) => Some((num(x)?, false, Some(CardPoint { y: num(y)?, anchor: anchor.unwrap_or_default() }))),
+        _ => None,
+    }
 }
 
 /// Interpret a table (rows of cells) as credits.
@@ -283,6 +394,9 @@ pub fn read_sheet(rows: &[Vec<String>], default_page: &str, default_content: &st
     let mut style = default_content.to_string();
     let mut spine = 0.0;
     let mut parallel_next = false;
+    let mut hook_next: Option<Hook> = None;
+    let mut spine_cell_next = false;
+    let mut card_point: Option<CardPoint> = None;
     let mut pending_units = 0.0f64;
     let mut explicit_gap: Option<Gap> = None;
     let mut open = false; // the last block still takes body cells
@@ -351,12 +465,23 @@ pub fn read_sheet(rows: &[Vec<String>], default_page: &str, default_content: &st
             open = false;
         }
         if !spine_s.trim().is_empty() {
-            match parse_spine(&spine_s) {
-                Some((v, par)) => {
+            spine_cell_next = true;
+            match (parse_spine(&spine_s), parse_hook(&spine_s)) {
+                (Some((v, par, point)), _) => {
                     spine = v;
                     parallel_next = par;
+                    card_point = point;
+                    hook_next = None;
                 }
-                None => warn(&mut out, rowno, format!("spine position `{}` is not supported (a pixel offset, optionally `parallel`, is)", spine_s.trim())),
+                (None, Some(h)) => {
+                    hook_next = Some(h);
+                    parallel_next = false;
+                }
+                (None, None) => warn(
+                    &mut out,
+                    rowno,
+                    format!("spine position `{}` is not supported (a pixel offset, optionally `parallel`, or `Hook N Bottom-Top dx dy` is)", spine_s.trim()),
+                ),
             }
             open = false;
         }
@@ -399,6 +524,9 @@ pub fn read_sheet(rows: &[Vec<String>], default_page: &str, default_content: &st
                 portraits: if has_body && portrait.is_some() { vec![portrait.clone()] } else { vec![] },
                 pictures: pics,
                 parallel: std::mem::take(&mut parallel_next),
+                hook: hook_next.take(),
+                spine_cell: std::mem::take(&mut spine_cell_next),
+                card_point,
                 row: rowno,
             });
             pending_units = 0.0;

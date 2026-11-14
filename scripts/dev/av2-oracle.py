@@ -15,11 +15,15 @@ Subcommands:
               tests never compare against the wrong reference.
     manifest  Rebuild the manifest's vector hashes from an AV2-00 evidence file
               (docs/audit/av2-00-results.json), keeping everything else.
+    hash      Fill the reference of the named vectors (bitstream SHA-256, geometry, per-frame
+              plane hashes) from the generated corpus: decode with the pinned avmdec v1.0.0 and
+              require the av2-normative avmdec to agree. Used when a vector is added.
 
 Usage:
     python3 scripts/dev/av2-oracle.py build [--ref v1.0.0|av2-normative] [--prefix DIR]
     python3 scripts/dev/av2-oracle.py corpus [--prefix DIR] [--out DIR] [--allow-drift]
     python3 scripts/dev/av2-oracle.py manifest --from docs/audit/av2-00-results.json
+    python3 scripts/dev/av2-oracle.py hash NAME... [--allow-no-cross-check]
 
 Then: CFA4_REQUIRE_AV2_ORACLE=1 cargo test -p cfa4-testkit av2
 Requirements: git, cmake, ninja, nasm, a C/C++ compiler, and for the sources only CFA4's pinned
@@ -30,7 +34,9 @@ from __future__ import annotations
 
 import argparse
 import hashlib
+import importlib.util
 import json
+import tempfile
 import shutil
 import subprocess
 import sys
@@ -239,6 +245,59 @@ def cmd_manifest(args: argparse.Namespace) -> int:
     return 0
 
 
+def y4m_frames(path: Path) -> tuple[dict, list[list[str]]]:
+    """The AV2-00 audit's Y4M plane hashing (one implementation for both scripts)."""
+    spec = importlib.util.spec_from_file_location("av2_00_audit", Path(__file__).with_name("av2-00-audit.py"))
+    if spec is None or spec.loader is None:
+        die("cannot load av2-00-audit.py")
+    mod = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(mod)
+    return mod.y4m_frames(path)
+
+
+def avmdec_hashes(avmdec: Path, obu: Path) -> tuple[dict, list[list[str]]]:
+    with tempfile.TemporaryDirectory() as tmp:
+        out = Path(tmp) / "out.y4m"
+        r = run([str(avmdec), "-o", str(out), str(obu)])
+        if r.returncode != 0 or not out.exists():
+            die(f"{avmdec} failed on {obu.name}: {r.stderr[-800:]}")
+        return y4m_frames(out)
+
+
+def cmd_hash(args: argparse.Namespace) -> int:
+    manifest = load_manifest()
+    oracle = manifest["oracle"]
+    out = (args.out or ROOT / "target" / "fixtures" / "av2" / "vectors").resolve()
+    decoders = []
+    for p in [oracle, *manifest.get("cross_check", [])]:
+        prefix = default_prefix(p["ref"])
+        stamp = prefix / "AVM_COMMIT"
+        if stamp.is_file() and stamp.read_text().strip() == p["commit"]:
+            decoders.append((p["ref"], prefix / "bin" / "avmdec"))
+        elif p is oracle or not args.allow_no_cross_check:
+            die(f"AVM {p['ref']} is not built in {prefix} (build --ref {p['ref']})")
+    by_name = {v["name"]: v for v in manifest["vectors"]}
+    for name in args.names:
+        v = by_name.get(name)
+        if v is None:
+            die(f"no vector {name!r} in the manifest")
+        obu = out / f"{name}.obu"
+        if not obu.is_file():
+            die(f"{obu} missing; run the corpus subcommand with --allow-drift first")
+        results = [(ref, *avmdec_hashes(exe, obu)) for ref, exe in decoders]
+        ref0, geometry, frames = results[0]
+        for ref, g, f in results[1:]:
+            if (g, f) != (geometry, frames):
+                die(f"{name}: avmdec {ref} disagrees with {ref0}; not a usable reference")
+        v["bitstream_sha256"] = sha256(obu)
+        v["bitstream_bytes"] = obu.stat().st_size
+        v["geometry"] = geometry
+        v["frames"] = frames
+        print(f"{name}: {len(frames)} frames, {geometry}, agreed by {', '.join(r[0] for r in results)}")
+    MANIFEST.write_text(json.dumps(manifest, indent=2) + "\n", encoding="utf-8")
+    return 0
+
+
 def main() -> int:
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     sub = ap.add_subparsers(dest="cmd", required=True)
@@ -252,8 +311,12 @@ def main() -> int:
     c.add_argument("--allow-drift", action="store_true", help="keep drifted bitstreams and exit 0")
     m = sub.add_parser("manifest", help="refresh vector hashes from AV2-00 evidence")
     m.add_argument("--from", dest="source", required=True)
+    h = sub.add_parser("hash", help="fill the reference hashes of new vectors from the oracle")
+    h.add_argument("names", nargs="+")
+    h.add_argument("--out", type=Path, help="corpus dir (default target/fixtures/av2/vectors)")
+    h.add_argument("--allow-no-cross-check", action="store_true", help="accept the v1.0.0 result alone")
     args = ap.parse_args()
-    return {"build": cmd_build, "corpus": cmd_corpus, "manifest": cmd_manifest}[args.cmd](args)
+    return {"build": cmd_build, "corpus": cmd_corpus, "manifest": cmd_manifest, "hash": cmd_hash}[args.cmd](args)
 
 
 if __name__ == "__main__":

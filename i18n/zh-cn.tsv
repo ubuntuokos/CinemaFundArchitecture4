@@ -4378,6 +4378,10 @@
 	{n} more	另有 {n} 项
 	Block	块
 	parallel	并列
+	page {page}: a spine's vertical position works on card pages only; it is ignored	第 {page} 页:轴线的垂直位置只在卡片页上有效;已忽略
+	on a card: centered on {y} px	卡片上:以 {y} px 为中心
+	on a card: starts at {y} px	卡片上:从 {y} px 开始
+	on a card: ends at {y} px	卡片上:到 {y} px 结束
 # MPEG-2 export audio (#268): a product name, kept as is
 	Dolby Digital (AC-3)	Dolby Digital (AC-3)
 	In the page (OBS takes it from the Browser Source)	在页面中（OBS 从浏览器源获取）
@@ -4450,7 +4454,12 @@
 	page {page}: the runtime is reached by changing the roll speed (the gaps would have to grow more than 20-fold)	第 {page} 页:通过改变滚动速度来达到时长(间隔需要增大到 20 倍以上)
 	page {page}: the transition needs the pages to touch (page gap 0); it is left out	第 {page} 页:转场要求页面首尾相接(页间隔为 0);已忽略
 	page {page}: there is no transition “{name}”; the pages cut	第 {page} 页:不存在转场“{name}”;页面直接切换
-	spine position “{value}” is not supported (a pixel offset, optionally “parallel”, is)	不支持对齐轴位置“{value}”(支持像素偏移,可选加“parallel”)
+	spine position “{value}” is not supported (a pixel offset, optionally “parallel”, or “Hook N Bottom-Top dx dy” is)	不支持对齐轴位置“{value}”(支持像素偏移,可选加“parallel” / “Hook N Bottom-Top dx dy”)
+	page {page}: the hook reaches back further than there are spines; it hooks onto the first spine, or starts its own	第 {page} 页：挂钩回溯的轴数超过了已有的轴；它挂到第一条轴上，或自成一条轴
+	hooked {n} spines back: its {from} meets this spine's {to}	挂在前面第 {n} 条轴上：那条轴的{from}与本轴的{to}相接
+	top	顶部
+	middle	中部
+	bottom	底部
 	vertical gap “{value}” is not a number	垂直间距“{value}”不是数字
 	picture “{file}” was not found or cannot be read; it is left out	未找到图片“{file}”或无法读取;已忽略
 	video “{file}” was not found or cannot be read; it is left out	未找到视频“{file}”或无法读取;已忽略
@@ -4515,7 +4524,7 @@
 	the engine sent no report	引擎未发送报告
 	MXF OP1a Uncompressed 10-bit 4:2:2 (v210)	MXF OP1a 无压缩 10 位 4:2:2 (v210)
 	MXF OP1a, uncompressed 10-bit Y'CbCr 4:2:2 in the v210 layout (SMPTE ST 384), 24-bit 48 kHz PCM, start timecode	MXF OP1a，v210 布局的无压缩 10 位 Y'CbCr 4:2:2（SMPTE ST 384），24 位 48 kHz PCM，起始时间码
-	Write the captions as ANC data (CEA-608/708, 29.97 fps)	将字幕写为 ANC 数据（CEA-608/708，29.97 fps）
+	Write the captions as ANC data (CEA-608/708)	将字幕写为 ANC 数据（CEA-608/708）
 	Load KDM…	加载 KDM…
 	Forget DCP Keys	清除 DCP 密钥
 	Load KDM	加载 KDM
