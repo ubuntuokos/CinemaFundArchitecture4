@@ -490,6 +490,13 @@ class SmartCutDialog(QDialog):
             # the settings changed since the plan was made: plan them, then the user exports
             self.replan()
             return
+        # the plan the user confirms: a change while a question is open (a renamed marker can
+        # name another file) drops it, and nothing is written
+        generation = self._plan_request
+
+        def still_current() -> bool:
+            return generation == self._plan_request and self.plan_current()
+
         # an existing file is replaced only once the user says so (plan 1.1 §7)
         if self.segments_mode():
             taken = [str(x) for x in (self.plan or {}).get("existing") or []]
@@ -501,7 +508,7 @@ class SmartCutDialog(QDialog):
                 tr("Smart Cut Source"),
                 fmt("These files already exist and will be replaced: {files}. Continue?", files=", ".join(taken)),
             )
-            if asked != QMessageBox.StandardButton.Yes:
+            if asked != QMessageBox.StandardButton.Yes or not still_current():
                 return
             if self.segments_mode():
                 params["overwrite"] = True
@@ -512,7 +519,7 @@ class SmartCutDialog(QDialog):
                 tr("Smart Cut Source"),
                 fmt("{frames} frames at the boundaries are re-encoded. Continue?", frames=int(summary.get("reencodedFrames") or 0)),
             )
-            if asked != QMessageBox.StandardButton.Yes:
+            if asked != QMessageBox.StandardButton.Yes or not still_current():
                 return
             params["confirm"] = True
         self.run.setEnabled(False)

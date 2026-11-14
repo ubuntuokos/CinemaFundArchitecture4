@@ -15358,3 +15358,28 @@ def test_marker_csv_import_goes_to_the_focused_monitor():
     assert MainWindow.marker_import_params(win, {"item": 3}) == {"item": 3}
     win.focused_monitor = lambda: program
     assert MainWindow.marker_import_params(win, {}) == {}
+
+
+def test_smart_cut_writes_nothing_when_the_project_changes_during_a_question(app, monkeypatch):
+    """Smart Cut: a project change while a confirmation is open (a marker renamed, so another
+    file name) drops the plan, and the confirmed export does not run on it."""
+    from cfa4_qt.panels import smart_cut
+    from cfa4_qt.panels.smart_cut import SmartCutDialog
+
+    parent = QtWidgets.QWidget()
+    engine = _StubEngine()
+    d = SmartCutDialog(parent, engine, 7, lambda _t: None)
+    engine.last("export.analyze")[2]({"path": "/m/clip.mp4", "codec": "h264", "container": "mp4", "smartCut": {"allowed": True}}, None)
+    plan = {"summary": {"copiedFrames": 40, "reencodedFrames": 10, "requiresConfirmation": True}, "plan": {"executable": True}}
+    engine.last("export.plan")[2](plan, None)
+    assert d.plan_current()
+
+    def changed_while_asking(*_a: object) -> object:
+        engine.event.emit({"event": "projectChanged", "revision": 2})
+        return QtWidgets.QMessageBox.StandardButton.Yes
+
+    monkeypatch.setattr(smart_cut.QMessageBox, "question", changed_while_asking)
+    d.start()
+    assert not any(c == "export.start" for c, *_r in engine.sent)
+    assert not d.run.isEnabled() and d.plan is None
+    parent.deleteLater()
