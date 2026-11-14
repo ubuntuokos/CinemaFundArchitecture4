@@ -326,6 +326,17 @@ w.finish()?;
 - `write_opatom_pcm(&OpAtomPcm, &[i32])` builds a complete in-memory OP-Atom PCM file (AAF media
   consolidation); `encode_pcm` interleaves planar f32 as little-endian PCM.
 
+## AS-11 descriptive metadata
+
+`as11` reads and writes AMWA AS-11 descriptive metadata in OP1a files: the AS-11 Core framework,
+the Segmentation framework (part number / total on a timeline track with the programme parts) and
+the UK DPP framework, laid out as bmx writes them (static DM tracks 5001 / 5101, segmentation track
+5002, DMSchemes labels in the Preface, dynamic local tags). Set `WriterConfig::as11` to an `As11`
+(Core is required; UK DPP `TotalNumberOfParts` and `TotalProgrammeDuration` are filled from the
+segments); `MxfFile::as11` returns what a file carries. `parse_framework_text` and
+`parse_segments_text` read the bmx text forms (`Name: value` lines; `part/total start duration`
+with timecodes or frame counts). Codec shims (AVC-Intra, XDCAM HD422, D-10) are not enforced.
+
 ## Tests
 
 - `src/tests.rs`: a small OP1a writer builds synthetic files (temporal offsets, key flags, PCM,

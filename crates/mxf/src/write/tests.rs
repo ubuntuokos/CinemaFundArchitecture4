@@ -1759,3 +1759,101 @@ fn timed_text_track_file_round_trips() {
         assert!(out.status.success() && String::from_utf8_lossy(&out.stdout).trim() == "mxf", "{}", String::from_utf8_lossy(&out.stderr));
     }
 }
+
+fn kv(pairs: &[(&str, &str)]) -> Vec<(String, String)> {
+    pairs.iter().map(|(k, v)| (k.to_string(), v.to_string())).collect()
+}
+
+/// #96: the AS-11 Core, Segmentation and UK DPP frameworks (bmx's test values) read back.
+#[test]
+fn as11_metadata_reads_back() {
+    use crate::as11::{As11, Segment};
+    let core = kv(&[
+        ("SeriesTitle", "Holby City Series 5"),
+        ("ProgrammeTitle", "Holby City Series 5, Episode 10: Depths of Devotion"),
+        ("EpisodeTitleNumber", "Depths of Devotion"),
+        ("ShimName", "UK DPP HD"),
+        ("ShimVersion", "1.1"),
+        ("AudioTrackLayout", "3"),
+        ("PrimaryAudioLanguage", "eng"),
+        ("ClosedCaptionsPresent", "false"),
+    ]);
+    let ukdpp = kv(&[
+        ("ProductionNumber", "LDXA123B/71"),
+        ("Synopsis", "Doctors, nurses, patients etc."),
+        ("Originator", "Maverick Productions"),
+        ("CopyrightYear", "2011"),
+        ("Distributor", "Rick Distributors"),
+        ("PictureRatio", "16/9"),
+        ("ThreeD", "false"),
+        ("ProductPlacement", "true"),
+        ("PSEPass", "1"),
+        ("PSEManufacturer", "Harding"),
+        ("PSEVersion", "1.0 alpha"),
+        ("SecondaryAudioLanguage", "zxx"),
+        ("TertiaryAudioLanguage", "zxx"),
+        ("AudioLoudnessStandard", "0"),
+        ("LineUpStart", "01:00:00:01"),
+        ("IdentClockStart", "2"),
+        ("AudioDescriptionPresent", "false"),
+        ("OpenCaptionsPresent", "false"),
+        ("SigningPresent", "1"),
+        ("CompletionDate", "2011-08-01"),
+        ("ContactEmail", "eric@maverick.co.uk"),
+        ("ContactTelephoneNumber", "02074079302"),
+    ]);
+    let segments = vec![Segment { start: 2, duration: 5, part_number: 1, part_total: 2 }, Segment { start: 7, duration: 2, part_number: 2, part_total: 2 }];
+    let mut cfg = op1a_config(Rational::new(25, 1), PictureCoding::ProRes { profile: 3 });
+    cfg.sound.truncate(1);
+    cfg.as11 = Some(As11 { core: core.clone(), segments: segments.clone(), ukdpp: ukdpp.clone() });
+    let mut w = MxfWriter::new(Cursor::new(Vec::new()), cfg.clone()).unwrap();
+    for i in 0..10 {
+        w.push_picture(&prores_like(i), FrameInfo::intra()).unwrap();
+        w.push_sound(0, &pcm16(i * 1920, 1920)).unwrap();
+    }
+    let bytes = w.finish().unwrap().into_inner();
+    let f = open(&bytes).unwrap();
+    assert_eq!(f.tracks.len(), 2, "the DM tracks are not essence tracks");
+    let a = f.as11.unwrap();
+    let sorted = |mut v: Vec<(String, String)>| {
+        v.sort();
+        v
+    };
+    assert_eq!(sorted(a.core), sorted(core.clone()));
+    assert_eq!(a.segments, [segments.clone(), vec![]].concat());
+    // the writer fills in the parts and their duration
+    let mut want = ukdpp.clone();
+    for (k, v) in &mut want {
+        if k == "IdentClockStart" {
+            *v = "01:00:00:02".into();
+        }
+    }
+    want.push(("TotalNumberOfParts".into(), "2".into()));
+    want.push(("TotalProgrammeDuration".into(), "7".into()));
+    assert_eq!(sorted(a.ukdpp), sorted(want));
+
+    // a missing required item, an unknown item, a bad value and parts past the end are refused
+    let refuse = |as11: As11| {
+        let mut c = cfg.clone();
+        c.as11 = Some(as11);
+        match MxfWriter::new(Cursor::new(Vec::new()), c) {
+            Err(e) => e.to_string(),
+            Ok(mut w) => {
+                w.push_picture(&prores_like(0), FrameInfo::intra()).unwrap();
+                w.push_sound(0, &pcm16(0, 1920)).unwrap();
+                w.finish().err().unwrap().to_string()
+            }
+        }
+    };
+    let e = refuse(As11 { core: core[1..].to_vec(), ..Default::default() });
+    assert!(e.contains("SeriesTitle is required"), "{e}");
+    let e = refuse(As11 { core: [core.clone(), kv(&[("Nope", "1")])].concat(), ..Default::default() });
+    assert!(e.contains("unknown AS-11 item"), "{e}");
+    let mut bad = core.clone();
+    bad[4].1 = "one.two".into();
+    assert!(refuse(As11 { core: bad, ..Default::default() }).contains("ShimVersion"));
+    let e = refuse(As11 { core: core.clone(), segments: segments.clone(), ukdpp: vec![] });
+    assert!(e.contains("after the programme"), "{e}");
+    let e = refuse(As11 { core: core.clone(), segments: vec![segments[1], segments[0]], ukdpp: vec![] });
+    assert!(e.contains("starts before"), "{e}");
+}

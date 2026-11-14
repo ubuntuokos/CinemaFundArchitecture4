@@ -462,6 +462,19 @@ pub struct ExportSettings {
     /// default.
     #[serde(default)]
     pub mxf_anc_captions: bool,
+    /// MXF OP1a: the AMWA AS-11 Core framework in bmx's text form, one `Name: value` per line
+    /// (`SeriesTitle: …`, `ShimName: UK DPP HD`, `ShimVersion: 1.1`; [`cfa4_mxf::as11`]). Empty: no
+    /// AS-11 metadata.
+    #[serde(default)]
+    pub mxf_as11_core: String,
+    /// MXF OP1a with AS-11: the programme parts, one `part/total start duration` per line, the start
+    /// a time code of the export's start time code and the duration a time code or a frame count.
+    #[serde(default)]
+    pub mxf_as11_segments: String,
+    /// MXF OP1a with AS-11: the UK DPP framework (`Name: value` lines); empty = none. The number of
+    /// parts and the programme duration are filled in from the parts when not given.
+    #[serde(default)]
+    pub mxf_as11_ukdpp: String,
     /// Container of MPEG-2 exports: `ps`, `ts`, `m2ts` or `es` (empty = from the path's
     /// extension, a program stream unless it is `.ts`, `.m2ts` / `.mts` or `.m2v`).
     #[serde(default)]
@@ -790,6 +803,9 @@ impl Default for ExportSettings {
             cineform_quality: String::new(),
             mxf_video_codec: MxfVideoCodec::default(),
             mxf_anc_captions: false,
+            mxf_as11_core: String::new(),
+            mxf_as11_segments: String::new(),
+            mxf_as11_ukdpp: String::new(),
             mpeg2_container: String::new(),
             mpeg2_422: false,
             mpeg2_quantizer: None,
@@ -925,6 +941,21 @@ impl ExportSettings {
             {
                 return Err(ExportError::Unsupported("D-10 (IMX) carries up to 8 channels of 16- or 24-bit 48 kHz audio".into()));
             }
+        }
+        let as11 = [&self.mxf_as11_core, &self.mxf_as11_segments, &self.mxf_as11_ukdpp];
+        if as11.iter().any(|t| !t.trim().is_empty()) {
+            if self.format != Format::MxfOp1a {
+                return Err(ExportError::Unsupported("AS-11 metadata is written in MXF OP1a".into()));
+            }
+            if self.mxf_as11_core.trim().is_empty() {
+                return Err(ExportError::Unsupported("AS-11 needs the AS-11 Core framework".into()));
+            }
+            let bad = |e: String| ExportError::Unsupported(format!("AS-11: {e}"));
+            cfa4_mxf::as11::check_framework_text(&self.mxf_as11_core, false).map_err(bad)?;
+            if !self.mxf_as11_ukdpp.trim().is_empty() {
+                cfa4_mxf::as11::check_framework_text(&self.mxf_as11_ukdpp, true).map_err(bad)?;
+            }
+            cfa4_mxf::as11::parse_segments_text(&self.mxf_as11_segments, cfa4_mxf::as11::Clock { start: 0, base: 1000 }).map_err(bad)?;
         }
         if self.format.is_mxf() && self.mxf_anc_captions {
             if self.format == Format::MxfOpAtom {
