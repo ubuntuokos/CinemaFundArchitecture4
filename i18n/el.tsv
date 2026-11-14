@@ -4538,6 +4538,13 @@ export.summary	Low	χαμηλή
 	The keys stay in memory only, until Forget DCP Keys or the end of the session.	Τα κλειδιά μένουν μόνο στη μνήμη, μέχρι τη «Διαγραφή κλειδιών DCP» ή το τέλος της συνεδρίας.
 	DCP keys forgotten	Τα κλειδιά DCP διαγράφηκαν
 	Choose the KDM file and the private key.	Επιλέξτε το αρχείο KDM και το ιδιωτικό κλειδί.
+	Load even if the certificate chain is not verified	Φόρτωση ακόμη και με μη επαληθευμένη αλυσίδα πιστοποιητικών
+	Bundle: {loaded} of {total} KDMs loaded, {other} for other recipients	Πακέτο: φορτώθηκαν {loaded} από {total} KDM, {other} για άλλους παραλήπτες
+	Not loaded: {path}: {problem}	Δεν φορτώθηκε: {path}: {problem}
+	Signature verified: {chain}	Η υπογραφή επαληθεύτηκε: {chain}
+	Signature not verified: {problem}	Η υπογραφή δεν επαληθεύτηκε: {problem}
+	KDM required	Απαιτείται KDM
+	Encrypted: load the KDM with content key {keys}	Κρυπτογραφημένο: φορτώστε το KDM με το κλειδί περιεχομένου {keys}
 
 # Settings ▸ Timecode Sync (TC-4)
 	Timecode Sync	Συγχρονισμός χρονοκώδικα
@@ -4570,3 +4577,60 @@ export.summary	Low	χαμηλή
 	Chase External Timecode	Παρακολούθηση εξωτερικού χρονοκώδικα
 	Send LTC	Αποστολή LTC
 	Send MIDI Timecode	Αποστολή χρονοκώδικα MIDI
+# Auto Color, Auto Contrast, Auto Levels (EffectsSDK review)
+	Auto Color	Αυτόματο χρώμα
+	Auto Contrast	Αυτόματη αντίθεση
+	Auto Levels	Αυτόματα επίπεδα
+	Temporal Smoothing (seconds)	Χρονική εξομάλυνση (δευτερόλεπτα)
+	Scene Detect	Ανίχνευση σκηνών
+	Black Clip	Αποκοπή μαύρου
+	White Clip	Αποκοπή λευκού
+	Snap Neutral Midtones	Ουδέτεροι μεσαίοι τόνοι
+# Layout presets: PiP corners, split screen (EffectsSDK review)
+	PiP 35% Upper Left	PiP 35% πάνω αριστερά
+	Picture-in-picture: 35 % scale in the upper left	Εικόνα σε εικόνα: κλίμακα 35 % πάνω αριστερά
+	PiP 35% Lower Left	PiP 35% κάτω αριστερά
+	Picture-in-picture: 35 % scale in the lower left	Εικόνα σε εικόνα: κλίμακα 35 % κάτω αριστερά
+	PiP 35% Lower Right	PiP 35% κάτω δεξιά
+	Picture-in-picture: 35 % scale in the lower right	Εικόνα σε εικόνα: κλίμακα 35 % κάτω δεξιά
+	Split Screen Left	Διαιρεμένη οθόνη αριστερά
+	Split screen: the middle half of the picture fills the left half of the frame	Διαιρεμένη οθόνη: το μεσαίο μισό της εικόνας γεμίζει το αριστερό μισό του κάδρου
+	Split Screen Right	Διαιρεμένη οθόνη δεξιά
+	Split screen: the middle half of the picture fills the right half of the frame	Διαιρεμένη οθόνη: το μεσαίο μισό της εικόνας γεμίζει το δεξί μισό του κάδρου
+# Creative Looks: CRT (P3)
+	CRT	CRT
+	Scanline Strength	Ένταση γραμμών σάρωσης
+	Line Count	Αριθμός γραμμών
+	Mask	Μάσκα
+	Mask Strength	Ένταση μάσκας
+	Corner Darkening	Σκούρυνση γωνιών
+	Aperture Grille	Πλέγμα διαφράγματος
+	Shadow Mask	Μάσκα σκιάς
+	Slot Mask	Μάσκα σχισμών
+# Creative Looks: Oil Paint (P4)
+	Oil Paint	Ελαιογραφία
+	Detail	Λεπτομέρεια
+	Texture	Υφή
+	Facet	Έδρες
+	Daubs	Πινελιές
+	Dry Brush	Στεγνό πινέλο
+	Fresco	Νωπογραφία
+	Knife	Σπάτουλα
+	Sponge	Σφουγγάρι
+# Creative Looks: Pixel Sort (P5)
+	Pixel Sort	Ταξινόμηση εικονοστοιχείων
+	Sort By	Ταξινόμηση κατά
+	Lower Threshold	Κάτω κατώφλι
+	Upper Threshold	Άνω κατώφλι
+	Ascending	Αύξουσα
+# Temporal Denoise (EffectsSDK review)
+	Temporal Denoise	Χρονική αποθορυβοποίηση
+	Frames Each Side	Καρέ σε κάθε πλευρά
+	Motion Threshold	Κατώφλι κίνησης
+	Show Motion	Εμφάνιση κίνησης
+	No signal	Χωρίς σήμα
+	Locating	Εντοπισμός
+	Locked	Συγχρονισμένο
+	Freewheel	Ελεύθερη λειτουργία
+	Scrubbing	Κύλιση
+	Sending	Αποστολή
