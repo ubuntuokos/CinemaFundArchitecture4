@@ -44,6 +44,16 @@
       "lavfi": "testsrc2=size=66x50:rate=30",
       "pix_fmt": "yuv420p",
       "frames": 6
+    },
+    "cif422": {
+      "lavfi": "testsrc2=size=352x288:rate=30",
+      "pix_fmt": "yuv422p",
+      "frames": 6
+    },
+    "cif422p10": {
+      "lavfi": "mandelbrot=size=352x288:rate=30",
+      "pix_fmt": "yuv422p10le",
+      "frames": 6
     }
   },
   "encoder_base_args": [
@@ -494,6 +504,318 @@
         ],
         [
           "518a89ccc612689f8191a6d6e7e4064d78770b1fe70dae6c87b3ec0d25a49973"
+        ]
+      ]
+    },
+    {
+      "name": "422-8bit",
+      "source": "cif422",
+      "encoder_args": [
+        "--profile=3"
+      ],
+      "purpose": "4:2:2 8 bit, default tools, inter",
+      "profile": "Main_422_10_IP1",
+      "bitstream_sha256": "274c5a1cecef5645984d5c19697f8d0e48bbdd10e667f4aaa4ea2bae641ce60c",
+      "bitstream_bytes": 14047,
+      "geometry": {
+        "width": 352,
+        "height": 288,
+        "chroma": "422",
+        "bytes_per_sample": 1
+      },
+      "frames": [
+        [
+          "704ecea1cc04f127b65663980294fb31faa979096757a9d0f1973ddb2b9fc7f5",
+          "277c74403351bca4e230dac2807865a7a95d37262b0756f7428d87323593fba3",
+          "9a74850418f3ac5108f59ce99d62f337f239936ab871fbb9f8544503e684d340"
+        ],
+        [
+          "1da2d488ee350752c3cf93e4a3de0782e74b12a71123090d8ea1b50c8a413fdc",
+          "6642021470aff6bfe92ece915afbfabec760614c930b35a1f77420e6f7998793",
+          "745f7fd21acd7f9036d9d7402e0047758388fe5c30c85641352d11b1b521fc4c"
+        ],
+        [
+          "8cbfcf8e2629508b7e1ca1a43b759ad079553fd3d31eed503f6bef3dfad422bc",
+          "39b8c8896237a236dd650e84102a7e1368395e22ad879bf60912eab64945f5c4",
+          "be07a930f05e06c6c585c851b95d1931f682698cfa72656d88d820723ea513d2"
+        ],
+        [
+          "fb42bf338890d1641bc81acbbb26cde2c00a02393e17dcd78f8018ca765dd750",
+          "48df4c32f20869a471274caa81cc3969740fbf24254d4e949c888ff628f1107e",
+          "dc81a34d452ff0a573c6f0fd1b0febec65f6ed2664d38219d55ff0df4e4be514"
+        ],
+        [
+          "f271ea293bbf838c97961775a0221d929eccb1881083db95f42baf65acc7ceea",
+          "6bf2b9f805d4ac092d96d1728834fbdbc21b40536d3a3b4f2ad896d04d163e3f",
+          "07029cf1333a0a57f1cd674dcb210138453630404f85e2aad4776ea9f713cff9"
+        ],
+        [
+          "dfc55877af476cb87e9d64272067309671a86379775876d8051c347bc990e9e7",
+          "feb308672360782d9dae27da05519da4156e1c5c3fd7756ea83602bcb0202007",
+          "f6d8bcaf8714ffbaaddb1a3b69f93c49acbcf2a11a5f46959ebadd0d2f19d542"
+        ]
+      ]
+    },
+    {
+      "name": "422-10bit",
+      "source": "cif422p10",
+      "encoder_args": [
+        "--profile=3",
+        "--input-bit-depth=10",
+        "--bit-depth=10"
+      ],
+      "purpose": "4:2:2 10 bit, default tools, inter",
+      "profile": "Main_422_10_IP1",
+      "bitstream_sha256": "492d44c8a74d4d6d07a03bebd516ecf98c1ed7d374bf4b1163025c9e2f11bbe4",
+      "bitstream_bytes": 37403,
+      "geometry": {
+        "width": 352,
+        "height": 288,
+        "chroma": "422",
+        "bytes_per_sample": 2
+      },
+      "frames": [
+        [
+          "cc5af980c8c28227d49bea8541864725301636908a7690fe00ba0f1299b7d2d7",
+          "0de1f20748ca5f7f7a078d304580cbccfe363e5a9003064dad30605a39bd0151",
+          "2a5654539132f0b610a04a183277a0cfef3bfd50b0df8027a2720dffcb7b16d5"
+        ],
+        [
+          "ae47b59047b34444f9e27324e2cc48bd2364ab78a08454084fc6b486c9f28d34",
+          "b937f3b10575fd9a85b3d9ecae544a4cbeea73d93fdd5b78a2e0a455b5242361",
+          "aeb92090a346dab4c123773d9685f2df59b7a1b37fd95cde8a2412f487bca145"
+        ],
+        [
+          "d7d74191653d344daa4032c66e9874d27ce79f232645994418ba3a5eac159274",
+          "1177f6af6050d235c290fc8189e803f3e4663be707b1571d22aa7c3655ea3607",
+          "f4fd1e1ace79a67761198bb43b7f2058cabf6d0374fc383fc5ac30360f01c058"
+        ],
+        [
+          "cb11ede55a247d67fe7d5edbf96fe22dcd1147b36a89fa22e71f3b0d4552dc27",
+          "18d320ec86cb3ba1922070ed9337a6cc52b62216333784a47e70ff0e68442e3f",
+          "33ecb7c1cace524e3d434f0e2ed54d5dcece9eab7bd6e06e924d5a3f188f0618"
+        ],
+        [
+          "7c42ec10ecac235eeeeeff64c137ec2a9f8633b610d42f8dbad9339e1f8090ec",
+          "e58b1ecfed0dd65c41c773b6c2855486e6b68f2c1f5a651ccbcf9441fa407ee5",
+          "dcbb62f7c39e21579779c67b679cb87e458d1482043ad8d019647f25a992c223"
+        ],
+        [
+          "537916b242d607fdbb1c15dd3a2f3497a12caa1d6635c5cbd7cc8d68cc973aba",
+          "549424ad57e552c3620d2f4e41f51f3230cd836c0829ed1f8a6c0c61cc4a2e24",
+          "374d2d427bf6bfe50e147048f71eb13e7285f49c35c0e7e9f83d19aee661b25c"
+        ]
+      ]
+    },
+    {
+      "name": "420-8bit-resize",
+      "source": "cif8",
+      "encoder_args": [
+        "--resize-mode=1",
+        "--resize-denominator=16",
+        "--resize-kf-denominator=16"
+      ],
+      "purpose": "4:2:0 8 bit, fixed 1/2 resize (coded 176x144)",
+      "profile": "Main_420_10_IP0",
+      "bitstream_sha256": "db977c36c056b8e901743ac1973e949717bd0960e684536f195bfe1d4ddeb59f",
+      "bitstream_bytes": 6723,
+      "geometry": {
+        "width": 176,
+        "height": 144,
+        "chroma": "420",
+        "bytes_per_sample": 1
+      },
+      "frames": [
+        [
+          "fe421276ad6c8829ec581c231400e69a9bbc44118e1faa0d5c6b1d205e6b0d68",
+          "9317c62b78d5d7223c275c92ad74f0dadf71a8397a34bb45efb48c6dcf1231fd",
+          "640f202d4a77382b3758da8eef516bc09132b8725e66146f4e7b2271549f8b7a"
+        ],
+        [
+          "cbeed2098f2913c8a737698e3250031763ad51e4a9e6d90c57d981656b8e831b",
+          "a5640d418e0677be278d82e114e2f26f61a1a2f2efc2383758d210914f5fb0a7",
+          "fc6dcddf762a30d6c3d740aa464641fe618ccaf7a8ff895fa0c4b93ba3e5ed5a"
+        ],
+        [
+          "133fb790e249a098abe08ae530830038704280f6aa39ad7deb2fc1a097859763",
+          "34d7f20b6fc91ed7ac4238e2dae53cf3f3be5c21ca3c9523deb430d23825150c",
+          "ae22237179c2ee266d1febfd0094a25cf25b6aaad604669f35ade0958cc0d8bf"
+        ],
+        [
+          "0fefa08a74bd4c756d5658da0de6f2a561e9f33c906fb95c196b7c29f789952d",
+          "89a0259de780a21ab91f68ac5838646226ab9519172d9885aab70319dd70f440",
+          "04869197dd432f72b1749a623ffadf0926c23e16e76e0b6be3b3f63a900603a5"
+        ],
+        [
+          "019575a9779e86af9a232b69cebf940e2b73edf2facd16787f9765605736fc0f",
+          "688d083a1fdd9801b99ab696203e700b23b092db697a48b3efcba98973c6b15c",
+          "3bc3bfb5efc27912515480571d2093018bc4740c4150f7ea50f2c19353631d4d"
+        ],
+        [
+          "988129a1ebf3c35954adf60891f6d60963498ec131d9389f2e73eb15e7014407",
+          "0475e3add88463e001da11a39a57e8bb9399f95e365250f6894c7e0c2a3b04c8",
+          "510a62f709331447eef6fb5cb8b6a1219cbbfdeecbfc3a92646e7520616860a8"
+        ],
+        [
+          "f539855bcda23c82546b5d2d4cc4be29f509e287ea1b911cbbe52346a10563f5",
+          "404f8d8f6540b009e70ee7c91aa81bcf8e1521659d348d5f7955bf5bccdd5821",
+          "47177e64a9f5e4570eb0cd80de00fab5bf6c23654141c3cf05d55f96dd4720b8"
+        ],
+        [
+          "0c35e8c4d1df69381329d60379424663f6534457ee3e04d33533dfabeb12cc7d",
+          "c525134df28cb930379e1a692b9a94f2c78758a06fce9b404d2a535bda497289",
+          "da1acf186c6817ccbce5776cb6fdd9b9edfee5b3597505cfd40f16648b9d7d84"
+        ],
+        [
+          "73fee27e7a48c27d47330feeab224d0918b238d1b8f5420a2a214768c94a7ba9",
+          "20ffe11e088e92ac2269143a3f934e43393f2e731b978af9a67ecd19e3e64af5",
+          "5ca6a19f59e09c95c122a03625b44755cf6d4ccbac1e5fddb09e73d78c6e6821"
+        ],
+        [
+          "0060536782364f4600f6d3af65248680f0187323e6018c5f8ac029b5f9d2bcc7",
+          "888da35e7397251ec0138b7f9e77e5451a954597a17570c4e1dd83f1b1013bf7",
+          "1945c7c881e093e84e346e76cdc365c20a1695f8b04b02c254e0c6eba0f57327"
+        ]
+      ]
+    },
+    {
+      "name": "420-8bit-kf4",
+      "source": "cif8",
+      "encoder_args": [
+        "--kf-min-dist=4",
+        "--kf-max-dist=4"
+      ],
+      "purpose": "4:2:0 8 bit, a key frame every 4 frames (start at a later key, start at a non-key)",
+      "profile": "Main_420_10_IP0",
+      "bitstream_sha256": "098ad2a26713d1ed6da2d904167ae3eb8f82a4bac5a2c43103bc0889710728b9",
+      "bitstream_bytes": 23453,
+      "geometry": {
+        "width": 352,
+        "height": 288,
+        "chroma": "420",
+        "bytes_per_sample": 1
+      },
+      "frames": [
+        [
+          "471346b623966bc6ca9386ca299c7de95deaa64d249736f10b25527b04b5038f",
+          "f1ab5bf9e1189ed2ccd58d2d96babfb552e15700b8520ec669c11cc969ed7a98",
+          "25a29cba7f3b39cb6f06955a59498cc286c9a8f566e236878691ad22785b447f"
+        ],
+        [
+          "7010affb669e7360753dcd8479a59c167c7c2b186fcdf85df1ff1d820bd7c76d",
+          "9cec7aa8d3f40b8aad0b17ffa4cc3e5e6b3538089dc83b51d2e10db8ab64aff6",
+          "37e8a4541f4fdb064d311e55ea16debbdac71f96e9c45322adb5c95d8999c3fb"
+        ],
+        [
+          "20fa27a441b003ecde5cb6fee2558e002d5c4b03698cd8e79bcf039b0d0198ac",
+          "932bd4dbe0e3524e173b4945deec8fe1b0937efd8f0eb10f11b1334578ce8f8d",
+          "93451fa4954638695959f497bfac8f22c45862dcdf018aca370c5b3cfc342a23"
+        ],
+        [
+          "e63b4aa5078b4c706a9a233a91c7f365e5ba33f8263720cc4aa846e93c45b37d",
+          "f23819adfe87f42e079dd39707500870009d8c37f814d1f91d37f7a1f7f95192",
+          "ad9dcc40b774487de007446a593dde62e35e0f935a4b890ff203558f5ebf6a8e"
+        ],
+        [
+          "b03558abe8470e5d670a76830edbbc757b15bef7e2f42e477413b01ec6a5a8d4",
+          "e5d3cec66cfdb0b5160b389e040528311f6bcdad6f55b7c41abb823f7fa8148b",
+          "6de883e9d1952483a8179485ae7891a1504b267539e62a5f1d5c8db82f2ee4d4"
+        ],
+        [
+          "1aa83e1a4412b4dccc3b65a73a99270bf7ed2386da242028b1386ec47df0095f",
+          "74d8878500c13ff341663074819dc7c495600bb4de8c42fbdf44ed033b6ac9d1",
+          "804e828dc641ae068dcbbd644b0c39bb5cd97fc9fc3be1cc58dc0e84fa753fad"
+        ],
+        [
+          "3f39de84b40f8defb5dd364757d1d22e1e7794edbbb30fd469c2d7e4b8667a47",
+          "8ecdc45c24f5090bec8ff85c199fe84850b5f04766ca3892d4100a2ff3bc5b86",
+          "292adcbc75b5277f1b38f9ebc6404baca961bcc0a5b380cb60c63d03ccf2389c"
+        ],
+        [
+          "4d7e920a0cd0ce99ceceb7b5693039acd0971e97ab78465a35da3839bb18e622",
+          "1c4bbb2da4249764c8dbf65a14db6a5e7d8a96debe53886c7a3edc74ec3bfe33",
+          "71c74e6efdbabbeb9897caf82915784df9e6cca5b3056b948e27349ca2c79008"
+        ],
+        [
+          "639a8efc0fe7fb5df2779829d57832e20a3dfb79d8d022d1d10343d8b4f749d3",
+          "40c7d2d3807b4c19198d753daf52d9169e3a60dbe9befdac3850f5d654dd821d",
+          "267ea7ed2419527655b86733062a089436eebba9afd8752ca070eae233680081"
+        ],
+        [
+          "3e394fc6d9e8743cc7cd39741459eda3d10bf1481e6ed549b108563e157a341b",
+          "8c5e37c76d6f66dfbdc7e0f4afde451f81a4efc5e117039ce4ada4c449817be1",
+          "16ae1b06e7d32c2265e3c804f94a4512fe7a9bdf6d6f27d679890daff80391ef"
+        ]
+      ]
+    },
+    {
+      "name": "420-8bit-ras",
+      "source": "cif8",
+      "encoder_args": [
+        "--enable-sframe=1",
+        "--sframe-dist=4",
+        "--sframe-type=1"
+      ],
+      "purpose": "4:2:0 8 bit, RAS frames every 4 frames",
+      "profile": "Main_420_10_IP0",
+      "bitstream_sha256": "6bb4a9626b6f430327319b90c8561fb9af7b7e93d8d6fe5411b283f8a9cdc6ff",
+      "bitstream_bytes": 11028,
+      "geometry": {
+        "width": 352,
+        "height": 288,
+        "chroma": "420",
+        "bytes_per_sample": 1
+      },
+      "frames": [
+        [
+          "471346b623966bc6ca9386ca299c7de95deaa64d249736f10b25527b04b5038f",
+          "f1ab5bf9e1189ed2ccd58d2d96babfb552e15700b8520ec669c11cc969ed7a98",
+          "25a29cba7f3b39cb6f06955a59498cc286c9a8f566e236878691ad22785b447f"
+        ],
+        [
+          "7010affb669e7360753dcd8479a59c167c7c2b186fcdf85df1ff1d820bd7c76d",
+          "9cec7aa8d3f40b8aad0b17ffa4cc3e5e6b3538089dc83b51d2e10db8ab64aff6",
+          "37e8a4541f4fdb064d311e55ea16debbdac71f96e9c45322adb5c95d8999c3fb"
+        ],
+        [
+          "20fa27a441b003ecde5cb6fee2558e002d5c4b03698cd8e79bcf039b0d0198ac",
+          "932bd4dbe0e3524e173b4945deec8fe1b0937efd8f0eb10f11b1334578ce8f8d",
+          "93451fa4954638695959f497bfac8f22c45862dcdf018aca370c5b3cfc342a23"
+        ],
+        [
+          "e63b4aa5078b4c706a9a233a91c7f365e5ba33f8263720cc4aa846e93c45b37d",
+          "f23819adfe87f42e079dd39707500870009d8c37f814d1f91d37f7a1f7f95192",
+          "ad9dcc40b774487de007446a593dde62e35e0f935a4b890ff203558f5ebf6a8e"
+        ],
+        [
+          "06b66c062146945d759adaecee2605c8e45c33c1765911337825027b92675ab7",
+          "f16fdc076bcd8feccada8ce1463e2d84b1e00d10afaa6469da42fee31c9ee9a6",
+          "d61c1df5c3958c06ce7b67c9e5dedea808d4ae72f5f58887f83d50175289f17a"
+        ],
+        [
+          "11a1734d19c8ddfeb7a794851aae34a00344bf163adff7dbd6695d3153d71a16",
+          "30cdb304dbe5594c502fe3df91b887a7deaed7d9e75c9a651a214403c407ebc1",
+          "d51ea88213f5ec41a6dd20aec27a8256e4de3c26cf7f0688fc1ddd5f54035a7a"
+        ],
+        [
+          "63a943b865f8aac587510bbcdbc1efe2368d161e2ac539f2f418a235229d0adb",
+          "42f9d7fe054068233f97c909d8ae26c5d820244c4f9c75636aefa63c76d454e5",
+          "db678d61c3de5fbd47fecddfdf2a5480b1067be6ab16befaa20b8e169789a306"
+        ],
+        [
+          "a9a2d4719a4e492b00ee7768362c4d74ebb262412a6f9b5b1471a9b1b98cbc34",
+          "955625fd28414ac9c88496b7556bfbcae6601756317f8405e401679989dd17f2",
+          "87920db319799b994c03b2c44ab703191d6efc7143b2405ae6f9d712fbfbda69"
+        ],
+        [
+          "2dbeabe011ffd054ed102175a700496b97c27cf42f4adc4425acc8da903d0d6a",
+          "ababf8dd5850f64bc1a077b70ea6763e1d7b9c3f415b019089655beab66a1026",
+          "f23840f770e6a63f81ee8cc7f7856ad2f0ba17510f7812f00ba5689e077a8a86"
+        ],
+        [
+          "4b0c5e40dc22bbdbaf82e48591fdcd48674d790ae3d7d1da722ab45a4b394185",
+          "2e7d30b03bf9446b8f865788edd2c95588ee2408c03f6f2ddc7d4044276b257f",
+          "152b3a884efc6e8ddd050af611ace5cd7016089c5fceb43c039d87a57131ea5d"
         ]
       ]
     }

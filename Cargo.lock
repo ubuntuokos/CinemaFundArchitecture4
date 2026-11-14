@@ -1193,11 +1193,13 @@ dependencies = [
  "cfa4-dv",
  "cfa4-ffv1",
  "cfa4-frame",
+ "cfa4-g729",
  "cfa4-h264",
  "cfa4-hap",
  "cfa4-hevc",
  "cfa4-huffyuv",
  "cfa4-iab",
+ "cfa4-ilbc",
  "cfa4-isobmff",
  "cfa4-j2k",
  "cfa4-lcevc",
@@ -1206,6 +1208,7 @@ dependencies = [
  "cfa4-mpa",
  "cfa4-mpeg2v",
  "cfa4-mpegts",
+ "cfa4-musepack",
  "cfa4-mxf",
  "cfa4-ogg",
  "cfa4-opus",
@@ -1284,8 +1287,10 @@ dependencies = [
 name = "cfa4-dcp-validate"
 version = "0.10.0"
 dependencies = [
+ "cfa4-audio-dsp",
  "cfa4-dcp",
  "cfa4-export",
+ "cfa4-iab",
  "cfa4-j2k",
  "cfa4-media",
  "cfa4-mxf",
@@ -1293,6 +1298,18 @@ dependencies = [
  "cfa4-render",
  "cfa4-time",
  "chrono",
+ "serde",
+ "serde_json",
+ "thiserror 2.0.21",
+]
+
+[[package]]
+name = "cfa4-dcpomatic"
+version = "0.10.0"
+dependencies = [
+ "cfa4-dcp-validate",
+ "cfa4-testkit",
+ "rustix 1.1.6",
  "serde",
  "serde_json",
  "thiserror 2.0.21",
@@ -1371,6 +1388,7 @@ dependencies = [
  "cfa4-color",
  "cfa4-credits",
  "cfa4-dcp",
+ "cfa4-dcpomatic",
  "cfa4-dng",
  "cfa4-docpath",
  "cfa4-edit",
@@ -1521,6 +1539,14 @@ dependencies = [
 ]
 
 [[package]]
+name = "cfa4-g729"
+version = "0.10.0"
+dependencies = [
+ "cfa4-testkit",
+ "thiserror 2.0.21",
+]
+
+[[package]]
 name = "cfa4-geom"
 version = "0.10.0"
 dependencies = [
@@ -1644,6 +1670,14 @@ dependencies = [
 ]
 
 [[package]]
+name = "cfa4-ilbc"
+version = "0.10.0"
+dependencies = [
+ "cfa4-testkit",
+ "thiserror 2.0.21",
+]
+
+[[package]]
 name = "cfa4-interchange"
 version = "0.10.0"
 dependencies = [
@@ -1760,6 +1794,14 @@ dependencies = [
 
 [[package]]
 name = "cfa4-mpegts"
+version = "0.10.0"
+dependencies = [
+ "cfa4-testkit",
+ "thiserror 2.0.21",
+]
+
+[[package]]
+name = "cfa4-musepack"
 version = "0.10.0"
 dependencies = [
  "cfa4-testkit",

@@ -189,6 +189,8 @@ distributions are not targets.
   sequences (#828): scan-line, uncompressed / RLE / ZIPS / ZIP, half / float / uint, RGB(A) or
   luminance, decoded to linear float frames and bit-exact against ffmpeg; PXR24 (lossy 24-bit
   float, 16 lines per chunk) decodes too, bit-exact against OpenEXR (via OpenImageIO, #828).
+  A `chromaticities` attribute (ACES AP0 / AP1, P3, Rec.2020, custom) converts to the Rec.709
+  working primaries with Bradford white adaptation (CFA4-PROCODEC-002 WP3).
   IAB immersive audio (SMPTE ST 2098-2) in DCP / IMF MXF (#82): PCM and DLC lossless assets,
   Beds, remaps and Objects, rendered to 7.1 for playback.
 - **Missing:** DTS:X heights / objects on their own speakers (#130), DTS Express, 14-bit DTS,
