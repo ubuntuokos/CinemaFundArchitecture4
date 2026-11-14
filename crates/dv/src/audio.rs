@@ -77,6 +77,13 @@ pub struct Audio {
     pub errors: u32,
 }
 
+/// Position of the first sample of audio block `block` of DIF sequence `ds` within its half of
+/// the sequences (the encoder's view of the shuffle).
+pub(crate) fn unshuffle(fifty: bool, ds: usize, block: usize) -> Option<usize> {
+    let v = if fifty { UNSHUFFLE_50.get(ds)?.get(block)? } else { UNSHUFFLE_60.get(ds)?.get(block)? };
+    Some(usize::from(*v))
+}
+
 /// Fields of an AAUX source pack (`50 pc1 pc2 pc3 pc4`).
 struct SourcePack {
     af_size: u16,

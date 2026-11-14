@@ -166,6 +166,17 @@ fn build() -> Vec<Entry> {
     t
 }
 
+/// The table codes without their sign bit, as `(bits, length, run, amplitude)`, for the
+/// encoder; the run and amplitude escapes are not listed.
+pub(crate) fn codes() -> impl Iterator<Item = (u32, u8, u8, u8)> {
+    CODES.iter().map(|&(bits, run, amp)| (parse(bits), bits.len() as u8, run, amp))
+}
+
+/// The end-of-block code as `(bits, length)`.
+pub(crate) fn eob() -> (u32, u8) {
+    (parse(EOB), EOB.len() as u8)
+}
+
 /// The 16-bit lookup table (built once).
 pub(crate) fn table() -> &'static [Entry] {
     static T: OnceLock<Vec<Entry>> = OnceLock::new();

@@ -1,6 +1,6 @@
 # cfa4-dv
 
-DV video decoder in pure Rust: consumer DV / DVCAM (IEC 61834-2, 25 Mbit/s), DVCPRO 25 and
+DV video decoder and encoder in pure Rust: consumer DV / DVCAM (IEC 61834-2, 25 Mbit/s), DVCPRO 25 and
 DVCPRO 50 (SMPTE 314M) and DVCPRO HD (SMPTE 370M). Layer L0: depends only on `thiserror` and (optional, feature `threads`, default
 on) `rayon`. No `unsafe`, no panics on damaged input.
 
@@ -9,7 +9,7 @@ The crate decodes DIF frames (step DV-1 of the DV/DVCPRO plan). `cfa4-codecs` im
 the engine as 4:2:2, and the stream info's aspect, sampling and colour come from the first
 frame (`cfa4_codecs::video::dv_stream_info`). DVCPRO 50 and DVCPRO HD are DV-3 (`pro.rs`). DV-4
 adds the audio (`decode_audio`): raw `.dv` files and type-1 AVI files (`iavs`, video and the
-sound inside its DIF frames) play it.
+sound inside its DIF frames) play it. DV-5a adds the encoder (`encode.rs`, 25 Mbit/s formats).
 
 ## Sources and licence
 
@@ -89,6 +89,30 @@ off) follows the published SMPTE 12M field order; nothing is taken from libdv or
 `cfa4-codecs` uses the first frame's time code as the start timecode of raw `.dv` files and of
 type-1 and type-2 DV AVI files.
 
+## Encoder
+
+`Encoder::new(EncoderConfig { system, format, aspect })` encodes 25 Mbit/s frames: DV / DVCAM
+(525/60 4:1:1, 625/50 4:2:0) and DVCPRO 25 (4:1:1). `encode(&EncoderInput { y, cb, cr, audio,
+timecode })` takes planes in the format's chroma (`EncoderConfig::chroma`) and returns one DIF
+frame of `frame_size()` bytes.
+
+- Blocks: 8-8 DCT, or 2-4-8 when the lines of a field differ much less from each other than
+  from the other field's; weighting and class (0-3) from the block's largest coefficient (flat
+  blocks get finer steps, very large coefficients class 3).
+- Rate: per video segment the finest common QNO whose codes fit its 2680 AC bits, then finer
+  QNOs for single macroblocks while the segment still fits; if QNO 0 is still too long, the
+  last coefficients of the longest blocks go. Each block's codes are laid out the way the
+  decoder's three passes read them (own area, macroblock free space, segment free space).
+  Every `(run, amplitude)` takes its shortest code (a table code, or a zero run plus a code).
+- System data: DIF header (DSF, APT), subcode with the SMPTE time code pack in four sync
+  blocks per sequence, VAUX source and source control packs (signal type, 50/60, 4:3 / 16:9),
+  AAUX source pack and 16-bit 48 kHz PCM in the audio blocks (two channels; silence when no
+  sound is given). `EncoderConfig::audio_samples` gives each frame's sample count (1920, or the
+  1600 / 1602 cycle of 525/60).
+- Written from the decoder's structure and the published DIF layout, reusing the crate's
+  tables; no encoder source (libdv, FFmpeg) was read. `encode.rs` is GPL-3.0-or-later.
+- Speed: segments encode in parallel (feature `threads`).
+
 ## Tests
 
 - Unit tests: VLC table completeness, scan/area tables, IDCT round trips against the forward
@@ -104,3 +128,11 @@ type-1 and type-2 DV AVI files.
   coding errors; bit flips,
   an erased DIF sequence and truncation never panic. `cargo xtask fixtures dv` generates the
   fixtures into `target/fixtures/dv`.
+- Encoder unit tests: every `(run, amplitude)` code decodes back, round trips through the
+  decoder for all three formats (no coding errors, PSNR > 38 dB on a textured picture, time
+  code and audio exact), the 525/60 audio cycle, noise still fits.
+- `tests/encoder_oracle.rs`: lavfi patterns (525 4:1:1, 625 4:2:0 16:9 interlaced, DVCPRO 25
+  625) encoded by `Encoder`: ffmpeg reads the format, decodes the pictures within ±3 of our
+  decode, reads the time code and decodes the audio bit-exactly; PSNR against the source is
+  compared with ffmpeg's `dvvideo` on the same frames (measured: 51.5 / 47.8 / 53.3 dB, ffmpeg
+  50.1 / 47.0 / 51.6 dB).

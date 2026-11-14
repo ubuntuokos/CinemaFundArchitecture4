@@ -41,6 +41,7 @@ szabadalommal védett formátumot.
 | MPEG-4 Part 2 (Visual) | dekódolás, kódolás | FFmpeg-háttér | alap | függőben | | |
 | VC-1 / WMV | dekódolás | FFmpeg-háttér; GStreamer | alap | függőben | | |
 | DV / DVCPRO 25 / 50, DVCPRO HD (IEC 61834-2, SMPTE 314M, SMPTE 370M) | dekódolás | `crates/dv`; FFmpeg-háttér | alap | függőben | | |
+| DV / DVCPRO 25 (IEC 61834-2, SMPTE 314M) | kódolás (25 Mbit/s) | `crates/dv` | alap | függőben | | |
 | AV1 | dekódolás | `crates/av1`; FFmpeg-háttér (dav1d) | alap | függőben | | |
 | AV1 | kódolás | tervezett (rav1e) | – | függőben | | |
 | AV2 | bitfolyam-elemzés (OBU, sequence header); dekódolás csak fejlesztői kapcsolóval (AV2-LAB) | `crates/av2`; `cfa4-av2-decode` segédprogram (dav2d, külön folyamat, ADR 0010) | alap | függőben | | |
