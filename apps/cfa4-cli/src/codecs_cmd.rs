@@ -121,7 +121,7 @@ static ROWS: &[Row] = &[
     video("Animated GIF", &[], Dependency, Sw(""), false, Fmt(Format::Gif)),
     video("CinemaDNG / DNG", &["dng"], Own, Sw("uncompressed and lossless JPEG raw"), false, NoEnc),
     video("LCEVC", &["lcevc"], Own, Detect("enhancement layer detected, not decoded"), false, NoEnc),
-    video("MPEG-4 Part 2", &[], Missing, No, false, NoEnc),
+    video("MPEG-4 Part 2", &["sstp"], Ported, Sw("Simple Studio Profile (Sony SR) only: raw .m4v streams and MXF"), false, NoEnc),
     video("WMV / VC-1", &[], Missing, No, false, NoEnc),
     video("Camera RAW (R3D, ARRIRAW, BRAW…)", &[], Missing, No, false, NoEnc),
     image("JPEG XL", &["jxl"], Ported, Sw("")),

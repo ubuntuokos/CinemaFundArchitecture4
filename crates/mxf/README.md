@@ -132,7 +132,8 @@ let pcm = mxf.read_pcm(&file, a, 48_000, 1920)?;       // planar f32, sample-exa
   orders by the bitstream (`cfa4-codecs` uses the AVC picture order counts).
 - **Codecs.** From the picture essence coding label, then the essence container label, then the
   essence bytes: AVC / AVC-Intra, VC-3, ProRes (profile from the label), MPEG-2 (decoded in `cfa4-codecs`),
-  MPEG-4 visual, JPEG 2000 (decoded in `cfa4-codecs` with `cfa4-j2k`), DV, uncompressed.
+  MPEG-4 visual (the Simple Studio Profile decoded in `cfa4-codecs` with `cfa4-sstp`), JPEG 2000
+  (decoded in `cfa4-codecs` with `cfa4-j2k`), DV, uncompressed.
 - **Uncompressed pictures** (`uncompressed`, ST 384). `Layout::of` takes the layout from the
   picture essence coding label (the nine Y'CbCr layouts of ST 377-1 G.2.25: 8-bit 4:4:4, UYVY,
   YUY2, planar 4:2:2 and 4:2:0, v210, planar 10-bit, 12- and 16-bit Cb Y Cr Y), else from the
