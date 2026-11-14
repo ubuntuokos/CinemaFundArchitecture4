@@ -19,6 +19,7 @@ python3 -m venv .venv
 .venv/bin/python -m pip install -e '.[qt]'      # PySide6 + cfa4-qt, inside .venv only
 .venv/bin/cfa4-qt --demo --lang hu              # demo project, Hungarian UI
 .venv/bin/cfa4-qt project.fcproj                # open a project
+.venv/bin/cfa4-qt a.mp4 b.wav                  # import media (as egui; with a .fcproj: into it)
 ```
 
 `source .venv/bin/activate` lets you type `cfa4-qt` without the path in that terminal.
