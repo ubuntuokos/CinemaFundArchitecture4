@@ -4382,6 +4382,10 @@ export.summary	Low	niska
 	{n} more	Još {n}
 	Block	Blok
 	parallel	paralelno
+	page {page}: a spine's vertical position works on card pages only; it is ignored	stranica {page}: okomiti položaj osi vrijedi samo na stranicama kartica; zanemaruje se
+	on a card: centered on {y} px	na kartici: centrirano na {y} px
+	on a card: starts at {y} px	na kartici: počinje na {y} px
+	on a card: ends at {y} px	na kartici: završava na {y} px
 # MPEG-2 export audio (#268): a product name, kept as is
 	Dolby Digital (AC-3)	Dolby Digital (AC-3)
 	In the page (OBS takes it from the Browser Source)	Na stranici (OBS ga uzima iz izvora preglednika)

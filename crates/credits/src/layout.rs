@@ -3,8 +3,10 @@
 //! Every piece of text is an ordinary CFA4 text layer (`graphic_text`), so a laid-out page
 //! can be edited afterwards in Essential Graphics like any title. Scroll pages use the graphic's
 //! Roll (start and end off screen); crawl pages put their blocks side by side on one line and
-//! use Crawl Left; card pages are centred vertically and fade with opacity keyframes. Text sizes come from the caller's [`Measure`] (the engine uses the real text
-//! engine), so this crate stays free of fonts and rendering.
+//! use Crawl Left; on card pages each spine (with its parallel columns) stands at its own point,
+//! by default centred vertically, and the page fades with opacity keyframes. Text sizes come from
+//! the caller's [`Measure`] (the engine uses the real text engine), so this crate stays free of
+//! fonts and rendering.
 
 use cfa4_geom::Vec2;
 use cfa4_project::graphic::{new_shape_layer, new_text_layer};
@@ -14,7 +16,7 @@ use cfa4_project::{EffectInstance, Interpolation, Keyframe, Param, ParamValue};
 use cfa4_time::{FrameRate, Tick};
 
 use crate::CreditsError;
-use crate::sheet::{Block, Credits, Gap, Page, Picture, Warning};
+use crate::sheet::{Block, CardAnchor, Credits, Gap, Page, Picture, Warning};
 use crate::style::{Align, Behaviour, BodyLayout, ContentStyle, LetterStyle, Orientation, Styling, parse_color};
 
 /// Measures text layers.
@@ -102,6 +104,9 @@ pub struct PageOut {
     pub content_top: f64,
     /// The spines of the page's blocks (frame x, left to right; none on a crawl).
     pub spines: Vec<f64>,
+    /// A card page's spine points (frame pixels), one per spine that stands on its own, in
+    /// sheet order; empty on other pages.
+    pub spine_points: Vec<(f64, f64)>,
     /// What is behind the page, if anything.
     pub background: Option<crate::style::Background>,
     /// The transition into the next page (video transition id and length), when it has one
@@ -654,6 +659,9 @@ pub fn block_key(b: &Block) -> u64 {
     if let Some(h) = b.hook {
         parts.push(format!("hook {} {:?}-{:?} {} {}", h.back, h.from, h.to, h.dx, h.dy).into_bytes());
     }
+    if let Some(cp) = b.card_point {
+        parts.push(format!("card {} {:?}", cp.y, cp.anchor).into_bytes());
+    }
     let refs: Vec<&[u8]> = parts.iter().map(Vec::as_slice).collect();
     crate::doc::fnv1a(&refs)
 }
@@ -698,9 +706,18 @@ fn occurrences(credits: &Credits) -> Vec<Vec<usize>> {
         .collect()
 }
 
-/// Stack a page's blocks from the top; the gaps between blocks are multiplied by `gap_scale`.
-/// Returns the pieces, the content height and the total of those (elastic) gaps.
-fn stack(ctx: &mut Ctx<'_>, styling: &Styling, page: &Page, w: f64, index: usize, gap_scale: f64) -> Result<(Vec<Piece>, f64, f64), CreditsError> {
+/// Stack a page's blocks `part` (all of them for a scroll page, one spine of a card) from the
+/// top; the gaps between blocks are multiplied by `gap_scale`. Returns the pieces, the content
+/// height and the total of those (elastic) gaps.
+fn stack(
+    ctx: &mut Ctx<'_>,
+    styling: &Styling,
+    page: &Page,
+    part: std::ops::Range<usize>,
+    w: f64,
+    index: usize,
+    gap_scale: f64,
+) -> Result<(Vec<Piece>, f64, f64), CreditsError> {
     let s = ctx.s;
     let unit = finite_or(styling.unit_px, 32.0).clamp(0.0, 10_000.0) * s;
     let mut pieces: Vec<Piece> = Vec::new();
@@ -733,7 +750,9 @@ fn stack(ctx: &mut Ctx<'_>, styling: &Styling, page: &Page, w: f64, index: usize
             None => head_widths.push((cs.name.clone(), w)),
         }
     }
-    for (k, b) in page.blocks.iter().enumerate() {
+    for (k, b) in page.blocks.iter().enumerate().take(part.end).skip(part.start) {
+        // the part's first block starts it, as the page's first block starts a page
+        let k_in = k - part.start;
         let cs = match styling.content_style(&b.style) {
             Some(c) => c,
             None => {
@@ -745,10 +764,10 @@ fn stack(ctx: &mut Ctx<'_>, styling: &Styling, page: &Page, w: f64, index: usize
             }
         };
         let margin = finite_or(cs.margin, 0.0).max(0.0) * s;
-        let value_changed = k > 0 && page.blocks.get(k - 1).is_some_and(|p| p.spine.to_bits() != b.spine.to_bits());
+        let value_changed = k_in > 0 && page.blocks.get(k - 1).is_some_and(|p| p.spine.to_bits() != b.spine.to_bits());
         // a new spine: a new offset, a parallel or hooked one, or any spine cell after a hook
-        let spine_changed = k > 0 && (value_changed || b.hook.is_some() || (hooked.is_some() && b.spine_cell));
-        if k > 0 && (spine_changed || b.parallel) {
+        let spine_changed = k_in > 0 && (value_changed || b.hook.is_some() || (hooked.is_some() && b.spine_cell));
+        if k_in > 0 && (spine_changed || b.parallel) {
             // close the spine before it
             if let Some(h) = hooked.take() {
                 let (top, bottom) = h.finish(&mut pieces, &spines, y, s);
@@ -759,7 +778,7 @@ fn stack(ctx: &mut Ctx<'_>, styling: &Styling, page: &Page, w: f64, index: usize
                 spines.push((x, top, y));
             }
         }
-        let hook = b.hook.filter(|_| k > 0 && !spines.is_empty());
+        let hook = b.hook.filter(|_| k_in > 0 && !spines.is_empty());
         if b.hook.is_some() && hook.is_none() && !warned_hook {
             warned_hook = true;
             ctx.warn(
@@ -793,7 +812,7 @@ fn stack(ctx: &mut Ctx<'_>, styling: &Styling, page: &Page, w: f64, index: usize
                 Gap::Px(p) => finite_or(p, 0.0).max(0.0) * s,
             };
             y += gap.max(margin).max(prev_margin) * gap_scale;
-        } else if b.parallel && k > 0 {
+        } else if b.parallel && k_in > 0 {
             // a parallel column starts beside the previous one, at the same top
             group_bottom = group_bottom.max(y);
             y = group_top;
@@ -804,7 +823,7 @@ fn stack(ctx: &mut Ctx<'_>, styling: &Styling, page: &Page, w: f64, index: usize
                 y = y.max(group_bottom);
                 in_parallel = false;
             }
-            if k > 0 {
+            if k_in > 0 {
                 let gap = match b.gap_before {
                     Gap::Units(u) => finite_or(u, 0.0).max(0.0) * unit,
                     Gap::Px(p) => finite_or(p, 0.0).max(0.0) * s,
@@ -816,7 +835,7 @@ fn stack(ctx: &mut Ctx<'_>, styling: &Styling, page: &Page, w: f64, index: usize
                 }
                 y += g * gap_scale;
             }
-            if spine_changed || k == 0 {
+            if spine_changed || k_in == 0 {
                 group_top = y;
                 group_bottom = y;
             }
@@ -879,6 +898,78 @@ impl HookRun {
         }
         (top, top + height)
     }
+}
+
+/// Lay a card page: each spine that stands on its own (a block whose spine position or card
+/// point differs from the block before, unless it is parallel; with its parallel columns) is
+/// stacked by itself and placed at its point, by default centred on it. Returns the pieces (tops
+/// relative to the content's top), the content height, where the content's top is on the frame
+/// and the spine points (frame pixels).
+#[allow(clippy::type_complexity)]
+fn card_stack(
+    ctx: &mut Ctx<'_>,
+    styling: &Styling,
+    page: &Page,
+    (w, h): (f64, f64),
+    index: usize,
+) -> Result<(Vec<Piece>, f64, f64, Vec<(f64, f64)>), CreditsError> {
+    let s = ctx.s;
+    let n = page.blocks.len();
+    let mut starts: Vec<usize> = Vec::new();
+    for (k, b) in page.blocks.iter().enumerate() {
+        let new_spine = match k.checked_sub(1).and_then(|j| page.blocks.get(j)) {
+            None => true,
+            Some(p) => !b.parallel && (p.spine.to_bits() != b.spine.to_bits() || p.card_point != b.card_point),
+        };
+        if new_spine {
+            starts.push(k);
+        }
+    }
+    let kept = ctx.warnings.len();
+    let mut hooked: Vec<f64> = Vec::new();
+    let mut pieces: Vec<Piece> = Vec::new();
+    let mut points = Vec::with_capacity(starts.len());
+    let (mut top_all, mut bottom_all) = (f64::INFINITY, f64::NEG_INFINITY);
+    for (i, &a) in starts.iter().enumerate() {
+        let end = starts.get(i + 1).copied().unwrap_or(n);
+        let (mut part, ph, _) = stack(ctx, styling, page, a..end, w, index, 1.0)?;
+        // each stack starts its own list of hooked spines: keep every spine's for the guides
+        hooked.append(&mut ctx.hooked_spines);
+        let root = page.blocks.get(a);
+        let cp = root.and_then(|b| b.card_point).unwrap_or_default();
+        let x = w / 2.0 + finite_or(root.map_or(0.0, |b| b.spine), 0.0) * s;
+        let y = h / 2.0 + finite_or(cp.y, 0.0) * s;
+        let top = match cp.anchor {
+            CardAnchor::Middle => y - ph / 2.0,
+            CardAnchor::Below => y,
+            CardAnchor::Above => y - ph,
+        };
+        for p in &mut part {
+            p.top += top;
+        }
+        top_all = top_all.min(top);
+        bottom_all = bottom_all.max(top + ph);
+        points.push((x, y));
+        pieces.extend(part);
+        if pieces.len() > MAX_LAYERS_PER_PAGE {
+            return Err(CreditsError::TooLarge(format!("page {} needs more than {MAX_LAYERS_PER_PAGE} text layers", index + 1)));
+        }
+    }
+    ctx.hooked_spines = hooked;
+    // each spine is stacked by itself: a note about a style is given once
+    let new: Vec<Warning> = ctx.warnings.drain(kept..).collect();
+    for wn in new {
+        if !ctx.warnings.iter().skip(kept).any(|x| x.message == wn.message) {
+            ctx.warnings.push(wn);
+        }
+    }
+    if !(top_all.is_finite() && bottom_all.is_finite()) {
+        return Ok((pieces, 0.0, h / 2.0, points));
+    }
+    for p in &mut pieces {
+        p.top -= top_all;
+    }
+    Ok((pieces, (bottom_all - top_all).max(0.0), top_all, points))
 }
 
 /// Lay a crawl page's blocks side by side on one line centred at `line_y` (frame pixels), from
@@ -960,13 +1051,23 @@ fn lay_page(ctx: &mut Ctx<'_>, styling: &Styling, page: &Page, frame: Frame, ind
     };
     let crawl = ps.behaviour == Behaviour::Crawl;
     let line_y = finite_or(ps.crawl_line, 0.85).clamp(0.0, 1.0) * h;
+    // a card's content top on the frame, and its spine points
+    let (mut card_top, mut spine_points) = (0.0f64, Vec::new());
     let (mut pieces, mut content_h, elastic, content_w) = if crawl {
         let (p, cw) = line(ctx, styling, page, index, line_y, ps.crawl_gap)?;
         let top = p.iter().map(|x| x.top).fold(f64::INFINITY, f64::min);
         let bot = bottom(&p).unwrap_or(0.0);
         (p, if top.is_finite() { (bot - top).max(0.0) } else { 0.0 }, 0.0, cw)
+    } else if ps.behaviour == Behaviour::Card {
+        let (p, ch, top, points) = card_stack(ctx, styling, page, (w, h), index)?;
+        card_top = top;
+        spine_points = points;
+        (p, ch, 0.0, 0.0)
     } else {
-        let (p, ch, el) = stack(ctx, styling, page, w, index, 1.0)?;
+        if let Some(b) = page.blocks.iter().find(|b| b.card_point.is_some()) {
+            ctx.warn(b.row, format!("page {}: a spine's vertical position works on card pages only; it is ignored", index + 1));
+        }
+        let (p, ch, el) = stack(ctx, styling, page, 0..page.blocks.len(), w, index, 1.0)?;
         (p, ch, el, 0.0)
     };
     let rate = frame.rate;
@@ -1003,7 +1104,7 @@ fn lay_page(ctx: &mut Ctx<'_>, styling: &Styling, page: &Page, frame: Frame, ind
                     let scale = (want_content - rigid) / elastic;
                     if elastic > 0.0 && (0.0..=MAX_GAP_SCALE).contains(&scale) {
                         let kept = ctx.warnings.len();
-                        let (p2, c2, _) = stack(ctx, styling, page, w, index, scale)?;
+                        let (p2, c2, _) = stack(ctx, styling, page, 0..page.blocks.len(), w, index, scale)?;
                         ctx.warnings.truncate(kept);
                         pieces = p2;
                         content_h = c2;
@@ -1036,7 +1137,7 @@ fn lay_page(ctx: &mut Ctx<'_>, styling: &Styling, page: &Page, frame: Frame, ind
             if content_h > h {
                 ctx.warn(page.row, format!("card page {} is taller than the frame; use a Scroll page", index + 1));
             }
-            (((h - content_h) / 2.0), runtime.unwrap_or_else(|| frames(rate, i64::from(ps.card_frames.max(1)))))
+            (card_top, runtime.unwrap_or_else(|| frames(rate, i64::from(ps.card_frames.max(1)))))
         }
     };
     let duration = rate.snap_nearest(duration).max(fd);
@@ -1169,6 +1270,7 @@ fn lay_page(ctx: &mut Ctx<'_>, styling: &Styling, page: &Page, frame: Frame, ind
         content_width: content_w,
         content_top: dy,
         spines,
+        spine_points,
         background,
         transition,
         transition_in: Tick::ZERO,

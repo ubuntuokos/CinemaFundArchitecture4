@@ -4389,6 +4389,10 @@
 	{n} more	ほか {n} 件
 	Block	ブロック
 	parallel	並列
+	page {page}: a spine's vertical position works on card pages only; it is ignored	ページ{page}: 軸の縦位置はカードページでのみ有効なため、無視されます
+	on a card: centered on {y} px	カード: {y} px を中心に配置
+	on a card: starts at {y} px	カード: {y} px から開始
+	on a card: ends at {y} px	カード: {y} px で終了
 # MPEG-2 export audio (#268): a product name, kept as is
 	Dolby Digital (AC-3)	Dolby Digital (AC-3)
 	In the page (OBS takes it from the Browser Source)	ページ内（OBS がブラウザソースから取得）

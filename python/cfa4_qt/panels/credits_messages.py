@@ -27,6 +27,8 @@ NOTES: tuple[tuple[re.Pattern[str], str], ...] = (
     (_p(re.escape("the page runtime is not a positive duration; the page style's is used")), N_("the page runtime is not a positive duration; the page style's is used")),
     (_p("background " + V.format("file") + " was not found; it is left out"), N_("background “{file}” was not found; it is left out")),
     (_p(r"card page (?P<page>\d+) is taller than the frame; use a Scroll page"), N_("card page {page} is taller than the frame; use a roll page")),
+    (_p(r"page (?P<page>\d+): a spine's vertical position works on card pages only; it is ignored"),
+     N_("page {page}: a spine's vertical position works on card pages only; it is ignored")),
     (_p("colour " + V.format("colour") + " of letter style " + V.format("style") + " is not #rrggbb; it is left out"),
      N_("colour “{colour}” of letter style “{style}” is not #rrggbb; it is left out")),
     (_p("colour " + V.format("colour") + " is not #rrggbb; black is used"), N_("colour “{colour}” is not #rrggbb; black is used")),

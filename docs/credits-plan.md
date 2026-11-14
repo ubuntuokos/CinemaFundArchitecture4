@@ -327,9 +327,23 @@ korábbi alá kerül; ha egy gerinc a lap teteje fölé kerül, a lap felfelé n
 horog figyelmeztetés; a segédvonalak és a tulajdonságok a horog szerinti helyet mutatják, a Qt6
 minden nyelven.
 
-Ami még hátra van a listából: a kártya gerincének függőleges eltolása (`150 -50`, `Above`/`Below`),
-az egységes törzsszélesség, az online táblázatok (a `cfa4-fetch`-re vár), a Cinecred-projekt írása
-(csak kérésre).
+Ami még hátra van a listából: az egységes törzsszélesség, az online táblázatok (a `cfa4-fetch`-re
+vár), a Cinecred-projekt írása (csak kérésre).
+
+### C15 – A kártya gerincének pontja – **KÉSZ (2026-11-14)**
+
+A „Not yet” lista következő pontja (Cinecred-hűség), a Cinecred nyilvános útmutatója szerint
+(cinecred.com/guide/credits-spreadsheet, „Spine Position”; tisztaszobás: a forráskódját nem
+néztük): kártyaoldalon a `Spine Position` cella vízszintes és opcionálisan függőleges eltolást ad
+a képközéptől (`150 -50`, képpontban, negatív: balra, fel); a gerinc alapból függőlegesen a pont
+körül középre kerül, `Below` (`alatta`) esetén a pontból indul lefelé, `Above` (`fölötte`) esetén
+ott ér véget. Minden gerinc (a párhuzamos oszlopaival együtt, mint egy egység) a saját pontjára
+kerül, nem az előző alá: ez a korábbi viselkedést változtatja meg azokon a kártyákon, ahol több
+vízszintes gerincpozíció volt (eddig egymás alá rakódtak, most egymás mellett állnak, mint a
+Cinecredben). Gerincpozíció nélküli kártya ugyanúgy középre kerül, mint eddig. Gördülő és úszó
+oldalon a függőleges rész figyelmeztetés, és nem hat. A segédvonalas bélyegkép a pontokat kis
+rombusszal jelöli (a képközépen nem), az előnézet `cardPoint` és `spinePoints` mezőt ad, a Qt6
+blokk-tulajdonságai minden nyelven mutatják a pontot. Kártyán a horgas gerinc (C14) a gyökérgerincével együtt mozog.
 
 ### C12 – Animált vonalrajz-réteg Rustban, második lépcső (a jövő évi kiadásban) – **TERVEZET**
 

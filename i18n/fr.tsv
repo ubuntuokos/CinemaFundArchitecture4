@@ -4385,6 +4385,10 @@
 	{n} more	{n} de plus
 	Block	Bloc
 	parallel	parallèle
+	page {page}: a spine's vertical position works on card pages only; it is ignored	page {page} : la position verticale d’un axe ne vaut que sur les pages carte ; elle est ignorée
+	on a card: centered on {y} px	sur une carte : centré sur {y} px
+	on a card: starts at {y} px	sur une carte : commence à {y} px
+	on a card: ends at {y} px	sur une carte : finit à {y} px
 # MPEG-2 export audio (#268): a product name, kept as is
 	Dolby Digital (AC-3)	Dolby Digital (AC-3)
 	In the page (OBS takes it from the Browser Source)	Dans la page (OBS le prend de la source navigateur)
