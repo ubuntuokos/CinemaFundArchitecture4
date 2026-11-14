@@ -31,6 +31,8 @@ pub mod avi;
 pub mod canopus;
 pub mod dif;
 pub mod dirac;
+#[cfg(any(feature = "av2-external", feature = "vvc-external"))]
+pub mod external_decoder;
 pub mod ffv1;
 pub mod gop;
 pub mod hap;
@@ -47,6 +49,8 @@ pub mod ogg;
 mod stream_color;
 pub mod utvideo;
 pub mod video;
+#[cfg(feature = "vvc-external")]
+pub mod vvc_external;
 mod webm_alpha;
 pub mod y4m;
 
