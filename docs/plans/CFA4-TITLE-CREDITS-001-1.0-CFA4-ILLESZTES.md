@@ -167,7 +167,7 @@ szabad licencű betűtípussal (`AGENTS.md` §1.9), minden nyelven elnevezve (Q1
 
 Javasolt műfajlista (bővíthető): dráma, vígjáték, akció, thriller és krimi, horror, sci-fi,
 fantasy, romantikus, animációs és családi, dokumentumfilm, történelmi és kosztümös, háborús,
-western, zenés és musical, táncfilm, paródia, rövidfilm és fesztiválfilm, élő műsor és közvetítés, híradó (e kettő az Élő grafikában, C10, cue-ként is betölthető: főcím, alsó sávok, futószöveg, stáblista).
+western, zenés és musical, táncfilm, paródia, rövidfilm és fesztiválfilm, élő műsor és közvetítés, híradó, valóságshow (e három az Élő grafikában, C10, cue-ként is betölthető: főcím, alsó sávok, futószöveg, stáblista).
 
 Szerkesztés és mentés: a beépített sablon megnyitva szerkeszthető, mentéskor **új néven**
 felhasználói vagy projekt-sablonként (vagy `.cfa4credtpl` fájlként) kerül el; a beépített
