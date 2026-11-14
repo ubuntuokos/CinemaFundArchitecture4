@@ -8,6 +8,7 @@
 //! and a modulated lapped transform.
 
 use crate::bits::{Bits, Huff};
+use crate::lfg::Lfg;
 use crate::mdct::Imdct;
 use crate::tables::*;
 use crate::{Error, Result};
@@ -85,22 +86,6 @@ struct Subpacket {
     prev2: Vec<f32>,
     gains1: Gains,
     gains2: Gains,
-}
-
-#[derive(Clone)]
-struct Lfg {
-    state: [u32; 64],
-    index: u32,
-}
-
-impl Lfg {
-    fn get(&mut self) -> u32 {
-        let i = self.index;
-        let a = self.state[(i.wrapping_sub(24) & 63) as usize].wrapping_add(self.state[(i.wrapping_sub(55) & 63) as usize]);
-        self.state[(i & 63) as usize] = a;
-        self.index = i.wrapping_add(1);
-        a
-    }
 }
 
 /// `pow2tab` and `rootpow2tab` (2^i and 2^(i/2) for -63 <= i < 64), built as FFmpeg does in
@@ -366,7 +351,7 @@ impl Decoder {
             gain_table,
             window,
             imdct: Imdct::new(spc, -1.0 / 32768.0),
-            random: Lfg { state: LFG_SEED0, index: 0 },
+            random: Lfg::new(LFG_SEED0),
             discarded: 0,
             subpackets,
             num_vectors: 0,

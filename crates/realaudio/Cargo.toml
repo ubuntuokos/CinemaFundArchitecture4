@@ -1,6 +1,6 @@
 [package]
 name = "cfa4-realaudio"
-description = "Pure-Rust RealAudio decoders (Cook, SIPR, 14.4, 28.8), ATRAC3 and ATRAC3plus"
+description = "Pure-Rust RealAudio decoders (Cook, SIPR, 14.4, 28.8), ATRAC3, ATRAC3plus and ATRAC9"
 version.workspace = true
 edition.workspace = true
 license = "GPL-3.0-or-later AND LGPL-2.1-or-later"

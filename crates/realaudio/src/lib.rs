@@ -1,19 +1,22 @@
 //! Pure-Rust RealAudio decoders: **Cook** (RealAudio G2, `cook`; mono, stereo, joint stereo and
 //! multichannel) and **RealAudio 1.0** (14.4, `lpcJ`, [`ra144`]), as stored in RealMedia files
 //! (`cfa4-realmedia` deinterleaves the packets), **ATRAC3** ([`atrac3`]; RealMedia `atrc` and
-//! WAV `.at3`) and **ATRAC3plus** ([`atrac3p`]; OpenMG `.oma` / `.aa3` and WAV `.at3`).
+//! WAV `.at3`) and **ATRAC3plus** ([`atrac3p`]; OpenMG `.oma` / `.aa3` and WAV `.at3`) and **ATRAC9**
+//! ([`atrac9`]; WAV `.at9`).
 //!
 //! Cook follows FFmpeg's `cook` decoder (planar `f32` in `[-1, 1]`, the first two frames dropped
 //! because they carry no audio); RealAudio 1.0 gives FFmpeg's 16-bit samples bit for bit.
 //!
-//! Codec backlog items CB-14.1, CB-14.2, CB-15.1 and CB-15.2. Every number in the stream is treated as hostile: a
+//! Codec backlog items CB-14.1, CB-14.2, CB-15.1, CB-15.2 and CB-16.1. Every number in the stream is treated as hostile: a
 //! damaged frame is an error, never a panic.
 
 pub mod atrac3;
 pub mod atrac3p;
+pub mod atrac9;
 mod bits;
 mod celp;
 pub mod cook;
+mod lfg;
 mod mdct;
 pub mod ra144;
 pub mod ra288;
@@ -22,6 +25,7 @@ mod tables;
 mod tables144;
 mod tables288;
 mod tables_atrac3p;
+mod tables_atrac9;
 mod tables_sipr;
 
 /// Errors.
