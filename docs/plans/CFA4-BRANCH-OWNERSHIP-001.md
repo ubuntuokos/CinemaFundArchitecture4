@@ -1,11 +1,11 @@
 # CFA4-BRANCH-OWNERSHIP-001 – egy ág, egy munkamenet: az ág-tulajdon technikai védelme
 
-**Állapot:** 1.0, jóváhagyva. A tulajdonos 2026-11-14-én a tervet jóváhagyta, a D1–D6 döntési pontok a javasolt alapértékkel érvényesek (5. fejezet). Következő lépés: BO-1.
+**Állapot:** 1.1, jóváhagyva. A tulajdonos 2026-11-14-én a tervet jóváhagyta, a D1–D6 döntési pontok a javasolt alapértékkel érvényesek (5. fejezet). Ugyanaznap kérésére bekerült a gazda-átvétel (3. fejezet, T1, T2, T4, D6). Következő lépés: BO-1.
 
 **Összefoglaló:** a „más PR-jához, ágához ne nyúlj” szabály (`docs/coordination.md` §1 és §2.4) ma csak
 írott szabály, és semmi nem állítja meg az ügynököt, amelyik mégis megszegi. A terv után minden PR-ágnak
-egy tulajdonos munkamenete van, csak az pushol rá, a kivételeket (gazda, Dependabot, tulajdonosi átadás) pedig
-a PR maga sorolja fel. Egy kötelező CI-ellenőrzés (`branch-ownership`) pirosra vált, ha idegen munkamenet
+egy tulajdonos munkamenete van, csak az pushol rá, a kivételeket (gazda-átvétel, Dependabot, tulajdonosi átadás) pedig
+a PR maga sorolja fel. A gazda a beolvasztásra kész PR-t átveheti, és onnantól ő dolgozik rajta. Egy kötelező CI-ellenőrzés (`branch-ownership`) pirosra vált, ha idegen munkamenet
 commitja kerül az ágra, így a gazda azt nem olvaszthatja be. Egy helyi Claude Code-hook a push előtt meg is
 állítja az idegen munkamenetet. A védelem a véletlen ellen véd, nem a szándékos visszaélés ellen (6. fejezet).
 
@@ -51,8 +51,15 @@ helyi pusholása, a `docs/coordination.md` és a `/gazda` skill. **Nem** hatók�
 - **Átadás:** a tulajdonos döntése, hogy egy PR-t egy másik munkamenet visz tovább. A PR leírásába egy
   `Átadva: session_<régi> → session_<új>, tulajdonosi jóváhagyással, ÉÉÉÉ-HH-NN` sor kerül, és egy
   ugyanilyen PR-megjegyzés. Az átadás után a régi munkamenet nem pushol az ágra.
+- **Gazda-átvétel:** a gazda a beolvasztáshoz átveheti a PR-t (ahogy ma is: ághoz igazítás, ütközésfeloldás,
+  CI, beolvasztás; tulajdonosi döntés 2026-11-03). Átvételkor a gazda a PR leírásába beírja:
+  `Gazda átvette: session_<gazda>, ÉÉÉÉ-HH-NN`, és ugyanezt PR-megjegyzésben is. Ehhez nem kell külön
+  tulajdonosi jóváhagyás, mert a gazda csak a tulajdonos hívására dolgozik. Onnantól a gazda pushol az ágra,
+  a fejlesztő munkamenet nem. Ha a PR-on a fejlesztőnek kell javítania, a gazda visszaadja:
+  `Gazda visszaadta: session_<fejlesztő>, ÉÉÉÉ-HH-NN`.
 - **Megengedett commit egy PR-ágon:**
-  1. nem-merge commit a tulajdonos vagy egy átvevő munkamenet `Claude-Session:` sorával;
+  1. nem-merge commit annak a munkamenetnek a `Claude-Session:` sorával, amelyé a commit idején az ág volt
+     (a tulajdonos, egy átvevő, vagy átvétel után a gazda);
   2. merge commit, amelynek második szülője a `main`-en van (a `main` behúzása, kézzel vagy a GitHub
      „Update branch” gombjával), bárkitől;
   3. a 4. fejezet T2 pontjában felsorolt kivételek (Dependabot, köteg-ág, tulajdonosi kézi commit).
@@ -67,6 +74,11 @@ tulajdonos munkamenete pushol. Új pont (§2.10) írja le az átadást:
 3. A régi munkamenet minden push előtt megnézi a PR leírását (T3 ezt el is végzi), és ha átadták, nem pushol,
    hanem jelzi a tulajdonosnak.
 
+Új pont (§2.11) a gazda-átvételről (3. fejezet): a fejlesztő munkamenet, amikor a PR-t „Kész”-nek jelöli,
+átadja a gazdának. Amint a PR-on `Gazda átvette:` sor áll, a fejlesztő nem pushol rá, a javítási igényt
+megjegyzésben jelzi. A gazda vagy maga javít, vagy visszaadja a PR-t (`Gazda visszaadta:`). A §1 és a §3
+gazda-leírása ennek megfelelően kiegészül: a gazda a fejlesztői PR ágára is pusholhat, de csak átvétel után.
+
 Ha a tulajdonos nem mondja ki az átadást, az új munkamenet nem nyúl a régi ágához. Új ágat nyit a `main`-ből,
 vagy megkérdezi a tulajdonost.
 
@@ -78,21 +90,28 @@ minősít. Kivételek:
 - `dependabot/*` ág: csak `dependabot[bot]` szerzőjű commit és a `main` behúzása megengedett;
 - `koteg/*` ág: csak a köteg-szkript (`scripts/dev/gazda-koteg.sh`) merge commitjai, amelyek második szülője
   a köteg-PR leírásában felsorolt PR-ok egyikének feje, valamint a `main` behúzása (D3);
-- tulajdonosi kézi commit (`Claude-Session:` sor nélkül, szerző `ubuntuokos`): D2 szerint.
+- tulajdonosi kézi commit (`Claude-Session:` sor nélkül, szerző `ubuntuokos`): D2 szerint;
+- gazda-átvétel: a `Gazda átvette:` / `Gazda visszaadta:` sorok a PR leírásában sorrendet adnak. A szkript
+  minden commitot ahhoz a munkamenethez mér, amelyé az ág a commit idején volt (a commit ideje és a sor
+  dátuma alapján; ha a dátum nem dönti el, a PR-megjegyzések időbélyege). A gazda átvétel előtti commitja és
+  a fejlesztő átvétel utáni commitja idegen.
 
 Ha idegen commitot talál, a check piros, és a naplóban commitonként kiírja, melyik commit melyik munkamenetből
 jött, és mi lett volna a megengedett. A check a `main` kötelező ellenőrzései közé kerül (D4).
 
 **T3 – Helyi push-őr (Claude Code-hook).** A `.claude/settings.json` egy `PreToolUse` hookja a `git push`
 parancsok előtt lefut (`scripts/dev/branch-owner-guard.sh`), és megállítja a pusht, ha:
-- a cél-ágnak van nyitott PR-ja, és annak tulajdonosa (vagy utolsó átvevője) nem ez a munkamenet;
+- a cél-ágnak van nyitott PR-ja, és annak tulajdonosa (vagy utolsó átvevője, gazda-átvétel után a gazda) nem
+  ez a munkamenet;
 - a PR leírásában `Átadva:` sor szerint ezt a munkamenetet már leváltották.
 
 Az ellenőrzés a saját munkamenet azonosítóját a környezet adja (a T3 első lépése kideríti, honnan olvasható ki
 megbízhatóan: környezeti változó vagy a munkamenet által írt commit sora; ha nem olvasható ki, a hook csak
 figyelmeztet). A hook a hiba okát és a teendőt is kiírja („kérd a tulajdonost átadásra, vagy nyiss új ágat”).
 
-**T4 – A gazda.** A `/gazda` skill beolvasztás előtt a `branch-ownership` checket is nézi (kötelező checkként
+**T4 – A gazda.** A `/gazda` skill a PR-on végzett első írás (ághoz igazítás, ütközésfeloldás, javítás) előtt
+beírja a `Gazda átvette:` sort, és ha a fejlesztőnek kell javítania, a `Gazda visszaadta:` sort. A skill
+beolvasztás előtt a `branch-ownership` checket is nézi (kötelező checkként
 amúgy is), idegen commitnál a PR a (c) kategóriába kerül, és a tulajdonosnak jelzi. A köteg-szkript a köteg-PR
 leírásába beírja a felhasznált PR-fejeket, hogy a T2 ellenőrizni tudja.
 
@@ -112,7 +131,7 @@ szabály egy helyen). Az `AGENTS.md` és a `CLAUDE.md` legfeljebb egy hivatkozá
 | D3 | Köteg-ágak ellenőrzése | Igen, a 4. fejezet szerint (csak a felsorolt PR-fejek és a `main` beolvasztása). |
 | D4 | Mikortól blokkol a check? | Egy hétig csak jelez (nem kötelező check), utána a `main` kötelező ellenőrzése. |
 | D5 | A helyi hook (T3) blokkol vagy csak figyelmeztet? | Blokkol, ha a munkamenet azonosítója megbízhatóan kiolvasható; különben figyelmeztet. |
-| D6 | A §2.4 tiltásának kivétele a gazda „Update branch”-e és ütközésfeloldása | A `main` behúzása mindenkinek megengedett (a check nem jelez rá). Ütközésfeloldó commitot a gazda csak a köteg-ágon tesz, más PR-ágon nem, ahogy ma is. |
+| D6 | A gazda munkája a fejlesztői PR ágán | A `main` behúzása mindenkinek megengedett (a check nem jelez rá). Minden más gazda-commit (ütközésfeloldás, javítás) a fejlesztői PR ágán csak `Gazda átvette:` sor után megengedett; a köteg-ágon átvétel nélkül is (§3a). (Tulajdonosi kiegészítés, 2026-11-14.) |
 
 ## 6. Korlátok és kockázatok
 
@@ -145,6 +164,8 @@ A sorrendről a tulajdonos dönt; a lista mindent tartalmaz.
 - A T2 szkript tesztjei lefedik: egyetlen munkamenet (zöld); idegen munkamenet commitja (piros); a `main`
   behúzása merge committal más munkamenettől (zöld); más ág beolvasztása merge committal (piros); érvényes
   `Átadva:` sor után az átvevő commitja (zöld), és a leváltott munkamenet későbbi commitja (piros);
+  `Gazda átvette:` sor után a gazda commitja (zöld), előtte (piros), és a fejlesztő commitja átvétel után
+  (piros), `Gazda visszaadta:` után (zöld);
   Dependabot-ág (zöld); köteg-ág felsorolt és nem felsorolt PR-fejjel (zöld / piros); sor nélküli kézi commit
   címkével és címke nélkül (zöld / piros).
 - A jelzős héten a check minden nyitott PR-on lefut, és a hamis riasztások száma nulla, vagy mindegyiknek
