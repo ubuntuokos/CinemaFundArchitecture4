@@ -1,5 +1,8 @@
 #!/usr/bin/env bash
 # Pinned FFmpeg 9.0.2 CLI test oracles, isolated from Ubuntu FFmpeg shared libraries.
+# No x264 or x265: they are patent-restricted and never part of CFA4's FFmpeg (docs/licensing.md §7,
+# owner decision 2026-11-12; users get them from the Ubuntu archive at their own risk through
+# `cfa4-restricted-extras`). Tests whose fixtures need them skip (cfa4_testkit::RESTRICTED_ENCODERS).
 set -euo pipefail
 if [[ "$(uname -s)" != "Linux" || "$(uname -m)" != "x86_64" ]]; then
   echo "CFA4 FFmpeg CI oracle is supported on Linux x86_64 (AMD64) only." >&2
@@ -9,7 +12,7 @@ version=9.0.2
 archive="ffmpeg-${version}.tar.xz"
 source_url="https://ffmpeg.org/releases/${archive}"
 sha256=8c3850283eb25fa026482078a04051e0be17347b09ef81a0849bec15a96e002e
-prefix="${CFA4_FFMPEG_CACHE_DIR:-${HOME}/.cache/cfa4/ffmpeg-9.0.2-linux-x86_64-v7}"
+prefix="${CFA4_FFMPEG_CACHE_DIR:-${HOME}/.cache/cfa4/ffmpeg-9.0.2-linux-x86_64-v8}"
 if [[ ! -x "${prefix}/bin/ffmpeg" || ! -x "${prefix}/bin/ffprobe" ]]; then
   tmp="$(mktemp -d)"
   trap 'rm -rf "$tmp"' EXIT
@@ -23,7 +26,7 @@ if [[ ! -x "${prefix}/bin/ffmpeg" || ! -x "${prefix}/bin/ffprobe" ]]; then
     ./configure --prefix="$prefix" --disable-doc --disable-debug --disable-ffplay \
       --disable-autodetect --disable-shared --enable-static --enable-gpl --enable-zlib \
       --enable-libdav1d --enable-libsvtav1 --enable-libaom \
-      --enable-libx264 --enable-libx265 --enable-libvpx --enable-libmp3lame --enable-libopus --enable-libwebp --enable-libopenjpeg
+      --enable-libvpx --enable-libmp3lame --enable-libopus --enable-libwebp --enable-libopenjpeg
     make -j2
     make install
   )
@@ -43,7 +46,7 @@ done
 # apps/cfa4-cli/tests and crates/*/tests (including their common fixture helpers).
 # Check every dependency in one pass, rather than discovering missing codecs
 # only after a long Rust release-test run.
-video_encoders=(libx264 libx265 libvpx libvpx-vp9 libsvtav1 libaom-av1 libwebp libopenjpeg jpeg2000 mpeg2video mjpeg prores_ks dnxhd rawvideo png)
+video_encoders=(libvpx libvpx-vp9 libsvtav1 libaom-av1 libwebp libopenjpeg jpeg2000 mpeg2video mjpeg prores_ks dnxhd rawvideo png)
 audio_encoders=(libmp3lame libopus aac ac3 eac3 mp2 flac vorbis pcm_s16le pcm_s24le pcm_dvd)
 video_decoders=(apv libdav1d jpeg2000 h264 hevc vp8 vp9 mpeg2video prores dnxhd png webp)
 audio_decoders=(aac ac3 eac3 mp3 mp2 opus vorbis flac)
@@ -64,8 +67,13 @@ check_codecs "$encoders" V "video encoder" "${video_encoders[@]}"
 check_codecs "$encoders" A "audio encoder" "${audio_encoders[@]}"
 check_codecs "$decoders" V "video decoder" "${video_decoders[@]}"
 check_codecs "$decoders" A "audio decoder" "${audio_decoders[@]}"
+for codec in libx264 libx265; do
+  if awk -v codec="$codec" '$2 == codec { found=1 } END { exit !found }' <<< "$encoders"; then
+    missing+=("patent-restricted encoder present (must never be in CFA4's FFmpeg): $codec")
+  fi
+done
 if (( ${#missing[@]} > 0 )); then
-  echo "::error::Pinned FFmpeg ${version} is missing ${#missing[@]} required oracle codecs:" >&2
+  echo "::error::Pinned FFmpeg ${version} fails ${#missing[@]} oracle codec checks:" >&2
   printf '::error::  %s\n' "${missing[@]}" >&2
   exit 1
 fi

@@ -127,6 +127,60 @@ pub fn ffmpeg_has_encoder(ffmpeg: &Path, encoder: &str) -> bool {
     encoders_output_lists(&String::from_utf8_lossy(&out.stdout), encoder)
 }
 
+/// Patent-restricted encoders that CFA4's FFmpeg never contains (docs/licensing.md §7, the Ubuntu
+/// model): x264 and x265 come from the Ubuntu archive at the user's own risk (`cfa4-restricted-extras`),
+/// so neither the development nor the CI FFmpeg 9.0.2 has them. A test whose fixture needs one skips
+/// without it, even with `CFA4_REQUIRE_ORACLES=1`.
+pub const RESTRICTED_ENCODERS: &[&str] = &["libx264", "libx265"];
+
+/// The first of [`RESTRICTED_ENCODERS`] named in the ffmpeg arguments `args` that `ffmpeg` lacks.
+pub fn missing_fixture_encoder<S: AsRef<str>>(ffmpeg: &Path, args: &[S]) -> Option<&'static str> {
+    RESTRICTED_ENCODERS.iter().copied().find(|enc| args.iter().any(|a| a.as_ref() == *enc) && !ffmpeg_has_encoder(ffmpeg, enc))
+}
+
+/// Report a test skipped because `encoder` is missing: a plain `SKIPPED` for a [restricted
+/// encoder](RESTRICTED_ENCODERS), which no CFA4 FFmpeg has; [`skip`] (a failure with
+/// `CFA4_REQUIRE_ORACLES=1`) for any other.
+fn skip_missing_encoder(context: &str, encoder: &str) {
+    if RESTRICTED_ENCODERS.contains(&encoder) {
+        eprintln!("SKIPPED ({context}): this ffmpeg has no {encoder} encoder (patent-restricted, never in CFA4's FFmpeg)");
+    } else {
+        skip(context, &format!("this ffmpeg has no {encoder} encoder"));
+    }
+}
+
+/// Whether `ffmpeg` has every encoder in `encoders`. Otherwise reports the skip and returns
+/// `false`, naming a missing encoder that is not [restricted](RESTRICTED_ENCODERS) when there is
+/// one (so `CFA4_REQUIRE_ORACLES=1` fails for it), a restricted one only when every missing
+/// encoder is.
+pub fn encoders_or_skip(context: &str, ffmpeg: &Path, encoders: &[&str]) -> bool {
+    let missing: Vec<&str> = encoders.iter().copied().filter(|enc| !ffmpeg_has_encoder(ffmpeg, enc)).collect();
+    match reported_missing_encoder(&missing) {
+        None => true,
+        Some(enc) => {
+            skip_missing_encoder(context, enc);
+            false
+        }
+    }
+}
+
+/// Which of the `missing` encoders a skip names: the first one that is not
+/// [restricted](RESTRICTED_ENCODERS), else the first one.
+fn reported_missing_encoder<'a>(missing: &[&'a str]) -> Option<&'a str> {
+    missing.iter().copied().find(|enc| !RESTRICTED_ENCODERS.contains(enc)).or_else(|| missing.first().copied())
+}
+
+/// [`encoders_or_skip`] for the restricted encoders named in the ffmpeg arguments `args`.
+pub fn fixture_encoders_or_skip<S: AsRef<str>>(context: &str, ffmpeg: &Path, args: &[S]) -> bool {
+    match missing_fixture_encoder(ffmpeg, args) {
+        None => true,
+        Some(enc) => {
+            skip_missing_encoder(context, enc);
+            false
+        }
+    }
+}
+
 /// Pure function of the `ffmpeg -encoders` output: whether `encoder` is one of the listed names.
 fn encoders_output_lists(output: &str, encoder: &str) -> bool {
     // rows look like ` V....D libx264   libx264 H.264 …`; the name is the second whitespace-separated token
@@ -202,6 +256,14 @@ mod tests {
         assert!(encoders_output_lists(out, "libx265"));
         assert!(!encoders_output_lists(out, "libsvtav1"));
         assert!(!encoders_output_lists(out, "H.264"));
+    }
+
+    #[test]
+    fn a_missing_unrestricted_encoder_is_reported_before_a_restricted_one() {
+        assert_eq!(reported_missing_encoder(&[]), None);
+        assert_eq!(reported_missing_encoder(&["libx264", "mpeg2video"]), Some("mpeg2video"));
+        assert_eq!(reported_missing_encoder(&["libx265", "libx264"]), Some("libx265"));
+        assert_eq!(reported_missing_encoder(&["prores_ks", "libx264"]), Some("prores_ks"));
     }
     use std::ffi::OsString;
 

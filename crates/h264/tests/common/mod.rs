@@ -951,6 +951,10 @@ pub fn ensure(f: &Fixture) -> Option<(PathBuf, PathBuf)> {
     let dir = fixtures_dir();
     let h264 = dir.join(format!("{}.h264", f.name));
     let yuv = dir.join(format!("{}.yuv", f.name));
+    // libx264 is patent-restricted and never in CFA4's FFmpeg (cfa4_testkit::RESTRICTED_ENCODERS): its fixtures skip without it
+    if !h264.exists() && !f.args.contains(&"-c:v") && !cfa4_testkit::encoders_or_skip(f.name, &ff, &["libx264"]) {
+        return None;
+    }
     if !h264.exists() {
         let tmp = cfa4_testkit::temp_path(&h264);
         let mut vf = format!("{}=size={}x{}:rate=25,format={}", f.source, f.width, f.height, f.pix_fmt);

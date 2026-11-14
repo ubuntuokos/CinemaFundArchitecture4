@@ -195,10 +195,15 @@ pub const ALL: &[&str] = &[
     "es_mpeg2.m2v",
 ];
 
-fn make(ff: &Path, name: &str) -> PathBuf {
+/// The fixture `name`, or `None` after a skip when it needs libx264/libx265, which CFA4's FFmpeg
+/// never has (patent-restricted, `cfa4_testkit::RESTRICTED_ENCODERS`).
+fn make(ff: &Path, name: &str) -> Option<PathBuf> {
+    if !cfa4_testkit::fixture_encoders_or_skip(name, ff, &spec(name)) {
+        return None;
+    }
     let args = spec(name);
     let refs: Vec<&str> = args.iter().map(String::as_str).collect();
-    fixture(ff, name, &refs).unwrap_or_else(|| panic!("could not generate {name}"))
+    Some(fixture(ff, name, &refs).unwrap_or_else(|| panic!("could not generate {name}")))
 }
 
 fn open(p: &Path) -> MpegSource {
@@ -381,7 +386,7 @@ fn check_audio(ff: &Path, file: &Path, tol: f32) -> f32 {
 #[test]
 fn transport_stream_mpeg2_and_mp2() {
     let ff = cfa4_testkit::require_ffmpeg!();
-    let f = make(&ff, "ts_mpeg2_mp2.ts");
+    let Some(f) = make(&ff, "ts_mpeg2_mp2.ts") else { return };
     let src = open(&f);
     let v = src.info().video.clone().unwrap();
     assert_eq!(src.info().container, "MPEG-2 TS");
@@ -405,7 +410,7 @@ fn transport_stream_mpeg2_and_mp2() {
 #[test]
 fn transport_stream_h264_and_aac() {
     let ff = cfa4_testkit::require_ffmpeg!();
-    let f = make(&ff, "ts_h264_aac.ts");
+    let Some(f) = make(&ff, "ts_h264_aac.ts") else { return };
     let src = open(&f);
     assert_eq!(src.info().video.as_ref().unwrap().codec, "H.264");
     let first = src.video_frame(FrameRequest { time: cfa4_time::Tick::ZERO, scale: 1.0 }).unwrap();
@@ -418,7 +423,7 @@ fn transport_stream_h264_and_aac() {
 #[test]
 fn bdav_h264_with_lpcm_sample_exact() {
     let ff = cfa4_testkit::require_ffmpeg!();
-    let f = make(&ff, "m2ts_h264_lpcm.m2ts");
+    let Some(f) = make(&ff, "m2ts_h264_lpcm.m2ts") else { return };
     let src = open(&f);
     assert_eq!(src.info().container, "MPEG-2 TS (BDAV/AVCHD)");
     let a = src.info().audio().cloned().unwrap();
@@ -430,7 +435,7 @@ fn bdav_h264_with_lpcm_sample_exact() {
 #[test]
 fn avchd_ac3_audio() {
     let ff = cfa4_testkit::require_ffmpeg!();
-    let f = make(&ff, "m2ts_h264_ac3.mts");
+    let Some(f) = make(&ff, "m2ts_h264_ac3.mts") else { return };
     let src = open(&f);
     check_video(&ff, &f, 0, 6);
     let a = src.info().audio().cloned().unwrap();
@@ -451,7 +456,7 @@ fn avchd_ac3_audio() {
 #[test]
 fn transport_stream_hevc_and_latm() {
     let ff = cfa4_testkit::require_ffmpeg!();
-    let f = make(&ff, "ts_hevc_latm.ts");
+    let Some(f) = make(&ff, "ts_hevc_latm.ts") else { return };
     let src = open(&f);
     assert_eq!(src.info().video.as_ref().unwrap().codec, "HEVC");
     assert_eq!(src.info().audio().unwrap().codec, "AAC (LATM)");
@@ -463,7 +468,7 @@ fn transport_stream_hevc_and_latm() {
 #[test]
 fn program_streams() {
     let ff = cfa4_testkit::require_ffmpeg!();
-    let f = make(&ff, "ps_mpeg2_mp2.vob");
+    let Some(f) = make(&ff, "ps_mpeg2_mp2.vob") else { return };
     let src = open(&f);
     assert_eq!(src.info().container, "MPEG-2 PS");
     let (worst, psnr) = check_video(&ff, &f, 4, 10);
@@ -471,23 +476,23 @@ fn program_streams() {
     println!("ps_mpeg2_mp2: video max diff {worst}, PSNR {psnr:.2} dB");
     check_audio(&ff, &f, 2e-4);
     // DVD LPCM: sample-exact
-    let f = make(&ff, "ps_mpeg2_lpcm.vob");
+    let Some(f) = make(&ff, "ps_mpeg2_lpcm.vob") else { return };
     let src = open(&f);
     assert_eq!(src.info().audio().unwrap().codec, "LPCM (DVD)");
     assert_eq!(src.info().audio().unwrap().bits_per_sample, Some(24));
     assert_eq!(check_audio(&ff, &f, 0.0), 0.0);
     check_video(&ff, &f, 4, 4);
-    let f = make(&ff, "ps_mpeg2_lpcm16.vob");
+    let Some(f) = make(&ff, "ps_mpeg2_lpcm16.vob") else { return };
     assert_eq!(open(&f).info().audio().unwrap().bits_per_sample, Some(16));
     assert_eq!(check_audio(&ff, &f, 0.0), 0.0);
     // AC-3 in private stream 1
-    let f = make(&ff, "ps_mpeg2_ac3.vob");
+    let Some(f) = make(&ff, "ps_mpeg2_ac3.vob") else { return };
     let src = open(&f);
     assert_eq!(src.info().audio().unwrap().codec, "AC-3");
     let e = check_audio(&ff, &f, 5e-3);
     println!("ps_mpeg2_ac3: AC-3 max error {e:.2e}");
     // MPEG-1 system stream
-    let f = make(&ff, "mpeg1_system.mpg");
+    let Some(f) = make(&ff, "mpeg1_system.mpg") else { return };
     let src = open(&f);
     assert_eq!(src.info().container, "MPEG-1 System");
     assert_eq!(src.info().video.as_ref().unwrap().codec, "MPEG-1 Video");
@@ -500,7 +505,7 @@ fn program_streams() {
 #[test]
 fn video_elementary_stream() {
     let ff = cfa4_testkit::require_ffmpeg!();
-    let f = make(&ff, "es_mpeg2.m2v");
+    let Some(f) = make(&ff, "es_mpeg2.m2v") else { return };
     let src = cfa4_codecs::open_bytes("es_mpeg2.m2v", bytes(&f)).unwrap();
     assert_eq!(src.info().container, "MPEG video elementary stream");
     let raw = ffmpeg_frames(&ff, &f, "yuv420p");
@@ -526,7 +531,7 @@ fn mpeg2_in_quicktime_mp4_matroska_and_avi() {
         ("avi_matrox_m701.avi", (2, 1)),
         ("avi_matrox_m705.avi", (2, 2)),
     ] {
-        let f = make(&ff, name);
+        let Some(f) = make(&ff, name) else { continue };
         let src = cfa4_codecs::open_bytes(name, bytes(&f)).unwrap();
         let v = src.info().video.clone().unwrap();
         let (w, h) = (v.width as usize, v.height as usize);
@@ -548,7 +553,7 @@ fn mpeg2_in_quicktime_mp4_matroska_and_avi() {
 #[test]
 fn standalone_mp2_file() {
     let ff = cfa4_testkit::require_ffmpeg!();
-    let f = make(&ff, "audio.mp2");
+    let Some(f) = make(&ff, "audio.mp2") else { return };
     let src = cfa4_codecs::open_bytes("audio.mp2", bytes(&f)).unwrap();
     let a = src.info().audio().cloned().unwrap();
     assert_eq!((a.sample_rate, a.channels), (48_000, 2));
@@ -564,9 +569,10 @@ fn standalone_mp2_file() {
 #[test]
 fn mono_mp2_at_ffmpegs_default_bit_rate() {
     let ff = cfa4_testkit::require_ffmpeg!();
-    let f = make(&ff, "audio_mono.mp2");
+    let Some(f) = make(&ff, "audio_mono.mp2") else { return };
     assert_eq!(std::fs::read(&f).unwrap()[2] >> 4, 14, "384 kbit/s");
-    let worst = check_audio(&ff, &make(&ff, "ts_mpeg2_mono_mp2.ts"), 2e-4);
+    let Some(ts) = make(&ff, "ts_mpeg2_mono_mp2.ts") else { return };
+    let worst = check_audio(&ff, &ts, 2e-4);
     println!("ts_mpeg2_mono_mp2.ts: max error {worst}");
     // Matroska stores the encoder's 481-sample priming as `CodecDelay`. Whether ffmpeg's CLI trims
     // it depends on its version (9.x does; 2023-24 builds keep the priming samples), and until
@@ -574,7 +580,7 @@ fn mono_mp2_at_ffmpegs_default_bit_rate() {
     // lags within a sample or two of 0 (trimmed) and of `CodecDelay` (kept). The plain .mp2 file
     // has no such ambiguity and must line up exactly.
     for name in ["audio_mono.mp2", "mkv_mono_mp2.mkv"] {
-        let f = make(&ff, name);
+        let Some(f) = make(&ff, name) else { continue };
         let file = bytes(&f);
         let src = cfa4_codecs::open_bytes(name, file.clone()).unwrap();
         let a = src.info().audio().cloned().unwrap();
@@ -610,7 +616,7 @@ fn mono_mp2_at_ffmpegs_default_bit_rate() {
 fn truncated_and_corrupt_files_never_panic() {
     let ff = cfa4_testkit::require_ffmpeg!();
     for name in ["ts_mpeg2_mp2.ts", "ps_mpeg2_mp2.vob", "ts_h264_aac.ts"] {
-        let f = make(&ff, name);
+        let Some(f) = make(&ff, name) else { continue };
         let full = std::fs::read(&f).unwrap();
         let mut rng = Rng(0xC0FFEE);
         let exercise = |data: Vec<u8>, rng: &mut Rng| {

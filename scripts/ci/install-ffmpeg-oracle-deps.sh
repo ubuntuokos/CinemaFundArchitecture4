@@ -9,7 +9,7 @@ sudo apt-get update
 # package in a single fast failure, not one by one across costly CI runs.
 oracle_dev_packages=(
   libdav1d-dev libsvtav1enc-dev libaom-dev
-  libx264-dev libx265-dev libvpx-dev libmp3lame-dev libopus-dev libwebp-dev libopenjp2-7-dev zlib1g-dev
+  libvpx-dev libmp3lame-dev libopus-dev libwebp-dev libopenjp2-7-dev zlib1g-dev
   libheif-examples libheif-plugin-libde265 libheif-plugin-x265 libjxl-tools
   webp
 )

@@ -163,6 +163,10 @@ pub fn ensure(f: &Fixture) -> Option<(PathBuf, PathBuf)> {
     let dir = fixtures_dir();
     let hevc = dir.join(format!("{}.hevc", f.name));
     let yuv = dir.join(format!("{}.yuv", f.name));
+    // libx265 is patent-restricted and never in CFA4's FFmpeg (cfa4_testkit::RESTRICTED_ENCODERS): its fixtures skip without it
+    if !hevc.exists() && !f.args.contains(&"-c:v") && !cfa4_testkit::encoders_or_skip(f.name, &ff, &["libx265"]) {
+        return None;
+    }
     if !hevc.exists() {
         let tmp = cfa4_testkit::temp_path(&hevc);
         let mut vf = format!("{}=size={}x{}:rate=25,format={}", f.source, f.width, f.height, pix_fmt(f));
