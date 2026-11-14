@@ -4531,6 +4531,8 @@ export.summary	Low	nizka
 	DCP keys forgotten	Ključi DCP pozabljeni
 	Choose the KDM file and the private key.	Izberite datoteko KDM in zasebni ključ.
 	Load even if the certificate chain is not verified	Naloži tudi z nepreverjeno verigo potrdil
+	Bundle: {loaded} of {total} KDMs loaded, {other} for other recipients	Paket: naloženih {loaded} od {total} KDM, {other} za druge prejemnike
+	Not loaded: {path}: {problem}	Ni naloženo: {path}: {problem}
 	Signature verified: {chain}	Podpis preverjen: {chain}
 	Signature not verified: {problem}	Podpis ni preverjen: {problem}
 	KDM required	Potreben je KDM

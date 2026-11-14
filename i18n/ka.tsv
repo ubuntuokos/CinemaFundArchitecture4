@@ -4531,6 +4531,8 @@ export.summary	Low	დაბალი
 	DCP keys forgotten	DCP გასაღებები დავიწყებულია
 	Choose the KDM file and the private key.	აირჩიეთ KDM ფაილი და პირადი გასაღები.
 	Load even if the certificate chain is not verified	ჩატვირთვა გადაუმოწმებელი სერტიფიკატების ჯაჭვითაც
+	Bundle: {loaded} of {total} KDMs loaded, {other} for other recipients	პაკეტი: ჩაიტვირთა {loaded} KDM {total}-დან, {other} სხვა მიმღებებისთვის
+	Not loaded: {path}: {problem}	არ ჩაიტვირთა: {path}: {problem}
 	Signature verified: {chain}	ხელმოწერა გადამოწმებულია: {chain}
 	Signature not verified: {problem}	ხელმოწერა არ არის გადამოწმებული: {problem}
 	KDM required	საჭიროა KDM

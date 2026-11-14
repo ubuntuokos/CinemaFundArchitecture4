@@ -4526,6 +4526,8 @@
 	DCP keys forgotten	已清除 DCP 密钥
 	Choose the KDM file and the private key.	请选择 KDM 文件和私钥。
 	Load even if the certificate chain is not verified	即使证书链未经验证也加载
+	Bundle: {loaded} of {total} KDMs loaded, {other} for other recipients	包：已加载 {total} 个 KDM 中的 {loaded} 个，{other} 个属于其他接收方
+	Not loaded: {path}: {problem}	未加载：{path}：{problem}
 	Signature verified: {chain}	签名已验证：{chain}
 	Signature not verified: {problem}	签名未验证：{problem}
 	KDM required	需要 KDM

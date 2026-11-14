@@ -4528,6 +4528,8 @@ export.summary	Low	laag
 	DCP keys forgotten	DCP-sleutels vergeten
 	Choose the KDM file and the private key.	Kies het KDM-bestand en de privésleutel.
 	Load even if the certificate chain is not verified	Ook laden met een niet-geverifieerde certificaatketen
+	Bundle: {loaded} of {total} KDMs loaded, {other} for other recipients	Bundel: {loaded} van {total} KDM's geladen, {other} voor andere ontvangers
+	Not loaded: {path}: {problem}	Niet geladen: {path}: {problem}
 	Signature verified: {chain}	Handtekening geverifieerd: {chain}
 	Signature not verified: {problem}	Handtekening niet geverifieerd: {problem}
 	KDM required	KDM vereist

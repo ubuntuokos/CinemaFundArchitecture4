@@ -12,6 +12,7 @@ proposed in [DCP-00](../../docs/audit/DCP-00-CAPABILITY-AUDIT-2026-10-27.md).
 | Stereoscopic picture asset | ST 429-10:2008 | `437-Y/2007/Main-Stereo-Picture-CPL` |
 | Composition metadata asset | ST 429-16:2014 (kept as an extension asset; its fields are listed by name) | n/a |
 | Key Delivery Message (`kdm` module) | ST 430-1:2023 (`430-1/2006/KDM`, ETM `430-3/2006/ETM`) | n/a |
+| Key Delivery Bundle (`kdb` module) | ST 430-9:2008 + Am1:2011 (ustar, `CATALOG` in `429-10/2008/KDMB`) | n/a |
 
 The root element and its namespace decide the document kind and the standard.
 
@@ -76,8 +77,17 @@ issuer's validity and path length, all valid at the given time, ending in a self
 `AuthenticatedPrivate` must be referenced. Not checked: a list of trusted roots (ST 430-2 step 19)
 and revocation lists, which CFA4 does not have.
 
+`kdb::read_bundle` reads a Key Delivery Bundle (ST 430-9) from memory: a POSIX ustar archive
+(header checksums checked; regular files with relative paths only, links and `..` paths ignored
+with an issue; at most 64 MiB, 4096 files, 4 MiB per KDM) with its `CATALOG` (Id, annotation,
+creator, and per `KDMFile` the CPL, `FilePath` under `CONTENT/`, recipient subject and key
+validity). Catalog entries without a file become issues; `CONTENT` files the catalog does not
+list are still taken. The engine's `dcp.loadKdm` accepts a bundle in place of a KDM and loads every
+KDM made for the given private key, each under the signature rule, skipping the other
+recipients' (#1144).
+
 `testing` (feature `test-util`) makes ST 430-2 conforming and plain X.509 signing chains with the
-openssl and xmlsec1 command lines for tests.
+openssl and xmlsec1 command lines for tests, plus `ustar` / `catalog` to build bundles.
 
 ## What counts as an error
 

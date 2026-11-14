@@ -4533,6 +4533,8 @@
 	DCP keys forgotten	Clés DCP oubliées
 	Choose the KDM file and the private key.	Choisissez le fichier KDM et la clé privée.
 	Load even if the certificate chain is not verified	Charger même avec une chaîne de certificats non vérifiée
+	Bundle: {loaded} of {total} KDMs loaded, {other} for other recipients	Lot : {loaded} KDM chargés sur {total}, {other} pour d'autres destinataires
+	Not loaded: {path}: {problem}	Non chargé : {path} : {problem}
 	Signature verified: {chain}	Signature vérifiée : {chain}
 	Signature not verified: {problem}	Signature non vérifiée : {problem}
 	KDM required	KDM requis

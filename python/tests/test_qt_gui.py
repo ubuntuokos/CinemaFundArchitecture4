@@ -14988,6 +14988,11 @@ def test_kdm_dialog_describes_the_reply_never_a_key():
     bad = describe({"title": "F", "keys": [], "signature": {"valid": False, "problem": "the KDM is not signed"}})
     assert bad.splitlines()[-1] == "Signature not verified: the KDM is not signed"
     assert describe({"keys": [], "signature": {"valid": False}}).endswith("Signature not verified: ?")
+    # #1144: a Key Delivery Bundle
+    b = describe({"title": "Bundle", "keys": [{"type": "MDIK", "keyId": "5a"}], "bundle": {"kdms": 3}, "kdms": [{"path": "a.xml"}],
+                  "otherRecipients": 1, "refused": [{"path": "c.xml", "problem": "changed"}], "signature": None})
+    assert b.splitlines()[0] == "Bundle: 1 keys loaded"
+    assert b.splitlines()[-2:] == ["Bundle: 1 of 3 KDMs loaded, 1 for other recipients", "Not loaded: c.xml: changed"]
 
 
 def test_kdm_required_badge_opens_load_kdm(app, fake_engine: Path, tmp_path: Path):

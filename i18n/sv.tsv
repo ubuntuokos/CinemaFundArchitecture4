@@ -4530,6 +4530,8 @@ export.summary	Low	låg
 	DCP keys forgotten	DCP-nycklarna glömda
 	Choose the KDM file and the private key.	Välj KDM-filen och den privata nyckeln.
 	Load even if the certificate chain is not verified	Läs in även med en overifierad certifikatkedja
+	Bundle: {loaded} of {total} KDMs loaded, {other} for other recipients	Paket: {loaded} av {total} KDM:er inlästa, {other} för andra mottagare
+	Not loaded: {path}: {problem}	Inte inläst: {path}: {problem}
 	Signature verified: {chain}	Signaturen verifierad: {chain}
 	Signature not verified: {problem}	Signaturen inte verifierad: {problem}
 	KDM required	KDM krävs

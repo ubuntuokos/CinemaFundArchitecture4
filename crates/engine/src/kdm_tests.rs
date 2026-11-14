@@ -210,3 +210,51 @@ fn an_encrypted_clip_without_its_key_says_which_key_it_needs() {
     assert_eq!(s.execute("source.inspect", json!({})).unwrap()["needsKey"], json!([]));
     assert!(s.media.missing_keys(wav).is_empty());
 }
+
+/// #1144: a Key Delivery Bundle (ST 430-9) loads the KDMs made for the private key, each under
+/// the signature rule; KDMs for other recipients are skipped.
+#[test]
+fn kdm_bundle_loads_the_kdms_for_the_key() {
+    let (a, b) = (tmp_dir("kdb-a"), tmp_dir("kdb-b"));
+    let key = cfa4_mxf::testing::test_key("bundle");
+    if !write_kdm(&a, &key) || !write_kdm(&b, &key) {
+        return;
+    }
+    let read = |p: &Path| std::fs::read(p).unwrap();
+    let cpl = "11111111-1111-1111-1111-111111111111";
+    let catalog = cfa4_dcp::testing::catalog(&[("mine.xml", cpl), ("theirs.xml", cpl), ("changed.xml", cpl)]);
+    let (mine, theirs, changed) = (read(&a.join("signed.xml")), read(&b.join("signed.xml")), read(&a.join("changed.xml")));
+    let tar = cfa4_dcp::testing::ustar(&[
+        ("CATALOG", catalog.as_bytes()),
+        ("CONTENT/mine.xml", &mine),
+        ("CONTENT/theirs.xml", &theirs),
+        ("CONTENT/changed.xml", &changed),
+    ]);
+    std::fs::write(a.join("bundle.tar"), &tar).unwrap();
+    let mut s = Session::default();
+    s.execute("dcp.clearKeys", json!({})).unwrap();
+    let s_path = |p: &Path| p.to_string_lossy().to_string();
+    let r = s.execute("dcp.loadKdm", json!({"kdm": s_path(&a.join("bundle.tar")), "privateKey": s_path(&a.join("key.pem"))})).unwrap();
+    assert_eq!(r["title"], "Test bundle");
+    assert_eq!(r["bundle"]["kdms"], 3);
+    assert_eq!(r["kdms"].as_array().unwrap().len(), 1);
+    assert_eq!(r["kdms"][0]["path"], "mine.xml");
+    assert_eq!(r["kdms"][0]["signature"]["valid"], true);
+    assert_eq!(r["otherRecipients"], 1);
+    assert_eq!(r["refused"][0]["path"], "changed.xml");
+    assert!(r["refused"][0]["problem"].as_str().unwrap().contains("not loaded"), "{r}");
+    assert_eq!(r["keys"][0]["keyId"], "5a5a5a5a-5a5a-5a5a-5a5a-5a5a5a5a5a5a");
+    assert_eq!(s.execute("dcp.keys", json!({})).unwrap()["keyIds"][0], "5a5a5a5a-5a5a-5a5a-5a5a-5a5a5a5a5a5a");
+    let hex: String = key.iter().map(|b| format!("{b:02x}")).collect();
+    assert!(!r.to_string().contains(&hex), "the key itself is never returned");
+    s.execute("dcp.clearKeys", json!({})).unwrap();
+    // a bundle with nothing loadable for the key says why
+    let none = cfa4_dcp::testing::ustar(&[("CATALOG", catalog.as_bytes()), ("CONTENT/theirs.xml", &theirs), ("CONTENT/changed.xml", &changed)]);
+    std::fs::write(a.join("none.tar"), &none).unwrap();
+    let e = s.execute("dcp.loadKdm", json!({"kdm": s_path(&a.join("none.tar")), "privateKey": s_path(&a.join("key.pem"))})).unwrap_err().to_string();
+    assert!(e.contains("no KDM of the bundle") && e.contains("1 for other recipients") && e.contains("changed.xml"), "{e}");
+    assert!(s.execute("dcp.keys", json!({})).unwrap()["keyIds"].as_array().unwrap().is_empty());
+    // a damaged bundle is an error, not a panic
+    std::fs::write(a.join("cut.tar"), &tar[..700]).unwrap();
+    assert!(s.execute("dcp.loadKdm", json!({"kdm": s_path(&a.join("cut.tar")), "privateKey": s_path(&a.join("key.pem"))})).is_err());
+}

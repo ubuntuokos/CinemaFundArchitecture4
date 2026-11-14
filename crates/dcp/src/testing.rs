@@ -70,7 +70,9 @@ impl Signed {
         if !tool("openssl", "version") || !tool("xmlsec1", "--version") {
             return None;
         }
-        let dir = std::env::temp_dir().join(format!("cfa4-xmldsig-{name}-{}", std::process::id()));
+        static NEXT: std::sync::atomic::AtomicUsize = std::sync::atomic::AtomicUsize::new(0);
+        let n = NEXT.fetch_add(1, std::sync::atomic::Ordering::Relaxed);
+        let dir = std::env::temp_dir().join(format!("cfa4-xmldsig-{name}-{}-{n}", std::process::id()));
         std::fs::create_dir_all(&dir).unwrap();
         std::fs::write(dir.join("ext.cnf"), if st430 { EXT } else { PLAIN_EXT }).unwrap();
         for (k, cn) in [("root", ".root"), ("inter", ".inter"), ("leaf", "CS.signer")] {
@@ -159,6 +161,50 @@ impl Drop for Signed {
     fn drop(&mut self) {
         let _ = std::fs::remove_dir_all(&self.dir);
     }
+}
+
+/// A POSIX ustar archive (ST 430-9 5) of `files` (path, contents), as a bundle tool writes it:
+/// read-only regular files owned by root.
+pub fn ustar(files: &[(&str, &[u8])]) -> Vec<u8> {
+    let mut out = Vec::new();
+    for (path, data) in files {
+        let mut h = [0u8; 512];
+        let (prefix, name) = if path.len() > 100 { path.rsplit_once('/').unwrap() } else { ("", *path) };
+        h[..name.len()].copy_from_slice(name.as_bytes());
+        h[100..108].copy_from_slice(b"0000444\0");
+        h[108..116].copy_from_slice(b"0000000\0");
+        h[116..124].copy_from_slice(b"0000000\0");
+        h[124..136].copy_from_slice(format!("{:011o}\0", data.len()).as_bytes());
+        h[136..148].copy_from_slice(b"00000000000\0");
+        h[156] = b'0';
+        h[257..263].copy_from_slice(b"ustar\0");
+        h[263..265].copy_from_slice(b"00");
+        h[265..269].copy_from_slice(b"root");
+        h[297..301].copy_from_slice(b"root");
+        h[345..345 + prefix.len()].copy_from_slice(prefix.as_bytes());
+        h[148..156].copy_from_slice(b"        ");
+        let sum: u32 = h.iter().map(|&b| u32::from(b)).sum();
+        h[148..156].copy_from_slice(format!("{sum:06o}\0 ").as_bytes());
+        out.extend_from_slice(&h);
+        out.extend_from_slice(data);
+        out.resize(out.len().div_ceil(512) * 512, 0);
+    }
+    out.extend_from_slice(&[0u8; 1024]);
+    out
+}
+
+/// A ST 430-9 CATALOG listing `files` as (FilePath, CPLId).
+pub fn catalog(files: &[(&str, &str)]) -> String {
+    let mut s = String::from(
+        "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n<Catalog xmlns=\"http://www.smpte-ra.org/schemas/429-10/2008/KDMB\" xmlns:ds=\"http://www.w3.org/2000/09/xmldsig#\">\n<Id>urn:uuid:00000000-0000-0000-0000-0000000000b1</Id><AnnotationText>Test bundle</AnnotationText><Creator>cfa4 tests</Creator><KDMFileList>",
+    );
+    for (path, cpl) in files {
+        s.push_str(&format!(
+            "<KDMFile><CPLId>urn:uuid:{cpl}</CPLId><FilePath>{path}</FilePath><Recipient><X509IssuerSerial><ds:X509IssuerName>CN=.ca,O=test</ds:X509IssuerName><ds:X509SerialNumber>7</ds:X509SerialNumber></X509IssuerSerial><X509SubjectName>CN=SM.server,O=test</X509SubjectName></Recipient><ContentKeysNotValidBefore>2020-01-01T00:00:00Z</ContentKeysNotValidBefore><ContentKeysNotValidAfter>2099-01-01T00:00:00Z</ContentKeysNotValidAfter></KDMFile>"
+        ));
+    }
+    s.push_str("</KDMFileList></Catalog>\n");
+    s
 }
 
 #[cfg(test)]

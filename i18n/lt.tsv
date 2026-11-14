@@ -4531,6 +4531,8 @@ export.summary	Low	žema
 	DCP keys forgotten	DCP raktai pamiršti
 	Choose the KDM file and the private key.	Pasirinkite KDM failą ir privatųjį raktą.
 	Load even if the certificate chain is not verified	Įkelti net su nepatikrinta sertifikatų grandine
+	Bundle: {loaded} of {total} KDMs loaded, {other} for other recipients	Paketas: įkelta {loaded} iš {total} KDM, {other} kitiems gavėjams
+	Not loaded: {path}: {problem}	Neįkelta: {path}: {problem}
 	Signature verified: {chain}	Parašas patikrintas: {chain}
 	Signature not verified: {problem}	Parašas nepatikrintas: {problem}
 	KDM required	Reikia KDM

@@ -4528,6 +4528,8 @@ export.summary	Low	nízká
 	DCP keys forgotten	Klíče DCP zapomenuty
 	Choose the KDM file and the private key.	Vyberte soubor KDM a soukromý klíč.
 	Load even if the certificate chain is not verified	Načíst i s neověřeným řetězcem certifikátů
+	Bundle: {loaded} of {total} KDMs loaded, {other} for other recipients	Balíček: načteno {loaded} z {total} KDM, {other} pro jiné příjemce
+	Not loaded: {path}: {problem}	Nenačteno: {path}: {problem}
 	Signature verified: {chain}	Podpis ověřen: {chain}
 	Signature not verified: {problem}	Podpis neověřen: {problem}
 	KDM required	Vyžaduje KDM
