@@ -16,6 +16,10 @@ Copyright (c) 2011-2019 Belledonne Communications SARL). Codec backlog item CB-1
 - `tests/patterns.rs`: bit-exact against bcg729's decoder test patterns (the ITU-T G.729 and
   Annex B test vectors with bcg729's output), when the pattern archive is present locally
   (`target/fixtures/g729/p/patterns`, see the file).
+- `tests/bcg729_oracle.rs`: bit-exact against bcg729 itself through the helper
+  `cfa4-g729-oracle` (`scripts/ci/install-g729-oracle.sh`, built from the pinned 1.1.2 tag, in CI):
+  a synthetic speech signal encoded by bcg729 with and without Annex B VAD / DTX, and random
+  streams with SID, untransmitted and erased frames.
 - `tests/oracle.rs`: against ffmpeg's G.729 decoder on synthetic streams. ffmpeg's decoder is a
   separate implementation that does not match the ITU-T reference sample for sample, so this
   checks the signal-to-noise ratio only.
