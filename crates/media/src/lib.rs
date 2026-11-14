@@ -235,6 +235,12 @@ pub trait MediaSource: Send + Sync {
     fn carrier(&self) -> Option<SharedSource> {
         None
     }
+    /// The Key IDs (UUID text) of encrypted essence (ST 429-6) whose content key is not loaded:
+    /// its picture is black and its sound silent until a KDM brings them (#1053). Read when
+    /// asked, so it is empty once the keys are there. Empty for sources that are not encrypted.
+    fn missing_keys(&self) -> Vec<String> {
+        Vec::new()
+    }
 }
 
 pub type SharedSource = Arc<dyn MediaSource>;

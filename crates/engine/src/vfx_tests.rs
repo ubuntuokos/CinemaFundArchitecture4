@@ -83,6 +83,9 @@ fn effects_list_reports_folders_and_badges() {
     assert_eq!(find("skin_smoothing")["category"], json!(["Video Effects", "Enhance"]));
     assert_eq!(find("halftone")["category"], json!(["Video Effects", "Creative Looks"]));
     assert_eq!(find("dither")["category"], json!(["Video Effects", "Creative Looks"]));
+    assert_eq!(find("crt")["category"], json!(["Video Effects", "Creative Looks"]));
+    assert_eq!(find("oil_paint")["category"], json!(["Video Effects", "Creative Looks"]));
+    assert_eq!(find("pixel_sort")["category"], json!(["Video Effects", "Creative Looks"]));
     // and CFA4's own effects in Premiere's folders
     assert_eq!(find("slit_scan")["category"], json!(["Video Effects", "Time"]));
 }

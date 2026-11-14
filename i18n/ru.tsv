@@ -4521,6 +4521,13 @@
 	The keys stay in memory only, until Forget DCP Keys or the end of the session.	Ключи хранятся только в памяти, до команды «Забыть ключи DCP» или конца сеанса.
 	DCP keys forgotten	Ключи DCP забыты
 	Choose the KDM file and the private key.	Выберите файл KDM и закрытый ключ.
+	Load even if the certificate chain is not verified	Загружать и с непроверенной цепочкой сертификатов
+	Bundle: {loaded} of {total} KDMs loaded, {other} for other recipients	Пакет: загружено {loaded} из {total} KDM, {other} для других получателей
+	Not loaded: {path}: {problem}	Не загружено: {path}: {problem}
+	Signature verified: {chain}	Подпись проверена: {chain}
+	Signature not verified: {problem}	Подпись не проверена: {problem}
+	KDM required	Требуется KDM
+	Encrypted: load the KDM with content key {keys}	Зашифровано: загрузите KDM с ключом содержимого {keys}
 
 # Settings ▸ Timecode Sync (TC-4)
 	Timecode Sync	Синхронизация тайм-кода
@@ -4553,3 +4560,60 @@
 	Chase External Timecode	Следовать за внешним тайм-кодом
 	Send LTC	Передавать LTC
 	Send MIDI Timecode	Передавать MIDI тайм-код
+# Auto Color, Auto Contrast, Auto Levels (EffectsSDK review)
+	Auto Color	Автоцвет
+	Auto Contrast	Автоконтраст
+	Auto Levels	Автоуровни
+	Temporal Smoothing (seconds)	Временное сглаживание (секунды)
+	Scene Detect	Обнаружение сцен
+	Black Clip	Отсечение чёрного
+	White Clip	Отсечение белого
+	Snap Neutral Midtones	Нейтральные средние тона
+# Layout presets: PiP corners, split screen (EffectsSDK review)
+	PiP 35% Upper Left	«Картинка в картинке» 35% слева вверху
+	Picture-in-picture: 35 % scale in the upper left	«Картинка в картинке»: масштаб 35 % в левом верхнем углу
+	PiP 35% Lower Left	«Картинка в картинке» 35% слева внизу
+	Picture-in-picture: 35 % scale in the lower left	«Картинка в картинке»: масштаб 35 % в левом нижнем углу
+	PiP 35% Lower Right	«Картинка в картинке» 35% справа внизу
+	Picture-in-picture: 35 % scale in the lower right	«Картинка в картинке»: масштаб 35 % в правом нижнем углу
+	Split Screen Left	Разделённый экран слева
+	Split screen: the middle half of the picture fills the left half of the frame	Разделённый экран: средняя половина изображения заполняет левую половину кадра
+	Split Screen Right	Разделённый экран справа
+	Split screen: the middle half of the picture fills the right half of the frame	Разделённый экран: средняя половина изображения заполняет правую половину кадра
+# Creative Looks: CRT (P3)
+	CRT	CRT
+	Scanline Strength	Сила строк
+	Line Count	Число строк
+	Mask	Маска
+	Mask Strength	Сила маски
+	Corner Darkening	Затемнение углов
+	Aperture Grille	Апертурная решётка
+	Shadow Mask	Теневая маска
+	Slot Mask	Щелевая маска
+# Creative Looks: Oil Paint (P4)
+	Oil Paint	Масляная живопись
+	Detail	Детализация
+	Texture	Текстура
+	Facet	Грани
+	Daubs	Мазки
+	Dry Brush	Сухая кисть
+	Fresco	Фреска
+	Knife	Мастихин
+	Sponge	Губка
+# Creative Looks: Pixel Sort (P5)
+	Pixel Sort	Сортировка пикселей
+	Sort By	Сортировать по
+	Lower Threshold	Нижний порог
+	Upper Threshold	Верхний порог
+	Ascending	По возрастанию
+# Temporal Denoise (EffectsSDK review)
+	Temporal Denoise	Временное шумоподавление
+	Frames Each Side	Кадров с каждой стороны
+	Motion Threshold	Порог движения
+	Show Motion	Показать движение
+	No signal	Нет сигнала
+	Locating	Поиск
+	Locked	Синхронизировано
+	Freewheel	Свободный ход
+	Scrubbing	Прокрутка
+	Sending	Отправка

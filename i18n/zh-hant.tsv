@@ -4535,6 +4535,13 @@ export.summary	Low	低
 	The keys stay in memory only, until Forget DCP Keys or the end of the session.	金鑰只保存在記憶體中，直到執行「清除 DCP 金鑰」或工作階段結束。
 	DCP keys forgotten	已清除 DCP 金鑰
 	Choose the KDM file and the private key.	請選擇 KDM 檔案和私密金鑰。
+	Load even if the certificate chain is not verified	即使憑證鏈未經驗證也載入
+	Bundle: {loaded} of {total} KDMs loaded, {other} for other recipients	套件：已載入 {total} 個 KDM 中的 {loaded} 個，{other} 個屬於其他接收者
+	Not loaded: {path}: {problem}	未載入：{path}：{problem}
+	Signature verified: {chain}	簽章已驗證：{chain}
+	Signature not verified: {problem}	簽章未驗證：{problem}
+	KDM required	需要 KDM
+	Encrypted: load the KDM with content key {keys}	已加密：請載入含有內容金鑰 {keys} 的 KDM
 
 # Settings ▸ Timecode Sync (TC-4)
 	Timecode Sync	時間碼同步
@@ -4567,3 +4574,60 @@ export.summary	Low	低
 	Chase External Timecode	追隨外部時間碼
 	Send LTC	傳送 LTC
 	Send MIDI Timecode	傳送 MIDI 時間碼
+# Auto Color, Auto Contrast, Auto Levels (EffectsSDK review)
+	Auto Color	自動色彩
+	Auto Contrast	自動對比
+	Auto Levels	自動色階
+	Temporal Smoothing (seconds)	時間平滑（秒）
+	Scene Detect	場景偵測
+	Black Clip	黑色修剪
+	White Clip	白色修剪
+	Snap Neutral Midtones	中間調中性化
+# Layout presets: PiP corners, split screen (EffectsSDK review)
+	PiP 35% Upper Left	畫中畫 35% 左上
+	Picture-in-picture: 35 % scale in the upper left	畫中畫：左上角 35% 縮放
+	PiP 35% Lower Left	畫中畫 35% 左下
+	Picture-in-picture: 35 % scale in the lower left	畫中畫：左下角 35% 縮放
+	PiP 35% Lower Right	畫中畫 35% 右下
+	Picture-in-picture: 35 % scale in the lower right	畫中畫：右下角 35% 縮放
+	Split Screen Left	分割畫面 左
+	Split screen: the middle half of the picture fills the left half of the frame	分割畫面：畫面中間的一半填滿畫框的左半邊
+	Split Screen Right	分割畫面 右
+	Split screen: the middle half of the picture fills the right half of the frame	分割畫面：畫面中間的一半填滿畫框的右半邊
+# Creative Looks: CRT (P3)
+	CRT	CRT
+	Scanline Strength	掃描線強度
+	Line Count	掃描線數
+	Mask	遮罩
+	Mask Strength	遮罩強度
+	Corner Darkening	四角暗化
+	Aperture Grille	柵條蔭罩
+	Shadow Mask	蔭罩
+	Slot Mask	槽形蔭罩
+# Creative Looks: Oil Paint (P4)
+	Oil Paint	油畫
+	Detail	細節
+	Texture	紋理
+	Facet	切面
+	Daubs	厚塗
+	Dry Brush	乾筆
+	Fresco	壁畫
+	Knife	刮刀
+	Sponge	海綿
+# Creative Looks: Pixel Sort (P5)
+	Pixel Sort	像素排序
+	Sort By	排序依據
+	Lower Threshold	下限臨界值
+	Upper Threshold	上限臨界值
+	Ascending	遞增
+# Temporal Denoise (EffectsSDK review)
+	Temporal Denoise	時間降噪
+	Frames Each Side	每側影格數
+	Motion Threshold	動態臨界值
+	Show Motion	顯示動態
+	No signal	無訊號
+	Locating	正在定位
+	Locked	已鎖定
+	Freewheel	自由運行
+	Scrubbing	拖曳中
+	Sending	正在傳送
