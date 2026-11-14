@@ -4542,6 +4542,13 @@ export.summary	Low	తక్కువ
 	The keys stay in memory only, until Forget DCP Keys or the end of the session.	కీలు మెమరీలో మాత్రమే ఉంటాయి, DCP కీలను మర్చిపో లేదా సెషన్ ముగిసే వరకు.
 	DCP keys forgotten	DCP కీలు మర్చిపోబడ్డాయి
 	Choose the KDM file and the private key.	KDM ఫైల్‌ను మరియు ప్రైవేట్ కీని ఎంచుకోండి.
+	Load even if the certificate chain is not verified	ధృవీకరించని సర్టిఫికెట్ గొలుసుతోనూ లోడ్ చేయండి
+	Bundle: {loaded} of {total} KDMs loaded, {other} for other recipients	బండిల్: {total} KDMలలో {loaded} లోడ్ అయ్యాయి, {other} ఇతర గ్రహీతల కోసం
+	Not loaded: {path}: {problem}	లోడ్ కాలేదు: {path}: {problem}
+	Signature verified: {chain}	సంతకం ధృవీకరించబడింది: {chain}
+	Signature not verified: {problem}	సంతకం ధృవీకరించబడలేదు: {problem}
+	KDM required	KDM అవసరం
+	Encrypted: load the KDM with content key {keys}	ఎన్‌క్రిప్ట్ చేయబడింది: కంటెంట్ కీ {keys} ఉన్న KDM ను లోడ్ చేయండి
 
 # Settings ▸ Timecode Sync (TC-4)
 	Timecode Sync	టైమ్‌కోడ్ సమకాలీకరణ
@@ -4574,3 +4581,60 @@ export.summary	Low	తక్కువ
 	Chase External Timecode	బాహ్య టైమ్‌కోడ్‌ను అనుసరించు
 	Send LTC	LTC పంపు
 	Send MIDI Timecode	MIDI టైమ్‌కోడ్ పంపు
+# Auto Color, Auto Contrast, Auto Levels (EffectsSDK review)
+	Auto Color	స్వయంచాలక రంగు
+	Auto Contrast	స్వయంచాలక కాంట్రాస్ట్
+	Auto Levels	స్వయంచాలక స్థాయిలు
+	Temporal Smoothing (seconds)	కాల సమతలీకరణ (సెకన్లు)
+	Scene Detect	దృశ్య గుర్తింపు
+	Black Clip	నలుపు కత్తిరింపు
+	White Clip	తెలుపు కత్తిరింపు
+	Snap Neutral Midtones	మధ్య టోన్లను తటస్థం చేయి
+# Layout presets: PiP corners, split screen (EffectsSDK review)
+	PiP 35% Upper Left	PiP 35% పైన ఎడమ
+	Picture-in-picture: 35 % scale in the upper left	చిత్రంలో చిత్రం: పైన ఎడమవైపు 35 % స్కేల్
+	PiP 35% Lower Left	PiP 35% కింద ఎడమ
+	Picture-in-picture: 35 % scale in the lower left	చిత్రంలో చిత్రం: కింద ఎడమవైపు 35 % స్కేల్
+	PiP 35% Lower Right	PiP 35% కింద కుడి
+	Picture-in-picture: 35 % scale in the lower right	చిత్రంలో చిత్రం: కింద కుడివైపు 35 % స్కేల్
+	Split Screen Left	విభజిత తెర ఎడమ
+	Split screen: the middle half of the picture fills the left half of the frame	విభజిత తెర: చిత్రం మధ్య సగం ఫ్రేమ్ ఎడమ సగాన్ని నింపుతుంది
+	Split Screen Right	విభజిత తెర కుడి
+	Split screen: the middle half of the picture fills the right half of the frame	విభజిత తెర: చిత్రం మధ్య సగం ఫ్రేమ్ కుడి సగాన్ని నింపుతుంది
+# Creative Looks: CRT (P3)
+	CRT	CRT
+	Scanline Strength	స్కాన్‌లైన్ తీవ్రత
+	Line Count	లైన్ల సంఖ్య
+	Mask	మాస్క్
+	Mask Strength	మాస్క్ తీవ్రత
+	Corner Darkening	మూలలను చీకటి చేయడం
+	Aperture Grille	అపర్చర్ గ్రిల్
+	Shadow Mask	షాడో మాస్క్
+	Slot Mask	స్లాట్ మాస్క్
+# Creative Looks: Oil Paint (P4)
+	Oil Paint	ఆయిల్ పెయింట్
+	Detail	వివరాలు
+	Texture	ఆకృతి
+	Facet	ముఖాలు
+	Daubs	అద్దకాలు
+	Dry Brush	పొడి బ్రష్
+	Fresco	ఫ్రెస్కో
+	Knife	పాలెట్ కత్తి
+	Sponge	స్పాంజ్
+# Creative Looks: Pixel Sort (P5)
+	Pixel Sort	పిక్సెల్ క్రమీకరణ
+	Sort By	దీని ప్రకారం క్రమీకరించు
+	Lower Threshold	దిగువ పరిమితి
+	Upper Threshold	ఎగువ పరిమితి
+	Ascending	ఆరోహణ
+# Temporal Denoise (EffectsSDK review)
+	Temporal Denoise	కాలపరమైన శబ్ద తొలగింపు
+	Frames Each Side	ప్రతి వైపు ఫ్రేమ్‌లు
+	Motion Threshold	కదలిక పరిమితి
+	Show Motion	కదలికను చూపు
+	No signal	సిగ్నల్ లేదు
+	Locating	స్థానం కనుగొంటోంది
+	Locked	సమకాలీకరించబడింది
+	Freewheel	ఫ్రీవీల్
+	Scrubbing	స్క్రబ్ చేస్తోంది
+	Sending	పంపుతోంది

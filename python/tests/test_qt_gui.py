@@ -5010,7 +5010,7 @@ def test_desktop_entry_is_opt_in_and_never_overrides_a_package(tmp_path: Path, m
     text = entry.read_text(encoding="utf-8")
     assert "Icon=io.github.ubuntuokos.cfa4" in text and "Name=CFA4 (development)" in text
     exec_line = next(line for line in text.splitlines() if line.startswith("Exec="))
-    assert exec_line.endswith(" %f") and "%" not in exec_line[:-3]
+    assert exec_line.endswith(" %F") and "%" not in exec_line[:-3]
     assert (home / "icons" / "hicolor" / "48x48" / "apps" / "io.github.ubuntuokos.cfa4.png").is_file()
     assert (home / "icons" / "hicolor" / "scalable" / "apps" / "io.github.ubuntuokos.cfa4.svg").is_file()
     # idempotent
@@ -14718,6 +14718,36 @@ def test_credits_files_from_the_command_line(tmp_path: Path):
 
 
 @pytest.mark.skipif(REAL is None, reason="Rust engine not built (cargo build -p cfa4-cli)")
+def test_real_engine_media_files_from_the_command_line_are_imported(app, tmp_path: Path):
+    """Owner decision 2026-11-12: the menu entry starts `cfa4-qt %F`, so files opened with CFA4
+    from a file manager are handled as egui handles them: the launch project opens and every media
+    file is imported into it (`import_at_start`, egui's `file.import` at start-up)."""
+    from cfa4_qt.__main__ import import_at_start, launch_files
+    from cfa4_qt.main_window import MainWindow
+
+    a, b = tmp_path / "first.wav", tmp_path / "second.wav"
+    _test_music(a, bars=2)
+    _test_music(b, bars=2)
+    project, credits, media = launch_files([str(a), str(b)])
+    assert project is None and credits is None and media == [str(a), str(b)]
+    settings = QtCore.QSettings(str(tmp_path / "s.ini"), QtCore.QSettings.Format.IniFormat)
+    engine = EngineClient(REAL, ["--demo", "--data-dir", str(tmp_path / "data")])
+    win = MainWindow(engine, settings)
+    import_at_start(engine, win, media)
+    win.show()
+    engine.start()
+    try:
+        names = lambda: {i.get("name") for i in _items(win.project or {})}
+        assert wait_until(app, lambda: {"first.wav", "second.wav"} <= names(), 60_000), names()
+        # into the launch project (here the demo), not instead of it
+        assert len(names()) > 2
+    finally:
+        win._quit_confirmed = True
+        win.close()
+        engine.stop()
+
+
+@pytest.mark.skipif(REAL is None, reason="Rust engine not built (cargo build -p cfa4-cli)")
 def test_real_engine_credits_file_and_template_open_in_the_workspace(app, tmp_path: Path):
     """C9: a credits file or template handed over by the file manager opens in the full Credits
     workspace; a template with no spreadsheet brings its sample."""
@@ -14940,7 +14970,9 @@ def test_monitor_picture_falls_back_to_raster_without_opengl(app, monkeypatch):
 
 def _openssl_kdm(tmp_path: Path) -> bool:
     """A recipient key (``key.pem``), another key (``other.pem``) and a KDM (``kdm.xml``) for the
-    first, built with the openssl command line (ST 430-1 RSA-OAEP SHA-1 CipherData)."""
+    first, built with the openssl command line (ST 430-1 RSA-OAEP SHA-1 CipherData); with xmlsec1
+    also ``plain.xml``, the same KDM signed by a self-signed certificate that does not keep ST 430-2
+    (intact content, untrusted chain)."""
     import shutil
     import subprocess
 
@@ -14962,15 +14994,39 @@ def _openssl_kdm(tmp_path: Path) -> bool:
     b64 = base64.b64encode((tmp_path / "c.bin").read_bytes()).decode()
     (tmp_path / "kdm.xml").write_text(
         '<?xml version="1.0" encoding="UTF-8"?>\n'
-        '<DCinemaSecurityMessage xmlns="http://www.smpte-ra.org/schemas/430-3/2006/ETM">'
-        "<AuthenticatedPublic><AnnotationText>Reel 1 KDM</AnnotationText><RequiredExtensions>"
+        '<DCinemaSecurityMessage xmlns="http://www.smpte-ra.org/schemas/430-3/2006/ETM" xmlns:dsig="http://www.w3.org/2000/09/xmldsig#">'
+        '<AuthenticatedPublic Id="ID_AuthenticatedPublic"><AnnotationText>Reel 1 KDM</AnnotationText><RequiredExtensions>'
         '<KDMRequiredExtensions xmlns="http://www.smpte-ra.org/schemas/430-1/2006/KDM">'
         "<CompositionPlaylistId>urn:uuid:11111111-1111-1111-1111-111111111111</CompositionPlaylistId>"
         "<ContentTitleText>Encrypted Test</ContentTitleText></KDMRequiredExtensions></RequiredExtensions></AuthenticatedPublic>"
-        '<AuthenticatedPrivate><enc:EncryptedKey xmlns:enc="http://www.w3.org/2001/04/xmlenc#"><enc:CipherData>'
+        '<AuthenticatedPrivate Id="ID_AuthenticatedPrivate"><enc:EncryptedKey xmlns:enc="http://www.w3.org/2001/04/xmlenc#"><enc:CipherData>'
         f"<enc:CipherValue>{b64}</enc:CipherValue></enc:CipherData></enc:EncryptedKey></AuthenticatedPrivate>"
         "</DCinemaSecurityMessage>",
         encoding="utf-8",
+    )
+    xmlsec = shutil.which("xmlsec1")
+    if xmlsec is None:
+        return True
+    run("genpkey", "-algorithm", "RSA", "-pkeyopt", "rsa_keygen_bits:2048", "-out", "signer.key")
+    run("req", "-x509", "-new", "-key", "signer.key", "-sha256", "-days", "30", "-subj", "/O=test/CN=CS.signer", "-out", "signer.pem")
+    sig = (
+        "<dsig:Signature><dsig:SignedInfo>"
+        '<dsig:CanonicalizationMethod Algorithm="http://www.w3.org/TR/2001/REC-xml-c14n-20010315#WithComments"/>'
+        '<dsig:SignatureMethod Algorithm="http://www.w3.org/2001/04/xmldsig-more#rsa-sha256"/>'
+        + "".join(
+            f'<dsig:Reference URI="#ID_Authenticated{p}"><dsig:DigestMethod Algorithm="http://www.w3.org/2001/04/xmlenc#sha256"/>'
+            "<dsig:DigestValue/></dsig:Reference>"
+            for p in ("Public", "Private")
+        )
+        + "</dsig:SignedInfo><dsig:SignatureValue/><dsig:KeyInfo><dsig:X509Data><dsig:X509Certificate/></dsig:X509Data></dsig:KeyInfo>"
+        "</dsig:Signature>"
+    )
+    text = (tmp_path / "kdm.xml").read_text(encoding="utf-8")
+    (tmp_path / "template.xml").write_text(text.replace("</DCinemaSecurityMessage>", sig + "</DCinemaSecurityMessage>"), encoding="utf-8")
+    subprocess.run(
+        [xmlsec, "--sign", "--privkey-pem", "signer.key,signer.pem", "--id-attr:Id", "AuthenticatedPublic", "--id-attr:Id",
+         "AuthenticatedPrivate", "--output", "plain.xml", "template.xml"],
+        cwd=tmp_path, check=True, capture_output=True,
     )
     return True
 
@@ -14981,6 +15037,50 @@ def test_kdm_dialog_describes_the_reply_never_a_key():
     text = describe({"title": "Film", "composition": "1111", "keys": [{"keyId": "5a5a", "type": "MDIK", "notValidBefore": "a", "notValidAfter": "b"}]})
     assert text.splitlines()[0] == "Film: 1 keys loaded" and "MDIK  5a5a  a – b" in text and "CPL 1111" in text
     assert describe(None) == "" and describe({"keys": "x"}).startswith("KDM: 0 keys")
+    # #1075: how the signature check went
+    ok = describe({"title": "F", "keys": [], "signature": {"valid": True, "chain": ["leaf", "root"]}})
+    assert ok.splitlines()[-1] == "Signature verified: leaf ← root"
+    bad = describe({"title": "F", "keys": [], "signature": {"valid": False, "problem": "the KDM is not signed"}})
+    assert bad.splitlines()[-1] == "Signature not verified: the KDM is not signed"
+    assert describe({"keys": [], "signature": {"valid": False}}).endswith("Signature not verified: ?")
+    # #1144: a Key Delivery Bundle
+    b = describe({"title": "Bundle", "keys": [{"type": "MDIK", "keyId": "5a"}], "bundle": {"kdms": 3}, "kdms": [{"path": "a.xml"}],
+                  "otherRecipients": 1, "refused": [{"path": "c.xml", "problem": "changed"}], "signature": None})
+    assert b.splitlines()[0] == "Bundle: 1 keys loaded"
+    assert b.splitlines()[-2:] == ["Bundle: 1 of 3 KDMs loaded, 1 for other recipients", "Not loaded: c.xml: changed"]
+
+
+def test_kdm_required_badge_opens_load_kdm(app, fake_engine: Path, tmp_path: Path):
+    """#1053: an encrypted clip whose content keys are not loaded (``needsKey``) shows "KDM required"
+    over the Source monitor, naming its Key IDs; a click opens File ▸ Load KDM…. The Project panel's
+    row names the keys in its tooltip."""
+    from cfa4_qt.main_window import MainWindow
+
+    settings = QtCore.QSettings(str(tmp_path / "s.ini"), QtCore.QSettings.Format.IniFormat)
+    win = MainWindow(EngineClient(fake_engine), settings)
+    try:
+        key = "6b6b6b6b-6b6b-6b6b-6b6b-6b6b6b6b6b6b"
+        src = win.source_monitor
+        clip = {"item": 7, "name": "enc.mxf", "start": 0, "end": 254_016_000_000, "fps": 24.0}
+        button = src.findChild(QtWidgets.QPushButton, "source.kdmRequired")
+        assert button is not None and button.isHidden()
+        src.set_source({**clip, "needsKey": [key]}, 1)
+        assert not button.isHidden() and button.text() == "KDM required" and key in button.toolTip()
+        assert src.needed_keys() == [key]
+        button.click()
+        assert win.kdm_dialog is not None and win.kdm_dialog.isVisible()
+        win.kdm_dialog.close()
+        # the keys are loaded: the engine reports none missing
+        src.set_source({**clip, "needsKey": []}, 2)
+        assert button.isHidden() and src.needed_keys() == []
+        bv = win.project_panel.main
+        bv.own_mode = "list"
+        bv.set_data({"rows": [{"item": 7, "name": "enc.mxf", "offline": "KDM required", "needsKey": [key]}]})
+        it = bv.tree.topLevelItem(0)
+        assert it is not None and it.text(0) == "enc.mxf" and key in it.toolTip(0)
+    finally:
+        win._quit_confirmed = True
+        win.close()
 
 
 @pytest.mark.skipif(REAL is None, reason="Rust engine not built (cargo build -p cfa4-cli)")
@@ -15012,9 +15112,28 @@ def test_real_engine_load_kdm_dialog(app, tmp_path: Path):
         dlg.load()
         assert wait_until(app, lambda: "not made for this private key" in dlg.result.toPlainText(), 20_000), dlg.result.toPlainText()
         dlg.key_path.setText(str(tmp_path / "key.pem"))
+        # #1028: an unsigned KDM is refused, also with the box ticked
+        assert not dlg.allow_unverified.isChecked()
+        for tick in (False, True):
+            dlg.allow_unverified.setChecked(tick)
+            dlg.result.clear()
+            dlg.load()
+            assert wait_until(app, lambda: "not signed" in dlg.result.toPlainText(), 20_000), dlg.result.toPlainText()
+            assert "not loaded" in dlg.result.toPlainText()
+        if not (tmp_path / "plain.xml").exists():
+            assert not os.environ.get("CFA4_REQUIRE_ORACLES"), "xmlsec1 not found"
+            pytest.skip("xmlsec1 not found")
+        # an intact KDM whose certificate chain does not keep ST 430-2: refused until the box is ticked
+        dlg.kdm_path.setText(str(tmp_path / "plain.xml"))
+        dlg.allow_unverified.setChecked(False)
+        dlg.load()
+        assert wait_until(app, lambda: "certificate chain does not check out" in dlg.result.toPlainText(), 20_000), dlg.result.toPlainText()
+        dlg.allow_unverified.setChecked(True)
         dlg.load()
         assert wait_until(app, lambda: dlg.result.toPlainText().startswith("Encrypted Test: 1 keys loaded"), 20_000), dlg.result.toPlainText()
         assert "MDAK" in dlg.result.toPlainText() and "5a5a5a5a-5a5a" in dlg.result.toPlainText()
+        last = dlg.result.toPlainText().splitlines()[-1]
+        assert last.startswith("Signature not verified: certificate CS.signer") and "ST 430-2" in last, last
         got: list = []
         engine.execute("dcp.keys", {}, on_reply=lambda r, _b: got.append(r))
         assert wait_until(app, lambda: got, 10_000) and got[0]["keyIds"] == ["5a5a5a5a-5a5a-5a5a-5a5a-5a5a5a5a5a5a"]

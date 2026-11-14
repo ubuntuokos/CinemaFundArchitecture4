@@ -19,6 +19,7 @@ python3 -m venv .venv
 .venv/bin/python -m pip install -e '.[qt]'      # PySide6 + cfa4-qt, inside .venv only
 .venv/bin/cfa4-qt --demo --lang hu              # demo project, Hungarian UI
 .venv/bin/cfa4-qt project.fcproj                # open a project
+.venv/bin/cfa4-qt a.mp4 b.wav                  # import media (as egui; with a .fcproj: into it)
 ```
 
 `source .venv/bin/activate` lets you type `cfa4-qt` without the path in that terminal.
@@ -116,6 +117,7 @@ line longer than 4 MiB is skipped with an error reply.
 | `time.parse` | `{text, target?, time?}` | `{time, frame}`: a timecode typed into a monitor, read as Premiere does (`01:02:03:04`, `1.2.3.4`, bare digits as right-aligned `HHMMSSFF`, `+15` / `-1.00` relative to the monitor's frame: `time`, the shown one, else the engine's playhead) at the sequence's or the Source clip's rate (drop-frame when the sequence counts it, as the GUI shows it) |
 | `media.peaks` | `{item, start, end (media ticks), buckets ≤ 20000, stream?}` | `{item, buckets, start, end, hasAudio}` + `buckets` (min, max) pairs, f32le, the extremes over all channels of audio stream `stream` (default 0; a clip's `audioStream` in `sequence.inspect`) (≤ 600 s per call) |
 | `timecodeSync.transport` | `{playing, time \| seconds \| frame, speed?}` | `{active}`: the player's transport, sent whenever it starts, stops, seeks or changes speed; LTC and MIDI Timecode output follow it and chase compares it with the external clock (`active`: a sync device is open) |
+| `timecodeSync.devices` | – | `{ltcInputs, ltcOutputs, mtcInputs, mtcOutputs}`: the audio devices (of the Settings ▸ Audio Hardware host) and MIDI ports (`Client:Port`) the Timecode Sync settings can name |
 | `session.state` | – | `{dirty, revision, path, canUndo, canRedo, playhead}` |
 | `app.quit` | – | `{quit: true}`, then the session ends (as stdin EOF does) |
 
