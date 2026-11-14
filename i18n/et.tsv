@@ -4179,6 +4179,11 @@ export.summary	Low	madal
 	Burn Size	Põletuse suurus
 	Ember Width	Hõõguva serva laius
 	Ember Color	Hõõguva serva värv
+	Tear Away	Rebimine
+	Tear Roughness	Rebenemisserva karedus
+	Paper Edge Width	Paberiserva laius
+	Stamp Cut	Margilõige
+	Perforations	Perforatsioon
 	Check Text Legibility	Kontrolli teksti loetavust
 	Clear Legibility Markers	Eemalda loetavuse markerid
 	Text legibility: no problems found	Teksti loetavus: probleeme ei leitud

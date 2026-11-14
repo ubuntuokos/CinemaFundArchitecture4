@@ -4180,6 +4180,11 @@ export.summary	Low	დაბალი
 	Burn Size	წვის ზომა
 	Ember Width	ნაღვერდლის სიგანე
 	Ember Color	ნაღვერდლის ფერი
+	Tear Away	მოგლეჯა
+	Tear Roughness	გახევის უხეშობა
+	Paper Edge Width	ქაღალდის კიდის სიგანე
+	Stamp Cut	მარკის ამოჭრა
+	Perforations	პერფორაცია
 	Check Text Legibility	ტექსტის წაკითხვადობის შემოწმება
 	Clear Legibility Markers	წაკითხვადობის მარკერების წაშლა
 	Text legibility: no problems found	ტექსტის წაკითხვადობა: პრობლემები ვერ მოიძებნა

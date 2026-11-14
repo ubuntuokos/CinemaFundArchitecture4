@@ -4180,6 +4180,11 @@ export.summary	Low	žema
 	Burn Size	Išdeginimo dydis
 	Ember Width	Žarijų krašto plotis
 	Ember Color	Žarijų krašto spalva
+	Tear Away	Atplėšimas
+	Tear Roughness	Plyšio šiurkštumas
+	Paper Edge Width	Popieriaus krašto plotis
+	Stamp Cut	Pašto ženklo iškarpa
+	Perforations	Perforacija
 	Check Text Legibility	Tikrinti teksto įskaitomumą
 	Clear Legibility Markers	Išvalyti įskaitomumo žymes
 	Text legibility: no problems found	Teksto įskaitomumas: problemų nerasta

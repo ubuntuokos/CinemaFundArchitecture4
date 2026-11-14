@@ -4182,6 +4182,11 @@ export.summary	Low	alacsony
 	Burn Size	Égés mérete
 	Ember Width	Parázsszegély szélessége
 	Ember Color	Parázsszegély színe
+	Tear Away	Széttépés
+	Tear Roughness	Tépés érdessége
+	Paper Edge Width	Papírszél szélessége
+	Stamp Cut	Bélyegkivágás
+	Perforations	Perforáció
 	Check Text Legibility	Szöveg olvashatóságának ellenőrzése
 	Clear Legibility Markers	Olvashatósági jelölők törlése
 	Text legibility: no problems found	Szöveg olvashatósága: nincs probléma
