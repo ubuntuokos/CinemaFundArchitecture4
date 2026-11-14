@@ -163,7 +163,7 @@ fn dpx_and_exr_floats_match_their_8_bit_codes() {
     let rgba: Vec<u8> = (0..=255u8).flat_map(|v| [v, 255 - v, v / 3, if v % 2 == 0 { 255 } else { 128 }]).collect();
     let float: Vec<f32> = rgba.chunks_exact(4).flat_map(|p| [p[0], p[1], p[2]].map(|v| f32::from(v) / 255.0)).collect();
     let a = raster::dpx(&rgba, 256, 1).unwrap();
-    let b = raster::dpx_deep(&rgba, Some(&float), 256, 1).unwrap();
+    let b = raster::dpx_deep(&rgba, Some(&float), 256, 1, None).unwrap();
     assert_eq!(a.len(), b.len());
     for (x, y) in a[2048..].as_chunks::<4>().0.iter().zip(b[2048..].as_chunks::<4>().0) {
         let (x, y) = (u32::from_be_bytes(*x), u32::from_be_bytes(*y));
@@ -180,7 +180,7 @@ fn dpx_and_exr_floats_match_their_8_bit_codes() {
         }
     }
     // short float input falls back to the 8-bit picture, NaN codes as black
-    assert_eq!(raster::dpx_deep(&rgba, Some(&float[..3]), 256, 1).unwrap(), a);
-    let nan = raster::dpx_deep(&rgba[..4], Some(&[f32::NAN; 3]), 1, 1).unwrap();
+    assert_eq!(raster::dpx_deep(&rgba, Some(&float[..3]), 256, 1, None).unwrap(), a);
+    let nan = raster::dpx_deep(&rgba[..4], Some(&[f32::NAN; 3]), 1, 1, None).unwrap();
     assert_eq!(&nan[2048..], &[0, 0, 0, 0]);
 }
