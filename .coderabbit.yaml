@@ -35,7 +35,8 @@ reviews:
   # „@coderabbitai review” megjegyzéssel, amikor a PR-t késznek jelöli (coordination.md §2.9).
   auto_review:
     enabled: false
-    drafts: false
+    # Tulajdonosi döntés (2026-11-13): a piszkozat (draft) PR-ok is kaphatnak automatikus review-t.
+    drafts: true
     ignore_usernames:
       - "dependabot[bot]"
     ignore_title_keywords:
