@@ -22,10 +22,9 @@ export CXXFLAGS="-O2 -I$P/include"
 J=$(nproc)
 t() { echo "=== $(date +%T) $*"; }
 
-if [[ "${DCPOM_SKIP_APT:-0}" != 1 && ! -e $D/.done-apt ]]; then
-  t apt
-  S=; [[ $(id -u) == 0 ]] || S=sudo
-  $S apt-get update -qq
+# The system packages are checked on every run, not by a marker file: a CI cache restores $D
+# onto a fresh runner that has none of them.
+if [[ "${DCPOM_SKIP_APT:-0}" != 1 ]]; then
   pkgs=(build-essential pkg-config python3 git cmake perl
     libboost-all-dev libxml++2.6-dev libxmlsec1-dev libssl-dev libopenjp2-7-dev
     libavformat-dev libavcodec-dev libavfilter-dev libswscale-dev libswresample-dev libavutil-dev libavdevice-dev
@@ -36,8 +35,12 @@ if [[ "${DCPOM_SKIP_APT:-0}" != 1 && ! -e $D/.done-apt ]]; then
   # FFmpeg 8 (Ubuntu 26.04) has no libpostproc; DCP-o-matic 2.18.51 builds without it
   # (its wscript then sets DCPOMATIC_FFMPEG_8), FFmpeg 7 (Ubuntu 24.04) still wants it.
   if apt-cache show libpostproc-dev >/dev/null 2>&1; then pkgs+=(libpostproc-dev); fi
-  $S apt-get install -y -qq --no-install-recommends "${pkgs[@]}" >/dev/null
-  touch "$D/.done-apt"
+  if ! dpkg -s "${pkgs[@]}" >/dev/null 2>&1; then
+    t apt
+    S=; [[ $(id -u) == 0 ]] || S=sudo
+    $S apt-get update -qq
+    $S apt-get install -y -qq --no-install-recommends "${pkgs[@]}" >/dev/null
+  fi
 fi
 
 # name, url, commit. Full clones: the version strings come from `git describe` (a shallow

@@ -10,14 +10,15 @@
 //! CFA4-DCPOMATIC-001. DCP-o-matic runs as separate processes (`cfa4-dcpomatic`); nothing of it
 //! is in the engine. CFA4's own DCP export (`format: "dcp"`) stays the default.
 
+use std::collections::BTreeSet;
 use std::path::{Path, PathBuf};
-use std::sync::PoisonError;
 use std::sync::atomic::Ordering;
+use std::sync::{Mutex, PoisonError};
 
 use cfa4_dcpomatic::{Container, Content, ContentKind, DcpRequest, Dcpomatic, DcpomaticError, Phase, Resolution, Standard};
 use serde_json::{Value, json};
 
-use crate::commands::{CommandSpec, always, bad, bool_p, str_p, u64_p};
+use crate::commands::{CommandSpec, always, bad, checked_u32_p, str_p};
 use crate::{EngineError, Result, Session};
 
 /// The progress scale of a job: creating the film is the first 2 %, encoding the rest.
@@ -58,11 +59,42 @@ fn enum_p<T: serde::de::DeserializeOwned>(cmd: &str, p: &Value, k: &str) -> Resu
     }
 }
 
+/// A whole number: fractions, negatives and values over `u32::MAX` are refused, never truncated.
 fn u32_p(cmd: &str, p: &Value, k: &str) -> Result<Option<u32>> {
-    match u64_p(p, k) {
-        None if p.get(k).is_some_and(|v| !v.is_null()) => Err(bad(cmd, format!("{k} must be a whole number"))),
-        None => Ok(None),
-        Some(n) => u32::try_from(n).map(Some).map_err(|_| bad(cmd, format!("{k} is too large"))),
+    checked_u32_p(p, k, cmd)
+}
+
+/// `true` or `false`; anything else that is there (`"true"`, `1`) is refused, so a mistyped
+/// flag is never read as its default.
+fn flag_p(cmd: &str, p: &Value, k: &str, default: bool) -> Result<bool> {
+    match p.get(k) {
+        None | Some(Value::Null) => Ok(default),
+        Some(Value::Bool(b)) => Ok(*b),
+        Some(v) => Err(bad(cmd, format!("{k}: {v} is not true or false"))),
+    }
+}
+
+/// The film folders of the DCP-o-matic jobs that are running: two jobs never write into the
+/// same folder, and one job's clean-up never removes another's.
+static FILM_DIRS: Mutex<BTreeSet<PathBuf>> = Mutex::new(BTreeSet::new());
+
+/// A film folder held by one job until it is dropped (finished, failed, cancelled, or never
+/// started).
+struct FilmDirClaim(PathBuf);
+
+impl FilmDirClaim {
+    fn take(cmd: &str, dir: &Path) -> Result<Self> {
+        let key = std::path::absolute(dir).unwrap_or_else(|_| dir.to_path_buf());
+        if !FILM_DIRS.lock().unwrap_or_else(PoisonError::into_inner).insert(key.clone()) {
+            return Err(bad(cmd, format!("output: another DCP-o-matic job is already writing into {}", dir.display())));
+        }
+        Ok(Self(key))
+    }
+}
+
+impl Drop for FilmDirClaim {
+    fn drop(&mut self) {
+        FILM_DIRS.lock().unwrap_or_else(PoisonError::into_inner).remove(&self.0);
     }
 }
 
@@ -97,11 +129,11 @@ pub(crate) fn request_from_params(cmd: &str, p: &Value) -> Result<DcpRequest> {
     r.frame_rate = u32_p(cmd, p, "fps")?;
     r.audio_channels = u32_p(cmd, p, "audioChannels")?;
     r.video_bit_rate_mbps = u32_p(cmd, p, "videoBitRateMbps")?;
-    r.three_d = bool_p(p, "threeD").unwrap_or(false);
-    if bool_p(p, "encrypt").unwrap_or(false) {
+    r.three_d = flag_p(cmd, p, "threeD", false)?;
+    if flag_p(cmd, p, "encrypt", false)? {
         return Err(bad(cmd, "encrypt: encrypted DCPs and KDMs are not available yet (phase DCPOM-3)"));
     }
-    r.isdcf_name = bool_p(p, "isdcfName").unwrap_or(true);
+    r.isdcf_name = flag_p(cmd, p, "isdcfName", true)?;
     r.threads = u32_p(cmd, p, "threads")?;
     r.config_dir = str_p(p, "configDir").map(PathBuf::from);
     Ok(r)
@@ -124,12 +156,14 @@ fn make_dcp(s: &mut Session, p: &Value) -> Result<Value> {
     const CMD: &str = "dcpomatic.makeDcp";
     let request = request_from_params(CMD, p)?;
     let dcpomatic = Dcpomatic::locate().map_err(|e| bad(CMD, format!("{e}; see docs/development/dcpomatic.md")))?;
-    let wait = bool_p(p, "wait").unwrap_or(false);
+    let wait = flag_p(CMD, p, "wait", false)?;
+    let claim = FilmDirClaim::take(CMD, &request.film_dir)?;
     let id = s.jobs.iter().map(|j| j.id).max().unwrap_or(0) + 1;
     let job = crate::Job { id, label: format!("DCP-o-matic: {}", request.name), progress: Default::default(), result: Default::default() };
     job.progress.total.store(STEPS, Ordering::Relaxed);
     let (prog, res) = (job.progress.clone(), job.result.clone());
     let run = move || {
+        let _claim = claim;
         let t0 = web_time::Instant::now();
         let (pc, pp) = (prog.clone(), prog.clone());
         let control = cfa4_dcpomatic::Control::new().with_cancel(move || pc.cancel.load(Ordering::Relaxed)).with_progress(move |phase, f| {
@@ -165,8 +199,8 @@ fn make_dcp(s: &mut Session, p: &Value) -> Result<Value> {
     };
     let run = crate::export_tools::guard_job(job.progress.clone(), job.result.clone(), run);
     let result = job.result.clone();
-    s.jobs.push(job);
     if wait {
+        s.jobs.push(job);
         run();
         let r = result.lock().unwrap_or_else(PoisonError::into_inner).clone();
         return match r {
@@ -175,7 +209,9 @@ fn make_dcp(s: &mut Session, p: &Value) -> Result<Value> {
             None => Err(bad(CMD, "the job did not finish")),
         };
     }
+    // The job is listed only once its thread runs, so a failed start leaves no job without a runner.
     std::thread::Builder::new().name("dcpomatic".into()).spawn(run).map_err(|e| EngineError::Other(e.to_string()))?;
+    s.jobs.push(job);
     Ok(json!({"job": id}))
 }
 

@@ -54,6 +54,10 @@ fn bad_params_are_refused() {
         (json!({"content": "/a.mov", "output": "/o/f", "container": "1.90"}), "container"),
         (json!({"content": "/a.mov", "output": "/o/f", "encrypt": true}), "DCPOM-3"),
         (json!({"content": "/a.mov", "output": "/o/f", "fps": "fast"}), "fps"),
+        (json!({"content": "/a.mov", "output": "/o/f", "fps": 24.9}), "fps"),
+        (json!({"content": "/a.mov", "output": "/o/f", "fps": -24}), "fps"),
+        (json!({"content": "/a.mov", "output": "/o/f", "encrypt": "true"}), "encrypt"),
+        (json!({"content": "/a.mov", "output": "/o/f", "threeD": 1}), "threeD"),
         (json!({"content": [{"path": "/a.mov", "channel": "Q"}], "output": "/o/f"}), "content"),
     ] {
         let e = request_from_params(cmd, &p).unwrap_err().to_string();
@@ -69,4 +73,15 @@ fn commands_are_registered() {
     let mut s = crate::Session::default();
     let st = status(&mut s, &json!({})).unwrap();
     assert!(st["available"].is_boolean() && st["minimumVersion"] == "2.18.51", "{st}");
+}
+
+#[test]
+fn a_film_folder_is_held_by_one_job_at_a_time() {
+    let cmd = "dcpomatic.makeDcp";
+    let dir = std::env::temp_dir().join(format!("cfa4-dcpom-claim-{}", std::process::id()));
+    let first = FilmDirClaim::take(cmd, &dir).unwrap();
+    let e = FilmDirClaim::take(cmd, &dir.join(".")).err().expect("the same folder is refused").to_string();
+    assert!(e.contains("already writing"), "{e}");
+    drop(first);
+    assert!(FilmDirClaim::take(cmd, &dir).is_ok(), "released when the job ends");
 }
