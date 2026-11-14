@@ -277,6 +277,7 @@ fn text_animators_change_what_a_title_shows_over_time() {
         ("graphics.textAnimator.counter", "Counter"),
         ("graphics.textAnimator.typewriter", "Typewriter"),
         ("graphics.textAnimator.wordByWord", "Word by Word"),
+        ("graphics.textAnimator.scramble", "Scramble"),
         ("graphics.textAnimator.none", "None"),
     ] {
         let spec = crate::commands::find(id).unwrap();
@@ -292,6 +293,12 @@ fn text_animators_change_what_a_title_shows_over_time() {
     s.execute("graphics.textAnimator.typewriter", json!({"duration": 1.0, "delay": 1.0})).unwrap();
     assert_eq!(shown(&s, 0.5), "");
     assert_eq!(shown(&s, 1.5).chars().count(), 8);
+    s.execute("graphics.textAnimator.scramble", json!({"duration": 1.0, "delay": 1.0})).unwrap();
+    let scrambled = shown(&s, 1.0);
+    assert_eq!(scrambled.chars().count(), "432,014,696 views".chars().count());
+    assert_eq!(scrambled.find(' '), Some(11), "{scrambled}");
+    assert!(!scrambled.contains("views"), "{scrambled}");
+    assert_eq!(shown(&s, 2.5), "432,014,696 views");
     s.execute("graphics.set", json!({"clip": clip.0, "props": {"anim": "Word by Word"}})).unwrap();
     assert_eq!(shown(&s, 1.6), "432,014,696");
     s.execute("graphics.textAnimator.none", json!({})).unwrap();
