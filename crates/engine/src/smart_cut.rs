@@ -522,6 +522,24 @@ fn cut(s: &mut Session, p: &Value) -> Result<(Vec<u8>, Value)> {
     let mut audio_reports = Vec::new();
     let bytes = match &audio {
         Some((interval, a)) if !a.tracks.is_empty() => {
+            // the sound's bytes are known from the index: sound over the limit stops the cut
+            // before it is read and muxed (the video is already within it; the finished file is
+            // checked below), so the memory held stays a small multiple of the limit
+            let sound: u64 = a
+                .tracks
+                .iter()
+                .map(|t| {
+                    let Some(track) = src.file.tracks.get(t.track) else { return 0 };
+                    match (t.pcm, track.entries.first().map(|e| &e.codec)) {
+                        // uncompressed sound: only the frames written, not the whole chunks read
+                        (Some((_, frames)), Some(CodecConfig::Pcm(p))) => frames.saturating_mul(u64::from(p.bytes_per_frame())),
+                        _ => track.samples.get(t.first..=t.last).map_or(0, |v| v.iter().map(|x| u64::from(x.size)).sum::<u64>()),
+                    }
+                })
+                .sum();
+            if sound > cap {
+                return Err(too_large(cap));
+            }
             let brand = if plan.plan.output_container == Container::Mov { Brand::Mov } else { Brand::Mp4 };
             let with_audio = mux_with_audio(&bytes, &src.file, &*src.bytes, a, *interval, brand).map_err(other)?;
             audio_reports = verify_audio_copy(&with_audio, &bytes, &src.file, &*src.bytes, a, *interval).map_err(other)?;
@@ -534,6 +552,9 @@ fn cut(s: &mut Session, p: &Value) -> Result<(Vec<u8>, Value)> {
     }
     // the source's chapters inside the cut, moved onto its timeline (K14)
     let (bytes, chapters) = with_chapters(&src, &plan, bytes)?;
+    if bytes.len() as u64 > cap {
+        return Err(too_large(cap));
+    }
     let summary = summary(&plan);
     let mut audio = audio_json(&audio);
     audio["verified"] = json!(audio_reports);

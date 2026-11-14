@@ -223,6 +223,33 @@ fn a_join_stops_a_cut_as_soon_as_it_passes_the_memory_limit() {
     assert!(!files.0.lock().unwrap().contains_key("o.mp4"));
 }
 
+/// The limit holds for the whole file: with its sound and with its chapters, one byte less
+/// than the cut needs is refused and nothing is written.
+#[test]
+fn the_memory_limit_counts_the_sound_and_the_chapters() {
+    let ch = |s: f64, t: &str| cfa4_isobmff::Chapter { start_100ns: (s * 10_000_000.0) as u64, title: t.into() };
+    let chaptered = cfa4_isobmff::replace_chapters(&source_mp4(), &[ch(0.0, "A"), ch(0.6, "B")]).unwrap();
+    let (mut s, files) = session();
+    files.0.lock().unwrap().insert("av.mp4".into(), av_mp4());
+    files.0.lock().unwrap().insert("ch.mp4".into(), chaptered);
+    for (src, check) in [("av.mp4", "audio"), ("ch.mp4", "chapters")] {
+        let cut = |s: &mut Session, out: &str, cap: Option<u64>| {
+            let mut p = json!({"path": src, "in": frame(0), "out": frame(20), "output": format!("{check}-{out}")});
+            if let Some(c) = cap {
+                p["maxBytes"] = json!(c);
+            }
+            s.execute("export.start", p)
+        };
+        let r = cut(&mut s, "full.mp4", None).unwrap();
+        assert!(r[check].as_array().is_some_and(|v| !v.is_empty()) || r[check]["tracks"].as_array().is_some_and(|v| !v.is_empty()), "{src}: {r}");
+        let need = r["bytes"].as_u64().unwrap();
+        let e = cut(&mut s, "small.mp4", Some(need - 1)).unwrap_err().to_string();
+        assert!(e.contains("maxBytes"), "{src}: {e}");
+        assert!(!files.0.lock().unwrap().contains_key(&format!("{check}-small.mp4")), "{src}");
+        cut(&mut s, "exact.mp4", Some(need)).unwrap();
+    }
+}
+
 #[cfg(unix)]
 #[test]
 fn a_hard_link_to_the_source_is_not_an_output() {
