@@ -22,7 +22,8 @@ Usage:
     python3 scripts/dev/av2-oracle.py manifest --from docs/audit/av2-00-results.json
 
 Then: CFA4_REQUIRE_AV2_ORACLE=1 cargo test -p cfa4-testkit av2
-Requirements: git, cmake, ninja, nasm, a C/C++ compiler, ffmpeg (sources only).
+Requirements: git, cmake, ninja, nasm, a C/C++ compiler, and for the sources only CFA4's pinned
+FFmpeg 9.0.2 (docs/testing.md §2; scripts/dev/fetch-ffmpeg-9.0.2.sh), never the Ubuntu ffmpeg.
 """
 
 from __future__ import annotations
@@ -50,6 +51,23 @@ def run(cmd: list[str], **kw) -> subprocess.CompletedProcess:
 
 def die(msg: str) -> None:
     sys.exit(f"av2-oracle: {msg}")
+
+
+FFMPEG_VERSION = "9.0.2"
+
+
+def require_pinned_ffmpeg() -> None:
+    """The corpus sources come only from CFA4's pinned FFmpeg (docs/testing.md §2)."""
+    if shutil.which("ffmpeg") is None:
+        die(f"ffmpeg not found; install FFmpeg {FFMPEG_VERSION} with scripts/dev/fetch-ffmpeg-9.0.2.sh")
+    r = run(["ffmpeg", "-version"])
+    words = r.stdout.split()
+    got = words[2] if r.returncode == 0 and len(words) > 2 else "unknown"
+    if got != FFMPEG_VERSION:
+        die(
+            f"the ffmpeg on PATH is {got}, not the pinned {FFMPEG_VERSION}: put "
+            f"/opt/cfa4/ffmpeg-{FFMPEG_VERSION}/bin first on PATH (scripts/dev/fetch-ffmpeg-9.0.2.sh)"
+        )
 
 
 def pin(manifest: dict, ref: str) -> dict:
@@ -127,9 +145,13 @@ def cmd_corpus(args: argparse.Namespace) -> int:
     sources_dir.mkdir(parents=True, exist_ok=True)
 
     sources = {}
+    ffmpeg_checked = False
     for name, s in manifest["sources"].items():
         path = sources_dir / f"{name}.y4m"
         if not path.exists():
+            if not ffmpeg_checked:
+                require_pinned_ffmpeg()
+                ffmpeg_checked = True
             tmp = path.with_suffix(".tmp.y4m")
             r = run(
                 [

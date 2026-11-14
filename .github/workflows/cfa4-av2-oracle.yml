@@ -41,10 +41,30 @@ jobs:
           persist-credentials: false
       - name: Ubuntu 26.04 host gate
         run: bash scripts/ci/require-ubuntu-2604.sh
+      # No Ubuntu ffmpeg: the corpus sources come only from CFA4's pinned FFmpeg 9.0.2
+      # (docs/testing.md §2). The -dev packages bring the shared libraries the prebuilt loads.
       - name: Build dependencies
         run: |
           sudo apt-get update
-          sudo apt-get install -y --no-install-recommends build-essential cmake ninja-build meson nasm git ffmpeg
+          sudo apt-get install -y --no-install-recommends build-essential cmake ninja-build meson nasm git \
+            curl xz-utils zlib1g-dev libva-dev libdrm-dev libvpl-dev \
+            libdav1d-dev libvpx-dev libopus-dev libwebp-dev libmp3lame-dev
+      - name: Install CFA4 FFmpeg 9.0.2 (prebuilt, SHA-256 pinned; GPL-3 base build, no x264/x265)
+        run: |
+          bash scripts/dev/fetch-ffmpeg-9.0.2.sh
+          echo /opt/cfa4/ffmpeg-9.0.2/bin >> "$GITHUB_PATH"
+      - name: Assert the corpus ffmpeg is the pinned 9.0.2
+        run: |
+          if dpkg-query -W -f='${Status}' ffmpeg 2>/dev/null | grep -q 'install ok installed'; then
+            echo "::error::The Ubuntu ffmpeg package is installed; the AV2 corpus must use only FFmpeg 9.0.2."
+            exit 1
+          fi
+          test "$(command -v ffmpeg)" = /opt/cfa4/ffmpeg-9.0.2/bin/ffmpeg
+          actual="$(ffmpeg -version | awk 'NR==1 {print $3}')"
+          if [[ "$actual" != "9.0.2" ]]; then
+            echo "::error::The AV2 corpus requires ffmpeg 9.0.2 (got $actual)."
+            exit 1
+          fi
       - name: Rust toolchain from rust-toolchain.toml
         run: rustup show
       - name: Build AVM v1.0.0 (oracle) into target/av2-oracle

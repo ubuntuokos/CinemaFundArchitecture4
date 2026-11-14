@@ -104,8 +104,8 @@ cross-check ([AV2 plan](plans/AV2-CODEC-PLAN-2026-10-29.md) II.3, X/3).
   SHA-256 of the AVM v1.0.0 output (after film grain synthesis). Only hashes, never media.
 - `python3 scripts/dev/av2-oracle.py build [--ref av2-normative]` builds `avmenc`/`avmdec` at the
   pinned commit into `target/av2-oracle/avm-<ref>/bin` with an `AVM_COMMIT` stamp (nothing is
-  installed system-wide). `python3 scripts/dev/av2-oracle.py corpus` makes the sources with ffmpeg,
-  encodes the vectors into `target/fixtures/av2/vectors` and removes any bitstream whose SHA-256
+  installed system-wide). `python3 scripts/dev/av2-oracle.py corpus` makes the sources with the
+  pinned FFmpeg 9.0.2 (it refuses any other ffmpeg on `PATH`), encodes the vectors into `target/fixtures/av2/vectors` and removes any bitstream whose SHA-256
   differs from the manifest. `manifest --from <AV2-00 evidence>` refreshes the hashes.
 - `cfa4_testkit::av2` finds the oracle (`CFA4_AVMDEC`, else `CFA4_AVM_PREFIX` or the default
   prefix; the stamp must name the pinned commit, and `PATH` is never searched), checks corpus
