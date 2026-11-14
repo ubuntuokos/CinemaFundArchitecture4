@@ -1,7 +1,7 @@
 # CFA4-TITLE-CREDITS-001 – Cím-, felirat- és kreditgenerátor – Fejlesztési terv – 1.0
 
 > **Eredet és állapot.** A tervet a tulajdonos (ubuntuokos) 2026-11-14-én adta át összeegyeztetésre.
-> **Állapota: javasolt, jóváhagyásra vár.** A szöveg itt változatlan; csak a formázás (címsorok,
+> **Állapota: JÓVÁHAGYVA (a tulajdonos, 2026-11-14)**, a CFA4-illesztési melléklet döntéseivel (Q1–Q18) együtt; ahol a melléklet döntése eltér a szövegtől, a döntés érvényes. A szöveg itt változatlan; csak a formázás (címsorok,
 > felsorolások) igazodik a Markdownhoz. A CFA4 `main`-ben rögzített szabályaihoz és a meglévő
 > stáblista-tervhez ([`docs/credits-plan.md`](../credits-plan.md), C1–C14) való illesztés a
 > [CFA4-illesztési mellékletben](CFA4-TITLE-CREDITS-001-1.0-CFA4-ILLESZTES.md) van: mi kész, mi
@@ -13,7 +13,7 @@
 | Azonosító | CFA4-TITLE-CREDITS-001 |
 | Cím | Cím-, felirat- és kreditgenerátor |
 | Változat | Fejlesztési terv – 1.0 |
-| Állapot | Javasolt, jóváhagyásra vár |
+| Állapot | Jóváhagyva (2026-11-14), a melléklet döntéseivel |
 | Projekt | CinemaFundArchitecture4 (CFA4) |
 | Célplatform | Ubuntu 26.04 / amd64 |
 | Grafikus környezet | Qt6 |

@@ -1,6 +1,6 @@
 # CFA4-TITLE-CREDITS-001 1.0 – CFA4-illesztési melléklet
 
-**Dátum:** 2026-11-14 · **Állapot:** a terv javasolt; a tulajdonos 2026-11-14-én elfogadta az E1–E14 javaslatait (Q1–Q12)
+**Dátum:** 2026-11-14 · **Állapot:** a tervet a tulajdonos 2026-11-14-én **jóváhagyta**; a tulajdonos 2026-11-14-én elfogadta az E1–E14 javaslatait (Q1–Q12)
 és döntött az 1.2 hiányainak pótlásáról; a 3. pont javaslatai (Q1–Q13) mind elfogadva · **Terv:** [`CFA4-TITLE-CREDITS-001-1.0.md`](CFA4-TITLE-CREDITS-001-1.0.md) ·
 **Meglévő terv:** [`docs/credits-plan.md`](../credits-plan.md) (F10, C1–C14), [ADR F10](../adr/ADR-F10-CREDITS-SPREADSHEET-2026-10-23.md),
 [`docs/credits.md`](../credits.md)
