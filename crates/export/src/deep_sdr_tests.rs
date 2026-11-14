@@ -122,3 +122,65 @@ fn dcp_xyz_from_floats() {
     // short or hostile input never panics
     let _ = dcp_out::rgbf_to_xyz12(&[f32::NAN, f32::INFINITY], 4, 4);
 }
+
+/// DPX (10-bit) and OpenEXR (half float) image sequences take the floats too: the ramp keeps its
+/// 320 levels instead of 256.
+#[test]
+fn deep_image_sequences_keep_more_than_8_bits() {
+    let (p, seq, m) = ramp_project();
+    let dir = std::env::temp_dir().join(format!("fc-deep-seq-{}", std::process::id()));
+    std::fs::create_dir_all(&dir).unwrap();
+    for format in [Format::DpxSequence, Format::ExrSequence] {
+        let path = dir.join(format!("ramp.{}", format.extension())).to_string_lossy().into_owned();
+        let s = ExportSettings { format, path, range: Some(TimeRange::new(Tick::ZERO, FrameRate::FPS_24.tick_of(1))), ..Default::default() };
+        export(&p, seq, &s, &m, &Progress::default()).unwrap();
+        let file = std::fs::read_dir(&dir).unwrap().flatten().map(|e| e.path()).find(|p| p.extension().is_some_and(|x| x == format.extension())).unwrap();
+        let bytes = std::fs::read(&file).unwrap();
+        let mut row: Vec<u32> = match format {
+            Format::DpxSequence => {
+                // one big-endian word per pixel after the 2048-byte header: R, G, B in 10 bits each
+                let words: Vec<u32> = bytes[2048..].as_chunks::<4>().0.iter().map(|w| u32::from_be_bytes(*w)).collect();
+                words[90 * 320..91 * 320].iter().map(|w| (w >> 12) & 0x3FF).collect()
+            }
+            _ => {
+                let d = cfa4_media::still::exr::decode("ramp.exr", &bytes).unwrap();
+                let cfa4_frame::PixelData::RgbaF32(px) = &d.frame.data else { panic!("EXR decodes to floats") };
+                px.chunks_exact(4).skip(90 * 320).take(320).map(|p| p[1].to_bits()).collect()
+            }
+        };
+        row.sort_unstable();
+        row.dedup();
+        assert!(row.len() > 300, "{format:?}: {} distinct values across a 320-step ramp", row.len());
+        let _ = std::fs::remove_file(&file);
+    }
+    let _ = std::fs::remove_dir_all(&dir);
+}
+
+/// The 8-bit path of the DPX and EXR writers is unchanged, and float input agrees with it at the
+/// 8-bit codes (alpha included).
+#[test]
+fn dpx_and_exr_floats_match_their_8_bit_codes() {
+    let rgba: Vec<u8> = (0..=255u8).flat_map(|v| [v, 255 - v, v / 3, if v % 2 == 0 { 255 } else { 128 }]).collect();
+    let float: Vec<f32> = rgba.chunks_exact(4).flat_map(|p| [p[0], p[1], p[2]].map(|v| f32::from(v) / 255.0)).collect();
+    let a = raster::dpx(&rgba, 256, 1).unwrap();
+    let b = raster::dpx_deep(&rgba, Some(&float), 256, 1).unwrap();
+    assert_eq!(a.len(), b.len());
+    for (x, y) in a[2048..].as_chunks::<4>().0.iter().zip(b[2048..].as_chunks::<4>().0) {
+        let (x, y) = (u32::from_be_bytes(*x), u32::from_be_bytes(*y));
+        for s in [22, 12, 2] {
+            assert!(((x >> s) & 0x3FF).abs_diff((y >> s) & 0x3FF) <= 1, "{x:08x} vs {y:08x}");
+        }
+    }
+    for alpha in [false, true] {
+        let a = cfa4_media::still::exr::decode("a.exr", &raster::exr(&rgba, 256, 1, alpha, ExrCompression::Zip).unwrap()).unwrap();
+        let b = cfa4_media::still::exr::decode("b.exr", &raster::exr_with(&rgba, Some(&float), 256, 1, alpha, ExrCompression::Zip, None).unwrap()).unwrap();
+        let (cfa4_frame::PixelData::RgbaF32(a), cfa4_frame::PixelData::RgbaF32(b)) = (&a.frame.data, &b.frame.data) else { panic!("floats") };
+        for (x, y) in a.iter().zip(b.iter()) {
+            assert!((x - y).abs() <= 1e-3 * x.abs().max(1e-2), "alpha {alpha}: {x} vs {y}");
+        }
+    }
+    // short float input falls back to the 8-bit picture, NaN codes as black
+    assert_eq!(raster::dpx_deep(&rgba, Some(&float[..3]), 256, 1).unwrap(), a);
+    let nan = raster::dpx_deep(&rgba[..4], Some(&[f32::NAN; 3]), 1, 1).unwrap();
+    assert_eq!(&nan[2048..], &[0, 0, 0, 0]);
+}
