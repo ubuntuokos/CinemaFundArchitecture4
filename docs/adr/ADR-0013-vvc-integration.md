@@ -1,6 +1,6 @@
 # ADR 0013 – H.266/VVC bekötése: VVdeC külön folyamatban, kódolás FFmpeg `libvvenc`-kel
 
-**Dátum:** 2026-11-14 · **Állapot:** javaslat (VVC-01, a tulajdonos jóváhagyására vár; G1 kapu) ·
+**Dátum:** 2026-11-14 · **Állapot:** elfogadva (VVC-01; a tulajdonos jóváhagyta 2026-11-14-én, G1 kapu teljesült) ·
 **Kapcsolódik:** [VVC terv v1.2](../plans/CFA4-VVC-PLAN-001-2026-11-07.md) 3., 4. és 7. fejezet,
 [VVC-00 jelentés](../plans/CFA4-VVC-00-REPORT-2026-11-14.md),
 [ADR 0001](0001-platform-ffi.md) (FFI, 2026-11-07-i kiegészítés), [ADR 0004](ADR-0004-compute-routing.md) (`cfa4-route`),
@@ -31,7 +31,7 @@ További tények a VVC-00-ból és a repóból:
   a CFA4-et is leállítaná, és `catch_unwind`-dal nem fogható meg.
 - A CFA4-ben ma nincs VVC-nyom (`crates/isobmff` `CodecConfig`-ban sincs `Vvc`).
 
-## Döntés (javaslat)
+## Döntés
 
 1. **A VVdeC külön folyamatban fut, az ADR 0010 mintájára.** Új segédprogram: `cfa4-vvc-decode`
    (C, GPL-3.0-or-later, a VVdeC C API-ját, a `vvdec/vvdec.h`-t hívja), helye
@@ -119,7 +119,9 @@ További tények a VVC-00-ból és a repóból:
   (csonka, sérült, túlméretes), a crash-elszigetelés tesztjével és a VVdeC–FFmpeg bitazonossággal fut;
   a `libvvenc` MKV/TS DTS-hibájára regressziós teszt kerül (VVC-TEST-004/005).
 
-## Nyitott kérdés a tulajdonosnak
+## Tulajdonosi döntés
 
 Nincs új döntési pont a tervhez képest: a külön folyamat és a `cfa4-restricted-extras` csomagolás a
-terv és a korábbi döntések következménye. Jóváhagyásra vár: ez az ADR egészében (G1).
+terv és a korábbi döntések következménye. A tulajdonos 2026-11-14-én az ADR-t egészében jóváhagyta
+(G1). A szám 0013, mert a 0011-et az [ADR 0011](ADR-0011-dcpomatic-external-mastering.md), a 0012-t
+a vezérlőfelület ADR-javaslata (#1184) már használja.
