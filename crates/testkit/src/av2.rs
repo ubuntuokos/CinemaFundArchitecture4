@@ -411,7 +411,9 @@ mod tests {
         assert_eq!(c.oracle.commit, "966a7d7cd6fcf60360caf5dc413b2aeeb65e144d");
         assert_eq!(c.cross_check.first().map(|p| p.reference.as_str()), Some("av2-normative"));
         assert_eq!(c.hash_stage, "output");
-        assert_eq!(c.vectors.len(), 8);
+        assert_eq!(c.vectors.len(), 13);
+        assert!(c.vector("422-10bit").is_some_and(|v| v.geometry.chroma == "422" && v.geometry.bytes_per_sample == 2));
+        assert!(c.vector("420-8bit-resize").is_some_and(|v| (v.geometry.width, v.geometry.height) == (176, 144)));
         assert!(c.vector("420-10bit-default").is_some_and(|v| v.geometry.bytes_per_sample == 2));
         assert!(c.vector("400-8bit").is_some_and(|v| v.frames.iter().all(|f| f.len() == 1)));
     }

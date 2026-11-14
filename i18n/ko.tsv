@@ -4374,6 +4374,10 @@
 	{n} more	{n}개 더
 	Block	블록
 	parallel	병렬
+	page {page}: a spine's vertical position works on card pages only; it is ignored	페이지 {page}: 축의 세로 위치는 카드 페이지에서만 적용되므로 무시됩니다
+	on a card: centered on {y} px	카드: {y} px 중앙
+	on a card: starts at {y} px	카드: {y} px에서 시작
+	on a card: ends at {y} px	카드: {y} px에서 끝남
 # MPEG-2 export audio (#268): a product name, kept as is
 	Dolby Digital (AC-3)	Dolby Digital (AC-3)
 	In the page (OBS takes it from the Browser Source)	페이지 안 (OBS가 브라우저 소스에서 가져옴)
@@ -4446,7 +4450,12 @@
 	page {page}: the runtime is reached by changing the roll speed (the gaps would have to grow more than 20-fold)	페이지 {page}: 롤 속도를 바꿔 길이를 맞춥니다(간격을 20배보다 더 늘려야 합니다)
 	page {page}: the transition needs the pages to touch (page gap 0); it is left out	페이지 {page}: 전환을 쓰려면 페이지가 맞닿아야 합니다(페이지 간격 0). 제외합니다
 	page {page}: there is no transition “{name}”; the pages cut	페이지 {page}: 전환 “{name}”이(가) 없습니다. 페이지는 컷으로 이어집니다
-	spine position “{value}” is not supported (a pixel offset, optionally “parallel”, is)	스파인 위치 “{value}”은(는) 지원되지 않습니다(픽셀 오프셋과, 선택적으로 “parallel”은 지원됩니다)
+	spine position “{value}” is not supported (a pixel offset, optionally “parallel”, or “Hook N Bottom-Top dx dy” is)	스파인 위치 “{value}”은(는) 지원되지 않습니다(픽셀 오프셋과, 선택적으로 “parallel” / “Hook N Bottom-Top dx dy”은 지원됩니다)
+	page {page}: the hook reaches back further than there are spines; it hooks onto the first spine, or starts its own	{page}페이지: 후크가 있는 스파인 수보다 더 앞을 가리킵니다. 첫 스파인에 걸리거나 새 스파인을 시작합니다
+	hooked {n} spines back: its {from} meets this spine's {to}	{n}개 앞의 스파인에 걸림: 그 {from}이(가) 이 스파인의 {to}에 맞닿습니다
+	top	위쪽
+	middle	가운데
+	bottom	아래쪽
 	vertical gap “{value}” is not a number	세로 간격 “{value}”은(는) 숫자가 아닙니다
 	picture “{file}” was not found or cannot be read; it is left out	이미지 “{file}”을(를) 찾을 수 없거나 읽을 수 없습니다. 제외합니다
 	video “{file}” was not found or cannot be read; it is left out	비디오 “{file}”을(를) 찾을 수 없거나 읽을 수 없습니다. 제외합니다
@@ -4511,7 +4520,7 @@
 	the engine sent no report	엔진이 보고서를 보내지 않았습니다
 	MXF OP1a Uncompressed 10-bit 4:2:2 (v210)	MXF OP1a 비압축 10비트 4:2:2 (v210)
 	MXF OP1a, uncompressed 10-bit Y'CbCr 4:2:2 in the v210 layout (SMPTE ST 384), 24-bit 48 kHz PCM, start timecode	MXF OP1a, v210 레이아웃의 비압축 10비트 Y'CbCr 4:2:2 (SMPTE ST 384), 24비트 48kHz PCM, 시작 타임코드
-	Write the captions as ANC data (CEA-608/708, 29.97 fps)	자막을 ANC 데이터로 기록 (CEA-608/708, 29.97fps)
+	Write the captions as ANC data (CEA-608/708)	자막을 ANC 데이터로 기록 (CEA-608/708)
 	Load KDM…	KDM 불러오기…
 	Forget DCP Keys	DCP 키 지우기
 	Load KDM	KDM 불러오기
@@ -4521,6 +4530,13 @@
 	The keys stay in memory only, until Forget DCP Keys or the end of the session.	키는 메모리에만 남으며, DCP 키 지우기 또는 세션이 끝날 때까지 유지됩니다.
 	DCP keys forgotten	DCP 키를 지웠습니다
 	Choose the KDM file and the private key.	KDM 파일과 개인 키를 선택하십시오.
+	Load even if the certificate chain is not verified	인증서 체인이 확인되지 않아도 불러오기
+	Bundle: {loaded} of {total} KDMs loaded, {other} for other recipients	번들: KDM {total}개 중 {loaded}개 불러옴, {other}개는 다른 수신자용
+	Not loaded: {path}: {problem}	불러오지 않음: {path}: {problem}
+	Signature verified: {chain}	서명 확인됨: {chain}
+	Signature not verified: {problem}	서명 확인 안 됨: {problem}
+	KDM required	KDM 필요
+	Encrypted: load the KDM with content key {keys}	암호화됨: 콘텐츠 키 {keys}가 든 KDM을 불러오십시오
 
 # Settings ▸ Timecode Sync (TC-4)
 	Timecode Sync	타임코드 동기화
@@ -4555,3 +4571,60 @@
 	Send MIDI Timecode	MIDI 타임코드 보내기
 	Add Studio Scene	스튜디오 장면 추가
 	Live	라이브
+# Auto Color, Auto Contrast, Auto Levels (EffectsSDK review)
+	Auto Color	자동 색상
+	Auto Contrast	자동 대비
+	Auto Levels	자동 레벨
+	Temporal Smoothing (seconds)	시간적 스무딩(초)
+	Scene Detect	장면 감지
+	Black Clip	검정 클립
+	White Clip	흰색 클립
+	Snap Neutral Midtones	중간 톤 중립화
+# Layout presets: PiP corners, split screen (EffectsSDK review)
+	PiP 35% Upper Left	PiP 35% 왼쪽 위
+	Picture-in-picture: 35 % scale in the upper left	화면 속 화면: 왼쪽 위에 35 % 비율
+	PiP 35% Lower Left	PiP 35% 왼쪽 아래
+	Picture-in-picture: 35 % scale in the lower left	화면 속 화면: 왼쪽 아래에 35 % 비율
+	PiP 35% Lower Right	PiP 35% 오른쪽 아래
+	Picture-in-picture: 35 % scale in the lower right	화면 속 화면: 오른쪽 아래에 35 % 비율
+	Split Screen Left	분할 화면 왼쪽
+	Split screen: the middle half of the picture fills the left half of the frame	분할 화면: 영상의 가운데 절반이 프레임의 왼쪽 절반을 채움
+	Split Screen Right	분할 화면 오른쪽
+	Split screen: the middle half of the picture fills the right half of the frame	분할 화면: 영상의 가운데 절반이 프레임의 오른쪽 절반을 채움
+# Creative Looks: CRT (P3)
+	CRT	CRT
+	Scanline Strength	주사선 강도
+	Line Count	주사선 수
+	Mask	마스크
+	Mask Strength	마스크 강도
+	Corner Darkening	모서리 어둡게
+	Aperture Grille	어퍼처 그릴
+	Shadow Mask	섀도 마스크
+	Slot Mask	슬롯 마스크
+# Creative Looks: Oil Paint (P4)
+	Oil Paint	유화
+	Detail	디테일
+	Texture	텍스처
+	Facet	패싯
+	Daubs	덧칠
+	Dry Brush	드라이 브러시
+	Fresco	프레스코
+	Knife	나이프
+	Sponge	스펀지
+# Creative Looks: Pixel Sort (P5)
+	Pixel Sort	픽셀 정렬
+	Sort By	정렬 기준
+	Lower Threshold	하한 임계값
+	Upper Threshold	상한 임계값
+	Ascending	오름차순
+# Temporal Denoise (EffectsSDK review)
+	Temporal Denoise	시간적 노이즈 제거
+	Frames Each Side	양쪽 프레임 수
+	Motion Threshold	움직임 임계값
+	Show Motion	움직임 표시
+	No signal	신호 없음
+	Locating	위치 찾는 중
+	Locked	동기화됨
+	Freewheel	프리휠
+	Scrubbing	스크러빙
+	Sending	보내는 중

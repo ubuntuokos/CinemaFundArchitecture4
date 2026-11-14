@@ -4382,6 +4382,10 @@ export.summary	Low	madal
 	{n} more	Veel {n}
 	Block	Plokk
 	parallel	paralleelne
+	page {page}: a spine's vertical position works on card pages only; it is ignored	leht {page}: telje püstasend kehtib ainult kaardilehtedel; seda eiratakse
+	on a card: centered on {y} px	kaardil: keskel kohal {y} px
+	on a card: starts at {y} px	kaardil: algab kohalt {y} px
+	on a card: ends at {y} px	kaardil: lõpeb kohal {y} px
 # MPEG-2 export audio (#268): a product name, kept as is
 	Dolby Digital (AC-3)	Dolby Digital (AC-3)
 	In the page (OBS takes it from the Browser Source)	Lehel (OBS võtab selle brauseriallikast)
@@ -4454,7 +4458,12 @@ export.summary	Low	madal
 	page {page}: the runtime is reached by changing the roll speed (the gaps would have to grow more than 20-fold)	leht {page}: kestus saavutatakse kerimiskiirust muutes (vahed peaksid kasvama üle 20 korra)
 	page {page}: the transition needs the pages to touch (page gap 0); it is left out	leht {page}: üleminek nõuab, et lehed puutuksid (lehevahe 0); see jäetakse välja
 	page {page}: there is no transition “{name}”; the pages cut	leht {page}: üleminekut „{name}“ pole; lehed vahetuvad lõikega
-	spine position “{value}” is not supported (a pixel offset, optionally “parallel”, is)	telje asukohta „{value}“ ei toetata (toetatakse pikslinihet, soovi korral koos „parallel“)
+	spine position “{value}” is not supported (a pixel offset, optionally “parallel”, or “Hook N Bottom-Top dx dy” is)	telje asukohta „{value}“ ei toetata (toetatakse pikslinihet, soovi korral koos „parallel“ / „Hook N Bottom-Top dx dy“)
+	page {page}: the hook reaches back further than there are spines; it hooks onto the first spine, or starts its own	lehekülg {page}: konks ulatub kaugemale tagasi, kui telgi on; see haakub esimese teljega või alustab oma
+	hooked {n} spines back: its {from} meets this spine's {to}	haagitud {n} telge tagasi: selle {from} kohtub selle telje {to}ga
+	top	ülaserv
+	middle	keskkoht
+	bottom	alaserv
 	vertical gap “{value}” is not a number	vertikaalne vahe „{value}“ ei ole arv
 	picture “{file}” was not found or cannot be read; it is left out	pilti „{file}“ ei leitud või ei saa lugeda; see jäetakse välja
 	video “{file}” was not found or cannot be read; it is left out	videot „{file}“ ei leitud või ei saa lugeda; see jäetakse välja
@@ -4519,7 +4528,7 @@ export.summary	Low	madal
 	the engine sent no report	mootor ei saatnud aruannet
 	MXF OP1a Uncompressed 10-bit 4:2:2 (v210)	MXF OP1a tihendamata 10-bitine 4:2:2 (v210)
 	MXF OP1a, uncompressed 10-bit Y'CbCr 4:2:2 in the v210 layout (SMPTE ST 384), 24-bit 48 kHz PCM, start timecode	MXF OP1a, tihendamata 10-bitine Y'CbCr 4:2:2 v210 paigutuses (SMPTE ST 384), 24-bitine 48 kHz PCM, algusajakood
-	Write the captions as ANC data (CEA-608/708, 29.97 fps)	Kirjuta subtiitrid ANC-andmetena (CEA-608/708, 29,97 fps)
+	Write the captions as ANC data (CEA-608/708)	Kirjuta subtiitrid ANC-andmetena (CEA-608/708)
 	Load KDM…	Laadi KDM…
 	Forget DCP Keys	Unusta DCP võtmed
 	Load KDM	Laadi KDM
@@ -4529,6 +4538,13 @@ export.summary	Low	madal
 	The keys stay in memory only, until Forget DCP Keys or the end of the session.	Võtmed on ainult mälus, kuni valikuni Unusta DCP võtmed või seansi lõpuni.
 	DCP keys forgotten	DCP võtmed unustatud
 	Choose the KDM file and the private key.	Vali KDM-fail ja privaatvõti.
+	Load even if the certificate chain is not verified	Laadi ka kontrollimata sertifikaadiahelaga
+	Bundle: {loaded} of {total} KDMs loaded, {other} for other recipients	Kogum: laaditud {loaded} KDM-i {total}-st, {other} teistele saajatele
+	Not loaded: {path}: {problem}	Laadimata: {path}: {problem}
+	Signature verified: {chain}	Allkiri kontrollitud: {chain}
+	Signature not verified: {problem}	Allkiri kontrollimata: {problem}
+	KDM required	KDM on vajalik
+	Encrypted: load the KDM with content key {keys}	Krüptitud: laadi KDM sisuvõtmega {keys}
 
 # Settings ▸ Timecode Sync (TC-4)
 	Timecode Sync	Ajakoodi sünkroonimine
@@ -4563,3 +4579,60 @@ export.summary	Low	madal
 	Send MIDI Timecode	Saada MIDI-ajakood
 	Add Studio Scene	Lisa stuudiostseen
 	Live	Otse
+# Auto Color, Auto Contrast, Auto Levels (EffectsSDK review)
+	Auto Color	Automaatne värv
+	Auto Contrast	Automaatne kontrast
+	Auto Levels	Automaatsed tasemed
+	Temporal Smoothing (seconds)	Ajaline silumine (sekundit)
+	Scene Detect	Stseenide tuvastus
+	Black Clip	Musta kärpimine
+	White Clip	Valge kärpimine
+	Snap Neutral Midtones	Neutraalsed keskmised toonid
+# Layout presets: PiP corners, split screen (EffectsSDK review)
+	PiP 35% Upper Left	PiP 35% üleval vasakul
+	Picture-in-picture: 35 % scale in the upper left	Pilt pildis: 35 % skaala üleval vasakul
+	PiP 35% Lower Left	PiP 35% all vasakul
+	Picture-in-picture: 35 % scale in the lower left	Pilt pildis: 35 % skaala all vasakul
+	PiP 35% Lower Right	PiP 35% all paremal
+	Picture-in-picture: 35 % scale in the lower right	Pilt pildis: 35 % skaala all paremal
+	Split Screen Left	Jagatud ekraan vasakul
+	Split screen: the middle half of the picture fills the left half of the frame	Jagatud ekraan: pildi keskmine pool täidab kaadri vasaku poole
+	Split Screen Right	Jagatud ekraan paremal
+	Split screen: the middle half of the picture fills the right half of the frame	Jagatud ekraan: pildi keskmine pool täidab kaadri parema poole
+# Creative Looks: CRT (P3)
+	CRT	CRT
+	Scanline Strength	Skaneerimisjoonte tugevus
+	Line Count	Joonte arv
+	Mask	Mask
+	Mask Strength	Maski tugevus
+	Corner Darkening	Nurkade tumendus
+	Aperture Grille	Avarest
+	Shadow Mask	Varjumask
+	Slot Mask	Piludega mask
+# Creative Looks: Oil Paint (P4)
+	Oil Paint	Õlimaal
+	Detail	Detailsus
+	Texture	Tekstuur
+	Facet	Tahud
+	Daubs	Täpid
+	Dry Brush	Kuiv pintsel
+	Fresco	Fresko
+	Knife	Pahtlinuga
+	Sponge	Käsn
+# Creative Looks: Pixel Sort (P5)
+	Pixel Sort	Pikslite sortimine
+	Sort By	Sordi
+	Lower Threshold	Alumine lävi
+	Upper Threshold	Ülemine lävi
+	Ascending	Kasvav
+# Temporal Denoise (EffectsSDK review)
+	Temporal Denoise	Ajaline mürasummutus
+	Frames Each Side	Kaadreid kummalgi pool
+	Motion Threshold	Liikumise lävi
+	Show Motion	Näita liikumist
+	No signal	Signaal puudub
+	Locating	Positsioneerimine
+	Locked	Sünkroonis
+	Freewheel	Vabajooks
+	Scrubbing	Kerimine
+	Sending	Saatmine

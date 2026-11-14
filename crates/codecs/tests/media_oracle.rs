@@ -54,10 +54,19 @@ fn open_sequence(d: &Path, ext: &str) -> ImageSequenceSource {
     ImageSequenceSource::new("img_0001", sequence_frames(&n, &names), FrameRate::FPS_25, loader()).unwrap()
 }
 
+/// Our frame as straight (not premultiplied) RGBA8, the way ffmpeg's `rgba` output is: 8-bit
+/// stills as they are, deep RGB codes rounded to 8 bits each (alpha too), so a transparent pixel
+/// keeps its colour. Deep Y'CbCr goes through the display conversion.
 fn rgba(f: &cfa4_frame::VideoFrame) -> Vec<u8> {
     match &f.data {
         cfa4_frame::PixelData::Rgba8(p) => p.to_vec(),
-        _ => panic!("still frames are RGBA"),
+        cfa4_frame::PixelData::Rgb16 { planes, bits, alpha } => {
+            let max = (1u32 << bits) - 1;
+            let to8 = |v: u16| ((u32::from(v) * 255 + max / 2) / max) as u8;
+            let n = (f.width * f.height) as usize;
+            (0..n).flat_map(|i| [to8(planes[0][i]), to8(planes[1][i]), to8(planes[2][i]), alpha.as_ref().map_or(255, |a| to8(a[i]))]).collect()
+        }
+        _ => f.to_rgba8(),
     }
 }
 

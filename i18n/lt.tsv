@@ -4383,6 +4383,10 @@ export.summary	Low	žema
 	{n} more	Dar {n}
 	Block	Blokas
 	parallel	lygiagrečiai
+	page {page}: a spine's vertical position works on card pages only; it is ignored	puslapis {page}: ašies vertikali padėtis galioja tik kortelių puslapiuose; ji nepaisoma
+	on a card: centered on {y} px	kortelėje: centruota ties {y} px
+	on a card: starts at {y} px	kortelėje: prasideda ties {y} px
+	on a card: ends at {y} px	kortelėje: baigiasi ties {y} px
 # MPEG-2 export audio (#268): a product name, kept as is
 	Dolby Digital (AC-3)	Dolby Digital (AC-3)
 	In the page (OBS takes it from the Browser Source)	Puslapyje (OBS jį ima iš naršyklės šaltinio)
@@ -4455,7 +4459,12 @@ export.summary	Low	žema
 	page {page}: the runtime is reached by changing the roll speed (the gaps would have to grow more than 20-fold)	{page} puslapis: trukmė pasiekiama keičiant slinkimo greitį (tarpai turėtų padidėti daugiau nei 20 kartų)
 	page {page}: the transition needs the pages to touch (page gap 0); it is left out	{page} puslapis: perėjimui reikia, kad puslapiai liestųsi (tarpas 0); praleidžiamas
 	page {page}: there is no transition “{name}”; the pages cut	{page} puslapis: perėjimo „{name}“ nėra; puslapiai keičiasi kirpimu
-	spine position “{value}” is not supported (a pixel offset, optionally “parallel”, is)	ašies padėtis „{value}“ nepalaikoma (palaikomas poslinkis pikseliais, pasirinktinai su „parallel“)
+	spine position “{value}” is not supported (a pixel offset, optionally “parallel”, or “Hook N Bottom-Top dx dy” is)	ašies padėtis „{value}“ nepalaikoma (palaikomas poslinkis pikseliais, pasirinktinai su „parallel“ / „Hook N Bottom-Top dx dy“)
+	page {page}: the hook reaches back further than there are spines; it hooks onto the first spine, or starts its own	{page} puslapis: kablys siekia toliau atgal, nei yra ašių; jis kabinasi už pirmosios ašies arba pradeda savo
+	hooked {n} spines back: its {from} meets this spine's {to}	užkabinta {n} ašimis atgal: jos {from} susitinka su šios ašies {to}
+	top	viršus
+	middle	vidurys
+	bottom	apačia
 	vertical gap “{value}” is not a number	vertikalus tarpas „{value}“ nėra skaičius
 	picture “{file}” was not found or cannot be read; it is left out	paveikslėlis „{file}“ nerastas arba neperskaitomas; praleidžiamas
 	video “{file}” was not found or cannot be read; it is left out	vaizdo įrašas „{file}“ nerastas arba neperskaitomas; praleidžiamas
@@ -4520,7 +4529,7 @@ export.summary	Low	žema
 	the engine sent no report	variklis neatsiuntė ataskaitos
 	MXF OP1a Uncompressed 10-bit 4:2:2 (v210)	MXF OP1a nesuspaustas 10 bitų 4:2:2 (v210)
 	MXF OP1a, uncompressed 10-bit Y'CbCr 4:2:2 in the v210 layout (SMPTE ST 384), 24-bit 48 kHz PCM, start timecode	MXF OP1a, nesuspaustas 10 bitų Y'CbCr 4:2:2 v210 išdėstymu (SMPTE ST 384), 24 bitų 48 kHz PCM, pradinis laiko kodas
-	Write the captions as ANC data (CEA-608/708, 29.97 fps)	Įrašyti subtitrus kaip ANC duomenis (CEA-608/708, 29,97 kadr./s)
+	Write the captions as ANC data (CEA-608/708)	Įrašyti subtitrus kaip ANC duomenis (CEA-608/708)
 	Load KDM…	Įkelti KDM…
 	Forget DCP Keys	Pamiršti DCP raktus
 	Load KDM	Įkelti KDM
@@ -4530,6 +4539,13 @@ export.summary	Low	žema
 	The keys stay in memory only, until Forget DCP Keys or the end of the session.	Raktai laikomi tik atmintyje, kol pasirenkama Pamiršti DCP raktus arba baigiasi seansas.
 	DCP keys forgotten	DCP raktai pamiršti
 	Choose the KDM file and the private key.	Pasirinkite KDM failą ir privatųjį raktą.
+	Load even if the certificate chain is not verified	Įkelti net su nepatikrinta sertifikatų grandine
+	Bundle: {loaded} of {total} KDMs loaded, {other} for other recipients	Paketas: įkelta {loaded} iš {total} KDM, {other} kitiems gavėjams
+	Not loaded: {path}: {problem}	Neįkelta: {path}: {problem}
+	Signature verified: {chain}	Parašas patikrintas: {chain}
+	Signature not verified: {problem}	Parašas nepatikrintas: {problem}
+	KDM required	Reikia KDM
+	Encrypted: load the KDM with content key {keys}	Užšifruota: įkelkite KDM su turinio raktu {keys}
 
 # Settings ▸ Timecode Sync (TC-4)
 	Timecode Sync	Laiko kodo sinchronizavimas
@@ -4564,3 +4580,60 @@ export.summary	Low	žema
 	Send MIDI Timecode	Siųsti MIDI laiko kodą
 	Add Studio Scene	Pridėti studijos sceną
 	Live	Tiesiogiai
+# Auto Color, Auto Contrast, Auto Levels (EffectsSDK review)
+	Auto Color	Automatinė spalva
+	Auto Contrast	Automatinis kontrastas
+	Auto Levels	Automatiniai lygiai
+	Temporal Smoothing (seconds)	Laikinis glotninimas (sekundės)
+	Scene Detect	Scenų aptikimas
+	Black Clip	Juodos apkirpimas
+	White Clip	Baltos apkirpimas
+	Snap Neutral Midtones	Neutralūs vidutiniai tonai
+# Layout presets: PiP corners, split screen (EffectsSDK review)
+	PiP 35% Upper Left	PiP 35 % viršuje kairėje
+	Picture-in-picture: 35 % scale in the upper left	Vaizdas vaizde: 35 % mastelis viršuje kairėje
+	PiP 35% Lower Left	PiP 35 % apačioje kairėje
+	Picture-in-picture: 35 % scale in the lower left	Vaizdas vaizde: 35 % mastelis apačioje kairėje
+	PiP 35% Lower Right	PiP 35 % apačioje dešinėje
+	Picture-in-picture: 35 % scale in the lower right	Vaizdas vaizde: 35 % mastelis apačioje dešinėje
+	Split Screen Left	Padalytas ekranas kairėje
+	Split screen: the middle half of the picture fills the left half of the frame	Padalytas ekranas: vidurinė vaizdo pusė užpildo kairiąją kadro pusę
+	Split Screen Right	Padalytas ekranas dešinėje
+	Split screen: the middle half of the picture fills the right half of the frame	Padalytas ekranas: vidurinė vaizdo pusė užpildo dešiniąją kadro pusę
+# Creative Looks: CRT (P3)
+	CRT	CRT
+	Scanline Strength	Skleidimo linijų stiprumas
+	Line Count	Linijų skaičius
+	Mask	Kaukė
+	Mask Strength	Kaukės stiprumas
+	Corner Darkening	Kampų patamsinimas
+	Aperture Grille	Apertūrinės grotelės
+	Shadow Mask	Šešėlinė kaukė
+	Slot Mask	Plyšinė kaukė
+# Creative Looks: Oil Paint (P4)
+	Oil Paint	Aliejinė tapyba
+	Detail	Detalumas
+	Texture	Tekstūra
+	Facet	Briaunos
+	Daubs	Tepinėliai
+	Dry Brush	Sausas teptukas
+	Fresco	Freska
+	Knife	Mentelė
+	Sponge	Kempinė
+# Creative Looks: Pixel Sort (P5)
+	Pixel Sort	Pikselių rikiavimas
+	Sort By	Rikiuoti pagal
+	Lower Threshold	Apatinė riba
+	Upper Threshold	Viršutinė riba
+	Ascending	Didėjančiai
+# Temporal Denoise (EffectsSDK review)
+	Temporal Denoise	Laikinis triukšmo šalinimas
+	Frames Each Side	Kadrų kiekvienoje pusėje
+	Motion Threshold	Judesio slenkstis
+	Show Motion	Rodyti judesį
+	No signal	Nėra signalo
+	Locating	Ieškoma pozicijos
+	Locked	Sinchronizuota
+	Freewheel	Laisvoji eiga
+	Scrubbing	Slinkimas
+	Sending	Siunčiama

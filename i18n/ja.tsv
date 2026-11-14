@@ -4389,6 +4389,10 @@
 	{n} more	ほか {n} 件
 	Block	ブロック
 	parallel	並列
+	page {page}: a spine's vertical position works on card pages only; it is ignored	ページ{page}: 軸の縦位置はカードページでのみ有効なため、無視されます
+	on a card: centered on {y} px	カード: {y} px を中心に配置
+	on a card: starts at {y} px	カード: {y} px から開始
+	on a card: ends at {y} px	カード: {y} px で終了
 # MPEG-2 export audio (#268): a product name, kept as is
 	Dolby Digital (AC-3)	Dolby Digital (AC-3)
 	In the page (OBS takes it from the Browser Source)	ページ内（OBS がブラウザソースから取得）
@@ -4461,7 +4465,12 @@
 	page {page}: the runtime is reached by changing the roll speed (the gaps would have to grow more than 20-fold)	ページ{page}:ロール速度を変えて長さを合わせます(間隔を20倍より大きく広げる必要があります)
 	page {page}: the transition needs the pages to touch (page gap 0); it is left out	ページ{page}:トランジションにはページが接している必要があります(ページ間隔0)。省略します
 	page {page}: there is no transition “{name}”; the pages cut	ページ{page}:トランジション“{name}”はありません。ページはカットでつながります
-	spine position “{value}” is not supported (a pixel offset, optionally “parallel”, is)	スパイン位置“{value}”はサポートされていません(ピクセル単位のオフセットと、任意で“parallel”が使えます)
+	spine position “{value}” is not supported (a pixel offset, optionally “parallel”, or “Hook N Bottom-Top dx dy” is)	スパイン位置“{value}”はサポートされていません(ピクセル単位のオフセットと、任意で“parallel” / “Hook N Bottom-Top dx dy”が使えます)
+	page {page}: the hook reaches back further than there are spines; it hooks onto the first spine, or starts its own	ページ {page}: フックが既存のスパインより前を指しています。最初のスパインに掛けるか、新しいスパインを始めます
+	hooked {n} spines back: its {from} meets this spine's {to}	{n} 本前のスパインに掛けています: その{from}がこのスパインの{to}に接します
+	top	上端
+	middle	中央
+	bottom	下端
 	vertical gap “{value}” is not a number	縦の間隔“{value}”は数値ではありません
 	picture “{file}” was not found or cannot be read; it is left out	画像“{file}”が見つからないか読み込めません。省略します
 	video “{file}” was not found or cannot be read; it is left out	ビデオ“{file}”が見つからないか読み込めません。省略します
@@ -4526,7 +4535,7 @@
 	the engine sent no report	エンジンがレポートを送信しませんでした
 	MXF OP1a Uncompressed 10-bit 4:2:2 (v210)	MXF OP1a 非圧縮 10 ビット 4:2:2 (v210)
 	MXF OP1a, uncompressed 10-bit Y'CbCr 4:2:2 in the v210 layout (SMPTE ST 384), 24-bit 48 kHz PCM, start timecode	MXF OP1a、v210 レイアウトの非圧縮 10 ビット Y'CbCr 4:2:2 (SMPTE ST 384)、24 ビット 48 kHz PCM、開始タイムコード
-	Write the captions as ANC data (CEA-608/708, 29.97 fps)	字幕を ANC データとして書き出す（CEA-608/708、29.97 fps）
+	Write the captions as ANC data (CEA-608/708)	字幕を ANC データとして書き出す（CEA-608/708）
 	Load KDM…	KDM を読み込む…
 	Forget DCP Keys	DCP キーを破棄
 	Load KDM	KDM を読み込む
@@ -4536,6 +4545,13 @@
 	The keys stay in memory only, until Forget DCP Keys or the end of the session.	キーはメモリ上にのみ保持され、「DCP キーを破棄」またはセッション終了まで残ります。
 	DCP keys forgotten	DCP キーを破棄しました
 	Choose the KDM file and the private key.	KDM ファイルと秘密鍵を選択してください。
+	Load even if the certificate chain is not verified	証明書チェーンが未検証でも読み込む
+	Bundle: {loaded} of {total} KDMs loaded, {other} for other recipients	バンドル: {total} 件中 {loaded} 件の KDM を読み込み、{other} 件は他の受信者用
+	Not loaded: {path}: {problem}	読み込まれていません: {path}: {problem}
+	Signature verified: {chain}	署名を検証済み: {chain}
+	Signature not verified: {problem}	署名は未検証: {problem}
+	KDM required	KDM が必要
+	Encrypted: load the KDM with content key {keys}	暗号化済み: コンテンツキー {keys} を含む KDM を読み込んでください
 
 # Settings ▸ Timecode Sync (TC-4)
 	Timecode Sync	タイムコード同期
@@ -4570,3 +4586,60 @@
 	Send MIDI Timecode	MIDI タイムコードを送信
 	Add Studio Scene	スタジオシーンを追加
 	Live	ライブ
+# Auto Color, Auto Contrast, Auto Levels (EffectsSDK review)
+	Auto Color	自動カラー
+	Auto Contrast	自動コントラスト
+	Auto Levels	自動レベル補正
+	Temporal Smoothing (seconds)	時間的スムージング（秒）
+	Scene Detect	シーン検出
+	Black Clip	黒のクリップ
+	White Clip	白のクリップ
+	Snap Neutral Midtones	中間色をニュートラルに
+# Layout presets: PiP corners, split screen (EffectsSDK review)
+	PiP 35% Upper Left	PiP 35% 左上
+	Picture-in-picture: 35 % scale in the upper left	ピクチャーインピクチャー: スケール 35 % で左上に配置
+	PiP 35% Lower Left	PiP 35% 左下
+	Picture-in-picture: 35 % scale in the lower left	ピクチャーインピクチャー: スケール 35 % で左下に配置
+	PiP 35% Lower Right	PiP 35% 右下
+	Picture-in-picture: 35 % scale in the lower right	ピクチャーインピクチャー: スケール 35 % で右下に配置
+	Split Screen Left	分割画面 左
+	Split screen: the middle half of the picture fills the left half of the frame	分割画面: 映像の中央半分をフレームの左半分に配置
+	Split Screen Right	分割画面 右
+	Split screen: the middle half of the picture fills the right half of the frame	分割画面: 映像の中央半分をフレームの右半分に配置
+# Creative Looks: CRT (P3)
+	CRT	CRT
+	Scanline Strength	走査線の強さ
+	Line Count	走査線の数
+	Mask	マスク
+	Mask Strength	マスクの強さ
+	Corner Darkening	四隅の減光
+	Aperture Grille	アパーチャーグリル
+	Shadow Mask	シャドウマスク
+	Slot Mask	スロットマスク
+# Creative Looks: Oil Paint (P4)
+	Oil Paint	油絵
+	Detail	ディテール
+	Texture	テクスチャ
+	Facet	ファセット
+	Daubs	厚塗り
+	Dry Brush	ドライブラシ
+	Fresco	フレスコ
+	Knife	ペインティングナイフ
+	Sponge	スポンジ
+# Creative Looks: Pixel Sort (P5)
+	Pixel Sort	ピクセルソート
+	Sort By	並べ替えの基準
+	Lower Threshold	下限しきい値
+	Upper Threshold	上限しきい値
+	Ascending	昇順
+# Temporal Denoise (EffectsSDK review)
+	Temporal Denoise	時間的ノイズ除去
+	Frames Each Side	片側のフレーム数
+	Motion Threshold	動きのしきい値
+	Show Motion	動きを表示
+	No signal	信号なし
+	Locating	位置合わせ中
+	Locked	ロック
+	Freewheel	フリーホイール
+	Scrubbing	スクラブ中
+	Sending	送信中

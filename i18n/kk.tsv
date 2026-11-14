@@ -4382,6 +4382,10 @@ export.summary	Low	төмен
 	{n} more	Тағы {n}
 	Block	Блок
 	parallel	қатар
+	page {page}: a spine's vertical position works on card pages only; it is ignored	{page} бет: осьтің тік орны тек карта беттерінде жұмыс істейді; ескерілмейді
+	on a card: centered on {y} px	картада: {y} px бойынша ортада
+	on a card: starts at {y} px	картада: {y} px-тен басталады
+	on a card: ends at {y} px	картада: {y} px-те аяқталады
 # MPEG-2 export audio (#268): a product name, kept as is
 	Dolby Digital (AC-3)	Dolby Digital (AC-3)
 	In the page (OBS takes it from the Browser Source)	Бетте (OBS оны браузер көзінен алады)
@@ -4454,7 +4458,12 @@ export.summary	Low	төмен
 	page {page}: the runtime is reached by changing the roll speed (the gaps would have to grow more than 20-fold)	{page}-бет: ұзақтыққа жылжу жылдамдығын өзгерту арқылы жетеді (аралықтар 20 еседен артық өсуі керек еді)
 	page {page}: the transition needs the pages to touch (page gap 0); it is left out	{page}-бет: ауысу үшін беттер түйісуі керек (бет аралығы 0); ол алынып тасталды
 	page {page}: there is no transition “{name}”; the pages cut	{page}-бет: «{name}» ауысуы жоқ; беттер кесумен ауысады
-	spine position “{value}” is not supported (a pixel offset, optionally “parallel”, is)	«{value}» ось орны қолдау көрсетілмейді (пиксельмен ығысу қолданылады, қаласаңыз «parallel» белгісімен)
+	spine position “{value}” is not supported (a pixel offset, optionally “parallel”, or “Hook N Bottom-Top dx dy” is)	«{value}» ось орны қолдау көрсетілмейді (пиксельмен ығысу қолданылады, қаласаңыз «parallel» / «Hook N Bottom-Top dx dy» белгісімен)
+	page {page}: the hook reaches back further than there are spines; it hooks onto the first spine, or starts its own	{page}-бет: ілмек осьтер санынан әріге сілтейді; ол бірінші оське ілінеді немесе өз осін бастайды
+	hooked {n} spines back: its {from} meets this spine's {to}	{n} ось бұрын ілінген: оның {from} бөлігі осы осьтің {to} бөлігімен түйіседі
+	top	жоғарғы шеті
+	middle	ортасы
+	bottom	төменгі шеті
 	vertical gap “{value}” is not a number	«{value}» тік аралық сан емес
 	picture “{file}” was not found or cannot be read; it is left out	«{file}» суреті табылмады немесе оқылмайды; ол алынып тасталды
 	video “{file}” was not found or cannot be read; it is left out	«{file}» бейнесі табылмады немесе оқылмайды; ол алынып тасталды
@@ -4519,7 +4528,7 @@ export.summary	Low	төмен
 	the engine sent no report	қозғалтқыш есеп жібермеді
 	MXF OP1a Uncompressed 10-bit 4:2:2 (v210)	MXF OP1a сығылмаған 10 биттік 4:2:2 (v210)
 	MXF OP1a, uncompressed 10-bit Y'CbCr 4:2:2 in the v210 layout (SMPTE ST 384), 24-bit 48 kHz PCM, start timecode	MXF OP1a, сығылмаған 10 биттік Y'CbCr 4:2:2, v210 орналасуы (SMPTE ST 384), 24 биттік 48 кГц PCM, бастапқы уақыт коды
-	Write the captions as ANC data (CEA-608/708, 29.97 fps)	Субтитрлерді ANC деректері ретінде жазу (CEA-608/708, 29,97 fps)
+	Write the captions as ANC data (CEA-608/708)	Субтитрлерді ANC деректері ретінде жазу (CEA-608/708)
 	Load KDM…	KDM жүктеу…
 	Forget DCP Keys	DCP кілттерін ұмыту
 	Load KDM	KDM жүктеу
@@ -4529,6 +4538,13 @@ export.summary	Low	төмен
 	The keys stay in memory only, until Forget DCP Keys or the end of the session.	Кілттер тек жадта сақталады, «DCP кілттерін ұмыту» командасына немесе сеанс соңына дейін.
 	DCP keys forgotten	DCP кілттері ұмытылды
 	Choose the KDM file and the private key.	KDM файлын және жеке кілтті таңдаңыз.
+	Load even if the certificate chain is not verified	Тексерілмеген сертификаттар тізбегімен де жүктеу
+	Bundle: {loaded} of {total} KDMs loaded, {other} for other recipients	Бума: {total} KDM ішінен {loaded} жүктелді, {other} басқа алушыларға
+	Not loaded: {path}: {problem}	Жүктелмеді: {path}: {problem}
+	Signature verified: {chain}	Қолтаңба тексерілді: {chain}
+	Signature not verified: {problem}	Қолтаңба тексерілмеді: {problem}
+	KDM required	KDM қажет
+	Encrypted: load the KDM with content key {keys}	Шифрланған: {keys} мазмұн кілті бар KDM жүктеңіз
 
 # Settings ▸ Timecode Sync (TC-4)
 	Timecode Sync	Уақыт кодын синхрондау
@@ -4563,3 +4579,60 @@ export.summary	Low	төмен
 	Send MIDI Timecode	MIDI уақыт кодын жіберу
 	Add Studio Scene	Студия сахнасын қосу
 	Live	Тікелей
+# Auto Color, Auto Contrast, Auto Levels (EffectsSDK review)
+	Auto Color	Автоматты түс
+	Auto Contrast	Автоматты контраст
+	Auto Levels	Автоматты деңгейлер
+	Temporal Smoothing (seconds)	Уақыттық тегістеу (секунд)
+	Scene Detect	Сахналарды анықтау
+	Black Clip	Қараны кесу
+	White Clip	Ақты кесу
+	Snap Neutral Midtones	Бейтарап орта реңктер
+# Layout presets: PiP corners, split screen (EffectsSDK review)
+	PiP 35% Upper Left	PiP 35% жоғарғы солда
+	Picture-in-picture: 35 % scale in the upper left	Кескін ішіндегі кескін: жоғарғы солда 35% масштаб
+	PiP 35% Lower Left	PiP 35% төменгі солда
+	Picture-in-picture: 35 % scale in the lower left	Кескін ішіндегі кескін: төменгі солда 35% масштаб
+	PiP 35% Lower Right	PiP 35% төменгі оңда
+	Picture-in-picture: 35 % scale in the lower right	Кескін ішіндегі кескін: төменгі оңда 35% масштаб
+	Split Screen Left	Бөлінген экран сол жақ
+	Split screen: the middle half of the picture fills the left half of the frame	Бөлінген экран: кескіннің ортаңғы жартысы кадрдың сол жартысын толтырады
+	Split Screen Right	Бөлінген экран оң жақ
+	Split screen: the middle half of the picture fills the right half of the frame	Бөлінген экран: кескіннің ортаңғы жартысы кадрдың оң жартысын толтырады
+# Creative Looks: CRT (P3)
+	CRT	CRT
+	Scanline Strength	Жолақтар күші
+	Line Count	Жолдар саны
+	Mask	Маска
+	Mask Strength	Маска күші
+	Corner Darkening	Бұрыштарды күңгірттеу
+	Aperture Grille	Апертуралық тор
+	Shadow Mask	Көлеңкелі маска
+	Slot Mask	Саңылаулы маска
+# Creative Looks: Oil Paint (P4)
+	Oil Paint	Майлы бояу
+	Detail	Егжей-тегжей
+	Texture	Текстура
+	Facet	Қырлар
+	Daubs	Жағындылар
+	Dry Brush	Құрғақ қылқалам
+	Fresco	Фреска
+	Knife	Шпатель
+	Sponge	Губка
+# Creative Looks: Pixel Sort (P5)
+	Pixel Sort	Пикселдерді сұрыптау
+	Sort By	Сұрыптау негізі
+	Lower Threshold	Төменгі шек
+	Upper Threshold	Жоғарғы шек
+	Ascending	Өсу бойынша
+# Temporal Denoise (EffectsSDK review)
+	Temporal Denoise	Уақыттық шуды азайту
+	Frames Each Side	Әр жақтағы кадрлар
+	Motion Threshold	Қозғалыс шегі
+	Show Motion	Қозғалысты көрсету
+	No signal	Сигнал жоқ
+	Locating	Орынды іздеу
+	Locked	Синхрондалған
+	Freewheel	Еркін жүріс
+	Scrubbing	Айналдыру
+	Sending	Жіберу

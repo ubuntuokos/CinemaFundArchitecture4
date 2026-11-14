@@ -4383,6 +4383,10 @@ export.summary	Low	ниско
 	{n} more	Още {n}
 	Block	Блок
 	parallel	паралелно
+	page {page}: a spine's vertical position works on card pages only; it is ignored	страница {page}: вертикалното положение на оста действа само на страници-карти; пренебрегва се
+	on a card: centered on {y} px	на карта: центрирана на {y} px
+	on a card: starts at {y} px	на карта: започва от {y} px
+	on a card: ends at {y} px	на карта: завършва на {y} px
 # MPEG-2 export audio (#268): a product name, kept as is
 	Dolby Digital (AC-3)	Dolby Digital (AC-3)
 	In the page (OBS takes it from the Browser Source)	В страницата (OBS го взема от източника „Браузър“)
@@ -4455,7 +4459,12 @@ export.summary	Low	ниско
 	page {page}: the runtime is reached by changing the roll speed (the gaps would have to grow more than 20-fold)	страница {page}: продължителността се постига чрез промяна на скоростта на рола (разстоянията би трябвало да нараснат над 20 пъти)
 	page {page}: the transition needs the pages to touch (page gap 0); it is left out	страница {page}: преходът изисква страниците да се допират (разстояние 0); пропуска се
 	page {page}: there is no transition “{name}”; the pages cut	страница {page}: няма преход „{name}“; страниците се сменят с рязане
-	spine position “{value}” is not supported (a pixel offset, optionally “parallel”, is)	позицията на оста „{value}“ не се поддържа (поддържа се отместване в пиксели, по избор с „parallel“)
+	spine position “{value}” is not supported (a pixel offset, optionally “parallel”, or “Hook N Bottom-Top dx dy” is)	позицията на оста „{value}“ не се поддържа (поддържа се отместване в пиксели, по избор с „parallel“ / „Hook N Bottom-Top dx dy“)
+	page {page}: the hook reaches back further than there are spines; it hooks onto the first spine, or starts its own	страница {page}: куката сочи по-назад, отколкото има оси; закача се за първата ос или започва своя
+	hooked {n} spines back: its {from} meets this spine's {to}	закачена {n} оси назад: нейният {from} среща {to} на тази ос
+	top	горен край
+	middle	среда
+	bottom	долен край
 	vertical gap “{value}” is not a number	вертикалното разстояние „{value}“ не е число
 	picture “{file}” was not found or cannot be read; it is left out	изображението „{file}“ не е намерено или не може да се прочете; пропуска се
 	video “{file}” was not found or cannot be read; it is left out	видеото „{file}“ не е намерено или не може да се прочете; пропуска се
@@ -4520,7 +4529,7 @@ export.summary	Low	ниско
 	the engine sent no report	двигателят не изпрати отчет
 	MXF OP1a Uncompressed 10-bit 4:2:2 (v210)	MXF OP1a некомпресиран 10-битов 4:2:2 (v210)
 	MXF OP1a, uncompressed 10-bit Y'CbCr 4:2:2 in the v210 layout (SMPTE ST 384), 24-bit 48 kHz PCM, start timecode	MXF OP1a, некомпресиран 10-битов Y'CbCr 4:2:2 в подредба v210 (SMPTE ST 384), 24-битов PCM 48 kHz, начален тайм код
-	Write the captions as ANC data (CEA-608/708, 29.97 fps)	Записване на надписите като ANC данни (CEA-608/708, 29,97 fps)
+	Write the captions as ANC data (CEA-608/708)	Записване на надписите като ANC данни (CEA-608/708)
 	Load KDM…	Зареждане на KDM…
 	Forget DCP Keys	Забравяне на DCP ключовете
 	Load KDM	Зареждане на KDM
@@ -4530,6 +4539,13 @@ export.summary	Low	ниско
 	The keys stay in memory only, until Forget DCP Keys or the end of the session.	Ключовете остават само в паметта, до „Забравяне на DCP ключовете“ или края на сесията.
 	DCP keys forgotten	DCP ключовете са забравени
 	Choose the KDM file and the private key.	Изберете KDM файла и частния ключ.
+	Load even if the certificate chain is not verified	Зареждане дори при непроверена верига от сертификати
+	Bundle: {loaded} of {total} KDMs loaded, {other} for other recipients	Пакет: заредени {loaded} от {total} KDM, {other} за други получатели
+	Not loaded: {path}: {problem}	Не е заредено: {path}: {problem}
+	Signature verified: {chain}	Подписът е проверен: {chain}
+	Signature not verified: {problem}	Подписът не е проверен: {problem}
+	KDM required	Необходим е KDM
+	Encrypted: load the KDM with content key {keys}	Шифровано: заредете KDM с ключа за съдържание {keys}
 
 # Settings ▸ Timecode Sync (TC-4)
 	Timecode Sync	Синхронизация на тайм код
@@ -4564,3 +4580,60 @@ export.summary	Low	ниско
 	Send MIDI Timecode	Изпращане на MIDI тайм код
 	Add Studio Scene	Добавяне на студийна сцена
 	Live	На живо
+# Auto Color, Auto Contrast, Auto Levels (EffectsSDK review)
+	Auto Color	Автоматичен цвят
+	Auto Contrast	Автоматичен контраст
+	Auto Levels	Автоматични нива
+	Temporal Smoothing (seconds)	Времево изглаждане (секунди)
+	Scene Detect	Откриване на сцени
+	Black Clip	Отрязване на черното
+	White Clip	Отрязване на бялото
+	Snap Neutral Midtones	Неутрални средни тонове
+# Layout presets: PiP corners, split screen (EffectsSDK review)
+	PiP 35% Upper Left	Картина в картината 35% горе вляво
+	Picture-in-picture: 35 % scale in the upper left	Картина в картината: мащаб 35 % горе вляво
+	PiP 35% Lower Left	Картина в картината 35% долу вляво
+	Picture-in-picture: 35 % scale in the lower left	Картина в картината: мащаб 35 % долу вляво
+	PiP 35% Lower Right	Картина в картината 35% долу вдясно
+	Picture-in-picture: 35 % scale in the lower right	Картина в картината: мащаб 35 % долу вдясно
+	Split Screen Left	Разделен екран вляво
+	Split screen: the middle half of the picture fills the left half of the frame	Разделен екран: средната половина на картината запълва лявата половина на кадъра
+	Split Screen Right	Разделен екран вдясно
+	Split screen: the middle half of the picture fills the right half of the frame	Разделен екран: средната половина на картината запълва дясната половина на кадъра
+# Creative Looks: CRT (P3)
+	CRT	CRT
+	Scanline Strength	Сила на редовете
+	Line Count	Брой редове
+	Mask	Маска
+	Mask Strength	Сила на маската
+	Corner Darkening	Потъмняване на ъглите
+	Aperture Grille	Апертурна решетка
+	Shadow Mask	Сенчеста маска
+	Slot Mask	Слотова маска
+# Creative Looks: Oil Paint (P4)
+	Oil Paint	Маслена живопис
+	Detail	Детайлност
+	Texture	Текстура
+	Facet	Фасети
+	Daubs	Мазки
+	Dry Brush	Суха четка
+	Fresco	Фреска
+	Knife	Шпатула
+	Sponge	Гъба
+# Creative Looks: Pixel Sort (P5)
+	Pixel Sort	Сортиране на пиксели
+	Sort By	Сортиране по
+	Lower Threshold	Долен праг
+	Upper Threshold	Горен праг
+	Ascending	Възходящо
+# Temporal Denoise (EffectsSDK review)
+	Temporal Denoise	Времево обезшумяване
+	Frames Each Side	Кадри от всяка страна
+	Motion Threshold	Праг на движение
+	Show Motion	Показване на движението
+	No signal	Няма сигнал
+	Locating	Позициониране
+	Locked	Синхронизирано
+	Freewheel	Свободен ход
+	Scrubbing	Превъртане
+	Sending	Изпращане

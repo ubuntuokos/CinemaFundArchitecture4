@@ -4382,6 +4382,10 @@ export.summary	Low	nizak
 	{n} more	Još {n}
 	Block	Blok
 	parallel	paralelno
+	page {page}: a spine's vertical position works on card pages only; it is ignored	stranica {page}: vertikalni položaj ose važi samo na stranicama kartica; zanemaruje se
+	on a card: centered on {y} px	na kartici: centrirano na {y} px
+	on a card: starts at {y} px	na kartici: počinje na {y} px
+	on a card: ends at {y} px	na kartici: završava se na {y} px
 # MPEG-2 export audio (#268): a product name, kept as is
 	Dolby Digital (AC-3)	Dolby Digital (AC-3)
 	In the page (OBS takes it from the Browser Source)	Na stranici (OBS ga uzima iz izvora pregledača)
@@ -4454,7 +4458,12 @@ export.summary	Low	nizak
 	page {page}: the runtime is reached by changing the roll speed (the gaps would have to grow more than 20-fold)	stranica {page}: trajanje se postiže promenom brzine pomeranja (razmaci bi morali da porastu više od 20 puta)
 	page {page}: the transition needs the pages to touch (page gap 0); it is left out	stranica {page}: prelaz zahteva da se stranice dodiruju (razmak 0); izostavlja se
 	page {page}: there is no transition “{name}”; the pages cut	stranica {page}: nema prelaza „{name}”; stranice se menjaju rezom
-	spine position “{value}” is not supported (a pixel offset, optionally “parallel”, is)	položaj ose „{value}” nije podržan (podržan je pomak u pikselima, po želji uz „parallel”)
+	spine position “{value}” is not supported (a pixel offset, optionally “parallel”, or “Hook N Bottom-Top dx dy” is)	položaj ose „{value}” nije podržan (podržan je pomak u pikselima, po želji uz „parallel” / „Hook N Bottom-Top dx dy”)
+	page {page}: the hook reaches back further than there are spines; it hooks onto the first spine, or starts its own	stranica {page}: kuka seže dalje unazad nego što ima osa; kači se na prvu osu ili započinje svoju
+	hooked {n} spines back: its {from} meets this spine's {to}	zakačeno {n} osa unazad: njen {from} spaja se sa {to} ove ose
+	top	gornja ivica
+	middle	sredina
+	bottom	donja ivica
 	vertical gap “{value}” is not a number	vertikalni razmak „{value}” nije broj
 	picture “{file}” was not found or cannot be read; it is left out	slika „{file}” nije pronađena ili se ne može pročitati; izostavlja se
 	video “{file}” was not found or cannot be read; it is left out	video „{file}” nije pronađen ili se ne može pročitati; izostavlja se
@@ -4519,7 +4528,7 @@ export.summary	Low	nizak
 	the engine sent no report	mašina nije poslala izveštaj
 	MXF OP1a Uncompressed 10-bit 4:2:2 (v210)	MXF OP1a nekompresovano 10-bitno 4:2:2 (v210)
 	MXF OP1a, uncompressed 10-bit Y'CbCr 4:2:2 in the v210 layout (SMPTE ST 384), 24-bit 48 kHz PCM, start timecode	MXF OP1a, nekompresovani 10-bitni Y'CbCr 4:2:2 u rasporedu v210 (SMPTE ST 384), 24-bitni PCM 48 kHz, početni vremenski kod
-	Write the captions as ANC data (CEA-608/708, 29.97 fps)	Upiši titlove kao ANC podatke (CEA-608/708, 29,97 fps)
+	Write the captions as ANC data (CEA-608/708)	Upiši titlove kao ANC podatke (CEA-608/708)
 	Load KDM…	Učitaj KDM…
 	Forget DCP Keys	Zaboravi DCP ključeve
 	Load KDM	Učitaj KDM
@@ -4529,6 +4538,13 @@ export.summary	Low	nizak
 	The keys stay in memory only, until Forget DCP Keys or the end of the session.	Ključevi ostaju samo u memoriji, do komande Zaboravi DCP ključeve ili kraja sesije.
 	DCP keys forgotten	DCP ključevi zaboravljeni
 	Choose the KDM file and the private key.	Izaberite KDM datoteku i privatni ključ.
+	Load even if the certificate chain is not verified	Učitaj i sa neproverenim lancem sertifikata
+	Bundle: {loaded} of {total} KDMs loaded, {other} for other recipients	Paket: učitano {loaded} od {total} KDM, {other} za druge primaoce
+	Not loaded: {path}: {problem}	Nije učitano: {path}: {problem}
+	Signature verified: {chain}	Potpis proveren: {chain}
+	Signature not verified: {problem}	Potpis nije proveren: {problem}
+	KDM required	Potreban je KDM
+	Encrypted: load the KDM with content key {keys}	Šifrovano: učitajte KDM sa ključem sadržaja {keys}
 
 # Settings ▸ Timecode Sync (TC-4)
 	Timecode Sync	Sinhronizacija vremenskog koda
@@ -4563,3 +4579,60 @@ export.summary	Low	nizak
 	Send MIDI Timecode	Šalji MIDI vremenski kod
 	Add Studio Scene	Dodaj scenu studija
 	Live	Uživo
+# Auto Color, Auto Contrast, Auto Levels (EffectsSDK review)
+	Auto Color	Automatska boja
+	Auto Contrast	Automatski kontrast
+	Auto Levels	Automatski nivoi
+	Temporal Smoothing (seconds)	Vremensko izglađivanje (sekunde)
+	Scene Detect	Otkrivanje scena
+	Black Clip	Odsecanje crne
+	White Clip	Odsecanje bele
+	Snap Neutral Midtones	Neutralni srednji tonovi
+# Layout presets: PiP corners, split screen (EffectsSDK review)
+	PiP 35% Upper Left	Slika u slici 35% gore levo
+	Picture-in-picture: 35 % scale in the upper left	Slika u slici: razmera 35 % gore levo
+	PiP 35% Lower Left	Slika u slici 35% dole levo
+	Picture-in-picture: 35 % scale in the lower left	Slika u slici: razmera 35 % dole levo
+	PiP 35% Lower Right	Slika u slici 35% dole desno
+	Picture-in-picture: 35 % scale in the lower right	Slika u slici: razmera 35 % dole desno
+	Split Screen Left	Podeljeni ekran levo
+	Split screen: the middle half of the picture fills the left half of the frame	Podeljeni ekran: srednja polovina slike ispunjava levu polovinu kadra
+	Split Screen Right	Podeljeni ekran desno
+	Split screen: the middle half of the picture fills the right half of the frame	Podeljeni ekran: srednja polovina slike ispunjava desnu polovinu kadra
+# Creative Looks: CRT (P3)
+	CRT	CRT
+	Scanline Strength	Jačina linija
+	Line Count	Broj linija
+	Mask	Maska
+	Mask Strength	Jačina maske
+	Corner Darkening	Tamnjenje uglova
+	Aperture Grille	Aperturna rešetka
+	Shadow Mask	Maska senke
+	Slot Mask	Maska sa prorezima
+# Creative Looks: Oil Paint (P4)
+	Oil Paint	Uljana slika
+	Detail	Detalji
+	Texture	Tekstura
+	Facet	Fasete
+	Daubs	Mrlje
+	Dry Brush	Suva četkica
+	Fresco	Freska
+	Knife	Špahtla
+	Sponge	Sunđer
+# Creative Looks: Pixel Sort (P5)
+	Pixel Sort	Sortiranje piksela
+	Sort By	Sortiraj po
+	Lower Threshold	Donji prag
+	Upper Threshold	Gornji prag
+	Ascending	Rastuće
+# Temporal Denoise (EffectsSDK review)
+	Temporal Denoise	Vremensko uklanjanje šuma
+	Frames Each Side	Sličica sa svake strane
+	Motion Threshold	Prag pokreta
+	Show Motion	Prikaži pokret
+	No signal	Nema signala
+	Locating	Pozicioniranje
+	Locked	Sinhronizovano
+	Freewheel	Slobodan hod
+	Scrubbing	Pomeranje
+	Sending	Slanje

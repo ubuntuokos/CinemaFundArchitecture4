@@ -45,6 +45,34 @@ fn find_port(seq: &Seq, spec: &str, caps: PortCap, own: i32) -> Result<Addr, Str
     Err(format!("MIDI port `{spec}` not found"))
 }
 
+/// MIDI ports other programs and devices offer, as `Client:Port` names: (ports MTC can be read
+/// from, ports it can be sent to). Empty without an ALSA sequencer.
+pub fn port_names() -> (Vec<String>, Vec<String>) {
+    let Ok(seq) = Seq::open(None, None, true) else {
+        return (Vec::new(), Vec::new());
+    };
+    let own = seq.client_id().unwrap_or(-1);
+    let (mut readable, mut writable) = (Vec::new(), Vec::new());
+    for c in ClientIter::new(&seq) {
+        // 0 is the system client (timer, announce)
+        if c.get_client() == own || c.get_client() == 0 {
+            continue;
+        }
+        let cname = c.get_name().unwrap_or_default().to_string();
+        for p in PortIter::new(&seq, c.get_client()) {
+            let name = format!("{cname}:{}", p.get_name().unwrap_or_default());
+            let caps = p.get_capability();
+            if caps.contains(PortCap::READ | PortCap::SUBS_READ) {
+                readable.push(name.clone());
+            }
+            if caps.contains(PortCap::WRITE | PortCap::SUBS_WRITE) {
+                writable.push(name);
+            }
+        }
+    }
+    (readable, writable)
+}
+
 fn seq_err(what: &str, e: alsa::Error) -> String {
     format!("MIDI Timecode: {what}: {e}")
 }

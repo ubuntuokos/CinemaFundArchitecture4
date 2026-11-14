@@ -4382,6 +4382,10 @@ export.summary	Low	χαμηλή
 	{n} more	{n} ακόμη
 	Block	Μπλοκ
 	parallel	παράλληλα
+	page {page}: a spine's vertical position works on card pages only; it is ignored	σελίδα {page}: η κατακόρυφη θέση του άξονα ισχύει μόνο σε σελίδες κάρτας· αγνοείται
+	on a card: centered on {y} px	σε κάρτα: κεντραρισμένος στα {y} px
+	on a card: starts at {y} px	σε κάρτα: ξεκινά στα {y} px
+	on a card: ends at {y} px	σε κάρτα: τελειώνει στα {y} px
 # MPEG-2 export audio (#268): a product name, kept as is
 	Dolby Digital (AC-3)	Dolby Digital (AC-3)
 	In the page (OBS takes it from the Browser Source)	Στη σελίδα (το OBS τον παίρνει από την πηγή προγράμματος περιήγησης)
@@ -4454,7 +4458,12 @@ export.summary	Low	χαμηλή
 	page {page}: the runtime is reached by changing the roll speed (the gaps would have to grow more than 20-fold)	σελίδα {page}: η διάρκεια επιτυγχάνεται αλλάζοντας την ταχύτητα κύλισης (τα κενά θα έπρεπε να μεγαλώσουν πάνω από 20 φορές)
 	page {page}: the transition needs the pages to touch (page gap 0); it is left out	σελίδα {page}: η μετάβαση απαιτεί οι σελίδες να εφάπτονται (κενό σελίδας 0)· παραλείπεται
 	page {page}: there is no transition “{name}”; the pages cut	σελίδα {page}: δεν υπάρχει μετάβαση “{name}”· οι σελίδες αλλάζουν με κόψιμο
-	spine position “{value}” is not supported (a pixel offset, optionally “parallel”, is)	η θέση άξονα “{value}” δεν υποστηρίζεται (υποστηρίζεται μετατόπιση σε pixel, προαιρετικά με “parallel”)
+	spine position “{value}” is not supported (a pixel offset, optionally “parallel”, or “Hook N Bottom-Top dx dy” is)	η θέση άξονα “{value}” δεν υποστηρίζεται (υποστηρίζεται μετατόπιση σε pixel, προαιρετικά με “parallel” / “Hook N Bottom-Top dx dy”)
+	page {page}: the hook reaches back further than there are spines; it hooks onto the first spine, or starts its own	σελίδα {page}: το άγκιστρο φτάνει πιο πίσω απ’ όσους άξονες υπάρχουν· αγκιστρώνεται στον πρώτο άξονα ή ξεκινά δικό του
+	hooked {n} spines back: its {from} meets this spine's {to}	αγκιστρωμένος {n} άξονες πίσω: το {from} του συναντά το {to} αυτού του άξονα
+	top	πάνω άκρο
+	middle	μέση
+	bottom	κάτω άκρο
 	vertical gap “{value}” is not a number	το κατακόρυφο κενό “{value}” δεν είναι αριθμός
 	picture “{file}” was not found or cannot be read; it is left out	η εικόνα “{file}” δεν βρέθηκε ή δεν διαβάζεται· παραλείπεται
 	video “{file}” was not found or cannot be read; it is left out	το βίντεο “{file}” δεν βρέθηκε ή δεν διαβάζεται· παραλείπεται
@@ -4519,7 +4528,7 @@ export.summary	Low	χαμηλή
 	the engine sent no report	η μηχανή δεν έστειλε αναφορά
 	MXF OP1a Uncompressed 10-bit 4:2:2 (v210)	MXF OP1a ασυμπίεστο 10-bit 4:2:2 (v210)
 	MXF OP1a, uncompressed 10-bit Y'CbCr 4:2:2 in the v210 layout (SMPTE ST 384), 24-bit 48 kHz PCM, start timecode	MXF OP1a, ασυμπίεστο 10-bit Y'CbCr 4:2:2 σε διάταξη v210 (SMPTE ST 384), PCM 24-bit 48 kHz, αρχικός κωδικός χρόνου
-	Write the captions as ANC data (CEA-608/708, 29.97 fps)	Εγγραφή των υποτίτλων ως δεδομένα ANC (CEA-608/708, 29,97 fps)
+	Write the captions as ANC data (CEA-608/708)	Εγγραφή των υποτίτλων ως δεδομένα ANC (CEA-608/708)
 	Load KDM…	Φόρτωση KDM…
 	Forget DCP Keys	Διαγραφή κλειδιών DCP
 	Load KDM	Φόρτωση KDM
@@ -4529,6 +4538,13 @@ export.summary	Low	χαμηλή
 	The keys stay in memory only, until Forget DCP Keys or the end of the session.	Τα κλειδιά μένουν μόνο στη μνήμη, μέχρι τη «Διαγραφή κλειδιών DCP» ή το τέλος της συνεδρίας.
 	DCP keys forgotten	Τα κλειδιά DCP διαγράφηκαν
 	Choose the KDM file and the private key.	Επιλέξτε το αρχείο KDM και το ιδιωτικό κλειδί.
+	Load even if the certificate chain is not verified	Φόρτωση ακόμη και με μη επαληθευμένη αλυσίδα πιστοποιητικών
+	Bundle: {loaded} of {total} KDMs loaded, {other} for other recipients	Πακέτο: φορτώθηκαν {loaded} από {total} KDM, {other} για άλλους παραλήπτες
+	Not loaded: {path}: {problem}	Δεν φορτώθηκε: {path}: {problem}
+	Signature verified: {chain}	Η υπογραφή επαληθεύτηκε: {chain}
+	Signature not verified: {problem}	Η υπογραφή δεν επαληθεύτηκε: {problem}
+	KDM required	Απαιτείται KDM
+	Encrypted: load the KDM with content key {keys}	Κρυπτογραφημένο: φορτώστε το KDM με το κλειδί περιεχομένου {keys}
 
 # Settings ▸ Timecode Sync (TC-4)
 	Timecode Sync	Συγχρονισμός χρονοκώδικα
@@ -4563,3 +4579,60 @@ export.summary	Low	χαμηλή
 	Send MIDI Timecode	Αποστολή χρονοκώδικα MIDI
 	Add Studio Scene	Προσθήκη σκηνής στούντιο
 	Live	Ζωντανά
+# Auto Color, Auto Contrast, Auto Levels (EffectsSDK review)
+	Auto Color	Αυτόματο χρώμα
+	Auto Contrast	Αυτόματη αντίθεση
+	Auto Levels	Αυτόματα επίπεδα
+	Temporal Smoothing (seconds)	Χρονική εξομάλυνση (δευτερόλεπτα)
+	Scene Detect	Ανίχνευση σκηνών
+	Black Clip	Αποκοπή μαύρου
+	White Clip	Αποκοπή λευκού
+	Snap Neutral Midtones	Ουδέτεροι μεσαίοι τόνοι
+# Layout presets: PiP corners, split screen (EffectsSDK review)
+	PiP 35% Upper Left	PiP 35% πάνω αριστερά
+	Picture-in-picture: 35 % scale in the upper left	Εικόνα σε εικόνα: κλίμακα 35 % πάνω αριστερά
+	PiP 35% Lower Left	PiP 35% κάτω αριστερά
+	Picture-in-picture: 35 % scale in the lower left	Εικόνα σε εικόνα: κλίμακα 35 % κάτω αριστερά
+	PiP 35% Lower Right	PiP 35% κάτω δεξιά
+	Picture-in-picture: 35 % scale in the lower right	Εικόνα σε εικόνα: κλίμακα 35 % κάτω δεξιά
+	Split Screen Left	Διαιρεμένη οθόνη αριστερά
+	Split screen: the middle half of the picture fills the left half of the frame	Διαιρεμένη οθόνη: το μεσαίο μισό της εικόνας γεμίζει το αριστερό μισό του κάδρου
+	Split Screen Right	Διαιρεμένη οθόνη δεξιά
+	Split screen: the middle half of the picture fills the right half of the frame	Διαιρεμένη οθόνη: το μεσαίο μισό της εικόνας γεμίζει το δεξί μισό του κάδρου
+# Creative Looks: CRT (P3)
+	CRT	CRT
+	Scanline Strength	Ένταση γραμμών σάρωσης
+	Line Count	Αριθμός γραμμών
+	Mask	Μάσκα
+	Mask Strength	Ένταση μάσκας
+	Corner Darkening	Σκούρυνση γωνιών
+	Aperture Grille	Πλέγμα διαφράγματος
+	Shadow Mask	Μάσκα σκιάς
+	Slot Mask	Μάσκα σχισμών
+# Creative Looks: Oil Paint (P4)
+	Oil Paint	Ελαιογραφία
+	Detail	Λεπτομέρεια
+	Texture	Υφή
+	Facet	Έδρες
+	Daubs	Πινελιές
+	Dry Brush	Στεγνό πινέλο
+	Fresco	Νωπογραφία
+	Knife	Σπάτουλα
+	Sponge	Σφουγγάρι
+# Creative Looks: Pixel Sort (P5)
+	Pixel Sort	Ταξινόμηση εικονοστοιχείων
+	Sort By	Ταξινόμηση κατά
+	Lower Threshold	Κάτω κατώφλι
+	Upper Threshold	Άνω κατώφλι
+	Ascending	Αύξουσα
+# Temporal Denoise (EffectsSDK review)
+	Temporal Denoise	Χρονική αποθορυβοποίηση
+	Frames Each Side	Καρέ σε κάθε πλευρά
+	Motion Threshold	Κατώφλι κίνησης
+	Show Motion	Εμφάνιση κίνησης
+	No signal	Χωρίς σήμα
+	Locating	Εντοπισμός
+	Locked	Συγχρονισμένο
+	Freewheel	Ελεύθερη λειτουργία
+	Scrubbing	Κύλιση
+	Sending	Αποστολή
