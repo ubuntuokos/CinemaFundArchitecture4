@@ -96,6 +96,8 @@ pub fn auto_point(effect: &str, param: &str) -> Option<(f64, f64)> {
         ("checkerboard", "anchor") => (0.0, 0.0),
         ("write_on", "brush") => (0.5, 0.5),
         ("volumetric_rays", "center") => (0.5, 0.25),
+        ("rack_focus", "focus_a") => (1.0 / 3.0, 0.5),
+        ("rack_focus", "focus_b") => (2.0 / 3.0, 0.5),
         _ => return None,
     })
 }
@@ -284,6 +286,23 @@ pub(super) fn defs() -> Vec<EffectDef> {
                 px("size", "Focus Size", 200.0, 4000.0, 1000.0),
                 px("feather", "Feather", 200.0, 4000.0, 1000.0),
                 px("amount", "Blur Amount", 20.0, 500.0, 100.0),
+                b("show", "Show Focus Area", false),
+            ],
+        ),
+        // CFA4's own: focus pulls from point A to point B as Rack goes 0 → 100 %.
+        video(
+            "rack_focus",
+            "Rack Focus",
+            BLUR,
+            vec![
+                ch("shape", "Focus Shape", &["Radial", "Linear"], 0),
+                pt("focus_a", "Focus Point A", f64::NAN, f64::NAN),
+                pt("focus_b", "Focus Point B", f64::NAN, f64::NAN),
+                pct("rack", "Rack", 0.0),
+                ang("angle", "Angle", 0.0),
+                px("size", "Focus Size", 150.0, 4000.0, 1000.0),
+                px("feather", "Feather", 300.0, 4000.0, 1000.0),
+                px("amount", "Blur Amount", 25.0, 500.0, 100.0),
                 b("show", "Show Focus Area", false),
             ],
         ),

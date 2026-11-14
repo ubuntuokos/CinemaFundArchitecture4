@@ -2357,6 +2357,10 @@
 	Show Clip Mismatch Warning dialog	显示剪辑不匹配警告对话框
 	Show Event Indicator	显示事件指示器
 	Show Focus Area	显示焦点区域
+	Rack Focus	移焦
+	Focus Point A	焦点 A
+	Focus Point B	焦点 B
+	Rack	移焦进度
 	Show Home	显示主页
 	Show Mask Tracker Preview	显示遮罩跟踪器预览
 	Show Only Noise	仅显示噪点
