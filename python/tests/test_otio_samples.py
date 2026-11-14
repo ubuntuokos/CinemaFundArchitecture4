@@ -145,6 +145,16 @@ class WriteTest(unittest.TestCase):
         want = samples.expect_timeline(otio, tl)
         self.assertEqual((want["name"], want["rate"], want["start_timecode"]), ("Solo", 30, 0))
 
+    def test_image_sequence_expects_its_first_frame(self):
+        import opentimelineio as otio
+
+        tl = samples.media_paths(otio)
+        clip = next(c for c in tl.find_clips() if c.name == "frames")
+        self.assertEqual(
+            samples.expect_media(otio, clip),
+            {"ref": "file", "path": "/frames/shot.0001.exr", "image_sequence": True, "offline": False},
+        )
+
     def test_legacy_markers_read_back_at_the_same_time(self):
         import opentimelineio as otio
 
