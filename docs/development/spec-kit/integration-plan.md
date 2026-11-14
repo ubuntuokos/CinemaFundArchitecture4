@@ -1,7 +1,7 @@
 # CFA4 – GitHub Spec Kit integrációs és fejlesztési terv
 
 **Azonosító:** CFA4-DEV-SPEC-KIT-001 · **Verzió:** TERV 1.2 · **Dátum:** 2026-11-01
-**Állapot:** a tulajdonos (ubuntuokos) 2026-11-01-én jóváhagyta, a D1′ és a D5–D10 döntéssel együtt (D9, D10: az SK-F1 tanulságai, 12:56); az 1.1-et ez váltja fel. Az SK-F1 indítását a tulajdonos 2026-11-01-én engedélyezte; a #450 beolvasztása után indul. A további fázisok külön engedélyhez kötöttek. 2026-11-06: az SK-F2 elfogadva, a D11 elfogadva, az SK-F3 engedélyezve. 2026-11-08: az SK-F3 elfogadva, az SK-F4 engedélyezve. 2026-11-09: az SK-F4 elfogadva. 2026-11-14: a D12 elfogadva, a pilotfeladat a G7 (D8), az SK-F5 engedélyezve.
+**Állapot:** a tulajdonos (ubuntuokos) 2026-11-01-én jóváhagyta, a D1′ és a D5–D10 döntéssel együtt (D9, D10: az SK-F1 tanulságai, 12:56); az 1.1-et ez váltja fel. Az SK-F1 indítását a tulajdonos 2026-11-01-én engedélyezte; a #450 beolvasztása után indul. A további fázisok külön engedélyhez kötöttek. 2026-11-06: az SK-F2 elfogadva, a D11 elfogadva, az SK-F3 engedélyezve. 2026-11-08: az SK-F3 elfogadva, az SK-F4 engedélyezve. 2026-11-09: az SK-F4 elfogadva. 2026-11-14: a D12 elfogadva, a pilotfeladat a G7 (D8), az SK-F5 engedélyezve. **2026-11-14 20:20: a tulajdonos a D13 szerint lezárta az integrációt a pilotnál; az SK-F6 és az SK-F7 elmarad.**
 **Kiinduló állapot:** `main` @ `64d8f86` (2026-11-01 04:19 UTC, #438 beolvasztása).
 
 ## Változások 1.1 → 1.2
@@ -182,9 +182,9 @@ Az SK-F0–SK-F4 elkészült és elfogadott (SK-F3: 2026-11-08, SK-F4: 2026-11-0
 | SK-F2 · Hivatkozó constitution, preset | **kész, elfogadva 2026-11-06** (#457) | AC-SK-02, -03, -16 | – |
 | SK-F3 · Munkafolyamat-integráció | **kész, elfogadva 2026-11-08** (#691): D9-overlay, pontosított wrap | AC-SK-05, -06 | – |
 | SK-F4 · Biztonsági kapuk | **kész, elfogadva 2026-11-09** (#776): SK-07 blokkoló csonkok, `check-cfa4-policy.sh`, 9 negatív teszt; SK-04 bizonyítékmátrix | AC-SK-07 | engedélyezve 2026-11-08 |
-| SK-F5 · Pilot a pilotágon | **kész** (`cfa4/spec-kit-pilot`): a G7 tervezése Spec Kittel és nélküle (D8, D12). **AC-SK-08 FAIL** (168%), AC-SK-09 részben; tulajdonosi döntésre vár ([SK-F5](../../audit/spec-kit/SK-F5-2026-11-14.md)) | AC-SK-08, -09 | engedélyezve 2026-11-14; költség: páros mérés (D12) |
-| SK-F6 · CI- és kiadási validáció | azonos PR-fejen | AC-SK-01, -10, -11, -12 | – |
-| SK-F7 · Spec Kit a `main`-re (D7) | kiválasztott munkafolyamatok aktiválása | – | külön tulajdonosi élesítési jóváhagyás |
+| SK-F5 · Pilot a pilotágon | **kész** (`cfa4/spec-kit-pilot`): a G7 tervezése Spec Kittel és nélküle (D8, D12). **AC-SK-08 FAIL** (168%), AC-SK-09 részben; lezárva (D13) ([SK-F5](../../audit/spec-kit/SK-F5-2026-11-14.md)) | AC-SK-08, -09 | engedélyezve 2026-11-14; költség: páros mérés (D12) |
+| SK-F6 · CI- és kiadási validáció | **elmarad (D13)** | AC-SK-01, -10, -11, -12 | – |
+| SK-F7 · Spec Kit a `main`-re (D7) | **elmarad (D13)** | – | – |
 
 ### SK-F1 – pontos menet
 
@@ -281,6 +281,7 @@ Az integráció csak a fejlesztői környezetet érinti; a Spec Kit nem része a
 | D10 | `--force` a `specify init`-nél (SK-F1 E1) | A tiltás helyett: csak eldobható worktree-ben, utána kötelező teljes diff; meglévő fájl módosulása = leállás | elfogadva 2026-11-01 |
 | D11 | Az SK-F3 függ a #336 (orkesztrációs F0-audit) elfogadásától? | Nem: az SK-F3 eldobható worktree-ben fut, a `main`-re csak dokumentáció kerül (mint a D6-nál). A #336 a Spec Kit egyetlen fázisának sem feltétele | elfogadva 2026-11-06 |
 | D12 | Az SK-F5 költségmérése hitelesített baseline nélkül | Páros mérés a pilotban: ugyanaz a feladat, ugyanaz a modell, Spec Kittel és a mostani módszerrel; a baseline-nal az SK-F7 előtt kell összevetni, ha elkészül | elfogadva 2026-11-14 |
+| D13 | Folytatás az SK-F5 után (AC-SK-08 FAIL) | Lezárás a pilotnál: a Spec Kit nem kerül a `main`-re, az SK-F6 és az SK-F7 elmarad; a dokumentáció és a `cfa4-policy` forrás marad, a pilotág bizonyíték | elfogadva 2026-11-14 |
 
 Jóváhagyási csomag:
 
@@ -294,9 +295,11 @@ Jóváhagyási csomag:
 
 A Spec Kit akkor éri meg a CFA4-nek, ha egyetlen szabályt sem dupláz, egyetlen más munkamenetet sem terhel, és mérhetően nem drágítja a munkát. A sorrend:
 
-SK-F1 izolált próba – kész (#451) → SK-F2 hivatkozó constitution és preset – kész (#457) → SK-F3 munkafolyamat – kész (#691) → SK-F4 biztonsági kapuk – kész (#776) → SK-F5 pilot páros költségméréssel (D12) – kész, AC-SK-08 FAIL, döntésre vár → SK-F6 teljes validáció → SK-F7 külön élesítési döntés.
+SK-F1 izolált próba – kész (#451) → SK-F2 hivatkozó constitution és preset – kész (#457) → SK-F3 munkafolyamat – kész (#691) → SK-F4 biztonsági kapuk – kész (#776) → SK-F5 pilot páros költségméréssel (D12) – kész, AC-SK-08 FAIL → **lezárás (D13)**; az SK-F6 és az SK-F7 elmarad. SK-F6 teljes validáció → SK-F7 külön élesítési döntés.
 
 Ha az AC-SK-15 nem teljesül, a Spec Kit csak a pilotban marad használható, a `main`-re nem kerül.
+
+**Lezárás (D13, 2026-11-14).** Az SK-F5 páros mérése szerint a Spec Kit ugyanarra a feladatra 168%-ba került, és a terve sem lett jobb (AC-SK-08 FAIL). A fenti feltétel („mérhetően nem drágítja a munkát”) nem teljesült, ezért a Spec Kit nem kerül a `main`-re. Ami marad: a `docs/development/spec-kit/` dokumentáció és az inert `cfa4-policy` forrás (újranyitáskor kiindulópont), valamint a be nem olvasztandó `cfa4/spec-kit-pilot` ág bizonyítéknak. Újranyitás csak új tulajdonosi döntéssel, új Spec Kit-verzió vagy új mérés alapján.
 
 ### Források
 
