@@ -64,6 +64,8 @@ nélkül folytatódik.
 - **Minden eredmény szerkeszthető grafikus klip** az idővonalon, egy visszavonási lépéssel; a
   „Composer”, a „Motion” és a „Transition Engine” a CFA4 meglévő idővonala, grafikái és átmenetei,
   nem külön motorok (E5).
+- **Csak Qt6 felület** (a tulajdonos döntése, 2026-11-14, Q14; összhangban a `credits-plan.md` 3.2-vel):
+  a C16–C24 minden felülete a Qt6 GUI-ban (`python/cfa4_qt/`) készül; egui-felület nem készül.
 - **A Qt6 Stáblista-munkaterület (C8)** lesz a terv „munkafelülete”; a tervben felsorolt panelek
   (réteglista, idővonal, kulcsképkocka-szerkesztő, előnézet, validáció) a CFA4 Qt6 felületének
   meglévő paneljei.
@@ -243,3 +245,4 @@ hiány egy fázishoz van kötve (→ C16–C21, 0.3).
 | Q11 | Megengedett-e a jóváhagyással indított, alkalmazáson belüli modell-letöltés (E13)? | Igen (a mai működés); automatikus telepítés nem | Elfogadva a javaslat szerint (tulajdonos, 2026-11-14) |
 | Q12 | Milyen azonosítót kapjanak a terv fázisai (E14)? | TC-F0…TC-F9; a megvalósítás C15-től | Elfogadva a javaslat szerint (tulajdonos, 2026-11-14) |
 | Q13 | Elfogadod-e a 0.3 szerinti folytatást (C16–C24) a meglévő stáblista-generátorra építve? | Igen, a C15 és a törzsszélesség után C16-tal | Elfogadva a javaslat szerint (tulajdonos, 2026-11-14), az 1.2 hiányainak pótlásával (C18–C21) |
+| Q14 | Milyen felület készül a C16–C24-hez? | Csak Qt6 | Eldöntve (tulajdonos, 2026-11-14): csak Qt6 GUI, egui nem készül |
