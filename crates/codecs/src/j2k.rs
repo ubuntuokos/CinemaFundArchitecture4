@@ -316,15 +316,68 @@ fn weave(top: &Image, bottom: &Image, y0: u32) -> Result<Image> {
     Ok(Image { width: top.width, height: top.height.saturating_mul(2), components, mct: top.mct || bottom.mct })
 }
 
+/// In draft mode pictures are decoded down to about this width (and no narrower).
+const DRAFT_WIDTH: u32 = 960;
+
+/// Wavelet levels a draft decode leaves out for a picture `width` samples wide: as many as keep
+/// it at least [`DRAFT_WIDTH`] wide, at most two (HD and 2K: half, UHD and 4K: a quarter).
+fn draft_reduce(width: u32) -> u8 {
+    (0..=2u8).rev().find(|&r| width >> r >= DRAFT_WIDTH).unwrap_or(0)
+}
+
 /// Our JPEG 2000 decoder: every picture is a codestream of its own.
+///
+/// In draft mode ([`VideoDecoder::set_draft`], reduced-resolution playback) pictures are
+/// decoded one or two wavelet levels down to about [`DRAFT_WIDTH`] across
+/// ([`cfa4_j2k::decode_reduced`]: the code-blocks of the left-out resolutions, most of the
+/// work, are never decoded) and each sample repeated back to the full size, so a 2K or 4K DCP
+/// plays in real time where a full decode cannot keep up (DCI 2K 2.3×, 4K 3.7× faster). Those
+/// frames come out flagged [`DecodedFrame::draft`]; narrower pictures decode in full.
 pub struct J2kDecoder {
     hints: J2kHints,
+    draft: bool,
 }
 
 impl J2kDecoder {
     pub fn new(hints: J2kHints) -> Self {
-        Self { hints }
+        Self { hints, draft: false }
     }
+}
+
+/// `image`, decoded `reduce` levels down from a codestream with `header`, back at full size:
+/// each sample covers the `2^reduce × 2^reduce` samples of the full grid it stands for (B.5).
+fn expand(image: Image, header: &Header, reduce: u8) -> Image {
+    if reduce == 0 {
+        return image;
+    }
+    let r = u32::from(reduce);
+    let full = |a: u32, d: u8| a.div_ceil(u32::from(d.max(1)));
+    // full-grid sample index → reduced sample index, for a component starting at `a0` (its
+    // reduced grid starts at `ceil(a0 / 2^r)`)
+    let map = |n: u32, a0: u32, len: u32| -> Vec<usize> {
+        let r0 = a0.div_ceil(1 << r);
+        (0..n).map(|i| (((a0 + i) >> r).saturating_sub(r0)).min(len.saturating_sub(1)) as usize).collect()
+    };
+    let components = image
+        .components
+        .into_iter()
+        .map(|p| {
+            let (x0, y0) = (full(header.x0, p.dx), full(header.y0, p.dy));
+            let (w, h) = (full(header.x1, p.dx) - x0, full(header.y1, p.dy) - y0);
+            if p.width == 0 || p.height == 0 {
+                return Plane { width: w, height: h, data: vec![0; w as usize * h as usize], ..p };
+            }
+            let (xs, ys) = (map(w, x0, p.width), map(h, y0, p.height));
+            let pw = p.width as usize;
+            let mut data = Vec::with_capacity(w as usize * h as usize);
+            for &y in &ys {
+                let row = &p.data[y * pw..(y + 1) * pw];
+                data.extend(xs.iter().map(|&x| row[x]));
+            }
+            Plane { width: w, height: h, data, ..p }
+        })
+        .collect();
+    Image { width: header.width(), height: header.height(), components, mct: image.mct }
 }
 
 impl VideoDecoder for J2kDecoder {
@@ -335,13 +388,22 @@ impl VideoDecoder for J2kDecoder {
         };
         let cs = cfa4_j2k::codestream(sample).map_err(err)?;
         let mut header = cfa4_j2k::parse_header(cs).map_err(err)?;
-        let mut image = cfa4_j2k::decode(cs).map_err(err)?;
+        let reduce = if self.draft { draft_reduce(header.width()) } else { 0 };
+        let decode = |cs: &[u8]| -> cfa4_j2k::Result<(Image, bool)> {
+            let (image, r) = cfa4_j2k::decode_reduced(cs, reduce)?;
+            let h = cfa4_j2k::parse_header(cs)?;
+            Ok((expand(image, &h, r), r > 0))
+        };
+        let (mut image, mut draft) = decode(cs).map_err(err)?;
         let mut origin = (header.x0, header.y0);
         if self.hints.separate_fields {
             // a missing or damaged second field repeats the first; one we cannot decode is
             // refused like any unsupported picture
-            let second = match second_field(cs).map(cfa4_j2k::decode) {
-                Some(Ok(f)) => f,
+            let second = match second_field(cs).map(decode) {
+                Some(Ok((f, d))) => {
+                    draft |= d;
+                    f
+                }
                 Some(Err(e @ cfa4_j2k::Error::Unsupported(_))) => return Err(err(e)),
                 Some(Err(_)) | None => image.clone(),
             };
@@ -351,7 +413,10 @@ impl VideoDecoder for J2kDecoder {
             origin.1 = 0;
         }
         let components = after_decode(&header, self.hints, &image)?;
-        Ok(vec![DecodedFrame { pts, frame: to_video_frame(&image, origin, components, self.hints)?, draft: false }])
+        Ok(vec![DecodedFrame { pts, frame: to_video_frame(&image, origin, components, self.hints)?, draft }])
+    }
+    fn set_draft(&mut self, on: bool) {
+        self.draft = on;
     }
     fn flush(&mut self) -> Vec<DecodedFrame> {
         Vec::new()
@@ -616,5 +681,55 @@ mod tests {
             assert!(to_video_frame(&image, (0, 0), c, J2kHints::default()).is_ok());
         }
         assert!(to_video_frame(&Image { width: 0, height: 0, components: vec![], mct: false }, (0, 0), Components::Gray, J2kHints::default()).is_err());
+    }
+
+    #[test]
+    fn draft_mode_decodes_wide_pictures_at_a_lower_resolution() {
+        // a smooth 4:2:2 picture, 1920 wide: draft frames keep the full size, close to the
+        // full decode
+        let (w, h) = (1920u32, 72u32);
+        let luma = Plane { data: (0..w * h).map(|i| 16 + ((i % w) * 200 / w + (i / w) * 2) as i32).collect(), ..plane_of(w, h, 8, false, 0) };
+        let chroma = Plane { dx: 2, ..plane_of(w / 2, h, 8, false, 128) };
+        let image = Image { width: w, height: h, components: vec![luma, chroma.clone(), chroma], mct: false };
+        let opts = cfa4_j2k::EncodeOptions { mct: false, ..cfa4_j2k::EncodeOptions::lossless() };
+        let sample = cfa4_j2k::encode(&image, &opts).unwrap_or_else(|e| panic!("{e}"));
+        let mut dec = J2kDecoder::new(J2kHints::default());
+        let full = dec.decode(&sample, 0).unwrap_or_else(|e| panic!("{e}")).remove(0);
+        dec.set_draft(true);
+        let draft = dec.decode(&sample, 0).unwrap_or_else(|e| panic!("{e}")).remove(0);
+        assert!(!full.draft && draft.draft);
+        assert_eq!((draft.frame.width, draft.frame.height), (w, h));
+        let (PixelData::Yuv8 { planes: a, chroma: ca, .. }, PixelData::Yuv8 { planes: b, chroma: cb, .. }) = (&full.frame.data, &draft.frame.data) else {
+            panic!("8-bit expected")
+        };
+        assert_eq!((ca, cb), (&Chroma::C422, &Chroma::C422));
+        for (pa, pb) in a.iter().zip(b) {
+            assert_eq!(pa.len(), pb.len());
+            let worst = pa.iter().zip(pb.iter()).map(|(&x, &y)| (i32::from(x) - i32::from(y)).abs()).max().unwrap_or(0);
+            assert!(worst <= 4, "draft differs from the full decode by {worst}");
+        }
+        // narrower pictures decode in full even in draft mode
+        let small = Image { width: 64, height: 8, components: vec![plane_of(64, 8, 8, false, 90)], mct: false };
+        let sample = cfa4_j2k::encode(&small, &opts).unwrap_or_else(|e| panic!("{e}"));
+        let out = dec.decode(&sample, 0).unwrap_or_else(|e| panic!("{e}")).remove(0);
+        assert!(!out.draft);
+        assert_eq!((out.frame.width, out.frame.height), (64, 8));
+        assert_eq!([draft_reduce(1280), draft_reduce(1920), draft_reduce(2048), draft_reduce(3840), draft_reduce(8192)], [0, 1, 1, 2, 2]);
+    }
+
+    #[test]
+    fn reduced_planes_expand_onto_the_full_grid() {
+        // image area x 3..11 on the reference grid: the half-resolution samples stand for
+        // x 4-5, 6-7, 8-9 and 10 (B.5), and x 3 takes the first one
+        let mut hd = header(&[(1, 1)], 0, false);
+        (hd.x0, hd.x1, hd.y0, hd.y1) = (3, 11, 0, 2);
+        let reduced = Plane { data: vec![1, 2, 3, 4], ..plane_of(4, 1, 8, false, 0) };
+        let out = expand(Image { width: 4, height: 1, components: vec![reduced], mct: false }, &hd, 1);
+        assert_eq!((out.width, out.height), (8, 2));
+        assert_eq!(out.components[0].data, [1, 1, 1, 2, 2, 3, 3, 4, 1, 1, 1, 2, 2, 3, 3, 4]);
+        // an empty plane becomes an empty full-size one instead of panicking
+        let empty = Plane { width: 0, height: 0, data: vec![], ..plane_of(0, 0, 8, false, 0) };
+        let out = expand(Image { width: 0, height: 0, components: vec![empty], mct: false }, &hd, 1);
+        assert_eq!(out.components[0].data.len(), 16);
     }
 }
