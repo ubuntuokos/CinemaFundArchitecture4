@@ -4582,3 +4582,29 @@ export.summary	Low	nizka
 	Split screen: the middle half of the picture fills the left half of the frame	Razdeljen zaslon: srednja polovica slike zapolni levo polovico kadra
 	Split Screen Right	Razdeljen zaslon desno
 	Split screen: the middle half of the picture fills the right half of the frame	Razdeljen zaslon: srednja polovica slike zapolni desno polovico kadra
+# Creative Looks: CRT (P3)
+	CRT	CRT
+	Scanline Strength	Moč vrstic
+	Line Count	Število vrstic
+	Mask	Maska
+	Mask Strength	Moč maske
+	Corner Darkening	Temnenje kotov
+	Aperture Grille	Mreža odprtin
+	Shadow Mask	Senčna maska
+	Slot Mask	Režna maska
+# Creative Looks: Oil Paint (P4)
+	Oil Paint	Oljna slika
+	Detail	Podrobnosti
+	Texture	Tekstura
+	Facet	Ploskve
+	Daubs	Madeži
+	Dry Brush	Suh čopič
+	Fresco	Freska
+	Knife	Lopatica
+	Sponge	Goba
+# Creative Looks: Pixel Sort (P5)
+	Pixel Sort	Razvrščanje slikovnih pik
+	Sort By	Razvrsti po
+	Lower Threshold	Spodnji prag
+	Upper Threshold	Zgornji prag
+	Ascending	Naraščajoče

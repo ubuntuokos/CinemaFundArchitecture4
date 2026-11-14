@@ -4579,3 +4579,29 @@ export.summary	Low	nízká
 	Split screen: the middle half of the picture fills the left half of the frame	Rozdělená obrazovka: prostřední polovina obrazu vyplní levou polovinu snímku
 	Split Screen Right	Rozdělená obrazovka vpravo
 	Split screen: the middle half of the picture fills the right half of the frame	Rozdělená obrazovka: prostřední polovina obrazu vyplní pravou polovinu snímku
+# Creative Looks: CRT (P3)
+	CRT	CRT
+	Scanline Strength	Síla řádků
+	Line Count	Počet řádků
+	Mask	Maska
+	Mask Strength	Síla masky
+	Corner Darkening	Ztmavení rohů
+	Aperture Grille	Aperturní mřížka
+	Shadow Mask	Stínová maska
+	Slot Mask	Štěrbinová maska
+# Creative Looks: Oil Paint (P4)
+	Oil Paint	Olejomalba
+	Detail	Detail
+	Texture	Textura
+	Facet	Fasety
+	Daubs	Tahy
+	Dry Brush	Suchý štětec
+	Fresco	Freska
+	Knife	Špachtle
+	Sponge	Houba
+# Creative Looks: Pixel Sort (P5)
+	Pixel Sort	Řazení pixelů
+	Sort By	Řadit podle
+	Lower Threshold	Dolní práh
+	Upper Threshold	Horní práh
+	Ascending	Vzestupně

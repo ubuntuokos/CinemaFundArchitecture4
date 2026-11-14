@@ -130,6 +130,7 @@ const NEW_IDS: &[&str] = &[
     "vhs",
     "scan_line_jitter",
     "tile_jitter",
+    "pixel_sort",
     "lightning",
     "cell_pattern",
     "checkerboard",

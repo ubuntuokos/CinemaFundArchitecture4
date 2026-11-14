@@ -4579,3 +4579,29 @@ export.summary	Low	niska
 	Split screen: the middle half of the picture fills the left half of the frame	Podzielony ekran: środkowa połowa obrazu wypełnia lewą połowę kadru
 	Split Screen Right	Podzielony ekran z prawej
 	Split screen: the middle half of the picture fills the right half of the frame	Podzielony ekran: środkowa połowa obrazu wypełnia prawą połowę kadru
+# Creative Looks: CRT (P3)
+	CRT	CRT
+	Scanline Strength	Siła linii
+	Line Count	Liczba linii
+	Mask	Maska
+	Mask Strength	Siła maski
+	Corner Darkening	Przyciemnienie narożników
+	Aperture Grille	Maskownica szczelinowa
+	Shadow Mask	Maska perforowana
+	Slot Mask	Maska szczelinowa
+# Creative Looks: Oil Paint (P4)
+	Oil Paint	Obraz olejny
+	Detail	Szczegółowość
+	Texture	Tekstura
+	Facet	Fasety
+	Daubs	Plamy
+	Dry Brush	Suchy pędzel
+	Fresco	Fresk
+	Knife	Szpachla
+	Sponge	Gąbka
+# Creative Looks: Pixel Sort (P5)
+	Pixel Sort	Sortowanie pikseli
+	Sort By	Sortuj według
+	Lower Threshold	Dolny próg
+	Upper Threshold	Górny próg
+	Ascending	Rosnąco

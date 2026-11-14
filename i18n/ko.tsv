@@ -4573,3 +4573,29 @@
 	Split screen: the middle half of the picture fills the left half of the frame	분할 화면: 영상의 가운데 절반이 프레임의 왼쪽 절반을 채움
 	Split Screen Right	분할 화면 오른쪽
 	Split screen: the middle half of the picture fills the right half of the frame	분할 화면: 영상의 가운데 절반이 프레임의 오른쪽 절반을 채움
+# Creative Looks: CRT (P3)
+	CRT	CRT
+	Scanline Strength	주사선 강도
+	Line Count	주사선 수
+	Mask	마스크
+	Mask Strength	마스크 강도
+	Corner Darkening	모서리 어둡게
+	Aperture Grille	어퍼처 그릴
+	Shadow Mask	섀도 마스크
+	Slot Mask	슬롯 마스크
+# Creative Looks: Oil Paint (P4)
+	Oil Paint	유화
+	Detail	디테일
+	Texture	텍스처
+	Facet	패싯
+	Daubs	덧칠
+	Dry Brush	드라이 브러시
+	Fresco	프레스코
+	Knife	나이프
+	Sponge	스펀지
+# Creative Looks: Pixel Sort (P5)
+	Pixel Sort	픽셀 정렬
+	Sort By	정렬 기준
+	Lower Threshold	하한 임계값
+	Upper Threshold	상한 임계값
+	Ascending	오름차순

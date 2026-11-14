@@ -4582,3 +4582,29 @@ export.summary	Low	დაბალი
 	Split screen: the middle half of the picture fills the left half of the frame	გაყოფილი ეკრანი: სურათის შუა ნახევარი ავსებს კადრის მარცხენა ნახევარს
 	Split Screen Right	გაყოფილი ეკრანი მარჯვნივ
 	Split screen: the middle half of the picture fills the right half of the frame	გაყოფილი ეკრანი: სურათის შუა ნახევარი ავსებს კადრის მარჯვენა ნახევარს
+# Creative Looks: CRT (P3)
+	CRT	CRT
+	Scanline Strength	სკანირების ხაზების სიძლიერე
+	Line Count	ხაზების რაოდენობა
+	Mask	ნიღაბი
+	Mask Strength	ნიღბის სიძლიერე
+	Corner Darkening	კუთხეების დაბნელება
+	Aperture Grille	აპერტურული ბადე
+	Shadow Mask	ჩრდილის ნიღაბი
+	Slot Mask	ჭრილოვანი ნიღაბი
+# Creative Looks: Oil Paint (P4)
+	Oil Paint	ზეთის ფერწერა
+	Detail	დეტალიზაცია
+	Texture	ტექსტურა
+	Facet	წახნაგები
+	Daubs	მონასმები
+	Dry Brush	მშრალი ფუნჯი
+	Fresco	ფრესკა
+	Knife	შპატელი
+	Sponge	ღრუბელი
+# Creative Looks: Pixel Sort (P5)
+	Pixel Sort	პიქსელების დალაგება
+	Sort By	დალაგების კრიტერიუმი
+	Lower Threshold	ქვედა ზღვარი
+	Upper Threshold	ზედა ზღვარი
+	Ascending	ზრდადობით

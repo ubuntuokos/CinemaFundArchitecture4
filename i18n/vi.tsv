@@ -4579,3 +4579,29 @@ export.summary	Low	thấp
 	Split screen: the middle half of the picture fills the left half of the frame	Chia màn hình: nửa giữa của hình lấp đầy nửa trái khung hình
 	Split Screen Right	Chia màn hình phải
 	Split screen: the middle half of the picture fills the right half of the frame	Chia màn hình: nửa giữa của hình lấp đầy nửa phải khung hình
+# Creative Looks: CRT (P3)
+	CRT	CRT
+	Scanline Strength	Cường độ dòng quét
+	Line Count	Số dòng
+	Mask	Mặt nạ
+	Mask Strength	Cường độ mặt nạ
+	Corner Darkening	Làm tối góc
+	Aperture Grille	Lưới khe
+	Shadow Mask	Mặt nạ bóng
+	Slot Mask	Mặt nạ khe
+# Creative Looks: Oil Paint (P4)
+	Oil Paint	Tranh sơn dầu
+	Detail	Chi tiết
+	Texture	Kết cấu
+	Facet	Mặt cắt
+	Daubs	Vệt chấm
+	Dry Brush	Cọ khô
+	Fresco	Bích họa
+	Knife	Dao vẽ
+	Sponge	Bọt biển
+# Creative Looks: Pixel Sort (P5)
+	Pixel Sort	Sắp xếp điểm ảnh
+	Sort By	Sắp xếp theo
+	Lower Threshold	Ngưỡng dưới
+	Upper Threshold	Ngưỡng trên
+	Ascending	Tăng dần

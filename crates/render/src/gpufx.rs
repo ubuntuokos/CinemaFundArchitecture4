@@ -174,6 +174,32 @@ pub enum FxOp {
         inv: [f32; 9],
         identity: bool,
     },
+    /// CRT: a curved tube (`curve` = barrel factor, 0 = flat) showing the picture through
+    /// `lines` scanlines (`scan` = depth of the gaps), a phosphor mask (`mask` 0 none, 1 aperture
+    /// grille, 2 shadow mask, 3 slot mask; `mask_amt` = how dark the other phosphors are, `pitch` =
+    /// one triad in working pixels), darker corners and a per-frame brightness `gain` (flicker).
+    /// See [`crt_warp`] and [`crt_shade`].
+    Crt {
+        scan: f32,
+        lines: f32,
+        mask: u32,
+        mask_amt: f32,
+        pitch: f32,
+        curve: f32,
+        corner: f32,
+        gain: f32,
+    },
+    /// Oil Paint: a generalized Kuwahara filter (the mean of each sector of a `radius` neighbourhood,
+    /// weighted towards the calmest sectors with sharpness `q`; see [`oil_sectors`]) on the
+    /// premultiplied image, then the style's canvas texture ([`oil_texture`]) scaled by `texture`.
+    /// `style` is the index into `cfa4_project::effect::OIL_STYLES`.
+    OilPaint {
+        style: u32,
+        radius: u32,
+        q: f32,
+        texture: f32,
+        seed: u32,
+    },
     /// Film Grain: smooth value noise ([`grain_noise`]) on display-encoded colour, weighted by a
     /// shadows / midtones / highlights response. `inv_cell` is 1 / the grain cell in working
     /// pixels; `seed` already folds in the frame when the grain is animated.
@@ -367,6 +393,8 @@ pub const GPU_EFFECTS: &[&str] = &[
     "vhs",
     "scan_line_jitter",
     "tile_jitter",
+    "crt",
+    "oil_paint",
     "mirror",
     "offset",
     "asc_cdl",
@@ -443,6 +471,95 @@ pub fn halftone_ink(px: f32, py: f32, cs: f32, sn: f32, inv_cell: f32, soft: f32
     // the threshold reaches past the spot's range so 0 and 1 are exactly no ink and solid ink
     let th = (1.0 - 2.0 * v) * (1.0 + soft);
     ((spot - th) / (2.0 * soft) + 0.5).clamp(0.0, 1.0)
+}
+
+/// CRT tube coordinates (−1…1 across the frame) of pixel centre (`px`, `py`) in a `w` × `h`
+/// frame, bent by the barrel factor `curve`; `None` outside the curved screen. `fx.wgsl`
+/// (`crt_warp`) mirrors this.
+pub fn crt_warp(px: f32, py: f32, w: f32, h: f32, curve: f32) -> Option<(f32, f32)> {
+    let u = px / w * 2.0 - 1.0;
+    let v = py / h * 2.0 - 1.0;
+    let cu = u * (1.0 + curve * v * v);
+    let cv = v * (1.0 + curve * u * u);
+    (cu.abs() <= 1.0 && cv.abs() <= 1.0).then_some((cu, cv))
+}
+
+/// The per-channel brightness of the CRT look at tube coordinates (`cu`, `cv`) and output pixel
+/// centre (`px`, `py`): the scanline beam profile, the phosphor mask and the corner falloff (see
+/// [`FxOp::Crt`]). `fx.wgsl` (`crt_shade`) mirrors this.
+#[allow(clippy::too_many_arguments)]
+pub fn crt_shade(cu: f32, cv: f32, px: f32, py: f32, scan: f32, lines: f32, mask: u32, mask_amt: f32, pitch: f32, corner: f32) -> [f32; 3] {
+    // the beam: brightest in the middle of each scanline, darkest between two
+    let t = (cv + 1.0) * 0.5 * lines;
+    let beam = 1.0 - scan * (1.0 - (std::f32::consts::PI * (t - t.floor())).sin());
+    // the phosphors: one lit, the other two dimmed by `mask_amt`
+    let mut m = [1.0f32; 3];
+    if mask > 0 && mask_amt > 0.0 {
+        let odd = |v: f32| v - 2.0 * (v * 0.5).floor() >= 1.0;
+        let tx = px / pitch;
+        let col = tx.floor();
+        let mut lit = true;
+        let mut sx = tx;
+        if mask == 2 {
+            // shadow mask: each row of triads shifted by half a triad
+            if odd((py / pitch * 2.0).floor()) {
+                sx += 0.5;
+            }
+        } else if mask == 3 {
+            // slot mask: grille stripes broken by staggered horizontal gaps
+            let ty = py / pitch + if odd(col) { 0.5 } else { 0.0 };
+            lit = ty - ty.floor() >= 0.25;
+        }
+        let k = (((sx - sx.floor()) * 3.0).floor() as usize).min(2);
+        m = [1.0 - mask_amt; 3];
+        if lit && let Some(c) = m.get_mut(k) {
+            *c = 1.0;
+        }
+    }
+    // the tube's corners: dark at the rim of the screen
+    let rim = ((1.0 - cu * cu) * (1.0 - cv * cv)).max(0.0).sqrt().sqrt();
+    let k = beam * (1.0 - corner * (1.0 - rim));
+    [m[0] * k, m[1] * k, m[2] * k]
+}
+
+/// The Kuwahara sectors of Oil Paint `style` that offset (`dx`, `dy`) belongs to, as a bit mask
+/// (0: outside the brush of radius `r`). Facet uses four square quadrants; Knife four quadrants
+/// of a disc; the other styles eight octants of a disc. Boundary taps belong to both neighbours
+/// and the centre to every sector; integer tests only, so `fx.wgsl` (`oil_sectors`) matches
+/// exactly.
+pub fn oil_sectors(style: u32, dx: i32, dy: i32, r: i32) -> u32 {
+    if style != 0 && dx * dx + dy * dy > r * r {
+        return 0;
+    }
+    let (e, n, w, s) = (dx >= 0, dy >= 0, dx <= 0, dy <= 0);
+    if style == 0 || style == 4 {
+        return (e && n) as u32 | ((w && n) as u32) << 1 | ((w && s) as u32) << 2 | ((e && s) as u32) << 3;
+    }
+    (e && n && dx >= dy) as u32
+        | ((e && n && dy >= dx) as u32) << 1
+        | ((w && n && dy >= -dx) as u32) << 2
+        | ((w && n && -dx >= dy) as u32) << 3
+        | ((w && s && -dx >= -dy) as u32) << 4
+        | ((w && s && -dy >= -dx) as u32) << 5
+        | ((e && s && -dy >= dx) as u32) << 6
+        | ((e && s && dx >= -dy) as u32) << 7
+}
+
+/// The canvas texture of Oil Paint `style` at pixel (`x`, `y`) for brush radius `r`, within
+/// ±0.6: a woven canvas, dry-brush streaks (Dry Brush), mottled plaster (Fresco) or sponge
+/// pores (Sponge). `fx.wgsl` (`oil_texture`) mirrors this.
+pub fn oil_texture(style: u32, x: usize, y: usize, r: u32, seed: u32) -> f32 {
+    let weave = ((x / 2 + y / 2) % 2) as f32 - 0.5;
+    let r = r.max(1) as f32;
+    match style {
+        2 => {
+            let (ix, iy) = (((x as f32 + 0.5) / (8.0 * r)).floor() as i32, ((y as f32 + 0.5) / (r / 3.0).max(1.0)).floor() as i32);
+            0.2 * weave + lattice(ix, iy, seed, 0)
+        }
+        3 => 0.2 * weave + grain_noise(x, y, 1.0 / (4.0 * r), seed, 0),
+        5 => (2.0 * grain_noise(x, y, 2.0 / r, seed, 0)).clamp(-0.5, 0.5),
+        _ => 0.4 * weave,
+    }
 }
 
 /// The fixed palettes of Dither (`cfa4_project::effect::DITHER_PALETTES` after "Input Colors"),
@@ -1039,6 +1156,48 @@ impl FxOp {
                 levels: f(e, "levels", cx).round().clamp(2.0, 16.0),
                 blend: (f(e, "blend", cx) / 100.0).clamp(0.0, 1.0),
             },
+            "crt" => {
+                let pct = |k: &str| {
+                    let v = f(e, k, cx) / 100.0;
+                    if v.is_finite() { v.clamp(0.0, 1.0) } else { 0.0 }
+                };
+                let lines = f(e, "line_count", cx);
+                let mask = choice(e, "mask").min(3);
+                // (`as` saturates: NaN → 0)
+                let user = f(e, "seed", cx).round().clamp(0.0, 1e6) as u32;
+                let t = crate::effects::noise_frame_seed(cx);
+                // 24 bits, exact in f32: [0, 1)
+                let n = (pcg3d(user, (t ^ (t >> 32)) as u32, 0x6372_7421) >> 8) as f32 / 16_777_216.0;
+                FxOp::Crt {
+                    scan: pct("scanlines"),
+                    lines: if lines.is_finite() { lines.round().clamp(60.0, 1080.0) } else { 240.0 },
+                    mask,
+                    mask_amt: if mask == 0 { 0.0 } else { pct("mask_strength") },
+                    // a triad is three working pixels at full resolution
+                    pitch: (3.0 * cx.px_scale).max(1.0),
+                    // up to a quarter: the corners bend in by about a fifth of the frame
+                    curve: pct("curvature") * 0.25,
+                    corner: pct("corner_darkening"),
+                    gain: 1.0 - pct("flicker") * 0.3 * n,
+                }
+            }
+            "oil_paint" => {
+                let pct = |k: &str| {
+                    let v = f(e, k, cx) / 100.0;
+                    if v.is_finite() { v.clamp(0.0, 1.0) } else { 0.0 }
+                };
+                let style = choice(e, "style").min(5);
+                // (`as` saturates: NaN → 0, then at least 1; 24 px covers a 2× render)
+                let radius = ((f(e, "brush_size", cx).clamp(1.0, 12.0) * cx.px_scale).round() as u32).clamp(1, 24);
+                FxOp::OilPaint {
+                    style,
+                    radius,
+                    // Knife: always the calmest sector, hard edges
+                    q: if style == 4 { 16.0 } else { 1.0 + 15.0 * pct("detail") },
+                    texture: pct("texture"),
+                    seed: f(e, "seed", cx).round().clamp(0.0, 1e6) as u32,
+                }
+            }
             "film_grain" => {
                 let pct = |k: &str| (f(e, k, cx) / 100.0).clamp(0.0, 2.0);
                 // a grain cell under a quarter pixel only aliases; 0 / NaN sizes land here too
@@ -1230,6 +1389,15 @@ impl FxOp {
         FxOp::Crop { x0: l * w, x1: w * (1.0 - r), y0: t * h, y1: h * (1.0 - b), feather: feather.max(0.0) }
     }
 
+    /// Whether this op leaves every pixel as it is, so both the CPU and the GPU skip it (only the
+    /// effects whose neutral settings would otherwise still round-trip the colours answer).
+    pub fn is_identity(&self) -> bool {
+        match self {
+            FxOp::Crt { scan, mask_amt, curve, corner, gain, .. } => *scan == 0.0 && *mask_amt == 0.0 && *curve == 0.0 && *corner == 0.0 && *gain == 1.0,
+            _ => false,
+        }
+    }
+
     /// Whether the GPU shader reproduces [`apply`](Self::apply) for this op: every number finite
     /// (the CPU's NaN / infinity behaviour is left to the CPU) and resamples that the CPU does
     /// not pre-filter.
@@ -1280,6 +1448,8 @@ impl FxOp {
             FxOp::Vhs(v) => fin(&[v.alpha, v.wobble, v.inv_len, v.phase, v.snow, v.dim]),
             FxOp::ScanLineJitter { disp, thr, .. } => fin(&[*disp, *thr]),
             FxOp::TileJitter { dx, dy, tiles, .. } => fin(&[*dx, *dy, *tiles]),
+            FxOp::Crt { scan, lines, mask_amt, pitch, curve, corner, gain, .. } => fin(&[*scan, *lines, *mask_amt, *pitch, *curve, *corner, *gain]),
+            FxOp::OilPaint { q, texture, .. } => fin(&[*q, *texture]),
             FxOp::FilmGrain { amount, inv_cell, shadows, midtones, highlights, color, .. } => {
                 fin(&[*amount, *inv_cell, *shadows, *midtones, *highlights, *color])
             }
@@ -1744,6 +1914,98 @@ impl FxOp {
                         }
                         let c = dec(c);
                         p.copy_from_slice(&[c[0] * a, c[1] * a, c[2] * a, a]);
+                    }
+                });
+            }
+            FxOp::Crt { scan, lines, mask, mask_amt, pitch, curve, corner, gain } => {
+                let (scan, lines, mask, amt, pitch, curve, corner, gain) = (*scan, *lines, *mask, *mask_amt, *pitch, *curve, *corner, *gain);
+                if ![scan, lines, amt, pitch, curve, corner, gain].iter().all(|v| v.is_finite()) || self.is_identity() {
+                    return;
+                }
+                let src = img.clone();
+                let (w, fw, fh) = (img.w, img.w as f32, img.h as f32);
+                img.px.par_chunks_mut(w * 4).enumerate().for_each(|(y, row)| {
+                    for x in 0..w {
+                        let (px, py) = (x as f32 + 0.5, y as f32 + 0.5);
+                        let Some(d) = row.get_mut(x * 4..x * 4 + 4) else { continue };
+                        let Some((cu, cv)) = crt_warp(px, py, fw, fh, curve) else {
+                            d.copy_from_slice(&[0.0; 4]);
+                            continue;
+                        };
+                        // a flat tube shows each pixel as it is
+                        let q = if curve == 0.0 { src.get(x, y) } else { src.sample_bilinear_clamped((cu + 1.0) * 0.5 * fw, (cv + 1.0) * 0.5 * fh) };
+                        let a = q[3];
+                        if a <= 1e-6 {
+                            d.copy_from_slice(&q);
+                            continue;
+                        }
+                        let e = enc([q[0] / a, q[1] / a, q[2] / a]);
+                        let k = crt_shade(cu, cv, px, py, scan, lines, mask, amt, pitch, corner);
+                        let c = dec([e[0] * k[0] * gain, e[1] * k[1] * gain, e[2] * k[2] * gain]);
+                        d.copy_from_slice(&[c[0] * a, c[1] * a, c[2] * a, a]);
+                    }
+                });
+            }
+            FxOp::OilPaint { style, radius, q, texture, seed } => {
+                let (style, r, q, tex, seed) = (*style, (*radius).clamp(1, 24) as i32, *q, *texture, *seed);
+                if !q.is_finite() || !tex.is_finite() {
+                    return;
+                }
+                let n = if style == 0 || style == 4 { 4 } else { 8 };
+                let taps: Vec<(isize, isize, u32)> =
+                    (-r..=r).flat_map(|dy| (-r..=r).map(move |dx| (dx as isize, dy as isize, oil_sectors(style, dx, dy, r)))).filter(|t| t.2 != 0).collect();
+                let src = img.clone();
+                let w = img.w;
+                img.px.par_chunks_mut(w * 4).enumerate().for_each(|(y, row)| {
+                    for x in 0..w {
+                        let mut sum = [[0.0f32; 4]; 8];
+                        let mut sq = [[0.0f32; 3]; 8];
+                        let mut cnt = [0.0f32; 8];
+                        for &(dx, dy, m) in &taps {
+                            let c = src.get_clamped(x as isize + dx, y as isize + dy);
+                            for k in 0..n {
+                                if (m >> k) & 1 == 1 {
+                                    for i in 0..4 {
+                                        sum[k][i] += c[i];
+                                    }
+                                    for i in 0..3 {
+                                        sq[k][i] += c[i] * c[i];
+                                    }
+                                    cnt[k] += 1.0;
+                                }
+                            }
+                        }
+                        // each sector's mean and spread (the summed variance of its colour)
+                        let mut mean = [[0.0f32; 4]; 8];
+                        let mut sd = [0.0f32; 8];
+                        let mut lo = f32::INFINITY;
+                        for k in 0..n {
+                            let c = cnt[k].max(1.0);
+                            mean[k] = sum[k].map(|v| v / c);
+                            let var = (0..3).map(|i| sq[k][i] / c - mean[k][i] * mean[k][i]).sum::<f32>();
+                            sd[k] = var.max(0.0).sqrt();
+                            lo = lo.min(sd[k]);
+                        }
+                        let mut o = [0.0f32; 4];
+                        let mut wsum = 0.0f32;
+                        for k in 0..n {
+                            let wk = 1.0 / (1.0 + (sd[k] / (lo + 1e-4)).powf(q));
+                            for i in 0..4 {
+                                o[i] += mean[k][i] * wk;
+                            }
+                            wsum += wk;
+                        }
+                        let o = o.map(|v| v / wsum.max(1e-12));
+                        let Some(d) = row.get_mut(x * 4..x * 4 + 4) else { continue };
+                        let a = o[3];
+                        if a <= 1e-6 {
+                            d.copy_from_slice(&[0.0; 4]);
+                            continue;
+                        }
+                        let t = 1.0 + tex * oil_texture(style, x, y, r as u32, seed);
+                        let e = enc([o[0] / a, o[1] / a, o[2] / a]);
+                        let c = dec([e[0] * t, e[1] * t, e[2] * t]);
+                        d.copy_from_slice(&[c[0] * a, c[1] * a, c[2] * a, a]);
                     }
                 });
             }

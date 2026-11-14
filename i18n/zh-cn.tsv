@@ -4577,3 +4577,29 @@
 	Split screen: the middle half of the picture fills the left half of the frame	分屏：画面中间的一半填满画框的左半边
 	Split Screen Right	分屏 右
 	Split screen: the middle half of the picture fills the right half of the frame	分屏：画面中间的一半填满画框的右半边
+# Creative Looks: CRT (P3)
+	CRT	CRT
+	Scanline Strength	扫描线强度
+	Line Count	扫描线数
+	Mask	遮罩
+	Mask Strength	遮罩强度
+	Corner Darkening	四角暗化
+	Aperture Grille	栅条荫罩
+	Shadow Mask	荫罩
+	Slot Mask	槽形荫罩
+# Creative Looks: Oil Paint (P4)
+	Oil Paint	油画
+	Detail	细节
+	Texture	纹理
+	Facet	切面
+	Daubs	厚涂
+	Dry Brush	干笔
+	Fresco	壁画
+	Knife	刮刀
+	Sponge	海绵
+# Creative Looks: Pixel Sort (P5)
+	Pixel Sort	像素排序
+	Sort By	排序依据
+	Lower Threshold	下限阈值
+	Upper Threshold	上限阈值
+	Ascending	升序

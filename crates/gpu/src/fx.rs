@@ -74,6 +74,8 @@ const OP_GLITCH_DATABEND: u32 = 50;
 const OP_GLITCH_VHS: u32 = 51;
 const OP_GLITCH_SCAN: u32 = 52;
 const OP_GLITCH_TILE: u32 = 53;
+const OP_CRT: u32 = 54;
+const OP_OIL_PAINT: u32 = 55;
 
 /// Working textures an op with explicit routing ([`Step::slots`]) may use: its input and four more.
 const SLOTS: usize = 5;
@@ -345,6 +347,12 @@ fn steps(op: &FxOp) -> Vec<Step> {
                 out.push(step(OP_GLITCH_TILE, [0; 4], &[*dx, *dy, *tiles, f32::from(u8::from(*across))]));
             }
         }
+        FxOp::Crt { scan, lines, mask, mask_amt, pitch, curve, corner, gain } => {
+            if !op.is_identity() {
+                out.push(step(OP_CRT, [*mask, 0, 0, 0], &[*scan, *lines, *mask_amt, *pitch, *curve, *corner, *gain]));
+            }
+        }
+        FxOp::OilPaint { style, radius, q, texture, seed } => out.push(step(OP_OIL_PAINT, [*style, (*radius).clamp(1, 24), *seed, 0], &[*q, *texture])),
         FxOp::FilmGrain { amount, inv_cell, shadows, midtones, highlights, color, seed } => {
             if *amount > 0.0 {
                 out.push(step(OP_FILM_GRAIN, [*seed, 0, 0, 0], &[*amount, *inv_cell, *shadows, *midtones, *highlights, *color]));

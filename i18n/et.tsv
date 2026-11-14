@@ -4581,3 +4581,29 @@ export.summary	Low	madal
 	Split screen: the middle half of the picture fills the left half of the frame	Jagatud ekraan: pildi keskmine pool täidab kaadri vasaku poole
 	Split Screen Right	Jagatud ekraan paremal
 	Split screen: the middle half of the picture fills the right half of the frame	Jagatud ekraan: pildi keskmine pool täidab kaadri parema poole
+# Creative Looks: CRT (P3)
+	CRT	CRT
+	Scanline Strength	Skaneerimisjoonte tugevus
+	Line Count	Joonte arv
+	Mask	Mask
+	Mask Strength	Maski tugevus
+	Corner Darkening	Nurkade tumendus
+	Aperture Grille	Avarest
+	Shadow Mask	Varjumask
+	Slot Mask	Piludega mask
+# Creative Looks: Oil Paint (P4)
+	Oil Paint	Õlimaal
+	Detail	Detailsus
+	Texture	Tekstuur
+	Facet	Tahud
+	Daubs	Täpid
+	Dry Brush	Kuiv pintsel
+	Fresco	Fresko
+	Knife	Pahtlinuga
+	Sponge	Käsn
+# Creative Looks: Pixel Sort (P5)
+	Pixel Sort	Pikslite sortimine
+	Sort By	Sordi
+	Lower Threshold	Alumine lävi
+	Upper Threshold	Ülemine lävi
+	Ascending	Kasvav

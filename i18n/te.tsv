@@ -4585,3 +4585,29 @@ export.summary	Low	తక్కువ
 	Split screen: the middle half of the picture fills the left half of the frame	విభజిత తెర: చిత్రం మధ్య సగం ఫ్రేమ్ ఎడమ సగాన్ని నింపుతుంది
 	Split Screen Right	విభజిత తెర కుడి
 	Split screen: the middle half of the picture fills the right half of the frame	విభజిత తెర: చిత్రం మధ్య సగం ఫ్రేమ్ కుడి సగాన్ని నింపుతుంది
+# Creative Looks: CRT (P3)
+	CRT	CRT
+	Scanline Strength	స్కాన్‌లైన్ తీవ్రత
+	Line Count	లైన్ల సంఖ్య
+	Mask	మాస్క్
+	Mask Strength	మాస్క్ తీవ్రత
+	Corner Darkening	మూలలను చీకటి చేయడం
+	Aperture Grille	అపర్చర్ గ్రిల్
+	Shadow Mask	షాడో మాస్క్
+	Slot Mask	స్లాట్ మాస్క్
+# Creative Looks: Oil Paint (P4)
+	Oil Paint	ఆయిల్ పెయింట్
+	Detail	వివరాలు
+	Texture	ఆకృతి
+	Facet	ముఖాలు
+	Daubs	అద్దకాలు
+	Dry Brush	పొడి బ్రష్
+	Fresco	ఫ్రెస్కో
+	Knife	పాలెట్ కత్తి
+	Sponge	స్పాంజ్
+# Creative Looks: Pixel Sort (P5)
+	Pixel Sort	పిక్సెల్ క్రమీకరణ
+	Sort By	దీని ప్రకారం క్రమీకరించు
+	Lower Threshold	దిగువ పరిమితి
+	Upper Threshold	ఎగువ పరిమితి
+	Ascending	ఆరోహణ

@@ -4582,3 +4582,29 @@ export.summary	Low	ниско
 	Split screen: the middle half of the picture fills the left half of the frame	Разделен екран: средната половина на картината запълва лявата половина на кадъра
 	Split Screen Right	Разделен екран вдясно
 	Split screen: the middle half of the picture fills the right half of the frame	Разделен екран: средната половина на картината запълва дясната половина на кадъра
+# Creative Looks: CRT (P3)
+	CRT	CRT
+	Scanline Strength	Сила на редовете
+	Line Count	Брой редове
+	Mask	Маска
+	Mask Strength	Сила на маската
+	Corner Darkening	Потъмняване на ъглите
+	Aperture Grille	Апертурна решетка
+	Shadow Mask	Сенчеста маска
+	Slot Mask	Слотова маска
+# Creative Looks: Oil Paint (P4)
+	Oil Paint	Маслена живопис
+	Detail	Детайлност
+	Texture	Текстура
+	Facet	Фасети
+	Daubs	Мазки
+	Dry Brush	Суха четка
+	Fresco	Фреска
+	Knife	Шпатула
+	Sponge	Гъба
+# Creative Looks: Pixel Sort (P5)
+	Pixel Sort	Сортиране на пиксели
+	Sort By	Сортиране по
+	Lower Threshold	Долен праг
+	Upper Threshold	Горен праг
+	Ascending	Възходящо

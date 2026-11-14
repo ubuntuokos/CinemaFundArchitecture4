@@ -4584,3 +4584,29 @@
 	Split screen: the middle half of the picture fills the left half of the frame	Écran partagé : la moitié centrale de l'image remplit la moitié gauche du cadre
 	Split Screen Right	Écran partagé à droite
 	Split screen: the middle half of the picture fills the right half of the frame	Écran partagé : la moitié centrale de l'image remplit la moitié droite du cadre
+# Creative Looks: CRT (P3)
+	CRT	CRT
+	Scanline Strength	Intensité des lignes
+	Line Count	Nombre de lignes
+	Mask	Masque
+	Mask Strength	Intensité du masque
+	Corner Darkening	Assombrissement des coins
+	Aperture Grille	Grille d’ouverture
+	Shadow Mask	Masque perforé
+	Slot Mask	Masque à fentes
+# Creative Looks: Oil Paint (P4)
+	Oil Paint	Peinture à l’huile
+	Detail	Détail
+	Texture	Texture
+	Facet	Facettes
+	Daubs	Touches
+	Dry Brush	Pinceau sec
+	Fresco	Fresque
+	Knife	Couteau
+	Sponge	Éponge
+# Creative Looks: Pixel Sort (P5)
+	Pixel Sort	Tri de pixels
+	Sort By	Trier par
+	Lower Threshold	Seuil inférieur
+	Upper Threshold	Seuil supérieur
+	Ascending	Croissant

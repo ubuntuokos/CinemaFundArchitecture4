@@ -4581,3 +4581,29 @@ export.summary	Low	matala
 	Split screen: the middle half of the picture fills the left half of the frame	Jaettu näyttö: kuvan keskimmäinen puolikas täyttää ruudun vasemman puolen
 	Split Screen Right	Jaettu näyttö oikea
 	Split screen: the middle half of the picture fills the right half of the frame	Jaettu näyttö: kuvan keskimmäinen puolikas täyttää ruudun oikean puolen
+# Creative Looks: CRT (P3)
+	CRT	CRT
+	Scanline Strength	Juovien voimakkuus
+	Line Count	Juovien määrä
+	Mask	Maski
+	Mask Strength	Maskin voimakkuus
+	Corner Darkening	Kulmien tummennus
+	Aperture Grille	Aukkoritilä
+	Shadow Mask	Varjomaski
+	Slot Mask	Rakomaski
+# Creative Looks: Oil Paint (P4)
+	Oil Paint	Öljymaalaus
+	Detail	Yksityiskohdat
+	Texture	Tekstuuri
+	Facet	Fasetit
+	Daubs	Täplät
+	Dry Brush	Kuiva sivellin
+	Fresco	Fresko
+	Knife	Palettiveitsi
+	Sponge	Sieni
+# Creative Looks: Pixel Sort (P5)
+	Pixel Sort	Pikselien lajittelu
+	Sort By	Lajitteluperuste
+	Lower Threshold	Alaraja
+	Upper Threshold	Yläraja
+	Ascending	Nouseva

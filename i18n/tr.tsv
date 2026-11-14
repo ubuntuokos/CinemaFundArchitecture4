@@ -4580,3 +4580,29 @@ export.summary	Low	düşük
 	Split screen: the middle half of the picture fills the left half of the frame	Bölünmüş ekran: görüntünün orta yarısı karenin sol yarısını doldurur
 	Split Screen Right	Bölünmüş Ekran Sağ
 	Split screen: the middle half of the picture fills the right half of the frame	Bölünmüş ekran: görüntünün orta yarısı karenin sağ yarısını doldurur
+# Creative Looks: CRT (P3)
+	CRT	CRT
+	Scanline Strength	Tarama çizgisi gücü
+	Line Count	Çizgi sayısı
+	Mask	Maske
+	Mask Strength	Maske gücü
+	Corner Darkening	Köşe kararması
+	Aperture Grille	Açıklık ızgarası
+	Shadow Mask	Gölge maskesi
+	Slot Mask	Yarık maskesi
+# Creative Looks: Oil Paint (P4)
+	Oil Paint	Yağlı boya
+	Detail	Ayrıntı
+	Texture	Doku
+	Facet	Faset
+	Daubs	Lekeler
+	Dry Brush	Kuru fırça
+	Fresco	Fresk
+	Knife	Spatula
+	Sponge	Sünger
+# Creative Looks: Pixel Sort (P5)
+	Pixel Sort	Piksel sıralama
+	Sort By	Sıralama ölçütü
+	Lower Threshold	Alt eşik
+	Upper Threshold	Üst eşik
+	Ascending	Artan

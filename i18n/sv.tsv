@@ -4581,3 +4581,29 @@ export.summary	Low	låg
 	Split screen: the middle half of the picture fills the left half of the frame	Delad skärm: bildens mittersta halva fyller rutans vänstra halva
 	Split Screen Right	Delad skärm höger
 	Split screen: the middle half of the picture fills the right half of the frame	Delad skärm: bildens mittersta halva fyller rutans högra halva
+# Creative Looks: CRT (P3)
+	CRT	CRT
+	Scanline Strength	Styrka på sveplinjer
+	Line Count	Antal linjer
+	Mask	Mask
+	Mask Strength	Maskstyrka
+	Corner Darkening	Mörkare hörn
+	Aperture Grille	Aperturgaller
+	Shadow Mask	Skuggmask
+	Slot Mask	Slitsmask
+# Creative Looks: Oil Paint (P4)
+	Oil Paint	Oljemålning
+	Detail	Detalj
+	Texture	Textur
+	Facet	Facetter
+	Daubs	Klickar
+	Dry Brush	Torr pensel
+	Fresco	Fresk
+	Knife	Palettkniv
+	Sponge	Svamp
+# Creative Looks: Pixel Sort (P5)
+	Pixel Sort	Pixelsortering
+	Sort By	Sortera efter
+	Lower Threshold	Nedre tröskel
+	Upper Threshold	Övre tröskel
+	Ascending	Stigande

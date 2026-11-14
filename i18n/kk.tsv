@@ -4581,3 +4581,29 @@ export.summary	Low	төмен
 	Split screen: the middle half of the picture fills the left half of the frame	Бөлінген экран: кескіннің ортаңғы жартысы кадрдың сол жартысын толтырады
 	Split Screen Right	Бөлінген экран оң жақ
 	Split screen: the middle half of the picture fills the right half of the frame	Бөлінген экран: кескіннің ортаңғы жартысы кадрдың оң жартысын толтырады
+# Creative Looks: CRT (P3)
+	CRT	CRT
+	Scanline Strength	Жолақтар күші
+	Line Count	Жолдар саны
+	Mask	Маска
+	Mask Strength	Маска күші
+	Corner Darkening	Бұрыштарды күңгірттеу
+	Aperture Grille	Апертуралық тор
+	Shadow Mask	Көлеңкелі маска
+	Slot Mask	Саңылаулы маска
+# Creative Looks: Oil Paint (P4)
+	Oil Paint	Майлы бояу
+	Detail	Егжей-тегжей
+	Texture	Текстура
+	Facet	Қырлар
+	Daubs	Жағындылар
+	Dry Brush	Құрғақ қылқалам
+	Fresco	Фреска
+	Knife	Шпатель
+	Sponge	Губка
+# Creative Looks: Pixel Sort (P5)
+	Pixel Sort	Пикселдерді сұрыптау
+	Sort By	Сұрыптау негізі
+	Lower Threshold	Төменгі шек
+	Upper Threshold	Жоғарғы шек
+	Ascending	Өсу бойынша

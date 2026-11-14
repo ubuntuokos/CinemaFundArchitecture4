@@ -4576,3 +4576,29 @@ export.summary	Low	alacsony
 	Split screen: the middle half of the picture fills the left half of the frame	Osztott kép: a kép középső fele kitölti a képkocka bal felét
 	Split Screen Right	Osztott kép, jobb
 	Split screen: the middle half of the picture fills the right half of the frame	Osztott kép: a kép középső fele kitölti a képkocka jobb felét
+# Creative Looks: CRT (P3)
+	CRT	CRT
+	Scanline Strength	Pásztázósorok erőssége
+	Line Count	Sorok száma
+	Mask	Maszk
+	Mask Strength	Maszk erőssége
+	Corner Darkening	Sarkok sötétítése
+	Aperture Grille	Csíkmaszk
+	Shadow Mask	Árnyékmaszk
+	Slot Mask	Résmaszk
+# Creative Looks: Oil Paint (P4)
+	Oil Paint	Olajfestmény
+	Detail	Részletesség
+	Texture	Textúra
+	Facet	Fazetta
+	Daubs	Foltok
+	Dry Brush	Száraz ecset
+	Fresco	Freskó
+	Knife	Festőkés
+	Sponge	Szivacs
+# Creative Looks: Pixel Sort (P5)
+	Pixel Sort	Pixelrendezés
+	Sort By	Rendezés alapja
+	Lower Threshold	Alsó küszöb
+	Upper Threshold	Felső küszöb
+	Ascending	Növekvő

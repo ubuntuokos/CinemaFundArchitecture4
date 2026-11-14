@@ -4564,3 +4564,29 @@
 	Split screen: the middle half of the picture fills the left half of the frame	Разделённый экран: средняя половина изображения заполняет левую половину кадра
 	Split Screen Right	Разделённый экран справа
 	Split screen: the middle half of the picture fills the right half of the frame	Разделённый экран: средняя половина изображения заполняет правую половину кадра
+# Creative Looks: CRT (P3)
+	CRT	CRT
+	Scanline Strength	Сила строк
+	Line Count	Число строк
+	Mask	Маска
+	Mask Strength	Сила маски
+	Corner Darkening	Затемнение углов
+	Aperture Grille	Апертурная решётка
+	Shadow Mask	Теневая маска
+	Slot Mask	Щелевая маска
+# Creative Looks: Oil Paint (P4)
+	Oil Paint	Масляная живопись
+	Detail	Детализация
+	Texture	Текстура
+	Facet	Грани
+	Daubs	Мазки
+	Dry Brush	Сухая кисть
+	Fresco	Фреска
+	Knife	Мастихин
+	Sponge	Губка
+# Creative Looks: Pixel Sort (P5)
+	Pixel Sort	Сортировка пикселей
+	Sort By	Сортировать по
+	Lower Threshold	Нижний порог
+	Upper Threshold	Верхний порог
+	Ascending	По возрастанию

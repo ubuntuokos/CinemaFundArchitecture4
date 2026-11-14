@@ -4589,3 +4589,29 @@
 	Split screen: the middle half of the picture fills the left half of the frame	Tela dividida: a metade central da imagem preenche a metade esquerda do quadro
 	Split Screen Right	Tela dividida à direita
 	Split screen: the middle half of the picture fills the right half of the frame	Tela dividida: a metade central da imagem preenche a metade direita do quadro
+# Creative Looks: CRT (P3)
+	CRT	CRT
+	Scanline Strength	Intensidade das linhas
+	Line Count	Número de linhas
+	Mask	Máscara
+	Mask Strength	Intensidade da máscara
+	Corner Darkening	Escurecimento dos cantos
+	Aperture Grille	Grade de abertura
+	Shadow Mask	Máscara de sombra
+	Slot Mask	Máscara de fenda
+# Creative Looks: Oil Paint (P4)
+	Oil Paint	Pintura a óleo
+	Detail	Detalhe
+	Texture	Textura
+	Facet	Facetas
+	Daubs	Pinceladas
+	Dry Brush	Pincel seco
+	Fresco	Afresco
+	Knife	Espátula
+	Sponge	Esponja
+# Creative Looks: Pixel Sort (P5)
+	Pixel Sort	Ordenar pixels
+	Sort By	Ordenar por
+	Lower Threshold	Limite inferior
+	Upper Threshold	Limite superior
+	Ascending	Crescente

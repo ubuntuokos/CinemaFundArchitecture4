@@ -4581,3 +4581,29 @@ export.summary	Low	χαμηλή
 	Split screen: the middle half of the picture fills the left half of the frame	Διαιρεμένη οθόνη: το μεσαίο μισό της εικόνας γεμίζει το αριστερό μισό του κάδρου
 	Split Screen Right	Διαιρεμένη οθόνη δεξιά
 	Split screen: the middle half of the picture fills the right half of the frame	Διαιρεμένη οθόνη: το μεσαίο μισό της εικόνας γεμίζει το δεξί μισό του κάδρου
+# Creative Looks: CRT (P3)
+	CRT	CRT
+	Scanline Strength	Ένταση γραμμών σάρωσης
+	Line Count	Αριθμός γραμμών
+	Mask	Μάσκα
+	Mask Strength	Ένταση μάσκας
+	Corner Darkening	Σκούρυνση γωνιών
+	Aperture Grille	Πλέγμα διαφράγματος
+	Shadow Mask	Μάσκα σκιάς
+	Slot Mask	Μάσκα σχισμών
+# Creative Looks: Oil Paint (P4)
+	Oil Paint	Ελαιογραφία
+	Detail	Λεπτομέρεια
+	Texture	Υφή
+	Facet	Έδρες
+	Daubs	Πινελιές
+	Dry Brush	Στεγνό πινέλο
+	Fresco	Νωπογραφία
+	Knife	Σπάτουλα
+	Sponge	Σφουγγάρι
+# Creative Looks: Pixel Sort (P5)
+	Pixel Sort	Ταξινόμηση εικονοστοιχείων
+	Sort By	Ταξινόμηση κατά
+	Lower Threshold	Κάτω κατώφλι
+	Upper Threshold	Άνω κατώφλι
+	Ascending	Αύξουσα

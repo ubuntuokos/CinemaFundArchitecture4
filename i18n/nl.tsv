@@ -4579,3 +4579,29 @@ export.summary	Low	laag
 	Split screen: the middle half of the picture fills the left half of the frame	Gesplitst scherm: de middelste helft van het beeld vult de linkerhelft van het frame
 	Split Screen Right	Gesplitst scherm rechts
 	Split screen: the middle half of the picture fills the right half of the frame	Gesplitst scherm: de middelste helft van het beeld vult de rechterhelft van het frame
+# Creative Looks: CRT (P3)
+	CRT	CRT
+	Scanline Strength	Sterkte scanlijnen
+	Line Count	Aantal lijnen
+	Mask	Masker
+	Mask Strength	Maskersterkte
+	Corner Darkening	Hoeken verdonkeren
+	Aperture Grille	Aperture grille
+	Shadow Mask	Schaduwmasker
+	Slot Mask	Sleufmasker
+# Creative Looks: Oil Paint (P4)
+	Oil Paint	Olieverf
+	Detail	Detail
+	Texture	Textuur
+	Facet	Facetten
+	Daubs	Klodders
+	Dry Brush	Droge kwast
+	Fresco	Fresco
+	Knife	Paletmes
+	Sponge	Spons
+# Creative Looks: Pixel Sort (P5)
+	Pixel Sort	Pixels sorteren
+	Sort By	Sorteren op
+	Lower Threshold	Ondergrens
+	Upper Threshold	Bovengrens
+	Ascending	Oplopend

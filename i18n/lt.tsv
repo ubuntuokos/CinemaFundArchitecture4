@@ -4582,3 +4582,29 @@ export.summary	Low	žema
 	Split screen: the middle half of the picture fills the left half of the frame	Padalytas ekranas: vidurinė vaizdo pusė užpildo kairiąją kadro pusę
 	Split Screen Right	Padalytas ekranas dešinėje
 	Split screen: the middle half of the picture fills the right half of the frame	Padalytas ekranas: vidurinė vaizdo pusė užpildo dešiniąją kadro pusę
+# Creative Looks: CRT (P3)
+	CRT	CRT
+	Scanline Strength	Skleidimo linijų stiprumas
+	Line Count	Linijų skaičius
+	Mask	Kaukė
+	Mask Strength	Kaukės stiprumas
+	Corner Darkening	Kampų patamsinimas
+	Aperture Grille	Apertūrinės grotelės
+	Shadow Mask	Šešėlinė kaukė
+	Slot Mask	Plyšinė kaukė
+# Creative Looks: Oil Paint (P4)
+	Oil Paint	Aliejinė tapyba
+	Detail	Detalumas
+	Texture	Tekstūra
+	Facet	Briaunos
+	Daubs	Tepinėliai
+	Dry Brush	Sausas teptukas
+	Fresco	Freska
+	Knife	Mentelė
+	Sponge	Kempinė
+# Creative Looks: Pixel Sort (P5)
+	Pixel Sort	Pikselių rikiavimas
+	Sort By	Rikiuoti pagal
+	Lower Threshold	Apatinė riba
+	Upper Threshold	Viršutinė riba
+	Ascending	Didėjančiai

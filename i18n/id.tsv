@@ -4587,3 +4587,29 @@
 	Split screen: the middle half of the picture fills the left half of the frame	Layar terbagi: separuh tengah gambar mengisi separuh kiri bingkai
 	Split Screen Right	Layar Terbagi Kanan
 	Split screen: the middle half of the picture fills the right half of the frame	Layar terbagi: separuh tengah gambar mengisi separuh kanan bingkai
+# Creative Looks: CRT (P3)
+	CRT	CRT
+	Scanline Strength	Kekuatan Garis Pindai
+	Line Count	Jumlah Garis
+	Mask	Masker
+	Mask Strength	Kekuatan Masker
+	Corner Darkening	Penggelapan Sudut
+	Aperture Grille	Kisi Aperture
+	Shadow Mask	Masker Bayangan
+	Slot Mask	Masker Celah
+# Creative Looks: Oil Paint (P4)
+	Oil Paint	Lukisan Minyak
+	Detail	Detail
+	Texture	Tekstur
+	Facet	Faset
+	Daubs	Sapuan
+	Dry Brush	Kuas Kering
+	Fresco	Fresko
+	Knife	Pisau Palet
+	Sponge	Spons
+# Creative Looks: Pixel Sort (P5)
+	Pixel Sort	Urutkan Piksel
+	Sort By	Urutkan Menurut
+	Lower Threshold	Ambang Bawah
+	Upper Threshold	Ambang Atas
+	Ascending	Naik
