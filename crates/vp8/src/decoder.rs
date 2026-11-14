@@ -221,7 +221,7 @@ impl Decoder {
             parts.push(&data[pos..end]);
             pos = end;
         }
-        let mut token_decoders: Vec<BoolDecoder> = parts.into_iter().map(BoolDecoder::new).collect();
+        let mut token_decoders: Vec<BoolDecoder<'_>> = parts.into_iter().map(BoolDecoder::new).collect();
 
         let mut frame = Frame::new(self.mb_w * 16, self.mb_h * 16);
         let dequant: [Dequant; 4] = std::array::from_fn(|s| {
@@ -488,7 +488,7 @@ impl Decoder {
     }
 
     /// Inter prediction record (16.2-16.4, 17) of the macroblock at `idx` in `infos`.
-    fn read_inter_modes(&self, bd: &mut BoolDecoder, infos: &[MbInfo], idx: usize, stride: usize, mb_x: usize, mb_y: usize, info: &mut MbInfo) {
+    fn read_inter_modes(&self, bd: &mut BoolDecoder<'_>, infos: &[MbInfo], idx: usize, stride: usize, mb_x: usize, mb_y: usize, info: &mut MbInfo) {
         let get = |i: usize| infos.get(i).copied().unwrap_or_default();
         let above = get(idx - stride);
         let left = get(idx - 1);
@@ -569,7 +569,7 @@ impl Decoder {
     }
 
     /// SPLITMV partitioning and subblock vectors (16.4).
-    fn read_split(&self, bd: &mut BoolDecoder, left: &MbInfo, above: &MbInfo, best: Mv, info: &mut MbInfo) {
+    fn read_split(&self, bd: &mut BoolDecoder<'_>, left: &MbInfo, above: &MbInfo, best: Mv, info: &mut MbInfo) {
         let part = usize::from(bd.read_tree(&MVPARTITION_TREE, &MVPARTITION_PROBS)) & 3;
         let map = &SPLIT_MAPS[part];
         let mut part_mv = [Mv::ZERO; 16];
@@ -605,7 +605,7 @@ impl Decoder {
     }
 
     /// `read_mv` (17.2): row, then column.
-    fn read_mv(&self, bd: &mut BoolDecoder) -> Mv {
+    fn read_mv(&self, bd: &mut BoolDecoder<'_>) -> Mv {
         let row = read_mv_component(bd, &self.ctx.mv[0]);
         let col = read_mv_component(bd, &self.ctx.mv[1]);
         Mv { row, col }
@@ -613,7 +613,7 @@ impl Decoder {
 }
 
 /// `read_mvcomponent` (17.1), in quarter pixels.
-fn read_mv_component(bd: &mut BoolDecoder, p: &[u8; 19]) -> i32 {
+fn read_mv_component(bd: &mut BoolDecoder<'_>, p: &[u8; 19]) -> i32 {
     let a = if bd.read_bool(p[MVP_IS_SHORT]) {
         let mut a = 0i32;
         for i in 0..3 {
@@ -668,7 +668,7 @@ fn implied_bmode(mode: u8) -> u8 {
 
 /// Decode the tokens of one block (13), storing dequantized coefficients in raster order.
 /// Returns the position after the last token (where the end of block was read, or 16).
-fn read_coefficients(bd: &mut BoolDecoder, probs: &[[[u8; 11]; 3]; 8], ctx: usize, first: usize, dq: [i32; 2], out: &mut [i16; 16]) -> usize {
+fn read_coefficients(bd: &mut BoolDecoder<'_>, probs: &[[[u8; 11]; 3]; 8], ctx: usize, first: usize, dq: [i32; 2], out: &mut [i16; 16]) -> usize {
     let mut ctx = ctx.min(2);
     let mut prev_zero = false;
     let mut i = first;

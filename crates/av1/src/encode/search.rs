@@ -24,7 +24,7 @@ fn mv_bits_estimate(d: [i32; 2]) -> u32 {
 impl<S: SymbolIo> TileDecoder<'_, '_, S> {
     /// Analyse the square block (r, c, bsize) of the current superblock: returns its cost and
     /// records in `enc.split` whether it is better split.
-    pub(crate) fn analyse(&mut self, enc: &mut TileEnc, r: usize, c: usize, bsize: usize) -> u64 {
+    pub(crate) fn analyse(&mut self, enc: &mut TileEnc<'_>, r: usize, c: usize, bsize: usize) -> u64 {
         let (mi_rows, mi_cols) = (self.fs.fh.mi_rows as usize, self.fs.fh.mi_cols as usize);
         if r >= mi_rows || c >= mi_cols {
             return 0;
@@ -62,7 +62,7 @@ impl<S: SymbolIo> TileDecoder<'_, '_, S> {
 
     /// Cost of coding the block whole: the best of a few intra predictors from the neighbouring
     /// source samples and (inter frames) the best integer motion vector.
-    fn analyse_block(&mut self, enc: &mut TileEnc, r: usize, c: usize, bsize: usize, node: Option<usize>) -> u64 {
+    fn analyse_block(&mut self, enc: &mut TileEnc<'_>, r: usize, c: usize, bsize: usize, node: Option<usize>) -> u64 {
         let lambda = enc.fe.lambda_sse;
         let w = 4 * NUM_4X4_BLOCKS_WIDE[bsize] as usize;
         let h = 4 * NUM_4X4_BLOCKS_HIGH[bsize] as usize;
@@ -113,7 +113,7 @@ impl<S: SymbolIo> TileDecoder<'_, '_, S> {
 
     /// Lowest SATD of DC / V / H / Paeth predictions built from the source's neighbouring
     /// samples; the residual of the best one is left in `enc.diff`.
-    fn source_intra_cost(&self, enc: &mut TileEnc, x: usize, y: usize, w: usize, h: usize, have_above: bool, have_left: bool) -> u64 {
+    fn source_intra_cost(&self, enc: &mut TileEnc<'_>, x: usize, y: usize, w: usize, h: usize, have_above: bool, have_left: bool) -> u64 {
         let src = &enc.src.planes[0];
         let base = 1i32 << (self.fs.bit_depth - 1);
         let above: Vec<i32> = (0..w)
@@ -198,7 +198,7 @@ impl<S: SymbolIo> TileDecoder<'_, '_, S> {
     }
 
     /// SAD of the source block at (x, y) against the reference at integer offset (dx, dy).
-    fn sad_at(&self, enc: &TileEnc, x: usize, y: usize, w: usize, h: usize, dx: i32, dy: i32, limit: u64) -> u64 {
+    fn sad_at(&self, enc: &TileEnc<'_>, x: usize, y: usize, w: usize, h: usize, dx: i32, dy: i32, limit: u64) -> u64 {
         let ref_idx = self.ref_idx();
         let refp = self.ref_plane(ref_idx, 0);
         let (last_x, last_y) = self.ref_plane_dims(ref_idx, 0);
@@ -228,7 +228,7 @@ impl<S: SymbolIo> TileDecoder<'_, '_, S> {
 
     /// Integer-sample motion search (diamond steps from the best seed); returns the vector (1/8
     /// units) and its SATD.
-    fn integer_search(&self, enc: &mut TileEnc, x: usize, y: usize, w: usize, h: usize, seeds: &[[i32; 2]]) -> ([i32; 2], u64) {
+    fn integer_search(&self, enc: &mut TileEnc<'_>, x: usize, y: usize, w: usize, h: usize, seeds: &[[i32; 2]]) -> ([i32; 2], u64) {
         let lambda = enc.fe.lambda;
         let range = enc.fe.range.max(1);
         let fw = self.fs.fh.frame_width as i32;
@@ -242,7 +242,7 @@ impl<S: SymbolIo> TileDecoder<'_, '_, S> {
                 && x as i32 + dx < fw + 64
                 && y as i32 + dy < fhh + 64
         };
-        let cost = |s: &Self, enc: &TileEnc, dx: i32, dy: i32, limit: u64| -> u64 {
+        let cost = |s: &Self, enc: &TileEnc<'_>, dx: i32, dy: i32, limit: u64| -> u64 {
             let bits = mv_bits_estimate([dy * 8, dx * 8]);
             let pen = (lambda * bits as f64 / 256.0) as u64;
             s.sad_at(enc, x, y, w, h, dx, dy, limit.saturating_sub(pen)).saturating_add(pen)
@@ -356,7 +356,7 @@ impl<S: SymbolIo> TileDecoder<'_, '_, S> {
     }
 
     /// Luma SATD of the inter prediction with `mv`.
-    fn inter_satd(&mut self, enc: &mut TileEnc, mv: [i32; 2]) -> u64 {
+    fn inter_satd(&mut self, enc: &mut TileEnc<'_>, mv: [i32; 2]) -> u64 {
         let (x, y, w, h) = self.inter_pred(0, mv);
         let max = (1i32 << self.fs.bit_depth) - 1;
         let src = &enc.src.planes[0];
@@ -374,7 +374,7 @@ impl<S: SymbolIo> TileDecoder<'_, '_, S> {
 
     /// The best inter mode (LAST_FRAME) for the block, with its rate-distortion cost (the residual
     /// of its prediction is left in `enc.diff`).
-    pub(crate) fn plan_inter(&mut self, enc: &mut TileEnc) -> Option<(u64, Plan)> {
+    pub(crate) fn plan_inter(&mut self, enc: &mut TileEnc<'_>) -> Option<(u64, Plan)> {
         let lambda = enc.fe.lambda;
         let lam = |bits: u32| -> u64 { (lambda * bits as f64 / 256.0) as u64 };
         self.b.is_inter = true;

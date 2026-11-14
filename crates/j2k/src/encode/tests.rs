@@ -332,6 +332,7 @@ fn random_options_never_panic() {
             tile_part_per_component: r(2) == 0,
             tlm: r(2) == 0,
             profile: Profile::Part1,
+            ht: r(3) == 0,
         };
         let Ok(cs) = encode(&img, &opts) else { continue };
         let back = decode(&cs).unwrap();
@@ -379,5 +380,47 @@ fn refine_agrees_with_search() {
             _ => Some((rnd(&mut seed) % (n as u32 + 5)) as usize),
         };
         assert_eq!(refine(n, guess, ok).unwrap(), search(n, ok).unwrap(), "n {n} cut {cut} guess {guess:?}");
+    }
+}
+
+#[test]
+fn htj2k_round_trips_and_matches_the_part_1_coder() {
+    let shapes: [&[(u8, bool, u8, u8)]; 5] =
+        [&[(8, false, 1, 1); 3], &[(1, false, 1, 1)], &[(16, false, 1, 1), (16, false, 2, 1), (16, false, 2, 1)], &[(12, true, 1, 1)], &[(10, false, 1, 2); 4]];
+    for (k, comps) in shapes.iter().enumerate() {
+        let img = picture(77, 45, comps, 7 + k as u32);
+        for cb in [(6, 6), (2, 2), (10, 2), (3, 7)] {
+            let ht = EncodeOptions { ht: true, code_block: cb, ..EncodeOptions::lossless() };
+            let back = decode(&encode(&img, &ht).unwrap()).unwrap();
+            assert_eq!(back.components, img.components, "{comps:?} {cb:?}");
+        }
+        // with every bit-plane coded, both block coders give the same reconstruction
+        let lossy = EncodeOptions::lossy(1.5);
+        let part1 = decode(&encode(&img, &lossy).unwrap()).unwrap();
+        let ht = decode(&encode(&img, &EncodeOptions { ht: true, ..lossy }).unwrap()).unwrap();
+        assert_eq!(ht.components, part1.components, "{comps:?} lossy");
+    }
+}
+
+#[test]
+fn htj2k_header_and_limits() {
+    let img = picture(64, 32, &[(8, false, 1, 1); 3], 3);
+    let cs = encode(&img, &EncodeOptions { ht: true, ..EncodeOptions::lossless() }).unwrap();
+    // SIZ Rsiz with bit 14, then CAP: Pcap with Part 15, Ccap15 reversible with Bp for B = 11
+    assert_eq!(&cs[0..4], &[0xFF, 0x4F, 0xFF, 0x51]);
+    assert_eq!(u16::from_be_bytes([cs[6], cs[7]]), 0x4000);
+    let cap = 4 + usize::from(u16::from_be_bytes([cs[4], cs[5]]));
+    assert_eq!(&cs[cap..cap + 10], &[0xFF, 0x50, 0, 8, 0, 2, 0, 0, 0, 3]);
+    // COD code-block style: HT
+    assert_eq!(&cs[cap + 10..cap + 12], &[0xFF, 0x52]);
+    assert_eq!(cs[cap + 10 + 12], 0x40);
+    let lossy = encode(&img, &EncodeOptions { ht: true, ..EncodeOptions::lossy(1.0) }).unwrap();
+    assert_eq!(lossy[cap + 9] & 0x20, 0x20, "irreversible flag in Ccap15");
+    for opts in [
+        EncodeOptions { ht: true, max_bytes: Some(10_000), ..EncodeOptions::lossless() },
+        EncodeOptions { ht: true, max_component_bytes: Some(10_000), ..EncodeOptions::lossless() },
+        EncodeOptions { ht: true, ..EncodeOptions::cinema_2k(24) },
+    ] {
+        assert!(matches!(encode(&img, &opts), Err(Error::Unsupported(_))), "{opts:?}");
     }
 }

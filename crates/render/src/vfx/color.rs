@@ -9,7 +9,7 @@ use super::*;
 
 /// Lighting Effects: up to five directional / omni / spot lights, ambience, gloss and a bump map
 /// from the layer's own luminance.
-pub fn lighting(img: &mut Image, e: &EffectInstance, cx: &FxCtx) {
+pub fn lighting(img: &mut Image, e: &EffectInstance, cx: &FxCtx<'_>) {
     struct L {
         kind: u32,
         color: [f32; 3],
@@ -116,7 +116,7 @@ pub(crate) use crate::gpufx::limit;
 /// Logo Cutout: removes a flat white/black/custom background by un-multiplying it — the alpha of
 /// a pixel is how far it is from the background towards the gamut edge, and the colour is
 /// recovered as if it had been composited over that background.
-pub fn logo_cutout(img: &mut Image, e: &EffectInstance, cx: &FxCtx) {
+pub fn logo_cutout(img: &mut Image, e: &EffectInstance, cx: &FxCtx<'_>) {
     let bg = match chv(e, "background") {
         0 => [1.0; 3],
         1 => [0.0; 3],
@@ -156,7 +156,7 @@ pub fn logo_cutout(img: &mut Image, e: &EffectInstance, cx: &FxCtx) {
 
 /// Ultra Key: a colour-difference keyer working in Y′CbCr against the key colour's chroma, with
 /// Premiere's matte generation, cleanup, spill suppression and colour correction stages.
-pub fn ultra_key(img: &mut Image, e: &EffectInstance, cx: &FxCtx) {
+pub fn ultra_key(img: &mut Image, e: &EffectInstance, cx: &FxCtx<'_>) {
     let kc = cv(e, "key_color", cx);
     let k = rgb_to_ycbcr(kc[0], kc[1], kc[2], Matrix::Bt709);
     let kmag2 = (k[1] * k[1] + k[2] * k[2]).max(1e-6);
@@ -259,7 +259,7 @@ pub fn ultra_key(img: &mut Image, e: &EffectInstance, cx: &FxCtx) {
 
 /// Track Matte Key: multiplies the layer by another video track's alpha or luma (sampled where
 /// the layer lands in the frame).
-pub fn track_matte(img: &mut Image, e: &EffectInstance, cx: &FxCtx) {
+pub fn track_matte(img: &mut Image, e: &EffectInstance, cx: &FxCtx<'_>) {
     let idx = chv(e, "matte") as usize;
     if idx == 0 {
         return;
@@ -288,7 +288,7 @@ pub(crate) fn apply_matte(img: &mut Image, matte: &Image, m: &Affine, use_luma: 
 }
 
 /// Cineon Converter (Kodak Cineon printing-density model, film gamma 0.6, 0.002 density / code).
-pub fn cineon(img: &mut Image, e: &EffectInstance, cx: &FxCtx) {
+pub fn cineon(img: &mut Image, e: &EffectInstance, cx: &FxCtx<'_>) {
     let mode = chv(e, "conversion");
     let black = fv(e, "black10", cx);
     let white = fv(e, "white10", cx).max(black + 1.0);
@@ -329,7 +329,7 @@ pub(crate) fn cineon_value(v: f32, mode: u32, black: f32, white: f32, ib: f32, i
 }
 
 /// Noise (and Noise (Legacy)): per-frame random noise added in display space, with grain size.
-pub fn noise(img: &mut Image, e: &EffectInstance, cx: &FxCtx) {
+pub fn noise(img: &mut Image, e: &EffectInstance, cx: &FxCtx<'_>) {
     let amt = fv(e, "amount", cx) / 100.0;
     if amt <= 0.0 {
         return;

@@ -39,6 +39,8 @@ enum VCodec {
     Hevc,
     /// Hap: the FourCC.
     Hap([u8; 4]),
+    /// Canopus HQ / HQA (`CUVC`) or HQX (`CHQX`).
+    Canopus(cfa4_canopus::Codec),
     /// FFV1 with its configuration record (`BITMAPINFOHEADER` extra bytes).
     Ffv1(Vec<u8>),
     /// VC-2 / Dirac.
@@ -63,6 +65,9 @@ fn fourcc_text(f: [u8; 4]) -> String {
 fn video_codec(b: &BitmapInfo) -> (VCodec, String) {
     if let Some(raw) = RawFormat::from_avi(b.compression, b.bit_count) {
         return (VCodec::Raw(raw), raw.label().into());
+    }
+    if let Some(c) = crate::canopus::codec(&b.compression) {
+        return (VCodec::Canopus(c), crate::canopus::label(c).into());
     }
     let mut f = b.compression;
     f.make_ascii_uppercase();
@@ -624,6 +629,7 @@ impl VideoSamples for AviVideo<'_> {
             VCodec::H264 => Ok(Box::new(crate::video::H264Decoder::annexb())),
             VCodec::Hevc => Ok(Box::new(crate::video::HevcDecoder::annexb())),
             VCodec::Hap(fourcc) => make_video_decoder(&crate::hap::sample_entry(*fourcc, w, h)),
+            VCodec::Canopus(c) => make_video_decoder(&crate::canopus::sample_entry(*c, w, h)),
             VCodec::Ffv1(record) => make_video_decoder(&crate::ffv1::sample_entry(record, w, h)),
             VCodec::Dirac => make_video_decoder(&crate::dirac::sample_entry(w, h)),
             VCodec::Huffyuv(bih) => make_video_decoder(&crate::huffyuv::sample_entry(bih, w, h)),

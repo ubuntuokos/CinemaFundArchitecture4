@@ -123,7 +123,7 @@ fn alg_of(seq: &[u8]) -> Result<Option<SigAlg>, String> {
     })
 }
 
-fn time_of(t: &Tlv) -> Result<DateTime<Utc>, String> {
+fn time_of(t: &Tlv<'_>) -> Result<DateTime<Utc>, String> {
     let s = std::str::from_utf8(t.value).map_err(|_| "certificate time is not text")?;
     let digits = s.strip_suffix('Z').ok_or("certificate time is not UTC")?;
     let full = match t.tag {

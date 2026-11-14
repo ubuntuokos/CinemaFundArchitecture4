@@ -168,7 +168,7 @@ def compare(out, expect, skip=lambda x, y: False) -> None:
             if skip(x, y):
                 continue
             want = expect(x, y)
-            d = max(abs(a - b) for a, b in zip(got, want))
+            d = max(abs(a - b) for a, b in zip(got, want, strict=False))
             if d > worst[0]:
                 worst = (d, (x, y, got, want))
     assert worst[0] <= TOL, worst

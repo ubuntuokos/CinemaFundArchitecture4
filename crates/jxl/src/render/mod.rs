@@ -359,7 +359,7 @@ impl RenderContext {
 }
 
 impl RenderContext {
-    pub fn load_frame_header(&mut self, bitstream: &mut Bitstream) -> Result<&mut IndexedFrame> {
+    pub fn load_frame_header(&mut self, bitstream: &mut Bitstream<'_>) -> Result<&mut IndexedFrame> {
         if self.loading_frame.is_some() && !self.try_finalize_current_frame() {
             return Err(Error::Internal("another frame is still loading"));
         }

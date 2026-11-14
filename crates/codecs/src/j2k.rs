@@ -3,11 +3,12 @@
 //!
 //! - Y'CbCr components (4:4:4, 4:2:2 or 4:2:0, with an optional alpha component) are passed
 //!   through at their precision.
-//! - R'G'B' components (an RGBA picture descriptor, or the multiple-component transform) become
-//!   Y'CbCr 4:4:4 with the BT.709 matrix, video range.
+//! - R'G'B' components (an RGBA picture descriptor, or the multiple-component transform) stay
+//!   R'G'B' at their precision: 8-bit as RGBA, deeper as planar [`PixelData::Rgb16`], full range
+//!   (CFA4-PROCODEC-002 1b: no Y'CbCr round trip).
 //! - X'Y'Z' (the digital cinema profiles, SMPTE ST 428-1) is decoded with the DCI transfer
 //!   (gamma 2.6, 52.37 cd/m² at code 4095, 48 cd/m² reference white), converted to P3-D65 and
-//!   encoded with the sRGB curve the pipeline decodes P3-D65 frames with, then Y'CbCr 4:4:4 like R'G'B'.
+//!   encoded with the sRGB curve the pipeline decodes P3-D65 frames with, then kept as R'G'B'.
 
 use std::sync::Arc;
 
@@ -92,9 +93,9 @@ pub fn color(components: Components, width: u32, height: u32, hints: J2kHints) -
             matrix: Matrix::Bt709,
             transfer: s.transfer.unwrap_or(ColorInfo::REC709.transfer),
             primaries: s.primaries.unwrap_or(ColorInfo::REC709.primaries),
-            ..ColorInfo::REC709
+            range: Range::Full,
         },
-        Components::Xyz => ColorInfo { matrix: Matrix::Bt709, primaries: Primaries::P3D65, ..ColorInfo::REC709 },
+        Components::Xyz => ColorInfo { matrix: Matrix::Bt709, primaries: Primaries::P3D65, range: Range::Full, ..ColorInfo::REC709 },
     }
 }
 
@@ -140,24 +141,7 @@ fn plane(p: &Plane, bits: u32, w: usize, h: usize, step: (usize, usize), origin:
     out
 }
 
-/// Y'CbCr 4:4:4, video range, BT.709 matrix, from R'G'B' planes of `bits` bits (in place).
-pub(crate) fn rgb_to_ycbcr(r: &mut [u16], g: &mut [u16], b: &mut [u16], bits: u32) {
-    let (kr, kb) = Matrix::Bt709.kr_kb();
-    let kg = 1.0 - kr - kb;
-    let max = ((1u32 << bits) - 1) as f32;
-    let s = (1u32 << bits.saturating_sub(8)) as f32;
-    for ((r, g), b) in r.iter_mut().zip(g.iter_mut()).zip(b.iter_mut()) {
-        let (rr, gg, bb) = (f32::from(*r) / max, f32::from(*g) / max, f32::from(*b) / max);
-        let y = kr * rr + kg * gg + kb * bb;
-        let u = (bb - y) / (2.0 * (1.0 - kb));
-        let v = (rr - y) / (2.0 * (1.0 - kr));
-        *r = ((16.0 + 219.0 * y) * s + 0.5).clamp(0.0, max) as u16;
-        *g = ((128.0 + 224.0 * u) * s + 0.5).clamp(0.0, max) as u16;
-        *b = ((128.0 + 224.0 * v) * s + 0.5).clamp(0.0, max) as u16;
-    }
-}
-
-/// X'Y'Z' planes of `bits` bits to P3-D65 R'G'B' (in place), for [`rgb_to_ycbcr`].
+/// X'Y'Z' planes of `bits` bits to P3-D65 R'G'B' (in place).
 pub(crate) fn xyz_to_rgb(x: &mut [u16], y: &mut [u16], z: &mut [u16], bits: u32) {
     let max = ((1u32 << bits) - 1) as f32;
     // DCI: luminance = 52.37 cd/m² × (code / max)^2.6; reference white (48 cd/m²) is 1.0
@@ -207,22 +191,43 @@ pub fn to_video_frame(image: &Image, origin: (u32, u32), components: Components,
         }
         _ => (plane(first, bits, w, h, full, origin, luma_full), vec![mid; cw * ch], vec![mid; cw * ch]),
     };
-    match components {
-        Components::Rgb => rgb_to_ycbcr(&mut p0, &mut p1, &mut p2, bits),
-        Components::Xyz => {
-            xyz_to_rgb(&mut p0, &mut p1, &mut p2, bits);
-            rgb_to_ycbcr(&mut p0, &mut p1, &mut p2, bits);
-        }
-        Components::Ycbcr(_) | Components::Gray => {}
+    if components == Components::Xyz {
+        xyz_to_rgb(&mut p0, &mut p1, &mut p2, bits);
     }
     let alpha = c.get(colour_planes).map(|a| plane(a, bits, w, h, full, origin, true));
-    let data = if bits == 8 {
+    let data = if rgb {
+        rgb_data([p0, p1, p2], bits, alpha)
+    } else if bits == 8 {
         let to8 = |p: Vec<u16>| Arc::new(p.into_iter().map(|v| v as u8).collect::<Vec<u8>>());
         PixelData::Yuv8 { planes: [to8(p0), to8(p1), to8(p2)], chroma, alpha: alpha.map(to8) }
     } else {
         PixelData::Yuv16 { planes: [Arc::new(p0), Arc::new(p1), Arc::new(p2)], chroma, bits, alpha: alpha.map(Arc::new) }
     };
-    Ok(VideoFrame { width: image.width, height: image.height, data, color: color(components, image.width, image.height, hints), par: (1, 1), pts: Tick::ZERO })
+    Ok(VideoFrame {
+        width: image.width,
+        height: image.height,
+        data,
+        color: color(components, image.width, image.height, hints),
+        par: (1, 1),
+        pts: Tick::ZERO,
+        layout: Default::default(),
+    })
+}
+
+/// Full-resolution R'G'B' planes of `bits` bits (and straight alpha) as frame data: RGBA at 8
+/// bits, planar [`PixelData::Rgb16`] above.
+pub(crate) fn rgb_data(planes: [Vec<u16>; 3], bits: u32, alpha: Option<Vec<u16>>) -> PixelData {
+    if bits == 8 {
+        let [r, g, b] = &planes;
+        let mut rgba = Vec::with_capacity(r.len() * 4);
+        for (i, ((r, g), b)) in r.iter().zip(g).zip(b).enumerate() {
+            let a = alpha.as_ref().and_then(|a| a.get(i)).map_or(255, |&a| a as u8);
+            rgba.extend_from_slice(&[*r as u8, *g as u8, *b as u8, a]);
+        }
+        PixelData::Rgba8(Arc::new(rgba))
+    } else {
+        PixelData::Rgb16 { planes: planes.map(Arc::new), bits, alpha: alpha.map(Arc::new) }
+    }
 }
 
 /// [`components`] with the component transform decoding actually applied: tile-part CODs take
@@ -411,13 +416,12 @@ mod tests {
     fn xyz_white_and_black_map_to_white_and_black() {
         let code = |v: f64| ((v * 48.0 / 52.37).powf(1.0 / 2.6) * 4095.0).round() as i32;
         let white = [code(0.3127 / 0.3290), code(1.0), code((1.0 - 0.3127 - 0.3290) / 0.3290)];
-        for (xyz, y, c) in [(white, 235 * 16, 128 * 16), ([0; 3], 16 * 16, 128 * 16)] {
+        for (xyz, want) in [(white, 4095), ([0; 3], 0)] {
             let image = Image { width: 8, height: 4, components: xyz.iter().map(|&v| plane_of(8, 4, 12, false, v)).collect(), mct: false };
             let f = to_video_frame(&image, (0, 0), Components::Xyz, J2kHints::default()).unwrap_or_else(|e| panic!("{e}"));
-            assert_eq!(f.color.primaries, Primaries::P3D65);
-            let PixelData::Yuv16 { planes, bits: 12, .. } = &f.data else { panic!("12-bit Y'CbCr expected") };
-            assert!(planes[0].iter().all(|&v| v.abs_diff(y) <= 2), "Y {:?} for {xyz:?}", planes[0].first());
-            assert!(planes[1].iter().chain(planes[2].iter()).all(|&v| v.abs_diff(c) <= 2), "CbCr for {xyz:?}");
+            assert_eq!((f.color.primaries, f.color.range), (Primaries::P3D65, Range::Full));
+            let PixelData::Rgb16 { planes, bits: 12, alpha: None } = &f.data else { panic!("12-bit R'G'B' expected") };
+            assert!(planes.iter().all(|p| p.iter().all(|&v| v.abs_diff(want) <= 2)), "{:?} for {xyz:?}", planes[0].first());
         }
     }
 
@@ -557,23 +561,23 @@ mod tests {
         let comps = vec![rgb(2, 2, quad.clone()), rgb(2, 2, quad.clone()), rgb(2, 2, quad), rgb(1, 2, vec![255, 255, 255, 255, 0, 0, 0, 0])];
         let f = to_video_frame(&Image { width: 4, height: 4, components: comps, mct: false }, (0, 0), Components::Rgb, J2kHints::default())
             .unwrap_or_else(|e| panic!("{e}"));
-        let PixelData::Yuv8 { planes, alpha: Some(a), .. } = &f.data else { panic!("8-bit with alpha expected") };
-        let (black, white) = (16, 235);
+        let PixelData::Rgba8(px) = &f.data else { panic!("8-bit RGBA expected") };
         #[rustfmt::skip]
-        let want = [black, black, white, white, black, black, white, white, white, white, black, black, white, white, black, black];
-        assert_eq!(planes[0].as_slice(), &want);
-        assert_eq!(a.as_slice(), &[255, 255, 255, 255, 255, 255, 255, 255, 0, 0, 0, 0, 0, 0, 0, 0]);
+        let want = [0, 0, 255, 255, 0, 0, 255, 255, 255, 255, 0, 0, 255, 255, 0, 0];
+        assert_eq!(px.chunks(4).map(|p| p[0]).collect::<Vec<_>>(), want);
+        assert!(px.chunks(4).all(|p| p[0] == p[1] && p[1] == p[2]));
+        assert_eq!(px.chunks(4).map(|p| p[3]).collect::<Vec<_>>(), [255, 255, 255, 255, 255, 255, 255, 255, 0, 0, 0, 0, 0, 0, 0, 0]);
     }
 
-    /// R'G'B' components below 8 bits scale to the full 8-bit range before the matrix: 1-bit
-    /// white is video white (235), not the 126 a bit shift to 128 gave.
+    /// R'G'B' components below 8 bits scale to the full 8-bit range: 1-bit white is 255, not the
+    /// 128 a bit shift gives.
     #[test]
     fn low_precision_rgb_scales_to_the_full_range() {
         for (prec, white) in [(1u8, 1), (4, 15)] {
             let image = Image { width: 2, height: 2, components: vec![plane_of(2, 2, prec, false, white); 3], mct: false };
             let f = to_video_frame(&image, (0, 0), Components::Rgb, J2kHints::default()).unwrap_or_else(|e| panic!("{e}"));
-            let PixelData::Yuv8 { planes, .. } = &f.data else { panic!("8-bit expected") };
-            assert!(planes[0].iter().all(|&v| v == 235), "{prec}-bit white gives Y {:?}", planes[0].first());
+            let PixelData::Rgba8(px) = &f.data else { panic!("8-bit RGBA expected") };
+            assert!(px.iter().all(|&v| v == 255), "{prec}-bit white gives {:?}", &px[..4]);
         }
     }
 

@@ -5,6 +5,7 @@ import argparse
 import json
 import sys
 from pathlib import Path
+from typing import Any
 
 from cfa4_devtools import patent_register
 
@@ -38,23 +39,23 @@ class ReleaseGateError(ValueError):
     pass
 
 
-def evaluate(data: dict) -> dict:
+def evaluate(data: Any) -> dict[str, Any]:
     if not isinstance(data, dict):
         raise ReleaseGateError("release inventory must be a JSON object")
-    for key, expected in (
+    for field, expected in (
         ("schema", "cfa4-release-readiness-v1"),
         ("repository", "ubuntuokos/CinemaFundArchitecture4"),
         ("target", "Ubuntu 26.04 AMD64"),
         ("parent_repository_policy", "READ_ONLY_UPSTREAM"),
     ):
-        if data.get(key) != expected:
-            raise ReleaseGateError(f"invalid CFA4 {key}")
+        if data.get(field) != expected:
+            raise ReleaseGateError(f"invalid CFA4 {field}")
     if set(data.get("artifact_formats", [])) != FORMATS:
         raise ReleaseGateError("CFA4 must require exactly four formats")
     items = data.get("gates")
     if not isinstance(items, list) or len(items) != len(REQUIRED):
         raise ReleaseGateError("missing or duplicated required release gates")
-    by_id = {}
+    by_id: dict[Any, dict[str, Any]] = {}  # keyed by the gate id as written (checked against REQUIRED below)
     for item in items:
         if not isinstance(item, dict):
             raise ReleaseGateError("malformed release gate")

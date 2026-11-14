@@ -54,10 +54,13 @@ attribution and original copyright/licence requirements remain in force.
     only by voluntary donations, which unlock nothing. No proprietary (non-GPL) code extras,
     in-process or separate, and no proprietary plug-ins (docs/licensing.md §4).
   - Inherited upstream code keeps its MIT/Apache notices (`LICENSE-MIT`, `LICENSE-APACHE`, `NOTICE`).
-  - PySide6/Qt6 (LGPLv3) is compatible; bundling Qt/PySide binaries still needs a packaging review.
+  - PySide6/Qt6 (LGPLv3) is compatible. The .deb and the tarball use Ubuntu's `python3-pyside6.*`;
+    the AppImage and the Flatpak carry PySide6 / Qt 6 unmodified and replaceable (owner decision
+    2026-11-09; rules in [docs/development/linux.md](docs/development/linux.md), "Python / Qt license
+    and origin requirements").
 - Upstream brand names, marks and icons are removed from CFA4 and must not be reintroduced
   (`python/tests/test_independence.py` guards this). Retain the upstream MIT/Apache copyright
-  notices in `LICENSE-MIT`, `NOTICE`, `vendor/*/NOTICE` and the `ATTRIBUTION.md` author columns.
+  notices in `LICENSE-MIT`, `NOTICE`, `vendor/*/*/NOTICE` and the `ATTRIBUTION.md` author columns.
 - **Media backends** ([ADR 0005](docs/adr/ADR-0005-media-backends.md)): our own Rust engine is the base. Supplementary
   backends (FFmpeg ≥ 9.0.2, linked and shipped only through the `cfa4-ffmpeg` crate (`crates/ffmpeg`, no `unsafe`),
   GPL-3 build only, never `--enable-nonfree`, no copied FFmpeg source; the GStreamer that Ubuntu ships in its repositories as the default, plus an
@@ -90,14 +93,16 @@ attribution and original copyright/licence requirements remain in force.
   studio, and every part still to come) goes in the top-level `i18n/` directory, one catalog per
   language in the shared TSV format, with its `.attribution` sidecar where one is needed. No part
   keeps its own translation directory, and no frontend's source tree (`crates/ui-egui`, which is
-  being retired) owns them. Until the move (step 1 of the egui removal in
-  `docs/plans/CFA4-QT6-FINISH-001.md`, PR #779; the move is its own PR), add strings to the existing catalogs
-  (`crates/ui-egui/src/i18n/`, `python/cfa4_qt/i18n/`) and create no new catalog directory
-  anywhere else.
+  being retired) owns them. The catalogs have moved there (`crates/ui-egui/src/i18n/` now holds only
+  the loader code, and `python/cfa4_qt/i18n.py` reads `i18n/`); add new or changed strings only to
+  `i18n/<code>.tsv` and create no catalog directory anywhere else.
 - **GPU/accelerator vendor neutrality:** features must not depend on one GPU vendor. NVIDIA paths
   (NVDEC/NVENC, CUDA) are allowed only next to an AMD/Intel path (VA-API, Vulkan, NPU where
   available) or the CPU fallback.
-- The Qt shell is a development prototype, NOT a completed migration from egui.
+- **Qt 6 GUI** (`python/cfa4_qt/`, [docs/qt-gui.md](docs/qt-gui.md)) is the CFA4 editor frontend;
+  every new UI feature goes there. The migration is not complete: the egui editor stays, frozen (bug
+  and security fixes only), until the Qt 6 GUI does point by point everything it does
+  ([docs/qt-parity.md](docs/qt-parity.md)) and the owner approves its removal.
 - Primary setup reference: [docs/development/linux.md](docs/development/linux.md).
 
 ---
@@ -208,8 +213,8 @@ reproduce an image (for example, point lists traced from someone else's icon).
 9. **Fonts live in an external font directory, never in this
    repo.** Don't commit new font files (the small Latin UI fonts already in `assets/fonts/` stay). A
    font CFA4 needs is added to extra-fonts, which the app reads through the optional build input
-   `CFA4_FONTS_DIR=<absolute path of an extra-fonts checkout>` (`crates/text/build.rs` embeds the fonts in its
-   `fonts/manifest.txt` as `cfa4_text::fonts::CFA4_FONTS`; unset, it is empty and the app uses its
+   `CFA4_FONTS_DIR=<absolute path of an extra-fonts checkout>` (`crates/text/build.rs` embeds the fonts listed
+   in that checkout's `fonts/manifest.txt` as `cfa4_text::fonts::CFA4_FONTS`; unset, it is empty and the app uses its
    bundled and system fonts). Never add extra-fonts to a `Cargo.toml`. Code using `CFA4_FONTS` must work
    when it is empty.
 
@@ -233,13 +238,13 @@ See [§0](#0-never-crash). It outranks every other engineering rule.
 
 ### 3.2 The rest
 
-See `CLAUDE.md`: pure Rust, dependency layering (`cargo xtask layers`), exact `Tick` time, calendar time through `chrono`, everything is
+See `CLAUDE.md`: Rust first (non-Rust components only as the CFA4 section above allows), dependency layering (`cargo xtask layers`), exact `Tick` time, calendar time through `chrono`, everything is
 a command, everything is agent-drivable, and the quality gates before every commit.
 
 
 Shared real-file test corpora (Photoshop-authored PSDs, etc.) live outside this repository.
-Never commit large binary fixtures to this repo; fetch them pinned by commit and sha256-verified
-(for example with a `cargo xtask corpus` command).
+Never commit large binary fixtures to this repo; fetch them pinned by commit and sha256-verified.
+(There is no `cargo xtask` command for this yet; a fetcher must follow the same pinning rule.)
 
 ## See also
 

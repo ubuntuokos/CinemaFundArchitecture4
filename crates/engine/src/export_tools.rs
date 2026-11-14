@@ -313,7 +313,11 @@ pub fn settings_from_params(s: &Session, p: &Value, cmd: &str) -> Result<(Option
         settings.audio.flac_level = v.min(8) as u8;
     }
     if let Some(v) = str_p(p, "mxfVideoCodec") {
-        settings.mxf_video_codec = serde_json::from_value(json!(v)).map_err(|_| bad(cmd, "mxfVideoCodec: dnxhr | proRes | h264 | mpeg2 | d10 | xdcamHd422"))?;
+        settings.mxf_video_codec =
+            serde_json::from_value(json!(v)).map_err(|_| bad(cmd, "mxfVideoCodec: dnxhr | proRes | h264 | mpeg2 | d10 | xdcamHd422 | v210 | uyvy"))?;
+    }
+    if let Some(v) = bool_p(p, "mxfAncCaptions") {
+        settings.mxf_anc_captions = v;
     }
     if let Some(v) = str_p(p, "mpeg2Container") {
         let c = cfa4_export::Mpeg2Container::from_name(v).ok_or_else(|| bad(cmd, "mpeg2Container: ps | ts | m2ts | es"))?;
@@ -383,7 +387,7 @@ pub fn settings_from_params(s: &Session, p: &Value, cmd: &str) -> Result<(Option
         settings.alpha = v;
     }
     if let Some(v) = str_p(p, "exrCompression") {
-        settings.exr_compression = serde_json::from_value(json!(v)).map_err(|_| bad(cmd, "exrCompression: none | rle | zips | zip"))?;
+        settings.exr_compression = serde_json::from_value(json!(v)).map_err(|_| bad(cmd, "exrCompression: none | rle | zips | zip | piz"))?;
     }
     match (crate::commands::checked_u32_p(p, "width", cmd)?, crate::commands::checked_u32_p(p, "height", cmd)?) {
         (Some(w), Some(h)) => settings.frame_size = Some((w, h)),
@@ -1084,8 +1088,12 @@ fn resolve(s: &mut Session, p: &Value) -> Result<Value> {
         let title = project.item(seq).map(|i| i.name.clone()).unwrap_or_default();
         cfa4_export::dcp_isdcf_name(&settings, &title, &cfa4_export::dcp_isdcf_date())
     });
+    // settings the encoders cannot honour (egui's red `export.problem` line): said before Export is
+    // pressed, and the Export / Send to Queue buttons stay off while it is set
+    let problem = settings.validate().err().map(|e| e.to_string());
     Ok(json!({
         "dcpName": dcp_name,
+        "problem": problem,
         "preset": preset.map(|x| x.name),
         "hdr": hdr,
         "videoFormat": settings.video_format().id(),

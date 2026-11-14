@@ -116,24 +116,45 @@ impl Signed {
     /// `xml` (with a Signature template) signed by the signer, the chain in KeyInfo.
     pub fn sign(&self, xml: &str) -> String {
         std::fs::write(self.dir.join("in.xml"), xml).unwrap();
-        run(
-            &self.dir,
-            "xmlsec1",
-            &[
-                "--sign",
-                "--privkey-pem",
-                "leaf.key,leaf.pem,inter.pem,root.pem",
-                "--id-attr:Id",
-                "AuthenticatedPublic",
-                "--id-attr:Id",
-                "AuthenticatedPrivate",
-                "--output",
-                "out.xml",
-                "in.xml",
-            ],
-        );
+        let mut args = vec![
+            "--sign",
+            "--privkey-pem",
+            "leaf.key,leaf.pem,inter.pem,root.pem",
+            "--id-attr:Id",
+            "AuthenticatedPublic",
+            "--id-attr:Id",
+            "AuthenticatedPrivate",
+        ];
+        // The template's KeyInfo names no key (a KDM carries only the X509Data chain). From
+        // xmlsec1 1.3 on the key search is strict and finds nothing without a KeyName
+        // (KEY-NOT-FOUND); `--lax-key-search` restores the 1.2 behaviour (any key that fits the
+        // signature method). xmlsec1 1.2 doesn't know the option, so it is passed only from 1.3.
+        if lax_key_search() {
+            args.push("--lax-key-search");
+        }
+        args.extend(["--output", "out.xml", "in.xml"]);
+        run(&self.dir, "xmlsec1", &args);
         std::fs::read_to_string(self.dir.join("out.xml")).unwrap()
     }
+}
+
+/// Whether the installed xmlsec1 has strict key search (1.3 and later), which needs
+/// `--lax-key-search` to sign with a key that the template's KeyInfo doesn't name.
+fn lax_key_search() -> bool {
+    let out = Command::new("xmlsec1").arg("--version").output().unwrap();
+    // "xmlsec1 1.3.9 (openssl)"
+    let version = String::from_utf8_lossy(&out.stdout);
+    xmlsec1_is_strict(&version)
+}
+
+/// `xmlsec1 --version` output names version 1.3 or later.
+fn xmlsec1_is_strict(version: &str) -> bool {
+    let Some(number) = version.split_whitespace().find(|w| w.starts_with(|c: char| c.is_ascii_digit())) else {
+        return false;
+    };
+    let mut parts = number.split('.').map(|p| p.parse::<u32>().unwrap_or(0));
+    let (major, minor) = (parts.next().unwrap_or(0), parts.next().unwrap_or(0));
+    (major, minor) >= (1, 3)
 }
 
 impl Drop for Signed {
@@ -184,4 +205,18 @@ pub fn catalog(files: &[(&str, &str)]) -> String {
     }
     s.push_str("</KDMFileList></Catalog>\n");
     s
+}
+
+#[cfg(test)]
+mod version_tests {
+    use super::xmlsec1_is_strict;
+
+    #[test]
+    fn strict_key_search_from_xmlsec1_1_3() {
+        assert!(!xmlsec1_is_strict("xmlsec1 1.2.39 (openssl)\n"));
+        assert!(xmlsec1_is_strict("xmlsec1 1.3.9 (openssl)\n"));
+        assert!(xmlsec1_is_strict("xmlsec1 1.3.0 (openssl)"));
+        assert!(xmlsec1_is_strict("xmlsec1 2.0.0 (openssl)"));
+        assert!(!xmlsec1_is_strict(""));
+    }
 }

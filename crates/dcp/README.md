@@ -16,6 +16,11 @@ proposed in [DCP-00](../../docs/audit/DCP-00-CAPABILITY-AUDIT-2026-10-27.md).
 
 The root element and its namespace decide the document kind and the standard.
 
+Elements must come in the order of the standard's own schema (an element out of order is `Invalid`).
+The two asset map schemas differ here: SMPTE ST 429-9 has `Creator, VolumeCount, IssueDate, Issuer`,
+the Interop `PROTO-ASDCP-AM-20040311` schema `VolumeCount, IssueDate, Issuer, Creator` (as libdcp
+writes and checks it). Plan: [CFA4-DCPVAL-LIBDCP-001](../../docs/plans/CFA4-DCPVAL-LIBDCP-001-FINAL-1.0.md).
+
 ```rust
 let doc = cfa4_dcp::read(std::path::Path::new("CPL.xml"), cfa4_dcp::Limits::default())?;
 for issue in doc.issues() {

@@ -9,7 +9,7 @@ use crate::image::Image;
 
 /// Per-pixel A/B mix at weight `k`, both sampled (clamped) at (sx, sy).
 #[inline]
-fn ab(t: &Tx, sx: f32, sy: f32, k: f32) -> [f32; 4] {
+fn ab(t: &Tx<'_>, sx: f32, sy: f32, k: f32) -> [f32; 4] {
     if k <= 0.0 {
         t.sac(sx, sy)
     } else if k >= 1.0 {
@@ -21,7 +21,7 @@ fn ab(t: &Tx, sx: f32, sy: f32, k: f32) -> [f32; 4] {
 
 /// RGB-split sample: red from (+d), blue from (−d).
 #[inline]
-fn split(t: &Tx, x: f32, y: f32, d: f32, k: f32) -> [f32; 4] {
+fn split(t: &Tx<'_>, x: f32, y: f32, d: f32, k: f32) -> [f32; 4] {
     let c = ab(t, x, y, k);
     if d.abs() < 0.25 {
         return c;
@@ -31,7 +31,7 @@ fn split(t: &Tx, x: f32, y: f32, d: f32, k: f32) -> [f32; 4] {
     [r[0], c[1], b[2], c[3].max(r[3]).max(b[3])]
 }
 
-pub(super) fn apply(id: &str, t: &Tx) -> Option<Image> {
+pub(super) fn apply(id: &str, t: &Tx<'_>) -> Option<Image> {
     let p = t.p;
     let (w, h) = (t.wf, t.hf);
     let env = bell(p);

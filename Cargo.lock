@@ -1100,6 +1100,14 @@ dependencies = [
 ]
 
 [[package]]
+name = "cfa4-canopus"
+version = "0.10.0"
+dependencies = [
+ "cfa4-testkit",
+ "thiserror 2.0.21",
+]
+
+[[package]]
 name = "cfa4-captions"
 version = "0.10.0"
 dependencies = [
@@ -1143,6 +1151,7 @@ dependencies = [
  "cfa4-media",
  "cfa4-mpegts",
  "cfa4-mxf",
+ "cfa4-obs",
  "cfa4-ogg",
  "cfa4-platform",
  "cfa4-project",
@@ -1150,6 +1159,8 @@ dependencies = [
  "cfa4-render",
  "cfa4-route",
  "cfa4-scopes",
+ "cfa4-tcsync",
+ "cfa4-tcsync-io",
  "cfa4-testkit",
  "cfa4-time",
  "cfa4-tts",
@@ -1173,6 +1184,7 @@ dependencies = [
  "cfa4-av2",
  "cfa4-avi",
  "cfa4-bitstream",
+ "cfa4-canopus",
  "cfa4-cineform",
  "cfa4-color",
  "cfa4-dirac",
@@ -1202,6 +1214,7 @@ dependencies = [
  "cfa4-testkit",
  "cfa4-time",
  "cfa4-truehd",
+ "cfa4-tta",
  "cfa4-utvideo",
  "cfa4-vp8",
  "cfa4-vp9",
@@ -1272,7 +1285,9 @@ version = "0.10.0"
 dependencies = [
  "cfa4-dcp",
  "cfa4-export",
+ "cfa4-j2k",
  "cfa4-media",
+ "cfa4-mxf",
  "cfa4-project",
  "cfa4-render",
  "cfa4-time",
@@ -1379,6 +1394,7 @@ dependencies = [
  "cfa4-scopes",
  "cfa4-smart-edit",
  "cfa4-speech",
+ "cfa4-tcsync",
  "cfa4-testkit",
  "cfa4-text",
  "cfa4-time",
@@ -1402,6 +1418,7 @@ dependencies = [
  "cfa4-audio-dsp",
  "cfa4-av1",
  "cfa4-bitstream",
+ "cfa4-captions",
  "cfa4-cineform",
  "cfa4-codecs",
  "cfa4-color",
@@ -1499,6 +1516,7 @@ dependencies = [
  "cfa4-time",
  "rayon",
  "serde",
+ "serde_json",
 ]
 
 [[package]]
@@ -1759,6 +1777,17 @@ dependencies = [
 ]
 
 [[package]]
+name = "cfa4-obs"
+version = "0.10.0"
+dependencies = [
+ "libloading 0.8.9",
+ "log",
+ "serde",
+ "serde_json",
+ "thiserror 2.0.21",
+]
+
+[[package]]
 name = "cfa4-ogg"
 version = "0.10.0"
 dependencies = [
@@ -1924,10 +1953,37 @@ dependencies = [
 ]
 
 [[package]]
+name = "cfa4-st2110"
+version = "0.10.0"
+dependencies = [
+ "cfa4-testkit",
+ "thiserror 2.0.21",
+]
+
+[[package]]
+name = "cfa4-studio-host"
+version = "0.10.0"
+dependencies = [
+ "cfa4-obs",
+ "rustix 1.1.6",
+ "serde_json",
+]
+
+[[package]]
 name = "cfa4-tcsync"
 version = "0.10.0"
 dependencies = [
  "cfa4-time",
+]
+
+[[package]]
+name = "cfa4-tcsync-io"
+version = "0.10.0"
+dependencies = [
+ "alsa",
+ "cfa4-tcsync",
+ "cfa4-time",
+ "cpal",
 ]
 
 [[package]]
@@ -1969,6 +2025,14 @@ version = "0.10.0"
 dependencies = [
  "cfa4-testkit",
  "log",
+ "thiserror 2.0.21",
+]
+
+[[package]]
+name = "cfa4-tta"
+version = "0.10.0"
+dependencies = [
+ "cfa4-testkit",
  "thiserror 2.0.21",
 ]
 

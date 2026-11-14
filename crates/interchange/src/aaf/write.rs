@@ -370,7 +370,7 @@ struct Refs {
 /// The composition mob of `comp`. Slot 1 is its timecode; its tracks follow from slot 2 in order.
 #[allow(clippy::too_many_arguments)]
 fn composition_mob(
-    w: &mut W,
+    w: &mut W<'_>,
     doc: &Document,
     comp: &Composition,
     id: [u8; 32],
@@ -587,7 +587,7 @@ fn source_clip(kind: CKind, len: i64, source: [u8; 32], slot: u32, start: i64) -
         .data_prop(pid::START_TIME, start.to_le_bytes().to_vec())
 }
 
-fn event_slot(w: &mut W, id: u32, rate: (i64, i64), markers: &[CMarker]) -> Obj {
+fn event_slot(w: &mut W<'_>, id: u32, rate: (i64, i64), markers: &[CMarker]) -> Obj {
     let comps = markers
         .iter()
         .map(|m| {
@@ -630,7 +630,7 @@ fn transition_op(kind: CKind, effect: &str) -> Auid {
     }
 }
 
-fn descriptor(w: &mut W, s: &Source) -> Obj {
+fn descriptor(w: &mut W<'_>, s: &Source) -> Obj {
     let rate = source_rate(s);
     let len = w.u(s.length, rate);
     let container = if s.embedded.is_some() { def::CONTAINER_AAF } else { def::CONTAINER_EXTERNAL };

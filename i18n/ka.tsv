@@ -4518,6 +4518,9 @@ export.summary	Low	დაბალი
 	accept	მისაღები
 	the engine did not start the check	ძრავამ შემოწმება არ დაიწყო
 	the engine sent no report	ძრავამ ანგარიში არ გამოგზავნა
+	MXF OP1a Uncompressed 10-bit 4:2:2 (v210)	MXF OP1a შეუკუმშავი 10-ბიტიანი 4:2:2 (v210)
+	MXF OP1a, uncompressed 10-bit Y'CbCr 4:2:2 in the v210 layout (SMPTE ST 384), 24-bit 48 kHz PCM, start timecode	MXF OP1a, შეუკუმშავი 10-ბიტიანი Y'CbCr 4:2:2 v210 განლაგებით (SMPTE ST 384), 24-ბიტიანი 48 kHz PCM, საწყისი დროის კოდი
+	Write the captions as ANC data (CEA-608/708, 29.97 fps)	სუბტიტრების ჩაწერა ANC მონაცემებად (CEA-608/708, 29,97 fps)
 	Load KDM…	KDM-ის ჩატვირთვა…
 	Forget DCP Keys	DCP გასაღებების დავიწყება
 	Load KDM	KDM-ის ჩატვირთვა
@@ -4532,3 +4535,35 @@ export.summary	Low	დაბალი
 	Not loaded: {path}: {problem}	არ ჩაიტვირთა: {path}: {problem}
 	Signature verified: {chain}	ხელმოწერა გადამოწმებულია: {chain}
 	Signature not verified: {problem}	ხელმოწერა არ არის გადამოწმებული: {problem}
+
+# Settings ▸ Timecode Sync (TC-4)
+	Timecode Sync	დროის კოდის სინქრონიზაცია
+	TimecodeSync	დროის კოდის სინქრონიზაცია
+	Chase	მიყოლა
+	Follow external timecode during playback	გარე დროის კოდისთვის მიყოლა დაკვრისას
+	Lock after	ჩაკეტვა შემდეგ
+	Keep playing without signal for	სიგნალის გარეშე დაკვრის გაგრძელება
+	External frame rate	გარე კადრების სიხშირე
+	Offset (added to the external timecode)	წანაცვლება (ემატება გარე დროის კოდს)
+	LTC	LTC
+	LTC input device	LTC შეტანის მოწყობილობა
+	LTC input channel	LTC შეტანის არხი
+	Send LTC during playback	LTC-ის გაგზავნა დაკვრისას
+	LTC output device	LTC გამოტანის მოწყობილობა
+	LTC output channel	LTC გამოტანის არხი
+	LTC level	LTC-ის დონე
+	dBFS	dBFS
+	MIDI Timecode	MIDI დროის კოდი
+	MTC input port (empty = CFA4 port)	MTC შეტანის პორტი (ცარიელი = CFA4-ის პორტი)
+	Send MIDI Timecode during playback	MIDI დროის კოდის გაგზავნა დაკვრისას
+	MTC output port (empty = CFA4 port)	MTC გამოტანის პორტი (ცარიელი = CFA4-ის პორტი)
+	Send timecode ahead of the picture by	დროის კოდის გაგზავნა გამოსახულებაზე ადრე
+	LTC (audio input)	LTC (აუდიო შეტანა)
+	MIDI Timecode (MIDI input)	MIDI დროის კოდი (MIDI შეტანა)
+	Same as the sequence	იგივე, რაც მიმდევრობაში
+	29.97 fps drop-frame	29,97 fps drop-frame
+	29.97 fps non-drop	29,97 fps non-drop
+	Timecode Sync Status	დროის კოდის სინქრონიზაციის მდგომარეობა
+	Chase External Timecode	გარე დროის კოდისთვის მიყოლა
+	Send LTC	LTC-ის გაგზავნა
+	Send MIDI Timecode	MIDI დროის კოდის გაგზავნა

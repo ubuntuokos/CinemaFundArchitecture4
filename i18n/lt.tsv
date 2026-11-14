@@ -4518,6 +4518,9 @@ export.summary	Low	žema
 	accept	priimtina
 	the engine did not start the check	variklis nepradėjo patikrinimo
 	the engine sent no report	variklis neatsiuntė ataskaitos
+	MXF OP1a Uncompressed 10-bit 4:2:2 (v210)	MXF OP1a nesuspaustas 10 bitų 4:2:2 (v210)
+	MXF OP1a, uncompressed 10-bit Y'CbCr 4:2:2 in the v210 layout (SMPTE ST 384), 24-bit 48 kHz PCM, start timecode	MXF OP1a, nesuspaustas 10 bitų Y'CbCr 4:2:2 v210 išdėstymu (SMPTE ST 384), 24 bitų 48 kHz PCM, pradinis laiko kodas
+	Write the captions as ANC data (CEA-608/708, 29.97 fps)	Įrašyti subtitrus kaip ANC duomenis (CEA-608/708, 29,97 kadr./s)
 	Load KDM…	Įkelti KDM…
 	Forget DCP Keys	Pamiršti DCP raktus
 	Load KDM	Įkelti KDM
@@ -4532,3 +4535,35 @@ export.summary	Low	žema
 	Not loaded: {path}: {problem}	Neįkelta: {path}: {problem}
 	Signature verified: {chain}	Parašas patikrintas: {chain}
 	Signature not verified: {problem}	Parašas nepatikrintas: {problem}
+
+# Settings ▸ Timecode Sync (TC-4)
+	Timecode Sync	Laiko kodo sinchronizavimas
+	TimecodeSync	Laiko kodo sinchronizavimas
+	Chase	Sekimas
+	Follow external timecode during playback	Atkūrimo metu sekti išorinį laiko kodą
+	Lock after	Užfiksuoti po
+	Keep playing without signal for	Be signalo toliau leisti
+	External frame rate	Išorinis kadrų dažnis
+	Offset (added to the external timecode)	Poslinkis (pridedamas prie išorinio laiko kodo)
+	LTC	LTC
+	LTC input device	LTC įvesties įrenginys
+	LTC input channel	LTC įvesties kanalas
+	Send LTC during playback	Atkūrimo metu siųsti LTC
+	LTC output device	LTC išvesties įrenginys
+	LTC output channel	LTC išvesties kanalas
+	LTC level	LTC lygis
+	dBFS	dBFS
+	MIDI Timecode	MIDI laiko kodas
+	MTC input port (empty = CFA4 port)	MTC įvesties prievadas (tuščia = CFA4 prievadas)
+	Send MIDI Timecode during playback	Atkūrimo metu siųsti MIDI laiko kodą
+	MTC output port (empty = CFA4 port)	MTC išvesties prievadas (tuščia = CFA4 prievadas)
+	Send timecode ahead of the picture by	Siųsti laiko kodą anksčiau už vaizdą
+	LTC (audio input)	LTC (garso įvestis)
+	MIDI Timecode (MIDI input)	MIDI laiko kodas (MIDI įvestis)
+	Same as the sequence	Kaip sekoje
+	29.97 fps drop-frame	29,97 fps drop-frame
+	29.97 fps non-drop	29,97 fps non-drop
+	Timecode Sync Status	Laiko kodo sinchronizavimo būsena
+	Chase External Timecode	Sekti išorinį laiko kodą
+	Send LTC	Siųsti LTC
+	Send MIDI Timecode	Siųsti MIDI laiko kodą

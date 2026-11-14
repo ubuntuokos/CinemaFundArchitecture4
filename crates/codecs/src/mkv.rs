@@ -117,6 +117,13 @@ fn audio_starts(file: &MkvFile, bytes: &crate::Src, ti: usize, rate: i64) -> Vec
         });
         return contiguous_starts(packets, stamp_tolerance(t, rate));
     }
+    if matches!(&t.codec, Codec::Other(id) if id == "A_TTA1") {
+        // TTA packets are whole frames of 256 × rate / 245 samples (the last one shorter)
+        let full = 256 * rate / 245;
+        let last = t.samples.len().saturating_sub(1);
+        let packets = t.samples.iter().enumerate().map(|(i, s)| PacketTime { stamp: at(s.pts), stamped: own_stamp(s), samples: (i < last).then_some(full) });
+        return contiguous_starts(packets, stamp_tolerance(t, rate));
+    }
     if let Some(Ok(c)) = acm_codec(t) {
         // G.711 / ADPCM packets hold whole frames or blocks: they run on like PCM
         let channels = t.audio.as_ref().map_or(1, |a| a.channels.max(1));
@@ -371,6 +378,7 @@ fn sample_entry(c: &Codec, private: &[u8], v: Option<&cfa4_matroska::VideoInfo>,
         Codec::Other(id) if id == "V_DIRAC" => crate::dirac::sample_entry(w, h),
         // Huffyuv: the VfW BITMAPINFOHEADER sets the stream up (bit count, extradata)
         Codec::VfwFourcc { fourcc, bitmap_info_header } if fourcc.eq_ignore_ascii_case(b"HFYU") => crate::huffyuv::sample_entry(bitmap_info_header, w, h),
+        Codec::VfwFourcc { fourcc, .. } if crate::canopus::codec(fourcc).is_some() => crate::canopus::sample_entry(crate::canopus::codec(fourcc)?, w, h),
         // Ut Video: the extradata follows the VfW BITMAPINFOHEADER
         Codec::VfwFourcc { fourcc, bitmap_info_header } if crate::utvideo::is_utvideo(fourcc) => {
             crate::utvideo::sample_entry(*fourcc, bitmap_info_header.get(40..).unwrap_or_default(), w, h)
@@ -439,8 +447,12 @@ fn codec_label(c: &Codec) -> String {
         Codec::Other(id) if id == "V_MPEG1" => "MPEG-1 Video".into(),
         Codec::VfwFourcc { fourcc, .. } if crate::utvideo::is_utvideo(fourcc) => "Ut Video".into(),
         Codec::VfwFourcc { fourcc, .. } if fourcc.eq_ignore_ascii_case(b"HFYU") => "Huffyuv".into(),
+        Codec::VfwFourcc { fourcc, .. } if crate::canopus::codec(fourcc).is_some() => {
+            crate::canopus::codec(fourcc).map_or("Canopus", crate::canopus::label).into()
+        }
         Codec::Other(id) if id == "V_FFV1" => "FFV1".into(),
         Codec::Other(id) if id == "V_DIRAC" => "VC-2 / Dirac".into(),
+        Codec::Other(id) if id == "A_TTA1" => "TTA".into(),
         Codec::VfwFourcc { fourcc, .. } if fourcc.eq_ignore_ascii_case(b"FFV1") => "FFV1".into(),
         other => other.name().to_string(),
     }
@@ -617,6 +629,10 @@ impl MkvSource {
         if let Some(c) = acm_codec(t) {
             let c = c.map_err(|e| CodecError::Unsupported(e.to_string()))?;
             return PacketDecoder::adpcm(c, ainfo.channels as usize);
+        }
+        if matches!(&t.codec, Codec::Other(id) if id == "A_TTA1") {
+            let bits = ainfo.bits_per_sample.unwrap_or(16);
+            return PacketDecoder::tta(u16::try_from(ainfo.channels).unwrap_or(0), u16::try_from(bits).unwrap_or(0), rate);
         }
         match &t.codec {
             Codec::Aac { asc } => PacketDecoder::aac(asc, rate),

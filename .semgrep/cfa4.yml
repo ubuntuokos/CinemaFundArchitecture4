@@ -41,10 +41,12 @@ rules:
     languages: [generic]
     severity: ERROR
     message: >-
-      `unsafe` is allowed only in crates/platform FFI modules (AGENTS.md §0.3, ADR 0001).
+      `unsafe` is allowed only in crates/platform FFI modules (AGENTS.md §0.3, ADR 0001) and in the
+      binding modules of non-Rust components named in ADR 0001 addenda (2026-11-09: libobs::sys).
     paths:
       include:
         - "*.rs"
       exclude:
         - "/crates/platform/**"
+        - "/crates/obs/src/libobs/sys.rs"
     pattern-regex: '#!?\[allow\(\s*unsafe_code\s*\)\]'
