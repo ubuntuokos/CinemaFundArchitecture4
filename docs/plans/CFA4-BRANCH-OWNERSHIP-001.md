@@ -1,6 +1,6 @@
 # CFA4-BRANCH-OWNERSHIP-001 – egy ág, egy munkamenet: az ág-tulajdon technikai védelme
 
-**Állapot:** 1.3, jóváhagyva. A tulajdonos 2026-11-14-én a tervet jóváhagyta, a D1–D6 döntési pontok a javasolt alapértékkel érvényesek, a D7 a tulajdonos döntése, a D8 megerősítésre vár (5. fejezet). Ugyanaznap kérésére bekerült a gazda-átvétel (3. fejezet, T1, T2, T4, D6, 1.1), majd a CodeRabbit és a gazda-átvétel viszonya (T7, D7, D8, 1.2), és a gazda tulajdonosi kérésre végzett javítása (D7 kivétele, 1.3). Következő lépés: BO-1.
+**Állapot:** 1.4, jóváhagyva. A tulajdonos 2026-11-14-én a tervet jóváhagyta, a D1–D6 döntési pontok a javasolt alapértékkel érvényesek, a D7 és a D8 a tulajdonos 2026-11-14-i döntése (5. fejezet). Ugyanaznap kérésére bekerült a gazda-átvétel (3. fejezet, T1, T2, T4, D6, 1.1), majd a CodeRabbit és a gazda-átvétel viszonya (T7, D7, D8, 1.2), és a gazda tulajdonosi kérésre végzett javítása (D7 kivétele, 1.3); a D8-at a tulajdonos a javaslat szerint elfogadta (1.4). Következő lépés: BO-1.
 
 **Összefoglaló:** a „más PR-jához, ágához ne nyúlj” szabály (`docs/coordination.md` §1 és §2.4) ma csak
 írott szabály, és semmi nem állítja meg az ügynököt, amelyik mégis megszegi. A terv után minden PR-ágnak
@@ -152,7 +152,7 @@ szabály egy helyen). Az `AGENTS.md` és a `CLAUDE.md` legfeljebb egy hivatkozá
 | D5 | A helyi hook (T3) blokkol vagy csak figyelmeztet? | Blokkol, ha a munkamenet azonosítója megbízhatóan kiolvasható; különben figyelmeztet. |
 | D6 | A gazda munkája a fejlesztői PR ágán | A `main` behúzása mindenkinek megengedett (a check nem jelez rá). Minden más gazda-commit (ütközésfeloldás) a fejlesztői PR ágán csak `Gazda átvette:` sor után megengedett; hibát a gazda csak tulajdonosi kérésre javít, egyébként visszaadja (D7); a köteg-ágon átvétel nélkül is (§3a). (Tulajdonosi kiegészítés, 2026-11-14.) |
 | D7 | Ki javít, ha átvétel után hiba derül ki (CodeRabbit vagy más)? | A fejlesztő: a gazda visszaadja a PR-t. A gazdához csak hibátlan PR kerül. Kivétel: a tulajdonos kérésére a gazda javít, ha a fejlesztő túlterhelt és a PR-ra máshol szükség van (`Gazda javítja tulajdonosi kérésre:` sor, T7). (Tulajdonosi döntések, 2026-11-14.) |
-| D8 | Kell-e új CodeRabbit-review a `main` puszta behúzása után? | Nem, ha a behúzás ütközés nélkül ment, és a PR saját változtatása (a diff a `main`-hez képest) nem változott; ilyenkor az előző fejen kapott sikeres review elég. Ütközésfeloldás után igen. Ez kíméli a nagyjából óránként egy review-ra elég keretet. (Javaslat, a tulajdonos megerősítésére vár.) |
+| D8 | Kell-e új CodeRabbit-review a `main` puszta behúzása után? | Nem, ha a behúzás ütközés nélkül ment, és a PR saját változtatása (a diff a `main`-hez képest) nem változott; ilyenkor az előző fejen kapott sikeres review elég. Ütközésfeloldás után igen. Ez kíméli a nagyjából óránként egy review-ra elég keretet. (Tulajdonosi döntés, 2026-11-14, a javaslat szerint.) |
 
 ## 6. Korlátok és kockázatok
 
