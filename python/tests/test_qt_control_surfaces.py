@@ -63,13 +63,13 @@ class StubEngine:
         self.sent: list[tuple[str, dict[str, Any]]] = []
         self.values: dict[str, Any] = {"controlSurfaces": {"enabled": True, "devices": []}}
 
-    def call(self, method: str, params: dict[str, Any] | None = None, on_reply=None, on_error=None) -> int:
+    def call(self, method: str, params: dict[str, Any] | None = None, on_reply: Any = None, on_error: Any = None) -> int:
         self.sent.append((method, params or {}))
         if method == "surface.devices" and on_reply:
             on_reply(self.devices, None)
         return len(self.sent)
 
-    def execute(self, command: str, params: dict[str, Any] | None = None, on_reply=None, on_error=None) -> int:
+    def execute(self, command: str, params: dict[str, Any] | None = None, on_reply: Any = None, on_error: Any = None) -> int:
         self.sent.append((command, params or {}))
         replies = {"prefs.schema": SCHEMA, "prefs.get": {"values": self.values}, "controlSurfaces.profiles": PROFILES, "prefs.set": {}}
         if command in replies and on_reply:
@@ -78,17 +78,17 @@ class StubEngine:
 
 
 @pytest.fixture(scope="module")
-def app():
+def app() -> Any:
     return QtWidgets.QApplication.instance() or QtWidgets.QApplication([])
 
 
-def find(d, kind, name):
+def find(d: Any, kind: Any, name: str) -> Any:
     w = d.findChild(kind, name)
     assert w is not None, name
     return w
 
 
-def test_control_surfaces_page_lists_devices_and_applies_choices(app):
+def test_control_surfaces_page_lists_devices_and_applies_choices(app: Any) -> None:
     engine = StubEngine(DEVICES)
     d = PreferencesDialog(None, engine, "controlSurfaces")
     assert d.page == "controlSurfaces"
@@ -116,7 +116,7 @@ def test_control_surfaces_page_lists_devices_and_applies_choices(app):
     assert {"device": "hid:0b33:0030:usb-0000:00:14.0-3/input0", "enabled": True, "profile": "cfa4.shuttlepro.kdenlive"} in devices
 
 
-def test_control_surfaces_page_without_devices_and_refresh(app):
+def test_control_surfaces_page_without_devices_and_refresh(app: Any) -> None:
     engine = StubEngine({"enabled": True, "devices": [], "problems": ["MIDI: no ALSA sequencer"]})
     d = PreferencesDialog(None, engine, "controlSurfaces")
     assert "No MIDI controller" in find(d, QtWidgets.QLabel, "settings.controlSurfaces.empty").text()
@@ -138,13 +138,15 @@ def _real_engine() -> Path | None:
 
 
 @pytest.mark.skipif(_real_engine() is None, reason="Rust engine not built (cargo build -p cfa4-cli)")
-def test_real_engine_reports_control_surfaces(app, tmp_path: Path):
+def test_real_engine_reports_control_surfaces(app: Any, tmp_path: Path) -> None:
     """The built engine answers surface.devices (a list, empty in CI) and announces the feature."""
     import time
 
     from cfa4_qt.engine import EngineClient
 
-    engine = EngineClient(_real_engine(), ["--data-dir", str(tmp_path / "data")])
+    path = _real_engine()
+    assert path is not None
+    engine = EngineClient(path, ["--data-dir", str(tmp_path / "data")])
     got: dict[str, Any] = {}
     engine.start()
     try:
