@@ -1,6 +1,6 @@
 # CFA4-BRANCH-OWNERSHIP-001 – egy ág, egy munkamenet: az ág-tulajdon technikai védelme
 
-**Állapot:** 1.1, jóváhagyva. A tulajdonos 2026-11-14-én a tervet jóváhagyta, a D1–D6 döntési pontok a javasolt alapértékkel érvényesek (5. fejezet). Ugyanaznap kérésére bekerült a gazda-átvétel (3. fejezet, T1, T2, T4, D6). Következő lépés: BO-1.
+**Állapot:** 1.1, jóváhagyva. A tulajdonos 2026-11-14-én a tervet jóváhagyta, a D1–D6 döntési pontok a javasolt alapértékkel érvényesek, a D7 a tulajdonos döntése, a D8 megerősítésre vár (5. fejezet). Ugyanaznap kérésére bekerült a gazda-átvétel (3. fejezet, T1, T2, T4, D6, 1.1), majd a CodeRabbit és a gazda-átvétel viszonya (T7, D7, D8, 1.2). Következő lépés: BO-1.
 
 **Összefoglaló:** a „más PR-jához, ágához ne nyúlj” szabály (`docs/coordination.md` §1 és §2.4) ma csak
 írott szabály, és semmi nem állítja meg az ügynököt, amelyik mégis megszegi. A terv után minden PR-ágnak
@@ -76,7 +76,7 @@ tulajdonos munkamenete pushol. Új pont (§2.10) írja le az átadást:
 
 Új pont (§2.11) a gazda-átvételről (3. fejezet): a fejlesztő munkamenet, amikor a PR-t „Kész”-nek jelöli,
 átadja a gazdának. Amint a PR-on `Gazda átvette:` sor áll, a fejlesztő nem pushol rá, a javítási igényt
-megjegyzésben jelzi. A gazda vagy maga javít, vagy visszaadja a PR-t (`Gazda visszaadta:`). A §1 és a §3
+megjegyzésben jelzi. Hibát a gazda nem javít: visszaadja a PR-t (`Gazda visszaadta:`), és a fejlesztő javít (T7, D7). A §1 és a §3
 gazda-leírása ennek megfelelően kiegészül: a gazda a fejlesztői PR ágára is pusholhat, de csak átvétel után.
 
 Ha a tulajdonos nem mondja ki az átadást, az új munkamenet nem nyúl a régi ágához. Új ágat nyit a `main`-ből,
@@ -109,7 +109,7 @@ Az ellenőrzés a saját munkamenet azonosítóját a környezet adja (a T3 els�
 megbízhatóan: környezeti változó vagy a munkamenet által írt commit sora; ha nem olvasható ki, a hook csak
 figyelmeztet). A hook a hiba okát és a teendőt is kiírja („kérd a tulajdonost átadásra, vagy nyiss új ágat”).
 
-**T4 – A gazda.** A `/gazda` skill a PR-on végzett első írás (ághoz igazítás, ütközésfeloldás, javítás) előtt
+**T4 – A gazda.** A `/gazda` skill a PR-on végzett első írás (ághoz igazítás, ütközésfeloldás) előtt
 beírja a `Gazda átvette:` sort, és ha a fejlesztőnek kell javítania, a `Gazda visszaadta:` sort. A skill
 beolvasztás előtt a `branch-ownership` checket is nézi (kötelező checkként
 amúgy is), idegen commitnál a PR a (c) kategóriába kerül, és a tulajdonosnak jelzi. A köteg-szkript a köteg-PR
@@ -118,6 +118,19 @@ leírásába beírja a felhasznált PR-fejeket, hogy a T2 ellenőrizni tudja.
 **T5 – A meglévő nyitott PR-ok.** Bevezetéskor (2026-11-14-én 77 nyitott PR van) egyszeri, csak olvasó jelentés
 készül: melyik PR-on van idegen commit, és melyiken hiányzik a `Munkamenet:` sor. Visszamenőleg nem javítunk
 commitot. Ahol a jelentés idegen commitot talál, a tulajdonos dönt (átadásnak tekinti vagy nem).
+
+**T7 – CodeRabbit és gazda-átvétel** (tulajdonosi döntés, 2026-11-14: „ha hibátlan a PR, megy a gazdához,
+ha hibás, javítani kell”). Kockázatos PR-on (`docs/coordination.md` §2.9) a sorrend:
+1. A fejlesztő kéri a CodeRabbit-review-t, ahogy ma is. Ha a CodeRabbit hibát talál, a fejlesztő javítja a
+   saját ágán, és újra kéri. A gazdához csak hibátlan PR kerül: sikeres CodeRabbit-check a mostani fejen,
+   és nincs megválaszolatlan megállapítás.
+2. A gazda átveszi. Ha átvétel után a fej a D8 szerint új review-t igényel, a gazda kéri újra
+   (`@coderabbitai review`), mert a fejlesztő ekkor már nem nyúl a PR-hoz.
+3. Ha ez a review (vagy bármi más a beolvasztás előtt) hibát talál, a gazda **nem javítja**, hanem visszaadja
+   a PR-t a fejlesztőnek (`Gazda visszaadta:`). A fejlesztő javít, kéri a CodeRabbitet, és a hibátlan PR újra
+   a gazdához megy.
+4. A CodeRabbit soha nem commitol (a javító funkciói tiltva vannak). Ha mégis commit kerülne tőle az ágra,
+   a T2 idegennek jelöli.
 
 **T6 – Egy helyen a szabály.** A szabály csak a `docs/coordination.md`-ben áll (a 2026-11-01-i döntés: minden
 szabály egy helyen). Az `AGENTS.md` és a `CLAUDE.md` legfeljebb egy hivatkozást kap rá.
@@ -131,7 +144,9 @@ szabály egy helyen). Az `AGENTS.md` és a `CLAUDE.md` legfeljebb egy hivatkozá
 | D3 | Köteg-ágak ellenőrzése | Igen, a 4. fejezet szerint (csak a felsorolt PR-fejek és a `main` beolvasztása). |
 | D4 | Mikortól blokkol a check? | Egy hétig csak jelez (nem kötelező check), utána a `main` kötelező ellenőrzése. |
 | D5 | A helyi hook (T3) blokkol vagy csak figyelmeztet? | Blokkol, ha a munkamenet azonosítója megbízhatóan kiolvasható; különben figyelmeztet. |
-| D6 | A gazda munkája a fejlesztői PR ágán | A `main` behúzása mindenkinek megengedett (a check nem jelez rá). Minden más gazda-commit (ütközésfeloldás, javítás) a fejlesztői PR ágán csak `Gazda átvette:` sor után megengedett; a köteg-ágon átvétel nélkül is (§3a). (Tulajdonosi kiegészítés, 2026-11-14.) |
+| D6 | A gazda munkája a fejlesztői PR ágán | A `main` behúzása mindenkinek megengedett (a check nem jelez rá). Minden más gazda-commit (ütközésfeloldás) a fejlesztői PR ágán csak `Gazda átvette:` sor után megengedett; hibát a gazda nem javít, hanem visszaadja (D7); a köteg-ágon átvétel nélkül is (§3a). (Tulajdonosi kiegészítés, 2026-11-14.) |
+| D7 | Ki javít, ha átvétel után hiba derül ki (CodeRabbit vagy más)? | A fejlesztő: a gazda visszaadja a PR-t, maga nem javít. A gazdához csak hibátlan PR kerül. (Tulajdonosi döntés, 2026-11-14.) |
+| D8 | Kell-e új CodeRabbit-review a `main` puszta behúzása után? | Nem, ha a behúzás ütközés nélkül ment, és a PR saját változtatása (a diff a `main`-hez képest) nem változott; ilyenkor az előző fejen kapott sikeres review elég. Ütközésfeloldás után igen. Ez kíméli a nagyjából óránként egy review-ra elég keretet. (Javaslat, a tulajdonos megerősítésére vár.) |
 
 ## 6. Korlátok és kockázatok
 
@@ -156,7 +171,7 @@ A sorrendről a tulajdonos dönt; a lista mindent tartalmaz.
 | BO-2 | T2 szkript és tesztjei, munkafolyamat jelző módban | PR (CI, CodeRabbit: kell) |
 | BO-3 | T1 szabály és átadási eljárás, T6 hivatkozások | PR (szabályfájl, CodeRabbit: kell) |
 | BO-4 | T3 helyi hook | PR (`.claude/`, CodeRabbit: kell) |
-| BO-5 | T4 gazda-skill és köteg-szkript módosítása | PR (`.claude/`, CodeRabbit: kell) |
+| BO-5 | T4 és T7: gazda-skill (átvétel, CodeRabbit-újrakérés, visszaadás) és köteg-szkript módosítása | PR (`.claude/`, CodeRabbit: kell) |
 | BO-6 | D4 után: a check kötelezővé tétele a `main` védelmében | tulajdonosi beállítás a GitHubon |
 
 ## 8. Elfogadási feltételek
@@ -166,6 +181,8 @@ A sorrendről a tulajdonos dönt; a lista mindent tartalmaz.
   `Átadva:` sor után az átvevő commitja (zöld), és a leváltott munkamenet későbbi commitja (piros);
   `Gazda átvette:` sor után a gazda commitja (zöld), előtte (piros), és a fejlesztő commitja átvétel után
   (piros), `Gazda visszaadta:` után (zöld);
+- A gazda-skill próbán egy kockázatos PR-on: hibátlan CodeRabbit-review után beolvasztható; a `main` ütközés nélküli
+  behúzása után nem kér új review-t (D8); ütközésfeloldás után kér; hibás review után visszaadja a PR-t (D7);
   Dependabot-ág (zöld); köteg-ág felsorolt és nem felsorolt PR-fejjel (zöld / piros); sor nélküli kézi commit
   címkével és címke nélkül (zöld / piros).
 - A jelzős héten a check minden nyitott PR-on lefut, és a hamis riasztások száma nulla, vagy mindegyiknek
