@@ -169,6 +169,12 @@ Javasolt műfajlista (bővíthető): dráma, vígjáték, akció, thriller és k
 fantasy, romantikus, animációs és családi, dokumentumfilm, történelmi és kosztümös, háborús,
 western, zenés és musical, táncfilm, paródia, rövidfilm és fesztiválfilm, élő műsor és közvetítés, híradó, valóságshow (e három az Élő grafikában, C10, cue-ként is betölthető: főcím, alsó sávok, futószöveg, stáblista).
 
+**A műfajlista bővíthető** (a tulajdonos döntése, 2026-11-14): a felhasználó a sablonkezelőben
+saját műfajt vehet fel, nevezhet át és törölhet (a beépítetteket nem törli, csak elrejti); a
+saját műfaj a felhasználói beállításokban tárolódik, és a sablonhoz menthető, így a sablonnal
+együtt más gépre is átkerül. Új beépített műfaj a CFA4 következő kiadásaiban is jöhet, minden
+nyelvre lefordítva (Q15).
+
 Szerkesztés és mentés: a beépített sablon megnyitva szerkeszthető, mentéskor **új néven**
 felhasználói vagy projekt-sablonként (vagy `.cfa4credtpl` fájlként) kerül el; a beépített
 változat nem íródik felül, így mindig visszaállítható. A sablonválasztóban a műfaj a terv 3.2
