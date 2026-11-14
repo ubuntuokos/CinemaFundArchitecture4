@@ -4574,6 +4574,16 @@ export.summary	Low	低
 	Chase External Timecode	追隨外部時間碼
 	Send LTC	傳送 LTC
 	Send MIDI Timecode	傳送 MIDI 時間碼
+
+# Live studio preview (CFA4-LIVE-STUDIO-001 S0)
+	Live studio preview	直播攝影棚預覽
+	Live studio: stopped	直播攝影棚：已停止
+	Live studio: {state}	直播攝影棚：{state}
+	Live studio: {error}	直播攝影棚：{error}
+	restarted after {count} crashes (last: {exit})	在 {count} 次當機後已重新啟動（最近一次：{exit}）
+	software backend: {reason}	軟體後端：{reason}
+	Start studio	啟動攝影棚
+	Stop studio	停止攝影棚
 # Auto Color, Auto Contrast, Auto Levels (EffectsSDK review)
 	Auto Color	自動色彩
 	Auto Contrast	自動對比

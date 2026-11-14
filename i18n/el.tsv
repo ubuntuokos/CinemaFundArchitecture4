@@ -4577,6 +4577,16 @@ export.summary	Low	χαμηλή
 	Chase External Timecode	Παρακολούθηση εξωτερικού χρονοκώδικα
 	Send LTC	Αποστολή LTC
 	Send MIDI Timecode	Αποστολή χρονοκώδικα MIDI
+
+# Live studio preview (CFA4-LIVE-STUDIO-001 S0)
+	Live studio preview	Προεπισκόπηση ζωντανού στούντιο
+	Live studio: stopped	Ζωντανό στούντιο: σταματημένο
+	Live studio: {state}	Ζωντανό στούντιο: {state}
+	Live studio: {error}	Ζωντανό στούντιο: {error}
+	restarted after {count} crashes (last: {exit})	επανεκκίνηση μετά από {count} καταρρεύσεις (τελευταία: {exit})
+	software backend: {reason}	λογισμικό υποστήριξης: {reason}
+	Start studio	Έναρξη στούντιο
+	Stop studio	Διακοπή στούντιο
 # Auto Color, Auto Contrast, Auto Levels (EffectsSDK review)
 	Auto Color	Αυτόματο χρώμα
 	Auto Contrast	Αυτόματη αντίθεση

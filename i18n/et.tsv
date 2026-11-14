@@ -4577,6 +4577,16 @@ export.summary	Low	madal
 	Chase External Timecode	Järgi välist ajakoodi
 	Send LTC	Saada LTC
 	Send MIDI Timecode	Saada MIDI-ajakood
+
+# Live studio preview (CFA4-LIVE-STUDIO-001 S0)
+	Live studio preview	Otsestuudio eelvaade
+	Live studio: stopped	Otsestuudio: peatatud
+	Live studio: {state}	Otsestuudio: {state}
+	Live studio: {error}	Otsestuudio: {error}
+	restarted after {count} crashes (last: {exit})	taaskäivitatud pärast {count} krahhi (viimane: {exit})
+	software backend: {reason}	tarkvaraline taustasüsteem: {reason}
+	Start studio	Käivita stuudio
+	Stop studio	Peata stuudio
 # Auto Color, Auto Contrast, Auto Levels (EffectsSDK review)
 	Auto Color	Automaatne värv
 	Auto Contrast	Automaatne kontrast

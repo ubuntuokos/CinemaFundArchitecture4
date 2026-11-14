@@ -4578,6 +4578,16 @@ export.summary	Low	nizka
 	Chase External Timecode	Sledi zunanji časovni kodi
 	Send LTC	Pošlji LTC
 	Send MIDI Timecode	Pošlji časovno kodo MIDI
+
+# Live studio preview (CFA4-LIVE-STUDIO-001 S0)
+	Live studio preview	Predogled studia v živo
+	Live studio: stopped	Studio v živo: ustavljen
+	Live studio: {state}	Studio v živo: {state}
+	Live studio: {error}	Studio v živo: {error}
+	restarted after {count} crashes (last: {exit})	znova zagnan po {count} sesutjih (zadnje: {exit})
+	software backend: {reason}	programsko zaledje: {reason}
+	Start studio	Zaženi studio
+	Stop studio	Ustavi studio
 # Auto Color, Auto Contrast, Auto Levels (EffectsSDK review)
 	Auto Color	Samodejna barva
 	Auto Contrast	Samodejni kontrast

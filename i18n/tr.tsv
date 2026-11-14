@@ -4576,6 +4576,16 @@ export.summary	Low	düşük
 	Chase External Timecode	Harici Zaman Kodunu Takip Et
 	Send LTC	LTC Gönder
 	Send MIDI Timecode	MIDI Zaman Kodu Gönder
+
+# Live studio preview (CFA4-LIVE-STUDIO-001 S0)
+	Live studio preview	Canlı stüdyo önizlemesi
+	Live studio: stopped	Canlı stüdyo: durduruldu
+	Live studio: {state}	Canlı stüdyo: {state}
+	Live studio: {error}	Canlı stüdyo: {error}
+	restarted after {count} crashes (last: {exit})	{count} çökmeden sonra yeniden başlatıldı (son: {exit})
+	software backend: {reason}	yazılım arka ucu: {reason}
+	Start studio	Stüdyoyu başlat
+	Stop studio	Stüdyoyu durdur
 # Auto Color, Auto Contrast, Auto Levels (EffectsSDK review)
 	Auto Color	Otomatik Renk
 	Auto Contrast	Otomatik Kontrast
