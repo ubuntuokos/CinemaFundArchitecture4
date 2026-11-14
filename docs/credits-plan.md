@@ -6,7 +6,7 @@
 átdolgozva a CFA4 valós állapotára, a [`VISION.md`](../VISION.md) prioritásaira és a
 [GPL-3.0-or-later licencre](licensing.md).  
 **Kapcsolódó:** [ADR F10](adr/ADR-F10-CREDITS-SPREADSHEET-2026-10-23.md), [credits.md](credits.md), [ADR 0003](adr/ADR-0003-aswf-and-conversion-sources.md) (GPL-3 források)  
-**Folytatás (jóváhagyva 2026-11-14):** [CFA4-TITLE-CREDITS-001 1.0](plans/CFA4-TITLE-CREDITS-001-1.0.md), a C1–C14-gyel való megfeleltetés és a nyitott kérdések a [CFA4-illesztési mellékletben](plans/CFA4-TITLE-CREDITS-001-1.0-CFA4-ILLESZTES.md)
+**Folytatás (jóváhagyva 2026-11-14):** [CFA4-TITLE-CREDITS-001 1.1](plans/CFA4-TITLE-CREDITS-001-1.1.md) (az 1.0 a döntésekkel; [1.0](plans/CFA4-TITLE-CREDITS-001-1.0.md)), a C1–C15-tel való megfeleltetés és a döntések (Q1–Q18) a [CFA4-illesztési mellékletben](plans/CFA4-TITLE-CREDITS-001-1.0-CFA4-ILLESZTES.md)
 
 ## 1. Miért kell módosítani
 
