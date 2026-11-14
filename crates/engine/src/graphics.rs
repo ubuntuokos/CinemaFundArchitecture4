@@ -1043,6 +1043,9 @@ pub fn commands() -> Vec<CommandSpec> {
         spec("graphics.textAnimator.wordByWord", "Word by Word", &["Graphics and Titles", "Text Animator"], None, ANIM_PARAMS, has_text_layer, |s, p| {
             set_text_animator(s, p, 3)
         }),
+        spec("graphics.textAnimator.scramble", "Scramble", &["Graphics and Titles", "Text Animator"], None, ANIM_PARAMS, has_text_layer, |s, p| {
+            set_text_animator(s, p, 4)
+        }),
         spec(
             "graphics.newText",
             "Text",
