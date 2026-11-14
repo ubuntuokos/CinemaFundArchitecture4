@@ -16,6 +16,7 @@ mod demux;
 mod error;
 mod mux;
 mod source;
+mod vvcc;
 
 pub use bytes::FourCc;
 pub use codec::{
@@ -26,3 +27,4 @@ pub use demux::{Chapter, Edit, Metadata, Mp4File, Sample, SampleGroup, Track, Tr
 pub use error::{Error, Result};
 pub use mux::{Brand, FragmentedWriter, MAX_CHAPTER_TITLE_BYTES, MAX_CHAPTERS, Mp4Writer, TrackConfig, WriteSample, WriterOptions};
 pub use source::ByteSource;
+pub use vvcc::{VvcConfig, VvcNalArray, VvcOperatingPoint, VvcPtl};

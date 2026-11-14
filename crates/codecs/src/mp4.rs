@@ -703,6 +703,7 @@ fn codec_label(c: &CodecConfig) -> String {
         CodecConfig::Unknown { fourcc, .. } if fourcc.0 == *b"v210" => "Uncompressed YUV 4:2:2 10-bit".into(),
         CodecConfig::Unknown { fourcc, .. } if fourcc.0 == *b"a3ds" => "Auro-CX (unsupported)".into(),
         CodecConfig::Av2 { .. } => "AV2 (unsupported)".into(),
+        CodecConfig::Vvc(c) => vvc_label(c),
         CodecConfig::Unknown { fourcc, .. } if fourcc.0 == *b"drac" => "VC-2 / Dirac".into(),
         CodecConfig::Unknown { fourcc, .. } if fourcc.0 == *b"samr" => "AMR-NB".into(),
         CodecConfig::Unknown { fourcc, .. } if fourcc.0 == *b"sawb" => "AMR-WB".into(),
@@ -794,6 +795,33 @@ fn hevc_format(h: &cfa4_isobmff::HevcConfig) -> (u32, u32) {
     }
 }
 
+/// `(chroma_format_idc, bit depth)` of a `vvcC` record: from its SPS, else from the record.
+fn vvc_format(c: &cfa4_isobmff::VvcConfig) -> Option<(u32, u32)> {
+    if let Some(sps) = c.sps().first().and_then(|n| cfa4_vvc::Sps::parse(n).ok()) {
+        return Some((u32::from(sps.chroma_format_idc), u32::from(sps.bit_depth)));
+    }
+    c.operating_point.as_ref().map(|op| (u32::from(op.chroma_format_idc), u32::from(op.bit_depth)))
+}
+
+/// "VVC (Main 10)" and the like; the profile from the record or the SPS. Only the version 1
+/// profiles are named (the values VVdeC knows); others are plain "VVC".
+fn vvc_label(c: &cfa4_isobmff::VvcConfig) -> String {
+    let idc =
+        c.operating_point.as_ref().map(|op| op.ptl.general_profile_idc).or_else(|| c.sps().first().and_then(|n| cfa4_vvc::Sps::parse(n).ok()?.profile_idc));
+    let profile = match idc {
+        Some(1) => "Main 10",
+        Some(65) => "Main 10 Still Picture",
+        Some(17) => "Multilayer Main 10",
+        Some(81) => "Multilayer Main 10 Still Picture",
+        Some(33) => "Main 10 4:4:4",
+        Some(97) => "Main 10 4:4:4 Still Picture",
+        Some(49) => "Multilayer Main 10 4:4:4",
+        Some(113) => "Multilayer Main 10 4:4:4 Still Picture",
+        _ => return "VVC".into(),
+    };
+    format!("VVC ({profile})")
+}
+
 fn pixfmt_label(c: &CodecConfig) -> String {
     match c {
         CodecConfig::Avc(a) => avc_format(a).map(|(chroma, bits)| yuv_label(chroma, bits)).unwrap_or_default(),
@@ -813,6 +841,7 @@ fn pixfmt_label(c: &CodecConfig) -> String {
             let chroma = cfa4_apv::ChromaFormat::from_idc(a.chroma_format_idc).unwrap_or(cfa4_apv::ChromaFormat::Yuv422);
             crate::apv::apv_pixfmt_label(chroma, a.bit_depth_minus8.saturating_add(8))
         }
+        CodecConfig::Vvc(c) => vvc_format(c).map(|(chroma, bits)| yuv_label(chroma, bits)).unwrap_or_default(),
         // 4444 until the first frame header says whether it codes alpha (`open_reader`)
         CodecConfig::ProRes { fourcc } if fourcc.0[2] == b'4' => "YUV 4:4:4 12-bit".into(),
         CodecConfig::ProRes { .. } => "YUV 4:2:2 10-bit".into(),

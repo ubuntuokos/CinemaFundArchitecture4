@@ -15,11 +15,11 @@ workspace = true
 av2-external = ["dep:cfa4-av2"]
 # Early VVC (H.266) decoding through the external `cfa4-vvc-decode` helper (ADR 0013, VVC-02; also
 # needs CFA4_VVC_DECODER). Off by default until the router registration after G2.
-vvc-external = ["dep:cfa4-vvc"]
+vvc-external = []
 
 [dependencies]
 cfa4-av2 = { workspace = true, optional = true }
-cfa4-vvc = { workspace = true, optional = true }
+cfa4-vvc = { workspace = true }
 cfa4-time = { workspace = true }
 cfa4-color = { workspace = true }
 cfa4-frame = { workspace = true }
@@ -86,4 +86,8 @@ required-features = ["av2-external"]
 
 [[test]]
 name = "vvc_external"
+required-features = ["vvc-external"]
+
+[[test]]
+name = "vvc_mp4_source"
 required-features = ["vvc-external"]
