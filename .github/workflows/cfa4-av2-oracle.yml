@@ -15,6 +15,7 @@ on:
       - "crates/testkit/**"
       - "crates/av2/**"
       - "crates/codecs/src/av2*"
+      - "crates/codecs/src/external_decoder.rs"
       - "crates/codecs/tests/av2_external.rs"
       - "packaging/av2-decode/**"
       - "scripts/dev/av2-*"

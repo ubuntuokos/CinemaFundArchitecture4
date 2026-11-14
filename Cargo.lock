@@ -1221,6 +1221,7 @@ dependencies = [
  "cfa4-utvideo",
  "cfa4-vp8",
  "cfa4-vp9",
+ "cfa4-vvc",
  "image",
  "log",
  "rayon",

@@ -1,0 +1,7 @@
+{
+  "description": "The VVdeC release the cfa4-vvc-decode helper is built from (ADR 0013; measured in docs/plans/CFA4-VVC-00-REPORT-2026-11-14.md). Change it only together with a new conformance run.",
+  "repo": "https://github.com/fraunhoferhhi/vvdec.git",
+  "commit": "cb1a3efd88b2ebd1141f1a9ca87c774f05de9249",
+  "version": "v3.2.1",
+  "license": "BSD-3-Clause-Clear"
+}

@@ -13,9 +13,13 @@ workspace = true
 # Early AV2 decoding through the external `cfa4-av2-decode` helper (ADR 0010, AV2-LAB; also
 # needs CFA4_AV2_DECODER). Off by default until the router registration after G1 (plan X/7).
 av2-external = ["dep:cfa4-av2"]
+# Early VVC (H.266) decoding through the external `cfa4-vvc-decode` helper (ADR 0013, VVC-02; also
+# needs CFA4_VVC_DECODER). Off by default until the router registration after G2.
+vvc-external = ["dep:cfa4-vvc"]
 
 [dependencies]
 cfa4-av2 = { workspace = true, optional = true }
+cfa4-vvc = { workspace = true, optional = true }
 cfa4-time = { workspace = true }
 cfa4-color = { workspace = true }
 cfa4-frame = { workspace = true }
@@ -79,3 +83,7 @@ serde_json = { workspace = true }
 [[test]]
 name = "av2_external"
 required-features = ["av2-external"]
+
+[[test]]
+name = "vvc_external"
+required-features = ["vvc-external"]

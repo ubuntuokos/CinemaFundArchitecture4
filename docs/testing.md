@@ -134,6 +134,15 @@ cross-check ([AV2 plan](plans/AV2-CODEC-PLAN-2026-10-29.md) II.3, X/3).
   list is kept honest. It also seeks across key frames and starts decoding on a non-key unit. The same test checks that a crashing,
   hanging or garbage-writing helper is an error, and feeds mutated units to the real helper.
   `CFA4_AV2_DECODER` overrides the helper path.
+- The early VVC decoder (ADR 0013, VVC-02): `python3 scripts/dev/vvc-decoder.py build` builds
+  VVdeC at the release pinned in `packaging/vvc-decode/vvdec.json` and the `cfa4-vvc-decode`
+  helper into `target/vvc-decoder/bin` (`VVDEC_COMMIT` stamp; `CFA4_VVC_DECODER` overrides the
+  path). `cargo test -p cfa4-codecs --features vvc-external --test vvc_external` decodes a VVenC
+  stream (FFmpeg `libvvenc` fixture in `target/fixtures/vvc/`) through the helper and compares
+  every picture with FFmpeg's own VVC decoder, starts decoding at a later random-access unit,
+  and feeds mutated units to the real helper. VVdeC and `libvvenc` are restricted components
+  (`cfa4-restricted-extras`), so without them the tests print `SKIPPED`, also under
+  `CFA4_REQUIRE_ORACLES`. The JVET conformance run against VTM is the G2 entry condition.
 - CI: `.github/workflows/cfa4-av2-oracle.yml` (Ubuntu 26.04) runs only on `workflow_dispatch` or
   on a `cfa4-full-validation` label event of a PR that touches the harness or the decoder. It is
   not a required check.
