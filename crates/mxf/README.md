@@ -20,6 +20,7 @@ Implemented from the SMPTE documents (editions used):
 | SMPTE ST 381-1 | 2005 | MPEG video mapping (MPEG-2 identified, MPEG video descriptor; decoded by `cfa4-mpeg2v` in `cfa4-codecs`); writer: ES container, element keys, MPEG video descriptor, index flags |
 | SMPTE ST 381-3 | 2013 | AVC byte-stream mapping and AVC sub-descriptor |
 | SMPTE ST 382 | 2007 | AES3 and Broadcast Wave audio mapping (wave / AES3 descriptors) |
+| SMPTE ST 381-4 | 2017 | AAC in MXF (reader): essence container (Table 8), sound coding label (Tables 5–6), MPEG sound element key |
 | SMPTE ST 331 | 2011 | element data of 8-channel AES3 sound (D-10; reader and writer), ST 12-1 time code metadata of the system item |
 | SMPTE ST 385 | 2012 | SDTI-CP compatible system item (writer: system metadata pack, package metadata set) |
 | SMPTE ST 2067-201 | 2019 | IAB track files: IAB essence descriptor (set 0x7B), clip-wrapped container, element type 0x0D (labels from the SMPTE registers) |
@@ -157,7 +158,9 @@ let pcm = mxf.read_pcm(&file, a, 48_000, 1920)?;       // planar f32, sample-exa
   little-endian 8/16/24/32-bit PCM (wave / AES3 descriptors) and ST 331 AES3 elements (D-10).
   Immersive Audio (IAB, `Codec::Iab`): one `Sample` per IABitstream frame, from frame-wrapped
   elements, the index of a clip-wrapped element, or, without an index, the frames' own
-  tag-length framing; decoded by `cfa4-iab`.
+  tag-length framing; decoded by `cfa4-iab`. AAC (`Codec::Aac`, ST 381-4: the AAC essence
+  container or the MPEG-2 / MPEG-4 AAC sound coding label): one `Sample` per element; the audio
+  frames (ADTS or LATM/LOAS; ADIF is not read) are decoded back to back by `cfa4-codecs`.
 - **Timecode.** The material package timecode component (start frame count, rounded base,
   drop frame), falling back to the file package's; `Timecode::format` gives `HH:MM:SS:FF` /
   `HH:MM:SS;FF`.

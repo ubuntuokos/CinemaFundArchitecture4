@@ -341,6 +341,62 @@ fn build_436(rate: (u32, u32), frames: &[Vec<u8>], vbi: bool) -> Vec<u8> {
     f
 }
 
+/// An OP1a file with one AAC sound track (ST 381-4) at edit rate `rate`: AAC essence container
+/// mapping kind `mapping` (17h ADTS, 18h LATM/LOAS), `elements` frame wrapped (one element per
+/// edit unit) or, with `clip`, the one element clip wrapped; a generic sound descriptor with the
+/// MPEG-4 AAC coding label, `sample_rate` and `channels`.
+pub fn build_aac(rate: (u32, u32), sample_rate: u32, channels: u32, mapping: u8, elements: &[Vec<u8>], clip: bool) -> Vec<u8> {
+    let container = ul(&[0x06, 0x0E, 0x2B, 0x34, 0x04, 0x01, 0x01, 0x0D, 0x0D, 0x01, 0x03, 0x01, 0x02, mapping, if clip { 0x02 } else { 0x01 }, 0x00]);
+    let coding = ul(&[0x06, 0x0E, 0x2B, 0x34, 0x04, 0x01, 0x01, 0x0D, 0x04, 0x02, 0x02, 0x02, 0x04, 0x04, 0x01, 0x00]);
+    let element_type = if clip { 0x06 } else { 0x05 };
+    let key = ul(&[0x06, 0x0E, 0x2B, 0x34, 0x01, 0x02, 0x01, 0x01, 0x0D, 0x01, 0x03, 0x01, 0x16, 0x01, element_type, 0x01]);
+    let number = u32::from_be_bytes([0x16, 0x01, element_type, 0x01]);
+    let dur = if clip { 1 } else { elements.len() as i64 };
+    let mut r = rate.0.to_be_bytes().to_vec();
+    r.extend_from_slice(&rate.1.to_be_bytes());
+    let mut md = Vec::new();
+    klv(&mut md, ul(&[0x06, 0x0E, 0x2B, 0x34, 0x02, 0x05, 0x01, 0x01, 0x0D, 0x01, 0x02, 0x01, 0x01, 0x05, 0x01, 0x00]), &batch(&[]));
+    let mut pre = LocalSet::new(1);
+    pre.p(0x3B03, &uuid(2)).p(0x3B09, &OP1A);
+    klv(&mut md, set_key(0x2F), &pre.0);
+    let mut mp = LocalSet::new(3);
+    mp.p(0x4401, &umid(1)).p(0x4403, &batch(&[&uuid(10)]));
+    klv(&mut md, set_key(0x36), &mp.0);
+    let rated_track = |uid: u8, number: u32, seq: u8| {
+        let mut s = LocalSet::new(uid);
+        s.p(0x4801, &2u32.to_be_bytes()).p(0x4804, &number.to_be_bytes()).p(0x4B01, &r).p(0x4B02, &0i64.to_be_bytes()).p(0x4803, &uuid(seq));
+        s.0
+    };
+    klv(&mut md, set_key(0x3B), &rated_track(10, 0, 20));
+    klv(&mut md, set_key(0x0F), &sequence(20, SOUND_DEF, dur, 30));
+    klv(&mut md, set_key(0x11), &source_clip(30, SOUND_DEF, dur, umid(2), 2));
+    let mut fp = LocalSet::new(4);
+    fp.p(0x4401, &umid(2)).p(0x4403, &batch(&[&uuid(11)])).p(0x4701, &uuid(40));
+    klv(&mut md, set_key(0x37), &fp.0);
+    klv(&mut md, set_key(0x3B), &rated_track(11, number, 21));
+    klv(&mut md, set_key(0x0F), &sequence(21, SOUND_DEF, dur, 31));
+    klv(&mut md, set_key(0x11), &source_clip(31, SOUND_DEF, dur, [0; 32], 0));
+    let mut desc = LocalSet::new(40);
+    let mut sr = sample_rate.to_be_bytes().to_vec();
+    sr.extend_from_slice(&1u32.to_be_bytes());
+    desc.p(0x3001, &r).p(0x3002, &dur.to_be_bytes()).p(0x3004, &container).p(0x3D03, &sr).p(0x3D07, &channels.to_be_bytes()).p(0x3D06, &coding);
+    klv(&mut md, set_key(0x42), &desc.0);
+    let mut ecd = LocalSet::new(5);
+    ecd.p(0x2701, &umid(2)).p(0x3F07, &1u32.to_be_bytes()).p(0x3F06, &0u32.to_be_bytes());
+    klv(&mut md, set_key(0x23), &ecd.0);
+
+    let mut f = partition_with(2, 0x04, 0, 0, md.len() as u64, &[container]);
+    f.extend_from_slice(&md);
+    let at = f.len() as u64;
+    f.extend_from_slice(&partition_with(3, 0x04, at, 1, 0, &[container]));
+    for v in elements {
+        klv(&mut f, key, v);
+    }
+    let at = f.len() as u64;
+    f.extend_from_slice(&partition_with(4, 0x04, at, 0, 0, &[container]));
+    f
+}
+
 /// A material sequence component of [`build_edit_list`]: a source clip into file package `pkg`
 /// (0 or 1) from `start` for `dur` edit units, or a filler.
 #[derive(Clone, Copy)]
