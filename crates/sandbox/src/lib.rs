@@ -2,14 +2,15 @@
 //!
 //! When a hostile media file, project, web page, network stream, plug-in or AI model breaks one part
 //! of CFA4, the damage must stay inside that one process: it must not read the user's other files
-//! (`~/.ssh`, browser profiles, documents), start programs or open network connections. Every CFA4
-//! process locks itself down at start-up with the profile of its [`ProcessKind`]:
+//! (`~/.ssh`, browser profiles, documents), start programs or open network connections. This crate
+//! gives every CFA4 [`ProcessKind`] a profile it can lock itself down with at start-up (applied by
+//! the engine from phase B3, by the media host from phase B4):
 //!
 //! - **Landlock** (file-system access, TCP ports on ABI ≥ 4, signal and abstract-socket scoping on
 //!   ABI ≥ 6), through the safe `landlock` crate;
 //! - **seccomp-bpf** (a deny list of system calls: program start, debugging other processes, kernel
-//!   module and namespace calls, IPv4/IPv6 sockets where the process has no network), through the
-//!   safe `seccompiler` crate.
+//!   module and namespace calls, IPv4/IPv6 sockets where the process has no network, UDP and raw
+//!   sockets where it has loopback TCP only), through the safe `seccompiler` crate.
 //!
 //! Both are unprivileged and irreversible: once applied, a process (and every child it starts)
 //! keeps them. Apply a profile early, before the process opens untrusted input and before it starts
@@ -118,8 +119,9 @@ pub fn missing(profile: &Profile, support: &Support) -> Vec<String> {
         }
         return out;
     }
-    if support.landlock_abi < 1 {
-        out.push("Landlock (file-system rules)".to_string());
+    // ABI 3 also governs truncation: below it a process could truncate files it may only read
+    if support.landlock_abi < 3 {
+        out.push("Landlock ABI 3 (file truncation rules)".to_string());
     }
     if profile.network.port_limited() && support.landlock_abi < 4 {
         out.push("Landlock ABI 4 (network port rules)".to_string());
@@ -144,19 +146,19 @@ pub fn apply(profile: &Profile, mode: Mode) -> Result<Enforcement, SandboxError>
     if mode == Mode::Strict && !gaps.is_empty() {
         return Err(SandboxError::Missing(gaps));
     }
-    let enforcement = apply_impl(profile, &support)?;
+    let enforcement = apply_impl(profile, &support, mode == Mode::Strict)?;
     let mut guard = SELF.lock().unwrap_or_else(std::sync::PoisonError::into_inner);
     *guard = Some(SelfState { kind: profile.kind, mode, enforcement: enforcement.clone() });
     Ok(enforcement)
 }
 
 #[cfg(target_os = "linux")]
-fn apply_impl(profile: &Profile, support: &Support) -> Result<Enforcement, SandboxError> {
-    linux::apply(profile, support)
+fn apply_impl(profile: &Profile, support: &Support, strict: bool) -> Result<Enforcement, SandboxError> {
+    linux::apply(profile, support, strict)
 }
 
 #[cfg(not(target_os = "linux"))]
-fn apply_impl(_: &Profile, _: &Support) -> Result<Enforcement, SandboxError> {
+fn apply_impl(_: &Profile, _: &Support, _: bool) -> Result<Enforcement, SandboxError> {
     Err(SandboxError::Unsupported)
 }
 
@@ -174,6 +176,7 @@ pub fn status(ctx: &Context) -> Value {
                 "label": kind.label(),
                 "read": p.read,
                 "write": p.write,
+                "outputs": p.outputs,
                 "exec": p.exec,
                 "network": p.network,
                 "gpu": p.gpu,

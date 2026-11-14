@@ -4,7 +4,8 @@ name: CFA4 fuzzing (nightly)
 # and credits readers under libFuzzer, every night, in six shards. Not a PR check: automatic PR
 # checks stay quick (AGENTS.md CFA4 section); run it by hand with workflow_dispatch.
 # The corpus grows from night to night through the Actions cache; a finding fails the shard and the
-# crashing input is printed (base64) in the log, to be turned into a regression test (AGENTS.md §0.8).
+# crashing input is printed (base64, first 64 KiB) in the log and uploaded whole as an artifact,
+# to be turned into a regression test (AGENTS.md §0.8).
 
 on:
   schedule:
@@ -92,4 +93,15 @@ jobs:
             [ -f "$f" ] || continue
             echo "== $f ($(stat -c %s "$f") bytes)"
             head -c 65536 "$f" | base64 -w0; echo
+            [ "$(stat -c %s "$f")" -le 65536 ] || echo "(first 64 KiB only; the whole file is in the fuzz-findings artifact)"
           done
+      # the whole inputs (the log above prints at most 64 KiB of each), to reproduce with
+      # `cargo fuzz run <target> <file>`
+      - name: Upload findings
+        if: failure()
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: fuzz-findings-shard-${{ matrix.shard }}
+          path: fuzz/artifacts
+          if-no-files-found: ignore
+          retention-days: 14

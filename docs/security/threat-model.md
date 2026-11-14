@@ -72,12 +72,12 @@ azt, amit a profil megad.
 
 | Folyamat (`kind`) | Fájlrendszer | Hálózat | Programindítás | seccomp |
 |---|---|---|---|---|
-| Qt GUI (`qtGui`) | olvas: projekt, betűk; ír: beállítások, futásidejű könyvtár | csak a megadott helyi portok | csak a motor | tiltólista |
-| Motor (`engine`) | olvas: hozzáadott média; ír: projekt, gyorsítótár, beállítások, export célja | csak a megadott helyi portok | csak a saját segédfolyamatai | tiltólista |
+| Qt GUI (`qtGui`) | olvas: projekt, betűk; ír: beállítások, futásidejű könyvtár | csak a megadott helyi TCP-portok, UDP nincs | csak a motor | tiltólista + `socket(AF_INET*, SOCK_DGRAM/SOCK_RAW)` |
+| Motor (`engine`) | olvas: hozzáadott média; ír: projekt, gyorsítótár, beállítások, az exportfájl (csak maga a fájl) | csak a megadott helyi TCP-portok, UDP nincs | csak a saját segédfolyamatai | tiltólista + `socket(AF_INET*, SOCK_DGRAM/SOCK_RAW)` |
 | Médiaszolgáltató (`mediaHost`) | csak a megnyitott fájl, olvasásra | nincs (IPv4/IPv6 socket sem) | nincs | tiltólista + `execve` + `socket(AF_INET*)` |
-| Stúdió (`studioHost`) | olvas: jelenet forrásai; ír: felvétel célja | bármi (streamelési célok, bemenetek) | a Chromium segédfolyamata | tiltólista, de névterek engedve (Chromium-sandbox) |
+| Stúdió (`studioHost`) | olvas: jelenet forrásai; ír: a felvétel fájlja | bármi (streamelési célok, bemenetek) | a Chromium segédfolyamata | tiltólista, de névterek engedve (Chromium-sandbox) |
 | Böngészőforrás (`browserSource`) | a Chromium-sandbox és az AppArmor zárja (B6), nem a `cfa4-sandbox` | | | |
-| Letöltő (`fetch`) | ír: csak a letöltés célja | csak kimenő 443-as port | nincs | tiltólista + `execve` |
+| Letöltő (`fetch`) | ír: csak a letöltés célja | kimenő TCP csak a 443-as portra; UDP a névfeloldáshoz | nincs | tiltólista + `execve` + `socket(AF_INET*, SOCK_RAW)` |
 | Bővítmény (`pluginHost`) | olvas: a bővítmény saját fájljai | nincs | nincs | tiltólista + `execve` + `socket(AF_INET*)` |
 | Modell-átalakító (`modelConverter`) | olvas: forrásmodell; ír: a kimeneti fájl | nincs | nincs | tiltólista + `execve` + `socket(AF_INET*)` |
 
@@ -94,6 +94,24 @@ ABI-ja, a seccomp-szűrő és az AppArmor gyárilag megvan; a `security.status` 
 védelem nevével, és a hozzá tartozó kockázatos rész nem indul. A B1 tesztje ezt egy 6.18-as
 rendszermagon (Landlock 8-as ABI) valódi korlátozással ellenőrizte: a médiaszolgáltató profiljával
 futó folyamat nem olvassa a `~/.ssh`-t, nem indít programot, nem nyit IPv4/IPv6 socketet.
+
+**Egyetlen kimeneti fájl:** az exportfájlt, a felvételt és a modell-átalakító kimenetét a profil
+fájlként kezeli (`Profile::outputs`). Ha még nem létezik, a `cfa4-sandbox` a korlátozás előtt üresen
+létrehozza (`create_new`, meglévő útvonalat vagy linket nem követ), és csak magára a fájlra ad jogot,
+a könyvtárára soha: egy `~/model.safetensors` kimenet nem nyitja meg a `~/.ssh`-t.
+
+**UDP:** a Landlock (a 8-as ABI-ig) csak a TCP-portokat korlátozza. Ezért a csak helyi TCP-t használó
+folyamatok (Qt GUI, motor) UDP- és nyers socketet sem nyithatnak (seccomp). A letöltőnek a
+névfeloldáshoz UDP kell (a rendszer feloldója, gyakran `127.0.0.53`), így egy feltört letöltő UDP-n
+tetszőleges címre küldhet adatot. Ez elfogadott maradó kockázat, amíg a Landlock nem kezeli az UDP-t;
+a letöltő a felhasználó fájljai közül semmit sem olvas, csak a letöltés célját írja.
+
+**Landlock ABI:** a `security.status` a kernel által elfogadott jogokból állapítja meg az ABI-t
+(fájlrendszer-jogok, a 4-es ABI hálózati jogai, a 6-os ABI hatókörei); a 7-es és a 8-as ABI csak
+naplózási és szálszinkronizálási jelzőket ad, ezért a próba legfeljebb 6-ot jelez, a ténylegesen
+használt ABI-t pedig az alkalmazás után az `enforcement` adja. Szigorú módban a 3-as ABI (a fájlcsonkolás
+korlátozása) a minimum, és minden szabály `HardRequirement` mellett kerül fel: ha a kernel nem
+érvényesíti teljesen, az `apply` hibát ad.
 
 ## 5. Fázisok és maradó kockázat
 

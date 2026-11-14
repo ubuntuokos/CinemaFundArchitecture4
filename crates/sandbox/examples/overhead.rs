@@ -25,22 +25,31 @@ fn median(mut v: Vec<f64>) -> f64 {
     v.get(v.len() / 2).copied().unwrap_or(0.0)
 }
 
-/// One round over the files; returns nanoseconds per file.
-fn round(dir: &Path, files: usize) -> f64 {
+/// The bounds of the command line's `files` and `rounds` (also for the child's arguments).
+const FILES: (usize, usize) = (1, 100_000);
+const ROUNDS: (usize, usize) = (1, 1000);
+
+fn bounded(arg: Option<&String>, default: usize, (lo, hi): (usize, usize)) -> usize {
+    arg.and_then(|s| s.parse().ok()).unwrap_or(default).clamp(lo, hi)
+}
+
+/// One round over the files; returns nanoseconds per file. Every operation must succeed: a refused
+/// read (a confinement that denies the files) would otherwise time less work.
+fn round(dir: &Path, files: usize) -> Result<f64, String> {
     let t = Instant::now();
     let mut bytes = 0usize;
     for i in 0..files {
         let p = dir.join(format!("f{i:05}.bin"));
-        if let Ok(b) = std::fs::read(&p) {
-            bytes += b.len();
-        }
-        let _ = std::fs::metadata(&p);
+        bytes += std::fs::read(&p).map_err(|e| format!("read {}: {e}", p.display()))?.len();
+        std::fs::metadata(&p).map_err(|e| format!("stat {}: {e}", p.display()))?;
     }
-    if let Ok(rd) = std::fs::read_dir(dir) {
-        bytes += rd.count();
+    let rd = std::fs::read_dir(dir).map_err(|e| format!("list {}: {e}", dir.display()))?;
+    for entry in rd {
+        entry.map_err(|e| format!("list {}: {e}", dir.display()))?;
+        bytes += 1;
     }
     std::hint::black_box(bytes);
-    t.elapsed().as_nanos() as f64 / files.max(1) as f64
+    Ok(t.elapsed().as_nanos() as f64 / files.max(1) as f64)
 }
 
 fn child(case: &str, dir: &Path, files: usize, rounds: usize) -> Result<Value, String> {
@@ -53,14 +62,14 @@ fn child(case: &str, dir: &Path, files: usize, rounds: usize) -> Result<Value, S
         other => return Err(format!("unknown case {other}")),
     };
     // warm the page cache and the dentry cache before confining
-    round(dir, files);
+    round(dir, files)?;
     let t = Instant::now();
     let enforcement = match &profile {
         Some(p) => Some(apply(p, Mode::Strict).map_err(|e| e.to_string())?),
         None => None,
     };
     let apply_us = t.elapsed().as_nanos() as f64 / 1e3;
-    let per_file: Vec<f64> = (0..rounds).map(|_| round(dir, files)).collect();
+    let per_file = (0..rounds).map(|_| round(dir, files)).collect::<Result<Vec<f64>, String>>()?;
     Ok(json!({"case": case, "applyUs": apply_us, "nsPerFile": median(per_file), "enforcement": enforcement}))
 }
 
@@ -71,15 +80,18 @@ fn main() {
             eprintln!("--child CASE DIR FILES ROUNDS");
             std::process::exit(2);
         };
-        let (files, rounds) = (files.parse().unwrap_or(1000), rounds.parse().unwrap_or(20));
+        let (files, rounds) = (bounded(Some(files), 1000, FILES), bounded(Some(rounds), 20, ROUNDS));
         match child(case, Path::new(dir), files, rounds) {
             Ok(v) => println!("{v}"),
-            Err(e) => println!("{}", json!({"case": case, "error": e})),
+            Err(e) => {
+                println!("{}", json!({"case": case, "error": e}));
+                std::process::exit(1);
+            }
         }
         return;
     }
-    let files: usize = args.get(1).and_then(|s| s.parse().ok()).unwrap_or(2000).clamp(1, 100_000);
-    let rounds: usize = args.get(2).and_then(|s| s.parse().ok()).unwrap_or(20).clamp(1, 1000);
+    let files = bounded(args.get(1), 2000, FILES);
+    let rounds = bounded(args.get(2), 20, ROUNDS);
     if let Err(e) = run(files, rounds) {
         eprintln!("overhead: {e}");
         std::process::exit(1);
@@ -87,8 +99,21 @@ fn main() {
 }
 
 fn run(files: usize, rounds: usize) -> Result<(), String> {
-    let dir: PathBuf = std::env::temp_dir().join(format!("cfa4-sandbox-overhead-{}", std::process::id()));
-    std::fs::create_dir_all(&dir).map_err(|e| e.to_string())?;
+    // `create_dir` (not `_all`) fails on an existing path: a directory or link planted under the
+    // predictable name is never written into
+    let dir: PathBuf = std::env::temp_dir().join(format!("cfa4-sandbox-overhead-{}-{}", std::process::id(), nonce()));
+    std::fs::create_dir(&dir).map_err(|e| format!("{}: {e}", dir.display()))?;
+    let result = measure(&dir, files, rounds);
+    let _ = std::fs::remove_dir_all(&dir);
+    result
+}
+
+/// A per-run suffix for the temporary directory's name.
+fn nonce() -> u128 {
+    std::time::SystemTime::now().duration_since(std::time::UNIX_EPOCH).map(|d| d.as_nanos()).unwrap_or(0)
+}
+
+fn measure(dir: &Path, files: usize, rounds: usize) -> Result<(), String> {
     for i in 0..files {
         std::fs::write(dir.join(format!("f{i:05}.bin")), [i as u8; 4096]).map_err(|e| e.to_string())?;
     }
@@ -102,17 +127,27 @@ fn run(files: usize, rounds: usize) -> Result<(), String> {
                 .output()
                 .map_err(|e| e.to_string())?;
             let v: Value = serde_json::from_slice(&out.stdout).map_err(|e| format!("{case}: {e}: {}", String::from_utf8_lossy(&out.stderr)))?;
+            // a failed run (its exit status or an `error`) is reported, never counted
+            if !out.status.success() || !v["error"].is_null() {
+                return Err(format!("{case}: run failed ({}): {}", out.status, v["error"]));
+            }
             cases.push(v);
         }
     }
-    let _ = std::fs::remove_dir_all(&dir);
-    let pick = |case: &str, key: &str| median(cases.iter().filter(|v| v["case"] == case).filter_map(|v| v[key].as_f64()).collect());
+    let pick = |case: &str, key: &str| -> Option<f64> {
+        let v: Vec<f64> = cases.iter().filter(|v| v["case"] == case).filter_map(|v| v[key].as_f64()).collect();
+        (!v.is_empty()).then(|| median(v))
+    };
     let base = pick("none", "nsPerFile");
     let summary: Vec<Value> = ["none", "pluginHost", "engine"]
         .iter()
         .map(|c| {
             let ns = pick(c, "nsPerFile");
-            json!({"case": c, "applyUs": pick(c, "applyUs"), "nsPerFile": ns, "overheadPct": if base > 0.0 { (ns / base - 1.0) * 100.0 } else { 0.0 }})
+            let overhead = match (ns, base) {
+                (Some(ns), Some(base)) if base > 0.0 => Some((ns / base - 1.0) * 100.0),
+                _ => None,
+            };
+            json!({"case": c, "applyUs": pick(c, "applyUs"), "nsPerFile": ns, "overheadPct": overhead})
         })
         .collect();
     let report = json!({

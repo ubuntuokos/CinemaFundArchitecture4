@@ -40,7 +40,10 @@ fn profiles_follow_plan_table() {
     let e = p(ProcessKind::Engine);
     assert_eq!(e.network, Network::Loopback { ports: vec![9876] });
     assert_eq!(e.exec, c.helper_exes);
-    assert!(e.write.contains(&PathBuf::from("/work/film")) && e.write.contains(&PathBuf::from("/work/out/film.mp4")));
+    assert!(e.write.contains(&PathBuf::from("/work/film")));
+    // the export is a single output file, never its directory
+    assert_eq!(e.outputs, vec![PathBuf::from("/work/out/film.mp4")]);
+    assert!(!e.write.contains(&PathBuf::from("/work/out")));
     assert!(e.read.contains(&PathBuf::from("/media/rushes")));
 
     // downloader: reads nothing of the user's, writes only the target, HTTPS out (D5)
@@ -55,7 +58,10 @@ fn profiles_follow_plan_table() {
         assert_eq!(p(k).network, Network::None, "{k:?}");
         assert!(p(k).exec.is_empty(), "{k:?}");
     }
-    assert_eq!(p(ProcessKind::ModelConverter).write, vec![PathBuf::from("/tmp/m.safetensors")]);
+    let mc = p(ProcessKind::ModelConverter);
+    assert!(mc.write.is_empty());
+    assert_eq!(mc.outputs, vec![PathBuf::from("/tmp/m.safetensors")]);
+    assert!(mc.covers(&PathBuf::from("/tmp/m.safetensors")) && !mc.covers(&PathBuf::from("/tmp/other")), "only the output file");
     assert!(p(ProcessKind::PluginHost).write.is_empty());
 
     // only the studio host goes out to the network
@@ -70,7 +76,7 @@ fn no_profile_reads_home_by_default() {
     let empty = Context::default();
     for k in ProcessKind::ALL {
         let p = Profile::for_process(k, &empty);
-        assert!(p.read.is_empty() && p.write.is_empty() && p.exec.is_empty(), "{k:?}: {p:?}");
+        assert!(p.read.is_empty() && p.write.is_empty() && p.outputs.is_empty() && p.exec.is_empty(), "{k:?}: {p:?}");
     }
     for s in profile::SYSTEM_READ {
         assert!(!s.starts_with("/home") && !s.starts_with("/root") && *s != "/proc", "{s}");
@@ -97,6 +103,13 @@ fn strict_mode_names_what_is_missing() {
     assert_eq!(m.len(), 3, "{m:?}");
     assert!(m.iter().any(|s| s.contains("seccomp")));
 
+    // ABI 1 and 2 leave truncation unchecked: strict mode needs ABI 3 for every profile
+    for abi in [1, 2] {
+        let early = Support { landlock_abi: abi, seccomp: true, ..Support::default() };
+        let m = missing(&Profile::for_process(ProcessKind::StudioHost, &c), &early);
+        assert_eq!(m, vec!["Landlock ABI 3 (file truncation rules)".to_string()], "ABI {abi}");
+    }
+
     // ABI 3: file rules but no port rules; port-limited profiles miss them, unrestricted ones don't
     let old = Support { landlock_abi: 3, seccomp: true, ..Support::default() };
     assert_eq!(missing(&engine, &old), vec!["Landlock ABI 4 (network port rules)".to_string()]);
@@ -120,7 +133,7 @@ fn status_lists_every_process_kind() {
     let procs = v["processes"].as_array().unwrap();
     assert_eq!(procs.len(), ProcessKind::ALL.len());
     for p in procs {
-        for k in ["kind", "label", "read", "write", "exec", "network", "gpu", "canStart", "missing"] {
+        for k in ["kind", "label", "read", "write", "outputs", "exec", "network", "gpu", "canStart", "missing"] {
             assert!(!p[k].is_null(), "{k} in {p}");
         }
     }
@@ -142,4 +155,16 @@ fn seccomp_programs_build_for_every_kind() {
     let none = linux::seccomp_program(&Profile::for_process(ProcessKind::MediaHost, &c)).unwrap();
     let any = linux::seccomp_program(&Profile::for_process(ProcessKind::StudioHost, &c)).unwrap();
     assert!(none.len() > any.len());
+}
+
+/// The `socket` rules per network: no network refuses IP and packet sockets outright; loopback
+/// also loses UDP and raw sockets (Landlock restricts TCP ports only); outbound keeps UDP for DNS.
+#[cfg(target_os = "linux")]
+#[test]
+fn socket_rules_follow_the_network() {
+    let n = |network: Network| linux::socket_rules_len(&network);
+    assert_eq!(n(Network::None), 3);
+    assert_eq!(n(Network::Loopback { ports: vec![9876] }), 1 + 2 * 2, "packet + IPv4/IPv6 x datagram/raw");
+    assert_eq!(n(Network::Outbound { ports: vec![443] }), 1 + 2, "packet + IPv4/IPv6 raw");
+    assert_eq!(n(Network::Any), 0);
 }

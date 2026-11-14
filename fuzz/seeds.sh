@@ -73,6 +73,8 @@ ff $V -frames:v 1 -c:v hap -f rawvideo "$T/a.hap"
 ff $V -frames:v 1 -c:v utvideo -f rawvideo "$T/a.utvideo"
 ff $V -frames:v 1 -c:v huffyuv -pix_fmt yuv422p -f rawvideo "$T/a.huffyuv"
 ff $V -frames:v 1 -c:v ffv1 -level 1 -f rawvideo "$T/a.ffv1"
+# a key frame and the frame after it, one file per packet (the harness decodes a packet sequence)
+ff $V -frames:v 2 -c:v ffv1 -level 1 -g 2 -f image2 "$T/ffv1-%d.bin"
 ff $A -c:a aac -f adts "$T/a.adts"
 ff $A -c:a ac3 "$T/a.ac3"
 ff $A -c:a mp2 -f mp2 "$T/a.mp2"
@@ -187,9 +189,11 @@ if rd("a.utvideo"):
 # huffyuv: 64x48, 16 bits per pixel (index 0), no extradata
 if rd("a.huffyuv"):
     put("huffyuv", "yuy2-64x48", side(64) + side(48) + b"\x00\x00" + rd("a.huffyuv"))
-# ffv1 level 1: no configuration record
+# ffv1 level 1: no configuration record, then length-prefixed packets
 if rd("a.ffv1"):
-    put("ffv1", "v1-64x48", side(64) + side(48) + b"\x00" + rd("a.ffv1"))
+    put("ffv1", "v1-64x48", side(64) + side(48) + b"\x00" + packets([rd("a.ffv1")]))
+if rd("ffv1-1.bin") and rd("ffv1-2.bin"):
+    put("ffv1", "v1-64x48-key-then-delta", side(64) + side(48) + b"\x00" + packets([rd("ffv1-1.bin"), rd("ffv1-2.bin")]))
 # aac: AudioSpecificConfig of AAC-LC 48 kHz stereo, then the raw frames
 put("aac", "lc-48k", b"\x02\x11\x90" + packets(adts(rd("a.adts"))))
 put("ac3", "a.ac3", rd("a.ac3"))

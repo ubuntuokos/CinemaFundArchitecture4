@@ -112,7 +112,7 @@ pub struct Context {
     pub cache_dir: Option<PathBuf>,
     /// The settings directory (read-write).
     pub config_dir: Option<PathBuf>,
-    /// Export targets (read-write; a file that does not exist yet grants its directory).
+    /// Export targets (files, read-write: see [`Profile::outputs`]).
     pub export_targets: Vec<PathBuf>,
     /// Program files of this process: the Python virtual environment, `/opt/cfa4` (read).
     pub app_dirs: Vec<PathBuf>,
@@ -125,7 +125,7 @@ pub struct Context {
     pub helper_exes: Vec<PathBuf>,
     /// Local TCP ports of the control channel, MCP and the live page.
     pub loopback_ports: Vec<u16>,
-    /// Live studio: the scene's sources (read) and the recording target (read-write).
+    /// Live studio: the scene's sources (read) and the recording target (a file, read-write).
     pub studio_sources: Vec<PathBuf>,
     pub recording_target: Option<PathBuf>,
     /// Downloader: the target directory (read-write) and the ports it may connect to (default 443).
@@ -133,7 +133,7 @@ pub struct Context {
     pub fetch_ports: Vec<u16>,
     /// Plug-in host: the plug-in's own files (read).
     pub plugin_dirs: Vec<PathBuf>,
-    /// Model converter: the source model (read) and the safetensors output (read-write).
+    /// Model converter: the source model (read) and the safetensors output (a file, read-write).
     pub model_source: Option<PathBuf>,
     pub model_output: Option<PathBuf>,
 }
@@ -145,8 +145,13 @@ pub struct Profile {
     pub kind: ProcessKind,
     /// Read (files and directory listings) beneath these paths, on top of [`SYSTEM_READ`].
     pub read: Vec<PathBuf>,
-    /// Read and write beneath these paths (create, remove, truncate).
+    /// Read and write beneath these directories (create, remove, truncate). One that does not exist
+    /// grants nothing.
     pub write: Vec<PathBuf>,
+    /// Single files this process writes (an export, a recording, a model): one that does not exist
+    /// yet is created empty just before confinement, and only the file itself is granted, never its
+    /// directory.
+    pub outputs: Vec<PathBuf>,
     /// The only programs this process may start. Empty: `execve` is refused (seccomp).
     pub exec: Vec<PathBuf>,
     pub network: Network,
@@ -189,6 +194,7 @@ impl Profile {
     pub fn for_process(kind: ProcessKind, ctx: &Context) -> Profile {
         let mut read = ctx.app_dirs.clone();
         let mut write = Vec::new();
+        let mut outputs = Vec::new();
         let mut exec = Vec::new();
         let (network, gpu) = match kind {
             ProcessKind::QtGui => {
@@ -206,7 +212,7 @@ impl Profile {
                 write.extend(some(&ctx.cache_dir));
                 // the engine stores preferences (`prefs.*` commands)
                 write.extend(some(&ctx.config_dir));
-                write.extend(ctx.export_targets.iter().cloned());
+                outputs.extend(ctx.export_targets.iter().cloned());
                 write.extend(some(&ctx.runtime_dir));
                 exec.extend(ctx.helper_exes.iter().cloned());
                 (Network::Loopback { ports: ctx.loopback_ports.clone() }, true)
@@ -219,7 +225,7 @@ impl Profile {
             ProcessKind::StudioHost => {
                 read.extend(ctx.studio_sources.iter().cloned());
                 read.extend(ctx.font_dirs.iter().cloned());
-                write.extend(some(&ctx.recording_target));
+                outputs.extend(some(&ctx.recording_target));
                 write.extend(some(&ctx.runtime_dir));
                 exec.extend(ctx.helper_exes.iter().cloned());
                 (Network::Any, true)
@@ -236,16 +242,16 @@ impl Profile {
             }
             ProcessKind::ModelConverter => {
                 read.extend(some(&ctx.model_source));
-                write.extend(some(&ctx.model_output));
+                outputs.extend(some(&ctx.model_output));
                 (Network::None, false)
             }
         };
-        Profile { kind, read, write, exec, network, gpu }
+        Profile { kind, read, write, outputs, exec, network, gpu }
     }
 
     /// Whether `path` falls under one of this profile's own read or write paths (not the system ones).
     /// Lexical: does not resolve symbolic links (the kernel rules do).
     pub fn covers(&self, path: &Path) -> bool {
-        self.read.iter().chain(&self.write).any(|p| path.starts_with(p))
+        self.read.iter().chain(&self.write).any(|p| path.starts_with(p)) || self.outputs.iter().any(|p| path == p)
     }
 }

@@ -239,14 +239,18 @@ pub fn lcevc(data: &[u8]) {
 
 // ---------------------------------------------------------------- video
 
+// One decoding thread: a finding then reproduces the same way every time; `flush` also drains the
+// pictures still held for reordering, so their output path is exercised too.
 pub fn h264(data: &[u8]) {
-    let mut dec = cfa4_h264::Decoder::new();
+    let mut dec = cfa4_h264::Decoder::with_threads(1);
     let _ = dec.decode(data, 0);
+    let _ = dec.flush();
 }
 
 pub fn hevc(data: &[u8]) {
-    let mut dec = cfa4_hevc::Decoder::new();
+    let mut dec = cfa4_hevc::Decoder::with_threads(1);
     let _ = dec.decode(data, 0);
+    let _ = dec.flush();
 }
 
 pub fn mpeg2v(data: &[u8]) {
@@ -343,7 +347,10 @@ pub fn ffv1(data: &[u8]) {
     let config_len = usize::from(i.byte()) % 128;
     let config: Vec<u8> = (0..config_len).map(|_| i.byte()).collect();
     if let Ok(mut dec) = cfa4_ffv1::Decoder::new(w, h, &config) {
-        let _ = dec.decode(i.rest());
+        // a packet sequence: a key frame's state carries into the frames after it
+        for p in packets(i.rest()) {
+            let _ = dec.decode(p);
+        }
     }
 }
 

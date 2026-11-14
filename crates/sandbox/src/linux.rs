@@ -4,7 +4,7 @@ use std::collections::BTreeMap;
 use std::path::{Path, PathBuf};
 
 use landlock::{
-    ABI, Access, AccessFs, AccessNet, BitFlags, CompatLevel, Compatible, NetPort, PathBeneath, PathFd, Ruleset, RulesetAttr, RulesetCreated,
+    ABI, Access, AccessFs, AccessNet, BitFlags, CompatLevel, Compatible, LandlockStatus, NetPort, PathBeneath, PathFd, Ruleset, RulesetAttr, RulesetCreated,
     RulesetCreatedAttr, RulesetStatus, Scope,
 };
 use seccompiler::{BpfProgram, SeccompAction, SeccompCmpArgLen, SeccompCmpOp, SeccompCondition, SeccompFilter, SeccompRule, TargetArch};
@@ -20,19 +20,35 @@ const ABIS: [(ABI, u8); 8] = [(ABI::V8, 8), (ABI::V7, 7), (ABI::V6, 6), (ABI::V5
 /// The dynamic loader: starting any program needs execute access to it.
 const LOADERS: &[&str] = &["/lib64/ld-linux-x86-64.so.2", "/usr/lib64/ld-linux-x86-64.so.2"];
 
+/// The highest ABI [`probe_abi`] can tell apart: every right CFA4's rules use exists by ABI 6
+/// (ABIs 7 and 8 add audit-logging and thread-sync flags, which only show when a ruleset is
+/// enforced). A kernel with ABI 6 or newer probes as 6.
+const PROBE_MAX: u8 = 6;
+
 fn abi_of(n: u8) -> ABI {
     ABIS.iter().find(|(_, v)| *v == n).map(|(a, _)| *a).unwrap_or(ABI::Unsupported)
 }
 
-/// The highest ABI for which the kernel accepts a ruleset handling every file-system right
-/// (creating and dropping a ruleset restricts nothing).
+fn abi_number(abi: ABI) -> u8 {
+    ABIS.iter().find(|(a, _)| *a == abi).map(|(_, n)| *n).unwrap_or(0)
+}
+
+/// Whether the kernel accepts a ruleset that handles every right `abi` introduced: the file-system
+/// rights (ABI 1–3, 5), the TCP port rights (ABI 4) and the scopes (ABI 6). Creating and dropping a
+/// ruleset restricts nothing.
+fn kernel_accepts(abi: ABI, n: u8) -> bool {
+    let hard = || Ruleset::default().set_compatibility(CompatLevel::HardRequirement);
+    let fs = hard().handle_access(AccessFs::from_all(abi)).and_then(|r| r.create()).is_ok();
+    let net = n < 4 || hard().handle_access(AccessNet::from_all(abi)).and_then(|r| r.create()).is_ok();
+    let scope = n < 6 || hard().scope(Scope::from_all(abi)).and_then(|r| r.create()).is_ok();
+    fs && net && scope
+}
+
+/// The kernel's Landlock ABI, up to [`PROBE_MAX`], from the rights it accepts: each ABI up to 6
+/// adds rights the previous one lacks (ABI 4 only network rights, so the file-system rights alone
+/// would read ABI 3 as 4).
 pub(crate) fn probe_abi() -> u8 {
-    ABIS.iter()
-        .find(|(abi, _)| {
-            Ruleset::default().set_compatibility(CompatLevel::HardRequirement).handle_access(AccessFs::from_all(*abi)).and_then(|r| r.create()).is_ok()
-        })
-        .map(|(_, n)| *n)
-        .unwrap_or(0)
+    ABIS.iter().filter(|(_, n)| *n <= PROBE_MAX).find(|(abi, n)| kernel_accepts(*abi, *n)).map(|(_, n)| *n).unwrap_or(0)
 }
 
 fn ll(e: impl std::fmt::Display) -> SandboxError {
@@ -49,13 +65,19 @@ fn allow(c: RulesetCreated, path: &Path, access: BitFlags<AccessFs>, abi: ABI) -
     c.add_rule(PathBeneath::new(fd, access)).map_err(ll)
 }
 
-/// A write target that does not exist yet (an export file, a model output) is created in its
-/// directory, so the rule goes on the nearest existing parent.
-fn existing_or_parent(path: &Path) -> Option<PathBuf> {
+/// An output file ([`Profile::outputs`]) that does not exist yet is created empty now, before
+/// confinement, so the rule can name the file itself: a rule on its directory would cover every
+/// sibling (`~/model.safetensors` would open `~/.ssh`). `create_new` never follows or replaces an
+/// existing path, so a planted link is not written through.
+fn create_output(path: &Path) -> Result<(), SandboxError> {
     if path.exists() {
-        return Some(path.to_path_buf());
+        return Ok(());
     }
-    path.parent().filter(|p| p.is_dir()).map(Path::to_path_buf)
+    match std::fs::OpenOptions::new().write(true).create_new(true).open(path) {
+        Ok(_) => Ok(()),
+        Err(e) if e.kind() == std::io::ErrorKind::AlreadyExists => Ok(()),
+        Err(e) => Err(ll(format!("cannot create the output {}: {e}", path.display()))),
+    }
 }
 
 /// The NVIDIA device nodes (`/dev/nvidia0`, `/dev/nvidia1`…) present now.
@@ -72,14 +94,16 @@ fn nvidia_nodes() -> Vec<PathBuf> {
         .collect()
 }
 
-fn landlock(profile: &Profile, abi: ABI, en: &mut Enforcement) -> Result<(), SandboxError> {
+fn landlock(profile: &Profile, abi: ABI, strict: bool, en: &mut Enforcement) -> Result<(), SandboxError> {
     let all = AccessFs::from_all(abi);
     let read: BitFlags<AccessFs> = AccessFs::ReadFile | AccessFs::ReadDir;
     let device_ops: BitFlags<AccessFs> = AccessFs::MakeChar | AccessFs::MakeBlock;
     let write = AccessFs::from_write(abi) & !device_ops & all;
     let ioctl = BitFlags::from(AccessFs::IoctlDev) & all;
 
-    let mut rs = Ruleset::default().handle_access(all).map_err(ll)?;
+    // strict: a right the kernel lacks is an error, not silently dropped (BestEffort)
+    let level = if strict { CompatLevel::HardRequirement } else { CompatLevel::BestEffort };
+    let mut rs = Ruleset::default().set_compatibility(level).handle_access(all).map_err(ll)?;
     let net_ports = profile.network.port_limited() && abi >= ABI::V4;
     if net_ports {
         rs = rs.handle_access(AccessNet::from_all(abi)).map_err(ll)?;
@@ -110,9 +134,11 @@ fn landlock(profile: &Profile, abi: ABI, en: &mut Enforcement) -> Result<(), San
         c = allow(c, p, read, abi)?;
     }
     for p in &profile.write {
-        if let Some(p) = existing_or_parent(p) {
-            c = allow(c, &p, read | write, abi)?;
-        }
+        c = allow(c, p, read | write, abi)?;
+    }
+    for p in &profile.outputs {
+        create_output(p)?;
+        c = allow(c, p, read | write, abi)?;
     }
     if !profile.exec.is_empty() {
         let run = AccessFs::ReadFile | AccessFs::Execute;
@@ -137,6 +163,13 @@ fn landlock(profile: &Profile, abi: ABI, en: &mut Enforcement) -> Result<(), San
     }
     let st = c.restrict_self().map_err(ll)?;
     en.landlock_full = st.ruleset == RulesetStatus::FullyEnforced;
+    // the ABI the kernel reports now that a ruleset is enforced (the probe stops at 6)
+    if let LandlockStatus::Available { effective_abi, .. } = st.landlock {
+        en.landlock_abi = abi_number(effective_abi).max(en.landlock_abi);
+    }
+    if strict && !en.landlock_full {
+        return Err(ll(format!("the rules were not fully enforced ({:?})", st.ruleset)));
+    }
     en.network_ports = net_ports && st.ruleset != RulesetStatus::NotEnforced;
     en.no_new_privs = st.no_new_privs;
     Ok(())
@@ -196,6 +229,12 @@ const DENY_EXEC: &[libc::c_long] = &[libc::SYS_execve, libc::SYS_execveat];
 /// Socket families refused when the process has no network (Unix sockets stay for the parent channel).
 const NET_FAMILIES: &[libc::c_int] = &[libc::AF_INET, libc::AF_INET6, libc::AF_PACKET];
 
+/// IP families whose socket types a profile with some network may still lose.
+const IP_FAMILIES: &[libc::c_int] = &[libc::AF_INET, libc::AF_INET6];
+
+/// The `type` argument of `socket` without `SOCK_NONBLOCK` / `SOCK_CLOEXEC`.
+const SOCK_TYPE_MASK: u64 = 0xf;
+
 fn sc(e: impl std::fmt::Display) -> SandboxError {
     SandboxError::Seccomp(e.to_string())
 }
@@ -213,14 +252,9 @@ pub(crate) fn seccomp_program(profile: &Profile) -> Result<BpfProgram, SandboxEr
     for nr in deny {
         rules.insert(nr, Vec::new());
     }
-    if profile.network == Network::None {
-        let mut by_family = Vec::new();
-        for &family in NET_FAMILIES {
-            let family = u64::try_from(family).map_err(sc)?;
-            let cond = SeccompCondition::new(0, SeccompCmpArgLen::Dword, SeccompCmpOp::Eq, family).map_err(sc)?;
-            by_family.push(SeccompRule::new(vec![cond]).map_err(sc)?);
-        }
-        rules.insert(libc::SYS_socket, by_family);
+    let socket_rules = socket_rules(&profile.network)?;
+    if !socket_rules.is_empty() {
+        rules.insert(libc::SYS_socket, socket_rules);
     }
     let arch = TargetArch::try_from(std::env::consts::ARCH).map_err(sc)?;
     let eperm = u32::try_from(libc::EPERM).map_err(sc)?;
@@ -228,12 +262,55 @@ pub(crate) fn seccomp_program(profile: &Profile) -> Result<BpfProgram, SandboxEr
     BpfProgram::try_from(filter).map_err(sc)
 }
 
-pub(crate) fn apply(profile: &Profile, support: &Support) -> Result<Enforcement, SandboxError> {
+/// The `socket` calls `network` refuses:
+///
+/// - `None`: IPv4, IPv6 and packet sockets;
+/// - `Loopback`: packet sockets and IPv4/IPv6 datagram and raw sockets. Landlock (up to ABI 8)
+///   restricts TCP ports only, so UDP would reach any address; a loopback process needs neither
+///   UDP nor DNS;
+/// - `Outbound`: packet and raw sockets. UDP stays for DNS (the system resolver, often
+///   `127.0.0.53`), so a compromised downloader could still send UDP datagrams: an accepted risk
+///   until Landlock handles UDP (docs/security/threat-model.md). It reads none of the user's files;
+/// - `Any`: nothing.
+fn socket_rules(network: &Network) -> Result<Vec<SeccompRule>, SandboxError> {
+    let family = |f: libc::c_int| -> Result<SeccompCondition, SandboxError> {
+        SeccompCondition::new(0, SeccompCmpArgLen::Dword, SeccompCmpOp::Eq, u64::try_from(f).map_err(sc)?).map_err(sc)
+    };
+    let sock_type = |t: libc::c_int| -> Result<SeccompCondition, SandboxError> {
+        SeccompCondition::new(1, SeccompCmpArgLen::Dword, SeccompCmpOp::MaskedEq(SOCK_TYPE_MASK), u64::try_from(t).map_err(sc)?).map_err(sc)
+    };
+    let mut out = Vec::new();
+    let refused_types: &[libc::c_int] = match network {
+        Network::None => {
+            for &f in NET_FAMILIES {
+                out.push(SeccompRule::new(vec![family(f)?]).map_err(sc)?);
+            }
+            return Ok(out);
+        }
+        Network::Loopback { .. } => &[libc::SOCK_DGRAM, libc::SOCK_RAW],
+        Network::Outbound { .. } => &[libc::SOCK_RAW],
+        Network::Any => return Ok(out),
+    };
+    out.push(SeccompRule::new(vec![family(libc::AF_PACKET)?]).map_err(sc)?);
+    for &f in IP_FAMILIES {
+        for &t in refused_types {
+            out.push(SeccompRule::new(vec![family(f)?, sock_type(t)?]).map_err(sc)?);
+        }
+    }
+    Ok(out)
+}
+
+#[cfg(test)]
+pub(crate) fn socket_rules_len(network: &Network) -> usize {
+    socket_rules(network).map(|r| r.len()).unwrap_or(0)
+}
+
+pub(crate) fn apply(profile: &Profile, support: &Support, strict: bool) -> Result<Enforcement, SandboxError> {
     let mut en = Enforcement::default();
     let abi = abi_of(support.landlock_abi);
     if abi != ABI::Unsupported {
         en.landlock_abi = support.landlock_abi;
-        landlock(profile, abi, &mut en)?;
+        landlock(profile, abi, strict, &mut en)?;
     }
     if support.seccomp {
         let prog = seccomp_program(profile)?;

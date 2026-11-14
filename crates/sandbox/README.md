@@ -1,8 +1,11 @@
 # cfa4-sandbox
 
 CFA4's run-time security layer ([CFA4-SECURITY-001](../../docs/plans/CFA4-SECURITY-001.md), phase B1).
-Every CFA4 process confines itself at start-up with the profile of its kind, so a bug in a parser,
-decoder, plug-in or browser stays inside that one process.
+This phase adds the sandbox API and the profile of every CFA4 process kind, so that a process can
+confine itself at start-up and a bug in a parser, decoder, plug-in or browser stays inside that one
+process. No process applies it yet: the engine confines itself in phase B3, and the separate media
+host that takes FFmpeg and GStreamer out of the engine comes in phase B4; until then they run
+in-process, unconfined.
 
 - **Landlock** (unprivileged, in the kernel): which files and directories the process may read or
   write, which programs it may start, which TCP ports it may bind or connect (ABI ≥ 4), and that it
@@ -18,12 +21,12 @@ Apache-2.0 OR BSD-3-Clause); this crate has no `unsafe`. Layer L1: it depends on
 
 | Kind | Reads (besides the system) | Writes | Network | Starts programs |
 |---|---|---|---|---|
-| `qtGui` | app dirs, project, fonts | settings, runtime dir | loopback ports | the engine |
-| `engine` | added media, fonts | project, cache, settings, export targets | loopback ports | its helpers |
+| `qtGui` | app dirs, project, fonts | settings, runtime dir | loopback TCP ports | the engine |
+| `engine` | added media, fonts | project, cache, settings, the export files (only the files) | loopback TCP ports | its helpers |
 | `mediaHost` | the one opened file | nothing | none | none |
-| `studioHost` | scene sources, fonts | recording target | any | its Chromium helper |
+| `studioHost` | scene sources, fonts | the recording file | any | its Chromium helper |
 | `browserSource` | – | – | any | confined by Chromium's sandbox + AppArmor (B6), not here |
-| `fetch` | – | download target | connect to 443 | none |
+| `fetch` | – | download target | connect to 443 (and UDP for DNS) | none |
 | `pluginHost` | plug-in files | nothing | none | none |
 | `modelConverter` | source model | output file | none | none |
 
