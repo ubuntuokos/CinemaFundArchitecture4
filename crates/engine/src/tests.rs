@@ -755,7 +755,7 @@ fn effects_list_reports_transition_folders() {
     assert!(all.iter().all(|e| e["kind"] == "VideoTransition" && e["folder"].is_string()));
     let wipes = s.execute("effects.list", json!({"folder": "Video Transitions/Wipe", "detail": true})).unwrap();
     let wipes = wipes.as_array().unwrap();
-    assert_eq!(wipes.len(), 10, "Premiere's 9 wipes + CFA4's Keyhole");
+    assert_eq!(wipes.len(), 11, "Premiere's 9 wipes + CFA4's Keyhole and Stamp Cut");
     let lw = wipes.iter().find(|e| e["id"] == "linear_wipe").unwrap();
     assert_eq!(lw["folder"], "Wipe");
     assert_eq!(lw["path"], "Video Transitions/Wipe");
