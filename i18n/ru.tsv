@@ -2394,6 +2394,10 @@
 	Show Clip Mismatch Warning dialog	Показывать предупреждение о несоответствии клипа
 	Show Event Indicator	Показывать индикатор событий
 	Show Focus Area	Показывать область фокуса
+	Rack Focus	Перевод фокуса
+	Focus Point A	Точка фокуса A
+	Focus Point B	Точка фокуса B
+	Rack	Перевод
 	Show Home	Показывать главную страницу
 	Show Mask Tracker Preview	Показывать предпросмотр трекинга маски
 	Show Only Noise	Показывать только шум

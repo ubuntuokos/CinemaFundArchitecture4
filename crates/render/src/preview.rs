@@ -411,6 +411,7 @@ pub fn effect_cost_ms(id: &str) -> f64 {
         | "bokeh_blur"
         | "compound_blur"
         | "focus_blur"
+        | "rack_focus"
         | "channel_blur"
         | "turbulent_displace"
         | "warp_stabilizer"

@@ -274,7 +274,7 @@ pub const GLITCH: &[&str] = &["Video Effects", "Glitch"];
 pub const CFA4_FOLDERS: &[&str] = &["Stereoscopic 3D", "Creative Looks", "Enhance", "Glitch"];
 /// CFA4's own effects that sit in one of Premiere's folders or in the Glitch folder.
 pub const CFA4_OWN: &[&str] =
-    &["slit_scan", "six_point_pin", "film_gate", "particles", "bit_crush", "block_glitch", "databend", "vhs", "scan_line_jitter", "tile_jitter"];
+    &["slit_scan", "six_point_pin", "film_gate", "particles", "bit_crush", "block_glitch", "databend", "vhs", "scan_line_jitter", "tile_jitter", "rack_focus"];
 const VIDEO: &[&str] = &["Video Effects", "Video"];
 const A_AMP: &[&str] = &["Audio Effects", "Amplitude and Compression"];
 const A_DELAY: &[&str] = &["Audio Effects", "Delay and Echo"];
