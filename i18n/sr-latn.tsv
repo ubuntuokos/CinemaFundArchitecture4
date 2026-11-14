@@ -4217,6 +4217,9 @@ export.summary	Low	nizak
 	Dither	Raspršivanje
 	Pattern	Uzorak
 	Cell Size	Veličina ćelije
+	Pixelate	Pikselizacija
+	Cell Shape	Oblik ćelije
+	LED	LED
 	Cyan Angle	Ugao cijan
 	Magenta Angle	Ugao magenta
 	Yellow Angle	Ugao žute

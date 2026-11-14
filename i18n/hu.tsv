@@ -4214,6 +4214,9 @@ export.summary	Low	alacsony
 	Dither	Dither
 	Pattern	Minta
 	Cell Size	Cellaméret
+	Pixelate	Pixelesítés
+	Cell Shape	Cella alakja
+	LED	LED
 	Cyan Angle	Cián szöge
 	Magenta Angle	Bíbor szöge
 	Yellow Angle	Sárga szöge

@@ -4214,6 +4214,9 @@ export.summary	Low	低
 	Dither	遞色
 	Pattern	圖樣
 	Cell Size	儲存格大小
+	Pixelate	像素化
+	Cell Shape	儲存格形狀
+	LED	LED
 	Cyan Angle	青色角度
 	Magenta Angle	洋紅色角度
 	Yellow Angle	黃色角度

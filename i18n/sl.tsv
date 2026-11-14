@@ -4218,6 +4218,9 @@ export.summary	Low	nizka
 	Dither	Razprševanje
 	Pattern	Vzorec
 	Cell Size	Velikost celice
+	Pixelate	Pikselizacija
+	Cell Shape	Oblika celice
+	LED	LED
 	Cyan Angle	Kot cijan
 	Magenta Angle	Kot magenta
 	Yellow Angle	Kot rumene

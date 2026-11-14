@@ -4217,6 +4217,9 @@ export.summary	Low	matala
 	Dither	Rasterointi
 	Pattern	Kuvio
 	Cell Size	Solukoko
+	Pixelate	Pikselöinti
+	Cell Shape	Solun muoto
+	LED	LED
 	Cyan Angle	Syaanin kulma
 	Magenta Angle	Magentan kulma
 	Yellow Angle	Keltaisen kulma
