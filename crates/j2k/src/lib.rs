@@ -36,7 +36,7 @@ mod t2;
 
 pub use codestream::{ComponentInfo, Header, parse_header};
 pub use decode::decode;
-pub use encode::{EncodeOptions, ImfProfile, ImfSize, Profile, Progression, encode};
+pub use encode::{EncodeOptions, EncodeStats, ImfProfile, ImfSize, Profile, Progression, encode, encode_with_stats};
 
 /// Decoder errors. Malformed input gives an error, never a panic.
 #[derive(Debug, Clone, PartialEq, Eq, thiserror::Error)]

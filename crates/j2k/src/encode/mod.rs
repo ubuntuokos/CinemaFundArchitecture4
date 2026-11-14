@@ -332,6 +332,17 @@ struct Coded {
     ht: Vec<(u32, Vec<u8>)>,
     enc: t1::Encoded,
     hull: Vec<(u32, usize, f64)>,
+    /// Coefficients whose index was clipped to the block's `limit`.
+    saturated: u64,
+}
+
+/// What an encode did besides the codestream.
+#[derive(Clone, Copy, Debug, Default, PartialEq, Eq)]
+pub struct EncodeStats {
+    /// Quantization indices clipped to the largest value the guard bits and exponents carry
+    /// (2K Digital Cinema writes 1 guard bit, as libdcp's encoder and verifier expect, so the rare
+    /// coefficients beyond the band's nominal range saturate).
+    pub saturated: u64,
 }
 
 /// Encodes `image` as a JPEG 2000 codestream (`.j2c`).
@@ -339,8 +350,17 @@ pub fn encode(image: &Image, opts: &EncodeOptions) -> Result<Vec<u8>> {
     encode_with(image, opts, true)
 }
 
+/// [`encode`], with the encoder's [`EncodeStats`].
+pub fn encode_with_stats(image: &Image, opts: &EncodeOptions) -> Result<(Vec<u8>, EncodeStats)> {
+    encode_inner(image, opts, true)
+}
+
 /// [`encode`]; `early` lets code-blocks stop below the predicted rate-control threshold.
 fn encode_with(image: &Image, opts: &EncodeOptions, early: bool) -> Result<Vec<u8>> {
+    encode_inner(image, opts, early).map(|(out, _)| out)
+}
+
+fn encode_inner(image: &Image, opts: &EncodeOptions, early: bool) -> Result<(Vec<u8>, EncodeStats)> {
     validate(image, opts)?;
     let ncomp = image.components.len();
     let levels = opts.levels;
@@ -389,9 +409,11 @@ fn encode_with(image: &Image, opts: &EncodeOptions, early: bool) -> Result<Vec<u
             Quant { style: if opts.reversible { 0 } else { 2 }, guard: 1, steps }
         })
         .collect();
-    // guard bits: enough for the largest index of every band
-    let mut guard = 2u8;
-    for ((p, q), cf) in image.components.iter().zip(&quants).zip(&coeffs) {
+    // guard bits: 1 for 2K Digital Cinema (libdcp's verifier requires it and its encoder writes
+    // it; indices beyond the nominal range saturate, plan CFA4-DCPVAL-LIBDCP-001 v1.1 D8), else
+    // enough for the largest index of every band
+    let mut guard = if opts.profile == Profile::Cinema2k { 1u8 } else { 2u8 };
+    for ((p, q), cf) in image.components.iter().zip(&quants).zip(&coeffs).filter(|_| opts.profile != Profile::Cinema2k) {
         for band in 0..q.steps.len() {
             let (r, bi) = band_position(band);
             let (e, _) = q.step(band, levels)?;
@@ -450,9 +472,9 @@ fn encode_with(image: &Image, opts: &EncodeOptions, early: bool) -> Result<Vec<u
         let cf = coeffs.get(j.c).ok_or(Error::Invalid("component"))?;
         let mb = comps.get(j.c).and_then(|tc| tc.res.get(j.r)).and_then(|res| res.bands.get(j.bi)).map_or(0, |b| b.mb);
         let w = weight(j);
-        let (enc, alts) = code_block(cf, j, opts.ht, limited, if stop.is_finite() && stop > 0.0 { stop / w.max(1e-30) } else { 0.0 })?;
+        let (enc, alts, saturated) = code_block(cf, j, opts.ht, limited, if stop.is_finite() && stop > 0.0 { stop / w.max(1e-30) } else { 0.0 })?;
         let ht = alts.into_iter().map(|(planes, data)| (mb.saturating_sub(planes), data)).collect();
-        Ok(Coded { c: j.c, zero: mb.saturating_sub(enc.planes), hull: hull(&enc.passes, w), enc, ht })
+        Ok(Coded { c: j.c, zero: mb.saturating_sub(enc.planes), hull: hull(&enc.passes, w), enc, ht, saturated })
     };
     let mut coded = if !early || (opts.max_bytes.is_none() && opts.max_component_bytes.is_none()) {
         map(&jobs, |j| code(j, 0.0))?
@@ -493,7 +515,7 @@ fn encode_with(image: &Image, opts: &EncodeOptions, early: bool) -> Result<Vec<u
     if out.len() != total || !fits(total, &sizes) {
         return Err(Error::Invalid("byte limit below the size of the headers"));
     }
-    Ok(out)
+    Ok((out, EncodeStats { saturated: coded.iter().map(|b| b.saturated).sum() }))
 }
 
 /// Every how many code-blocks one is coded in full to predict the slope thresholds.
@@ -901,11 +923,13 @@ fn component_weights(n: usize, mct: bool, reversible: bool) -> Vec<f64> {
 /// HTJ2K: one cleanup pass with every bit-plane; with `limited` (a byte limit), also one coding
 /// per coarser plane it could stop at, returned as (coded planes, codeword), coarsest first, the
 /// passes of the [`t1::Encoded`] being their truncation points.
-fn code_block(cf: &Coeffs, j: &Job, ht: bool, limited: bool, stop: f64) -> Result<(t1::Encoded, Vec<(u32, Vec<u8>)>)> {
+/// Also returns how many of the block's indices saturated at `j.limit`.
+fn code_block(cf: &Coeffs, j: &Job, ht: bool, limited: bool, stop: f64) -> Result<(t1::Encoded, Vec<(u32, Vec<u8>)>, u64)> {
     let (w, h) = (j.rect.w(), j.rect.h());
     let mut q = Vec::with_capacity(w * h);
     let mut exact = Vec::with_capacity(w * h);
     let limit = j.limit as i64;
+    let mut saturated = 0u64;
     match cf {
         Coeffs::Int(bands) => {
             let band = bands.get(j.r).and_then(|b| b.get(j.bi)).ok_or(Error::Invalid("subband"))?;
@@ -914,6 +938,7 @@ fn code_block(cf: &Coeffs, j: &Job, ht: bool, limited: bool, stop: f64) -> Resul
                 let row = band.get(y as usize * bw + j.rect.u0 as usize..y as usize * bw + j.rect.u1 as usize).ok_or(Error::Invalid("code-block"))?;
                 for &c in row {
                     let v = i64::from(c).clamp(-limit, limit) as i32;
+                    saturated += u64::from(v != c);
                     q.push(v);
                     exact.push(c as f32);
                 }
@@ -927,7 +952,9 @@ fn code_block(cf: &Coeffs, j: &Job, ht: bool, limited: bool, stop: f64) -> Resul
                 let row = band.get(y as usize * bw + j.rect.u0 as usize..y as usize * bw + j.rect.u1 as usize).ok_or(Error::Invalid("code-block"))?;
                 for &c in row {
                     let x = c * inv;
-                    let m = (x.abs() as i64).min(limit) as i32;
+                    let whole = x.abs() as i64;
+                    saturated += u64::from(whole > limit);
+                    let m = whole.min(limit) as i32;
                     q.push(if x < 0.0 { -m } else { m });
                     exact.push(x);
                 }
@@ -946,11 +973,13 @@ fn code_block(cf: &Coeffs, j: &Job, ht: bool, limited: bool, stop: f64) -> Resul
                     None => t1::Encoded::default(),
                 },
                 Vec::new(),
+                saturated,
             ));
         }
-        return ht_codings(&q, &exact, w, h);
+        let (enc, alts) = ht_codings(&q, &exact, w, h)?;
+        return Ok((enc, alts, saturated));
     }
-    Ok((t1::encode(&q, &exact, w, h, j.orient, stop), Vec::new()))
+    Ok((t1::encode(&q, &exact, w, h, j.orient, stop), Vec::new(), saturated))
 }
 
 /// The HTJ2K codings of a block for rate control: for each plane `s` from the most significant
