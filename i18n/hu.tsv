@@ -4572,6 +4572,40 @@ export.summary	Low	alacsony
 	Chase External Timecode	Külső időkód követése
 	Send LTC	LTC küldése
 	Send MIDI Timecode	MIDI-időkód küldése
+	Task Manager	Feladatkezelő
+	Background jobs	Háttérfeladatok
+	Exports	Exportálások
+	Shared task queue	Közös feladatsor
+	Task	Feladat
+	State	Állapot
+	Details	Részletek
+	Time left	Hátralévő idő
+	Scheduled	Ütemezve
+	Queued	Sorban áll
+	Waiting for resources	Erőforrásra vár
+	Blocked	Blokkolva
+	Running	Fut
+	Paused	Szüneteltetve
+	Cancelling	Megszakítás folyamatban
+	Interactive	Interaktív
+	Speculative	Előzetes
+	Final render	Végső renderelés
+	Show finished	Befejezettek megjelenítése
+	Nothing is running.	Semmi sem fut.
+	Not reported by this engine yet.	Ez a motor még nem jelenti.
+	Not available: {why}	Nem érhető el: {why}
+	{name} waits: {why}	{name} vár: {why}
+	{running} running · {waiting} waiting	{running} fut · {waiting} vár
+	{n} active	{n} aktív
+	{n} CPU	{n} CPU
+	{n} GiB	{n} GiB
+	{n} MiB	{n} MiB
+	Needs your decision	Döntésre vár
+	Run now	Futtatás most
+	Next slot	Következő időpont
+	Missed its start	Lekéste az indulást
+	Missed its start at {time}	Lekéste az indulást ({time})
+	Starts at {time}	Indulás: {time}
 # Auto Color, Auto Contrast, Auto Levels (EffectsSDK review)
 	Auto Color	Automatikus szín
 	Auto Contrast	Automatikus kontraszt
