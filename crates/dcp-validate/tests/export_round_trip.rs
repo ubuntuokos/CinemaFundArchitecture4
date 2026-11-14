@@ -3,7 +3,7 @@
 
 use std::sync::Arc;
 
-use cfa4_dcp_validate::rules::{AM_PRESENT, MARK_MARKERS, MXF_TRACK_FILES, PIC_FORMAT, PKL_HASH, STD_CONSISTENT};
+use cfa4_dcp_validate::rules::{AM_PRESENT, AUD_PCM, MARK_MARKERS, MXF_TRACK_FILES, PIC_FORMAT, PKL_HASH, STD_CONSISTENT};
 use cfa4_dcp_validate::{DcpValidator, NativeValidator, Profile, Status, ValidationControl, ValidationReport, ValidationRequest, Verdict};
 use cfa4_export::{ExportSettings, Format, Progress, export};
 use cfa4_media::generators::GeneratorSource;
@@ -90,6 +90,8 @@ fn cfa4_dcp_export_passes_the_native_quick_scan() {
     let status = |rule: &str| smpte.findings.iter().filter(|f| f.rule == rule).map(|f| f.status).collect::<Vec<_>>();
     assert_eq!(status(MXF_TRACK_FILES), [Status::Pass], "{:?}", outcome(&smpte));
     assert_eq!(status(PIC_FORMAT), [Status::Warning], "{:?}", outcome(&smpte));
+    // DCP-07: 6 channels of 24-bit PCM at 48 kHz
+    assert_eq!(status(AUD_PCM), [Status::Pass], "{:?}", outcome(&smpte));
     // The one failure allowed: cfa4-j2k writes 2 QCD guard bits where the 2K profile has 1
     // (dcp_inspect reports the same). Every other profile requirement must hold.
     let fails: Vec<&str> = smpte.findings.iter().filter(|f| f.status == Status::Fail).map(|f| f.message.as_str()).collect();

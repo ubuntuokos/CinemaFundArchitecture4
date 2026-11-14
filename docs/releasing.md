@@ -131,9 +131,16 @@ runs `cfa4-cli --version` in the sandbox. Users install it with
 `flatpak install --user <file>`; the freedesktop runtime comes from Flathub.
 `packaging/linux/flatpak/io.github.ubuntuokos.cfa4.yml` is the from-source manifest for a Flathub
 submission (its header says how to build it). Both manifests must keep the same runtime and
-`finish-args`, and install the same programs: the app and `cfa4-cli`, which runs the
+`finish-args`, and install the app and `cfa4-cli`, which runs the
 headless commands and the MCP server in the sandbox
 (`flatpak run --command=cfa4-cli io.github.ubuntuokos.cfa4 mcp`). packaging-lint checks this.
+Both also carry the Qt 6 GUI and start it (`command: cfa4-qt`, owner decision 2026-11-12; the egui
+editor with `--command=cfa4`): the bundle from the tarball, the from-source manifest staging it as
+`package.sh` does, with PySide6 / Qt 6 from the wheels pinned in `requirements/linux-amd64.txt`
+(the same SHA-256 as `file` sources; bump them together). Both build MIT Kerberos first (the `krb5`
+module, a pinned and PGP-checked tarball, its NOTICE in `share/doc/cfa4/krb5`): the wheels' QtNetwork
+and QtMultimedia need `libgssapi_krb5.so.2`, which the freedesktop runtime lacks. The bundle's test
+imports every module the GUI loads and starts it with `--smoke`.
 
 ## The draft release
 

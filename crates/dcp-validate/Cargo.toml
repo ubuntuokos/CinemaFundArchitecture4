@@ -10,7 +10,9 @@ rust-version.workspace = true
 workspace = true
 
 [dependencies]
+cfa4-audio-dsp = { workspace = true }
 cfa4-dcp = { workspace = true }
+cfa4-iab = { workspace = true }
 cfa4-j2k = { workspace = true }
 cfa4-mxf = { workspace = true }
 chrono = { workspace = true }

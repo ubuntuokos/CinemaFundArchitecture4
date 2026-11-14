@@ -5,7 +5,8 @@
 **Forrás:** az „FA3 Credits & Titles Composer – végleges materializációs és végrehajtási terv”,
 átdolgozva a CFA4 valós állapotára, a [`VISION.md`](../VISION.md) prioritásaira és a
 [GPL-3.0-or-later licencre](licensing.md).  
-**Kapcsolódó:** [ADR F10](adr/ADR-F10-CREDITS-SPREADSHEET-2026-10-23.md), [credits.md](credits.md), [ADR 0003](adr/ADR-0003-aswf-and-conversion-sources.md) (GPL-3 források)
+**Kapcsolódó:** [ADR F10](adr/ADR-F10-CREDITS-SPREADSHEET-2026-10-23.md), [credits.md](credits.md), [ADR 0003](adr/ADR-0003-aswf-and-conversion-sources.md) (GPL-3 források)  
+**Folytatás (jóváhagyva 2026-11-14):** [CFA4-TITLE-CREDITS-001 1.0](plans/CFA4-TITLE-CREDITS-001-1.0.md), a C1–C14-gyel való megfeleltetés és a nyitott kérdések a [CFA4-illesztési mellékletben](plans/CFA4-TITLE-CREDITS-001-1.0-CFA4-ILLESZTES.md)
 
 ## 1. Miért kell módosítani
 
@@ -57,6 +58,10 @@ Elkészült és a `main`-en van (#36), illetve a `cfa4/credits-2` ágon:
 5. **Licenc:** a Cinecred (GPL-3.0-or-later) kódja a GPL-3-váltás óta felhasználható,
    fejléc-megőrzéssel és a [licensing.md §5](licensing.md) nyilvántartásba vétellel. Ahol
    egyszerűbb, saját megvalósítás készül (ahogy eddig).
+   *Megjegyzés (a tulajdonos döntése, 2026-11-14, [CFA4-TITLE-CREDITS-001 Q2](plans/CFA4-TITLE-CREDITS-001-1.0-CFA4-ILLESZTES.md)):*
+   a stáblista további munkája tisztaszobás: forrás csak a Cinecred nyilvános útmutatója
+   (cinecred.com/guide), a Cinecred forráskódja nem. A C7 korábbi nyilvántartási sora a
+   `licensing.md` §5-ben történeti adatként marad.
 
 ## 4. Fázisok
 
@@ -301,6 +306,58 @@ nem kerül a CFA4-be, a Chrome nem lesz függőség.
   ismétlődő háttérként vagy videócímkeként a stáblistába.
 - **Qt6:** a háttér a lapok listájában „Ismétlődő videó: …”, minden nyelven.
 
+### C13 – Ismétlődő videó egy cellában – **KÉSZ (2026-11-13)**
+
+A „Not yet” lista első pontja, a C11 folytatása (a tulajdonos 2026-11-13-i kérésére: „foglalkozzunk
+olyannal, ami nincs kész”): a cellában lévő videó (`{{Video walk.mp4 loop}}`; `loop`, `ismétlés`,
+`ismételve`, a magasság előtt vagy után) újraindul, amíg az oldal tart, így egy vonalrajz-figura a
+nevekkel együtt halad végig az oldalon. Minden futás saját klip egy sávon, egymás után,
+képkockahatáron (legfeljebb 1000); a mozgásuk és az áttetszőségük az egész oldalra számolt görbe
+megfelelő szelete, tehát gördülő oldalon és kártyán is úgy mozognak és tűnnek el, ahogy egyetlen
+klip tenné. A háttérvideó (C11) ugyanazt a futásbeosztást használja.
+
+### C14 – Horgas gerincek – **KÉSZ (2026-11-13)**
+
+A „Not yet” lista következő pontja (Cinecred-hűség), a Cinecred nyilvános útmutatója szerint
+(tisztaszobás: a forráskódját nem néztük): a `Spine Position` cellában `Hook N From-To dx dy`
+(`Horog …`) a következő blokkokat egy N gerinccel korábbi gerincre akasztja; a pontok `Top`,
+`Middle`, `Bottom` (`teteje`, `közepe`, `alja`), alapból `Bottom-Top`, a távolságok képpontban.
+A horgas gerinc blokkjai 0-tól rakódnak, majd a horog helyére tolódnak; ami utánuk jön, minden
+korábbi alá kerül; ha egy gerinc a lap teteje fölé kerül, a lap felfelé nő. A túl messzire mutató
+horog figyelmeztetés; a segédvonalak és a tulajdonságok a horog szerinti helyet mutatják, a Qt6
+minden nyelven.
+
+Ami még hátra van a listából: az egységes törzsszélesség (C15b), az online táblázatok (a `cfa4-fetch`-re
+vár), a Cinecred-projekt írása (csak kérésre).
+
+### C15 – A kártya gerincének pontja – **KÉSZ (2026-11-14)**
+
+A „Not yet” lista következő pontja (Cinecred-hűség), a Cinecred nyilvános útmutatója szerint
+(cinecred.com/guide/credits-spreadsheet, „Spine Position”; tisztaszobás: a forráskódját nem
+néztük): kártyaoldalon a `Spine Position` cella vízszintes és opcionálisan függőleges eltolást ad
+a képközéptől (`150 -50`, képpontban, negatív: balra, fel); a gerinc alapból függőlegesen a pont
+körül középre kerül, `Below` (`alatta`) esetén a pontból indul lefelé, `Above` (`fölötte`) esetén
+ott ér véget. Minden gerinc (a párhuzamos oszlopaival együtt, mint egy egység) a saját pontjára
+kerül, nem az előző alá: ez a korábbi viselkedést változtatja meg azokon a kártyákon, ahol több
+vízszintes gerincpozíció volt (eddig egymás alá rakódtak, most egymás mellett állnak, mint a
+Cinecredben). Gerincpozíció nélküli kártya ugyanúgy középre kerül, mint eddig. Gördülő és úszó
+oldalon a függőleges rész figyelmeztetés, és nem hat. A segédvonalas bélyegkép a pontokat kis
+rombusszal jelöli (a képközépen nem), az előnézet `cardPoint` és `spinePoints` mezőt ad, a Qt6
+blokk-tulajdonságai minden nyelven mutatják a pontot. Kártyán a horgas gerinc (C14) a gyökérgerincével együtt mozog.
+
+### C15b – Egységes törzsszélesség – **KÉSZ (2026-11-14)**
+
+A „Not yet” lista pontja, a Cinecred nyilvános útmutatója szerint (cinecred.com/guide/content-style/
+grid-layout, „Harmonize Column Widths”; tisztaszobás: a forráskódját nem néztük): a tartalomstílus
+új `harmonizeBody` mezője a rácsos törzs minden oszlopát a stílus legszélesebb oszlopának
+szélességére hozza. A CFA4 rácsában egy blokk oszlopai eddig is egyforma szélesek voltak, így az
+egységesítés az oldal azonos stílusú blokkjai között hat: a többoszlopos rácsok ugyanazokra az
+oszlopokra kerülnek, vízszintes elrendezésben a lábak egy oszlopba állnak. Hatóköre az oldal, mint
+a `harmonizeHeads`-é. Ami nem készült el (az útmutató többi beállítása): más stílusokra kiterjesztés,
+bal/jobb igazítás eltérő oszlopszámnál, szellemcellák, a `@Break Harmonization` oszlop, a folyó
+elrendezés cellaszélessége (a CFA4 folyó törzse egyetlen bekezdés, nincsenek cellái) és a
+Cinecred-import megfelelő kulcsa. Új felületi szöveg és figyelmeztetés nincs.
+
 ### C12 – Animált vonalrajz-réteg Rustban, második lépcső (a jövő évi kiadásban) – **TERVEZET**
 
 A tulajdonos döntése (2026-11-11): a vonalrajzos animáció saját grafikai elemmé válik a CFA4
@@ -324,7 +381,7 @@ C1 kapcsolt stáblista ─┬─> C2 ellenőrzések ─> C3 zene
 C4 háttér / átmenet ───> C5 gazdagabb elrendezés
 Qt6 felület (F8, #48–#54) ─> C8 Qt6 munkaterület
 C8 ─> C9 csomagolás és együttélés ─> C10 élő grafika ─> CFA4-LIVE-STUDIO-001 (élő stúdió, műsorterv)
-C4 háttér ─> C11 ismétlődő videóháttér (vonalrajz, 1. lépcső) ─> C12 vonalrajz-réteg Rustban (jövő év)
+C4 háttér ─> C11 ismétlődő videóháttér (vonalrajz, 1. lépcső) ─> C13 ismétlődő videó cellában ─> C12 vonalrajz-réteg Rustban (jövő év)
 ```
 
 Sorrend: **C1 → C2 → C3 → C4 → C5 → C6 → C7 → C8 → C9 → C10** (mind kész, 2026-11-09). Minden fázis a motorral együtt a Qt6-os
