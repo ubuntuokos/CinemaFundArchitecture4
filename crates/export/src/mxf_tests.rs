@@ -485,6 +485,97 @@ fn xdcam_hd422_rdd9_op1a() {
     }
 }
 
+/// Interlaced MPEG-2 in MXF (#949): XDCAM HD422 1080i at 25 fps as RDD 9's separate fields (544
+/// stored, 540 sampled lines per field, line map 21 / 584, field 1 first, coded content
+/// interlaced) holds the interlaced elementary stream, which ffprobe (oracle) reads as top field
+/// first; D-10 codes interlaced pictures upper field first. Rates, sizes and a lower-first D-10
+/// that RDD 9 / ST 356 do not have are refused.
+#[test]
+fn interlaced_mpeg2_mxf() {
+    let (p, seq, m) = project();
+    let xd = |path: &str| ExportSettings {
+        frame_size: Some((1920, 1080)),
+        frame_rate: Some(FrameRate::new(25, 1)),
+        bitrate_kbps: 50_000,
+        max_bitrate_kbps: Some(50_000),
+        keyframe_distance: Some(12),
+        mpeg2_b_frames: Some(2),
+        field_order: FieldOrder::UpperFirst,
+        ..settings(Format::MxfOp1a, MxfVideoCodec::XdcamHd422, path)
+    };
+    let refused = |s: ExportSettings| matches!(export(&p, seq, &s, &m, &Progress::default()), Err(ExportError::Unsupported(_)));
+    assert!(refused(ExportSettings { frame_rate: Some(FrameRate::FPS_24), ..xd(&tmp("xd_1080i24.mxf")) }), "RDD 9 has no 1080i at 24 fps");
+    assert!(refused(ExportSettings { frame_size: Some((1280, 720)), ..xd(&tmp("xd_720i.mxf")) }), "720 lines are progressive");
+    assert!(refused(ExportSettings { mxf_video_codec: MxfVideoCodec::ProRes, ..xd(&tmp("prores_i.mxf")) }), "ProRes in MXF is progressive");
+    let path = tmp("xd_1080i.mxf");
+    let r = export(&p, seq, &xd(&path), &m, &Progress::default()).unwrap();
+    let n = r.frames as usize;
+    let bytes = std::fs::read(&path).unwrap();
+    let mx = cfa4_mxf::open(&bytes).unwrap();
+    assert!(mx.warnings.is_empty(), "{:?}", mx.warnings);
+    let v = &mx.tracks[mx.track_of_kind(cfa4_mxf::TrackKind::Picture).unwrap()];
+    assert_eq!((v.codec, v.samples.len()), (cfa4_mxf::Codec::Mpeg2, n));
+    let pi = v.picture.as_ref().unwrap();
+    assert_eq!((pi.frame_layout, pi.stored_width, pi.stored_height, pi.display_height), (1, 1920, 544, 540));
+    assert_eq!((pi.frame_width(), pi.frame_height()), (1920, 1080));
+    // the descriptor's field properties, as RDD 9's annex table gives them
+    let find = |key: &[u8]| bytes.windows(key.len()).position(|w| w == key).map(|i| &bytes[i + key.len()..]);
+    assert_eq!(find(&[0x32, 0x0D, 0x00, 0x10]).map(|b| &b[..16]), Some(&[0, 0, 0, 2, 0, 0, 0, 4, 0, 0, 0, 21, 0, 0, 2, 0x48][..]), "video line map 21, 584");
+    assert_eq!(find(&[0x32, 0x12, 0x00, 0x01]).map(|b| b[0]), Some(1), "field dominance");
+    assert_eq!(find(&[0x32, 0x15, 0x00, 0x01]).map(|b| b[0]), Some(4), "signal standard ST 274");
+    let Some(ffmpeg) = cfa4_testkit::ffmpeg_or_skip("MXF 1080i decode") else { return };
+    let raw = ["-f", "rawvideo", "-pix_fmt", "yuv422p"];
+    let theirs = ffmpeg_raw(&ffmpeg, &path, "0:v:0", &raw);
+    assert_eq!(theirs.len(), n * 1920 * 1080 * 2);
+    let es = tmp("xd_1080i.m2v");
+    let ess = ExportSettings { format: Format::Mpeg2, mpeg2_container: "es".into(), mpeg2_422: true, ..xd(&es) };
+    export(&p, seq, &ess, &m, &Progress::default()).unwrap();
+    assert!(theirs == ffmpeg_raw(&ffmpeg, &es, "0:v:0", &raw), "the MXF essence is the interlaced elementary stream");
+    if let Some(ffprobe) = cfa4_testkit::ffprobe_or_skip("MXF 1080i probe") {
+        let j = ffprobe_json(&ffprobe, &path);
+        let v = j["streams"].as_array().unwrap().iter().find(|s| s["codec_type"] == "video").unwrap().clone();
+        assert_eq!((v["width"].as_u64(), v["height"].as_u64(), v["field_order"].as_str()), (Some(1920), Some(1080), Some("tt")), "{v}");
+        assert_eq!(v["nb_read_frames"], n.to_string());
+    }
+
+    // D-10: interlaced pictures in the separate-field layout it always has
+    let d10 = |path: &str| ExportSettings {
+        frame_size: Some((720, 576)),
+        frame_rate: Some(FrameRate::new(25, 1)),
+        pixel_aspect: Some((16, 15)),
+        bitrate_kbps: 50_000,
+        field_order: FieldOrder::UpperFirst,
+        ..settings(Format::MxfOp1a, MxfVideoCodec::D10, path)
+    };
+    assert!(refused(ExportSettings { field_order: FieldOrder::LowerFirst, ..d10(&tmp("d10_bff.mxf")) }), "D-10 is upper field first");
+    let path = tmp("d10_i.mxf");
+    let r = export(&p, seq, &d10(&path), &m, &Progress::default()).unwrap();
+    let n = r.frames as usize;
+    let bytes = std::fs::read(&path).unwrap();
+    let mx = cfa4_mxf::open(&bytes).unwrap();
+    let v = &mx.tracks[mx.track_of_kind(cfa4_mxf::TrackKind::Picture).unwrap()];
+    assert!(v.samples.iter().all(|s| s.key && s.size == 250_000));
+    let src = cfa4_codecs::open_bytes("x.mxf", bytes.clone().into()).unwrap();
+    let theirs = ffmpeg_raw(&ffmpeg, &path, "0:v:0", &raw);
+    let fsize = 720 * 608 * 2;
+    assert_eq!(theirs.len(), n * fsize);
+    for f in [0usize, n / 2, n - 1] {
+        let frame = &theirs[f * fsize..f * fsize + 720 * 608];
+        assert!(frame[..720 * 32].iter().all(|&y| y.abs_diff(16) <= 2), "frame {f}: vertical interval");
+        let t = FrameRate::new(25, 1).tick_of(f as i64) + Tick(1);
+        let ours = src.video_frame(FrameRequest::full(t)).unwrap();
+        let cfa4_frame::PixelData::Yuv8 { planes, .. } = &ours.data else { panic!("8-bit Y'CbCr") };
+        let (h, want) = if planes[0].len() == 720 * 608 { (608, frame) } else { (576, &frame[720 * 32..]) };
+        let worst = planes[0][..720 * h].iter().zip(want).map(|(a, b)| a.abs_diff(*b)).max().unwrap_or(0);
+        assert!(worst <= 4, "frame {f}: luma differs by {worst}");
+    }
+    if let Some(ffprobe) = cfa4_testkit::ffprobe_or_skip("MXF D-10 interlaced probe") {
+        let j = ffprobe_json(&ffprobe, &path);
+        let v = j["streams"].as_array().unwrap().iter().find(|s| s["codec_type"] == "video").unwrap().clone();
+        assert_eq!(v["field_order"].as_str(), Some("tt"), "{v}");
+    }
+}
+
 /// Uncompressed MXF (#946): v210 and UYVY pictures in OP1a and OP-Atom read back with our
 /// demuxer (layout, picture size, one picture per edit unit) and decode to the rendered frames
 /// within the 4:2:2 Rec. 709 round trip; ffprobe / ffmpeg (oracle) name the codec and decode

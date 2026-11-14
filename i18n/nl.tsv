@@ -4380,6 +4380,10 @@ export.summary	Low	laag
 	{n} more	Nog {n}
 	Block	Blok
 	parallel	parallel
+	page {page}: a spine's vertical position works on card pages only; it is ignored	pagina {page}: de verticale positie van een as werkt alleen op kaartpagina’s; ze wordt genegeerd
+	on a card: centered on {y} px	op een kaart: gecentreerd op {y} px
+	on a card: starts at {y} px	op een kaart: begint op {y} px
+	on a card: ends at {y} px	op een kaart: eindigt op {y} px
 # MPEG-2 export audio (#268): a product name, kept as is
 	Dolby Digital (AC-3)	Dolby Digital (AC-3)
 	In the page (OBS takes it from the Browser Source)	In de pagina (OBS haalt het uit de browserbron)
@@ -4452,7 +4456,12 @@ export.summary	Low	laag
 	page {page}: the runtime is reached by changing the roll speed (the gaps would have to grow more than 20-fold)	pagina {page}: de looptijd wordt bereikt door de rolsnelheid te wijzigen (de ruimtes zouden meer dan 20 keer zo groot moeten worden)
 	page {page}: the transition needs the pages to touch (page gap 0); it is left out	pagina {page}: de overgang vereist dat de pagina's aansluiten (paginatussenruimte 0); die wordt weggelaten
 	page {page}: there is no transition “{name}”; the pages cut	pagina {page}: er is geen overgang “{name}”; de pagina's wisselen met een harde las
-	spine position “{value}” is not supported (a pixel offset, optionally “parallel”, is)	aspositie “{value}” wordt niet ondersteund (een verschuiving in pixels, eventueel met “parallel”, wel)
+	spine position “{value}” is not supported (a pixel offset, optionally “parallel”, or “Hook N Bottom-Top dx dy” is)	aspositie “{value}” wordt niet ondersteund (een verschuiving in pixels, eventueel met “parallel” / “Hook N Bottom-Top dx dy”, wel)
+	page {page}: the hook reaches back further than there are spines; it hooks onto the first spine, or starts its own	pagina {page}: de haak reikt verder terug dan er assen zijn; hij haakt aan de eerste as of begint een eigen as
+	hooked {n} spines back: its {from} meets this spine's {to}	{n} assen terug gehaakt: de {from} daarvan raakt de {to} van deze as
+	top	bovenkant
+	middle	midden
+	bottom	onderkant
 	vertical gap “{value}” is not a number	verticale ruimte “{value}” is geen getal
 	picture “{file}” was not found or cannot be read; it is left out	afbeelding “{file}” is niet gevonden of kan niet worden gelezen; die wordt weggelaten
 	video “{file}” was not found or cannot be read; it is left out	video “{file}” is niet gevonden of kan niet worden gelezen; die wordt weggelaten
@@ -4517,7 +4526,7 @@ export.summary	Low	laag
 	the engine sent no report	de engine heeft geen rapport gestuurd
 	MXF OP1a Uncompressed 10-bit 4:2:2 (v210)	MXF OP1a ongecomprimeerd 10-bit 4:2:2 (v210)
 	MXF OP1a, uncompressed 10-bit Y'CbCr 4:2:2 in the v210 layout (SMPTE ST 384), 24-bit 48 kHz PCM, start timecode	MXF OP1a, ongecomprimeerd 10-bit Y'CbCr 4:2:2 in de v210-indeling (SMPTE ST 384), 24-bit 48 kHz PCM, starttijdcode
-	Write the captions as ANC data (CEA-608/708, 29.97 fps)	Ondertiteling als ANC-gegevens schrijven (CEA-608/708, 29,97 fps)
+	Write the captions as ANC data (CEA-608/708)	Ondertiteling als ANC-gegevens schrijven (CEA-608/708)
 	Load KDM…	KDM laden…
 	Forget DCP Keys	DCP-sleutels vergeten
 	Load KDM	KDM laden

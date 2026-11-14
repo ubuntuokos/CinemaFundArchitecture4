@@ -4387,6 +4387,10 @@
 	{n} more	{n} weitere
 	Block	Block
 	parallel	parallel
+	page {page}: a spine's vertical position works on card pages only; it is ignored	Seite {page}: die senkrechte Position einer Achse gilt nur auf Kartenseiten; sie wird ignoriert
+	on a card: centered on {y} px	auf einer Karte: mittig auf {y} px
+	on a card: starts at {y} px	auf einer Karte: beginnt bei {y} px
+	on a card: ends at {y} px	auf einer Karte: endet bei {y} px
 # MPEG-2 export audio (#268): a product name, kept as is
 	Dolby Digital (AC-3)	Dolby Digital (AC-3)
 	In the page (OBS takes it from the Browser Source)	In der Seite (OBS übernimmt ihn aus der Browserquelle)
@@ -4459,7 +4463,12 @@
 	page {page}: the runtime is reached by changing the roll speed (the gaps would have to grow more than 20-fold)	Seite {page}: Die Laufzeit wird durch Ändern der Rollgeschwindigkeit erreicht (die Abstände müssten auf mehr als das 20-Fache wachsen)
 	page {page}: the transition needs the pages to touch (page gap 0); it is left out	Seite {page}: Der Übergang setzt voraus, dass die Seiten aneinanderstoßen (Seitenabstand 0); er wird weggelassen
 	page {page}: there is no transition “{name}”; the pages cut	Seite {page}: Es gibt keinen Übergang “{name}”; die Seiten werden hart geschnitten
-	spine position “{value}” is not supported (a pixel offset, optionally “parallel”, is)	Achsenposition “{value}” wird nicht unterstützt (ein Pixelversatz, optional mit “parallel”, wird unterstützt)
+	spine position “{value}” is not supported (a pixel offset, optionally “parallel”, or “Hook N Bottom-Top dx dy” is)	Achsenposition “{value}” wird nicht unterstützt (ein Pixelversatz, optional mit “parallel” / “Hook N Bottom-Top dx dy”, wird unterstützt)
+	page {page}: the hook reaches back further than there are spines; it hooks onto the first spine, or starts its own	Seite {page}: Der Haken reicht weiter zurück, als es Achsen gibt; er hängt an der ersten Achse oder beginnt eine eigene
+	hooked {n} spines back: its {from} meets this spine's {to}	{n} Achsen zurück eingehakt: deren {from} trifft {to} dieser Achse
+	top	Oberkante
+	middle	Mitte
+	bottom	Unterkante
 	vertical gap “{value}” is not a number	Vertikaler Abstand “{value}” ist keine Zahl
 	picture “{file}” was not found or cannot be read; it is left out	Bild “{file}” wurde nicht gefunden oder kann nicht gelesen werden; es wird weggelassen
 	video “{file}” was not found or cannot be read; it is left out	Video “{file}” wurde nicht gefunden oder kann nicht gelesen werden; es wird weggelassen
@@ -4524,7 +4533,7 @@
 	the engine sent no report	die Engine hat keinen Bericht gesendet
 	MXF OP1a Uncompressed 10-bit 4:2:2 (v210)	MXF OP1a Unkomprimiert 10 Bit 4:2:2 (v210)
 	MXF OP1a, uncompressed 10-bit Y'CbCr 4:2:2 in the v210 layout (SMPTE ST 384), 24-bit 48 kHz PCM, start timecode	MXF OP1a, unkomprimiertes 10-Bit-Y'CbCr 4:2:2 im v210-Layout (SMPTE ST 384), 24-Bit-PCM mit 48 kHz, Start-Timecode
-	Write the captions as ANC data (CEA-608/708, 29.97 fps)	Untertitel als ANC-Daten schreiben (CEA-608/708, 29,97 fps)
+	Write the captions as ANC data (CEA-608/708)	Untertitel als ANC-Daten schreiben (CEA-608/708)
 	Load KDM…	KDM laden…
 	Forget DCP Keys	DCP-Schlüssel vergessen
 	Load KDM	KDM laden
