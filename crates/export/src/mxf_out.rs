@@ -153,6 +153,19 @@ impl MxfMux {
             cfg.sound = vec![SoundDesc { sample_rate: sr, channels: ch as u32, bits }];
         }
         cfg.rdd9 = settings.mxf_video_codec == MxfVideoCodec::XdcamHd422;
+        if !atom && !settings.mxf_as11_core.trim().is_empty() {
+            use cfa4_mxf::as11;
+            let bad = |e: String| ExportError::Unsupported(format!("AS-11: {e}"));
+            let base = cfg.timecode.map_or(25, |t| t.rounded_base());
+            let clock = as11::Clock { start: s.timecode.0, base };
+            let ukdpp =
+                if settings.mxf_as11_ukdpp.trim().is_empty() { Vec::new() } else { as11::parse_framework_text(&settings.mxf_as11_ukdpp).map_err(bad)? };
+            cfg.as11 = Some(as11::As11 {
+                core: as11::parse_framework_text(&settings.mxf_as11_core).map_err(bad)?,
+                segments: as11::parse_segments_text(&settings.mxf_as11_segments, clock).map_err(bad)?,
+                ukdpp,
+            });
+        }
         let cdp = match s.captions.as_ref().filter(|_| !atom) {
             Some(doc) => {
                 if s.rate != cfa4_captions::mcc::RATE {

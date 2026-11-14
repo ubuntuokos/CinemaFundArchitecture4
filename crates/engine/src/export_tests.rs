@@ -1374,3 +1374,39 @@ fn mxf_op1a_writes_captions_as_anc_data() {
     let err = s25.execute("file.exportMedia", p).unwrap_err().to_string();
     assert!(err.contains("29.97"), "{err}");
 }
+
+/// #96: MXF OP1a with AS-11 metadata (bmx's text forms): the Core and UK DPP frameworks and the
+/// programme parts read back with our reader, ffprobe still opens the file, and a bad item,
+/// OP-Atom and UK DPP without Core are refused before exporting.
+#[test]
+fn mxf_op1a_writes_as11_metadata() {
+    let dir = Scratch::new("mxf-as11");
+    let mut s = Session::default();
+    s.execute("file.newSequence", json!({"name":"AS11", "fps":25, "width":320, "height":180, "video":1, "audio":1})).unwrap();
+    let out = dir.path("as11.mxf");
+    let core = "SeriesTitle: Sorozat\nProgrammeTitle: Műsor\nEpisodeTitleNumber: 1. rész\nShimName: UK DPP HD\nShimVersion: 1.1\nAudioTrackLayout: 3\nPrimaryAudioLanguage: hun\nClosedCaptionsPresent: false\n";
+    let ukdpp = "ProductionNumber: P1\nSynopsis: Teszt\nOriginator: CFA4\nCopyrightYear: 2026\nThreeD: false\nPSEPass: 1\nSecondaryAudioLanguage: zxx\nTertiaryAudioLanguage: zxx\nAudioLoudnessStandard: 1\nLineUpStart: 00:00:00:00\nIdentClockStart: 00:00:00:05\nAudioDescriptionPresent: false\nOpenCaptionsPresent: false\nSigningPresent: 2\nCompletionDate: 2026-11-14\nContactEmail: info@example.com\nContactTelephoneNumber: 0\n";
+    let p = json!({"format":"mxf-op1a", "path": out, "mxfAs11Core": core, "mxfAs11Segments": "1/2 00:00:00:10 00:00:00:15\n2/2 00:00:01:05 15\n", "mxfAs11Ukdpp": ukdpp, "range":"custom", "startSeconds":0.0, "endSeconds":2.0, "wait":true});
+    s.execute("file.exportMedia", p.clone()).unwrap();
+    let bytes = std::fs::read(&out).unwrap();
+    let m = cfa4_mxf::open(&bytes[..]).unwrap();
+    assert!(m.warnings.is_empty(), "{:?}", m.warnings);
+    let a = m.as11.unwrap();
+    let get = |v: &[(String, String)], k: &str| v.iter().find(|(n, _)| n == k).map(|(_, v)| v.clone()).unwrap_or_default();
+    assert_eq!(get(&a.core, "ProgrammeTitle"), "Műsor");
+    assert_eq!(get(&a.core, "ShimVersion"), "1.1");
+    let parts: Vec<(i64, i64, u16, u16)> = a.segments.iter().map(|s| (s.start, s.duration, s.part_number, s.part_total)).collect();
+    assert_eq!(parts, vec![(10, 15, 1, 2), (30, 15, 2, 2)]);
+    assert_eq!(get(&a.ukdpp, "IdentClockStart"), "00:00:00:05");
+    assert_eq!(get(&a.ukdpp, "TotalNumberOfParts"), "2");
+    assert_eq!(get(&a.ukdpp, "TotalProgrammeDuration"), "30");
+    if let Some(j) = probe(&out) {
+        assert!(j["streams"].as_array().unwrap().iter().any(|s| s["codec_type"] == "video"), "{j}");
+    }
+    for (key, value) in [("format", json!("mxf-opatom")), ("mxfAs11Core", json!("SeriesTitle: x\nNope: 1\n")), ("mxfAs11Core", json!(""))] {
+        let mut q = p.clone();
+        q[key] = value;
+        let e = s.execute("file.exportMedia", q).unwrap_err().to_string();
+        assert!(e.contains("AS-11"), "{key}: {e}");
+    }
+}

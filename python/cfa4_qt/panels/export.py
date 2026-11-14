@@ -33,6 +33,7 @@ from PySide6.QtWidgets import (
     QLabel,
     QLineEdit,
     QMessageBox,
+    QPlainTextEdit,
     QProgressBar,
     QPushButton,
     QScrollArea,
@@ -526,6 +527,20 @@ class ExportDialog(QDialog):
         # MXF OP1a: the caption track as closed captions in an ANC data track (ST 436-1, CEA-608/708)
         self.mxf_anc = QCheckBox(tr("Write the captions as ANC data (CEA-608/708, 29.97 fps)"), self)
         self.mxf_anc.setObjectName("export.video.mxfAncCaptions")
+        # MXF OP1a: AMWA AS-11 metadata in bmx's text forms (empty Core = no AS-11 metadata)
+        self.as11_text: dict[str, QPlainTextEdit] = {}
+        # the placeholders show bmx's text forms (item names and time codes, not translated)
+        for key, hint in (
+            ("mxfAs11Core", "SeriesTitle: …\nProgrammeTitle: …\nShimName: UK DPP HD\nShimVersion: 1.1"),
+            ("mxfAs11Segments", "1/2 10:00:00:00 00:12:30:00\n2/2 10:13:00:00 00:11:00:00"),
+            ("mxfAs11Ukdpp", "ProductionNumber: …\nSynopsis: …\nContactEmail: …"),
+        ):
+            t = QPlainTextEdit(self)
+            t.setObjectName(f"export.video.{key}")
+            t.setPlaceholderText(hint)
+            t.setFixedHeight(72)
+            t.setTabChangesFocus(True)
+            self.as11_text[key] = t
         self.quality = QSpinBox(self)
         self.quality.setObjectName("export.video.quality")
         self.quality.setRange(1, 100)
@@ -595,6 +610,8 @@ class ExportDialog(QDialog):
         fv.addRow(tr("Alpha"), self.alpha)
         fv.addRow(tr("DASH Manifest"), self.dash_manifest)
         fv.addRow(tr("Closed Captions"), self.mxf_anc)
+        for key, label in (("mxfAs11Core", N_("AS-11 Core")), ("mxfAs11Segments", N_("AS-11 Parts")), ("mxfAs11Ukdpp", N_("AS-11 UK DPP"))):
+            fv.addRow(tr(label), self.as11_text[key])
         fv.addRow(tr("Quality"), self.quality)
         self.video_form = fv
         fv.addRow(self.hardware)
@@ -809,6 +826,8 @@ class ExportDialog(QDialog):
             c.currentIndexChanged.connect(lambda _i, k=key: self._touch(k))
         for key, b in (("hardware", self.hardware), ("audio", self.audio), ("alpha", self.alpha), ("dashManifest", self.dash_manifest), ("mxfAncCaptions", self.mxf_anc)):
             b.toggled.connect(lambda _on, k=key: self._touch(k))
+        for key, t in self.as11_text.items():
+            t.textChanged.connect(lambda k=key: self._touch(k))
         for key, c in self.format_choices.items():
             c.currentIndexChanged.connect(lambda _i, k=key: (self._touch(k), self._sync_format_rows()))
         self.quality.valueChanged.connect(lambda _v: self._touch("quality"))
@@ -1053,6 +1072,8 @@ class ExportDialog(QDialog):
         rows["quality"] = enc in QUALITY_FORMATS
         rows["dashManifest"] = fmt == "hls"
         rows["mxfAncCaptions"] = fmt == "mxf-op1a" and self._choice("mxfVideoCodec") != "d10"
+        for key in self.as11_text:
+            rows[key] = fmt == "mxf-op1a"
         return rows
 
     def _sync_mpeg2_rows(self) -> None:
@@ -1094,6 +1115,7 @@ class ExportDialog(QDialog):
             "quality": self.quality,
             "dashManifest": self.dash_manifest,
             "mxfAncCaptions": self.mxf_anc,
+            **self.as11_text,
         }
         for key, shown in self._format_rows().items():
             self.video_form.setRowVisible(widgets[key], shown)
@@ -1112,6 +1134,11 @@ class ExportDialog(QDialog):
                 box.blockSignals(True)
                 box.setChecked(settings[key])
                 box.blockSignals(False)
+        for key, t in self.as11_text.items():
+            if key not in self.touched and isinstance(settings.get(key), str) and settings[key] != t.toPlainText():
+                t.blockSignals(True)
+                t.setPlainText(settings[key])
+                t.blockSignals(False)
         self.rows.show_settings(settings, self.touched)
         self._show_bitrate(settings)
         if "bitrateMode" not in self.touched and isinstance(settings.get("bitrateMode"), str):
@@ -1376,6 +1403,9 @@ class ExportDialog(QDialog):
             p["dashManifest"] = self.dash_manifest.isChecked()
         if rows["mxfAncCaptions"] and "mxfAncCaptions" in self.touched:
             p["mxfAncCaptions"] = self.mxf_anc.isChecked()
+        for key, t in self.as11_text.items():
+            if rows[key] and key in self.touched:
+                p[key] = t.toPlainText()
         if rows["quality"] and "quality" in self.touched:
             p["quality"] = self.quality.value()
         if self.container.isEnabled():
