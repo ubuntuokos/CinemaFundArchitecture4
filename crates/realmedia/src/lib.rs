@@ -8,10 +8,13 @@
 //! (`1u32` LE, then the slice's LE byte offset) and the concatenated slice data.
 //!
 //! Audio streams are listed with their raw type-specific data and their packets are returned
-//! as stored (no deinterleaving yet).
+//! as stored; [`audio::parse_audio_info`] reads a RealAudio header and [`audio::Deinterleaver`]
+//! turns the packets into codec frames (`genr`, `Int4`, `sipr`, `vbrs`/`vbrf`).
 //!
 //! Every number in the file is treated as hostile: sizes are capped and checked, a damaged
 //! packet is skipped and the reader resynchronises on the next packet header.
+
+pub mod audio;
 
 use std::io::{ErrorKind, Read, Seek, SeekFrom};
 

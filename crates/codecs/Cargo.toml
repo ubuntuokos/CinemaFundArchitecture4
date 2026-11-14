@@ -53,6 +53,7 @@ cfa4-hap = { workspace = true }
 cfa4-canopus = { workspace = true }
 cfa4-realmedia = { workspace = true }
 cfa4-realvideo = { workspace = true }
+cfa4-realaudio = { workspace = true }
 cfa4-utvideo = { workspace = true }
 cfa4-huffyuv = { workspace = true }
 cfa4-ffv1 = { workspace = true }
