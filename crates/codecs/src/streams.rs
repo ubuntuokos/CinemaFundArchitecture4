@@ -198,7 +198,7 @@ macro_rules! byte_source {
         }
     )*};
 }
-byte_source!(cfa4_isobmff::ByteSource, cfa4_matroska::ByteSource, cfa4_mpegts::ByteSource, cfa4_mxf::ByteSource, cfa4_ogg::ByteSource, cfa4_avi::ByteSource);
+byte_source!(cfa4_isobmff::ByteSource, cfa4_matroska::ByteSource, cfa4_mpegts::ByteSource, cfa4_mxf::ByteSource, cfa4_avi::ByteSource);
 
 /// Bytes read from the start of the file to recognise its container.
 const HEAD: u64 = 70_000;
@@ -225,13 +225,13 @@ pub fn stream_list(src: &dyn ByteReader) -> Option<Result<StreamList, String>> {
         return Some(cfa4_avi::open(&s).map(|f| avi(&f)).map_err(|e| e.to_string()));
     }
     if cfa4_ogg::sniff(&head) {
-        return Some(cfa4_ogg::open(&s).map(|f| ogg(&f)).map_err(|e| e.to_string()));
+        return Some(ogg(src));
     }
     if cfa4_mpegts::sniff(&head).is_some() {
         return Some(cfa4_mpegts::open(&s).map(|f| mpeg(&f, &s)).map_err(|e| e.to_string()));
     }
     if head.starts_with(b"RIFF") && head.get(8..12) == Some(b"WAVE") {
-        return wav(&head).map(Ok);
+        return wav(&head);
     }
     if head.starts_with(b"fLaC") {
         return flac(&head).map(Ok);
@@ -574,8 +574,10 @@ fn mxf(f: &cfa4_mxf::MxfFile) -> StreamList {
         if let Some(p) = &t.picture {
             let (w, h) = if p.display_width > 0 && p.display_height > 0 { (p.display_width, p.display_height) } else { (p.stored_width, p.stored_height) };
             // separated fields (frame layout 1) describe one field: the frame is twice as tall
-            let h = if p.frame_layout == 1 { h * 2 } else { h };
-            s = s.size(w, h);
+            let h = if p.frame_layout == 1 { h.checked_mul(2) } else { Some(h) };
+            if let Some(h) = h {
+                s = s.size(w, h);
+            }
         }
         if let Some(a) = &t.sound {
             let rate = if a.sample_rate.den > 0 { (a.sample_rate.num / a.sample_rate.den) as u32 } else { 0 };
@@ -588,28 +590,87 @@ fn mxf(f: &cfa4_mxf::MxfFile) -> StreamList {
 
 // ---------------------------------------------------------------- Ogg
 
-fn ogg(f: &cfa4_ogg::OggFile) -> StreamList {
-    use cfa4_ogg::Codec;
-    let mut l = StreamList { container: "ogg".into(), warnings: f.warnings.clone(), ..StreamList::default() };
-    for st in &f.streams {
-        let h = st.headers.first().map(Vec::as_slice).unwrap_or_default();
+/// Pages read at most while looking for the first page of every logical stream.
+const OGG_MAX_HEADER_PAGES: usize = 1024;
+
+/// The first packet of each logical stream of an Ogg file, by serial, in file order. Every stream
+/// begins with a beginning-of-stream page, and all of them precede the first data page (RFC 3533
+/// §4), so only the pages at the start of the file are read, never the whole file.
+fn ogg_first_packets(src: &dyn ByteReader) -> Result<Vec<(u32, Vec<u8>)>, String> {
+    let len = src.len();
+    let mut firsts: Vec<(u32, Vec<u8>)> = Vec::new();
+    let mut pos = 0u64;
+    let mut hdr = [0u8; 27 + 255];
+    for _ in 0..OGG_MAX_HEADER_PAGES {
+        if pos + 27 > len {
+            break;
+        }
+        src.read_at(pos, &mut hdr[..27]).map_err(|e| e.to_string())?;
+        if &hdr[..4] != b"OggS" {
+            if firsts.is_empty() {
+                return Err(format!("no Ogg page at byte {pos}"));
+            }
+            break;
+        }
+        let bos = hdr[5] & 2 != 0;
+        if !bos {
+            break;
+        }
+        let serial = u32::from_le_bytes([hdr[14], hdr[15], hdr[16], hdr[17]]);
+        let nseg = usize::from(hdr[26]);
+        if pos + 27 + nseg as u64 > len {
+            return Err(format!("truncated Ogg page header at byte {pos}"));
+        }
+        src.read_at(pos + 27, &mut hdr[27..27 + nseg]).map_err(|e| e.to_string())?;
+        let lacing = &hdr[27..27 + nseg];
+        let body_len: u64 = lacing.iter().map(|&b| u64::from(b)).sum();
+        // the first packet: segments up to and including the first shorter than 255 bytes
+        let first_len: u64 = match lacing.iter().position(|&b| b < 255) {
+            Some(i) => lacing[..=i].iter().map(|&b| u64::from(b)).sum(),
+            None => body_len,
+        };
+        let body_at = pos + 27 + nseg as u64;
+        if body_at + first_len > len {
+            return Err(format!("truncated Ogg page at byte {pos}"));
+        }
+        let mut packet = vec![0; first_len as usize];
+        src.read_at(body_at, &mut packet).map_err(|e| e.to_string())?;
+        if !firsts.iter().any(|(s, _)| *s == serial) {
+            firsts.push((serial, packet));
+        }
+        pos = body_at + body_len;
+    }
+    if firsts.is_empty() {
+        return Err("no Ogg beginning-of-stream page".into());
+    }
+    Ok(firsts)
+}
+
+fn ogg(src: &dyn ByteReader) -> Result<StreamList, String> {
+    let mut l = StreamList { container: "ogg".into(), ..StreamList::default() };
+    for (serial, h) in ogg_first_packets(src)? {
+        let h = h.as_slice();
         let le32 = |o: usize| h.get(o..o + 4).map(|b| u32::from_le_bytes([b[0], b[1], b[2], b[3]])).unwrap_or(0);
         let be24 = |o: usize| h.get(o..o + 3).map(|b| u32::from_be_bytes([0, b[0], b[1], b[2]])).unwrap_or(0);
-        let mut s = match st.codec {
-            Codec::Opus => StreamEntry::new(StreamType::Audio).codec("opus").audio(h.get(9).copied().map(u32::from).unwrap_or(0), 48_000),
-            Codec::Vorbis => StreamEntry::new(StreamType::Audio).codec("vorbis").audio(h.get(11).copied().map(u32::from).unwrap_or(0), le32(12)),
-            Codec::Speex => StreamEntry::new(StreamType::Audio).codec("speex").audio(le32(48), le32(36)),
-            Codec::Flac => {
-                let (rate, ch) = h.get(13..).and_then(flac_streaminfo).unwrap_or((0, 0));
-                StreamEntry::new(StreamType::Audio).codec("flac").audio(ch, rate)
-            }
-            Codec::Theora => StreamEntry::new(StreamType::Video).codec("theora").size(be24(14), be24(17)),
-            Codec::Unknown => StreamEntry::new(StreamType::Data),
+        let mut s = if h.starts_with(b"OpusHead") {
+            StreamEntry::new(StreamType::Audio).codec("opus").audio(h.get(9).copied().map(u32::from).unwrap_or(0), 48_000)
+        } else if h.starts_with(b"\x01vorbis") {
+            StreamEntry::new(StreamType::Audio).codec("vorbis").audio(h.get(11).copied().map(u32::from).unwrap_or(0), le32(12))
+        } else if h.starts_with(b"Speex   ") {
+            StreamEntry::new(StreamType::Audio).codec("speex").audio(le32(48), le32(36))
+        } else if h.starts_with(b"\x7fFLAC") {
+            // 0x7F "FLAC", version (2 bytes), header count (2 bytes), then "fLaC" + STREAMINFO
+            let (rate, ch) = h.get(9..).and_then(flac_streaminfo).unwrap_or((0, 0));
+            StreamEntry::new(StreamType::Audio).codec("flac").audio(ch, rate)
+        } else if h.starts_with(b"\x80theora") {
+            StreamEntry::new(StreamType::Video).codec("theora").size(be24(14), be24(17))
+        } else {
+            StreamEntry::new(StreamType::Data)
         };
-        s.id = Some(st.serial.to_string());
+        s.id = Some(serial.to_string());
         l.push(s);
     }
-    l
+    Ok(l)
 }
 
 /// (sample rate, channels) of a FLAC `fLaC` + STREAMINFO block.
@@ -713,23 +774,27 @@ fn wave_format_entry(format_tag: u16, bits: u16, extra: &[u8]) -> StreamEntry {
 }
 
 /// A WAV file: its `fmt ` chunk, found in the first bytes.
-fn wav(head: &[u8]) -> Option<StreamList> {
-    let mut o = 12;
-    while o + 8 <= head.len() {
+/// A WAV file: its `fmt ` chunk, found in the first bytes. `None` when it is not there (the
+/// caller falls back to the opened source); an error when it is too short to describe the audio.
+fn wav(head: &[u8]) -> Option<Result<StreamList, String>> {
+    let mut o = 12usize;
+    while o.checked_add(8).is_some_and(|e| e <= head.len()) {
         let id = &head[o..o + 4];
         let size = u32::from_le_bytes([head[o + 4], head[o + 5], head[o + 6], head[o + 7]]) as usize;
-        let body = head.get(o + 8..)?;
         if id == b"fmt " {
-            let b = body.get(..size.min(body.len()))?;
-            let le16 = |i: usize| b.get(i..i + 2).map(|x| u16::from_le_bytes([x[0], x[1]])).unwrap_or(0);
-            let rate = b.get(4..8).map(|x| u32::from_le_bytes([x[0], x[1], x[2], x[3]])).unwrap_or(0);
+            // WAVEFORMAT is 16 bytes (tag, channels, rate, byte rate, block align, bits)
+            let Some(b) = o.checked_add(8).and_then(|a| Some((a, a.checked_add(size)?))).and_then(|(a, e)| head.get(a..e)).filter(|b| b.len() >= 16) else {
+                return Some(Err(format!("truncated WAV fmt chunk at byte {o} ({size} bytes)")));
+            };
+            let le16 = |i: usize| u16::from_le_bytes([b[i], b[i + 1]]);
+            let rate = u32::from_le_bytes([b[4], b[5], b[6], b[7]]);
             let extra = b.get(18..).unwrap_or_default();
             let s = wave_format_entry(le16(0), le16(14), extra).audio(u32::from(le16(2)), rate);
             let mut l = StreamList { container: "wav".into(), ..StreamList::default() };
             l.push(s);
-            return Some(l);
+            return Some(Ok(l));
         }
-        o = o.checked_add(8 + size + (size & 1))?;
+        o = o.checked_add(8)?.checked_add(size)?.checked_add(size & 1)?;
     }
     None
 }
@@ -739,4 +804,58 @@ fn flac(head: &[u8]) -> Option<StreamList> {
     let mut l = StreamList { container: "flac".into(), ..StreamList::default() };
     l.push(StreamEntry::new(StreamType::Audio).codec("flac").audio(ch, rate));
     Some(l)
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    fn wav_head(fmt_size: u32, fmt: &[u8]) -> Vec<u8> {
+        let mut b = b"RIFF\0\0\0\0WAVEfmt ".to_vec();
+        b.extend(fmt_size.to_le_bytes());
+        b.extend(fmt);
+        b
+    }
+
+    #[test]
+    fn a_wav_fmt_chunk_is_read() {
+        let mut fmt = vec![1, 0, 2, 0];
+        fmt.extend(48_000u32.to_le_bytes());
+        fmt.extend(192_000u32.to_le_bytes());
+        fmt.extend([4, 0, 16, 0]);
+        let l = wav(&wav_head(16, &fmt)).unwrap().unwrap();
+        assert_eq!((l.streams[0].codec.as_deref(), l.streams[0].channels, l.streams[0].sample_rate), (Some("pcm_s16le"), Some(2), Some(48_000)));
+    }
+
+    #[test]
+    fn a_truncated_wav_fmt_chunk_is_an_error() {
+        // the chunk says 16 bytes but the file ends after 6; a chunk that says 6 is too short too
+        assert!(wav(&wav_head(16, &[1, 0, 2, 0, 0x80, 0xBB])).unwrap().is_err());
+        assert!(wav(&wav_head(6, &[1, 0, 2, 0, 0x80, 0xBB])).unwrap().is_err());
+        // no fmt chunk in the bytes read: not recognised, the caller falls back
+        assert!(wav(b"RIFF\0\0\0\0WAVE").is_none());
+    }
+
+    #[test]
+    fn ogg_first_packets_stop_at_the_first_data_page() {
+        fn page(flags: u8, serial: u32, body: &[u8]) -> Vec<u8> {
+            let mut p = b"OggS\0".to_vec();
+            p.push(flags);
+            p.extend([0; 8]);
+            p.extend(serial.to_le_bytes());
+            p.extend([0; 8]);
+            p.push(1);
+            p.push(body.len() as u8);
+            p.extend(body);
+            p
+        }
+        let mut f = page(2, 7, b"OpusHead\x01\x02");
+        f.extend(page(0, 7, b"data"));
+        f.extend(page(2, 9, b"late bos is not read"));
+        let r = cfa4_media::reader::MemReader(f.into());
+        let firsts = ogg_first_packets(&r).unwrap();
+        assert_eq!(firsts, [(7, b"OpusHead\x01\x02".to_vec())]);
+        let l = ogg(&r).unwrap();
+        assert_eq!((l.streams[0].codec.as_deref(), l.streams[0].channels), (Some("opus"), Some(2)));
+    }
 }

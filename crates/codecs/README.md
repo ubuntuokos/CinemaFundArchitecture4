@@ -33,10 +33,10 @@ validation or repair bugs inside a dependency.
 video, audio, subtitle, data (QuickTime timecode and chapter-text tracks, unknown MPEG TS stream
 types) and attachment (Matroska fonts), each with its codec, container id, language, title,
 picture size, channels and sample rate, plus the file's chapters. It covers MP4 / MOV, Matroska /
-WebM, MPEG TS / PS, MXF, Ogg, AVI, WAV and FLAC; other files fall back to
+WebM, MPEG TS / PS, MXF, Ogg (read from its beginning-of-stream pages only), AVI, WAV and FLAC; other files fall back to
 `streams::from_media_info`. Only headers, codec configuration and (MPEG TS / PS) each stream's
 first access unit are read; nothing is decoded. Codec names, stream ids and the stream order follow
-FFmpeg's vocabulary, so `tests/streams_oracle.rs` checks the list of thirteen ffmpeg-made files
+FFmpeg's vocabulary, so `tests/streams_oracle.rs` checks the list of fourteen ffmpeg-made files
 against `ffprobe` field by field. `cfa4-cli probe` and the `export.analyze` command return it as
 `streams` and `chapters`.
 

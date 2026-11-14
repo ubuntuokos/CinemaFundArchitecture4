@@ -417,17 +417,18 @@ struct Trex {
 }
 
 /// QuickTime Macintosh language codes 0–138 (QuickTime File Format, "Language Code Values") as
-/// ISO 639-2 codes, in the spelling other readers (ffmpeg) report them; `""` for codes that have
+/// three-letter ISO 639-2 codes (the ones ffmpeg reports; where ffmpeg gives a two-letter code,
+/// its three-letter form), so that a muxer writes them back unchanged; `""` for codes that have
 /// none.
 const MAC_LANGUAGES: [&str; 139] = [
     "eng", "fra", "ger", "ita", "dut", "sve", "spa", "dan", "por", "nor", // 0
-    "heb", "jpn", "ara", "fin", "gre", "ice", "mlt", "tur", "hr", "chi", // 10
+    "heb", "jpn", "ara", "fin", "gre", "ice", "mlt", "tur", "hrv", "chi", // 10
     "urd", "hin", "tha", "kor", "lit", "pol", "hun", "est", "lav", "", // 20
-    "fo", "", "rus", "chi", "", "iri", "alb", "ron", "ces", "slk", // 30
-    "slv", "yid", "sr", "mac", "bul", "ukr", "bel", "uzb", "kaz", "aze", // 40
+    "fao", "", "rus", "chi", "", "iri", "alb", "ron", "ces", "slk", // 30
+    "slv", "yid", "srp", "mac", "bul", "ukr", "bel", "uzb", "kaz", "aze", // 40
     "aze", "arm", "geo", "mol", "kir", "tgk", "tuk", "mon", "", "pus", // 50
     "kur", "kas", "snd", "tib", "nep", "san", "mar", "ben", "asm", "guj", // 60
-    "pa", "ori", "mal", "kan", "tam", "tel", "", "bur", "khm", "lao", // 70
+    "pan", "ori", "mal", "kan", "tam", "tel", "", "bur", "khm", "lao", // 70
     "vie", "ind", "tgl", "may", "may", "amh", "tir", "orm", "som", "swa", // 80
     "", "run", "", "mlg", "epo", "", "", "", "", "", // 90
     "", "", "", "", "", "", "", "", "", "", // 100
@@ -1059,6 +1060,8 @@ mod tests {
         assert_eq!(parse_language(26), "hun");
         assert_eq!(parse_language(29), "und");
         assert_eq!(parse_language(0x3FF), "und");
+        // every mapped code packs back into `mdhd` unchanged (a strict copy re-reads it)
+        assert!(MAC_LANGUAGES.iter().filter(|l| !l.is_empty()).all(|l| l.len() == 3 && l.bytes().all(|c| c.is_ascii_lowercase())));
         assert_eq!(parse_language(0x15C7), "eng");
     }
 

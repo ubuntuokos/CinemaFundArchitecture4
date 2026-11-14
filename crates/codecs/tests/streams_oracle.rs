@@ -64,6 +64,7 @@ fn cases() -> Vec<Case> {
         },
         Case { file: "full.ogg", encoders: &["libtheora", "libvorbis"], args: "{V} {A44} -map 0 -map 1 -c:v libtheora -c:a libvorbis" },
         Case { file: "full.opus", encoders: &["libopus"], args: "{A48} -c:a libopus -ac 2" },
+        Case { file: "flac.oga", encoders: &["flac"], args: "{A44} -c:a flac -ac 2 -f ogg" },
         Case {
             file: "full.mxf",
             encoders: &["mpeg2video", "pcm_s16le"],
