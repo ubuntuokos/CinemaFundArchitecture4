@@ -52,7 +52,10 @@ pub struct VolumeIndex {
     pub issues: Vec<Issue>,
 }
 
-const ROOT: &[&str] = &["Id", "AnnotationText", "Creator", "VolumeCount", "IssueDate", "Issuer", "AssetList"];
+/// Root elements in schema order. The two standards differ: SMPTE ST 429-9 has `Creator` before
+/// `VolumeCount`, the Interop schema (`PROTO-ASDCP-AM-20040311`) has it after `Issuer`.
+const ROOT_SMPTE: &[&str] = &["Id", "AnnotationText", "Creator", "VolumeCount", "IssueDate", "Issuer", "AssetList"];
+const ROOT_INTEROP: &[&str] = &["Id", "AnnotationText", "VolumeCount", "IssueDate", "Issuer", "Creator", "AssetList"];
 const ASSET: &[&str] = &["Id", "AnnotationText", "PackingList", "ChunkList"];
 const CHUNK: &[&str] = &["Path", "VolumeIndex", "Offset", "Length"];
 
@@ -72,7 +75,7 @@ pub(crate) fn read(doc: &Document<'_>, standard: Standard) -> AssetMap {
     }
     let issue_date = r.date_time(root, p, "IssueDate", true);
     let issuer = r.required_text(root, p, "Issuer");
-    let extensions = r.unknown(root, p, ROOT);
+    let extensions = r.unknown(root, p, if standard == Standard::Interop { ROOT_INTEROP } else { ROOT_SMPTE });
     let mut assets = Vec::new();
     match r.child(root, p, "AssetList") {
         None => r.issue(IssueKind::Missing, "AssetMap/AssetList", root, "AssetList is missing"),
