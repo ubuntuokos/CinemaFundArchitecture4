@@ -170,7 +170,9 @@ let pcm = mxf.read_pcm(&file, a, 48_000, 1920)?;       // planar f32, sample-exa
   content key, ST 429-6 Annex B / FIPS 186-2 (`crypt::legacy_mic_key`), once the first triplet
   matches it) with the content key from the in-memory key ring (`crypt::add_key`, filled from a
   KDM by `cfa4-dcp` and the engine's `dcp.loadKdm`); without it they fail with `Error::Encrypted`
-  naming the Key ID. Keys are never written anywhere; `crypt::clear_keys` overwrites them.
+  naming the Key ID. `MxfFile::missing_keys` lists the Key IDs still missing (the engine reports
+  them as `needsKey` in `source.inspect` and the Project panel rows, and the Qt GUI shows
+  "KDM required"). Keys are never written anywhere; `crypt::clear_keys` overwrites them.
 
 - **OP1b–OP3c** (ST 391, 392, 393, 407, 408). A material track whose sequence holds several
   source clips plays them back to back as one `EssenceTrack`. Each clip contributes its own

@@ -236,7 +236,7 @@ class ExportRows(QObject):
 
     def allow_interlaced(self, on: bool) -> None:
         """egui greys out the interlaced field orders except for MPEG-2 and ProRes, the encoders
-        that code interlaced video (in MXF: MPEG-2, XDCAM HD422 or D-10); the others write
+        that code interlaced video (in MXF: MPEG-2, XDCAM HD422, D-10 or ProRes); the others write
         progressive frames."""
         model = self.field_order.model()
         for i in range(1, self.field_order.count()):

@@ -245,6 +245,15 @@ def as_int(v: Any, default: int = 0) -> int:
     return v if isinstance(v, int) and not isinstance(v, bool) else default
 
 
+def edge_time(clip: dict[str, Any], out: bool) -> int:
+    """The time of a clip's Out (``out``) or In edge; 0 when the engine left it out.
+
+    Written as ``int(clip.get("start") if in else clip.get("end") or 0)`` the ``or 0`` bound only to
+    the second operand, so a clip without a ``start`` raised TypeError on the In edge
+    (CFA4-PY-TYPING-001 T0b, K1)."""
+    return int(clip.get("end" if out else "start") or 0)
+
+
 def is_rtl(text: str) -> bool:
     """Whether ``text`` reads right to left: its first strong character is Hebrew or Arabic."""
     for ch in text[:256]:
@@ -2363,7 +2372,7 @@ class TimelineCanvas(QWidget):
             if not edge:  # these tools work on edges; a click on the body selects
                 self.command.emit("timeline.select", {"clips": [cid]})
                 return
-            origin = int(clip.get("start") if edge == "in" else clip.get("end") or 0)
+            origin = edge_time(clip, out=edge != "in")
             alone = bool(e.modifiers() & Qt.KeyboardModifier.AltModifier)  # Alt: only this side of a link
             if self.tool == "rateStretch":
                 self._drag = Drag("stretch", clip, pos, origin, edge=edge, linked=not alone)
@@ -2391,7 +2400,7 @@ class TimelineCanvas(QWidget):
             if self.sequence is not None:
                 self.sequence["selection"] = [cid]  # local echo until the engine's reply
         if edge:
-            origin = int(clip.get("start") if edge == "in" else clip.get("end") or 0)
+            origin = edge_time(clip, out=edge != "in")
             # Alt: only this side of a link (upstream #3301)
             self._drag = Drag("trim", clip, pos, origin, edge=edge, linked=not e.modifiers() & Qt.KeyboardModifier.AltModifier)
         else:
@@ -2494,7 +2503,7 @@ class TimelineCanvas(QWidget):
         elif self.tool == "ripple":
             select("ripple")
         else:
-            cut = int(clip.get("end") if edge == "out" else clip.get("start") or 0)
+            cut = edge_time(clip, out=edge == "out")
             host.edit_point_kind(abs(self.x_of(cut) - pos.x()), other is not None, select)
 
     def leaveEvent(self, e: QEvent) -> None:
