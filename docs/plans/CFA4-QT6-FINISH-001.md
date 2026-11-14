@@ -1,9 +1,10 @@
 # CFA4-QT6-FINISH-001 – a Qt6 GUI befejezése és az egui eltávolítása
 
-**Állapot:** TERVEZET 1.2 (2026-11-14; 1.1: 2026-11-10; 1.0: 2026-11-08), tulajdonosi jóváhagyásra vár.
+**Állapot:** FINAL 1.2 – a tulajdonos 2026-11-14-én jóváhagyta (1.1: 2026-11-10; 1.0: 2026-11-08).
 Az 1.2 változásai: D2 és D3 eldőlt, a Q4.3 a tulajdonos 2026-11-12-i és 2026-11-14-i döntése szerint
-(a csomagok semmilyen úton nem indítanak egui-t), a Q2 és a Q5.3 ehhez igazítva. Fejlesztés csak a jóváhagyott
-fázisokban indul. A 7. fejezet döntési pontjait a tulajdonos hozza meg.
+(a csomagok semmilyen úton nem indítanak egui-t), a Q2 és a Q5.3 ehhez igazítva. Fejlesztés csak e
+terv szerint folyik; a terv minden további módosítása után a munka a tulajdonos újabb jóváhagyásáig
+áll (`docs/coordination.md` §2.10).
 
 **Kapcsolódó dokumentumok:** döntés és fázisok: [`docs/adr/ADR-F8-QT6-RUST-ENGINE-2026-10-23.md`](../adr/ADR-F8-QT6-RUST-ENGINE-2026-10-23.md);
 pontonkénti lista: [`docs/qt-parity.md`](../qt-parity.md); technikai leírás: [`docs/qt-gui.md`](../qt-gui.md);
