@@ -41,6 +41,7 @@ cfa4-dts = { path = "crates/dts" }
 cfa4-auro = { path = "crates/auro" }
 cfa4-truehd = { path = "crates/truehd" }
 cfa4-tcsync = { path = "crates/tcsync" }
+cfa4-surface-catalog = { path = "crates/surface-catalog" }
 cfa4-tcsync-io = { path = "crates/tcsync-io" }
 cfa4-mpa = { path = "crates/mpa" }
 cfa4-ogg = { path = "crates/ogg" }

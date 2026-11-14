@@ -1,0 +1,17 @@
+[package]
+name = "cfa4-surface-catalog"
+description = "Hardware control surface catalogue for CFA4: device models, support goals, per-feature evidence from hardware test reports and the computed support status (pure, no device I/O)"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+rust-version.workspace = true
+
+[lints]
+workspace = true
+
+[dependencies]
+serde = { workspace = true }
+thiserror = { workspace = true }
+toml = "1"
+# hardware test reports (docs/audit/hw/*.yaml); pure Rust, no unsafe-libyaml
+serde-saphyr = "2"

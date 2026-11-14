@@ -1,0 +1,15 @@
+# Mountain DisplayPad (plan §2, M6).
+format = "cfa4-surface-catalog"
+version = 1
+family = "mountain"
+
+[[model]]
+id = "mountain.displaypad"
+vendor = "Mountain"
+name = "DisplayPad"
+kind = "lcd_keypad"
+goal = "BEST_EFFORT"
+adapter = "mountain"
+phase = "M6"
+connection = ["usb"]
+source = "mountain-displaypad (MIT)"
