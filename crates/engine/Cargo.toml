@@ -32,6 +32,7 @@ cfa4-scopes = { workspace = true }
 cfa4-text = { workspace = true }
 cfa4-audio-dsp = { workspace = true }
 cfa4-export = { workspace = true }
+cfa4-atracenc = { workspace = true }
 cfa4-mpegts = { workspace = true }
 cfa4-smart-edit = { workspace = true }
 cfa4-isobmff = { workspace = true }

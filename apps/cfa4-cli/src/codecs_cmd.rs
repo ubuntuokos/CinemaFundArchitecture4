@@ -141,10 +141,10 @@ static ROWS: &[Row] = &[
     audio("TTA (True Audio)", &["tta"], Ported, Sw(""), NoEnc),
     audio(
         "RealAudio Cook / SIPR / 1.0 (14.4) / 2.0 (28.8), ATRAC3, ATRAC3plus, ATRAC9",
-        &["realaudio"],
+        &["realaudio", "atracenc"],
         Ported,
         Sw("in RealMedia (.rm, .rmvb); ATRAC3 also in WAV (.wav, .at3), ATRAC3plus in WAV and OpenMG (.at3, .oma, .aa3), ATRAC9 in WAV (.at9)"),
-        NoEnc,
+        AudioTrack("ATRAC3 (.at3) in Tools ▸ Audio Tools ▸ AT9/AT3 Converter"),
     ),
     audio("G.729 / G.729 Annex B", &["g729"], Ported, Sw(""), NoEnc),
     audio("iLBC", &["ilbc"], Ported, Sw(""), NoEnc),

@@ -1392,6 +1392,7 @@ name = "cfa4-engine"
 version = "0.10.0"
 dependencies = [
  "base64 0.22.1",
+ "cfa4-atracenc",
  "cfa4-audio-dsp",
  "cfa4-auro",
  "cfa4-captions",
