@@ -1,0 +1,17 @@
+[package]
+name = "cfa4-vvc"
+description = "Clean-room H.266/VVC bitstream parsing (ITU-T H.266): NAL units, access units, random access, sequence parameter set"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+rust-version.workspace = true
+
+[lints]
+workspace = true
+
+[dependencies]
+cfa4-bitstream = { workspace = true }
+thiserror = { workspace = true }
+
+[dev-dependencies]
+cfa4-testkit = { workspace = true }

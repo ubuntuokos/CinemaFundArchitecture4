@@ -76,6 +76,7 @@ cfa4-tta = { path = "crates/tta" }
 cfa4-musepack = { path = "crates/musepack" }
 cfa4-av1 = { path = "crates/av1" }
 cfa4-av2 = { path = "crates/av2" }
+cfa4-vvc = { path = "crates/vvc" }
 cfa4-aac = { path = "crates/aac" }
 cfa4-flac = { path = "crates/flac" }
 cfa4-opus = { path = "crates/opus" }
