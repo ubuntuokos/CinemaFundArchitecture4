@@ -4598,6 +4598,16 @@ export.summary	Low	laag
 	software backend: {reason}	software-backend: {reason}
 	Start studio	Studio starten
 	Stop studio	Studio stoppen
+	Add Studio Scene	Studioscène toevoegen
+	Live	Live
+# Credits: title, opening, chapter and lower-third pages filled from a graphics template (F10-C16)
+	Opening Credits	Openingstitels
+	Chapter Title	Hoofdstuktitel
+	Lower Third	Onderbalk
+	page {page}: graphics template “{template}” was not found; “{used}” is used	pagina {page}: grafische sjabloon “{template}” is niet gevonden; “{used}” wordt gebruikt
+	page {page}: graphics template “{template}” has no field for all of the block's text; the rest is left out	pagina {page}: grafische sjabloon “{template}” heeft geen veld voor alle tekst van het blok; de rest wordt weggelaten
+	page {page}: template field “{control}” → “{part}” is not used (no such text control, or not head, body or tail)	pagina {page}: sjabloonveld “{control}” → “{part}” wordt niet gebruikt (geen tekstbesturing met die naam, of geen kop, hoofdtekst of staart)
+	page {page}: pictures are left out on title, opening, chapter and lower-third pages	pagina {page}: afbeeldingen worden weggelaten op titel-, openings-, hoofdstuk- en onderbalkpagina’s
 # Auto Color, Auto Contrast, Auto Levels (EffectsSDK review)
 	Auto Color	Automatische kleur
 	Auto Contrast	Automatisch contrast
@@ -4668,3 +4678,35 @@ export.summary	Low	laag
 	AS-11 Core	AS-11 Core
 	AS-11 Parts	AS-11-delen
 	AS-11 UK DPP	AS-11 UK DPP
+
+# Control Surfaces settings page (CS-1, #1187)
+	Devices	Apparaten
+	Use	Gebruiken
+	Device	Apparaat
+	MIDI	MIDI
+	HID jog/shuttle	HID-jog/shuttle
+	OSC	OSC
+	Connected	Verbonden
+	Not connected	Niet verbonden
+	Disabled	Uitgeschakeld
+	{device} ({port})	{device} ({port})
+	{name}: {error}	{name}: {error}
+	Looking for devices…	Apparaten zoeken…
+	No MIDI controller or jog/shuttle device was found. Connect one and press Refresh.	Geen MIDI-controller of jog/shuttle-apparaat gevonden. Sluit er een aan en druk op Vernieuwen.
+	Control Surfaces	Bedieningspanelen
+	Use control surfaces (MIDI controllers, jog/shuttle devices)	Bedieningspanelen gebruiken (MIDI-controllers, jog/shuttle-apparaten)
+	Mapping controls to commands, MIDI Learn and the MIDI Monitor come in a later version; the choices here are remembered until then.	Het koppelen van bedieningselementen aan opdrachten, MIDI Learn en de MIDI-monitor komen in een latere versie; tot dan worden de keuzes hier onthouden.
+	CFA4 ShuttlePRO	CFA4 ShuttlePRO
+	Kdenlive-style ShuttlePRO	ShuttlePRO in Kdenlive-stijl
+	Generic MIDI	Algemene MIDI
+
+# LTC timecode read from clip audio (TC-7, #1285)
+	Read from LTC Audio	Uit LTC-audio lezen
+	Find SMPTE LTC on the clip's audio and use the timecode it gives the first frame	SMPTE LTC in de audio van de clip zoeken en de tijdcode gebruiken die het aan het eerste beeld geeft
+	Read Timecode from LTC Audio	Tijdcode uit LTC-audio lezen
+# Credits: voices (the Voice column) in the block's properties (F10-C16)
+	Voices	Stemmen
+
+# Timecode sync varispeed and user bits (TC-8, #1308)
+	Varispeed: adjust the playback speed instead of seeking	Varispeed: afspeelsnelheid aanpassen in plaats van te springen
+	User bits	Gebruikersbits

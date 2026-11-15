@@ -1182,6 +1182,8 @@ dependencies = [
  "cfa4-render",
  "cfa4-route",
  "cfa4-scopes",
+ "cfa4-surface",
+ "cfa4-surface-model",
  "cfa4-tcsync",
  "cfa4-tcsync-io",
  "cfa4-testkit",
@@ -1225,7 +1227,9 @@ dependencies = [
  "cfa4-ilbc",
  "cfa4-isobmff",
  "cfa4-j2k",
+ "cfa4-lagarith",
  "cfa4-lcevc",
+ "cfa4-magicyuv",
  "cfa4-matroska",
  "cfa4-media",
  "cfa4-mpa",
@@ -1236,7 +1240,11 @@ dependencies = [
  "cfa4-ogg",
  "cfa4-opus",
  "cfa4-prores",
+ "cfa4-realmedia",
+ "cfa4-realvideo",
+ "cfa4-shorten",
  "cfa4-speex",
+ "cfa4-tak",
  "cfa4-testkit",
  "cfa4-time",
  "cfa4-truehd",
@@ -1748,6 +1756,14 @@ dependencies = [
 ]
 
 [[package]]
+name = "cfa4-lagarith"
+version = "0.10.0"
+dependencies = [
+ "cfa4-testkit",
+ "thiserror 2.0.21",
+]
+
+[[package]]
 name = "cfa4-lcevc"
 version = "0.10.0"
 
@@ -1758,6 +1774,15 @@ dependencies = [
  "base64 0.22.1",
  "serde_json",
  "sha2 0.10.9",
+]
+
+[[package]]
+name = "cfa4-magicyuv"
+version = "0.10.0"
+dependencies = [
+ "cfa4-avi",
+ "cfa4-testkit",
+ "thiserror 2.0.21",
 ]
 
 [[package]]
@@ -1937,6 +1962,23 @@ dependencies = [
 ]
 
 [[package]]
+name = "cfa4-realmedia"
+version = "0.10.0"
+dependencies = [
+ "cfa4-testkit",
+ "thiserror 2.0.21",
+]
+
+[[package]]
+name = "cfa4-realvideo"
+version = "0.10.0"
+dependencies = [
+ "cfa4-realmedia",
+ "cfa4-testkit",
+ "thiserror 2.0.21",
+]
+
+[[package]]
 name = "cfa4-render"
 version = "0.10.0"
 dependencies = [
@@ -1985,6 +2027,14 @@ dependencies = [
  "cfa4-color",
  "serde",
  "serde_json",
+]
+
+[[package]]
+name = "cfa4-shorten"
+version = "0.10.0"
+dependencies = [
+ "cfa4-testkit",
+ "thiserror 2.0.21",
 ]
 
 [[package]]
@@ -2049,6 +2099,16 @@ dependencies = [
 ]
 
 [[package]]
+name = "cfa4-surface"
+version = "0.10.0"
+dependencies = [
+ "alsa",
+ "cfa4-surface-model",
+ "serde",
+ "serde_json",
+]
+
+[[package]]
 name = "cfa4-surface-catalog"
 version = "0.10.0"
 dependencies = [
@@ -2056,6 +2116,22 @@ dependencies = [
  "serde-saphyr",
  "thiserror 2.0.21",
  "toml",
+]
+
+[[package]]
+name = "cfa4-surface-model"
+version = "0.10.0"
+dependencies = [
+ "serde",
+ "serde_json",
+]
+
+[[package]]
+name = "cfa4-tak"
+version = "0.10.0"
+dependencies = [
+ "cfa4-testkit",
+ "thiserror 2.0.21",
 ]
 
 [[package]]

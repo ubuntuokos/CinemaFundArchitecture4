@@ -4600,6 +4600,16 @@ export.summary	Low	төмен
 	software backend: {reason}	бағдарламалық бэкенд: {reason}
 	Start studio	Студияны іске қосу
 	Stop studio	Студияны тоқтату
+	Add Studio Scene	Студия сахнасын қосу
+	Live	Тікелей
+# Credits: title, opening, chapter and lower-third pages filled from a graphics template (F10-C16)
+	Opening Credits	Бастапқы титрлер
+	Chapter Title	Тарау атауы
+	Lower Third	Төменгі жолақ
+	page {page}: graphics template “{template}” was not found; “{used}” is used	{page}-бет: «{template}» графикалық үлгісі табылмады; «{used}» қолданылады
+	page {page}: graphics template “{template}” has no field for all of the block's text; the rest is left out	{page}-бет: «{template}» графикалық үлгісінде блоктың барлық мәтініне өріс жоқ; қалғаны алынып тасталды
+	page {page}: template field “{control}” → “{part}” is not used (no such text control, or not head, body or tail)	{page}-бет: «{control}» → «{part}» үлгі өрісі қолданылмайды (мұндай мәтін басқару элементі жоқ немесе ол тақырып, негізгі мәтін не соңғы бөлік емес)
+	page {page}: pictures are left out on title, opening, chapter and lower-third pages	{page}-бет: тақырып, бастапқы титр, тарау және төменгі жолақ беттерінде суреттер алынып тасталады
 # Auto Color, Auto Contrast, Auto Levels (EffectsSDK review)
 	Auto Color	Автоматты түс
 	Auto Contrast	Автоматты контраст
@@ -4670,3 +4680,35 @@ export.summary	Low	төмен
 	AS-11 Core	AS-11 Core
 	AS-11 Parts	AS-11 бөліктері
 	AS-11 UK DPP	AS-11 UK DPP
+
+# Control Surfaces settings page (CS-1, #1187)
+	Devices	Құрылғылар
+	Use	Пайдалану
+	Device	Құрылғы
+	MIDI	MIDI
+	HID jog/shuttle	HID jog/shuttle
+	OSC	OSC
+	Connected	Қосылған
+	Not connected	Қосылмаған
+	Disabled	Өшірілген
+	{device} ({port})	{device} ({port})
+	{name}: {error}	{name}: {error}
+	Looking for devices…	Құрылғылар ізделуде…
+	No MIDI controller or jog/shuttle device was found. Connect one and press Refresh.	MIDI контроллері немесе jog/shuttle құрылғысы табылмады. Біреуін қосып, «Жаңарту» түймесін басыңыз.
+	Control Surfaces	Басқару беттері
+	Use control surfaces (MIDI controllers, jog/shuttle devices)	Басқару беттерін пайдалану (MIDI контроллерлері, jog/shuttle құрылғылары)
+	Mapping controls to commands, MIDI Learn and the MIDI Monitor come in a later version; the choices here are remembered until then.	Басқару элементтерін пәрмендерге байлау, MIDI Learn және MIDI мониторы кейінгі нұсқада келеді; оған дейін мұндағы таңдаулар есте сақталады.
+	CFA4 ShuttlePRO	CFA4 ShuttlePRO
+	Kdenlive-style ShuttlePRO	Kdenlive стиліндегі ShuttlePRO
+	Generic MIDI	Жалпы MIDI
+
+# LTC timecode read from clip audio (TC-7, #1285)
+	Read from LTC Audio	LTC дыбысынан оқу
+	Find SMPTE LTC on the clip's audio and use the timecode it gives the first frame	Клип дыбысынан SMPTE LTC тауып, оның бірінші кадрға беретін уақыт кодын пайдалану
+	Read Timecode from LTC Audio	Уақыт кодын LTC дыбысынан оқу
+# Credits: voices (the Voice column) in the block's properties (F10-C16)
+	Voices	Дауыстар
+
+# Timecode sync varispeed and user bits (TC-8, #1308)
+	Varispeed: adjust the playback speed instead of seeking	Varispeed: секіру орнына ойнату жылдамдығын реттеу
+	User bits	Пайдаланушы биттері

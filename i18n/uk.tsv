@@ -4549,6 +4549,8 @@
 	Follow external timecode during playback	Стежити за зовнішнім тайм-кодом під час відтворення
 	Lock after	Захоплення після
 	Keep playing without signal for	Продовжувати без сигналу протягом
+	Varispeed: adjust the playback speed instead of seeking	Varispeed: підлаштовувати швидкість відтворення замість переходу
+	User bits	Користувацькі біти
 	External frame rate	Зовнішня частота кадрів
 	Offset (added to the external timecode)	Зсув (додається до зовнішнього тайм-коду)
 	LTC	LTC
@@ -4583,6 +4585,16 @@
 	software backend: {reason}	програмний бекенд: {reason}
 	Start studio	Запустити студію
 	Stop studio	Зупинити студію
+	Add Studio Scene	Додати сцену студії
+	Live	Наживо
+# Credits: title, opening, chapter and lower-third pages filled from a graphics template (F10-C16)
+	Opening Credits	Початкові титри
+	Chapter Title	Назва розділу
+	Lower Third	Плашка
+	page {page}: graphics template “{template}” was not found; “{used}” is used	сторінка {page}: графічний шаблон “{template}” не знайдено; використовується “{used}”
+	page {page}: graphics template “{template}” has no field for all of the block's text; the rest is left out	сторінка {page}: у графічному шаблоні “{template}” немає поля для всього тексту блоку; решту пропущено
+	page {page}: template field “{control}” → “{part}” is not used (no such text control, or not head, body or tail)	сторінка {page}: поле шаблону “{control}” → “{part}” не використовується (немає такого текстового елемента або це не заголовок, основний текст чи підпис)
+	page {page}: pictures are left out on title, opening, chapter and lower-third pages	сторінка {page}: на сторінках заголовка, початкових титрів, розділу та плашки зображення пропускаються
 # Auto Color, Auto Contrast, Auto Levels (EffectsSDK review)
 	Auto Color	Автоколір
 	Auto Contrast	Автоконтраст
@@ -4653,3 +4665,29 @@
 	AS-11 Core	AS-11 Core
 	AS-11 Parts	Частини AS-11
 	AS-11 UK DPP	AS-11 UK DPP
+
+# Control Surfaces settings page (CS-1, #1187)
+	Devices	Пристрої
+	Use	Використовувати
+	Device	Пристрій
+	MIDI	MIDI
+	HID jog/shuttle	HID jog/shuttle
+	OSC	OSC
+	Connected	Під'єднано
+	Not connected	Не під'єднано
+	Disabled	Вимкнено
+	{device} ({port})	{device} ({port})
+	{name}: {error}	{name}: {error}
+	Looking for devices…	Пошук пристроїв…
+	No MIDI controller or jog/shuttle device was found. Connect one and press Refresh.	Не знайдено MIDI-контролера чи пристрою jog/shuttle. Під'єднайте один і натисніть «Оновити».
+	Control Surfaces	Панелі керування
+	Use control surfaces (MIDI controllers, jog/shuttle devices)	Використовувати панелі керування (MIDI-контролери, пристрої jog/shuttle)
+	Mapping controls to commands, MIDI Learn and the MIDI Monitor come in a later version; the choices here are remembered until then.	Призначення елементів керування командам, MIDI Learn і MIDI-монітор з'являться в пізнішій версії; доти вибір тут запам'ятовується.
+	CFA4 ShuttlePRO	CFA4 ShuttlePRO
+	Kdenlive-style ShuttlePRO	ShuttlePRO у стилі Kdenlive
+	Generic MIDI	Загальний MIDI
+	Read from LTC Audio	Зчитати зі звуку LTC
+	Find SMPTE LTC on the clip's audio and use the timecode it gives the first frame	Знайти SMPTE LTC у звуці кліпу й узяти тайм-код, який він дає першому кадру
+	Read Timecode from LTC Audio	Зчитати тайм-код зі звуку LTC
+# Credits: voices (the Voice column) in the block's properties (F10-C16)
+	Voices	Голоси

@@ -4598,6 +4598,16 @@ export.summary	Low	низак
 	software backend: {reason}	софтверска позадина: {reason}
 	Start studio	Покрени студио
 	Stop studio	Заустави студио
+	Add Studio Scene	Додај сцену студија
+	Live	Уживо
+# Credits: title, opening, chapter and lower-third pages filled from a graphics template (F10-C16)
+	Opening Credits	Уводна шпица
+	Chapter Title	Наслов поглавља
+	Lower Third	Доњи натпис
+	page {page}: graphics template “{template}” was not found; “{used}” is used	страница {page}: графички шаблон „{template}” није пронађен; користи се „{used}”
+	page {page}: graphics template “{template}” has no field for all of the block's text; the rest is left out	страница {page}: графички шаблон „{template}” нема поље за сав текст блока; остатак се изоставља
+	page {page}: template field “{control}” → “{part}” is not used (no such text control, or not head, body or tail)	страница {page}: поље шаблона „{control}” → „{part}” се не користи (нема такве текстуалне контроле или није заглавље, тело или реп)
+	page {page}: pictures are left out on title, opening, chapter and lower-third pages	страница {page}: слике се изостављају на страницама наслова, уводне шпице, поглавља и доњег натписа
 # Auto Color, Auto Contrast, Auto Levels (EffectsSDK review)
 	Auto Color	Аутоматска боја
 	Auto Contrast	Аутоматски контраст
@@ -4668,3 +4678,35 @@ export.summary	Low	низак
 	AS-11 Core	AS-11 Core
 	AS-11 Parts	AS-11 делови
 	AS-11 UK DPP	AS-11 UK DPP
+
+# Control Surfaces settings page (CS-1, #1187)
+	Devices	Уређаји
+	Use	Користи
+	Device	Уређај
+	MIDI	MIDI
+	HID jog/shuttle	HID jog/shuttle
+	OSC	OSC
+	Connected	Повезано
+	Not connected	Није повезано
+	Disabled	Онемогућено
+	{device} ({port})	{device} ({port})
+	{name}: {error}	{name}: {error}
+	Looking for devices…	Тражење уређаја…
+	No MIDI controller or jog/shuttle device was found. Connect one and press Refresh.	Није пронађен ниједан MIDI контролер ни jog/shuttle уређај. Прикључите један и притисните Освежи.
+	Control Surfaces	Контролне површине
+	Use control surfaces (MIDI controllers, jog/shuttle devices)	Користи контролне површине (MIDI контролери, jog/shuttle уређаји)
+	Mapping controls to commands, MIDI Learn and the MIDI Monitor come in a later version; the choices here are remembered until then.	Додела контрола командама, MIDI Learn и MIDI монитор долазе у каснијој верзији; до тада се избори овде памте.
+	CFA4 ShuttlePRO	CFA4 ShuttlePRO
+	Kdenlive-style ShuttlePRO	ShuttlePRO у стилу Kdenlive-а
+	Generic MIDI	Општи MIDI
+
+# LTC timecode read from clip audio (TC-7, #1285)
+	Read from LTC Audio	Читај из LTC звука
+	Find SMPTE LTC on the clip's audio and use the timecode it gives the first frame	Пронађи SMPTE LTC у звуку клипа и употреби временски код који даје првом кадру
+	Read Timecode from LTC Audio	Читај временски код из LTC звука
+# Credits: voices (the Voice column) in the block's properties (F10-C16)
+	Voices	Гласови
+
+# Timecode sync varispeed and user bits (TC-8, #1308)
+	Varispeed: adjust the playback speed instead of seeking	Varispeed: прилагоди брзину репродукције уместо прескакања
+	User bits	Кориснички битови

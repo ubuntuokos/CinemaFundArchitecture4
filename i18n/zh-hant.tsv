@@ -4597,6 +4597,16 @@ export.summary	Low	低
 	software backend: {reason}	軟體後端：{reason}
 	Start studio	啟動攝影棚
 	Stop studio	停止攝影棚
+	Add Studio Scene	新增攝影棚場景
+	Live	直播
+# Credits: title, opening, chapter and lower-third pages filled from a graphics template (F10-C16)
+	Opening Credits	片頭字幕
+	Chapter Title	章節標題
+	Lower Third	下方字幕條
+	page {page}: graphics template “{template}” was not found; “{used}” is used	第 {page} 頁：找不到圖形範本「{template}」；改用「{used}」
+	page {page}: graphics template “{template}” has no field for all of the block's text; the rest is left out	第 {page} 頁：圖形範本「{template}」沒有容納該區塊全部文字的欄位；其餘部分已略過
+	page {page}: template field “{control}” → “{part}” is not used (no such text control, or not head, body or tail)	第 {page} 頁：範本欄位「{control}」→「{part}」未使用（沒有該文字控制項，或不是標題、內文或尾註）
+	page {page}: pictures are left out on title, opening, chapter and lower-third pages	第 {page} 頁：標題、片頭、章節和下方字幕條頁面上的圖片會被略過
 # Auto Color, Auto Contrast, Auto Levels (EffectsSDK review)
 	Auto Color	自動色彩
 	Auto Contrast	自動對比
@@ -4667,3 +4677,35 @@ export.summary	Low	低
 	AS-11 Core	AS-11 Core
 	AS-11 Parts	AS-11 部分
 	AS-11 UK DPP	AS-11 UK DPP
+
+# Control Surfaces settings page (CS-1, #1187)
+	Devices	裝置
+	Use	使用
+	Device	裝置
+	MIDI	MIDI
+	HID jog/shuttle	HID 飛梭
+	OSC	OSC
+	Connected	已連線
+	Not connected	未連線
+	Disabled	已停用
+	{device} ({port})	{device} ({port})
+	{name}: {error}	{name}: {error}
+	Looking for devices…	正在尋找裝置…
+	No MIDI controller or jog/shuttle device was found. Connect one and press Refresh.	找不到 MIDI 控制器或飛梭裝置。請連接一個裝置，然後按「重新整理」。
+	Control Surfaces	控制台
+	Use control surfaces (MIDI controllers, jog/shuttle devices)	使用控制台（MIDI 控制器、飛梭裝置）
+	Mapping controls to commands, MIDI Learn and the MIDI Monitor come in a later version; the choices here are remembered until then.	將控制項對應到指令、MIDI Learn 與 MIDI 監視器將於後續版本提供；在此之前，這裡的選擇會被記住。
+	CFA4 ShuttlePRO	CFA4 ShuttlePRO
+	Kdenlive-style ShuttlePRO	Kdenlive 風格 ShuttlePRO
+	Generic MIDI	通用 MIDI
+
+# LTC timecode read from clip audio (TC-7, #1285)
+	Read from LTC Audio	從 LTC 音訊讀取
+	Find SMPTE LTC on the clip's audio and use the timecode it gives the first frame	在片段音訊中尋找 SMPTE LTC，並使用它為第一格給出的時間碼
+	Read Timecode from LTC Audio	從 LTC 音訊讀取時間碼
+# Credits: voices (the Voice column) in the block's properties (F10-C16)
+	Voices	配音
+
+# Timecode sync varispeed and user bits (TC-8, #1308)
+	Varispeed: adjust the playback speed instead of seeking	變速：調整播放速度而非跳轉
+	User bits	使用者位元

@@ -1438,7 +1438,7 @@ def test_real_engine_preferences_dialog_and_favourite_themes_as_egui(app, tmp_pa
         assert win.menuBar().findChild(QtGui.QAction, "app.settings.general").shortcut().toString() == "Ctrl+,"
         d = opened("timeline")
         assert d.objectName() == "settings" and d.findChild(QtWidgets.QPushButton, "settings.category.timeline").isChecked()
-        assert len([b for b in d.findChildren(QtWidgets.QPushButton) if b.objectName().startswith("settings.category.")]) == 17  # with Media Backends (ADR 0005)
+        assert len([b for b in d.findChildren(QtWidgets.QPushButton) if b.objectName().startswith("settings.category.")]) == 19  # every category of prefs.schema, Control Surfaces (ADR-0012) included
         scroll = d.findChild(QtWidgets.QComboBox, "settings.timeline.autoScroll")
         scroll.setCurrentIndex(scroll.findData("smoothScroll"))
         d.findChild(QtWidgets.QPushButton, "settings.cancel").click()
@@ -14934,6 +14934,25 @@ def test_credits_engine_notes_are_translated():
         if literal.startswith("{what}"):
             filled = "picture" + filled[1:]
         assert any(p.match(filled) for p, _t in NOTES), literal
+
+
+def test_credits_template_pages_have_names_and_colours():
+    """F10-C16: the title, opening, chapter and lower-third pages are named in the page list (in
+    every language) and have their own colour on the Credits workspace's timeline strip."""
+    from cfa4_qt.i18n import TR
+    from cfa4_qt.panels.credits import BEHAVIOURS
+    from cfa4_qt.panels.credits_workspace import KIND_COLOURS
+
+    for kind in ("title", "opening", "chapter", "lowerThird"):
+        assert kind in BEHAVIOURS and kind in KIND_COLOURS, kind
+    assert set(KIND_COLOURS) == set(BEHAVIOURS)
+    TR.set_language("hu")
+    try:
+        assert TR.tr(BEHAVIOURS["lowerThird"]) == "Alsó sáv"
+        assert TR.tr(BEHAVIOURS["chapter"]) == "Fejezetcím"
+        assert TR.tr(BEHAVIOURS["opening"]) == "Nyitó képsor"
+    finally:
+        TR.set_language("en")
 
 
 def test_credits_card_point_text(app):

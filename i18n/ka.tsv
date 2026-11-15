@@ -4601,6 +4601,16 @@ export.summary	Low	დაბალი
 	software backend: {reason}	პროგრამული ბექენდი: {reason}
 	Start studio	სტუდიის გაშვება
 	Stop studio	სტუდიის გაჩერება
+	Add Studio Scene	სტუდიის სცენის დამატება
+	Live	პირდაპირი
+# Credits: title, opening, chapter and lower-third pages filled from a graphics template (F10-C16)
+	Opening Credits	საწყისი ტიტრები
+	Chapter Title	თავის სათაური
+	Lower Third	ქვედა ზოლი
+	page {page}: graphics template “{template}” was not found; “{used}” is used	გვერდი {page}: გრაფიკული შაბლონი „{template}“ ვერ მოიძებნა; გამოიყენება „{used}“
+	page {page}: graphics template “{template}” has no field for all of the block's text; the rest is left out	გვერდი {page}: გრაფიკულ შაბლონს „{template}“ არ აქვს ველი ბლოკის მთელი ტექსტისთვის; დანარჩენი გამოტოვებულია
+	page {page}: template field “{control}” → “{part}” is not used (no such text control, or not head, body or tail)	გვერდი {page}: შაბლონის ველი „{control}“ → „{part}“ არ გამოიყენება (ასეთი ტექსტური ელემენტი არ არსებობს, ან ეს არ არის თავი, ძირითადი ტექსტი ან ბოლო)
+	page {page}: pictures are left out on title, opening, chapter and lower-third pages	გვერდი {page}: სათაურის, საწყისი ტიტრების, თავისა და ქვედა ზოლის გვერდებზე სურათები გამოტოვებულია
 # Auto Color, Auto Contrast, Auto Levels (EffectsSDK review)
 	Auto Color	ავტომატური ფერი
 	Auto Contrast	ავტომატური კონტრასტი
@@ -4671,3 +4681,35 @@ export.summary	Low	დაბალი
 	AS-11 Core	AS-11 Core
 	AS-11 Parts	AS-11 ნაწილები
 	AS-11 UK DPP	AS-11 UK DPP
+
+# Control Surfaces settings page (CS-1, #1187)
+	Devices	მოწყობილობები
+	Use	გამოყენება
+	Device	მოწყობილობა
+	MIDI	MIDI
+	HID jog/shuttle	HID jog/shuttle
+	OSC	OSC
+	Connected	დაკავშირებულია
+	Not connected	არ არის დაკავშირებული
+	Disabled	გამორთულია
+	{device} ({port})	{device} ({port})
+	{name}: {error}	{name}: {error}
+	Looking for devices…	მოწყობილობების ძიება…
+	No MIDI controller or jog/shuttle device was found. Connect one and press Refresh.	MIDI კონტროლერი ან jog/shuttle მოწყობილობა ვერ მოიძებნა. მიაერთეთ ერთ-ერთი და დააჭირეთ „განახლებას“.
+	Control Surfaces	მართვის ზედაპირები
+	Use control surfaces (MIDI controllers, jog/shuttle devices)	მართვის ზედაპირების გამოყენება (MIDI კონტროლერები, jog/shuttle მოწყობილობები)
+	Mapping controls to commands, MIDI Learn and the MIDI Monitor come in a later version; the choices here are remembered until then.	მართვის ელემენტების ბრძანებებზე მიბმა, MIDI Learn და MIDI მონიტორი მოგვიანებით ვერსიაში დაემატება; მანამდე აქ არჩეული პარამეტრები დაიმახსოვრება.
+	CFA4 ShuttlePRO	CFA4 ShuttlePRO
+	Kdenlive-style ShuttlePRO	Kdenlive-ის სტილის ShuttlePRO
+	Generic MIDI	ზოგადი MIDI
+
+# LTC timecode read from clip audio (TC-7, #1285)
+	Read from LTC Audio	წაკითხვა LTC ხმიდან
+	Find SMPTE LTC on the clip's audio and use the timecode it gives the first frame	კლიპის ხმაში SMPTE LTC-ის პოვნა და იმ თაიმკოდის გამოყენება, რომელსაც ის პირველ კადრს აძლევს
+	Read Timecode from LTC Audio	თაიმკოდის წაკითხვა LTC ხმიდან
+# Credits: voices (the Voice column) in the block's properties (F10-C16)
+	Voices	ხმები
+
+# Timecode sync varispeed and user bits (TC-8, #1308)
+	Varispeed: adjust the playback speed instead of seeking	Varispeed: გადახტომის ნაცვლად დაკვრის სიჩქარის მორგება
+	User bits	მომხმარებლის ბიტები

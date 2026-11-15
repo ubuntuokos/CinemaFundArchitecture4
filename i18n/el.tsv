@@ -4600,6 +4600,16 @@ export.summary	Low	χαμηλή
 	software backend: {reason}	λογισμικό υποστήριξης: {reason}
 	Start studio	Έναρξη στούντιο
 	Stop studio	Διακοπή στούντιο
+	Add Studio Scene	Προσθήκη σκηνής στούντιο
+	Live	Ζωντανά
+# Credits: title, opening, chapter and lower-third pages filled from a graphics template (F10-C16)
+	Opening Credits	Τίτλοι αρχής
+	Chapter Title	Τίτλος κεφαλαίου
+	Lower Third	Λεζάντα ονόματος
+	page {page}: graphics template “{template}” was not found; “{used}” is used	σελίδα {page}: το πρότυπο γραφικών “{template}” δεν βρέθηκε· χρησιμοποιείται το “{used}”
+	page {page}: graphics template “{template}” has no field for all of the block's text; the rest is left out	σελίδα {page}: το πρότυπο γραφικών “{template}” δεν έχει πεδίο για όλο το κείμενο του μπλοκ· το υπόλοιπο παραλείπεται
+	page {page}: template field “{control}” → “{part}” is not used (no such text control, or not head, body or tail)	σελίδα {page}: το πεδίο προτύπου “{control}” → “{part}” δεν χρησιμοποιείται (δεν υπάρχει τέτοιο στοιχείο κειμένου ή δεν είναι κεφαλίδα, κύριο σώμα ή υποσέλιδο)
+	page {page}: pictures are left out on title, opening, chapter and lower-third pages	σελίδα {page}: οι εικόνες παραλείπονται στις σελίδες τίτλου, τίτλων αρχής, κεφαλαίου και λεζάντας ονόματος
 # Auto Color, Auto Contrast, Auto Levels (EffectsSDK review)
 	Auto Color	Αυτόματο χρώμα
 	Auto Contrast	Αυτόματη αντίθεση
@@ -4670,3 +4680,35 @@ export.summary	Low	χαμηλή
 	AS-11 Core	AS-11 Core
 	AS-11 Parts	Τμήματα AS-11
 	AS-11 UK DPP	AS-11 UK DPP
+
+# Control Surfaces settings page (CS-1, #1187)
+	Devices	Συσκευές
+	Use	Χρήση
+	Device	Συσκευή
+	MIDI	MIDI
+	HID jog/shuttle	HID jog/shuttle
+	OSC	OSC
+	Connected	Συνδεδεμένη
+	Not connected	Μη συνδεδεμένη
+	Disabled	Απενεργοποιημένη
+	{device} ({port})	{device} ({port})
+	{name}: {error}	{name}: {error}
+	Looking for devices…	Αναζήτηση συσκευών…
+	No MIDI controller or jog/shuttle device was found. Connect one and press Refresh.	Δεν βρέθηκε ελεγκτής MIDI ή συσκευή jog/shuttle. Συνδέστε μία και πατήστε Ανανέωση.
+	Control Surfaces	Επιφάνειες ελέγχου
+	Use control surfaces (MIDI controllers, jog/shuttle devices)	Χρήση επιφανειών ελέγχου (ελεγκτές MIDI, συσκευές jog/shuttle)
+	Mapping controls to commands, MIDI Learn and the MIDI Monitor come in a later version; the choices here are remembered until then.	Η αντιστοίχιση χειριστηρίων σε εντολές, το MIDI Learn και η οθόνη MIDI έρχονται σε μεταγενέστερη έκδοση· οι επιλογές εδώ απομνημονεύονται μέχρι τότε.
+	CFA4 ShuttlePRO	CFA4 ShuttlePRO
+	Kdenlive-style ShuttlePRO	ShuttlePRO σε στυλ Kdenlive
+	Generic MIDI	Γενικό MIDI
+
+# LTC timecode read from clip audio (TC-7, #1285)
+	Read from LTC Audio	Ανάγνωση από ήχο LTC
+	Find SMPTE LTC on the clip's audio and use the timecode it gives the first frame	Εύρεση SMPTE LTC στον ήχο του κλιπ και χρήση του timecode που δίνει στο πρώτο καρέ
+	Read Timecode from LTC Audio	Ανάγνωση timecode από ήχο LTC
+# Credits: voices (the Voice column) in the block's properties (F10-C16)
+	Voices	Φωνές
+
+# Timecode sync varispeed and user bits (TC-8, #1308)
+	Varispeed: adjust the playback speed instead of seeking	Varispeed: προσαρμογή της ταχύτητας αναπαραγωγής αντί για μετάβαση
+	User bits	Bit χρήστη

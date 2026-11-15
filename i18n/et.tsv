@@ -4600,6 +4600,16 @@ export.summary	Low	madal
 	software backend: {reason}	tarkvaraline taustasüsteem: {reason}
 	Start studio	Käivita stuudio
 	Stop studio	Peata stuudio
+	Add Studio Scene	Lisa stuudiostseen
+	Live	Otse
+# Credits: title, opening, chapter and lower-third pages filled from a graphics template (F10-C16)
+	Opening Credits	Algustiitrid
+	Chapter Title	Peatüki pealkiri
+	Lower Third	Nimeriba
+	page {page}: graphics template “{template}” was not found; “{used}” is used	lehekülg {page}: graafikamalli “{template}” ei leitud; kasutatakse malli “{used}”
+	page {page}: graphics template “{template}” has no field for all of the block's text; the rest is left out	lehekülg {page}: graafikamallis “{template}” pole välja kogu ploki tekstile; ülejäänu jäetakse välja
+	page {page}: template field “{control}” → “{part}” is not used (no such text control, or not head, body or tail)	lehekülg {page}: malli välja “{control}” → “{part}” ei kasutata (sellist tekstijuhtelementi pole või see pole päis, sisu ega jalus)
+	page {page}: pictures are left out on title, opening, chapter and lower-third pages	lehekülg {page}: pildid jäetakse välja pealkirja-, algustiitri-, peatüki- ja nimeribalehtedel
 # Auto Color, Auto Contrast, Auto Levels (EffectsSDK review)
 	Auto Color	Automaatne värv
 	Auto Contrast	Automaatne kontrast
@@ -4670,3 +4680,35 @@ export.summary	Low	madal
 	AS-11 Core	AS-11 Core
 	AS-11 Parts	AS-11 osad
 	AS-11 UK DPP	AS-11 UK DPP
+
+# Control Surfaces settings page (CS-1, #1187)
+	Devices	Seadmed
+	Use	Kasuta
+	Device	Seade
+	MIDI	MIDI
+	HID jog/shuttle	HID jog/shuttle
+	OSC	OSC
+	Connected	Ühendatud
+	Not connected	Pole ühendatud
+	Disabled	Keelatud
+	{device} ({port})	{device} ({port})
+	{name}: {error}	{name}: {error}
+	Looking for devices…	Seadmete otsimine…
+	No MIDI controller or jog/shuttle device was found. Connect one and press Refresh.	Ühtegi MIDI-kontrollerit ega jog/shuttle-seadet ei leitud. Ühendage üks ja vajutage Värskenda.
+	Control Surfaces	Juhtpaneelid
+	Use control surfaces (MIDI controllers, jog/shuttle devices)	Kasuta juhtpaneele (MIDI-kontrollerid, jog/shuttle-seadmed)
+	Mapping controls to commands, MIDI Learn and the MIDI Monitor come in a later version; the choices here are remembered until then.	Juhtelementide sidumine käskudega, MIDI Learn ja MIDI-monitor tulevad hilisemas versioonis; siinsed valikud jäetakse seni meelde.
+	CFA4 ShuttlePRO	CFA4 ShuttlePRO
+	Kdenlive-style ShuttlePRO	Kdenlive'i stiilis ShuttlePRO
+	Generic MIDI	Üldine MIDI
+
+# LTC timecode read from clip audio (TC-7, #1285)
+	Read from LTC Audio	Loe LTC-helist
+	Find SMPTE LTC on the clip's audio and use the timecode it gives the first frame	Otsi klipi helist SMPTE LTC-d ja kasuta ajakoodi, mille see annab esimesele kaadrile
+	Read Timecode from LTC Audio	Loe ajakood LTC-helist
+# Credits: voices (the Voice column) in the block's properties (F10-C16)
+	Voices	Hääled
+
+# Timecode sync varispeed and user bits (TC-8, #1308)
+	Varispeed: adjust the playback speed instead of seeking	Varispeed: hüppamise asemel kohanda taasesituse kiirust
+	User bits	Kasutajabitid

@@ -4605,6 +4605,16 @@
 	software backend: {reason}	Software-Backend: {reason}
 	Start studio	Studio starten
 	Stop studio	Studio anhalten
+	Add Studio Scene	Studioszene hinzufügen
+	Live	Live
+# Credits: title, opening, chapter and lower-third pages filled from a graphics template (F10-C16)
+	Opening Credits	Vorspann
+	Chapter Title	Kapiteltitel
+	Lower Third	Bauchbinde
+	page {page}: graphics template “{template}” was not found; “{used}” is used	Seite {page}: Grafikvorlage “{template}” wurde nicht gefunden; “{used}” wird verwendet
+	page {page}: graphics template “{template}” has no field for all of the block's text; the rest is left out	Seite {page}: Grafikvorlage “{template}” hat nicht für den ganzen Text des Blocks ein Feld; der Rest wird weggelassen
+	page {page}: template field “{control}” → “{part}” is not used (no such text control, or not head, body or tail)	Seite {page}: Vorlagenfeld “{control}” → “{part}” wird nicht verwendet (kein solches Textfeld, oder nicht Kopf, Hauptteil oder Fuß)
+	page {page}: pictures are left out on title, opening, chapter and lower-third pages	Seite {page}: auf Titel-, Vorspann-, Kapitel- und Bauchbindenseiten werden Bilder weggelassen
 # Auto Color, Auto Contrast, Auto Levels (EffectsSDK review)
 	Auto Color	Auto-Farbe
 	Auto Contrast	Auto-Kontrast
@@ -4675,3 +4685,35 @@
 	AS-11 Core	AS-11 Core
 	AS-11 Parts	AS-11-Teile
 	AS-11 UK DPP	AS-11 UK DPP
+
+# Control Surfaces settings page (CS-1, #1187)
+	Devices	Geräte
+	Use	Verwenden
+	Device	Gerät
+	MIDI	MIDI
+	HID jog/shuttle	HID-Jog/Shuttle
+	OSC	OSC
+	Connected	Verbunden
+	Not connected	Nicht verbunden
+	Disabled	Deaktiviert
+	{device} ({port})	{device} ({port})
+	{name}: {error}	{name}: {error}
+	Looking for devices…	Geräte werden gesucht…
+	No MIDI controller or jog/shuttle device was found. Connect one and press Refresh.	Kein MIDI-Controller und kein Jog/Shuttle-Gerät gefunden. Schließen Sie eines an und klicken Sie auf Aktualisieren.
+	Control Surfaces	Steueroberflächen
+	Use control surfaces (MIDI controllers, jog/shuttle devices)	Steueroberflächen verwenden (MIDI-Controller, Jog/Shuttle-Geräte)
+	Mapping controls to commands, MIDI Learn and the MIDI Monitor come in a later version; the choices here are remembered until then.	Die Zuordnung von Bedienelementen zu Befehlen, MIDI Learn und der MIDI-Monitor folgen in einer späteren Version; die Auswahl hier bleibt bis dahin gespeichert.
+	CFA4 ShuttlePRO	CFA4 ShuttlePRO
+	Kdenlive-style ShuttlePRO	ShuttlePRO im Kdenlive-Stil
+	Generic MIDI	Generisches MIDI
+
+# LTC timecode read from clip audio (TC-7, #1285)
+	Read from LTC Audio	Aus LTC-Audio lesen
+	Find SMPTE LTC on the clip's audio and use the timecode it gives the first frame	SMPTE-LTC im Ton des Clips suchen und den Timecode verwenden, den er dem ersten Bild gibt
+	Read Timecode from LTC Audio	Timecode aus LTC-Audio lesen
+# Credits: voices (the Voice column) in the block's properties (F10-C16)
+	Voices	Stimmen
+
+# Timecode sync varispeed and user bits (TC-8, #1308)
+	Varispeed: adjust the playback speed instead of seeking	Varispeed: Wiedergabegeschwindigkeit anpassen statt zu springen
+	User bits	User Bits
