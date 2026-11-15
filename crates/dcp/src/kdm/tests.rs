@@ -9,8 +9,12 @@ const KEY_ID: [u8; 16] = [0x5A; 16];
 const CONTENT_KEY: [u8; 16] = *b"0123456789abcdef";
 
 fn plaintext(structure: [u8; 16], cpl: [u8; 16], kind: &str, key_id: [u8; 16], from: &str, to: &str) -> Vec<u8> {
+    signed_plaintext([0x77; 20], structure, cpl, kind, key_id, from, to)
+}
+
+fn signed_plaintext(signer: [u8; 20], structure: [u8; 16], cpl: [u8; 16], kind: &str, key_id: [u8; 16], from: &str, to: &str) -> Vec<u8> {
     let mut p = structure.to_vec();
-    p.extend_from_slice(&[0x77; 20]);
+    p.extend_from_slice(&signer);
     p.extend_from_slice(&cpl);
     p.extend_from_slice(kind.as_bytes());
     p.extend_from_slice(&key_id);
@@ -170,4 +174,54 @@ fn bad_inputs_are_errors() {
     assert!(matches!(open_kdm(&kdm_xml("11111111-1111-1111-1111-111111111111", &[block]), &key, now()), Err(KdmError::Invalid(_))));
     let xml = kdm_xml("11111111-1111-1111-1111-111111111111", &["A".repeat(344)]);
     assert!(open_kdm(&xml, &key, now()).is_err());
+}
+
+/// The KDM's signature: an xmlsec1-signed KDM checks out with its chain; unsigned, changed and
+/// untrusted ones say so, and still open (the caller decides).
+#[test]
+fn kdm_signatures_are_checked() {
+    let Some(o) = Ossl::new("sig") else { return };
+    let Some(signer) = crate::testing::Signed::new("kdm") else { return };
+    let (pem, _) = o.key();
+    let key = private_key_from_pem(&pem).unwrap();
+    let blocks = [o.wrap(&signed_plaintext(signer.signer_thumbprint(), STRUCTURE_ID, CPL, "MDIK", KEY_ID, FROM, TO))];
+    let unsigned = kdm_xml("11111111-1111-1111-1111-111111111111", &blocks);
+    let secs = std::time::SystemTime::now().duration_since(std::time::UNIX_EPOCH).unwrap().as_secs() as i64;
+    let now = DateTime::from_timestamp(secs, 0).unwrap();
+    assert_eq!(open_kdm(&unsigned, &key, now).unwrap().signature, Signature::Missing);
+    let template = unsigned.replace("</DCinemaSecurityMessage>", &format!("{}\n</DCinemaSecurityMessage>", crate::testing::TEMPLATE_SIGNATURE));
+    let signed = signer.sign(&template);
+    let k = open_kdm(&signed, &key, now).unwrap();
+    assert_eq!(k.signature, Signature::Valid { chain: vec!["CS.signer".into(), ".inter".into(), ".root".into()] });
+    assert!(k.signature.is_valid());
+    let changed = open_kdm(&signed.replace("Test Feature", "Other Feature"), &key, now).unwrap();
+    assert!(matches!(&changed.signature, Signature::Invalid(e) if e.contains("ID_AuthenticatedPublic")), "{:?}", changed.signature);
+    assert_eq!(changed.content_title.as_deref(), Some("Other Feature"));
+    // a signature that leaves the private part out
+    let partial = signer.sign(&unsigned.replace(
+        "</DCinemaSecurityMessage>",
+        &format!("{}\n</DCinemaSecurityMessage>", crate::testing::TEMPLATE_SIGNATURE.replace("<dsig:Reference URI=\"#ID_AuthenticatedPrivate\"><dsig:DigestMethod Algorithm=\"http://www.w3.org/2001/04/xmlenc#sha256\"/><dsig:DigestValue/></dsig:Reference>", "")),
+    ));
+    let p = open_kdm(&partial, &key, now).unwrap();
+    assert!(matches!(&p.signature, Signature::Invalid(e) if e.contains("AuthenticatedPrivate")), "{:?}", p.signature);
+    // only a chain problem can be overridden (owner decision 2026-11-13)
+    assert!(!Signature::Missing.is_overridable() && !changed.signature.is_overridable() && !k.signature.is_overridable());
+    // a signer certificate outside its validity, and a chain that does not keep ST 430-2: the
+    // content is intact, the signer is not established
+    let late = open_kdm(&signed, &key, now - chrono::Duration::days(2)).unwrap();
+    assert!(matches!(&late.signature, Signature::Untrusted { problem, .. } if problem.contains("not valid at")), "{:?}", late.signature);
+    assert!(late.signature.is_overridable() && !late.signature.is_valid());
+    // blocks naming another signer than the one that signed
+    let other = kdm_xml("11111111-1111-1111-1111-111111111111", &[o.wrap(&plaintext(STRUCTURE_ID, CPL, "MDIK", KEY_ID, FROM, TO))]);
+    let o_signed = signer.sign(&other.replace("</DCinemaSecurityMessage>", &format!("{}\n</DCinemaSecurityMessage>", crate::testing::TEMPLATE_SIGNATURE)));
+    let w = open_kdm(&o_signed, &key, now).unwrap();
+    assert!(matches!(&w.signature, Signature::Untrusted { problem, .. } if problem.contains("another signer")), "{:?}", w.signature);
+    assert_eq!(w.keys[0].signer_thumbprint, [0x77; 20]);
+    let Some(plain) = crate::testing::Signed::non_conforming("kdm-plain") else { return };
+    let u = open_kdm(&plain.sign(&template), &key, now).unwrap();
+    assert!(
+        matches!(&u.signature, Signature::Untrusted { chain, problem } if chain.first().map(String::as_str) == Some("CS.signer") && problem.contains("ST 430-2")),
+        "{:?}",
+        u.signature
+    );
 }

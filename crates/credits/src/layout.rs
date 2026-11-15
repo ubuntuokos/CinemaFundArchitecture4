@@ -3,8 +3,10 @@
 //! Every piece of text is an ordinary CFA4 text layer (`graphic_text`), so a laid-out page
 //! can be edited afterwards in Essential Graphics like any title. Scroll pages use the graphic's
 //! Roll (start and end off screen); crawl pages put their blocks side by side on one line and
-//! use Crawl Left; card pages are centred vertically and fade with opacity keyframes. Text sizes come from the caller's [`Measure`] (the engine uses the real text
-//! engine), so this crate stays free of fonts and rendering.
+//! use Crawl Left; on card pages each spine (with its parallel columns) stands at its own point,
+//! by default centred vertically, and the page fades with opacity keyframes. Text sizes come from
+//! the caller's [`Measure`] (the engine uses the real text engine), so this crate stays free of
+//! fonts and rendering.
 
 use cfa4_geom::Vec2;
 use cfa4_project::graphic::{new_shape_layer, new_text_layer};
@@ -14,7 +16,7 @@ use cfa4_project::{EffectInstance, Interpolation, Keyframe, Param, ParamValue};
 use cfa4_time::{FrameRate, Tick};
 
 use crate::CreditsError;
-use crate::sheet::{Block, Credits, Gap, Page, Picture, Warning};
+use crate::sheet::{Block, CardAnchor, Credits, Gap, Page, Picture, Warning};
 use crate::style::{Align, Behaviour, BodyLayout, ContentStyle, LetterStyle, Orientation, Styling, parse_color};
 
 /// Measures text layers.
@@ -46,6 +48,8 @@ pub struct PicturePlace {
     pub row: usize,
     /// A video, playing from its start.
     pub video: bool,
+    /// A video that starts again from its beginning until its page ends.
+    pub repeat: bool,
     /// When it comes in on a card with a staggered entrance (zero otherwise).
     pub delay: Tick,
 }
@@ -58,6 +62,7 @@ struct PicInfo {
     h: f64,
     row: usize,
     video: bool,
+    repeat: bool,
 }
 
 /// Default picture height (1080-high pixels).
@@ -99,6 +104,9 @@ pub struct PageOut {
     pub content_top: f64,
     /// The spines of the page's blocks (frame x, left to right; none on a crawl).
     pub spines: Vec<f64>,
+    /// A card page's spine points (frame pixels), one per spine that stands on its own, in
+    /// sheet order; empty on other pages.
+    pub spine_points: Vec<(f64, f64)>,
     /// What is behind the page, if anything.
     pub background: Option<crate::style::Background>,
     /// The transition into the next page (video transition id and length), when it has one
@@ -170,6 +178,8 @@ struct Ctx<'a> {
     /// Inline letter styles by lower-case name (Hungarian built-in names too), scaled.
     inline: Vec<(String, CharStyle)>,
     unknown_inline: Vec<String>,
+    /// Where the last stacked page's hooked spines stand (frame x), for the guides.
+    hooked_spines: Vec<f64>,
 }
 
 impl Ctx<'_> {
@@ -255,8 +265,43 @@ fn left_of(x: f64, w: f64, a: Align) -> f64 {
     }
 }
 
-/// Lay out the body cells with their top at `top`, anchored at `x`. Returns the pieces.
-fn lay_body(ctx: &mut Ctx<'_>, b: &Block, cs: &ContentStyle, align: Align, x: f64, top: f64) -> Result<Vec<Piece>, CreditsError> {
+/// A grid body's columns as measured text layers (one layer for a single column). Cells of a
+/// row are padded to the row's line count so the columns stay in step.
+fn grid_columns(ctx: &mut Ctx<'_>, b: &Block, cs: &ContentStyle, align: Align) -> Result<Vec<(EffectInstance, [f64; 4])>, CreditsError> {
+    let n = (cs.columns.clamp(1, 16) as usize).min(b.body.len()).max(1);
+    if n == 1 {
+        return Ok(vec![ctx.text(b.row, "Body", &b.body.join("\n"), &cs.body, align, None)?]);
+    }
+    let mut cols: Vec<Vec<String>> = vec![Vec::new(); n];
+    for row in b.body.chunks(n) {
+        let lines = row.iter().map(|c| c.split('\n').count()).max().unwrap_or(1);
+        for j in 0..n {
+            let cell = row.get(j).map(String::as_str).unwrap_or("");
+            let have = cell.split('\n').count();
+            let mut c = cell.to_string();
+            for _ in have..lines {
+                c.push('\n');
+            }
+            if let Some(col) = cols.get_mut(j) {
+                col.push(c);
+            }
+        }
+    }
+    let mut measured = Vec::with_capacity(n);
+    for (j, col) in cols.iter().enumerate() {
+        measured.push(ctx.text(b.row, &format!("Body {}", j + 1), &col.join("\n"), &cs.body, align, None)?);
+    }
+    Ok(measured)
+}
+
+/// Whether a block's body is a grid of text whose column width a harmonised style shares.
+fn harmonised_grid(b: &Block, cs: &ContentStyle) -> bool {
+    cs.harmonize_body && cs.layout == BodyLayout::Grid && !b.body.is_empty() && b.pictures.is_empty() && !b.portraits.iter().any(Option::is_some)
+}
+
+/// Lay out the body cells with their top at `top`, anchored at `x`; `body_w`: the column width
+/// of a harmonised grid style (`None`: the block's own). Returns the pieces.
+fn lay_body(ctx: &mut Ctx<'_>, b: &Block, cs: &ContentStyle, align: Align, x: f64, top: f64, body_w: Option<f64>) -> Result<Vec<Piece>, CreditsError> {
     let s = ctx.s;
     let mut out = Vec::new();
     if b.body.is_empty() {
@@ -267,37 +312,18 @@ fn lay_body(ctx: &mut Ctx<'_>, b: &Block, cs: &ContentStyle, align: Align, x: f6
     }
     match cs.layout {
         BodyLayout::Grid => {
-            let n = (cs.columns.clamp(1, 16) as usize).min(b.body.len()).max(1);
+            let measured = grid_columns(ctx, b, cs, align)?;
+            let n = measured.len();
             if n == 1 {
-                let (e, bb) = ctx.text(b.row, "Body", &b.body.join("\n"), &cs.body, align, None)?;
-                out.push(Piece { row: 0, key: String::new(), layer: e, b: bb, x, top, pic: None });
+                if let Some((e, bb)) = measured.into_iter().next() {
+                    out.push(Piece { row: 0, key: String::new(), layer: e, b: bb, x, top, pic: None });
+                }
                 return Ok(out);
             }
-            // pad every cell of a row to the row's line count so the columns stay in step
-            let rows = b.body.chunks(n);
-            let mut cols: Vec<Vec<String>> = vec![Vec::new(); n];
-            for row in rows {
-                let lines = row.iter().map(|c| c.split('\n').count()).max().unwrap_or(1);
-                for j in 0..n {
-                    let cell = row.get(j).map(String::as_str).unwrap_or("");
-                    let have = cell.split('\n').count();
-                    let mut c = cell.to_string();
-                    for _ in have..lines {
-                        c.push('\n');
-                    }
-                    if let Some(col) = cols.get_mut(j) {
-                        col.push(c);
-                    }
-                }
-            }
-            let mut measured = Vec::with_capacity(n);
-            for (j, col) in cols.iter().enumerate() {
-                let (e, bb) = ctx.text(b.row, &format!("Body {}", j + 1), &col.join("\n"), &cs.body, align, None)?;
-                measured.push((e, bb));
-            }
             let gap = finite_or(cs.column_gap, 0.0).max(0.0) * s;
-            // equal column widths look tidier than ragged ones
-            let colw = measured.iter().map(|(_, bb)| bb[2] - bb[0]).fold(0.0f64, f64::max);
+            // equal column widths look tidier than ragged ones; a harmonised style's columns
+            // are as wide as the widest of the page
+            let colw = measured.iter().map(|(_, bb)| bb[2] - bb[0]).fold(body_w.unwrap_or(0.0), f64::max);
             let total = colw * n as f64 + gap * (n as f64 - 1.0);
             let mut left = left_of(x, total, align);
             for (e, bb) in measured {
@@ -367,7 +393,7 @@ fn picture_piece(p: &Picture, k: usize, w: f64, h: f64, cx: f64, top: f64, row: 
         b: [-w / 2.0, -h / 2.0, w / 2.0, h / 2.0],
         x: cx,
         top,
-        pic: Some(Box::new(PicInfo { file: p.file.clone(), w, h, row, video: p.video })),
+        pic: Some(Box::new(PicInfo { file: p.file.clone(), w, h, row, video: p.video, repeat: p.video && p.repeat })),
     }
 }
 
@@ -453,8 +479,17 @@ fn lay_portraits(ctx: &mut Ctx<'_>, b: &Block, cs: &ContentStyle, align: Align, 
 const MAX_LEADER: usize = 2_000;
 
 /// Lay out one block with its top at `top`. `head_w`: the width the head column has (heads of a
-/// harmonised style); `None` = the head's own.
-fn lay_block(ctx: &mut Ctx<'_>, b: &Block, cs: &ContentStyle, spine_x: f64, top: f64, head_w: Option<f64>) -> Result<(Vec<Piece>, f64), CreditsError> {
+/// harmonised style); `None` = the head's own. `body_w`: the same for the body's grid columns.
+#[allow(clippy::too_many_arguments)]
+fn lay_block(
+    ctx: &mut Ctx<'_>,
+    b: &Block,
+    cs: &ContentStyle,
+    spine_x: f64,
+    top: f64,
+    head_w: Option<f64>,
+    body_w: Option<f64>,
+) -> Result<(Vec<Piece>, f64), CreditsError> {
     let s = ctx.s;
     let mut pieces = Vec::new();
     let head_gap = finite_or(cs.head_gap, 0.0).max(0.0) * s;
@@ -468,7 +503,7 @@ fn lay_block(ctx: &mut Ctx<'_>, b: &Block, cs: &ContentStyle, spine_x: f64, top:
                 y += p.height() + head_gap;
                 pieces.push(p);
             }
-            let body = if b.pictures.is_empty() { lay_body(ctx, b, cs, cs.align, spine_x, y)? } else { lay_pictures(ctx, b, cs, spine_x, cs.align, y) };
+            let body = if b.pictures.is_empty() { lay_body(ctx, b, cs, cs.align, spine_x, y, body_w)? } else { lay_pictures(ctx, b, cs, spine_x, cs.align, y) };
             if let Some(bt) = bottom(&body) {
                 y = bt;
             }
@@ -481,7 +516,7 @@ fn lay_block(ctx: &mut Ctx<'_>, b: &Block, cs: &ContentStyle, spine_x: f64, top:
         }
         Orientation::Horizontal => {
             let body = if b.pictures.is_empty() {
-                lay_body(ctx, b, cs, Align::Left, spine_x + head_gap / 2.0, top)?
+                lay_body(ctx, b, cs, Align::Left, spine_x + head_gap / 2.0, top, body_w)?
             } else {
                 lay_pictures(ctx, b, cs, spine_x + head_gap / 2.0, Align::Left, top)
             };
@@ -513,7 +548,13 @@ fn lay_block(ctx: &mut Ctx<'_>, b: &Block, cs: &ContentStyle, spine_x: f64, top:
                     }
                 }
             }
-            let right = body.iter().map(Piece::right).reduce(f64::max).unwrap_or(spine_x + head_gap / 2.0);
+            let mut right = body.iter().map(Piece::right).reduce(f64::max).unwrap_or(spine_x + head_gap / 2.0);
+            if let Some(w) = body_w.filter(|_| harmonised_grid(b, cs)) {
+                // tails stand after the harmonised columns, so they line up across blocks
+                let n = (cs.columns.clamp(1, 16) as usize).min(b.body.len()).max(1) as f64;
+                let gap = finite_or(cs.column_gap, 0.0).max(0.0) * s;
+                right = right.max(spine_x + head_gap / 2.0 + w * n + gap * (n - 1.0));
+            }
             let single_column = cs.layout == BodyLayout::Grid && body.len() == 1 && b.pictures.is_empty();
             pieces.extend(body);
             if !b.tails.is_empty() {
@@ -638,13 +679,19 @@ pub fn block_key(b: &Block) -> u64 {
         parts.push(format!("{i}:{t}").into_bytes());
     }
     for p in &b.pictures {
-        parts.push(format!("{}@{:?}{}", p.file, p.height, if p.video { "v" } else { "" }).into_bytes());
+        parts.push(format!("{}@{:?}{}{}", p.file, p.height, if p.video { "v" } else { "" }, if p.repeat { "l" } else { "" }).into_bytes());
     }
     for p in b.portraits.iter().flatten() {
         parts.push(format!("portrait {}@{:?}", p.file, p.height).into_bytes());
     }
     if b.parallel {
         parts.push(b"parallel".to_vec());
+    }
+    if let Some(h) = b.hook {
+        parts.push(format!("hook {} {:?}-{:?} {} {}", h.back, h.from, h.to, h.dx, h.dy).into_bytes());
+    }
+    if let Some(cp) = b.card_point {
+        parts.push(format!("card {} {:?}", cp.y, cp.anchor).into_bytes());
     }
     let refs: Vec<&[u8]> = parts.iter().map(Vec::as_slice).collect();
     crate::doc::fnv1a(&refs)
@@ -690,9 +737,18 @@ fn occurrences(credits: &Credits) -> Vec<Vec<usize>> {
         .collect()
 }
 
-/// Stack a page's blocks from the top; the gaps between blocks are multiplied by `gap_scale`.
-/// Returns the pieces, the content height and the total of those (elastic) gaps.
-fn stack(ctx: &mut Ctx<'_>, styling: &Styling, page: &Page, w: f64, index: usize, gap_scale: f64) -> Result<(Vec<Piece>, f64, f64), CreditsError> {
+/// Stack a page's blocks `part` (all of them for a scroll page, one spine of a card) from the
+/// top; the gaps between blocks are multiplied by `gap_scale`. Returns the pieces, the content
+/// height and the total of those (elastic) gaps.
+fn stack(
+    ctx: &mut Ctx<'_>,
+    styling: &Styling,
+    page: &Page,
+    part: std::ops::Range<usize>,
+    w: f64,
+    index: usize,
+    gap_scale: f64,
+) -> Result<(Vec<Piece>, f64, f64), CreditsError> {
     let s = ctx.s;
     let unit = finite_or(styling.unit_px, 32.0).clamp(0.0, 10_000.0) * s;
     let mut pieces: Vec<Piece> = Vec::new();
@@ -704,6 +760,13 @@ fn stack(ctx: &mut Ctx<'_>, styling: &Styling, page: &Page, w: f64, index: usize
     // parallel columns: where the current set of columns starts, how far down the finished
     // columns reach, and whether the block is in a column after the first
     let (mut group_top, mut group_bottom, mut in_parallel) = (0.0f64, 0.0f64, false);
+    // the page's finished spines (x, top, bottom), the open one (x, top), and a hooked spine
+    // being laid (its blocks are laid from 0, then moved to where the hook puts them)
+    let mut spines: Vec<(f64, f64, f64)> = Vec::new();
+    let mut open_spine: Option<(f64, f64)> = None;
+    let mut hooked: Option<HookRun> = None;
+    let mut warned_hook = false;
+    ctx.hooked_spines.clear();
     // the widest head of each harmonised style on the page
     let mut head_widths: Vec<(String, f64)> = Vec::new();
     for b in &page.blocks {
@@ -718,7 +781,23 @@ fn stack(ctx: &mut Ctx<'_>, styling: &Styling, page: &Page, w: f64, index: usize
             None => head_widths.push((cs.name.clone(), w)),
         }
     }
-    for (k, b) in page.blocks.iter().enumerate() {
+    // the widest grid column of each style with harmonised bodies on the page
+    let mut body_widths: Vec<(String, f64)> = Vec::new();
+    for b in &page.blocks {
+        let Some(cs) = styling.content_style(&b.style) else { continue };
+        if !harmonised_grid(b, &cs) {
+            continue;
+        }
+        let align = if cs.orientation == Orientation::Horizontal { Align::Left } else { cs.align };
+        let w = grid_columns(ctx, b, &cs, align)?.iter().map(|(_, bb)| (bb[2] - bb[0]).max(0.0)).fold(0.0f64, f64::max);
+        match body_widths.iter_mut().find(|(n, _)| *n == cs.name) {
+            Some((_, m)) => *m = m.max(w),
+            None => body_widths.push((cs.name.clone(), w)),
+        }
+    }
+    for (k, b) in page.blocks.iter().enumerate().take(part.end).skip(part.start) {
+        // the part's first block starts it, as the page's first block starts a page
+        let k_in = k - part.start;
         let cs = match styling.content_style(&b.style) {
             Some(c) => c,
             None => {
@@ -730,8 +809,55 @@ fn stack(ctx: &mut Ctx<'_>, styling: &Styling, page: &Page, w: f64, index: usize
             }
         };
         let margin = finite_or(cs.margin, 0.0).max(0.0) * s;
-        let spine_changed = k > 0 && page.blocks.get(k - 1).is_some_and(|p| p.spine.to_bits() != b.spine.to_bits());
-        if b.parallel && k > 0 {
+        let value_changed = k_in > 0 && page.blocks.get(k - 1).is_some_and(|p| p.spine.to_bits() != b.spine.to_bits());
+        // a new spine: a new offset, a parallel or hooked one, or any spine cell after a hook
+        let spine_changed = k_in > 0 && (value_changed || b.hook.is_some() || (hooked.is_some() && b.spine_cell));
+        if k_in > 0 && (spine_changed || b.parallel) {
+            // close the spine before it
+            if let Some(h) = hooked.take() {
+                let (top, bottom) = h.finish(&mut pieces, &spines, y, s);
+                spines.push((h.x, top, bottom));
+                group_bottom = group_bottom.max(bottom);
+                y = h.y_main.max(bottom);
+            } else if let Some((x, top)) = open_spine.take() {
+                spines.push((x, top, y));
+            }
+        }
+        let hook = b.hook.filter(|_| k_in > 0 && !spines.is_empty());
+        if b.hook.is_some() && hook.is_none() && !warned_hook {
+            warned_hook = true;
+            ctx.warn(
+                b.row,
+                format!("page {}: the hook reaches back further than there are spines; it hooks onto the first spine, or starts its own", index + 1),
+            );
+        }
+        let mut spine_x = w / 2.0 + finite_or(b.spine, 0.0) * s;
+        if let Some(hk) = hook {
+            // a hooked spine: laid from 0, moved into place when it ends
+            let back = hk.back as usize;
+            if back > spines.len() && !warned_hook {
+                warned_hook = true;
+                ctx.warn(
+                    b.row,
+                    format!("page {}: the hook reaches back further than there are spines; it hooks onto the first spine, or starts its own", index + 1),
+                );
+            }
+            let target = spines.len().saturating_sub(back);
+            spine_x = spines[target].0 + finite_or(hk.dx, 0.0) * s;
+            hooked = Some(HookRun { hook: hk, target, x: spine_x, first_piece: pieces.len(), y_main: y.max(group_bottom) });
+            ctx.hooked_spines.push(spine_x);
+            group_bottom = group_bottom.max(y);
+            in_parallel = false;
+            y = 0.0;
+        } else if let Some(h) = &hooked {
+            // further blocks of the hooked spine (their gaps do not change the page's length)
+            spine_x = h.x;
+            let gap = match b.gap_before {
+                Gap::Units(u) => finite_or(u, 0.0).max(0.0) * unit,
+                Gap::Px(p) => finite_or(p, 0.0).max(0.0) * s,
+            };
+            y += gap.max(margin).max(prev_margin) * gap_scale;
+        } else if b.parallel && k_in > 0 {
             // a parallel column starts beside the previous one, at the same top
             group_bottom = group_bottom.max(y);
             y = group_top;
@@ -742,7 +868,7 @@ fn stack(ctx: &mut Ctx<'_>, styling: &Styling, page: &Page, w: f64, index: usize
                 y = y.max(group_bottom);
                 in_parallel = false;
             }
-            if k > 0 {
+            if k_in > 0 {
                 let gap = match b.gap_before {
                     Gap::Units(u) => finite_or(u, 0.0).max(0.0) * unit,
                     Gap::Px(p) => finite_or(p, 0.0).max(0.0) * s,
@@ -754,15 +880,18 @@ fn stack(ctx: &mut Ctx<'_>, styling: &Styling, page: &Page, w: f64, index: usize
                 }
                 y += g * gap_scale;
             }
-            if spine_changed || k == 0 {
+            if spine_changed || k_in == 0 {
                 group_top = y;
                 group_bottom = y;
             }
         }
+        if hooked.is_none() && open_spine.is_none() {
+            open_spine = Some((spine_x, if b.parallel { group_top } else { y }));
+        }
         prev_margin = margin;
-        let spine_x = w / 2.0 + finite_or(b.spine, 0.0) * s;
         let head_w = head_widths.iter().find(|(n, _)| *n == cs.name).map(|(_, w)| *w);
-        let (mut ps_, bh) = lay_block(ctx, b, &cs, spine_x, y, head_w)?;
+        let body_w = body_widths.iter().find(|(n, _)| *n == cs.name).map(|(_, w)| *w).filter(|_| harmonised_grid(b, &cs));
+        let (mut ps_, bh) = lay_block(ctx, b, &cs, spine_x, y, head_w, body_w)?;
         let nth = ctx.occurrences.get(index).and_then(|v| v.get(k)).copied().unwrap_or(0);
         key_pieces(b, nth, &mut ps_);
         y += bh;
@@ -771,7 +900,122 @@ fn stack(ctx: &mut Ctx<'_>, styling: &Styling, page: &Page, w: f64, index: usize
             return Err(CreditsError::TooLarge(format!("page {} needs more than {MAX_LAYERS_PER_PAGE} text layers", index + 1)));
         }
     }
-    Ok((pieces, y.max(group_bottom).max(0.0), elastic))
+    if let Some(h) = hooked.take() {
+        let (_, bottom) = h.finish(&mut pieces, &spines, y, s);
+        group_bottom = group_bottom.max(bottom);
+        y = h.y_main.max(bottom);
+    }
+    // a spine hooked above the page's top: everything moves down so the page starts at 0
+    let lowest = pieces.iter().map(|p| p.top).fold(0.0f64, f64::min);
+    if lowest < 0.0 {
+        for p in &mut pieces {
+            p.top -= lowest;
+        }
+    }
+    Ok((pieces, (y.max(group_bottom) - lowest).max(0.0), elastic))
+}
+
+/// A hooked spine while its blocks are laid (from 0): which spine it hangs on, where it stands,
+/// its first piece, and where the page's other content had reached.
+struct HookRun {
+    hook: crate::sheet::Hook,
+    target: usize,
+    x: f64,
+    first_piece: usize,
+    y_main: f64,
+}
+
+impl HookRun {
+    /// Move the spine's pieces to where the hook puts them (`height`: how far its blocks
+    /// reached from 0). Returns its top and bottom.
+    fn finish(&self, pieces: &mut [Piece], spines: &[(f64, f64, f64)], height: f64, s: f64) -> (f64, f64) {
+        use crate::sheet::SpinePoint as P;
+        let height = height.max(0.0);
+        let (_, t_top, t_bottom) = spines.get(self.target).copied().unwrap_or((0.0, 0.0, 0.0));
+        let at = |p: P, top: f64, h: f64| match p {
+            P::Top => top,
+            P::Middle => top + h / 2.0,
+            P::Bottom => top + h,
+        };
+        let anchor = at(self.hook.from, t_top, t_bottom - t_top) + finite_or(self.hook.dy, 0.0) * s;
+        let top = anchor - at(self.hook.to, 0.0, height);
+        for p in pieces.iter_mut().skip(self.first_piece) {
+            p.top += top;
+        }
+        (top, top + height)
+    }
+}
+
+/// Lay a card page: each spine that stands on its own (a block whose spine position or card
+/// point differs from the block before, unless it is parallel; with its parallel columns) is
+/// stacked by itself and placed at its point, by default centred on it. Returns the pieces (tops
+/// relative to the content's top), the content height, where the content's top is on the frame
+/// and the spine points (frame pixels).
+#[allow(clippy::type_complexity)]
+fn card_stack(
+    ctx: &mut Ctx<'_>,
+    styling: &Styling,
+    page: &Page,
+    (w, h): (f64, f64),
+    index: usize,
+) -> Result<(Vec<Piece>, f64, f64, Vec<(f64, f64)>), CreditsError> {
+    let s = ctx.s;
+    let n = page.blocks.len();
+    let mut starts: Vec<usize> = Vec::new();
+    for (k, b) in page.blocks.iter().enumerate() {
+        let new_spine = match k.checked_sub(1).and_then(|j| page.blocks.get(j)) {
+            None => true,
+            Some(p) => !b.parallel && (p.spine.to_bits() != b.spine.to_bits() || p.card_point != b.card_point),
+        };
+        if new_spine {
+            starts.push(k);
+        }
+    }
+    let kept = ctx.warnings.len();
+    let mut hooked: Vec<f64> = Vec::new();
+    let mut pieces: Vec<Piece> = Vec::new();
+    let mut points = Vec::with_capacity(starts.len());
+    let (mut top_all, mut bottom_all) = (f64::INFINITY, f64::NEG_INFINITY);
+    for (i, &a) in starts.iter().enumerate() {
+        let end = starts.get(i + 1).copied().unwrap_or(n);
+        let (mut part, ph, _) = stack(ctx, styling, page, a..end, w, index, 1.0)?;
+        // each stack starts its own list of hooked spines: keep every spine's for the guides
+        hooked.append(&mut ctx.hooked_spines);
+        let root = page.blocks.get(a);
+        let cp = root.and_then(|b| b.card_point).unwrap_or_default();
+        let x = w / 2.0 + finite_or(root.map_or(0.0, |b| b.spine), 0.0) * s;
+        let y = h / 2.0 + finite_or(cp.y, 0.0) * s;
+        let top = match cp.anchor {
+            CardAnchor::Middle => y - ph / 2.0,
+            CardAnchor::Below => y,
+            CardAnchor::Above => y - ph,
+        };
+        for p in &mut part {
+            p.top += top;
+        }
+        top_all = top_all.min(top);
+        bottom_all = bottom_all.max(top + ph);
+        points.push((x, y));
+        pieces.extend(part);
+        if pieces.len() > MAX_LAYERS_PER_PAGE {
+            return Err(CreditsError::TooLarge(format!("page {} needs more than {MAX_LAYERS_PER_PAGE} text layers", index + 1)));
+        }
+    }
+    ctx.hooked_spines = hooked;
+    // each spine is stacked by itself: a note about a style is given once
+    let new: Vec<Warning> = ctx.warnings.drain(kept..).collect();
+    for wn in new {
+        if !ctx.warnings.iter().skip(kept).any(|x| x.message == wn.message) {
+            ctx.warnings.push(wn);
+        }
+    }
+    if !(top_all.is_finite() && bottom_all.is_finite()) {
+        return Ok((pieces, 0.0, h / 2.0, points));
+    }
+    for p in &mut pieces {
+        p.top -= top_all;
+    }
+    Ok((pieces, (bottom_all - top_all).max(0.0), top_all, points))
 }
 
 /// Lay a crawl page's blocks side by side on one line centred at `line_y` (frame pixels), from
@@ -794,7 +1038,7 @@ fn line(ctx: &mut Ctx<'_>, styling: &Styling, page: &Page, index: usize, line_y:
                 fallback.clone()
             }
         };
-        let (mut ps_, bh) = lay_block(ctx, b, &cs, 0.0, 0.0, None)?;
+        let (mut ps_, bh) = lay_block(ctx, b, &cs, 0.0, 0.0, None, None)?;
         if ps_.is_empty() {
             continue;
         }
@@ -853,13 +1097,23 @@ fn lay_page(ctx: &mut Ctx<'_>, styling: &Styling, page: &Page, frame: Frame, ind
     };
     let crawl = ps.behaviour == Behaviour::Crawl;
     let line_y = finite_or(ps.crawl_line, 0.85).clamp(0.0, 1.0) * h;
+    // a card's content top on the frame, and its spine points
+    let (mut card_top, mut spine_points) = (0.0f64, Vec::new());
     let (mut pieces, mut content_h, elastic, content_w) = if crawl {
         let (p, cw) = line(ctx, styling, page, index, line_y, ps.crawl_gap)?;
         let top = p.iter().map(|x| x.top).fold(f64::INFINITY, f64::min);
         let bot = bottom(&p).unwrap_or(0.0);
         (p, if top.is_finite() { (bot - top).max(0.0) } else { 0.0 }, 0.0, cw)
+    } else if ps.behaviour == Behaviour::Card {
+        let (p, ch, top, points) = card_stack(ctx, styling, page, (w, h), index)?;
+        card_top = top;
+        spine_points = points;
+        (p, ch, 0.0, 0.0)
     } else {
-        let (p, ch, el) = stack(ctx, styling, page, w, index, 1.0)?;
+        if let Some(b) = page.blocks.iter().find(|b| b.card_point.is_some()) {
+            ctx.warn(b.row, format!("page {}: a spine's vertical position works on card pages only; it is ignored", index + 1));
+        }
+        let (p, ch, el) = stack(ctx, styling, page, 0..page.blocks.len(), w, index, 1.0)?;
         (p, ch, el, 0.0)
     };
     let rate = frame.rate;
@@ -896,7 +1150,7 @@ fn lay_page(ctx: &mut Ctx<'_>, styling: &Styling, page: &Page, frame: Frame, ind
                     let scale = (want_content - rigid) / elastic;
                     if elastic > 0.0 && (0.0..=MAX_GAP_SCALE).contains(&scale) {
                         let kept = ctx.warnings.len();
-                        let (p2, c2, _) = stack(ctx, styling, page, w, index, scale)?;
+                        let (p2, c2, _) = stack(ctx, styling, page, 0..page.blocks.len(), w, index, scale)?;
                         ctx.warnings.truncate(kept);
                         pieces = p2;
                         content_h = c2;
@@ -929,7 +1183,7 @@ fn lay_page(ctx: &mut Ctx<'_>, styling: &Styling, page: &Page, frame: Frame, ind
             if content_h > h {
                 ctx.warn(page.row, format!("card page {} is taller than the frame; use a Scroll page", index + 1));
             }
-            (((h - content_h) / 2.0), runtime.unwrap_or_else(|| frames(rate, i64::from(ps.card_frames.max(1)))))
+            (card_top, runtime.unwrap_or_else(|| frames(rate, i64::from(ps.card_frames.max(1)))))
         }
     };
     let duration = rate.snap_nearest(duration).max(fd);
@@ -998,8 +1252,8 @@ fn lay_page(ctx: &mut Ctx<'_>, styling: &Styling, page: &Page, frame: Frame, ind
         set(&mut e, "position", ParamValue::Vec2(Vec2::new(p.x, y)));
         let delay = delay_of(p.row);
         if let Some(pic) = p.pic {
-            let PicInfo { file, w, h, row, video } = *pic;
-            pictures.push(PicturePlace { file, center: (p.x, y), size: (w, h), row, video, delay });
+            let PicInfo { file, w, h, row, video, repeat } = *pic;
+            pictures.push(PicturePlace { file, center: (p.x, y), size: (w, h), row, video, repeat, delay });
         } else if card {
             card_keys(&mut e, duration, delay, fade_in, fade_out, motion, (p.x, y));
         }
@@ -1014,8 +1268,9 @@ fn lay_page(ctx: &mut Ctx<'_>, styling: &Styling, page: &Page, frame: Frame, ind
     let name = if name.trim().is_empty() { format!("Credits {}", index + 1) } else { format!("Credits {}: {}", index + 1, name.trim()) };
     let mut spines: Vec<f64> = Vec::new();
     if !crawl {
-        for b in &page.blocks {
-            let x = w / 2.0 + finite_or(b.spine, 0.0) * s;
+        // the blocks' own spines, and the hooked ones where the hooks put them
+        let own = page.blocks.iter().filter(|b| b.hook.is_none()).map(|b| w / 2.0 + finite_or(b.spine, 0.0) * s);
+        for x in own.chain(ctx.hooked_spines.clone()) {
             if !spines.iter().any(|v| (v - x).abs() < 0.5) {
                 spines.push(x);
             }
@@ -1061,6 +1316,7 @@ fn lay_page(ctx: &mut Ctx<'_>, styling: &Styling, page: &Page, frame: Frame, ind
         content_width: content_w,
         content_top: dy,
         spines,
+        spine_points,
         background,
         transition,
         transition_in: Tick::ZERO,
@@ -1087,6 +1343,7 @@ pub fn layout(credits: &Credits, styling: &Styling, frame: Frame, measure: &dyn 
         occurrences: occurrences(credits),
         inline: Vec::new(),
         unknown_inline: vec![],
+        hooked_spines: vec![],
     };
     let s = ctx.s;
     let mut inline: Vec<(String, CharStyle)> = Vec::new();

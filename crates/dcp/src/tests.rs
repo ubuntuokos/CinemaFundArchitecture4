@@ -134,10 +134,10 @@ const SMPTE_PKL: &str = r#"<?xml version="1.0" encoding="UTF-8"?>
 const INTEROP_AM: &str = r#"<?xml version="1.0" encoding="UTF-8"?>
 <AssetMap xmlns="http://www.digicine.com/PROTO-ASDCP-AM-20040311#">
   <Id>urn:uuid:11111111-2222-4333-8444-555555555555</Id>
-  <Creator>x</Creator>
   <VolumeCount>1</VolumeCount>
   <IssueDate>2010-01-01T00:00:00+00:00</IssueDate>
   <Issuer>x</Issuer>
+  <Creator>x</Creator>
   <AssetList>
     <Asset>
       <Id>urn:uuid:21111111-2222-4333-8444-555555555555</Id>
@@ -155,6 +155,14 @@ const INTEROP_AM: &str = r#"<?xml version="1.0" encoding="UTF-8"?>
   </AssetList>
 </AssetMap>
 "#;
+
+/// `INTEROP_AM` as a SMPTE asset map: the SMPTE namespace, and `Creator` first (ST 429-9 order).
+fn smpte_am() -> String {
+    INTEROP_AM
+        .replace(ns::INTEROP_AM, ns::SMPTE_AM)
+        .replace("  <Creator>x</Creator>\n", "")
+        .replace("  <VolumeCount>", "  <Creator>x</Creator>\n  <VolumeCount>")
+}
 
 fn composition(text: &str) -> Composition {
     match parse(text, Limits::default()) {
@@ -383,7 +391,7 @@ fn schema_elements_must_be_in_the_document_namespace() {
 
 #[test]
 fn smpte_packing_list_flag_is_a_boolean() {
-    let smpte = INTEROP_AM.replace(ns::INTEROP_AM, ns::SMPTE_AM);
+    let smpte = smpte_am();
     let Ok(Document::AssetMap(m)) = parse(&smpte, Limits::default()) else { panic!("not an asset map") };
     assert!(!m.assets[0].packing_list);
     assert!(m.issues.iter().any(|i| i.kind == IssueKind::Invalid && i.path == "AssetMap/AssetList/Asset[1]/PackingList"));
@@ -421,17 +429,24 @@ fn smpte_picture_needs_rational_frame_rate_and_aspect_ratio() {
 
 #[test]
 fn schema_order_and_positive_volume_fields() {
-    let t = INTEROP_AM
-        .replace("<VolumeCount>1</VolumeCount>", "<VolumeCount>0</VolumeCount>")
-        .replace("<Issuer>x</Issuer>", "")
-        .replace("<Creator>x</Creator>", "<Issuer>x</Issuer><Creator>x</Creator>");
+    let t = INTEROP_AM.replace("<VolumeCount>1</VolumeCount>", "<VolumeCount>0</VolumeCount>");
     let Ok(Document::AssetMap(m)) = parse(&t, Limits::default()) else { panic!("not an asset map") };
     assert_eq!(m.volume_count, None);
     assert!(m.issues.iter().any(|i| i.kind == IssueKind::Invalid && i.path == "AssetMap/VolumeCount"));
-    let order: Vec<&Issue> = m.issues.iter().filter(|i| i.message.contains("schema order")).collect();
-    assert_eq!(order.len(), 1, "{:#?}", m.issues);
-    assert_eq!(order[0].path, "AssetMap/Creator");
-    assert_eq!(m.issuer.as_deref(), Some("x"), "an out-of-order element is still read");
+    let schema_order = |t: &str| {
+        let Ok(Document::AssetMap(m)) = parse(t, Limits::default()) else { panic!("not an asset map") };
+        let order: Vec<String> = m.issues.iter().filter(|i| i.message.contains("schema order")).map(|i| i.path.clone()).collect();
+        (order, m)
+    };
+    // each standard in its own order is clean (Interop: Creator after Issuer; SMPTE: Creator first)
+    assert!(schema_order(INTEROP_AM).0.is_empty());
+    assert!(schema_order(&smpte_am()).0.is_empty());
+    // Interop in the SMPTE order: VolumeCount comes after Creator
+    assert_eq!(schema_order(&smpte_am().replace(ns::SMPTE_AM, ns::INTEROP_AM)).0, ["AssetMap/VolumeCount"]);
+    // SMPTE in the Interop order: Creator comes last
+    let (order, m) = schema_order(&INTEROP_AM.replace(ns::INTEROP_AM, ns::SMPTE_AM));
+    assert_eq!(order, ["AssetMap/Creator"]);
+    assert_eq!(m.creator.as_deref(), Some("x"), "an out-of-order element is still read");
     let t = r#"<VolumeIndex xmlns="http://www.smpte-ra.org/schemas/429-9/2007/AM"><Index>0</Index></VolumeIndex>"#;
     let Ok(Document::VolumeIndex(v)) = parse(t, Limits::default()) else { panic!("not a volume index") };
     assert_eq!(v.index, None);
@@ -465,10 +480,7 @@ fn content_kind_version_and_volume_count() {
     assert!(c.issues.iter().any(|i| i.kind == IssueKind::Missing && i.path == "CompositionPlaylist/ContentVersion/LabelText"));
     assert!(composition(INTEROP_CPL).issues.is_empty(), "Interop needs no ContentVersion");
 
-    let two = INTEROP_AM
-        .replace(ns::INTEROP_AM, ns::SMPTE_AM)
-        .replace("<PackingList/>", "<PackingList>true</PackingList>")
-        .replace("<VolumeCount>1</VolumeCount>", "<VolumeCount>2</VolumeCount>");
+    let two = smpte_am().replace("<PackingList/>", "<PackingList>true</PackingList>").replace("<VolumeCount>1</VolumeCount>", "<VolumeCount>2</VolumeCount>");
     let Ok(Document::AssetMap(m)) = parse(&two, Limits::default()) else { panic!("not an asset map") };
     assert!(m.issues.iter().any(|i| i.kind == IssueKind::Invalid && i.path == "AssetMap/VolumeCount"));
     let Ok(Document::AssetMap(m)) = parse(&INTEROP_AM.replace("<VolumeCount>1</VolumeCount>", "<VolumeCount>2</VolumeCount>"), Limits::default()) else {
@@ -479,7 +491,7 @@ fn content_kind_version_and_volume_count() {
 
 #[test]
 fn smpte_chunks_ratings_and_text_only_values() {
-    let smpte = INTEROP_AM.replace(ns::INTEROP_AM, ns::SMPTE_AM).replace("<PackingList/>", "<PackingList>true</PackingList>");
+    let smpte = smpte_am().replace("<PackingList/>", "<PackingList>true</PackingList>");
     let am = |t: &str| {
         let Ok(Document::AssetMap(m)) = parse(t, Limits::default()) else { panic!("not an asset map") };
         m

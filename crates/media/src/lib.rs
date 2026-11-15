@@ -235,6 +235,12 @@ pub trait MediaSource: Send + Sync {
     fn carrier(&self) -> Option<SharedSource> {
         None
     }
+    /// The Key IDs (UUID text) of encrypted essence (ST 429-6) whose content key is not loaded:
+    /// its picture is black and its sound silent until a KDM brings them (#1053). Read when
+    /// asked, so it is empty once the keys are there. Empty for sources that are not encrypted.
+    fn missing_keys(&self) -> Vec<String> {
+        Vec::new()
+    }
 }
 
 pub type SharedSource = Arc<dyn MediaSource>;
@@ -243,7 +249,7 @@ pub type SharedSource = Arc<dyn MediaSource>;
 pub const STILL_EXTENSIONS: &[&str] =
     &["png", "jpg", "jpeg", "gif", "webp", "heic", "heif", "hif", "tif", "tiff", "bmp", "tga", "dpx", "exr", "hdr", "jxl", "dng"];
 pub const AUDIO_EXTENSIONS: &[&str] =
-    &["wav", "wave", "bwf", "aif", "aiff", "mp3", "mp2", "m4a", "aac", "dts", "dtshd", "flac", "ogg", "opus", "spx", "amr", "awb", "tta"];
+    &["wav", "wave", "bwf", "aif", "aiff", "mp3", "mp2", "m4a", "aac", "dts", "dtshd", "flac", "ogg", "opus", "spx", "amr", "awb", "tta", "g729", "lbc", "mpc"];
 pub const VIDEO_EXTENSIONS: &[&str] = &[
     "mp4", "m4v", "mov", "mkv", "webm", "avi", "mxf", "mts", "m2ts", "m2t", "ts", "mpg", "mpeg", "vob", "mod", "tod", "m2v", "m1v", "mpv", "3gp", "y4m", "apv",
     "dv", "dif", "obu", "ivf",

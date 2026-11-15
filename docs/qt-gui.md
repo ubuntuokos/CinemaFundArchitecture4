@@ -19,6 +19,7 @@ python3 -m venv .venv
 .venv/bin/python -m pip install -e '.[qt]'      # PySide6 + cfa4-qt, inside .venv only
 .venv/bin/cfa4-qt --demo --lang hu              # demo project, Hungarian UI
 .venv/bin/cfa4-qt project.fcproj                # open a project
+.venv/bin/cfa4-qt a.mp4 b.wav                  # import media (as egui; with a .fcproj: into it)
 ```
 
 `source .venv/bin/activate` lets you type `cfa4-qt` without the path in that terminal.
@@ -118,6 +119,7 @@ line longer than 4 MiB is skipped with an error reply.
 | `timecodeSync.transport` | `{playing, time \| seconds \| frame, speed?}` | `{active}`: the player's transport, sent whenever it starts, stops, seeks or changes speed; LTC and MIDI Timecode output follow it and chase compares it with the external clock (`active`: a sync device is open) |
 | `surface.devices` | `{}` | `{enabled, devices: [{device, name, protocol: midi\|hid, driver, state: online\|error, port, vid?, pid?, error?, enabled, profile}], problems}`: the MIDI controllers (ALSA sequencer ports) and jog/shuttle devices (hidraw) of this machine for Settings ▸ Control Surfaces, with the user's choices from `controlSurfaces.devices` (`profile`: the driver's default when none was chosen); `problems` names what could not be searched (no ALSA sequencer, no hidraw) |
 | `surface.monitor` | `{enabled, device?, filter?: {clock?, sense?}}` | `{enabled}`: the MIDI Monitor of Settings ▸ Control Surfaces. While on, the engine reads every MIDI controller (its own sequencer client `CFA4`, hot-plugged ports included) and sends `{"event": "surfaceMonitor", "messages": [{device, at (ns since start), raw (hex), decoded}], "dropped": n}` at most 20 times a second, at most 200 messages each (the rest counted in `dropped`); MIDI Clock and Active Sensing only when `filter` asks. An error when there is no ALSA sequencer; `{"event": "surfaceError", code, error}` when the sequencer goes away (the monitor is then off). The GUI turns it off when the dialog closes |
+| `timecodeSync.devices` | – | `{ltcInputs, ltcOutputs, mtcInputs, mtcOutputs}`: the audio devices (of the Settings ▸ Audio Hardware host) and MIDI ports (`Client:Port`) the Timecode Sync settings can name |
 | `session.state` | – | `{dirty, revision, path, canUndo, canRedo, playhead}` |
 | `app.quit` | – | `{quit: true}`, then the session ends (as stdin EOF does) |
 
