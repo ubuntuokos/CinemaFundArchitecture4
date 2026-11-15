@@ -5,7 +5,8 @@
 > [CFA4-AI_modules ADR 0008 (korábban 0006)](https://github.com/ubuntuokos/CFA4-AI_modules/blob/main/docs/adr/ADR-0008-ai-processing-layer.md) F1, F2, F4 és F5 kapu · **Kapcsolódik:** CFA4
 > [`ADR 0006`](../adr/ADR-0006-backlothub-postgresql.md) (BacklotHub: PostgreSQL, 2026-11-02),
 > [`CFA4-EVENT-FABRIC-001`](CFA4-EVENT-FABRIC-001-1.0.md) és [illesztési melléklete](CFA4-EVENT-FABRIC-001-1.0-CFA4-ILLESZTES.md),
-> CFA4-ADAPTIVE-CAPABILITY-001 (adaptív erőforrás-kezelés, tulajdonosi specifikáció, 2026-11-07)
+> CFA4-ADAPTIVE-CAPABILITY-001 (adaptív erőforrás-kezelés, tulajdonosi specifikáció, 2026-11-07;
+> [összevetése az AI-tervvel](CFA4-ADAPTIVE-CAPABILITY-001-OSSZEVETES.md))
 
 ## 1. Kiindulás
 

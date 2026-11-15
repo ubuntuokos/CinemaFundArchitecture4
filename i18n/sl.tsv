@@ -2097,6 +2097,7 @@
 	Counter	Števec
 	Typewriter	Pisalni stroj
 	Word by Word	Beseda za besedo
+	Scramble	Mešanje
 	Animator	Animator
 	Animator Duration	Trajanje animatorja
 	Animator Delay	Zakasnitev animatorja
@@ -3237,6 +3238,10 @@
 	Sharpen Amount	Količina izostritve
 	Shift Center To	Premakni središče na
 	Show Focus Area	Pokaži območje ostrenja
+	Rack Focus	Prenos ostrine
+	Focus Point A	Točka ostrine A
+	Focus Point B	Točka ostrine B
+	Rack	Prenos
 	Show Only Noise	Pokaži samo šum
 	Shrink	Skrči
 	Shutter Angle	Kot zaklopa
@@ -4179,6 +4184,11 @@ export.summary	Low	nizka
 	Burn Size	Velikost izžiga
 	Ember Width	Širina žerjavice
 	Ember Color	Barva žerjavice
+	Tear Away	Odtrganje
+	Tear Roughness	Hrapavost raztrganine
+	Paper Edge Width	Širina papirnatega roba
+	Stamp Cut	Izrez znamke
+	Perforations	Perforacija
 	Check Text Legibility	Preveri berljivost besedila
 	Clear Legibility Markers	Počisti oznake berljivosti
 	Text legibility: no problems found	Berljivost besedila: ni najdenih težav
@@ -4218,6 +4228,9 @@ export.summary	Low	nizka
 	Dither	Razprševanje
 	Pattern	Vzorec
 	Cell Size	Velikost celice
+	Pixelate	Pikselizacija
+	Cell Shape	Oblika celice
+	LED	LED
 	Cyan Angle	Kot cijan
 	Magenta Angle	Kot magenta
 	Yellow Angle	Kot rumene
@@ -4578,6 +4591,18 @@ export.summary	Low	nizka
 	Chase External Timecode	Sledi zunanji časovni kodi
 	Send LTC	Pošlji LTC
 	Send MIDI Timecode	Pošlji časovno kodo MIDI
+
+# Live studio preview (CFA4-LIVE-STUDIO-001 S0)
+	Live studio preview	Predogled studia v živo
+	Live studio: stopped	Studio v živo: ustavljen
+	Live studio: {state}	Studio v živo: {state}
+	Live studio: {error}	Studio v živo: {error}
+	restarted after {count} crashes (last: {exit})	znova zagnan po {count} sesutjih (zadnje: {exit})
+	software backend: {reason}	programsko zaledje: {reason}
+	Start studio	Zaženi studio
+	Stop studio	Ustavi studio
+	Add Studio Scene	Dodaj studijsko sceno
+	Live	V živo
 # Auto Color, Auto Contrast, Auto Levels (EffectsSDK review)
 	Auto Color	Samodejna barva
 	Auto Contrast	Samodejni kontrast
@@ -4635,3 +4660,42 @@ export.summary	Low	nizka
 	Freewheel	Prosti tek
 	Scrubbing	Drsenje
 	Sending	Pošiljanje
+
+# DCP subtitle export (#938)
+	Subtitles from the first caption track	Podnapisi s prve sledi podnapisov
+	The package language	Jezik paketa
+	Inter Regular (built in), or an OpenType / TrueType file	Inter Regular (vgrajena) ali datoteka OpenType / TrueType
+	Subtitle language	Jezik podnapisov
+	Subtitle font	Pisava podnapisov
+	Fonts	Pisave
+
+# AS-11 metadata in MXF OP1a (#96)
+	AS-11 Core	AS-11 Core
+	AS-11 Parts	Deli AS-11
+	AS-11 UK DPP	AS-11 UK DPP
+
+# Control Surfaces settings page (CS-1, #1187)
+	Devices	Naprave
+	Use	Uporabi
+	Device	Naprava
+	MIDI	MIDI
+	HID jog/shuttle	HID jog/shuttle
+	OSC	OSC
+	Connected	Povezano
+	Not connected	Ni povezano
+	Disabled	Onemogočeno
+	{device} ({port})	{device} ({port})
+	{name}: {error}	{name}: {error}
+	Looking for devices…	Iskanje naprav …
+	No MIDI controller or jog/shuttle device was found. Connect one and press Refresh.	Ni bilo najdenega krmilnika MIDI ali naprave jog/shuttle. Priključite eno in pritisnite Osveži.
+	Control Surfaces	Nadzorne površine
+	Use control surfaces (MIDI controllers, jog/shuttle devices)	Uporabi nadzorne površine (krmilniki MIDI, naprave jog/shuttle)
+	Mapping controls to commands, MIDI Learn and the MIDI Monitor come in a later version; the choices here are remembered until then.	Dodeljevanje kontrolnikov ukazom, MIDI Learn in monitor MIDI pridejo v poznejši različici; do takrat se izbire tukaj shranijo.
+	CFA4 ShuttlePRO	CFA4 ShuttlePRO
+	Kdenlive-style ShuttlePRO	ShuttlePRO v slogu Kdenlive
+	Generic MIDI	Splošni MIDI
+
+# LTC timecode read from clip audio (TC-7, #1285)
+	Read from LTC Audio	Preberi iz zvoka LTC
+	Find SMPTE LTC on the clip's audio and use the timecode it gives the first frame	Poišči SMPTE LTC v zvoku posnetka in uporabi časovno kodo, ki jo da prvi sličici
+	Read Timecode from LTC Audio	Preberi časovno kodo iz zvoka LTC
