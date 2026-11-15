@@ -5,6 +5,8 @@ default-members = ["crates/*", "apps/*", "xtask"]
 # Cargo does not expand globs here: each vendored crate is named, so `--workspace` does not
 # build their tests (their dev-dependencies stay out of Cargo.lock; scripts/dev/test-vendored-ui.sh).
 exclude = [
+    # CFA4-SECURITY-001 B2: cargo-fuzz targets, their own workspace (nightly + libFuzzer; fuzz/README.md)
+    "fuzz",
     "vendor/cfa4-libs/docpath",
     "vendor/cfa4-libs/ui",
     "vendor/ffmpeg-bindings/rsmedia",
@@ -41,7 +43,10 @@ cfa4-dts = { path = "crates/dts" }
 cfa4-auro = { path = "crates/auro" }
 cfa4-truehd = { path = "crates/truehd" }
 cfa4-tcsync = { path = "crates/tcsync" }
+cfa4-surface-catalog = { path = "crates/surface-catalog" }
 cfa4-tcsync-io = { path = "crates/tcsync-io" }
+cfa4-surface-model = { path = "crates/surface-model" }
+cfa4-surface = { path = "crates/surface" }
 cfa4-mpa = { path = "crates/mpa" }
 cfa4-ogg = { path = "crates/ogg" }
 cfa4-h264 = { path = "crates/h264" }
@@ -54,6 +59,8 @@ cfa4-speex = { path = "crates/speex" }
 cfa4-amr = { path = "crates/amr" }
 cfa4-hap = { path = "crates/hap" }
 cfa4-utvideo = { path = "crates/utvideo" }
+cfa4-lagarith = { path = "crates/lagarith" }
+cfa4-magicyuv = { path = "crates/magicyuv" }
 cfa4-huffyuv = { path = "crates/huffyuv" }
 cfa4-ffv1 = { path = "crates/ffv1" }
 cfa4-canopus = { path = "crates/canopus" }
@@ -67,12 +74,18 @@ cfa4-iab = { path = "crates/iab" }
 cfa4-dcp = { path = "crates/dcp" }
 cfa4-dcp-validate = { path = "crates/dcp-validate" }
 cfa4-dcp-inspect = { path = "crates/dcp-inspect" }
+cfa4-dcpomatic = { path = "crates/dcpomatic" }
 cfa4-apv = { path = "crates/apv" }
 cfa4-dng = { path = "crates/dng" }
+cfa4-g729 = { path = "crates/g729" }
+cfa4-ilbc = { path = "crates/ilbc" }
 cfa4-tta = { path = "crates/tta" }
+cfa4-shorten = { path = "crates/shorten" }
+cfa4-tak = { path = "crates/tak" }
 cfa4-realvideo = { path = "crates/realvideo" }
 cfa4-realmedia = { path = "crates/realmedia" }
 cfa4-realaudio = { path = "crates/realaudio" }
+cfa4-musepack = { path = "crates/musepack" }
 cfa4-av1 = { path = "crates/av1" }
 cfa4-av2 = { path = "crates/av2" }
 cfa4-aac = { path = "crates/aac" }
@@ -113,6 +126,7 @@ rsmedia = { version = "0.7.1", path = "vendor/ffmpeg-bindings/rsmedia", default-
 rsmpeg = { version = "0.18.1", path = "vendor/ffmpeg-bindings/rsmpeg", default-features = false, features = ["ffmpeg9", "link_system_ffmpeg"] }
 rusty_ffmpeg = { version = "0.18.1", path = "vendor/ffmpeg-bindings/rusty_ffmpeg" }
 cfa4-metrics = { path = "crates/metrics" }
+cfa4-sandbox = { path = "crates/sandbox" }
 
 # foundation
 thiserror = "2"
@@ -128,7 +142,7 @@ roxmltree = "0.21"
 aes = "0.9"
 hmac = "0.13"
 sha1 = "0.11"
-rsa = { version = "0.10", default-features = false, features = ["std", "encoding"] }
+rsa = { version = "0.10", default-features = false, features = ["std", "encoding", "pkcs1v15"] }
 base64 = "0.22"
 cfa4-docpath = { version = "0.1.0", path = "vendor/cfa4-libs/docpath" }
 
@@ -164,7 +178,19 @@ opt-level = 3
 [profile.dev.package.cfa4-dirac]
 opt-level = 3
 
+[profile.dev.package.cfa4-g729]
+opt-level = 3
+
+[profile.dev.package.cfa4-ilbc]
+opt-level = 3
+
 [profile.dev.package.cfa4-tta]
+opt-level = 3
+
+[profile.dev.package.cfa4-shorten]
+opt-level = 3
+
+[profile.dev.package.cfa4-tak]
 opt-level = 3
 
 [profile.dev.package.cfa4-realvideo]
@@ -176,10 +202,19 @@ opt-level = 3
 [profile.dev.package.cfa4-canopus]
 opt-level = 3
 
+[profile.dev.package.cfa4-musepack]
+opt-level = 3
+
 [profile.dev.package.cfa4-huffyuv]
 opt-level = 3
 
 [profile.dev.package.cfa4-utvideo]
+opt-level = 3
+
+[profile.dev.package.cfa4-lagarith]
+opt-level = 3
+
+[profile.dev.package.cfa4-magicyuv]
 opt-level = 3
 
 [profile.dev.package."*"]

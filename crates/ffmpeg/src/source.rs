@@ -437,7 +437,7 @@ impl VideoState {
         };
         let pts = ts_to_tick(ts.saturating_sub(meta.origin), meta.tb);
         let color = if meta.output == Output::Rgba { ColorInfo::SRGB_FULL } else { meta.color };
-        Ok(Some((ts, Arc::new(VideoFrame { width: meta.width, height: meta.height, data: frame, color, par: meta.par, pts }))))
+        Ok(Some((ts, Arc::new(VideoFrame { width: meta.width, height: meta.height, data: frame, color, par: meta.par, pts, layout: Default::default() }))))
     }
 }
 

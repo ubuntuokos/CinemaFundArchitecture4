@@ -1,32 +1,35 @@
 //! The pure-Rust backend: always available, and the fallback when libobs cannot start.
 //!
-//! In S0 it composites what S0 has, the empty scene: opaque black frames at the configured
-//! frame rate, paced by the monotonic clock. Later phases grow it into the Rust replacement of
-//! libobs (plan S12+), behind the same [`StudioBackend`] trait.
+//! It composites the scene the engine sends (S1: still layers, [`crate::scene::compose`]) onto
+//! opaque black, once per scene change, and paces the frames by the monotonic clock. Later phases
+//! grow it into the Rust replacement of libobs (plan S12+), behind the same [`StudioBackend`]
+//! trait.
 
+use crate::scene::LoadedScene;
 use crate::{Frame, PixelFormat, Result, StudioBackend, VideoSettings};
 use std::time::{Duration, Instant};
 
-/// Software compositor of the empty scene.
+/// Software compositor.
 pub struct SoftwareBackend {
     video: VideoSettings,
     start: Instant,
     next: u64,
-    empty: Vec<u8>,
+    /// The composited scene (BGRA), repeated every frame.
+    picture: Vec<u8>,
 }
 
 impl SoftwareBackend {
     /// A backend producing `video`.
     pub fn new(video: VideoSettings) -> Result<Self> {
         video.validate()?;
-        let mut empty = vec![0u8; video.frame_len()];
+        let mut picture = vec![0u8; video.frame_len()];
         // opaque black: alpha 255 in every BGRA pixel
-        for px in empty.chunks_exact_mut(4) {
+        for px in picture.chunks_exact_mut(4) {
             if let Some(a) = px.get_mut(3) {
                 *a = 255;
             }
         }
-        Ok(Self { video, start: Instant::now(), next: 0, empty })
+        Ok(Self { video, start: Instant::now(), next: 0, picture })
     }
 
     fn due(&self, index: u64) -> Duration {
@@ -49,6 +52,12 @@ impl StudioBackend for SoftwareBackend {
     }
 
     fn show_empty_scene(&mut self) -> Result<()> {
+        self.set_scene(&LoadedScene::default())
+    }
+
+    fn set_scene(&mut self, scene: &LoadedScene) -> Result<()> {
+        // the layers are still pictures: one composite serves every frame until the next change
+        self.picture = crate::scene::compose(scene, &self.video, 0).data;
         Ok(())
     }
 
@@ -75,7 +84,7 @@ impl StudioBackend for SoftwareBackend {
             stride: self.video.stride(),
             format: PixelFormat::Bgra8,
             pts_ns,
-            data: self.empty.clone(),
+            data: self.picture.clone(),
         }))
     }
 

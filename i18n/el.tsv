@@ -1865,6 +1865,7 @@
 	Text Animator	Κίνηση κειμένου
 	Counter	Μετρητής
 	Word by Word	Λέξη προς λέξη
+	Scramble	Ανακάτεμα
 	Animator	Κίνηση
 	Animator Duration	Διάρκεια κίνησης
 	Animator Delay	Καθυστέρηση κίνησης
@@ -2886,6 +2887,10 @@
 	Sharpen Amount	Ποσότητα όξυνσης
 	Shift Center To	Μετακίνηση κέντρου σε
 	Show Focus Area	Εμφάνιση περιοχής εστίασης
+	Rack Focus	Μετατόπιση εστίασης
+	Focus Point A	Σημείο εστίασης Α
+	Focus Point B	Σημείο εστίασης Β
+	Rack	Μετατόπιση
 	Show Only Noise	Εμφάνιση μόνο θορύβου
 	Shrink	Συρρίκνωση
 	Shutter Angle	Γωνία κλείστρου
@@ -4178,6 +4183,11 @@ export.summary	Low	χαμηλή
 	Burn Size	Μέγεθος καψίματος
 	Ember Width	Πλάτος θράκας
 	Ember Color	Χρώμα θράκας
+	Tear Away	Σκίσιμο
+	Tear Roughness	Τραχύτητα σκισίματος
+	Paper Edge Width	Πλάτος άκρης χαρτιού
+	Stamp Cut	Αποκοπή γραμματοσήμου
+	Perforations	Διάτρηση
 	Check Text Legibility	Έλεγχος αναγνωσιμότητας κειμένου
 	Clear Legibility Markers	Απαλοιφή δεικτών αναγνωσιμότητας
 	Text legibility: no problems found	Αναγνωσιμότητα κειμένου: δεν βρέθηκαν προβλήματα
@@ -4217,6 +4227,9 @@ export.summary	Low	χαμηλή
 	Dither	Διάχυση
 	Pattern	Μοτίβο
 	Cell Size	Μέγεθος κελιού
+	Pixelate	Εικονοστοιχειοποίηση
+	Cell Shape	Σχήμα κελιού
+	LED	LED
 	Cyan Angle	Γωνία κυανού
 	Magenta Angle	Γωνία ματζέντα
 	Yellow Angle	Γωνία κίτρινου
@@ -4382,6 +4395,10 @@ export.summary	Low	χαμηλή
 	{n} more	{n} ακόμη
 	Block	Μπλοκ
 	parallel	παράλληλα
+	page {page}: a spine's vertical position works on card pages only; it is ignored	σελίδα {page}: η κατακόρυφη θέση του άξονα ισχύει μόνο σε σελίδες κάρτας· αγνοείται
+	on a card: centered on {y} px	σε κάρτα: κεντραρισμένος στα {y} px
+	on a card: starts at {y} px	σε κάρτα: ξεκινά στα {y} px
+	on a card: ends at {y} px	σε κάρτα: τελειώνει στα {y} px
 # MPEG-2 export audio (#268): a product name, kept as is
 	Dolby Digital (AC-3)	Dolby Digital (AC-3)
 	In the page (OBS takes it from the Browser Source)	Στη σελίδα (το OBS τον παίρνει από την πηγή προγράμματος περιήγησης)
@@ -4454,7 +4471,12 @@ export.summary	Low	χαμηλή
 	page {page}: the runtime is reached by changing the roll speed (the gaps would have to grow more than 20-fold)	σελίδα {page}: η διάρκεια επιτυγχάνεται αλλάζοντας την ταχύτητα κύλισης (τα κενά θα έπρεπε να μεγαλώσουν πάνω από 20 φορές)
 	page {page}: the transition needs the pages to touch (page gap 0); it is left out	σελίδα {page}: η μετάβαση απαιτεί οι σελίδες να εφάπτονται (κενό σελίδας 0)· παραλείπεται
 	page {page}: there is no transition “{name}”; the pages cut	σελίδα {page}: δεν υπάρχει μετάβαση “{name}”· οι σελίδες αλλάζουν με κόψιμο
-	spine position “{value}” is not supported (a pixel offset, optionally “parallel”, is)	η θέση άξονα “{value}” δεν υποστηρίζεται (υποστηρίζεται μετατόπιση σε pixel, προαιρετικά με “parallel”)
+	spine position “{value}” is not supported (a pixel offset, optionally “parallel”, or “Hook N Bottom-Top dx dy” is)	η θέση άξονα “{value}” δεν υποστηρίζεται (υποστηρίζεται μετατόπιση σε pixel, προαιρετικά με “parallel” / “Hook N Bottom-Top dx dy”)
+	page {page}: the hook reaches back further than there are spines; it hooks onto the first spine, or starts its own	σελίδα {page}: το άγκιστρο φτάνει πιο πίσω απ’ όσους άξονες υπάρχουν· αγκιστρώνεται στον πρώτο άξονα ή ξεκινά δικό του
+	hooked {n} spines back: its {from} meets this spine's {to}	αγκιστρωμένος {n} άξονες πίσω: το {from} του συναντά το {to} αυτού του άξονα
+	top	πάνω άκρο
+	middle	μέση
+	bottom	κάτω άκρο
 	vertical gap “{value}” is not a number	το κατακόρυφο κενό “{value}” δεν είναι αριθμός
 	picture “{file}” was not found or cannot be read; it is left out	η εικόνα “{file}” δεν βρέθηκε ή δεν διαβάζεται· παραλείπεται
 	video “{file}” was not found or cannot be read; it is left out	το βίντεο “{file}” δεν βρέθηκε ή δεν διαβάζεται· παραλείπεται
@@ -4519,7 +4541,7 @@ export.summary	Low	χαμηλή
 	the engine sent no report	η μηχανή δεν έστειλε αναφορά
 	MXF OP1a Uncompressed 10-bit 4:2:2 (v210)	MXF OP1a ασυμπίεστο 10-bit 4:2:2 (v210)
 	MXF OP1a, uncompressed 10-bit Y'CbCr 4:2:2 in the v210 layout (SMPTE ST 384), 24-bit 48 kHz PCM, start timecode	MXF OP1a, ασυμπίεστο 10-bit Y'CbCr 4:2:2 σε διάταξη v210 (SMPTE ST 384), PCM 24-bit 48 kHz, αρχικός κωδικός χρόνου
-	Write the captions as ANC data (CEA-608/708, 29.97 fps)	Εγγραφή των υποτίτλων ως δεδομένα ANC (CEA-608/708, 29,97 fps)
+	Write the captions as ANC data (CEA-608/708)	Εγγραφή των υποτίτλων ως δεδομένα ANC (CEA-608/708)
 	Load KDM…	Φόρτωση KDM…
 	Forget DCP Keys	Διαγραφή κλειδιών DCP
 	Load KDM	Φόρτωση KDM
@@ -4529,6 +4551,13 @@ export.summary	Low	χαμηλή
 	The keys stay in memory only, until Forget DCP Keys or the end of the session.	Τα κλειδιά μένουν μόνο στη μνήμη, μέχρι τη «Διαγραφή κλειδιών DCP» ή το τέλος της συνεδρίας.
 	DCP keys forgotten	Τα κλειδιά DCP διαγράφηκαν
 	Choose the KDM file and the private key.	Επιλέξτε το αρχείο KDM και το ιδιωτικό κλειδί.
+	Load even if the certificate chain is not verified	Φόρτωση ακόμη και με μη επαληθευμένη αλυσίδα πιστοποιητικών
+	Bundle: {loaded} of {total} KDMs loaded, {other} for other recipients	Πακέτο: φορτώθηκαν {loaded} από {total} KDM, {other} για άλλους παραλήπτες
+	Not loaded: {path}: {problem}	Δεν φορτώθηκε: {path}: {problem}
+	Signature verified: {chain}	Η υπογραφή επαληθεύτηκε: {chain}
+	Signature not verified: {problem}	Η υπογραφή δεν επαληθεύτηκε: {problem}
+	KDM required	Απαιτείται KDM
+	Encrypted: load the KDM with content key {keys}	Κρυπτογραφημένο: φορτώστε το KDM με το κλειδί περιεχομένου {keys}
 
 # Settings ▸ Timecode Sync (TC-4)
 	Timecode Sync	Συγχρονισμός χρονοκώδικα
@@ -4561,3 +4590,125 @@ export.summary	Low	χαμηλή
 	Chase External Timecode	Παρακολούθηση εξωτερικού χρονοκώδικα
 	Send LTC	Αποστολή LTC
 	Send MIDI Timecode	Αποστολή χρονοκώδικα MIDI
+
+# Live studio preview (CFA4-LIVE-STUDIO-001 S0)
+	Live studio preview	Προεπισκόπηση ζωντανού στούντιο
+	Live studio: stopped	Ζωντανό στούντιο: σταματημένο
+	Live studio: {state}	Ζωντανό στούντιο: {state}
+	Live studio: {error}	Ζωντανό στούντιο: {error}
+	restarted after {count} crashes (last: {exit})	επανεκκίνηση μετά από {count} καταρρεύσεις (τελευταία: {exit})
+	software backend: {reason}	λογισμικό υποστήριξης: {reason}
+	Start studio	Έναρξη στούντιο
+	Stop studio	Διακοπή στούντιο
+	Add Studio Scene	Προσθήκη σκηνής στούντιο
+	Live	Ζωντανά
+# Credits: title, opening, chapter and lower-third pages filled from a graphics template (F10-C16)
+	Opening Credits	Τίτλοι αρχής
+	Chapter Title	Τίτλος κεφαλαίου
+	Lower Third	Λεζάντα ονόματος
+	page {page}: graphics template “{template}” was not found; “{used}” is used	σελίδα {page}: το πρότυπο γραφικών “{template}” δεν βρέθηκε· χρησιμοποιείται το “{used}”
+	page {page}: graphics template “{template}” has no field for all of the block's text; the rest is left out	σελίδα {page}: το πρότυπο γραφικών “{template}” δεν έχει πεδίο για όλο το κείμενο του μπλοκ· το υπόλοιπο παραλείπεται
+	page {page}: template field “{control}” → “{part}” is not used (no such text control, or not head, body or tail)	σελίδα {page}: το πεδίο προτύπου “{control}” → “{part}” δεν χρησιμοποιείται (δεν υπάρχει τέτοιο στοιχείο κειμένου ή δεν είναι κεφαλίδα, κύριο σώμα ή υποσέλιδο)
+	page {page}: pictures are left out on title, opening, chapter and lower-third pages	σελίδα {page}: οι εικόνες παραλείπονται στις σελίδες τίτλου, τίτλων αρχής, κεφαλαίου και λεζάντας ονόματος
+# Auto Color, Auto Contrast, Auto Levels (EffectsSDK review)
+	Auto Color	Αυτόματο χρώμα
+	Auto Contrast	Αυτόματη αντίθεση
+	Auto Levels	Αυτόματα επίπεδα
+	Temporal Smoothing (seconds)	Χρονική εξομάλυνση (δευτερόλεπτα)
+	Scene Detect	Ανίχνευση σκηνών
+	Black Clip	Αποκοπή μαύρου
+	White Clip	Αποκοπή λευκού
+	Snap Neutral Midtones	Ουδέτεροι μεσαίοι τόνοι
+# Layout presets: PiP corners, split screen (EffectsSDK review)
+	PiP 35% Upper Left	PiP 35% πάνω αριστερά
+	Picture-in-picture: 35 % scale in the upper left	Εικόνα σε εικόνα: κλίμακα 35 % πάνω αριστερά
+	PiP 35% Lower Left	PiP 35% κάτω αριστερά
+	Picture-in-picture: 35 % scale in the lower left	Εικόνα σε εικόνα: κλίμακα 35 % κάτω αριστερά
+	PiP 35% Lower Right	PiP 35% κάτω δεξιά
+	Picture-in-picture: 35 % scale in the lower right	Εικόνα σε εικόνα: κλίμακα 35 % κάτω δεξιά
+	Split Screen Left	Διαιρεμένη οθόνη αριστερά
+	Split screen: the middle half of the picture fills the left half of the frame	Διαιρεμένη οθόνη: το μεσαίο μισό της εικόνας γεμίζει το αριστερό μισό του κάδρου
+	Split Screen Right	Διαιρεμένη οθόνη δεξιά
+	Split screen: the middle half of the picture fills the right half of the frame	Διαιρεμένη οθόνη: το μεσαίο μισό της εικόνας γεμίζει το δεξί μισό του κάδρου
+# Creative Looks: CRT (P3)
+	CRT	CRT
+	Scanline Strength	Ένταση γραμμών σάρωσης
+	Line Count	Αριθμός γραμμών
+	Mask	Μάσκα
+	Mask Strength	Ένταση μάσκας
+	Corner Darkening	Σκούρυνση γωνιών
+	Aperture Grille	Πλέγμα διαφράγματος
+	Shadow Mask	Μάσκα σκιάς
+	Slot Mask	Μάσκα σχισμών
+# Creative Looks: Oil Paint (P4)
+	Oil Paint	Ελαιογραφία
+	Detail	Λεπτομέρεια
+	Texture	Υφή
+	Facet	Έδρες
+	Daubs	Πινελιές
+	Dry Brush	Στεγνό πινέλο
+	Fresco	Νωπογραφία
+	Knife	Σπάτουλα
+	Sponge	Σφουγγάρι
+# Creative Looks: Pixel Sort (P5)
+	Pixel Sort	Ταξινόμηση εικονοστοιχείων
+	Sort By	Ταξινόμηση κατά
+	Lower Threshold	Κάτω κατώφλι
+	Upper Threshold	Άνω κατώφλι
+	Ascending	Αύξουσα
+# Temporal Denoise (EffectsSDK review)
+	Temporal Denoise	Χρονική αποθορυβοποίηση
+	Frames Each Side	Καρέ σε κάθε πλευρά
+	Motion Threshold	Κατώφλι κίνησης
+	Show Motion	Εμφάνιση κίνησης
+	No signal	Χωρίς σήμα
+	Locating	Εντοπισμός
+	Locked	Συγχρονισμένο
+	Freewheel	Ελεύθερη λειτουργία
+	Scrubbing	Κύλιση
+	Sending	Αποστολή
+
+# DCP subtitle export (#938)
+	Subtitles from the first caption track	Υπότιτλοι από το πρώτο κανάλι λεζάντων
+	The package language	Η γλώσσα του πακέτου
+	Inter Regular (built in), or an OpenType / TrueType file	Inter Regular (ενσωματωμένη) ή ένα αρχείο OpenType / TrueType
+	Subtitle language	Γλώσσα υποτίτλων
+	Subtitle font	Γραμματοσειρά υποτίτλων
+	Fonts	Γραμματοσειρές
+
+# AS-11 metadata in MXF OP1a (#96)
+	AS-11 Core	AS-11 Core
+	AS-11 Parts	Τμήματα AS-11
+	AS-11 UK DPP	AS-11 UK DPP
+
+# Control Surfaces settings page (CS-1, #1187)
+	Devices	Συσκευές
+	Use	Χρήση
+	Device	Συσκευή
+	MIDI	MIDI
+	HID jog/shuttle	HID jog/shuttle
+	OSC	OSC
+	Connected	Συνδεδεμένη
+	Not connected	Μη συνδεδεμένη
+	Disabled	Απενεργοποιημένη
+	{device} ({port})	{device} ({port})
+	{name}: {error}	{name}: {error}
+	Looking for devices…	Αναζήτηση συσκευών…
+	No MIDI controller or jog/shuttle device was found. Connect one and press Refresh.	Δεν βρέθηκε ελεγκτής MIDI ή συσκευή jog/shuttle. Συνδέστε μία και πατήστε Ανανέωση.
+	Control Surfaces	Επιφάνειες ελέγχου
+	Use control surfaces (MIDI controllers, jog/shuttle devices)	Χρήση επιφανειών ελέγχου (ελεγκτές MIDI, συσκευές jog/shuttle)
+	Mapping controls to commands, MIDI Learn and the MIDI Monitor come in a later version; the choices here are remembered until then.	Η αντιστοίχιση χειριστηρίων σε εντολές, το MIDI Learn και η οθόνη MIDI έρχονται σε μεταγενέστερη έκδοση· οι επιλογές εδώ απομνημονεύονται μέχρι τότε.
+	CFA4 ShuttlePRO	CFA4 ShuttlePRO
+	Kdenlive-style ShuttlePRO	ShuttlePRO σε στυλ Kdenlive
+	Generic MIDI	Γενικό MIDI
+
+# LTC timecode read from clip audio (TC-7, #1285)
+	Read from LTC Audio	Ανάγνωση από ήχο LTC
+	Find SMPTE LTC on the clip's audio and use the timecode it gives the first frame	Εύρεση SMPTE LTC στον ήχο του κλιπ και χρήση του timecode που δίνει στο πρώτο καρέ
+	Read Timecode from LTC Audio	Ανάγνωση timecode από ήχο LTC
+# Credits: voices (the Voice column) in the block's properties (F10-C16)
+	Voices	Φωνές
+
+# Timecode sync varispeed and user bits (TC-8, #1308)
+	Varispeed: adjust the playback speed instead of seeking	Varispeed: προσαρμογή της ταχύτητας αναπαραγωγής αντί για μετάβαση
+	User bits	Bit χρήστη

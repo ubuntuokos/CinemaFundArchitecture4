@@ -50,6 +50,10 @@ let dcp = cfa4_j2k::encode(&xyz12, &cfa4_j2k::EncodeOptions::cinema_2k(24))?; //
   `ojph_block_common.cpp`, `table0.h`, `table1.h`) with byte-wise readers.
 - Reversible 5/3 in integers (lossless) and irreversible 9/7 in `f32`; RCT and ICT; scalar
   derived and expounded quantization; truncated streams reconstruct at the midpoint.
+- Reduced resolution (`decode_reduced(data, levels)`, B.5): the inverse wavelet stops
+  `levels` levels short and the code-blocks of the left-out resolutions are not decoded, as
+  OpenJPEG's `-r` (same size; 5/3 bit-exact, 9/7 within ±1, with tiles and image offsets).
+  `cfa4-codecs` uses it for draft (reduced-resolution) playback.
 - Hostile input: every size and count is checked, allocations are capped (`MAX_SAMPLES`,
   code-block count), and errors are returned, never a panic.
 
@@ -98,10 +102,15 @@ and decoder cannot disagree on them.
   MagSgn writers ported from OpenJPH 0.28.1 (`ojph_block_encoder.cpp`, the VLC encoder tables
   built from the decoder's `ht_tables.rs`); Rsiz bit 14, the CAP marker (Pcap Part 15, Ccap15:
   HT only, one HT set, no ROI, the irreversible flag and Bp from the largest Mb) and code-block
-  style 0x40. Lossless and fixed-step lossy, Part 1 profile only: rate control (a byte limit) and
-  the IMF HTJ2K profiles (ST 2067-21, edition to be decided) come later.
+  style 0x40. Lossless and fixed-step lossy, Part 1 profile only; the IMF HTJ2K profiles
+  (ST 2067-21, edition to be decided) come later. With a byte limit (`max_bytes`,
+  `max_component_bytes`) each code-block is also coded with its `s` lowest bit-planes dropped,
+  for every `s` up to its most significant one (missing MSBs Mb - 1 - s, the decoder puts the
+  magnitudes back at plane `s`); those codings are the block's truncation points, and the same
+  convex-hull rate control as Part 1 picks one per block. Whole planes only (no SigProp / MagRef
+  passes), so at equal size it is a little below the Part 1 coder (≤ 1.7 dB in the tests).
 
-Not yet (#117): several quality layers, tiles, rate-controlled HTJ2K, other code-block styles, SOP /
+Not yet (#117): several quality layers, tiles, HT refinement passes, other code-block styles, SOP /
 EPH / PLT, broadcast profiles. DCP / MXF export is #115, speed #116.
 
 In MXF the decoder runs through `cfa4-codecs` (`j2k.rs`): Y'CbCr, R'G'B' and gray components
@@ -161,6 +170,18 @@ development machine, a 2K DCI frame (`dci_2k.j2k`, 586 kB) decodes in about 150 
   strips, and the output planes run in parallel.
 
 Players also decode several frames at once, since every picture is intra coded.
+
+The bench also times `decode_reduced` one and two levels down. On the same 4-core machine, an
+encoder-made DCI frame (1.3 MB, filled to the 250 Mbit/s limit):
+
+| Frame | Full | 1 level down | 2 levels down |
+|---|---|---|---|
+| DCI 2K, 4 threads | 128 ms | 55 ms | 25 ms |
+| DCI 2K, 1 thread | 430 ms | 188 ms | 69 ms |
+| DCI 4K, 4 threads | 250 ms | 115 ms | 67 ms |
+
+Draft playback (`cfa4-codecs` `J2kDecoder::set_draft`) decodes down to about 960 samples
+across: 2K one level, 4K two, and repeats each sample back to the full size.
 
 `cargo run --release -p cfa4-j2k --example j2k_encode_bench -- 2k|4k` times the encoder on a
 synthetic 12-bit frame with grain: a DCI 2K frame takes about 0.75 s, a 4K frame about 3 s on

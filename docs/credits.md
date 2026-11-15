@@ -19,10 +19,11 @@ leading `@` is allowed, and Hungarian names work too.
 | Tail | Láb | Text after the body (e.g. a character name) |
 | Vertical Gap | Térköz | Space before the next block: `2` (units) or `40px`. An empty row = 1 unit |
 | Content Style | Stílus | Style of this and the following blocks |
-| Spine Position | Gerinc | Horizontal offset of the following blocks from the centre, pixels; `450 parallel` (`párhuzamos`) starts a column beside the previous one, from the same top |
+| Spine Position | Gerinc | Horizontal offset of the following blocks from the centre, pixels; `450 parallel` (`párhuzamos`) starts a column beside the previous one, from the same top; `Hook 1 Middle-Top 600 10` (`Horog`) hooks the following blocks onto an earlier spine; on a card page also a vertical offset, `150 -50`, optionally with `Below` / `Above` (`alatta` / `fölötte`) |
 | Page Style | Oldal | Starts a new page with that style (`Scroll`, `Card`, or your own) |
 | Page Runtime | Játékidő | Page length: `00:00:12:00`, `12s`, `300f`. On a scroll page the speed is kept and the gaps between blocks stretch or shrink to fit (up to 20-fold); if they cannot, the speed changes, with a warning |
 | Page Gap | Oldalköz | Empty time after the page; negative overlaps the next page |
+| Voice | Hang, Szinkronhang | Who dubs the character on this row (also in CFA4's other languages: `Stimme`, `Voix`, `Голос`, `声優` …); see [Voices](#voices-dubbing) |
 
 A new head, an empty row, a new style or a new page starts a new block. `{{Blank}}` is an empty
 line inside a block. Line breaks inside a cell are kept.
@@ -40,6 +41,28 @@ column before them, starting at the same height: e.g. *Camera* at `-450`, then *
 `450 parallel`. The column set ends at the next spine position without `parallel`; what follows
 goes below the longest column. On a roll with a `Page Runtime`, the first column's gaps stretch.
 
+**Hooked spines.** `Hook N From-To dx dy` (`Horog …`) hangs the following blocks on the spine
+`N` spines before them (`Hook 1`: the one just before; parallel and hooked spines count too):
+point `From` of that spine (`Top`, `Middle` or `Bottom`; `teteje`, `közepe`, `alja`) meets point
+`To` of the new one, which stands `dx` pixels right of it (negative: left) and is moved `dy`
+pixels down. Without a connection it is `Bottom-Top`; `dx` and `dy` are 0 when left out. E.g.
+`Hook 1 Middle-Top 600 10` starts a column 600 px right of the previous one, 10 px below its
+middle; `Hook 1 Top-Bottom -400` puts one above and to the left of the previous one (the page
+grows upwards to make room). The next `Spine Position` cell, even with the same offset, ends the
+hooked spine; what follows goes below everything before it. Its gaps do not stretch. A hook that
+reaches back further than there are spines is a warning: it hooks onto the first spine, or starts
+its own. The guides and the block's properties show hooked spines where the hook puts them.
+
+**Spines on a card.** On a card page every spine stands at its own point instead of below the
+one before: `Spine Position` gives the point's horizontal and, optionally, vertical offset from
+the frame centre in pixels (negative: left, up), and the spine is centred on it vertically.
+Append `Below` (`alatta`) to start the spine at the point, or `Above` (`fölötte`) to end it
+there. E.g. `-150` on one block and `150 -50` on the next set them side by side, the second 50 px
+higher; `0 50 Below` starts a spine 50 px under the middle. A spine's parallel and hooked spines go with it.
+A card without spine positions is centred as before. On scroll and crawl pages the vertical part
+is a warning and is ignored. With guides on, the thumbnail marks each point that is not the frame
+centre with a small diamond; the block's properties show the point.
+
 **Files.** `.ods` (LibreOffice), `.xlsx` (Excel, LibreOffice, Google Sheets download) and CSV /
 TSV (comma, semicolon or tab). A workbook's first sheet is used unless `sheet` names another (by
 name or number). Stored values are read, not display formats: write durations as text (`12s`,
@@ -56,8 +79,13 @@ warning and is left out.
 
 **Videos.** `{{Video intro.mp4}}` (`{{Videó …}}`, `{{Mozgókép …}}`, with an optional height like
 pictures) puts a video in the credits the same way: its own clip that moves with the roll or comes
-in with the card, playing from its start; a video shorter than its page ends early. Its size is
-read from the file (a file over 256 MiB is taken as 16:9).
+in with the card, playing from its start; a video shorter than its page ends early, unless a
+loop word follows its name – `{{Video walk.mp4 loop}}`, `{{Videó séta.mp4 120 ismétlés}}` (`loop`,
+`ismétlés` or `ismételve`, before or after the height): then it starts again from its beginning
+until the page ends, each run its own clip right after the one before on one track (on frame
+boundaries, at most 1000), moving and fading as one clip over the page would; the page's
+`pictures` list names every run. Its size is read from the file (a file over 256 MiB is taken as
+16:9).
 
 **Portraits.** A body cell with one picture tag and a name – `{{Pic anna.jpg}} Kiss Anna` – is a
 name with its portrait. A block with portraits is a grid of faces with the names under them
@@ -74,7 +102,8 @@ Sizes are pixels of a 1080-pixel-high frame and scale with the sequence.
 
 - **Page styles:** `Scroll` (rolls from below to above the frame, 3 px per frame), `Card`
   (120 frames, 12-frame fades) and `Crawl` (a one-line ticker near the bottom, right to left,
-  4 px per frame).
+  4 px per frame); the template pages `Title`, `Opening`, `Chapter` and `LowerThird` (also
+  `Cím`, `Nyitó`, `Fejezetcím`, `Alsó sáv`), see [Titles and lower thirds](#titles-opening-credits-chapters-and-lower-thirds).
 - **Content styles:** `Gutter` (role left of the centre, names right; the default), `Centered`,
   `Heading`, `Title`, `Grid` (3 columns), `Bullets` (names run on with •), `Paragraphs`,
   `Leaders` (roles in one even left column, dots to the names).
@@ -103,6 +132,8 @@ Content style fields: `orientation` (`horizontal` = head beside the body, `verti
 `leading`), `headGap`, `tailGap`, `columnGap`, `paragraphGap`, `wrapWidth`, `flowSeparator`,
 `margin`, and for the horizontal orientation `headAlign` (`right` by default; `left` makes a
 column), `harmonizeHeads` (every head of the style on a page gets the widest one's width),
+`harmonizeBody` (grid layout, either orientation: every body column of the style on a page gets
+the widest column's width, so multi-column grids stand on the same columns and tails line up),
 `leader` (e.g. `" ."`: repeated from the head to the body, on the head's line, in its letter
 style) and `leaderGap` (space on either side of the dots, default 16); for portraits
 `portraitHeight`, `portraitSide` (`above`, `left`) and `portraitGap`.
@@ -111,7 +142,7 @@ style) and `leaderGap` (space on either side of the dots, default 16); for portr
 `slideRight`, `slideUp`, `slideDown`) moves it `entranceDistance` pixels (default 120) over
 `entranceFrames` (default 18, easing out) while it fades in, and `staggerFrames` brings each block
 in that many frames after the one before. Pictures and videos come in with their block. They are
-ordinary keyframes on the layers, editable afterwards. Page style fields: `behaviour` (`scroll`, `card`, `crawl`), `scrollPxPerFrame` (rolls
+ordinary keyframes on the layers, editable afterwards. Page style fields: `behaviour` (`scroll`, `card`, `crawl`, and `title`, `opening`, `chapter`, `lowerThird` with `template` and `fields`, see below), `scrollPxPerFrame` (rolls
 and crawls), `cardFrames`, `fadeInFrames`, `fadeOutFrames`, `gapAfterFrames`, `crawlLine`,
 `crawlGap`, `background`, `transition`, `transitionFrames` (see below).
 
@@ -152,7 +183,8 @@ does not run the tool; use it on its own:
      "background": { "kind": "video", "file": "walk.mp4", "loop": true, "fit": "fill", "opacity": 70 } }
    ```
 3. Import or refresh. The loop runs under the whole page; its opacity and blur stay editable. For
-   a figure that should move with the names instead, put it in a cell as `{{Video walk.mp4}}`.
+   a figure that should move with the names instead, put it in a cell as
+   `{{Video walk.mp4 loop}}`.
 
 Keep the text readable over moving pictures (the contrast check cannot measure them: check by
 eye, or lower the background's opacity). A line-art layer drawn by CFA4 itself is planned for
@@ -179,6 +211,74 @@ Left). `Page Runtime` sets its length; the speed changes to fit. Pictures crawl 
 action-safe (93 %) and title-safe (90 %) areas, the centre lines and the spines of the page's
 blocks; *Baseline grid* draws lines one gap unit (`unitPx`) apart that move with the page. They
 are only in the picture, never in the credits.
+
+## Titles, opening credits, chapters and lower thirds
+
+One sheet can hold the whole film's text: the main title, the opening credits, a lower third for
+each person who speaks, chapter titles and the rolling end credits. A page whose style has the
+behaviour `title`, `opening`, `chapter` or `lowerThird` is not laid out as text: **each row with a
+name fills a graphics template** (`.fcgt`, the templates of Essential Graphics) and stands as a card
+of its own, one after another with the page style's gap. The head goes with the block's first row,
+a tail with the row it stands on.
+
+| Page style (built in) | Template it fills | Length, fades, gap after |
+|---|---|---|
+| `Title` (`Cím`) | *Title – Centered* (body: title, head: subtitle) | 150 frames, 18, 0 |
+| `Opening` (`Nyitó`) | *Title – Centered* | 120 frames, 12, 12 |
+| `Chapter` (`Fejezetcím`) | *Title – Boxed* (body: title) | 96 frames, 12, 0 |
+| `LowerThird` (`Alsó sáv`) | *Lower Third – Slab* (body: name, head: role) | 150 frames, 9, 25 |
+
+```csv
+Head,Body,Page Style
+a film by,THE LONG WAY HOME,Title
+Historian,Anna Kovács,LowerThird
+Archivist,Ben Ode,
+,Chapter One,Chapter
+Directed by,Jordan Lee,Scroll
+```
+
+A page style of your own names the template and, if needed, which text control takes which part:
+
+```json
+{ "pageStyles": [
+   { "name": "Names", "behaviour": "lowerThird", "template": "Lower Third – Rule",
+     "fields": { "name": "body", "role": "head" }, "cardFrames": 125, "gapAfterFrames": 50 } ] }
+```
+
+- `template`: a template's id or name (built in or installed), or a `.fcgt` file (next to the
+  sheet, or by path). Not found: the page type's built-in one is used, with a note.
+- `fields`: control id → `head`, `body`, `tail` or `voice` (also `fej`, `törzs`, `láb`, `hang`). Without it the
+  control called `name`, `title`, `heading`, `text`, `label` or `credits` (else the first text
+  control) takes the body, `role`, `subtitle`, `job` or `caption` (else the next one) the head, and
+  the next free one the tail. A part with no control is left out, with a note; an empty part hides
+  its layer (a title without a subtitle shows no empty line).
+- Fades, `runtime`, `Page Gap`, transitions and backgrounds work as on a card; layers the template
+  animates itself keep their own opacity, and a layer's own opacity (the slab's 92 %) is kept under
+  the fade. Pictures in such a row are left out, with a note.
+- Each graphic stays linked to its template (Essential Graphics ▸ Edit shows its controls) and to
+  the credits document: refreshing from the sheet replaces it, and hand edits in rows that did not
+  change are kept. Live graphics (C10) offer each of them as a cue, so a lower third can go on air.
+- The built-in credits template *Documentary* shows the whole structure.
+
+## Voices (dubbing)
+
+The `Voice` column (`Hang`, `Szinkronhang`) names who dubs the character on that row: Head the
+character, Body the actor on screen, Voice the voice. Where there is no actor on screen (an
+animated film) put the voice in the Body. A voice-only row joins the block's last name.
+
+- **Horizontal** content styles put the voices in a column of their own right of the names (and
+  tails), each on its name's line: the built-in content style `Voices` is *character – actor –
+  voice*. **Vertical** ones put them under the names.
+- Content style fields: `voice` (letter style; default 34 px, grey, Italic), `voiceLabel` (text
+  before each voice, e.g. `voice: ` or `hangja: `; default none), `voiceGap` (space to the names;
+  default 48).
+- **Checks:** a person written one way in the cast and another way among the voices gets the
+  `name-spelling` warning, as names within the credits do.
+- **Lower thirds:** a template with a `voice` text control takes the voice; otherwise it joins the
+  role (`Detective, voice: Anna Kovács`, with the block's content style's `voiceLabel`). `fields`
+  can map any control to `voice`.
+- The built-in credits template *Dubbed Version* shows the cast with voices and a dubbing crew
+  under its own heading.
 
 ## Cinecred projects
 
@@ -214,7 +314,7 @@ default style), as one undo step. Template files over 8 MiB are skipped.
 
 | Kind | Where | Licence |
 |---|---|---|
-| built in | in CFA4: *Classic Roll*, *Cards and Roll*, *News Crawl*, *Cast Portraits* (original designs) | MIT OR Apache-2.0 |
+| built in | in CFA4: *Classic Roll*, *Cards and Roll*, *News Crawl*, *Cast Portraits*, *Documentary*, *Dubbed Version* (original designs) | MIT OR Apache-2.0 |
 | user | `<data dir>/Credits Templates/*.cfa4credtpl` | what its `license` says |
 | project | kept in the project file | what its `license` says |
 
@@ -400,8 +500,8 @@ CFA4) and the running order (rundown) follow in their own plan,
 | Command | Menu | Params |
 |---|---|---|
 | `graphics.credits.import` | Graphics and Titles ▸ Import Credits Spreadsheet… | `path` (.csv/.tsv/.xlsx/.ods/.cfa4credits, or a Cinecred project folder / its `Styling.toml`, with `credits` to pick its spreadsheet) or `csv` (text), `sheet`, `pictureDir`, `styling`, `template` (its styling and fitting; `styling` wins), `time`, `track` (of each page's lowest clip: its background, else the page) → `{clips: [{clip, start, duration, behaviour, pictures, background, backgroundClips, transition}], group, end, sheet, warnings}` (`backgroundClips`: every clip of the background, several for a looped video); one undo step |
-| `graphics.credits.preview` | (query) | as above → `{pages: [{name, style, row, behaviour (scroll/card/crawl), duration, seconds, layers, contentHeight, contentWidth, background, transition: {effect, duration}, blocks: [{style, head, body (the first 40 cells), bodyCount, tails, pictures, row, lastRow, spine, parallel, at (0–1: the moment of the page that shows the block)}]}], duration, sheets, sheet, warnings, issues}` |
-| `graphics.credits.thumbnail` | (query) | as preview, plus `page`, `at` (0–1, moment in the page), `width`, `guides`, `grid` → `{width, height, page, pages, time, pngBase64}`: the page's background (a picture or video as grey) and text with the roll, crawl or fades applied, pictures outlined, guides drawn |
+| `graphics.credits.preview` | (query) | as above → `{pages: [{name, style, row, behaviour (scroll/card/crawl/title/opening/chapter/lowerThird), duration, seconds, layers, contentHeight, contentWidth, background, transition: {effect, duration}, blocks: [{style, head, body (the first 40 cells), bodyCount, tails, pictures, row, lastRow, spine, parallel, cardPoint ({y, anchor: middle/below/above} or null; null on a hooked spine), at (0–1: the moment of the page that shows the block), hook (`{back, from, to, dx, dy}` or null)}], spinePoints (a card's spine points, [x, y] frame pixels)}], duration, sheets, sheet, warnings, issues}` |
+| `graphics.credits.thumbnail` | (query) | as preview, plus `page`, `at` (0–1, moment in the page), `width`, `guides`, `grid` → `{width, height, page, pages, time, pngBase64}`: the page's background (a picture or video as grey) and text with the roll, crawl or fades applied, pictures outlined, guides drawn (a card's spine points as diamonds) |
 | `graphics.credits.validate` | (query; shown in the Credits window) | as preview, or `clip` for placed credits → `{errors, warnings, infos, issues: [{code, severity, page?, row?, values, message}]}` |
 | `graphics.credits.music` | (query; the Fit window) | `audio`?, `clip`? → `{audio, name, start, duration, soundEnd, bpm, beat, beats, suggestions: [{id: musicLength/soundEnd/lastBar, total}], credits, natural, fit}`; changes nothing |
 | `graphics.credits.fit` | Graphics and Titles ▸ Fit Credits to Music… | `clip`?, `total` / `seconds` / `use` (a suggestion id, default `musicLength`), `audio`?, `cardsOnBeat`, `alignToAudio`, `off` → `{clips, group, end, fit, report: {natural, target, result, scrollPages}, warnings}`; one undo step |
@@ -422,6 +522,5 @@ broken JSON are errors.
 
 ## Not yet
 
-Online sheets (download as `.xlsx`), hooked and fused spines, body-width harmonisation, looping a
-video in a cell (`{{Video …}}`), writing Cinecred projects (only on request, per the plan), a
+Online sheets (download as `.xlsx`), writing Cinecred projects (only on request, per the plan), a
 line-art layer drawn by CFA4 itself (plan C12, next year's release).
