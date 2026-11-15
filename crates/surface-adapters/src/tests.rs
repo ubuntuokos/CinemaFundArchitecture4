@@ -30,7 +30,14 @@ fn events_use_the_documented_json_shape() {
 #[test]
 fn every_event_round_trips() {
     let events = vec![
-        Event::Hello { protocol: wire::PROTOCOL.into(), version: 1, adapter: "mirabox-family".into(), adapter_version: "0.1".into(), models: vec!["m".into()] },
+        Event::Hello {
+            protocol: wire::PROTOCOL.into(),
+            protocol_version: 2,
+            family: "mirabox-family".into(),
+            kind: wire::AdapterKind::Surface,
+            adapter_version: "0.1".into(),
+            models: vec!["m".into()],
+        },
         Event::Connected {
             device: "d".into(),
             model: "m".into(),
@@ -235,10 +242,42 @@ fn rgba_cmd(seq: u64, device: &str, control: &str, index: u32) -> String {
 #[tokio::test(flavor = "multi_thread")]
 async fn hello_comes_first() {
     let mut h = Harness::start();
-    let Event::Hello { protocol, version, adapter, models, .. } = h.next().await else { panic!("not hello") };
-    assert_eq!((protocol.as_str(), version, adapter.as_str()), (wire::PROTOCOL, 1, "mirabox-family"));
+    let first = h.next().await;
+    let Event::Hello { protocol, protocol_version, family, kind, models, .. } = first.clone() else { panic!("not hello") };
+    assert_eq!((protocol.as_str(), protocol_version, family.as_str(), kind), (wire::PROTOCOL, 2, "mirabox-family", wire::AdapterKind::Surface));
     assert_eq!(models, vec!["ajazz.akp153e".to_owned()]);
+    // the supervisor accepts what the adapter sends
+    let line = serde_json::to_string(&first).unwrap();
+    assert_eq!(wire::handshake(&line, wire::AdapterKind::Surface).map(|h| h.family), Ok("mirabox-family".to_owned()));
     h.quit().await;
+}
+
+/// READY-V4.4: the supervisor refuses a child of another protocol version or kind with
+/// `protocol_mismatch`, and anything that is not a hello with `bad_request`, without a panic.
+#[test]
+fn handshake_refuses_other_versions_and_kinds() {
+    use wire::{AdapterKind, ErrorCode, handshake};
+    let ok = r#"{"type":"hello","protocol":"cfa4-surface-adapter","protocolVersion":2,"family":"mirabox-family","kind":"surface","adapterVersion":"0.1","models":["m"]}"#;
+    let h = handshake(ok, AdapterKind::Surface).expect("version 2 surface hello");
+    assert_eq!((h.family.as_str(), h.kind, h.models), ("mirabox-family", AdapterKind::Surface, vec!["m".to_owned()]));
+    let code = |line: &str, want| handshake(line, want).map_err(|r| r.code).err();
+    // a version 1 child
+    let v1 = r#"{"type":"hello","protocol":"cfa4-surface-adapter","version":1,"adapter":"mirabox-family","adapterVersion":"0.1","models":[]}"#;
+    assert_eq!(code(v1, AdapterKind::Surface), Some(ErrorCode::ProtocolMismatch));
+    assert!(handshake(v1, AdapterKind::Surface).unwrap_err().message.contains("protocol version 1"));
+    // a newer child, with fields this version does not know
+    let v3 = r#"{"type":"hello","protocol":"cfa4-surface-adapter","protocolVersion":3,"family":"x","kind":"hologram","caps":{"a":1}}"#;
+    assert_eq!(code(v3, AdapterKind::Surface), Some(ErrorCode::ProtocolMismatch));
+    // another kind, another protocol, a broken version 2 hello
+    assert_eq!(code(ok, AdapterKind::Io), Some(ErrorCode::ProtocolMismatch));
+    assert_eq!(code(&ok.replace("cfa4-surface-adapter", "other"), AdapterKind::Surface), Some(ErrorCode::ProtocolMismatch));
+    assert_eq!(code(&ok.replace(r#""kind":"surface","#, ""), AdapterKind::Surface), Some(ErrorCode::ProtocolMismatch));
+    // not a hello at all
+    for line in ["", "{", "[]", r#"{"type":"input","device":"d","control":"keys","index":0,"action":"press"}"#, "\u{0}\u{ff}"] {
+        assert_eq!(code(line, AdapterKind::Surface), Some(ErrorCode::BadRequest), "{line:?}");
+    }
+    let r = handshake(v1, AdapterKind::Surface).unwrap_err();
+    assert!(r.to_string().starts_with("protocol_mismatch: "), "{r}");
 }
 
 #[tokio::test(flavor = "multi_thread")]

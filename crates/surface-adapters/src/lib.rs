@@ -161,8 +161,9 @@ where
         &out,
         Event::Hello {
             protocol: wire::PROTOCOL.into(),
-            version: wire::PROTOCOL_VERSION,
-            adapter: MIRABOX_FAMILY.into(),
+            protocol_version: wire::PROTOCOL_VERSION,
+            family: MIRABOX_FAMILY.into(),
+            kind: wire::AdapterKind::Surface,
             adapter_version: adapter_version.into(),
             models,
         },

@@ -1,16 +1,22 @@
-//! The adapter wire protocol (`cfa4-surface-adapter`, version 1): JSON lines between an adapter
-//! child process and its supervisor (integration annex E2, E13).
+//! The adapter wire protocol (`cfa4-surface-adapter`, version 2): JSON lines between an adapter
+//! child process and its supervisor (integration annex E2, E13). The shared description, which
+//! every adapter process of CFA4 follows (control surfaces now, capture and playout hosts later),
+//! is [`docs/adapter-process-protocol.md`](../../../docs/adapter-process-protocol.md).
 //!
 //! The child writes [`Event`]s on stdout and reads [`Command`]s on stdin, one JSON object per
 //! line. The supervisor turns the events into `SurfaceEvent`s of `cfa4-surface-model`; keeping
 //! this protocol separate lets the event model evolve without touching the child.
+//!
+//! The first line is always [`Event::Hello`]. The supervisor checks it with [`handshake`] before
+//! it reads anything else: a child of another protocol version is stopped with a
+//! `protocol_mismatch` error, never misread (READY-V4.4).
 
 use serde::{Deserialize, Serialize};
 
 /// The protocol name in [`Event::Hello`].
 pub const PROTOCOL: &str = "cfa4-surface-adapter";
-/// The protocol version in [`Event::Hello`].
-pub const PROTOCOL_VERSION: u32 = 1;
+/// The protocol version in [`Event::Hello`] (2: `protocolVersion`, `family`, `kind`).
+pub const PROTOCOL_VERSION: u32 = 2;
 /// Largest key image a command may carry, per side, in pixels.
 pub const MAX_IMAGE_SIDE: u32 = 1024;
 
@@ -59,15 +65,29 @@ pub struct ControlGroup {
     pub image: Option<(u32, u32)>,
 }
 
+/// What an adapter process is for.
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Hash, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub enum AdapterKind {
+    /// A control surface family (keys, faders, displays).
+    Surface,
+    /// A media input/output host (capture and playout devices).
+    Io,
+}
+
 /// Child → supervisor.
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
 #[serde(tag = "type", rename_all = "camelCase")]
 pub enum Event {
     #[serde(rename_all = "camelCase")]
     Hello {
+        /// [`PROTOCOL`].
         protocol: String,
-        version: u32,
-        adapter: String,
+        /// [`PROTOCOL_VERSION`] of the child.
+        protocol_version: u32,
+        /// The adapter family (`mirabox-family`).
+        family: String,
+        kind: AdapterKind,
         adapter_version: String,
         models: Vec<String>,
     },
@@ -207,4 +227,56 @@ pub fn serial_hash(serial: &str) -> String {
         out.push_str(&format!("{b:02x}"));
     }
     out
+}
+
+/// What a supervisor learned from an accepted [`Event::Hello`].
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct Hello {
+    pub family: String,
+    pub kind: AdapterKind,
+    pub adapter_version: String,
+    pub models: Vec<String>,
+}
+
+/// Why a supervisor refused a child: send `quit`, stop the child, report `code` with `message`.
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct Refused {
+    pub code: ErrorCode,
+    pub message: String,
+}
+
+impl std::fmt::Display for Refused {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{}: {}", serde_json::to_value(self.code).ok().and_then(|v| v.as_str().map(str::to_owned)).unwrap_or_default(), self.message)
+    }
+}
+
+/// Checks a child's first line, the supervisor side of the handshake (READY-V4.4).
+///
+/// Accepts only an [`Event::Hello`] of [`PROTOCOL`] at [`PROTOCOL_VERSION`] whose kind is
+/// `want`. Anything else is refused, never a panic: another version (version 1 children sent
+/// `version` instead of `protocolVersion`) or another kind is `protocol_mismatch`; a line that is
+/// not a hello at all is `bad_request`. The line is read as plain JSON first, so a hello of a
+/// newer version with fields this version does not know is still recognised as a mismatch.
+pub fn handshake(line: &str, want: AdapterKind) -> Result<Hello, Refused> {
+    let refuse = |code, message: String| Refused { code, message };
+    let v: serde_json::Value = serde_json::from_str(line.trim()).map_err(|e| refuse(ErrorCode::BadRequest, format!("the first line is not JSON: {e}")))?;
+    if v.get("type").and_then(|t| t.as_str()) != Some("hello") {
+        return Err(refuse(ErrorCode::BadRequest, "the first line is not a hello".into()));
+    }
+    let protocol = v.get("protocol").and_then(|p| p.as_str()).unwrap_or_default();
+    if protocol != PROTOCOL {
+        return Err(refuse(ErrorCode::ProtocolMismatch, format!("protocol `{protocol}`, expected `{PROTOCOL}`")));
+    }
+    let version = v.get("protocolVersion").or_else(|| v.get("version")).and_then(|n| n.as_u64());
+    if version != Some(u64::from(PROTOCOL_VERSION)) {
+        let got = version.map_or_else(|| "none".to_owned(), |n| n.to_string());
+        return Err(refuse(ErrorCode::ProtocolMismatch, format!("protocol version {got}, this CFA4 speaks {PROTOCOL_VERSION}")));
+    }
+    match serde_json::from_value::<Event>(v) {
+        Ok(Event::Hello { family, kind, adapter_version, models, .. }) if kind == want => Ok(Hello { family, kind, adapter_version, models }),
+        Ok(Event::Hello { family, kind, .. }) => Err(refuse(ErrorCode::ProtocolMismatch, format!("`{family}` is a {kind:?} adapter, expected {want:?}"))),
+        Ok(_) => Err(refuse(ErrorCode::BadRequest, "the first line is not a hello".into())),
+        Err(e) => Err(refuse(ErrorCode::ProtocolMismatch, format!("hello does not match version {PROTOCOL_VERSION}: {e}"))),
+    }
 }
