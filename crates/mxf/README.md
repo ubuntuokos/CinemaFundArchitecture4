@@ -334,6 +334,11 @@ w.finish()?;
 
 ## AS-11 descriptive metadata
 
+`as11_shim` checks a file against the AS-11 shims `UK DPP HD` and `UK DPP SD` (version 1.1, from
+the Apache-2.0 AMWA specifications): `check_metadata` (Core and UK DPP conditions, enumerations,
+text limits, picture ratios, audio track layouts) and `check_essence` (picture coding and format,
+channel count, 24-bit 48 kHz audio). The export wiring is a follow-up.
+
 `as11` reads and writes AMWA AS-11 descriptive metadata in OP1a files: the AS-11 Core framework,
 the Segmentation framework (part number / total on a timeline track with the programme parts) and
 the UK DPP framework, laid out as bmx writes them (static DM tracks 5001 / 5101, segmentation track

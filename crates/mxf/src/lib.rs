@@ -25,6 +25,7 @@
 
 mod anc;
 pub mod as11;
+pub mod as11_shim;
 pub mod crypt;
 mod essence;
 mod file;
