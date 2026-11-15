@@ -16,6 +16,9 @@
 //!   the estimated clock; after `freewheel` stop.
 //! - **Jumps:** a frame outside `accept_window` of the expected position starts a new lock.
 //! - **Scrubbing:** reverse play or a speed outside 0.9×–1.1× gives locates without playback.
+//! - **Varispeed** (optional): while locked, a small drift is closed by playing slightly faster or
+//!   slower ([`ChaseAction::Speed`], at most ±2 % around the external speed) instead of seeking;
+//!   only a drift beyond `varispeed_max_drift_frames` still re-seeks.
 //!
 //! The rules for dropouts, repeated frames and the acceptance window follow how lighting consoles
 //! read LTC. Positions wrap at 24 hours.
@@ -55,6 +58,10 @@ pub struct ChaseConfig {
     pub freewheel: Tick,
     /// Frames further than this from the expected position start a new lock.
     pub accept_window: Tick,
+    /// Follow small drift with the play speed instead of re-seeking.
+    pub varispeed: bool,
+    /// With varispeed, the drift (in frames) beyond which a re-seek still happens.
+    pub varispeed_max_drift_frames: i64,
 }
 
 impl ChaseConfig {
@@ -69,6 +76,8 @@ impl ChaseConfig {
             resync_after: Tick(frame.0.saturating_mul(5)),
             freewheel: Tick(frame.0.saturating_mul(10)),
             accept_window: Tick::from_units(2, 1),
+            varispeed: false,
+            varispeed_max_drift_frames: 5,
         }
     }
 }
@@ -90,13 +99,22 @@ pub enum ChaseState {
 }
 
 /// What the player should do.
-#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+#[derive(Clone, Copy, Debug, PartialEq)]
 pub enum ChaseAction {
     /// Go to sequence position `to` (as of the current local time) and play or hold.
     Locate { to: Tick, play: bool },
     /// Stop playback where it is.
     Stop,
+    /// Keep playing from where it is at this speed (varispeed).
+    Speed { speed: f64 },
 }
+
+/// Largest varispeed correction around the external speed.
+pub const VARISPEED_RANGE: f64 = 0.02;
+/// Seconds over which varispeed closes a drift.
+const VARISPEED_CLOSE_SECONDS: f64 = 2.0;
+/// Speed changes smaller than this are not sent (the player restarts on each one).
+const VARISPEED_STEP: f64 = 0.0015;
 
 /// Status for the UI and the control channel.
 #[derive(Clone, Copy, Debug, PartialEq)]
@@ -119,11 +137,15 @@ pub struct Chase {
     speed: f64,
     drift: Option<Tick>,
     drift_since: Option<Tick>,
+    /// The player's play speed, as last reported.
+    player_speed: f64,
+    /// When the last speed change was sent.
+    speed_sent: Option<Tick>,
 }
 
 impl Chase {
     pub fn new(cfg: ChaseConfig) -> Self {
-        Chase { cfg, state: ChaseState::NoSignal, last: None, agree: 0, speed: 1.0, drift: None, drift_since: None }
+        Chase { cfg, state: ChaseState::NoSignal, last: None, agree: 0, speed: 1.0, drift: None, drift_since: None, player_speed: 1.0, speed_sent: None }
     }
 
     pub fn config(&self) -> &ChaseConfig {
@@ -132,6 +154,13 @@ impl Chase {
 
     pub fn set_config(&mut self, cfg: ChaseConfig) {
         self.cfg = cfg;
+    }
+
+    /// The player's play speed (for varispeed: the chase changes it only when it differs enough).
+    pub fn set_player_speed(&mut self, speed: f64) {
+        if speed.is_finite() {
+            self.player_speed = speed;
+        }
     }
 
     pub fn status(&self) -> ChaseStatus {
@@ -244,6 +273,11 @@ impl Chase {
         };
         let drift = wrap_diff(ph, target);
         self.drift = Some(Tick(drift));
+        if self.cfg.varispeed && drift.abs() <= self.cfg.varispeed_max_drift_frames.saturating_mul(frame) {
+            self.drift_since = None;
+            self.steer(now, drift, out);
+            return;
+        }
         if drift.abs() > self.cfg.resync_threshold_frames.saturating_mul(frame) {
             let since = *self.drift_since.get_or_insert(now);
             if now.0.saturating_sub(since.0) >= self.cfg.resync_after.0 {
@@ -254,11 +288,73 @@ impl Chase {
             self.drift_since = None;
         }
     }
+
+    /// Varispeed: the speed that closes `drift` (player minus expected, ticks) in about two
+    /// seconds, within [`VARISPEED_RANGE`] of the external speed; sent at most twice a second.
+    fn steer(&mut self, now: Tick, drift: i64, out: &mut Vec<ChaseAction>) {
+        let drift_s = drift as f64 / cfa4_time::TICKS_PER_SECOND as f64;
+        let base = self.speed.clamp(0.9, 1.1);
+        let correction = (-drift_s / VARISPEED_CLOSE_SECONDS).clamp(-VARISPEED_RANGE, VARISPEED_RANGE);
+        // within a quarter frame: play at the external speed
+        let quarter = self.frame() / 4;
+        let speed = if drift.abs() <= quarter { base } else { base + correction };
+        let speed = (speed * 10_000.0).round() / 10_000.0;
+        if (speed - self.player_speed).abs() < VARISPEED_STEP {
+            return;
+        }
+        if self.speed_sent.is_some_and(|t| now.0.saturating_sub(t.0) < Tick::from_units(1, 2).0) {
+            return;
+        }
+        self.speed_sent = Some(now);
+        self.player_speed = speed;
+        out.push(ChaseAction::Speed { speed });
+    }
 }
 
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn varispeed_closes_small_drift_with_speed_and_seeks_on_large() {
+        let mut cfg = ChaseConfig::new(RATE);
+        cfg.varispeed = true;
+        let mut c = Chase::new(cfg);
+        let mut out = Vec::new();
+        feed(&mut c, 1000, 0, 4, &mut out);
+        assert!(matches!(out.as_slice(), [ChaseAction::Locate { play: true, .. }]), "{out:?}");
+        out.clear();
+        // the player is 2 frames behind: it plays faster, not a seek
+        let now = f(4);
+        let expected = Tick(f(1004).0);
+        c.tick(now, Some(Tick(expected.0 - f(2).0)), &mut out);
+        let [ChaseAction::Speed { speed }] = out.as_slice() else { panic!("{out:?}") };
+        assert!(*speed > 1.0 && *speed <= 1.0 + VARISPEED_RANGE, "{speed}");
+        // the same again soon after: nothing new (the player already got it)
+        out.clear();
+        c.tick(Tick(now.0 + f(1).0 / 2), Some(Tick(expected.0 - f(2).0)), &mut out);
+        assert!(out.is_empty(), "{out:?}");
+        // caught up (within a quarter frame) half a second later: back to the external speed
+        feed(&mut c, 1000, 4, 20, &mut out);
+        out.clear();
+        c.tick(f(20), Some(f(1020)), &mut out);
+        assert_eq!(out, [ChaseAction::Speed { speed: 1.0 }]);
+        // far off: the usual re-seek after `resync_after`
+        out.clear();
+        c.tick(f(20), Some(f(1040)), &mut out);
+        feed(&mut c, 1000, 20, 27, &mut out);
+        c.tick(f(26), Some(f(1046)), &mut out);
+        assert!(out.iter().any(|a| matches!(a, ChaseAction::Locate { play: true, .. })), "{out:?}");
+        // and without varispeed a 2-frame drift seeks
+        let mut c = Chase::new(ChaseConfig::new(RATE));
+        let mut out = Vec::new();
+        feed(&mut c, 1000, 0, 4, &mut out);
+        out.clear();
+        c.tick(f(4), Some(f(1002)), &mut out);
+        feed(&mut c, 1000, 4, 11, &mut out);
+        c.tick(f(10), Some(f(1008)), &mut out);
+        assert!(out.iter().all(|a| !matches!(a, ChaseAction::Speed { .. })) && !out.is_empty(), "{out:?}");
+    }
 
     const RATE: FrameRate = FrameRate::FPS_25;
 

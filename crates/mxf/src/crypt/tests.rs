@@ -150,11 +150,13 @@ fn encrypted_picture_track_file() {
     let e = t.encryption.unwrap();
     assert_eq!((e.key_id, e.context_id, e.aes, e.mic), (KEY_ID, CONTEXT, true, true));
     assert!(m.needs_key());
+    assert_eq!(m.missing_keys(), vec![KEY_ID]);
     let err = m.read_sample(&f, 0, 0).unwrap_err();
     assert!(matches!(err, Error::Encrypted(_)), "{err}");
     assert!(err.to_string().contains("5a5a5a5a-5a5a"), "{err}");
     ring(true);
     assert!(!m.needs_key());
+    assert!(m.missing_keys().is_empty());
     for i in 0..5 {
         assert_eq!(m.read_sample(&f, 0, i).unwrap(), j2k_like(i));
     }

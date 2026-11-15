@@ -95,12 +95,59 @@ pub(crate) fn idct_248(c: &[f32; 64]) -> [u8; 64] {
     out
 }
 
+/// Forward 8-8 DCT (the encoder's): 8x8 pixels (row-major, offset 128 removed here) →
+/// natural-order coefficients of the orthonormal transform.
+pub(crate) fn fdct_88(p: &[u8; 64]) -> [f32; 64] {
+    let b = basis();
+    // horizontal: t[y][h] = Σ_x b8[h][x] p[y][x]
+    let mut t = [[0f32; 8]; 8];
+    for (y, row) in t.iter_mut().enumerate() {
+        for (h, o) in row.iter_mut().enumerate() {
+            *o = (0..8).map(|x| b.b8[h][x] * (f32::from(p[y * 8 + x]) - 128.0)).sum();
+        }
+    }
+    let mut c = [0f32; 64];
+    for v in 0..8 {
+        for h in 0..8 {
+            c[v * 8 + h] = (0..8).map(|y| b.b8[v][y] * t[y][h]).sum();
+        }
+    }
+    c
+}
+
+/// Forward 2-4-8 DCT: rows 0-3 the 4x8 DCT of the field sum, rows 4-7 of the difference
+/// (the inverse of [`idct_248`]).
+pub(crate) fn fdct_248(p: &[u8; 64]) -> [f32; 64] {
+    let b = basis();
+    let r = std::f32::consts::FRAC_1_SQRT_2;
+    let mut t = [[0f32; 8]; 8];
+    for (y, row) in t.iter_mut().enumerate() {
+        for (h, o) in row.iter_mut().enumerate() {
+            *o = (0..8).map(|x| b.b8[h][x] * (f32::from(p[y * 8 + x]) - 128.0)).sum();
+        }
+    }
+    let mut c = [0f32; 64];
+    for v in 0..4 {
+        for h in 0..8 {
+            let (mut s, mut d) = (0f32, 0f32);
+            for z in 0..4 {
+                let (a, bb) = (t[2 * z][h], t[2 * z + 1][h]);
+                s += b.b4[v][z] * (a + bb) * r;
+                d += b.b4[v][z] * (a - bb) * r;
+            }
+            c[v * 8 + h] = s;
+            c[(v + 4) * 8 + h] = d;
+        }
+    }
+    c
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
 
     /// Forward 8-8 DCT by definition, for round trips.
-    fn fdct_88(p: &[f32; 64]) -> [f32; 64] {
+    fn def_88(p: &[f32; 64]) -> [f32; 64] {
         let b = basis();
         let mut c = [0f32; 64];
         for v in 0..8 {
@@ -118,7 +165,7 @@ mod tests {
     }
 
     /// Forward 2-4-8 DCT by definition.
-    fn fdct_248(p: &[f32; 64]) -> [f32; 64] {
+    fn def_248(p: &[f32; 64]) -> [f32; 64] {
         let b = basis();
         let r = std::f32::consts::FRAC_1_SQRT_2;
         let mut c = [0f32; 64];
@@ -152,7 +199,7 @@ mod tests {
     #[test]
     fn round_trip_88() {
         let p = pattern();
-        let out = idct_88(&fdct_88(&p));
+        let out = idct_88(&def_88(&p));
         for i in 0..64 {
             assert_eq!(out[i] as f32, p[i], "sample {i}");
         }
@@ -161,9 +208,20 @@ mod tests {
     #[test]
     fn round_trip_248() {
         let p = pattern();
-        let out = idct_248(&fdct_248(&p));
+        let out = idct_248(&def_248(&p));
         for i in 0..64 {
             assert_eq!(out[i] as f32, p[i], "sample {i}");
+        }
+    }
+
+    #[test]
+    fn forward_matches_the_definition() {
+        let p = pattern();
+        let px: [u8; 64] = std::array::from_fn(|i| p[i] as u8);
+        for (a, b) in [(fdct_88(&px), def_88(&p)), (fdct_248(&px), def_248(&p))] {
+            for i in 0..64 {
+                assert!((a[i] - b[i]).abs() < 1e-2, "coefficient {i}: {} vs {}", a[i], b[i]);
+            }
         }
     }
 

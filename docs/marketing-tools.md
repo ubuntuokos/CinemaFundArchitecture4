@@ -20,7 +20,7 @@ Zones overlay, the spreadsheet picker and the result messages are Qt6 features
 | Social deliverables | File ▸ Export ▸ Social Deliverables… | `export.socialDeliverables` | `crates/engine/src/social.rs` |
 | Check before export | File ▸ Export ▸ Check Before Export…, Markers ▸ Clear Check Markers | `sequence.checkDelivery`, `markers.clearChecks` | `crates/engine/src/delivery_check.rs` |
 | Batch variants | File ▸ Export ▸ Batch Variants from Spreadsheet… | `export.batchVariants` | `crates/engine/src/variants.rs` |
-| Text animators | Graphics and Titles ▸ Text Animator ▸ None / Counter / Typewriter / Word by Word | `graphics.textAnimator.*` | `crates/project/src/text_animator.rs` |
+| Text animators | Graphics and Titles ▸ Text Animator ▸ None / Counter / Typewriter / Word by Word / Scramble | `graphics.textAnimator.*` | `crates/project/src/text_animator.rs` |
 
 ## Beat markers
 
@@ -110,6 +110,10 @@ stays what was typed and is shown after the animator ends.
   views"), keeping thousands separators and decimals (`1,250.50`, `1.234.567`, `1 234,5`).
 - **Typewriter** reveals the characters one by one.
 - **Word by Word** reveals the words one by one.
+- **Scramble** starts with random symbols that settle into the real characters from left to
+  right (a "decode" look). Spaces and line breaks stay in place, so the layout does not move;
+  the symbols are a fixed hash of the position and the step, so every scrub shows the same frame.
+  Idea from the glitch-effect review (robertdevore/scramble-decode, MIT); the code is our own.
 
 Per-character styles stay on their characters. The parameters (`anim`, `anim_duration`,
 `anim_delay`) are in Effect Controls under Text Animator and settable with `graphics.set`.

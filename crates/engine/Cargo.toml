@@ -37,6 +37,7 @@ cfa4-smart-edit = { workspace = true }
 cfa4-isobmff = { workspace = true }
 cfa4-mxf = { workspace = true }
 cfa4-dcp = { workspace = true }
+cfa4-dcpomatic = { workspace = true }
 cfa4-format = { workspace = true }
 cfa4-interchange = { workspace = true }
 cfa4-captions = { workspace = true }
@@ -47,6 +48,7 @@ cfa4-tts = { workspace = true }
 cfa4-route = { workspace = true }
 cfa4-tcsync = { workspace = true }
 cfa4-qc = { workspace = true }
+cfa4-sandbox = { workspace = true }
 serde = { workspace = true }
 serde_json = { workspace = true }
 thiserror = { workspace = true }
@@ -65,4 +67,5 @@ cfa4-dng = { workspace = true, features = ["writer"] }
 cfa4-iab = { workspace = true }
 cfa4-auro = { workspace = true, features = ["test-util"] }
 cfa4-mxf = { workspace = true, features = ["test-util"] }
+cfa4-dcp = { workspace = true, features = ["test-util"] }
 image = { version = "0.25", default-features = false, features = ["png", "gif"] }
