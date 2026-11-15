@@ -16,8 +16,10 @@ Design principles:
    background readers (playback, export) hold a snapshot without locking.
 5. **CPU reference, GPU fast path.** The CPU compositor is the oracle. The GPU path is tested
    against it.
-6. **Pure Rust, clean-room.** Codecs and containers are written from public specifications
-   (see [AGENTS.md](../AGENTS.md)).
+6. **Pure Rust, from public specifications.** Codecs and containers are written from public
+   specifications by default; a port of an implementation with a permitted licence, recorded in
+   the reused-code register, is allowed ([AGENTS.md](../AGENTS.md) §2,
+   [licensing.md](licensing.md) §3, §5).
 
 ## 1. Layers
 
@@ -28,7 +30,7 @@ Design principles:
  L3  render · gpu · export · smart-edit · qc · golden (test-only)
      DCP validation: dcp-validate · dcp-inspect · DCP mastering: dcpomatic
  L2  edit · codecs · interchange · captions · credits · speech · tts · tts-text
- L1  frame · media · project · audio-dsp · text · route (cfa4-route) · tcsync · metrics · live
+ L1  frame · media · project · audio-dsp · text · route (cfa4-route) · tcsync · metrics · live · sandbox · surface-catalog
  L0  foundation: time · geom · color · bitstream · testkit (dev-dependency only)
      codecs/containers: isobmff · matroska · mxf · cfb · mpegts · st2110 · ogg · h264 · h264enc · hevc · vp9 · av1 · mpeg2v · dv · lcevc · prores · dnx · apv · dng · aac · ac3 · dts · mpa · opus
      documents: dcp
@@ -88,10 +90,12 @@ Crates are named `cfa4-<dir>` (`crates/time` is `cfa4-time`); new CFA4 crates ar
 | `project` | L1 | document model, effect definitions, keyframes |
 | `audio-dsp` | L1 | loudness metering (BS.1770 / R128), audio effects, channel layouts (BS.775 up/downmix, 5.1 panner), music remix analysis; no dependencies |
 | `tcsync` | L1 | external timecode sync: SMPTE LTC frame, biphase-mark encoder and decoder (either direction, varying speed); MIDI Timecode quarter-frame / full-frame generation and parsing; chase state machine (locate, lock, drift re-seek, freewheel, scrub) ([plan](plans/TIMECODE-SYNC-LTC-MTC-2026-11-11.md)); depends only on `time` |
+| `surface-catalog` | L1 | `cfa4-surface-catalog`: hardware control surface catalogue (TOML, one family per file), hardware test reports (`docs/audit/hw/*.yaml`) and the computed support status and editor gate of CFA4-HW-CONTROL-SURFACES-001; no device I/O ([README](../crates/surface-catalog/README.md), [integration annex](plans/CFA4-HW-CONTROL-SURFACES-001-FINAL-1.1-CFA4-ILLESZTES.md)) |
 | `text` | L1 | text engine: font database (bundled OFL fonts + system fonts), shaping (harfrust), bidi, line breaking, paragraph layout, glyph/path rasteriser, strokes ([crates/text/README.md](../crates/text/README.md)) |
 | `route` | L1 | `cfa4-route`: compute router: per-task choice of backend and device (GPU, NPU, CPU) from the routing table (`routing.toml`), the `/sys` device probe and the user's preferences, with reasons and fallback order; backend catalogue (implemented / planned, vendor-locked) and the vendor-neutrality coverage report; no `unsafe`, no workspace dependencies ([ADR 0004](adr/ADR-0004-compute-routing.md), [README](../crates/route/README.md)) |
 | `metrics` | L1 | image fidelity metrics for output comparison (docs/gaps.md G1): CIEDE2000 ΔE between sRGB images, SSIM of planes; depends on `color` only ([README](../crates/metrics/README.md)) |
 | `live` | L1 | `cfa4-live`: live graphics plumbing (credits plan C10): the live page server for OBS's Browser Source on **127.0.0.1 only** (the program picture as a transparent PNG, status, the cue's sound with byte ranges; other host names and methods refused), an obs-websocket 5 client over a minimal RFC 6455 WebSocket client; no rendering and no workspace dependencies ([README](../crates/live/README.md), [credits.md](credits.md)) |
+| `sandbox` | L1 | run-time security layer ([CFA4-SECURITY-001](plans/CFA4-SECURITY-001.md) B1): Landlock + seccomp profile of every CFA4 process kind (GUI, engine, media host, studio host, downloader, plug-in host, model converter), strict by default (D4), the report behind `security.status`; no `unsafe` (safe `landlock` and `seccompiler` crates), no workspace dependencies ([README](../crates/sandbox/README.md)) |
 | `edit` | L2 | pure edit algebra (insert, overwrite, razor, ripple, roll, slip, slide, rate stretch…; text-based editing: `edit::transcript`) |
 | `credits` | L2 | credits sequences from a spreadsheet: CSV/TSV reader, page / content / letter styles, layout into graphic clips (rolls and cards) ([README](../crates/credits/README.md), [credits.md](credits.md)) |
 | `speech` | L2 | speech-to-text: `Transcriber` trait, Whisper model catalogue + verified downloader (feature `download`), pure-Rust Whisper inference on candle with word timestamps (feature `whisper`), speaker labelling ([transcripts.md](transcripts.md)) |
@@ -115,7 +119,7 @@ Crates are named `cfa4-<dir>` (`crates/time` is `cfa4-time`); new CFA4 crates ar
 | `ffmpeg` | L5 | `cfa4-ffmpeg`: FFmpeg (≥ 9.0.2, GPL-3 build) supplementary backend (feature `ffmpeg`): probe with licence and restricted-codec check, native-bit-depth decoding of what the engine cannot read yet, first fallback before GStreamer, `ffmpeg` route ([ADR 0005](adr/ADR-0005-media-backends.md), [README](../crates/ffmpeg/README.md)) |
 | `obs` | L5 | `cfa4-obs`: live studio core (CFA4-LIVE-STUDIO-001 S0): the `StudioBackend` trait, the libobs 33.0.1 binding (loaded at run time; `unsafe` only in `libobs::sys`, ADR 0001 addendum 2026-11-07), the pure-Rust software backend (the fallback), the shared-memory frame ring and the supervisor of `cfa4-studio-host` ([plan](plans/CFA4-LIVE-STUDIO-001.md), [README](../crates/obs/README.md)) |
 | `tcsync-io` | L5 | `cfa4-tcsync-io`: external timecode sync devices: LTC in and out through cpal (a chosen channel of a chosen device), MIDI Timecode in and out through the ALSA sequencer (client `CFA4`, ports `Timecode In` / `Timecode Out`), and the `SyncManager` that opens what the settings ask for, feeds the chase and returns locate / stop for the player; used by `cfa4-cli serve` ([plan](plans/TIMECODE-SYNC-LTC-MTC-2026-11-11.md)) |
-| `surface-adapters` | L5 | `cfa4-surface-adapters`: hardware control surface adapter processes (plan CFA4-HW-CONTROL-SURFACES-001): the `cfa4-surface-adapter` JSON-lines wire protocol, the adapter loop (one task per device, a panic stays inside it), and the `mirabox-family` adapter (AJAZZ AKP153E and kin through mirajazz on async-hid), run as the child process `cfa4-cli surfaces --adapter mirabox-family` |
+| `surface-adapters` | L5 | `cfa4-surface-adapters`: hardware control surface adapter processes ([README](../crates/surface-adapters/README.md), [integration annex](plans/CFA4-HW-CONTROL-SURFACES-001-FINAL-1.1-CFA4-ILLESZTES.md)): the `cfa4-surface-adapter` JSON-lines wire protocol, the adapter loop (one task per device, a panic stays inside it), and the `mirabox-family` adapter (AJAZZ AKP153E and kin through mirajazz on async-hid), run as the child process `cfa4-cli surfaces --adapter mirabox-family` |
 | `automation` | L5 | MCP server (`rmcp`, stdio), headless or bridged to the running app |
 | `platform` | L5 | OS media FFI only: hardware video decoding (NVDEC and VA-API H.264 / HEVC, with our own parsers and DPBs driving the stateless hardware; a no-op elsewhere) behind `codecs::VideoDecoder`, with transparent fallback to our decoders, and NVIDIA NVENC H.264 (opt-in) and H.265 (CFA4's only H.265 encoder; the format exists only where it does) encoding behind `export::VideoEncoder`; H.264 declines to the built-in encoder for what the hardware does not take. The one crate allowed `unsafe` ([ADR 0001](adr/0001-platform-ffi.md), [README](../crates/platform/README.md)) |
 | `cfa4` | L6 | desktop binary: eframe/wgpu window, cpal audio output, file dialogs, TCP control server |

@@ -2357,6 +2357,10 @@
 	Show Clip Mismatch Warning dialog	显示剪辑不匹配警告对话框
 	Show Event Indicator	显示事件指示器
 	Show Focus Area	显示焦点区域
+	Rack Focus	移焦
+	Focus Point A	焦点 A
+	Focus Point B	焦点 B
+	Rack	移焦进度
 	Show Home	显示主页
 	Show Mask Tracker Preview	显示遮罩跟踪器预览
 	Show Only Noise	仅显示噪点
@@ -3622,6 +3626,7 @@
 	Social Deliverables…	社交媒体交付…
 	Counter	计数器
 	Word by Word	逐词
+	Scramble	乱码
 	Animator	动画器
 	Animator Duration	动画器持续时间
 	Animator Delay	动画器延迟
@@ -4174,6 +4179,11 @@
 	Burn Size	燃烧大小
 	Ember Width	余烬宽度
 	Ember Color	余烬颜色
+	Tear Away	撕开
+	Tear Roughness	撕裂粗糙度
+	Paper Edge Width	纸边宽度
+	Stamp Cut	邮票剪切
+	Perforations	齿孔
 	Check Text Legibility	检查文本可读性
 	Clear Legibility Markers	清除可读性标记
 	Text legibility: no problems found	文本可读性：未发现问题
@@ -4213,6 +4223,9 @@
 	Dither	抖动
 	Pattern	图案
 	Cell Size	网格大小
+	Pixelate	像素化
+	Cell Shape	单元形状
+	LED	LED
 	Cyan Angle	青色角度
 	Magenta Angle	洋红角度
 	Yellow Angle	黄色角度
@@ -4534,6 +4547,13 @@
 	The keys stay in memory only, until Forget DCP Keys or the end of the session.	密钥只保存在内存中，直到执行“清除 DCP 密钥”或会话结束。
 	DCP keys forgotten	已清除 DCP 密钥
 	Choose the KDM file and the private key.	请选择 KDM 文件和私钥。
+	Load even if the certificate chain is not verified	即使证书链未经验证也加载
+	Bundle: {loaded} of {total} KDMs loaded, {other} for other recipients	包：已加载 {total} 个 KDM 中的 {loaded} 个，{other} 个属于其他接收方
+	Not loaded: {path}: {problem}	未加载：{path}：{problem}
+	Signature verified: {chain}	签名已验证：{chain}
+	Signature not verified: {problem}	签名未验证：{problem}
+	KDM required	需要 KDM
+	Encrypted: load the KDM with content key {keys}	已加密：请加载含有内容密钥 {keys} 的 KDM
 
 # Settings ▸ Timecode Sync (TC-4)
 	Timecode Sync	时间码同步
@@ -4566,3 +4586,83 @@
 	Chase External Timecode	追随外部时间码
 	Send LTC	发送 LTC
 	Send MIDI Timecode	发送 MIDI 时间码
+
+# Live studio preview (CFA4-LIVE-STUDIO-001 S0)
+	Live studio preview	直播演播室预览
+	Live studio: stopped	直播演播室：已停止
+	Live studio: {state}	直播演播室：{state}
+	Live studio: {error}	直播演播室：{error}
+	restarted after {count} crashes (last: {exit})	在 {count} 次崩溃后已重新启动（最近一次：{exit}）
+	software backend: {reason}	软件后端：{reason}
+	Start studio	启动演播室
+	Stop studio	停止演播室
+# Auto Color, Auto Contrast, Auto Levels (EffectsSDK review)
+	Auto Color	自动颜色
+	Auto Contrast	自动对比度
+	Auto Levels	自动色阶
+	Temporal Smoothing (seconds)	时间平滑（秒）
+	Scene Detect	场景检测
+	Black Clip	黑色修剪
+	White Clip	白色修剪
+	Snap Neutral Midtones	中间调中性化
+# Layout presets: PiP corners, split screen (EffectsSDK review)
+	PiP 35% Upper Left	画中画 35% 左上
+	Picture-in-picture: 35 % scale in the upper left	画中画：左上角 35% 缩放
+	PiP 35% Lower Left	画中画 35% 左下
+	Picture-in-picture: 35 % scale in the lower left	画中画：左下角 35% 缩放
+	PiP 35% Lower Right	画中画 35% 右下
+	Picture-in-picture: 35 % scale in the lower right	画中画：右下角 35% 缩放
+	Split Screen Left	分屏 左
+	Split screen: the middle half of the picture fills the left half of the frame	分屏：画面中间的一半填满画框的左半边
+	Split Screen Right	分屏 右
+	Split screen: the middle half of the picture fills the right half of the frame	分屏：画面中间的一半填满画框的右半边
+# Creative Looks: CRT (P3)
+	CRT	CRT
+	Scanline Strength	扫描线强度
+	Line Count	扫描线数
+	Mask	遮罩
+	Mask Strength	遮罩强度
+	Corner Darkening	四角暗化
+	Aperture Grille	栅条荫罩
+	Shadow Mask	荫罩
+	Slot Mask	槽形荫罩
+# Creative Looks: Oil Paint (P4)
+	Oil Paint	油画
+	Detail	细节
+	Texture	纹理
+	Facet	切面
+	Daubs	厚涂
+	Dry Brush	干笔
+	Fresco	壁画
+	Knife	刮刀
+	Sponge	海绵
+# Creative Looks: Pixel Sort (P5)
+	Pixel Sort	像素排序
+	Sort By	排序依据
+	Lower Threshold	下限阈值
+	Upper Threshold	上限阈值
+	Ascending	升序
+# Temporal Denoise (EffectsSDK review)
+	Temporal Denoise	时间降噪
+	Frames Each Side	每侧帧数
+	Motion Threshold	运动阈值
+	Show Motion	显示运动
+	No signal	无信号
+	Locating	正在定位
+	Locked	已锁定
+	Freewheel	自由运行
+	Scrubbing	拖动中
+	Sending	正在发送
+
+# DCP subtitle export (#938)
+	Subtitles from the first caption track	来自第一条字幕轨道的字幕
+	The package language	包的语言
+	Inter Regular (built in), or an OpenType / TrueType file	Inter Regular（内置）或 OpenType / TrueType 文件
+	Subtitle language	字幕语言
+	Subtitle font	字幕字体
+	Fonts	字体
+
+# AS-11 metadata in MXF OP1a (#96)
+	AS-11 Core	AS-11 Core
+	AS-11 Parts	AS-11 部分
+	AS-11 UK DPP	AS-11 UK DPP

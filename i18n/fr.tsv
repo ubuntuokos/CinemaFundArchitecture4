@@ -2374,6 +2374,10 @@
 	Show Clip Mismatch Warning dialog	Afficher l'avertissement de non-concordance de clip
 	Show Event Indicator	Afficher l'indicateur d'événement
 	Show Focus Area	Afficher la zone de mise au point
+	Rack Focus	Bascule de point
+	Focus Point A	Point de mise au point A
+	Focus Point B	Point de mise au point B
+	Rack	Bascule
 	Show Home	Afficher l'accueil
 	Show Mask Tracker Preview	Afficher l'aperçu du suivi de masque
 	Show Only Noise	Afficher uniquement le bruit
@@ -3613,6 +3617,7 @@
 	Social Deliverables…	Livrables pour les réseaux sociaux…
 	Counter	Compteur
 	Word by Word	Mot par mot
+	Scramble	Brouillage
 	Animator	Animateur
 	Animator Duration	Durée de l’animateur
 	Animator Delay	Délai de l’animateur
@@ -4181,6 +4186,11 @@
 	Burn Size	Taille de la brûlure
 	Ember Width	Largeur de la braise
 	Ember Color	Couleur de la braise
+	Tear Away	Déchirure
+	Tear Roughness	Rugosité de la déchirure
+	Paper Edge Width	Largeur du bord papier
+	Stamp Cut	Découpe en timbre
+	Perforations	Perforations
 	Check Text Legibility	Vérifier la lisibilité du texte
 	Clear Legibility Markers	Effacer les marqueurs de lisibilité
 	Text legibility: no problems found	Lisibilité du texte : aucun problème trouvé
@@ -4220,6 +4230,9 @@
 	Dither	Tramage
 	Pattern	Motif
 	Cell Size	Taille de cellule
+	Pixelate	Pixellisation
+	Cell Shape	Forme des cellules
+	LED	LED
 	Cyan Angle	Angle du cyan
 	Magenta Angle	Angle du magenta
 	Yellow Angle	Angle du jaune
@@ -4541,6 +4554,13 @@
 	The keys stay in memory only, until Forget DCP Keys or the end of the session.	Les clés restent uniquement en mémoire, jusqu’à « Oublier les clés DCP » ou la fin de la session.
 	DCP keys forgotten	Clés DCP oubliées
 	Choose the KDM file and the private key.	Choisissez le fichier KDM et la clé privée.
+	Load even if the certificate chain is not verified	Charger même avec une chaîne de certificats non vérifiée
+	Bundle: {loaded} of {total} KDMs loaded, {other} for other recipients	Lot : {loaded} KDM chargés sur {total}, {other} pour d'autres destinataires
+	Not loaded: {path}: {problem}	Non chargé : {path} : {problem}
+	Signature verified: {chain}	Signature vérifiée : {chain}
+	Signature not verified: {problem}	Signature non vérifiée : {problem}
+	KDM required	KDM requis
+	Encrypted: load the KDM with content key {keys}	Chiffré : chargez le KDM contenant la clé de contenu {keys}
 
 # Settings ▸ Timecode Sync (TC-4)
 	Timecode Sync	Synchronisation du timecode
@@ -4573,3 +4593,83 @@
 	Chase External Timecode	Suivre le timecode externe
 	Send LTC	Envoyer le LTC
 	Send MIDI Timecode	Envoyer le timecode MIDI
+
+# Live studio preview (CFA4-LIVE-STUDIO-001 S0)
+	Live studio preview	Aperçu du studio en direct
+	Live studio: stopped	Studio en direct : arrêté
+	Live studio: {state}	Studio en direct : {state}
+	Live studio: {error}	Studio en direct : {error}
+	restarted after {count} crashes (last: {exit})	redémarré après {count} plantages (dernier : {exit})
+	software backend: {reason}	moteur logiciel : {reason}
+	Start studio	Démarrer le studio
+	Stop studio	Arrêter le studio
+# Auto Color, Auto Contrast, Auto Levels (EffectsSDK review)
+	Auto Color	Couleur automatique
+	Auto Contrast	Contraste automatique
+	Auto Levels	Niveaux automatiques
+	Temporal Smoothing (seconds)	Lissage temporel (secondes)
+	Scene Detect	Détection de scène
+	Black Clip	Écrêtage du noir
+	White Clip	Écrêtage du blanc
+	Snap Neutral Midtones	Neutraliser les tons moyens
+# Layout presets: PiP corners, split screen (EffectsSDK review)
+	PiP 35% Upper Left	PiP 35 % en haut à gauche
+	Picture-in-picture: 35 % scale in the upper left	Image dans l'image : échelle de 35 % en haut à gauche
+	PiP 35% Lower Left	PiP 35 % en bas à gauche
+	Picture-in-picture: 35 % scale in the lower left	Image dans l'image : échelle de 35 % en bas à gauche
+	PiP 35% Lower Right	PiP 35 % en bas à droite
+	Picture-in-picture: 35 % scale in the lower right	Image dans l'image : échelle de 35 % en bas à droite
+	Split Screen Left	Écran partagé à gauche
+	Split screen: the middle half of the picture fills the left half of the frame	Écran partagé : la moitié centrale de l'image remplit la moitié gauche du cadre
+	Split Screen Right	Écran partagé à droite
+	Split screen: the middle half of the picture fills the right half of the frame	Écran partagé : la moitié centrale de l'image remplit la moitié droite du cadre
+# Creative Looks: CRT (P3)
+	CRT	CRT
+	Scanline Strength	Intensité des lignes
+	Line Count	Nombre de lignes
+	Mask	Masque
+	Mask Strength	Intensité du masque
+	Corner Darkening	Assombrissement des coins
+	Aperture Grille	Grille d’ouverture
+	Shadow Mask	Masque perforé
+	Slot Mask	Masque à fentes
+# Creative Looks: Oil Paint (P4)
+	Oil Paint	Peinture à l’huile
+	Detail	Détail
+	Texture	Texture
+	Facet	Facettes
+	Daubs	Touches
+	Dry Brush	Pinceau sec
+	Fresco	Fresque
+	Knife	Couteau
+	Sponge	Éponge
+# Creative Looks: Pixel Sort (P5)
+	Pixel Sort	Tri de pixels
+	Sort By	Trier par
+	Lower Threshold	Seuil inférieur
+	Upper Threshold	Seuil supérieur
+	Ascending	Croissant
+# Temporal Denoise (EffectsSDK review)
+	Temporal Denoise	Débruitage temporel
+	Frames Each Side	Images de chaque côté
+	Motion Threshold	Seuil de mouvement
+	Show Motion	Afficher le mouvement
+	No signal	Aucun signal
+	Locating	Positionnement
+	Locked	Verrouillé
+	Freewheel	Roue libre
+	Scrubbing	Défilement
+	Sending	Envoi
+
+# DCP subtitle export (#938)
+	Subtitles from the first caption track	Sous-titres de la première piste de sous-titres
+	The package language	La langue du paquet
+	Inter Regular (built in), or an OpenType / TrueType file	Inter Regular (intégrée) ou un fichier OpenType / TrueType
+	Subtitle language	Langue des sous-titres
+	Subtitle font	Police des sous-titres
+	Fonts	Polices
+
+# AS-11 metadata in MXF OP1a (#96)
+	AS-11 Core	AS-11 Core
+	AS-11 Parts	Parties AS-11
+	AS-11 UK DPP	AS-11 UK DPP

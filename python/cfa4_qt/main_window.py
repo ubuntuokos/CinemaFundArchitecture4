@@ -80,6 +80,7 @@ from .panels.project import ProjectPanel
 from .panels.properties import PropertiesPanel
 from .panels.quick_export import QuickExport
 from .panels.readouts import ProgressPanel, TimecodePanel
+from .panels.tasks import TaskManagerPanel
 from .panels.recovery import RecoveryDialog, recovery_lines
 from .panels.reference import ReferenceMonitor
 from .panels.remix import RemixPropertiesDialog
@@ -98,6 +99,7 @@ from .panels.tools import ToolsPanel, tool_commands
 from .panels.tts import TextToSpeechPanel
 from .panels.voiceover import VoiceOverRecorder, VoiceOverSettingsDialog
 from .status_bar import JobStatus, tool_hint
+from .timecode_sync import TimecodeSyncLink
 from .timecode import TICKS_PER_SECOND
 from .tools_menu import build_tools_menu
 from .window_menu import Workspaces, bind_free, build_window_menu, window_commands
@@ -138,7 +140,7 @@ TRACK_HEIGHT_COMMANDS = {
 }
 MAX_RESTARTS = 3
 RESTART_WINDOW_S = 60.0
-LAYOUT_VERSION = 20  # 2: Source monitor; 3: Effect Controls; 4: Properties (egui name); 5: proportional sizes; 6: Tools panel; 7: Audio Meters; 8: Info, Markers, Metadata, Project Notes, egui's groups; 9: Timecode, Progress; 10: Audio Track Mixer; 11: Audio Clip Mixer; 12: Reference Monitor; 13: Lumetri Scopes; 14: Lumetri Color; 15: Media Browser; 16: Text; 17: Essential Sound; 18: Essential Graphics; 19: Text to Speech; 20: Libraries
+LAYOUT_VERSION = 21  # 2: Source monitor; 3: Effect Controls; 4: Properties (egui name); 5: proportional sizes; 6: Tools panel; 7: Audio Meters; 8: Info, Markers, Metadata, Project Notes, egui's groups; 9: Timecode, Progress; 10: Audio Track Mixer; 11: Audio Clip Mixer; 12: Reference Monitor; 13: Lumetri Scopes; 14: Lumetri Color; 15: Media Browser; 16: Text; 17: Essential Sound; 18: Essential Graphics; 19: Text to Speech; 20: Libraries; 21: Task Manager
 # commands that can change which media an item shows, done or undone
 SOURCE_COMMANDS = frozenset({
     "media.relink", "media.replaceFootage", "media.makeOffline", "media.offlineAll", "media.autoRelink", "media.linkMedia",
@@ -165,6 +167,7 @@ DOCK_PLAN = (
     ("Reference Monitor", Qt.DockWidgetArea.LeftDockWidgetArea),
     ("Lumetri Scopes", Qt.DockWidgetArea.LeftDockWidgetArea),
     ("Progress", Qt.DockWidgetArea.LeftDockWidgetArea),
+    ("Task Manager", Qt.DockWidgetArea.LeftDockWidgetArea),
     ("Properties", Qt.DockWidgetArea.RightDockWidgetArea),
     ("Essential Graphics", Qt.DockWidgetArea.RightDockWidgetArea),
     ("Text", Qt.DockWidgetArea.RightDockWidgetArea),
@@ -344,6 +347,8 @@ class MainWindow(QMainWindow):
         self.progress = ProgressPanel(self)
         self.progress.attach_settings(self.settings)
         self.progress.poll.timeout.connect(self.update_jobs)
+        self.task_manager = TaskManagerPanel(engine, self)
+        self.task_manager.attach_settings(self.settings)
         self.mixer = TrackMixerPanel(self)
         self.mixer.transport.connect(self._mixer_transport)
         self.clip_mixer = ClipMixerPanel(self)
@@ -416,6 +421,7 @@ class MainWindow(QMainWindow):
             "Project Notes": self.notes,
             "Timecode": self.timecode_panel,
             "Progress": self.progress,
+            "Task Manager": self.task_manager,
             "Audio Track Mixer": self.mixer,
             "Audio Clip Mixer": self.clip_mixer,
             "Reference Monitor": self.reference,
@@ -447,6 +453,10 @@ class MainWindow(QMainWindow):
         self.job_status = JobStatus(self)
         self.job_status.cancel.connect(lambda jid: self.execute("jobs.cancel", {"job": jid}))
         self.statusBar().addPermanentWidget(self.job_status)
+        # external timecode sync: the Program monitor's transport out, locate/stop in
+        self.timecode_sync = TimecodeSyncLink(engine, self.monitor, self)
+        self.statusBar().addPermanentWidget(self.timecode_sync.label)
+        self._tc_devices: dict[str, Any] = {}
         self.statusBar().addPermanentWidget(self.status_engine)
         self._show_tool_hint("selection")
         self.tools.tool_selected.connect(self._show_tool_hint)
@@ -467,6 +477,7 @@ class MainWindow(QMainWindow):
             self.metadata,
             self.notes,
             self.progress,
+            self.task_manager,
             self.mixer,
             self.clip_mixer,
             self.lumetri,
@@ -537,6 +548,7 @@ class MainWindow(QMainWindow):
         self.source_monitor.playhead_moved.connect(lambda _t: self.update_timecode())
         self.docks["Timecode"].visibilityChanged.connect(lambda shown: shown and self.update_timecode())
         self.docks["Progress"].visibilityChanged.connect(lambda shown: shown and self.update_jobs())
+        self.docks["Task Manager"].visibilityChanged.connect(self.task_manager.watch)
         self.docks["Audio Track Mixer"].visibilityChanged.connect(lambda shown: shown and self.update_mixer())
         self.docks["Audio Clip Mixer"].visibilityChanged.connect(lambda shown: shown and self.update_clip_mixer())
         self.docks["Lumetri Color"].visibilityChanged.connect(lambda shown: shown and self.update_lumetri())
@@ -596,7 +608,8 @@ class MainWindow(QMainWindow):
         win.tabifyDockWidget(d["History"], d["Project Notes"])
         win.tabifyDockWidget(d["Project Notes"], d["Timecode"])
         win.tabifyDockWidget(d["Timecode"], d["Progress"])
-        for closed in ("Project Notes", "Timecode", "Progress"):  # opened from the Window menu
+        win.tabifyDockWidget(d["Progress"], d["Task Manager"])
+        for closed in ("Project Notes", "Timecode", "Progress", "Task Manager"):  # opened from the Window menu
             d[closed].hide()
         win.splitDockWidget(d["Tools"], d["Timeline"], Qt.Orientation.Horizontal)  # Tools left of it
         win.splitDockWidget(d["Timeline"], d["Audio Meters"], Qt.Orientation.Horizontal)
@@ -1133,6 +1146,8 @@ class MainWindow(QMainWindow):
         self.engine.call("engine.commands", on_reply=self._on_commands)
         self.engine.execute("effects.list", {}, on_reply=self._on_effects_list)
         self.load_appearance()
+        self.refresh_timecode_devices()
+        self.timecode_sync.report()  # a restarted engine knows nothing of the player
         self.load_audio_output()
         self.refresh()
         recovery = hello.get("recovery")
@@ -1719,6 +1734,7 @@ class MainWindow(QMainWindow):
 
     def open_settings(self, page: str = "general") -> PreferencesDialog:
         """Edit ▸ Preferences ▸ <category> (egui's ``app.settings.<category>``)."""
+        self.refresh_timecode_devices()  # for the next opening too: the reply comes after this one
         dialog = PreferencesDialog(self, self.engine, page, devices=self.audio_devices, memory=self.memory_usage)
         dialog.applied.connect(self._settings_applied)
         dialog.setAttribute(Qt.WidgetAttribute.WA_DeleteOnClose)
@@ -1762,7 +1778,21 @@ class MainWindow(QMainWindow):
             "inputs": [d.description() for d in QMediaDevices.audioInputs()],
             "outputs": [d.description() for d in outputs],
             "outputChannels": default.maximumChannelCount() if not default.isNull() else 0,
+            # the engine's own device names for Settings ▸ Timecode Sync (LTC goes through the
+            # engine's audio layer, not Qt's): as of the last refresh_timecode_devices()
+            **self._tc_devices,
         }
+
+    def refresh_timecode_devices(self) -> None:
+        """Ask the engine for the LTC devices and MIDI ports Settings ▸ Timecode Sync lists."""
+        if not self.engine.running:
+            return
+
+        def got(result: Any, _b: bytes | None) -> None:
+            if isinstance(result, dict):
+                self._tc_devices = {k: [str(n) for n in v] for k, v in result.items() if isinstance(v, list)}
+
+        self.engine.call("timecodeSync.devices", {}, on_reply=got, on_error=lambda _m: None)
 
     def memory_usage(self) -> int:
         """Bytes of decoded pictures held for the Timeline, Project panel and Source monitor."""
@@ -1953,6 +1983,8 @@ class MainWindow(QMainWindow):
 
     def _on_event(self, ev: dict[str, Any]) -> None:
         kind = ev.get("event")
+        if self.timecode_sync.on_event(ev):
+            return
         if kind == "projectChanged":
             self.schedule_refresh()
         elif kind == "toast":

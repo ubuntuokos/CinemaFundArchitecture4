@@ -18,12 +18,12 @@ pub(super) const MAX_SAMPLE_BYTES: u32 = 256 << 20;
 /// How often (in samples) the cancel flag is checked.
 pub(super) const CANCEL_EVERY: usize = 64;
 
-fn io(e: impl std::fmt::Display) -> CopyError {
+pub(super) fn io(e: impl std::fmt::Display) -> CopyError {
     CopyError::new(Code::IoFailed, e.to_string())
 }
 
 /// The source file's size and modification time, to notice a change during the copy.
-fn stamp(f: &File) -> Option<(u64, Option<SystemTime>)> {
+pub(super) fn stamp(f: &File) -> Option<(u64, Option<SystemTime>)> {
     let m = f.metadata().ok()?;
     Some((m.len(), m.modified().ok()))
 }
@@ -43,7 +43,7 @@ pub(super) fn codec_name(f: &Mp4File, t: usize) -> String {
 }
 
 /// The tracks to copy, or why the request cannot be copied strictly.
-fn select_tracks(f: &Mp4File, wanted: Option<&[usize]>, skipped: &mut Vec<SkippedTrack>) -> Result<Vec<usize>, CopyError> {
+pub(super) fn select_tracks(f: &Mp4File, wanted: Option<&[usize]>, skipped: &mut Vec<SkippedTrack>, mp4_target: bool) -> Result<Vec<usize>, CopyError> {
     let candidates: Vec<usize> = match wanted {
         Some(w) => {
             for &t in w {
@@ -85,7 +85,7 @@ fn select_tracks(f: &Mp4File, wanted: Option<&[usize]>, skipped: &mut Vec<Skippe
             skipped.push(SkippedTrack { source_track: t, reason: "no samples".into() });
             continue;
         }
-        check_track(f, t)?;
+        check_track(f, t, mp4_target)?;
         out.push(t);
     }
     if out.is_empty() {
@@ -94,8 +94,11 @@ fn select_tracks(f: &Mp4File, wanted: Option<&[usize]>, skipped: &mut Vec<Skippe
     Ok(out)
 }
 
-/// Strict-copy preconditions of one track: one sample description, sane sizes and timestamps.
-fn check_track(f: &Mp4File, t: usize) -> Result<(), CopyError> {
+/// Copy preconditions of one track: one sample description, sane sizes and timestamps. With an
+/// MP4 / QuickTime target (`mp4_target`) also what the MP4 writer cannot carry: sample groups,
+/// `sdtp` and a decode start after zero. A transport stream has no place for sample groups and
+/// `sdtp` (their information is in the access units) and carries any start time.
+fn check_track(f: &Mp4File, t: usize, mp4_target: bool) -> Result<(), CopyError> {
     let Some(tr) = f.tracks.get(t) else { return Ok(()) };
     if tr.entries.is_empty() {
         return Err(CopyError::new(Code::CodecUnsupported, format!("track {t} has no sample description")));
@@ -112,14 +115,14 @@ fn check_track(f: &Mp4File, t: usize) -> Result<(), CopyError> {
         return Err(CopyError::new(Code::CodecUnsupported, format!("track {t} is encrypted; Strict Stream Copy cannot carry its protection scheme yet")));
     }
     // the MP4 writer writes no sample groups (`roll`, `sync`, `rap `) and sample dependency flags
-    if !tr.sample_groups.is_empty() || !tr.sdtp.is_empty() {
+    if mp4_target && (!tr.sample_groups.is_empty() || !tr.sdtp.is_empty()) {
         return Err(CopyError::new(
             Code::ContainerUnsupported,
             format!("track {t} has sample groups or sample dependency flags that the writer cannot carry yet"),
         ));
     }
     // a sample table starts at decode time 0; a later start (a fragment's `tfdt`) is lost
-    if tr.samples.first().is_some_and(|s| s.dts != 0) {
+    if mp4_target && tr.samples.first().is_some_and(|s| s.dts != 0) {
         return Err(CopyError::new(Code::TimestampInvalid, format!("track {t} does not start at decode time 0")));
     }
     let mut last_dts = i64::MIN;
@@ -192,7 +195,7 @@ pub fn stream_copy_strict(req: &StrictCopyRequest, progress: &Progress) -> Resul
         )
     })?;
     let mut skipped = Vec::new();
-    let tracks = select_tracks(&f, req.tracks.as_deref(), &mut skipped)?;
+    let tracks = select_tracks(&f, req.tracks.as_deref(), &mut skipped, true)?;
     if f.timescale == 0 && tracks.iter().any(|&t| f.tracks.get(t).is_some_and(|tr| !tr.edits.is_empty())) {
         return Err(CopyError::new(Code::TimestampInvalid, "the source has edit lists but a zero movie timescale"));
     }
@@ -261,5 +264,14 @@ pub fn stream_copy_strict(req: &StrictCopyRequest, progress: &Progress) -> Resul
         })
         .collect();
     let bytes = out.commit().map_err(|e| CopyError::new(Code::AtomicCommitFailed, format!("{}: {e}", req.output.display())))?;
-    Ok(CopyReport { mode: "stream_copy_strict".into(), output: req.output.clone(), container: req.container, bytes, tracks: copied, skipped, validation })
+    Ok(CopyReport {
+        mode: "stream_copy_strict".into(),
+        output: req.output.clone(),
+        container: req.container,
+        bytes,
+        tracks: copied,
+        skipped,
+        validation,
+        transformations: Vec::new(),
+    })
 }

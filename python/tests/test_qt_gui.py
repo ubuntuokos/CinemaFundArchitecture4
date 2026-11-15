@@ -2974,7 +2974,7 @@ def test_real_engine_dcp_export_writes_a_package_folder(app, tmp_path: Path):
         dlg = win.export_dialog
         assert dlg is not None
         assert wait_until(app, lambda: dlg.preset.count() > 0 and dlg.format.count() > 0, 30_000)
-        assert not dlg.dcp_resolution.isEnabled()
+        assert not dlg.dcp_resolution.isEnabled() and not dlg.dcp_subtitles.isEnabled()
         assert "dcpResolution" not in dlg.params()
         dlg.preset.setCurrentIndex(dlg.preset.findData("DCP 2K Scope"))
         assert dlg.format.currentData() == "dcp" and dlg.dcp_resolution.isEnabled()
@@ -2997,6 +2997,19 @@ def test_real_engine_dcp_export_writes_a_package_folder(app, tmp_path: Path):
         assert wait_until(app, lambda: "RFC 5646" in dlg.summary.text(), 10_000), dlg.summary.text()
         assert not dlg.dcp_isdcf.isEnabled()
         dlg.dcp_language.setCurrentText("hu-HU")
+        # DCP subtitles (#938): the language and font rows follow the checkbox
+        assert dlg.dcp_subtitles.isEnabled() and not dlg.dcp_subtitles.isChecked()
+        assert not dlg.dcp_subtitle_language.isEnabled() and not dlg.dcp_subtitle_font.isEnabled()
+        assert dlg.params()["dcpSubtitles"] is False and "dcpSubtitleLanguage" not in dlg.params()
+        dlg.dcp_subtitles.setChecked(True)
+        assert dlg.dcp_subtitle_language.isEnabled() and dlg.dcp_subtitle_font_browse.isEnabled()
+        dlg.dcp_subtitle_language.setCurrentText("en")
+        dlg.dcp_subtitle_font.setText("~/fonts/sub.otf")
+        p = dlg.params()
+        assert (p["dcpSubtitles"], p["dcpSubtitleLanguage"], p["dcpSubtitleFont"]) == (True, "en", os.path.expanduser("~/fonts/sub.otf"))
+        assert wait_until(app, lambda: "_TLR-1_S_HU-EN_51_2K_" in dlg._dcp_name, 10_000), dlg._dcp_name
+        dlg.dcp_subtitles.setChecked(False)
+        assert not dlg.dcp_subtitle_font.isEnabled() and "dcpSubtitleFont" not in dlg.params()
 
         dlg.range.setCurrentIndex(dlg.range.findData("custom"))
         dlg.start.setValue(0.0)
@@ -5010,7 +5023,7 @@ def test_desktop_entry_is_opt_in_and_never_overrides_a_package(tmp_path: Path, m
     text = entry.read_text(encoding="utf-8")
     assert "Icon=io.github.ubuntuokos.cfa4" in text and "Name=CFA4 (development)" in text
     exec_line = next(line for line in text.splitlines() if line.startswith("Exec="))
-    assert exec_line.endswith(" %f") and "%" not in exec_line[:-3]
+    assert exec_line.endswith(" %F") and "%" not in exec_line[:-3]
     assert (home / "icons" / "hicolor" / "48x48" / "apps" / "io.github.ubuntuokos.cfa4.png").is_file()
     assert (home / "icons" / "hicolor" / "scalable" / "apps" / "io.github.ubuntuokos.cfa4.svg").is_file()
     # idempotent
@@ -5063,7 +5076,7 @@ def test_window_menu_lists_every_egui_panel_with_its_shortcut(app, fake_engine: 
         assert entries[1].text() == "New Project Panel" and not entries[1].isEnabled()
         panels = entries[2:]
         assert [a.text() for a in panels] == [p.title for p in PANELS]
-        have = {"Project", "Effects", "History", "Source", "Effect Controls", "Program", "Timeline", "Properties", "Events", "Tools", "Audio Meters", "Info", "Markers", "Metadata", "Project Notes", "Timecode", "Progress", "Audio Track Mixer", "Audio Clip Mixer", "Reference Monitor", "Lumetri Scopes", "Lumetri Color", "Media Browser", "Text", "Essential Sound", "Essential Graphics", "Text to Speech", "Libraries"}
+        have = {"Project", "Effects", "History", "Source", "Effect Controls", "Program", "Timeline", "Properties", "Events", "Tools", "Audio Meters", "Info", "Markers", "Metadata", "Project Notes", "Timecode", "Progress", "Audio Track Mixer", "Audio Clip Mixer", "Reference Monitor", "Lumetri Scopes", "Lumetri Color", "Media Browser", "Text", "Essential Sound", "Essential Graphics", "Text to Speech", "Libraries", "Task Manager"}
         for a, p in zip(panels, PANELS, strict=True):
             assert a.isEnabled() == (p.title in have), p.title
             if p.shortcut and a.isEnabled():
@@ -14718,6 +14731,36 @@ def test_credits_files_from_the_command_line(tmp_path: Path):
 
 
 @pytest.mark.skipif(REAL is None, reason="Rust engine not built (cargo build -p cfa4-cli)")
+def test_real_engine_media_files_from_the_command_line_are_imported(app, tmp_path: Path):
+    """Owner decision 2026-11-12: the menu entry starts `cfa4-qt %F`, so files opened with CFA4
+    from a file manager are handled as egui handles them: the launch project opens and every media
+    file is imported into it (`import_at_start`, egui's `file.import` at start-up)."""
+    from cfa4_qt.__main__ import import_at_start, launch_files
+    from cfa4_qt.main_window import MainWindow
+
+    a, b = tmp_path / "first.wav", tmp_path / "second.wav"
+    _test_music(a, bars=2)
+    _test_music(b, bars=2)
+    project, credits, media = launch_files([str(a), str(b)])
+    assert project is None and credits is None and media == [str(a), str(b)]
+    settings = QtCore.QSettings(str(tmp_path / "s.ini"), QtCore.QSettings.Format.IniFormat)
+    engine = EngineClient(REAL, ["--demo", "--data-dir", str(tmp_path / "data")])
+    win = MainWindow(engine, settings)
+    import_at_start(engine, win, media)
+    win.show()
+    engine.start()
+    try:
+        names = lambda: {i.get("name") for i in _items(win.project or {})}
+        assert wait_until(app, lambda: {"first.wav", "second.wav"} <= names(), 60_000), names()
+        # into the launch project (here the demo), not instead of it
+        assert len(names()) > 2
+    finally:
+        win._quit_confirmed = True
+        win.close()
+        engine.stop()
+
+
+@pytest.mark.skipif(REAL is None, reason="Rust engine not built (cargo build -p cfa4-cli)")
 def test_real_engine_credits_file_and_template_open_in_the_workspace(app, tmp_path: Path):
     """C9: a credits file or template handed over by the file manager opens in the full Credits
     workspace; a template with no spreadsheet brings its sample."""
@@ -14940,7 +14983,9 @@ def test_monitor_picture_falls_back_to_raster_without_opengl(app, monkeypatch):
 
 def _openssl_kdm(tmp_path: Path) -> bool:
     """A recipient key (``key.pem``), another key (``other.pem``) and a KDM (``kdm.xml``) for the
-    first, built with the openssl command line (ST 430-1 RSA-OAEP SHA-1 CipherData)."""
+    first, built with the openssl command line (ST 430-1 RSA-OAEP SHA-1 CipherData); with xmlsec1
+    also ``plain.xml``, the same KDM signed by a self-signed certificate that does not keep ST 430-2
+    (intact content, untrusted chain)."""
     import shutil
     import subprocess
 
@@ -14962,15 +15007,39 @@ def _openssl_kdm(tmp_path: Path) -> bool:
     b64 = base64.b64encode((tmp_path / "c.bin").read_bytes()).decode()
     (tmp_path / "kdm.xml").write_text(
         '<?xml version="1.0" encoding="UTF-8"?>\n'
-        '<DCinemaSecurityMessage xmlns="http://www.smpte-ra.org/schemas/430-3/2006/ETM">'
-        "<AuthenticatedPublic><AnnotationText>Reel 1 KDM</AnnotationText><RequiredExtensions>"
+        '<DCinemaSecurityMessage xmlns="http://www.smpte-ra.org/schemas/430-3/2006/ETM" xmlns:dsig="http://www.w3.org/2000/09/xmldsig#">'
+        '<AuthenticatedPublic Id="ID_AuthenticatedPublic"><AnnotationText>Reel 1 KDM</AnnotationText><RequiredExtensions>'
         '<KDMRequiredExtensions xmlns="http://www.smpte-ra.org/schemas/430-1/2006/KDM">'
         "<CompositionPlaylistId>urn:uuid:11111111-1111-1111-1111-111111111111</CompositionPlaylistId>"
         "<ContentTitleText>Encrypted Test</ContentTitleText></KDMRequiredExtensions></RequiredExtensions></AuthenticatedPublic>"
-        '<AuthenticatedPrivate><enc:EncryptedKey xmlns:enc="http://www.w3.org/2001/04/xmlenc#"><enc:CipherData>'
+        '<AuthenticatedPrivate Id="ID_AuthenticatedPrivate"><enc:EncryptedKey xmlns:enc="http://www.w3.org/2001/04/xmlenc#"><enc:CipherData>'
         f"<enc:CipherValue>{b64}</enc:CipherValue></enc:CipherData></enc:EncryptedKey></AuthenticatedPrivate>"
         "</DCinemaSecurityMessage>",
         encoding="utf-8",
+    )
+    xmlsec = shutil.which("xmlsec1")
+    if xmlsec is None:
+        return True
+    run("genpkey", "-algorithm", "RSA", "-pkeyopt", "rsa_keygen_bits:2048", "-out", "signer.key")
+    run("req", "-x509", "-new", "-key", "signer.key", "-sha256", "-days", "30", "-subj", "/O=test/CN=CS.signer", "-out", "signer.pem")
+    sig = (
+        "<dsig:Signature><dsig:SignedInfo>"
+        '<dsig:CanonicalizationMethod Algorithm="http://www.w3.org/TR/2001/REC-xml-c14n-20010315#WithComments"/>'
+        '<dsig:SignatureMethod Algorithm="http://www.w3.org/2001/04/xmldsig-more#rsa-sha256"/>'
+        + "".join(
+            f'<dsig:Reference URI="#ID_Authenticated{p}"><dsig:DigestMethod Algorithm="http://www.w3.org/2001/04/xmlenc#sha256"/>'
+            "<dsig:DigestValue/></dsig:Reference>"
+            for p in ("Public", "Private")
+        )
+        + "</dsig:SignedInfo><dsig:SignatureValue/><dsig:KeyInfo><dsig:X509Data><dsig:X509Certificate/></dsig:X509Data></dsig:KeyInfo>"
+        "</dsig:Signature>"
+    )
+    text = (tmp_path / "kdm.xml").read_text(encoding="utf-8")
+    (tmp_path / "template.xml").write_text(text.replace("</DCinemaSecurityMessage>", sig + "</DCinemaSecurityMessage>"), encoding="utf-8")
+    subprocess.run(
+        [xmlsec, "--sign", "--privkey-pem", "signer.key,signer.pem", "--id-attr:Id", "AuthenticatedPublic", "--id-attr:Id",
+         "AuthenticatedPrivate", "--output", "plain.xml", "template.xml"],
+        cwd=tmp_path, check=True, capture_output=True,
     )
     return True
 
@@ -14981,6 +15050,50 @@ def test_kdm_dialog_describes_the_reply_never_a_key():
     text = describe({"title": "Film", "composition": "1111", "keys": [{"keyId": "5a5a", "type": "MDIK", "notValidBefore": "a", "notValidAfter": "b"}]})
     assert text.splitlines()[0] == "Film: 1 keys loaded" and "MDIK  5a5a  a – b" in text and "CPL 1111" in text
     assert describe(None) == "" and describe({"keys": "x"}).startswith("KDM: 0 keys")
+    # #1075: how the signature check went
+    ok = describe({"title": "F", "keys": [], "signature": {"valid": True, "chain": ["leaf", "root"]}})
+    assert ok.splitlines()[-1] == "Signature verified: leaf ← root"
+    bad = describe({"title": "F", "keys": [], "signature": {"valid": False, "problem": "the KDM is not signed"}})
+    assert bad.splitlines()[-1] == "Signature not verified: the KDM is not signed"
+    assert describe({"keys": [], "signature": {"valid": False}}).endswith("Signature not verified: ?")
+    # #1144: a Key Delivery Bundle
+    b = describe({"title": "Bundle", "keys": [{"type": "MDIK", "keyId": "5a"}], "bundle": {"kdms": 3}, "kdms": [{"path": "a.xml"}],
+                  "otherRecipients": 1, "refused": [{"path": "c.xml", "problem": "changed"}], "signature": None})
+    assert b.splitlines()[0] == "Bundle: 1 keys loaded"
+    assert b.splitlines()[-2:] == ["Bundle: 1 of 3 KDMs loaded, 1 for other recipients", "Not loaded: c.xml: changed"]
+
+
+def test_kdm_required_badge_opens_load_kdm(app, fake_engine: Path, tmp_path: Path):
+    """#1053: an encrypted clip whose content keys are not loaded (``needsKey``) shows "KDM required"
+    over the Source monitor, naming its Key IDs; a click opens File ▸ Load KDM…. The Project panel's
+    row names the keys in its tooltip."""
+    from cfa4_qt.main_window import MainWindow
+
+    settings = QtCore.QSettings(str(tmp_path / "s.ini"), QtCore.QSettings.Format.IniFormat)
+    win = MainWindow(EngineClient(fake_engine), settings)
+    try:
+        key = "6b6b6b6b-6b6b-6b6b-6b6b-6b6b6b6b6b6b"
+        src = win.source_monitor
+        clip = {"item": 7, "name": "enc.mxf", "start": 0, "end": 254_016_000_000, "fps": 24.0}
+        button = src.findChild(QtWidgets.QPushButton, "source.kdmRequired")
+        assert button is not None and button.isHidden()
+        src.set_source({**clip, "needsKey": [key]}, 1)
+        assert not button.isHidden() and button.text() == "KDM required" and key in button.toolTip()
+        assert src.needed_keys() == [key]
+        button.click()
+        assert win.kdm_dialog is not None and win.kdm_dialog.isVisible()
+        win.kdm_dialog.close()
+        # the keys are loaded: the engine reports none missing
+        src.set_source({**clip, "needsKey": []}, 2)
+        assert button.isHidden() and src.needed_keys() == []
+        bv = win.project_panel.main
+        bv.own_mode = "list"
+        bv.set_data({"rows": [{"item": 7, "name": "enc.mxf", "offline": "KDM required", "needsKey": [key]}]})
+        it = bv.tree.topLevelItem(0)
+        assert it is not None and it.text(0) == "enc.mxf" and key in it.toolTip(0)
+    finally:
+        win._quit_confirmed = True
+        win.close()
 
 
 @pytest.mark.skipif(REAL is None, reason="Rust engine not built (cargo build -p cfa4-cli)")
@@ -15012,9 +15125,28 @@ def test_real_engine_load_kdm_dialog(app, tmp_path: Path):
         dlg.load()
         assert wait_until(app, lambda: "not made for this private key" in dlg.result.toPlainText(), 20_000), dlg.result.toPlainText()
         dlg.key_path.setText(str(tmp_path / "key.pem"))
+        # #1028: an unsigned KDM is refused, also with the box ticked
+        assert not dlg.allow_unverified.isChecked()
+        for tick in (False, True):
+            dlg.allow_unverified.setChecked(tick)
+            dlg.result.clear()
+            dlg.load()
+            assert wait_until(app, lambda: "not signed" in dlg.result.toPlainText(), 20_000), dlg.result.toPlainText()
+            assert "not loaded" in dlg.result.toPlainText()
+        if not (tmp_path / "plain.xml").exists():
+            assert not os.environ.get("CFA4_REQUIRE_ORACLES"), "xmlsec1 not found"
+            pytest.skip("xmlsec1 not found")
+        # an intact KDM whose certificate chain does not keep ST 430-2: refused until the box is ticked
+        dlg.kdm_path.setText(str(tmp_path / "plain.xml"))
+        dlg.allow_unverified.setChecked(False)
+        dlg.load()
+        assert wait_until(app, lambda: "certificate chain does not check out" in dlg.result.toPlainText(), 20_000), dlg.result.toPlainText()
+        dlg.allow_unverified.setChecked(True)
         dlg.load()
         assert wait_until(app, lambda: dlg.result.toPlainText().startswith("Encrypted Test: 1 keys loaded"), 20_000), dlg.result.toPlainText()
         assert "MDAK" in dlg.result.toPlainText() and "5a5a5a5a-5a5a" in dlg.result.toPlainText()
+        last = dlg.result.toPlainText().splitlines()[-1]
+        assert last.startswith("Signature not verified: certificate CS.signer") and "ST 430-2" in last, last
         got: list = []
         engine.execute("dcp.keys", {}, on_reply=lambda r, _b: got.append(r))
         assert wait_until(app, lambda: got, 10_000) and got[0]["keyIds"] == ["5a5a5a5a-5a5a-5a5a-5a5a-5a5a5a5a5a5a"]
@@ -15055,3 +15187,39 @@ def test_real_engine_check_text_legibility_reports_as_egui(app, tmp_path: Path):
         win._quit_confirmed = True
         win.close()
         engine.stop()
+
+
+def test_export_mxf_as11_fields_only_for_op1a(app):
+    """#96: the AS-11 Core, parts and UK DPP text fields show for MXF OP1a only and are sent as
+    ``mxfAs11Core`` / ``mxfAs11Segments`` / ``mxfAs11Ukdpp`` once edited."""
+    from cfa4_qt.panels.export import ExportDialog
+
+    class Engine:
+        running = False
+
+        def execute(self, command, params=None, on_reply=None, on_error=None):
+            return 0
+
+    dlg = ExportDialog(Engine())  # type: ignore[arg-type]
+    dlg._on_formats([{"id": "h264", "label": "H.264"}, {"id": "mxf-op1a", "label": "MXF OP1a"}, {"id": "mxf-opatom", "label": "MXF OP-Atom"}], None)
+    core = dlg.findChild(QtWidgets.QPlainTextEdit, "export.video.mxfAs11Core")
+    parts = dlg.findChild(QtWidgets.QPlainTextEdit, "export.video.mxfAs11Segments")
+    assert core is dlg.as11_text["mxfAs11Core"] and parts is dlg.as11_text["mxfAs11Segments"]
+    assert dlg.video_form.labelForField(core).text() == "AS-11 Core"
+    dlg.format.setCurrentIndex(dlg.format.findData("mxf-op1a"))
+    dlg._sync_format_rows()
+    assert not core.isHidden() and "mxfAs11Core" not in dlg.params()
+    core.setPlainText("SeriesTitle: S\nShimName: UK DPP HD")
+    parts.setPlainText("1/1 10:00:00:00 25")
+    p = dlg.params()
+    assert p["mxfAs11Core"] == "SeriesTitle: S\nShimName: UK DPP HD" and p["mxfAs11Segments"] == "1/1 10:00:00:00 25"
+    assert "mxfAs11Ukdpp" not in p
+    dlg.format.setCurrentIndex(dlg.format.findData("mxf-opatom"))
+    dlg._sync_format_rows()
+    assert core.isHidden() and "mxfAs11Core" not in dlg.params()
+    # a preset's AS-11 text shows until the field is edited here
+    dlg2 = ExportDialog(Engine())  # type: ignore[arg-type]
+    dlg2._show_settings({"mxfAs11Ukdpp": "ProductionNumber: P1"})
+    assert dlg2.as11_text["mxfAs11Ukdpp"].toPlainText() == "ProductionNumber: P1"
+    dlg.deleteLater()
+    dlg2.deleteLater()

@@ -2097,6 +2097,7 @@
 	Counter	Števec
 	Typewriter	Pisalni stroj
 	Word by Word	Beseda za besedo
+	Scramble	Mešanje
 	Animator	Animator
 	Animator Duration	Trajanje animatorja
 	Animator Delay	Zakasnitev animatorja
@@ -3237,6 +3238,10 @@
 	Sharpen Amount	Količina izostritve
 	Shift Center To	Premakni središče na
 	Show Focus Area	Pokaži območje ostrenja
+	Rack Focus	Prenos ostrine
+	Focus Point A	Točka ostrine A
+	Focus Point B	Točka ostrine B
+	Rack	Prenos
 	Show Only Noise	Pokaži samo šum
 	Shrink	Skrči
 	Shutter Angle	Kot zaklopa
@@ -4179,6 +4184,11 @@ export.summary	Low	nizka
 	Burn Size	Velikost izžiga
 	Ember Width	Širina žerjavice
 	Ember Color	Barva žerjavice
+	Tear Away	Odtrganje
+	Tear Roughness	Hrapavost raztrganine
+	Paper Edge Width	Širina papirnatega roba
+	Stamp Cut	Izrez znamke
+	Perforations	Perforacija
 	Check Text Legibility	Preveri berljivost besedila
 	Clear Legibility Markers	Počisti oznake berljivosti
 	Text legibility: no problems found	Berljivost besedila: ni najdenih težav
@@ -4218,6 +4228,9 @@ export.summary	Low	nizka
 	Dither	Razprševanje
 	Pattern	Vzorec
 	Cell Size	Velikost celice
+	Pixelate	Pikselizacija
+	Cell Shape	Oblika celice
+	LED	LED
 	Cyan Angle	Kot cijan
 	Magenta Angle	Kot magenta
 	Yellow Angle	Kot rumene
@@ -4539,6 +4552,13 @@ export.summary	Low	nizka
 	The keys stay in memory only, until Forget DCP Keys or the end of the session.	Ključi ostanejo samo v pomnilniku, do ukaza Pozabi ključe DCP ali konca seje.
 	DCP keys forgotten	Ključi DCP pozabljeni
 	Choose the KDM file and the private key.	Izberite datoteko KDM in zasebni ključ.
+	Load even if the certificate chain is not verified	Naloži tudi z nepreverjeno verigo potrdil
+	Bundle: {loaded} of {total} KDMs loaded, {other} for other recipients	Paket: naloženih {loaded} od {total} KDM, {other} za druge prejemnike
+	Not loaded: {path}: {problem}	Ni naloženo: {path}: {problem}
+	Signature verified: {chain}	Podpis preverjen: {chain}
+	Signature not verified: {problem}	Podpis ni preverjen: {problem}
+	KDM required	Potreben je KDM
+	Encrypted: load the KDM with content key {keys}	Šifrirano: naložite KDM s ključem vsebine {keys}
 
 # Settings ▸ Timecode Sync (TC-4)
 	Timecode Sync	Sinhronizacija časovne kode
@@ -4571,3 +4591,83 @@ export.summary	Low	nizka
 	Chase External Timecode	Sledi zunanji časovni kodi
 	Send LTC	Pošlji LTC
 	Send MIDI Timecode	Pošlji časovno kodo MIDI
+
+# Live studio preview (CFA4-LIVE-STUDIO-001 S0)
+	Live studio preview	Predogled studia v živo
+	Live studio: stopped	Studio v živo: ustavljen
+	Live studio: {state}	Studio v živo: {state}
+	Live studio: {error}	Studio v živo: {error}
+	restarted after {count} crashes (last: {exit})	znova zagnan po {count} sesutjih (zadnje: {exit})
+	software backend: {reason}	programsko zaledje: {reason}
+	Start studio	Zaženi studio
+	Stop studio	Ustavi studio
+# Auto Color, Auto Contrast, Auto Levels (EffectsSDK review)
+	Auto Color	Samodejna barva
+	Auto Contrast	Samodejni kontrast
+	Auto Levels	Samodejne ravni
+	Temporal Smoothing (seconds)	Časovno glajenje (sekunde)
+	Scene Detect	Zaznavanje prizorov
+	Black Clip	Rezanje črne
+	White Clip	Rezanje bele
+	Snap Neutral Midtones	Nevtralni srednji toni
+# Layout presets: PiP corners, split screen (EffectsSDK review)
+	PiP 35% Upper Left	SvS 35 % zgoraj levo
+	Picture-in-picture: 35 % scale in the upper left	Slika v sliki: merilo 35 % zgoraj levo
+	PiP 35% Lower Left	SvS 35 % spodaj levo
+	Picture-in-picture: 35 % scale in the lower left	Slika v sliki: merilo 35 % spodaj levo
+	PiP 35% Lower Right	SvS 35 % spodaj desno
+	Picture-in-picture: 35 % scale in the lower right	Slika v sliki: merilo 35 % spodaj desno
+	Split Screen Left	Razdeljen zaslon levo
+	Split screen: the middle half of the picture fills the left half of the frame	Razdeljen zaslon: srednja polovica slike zapolni levo polovico kadra
+	Split Screen Right	Razdeljen zaslon desno
+	Split screen: the middle half of the picture fills the right half of the frame	Razdeljen zaslon: srednja polovica slike zapolni desno polovico kadra
+# Creative Looks: CRT (P3)
+	CRT	CRT
+	Scanline Strength	Moč vrstic
+	Line Count	Število vrstic
+	Mask	Maska
+	Mask Strength	Moč maske
+	Corner Darkening	Temnenje kotov
+	Aperture Grille	Mreža odprtin
+	Shadow Mask	Senčna maska
+	Slot Mask	Režna maska
+# Creative Looks: Oil Paint (P4)
+	Oil Paint	Oljna slika
+	Detail	Podrobnosti
+	Texture	Tekstura
+	Facet	Ploskve
+	Daubs	Madeži
+	Dry Brush	Suh čopič
+	Fresco	Freska
+	Knife	Lopatica
+	Sponge	Goba
+# Creative Looks: Pixel Sort (P5)
+	Pixel Sort	Razvrščanje slikovnih pik
+	Sort By	Razvrsti po
+	Lower Threshold	Spodnji prag
+	Upper Threshold	Zgornji prag
+	Ascending	Naraščajoče
+# Temporal Denoise (EffectsSDK review)
+	Temporal Denoise	Časovno odstranjevanje šuma
+	Frames Each Side	Sličic na vsaki strani
+	Motion Threshold	Prag gibanja
+	Show Motion	Pokaži gibanje
+	No signal	Ni signala
+	Locating	Iskanje položaja
+	Locked	Sinhronizirano
+	Freewheel	Prosti tek
+	Scrubbing	Drsenje
+	Sending	Pošiljanje
+
+# DCP subtitle export (#938)
+	Subtitles from the first caption track	Podnapisi s prve sledi podnapisov
+	The package language	Jezik paketa
+	Inter Regular (built in), or an OpenType / TrueType file	Inter Regular (vgrajena) ali datoteka OpenType / TrueType
+	Subtitle language	Jezik podnapisov
+	Subtitle font	Pisava podnapisov
+	Fonts	Pisave
+
+# AS-11 metadata in MXF OP1a (#96)
+	AS-11 Core	AS-11 Core
+	AS-11 Parts	Deli AS-11
+	AS-11 UK DPP	AS-11 UK DPP

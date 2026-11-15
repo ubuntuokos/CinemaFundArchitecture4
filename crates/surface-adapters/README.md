@@ -1,8 +1,8 @@
 # cfa4-surface-adapters
 
 Hardware control surface adapter processes (layer L5) for plan CFA4-HW-CONTROL-SURFACES-001
-(integration annex E2, E5, E13, `docs/plans/CFA4-HW-CONTROL-SURFACES-001-FINAL-1.1-CFA4-ILLESZTES.md`,
-added with the M0 audit).
+(integration annex E2, E5, E13 in
+[`docs/plans/CFA4-HW-CONTROL-SURFACES-001-FINAL-1.1-CFA4-ILLESZTES.md`](../../docs/plans/CFA4-HW-CONTROL-SURFACES-001-FINAL-1.1-CFA4-ILLESZTES.md)).
 
 An adapter family that brings its own runtime or C code runs in its own process, so a crash or a
 hang in a device library ends that family's process, never CFA4 (plan §5.4):
