@@ -4706,3 +4706,17 @@
 # Control surfaces (continuous-values, CFA4-CONTROL-SURFACE-001)
 	{strip} Pan (knob)	{strip} panorama (perilla)
 	{strip} Volume (fader)	{strip} volumen (fader)
+# Control surfaces (F1 Learn and profile, CFA4-CONTROL-SURFACE-001)
+	Control Surfaces	Superficies de control
+	Use control surfaces (MIDI controllers, jog/shuttle devices)	Usar superficies de control (controladores MIDI, jog/shuttle)
+	Assignments run when a button is pressed (a fader or knob counts as pressed past half way); a fader or knob assigned to a mixer strip moves its volume or pan. A ShuttlePRO's shuttle ring plays at its profile's speeds and its jog wheel steps frame by frame. Endless encoders and feedback to the controller (lights, motor faders) come in a later version.	Las asignaciones se ejecutan al pulsar un botón (un fader o mando cuenta como pulsado pasada la mitad); un fader o mando asignado a una pista del mezclador mueve su volumen o panorama. El anillo shuttle de un ShuttlePRO reproduce a las velocidades de su perfil y la rueda jog avanza fotograma a fotograma. Los encoders sin fin y la respuesta al controlador (luces, faders motorizados) llegarán en una versión posterior.
+	First message (ms)	Primer mensaje (ms)
+	Silence (ms)	Silencio (ms)
+	Waiting for the control to settle…	Esperando a que el control se detenga…
+	Type: {hint}. Confirm this assignment.	Tipo: {hint}. Confirme esta asignación.
+	That control is already assigned. Confirm replaces it.	Ese control ya está asignado. Confirmar lo sustituye.
+	Learn timed out.	El aprendizaje agotó el tiempo.
+	Confirm	Confirmar
+	Reject	Rechazar
+	Shows every MIDI message from the controllers as it arrives, to check that a controller sends and what it sends. MIDI Clock, Active Sensing and MIDI Time Code are left out.	Muestra cada mensaje MIDI de los controladores al llegar, para comprobar que un controlador envía y qué envía. Se omiten el reloj MIDI, Active Sensing y el código de tiempo MIDI.
+	Pick a command (or a mixer strip for a fader or knob), press Learn, then press the button or move the control past half way. Confirm keeps the assignment. OK saves the assignments.	Elija un comando (o una pista del mezclador para un fader o mando), pulse Aprender y luego el botón, o mueva el control más allá de la mitad. Confirmar conserva la asignación. Aceptar guarda las asignaciones.

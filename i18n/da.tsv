@@ -4701,3 +4701,17 @@ export.summary	Low	lav
 # Control surfaces (continuous-values, CFA4-CONTROL-SURFACE-001)
 	{strip} Pan (knob)	{strip} panorering (drejeknap)
 	{strip} Volume (fader)	{strip} lydstyrke (fader)
+# Control surfaces (F1 Learn and profile, CFA4-CONTROL-SURFACE-001)
+	Control Surfaces	Betjeningsflader
+	Use control surfaces (MIDI controllers, jog/shuttle devices)	Brug betjeningsflader (MIDI-controllere, jog/shuttle)
+	Assignments run when a button is pressed (a fader or knob counts as pressed past half way); a fader or knob assigned to a mixer strip moves its volume or pan. A ShuttlePRO's shuttle ring plays at its profile's speeds and its jog wheel steps frame by frame. Endless encoders and feedback to the controller (lights, motor faders) come in a later version.	Tildelinger kører ved et tryk (en fader eller knap tæller som trykket forbi midten); en fader eller knap tildelt et mixerspor flytter lydstyrke eller panorering. Shuttle-ringen på en ShuttlePRO afspiller med profilens hastigheder, og jog-hjulet træder et billede ad gangen. Endeløse encodere og tilbagemelding til controlleren (lamper, motorfadere) kommer i en senere version.
+	First message (ms)	Første besked (ms)
+	Silence (ms)	Stilhed (ms)
+	Waiting for the control to settle…	Venter på at betjeningen falder til ro…
+	Type: {hint}. Confirm this assignment.	Type: {hint}. Bekræft denne tildeling.
+	That control is already assigned. Confirm replaces it.	Den betjening er allerede tildelt. Bekræft erstatter den.
+	Learn timed out.	Indlæringen udløb.
+	Confirm	Bekræft
+	Reject	Afvis
+	Shows every MIDI message from the controllers as it arrives, to check that a controller sends and what it sends. MIDI Clock, Active Sensing and MIDI Time Code are left out.	Viser hver MIDI-besked fra controllerne, når den kommer, så man kan se, om en controller sender, og hvad. MIDI-ur, Active Sensing og MIDI-tidskode udelades.
+	Pick a command (or a mixer strip for a fader or knob), press Learn, then press the button or move the control past half way. Confirm keeps the assignment. OK saves the assignments.	Vælg en kommando (eller et mixerspor til en fader eller knap), tryk på Lær, derefter knappen, eller flyt betjeningen forbi midten. Bekræft beholder tildelingen. OK gemmer tildelingerne.

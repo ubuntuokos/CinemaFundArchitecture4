@@ -4702,3 +4702,17 @@ export.summary	Low	nizka
 # Control surfaces (continuous-values, CFA4-CONTROL-SURFACE-001)
 	{strip} Pan (knob)	{strip} panorama (vrtljivi gumb)
 	{strip} Volume (fader)	{strip} glasnost (drsnik)
+# Control surfaces (F1 Learn and profile, CFA4-CONTROL-SURFACE-001)
+	Control Surfaces	Krmilne površine
+	Use control surfaces (MIDI controllers, jog/shuttle devices)	Uporabi krmilne površine (MIDI krmilniki, jog/shuttle)
+	Assignments run when a button is pressed (a fader or knob counts as pressed past half way); a fader or knob assigned to a mixer strip moves its volume or pan. A ShuttlePRO's shuttle ring plays at its profile's speeds and its jog wheel steps frame by frame. Endless encoders and feedback to the controller (lights, motor faders) come in a later version.	Dodelitve stečejo ob pritisku gumba (fader ali gumb šteje kot pritisnjen po polovici); fader ali gumb, dodeljen traku mešalne mize, premika glasnost ali panoramo. Obroč shuttle na ShuttlePRO predvaja s hitrostmi profila, kolo jog pa stopa po sličici. Neskončni kodirniki in odziv krmilniku (lučke, motorni faderji) pridejo v poznejši različici.
+	First message (ms)	Prvo sporočilo (ms)
+	Silence (ms)	Tišina (ms)
+	Waiting for the control to settle…	Čakanje, da se kontrola umiri…
+	Type: {hint}. Confirm this assignment.	Vrsta: {hint}. Potrdite to dodelitev.
+	That control is already assigned. Confirm replaces it.	Ta kontrola je že dodeljena. Potrditev jo zamenja.
+	Learn timed out.	Učenje je poteklo.
+	Confirm	Potrdi
+	Reject	Zavrni
+	Shows every MIDI message from the controllers as it arrives, to check that a controller sends and what it sends. MIDI Clock, Active Sensing and MIDI Time Code are left out.	Pokaže vsako MIDI sporočilo s krmilnikov, ko prispe, da se vidi, ali krmilnik pošilja in kaj. MIDI ura, Active Sensing in MIDI časovna koda so izpuščeni.
+	Pick a command (or a mixer strip for a fader or knob), press Learn, then press the button or move the control past half way. Confirm keeps the assignment. OK saves the assignments.	Izberite ukaz (ali trak mešalne mize za fader ali gumb), pritisnite Uči, nato gumb ali premaknite kontrolo čez polovico. Potrditev obdrži dodelitev. V redu shrani dodelitve.

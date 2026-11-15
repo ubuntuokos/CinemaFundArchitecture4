@@ -4699,3 +4699,17 @@ export.summary	Low	thấp
 # Control surfaces (continuous-values, CFA4-CONTROL-SURFACE-001)
 	{strip} Pan (knob)	{strip} cân bằng trái/phải (núm xoay)
 	{strip} Volume (fader)	{strip} âm lượng (fader)
+# Control surfaces (F1 Learn and profile, CFA4-CONTROL-SURFACE-001)
+	Control Surfaces	Bề mặt điều khiển
+	Use control surfaces (MIDI controllers, jog/shuttle devices)	Dùng bề mặt điều khiển (bộ điều khiển MIDI, jog/shuttle)
+	Assignments run when a button is pressed (a fader or knob counts as pressed past half way); a fader or knob assigned to a mixer strip moves its volume or pan. A ShuttlePRO's shuttle ring plays at its profile's speeds and its jog wheel steps frame by frame. Endless encoders and feedback to the controller (lights, motor faders) come in a later version.	Gán chạy khi nhấn nút (fader hoặc núm được tính là nhấn sau nửa đường); fader hoặc núm gán vào một dải mixer sẽ đẩy âm lượng hoặc pan. Vòng shuttle của ShuttlePRO phát theo tốc độ hồ sơ và bánh jog bước từng khung. Bộ mã hóa vô tận và phản hồi về bộ điều khiển (đèn, fader có động cơ) sẽ có ở bản sau.
+	First message (ms)	Thông điệp đầu (ms)
+	Silence (ms)	Im lặng (ms)
+	Waiting for the control to settle…	Đang chờ điều khiển dừng lại…
+	Type: {hint}. Confirm this assignment.	Kiểu: {hint}. Xác nhận gán này.
+	That control is already assigned. Confirm replaces it.	Điều khiển đó đã được gán. Xác nhận sẽ thay thế.
+	Learn timed out.	Học đã hết thời gian.
+	Confirm	Xác nhận
+	Reject	Từ chối
+	Shows every MIDI message from the controllers as it arrives, to check that a controller sends and what it sends. MIDI Clock, Active Sensing and MIDI Time Code are left out.	Hiện mỗi thông điệp MIDI từ bộ điều khiển ngay khi tới, để xem bộ điều khiển có gửi và gửi gì. Đồng hồ MIDI, Active Sensing và mã thời gian MIDI bị bỏ qua.
+	Pick a command (or a mixer strip for a fader or knob), press Learn, then press the button or move the control past half way. Confirm keeps the assignment. OK saves the assignments.	Chọn một lệnh (hoặc một dải mixer cho fader hay núm), nhấn Học, rồi nhấn nút hoặc đẩy điều khiển quá nửa. Xác nhận giữ gán. OK lưu các gán.

@@ -182,6 +182,22 @@ impl Triggers {
     }
 }
 
+fn default_learn_first_ms() -> u64 {
+    7_000
+}
+
+fn default_learn_silence_ms() -> u64 {
+    1_500
+}
+
+fn learn_first_is_default(v: &u64) -> bool {
+    *v == default_learn_first_ms()
+}
+
+fn learn_silence_is_default(v: &u64) -> bool {
+    *v == default_learn_silence_ms()
+}
+
 /// Settings ▸ Control Surfaces.
 #[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase", default)]
@@ -190,13 +206,25 @@ pub struct ControlSurfacePrefs {
     pub enabled: bool,
     /// Per-device choices, for devices the user changed something on.
     pub devices: Vec<DeviceSetting>,
+    /// How long Learn waits for a first message (F0: 7 s, adjustable; D2).
+    #[serde(default = "default_learn_first_ms", skip_serializing_if = "learn_first_is_default")]
+    pub learn_first_ms: u64,
+    /// Silence after the last Learn message before the type is offered (F0: 1.5 s; D2).
+    #[serde(default = "default_learn_silence_ms", skip_serializing_if = "learn_silence_is_default")]
+    pub learn_silence_ms: u64,
 }
 
 impl Default for ControlSurfacePrefs {
     fn default() -> Self {
-        Self { enabled: true, devices: Vec::new() }
+        Self { enabled: true, devices: Vec::new(), learn_first_ms: default_learn_first_ms(), learn_silence_ms: default_learn_silence_ms() }
     }
 }
+
+/// Pickup distance for a 7-bit control (Ardour `_threshold`, D4).
+pub const PICKUP_THRESHOLD7: u16 = 10;
+
+/// Pickup distance for a 14-bit control (D4).
+pub const PICKUP_THRESHOLD14: u16 = 1280;
 
 impl ControlSurfacePrefs {
     /// The settings of `device` (the defaults when the user never changed them).
@@ -293,6 +321,11 @@ impl ControlSurfacePrefs {
             d.bindings.truncate(MAX_BINDINGS);
             d.unsupported.truncate(MAX_BINDINGS - d.bindings.len());
         }
+        self.learn_first_ms = self.learn_first_ms.clamp(500, 60_000);
+        self.learn_silence_ms = self.learn_silence_ms.clamp(100, 10_000);
+        if self.learn_silence_ms >= self.learn_first_ms {
+            self.learn_silence_ms = (self.learn_first_ms / 2).max(100);
+        }
     }
 
     /// `surface.profile.warnings`: the devices with assignments loaded disabled, and why.
@@ -330,8 +363,61 @@ fn profile_warnings(s: &mut Session, _: &Value) -> Result<Value> {
     Ok(json!({"devices": devices}))
 }
 
+fn run_learn(s: &mut Session, p: &Value) -> Result<Value> {
+    crate::surface_runtime::cmd_learn(s, p)
+}
+
+fn run_learn_cancel(s: &mut Session, p: &Value) -> Result<Value> {
+    crate::surface_runtime::cmd_learn_cancel(s, p)
+}
+
+fn run_learn_confirm(s: &mut Session, p: &Value) -> Result<Value> {
+    crate::surface_runtime::cmd_learn_confirm(s, p)
+}
+
+fn run_inject(s: &mut Session, p: &Value) -> Result<Value> {
+    crate::surface_runtime::cmd_inject(s, p)
+}
+
+fn run_clock(s: &mut Session, p: &Value) -> Result<Value> {
+    crate::surface_runtime::cmd_clock(s, p)
+}
+
+fn run_enable(s: &mut Session, p: &Value) -> Result<Value> {
+    let result = crate::surface_runtime::cmd_enable(s, p)?;
+    let prefs = s.prefs.clone();
+    s.set_prefs(prefs).map_err(|e| crate::EngineError::Other(format!("saving preferences: {e}")))?;
+    Ok(result)
+}
+
+fn run_state(s: &mut Session, p: &Value) -> Result<Value> {
+    crate::surface_runtime::cmd_state(s, p)
+}
+
+fn run_audit(s: &mut Session, p: &Value) -> Result<Value> {
+    crate::surface_runtime::cmd_audit(s, p)
+}
+
 pub fn commands() -> Vec<CommandSpec> {
+    let spec = |id, label, params, run: fn(&mut Session, &Value) -> Result<Value>| CommandSpec {
+        id,
+        label,
+        menu: &[],
+        shortcut: None,
+        params,
+        enabled: always,
+        run,
+        journal: false,
+    };
     vec![
+        spec("surface.learn", "Learn Control", r#"{"target?":{"command":str,"params?":object},"device?":str,"firstMs?":int,"silenceMs?":int}"#, run_learn),
+        spec("surface.learnCancel", "Cancel Learn", "{}", run_learn_cancel),
+        spec("surface.learnConfirm", "Confirm Learn", r#"{"accept":bool}"#, run_learn_confirm),
+        spec("surface.inject", "Inject Control Input", r#"{"device":str,"input":object,"raw?":[int]}"#, run_inject),
+        spec("surface.clock", "Control Surface Clock", r#"{"time":int,"playing":bool,"speed":number,"monitor":str}"#, run_clock),
+        spec("surface.enable", "Enable Control Surface", r#"{"device":str,"enabled":bool}"#, run_enable),
+        spec("surface.state", "Control Surface State", r#"{"device?":str}"#, run_state),
+        spec("surface.audit", "Audit Control Surface", r#"{"device?":str}"#, run_audit),
         CommandSpec {
             id: "surface.profile.warnings",
             label: "Control Surface Profile Warnings",
@@ -369,6 +455,7 @@ mod tests {
                 DeviceSetting { device: String::new(), enabled: false, profile: String::new(), bindings: vec![], unsupported: vec![] },
                 DeviceSetting { device: "hid:0b33:0030:usb-1.2".into(), enabled: true, profile: "nope".into(), bindings: vec![], unsupported: vec![] },
             ],
+            ..ControlSurfacePrefs::default()
         };
         p.clamp();
         assert_eq!(p.devices.len(), 2);
@@ -477,6 +564,7 @@ mod tests {
                 bindings: vec![bind(cc(41), "playback.toggle"), bind(cc(41), "edit.undo"), bind(cc(42), " "), bind(cc(43), "edit.undo")],
                 unsupported: vec![],
             }],
+            ..ControlSurfacePrefs::default()
         };
         p.clamp();
         assert_eq!(p.devices[0].bindings, vec![bind(cc(41), "playback.toggle"), bind(cc(43), "edit.undo")], "first per control, no empty command");
@@ -533,6 +621,7 @@ mod tests {
                 ],
                 ..Default::default()
             }],
+            ..ControlSurfacePrefs::default()
         };
         let a = p.value(dev, &cc(0), &fader(127));
         assert_eq!(a, Some(Action { command: "mixer.stripVolume".into(), params: json!({"strip": "A1", "value": 1.0}) }));

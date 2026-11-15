@@ -4700,3 +4700,17 @@ export.summary	Low	düşük
 # Control surfaces (continuous-values, CFA4-CONTROL-SURFACE-001)
 	{strip} Pan (knob)	{strip} pan (düğme)
 	{strip} Volume (fader)	{strip} ses düzeyi (fader)
+# Control surfaces (F1 Learn and profile, CFA4-CONTROL-SURFACE-001)
+	Control Surfaces	Denetim yüzeyleri
+	Use control surfaces (MIDI controllers, jog/shuttle devices)	Denetim yüzeylerini kullan (MIDI denetleyiciler, jog/shuttle)
+	Assignments run when a button is pressed (a fader or knob counts as pressed past half way); a fader or knob assigned to a mixer strip moves its volume or pan. A ShuttlePRO's shuttle ring plays at its profile's speeds and its jog wheel steps frame by frame. Endless encoders and feedback to the controller (lights, motor faders) come in a later version.	Atamalar bir düğmeye basılınca çalışır (bir fader veya düğme yolun yarısından sonra basılmış sayılır); bir mikser şeridine atanmış fader veya düğme ses düzeyini ya da panı oynatır. Bir ShuttlePRO'nun mekik halkası profilinin hızlarında çalar, jog tekeri kare kare ilerler. Sonsuz kodlayıcılar ve denetleyiciye geri bildirim (ışıklar, motorlu faderler) sonraki bir sürümde gelir.
+	First message (ms)	İlk ileti (ms)
+	Silence (ms)	Sessizlik (ms)
+	Waiting for the control to settle…	Denetimin durulması bekleniyor…
+	Type: {hint}. Confirm this assignment.	Tür: {hint}. Bu atamayı onaylayın.
+	That control is already assigned. Confirm replaces it.	Bu denetim zaten atanmış. Onaylamak değiştirir.
+	Learn timed out.	Öğrenme zaman aşımına uğradı.
+	Confirm	Onayla
+	Reject	Reddet
+	Shows every MIDI message from the controllers as it arrives, to check that a controller sends and what it sends. MIDI Clock, Active Sensing and MIDI Time Code are left out.	Bir denetleyicinin gönderip göndermediğini ve ne gönderdiğini görmek için denetleyicilerden gelen her MIDI iletisini varır varmaz gösterir. MIDI saati, Active Sensing ve MIDI zaman kodu dışarıda bırakılır.
+	Pick a command (or a mixer strip for a fader or knob), press Learn, then press the button or move the control past half way. Confirm keeps the assignment. OK saves the assignments.	Bir komut seçin (fader veya düğme için bir mikser şeridi), Öğren'e basın, sonra düğmeye basın veya denetimi yarının ötesine taşıyın. Onay atamayı tutar. Tamam atamaları kaydeder.

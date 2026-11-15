@@ -4702,3 +4702,17 @@ export.summary	Low	ниско
 # Control surfaces (continuous-values, CFA4-CONTROL-SURFACE-001)
 	{strip} Pan (knob)	{strip} панорама (копче)
 	{strip} Volume (fader)	{strip} сила на звука (фейдър)
+# Control surfaces (F1 Learn and profile, CFA4-CONTROL-SURFACE-001)
+	Control Surfaces	Контролни повърхности
+	Use control surfaces (MIDI controllers, jog/shuttle devices)	Използване на контролни повърхности (MIDI контролери, jog/shuttle)
+	Assignments run when a button is pressed (a fader or knob counts as pressed past half way); a fader or knob assigned to a mixer strip moves its volume or pan. A ShuttlePRO's shuttle ring plays at its profile's speeds and its jog wheel steps frame by frame. Endless encoders and feedback to the controller (lights, motor faders) come in a later version.	Назначенията тръгват при натискане на бутон (фейдър или копче се брои за натиснато след половината); фейдър или копче към лента на миксера мести силата или панорамата. Пръстенът shuttle на ShuttlePRO пуска със скоростите на профила, а колелото jog стъпва по кадър. Безкрайни енкодери и отговор към контролера (лампи, моторни фейдъри) идват в по-късна версия.
+	First message (ms)	Първо съобщение (ms)
+	Silence (ms)	Тишина (ms)
+	Waiting for the control to settle…	Изчакване органът да се успокои…
+	Type: {hint}. Confirm this assignment.	Тип: {hint}. Потвърдете това назначение.
+	That control is already assigned. Confirm replaces it.	Този орган вече е назначен. Потвърждението го заменя.
+	Learn timed out.	Обучението изтече.
+	Confirm	Потвърди
+	Reject	Отхвърли
+	Shows every MIDI message from the controllers as it arrives, to check that a controller sends and what it sends. MIDI Clock, Active Sensing and MIDI Time Code are left out.	Показва всяко MIDI съобщение от контролерите при пристигане, за да се види дали контролер праща и какво. MIDI часовник, Active Sensing и MIDI времеви код се пропускат.
+	Pick a command (or a mixer strip for a fader or knob), press Learn, then press the button or move the control past half way. Confirm keeps the assignment. OK saves the assignments.	Изберете команда (или лента на миксера за фейдър или копче), натиснете Обучение, после бутона или преместете органа след половината. Потвърждението запазва назначението. OK записва назначенията.

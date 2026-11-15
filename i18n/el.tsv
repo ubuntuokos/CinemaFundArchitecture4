@@ -4701,3 +4701,17 @@ export.summary	Low	χαμηλή
 # Control surfaces (continuous-values, CFA4-CONTROL-SURFACE-001)
 	{strip} Pan (knob)	{strip} πανοραμική (περιστροφικό)
 	{strip} Volume (fader)	{strip} ένταση (fader)
+# Control surfaces (F1 Learn and profile, CFA4-CONTROL-SURFACE-001)
+	Control Surfaces	Επιφάνειες ελέγχου
+	Use control surfaces (MIDI controllers, jog/shuttle devices)	Χρήση επιφανειών ελέγχου (ελεγκτές MIDI, jog/shuttle)
+	Assignments run when a button is pressed (a fader or knob counts as pressed past half way); a fader or knob assigned to a mixer strip moves its volume or pan. A ShuttlePRO's shuttle ring plays at its profile's speeds and its jog wheel steps frame by frame. Endless encoders and feedback to the controller (lights, motor faders) come in a later version.	Οι αναθέσεις τρέχουν με πάτημα κουμπιού (ένα fader ή κουμπί μετρά ως πατημένο μετά τη μέση)· ένα fader ή κουμπί σε λωρίδα μίξης κινεί την ένταση ή το παν. Ο δακτύλιος shuttle ενός ShuttlePRO παίζει με τις ταχύτητες του προφίλ και ο τροχός jog προχωρά καρέ-καρέ. Οι ατέρμονες κωδικοποιητές και η απόκριση στον ελεγκτή (λυχνίες, μηχανοκίνητα fader) έρχονται σε νεότερη έκδοση.
+	First message (ms)	Πρώτο μήνυμα (ms)
+	Silence (ms)	Σιωπή (ms)
+	Waiting for the control to settle…	Αναμονή να ηρεμήσει το χειριστήριο…
+	Type: {hint}. Confirm this assignment.	Τύπος: {hint}. Επιβεβαιώστε αυτή την ανάθεση.
+	That control is already assigned. Confirm replaces it.	Αυτό το χειριστήριο είναι ήδη ανατεθειμένο. Η επιβεβαίωση το αντικαθιστά.
+	Learn timed out.	Η εκμάθηση έληξε.
+	Confirm	Επιβεβαίωση
+	Reject	Απόρριψη
+	Shows every MIDI message from the controllers as it arrives, to check that a controller sends and what it sends. MIDI Clock, Active Sensing and MIDI Time Code are left out.	Δείχνει κάθε μήνυμα MIDI από τους ελεγκτές μόλις φτάσει, για να φανεί αν ένας ελεγκτής στέλνει και τι. Το ρολόι MIDI, το Active Sensing και ο κώδικας χρόνου MIDI παραλείπονται.
+	Pick a command (or a mixer strip for a fader or knob), press Learn, then press the button or move the control past half way. Confirm keeps the assignment. OK saves the assignments.	Διαλέξτε εντολή (ή λωρίδα μίξης για fader ή κουμπί), πατήστε Εκμάθηση, έπειτα το κουμπί ή μετακινήστε το χειριστήριο πέρα από τη μέση. Η επιβεβαίωση κρατά την ανάθεση. Το OK αποθηκεύει τις αναθέσεις.

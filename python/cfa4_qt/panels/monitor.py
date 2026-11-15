@@ -1343,6 +1343,7 @@ class Monitor(QWidget):
             self.command.emit("mixer.recordStart", {"time": int(self.playhead)})
         self._timer.start()
         self.playback_started.emit()
+        self._surface_clock()
 
     def shuttle(self, direction: int) -> None:
         """J / L: play backwards / forwards; again in the same direction doubles the speed, up
@@ -1441,10 +1442,31 @@ class Monitor(QWidget):
             command, params = self.seek_command(self.playhead)
             self.command.emit(command, params)
         self.playback_stopped.emit()
+        self._surface_clock()
+
+    def _surface_clock(self) -> None:
+        """Tell the engine where playback is (`surface.clock`), at most 10 times a second while playing."""
+        import time
+
+        now = time.monotonic()
+        if self.playing and now - getattr(self, "_surface_clock_at", 0.0) < 0.1:
+            return
+        self._surface_clock_at = now
+        monitor = self.target if self.target in ("program", "source", "trim") else "program"
+        call = getattr(self.engine, "call", None)
+        if call is None:
+            return
+        call("surface.clock", {
+            "time": int(self.playhead),
+            "playing": bool(self.playing),
+            "speed": float(self.speed if self.playing else 0.0),
+            "monitor": monitor,
+        })
 
     def _tick(self) -> None:
         if not self.playing or not self.has_content():
             return
+        self._surface_clock()
         self._check_audio_clock()
         self._retry_audio()
         t = self._play_from + int(self._elapsed_ns() * TICKS_PER_SECOND * self.speed) // 1_000_000_000

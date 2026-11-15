@@ -4699,3 +4699,17 @@ export.summary	Low	laag
 # Control surfaces (continuous-values, CFA4-CONTROL-SURFACE-001)
 	{strip} Pan (knob)	{strip} panning (draaiknop)
 	{strip} Volume (fader)	{strip} volume (fader)
+# Control surfaces (F1 Learn and profile, CFA4-CONTROL-SURFACE-001)
+	Control Surfaces	Bedieningsoppervlakken
+	Use control surfaces (MIDI controllers, jog/shuttle devices)	Bedieningsoppervlakken gebruiken (MIDI-controllers, jog/shuttle)
+	Assignments run when a button is pressed (a fader or knob counts as pressed past half way); a fader or knob assigned to a mixer strip moves its volume or pan. A ShuttlePRO's shuttle ring plays at its profile's speeds and its jog wheel steps frame by frame. Endless encoders and feedback to the controller (lights, motor faders) come in a later version.	Toewijzingen lopen bij een knopdruk (een fader of knop telt als ingedrukt voorbij de helft); een fader of knop op een mixerkanaal beweegt het volume of de pan. De shuttle-ring van een ShuttlePRO speelt op de snelheden van het profiel en het jog-wiel stapt per frame. Eindeloze encoders en terugmelding naar de controller (lampjes, motorfaders) komen in een latere versie.
+	First message (ms)	Eerste bericht (ms)
+	Silence (ms)	Stilte (ms)
+	Waiting for the control to settle…	Wachten tot de bediening tot rust komt…
+	Type: {hint}. Confirm this assignment.	Type: {hint}. Bevestig deze toewijzing.
+	That control is already assigned. Confirm replaces it.	Die bediening is al toegewezen. Bevestigen vervangt haar.
+	Learn timed out.	Leren duurde te lang.
+	Confirm	Bevestigen
+	Reject	Afwijzen
+	Shows every MIDI message from the controllers as it arrives, to check that a controller sends and what it sends. MIDI Clock, Active Sensing and MIDI Time Code are left out.	Toont elk MIDI-bericht van de controllers zodra het binnenkomt, om te zien of een controller zendt en wat. MIDI-clock, Active Sensing en MIDI-timecode blijven weg.
+	Pick a command (or a mixer strip for a fader or knob), press Learn, then press the button or move the control past half way. Confirm keeps the assignment. OK saves the assignments.	Kies een opdracht (of een mixerkanaal voor een fader of knop), druk op Leren en dan op de knop, of beweeg de bediening voorbij de helft. Bevestigen houdt de toewijzing. OK bewaart de toewijzingen.

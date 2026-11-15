@@ -4684,3 +4684,17 @@
 # Control surfaces (continuous-values, CFA4-CONTROL-SURFACE-001)
 	{strip} Pan (knob)	{strip} панорама (ручка)
 	{strip} Volume (fader)	{strip} громкость (фейдер)
+# Control surfaces (F1 Learn and profile, CFA4-CONTROL-SURFACE-001)
+	Control Surfaces	Пульты управления
+	Use control surfaces (MIDI controllers, jog/shuttle devices)	Использовать пульты (MIDI-контроллеры, jog/shuttle)
+	Assignments run when a button is pressed (a fader or knob counts as pressed past half way); a fader or knob assigned to a mixer strip moves its volume or pan. A ShuttlePRO's shuttle ring plays at its profile's speeds and its jog wheel steps frame by frame. Endless encoders and feedback to the controller (lights, motor faders) come in a later version.	Назначения срабатывают по нажатию кнопки (фейдер или ручка считаются нажатыми за серединой); фейдер или ручка, назначенные на полосу микшера, двигают громкость или панораму. Кольцо shuttle ShuttlePRO играет со скоростями профиля, а колесо jog шагает по кадру. Бесконечные энкодеры и отклик на пульт (лампы, моторные фейдеры) появятся в следующей версии.
+	First message (ms)	Первое сообщение (мс)
+	Silence (ms)	Тишина (мс)
+	Waiting for the control to settle…	Ожидание, пока орган успокоится…
+	Type: {hint}. Confirm this assignment.	Тип: {hint}. Подтвердите это назначение.
+	That control is already assigned. Confirm replaces it.	Этот орган уже назначен. Подтверждение заменит его.
+	Learn timed out.	Время обучения истекло.
+	Confirm	Подтвердить
+	Reject	Отклонить
+	Shows every MIDI message from the controllers as it arrives, to check that a controller sends and what it sends. MIDI Clock, Active Sensing and MIDI Time Code are left out.	Показывает каждое MIDI-сообщение с пультов по мере прихода, чтобы проверить, что пульт шлёт и что именно. MIDI Clock, Active Sensing и MIDI-таймкод скрыты.
+	Pick a command (or a mixer strip for a fader or knob), press Learn, then press the button or move the control past half way. Confirm keeps the assignment. OK saves the assignments.	Выберите команду (или полосу микшера для фейдера или ручки), нажмите Обучить, затем кнопку или сдвиньте орган за середину. Подтверждение сохраняет назначение. ОК записывает назначения.

@@ -4697,3 +4697,17 @@
 # Control surfaces (continuous-values, CFA4-CONTROL-SURFACE-001)
 	{strip} Pan (knob)	{strip} 声像（旋钮）
 	{strip} Volume (fader)	{strip} 音量（推子）
+# Control surfaces (F1 Learn and profile, CFA4-CONTROL-SURFACE-001)
+	Control Surfaces	控制界面
+	Use control surfaces (MIDI controllers, jog/shuttle devices)	使用控制界面（MIDI 控制器、jog/shuttle）
+	Assignments run when a button is pressed (a fader or knob counts as pressed past half way); a fader or knob assigned to a mixer strip moves its volume or pan. A ShuttlePRO's shuttle ring plays at its profile's speeds and its jog wheel steps frame by frame. Endless encoders and feedback to the controller (lights, motor faders) come in a later version.	分配在按下按钮时执行（推子或旋钮过半即视为按下）；分配到混音条的推子或旋钮会移动音量或声像。ShuttlePRO 的穿梭环按配置的速度播放，飞梭轮逐帧步进。无极编码器和对控制器的回传（指示灯、电动推子）将在以后的版本加入。
+	First message (ms)	首条消息（毫秒）
+	Silence (ms)	静音（毫秒）
+	Waiting for the control to settle…	正在等待控件停稳…
+	Type: {hint}. Confirm this assignment.	类型：{hint}。确认此分配。
+	That control is already assigned. Confirm replaces it.	该控件已有分配。确认将替换它。
+	Learn timed out.	学习已超时。
+	Confirm	确认
+	Reject	拒绝
+	Shows every MIDI message from the controllers as it arrives, to check that a controller sends and what it sends. MIDI Clock, Active Sensing and MIDI Time Code are left out.	控制器的每条 MIDI 消息到达时都会显示，用来确认控制器是否在发送以及发送了什么。MIDI 时钟、Active Sensing 和 MIDI 时间码默认不显示。
+	Pick a command (or a mixer strip for a fader or knob), press Learn, then press the button or move the control past half way. Confirm keeps the assignment. OK saves the assignments.	选择一条命令（推子或旋钮则选择混音条），按学习，再按按钮或把控件移过一半。确认保留分配。确定保存分配。

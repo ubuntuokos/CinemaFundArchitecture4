@@ -377,6 +377,7 @@ class PreferencesDialog(QDialog):
         self.assign_command = ""  # the command Learn assigns
         self.learning = False
         self.learn_message = ""
+        self.learn_pending: dict[str, Any] | None = None  # captured control waiting for Confirm
         event = getattr(engine, "event", None)
         if event is not None:
             event.connect(self._engine_event)
@@ -1164,10 +1165,39 @@ class PreferencesDialog(QDialog):
         learn.setEnabled(command.count() > 0)
         learn.clicked.connect(self._toggle_learn)
         row.addWidget(learn)
+        confirm = self._button("settings.controlSurfaces.assign.confirm", tr("Confirm"))
+        confirm.setVisible(self.learn_pending is not None)
+        confirm.clicked.connect(lambda: self._confirm_learn(True))
+        reject = self._button("settings.controlSurfaces.assign.reject", tr("Reject"))
+        reject.setVisible(self.learn_pending is not None)
+        reject.clicked.connect(lambda: self._confirm_learn(False))
+        row.addWidget(confirm)
+        row.addWidget(reject)
         v.addLayout(row)
+        times = QHBoxLayout()
+        times.addWidget(QLabel(tr("First message (ms)"), box))
+        first = QSpinBox(box)
+        first.setObjectName("settings.controlSurfaces.assign.firstMs")
+        first.setRange(500, 60_000)
+        first.blockSignals(True)
+        first.setValue(int(self._surface_ms("learnFirstMs", 7000)))
+        first.blockSignals(False)
+        first.valueChanged.connect(lambda n: self._set_surface_root("learnFirstMs", int(n)))
+        times.addWidget(first)
+        times.addWidget(QLabel(tr("Silence (ms)"), box))
+        silence = QSpinBox(box)
+        silence.setObjectName("settings.controlSurfaces.assign.silenceMs")
+        silence.setRange(100, 10_000)
+        silence.blockSignals(True)
+        silence.setValue(int(self._surface_ms("learnSilenceMs", 1500)))
+        silence.blockSignals(False)
+        silence.valueChanged.connect(lambda n: self._set_surface_root("learnSilenceMs", int(n)))
+        times.addWidget(silence)
+        times.addStretch(1)
+        v.addLayout(times)
         text = self.learn_message or ("Press or move a control on the controller…" if self.learning else
                                       "Pick a command (or a mixer strip for a fader or knob), press Learn, then press the button "
-                                      "or move the control past half way. OK saves the assignments.")
+                                      "or move the control past half way. Confirm keeps the assignment. OK saves the assignments.")
         v.addWidget(self._note(box, text, "settings.controlSurfaces.assign.status"))
         return box
 
@@ -1199,20 +1229,36 @@ class PreferencesDialog(QDialog):
             self._rebuild_if_shown()
 
         self.learning = True
+        self.learn_pending = None
         self.learn_message = ""
         self._build_page()
-        self.engine.call("surface.learn", {"device": self.assign_device}, on_error=failed)
+        command, _, strip = self.assign_command.partition("|")
+        target: dict[str, Any] = {"command": command}
+        if strip:
+            target["params"] = {"strip": strip}
+        self.engine.call("surface.learn", {
+            "device": self.assign_device,
+            "target": target,
+            "firstMs": int(self._surface_ms("learnFirstMs", 7000)),
+            "silenceMs": int(self._surface_ms("learnSilenceMs", 1500)),
+        }, on_error=failed)
 
     def _cancel_learn(self) -> None:
-        if self.learning:
+        if self.learning or self.learn_pending is not None:
             self.learning = False
+            self.learn_pending = None
             self.engine.call("surface.learnCancel", {})
 
-    def _learned(self, message: dict[str, Any]) -> None:
-        if not self.learning or message.get("state") != "captured" or message.get("device") != self.assign_device:
-            return
-        self.learning = False
-        control = message.get("control")
+    def _surface_ms(self, key: str, default: int) -> int:
+        got = get(self.values, f"controlSurfaces.{key}")
+        return int(got) if isinstance(got, int) and not isinstance(got, bool) else default
+
+    def _set_surface_root(self, key: str, value: int) -> None:
+        surfaces = self.values.setdefault("controlSurfaces", {})
+        if isinstance(surfaces, dict):
+            surfaces[key] = value
+
+    def _store_learned(self, control: Any) -> None:
         if not isinstance(control, dict) or not self.assign_command:
             return
         kept = [b for b in self._bindings(self.assign_device) if b.get("control") != control]
@@ -1224,7 +1270,59 @@ class PreferencesDialog(QDialog):
         labels = {**dict(self.commands()), **dict(value_targets())}
         self.learn_message = fmt("{control} runs {command}.", control=control_label(control),
                                  command=labels.get(self.assign_command) or self.assign_command)
+
+    def _confirm_learn(self, accept: bool) -> None:
+        pending = self.learn_pending or {}
+        self.engine.call("surface.learnConfirm", {"accept": accept})
+        self.learning = False
+        self.learn_pending = None
+        if accept:
+            self._store_learned(pending.get("control"))
+        else:
+            self.learn_message = ""
         self._rebuild_if_shown()
+
+    def _learned(self, message: dict[str, Any]) -> None:
+        state = str(message.get("state") or "")
+        captured = message.get("captured") if isinstance(message.get("captured"), dict) else {}
+        device = str(captured.get("device") or message.get("device") or "")
+        if device and device != self.assign_device and state not in ("timeout", "cancelled", "rejected"):
+            return
+        if state == "capturing":
+            self.learn_message = tr("Waiting for the control to settle…")
+            self._rebuild_if_shown()
+            return
+        if state in ("pending", "captured", "conflict"):
+            control = captured.get("control") or message.get("control")
+            if not isinstance(control, dict):
+                return
+            self.learning = True
+            self.learn_pending = {"control": control, "mode": str(captured.get("mode") or "")}
+            hint = self.learn_pending["mode"] or "control"
+            if state == "conflict":
+                self.learn_message = tr("That control is already assigned. Confirm replaces it.")
+            else:
+                self.learn_message = fmt("Type: {hint}. Confirm this assignment.", hint=hint)
+            self._rebuild_if_shown()
+            return
+        if state == "confirmed":
+            # Confirm already stored the draft; a late event must not add it twice.
+            if self.learn_pending is not None:
+                self._store_learned(message.get("control") or captured.get("control"))
+            self.learning = False
+            self.learn_pending = None
+            self._rebuild_if_shown()
+            return
+        if state == "timeout":
+            self.learning = False
+            self.learn_pending = None
+            self.learn_message = tr("Learn timed out.")
+            self._rebuild_if_shown()
+            return
+        if state in ("rejected", "cancelled"):
+            self.learning = False
+            self.learn_pending = None
+            self._rebuild_if_shown()
 
     def _rebuild_if_shown(self) -> None:
         if self.page == "controlSurfaces":
@@ -1248,7 +1346,7 @@ class PreferencesDialog(QDialog):
         box.setObjectName("settings.controlSurfaces.monitor")
         v = QVBoxLayout(box)
         v.addWidget(self._note(box, "Shows every MIDI message from the controllers as it arrives, to check that a "
-                                    "controller sends and what it sends. MIDI Clock and Active Sensing are left out."))
+                                    "controller sends and what it sends. MIDI Clock, Active Sensing and MIDI Time Code are left out."))
         row = QHBoxLayout()
         toggle = self._button("settings.controlSurfaces.monitor.toggle", tr("Stop Monitor") if self.monitor_on else tr("Start Monitor"))
         toggle.setCheckable(True)

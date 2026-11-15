@@ -4707,3 +4707,17 @@
 # Control surfaces (continuous-values, CFA4-CONTROL-SURFACE-001)
 	{strip} Pan (knob)	{strip} pan (kenop)
 	{strip} Volume (fader)	{strip} volume (fader)
+# Control surfaces (F1 Learn and profile, CFA4-CONTROL-SURFACE-001)
+	Control Surfaces	Permukaan kendali
+	Use control surfaces (MIDI controllers, jog/shuttle devices)	Gunakan permukaan kendali (pengontrol MIDI, jog/shuttle)
+	Assignments run when a button is pressed (a fader or knob counts as pressed past half way); a fader or knob assigned to a mixer strip moves its volume or pan. A ShuttlePRO's shuttle ring plays at its profile's speeds and its jog wheel steps frame by frame. Endless encoders and feedback to the controller (lights, motor faders) come in a later version.	Penetapan berjalan saat tombol ditekan (fader atau kenop dihitung ditekan setelah lewat setengah); fader atau kenop yang ditetapkan ke jalur mixer menggerakkan volume atau pan. Cincin shuttle ShuttlePRO memutar pada kecepatan profilnya dan roda jog melangkah per bingkai. Encoder tanpa ujung dan umpan balik ke pengontrol (lampu, fader bermotor) menyusul di versi berikutnya.
+	First message (ms)	Pesan pertama (ms)
+	Silence (ms)	Senyap (ms)
+	Waiting for the control to settle…	Menunggu kendali menetap…
+	Type: {hint}. Confirm this assignment.	Jenis: {hint}. Konfirmasi penetapan ini.
+	That control is already assigned. Confirm replaces it.	Kendali itu sudah ditetapkan. Konfirmasi menggantinya.
+	Learn timed out.	Belajar kehabisan waktu.
+	Confirm	Konfirmasi
+	Reject	Tolak
+	Shows every MIDI message from the controllers as it arrives, to check that a controller sends and what it sends. MIDI Clock, Active Sensing and MIDI Time Code are left out.	Menampilkan setiap pesan MIDI dari pengontrol saat tiba, untuk memeriksa apakah pengontrol mengirim dan apa yang dikirim. Jam MIDI, Active Sensing, dan kode waktu MIDI dihilangkan.
+	Pick a command (or a mixer strip for a fader or knob), press Learn, then press the button or move the control past half way. Confirm keeps the assignment. OK saves the assignments.	Pilih perintah (atau jalur mixer untuk fader atau kenop), tekan Pelajari, lalu tombol, atau gerakkan kendali melewati setengah. Konfirmasi menyimpan penetapan. OK menyimpan penetapan.

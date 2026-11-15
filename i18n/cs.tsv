@@ -4699,3 +4699,17 @@ export.summary	Low	nízká
 # Control surfaces (continuous-values, CFA4-CONTROL-SURFACE-001)
 	{strip} Pan (knob)	{strip} panoráma (otočný ovladač)
 	{strip} Volume (fader)	{strip} hlasitost (fader)
+# Control surfaces (F1 Learn and profile, CFA4-CONTROL-SURFACE-001)
+	Control Surfaces	Ovládací povrchy
+	Use control surfaces (MIDI controllers, jog/shuttle devices)	Používat ovládací povrchy (MIDI ovladače, jog/shuttle)
+	Assignments run when a button is pressed (a fader or knob counts as pressed past half way); a fader or knob assigned to a mixer strip moves its volume or pan. A ShuttlePRO's shuttle ring plays at its profile's speeds and its jog wheel steps frame by frame. Endless encoders and feedback to the controller (lights, motor faders) come in a later version.	Přiřazení se spustí stiskem tlačítka (fader nebo knoflík se počítá jako stisknutý za polovinou); fader nebo knoflík přiřazený ke stopě mixu hýbe její hlasitostí nebo panoramou. Kroužek shuttle u ShuttlePRO přehrává rychlostmi profilu a kolečko jog krokne o snímek. Nekonečné enkodéry a odezva do ovladače (kontrolky, motorové fadéry) přijdou v pozdější verzi.
+	First message (ms)	První zpráva (ms)
+	Silence (ms)	Ticho (ms)
+	Waiting for the control to settle…	Čeká se, až se ovladač ustálí…
+	Type: {hint}. Confirm this assignment.	Typ: {hint}. Potvrďte toto přiřazení.
+	That control is already assigned. Confirm replaces it.	Tento ovladač už je přiřazen. Potvrzení ho nahradí.
+	Learn timed out.	Učení vypršelo.
+	Confirm	Potvrdit
+	Reject	Odmítnout
+	Shows every MIDI message from the controllers as it arrives, to check that a controller sends and what it sends. MIDI Clock, Active Sensing and MIDI Time Code are left out.	Ukazuje každou MIDI zprávu z ovladačů hned po příchodu, aby bylo vidět, jestli ovladač vysílá a co. MIDI hodiny, Active Sensing a MIDI časový kód se vynechávají.
+	Pick a command (or a mixer strip for a fader or knob), press Learn, then press the button or move the control past half way. Confirm keeps the assignment. OK saves the assignments.	Vyberte příkaz (nebo stopu mixu pro fader či knoflík), stiskněte Učit, pak tlačítko, nebo posuňte ovladač za polovinu. Potvrzení ponechá přiřazení. OK uloží přiřazení.

@@ -4701,3 +4701,17 @@ export.summary	Low	төмен
 # Control surfaces (continuous-values, CFA4-CONTROL-SURFACE-001)
 	{strip} Pan (knob)	{strip} панорама (тұтқа)
 	{strip} Volume (fader)	{strip} дыбыс деңгейі (фейдер)
+# Control surfaces (F1 Learn and profile, CFA4-CONTROL-SURFACE-001)
+	Control Surfaces	Басқару беттері
+	Use control surfaces (MIDI controllers, jog/shuttle devices)	Басқару беттерін қолдану (MIDI контроллерлер, jog/shuttle)
+	Assignments run when a button is pressed (a fader or knob counts as pressed past half way); a fader or knob assigned to a mixer strip moves its volume or pan. A ShuttlePRO's shuttle ring plays at its profile's speeds and its jog wheel steps frame by frame. Endless encoders and feedback to the controller (lights, motor faders) come in a later version.	Тағайындаулар түйме басылғанда орындалады (фейдер не тұтқа жартысынан асқанда басылған саналады); миксер жолағына тағайындалған фейдер не тұтқа дыбыс деңгейін немесе панораманы жылжытады. ShuttlePRO шаттл сақинасы профиль жылдамдығымен ойнатады, jog дөңгелегі кадрлап жылжиды. Шексіз кодтауыштар мен контроллерге жауап (шамдар, моторлы фейдерлер) кейінгі нұсқада келеді.
+	First message (ms)	Бірінші хабар (мс)
+	Silence (ms)	Тыныштық (мс)
+	Waiting for the control to settle…	Басқару тоқтағанын күту…
+	Type: {hint}. Confirm this assignment.	Түрі: {hint}. Осы тағайындауды растаңыз.
+	That control is already assigned. Confirm replaces it.	Бұл басқару бұрын тағайындалған. Растау оны ауыстырады.
+	Learn timed out.	Үйрену уақыты бітті.
+	Confirm	Растау
+	Reject	Қабылдамау
+	Shows every MIDI message from the controllers as it arrives, to check that a controller sends and what it sends. MIDI Clock, Active Sensing and MIDI Time Code are left out.	Контроллерден келген әр MIDI хабарын келген бойда көрсетеді, жіберетінін және не жіберетінін тексеру үшін. MIDI сағаты, Active Sensing және MIDI уақыт коды көрсетілмейді.
+	Pick a command (or a mixer strip for a fader or knob), press Learn, then press the button or move the control past half way. Confirm keeps the assignment. OK saves the assignments.	Пәрменді таңдаңыз (фейдер не тұтқа үшін миксер жолағын), Үйренуді басыңыз, содан түймені басыңыз немесе басқаруды жартысынан асырыңыз. Растау тағайындауды сақтайды. OK жазады.

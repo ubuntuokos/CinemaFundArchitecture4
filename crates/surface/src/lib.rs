@@ -15,6 +15,8 @@
 
 pub mod hid;
 pub mod hid_in;
+pub mod hid_watch;
+pub mod lane;
 pub mod midi;
 pub mod midi_in;
 

@@ -4734,3 +4734,14 @@ export.summary	Low	alacsony
 	Freewheel	Szabadonfutás
 	Scrubbing	Léptetés
 	Sending	Küldés
+# Control surfaces (F1 Learn and profile, CFA4-CONTROL-SURFACE-001)
+	First message (ms)	Első üzenet (ms)
+	Silence (ms)	Csend (ms)
+	Waiting for the control to settle…	Várakozás, amíg a kezelőszerv megnyugszik…
+	Type: {hint}. Confirm this assignment.	Típus: {hint}. Erősítse meg a hozzárendelést.
+	That control is already assigned. Confirm replaces it.	Ez a kezelőszerv már hozzá van rendelve. A megerősítés lecseréli.
+	Learn timed out.	A tanítás ideje lejárt.
+	Confirm	Megerősítés
+	Reject	Elutasítás
+	Shows every MIDI message from the controllers as it arrives, to check that a controller sends and what it sends. MIDI Clock, Active Sensing and MIDI Time Code are left out.	Megmutat minden MIDI-üzenetet, amely a vezérlőkről érkezik, így ellenőrizhető, hogy egy vezérlő küld-e, és mit küld. A MIDI Clock, az Active Sensing és a MIDI-időkód nem jelenik meg.
+	Pick a command (or a mixer strip for a fader or knob), press Learn, then press the button or move the control past half way. Confirm keeps the assignment. OK saves the assignments.	Válasszon parancsot (fader vagy forgatógomb esetén keverősávot), nyomja meg a Tanítás gombot, majd nyomja meg a gombot, vagy mozdítsa a kezelőszervet félúton túl. A megerősítés megtartja a hozzárendelést. Az OK menti a hozzárendeléseket.

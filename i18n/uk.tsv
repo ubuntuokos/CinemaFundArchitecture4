@@ -4684,3 +4684,17 @@
 # Control surfaces (continuous-values, CFA4-CONTROL-SURFACE-001)
 	{strip} Pan (knob)	{strip} панорама (регулятор)
 	{strip} Volume (fader)	{strip} гучність (фейдер)
+# Control surfaces (F1 Learn and profile, CFA4-CONTROL-SURFACE-001)
+	Control Surfaces	Пульти керування
+	Use control surfaces (MIDI controllers, jog/shuttle devices)	Використовувати пульти (MIDI-контролери, jog/shuttle)
+	Assignments run when a button is pressed (a fader or knob counts as pressed past half way); a fader or knob assigned to a mixer strip moves its volume or pan. A ShuttlePRO's shuttle ring plays at its profile's speeds and its jog wheel steps frame by frame. Endless encoders and feedback to the controller (lights, motor faders) come in a later version.	Призначення спрацьовують від натискання кнопки (фейдер або ручка рахуються натиснутими за половиною); фейдер або ручка, призначені на смугу мікшера, рухають гучність або панораму. Кільце shuttle ShuttlePRO грає зі швидкостями профілю, а колесо jog крокує по кадру. Нескінченні енкодери й відгук на пульт (лампи, моторні фейдери) з’являться в пізнішій версії.
+	First message (ms)	Перше повідомлення (мс)
+	Silence (ms)	Тиша (мс)
+	Waiting for the control to settle…	Очікування, поки орган заспокоїться…
+	Type: {hint}. Confirm this assignment.	Тип: {hint}. Підтвердьте це призначення.
+	That control is already assigned. Confirm replaces it.	Цей орган уже призначено. Підтвердження замінить його.
+	Learn timed out.	Час навчання вичерпано.
+	Confirm	Підтвердити
+	Reject	Відхилити
+	Shows every MIDI message from the controllers as it arrives, to check that a controller sends and what it sends. MIDI Clock, Active Sensing and MIDI Time Code are left out.	Показує кожне MIDI-повідомлення з пультів щойно воно надходить, щоб перевірити, чи пульт надсилає і що саме. MIDI Clock, Active Sensing і MIDI-таймкод приховано.
+	Pick a command (or a mixer strip for a fader or knob), press Learn, then press the button or move the control past half way. Confirm keeps the assignment. OK saves the assignments.	Оберіть команду (або смугу мікшера для фейдера чи ручки), натисніть Навчити, потім кнопку або зруште орган за половину. Підтвердження зберігає призначення. Гаразд записує призначення.

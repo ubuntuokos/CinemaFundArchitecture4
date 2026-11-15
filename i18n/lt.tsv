@@ -4702,3 +4702,17 @@ export.summary	Low	žema
 # Control surfaces (continuous-values, CFA4-CONTROL-SURFACE-001)
 	{strip} Pan (knob)	{strip} panorama (rankenėlė)
 	{strip} Volume (fader)	{strip} garsumas (slankiklis)
+# Control surfaces (F1 Learn and profile, CFA4-CONTROL-SURFACE-001)
+	Control Surfaces	Valdymo paviršiai
+	Use control surfaces (MIDI controllers, jog/shuttle devices)	Naudoti valdymo paviršius (MIDI valdikliai, jog/shuttle)
+	Assignments run when a button is pressed (a fader or knob counts as pressed past half way); a fader or knob assigned to a mixer strip moves its volume or pan. A ShuttlePRO's shuttle ring plays at its profile's speeds and its jog wheel steps frame by frame. Endless encoders and feedback to the controller (lights, motor faders) come in a later version.	Priskyrimai veikia paspaudus mygtuką (faderis ar rankenėlė skaičiuojama paspausta už pusės); prie maišytuvo takelio priskirtas faderis ar rankenėlė judina garsumą arba panoramą. ShuttlePRO šatlo žiedas groja profilio greičiais, o jog ratas žingsniuoja po kadrą. Begaliniai koduotuvai ir atsakas valdikliui (lemputės, varikliniai faderiai) bus vėlesnėje versijoje.
+	First message (ms)	Pirma žinutė (ms)
+	Silence (ms)	Tyla (ms)
+	Waiting for the control to settle…	Laukiama, kol valdiklis nurims…
+	Type: {hint}. Confirm this assignment.	Tipas: {hint}. Patvirtinkite šį priskyrimą.
+	That control is already assigned. Confirm replaces it.	Šis valdiklis jau priskirtas. Patvirtinimas jį pakeičia.
+	Learn timed out.	Mokymasis baigėsi laiku.
+	Confirm	Patvirtinti
+	Reject	Atmesti
+	Shows every MIDI message from the controllers as it arrives, to check that a controller sends and what it sends. MIDI Clock, Active Sensing and MIDI Time Code are left out.	Rodo kiekvieną MIDI žinutę iš valdiklių jai atėjus, kad matytųsi, ar valdiklis siunčia ir ką. MIDI laikrodis, Active Sensing ir MIDI laiko kodas praleidžiami.
+	Pick a command (or a mixer strip for a fader or knob), press Learn, then press the button or move the control past half way. Confirm keeps the assignment. OK saves the assignments.	Pasirinkite komandą (arba maišytuvo takelį faderiui ar rankenėlei), paspauskite Mokytis, tada mygtuką arba pastumkite valdiklį už pusės. Patvirtinimas palieka priskyrimą. Gerai įrašo priskyrimus.

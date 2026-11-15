@@ -4701,3 +4701,17 @@ export.summary	Low	matala
 # Control surfaces (continuous-values, CFA4-CONTROL-SURFACE-001)
 	{strip} Pan (knob)	{strip} panorointi (kiertonuppi)
 	{strip} Volume (fader)	{strip} äänenvoimakkuus (liukusäädin)
+# Control surfaces (F1 Learn and profile, CFA4-CONTROL-SURFACE-001)
+	Control Surfaces	Ohjainpinnat
+	Use control surfaces (MIDI controllers, jog/shuttle devices)	Käytä ohjainpintoja (MIDI-ohjaimet, jog/shuttle)
+	Assignments run when a button is pressed (a fader or knob counts as pressed past half way); a fader or knob assigned to a mixer strip moves its volume or pan. A ShuttlePRO's shuttle ring plays at its profile's speeds and its jog wheel steps frame by frame. Endless encoders and feedback to the controller (lights, motor faders) come in a later version.	Kytkennät käynnistyvät painalluksesta (fader tai nuppi lasketaan painetuksi puolenvälin jälkeen); mikseriraitaan kytketty fader tai nuppi liikuttaa äänenvoimakkuutta tai panorointia. ShuttlePRO:n sukkulakehä toistaa profiilin nopeuksilla ja jog-pyörä siirtyy ruutu kerrallaan. Päättymättömät enkooderit ja palaute ohjaimeen (valot, moottorifaderit) tulevat myöhemmässä versiossa.
+	First message (ms)	Ensimmäinen viesti (ms)
+	Silence (ms)	Hiljaisuus (ms)
+	Waiting for the control to settle…	Odotetaan, että säädin asettuu…
+	Type: {hint}. Confirm this assignment.	Tyyppi: {hint}. Vahvista tämä kytkentä.
+	That control is already assigned. Confirm replaces it.	Tämä säädin on jo kytketty. Vahvistus korvaa sen.
+	Learn timed out.	Oppiminen aikakatkaistiin.
+	Confirm	Vahvista
+	Reject	Hylkää
+	Shows every MIDI message from the controllers as it arrives, to check that a controller sends and what it sends. MIDI Clock, Active Sensing and MIDI Time Code are left out.	Näyttää jokaisen MIDI-viestin ohjaimilta sen saapuessa, jotta nähdään lähettääkö ohjain ja mitä. MIDI-kello, Active Sensing ja MIDI-aikakoodi jätetään pois.
+	Pick a command (or a mixer strip for a fader or knob), press Learn, then press the button or move the control past half way. Confirm keeps the assignment. OK saves the assignments.	Valitse komento (tai mikseriraita faderille tai nupille), paina Opi, sitten painiketta, tai siirrä säädin puolenvälin yli. Vahvistus säilyttää kytkennän. OK tallentaa kytkennät.

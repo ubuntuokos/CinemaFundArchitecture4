@@ -2,7 +2,9 @@
 //!
 //! A port is a control surface candidate when it sends MIDI that others may subscribe to
 //! (`READ | SUBS_READ`). Left out: the System client (0), `Midi Through` (it only echoes) and
-//! CFA4's own clients (named `CFA4`, such as the MIDI Timecode ports of `cfa4-tcsync-io`).
+//! CFA4's own clients. The timecode client is named `CFA4` (`cfa4-tcsync-io`); the surface
+//! reader is named `CFA4 Surfaces` (D7). Discovery skips both names, and the reader's own
+//! client id.
 
 use crate::DeviceInfo;
 use alsa::seq::{ClientIter, PortCap, PortIter, Seq};
@@ -21,9 +23,14 @@ pub struct Port {
     pub writable: bool,
 }
 
+/// Client names discovery never offers: the timecode client and the surface reader (D7).
+pub fn is_own_client(name: &str) -> bool {
+    name == "CFA4" || name == "CFA4 Surfaces"
+}
+
 /// Whether a port is offered as a control surface.
 pub fn is_candidate(p: &Port, own_client: i32) -> bool {
-    p.readable && p.client != 0 && p.client != own_client && p.client_name != "Midi Through" && p.client_name != "CFA4"
+    p.readable && p.client != 0 && p.client != own_client && p.client_name != "Midi Through" && !is_own_client(&p.client_name)
 }
 
 /// The [`DeviceInfo`] of a candidate port.
@@ -85,6 +92,7 @@ mod tests {
         assert!(!is_candidate(&port(14, "Midi Through", "Midi Through Port-0", true), 128));
         assert!(!is_candidate(&port(128, "x", "y", true), 128), "our own client");
         assert!(!is_candidate(&port(129, "CFA4", "Timecode Out", true), 128), "CFA4's timecode client");
+        assert!(!is_candidate(&port(130, "CFA4 Surfaces", "Control Surfaces", true), 128), "the surface reader");
         assert!(!is_candidate(&port(24, "Synth", "In", false), 128), "input-only ports send nothing");
     }
 
