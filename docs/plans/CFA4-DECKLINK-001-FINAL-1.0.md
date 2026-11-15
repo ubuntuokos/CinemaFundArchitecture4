@@ -16,7 +16,7 @@ A terv a spec F0–F8 fázisait követi. Az F1-et három részre bontja, hogy ha
 
 A teljes munka nagyságrendi becslése 674–1166 óra (az ST 2110-terület nélkül), ebből hardver nélkül végezhető kb. 250–350 óra (F0, F1a, a rétegek és a tesztkörnyezet).
 
-**Döntések (jóváhagyva 2026-11-14, a javaslatok szerint; a D6 a véglegesítéskor pontosítva****):**
+**Döntések (jóváhagyva 2026-11-14, a javaslatok szerint; a D6 a véglegesítéskor pontosítva):**
 
 | # | Kérdés | Döntés |
 | --- | --- | --- |
@@ -123,7 +123,7 @@ Az ST 2110-ből a T0 van a `main`-en, a T1 egy nyitott PR-ban; a T2–T7 még ne
 | ST 2110 elem | Állapot | Hol | Teendő a duplázás elkerülésére |
 | --- | --- | --- | --- |
 | T0: RTP-fejléc, SDP (`ts-refclk`, `mediaclk`, `fmtp`), -20 GPM/BPM csomagolás és bontás, fuzz, GStreamer-orákulum | kész a `main`-en (#1002) | `crates/st2110` (L0, kb. 1900 sor) | nincs; a DeckLink-terület nem nyúl hozzá |
-| T1: SMPTE Epoch médiaóra, képkocka-időbélyeg, PTP-állapot (`pmc`-olvasás), SDP-órák | nyitott PR (#1128, `cfa4/live-studio-st2110-t1`) | `crates/st2110/src/clock.rs`, `crates/obs/src/ptp.rs` | **a PTP-állapot olvasása ma a stúdióhostban (****`cfa4-obs`****) van**; a közös szinkronállapot-nézet (F4.2) ezt használja, nem ír sajátot. Javaslat: a #1128 beolvasztása után a `ptp.rs` a közös vezérlési rétegbe kerül (`cfa4-io` vagy külön crate), a stúdióhost onnan hívja; ez a T1 gazdájával egyeztetendő (koordinátor) |
+| T1: SMPTE Epoch médiaóra, képkocka-időbélyeg, PTP-állapot (`pmc`-olvasás), SDP-órák | nyitott PR (#1128, `cfa4/live-studio-st2110-t1`) | `crates/st2110/src/clock.rs`, `crates/obs/src/ptp.rs` | **a PTP-állapot olvasása ma a stúdióhostban (`cfa4-obs`) van**; a közös szinkronállapot-nézet (F4.2) ezt használja, nem ír sajátot. Javaslat: a #1128 beolvasztása után a `ptp.rs` a közös vezérlési rétegbe kerül (`cfa4-io` vagy külön crate), a stúdióhost onnan hívja; ez a T1 gazdájával egyeztetendő (koordinátor) |
 | T2: AES67 hang (-30) | nem kezdődött el | — | a hang a közös HAL `PcmBlock`-ját használja |
 | T3: képbemenet (A típusú vevő) | nem kezdődött el | — | a vevő a közös HAL `DeviceProvider`-ként épül, így a rögzítő és az `io.*` parancsok kód nélkül kezelik |
 | T4: programkimenet (W típusú küldő) | nem kezdődött el | — | a közös `PlayoutStream` mintájára |
@@ -154,7 +154,8 @@ Két terület, egy közös pipeline és egy közös vezérlés
 +-----------------------------------------------------------------------------------------+
 | Közös médiapipeline                                                                     |
 |  [cfa4-capture: HAL, gyűrű, mock eszköz] -> [cfa4-ingest: rögzítő, veszteségnapló]      |
-|      -> [Fájl és projekt: MOV/MXF, oldalfájl, .fcproj]                                  |
+|  cfa4-anc (ST 291/334/2016-3/12-2/2038) · natív kódolók és muxerek                      |
+|  File Services (files.stage.*) → projekt / idővonal                                     |
 +-----------------------------------------------------------------------------------------+
                     ^  vezérel és állapotot kap
                     v
@@ -162,7 +163,8 @@ Két terület, egy közös pipeline és egy közös vezérlés
 | Közös vezérlési infrastruktúra                                                          |
 | io.* parancsok, cfa4-io folyamatfelügyelet, szinkronállapot (genlock, PTP, LTC/MTC,     |
 |   RP188)                                                                                |
-| cfa4-control-io: TSL UMD, tally, OSC, MIDI → parancs a parancsregiszteren át            |
+| vezérlőfelület-motor (ADR 0012: TSL, tally, OSC, MIDI) · cfa4-tcsync (időkód)           |
+| · PTP-állapot (cfa4-io-core)                                                            |
 +-----------------------------------------------------------------------------------------+
                     ^
                     v
@@ -277,7 +279,7 @@ A `RecordReport.lost` teljesíti a spec 3.2 pontját: ha a célformátum nem vis
 1. **Betöltés:** a `libDeckLinkAPI.so` futásidőben töltődik be (`dlopen`), a fordítás és az indulás nem függ tőle. Hiányában `Availability::NotInstalled` telepítési útmutatóval, nem hiba.
 2. **C++-réteg:** `crates/decklink/shim/`, csak `extern "C"` függvények és POD-struktúrák. A COM-szerű referenciaszámlálás és a visszahívások (`IDeckLinkInputCallback`, `IDeckLinkVideoOutputCallback`, `IDeckLinkAudioOutputCallback`, `IDeckLinkDeviceNotificationCallback`) itt vannak.
 3. **Nincs szinkron visszahívás Rustba:** a C++ oldal egy korlátos sorba tesz, a Rust-szál olvas. Így a C++-kivétel és a Rust-pánik nem keresztezi a határt.
-4. **`unsafe`****:** csak a `cfa4-decklink::ffi` modulban, `// SAFETY:` megjegyzéssel, ABI-tesztekkel (méretek, eltolások), mint a `vaapi` és a `libobs` kötésnél (ADR 0001).
+4. **`unsafe`:** csak a `cfa4-decklink::ffi` modulban, `// SAFETY:` megjegyzéssel, ABI-tesztekkel (méretek, eltolások), mint a `vaapi` és a `libobs` kötésnél (ADR 0001).
 5. **Fejlécek:** a vendorálás csak a D1 és az EULA-átnézés után; addig a `CFA4_DECKLINK_SDK_DIR` mutat a helyi SDK-ra, és a `decklink` feature nélkül a workspace fejlécek nélkül is fordul.
 6. **Folyamathatár:** a `cfa4-io-host` összeomlása a motorban esemény (`SignalLost`/`Error`), a felügyelő újraindítja. A felvétel a motor folyamatában fut, így a fájl az utolsó teljes képkockáig szabályosan lezárul, a folytatás új szegmensbe megy.
 7. **Valós idő:** a gyűrű rekeszei előre lefoglaltak, a host szálai a kártya NUMA-csomópontjához rögzíthetők. A túlcsordulás számlált elejtés; a DeckLink-visszahívás soha nem blokkol.
@@ -496,7 +498,7 @@ A legnagyobb kockázat a licencdöntés (D1), utána a hardver hiánya. Az F0 é
 1. **F0** (döntések, ADR, donorok) → **F1a** (hardver és D1 nélkül).
 2. D1 = igen és van kártya → **F1b** → **F1c**.
 3. Az F1b után párhuzamosan: **F2**, **F3**, **F4** (a genlock-rész; a PTP a LIVE T1-ből jön).
-4. **Az ST 2110-terület (T1–T7) a saját ütemezése szerint halad; a közös rétegeket (F0.5, F1a) mindkét terület használja****.**
+4. **Az ST 2110-terület (T1–T7) a saját ütemezése szerint halad; a közös rétegeket (F0.5, F1a) mindkét terület használja.**
 5. **F7** az F1c után; a Key/Fill és a többkimenet a LIVE S4 után.
 6. **F8** a végén; a Qt6-panelek minden fázisban a Qt6 befejezése után (D7).
 

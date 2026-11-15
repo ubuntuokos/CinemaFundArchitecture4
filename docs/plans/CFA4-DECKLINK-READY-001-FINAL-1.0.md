@@ -153,7 +153,7 @@ pub struct RecordReport {
 
 **Végzi:** CFA4-CONTROL-SURFACE-001 munkamenete (CS-*, ADR 0012) a V4.1–V4.3 és V4.5 feladatot; CFA4-HW-CONTROL-SURFACES-001 munkamenete (#1287) a V4.4-et.
 
-**Kiinduló állapot (#1231, ****`crates/surface-model/src/lib.rs`****):**
+**Kiinduló állapot (#1231, `crates/surface-model/src/lib.rs`):**
 
 - `SurfaceProtocol { Hid, Midi, Osc }`, `SurfaceInput` (`Button`, `Absolute`, `Relative`…), `SurfaceEvent` eszközönkénti `seq`-kel.
 - `FeedbackTarget { Led, Fader, Ring, Display, Timecode, Meter, DeviceState }`, `FeedbackValue { Bool, U14, Text, Level, Tick }`. Tally-állapotot (program/előnézet) nem tud kifejezni, csak egy LED be/ki állapotát.
@@ -220,7 +220,7 @@ impl DeviceId { pub fn net(protocol: SurfaceProtocol, addr: &str) -> Self; }
 
 **Végzi:** CFA4-SECURITY-001 munkamenete (#1020, `cfa4-sandbox`, B1).
 
-**Kiinduló állapot (****`crates/sandbox/src/profile.rs`****, #1020):** nyolc folyamattípus (`ProcessKind::ALL`), a profil adatként: `read`, `write` (könyvtárak), `outputs` (egyes fájlok, csak maga a fájl), `exec`, `network`, `gpu`. Eszközcsomópontot csak a `SYSTEM_DEVICES` (`/dev/null`…) és a `GPU_DEVICES` lista enged. Egy rögzítő folyamat, amely kártyát nyit és több fájlra bontva ír, ma nem írható le.
+**Kiinduló állapot (`crates/sandbox/src/profile.rs`, #1020):** nyolc folyamattípus (`ProcessKind::ALL`), a profil adatként: `read`, `write` (könyvtárak), `outputs` (egyes fájlok, csak maga a fájl), `exec`, `network`, `gpu`. Eszközcsomópontot csak a `SYSTEM_DEVICES` (`/dev/null`…) és a `GPU_DEVICES` lista enged. Egy rögzítő folyamat, amely kártyát nyit és több fájlra bontva ír, ma nem írható le.
 
 | ID | Feladat | Eredmény | Óra |
 | --- | --- | --- | --- |
