@@ -12,6 +12,8 @@
 //!   (`scripts/dev/build-libobs-33.0.1.sh`), loaded at run time.
 //! - [`ring`]: the shared-memory frame ring the host writes and the engine (and later the Qt6
 //!   GUI) reads; a torn frame is dropped, never shown.
+//! - [`ptp`]: the PTP state `ptp4l` reports (read through `pmc`), the TAI time and the SDP clock
+//!   signalling of an ST 2110 sender (ST 2110 addendum, T1).
 //! - [`host`]: the supervisor of the `cfa4-studio-host` process. libobs never runs inside the
 //!   editor or the engine (plan D2): the engine starts the host, watches it and restarts it after
 //!   a crash, and the editor carries on.
@@ -23,6 +25,7 @@
 
 pub mod host;
 pub mod libobs;
+pub mod ptp;
 pub mod ring;
 pub mod software;
 

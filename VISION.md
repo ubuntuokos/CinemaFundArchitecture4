@@ -5,7 +5,7 @@
 > Ha egy terv, PR vagy audit ellentmond ennek a dokumentumnak, ez a dokumentum az irányadó,
 > és az ellentmondást jelezni kell a tulajdonosnak (`ubuntuokos`), nem csendben feloldani.
 
-**Utolsó módosítás:** 2026-11-08 · **Tulajdonos:** ubuntuokos
+**Utolsó módosítás:** 2026-11-13 · **Tulajdonos:** ubuntuokos
 
 ## 1. Mi a CFA4?
 
@@ -94,8 +94,10 @@ Csomagformátumok: `.deb`, AppImage, Flatpak, `tar.gz` (lásd F3–F6 auditok).
 A CFA4 ezeknek a programoknak a **képességeit** veszi át; a nevüket, logóikat és védjegyeiket nem.
 Kódot csak GPL-3.0-kompatibilis licencű projektből vehet át, forrásmegjelöléssel (1. pont, Licenc).
 Zárt programok (Adobe Premiere, DaVinci Resolve) és GPL-2.0-only projektek (pl. HandBrake) kódja
-nem vehető át: ezek képességét saját kóddal kell megvalósítani. A kodekek és konténerek saját,
-clean-room megvalósításúak; külső kodek-crate függőségként használható. A szabályok:
+nem vehető át: ezek képességét saját kóddal kell megvalósítani. A kodekek és konténerek a CFA4
+saját kódjai: alapból nyilvános specifikációból készülnek, de engedélyezett licencű megvalósítás
+portolható, ha bekerül a nyilvántartásba ([`AGENTS.md`](AGENTS.md) §2); külső kodek-crate
+függőségként használható. A szabályok:
 [`docs/licensing.md`](docs/licensing.md).
 
 | Program | Fő terület | Átveendő képességek |

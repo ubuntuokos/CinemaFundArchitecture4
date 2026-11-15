@@ -57,7 +57,8 @@ pub use audio_out::LoudnessReport;
 pub use dash_out::{DashMedia, DashRepresentation, dash_files, dash_mpd};
 pub use dcp_iab::{DcpImmersive, IabFallback, IabSourceInfo, fsk_sync, probe_iab_source};
 pub use dcp_out::{
-    DCP_CONTENT_KINDS, DcpAspect, DcpResolution, dcdm_code, dcp_content_kind, dcp_isdcf_date, dcp_isdcf_name, dcp_language, dcp_rate, rgba_to_xyz12,
+    DCP_CONTENT_KINDS, DcpAspect, DcpResolution, dcdm_code, dcp_content_kind, dcp_isdcf_date, dcp_isdcf_name, dcp_language, dcp_rate, dcp_subtitle_language,
+    rgba_to_xyz12,
 };
 pub use hls_out::{HlsFiles, SEGMENT_SECONDS as HLS_SEGMENT_SECONDS, hls_files};
 pub use imf_out::{IMF_CONTENT_KINDS, IMF_MAX_SIZE, IMF_RATES, imf_content_kind, imf_profile, imf_rate, rgba_to_rgb10};
@@ -457,9 +458,23 @@ pub struct ExportSettings {
     pub mxf_video_codec: MxfVideoCodec,
     /// MXF OP1a: write the sequence's first caption track as closed captions in an ANC data
     /// track (SMPTE ST 436-1, ST 334-2 caption distribution packets with CEA-608 field 1 and
-    /// CEA-708 service 1, VANC line 9) at 29.97 fps. Off by default.
+    /// CEA-708 service 1, VANC line 9) at 23.976, 24, 25, 29.97, 30, 50, 59.94 or 60 fps. Off by
+    /// default.
     #[serde(default)]
     pub mxf_anc_captions: bool,
+    /// MXF OP1a: the AMWA AS-11 Core framework in bmx's text form, one `Name: value` per line
+    /// (`SeriesTitle: …`, `ShimName: UK DPP HD`, `ShimVersion: 1.1`; [`cfa4_mxf::as11`]). Empty: no
+    /// AS-11 metadata.
+    #[serde(default)]
+    pub mxf_as11_core: String,
+    /// MXF OP1a with AS-11: the programme parts, one `part/total start duration` per line, the start
+    /// a time code of the export's start time code and the duration a time code or a frame count.
+    #[serde(default)]
+    pub mxf_as11_segments: String,
+    /// MXF OP1a with AS-11: the UK DPP framework (`Name: value` lines); empty = none. The number of
+    /// parts and the programme duration are filled in from the parts when not given.
+    #[serde(default)]
+    pub mxf_as11_ukdpp: String,
     /// Container of MPEG-2 exports: `ps`, `ts`, `m2ts` or `es` (empty = from the path's
     /// extension, a program stream unless it is `.ts`, `.m2ts` / `.mts` or `.m2v`).
     #[serde(default)]
@@ -500,6 +515,17 @@ pub struct ExportSettings {
     /// IMF exports use it too (MCA labels, the CPL locale).
     #[serde(default)]
     pub dcp_language: String,
+    /// DCP: write the sequence's first caption track as subtitles (#938): an ST 428-7 subtitle
+    /// reel in an ST 429-5 timed text track file, the CPL's `MainSubtitle`.
+    #[serde(default)]
+    pub dcp_subtitles: bool,
+    /// DCP subtitle language, an RFC 5646 tag (empty = [`ExportSettings::dcp_language`]).
+    #[serde(default)]
+    pub dcp_subtitle_language: String,
+    /// DCP subtitle font: an OpenType / TrueType file embedded in the timed text track file
+    /// (empty = the bundled Inter Regular, SIL OFL 1.1).
+    #[serde(default)]
+    pub dcp_subtitle_font: String,
     /// IMF: reversible (lossless) JPEG 2000 instead of the lossy IMF profile.
     #[serde(default)]
     pub imf_lossless: bool,
@@ -777,6 +803,9 @@ impl Default for ExportSettings {
             cineform_quality: String::new(),
             mxf_video_codec: MxfVideoCodec::default(),
             mxf_anc_captions: false,
+            mxf_as11_core: String::new(),
+            mxf_as11_segments: String::new(),
+            mxf_as11_ukdpp: String::new(),
             mpeg2_container: String::new(),
             mpeg2_422: false,
             mpeg2_quantizer: None,
@@ -788,6 +817,9 @@ impl Default for ExportSettings {
             dcp_iab_source: String::new(),
             dcp_iab_fallback: String::new(),
             dcp_language: String::new(),
+            dcp_subtitles: false,
+            dcp_subtitle_language: String::new(),
+            dcp_subtitle_font: String::new(),
             imf_lossless: false,
             imf_content_kind: String::new(),
             sdr: false,
@@ -882,11 +914,14 @@ impl ExportSettings {
             let codec = if self.audio_codec() == AudioCodec::Flac { "FLAC" } else { self.format.label() };
             return Err(ExportError::Unsupported(format!("{codec} audio has no {} samples: choose 16, 24 or 32 bit", sample_format.label())));
         }
-        if self.field_order != FieldOrder::Progressive && self.has_video() && !self.format.codes_interlaced() {
+        if self.field_order != FieldOrder::Progressive && self.has_video() && !self.codes_interlaced() {
             return Err(ExportError::Unsupported(format!(
-                "{} field order: only MPEG-2 and ProRes export code interlaced video; the other encoders write progressive frames",
+                "{} field order: only MPEG-2 and ProRes export (in MXF: MPEG-2, XDCAM HD422, D-10, ProRes) code interlaced video; the other encoders write progressive frames",
                 self.field_order.label()
             )));
+        }
+        if self.field_order == FieldOrder::LowerFirst && self.format.is_mxf() && self.mxf_video_codec == MxfVideoCodec::D10 {
+            return Err(ExportError::Unsupported("D-10 (IMX) pictures are upper field first: choose upper field first or progressive".into()));
         }
         if self.effects.image_overlay.enabled && self.effects.image_overlay.path.trim().is_empty() {
             return Err(ExportError::Unsupported("image overlay: no image file chosen".into()));
@@ -906,6 +941,21 @@ impl ExportSettings {
             {
                 return Err(ExportError::Unsupported("D-10 (IMX) carries up to 8 channels of 16- or 24-bit 48 kHz audio".into()));
             }
+        }
+        let as11 = [&self.mxf_as11_core, &self.mxf_as11_segments, &self.mxf_as11_ukdpp];
+        if as11.iter().any(|t| !t.trim().is_empty()) {
+            if self.format != Format::MxfOp1a {
+                return Err(ExportError::Unsupported("AS-11 metadata is written in MXF OP1a".into()));
+            }
+            if self.mxf_as11_core.trim().is_empty() {
+                return Err(ExportError::Unsupported("AS-11 needs the AS-11 Core framework".into()));
+            }
+            let bad = |e: String| ExportError::Unsupported(format!("AS-11: {e}"));
+            cfa4_mxf::as11::check_framework_text(&self.mxf_as11_core, false).map_err(bad)?;
+            if !self.mxf_as11_ukdpp.trim().is_empty() {
+                cfa4_mxf::as11::check_framework_text(&self.mxf_as11_ukdpp, true).map_err(bad)?;
+            }
+            cfa4_mxf::as11::parse_segments_text(&self.mxf_as11_segments, cfa4_mxf::as11::Clock { start: 0, base: 1000 }).map_err(bad)?;
         }
         if self.format.is_mxf() && self.mxf_anc_captions {
             if self.format == Format::MxfOpAtom {
@@ -1611,6 +1661,10 @@ impl D10Encoder {
         // ITU-R BT.470 B/G (625) or SMPTE 170M (525) primaries and matrix, BT.601 transfer
         cfg.colour = Some(if lines == 625 { (5, 6, 5) } else { (6, 6, 6) });
         cfg.adaptive_quantization = true;
+        // interlaced frame pictures, upper field first (ST 356); progressive for PsF material
+        if s.field_order != FieldOrder::Progressive {
+            cfg.interlaced = Some(cfa4_mpeg2v::FieldOrder::TopFirst);
+        }
         let enc = cfa4_mpeg2v::encode::Encoder::new(cfg.clone()).map_err(|e| ExportError::Unsupported(format!("D-10: {e}")))?;
         let n = 720 * stored as usize;
         Ok(D10Encoder { enc, cfg, frame_bytes, rate, w: w as u16, h: h as u16, top, y: vec![16; n], u: vec![128; n / 2], v: vec![128; n / 2] })
@@ -3081,15 +3135,17 @@ pub fn encode_still_with_quality(format: Format, rgba: Vec<u8>, w: u32, h: u32, 
 
 /// [`encode_still_with_quality`] with the OpenEXR compression (ignored by the other formats).
 pub fn encode_still_with(format: Format, rgba: Vec<u8>, w: u32, h: u32, alpha: bool, quality: u8, exr: ExrCompression) -> Result<Vec<u8>> {
-    encode_still_timed(format, rgba, w, h, alpha, quality, exr, None)
+    encode_still_timed(format, rgba, None, w, h, alpha, quality, exr, None)
 }
 
 /// [`encode_still_with`] for a frame of a sequence: OpenEXR also records its time code and the
-/// frame rate (ignored by the other formats).
+/// frame rate (ignored by the other formats). DPX and OpenEXR take the frame's straight sRGB
+/// R'G'B' floats (3 per pixel) from `float` when given, instead of the 8-bit `rgba`.
 #[allow(clippy::too_many_arguments)]
 pub fn encode_still_timed(
     format: Format,
     rgba: Vec<u8>,
+    float: Option<&[f32]>,
     w: u32,
     h: u32,
     alpha: bool,
@@ -3112,8 +3168,8 @@ pub fn encode_still_timed(
             .map_err(enc)?
         }
         Format::TgaSequence => return raster::tga(&rgba, w, h, alpha),
-        Format::DpxSequence => return raster::dpx(&rgba, w, h),
-        Format::ExrSequence => return raster::exr_with(&rgba, w, h, alpha, exr, timing),
+        Format::DpxSequence => return raster::dpx_deep(&rgba, float, w, h, timing),
+        Format::ExrSequence => return raster::exr_with(&rgba, float, w, h, alpha, exr, timing),
         Format::PngSequence if alpha => {
             image::ImageEncoder::write_image(image::codecs::png::PngEncoder::new(&mut out), &rgba, w, h, image::ExtendedColorType::Rgba8).map_err(enc)?
         }
@@ -3242,7 +3298,10 @@ fn export_here(project: &Arc<Project>, seq: ItemId, settings: &ExportSettings, s
             (n, frames)
         }
         f if f.is_image_sequence() || f == Format::Gif => {
-            let pipe = pipeline::Pipeline::new(project.clone(), seq, settings, false)?;
+            // DPX (10-bit) and OpenEXR (half float) take the frame's floats: deep sources keep
+            // their precision
+            let deep = matches!(settings.format, Format::DpxSequence | Format::ExrSequence);
+            let pipe = pipeline::Pipeline::new(project.clone(), seq, settings, false)?.with_deep_sdr(deep);
             let batch = pipe.render_batch_limit(batch);
             let (f0, f1) = frame_span(pipe.rate, range);
             let count = (f1 - f0) as u64;
@@ -3288,9 +3347,11 @@ fn export_here(project: &Arc<Project>, seq: ItemId, settings: &ExportSettings, s
                     let written: Vec<Result<u64>> = (f..end)
                         .into_par_iter()
                         .map(|fi| {
+                            let (rgba, float) = pipe.frame(fi, sources);
                             let data = encode_still_timed(
                                 settings.format,
-                                pipe.frame(fi, sources).0,
+                                rgba,
+                                deep.then_some(float.as_slice()),
                                 w,
                                 h,
                                 settings.alpha,
