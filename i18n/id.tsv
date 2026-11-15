@@ -4702,3 +4702,5 @@
 	Learn	Pelajari
 	Remove this assignment	Hapus penetapan ini
 	{control} runs {command}.	{control} menjalankan {command}.
+# Control surfaces (shuttlepro, CFA4-CONTROL-SURFACE-001)
+	Button {n}	Tombol {n}

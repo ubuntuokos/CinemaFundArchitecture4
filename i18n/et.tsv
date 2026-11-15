@@ -4696,3 +4696,5 @@ export.summary	Low	madal
 	Learn	Õpi
 	Remove this assignment	Eemalda see määrang
 	{control} runs {command}.	{control} käivitab {command}.
+# Control surfaces (shuttlepro, CFA4-CONTROL-SURFACE-001)
+	Button {n}	Nupp {n}

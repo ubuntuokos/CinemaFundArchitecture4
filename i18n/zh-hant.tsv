@@ -4693,3 +4693,5 @@ export.summary	Low	低
 	Learn	學習
 	Remove this assignment	移除此指派
 	{control} runs {command}.	{control} 執行 {command}。
+# Control surfaces (shuttlepro, CFA4-CONTROL-SURFACE-001)
+	Button {n}	按鈕 {n}

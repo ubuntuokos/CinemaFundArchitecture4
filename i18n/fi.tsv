@@ -4696,3 +4696,5 @@ export.summary	Low	matala
 	Learn	Opettele
 	Remove this assignment	Poista tämä määritys
 	{control} runs {command}.	{control} suorittaa komennon {command}.
+# Control surfaces (shuttlepro, CFA4-CONTROL-SURFACE-001)
+	Button {n}	Painike {n}

@@ -4697,3 +4697,5 @@ export.summary	Low	žema
 	Learn	Mokytis
 	Remove this assignment	Pašalinti šį priskyrimą
 	{control} runs {command}.	{control} vykdo {command}.
+# Control surfaces (shuttlepro, CFA4-CONTROL-SURFACE-001)
+	Button {n}	Mygtukas {n}

@@ -4694,3 +4694,5 @@
 	Learn	Apprendi
 	Remove this assignment	Rimuovi questa assegnazione
 	{control} runs {command}.	{control} esegue {command}.
+# Control surfaces (shuttlepro, CFA4-CONTROL-SURFACE-001)
+	Button {n}	Pulsante {n}

@@ -4692,3 +4692,5 @@
 	Learn	学习
 	Remove this assignment	移除此分配
 	{control} runs {command}.	{control} 运行 {command}。
+# Control surfaces (shuttlepro, CFA4-CONTROL-SURFACE-001)
+	Button {n}	按钮 {n}

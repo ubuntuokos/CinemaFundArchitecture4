@@ -4696,3 +4696,5 @@ export.summary	Low	låg
 	Learn	Lär in
 	Remove this assignment	Ta bort denna tilldelning
 	{control} runs {command}.	{control} kör {command}.
+# Control surfaces (shuttlepro, CFA4-CONTROL-SURFACE-001)
+	Button {n}	Knapp {n}

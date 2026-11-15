@@ -4694,3 +4694,5 @@ export.summary	Low	laag
 	Learn	Leren
 	Remove this assignment	Deze toewijzing verwijderen
 	{control} runs {command}.	{control} voert {command} uit.
+# Control surfaces (shuttlepro, CFA4-CONTROL-SURFACE-001)
+	Button {n}	Knop {n}

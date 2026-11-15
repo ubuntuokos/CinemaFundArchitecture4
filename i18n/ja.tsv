@@ -4703,3 +4703,5 @@
 	Learn	学習
 	Remove this assignment	この割り当てを削除
 	{control} runs {command}.	{control} は {command} を実行します。
+# Control surfaces (shuttlepro, CFA4-CONTROL-SURFACE-001)
+	Button {n}	ボタン {n}

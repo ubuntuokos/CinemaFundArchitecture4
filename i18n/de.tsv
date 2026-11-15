@@ -4701,3 +4701,5 @@
 	Learn	Lernen
 	Remove this assignment	Diese Zuweisung entfernen
 	{control} runs {command}.	{control} führt {command} aus.
+# Control surfaces (shuttlepro, CFA4-CONTROL-SURFACE-001)
+	Button {n}	Taste {n}

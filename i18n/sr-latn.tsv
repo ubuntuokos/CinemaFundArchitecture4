@@ -4696,3 +4696,5 @@ export.summary	Low	nizak
 	Learn	Nauči
 	Remove this assignment	Ukloni ovo dodeljivanje
 	{control} runs {command}.	{control} pokreće {command}.
+# Control surfaces (shuttlepro, CFA4-CONTROL-SURFACE-001)
+	Button {n}	Dugme {n}

@@ -4696,3 +4696,5 @@ export.summary	Low	lav
 	Learn	Indlær
 	Remove this assignment	Fjern denne tildeling
 	{control} runs {command}.	{control} kører {command}.
+# Control surfaces (shuttlepro, CFA4-CONTROL-SURFACE-001)
+	Button {n}	Knap {n}

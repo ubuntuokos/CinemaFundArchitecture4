@@ -4699,3 +4699,5 @@
 	Learn	Apprendre
 	Remove this assignment	Supprimer cette affectation
 	{control} runs {command}.	{control} exécute {command}.
+# Control surfaces (shuttlepro, CFA4-CONTROL-SURFACE-001)
+	Button {n}	Bouton {n}

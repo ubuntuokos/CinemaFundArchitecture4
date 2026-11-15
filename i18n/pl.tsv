@@ -4694,3 +4694,5 @@ export.summary	Low	niska
 	Learn	Ucz
 	Remove this assignment	Usuń to przypisanie
 	{control} runs {command}.	{control} uruchamia {command}.
+# Control surfaces (shuttlepro, CFA4-CONTROL-SURFACE-001)
+	Button {n}	Przycisk {n}

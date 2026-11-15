@@ -4695,3 +4695,5 @@ export.summary	Low	düşük
 	Learn	Öğren
 	Remove this assignment	Bu atamayı kaldır
 	{control} runs {command}.	{control}, {command} komutunu çalıştırır.
+# Control surfaces (shuttlepro, CFA4-CONTROL-SURFACE-001)
+	Button {n}	Düğme {n}

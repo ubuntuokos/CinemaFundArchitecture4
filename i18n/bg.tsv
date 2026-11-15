@@ -4697,3 +4697,5 @@ export.summary	Low	ниско
 	Learn	Обучение
 	Remove this assignment	Премахване на това присвояване
 	{control} runs {command}.	{control} изпълнява {command}.
+# Control surfaces (shuttlepro, CFA4-CONTROL-SURFACE-001)
+	Button {n}	Бутон {n}

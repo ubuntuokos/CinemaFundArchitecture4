@@ -4696,3 +4696,5 @@ export.summary	Low	niska
 	Learn	Nauči
 	Remove this assignment	Ukloni ovu dodjelu
 	{control} runs {command}.	{control} pokreće {command}.
+# Control surfaces (shuttlepro, CFA4-CONTROL-SURFACE-001)
+	Button {n}	Tipka {n}

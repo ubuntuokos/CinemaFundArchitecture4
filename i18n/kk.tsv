@@ -4696,3 +4696,5 @@ export.summary	Low	төмен
 	Learn	Үйрену
 	Remove this assignment	Бұл тағайындауды өшіру
 	{control} runs {command}.	{control} {command} іске қосады.
+# Control surfaces (shuttlepro, CFA4-CONTROL-SURFACE-001)
+	Button {n}	{n}-түйме

@@ -4700,3 +4700,5 @@ export.summary	Low	తక్కువ
 	Learn	నేర్చుకో
 	Remove this assignment	ఈ కేటాయింపును తీసివేయి
 	{control} runs {command}.	{control} {command} ను నడుపుతుంది.
+# Control surfaces (shuttlepro, CFA4-CONTROL-SURFACE-001)
+	Button {n}	బటన్ {n}

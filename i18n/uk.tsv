@@ -4679,3 +4679,5 @@
 	Learn	Навчити
 	Remove this assignment	Вилучити це призначення
 	{control} runs {command}.	{control} виконує {command}.
+# Control surfaces (shuttlepro, CFA4-CONTROL-SURFACE-001)
+	Button {n}	Кнопка {n}

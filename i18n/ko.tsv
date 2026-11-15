@@ -4688,3 +4688,5 @@
 	Learn	학습
 	Remove this assignment	이 할당 제거
 	{control} runs {command}.	{control}이(가) {command}을(를) 실행합니다.
+# Control surfaces (shuttlepro, CFA4-CONTROL-SURFACE-001)
+	Button {n}	버튼 {n}

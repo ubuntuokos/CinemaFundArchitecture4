@@ -4694,3 +4694,5 @@ export.summary	Low	nízká
 	Learn	Naučit
 	Remove this assignment	Odebrat toto přiřazení
 	{control} runs {command}.	{control} spouští {command}.
+# Control surfaces (shuttlepro, CFA4-CONTROL-SURFACE-001)
+	Button {n}	Tlačítko {n}

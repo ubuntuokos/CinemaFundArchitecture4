@@ -4696,3 +4696,5 @@ export.summary	Low	χαμηλή
 	Learn	Εκμάθηση
 	Remove this assignment	Αφαίρεση αυτής της αντιστοίχισης
 	{control} runs {command}.	Το {control} εκτελεί {command}.
+# Control surfaces (shuttlepro, CFA4-CONTROL-SURFACE-001)
+	Button {n}	Κουμπί {n}

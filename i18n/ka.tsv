@@ -4697,3 +4697,5 @@ export.summary	Low	დაბალი
 	Learn	სწავლა
 	Remove this assignment	ამ მინიჭების წაშლა
 	{control} runs {command}.	{control} უშვებს {command}-ს.
+# Control surfaces (shuttlepro, CFA4-CONTROL-SURFACE-001)
+	Button {n}	ღილაკი {n}

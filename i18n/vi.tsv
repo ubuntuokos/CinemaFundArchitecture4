@@ -4694,3 +4694,5 @@ export.summary	Low	thấp
 	Learn	Học
 	Remove this assignment	Xóa phép gán này
 	{control} runs {command}.	{control} chạy {command}.
+# Control surfaces (shuttlepro, CFA4-CONTROL-SURFACE-001)
+	Button {n}	Nút {n}
