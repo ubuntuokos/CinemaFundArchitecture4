@@ -459,12 +459,13 @@ impl Preferences {
         if parts.is_empty() {
             return Err(format!("unknown preference `{key}`"));
         }
+        // Leaves omitted while they hold their default (`skip_serializing_if`) stay settable from
+        // Settings OK. Unknown keys still fail, so agents cannot invent preference paths.
+        const OMITTED_DEFAULTS: &[&str] = &["controlSurfaces.learnFirstMs", "controlSurfaces.learnSilenceMs"];
         let mut slot = &mut v;
         for (i, k) in parts.iter().enumerate() {
             let last = i + 1 == parts.len();
-            // A field left out of the file while it holds its default (skip_serializing_if) is still
-            // a real preference: create the leaf so Settings OK can change it.
-            if last && slot.get(*k).is_none() {
+            if last && slot.get(*k).is_none() && OMITTED_DEFAULTS.contains(&key) {
                 let Some(obj) = slot.as_object_mut() else {
                     return Err(format!("unknown preference `{key}`"));
                 };

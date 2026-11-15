@@ -346,6 +346,18 @@ def build_window_menu(
     ws.addAction(edit)
     shortcuts.append((edit, "window.workspace.edit", ""))
 
+    new_project = QAction(tr("New Project Panel"), window)
+    new_project.setEnabled(False)
+    new_project.setToolTip(tr(NOT_YET))
+    menu.addAction(new_project)
+    for entry in PANELS:
+        dock = docks.get(entry.title)
+        a = panel_action(window, entry, dock, central if entry.title == "Program" else None)
+        menu.addAction(a)
+        if a.isEnabled():
+            shortcuts.append((a, a.objectName(), entry.shortcut))
+    menu.addSeparator()
+
     def open_surfaces(section: str) -> None:
         opener = getattr(window, "open_settings", None)
         if callable(opener):
@@ -361,18 +373,6 @@ def build_window_menu(
         action.triggered.connect(lambda _c=False, s=section: open_surfaces(s))
         menu.addAction(action)
         shortcuts.append((action, object_name, ""))
-    menu.addSeparator()
-
-    new_project = QAction(tr("New Project Panel"), window)
-    new_project.setEnabled(False)
-    new_project.setToolTip(tr(NOT_YET))
-    menu.addAction(new_project)
-    for entry in PANELS:
-        dock = docks.get(entry.title)
-        a = panel_action(window, entry, dock, central if entry.title == "Program" else None)
-        menu.addAction(a)
-        if a.isEnabled():
-            shortcuts.append((a, a.objectName(), entry.shortcut))
     return shortcuts
 
 
@@ -392,11 +392,13 @@ def window_commands() -> list[tuple[str, str, list[str], str]]:
         ("window.workspace.saveChanges", N_("Save Changes to this Workspace"), ["Window", "Workspaces"], ""),
         ("window.workspace.saveAs", N_("Save as New Workspace…"), ["Window", "Workspaces"], ""),
         ("window.workspace.edit", N_("Edit Workspaces…"), ["Window", "Workspaces"], ""),
+    ]
+    out += [(f"window.panel.{e.title.replace(' ', '')}", e.title, ["Window"], e.shortcut) for e in PANELS]
+    out += [
         ("window.controlSurfaces", N_("Control Surfaces…"), ["Window"], ""),
         ("window.midiMonitor", N_("MIDI Monitor…"), ["Window"], ""),
         ("window.surfaceAssignments", N_("Learn Assignments…"), ["Window"], ""),
     ]
-    out += [(f"window.panel.{e.title.replace(' ', '')}", e.title, ["Window"], e.shortcut) for e in PANELS]
     return out
 
 

@@ -5,7 +5,9 @@
 //! not the Learn half-travel (64 / 8192), which stays in [`crate::control_surfaces::Triggers`].
 
 use std::collections::{HashMap, HashSet};
-use std::time::{Duration, Instant};
+use std::time::Duration;
+
+use web_time::Instant;
 
 use cfa4_surface_model::midi::control_label;
 use cfa4_surface_model::{ControlId, DeviceCounters, MidiKind, SurfaceInput};
