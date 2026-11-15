@@ -13,7 +13,7 @@ HERE="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)"
 C="$HERE/corpus"
 FFMPEG="${CFA4_FFMPEG:-}"
 if [[ -z "$FFMPEG" ]]; then
-    cached="${CFA4_FFMPEG_CACHE_DIR:-$HOME/.cache/cfa4/ffmpeg-9.0.2-linux-x86_64-v7}/bin/ffmpeg"
+    cached="${CFA4_FFMPEG_CACHE_DIR:-$HOME/.cache/cfa4/ffmpeg-9.0.2-linux-x86_64-v8}/bin/ffmpeg"
     prebuilt=/opt/cfa4/ffmpeg-9.0.2/bin/ffmpeg   # scripts/dev/fetch-ffmpeg-9.0.2.sh (cloud and dev machines)
     if [[ -x "$cached" ]]; then FFMPEG="$cached"
     elif [[ -x "$prebuilt" ]]; then FFMPEG="$prebuilt"

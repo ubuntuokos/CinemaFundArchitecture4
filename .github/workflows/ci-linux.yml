@@ -239,8 +239,8 @@ jobs:
       - name: Restore FFmpeg 9.0.2 (saved on main by ci-cache-warm.yml)
         uses: actions/cache/restore@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
         with:
-          path: ~/.cache/cfa4/ffmpeg-9.0.2-linux-x86_64-v7
-          key: cfa4-ffmpeg-9.0.2-ubuntu-26.04-linux-x86_64-v7
+          path: ~/.cache/cfa4/ffmpeg-9.0.2-linux-x86_64-v8
+          key: cfa4-ffmpeg-9.0.2-ubuntu-26.04-linux-x86_64-v8
       - name: Install verified FFmpeg 9.0.2
         run: bash scripts/ci/install-ffmpeg-9.0.2.sh
       - name: Assert Ubuntu 26.04 and FFmpeg 9.0.2 versions

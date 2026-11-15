@@ -115,6 +115,9 @@ fn check(plain: &Path, tagged: &[PathBuf], codec: &str) {
 #[test]
 fn lcevc_sei_in_h264_is_reported_and_the_base_plays() {
     let ff = cfa4_testkit::require_ffmpeg!();
+    if !cfa4_testkit::encoders_or_skip("lcevc h264", &ff, &["libx264"]) {
+        return;
+    }
     let (plain, tagged) = make(&ff, "h264", &["-c:v", "libx264", "-pix_fmt", "yuv420p", "-bf", "0", "-x264-params", "slices=1"], false);
     check(&plain, &tagged, "H.264");
 }
@@ -122,6 +125,9 @@ fn lcevc_sei_in_h264_is_reported_and_the_base_plays() {
 #[test]
 fn lcevc_sei_in_hevc_is_reported_and_the_base_plays() {
     let ff = cfa4_testkit::require_ffmpeg!();
+    if !cfa4_testkit::encoders_or_skip("lcevc hevc", &ff, &["libx265"]) {
+        return;
+    }
     let (plain, tagged) = make(&ff, "hevc", &["-c:v", "libx265", "-pix_fmt", "yuv420p", "-x265-params", "log-level=error:bframes=0"], true);
     check(&plain, &tagged, "HEVC");
 }
