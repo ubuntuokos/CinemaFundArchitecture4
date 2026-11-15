@@ -4606,6 +4606,8 @@
 	software backend: {reason}	backend perangkat lunak: {reason}
 	Start studio	Mulai studio
 	Stop studio	Hentikan studio
+	Add Studio Scene	Tambah Adegan Studio
+	Live	Langsung
 # Auto Color, Auto Contrast, Auto Levels (EffectsSDK review)
 	Auto Color	Warna Otomatis
 	Auto Contrast	Kontras Otomatis
@@ -4676,3 +4678,29 @@
 	AS-11 Core	AS-11 Core
 	AS-11 Parts	Bagian AS-11
 	AS-11 UK DPP	AS-11 UK DPP
+
+# Control Surfaces settings page (CS-1, #1187)
+	Devices	Perangkat
+	Use	Gunakan
+	Device	Perangkat
+	MIDI	MIDI
+	HID jog/shuttle	HID jog/shuttle
+	OSC	OSC
+	Connected	Terhubung
+	Not connected	Tidak terhubung
+	Disabled	Dinonaktifkan
+	{device} ({port})	{device} ({port})
+	{name}: {error}	{name}: {error}
+	Looking for devices…	Mencari perangkat…
+	No MIDI controller or jog/shuttle device was found. Connect one and press Refresh.	Tidak ditemukan pengontrol MIDI atau perangkat jog/shuttle. Hubungkan salah satu lalu tekan Segarkan.
+	Control Surfaces	Permukaan Kontrol
+	Use control surfaces (MIDI controllers, jog/shuttle devices)	Gunakan permukaan kontrol (pengontrol MIDI, perangkat jog/shuttle)
+	Mapping controls to commands, MIDI Learn and the MIDI Monitor come in a later version; the choices here are remembered until then.	Pemetaan kontrol ke perintah, MIDI Learn, dan Monitor MIDI hadir di versi berikutnya; pilihan di sini diingat sampai saat itu.
+	CFA4 ShuttlePRO	CFA4 ShuttlePRO
+	Kdenlive-style ShuttlePRO	ShuttlePRO gaya Kdenlive
+	Generic MIDI	MIDI umum
+
+# LTC timecode read from clip audio (TC-7, #1285)
+	Read from LTC Audio	Baca dari Audio LTC
+	Find SMPTE LTC on the clip's audio and use the timecode it gives the first frame	Cari SMPTE LTC pada audio klip dan gunakan timecode yang diberikannya untuk frame pertama
+	Read Timecode from LTC Audio	Baca Timecode dari Audio LTC

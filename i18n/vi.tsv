@@ -4598,6 +4598,8 @@ export.summary	Low	thấp
 	software backend: {reason}	phần phụ trợ phần mềm: {reason}
 	Start studio	Khởi động phòng thu
 	Stop studio	Dừng phòng thu
+	Add Studio Scene	Thêm cảnh studio
+	Live	Trực tiếp
 # Auto Color, Auto Contrast, Auto Levels (EffectsSDK review)
 	Auto Color	Màu tự động
 	Auto Contrast	Tương phản tự động
@@ -4668,3 +4670,29 @@ export.summary	Low	thấp
 	AS-11 Core	AS-11 Core
 	AS-11 Parts	Phần AS-11
 	AS-11 UK DPP	AS-11 UK DPP
+
+# Control Surfaces settings page (CS-1, #1187)
+	Devices	Thiết bị
+	Use	Dùng
+	Device	Thiết bị
+	MIDI	MIDI
+	HID jog/shuttle	HID jog/shuttle
+	OSC	OSC
+	Connected	Đã kết nối
+	Not connected	Chưa kết nối
+	Disabled	Đã tắt
+	{device} ({port})	{device} ({port})
+	{name}: {error}	{name}: {error}
+	Looking for devices…	Đang tìm thiết bị…
+	No MIDI controller or jog/shuttle device was found. Connect one and press Refresh.	Không tìm thấy bộ điều khiển MIDI hay thiết bị jog/shuttle nào. Hãy kết nối một thiết bị rồi nhấn Làm mới.
+	Control Surfaces	Bề mặt điều khiển
+	Use control surfaces (MIDI controllers, jog/shuttle devices)	Dùng bề mặt điều khiển (bộ điều khiển MIDI, thiết bị jog/shuttle)
+	Mapping controls to commands, MIDI Learn and the MIDI Monitor come in a later version; the choices here are remembered until then.	Gán nút điều khiển cho lệnh, MIDI Learn và MIDI Monitor sẽ có trong phiên bản sau; cho đến lúc đó, các lựa chọn ở đây vẫn được ghi nhớ.
+	CFA4 ShuttlePRO	CFA4 ShuttlePRO
+	Kdenlive-style ShuttlePRO	ShuttlePRO kiểu Kdenlive
+	Generic MIDI	MIDI chung
+
+# LTC timecode read from clip audio (TC-7, #1285)
+	Read from LTC Audio	Đọc từ âm thanh LTC
+	Find SMPTE LTC on the clip's audio and use the timecode it gives the first frame	Tìm SMPTE LTC trong âm thanh của clip và dùng mã thời gian mà nó gán cho khung hình đầu tiên
+	Read Timecode from LTC Audio	Đọc mã thời gian từ âm thanh LTC

@@ -4601,6 +4601,8 @@ export.summary	Low	ниско
 	software backend: {reason}	софтуерна основа: {reason}
 	Start studio	Стартиране на студиото
 	Stop studio	Спиране на студиото
+	Add Studio Scene	Добавяне на студийна сцена
+	Live	На живо
 # Auto Color, Auto Contrast, Auto Levels (EffectsSDK review)
 	Auto Color	Автоматичен цвят
 	Auto Contrast	Автоматичен контраст
@@ -4671,3 +4673,29 @@ export.summary	Low	ниско
 	AS-11 Core	AS-11 Core
 	AS-11 Parts	AS-11 части
 	AS-11 UK DPP	AS-11 UK DPP
+
+# Control Surfaces settings page (CS-1, #1187)
+	Devices	Устройства
+	Use	Използване
+	Device	Устройство
+	MIDI	MIDI
+	HID jog/shuttle	HID jog/shuttle
+	OSC	OSC
+	Connected	Свързано
+	Not connected	Не е свързано
+	Disabled	Изключено
+	{device} ({port})	{device} ({port})
+	{name}: {error}	{name}: {error}
+	Looking for devices…	Търсене на устройства…
+	No MIDI controller or jog/shuttle device was found. Connect one and press Refresh.	Не е намерен MIDI контролер или jog/shuttle устройство. Свържете такова и натиснете „Опресняване“.
+	Control Surfaces	Контролни повърхности
+	Use control surfaces (MIDI controllers, jog/shuttle devices)	Използване на контролни повърхности (MIDI контролери, jog/shuttle устройства)
+	Mapping controls to commands, MIDI Learn and the MIDI Monitor come in a later version; the choices here are remembered until then.	Свързването на контролите с команди, MIDI Learn и MIDI мониторът идват в по-късна версия; дотогава изборът тук се запомня.
+	CFA4 ShuttlePRO	CFA4 ShuttlePRO
+	Kdenlive-style ShuttlePRO	ShuttlePRO в стил Kdenlive
+	Generic MIDI	Общ MIDI
+
+# LTC timecode read from clip audio (TC-7, #1285)
+	Read from LTC Audio	Четене от LTC звук
+	Find SMPTE LTC on the clip's audio and use the timecode it gives the first frame	Търсене на SMPTE LTC в звука на клипа и използване на времевия код, който той дава на първия кадър
+	Read Timecode from LTC Audio	Четене на времеви код от LTC звук

@@ -1202,7 +1202,9 @@ dependencies = [
  "cfa4-render",
  "cfa4-route",
  "cfa4-scopes",
+ "cfa4-surface",
  "cfa4-surface-adapters",
+ "cfa4-surface-model",
  "cfa4-tcsync",
  "cfa4-tcsync-io",
  "cfa4-testkit",
@@ -1257,6 +1259,7 @@ dependencies = [
  "cfa4-ogg",
  "cfa4-opus",
  "cfa4-prores",
+ "cfa4-shorten",
  "cfa4-speex",
  "cfa4-testkit",
  "cfa4-time",
@@ -2009,6 +2012,14 @@ dependencies = [
 ]
 
 [[package]]
+name = "cfa4-shorten"
+version = "0.10.0"
+dependencies = [
+ "cfa4-testkit",
+ "thiserror 2.0.21",
+]
+
+[[package]]
 name = "cfa4-smart-edit"
 version = "0.10.0"
 dependencies = [
@@ -2070,6 +2081,16 @@ dependencies = [
 ]
 
 [[package]]
+name = "cfa4-surface"
+version = "0.10.0"
+dependencies = [
+ "alsa",
+ "cfa4-surface-model",
+ "serde",
+ "serde_json",
+]
+
+[[package]]
 name = "cfa4-surface-adapters"
 version = "0.10.0"
 dependencies = [
@@ -2094,6 +2115,14 @@ dependencies = [
  "serde-saphyr",
  "thiserror 2.0.21",
  "toml",
+]
+
+[[package]]
+name = "cfa4-surface-model"
+version = "0.10.0"
+dependencies = [
+ "serde",
+ "serde_json",
 ]
 
 [[package]]

@@ -4605,6 +4605,8 @@
 	software backend: {reason}	motor por software: {reason}
 	Start studio	Iniciar estudio
 	Stop studio	Detener estudio
+	Add Studio Scene	Añadir escena de estudio
+	Live	En directo
 # Auto Color, Auto Contrast, Auto Levels (EffectsSDK review)
 	Auto Color	Color automático
 	Auto Contrast	Contraste automático
@@ -4675,3 +4677,29 @@
 	AS-11 Core	AS-11 Core
 	AS-11 Parts	Partes AS-11
 	AS-11 UK DPP	AS-11 UK DPP
+
+# Control Surfaces settings page (CS-1, #1187)
+	Devices	Dispositivos
+	Use	Usar
+	Device	Dispositivo
+	MIDI	MIDI
+	HID jog/shuttle	HID jog/shuttle
+	OSC	OSC
+	Connected	Conectado
+	Not connected	No conectado
+	Disabled	Desactivado
+	{device} ({port})	{device} ({port})
+	{name}: {error}	{name}: {error}
+	Looking for devices…	Buscando dispositivos…
+	No MIDI controller or jog/shuttle device was found. Connect one and press Refresh.	No se encontró ningún controlador MIDI ni dispositivo jog/shuttle. Conecte uno y pulse Actualizar.
+	Control Surfaces	Superficies de control
+	Use control surfaces (MIDI controllers, jog/shuttle devices)	Usar superficies de control (controladores MIDI, dispositivos jog/shuttle)
+	Mapping controls to commands, MIDI Learn and the MIDI Monitor come in a later version; the choices here are remembered until then.	La asignación de controles a comandos, MIDI Learn y el monitor MIDI llegarán en una versión posterior; hasta entonces se recuerdan las opciones elegidas aquí.
+	CFA4 ShuttlePRO	CFA4 ShuttlePRO
+	Kdenlive-style ShuttlePRO	ShuttlePRO al estilo de Kdenlive
+	Generic MIDI	MIDI genérico
+
+# LTC timecode read from clip audio (TC-7, #1285)
+	Read from LTC Audio	Leer del audio LTC
+	Find SMPTE LTC on the clip's audio and use the timecode it gives the first frame	Buscar SMPTE LTC en el audio del clip y usar el código de tiempo que da al primer fotograma
+	Read Timecode from LTC Audio	Leer código de tiempo del audio LTC
