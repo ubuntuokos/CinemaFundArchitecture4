@@ -226,7 +226,14 @@ fn timestamp(s: &str) -> Option<[u8; 8]> {
 fn umid(s: &str) -> Option<[u8; 32]> {
     let s = s.trim();
     let s = s.strip_prefix("urn:smpte:umid:").unwrap_or(s);
-    let digits: Vec<u8> = s.chars().filter(|c| !matches!(c, '.' | '-' | ':' | ' ')).map(|c| c.to_digit(16).map(|d| d as u8)).collect::<Option<_>>()?;
+    let mut digits: Vec<u8> = Vec::with_capacity(64);
+    for c in s.chars().filter(|c| !matches!(c, '.' | '-' | ':' | ' ')) {
+        // at most 64 digits are kept, a longer input is refused without storing it
+        if digits.len() == 64 {
+            return None;
+        }
+        digits.push(c.to_digit(16)? as u8);
+    }
     if digits.len() != 64 {
         return None;
     }

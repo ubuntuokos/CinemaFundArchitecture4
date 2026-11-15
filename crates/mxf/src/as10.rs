@@ -17,8 +17,12 @@ pub struct Facts {
     pub height: u32,
     pub audio_channels: u32,
     pub audio_bits: u32,
+    /// Audio sample rate in Hz (the shims need 48 kHz PCM).
+    pub audio_sample_rate: u32,
     /// Video bit rate in bits per second.
     pub bit_rate: u32,
+    /// Constant (`Some(true)`) or variable bit rate; `None` when not known.
+    pub cbr: Option<bool>,
 }
 
 /// One shim of AS-10 section 8.2.
@@ -34,15 +38,37 @@ pub struct Shim {
     pub audio_bits: u32,
     /// The video bit rate in Mbit/s the shim names (`35_VBR`: 35).
     pub mbps: &'static [u32],
+    /// The shim's rate mode: CBR (`true`) or VBR.
+    pub cbr: bool,
 }
 
 /// The shims of the specification.
 pub const SHIMS: &[Shim] = &[
-    Shim { name: "CNN_HD_2012", profiles: &[0x44], chroma_422: false, width: 1440, height: 1080, audio_channels: 4, audio_bits: 16, mbps: &[35] },
-    Shim { name: "NRK_HD_2012", profiles: &[0x82], chroma_422: true, width: 1920, height: 1080, audio_channels: 8, audio_bits: 16, mbps: &[50] },
-    Shim { name: "HIGH_HD_2014", profiles: &[0x82], chroma_422: true, width: 1920, height: 1080, audio_channels: 8, audio_bits: 24, mbps: &[50] },
-    Shim { name: "JVC_HD_35_VBR_2012", profiles: &[0x44], chroma_422: false, width: 1440, height: 1080, audio_channels: 2, audio_bits: 16, mbps: &[35] },
-    Shim { name: "JVC_HD_25_CBR_2012", profiles: &[0x46], chroma_422: false, width: 1440, height: 1080, audio_channels: 2, audio_bits: 16, mbps: &[25] },
+    Shim { name: "CNN_HD_2012", profiles: &[0x44], chroma_422: false, width: 1440, height: 1080, audio_channels: 4, audio_bits: 16, mbps: &[35], cbr: false },
+    Shim { name: "NRK_HD_2012", profiles: &[0x82], chroma_422: true, width: 1920, height: 1080, audio_channels: 8, audio_bits: 16, mbps: &[50], cbr: true },
+    Shim { name: "HIGH_HD_2014", profiles: &[0x82], chroma_422: true, width: 1920, height: 1080, audio_channels: 8, audio_bits: 24, mbps: &[50], cbr: true },
+    Shim {
+        name: "JVC_HD_35_VBR_2012",
+        profiles: &[0x44],
+        chroma_422: false,
+        width: 1440,
+        height: 1080,
+        audio_channels: 2,
+        audio_bits: 16,
+        mbps: &[35],
+        cbr: false,
+    },
+    Shim {
+        name: "JVC_HD_25_CBR_2012",
+        profiles: &[0x46],
+        chroma_422: false,
+        width: 1440,
+        height: 1080,
+        audio_channels: 2,
+        audio_bits: 16,
+        mbps: &[25],
+        cbr: true,
+    },
 ];
 
 /// The shim named `name` (case-insensitive).
@@ -85,6 +111,18 @@ pub fn check_shim(name: &str, facts: &Facts) -> Result<(), String> {
             facts.audio_channels, facts.audio_bits, s.audio_channels, s.audio_bits
         ));
     }
+    if facts.audio_sample_rate != 48_000 {
+        problems.push(format!("audio is {} Hz, the shim needs 48 kHz PCM", facts.audio_sample_rate));
+    }
+    if let Some(cbr) = facts.cbr
+        && cbr != s.cbr
+    {
+        problems.push(format!(
+            "the video is {}, the shim needs {}",
+            if cbr { "constant bit rate" } else { "variable bit rate" },
+            if s.cbr { "constant bit rate" } else { "variable bit rate" }
+        ));
+    }
     let near = |mbps: u32| {
         let want = u64::from(mbps) * 1_000_000;
         u64::from(facts.bit_rate).abs_diff(want) * 50 <= want
@@ -104,7 +142,17 @@ mod tests {
     use super::*;
 
     fn nrk() -> Facts {
-        Facts { profile_and_level: 0x82, chroma_422: true, width: 1920, height: 1080, audio_channels: 8, audio_bits: 16, bit_rate: 50_000_000 }
+        Facts {
+            profile_and_level: 0x82,
+            chroma_422: true,
+            width: 1920,
+            height: 1080,
+            audio_channels: 8,
+            audio_bits: 16,
+            audio_sample_rate: 48_000,
+            bit_rate: 50_000_000,
+            cbr: Some(true),
+        }
     }
 
     #[test]
@@ -121,9 +169,25 @@ mod tests {
         // the 4:2:0 shims
         let e = check_shim("CNN_HD_2012", &nrk()).unwrap_err();
         assert!(e.contains("MP@HL") && e.contains("4:2:0"), "{e}");
-        let jvc = Facts { profile_and_level: 0x46, chroma_422: false, width: 1440, height: 1080, audio_channels: 2, audio_bits: 16, bit_rate: 25_000_000 };
+        let jvc = Facts {
+            profile_and_level: 0x46,
+            chroma_422: false,
+            width: 1440,
+            height: 1080,
+            audio_channels: 2,
+            audio_bits: 16,
+            audio_sample_rate: 48_000,
+            bit_rate: 25_000_000,
+            cbr: Some(true),
+        };
         assert_eq!(check_shim("JVC_HD_25_CBR_2012", &jvc), Ok(()));
         assert!(check_shim("JVC_HD_35_VBR_2012", &jvc).is_err());
+        // 96 kHz audio and VBR video do not fit the CBR shims even at the right numbers
+        let e = check_shim("NRK_HD_2012", &Facts { audio_sample_rate: 96_000, ..nrk() }).unwrap_err();
+        assert!(e.contains("96000 Hz"), "{e}");
+        let e = check_shim("NRK_HD_2012", &Facts { cbr: Some(false), ..nrk() }).unwrap_err();
+        assert!(e.contains("variable bit rate"), "{e}");
+        assert_eq!(check_shim("NRK_HD_2012", &Facts { cbr: None, ..nrk() }), Ok(()));
     }
 
     #[test]

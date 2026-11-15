@@ -7,7 +7,7 @@ use cfa4_mxf::{
 };
 use cfa4_time::FrameRate;
 
-use crate::{ColorSignal, EncodedPacket, ExportError, ExportSettings, FieldOrder, Format, H264Profile, MpegVideoInfo, MxfVideoCodec, Out, Result};
+use crate::{BitrateMode, ColorSignal, EncodedPacket, ExportError, ExportSettings, FieldOrder, Format, H264Profile, MpegVideoInfo, MxfVideoCodec, Out, Result};
 
 /// Paths of the OP-Atom audio files for an export to `path` with `channels` channels.
 pub fn opatom_audio_paths(path: &str, channels: usize) -> Vec<String> {
@@ -203,6 +203,8 @@ impl MxfMux {
                 height: s.height,
                 audio_channels: s.audio.map_or(0, |(_, ch)| ch as u32),
                 audio_bits: bits,
+                audio_sample_rate: s.audio.map_or(0, |(sr, _)| sr),
+                cbr: Some(settings.mpeg2_quantizer.is_none() && settings.bitrate_mode == BitrateMode::Cbr),
                 bit_rate: match cfg.picture.as_ref().map(|d| d.coding) {
                     Some(PictureCoding::Mpeg2 { bit_rate, .. }) => bit_rate,
                     _ => 0,
