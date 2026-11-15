@@ -52,3 +52,7 @@ bash "$(dirname "$0")/install-amr-oracle.sh" \
 # built from the pinned upstream tag; the LCEVC oracle test skips without it)
 bash "$(dirname "$0")/install-lcevc-oracle.sh" \
   || echo "::warning::lcevc_oracle build failed: the LCEVC oracle test skips"
+# AVS2 oracles `davs2`, `xavs2` and their 10-bit builds (pinned upstream commits; the AVS2 oracle
+# tests skip without them)
+bash "$(dirname "$0")/install-avs2-oracle.sh" \
+  || echo "::warning::AVS2 oracle build failed: the AVS2 oracle tests skip"
