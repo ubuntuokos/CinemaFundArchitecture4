@@ -2379,6 +2379,10 @@
 	Show Clip Mismatch Warning dialog	Tampilkan dialog Peringatan Ketidakcocokan Klip
 	Show Event Indicator	Tampilkan Indikator Peristiwa
 	Show Focus Area	Tampilkan Area Fokus
+	Rack Focus	Pergeseran Fokus
+	Focus Point A	Titik Fokus A
+	Focus Point B	Titik Fokus B
+	Rack	Pergeseran
 	Show Home	Tampilkan Beranda
 	Show Mask Tracker Preview	Tampilkan Pratinjau Pelacak Masker
 	Show Only Noise	Tampilkan Hanya Derau
@@ -3611,6 +3615,7 @@
 	Social Deliverables…	Hasil untuk Media Sosial…
 	Counter	Penghitung
 	Word by Word	Kata demi Kata
+	Scramble	Acak
 	Animator	Animator
 	Animator Duration	Durasi Animator
 	Animator Delay	Tunda Animator
@@ -4184,6 +4189,11 @@
 	Burn Size	Ukuran bakaran
 	Ember Width	Lebar bara
 	Ember Color	Warna bara
+	Tear Away	Sobek
+	Tear Roughness	Kekasaran Sobekan
+	Paper Edge Width	Lebar Tepi Kertas
+	Stamp Cut	Potongan Prangko
+	Perforations	Perforasi
 	Check Text Legibility	Periksa Keterbacaan Teks
 	Clear Legibility Markers	Hapus Penanda Keterbacaan
 	Text legibility: no problems found	Keterbacaan teks: tidak ada masalah
@@ -4223,6 +4233,9 @@
 	Dither	Dither
 	Pattern	Pola
 	Cell Size	Ukuran Sel
+	Pixelate	Pikselasi
+	Cell Shape	Bentuk Sel
+	LED	LED
 	Cyan Angle	Sudut Cyan
 	Magenta Angle	Sudut Magenta
 	Yellow Angle	Sudut Kuning
@@ -4583,6 +4596,16 @@
 	Chase External Timecode	Ikuti Timecode Eksternal
 	Send LTC	Kirim LTC
 	Send MIDI Timecode	Kirim Timecode MIDI
+
+# Live studio preview (CFA4-LIVE-STUDIO-001 S0)
+	Live studio preview	Pratinjau studio langsung
+	Live studio: stopped	Studio langsung: berhenti
+	Live studio: {state}	Studio langsung: {state}
+	Live studio: {error}	Studio langsung: {error}
+	restarted after {count} crashes (last: {exit})	dimulai ulang setelah {count} kali mogok (terakhir: {exit})
+	software backend: {reason}	backend perangkat lunak: {reason}
+	Start studio	Mulai studio
+	Stop studio	Hentikan studio
 # Auto Color, Auto Contrast, Auto Levels (EffectsSDK review)
 	Auto Color	Warna Otomatis
 	Auto Contrast	Kontras Otomatis
@@ -4640,3 +4663,16 @@
 	Freewheel	Freewheel
 	Scrubbing	Menggulir
 	Sending	Mengirim
+
+# DCP subtitle export (#938)
+	Subtitles from the first caption track	Subtitel dari trek takarir pertama
+	The package language	Bahasa paket
+	Inter Regular (built in), or an OpenType / TrueType file	Inter Regular (bawaan), atau berkas OpenType / TrueType
+	Subtitle language	Bahasa subtitel
+	Subtitle font	Font subtitel
+	Fonts	Font
+
+# AS-11 metadata in MXF OP1a (#96)
+	AS-11 Core	AS-11 Core
+	AS-11 Parts	Bagian AS-11
+	AS-11 UK DPP	AS-11 UK DPP
