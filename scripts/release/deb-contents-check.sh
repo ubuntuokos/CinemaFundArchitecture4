@@ -29,12 +29,10 @@ STAGE="$work/root"
 FFMPEG_DEB="$work/deb-ffmpeg"
 rm -rf "$STAGE" "$FFMPEG_DEB"
 
-# stand-ins for what needs the release build
-for binary in cfa4 cfa4-cli; do
-  install -d "$STAGE/usr/bin"
-  printf '#!/bin/sh\necho "%s %s (deb-contents-check stand-in)"\n' "$binary" "$VERSION" >"$STAGE/usr/bin/$binary"
-  chmod 755 "$STAGE/usr/bin/$binary"
-done
+# stand-in for what needs the release build (bin/cfa4 is the Qt GUI's launcher, staged below)
+install -d "$STAGE/usr/bin"
+printf '#!/bin/sh\necho "cfa4-cli %s (deb-contents-check stand-in)"\n' "$VERSION" >"$STAGE/usr/bin/cfa4-cli"
+chmod 755 "$STAGE/usr/bin/cfa4-cli"
 ffmpeg="$FFMPEG_DEB/opt/cfa4/ffmpeg-9.0.2"
 install -d "$ffmpeg/lib" "$ffmpeg/share/doc/ffmpeg"
 for lib in libavcodec.so.62 libavformat.so.62 libavutil.so.60; do echo stand-in >"$ffmpeg/lib/$lib"; done
@@ -46,6 +44,7 @@ printf 'libzstd1\n' >"$work/ffmpeg-depends.txt"
 
 # the real files, staged as package.sh stages them
 install -Dm755 "$HERE/cfa4-qt" "$STAGE/usr/bin/cfa4-qt"
+install -Dm755 "$HERE/cfa4-qt" "$STAGE/usr/bin/cfa4"
 install -d "$STAGE/usr/lib/cfa4/python"
 cp -R "$ROOT/python/cfa4_qt" "$STAGE/usr/lib/cfa4/python/"
 find "$STAGE/usr/lib/cfa4/python" -name __pycache__ -type d -prune -exec rm -rf {} +
