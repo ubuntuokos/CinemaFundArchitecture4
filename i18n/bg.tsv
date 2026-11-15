@@ -4699,3 +4699,6 @@ export.summary	Low	ниско
 	{control} runs {command}.	{control} изпълнява {command}.
 # Control surfaces (shuttlepro, CFA4-CONTROL-SURFACE-001)
 	Button {n}	Бутон {n}
+# Control surfaces (continuous-values, CFA4-CONTROL-SURFACE-001)
+	{strip} Pan (knob)	{strip} панорама (копче)
+	{strip} Volume (fader)	{strip} сила на звука (фейдър)

@@ -4696,3 +4696,6 @@ export.summary	Low	низак
 	{control} runs {command}.	{control} покреће {command}.
 # Control surfaces (shuttlepro, CFA4-CONTROL-SURFACE-001)
 	Button {n}	Дугме {n}
+# Control surfaces (continuous-values, CFA4-CONTROL-SURFACE-001)
+	{strip} Pan (knob)	{strip} панорама (дугме)
+	{strip} Volume (fader)	{strip} јачина (фејдер)

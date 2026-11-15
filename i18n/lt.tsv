@@ -4699,3 +4699,6 @@ export.summary	Low	žema
 	{control} runs {command}.	{control} vykdo {command}.
 # Control surfaces (shuttlepro, CFA4-CONTROL-SURFACE-001)
 	Button {n}	Mygtukas {n}
+# Control surfaces (continuous-values, CFA4-CONTROL-SURFACE-001)
+	{strip} Pan (knob)	{strip} panorama (rankenėlė)
+	{strip} Volume (fader)	{strip} garsumas (slankiklis)

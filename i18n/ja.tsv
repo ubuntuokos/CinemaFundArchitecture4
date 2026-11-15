@@ -4705,3 +4705,6 @@
 	{control} runs {command}.	{control} は {command} を実行します。
 # Control surfaces (shuttlepro, CFA4-CONTROL-SURFACE-001)
 	Button {n}	ボタン {n}
+# Control surfaces (continuous-values, CFA4-CONTROL-SURFACE-001)
+	{strip} Pan (knob)	{strip} パン（ノブ）
+	{strip} Volume (fader)	{strip} 音量（フェーダー）

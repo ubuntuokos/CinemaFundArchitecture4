@@ -4698,3 +4698,6 @@ export.summary	Low	låg
 	{control} runs {command}.	{control} kör {command}.
 # Control surfaces (shuttlepro, CFA4-CONTROL-SURFACE-001)
 	Button {n}	Knapp {n}
+# Control surfaces (continuous-values, CFA4-CONTROL-SURFACE-001)
+	{strip} Pan (knob)	{strip} panorering (vred)
+	{strip} Volume (fader)	{strip} volym (fader)

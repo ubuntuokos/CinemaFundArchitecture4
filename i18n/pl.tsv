@@ -4696,3 +4696,6 @@ export.summary	Low	niska
 	{control} runs {command}.	{control} uruchamia {command}.
 # Control surfaces (shuttlepro, CFA4-CONTROL-SURFACE-001)
 	Button {n}	Przycisk {n}
+# Control surfaces (continuous-values, CFA4-CONTROL-SURFACE-001)
+	{strip} Pan (knob)	{strip} panorama (pokrętło)
+	{strip} Volume (fader)	{strip} głośność (suwak)

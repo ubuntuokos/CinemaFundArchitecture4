@@ -4698,3 +4698,6 @@ export.summary	Low	lav
 	{control} runs {command}.	{control} kører {command}.
 # Control surfaces (shuttlepro, CFA4-CONTROL-SURFACE-001)
 	Button {n}	Knap {n}
+# Control surfaces (continuous-values, CFA4-CONTROL-SURFACE-001)
+	{strip} Pan (knob)	{strip} panorering (drejeknap)
+	{strip} Volume (fader)	{strip} lydstyrke (fader)

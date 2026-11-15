@@ -4697,3 +4697,6 @@ export.summary	Low	düşük
 	{control} runs {command}.	{control}, {command} komutunu çalıştırır.
 # Control surfaces (shuttlepro, CFA4-CONTROL-SURFACE-001)
 	Button {n}	Düğme {n}
+# Control surfaces (continuous-values, CFA4-CONTROL-SURFACE-001)
+	{strip} Pan (knob)	{strip} pan (düğme)
+	{strip} Volume (fader)	{strip} ses düzeyi (fader)

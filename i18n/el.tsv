@@ -4698,3 +4698,6 @@ export.summary	Low	χαμηλή
 	{control} runs {command}.	Το {control} εκτελεί {command}.
 # Control surfaces (shuttlepro, CFA4-CONTROL-SURFACE-001)
 	Button {n}	Κουμπί {n}
+# Control surfaces (continuous-values, CFA4-CONTROL-SURFACE-001)
+	{strip} Pan (knob)	{strip} πανοραμική (περιστροφικό)
+	{strip} Volume (fader)	{strip} ένταση (fader)

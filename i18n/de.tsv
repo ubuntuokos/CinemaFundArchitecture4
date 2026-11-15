@@ -4703,3 +4703,6 @@
 	{control} runs {command}.	{control} führt {command} aus.
 # Control surfaces (shuttlepro, CFA4-CONTROL-SURFACE-001)
 	Button {n}	Taste {n}
+# Control surfaces (continuous-values, CFA4-CONTROL-SURFACE-001)
+	{strip} Pan (knob)	{strip} Panorama (Drehregler)
+	{strip} Volume (fader)	{strip} Lautstärke (Fader)

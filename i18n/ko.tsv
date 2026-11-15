@@ -4690,3 +4690,6 @@
 	{control} runs {command}.	{control}이(가) {command}을(를) 실행합니다.
 # Control surfaces (shuttlepro, CFA4-CONTROL-SURFACE-001)
 	Button {n}	버튼 {n}
+# Control surfaces (continuous-values, CFA4-CONTROL-SURFACE-001)
+	{strip} Pan (knob)	{strip} 팬 (노브)
+	{strip} Volume (fader)	{strip} 볼륨 (페이더)

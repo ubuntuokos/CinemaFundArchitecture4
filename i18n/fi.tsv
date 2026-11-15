@@ -4698,3 +4698,6 @@ export.summary	Low	matala
 	{control} runs {command}.	{control} suorittaa komennon {command}.
 # Control surfaces (shuttlepro, CFA4-CONTROL-SURFACE-001)
 	Button {n}	Painike {n}
+# Control surfaces (continuous-values, CFA4-CONTROL-SURFACE-001)
+	{strip} Pan (knob)	{strip} panorointi (kiertonuppi)
+	{strip} Volume (fader)	{strip} äänenvoimakkuus (liukusäädin)

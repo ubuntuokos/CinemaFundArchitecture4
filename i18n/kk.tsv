@@ -4698,3 +4698,6 @@ export.summary	Low	төмен
 	{control} runs {command}.	{control} {command} іске қосады.
 # Control surfaces (shuttlepro, CFA4-CONTROL-SURFACE-001)
 	Button {n}	{n}-түйме
+# Control surfaces (continuous-values, CFA4-CONTROL-SURFACE-001)
+	{strip} Pan (knob)	{strip} панорама (тұтқа)
+	{strip} Volume (fader)	{strip} дыбыс деңгейі (фейдер)

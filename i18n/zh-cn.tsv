@@ -4694,3 +4694,6 @@
 	{control} runs {command}.	{control} 运行 {command}。
 # Control surfaces (shuttlepro, CFA4-CONTROL-SURFACE-001)
 	Button {n}	按钮 {n}
+# Control surfaces (continuous-values, CFA4-CONTROL-SURFACE-001)
+	{strip} Pan (knob)	{strip} 声像（旋钮）
+	{strip} Volume (fader)	{strip} 音量（推子）

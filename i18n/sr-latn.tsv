@@ -4698,3 +4698,6 @@ export.summary	Low	nizak
 	{control} runs {command}.	{control} pokreće {command}.
 # Control surfaces (shuttlepro, CFA4-CONTROL-SURFACE-001)
 	Button {n}	Dugme {n}
+# Control surfaces (continuous-values, CFA4-CONTROL-SURFACE-001)
+	{strip} Pan (knob)	{strip} panorama (dugme)
+	{strip} Volume (fader)	{strip} jačina (fejder)

@@ -4698,3 +4698,6 @@ export.summary	Low	madal
 	{control} runs {command}.	{control} käivitab {command}.
 # Control surfaces (shuttlepro, CFA4-CONTROL-SURFACE-001)
 	Button {n}	Nupp {n}
+# Control surfaces (continuous-values, CFA4-CONTROL-SURFACE-001)
+	{strip} Pan (knob)	{strip} panoraam (nupp)
+	{strip} Volume (fader)	{strip} helitugevus (fader)

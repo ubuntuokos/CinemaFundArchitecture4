@@ -4696,3 +4696,6 @@ export.summary	Low	laag
 	{control} runs {command}.	{control} voert {command} uit.
 # Control surfaces (shuttlepro, CFA4-CONTROL-SURFACE-001)
 	Button {n}	Knop {n}
+# Control surfaces (continuous-values, CFA4-CONTROL-SURFACE-001)
+	{strip} Pan (knob)	{strip} panning (draaiknop)
+	{strip} Volume (fader)	{strip} volume (fader)

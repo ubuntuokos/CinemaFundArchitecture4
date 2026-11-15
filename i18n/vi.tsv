@@ -4696,3 +4696,6 @@ export.summary	Low	thấp
 	{control} runs {command}.	{control} chạy {command}.
 # Control surfaces (shuttlepro, CFA4-CONTROL-SURFACE-001)
 	Button {n}	Nút {n}
+# Control surfaces (continuous-values, CFA4-CONTROL-SURFACE-001)
+	{strip} Pan (knob)	{strip} cân bằng trái/phải (núm xoay)
+	{strip} Volume (fader)	{strip} âm lượng (fader)

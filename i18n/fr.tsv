@@ -4701,3 +4701,6 @@
 	{control} runs {command}.	{control} exécute {command}.
 # Control surfaces (shuttlepro, CFA4-CONTROL-SURFACE-001)
 	Button {n}	Bouton {n}
+# Control surfaces (continuous-values, CFA4-CONTROL-SURFACE-001)
+	{strip} Pan (knob)	{strip} panoramique (bouton rotatif)
+	{strip} Volume (fader)	{strip} volume (fader)

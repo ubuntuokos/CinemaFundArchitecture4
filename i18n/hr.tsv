@@ -4698,3 +4698,6 @@ export.summary	Low	niska
 	{control} runs {command}.	{control} pokreće {command}.
 # Control surfaces (shuttlepro, CFA4-CONTROL-SURFACE-001)
 	Button {n}	Tipka {n}
+# Control surfaces (continuous-values, CFA4-CONTROL-SURFACE-001)
+	{strip} Pan (knob)	{strip} panorama (okretni gumb)
+	{strip} Volume (fader)	{strip} glasnoća (fader)

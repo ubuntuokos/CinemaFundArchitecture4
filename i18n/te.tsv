@@ -4702,3 +4702,6 @@ export.summary	Low	తక్కువ
 	{control} runs {command}.	{control} {command} ను నడుపుతుంది.
 # Control surfaces (shuttlepro, CFA4-CONTROL-SURFACE-001)
 	Button {n}	బటన్ {n}
+# Control surfaces (continuous-values, CFA4-CONTROL-SURFACE-001)
+	{strip} Pan (knob)	{strip} ప్యాన్ (నాబ్)
+	{strip} Volume (fader)	{strip} వాల్యూమ్ (ఫేడర్)

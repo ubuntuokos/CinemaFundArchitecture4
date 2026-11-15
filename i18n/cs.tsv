@@ -4696,3 +4696,6 @@ export.summary	Low	nízká
 	{control} runs {command}.	{control} spouští {command}.
 # Control surfaces (shuttlepro, CFA4-CONTROL-SURFACE-001)
 	Button {n}	Tlačítko {n}
+# Control surfaces (continuous-values, CFA4-CONTROL-SURFACE-001)
+	{strip} Pan (knob)	{strip} panoráma (otočný ovladač)
+	{strip} Volume (fader)	{strip} hlasitost (fader)

@@ -4699,3 +4699,6 @@ export.summary	Low	დაბალი
 	{control} runs {command}.	{control} უშვებს {command}-ს.
 # Control surfaces (shuttlepro, CFA4-CONTROL-SURFACE-001)
 	Button {n}	ღილაკი {n}
+# Control surfaces (continuous-values, CFA4-CONTROL-SURFACE-001)
+	{strip} Pan (knob)	{strip} პანორამა (სახელური)
+	{strip} Volume (fader)	{strip} ხმა (ფეიდერი)
