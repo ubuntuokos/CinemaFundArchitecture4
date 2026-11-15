@@ -4705,3 +4705,7 @@ export.summary	Low	低
 	Read Timecode from LTC Audio	從 LTC 音訊讀取時間碼
 # Credits: voices (the Voice column) in the block's properties (F10-C16)
 	Voices	配音
+
+# Timecode sync varispeed and user bits (TC-8, #1308)
+	Varispeed: adjust the playback speed instead of seeking	變速：調整播放速度而非跳轉
+	User bits	使用者位元

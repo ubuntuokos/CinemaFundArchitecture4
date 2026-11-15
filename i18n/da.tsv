@@ -4708,3 +4708,7 @@ export.summary	Low	lav
 	Read Timecode from LTC Audio	Læs tidskode fra LTC-lyd
 # Credits: voices (the Voice column) in the block's properties (F10-C16)
 	Voices	Stemmer
+
+# Timecode sync varispeed and user bits (TC-8, #1308)
+	Varispeed: adjust the playback speed instead of seeking	Varispeed: juster afspilningshastigheden i stedet for at springe
+	User bits	Brugerbits

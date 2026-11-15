@@ -4704,3 +4704,7 @@
 	Read Timecode from LTC Audio	从 LTC 音频读取时间码
 # Credits: voices (the Voice column) in the block's properties (F10-C16)
 	Voices	配音
+
+# Timecode sync varispeed and user bits (TC-8, #1308)
+	Varispeed: adjust the playback speed instead of seeking	变速：调整播放速度而不是跳转
+	User bits	用户位

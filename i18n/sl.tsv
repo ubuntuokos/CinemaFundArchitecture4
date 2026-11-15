@@ -4709,3 +4709,7 @@ export.summary	Low	nizka
 	Read Timecode from LTC Audio	Preberi časovno kodo iz zvoka LTC
 # Credits: voices (the Voice column) in the block's properties (F10-C16)
 	Voices	Glasovi
+
+# Timecode sync varispeed and user bits (TC-8, #1308)
+	Varispeed: adjust the playback speed instead of seeking	Varispeed: prilagodi hitrost predvajanja namesto preskoka
+	User bits	Uporabniški biti

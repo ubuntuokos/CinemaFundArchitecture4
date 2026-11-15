@@ -4706,3 +4706,7 @@ export.summary	Low	thấp
 	Read Timecode from LTC Audio	Đọc mã thời gian từ âm thanh LTC
 # Credits: voices (the Voice column) in the block's properties (F10-C16)
 	Voices	Giọng lồng tiếng
+
+# Timecode sync varispeed and user bits (TC-8, #1308)
+	Varispeed: adjust the playback speed instead of seeking	Varispeed: điều chỉnh tốc độ phát thay vì nhảy
+	User bits	Bit người dùng

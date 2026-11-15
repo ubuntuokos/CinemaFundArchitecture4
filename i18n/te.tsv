@@ -4712,3 +4712,7 @@ export.summary	Low	తక్కువ
 	Read Timecode from LTC Audio	LTC ఆడియో నుండి టైమ్‌కోడ్ చదువు
 # Credits: voices (the Voice column) in the block's properties (F10-C16)
 	Voices	గొంతులు
+
+# Timecode sync varispeed and user bits (TC-8, #1308)
+	Varispeed: adjust the playback speed instead of seeking	Varispeed: దాటవేయడానికి బదులు ప్లేబ్యాక్ వేగాన్ని సర్దుబాటు చేయి
+	User bits	వినియోగదారు బిట్‌లు
