@@ -122,7 +122,7 @@ static ROWS: &[Row] = &[
     video("DV / DVCPRO", &["dv"], Ported, Sw("DV, DVCAM, DVCPRO 25 / 50, DVCPRO HD"), false, NoEnc),
     video("Animated GIF", &[], Dependency, Sw(""), false, Fmt(Format::Gif)),
     video("CinemaDNG / DNG", &["dng"], Own, Sw("uncompressed and lossless JPEG raw"), false, NoEnc),
-    video("LCEVC", &["lcevc"], Own, Detect("enhancement layer detected, not decoded"), false, NoEnc),
+    video("LCEVC", &["lcevc"], Ported, Sw("T.35 SEI in H.264 / HEVC; `lvc1` tracks and TS 0x36 detected only"), false, NoEnc),
     video("MPEG-4 Part 2", &["sstp"], Ported, Sw("Simple Studio Profile (Sony SR) only: raw .m4v streams and MXF"), false, NoEnc),
     video("WMV / VC-1", &[], Missing, No, false, NoEnc),
     video("Camera RAW (R3D, ARRIRAW, BRAW…)", &[], Missing, No, false, NoEnc),
@@ -347,8 +347,10 @@ mod tests {
         let ac3 = row(&v, "AC-3 / E-AC-3");
         assert_eq!((ac3["encode"].as_str(), ac3["exportFormat"].is_null()), (Some("software"), true));
         assert!(ac3["exportAudioTrack"].as_str().unwrap().contains("AC-3"));
+        let av2 = row(&v, "AV2");
+        assert_eq!((av2["decode"].as_str(), av2["decodeState"].as_str()), (Some("none"), Some("detect")));
         let lcevc = row(&v, "LCEVC");
-        assert_eq!((lcevc["decode"].as_str(), lcevc["decodeState"].as_str()), (Some("none"), Some("detect")));
+        assert_eq!((lcevc["decode"].as_str(), lcevc["origin"].as_str()), (Some("software"), Some("ported")));
         assert_eq!(row(&v, "DV / DVCPRO")["crates"], json!(["crates/dv"]));
         assert_eq!(row(&v, "DV / DVCPRO")["origin"], "ported");
         assert_eq!(row(&v, "MP3")["origin"], "dependency");

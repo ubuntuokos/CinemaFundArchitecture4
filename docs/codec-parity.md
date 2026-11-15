@@ -57,7 +57,7 @@ fidelity and the remaining work.
 | DV / DVCPRO | video | `crates/dv` | ported | yes: DV, DVCAM, DVCPRO 25 / 50, DVCPRO HD | no |
 | Animated GIF | video | — | dependency | yes | yes: Animated GIF |
 | CinemaDNG / DNG | video | `crates/dng` | own | yes: uncompressed and lossless JPEG raw | no |
-| LCEVC | video | `crates/lcevc` | ported | yes: T.35 SEI in H.264 / HEVC (MP4, MOV, Matroska, MPEG-TS / PS); `lvc1` tracks and TS 0x36 streams detected only | no |
+| LCEVC | video | `crates/lcevc` | ported | yes: T.35 SEI in H.264 / HEVC; `lvc1` tracks and TS 0x36 detected only | no |
 | MPEG-4 Part 2 | video | `crates/sstp` | ported | yes: Simple Studio Profile (Sony SR) only: raw .m4v streams and MXF | no |
 | WMV / VC-1 | video | — | none | no | no |
 | Camera RAW (R3D, ARRIRAW, BRAW…) | video | — | none | no | no |
