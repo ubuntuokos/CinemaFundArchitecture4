@@ -1159,6 +1159,19 @@ dependencies = [
 ]
 
 [[package]]
+name = "cfa4-cinema-acceptance"
+version = "0.10.0"
+dependencies = [
+ "cfa4-cinema-pkg",
+ "cfa4-export",
+ "cfa4-media",
+ "cfa4-project",
+ "cfa4-render",
+ "cfa4-time",
+ "chrono",
+]
+
+[[package]]
 name = "cfa4-cinema-pkg"
 version = "0.10.0"
 dependencies = [
