@@ -61,6 +61,7 @@ pub mod relink;
 pub mod remix;
 pub mod scene_detect;
 pub mod scopes;
+pub mod security;
 pub mod segment_detect;
 mod segments;
 pub mod sequence_extras;
