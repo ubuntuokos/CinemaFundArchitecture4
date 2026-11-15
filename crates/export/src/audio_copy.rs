@@ -41,6 +41,30 @@ impl CutInterval {
     }
 }
 
+/// The source chapters a cut of `interval` keeps (CFA4-LOSSLESS-MEDIA-TOOLS-001 K14), moved to
+/// the cut's timeline: every chapter starting inside the cut, and the one already running at its
+/// start, which then starts at 0. Chapter times are in 100 ns units (the `chpl` time base) on the
+/// source's presentation timeline.
+pub fn cut_chapters(chapters: &[cfa4_isobmff::Chapter], interval: CutInterval) -> Vec<cfa4_isobmff::Chapter> {
+    let ts = i128::from(interval.timescale.max(1));
+    let at = |t: i128| t.saturating_mul(10_000_000) / ts;
+    let start = at(i128::from(interval.start));
+    let end = at(i128::from(interval.start).saturating_add(i128::from(interval.duration)));
+    let mut sorted: Vec<&cfa4_isobmff::Chapter> = chapters.iter().collect();
+    sorted.sort_by_key(|c| c.start_100ns);
+    let mut out = Vec::new();
+    if let Some(running) = sorted.iter().rev().find(|c| i128::from(c.start_100ns) <= start) {
+        out.push(cfa4_isobmff::Chapter { start_100ns: 0, title: running.title.clone() });
+    }
+    for c in sorted {
+        let t = i128::from(c.start_100ns);
+        if t > start && t < end {
+            out.push(cfa4_isobmff::Chapter { start_100ns: u64::try_from(t - start).unwrap_or(0), title: c.title.clone() });
+        }
+    }
+    out
+}
+
 /// How one audio track is copied.
 #[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]

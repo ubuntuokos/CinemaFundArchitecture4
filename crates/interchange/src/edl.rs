@@ -50,7 +50,8 @@ fn parse_tc(s: &str) -> Option<Tc> {
     if parts.len() != 4 || parts.iter().any(|p| p.is_empty() || !p.bytes().all(|b| b.is_ascii_digit())) {
         return None;
     }
-    let n: Vec<i64> = parts.iter().map(|p| p.parse().unwrap_or(0)).collect();
+    // a field too long for i64 is no timecode (never read as zero)
+    let n: Vec<i64> = parts.iter().map(|p| p.parse().ok()).collect::<Option<_>>()?;
     Some(Tc { h: n[0], m: n[1], s: n[2], f: n[3], df: s.contains(';') || s.contains(',') })
 }
 
@@ -135,6 +136,9 @@ struct Event {
     to_clip: Option<String>,
     files: Vec<String>,
     effect: Option<String>,
+    /// `* SEGMENT NAME:` (a CFA4 segment written by `markers.exportEdl`), or `* SEGMENT NAME JSON:`
+    /// for a name that is not plain one-line text, as a JSON string.
+    segment: Option<String>,
     /// (reel, fps, entry tc)
     m2: Vec<(String, f64)>,
     locs: Vec<(Tc, String, String)>,
@@ -178,6 +182,15 @@ fn parse(text: &str, report: &mut Report) -> Parsed {
                 ev.to_clip = Some(value("TO CLIP NAME:"));
             } else if cu.starts_with("SOURCE FILE:") {
                 ev.files.push(value("SOURCE FILE:"));
+            } else if cu.starts_with("SEGMENT NAME JSON:") {
+                // a name CFA4 could not write as plain text (empty, padded, several lines)
+                // a damaged encoding is refused (`source_ranges`), never read as the name itself
+                match serde_json::from_str::<String>(&value("SEGMENT NAME JSON:")) {
+                    Ok(name) => ev.segment = Some(name),
+                    Err(e) => report.warn(format!("{BAD_NAME}{} ({e})", l.chars().take(60).collect::<String>())),
+                }
+            } else if cu.starts_with("SEGMENT NAME:") {
+                ev.segment = Some(value("SEGMENT NAME:"));
             } else if cu.starts_with("EFFECT NAME:") {
                 ev.effect = Some(value("EFFECT NAME:"));
             } else if cu.starts_with("LOC:") {
@@ -234,9 +247,73 @@ fn parse(text: &str, report: &mut Report) -> Parsed {
         if upper.starts_with(">>>") || upper.starts_with("REM") {
             continue;
         }
-        report.warn(format!("unrecognised EDL line ignored: {}", l.chars().take(60).collect::<String>()));
+        report.warn(format!("{UNREAD}{}", l.chars().take(60).collect::<String>()));
     }
     p
+}
+
+/// One event of an EDL read as a source range (CFA4-LOSSLESS-MEDIA-TOOLS-001 K6): the source
+/// timecodes of the event's last (incoming) line, in frames at the rate asked for.
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct SourceRange {
+    /// The event number as written.
+    pub event: String,
+    pub reel: String,
+    /// `* TO CLIP NAME:` / `* FROM CLIP NAME:` when present.
+    pub clip: Option<String>,
+    /// `* SEGMENT NAME:` when present.
+    pub segment: Option<String>,
+    /// Source in and out (exclusive) in frames, timecode origin included.
+    pub src_in: i64,
+    pub src_out: i64,
+}
+
+/// How the report names a line the parser could not read.
+const UNREAD: &str = "unrecognised EDL line ignored: ";
+/// How the report names a `* SEGMENT NAME JSON:` line whose name cannot be decoded.
+const BAD_NAME: &str = "EDL segment name is not valid JSON: ";
+
+/// The source ranges of an EDL's events, against `rate`. Refused (instead of converted) when the
+/// list cannot have been written at `rate`: a frame field at or above the rate's timecode base, or
+/// drop-frame timecode for a rate without drop frame, and when a line cannot be read (it could be
+/// an event).
+pub fn source_ranges(text: &str, rate: FrameRate) -> std::result::Result<Vec<SourceRange>, String> {
+    let mut report = Report::default();
+    let p = parse(text, &mut report);
+    // a line that is not read could be an event: refuse rather than return fewer ranges (a split
+    // line only moves sound, so the source ranges stay exact without it)
+    let unread: Vec<&str> =
+        report.entries.iter().filter(|e| e.message.starts_with(UNREAD) || e.message.starts_with(BAD_NAME)).map(|e| e.message.as_str()).collect();
+    if let Some(first) = unread.first() {
+        return Err(format!("{} line(s) of the EDL cannot be read ({first})", unread.len()));
+    }
+    let base = rate.timecode_base();
+    if p.max_ff >= base {
+        return Err(format!("the EDL counts frames up to {}, which {} fps timecode cannot hold: it was written at another frame rate", p.max_ff, rate.label()));
+    }
+    if p.any_df && !rate.supports_drop_frame() {
+        return Err(format!("the EDL uses drop-frame timecode, which {} fps does not have: it was written at another frame rate", rate.label()));
+    }
+    let mut out = Vec::new();
+    for ev in &p.events {
+        let Some(l) = ev.lines.last() else { continue };
+        let df = ev.df || l.tcs[0].df;
+        let frames = |t: Tc| fields_to_frames(t.h, t.m, t.s, t.f, rate, df && rate.supports_drop_frame());
+        // a frame count past i64 would be saturated into a wrong range: refuse it instead
+        let nominal = |t: &Tc| (i128::from(t.h) * 3600 + i128::from(t.m) * 60 + i128::from(t.s)) * i128::from(base) + i128::from(t.f);
+        if l.tcs[..2].iter().any(|t| i64::try_from(nominal(t)).is_err()) {
+            return Err(format!("event {}: its source timecode is too large to count in frames", l.num));
+        }
+        out.push(SourceRange {
+            event: l.num.clone(),
+            reel: l.reel.clone(),
+            clip: ev.to_clip.clone().or_else(|| ev.from_clip.clone()),
+            segment: ev.segment.clone(),
+            src_in: frames(l.tcs[0]),
+            src_out: frames(l.tcs[1]),
+        });
+    }
+    Ok(out)
 }
 
 fn guess_rate(p: &Parsed) -> FrameRate {
@@ -1020,6 +1097,48 @@ fn edl_transition(e: &cfa4_project::EffectInstance, report: &mut Report) -> (Str
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn source_ranges_refuse_a_line_they_cannot_read() {
+        let ok = "TITLE: T\nFCM: NON-DROP FRAME\n\n001  AX       V     C        00:00:01:00 00:00:02:00 00:00:00:00 00:00:01:00\n";
+        assert_eq!(source_ranges(ok, FrameRate::FPS_25).unwrap().len(), 1);
+        let damaged = format!("{ok}002  AX       V     C        00:00:03:00 00:0X:04:00 00:00:01:00 00:00:02:00\n");
+        let e = source_ranges(&damaged, FrameRate::FPS_25).unwrap_err();
+        assert!(e.contains("cannot be read") && e.contains("002"), "{e}");
+    }
+
+    #[test]
+    fn a_damaged_encoded_segment_name_is_refused_not_read_raw() {
+        let ok = "TITLE: T\nFCM: NON-DROP FRAME\n\n001  AX       V     C        00:00:01:00 00:00:02:00 00:00:00:00 00:00:01:00\n";
+        let good = format!("{ok}* SEGMENT NAME JSON: \"two\\nlines\"\n");
+        assert_eq!(source_ranges(&good, FrameRate::FPS_25).unwrap()[0].segment.as_deref(), Some("two\nlines"));
+        let bad = format!("{ok}* SEGMENT NAME JSON: \"two\\qlines\"\n");
+        let e = source_ranges(&bad, FrameRate::FPS_25).unwrap_err();
+        assert!(e.contains("cannot be read") && e.contains("SEGMENT NAME JSON") && e.contains("not valid JSON"), "{e}");
+        // the raw key still reads its text as it is, quotes included
+        let raw = format!("{ok}* SEGMENT NAME: \"two\\qlines\"\n");
+        assert_eq!(source_ranges(&raw, FrameRate::FPS_25).unwrap()[0].segment.as_deref(), Some("\"two\\qlines\""));
+    }
+
+    #[test]
+    fn an_overflowing_timecode_field_is_refused() {
+        assert_eq!(parse_tc("01:02:03:04").map(|t| (t.h, t.f)), Some((1, 4)));
+        assert_eq!(parse_tc("99999999999999999999:00:00:00"), None);
+        assert_eq!(parse_tc("00:00:00:99999999999999999999"), None);
+        let ok = "TITLE: T\nFCM: NON-DROP FRAME\n\n001  AX       V     C        00:00:01:00 00:00:02:00 00:00:00:00 00:00:01:00\n";
+        let huge = format!("{ok}002  AX       V     C        00:00:03:00 99999999999999999999:00:04:00 00:00:01:00 00:00:02:00\n");
+        assert!(source_ranges(&huge, FrameRate::FPS_25).is_err());
+    }
+
+    #[test]
+    fn a_timecode_past_the_frame_count_is_refused() {
+        // every field fits i64, but the frame count does not: never a saturated range
+        let ok = "TITLE: T\nFCM: NON-DROP FRAME\n\n001  AX       V     C        00:00:01:00 00:00:02:00 00:00:00:00 00:00:01:00\n";
+        assert_eq!(source_ranges(ok, FrameRate::FPS_25).unwrap().len(), 1);
+        let huge = format!("{ok}002  AX       V     C        00:00:03:00 9223372036854775807:00:04:00 00:00:01:00 00:00:02:00\n");
+        let e = source_ranges(&huge, FrameRate::FPS_25).unwrap_err();
+        assert!(e.contains("event 002") && e.contains("too large"), "{e}");
+    }
 
     #[test]
     fn channels() {

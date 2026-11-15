@@ -10,12 +10,19 @@ use serde_json::{Value, json};
 
 use crate::Session;
 
+/// In-memory files that count whole-file reads of a file that exists (a host without a
+/// random-access reader; its file sizes come without reading the file, as on a real host).
 #[derive(Default)]
-struct MemoryFiles(Mutex<BTreeMap<String, Vec<u8>>>);
+struct MemoryFiles(Mutex<BTreeMap<String, Vec<u8>>>, std::sync::atomic::AtomicUsize);
 
 impl crate::Services for MemoryFiles {
     fn read_file(&self, path: &str) -> std::io::Result<Vec<u8>> {
-        self.0.lock().unwrap().get(path).cloned().ok_or_else(|| std::io::ErrorKind::NotFound.into())
+        let b = self.0.lock().unwrap().get(path).cloned().ok_or(std::io::ErrorKind::NotFound)?;
+        self.1.fetch_add(1, std::sync::atomic::Ordering::Relaxed);
+        Ok(b)
+    }
+    fn file_size(&self, path: &str) -> std::io::Result<u64> {
+        self.0.lock().unwrap().get(path).map(|b| b.len() as u64).ok_or_else(|| std::io::ErrorKind::NotFound.into())
     }
     fn write_file(&self, path: &str, bytes: &[u8]) -> std::io::Result<()> {
         self.0.lock().unwrap().insert(path.to_owned(), bytes.to_vec());
@@ -140,6 +147,27 @@ fn mpeg_cuts_the_executor_cannot_run_are_refused_before_writing() {
     assert!(matches!(f.format, cfa4_mpegts::Format::Ps { .. }));
 }
 
+/// `maxBytes` holds for an MPEG cut too: a file one byte over it is refused before anything
+/// is written, both copied and with re-encoded boundaries.
+#[test]
+fn the_memory_limit_holds_for_mpeg_cuts() {
+    let (mut s, files) = session();
+    let copy = json!({"path": "clip.ts", "in": frame(10), "out": frame(30), "output": "copy.ts"});
+    let fa = json!({"path": "clip.ts", "in": frame(5), "out": frame(33), "mode": "frame-accurate", "output": "fa.ts", "confirm": true});
+    for p in [copy, fa] {
+        let out = p["output"].as_str().unwrap().to_string();
+        let need = s.execute("export.start", p.clone()).unwrap()["bytes"].as_u64().unwrap();
+        files.0.lock().unwrap().remove(&out);
+        let mut capped = p.clone();
+        capped["maxBytes"] = json!(need - 1);
+        let e = s.execute("export.start", capped.clone()).unwrap_err().to_string();
+        assert!(e.contains("maxBytes"), "{out}: {e}");
+        assert!(!files.0.lock().unwrap().contains_key(&out), "{out}: nothing was written");
+        capped["maxBytes"] = json!(need);
+        assert_eq!(s.execute("export.start", capped).unwrap()["bytes"].as_u64(), Some(need), "{out}");
+    }
+}
+
 /// The Source monitor's MPEG clip: media time 0 is the first presented picture.
 #[test]
 fn a_project_mpeg_item_is_cut_on_its_marked_range() {
@@ -194,4 +222,19 @@ fn a_frame_accurate_mpeg_cut_re_encodes_its_boundaries_once_confirmed() {
         s.execute("export.start", p).unwrap()["report"]["minPsnr"].as_f64().unwrap()
     };
     assert!(psnr(&mut s, 4.0) > psnr(&mut s, 51.0));
+}
+
+#[test]
+fn a_batch_reads_an_mpeg_source_once_for_all_its_ranges() {
+    let (mut s, files) = session();
+    let ranges = json!([{"in": frame(0), "out": frame(10)}, {"in": frame(10), "out": frame(20)}, {"in": frame(20), "out": frame(30)}]);
+    let reads = || files.1.load(std::sync::atomic::Ordering::Relaxed);
+    let before = reads();
+    s.execute("export.plan", json!({"path": "clip.ts", "output": "r{n}.ts", "ranges": ranges})).unwrap();
+    // the format check and the opened source, once for the batch, not once per range
+    assert!(reads() - before <= 2, "{} whole-file reads to plan three ranges", reads() - before);
+    let before = reads();
+    let r = s.execute("export.start", json!({"path": "clip.ts", "output": "r{n}.ts", "ranges": ranges})).unwrap();
+    assert_eq!(r["verified"], true, "{r}");
+    assert!(reads() - before <= 3, "{} whole-file reads to cut three ranges", reads() - before);
 }

@@ -47,6 +47,7 @@ use serde::{Deserialize, Serialize};
 
 pub use common::{file_url_to_path, path_to_file_url, resolve_path};
 pub use comp::ExtractedMedia;
+pub use edl::{SourceRange, source_ranges as edl_source_ranges};
 
 /// An interchange format.
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Hash, Serialize, Deserialize)]

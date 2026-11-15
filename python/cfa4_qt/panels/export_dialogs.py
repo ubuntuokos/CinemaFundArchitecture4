@@ -41,7 +41,7 @@ EXPORT_DIALOGS = {
     "file.exportAaf": (N_("AAF Export Settings"), "aafExport"),
     "file.exportOmf": (N_("OMF Export Settings"), "omfExport"),
 }
-STILL_SUFFIXES = (".png", ".jpg", ".jpeg", ".tif", ".tiff", ".bmp")
+STILL_SUFFIXES = (".png", ".jpg", ".jpeg", ".tif", ".tiff", ".bmp", ".webp", ".heic", ".heif")
 
 
 def clean_name(name: str) -> str:
@@ -58,6 +58,19 @@ def frame_path(folder: str, name: str, ext: str) -> str:
             break
     file = stem if stem.lower().endswith(f".{ext}") else f"{stem}.{ext}"
     return str(Path(os.path.expanduser(folder.strip())) / file)
+
+
+def frame_options(ext: str, quality: int, width: int, height: int) -> dict[str, Any]:
+    """Export Frame's quality (JPEG only) and size (0 keeps the frame's own; one side alone keeps
+    the aspect ratio) as engine parameters (K7)."""
+    out: dict[str, Any] = {}
+    if ext in ("jpeg", "jpg"):
+        out["quality"] = quality
+    if width > 0:
+        out["width"] = width
+    if height > 0:
+        out["height"] = height
+    return out
 
 
 class ExportSettingsDialog(ClipDialog):
@@ -107,6 +120,27 @@ class ExportSettingsDialog(ClipDialog):
         self.depth_box.setCurrentIndex(1 if p.get("depth") == 16 else 0)
         self.depth_box.currentIndexChanged.connect(lambda _i: p.__setitem__("depth", self.depth_box.currentData()))
         row.addWidget(self.depth_box)
+        row.addStretch(1)
+        # quality (JPEG) and output size (CFA4-LOSSLESS-MEDIA-TOOLS-001 K7); 0 keeps the frame's size
+        row = self._row(N_("Quality:"))
+        self.quality_box = QSpinBox(self)
+        self.quality_box.setObjectName("exportFrame.quality")
+        self.quality_box.setRange(1, 100)
+        self.quality_box.setValue(_int(p.get("quality"), 95))
+        row.addWidget(self.quality_box)
+        row.addStretch(1)
+        row = self._row(N_("Size:"))
+        self.size_boxes: dict[str, QSpinBox] = {}
+        for key in ("width", "height"):
+            box = QSpinBox(self)
+            box.setObjectName(f"exportFrame.{key}")
+            box.setRange(0, 16384)
+            box.setSpecialValueText(tr("Original"))
+            box.setSuffix(" px")
+            self.size_boxes[key] = box
+            row.addWidget(box)
+            if key == "width":
+                row.addWidget(QLabel("×", self))
         row.addStretch(1)
         row = self._row(N_("Path:"))
         self.folder_edit = QLineEdit(str(p.get("folder") or ""), self)
@@ -162,6 +196,8 @@ class ExportSettingsDialog(ClipDialog):
         if not deep:
             self.depth_box.setCurrentIndex(0)
         self.params["depth"] = self.depth_box.currentData()
+        # only JPEG is lossy; the other formats are written without loss
+        self.quality_box.setEnabled(ext == "jpeg" or ext == "jpg")
         self._set_replace(None)
 
     def _folder_changed(self, text: str) -> None:
@@ -198,6 +234,7 @@ class ExportSettingsDialog(ClipDialog):
         key = "item" if p.get("target") == "source" else "sequence"
         if key in p:
             params[key] = p[key]
+        params.update(frame_options(str(p.get("format") or "png"), self.quality_box.value(), self.size_boxes["width"].value(), self.size_boxes["height"].value()))
         self.sent.append(params)
 
         def done(error: str | None, result: Any = None) -> None:

@@ -71,6 +71,10 @@ def build_tools_menu(win: MainWindow, menu: QMenu) -> None:
     smart_cut.setObjectName("tools.video.smartCut")
     smart_cut.setToolTip(tr("Open a video clip in the Source monitor first."))
     smart_cut.triggered.connect(lambda _c=False: win.source_monitor.open_smart_cut())
+    find_segments = video.addAction(tr("Find Segments…"))
+    find_segments.setObjectName("tools.video.findSegments")
+    find_segments.setToolTip(tr("Open a video clip in the Source monitor first."))
+    find_segments.triggered.connect(lambda _c=False: win.source_monitor.open_find_segments())
     smart_export = video.addAction(tr("Smart Export…"))
     smart_export.setObjectName("tools.video.smartExport")
     smart_export.triggered.connect(lambda _c=False: open_smart_export(win))
@@ -83,6 +87,7 @@ def build_tools_menu(win: MainWindow, menu: QMenu) -> None:
     def video_shown() -> None:
         src = win.source_monitor
         smart_cut.setEnabled(src.source is not None and src.has_video())
+        find_segments.setEnabled(src.source is not None and src.has_video())
         smart_export.setEnabled(win.sequence is not None)
         gop.blockSignals(True)
         gop.setChecked(bool(win.timeline.canvas.show_gop_marks))

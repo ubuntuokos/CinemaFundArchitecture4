@@ -12,7 +12,7 @@ use serde_json::{Value, json};
 use crate::Session;
 
 #[derive(Default)]
-struct MemoryFiles(Mutex<BTreeMap<String, Vec<u8>>>);
+pub(crate) struct MemoryFiles(pub(crate) Mutex<BTreeMap<String, Vec<u8>>>);
 
 impl crate::Services for MemoryFiles {
     fn read_file(&self, path: &str) -> std::io::Result<Vec<u8>> {
@@ -25,7 +25,7 @@ impl crate::Services for MemoryFiles {
 }
 
 /// 40 pictures of H.264 at 25 fps, an IDR every 10, no B-frames (PTS = picture number).
-fn source_mp4() -> Vec<u8> {
+pub(crate) fn source_mp4() -> Vec<u8> {
     source_mp4_of(40)
 }
 
@@ -57,13 +57,13 @@ fn source_mp4_of(n: usize) -> Vec<u8> {
     mux.finish().unwrap().into_inner()
 }
 
-fn session() -> (Session, Arc<MemoryFiles>) {
+pub(crate) fn session() -> (Session, Arc<MemoryFiles>) {
     let files = Arc::new(MemoryFiles::default());
     files.0.lock().unwrap().insert("clip.mp4".into(), source_mp4());
     (Session::new(files.clone()), files)
 }
 
-fn frame(n: i64) -> Value {
+pub(crate) fn frame(n: i64) -> Value {
     json!({"frame": n})
 }
 
@@ -296,7 +296,7 @@ fn a_project_media_item_is_cut_on_its_marked_range() {
 
 /// [`source_mp4`] with an AAC track (stand-in packets of 1024 samples at 48 kHz, 2112 samples of
 /// priming hidden by its edit list) and a 16-bit mono PCM track, both as long as the video.
-fn av_mp4() -> Vec<u8> {
+pub(crate) fn av_mp4() -> Vec<u8> {
     use cfa4_isobmff::PcmConfig;
     let video = source_mp4();
     let v = cfa4_isobmff::open(video.as_slice()).unwrap();
@@ -373,4 +373,44 @@ fn repeated_exports_of_one_source_are_identical_and_follow_a_changed_source() {
     assert_eq!(a["frames"], 20);
     let err = s.execute("export.start", json!({"path": "clip.mp4", "in": frame(10), "out": frame(30), "output": "late.mp4"})).unwrap_err().to_string();
     assert!(!files.0.lock().unwrap().contains_key("late.mp4"), "nothing is written for a range past the new end: {err}");
+}
+
+/// K14 of CFA4-LOSSLESS-MEDIA-TOOLS-001: the chapters inside the cut go with it, moved onto the
+/// cut's timeline; the one running at the cut's start starts it.
+#[test]
+fn the_chapters_inside_the_cut_are_kept_and_moved() {
+    let ch = |s: f64, t: &str| cfa4_isobmff::Chapter { start_100ns: (s * 10_000_000.0) as u64, title: t.into() };
+    let with = cfa4_isobmff::replace_chapters(&source_mp4(), &[ch(0.0, "A"), ch(0.6, "B"), ch(1.2, "C")]).unwrap();
+    assert_eq!(cfa4_isobmff::open(with.as_slice()).unwrap().metadata.chapters.len(), 3);
+    let files = Arc::new(MemoryFiles::default());
+    files.0.lock().unwrap().insert("ch.mp4".into(), with);
+    let mut s = Session::new(files.clone());
+    // frames 10–30 (0.4 s – 1.2 s)
+    let r = s.execute("export.start", json!({"path": "ch.mp4", "in": frame(10), "out": frame(30), "output": "cut.mp4"})).unwrap();
+    assert_eq!(r["chapters"], json!([{"start100ns": 0, "title": "A"}, {"start100ns": 2_000_000, "title": "B"}]), "{r}");
+    let out = files.0.lock().unwrap().get("cut.mp4").cloned().unwrap();
+    let back = cfa4_isobmff::open(out.as_slice()).unwrap();
+    let got: Vec<(u64, &str)> = back.metadata.chapters.iter().map(|c| (c.start_100ns, c.title.as_str())).collect();
+    assert_eq!(got, [(0, "A"), (2_000_000, "B")]);
+    // a source without chapters gives a cut without chapters
+    let (mut s, files) = session();
+    let r = s.execute("export.start", json!({"path": "clip.mp4", "in": frame(10), "out": frame(30), "output": "plain.mp4"})).unwrap();
+    assert_eq!(r["chapters"], json!([]));
+    assert!(cfa4_isobmff::open(files.0.lock().unwrap()["plain.mp4"].as_slice()).unwrap().metadata.chapters.is_empty());
+}
+
+#[test]
+fn replacing_chapters_keeps_the_samples_and_refuses_odd_files() {
+    let src = source_mp4();
+    let ch = vec![cfa4_isobmff::Chapter { start_100ns: 5, title: "x".into() }];
+    let with = cfa4_isobmff::replace_chapters(&src, &ch).unwrap();
+    let (a, b) = (cfa4_isobmff::open(src.as_slice()).unwrap(), cfa4_isobmff::open(with.as_slice()).unwrap());
+    assert_eq!(a.tracks, b.tracks);
+    // removing them gives the chapters back to none
+    let without = cfa4_isobmff::replace_chapters(&with, &[]).unwrap();
+    assert!(cfa4_isobmff::open(without.as_slice()).unwrap().metadata.chapters.is_empty());
+    // garbage and truncated files are refused, never a panic
+    for bad in [vec![], vec![0u8; 3], src[..src.len() - 5].to_vec(), b"\0\0\0\x01moov".to_vec()] {
+        assert!(cfa4_isobmff::replace_chapters(&bad, &ch).is_err());
+    }
 }
