@@ -631,6 +631,11 @@
   },
   {
    "crate": "cfa4-engine",
+   "fn": "render_source",
+   "module": "studio.rs"
+  },
+  {
+   "crate": "cfa4-engine",
    "fn": "mix_cues",
    "module": "voiceover.rs"
   },
@@ -1364,6 +1369,13 @@
    "kind": "enum",
    "module": "channels.rs",
    "name": "Layout"
+  },
+  {
+   "class": "frame",
+   "crate": "cfa4-engine",
+   "kind": "struct",
+   "module": "control_surfaces.rs",
+   "name": "ControlSurfacePrefs"
   },
   {
    "class": "frame",
@@ -2404,6 +2416,20 @@
   {
    "class": "other",
    "crate": "cfa4-engine",
+   "kind": "struct",
+   "module": "control_surfaces.rs",
+   "name": "BuiltinProfile"
+  },
+  {
+   "class": "other",
+   "crate": "cfa4-engine",
+   "kind": "struct",
+   "module": "control_surfaces.rs",
+   "name": "DeviceSetting"
+  },
+  {
+   "class": "other",
+   "crate": "cfa4-engine",
    "kind": "enum",
    "module": "doc_path.rs",
    "name": "NotFollowed"
@@ -2505,6 +2531,13 @@
    "kind": "struct",
    "module": "live.rs",
    "name": "LiveState"
+  },
+  {
+   "class": "other",
+   "crate": "cfa4-engine",
+   "kind": "struct",
+   "module": "ltc_read.rs",
+   "name": "LtcFound"
   },
   {
    "class": "other",
@@ -3055,6 +3088,20 @@
   {
    "class": "other",
    "crate": "cfa4-engine",
+   "kind": "enum",
+   "module": "studio.rs",
+   "name": "LayerPicture"
+  },
+  {
+   "class": "other",
+   "crate": "cfa4-engine",
+   "kind": "struct",
+   "module": "studio.rs",
+   "name": "ProgramLayer"
+  },
+  {
+   "class": "other",
+   "crate": "cfa4-engine",
    "kind": "struct",
    "module": "sync.rs",
    "name": "Anchor"
@@ -3216,6 +3263,34 @@
   {
    "class": "other",
    "crate": "cfa4-export",
+   "kind": "enum",
+   "module": "copy/adapter.rs",
+   "name": "Adapter"
+  },
+  {
+   "class": "other",
+   "crate": "cfa4-export",
+   "kind": "struct",
+   "module": "copy/adapter.rs",
+   "name": "Adts"
+  },
+  {
+   "class": "other",
+   "crate": "cfa4-export",
+   "kind": "struct",
+   "module": "copy/adapter.rs",
+   "name": "Allowed"
+  },
+  {
+   "class": "other",
+   "crate": "cfa4-export",
+   "kind": "struct",
+   "module": "copy/adapter.rs",
+   "name": "AnnexB"
+  },
+  {
+   "class": "other",
+   "crate": "cfa4-export",
    "kind": "struct",
    "module": "copy/mod.rs",
    "name": "CopiedTrack"
@@ -3268,6 +3343,13 @@
    "kind": "struct",
    "module": "copy/mod.rs",
    "name": "StrictValidation"
+  },
+  {
+   "class": "other",
+   "crate": "cfa4-export",
+   "kind": "struct",
+   "module": "copy/mod.rs",
+   "name": "Transformation"
   },
   {
    "class": "other",
@@ -4603,6 +4685,20 @@
    "class": "other",
    "crate": "cfa4-project",
    "kind": "struct",
+   "module": "studio.rs",
+   "name": "LiveStudio"
+  },
+  {
+   "class": "other",
+   "crate": "cfa4-project",
+   "kind": "struct",
+   "module": "studio.rs",
+   "name": "StudioScene"
+  },
+  {
+   "class": "other",
+   "crate": "cfa4-project",
+   "kind": "struct",
    "module": "transcript.rs",
    "name": "Speaker"
   },
@@ -5868,6 +5964,27 @@
   },
   {
    "class": "render",
+   "crate": "cfa4-project",
+   "kind": "enum",
+   "module": "studio.rs",
+   "name": "SourceKind"
+  },
+  {
+   "class": "render",
+   "crate": "cfa4-project",
+   "kind": "struct",
+   "module": "studio.rs",
+   "name": "SourceTransform"
+  },
+  {
+   "class": "render",
+   "crate": "cfa4-project",
+   "kind": "struct",
+   "module": "studio.rs",
+   "name": "StudioSource"
+  },
+  {
+   "class": "render",
    "crate": "cfa4-qc",
    "kind": "struct",
    "module": "report.rs",
@@ -6339,6 +6456,26 @@
    "to": "cfa4-time"
   },
   {
+   "from": "cfa4-cli/serve_live.rs",
+   "item": "Session",
+   "to": "cfa4-engine"
+  },
+  {
+   "from": "cfa4-cli/serve_live.rs",
+   "item": "studio",
+   "to": "cfa4-engine"
+  },
+  {
+   "from": "cfa4-cli/serve_live.rs",
+   "item": "LiveStudio",
+   "to": "cfa4-project"
+  },
+  {
+   "from": "cfa4-cli/serve_live.rs",
+   "item": "StudioScene",
+   "to": "cfa4-project"
+  },
+  {
    "from": "cfa4-cli/serve_lumetri.rs",
    "item": "Session",
    "to": "cfa4-engine"
@@ -6497,6 +6634,16 @@
    "from": "cfa4-cli/serve_shuttle.rs",
    "item": "AudioEffect",
    "to": "cfa4-audio-dsp"
+  },
+  {
+   "from": "cfa4-cli/serve_surface.rs",
+   "item": "Session",
+   "to": "cfa4-engine"
+  },
+  {
+   "from": "cfa4-cli/serve_surface.rs",
+   "item": "control_surfaces",
+   "to": "cfa4-engine"
   },
   {
    "from": "cfa4-cli/serve_tcsync.rs",
@@ -6670,6 +6817,11 @@
   },
   {
    "from": "cfa4-engine/captions.rs",
+   "item": "Vec2",
+   "to": "cfa4-geom"
+  },
+  {
+   "from": "cfa4-engine/captions.rs",
    "item": "SharedReader",
    "to": "cfa4-media"
   },
@@ -6685,12 +6837,42 @@
   },
   {
    "from": "cfa4-engine/captions.rs",
+   "item": "ItemId",
+   "to": "cfa4-project"
+  },
+  {
+   "from": "cfa4-engine/captions.rs",
+   "item": "Keyframe",
+   "to": "cfa4-project"
+  },
+  {
+   "from": "cfa4-engine/captions.rs",
+   "item": "Track",
+   "to": "cfa4-project"
+  },
+  {
+   "from": "cfa4-engine/captions.rs",
+   "item": "TrackId",
+   "to": "cfa4-project"
+  },
+  {
+   "from": "cfa4-engine/captions.rs",
+   "item": "resolve_auto_points",
+   "to": "cfa4-project"
+  },
+  {
+   "from": "cfa4-engine/captions.rs",
    "item": "FrameRate",
    "to": "cfa4-time"
   },
   {
    "from": "cfa4-engine/captions.rs",
    "item": "Tick",
+   "to": "cfa4-time"
+  },
+  {
+   "from": "cfa4-engine/captions.rs",
+   "item": "TimeRange",
    "to": "cfa4-time"
   },
   {
@@ -7289,6 +7471,16 @@
    "to": "cfa4-time"
   },
   {
+   "from": "cfa4-engine/dcp_import.rs",
+   "item": "BinId",
+   "to": "cfa4-project"
+  },
+  {
+   "from": "cfa4-engine/dcp_import.rs",
+   "item": "Tick",
+   "to": "cfa4-time"
+  },
+  {
    "from": "cfa4-engine/dcpomatic.rs",
    "item": "Report",
    "to": "cfa4-export"
@@ -7561,6 +7753,11 @@
   {
    "from": "cfa4-engine/export_tools.rs",
    "item": "dcp_language",
+   "to": "cfa4-export"
+  },
+  {
+   "from": "cfa4-engine/export_tools.rs",
+   "item": "dcp_subtitle_language",
    "to": "cfa4-export"
   },
   {
@@ -8206,6 +8403,21 @@
   {
    "from": "cfa4-engine/live.rs",
    "item": "Tick",
+   "to": "cfa4-time"
+  },
+  {
+   "from": "cfa4-engine/ltc_read.rs",
+   "item": "SourceProvider",
+   "to": "cfa4-render"
+  },
+  {
+   "from": "cfa4-engine/ltc_read.rs",
+   "item": "FrameRate",
+   "to": "cfa4-time"
+  },
+  {
+   "from": "cfa4-engine/ltc_read.rs",
+   "item": "fields_to_frames",
    "to": "cfa4-time"
   },
   {
@@ -9604,6 +9816,56 @@
    "to": "cfa4-time"
   },
   {
+   "from": "cfa4-engine/studio.rs",
+   "item": "Affine",
+   "to": "cfa4-geom"
+  },
+  {
+   "from": "cfa4-engine/studio.rs",
+   "item": "Vec2",
+   "to": "cfa4-geom"
+  },
+  {
+   "from": "cfa4-engine/studio.rs",
+   "item": "still",
+   "to": "cfa4-media"
+  },
+  {
+   "from": "cfa4-engine/studio.rs",
+   "item": "Param",
+   "to": "cfa4-project"
+  },
+  {
+   "from": "cfa4-engine/studio.rs",
+   "item": "Project",
+   "to": "cfa4-project"
+  },
+  {
+   "from": "cfa4-engine/studio.rs",
+   "item": "graphic",
+   "to": "cfa4-project"
+  },
+  {
+   "from": "cfa4-engine/studio.rs",
+   "item": "studio",
+   "to": "cfa4-project"
+  },
+  {
+   "from": "cfa4-engine/studio.rs",
+   "item": "graphic_clip",
+   "to": "cfa4-render"
+  },
+  {
+   "from": "cfa4-engine/studio.rs",
+   "item": "image",
+   "to": "cfa4-render"
+  },
+  {
+   "from": "cfa4-engine/studio.rs",
+   "item": "Tick",
+   "to": "cfa4-time"
+  },
+  {
    "from": "cfa4-engine/sync.rs",
    "item": "sync",
    "to": "cfa4-audio-dsp"
@@ -10051,6 +10313,11 @@
   {
    "from": "cfa4-export/raster.rs",
    "item": "ffmpeg_or_skip",
+   "to": "cfa4-testkit"
+  },
+  {
+   "from": "cfa4-export/raster.rs",
+   "item": "ffprobe",
    "to": "cfa4-testkit"
   },
   {
@@ -11970,6 +12237,31 @@
   },
   {
    "from": "cfa4-render/vfx/mod.rs",
+   "item": "Tick",
+   "to": "cfa4-time"
+  },
+  {
+   "from": "cfa4-render/vfx/pixelate.rs",
+   "item": "WorkingSpace",
+   "to": "cfa4-color"
+  },
+  {
+   "from": "cfa4-render/vfx/pixelate.rs",
+   "item": "EffectInstance",
+   "to": "cfa4-project"
+  },
+  {
+   "from": "cfa4-render/vfx/pixelate.rs",
+   "item": "ParamValue",
+   "to": "cfa4-project"
+  },
+  {
+   "from": "cfa4-render/vfx/pixelate.rs",
+   "item": "effect",
+   "to": "cfa4-project"
+  },
+  {
+   "from": "cfa4-render/vfx/pixelate.rs",
    "item": "Tick",
    "to": "cfa4-time"
   },
