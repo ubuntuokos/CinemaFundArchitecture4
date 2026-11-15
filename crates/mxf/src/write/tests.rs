@@ -1805,7 +1805,7 @@ fn as11_metadata_reads_back() {
     let segments = vec![Segment { start: 2, duration: 5, part_number: 1, part_total: 2 }, Segment { start: 7, duration: 2, part_number: 2, part_total: 2 }];
     let mut cfg = op1a_config(Rational::new(25, 1), PictureCoding::ProRes { profile: 3 });
     cfg.sound.truncate(1);
-    cfg.as11 = Some(As11 { core: core.clone(), segments: segments.clone(), ukdpp: ukdpp.clone() });
+    cfg.as11 = Some(As11 { core: core.clone(), segments: segments.clone(), ukdpp: ukdpp.clone(), ..Default::default() });
     let mut w = MxfWriter::new(Cursor::new(Vec::new()), cfg.clone()).unwrap();
     for i in 0..10 {
         w.push_picture(&prores_like(i), FrameInfo::intra()).unwrap();
@@ -1852,8 +1852,54 @@ fn as11_metadata_reads_back() {
     let mut bad = core.clone();
     bad[4].1 = "one.two".into();
     assert!(refuse(As11 { core: bad, ..Default::default() }).contains("ShimVersion"));
-    let e = refuse(As11 { core: core.clone(), segments: segments.clone(), ukdpp: vec![] });
+    let e = refuse(As11 { core: core.clone(), segments: segments.clone(), ukdpp: vec![], ..Default::default() });
     assert!(e.contains("after the programme"), "{e}");
-    let e = refuse(As11 { core: core.clone(), segments: vec![segments[1], segments[0]], ukdpp: vec![] });
+    let e = refuse(As11 { core: core.clone(), segments: vec![segments[1], segments[0]], ukdpp: vec![], ..Default::default() });
     assert!(e.contains("starts before"), "{e}");
+}
+
+/// #1254: AMWA AS-10 metadata (a DMS_AS_10 framework, no AS-11 Core needed) reads back, and
+/// malformed AS-10 metadata is refused.
+#[test]
+fn as10_metadata_round_trips() {
+    use crate::as11::{As11, Segment};
+    let kv = |v: &[(&str, &str)]| -> Vec<(String, String)> { v.iter().map(|(k, v)| (k.to_string(), v.to_string())).collect() };
+    let umid = "060a2b340101010501010d4313000000".to_string() + "0123456789abcdef0123456789abcdef";
+    let as10 = kv(&[
+        ("ShimName", "NRK_HD_2012"),
+        ("MainTitle", "Tést"),
+        ("Type", "News"),
+        ("CommonSpanningID", &umid),
+        ("SpanningNumber", "2"),
+        ("CumulativeDuration", "250"),
+    ]);
+    let mut cfg = op1a_config(Rational::new(25, 1), PictureCoding::ProRes { profile: 3 });
+    cfg.sound.truncate(1);
+    cfg.as11 = Some(As11 { as10: as10.clone(), ..Default::default() });
+    let mut w = MxfWriter::new(Cursor::new(Vec::new()), cfg).unwrap();
+    for i in 0..4 {
+        w.push_picture(&prores_like(i), FrameInfo::intra()).unwrap();
+        w.push_sound(0, &pcm16(i * 1920, 1920)).unwrap();
+    }
+    let bytes = w.finish().unwrap().into_inner();
+    let f = open(&bytes).unwrap();
+    assert_eq!(f.tracks.len(), 2, "the DM track is not an essence track");
+    let a = f.as11.unwrap();
+    assert!(a.core.is_empty() && a.segments.is_empty() && a.ukdpp.is_empty());
+    let sorted = |mut v: Vec<(String, String)>| {
+        v.sort();
+        v
+    };
+    assert_eq!(sorted(a.as10), sorted(as10.clone()));
+    // a missing ShimName, an unknown item, a bad UMID and AS-10 with parts but no Core are refused
+    let refuse = |a: As11| {
+        let mut cfg = op1a_config(Rational::new(25, 1), PictureCoding::ProRes { profile: 3 });
+        cfg.as11 = Some(a);
+        MxfWriter::new(Cursor::new(Vec::new()), cfg).err().unwrap().to_string()
+    };
+    assert!(refuse(As11 { as10: kv(&[("MainTitle", "x")]), ..Default::default() }).contains("ShimName"));
+    assert!(refuse(As11 { as10: kv(&[("ShimName", "x"), ("Nope", "1")]), ..Default::default() }).contains("Nope"));
+    assert!(refuse(As11 { as10: kv(&[("ShimName", "x"), ("CommonSpanningID", "1234")]), ..Default::default() }).contains("CommonSpanningID"));
+    let part = Segment { start: 0, duration: 2, part_number: 1, part_total: 1 };
+    assert!(refuse(As11 { as10: as10.clone(), segments: vec![part], ..Default::default() }).contains("Core"));
 }

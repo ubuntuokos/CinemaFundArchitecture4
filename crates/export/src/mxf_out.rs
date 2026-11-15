@@ -182,7 +182,36 @@ impl MxfMux {
                 core: as11::parse_framework_text(&settings.mxf_as11_core).map_err(bad)?,
                 segments: as11::parse_segments_text(&settings.mxf_as11_segments, clock).map_err(bad)?,
                 ukdpp,
+                as10: Vec::new(),
             });
+        }
+        if !atom && !settings.mxf_as10.trim().is_empty() {
+            use cfa4_mxf::as10;
+            let bad = |e: String| ExportError::Unsupported(format!("AS-10: {e}"));
+            let values = cfa4_mxf::as11::parse_framework_text(&settings.mxf_as10).map_err(bad)?;
+            let (profile_and_level, chroma_422) = match &cfg.picture {
+                Some(d) => match d.coding {
+                    PictureCoding::Mpeg2 { profile_and_level, .. } => (profile_and_level, profile_and_level == 0x82),
+                    _ => (0, false),
+                },
+                None => (0, false),
+            };
+            let facts = as10::Facts {
+                profile_and_level,
+                chroma_422,
+                width: s.width,
+                height: s.height,
+                audio_channels: s.audio.map_or(0, |(_, ch)| ch as u32),
+                audio_bits: bits,
+                bit_rate: match cfg.picture.as_ref().map(|d| d.coding) {
+                    Some(PictureCoding::Mpeg2 { bit_rate, .. }) => bit_rate,
+                    _ => 0,
+                },
+            };
+            if let Some(name) = values.iter().find(|(k, _)| k.eq_ignore_ascii_case("ShimName")).map(|(_, v)| v.as_str()) {
+                as10::check_shim(name, &facts).map_err(bad)?;
+            }
+            cfg.as11.get_or_insert_with(Default::default).as10 = values;
         }
         let cdp = match s.captions.as_ref().filter(|_| !atom) {
             Some(doc) => {

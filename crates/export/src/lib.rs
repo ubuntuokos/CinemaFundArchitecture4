@@ -475,6 +475,12 @@ pub struct ExportSettings {
     /// parts and the programme duration are filled in from the parts when not given.
     #[serde(default)]
     pub mxf_as11_ukdpp: String,
+    /// MXF OP1a with MPEG-2 (XDCAM HD): the AMWA AS-10 (MXF for Production) framework in bmx's text
+    /// form, `Name: value` lines (`ShimName: NRK_HD_2012`, `MainTitle: …`; [`cfa4_mxf::as10`],
+    /// [`cfa4_mxf::as11::AS10_ITEMS`]); a shim named in the AS-10 specification is checked against the
+    /// essence. Empty: no AS-10 metadata.
+    #[serde(default)]
+    pub mxf_as10: String,
     /// Container of MPEG-2 exports: `ps`, `ts`, `m2ts` or `es` (empty = from the path's
     /// extension, a program stream unless it is `.ts`, `.m2ts` / `.mts` or `.m2v`).
     #[serde(default)]
@@ -806,6 +812,7 @@ impl Default for ExportSettings {
             mxf_as11_core: String::new(),
             mxf_as11_segments: String::new(),
             mxf_as11_ukdpp: String::new(),
+            mxf_as10: String::new(),
             mpeg2_container: String::new(),
             mpeg2_422: false,
             mpeg2_quantizer: None,
@@ -956,6 +963,12 @@ impl ExportSettings {
                 cfa4_mxf::as11::check_framework_text(&self.mxf_as11_ukdpp, true).map_err(bad)?;
             }
             cfa4_mxf::as11::parse_segments_text(&self.mxf_as11_segments, cfa4_mxf::as11::Clock { start: 0, base: 1000 }).map_err(bad)?;
+        }
+        if !self.mxf_as10.trim().is_empty() {
+            if self.format != Format::MxfOp1a || self.video_format() != Format::Mpeg2 {
+                return Err(ExportError::Unsupported("AS-10 metadata is written in MXF OP1a with MPEG-2 video (XDCAM HD)".into()));
+            }
+            cfa4_mxf::as11::check_as10_text(&self.mxf_as10).map_err(|e| ExportError::Unsupported(format!("AS-10: {e}")))?;
         }
         if self.format.is_mxf() && self.mxf_anc_captions {
             if self.format == Format::MxfOpAtom {

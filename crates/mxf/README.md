@@ -337,6 +337,21 @@ segments); `MxfFile::as11` returns what a file carries. `parse_framework_text` a
 `parse_segments_text` read the bmx text forms (`Name: value` lines; `part/total start duration`
 with timecodes or frame counts). Codec shims (AVC-Intra, XDCAM HD422, D-10) are not enforced.
 
+### AS-10 (MXF for Production)
+
+`As11::as10` holds the AMWA AS-10 v1.1 DMS_AS_10_Core framework (`ShimName` required; `Type`,
+`MainTitle`, `SubTitle`, `TitleDescription`, `OrganizationName`, `PersonName`,
+`LocationDescription`, and the spanning items `CommonSpanningID` (a UMID as 64 hex digits),
+`SpanningNumber`, `CumulativeDuration`): one static DM track in the material package and the
+DMS_AS_10_Core label in the Preface. An AS-10 file needs no AS-11 Core. The labels and keys are
+section 7.5 of the specification (`specs/amwa/as-10-mxf-for-production-spec.pdf`). `as10` holds the
+four shims of section 8.2 (CNN, NRK, HIGH / CANAL, JVC) and `check_shim` compares what an export
+writes (profile and level, chroma format, frame size, audio channels and bit depth, bit rate) with the
+named shim; an unknown shim name is a shim of the user's own and is not checked. The XDCAM HD422
+export writes the NRK and HIGH shims' essence; the 4:2:0 shims (CNN, JVC) need 1440x1080 MP@HL /
+MP@H-14 pictures, which CFA4 does not encode yet. The growing-file and spanning-file rules of
+section 6 (open and incomplete header partitions) are not written.
+
 ## Tests
 
 - `src/tests.rs`: a small OP1a writer builds synthetic files (temporal offsets, key flags, PCM,
