@@ -19,6 +19,7 @@ python3 -m venv .venv
 .venv/bin/python -m pip install -e '.[qt]'      # PySide6 + cfa4-qt, inside .venv only
 .venv/bin/cfa4-qt --demo --lang hu              # demo project, Hungarian UI
 .venv/bin/cfa4-qt project.fcproj                # open a project
+.venv/bin/cfa4-qt a.mp4 b.wav                  # import media (as egui; with a .fcproj: into it)
 ```
 
 `source .venv/bin/activate` lets you type `cfa4-qt` without the path in that terminal.
@@ -122,6 +123,7 @@ line longer than 4 MiB is skipped with an error reply.
 | `surface.monitor` | `{enabled, device?, filter?: {clock?, sense?}}` | `{enabled}`: the MIDI Monitor of Settings ▸ Control Surfaces. While on, the engine reads every MIDI controller (its own sequencer client `CFA4`, hot-plugged ports included) and sends `{"event": "surfaceMonitor", "messages": [{device, at (ns since start), raw (hex), decoded}], "dropped": n}` at most 20 times a second, at most 200 messages each (the rest counted in `dropped`); MIDI Clock and Active Sensing only when `filter` asks. An error when there is no ALSA sequencer; `{"event": "surfaceError", code, error}` when the sequencer goes away (the monitor is then off). The GUI turns it off when the dialog closes |
 | `surface.learn` | `{device?}` | `{state: "learning"}`: MIDI Learn. The next press on `device` (any controller when empty) is not run but reported as `{"event": "surfaceLearn", "state": "captured", device, control, label}`; the GUI adds `{control, command}` to the draft's `controlSurfaces.devices[].bindings`. A press is a button going down or a controller crossing half way upwards. An error when there is no ALSA sequencer |
 | `surface.learnCancel` | `{}` | `{state: "cancelled"}` |
+| `timecodeSync.devices` | – | `{ltcInputs, ltcOutputs, mtcInputs, mtcOutputs}`: the audio devices (of the Settings ▸ Audio Hardware host) and MIDI ports (`Client:Port`) the Timecode Sync settings can name |
 | `session.state` | – | `{dirty, revision, path, canUndo, canRedo, playhead}` |
 | `app.quit` | – | `{quit: true}`, then the session ends (as stdin EOF does) |
 

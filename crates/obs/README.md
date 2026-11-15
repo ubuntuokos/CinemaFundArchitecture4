@@ -14,6 +14,7 @@ code replaces it part by part later (plan S12+).
 | `libobs` | the binding of the pinned CFA4 libobs 33.0.1 build, loaded at run time from `$CFA4_LIBOBS_DIR/lib/libobs.so.30` (default `/opt/cfa4/libobs-33.0.1`); any other version is refused. `ffi` holds the transcribed declarations (with layout tests against the installed headers), `sys` is the only module with `unsafe` |
 | `ring` | the frame ring: program frames in a private (0600) shared-memory file in `$XDG_RUNTIME_DIR`; torn frames are dropped, never shown. Layout in the module docs |
 | `host` | `Supervisor`: starts `cfa4-studio-host`, watches it, restarts it after a crash (100 ms back-off, doubling to 5 s; gives up after 5 crashes a minute), stops it (quit, then kill after 2 s) |
+| `ptp` | ST 2110 addendum T1: the PTP state `ptp4l` reports, read with `pmc -u -b 0 -d $CFA4_PTP_DOMAIN` (default 127, ST 2059-2; 2 s timeout; linuxptp runs PTP, CFA4 only reads, plan D9), the TAI time (system UTC + the grandmaster's `currentUtcOffset`) and the `ts-refclk` / `mediaclk` an ST 2110 sender signals now (the grandmaster and `direct=0` when locked, else `localmac` of `$CFA4_PTP_INTERFACE` or the first interface, and `sender`). Shown as `ptp` in `live.studio.host.status` |
 
 ## How the pieces fit (plan V)
 

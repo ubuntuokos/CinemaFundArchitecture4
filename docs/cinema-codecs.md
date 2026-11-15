@@ -1,12 +1,14 @@
 # Cinema-grade codecs: Dolby, DTS, OpenMAX, JPEG 2000 / DCP
 
-> **Last updated:** 2026-11-11 · **Change:** minor (status moved to codec-parity.md and file-format-parity.md; this file keeps specifications, licences and patents only)
+> **Last updated:** 2026-11-13 · **Change:** minor (DCP row: encryption reading exists, writing pending decision D3 of the CineCert plan)
 
 Which public specification each cinema-grade format needs and which licence or patent constraint
-applies. Every row follows [AGENTS.md](../AGENTS.md) §2: codecs are clean-room Rust from public
-specifications, ffmpeg is a test oracle only, and system libraries are reached only through the
-optional GStreamer backend ([ADR 0002](adr/ADR-0002-gstreamer-backend.md)) or `crates/platform`
-([ADR 0001](adr/0001-platform-ffi.md)).
+applies. Every row follows [AGENTS.md](../AGENTS.md) §2: codecs are written in Rust
+from public specifications by default; porting an existing implementation is allowed when its
+licence is permitted by [licensing.md](licensing.md) §3 and the port is recorded in the reused-code
+register (§5); FFmpeg and GStreamer
+follow the Media backends rule in the AGENTS.md CFA4 section, and other system libraries are reached
+only through `crates/platform` ([ADR 0001](adr/0001-platform-ffi.md)).
 
 **This file does not track status.** What CFA4 decodes and encodes today, what is missing and the
 effort estimates live in one place only: [codec-parity.md](codec-parity.md) for codecs,
@@ -28,7 +30,7 @@ status column; it was not updated when the JPEG 2000, DTS and TrueHD decoders la
 | DTS-HD Master Audio (XLL) | ETSI TS 102 114 v1.4+ (extension substream) | DTS trademark may not be used | [codec-parity.md](codec-parity.md) (DTS) |
 | Auro-3D (Auro-Codec in 24-bit PCM) | **no public specification**; ported from harletty-bridge `auro` (Apache-2.0) | US 8,620,465 B2 in force (owner accepted the risk, #299) | [codec-parity.md](codec-parity.md) (Auro-3D) |
 | JPEG 2000 (MXF, DCP) | ITU-T T.800 / ISO/IEC 15444-1, SMPTE ST 422 (MXF), ST 429 (DCP) | royalty-free by design | [codec-parity.md](codec-parity.md) (JPEG 2000) |
-| DCP packaging | SMPTE ST 429-2/-3/-7/-8/-9 | open; encryption (KDM) out of scope | [file-format-parity.md](file-format-parity.md) (DCP) |
+| DCP packaging | SMPTE ST 429-2/-3/-7/-8/-9 | open; encryption: reading only (ST 429-6 track files, ST 430-1/-3 KDMs), writing encrypted DCPs and issuing KDMs out of scope until the owner decides (CineCert plan D3) | [file-format-parity.md](file-format-parity.md) (DCP); plan [CFA4-CINECERT-001](plans/CFA4-CINECERT-001-v2.3.md), status [CINECERT-WP00](audit/CINECERT-WP00-GAP-MATRIX-2026-11-13.md) |
 | ProRes, DNxHD / DNxHR | — | — | [codec-parity.md](codec-parity.md) |
 | OpenEXR, DPX | OpenEXR file layout docs | BSD-3-Clause | [file-format-parity.md](file-format-parity.md) (OpenEXR, DPX) |
 | OpenMAX IL hardware codecs | Khronos OpenMAX IL 1.1.2 | the API is open; components are vendor drivers | probe only, by design: see below |
@@ -48,6 +50,8 @@ NVIDIA Tegra). CFA4 is Linux x86_64 only and vendor-neutral, so:
 
 ## Before work starts
 
-Each codec needs its specification in hand before work starts: the clean-room rule forbids
-writing a decoder from memory or from another implementation's source. The spec edition used is
-recorded in the crate README.
+Each codec needs its source in hand before work starts: either the public specification, or an
+implementation whose licence [licensing.md](licensing.md) §3 permits, ported and recorded in the
+reused-code register (§5) in the same commit ([AGENTS.md](../AGENTS.md) §2). A decoder is never
+written from memory. The crate README records the spec edition or the ported source and its
+revision. Where neither exists, the owner decides before work starts.

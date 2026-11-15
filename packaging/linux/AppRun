@@ -1,23 +1,31 @@
 #!/bin/sh
 # SPDX-License-Identifier: GPL-3.0-or-later
-# The CFA4 AppImage's entry point. It starts the egui app (bin/cfa4), as the desktop entry does
-# until egui is retired, or the Qt 6 GUI (bin/cfa4-qt, with the PySide6 and Qt the AppImage
-# carries in lib/cfa4/pyside6; docs/qt-parity.md 1.10) when asked:
+# The CFA4 AppImage's entry point. It starts the Qt 6 GUI (bin/cfa4-qt, with the PySide6 and Qt
+# the AppImage carries in lib/cfa4/pyside6; docs/qt-parity.md 1.10) by default (owner decision
+# 2026-11-12), or the frozen egui app (bin/cfa4) when asked:
 #
-#   ./cfa4-<version>-linux-x86_64.AppImage --qt [cfa4-qt options]
-#   CFA4_GUI=qt ./cfa4-<version>-linux-x86_64.AppImage [cfa4-qt options]
+#   ./cfa4-<version>-linux-x86_64.AppImage [cfa4-qt options]
+#   ./cfa4-<version>-linux-x86_64.AppImage --egui [cfa4 options]
+#   CFA4_GUI=egui ./cfa4-<version>-linux-x86_64.AppImage [cfa4 options]
+#
+# `--qt` / CFA4_GUI=qt still select the Qt GUI explicitly. Without python3, an explicit Qt request
+# is an error; the default falls back to egui with a message, so the AppImage always starts.
 here="$(dirname "$(readlink -f "$0")")"
 gui="${CFA4_GUI:-}"
 case "${1:-}" in
   --qt) gui=qt; shift ;;
   --egui) gui=egui; shift ;;
 esac
-if [ "$gui" = qt ]; then
-  # Ubuntu 26.04 desktops have python3 (the PySide6 bundle is abi3: any Python 3.10 or newer)
-  if ! command -v python3 >/dev/null 2>&1; then
+if [ "$gui" = egui ]; then
+  exec "$here/usr/bin/cfa4" "$@"
+fi
+# Ubuntu 26.04 desktops have python3 (the PySide6 bundle is abi3: any Python 3.10 or newer)
+if ! command -v python3 >/dev/null 2>&1; then
+  if [ "$gui" = qt ]; then
     echo "cfa4: the Qt GUI needs python3 (sudo apt install python3)" >&2
     exit 1
   fi
-  exec python3 "$here/usr/bin/cfa4-qt" "$@"
+  echo "cfa4: python3 is missing, so the Qt GUI cannot start; starting the egui editor (sudo apt install python3 for the Qt GUI)" >&2
+  exec "$here/usr/bin/cfa4" "$@"
 fi
-exec "$here/usr/bin/cfa4" "$@"
+exec python3 "$here/usr/bin/cfa4-qt" "$@"
