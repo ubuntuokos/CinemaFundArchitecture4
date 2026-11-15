@@ -33,7 +33,7 @@ Gazdát csak a tulajdonos jelölhet ki vagy válthat le. Fejlesztő munkamenet n
    tulajdonosa pushol: az a munkamenet, amely a PR leírásának `Munkamenet:` sorában áll. Ezt a sort
    minden PR leírásába írd be: `Munkamenet: https://claude.ai/code/session_…`. Claude Projects-szál
    új beszélgetésben új munkamenettel folytatódhat: a folytató munkamenet az első push előtt a saját
-   azonosítóját hozzáfűzi a `Munkamenet:` sorhoz (ez nem átadás). A tulajdonost csak átadás (§2.11)
+   azonosítóját hozzáfűzi a `Munkamenet:` sorhoz (ez nem átadás); a helyi push-őr addig megállítja a pushát. A tulajdonost csak átadás (§2.11)
    vagy gazda-átvétel (§2.12) váltja. Minden commitod végén ott a `Claude-Session:` sor. A
    `main` behúzása a saját ágadba megengedett, és rakott PR-nál a lánc előző ágáé is. A
    `cfa4-branch-ownership` check ezt minden PR-on ellenőrzi; a tulajdonos saját, munkamenet-sor
