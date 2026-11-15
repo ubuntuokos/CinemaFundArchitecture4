@@ -395,6 +395,17 @@ fn start(s: &mut Session, p: &Value, kind: ScanKind, cmd: &str) -> Result<Value>
     Ok(json!({"job": id, "item": item.0, "kind": kind.name(), "state": "running"}))
 }
 
+/// Another project replaced the open one: its segment analyses are dropped and a running one is
+/// stopped, so none is found by its job in the new project (a running thread keeps only its own
+/// result, never the session's list).
+pub(crate) fn forget_scans(s: &mut Session) {
+    for scan in std::mem::take(&mut s.segment_scans) {
+        if let Some(j) = s.jobs.iter().find(|j| j.id == scan.job) {
+            j.progress.cancel.store(true, std::sync::atomic::Ordering::Relaxed);
+        }
+    }
+}
+
 /// The state of an analysis and, when it is done, its proposal.
 fn proposal_of(s: &Session, job: u64, cmd: &str) -> Result<Value> {
     use std::sync::atomic::Ordering;

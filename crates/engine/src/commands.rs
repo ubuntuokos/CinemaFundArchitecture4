@@ -1315,6 +1315,7 @@ fn build() -> Vec<CommandSpec> {
         cmd!("file.newProject", "Project…", ["File", "New"], Some("Cmd+Alt+N"), r#"{"name":str}"#, always, |s, p| {
             let name = str_p(p, "name").unwrap_or("Untitled").to_string();
             s.project = std::sync::Arc::new(cfa4_project::Project::new(&name));
+            crate::segment_detect::forget_scans(s);
             s.history = Default::default();
             s.voiceover.abandon();
             s.history.limit = 200;
@@ -1331,6 +1332,7 @@ fn build() -> Vec<CommandSpec> {
         cmd!("file.openDemoProject", "Demo Project", ["File", "New"], None, "{}", always, |s, _| {
             let (p, seq) = crate::demo::demo_project(&s.media);
             s.project = std::sync::Arc::new(p);
+            crate::segment_detect::forget_scans(s);
             s.history = Default::default();
             s.voiceover.abandon();
             s.history.limit = 200;
@@ -5524,13 +5526,7 @@ fn install_project(s: &mut Session, proj: cfa4_project::Project, path: Option<St
     s.media = std::sync::Arc::new(crate::MediaPool::default());
     s.media.set_use_proxies(proxies);
     s.offline = Default::default();
-    // segment analyses belong to the project they were started on: a running one is stopped,
-    // and none is found by its job in the new project (its thread keeps only its own result)
-    for scan in std::mem::take(&mut s.segment_scans) {
-        if let Some(j) = s.jobs.iter().find(|j| j.id == scan.job) {
-            j.progress.cancel.store(true, std::sync::atomic::Ordering::Relaxed);
-        }
-    }
+    crate::segment_detect::forget_scans(s);
     let first = proj.sequences().next().map(|i| i.id);
     s.media.add_stored(&proj, path.as_deref());
     s.project = std::sync::Arc::new(proj);

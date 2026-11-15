@@ -208,12 +208,27 @@ fn analyses_do_not_outlive_their_project() {
     let running = s.execute("segments.detectScenes", json!({"item": item.0})).unwrap()["job"].as_u64().unwrap();
     let project = dir.join("p.fcproj").to_string_lossy().into_owned();
     s.execute("file.save", json!({"path": project})).unwrap();
+    let gone = |s: &mut Session, jobs: &[u64], how: &str| {
+        for job in jobs {
+            let e = s.execute("segments.proposal", json!({"job": job})).unwrap_err().to_string();
+            assert!(e.contains("no segment analysis"), "{how} {job}: {e}");
+        }
+        assert!(s.segment_scans.is_empty(), "{how}");
+    };
     s.execute("file.open", json!({"path": project})).unwrap();
-    for job in [done, running] {
-        let e = s.execute("segments.proposal", json!({"job": job})).unwrap_err().to_string();
-        assert!(e.contains("no segment analysis"), "{job}: {e}");
+    gone(&mut s, &[done, running], "file.open");
+    // every way of replacing the project: a new one, the demo, one from a template
+    let replace = [
+        ("file.newProject", json!({"name": "N"})),
+        ("file.openDemoProject", json!({})),
+        ("file.newProjectFromTemplate", json!({"template": project, "force": true})),
+    ];
+    for (cmd, p) in replace {
+        s.execute("file.open", json!({"path": project})).unwrap();
+        let job = s.execute("segments.detectBlack", json!({"item": item.0, "wait": true})).unwrap()["job"].as_u64().unwrap();
+        s.execute(cmd, p).unwrap();
+        gone(&mut s, &[job], cmd);
     }
-    assert!(s.segment_scans.is_empty());
     let _ = std::fs::remove_dir_all(&dir);
 }
 
