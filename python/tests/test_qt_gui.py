@@ -14237,6 +14237,7 @@ def test_real_engine_smart_cut_segments(app, tmp_path: Path):
         src.status.connect(said.append)
         d.send("segments.toTimeline")
         assert wait_until(app, lambda: any("timeline" in m for m in said), 30_000), said
+        assert wait_until(app, lambda: d.run.isEnabled() and d.plan_current(), 30_000), d.error.text()
         d.run.click()
         assert wait_until(app, lambda: any("verified" in m for m in said), 30_000), said
         assert (tmp_path / "1-end.mp4").stat().st_size > 0

@@ -99,6 +99,24 @@ fn segments_go_out_as_an_edl_and_come_back_unchanged() {
     let _ = std::fs::remove_dir_all(&dir);
 }
 
+/// Any segment name comes back from the EDL exactly: empty, padded, on several lines, quoted.
+#[test]
+fn every_segment_name_survives_the_edl_round_trip() {
+    let names = ["", "  padded  ", "two\nlines", "\"quoted\"", "tab\there", "plain name"];
+    let markers: Vec<Marker> = names.iter().enumerate().map(|(i, n)| marker(910 + i as u64, i as i64 * 6, 5, n)).collect();
+    let (mut s, item, dir) = with_markers("mimport-edl-names", markers);
+    let edl = path(&dir, "names.edl");
+    s.execute("markers.exportEdl", json!({"path": edl, "item": item.0})).unwrap();
+    let text = std::fs::read_to_string(&edl).unwrap();
+    assert!(text.contains("* SEGMENT NAME: plain name\r\n") && text.contains("* SEGMENT NAME: \"\"\r\n"), "{text}");
+    assert_eq!(text.lines().count(), text.split("\r\n").count() - 1, "one line per CRLF: {text:?}");
+    clear(&mut s, item);
+    s.execute("markers.importEdl", json!({"path": edl, "item": item.0})).unwrap();
+    let got: Vec<String> = fields(&media_markers(&s, item)).into_iter().map(|m| m.2).collect();
+    assert_eq!(got, names.map(str::to_string));
+    let _ = std::fs::remove_dir_all(&dir);
+}
+
 #[test]
 fn an_edl_of_another_rate_or_outside_the_clip_is_refused() {
     let (mut s, item, dir) = with_markers("mimport-edl-bad", vec![]);

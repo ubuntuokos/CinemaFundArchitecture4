@@ -345,7 +345,7 @@ fn edl_markers(t: &Target, text: &str, cmd: &str) -> Result<Vec<New>> {
         if a < t.span.0 || b > t.span.1 {
             return Err(bad(cmd, format!("event {}: {}–{} lies outside {}; nothing was imported", r.event, tc(r.src_in), tc(r.src_out), t.name)));
         }
-        let name = r.segment.clone().or_else(|| r.clip.clone()).unwrap_or_else(|| format!("Event {}", r.event));
+        let name = r.segment.as_deref().map(edl_name_back).or_else(|| r.clip.clone()).unwrap_or_else(|| format!("Event {}", r.event));
         out.push(New { start: a, duration: Tick(b.0 - a.0), name, comment: String::new(), kind: MarkerKind::Comment, color: Label::Green });
     }
     Ok(out)
@@ -415,6 +415,24 @@ fn reel_of(name: &str) -> String {
 }
 
 /// One line of a comment: line breaks would end it.
+/// A segment name as `* SEGMENT NAME:` holds it: a plain one-line name as it is, any other (empty,
+/// padded, several lines, control characters, or a leading quote) as a JSON string, so every name
+/// comes back exactly and an empty one stays empty.
+fn edl_name(name: &str) -> String {
+    let plain = !name.is_empty() && name.trim() == name && !name.chars().any(char::is_control) && !name.starts_with('"');
+    if plain { name.to_string() } else { serde_json::Value::String(name.to_string()).to_string() }
+}
+
+/// The name `edl_name` wrote (an EDL of another tool: the text as it is).
+fn edl_name_back(raw: &str) -> String {
+    if raw.starts_with('"')
+        && let Ok(name) = serde_json::from_str::<String>(raw)
+    {
+        return name;
+    }
+    raw.to_string()
+}
+
 fn one_line(v: &str) -> String {
     v.chars().map(|c| if c.is_control() { ' ' } else { c }).collect::<String>().trim().to_string()
 }
@@ -454,9 +472,7 @@ pub(crate) fn export_edl(s: &mut Session, p: &Value) -> Result<Value> {
         let len = b - a;
         out.push_str(&format!("{:03}  {reel:<8} V     C        {} {} {} {}\r\n", n + 1, tc(a), tc(b), tc(rec), tc(rec.saturating_add(len))));
         out.push_str(&format!("* FROM CLIP NAME: {}\r\n", one_line(&t.name)));
-        if !m.name.trim().is_empty() {
-            out.push_str(&format!("* SEGMENT NAME: {}\r\n", one_line(&m.name)));
-        }
+        out.push_str(&format!("* SEGMENT NAME: {}\r\n", edl_name(&m.name)));
         out.push_str("\r\n");
         rec = rec.saturating_add(len);
     }
