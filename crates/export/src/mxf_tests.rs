@@ -506,7 +506,8 @@ fn interlaced_mpeg2_mxf() {
     let refused = |s: ExportSettings| matches!(export(&p, seq, &s, &m, &Progress::default()), Err(ExportError::Unsupported(_)));
     assert!(refused(ExportSettings { frame_rate: Some(FrameRate::FPS_24), ..xd(&tmp("xd_1080i24.mxf")) }), "RDD 9 has no 1080i at 24 fps");
     assert!(refused(ExportSettings { frame_size: Some((1280, 720)), ..xd(&tmp("xd_720i.mxf")) }), "720 lines are progressive");
-    assert!(refused(ExportSettings { mxf_video_codec: MxfVideoCodec::ProRes, ..xd(&tmp("prores_i.mxf")) }), "ProRes in MXF is progressive");
+    // ProRes in MXF codes field pictures (`op1a_prores_interlaced`); DNxHR stays progressive
+    assert!(refused(ExportSettings { mxf_video_codec: MxfVideoCodec::Dnxhr, ..xd(&tmp("xd_dnx_i.mxf")) }), "DNxHR in MXF is progressive");
     let path = tmp("xd_1080i.mxf");
     let r = export(&p, seq, &xd(&path), &m, &Progress::default()).unwrap();
     let n = r.frames as usize;
@@ -631,4 +632,52 @@ fn uncompressed_v210_and_uyvy() {
             }
         }
     }
+}
+
+/// Interlaced ProRes in MXF (PROCODEC-002 WP6): two field pictures per edit unit and a
+/// descriptor of separate fields (half-height stored rectangle, field dominance, the 1080-line
+/// video line map); the frames read back interlaced, like the MOV export of the same settings.
+#[test]
+fn op1a_prores_interlaced() {
+    let (p, seq, m) = project();
+    for (order, want, ff) in
+        [(FieldOrder::UpperFirst, cfa4_frame::FieldOrder::TopFirst, "tt"), (FieldOrder::LowerFirst, cfa4_frame::FieldOrder::BottomFirst, "bb")]
+    {
+        let path = tmp(&format!("op1a_prores_{ff}.mxf"));
+        // 1920 × 1080: the size with a standard video line map
+        let mut s = ExportSettings { field_order: order, scale: 6.0, ..settings(Format::MxfOp1a, MxfVideoCodec::ProRes, &path) };
+        s.range = Some(TimeRange::new(Tick::ZERO, FrameRate::FPS_24.tick_of(8)));
+        assert!(s.codes_interlaced());
+        export(&p, seq, &s, &m, &Progress::default()).unwrap();
+        let bytes = std::fs::read(&path).unwrap();
+        let mx = cfa4_mxf::open(&bytes).unwrap();
+        assert!(mx.warnings.is_empty(), "{:?}", mx.warnings);
+        let v = &mx.tracks[mx.track_of_kind(cfa4_mxf::TrackKind::Picture).unwrap()];
+        let pic = v.picture.as_ref().unwrap();
+        assert_eq!((pic.frame_layout, pic.stored_height, pic.frame_height(), pic.frame_width()), (1, 540, 1080, 1920), "{order:?}");
+        let src = cfa4_codecs::open_bytes("x.mxf", bytes.into()).unwrap();
+        assert_eq!(src.info().video.as_ref().unwrap().height, 1080);
+        let mov = tmp(&format!("op1a_prores_{ff}.mov"));
+        let ms = ExportSettings { format: Format::ProRes, multiplexer: Multiplexer::Mov, path: mov.clone(), ..s.clone() };
+        export(&p, seq, &ms, &m, &Progress::default()).unwrap();
+        let msrc = cfa4_codecs::open_bytes("x.mov", std::fs::read(&mov).unwrap().into()).unwrap();
+        for f in [0i64, 7] {
+            let t = FrameRate::FPS_24.tick_of(f) + Tick(1);
+            let a = src.video_frame(FrameRequest::full(t)).unwrap();
+            assert_eq!(a.layout.field_order, want, "{order:?}");
+            assert!(a.to_rgba8() == msrc.video_frame(FrameRequest::full(t)).unwrap().to_rgba8(), "{order:?}: frame {f} differs from the MOV export");
+        }
+        if let Some(ffprobe) = cfa4_testkit::ffprobe_or_skip("MXF ProRes field order") {
+            let j = ffprobe_json(&ffprobe, &path);
+            let st = j["streams"].as_array().unwrap().iter().find(|s| s["codec_type"] == "video").unwrap();
+            assert_eq!((st["codec_name"].as_str(), st["height"].as_i64()), (Some("prores"), Some(1080)), "{order:?}");
+            // ffprobe names the stored order (from the line map: field 1 first) and then the
+            // displayed one: "tt" upper first, "tb" lower first
+            let fo = st["field_order"].as_str().unwrap_or_default();
+            assert_eq!(fo.get(1..), Some(&ff[1..]), "{order:?}: {fo}");
+        }
+    }
+    // the other MXF codecs still write progressive frames only
+    let dnx = ExportSettings { field_order: FieldOrder::UpperFirst, ..settings(Format::MxfOp1a, MxfVideoCodec::Dnxhr, &tmp("dnx_i.mxf")) };
+    assert!(!dnx.codes_interlaced() && dnx.validate().is_err());
 }

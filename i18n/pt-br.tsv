@@ -2376,6 +2376,10 @@
 	Show Clip Mismatch Warning dialog	Mostrar o aviso de incompatibilidade de clipe
 	Show Event Indicator	Mostrar o indicador de eventos
 	Show Focus Area	Mostrar área de foco
+	Rack Focus	Mudança de foco
+	Focus Point A	Ponto de foco A
+	Focus Point B	Ponto de foco B
+	Rack	Mudança
 	Show Home	Mostrar Início
 	Show Mask Tracker Preview	Mostrar a pré-visualização do rastreamento de máscara
 	Show Only Noise	Mostrar somente o ruído
@@ -3613,6 +3617,7 @@
 	Social Deliverables…	Entregas para redes sociais…
 	Counter	Contador
 	Word by Word	Palavra por palavra
+	Scramble	Embaralhar
 	Animator	Animador
 	Animator Duration	Duração do animador
 	Animator Delay	Atraso do animador
@@ -4186,6 +4191,11 @@
 	Burn Size	Tamanho da queima
 	Ember Width	Largura da brasa
 	Ember Color	Cor da brasa
+	Tear Away	Rasgo
+	Tear Roughness	Aspereza do rasgo
+	Paper Edge Width	Largura da borda do papel
+	Stamp Cut	Corte de selo
+	Perforations	Perfurações
 	Check Text Legibility	Verificar legibilidade do texto
 	Clear Legibility Markers	Limpar marcadores de legibilidade
 	Text legibility: no problems found	Legibilidade do texto: nenhum problema encontrado
@@ -4225,6 +4235,9 @@
 	Dither	Pontilhado
 	Pattern	Padrão
 	Cell Size	Tamanho da célula
+	Pixelate	Pixelizar
+	Cell Shape	Forma da célula
+	LED	LED
 	Cyan Angle	Ângulo do ciano
 	Magenta Angle	Ângulo do magenta
 	Yellow Angle	Ângulo do amarelo
@@ -4585,6 +4598,16 @@
 	Chase External Timecode	Seguir timecode externo
 	Send LTC	Enviar LTC
 	Send MIDI Timecode	Enviar timecode MIDI
+
+# Live studio preview (CFA4-LIVE-STUDIO-001 S0)
+	Live studio preview	Pré-visualização do estúdio ao vivo
+	Live studio: stopped	Estúdio ao vivo: parado
+	Live studio: {state}	Estúdio ao vivo: {state}
+	Live studio: {error}	Estúdio ao vivo: {error}
+	restarted after {count} crashes (last: {exit})	reiniciado após {count} falhas (última: {exit})
+	software backend: {reason}	back-end de software: {reason}
+	Start studio	Iniciar estúdio
+	Stop studio	Parar estúdio
 # Auto Color, Auto Contrast, Auto Levels (EffectsSDK review)
 	Auto Color	Cor automática
 	Auto Contrast	Contraste automático
@@ -4642,3 +4665,16 @@
 	Freewheel	Roda livre
 	Scrubbing	Navegando
 	Sending	Enviando
+
+# DCP subtitle export (#938)
+	Subtitles from the first caption track	Legendas da primeira faixa de legendas
+	The package language	O idioma do pacote
+	Inter Regular (built in), or an OpenType / TrueType file	Inter Regular (integrada) ou um arquivo OpenType / TrueType
+	Subtitle language	Idioma das legendas
+	Subtitle font	Fonte das legendas
+	Fonts	Fontes
+
+# AS-11 metadata in MXF OP1a (#96)
+	AS-11 Core	AS-11 Core
+	AS-11 Parts	Partes AS-11
+	AS-11 UK DPP	AS-11 UK DPP

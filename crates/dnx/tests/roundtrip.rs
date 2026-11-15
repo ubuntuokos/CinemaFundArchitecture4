@@ -66,6 +66,35 @@ fn roundtrip_all_profiles() {
     }
 }
 
+/// The progressive DNxHD IDs (Table C.1): fixed raster, depth and frame size, header version 1.
+#[test]
+fn roundtrip_dnxhd_ids() {
+    for profile in Profile::ALL.into_iter().filter(|p| p.hd_raster().is_some()) {
+        let (w, h, depth) = profile.hd_raster().unwrap();
+        let cfg = EncoderConfig::new(profile, w, h);
+        assert_eq!(cfg.bit_depth, depth);
+        let chroma = cfg.chroma();
+        let mut enc = Encoder::with_config(cfg).unwrap();
+        let src = picture(w, h, chroma, depth, 3);
+        let data = enc.encode(&src).unwrap();
+        assert_eq!(data.len() as u32, enc.frame_size());
+        assert_eq!(data[4], 1, "{profile:?}: HD header version");
+        let hdr = probe(&data).unwrap();
+        assert_eq!((hdr.cid, hdr.width, hdr.lines, hdr.bit_depth), (profile.cid(), w, h, depth));
+        let dec = decode_frame(&data).unwrap();
+        assert_eq!((dec.width, dec.height, dec.chroma, dec.bit_depth), (w, h, chroma, depth));
+        let peak = ((1u32 << depth) - 1) as f64;
+        let (p, pc) = (psnr(&src.y, &dec.y, peak), psnr(&src.cb, &dec.cb, peak));
+        let min = if profile == Profile::Hd1253 { 30.0 } else { 38.0 };
+        assert!(p > min && pc > min, "{profile:?}: PSNR {p:.1}/{pc:.1}");
+    }
+    // the raster and depth are the ID's
+    assert!(Encoder::new(Profile::Hd1238, 1280, 720).is_err());
+    let mut cfg = EncoderConfig::new(Profile::Hd1235, 1920, 1080);
+    cfg.bit_depth = 8;
+    assert!(Encoder::with_config(cfg).is_err());
+}
+
 #[test]
 fn rejects_bad_input() {
     let mut enc = Encoder::new(Profile::Hq, 64, 64).unwrap();

@@ -2374,6 +2374,10 @@
 	Show Clip Mismatch Warning dialog	Mostrar el aviso de discrepancia de clip
 	Show Event Indicator	Mostrar el indicador de eventos
 	Show Focus Area	Mostrar zona de enfoque
+	Rack Focus	Cambio de foco
+	Focus Point A	Punto de enfoque A
+	Focus Point B	Punto de enfoque B
+	Rack	Cambio
 	Show Home	Mostrar Inicio
 	Show Mask Tracker Preview	Mostrar la previsualización del seguimiento de máscara
 	Show Only Noise	Mostrar solo el ruido
@@ -3651,6 +3655,7 @@
 	Social Deliverables…	Entregables para redes sociales…
 	Counter	Contador
 	Word by Word	Palabra por palabra
+	Scramble	Revoltijo
 	Animator	Animador
 	Animator Duration	Duración del animador
 	Animator Delay	Retardo del animador
@@ -4183,6 +4188,11 @@
 	Burn Size	Tamaño de quemado
 	Ember Width	Ancho de la brasa
 	Ember Color	Color de la brasa
+	Tear Away	Desgarro
+	Tear Roughness	Aspereza del desgarro
+	Paper Edge Width	Ancho del borde de papel
+	Stamp Cut	Corte de sello
+	Perforations	Perforaciones
 	Check Text Legibility	Comprobar legibilidad del texto
 	Clear Legibility Markers	Borrar marcadores de legibilidad
 	Text legibility: no problems found	Legibilidad del texto: no se encontraron problemas
@@ -4222,6 +4232,9 @@
 	Dither	Tramado
 	Pattern	Patrón
 	Cell Size	Tamaño de celda
+	Pixelate	Pixelado
+	Cell Shape	Forma de celda
+	LED	LED
 	Cyan Angle	Ángulo de cian
 	Magenta Angle	Ángulo de magenta
 	Yellow Angle	Ángulo de amarillo
@@ -4582,6 +4595,16 @@
 	Chase External Timecode	Seguir código de tiempo externo
 	Send LTC	Enviar LTC
 	Send MIDI Timecode	Enviar código de tiempo MIDI
+
+# Live studio preview (CFA4-LIVE-STUDIO-001 S0)
+	Live studio preview	Vista previa del estudio en directo
+	Live studio: stopped	Estudio en directo: detenido
+	Live studio: {state}	Estudio en directo: {state}
+	Live studio: {error}	Estudio en directo: {error}
+	restarted after {count} crashes (last: {exit})	reiniciado tras {count} fallos (último: {exit})
+	software backend: {reason}	motor por software: {reason}
+	Start studio	Iniciar estudio
+	Stop studio	Detener estudio
 # Auto Color, Auto Contrast, Auto Levels (EffectsSDK review)
 	Auto Color	Color automático
 	Auto Contrast	Contraste automático
@@ -4639,3 +4662,16 @@
 	Freewheel	Rueda libre
 	Scrubbing	Desplazando
 	Sending	Enviando
+
+# DCP subtitle export (#938)
+	Subtitles from the first caption track	Subtítulos de la primera pista de subtítulos
+	The package language	El idioma del paquete
+	Inter Regular (built in), or an OpenType / TrueType file	Inter Regular (integrada) o un archivo OpenType / TrueType
+	Subtitle language	Idioma de los subtítulos
+	Subtitle font	Fuente de los subtítulos
+	Fonts	Fuentes
+
+# AS-11 metadata in MXF OP1a (#96)
+	AS-11 Core	AS-11 Core
+	AS-11 Parts	Partes AS-11
+	AS-11 UK DPP	AS-11 UK DPP

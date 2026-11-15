@@ -1865,6 +1865,7 @@
 	Text Animator	Κίνηση κειμένου
 	Counter	Μετρητής
 	Word by Word	Λέξη προς λέξη
+	Scramble	Ανακάτεμα
 	Animator	Κίνηση
 	Animator Duration	Διάρκεια κίνησης
 	Animator Delay	Καθυστέρηση κίνησης
@@ -2886,6 +2887,10 @@
 	Sharpen Amount	Ποσότητα όξυνσης
 	Shift Center To	Μετακίνηση κέντρου σε
 	Show Focus Area	Εμφάνιση περιοχής εστίασης
+	Rack Focus	Μετατόπιση εστίασης
+	Focus Point A	Σημείο εστίασης Α
+	Focus Point B	Σημείο εστίασης Β
+	Rack	Μετατόπιση
 	Show Only Noise	Εμφάνιση μόνο θορύβου
 	Shrink	Συρρίκνωση
 	Shutter Angle	Γωνία κλείστρου
@@ -4178,6 +4183,11 @@ export.summary	Low	χαμηλή
 	Burn Size	Μέγεθος καψίματος
 	Ember Width	Πλάτος θράκας
 	Ember Color	Χρώμα θράκας
+	Tear Away	Σκίσιμο
+	Tear Roughness	Τραχύτητα σκισίματος
+	Paper Edge Width	Πλάτος άκρης χαρτιού
+	Stamp Cut	Αποκοπή γραμματοσήμου
+	Perforations	Διάτρηση
 	Check Text Legibility	Έλεγχος αναγνωσιμότητας κειμένου
 	Clear Legibility Markers	Απαλοιφή δεικτών αναγνωσιμότητας
 	Text legibility: no problems found	Αναγνωσιμότητα κειμένου: δεν βρέθηκαν προβλήματα
@@ -4217,6 +4227,9 @@ export.summary	Low	χαμηλή
 	Dither	Διάχυση
 	Pattern	Μοτίβο
 	Cell Size	Μέγεθος κελιού
+	Pixelate	Εικονοστοιχειοποίηση
+	Cell Shape	Σχήμα κελιού
+	LED	LED
 	Cyan Angle	Γωνία κυανού
 	Magenta Angle	Γωνία ματζέντα
 	Yellow Angle	Γωνία κίτρινου
@@ -4577,6 +4590,16 @@ export.summary	Low	χαμηλή
 	Chase External Timecode	Παρακολούθηση εξωτερικού χρονοκώδικα
 	Send LTC	Αποστολή LTC
 	Send MIDI Timecode	Αποστολή χρονοκώδικα MIDI
+
+# Live studio preview (CFA4-LIVE-STUDIO-001 S0)
+	Live studio preview	Προεπισκόπηση ζωντανού στούντιο
+	Live studio: stopped	Ζωντανό στούντιο: σταματημένο
+	Live studio: {state}	Ζωντανό στούντιο: {state}
+	Live studio: {error}	Ζωντανό στούντιο: {error}
+	restarted after {count} crashes (last: {exit})	επανεκκίνηση μετά από {count} καταρρεύσεις (τελευταία: {exit})
+	software backend: {reason}	λογισμικό υποστήριξης: {reason}
+	Start studio	Έναρξη στούντιο
+	Stop studio	Διακοπή στούντιο
 # Auto Color, Auto Contrast, Auto Levels (EffectsSDK review)
 	Auto Color	Αυτόματο χρώμα
 	Auto Contrast	Αυτόματη αντίθεση
@@ -4634,3 +4657,16 @@ export.summary	Low	χαμηλή
 	Freewheel	Ελεύθερη λειτουργία
 	Scrubbing	Κύλιση
 	Sending	Αποστολή
+
+# DCP subtitle export (#938)
+	Subtitles from the first caption track	Υπότιτλοι από το πρώτο κανάλι λεζάντων
+	The package language	Η γλώσσα του πακέτου
+	Inter Regular (built in), or an OpenType / TrueType file	Inter Regular (ενσωματωμένη) ή ένα αρχείο OpenType / TrueType
+	Subtitle language	Γλώσσα υποτίτλων
+	Subtitle font	Γραμματοσειρά υποτίτλων
+	Fonts	Γραμματοσειρές
+
+# AS-11 metadata in MXF OP1a (#96)
+	AS-11 Core	AS-11 Core
+	AS-11 Parts	Τμήματα AS-11
+	AS-11 UK DPP	AS-11 UK DPP
