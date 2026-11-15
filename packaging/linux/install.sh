@@ -74,8 +74,13 @@ fi
 # Use an absolute path so launching from the application menu does not depend on PATH.
 # Escape the Exec argument, then the desktop entry's string value (two separate layers).
 # https://specifications.freedesktop.org/desktop-entry/latest/exec-variables.html
-exec_path="$(printf '%s' "$prefix/bin/cfa4" | sed 's/[\\"`$]/\\&/g; s/\\/\\\\/g')"
-try_path="$(printf '%s' "$prefix/bin/cfa4" | sed 's/\\/\\\\/g')"
+# The menu entry starts the Qt 6 GUI (owner decision 2026-11-12); a tarball without it keeps egui.
+gui=cfa4
+if [ -f "$source_dir/bin/cfa4-qt" ]; then
+  gui=cfa4-qt
+fi
+exec_path="$(printf '%s' "$prefix/bin/$gui" | sed 's/[\\"`$]/\\&/g; s/\\/\\\\/g')"
+try_path="$(printf '%s' "$prefix/bin/$gui" | sed 's/\\/\\\\/g')"
 while IFS= read -r line || [ -n "$line" ]; do
   case "$line" in
     Exec=*) printf 'Exec="%s" %%F\n' "$exec_path" ;;

@@ -27,6 +27,17 @@ fn find(devices: Result<impl Iterator<Item = cpal::Device>, cpal::DevicesError>,
     devices.ok()?.find(|d| d.name().is_ok_and(|n| n == name))
 }
 
+/// The input and output device names of `host` ("" = default host), as the LTC settings name them.
+pub fn device_names(host_name: &str) -> (Vec<String>, Vec<String>) {
+    let run = || {
+        let h = host(host_name);
+        let inputs: Vec<String> = h.input_devices().map(|it| it.filter_map(|d| d.name().ok()).collect()).unwrap_or_default();
+        let outputs: Vec<String> = h.output_devices().map(|it| it.filter_map(|d| d.name().ok()).collect()).unwrap_or_default();
+        (inputs, outputs)
+    };
+    std::panic::catch_unwind(run).unwrap_or_default()
+}
+
 type ErrorCell = Arc<Mutex<Option<String>>>;
 
 fn report(cell: &ErrorCell, message: String) {
@@ -104,6 +115,7 @@ where
     let (mut all, mut mono, mut obs) = (Vec::new(), Vec::new(), Vec::new());
     let stream_error = error.clone();
     let data_tx = tx.clone();
+    let mut user_bits_sent = None;
     dev.build_input_stream(
         config,
         move |data: &[T], info: &cpal::InputCallbackInfo| {
@@ -119,6 +131,12 @@ where
             reader.push(&mono, end, &mut obs);
             for o in &obs {
                 let _ = data_tx.send(Input::Frame(*o));
+            }
+            if let Some(ub) = reader.user_bits()
+                && user_bits_sent != Some(ub)
+            {
+                user_bits_sent = Some(ub);
+                let _ = data_tx.send(Input::UserBits(ub));
             }
         },
         move |e| {

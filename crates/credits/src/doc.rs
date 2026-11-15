@@ -132,6 +132,7 @@ impl CreditsDoc {
     /// The credits the embedded table stands for.
     pub fn credits(&self) -> Result<Credits, CreditsError> {
         let mut c = read_sheet(&self.table, &self.styling.default_page_style, &self.styling.default_content_style)?;
+        crate::scene::split_pages(&mut c, &self.styling);
         let k = if self.pixel_scale.is_finite() && self.pixel_scale > 0.0 { self.pixel_scale.clamp(0.001, 1_000.0) } else { 1.0 };
         if k != 1.0 {
             for b in c.pages.iter_mut().flat_map(|p| p.blocks.iter_mut()) {

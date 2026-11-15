@@ -4,13 +4,14 @@ from __future__ import annotations
 
 import tomllib
 import unittest
+from typing import Any
 
 from cfa4_devtools.superpowers_cost import DEFAULT_POLICY, evaluate, main
 
 
 class SuperpowersCostTests(unittest.TestCase):
-    def setUp(self):
-        self.policy = {
+    def setUp(self) -> None:
+        self.policy: dict[str, Any] = {
             "schema": 1,
             "superpowers": {
                 "enabled": True, "automatic_bootstrap": False, "parallel_agents": False,
@@ -20,84 +21,84 @@ class SuperpowersCostTests(unittest.TestCase):
             "limits": {"allow_paid_calls": True, "max_parallel_paid_calls": 0,
                        "max_total_tokens": 1000, "max_paid_usd": "1"},
         }
-        self.request = {
+        self.request: dict[str, Any] = {
             "skill": "systematic-debugging", "mode": "inline", "approved": True,
             "paid": True, "input_tokens": 100, "max_output_tokens": 200,
             "input_usd_per_million": "1", "output_usd_per_million": "2",
         }
-        self.usage = {
+        self.usage: dict[str, Any] = {
             "baseline_tokens": 400, "baseline_paid_usd": "0.001",
             "spent_tokens": 100, "spent_paid_usd": "0.0001",
         }
 
-    def decision(self):
+    def decision(self) -> Any:
         return evaluate(self.policy, self.request, self.usage)["decision"]
 
-    def test_within_verified_baselines_is_estimate_only(self):
+    def test_within_verified_baselines_is_estimate_only(self) -> None:
         self.assertEqual(self.decision(), "ALLOW_ESTIMATE_ONLY")
 
-    def test_committed_policy_denies_by_default(self):
+    def test_committed_policy_denies_by_default(self) -> None:
         with DEFAULT_POLICY.open("rb") as stream:
             policy = tomllib.load(stream)
         self.assertEqual(evaluate(policy, self.request, self.usage)["decision"], "DENY")
         self.assertFalse(policy["superpowers"]["automatic_bootstrap"])
         self.assertFalse(policy["superpowers"]["parallel_agents"])
 
-    def test_missing_baseline_denied(self):
+    def test_missing_baseline_denied(self) -> None:
         self.usage.pop("baseline_tokens")
         self.assertEqual(self.decision(), "DENY")
 
-    def test_unapproved_task_denied(self):
+    def test_unapproved_task_denied(self) -> None:
         self.request["approved"] = False
         self.assertEqual(self.decision(), "DENY")
 
-    def test_disallowed_parallel_skill_denied(self):
+    def test_disallowed_parallel_skill_denied(self) -> None:
         self.request["skill"] = "dispatching-parallel-agents"
         self.assertEqual(self.decision(), "DENY")
 
-    def test_token_limit_denied(self):
+    def test_token_limit_denied(self) -> None:
         self.usage["spent_tokens"] = 101
         self.assertEqual(self.decision(), "DENY")
 
-    def test_paid_cost_limit_denied(self):
+    def test_paid_cost_limit_denied(self) -> None:
         self.usage["spent_paid_usd"] = "0.0006"
         self.assertEqual(self.decision(), "DENY")
 
-    def test_disabled_paid_calls_denied(self):
+    def test_disabled_paid_calls_denied(self) -> None:
         self.policy["limits"]["allow_paid_calls"] = False
         self.assertEqual(self.decision(), "DENY")
 
-    def test_nonfinite_cost_denied(self):
+    def test_nonfinite_cost_denied(self) -> None:
         self.request["output_usd_per_million"] = "NaN"
         self.assertEqual(self.decision(), "DENY")
 
-    def test_negative_bool_float_and_string_token_counts_denied(self):
+    def test_negative_bool_float_and_string_token_counts_denied(self) -> None:
         for bad in (-1, True, 1.5, "200"):
             self.request["max_output_tokens"] = bad
             self.assertEqual(self.decision(), "DENY")
 
-    def test_parallel_agents_denied(self):
+    def test_parallel_agents_denied(self) -> None:
         self.policy["superpowers"]["parallel_agents"] = True
         self.assertEqual(self.decision(), "DENY")
 
-    def test_automatic_bootstrap_denied(self):
+    def test_automatic_bootstrap_denied(self) -> None:
         self.policy["superpowers"]["automatic_bootstrap"] = True
         self.assertEqual(self.decision(), "DENY")
 
-    def test_unknown_paid_price_denied(self):
+    def test_unknown_paid_price_denied(self) -> None:
         self.request["input_usd_per_million"] = "0"
         self.request["output_usd_per_million"] = "0"
         self.assertEqual(self.decision(), "DENY")
 
-    def test_non_paid_model_with_price_denied(self):
+    def test_non_paid_model_with_price_denied(self) -> None:
         self.request["paid"] = False
         self.assertEqual(self.decision(), "DENY")
 
-    def test_corrupted_usage_denied(self):
+    def test_corrupted_usage_denied(self) -> None:
         self.usage["spent_paid_usd"] = "Infinity"
         self.assertEqual(self.decision(), "DENY")
 
-    def test_default_cli_denied(self):
+    def test_default_cli_denied(self) -> None:
         self.assertEqual(main([]), 2)
 
 
