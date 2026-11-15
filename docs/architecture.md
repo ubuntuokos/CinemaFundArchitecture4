@@ -77,7 +77,7 @@ Crates are named `cfa4-<dir>` (`crates/time` is `cfa4-time`); new CFA4 crates ar
 | `av1` | L0 | AV1 decoder (Main profile; bit-exact with libdav1d; see its README for the stage table) |
 | `mpeg2v` | L0 | MPEG-2 video (Main / 4:2:2 profile; frame and field pictures, dual prime) and MPEG-1 video decoder ([README](../crates/mpeg2v/README.md)) |
 | `dv` | L0 | DV video decoder: DV25 / DVCAM 4:1:1 and 4:2:0, DVCPRO 25 / 50, DVCPRO HD 1080i and 720p, 8-8 and 2-4-8 DCT ([README](../crates/dv/README.md)) |
-| `lcevc` | L0 | MPEG-5 LCEVC: finds enhancement data (T.35 SEI in H.264 / HEVC, `lvc1` tracks, TS stream type 0x36); no decoding yet ([README](../crates/lcevc/README.md)) |
+| `lcevc` | L0 | MPEG-5 LCEVC: finds enhancement data (T.35 SEI in H.264 / HEVC, `lvc1` tracks, TS stream type 0x36) and decodes it (LCEVCdec 4.3.1 port) ([README](../crates/lcevc/README.md)) |
 | `aac` | L0 | AAC-LC decoder and encoder |
 | `ac3` | L0 | AC-3 (ATSC A/52) decoder ([README](../crates/ac3/README.md)) |
 | `dts` | L0 | DTS core, DTS-HD MA / HRA decoder, FFmpeg-derived, LGPL-2.1-or-later ([README](../crates/dts/README.md)) |

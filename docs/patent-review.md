@@ -36,7 +36,7 @@ szabadalommal védett formátumot.
 | H.264 / AVC | kódolás | `crates/h264enc`; `crates/platform` (NVENC); x264 (FFmpeg-háttér) | alap; x264: kiegészítő | függőben | | |
 | H.265 / HEVC (Main, Main 10, RExt 4:2:2 / 4:4:4, 12 bit) | dekódolás | `crates/hevc`; `crates/platform` (VA-API, NVDEC); FFmpeg-háttér | alap | függőben | | |
 | H.265 / HEVC | kódolás | `crates/hevc` (szoftveres, Main / Main 10); `crates/platform` (NVENC); x265 (FFmpeg-háttér) | alap; x265: kiegészítő | függőben | | |
-| LCEVC (MPEG-5 Part 2, ISO/IEC 23094-2) | csak felismerés (H.264 / HEVC SEI, MP4 `lvc1`, TS 0x36; a javítóréteget nem dekódolja) | `crates/lcevc` | alap | függőben | | |
+| LCEVC (MPEG-5 Part 2, ISO/IEC 23094-2) | dekódolás (H.264 / HEVC T.35 SEI); felismerés (MP4 `lvc1`, TS 0x36) | `crates/lcevc` (az LCEVCdec 4.3.1 portja; a BSD-3-Clause-Clear licenc kifejezetten nem ad szabadalmi jogot) | alap | függőben | | |
 | MPEG-5 EVC Baseline (ISO/IEC 23094-1) | dekódolás | `crates/evc` (a xevd portja) | alap | függőben | | |
 | AVS1-P2 Jizhun (GB/T 20090.2) | dekódolás | `crates/cavs` (az FFmpeg portja) | alap | függőben | | |
 | MPEG-1 / MPEG-2 videó (H.262) | dekódolás | `crates/mpeg2v`; FFmpeg-háttér | alap | függőben | | |

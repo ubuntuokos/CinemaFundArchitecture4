@@ -48,3 +48,7 @@ bash "$(dirname "$0")/install-speex.sh" \
 # the AMR oracle tests skip without it)
 bash "$(dirname "$0")/install-amr-oracle.sh" \
   || echo "::warning::cfa4-amr-oracle build failed: the AMR oracle tests skip"
+# LCEVC oracle `lcevc_oracle` (V-Nova LCEVCdec 4.3.1 + crates/lcevc/tests/oracle/lcevc_oracle.c,
+# built from the pinned upstream tag; the LCEVC oracle test skips without it)
+bash "$(dirname "$0")/install-lcevc-oracle.sh" \
+  || echo "::warning::lcevc_oracle build failed: the LCEVC oracle test skips"
