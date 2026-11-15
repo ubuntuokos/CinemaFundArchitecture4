@@ -39,6 +39,7 @@ const IMPLEMENTED: &[&str] = &[
     IAB_TRACK,
     MARK_MARKERS,
     SUB_DOCUMENTS,
+    NAME_ISDCF,
 ];
 
 /// The native validator. Stateless; one value can validate many packages from many threads.
@@ -178,6 +179,7 @@ impl Run<'_> {
             IAB_TRACK,
             MARK_MARKERS,
             SUB_DOCUMENTS,
+            NAME_ISDCF,
         ];
         self.control.report("discover", 0, 1);
         let maps = package::asset_maps(&self.root);
@@ -261,6 +263,24 @@ impl Run<'_> {
             return;
         }
         self.subtitles(&files, &cpls);
+        if self.control.is_cancelled() {
+            return;
+        }
+        self.naming(&files, &cpls);
+    }
+
+    /// DCP-09: the ISDCF names against the packages.
+    fn naming(&mut self, files: &Files, cpls: &[(String, Composition)]) {
+        if !self.request.profile.contains(NAME_ISDCF) {
+            return;
+        }
+        if cpls.is_empty() {
+            self.findings.push(Finding::new(NAME_ISDCF, Status::Unchecked, "no composition playlist was read"));
+            self.done.insert(NAME_ISDCF);
+            return;
+        }
+        let Some(r) = crate::naming::check(cpls, files, self.control) else { return };
+        self.rule(NAME_ISDCF, r);
     }
 
     /// DCP-08: the subtitle and caption documents with their fonts and images.

@@ -1292,9 +1292,16 @@ fn imf_params() {
     assert_eq!((st.format, st.imf_lossless, st.imf_content_kind.as_str(), st.dcp_language.as_str()), (cfa4_export::Format::Imf, true, "episode", "hu-HU"));
     let e = setting(&s, json!({"path": "pkg", "format": "imf", "imfContentKind": "policy"})).unwrap_err().to_string();
     assert!(e.contains("imfContentKind"), "{e}");
+    // #1234: IMF subtitles reuse the DCP subtitle switch and language, with a timed text kind
+    let st = setting(&s, json!({"path": "pkg", "format": "imf", "dcpSubtitles": true, "dcpSubtitleLanguage": "hu-HU", "imfTimedTextKind": "ForcedNarrative"}))
+        .unwrap();
+    assert_eq!((st.dcp_subtitles, st.dcp_subtitle_language.as_str(), st.imf_timed_text_kind.as_str()), (true, "hu-HU", "forcedNarrative"));
+    let e = setting(&s, json!({"path": "pkg", "format": "imf", "imfTimedTextKind": "karaoke"})).unwrap_err().to_string();
+    assert!(e.contains("imfTimedTextKind"), "{e}");
     let mut s = s;
-    let r = s.execute("export.resolve", json!({"format": "imf", "fps": 48.0})).unwrap();
+    let r = s.execute("export.resolve", json!({"format": "imf", "fps": 48.0, "imfTimedTextKind": "captions"})).unwrap();
     assert_eq!(r["settings"]["imfContentKind"], "");
+    assert_eq!(r["settings"]["imfTimedTextKind"], "captions");
     assert!(r["summary"]["video"].as_str().unwrap().contains("JPEG 2000 IMF lossy, 10-bit R'G'B' 4:4:4"), "{r}");
 }
 
