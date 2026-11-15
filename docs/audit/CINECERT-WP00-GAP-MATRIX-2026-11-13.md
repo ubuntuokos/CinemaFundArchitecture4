@@ -125,9 +125,16 @@ az a crate README-jéből származik; a többi a megvalósító PR-ban rögzíte
 | ST 428-7 | 2007 / 2010 / 2014 névterek | `crates/captions/src/dcst.rs` |
 | ST 2067-3 / -8 / -100 / -101 / -102, ST 2086, ST 2067-9, ST 429-12, RDD 52, ST 430-2 / -3 | nincs rögzítve | a megvalósító PR-ban |
 
-## 6. Javasolt következő lépés
+## 6. Döntés (István, 2026-11-15)
 
-A tulajdonos és a gazda dönt (§2.8). A CineCert-munkamenet javaslata: a CineCert-terv a 3. pontban
+✅ **„Csak a CineCert-only részek”**: a CineCert-terv a 3. pontban „CineCert” gazdájú részeken
+folytatódik, ebben a sorrendben: WP01-A orákulum-telepítő (asdcplib, Photon, Clairmeta, korpusz),
+WP08 mxf-digest / VTFP, WP09 ISDCF, WP13 átadás és archiválás, majd a 8. fejezet elfogadási tesztjei.
+Az átfedő munkacsomagok (WP02-A, WP03–WP07, WP10–WP12, WP15, WP16) a PROCODEC-002, a DCP-VALIDATION és
+a G2 projektnél maradnak; ezekre ebből a projektből kód nem készül. A döntés a 30 nyitott PR feletti
+új CineCert-PR-ok tulajdonosi kérése is (§2.6). A D2 és D3 eltérés (2. pont) nyitott marad.
+
+Az eredeti javaslat: a CineCert-terv a 3. pontban
 „CineCert” gazdájú részeken folytatódik (WP01-A, WP08, WP09, WP13, elfogadási tesztek), a többi
 munkacsomagnál a terv a gazda projektjének ellenőrzőlistája marad, kód nem készül rájuk ebből a
 projektből. A D2 és D3 eltérést (2. pont) a tulajdonos egy helyen rögzíti.
