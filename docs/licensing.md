@@ -220,6 +220,15 @@ program's file format, from its documentation and published source:
   licence as well, but must be listed in `NOTICE` when shipped.
 - Packages must ship `LICENSE`, `LICENSE-MIT`, `LICENSE-APACHE`, `NOTICE` and the licences of
   bundled fonts and programs.
+- Control surfaces (CFA4-CONTROL-SURFACE-001). No code is taken from Ardour, Mixxx, GIMP or
+  Kdenlive; those projects are behaviour references only. The ShuttlePRO decoder in
+  `crates/surface` is original. Dependencies already in the lockfile, no second copy:
+  `alsa` 0.9 (`Apache-2.0 OR MIT`; the system library is `libasound2`, LGPL-2.1-or-later, opened
+  through the `alsa` crate, the same version as `cfa4-tcsync-io`) and `rustix` (`Apache-2.0 OR
+  MIT OR Apache-2.0 WITH LLVM-exception`) for `poll` and inotify. `midir`, `hidapi` and `libusb`
+  are not used. The udev rule `packaging/linux/70-cfa4-surfaces.rules` is original
+  (`TAG+="uaccess"`, vendor `0b33`). HW adapter crates (`mirajazz` MPL-2.0, `async-hid` MIT) are
+  not linked by this release.
 
 ## 7. Patent-restricted components (Ubuntu model)
 

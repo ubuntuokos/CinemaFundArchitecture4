@@ -104,6 +104,9 @@ contents:
   - src: ${STAGE}/usr/share/
     dst: /usr/share/
     type: tree
+  - src: ${STAGE}/usr/lib/udev/rules.d/70-cfa4-surfaces.rules
+    dst: /usr/lib/udev/rules.d/70-cfa4-surfaces.rules
+    file_info: { mode: 0644 }
 
 scripts:
   postinstall: packaging/linux/postinst.sh

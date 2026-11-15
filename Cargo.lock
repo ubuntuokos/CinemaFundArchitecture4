@@ -1456,6 +1456,7 @@ dependencies = [
  "cfa4-scopes",
  "cfa4-smart-edit",
  "cfa4-speech",
+ "cfa4-surface-model",
  "cfa4-tcsync",
  "cfa4-testkit",
  "cfa4-text",
@@ -2142,6 +2143,7 @@ version = "0.10.0"
 dependencies = [
  "alsa",
  "cfa4-surface-model",
+ "rustix 1.1.6",
  "serde",
  "serde_json",
 ]

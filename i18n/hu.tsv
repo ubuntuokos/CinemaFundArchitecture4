@@ -4600,6 +4600,27 @@ export.summary	Low	alacsony
 	Chase External Timecode	Külső időkód követése
 	Send LTC	LTC küldése
 	Send MIDI Timecode	MIDI-időkód küldése
+	Assignments run when a button is pressed (a fader or knob counts as pressed past half way); a fader or knob assigned to a mixer strip moves its volume or pan. A ShuttlePRO's shuttle ring plays at its profile's speeds and its jog wheel steps frame by frame. Endless encoders and feedback to the controller (lights, motor faders) come in a later version.	A hozzárendelések gombnyomásra futnak (egy fader vagy forgatógomb a félúton túl számít lenyomásnak); a keverősávhoz rendelt fader vagy forgatógomb a sáv hangerejét vagy panorámáját mozgatja. A ShuttlePRO shuttle-gyűrűje a profil sebességeivel játszik le, a jog-tárcsája képkockánként léptet. A végtelenített enkóderek és a vezérlőnek küldött visszajelzés (fények, motoros faderek) egy későbbi verzióban jönnek.
+	MIDI Monitor	MIDI-figyelő
+	Shows every MIDI message from the controllers as it arrives, to check that a controller sends and what it sends. MIDI Clock and Active Sensing are left out.	Megmutat minden MIDI-üzenetet, amely a vezérlőkről érkezik, így ellenőrizhető, hogy egy vezérlő küld-e, és mit küld. A MIDI Clock és az Active Sensing üzenetek nem jelennek meg.
+	Start Monitor	Figyelés indítása
+	Stop Monitor	Figyelés leállítása
+	Press Start Monitor, then move a control.	Nyomja meg a Figyelés indítása gombot, majd mozdítson meg egy kezelőszervet.
+	… {count} messages not shown (too many at once)	… {count} üzenet nem látszik (egyszerre túl sok érkezett)
+	Assignments	Hozzárendelések
+	Control	Kezelőszerv
+	Remove this assignment	Hozzárendelés törlése
+	No assignments yet.	Még nincs hozzárendelés.
+	Learn	Tanítás
+	Cancel Learn	Tanítás megszakítása
+	Press or move a control on the controller…	Nyomjon meg vagy mozdítson meg egy kezelőszervet a vezérlőn…
+	Pick a command (or a mixer strip for a fader or knob), press Learn, then press the button or move the control past half way. OK saves the assignments.	Válasszon parancsot (fader vagy forgatógomb esetén keverősávot), nyomja meg a Tanítás gombot, majd nyomja meg a gombot, vagy mozdítsa a kezelőszervet félúton túl. Az OK menti a hozzárendeléseket.
+	Connect a MIDI controller or a ShuttlePRO to assign commands to its buttons.	Csatlakoztasson egy MIDI-vezérlőt vagy egy ShuttlePRO-t, hogy parancsokat rendelhessen a gombjaihoz.
+	{control} runs {command}.	{control}: {command}.
+	A control surface asked for {command}, which does not exist.	Egy vezérlő a(z) {command} parancsot kérte, de ilyen parancs nincs.
+	Button {n}	{n}. gomb
+	{strip} Volume (fader)	{strip} hangerő (fader)
+	{strip} Pan (knob)	{strip} panoráma (forgatógomb)
 
 # Live studio preview (CFA4-LIVE-STUDIO-001 S0)
 	Live studio preview	Élő stúdió előnézet
@@ -4730,6 +4751,49 @@ export.summary	Low	alacsony
 	Freewheel	Szabadonfutás
 	Scrubbing	Léptetés
 	Sending	Küldés
+# Control surfaces (F1 Learn and profile, CFA4-CONTROL-SURFACE-001)
+	First message (ms)	Első üzenet (ms)
+	Silence (ms)	Csend (ms)
+	Waiting for the control to settle…	Várakozás, amíg a kezelőszerv megnyugszik…
+	Type: {hint}. Confirm this assignment.	Típus: {hint}. Erősítse meg a hozzárendelést.
+	That control is already assigned. Confirm replaces it.	Ez a kezelőszerv már hozzá van rendelve. A megerősítés lecseréli.
+	Learn timed out.	A tanítás ideje lejárt.
+	Confirm	Megerősítés
+	Reject	Elutasítás
+	Shows every MIDI message from the controllers as it arrives, to check that a controller sends and what it sends. MIDI Clock, Active Sensing and MIDI Time Code are left out.	Megmutat minden MIDI-üzenetet, amely a vezérlőkről érkezik, így ellenőrizhető, hogy egy vezérlő küld-e, és mit küld. A MIDI Clock, az Active Sensing és a MIDI-időkód nem jelenik meg.
+	Pick a command (or a mixer strip for a fader or knob), press Learn, then press the button or move the control past half way. Confirm keeps the assignment. OK saves the assignments.	Válasszon parancsot (fader vagy forgatógomb esetén keverősávot), nyomja meg a Tanítás gombot, majd nyomja meg a gombot, vagy mozdítsa a kezelőszervet félúton túl. A megerősítés megtartja a hozzárendelést. Az OK menti a hozzárendeléseket.
+	All devices	Minden eszköz
+	Builtin: {name}	Beépített: {name}
+	Capturing	Rögzítés
+	Confirmed	Megerősítve
+	Conflict	Ütközés
+	Connect a MIDI controller or a ShuttlePRO to edit its profile.	A profil szerkesztéséhez csatlakoztasson MIDI-vezérlőt vagy ShuttlePRO-t.
+	Control Surfaces…	Vezérlőfelületek…
+	Filter messages	Üzenetek szűrése
+	Idle	Tétlen
+	Kernel dropped: {count}	Kernel eldobott: {count}
+	Learn Assignments…	Tanulás és hozzárendelések…
+	Load profile	Profil betöltése
+	MIDI Monitor…	MIDI-figyelő…
+	Mute shuttle sound	Shuttle hang némítása
+	No conflicts.	Nincs ütközés.
+	No profile warnings.	Nincs profilfigyelmeztetés.
+	No project profile is stored.	Nincs tárolt projektprofil.
+	OK writes the preferences and the profile file together.	Az OK a beállításokat és a profilfájlt együtt írja ki.
+	Online	Elérhető
+	Pending	Függőben
+	Pickup (14-bit)	Felvétel (14 bites)
+	Pickup (7-bit)	Felvétel (7 bites)
+	Profile warnings	Profilfigyelmeztetések
+	Rejected	Elutasítva
+	Show Active Sensing	Active Sensing megjelenítése
+	Show MIDI Clock	MIDI-óra megjelenítése
+	Show MIDI Time Code	MIDI időkód megjelenítése
+	The profile file is damaged. Preferences and the built-in profile stay in use.	A profilfájl sérült. A beállítások és a beépített profil marad használatban.
+	Timed out	Lejárt
+	Type: {hint}	Típus: {hint}
+	User profile file	Felhasználói profilfájl
+	{received} received, {dispatched} dispatched, {coalesced} coalesced, {stalls} stalls, {errors} errors	{received} érkezett, {dispatched} kiosztott, {coalesced} összevont, {stalls} várakozás, {errors} hiba
 	Read from LTC Audio	Beolvasás LTC-hangból
 	Find SMPTE LTC on the clip's audio and use the timecode it gives the first frame	SMPTE LTC keresése a klip hangjában, és az első képkockára adódó időkód használata
 	Read Timecode from LTC Audio	Időkód beolvasása LTC-hangból

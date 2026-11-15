@@ -1372,6 +1372,13 @@
   },
   {
    "class": "frame",
+   "crate": "cfa4-cli",
+   "kind": "struct",
+   "module": "serve_surface.rs",
+   "name": "SurfaceError"
+  },
+  {
+   "class": "frame",
    "crate": "cfa4-engine",
    "kind": "struct",
    "module": "control_surfaces.rs",
@@ -2219,6 +2226,27 @@
   },
   {
    "class": "other",
+   "crate": "cfa4-cli",
+   "kind": "struct",
+   "module": "serve_surface.rs",
+   "name": "Batcher"
+  },
+  {
+   "class": "other",
+   "crate": "cfa4-cli",
+   "kind": "struct",
+   "module": "serve_surface.rs",
+   "name": "Filter"
+  },
+  {
+   "class": "other",
+   "crate": "cfa4-cli",
+   "kind": "struct",
+   "module": "serve_surface.rs",
+   "name": "Router"
+  },
+  {
+   "class": "other",
    "crate": "cfa4-color",
    "kind": "enum",
    "module": "grade.rs",
@@ -2418,6 +2446,20 @@
    "crate": "cfa4-engine",
    "kind": "struct",
    "module": "control_surfaces.rs",
+   "name": "Action"
+  },
+  {
+   "class": "other",
+   "crate": "cfa4-engine",
+   "kind": "struct",
+   "module": "control_surfaces.rs",
+   "name": "Binding"
+  },
+  {
+   "class": "other",
+   "crate": "cfa4-engine",
+   "kind": "struct",
+   "module": "control_surfaces.rs",
    "name": "BuiltinProfile"
   },
   {
@@ -2426,6 +2468,20 @@
    "kind": "struct",
    "module": "control_surfaces.rs",
    "name": "DeviceSetting"
+  },
+  {
+   "class": "other",
+   "crate": "cfa4-engine",
+   "kind": "struct",
+   "module": "control_surfaces.rs",
+   "name": "Triggers"
+  },
+  {
+   "class": "other",
+   "crate": "cfa4-engine",
+   "kind": "struct",
+   "module": "control_surfaces.rs",
+   "name": "UnsupportedBinding"
   },
   {
    "class": "other",
@@ -3098,6 +3154,27 @@
    "kind": "struct",
    "module": "studio.rs",
    "name": "ProgramLayer"
+  },
+  {
+   "class": "other",
+   "crate": "cfa4-engine",
+   "kind": "enum",
+   "module": "surface_profile.rs",
+   "name": "ProfileFault"
+  },
+  {
+   "class": "other",
+   "crate": "cfa4-engine",
+   "kind": "struct",
+   "module": "surface_runtime.rs",
+   "name": "LearnTarget"
+  },
+  {
+   "class": "other",
+   "crate": "cfa4-engine",
+   "kind": "struct",
+   "module": "surface_runtime.rs",
+   "name": "Runtime"
   },
   {
    "class": "other",
@@ -6647,12 +6724,22 @@
   },
   {
    "from": "cfa4-cli/serve_surface.rs",
+   "item": "EngineError",
+   "to": "cfa4-engine"
+  },
+  {
+   "from": "cfa4-cli/serve_surface.rs",
    "item": "Session",
    "to": "cfa4-engine"
   },
   {
    "from": "cfa4-cli/serve_surface.rs",
    "item": "control_surfaces",
+   "to": "cfa4-engine"
+  },
+  {
+   "from": "cfa4-cli/serve_surface.rs",
+   "item": "surface_runtime",
    "to": "cfa4-engine"
   },
   {
