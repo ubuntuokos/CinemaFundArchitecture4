@@ -33,5 +33,9 @@ generated from `huffman.c`.
 - `tests/oracle.rs`: ffmpeg's two FATE samples (`inside-mp7.mpc`, `inside-mp8.mpc`, in
   `$MUSEPACK_SAMPLES` or `target/fixtures/musepack/fate`) within 1 LSB at 16 bits of ffmpeg's
   fixed-point decoder; 2000 damaged copies without a panic.
+- `tests/libmpcdec_oracle.rs`: exactly libmpcdec's floating-point samples (the same `f32`
+  bits), through the tools `scripts/ci/install-musepack-oracle.sh` builds from the pinned
+  musepack_src_r475 archive (in CI): SV8 streams the reference encoder `mpcenc` makes at
+  qualities 0–10, 32 / 44.1 / 48 kHz, mono and stereo; and the FATE samples when present.
 - `crates/codecs/tests/musepack_oracle.rs`: the same files through the media source, also
   read from the middle.

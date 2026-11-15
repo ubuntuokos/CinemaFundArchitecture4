@@ -1968,6 +1968,7 @@
 	Counter	Tæller
 	Typewriter	Skrivemaskine
 	Word by Word	Ord for ord
+	Scramble	Omrokering
 	Animator	Animator
 	Animator Duration	Animatorvarighed
 	Animator Delay	Animatorforsinkelse
@@ -3043,6 +3044,10 @@
 	Sharpen Amount	Skarphedsmængde
 	Shift Center To	Flyt centrum til
 	Show Focus Area	Vis fokusområde
+	Rack Focus	Fokusskift
+	Focus Point A	Fokuspunkt A
+	Focus Point B	Fokuspunkt B
+	Rack	Skift
 	Show Only Noise	Vis kun støj
 	Shrink	Krymp
 	Shutter Angle	Lukkervinkel
@@ -4178,6 +4183,11 @@ export.summary	Low	lav
 	Burn Size	Brændstørrelse
 	Ember Width	Gløders bredde
 	Ember Color	Gløders farve
+	Tear Away	Afrivning
+	Tear Roughness	Rivekantens ruhed
+	Paper Edge Width	Papirkantens bredde
+	Stamp Cut	Frimærkeudsnit
+	Perforations	Perforeringer
 	Check Text Legibility	Kontrollér tekstens læsbarhed
 	Clear Legibility Markers	Ryd læsbarhedsmarkører
 	Text legibility: no problems found	Tekstens læsbarhed: ingen problemer fundet
@@ -4217,6 +4227,9 @@ export.summary	Low	lav
 	Dither	Dithering
 	Pattern	Mønster
 	Cell Size	Cellestørrelse
+	Pixelate	Pixelering
+	Cell Shape	Celleform
+	LED	LED
 	Cyan Angle	Cyan vinkel
 	Magenta Angle	Magenta vinkel
 	Yellow Angle	Gul vinkel
@@ -4577,6 +4590,18 @@ export.summary	Low	lav
 	Chase External Timecode	Følg ekstern tidskode
 	Send LTC	Send LTC
 	Send MIDI Timecode	Send MIDI-tidskode
+
+# Live studio preview (CFA4-LIVE-STUDIO-001 S0)
+	Live studio preview	Forhåndsvisning af livestudie
+	Live studio: stopped	Livestudie: stoppet
+	Live studio: {state}	Livestudie: {state}
+	Live studio: {error}	Livestudie: {error}
+	restarted after {count} crashes (last: {exit})	genstartet efter {count} nedbrud (sidste: {exit})
+	software backend: {reason}	software-backend: {reason}
+	Start studio	Start studie
+	Stop studio	Stop studie
+	Add Studio Scene	Tilføj studiescene
+	Live	Live
 # Auto Color, Auto Contrast, Auto Levels (EffectsSDK review)
 	Auto Color	Automatisk farve
 	Auto Contrast	Automatisk kontrast
@@ -4634,3 +4659,42 @@ export.summary	Low	lav
 	Freewheel	Frihjul
 	Scrubbing	Scrubber
 	Sending	Sender
+
+# DCP subtitle export (#938)
+	Subtitles from the first caption track	Undertekster fra det første tekstningsspor
+	The package language	Pakkens sprog
+	Inter Regular (built in), or an OpenType / TrueType file	Inter Regular (indbygget) eller en OpenType-/TrueType-fil
+	Subtitle language	Undertekstsprog
+	Subtitle font	Skrifttype til undertekster
+	Fonts	Skrifttyper
+
+# AS-11 metadata in MXF OP1a (#96)
+	AS-11 Core	AS-11 Core
+	AS-11 Parts	AS-11-dele
+	AS-11 UK DPP	AS-11 UK DPP
+
+# Control Surfaces settings page (CS-1, #1187)
+	Devices	Enheder
+	Use	Brug
+	Device	Enhed
+	MIDI	MIDI
+	HID jog/shuttle	HID jog/shuttle
+	OSC	OSC
+	Connected	Tilsluttet
+	Not connected	Ikke tilsluttet
+	Disabled	Deaktiveret
+	{device} ({port})	{device} ({port})
+	{name}: {error}	{name}: {error}
+	Looking for devices…	Søger efter enheder…
+	No MIDI controller or jog/shuttle device was found. Connect one and press Refresh.	Der blev ikke fundet nogen MIDI-controller eller jog/shuttle-enhed. Tilslut en, og tryk på Opdater.
+	Control Surfaces	Kontrolflader
+	Use control surfaces (MIDI controllers, jog/shuttle devices)	Brug kontrolflader (MIDI-controllere, jog/shuttle-enheder)
+	Mapping controls to commands, MIDI Learn and the MIDI Monitor come in a later version; the choices here are remembered until then.	Tildeling af kontroller til kommandoer, MIDI Learn og MIDI-monitoren kommer i en senere version; valgene her huskes indtil da.
+	CFA4 ShuttlePRO	CFA4 ShuttlePRO
+	Kdenlive-style ShuttlePRO	ShuttlePRO i Kdenlive-stil
+	Generic MIDI	Generisk MIDI
+
+# LTC timecode read from clip audio (TC-7, #1285)
+	Read from LTC Audio	Læs fra LTC-lyd
+	Find SMPTE LTC on the clip's audio and use the timecode it gives the first frame	Find SMPTE LTC i klippets lyd, og brug den tidskode, det giver det første billede
+	Read Timecode from LTC Audio	Læs tidskode fra LTC-lyd

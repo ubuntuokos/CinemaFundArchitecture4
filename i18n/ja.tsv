@@ -2363,6 +2363,10 @@
 	Show Clip Mismatch Warning dialog	クリップの不一致警告ダイアログを表示
 	Show Event Indicator	イベントインジケーターを表示
 	Show Focus Area	フォーカス範囲を表示
+	Rack Focus	ラックフォーカス
+	Focus Point A	フォーカスポイント A
+	Focus Point B	フォーカスポイント B
+	Rack	ラック
 	Show Home	ホームを表示
 	Show Mask Tracker Preview	マスクトラッカーのプレビューを表示
 	Show Only Noise	ノイズのみ表示
@@ -3653,6 +3657,7 @@
 	Social Deliverables…	SNS 用書き出しセット…
 	Counter	カウンター
 	Word by Word	単語ごと
+	Scramble	スクランブル
 	Animator	アニメーター
 	Animator Duration	アニメーターのデュレーション
 	Animator Delay	アニメーターの遅延
@@ -4185,6 +4190,11 @@
 	Burn Size	焼けのサイズ
 	Ember Width	残り火の幅
 	Ember Color	残り火の色
+	Tear Away	破り取り
+	Tear Roughness	破れ目の粗さ
+	Paper Edge Width	紙の縁の幅
+	Stamp Cut	切手カット
+	Perforations	ミシン目
 	Check Text Legibility	テキストの読みやすさをチェック
 	Clear Legibility Markers	読みやすさマーカーを消去
 	Text legibility: no problems found	テキストの読みやすさ: 問題は見つかりませんでした
@@ -4224,6 +4234,9 @@
 	Dither	ディザ
 	Pattern	パターン
 	Cell Size	セルサイズ
+	Pixelate	ピクセレート
+	Cell Shape	セルの形
+	LED	LED
 	Cyan Angle	シアンの角度
 	Magenta Angle	マゼンタの角度
 	Yellow Angle	イエローの角度
@@ -4584,6 +4597,18 @@
 	Chase External Timecode	外部タイムコードにチェイス
 	Send LTC	LTC を送信
 	Send MIDI Timecode	MIDI タイムコードを送信
+
+# Live studio preview (CFA4-LIVE-STUDIO-001 S0)
+	Live studio preview	ライブスタジオのプレビュー
+	Live studio: stopped	ライブスタジオ: 停止中
+	Live studio: {state}	ライブスタジオ: {state}
+	Live studio: {error}	ライブスタジオ: {error}
+	restarted after {count} crashes (last: {exit})	{count} 回のクラッシュ後に再起動しました(最後: {exit})
+	software backend: {reason}	ソフトウェアバックエンド: {reason}
+	Start studio	スタジオを開始
+	Stop studio	スタジオを停止
+	Add Studio Scene	スタジオシーンを追加
+	Live	ライブ
 # Auto Color, Auto Contrast, Auto Levels (EffectsSDK review)
 	Auto Color	自動カラー
 	Auto Contrast	自動コントラスト
@@ -4641,3 +4666,42 @@
 	Freewheel	フリーホイール
 	Scrubbing	スクラブ中
 	Sending	送信中
+
+# DCP subtitle export (#938)
+	Subtitles from the first caption track	最初のキャプショントラックからの字幕
+	The package language	パッケージの言語
+	Inter Regular (built in), or an OpenType / TrueType file	Inter Regular (組み込み)、または OpenType / TrueType ファイル
+	Subtitle language	字幕の言語
+	Subtitle font	字幕のフォント
+	Fonts	フォント
+
+# AS-11 metadata in MXF OP1a (#96)
+	AS-11 Core	AS-11 Core
+	AS-11 Parts	AS-11 パート
+	AS-11 UK DPP	AS-11 UK DPP
+
+# Control Surfaces settings page (CS-1, #1187)
+	Devices	デバイス
+	Use	使用
+	Device	デバイス
+	MIDI	MIDI
+	HID jog/shuttle	HID ジョグ/シャトル
+	OSC	OSC
+	Connected	接続済み
+	Not connected	未接続
+	Disabled	無効
+	{device} ({port})	{device} ({port})
+	{name}: {error}	{name}: {error}
+	Looking for devices…	デバイスを検索しています…
+	No MIDI controller or jog/shuttle device was found. Connect one and press Refresh.	MIDI コントローラーまたはジョグ/シャトル デバイスが見つかりません。接続してから［更新］を押してください。
+	Control Surfaces	コントロールサーフェス
+	Use control surfaces (MIDI controllers, jog/shuttle devices)	コントロールサーフェスを使用する（MIDI コントローラー、ジョグ/シャトル デバイス）
+	Mapping controls to commands, MIDI Learn and the MIDI Monitor come in a later version; the choices here are remembered until then.	コントロールへのコマンド割り当て、MIDI Learn、MIDI モニターは今後のバージョンで提供されます。それまではここでの選択が保存されます。
+	CFA4 ShuttlePRO	CFA4 ShuttlePRO
+	Kdenlive-style ShuttlePRO	Kdenlive 風 ShuttlePRO
+	Generic MIDI	汎用 MIDI
+
+# LTC timecode read from clip audio (TC-7, #1285)
+	Read from LTC Audio	LTC オーディオから読み取り
+	Find SMPTE LTC on the clip's audio and use the timecode it gives the first frame	クリップのオーディオから SMPTE LTC を探し、最初のフレームに対応するタイムコードを使用します
+	Read Timecode from LTC Audio	LTC オーディオからタイムコードを読み取り

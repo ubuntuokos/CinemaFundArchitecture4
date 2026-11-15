@@ -64,6 +64,21 @@ unchanged next to `cfa4` (OTIO-2.1). Where it is kept:
 Not kept yet: metadata on markers, transitions, effects and media references. CFA4's own work has
 no such keys, and an empty field is not written to the project file.
 
+## Image sequences
+
+An OTIO `ImageSequenceReference` is CFA4 image-sequence media (OTIO-2.3). OTIO describes the frames
+as a pattern: `target_url_base` + `name_prefix` + the frame number padded to `frame_zero_padding`
+digits + `name_suffix`, from `start_frame`, at `rate`. CFA4 keeps the first frame's file, marks the
+media as an image sequence at that rate, and finds the other frames next to it when it plays (from
+that number up to the highest one present). The export writes the pattern back from that file name
+(the directory as the base, padding from the digits as written), so a reader without CFA4's
+metadata gets the same frames.
+
+Reported on import, because CFA4 does not do it: a `frame_step` other than 1 (every frame is
+played), `missing_frame_policy: "black"` (CFA4 shows the previous frame, which is `"hold"`; the
+export writes `"hold"`), and a pattern whose files are not numbered still images (imported as one
+file). A reference without a base is offline, as before.
+
 ## Nested sequences
 
 For the formats Premiere Pro exports (FCP7 XML, OTIO, EDL, AAF, OMF) a nested sequence is written
@@ -180,5 +195,5 @@ the available range); per clip whether it is enabled, its speed, reverse and hol
 points at (file path, generator, offline, or a nested sequence); and the import warnings that are
 expected (an unknown generator, an effect CFA4 does not know, a file reference without a path, a
 clip directly in a stack). Any other warning, or a missing expected one, fails the test. The rates
-are 23.976, 24, 25, 29.97, 30, 50, 59.94 and 60 fps. How an image sequence is kept is OTIO-2.3; its
-path is not compared yet. Relative media paths resolve under `/media`, the base the test passes.
+are 23.976, 24, 25, 29.97, 30, 50, 59.94 and 60 fps. An image sequence is checked by its first
+frame's path (as OTIO's `target_url_for_image_number(0)` gives it) and its media kind. Relative media paths resolve under `/media`, the base the test passes.

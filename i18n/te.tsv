@@ -2065,6 +2065,7 @@
 	Text Animator	టెక్స్ట్ యానిమేటర్
 	Counter	కౌంటర్
 	Word by Word	పదం పదంగా
+	Scramble	కలగలుపు
 	Animator	యానిమేటర్
 	Animator Duration	యానిమేటర్ వ్యవధి
 	Animator Delay	యానిమేటర్ ఆలస్యం
@@ -3190,6 +3191,10 @@
 	Sharpen Amount	షార్పెన్ మొత్తం
 	Shift Center To	కేంద్రాన్ని దీనికి జరుపు
 	Show Focus Area	ఫోకస్ ప్రాంతాన్ని చూపు
+	Rack Focus	ర్యాక్ ఫోకస్
+	Focus Point A	ఫోకస్ బిందువు A
+	Focus Point B	ఫోకస్ బిందువు B
+	Rack	ర్యాక్
 	Show Only Noise	నాయిస్‌ను మాత్రమే చూపు
 	Shrink	కుదించు
 	Shutter Angle	షట్టర్ కోణం
@@ -4182,6 +4187,11 @@ export.summary	Low	తక్కువ
 	Burn Size	కాలే పరిమాణం
 	Ember Width	నిప్పు అంచు వెడల్పు
 	Ember Color	నిప్పు అంచు రంగు
+	Tear Away	చింపివేత
+	Tear Roughness	చిరుగు గరుకుదనం
+	Paper Edge Width	కాగితం అంచు వెడల్పు
+	Stamp Cut	స్టాంప్ కట్
+	Perforations	చిల్లులు
 	Check Text Legibility	వచనం చదవగలతను తనిఖీ చేయి
 	Clear Legibility Markers	చదవగలత మార్కర్లను తొలగించు
 	Text legibility: no problems found	వచనం చదవగలత: సమస్యలు ఏవీ కనబడలేదు
@@ -4221,6 +4231,9 @@ export.summary	Low	తక్కువ
 	Dither	డిథర్
 	Pattern	నమూనా
 	Cell Size	సెల్ పరిమాణం
+	Pixelate	పిక్సెలేట్
+	Cell Shape	సెల్ ఆకారం
+	LED	LED
 	Cyan Angle	సయాన్ కోణం
 	Magenta Angle	మెజెంటా కోణం
 	Yellow Angle	పసుపు కోణం
@@ -4581,6 +4594,18 @@ export.summary	Low	తక్కువ
 	Chase External Timecode	బాహ్య టైమ్‌కోడ్‌ను అనుసరించు
 	Send LTC	LTC పంపు
 	Send MIDI Timecode	MIDI టైమ్‌కోడ్ పంపు
+
+# Live studio preview (CFA4-LIVE-STUDIO-001 S0)
+	Live studio preview	లైవ్ స్టూడియో ప్రివ్యూ
+	Live studio: stopped	లైవ్ స్టూడియో: ఆపివేయబడింది
+	Live studio: {state}	లైవ్ స్టూడియో: {state}
+	Live studio: {error}	లైవ్ స్టూడియో: {error}
+	restarted after {count} crashes (last: {exit})	{count} క్రాష్‌ల తర్వాత మళ్లీ ప్రారంభించబడింది (చివరిది: {exit})
+	software backend: {reason}	సాఫ్ట్‌వేర్ బ్యాకెండ్: {reason}
+	Start studio	స్టూడియోను ప్రారంభించు
+	Stop studio	స్టూడియోను ఆపు
+	Add Studio Scene	స్టూడియో దృశ్యాన్ని జోడించు
+	Live	ప్రత్యక్షం
 # Auto Color, Auto Contrast, Auto Levels (EffectsSDK review)
 	Auto Color	స్వయంచాలక రంగు
 	Auto Contrast	స్వయంచాలక కాంట్రాస్ట్
@@ -4638,3 +4663,42 @@ export.summary	Low	తక్కువ
 	Freewheel	ఫ్రీవీల్
 	Scrubbing	స్క్రబ్ చేస్తోంది
 	Sending	పంపుతోంది
+
+# DCP subtitle export (#938)
+	Subtitles from the first caption track	మొదటి క్యాప్షన్ ట్రాక్ నుండి ఉపశీర్షికలు
+	The package language	ప్యాకేజీ భాష
+	Inter Regular (built in), or an OpenType / TrueType file	Inter Regular (అంతర్నిర్మిత), లేదా OpenType / TrueType ఫైల్
+	Subtitle language	ఉపశీర్షికల భాష
+	Subtitle font	ఉపశీర్షికల ఫాంట్
+	Fonts	ఫాంట్‌లు
+
+# AS-11 metadata in MXF OP1a (#96)
+	AS-11 Core	AS-11 Core
+	AS-11 Parts	AS-11 భాగాలు
+	AS-11 UK DPP	AS-11 UK DPP
+
+# Control Surfaces settings page (CS-1, #1187)
+	Devices	పరికరాలు
+	Use	ఉపయోగించు
+	Device	పరికరం
+	MIDI	MIDI
+	HID jog/shuttle	HID jog/shuttle
+	OSC	OSC
+	Connected	కనెక్ట్ అయింది
+	Not connected	కనెక్ట్ కాలేదు
+	Disabled	నిలిపివేయబడింది
+	{device} ({port})	{device} ({port})
+	{name}: {error}	{name}: {error}
+	Looking for devices…	పరికరాల కోసం వెతుకుతోంది…
+	No MIDI controller or jog/shuttle device was found. Connect one and press Refresh.	MIDI కంట్రోలర్ లేదా jog/shuttle పరికరం కనబడలేదు. ఒకదాన్ని కనెక్ట్ చేసి రిఫ్రెష్ చేయి నొక్కండి.
+	Control Surfaces	కంట్రోల్ సర్ఫేస్‌లు
+	Use control surfaces (MIDI controllers, jog/shuttle devices)	కంట్రోల్ సర్ఫేస్‌లను ఉపయోగించు (MIDI కంట్రోలర్లు, jog/shuttle పరికరాలు)
+	Mapping controls to commands, MIDI Learn and the MIDI Monitor come in a later version; the choices here are remembered until then.	నియంత్రణలను ఆదేశాలకు కేటాయించడం, MIDI Learn మరియు MIDI మానిటర్ తదుపరి వెర్షన్‌లో వస్తాయి; అప్పటివరకు ఇక్కడి ఎంపికలు గుర్తుంచుకోబడతాయి.
+	CFA4 ShuttlePRO	CFA4 ShuttlePRO
+	Kdenlive-style ShuttlePRO	Kdenlive శైలి ShuttlePRO
+	Generic MIDI	సాధారణ MIDI
+
+# LTC timecode read from clip audio (TC-7, #1285)
+	Read from LTC Audio	LTC ఆడియో నుండి చదువు
+	Find SMPTE LTC on the clip's audio and use the timecode it gives the first frame	క్లిప్ ఆడియోలో SMPTE LTC‌ను కనుగొని అది మొదటి ఫ్రేమ్‌కు ఇచ్చే టైమ్‌కోడ్‌ను ఉపయోగించు
+	Read Timecode from LTC Audio	LTC ఆడియో నుండి టైమ్‌కోడ్ చదువు

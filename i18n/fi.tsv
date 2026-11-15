@@ -1944,6 +1944,7 @@
 	Counter	Laskuri
 	Typewriter	Kirjoituskone
 	Word by Word	Sana sanalta
+	Scramble	Sekoitus
 	Animator	Animaattori
 	Animator Duration	Animaattorin kesto
 	Animator Delay	Animaattorin viive
@@ -3023,6 +3024,10 @@
 	Sharpen Amount	Terävöinnin määrä
 	Shift Center To	Siirrä keskipiste kohteeseen
 	Show Focus Area	Näytä tarkennusalue
+	Rack Focus	Tarkennuksen siirto
+	Focus Point A	Tarkennuspiste A
+	Focus Point B	Tarkennuspiste B
+	Rack	Siirto
 	Show Only Noise	Näytä vain kohina
 	Shrink	Kutista
 	Shutter Angle	Suljinkulma
@@ -4178,6 +4183,11 @@ export.summary	Low	matala
 	Burn Size	Palon koko
 	Ember Width	Hiillosreunan leveys
 	Ember Color	Hiillosreunan väri
+	Tear Away	Repäisy
+	Tear Roughness	Repeämän rosoisuus
+	Paper Edge Width	Paperireunan leveys
+	Stamp Cut	Postimerkkileikkaus
+	Perforations	Rei'itys
 	Check Text Legibility	Tarkista tekstin luettavuus
 	Clear Legibility Markers	Poista luettavuusmerkit
 	Text legibility: no problems found	Tekstin luettavuus: ongelmia ei löytynyt
@@ -4217,6 +4227,9 @@ export.summary	Low	matala
 	Dither	Rasterointi
 	Pattern	Kuvio
 	Cell Size	Solukoko
+	Pixelate	Pikselöinti
+	Cell Shape	Solun muoto
+	LED	LED
 	Cyan Angle	Syaanin kulma
 	Magenta Angle	Magentan kulma
 	Yellow Angle	Keltaisen kulma
@@ -4577,6 +4590,18 @@ export.summary	Low	matala
 	Chase External Timecode	Seuraa ulkoista aikakoodia
 	Send LTC	Lähetä LTC
 	Send MIDI Timecode	Lähetä MIDI-aikakoodi
+
+# Live studio preview (CFA4-LIVE-STUDIO-001 S0)
+	Live studio preview	Suoran studion esikatselu
+	Live studio: stopped	Suora studio: pysäytetty
+	Live studio: {state}	Suora studio: {state}
+	Live studio: {error}	Suora studio: {error}
+	restarted after {count} crashes (last: {exit})	käynnistetty uudelleen {count} kaatumisen jälkeen (viimeisin: {exit})
+	software backend: {reason}	ohjelmistotaustaosa: {reason}
+	Start studio	Käynnistä studio
+	Stop studio	Pysäytä studio
+	Add Studio Scene	Lisää studiokohtaus
+	Live	Suora
 # Auto Color, Auto Contrast, Auto Levels (EffectsSDK review)
 	Auto Color	Automaattinen väri
 	Auto Contrast	Automaattinen kontrasti
@@ -4634,3 +4659,42 @@ export.summary	Low	matala
 	Freewheel	Vapaakäynti
 	Scrubbing	Selataan
 	Sending	Lähetetään
+
+# DCP subtitle export (#938)
+	Subtitles from the first caption track	Tekstitykset ensimmäiseltä tekstitysraidalta
+	The package language	Paketin kieli
+	Inter Regular (built in), or an OpenType / TrueType file	Inter Regular (sisäänrakennettu) tai OpenType- / TrueType-tiedosto
+	Subtitle language	Tekstityskieli
+	Subtitle font	Tekstitysfontti
+	Fonts	Fontit
+
+# AS-11 metadata in MXF OP1a (#96)
+	AS-11 Core	AS-11 Core
+	AS-11 Parts	AS-11-osat
+	AS-11 UK DPP	AS-11 UK DPP
+
+# Control Surfaces settings page (CS-1, #1187)
+	Devices	Laitteet
+	Use	Käytä
+	Device	Laite
+	MIDI	MIDI
+	HID jog/shuttle	HID jog/shuttle
+	OSC	OSC
+	Connected	Yhdistetty
+	Not connected	Ei yhdistetty
+	Disabled	Poistettu käytöstä
+	{device} ({port})	{device} ({port})
+	{name}: {error}	{name}: {error}
+	Looking for devices…	Etsitään laitteita…
+	No MIDI controller or jog/shuttle device was found. Connect one and press Refresh.	MIDI-ohjainta tai jog/shuttle-laitetta ei löytynyt. Liitä sellainen ja paina Päivitä.
+	Control Surfaces	Ohjainpinnat
+	Use control surfaces (MIDI controllers, jog/shuttle devices)	Käytä ohjainpintoja (MIDI-ohjaimet, jog/shuttle-laitteet)
+	Mapping controls to commands, MIDI Learn and the MIDI Monitor come in a later version; the choices here are remembered until then.	Säätimien liittäminen komentoihin, MIDI Learn ja MIDI-monitori tulevat myöhemmässä versiossa; tässä tehdyt valinnat muistetaan siihen asti.
+	CFA4 ShuttlePRO	CFA4 ShuttlePRO
+	Kdenlive-style ShuttlePRO	Kdenlive-tyylinen ShuttlePRO
+	Generic MIDI	Yleinen MIDI
+
+# LTC timecode read from clip audio (TC-7, #1285)
+	Read from LTC Audio	Lue LTC-äänestä
+	Find SMPTE LTC on the clip's audio and use the timecode it gives the first frame	Etsi leikkeen äänestä SMPTE LTC ja käytä aikakoodia, jonka se antaa ensimmäiselle kuvalle
+	Read Timecode from LTC Audio	Lue aikakoodi LTC-äänestä
