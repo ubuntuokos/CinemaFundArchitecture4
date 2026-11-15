@@ -4688,3 +4688,11 @@ export.summary	Low	madal
 	Start Monitor	Käivita monitor
 	Stop Monitor	Peata monitor
 	… {count} messages not shown (too many at once)	… {count} sõnumit pole näidatud (liiga palju korraga)
+# Control surfaces (midi-learn, CFA4-CONTROL-SURFACE-001)
+	A control surface asked for {command}, which does not exist.	Juhtpind küsis käsku {command}, mida pole olemas.
+	Assignments	Määrangud
+	Cancel Learn	Tühista õppimine
+	Control	Juhtelement
+	Learn	Õpi
+	Remove this assignment	Eemalda see määrang
+	{control} runs {command}.	{control} käivitab {command}.

@@ -4684,3 +4684,11 @@
 	Start Monitor	开始监视
 	Stop Monitor	停止监视
 	… {count} messages not shown (too many at once)	… {count} 条消息未显示（同时到达太多）
+# Control surfaces (midi-learn, CFA4-CONTROL-SURFACE-001)
+	A control surface asked for {command}, which does not exist.	控制台请求了不存在的 {command}。
+	Assignments	分配
+	Cancel Learn	取消学习
+	Control	控件
+	Learn	学习
+	Remove this assignment	移除此分配
+	{control} runs {command}.	{control} 运行 {command}。

@@ -4671,3 +4671,11 @@
 	Start Monitor	Запустить монитор
 	Stop Monitor	Остановить монитор
 	… {count} messages not shown (too many at once)	… {count} сообщений не показано (слишком много сразу)
+# Control surfaces (midi-learn, CFA4-CONTROL-SURFACE-001)
+	A control surface asked for {command}, which does not exist.	Поверхность управления запросила {command}, которой не существует.
+	Assignments	Назначения
+	Cancel Learn	Отменить обучение
+	Control	Элемент управления
+	Learn	Обучить
+	Remove this assignment	Удалить это назначение
+	{control} runs {command}.	{control} выполняет {command}.

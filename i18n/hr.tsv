@@ -4688,3 +4688,11 @@ export.summary	Low	niska
 	Start Monitor	Pokreni monitor
 	Stop Monitor	Zaustavi monitor
 	… {count} messages not shown (too many at once)	… {count} poruka nije prikazano (previše odjednom)
+# Control surfaces (midi-learn, CFA4-CONTROL-SURFACE-001)
+	A control surface asked for {command}, which does not exist.	Kontrolna površina zatražila je {command}, koja ne postoji.
+	Assignments	Dodjele
+	Cancel Learn	Odustani od učenja
+	Control	Kontrola
+	Learn	Nauči
+	Remove this assignment	Ukloni ovu dodjelu
+	{control} runs {command}.	{control} pokreće {command}.

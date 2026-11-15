@@ -4693,3 +4693,11 @@
 	Start Monitor	Iniciar monitor
 	Stop Monitor	Detener monitor
 	… {count} messages not shown (too many at once)	… {count} mensajes no mostrados (demasiados a la vez)
+# Control surfaces (midi-learn, CFA4-CONTROL-SURFACE-001)
+	A control surface asked for {command}, which does not exist.	Una superficie de control pidió {command}, que no existe.
+	Assignments	Asignaciones
+	Cancel Learn	Cancelar aprendizaje
+	Control	Control
+	Learn	Aprender
+	Remove this assignment	Quitar esta asignación
+	{control} runs {command}.	{control} ejecuta {command}.

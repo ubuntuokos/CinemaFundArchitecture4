@@ -4688,3 +4688,11 @@ export.summary	Low	χαμηλή
 	Start Monitor	Έναρξη παρακολούθησης
 	Stop Monitor	Διακοπή παρακολούθησης
 	… {count} messages not shown (too many at once)	… {count} μηνύματα δεν εμφανίζονται (πάρα πολλά ταυτόχρονα)
+# Control surfaces (midi-learn, CFA4-CONTROL-SURFACE-001)
+	A control surface asked for {command}, which does not exist.	Μια επιφάνεια ελέγχου ζήτησε {command}, που δεν υπάρχει.
+	Assignments	Αντιστοιχίσεις
+	Cancel Learn	Ακύρωση εκμάθησης
+	Control	Χειριστήριο
+	Learn	Εκμάθηση
+	Remove this assignment	Αφαίρεση αυτής της αντιστοίχισης
+	{control} runs {command}.	Το {control} εκτελεί {command}.

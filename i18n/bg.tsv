@@ -4689,3 +4689,11 @@ export.summary	Low	ниско
 	Start Monitor	Старт на монитора
 	Stop Monitor	Спиране на монитора
 	… {count} messages not shown (too many at once)	… {count} съобщения не са показани (твърде много наведнъж)
+# Control surfaces (midi-learn, CFA4-CONTROL-SURFACE-001)
+	A control surface asked for {command}, which does not exist.	Контролна повърхност поиска {command}, която не съществува.
+	Assignments	Присвоявания
+	Cancel Learn	Отказ от обучението
+	Control	Контрола
+	Learn	Обучение
+	Remove this assignment	Премахване на това присвояване
+	{control} runs {command}.	{control} изпълнява {command}.

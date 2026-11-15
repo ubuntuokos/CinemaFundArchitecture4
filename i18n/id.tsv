@@ -4694,3 +4694,11 @@
 	Start Monitor	Mulai Monitor
 	Stop Monitor	Hentikan Monitor
 	… {count} messages not shown (too many at once)	… {count} pesan tidak ditampilkan (terlalu banyak sekaligus)
+# Control surfaces (midi-learn, CFA4-CONTROL-SURFACE-001)
+	A control surface asked for {command}, which does not exist.	Sebuah permukaan kontrol meminta {command}, yang tidak ada.
+	Assignments	Penetapan
+	Cancel Learn	Batalkan Pembelajaran
+	Control	Kontrol
+	Learn	Pelajari
+	Remove this assignment	Hapus penetapan ini
+	{control} runs {command}.	{control} menjalankan {command}.

@@ -4689,3 +4689,11 @@ export.summary	Low	žema
 	Start Monitor	Paleisti monitorių
 	Stop Monitor	Sustabdyti monitorių
 	… {count} messages not shown (too many at once)	… {count} pranešimų nerodoma (per daug vienu metu)
+# Control surfaces (midi-learn, CFA4-CONTROL-SURFACE-001)
+	A control surface asked for {command}, which does not exist.	Valdymo paviršius paprašė {command}, kurios nėra.
+	Assignments	Priskyrimai
+	Cancel Learn	Atšaukti mokymąsi
+	Control	Valdiklis
+	Learn	Mokytis
+	Remove this assignment	Pašalinti šį priskyrimą
+	{control} runs {command}.	{control} vykdo {command}.

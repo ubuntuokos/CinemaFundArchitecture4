@@ -4686,3 +4686,11 @@ export.summary	Low	низак
 	Start Monitor	Покрени монитор
 	Stop Monitor	Заустави монитор
 	… {count} messages not shown (too many at once)	… {count} порука није приказано (превише одједном)
+# Control surfaces (midi-learn, CFA4-CONTROL-SURFACE-001)
+	A control surface asked for {command}, which does not exist.	Контролна површина је затражила {command}, која не постоји.
+	Assignments	Додељивања
+	Cancel Learn	Откажи учење
+	Control	Контрола
+	Learn	Научи
+	Remove this assignment	Уклони ово додељивање
+	{control} runs {command}.	{control} покреће {command}.

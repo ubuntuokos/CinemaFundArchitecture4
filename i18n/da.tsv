@@ -4688,3 +4688,11 @@ export.summary	Low	lav
 	Start Monitor	Start monitor
 	Stop Monitor	Stop monitor
 	… {count} messages not shown (too many at once)	… {count} meddelelser vises ikke (for mange på én gang)
+# Control surfaces (midi-learn, CFA4-CONTROL-SURFACE-001)
+	A control surface asked for {command}, which does not exist.	En kontroloverflade bad om {command}, som ikke findes.
+	Assignments	Tildelinger
+	Cancel Learn	Annuller indlæring
+	Control	Betjeningselement
+	Learn	Indlær
+	Remove this assignment	Fjern denne tildeling
+	{control} runs {command}.	{control} kører {command}.

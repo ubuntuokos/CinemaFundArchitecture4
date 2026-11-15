@@ -4687,3 +4687,11 @@ export.summary	Low	düşük
 	Start Monitor	İzleyiciyi Başlat
 	Stop Monitor	İzleyiciyi Durdur
 	… {count} messages not shown (too many at once)	… {count} ileti gösterilmedi (aynı anda çok fazla)
+# Control surfaces (midi-learn, CFA4-CONTROL-SURFACE-001)
+	A control surface asked for {command}, which does not exist.	Bir kontrol yüzeyi var olmayan {command} komutunu istedi.
+	Assignments	Atamalar
+	Cancel Learn	Öğrenmeyi İptal Et
+	Control	Denetim
+	Learn	Öğren
+	Remove this assignment	Bu atamayı kaldır
+	{control} runs {command}.	{control}, {command} komutunu çalıştırır.

@@ -4686,3 +4686,11 @@ export.summary	Low	thấp
 	Start Monitor	Bắt đầu giám sát
 	Stop Monitor	Dừng giám sát
 	… {count} messages not shown (too many at once)	… {count} tin nhắn không hiển thị (quá nhiều cùng lúc)
+# Control surfaces (midi-learn, CFA4-CONTROL-SURFACE-001)
+	A control surface asked for {command}, which does not exist.	Một bề mặt điều khiển đã yêu cầu {command}, lệnh này không tồn tại.
+	Assignments	Gán lệnh
+	Cancel Learn	Hủy học
+	Control	Nút điều khiển
+	Learn	Học
+	Remove this assignment	Xóa phép gán này
+	{control} runs {command}.	{control} chạy {command}.

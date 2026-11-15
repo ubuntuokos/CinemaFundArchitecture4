@@ -4688,3 +4688,11 @@ export.summary	Low	låg
 	Start Monitor	Starta övervakning
 	Stop Monitor	Stoppa övervakning
 	… {count} messages not shown (too many at once)	… {count} meddelanden visas inte (för många på en gång)
+# Control surfaces (midi-learn, CFA4-CONTROL-SURFACE-001)
+	A control surface asked for {command}, which does not exist.	En kontrollyta bad om {command}, som inte finns.
+	Assignments	Tilldelningar
+	Cancel Learn	Avbryt inlärning
+	Control	Kontroll
+	Learn	Lär in
+	Remove this assignment	Ta bort denna tilldelning
+	{control} runs {command}.	{control} kör {command}.

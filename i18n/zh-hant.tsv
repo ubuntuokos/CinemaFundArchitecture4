@@ -4685,3 +4685,11 @@ export.summary	Low	低
 	Start Monitor	開始監視
 	Stop Monitor	停止監視
 	… {count} messages not shown (too many at once)	… {count} 則訊息未顯示（同時到達太多）
+# Control surfaces (midi-learn, CFA4-CONTROL-SURFACE-001)
+	A control surface asked for {command}, which does not exist.	控制台要求了不存在的 {command}。
+	Assignments	指派
+	Cancel Learn	取消學習
+	Control	控制項
+	Learn	學習
+	Remove this assignment	移除此指派
+	{control} runs {command}.	{control} 執行 {command}。

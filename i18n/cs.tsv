@@ -4686,3 +4686,11 @@ export.summary	Low	nízká
 	Start Monitor	Spustit monitor
 	Stop Monitor	Zastavit monitor
 	… {count} messages not shown (too many at once)	… {count} zpráv nezobrazeno (příliš mnoho najednou)
+# Control surfaces (midi-learn, CFA4-CONTROL-SURFACE-001)
+	A control surface asked for {command}, which does not exist.	Ovládací plocha požádala o {command}, který neexistuje.
+	Assignments	Přiřazení
+	Cancel Learn	Zrušit učení
+	Control	Ovládací prvek
+	Learn	Naučit
+	Remove this assignment	Odebrat toto přiřazení
+	{control} runs {command}.	{control} spouští {command}.

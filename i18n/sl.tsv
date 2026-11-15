@@ -4689,3 +4689,11 @@ export.summary	Low	nizka
 	Start Monitor	Zaženi nadzornik
 	Stop Monitor	Ustavi nadzornik
 	… {count} messages not shown (too many at once)	… {count} sporočil ni prikazanih (preveč naenkrat)
+# Control surfaces (midi-learn, CFA4-CONTROL-SURFACE-001)
+	A control surface asked for {command}, which does not exist.	Nadzorna površina je zahtevala {command}, ki ne obstaja.
+	Assignments	Dodelitve
+	Cancel Learn	Prekliči učenje
+	Control	Kontrolnik
+	Learn	Nauči
+	Remove this assignment	Odstrani to dodelitev
+	{control} runs {command}.	{control} zažene {command}.

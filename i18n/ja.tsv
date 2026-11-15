@@ -4695,3 +4695,11 @@
 	Start Monitor	モニター開始
 	Stop Monitor	モニター停止
 	… {count} messages not shown (too many at once)	… {count} 件のメッセージは表示されていません（一度に多すぎます）
+# Control surfaces (midi-learn, CFA4-CONTROL-SURFACE-001)
+	A control surface asked for {command}, which does not exist.	コントロールサーフェスが存在しない {command} を要求しました。
+	Assignments	割り当て
+	Cancel Learn	学習をキャンセル
+	Control	コントロール
+	Learn	学習
+	Remove this assignment	この割り当てを削除
+	{control} runs {command}.	{control} は {command} を実行します。
