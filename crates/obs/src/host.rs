@@ -12,11 +12,14 @@
 //! - [`Supervisor::stop`] (and drop) ask the host to quit over its stdin, wait briefly, then kill
 //!   it, and remove the ring.
 //!
-//! The host talks JSON lines: the supervisor writes commands to its stdin (`{"cmd":"quit"}`),
-//! the host writes events to its stdout ([`HostEvent`]). The monitor and reader threads run under
+//! The host talks JSON lines: the supervisor writes commands to its stdin (`{"cmd":"quit"}`,
+//! `{"cmd":"scene",…}`), the host writes events to its stdout ([`HostEvent`]). The supervisor
+//! keeps the last scene it was given ([`Supervisor::set_scene`]) and sends it again to every
+//! restarted host, so a crash costs the program a few frames, not its scene. The monitor and reader threads run under
 //! `catch_unwind`; nothing here panics.
 
 use crate::ring::{self, RingReader};
+use crate::scene::HostScene;
 use crate::{BackendChoice, Result, StudioError, VideoSettings};
 use serde::{Deserialize, Serialize};
 use std::io::{BufRead, BufReader, Write};
@@ -49,16 +52,30 @@ pub enum HostEvent {
         /// What went wrong.
         message: String,
     },
+    /// The host shows the scene `revision` (S1).
+    #[serde(rename_all = "camelCase")]
+    SceneShown {
+        /// The revision of the [`HostScene`].
+        revision: u64,
+        /// Its layers.
+        layers: usize,
+    },
     /// The host is ending at the supervisor's request.
     Stopped,
 }
 
 /// A command the supervisor writes to the host's stdin.
-#[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
+#[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
 #[serde(tag = "cmd", rename_all = "camelCase")]
 pub enum HostCommand {
     /// End cleanly.
     Quit,
+    /// Show this scene on the program (S1). A scene that cannot be loaded is an `error` event
+    /// and the shown scene stays.
+    Scene {
+        /// The scene.
+        scene: HostScene,
+    },
 }
 
 /// State of the supervised host.
@@ -103,6 +120,12 @@ pub struct HostStatus {
     pub ring: String,
     /// The video the host produces.
     pub video: VideoSettings,
+    /// The revision of the scene the host shows (none: the empty scene).
+    #[serde(default)]
+    pub scene_revision: Option<u64>,
+    /// The layers of that scene.
+    #[serde(default)]
+    pub scene_layers: usize,
 }
 
 /// How to start and supervise the host.
@@ -154,6 +177,10 @@ pub fn default_exe() -> PathBuf {
 
 struct Shared {
     status: Mutex<HostStatus>,
+    /// The scene every (re)started host is given.
+    scene: Mutex<Option<HostScene>>,
+    /// The running host's stdin (commands go there).
+    stdin: Mutex<Option<ChildStdin>>,
     stop: AtomicBool,
     wake: Condvar,
     wake_lock: Mutex<()>,
@@ -212,7 +239,11 @@ impl Supervisor {
                 error: None,
                 ring: ring_path.to_string_lossy().into_owned(),
                 video: opts.video,
+                scene_revision: None,
+                scene_layers: 0,
             }),
+            scene: Mutex::new(None),
+            stdin: Mutex::new(None),
             stop: AtomicBool::new(false),
             wake: Condvar::new(),
             wake_lock: Mutex::new(()),
@@ -242,6 +273,15 @@ impl Supervisor {
     /// The newest frame in the ring (`None`: none yet, or torn and dropped).
     pub fn latest_frame(&self) -> Result<Option<ring::RingFrame>> {
         self.reader.latest()
+    }
+
+    /// Shows `scene` on the program: sends it to the running host and keeps it for every host
+    /// started after a crash. The host reports the revision it shows in the status
+    /// (`sceneRevision`), or an error when the scene cannot be loaded.
+    pub fn set_scene(&self, scene: HostScene) {
+        *self.shared.scene.lock().unwrap_or_else(PoisonError::into_inner) = Some(scene.clone());
+        let mut stdin = self.shared.stdin.lock().unwrap_or_else(PoisonError::into_inner);
+        send(&mut stdin, &HostCommand::Scene { scene });
     }
 
     /// Path of the frame ring.
@@ -338,6 +378,11 @@ fn read_events(shared: Arc<Shared>, out: std::process::ChildStdout) {
                     log::warn!("cfa4-studio-host: {message}");
                     shared.update(|s| s.error = Some(message));
                 }
+                Ok(HostEvent::SceneShown { revision, layers }) => shared.update(|s| {
+                    s.scene_revision = Some(revision);
+                    s.scene_layers = layers;
+                    s.error = None;
+                }),
                 Ok(HostEvent::Stopped) => {}
                 Err(_) => log::debug!("cfa4-studio-host (not an event): {line}"),
             }
@@ -345,14 +390,21 @@ fn read_events(shared: Arc<Shared>, out: std::process::ChildStdout) {
     }));
 }
 
-fn ask_quit(stdin: &mut Option<ChildStdin>) {
-    // dropping stdin afterwards closes it: EOF is a quit request too
-    if let Some(mut s) = stdin.take()
-        && let Ok(line) = serde_json::to_string(&HostCommand::Quit)
+/// Writes `cmd` to the host's stdin; a host that is gone (broken pipe) is left to the monitor.
+fn send(stdin: &mut Option<ChildStdin>, cmd: &HostCommand) {
+    if let Some(s) = stdin.as_mut()
+        && let Ok(line) = serde_json::to_string(cmd)
+        && (writeln!(s, "{line}").is_err() || s.flush().is_err())
     {
-        let _ = writeln!(s, "{line}");
-        let _ = s.flush();
+        *stdin = None;
     }
+}
+
+fn ask_quit(shared: &Shared) {
+    // dropping stdin afterwards closes it: EOF is a quit request too
+    let mut stdin = shared.stdin.lock().unwrap_or_else(PoisonError::into_inner);
+    send(&mut stdin, &HostCommand::Quit);
+    *stdin = None;
 }
 
 fn monitor(shared: &Arc<Shared>, opts: &HostOptions, ring: &Path) {
@@ -382,8 +434,17 @@ fn monitor(shared: &Arc<Shared>, opts: &HostOptions, ring: &Path) {
             s.starts = generation;
             s.backend = None;
             s.version = None;
+            s.scene_revision = None;
+            s.scene_layers = 0;
         });
-        let mut stdin = child.stdin.take();
+        {
+            // the new host gets the scene at once (it reads it after starting its backend)
+            let mut stdin = shared.stdin.lock().unwrap_or_else(PoisonError::into_inner);
+            *stdin = child.stdin.take();
+            if let Some(scene) = shared.scene.lock().unwrap_or_else(PoisonError::into_inner).clone() {
+                send(&mut stdin, &HostCommand::Scene { scene });
+            }
+        }
         let reader = child.stdout.take().and_then(|out| {
             let s2 = shared.clone();
             std::thread::Builder::new().name("cfa4-studio-host-events".into()).spawn(move || read_events(s2, out)).ok()
@@ -404,7 +465,7 @@ fn monitor(shared: &Arc<Shared>, opts: &HostOptions, ring: &Path) {
         };
         let Some(status) = exit else {
             // stop requested (or the host cannot be watched): quit, then kill
-            ask_quit(&mut stdin);
+            ask_quit(shared);
             let deadline = Instant::now() + Duration::from_secs(2);
             let mut ended = false;
             while Instant::now() < deadline {
@@ -427,7 +488,7 @@ fn monitor(shared: &Arc<Shared>, opts: &HostOptions, ring: &Path) {
             });
             return;
         };
-        drop(stdin);
+        *shared.stdin.lock().unwrap_or_else(PoisonError::into_inner) = None;
         if let Some(r) = reader {
             let _ = r.join();
         }
@@ -474,6 +535,12 @@ mod tests {
         assert_eq!(s, r#"{"event":"ready","backend":"libobs","version":"33.0.1","fallbackReason":null}"#);
         assert_eq!(serde_json::from_str::<HostEvent>(&s).ok(), Some(e));
         assert_eq!(serde_json::to_string(&HostCommand::Quit).ok().as_deref(), Some(r#"{"cmd":"quit"}"#));
+        let shown = HostEvent::SceneShown { revision: 3, layers: 2 };
+        assert_eq!(serde_json::to_string(&shown).ok().as_deref(), Some(r#"{"event":"sceneShown","revision":3,"layers":2}"#));
+        let cmd = HostCommand::Scene { scene: HostScene { revision: 4, layers: vec![] } };
+        let line = serde_json::to_string(&cmd).expect("json");
+        assert_eq!(line, r#"{"cmd":"scene","scene":{"revision":4,"layers":[]}}"#);
+        assert_eq!(serde_json::from_str::<HostCommand>(&line).ok(), Some(cmd));
         assert!(serde_json::from_str::<HostEvent>(r#"{"event":"boom"}"#).is_err());
     }
 

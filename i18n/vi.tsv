@@ -1837,6 +1837,7 @@
 	Text Animator	Hoạt ảnh văn bản
 	Counter	Bộ đếm
 	Word by Word	Từng từ một
+	Scramble	Xáo trộn
 	Animator	Hoạt ảnh
 	Animator Duration	Thời lượng hoạt ảnh
 	Animator Delay	Độ trễ hoạt ảnh
@@ -2850,6 +2851,10 @@
 	Sharpen Amount	Mức làm nét
 	Shift Center To	Dời tâm đến
 	Show Focus Area	Hiện vùng lấy nét
+	Rack Focus	Chuyển tiêu điểm
+	Focus Point A	Điểm lấy nét A
+	Focus Point B	Điểm lấy nét B
+	Rack	Chuyển
 	Show Only Noise	Chỉ hiện nhiễu
 	Shrink	Thu nhỏ
 	Shutter Angle	Góc màn trập
@@ -4176,6 +4181,11 @@ export.summary	Low	thấp
 	Burn Size	Kích thước vùng cháy
 	Ember Width	Độ rộng viền than hồng
 	Ember Color	Màu viền than hồng
+	Tear Away	Xé rời
+	Tear Roughness	Độ nhám vết xé
+	Paper Edge Width	Độ rộng mép giấy
+	Stamp Cut	Cắt hình tem
+	Perforations	Lỗ răng cưa
 	Check Text Legibility	Kiểm tra độ dễ đọc của chữ
 	Clear Legibility Markers	Xóa điểm đánh dấu độ dễ đọc
 	Text legibility: no problems found	Độ dễ đọc của chữ: không có vấn đề
@@ -4215,6 +4225,9 @@ export.summary	Low	thấp
 	Dither	Dither
 	Pattern	Mẫu
 	Cell Size	Kích thước ô
+	Pixelate	Tạo điểm ảnh
+	Cell Shape	Hình dạng ô
+	LED	LED
 	Cyan Angle	Góc lục lam
 	Magenta Angle	Góc đỏ tươi
 	Yellow Angle	Góc vàng
@@ -4380,6 +4393,10 @@ export.summary	Low	thấp
 	{n} more	Thêm {n}
 	Block	Khối
 	parallel	song song
+	page {page}: a spine's vertical position works on card pages only; it is ignored	trang {page}: vị trí dọc của trục chỉ áp dụng trên trang thẻ; bị bỏ qua
+	on a card: centered on {y} px	trên thẻ: căn giữa tại {y} px
+	on a card: starts at {y} px	trên thẻ: bắt đầu tại {y} px
+	on a card: ends at {y} px	trên thẻ: kết thúc tại {y} px
 # MPEG-2 export audio (#268): a product name, kept as is
 	Dolby Digital (AC-3)	Dolby Digital (AC-3)
 	In the page (OBS takes it from the Browser Source)	Trong trang (OBS lấy từ nguồn trình duyệt)
@@ -4452,7 +4469,12 @@ export.summary	Low	thấp
 	page {page}: the runtime is reached by changing the roll speed (the gaps would have to grow more than 20-fold)	trang {page}: đạt thời lượng bằng cách đổi tốc độ cuộn (khoảng cách sẽ phải tăng hơn 20 lần)
 	page {page}: the transition needs the pages to touch (page gap 0); it is left out	trang {page}: chuyển cảnh cần các trang liền nhau (khoảng cách 0); bị bỏ qua
 	page {page}: there is no transition “{name}”; the pages cut	trang {page}: không có chuyển cảnh “{name}”; các trang cắt thẳng
-	spine position “{value}” is not supported (a pixel offset, optionally “parallel”, is)	vị trí trục “{value}” không được hỗ trợ (hỗ trợ độ lệch theo điểm ảnh, tùy chọn kèm “parallel”)
+	spine position “{value}” is not supported (a pixel offset, optionally “parallel”, or “Hook N Bottom-Top dx dy” is)	vị trí trục “{value}” không được hỗ trợ (hỗ trợ độ lệch theo điểm ảnh, tùy chọn kèm “parallel” / “Hook N Bottom-Top dx dy”)
+	page {page}: the hook reaches back further than there are spines; it hooks onto the first spine, or starts its own	trang {page}: móc trỏ lùi xa hơn số trục hiện có; nó móc vào trục đầu tiên hoặc bắt đầu trục riêng
+	hooked {n} spines back: its {from} meets this spine's {to}	móc vào trục cách {n} trục về trước: {from} của trục đó gặp {to} của trục này
+	top	đỉnh
+	middle	giữa
+	bottom	đáy
 	vertical gap “{value}” is not a number	khoảng cách dọc “{value}” không phải là số
 	picture “{file}” was not found or cannot be read; it is left out	không tìm thấy hoặc không đọc được hình “{file}”; bị bỏ qua
 	video “{file}” was not found or cannot be read; it is left out	không tìm thấy hoặc không đọc được video “{file}”; bị bỏ qua
@@ -4517,7 +4539,7 @@ export.summary	Low	thấp
 	the engine sent no report	engine không gửi báo cáo
 	MXF OP1a Uncompressed 10-bit 4:2:2 (v210)	MXF OP1a không nén 10-bit 4:2:2 (v210)
 	MXF OP1a, uncompressed 10-bit Y'CbCr 4:2:2 in the v210 layout (SMPTE ST 384), 24-bit 48 kHz PCM, start timecode	MXF OP1a, Y'CbCr 4:2:2 10-bit không nén theo bố cục v210 (SMPTE ST 384), PCM 24-bit 48 kHz, mã thời gian bắt đầu
-	Write the captions as ANC data (CEA-608/708, 29.97 fps)	Ghi phụ đề dưới dạng dữ liệu ANC (CEA-608/708, 29,97 fps)
+	Write the captions as ANC data (CEA-608/708)	Ghi phụ đề dưới dạng dữ liệu ANC (CEA-608/708)
 	Load KDM…	Tải KDM…
 	Forget DCP Keys	Quên khóa DCP
 	Load KDM	Tải KDM
@@ -4527,6 +4549,13 @@ export.summary	Low	thấp
 	The keys stay in memory only, until Forget DCP Keys or the end of the session.	Các khóa chỉ nằm trong bộ nhớ, cho đến khi chọn Quên khóa DCP hoặc kết thúc phiên.
 	DCP keys forgotten	Đã quên khóa DCP
 	Choose the KDM file and the private key.	Chọn tệp KDM và khóa riêng.
+	Load even if the certificate chain is not verified	Tải cả khi chuỗi chứng chỉ chưa được xác minh
+	Bundle: {loaded} of {total} KDMs loaded, {other} for other recipients	Gói: đã tải {loaded}/{total} KDM, {other} cho người nhận khác
+	Not loaded: {path}: {problem}	Chưa tải: {path}: {problem}
+	Signature verified: {chain}	Đã xác minh chữ ký: {chain}
+	Signature not verified: {problem}	Chưa xác minh chữ ký: {problem}
+	KDM required	Cần KDM
+	Encrypted: load the KDM with content key {keys}	Đã mã hóa: hãy tải KDM có khóa nội dung {keys}
 
 # Settings ▸ Timecode Sync (TC-4)
 	Timecode Sync	Đồng bộ timecode
@@ -4559,3 +4588,125 @@ export.summary	Low	thấp
 	Chase External Timecode	Bám theo timecode bên ngoài
 	Send LTC	Gửi LTC
 	Send MIDI Timecode	Gửi timecode MIDI
+
+# Live studio preview (CFA4-LIVE-STUDIO-001 S0)
+	Live studio preview	Xem trước phòng thu trực tiếp
+	Live studio: stopped	Phòng thu trực tiếp: đã dừng
+	Live studio: {state}	Phòng thu trực tiếp: {state}
+	Live studio: {error}	Phòng thu trực tiếp: {error}
+	restarted after {count} crashes (last: {exit})	đã khởi động lại sau {count} lần gặp sự cố (lần cuối: {exit})
+	software backend: {reason}	phần phụ trợ phần mềm: {reason}
+	Start studio	Khởi động phòng thu
+	Stop studio	Dừng phòng thu
+	Add Studio Scene	Thêm cảnh studio
+	Live	Trực tiếp
+# Credits: title, opening, chapter and lower-third pages filled from a graphics template (F10-C16)
+	Opening Credits	Phần mở đầu
+	Chapter Title	Tiêu đề chương
+	Lower Third	Dải chữ dưới
+	page {page}: graphics template “{template}” was not found; “{used}” is used	trang {page}: không tìm thấy mẫu đồ họa “{template}”; dùng “{used}”
+	page {page}: graphics template “{template}” has no field for all of the block's text; the rest is left out	trang {page}: mẫu đồ họa “{template}” không có trường cho toàn bộ văn bản của khối; phần còn lại bị bỏ
+	page {page}: template field “{control}” → “{part}” is not used (no such text control, or not head, body or tail)	trang {page}: trường mẫu “{control}” → “{part}” không được dùng (không có điều khiển văn bản đó, hoặc không phải đầu, thân hay đuôi)
+	page {page}: pictures are left out on title, opening, chapter and lower-third pages	trang {page}: hình ảnh bị bỏ trên các trang tiêu đề, phần mở đầu, chương và dải chữ dưới
+# Auto Color, Auto Contrast, Auto Levels (EffectsSDK review)
+	Auto Color	Màu tự động
+	Auto Contrast	Tương phản tự động
+	Auto Levels	Mức tự động
+	Temporal Smoothing (seconds)	Làm mượt theo thời gian (giây)
+	Scene Detect	Phát hiện cảnh
+	Black Clip	Cắt đen
+	White Clip	Cắt trắng
+	Snap Neutral Midtones	Trung hòa tông trung bình
+# Layout presets: PiP corners, split screen (EffectsSDK review)
+	PiP 35% Upper Left	PiP 35% trên trái
+	Picture-in-picture: 35 % scale in the upper left	Hình trong hình: tỷ lệ 35 % ở góc trên trái
+	PiP 35% Lower Left	PiP 35% dưới trái
+	Picture-in-picture: 35 % scale in the lower left	Hình trong hình: tỷ lệ 35 % ở góc dưới trái
+	PiP 35% Lower Right	PiP 35% dưới phải
+	Picture-in-picture: 35 % scale in the lower right	Hình trong hình: tỷ lệ 35 % ở góc dưới phải
+	Split Screen Left	Chia màn hình trái
+	Split screen: the middle half of the picture fills the left half of the frame	Chia màn hình: nửa giữa của hình lấp đầy nửa trái khung hình
+	Split Screen Right	Chia màn hình phải
+	Split screen: the middle half of the picture fills the right half of the frame	Chia màn hình: nửa giữa của hình lấp đầy nửa phải khung hình
+# Creative Looks: CRT (P3)
+	CRT	CRT
+	Scanline Strength	Cường độ dòng quét
+	Line Count	Số dòng
+	Mask	Mặt nạ
+	Mask Strength	Cường độ mặt nạ
+	Corner Darkening	Làm tối góc
+	Aperture Grille	Lưới khe
+	Shadow Mask	Mặt nạ bóng
+	Slot Mask	Mặt nạ khe
+# Creative Looks: Oil Paint (P4)
+	Oil Paint	Tranh sơn dầu
+	Detail	Chi tiết
+	Texture	Kết cấu
+	Facet	Mặt cắt
+	Daubs	Vệt chấm
+	Dry Brush	Cọ khô
+	Fresco	Bích họa
+	Knife	Dao vẽ
+	Sponge	Bọt biển
+# Creative Looks: Pixel Sort (P5)
+	Pixel Sort	Sắp xếp điểm ảnh
+	Sort By	Sắp xếp theo
+	Lower Threshold	Ngưỡng dưới
+	Upper Threshold	Ngưỡng trên
+	Ascending	Tăng dần
+# Temporal Denoise (EffectsSDK review)
+	Temporal Denoise	Khử nhiễu theo thời gian
+	Frames Each Side	Số khung mỗi bên
+	Motion Threshold	Ngưỡng chuyển động
+	Show Motion	Hiện chuyển động
+	No signal	Không có tín hiệu
+	Locating	Đang định vị
+	Locked	Đã khóa
+	Freewheel	Chạy tự do
+	Scrubbing	Đang tua
+	Sending	Đang gửi
+
+# DCP subtitle export (#938)
+	Subtitles from the first caption track	Phụ đề từ rãnh phụ đề đầu tiên
+	The package language	Ngôn ngữ của gói
+	Inter Regular (built in), or an OpenType / TrueType file	Inter Regular (dựng sẵn) hoặc tệp OpenType / TrueType
+	Subtitle language	Ngôn ngữ phụ đề
+	Subtitle font	Phông chữ phụ đề
+	Fonts	Phông chữ
+
+# AS-11 metadata in MXF OP1a (#96)
+	AS-11 Core	AS-11 Core
+	AS-11 Parts	Phần AS-11
+	AS-11 UK DPP	AS-11 UK DPP
+
+# Control Surfaces settings page (CS-1, #1187)
+	Devices	Thiết bị
+	Use	Dùng
+	Device	Thiết bị
+	MIDI	MIDI
+	HID jog/shuttle	HID jog/shuttle
+	OSC	OSC
+	Connected	Đã kết nối
+	Not connected	Chưa kết nối
+	Disabled	Đã tắt
+	{device} ({port})	{device} ({port})
+	{name}: {error}	{name}: {error}
+	Looking for devices…	Đang tìm thiết bị…
+	No MIDI controller or jog/shuttle device was found. Connect one and press Refresh.	Không tìm thấy bộ điều khiển MIDI hay thiết bị jog/shuttle nào. Hãy kết nối một thiết bị rồi nhấn Làm mới.
+	Control Surfaces	Bề mặt điều khiển
+	Use control surfaces (MIDI controllers, jog/shuttle devices)	Dùng bề mặt điều khiển (bộ điều khiển MIDI, thiết bị jog/shuttle)
+	Mapping controls to commands, MIDI Learn and the MIDI Monitor come in a later version; the choices here are remembered until then.	Gán nút điều khiển cho lệnh, MIDI Learn và MIDI Monitor sẽ có trong phiên bản sau; cho đến lúc đó, các lựa chọn ở đây vẫn được ghi nhớ.
+	CFA4 ShuttlePRO	CFA4 ShuttlePRO
+	Kdenlive-style ShuttlePRO	ShuttlePRO kiểu Kdenlive
+	Generic MIDI	MIDI chung
+
+# LTC timecode read from clip audio (TC-7, #1285)
+	Read from LTC Audio	Đọc từ âm thanh LTC
+	Find SMPTE LTC on the clip's audio and use the timecode it gives the first frame	Tìm SMPTE LTC trong âm thanh của clip và dùng mã thời gian mà nó gán cho khung hình đầu tiên
+	Read Timecode from LTC Audio	Đọc mã thời gian từ âm thanh LTC
+# Credits: voices (the Voice column) in the block's properties (F10-C16)
+	Voices	Giọng lồng tiếng
+
+# Timecode sync varispeed and user bits (TC-8, #1308)
+	Varispeed: adjust the playback speed instead of seeking	Varispeed: điều chỉnh tốc độ phát thay vì nhảy
+	User bits	Bit người dùng

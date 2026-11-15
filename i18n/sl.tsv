@@ -2097,6 +2097,7 @@
 	Counter	Števec
 	Typewriter	Pisalni stroj
 	Word by Word	Beseda za besedo
+	Scramble	Mešanje
 	Animator	Animator
 	Animator Duration	Trajanje animatorja
 	Animator Delay	Zakasnitev animatorja
@@ -3237,6 +3238,10 @@
 	Sharpen Amount	Količina izostritve
 	Shift Center To	Premakni središče na
 	Show Focus Area	Pokaži območje ostrenja
+	Rack Focus	Prenos ostrine
+	Focus Point A	Točka ostrine A
+	Focus Point B	Točka ostrine B
+	Rack	Prenos
 	Show Only Noise	Pokaži samo šum
 	Shrink	Skrči
 	Shutter Angle	Kot zaklopa
@@ -4179,6 +4184,11 @@ export.summary	Low	nizka
 	Burn Size	Velikost izžiga
 	Ember Width	Širina žerjavice
 	Ember Color	Barva žerjavice
+	Tear Away	Odtrganje
+	Tear Roughness	Hrapavost raztrganine
+	Paper Edge Width	Širina papirnatega roba
+	Stamp Cut	Izrez znamke
+	Perforations	Perforacija
 	Check Text Legibility	Preveri berljivost besedila
 	Clear Legibility Markers	Počisti oznake berljivosti
 	Text legibility: no problems found	Berljivost besedila: ni najdenih težav
@@ -4218,6 +4228,9 @@ export.summary	Low	nizka
 	Dither	Razprševanje
 	Pattern	Vzorec
 	Cell Size	Velikost celice
+	Pixelate	Pikselizacija
+	Cell Shape	Oblika celice
+	LED	LED
 	Cyan Angle	Kot cijan
 	Magenta Angle	Kot magenta
 	Yellow Angle	Kot rumene
@@ -4383,6 +4396,10 @@ export.summary	Low	nizka
 	{n} more	Še {n}
 	Block	Blok
 	parallel	vzporedno
+	page {page}: a spine's vertical position works on card pages only; it is ignored	stran {page}: navpični položaj osi velja samo na straneh kartic; prezrt je
+	on a card: centered on {y} px	na kartici: sredinsko na {y} px
+	on a card: starts at {y} px	na kartici: začne se pri {y} px
+	on a card: ends at {y} px	na kartici: konča se pri {y} px
 # MPEG-2 export audio (#268): a product name, kept as is
 	Dolby Digital (AC-3)	Dolby Digital (AC-3)
 	In the page (OBS takes it from the Browser Source)	Na strani (OBS ga vzame iz vira brskalnika)
@@ -4455,7 +4472,12 @@ export.summary	Low	nizka
 	page {page}: the runtime is reached by changing the roll speed (the gaps would have to grow more than 20-fold)	stran {page}: trajanje se doseže s spremembo hitrosti drsenja (razmiki bi morali zrasti več kot 20-krat)
 	page {page}: the transition needs the pages to touch (page gap 0); it is left out	stran {page}: prehod zahteva, da se strani stikata (razmik 0); izpuščen je
 	page {page}: there is no transition “{name}”; the pages cut	stran {page}: prehoda »{name}« ni; strani se zamenjata z rezom
-	spine position “{value}” is not supported (a pixel offset, optionally “parallel”, is)	položaj osi »{value}« ni podprt (podprt je zamik v slikovnih pikah, po želji s »parallel«)
+	spine position “{value}” is not supported (a pixel offset, optionally “parallel”, or “Hook N Bottom-Top dx dy” is)	položaj osi »{value}« ni podprt (podprt je zamik v slikovnih pikah, po želji s »parallel« / »Hook N Bottom-Top dx dy«)
+	page {page}: the hook reaches back further than there are spines; it hooks onto the first spine, or starts its own	stran {page}: kavelj sega dlje nazaj, kot je osi; zatakne se na prvo os ali začne svojo
+	hooked {n} spines back: its {from} meets this spine's {to}	zataknjeno {n} osi nazaj: njen {from} se stika z {to} te osi
+	top	zgornji rob
+	middle	sredina
+	bottom	spodnji rob
 	vertical gap “{value}” is not a number	navpični razmik »{value}« ni število
 	picture “{file}” was not found or cannot be read; it is left out	slike »{file}« ni bilo mogoče najti ali prebrati; izpuščena je
 	video “{file}” was not found or cannot be read; it is left out	videa »{file}« ni bilo mogoče najti ali prebrati; izpuščen je
@@ -4520,7 +4542,7 @@ export.summary	Low	nizka
 	the engine sent no report	pogon ni poslal poročila
 	MXF OP1a Uncompressed 10-bit 4:2:2 (v210)	MXF OP1a nestisnjeno 10-bitno 4:2:2 (v210)
 	MXF OP1a, uncompressed 10-bit Y'CbCr 4:2:2 in the v210 layout (SMPTE ST 384), 24-bit 48 kHz PCM, start timecode	MXF OP1a, nestisnjen 10-bitni Y'CbCr 4:2:2 v postavitvi v210 (SMPTE ST 384), 24-bitni PCM 48 kHz, začetna časovna koda
-	Write the captions as ANC data (CEA-608/708, 29.97 fps)	Zapiši podnapise kot podatke ANC (CEA-608/708, 29,97 sl./s)
+	Write the captions as ANC data (CEA-608/708)	Zapiši podnapise kot podatke ANC (CEA-608/708)
 	Load KDM…	Naloži KDM…
 	Forget DCP Keys	Pozabi ključe DCP
 	Load KDM	Naloži KDM
@@ -4530,6 +4552,13 @@ export.summary	Low	nizka
 	The keys stay in memory only, until Forget DCP Keys or the end of the session.	Ključi ostanejo samo v pomnilniku, do ukaza Pozabi ključe DCP ali konca seje.
 	DCP keys forgotten	Ključi DCP pozabljeni
 	Choose the KDM file and the private key.	Izberite datoteko KDM in zasebni ključ.
+	Load even if the certificate chain is not verified	Naloži tudi z nepreverjeno verigo potrdil
+	Bundle: {loaded} of {total} KDMs loaded, {other} for other recipients	Paket: naloženih {loaded} od {total} KDM, {other} za druge prejemnike
+	Not loaded: {path}: {problem}	Ni naloženo: {path}: {problem}
+	Signature verified: {chain}	Podpis preverjen: {chain}
+	Signature not verified: {problem}	Podpis ni preverjen: {problem}
+	KDM required	Potreben je KDM
+	Encrypted: load the KDM with content key {keys}	Šifrirano: naložite KDM s ključem vsebine {keys}
 
 # Settings ▸ Timecode Sync (TC-4)
 	Timecode Sync	Sinhronizacija časovne kode
@@ -4562,3 +4591,125 @@ export.summary	Low	nizka
 	Chase External Timecode	Sledi zunanji časovni kodi
 	Send LTC	Pošlji LTC
 	Send MIDI Timecode	Pošlji časovno kodo MIDI
+
+# Live studio preview (CFA4-LIVE-STUDIO-001 S0)
+	Live studio preview	Predogled studia v živo
+	Live studio: stopped	Studio v živo: ustavljen
+	Live studio: {state}	Studio v živo: {state}
+	Live studio: {error}	Studio v živo: {error}
+	restarted after {count} crashes (last: {exit})	znova zagnan po {count} sesutjih (zadnje: {exit})
+	software backend: {reason}	programsko zaledje: {reason}
+	Start studio	Zaženi studio
+	Stop studio	Ustavi studio
+	Add Studio Scene	Dodaj studijsko sceno
+	Live	V živo
+# Credits: title, opening, chapter and lower-third pages filled from a graphics template (F10-C16)
+	Opening Credits	Uvodna špica
+	Chapter Title	Naslov poglavja
+	Lower Third	Spodnji napis
+	page {page}: graphics template “{template}” was not found; “{used}” is used	stran {page}: grafične predloge „{template}“ ni mogoče najti; uporabi se „{used}“
+	page {page}: graphics template “{template}” has no field for all of the block's text; the rest is left out	stran {page}: grafična predloga „{template}“ nima polja za vse besedilo bloka; ostalo je izpuščeno
+	page {page}: template field “{control}” → “{part}” is not used (no such text control, or not head, body or tail)	stran {page}: polje predloge „{control}“ → „{part}“ ni uporabljeno (takega besedilnega kontrolnika ni ali pa ni glava, telo ali rep)
+	page {page}: pictures are left out on title, opening, chapter and lower-third pages	stran {page}: na straneh naslova, uvodne špice, poglavja in spodnjega napisa so slike izpuščene
+# Auto Color, Auto Contrast, Auto Levels (EffectsSDK review)
+	Auto Color	Samodejna barva
+	Auto Contrast	Samodejni kontrast
+	Auto Levels	Samodejne ravni
+	Temporal Smoothing (seconds)	Časovno glajenje (sekunde)
+	Scene Detect	Zaznavanje prizorov
+	Black Clip	Rezanje črne
+	White Clip	Rezanje bele
+	Snap Neutral Midtones	Nevtralni srednji toni
+# Layout presets: PiP corners, split screen (EffectsSDK review)
+	PiP 35% Upper Left	SvS 35 % zgoraj levo
+	Picture-in-picture: 35 % scale in the upper left	Slika v sliki: merilo 35 % zgoraj levo
+	PiP 35% Lower Left	SvS 35 % spodaj levo
+	Picture-in-picture: 35 % scale in the lower left	Slika v sliki: merilo 35 % spodaj levo
+	PiP 35% Lower Right	SvS 35 % spodaj desno
+	Picture-in-picture: 35 % scale in the lower right	Slika v sliki: merilo 35 % spodaj desno
+	Split Screen Left	Razdeljen zaslon levo
+	Split screen: the middle half of the picture fills the left half of the frame	Razdeljen zaslon: srednja polovica slike zapolni levo polovico kadra
+	Split Screen Right	Razdeljen zaslon desno
+	Split screen: the middle half of the picture fills the right half of the frame	Razdeljen zaslon: srednja polovica slike zapolni desno polovico kadra
+# Creative Looks: CRT (P3)
+	CRT	CRT
+	Scanline Strength	Moč vrstic
+	Line Count	Število vrstic
+	Mask	Maska
+	Mask Strength	Moč maske
+	Corner Darkening	Temnenje kotov
+	Aperture Grille	Mreža odprtin
+	Shadow Mask	Senčna maska
+	Slot Mask	Režna maska
+# Creative Looks: Oil Paint (P4)
+	Oil Paint	Oljna slika
+	Detail	Podrobnosti
+	Texture	Tekstura
+	Facet	Ploskve
+	Daubs	Madeži
+	Dry Brush	Suh čopič
+	Fresco	Freska
+	Knife	Lopatica
+	Sponge	Goba
+# Creative Looks: Pixel Sort (P5)
+	Pixel Sort	Razvrščanje slikovnih pik
+	Sort By	Razvrsti po
+	Lower Threshold	Spodnji prag
+	Upper Threshold	Zgornji prag
+	Ascending	Naraščajoče
+# Temporal Denoise (EffectsSDK review)
+	Temporal Denoise	Časovno odstranjevanje šuma
+	Frames Each Side	Sličic na vsaki strani
+	Motion Threshold	Prag gibanja
+	Show Motion	Pokaži gibanje
+	No signal	Ni signala
+	Locating	Iskanje položaja
+	Locked	Sinhronizirano
+	Freewheel	Prosti tek
+	Scrubbing	Drsenje
+	Sending	Pošiljanje
+
+# DCP subtitle export (#938)
+	Subtitles from the first caption track	Podnapisi s prve sledi podnapisov
+	The package language	Jezik paketa
+	Inter Regular (built in), or an OpenType / TrueType file	Inter Regular (vgrajena) ali datoteka OpenType / TrueType
+	Subtitle language	Jezik podnapisov
+	Subtitle font	Pisava podnapisov
+	Fonts	Pisave
+
+# AS-11 metadata in MXF OP1a (#96)
+	AS-11 Core	AS-11 Core
+	AS-11 Parts	Deli AS-11
+	AS-11 UK DPP	AS-11 UK DPP
+
+# Control Surfaces settings page (CS-1, #1187)
+	Devices	Naprave
+	Use	Uporabi
+	Device	Naprava
+	MIDI	MIDI
+	HID jog/shuttle	HID jog/shuttle
+	OSC	OSC
+	Connected	Povezano
+	Not connected	Ni povezano
+	Disabled	Onemogočeno
+	{device} ({port})	{device} ({port})
+	{name}: {error}	{name}: {error}
+	Looking for devices…	Iskanje naprav …
+	No MIDI controller or jog/shuttle device was found. Connect one and press Refresh.	Ni bilo najdenega krmilnika MIDI ali naprave jog/shuttle. Priključite eno in pritisnite Osveži.
+	Control Surfaces	Nadzorne površine
+	Use control surfaces (MIDI controllers, jog/shuttle devices)	Uporabi nadzorne površine (krmilniki MIDI, naprave jog/shuttle)
+	Mapping controls to commands, MIDI Learn and the MIDI Monitor come in a later version; the choices here are remembered until then.	Dodeljevanje kontrolnikov ukazom, MIDI Learn in monitor MIDI pridejo v poznejši različici; do takrat se izbire tukaj shranijo.
+	CFA4 ShuttlePRO	CFA4 ShuttlePRO
+	Kdenlive-style ShuttlePRO	ShuttlePRO v slogu Kdenlive
+	Generic MIDI	Splošni MIDI
+
+# LTC timecode read from clip audio (TC-7, #1285)
+	Read from LTC Audio	Preberi iz zvoka LTC
+	Find SMPTE LTC on the clip's audio and use the timecode it gives the first frame	Poišči SMPTE LTC v zvoku posnetka in uporabi časovno kodo, ki jo da prvi sličici
+	Read Timecode from LTC Audio	Preberi časovno kodo iz zvoka LTC
+# Credits: voices (the Voice column) in the block's properties (F10-C16)
+	Voices	Glasovi
+
+# Timecode sync varispeed and user bits (TC-8, #1308)
+	Varispeed: adjust the playback speed instead of seeking	Varispeed: prilagodi hitrost predvajanja namesto preskoka
+	User bits	Uporabniški biti

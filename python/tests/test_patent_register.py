@@ -9,20 +9,20 @@ HEADER = "| Formátum | Irány | Komponens | Csomag | Eredmény | Dátum | Vizsg
 
 
 class Register(unittest.TestCase):
-    def test_every_codec_and_container_crate_has_a_row(self):
+    def test_every_codec_and_container_crate_has_a_row(self) -> None:
         rows = pr.load()
         self.assertEqual(pr.missing_crates(rows), [], "add the crate's formats to docs/patent-review.md")
         # the obvious ones are found by the manifest pattern, so the check is not vacuous
         for name in ("h264", "hevc", "aac", "ac3", "isobmff", "platform"):
             self.assertIn(name, pr.format_crates())
 
-    def test_rows_are_well_formed(self):
+    def test_rows_are_well_formed(self) -> None:
         rows = pr.load()
         self.assertTrue(rows)
         for r in rows:
             self.assertIn(r.result, pr.RESULTS, r)
 
-    def test_a_recorded_result_needs_its_date_and_source(self):
+    def test_a_recorded_result_needs_its_date_and_source(self) -> None:
         ok = HEADER + "| X | dekódolás | `crates/x` | alap | szabad | 2026-11-02 | Dr. N. N., jogi vélemény |\n"
         self.assertEqual(pr.pending_in_base(pr.parse(ok)), [])
         for bad in ("| X | dekódolás | `crates/x` | alap | szabad | | Dr. N. N. |\n",
@@ -34,7 +34,7 @@ class Register(unittest.TestCase):
         with self.assertRaises(pr.RegisterError):
             pr.parse("| Format | Direction |\n|---|---|\n| X | Y |\n")
 
-    def test_pending_counts_only_the_base_package(self):
+    def test_pending_counts_only_the_base_package(self) -> None:
         text = HEADER + (
             "| A | dekódolás | `crates/a` | alap | függőben | | |\n"
             "| B | kódolás | x264 | kiegészítő | függőben | | |\n"

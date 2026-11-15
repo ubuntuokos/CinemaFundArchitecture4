@@ -5,13 +5,24 @@
 //!   stats: "432,014,696 views"), easing out; thousands separators and decimals are kept.
 //! - **Typewriter**: characters appear one after another.
 //! - **Word by Word**: words appear one after another.
+//! - **Scramble**: the text starts as random symbols that settle into the real characters from
+//!   left to right (a "decode" look); spaces and line breaks stay where they are, so the layout
+//!   does not jump. The symbols come from a fixed hash of the character position and the
+//!   animation step, not from a random generator, so scrubbing shows the same frame every time.
 //!
 //! An animator runs from `anim_delay` for `anim_duration` seconds of clip time; before it the
 //! layer shows the start state, after it the Source Text unchanged. Everything is a pure function
 //! of the text and the time, so frames render identically on every machine.
 
 /// Animator names, in the order of the layer's `anim` choice.
-pub const ANIMATOR_OPTS: &[&str] = &["None", "Counter", "Typewriter", "Word by Word"];
+pub const ANIMATOR_OPTS: &[&str] = &["None", "Counter", "Typewriter", "Word by Word", "Scramble"];
+
+/// Symbols the Scramble animator shows for characters that have not settled yet (ASCII only,
+/// so every font has them).
+const SCRAMBLE_GLYPHS: &[u8] = b"!<>-_\\/[]{}=+*^?#%&@$~01";
+
+/// How many times the Scramble symbols change over the animation.
+const SCRAMBLE_STEPS: f64 = 48.0;
 
 /// Longest number (characters) the counter reads; longer digit runs are left alone.
 const MAX_NUMBER_CHARS: usize = 40;
@@ -79,6 +90,36 @@ fn format_number(v: f64, decimals: usize, thousands: Option<char>, mark: char) -
     out
 }
 
+/// SplitMix64 finaliser: a fixed, well-mixed hash of `x`.
+fn mix(mut x: u64) -> u64 {
+    x = x.wrapping_add(0x9E37_79B9_7F4A_7C15);
+    x = (x ^ (x >> 30)).wrapping_mul(0xBF58_476D_1CE4_E5B9);
+    x = (x ^ (x >> 27)).wrapping_mul(0x94D0_49BB_1331_11EB);
+    x ^ (x >> 31)
+}
+
+/// The Scramble animator: the first `round(n·p)` characters are settled, the rest are symbols
+/// that change [`SCRAMBLE_STEPS`] times over the animation. Whitespace is never replaced.
+fn scramble(text: &str, p: f64) -> String {
+    let n = text.chars().count();
+    // n ≤ text length, so the product is finite; `as` saturates and is clamped by `n` anyway
+    let settled = ((n as f64) * p).floor() as usize;
+    let step = (p * SCRAMBLE_STEPS).floor() as u64;
+    let glyphs = SCRAMBLE_GLYPHS.len().max(1) as u64;
+    text.chars()
+        .enumerate()
+        .map(|(i, c)| {
+            if i < settled || c.is_whitespace() {
+                c
+            } else {
+                let h = mix((i as u64) ^ step.wrapping_mul(0x1_0000_0001));
+                let g = usize::try_from(h % glyphs).unwrap_or(0);
+                SCRAMBLE_GLYPHS.get(g).map_or('#', |b| char::from(*b))
+            }
+        })
+        .collect()
+}
+
 /// Ease-out cubic.
 fn ease_out(p: f64) -> f64 {
     1.0 - (1.0 - p).powi(3)
@@ -119,6 +160,7 @@ pub fn animate(kind: u32, text: &str, progress: f64) -> String {
                 None => text.to_string(),
             }
         }
+        4 => scramble(text, p),
         _ => text.to_string(),
     }
 }
@@ -168,6 +210,39 @@ mod tests {
         assert_eq!(animate(3, "one two  three", 1.0), "one two  three");
         assert_eq!(animate(0, "same", 0.0), "same");
         assert_eq!(animate(9, "same", 0.0), "same");
+    }
+
+    #[test]
+    fn scramble_settles_left_to_right_and_keeps_the_layout() {
+        let text = "Hello, wörld\nline two";
+        assert_eq!(animate(4, text, 1.0), text);
+        for i in 0..=40 {
+            let p = f64::from(i) / 40.0;
+            let s = animate(4, text, p);
+            // same number of characters, whitespace in the same places
+            assert_eq!(s.chars().count(), text.chars().count(), "{p}: {s}");
+            for (a, b) in s.chars().zip(text.chars()) {
+                assert_eq!(a.is_whitespace(), b.is_whitespace(), "{p}: {s}");
+                if b.is_whitespace() {
+                    assert_eq!(a, b);
+                }
+            }
+            // the settled prefix is the real text
+            let settled = ((text.chars().count() as f64) * p).floor() as usize;
+            assert!(s.chars().zip(text.chars()).take(settled).all(|(a, b)| a == b), "{p}: {s}");
+        }
+        // at the start nothing has settled: no real letter is shown
+        let start = animate(4, "ABCDEFGHIJ", 0.0);
+        assert!(start.chars().all(|c| u8::try_from(c).is_ok_and(|b| SCRAMBLE_GLYPHS.contains(&b))), "{start}");
+    }
+
+    #[test]
+    fn scramble_is_deterministic_and_flickers_between_steps() {
+        let a = animate(4, "deterministic text", 0.1);
+        assert_eq!(a, animate(4, "deterministic text", 0.1));
+        // a later step shows other symbols for the characters that are still unsettled
+        let b = animate(4, "deterministic text", 0.1 + 1.0 / SCRAMBLE_STEPS);
+        assert_ne!(a, b);
     }
 
     #[test]

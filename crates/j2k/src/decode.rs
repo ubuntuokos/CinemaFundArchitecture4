@@ -475,11 +475,14 @@ pub(crate) fn map<T: Sync, U: Send>(items: &[T], f: impl Fn(&T) -> Result<U> + S
     }
 }
 
-fn reconstruct(tc: &TileComp) -> Result<Samples> {
+/// The tile-component's samples at resolution `keep` (the full picture when it is the highest):
+/// code-blocks of higher resolutions are not decoded, and the inverse transform stops there
+/// (the LL band of a level is the picture at that resolution, B.5).
+fn reconstruct(tc: &TileComp, keep: usize) -> Result<Samples> {
     let reversible = tc.style.reversible;
     // every code-block with data: (resolution, band, block)
     let mut jobs: Vec<(usize, usize, &CodeBlock)> = Vec::new();
-    for (r, res) in tc.res.iter().enumerate() {
+    for (r, res) in tc.res.iter().enumerate().take(keep + 1) {
         for prec in &res.precincts {
             for (bi, pb) in prec.iter().enumerate() {
                 jobs.extend(pb.blocks.iter().filter(|cb| !cb.segments.is_empty()).map(|cb| (r, bi, cb)));
@@ -524,7 +527,7 @@ fn reconstruct(tc: &TileComp) -> Result<Samples> {
     if reversible {
         let half = |v: &Vec<i32>| v.iter().map(|&c| if c < 0 { -((-c) >> 1) } else { c >> 1 }).collect::<Vec<i32>>();
         let mut ll = half(get(0, 0));
-        for (r, res) in tc.res.iter().enumerate().skip(1) {
+        for (r, res) in tc.res.iter().enumerate().take(keep + 1).skip(1) {
             ll = dwt::level(&ll, &half(get(r, 0)), &half(get(r, 1)), &half(get(r, 2)), res.rect);
         }
         Ok(Samples::Int(ll))
@@ -534,7 +537,7 @@ fn reconstruct(tc: &TileComp) -> Result<Samples> {
             get(r, b).iter().map(|&c| c as f32 * step).collect()
         };
         let mut ll = scale(0, 0);
-        for (r, res) in tc.res.iter().enumerate().skip(1) {
+        for (r, res) in tc.res.iter().enumerate().take(keep + 1).skip(1) {
             ll = dwt::level(&ll, &scale(r, 0), &scale(r, 1), &scale(r, 2), res.rect);
         }
         Ok(Samples::Float(ll))
@@ -543,27 +546,44 @@ fn reconstruct(tc: &TileComp) -> Result<Samples> {
 
 /// Decodes a JPEG 2000 codestream or JP2 file.
 pub fn decode(data: &[u8]) -> Result<Image> {
+    decode_reduced(data, 0).map(|(image, _)| image)
+}
+
+/// Decodes a JPEG 2000 codestream or JP2 file at a lower resolution: `reduce` wavelet levels
+/// are left out, so each dimension shrinks by about `2^reduce` and the code-blocks of the left-out
+/// resolutions are never decoded (much faster; for proxy-resolution playback). The picture is
+/// the LL band of that level (B.5), as `opj_decompress -r` and `ojph_expand -skip_res` give it.
+///
+/// `reduce` is capped at the fewest decomposition levels any tile-component has; the levels
+/// actually left out are returned with the image. A plane spans
+/// `ceil(ceil(x1 / dx) / 2^r) - ceil(ceil(x0 / dx) / 2^r)` samples across (B.5, equation B-14),
+/// and the image's `width` / `height` are the reduced image area.
+pub fn decode_reduced(data: &[u8], reduce: u8) -> Result<(Image, u8)> {
     let cs = codestream::parse(data, true)?;
     let h = &cs.header;
+    let fewest = cs.tiles.iter().flat_map(|t| t.params.cod.iter().map(|c| c.levels)).min().unwrap_or(0);
+    let r = u32::from(reduce.min(fewest));
+    let shrink = |a: u32, d: u8| ceil_div(ceil_div(u64::from(a), u64::from(d)), 1 << r);
     let mut planes: Vec<Plane> = h
         .components
         .iter()
         .map(|c| {
-            let (dx, dy) = (u64::from(c.dx), u64::from(c.dy));
-            let w = (ceil_div(u64::from(h.x1), dx) - ceil_div(u64::from(h.x0), dx)) as u32;
-            let hh = (ceil_div(u64::from(h.y1), dy) - ceil_div(u64::from(h.y0), dy)) as u32;
+            let w = (shrink(h.x1, c.dx) - shrink(h.x0, c.dx)) as u32;
+            let hh = (shrink(h.y1, c.dy) - shrink(h.y0, c.dy)) as u32;
             Plane { width: w, height: hh, precision: c.precision, signed: c.signed, dx: c.dx, dy: c.dy, data: vec![0; w as usize * hh as usize] }
         })
         .collect();
     let mut mct = false;
     for tile in &cs.tiles {
-        mct |= decode_tile(h, tile, &mut planes)?;
+        mct |= decode_tile(h, tile, &mut planes, r)?;
     }
-    Ok(Image { width: h.width(), height: h.height(), components: planes, mct })
+    let (width, height) = ((shrink(h.x1, 1) - shrink(h.x0, 1)) as u32, (shrink(h.y1, 1) - shrink(h.y0, 1)) as u32);
+    Ok((Image { width, height, components: planes, mct }, r as u8))
 }
 
-/// Decodes one tile into `planes`; `true` when it applied the inverse component transform.
-fn decode_tile(h: &Header, tile: &Tile, planes: &mut [Plane]) -> Result<bool> {
+/// Decodes one tile into `planes`, `reduce` levels below full resolution; `true` when it applied
+/// the inverse component transform.
+fn decode_tile(h: &Header, tile: &Tile, planes: &mut [Plane], reduce: u32) -> Result<bool> {
     let (trect, mut comps) = build(h, &tile.params, tile.index)?;
     let order = packets(h, trect, &comps, &tile.params)?;
     let (mut pos, mut hpos) = (0, 0);
@@ -584,8 +604,11 @@ fn decode_tile(h: &Header, tile: &Tile, planes: &mut [Plane]) -> Result<bool> {
             Err(_) => break,
         }
     }
-    let mut samples: Vec<Samples> = map(&comps, reconstruct)?;
-    let mct = tile.params.global.mct && comps.len() >= 3 && comps.iter().take(3).all(|c| c.rect == comps[0].rect);
+    // the resolution each component is reconstructed at, and its area there
+    let keep = |tc: &TileComp| tc.res.len().saturating_sub(1 + reduce as usize);
+    let area = |tc: &TileComp| tc.res.get(keep(tc)).map_or(tc.rect, |r| r.rect);
+    let mut samples: Vec<Samples> = map(&comps, |tc| reconstruct(tc, keep(tc)))?;
+    let mct = tile.params.global.mct && comps.len() >= 3 && comps.iter().take(3).all(|c| area(c) == area(&comps[0]));
     if mct {
         let reversible = comps.iter().take(3).all(|c| c.style.reversible);
         if let [Samples::Int(y0), Samples::Int(y1), Samples::Int(y2), ..] = &mut samples[..]
@@ -615,9 +638,10 @@ fn decode_tile(h: &Header, tile: &Tile, planes: &mut [Plane]) -> Result<bool> {
         let p = u32::from(plane.precision);
         let (lo, hi, shift) = if plane.signed { (-(1i64 << (p - 1)), (1i64 << (p - 1)) - 1, 0i64) } else { (0, (1i64 << p) - 1, 1i64 << (p - 1)) };
         let (lo, hi, shift) = (lo as i32, hi as i32, shift as i32);
-        let px0 = ceil_div(u64::from(h.x0), u64::from(plane.dx)) as u32;
-        let py0 = ceil_div(u64::from(h.y0), u64::from(plane.dy)) as u32;
-        let (w, ox, oy) = (tc.rect.w(), (tc.rect.u0 - px0) as usize, (tc.rect.v0 - py0) as usize);
+        let px0 = ceil_div(ceil_div(u64::from(h.x0), u64::from(plane.dx)), 1 << reduce) as u32;
+        let py0 = ceil_div(ceil_div(u64::from(h.y0), u64::from(plane.dy)), 1 << reduce) as u32;
+        let rect = area(tc);
+        let (w, ox, oy) = (rect.w(), (rect.u0 - px0) as usize, (rect.v0 - py0) as usize);
         let pw = plane.width as usize;
         if w == 0 || ox >= pw {
             return;

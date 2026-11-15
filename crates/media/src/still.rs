@@ -150,8 +150,16 @@ impl StillSource {
         if jxl::sniff(bytes) {
             return jxl::still(name, bytes);
         }
+        if crate::dpx::sniff(bytes) {
+            return crate::dpx::still(name, bytes);
+        }
         let r = decode_raster(name, bytes)?;
         Ok(Self::from_rgba(name, r.width, r.height, r.rgba, r.has_alpha, bytes.len() as u64))
+    }
+
+    /// A still showing `frame`, described by `info`.
+    pub(crate) fn from_frame(info: MediaInfo, frame: VideoFrame) -> Self {
+        Self { info, frame: Arc::new(frame) }
     }
 
     pub fn from_rgba(name: &str, w: u32, h: u32, rgba: Vec<u8>, has_alpha: bool, file_size: u64) -> Self {
