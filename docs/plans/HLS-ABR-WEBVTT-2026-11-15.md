@@ -1,7 +1,7 @@
 # CFA4 HLS ABR-létra, WebVTT feliratok és alternatív hangsávok – megvalósítási terv
 
 **Dátum:** 2026-11-15  
-**Státusz:** tervezet, tulajdonosi jóváhagyásra vár ([`docs/coordination.md`](../coordination.md) §2.10)  
+**Státusz:** a terv tulajdonos által jóváhagyva (2026-11-15), D1–D7 a javaslatok szerint  
 **Issue-k:** #230 (ABR-létra, állítható szegmenshossz), #233 (WebVTT feliratok, külön hangsávok)  
 **Előzmény:** [`CHAPTERS-DASH-2026-10-30.md`](CHAPTERS-DASH-2026-10-30.md) (D1–D5 kész, utolsó PR #968)  
 **Sorrend (tulajdonos, 2026-11-15):** először az A rész (#230), utána a B rész (#233).
@@ -177,7 +177,7 @@ Minden feladat külön PR, friss `main`-ből, a quality gate-ek zöldek, és a v
 | B2 | `AudioOut` sávmaszk, `hls_audio_renditions`, több AAC-kódoló, hangcsoport és DASH `lang`/`Role` | 6–10 óra |
 | B3 | CLI- és motorparaméterek, Qt felirat-kapcsoló és hangváltozat-táblázat, magyar fordítás, dokumentáció (#233 lezárása) | 4–6 óra |
 
-## Döntések (jóváhagyásra)
+## Döntések (jóváhagyva 2026-11-15)
 
 | Kérdés | Javaslat |
 | --- | --- |
