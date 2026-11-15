@@ -136,7 +136,8 @@ struct Event {
     to_clip: Option<String>,
     files: Vec<String>,
     effect: Option<String>,
-    /// `* SEGMENT NAME:` (a CFA4 segment written by `markers.exportEdl`).
+    /// `* SEGMENT NAME:` (a CFA4 segment written by `markers.exportEdl`), or `* SEGMENT NAME JSON:`
+    /// for a name that is not plain one-line text, as a JSON string.
     segment: Option<String>,
     /// (reel, fps, entry tc)
     m2: Vec<(String, f64)>,
@@ -181,6 +182,10 @@ fn parse(text: &str, report: &mut Report) -> Parsed {
                 ev.to_clip = Some(value("TO CLIP NAME:"));
             } else if cu.starts_with("SOURCE FILE:") {
                 ev.files.push(value("SOURCE FILE:"));
+            } else if cu.starts_with("SEGMENT NAME JSON:") {
+                // a name CFA4 could not write as plain text (empty, padded, several lines)
+                let raw = value("SEGMENT NAME JSON:");
+                ev.segment = Some(serde_json::from_str::<String>(&raw).unwrap_or(raw));
             } else if cu.starts_with("SEGMENT NAME:") {
                 ev.segment = Some(value("SEGMENT NAME:"));
             } else if cu.starts_with("EFFECT NAME:") {

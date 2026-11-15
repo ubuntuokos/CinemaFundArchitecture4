@@ -108,12 +108,20 @@ fn every_segment_name_survives_the_edl_round_trip() {
     let edl = path(&dir, "names.edl");
     s.execute("markers.exportEdl", json!({"path": edl, "item": item.0})).unwrap();
     let text = std::fs::read_to_string(&edl).unwrap();
-    assert!(text.contains("* SEGMENT NAME: plain name\r\n") && text.contains("* SEGMENT NAME: \"\"\r\n"), "{text}");
+    assert!(text.contains("* SEGMENT NAME: plain name\r\n") && text.contains("* SEGMENT NAME JSON: \"\"\r\n"), "{text}");
     assert_eq!(text.lines().count(), text.split("\r\n").count() - 1, "one line per CRLF: {text:?}");
     clear(&mut s, item);
     s.execute("markers.importEdl", json!({"path": edl, "item": item.0})).unwrap();
     let got: Vec<String> = fields(&media_markers(&s, item)).into_iter().map(|m| m.2).collect();
     assert_eq!(got, names.map(str::to_string));
+    // another tool's plain name in quotes is read as it is, quotes and all
+    let foreign =
+        "TITLE: T\r\nFCM: NON-DROP FRAME\r\n\r\n001  AX       V     C        00:00:00:00 00:00:00:05 01:00:00:00 01:00:00:05\r\n* SEGMENT NAME: \"Intro\"\r\n";
+    std::fs::write(&edl, foreign).unwrap();
+    clear(&mut s, item);
+    s.execute("markers.importEdl", json!({"path": edl, "item": item.0})).unwrap();
+    let got: Vec<String> = fields(&media_markers(&s, item)).into_iter().map(|m| m.2).collect();
+    assert_eq!(got, ["\"Intro\"".to_string()]);
     let _ = std::fs::remove_dir_all(&dir);
 }
 
