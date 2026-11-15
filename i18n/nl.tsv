@@ -4691,3 +4691,8 @@ export.summary	Low	laag
 	CFA4 ShuttlePRO	CFA4 ShuttlePRO
 	Kdenlive-style ShuttlePRO	ShuttlePRO in Kdenlive-stijl
 	Generic MIDI	Algemene MIDI
+
+# LTC timecode read from clip audio (TC-7, #1285)
+	Read from LTC Audio	Uit LTC-audio lezen
+	Find SMPTE LTC on the clip's audio and use the timecode it gives the first frame	SMPTE LTC in de audio van de clip zoeken en de tijdcode gebruiken die het aan het eerste beeld geeft
+	Read Timecode from LTC Audio	Tijdcode uit LTC-audio lezen

@@ -4685,3 +4685,8 @@
 	CFA4 ShuttlePRO	CFA4 ShuttlePRO
 	Kdenlive-style ShuttlePRO	Kdenlive 스타일 ShuttlePRO
 	Generic MIDI	일반 MIDI
+
+# LTC timecode read from clip audio (TC-7, #1285)
+	Read from LTC Audio	LTC 오디오에서 읽기
+	Find SMPTE LTC on the clip's audio and use the timecode it gives the first frame	클립 오디오에서 SMPTE LTC를 찾아 첫 프레임에 해당하는 타임코드를 사용합니다
+	Read Timecode from LTC Audio	LTC 오디오에서 타임코드 읽기
