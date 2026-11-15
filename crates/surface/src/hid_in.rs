@@ -10,22 +10,22 @@
 //! A [`HidReader`] reads one device on its own thread and hands the inputs over through a bounded
 //! queue; it ends when the device is unplugged (the read fails) or the reader is dropped.
 
+use crate::lane::{self, LaneOut, Queued};
 use cfa4_surface_model::{ControlId, DeviceId, MAX_RAW, MonoNs, SurfaceInput};
 use rustix::event::{PollFd, PollFlags, Timespec, poll};
 use std::fs::File;
 use std::io::Read;
 use std::path::Path;
 use std::sync::Arc;
-use std::sync::atomic::{AtomicBool, AtomicU64, Ordering};
-use std::sync::mpsc::{Receiver, SyncSender, TrySendError, sync_channel};
+use std::sync::atomic::{AtomicBool, Ordering};
 use std::thread::JoinHandle;
 use std::time::Instant;
 
 /// The shuttle ring's positions on each side.
 pub const SHUTTLE_RANGE: i8 = 7;
 
-/// Inputs waiting for the GUI thread at most, per device.
-pub const QUEUE: usize = 1024;
+/// Kept so callers can name the old bound. The F0 lane capacity is [`crate::lane::TRIGGER_CAPACITY`].
+pub const QUEUE: usize = crate::lane::TRIGGER_CAPACITY;
 
 /// Turns ShuttlePRO / ShuttleXpress reports into inputs.
 #[derive(Clone, Debug)]
@@ -65,24 +65,22 @@ impl ShuttleDecoder {
         }
         out
     }
+
+    /// Buttons that are down, so an unplug can release them (F0 spec §9.6).
+    pub fn held(&self) -> Vec<ControlId> {
+        let Some((_, _, buttons)) = self.last else { return Vec::new() };
+        (0..self.buttons).filter(|b| buttons & (1u16 << b) != 0).map(|b| ControlId::hid_named(&format!("button{}", b + 1))).collect()
+    }
 }
 
-/// One input from one jog/shuttle device.
-#[derive(Clone, Debug, PartialEq)]
-pub struct HidInput {
-    pub device: DeviceId,
-    /// Since the reader started.
-    pub at: MonoNs,
-    pub input: SurfaceInput,
-    /// The report it came from.
-    pub raw: Vec<u8>,
-}
+/// One input from one jog/shuttle device. [`Queued`] is the lane's form; this alias keeps the
+/// call sites that name a HID input.
+pub type HidInput = Queued;
 
-/// The reading thread of one device and its queue.
+/// The reading thread of one device and its lane.
 pub struct HidReader {
-    rx: Receiver<HidInput>,
+    lane: LaneOut,
     stop: Arc<AtomicBool>,
-    dropped: Arc<AtomicU64>,
     thread: Option<JoinHandle<()>>,
 }
 
@@ -97,25 +95,25 @@ impl HidReader {
                 format!("{device}: cannot open {}: {e}", node.display())
             }
         })?;
-        let (tx, rx) = sync_channel(QUEUE);
+        let (tx, lane) = lane::lane();
         let stop = Arc::new(AtomicBool::new(false));
-        let dropped = Arc::new(AtomicU64::new(0));
-        let (s, d) = (stop.clone(), dropped.clone());
+        let s = stop.clone();
         let thread = std::thread::Builder::new()
             .name("cfa4-surface-hid".into())
-            .spawn(move || run(file, device, buttons, &tx, &s, &d))
+            .spawn(move || run(file, device, buttons, tx, &s))
             .map_err(|e| format!("HID: cannot start the reading thread ({e})"))?;
-        Ok(Self { rx, stop, dropped, thread: Some(thread) })
+        Ok(Self { lane, stop, thread: Some(thread) })
     }
 
-    /// Up to `max` waiting inputs, oldest first.
-    pub fn drain(&self, max: usize) -> Vec<HidInput> {
-        self.rx.try_iter().take(max).collect()
+    /// Waiting inputs, oldest first. `max` is accepted for the old call shape; triggers are never
+    /// left in the lane, so the cap is not applied to them.
+    pub fn drain(&self, _max: usize) -> Vec<HidInput> {
+        self.lane.drain()
     }
 
-    /// Inputs lost because the queue was full.
+    /// Trigger waits (`stalls`), not silent drops. Kept under the old name for callers.
     pub fn dropped(&self) -> u64 {
-        self.dropped.load(Ordering::Relaxed)
+        self.lane.counters().values().map(|c| c.stalls).sum()
     }
 
     /// Whether the device is still read (the thread ends when it is unplugged).
@@ -133,36 +131,49 @@ impl Drop for HidReader {
     }
 }
 
-fn run(mut file: File, device: DeviceId, buttons: u8, tx: &SyncSender<HidInput>, stop: &AtomicBool, dropped: &AtomicU64) {
+fn release_held(decoder: &ShuttleDecoder, device: &DeviceId, at: MonoNs, tx: &lane::LaneIn) {
+    for control in decoder.held() {
+        tx.push(device.clone(), at, SurfaceInput::Button { control, pressed: false }, Vec::new());
+    }
+}
+
+fn run(mut file: File, device: DeviceId, buttons: u8, tx: lane::LaneIn, stop: &AtomicBool) {
     let started = Instant::now();
     let mut decoder = ShuttleDecoder::new(buttons);
     let mut buf = [0u8; MAX_RAW];
     // wake up ten times a second to see the stop flag
     let tick = Timespec { tv_sec: 0, tv_nsec: 100_000_000 };
-    while !stop.load(Ordering::Relaxed) {
+    let at_now = || MonoNs(u64::try_from(started.elapsed().as_nanos()).unwrap_or(u64::MAX));
+    loop {
+        if stop.load(Ordering::Relaxed) {
+            release_held(&decoder, &device, at_now(), &tx);
+            return;
+        }
         let mut fds = [PollFd::new(&file, PollFlags::IN)];
         match poll(&mut fds, Some(&tick)) {
             Ok(0) => continue,
             Ok(_) => {}
             Err(rustix::io::Errno::INTR) => continue,
-            Err(_) => return,
+            Err(_) => {
+                release_held(&decoder, &device, at_now(), &tx);
+                return;
+            }
         }
         if fds[0].revents().intersects(PollFlags::ERR | PollFlags::HUP | PollFlags::NVAL) {
+            release_held(&decoder, &device, at_now(), &tx);
             return; // unplugged
         }
         let n = match file.read(&mut buf) {
-            Ok(0) | Err(_) => return,
+            Ok(0) | Err(_) => {
+                release_held(&decoder, &device, at_now(), &tx);
+                return;
+            }
             Ok(n) => n.min(buf.len()),
         };
-        let at = MonoNs(u64::try_from(started.elapsed().as_nanos()).unwrap_or(u64::MAX));
-        for input in decoder.decode(&buf[..n]) {
-            match tx.try_send(HidInput { device: device.clone(), at, input, raw: buf[..n].to_vec() }) {
-                Ok(()) => {}
-                Err(TrySendError::Full(_)) => {
-                    dropped.fetch_add(1, Ordering::Relaxed);
-                }
-                Err(TrySendError::Disconnected(_)) => return,
-            }
+        let at = at_now();
+        let raw = buf[..n].to_vec();
+        for input in decoder.decode(&raw) {
+            tx.push(device.clone(), at, input, raw.clone());
         }
     }
 }

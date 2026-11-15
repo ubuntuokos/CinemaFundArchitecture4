@@ -240,13 +240,21 @@ def test_learn_assigns_a_button_and_ok_saves_it(app):
     command.setCurrentIndex(command.findData("playback.toggle"))
     command.activated.emit(command.currentIndex())
     find(d, QtWidgets.QPushButton, "settings.controlSurfaces.assign.learn").click()
-    assert ("surface.learn", {"device": NANO}) in engine.sent
+    learn_params = [p for m, p in engine.sent if m == "surface.learn"][-1]
+    assert learn_params["device"] == NANO
+    assert learn_params["target"] == {"command": "playback.toggle"}
+    assert learn_params["firstMs"] == 7000 and learn_params["silenceMs"] == 1500
     learn = find(d, QtWidgets.QPushButton, "settings.controlSurfaces.assign.learn")
     assert learn.isChecked() and learn.text() == "Cancel Learn"
-    # another device's press, or the monitor's events, assign nothing
-    engine.event.emit({"event": "surfaceLearn", "state": "captured", "device": "midi:Other:Port", "control": CC41})
-    assert d.learning
-    engine.event.emit({"event": "surfaceLearn", "state": "captured", "device": NANO, "control": CC41, "label": "Ch 1 CC 41"})
+    # another device's press, or a capture that is not confirmed, assigns nothing
+    engine.event.emit({"event": "surfaceLearn", "state": "pending", "device": "midi:Other:Port",
+                       "captured": {"device": "midi:Other:Port", "control": CC41, "mode": "cc"}})
+    assert d.learning and rows(d, "control") == []
+    engine.event.emit({"event": "surfaceLearn", "state": "pending", "device": NANO,
+                       "captured": {"device": NANO, "control": CC41, "mode": "cc", "label": "Ch 1 CC 41"}})
+    assert d.learning and rows(d, "control") == []
+    assert "Type: cc" in find(d, QtWidgets.QLabel, "settings.controlSurfaces.assign.status").text()
+    find(d, QtWidgets.QPushButton, "settings.controlSurfaces.assign.confirm").click()
     assert not d.learning
     assert rows(d, "control") == ["Ch 1 CC 41"] and rows(d, "command") == ["Play/Stop"]
     assert "Ch 1 CC 41 runs Play/Stop" in find(d, QtWidgets.QLabel, "settings.controlSurfaces.assign.status").text()
@@ -256,11 +264,15 @@ def test_learn_assigns_a_button_and_ok_saves_it(app):
     command.setCurrentIndex(command.findData("edit.undo"))
     command.activated.emit(command.currentIndex())
     find(d, QtWidgets.QPushButton, "settings.controlSurfaces.assign.learn").click()
-    engine.event.emit({"event": "surfaceLearn", "state": "captured", "device": NANO, "control": CC41})
+    engine.event.emit({"event": "surfaceLearn", "state": "pending", "device": NANO,
+                       "captured": {"device": NANO, "control": CC41, "mode": "cc"}})
+    find(d, QtWidgets.QPushButton, "settings.controlSurfaces.assign.confirm").click()
     assert rows(d, "command") == ["Undo"]
     note = {"midi": {"channel": 9, "kind": "note", "number": 36}}
     find(d, QtWidgets.QPushButton, "settings.controlSurfaces.assign.learn").click()
-    engine.event.emit({"event": "surfaceLearn", "state": "captured", "device": NANO, "control": note})
+    engine.event.emit({"event": "surfaceLearn", "state": "pending", "device": NANO,
+                       "captured": {"device": NANO, "control": note, "mode": "note"}})
+    find(d, QtWidgets.QPushButton, "settings.controlSurfaces.assign.confirm").click()
     assert rows(d, "control") == ["Ch 1 CC 41", "Ch 10 Note 36"]
     find(d, QtWidgets.QToolButton, "settings.controlSurfaces.assign.1.remove").click()
     assert rows(d, "control") == ["Ch 10 Note 36"]
@@ -283,7 +295,9 @@ def test_learn_cancel_errors_and_close(app):
     find(d, QtWidgets.QPushButton, "settings.controlSurfaces.assign.learn").click()  # Cancel Learn
     assert [m for m, _p in engine.sent if m.startswith("surface.learn")] == ["surface.learn", "surface.learn", "surface.learnCancel"]
     # a press after cancelling assigns nothing
-    engine.event.emit({"event": "surfaceLearn", "state": "captured", "device": NANO, "control": CC41})
+    engine.event.emit({"event": "surfaceLearn", "state": "pending", "device": NANO,
+                       "captured": {"device": NANO, "control": CC41, "mode": "cc"}})
+    find(d, QtWidgets.QPushButton, "settings.controlSurfaces.assign.reject").click()
     assert rows(d, "control") == []
     # the sequencer going away ends Learn with its reason
     find(d, QtWidgets.QPushButton, "settings.controlSurfaces.assign.learn").click()
@@ -302,9 +316,11 @@ def test_shuttlepro_buttons_are_learned_too(app):
     device.setCurrentIndex(device.findData(SHUTTLE))
     device.activated.emit(device.currentIndex())
     find(d, QtWidgets.QPushButton, "settings.controlSurfaces.assign.learn").click()
-    assert ("surface.learn", {"device": SHUTTLE}) in engine.sent
+    assert [p for m, p in engine.sent if m == "surface.learn"][-1]["device"] == SHUTTLE
     button = {"hid": {"name": "button3", "usagePage": 0, "usage": 0}}
-    engine.event.emit({"event": "surfaceLearn", "state": "captured", "device": SHUTTLE, "control": button, "label": "button3"})
+    engine.event.emit({"event": "surfaceLearn", "state": "pending", "device": SHUTTLE,
+                       "captured": {"device": SHUTTLE, "control": button, "mode": "button", "label": "button3"}})
+    find(d, QtWidgets.QPushButton, "settings.controlSurfaces.assign.confirm").click()
     assert rows(d, "control") == ["Button 3"]
     find(d, QtWidgets.QPushButton, "settings.ok").click()
     saved = [p for m, p in engine.sent if m == "prefs.set"][0]["values"]["controlSurfaces.devices"]
@@ -319,7 +335,9 @@ def test_a_fader_is_learned_onto_a_mixer_strip(app):
     command.activated.emit(command.currentIndex())
     find(d, QtWidgets.QPushButton, "settings.controlSurfaces.assign.learn").click()
     fader = {"midi": {"channel": 0, "kind": "cc", "number": 0}}
-    engine.event.emit({"event": "surfaceLearn", "state": "captured", "device": NANO, "control": fader})
+    engine.event.emit({"event": "surfaceLearn", "state": "pending", "device": NANO,
+                       "captured": {"device": NANO, "control": fader, "mode": "cc"}})
+    find(d, QtWidgets.QPushButton, "settings.controlSurfaces.assign.confirm").click()
     assert rows(d, "control") == ["Ch 1 CC 0"] and rows(d, "command") == ["A2 Volume (fader)"]
     find(d, QtWidgets.QPushButton, "settings.ok").click()
     saved = [p for m, p in engine.sent if m == "prefs.set"][0]["values"]["controlSurfaces.devices"]

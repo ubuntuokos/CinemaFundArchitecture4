@@ -4708,3 +4708,17 @@
 # Control surfaces (continuous-values, CFA4-CONTROL-SURFACE-001)
 	{strip} Pan (knob)	{strip} パン（ノブ）
 	{strip} Volume (fader)	{strip} 音量（フェーダー）
+# Control surfaces (F1 Learn and profile, CFA4-CONTROL-SURFACE-001)
+	Control Surfaces	コントロールサーフェス
+	Use control surfaces (MIDI controllers, jog/shuttle devices)	コントロールサーフェスを使う（MIDI コントローラー、ジョグ／シャトル）
+	Assignments run when a button is pressed (a fader or knob counts as pressed past half way); a fader or knob assigned to a mixer strip moves its volume or pan. A ShuttlePRO's shuttle ring plays at its profile's speeds and its jog wheel steps frame by frame. Endless encoders and feedback to the controller (lights, motor faders) come in a later version.	割り当てはボタンを押したときに実行されます（フェーダーやノブは半分を超えると押された扱いになります）。ミキサーのストリップに割り当てたフェーダーやノブは音量またはパンを動かします。ShuttlePRO のシャトルリングはプロファイルの速度で再生し、ジョグホイールはフレームごとに進みます。エンドレスエンコーダーとコントローラーへの返答（ランプ、モーターフェーダー）は後の版で追加します。
+	First message (ms)	最初のメッセージ（ミリ秒）
+	Silence (ms)	無音（ミリ秒）
+	Waiting for the control to settle…	コントロールが落ち着くのを待っています…
+	Type: {hint}. Confirm this assignment.	種類: {hint}。この割り当てを確定します。
+	That control is already assigned. Confirm replaces it.	そのコントロールは既に割り当てられています。確定すると置き換わります。
+	Learn timed out.	学習が時間切れになりました。
+	Confirm	確定
+	Reject	却下
+	Shows every MIDI message from the controllers as it arrives, to check that a controller sends and what it sends. MIDI Clock, Active Sensing and MIDI Time Code are left out.	コントローラーからの MIDI メッセージを届いた順に表示し、送っているかと内容を確認します。MIDI クロック、アクティブセンシング、MIDI タイムコードは表示しません。
+	Pick a command (or a mixer strip for a fader or knob), press Learn, then press the button or move the control past half way. Confirm keeps the assignment. OK saves the assignments.	コマンド（フェーダーやノブならミキサーのストリップ）を選び、学習を押してからボタンを押すか、コントロールを半分より先へ動かします。確定で割り当てを残します。OK で保存します。

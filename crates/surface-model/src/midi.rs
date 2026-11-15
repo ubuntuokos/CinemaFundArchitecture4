@@ -26,6 +26,17 @@ pub fn is_chatter(raw: &[u8]) -> Option<Chatter> {
     }
 }
 
+/// Clock (0xF8), Active Sensing (0xFE), MTC quarter-frame (0xF1) and MTC full-frame SysEx
+/// (`F0 7F … 01 01`). Learn and the Monitor's default view leave these out (F0 spec §5);
+/// MIDI timecode belongs to `cfa4-tcsync-io`.
+pub fn is_timing(raw: &[u8]) -> bool {
+    match raw.first().copied() {
+        Some(0xf8 | 0xfe | 0xf1) => true,
+        Some(0xf0) => raw.len() >= 6 && raw[1] == 0x7f && raw.get(3) == Some(&0x01) && raw.get(4) == Some(&0x01),
+        _ => false,
+    }
+}
+
 /// The two kinds of [`is_chatter`] messages.
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub enum Chatter {
@@ -142,6 +153,10 @@ mod tests {
         assert_eq!(is_chatter(&[0xf8]), Some(Chatter::Clock));
         assert_eq!(is_chatter(&[0xfe]), Some(Chatter::Sense));
         assert_eq!(is_chatter(&[0xb0, 1, 2]), None);
+        assert!(is_timing(&[0xf8]) && is_timing(&[0xfe]) && is_timing(&[0xf1, 0x00]));
+        assert!(is_timing(&[0xf0, 0x7f, 0x00, 0x01, 0x01, 0xf7]), "MTC full frame");
+        assert!(!is_timing(&[0xf0, 0x7e, 0x7f, 0x06, 0x01, 0xf7]), "identity request is not timing");
+        assert!(!is_timing(&[0xb0, 1, 2]));
         assert_eq!(hex(&[0xb0, 0x10, 0x40]), "B0 10 40");
         assert_eq!(hex(&[]), "");
     }
@@ -160,5 +175,24 @@ mod tests {
         assert_eq!(input(&[0xf8]), SurfaceInput::Raw);
         assert_eq!(input(&[0xb0, 1]), SurfaceInput::Raw, "incomplete");
         assert_eq!(input(&[]), SurfaceInput::Raw);
+    }
+
+    /// Any byte string is described and parsed without reading past its end or panicking.
+    #[test]
+    fn hostile_bytes_do_not_panic() {
+        let mut state = 0x1234_5678u32;
+        for n in 0..256 {
+            state = state.wrapping_mul(1664525).wrapping_add(1013904223);
+            let len = (state % 24) as usize;
+            let bytes: Vec<u8> = (0..len).map(|i| state.wrapping_add(i as u32).wrapping_mul(n).to_le_bytes()[0]).collect();
+            let text = describe(&bytes);
+            assert!(text.len() < 200, "{text}");
+            let parsed = input(&bytes);
+            let _ = is_timing(&bytes);
+            let _ = is_chatter(&bytes);
+            if let SurfaceInput::SysEx { len: got } = parsed {
+                assert_eq!(got as usize, bytes.len());
+            }
+        }
     }
 }

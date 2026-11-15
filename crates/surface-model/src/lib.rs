@@ -20,7 +20,8 @@ use std::fmt;
 /// Longest raw message kept with an event (enough for any channel message and short SysEx).
 pub const MAX_RAW: usize = 64;
 
-/// A stable device identity: `hid:<vid>:<pid>:<physical path>` or `midi:<client>:<port>`.
+/// A stable device identity: `hid:<vid>:<pid>:<physical path>`, `midi:<client>:<port>`, or
+/// `net:<protocol>:<address>` for a source reached over the network (OSC now, TSL UMD later).
 #[derive(Clone, Debug, PartialEq, Eq, Hash, PartialOrd, Ord, Serialize, Deserialize)]
 #[serde(transparent)]
 pub struct DeviceId(pub String);
@@ -29,6 +30,12 @@ impl DeviceId {
     /// The id of a HID device from its USB ids and its physical path (`HID_PHYS`).
     pub fn hid(vid: u16, pid: u16, phys: &str) -> Self {
         DeviceId(format!("hid:{vid:04x}:{pid:04x}:{phys}"))
+    }
+
+    /// The id of a network source from its protocol and its address as the user gave it
+    /// (`192.168.1.20:9000`, `[fe80::1]:8000`, a host name); surrounding blanks are dropped.
+    pub fn net(protocol: SurfaceProtocol, addr: &str) -> Self {
+        DeviceId(format!("net:{}:{}", protocol.as_str(), addr.trim()))
     }
 
     /// A version of the id that is safe as a file name (`active-<device>.json`).
@@ -55,6 +62,17 @@ pub enum SurfaceProtocol {
     Hid,
     Midi,
     Osc,
+}
+
+impl SurfaceProtocol {
+    /// The name the protocol has in JSON and in device ids.
+    pub fn as_str(self) -> &'static str {
+        match self {
+            SurfaceProtocol::Hid => "hid",
+            SurfaceProtocol::Midi => "midi",
+            SurfaceProtocol::Osc => "osc",
+        }
+    }
 }
 
 /// One normalised input from one device.
@@ -342,6 +360,23 @@ mod tests {
         let d = DeviceId::hid(0x0b33, 0x0030, "usb-0000:00:14.0-3/input0");
         assert_eq!(d.0, "hid:0b33:0030:usb-0000:00:14.0-3/input0");
         assert_eq!(d.file_stem(), "hid_0b33_0030_usb-0000_00_14.0-3_input0");
+    }
+
+    /// READY-V4.5: network sources get an id, and its file stem is a safe file name.
+    #[test]
+    fn network_device_ids() {
+        assert_eq!(DeviceId::net(SurfaceProtocol::Osc, " 192.168.1.20:9000 ").0, "net:osc:192.168.1.20:9000");
+        assert_eq!(DeviceId::net(SurfaceProtocol::Osc, "192.168.1.20:9000").file_stem(), "net_osc_192.168.1.20_9000");
+        assert_eq!(DeviceId::net(SurfaceProtocol::Osc, "[fe80::1%eth0]:8000").file_stem(), "net_osc__fe80__1_eth0__8000");
+        for hostile in ["../../etc/passwd", "a/b\\c", "x\0y", "", "..", "名前:1"] {
+            let stem = DeviceId::net(SurfaceProtocol::Osc, hostile).file_stem();
+            assert!(stem.starts_with("net_osc_"), "{stem}");
+            assert!(stem.chars().all(|c| c.is_ascii_alphanumeric() || "-_.".contains(c)), "{stem}");
+            assert!(!stem.contains('/') && !stem.contains('\\'), "{stem}");
+        }
+        for p in [SurfaceProtocol::Hid, SurfaceProtocol::Midi, SurfaceProtocol::Osc] {
+            assert_eq!(serde_json::to_value(p).ok(), Some(serde_json::Value::String(p.as_str().into())));
+        }
     }
 
     #[test]

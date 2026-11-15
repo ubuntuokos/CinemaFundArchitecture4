@@ -4693,3 +4693,17 @@
 # Control surfaces (continuous-values, CFA4-CONTROL-SURFACE-001)
 	{strip} Pan (knob)	{strip} 팬 (노브)
 	{strip} Volume (fader)	{strip} 볼륨 (페이더)
+# Control surfaces (F1 Learn and profile, CFA4-CONTROL-SURFACE-001)
+	Control Surfaces	컨트롤 서피스
+	Use control surfaces (MIDI controllers, jog/shuttle devices)	컨트롤 서피스 사용 (MIDI 컨트롤러, 조그/셔틀)
+	Assignments run when a button is pressed (a fader or knob counts as pressed past half way); a fader or knob assigned to a mixer strip moves its volume or pan. A ShuttlePRO's shuttle ring plays at its profile's speeds and its jog wheel steps frame by frame. Endless encoders and feedback to the controller (lights, motor faders) come in a later version.	할당은 버튼을 누를 때 실행됩니다(페이더나 노브는 절반을 넘으면 눌린 것으로 봅니다). 믹서 스트립에 할당된 페이더나 노브는 음량이나 팬을 움직입니다. ShuttlePRO의 셔틀 링은 프로필 속도로 재생하고 조그 휠은 프레임 단위로 이동합니다. 무한 인코더와 컨트롤러로의 응답(램프, 모터 페이더)은 이후 버전에 옵니다.
+	First message (ms)	첫 메시지(ms)
+	Silence (ms)	무음(ms)
+	Waiting for the control to settle…	컨트롤이 멈추기를 기다리는 중…
+	Type: {hint}. Confirm this assignment.	유형: {hint}. 이 할당을 확인하세요.
+	That control is already assigned. Confirm replaces it.	그 컨트롤은 이미 할당되어 있습니다. 확인하면 바뀝니다.
+	Learn timed out.	학습 시간이 초과되었습니다.
+	Confirm	확인
+	Reject	거부
+	Shows every MIDI message from the controllers as it arrives, to check that a controller sends and what it sends. MIDI Clock, Active Sensing and MIDI Time Code are left out.	컨트롤러의 MIDI 메시지가 도착하는 대로 보여, 보내는지와 내용을 확인합니다. MIDI 클록, Active Sensing, MIDI 타임코드는 빼 둡니다.
+	Pick a command (or a mixer strip for a fader or knob), press Learn, then press the button or move the control past half way. Confirm keeps the assignment. OK saves the assignments.	명령을 고르고(페이더나 노브는 믹서 스트립), 학습을 누른 뒤 버튼을 누르거나 컨트롤을 절반 너머로 움직이세요. 확인이 할당을 남깁니다. 확인(OK)이 저장합니다.

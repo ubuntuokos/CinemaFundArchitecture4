@@ -4701,3 +4701,17 @@ export.summary	Low	låg
 # Control surfaces (continuous-values, CFA4-CONTROL-SURFACE-001)
 	{strip} Pan (knob)	{strip} panorering (vred)
 	{strip} Volume (fader)	{strip} volym (fader)
+# Control surfaces (F1 Learn and profile, CFA4-CONTROL-SURFACE-001)
+	Control Surfaces	Kontrollytor
+	Use control surfaces (MIDI controllers, jog/shuttle devices)	Använd kontrollytor (MIDI-kontroller, jog/shuttle)
+	Assignments run when a button is pressed (a fader or knob counts as pressed past half way); a fader or knob assigned to a mixer strip moves its volume or pan. A ShuttlePRO's shuttle ring plays at its profile's speeds and its jog wheel steps frame by frame. Endless encoders and feedback to the controller (lights, motor faders) come in a later version.	Tilldelningar körs vid en knapptryckning (ett reglage eller en ratt räknas som nedtryckt förbi mitten); ett reglage eller en ratt kopplad till ett mixerkanal flyttar volym eller panorering. Shuttle-ringen på en ShuttlePRO spelar med profilens hastigheter och jog-hjulet stegar bildruta för bildruta. Ändlösa enkodrar och återkoppling till kontrollen (lampor, motorreglage) kommer i en senare version.
+	First message (ms)	Första meddelandet (ms)
+	Silence (ms)	Tystnad (ms)
+	Waiting for the control to settle…	Väntar tills kontrollen lugnar sig…
+	Type: {hint}. Confirm this assignment.	Typ: {hint}. Bekräfta den här tilldelningen.
+	That control is already assigned. Confirm replaces it.	Den kontrollen är redan tilldelad. Bekräfta ersätter den.
+	Learn timed out.	Inlärningen tog för lång tid.
+	Confirm	Bekräfta
+	Reject	Avvisa
+	Shows every MIDI message from the controllers as it arrives, to check that a controller sends and what it sends. MIDI Clock, Active Sensing and MIDI Time Code are left out.	Visar varje MIDI-meddelande från kontrollerna när det kommer, för att se att en kontroll sänder och vad. MIDI-klocka, Active Sensing och MIDI-tidskod lämnas ute.
+	Pick a command (or a mixer strip for a fader or knob), press Learn, then press the button or move the control past half way. Confirm keeps the assignment. OK saves the assignments.	Välj ett kommando (eller en mixerkanal för reglage eller ratt), tryck på Lär, sedan knappen, eller flytta kontrollen förbi mitten. Bekräfta behåller tilldelningen. OK sparar tilldelningarna.

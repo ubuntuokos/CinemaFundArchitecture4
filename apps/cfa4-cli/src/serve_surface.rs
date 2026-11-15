@@ -1,22 +1,9 @@
-//! `surface.devices`: the control surfaces of this machine for Preferences ▸ Control Surfaces
-//! (CFA4-CONTROL-SURFACE-001, `docs/adr/ADR-0012-control-surface.md`).
+//! Control surfaces on `cfa4-cli serve` (CFA4-CONTROL-SURFACE-001, ADR 0012).
 //!
-//! The device list comes from `cfa4-surface` (L5: ALSA sequencer MIDI ports, hidraw jog/shuttle
-//! devices); each device carries the user's choices from `controlSurfaces.devices` (enabled,
-//! profile, falling back to the driver's default profile). A machine without an ALSA sequencer or
-//! hidraw gives a shorter list and a note in `problems`, never an error.
-//!
-//! `surface.monitor {enabled, device?, filter?: {clock?, sense?}}`: the MIDI Monitor. While it is
-//! on, every MIDI message from the controllers comes as `{"event": "surfaceMonitor", "messages":
-//! [{device, at, raw, decoded}], "dropped": n}`, at most 20 times a second, in batches of at most
-//! [`BATCH`] messages; what does not fit is counted in `dropped`. MIDI clock and active sensing are
-//! left out unless the filter asks for them. Turning it off (or `surface.monitor` failing to find
-//! a sequencer) stops reading.
-//!
-//! `surface.learn {device?}` / `surface.learnCancel`: MIDI Learn (the next press is reported as a
-//! `surfaceLearn` event). Assignments (`controlSurfaces.devices[].bindings`) are read whenever a
-//! used device has one: a press of an assigned control is `{"event": "surfaceAction", command,
-//! params, device, control}`, which the GUI runs as it runs a menu item.
+//! L5 (`cfa4-surface`) reads MIDI and hidraw. This module empties those lanes on the session
+//! thread and asks the engine (`surface_runtime`) to map them. `surface.inject` uses that same
+//! mapping. The MIDI Monitor is display only: clock, active sensing and MTC are left out unless
+//! the filter asks (F0 spec §5).
 
 use std::cell::RefCell;
 use std::collections::HashMap;
@@ -24,11 +11,13 @@ use std::path::Path;
 use std::time::{Duration, Instant};
 
 use cfa4_engine::Session;
-use cfa4_engine::control_surfaces::{Action, ControlSurfacePrefs, PROFILES, Triggers};
-use cfa4_surface::hid_in::{HidInput, HidReader};
+use cfa4_engine::control_surfaces::{ControlSurfacePrefs, PROFILES};
+use cfa4_engine::surface_runtime;
+use cfa4_surface::hid_in::HidReader;
+use cfa4_surface::hid_watch::DevWatch;
+use cfa4_surface::lane::Queued;
 use cfa4_surface::midi_in::{MidiMessage, MidiReader};
 use cfa4_surface_model::midi::{self, Chatter};
-use cfa4_surface_model::{ControlId, SurfaceInput};
 use serde_json::{Value, json};
 
 /// Most messages in one `surfaceMonitor` event.
@@ -37,6 +26,38 @@ pub const BATCH: usize = 200;
 /// Shortest time between two `surfaceMonitor` events (20 Hz).
 const EVERY: Duration = Duration::from_millis(50);
 
+/// How often jog/shuttle devices are reconciled when inotify is quiet (D5: the scan is the net).
+const HID_SCAN: Duration = Duration::from_secs(2);
+
+/// A failure the Qt client can show. `code` is the protocol contract's code.
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct SurfaceError {
+    pub message: String,
+    pub code: &'static str,
+}
+
+impl SurfaceError {
+    fn new(code: &'static str, message: impl Into<String>) -> Self {
+        Self { message: message.into(), code }
+    }
+}
+
+fn engine_err(e: cfa4_engine::EngineError) -> SurfaceError {
+    let message = e.to_string();
+    let code = if message.starts_with("learn_busy") {
+        "learn_busy"
+    } else if message.starts_with("learn_idle") {
+        "learn_idle"
+    } else if message.starts_with("invalid_params") {
+        "invalid_params"
+    } else if message.contains("ALSA") {
+        "alsa_unavailable"
+    } else {
+        "internal"
+    };
+    SurfaceError { message, code }
+}
+
 /// What the monitor shows.
 #[derive(Clone, Debug, Default, PartialEq, Eq)]
 pub struct Filter {
@@ -44,6 +65,8 @@ pub struct Filter {
     pub device: String,
     pub clock: bool,
     pub sense: bool,
+    /// MIDI timecode (quarter-frame and full-frame). Off in the default view.
+    pub mtc: bool,
 }
 
 impl Filter {
@@ -51,11 +74,14 @@ impl Filter {
         if !self.device.is_empty() && m.device.0 != self.device {
             return false;
         }
-        match midi::is_chatter(&m.raw) {
-            Some(Chatter::Clock) => self.clock,
-            Some(Chatter::Sense) => self.sense,
-            None => true,
+        if midi::is_timing(&m.raw) {
+            return match midi::is_chatter(&m.raw) {
+                Some(Chatter::Clock) => self.clock,
+                Some(Chatter::Sense) => self.sense,
+                None => self.mtc,
+            };
         }
+        true
     }
 }
 
@@ -95,149 +121,139 @@ impl Batcher {
             .drain(..)
             .map(|m| {
                 let decoded = if m.len > m.raw.len() { format!("{} (first {} shown)", midi::describe(&m.raw), m.raw.len()) } else { midi::describe(&m.raw) };
-                json!({"device": m.device.0, "at": m.at.0, "raw": midi::hex(&m.raw), "decoded": decoded})
+                json!({"device": m.device.0, "at": m.at.0, "raw": midi::hex(&m.raw), "decoded": decoded, "seq": m.seq})
             })
             .collect();
         Some(json!({"event": "surfaceMonitor", "messages": messages, "dropped": std::mem::take(&mut self.dropped)}))
     }
 }
 
-/// Where the messages read go: the MIDI Monitor, MIDI Learn and the assignments.
+/// Where the messages read go.
 #[derive(Debug, Default)]
 pub struct Router {
     /// The MIDI Monitor, while it is on.
     pub monitor: Option<Batcher>,
-    /// MIDI Learn waits for a press on this device ("" = any device).
-    pub learn: Option<String>,
-    triggers: Triggers,
 }
 
 impl Router {
-    /// Whether anything needs the controllers read.
     pub fn wants_reader(&self, prefs: &ControlSurfacePrefs) -> bool {
-        self.monitor.is_some() || self.learn.is_some() || prefs.maps_anything()
+        self.monitor.is_some() || surface_runtime::learning() || prefs.maps_anything()
     }
 
-    /// The events `messages` give at once (`surfaceLearn` when Learn caught a press, else
-    /// `surfaceAction` for an assigned control); the monitor collects them for its next batch.
-    pub fn route(&mut self, prefs: &ControlSurfacePrefs, messages: Vec<MidiMessage>, lost: u64) -> Vec<Value> {
+    /// Map one pass of lane inputs, coalescing continuous values, and keep the monitor's copy.
+    pub fn route(&mut self, prefs: &ControlSurfacePrefs, messages: Vec<MidiMessage>, inputs: Vec<Queued>, lost: u64, now: Instant) -> Vec<Value> {
         let mut out = Vec::new();
-        let mut values = Values::default();
-        for m in &messages {
-            self.input(prefs, &m.device.0, &midi::input(&m.raw), &mut out, &mut values);
-        }
-        out.extend(values.0.into_iter().map(|(_, v)| v));
+        surface_runtime::with(|rt| {
+            for q in &inputs {
+                out.extend(rt.handle(prefs, &q.device.0, &q.input, q.seq, now));
+            }
+            out.extend(rt.tick(prefs, now));
+            out.extend(rt.take_events());
+        });
         if let Some(b) = self.monitor.as_mut() {
             b.push(messages, lost);
         }
-        out
-    }
-
-    /// The events of jog/shuttle inputs: buttons as [`Router::route`] handles MIDI presses, the
-    /// jog wheel and the shuttle ring by the device's profile.
-    pub fn route_hid(&mut self, prefs: &ControlSurfacePrefs, inputs: &[HidInput]) -> Vec<Value> {
-        let mut out = Vec::new();
-        let mut values = Values::default();
-        for i in inputs {
-            self.input(prefs, &i.device.0, &i.input, &mut out, &mut values);
-        }
-        out.extend(values.0.into_iter().map(|(_, v)| v));
-        out
-    }
-
-    fn input(&mut self, prefs: &ControlSurfacePrefs, device: &str, input: &SurfaceInput, out: &mut Vec<Value>, values: &mut Values) {
-        let action = |a: Action, control: &ControlId| {
-            let params = if a.params.is_null() { json!({}) } else { a.params };
-            json!({"event": "surfaceAction", "command": a.command, "params": params, "device": device, "control": control})
-        };
-        // a fader or knob on a value target: only its last position in this pass is sent
-        if self.learn.is_none()
-            && let Some(control) = input.control()
-            && let Some(a) = prefs.value(device, control, input)
-        {
-            values.set(device, control, action(a, control));
-            return;
-        }
-        if let Some(control) = input.control()
-            && matches!(input, SurfaceInput::Jog { .. } | SurfaceInput::Shuttle { .. })
-        {
-            out.extend(prefs.motion(device, input).into_iter().map(|a| action(a, control)));
-            return;
-        }
-        let Some(control) = self.triggers.press(device, input) else { return };
-        if self.learn.as_deref().is_some_and(|d| d.is_empty() || d == device) {
-            self.learn = None;
-            out.push(json!({"event": "surfaceLearn", "state": "captured", "device": device, "control": control, "label": midi::control_label(&control)}));
-            return; // a press caught by Learn runs nothing
-        }
-        if let Some(a) = prefs.action(device, &control) {
-            out.push(action(a, &control));
-        }
+        coalesce_values(out)
     }
 }
 
-/// The value actions of one pass, the last one per control (continuous values are coalesced,
-/// F0 spec §3), in the order the controls first moved.
-#[derive(Default)]
-struct Values(Vec<((String, ControlId), Value)>);
-
-impl Values {
-    fn set(&mut self, device: &str, control: &ControlId, event: Value) {
-        match self.0.iter_mut().find(|((d, c), _)| d == device && c == control) {
-            Some((_, v)) => *v = event,
-            None => self.0.push(((device.to_string(), control.clone()), event)),
+/// One value action per control per pass (the last position wins).
+fn coalesce_values(events: Vec<Value>) -> Vec<Value> {
+    let mut out = Vec::new();
+    let mut at: HashMap<String, usize> = HashMap::new();
+    for ev in events {
+        let key = value_key(&ev);
+        if let Some(key) = key {
+            if let Some(i) = at.get(&key).copied() {
+                out[i] = ev;
+                continue;
+            }
+            at.insert(key, out.len());
         }
+        out.push(ev);
     }
+    out
 }
 
-/// How long to wait before trying the sequencer again for the assignments after it failed.
-const RETRY: Duration = Duration::from_secs(10);
-
-/// How often the jog/shuttle devices are looked for (plugged in, unplugged, permission fixed).
-const HID_SCAN: Duration = Duration::from_secs(2);
+fn value_key(ev: &Value) -> Option<String> {
+    if ev.get("event").and_then(Value::as_str) != Some("surfaceAction") {
+        return None;
+    }
+    ev.pointer("/params/value")?;
+    Some(format!("{}|{}", ev.get("device").unwrap_or(&Value::Null), ev.get("control").unwrap_or(&Value::Null)))
+}
 
 #[derive(Default)]
 struct State {
     reader: Option<MidiReader>,
     seen_lost: u64,
     router: Router,
-    /// No reading for the assignments before this (the sequencer failed).
-    retry_at: Option<Instant>,
-    /// The jog/shuttle devices read now, by device id.
     hid: HashMap<String, HidReader>,
     hid_scanned: Option<Instant>,
+    watch: Option<DevWatch>,
+    /// Present at the last scan, so a dead reader is an unplug rather than a fault.
+    hid_present: Vec<String>,
+    last_error: Option<(String, Instant)>,
+    disabled_reported: bool,
 }
 
 impl State {
-    /// Starts reading the jog/shuttle devices that are plugged in, readable and used; stops the
-    /// ones unplugged or no longer used.
-    fn keep_hid(&mut self, prefs: &ControlSurfacePrefs, now: Instant) {
-        self.hid.retain(|id, r| r.running() && prefs.enabled && prefs.device(id).enabled);
-        if !prefs.enabled || self.hid_scanned.is_some_and(|t| now.duration_since(t) < HID_SCAN) {
-            return;
+    fn keep_hid(&mut self, prefs: &ControlSurfacePrefs, now: Instant) -> Vec<Queued> {
+        let mut leftover = Vec::new();
+        let present = self.hid_present.clone();
+        let dead: Vec<String> = self.hid.iter().filter(|(_, r)| !r.running()).map(|(id, _)| id.clone()).collect();
+        for id in dead {
+            if let Some(reader) = self.hid.remove(&id) {
+                leftover.extend(reader.drain(cfa4_surface::lane::TRIGGER_CAPACITY));
+            }
+            if present.iter().any(|p| p == &id) {
+                surface_runtime::with(|rt| {
+                    let _ = rt.note_fault(&id, now);
+                });
+            }
+        }
+        self.hid.retain(|id, r| r.running() && prefs.enabled && prefs.device(id).enabled && !surface_runtime::with(|rt| rt.disabled(id)));
+        if self.watch.is_none() {
+            self.watch = DevWatch::open(Path::new("/dev")).ok();
+        }
+        let woke = self.watch.as_ref().is_some_and(|w| w.changed());
+        let due = self.hid_scanned.is_none_or(|t| now.saturating_duration_since(t) >= HID_SCAN);
+        if !prefs.enabled || (!woke && !due) {
+            return leftover;
         }
         self.hid_scanned = Some(now);
-        let Ok(found) = cfa4_surface::hid::scan(Path::new("/sys/class/hidraw"), Path::new("/dev")) else { return };
+        let Ok(found) = cfa4_surface::hid::scan(Path::new("/sys/class/hidraw"), Path::new("/dev")) else { return leftover };
+        self.hid_present = found.iter().map(|d| d.device.0.clone()).collect();
         for d in found {
             if d.error.is_some() || self.hid.contains_key(&d.device.0) || !prefs.device(&d.device.0).enabled {
+                continue;
+            }
+            if surface_runtime::with(|rt| rt.disabled(&d.device.0)) {
                 continue;
             }
             let buttons = d.vid.zip(d.pid).and_then(|(v, p)| cfa4_surface::hid::known(v, p)).map_or(15, |k| k.3);
             if let Ok(r) = HidReader::start(d.device.clone(), Path::new(&d.port), buttons) {
                 self.hid.insert(d.device.0.clone(), r);
+                surface_runtime::with(|rt| rt.note_ok(&d.device.0));
             }
         }
+        leftover
     }
-}
 
-impl State {
-    /// Starts reading if it does not run yet (`surface.monitor`, `surface.learn` ask for it).
-    fn ensure_reader(&mut self) -> Result<(), String> {
+    fn ensure_reader(&mut self) -> Result<(), SurfaceError> {
         if self.reader.is_none() {
-            self.reader = Some(MidiReader::start()?);
+            self.reader = Some(MidiReader::start().map_err(|e| SurfaceError::new("alsa_unavailable", e))?);
             self.seen_lost = 0;
         }
         Ok(())
+    }
+
+    fn note_error(&mut self, code: &str, message: &str, now: Instant, out: &mut Vec<Value>) {
+        if self.last_error.as_ref().is_some_and(|(c, t)| c == code && now.saturating_duration_since(*t) < Duration::from_secs(1)) {
+            return;
+        }
+        self.last_error = Some((code.to_string(), now));
+        out.push(json!({"event": "surfaceError", "code": code, "error": message}));
     }
 }
 
@@ -246,17 +262,20 @@ thread_local! {
 }
 
 /// `surface.monitor`: turns the MIDI Monitor on or off.
-pub fn monitor(p: &Value) -> Result<Value, String> {
-    let Some(enabled) = p.get("enabled").and_then(Value::as_bool) else { return Err("`enabled` (true or false) is required".into()) };
+pub fn monitor(p: &Value) -> Result<Value, SurfaceError> {
+    let Some(enabled) = p.get("enabled").and_then(Value::as_bool) else {
+        return Err(SurfaceError::new("invalid_params", "`enabled` (true or false) is required"));
+    };
     let filter = Filter {
         device: p.get("device").and_then(Value::as_str).unwrap_or_default().to_string(),
         clock: p.pointer("/filter/clock").and_then(Value::as_bool).unwrap_or(false),
         sense: p.pointer("/filter/sense").and_then(Value::as_bool).unwrap_or(false),
+        mtc: p.pointer("/filter/mtc").and_then(Value::as_bool).unwrap_or(false),
     };
     STATE.with(|st| {
         let mut st = st.borrow_mut();
         if !enabled {
-            st.router.monitor = None; // upkeep stops the reader when nothing else needs it
+            st.router.monitor = None;
             return Ok(json!({"enabled": false}));
         }
         st.ensure_reader()?;
@@ -268,71 +287,174 @@ pub fn monitor(p: &Value) -> Result<Value, String> {
     })
 }
 
-/// `surface.learn {device?}`: the next press (on `device`, or on any controller) is reported as
-/// `{"event": "surfaceLearn", "state": "captured", device, control, label}` instead of running
-/// its assignment. The GUI puts it into its draft.
-pub fn learn(p: &Value) -> Result<Value, String> {
-    let device = p.get("device").and_then(Value::as_str).unwrap_or_default().to_string();
-    STATE.with(|st| {
-        let mut st = st.borrow_mut();
-        if !device.starts_with("hid:") {
-            st.ensure_reader()?; // a jog/shuttle device is read whenever it is used
-        }
-        st.router.learn = Some(device);
-        Ok(json!({"state": "learning"}))
-    })
+/// `surface.learn`. The full F0 machine (D2): the result is `learning` until silence, then
+/// `pending` or `conflict`, and only [`learn_confirm`] keeps the assignment.
+pub fn learn(s: &Session, p: &Value) -> Result<Value, SurfaceError> {
+    let device = p.get("device").and_then(Value::as_str).unwrap_or_default();
+    if !device.starts_with("hid:") {
+        STATE.with(|st| st.borrow_mut().ensure_reader())?;
+    }
+    let prefs = s.prefs.control_surfaces.clone();
+    surface_runtime::with(|rt| surface_runtime::learn(rt, &prefs, p, Instant::now())).map_err(engine_err)
 }
 
-/// `surface.learnCancel`: stops waiting for a press.
+/// `surface.learnCancel`.
 pub fn learn_cancel() -> Value {
-    STATE.with(|st| st.borrow_mut().router.learn = None);
-    json!({"state": "cancelled"})
+    surface_runtime::with(|rt| surface_runtime::learn_cancel(rt, Instant::now()))
 }
 
-/// The events to send now (called by the serve loop after every request and timeout): presses
-/// that run commands, Learn results and the monitor's batches. Reads the controllers only while
-/// something needs it.
+/// `surface.learnConfirm {accept}`.
+pub fn learn_confirm(s: &Session, p: &Value) -> Result<Value, SurfaceError> {
+    let accept = p.get("accept").and_then(Value::as_bool).ok_or_else(|| SurfaceError::new("invalid_params", "`accept` is required"))?;
+    let prefs = s.prefs.control_surfaces.clone();
+    surface_runtime::with(|rt| surface_runtime::learn_confirm(rt, &prefs, accept, Instant::now())).map_err(engine_err)
+}
+
+/// `surface.inject`: the same mapping as a device event.
+pub fn inject(s: &Session, p: &Value) -> Result<Value, SurfaceError> {
+    let prefs = s.prefs.control_surfaces.clone();
+    surface_runtime::with(|rt| surface_runtime::inject(rt, &prefs, p, Instant::now())).map_err(engine_err)
+}
+
+/// `surface.clock`.
+pub fn clock(p: &Value) -> Result<Value, SurfaceError> {
+    surface_runtime::with(|rt| surface_runtime::clock(rt, p, Instant::now())).map_err(engine_err)
+}
+
+/// `surface.enable`: clears a fault-disabled reader and stores the preference.
+pub fn enable(s: &mut Session, p: &Value) -> Result<Value, SurfaceError> {
+    let result = surface_runtime::with(|rt| surface_runtime::enable(rt, &mut s.prefs.control_surfaces, p)).map_err(engine_err)?;
+    let prefs = s.prefs.clone();
+    s.set_prefs(prefs).map_err(|e| SurfaceError::new("internal", format!("saving preferences: {e}")))?;
+    Ok(result)
+}
+
+/// `surface.state`.
+pub fn state(s: &Session) -> Value {
+    publish_counters();
+    surface_runtime::with(|rt| surface_runtime::state(rt, &s.prefs.control_surfaces))
+}
+
+/// `surface.audit`.
+pub fn audit(s: &Session) -> Value {
+    surface_runtime::audit(s)
+}
+
+fn publish_counters() {
+    STATE.with(|st| {
+        let st = st.borrow();
+        let mut counters = HashMap::new();
+        let mut kernel = 0;
+        if let Some(reader) = &st.reader {
+            counters.extend(reader.counters());
+            kernel = reader.dropped();
+        }
+        for reader in st.hid.values() {
+            // HID counters are inside the lane; dropped() is the stall total, not per device.
+            let _ = reader.dropped();
+        }
+        drop(st);
+        surface_runtime::with(|rt| rt.set_counters(counters, kernel));
+    });
+}
+
+/// The events to send now.
 pub fn upkeep(s: &Session) -> Vec<Value> {
     let prefs = &s.prefs.control_surfaces;
     STATE.with(|st| {
         let mut st = st.borrow_mut();
         let now = Instant::now();
         let mut out = midi_upkeep(&mut st, prefs, now);
-        st.keep_hid(prefs, now);
-        let inputs: Vec<HidInput> = st.hid.values().flat_map(|r| r.drain(cfa4_surface::hid_in::QUEUE)).collect();
-        out.extend(st.router.route_hid(prefs, &inputs));
+        let leftover = st.keep_hid(prefs, now);
+        let inputs: Vec<Queued> = st.hid.values().flat_map(|r| r.drain(cfa4_surface::lane::TRIGGER_CAPACITY)).chain(leftover).collect();
+        out.extend(map_inputs(&mut st.router, prefs, inputs, now));
+        out.extend(surface_runtime::take_pending());
         out
     })
 }
 
-fn midi_upkeep(st: &mut State, prefs: &ControlSurfacePrefs, now: Instant) -> Vec<Value> {
-    if !st.router.wants_reader(prefs) {
-        st.reader = None; // dropping the reader stops its thread
-        return Vec::new();
-    }
-    if st.reader.is_none() && st.retry_at.is_none_or(|t| now >= t) {
-        // only the assignments need it here (Monitor and Learn started it themselves)
-        if st.ensure_reader().is_err() {
-            st.retry_at = Some(now + RETRY);
+fn map_inputs(router: &mut Router, prefs: &ControlSurfacePrefs, inputs: Vec<Queued>, now: Instant) -> Vec<Value> {
+    let _ = router;
+    let mut out = Vec::new();
+    surface_runtime::with(|rt| {
+        for q in &inputs {
+            out.extend(rt.handle(prefs, &q.device.0, &q.input, q.seq, now));
         }
+        out.extend(rt.tick(prefs, now));
+    });
+    coalesce_values(out)
+}
+
+fn midi_upkeep(st: &mut State, prefs: &ControlSurfacePrefs, now: Instant) -> Vec<Value> {
+    let mut out = Vec::new();
+    let wanted = st.router.wants_reader(prefs);
+    if surface_runtime::with(|rt| rt.disabled("alsa")) {
+        st.reader = None;
+        if wanted && !st.disabled_reported {
+            st.disabled_reported = true;
+            st.note_error("overload", "MIDI: stopped after repeated sequencer failures; turn the device back on to try again", now, &mut out);
+        }
+        out.extend(surface_runtime::tick_with(prefs, now));
+        return out;
     }
-    let Some(reader) = st.reader.as_ref() else { return Vec::new() };
-    let lost = reader.dropped();
-    let messages = reader.drain(cfa4_surface::midi_in::QUEUE);
-    let running = reader.running();
+    st.disabled_reported = false;
+    if !wanted {
+        st.reader = None;
+        out.extend(surface_runtime::tick_with(prefs, now));
+        return out;
+    }
+    if st.reader.is_none() {
+        let wait = surface_runtime::with(|rt| rt.wait_until("alsa"));
+        if wait.is_some_and(|t| now < t) {
+            out.extend(surface_runtime::tick_with(prefs, now));
+            return out;
+        }
+        if let Err(e) = st.ensure_reader() {
+            let disabled = surface_runtime::with(|rt| {
+                let _ = rt.note_fault("alsa", now);
+                rt.disabled("alsa")
+            });
+            st.note_error(e.code, &e.message, now, &mut out);
+            if disabled {
+                st.note_error("overload", "MIDI: stopped after repeated sequencer failures; turn the device back on to try again", now, &mut out);
+            }
+            out.extend(surface_runtime::tick_with(prefs, now));
+            return out;
+        }
+        surface_runtime::with(|rt| rt.note_ok("alsa"));
+    }
+    let snapshot = st.reader.as_ref().map(|reader| {
+        let lost = reader.dropped();
+        let inputs = reader.inputs();
+        let messages = reader.drain(4_096);
+        let running = reader.running();
+        let counters = reader.counters();
+        let dropped = reader.dropped();
+        (lost, inputs, messages, running, counters, dropped)
+    });
+    let Some((lost, inputs, messages, running, counters, dropped)) = snapshot else {
+        out.extend(surface_runtime::tick_with(prefs, now));
+        return out;
+    };
     let new_lost = lost.saturating_sub(st.seen_lost);
     st.seen_lost = lost;
-    let mut out = st.router.route(prefs, messages, new_lost);
+    surface_runtime::with(|rt| rt.set_counters(counters, dropped));
+    out.extend(st.router.route(prefs, messages, inputs, new_lost, now));
     if let Some(e) = st.router.monitor.as_mut().and_then(|b| b.flush(now)) {
         out.push(e);
     }
     if !running {
         st.reader = None;
-        st.retry_at = Some(now + RETRY);
-        if st.router.monitor.take().is_some() || st.router.learn.take().is_some() {
-            out.push(
-                json!({"event": "surfaceError", "code": "alsa_unavailable", "error": "MIDI: the sequencer stopped; the MIDI Monitor and MIDI Learn are off"}),
-            );
+        let disabled = surface_runtime::with(|rt| {
+            let _ = rt.note_fault("alsa", now);
+            rt.disabled("alsa")
+        });
+        if st.router.monitor.take().is_some() || surface_runtime::learning() {
+            st.note_error("alsa_unavailable", "MIDI: the sequencer stopped; the MIDI Monitor and MIDI Learn are off", now, &mut out);
+        }
+        if disabled {
+            surface_runtime::with(|rt| surface_runtime::learn_cancel(rt, now));
+            st.note_error("overload", "MIDI: stopped after repeated sequencer failures; turn the device back on to try again", now, &mut out);
         }
     }
     out
@@ -341,6 +463,7 @@ fn midi_upkeep(st: &mut State, prefs: &ControlSurfacePrefs, now: Instant) -> Vec
 /// Stops reading (the session ends).
 pub fn shutdown() {
     STATE.with(|st| *st.borrow_mut() = State::default());
+    surface_runtime::reset();
 }
 
 /// The reply of `surface.devices`.
@@ -360,10 +483,14 @@ fn with_settings(s: &Session, found: cfa4_surface::Discovery) -> Value {
             } else {
                 set.profile.clone()
             };
+            let disabled = surface_runtime::with(|rt| rt.disabled(&d.device.0) || (d.device.0.starts_with("midi:") && rt.disabled("alsa")));
             let mut v = serde_json::to_value(d).unwrap_or_else(|_| json!({}));
             if let Some(o) = v.as_object_mut() {
-                o.insert("enabled".into(), json!(set.enabled));
+                o.insert("enabled".into(), json!(set.enabled && !disabled));
                 o.insert("profile".into(), json!(profile));
+                if disabled {
+                    o.insert("state".into(), json!("disabled"));
+                }
             }
             v
         })
@@ -374,9 +501,9 @@ fn with_settings(s: &Session, found: cfa4_surface::Discovery) -> Value {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use cfa4_engine::control_surfaces::DeviceSetting;
+    use cfa4_engine::control_surfaces::{Binding, DeviceSetting};
     use cfa4_surface::{DeviceInfo, Discovery};
-    use cfa4_surface_model::{DeviceId, DeviceState, SurfaceProtocol};
+    use cfa4_surface_model::{ControlId, DeviceId, DeviceState, MidiKind, SurfaceInput, SurfaceProtocol};
 
     fn dev(id: &str, driver: &str) -> DeviceInfo {
         DeviceInfo {
@@ -390,6 +517,10 @@ mod tests {
             pid: None,
             error: None,
         }
+    }
+
+    fn fresh() {
+        surface_runtime::reset();
     }
 
     #[test]
@@ -409,7 +540,7 @@ mod tests {
     }
 
     fn msg(device: &str, at: u64, raw: &[u8]) -> MidiMessage {
-        MidiMessage { device: DeviceId(device.into()), at: cfa4_surface_model::MonoNs(at), raw: raw.to_vec(), len: raw.len() }
+        MidiMessage { device: DeviceId(device.into()), at: cfa4_surface_model::MonoNs(at), raw: raw.to_vec(), len: raw.len(), seq: at }
     }
 
     #[test]
@@ -417,38 +548,43 @@ mod tests {
         let mut b = Batcher::default();
         let t0 = Instant::now();
         assert_eq!(b.flush(t0), None, "nothing to say");
-        b.push(vec![msg("midi:a:b", 5, &[0xb0, 16, 64]), msg("midi:a:b", 6, &[0xf8]), msg("midi:a:b", 7, &[0xfe])], 0);
+        b.push(vec![msg("midi:a:b", 5, &[0xb0, 16, 64]), msg("midi:a:b", 6, &[0xf8]), msg("midi:a:b", 7, &[0xfe]), msg("midi:a:b", 8, &[0xf1, 0x20])], 0);
         let e = b.flush(t0).unwrap_or_default();
         assert_eq!(e["event"], "surfaceMonitor");
-        assert_eq!(e["messages"].as_array().map(Vec::len), Some(1), "clock and active sensing are left out");
-        assert_eq!(e["messages"][0], json!({"device": "midi:a:b", "at": 5, "raw": "B0 10 40", "decoded": "Ch 1 CC 16 = 64"}));
+        assert_eq!(e["messages"].as_array().map(Vec::len), Some(1), "clock, active sensing and MTC are left out");
+        assert_eq!(e["messages"][0]["decoded"], "Ch 1 CC 16 = 64");
         assert_eq!(e["dropped"], 0);
-        b.push(vec![msg("midi:a:b", 8, &[0x90, 60, 1])], 0);
-        assert_eq!(b.flush(t0 + Duration::from_millis(10)), None, "at most 20 events a second");
+        b.filter.mtc = true;
+        b.push(vec![msg("midi:a:b", 9, &[0xf1, 0x00]), msg("midi:a:b", 10, &[0xf0, 0x7f, 0x00, 0x01, 0x01, 0xf7])], 0);
         let e = b.flush(t0 + Duration::from_millis(60)).unwrap_or_default();
+        assert_eq!(e["messages"].as_array().map(Vec::len), Some(2), "MTC is shown when the filter asks");
+        b.filter = Filter::default();
+        b.push(vec![msg("midi:a:b", 8, &[0x90, 60, 1])], 0);
+        assert_eq!(b.flush(t0 + Duration::from_millis(70)), None, "at most 20 events a second");
+        let e = b.flush(t0 + Duration::from_millis(130)).unwrap_or_default();
         assert_eq!(e["messages"][0]["decoded"], "Ch 1 Note On 60 vel 1");
-        // a full batch counts the rest as dropped, with what the reader lost
         b.push((0..BATCH as u64 + 5).map(|i| msg("midi:a:b", i, &[0xb0, 1, 2])).collect(), 3);
         let e = b.flush(t0 + Duration::from_millis(200)).unwrap_or_default();
         assert_eq!(e["messages"].as_array().map(Vec::len), Some(BATCH));
         assert_eq!(e["dropped"], 8);
-        // the filter: one device, clock on
-        b.filter = Filter { device: "midi:x:y".into(), clock: true, sense: false };
+        b.filter = Filter { device: "midi:x:y".into(), clock: true, sense: false, mtc: false };
         b.push(vec![msg("midi:a:b", 1, &[0xb0, 1, 2]), msg("midi:x:y", 2, &[0xf8]), msg("midi:x:y", 3, &[0xfe])], 0);
         let e = b.flush(t0 + Duration::from_millis(300)).unwrap_or_default();
         assert_eq!(e["messages"].as_array().map(Vec::len), Some(1));
         assert_eq!(e["messages"][0]["decoded"], "Clock");
-        // a long SysEx says it was cut
         b.filter = Filter::default();
-        b.push(vec![MidiMessage { device: DeviceId("midi:a:b".into()), at: cfa4_surface_model::MonoNs(9), raw: vec![0xf0, 1, 2], len: 300 }], 0);
+        b.push(vec![MidiMessage { device: DeviceId("midi:a:b".into()), at: cfa4_surface_model::MonoNs(9), raw: vec![0xf0, 1, 2], len: 300, seq: 1 }], 0);
         let e = b.flush(t0 + Duration::from_millis(400)).unwrap_or_default();
         assert_eq!(e["messages"][0]["decoded"], "SysEx (3 bytes) (first 3 shown)");
     }
 
+    fn queued(device: &str, seq: u64, input: SurfaceInput) -> Queued {
+        Queued { device: DeviceId(device.into()), seq, at: cfa4_surface_model::MonoNs(seq), input, raw: vec![] }
+    }
+
     #[test]
-    fn presses_run_assignments_and_learn_catches_one() {
-        use cfa4_engine::control_surfaces::{Binding, DeviceSetting};
-        use cfa4_surface_model::{ControlId, MidiKind};
+    fn presses_run_assignments_and_learn_waits_for_confirm() {
+        fresh();
         let cc41 = ControlId::Midi { channel: 0, kind: MidiKind::Cc, number: 41 };
         let mut prefs = ControlSurfacePrefs::default();
         let mut r = Router::default();
@@ -459,108 +595,150 @@ mod tests {
             ..Default::default()
         });
         assert!(r.wants_reader(&prefs), "an assignment keeps the controllers read");
-        let press = |at| msg("midi:k:p", at, &[0xb0, 41, 127]);
-        let release = |at| msg("midi:k:p", at, &[0xb0, 41, 0]);
-        let out = r.route(&prefs, vec![press(1), press(2), release(3)], 0);
-        assert_eq!(
-            out,
-            vec![
-                json!({"event": "surfaceAction", "command": "playback.toggle", "params": {}, "device": "midi:k:p", "control": {"midi": {"channel": 0, "kind": "cc", "number": 41}}})
-            ]
-        );
-        assert!(r.route(&prefs, vec![msg("midi:k:p", 4, &[0xb0, 42, 127])], 0).is_empty(), "no assignment");
-        // Learn on another device ignores this one; on this device it takes the press instead of running it
-        r.learn = Some("midi:x:y".into());
-        assert_eq!(r.route(&prefs, vec![press(5), release(6)], 0).len(), 1);
-        r.learn = Some(String::new());
-        let out = r.route(&prefs, vec![msg("midi:k:p", 7, &[0x99, 36, 100]), press(8)], 0);
-        assert_eq!(
-            out[0],
-            json!({"event": "surfaceLearn", "state": "captured", "device": "midi:k:p", "control": {"midi": {"channel": 9, "kind": "note", "number": 36}}, "label": "Ch 10 Note 36"})
-        );
-        assert_eq!(out[1]["event"], "surfaceAction", "Learn takes one press only");
-        assert_eq!(r.learn, None);
-        // the monitor sees every message
-        r.monitor = Some(Batcher::default());
-        let _ = r.route(&prefs, vec![release(9), msg("midi:k:p", 10, &[0xfe])], 0);
-        let e = r.monitor.as_mut().and_then(|b| b.flush(Instant::now())).unwrap_or_default();
-        assert_eq!(e["messages"].as_array().map(Vec::len), Some(1));
+        let t0 = Instant::now();
+        let press = SurfaceInput::Absolute { control: cc41.clone(), value: 127, bits: 7 };
+        let out = r.route(&prefs, vec![], vec![queued("midi:k:p", 1, press.clone()), queued("midi:k:p", 2, press.clone())], 0, t0);
+        assert_eq!(out.len(), 1, "held is not a second press");
+        assert_eq!(out[0]["command"], "playback.toggle");
+        assert_eq!(out[0]["seq"], 1);
+        // Learn does not finish on the first message
+        surface_runtime::with(|rt| {
+            surface_runtime::learn(rt, &prefs, &json!({"device": "midi:k:p", "target": {"command": "edit.undo"}, "silenceMs": 1500, "firstMs": 7000}), t0)
+        })
+        .ok();
+        let note = SurfaceInput::Button { control: ControlId::Midi { channel: 9, kind: MidiKind::Note, number: 36 }, pressed: true };
+        let out = r.route(&prefs, vec![], vec![queued("midi:k:p", 3, note)], 0, t0 + Duration::from_millis(10));
+        assert_eq!(out[0]["state"], "capturing");
+        assert!(out.iter().all(|e| e["event"] != "surfaceAction"), "Learn does not run the old assignment");
+        let out = r.route(&prefs, vec![], vec![], 0, t0 + Duration::from_millis(10 + 1500));
+        assert_eq!(out[0]["state"], "pending");
+        assert_eq!(out[0]["captured"]["mode"], "note");
+        let confirmed = surface_runtime::with(|rt| surface_runtime::learn_confirm(rt, &prefs, true, t0)).unwrap_or_default();
+        assert_eq!(confirmed["command"], "edit.undo");
+        let release = SurfaceInput::Absolute { control: cc41, value: 0, bits: 7 };
+        let _ = r.route(&prefs, vec![], vec![queued("midi:k:p", 4, release)], 0, t0);
+        let out = r.route(&prefs, vec![], vec![queued("midi:k:p", 5, press)], 0, t0);
+        assert_eq!(out.first().and_then(|e| e.get("event")).and_then(Value::as_str), Some("surfaceAction"));
     }
 
     #[test]
     fn jog_shuttle_and_their_buttons() {
-        use cfa4_engine::control_surfaces::{Binding, DeviceSetting};
-        use cfa4_surface_model::{DeviceId, MonoNs};
+        fresh();
         let dev = "hid:0b33:0030:usb-1";
-        let hid = |input| HidInput { device: DeviceId(dev.into()), at: MonoNs(0), input, raw: vec![] };
+        let hid = |seq, input| queued(dev, seq, input);
         let button = |pressed| SurfaceInput::Button { control: ControlId::hid_named("button3"), pressed };
-        let mut prefs = ControlSurfacePrefs::default();
+        let prefs = ControlSurfacePrefs::default();
         let mut r = Router::default();
-        let out = r.route_hid(
+        let t0 = Instant::now();
+        let out = r.route(
             &prefs,
-            &[
-                hid(SurfaceInput::Shuttle { control: ControlId::hid_named("shuttle"), position: 4, range: 7 }),
-                hid(SurfaceInput::Jog { control: ControlId::hid_named("jog"), delta: 2 }),
-                hid(button(true)),
+            vec![],
+            vec![
+                hid(1, SurfaceInput::Shuttle { control: ControlId::hid_named("shuttle"), position: 4, range: 7 }),
+                hid(2, SurfaceInput::Jog { control: ControlId::hid_named("jog"), delta: 2 }),
+                hid(3, button(true)),
             ],
+            0,
+            t0,
         );
-        assert_eq!(
-            out[0],
-            json!({"event": "surfaceAction", "command": "playback.shuttleSpeed", "params": {"speed": 1.5}, "device": dev, "control": {"hid": {"name": "shuttle", "usagePage": 0, "usage": 0}}})
-        );
+        assert_eq!(out[0]["command"], "playback.shuttleSpeed");
+        assert_eq!(out[0]["params"]["speed"], 1.5);
         assert_eq!(out[1]["command"], "playhead.stepForward");
         assert_eq!(out[2]["command"], "playhead.stepForward");
         assert_eq!(out.len(), 3, "a button without an assignment runs nothing");
-        // Learn takes a button; the jog and the shuttle keep working meanwhile
-        let _ = r.route_hid(&prefs, &[hid(button(false))]);
-        r.learn = Some(dev.into());
-        let out = r.route_hid(&prefs, &[hid(SurfaceInput::Jog { control: ControlId::hid_named("jog"), delta: -1 }), hid(button(true))]);
+        surface_runtime::with(|rt| {
+            surface_runtime::learn(rt, &prefs, &json!({"device": dev, "target": {"command": "markers.markIn"}, "silenceMs": 1500, "firstMs": 7000}), t0)
+        })
+        .ok();
+        let out = r.route(
+            &prefs,
+            vec![],
+            vec![hid(4, SurfaceInput::Jog { control: ControlId::hid_named("jog"), delta: -1 }), hid(5, button(false)), hid(6, button(true))],
+            0,
+            t0,
+        );
         assert_eq!(out[0]["command"], "playhead.stepBack");
-        assert_eq!(out[1]["event"], "surfaceLearn");
-        assert_eq!(out[1]["label"], "button3");
-        prefs.devices.push(DeviceSetting {
-            device: dev.into(),
-            bindings: vec![Binding { control: ControlId::hid_named("button3"), command: "markers.markIn".into(), params: Value::Null }],
-            ..Default::default()
-        });
-        let _ = r.route_hid(&prefs, &[hid(button(false))]);
-        assert_eq!(r.route_hid(&prefs, &[hid(button(true))])[0]["command"], "markers.markIn");
+        assert!(out.iter().any(|e| e["state"] == "capturing"));
     }
 
     #[test]
-    fn fader_values_are_coalesced_and_learnable() {
-        use cfa4_engine::control_surfaces::{Binding, DeviceSetting};
-        let fader = ControlId::Midi { channel: 0, kind: cfa4_surface_model::MidiKind::Cc, number: 0 };
+    fn fader_values_are_coalesced_and_pickup_blocks_a_jump() {
+        fresh();
+        let fader = ControlId::Midi { channel: 0, kind: MidiKind::Cc, number: 0 };
         let mut prefs = ControlSurfacePrefs::default();
         prefs.devices.push(DeviceSetting {
             device: "midi:k:p".into(),
-            bindings: vec![Binding { control: fader, command: "mixer.stripPan".into(), params: json!({"strip": "Mix"}) }],
+            bindings: vec![Binding { control: fader.clone(), command: "mixer.stripPan".into(), params: json!({"strip": "Mix"}) }],
             ..Default::default()
         });
         let mut r = Router::default();
-        let moves: Vec<MidiMessage> = [10u8, 40, 90, 127].iter().map(|v| msg("midi:k:p", 1, &[0xb0, 0, *v])).collect();
-        let out = r.route(&prefs, moves, 0);
+        let t0 = Instant::now();
+        let moves = [10u16, 40, 90, 127]
+            .iter()
+            .enumerate()
+            .map(|(i, v)| queued("midi:k:p", i as u64 + 1, SurfaceInput::Absolute { control: fader.clone(), value: *v, bits: 7 }))
+            .collect();
+        let out = r.route(&prefs, vec![], moves, 0, t0);
         assert_eq!(out.len(), 1, "one event per control per pass");
-        assert_eq!(out[0]["command"], "mixer.stripPan");
-        assert_eq!(out[0]["params"], json!({"strip": "Mix", "value": 1.0}));
-        // a fader moved past half way is learnable even when it already has a value target
-        r.learn = Some(String::new());
-        let out = r.route(&prefs, vec![msg("midi:k:p", 2, &[0xb0, 0, 0]), msg("midi:k:p", 3, &[0xb0, 0, 100])], 0);
-        assert_eq!(out.len(), 1);
-        assert_eq!(out[0]["event"], "surfaceLearn");
+        assert_eq!(out[0]["params"]["value"], 1.0);
+        let later = t0 + Duration::from_millis(600);
+        let jumped = r.route(&prefs, vec![], vec![queued("midi:k:p", 9, SurfaceInput::Absolute { control: fader.clone(), value: 0, bits: 7 })], 0, later);
+        assert!(jumped.iter().all(|e| e["event"] != "surfaceAction"), "pickup: a jump after a rest does not write, {jumped:?}");
+        let near = r.route(
+            &prefs,
+            vec![],
+            vec![queued("midi:k:p", 10, SurfaceInput::Absolute { control: fader, value: 120, bits: 7 })],
+            0,
+            later + Duration::from_millis(10),
+        );
+        assert_eq!(near[0]["event"], "surfaceAction", "within threshold 10 of 127");
+    }
+
+    #[test]
+    fn inject_runs_the_same_path_and_mtc_is_not_learned() {
+        fresh();
+        let mut s = Session::default();
+        s.prefs.control_surfaces.devices.push(DeviceSetting {
+            device: "midi:k:p".into(),
+            bindings: vec![Binding {
+                control: ControlId::Midi { channel: 0, kind: MidiKind::Note, number: 60 },
+                command: "edit.undo".into(),
+                params: Value::Null,
+            }],
+            ..Default::default()
+        });
+        let seq = inject(
+            &s,
+            &json!({"device": "midi:k:p", "input": {"type": "button", "control": {"midi": {"channel": 0, "kind": "note", "number": 60}}, "pressed": true}}),
+        )
+        .unwrap_or_default();
+        assert_eq!(seq["seq"], 1);
+        let ev = surface_runtime::take_pending();
+        assert_eq!(ev[0]["command"], "edit.undo");
+        let t0 = Instant::now();
+        surface_runtime::with(|rt| {
+            surface_runtime::learn(rt, &s.prefs.control_surfaces, &json!({"target": {"command": "edit.redo"}, "silenceMs": 1500, "firstMs": 7000}), t0)
+        })
+        .ok();
+        let mtc = inject(&s, &json!({"device": "midi:k:p", "input": {"type": "raw"}, "raw": [241, 0]})).unwrap_or_default();
+        assert!(mtc["seq"].as_u64().is_some());
+        let out = surface_runtime::tick_with(&s.prefs.control_surfaces, t0 + Duration::from_millis(7000));
+        assert_eq!(out[0]["state"], "timeout", "MTC did not start a capture");
     }
 
     /// Without a sequencer (CI) Learn is an error that says why; cancelling always works.
     #[test]
     fn learn_without_a_sequencer() {
-        match learn(&json!({})) {
+        fresh();
+        let s = Session::default();
+        match learn(&s, &json!({})) {
             Ok(v) => assert_eq!(v["state"], "learning"),
-            Err(e) => assert!(e.contains("ALSA sequencer"), "{e}"),
+            Err(e) => assert_eq!(e.code, "alsa_unavailable"),
         }
         assert_eq!(learn_cancel()["state"], "cancelled");
-        assert_eq!(learn(&json!({"device": "hid:0b33:0030:usb-1"})).unwrap_or_default()["state"], "learning", "HID needs no sequencer");
+        assert_eq!(learn(&s, &json!({"device": "hid:0b33:0030:usb-1"})).unwrap_or_default()["state"], "learning", "HID needs no sequencer");
         assert_eq!(learn_cancel()["state"], "cancelled");
-        assert!(upkeep(&Session::default()).is_empty());
+        assert!(upkeep(&Session::default()).iter().all(|e| e["event"] != "surfaceAction"));
     }
 
     /// Without a sequencer (CI) turning the monitor on is an error that says why; off always works.
@@ -569,11 +747,13 @@ mod tests {
         assert!(monitor(&json!({})).is_err());
         match monitor(&json!({"enabled": true})) {
             Ok(v) => assert_eq!(v["enabled"], true),
-            Err(e) => assert!(e.contains("ALSA sequencer"), "{e}"),
+            Err(e) => {
+                assert_eq!(e.code, "alsa_unavailable");
+                assert!(e.message.contains("ALSA sequencer"), "{}", e.message);
+            }
         }
         let _ = upkeep(&Session::default());
         assert_eq!(monitor(&json!({"enabled": false})).unwrap_or_default()["enabled"], false);
-        assert!(upkeep(&Session::default()).is_empty());
     }
 
     /// In CI there is neither a sequencer nor hidraw: the reply is still a list.
@@ -583,5 +763,23 @@ mod tests {
         let v = devices(&s);
         assert!(v["devices"].is_array());
         assert!(v["problems"].is_array());
+    }
+
+    #[test]
+    fn five_reader_faults_disable_until_enable() {
+        fresh();
+        let now = Instant::now();
+        surface_runtime::with(|rt| {
+            for _ in 0..4 {
+                let _ = rt.note_fault("alsa", now);
+            }
+            assert!(!rt.disabled("alsa"));
+            let _ = rt.note_fault("alsa", now);
+            assert!(rt.disabled("alsa"));
+        });
+        let mut s = Session::default();
+        let v = enable(&mut s, &json!({"device": "midi:k:p", "enabled": true})).unwrap_or_default();
+        assert_eq!(v["enabled"], true);
+        assert!(!surface_runtime::with(|rt| rt.disabled("alsa")));
     }
 }

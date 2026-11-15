@@ -58,6 +58,7 @@ cp -R "$ROOT/assets/cfa4/hicolor" "$STAGE/usr/share/icons/"
 CFA4_THIRD_PARTY_LICENSES_FILE="$work/THIRD-PARTY-LICENSES.txt" CFA4_SBOM_FILE="$work/cfa4.cdx.json" \
   copy_docs "$STAGE/usr/share/doc/cfa4"
 install -Dm644 "$HERE/copyright" "$STAGE/usr/share/doc/cfa4/copyright"
+install -Dm644 "$HERE/70-cfa4-surfaces.rules" "$STAGE/usr/lib/udev/rules.d/70-cfa4-surfaces.rules"
 bash "$ROOT/scripts/ci/check-package-docs.sh" "$STAGE/usr/share/doc/cfa4"
 
 deb="$DIST/cfa4-$VERSION-linux-x86_64.deb"

@@ -4699,3 +4699,17 @@ export.summary	Low	низак
 # Control surfaces (continuous-values, CFA4-CONTROL-SURFACE-001)
 	{strip} Pan (knob)	{strip} панорама (дугме)
 	{strip} Volume (fader)	{strip} јачина (фејдер)
+# Control surfaces (F1 Learn and profile, CFA4-CONTROL-SURFACE-001)
+	Control Surfaces	Контролне површине
+	Use control surfaces (MIDI controllers, jog/shuttle devices)	Користи контролне површине (MIDI контролери, jog/shuttle)
+	Assignments run when a button is pressed (a fader or knob counts as pressed past half way); a fader or knob assigned to a mixer strip moves its volume or pan. A ShuttlePRO's shuttle ring plays at its profile's speeds and its jog wheel steps frame by frame. Endless encoders and feedback to the controller (lights, motor faders) come in a later version.	Доделе се покрећу притиском дугмета (фејдер или дугме се рачуна као притиснуто после половине); фејдер или дугме додељено траци миксера помера јачину или панораму. Прстен shuttle на ShuttlePRO пушта брзинама профила, а точак jog корача по кадру. Бесконачни енкодери и одговор контролеру (лампице, моторни фејдери) долазе у каснијој верзији.
+	First message (ms)	Прва порука (ms)
+	Silence (ms)	Тишина (ms)
+	Waiting for the control to settle…	Чека се да се контрола смири…
+	Type: {hint}. Confirm this assignment.	Тип: {hint}. Потврдите ову доделу.
+	That control is already assigned. Confirm replaces it.	Та контрола је већ додељена. Потврда је замењује.
+	Learn timed out.	Учење је истекло.
+	Confirm	Потврди
+	Reject	Одбаци
+	Shows every MIDI message from the controllers as it arrives, to check that a controller sends and what it sends. MIDI Clock, Active Sensing and MIDI Time Code are left out.	Приказује сваку MIDI поруку са контролера чим стигне, да се види да ли контролер шаље и шта. MIDI сат, Active Sensing и MIDI временски код се изостављају.
+	Pick a command (or a mixer strip for a fader or knob), press Learn, then press the button or move the control past half way. Confirm keeps the assignment. OK saves the assignments.	Изаберите команду (или траку миксера за фејдер или дугме), притисните Учи, затим дугме или померите контролу преко половине. Потврда чува доделу. У реду чува доделе.

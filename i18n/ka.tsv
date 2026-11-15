@@ -4702,3 +4702,17 @@ export.summary	Low	დაბალი
 # Control surfaces (continuous-values, CFA4-CONTROL-SURFACE-001)
 	{strip} Pan (knob)	{strip} პანორამა (სახელური)
 	{strip} Volume (fader)	{strip} ხმა (ფეიდერი)
+# Control surfaces (F1 Learn and profile, CFA4-CONTROL-SURFACE-001)
+	Control Surfaces	მართვის ზედაპირები
+	Use control surfaces (MIDI controllers, jog/shuttle devices)	მართვის ზედაპირების გამოყენება (MIDI კონტროლერები, jog/shuttle)
+	Assignments run when a button is pressed (a fader or knob counts as pressed past half way); a fader or knob assigned to a mixer strip moves its volume or pan. A ShuttlePRO's shuttle ring plays at its profile's speeds and its jog wheel steps frame by frame. Endless encoders and feedback to the controller (lights, motor faders) come in a later version.	მინიჭებები ღილაკის დაჭერაზე ეშვება (ფეიდერი ან სახელური ნახევრის შემდეგ დაჭერილად ითვლება); მიქსერის ზოლზე მიბმული ფეიდერი ან სახელური ხმას ან პანორამას წევს. ShuttlePRO-ს შატლის რგოლი პროფილის სიჩქარეებით უკრავს, ჯოგის ბორბალი კი კადრ-კადრ მიდის. უსასრულო ენკოდერები და პასუხი კონტროლერზე (ნათურები, მოტორიანი ფეიდერები) მოგვიანებით ვერსიაში მოვა.
+	First message (ms)	პირველი შეტყობინება (მწმ)
+	Silence (ms)	სიჩუმე (მწმ)
+	Waiting for the control to settle…	ველოდებით, სანამ სამართავი დაწყნარდება…
+	Type: {hint}. Confirm this assignment.	ტიპი: {hint}. დაადასტურეთ ეს მინიჭება.
+	That control is already assigned. Confirm replaces it.	ეს სამართავი უკვე მიბმულია. დადასტურება მას შეცვლის.
+	Learn timed out.	სწავლების დრო ამოიწურა.
+	Confirm	დადასტურება
+	Reject	უარყოფა
+	Shows every MIDI message from the controllers as it arrives, to check that a controller sends and what it sends. MIDI Clock, Active Sensing and MIDI Time Code are left out.	აჩვენებს კონტროლერებიდან ყოველ MIDI შეტყობინებას მოსვლისთანავე, რომ ჩანდეს, აგზავნის თუ არა კონტროლერი და რას. MIDI საათი, Active Sensing და MIDI დროის კოდი გამოტოვებულია.
+	Pick a command (or a mixer strip for a fader or knob), press Learn, then press the button or move the control past half way. Confirm keeps the assignment. OK saves the assignments.	აირჩიეთ ბრძანება (ფეიდერისთვის ან სახელურისთვის მიქსერის ზოლი), დააჭირეთ სწავლებას, შემდეგ ღილაკს ან გადაიტანეთ სამართავი ნახევარზე შორს. დადასტურება ინახავს მინიჭებას. კარგი წერს მინიჭებებს.

@@ -4701,3 +4701,17 @@ export.summary	Low	madal
 # Control surfaces (continuous-values, CFA4-CONTROL-SURFACE-001)
 	{strip} Pan (knob)	{strip} panoraam (nupp)
 	{strip} Volume (fader)	{strip} helitugevus (fader)
+# Control surfaces (F1 Learn and profile, CFA4-CONTROL-SURFACE-001)
+	Control Surfaces	Juhtimispinnad
+	Use control surfaces (MIDI controllers, jog/shuttle devices)	Kasuta juhtimispindu (MIDI-kontrollerid, jog/shuttle)
+	Assignments run when a button is pressed (a fader or knob counts as pressed past half way); a fader or knob assigned to a mixer strip moves its volume or pan. A ShuttlePRO's shuttle ring plays at its profile's speeds and its jog wheel steps frame by frame. Endless encoders and feedback to the controller (lights, motor faders) come in a later version.	Määrangud käivituvad nupuvajutusel (fader või nupp loetakse vajutatuks pärast poolt); mikseri rajale määratud fader või nupp liigutab helitugevust või panoraami. ShuttlePRO süstikurõngas mängib profiili kiirustel ja jog-ratas astub kaaderhaaval. Lõputud koodrid ja vastus kontrollerile (tuled, mootorfaderid) tulevad hilisemas versioonis.
+	First message (ms)	Esimene sõnum (ms)
+	Silence (ms)	Vaikus (ms)
+	Waiting for the control to settle…	Oodatakse, kuni juhik rahuneb…
+	Type: {hint}. Confirm this assignment.	Tüüp: {hint}. Kinnita see määrang.
+	That control is already assigned. Confirm replaces it.	See juhik on juba määratud. Kinnitus asendab selle.
+	Learn timed out.	Õppimise aeg sai otsa.
+	Confirm	Kinnita
+	Reject	Keeldu
+	Shows every MIDI message from the controllers as it arrives, to check that a controller sends and what it sends. MIDI Clock, Active Sensing and MIDI Time Code are left out.	Näitab iga MIDI-sõnumit kontrolleritelt selle saabudes, et näha, kas kontroller saadab ja mida. MIDI-kell, Active Sensing ja MIDI ajakood jäetakse välja.
+	Pick a command (or a mixer strip for a fader or knob), press Learn, then press the button or move the control past half way. Confirm keeps the assignment. OK saves the assignments.	Vali käsk (või mikseri rada faderile või nupule), vajuta Õpi, siis nuppu või liiguta juhik üle poole. Kinnitus jätab määrangu alles. OK salvestab määrangud.

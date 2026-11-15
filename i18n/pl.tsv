@@ -4699,3 +4699,17 @@ export.summary	Low	niska
 # Control surfaces (continuous-values, CFA4-CONTROL-SURFACE-001)
 	{strip} Pan (knob)	{strip} panorama (pokrętło)
 	{strip} Volume (fader)	{strip} głośność (suwak)
+# Control surfaces (F1 Learn and profile, CFA4-CONTROL-SURFACE-001)
+	Control Surfaces	Powierzchnie sterujące
+	Use control surfaces (MIDI controllers, jog/shuttle devices)	Używaj powierzchni sterujących (kontrolery MIDI, jog/shuttle)
+	Assignments run when a button is pressed (a fader or knob counts as pressed past half way); a fader or knob assigned to a mixer strip moves its volume or pan. A ShuttlePRO's shuttle ring plays at its profile's speeds and its jog wheel steps frame by frame. Endless encoders and feedback to the controller (lights, motor faders) come in a later version.	Przypisania działają po naciśnięciu przycisku (fader lub pokrętło liczy się jako naciśnięte po połowie); fader lub pokrętło przypisane do ścieżki miksera rusza jej głośność lub panoramę. Pierścień shuttle ShuttlePRO odtwarza z prędkościami profilu, a koło jog krokami po klatce. Enkodery bez końca i odpowiedź do kontrolera (lampki, fadery silnikowe) pojawią się w późniejszej wersji.
+	First message (ms)	Pierwsza wiadomość (ms)
+	Silence (ms)	Cisza (ms)
+	Waiting for the control to settle…	Oczekiwanie, aż element się uspokoi…
+	Type: {hint}. Confirm this assignment.	Typ: {hint}. Potwierdź to przypisanie.
+	That control is already assigned. Confirm replaces it.	Ten element jest już przypisany. Potwierdzenie je zastępuje.
+	Learn timed out.	Nauka przekroczyła czas.
+	Confirm	Potwierdź
+	Reject	Odrzuć
+	Shows every MIDI message from the controllers as it arrives, to check that a controller sends and what it sends. MIDI Clock, Active Sensing and MIDI Time Code are left out.	Pokazuje każdą wiadomość MIDI z kontrolerów w chwili nadejścia, aby sprawdzić, czy kontroler wysyła i co wysyła. Zegar MIDI, Active Sensing i kod czasowy MIDI są pomijane.
+	Pick a command (or a mixer strip for a fader or knob), press Learn, then press the button or move the control past half way. Confirm keeps the assignment. OK saves the assignments.	Wybierz polecenie (albo ścieżkę miksera dla fadera lub pokrętła), naciśnij Ucz się, a potem przycisk lub przesuń element za połowę. Potwierdzenie zachowuje przypisanie. OK zapisuje przypisania.
