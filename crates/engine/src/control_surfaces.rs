@@ -19,8 +19,13 @@ use crate::{Result, Session};
 
 /// One device's settings. A list, not a map keyed by device id: ids contain dots and colons, which
 /// dotted preference keys cannot carry.
+///
+/// Forward compatible (READY-V4.3): an assignment this version cannot read (a control of an
+/// unknown protocol or input kind, written by a newer CFA4 or by hand) does not spoil the
+/// settings. It is kept, disabled, in [`DeviceSetting::unsupported`], written back unchanged, and
+/// reported by `surface.profile.warnings`.
 #[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
-#[serde(rename_all = "camelCase", default)]
+#[serde(from = "RawDeviceSetting", into = "RawDeviceSetting")]
 pub struct DeviceSetting {
     /// `hid:<vid>:<pid>:<phys>` or `midi:<client>:<port>` (as `surface.devices` names it).
     pub device: String,
@@ -29,11 +34,82 @@ pub struct DeviceSetting {
     pub profile: String,
     /// What the controls of this device run (one per control).
     pub bindings: Vec<Binding>,
+    /// Assignments this version cannot read: never run, saved back as they were.
+    pub unsupported: Vec<UnsupportedBinding>,
 }
 
 impl Default for DeviceSetting {
     fn default() -> Self {
+        Self { device: String::new(), enabled: true, profile: String::new(), bindings: Vec::new(), unsupported: Vec::new() }
+    }
+}
+
+impl DeviceSetting {
+    /// One line per assignment that is loaded disabled, for `surface.profile.warnings`.
+    pub fn warnings(&self) -> Vec<String> {
+        self.unsupported.iter().map(|u| format!("assignment of {} is disabled: {}", u.control_kind(), u.reason)).collect()
+    }
+}
+
+/// An assignment kept as written because this version cannot read it.
+#[derive(Clone, Debug, PartialEq)]
+pub struct UnsupportedBinding {
+    /// The assignment exactly as the preferences hold it.
+    pub raw: Value,
+    /// Why it could not be read (the parser's message).
+    pub reason: String,
+}
+
+// `raw` is JSON; equality of JSON values is total for what a preference file holds
+impl Eq for UnsupportedBinding {}
+
+impl UnsupportedBinding {
+    /// What the assignment's control is, as far as it can be told: `a "tsl" control`, or
+    /// `an unreadable control`.
+    pub fn control_kind(&self) -> String {
+        match self.raw.get("control") {
+            Some(Value::Object(m)) if m.len() == 1 => m.keys().next().map_or_else(|| "an unreadable control".into(), |k| format!("a \"{k}\" control")),
+            Some(Value::String(k)) => format!("a \"{k}\" control"),
+            _ => "an unreadable control".into(),
+        }
+    }
+}
+
+/// The stored form of [`DeviceSetting`]: assignments as plain JSON, so one unreadable assignment
+/// cannot fail the whole preferences document.
+#[derive(Serialize, Deserialize)]
+#[serde(rename_all = "camelCase", default)]
+struct RawDeviceSetting {
+    device: String,
+    enabled: bool,
+    profile: String,
+    bindings: Vec<Value>,
+}
+
+impl Default for RawDeviceSetting {
+    fn default() -> Self {
         Self { device: String::new(), enabled: true, profile: String::new(), bindings: Vec::new() }
+    }
+}
+
+impl From<RawDeviceSetting> for DeviceSetting {
+    fn from(r: RawDeviceSetting) -> Self {
+        let mut bindings = Vec::new();
+        let mut unsupported = Vec::new();
+        for raw in r.bindings {
+            match serde_json::from_value::<Binding>(raw.clone()) {
+                Ok(b) => bindings.push(b),
+                Err(e) => unsupported.push(UnsupportedBinding { raw, reason: e.to_string() }),
+            }
+        }
+        DeviceSetting { device: r.device, enabled: r.enabled, profile: r.profile, bindings, unsupported }
+    }
+}
+
+impl From<DeviceSetting> for RawDeviceSetting {
+    fn from(d: DeviceSetting) -> Self {
+        let bindings = d.bindings.iter().map(|b| serde_json::to_value(b).unwrap_or_default()).chain(d.unsupported.into_iter().map(|u| u.raw)).collect();
+        RawDeviceSetting { device: d.device, enabled: d.enabled, profile: d.profile, bindings }
     }
 }
 
@@ -215,7 +291,13 @@ impl ControlSurfacePrefs {
                 true
             });
             d.bindings.truncate(MAX_BINDINGS);
+            d.unsupported.truncate(MAX_BINDINGS - d.bindings.len());
         }
+    }
+
+    /// `surface.profile.warnings`: the devices with assignments loaded disabled, and why.
+    pub fn warnings(&self) -> Vec<(String, Vec<String>)> {
+        self.devices.iter().map(|d| (d.device.clone(), d.warnings())).filter(|(_, w)| !w.is_empty()).collect()
     }
 }
 
@@ -242,17 +324,35 @@ fn profiles(_: &mut Session, _: &Value) -> Result<Value> {
     Ok(json!({"profiles": list}))
 }
 
+fn profile_warnings(s: &mut Session, _: &Value) -> Result<Value> {
+    let devices: Vec<Value> =
+        s.prefs.control_surfaces.warnings().into_iter().map(|(device, warnings)| json!({"device": device, "warnings": warnings})).collect();
+    Ok(json!({"devices": devices}))
+}
+
 pub fn commands() -> Vec<CommandSpec> {
-    vec![CommandSpec {
-        id: "controlSurfaces.profiles",
-        label: "Control Surface Profiles",
-        menu: &[],
-        shortcut: None,
-        params: "{}",
-        enabled: always,
-        run: profiles,
-        journal: false,
-    }]
+    vec![
+        CommandSpec {
+            id: "surface.profile.warnings",
+            label: "Control Surface Profile Warnings",
+            menu: &[],
+            shortcut: None,
+            params: "{}",
+            enabled: always,
+            run: profile_warnings,
+            journal: false,
+        },
+        CommandSpec {
+            id: "controlSurfaces.profiles",
+            label: "Control Surface Profiles",
+            menu: &[],
+            shortcut: None,
+            params: "{}",
+            enabled: always,
+            run: profiles,
+            journal: false,
+        },
+    ]
 }
 
 #[cfg(test)]
@@ -264,10 +364,10 @@ mod tests {
         let mut p = ControlSurfacePrefs {
             enabled: true,
             devices: vec![
-                DeviceSetting { device: "midi:a:b".into(), enabled: false, profile: "cfa4.generic-midi".into(), bindings: vec![] },
-                DeviceSetting { device: "midi:a:b".into(), enabled: true, profile: String::new(), bindings: vec![] },
-                DeviceSetting { device: String::new(), enabled: false, profile: String::new(), bindings: vec![] },
-                DeviceSetting { device: "hid:0b33:0030:usb-1.2".into(), enabled: true, profile: "nope".into(), bindings: vec![] },
+                DeviceSetting { device: "midi:a:b".into(), enabled: false, profile: "cfa4.generic-midi".into(), bindings: vec![], unsupported: vec![] },
+                DeviceSetting { device: "midi:a:b".into(), enabled: true, profile: String::new(), bindings: vec![], unsupported: vec![] },
+                DeviceSetting { device: String::new(), enabled: false, profile: String::new(), bindings: vec![], unsupported: vec![] },
+                DeviceSetting { device: "hid:0b33:0030:usb-1.2".into(), enabled: true, profile: "nope".into(), bindings: vec![], unsupported: vec![] },
             ],
         };
         p.clamp();
@@ -277,6 +377,63 @@ mod tests {
         let fresh = p.device("midi:new:port");
         assert!(fresh.enabled);
         assert_eq!(fresh.device, "midi:new:port");
+    }
+
+    /// READY-V4.3: a profile with a control of an unknown protocol or input kind still loads;
+    /// that assignment is disabled, kept as written and reported.
+    #[test]
+    fn unknown_controls_load_disabled_with_a_warning() {
+        let doc = json!({
+            "enabled": true,
+            "devices": [{
+                "device": "midi:k:p",
+                "enabled": true,
+                "profile": "cfa4.generic-midi",
+                "bindings": [
+                    {"control": {"midi": {"channel": 0, "kind": "cc", "number": 41}}, "command": "playback.toggle"},
+                    {"control": {"tsl": {"screen": 1, "index": 4}}, "command": "live.studio.cut"},
+                    {"control": {"midi": {"channel": 0, "kind": "polyAftertouch", "number": 3}}, "command": "markers.markIn"}
+                ]
+            }]
+        });
+        let p: ControlSurfacePrefs = serde_json::from_value(doc.clone()).expect("one unknown assignment does not fail the settings");
+        let d = p.device("midi:k:p");
+        assert_eq!(d.bindings, [bind(cc(41), "playback.toggle")]);
+        assert_eq!(d.unsupported.len(), 2);
+        assert_eq!(p.action("midi:k:p", &cc(41)).map(|a| a.command), Some("playback.toggle".into()));
+        let w = p.warnings();
+        assert_eq!(w.len(), 1);
+        assert_eq!(w[0].0, "midi:k:p");
+        assert!(w[0].1[0].starts_with("assignment of a \"tsl\" control is disabled: "), "{:?}", w[0].1);
+        assert!(w[0].1[1].starts_with("assignment of a \"midi\" control is disabled: "), "{:?}", w[0].1);
+        // written back unchanged, so a newer CFA4 finds its assignments again
+        assert_eq!(serde_json::to_value(&p).ok(), Some(doc));
+    }
+
+    #[test]
+    fn unknown_controls_do_not_reset_the_preferences() {
+        let mut v = crate::autosave::Preferences::default().to_value();
+        v["controlSurfaces"]["devices"] = json!([{
+            "device": "midi:k:p",
+            "bindings": [{"control": {"osc2": {"path": "/x"}}, "command": "playback.toggle"}]
+        }]);
+        v["trim"]["largeTrimOffset"] = json!(7);
+        let p = crate::autosave::Preferences::from_value(v);
+        assert_eq!(p.trim.large_trim_offset, 7, "the other preferences survive");
+        assert_eq!(p.control_surfaces.device("midi:k:p").unsupported.len(), 1);
+    }
+
+    #[test]
+    fn profile_warnings_command() {
+        let mut s = Session::default();
+        assert_eq!((profile_warnings)(&mut s, &Value::Null).ok(), Some(json!({"devices": []})));
+        s.prefs.control_surfaces.devices.push(DeviceSetting {
+            device: "midi:k:p".into(),
+            unsupported: vec![UnsupportedBinding { raw: json!({"control": "tsl"}), reason: "unknown variant".into() }],
+            ..Default::default()
+        });
+        let r = (profile_warnings)(&mut s, &Value::Null).ok();
+        assert_eq!(r, Some(json!({"devices": [{"device": "midi:k:p", "warnings": ["assignment of a \"tsl\" control is disabled: unknown variant"]}]})));
     }
 
     fn cc(number: u16) -> ControlId {
@@ -318,6 +475,7 @@ mod tests {
                 enabled: true,
                 profile: String::new(),
                 bindings: vec![bind(cc(41), "playback.toggle"), bind(cc(41), "edit.undo"), bind(cc(42), " "), bind(cc(43), "edit.undo")],
+                unsupported: vec![],
             }],
         };
         p.clamp();
