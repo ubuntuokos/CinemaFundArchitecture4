@@ -4570,6 +4570,8 @@ export.summary	Low	alacsony
 	Follow external timecode during playback	Külső időkód követése lejátszáskor
 	Lock after	Zárolás ennyi után
 	Keep playing without signal for	Jel nélkül tovább játszik
+	Varispeed: adjust the playback speed instead of seeking	Varispeed: ugrás helyett a lejátszási sebességet igazítja
+	User bits	Felhasználói bitek
 	External frame rate	Külső képkockasebesség
 	Offset (added to the external timecode)	Eltolás (a külső időkódhoz adva)
 	LTC	LTC
