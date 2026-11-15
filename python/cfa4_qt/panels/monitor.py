@@ -1335,7 +1335,7 @@ class Monitor(QWidget):
         self.transport.set_icon("toggle", "pause")
         self._play_from = self.playhead
         self._clock.start()
-        if shuttle_sounds(self.speed):
+        if shuttle_sounds(self.speed) and not getattr(self, "surface_shuttle_mute", False):
             self._start_audio()
         if self.speed == 1.0 and self.target == "program" and not self._automation_pass:
             # Audio Track Mixer: an automation pass runs while playing forward in real time (egui's)

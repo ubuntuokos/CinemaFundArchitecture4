@@ -4715,3 +4715,35 @@ export.summary	Low	låg
 	Reject	Avvisa
 	Shows every MIDI message from the controllers as it arrives, to check that a controller sends and what it sends. MIDI Clock, Active Sensing and MIDI Time Code are left out.	Visar varje MIDI-meddelande från kontrollerna när det kommer, för att se att en kontroll sänder och vad. MIDI-klocka, Active Sensing och MIDI-tidskod lämnas ute.
 	Pick a command (or a mixer strip for a fader or knob), press Learn, then press the button or move the control past half way. Confirm keeps the assignment. OK saves the assignments.	Välj ett kommando (eller en mixerkanal för reglage eller ratt), tryck på Lär, sedan knappen, eller flytta kontrollen förbi mitten. Bekräfta behåller tilldelningen. OK sparar tilldelningarna.
+	All devices	Alla enheter
+	Builtin: {name}	Inbyggd: {name}
+	Capturing	Fångar
+	Confirmed	Bekräftad
+	Conflict	Konflikt
+	Connect a MIDI controller or a ShuttlePRO to edit its profile.	Anslut en MIDI-kontroll eller en ShuttlePRO för att redigera dess profil.
+	Control Surfaces…	Kontrollytor…
+	Filter messages	Filtrera meddelanden
+	Idle	Vilande
+	Kernel dropped: {count}	Kärnan släppte: {count}
+	Learn Assignments…	Lär tilldelningar…
+	Load profile	Läs in profil
+	MIDI Monitor…	MIDI-övervakning…
+	Mute shuttle sound	Tysta shuttle-ljudet
+	No conflicts.	Inga konflikter.
+	No profile warnings.	Inga profilvarningar.
+	No project profile is stored.	Ingen projektprofil är sparad.
+	OK writes the preferences and the profile file together.	OK skriver inställningarna och profilfilen tillsammans.
+	Online	Online
+	Pending	Väntar
+	Pickup (14-bit)	Upptagning (14 bitar)
+	Pickup (7-bit)	Upptagning (7 bitar)
+	Profile warnings	Profilvarningar
+	Rejected	Avvisad
+	Show Active Sensing	Visa Active Sensing
+	Show MIDI Clock	Visa MIDI-klocka
+	Show MIDI Time Code	Visa MIDI-tidskod
+	The profile file is damaged. Preferences and the built-in profile stay in use.	Profilfilen är skadad. Inställningarna och den inbyggda profilen används fortfarande.
+	Timed out	Tiden gick ut
+	Type: {hint}	Typ: {hint}
+	User profile file	Användarprofilfil
+	{received} received, {dispatched} dispatched, {coalesced} coalesced, {stalls} stalls, {errors} errors	{received} mottagna, {dispatched} skickade, {coalesced} sammanslagna, {stalls} väntan, {errors} fel

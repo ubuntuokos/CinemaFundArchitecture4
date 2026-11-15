@@ -4714,3 +4714,35 @@ export.summary	Low	düşük
 	Reject	Reddet
 	Shows every MIDI message from the controllers as it arrives, to check that a controller sends and what it sends. MIDI Clock, Active Sensing and MIDI Time Code are left out.	Bir denetleyicinin gönderip göndermediğini ve ne gönderdiğini görmek için denetleyicilerden gelen her MIDI iletisini varır varmaz gösterir. MIDI saati, Active Sensing ve MIDI zaman kodu dışarıda bırakılır.
 	Pick a command (or a mixer strip for a fader or knob), press Learn, then press the button or move the control past half way. Confirm keeps the assignment. OK saves the assignments.	Bir komut seçin (fader veya düğme için bir mikser şeridi), Öğren'e basın, sonra düğmeye basın veya denetimi yarının ötesine taşıyın. Onay atamayı tutar. Tamam atamaları kaydeder.
+	All devices	Tüm aygıtlar
+	Builtin: {name}	Yerleşik: {name}
+	Capturing	Yakalanıyor
+	Confirmed	Onaylandı
+	Conflict	Çakışma
+	Connect a MIDI controller or a ShuttlePRO to edit its profile.	Profilini düzenlemek için bir MIDI denetleyici veya ShuttlePRO bağlayın.
+	Control Surfaces…	Denetim yüzeyleri…
+	Filter messages	İletileri süz
+	Idle	Boşta
+	Kernel dropped: {count}	Çekirdek attı: {count}
+	Learn Assignments…	Atamaları öğren…
+	Load profile	Profili yükle
+	MIDI Monitor…	MIDI izleyici…
+	Mute shuttle sound	Shuttle sesini kapat
+	No conflicts.	Çakışma yok.
+	No profile warnings.	Profil uyarısı yok.
+	No project profile is stored.	Kayıtlı proje profili yok.
+	OK writes the preferences and the profile file together.	Tamam, tercihleri ve profil dosyasını birlikte yazar.
+	Online	Çevrimiçi
+	Pending	Bekliyor
+	Pickup (14-bit)	Yakalama (14 bit)
+	Pickup (7-bit)	Yakalama (7 bit)
+	Profile warnings	Profil uyarıları
+	Rejected	Reddedildi
+	Show Active Sensing	Active Sensing göster
+	Show MIDI Clock	MIDI saati göster
+	Show MIDI Time Code	MIDI zaman kodu göster
+	The profile file is damaged. Preferences and the built-in profile stay in use.	Profil dosyası bozuk. Tercihler ve yerleşik profil kullanılmaya devam eder.
+	Timed out	Zaman aşımı
+	Type: {hint}	Tür: {hint}
+	User profile file	Kullanıcı profil dosyası
+	{received} received, {dispatched} dispatched, {coalesced} coalesced, {stalls} stalls, {errors} errors	{received} alındı, {dispatched} iletildi, {coalesced} birleştirildi, {stalls} beklemeler, {errors} hatalar

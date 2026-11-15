@@ -4716,3 +4716,35 @@ export.summary	Low	დაბალი
 	Reject	უარყოფა
 	Shows every MIDI message from the controllers as it arrives, to check that a controller sends and what it sends. MIDI Clock, Active Sensing and MIDI Time Code are left out.	აჩვენებს კონტროლერებიდან ყოველ MIDI შეტყობინებას მოსვლისთანავე, რომ ჩანდეს, აგზავნის თუ არა კონტროლერი და რას. MIDI საათი, Active Sensing და MIDI დროის კოდი გამოტოვებულია.
 	Pick a command (or a mixer strip for a fader or knob), press Learn, then press the button or move the control past half way. Confirm keeps the assignment. OK saves the assignments.	აირჩიეთ ბრძანება (ფეიდერისთვის ან სახელურისთვის მიქსერის ზოლი), დააჭირეთ სწავლებას, შემდეგ ღილაკს ან გადაიტანეთ სამართავი ნახევარზე შორს. დადასტურება ინახავს მინიჭებას. კარგი წერს მინიჭებებს.
+	All devices	ყველა მოწყობილობა
+	Builtin: {name}	ჩაშენებული: {name}
+	Capturing	ჩაწერა
+	Confirmed	დადასტურებული
+	Conflict	კონფლიქტი
+	Connect a MIDI controller or a ShuttlePRO to edit its profile.	პროფილის შესაცვლელად შეაერთეთ MIDI კონტროლერი ან ShuttlePRO.
+	Control Surfaces…	მართვის ზედაპირები…
+	Filter messages	შეტყობინებების გაფილტვრა
+	Idle	უქმე
+	Kernel dropped: {count}	ბირთვმა გადააგდო: {count}
+	Learn Assignments…	შესწავლა და მინიჭებები…
+	Load profile	პროფილის ჩატვირთვა
+	MIDI Monitor…	MIDI მონიტორი…
+	Mute shuttle sound	შატლის ხმის გამორთვა
+	No conflicts.	კონფლიქტი არ არის.
+	No profile warnings.	პროფილის გაფრთხილება არ არის.
+	No project profile is stored.	პროექტის პროფილი არ არის შენახული.
+	OK writes the preferences and the profile file together.	OK ერთად წერს პარამეტრებს და პროფილის ფაილს.
+	Online	ხაზზე
+	Pending	მოლოდინში
+	Pickup (14-bit)	აყვანა (14 ბიტი)
+	Pickup (7-bit)	აყვანა (7 ბიტი)
+	Profile warnings	პროფილის გაფრთხილებები
+	Rejected	უარყოფილი
+	Show Active Sensing	Active Sensing-ის ჩვენება
+	Show MIDI Clock	MIDI საათის ჩვენება
+	Show MIDI Time Code	MIDI დროის კოდის ჩვენება
+	The profile file is damaged. Preferences and the built-in profile stay in use.	პროფილის ფაილი დაზიანებულია. პარამეტრები და ჩაშენებული პროფილი რჩება გამოყენებაში.
+	Timed out	დრო ამოიწურა
+	Type: {hint}	ტიპი: {hint}
+	User profile file	მომხმარებლის პროფილის ფაილი
+	{received} received, {dispatched} dispatched, {coalesced} coalesced, {stalls} stalls, {errors} errors	{received} მიღებული, {dispatched} გადაცემული, {coalesced} გაერთიანებული, {stalls} შეფერხება, {errors} შეცდომა

@@ -4721,3 +4721,35 @@
 	Reject	Tolak
 	Shows every MIDI message from the controllers as it arrives, to check that a controller sends and what it sends. MIDI Clock, Active Sensing and MIDI Time Code are left out.	Menampilkan setiap pesan MIDI dari pengontrol saat tiba, untuk memeriksa apakah pengontrol mengirim dan apa yang dikirim. Jam MIDI, Active Sensing, dan kode waktu MIDI dihilangkan.
 	Pick a command (or a mixer strip for a fader or knob), press Learn, then press the button or move the control past half way. Confirm keeps the assignment. OK saves the assignments.	Pilih perintah (atau jalur mixer untuk fader atau kenop), tekan Pelajari, lalu tombol, atau gerakkan kendali melewati setengah. Konfirmasi menyimpan penetapan. OK menyimpan penetapan.
+	All devices	Semua perangkat
+	Builtin: {name}	Bawaan: {name}
+	Capturing	Merekam
+	Confirmed	Dikonfirmasi
+	Conflict	Konflik
+	Connect a MIDI controller or a ShuttlePRO to edit its profile.	Hubungkan pengontrol MIDI atau ShuttlePRO untuk menyunting profilnya.
+	Control Surfaces…	Permukaan kontrol…
+	Filter messages	Saring pesan
+	Idle	Diam
+	Kernel dropped: {count}	Dibuang kernel: {count}
+	Learn Assignments…	Pelajari penetapan…
+	Load profile	Muat profil
+	MIDI Monitor…	Monitor MIDI…
+	Mute shuttle sound	Bisukan suara shuttle
+	No conflicts.	Tidak ada konflik.
+	No profile warnings.	Tidak ada peringatan profil.
+	No project profile is stored.	Tidak ada profil proyek yang tersimpan.
+	OK writes the preferences and the profile file together.	OK menulis preferensi dan berkas profil bersama-sama.
+	Online	Daring
+	Pending	Menunggu
+	Pickup (14-bit)	Pickup (14 bit)
+	Pickup (7-bit)	Pickup (7 bit)
+	Profile warnings	Peringatan profil
+	Rejected	Ditolak
+	Show Active Sensing	Tampilkan Active Sensing
+	Show MIDI Clock	Tampilkan jam MIDI
+	Show MIDI Time Code	Tampilkan kode waktu MIDI
+	The profile file is damaged. Preferences and the built-in profile stay in use.	Berkas profil rusak. Preferensi dan profil bawaan tetap dipakai.
+	Timed out	Waktu habis
+	Type: {hint}	Jenis: {hint}
+	User profile file	Berkas profil pengguna
+	{received} received, {dispatched} dispatched, {coalesced} coalesced, {stalls} stalls, {errors} errors	{received} diterima, {dispatched} dikirim, {coalesced} digabung, {stalls} antrean, {errors} kesalahan

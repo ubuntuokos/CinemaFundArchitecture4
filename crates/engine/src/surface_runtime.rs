@@ -11,7 +11,7 @@ use cfa4_surface_model::midi::control_label;
 use cfa4_surface_model::{ControlId, DeviceCounters, MidiKind, SurfaceInput};
 use serde_json::{Value, json};
 
-use crate::control_surfaces::{Action, ControlSurfacePrefs, PICKUP_THRESHOLD7, PICKUP_THRESHOLD14, Triggers, VALUE_COMMANDS};
+use crate::control_surfaces::{Action, ControlSurfacePrefs, Triggers, VALUE_COMMANDS};
 use crate::{EngineError, Result, Session};
 
 const CLOCK_VALID: Duration = Duration::from_millis(500);
@@ -257,14 +257,14 @@ impl Runtime {
             && input.control().is_some_and(|c| c == &captured.control)
             && let Some(target) = self.learn.target.clone()
         {
-            return self.emit_target(device, input, &target, seq, now);
+            return self.emit_target(prefs, device, input, &target, seq, now);
         }
         let mut out = Vec::new();
         if self.learn.phase == Phase::Idle
             && let Some(control) = input.control().cloned()
             && prefs.value(device, &control, input).is_some()
         {
-            if self.pickup_ok(device, &control, input, now)
+            if self.pickup_ok(prefs, device, &control, input, now)
                 && let Some(action) = prefs.value(device, &control, input)
             {
                 out.push(action_event(device, &control, action, seq));
@@ -299,10 +299,10 @@ impl Runtime {
         vec![json!({"event": "surfaceLearn", "state": "capturing", "count": count, "device": device, "hint": hint})]
     }
 
-    fn emit_target(&mut self, device: &str, input: &SurfaceInput, target: &LearnTarget, seq: u64, now: Instant) -> Vec<Value> {
+    fn emit_target(&mut self, prefs: &ControlSurfacePrefs, device: &str, input: &SurfaceInput, target: &LearnTarget, seq: u64, now: Instant) -> Vec<Value> {
         let Some(control) = input.control().cloned() else { return Vec::new() };
         if VALUE_COMMANDS.contains(&target.command.as_str()) {
-            if !self.pickup_ok(device, &control, input, now) {
+            if !self.pickup_ok(prefs, device, &control, input, now) {
                 return Vec::new();
             }
             let Some(preview) = value_of(input) else { return Vec::new() };
@@ -324,9 +324,10 @@ impl Runtime {
         prefs.motion(device, input).into_iter().map(|a| action_event(device, &control, a, seq)).collect()
     }
 
-    fn pickup_ok(&mut self, device: &str, control: &ControlId, input: &SurfaceInput, now: Instant) -> bool {
+    fn pickup_ok(&mut self, prefs: &ControlSurfacePrefs, device: &str, control: &ControlId, input: &SurfaceInput, now: Instant) -> bool {
         let SurfaceInput::Absolute { value, bits, .. } = input else { return true };
-        let threshold = if *bits >= 14 { PICKUP_THRESHOLD14 } else { PICKUP_THRESHOLD7 };
+        let setting = prefs.device(device);
+        let threshold = if *bits >= 14 { setting.pickup_threshold14 } else { setting.pickup_threshold7 };
         let key = (device.to_string(), control.clone());
         let arm = self.pickup.entry(key).or_insert(Arm { last: *value, live: true, at: now });
         if now.saturating_duration_since(arm.at) > PICKUP_IDLE {

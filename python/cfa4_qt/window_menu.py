@@ -346,6 +346,23 @@ def build_window_menu(
     ws.addAction(edit)
     shortcuts.append((edit, "window.workspace.edit", ""))
 
+    def open_surfaces(section: str) -> None:
+        opener = getattr(window, "open_settings", None)
+        if callable(opener):
+            opener("controlSurfaces", section)
+
+    for object_name, label, section in (
+        ("window.controlSurfaces", "Control Surfaces…", "settings.controlSurfaces.devices"),
+        ("window.midiMonitor", "MIDI Monitor…", "settings.controlSurfaces.monitor"),
+        ("window.surfaceAssignments", "Learn Assignments…", "settings.controlSurfaces.assign"),
+    ):
+        action = QAction(tr(label), window)
+        action.setObjectName(object_name)
+        action.triggered.connect(lambda _c=False, s=section: open_surfaces(s))
+        menu.addAction(action)
+        shortcuts.append((action, object_name, ""))
+    menu.addSeparator()
+
     new_project = QAction(tr("New Project Panel"), window)
     new_project.setEnabled(False)
     new_project.setToolTip(tr(NOT_YET))
@@ -375,6 +392,9 @@ def window_commands() -> list[tuple[str, str, list[str], str]]:
         ("window.workspace.saveChanges", N_("Save Changes to this Workspace"), ["Window", "Workspaces"], ""),
         ("window.workspace.saveAs", N_("Save as New Workspace…"), ["Window", "Workspaces"], ""),
         ("window.workspace.edit", N_("Edit Workspaces…"), ["Window", "Workspaces"], ""),
+        ("window.controlSurfaces", N_("Control Surfaces…"), ["Window"], ""),
+        ("window.midiMonitor", N_("MIDI Monitor…"), ["Window"], ""),
+        ("window.surfaceAssignments", N_("Learn Assignments…"), ["Window"], ""),
     ]
     out += [(f"window.panel.{e.title.replace(' ', '')}", e.title, ["Window"], e.shortcut) for e in PANELS]
     return out

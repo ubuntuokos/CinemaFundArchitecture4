@@ -4713,3 +4713,35 @@ export.summary	Low	laag
 	Reject	Afwijzen
 	Shows every MIDI message from the controllers as it arrives, to check that a controller sends and what it sends. MIDI Clock, Active Sensing and MIDI Time Code are left out.	Toont elk MIDI-bericht van de controllers zodra het binnenkomt, om te zien of een controller zendt en wat. MIDI-clock, Active Sensing en MIDI-timecode blijven weg.
 	Pick a command (or a mixer strip for a fader or knob), press Learn, then press the button or move the control past half way. Confirm keeps the assignment. OK saves the assignments.	Kies een opdracht (of een mixerkanaal voor een fader of knop), druk op Leren en dan op de knop, of beweeg de bediening voorbij de helft. Bevestigen houdt de toewijzing. OK bewaart de toewijzingen.
+	All devices	Alle apparaten
+	Builtin: {name}	Ingebouwd: {name}
+	Capturing	Vastleggen
+	Confirmed	Bevestigd
+	Conflict	Conflict
+	Connect a MIDI controller or a ShuttlePRO to edit its profile.	Sluit een MIDI-controller of ShuttlePRO aan om het profiel te bewerken.
+	Control Surfaces…	Besturingsoppervlakken…
+	Filter messages	Berichten filteren
+	Idle	Inactief
+	Kernel dropped: {count}	Door de kernel verloren: {count}
+	Learn Assignments…	Toewijzingen leren…
+	Load profile	Profiel laden
+	MIDI Monitor…	MIDI-monitor…
+	Mute shuttle sound	Shuttle-geluid dempen
+	No conflicts.	Geen conflicten.
+	No profile warnings.	Geen profielwaarschuwingen.
+	No project profile is stored.	Er is geen projectprofiel opgeslagen.
+	OK writes the preferences and the profile file together.	OK schrijft de voorkeuren en het profielbestand samen.
+	Online	Online
+	Pending	In behandeling
+	Pickup (14-bit)	Oppakken (14-bit)
+	Pickup (7-bit)	Oppakken (7-bit)
+	Profile warnings	Profielwaarschuwingen
+	Rejected	Afgewezen
+	Show Active Sensing	Active Sensing tonen
+	Show MIDI Clock	MIDI-klok tonen
+	Show MIDI Time Code	MIDI-tijdcode tonen
+	The profile file is damaged. Preferences and the built-in profile stay in use.	Het profielbestand is beschadigd. De voorkeuren en het ingebouwde profiel blijven in gebruik.
+	Timed out	Tijd verstreken
+	Type: {hint}	Type: {hint}
+	User profile file	Gebruikersprofielbestand
+	{received} received, {dispatched} dispatched, {coalesced} coalesced, {stalls} stalls, {errors} errors	{received} ontvangen, {dispatched} verzonden, {coalesced} samengevoegd, {stalls} wachttijden, {errors} fouten

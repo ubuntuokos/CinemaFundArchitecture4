@@ -4718,3 +4718,35 @@
 	Reject	Refuser
 	Shows every MIDI message from the controllers as it arrives, to check that a controller sends and what it sends. MIDI Clock, Active Sensing and MIDI Time Code are left out.	Affiche chaque message MIDI des contrôleurs dès qu'il arrive, pour vérifier qu'un contrôleur émet et ce qu'il émet. L'horloge MIDI, l'Active Sensing et le timecode MIDI sont omis.
 	Pick a command (or a mixer strip for a fader or knob), press Learn, then press the button or move the control past half way. Confirm keeps the assignment. OK saves the assignments.	Choisissez une commande (ou une tranche pour un fader ou un bouton), appuyez sur Apprendre, puis sur le bouton ou déplacez la commande au-delà de la moitié. Confirmer conserve l'affectation. OK enregistre les affectations.
+	All devices	Tous les appareils
+	Builtin: {name}	Intégré : {name}
+	Capturing	Capture
+	Confirmed	Confirmé
+	Conflict	Conflit
+	Connect a MIDI controller or a ShuttlePRO to edit its profile.	Branchez un contrôleur MIDI ou un ShuttlePRO pour modifier son profil.
+	Control Surfaces…	Surfaces de contrôle…
+	Filter messages	Filtrer les messages
+	Idle	Inactif
+	Kernel dropped: {count}	Abandons du noyau : {count}
+	Learn Assignments…	Apprentissage des affectations…
+	Load profile	Charger le profil
+	MIDI Monitor…	Moniteur MIDI…
+	Mute shuttle sound	Couper le son de la navette
+	No conflicts.	Aucun conflit.
+	No profile warnings.	Aucun avertissement de profil.
+	No project profile is stored.	Aucun profil de projet n'est enregistré.
+	OK writes the preferences and the profile file together.	OK écrit les préférences et le fichier de profil ensemble.
+	Online	En ligne
+	Pending	En attente
+	Pickup (14-bit)	Reprise (14 bits)
+	Pickup (7-bit)	Reprise (7 bits)
+	Profile warnings	Avertissements de profil
+	Rejected	Rejeté
+	Show Active Sensing	Afficher l'Active Sensing
+	Show MIDI Clock	Afficher l'horloge MIDI
+	Show MIDI Time Code	Afficher le timecode MIDI
+	The profile file is damaged. Preferences and the built-in profile stay in use.	Le fichier de profil est endommagé. Les préférences et le profil intégré restent en usage.
+	Timed out	Délai dépassé
+	Type: {hint}	Type : {hint}
+	User profile file	Fichier de profil utilisateur
+	{received} received, {dispatched} dispatched, {coalesced} coalesced, {stalls} stalls, {errors} errors	{received} reçus, {dispatched} distribués, {coalesced} fusionnés, {stalls} attentes, {errors} erreurs

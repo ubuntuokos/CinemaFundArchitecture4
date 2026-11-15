@@ -88,7 +88,8 @@ pub fn document(device: &DeviceSetting) -> Value {
         "match": {"midiPortName": device.device},
         "modified": true,
         "basedOn": if device.profile.is_empty() { Value::Null } else { json!(device.profile) },
-        "pickup": {"enabled": true, "threshold7": 10, "threshold14": 1280},
+        "pickup": {"enabled": true, "threshold7": device.pickup_threshold7, "threshold14": device.pickup_threshold14},
+        "shuttle": {"sound": if device.shuttle_sound == "mute" { "mute" } else { "follow-playback" }},
         "controls": controls,
     })
 }
@@ -201,6 +202,19 @@ fn check_control(v: &Value) -> Result<(), String> {
     Ok(())
 }
 
+fn apply_file(d: &mut DeviceSetting, value: &Value) {
+    if let Some(pickup) = value.get("pickup").and_then(Value::as_object) {
+        if let Some(t) = pickup.get("threshold7").and_then(Value::as_u64) {
+            d.pickup_threshold7 = u16::try_from(t).unwrap_or(crate::control_surfaces::PICKUP_THRESHOLD7).min(127);
+        }
+        if let Some(t) = pickup.get("threshold14").and_then(Value::as_u64) {
+            d.pickup_threshold14 = u16::try_from(t).unwrap_or(crate::control_surfaces::PICKUP_THRESHOLD14).min(16383);
+        }
+    }
+    let sound = value.get("shuttle").and_then(|s| s.get("sound")).and_then(Value::as_str).unwrap_or("");
+    d.shuttle_sound = if sound == "mute" { "mute".into() } else { String::new() };
+}
+
 fn bindings_of(v: &Value) -> Vec<Binding> {
     v.get("controls")
         .and_then(Value::as_array)
@@ -253,14 +267,15 @@ pub fn load_into(prefs: &mut ControlSurfacePrefs, dir: &Path) -> Vec<String> {
             Ok(device) => {
                 let bindings = bindings_of(&value);
                 let profile = value.get("basedOn").and_then(Value::as_str).unwrap_or("").to_string();
-                match prefs.devices.iter_mut().find(|d| d.device == device) {
-                    Some(d) => {
-                        d.bindings = bindings;
-                        if !profile.is_empty() {
-                            d.profile = profile;
-                        }
+                if !prefs.devices.iter().any(|d| d.device == device) {
+                    prefs.devices.push(DeviceSetting { device: device.clone(), ..DeviceSetting::default() });
+                }
+                if let Some(d) = prefs.devices.iter_mut().find(|d| d.device == device) {
+                    d.bindings = bindings;
+                    if !profile.is_empty() {
+                        d.profile = profile;
                     }
-                    None => prefs.devices.push(DeviceSetting { device, profile, bindings, ..DeviceSetting::default() }),
+                    apply_file(d, &value);
                 }
             }
             Err(ProfileFault::Readonly(v)) => {
@@ -362,6 +377,33 @@ mod tests {
         let warnings = save_all(&prefs, &dir);
         assert!(warnings.iter().any(|w| w.contains("read-only")), "{warnings:?}");
         assert_eq!(fs::read(&path).unwrap_or_default(), before, "a newer version is not overwritten");
+        let _ = fs::remove_dir_all(&dir);
+    }
+
+    #[test]
+    fn pickup_and_shuttle_sound_round_trip() {
+        let dir = std::env::temp_dir().join(format!("cfa4-surface-profile-pickup-{}", std::process::id()));
+        let _ = fs::remove_dir_all(&dir);
+        fs::create_dir_all(&dir).expect("temp dir");
+        let mut prefs = ControlSurfacePrefs {
+            devices: vec![DeviceSetting {
+                device: "midi:k:p".into(),
+                pickup_threshold7: 12,
+                pickup_threshold14: 200,
+                shuttle_sound: "mute".into(),
+                bindings: vec![Binding { control: cc(), command: "edit.undo".into(), params: Value::Null }],
+                ..DeviceSetting::default()
+            }],
+            ..ControlSurfacePrefs::default()
+        };
+        assert!(save_all(&prefs, &dir).is_empty(), "the document we write validates");
+        prefs.devices[0].pickup_threshold7 = 1;
+        prefs.devices[0].shuttle_sound.clear();
+        let warnings = load_into(&mut prefs, &dir);
+        assert!(warnings.is_empty(), "{warnings:?}");
+        assert_eq!(prefs.devices[0].pickup_threshold7, 12);
+        assert_eq!(prefs.devices[0].pickup_threshold14, 200);
+        assert_eq!(prefs.devices[0].shuttle_sound, "mute");
         let _ = fs::remove_dir_all(&dir);
     }
 

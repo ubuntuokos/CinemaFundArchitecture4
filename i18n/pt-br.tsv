@@ -4723,3 +4723,35 @@
 	Reject	Rejeitar
 	Shows every MIDI message from the controllers as it arrives, to check that a controller sends and what it sends. MIDI Clock, Active Sensing and MIDI Time Code are left out.	Mostra cada mensagem MIDI dos controladores ao chegar, para ver se um controlador envia e o que envia. Clock MIDI, Active Sensing e timecode MIDI ficam de fora.
 	Pick a command (or a mixer strip for a fader or knob), press Learn, then press the button or move the control past half way. Confirm keeps the assignment. OK saves the assignments.	Escolha um comando (ou um canal do mixer para um fader ou knob), pressione Aprender e depois o botão, ou mova o controle além da metade. Confirmar mantém a atribuição. OK salva as atribuições.
+	All devices	Todos os dispositivos
+	Builtin: {name}	Integrado: {name}
+	Capturing	Capturando
+	Confirmed	Confirmado
+	Conflict	Conflito
+	Connect a MIDI controller or a ShuttlePRO to edit its profile.	Ligue um controlador MIDI ou um ShuttlePRO para editar o perfil.
+	Control Surfaces…	Superfícies de controle…
+	Filter messages	Filtrar mensagens
+	Idle	Ocioso
+	Kernel dropped: {count}	Descartados pelo kernel: {count}
+	Learn Assignments…	Aprender atribuições…
+	Load profile	Carregar perfil
+	MIDI Monitor…	Monitor MIDI…
+	Mute shuttle sound	Silenciar o som do shuttle
+	No conflicts.	Não há conflitos.
+	No profile warnings.	Não há avisos de perfil.
+	No project profile is stored.	Nenhum perfil de projeto está gravado.
+	OK writes the preferences and the profile file together.	OK grava as preferências e o arquivo de perfil juntos.
+	Online	Online
+	Pending	Pendente
+	Pickup (14-bit)	Pickup (14 bits)
+	Pickup (7-bit)	Pickup (7 bits)
+	Profile warnings	Avisos de perfil
+	Rejected	Rejeitado
+	Show Active Sensing	Mostrar Active Sensing
+	Show MIDI Clock	Mostrar relógio MIDI
+	Show MIDI Time Code	Mostrar código de tempo MIDI
+	The profile file is damaged. Preferences and the built-in profile stay in use.	O arquivo de perfil está danificado. As preferências e o perfil integrado continuam em uso.
+	Timed out	Tempo esgotado
+	Type: {hint}	Tipo: {hint}
+	User profile file	Arquivo de perfil do usuário
+	{received} received, {dispatched} dispatched, {coalesced} coalesced, {stalls} stalls, {errors} errors	{received} recebidos, {dispatched} despachados, {coalesced} reunidos, {stalls} esperas, {errors} erros

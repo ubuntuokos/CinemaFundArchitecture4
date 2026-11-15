@@ -4716,3 +4716,35 @@ export.summary	Low	ниско
 	Reject	Отхвърли
 	Shows every MIDI message from the controllers as it arrives, to check that a controller sends and what it sends. MIDI Clock, Active Sensing and MIDI Time Code are left out.	Показва всяко MIDI съобщение от контролерите при пристигане, за да се види дали контролер праща и какво. MIDI часовник, Active Sensing и MIDI времеви код се пропускат.
 	Pick a command (or a mixer strip for a fader or knob), press Learn, then press the button or move the control past half way. Confirm keeps the assignment. OK saves the assignments.	Изберете команда (или лента на миксера за фейдър или копче), натиснете Обучение, после бутона или преместете органа след половината. Потвърждението запазва назначението. OK записва назначенията.
+	All devices	Всички устройства
+	Builtin: {name}	Вграден: {name}
+	Capturing	Заснемане
+	Confirmed	Потвърдено
+	Conflict	Конфликт
+	Connect a MIDI controller or a ShuttlePRO to edit its profile.	Свържете MIDI контролер или ShuttlePRO, за да редактирате профила му.
+	Control Surfaces…	Повърхности за управление…
+	Filter messages	Филтриране на съобщения
+	Idle	В покой
+	Kernel dropped: {count}	Ядрото отхвърли: {count}
+	Learn Assignments…	Научаване на назначения…
+	Load profile	Зареждане на профил
+	MIDI Monitor…	MIDI монитор…
+	Mute shuttle sound	Заглушаване на звука на совалката
+	No conflicts.	Няма конфликти.
+	No profile warnings.	Няма предупреждения за профила.
+	No project profile is stored.	Няма записан профил на проекта.
+	OK writes the preferences and the profile file together.	OK записва настройките и файла на профила заедно.
+	Online	На линия
+	Pending	Изчаква
+	Pickup (14-bit)	Захващане (14 бита)
+	Pickup (7-bit)	Захващане (7 бита)
+	Profile warnings	Предупреждения за профила
+	Rejected	Отхвърлено
+	Show Active Sensing	Показване на Active Sensing
+	Show MIDI Clock	Показване на MIDI часовник
+	Show MIDI Time Code	Показване на MIDI времеви код
+	The profile file is damaged. Preferences and the built-in profile stay in use.	Файлът на профила е повреден. Настройките и вграденият профил остават в употреба.
+	Timed out	Времето изтече
+	Type: {hint}	Тип: {hint}
+	User profile file	Файл на потребителския профил
+	{received} received, {dispatched} dispatched, {coalesced} coalesced, {stalls} stalls, {errors} errors	{received} получени, {dispatched} изпратени, {coalesced} обединени, {stalls} изчаквания, {errors} грешки

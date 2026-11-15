@@ -4745,3 +4745,35 @@ export.summary	Low	alacsony
 	Reject	Elutasítás
 	Shows every MIDI message from the controllers as it arrives, to check that a controller sends and what it sends. MIDI Clock, Active Sensing and MIDI Time Code are left out.	Megmutat minden MIDI-üzenetet, amely a vezérlőkről érkezik, így ellenőrizhető, hogy egy vezérlő küld-e, és mit küld. A MIDI Clock, az Active Sensing és a MIDI-időkód nem jelenik meg.
 	Pick a command (or a mixer strip for a fader or knob), press Learn, then press the button or move the control past half way. Confirm keeps the assignment. OK saves the assignments.	Válasszon parancsot (fader vagy forgatógomb esetén keverősávot), nyomja meg a Tanítás gombot, majd nyomja meg a gombot, vagy mozdítsa a kezelőszervet félúton túl. A megerősítés megtartja a hozzárendelést. Az OK menti a hozzárendeléseket.
+	All devices	Minden eszköz
+	Builtin: {name}	Beépített: {name}
+	Capturing	Rögzítés
+	Confirmed	Megerősítve
+	Conflict	Ütközés
+	Connect a MIDI controller or a ShuttlePRO to edit its profile.	A profil szerkesztéséhez csatlakoztasson MIDI-vezérlőt vagy ShuttlePRO-t.
+	Control Surfaces…	Vezérlőfelületek…
+	Filter messages	Üzenetek szűrése
+	Idle	Tétlen
+	Kernel dropped: {count}	Kernel eldobott: {count}
+	Learn Assignments…	Tanulás és hozzárendelések…
+	Load profile	Profil betöltése
+	MIDI Monitor…	MIDI-figyelő…
+	Mute shuttle sound	Shuttle hang némítása
+	No conflicts.	Nincs ütközés.
+	No profile warnings.	Nincs profilfigyelmeztetés.
+	No project profile is stored.	Nincs tárolt projektprofil.
+	OK writes the preferences and the profile file together.	Az OK a beállításokat és a profilfájlt együtt írja ki.
+	Online	Elérhető
+	Pending	Függőben
+	Pickup (14-bit)	Felvétel (14 bites)
+	Pickup (7-bit)	Felvétel (7 bites)
+	Profile warnings	Profilfigyelmeztetések
+	Rejected	Elutasítva
+	Show Active Sensing	Active Sensing megjelenítése
+	Show MIDI Clock	MIDI-óra megjelenítése
+	Show MIDI Time Code	MIDI időkód megjelenítése
+	The profile file is damaged. Preferences and the built-in profile stay in use.	A profilfájl sérült. A beállítások és a beépített profil marad használatban.
+	Timed out	Lejárt
+	Type: {hint}	Típus: {hint}
+	User profile file	Felhasználói profilfájl
+	{received} received, {dispatched} dispatched, {coalesced} coalesced, {stalls} stalls, {errors} errors	{received} érkezett, {dispatched} kiosztott, {coalesced} összevont, {stalls} várakozás, {errors} hiba

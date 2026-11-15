@@ -49,7 +49,7 @@ from PySide6.QtWidgets import (
 )
 
 from .. import theme
-from ..i18n import fmt, tr
+from ..i18n import N_, fmt, tr
 
 LIST_W = 216
 LABEL_W = 250
@@ -79,6 +79,7 @@ MENU = (
     ("plugins", "Plugins…"),
     ("timeline", "Timeline…"),
     ("trim", "Trim…"),
+    ("controlSurfaces", N_("Control Surfaces…")),
 )
 LABELS = ("Violet", "Iris", "Caribbean", "Lavender", "Cerulean", "Forest", "Rose", "Mango", "Purple", "Blue", "Teal", "Magenta", "Tan", "Green",
           "Brown", "Yellow")
@@ -348,7 +349,7 @@ class PreferencesDialog(QDialog):
 
     def __init__(self, parent: QWidget | None, engine: Any, page: str = "general",
                  devices: Callable[[], dict[str, Any]] | None = None, memory: Callable[[], int] | None = None,
-                 commands: Callable[[], list[tuple[str, str]]] | None = None) -> None:
+                 commands: Callable[[], list[tuple[str, str]]] | None = None, section: str = "") -> None:
         super().__init__(parent)
         self.engine = engine
         # (id, label) of the commands a control surface button can run (Control Surfaces ▸ Assignments)
@@ -378,6 +379,16 @@ class PreferencesDialog(QDialog):
         self.learning = False
         self.learn_message = ""
         self.learn_pending: dict[str, Any] | None = None  # captured control waiting for Confirm
+        self.learn_phase = "idle"
+        self.learn_hint = ""
+        self.focus_section = section
+        self.monitor_clock = self.monitor_sense = self.monitor_mtc = False
+        self.monitor_query = ""
+        self.monitor_device = ""
+        self.surface_state: dict[str, Any] = {}
+        self.profile_warnings: list[str] = []
+        self.profile_conflicts: list[str] = []
+        self.profile_file_warnings: list[str] = []
         event = getattr(engine, "event", None)
         if event is not None:
             event.connect(self._engine_event)
@@ -574,6 +585,9 @@ class PreferencesDialog(QDialog):
         self.scroll.setWidget(page)
         for w, by in self._enablers:
             w.setEnabled(get(self.values, by) is not False)
+        if self.page == "controlSurfaces":
+            self._load_surface_extras()
+        self._reveal_focus()
 
     def _note(self, parent: QWidget, text: str, name: str = "") -> QLabel:
         label = QLabel(tr(text), parent)
@@ -1007,11 +1021,93 @@ class PreferencesDialog(QDialog):
         col.setContentsMargins(0, 0, 0, 0)
         col.addWidget(self._surface_devices(page))
         col.addWidget(self._assignments(page))
+        col.addWidget(self._profile_editor(page))
+        col.addWidget(self._profile_warnings_box(page))
         col.addWidget(self._midi_monitor(page))
         return page
 
+    def _reveal_focus(self) -> None:
+        if not self.focus_section:
+            return
+        w = self.findChild(QWidget, self.focus_section)
+        if w is not None:
+            self.scroll.ensureWidgetVisible(w)
+
+    def _state_word(self, state: str) -> str:
+        return {"online": tr("Online"), "offline": tr("Offline"), "error": tr("Error"), "disabled": tr("Disabled")}.get(state, state)
+
+    def _state_for(self, device: str) -> dict[str, Any]:
+        for row in self.surface_state.get("devices") or []:
+            if isinstance(row, dict) and row.get("device") == device:
+                return row
+        return {}
+
+    def _counter_text(self, device: str) -> str:
+        c = self._state_for(device)
+        def n(key: str) -> int:
+            got = c.get(key)
+            return int(got) if isinstance(got, int) and not isinstance(got, bool) else 0
+        return fmt("{received} received, {dispatched} dispatched, {coalesced} coalesced, {stalls} stalls, {errors} errors",
+                   received=n("received"), dispatched=n("dispatched"), coalesced=n("coalesced"), stalls=n("stalls"), errors=n("errors"))
+
+    def _paint_text(self, name: str, text: str) -> None:
+        w = self.findChild(QLabel, name)
+        if w is None:
+            return
+        try:
+            w.setText(text)
+        except RuntimeError:
+            pass
+
+    def _paint_counters(self) -> None:
+        devices = [d for d in (self.surfaces or {}).get("devices") or [] if isinstance(d, dict)]
+        for n, d in enumerate(devices, start=1):
+            dev = str(d.get("device") or "")
+            self._paint_text(f"settings.controlSurfaces.{n}.counters", self._counter_text(dev))
+            reported = str(d.get("state") or "")
+            if self._state_for(dev).get("state") == "disabled":
+                reported = "disabled"
+            self._paint_text(f"settings.controlSurfaces.{n}.state", self._state_word(reported))
+        dropped = self.surface_state.get("kernelDropped")
+        count = int(dropped) if isinstance(dropped, int) and not isinstance(dropped, bool) else 0
+        self._paint_text("settings.controlSurfaces.kernelDropped", fmt("Kernel dropped: {count}", count=count))
+
+    def _load_surface_extras(self) -> None:
+        def state(r: Any, _b: Any) -> None:
+            self.surface_state = r if isinstance(r, dict) else {}
+            self._paint_counters()
+
+        def warnings(r: Any, _b: Any) -> None:
+            lines: list[str] = []
+            rows = r.get("devices") if isinstance(r, dict) else None
+            for row in rows or []:
+                if isinstance(row, dict):
+                    for warning in row.get("warnings") or []:
+                        lines.append(f"{row.get('device')}: {warning}")
+            self.profile_warnings = lines
+            self._paint_text("settings.controlSurfaces.warnings.text", "\n".join(lines) if lines else tr("No profile warnings."))
+
+        def audit(r: Any, _b: Any) -> None:
+            lines = []
+            if isinstance(r, list):
+                for row in r:
+                    if isinstance(row, dict):
+                        lines.append(f"{row.get('device')}: {row.get('problem')}: {row.get('detail')}")
+            self.profile_conflicts = lines
+            self._paint_text("settings.controlSurfaces.profile.conflicts", "\n".join(lines) if lines else tr("No conflicts."))
+
+        self.engine.call("surface.state", {}, on_reply=state)
+        self.engine.execute("surface.profile.warnings", {}, on_reply=warnings)
+        self.engine.execute("surface.audit", {}, on_reply=audit)
+
+    def _enable_surface(self, device: str) -> None:
+        self._set_surface(device, "enabled", True)
+        self.engine.call("surface.enable", {"device": device, "enabled": True})
+        self._build_page()
+
     def _surface_devices(self, parent: QWidget) -> QWidget:
         box = QGroupBox(tr("Devices"), parent)
+        box.setObjectName("settings.controlSurfaces.devices")
         v = QVBoxLayout(box)
         if (self.surfaces is None or self.surface_profiles is None) and not self._surfaces_pending:
             self._surfaces_pending = self._surfaces_building = True
@@ -1026,12 +1122,11 @@ class PreferencesDialog(QDialog):
         grid = QGridLayout()
         grid.setHorizontalSpacing(12)
         grid.setVerticalSpacing(4)
-        for c, head in enumerate((tr("Use"), tr("Device"), tr("Type"), tr("Status"), tr("Profile"))):
+        for c, head in enumerate((tr("Use"), tr("Device"), tr("Type"), tr("Status"), tr("Profile"), "")):
             h = QLabel(head, box)
             h.setStyleSheet(f"color: {theme.current().text_dim}; font-weight: 600;")
             grid.addWidget(h, 0, c)
         types = {"midi": tr("MIDI"), "hid": tr("HID jog/shuttle"), "osc": tr("OSC")}
-        states = {"online": tr("Connected"), "offline": tr("Not connected"), "error": tr("Error"), "disabled": tr("Disabled")}
         for n, d in enumerate(devices, start=1):
             dev = str(d.get("device") or "")
             setting = self._surface_setting(dev)
@@ -1045,7 +1140,10 @@ class PreferencesDialog(QDialog):
             name.setToolTip(fmt("{device} ({port})", device=dev, port=str(d.get("port") or "")))
             grid.addWidget(name, n, 1)
             grid.addWidget(QLabel(types.get(str(d.get("protocol") or ""), str(d.get("protocol") or "")), box), n, 2)
-            state = QLabel(states.get(str(d.get("state") or ""), str(d.get("state") or "")), box)
+            reported = str(d.get("state") or "")
+            if self._state_for(dev).get("state") == "disabled":
+                reported = "disabled"
+            state = QLabel(self._state_word(reported), box)
             state.setObjectName(f"settings.controlSurfaces.{n}.state")
             if d.get("error"):
                 state.setToolTip(str(d.get("error")))
@@ -1062,8 +1160,18 @@ class PreferencesDialog(QDialog):
             combo.setCurrentIndex(max(i, 0))
             combo.activated.connect(lambda _i, i=dev, c=combo: self._set_surface(i, "profile", str(c.currentData() or "")))
             grid.addWidget(combo, n, 4)
+            enable = self._button(f"settings.controlSurfaces.{n}.enable", tr("Enable"))
+            enable.clicked.connect(lambda _c=False, i=dev: self._enable_surface(i))
+            grid.addWidget(enable, n, 5)
         grid.setColumnStretch(1, 1)
         v.addLayout(grid)
+        for n, d in enumerate(devices, start=1):
+            counters = QLabel(self._counter_text(str(d.get("device") or "")), box)
+            counters.setObjectName(f"settings.controlSurfaces.{n}.counters")
+            v.addWidget(counters)
+        dropped = self.surface_state.get("kernelDropped")
+        count = int(dropped) if isinstance(dropped, int) and not isinstance(dropped, bool) else 0
+        v.addWidget(self._note(box, fmt("Kernel dropped: {count}", count=count), "settings.controlSurfaces.kernelDropped"))
         if not devices:
             v.addWidget(self._note(box, "No MIDI controller or jog/shuttle device was found. Connect one and press Refresh.",
                                    "settings.controlSurfaces.empty"))
@@ -1195,6 +1303,12 @@ class PreferencesDialog(QDialog):
         times.addWidget(silence)
         times.addStretch(1)
         v.addLayout(times)
+        state = QLabel(self._learn_state_label(), box)
+        state.setObjectName("settings.controlSurfaces.assign.state")
+        v.addWidget(state)
+        hint = QLabel(fmt("Type: {hint}", hint=self.learn_hint or "—"), box)
+        hint.setObjectName("settings.controlSurfaces.assign.hint")
+        v.addWidget(hint)
         text = self.learn_message or ("Press or move a control on the controller…" if self.learning else
                                       "Pick a command (or a mixer strip for a fader or knob), press Learn, then press the button "
                                       "or move the control past half way. Confirm keeps the assignment. OK saves the assignments.")
@@ -1225,11 +1339,14 @@ class PreferencesDialog(QDialog):
 
         def failed(m: str) -> None:
             self.learning = False
+            self.learn_phase = "idle"
             self.learn_message = m
             self._rebuild_if_shown()
 
         self.learning = True
         self.learn_pending = None
+        self.learn_phase = "learning"
+        self.learn_hint = ""
         self.learn_message = ""
         self._build_page()
         command, _, strip = self.assign_command.partition("|")
@@ -1247,7 +1364,28 @@ class PreferencesDialog(QDialog):
         if self.learning or self.learn_pending is not None:
             self.learning = False
             self.learn_pending = None
+            self.learn_phase = "cancelled"
             self.engine.call("surface.learnCancel", {})
+
+    def _learn_state_label(self) -> str:
+        phase = self.learn_phase
+        if phase == "learning":
+            return tr("Learning")
+        if phase == "capturing":
+            return tr("Capturing")
+        if phase == "pending":
+            return tr("Pending")
+        if phase == "conflict":
+            return tr("Conflict")
+        if phase == "timeout":
+            return tr("Timed out")
+        if phase == "confirmed":
+            return tr("Confirmed")
+        if phase == "rejected":
+            return tr("Rejected")
+        if phase == "cancelled":
+            return tr("Cancelled")
+        return tr("Idle")
 
     def _surface_ms(self, key: str, default: int) -> int:
         got = get(self.values, f"controlSurfaces.{key}")
@@ -1276,6 +1414,7 @@ class PreferencesDialog(QDialog):
         self.engine.call("surface.learnConfirm", {"accept": accept})
         self.learning = False
         self.learn_pending = None
+        self.learn_phase = "confirmed" if accept else "rejected"
         if accept:
             self._store_learned(pending.get("control"))
         else:
@@ -1289,6 +1428,9 @@ class PreferencesDialog(QDialog):
         if device and device != self.assign_device and state not in ("timeout", "cancelled", "rejected"):
             return
         if state == "capturing":
+            self.learn_phase = "capturing"
+            hint = message.get("hint")
+            self.learn_hint = str(hint) if isinstance(hint, str) else ""
             self.learn_message = tr("Waiting for the control to settle…")
             self._rebuild_if_shown()
             return
@@ -1297,8 +1439,10 @@ class PreferencesDialog(QDialog):
             if not isinstance(control, dict):
                 return
             self.learning = True
+            self.learn_phase = "conflict" if state == "conflict" else "pending"
             self.learn_pending = {"control": control, "mode": str(captured.get("mode") or "")}
             hint = self.learn_pending["mode"] or "control"
+            self.learn_hint = hint
             if state == "conflict":
                 self.learn_message = tr("That control is already assigned. Confirm replaces it.")
             else:
@@ -1311,17 +1455,20 @@ class PreferencesDialog(QDialog):
                 self._store_learned(message.get("control") or captured.get("control"))
             self.learning = False
             self.learn_pending = None
+            self.learn_phase = "confirmed"
             self._rebuild_if_shown()
             return
         if state == "timeout":
             self.learning = False
             self.learn_pending = None
+            self.learn_phase = "timeout"
             self.learn_message = tr("Learn timed out.")
             self._rebuild_if_shown()
             return
         if state in ("rejected", "cancelled"):
             self.learning = False
             self.learn_pending = None
+            self.learn_phase = state
             self._rebuild_if_shown()
 
     def _rebuild_if_shown(self) -> None:
@@ -1334,6 +1481,120 @@ class PreferencesDialog(QDialog):
     def _stop_reading(self) -> None:
         self._stop_monitor()
         self._cancel_learn()
+
+    # ----- profile editor -----
+    def _profile_device(self) -> str:
+        devices = self._midi_devices()
+        ids = [str(d.get("device") or "") for d in devices]
+        if self.assign_device in ids:
+            return self.assign_device
+        return ids[0] if ids else ""
+
+    def _profile_name(self, device: str) -> str:
+        setting = self._surface_setting(device)
+        current = str(setting.get("profile") or "")
+        if not current:
+            for row in (self.surfaces or {}).get("devices") or []:
+                if isinstance(row, dict) and row.get("device") == device:
+                    current = str(row.get("profile") or "")
+                    break
+        for p in self.surface_profiles or []:
+            if p.get("id") == current:
+                return str(p.get("name") or current)
+        return current
+
+    def _surface_int(self, device: str, key: str, default: int) -> int:
+        got = self._surface_setting(device).get(key)
+        return int(got) if isinstance(got, int) and not isinstance(got, bool) else default
+
+    def _profile_editor(self, parent: QWidget) -> QWidget:
+        """Layers, pickup and shuttle mute for the device selected under Assignments. OK writes
+        the preferences and the active profile file together; Load reads the files back."""
+        box = QGroupBox(tr("Profile"), parent)
+        box.setObjectName("settings.controlSurfaces.profile")
+        v = QVBoxLayout(box)
+        device = self._profile_device()
+        if not device:
+            v.addWidget(self._note(box, tr("Connect a MIDI controller or a ShuttlePRO to edit its profile."),
+                                   "settings.controlSurfaces.profile.empty"))
+        else:
+            v.addWidget(self._note(box, fmt("Builtin: {name}", name=self._profile_name(device) or "—"),
+                                   "settings.controlSurfaces.profile.builtin"))
+        v.addWidget(self._note(box, tr("User profile file"), "settings.controlSurfaces.profile.user"))
+        v.addWidget(self._note(box, tr("No project profile is stored."), "settings.controlSurfaces.profile.project"))
+        v.addWidget(self._note(box, tr("OK writes the preferences and the profile file together."),
+                               "settings.controlSurfaces.profile.save"))
+        row = QHBoxLayout()
+        row.addWidget(QLabel(tr("Pickup (7-bit)"), box))
+        t7 = QSpinBox(box)
+        t7.setObjectName("settings.controlSurfaces.profile.threshold7")
+        t7.setRange(0, 127)
+        t7.blockSignals(True)
+        t7.setValue(self._surface_int(device, "pickupThreshold7", 10) if device else 10)
+        t7.blockSignals(False)
+        t7.setEnabled(bool(device))
+        t7.valueChanged.connect(lambda n, i=device: self._set_surface(i, "pickupThreshold7", int(n)) if i else None)
+        row.addWidget(t7)
+        row.addWidget(QLabel(tr("Pickup (14-bit)"), box))
+        t14 = QSpinBox(box)
+        t14.setObjectName("settings.controlSurfaces.profile.threshold14")
+        t14.setRange(0, 16383)
+        t14.blockSignals(True)
+        t14.setValue(self._surface_int(device, "pickupThreshold14", 1280) if device else 1280)
+        t14.blockSignals(False)
+        t14.setEnabled(bool(device))
+        t14.valueChanged.connect(lambda n, i=device: self._set_surface(i, "pickupThreshold14", int(n)) if i else None)
+        row.addWidget(t14)
+        row.addStretch(1)
+        v.addLayout(row)
+        mute = QCheckBox(tr("Mute shuttle sound"), box)
+        mute.setObjectName("settings.controlSurfaces.profile.shuttleMute")
+        mute.setEnabled(bool(device))
+        mute.setChecked(self._surface_setting(device).get("shuttleSound") == "mute" if device else False)
+        mute.toggled.connect(lambda on, i=device: self._set_surface(i, "shuttleSound", "mute" if on else "") if i else None)
+        v.addWidget(mute)
+        conflicts = "\n".join(self.profile_conflicts) if self.profile_conflicts else tr("No conflicts.")
+        conflict = QLabel(conflicts, box)
+        conflict.setObjectName("settings.controlSurfaces.profile.conflicts")
+        conflict.setWordWrap(True)
+        v.addWidget(conflict)
+        load = self._button("settings.controlSurfaces.profile.load", tr("Load profile"))
+        load.clicked.connect(self._load_profile_files)
+        v.addWidget(load)
+        corrupt = QLabel(tr("The profile file is damaged. Preferences and the built-in profile stay in use."), box)
+        corrupt.setObjectName("settings.controlSurfaces.profile.corrupt")
+        corrupt.setWordWrap(True)
+        if self.profile_file_warnings:
+            corrupt.setText(corrupt.text() + "\n" + "\n".join(self.profile_file_warnings))
+        corrupt.setVisible(bool(self.profile_file_warnings))
+        v.addWidget(corrupt)
+        return box
+
+    def _profile_warnings_box(self, parent: QWidget) -> QWidget:
+        box = QGroupBox(tr("Profile warnings"), parent)
+        box.setObjectName("settings.controlSurfaces.warnings")
+        v = QVBoxLayout(box)
+        text = "\n".join(self.profile_warnings) if self.profile_warnings else tr("No profile warnings.")
+        label = QLabel(text, box)
+        label.setObjectName("settings.controlSurfaces.warnings.text")
+        label.setWordWrap(True)
+        v.addWidget(label)
+        return box
+
+    def _load_profile_files(self) -> None:
+        def got(r: Any, _b: Any) -> None:
+            warnings = r.get("warnings") if isinstance(r, dict) else None
+            self.profile_file_warnings = [str(w) for w in warnings or []]
+            devices = r.get("devices") if isinstance(r, dict) else None
+            if isinstance(devices, list):
+                put(self.values, "controlSurfaces.devices", devices)
+            self._rebuild_if_shown()
+
+        def failed(message: str) -> None:
+            self.profile_file_warnings = [message]
+            self._rebuild_if_shown()
+
+        self.engine.execute("controlSurfaces.reloadProfiles", {}, on_reply=got, on_error=failed)
 
     # ----- MIDI Monitor -----
     MONITOR_LINES = 500
@@ -1358,6 +1619,41 @@ class PreferencesDialog(QDialog):
         row.addWidget(clear)
         row.addStretch(1)
         v.addLayout(row)
+        filters = QHBoxLayout()
+        clock = QCheckBox(tr("Show MIDI Clock"), box)
+        clock.setObjectName("settings.controlSurfaces.monitor.clock")
+        clock.setChecked(self.monitor_clock)
+        clock.toggled.connect(lambda on: self._set_monitor_flag("clock", bool(on)))
+        sense = QCheckBox(tr("Show Active Sensing"), box)
+        sense.setObjectName("settings.controlSurfaces.monitor.sense")
+        sense.setChecked(self.monitor_sense)
+        sense.toggled.connect(lambda on: self._set_monitor_flag("sense", bool(on)))
+        mtc = QCheckBox(tr("Show MIDI Time Code"), box)
+        mtc.setObjectName("settings.controlSurfaces.monitor.mtc")
+        mtc.setChecked(self.monitor_mtc)
+        mtc.toggled.connect(lambda on: self._set_monitor_flag("mtc", bool(on)))
+        filters.addWidget(clock)
+        filters.addWidget(sense)
+        filters.addWidget(mtc)
+        filters.addStretch(1)
+        v.addLayout(filters)
+        pick = QHBoxLayout()
+        pick.addWidget(QLabel(tr("Device"), box))
+        device = QComboBox(box)
+        device.setObjectName("settings.controlSurfaces.monitor.device")
+        device.addItem(tr("All devices"), "")
+        for d in self._midi_devices():
+            device.addItem(str(d.get("name") or d.get("device")), str(d.get("device") or ""))
+        device.setCurrentIndex(max(device.findData(self.monitor_device), 0))
+        device.activated.connect(lambda _i, c=device: self._set_monitor_device(str(c.currentData() or "")))
+        pick.addWidget(device, 1)
+        query = QLineEdit(box)
+        query.setObjectName("settings.controlSurfaces.monitor.filter")
+        query.setPlaceholderText(tr("Filter messages"))
+        query.setText(self.monitor_query)
+        query.textChanged.connect(self._set_monitor_query)
+        pick.addWidget(query, 1)
+        v.addLayout(pick)
         log = QPlainTextEdit(box)
         log.setObjectName("settings.controlSurfaces.monitor.log")
         log.setReadOnly(True)
@@ -1405,12 +1701,39 @@ class PreferencesDialog(QDialog):
         self.monitor_error = ""
         self.monitor_on = bool(on)
         self._show_monitor_state()
-        self.engine.call("surface.monitor", {"enabled": bool(on)}, on_reply=done, on_error=failed)
+        self.engine.call("surface.monitor", self._monitor_params(bool(on)), on_reply=done, on_error=failed)
+
+    def _monitor_params(self, enabled: bool) -> dict[str, Any]:
+        return {
+            "enabled": enabled,
+            "device": self.monitor_device,
+            "filter": {"clock": self.monitor_clock, "sense": self.monitor_sense, "mtc": self.monitor_mtc},
+        }
+
+    def _set_monitor_flag(self, key: str, on: bool) -> None:
+        setattr(self, f"monitor_{key}", on)
+        if self.monitor_on:
+            self.engine.call("surface.monitor", self._monitor_params(True))
+
+    def _set_monitor_device(self, device: str) -> None:
+        self.monitor_device = device
+        if self.monitor_on:
+            self.engine.call("surface.monitor", self._monitor_params(True))
+
+    def _monitor_keeps(self, line: str) -> bool:
+        query = self.monitor_query.strip().casefold()
+        return not query or query in line.casefold()
+
+    def _set_monitor_query(self, text: str) -> None:
+        self.monitor_query = text
+        log = self._monitor_widget("log")
+        if log is not None:
+            log.setPlainText("\n".join(line for line in self.monitor_lines if self._monitor_keeps(line)))
 
     def _stop_monitor(self) -> None:
         if self.monitor_on:
             self.monitor_on = False
-            self.engine.call("surface.monitor", {"enabled": False})
+            self.engine.call("surface.monitor", self._monitor_params(False))
 
     def _clear_monitor(self) -> None:
         self.monitor_lines.clear()
@@ -1456,9 +1779,10 @@ class PreferencesDialog(QDialog):
         if not new:
             return
         self.monitor_lines = (self.monitor_lines + new)[-self.MONITOR_LINES:]
+        shown = [line for line in new if self._monitor_keeps(line)]
         log = self._monitor_widget("log")
-        if log is not None:
-            log.appendPlainText("\n".join(new))
+        if log is not None and shown:
+            log.appendPlainText("\n".join(shown))
 
     def _load_surfaces(self) -> None:
         def devices(r: Any, _b: Any) -> None:
