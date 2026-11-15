@@ -77,6 +77,14 @@ pub fn transport(s: &Session, p: &Value) -> Result<Value, String> {
     Ok(json!({ "active": active }))
 }
 
+/// `timecodeSync.devices`: the names the LTC and MTC settings take (cpal devices of the
+/// Settings ▸ Audio Hardware host, ALSA sequencer ports).
+pub fn devices(s: &Session) -> Value {
+    let (inputs, outputs) = cfa4_tcsync_io::cpal_dev::device_names(&s.prefs.audio_hardware.device_class);
+    let (midi_inputs, midi_outputs) = cfa4_tcsync_io::alsa_seq::port_names();
+    json!({ "ltcInputs": inputs, "ltcOutputs": outputs, "mtcInputs": midi_inputs, "mtcOutputs": midi_outputs })
+}
+
 /// Applies the preferences, reads the inputs and returns the events for the GUI. Returns whether
 /// sync is on (the serve loop then checks more often).
 pub fn upkeep(s: &mut Session) -> (Vec<Value>, bool) {
@@ -95,6 +103,7 @@ fn upkeep_with<B: Backend>(st: &mut State<B>, s: &mut Session, backend: impl FnO
         rt.ltc_out_running = false;
         rt.mtc_out_running = false;
         rt.warning = None;
+        rt.user_bits = None;
         rt.error = wanted.err();
         return (Vec::new(), false);
     }
@@ -114,6 +123,7 @@ fn upkeep_with<B: Backend>(st: &mut State<B>, s: &mut Session, backend: impl FnO
         .map(|a| match a {
             ChaseAction::Locate { to, play } => json!({"event": "timecodeSync.locate", "time": to.0, "seconds": to.seconds(), "play": play}),
             ChaseAction::Stop => json!({"event": "timecodeSync.stop"}),
+            ChaseAction::Speed { speed } => json!({"event": "timecodeSync.speed", "speed": speed}),
         })
         .collect();
     let status = m.status();
@@ -123,6 +133,7 @@ fn upkeep_with<B: Backend>(st: &mut State<B>, s: &mut Session, backend: impl FnO
     rt.mtc_out_running = status.mtc_out_running;
     rt.error = status.error;
     rt.warning = status.warning;
+    rt.user_bits = status.user_bits;
     (events, true)
 }
 
@@ -241,5 +252,8 @@ mod tests {
         assert!(transport(&s, &json!({"playing": true, "speed": "fast"})).is_err());
         assert_eq!(transport(&s, &json!({"playing": true, "seconds": 2.0})), Ok(json!({"active": false})));
         assert_eq!(SYNC.with_borrow(|st| st.transport), (true, Tick::from_units(2, 1), 1.0));
+        // no sound card or sequencer in CI: empty lists, never a failure
+        let d = devices(&s);
+        assert!(d["ltcInputs"].is_array() && d["mtcOutputs"].is_array());
     }
 }

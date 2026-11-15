@@ -40,7 +40,9 @@ pub mod huffyuv;
 pub mod hw;
 mod hw_frame;
 pub mod j2k;
+pub mod lagarith;
 pub mod lcevc;
+pub mod magicyuv;
 pub mod mkv;
 pub mod mp4;
 pub mod mpeg;
@@ -49,6 +51,7 @@ pub mod ogg;
 pub mod realmedia;
 pub mod sstp;
 mod stream_color;
+pub mod streams;
 pub mod utvideo;
 pub mod video;
 mod webm_alpha;
@@ -97,7 +100,7 @@ impl From<CodecError> for cfa4_media::MediaError {
 }
 
 /// Our own (pure-Rust) decoders, in the order they are tried.
-const BUILTIN_FACTORIES: [VideoDecoderFactory; 19] = [
+const BUILTIN_FACTORIES: [VideoDecoderFactory; 21] = [
     video::h264_factory,
     video::hevc_factory,
     video::vp8_factory,
@@ -116,7 +119,9 @@ const BUILTIN_FACTORIES: [VideoDecoderFactory; 19] = [
     ffv1::ffv1_factory,
     dirac::dirac_factory,
     huffyuv::huffyuv_factory,
+    lagarith::lagarith_factory,
     utvideo::utvideo_factory,
+    magicyuv::magicyuv_factory,
 ];
 
 fn factories() -> &'static RwLock<Vec<VideoDecoderFactory>> {

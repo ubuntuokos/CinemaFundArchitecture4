@@ -130,7 +130,24 @@ pub(crate) fn keyhole_dist(x: f32, y: f32) -> f32 {
     r / reach
 }
 
-/// Star metric with `n` points and inner radius `inner` (fraction of outer): straight edges
+/// Postage-stamp metric in pixels (value < R ⇔ inside a stamp whose half-width is R): the
+/// frame-shaped box metric, pushed out by a semicircular perforation `holes` times per side, so
+/// the shape keeps its perforations at every size.
+pub(crate) fn stamp_dist(x: f32, y: f32, w: f32, h: f32, holes: f32) -> f32 {
+    let (u, v) = ((x / w).abs(), (y / h).abs());
+    let bn = u.max(v);
+    if !bn.is_finite() || bn < 1e-6 {
+        return 0.0;
+    }
+    // position along the nearest side, −1 … 1
+    let along = if u >= v { y / h / bn } else { x / w / bn };
+    let f = ((along + 1.0) * 0.5 * holes).fract();
+    let r = (f - 0.5) / 0.3;
+    let hole = (1.0 - r * r).max(0.0).sqrt();
+    bn * w * (1.0 + 0.6 / holes.max(1.0) * hole)
+}
+
+/// Star metric with/// Star metric with `n` points and inner radius `inner` (fraction of outer): straight edges
 /// between each point and the neighbouring inner vertex.
 pub(crate) fn star_dist(x: f32, y: f32, n: u32, inner: f32) -> f32 {
     let r = (x * x + y * y).sqrt();
@@ -265,6 +282,15 @@ pub(super) fn apply(id: &str, t: &Tx<'_>) -> Option<Image> {
         // Legacy wipes rebuilt on the field engine (border / anti-aliasing / centre).
         "iris_round" => field_wipe(t, st, move |x, y| ((x - cx).powi(2) + (y - cy).powi(2)).sqrt()),
         "keyhole" => field_wipe(t, st, move |x, y| keyhole_dist(x - cx, -(y - cy))),
+        "stamp_cut" => {
+            // CFA4's own: B arrives in a postage-stamp shape (the frame's rectangle with
+            // perforated edges) that grows from the centre while its tilt settles to zero.
+            let holes = t.num("perforations").round().clamp(2.0, 60.0);
+            let tilt = t.num("rotation").clamp(-45.0, 45.0).to_radians() * (1.0 - t.p).powi(2);
+            let (sn, cs) = tilt.sin_cos();
+            let (wf, hf) = (w.max(1.0), h.max(1.0));
+            field_wipe(t, st, move |x, y| stamp_dist((x - cx) * cs + (y - cy) * sn, -(x - cx) * sn + (y - cy) * cs, wf, hf, holes))
+        }
         "iris_box" => field_wipe(t, st, move |x, y| (x - cx).abs().max((y - cy).abs() * asp)),
         "iris_diamond" => field_wipe(t, st, move |x, y| (x - cx).abs() + (y - cy).abs() * asp),
         "iris_cross" => field_wipe(t, st, move |x, y| {

@@ -84,7 +84,7 @@ pub fn fit_layout(credits: &Credits, styling: &Styling, frame: Frame, measure: &
     // cards on the beat
     if fit.card_beat > 0 {
         for (p, out) in fitted.pages.iter_mut().zip(&natural.pages) {
-            if out.behaviour == Behaviour::Card && p.runtime.is_none() {
+            if out.behaviour.is_card() && p.runtime.is_none() {
                 let beats = ((out.duration.0 as f64 / fit.card_beat as f64).round() as i64).max(1);
                 let t = frame.rate.snap_nearest(Tick(fit.card_beat.saturating_mul(beats)));
                 p.runtime = Some(TimeSpec::Ticks(t.max(Tick(fd))));
@@ -158,7 +158,7 @@ fn cards_on_beats(staged: &Laid, flexible: &[usize], alloc: &mut [(usize, i64)],
     let mut t = 0i64;
     for i in 0..staged.pages.len() {
         let Some(p) = staged.pages.get(i) else { break };
-        if p.behaviour == Behaviour::Card && i < last_flex {
+        if p.behaviour.is_card() && i < last_flex {
             // the closest scroll page before the card
             if let Some(&j) = flexible.iter().rev().find(|j| **j < i) {
                 let phase = (t - fit.beat_offset).rem_euclid(period);

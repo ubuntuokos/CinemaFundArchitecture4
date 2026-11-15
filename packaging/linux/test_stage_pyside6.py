@@ -87,10 +87,10 @@ class StagePyside6Tests(unittest.TestCase):
         requirements.write_text("other==1.0 \\\n    --hash=sha256:" + "1" * 64 + "\n" + "\n".join(pins) + "\n")
         return house, requirements
 
-    def stage(self, house: Path, requirements: Path):
+    def stage(self, house: Path, requirements: Path, *extra: str):
         return subprocess.run(
             ["python3", str(STAGE), "--wheels", str(house), "--dest", str(self.root / "dest"),
-             "--doc", str(self.root / "doc"), "--requirements", str(requirements)],
+             "--doc", str(self.root / "doc"), "--requirements", str(requirements), *extra],
             capture_output=True, text=True, timeout=60, check=False,
         )
 
@@ -117,6 +117,25 @@ class StagePyside6Tests(unittest.TestCase):
         self.assertIn("pyside6_essentials-6.12.0-cp310-abi3-manylinux_2_34_x86_64.whl  sha256:", notice)
         self.assertIn("download.qt.io", notice)
 
+    def test_licence_texts_from_another_directory(self):
+        """The from-source Flatpak's SDK has no /usr/share/common-licenses: `--licences` names the
+        directory with the pinned GNU texts; without them nothing is staged."""
+        house, requirements = self.wheels()
+        texts = self.root / "gnu"
+        texts.mkdir()
+        (texts / "LGPL-3").write_text("lgpl 3 text\n")
+        (texts / "LGPL-2.1").write_text("lgpl 2.1 text\n")
+        result = self.stage(house, requirements, "--licences", str(texts))
+        self.assertEqual(result.returncode, 0, result.stderr)
+        self.assertEqual((self.root / "doc/LICENSE.LGPL-3.0").read_text(), "lgpl 3 text\n")
+        self.assertEqual((self.root / "doc/LICENSE.LGPL-2.1").read_text(), "lgpl 2.1 text\n")
+        shutil.rmtree(self.root / "dest")
+        (texts / "LGPL-2.1").unlink()
+        result = self.stage(house, requirements, "--licences", str(texts))
+        self.assertEqual(result.returncode, 1)
+        self.assertIn("LGPL-2.1 is missing", result.stderr)
+        self.assertFalse((self.root / "dest").exists(), "nothing staged")
+
     def test_refuses_a_wheel_whose_hash_is_not_pinned(self):
         house, requirements = self.wheels()
         with zipfile.ZipFile(next(house.glob("shiboken6-*.whl")), "a") as z:
@@ -134,7 +153,7 @@ class StagePyside6Tests(unittest.TestCase):
 
 
 class AppRunTests(unittest.TestCase):
-    """AppRun starts egui by default and the Qt GUI with --qt or CFA4_GUI=qt."""
+    """AppRun starts the Qt GUI by default (owner decision 2026-11-12) and egui with --egui or CFA4_GUI=egui."""
 
     def setUp(self):
         self.temp = tempfile.TemporaryDirectory(prefix="cfa4-apprun-")
@@ -153,11 +172,31 @@ class AppRunTests(unittest.TestCase):
                                 capture_output=True, text=True, timeout=30, check=True)
         return result.stdout.strip()
 
-    def test_egui_by_default_and_qt_on_request(self):
-        self.assertEqual(self.run_app("film.fcproj"), "egui film.fcproj")
+    def test_qt_by_default_and_egui_on_request(self):
+        self.assertEqual(self.run_app("film.fcproj"), "qt film.fcproj")
         self.assertEqual(self.run_app("--qt", "--demo"), "qt --demo")
         self.assertEqual(self.run_app("--demo", CFA4_GUI="qt"), "qt --demo")
+        self.assertEqual(self.run_app("--egui", "x"), "egui x")
+        self.assertEqual(self.run_app("x", CFA4_GUI="egui"), "egui x")
         self.assertEqual(self.run_app("--egui", "x", CFA4_GUI="qt"), "egui x")
+        self.assertEqual(self.run_app("--qt", "x", CFA4_GUI="egui"), "qt x")
+
+    def test_without_python3_the_default_falls_back_to_egui(self):
+        """Only sh and the egui binary on PATH: the default still starts; an explicit --qt fails."""
+        bindir = Path(self.temp.name) / "bin"
+        bindir.mkdir()
+        for tool in ("sh", "dirname", "readlink"):
+            found = shutil.which(tool)
+            self.assertIsNotNone(found, tool)
+            (bindir / tool).symlink_to(found)
+        env = {"PATH": str(bindir)}
+        app = str(self.appdir / "AppRun")
+        result = subprocess.run([app, "x"], env=env, capture_output=True, text=True, timeout=30, check=True)
+        self.assertEqual(result.stdout.strip(), "egui x")
+        self.assertIn("python3 is missing", result.stderr)
+        result = subprocess.run([app, "--qt", "x"], env=env, capture_output=True, text=True, timeout=30, check=False)
+        self.assertEqual(result.returncode, 1)
+        self.assertIn("needs python3", result.stderr)
 
 
 if __name__ == "__main__":

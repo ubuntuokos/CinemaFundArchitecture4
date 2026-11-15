@@ -189,6 +189,8 @@ distributions are not targets.
   sequences (#828): scan-line, uncompressed / RLE / ZIPS / ZIP, half / float / uint, RGB(A) or
   luminance, decoded to linear float frames and bit-exact against ffmpeg; PXR24 (lossy 24-bit
   float, 16 lines per chunk) decodes too, bit-exact against OpenEXR (via OpenImageIO, #828).
+  A `chromaticities` attribute (ACES AP0 / AP1, P3, Rec.2020, custom) converts to the Rec.709
+  working primaries with Bradford white adaptation (CFA4-PROCODEC-002 WP3).
   IAB immersive audio (SMPTE ST 2098-2) in DCP / IMF MXF (#82): PCM and DLC lossless assets,
   Beds, remaps and Objects, rendered to 7.1 for playback.
 - **Missing:** DTS:X heights / objects on their own speakers (#130), DTS Express, 14-bit DTS,
@@ -202,7 +204,7 @@ distributions are not targets.
   settings; DNG frames and folders import since #1065); stills: PSD, EXR beyond scan-line RLE / ZIP / PXR24 / PIZ (B44, DWA,
   tiled, multi-part, deep), AVIF / JPEG items inside HEIF,
   AI / EPS, and the rarer DPX layout, run-length encoding (Targa and DPX stills and sequences import
-  since #821, packed 10/12-bit and Y'CbCr DPX since #841, deeper than 8 bits kept at 8); transparent
+  since #821, packed 10/12-bit and Y'CbCr DPX since #841, read at their stored depth with time code and frame rate since #1155); transparent
   video (#402); Sony start timecode in `rtmd` (#460); stereo 3D flag (#500); MKV multi-audio (#601).
 - **CFA4 candidates after GPL-3.0-or-later** ([ADR 0003](adr/ADR-0003-aswf-and-conversion-sources.md) §6):
   LibRaw (LGPL-2.1 / CDDL-1.0) for camera RAW, libheif (LGPL-3.0) for HEIF / HEIC, both also
@@ -262,6 +264,14 @@ distributions are not targets.
     existing Skin Smoothing effect to faces.
   - *Background blur / replace*: Robust Video Matting (GPL-3.0) for the subject matte; MODNet
     (Apache-2.0) as the fallback.
+    The same matte also gives a *transparent background* (subject over the tracks below) and a
+    *screen recording as the background* (EffectsSDK review, 2026-11-13).
+  - *Portrait Lighting*: brighten the subject and darken the background (EffectsSDK review); needs
+    the subject matte above, the grading itself is not AI.
+  - *Face-framed Auto Reframe*: keep a detected face (YuNet, BSD-3) at a set share of the frame
+    ("smart zoom"); today's Auto Reframe follows a classical saliency centroid.
+  - *3D head avatars* driven by face tracking (EffectsSDK review): needs an openly licensed face
+    landmark / blendshape model and avatar assets; no candidate checked yet.
   - *AI foley*: MMAudio (code MIT, weights CC BY-NC 4.0): blocked until a commercially usable
     model exists (see [kdenlive-parity.md](kdenlive-parity.md) 12.1).
 

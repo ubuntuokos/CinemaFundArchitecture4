@@ -15,6 +15,7 @@
 
 #![cfg_attr(not(test), deny(clippy::unwrap_used, clippy::expect_used, clippy::panic, clippy::unimplemented, clippy::todo, clippy::unreachable))]
 
+mod audio;
 mod codestream;
 mod integrity;
 mod media;
@@ -23,6 +24,7 @@ pub mod package;
 pub mod profile;
 pub mod report;
 pub mod rules;
+mod subtitles;
 
 pub use native::NativeValidator;
 pub use profile::{Profile, ProfileRule};
