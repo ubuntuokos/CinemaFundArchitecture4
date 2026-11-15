@@ -1323,6 +1323,7 @@ dependencies = [
  "cfa4-render",
  "cfa4-time",
  "chrono",
+ "roxmltree",
  "serde",
  "serde_json",
  "thiserror 2.0.21",

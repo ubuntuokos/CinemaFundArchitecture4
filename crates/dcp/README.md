@@ -54,7 +54,8 @@ decision 2026-11-13: the engine's `dcp.loadKdm` always refuses `Missing` and `In
 an `Untrusted` KDM only with `allowUnverified`.
 
 `xmldsig::verify` checks an enveloped XML Signature in two steps. First the signed content:
-same-document references (`URI="#id"`, optional enveloped-signature and C14N transforms) with
+same-document references (`URI="#id"`, or `URI=""` for the whole document without comments as
+CPL and PKL signatures use; optional enveloped-signature and C14N transforms) with
 SHA-256 or SHA-1 digests, inclusive Canonical XML 1.0 with or without comments (`c14n`), and the
 RSA PKCS#1 v1.5 (SHA-256 or SHA-1) signature value under the signer certificate's key. A failure
 there is an error. Then the certificate chain in `KeyInfo`, whose failure is

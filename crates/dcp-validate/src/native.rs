@@ -29,6 +29,8 @@ const IMPLEMENTED: &[&str] = &[
     CPL_DURATIONS,
     CPL_REEL_SYNC,
     STD_CONSISTENT,
+    SIG_SIGNATURE,
+    SIG_CERTIFICATES,
     MXF_TRACK_FILES,
     J2K_CODESTREAM,
     PIC_FORMAT,
@@ -166,6 +168,8 @@ impl Run<'_> {
             CPL_DURATIONS,
             CPL_REEL_SYNC,
             STD_CONSISTENT,
+            SIG_SIGNATURE,
+            SIG_CERTIFICATES,
             MXF_TRACK_FILES,
             J2K_CODESTREAM,
             PIC_FORMAT,
@@ -244,6 +248,10 @@ impl Run<'_> {
         if self.control.is_cancelled() {
             return;
         }
+        self.signatures(&files, &pkls, &cpls);
+        if self.control.is_cancelled() {
+            return;
+        }
         self.media(&files, &cpls);
         if self.control.is_cancelled() {
             return;
@@ -316,6 +324,18 @@ impl Run<'_> {
         self.findings.extend(findings);
         self.passed.insert(rule, passed);
         self.done.insert(rule);
+    }
+
+    /// DCP-10: the signatures of the CPLs and PKLs and their certificate chains.
+    fn signatures(&mut self, files: &Files, pkls: &[(String, PackingList)], cpls: &[(String, Composition)]) {
+        let profile = &self.request.profile;
+        if ![SIG_SIGNATURE, SIG_CERTIFICATES].iter().any(|r| profile.contains(r)) {
+            return;
+        }
+        let required = profile.rules.iter().any(|r| r.rule == SIG_SIGNATURE && r.required);
+        let Some((sig, cert)) = crate::signatures::check(pkls, cpls, files, self.request.limits.document, required, self.control) else { return };
+        self.rule(SIG_SIGNATURE, sig);
+        self.rule(SIG_CERTIFICATES, cert);
     }
 
     /// DCP-05: the rules over the documents read.

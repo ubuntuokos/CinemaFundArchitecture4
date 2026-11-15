@@ -100,6 +100,8 @@ The native backend implements these rules:
 | `DCP.IAB.001` | Immersive audio track files (see below). |
 | `DCP.SUB.001` | Subtitle and caption documents (see below). |
 | `DCP.MARK.001` | Markers (see below). |
+| `DCP.SIG.001` | XML signatures of the compositions and packing lists (see below). |
+| `DCP.SIG.002` | Signer certificate chains (see below). |
 
 `DCP.MARK.001` checks each composition's markers:
 
@@ -118,7 +120,7 @@ The native backend implements these rules:
 Tools differ on whether FFOC sits at offset 0 or 1 (CFA4's export writes 1), so both are accepted.
 
 If no packing list or composition playlist was read, the rules over them are `UNCHECKED`, never a
-vacuous pass. The signatures come with DCP-10.
+vacuous pass.
 
 ### Track files and pictures (DCP-06)
 
@@ -224,6 +226,28 @@ Not checked: the XML schemas beyond what the reader enforces, whether the fonts 
 every character, and how the subtitles render. The local asdcplib build has no XML parser, so it
 cannot wrap timed text; the SMPTE tests use track files built with `cfa4-mxf`'s test builder.
 
+### Signatures (DCP-10)
+
+`DCP.SIG.001` (ST 429-7 / ST 429-8 with ST 430-3) re-reads every signed composition playlist and
+packing list and verifies its enveloped `ds:Signature` with `cfa4_dcp::xmldsig`:
+
+- `FAIL`: the signature does not verify (digest, signature value, key), naming the reason;
+- `FAIL`: it does not cover the whole document (`URI=""`);
+- `FAIL`: a `Signer` without a `Signature`, or the other way round, or more than one `Signature`;
+- `FAIL`: the certificate the `Signer` names (its serial number) is not the one that signed;
+- `FAIL`: an unsigned document where the profile requires the rule (`security`);
+- `WARNING`: an unsigned document beside signed ones, where the rule is optional;
+- `NOT_APPLICABLE`: nothing in the package is signed, where the rule is optional.
+
+`DCP.SIG.002` checks, for each verified signature, the certificate chain in `KeyInfo` against
+ST 430-2 6.2 and that the signer has the content signer role (`CS` in its CommonName). A document
+whose signature did not verify is `UNCHECKED` here. Whether the root is trusted is not decided.
+
+Not checked natively: that the `Signer`'s `X509IssuerName` matches the certificate, and that names
+are ASN.1 PrintableString (dcp_inspect checks both). The tests sign with xmlsec1 over openssl ST 430-2
+chains and skip without them, unless `CFA4_REQUIRE_ORACLES` is set as in CI. A package signed with
+another signer (signxml) verified both natively and in dcp_inspect, and a changed title failed both.
+
 ### Comparison with dcp_inspect
 
 On CFA4 exports the rules were compared with dcp_inspect: a flipped byte, a grown file and a marker
@@ -282,6 +306,9 @@ The HTML report is DCP-15.
   - the report.
 - `tests/subtitles.rs` builds small Interop and SMPTE packages with subtitles: a good one of each,
   and each `DCP.SUB.001` failure and warning (ids, fonts, images, times, standard, edit rate).
+- `tests/signatures.rs` signs small SMPTE packages with xmlsec1: a good one, a changed document, a
+  chain outside ST 430-2, an unsigned document beside a signed one, unsigned packages per profile,
+  a `Signer` without a `Signature` and an unfilled signature template.
 - `tests/export_round_trip.rs` writes a DCP with `cfa4-export` and runs three profiles on it:
   - Quick Scan and Full Integrity, including the hashes, must pass;
   - SMPTE Cinema: the track files and the sound pass, the picture format is a warning (25 fps), and the only
