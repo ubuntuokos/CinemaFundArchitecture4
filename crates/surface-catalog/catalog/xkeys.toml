@@ -1,0 +1,15 @@
+# P.I. Engineering X-keys (plan §2, M5–M6).
+format = "cfa4-surface-catalog"
+version = 1
+family = "xkeys"
+
+[[model]]
+id = "xkeys.keypads"
+vendor = "P.I. Engineering"
+name = "X-keys key pads and jog/shuttle variants"
+kind = "keypad"
+goal = "BEST_EFFORT"
+adapter = "xkeys"
+phase = "M5"
+connection = ["usb"]
+source = "@julusian/xkeys (Node.js), reference"

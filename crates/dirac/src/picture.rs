@@ -23,7 +23,7 @@ pub(crate) struct Components {
     pub planes: [Vec<u16>; 3],
 }
 
-struct Transform {
+pub(crate) struct Transform {
     wavelet: &'static Filter,
     wavelet_ho: &'static Filter,
     depth: u32,
@@ -40,13 +40,19 @@ struct Transform {
 
 /// A subband: its level and size in one component.
 #[derive(Clone, Copy)]
-struct Band {
-    w: usize,
-    h: usize,
+pub(crate) struct Band {
+    pub w: usize,
+    pub h: usize,
 }
 
 fn filter(index: u64) -> Result<&'static Filter> {
     usize::try_from(index).ok().and_then(|i| FILTERS.get(i)).ok_or(Error::Invalid("unknown wavelet"))
+}
+
+/// The transform of a Dirac core syntax picture: one wavelet, symmetric, no slices.
+pub(crate) fn core_transform(wavelet_index: u64, depth: u32) -> Result<Transform> {
+    let wavelet = filter(wavelet_index)?;
+    Ok(Transform { wavelet, wavelet_ho: wavelet, depth, depth_ho: 0, slices_x: 1, slices_y: 1, ld: None, hq: (0, 1), quant_matrix: Vec::new() })
 }
 
 fn transform_parameters(b: &mut Bits<'_>, seq: &Sequence, ld: bool) -> Result<Transform> {
@@ -109,7 +115,7 @@ fn transform_parameters(b: &mut Bits<'_>, seq: &Sequence, ld: bool) -> Result<Tr
 }
 
 /// The subbands of a `w` x `h` component in coding order (§13.2.2 `subband_width/height`).
-fn bands(t: &Transform, w: u32, h: u32) -> Result<Vec<Band>> {
+pub(crate) fn bands(t: &Transform, w: u32, h: u32) -> Result<Vec<Band>> {
     let all = t.depth + t.depth_ho;
     let (sw, sh) = (1u64 << all, 1u64 << t.depth);
     let pw = u64::from(w).div_ceil(sw) * sw;
@@ -128,16 +134,18 @@ fn bands(t: &Transform, w: u32, h: u32) -> Result<Vec<Band>> {
 }
 
 /// `quant_factor` and `quant_offset` (§13.3.2) for indices 0..=255; `inverse_quant` saturates.
-struct Quant {
+pub(crate) struct Quant {
     factor: [u128; 256],
     offset: [u128; 256],
+    inter: [u128; 256],
 }
 
 impl Quant {
-    fn new() -> Self {
+    pub fn new() -> Self {
         let mut factor = [0u128; 256];
         let mut offset = [0u128; 256];
-        for (i, (f, o)) in factor.iter_mut().zip(offset.iter_mut()).enumerate() {
+        let mut inter = [0u128; 256];
+        for (i, ((f, o), p)) in factor.iter_mut().zip(offset.iter_mut()).zip(inter.iter_mut()).enumerate() {
             let base = 1u128 << (i / 4);
             *f = match i % 4 {
                 0 => 4 * base,
@@ -150,23 +158,35 @@ impl Quant {
                 1 => 2,
                 _ => f.div_ceil(2),
             };
+            *p = match i {
+                0 => 1,
+                1 => 2,
+                _ => (3 * *f + 4) / 8,
+            };
         }
-        Self { factor, offset }
+        Self { factor, offset, inter }
     }
 
     #[inline]
-    fn inverse(&self, v: i64, q: usize) -> i32 {
+    pub fn inverse(&self, v: i64, q: usize) -> i32 {
+        self.inverse_with(v, q, false)
+    }
+
+    /// `inverse_quant` with the intra or (`inter`) the inter picture offset (§13.3.2).
+    #[inline]
+    pub fn inverse_with(&self, v: i64, q: usize, inter: bool) -> i32 {
         if v == 0 {
             return 0;
         }
-        let (f, o) = (self.factor.get(q).copied().unwrap_or(0), self.offset.get(q).copied().unwrap_or(0));
+        let offsets = if inter { &self.inter } else { &self.offset };
+        let (f, o) = (self.factor.get(q).copied().unwrap_or(0), offsets.get(q).copied().unwrap_or(0));
         let m = (u128::from(v.unsigned_abs()).saturating_mul(f).saturating_add(o).saturating_add(2) / 4).min(i32::MAX as u128) as i32;
         if v < 0 { -m } else { m }
     }
 }
 
 /// The coefficients of one component, one vector per subband.
-type Coeffs = Vec<Vec<i32>>;
+pub(crate) type Coeffs = Vec<Vec<i32>>;
 
 struct Slices<'a> {
     t: &'a Transform,
@@ -272,7 +292,7 @@ impl Slices<'_> {
 }
 
 /// `dc_prediction` (§13.4) on a `w`-wide band.
-fn dc_prediction(band: &mut [i32], w: usize) {
+pub(crate) fn dc_prediction(band: &mut [i32], w: usize) {
     if w == 0 {
         return;
     }
@@ -339,7 +359,7 @@ fn bit_shift(a: &mut [i32], shift: u32) {
 }
 
 /// `idwt` (§15.4.1) of one component; returns the synthesised `w` x `h` array.
-fn idwt(t: &Transform, bands: &[Band], mut coeffs: Coeffs) -> Result<(Vec<i32>, usize)> {
+pub(crate) fn idwt(t: &Transform, bands: &[Band], mut coeffs: Coeffs) -> Result<(Vec<i32>, usize)> {
     let mut iter = coeffs.drain(..).zip(bands.iter().copied());
     let (mut dc, b0) = iter.next().ok_or(Error::Invalid("no subbands"))?;
     let (mut w, mut h) = (b0.w, b0.h);

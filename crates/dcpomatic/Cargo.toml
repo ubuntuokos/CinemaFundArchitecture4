@@ -1,0 +1,22 @@
+[package]
+name = "cfa4-dcpomatic"
+description = "DCP mastering backend that runs DCP-o-matic's command-line tools as separate processes (ADR 0011)"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+rust-version.workspace = true
+
+[lints]
+workspace = true
+
+[dependencies]
+# Process-group signals (SIGINT on cancel, SIGKILL on timeout); already in the tree via dcp-inspect.
+rustix = { version = "1", default-features = false, features = ["std", "process"] }
+serde = { workspace = true }
+thiserror = { workspace = true }
+
+[dev-dependencies]
+serde_json = { workspace = true }
+# tests/real_dcpomatic.rs: the pinned DCP-o-matic's DCP through CFA4's validator (dev only)
+cfa4-dcp-validate = { workspace = true }
+cfa4-testkit = { workspace = true }
