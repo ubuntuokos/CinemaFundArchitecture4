@@ -1388,8 +1388,6 @@ mod interchange_auto_points_tests;
 #[cfg(test)]
 mod keyboard_tests;
 #[cfg(test)]
-mod otio_size_tests;
-#[cfg(test)]
 mod legibility_tests;
 #[cfg(test)]
 mod linked_speed_tests;
@@ -1419,6 +1417,8 @@ mod nest_fidelity_tests;
 mod nesting_tests;
 #[cfg(test)]
 mod opatom_tests;
+#[cfg(test)]
+mod otio_size_tests;
 #[cfg(test)]
 mod panels_tests;
 #[cfg(test)]
