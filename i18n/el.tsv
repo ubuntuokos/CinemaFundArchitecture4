@@ -4670,3 +4670,29 @@ export.summary	Low	χαμηλή
 	AS-11 Core	AS-11 Core
 	AS-11 Parts	Τμήματα AS-11
 	AS-11 UK DPP	AS-11 UK DPP
+# Control surfaces (qt-control-surfaces-page, CFA4-CONTROL-SURFACE-001)
+	Connected	Συνδεδεμένο
+	Device	Συσκευή
+	Devices	Συσκευές
+	Disabled	Απενεργοποιημένο
+	HID jog/shuttle	HID jog/shuttle
+	MIDI	MIDI
+	Not connected	Μη συνδεδεμένο
+	OSC	OSC
+	Use	Χρήση
+	{device} ({port})	{device} ({port})
+	{name}: {error}	{name}: {error}
+# Control surfaces (midi-monitor, CFA4-CONTROL-SURFACE-001)
+	MIDI Monitor	Παρακολούθηση MIDI
+	Press Start Monitor, then move a control.	Πατήστε «Έναρξη παρακολούθησης» και μετακινήστε ένα χειριστήριο.
+	Start Monitor	Έναρξη παρακολούθησης
+	Stop Monitor	Διακοπή παρακολούθησης
+	… {count} messages not shown (too many at once)	… {count} μηνύματα δεν εμφανίζονται (πάρα πολλά ταυτόχρονα)
+# Control surfaces (midi-learn, CFA4-CONTROL-SURFACE-001)
+	A control surface asked for {command}, which does not exist.	Μια επιφάνεια ελέγχου ζήτησε {command}, που δεν υπάρχει.
+	Assignments	Αντιστοιχίσεις
+	Cancel Learn	Ακύρωση εκμάθησης
+	Control	Χειριστήριο
+	Learn	Εκμάθηση
+	Remove this assignment	Αφαίρεση αυτής της αντιστοίχισης
+	{control} runs {command}.	Το {control} εκτελεί {command}.

@@ -4670,3 +4670,29 @@ export.summary	Low	låg
 	AS-11 Core	AS-11 Core
 	AS-11 Parts	AS-11-delar
 	AS-11 UK DPP	AS-11 UK DPP
+# Control surfaces (qt-control-surfaces-page, CFA4-CONTROL-SURFACE-001)
+	Connected	Ansluten
+	Device	Enhet
+	Devices	Enheter
+	Disabled	Inaktiverad
+	HID jog/shuttle	HID-jog/shuttle
+	MIDI	MIDI
+	Not connected	Inte ansluten
+	OSC	OSC
+	Use	Använd
+	{device} ({port})	{device} ({port})
+	{name}: {error}	{name}: {error}
+# Control surfaces (midi-monitor, CFA4-CONTROL-SURFACE-001)
+	MIDI Monitor	MIDI-övervakning
+	Press Start Monitor, then move a control.	Tryck på Starta övervakning och rör sedan en kontroll.
+	Start Monitor	Starta övervakning
+	Stop Monitor	Stoppa övervakning
+	… {count} messages not shown (too many at once)	… {count} meddelanden visas inte (för många på en gång)
+# Control surfaces (midi-learn, CFA4-CONTROL-SURFACE-001)
+	A control surface asked for {command}, which does not exist.	En kontrollyta bad om {command}, som inte finns.
+	Assignments	Tilldelningar
+	Cancel Learn	Avbryt inlärning
+	Control	Kontroll
+	Learn	Lär in
+	Remove this assignment	Ta bort denna tilldelning
+	{control} runs {command}.	{control} kör {command}.

@@ -4674,3 +4674,29 @@ export.summary	Low	తక్కువ
 	AS-11 Core	AS-11 Core
 	AS-11 Parts	AS-11 భాగాలు
 	AS-11 UK DPP	AS-11 UK DPP
+# Control surfaces (qt-control-surfaces-page, CFA4-CONTROL-SURFACE-001)
+	Connected	కనెక్ట్ అయింది
+	Device	పరికరం
+	Devices	పరికరాలు
+	Disabled	నిలిపివేయబడింది
+	HID jog/shuttle	HID జాగ్/షటిల్
+	MIDI	MIDI
+	Not connected	కనెక్ట్ కాలేదు
+	OSC	OSC
+	Use	ఉపయోగించు
+	{device} ({port})	{device} ({port})
+	{name}: {error}	{name}: {error}
+# Control surfaces (midi-monitor, CFA4-CONTROL-SURFACE-001)
+	MIDI Monitor	MIDI మానిటర్
+	Press Start Monitor, then move a control.	మానిటర్ ప్రారంభించు నొక్కి, ఆపై ఒక నియంత్రణను కదిలించండి.
+	Start Monitor	మానిటర్ ప్రారంభించు
+	Stop Monitor	మానిటర్ ఆపు
+	… {count} messages not shown (too many at once)	… {count} సందేశాలు చూపబడలేదు (ఒకేసారి చాలా ఎక్కువ)
+# Control surfaces (midi-learn, CFA4-CONTROL-SURFACE-001)
+	A control surface asked for {command}, which does not exist.	నియంత్రణ ఉపరితలం లేని {command} ను అడిగింది.
+	Assignments	కేటాయింపులు
+	Cancel Learn	నేర్చుకోవడం రద్దు
+	Control	నియంత్రణ
+	Learn	నేర్చుకో
+	Remove this assignment	ఈ కేటాయింపును తీసివేయి
+	{control} runs {command}.	{control} {command} ను నడుపుతుంది.

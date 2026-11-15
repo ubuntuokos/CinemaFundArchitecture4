@@ -4670,3 +4670,29 @@ export.summary	Low	madal
 	AS-11 Core	AS-11 Core
 	AS-11 Parts	AS-11 osad
 	AS-11 UK DPP	AS-11 UK DPP
+# Control surfaces (qt-control-surfaces-page, CFA4-CONTROL-SURFACE-001)
+	Connected	Ühendatud
+	Device	Seade
+	Devices	Seadmed
+	Disabled	Keelatud
+	HID jog/shuttle	HID jog/shuttle
+	MIDI	MIDI
+	Not connected	Pole ühendatud
+	OSC	OSC
+	Use	Kasuta
+	{device} ({port})	{device} ({port})
+	{name}: {error}	{name}: {error}
+# Control surfaces (midi-monitor, CFA4-CONTROL-SURFACE-001)
+	MIDI Monitor	MIDI-monitor
+	Press Start Monitor, then move a control.	Vajutage „Käivita monitor“ ja liigutage seejärel juhtelementi.
+	Start Monitor	Käivita monitor
+	Stop Monitor	Peata monitor
+	… {count} messages not shown (too many at once)	… {count} sõnumit pole näidatud (liiga palju korraga)
+# Control surfaces (midi-learn, CFA4-CONTROL-SURFACE-001)
+	A control surface asked for {command}, which does not exist.	Juhtpind küsis käsku {command}, mida pole olemas.
+	Assignments	Määrangud
+	Cancel Learn	Tühista õppimine
+	Control	Juhtelement
+	Learn	Õpi
+	Remove this assignment	Eemalda see määrang
+	{control} runs {command}.	{control} käivitab {command}.

@@ -4668,3 +4668,29 @@
 	AS-11 Core	AS-11 Core
 	AS-11 Parts	Parti AS-11
 	AS-11 UK DPP	AS-11 UK DPP
+# Control surfaces (qt-control-surfaces-page, CFA4-CONTROL-SURFACE-001)
+	Connected	Connesso
+	Device	Dispositivo
+	Devices	Dispositivi
+	Disabled	Disattivato
+	HID jog/shuttle	Jog/shuttle HID
+	MIDI	MIDI
+	Not connected	Non connesso
+	OSC	OSC
+	Use	Usa
+	{device} ({port})	{device} ({port})
+	{name}: {error}	{name}: {error}
+# Control surfaces (midi-monitor, CFA4-CONTROL-SURFACE-001)
+	MIDI Monitor	Monitor MIDI
+	Press Start Monitor, then move a control.	Premi Avvia monitor, poi muovi un controllo.
+	Start Monitor	Avvia monitor
+	Stop Monitor	Ferma monitor
+	… {count} messages not shown (too many at once)	… {count} messaggi non mostrati (troppi in una volta)
+# Control surfaces (midi-learn, CFA4-CONTROL-SURFACE-001)
+	A control surface asked for {command}, which does not exist.	Una superficie di controllo ha chiesto {command}, che non esiste.
+	Assignments	Assegnazioni
+	Cancel Learn	Annulla apprendimento
+	Control	Controllo
+	Learn	Apprendi
+	Remove this assignment	Rimuovi questa assegnazione
+	{control} runs {command}.	{control} esegue {command}.
