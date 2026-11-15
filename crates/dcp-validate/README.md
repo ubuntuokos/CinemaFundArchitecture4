@@ -59,18 +59,51 @@ The rule catalogue is in [`src/rules.rs`](src/rules.rs). Rule ids are stable (`D
 `DCP.REF.001` is in no profile. A reference-engine backend (`cfa4-dcp-inspect`, DCP-04) keeps
 there every engine message that no catalogue rule covers, and a `FAIL` there fails the package.
 
-The eight profiles of plan §5 are built in, all at version 1:
+The eight profiles of plan §5 are built in and versioned (DCP-11). `Profile::builtin(id)` gives the
+latest version and `Profile::builtin_version(id, v)` any earlier one. A report records the profile id
+and version, so an earlier run can be repeated with the same rules.
 
-- `quick-scan`
-- `full-integrity`
-- `smpte-cinema`
-- `interop-cinema`
-- `subtitle-accessibility`
-- `audio-quality`
-- `security`
-- `delivery-preflight`
+| Profile | Version | Change |
+|---|---|---|
+| `quick-scan` | 1 | |
+| `full-integrity` | 1 | |
+| `smpte-cinema` | 2 | requires `DCP.PIC.001` (DCP-06) |
+| `interop-cinema` | 2 | requires `DCP.PIC.001` (DCP-06) |
+| `subtitle-accessibility` | 1 | |
+| `audio-quality` | 1 | |
+| `security` | 1 | |
+| `delivery-preflight` | 2 | requires `DCP.PIC.001` (DCP-06) |
 
-A profile file format arrives with DCP-11. It will deserialise into the same `Profile` type.
+The history is `profile::HISTORY`. Changing a built-in profile's rules means adding a version there.
+
+### Profile files (`cfa4-dcp-profile/1`)
+
+`Profile::load(path)` (at most 1 MiB) and `Profile::from_json(text)` read a profile file;
+`Profile::to_json()` writes one. Unknown fields are an error.
+
+```json
+{
+  "format": "cfa4-dcp-profile/1",
+  "id": "festival-delivery",
+  "version": 3,
+  "title": "Festival Delivery",
+  "standard": "smpte",
+  "extends": "smpte-cinema@1",
+  "remove": ["DCP.MARK.001"],
+  "rules": [
+    {"rule": "DCP.SUB.001", "required": true},
+    {"rule": "DCP.AUD.002", "required": false}
+  ]
+}
+```
+
+- `standard` is `smpte`, `interop` or absent (both are accepted).
+- `extends` names a built-in profile, optionally `@version`; its rules come first.
+- `remove` leaves out inherited rules. `rules` adds rules, or changes `required` on an inherited one.
+- A profile is checked (`Profile::check`). The `id` must be 1-64 lower-case letters, digits and `-`,
+  the version 1 or more, and the title not empty. It needs at least one rule, each from the
+  catalogue and none twice. `DCP.REF.001` is in no profile.
+- `to_json` writes the resolved rules, without `extends`, so the file stands on its own.
 
 The native backend implements these rules:
 
@@ -282,6 +315,8 @@ The HTML report is DCP-15.
   - the report.
 - `tests/subtitles.rs` builds small Interop and SMPTE packages with subtitles: a good one of each,
   and each `DCP.SUB.001` failure and warning (ids, fonts, images, times, standard, edit rate).
+- `tests/profiles.rs` checks the history of the built-in profiles, a profile file that extends one,
+  every kind of bad profile file and the size limit.
 - `tests/export_round_trip.rs` writes a DCP with `cfa4-export` and runs three profiles on it:
   - Quick Scan and Full Integrity, including the hashes, must pass;
   - SMPTE Cinema: the track files and the sound pass, the picture format is a warning (25 fps), and the only
