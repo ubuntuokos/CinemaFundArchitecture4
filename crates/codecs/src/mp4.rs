@@ -60,6 +60,8 @@ pub struct Mp4Source {
     snap: bool,
     /// The playable audio tracks in file order: `info.audio_streams[k]` describes `audios[k]`.
     audios: Vec<Mp4Audio>,
+    /// LCEVC in the video track's T.35 SEI that is decoded on top of the base.
+    lcevc: Option<(cfa4_lcevc::BaseCodec, cfa4_lcevc::Framing)>,
 }
 
 pub fn sniff(b: &[u8]) -> bool {
@@ -269,6 +271,7 @@ impl Mp4Source {
         let rotation = vtrack.and_then(|i| file.tracks[i].display_rotation()).unwrap_or(0);
         // the clean aperture ('clap') cut from every frame, before the rotation
         let mut aperture = None;
+        let mut lcevc = None;
         let video = vtrack.map(|i| {
             let t = &file.tracks[i];
             let entry = &t.entries[0];
@@ -280,7 +283,21 @@ impl Mp4Source {
                 Some(Ok(n)) if n.crop.2 > 0 && n.crop.3 > 0 => (n.crop.2, n.crop.3),
                 _ => (w, h),
             };
-            aperture = vp.clean_aperture.and_then(|c| clean_aperture(c, (w, h)));
+            // LCEVC as T.35 SEI in the first samples: decoded at its own size (a separate 'lvc1'
+            // track is not decoded)
+            let carriage = crate::lcevc::base_of(&entry.codec).filter(|_| !lcevc_track).and_then(|(base, framing)| {
+                let heads =
+                    t.samples.iter().take(crate::lcevc::SCAN_SAMPLES).filter_map(|s| cfa4_media::reader::read_range(&*bytes.0, s.offset, s.size as usize).ok());
+                crate::lcevc::scan(heads, base, framing)
+            });
+            let mut size = (w, h);
+            let mut lcevc_label = String::new();
+            if let Some(c) = carriage {
+                lcevc = crate::lcevc::apply(name, c, &mut lcevc_label, &mut size);
+            }
+            let (w, h) = size;
+            // the clean aperture is in base picture coordinates: not used over an enhancement
+            aperture = vp.clean_aperture.filter(|_| lcevc.is_none()).and_then(|c| clean_aperture(c, (w, h)));
             let (w, h) = aperture.map_or((w, h), |r| (r.w as u32, r.h as u32));
             // frame rate from the median sample duration
             let mut durs: Vec<u32> = t.samples.iter().take(240).map(|s| s.duration).collect();
@@ -325,16 +342,11 @@ impl Mp4Source {
                     info.has_alpha = h.alpha;
                 }
             }
-            // LCEVC: a separate enhancement track, or T.35 SEI in the base track's first samples
+            // LCEVC: a separate enhancement track, or T.35 SEI in the base track (scanned above)
             if lcevc_track {
                 crate::lcevc::mark(name, &mut info.codec, "separate 'lvc1' track");
-            } else if let Some((base, framing)) = crate::lcevc::base_of(&entry.codec) {
-                let heads =
-                    t.samples.iter().take(crate::lcevc::SCAN_SAMPLES).filter_map(|s| cfa4_media::reader::read_range(&*bytes.0, s.offset, s.size as usize).ok());
-                if heads.into_iter().any(|d| cfa4_lcevc::sample_has_lcevc(&d, base, framing)) {
-                    crate::lcevc::mark(name, &mut info.codec, "T.35 SEI");
-                }
             }
+            info.codec.push_str(&lcevc_label);
             if matches!(entry.codec, CodecConfig::Dv { .. }) {
                 // format, sampling, aspect and colour are in the first frame's header and VAUX packs
                 let s0 = &t.samples[0];
@@ -425,7 +437,7 @@ impl Mp4Source {
             let t = &file.tracks[i];
             crate::gop::snap_coarse_units(t.samples.iter().map(|s| s.pts.saturating_add(t.edit_offset)), 1, i64::from(t.timescale), v.frame_rate)
         });
-        Ok(Self { info, bytes, file, vtrack, video: GopCache::new(explicit_color).with_rotation(rotation).with_crop(aperture), snap, audios })
+        Ok(Self { info, bytes, file, vtrack, video: GopCache::new(explicit_color).with_rotation(rotation).with_crop(aperture), snap, audios, lcevc })
     }
 
     fn read(&self, track: usize, i: usize) -> crate::Result<Vec<u8>> {
@@ -529,7 +541,7 @@ impl VideoSamples for Mp4Video<'_> {
         self.src.read(self.track, i)
     }
     fn make_decoder(&self) -> crate::Result<Box<dyn VideoDecoder>> {
-        make_video_decoder(&self.src.file.tracks[self.track].entries[0])
+        Ok(crate::lcevc::LcevcDecoder::wrap(make_video_decoder(&self.src.file.tracks[self.track].entries[0])?, self.src.lcevc))
     }
 }
 

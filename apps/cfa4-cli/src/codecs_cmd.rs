@@ -99,6 +99,8 @@ static ROWS: &[Row] = &[
         Fmt(Format::H264),
     ),
     video("HEVC / H.265", &["hevc"], Own, Sw("up to 12-bit 4:4:4; no RExt coding tools; encoder Main / Main 10 4:2:0"), true, Fmt(Format::Hevc)),
+    video("MPEG-5 EVC", &["evc"], Ported, Sw("Baseline profile: raw .evc streams and MP4 evc1"), false, NoEnc),
+    video("AVS1-P2", &["cavs"], Ported, Sw("Jizhun profile (AVS1, not AVS+): raw .avs / .cavs streams"), false, NoEnc),
     video("AV1", &["av1"], Own, Sw("Main 8/10-bit"), false, Fmt(Format::Av1)),
     video("AV2", &["av2"], Own, Detect("bitstream parsing only"), false, NoEnc),
     video("VP8", &["vp8"], Own, Sw("RFC 6386"), false, NoEnc),
@@ -115,12 +117,15 @@ static ROWS: &[Row] = &[
     video("Hap", &["hap"], Own, Sw(""), false, NoEnc),
     video("Huffyuv", &["huffyuv"], Own, Sw(""), false, NoEnc),
     video("Canopus HQ / HQA / HQX", &["canopus"], Ported, Sw(""), false, NoEnc),
+    video("RealVideo 1.0 / 2.0 / 3.0 / 4.0", &["realvideo", "realmedia"], Ported, Sw("in RealMedia (.rm, .rmvb)"), false, NoEnc),
     video("Ut Video", &["utvideo"], Own, Sw(""), false, NoEnc),
+    video("Lagarith", &["lagarith"], Ported, Sw(""), false, NoEnc),
+    video("MagicYUV", &["magicyuv"], Ported, Sw(""), false, NoEnc),
     video("DV / DVCPRO", &["dv"], Ported, Sw("DV, DVCAM, DVCPRO 25 / 50, DVCPRO HD"), false, NoEnc),
     video("Animated GIF", &[], Dependency, Sw(""), false, Fmt(Format::Gif)),
     video("CinemaDNG / DNG", &["dng"], Own, Sw("uncompressed and lossless JPEG raw"), false, NoEnc),
-    video("LCEVC", &["lcevc"], Own, Detect("enhancement layer detected, not decoded"), false, NoEnc),
-    video("MPEG-4 Part 2", &[], Missing, No, false, NoEnc),
+    video("LCEVC", &["lcevc"], Ported, Sw("T.35 SEI in H.264 / HEVC; `lvc1` tracks and TS 0x36 detected only"), false, NoEnc),
+    video("MPEG-4 Part 2", &["sstp"], Ported, Sw("Simple Studio Profile (Sony SR) only: raw .m4v streams and MXF"), false, NoEnc),
     video("WMV / VC-1", &[], Missing, No, false, NoEnc),
     video("Camera RAW (R3D, ARRIRAW, BRAW…)", &[], Missing, No, false, NoEnc),
     image("JPEG XL", &["jxl"], Ported, Sw("")),
@@ -138,7 +143,15 @@ static ROWS: &[Row] = &[
     audio("AMR-NB / AMR-WB", &["amr"], Ported, Sw(""), NoEnc),
     audio("Speex", &["speex"], Ported, Sw("Ogg Speex"), NoEnc),
     audio("TTA (True Audio)", &["tta"], Ported, Sw(""), NoEnc),
+    audio(
+        "RealAudio Cook / SIPR / 1.0 (14.4) / 2.0 (28.8), ATRAC3, ATRAC3plus, ATRAC9",
+        &["realaudio"],
+        Ported,
+        Sw("in RealMedia (.rm, .rmvb); ATRAC3 also in WAV (.wav, .at3), ATRAC3plus in WAV and OpenMG (.at3, .oma, .aa3), ATRAC9 in WAV (.at9)"),
+        NoEnc,
+    ),
     audio("Shorten", &["shorten"], Ported, Sw(""), NoEnc),
+    audio("TAK", &["tak"], Ported, Sw(""), NoEnc),
     audio("G.729 / G.729 Annex B", &["g729"], Ported, Sw(""), NoEnc),
     audio("iLBC", &["ilbc"], Ported, Sw(""), NoEnc),
     audio("Musepack SV7 / SV8", &["musepack"], Ported, Sw(""), NoEnc),
@@ -342,8 +355,10 @@ mod tests {
         let ac3 = row(&v, "AC-3 / E-AC-3");
         assert_eq!((ac3["encode"].as_str(), ac3["exportFormat"].is_null()), (Some("software"), true));
         assert!(ac3["exportAudioTrack"].as_str().unwrap().contains("AC-3"));
+        let av2 = row(&v, "AV2");
+        assert_eq!((av2["decode"].as_str(), av2["decodeState"].as_str()), (Some("none"), Some("detect")));
         let lcevc = row(&v, "LCEVC");
-        assert_eq!((lcevc["decode"].as_str(), lcevc["decodeState"].as_str()), (Some("none"), Some("detect")));
+        assert_eq!((lcevc["decode"].as_str(), lcevc["origin"].as_str()), (Some("software"), Some("ported")));
         assert_eq!(row(&v, "DV / DVCPRO")["crates"], json!(["crates/dv"]));
         assert_eq!(row(&v, "DV / DVCPRO")["origin"], "ported");
         assert_eq!(row(&v, "MP3")["origin"], "dependency");

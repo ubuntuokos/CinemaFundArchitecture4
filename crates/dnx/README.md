@@ -103,6 +103,10 @@ the prose of §7.3.1.2; we follow the prose (normative text takes precedence).
 - `export::Format::DnxHr` (`file.exportMedia {"format":"dnxhr","dnxProfile":"lb|sq|hq|hqx"}`)
   writes QuickTime `AVdh` + PCM. The Avid-specific `ACLR`/`ADHR` sample-entry atoms are not
   written (ffmpeg and our reader don't need them).
+- The 4:2:2 DNxHD IDs are export profiles too (`"dnxProfile":"hd1235|hd1237|hd1238|hd1250|hd1251|hd1252|hd1253"`),
+  written as QuickTime `AVdn` or in MXF (OP1a / OP-Atom, the ID in the picture coding label).
+  Each codes one raster, so another output size is refused before encoding. CID 1256
+  (RGB 4:4:4) is not offered: the export path feeds the encoder 4:2:2.
 
 ## Accuracy (vs ffmpeg as an external oracle)
 

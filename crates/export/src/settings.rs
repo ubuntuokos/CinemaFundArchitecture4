@@ -731,6 +731,10 @@ impl ExportSettings {
             Format::Aac => 0.0,
             Format::H264 | Format::Hevc | Format::Av1 | Format::WebM | Format::Hls | Format::Mpeg2 => r.target_kbps as f64 * 1000.0,
             Format::ProRes => crate::prores_profile(&self.prores_profile).nominal_mbps_1080p30() * 1e6 * px / (1920.0 * 1080.0) * fps / 29.97,
+            Format::DnxHr if crate::dnx_profile(&self.dnx_profile).hd_raster().is_some() => {
+                // DNxHD: a fixed frame size per ID
+                f64::from(crate::dnx_profile(&self.dnx_profile).frame_size(0, 0)) * 8.0 * fps
+            }
             Format::DnxHr => {
                 // nominal 1080p29.97 data rates of the DNxHR profiles (Mb/s)
                 let mbps = match self.dnx_profile.to_ascii_lowercase().as_str() {
@@ -916,7 +920,7 @@ impl ExportSettings {
                         Profile::P4444Xq => ", ProRes 4444 XQ",
                     }
                 }
-                Format::DnxHr => v += &format!(", DNxHR {}", if self.dnx_profile.is_empty() { "HQ".into() } else { self.dnx_profile.to_ascii_uppercase() }),
+                Format::DnxHr => v += &format!(", {}", crate::dnx_profile(&self.dnx_profile).name()),
                 Format::Apv => v += &format!(", {}", crate::apv_profile(&self.apv_profile).name()),
                 Format::Cineform => {
                     let mut f = crate::cineform_profile(&self.cineform_profile);

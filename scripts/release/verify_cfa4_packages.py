@@ -211,6 +211,7 @@ def verify_deb(path: Path, version: str) -> None:
     sizes = parse_listing(files, "./")
     for entry in (
         "usr/bin/cfa4", "usr/bin/cfa4-cli", "usr/bin/cfa4-qt",
+        "usr/lib/udev/rules.d/70-cfa4-surfaces.rules",
         "usr/lib/cfa4/python/cfa4_qt/__main__.py",
         f"usr/share/applications/{APP_ID}.desktop",
         f"usr/share/mime/packages/{APP_ID}.xml",

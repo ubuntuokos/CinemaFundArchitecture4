@@ -61,7 +61,12 @@ package as the primary package, a timecode and a data track, the TimedTextDescri
 TimedTextResourceSubDescriptor per resource with dynamic local tags 8050h-8055h), the XML
 clip-wrapped in BodySID 1, each resource alone in a generic stream partition (BodySID 2, 3, …,
 no fill before its KLV), the single index entry of 7.2 in the footer (IndexSID 129) and a random
-index pack that lists the generic stream partitions too (6.3).
+index pack that lists the generic stream partitions too (6.3). With `TimedTextConfig::imf` it
+writes an IMF timed text track file instead (ST 2067-2 5.4, IMF subtitle export, #1234): OP1a
+(internal, streamable, uni-track; ST 2067-5 5.2.1), 8 KiB of fill after the header metadata, and
+`languages` as the RFC 5646 Language Tag List item (Annex H, dynamic tag 8056h), which
+`open_timed_text` returns as `TimedText::languages`. `regxml::essence_descriptor` maps the timed
+text descriptor and its resource sub-descriptors for the IMF playlist.
 
 The `test-util` feature exposes `testing::build_timed_text` and the other synthetic file builders
 for tests in other crates.
@@ -141,7 +146,8 @@ let pcm = mxf.read_pcm(&file, a, 48_000, 1920)?;       // planar f32, sample-exa
   orders by the bitstream (`cfa4-codecs` uses the AVC picture order counts).
 - **Codecs.** From the picture essence coding label, then the essence container label, then the
   essence bytes: AVC / AVC-Intra, VC-3, ProRes (profile from the label), MPEG-2 (decoded in `cfa4-codecs`),
-  MPEG-4 visual, JPEG 2000 (decoded in `cfa4-codecs` with `cfa4-j2k`), DV, uncompressed.
+  MPEG-4 visual (the Simple Studio Profile decoded in `cfa4-codecs` with `cfa4-sstp`), JPEG 2000
+  (decoded in `cfa4-codecs` with `cfa4-j2k`), DV, uncompressed.
 - **Uncompressed pictures** (`uncompressed`, ST 384). `Layout::of` takes the layout from the
   picture essence coding label (the nine Y'CbCr layouts of ST 377-1 G.2.25: 8-bit 4:4:4, UYVY,
   YUY2, planar 4:2:2 and 4:2:0, v210, planar 10-bit, 12- and 16-bit Cb Y Cr Y), else from the

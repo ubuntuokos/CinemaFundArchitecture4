@@ -59,9 +59,14 @@ cfa4-speex = { path = "crates/speex" }
 cfa4-amr = { path = "crates/amr" }
 cfa4-hap = { path = "crates/hap" }
 cfa4-utvideo = { path = "crates/utvideo" }
+cfa4-lagarith = { path = "crates/lagarith" }
+cfa4-magicyuv = { path = "crates/magicyuv" }
 cfa4-huffyuv = { path = "crates/huffyuv" }
 cfa4-ffv1 = { path = "crates/ffv1" }
 cfa4-canopus = { path = "crates/canopus" }
+cfa4-sstp = { path = "crates/sstp" }
+cfa4-evc = { path = "crates/evc" }
+cfa4-cavs = { path = "crates/cavs" }
 cfa4-dirac = { path = "crates/dirac" }
 cfa4-vp9 = { path = "crates/vp9" }
 cfa4-prores = { path = "crates/prores" }
@@ -79,6 +84,10 @@ cfa4-g729 = { path = "crates/g729" }
 cfa4-ilbc = { path = "crates/ilbc" }
 cfa4-tta = { path = "crates/tta" }
 cfa4-shorten = { path = "crates/shorten" }
+cfa4-tak = { path = "crates/tak" }
+cfa4-realvideo = { path = "crates/realvideo" }
+cfa4-realmedia = { path = "crates/realmedia" }
+cfa4-realaudio = { path = "crates/realaudio" }
 cfa4-musepack = { path = "crates/musepack" }
 cfa4-av1 = { path = "crates/av1" }
 cfa4-av2 = { path = "crates/av2" }
@@ -184,7 +193,25 @@ opt-level = 3
 [profile.dev.package.cfa4-shorten]
 opt-level = 3
 
+[profile.dev.package.cfa4-tak]
+opt-level = 3
+
+[profile.dev.package.cfa4-realvideo]
+opt-level = 3
+
+[profile.dev.package.cfa4-realaudio]
+opt-level = 3
+
 [profile.dev.package.cfa4-canopus]
+opt-level = 3
+
+[profile.dev.package.cfa4-sstp]
+opt-level = 3
+
+[profile.dev.package.cfa4-cavs]
+opt-level = 3
+
+[profile.dev.package.cfa4-evc]
 opt-level = 3
 
 [profile.dev.package.cfa4-musepack]
@@ -194,6 +221,12 @@ opt-level = 3
 opt-level = 3
 
 [profile.dev.package.cfa4-utvideo]
+opt-level = 3
+
+[profile.dev.package.cfa4-lagarith]
+opt-level = 3
+
+[profile.dev.package.cfa4-magicyuv]
 opt-level = 3
 
 [profile.dev.package."*"]
