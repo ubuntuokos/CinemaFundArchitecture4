@@ -332,6 +332,15 @@ w.finish()?;
 - `write_opatom_pcm(&OpAtomPcm, &[i32])` builds a complete in-memory OP-Atom PCM file (AAF media
   consolidation); `encode_pcm` interleaves planar f32 as little-endian PCM.
 
+## AS-02 bundle manifest
+
+`as02` reads, writes and checks the `manifest.xml` of an AMWA AS-02 (MXF Versioning) bundle: the
+file list with roles (Annex B), identifiers (a file whose own id is a UMID gets the UUID or UMID URN
+of 9.2.1), sizes, paths and media integrity checks, and the layout rules of 4.3.7 / 4.3.8 (version
+files in the root, essence components under `media/`, a folder entry per subfolder, a simple bundle
+with one version file named like the folder). It does not open the MXF files; reading the
+version file (OP1b with external essence) and the import / export come next (#1363).
+
 ## AS-11 descriptive metadata
 
 `as11` reads and writes AMWA AS-11 descriptive metadata in OP1a files: the AS-11 Core framework,

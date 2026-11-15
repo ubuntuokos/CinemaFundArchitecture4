@@ -1885,6 +1885,7 @@ dependencies = [
  "cfa4-testkit",
  "chrono",
  "hmac",
+ "roxmltree",
  "sha1",
 ]
 
