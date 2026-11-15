@@ -25,14 +25,14 @@ use cfa4_time::{Tick, TimeRange};
 use serde_json::{Value, json};
 
 use crate::clip_ops::source_view;
-use crate::commands::{CommandSpec, always, bad, bool_p, item_p};
+use crate::commands::{CommandSpec, always, bad, bool_p, exact_item_p};
 use crate::{EngineError, Result, Session};
 
 /// The media item named by `item`, or the Source monitor's clip.
 fn item_of(s: &Session, p: &Value, cmd: &str) -> Result<ItemId> {
     match p.get("item") {
         None | Some(Value::Null) => s.state.source_item.ok_or_else(|| bad(cmd, "`item` is required when no Source clip is open")),
-        Some(_) => item_p(p, "item").ok_or_else(|| bad(cmd, "`item` must be a project item id")),
+        Some(_) => exact_item_p(p, "item").ok_or_else(|| bad(cmd, "`item` must be a project item id")),
     }
 }
 

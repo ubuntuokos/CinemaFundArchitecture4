@@ -168,6 +168,15 @@ fn bad_files_and_hostile_values_are_refused_without_panicking() {
         let _ = s.execute("markers.exportEdl", json!({"path": v, "item": v}));
     }
     assert!(media_markers(&s, item).is_empty());
+    // a fractional or negative id is never rounded to another item
+    std::fs::write(&csv, "Start Ticks\r\n0\r\n").unwrap();
+    for v in [json!(item.0 as f64 + 0.5), json!(-(item.0 as f64)), json!(item.0 as f64 - 0.5)] {
+        for cmd in ["markers.importCsv", "markers.importEdl", "markers.exportCsv", "segments.list", "segments.detectBlack"] {
+            let e = s.execute(cmd, json!({"path": csv, "item": v})).unwrap_err().to_string();
+            assert!(e.contains("`item`"), "{cmd} {v}: {e}");
+        }
+    }
+    assert!(media_markers(&s, item).is_empty());
     let _ = std::fs::remove_dir_all(&dir);
     let _: Option<Value> = None;
 }

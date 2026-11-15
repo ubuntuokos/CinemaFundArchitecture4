@@ -511,7 +511,7 @@ class MainWindow(QMainWindow):
         self.multicam.refresh.connect(self.schedule_refresh)
         self.monitor.multicam_command.connect(self.multicam.view_command)
         self.monitor.multicam_record.connect(self.multicam.toggle_record)
-        self.markers.command.connect(lambda c, p: self._seek_program(p["time"]) if c == "playhead.set" else self.execute(c, p))
+        self.markers.command.connect(self._marker_command)
         self.effect_controls.seek.connect(self._seek_program)
         self.monitor.overlay.pen_finished.connect(self.effect_controls.pen_done)
         self.effect_controls.eyedropper_armed.connect(self.monitor.overlay.arm_eyedropper)
@@ -2087,6 +2087,16 @@ class MainWindow(QMainWindow):
         self.media_browser.refresh()
         self.text_panel.set_sequence(self.sequence, self.monitor.playhead)
         self.update_inspectors()
+
+    def _marker_command(self, command: str, params: dict[str, Any]) -> None:
+        """The Markers panel's commands: a jump stops the monitor it moves (playing, the jump would
+        be dropped) and goes through that monitor; the rest run as they are."""
+        if command == "playhead.set":
+            self._seek_program(params["time"])
+        elif command == "source.setPlayhead":
+            self.source_monitor.seek(params["time"])
+        else:
+            self.execute(command, params)
 
     def _on_source(self, result: Any, _b: bytes | None) -> None:
         self.source_state = result if isinstance(result, dict) else None

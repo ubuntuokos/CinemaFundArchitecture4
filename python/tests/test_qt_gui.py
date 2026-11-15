@@ -15567,3 +15567,23 @@ def test_smart_cut_keeps_the_segment_order_and_checks_when_the_list_is_read_agai
     assert d.chosen_segments() == [3, 4]
     assert d.segment_list.currentItem().data(QtCore.Qt.ItemDataRole.UserRole) == 3
     parent.deleteLater()
+
+
+def test_a_marker_jump_goes_through_the_monitor_it_moves():
+    """Markers panel: a jump in the Source clip's segments goes through the Source monitor's seek
+    (which stops playback first, so the jump is not dropped); a Program jump through the Program
+    seek; other commands run as they are."""
+    from types import SimpleNamespace
+
+    from cfa4_qt.main_window import MainWindow
+
+    done: list[tuple[str, object]] = []
+    win = SimpleNamespace(
+        source_monitor=SimpleNamespace(seek=lambda t: done.append(("source", t))),
+        _seek_program=lambda t: done.append(("program", t)),
+        execute=lambda c, p: done.append((c, p)),
+    )
+    MainWindow._marker_command(win, "source.setPlayhead", {"time": 5})
+    MainWindow._marker_command(win, "playhead.set", {"time": 7})
+    MainWindow._marker_command(win, "markers.update", {"id": 1})
+    assert done == [("source", 5), ("program", 7), ("markers.update", {"id": 1})]

@@ -289,7 +289,7 @@ fn settings_of(kind: ScanKind, p: &Value, cmd: &str) -> Result<Settings> {
 fn item_of(s: &Session, p: &Value, cmd: &str) -> Result<ItemId> {
     match p.get("item") {
         None | Some(Value::Null) => s.state.source_item.ok_or_else(|| bad(cmd, "`item` is required when no Source clip is open")),
-        Some(_) => crate::commands::item_p(p, "item").ok_or_else(|| bad(cmd, "`item` must be a project item id")),
+        Some(_) => crate::commands::exact_item_p(p, "item").ok_or_else(|| bad(cmd, "`item` must be a project item id")),
     }
 }
 

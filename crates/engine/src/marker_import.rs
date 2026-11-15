@@ -65,7 +65,7 @@ impl Holder {
 /// or the active sequence.
 pub(crate) fn target(s: &Session, p: &Value, cmd: &str) -> Result<Target> {
     let item = match (p.get("item"), str_p(p, "target")) {
-        (Some(v), _) if !v.is_null() => Some(crate::commands::item_p(p, "item").ok_or_else(|| bad(cmd, "`item` must be a project item id"))?),
+        (Some(v), _) if !v.is_null() => Some(crate::commands::exact_item_p(p, "item").ok_or_else(|| bad(cmd, "`item` must be a project item id"))?),
         (_, Some("source")) => Some(s.state.source_item.ok_or_else(|| bad(cmd, "no Source clip is open"))?),
         (_, None | Some("program")) => None,
         (_, Some(_)) => return Err(bad(cmd, "target must be program or source")),

@@ -199,6 +199,24 @@ fn a_running_analysis_reports_its_state_and_can_be_stopped() {
     let _ = std::fs::remove_dir_all(&dir);
 }
 
+/// Another project opened: the analyses of the old one are gone (a running one is stopped), so
+/// no old item and its segments come back by their job.
+#[test]
+fn analyses_do_not_outlive_their_project() {
+    let (mut s, item, dir) = session("segdetect-reopen");
+    let done = s.execute("segments.detectBlack", json!({"item": item.0, "wait": true})).unwrap()["job"].as_u64().unwrap();
+    let running = s.execute("segments.detectScenes", json!({"item": item.0})).unwrap()["job"].as_u64().unwrap();
+    let project = dir.join("p.fcproj").to_string_lossy().into_owned();
+    s.execute("file.save", json!({"path": project})).unwrap();
+    s.execute("file.open", json!({"path": project})).unwrap();
+    for job in [done, running] {
+        let e = s.execute("segments.proposal", json!({"job": job})).unwrap_err().to_string();
+        assert!(e.contains("no segment analysis"), "{job}: {e}");
+    }
+    assert!(s.segment_scans.is_empty());
+    let _ = std::fs::remove_dir_all(&dir);
+}
+
 #[test]
 fn a_subclip_is_analysed_and_segmented_only_within_its_range() {
     let (mut s, item, dir) = session("segdetect-subclip");

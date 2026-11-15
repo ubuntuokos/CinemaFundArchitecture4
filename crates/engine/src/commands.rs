@@ -385,6 +385,15 @@ pub(crate) fn item_p(p: &Value, k: &str) -> Option<ItemId> {
     u64_p(p, k).map(ItemId)
 }
 
+/// An item id that must be exact: a whole, non-negative number (`7.0` is 7), never a fraction or a
+/// negative number rounded to another item.
+pub(crate) fn exact_item_p(p: &Value, k: &str) -> Option<ItemId> {
+    let v = p.get(k)?;
+    v.as_u64()
+        .or_else(|| v.as_f64().filter(|f| f.is_finite() && f.fract() == 0.0 && *f >= 0.0 && *f < 18_446_744_073_709_551_616.0).map(|f| f as u64))
+        .map(ItemId)
+}
+
 /// `timeline.move`: move the listed clips to (track, time). With Linked Selection on (or
 /// `linked: true`) the linked partners of a listed clip that are not listed themselves follow by
 /// the same time offset on their own tracks, so picture and sound stay in sync; a partner on a
@@ -5514,6 +5523,13 @@ fn install_project(s: &mut Session, proj: cfa4_project::Project, path: Option<St
     s.media = std::sync::Arc::new(crate::MediaPool::default());
     s.media.set_use_proxies(proxies);
     s.offline = Default::default();
+    // segment analyses belong to the project they were started on: a running one is stopped,
+    // and none is found by its job in the new project (its thread keeps only its own result)
+    for scan in std::mem::take(&mut s.segment_scans) {
+        if let Some(j) = s.jobs.iter().find(|j| j.id == scan.job) {
+            j.progress.cancel.store(true, std::sync::atomic::Ordering::Relaxed);
+        }
+    }
     let first = proj.sequences().next().map(|i| i.id);
     s.media.add_stored(&proj, path.as_deref());
     s.project = std::sync::Arc::new(proj);
