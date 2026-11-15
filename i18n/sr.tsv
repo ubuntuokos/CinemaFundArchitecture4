@@ -4668,3 +4668,15 @@ export.summary	Low	низак
 	AS-11 Core	AS-11 Core
 	AS-11 Parts	AS-11 делови
 	AS-11 UK DPP	AS-11 UK DPP
+# Control surfaces (qt-control-surfaces-page, CFA4-CONTROL-SURFACE-001)
+	Connected	Повезано
+	Device	Уређај
+	Devices	Уређаји
+	Disabled	Онемогућено
+	HID jog/shuttle	HID jog/shuttle
+	MIDI	MIDI
+	Not connected	Није повезано
+	OSC	OSC
+	Use	Користи
+	{device} ({port})	{device} ({port})
+	{name}: {error}	{name}: {error}

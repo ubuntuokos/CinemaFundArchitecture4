@@ -4668,3 +4668,15 @@ export.summary	Low	thấp
 	AS-11 Core	AS-11 Core
 	AS-11 Parts	Phần AS-11
 	AS-11 UK DPP	AS-11 UK DPP
+# Control surfaces (qt-control-surfaces-page, CFA4-CONTROL-SURFACE-001)
+	Connected	Đã kết nối
+	Device	Thiết bị
+	Devices	Thiết bị
+	Disabled	Đã tắt
+	HID jog/shuttle	Jog/shuttle HID
+	MIDI	MIDI
+	Not connected	Chưa kết nối
+	OSC	OSC
+	Use	Dùng
+	{device} ({port})	{device} ({port})
+	{name}: {error}	{name}: {error}

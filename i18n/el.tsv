@@ -4670,3 +4670,15 @@ export.summary	Low	χαμηλή
 	AS-11 Core	AS-11 Core
 	AS-11 Parts	Τμήματα AS-11
 	AS-11 UK DPP	AS-11 UK DPP
+# Control surfaces (qt-control-surfaces-page, CFA4-CONTROL-SURFACE-001)
+	Connected	Συνδεδεμένο
+	Device	Συσκευή
+	Devices	Συσκευές
+	Disabled	Απενεργοποιημένο
+	HID jog/shuttle	HID jog/shuttle
+	MIDI	MIDI
+	Not connected	Μη συνδεδεμένο
+	OSC	OSC
+	Use	Χρήση
+	{device} ({port})	{device} ({port})
+	{name}: {error}	{name}: {error}

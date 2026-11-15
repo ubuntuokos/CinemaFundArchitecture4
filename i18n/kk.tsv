@@ -4670,3 +4670,15 @@ export.summary	Low	төмен
 	AS-11 Core	AS-11 Core
 	AS-11 Parts	AS-11 бөліктері
 	AS-11 UK DPP	AS-11 UK DPP
+# Control surfaces (qt-control-surfaces-page, CFA4-CONTROL-SURFACE-001)
+	Connected	Қосылған
+	Device	Құрылғы
+	Devices	Құрылғылар
+	Disabled	Өшірілген
+	HID jog/shuttle	HID jog/shuttle
+	MIDI	MIDI
+	Not connected	Қосылмаған
+	OSC	OSC
+	Use	Пайдалану
+	{device} ({port})	{device} ({port})
+	{name}: {error}	{name}: {error}
