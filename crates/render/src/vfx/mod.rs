@@ -20,6 +20,7 @@ pub(crate) mod distort;
 pub(crate) mod glitch;
 mod immersive;
 mod lights;
+mod pixelate;
 mod stylize;
 mod temporal;
 mod text;
@@ -474,6 +475,7 @@ pub fn apply(img: &mut Image, e: &EffectInstance, cx: &FxCtx<'_>) -> bool {
         "channel_blur" => blur::channel_blur(img, e, cx),
         "compound_blur" => blur::compound(img, e, cx),
         "focus_blur" => blur::focus(img, e, cx),
+        "rack_focus" => blur::rack_focus(img, e, cx),
         "reduce_interlace_flicker" => blur::interlace_flicker(img, e, cx),
         "gaussian_blur_legacy" => alias(img, "gaussian_blur"),
         "directional_blur_legacy" => alias(img, "directional_blur"),
@@ -495,6 +497,7 @@ pub fn apply(img: &mut Image, e: &EffectInstance, cx: &FxCtx<'_>) -> bool {
         "auto_align" => distort::auto_align(img, e, cx),
         "rounded_crop" => distort::rounded_crop(img, e, cx),
         "mosaic" | "mosaic_legacy" => distort::mosaic(img, e, cx),
+        "pixelate" => pixelate::pixelate(img, e, cx),
         "twirl_legacy" => alias(img, "twirl"),
         // Lights & Glows
         "echo_glow" => lights::echo_glow(img, e, cx),

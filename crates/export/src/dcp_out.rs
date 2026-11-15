@@ -12,6 +12,11 @@
 //! (ST 429-18, a CPL `AuxData` asset) and the main sound becomes 16 channels with the FSK
 //! synchronisation signal (ST 429-19).
 //!
+//! With subtitles (#938) the sequence's first caption track becomes an ST 428-7 subtitle reel in
+//! an ST 429-5 timed text track file (the font, Inter Regular unless the user picks one, embedded
+//! as its ancillary resource), the CPL's `MainSubtitle` and the ST 429-16
+//! `MainSubtitleLanguageList`.
+//!
 //! Unencrypted and unsigned (no KDM, no XML signature): a DCP that servers ingest as an OV.
 //! The composition edit rate is the DCI rate nearest the export's (24, 25, 30, 48, 50 or 60; 4K
 //! 24, 25 or 30).
@@ -173,6 +178,12 @@ pub(crate) fn validate(s: &ExportSettings) -> Result<()> {
     if dcp_language(s).is_none() {
         return Err(ExportError::Unsupported(format!("DCP language {:?} is not an RFC 5646 tag such as en-US or hu-HU", s.dcp_language)));
     }
+    if rfc5646(&s.dcp_subtitle_language).is_none() {
+        return Err(ExportError::Unsupported(format!("DCP subtitle language {:?} is not an RFC 5646 tag such as en-US or hu-HU", s.dcp_subtitle_language)));
+    }
+    if s.dcp_subtitles && dcp_subtitle_language(s).is_none_or(str::is_empty) {
+        return Err(ExportError::Unsupported("DCP subtitles need a language: set the subtitle or the package language".into()));
+    }
     crate::dcp_iab::validate(s)
 }
 
@@ -180,7 +191,21 @@ pub(crate) fn validate(s: &ExportSettings) -> Result<()> {
 /// when it has the RFC 5646 shape (a 2-3 letter primary language subtag, then 1-8 character
 /// alphanumeric subtags, at most 35 characters), `None` otherwise.
 pub fn dcp_language(s: &ExportSettings) -> Option<&str> {
-    let tag = s.dcp_language.trim();
+    rfc5646(&s.dcp_language)
+}
+
+/// The DCP subtitle language: [`ExportSettings::dcp_subtitle_language`], else the package's
+/// [`dcp_language`] (`Some("")` when neither is set, `None` when the tag is malformed).
+pub fn dcp_subtitle_language(s: &ExportSettings) -> Option<&str> {
+    match rfc5646(&s.dcp_subtitle_language)? {
+        "" => dcp_language(s),
+        tag => Some(tag),
+    }
+}
+
+/// `Some("")` for an empty `tag`, the trimmed tag when it has the RFC 5646 shape, else `None`.
+fn rfc5646(tag: &str) -> Option<&str> {
+    let tag = tag.trim();
     if tag.is_empty() {
         return Some("");
     }
@@ -238,14 +263,17 @@ pub fn dcp_isdcf_name(s: &ExportSettings, title: &str, date: &str) -> String {
         DcpAspect::Scope => "S",
         DcpAspect::Full => "C",
     };
-    let lang = match dcp_language(s).and_then(|t| t.split('-').next()).filter(|p| !p.is_empty()) {
+    let code = |t: Option<&str>| match t.and_then(|t| t.split('-').next()).filter(|p| !p.is_empty()) {
         Some(p) => p.to_ascii_uppercase(),
-        None => "XX".into(),
+        None => "XX".to_string(),
     };
+    let lang = code(dcp_language(s));
+    // subtitles in their own track file: the subtitle language in upper case (ISDCF)
+    let subs = if s.dcp_subtitles { code(dcp_subtitle_language(s)) } else { "XX".into() };
     let audio = if DcpImmersive::of(s) == DcpImmersive::Off { "51" } else { "IAB" };
     let res = if DcpResolution::of(s) == DcpResolution::FourK { "4K" } else { "2K" };
     let date: String = date.chars().filter(char::is_ascii_digit).take(8).collect();
-    format!("{short}_{kind}-1_{aspect}_{lang}-XX_{audio}_{res}_{date}_SMPTE_OV")
+    format!("{short}_{kind}-1_{aspect}_{lang}-{subs}_{audio}_{res}_{date}_SMPTE_OV")
 }
 
 // ---------------------------------------------------------------------------------------------
@@ -564,6 +592,34 @@ pub(crate) struct DcpSetup<'a> {
     pub audio: bool,
     /// The picture inside the container (black bars excluded), for the ST 429-16 active area.
     pub active: (u32, u32),
+    /// The subtitles (#938), timed from the first exported frame.
+    pub subtitles: Option<cfa4_captions::Document>,
+}
+
+/// The subtitle font of an export: the file of [`ExportSettings::dcp_subtitle_font`], else the
+/// bundled Inter Regular. An OpenType or TrueType font (`OTTO`, `true` or version 1.0 sfnt).
+pub(crate) fn subtitle_font(s: &ExportSettings) -> Result<Vec<u8>> {
+    let path = s.dcp_subtitle_font.trim();
+    if path.is_empty() {
+        return Ok(cfa4_text::fonts::INTER_REGULAR.to_vec());
+    }
+    let size = std::fs::metadata(path).map_err(|e| io(format!("subtitle font {path}: {e}")))?.len();
+    if size > cfa4_mxf::MAX_RESOURCE_BYTES {
+        return Err(ExportError::Unsupported(format!("subtitle font {path} is {size} bytes, over the 64 MiB a timed text resource may hold")));
+    }
+    let data = std::fs::read(path).map_err(|e| io(format!("subtitle font {path}: {e}")))?;
+    let sfnt = matches!(data.get(..4), Some([0, 1, 0, 0] | b"OTTO" | b"true"));
+    if !sfnt {
+        return Err(ExportError::Unsupported(format!("subtitle font {path} is not an OpenType or TrueType font file")));
+    }
+    Ok(data)
+}
+
+/// Subtitles of a DCP in progress: the cues, the language and the font.
+struct Subtitles {
+    doc: cfa4_captions::Document,
+    language: String,
+    font: Vec<u8>,
 }
 
 /// A DCP export in progress: the two track files are written as the export runs; the XML at the
@@ -580,6 +636,8 @@ pub(crate) struct DcpMux {
     /// The RFC 5646 spoken language ("" = none).
     language: String,
     issued: String,
+    /// The issue time, for the timed text track file's header.
+    modified: Timestamp,
     picture: Option<([u8; 16], String, MxfWriter<Out>)>,
     sound: Option<([u8; 16], String, MxfWriter<Out>)>,
     /// The IAB track and the 16-channel main sound of an immersive audio DCP.
@@ -588,6 +646,7 @@ pub(crate) struct DcpMux {
     fallback: Option<crate::dcp_iab::IabFallback>,
     /// The main sound's MCA labels and their sub-descriptor instance ids (the CPL repeats them).
     mca: Vec<(cfa4_mxf::McaLabel, [u8; 16])>,
+    subtitles: Option<Subtitles>,
     frames: u64,
 }
 
@@ -661,6 +720,10 @@ impl DcpMux {
             None => Vec::new(),
         };
         let fallback = immersive.then(|| crate::dcp_iab::IabFallback::of(settings));
+        let subtitles = match s.subtitles {
+            Some(doc) => Some(Subtitles { doc, language: dcp_subtitle_language(settings).unwrap_or_default().to_string(), font: subtitle_font(settings)? }),
+            None => None,
+        };
         let immersive = match (&sound, immersive) {
             (Some((sound_id, _, _)), true) => {
                 let id = uuid(&format!("{seed}|iab"));
@@ -683,11 +746,13 @@ impl DcpMux {
             active: active_area(s.active, (s.width, s.height)),
             language,
             issued,
+            modified: t,
             picture,
             sound,
             immersive,
             fallback,
             mca,
+            subtitles,
             frames: 0,
         })
     }
@@ -752,20 +817,25 @@ impl DcpMux {
             Some((id, name, w, units)) => Some(Asset { units: Some(units), ..track(id, name, w)? }),
             None => None,
         };
-        let mut write = |name: String, xml: String, id: [u8; 16]| -> Result<Asset> {
+        let mut write_file = |name: String, data: Vec<u8>, id: [u8; 16], mime: &'static str| -> Result<Asset> {
             let path = join(&dir, &name);
-            let data = xml.into_bytes();
             let hash = sha1(&data);
             let size = crate::write_output(settings, &path, data)?;
             total += size;
             files.push(path);
-            Ok(Asset { id, name, size, hash, mime: "text/xml", units: None })
+            Ok(Asset { id, name, size, hash, mime, units: None })
         };
+        let subtitle = match self.subtitle_track_file()? {
+            Some((id, data)) => Some(write_file(format!("sub_{}.mxf", uuid_text(&id)), data, id, "application/mxf")?),
+            None => None,
+        };
+        let mut write = |name: String, xml: String, id: [u8; 16]| write_file(name, xml.into_bytes(), id, "text/xml");
         let cpl_id = uuid(&format!("{}|cpl", self.seed));
-        let cpl = write(format!("cpl_{}.xml", uuid_text(&cpl_id)), self.cpl(cpl_id, &picture, sound.as_ref(), aux.as_ref()), cpl_id)?;
+        let cpl = write(format!("cpl_{}.xml", uuid_text(&cpl_id)), self.cpl(cpl_id, &picture, sound.as_ref(), subtitle.as_ref(), aux.as_ref()), cpl_id)?;
         let pkl_id = uuid(&format!("{}|pkl", self.seed));
         let mut assets = vec![&cpl, &picture];
         assets.extend(sound.as_ref());
+        assets.extend(subtitle.as_ref());
         assets.extend(aux.as_ref());
         let pkl = write(format!("pkl_{}.xml", uuid_text(&pkl_id)), self.pkl(pkl_id, &assets), pkl_id)?;
         assets.insert(0, &pkl);
@@ -775,6 +845,46 @@ impl DcpMux {
         let vol = "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n<VolumeIndex xmlns=\"http://www.smpte-ra.org/schemas/429-9/2007/AM\">\n  <Index>1</Index>\n</VolumeIndex>\n";
         write("VOLINDEX.xml".into(), vol.into(), am_id)?;
         Ok((total, files))
+    }
+
+    /// The subtitle track file (ST 429-5): the ST 428-7 reel of the cues inside the composition
+    /// with the font as its one ancillary resource; (asset id, file bytes).
+    fn subtitle_track_file(&self) -> Result<Option<([u8; 16], Vec<u8>)>> {
+        let Some(sub) = &self.subtitles else { return Ok(None) };
+        let id = uuid(&format!("{}|subtitle", self.seed));
+        let xml_id = uuid(&format!("{}|subtitle-reel", self.seed));
+        let font_id = uuid(&format!("{}|subtitle-font", self.seed));
+        // cues past the last frame are cut there
+        let rate = self.rate;
+        let end = rate.tick_of(i64::try_from(self.frames).unwrap_or(i64::MAX));
+        let mut doc = sub.doc.clone();
+        doc.cues.retain_mut(|c| {
+            c.end = c.end.min(end);
+            c.start < c.end
+        });
+        let opts = cfa4_captions::dcst::ReelOptions {
+            id: format!("urn:uuid:{}", uuid_text(&xml_id)),
+            title: self.title.clone(),
+            issue_date: self.issued.clone(),
+            reel_number: 1,
+            language: sub.language.clone(),
+            edit_rate: (rate.num, rate.den),
+            font: Some(("font1".into(), format!("urn:uuid:{}", uuid_text(&font_id)))),
+            size: cfa4_captions::dcst::DEFAULT_SIZE,
+        };
+        let xml = cfa4_captions::dcst::write_reel(&doc, &opts);
+        let er = Rational::new(i32::try_from(rate.num).unwrap_or(24), i32::try_from(rate.den).unwrap_or(1));
+        let ids = PackageIds {
+            material: Umid::dcinema(uuid(&format!("{}|material", self.seed))),
+            file: Umid::dcinema(id),
+            material_name: self.title.clone(),
+            file_name: format!("{} subtitles", self.title),
+        };
+        let mut cfg = cfa4_mxf::TimedTextConfig::new(er, i64::try_from(self.frames).unwrap_or(i64::MAX), xml_id, cfa4_captions::dcst::NAMESPACE_2010, ids);
+        cfg.modified = self.modified;
+        let font = cfa4_mxf::TimedTextResource { id: font_id, mime: cfa4_mxf::write::MIME_OPENTYPE.into(), data: sub.font.clone() };
+        let data = cfa4_mxf::write_timed_text(&cfg, xml.as_bytes(), &[font]).map_err(io)?;
+        Ok(Some((id, data)))
     }
 
     fn header(&self, out: &mut String, id: [u8; 16]) {
@@ -787,7 +897,7 @@ impl DcpMux {
 
     /// Composition playlist (ST 429-7): one reel, main picture, main sound and the immersive
     /// audio `AuxData` of ST 429-18 clause 14.
-    fn cpl(&self, id: [u8; 16], picture: &Asset, sound: Option<&Asset>, aux: Option<&Asset>) -> String {
+    fn cpl(&self, id: [u8; 16], picture: &Asset, sound: Option<&Asset>, subtitle: Option<&Asset>, aux: Option<&Asset>) -> String {
         let rate = format!("{} {}", self.rate.num, self.rate.den);
         let mut x =
             String::from("<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n<CompositionPlaylist xmlns=\"http://www.smpte-ra.org/schemas/429-7/2006/CPL\">\n");
@@ -834,6 +944,12 @@ impl DcpMux {
             track(&mut x, a);
             x.push_str("        </MainSound>\n");
         }
+        if let (Some(a), Some(sub)) = (subtitle, &self.subtitles) {
+            x.push_str("        <MainSubtitle>\n");
+            track(&mut x, a);
+            x.push_str(&format!("          <Language>{}</Language>\n", xml_text(&sub.language)));
+            x.push_str("        </MainSubtitle>\n");
+        }
         self.composition_metadata(&mut x, sound.is_some());
         if let Some(a) = aux {
             x.push_str("        <axd:AuxData xmlns:axd=\"http://www.dolby.com/schemas/2012/AD\">\n");
@@ -867,6 +983,9 @@ impl DcpMux {
             x.push_str(&format!(
                 "          <meta:{area}>\n            <meta:Width>{w}</meta:Width>\n            <meta:Height>{h}</meta:Height>\n          </meta:{area}>\n"
             ));
+        }
+        if let Some(sub) = &self.subtitles {
+            x.push_str(&format!("          <meta:MainSubtitleLanguageList>{}</meta:MainSubtitleLanguageList>\n", xml_text(&sub.language)));
         }
         // the ISDCF application: IAB Profile 1 (Doc 15 4.2) or the RDD 52 DCP constraints profile
         let (name, value) =

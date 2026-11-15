@@ -1537,6 +1537,17 @@ fn build() -> Vec<CommandSpec> {
                     }
                     continue;
                 }
+                // A DCP folder, asset map or composition playlist: one sequence per playlist.
+                if let Some(r) = crate::dcp_import::import_package(s, &path, bin) {
+                    match r {
+                        Ok(r) => {
+                            sequences.extend(r["sequences"].as_array().cloned().unwrap_or_default());
+                            reports.push(r);
+                        }
+                        Err(e) => errors.push(format!("{path}: {e}")),
+                    }
+                    continue;
+                }
                 // DCP / IMF subtitles: timed text track files are caption tracks, not media.
                 if let Some(r) = crate::captions::import_timed_text_mxf(s, &path) {
                     match r {
@@ -1841,12 +1852,13 @@ fn build() -> Vec<CommandSpec> {
             "Media…",
             ["File", "Export"],
             None,
-            r#"{"path":str,"preset":str?,"settings":ExportSettings?,"format":"h264|hevc|prores|dnxhr|apv|cineform|mjpeg|mxf-op1a|mxf-opatom|mpeg2|dcp|imf|png|tiff|bmp|jpg|tga|dpx|exr|gif|wav|aiff|aac|flac"?,"audioCodec":"auto|aac|pcm|flac|opus|ac3|mp2"?,"flacLevel":0..8=5,"width":u32?,"height":u32?,"fps":f64?,"bitrateKbps":u32?,"bitrateMode":"cbr|vbr1Pass|vbr2Pass|crf"?,"crf":0..51=23,"hardwareEncoding":"off|auto"?,"scale":f32=1,"audio":bool=true,"quality":0..100,"burnCaptions":bool=false,"dashManifest":bool=false,"alpha":bool=false,"exrCompression":"none|rle|zips|zip|piz"?,"captionSidecar":"srt|vtt"?,"loudnessLufs":f64?,"proresProfile":"proxy|lt|standard|hq|4444|4444xq"?,"dnxProfile":"lb|sq|hq|hqx"?,"apvProfile":"422-10|422-12|444-10|444-12"?,"cineformProfile":"422|444|4444"?,"cineformQuality":"filmscan3|filmscan2|filmscan1|high|medium|low"?,"mxfVideoCodec":"dnxhr|proRes|h264|mpeg2|d10|xdcamHd422|v210|uyvy"?,"mxfAncCaptions":bool=false,"mpeg2Container":"ps|ts|m2ts|es"?,"mpeg2Chroma":"420|422"?,"mpeg2Quantizer":1..31?,"mpeg2BFrames":0..7?,"dcpResolution":"2k|4k"?,"dcpAspect":"flat|scope|full"?,"dcpContentKind":"feature|trailer|teaser|short|advertisement|test|transitional|rating|policy|psa"?,"dcpImmersive":"off|bed|file"?,"dcpIabSource":str?,"dcpIabFallback":"5.1|mix|none"?,"dcpLanguage":str?,"imfLossless":bool?,"imfContentKind":"feature|trailer|teaser|short|advertisement|test|transitional|rating|psa|episode|highlights|event"?,"fieldOrder":"progressive|upperFirst|lowerFirst"?,"sequence":id?,"range":"entire|inOut|workArea|custom"?,"startSeconds":f64?,"endSeconds":f64?,"wait":bool=false}"#,
+            r#"{"path":str,"preset":str?,"settings":ExportSettings?,"format":"h264|hevc|prores|dnxhr|apv|cineform|mjpeg|mxf-op1a|mxf-opatom|mpeg2|dcp|imf|png|tiff|bmp|jpg|tga|dpx|exr|gif|wav|aiff|aac|flac"?,"audioCodec":"auto|aac|pcm|flac|opus|ac3|mp2"?,"flacLevel":0..8=5,"width":u32?,"height":u32?,"fps":f64?,"bitrateKbps":u32?,"bitrateMode":"cbr|vbr1Pass|vbr2Pass|crf"?,"crf":0..51=23,"hardwareEncoding":"off|auto"?,"scale":f32=1,"audio":bool=true,"quality":0..100,"burnCaptions":bool=false,"dashManifest":bool=false,"alpha":bool=false,"exrCompression":"none|rle|zips|zip|piz"?,"captionSidecar":"srt|vtt"?,"loudnessLufs":f64?,"proresProfile":"proxy|lt|standard|hq|4444|4444xq"?,"dnxProfile":"lb|sq|hq|hqx"?,"apvProfile":"422-10|422-12|444-10|444-12"?,"cineformProfile":"422|444|4444"?,"cineformQuality":"filmscan3|filmscan2|filmscan1|high|medium|low"?,"mxfVideoCodec":"dnxhr|proRes|h264|mpeg2|d10|xdcamHd422|v210|uyvy"?,"mxfAncCaptions":bool=false,"mxfAs11Core":str?,"mxfAs11Segments":str?,"mxfAs11Ukdpp":str?,"mpeg2Container":"ps|ts|m2ts|es"?,"mpeg2Chroma":"420|422"?,"mpeg2Quantizer":1..31?,"mpeg2BFrames":0..7?,"dcpResolution":"2k|4k"?,"dcpAspect":"flat|scope|full"?,"dcpContentKind":"feature|trailer|teaser|short|advertisement|test|transitional|rating|policy|psa"?,"dcpImmersive":"off|bed|file"?,"dcpIabSource":str?,"dcpIabFallback":"5.1|mix|none"?,"dcpLanguage":str?,"dcpSubtitles":bool?,"dcpSubtitleLanguage":str?,"dcpSubtitleFont":str?,"imfLossless":bool?,"imfContentKind":"feature|trailer|teaser|short|advertisement|test|transitional|rating|psa|episode|highlights|event"?,"fieldOrder":"progressive|upperFirst|lowerFirst"?,"sequence":id?,"range":"entire|inOut|workArea|custom"?,"startSeconds":f64?,"endSeconds":f64?,"wait":bool=false}"#,
             has_seq,
             crate::export_tools::export_media
         ),
         query!("jobs.list", "List Jobs", "{}", |s, _| Ok(Value::Array(s.jobs.iter().map(|j| crate::export_tools::job_json(s, j)).collect()))),
         query!("perf.stats", "Performance Statistics", "{}", |s, _| Ok(crate::perf::stats(s))),
+        query!("security.status", "Security Status", "{}", |s, _| Ok(crate::security::status(s))),
         cmd!("jobs.cancel", "Cancel Job", [], None, r#"{"job":id}"#, always, |s, p| {
             let id = u64_p(p, "job").ok_or_else(|| bad("jobs.cancel", "need `job`"))?;
             let j = s.jobs.iter().find(|j| j.id == id).ok_or_else(|| bad("jobs.cancel", "no such job"))?;
@@ -3852,6 +3864,8 @@ fn build() -> Vec<CommandSpec> {
     v.extend(crate::captions::commands());
     v.extend(crate::settings::commands());
     v.extend(crate::timecode_sync::commands());
+    v.extend(crate::control_surfaces::commands());
+    v.extend(crate::ltc_read::commands());
     v.extend(crate::mixer::commands());
     v.extend(crate::multicam::commands());
     v.extend(crate::essential_sound::commands());
@@ -3860,6 +3874,7 @@ fn build() -> Vec<CommandSpec> {
     v.extend(crate::graphic_templates::commands());
     v.extend(crate::credits::commands());
     v.extend(crate::live::commands());
+    v.extend(crate::studio::commands());
     v.extend(crate::dialog_defaults::commands());
     v.extend(crate::legibility::commands());
     v.extend(crate::shortcuts::commands());

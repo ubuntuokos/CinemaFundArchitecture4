@@ -1827,6 +1827,7 @@
 	Counter	Licznik
 	Typewriter	Maszyna do pisania
 	Word by Word	Słowo po słowie
+	Scramble	Mieszanie
 	Animator	Animator
 	Animator Duration	Czas trwania animatora
 	Animator Delay	Opóźnienie animatora
@@ -2840,6 +2841,10 @@
 	Sharpen Amount	Stopień wyostrzenia
 	Shift Center To	Przesuń środek do
 	Show Focus Area	Pokaż obszar ostrości
+	Rack Focus	Przeostrzenie
+	Focus Point A	Punkt ostrości A
+	Focus Point B	Punkt ostrości B
+	Rack	Przeostrzenie (%)
 	Show Only Noise	Pokaż tylko szum
 	Shrink	Zmniejszenie
 	Shutter Angle	Kąt migawki
@@ -4176,6 +4181,11 @@ export.summary	Low	niska
 	Burn Size	Rozmiar wypalenia
 	Ember Width	Szerokość żaru
 	Ember Color	Kolor żaru
+	Tear Away	Oderwanie
+	Tear Roughness	Szorstkość rozdarcia
+	Paper Edge Width	Szerokość krawędzi papieru
+	Stamp Cut	Wycięcie znaczka
+	Perforations	Perforacja
 	Check Text Legibility	Sprawdź czytelność tekstu
 	Clear Legibility Markers	Wyczyść znaczniki czytelności
 	Text legibility: no problems found	Czytelność tekstu: nie znaleziono problemów
@@ -4215,6 +4225,9 @@ export.summary	Low	niska
 	Dither	Dithering
 	Pattern	Wzór
 	Cell Size	Rozmiar komórki
+	Pixelate	Pikselizacja
+	Cell Shape	Kształt komórki
+	LED	LED
 	Cyan Angle	Kąt cyjanu
 	Magenta Angle	Kąt magenty
 	Yellow Angle	Kąt żółtego
@@ -4575,6 +4588,18 @@ export.summary	Low	niska
 	Chase External Timecode	Podążaj za zewnętrznym kodem czasowym
 	Send LTC	Wysyłaj LTC
 	Send MIDI Timecode	Wysyłaj kod czasowy MIDI
+
+# Live studio preview (CFA4-LIVE-STUDIO-001 S0)
+	Live studio preview	Podgląd studia na żywo
+	Live studio: stopped	Studio na żywo: zatrzymane
+	Live studio: {state}	Studio na żywo: {state}
+	Live studio: {error}	Studio na żywo: {error}
+	restarted after {count} crashes (last: {exit})	uruchomione ponownie po {count} awariach (ostatnia: {exit})
+	software backend: {reason}	zaplecze programowe: {reason}
+	Start studio	Uruchom studio
+	Stop studio	Zatrzymaj studio
+	Add Studio Scene	Dodaj scenę studia
+	Live	Na żywo
 # Auto Color, Auto Contrast, Auto Levels (EffectsSDK review)
 	Auto Color	Automatyczny kolor
 	Auto Contrast	Automatyczny kontrast
@@ -4632,3 +4657,42 @@ export.summary	Low	niska
 	Freewheel	Wolnobieg
 	Scrubbing	Przewijanie
 	Sending	Wysyłanie
+
+# DCP subtitle export (#938)
+	Subtitles from the first caption track	Napisy z pierwszej ścieżki napisów
+	The package language	Język pakietu
+	Inter Regular (built in), or an OpenType / TrueType file	Inter Regular (wbudowana) lub plik OpenType / TrueType
+	Subtitle language	Język napisów
+	Subtitle font	Czcionka napisów
+	Fonts	Czcionki
+
+# AS-11 metadata in MXF OP1a (#96)
+	AS-11 Core	AS-11 Core
+	AS-11 Parts	Części AS-11
+	AS-11 UK DPP	AS-11 UK DPP
+
+# Control Surfaces settings page (CS-1, #1187)
+	Devices	Urządzenia
+	Use	Używaj
+	Device	Urządzenie
+	MIDI	MIDI
+	HID jog/shuttle	HID jog/shuttle
+	OSC	OSC
+	Connected	Połączono
+	Not connected	Nie połączono
+	Disabled	Wyłączone
+	{device} ({port})	{device} ({port})
+	{name}: {error}	{name}: {error}
+	Looking for devices…	Wyszukiwanie urządzeń…
+	No MIDI controller or jog/shuttle device was found. Connect one and press Refresh.	Nie znaleziono kontrolera MIDI ani urządzenia jog/shuttle. Podłącz jedno i naciśnij Odśwież.
+	Control Surfaces	Powierzchnie sterujące
+	Use control surfaces (MIDI controllers, jog/shuttle devices)	Używaj powierzchni sterujących (kontrolery MIDI, urządzenia jog/shuttle)
+	Mapping controls to commands, MIDI Learn and the MIDI Monitor come in a later version; the choices here are remembered until then.	Przypisywanie elementów sterujących do poleceń, MIDI Learn i monitor MIDI pojawią się w późniejszej wersji; do tego czasu wybory tutaj są zapamiętywane.
+	CFA4 ShuttlePRO	CFA4 ShuttlePRO
+	Kdenlive-style ShuttlePRO	ShuttlePRO w stylu Kdenlive
+	Generic MIDI	Ogólne MIDI
+
+# LTC timecode read from clip audio (TC-7, #1285)
+	Read from LTC Audio	Odczytaj z dźwięku LTC
+	Find SMPTE LTC on the clip's audio and use the timecode it gives the first frame	Znajdź SMPTE LTC w dźwięku klipu i użyj kodu czasowego, który daje on pierwszej klatce
+	Read Timecode from LTC Audio	Odczytaj kod czasowy z dźwięku LTC

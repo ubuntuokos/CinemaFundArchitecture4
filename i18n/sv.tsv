@@ -1915,6 +1915,7 @@
 	Counter	Räknare
 	Typewriter	Skrivmaskin
 	Word by Word	Ord för ord
+	Scramble	Förvrängning
 	Animator	Animerare
 	Animator Duration	Animerarens längd
 	Animator Delay	Animerarens fördröjning
@@ -2978,6 +2979,10 @@
 	Sharpen Amount	Skärpningsmängd
 	Shift Center To	Flytta mittpunkten till
 	Show Focus Area	Visa fokusområde
+	Rack Focus	Skärpeflytt
+	Focus Point A	Fokuspunkt A
+	Focus Point B	Fokuspunkt B
+	Rack	Flytt
 	Show Only Noise	Visa endast brus
 	Shrink	Krymp
 	Shutter Angle	Slutarvinkel
@@ -4178,6 +4183,11 @@ export.summary	Low	låg
 	Burn Size	Brännstorlek
 	Ember Width	Glödkantens bredd
 	Ember Color	Glödkantens färg
+	Tear Away	Avrivning
+	Tear Roughness	Revans ojämnhet
+	Paper Edge Width	Papperskantens bredd
+	Stamp Cut	Frimärksutskärning
+	Perforations	Perforering
 	Check Text Legibility	Kontrollera textens läsbarhet
 	Clear Legibility Markers	Rensa läsbarhetsmarkörer
 	Text legibility: no problems found	Textens läsbarhet: inga problem hittades
@@ -4217,6 +4227,9 @@ export.summary	Low	låg
 	Dither	Dithering
 	Pattern	Mönster
 	Cell Size	Cellstorlek
+	Pixelate	Pixelera
+	Cell Shape	Cellform
+	LED	LED
 	Cyan Angle	Cyanvinkel
 	Magenta Angle	Magentavinkel
 	Yellow Angle	Gul vinkel
@@ -4577,6 +4590,18 @@ export.summary	Low	låg
 	Chase External Timecode	Följ extern tidskod
 	Send LTC	Skicka LTC
 	Send MIDI Timecode	Skicka MIDI-tidskod
+
+# Live studio preview (CFA4-LIVE-STUDIO-001 S0)
+	Live studio preview	Förhandsvisning av livestudio
+	Live studio: stopped	Livestudio: stoppad
+	Live studio: {state}	Livestudio: {state}
+	Live studio: {error}	Livestudio: {error}
+	restarted after {count} crashes (last: {exit})	omstartad efter {count} krascher (senaste: {exit})
+	software backend: {reason}	programvarubakände: {reason}
+	Start studio	Starta studio
+	Stop studio	Stoppa studio
+	Add Studio Scene	Lägg till studioscen
+	Live	Live
 # Auto Color, Auto Contrast, Auto Levels (EffectsSDK review)
 	Auto Color	Automatisk färg
 	Auto Contrast	Automatisk kontrast
@@ -4634,3 +4659,42 @@ export.summary	Low	låg
 	Freewheel	Frihjul
 	Scrubbing	Skrubbar
 	Sending	Skickar
+
+# DCP subtitle export (#938)
+	Subtitles from the first caption track	Undertexter från det första textningsspåret
+	The package language	Paketets språk
+	Inter Regular (built in), or an OpenType / TrueType file	Inter Regular (inbyggt) eller en OpenType-/TrueType-fil
+	Subtitle language	Undertextspråk
+	Subtitle font	Teckensnitt för undertexter
+	Fonts	Teckensnitt
+
+# AS-11 metadata in MXF OP1a (#96)
+	AS-11 Core	AS-11 Core
+	AS-11 Parts	AS-11-delar
+	AS-11 UK DPP	AS-11 UK DPP
+
+# Control Surfaces settings page (CS-1, #1187)
+	Devices	Enheter
+	Use	Använd
+	Device	Enhet
+	MIDI	MIDI
+	HID jog/shuttle	HID jog/shuttle
+	OSC	OSC
+	Connected	Ansluten
+	Not connected	Inte ansluten
+	Disabled	Inaktiverad
+	{device} ({port})	{device} ({port})
+	{name}: {error}	{name}: {error}
+	Looking for devices…	Söker efter enheter…
+	No MIDI controller or jog/shuttle device was found. Connect one and press Refresh.	Ingen MIDI-kontroller eller jog/shuttle-enhet hittades. Anslut en och tryck på Uppdatera.
+	Control Surfaces	Kontrollytor
+	Use control surfaces (MIDI controllers, jog/shuttle devices)	Använd kontrollytor (MIDI-kontroller, jog/shuttle-enheter)
+	Mapping controls to commands, MIDI Learn and the MIDI Monitor come in a later version; the choices here are remembered until then.	Att koppla kontroller till kommandon, MIDI Learn och MIDI-monitorn kommer i en senare version; valen här sparas tills dess.
+	CFA4 ShuttlePRO	CFA4 ShuttlePRO
+	Kdenlive-style ShuttlePRO	ShuttlePRO i Kdenlive-stil
+	Generic MIDI	Allmän MIDI
+
+# LTC timecode read from clip audio (TC-7, #1285)
+	Read from LTC Audio	Läs från LTC-ljud
+	Find SMPTE LTC on the clip's audio and use the timecode it gives the first frame	Hitta SMPTE LTC i klippets ljud och använd den tidkod som det ger den första bildrutan
+	Read Timecode from LTC Audio	Läs tidkod från LTC-ljud
