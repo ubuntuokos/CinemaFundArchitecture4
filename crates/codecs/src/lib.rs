@@ -17,6 +17,7 @@
 //!   MP3 / MP2 and AC-3 audio.
 //! - [`AudioFileSource`]: standalone compressed audio files (MP3, FLAC, AIFF, …).
 //! - [`DifSource`]: raw DV (`.dv`, `.dif`) files, decoded by `cfa4-dv`, frames read on demand.
+//! - [`RmSource`]: RealMedia (`.rm`, `.rmvb`) with RealVideo 1.0 / 2.0 video.
 //! - [`Y4mSource`]: uncompressed YUV4MPEG2 (`.y4m`) video, frames read on demand.
 //! - [`openers`]: the openers to register with the engine's media pool.
 
@@ -38,12 +39,15 @@ pub mod huffyuv;
 pub mod hw;
 mod hw_frame;
 pub mod j2k;
+pub mod lagarith;
 pub mod lcevc;
+pub mod magicyuv;
 pub mod mkv;
 pub mod mp4;
 pub mod mpeg;
 pub mod mxf;
 pub mod ogg;
+pub mod realmedia;
 mod stream_color;
 pub mod streams;
 pub mod utvideo;
@@ -63,6 +67,7 @@ pub use mp4::Mp4Source;
 pub use mpeg::MpegSource;
 pub use mxf::MxfSource;
 pub use ogg::OggSource;
+pub use realmedia::RmSource;
 pub use video::{DecodedFrame, VideoDecoder, VideoDecoderFactory};
 pub use y4m::Y4mSource;
 
@@ -92,7 +97,7 @@ impl From<CodecError> for cfa4_media::MediaError {
 }
 
 /// Our own (pure-Rust) decoders, in the order they are tried.
-const BUILTIN_FACTORIES: [VideoDecoderFactory; 19] = [
+const BUILTIN_FACTORIES: [VideoDecoderFactory; 21] = [
     video::h264_factory,
     video::hevc_factory,
     video::vp8_factory,
@@ -111,7 +116,9 @@ const BUILTIN_FACTORIES: [VideoDecoderFactory; 19] = [
     ffv1::ffv1_factory,
     dirac::dirac_factory,
     huffyuv::huffyuv_factory,
+    lagarith::lagarith_factory,
     utvideo::utvideo_factory,
+    magicyuv::magicyuv_factory,
 ];
 
 fn factories() -> &'static RwLock<Vec<VideoDecoderFactory>> {
@@ -163,10 +170,23 @@ pub fn software_video_decoder(entry: &cfa4_isobmff::SampleEntry) -> Result<Box<d
 }
 
 /// Openers for the engine's media pool (MP4/MOV, Matroska/WebM, MXF, Ogg Opus/Vorbis, MPEG TS/PS and
-/// MPEG-1/2 video elementary streams, APV raw bitstreams, YUV4MPEG2, raw DV, standalone audio).
+/// MPEG-1/2 video elementary streams, APV raw bitstreams, YUV4MPEG2, raw DV, RealMedia, standalone audio).
 /// AV2 Annex B / IVF files are recognised and answered as unsupported ([`av2`]).
 pub fn openers() -> Vec<cfa4_media::Opener> {
-    vec![mp4::opener, mkv::opener, mxf::opener, ogg::opener, mpeg::opener, apv::opener, avi::opener, y4m::opener, dif::opener, av2::opener, audio::opener]
+    vec![
+        mp4::opener,
+        mkv::opener,
+        mxf::opener,
+        ogg::opener,
+        mpeg::opener,
+        apv::opener,
+        avi::opener,
+        y4m::opener,
+        dif::opener,
+        realmedia::opener,
+        av2::opener,
+        audio::opener,
+    ]
 }
 
 fn reader_registry() -> &'static RwLock<Vec<cfa4_media::ReaderOpener>> {
