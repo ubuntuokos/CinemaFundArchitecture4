@@ -1892,6 +1892,7 @@
 	Counter	Brojač
 	Typewriter	Pisaća mašina
 	Word by Word	Reč po reč
+	Scramble	Mešanje
 	Animator	Animator
 	Animator Duration	Trajanje animatora
 	Animator Delay	Kašnjenje animatora
@@ -2927,6 +2928,10 @@
 	Sharpen Amount	Količina izoštravanja
 	Shift Center To	Pomeri središte na
 	Show Focus Area	Prikaži oblast fokusa
+	Rack Focus	Prebacivanje fokusa
+	Focus Point A	Tačka fokusa A
+	Focus Point B	Tačka fokusa B
+	Rack	Prebacivanje
 	Show Only Noise	Prikaži samo šum
 	Shrink	Skupi
 	Shutter Angle	Ugao zatvarača
@@ -4178,6 +4183,11 @@ export.summary	Low	nizak
 	Burn Size	Veličina izgorevanja
 	Ember Width	Širina žara
 	Ember Color	Boja žara
+	Tear Away	Cepanje
+	Tear Roughness	Hrapavost pocepotine
+	Paper Edge Width	Širina ivice papira
+	Stamp Cut	Isečak marke
+	Perforations	Perforacija
 	Check Text Legibility	Proveri čitljivost teksta
 	Clear Legibility Markers	Ukloni oznake čitljivosti
 	Text legibility: no problems found	Čitljivost teksta: nisu pronađeni problemi
@@ -4217,6 +4227,9 @@ export.summary	Low	nizak
 	Dither	Raspršivanje
 	Pattern	Uzorak
 	Cell Size	Veličina ćelije
+	Pixelate	Pikselizacija
+	Cell Shape	Oblik ćelije
+	LED	LED
 	Cyan Angle	Ugao cijan
 	Magenta Angle	Ugao magenta
 	Yellow Angle	Ugao žute
@@ -4577,6 +4590,16 @@ export.summary	Low	nizak
 	Chase External Timecode	Prati spoljni vremenski kod
 	Send LTC	Šalji LTC
 	Send MIDI Timecode	Šalji MIDI vremenski kod
+
+# Live studio preview (CFA4-LIVE-STUDIO-001 S0)
+	Live studio preview	Pregled studija uživo
+	Live studio: stopped	Studio uživo: zaustavljen
+	Live studio: {state}	Studio uživo: {state}
+	Live studio: {error}	Studio uživo: {error}
+	restarted after {count} crashes (last: {exit})	ponovo pokrenut posle {count} padova (poslednji: {exit})
+	software backend: {reason}	softverska pozadina: {reason}
+	Start studio	Pokreni studio
+	Stop studio	Zaustavi studio
 # Auto Color, Auto Contrast, Auto Levels (EffectsSDK review)
 	Auto Color	Automatska boja
 	Auto Contrast	Automatski kontrast
@@ -4634,3 +4657,16 @@ export.summary	Low	nizak
 	Freewheel	Slobodan hod
 	Scrubbing	Pomeranje
 	Sending	Slanje
+
+# DCP subtitle export (#938)
+	Subtitles from the first caption track	Titlovi sa prve staze titlova
+	The package language	Jezik paketa
+	Inter Regular (built in), or an OpenType / TrueType file	Inter Regular (ugrađeni) ili datoteka OpenType / TrueType
+	Subtitle language	Jezik titlova
+	Subtitle font	Font titlova
+	Fonts	Fontovi
+
+# AS-11 metadata in MXF OP1a (#96)
+	AS-11 Core	AS-11 Core
+	AS-11 Parts	AS-11 delovi
+	AS-11 UK DPP	AS-11 UK DPP

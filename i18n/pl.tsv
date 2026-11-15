@@ -1827,6 +1827,7 @@
 	Counter	Licznik
 	Typewriter	Maszyna do pisania
 	Word by Word	Słowo po słowie
+	Scramble	Mieszanie
 	Animator	Animator
 	Animator Duration	Czas trwania animatora
 	Animator Delay	Opóźnienie animatora
@@ -2840,6 +2841,10 @@
 	Sharpen Amount	Stopień wyostrzenia
 	Shift Center To	Przesuń środek do
 	Show Focus Area	Pokaż obszar ostrości
+	Rack Focus	Przeostrzenie
+	Focus Point A	Punkt ostrości A
+	Focus Point B	Punkt ostrości B
+	Rack	Przeostrzenie (%)
 	Show Only Noise	Pokaż tylko szum
 	Shrink	Zmniejszenie
 	Shutter Angle	Kąt migawki
@@ -4176,6 +4181,11 @@ export.summary	Low	niska
 	Burn Size	Rozmiar wypalenia
 	Ember Width	Szerokość żaru
 	Ember Color	Kolor żaru
+	Tear Away	Oderwanie
+	Tear Roughness	Szorstkość rozdarcia
+	Paper Edge Width	Szerokość krawędzi papieru
+	Stamp Cut	Wycięcie znaczka
+	Perforations	Perforacja
 	Check Text Legibility	Sprawdź czytelność tekstu
 	Clear Legibility Markers	Wyczyść znaczniki czytelności
 	Text legibility: no problems found	Czytelność tekstu: nie znaleziono problemów
@@ -4215,6 +4225,9 @@ export.summary	Low	niska
 	Dither	Dithering
 	Pattern	Wzór
 	Cell Size	Rozmiar komórki
+	Pixelate	Pikselizacja
+	Cell Shape	Kształt komórki
+	LED	LED
 	Cyan Angle	Kąt cyjanu
 	Magenta Angle	Kąt magenty
 	Yellow Angle	Kąt żółtego
@@ -4575,6 +4588,16 @@ export.summary	Low	niska
 	Chase External Timecode	Podążaj za zewnętrznym kodem czasowym
 	Send LTC	Wysyłaj LTC
 	Send MIDI Timecode	Wysyłaj kod czasowy MIDI
+
+# Live studio preview (CFA4-LIVE-STUDIO-001 S0)
+	Live studio preview	Podgląd studia na żywo
+	Live studio: stopped	Studio na żywo: zatrzymane
+	Live studio: {state}	Studio na żywo: {state}
+	Live studio: {error}	Studio na żywo: {error}
+	restarted after {count} crashes (last: {exit})	uruchomione ponownie po {count} awariach (ostatnia: {exit})
+	software backend: {reason}	zaplecze programowe: {reason}
+	Start studio	Uruchom studio
+	Stop studio	Zatrzymaj studio
 # Auto Color, Auto Contrast, Auto Levels (EffectsSDK review)
 	Auto Color	Automatyczny kolor
 	Auto Contrast	Automatyczny kontrast
@@ -4632,3 +4655,16 @@ export.summary	Low	niska
 	Freewheel	Wolnobieg
 	Scrubbing	Przewijanie
 	Sending	Wysyłanie
+
+# DCP subtitle export (#938)
+	Subtitles from the first caption track	Napisy z pierwszej ścieżki napisów
+	The package language	Język pakietu
+	Inter Regular (built in), or an OpenType / TrueType file	Inter Regular (wbudowana) lub plik OpenType / TrueType
+	Subtitle language	Język napisów
+	Subtitle font	Czcionka napisów
+	Fonts	Czcionki
+
+# AS-11 metadata in MXF OP1a (#96)
+	AS-11 Core	AS-11 Core
+	AS-11 Parts	Części AS-11
+	AS-11 UK DPP	AS-11 UK DPP
