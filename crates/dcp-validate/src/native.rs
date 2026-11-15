@@ -32,7 +32,11 @@ const IMPLEMENTED: &[&str] = &[
     MXF_TRACK_FILES,
     J2K_CODESTREAM,
     PIC_FORMAT,
+    AUD_PCM,
+    AUD_LOUDNESS,
+    IAB_TRACK,
     MARK_MARKERS,
+    SUB_DOCUMENTS,
 ];
 
 /// The native validator. Stateless; one value can validate many packages from many threads.
@@ -165,7 +169,11 @@ impl Run<'_> {
             MXF_TRACK_FILES,
             J2K_CODESTREAM,
             PIC_FORMAT,
+            AUD_PCM,
+            AUD_LOUDNESS,
+            IAB_TRACK,
             MARK_MARKERS,
+            SUB_DOCUMENTS,
         ];
         self.control.report("discover", 0, 1);
         let maps = package::asset_maps(&self.root);
@@ -237,6 +245,50 @@ impl Run<'_> {
             return;
         }
         self.media(&files, &cpls);
+        if self.control.is_cancelled() {
+            return;
+        }
+        self.audio(&files, &cpls);
+        if self.control.is_cancelled() {
+            return;
+        }
+        self.subtitles(&files, &cpls);
+    }
+
+    /// DCP-08: the subtitle and caption documents with their fonts and images.
+    fn subtitles(&mut self, files: &Files, cpls: &[(String, Composition)]) {
+        if !self.request.profile.contains(SUB_DOCUMENTS) {
+            return;
+        }
+        if cpls.is_empty() {
+            self.findings.push(Finding::new(SUB_DOCUMENTS, Status::Unchecked, "no composition playlist was read"));
+            self.done.insert(SUB_DOCUMENTS);
+            return;
+        }
+        let Some(r) = crate::subtitles::check(&self.root, cpls, files, self.request.limits.document, self.control) else { return };
+        self.rule(SUB_DOCUMENTS, r);
+    }
+
+    /// DCP-07: sound, loudness and immersive audio. Measuring loudness reads every sample and
+    /// parsing IAB every frame, so each runs only when the profile asks for it.
+    fn audio(&mut self, files: &Files, cpls: &[(String, Composition)]) {
+        let profile = &self.request.profile;
+        if ![AUD_PCM, AUD_LOUDNESS, IAB_TRACK].iter().any(|r| profile.contains(r)) {
+            return;
+        }
+        let Some(a) = crate::audio::check(cpls, files, profile.contains(AUD_LOUDNESS), profile.contains(IAB_TRACK), self.control) else { return };
+        if cpls.is_empty() {
+            for r in [AUD_PCM, AUD_LOUDNESS, IAB_TRACK] {
+                self.findings.push(Finding::new(r, Status::Unchecked, "no composition playlist was read"));
+            }
+        }
+        self.rule(AUD_PCM, a.pcm);
+        if let Some(l) = a.loudness {
+            self.rule(AUD_LOUDNESS, l);
+        }
+        if let Some(i) = a.iab {
+            self.rule(IAB_TRACK, i);
+        }
     }
 
     /// DCP-06: the track files and picture codestreams. Only a profile with one of its rules reads

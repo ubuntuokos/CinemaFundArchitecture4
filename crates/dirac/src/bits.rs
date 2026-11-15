@@ -89,8 +89,30 @@ impl<'a> Bits<'a> {
         Ok(value - 1)
     }
 
+    /// A signed exp-Golomb integer: the magnitude, then a sign bit (1: negative) when non-zero.
+    pub fn read_sint(&mut self) -> Result<i64> {
+        let v = self.read_uint()? as i64;
+        if v != 0 && self.read_bit()? == 1 { Ok(-v) } else { Ok(v) }
+    }
+
+    /// A length-prefixed block of a Dirac core syntax picture: the length, byte alignment, then
+    /// that many bytes (cut to what is left of the data, as a damaged stream may claim more).
+    pub fn block(&mut self) -> Result<&'a [u8]> {
+        let len = self.read_uint()?;
+        self.byte_align();
+        Ok(self.take(len))
+    }
+
+    /// Up to `n` bytes from a byte-aligned position (fewer when the data ends first).
+    pub fn take(&mut self, n: u64) -> &'a [u8] {
+        let start = (self.pos / 8).min(self.data.len());
+        let n = usize::try_from(n).unwrap_or(usize::MAX).min(self.data.len() - start);
+        self.pos = (start + n) * 8;
+        self.data.get(start..start + n).unwrap_or(&[])
+    }
+
     #[inline]
-    fn read_bitb(&mut self) -> Result<u32> {
+    pub fn read_bitb(&mut self) -> Result<u32> {
         if self.bits_left == 0 {
             return Ok(1);
         }

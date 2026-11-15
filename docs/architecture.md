@@ -16,19 +16,21 @@ Design principles:
    background readers (playback, export) hold a snapshot without locking.
 5. **CPU reference, GPU fast path.** The CPU compositor is the oracle. The GPU path is tested
    against it.
-6. **Pure Rust, clean-room.** Codecs and containers are written from public specifications
-   (see [AGENTS.md](../AGENTS.md)).
+6. **Pure Rust, from public specifications.** Codecs and containers are written from public
+   specifications by default; a port of an implementation with a permitted licence, recorded in
+   the reused-code register, is allowed ([AGENTS.md](../AGENTS.md) §2,
+   [licensing.md](licensing.md) §3, §5).
 
 ## 1. Layers
 
 ```text
  L6  apps/cfa4 · apps/cfa4-cli · apps/cfa4-studio-host
- L5  ui-egui · automation · tcsync-io · platform · gstreamer (cfa4-gstreamer, optional) · ffmpeg (cfa4-ffmpeg, optional) · obs (cfa4-obs)
+ L5  ui-egui · automation · tcsync-io · surface · platform · gstreamer (cfa4-gstreamer, optional) · ffmpeg (cfa4-ffmpeg, optional) · obs (cfa4-obs)
  L4  engine
  L3  render · gpu · export · smart-edit · qc · golden (test-only)
-     DCP validation: dcp-validate · dcp-inspect
+     DCP validation: dcp-validate · dcp-inspect · DCP mastering: dcpomatic
  L2  edit · codecs · interchange · captions · credits · speech · tts · tts-text
- L1  frame · media · project · audio-dsp · text · route (cfa4-route) · tcsync · metrics · live
+ L1  frame · media · project · audio-dsp · text · route (cfa4-route) · tcsync · surface-model · metrics · live · sandbox · surface-catalog
  L0  foundation: time · geom · color · bitstream · testkit (dev-dependency only)
      codecs/containers: isobmff · matroska · mxf · cfb · mpegts · st2110 · ogg · h264 · h264enc · hevc · vp9 · av1 · mpeg2v · dv · lcevc · prores · dnx · apv · dng · aac · ac3 · dts · mpa · opus
      documents: dcp
@@ -58,10 +60,12 @@ Crates are named `cfa4-<dir>` (`crates/time` is `cfa4-time`); new CFA4 crates ar
 | `prores` | L0 | ProRes decoder and encoder |
 | `dnx` | L0 | DNxHD / DNxHR (SMPTE ST 2019-1 VC-3) decoder and DNxHR encoder |
 | `hap` | L0 | Hap video decoder: `Hap1`, `Hap5`, `HapY`, `HapM`, `HapA`; Snappy, chunks, DXT1 / DXT5 / RGTC1 / scaled YCoCg textures to RGBA ([README](../crates/hap/README.md)) |
-| `dirac` | L0 | SMPTE VC-2 (ST 2042-1) decoder, the intra subset of Dirac: low-delay and high-quality pictures, all seven wavelets, symmetric and asymmetric transforms, 4:4:4 / 4:2:2 / 4:2:0 up to 16 bits, field coding ([README](../crates/dirac/README.md)) |
+| `dirac` | L0 | Dirac and SMPTE VC-2 (ST 2042-1) decoder: VC-2 low-delay and high-quality pictures, all seven wavelets, symmetric and asymmetric transforms, 4:4:4 / 4:2:2 / 4:2:0 up to 16 bits, field coding; Dirac core syntax with arithmetic coding and overlapped block motion compensation ([README](../crates/dirac/README.md)) |
 | `ffv1` | L0 | FFV1 (IETF RFC 9043) lossless video decoder: versions 0, 1, 3, Golomb Rice and range coding, YCbCr / RGB, 8-16 bit, slices ([README](../crates/ffv1/README.md)) |
 | `huffyuv` | L0 | Huffyuv (`HFYU`) lossless video decoder: YUY2, RGB24, RGBA; left, gradient and median prediction; interlaced ([README](../crates/huffyuv/README.md)) |
+| `lagarith` | L0 | Lagarith (`LAGS`) lossless video decoder: RGB24, RGBA, YUY2, YV12; range coder with zero runs; solid frames; ported from FFmpeg (LGPL-2.1-or-later, owner-approved exception) ([README](../crates/lagarith/README.md)) |
 | `utvideo` | L0 | Ut Video lossless video decoder: 8-bit YUV 4:2:0 / 4:2:2 / 4:4:4, RGB, RGBA; slices; left, gradient and median prediction ([README](../crates/utvideo/README.md)) |
+| `magicyuv` | L0 | MagicYUV (`MAGY`, `M8..` / `M0..` / `M2..` / `M4..`) lossless video decoder: 8-bit RGB / RGBA / YUV / YUVA / grey, 10-bit YUV / grey, 10- to 14-bit RGB / RGBA; slices; left, gradient and median prediction; interlaced; ported from FFmpeg (LGPL-2.1-or-later, owner-approved exception) ([README](../crates/magicyuv/README.md)) |
 | `realvideo` | L0 | RealVideo 1.0 / 2.0 (RV10, RV20) decoder, H.263-based with B-frames and the RV20 loop filter, and RealVideo 3.0 / 4.0 (RV30, RV40, H.264-like), ported from FFmpeg (LGPL-2.1-or-later, owner-approved exception) ([README](../crates/realvideo/README.md)) |
 | `realmedia` | L0 | RealMedia (`.rm`, `.rmvb`) demuxer: header chunks, index, packet sync, video frame reassembly and RealAudio packet deinterleaving, ported from FFmpeg (LGPL-2.1-or-later, owner-approved exception) ([README](../crates/realmedia/README.md)) |
 | `realaudio` | L0 | RealAudio decoders: Cook (RealAudio G2), SIPR, RealAudio 1.0 (14.4) and 2.0 (28.8), ATRAC3 and ATRAC3plus, ported from FFmpeg (LGPL-2.1-or-later, owner-approved exception) ([README](../crates/realaudio/README.md)) |
@@ -81,17 +85,25 @@ Crates are named `cfa4-<dir>` (`crates/time` is `cfa4-time`); new CFA4 crates ar
 | `speex` | L0 | Speex decoder (narrowband, wideband, ultra-wideband, VBR / DTX, in-band stereo), ported from the BSD-3-Clause libspeex 1.2.1 ([README](../crates/speex/README.md)) |
 | `adpcm` | L0 | G.711 μ-law / A-law, G.722, IMA ADPCM (WAV, QuickTime `ima4`) and Microsoft ADPCM decoders ([README](../crates/adpcm/README.md)) |
 | `amr` | L0 | AMR-NB and AMR-WB speech decoders, ported from opencore-amr (Apache-2.0) ([README](../crates/amr/README.md)) |
+| `g729` | L0 | ITU-T G.729 speech decoder with Annex B comfort noise, ported from bcg729 (GPL-3.0-or-later) ([README](../crates/g729/README.md)) |
+| `ilbc` | L0 | iLBC (RFC 3951) speech decoder, ported from WebRTC's fixed-point libilbc (BSD-3-Clause) ([README](../crates/ilbc/README.md)) |
 | `tta` | L0 | TTA (True Audio) lossless audio decoder, ported from libtta (LGPL-3.0) ([README](../crates/tta/README.md)) |
+| `shorten` | L0 | Shorten (`.shn`) lossless audio decoder, ported from FFmpeg (LGPL-2.1-or-later, owner-approved exception) ([README](../crates/shorten/README.md)) |
+| `tak` | L0 | TAK (Tom's lossless Audio Kompressor) decoder, ported from FFmpeg (LGPL-2.1-or-later, owner-approved exception) ([README](../crates/tak/README.md)) |
+| `musepack` | L0 | Musepack SV7 and SV8 audio decoder, ported from the reference library libmpcdec (BSD-3-Clause) in its floating-point build ([README](../crates/musepack/README.md)) |
 | `testkit` | L0 | test-only helpers, used only as a dev-dependency: ffmpeg/ffprobe discovery, fixture dirs, golden images ([testing.md](testing.md)) |
 | `frame` | L1 | `VideoFrame` (planar YUV / RGBA8 / linear RGBA f32, colour metadata), `AudioBuffer` |
 | `media` | L1 | `MediaSource` trait, probing/openers, frame cache, generators, stills, image sequences, WAV / Broadcast WAV (PCM, G.711, G.722, ADPCM) |
 | `project` | L1 | document model, effect definitions, keyframes |
 | `audio-dsp` | L1 | loudness metering (BS.1770 / R128), audio effects, channel layouts (BS.775 up/downmix, 5.1 panner), music remix analysis; no dependencies |
 | `tcsync` | L1 | external timecode sync: SMPTE LTC frame, biphase-mark encoder and decoder (either direction, varying speed); MIDI Timecode quarter-frame / full-frame generation and parsing; chase state machine (locate, lock, drift re-seek, freewheel, scrub) ([plan](plans/TIMECODE-SYNC-LTC-MTC-2026-11-11.md)); depends only on `time` |
+| `surface-catalog` | L1 | `cfa4-surface-catalog`: hardware control surface catalogue (TOML, one family per file), hardware test reports (`docs/audit/hw/*.yaml`) and the computed support status and editor gate of CFA4-HW-CONTROL-SURFACES-001; no device I/O ([README](../crates/surface-catalog/README.md), [integration annex](plans/CFA4-HW-CONTROL-SURFACES-001-FINAL-1.1-CFA4-ILLESZTES.md)) |
+| `surface-model` | L1 | `cfa4-surface-model`: control surface types shared by the engine and the device I/O: `SurfaceEvent` / `SurfaceInput` (button, absolute 7/14-bit, relative with its encoding, jog, shuttle, touch, program change, pitch bend, SysEx, raw), `SurfaceFeedback`, `DeviceId`, device state and counters; serde only ([ADR 0012](adr/ADR-0012-control-surface.md)) |
 | `text` | L1 | text engine: font database (bundled OFL fonts + system fonts), shaping (harfrust), bidi, line breaking, paragraph layout, glyph/path rasteriser, strokes ([crates/text/README.md](../crates/text/README.md)) |
 | `route` | L1 | `cfa4-route`: compute router: per-task choice of backend and device (GPU, NPU, CPU) from the routing table (`routing.toml`), the `/sys` device probe and the user's preferences, with reasons and fallback order; backend catalogue (implemented / planned, vendor-locked) and the vendor-neutrality coverage report; no `unsafe`, no workspace dependencies ([ADR 0004](adr/ADR-0004-compute-routing.md), [README](../crates/route/README.md)) |
 | `metrics` | L1 | image fidelity metrics for output comparison (docs/gaps.md G1): CIEDE2000 ΔE between sRGB images, SSIM of planes; depends on `color` only ([README](../crates/metrics/README.md)) |
 | `live` | L1 | `cfa4-live`: live graphics plumbing (credits plan C10): the live page server for OBS's Browser Source on **127.0.0.1 only** (the program picture as a transparent PNG, status, the cue's sound with byte ranges; other host names and methods refused), an obs-websocket 5 client over a minimal RFC 6455 WebSocket client; no rendering and no workspace dependencies ([README](../crates/live/README.md), [credits.md](credits.md)) |
+| `sandbox` | L1 | run-time security layer ([CFA4-SECURITY-001](plans/CFA4-SECURITY-001.md) B1): Landlock + seccomp profile of every CFA4 process kind (GUI, engine, media host, studio host, downloader, plug-in host, model converter), strict by default (D4), the report behind `security.status`; no `unsafe` (safe `landlock` and `seccompiler` crates), no workspace dependencies ([README](../crates/sandbox/README.md)) |
 | `edit` | L2 | pure edit algebra (insert, overwrite, razor, ripple, roll, slip, slide, rate stretch…; text-based editing: `edit::transcript`) |
 | `credits` | L2 | credits sequences from a spreadsheet: CSV/TSV reader, page / content / letter styles, layout into graphic clips (rolls and cards) ([README](../crates/credits/README.md), [credits.md](credits.md)) |
 | `speech` | L2 | speech-to-text: `Transcriber` trait, Whisper model catalogue + verified downloader (feature `download`), pure-Rust Whisper inference on candle with word timestamps (feature `whisper`), speaker labelling ([transcripts.md](transcripts.md)) |
@@ -107,18 +119,20 @@ Crates are named `cfa4-<dir>` (`crates/time` is `cfa4-time`); new CFA4 crates ar
 | `export` | L3 | render → encode → mux pipeline, progress/cancel |
 | `dcp-validate` | L3 | DCP validation API (DCP-03): `DcpValidator` trait, seven result states and the package verdict, versioned profiles, `cfa4-dcp-report/1` JSON / Markdown report, safe package discovery, native backend ([README](../crates/dcp-validate/README.md)) |
 | `dcp-inspect` | L3 | DCP validation backend (DCP-04) that runs the isolated dcp_inspect reference engine as a separate process: argument array, own process group, private `HOME`/`TMPDIR`, timeout and cancel, `--dump-result` mapped onto the rule catalogue ([README](../crates/dcp-inspect/README.md)) |
+| `dcpomatic` | L3 | DCP mastering with the DCP-o-matic build CFA4 ships (plan [CFA4-DCPOMATIC-001](plans/CFA4-DCPOMATIC-001-FINAL-1.0.md), ADR 0011): `dcpomatic2_create` and `dcpomatic2_cli make-dcp` as separate processes from `/usr/lib/cfa4/dcpomatic/` only (never `PATH`), argument array, own process group, private `HOME`/`TMPDIR`, timeout, cancel and progress ([README](../crates/dcpomatic/README.md)) |
 | `smart-edit` | L3 | `cfa4-smart-edit`: Smart Cut / Smart Render planning: media capability registry (WP-01), later GOP index and render plans; decides, never executes ([plan](plans/CFA4-SMART-CUT-RENDER-R1.md), [baseline](audit/smart-edit-baseline.md), [README](../crates/smart-edit/README.md)) |
 | `engine` | L4 | `Session`, command registry, undo history, media pool, jobs, interchange glue |
 | `ui-egui` | L5 | the egui frontend: docking, panels, timeline, monitors, playback, control-channel handlers |
 | `gstreamer` | L5 | `cfa4-gstreamer`: optional GStreamer backend (feature `gstreamer`): installation probe with plugin licences, media discovery; supplements the Rust engine ([ADR 0002](adr/ADR-0002-gstreamer-backend.md), [README](../crates/gstreamer/README.md)) |
 | `ffmpeg` | L5 | `cfa4-ffmpeg`: FFmpeg (≥ 9.0.2, GPL-3 build) supplementary backend (feature `ffmpeg`): probe with licence and restricted-codec check, native-bit-depth decoding of what the engine cannot read yet, first fallback before GStreamer, `ffmpeg` route ([ADR 0005](adr/ADR-0005-media-backends.md), [README](../crates/ffmpeg/README.md)) |
-| `obs` | L5 | `cfa4-obs`: live studio core (CFA4-LIVE-STUDIO-001 S0): the `StudioBackend` trait, the libobs 33.0.1 binding (loaded at run time; `unsafe` only in `libobs::sys`, ADR 0001 addendum 2026-11-07), the pure-Rust software backend (the fallback), the shared-memory frame ring and the supervisor of `cfa4-studio-host` ([plan](plans/CFA4-LIVE-STUDIO-001.md), [README](../crates/obs/README.md)) |
+| `obs` | L5 | `cfa4-obs`: live studio core (CFA4-LIVE-STUDIO-001 S0–S1): the `StudioBackend` trait, the libobs 33.0.1 binding (loaded at run time; `unsafe` only in `libobs::sys`, ADR 0001 addendum 2026-11-07; scenes of a CFA4 picture source registered from Rust), the pure-Rust software backend (the fallback and the reference compositor of a scene's layers), the shared-memory frame ring and the supervisor of `cfa4-studio-host` ([plan](plans/CFA4-LIVE-STUDIO-001.md), [README](../crates/obs/README.md)) |
 | `tcsync-io` | L5 | `cfa4-tcsync-io`: external timecode sync devices: LTC in and out through cpal (a chosen channel of a chosen device), MIDI Timecode in and out through the ALSA sequencer (client `CFA4`, ports `Timecode In` / `Timecode Out`), and the `SyncManager` that opens what the settings ask for, feeds the chase and returns locate / stop for the player; used by `cfa4-cli serve` ([plan](plans/TIMECODE-SYNC-LTC-MTC-2026-11-11.md)) |
+| `surface` | L5 | `cfa4-surface`: control surface devices: discovery of ALSA sequencer MIDI ports (not System, Midi Through or CFA4's own clients) and of Contour ShuttlePRO / ShuttleXpress through `/sys/class/hidraw` (no read permission is reported, not hidden); used by `cfa4-cli serve` (`surface.devices`) for Settings ▸ Control Surfaces; reading, hot-plug and feedback come next ([ADR 0012](adr/ADR-0012-control-surface.md)) |
 | `automation` | L5 | MCP server (`rmcp`, stdio), headless or bridged to the running app |
 | `platform` | L5 | OS media FFI only: hardware video decoding (NVDEC and VA-API H.264 / HEVC, with our own parsers and DPBs driving the stateless hardware; a no-op elsewhere) behind `codecs::VideoDecoder`, with transparent fallback to our decoders, and NVIDIA NVENC H.264 (opt-in) and H.265 (CFA4's only H.265 encoder; the format exists only where it does) encoding behind `export::VideoEncoder`; H.264 declines to the built-in encoder for what the hardware does not take. The one crate allowed `unsafe` ([ADR 0001](adr/0001-platform-ffi.md), [README](../crates/platform/README.md)) |
 | `cfa4` | L6 | desktop binary: eframe/wgpu window, cpal audio output, file dialogs, TCP control server |
 | `cfa4-cli` | L6 | headless CLI: `exec`, `run`, `inspect`, `describe`, `commands`, `import`, `export`, `render`, `probe`, `mcp`; `--bridge` targets the running app |
-| `cfa4-studio-host` | L6 | the live studio's own process: runs libobs (or the software backend), writes program frames into the frame ring; started, watched and restarted by the engine (`live.studio.host.*`), so a libobs crash never ends the editor (plan D2) |
+| `cfa4-studio-host` | L6 | the live studio's own process: runs libobs (or the software backend), shows the scene the engine sends (S1: the project's current studio scene, `live.studio.scene.*` / `live.studio.source.*`), writes program frames into the frame ring; started, watched and restarted by the engine (`live.studio.host.*`), so a libobs crash never ends the editor (plan D2) |
 
 ### What `cargo xtask layers` enforces
 

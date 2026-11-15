@@ -22,8 +22,9 @@ pub enum Scaling {
 }
 
 /// Field order of the encoded video. Only MPEG-2 and ProRes export code interlaced frames
-/// ([`crate::Format::codes_interlaced`]); the other encoders write progressive ones. The frames
-/// are rendered progressively and coded as interlaced (no field-rate rendering yet).
+/// ([`ExportSettings::codes_interlaced`]; in MXF MPEG-2, XDCAM HD422, D-10 or ProRes); the other encoders
+/// write progressive ones. The frames are rendered progressively and coded as interlaced (no
+/// field-rate rendering yet).
 #[derive(Clone, Copy, Debug, Default, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub enum FieldOrder {
@@ -146,12 +147,14 @@ pub enum MxfVideoCodec {
     Mpeg2,
     /// Type D-10 / IMX (ST 386): intra-only MPEG-2 4:2:2P@ML at 30, 40 or 50 Mbit/s (the
     /// bitrate setting), 720 × 576 at 25 fps or 720 × 486 / 480 at 29.97 fps, with up to eight
-    /// 16- or 24-bit 48 kHz audio channels in one AES3 element. OP1a only.
+    /// 16- or 24-bit 48 kHz audio channels in one AES3 element. OP1a only. An interlaced field
+    /// order codes interlaced pictures (upper field first); progressive codes PsF pictures.
     #[serde(rename = "d10", alias = "D10")]
     D10,
     /// XDCAM HD422 (SMPTE RDD 9): MPEG-2 4:2:2P@HL long GOP at 1920 × 1080 or 1280 × 720 in
     /// RDD 9's OP1a layout (system items, one AES3 element per channel, body partitions every
-    /// five seconds), up to eight 16- or 24-bit 48 kHz channels. Progressive pictures only.
+    /// five seconds), up to eight 16- or 24-bit 48 kHz channels. 1080i at 25 or 29.97 fps with an
+    /// interlaced field order (separate fields, RDD 9 Annex), otherwise progressive.
     #[serde(rename = "xdcamHd422", alias = "XdcamHd422")]
     XdcamHd422,
     /// Uncompressed 10-bit Y'CbCr 4:2:2 in the `v210` layout (ST 384, ST 377-1 G.2.25 label
@@ -576,6 +579,13 @@ impl ExportSettings {
             Format::Hls => Format::H264,
             f => f,
         }
+    }
+
+    /// Whether the export codes interlaced video ([`ExportSettings::field_order`]): MPEG-2 files
+    /// and ProRes ([`Format::codes_interlaced`]); in MXF MPEG-2 (also XDCAM HD422 and D-10), whose
+    /// separate-field layout the writer has, and ProRes field pictures.
+    pub fn codes_interlaced(&self) -> bool {
+        if self.format.is_mxf() { matches!(self.video_format(), Format::Mpeg2 | Format::ProRes) } else { self.format.codes_interlaced() }
     }
 
     /// Whether the output can carry an alpha channel ([`ExportSettings::alpha`]): PNG, TIFF,

@@ -551,6 +551,14 @@ fn encoded_codestreams_decode_in_openjpeg_and_ffmpeg() {
         ("ht_wide_blocks", &rgb8, EncodeOptions { ht: true, code_block: (10, 2), levels: 2, mct: false, ..EncodeOptions::lossless() }, true),
         ("ht_lossy", &rgb8, EncodeOptions { ht: true, ..EncodeOptions::lossy(2.0) }, false),
         ("ht_lossy_12bit", &rgb12, EncodeOptions { ht: true, ..EncodeOptions::lossy(0.5) }, false),
+        // HTJ2K under a byte limit: cleanup passes at coarser planes (fewer missing MSBs signalled)
+        ("ht_lossy_budget", &rgb8, EncodeOptions { ht: true, max_bytes: Some(6_000), ..EncodeOptions::lossy(0.5) }, false),
+        (
+            "ht_lossless_budget",
+            &rgb12,
+            EncodeOptions { ht: true, max_bytes: Some(12_000), max_component_bytes: Some(5_000), ..EncodeOptions::lossless() },
+            false,
+        ),
     ];
     for (name, img, opts, lossless) in cases {
         let data = cfa4_j2k::encode(img, &opts).unwrap_or_else(|e| panic!("{name}: {e}"));
@@ -589,5 +597,52 @@ fn encoded_codestreams_decode_in_openjpeg_and_ffmpeg() {
                 assert!(worst <= i32::from(!lossless), "{name}: ffmpeg component {c} differs by {worst}");
             }
         }
+    }
+}
+
+/// Reduced-resolution decoding (`decode_reduced`) against OpenJPEG's `-r` (`-n` counts
+/// resolutions, one more than the wavelet levels): the same picture
+/// size, 5/3 bit-exact and 9/7 within ±1, with tiles, an image offset and both kinds of
+/// code-blocks, and the reduction capped at the levels the stream has. Skipped without
+/// `opj_compress`.
+#[test]
+fn reduced_resolution_matches_openjpeg() {
+    let ff = cfa4_testkit::require_ffmpeg!();
+    let (Some(enc), Some(dec)) = (opj("opj_compress"), opj("opj_decompress")) else {
+        eprintln!("skipped: OpenJPEG tools (libopenjp2-tools) not installed");
+        return;
+    };
+    let dir = cfa4_testkit::fixtures_dir("j2k").join("reduce");
+    std::fs::create_dir_all(&dir).unwrap();
+    let input = dir.join("in.ppm");
+    let st =
+        Command::new(&ff).args(["-v", "error", "-y", "-f", "lavfi", "-i", "testsrc2=s=203x117", "-frames:v", "1", "-pix_fmt", "rgb24"]).arg(&input).status();
+    assert!(matches!(st, Ok(s) if s.success()));
+    let args = |a: &str| a.split(' ').map(String::from).collect::<Vec<_>>();
+    // (name, opj_compress options, levels asked, levels expected, tolerance)
+    let cases: [(&str, Vec<String>, u8, u8, i32); 7] = [
+        ("r1", args("-n 4"), 1, 1, 0),
+        ("r3", args("-n 4"), 3, 3, 0),
+        ("r1_97", args("-n 5 -I -r 20"), 1, 1, 1),
+        ("r2_97", args("-n 5 -I -r 20"), 2, 2, 1),
+        ("tiles_offset", args("-n 3 -t 64,48 -d 3,5 -T 1,2"), 1, 1, 0),
+        ("tiles_offset_97", args("-n 3 -t 64,48 -d 3,5 -T 1,2 -I -r 10"), 2, 2, 1),
+        ("capped", args("-n 2"), 4, 1, 0),
+    ];
+    for (name, opts, ask, got, tol) in cases {
+        let (cs, out) = (dir.join(format!("{name}.j2k")), dir.join(format!("{name}.ppm")));
+        let st = Command::new(&enc).arg("-i").arg(&input).arg("-o").arg(&cs).args(&opts).stdout(Stdio::null()).status();
+        assert!(st.is_ok_and(|s| s.success()), "{name}: opj_compress");
+        let st = Command::new(&dec).arg("-i").arg(&cs).arg("-o").arg(&out).args(["-r", &got.to_string()]).stdout(Stdio::null()).status();
+        assert!(st.is_ok_and(|s| s.success()), "{name}: opj_decompress");
+        let (img, levels) = cfa4_j2k::decode_reduced(&std::fs::read(&cs).unwrap(), ask).unwrap_or_else(|e| panic!("{name}: {e}"));
+        assert_eq!(levels, got, "{name}: levels left out");
+        let want = ppm(&std::fs::read(&out).unwrap());
+        for (c, p) in img.components.iter().enumerate() {
+            assert_eq!(p.data.len(), want[c].len(), "{name}: component {c} size {}×{}", p.width, p.height);
+            let worst = p.data.iter().zip(&want[c]).map(|(&a, &b)| (a - b).abs()).max().unwrap_or(0);
+            assert!(worst <= tol, "{name}: component {c} differs by {worst}");
+        }
+        assert_eq!((img.width, img.height), (img.components[0].width, img.components[0].height), "{name}: image size");
     }
 }

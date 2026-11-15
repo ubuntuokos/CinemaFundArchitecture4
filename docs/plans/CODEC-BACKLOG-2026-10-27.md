@@ -1,6 +1,6 @@
 # Kodek-backlog (alacsony prioritás)
 
-> **Utolsó frissítés:** 2026-11-09 · **Változás:** minor (a H.266 / VVC a „máshol tervben” táblába került, #721) · **Hely a tervben:** a kodekfejlesztés legvégén, az [M9](../roadmap.md#milestones-history-and-remaining) és a [B3](../roadmap.md#beta-milestones) után
+> **Utolsó frissítés:** 2026-11-14 · **Változás:** minor (az OptimFROG, a Sony SR Codec és a Bink 2 kimarad, tulajdonosi döntés) · **Hely a tervben:** a kodekfejlesztés legvégén, az [M9](../roadmap.md#milestones-history-and-remaining) és a [B3](../roadmap.md#beta-milestones) után
 
 A tulajdonos 2026-10-27-én két kodeklistát adott át (általánosan használt, valamint ritkább és
 ázsiai videó-, audio- és képkodekek). Ebből a fájlból **kimaradt minden, ami ebben a tárolóban
@@ -13,9 +13,11 @@ Heti ütemterv (legalább 2 tétel hetente): [CODEC-BACKLOG-PLAN-2026-10-27.md](
 tartalék háttér ([ADR 0005](../adr/ADR-0005-media-backends.md)) már megnyit, nem számít
 megoldottnak; a backlog tétele a saját, pure-Rust dekóder.
 
-Minden tételre érvényesek a szokásos szabályok: clean-room, nyilvános leírásból, pure Rust
-([AGENTS.md](../../AGENTS.md) §2); ffmpeg csak tesztorákulum. Ahol nincs nyilvános specifikáció, vagy
-szabadalmi / licencdöntés kell, ott **tulajdonosi döntés** szükséges, mielőtt bárki hozzányúl.
+Minden tételre érvényesek a szokásos szabályok ([AGENTS.md](../../AGENTS.md) §2): pure Rust,
+alapból nyilvános leírásból; engedélyezett licencű megvalósítás ([licensing.md](../licensing.md)
+§3) portolható, ha a port bekerül a nyilvántartásba (§5). Az ffmpeg tesztorákulum. Ahol nincs
+nyilvános specifikáció, vagy szabadalmi / licencdöntés kell, ott **tulajdonosi döntés** szükséges,
+mielőtt bárki hozzányúl.
 
 ## Már megoldva vagy tervezve (ezért kimaradt)
 
@@ -74,21 +76,21 @@ Ami a listán volt, és már máshol tervben van (ott kell követni, nem itt):
 | VC-2, Dirac | videó | |
 | Canopus HQ / HQX | videó | |
 | Matrox MPEG-2 I-frame | videó | Valószínűleg már a meglévő MPEG-2 dekóderrel megy, csak ellenőrizni kell |
-| Sony SR Codec | videó | |
+| ~~Sony SR Codec~~ | videó | Kimarad (tulajdonosi döntés, 2026-11-14): nincs nyilvános leírás, sem nyílt megvalósítás |
 | RealVideo RV10–RV40 | videó | RealMedia konténer is kell |
 | RealAudio Cook, SIPR, 14.4 / 28.8 | audio | |
 | Sony ATRAC3, ATRAC3plus, ATRAC9 | audio | |
 | G.729, EVS, iLBC | audio | Beszédkodekek |
-| Musepack SV7 / SV8, TAK, TTA, Shorten, OptimFROG | audio | Ritka veszteségmentes / zenei |
+| Musepack SV7 / SV8, TAK, TTA, Shorten | audio | Ritka veszteségmentes / zenei. Az OptimFROG kimarad (tulajdonosi döntés, 2026-11-14): csak zárt gyártói SDK |
 
 ## K3 – örökölt, játék és egyéb ritka (a legvégén)
 
-Ezek többségéhez nincs nyilvános specifikáció, ezért a clean-room szabály miatt mindegyikhez
-külön tulajdonosi döntés kell.
+Ezek többségéhez nincs nyilvános specifikáció, ezért mindegyikhez külön tulajdonosi döntés kell
+(port engedélyezett licencű megvalósításból, vagy kimarad).
 
 | Kodek / formátum | Típus |
 |---|---|
-| Bink / Bink 2, Bink Audio | játék |
+| Bink, Bink Audio (a Bink 2 kimarad, tulajdonosi döntés, 2026-11-14: nincs nyílt dekóder) | játék |
 | Smacker, Smacker Audio | játék |
 | id RoQ, Interplay MVE, Interplay ACM | játék |
 | CRIWARE Sofdec.Prime, Sofdec2, CRI ADX, CRI HCA | japán játék |
@@ -123,6 +125,8 @@ A K2-es AVS-munkához (AVS2, AVS3, AVS-audiók) kötődnek, és csak utána, a b
 
 | Dátum | Változás | Összefoglaló |
 |---|---|---|
+| 2026-11-14 | minor | Tulajdonosi döntés: az OptimFROG, a Sony SR Codec és a Bink 2 kimarad (nincs nyilvános leírás és nyílt dekóder sem). A forráskeresésre váró tételek az ütemtervben (🔎) |
+| 2026-11-13 | minor | A szabályszöveg az AGENTS.md §2-höz igazítva: alapból nyilvános leírás, engedélyezett és nyilvántartott port megengedett. A döntési kapuk nem változtak |
 | 2026-11-09 | minor | A H.266 / VVC átkerült a „máshol tervben” táblába: saját, jóváhagyott terve van (CFA4-VVC-PLAN-001, #721) |
 | 2026-11-08 | major | Áthelyezve a CFA4-AI_modules tárolóból (ott: PR #9) a CinemaFundArchitecture4-be, a tulajdonos döntésére. Összevetve az itteni kodekekkel: kimaradt a CineForm, a DTS / DTS-HD MA, a TrueHD és a JPEG XL (saját dekóder van), az AVIF (G10). A „máshol tervben” tábla ehhez a tárolóhoz igazítva. Saját dekóder a cél, az FFmpeg-tartalék nem számít megoldásnak |
 | 2026-10-27 | major | Létrehozva a tulajdonos 2026-10-27-i kodeklistájából (a CFA4-AI_modules tárolóban) |
