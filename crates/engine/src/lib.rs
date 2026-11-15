@@ -1388,6 +1388,8 @@ mod interchange_auto_points_tests;
 #[cfg(test)]
 mod keyboard_tests;
 #[cfg(test)]
+mod otio_size_tests;
+#[cfg(test)]
 mod legibility_tests;
 #[cfg(test)]
 mod linked_speed_tests;
