@@ -4670,3 +4670,15 @@ export.summary	Low	låg
 	AS-11 Core	AS-11 Core
 	AS-11 Parts	AS-11-delar
 	AS-11 UK DPP	AS-11 UK DPP
+# Control surfaces (qt-control-surfaces-page, CFA4-CONTROL-SURFACE-001)
+	Connected	Ansluten
+	Device	Enhet
+	Devices	Enheter
+	Disabled	Inaktiverad
+	HID jog/shuttle	HID-jog/shuttle
+	MIDI	MIDI
+	Not connected	Inte ansluten
+	OSC	OSC
+	Use	Använd
+	{device} ({port})	{device} ({port})
+	{name}: {error}	{name}: {error}

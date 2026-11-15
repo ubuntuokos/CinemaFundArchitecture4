@@ -4671,3 +4671,15 @@ export.summary	Low	žema
 	AS-11 Core	AS-11 Core
 	AS-11 Parts	AS-11 dalys
 	AS-11 UK DPP	AS-11 UK DPP
+# Control surfaces (qt-control-surfaces-page, CFA4-CONTROL-SURFACE-001)
+	Connected	Prijungta
+	Device	Įrenginys
+	Devices	Įrenginiai
+	Disabled	Išjungta
+	HID jog/shuttle	HID jog/shuttle
+	MIDI	MIDI
+	Not connected	Neprijungta
+	OSC	OSC
+	Use	Naudoti
+	{device} ({port})	{device} ({port})
+	{name}: {error}	{name}: {error}

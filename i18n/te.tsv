@@ -4674,3 +4674,15 @@ export.summary	Low	తక్కువ
 	AS-11 Core	AS-11 Core
 	AS-11 Parts	AS-11 భాగాలు
 	AS-11 UK DPP	AS-11 UK DPP
+# Control surfaces (qt-control-surfaces-page, CFA4-CONTROL-SURFACE-001)
+	Connected	కనెక్ట్ అయింది
+	Device	పరికరం
+	Devices	పరికరాలు
+	Disabled	నిలిపివేయబడింది
+	HID jog/shuttle	HID జాగ్/షటిల్
+	MIDI	MIDI
+	Not connected	కనెక్ట్ కాలేదు
+	OSC	OSC
+	Use	ఉపయోగించు
+	{device} ({port})	{device} ({port})
+	{name}: {error}	{name}: {error}

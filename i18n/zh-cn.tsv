@@ -4666,3 +4666,15 @@
 	AS-11 Core	AS-11 Core
 	AS-11 Parts	AS-11 部分
 	AS-11 UK DPP	AS-11 UK DPP
+# Control surfaces (qt-control-surfaces-page, CFA4-CONTROL-SURFACE-001)
+	Connected	已连接
+	Device	设备
+	Devices	设备
+	Disabled	已停用
+	HID jog/shuttle	HID 飞梭/穿梭
+	MIDI	MIDI
+	Not connected	未连接
+	OSC	OSC
+	Use	使用
+	{device} ({port})	{device} ({port})
+	{name}: {error}	{name}: {error}

@@ -4668,3 +4668,15 @@ export.summary	Low	laag
 	AS-11 Core	AS-11 Core
 	AS-11 Parts	AS-11-delen
 	AS-11 UK DPP	AS-11 UK DPP
+# Control surfaces (qt-control-surfaces-page, CFA4-CONTROL-SURFACE-001)
+	Connected	Verbonden
+	Device	Apparaat
+	Devices	Apparaten
+	Disabled	Uitgeschakeld
+	HID jog/shuttle	HID-jog/shuttle
+	MIDI	MIDI
+	Not connected	Niet verbonden
+	OSC	OSC
+	Use	Gebruiken
+	{device} ({port})	{device} ({port})
+	{name}: {error}	{name}: {error}

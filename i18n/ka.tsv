@@ -4671,3 +4671,15 @@ export.summary	Low	დაბალი
 	AS-11 Core	AS-11 Core
 	AS-11 Parts	AS-11 ნაწილები
 	AS-11 UK DPP	AS-11 UK DPP
+# Control surfaces (qt-control-surfaces-page, CFA4-CONTROL-SURFACE-001)
+	Connected	დაკავშირებულია
+	Device	მოწყობილობა
+	Devices	მოწყობილობები
+	Disabled	გამორთულია
+	HID jog/shuttle	HID jog/shuttle
+	MIDI	MIDI
+	Not connected	არ არის დაკავშირებული
+	OSC	OSC
+	Use	გამოყენება
+	{device} ({port})	{device} ({port})
+	{name}: {error}	{name}: {error}
