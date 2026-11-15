@@ -4706,3 +4706,5 @@ export.summary	Low	төмен
 	Read from LTC Audio	LTC дыбысынан оқу
 	Find SMPTE LTC on the clip's audio and use the timecode it gives the first frame	Клип дыбысынан SMPTE LTC тауып, оның бірінші кадрға беретін уақыт кодын пайдалану
 	Read Timecode from LTC Audio	Уақыт кодын LTC дыбысынан оқу
+# Credits: voices (the Voice column) in the block's properties (F10-C16)
+	Voices	Дауыстар

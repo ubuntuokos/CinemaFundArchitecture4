@@ -4706,3 +4706,5 @@ export.summary	Low	matala
 	Read from LTC Audio	Lue LTC-äänestä
 	Find SMPTE LTC on the clip's audio and use the timecode it gives the first frame	Etsi leikkeen äänestä SMPTE LTC ja käytä aikakoodia, jonka se antaa ensimmäiselle kuvalle
 	Read Timecode from LTC Audio	Lue aikakoodi LTC-äänestä
+# Credits: voices (the Voice column) in the block's properties (F10-C16)
+	Voices	Äänet

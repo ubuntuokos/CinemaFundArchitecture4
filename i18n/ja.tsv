@@ -4713,3 +4713,5 @@
 	Read from LTC Audio	LTC オーディオから読み取り
 	Find SMPTE LTC on the clip's audio and use the timecode it gives the first frame	クリップのオーディオから SMPTE LTC を探し、最初のフレームに対応するタイムコードを使用します
 	Read Timecode from LTC Audio	LTC オーディオからタイムコードを読み取り
+# Credits: voices (the Voice column) in the block's properties (F10-C16)
+	Voices	声の出演

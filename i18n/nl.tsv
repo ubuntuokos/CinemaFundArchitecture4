@@ -4704,3 +4704,5 @@ export.summary	Low	laag
 	Read from LTC Audio	Uit LTC-audio lezen
 	Find SMPTE LTC on the clip's audio and use the timecode it gives the first frame	SMPTE LTC in de audio van de clip zoeken en de tijdcode gebruiken die het aan het eerste beeld geeft
 	Read Timecode from LTC Audio	Tijdcode uit LTC-audio lezen
+# Credits: voices (the Voice column) in the block's properties (F10-C16)
+	Voices	Stemmen

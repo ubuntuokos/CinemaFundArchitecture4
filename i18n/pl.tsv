@@ -4704,3 +4704,5 @@ export.summary	Low	niska
 	Read from LTC Audio	Odczytaj z dźwięku LTC
 	Find SMPTE LTC on the clip's audio and use the timecode it gives the first frame	Znajdź SMPTE LTC w dźwięku klipu i użyj kodu czasowego, który daje on pierwszej klatce
 	Read Timecode from LTC Audio	Odczytaj kod czasowy z dźwięku LTC
+# Credits: voices (the Voice column) in the block's properties (F10-C16)
+	Voices	Głosy

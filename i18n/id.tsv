@@ -4712,3 +4712,5 @@
 	Read from LTC Audio	Baca dari Audio LTC
 	Find SMPTE LTC on the clip's audio and use the timecode it gives the first frame	Cari SMPTE LTC pada audio klip dan gunakan timecode yang diberikannya untuk frame pertama
 	Read Timecode from LTC Audio	Baca Timecode dari Audio LTC
+# Credits: voices (the Voice column) in the block's properties (F10-C16)
+	Voices	Suara

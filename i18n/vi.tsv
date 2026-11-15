@@ -4704,3 +4704,5 @@ export.summary	Low	thấp
 	Read from LTC Audio	Đọc từ âm thanh LTC
 	Find SMPTE LTC on the clip's audio and use the timecode it gives the first frame	Tìm SMPTE LTC trong âm thanh của clip và dùng mã thời gian mà nó gán cho khung hình đầu tiên
 	Read Timecode from LTC Audio	Đọc mã thời gian từ âm thanh LTC
+# Credits: voices (the Voice column) in the block's properties (F10-C16)
+	Voices	Giọng lồng tiếng

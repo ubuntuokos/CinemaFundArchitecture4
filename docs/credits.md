@@ -23,6 +23,7 @@ leading `@` is allowed, and Hungarian names work too.
 | Page Style | Oldal | Starts a new page with that style (`Scroll`, `Card`, or your own) |
 | Page Runtime | Játékidő | Page length: `00:00:12:00`, `12s`, `300f`. On a scroll page the speed is kept and the gaps between blocks stretch or shrink to fit (up to 20-fold); if they cannot, the speed changes, with a warning |
 | Page Gap | Oldalköz | Empty time after the page; negative overlaps the next page |
+| Voice | Hang, Szinkronhang | Who dubs the character on this row (also in CFA4's other languages: `Stimme`, `Voix`, `Голос`, `声優` …); see [Voices](#voices-dubbing) |
 
 A new head, an empty row, a new style or a new page starts a new block. `{{Blank}}` is an empty
 line inside a block. Line breaks inside a cell are kept.
@@ -246,7 +247,7 @@ A page style of your own names the template and, if needed, which text control t
 
 - `template`: a template's id or name (built in or installed), or a `.fcgt` file (next to the
   sheet, or by path). Not found: the page type's built-in one is used, with a note.
-- `fields`: control id → `head`, `body` or `tail` (also `fej`, `törzs`, `láb`). Without it the
+- `fields`: control id → `head`, `body`, `tail` or `voice` (also `fej`, `törzs`, `láb`, `hang`). Without it the
   control called `name`, `title`, `heading`, `text`, `label` or `credits` (else the first text
   control) takes the body, `role`, `subtitle`, `job` or `caption` (else the next one) the head, and
   the next free one the tail. A part with no control is left out, with a note; an empty part hides
@@ -258,6 +259,26 @@ A page style of your own names the template and, if needed, which text control t
   the credits document: refreshing from the sheet replaces it, and hand edits in rows that did not
   change are kept. Live graphics (C10) offer each of them as a cue, so a lower third can go on air.
 - The built-in credits template *Documentary* shows the whole structure.
+
+## Voices (dubbing)
+
+The `Voice` column (`Hang`, `Szinkronhang`) names who dubs the character on that row: Head the
+character, Body the actor on screen, Voice the voice. Where there is no actor on screen (an
+animated film) put the voice in the Body. A voice-only row joins the block's last name.
+
+- **Horizontal** content styles put the voices in a column of their own right of the names (and
+  tails), each on its name's line: the built-in content style `Voices` is *character – actor –
+  voice*. **Vertical** ones put them under the names.
+- Content style fields: `voice` (letter style; default 34 px, grey, Italic), `voiceLabel` (text
+  before each voice, e.g. `voice: ` or `hangja: `; default none), `voiceGap` (space to the names;
+  default 48).
+- **Checks:** a person written one way in the cast and another way among the voices gets the
+  `name-spelling` warning, as names within the credits do.
+- **Lower thirds:** a template with a `voice` text control takes the voice; otherwise it joins the
+  role (`Detective, voice: Anna Kovács`, with the block's content style's `voiceLabel`). `fields`
+  can map any control to `voice`.
+- The built-in credits template *Dubbed Version* shows the cast with voices and a dubbing crew
+  under its own heading.
 
 ## Cinecred projects
 
@@ -293,7 +314,7 @@ default style), as one undo step. Template files over 8 MiB are skipped.
 
 | Kind | Where | Licence |
 |---|---|---|
-| built in | in CFA4: *Classic Roll*, *Cards and Roll*, *News Crawl*, *Cast Portraits*, *Documentary* (original designs) | MIT OR Apache-2.0 |
+| built in | in CFA4: *Classic Roll*, *Cards and Roll*, *News Crawl*, *Cast Portraits*, *Documentary*, *Dubbed Version* (original designs) | MIT OR Apache-2.0 |
 | user | `<data dir>/Credits Templates/*.cfa4credtpl` | what its `license` says |
 | project | kept in the project file | what its `license` says |
 

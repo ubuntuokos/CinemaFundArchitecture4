@@ -4707,3 +4707,5 @@ export.summary	Low	დაბალი
 	Read from LTC Audio	წაკითხვა LTC ხმიდან
 	Find SMPTE LTC on the clip's audio and use the timecode it gives the first frame	კლიპის ხმაში SMPTE LTC-ის პოვნა და იმ თაიმკოდის გამოყენება, რომელსაც ის პირველ კადრს აძლევს
 	Read Timecode from LTC Audio	თაიმკოდის წაკითხვა LTC ხმიდან
+# Credits: voices (the Voice column) in the block's properties (F10-C16)
+	Voices	ხმები

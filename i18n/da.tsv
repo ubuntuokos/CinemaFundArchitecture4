@@ -4706,3 +4706,5 @@ export.summary	Low	lav
 	Read from LTC Audio	Læs fra LTC-lyd
 	Find SMPTE LTC on the clip's audio and use the timecode it gives the first frame	Find SMPTE LTC i klippets lyd, og brug den tidskode, det giver det første billede
 	Read Timecode from LTC Audio	Læs tidskode fra LTC-lyd
+# Credits: voices (the Voice column) in the block's properties (F10-C16)
+	Voices	Stemmer

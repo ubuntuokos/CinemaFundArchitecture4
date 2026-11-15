@@ -4706,3 +4706,5 @@ export.summary	Low	madal
 	Read from LTC Audio	Loe LTC-helist
 	Find SMPTE LTC on the clip's audio and use the timecode it gives the first frame	Otsi klipi helist SMPTE LTC-d ja kasuta ajakoodi, mille see annab esimesele kaadrile
 	Read Timecode from LTC Audio	Loe ajakood LTC-helist
+# Credits: voices (the Voice column) in the block's properties (F10-C16)
+	Voices	Hääled

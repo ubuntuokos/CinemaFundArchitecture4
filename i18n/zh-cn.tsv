@@ -4702,3 +4702,5 @@
 	Read from LTC Audio	从 LTC 音频读取
 	Find SMPTE LTC on the clip's audio and use the timecode it gives the first frame	在片段音频中查找 SMPTE LTC，并使用它为第一帧给出的时间码
 	Read Timecode from LTC Audio	从 LTC 音频读取时间码
+# Credits: voices (the Voice column) in the block's properties (F10-C16)
+	Voices	配音

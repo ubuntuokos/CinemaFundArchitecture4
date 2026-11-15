@@ -4707,3 +4707,5 @@ export.summary	Low	žema
 	Read from LTC Audio	Nuskaityti iš LTC garso
 	Find SMPTE LTC on the clip's audio and use the timecode it gives the first frame	Rasti SMPTE LTC klipo garse ir naudoti laiko kodą, kurį jis suteikia pirmam kadrui
 	Read Timecode from LTC Audio	Nuskaityti laiko kodą iš LTC garso
+# Credits: voices (the Voice column) in the block's properties (F10-C16)
+	Voices	Balsai

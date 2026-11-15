@@ -274,5 +274,29 @@ pub fn builtin_templates() -> Vec<CreditsTemplate> {
                 &["Music", "Composer Name", "", "Gutter", "", ""],
             ],
         ),
+        // F10-C16 (Q18): the cast with their voices, and the dubbing crew under its own heading
+        builtin(
+            "dubbed-version",
+            "Dubbed Version",
+            "Character, actor and voice in three columns, then the dubbing crew under its own heading.",
+            Styling {
+                default_page_style: "Roll".into(),
+                default_content_style: "Voices".into(),
+                page_styles: vec![PageStyle { scroll_px_per_frame: 2.0, ..page("Roll", Behaviour::Scroll) }],
+                ..Styling::default()
+            },
+            &[
+                &["Head", "Body", "Voice", "Content Style", "Page Style", "Vertical Gap"],
+                &["", "CAST", "", "Heading", "Roll", ""],
+                &["The Detective", "First Actor", "First Voice", "Voices", "", ""],
+                &["The Friend", "Second Actor", "Second Voice", "", "", ""],
+                &["The Narrator", "Third Voice", "", "", "", ""],
+                &["", "DUBBED VERSION", "", "Heading", "", "2"],
+                &["Dubbing Director", "Name Surname", "", "Gutter", "", ""],
+                &["Translator", "Name Surname", "", "", "", ""],
+                &["Sound Engineer", "Name Surname", "", "", "", ""],
+                &["Dubbing Studio", "Studio Name", "", "", "", ""],
+            ],
+        ),
     ]
 }

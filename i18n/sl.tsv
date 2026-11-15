@@ -4707,3 +4707,5 @@ export.summary	Low	nizka
 	Read from LTC Audio	Preberi iz zvoka LTC
 	Find SMPTE LTC on the clip's audio and use the timecode it gives the first frame	Poišči SMPTE LTC v zvoku posnetka in uporabi časovno kodo, ki jo da prvi sličici
 	Read Timecode from LTC Audio	Preberi časovno kodo iz zvoka LTC
+# Credits: voices (the Voice column) in the block's properties (F10-C16)
+	Voices	Glasovi

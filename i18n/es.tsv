@@ -4711,3 +4711,5 @@
 	Read from LTC Audio	Leer del audio LTC
 	Find SMPTE LTC on the clip's audio and use the timecode it gives the first frame	Buscar SMPTE LTC en el audio del clip y usar el código de tiempo que da al primer fotograma
 	Read Timecode from LTC Audio	Leer código de tiempo del audio LTC
+# Credits: voices (the Voice column) in the block's properties (F10-C16)
+	Voices	Voces

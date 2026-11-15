@@ -373,7 +373,7 @@ renderelőjében, Chrome nélkül, a stáblistában, a címekben és az élő gr
 - **Ütemezés:** a jövő évi kiadás; részletes terve indulás előtt készül, a tulajdonos
   jóváhagyásával.
 
-### C16 – Címjelenetek a stáblista-dokumentumban (CFA4-TITLE-CREDITS-001, 0.3–0.4) – **C16a KÉSZ (2026-11-14)**
+### C16 – Címjelenetek a stáblista-dokumentumban (CFA4-TITLE-CREDITS-001, 0.3–0.4) – **KÉSZ (2026-11-14)**
 
 A CFA4-TITLE-CREDITS-001 terv illesztési melléklete szerint (0.3, 0.4, Q13–Q15, Q18).
 
@@ -387,8 +387,14 @@ A CFA4-TITLE-CREDITS-001 terv illesztési melléklete szerint (0.3, 0.4, Q13–Q
   ellenőrzés (kártyahossz, címbiztos terület), igazítás a zenéhez (kártyaként), élő cue (C10).
   Qt6: az oldalak listájában és az idővonal-sávon az új fajták, minden nyelven (34 katalógus), az
   engine új figyelmeztetései a `credits_messages.py` NOTES-ában. egui-felület nem készül (Q14).
-- **C16b – szinkronhangok (Q18, 0.7):** `Voice` / `Hang` oszlop, *szereplő – színész – hang*
-  elrendezés címkével és saját betűstílussal, ellenőrzés az eltérő írásmódra, az alsó sávban is.
+- **C16b – szinkronhangok (Q18, 0.7, kész):** `Voice` / `Hang` / `Szinkronhang` oszlop (a CFA4
+  minden nyelvén felismert oszlopnévvel), a hang saját oszlopban a nevek mellett (vízszintes
+  elrendezés) vagy alattuk (függőleges); beépített `Voices` tartalomstílus (*szereplő – színész –
+  hang*), `voice` betűstílus, `voiceLabel` címke (pl. „hangja: ”), `voiceGap`. Ellenőrzés: ugyanaz
+  a név a szereplő- és a hanglistában eltérő írásmóddal `name-spelling` jelzést kap. Alsó sávban
+  `voice` vezérlő, különben a szerep mellé kerül („Detective, hangja: …”). Beépített
+  stáblista-sablon *Dubbed Version* szinkronstáb-blokkal. Qt6: a blokk tulajdonságai között
+  „Hangok”, minden nyelven.
 
 ## 5. Sorrend és függőségek
 

@@ -137,3 +137,6 @@ mod body_width_tests;
 
 #[cfg(test)]
 mod scene_tests;
+
+#[cfg(test)]
+mod voice_tests;

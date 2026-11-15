@@ -4710,3 +4710,5 @@ export.summary	Low	తక్కువ
 	Read from LTC Audio	LTC ఆడియో నుండి చదువు
 	Find SMPTE LTC on the clip's audio and use the timecode it gives the first frame	క్లిప్ ఆడియోలో SMPTE LTC‌ను కనుగొని అది మొదటి ఫ్రేమ్‌కు ఇచ్చే టైమ్‌కోడ్‌ను ఉపయోగించు
 	Read Timecode from LTC Audio	LTC ఆడియో నుండి టైమ్‌కోడ్ చదువు
+# Credits: voices (the Voice column) in the block's properties (F10-C16)
+	Voices	గొంతులు

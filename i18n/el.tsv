@@ -4706,3 +4706,5 @@ export.summary	Low	χαμηλή
 	Read from LTC Audio	Ανάγνωση από ήχο LTC
 	Find SMPTE LTC on the clip's audio and use the timecode it gives the first frame	Εύρεση SMPTE LTC στον ήχο του κλιπ και χρήση του timecode που δίνει στο πρώτο καρέ
 	Read Timecode from LTC Audio	Ανάγνωση timecode από ήχο LTC
+# Credits: voices (the Voice column) in the block's properties (F10-C16)
+	Voices	Φωνές

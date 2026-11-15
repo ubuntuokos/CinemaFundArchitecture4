@@ -170,8 +170,9 @@ pub struct PageStyle {
     #[serde(skip_serializing_if = "String::is_empty")]
     pub template: String,
     /// Which text control of the template takes which part of the block: control id → `head`,
-    /// `body` or `tail` (empty = by the controls' ids: the name or title takes the body, the role
-    /// or subtitle the head, the next free one the tail).
+    /// `body`, `tail` or `voice` (empty = by the controls' ids: the name or title takes the body,
+    /// the role or subtitle the head, the next free one the tail, a `voice` control the voice;
+    /// without one the voice joins the head).
     #[serde(skip_serializing_if = "std::collections::BTreeMap::is_empty")]
     pub fields: std::collections::BTreeMap<String, String>,
 }
@@ -357,6 +358,13 @@ pub struct ContentStyle {
     pub portrait_height: f64,
     pub portrait_side: PortraitSide,
     pub portrait_gap: f64,
+    /// Voices (`Voice` column, F10-C16): their letter style, a label before each name (e.g.
+    /// `voice: `, `hangja: `; empty = none) and the space between them and the body: beside it
+    /// (horizontal orientation, a column of their own) or below it (vertical).
+    pub voice: LetterStyle,
+    #[serde(skip_serializing_if = "String::is_empty")]
+    pub voice_label: String,
+    pub voice_gap: f64,
 }
 
 impl Default for ContentStyle {
@@ -385,6 +393,9 @@ impl Default for ContentStyle {
             portrait_height: 220.0,
             portrait_side: PortraitSide::Above,
             portrait_gap: 16.0,
+            voice: LetterStyle { size: 34.0, color: "#c8c8c8".into(), font_style: "Italic".into(), ..Default::default() },
+            voice_label: String::new(),
+            voice_gap: 48.0,
         }
     }
 }
@@ -499,6 +510,16 @@ pub fn builtin_content_styles() -> Vec<ContentStyle> {
             head_align: Align::Left,
             harmonize_heads: true,
             leader: " .".into(),
+            ..base.clone()
+        },
+        // Character left of the spine, actor right of it, the voice in a third column (F10-C16).
+        ContentStyle {
+            name: "Voices".into(),
+            orientation: Orientation::Horizontal,
+            head: LetterStyle { size: 34.0, color: "#c8c8c8".into(), ..Default::default() },
+            head_gap: 40.0,
+            tail_gap: 40.0,
+            voice_gap: 56.0,
             ..base.clone()
         },
         ContentStyle {
