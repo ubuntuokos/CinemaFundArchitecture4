@@ -191,7 +191,7 @@ pub fn validate_bag(bag: &Path) -> Result<Vec<String>> {
     for (file, base) in [("manifest-sha256.txt", "data/"), ("tagmanifest-sha256.txt", "")] {
         let entries = parse_manifest(&read(file)?, &bag.join(file))?;
         for (p, h) in &entries {
-            if !p.starts_with(base) || p.split('/').any(|c| c == ".." || c.is_empty()) {
+            if !p.starts_with(base) || !delivery::safe_relative(p) {
                 out.push(format!("{file}: path {p} outside its place"));
                 continue;
             }

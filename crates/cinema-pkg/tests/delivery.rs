@@ -100,6 +100,12 @@ fn damaged_delivery_is_reported() {
     let mut got: Vec<(String, &str)> = delivery::verify(&r.package, &r.manifest).unwrap().into_iter().map(|m| (m.path, m.kind)).collect();
     got.sort();
     assert_eq!(got, [("ASSETMAP.xml".into(), "missing"), ("extra.txt".into(), "unexpected"), ("wav_b.mxf".into(), "changed")]);
+    // A manifest that points outside the package is refused, not followed.
+    for evil in ["../src", "/etc/passwd", "a/./b", "a//b", "..\\x"] {
+        let m = root.join("evil.sha256");
+        fs::write(&m, format!("{}  {evil}\n", "0".repeat(64))).unwrap();
+        assert!(delivery::verify(&r.package, &m).is_err(), "{evil}");
+    }
     fs::remove_dir_all(&root).unwrap();
 }
 
