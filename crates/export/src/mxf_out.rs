@@ -142,11 +142,7 @@ pub(crate) struct MxfSetup<'a> {
 /// AS-11 segments of the marker parts: numbered in order, each of the total.
 fn as11_marker_parts(parts: &[(i64, i64)]) -> std::result::Result<Vec<cfa4_mxf::as11::Segment>, String> {
     let total = u16::try_from(parts.len()).map_err(|_| format!("{} segmentation markers, more than an AS-11 part number can count", parts.len()))?;
-    Ok(parts
-        .iter()
-        .zip(1u16..)
-        .map(|(&(start, duration), part_number)| cfa4_mxf::as11::Segment { start, duration, part_number, part_total: total })
-        .collect())
+    Ok(parts.iter().zip(1u16..).map(|(&(start, duration), part_number)| cfa4_mxf::as11::Segment { start, duration, part_number, part_total: total }).collect())
 }
 
 /// An MXF export in progress.

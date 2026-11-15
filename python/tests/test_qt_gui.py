@@ -9739,6 +9739,13 @@ def test_markers_info_metadata_and_project_notes(app, tmp_path: Path):
         menu = win.markers.list.menu_for(2)
         next(a for a in menu.findChildren(QtGui.QAction) if a.objectName() == "markers.menu.color.Teal").trigger()
         assert wait_until(app, lambda: next(m for m in win.sequence["markers"] if m["id"] == target["id"])["color"] == "Teal", 10_000)
+        # the marker type: a segmentation marker is an AS-11 programme part of an MXF export
+        menu = win.markers.list.menu_for(2)
+        next(a for a in menu.findChildren(QtGui.QAction) if a.objectName() == "markers.menu.kind.segmentation").trigger()
+        assert wait_until(app, lambda: next(m for m in win.sequence["markers"] if m["id"] == target["id"])["kind"] == "Segmentation", 10_000)
+        assert wait_until(
+            app, lambda: "Segmentation" in win.markers.list.label_text(next(m for m in win.markers.list.markers if m["id"] == target["id"])), 10_000
+        )
         # Metadata and Info follow the Project panel's selection
         movie = next(i for i in _items(win.project) if i.get("name") == "Ocean_Sunset.mp4")
         tree = win.project_panel.tree

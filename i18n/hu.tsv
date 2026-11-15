@@ -637,6 +637,10 @@
 	Video {n}:	Videó {n}:
 	Video:	Videó:
 	{tc}  Chapter	{tc}  Fejezet
+	{tc}  Segmentation	{tc}  Szegmens
+	Marker Type	Jelölő típusa
+	Chapter	Fejezet
+	Segmentation (AS-11 programme part)	Szegmens (AS-11 műsorrész)
 	Media Type	Médiatípus
 	Frame Rate	Képkockasebesség
 	Media Start	Média kezdete
