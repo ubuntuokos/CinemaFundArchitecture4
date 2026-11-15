@@ -1944,6 +1944,7 @@
 	Counter	Laskuri
 	Typewriter	Kirjoituskone
 	Word by Word	Sana sanalta
+	Scramble	Sekoitus
 	Animator	Animaattori
 	Animator Duration	Animaattorin kesto
 	Animator Delay	Animaattorin viive
@@ -3023,6 +3024,10 @@
 	Sharpen Amount	Terävöinnin määrä
 	Shift Center To	Siirrä keskipiste kohteeseen
 	Show Focus Area	Näytä tarkennusalue
+	Rack Focus	Tarkennuksen siirto
+	Focus Point A	Tarkennuspiste A
+	Focus Point B	Tarkennuspiste B
+	Rack	Siirto
 	Show Only Noise	Näytä vain kohina
 	Shrink	Kutista
 	Shutter Angle	Suljinkulma
@@ -4178,6 +4183,11 @@ export.summary	Low	matala
 	Burn Size	Palon koko
 	Ember Width	Hiillosreunan leveys
 	Ember Color	Hiillosreunan väri
+	Tear Away	Repäisy
+	Tear Roughness	Repeämän rosoisuus
+	Paper Edge Width	Paperireunan leveys
+	Stamp Cut	Postimerkkileikkaus
+	Perforations	Rei'itys
 	Check Text Legibility	Tarkista tekstin luettavuus
 	Clear Legibility Markers	Poista luettavuusmerkit
 	Text legibility: no problems found	Tekstin luettavuus: ongelmia ei löytynyt
@@ -4217,6 +4227,9 @@ export.summary	Low	matala
 	Dither	Rasterointi
 	Pattern	Kuvio
 	Cell Size	Solukoko
+	Pixelate	Pikselöinti
+	Cell Shape	Solun muoto
+	LED	LED
 	Cyan Angle	Syaanin kulma
 	Magenta Angle	Magentan kulma
 	Yellow Angle	Keltaisen kulma
@@ -4538,6 +4551,13 @@ export.summary	Low	matala
 	The keys stay in memory only, until Forget DCP Keys or the end of the session.	Avaimet ovat vain muistissa, kunnes valitaan Unohda DCP-avaimet tai istunto päättyy.
 	DCP keys forgotten	DCP-avaimet unohdettu
 	Choose the KDM file and the private key.	Valitse KDM-tiedosto ja yksityinen avain.
+	Load even if the certificate chain is not verified	Lataa myös vahvistamattomalla varmenneketjulla
+	Bundle: {loaded} of {total} KDMs loaded, {other} for other recipients	Paketti: {loaded}/{total} KDM:ää ladattu, {other} muille vastaanottajille
+	Not loaded: {path}: {problem}	Ei ladattu: {path}: {problem}
+	Signature verified: {chain}	Allekirjoitus vahvistettu: {chain}
+	Signature not verified: {problem}	Allekirjoitusta ei vahvistettu: {problem}
+	KDM required	KDM tarvitaan
+	Encrypted: load the KDM with content key {keys}	Salattu: lataa KDM, jossa on sisältöavain {keys}
 
 # Settings ▸ Timecode Sync (TC-4)
 	Timecode Sync	Aikakoodin synkronointi
@@ -4570,3 +4590,83 @@ export.summary	Low	matala
 	Chase External Timecode	Seuraa ulkoista aikakoodia
 	Send LTC	Lähetä LTC
 	Send MIDI Timecode	Lähetä MIDI-aikakoodi
+
+# Live studio preview (CFA4-LIVE-STUDIO-001 S0)
+	Live studio preview	Suoran studion esikatselu
+	Live studio: stopped	Suora studio: pysäytetty
+	Live studio: {state}	Suora studio: {state}
+	Live studio: {error}	Suora studio: {error}
+	restarted after {count} crashes (last: {exit})	käynnistetty uudelleen {count} kaatumisen jälkeen (viimeisin: {exit})
+	software backend: {reason}	ohjelmistotaustaosa: {reason}
+	Start studio	Käynnistä studio
+	Stop studio	Pysäytä studio
+# Auto Color, Auto Contrast, Auto Levels (EffectsSDK review)
+	Auto Color	Automaattinen väri
+	Auto Contrast	Automaattinen kontrasti
+	Auto Levels	Automaattiset tasot
+	Temporal Smoothing (seconds)	Ajallinen tasoitus (sekuntia)
+	Scene Detect	Kohtausten tunnistus
+	Black Clip	Mustan leikkaus
+	White Clip	Valkoisen leikkaus
+	Snap Neutral Midtones	Neutraalit keskisävyt
+# Layout presets: PiP corners, split screen (EffectsSDK review)
+	PiP 35% Upper Left	PiP 35% ylhäällä vasemmalla
+	Picture-in-picture: 35 % scale in the upper left	Kuva kuvassa: 35 %:n skaalaus ylhäällä vasemmalla
+	PiP 35% Lower Left	PiP 35% alhaalla vasemmalla
+	Picture-in-picture: 35 % scale in the lower left	Kuva kuvassa: 35 %:n skaalaus alhaalla vasemmalla
+	PiP 35% Lower Right	PiP 35% alhaalla oikealla
+	Picture-in-picture: 35 % scale in the lower right	Kuva kuvassa: 35 %:n skaalaus alhaalla oikealla
+	Split Screen Left	Jaettu näyttö vasen
+	Split screen: the middle half of the picture fills the left half of the frame	Jaettu näyttö: kuvan keskimmäinen puolikas täyttää ruudun vasemman puolen
+	Split Screen Right	Jaettu näyttö oikea
+	Split screen: the middle half of the picture fills the right half of the frame	Jaettu näyttö: kuvan keskimmäinen puolikas täyttää ruudun oikean puolen
+# Creative Looks: CRT (P3)
+	CRT	CRT
+	Scanline Strength	Juovien voimakkuus
+	Line Count	Juovien määrä
+	Mask	Maski
+	Mask Strength	Maskin voimakkuus
+	Corner Darkening	Kulmien tummennus
+	Aperture Grille	Aukkoritilä
+	Shadow Mask	Varjomaski
+	Slot Mask	Rakomaski
+# Creative Looks: Oil Paint (P4)
+	Oil Paint	Öljymaalaus
+	Detail	Yksityiskohdat
+	Texture	Tekstuuri
+	Facet	Fasetit
+	Daubs	Täplät
+	Dry Brush	Kuiva sivellin
+	Fresco	Fresko
+	Knife	Palettiveitsi
+	Sponge	Sieni
+# Creative Looks: Pixel Sort (P5)
+	Pixel Sort	Pikselien lajittelu
+	Sort By	Lajitteluperuste
+	Lower Threshold	Alaraja
+	Upper Threshold	Yläraja
+	Ascending	Nouseva
+# Temporal Denoise (EffectsSDK review)
+	Temporal Denoise	Ajallinen kohinanpoisto
+	Frames Each Side	Kuvia kummallakin puolella
+	Motion Threshold	Liikkeen kynnys
+	Show Motion	Näytä liike
+	No signal	Ei signaalia
+	Locating	Paikannetaan
+	Locked	Lukittu
+	Freewheel	Vapaakäynti
+	Scrubbing	Selataan
+	Sending	Lähetetään
+
+# DCP subtitle export (#938)
+	Subtitles from the first caption track	Tekstitykset ensimmäiseltä tekstitysraidalta
+	The package language	Paketin kieli
+	Inter Regular (built in), or an OpenType / TrueType file	Inter Regular (sisäänrakennettu) tai OpenType- / TrueType-tiedosto
+	Subtitle language	Tekstityskieli
+	Subtitle font	Tekstitysfontti
+	Fonts	Fontit
+
+# AS-11 metadata in MXF OP1a (#96)
+	AS-11 Core	AS-11 Core
+	AS-11 Parts	AS-11-osat
+	AS-11 UK DPP	AS-11 UK DPP

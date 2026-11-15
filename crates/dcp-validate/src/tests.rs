@@ -576,6 +576,16 @@ fn composition_markers() {
     let r = run("mark-last", format!("{}{}", m("FFOC", 1), m("LFOC", 1)));
     assert_eq!(statuses(&r, MARK_MARKERS), [Status::Warning], "FFOC at 1 is accepted, LFOC before the last frame is not: {:?}", outcome(&r));
     assert!(r.findings.iter().any(|f| f.message.contains("not at the last frame")));
+    // EntryPoint and Duration in MainMarkers (as CFA4's export wrote them before plan v1.1 D6):
+    // allowed by ST 429-7, rejected by libdcp, so a warning and not a failure
+    let mut e = markers(&format!("{}{}{}", m("FFOC", 0), m("FFEC", 1), m("LFOC", 2)));
+    e.cpl.push((
+        "<IntrinsicDuration>3</IntrinsicDuration><MarkerList>",
+        "<IntrinsicDuration>3</IntrinsicDuration><EntryPoint>0</EntryPoint><Duration>3</Duration><MarkerList>".into(),
+    ));
+    let r = edited("mark-entry", e, "smpte-cinema");
+    assert_eq!(statuses(&r, MARK_MARKERS), [Status::Warning], "{:?}", outcome(&r));
+    assert!(r.findings.iter().any(|f| f.rule == MARK_MARKERS && f.message.contains("EntryPoint and Duration")));
 }
 
 #[test]
