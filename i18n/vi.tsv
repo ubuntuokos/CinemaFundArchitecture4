@@ -4668,3 +4668,21 @@ export.summary	Low	thấp
 	AS-11 Core	AS-11 Core
 	AS-11 Parts	Phần AS-11
 	AS-11 UK DPP	AS-11 UK DPP
+# Control surfaces (qt-control-surfaces-page, CFA4-CONTROL-SURFACE-001)
+	Connected	Đã kết nối
+	Device	Thiết bị
+	Devices	Thiết bị
+	Disabled	Đã tắt
+	HID jog/shuttle	Jog/shuttle HID
+	MIDI	MIDI
+	Not connected	Chưa kết nối
+	OSC	OSC
+	Use	Dùng
+	{device} ({port})	{device} ({port})
+	{name}: {error}	{name}: {error}
+# Control surfaces (midi-monitor, CFA4-CONTROL-SURFACE-001)
+	MIDI Monitor	Giám sát MIDI
+	Press Start Monitor, then move a control.	Nhấn Bắt đầu giám sát, rồi di chuyển một nút điều khiển.
+	Start Monitor	Bắt đầu giám sát
+	Stop Monitor	Dừng giám sát
+	… {count} messages not shown (too many at once)	… {count} tin nhắn không hiển thị (quá nhiều cùng lúc)

@@ -4667,3 +4667,21 @@ export.summary	Low	低
 	AS-11 Core	AS-11 Core
 	AS-11 Parts	AS-11 部分
 	AS-11 UK DPP	AS-11 UK DPP
+# Control surfaces (qt-control-surfaces-page, CFA4-CONTROL-SURFACE-001)
+	Connected	已連線
+	Device	裝置
+	Devices	裝置
+	Disabled	已停用
+	HID jog/shuttle	HID 飛梭/穿梭
+	MIDI	MIDI
+	Not connected	未連線
+	OSC	OSC
+	Use	使用
+	{device} ({port})	{device} ({port})
+	{name}: {error}	{name}: {error}
+# Control surfaces (midi-monitor, CFA4-CONTROL-SURFACE-001)
+	MIDI Monitor	MIDI 監視器
+	Press Start Monitor, then move a control.	按「開始監視」，然後移動一個控制項。
+	Start Monitor	開始監視
+	Stop Monitor	停止監視
+	… {count} messages not shown (too many at once)	… {count} 則訊息未顯示（同時到達太多）

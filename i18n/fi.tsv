@@ -4670,3 +4670,21 @@ export.summary	Low	matala
 	AS-11 Core	AS-11 Core
 	AS-11 Parts	AS-11-osat
 	AS-11 UK DPP	AS-11 UK DPP
+# Control surfaces (qt-control-surfaces-page, CFA4-CONTROL-SURFACE-001)
+	Connected	Yhdistetty
+	Device	Laite
+	Devices	Laitteet
+	Disabled	Poissa käytöstä
+	HID jog/shuttle	HID-jog/shuttle
+	MIDI	MIDI
+	Not connected	Ei yhdistetty
+	OSC	OSC
+	Use	Käytä
+	{device} ({port})	{device} ({port})
+	{name}: {error}	{name}: {error}
+# Control surfaces (midi-monitor, CFA4-CONTROL-SURFACE-001)
+	MIDI Monitor	MIDI-valvonta
+	Press Start Monitor, then move a control.	Paina Käynnistä valvonta ja liikuta sitten säädintä.
+	Start Monitor	Käynnistä valvonta
+	Stop Monitor	Pysäytä valvonta
+	… {count} messages not shown (too many at once)	… {count} viestiä jäi näyttämättä (liian monta kerralla)

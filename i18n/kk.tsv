@@ -4670,3 +4670,21 @@ export.summary	Low	төмен
 	AS-11 Core	AS-11 Core
 	AS-11 Parts	AS-11 бөліктері
 	AS-11 UK DPP	AS-11 UK DPP
+# Control surfaces (qt-control-surfaces-page, CFA4-CONTROL-SURFACE-001)
+	Connected	Қосылған
+	Device	Құрылғы
+	Devices	Құрылғылар
+	Disabled	Өшірілген
+	HID jog/shuttle	HID jog/shuttle
+	MIDI	MIDI
+	Not connected	Қосылмаған
+	OSC	OSC
+	Use	Пайдалану
+	{device} ({port})	{device} ({port})
+	{name}: {error}	{name}: {error}
+# Control surfaces (midi-monitor, CFA4-CONTROL-SURFACE-001)
+	MIDI Monitor	MIDI мониторы
+	Press Start Monitor, then move a control.	«Мониторды бастау» батырмасын басып, басқару элементін қозғаңыз.
+	Start Monitor	Мониторды бастау
+	Stop Monitor	Мониторды тоқтату
+	… {count} messages not shown (too many at once)	… {count} хабар көрсетілмеді (бір мезгілде тым көп)

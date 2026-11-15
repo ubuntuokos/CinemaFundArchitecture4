@@ -4676,3 +4676,21 @@
 	AS-11 Core	AS-11 Core
 	AS-11 Parts	Bagian AS-11
 	AS-11 UK DPP	AS-11 UK DPP
+# Control surfaces (qt-control-surfaces-page, CFA4-CONTROL-SURFACE-001)
+	Connected	Terhubung
+	Device	Perangkat
+	Devices	Perangkat
+	Disabled	Dinonaktifkan
+	HID jog/shuttle	Jog/shuttle HID
+	MIDI	MIDI
+	Not connected	Tidak terhubung
+	OSC	OSC
+	Use	Gunakan
+	{device} ({port})	{device} ({port})
+	{name}: {error}	{name}: {error}
+# Control surfaces (midi-monitor, CFA4-CONTROL-SURFACE-001)
+	MIDI Monitor	Monitor MIDI
+	Press Start Monitor, then move a control.	Tekan Mulai Monitor, lalu gerakkan sebuah kontrol.
+	Start Monitor	Mulai Monitor
+	Stop Monitor	Hentikan Monitor
+	… {count} messages not shown (too many at once)	… {count} pesan tidak ditampilkan (terlalu banyak sekaligus)

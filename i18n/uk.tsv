@@ -4653,3 +4653,21 @@
 	AS-11 Core	AS-11 Core
 	AS-11 Parts	Частини AS-11
 	AS-11 UK DPP	AS-11 UK DPP
+# Control surfaces (qt-control-surfaces-page, CFA4-CONTROL-SURFACE-001)
+	Connected	Під’єднано
+	Device	Пристрій
+	Devices	Пристрої
+	Disabled	Вимкнено
+	HID jog/shuttle	HID jog/shuttle
+	MIDI	MIDI
+	Not connected	Не під’єднано
+	OSC	OSC
+	Use	Використовувати
+	{device} ({port})	{device} ({port})
+	{name}: {error}	{name}: {error}
+# Control surfaces (midi-monitor, CFA4-CONTROL-SURFACE-001)
+	MIDI Monitor	MIDI-монітор
+	Press Start Monitor, then move a control.	Натисніть «Запустити монітор», потім поворушіть елемент керування.
+	Start Monitor	Запустити монітор
+	Stop Monitor	Зупинити монітор
+	… {count} messages not shown (too many at once)	… {count} повідомлень не показано (забагато водночас)
