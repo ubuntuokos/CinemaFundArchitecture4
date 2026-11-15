@@ -4677,3 +4677,31 @@
 	AS-11 Core	AS-11 Core
 	AS-11 Parts	AS-11 パート
 	AS-11 UK DPP	AS-11 UK DPP
+# Control surfaces (qt-control-surfaces-page, CFA4-CONTROL-SURFACE-001)
+	Connected	接続済み
+	Device	デバイス
+	Devices	デバイス
+	Disabled	無効
+	HID jog/shuttle	HID ジョグ/シャトル
+	MIDI	MIDI
+	Not connected	未接続
+	OSC	OSC
+	Use	使用
+	{device} ({port})	{device} ({port})
+	{name}: {error}	{name}: {error}
+# Control surfaces (midi-monitor, CFA4-CONTROL-SURFACE-001)
+	MIDI Monitor	MIDI モニター
+	Press Start Monitor, then move a control.	「モニター開始」を押してから、コントロールを動かしてください。
+	Start Monitor	モニター開始
+	Stop Monitor	モニター停止
+	… {count} messages not shown (too many at once)	… {count} 件のメッセージは表示されていません（一度に多すぎます）
+# Control surfaces (midi-learn, CFA4-CONTROL-SURFACE-001)
+	A control surface asked for {command}, which does not exist.	コントロールサーフェスが存在しない {command} を要求しました。
+	Assignments	割り当て
+	Cancel Learn	学習をキャンセル
+	Control	コントロール
+	Learn	学習
+	Remove this assignment	この割り当てを削除
+	{control} runs {command}.	{control} は {command} を実行します。
+# Control surfaces (shuttlepro, CFA4-CONTROL-SURFACE-001)
+	Button {n}	ボタン {n}

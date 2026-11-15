@@ -4668,3 +4668,31 @@ export.summary	Low	laag
 	AS-11 Core	AS-11 Core
 	AS-11 Parts	AS-11-delen
 	AS-11 UK DPP	AS-11 UK DPP
+# Control surfaces (qt-control-surfaces-page, CFA4-CONTROL-SURFACE-001)
+	Connected	Verbonden
+	Device	Apparaat
+	Devices	Apparaten
+	Disabled	Uitgeschakeld
+	HID jog/shuttle	HID-jog/shuttle
+	MIDI	MIDI
+	Not connected	Niet verbonden
+	OSC	OSC
+	Use	Gebruiken
+	{device} ({port})	{device} ({port})
+	{name}: {error}	{name}: {error}
+# Control surfaces (midi-monitor, CFA4-CONTROL-SURFACE-001)
+	MIDI Monitor	MIDI-monitor
+	Press Start Monitor, then move a control.	Klik op Monitor starten en beweeg daarna een bedieningselement.
+	Start Monitor	Monitor starten
+	Stop Monitor	Monitor stoppen
+	… {count} messages not shown (too many at once)	… {count} berichten niet getoond (te veel tegelijk)
+# Control surfaces (midi-learn, CFA4-CONTROL-SURFACE-001)
+	A control surface asked for {command}, which does not exist.	Een bedieningsoppervlak vroeg om {command}, dat niet bestaat.
+	Assignments	Toewijzingen
+	Cancel Learn	Leren annuleren
+	Control	Bedieningselement
+	Learn	Leren
+	Remove this assignment	Deze toewijzing verwijderen
+	{control} runs {command}.	{control} voert {command} uit.
+# Control surfaces (shuttlepro, CFA4-CONTROL-SURFACE-001)
+	Button {n}	Knop {n}

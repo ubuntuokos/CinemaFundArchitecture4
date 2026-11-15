@@ -4666,3 +4666,31 @@
 	AS-11 Core	AS-11 Core
 	AS-11 Parts	AS-11 部分
 	AS-11 UK DPP	AS-11 UK DPP
+# Control surfaces (qt-control-surfaces-page, CFA4-CONTROL-SURFACE-001)
+	Connected	已连接
+	Device	设备
+	Devices	设备
+	Disabled	已停用
+	HID jog/shuttle	HID 飞梭/穿梭
+	MIDI	MIDI
+	Not connected	未连接
+	OSC	OSC
+	Use	使用
+	{device} ({port})	{device} ({port})
+	{name}: {error}	{name}: {error}
+# Control surfaces (midi-monitor, CFA4-CONTROL-SURFACE-001)
+	MIDI Monitor	MIDI 监视器
+	Press Start Monitor, then move a control.	按“开始监视”，然后移动一个控件。
+	Start Monitor	开始监视
+	Stop Monitor	停止监视
+	… {count} messages not shown (too many at once)	… {count} 条消息未显示（同时到达太多）
+# Control surfaces (midi-learn, CFA4-CONTROL-SURFACE-001)
+	A control surface asked for {command}, which does not exist.	控制台请求了不存在的 {command}。
+	Assignments	分配
+	Cancel Learn	取消学习
+	Control	控件
+	Learn	学习
+	Remove this assignment	移除此分配
+	{control} runs {command}.	{control} 运行 {command}。
+# Control surfaces (shuttlepro, CFA4-CONTROL-SURFACE-001)
+	Button {n}	按钮 {n}

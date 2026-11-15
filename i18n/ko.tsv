@@ -4662,3 +4662,31 @@
 	AS-11 Core	AS-11 Core
 	AS-11 Parts	AS-11 파트
 	AS-11 UK DPP	AS-11 UK DPP
+# Control surfaces (qt-control-surfaces-page, CFA4-CONTROL-SURFACE-001)
+	Connected	연결됨
+	Device	장치
+	Devices	장치
+	Disabled	사용 안 함
+	HID jog/shuttle	HID 조그/셔틀
+	MIDI	MIDI
+	Not connected	연결 안 됨
+	OSC	OSC
+	Use	사용
+	{device} ({port})	{device} ({port})
+	{name}: {error}	{name}: {error}
+# Control surfaces (midi-monitor, CFA4-CONTROL-SURFACE-001)
+	MIDI Monitor	MIDI 모니터
+	Press Start Monitor, then move a control.	모니터 시작을 누른 다음 컨트롤을 움직이세요.
+	Start Monitor	모니터 시작
+	Stop Monitor	모니터 중지
+	… {count} messages not shown (too many at once)	… {count}개 메시지가 표시되지 않음 (한 번에 너무 많음)
+# Control surfaces (midi-learn, CFA4-CONTROL-SURFACE-001)
+	A control surface asked for {command}, which does not exist.	컨트롤 서피스가 존재하지 않는 {command}을(를) 요청했습니다.
+	Assignments	할당
+	Cancel Learn	학습 취소
+	Control	컨트롤
+	Learn	학습
+	Remove this assignment	이 할당 제거
+	{control} runs {command}.	{control}이(가) {command}을(를) 실행합니다.
+# Control surfaces (shuttlepro, CFA4-CONTROL-SURFACE-001)
+	Button {n}	버튼 {n}

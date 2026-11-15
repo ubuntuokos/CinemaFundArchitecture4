@@ -4670,3 +4670,31 @@ export.summary	Low	niska
 	AS-11 Core	AS-11 Core
 	AS-11 Parts	AS-11 dijelovi
 	AS-11 UK DPP	AS-11 UK DPP
+# Control surfaces (qt-control-surfaces-page, CFA4-CONTROL-SURFACE-001)
+	Connected	Povezano
+	Device	Uređaj
+	Devices	Uređaji
+	Disabled	Onemogućeno
+	HID jog/shuttle	HID jog/shuttle
+	MIDI	MIDI
+	Not connected	Nije povezano
+	OSC	OSC
+	Use	Koristi
+	{device} ({port})	{device} ({port})
+	{name}: {error}	{name}: {error}
+# Control surfaces (midi-monitor, CFA4-CONTROL-SURFACE-001)
+	MIDI Monitor	MIDI monitor
+	Press Start Monitor, then move a control.	Pritisnite Pokreni monitor, zatim pomaknite kontrolu.
+	Start Monitor	Pokreni monitor
+	Stop Monitor	Zaustavi monitor
+	… {count} messages not shown (too many at once)	… {count} poruka nije prikazano (previše odjednom)
+# Control surfaces (midi-learn, CFA4-CONTROL-SURFACE-001)
+	A control surface asked for {command}, which does not exist.	Kontrolna površina zatražila je {command}, koja ne postoji.
+	Assignments	Dodjele
+	Cancel Learn	Odustani od učenja
+	Control	Kontrola
+	Learn	Nauči
+	Remove this assignment	Ukloni ovu dodjelu
+	{control} runs {command}.	{control} pokreće {command}.
+# Control surfaces (shuttlepro, CFA4-CONTROL-SURFACE-001)
+	Button {n}	Tipka {n}

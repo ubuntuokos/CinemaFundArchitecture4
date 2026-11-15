@@ -4671,3 +4671,31 @@ export.summary	Low	დაბალი
 	AS-11 Core	AS-11 Core
 	AS-11 Parts	AS-11 ნაწილები
 	AS-11 UK DPP	AS-11 UK DPP
+# Control surfaces (qt-control-surfaces-page, CFA4-CONTROL-SURFACE-001)
+	Connected	დაკავშირებულია
+	Device	მოწყობილობა
+	Devices	მოწყობილობები
+	Disabled	გამორთულია
+	HID jog/shuttle	HID jog/shuttle
+	MIDI	MIDI
+	Not connected	არ არის დაკავშირებული
+	OSC	OSC
+	Use	გამოყენება
+	{device} ({port})	{device} ({port})
+	{name}: {error}	{name}: {error}
+# Control surfaces (midi-monitor, CFA4-CONTROL-SURFACE-001)
+	MIDI Monitor	MIDI მონიტორი
+	Press Start Monitor, then move a control.	დააჭირეთ „მონიტორის დაწყებას“, შემდეგ გაამოძრავეთ მართვის ელემენტი.
+	Start Monitor	მონიტორის დაწყება
+	Stop Monitor	მონიტორის შეჩერება
+	… {count} messages not shown (too many at once)	… {count} შეტყობინება არ ჩანს (ერთდროულად ზედმეტად ბევრია)
+# Control surfaces (midi-learn, CFA4-CONTROL-SURFACE-001)
+	A control surface asked for {command}, which does not exist.	მართვის ზედაპირმა მოითხოვა {command}, რომელიც არ არსებობს.
+	Assignments	მინიჭებები
+	Cancel Learn	სწავლის გაუქმება
+	Control	მართვის ელემენტი
+	Learn	სწავლა
+	Remove this assignment	ამ მინიჭების წაშლა
+	{control} runs {command}.	{control} უშვებს {command}-ს.
+# Control surfaces (shuttlepro, CFA4-CONTROL-SURFACE-001)
+	Button {n}	ღილაკი {n}

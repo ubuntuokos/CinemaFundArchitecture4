@@ -4671,3 +4671,31 @@ export.summary	Low	žema
 	AS-11 Core	AS-11 Core
 	AS-11 Parts	AS-11 dalys
 	AS-11 UK DPP	AS-11 UK DPP
+# Control surfaces (qt-control-surfaces-page, CFA4-CONTROL-SURFACE-001)
+	Connected	Prijungta
+	Device	Įrenginys
+	Devices	Įrenginiai
+	Disabled	Išjungta
+	HID jog/shuttle	HID jog/shuttle
+	MIDI	MIDI
+	Not connected	Neprijungta
+	OSC	OSC
+	Use	Naudoti
+	{device} ({port})	{device} ({port})
+	{name}: {error}	{name}: {error}
+# Control surfaces (midi-monitor, CFA4-CONTROL-SURFACE-001)
+	MIDI Monitor	MIDI monitorius
+	Press Start Monitor, then move a control.	Paspauskite „Paleisti monitorių“, tada pajudinkite valdiklį.
+	Start Monitor	Paleisti monitorių
+	Stop Monitor	Sustabdyti monitorių
+	… {count} messages not shown (too many at once)	… {count} pranešimų nerodoma (per daug vienu metu)
+# Control surfaces (midi-learn, CFA4-CONTROL-SURFACE-001)
+	A control surface asked for {command}, which does not exist.	Valdymo paviršius paprašė {command}, kurios nėra.
+	Assignments	Priskyrimai
+	Cancel Learn	Atšaukti mokymąsi
+	Control	Valdiklis
+	Learn	Mokytis
+	Remove this assignment	Pašalinti šį priskyrimą
+	{control} runs {command}.	{control} vykdo {command}.
+# Control surfaces (shuttlepro, CFA4-CONTROL-SURFACE-001)
+	Button {n}	Mygtukas {n}

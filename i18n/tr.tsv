@@ -4669,3 +4669,31 @@ export.summary	Low	düşük
 	AS-11 Core	AS-11 Core
 	AS-11 Parts	AS-11 bölümleri
 	AS-11 UK DPP	AS-11 UK DPP
+# Control surfaces (qt-control-surfaces-page, CFA4-CONTROL-SURFACE-001)
+	Connected	Bağlı
+	Device	Aygıt
+	Devices	Aygıtlar
+	Disabled	Devre dışı
+	HID jog/shuttle	HID jog/shuttle
+	MIDI	MIDI
+	Not connected	Bağlı değil
+	OSC	OSC
+	Use	Kullan
+	{device} ({port})	{device} ({port})
+	{name}: {error}	{name}: {error}
+# Control surfaces (midi-monitor, CFA4-CONTROL-SURFACE-001)
+	MIDI Monitor	MIDI izleyici
+	Press Start Monitor, then move a control.	İzleyiciyi Başlat'a basın, ardından bir denetimi hareket ettirin.
+	Start Monitor	İzleyiciyi Başlat
+	Stop Monitor	İzleyiciyi Durdur
+	… {count} messages not shown (too many at once)	… {count} ileti gösterilmedi (aynı anda çok fazla)
+# Control surfaces (midi-learn, CFA4-CONTROL-SURFACE-001)
+	A control surface asked for {command}, which does not exist.	Bir kontrol yüzeyi var olmayan {command} komutunu istedi.
+	Assignments	Atamalar
+	Cancel Learn	Öğrenmeyi İptal Et
+	Control	Denetim
+	Learn	Öğren
+	Remove this assignment	Bu atamayı kaldır
+	{control} runs {command}.	{control}, {command} komutunu çalıştırır.
+# Control surfaces (shuttlepro, CFA4-CONTROL-SURFACE-001)
+	Button {n}	Düğme {n}
