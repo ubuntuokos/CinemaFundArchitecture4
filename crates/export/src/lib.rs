@@ -61,7 +61,9 @@ pub use dcp_out::{
     rgba_to_xyz12,
 };
 pub use hls_out::{HlsFiles, SEGMENT_SECONDS as HLS_SEGMENT_SECONDS, hls_files};
-pub use imf_out::{IMF_CONTENT_KINDS, IMF_MAX_SIZE, IMF_RATES, imf_content_kind, imf_profile, imf_rate, rgba_to_rgb10};
+pub use imf_out::{
+    IMF_CONTENT_KINDS, IMF_MAX_SIZE, IMF_RATES, IMF_TIMED_TEXT_KINDS, imf_content_kind, imf_profile, imf_rate, imf_timed_text_sequence, rgba_to_rgb10,
+};
 pub use job::{Exporter, Step, stepped};
 pub use mpeg_out::Mpeg2Container;
 pub use mxf_out::opatom_audio_paths;
@@ -516,10 +518,12 @@ pub struct ExportSettings {
     #[serde(default)]
     pub dcp_language: String,
     /// DCP: write the sequence's first caption track as subtitles (#938): an ST 428-7 subtitle
-    /// reel in an ST 429-5 timed text track file, the CPL's `MainSubtitle`.
+    /// reel in an ST 429-5 timed text track file, the CPL's `MainSubtitle`. IMF (#1234): an
+    /// IMSC1 document in an ST 2067-2 timed text track file, a timed text virtual track of
+    /// [`ExportSettings::imf_timed_text_kind`].
     #[serde(default)]
     pub dcp_subtitles: bool,
-    /// DCP subtitle language, an RFC 5646 tag (empty = [`ExportSettings::dcp_language`]).
+    /// DCP / IMF subtitle language, an RFC 5646 tag (empty = [`ExportSettings::dcp_language`]).
     #[serde(default)]
     pub dcp_subtitle_language: String,
     /// DCP subtitle font: an OpenType / TrueType file embedded in the timed text track file
@@ -533,6 +537,11 @@ pub struct ExportSettings {
     /// [`ExportSettings::dcp_language`].
     #[serde(default)]
     pub imf_content_kind: String,
+    /// IMF timed text kind of the subtitles ([`ExportSettings::dcp_subtitles`] writes them for
+    /// IMF too, as IMSC1 in an ST 2067-2 timed text track file): one of [`IMF_TIMED_TEXT_KINDS`],
+    /// empty = `subtitles`.
+    #[serde(default)]
+    pub imf_timed_text_kind: String,
     /// Encode display-referred SDR (Rec. 709, tone mapped) even when the sequence works in
     /// Rec. 2100 PQ/HLG. Otherwise H.264 and ProRes exports of an HDR sequence are encoded in the
     /// sequence's HDR space and signal it (VUI / `colr` / `mdcv` / `clli` / SEI).
@@ -822,6 +831,7 @@ impl Default for ExportSettings {
             dcp_subtitle_font: String::new(),
             imf_lossless: false,
             imf_content_kind: String::new(),
+            imf_timed_text_kind: String::new(),
             sdr: false,
             alpha: false,
             exr_compression: ExrCompression::None,
