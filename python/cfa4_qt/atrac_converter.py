@@ -62,6 +62,8 @@ class AtracConverterDialog(QDialog):
         self._job: int | None = None
         self._done = 0
         self._total = 0
+        self._current = ""
+        self._errors: list[str] = []
         self._timer = QTimer(self)
         self._timer.setInterval(POLL_MS)
         self._timer.timeout.connect(self._poll)
@@ -210,6 +212,7 @@ class AtracConverterDialog(QDialog):
             return
         self._queue = jobs
         self._done = 0
+        self._errors = []
         self._total = len(jobs)
         self._set_running(True)
         self._next()
@@ -230,9 +233,11 @@ class AtracConverterDialog(QDialog):
             self._timer.stop()
             self._set_running(False)
             self.progress.setValue(1000)
-            self.status.setText(tr("Done: {n} file(s) converted.").replace("{n}", str(self._done)))
+            done = tr("Done: {n} file(s) converted.").replace("{n}", str(self._done))
+            self.status.setText("\n".join([done, *self._errors]))
             return
         src, out = self._queue.pop(0)
+        self._current = Path(src).name
         self.status.setText(tr("Converting {name}…").replace("{name}", Path(src).name))
 
         def started(r: Any, _b: bytes | None) -> None:
@@ -243,7 +248,7 @@ class AtracConverterDialog(QDialog):
                 self._timer.start()
 
         def failed(msg: str) -> None:
-            self.status.setText(f"{Path(src).name}: {msg}")
+            self._errors.append(f"{Path(src).name}: {msg}")
             self._next()
 
         self.engine.execute("audio.atracConvert", self.params(src, out), on_reply=started, on_error=failed)
@@ -264,7 +269,7 @@ class AtracConverterDialog(QDialog):
             self._timer.stop()
             result = entry.get("result") or {}
             if isinstance(result, dict) and result.get("error"):
-                self.status.setText(str(result["error"]))
+                self._errors.append(f"{self._current}: {result['error']}")
             else:
                 self._done += 1
             self._job = None
