@@ -23,8 +23,12 @@ fetch() { # name commit dir
   git -C "$3" -c advice.detachedHead=false checkout -q "$2"
 }
 
+# GCC 14 and later make these C diagnostics errors by default; the pinned sources predate that.
+relaxed="-Wno-error=incompatible-pointer-types -Wno-error=int-conversion -Wno-error=implicit-function-declaration"
+
 build() { # dir bit-depth
-  (cd "$1/build/linux" && ./configure --disable-asm --enable-pic --bit-depth="$2" >/dev/null && make -j "$(nproc)" >/dev/null)
+  (cd "$1/build/linux" && ./configure --disable-asm --enable-pic --bit-depth="$2" --extra-cflags="$relaxed" >/dev/null \
+    && make -j "$(nproc)" >/dev/null)
 }
 
 allow_10bit() { # dir
