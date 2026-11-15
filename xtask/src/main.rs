@@ -433,7 +433,9 @@ fn bench() -> Result<(), String> {
 /// arguments go to the script (`cargo xtask cinema-oracles --install photon`). Default: `--check`.
 fn cinema_oracles() -> Result<(), String> {
     let extra: Vec<String> = std::env::args().skip(2).collect();
-    run(Command::new("bash").arg(root().join("scripts/dev/setup-cinema-oracles.sh")).args(&extra))
+    // The script is executable (#!/usr/bin/env bash); running it directly keeps the arguments out
+    // of any shell command line.
+    run(Command::new(root().join("scripts/dev/setup-cinema-oracles.sh")).args(&extra))
 }
 
 /// L0 crates that read no untrusted input (encoders only): no fuzz target needed.
