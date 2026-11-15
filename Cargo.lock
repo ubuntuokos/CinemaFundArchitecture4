@@ -1162,7 +1162,10 @@ dependencies = [
 name = "cfa4-cinema-pkg"
 version = "0.10.0"
 dependencies = [
+ "chrono",
  "roxmltree",
+ "serde",
+ "serde_json",
  "sha1",
  "sha2 0.11.1",
  "thiserror 2.0.21",

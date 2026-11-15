@@ -9,15 +9,19 @@
 //!   `urn:smpte:imf-vtfp:<hex>`. Two compositions that play the same edit units of the same track
 //!   files on a track get the same fingerprint, however their segments and resources are laid out.
 //!
-//! Both follow the draft memos published by CineCert for the HPA (`README.md` names the revisions).
+//! - [`isdcf`]: an offline snapshot of the ISDCF metadata registries and a checker / builder for
+//!   names that follow the ISDCF Digital Cinema Naming Convention (CINECERT WP09).
+//!
+//! MXF-DIGEST and VTFP follow the draft memos published by CineCert for the HPA (`README.md` names the revisions).
 //! They are implemented from the memos' text; the memos' own test material is the test oracle.
 //!
-//! Layer L1: depends on `sha1`, `sha2`, `roxmltree` and `thiserror` only. No `unsafe`, no panics on
+//! Layer L1: depends on `sha1`, `sha2`, `roxmltree`, `serde_json`, `chrono` and `thiserror` only. No `unsafe`, no panics on
 //! malformed input; DTDs are refused and the XML node count is capped.
 
 #![cfg_attr(not(test), deny(clippy::unwrap_used, clippy::expect_used, clippy::panic, clippy::unimplemented, clippy::todo, clippy::unreachable))]
 
 mod base58;
+pub mod isdcf;
 pub mod mxf_digest;
 pub mod vtfp;
 
@@ -51,6 +55,9 @@ pub enum Error {
     /// The text is not a URN of this kind.
     #[error("not a valid {0} URN")]
     Urn(&'static str),
+    /// The ISDCF registry snapshot, or a registry checkout being reduced to one, is unusable.
+    #[error("ISDCF registry: {0}")]
+    Registry(String),
 }
 
 /// Result type of this crate.
