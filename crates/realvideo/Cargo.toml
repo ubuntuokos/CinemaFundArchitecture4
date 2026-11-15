@@ -1,6 +1,6 @@
 [package]
 name = "cfa4-realvideo"
-description = "Pure-Rust RealVideo 1.0/2.0 (RV10/RV20) decoder"
+description = "Pure-Rust RealVideo 1.0/2.0/3.0/4.0 (RV10/RV20/RV30/RV40) decoder"
 version.workspace = true
 edition.workspace = true
 license = "GPL-3.0-or-later AND LGPL-2.1-or-later"

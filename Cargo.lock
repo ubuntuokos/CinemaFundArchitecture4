@@ -1144,6 +1144,14 @@ dependencies = [
 ]
 
 [[package]]
+name = "cfa4-cavs"
+version = "0.10.0"
+dependencies = [
+ "cfa4-testkit",
+ "thiserror 2.0.21",
+]
+
+[[package]]
 name = "cfa4-cfb"
 version = "0.10.0"
 
@@ -1210,12 +1218,14 @@ dependencies = [
  "cfa4-avi",
  "cfa4-bitstream",
  "cfa4-canopus",
+ "cfa4-cavs",
  "cfa4-cineform",
  "cfa4-color",
  "cfa4-dirac",
  "cfa4-dnx",
  "cfa4-dts",
  "cfa4-dv",
+ "cfa4-evc",
  "cfa4-ffv1",
  "cfa4-frame",
  "cfa4-g729",
@@ -1240,10 +1250,12 @@ dependencies = [
  "cfa4-ogg",
  "cfa4-opus",
  "cfa4-prores",
+ "cfa4-realaudio",
  "cfa4-realmedia",
  "cfa4-realvideo",
  "cfa4-shorten",
  "cfa4-speex",
+ "cfa4-sstp",
  "cfa4-tak",
  "cfa4-testkit",
  "cfa4-time",
@@ -1456,6 +1468,14 @@ dependencies = [
  "serde_json",
  "thiserror 2.0.21",
  "web-time",
+]
+
+[[package]]
+name = "cfa4-evc"
+version = "0.10.0"
+dependencies = [
+ "cfa4-testkit",
+ "thiserror 2.0.21",
 ]
 
 [[package]]
@@ -1805,6 +1825,7 @@ dependencies = [
  "cfa4-heif",
  "cfa4-hevc",
  "cfa4-jxl",
+ "cfa4-realaudio",
  "cfa4-testkit",
  "cfa4-time",
  "image",
@@ -1962,6 +1983,15 @@ dependencies = [
 ]
 
 [[package]]
+name = "cfa4-realaudio"
+version = "0.10.0"
+dependencies = [
+ "cfa4-realmedia",
+ "cfa4-testkit",
+ "thiserror 2.0.21",
+]
+
+[[package]]
 name = "cfa4-realmedia"
 version = "0.10.0"
 dependencies = [
@@ -2075,6 +2105,14 @@ dependencies = [
 
 [[package]]
 name = "cfa4-speex"
+version = "0.10.0"
+dependencies = [
+ "cfa4-testkit",
+ "thiserror 2.0.21",
+]
+
+[[package]]
+name = "cfa4-sstp"
 version = "0.10.0"
 dependencies = [
  "cfa4-testkit",

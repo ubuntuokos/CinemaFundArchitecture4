@@ -66,8 +66,12 @@ Crates are named `cfa4-<dir>` (`crates/time` is `cfa4-time`); new CFA4 crates ar
 | `lagarith` | L0 | Lagarith (`LAGS`) lossless video decoder: RGB24, RGBA, YUY2, YV12; range coder with zero runs; solid frames; ported from FFmpeg (LGPL-2.1-or-later, owner-approved exception) ([README](../crates/lagarith/README.md)) |
 | `utvideo` | L0 | Ut Video lossless video decoder: 8-bit YUV 4:2:0 / 4:2:2 / 4:4:4, RGB, RGBA; slices; left, gradient and median prediction ([README](../crates/utvideo/README.md)) |
 | `magicyuv` | L0 | MagicYUV (`MAGY`, `M8..` / `M0..` / `M2..` / `M4..`) lossless video decoder: 8-bit RGB / RGBA / YUV / YUVA / grey, 10-bit YUV / grey, 10- to 14-bit RGB / RGBA; slices; left, gradient and median prediction; interlaced; ported from FFmpeg (LGPL-2.1-or-later, owner-approved exception) ([README](../crates/magicyuv/README.md)) |
-| `realvideo` | L0 | RealVideo 1.0 / 2.0 (RV10, RV20) decoder, H.263-based with B-frames and the RV20 loop filter, ported from FFmpeg (LGPL-2.1-or-later, owner-approved exception) ([README](../crates/realvideo/README.md)) |
-| `realmedia` | L0 | RealMedia (`.rm`, `.rmvb`) demuxer: header chunks, index, packet sync and video frame reassembly, ported from FFmpeg (LGPL-2.1-or-later, owner-approved exception) ([README](../crates/realmedia/README.md)) |
+| `realvideo` | L0 | RealVideo 1.0 / 2.0 (RV10, RV20) decoder, H.263-based with B-frames and the RV20 loop filter, and RealVideo 3.0 / 4.0 (RV30, RV40, H.264-like), ported from FFmpeg (LGPL-2.1-or-later, owner-approved exception) ([README](../crates/realvideo/README.md)) |
+| `realmedia` | L0 | RealMedia (`.rm`, `.rmvb`) demuxer: header chunks, index, packet sync, video frame reassembly and RealAudio packet deinterleaving, ported from FFmpeg (LGPL-2.1-or-later, owner-approved exception) ([README](../crates/realmedia/README.md)) |
+| `realaudio` | L0 | RealAudio decoders: Cook (RealAudio G2), SIPR, RealAudio 1.0 (14.4) and 2.0 (28.8), ATRAC3, ATRAC3plus and ATRAC9, ported from FFmpeg (LGPL-2.1-or-later, owner-approved exception) ([README](../crates/realaudio/README.md)) |
+| `sstp` | L0 | MPEG-4 Simple Studio Profile (Sony HDCAM SR / SRMASTER) intra video decoder: 10-bit 4:2:2, 4:4:4 and RGB, DCT and DPCM macroblocks, ported from FFmpeg (LGPL-2.1-or-later) ([README](../crates/sstp/README.md)) |
+| `cavs` | L0 | AVS1-P2 (GB/T 20090.2, Chinese AVS) Jizhun profile decoder: I / P / B pictures, quarter-sample MC, 2D-VLC residuals, deblocking, ported from FFmpeg (LGPL-2.1-or-later) ([README](../crates/cavs/README.md)) |
+| `evc` | L0 | MPEG-5 EVC (ISO/IEC 23094-1) Baseline profile decoder: quad-tree coding units, the Baseline intra and inter tools, deblocking, temporal-id reference structure, 4:0:0 / 4:2:0 at 8–12 bits, ported from Samsung xevd (BSD-3-Clause) ([README](../crates/evc/README.md)) |
 | `canopus` | L0 | Canopus HQ, HQA and HQX intra video decoder (8-bit 4:2:2 with alpha, 12-bit 4:2:2 / 4:4:4 with alpha), ported from FFmpeg (LGPL-2.1-or-later) ([README](../crates/canopus/README.md)) |
 | `apv` | L0 | Advanced Professional Video (IETF RFC 9924) decoder and encoder ([README](../crates/apv/README.md)) |
 | `jxl` | L0 | JPEG XL decoder (ISO/IEC 18181): safe port of jxl-oxide, VarDCT and Modular, all restoration filters, patches, splines, noise; first frame of a file to interleaved floats; animation, ICC colour and encoder: #138–#141 ([README](../crates/jxl/README.md)) |
@@ -75,7 +79,7 @@ Crates are named `cfa4-<dir>` (`crates/time` is `cfa4-time`); new CFA4 crates ar
 | `av1` | L0 | AV1 decoder (Main profile; bit-exact with libdav1d; see its README for the stage table) |
 | `mpeg2v` | L0 | MPEG-2 video (Main / 4:2:2 profile; frame and field pictures, dual prime) and MPEG-1 video decoder ([README](../crates/mpeg2v/README.md)) |
 | `dv` | L0 | DV video decoder: DV25 / DVCAM 4:1:1 and 4:2:0, DVCPRO 25 / 50, DVCPRO HD 1080i and 720p, 8-8 and 2-4-8 DCT ([README](../crates/dv/README.md)) |
-| `lcevc` | L0 | MPEG-5 LCEVC: finds enhancement data (T.35 SEI in H.264 / HEVC, `lvc1` tracks, TS stream type 0x36); no decoding yet ([README](../crates/lcevc/README.md)) |
+| `lcevc` | L0 | MPEG-5 LCEVC: finds enhancement data (T.35 SEI in H.264 / HEVC, `lvc1` tracks, TS stream type 0x36) and decodes it (LCEVCdec 4.3.1 port) ([README](../crates/lcevc/README.md)) |
 | `aac` | L0 | AAC-LC decoder and encoder |
 | `ac3` | L0 | AC-3 (ATSC A/52) decoder ([README](../crates/ac3/README.md)) |
 | `dts` | L0 | DTS core, DTS-HD MA / HRA decoder, FFmpeg-derived, LGPL-2.1-or-later ([README](../crates/dts/README.md)) |

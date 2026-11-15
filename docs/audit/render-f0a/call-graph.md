@@ -513,6 +513,7 @@ graph LR
 | `cfa4-media/lib.rs` | `cfa4-color` | `ColorInfo`, `HdrMetadata` |
 | `cfa4-media/lib.rs` | `cfa4-frame` | `AudioBuffer` |
 | `cfa4-media/lib.rs` | `cfa4-time` | `FrameRate` |
+| `cfa4-media/oma.rs` | `cfa4-time` | `Tick` |
 | `cfa4-media/reader.rs` | `cfa4-time` | `Tick` |
 | `cfa4-media/sequence.rs` | `cfa4-frame` | `AudioBuffer`, `PixelData` |
 | `cfa4-media/sequence.rs` | `cfa4-time` | `FrameRate`, `Tick` |
