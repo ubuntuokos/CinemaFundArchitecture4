@@ -13,10 +13,17 @@
 //!   per track, encrypted entries, sample groups / `sdtp`, uncompressed PCM tracks and sources that do not start at decode time 0.
 //!   The validator also compares the sample descriptions, edit lists and track headers.
 //!
+//! - **Compatible Stream Copy** ([`stream_copy_compatible`], `stream_copy_compatible`, §2.2):
+//!   MP4 / QuickTime H.264, HEVC and AAC into MPEG-TS / M2TS through the allowlisted native
+//!   adapters of [`adapter`] (Annex B with delimiter and in-band parameter sets, ADTS), validated
+//!   as `BITSTREAM_EQUIVALENT` by reading the stream back and undoing exactly that framing.
+//!
 //! This phase copies whole tracks of an MP4 / QuickTime source into MP4 or QuickTime. Cutting at
 //! GOP boundaries (the `ExportExecutionPlan` of `cfa4-smart-edit`), Matroska and transport stream
 //! targets (P2a) and Compatible Stream Copy (P3) build on it.
 
+pub mod adapter;
+mod compatible;
 mod strict;
 mod validate;
 
@@ -27,6 +34,7 @@ use std::path::PathBuf;
 
 use serde::{Deserialize, Serialize};
 
+pub use compatible::stream_copy_compatible;
 pub use strict::stream_copy_strict;
 
 use crate::atomic::Overwrite;
@@ -164,7 +172,7 @@ pub struct StrictValidation {
 #[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct CopyReport {
-    /// `stream_copy_strict`.
+    /// `stream_copy_strict` or `stream_copy_compatible`.
     pub mode: String,
     pub output: PathBuf,
     pub container: CopyContainer,
@@ -172,4 +180,23 @@ pub struct CopyReport {
     pub tracks: Vec<CopiedTrack>,
     pub skipped: Vec<SkippedTrack>,
     pub validation: StrictValidation,
+    /// Compatible Copy: the allowlisted adapter applied to each track (empty for a Strict Copy).
+    #[serde(default)]
+    pub transformations: Vec<Transformation>,
 }
+
+/// An allowlisted bitstream adapter applied to a copied track (SCE-001 §11: logged, never hidden).
+#[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct Transformation {
+    pub source_track: usize,
+    /// [`adapter::Allowed::id`].
+    pub adapter: String,
+    pub allowlist_version: u32,
+    /// What else the copy did that a reader must know (`AAC_PRIMING_KEPT: …`).
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    pub notes: Vec<String>,
+}
+
+#[cfg(test)]
+mod compatible_tests;

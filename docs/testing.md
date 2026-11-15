@@ -35,6 +35,7 @@ CFA4_REQUIRE_ORACLES=1 cargo test --workspace   # CI: missing ffmpeg fails inste
 | Remix | `crates/audio-dsp/src/remix.rs`, `crates/render/src/remix.rs`, `crates/engine/src/remix_tests.rs`, `crates/ui-egui/tests/remix_ui.rs` | generated rhythmic music (Rust-synthesised drums, bass, chord sections at 90–128 BPM, 22.05/44.1/48 kHz): tempo within 0.3 BPM, every beat within 10 ms (measured ≤ 8.9 ms); remix targets from 0.4× to 2.2× the source within one beat (measured ≤ 12 ms at default sliders), every cut on a detected beat, intro and outro kept, pieces ≥ 4 beats, deterministic; silence, tone and noise refused; rendering independent of request cuts, source-exact outside the 20 ms equal-power crossfades, no clicks; the engine's mix equals the source pieces (< 1e-5); undo, redo and revert exact; overlaps refused; Remix Properties dialog and Remix tool drag driven by automation id |
 | Oracle | `crates/*/tests/*oracle*.rs`, `conformance.rs` | compare with ffmpeg/ffprobe (§2) |
 | Robustness / fuzz | `*/tests/robustness.rs`, `*/tests/fuzz.rs` | seeded mutation and truncation of real and synthetic files; nothing may panic |
+| Coverage-guided fuzzing (CFA4-SECURITY-001 B2) | `fuzz/` (own workspace: `fuzz/src/lib.rs` harnesses, `fuzz/fuzz_targets/`), `.github/workflows/cfa4-fuzz.yml` (nightly, six shards) | libFuzzer on every L0 parser and the project, interchange, caption and credits readers (`cargo +nightly fuzz run <target>`, `fuzz/run.sh`); seeds from `fuzz/seeds.sh` (the pinned FFmpeg 9.0.2 oracle, never committed); `cargo test --lib` in `fuzz/` is the stable smoke run; `cargo xtask fuzz-targets` checks every L0 parser has a target; a finding becomes a regression test in the crate ([fuzz/README.md](../fuzz/README.md)) |
 | Program monitor while dragging | `crates/ui-egui/tests/perf_ui.rs` | headless: a parameter changed on every UI pass (a value dragged in Effect Controls or Properties) and a backward scrub leave the Program monitor's picture at most one step behind (it shows the frame asked for the pass before while the frame due renders; it used to freeze until the mouse rested); a frame still rendering is kept when the same frame is asked for at a newer revision, so frames slower than a refresh (CPU effects) are shown too; `perf.stats` reports the picture's frame and revision against the playhead and the project |
 | Performance | `*/tests/perf.rs` (`#[ignore]`) | §5 |
 
@@ -104,9 +105,18 @@ cross-check ([AV2 plan](plans/AV2-CODEC-PLAN-2026-10-29.md) II.3, X/3).
   SHA-256 of the AVM v1.0.0 output (after film grain synthesis). Only hashes, never media.
 - `python3 scripts/dev/av2-oracle.py build [--ref av2-normative]` builds `avmenc`/`avmdec` at the
   pinned commit into `target/av2-oracle/avm-<ref>/bin` with an `AVM_COMMIT` stamp (nothing is
-  installed system-wide). `python3 scripts/dev/av2-oracle.py corpus` makes the sources with ffmpeg,
-  encodes the vectors into `target/fixtures/av2/vectors` and removes any bitstream whose SHA-256
-  differs from the manifest. `manifest --from <AV2-00 evidence>` refreshes the hashes.
+  installed system-wide). `python3 scripts/dev/av2-oracle.py corpus` makes the sources with the
+  pinned FFmpeg 9.0.2 (it refuses any other ffmpeg on `PATH`), encodes the vectors into
+  `target/fixtures/av2/vectors` and removes any bitstream whose SHA-256 differs from the manifest. `manifest --from <AV2-00 evidence>` refreshes the hashes. A new
+  vector goes into the manifest with empty hashes; `corpus --allow-drift` encodes it, then
+  `hash NAME...` fills its reference from `avmdec` v1.0.0 and refuses it unless the
+  `av2-normative` build agrees.
+- The corpus (13 vectors): 4:2:0 8/10 bit, intra only, film grain, 2×2 tiles, odd size, a key
+  frame every 4 frames (`420-8bit-kf4`: seeks across keys and a non-key start), RAS frames,
+  fixed 1/2 resize, 4:2:2 8/10 bit, 4:4:4 and 4:0:0. Multistream and several operating points
+  are not in it: `avmenc` v1.0.0 makes neither from its command line (`--operating-points-count`
+  leaves the stream unchanged), and `cfa4-av2` rejects such streams as unsupported (synthetic
+  tests).
 - `cfa4_testkit::av2` finds the oracle (`CFA4_AVMDEC`, else `CFA4_AVM_PREFIX` or the default
   prefix; the stamp must name the pinned commit, and `PATH` is never searched), checks corpus
   bitstreams against the manifest, hashes Y4M output and compares it frame by frame and plane by
@@ -119,9 +129,25 @@ cross-check ([AV2 plan](plans/AV2-CODEC-PLAN-2026-10-29.md) II.3, X/3).
   `target/av2-decoder/bin` (`DAV2D_COMMIT` stamp). `cargo test -p cfa4-codecs --features
   av2-external --test av2_external` decodes the corpus through the helper and the Rust adapter
   and compares with the manifest: the `Main_420_10_IP0` vectors must be bit-exact, the others are
-  reported (dav2d's 4:4:4 inter mismatch is known). The same test checks that a crashing,
+  reported (dav2d's 4:4:4 and 4:2:2 8-bit inter mismatches are known). A `Main_420_10_IP0` vector
+  the pinned dav2d cannot decode is listed with its reason in `KNOWN_DAV2D_GAPS` (today
+  `420-8bit-ras`); it is printed as a G1 blocker, and the test fails once it passes so that the
+  list is kept honest. It also seeks across key frames and starts decoding on a non-key unit. The same test checks that a crashing,
   hanging or garbage-writing helper is an error, and feeds mutated units to the real helper.
   `CFA4_AV2_DECODER` overrides the helper path.
+- Fuzzing the native helper (G1): `python3 scripts/dev/av2-decoder.py build --sanitize` builds
+  dav2d and the helper with ASan and UBSan into `target/av2-decoder-asan` (never shipped), and
+  `python3 scripts/dev/av2-decoder.py fuzz [--rounds N] [--seed N] [--all]` drives it with
+  mutated corpus units (bit flips, special bytes, truncation, splices, garbage, duplicated
+  tails) interleaved with `RSET`/`FLSH`. A sanitizer report, an exit other than 0 or a reply
+  that takes more than 20 s fails the run; the request sequence and stderr of each failure are
+  kept in `target/av2-fuzz/failures`. By default only the `Main_420_10_IP0` vectors are used:
+  the unmutated `422-10bit` vector already makes ASan report a heap read overflow in dav2d
+  `18641bb` loop restoration (`lr_apply_tmpl.c:213`), outside the committed scope; `--all`
+  includes it. `replay <file>.requests` sends a kept failure to a helper again (`--helper` picks
+  the release build). The AV2 oracle workflow runs 3000 rounds with a fixed seed, as a
+  report-only step while the pinned dav2d has known failures (AV2-00 audit, 13. pont); G1 needs
+  it at 0.
 - CI: `.github/workflows/cfa4-av2-oracle.yml` (Ubuntu 26.04) runs only on `workflow_dispatch` or
   on a `cfa4-full-validation` label event of a PR that touches the harness or the decoder. It is
   not a required check.

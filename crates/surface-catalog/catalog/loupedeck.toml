@@ -1,0 +1,61 @@
+# Loupedeck and Razer (plan §2, M5). Sources: LoupixDeck, foxxyz/loupedeck (MIT), rewritten in Rust.
+format = "cfa4-surface-catalog"
+version = 1
+family = "loupedeck"
+
+[[model]]
+id = "loupedeck.live"
+vendor = "Loupedeck"
+name = "Live"
+kind = "lcd_console"
+goal = "FULL"
+adapter = "loupedeck"
+phase = "M5"
+connection = ["usb"]
+source = "LoupixDeck, foxxyz/loupedeck (MIT)"
+notes = ["Known bad firmware on Linux: 0.2.26 (plan §11.2)."]
+
+[[model]]
+id = "loupedeck.live-s"
+vendor = "Loupedeck"
+name = "Live S"
+kind = "lcd_console"
+goal = "FULL"
+adapter = "loupedeck"
+phase = "M5"
+connection = ["usb"]
+source = "LoupixDeck, foxxyz/loupedeck (MIT)"
+
+[[model]]
+id = "loupedeck.ct"
+vendor = "Loupedeck"
+name = "CT"
+kind = "lcd_console"
+goal = "FULL"
+adapter = "loupedeck"
+phase = "M5"
+connection = ["usb"]
+source = "LoupixDeck, foxxyz/loupedeck (MIT)"
+notes = ["Goal: from partial to full; the centre wheel has its own status."]
+
+[[model]]
+id = "razer.stream-controller"
+vendor = "Razer"
+name = "Stream Controller"
+kind = "lcd_console"
+goal = "FULL"
+adapter = "loupedeck"
+phase = "M5"
+connection = ["usb"]
+source = "LoupixDeck, foxxyz/loupedeck (MIT)"
+
+[[model]]
+id = "razer.stream-controller-x"
+vendor = "Razer"
+name = "Stream Controller X"
+kind = "lcd_keypad"
+goal = "FULL"
+adapter = "loupedeck"
+phase = "M5"
+connection = ["usb"]
+source = "LoupixDeck, foxxyz/loupedeck (MIT)"

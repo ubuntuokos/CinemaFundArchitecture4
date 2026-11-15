@@ -14,7 +14,9 @@ id: io.github.ubuntuokos.cfa4
 runtime: org.freedesktop.Platform
 runtime-version: '25.08'
 sdk: org.freedesktop.Sdk
-command: cfa4
+# The Qt 6 GUI is what `flatpak run` and the menu entry start (owner decision 2026-11-12), as in the
+# from-source manifest; the frozen egui editor: `flatpak run --command=cfa4 io.github.ubuntuokos.cfa4`.
+command: cfa4-qt
 finish-args:
   # X11 shared memory (MIT-SHM). Without it the X11 fallback is slow or fails.
   - --share=ipc
@@ -40,6 +42,34 @@ finish-args:
   # the sandbox; `flatpak override --user --share=network io.github.ubuntuokos.cfa4` exposes it
   # to host agents) and host-wide filesystem access.
 modules:
+  # MIT Kerberos (libgssapi_krb5.so.2): the Qt 6 wheels' QtNetwork and QtMultimedia need it and the
+  # freedesktop runtime has none, so without it the Qt GUI cannot start in the sandbox. Only the
+  # shared libraries stay, with their licence (MIT-style NOTICE) in share/doc/cfa4/krb5. The tarball's
+  # PGP signature checks out against Greg Hudson's key (C4493CB739F4A89F9852CBC20CBA08575F8372DF).
+  - name: krb5
+    subdir: src
+    config-opts:
+      - --localstatedir=/var/lib
+      - --disable-static
+      - --disable-rpath
+      - --without-system-verto
+    post-install:
+      - install -Dm644 ../NOTICE /app/share/doc/cfa4/krb5/NOTICE
+    cleanup:
+      - /bin
+      - /sbin
+      - /include
+      - /lib/pkgconfig
+      - /lib/krb5/plugins/kdb
+      - /share/man
+      - /share/examples
+      - /share/locale
+      - /share/et
+      - /var
+    sources:
+      - type: archive
+        url: https://kerberos.org/dist/krb5/1.22/krb5-1.22.3.tar.gz
+        sha256: fe90af8441ad9fa9b064b8e53077cefb782a96f8a68276b031dc54af1789ff0b
   - name: cfa4
     buildsystem: simple
     build-commands:
@@ -57,7 +87,7 @@ modules:
       # their licences: the binaries find it in ../lib/cfa4/ffmpeg-9.0.2 ($ORIGIN RUNPATH). No
       # patent-restricted encoder: x264/x265 exist only in the cfa4-restricted-extras .deb.
       - mkdir -p /app/lib/cfa4 && cp -R lib/cfa4/ffmpeg-9.0.2 /app/lib/cfa4/
-      # The Qt 6 GUI (docs/qt-parity.md 1.10): `flatpak run --command=cfa4-qt io.github.ubuntuokos.cfa4`.
+      # The Qt 6 GUI (docs/qt-parity.md 1.10), the bundle's command: `flatpak run io.github.ubuntuokos.cfa4`.
       # Its Python package, and the PySide6 / Qt 6 that flatpak-bundle.sh staged from the pinned
       # wheels (the runtime's python3 runs it; the licences went to share/doc/cfa4/pyside6 above).
       - install -Dm755 bin/cfa4-qt /app/bin/cfa4-qt

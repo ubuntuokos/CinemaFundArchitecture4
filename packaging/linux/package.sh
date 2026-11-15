@@ -210,7 +210,7 @@ if has appimage; then
   python3 "$HERE/stage-pyside6.py" --wheels "${CFA4_PYSIDE6_WHEELS:?set CFA4_PYSIDE6_WHEELS to the local PySide6 wheelhouse}" \
     --dest "$APPDIR/usr/lib/cfa4/pyside6" --doc "$APPDIR/usr/share/doc/cfa4/pyside6" --host-xcb
   # Keep usr/share/doc: licences, NOTICE and attributions must ship inside the AppImage too.
-  # AppRun starts egui, or the Qt GUI with --qt / CFA4_GUI=qt.
+  # AppRun starts the Qt GUI by default, or egui with --egui / CFA4_GUI=egui.
   install -m755 "$HERE/AppRun" "$APPDIR/AppRun"
   cp "$HERE/$APP_ID.desktop" "$APPDIR/$APP_ID.desktop"
   # the CFA4 logo is raster artwork: the 256 px PNG is the AppImage icon

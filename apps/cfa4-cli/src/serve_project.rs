@@ -33,7 +33,8 @@ fn kind_icon(it: &ProjectItem) -> &'static str {
     }
 }
 
-/// Offline text (egui's `media_badge`): None when the media is there.
+/// Offline text (egui's `media_badge`; "KDM required" for an encrypted clip whose content keys
+/// are not loaded): None when the media is there.
 fn offline(s: &Session, it: &ProjectItem) -> (Option<&'static str>, bool) {
     let target = match &it.kind {
         ItemKind::Subclip { parent, .. } => s.project.item(*parent),
@@ -44,6 +45,9 @@ fn offline(s: &Session, it: &ProjectItem) -> (Option<&'static str>, bool) {
         Some("Offline")
     } else if s.offline.missing.contains(&id) {
         Some("Media missing")
+    } else if !s.media.missing_keys(id).is_empty() {
+        // encrypted essence without its content keys plays black and silent (#1053)
+        Some("KDM required")
     } else {
         s.media.offline_status(id).map(|st| if st.reason == cfa4_render::offline::OfflineReason::Unreadable { "Unreadable" } else { "Media missing" })
     };
@@ -90,6 +94,7 @@ fn item_row(s: &Session, it: &ProjectItem, depth: usize, columns: &[pp::Column])
         "hasAudio": it.has_audio(),
         "offline": offline,
         "proxy": proxy,
+        "needsKey": p.resolve_media(it.id).map(|(id, _, _)| s.media.missing_keys(id)).unwrap_or_default(),
     })
 }
 

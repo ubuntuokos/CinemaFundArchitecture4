@@ -1,4 +1,5 @@
-//! Decode time of JPEG 2000 files: `cargo run --release -p cfa4-j2k --example j2k_bench -- FILE…`.
+//! Decode time of JPEG 2000 files: `cargo run --release -p cfa4-j2k --example j2k_bench -- FILE…`,
+//! at full resolution and one and two wavelet levels down (`decode_reduced`, proxy playback).
 
 fn main() {
     for path in std::env::args().skip(1) {
@@ -6,18 +7,25 @@ fn main() {
             eprintln!("{path}: unreadable");
             continue;
         };
-        let runs = 10;
-        let mut times = Vec::new();
-        for _ in 0..runs {
-            let start = std::time::Instant::now();
-            if let Err(e) = cfa4_j2k::decode(&data) {
-                eprintln!("{path}: {e}");
-                break;
+        for reduce in 0..=2u8 {
+            let runs = 10;
+            let mut times = Vec::new();
+            let mut size = (0, 0);
+            for _ in 0..runs {
+                let start = std::time::Instant::now();
+                match cfa4_j2k::decode_reduced(&data, reduce) {
+                    Ok((image, _)) => size = (image.width, image.height),
+                    Err(e) => {
+                        eprintln!("{path}: {e}");
+                        break;
+                    }
+                }
+                times.push(start.elapsed().as_secs_f64() * 1000.0);
             }
-            times.push(start.elapsed().as_secs_f64() * 1000.0);
+            times.sort_by(f64::total_cmp);
+            let median = times.get(times.len() / 2).copied().unwrap_or(0.0);
+            let best = times.first().copied().unwrap_or(0.0);
+            println!("{path} ({}×{}): median {median:.1} ms, best {best:.1} ms per decode", size.0, size.1);
         }
-        times.sort_by(f64::total_cmp);
-        let median = times.get(times.len() / 2).copied().unwrap_or(0.0);
-        println!("{path}: median {median:.1} ms, best {:.1} ms per decode", times.first().copied().unwrap_or(0.0));
     }
 }
