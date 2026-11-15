@@ -4598,6 +4598,8 @@ export.summary	Low	nízká
 	software backend: {reason}	softwarový backend: {reason}
 	Start studio	Spustit studio
 	Stop studio	Zastavit studio
+	Add Studio Scene	Přidat scénu studia
+	Live	Živě
 # Auto Color, Auto Contrast, Auto Levels (EffectsSDK review)
 	Auto Color	Automatická barva
 	Auto Contrast	Automatický kontrast
@@ -4668,3 +4670,29 @@ export.summary	Low	nízká
 	AS-11 Core	AS-11 Core
 	AS-11 Parts	AS-11 části
 	AS-11 UK DPP	AS-11 UK DPP
+
+# Control Surfaces settings page (CS-1, #1187)
+	Devices	Zařízení
+	Use	Použít
+	Device	Zařízení
+	MIDI	MIDI
+	HID jog/shuttle	HID jog/shuttle
+	OSC	OSC
+	Connected	Připojeno
+	Not connected	Nepřipojeno
+	Disabled	Vypnuto
+	{device} ({port})	{device} ({port})
+	{name}: {error}	{name}: {error}
+	Looking for devices…	Hledání zařízení…
+	No MIDI controller or jog/shuttle device was found. Connect one and press Refresh.	Nebyl nalezen žádný MIDI ovladač ani zařízení jog/shuttle. Jedno připojte a stiskněte Obnovit.
+	Control Surfaces	Ovládací povrchy
+	Use control surfaces (MIDI controllers, jog/shuttle devices)	Používat ovládací povrchy (MIDI ovladače, zařízení jog/shuttle)
+	Mapping controls to commands, MIDI Learn and the MIDI Monitor come in a later version; the choices here are remembered until then.	Přiřazení ovládacích prvků k příkazům, MIDI Learn a MIDI monitor přijdou v pozdější verzi; volby zde zadané se do té doby zapamatují.
+	CFA4 ShuttlePRO	CFA4 ShuttlePRO
+	Kdenlive-style ShuttlePRO	ShuttlePRO ve stylu Kdenlive
+	Generic MIDI	Obecné MIDI
+
+# LTC timecode read from clip audio (TC-7, #1285)
+	Read from LTC Audio	Načíst ze zvuku LTC
+	Find SMPTE LTC on the clip's audio and use the timecode it gives the first frame	Najít SMPTE LTC ve zvuku klipu a použít časový kód, který dává prvnímu snímku
+	Read Timecode from LTC Audio	Načíst časový kód ze zvuku LTC

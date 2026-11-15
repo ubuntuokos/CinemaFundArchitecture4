@@ -4601,6 +4601,8 @@ export.summary	Low	დაბალი
 	software backend: {reason}	პროგრამული ბექენდი: {reason}
 	Start studio	სტუდიის გაშვება
 	Stop studio	სტუდიის გაჩერება
+	Add Studio Scene	სტუდიის სცენის დამატება
+	Live	პირდაპირი
 # Auto Color, Auto Contrast, Auto Levels (EffectsSDK review)
 	Auto Color	ავტომატური ფერი
 	Auto Contrast	ავტომატური კონტრასტი
@@ -4671,3 +4673,29 @@ export.summary	Low	დაბალი
 	AS-11 Core	AS-11 Core
 	AS-11 Parts	AS-11 ნაწილები
 	AS-11 UK DPP	AS-11 UK DPP
+
+# Control Surfaces settings page (CS-1, #1187)
+	Devices	მოწყობილობები
+	Use	გამოყენება
+	Device	მოწყობილობა
+	MIDI	MIDI
+	HID jog/shuttle	HID jog/shuttle
+	OSC	OSC
+	Connected	დაკავშირებულია
+	Not connected	არ არის დაკავშირებული
+	Disabled	გამორთულია
+	{device} ({port})	{device} ({port})
+	{name}: {error}	{name}: {error}
+	Looking for devices…	მოწყობილობების ძიება…
+	No MIDI controller or jog/shuttle device was found. Connect one and press Refresh.	MIDI კონტროლერი ან jog/shuttle მოწყობილობა ვერ მოიძებნა. მიაერთეთ ერთ-ერთი და დააჭირეთ „განახლებას“.
+	Control Surfaces	მართვის ზედაპირები
+	Use control surfaces (MIDI controllers, jog/shuttle devices)	მართვის ზედაპირების გამოყენება (MIDI კონტროლერები, jog/shuttle მოწყობილობები)
+	Mapping controls to commands, MIDI Learn and the MIDI Monitor come in a later version; the choices here are remembered until then.	მართვის ელემენტების ბრძანებებზე მიბმა, MIDI Learn და MIDI მონიტორი მოგვიანებით ვერსიაში დაემატება; მანამდე აქ არჩეული პარამეტრები დაიმახსოვრება.
+	CFA4 ShuttlePRO	CFA4 ShuttlePRO
+	Kdenlive-style ShuttlePRO	Kdenlive-ის სტილის ShuttlePRO
+	Generic MIDI	ზოგადი MIDI
+
+# LTC timecode read from clip audio (TC-7, #1285)
+	Read from LTC Audio	წაკითხვა LTC ხმიდან
+	Find SMPTE LTC on the clip's audio and use the timecode it gives the first frame	კლიპის ხმაში SMPTE LTC-ის პოვნა და იმ თაიმკოდის გამოყენება, რომელსაც ის პირველ კადრს აძლევს
+	Read Timecode from LTC Audio	თაიმკოდის წაკითხვა LTC ხმიდან
