@@ -4607,6 +4607,14 @@
 	Stop studio	Studio anhalten
 	Add Studio Scene	Studioszene hinzufügen
 	Live	Live
+# Credits: title, opening, chapter and lower-third pages filled from a graphics template (F10-C16)
+	Opening Credits	Vorspann
+	Chapter Title	Kapiteltitel
+	Lower Third	Bauchbinde
+	page {page}: graphics template “{template}” was not found; “{used}” is used	Seite {page}: Grafikvorlage “{template}” wurde nicht gefunden; “{used}” wird verwendet
+	page {page}: graphics template “{template}” has no field for all of the block's text; the rest is left out	Seite {page}: Grafikvorlage “{template}” hat nicht für den ganzen Text des Blocks ein Feld; der Rest wird weggelassen
+	page {page}: template field “{control}” → “{part}” is not used (no such text control, or not head, body or tail)	Seite {page}: Vorlagenfeld “{control}” → “{part}” wird nicht verwendet (kein solches Textfeld, oder nicht Kopf, Hauptteil oder Fuß)
+	page {page}: pictures are left out on title, opening, chapter and lower-third pages	Seite {page}: auf Titel-, Vorspann-, Kapitel- und Bauchbindenseiten werden Bilder weggelassen
 # Auto Color, Auto Contrast, Auto Levels (EffectsSDK review)
 	Auto Color	Auto-Farbe
 	Auto Contrast	Auto-Kontrast
@@ -4703,3 +4711,9 @@
 	Read from LTC Audio	Aus LTC-Audio lesen
 	Find SMPTE LTC on the clip's audio and use the timecode it gives the first frame	SMPTE-LTC im Ton des Clips suchen und den Timecode verwenden, den er dem ersten Bild gibt
 	Read Timecode from LTC Audio	Timecode aus LTC-Audio lesen
+# Credits: voices (the Voice column) in the block's properties (F10-C16)
+	Voices	Stimmen
+
+# Timecode sync varispeed and user bits (TC-8, #1308)
+	Varispeed: adjust the playback speed instead of seeking	Varispeed: Wiedergabegeschwindigkeit anpassen statt zu springen
+	User bits	User Bits

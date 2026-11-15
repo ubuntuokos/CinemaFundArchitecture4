@@ -4609,6 +4609,14 @@
 	Stop studio	スタジオを停止
 	Add Studio Scene	スタジオシーンを追加
 	Live	ライブ
+# Credits: title, opening, chapter and lower-third pages filled from a graphics template (F10-C16)
+	Opening Credits	オープニングクレジット
+	Chapter Title	チャプタータイトル
+	Lower Third	ローワーサード
+	page {page}: graphics template “{template}” was not found; “{used}” is used	ページ {page}: グラフィックテンプレート“{template}”が見つかりません。“{used}”を使用します
+	page {page}: graphics template “{template}” has no field for all of the block's text; the rest is left out	ページ {page}: グラフィックテンプレート“{template}”にはブロックの全テキスト用のフィールドがありません。残りは省略します
+	page {page}: template field “{control}” → “{part}” is not used (no such text control, or not head, body or tail)	ページ {page}: テンプレートフィールド“{control}”→“{part}”は使用されません（そのテキストコントロールがないか、ヘッド・本文・テールではありません）
+	page {page}: pictures are left out on title, opening, chapter and lower-third pages	ページ {page}: タイトル、オープニング、チャプター、ローワーサードのページでは画像を省略します
 # Auto Color, Auto Contrast, Auto Levels (EffectsSDK review)
 	Auto Color	自動カラー
 	Auto Contrast	自動コントラスト
@@ -4705,3 +4713,9 @@
 	Read from LTC Audio	LTC オーディオから読み取り
 	Find SMPTE LTC on the clip's audio and use the timecode it gives the first frame	クリップのオーディオから SMPTE LTC を探し、最初のフレームに対応するタイムコードを使用します
 	Read Timecode from LTC Audio	LTC オーディオからタイムコードを読み取り
+# Credits: voices (the Voice column) in the block's properties (F10-C16)
+	Voices	声の出演
+
+# Timecode sync varispeed and user bits (TC-8, #1308)
+	Varispeed: adjust the playback speed instead of seeking	バリスピード：シークせずに再生速度を調整する
+	User bits	ユーザービット

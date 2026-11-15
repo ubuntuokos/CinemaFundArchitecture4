@@ -4600,6 +4600,14 @@ export.summary	Low	thấp
 	Stop studio	Dừng phòng thu
 	Add Studio Scene	Thêm cảnh studio
 	Live	Trực tiếp
+# Credits: title, opening, chapter and lower-third pages filled from a graphics template (F10-C16)
+	Opening Credits	Phần mở đầu
+	Chapter Title	Tiêu đề chương
+	Lower Third	Dải chữ dưới
+	page {page}: graphics template “{template}” was not found; “{used}” is used	trang {page}: không tìm thấy mẫu đồ họa “{template}”; dùng “{used}”
+	page {page}: graphics template “{template}” has no field for all of the block's text; the rest is left out	trang {page}: mẫu đồ họa “{template}” không có trường cho toàn bộ văn bản của khối; phần còn lại bị bỏ
+	page {page}: template field “{control}” → “{part}” is not used (no such text control, or not head, body or tail)	trang {page}: trường mẫu “{control}” → “{part}” không được dùng (không có điều khiển văn bản đó, hoặc không phải đầu, thân hay đuôi)
+	page {page}: pictures are left out on title, opening, chapter and lower-third pages	trang {page}: hình ảnh bị bỏ trên các trang tiêu đề, phần mở đầu, chương và dải chữ dưới
 # Auto Color, Auto Contrast, Auto Levels (EffectsSDK review)
 	Auto Color	Màu tự động
 	Auto Contrast	Tương phản tự động
@@ -4696,3 +4704,9 @@ export.summary	Low	thấp
 	Read from LTC Audio	Đọc từ âm thanh LTC
 	Find SMPTE LTC on the clip's audio and use the timecode it gives the first frame	Tìm SMPTE LTC trong âm thanh của clip và dùng mã thời gian mà nó gán cho khung hình đầu tiên
 	Read Timecode from LTC Audio	Đọc mã thời gian từ âm thanh LTC
+# Credits: voices (the Voice column) in the block's properties (F10-C16)
+	Voices	Giọng lồng tiếng
+
+# Timecode sync varispeed and user bits (TC-8, #1308)
+	Varispeed: adjust the playback speed instead of seeking	Varispeed: điều chỉnh tốc độ phát thay vì nhảy
+	User bits	Bit người dùng

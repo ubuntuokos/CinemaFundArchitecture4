@@ -4603,6 +4603,14 @@ export.summary	Low	ниско
 	Stop studio	Спиране на студиото
 	Add Studio Scene	Добавяне на студийна сцена
 	Live	На живо
+# Credits: title, opening, chapter and lower-third pages filled from a graphics template (F10-C16)
+	Opening Credits	Начални надписи
+	Chapter Title	Заглавие на глава
+	Lower Third	Долен надпис
+	page {page}: graphics template “{template}” was not found; “{used}” is used	страница {page}: графичният шаблон „{template}“ не е намерен; използва се „{used}“
+	page {page}: graphics template “{template}” has no field for all of the block's text; the rest is left out	страница {page}: графичният шаблон „{template}“ няма поле за целия текст на блока; останалото се пропуска
+	page {page}: template field “{control}” → “{part}” is not used (no such text control, or not head, body or tail)	страница {page}: полето на шаблона „{control}“ → „{part}“ не се използва (няма такава текстова контрола или не е глава, тяло или опашка)
+	page {page}: pictures are left out on title, opening, chapter and lower-third pages	страница {page}: картините се пропускат на страниците със заглавие, начални надписи, глава и долен надпис
 # Auto Color, Auto Contrast, Auto Levels (EffectsSDK review)
 	Auto Color	Автоматичен цвят
 	Auto Contrast	Автоматичен контраст
@@ -4699,3 +4707,9 @@ export.summary	Low	ниско
 	Read from LTC Audio	Четене от LTC звук
 	Find SMPTE LTC on the clip's audio and use the timecode it gives the first frame	Търсене на SMPTE LTC в звука на клипа и използване на времевия код, който той дава на първия кадър
 	Read Timecode from LTC Audio	Четене на времеви код от LTC звук
+# Credits: voices (the Voice column) in the block's properties (F10-C16)
+	Voices	Гласове
+
+# Timecode sync varispeed and user bits (TC-8, #1308)
+	Varispeed: adjust the playback speed instead of seeking	Varispeed: настройване на скоростта на възпроизвеждане вместо прескачане
+	User bits	Потребителски битове

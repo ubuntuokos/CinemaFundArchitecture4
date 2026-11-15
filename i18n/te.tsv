@@ -4606,6 +4606,14 @@ export.summary	Low	తక్కువ
 	Stop studio	స్టూడియోను ఆపు
 	Add Studio Scene	స్టూడియో దృశ్యాన్ని జోడించు
 	Live	ప్రత్యక్షం
+# Credits: title, opening, chapter and lower-third pages filled from a graphics template (F10-C16)
+	Opening Credits	ప్రారంభ క్రెడిట్స్
+	Chapter Title	అధ్యాయ శీర్షిక
+	Lower Third	లోయర్ థర్డ్
+	page {page}: graphics template “{template}” was not found; “{used}” is used	పేజీ {page}: గ్రాఫిక్స్ టెంప్లేట్ “{template}” కనబడలేదు; “{used}” వాడబడుతుంది
+	page {page}: graphics template “{template}” has no field for all of the block's text; the rest is left out	పేజీ {page}: గ్రాఫిక్స్ టెంప్లేట్ “{template}”లో బ్లాక్ మొత్తం వచనానికి ఫీల్డ్ లేదు; మిగిలినది వదిలివేయబడింది
+	page {page}: template field “{control}” → “{part}” is not used (no such text control, or not head, body or tail)	పేజీ {page}: టెంప్లేట్ ఫీల్డ్ “{control}” → “{part}” వాడబడదు (అటువంటి వచన నియంత్రణ లేదు, లేదా అది హెడ్, బాడీ లేదా టెయిల్ కాదు)
+	page {page}: pictures are left out on title, opening, chapter and lower-third pages	పేజీ {page}: శీర్షిక, ప్రారంభ, అధ్యాయ మరియు లోయర్ థర్డ్ పేజీలలో చిత్రాలు వదిలివేయబడతాయి
 # Auto Color, Auto Contrast, Auto Levels (EffectsSDK review)
 	Auto Color	స్వయంచాలక రంగు
 	Auto Contrast	స్వయంచాలక కాంట్రాస్ట్
@@ -4702,3 +4710,9 @@ export.summary	Low	తక్కువ
 	Read from LTC Audio	LTC ఆడియో నుండి చదువు
 	Find SMPTE LTC on the clip's audio and use the timecode it gives the first frame	క్లిప్ ఆడియోలో SMPTE LTC‌ను కనుగొని అది మొదటి ఫ్రేమ్‌కు ఇచ్చే టైమ్‌కోడ్‌ను ఉపయోగించు
 	Read Timecode from LTC Audio	LTC ఆడియో నుండి టైమ్‌కోడ్ చదువు
+# Credits: voices (the Voice column) in the block's properties (F10-C16)
+	Voices	గొంతులు
+
+# Timecode sync varispeed and user bits (TC-8, #1308)
+	Varispeed: adjust the playback speed instead of seeking	Varispeed: దాటవేయడానికి బదులు ప్లేబ్యాక్ వేగాన్ని సర్దుబాటు చేయి
+	User bits	వినియోగదారు బిట్‌లు

@@ -4601,6 +4601,14 @@ export.summary	Low	düşük
 	Stop studio	Stüdyoyu durdur
 	Add Studio Scene	Stüdyo sahnesi ekle
 	Live	Canlı
+# Credits: title, opening, chapter and lower-third pages filled from a graphics template (F10-C16)
+	Opening Credits	Açılış jeneriği
+	Chapter Title	Bölüm başlığı
+	Lower Third	Alt bant
+	page {page}: graphics template “{template}” was not found; “{used}” is used	sayfa {page}: “{template}” grafik şablonu bulunamadı; “{used}” kullanılıyor
+	page {page}: graphics template “{template}” has no field for all of the block's text; the rest is left out	sayfa {page}: “{template}” grafik şablonunda bloğun tüm metni için alan yok; kalanı çıkarıldı
+	page {page}: template field “{control}” → “{part}” is not used (no such text control, or not head, body or tail)	sayfa {page}: “{control}” → “{part}” şablon alanı kullanılmıyor (böyle bir metin denetimi yok ya da başlık, gövde veya kuyruk değil)
+	page {page}: pictures are left out on title, opening, chapter and lower-third pages	sayfa {page}: başlık, açılış jeneriği, bölüm ve alt bant sayfalarında resimler çıkarılır
 # Auto Color, Auto Contrast, Auto Levels (EffectsSDK review)
 	Auto Color	Otomatik Renk
 	Auto Contrast	Otomatik Kontrast
@@ -4697,3 +4705,9 @@ export.summary	Low	düşük
 	Read from LTC Audio	LTC sesinden oku
 	Find SMPTE LTC on the clip's audio and use the timecode it gives the first frame	Klibin sesinde SMPTE LTC bul ve ilk kareye verdiği zaman kodunu kullan
 	Read Timecode from LTC Audio	Zaman kodunu LTC sesinden oku
+# Credits: voices (the Voice column) in the block's properties (F10-C16)
+	Voices	Sesler
+
+# Timecode sync varispeed and user bits (TC-8, #1308)
+	Varispeed: adjust the playback speed instead of seeking	Varispeed: atlamak yerine oynatma hızını ayarla
+	User bits	Kullanıcı bitleri

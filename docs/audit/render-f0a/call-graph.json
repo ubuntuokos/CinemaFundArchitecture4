@@ -6272,12 +6272,22 @@
   },
   {
    "from": "cfa4-cli/probe.rs",
+   "item": "MediaInfo",
+   "to": "cfa4-media"
+  },
+  {
+   "from": "cfa4-cli/probe.rs",
    "item": "MediaSource",
    "to": "cfa4-media"
   },
   {
    "from": "cfa4-cli/probe.rs",
    "item": "open_with_fallback",
+   "to": "cfa4-media"
+  },
+  {
+   "from": "cfa4-cli/probe.rs",
+   "item": "reader",
    "to": "cfa4-media"
   },
   {
@@ -9563,6 +9573,11 @@
   {
    "from": "cfa4-engine/smart_cut.rs",
    "item": "SharedReader",
+   "to": "cfa4-media"
+  },
+  {
+   "from": "cfa4-engine/smart_cut.rs",
+   "item": "reader",
    "to": "cfa4-media"
   },
   {

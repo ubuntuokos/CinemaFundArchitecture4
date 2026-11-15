@@ -4600,6 +4600,14 @@ export.summary	Low	niska
 	Stop studio	Zatrzymaj studio
 	Add Studio Scene	Dodaj scenę studia
 	Live	Na żywo
+# Credits: title, opening, chapter and lower-third pages filled from a graphics template (F10-C16)
+	Opening Credits	Napisy początkowe
+	Chapter Title	Tytuł rozdziału
+	Lower Third	Belka dolna
+	page {page}: graphics template “{template}” was not found; “{used}” is used	strona {page}: nie znaleziono szablonu graficznego „{template}”; używany jest „{used}”
+	page {page}: graphics template “{template}” has no field for all of the block's text; the rest is left out	strona {page}: szablon graficzny „{template}” nie ma pola na cały tekst bloku; reszta jest pomijana
+	page {page}: template field “{control}” → “{part}” is not used (no such text control, or not head, body or tail)	strona {page}: pole szablonu „{control}” → „{part}” nie jest używane (brak takiej kontrolki tekstu albo to nie nagłówek, treść ani stopka)
+	page {page}: pictures are left out on title, opening, chapter and lower-third pages	strona {page}: obrazy są pomijane na stronach tytułu, napisów początkowych, rozdziału i belki dolnej
 # Auto Color, Auto Contrast, Auto Levels (EffectsSDK review)
 	Auto Color	Automatyczny kolor
 	Auto Contrast	Automatyczny kontrast
@@ -4696,3 +4704,9 @@ export.summary	Low	niska
 	Read from LTC Audio	Odczytaj z dźwięku LTC
 	Find SMPTE LTC on the clip's audio and use the timecode it gives the first frame	Znajdź SMPTE LTC w dźwięku klipu i użyj kodu czasowego, który daje on pierwszej klatce
 	Read Timecode from LTC Audio	Odczytaj kod czasowy z dźwięku LTC
+# Credits: voices (the Voice column) in the block's properties (F10-C16)
+	Voices	Głosy
+
+# Timecode sync varispeed and user bits (TC-8, #1308)
+	Varispeed: adjust the playback speed instead of seeking	Varispeed: dostosuj prędkość odtwarzania zamiast przeskakiwać
+	User bits	Bity użytkownika

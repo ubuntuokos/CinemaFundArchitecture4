@@ -89,8 +89,11 @@ Replies on stdout, one per request, in order: `{"id": 7, "ok": true, "result": â
 bytes. Lines with an `event` key and no `id` are notifications:
 `projectChanged {revision}`, `toast {message, error}`, `openSequence {item}`, `openSource {item}`,
 `revealInProject {item}`, and while external timecode sync chases (Settings â–¸ Timecode Sync)
-`timecodeSync.locate {time, seconds, play}` (go to `time` and play or hold) and
-`timecodeSync.stop`. A line that is not a request gets an error reply with `id: null`; a
+`timecodeSync.locate {time, seconds, play}` (go to `time` and play or hold),
+`timecodeSync.speed {speed}` (varispeed: play on at `speed`, within 2 % of the external clock's;
+only a running player follows it) and `timecodeSync.stop`. `timecodeSync.status` also carries
+`userBits` (the user bits of the LTC or MTC being read, eight hex digits, group 8 first; `null`
+without a signal), which the status bar shows in pairs. A line that is not a request gets an error reply with `id: null`; a
 line longer than 4 MiB is skipped with an error reply.
 
 | Method | Params | Result |

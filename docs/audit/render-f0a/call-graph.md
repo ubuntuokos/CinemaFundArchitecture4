@@ -122,7 +122,7 @@ graph LR
 | `cfa4-cli/main.rs` | `cfa4-project` | `ItemId`, `Project` |
 | `cfa4-cli/main.rs` | `cfa4-render` | `Image`, `RenderOptions`, `SourceProvider` |
 | `cfa4-cli/main.rs` | `cfa4-time` | `Tick` |
-| `cfa4-cli/probe.rs` | `cfa4-media` | `MediaSource`, `open_with_fallback`, `sequence`, `wav` |
+| `cfa4-cli/probe.rs` | `cfa4-media` | `MediaInfo`, `MediaSource`, `open_with_fallback`, `reader`, `sequence`, `wav` |
 | `cfa4-cli/probe.rs` | `cfa4-time` | `FrameRate` |
 | `cfa4-cli/qc.rs` | `cfa4-qc` | `Expectation`, `check_file_with_outputs`, `profile`, `report` |
 | `cfa4-cli/serve.rs` | `cfa4-audio-dsp` | `LoudnessMeter`, `channels` |
@@ -374,7 +374,7 @@ graph LR
 | `cfa4-engine/settings.rs` | `cfa4-time` | `FrameRate` |
 | `cfa4-engine/shortcuts.rs` | `cfa4-project` | `legacy` |
 | `cfa4-engine/smart_cut.rs` | `cfa4-export` | `audio_copy`, `boundary_reencode`, `smart_cut` |
-| `cfa4-engine/smart_cut.rs` | `cfa4-media` | `SharedReader` |
+| `cfa4-engine/smart_cut.rs` | `cfa4-media` | `SharedReader`, `reader` |
 | `cfa4-engine/smart_cut.rs` | `cfa4-project` | `ItemKind` |
 | `cfa4-engine/smart_cut.rs` | `cfa4-smart-edit` | `av1_index`, `capabilities`, `copy_planner`, `h264_index`, `hevc_index`, `media_index`, `plan`, `timestamp` |
 | `cfa4-engine/smart_cut.rs` | `cfa4-time` | `FrameRate` |

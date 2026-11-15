@@ -1431,6 +1431,7 @@ static CATEGORIES: &[Category] = &[
                     sub("timecodeSync.source", "Source", Kind::Choice(crate::timecode_sync::SOURCES), "timecodeSync.chase", true),
                     sub("timecodeSync.lockFrames", "Lock after", int(1.0, 30.0, "frames"), "timecodeSync.chase", true),
                     sub("timecodeSync.freewheelFrames", "Keep playing without signal for", int(2.0, 300.0, "frames"), "timecodeSync.chase", true),
+                    sub("timecodeSync.varispeed", "Varispeed: adjust the playback speed instead of seeking", Kind::Bool, "timecodeSync.chase", true),
                 ],
             ),
             Row::Group(

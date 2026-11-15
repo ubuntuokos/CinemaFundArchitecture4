@@ -115,6 +115,7 @@ where
     let (mut all, mut mono, mut obs) = (Vec::new(), Vec::new(), Vec::new());
     let stream_error = error.clone();
     let data_tx = tx.clone();
+    let mut user_bits_sent = None;
     dev.build_input_stream(
         config,
         move |data: &[T], info: &cpal::InputCallbackInfo| {
@@ -130,6 +131,12 @@ where
             reader.push(&mono, end, &mut obs);
             for o in &obs {
                 let _ = data_tx.send(Input::Frame(*o));
+            }
+            if let Some(ub) = reader.user_bits()
+                && user_bits_sent != Some(ub)
+            {
+                user_bits_sent = Some(ub);
+                let _ = data_tx.send(Input::UserBits(ub));
             }
         },
         move |e| {

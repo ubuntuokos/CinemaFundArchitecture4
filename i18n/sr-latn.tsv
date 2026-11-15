@@ -4602,6 +4602,14 @@ export.summary	Low	nizak
 	Stop studio	Zaustavi studio
 	Add Studio Scene	Dodaj scenu studija
 	Live	Uživo
+# Credits: title, opening, chapter and lower-third pages filled from a graphics template (F10-C16)
+	Opening Credits	Uvodna špica
+	Chapter Title	Naslov poglavlja
+	Lower Third	Donji natpis
+	page {page}: graphics template “{template}” was not found; “{used}” is used	stranica {page}: grafički šablon „{template}” nije pronađen; koristi se „{used}”
+	page {page}: graphics template “{template}” has no field for all of the block's text; the rest is left out	stranica {page}: grafički šablon „{template}” nema polje za sav tekst bloka; ostatak se izostavlja
+	page {page}: template field “{control}” → “{part}” is not used (no such text control, or not head, body or tail)	stranica {page}: polje šablona „{control}” → „{part}” se ne koristi (nema takve tekstualne kontrole ili nije zaglavlje, telo ili rep)
+	page {page}: pictures are left out on title, opening, chapter and lower-third pages	stranica {page}: slike se izostavljaju na stranicama naslova, uvodne špice, poglavlja i donjeg natpisa
 # Auto Color, Auto Contrast, Auto Levels (EffectsSDK review)
 	Auto Color	Automatska boja
 	Auto Contrast	Automatski kontrast
@@ -4698,3 +4706,9 @@ export.summary	Low	nizak
 	Read from LTC Audio	Čitaj iz LTC zvuka
 	Find SMPTE LTC on the clip's audio and use the timecode it gives the first frame	Pronađi SMPTE LTC u zvuku klipa i upotrebi vremenski kod koji daje prvom kadru
 	Read Timecode from LTC Audio	Čitaj vremenski kod iz LTC zvuka
+# Credits: voices (the Voice column) in the block's properties (F10-C16)
+	Voices	Glasovi
+
+# Timecode sync varispeed and user bits (TC-8, #1308)
+	Varispeed: adjust the playback speed instead of seeking	Varispeed: prilagodi brzinu reprodukcije umesto preskakanja
+	User bits	Korisnički bitovi

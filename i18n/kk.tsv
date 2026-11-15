@@ -4602,6 +4602,14 @@ export.summary	Low	төмен
 	Stop studio	Студияны тоқтату
 	Add Studio Scene	Студия сахнасын қосу
 	Live	Тікелей
+# Credits: title, opening, chapter and lower-third pages filled from a graphics template (F10-C16)
+	Opening Credits	Бастапқы титрлер
+	Chapter Title	Тарау атауы
+	Lower Third	Төменгі жолақ
+	page {page}: graphics template “{template}” was not found; “{used}” is used	{page}-бет: «{template}» графикалық үлгісі табылмады; «{used}» қолданылады
+	page {page}: graphics template “{template}” has no field for all of the block's text; the rest is left out	{page}-бет: «{template}» графикалық үлгісінде блоктың барлық мәтініне өріс жоқ; қалғаны алынып тасталды
+	page {page}: template field “{control}” → “{part}” is not used (no such text control, or not head, body or tail)	{page}-бет: «{control}» → «{part}» үлгі өрісі қолданылмайды (мұндай мәтін басқару элементі жоқ немесе ол тақырып, негізгі мәтін не соңғы бөлік емес)
+	page {page}: pictures are left out on title, opening, chapter and lower-third pages	{page}-бет: тақырып, бастапқы титр, тарау және төменгі жолақ беттерінде суреттер алынып тасталады
 # Auto Color, Auto Contrast, Auto Levels (EffectsSDK review)
 	Auto Color	Автоматты түс
 	Auto Contrast	Автоматты контраст
@@ -4698,3 +4706,9 @@ export.summary	Low	төмен
 	Read from LTC Audio	LTC дыбысынан оқу
 	Find SMPTE LTC on the clip's audio and use the timecode it gives the first frame	Клип дыбысынан SMPTE LTC тауып, оның бірінші кадрға беретін уақыт кодын пайдалану
 	Read Timecode from LTC Audio	Уақыт кодын LTC дыбысынан оқу
+# Credits: voices (the Voice column) in the block's properties (F10-C16)
+	Voices	Дауыстар
+
+# Timecode sync varispeed and user bits (TC-8, #1308)
+	Varispeed: adjust the playback speed instead of seeking	Varispeed: секіру орнына ойнату жылдамдығын реттеу
+	User bits	Пайдаланушы биттері
