@@ -1,6 +1,6 @@
 # cfa4-cinema-pkg
 
-Identifiers and names of digital cinema and IMF packages (CINECERT WP08 and WP09 of
+Identifiers and names of digital cinema and IMF packages (CINECERT WP08, WP09 and WP13 of
 [`docs/plans/CFA4-CINECERT-001-v2.3.md`](../../docs/plans/CFA4-CINECERT-001-v2.3.md)). Layer L1, no
 `unsafe`, no panics on malformed input.
 
@@ -85,3 +85,30 @@ chain are not judged; known ones must follow the registry order.
 The export (`cfa4-export`, folder name) and the validator (`cfa4-dcp-validate`, `DCP.NAME.001`)
 keep their own naming code for now; moving them onto this checker is for their owners
 (PROCODEC-002, DCP-VALIDATION).
+
+## Delivery and DCP drives (WP13)
+
+`delivery::deliver(package_dir, target)` copies a finished package so that a damaged or partial
+copy can never pass for a complete one:
+
+- file names are checked first (`check_names`: ASCII `A-Z a-z 0-9 . _ -`, no spaces, at most 255
+  bytes); symbolic links are refused. A package that fails is not copied at all;
+- files go, in sorted order, into `NAME.INCOMPLETE/`, each written under a temporary name,
+  synced, renamed and read back; its SHA-256 must equal the source's;
+- the manifest `NAME.sha256` (`sha256sum` format, sorted) is written, and `NAME.INCOMPLETE` is
+  renamed to `NAME` as the last step. An existing `NAME` is never overwritten;
+- after a failure or a cancel (`deliver_with` asks a callback before every 1 MiB step), running it
+  again resumes: files recorded as verified are checked again and kept, the rest is copied.
+
+`delivery::verify(package, manifest)` lists missing, changed and unexpected files. The tests
+interrupt a delivery, damage a verified file before resuming, damage a delivered package, and
+compare every delivered byte with the source (the WP13 gate).
+
+`drive::inspect(reader)` reads a disk image or a read-only opened block device and compares it
+with the ISDCF drive recommendation: MBR, one Linux (0x83) partition, ext2 or ext3, 128-byte
+inodes. It never writes; `drive::format_hint` gives the `mkfs.ext3 -I 128` command for the
+operator. Tested on synthetic images and, where `mkfs.ext2/3/4` are installed, real ones.
+
+Still open in WP13: the provenance report and optional BagIt archive packaging, and multi-volume
+DCPs (`VOLINDEX`, `ASSETMAP` `VolumeCount`; the latter changes the export writers, so it is agreed
+with PROCODEC-002 first).

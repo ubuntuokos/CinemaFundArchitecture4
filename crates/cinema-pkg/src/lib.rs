@@ -12,6 +12,11 @@
 //! - [`isdcf`]: an offline snapshot of the ISDCF metadata registries and a checker / builder for
 //!   names that follow the ISDCF Digital Cinema Naming Convention (CINECERT WP09).
 //!
+//! - [`delivery`]: verified copy of a finished package to its delivery target, marked incomplete
+//!   until every file is read back and matches, resumable, with a deterministic SHA-256 manifest;
+//!   [`drive`]: a read-only check of a DCP delivery drive (MBR, ext2/ext3, 128-byte inodes)
+//!   (CINECERT WP13).
+//!
 //! MXF-DIGEST and VTFP follow the draft memos published by CineCert for the HPA (`README.md` names the revisions).
 //! They are implemented from the memos' text; the memos' own test material is the test oracle.
 //!
@@ -21,6 +26,8 @@
 #![cfg_attr(not(test), deny(clippy::unwrap_used, clippy::expect_used, clippy::panic, clippy::unimplemented, clippy::todo, clippy::unreachable))]
 
 mod base58;
+pub mod delivery;
+pub mod drive;
 pub mod isdcf;
 pub mod mxf_digest;
 pub mod vtfp;
@@ -58,6 +65,12 @@ pub enum Error {
     /// The ISDCF registry snapshot, or a registry checkout being reduced to one, is unusable.
     #[error("ISDCF registry: {0}")]
     Registry(String),
+    /// A delivery cannot start or did not complete; the target stays marked incomplete.
+    #[error("delivery: {0}")]
+    Delivery(String),
+    /// The caller stopped a delivery; the target stays marked incomplete and can be resumed.
+    #[error("delivery cancelled")]
+    Cancelled,
 }
 
 /// Result type of this crate.

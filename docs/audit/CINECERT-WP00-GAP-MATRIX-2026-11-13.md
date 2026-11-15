@@ -77,7 +77,7 @@ Gazda: melyik jóváhagyott terv vagy issue viszi ma.
 | WP10 | titkosítás, aláírás, KDM | P / C | `crates/dcp/src/kdm.rs` (ST 430-1/-3 nyitás, RSA-OAEP); `crates/mxf/src/crypt.rs` (visszafejtés); nyitott: #1076 (KDM-aláírás), #1084, #1086 | titkosított írás, KDM-kiadás, XML-aláírás készítése | G2 (olvasás); írás: senki, D3 és PROCODEC-002 ellentétes (2. pont) |
 | WP11 | QC-motor | P | DCP: `cfa4-dcp-validate` 8 profil, `cfa4-dcp-report/1`; IMF: Photon-orákulum a tesztekben | natív IMF QC | DCP: DCP-VALIDATION; IMF: PROCODEC-002 5b |
 | WP12 | Qt6 / CLI | P | Qt IAB DCP export (#343); KDM-párbeszéd PR-ok | DCP/IMF inspect és QC panel | több projekt; D4 |
-| WP13 | átadás, archiválás | M | `VOLINDEX` egy kötetre íródik (`dcp_out.rs`, `imf_out.rs`) | ISDCF meghajtó, több kötet, provenance | **CineCert** |
+| WP13 | átadás, archiválás | P | `crates/cinema-pkg` `delivery` és `drive` (2026-11-15): ellenőrzött, folytatható átadás `.INCOMPLETE` jelöléssel és SHA-256 manifesttel, fájlnév-ellenőrzés, DCP-meghajtó ellenőrzése (MBR, ext2/ext3, 128 bájtos inode; formázás nélkül); `VOLINDEX` egy kötetre íródik (`dcp_out.rs`, `imf_out.rs`) | provenance-riport és BagIt (WP13-B); több kötet (az exportot érinti, PROCODEC-002-vel egyeztetni) | **CineCert** |
 | WP14 | kiadás, CI | – | a repó egészének csomagolása és CI-je (`AGENTS.md`) | nincs külön CineCert-teendő | repó |
 | WP15 | feliratok | P | `crates/captions/src/dcst.rs` (ST 428-7 2007/2010/2014 olvasás), TTML/IMSC1, ST 429-5 olvasás | ST 428-7 írás, Interop CineCanvas, CCAP (ST 429-12), IMSC1 Image | PROCODEC-002 |
 | WP16 | IMF App 2E / HDR / HTJ2K | P | HTJ2K dekódolás; App 2E 10 bit BT.709 export; #1113 | PQ/HLG, ST 2086, MaxCLL/MaxFALL, SCM (ST 2067-9) | PROCODEC-002 4/5b |
