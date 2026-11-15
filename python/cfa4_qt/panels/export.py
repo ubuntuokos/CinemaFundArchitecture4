@@ -111,7 +111,12 @@ FORMAT_CHOICES: tuple[tuple[str, str, str, tuple[tuple[str, str], ...]], ...] = 
     ("proresProfile", N_("Profile"), "export.video.proresProfile", (
         ("proxy", "Apple ProRes 422 Proxy"), ("lt", "Apple ProRes 422 LT"), ("standard", "Apple ProRes 422"),
         ("hq", "Apple ProRes 422 HQ"), ("4444", "Apple ProRes 4444"), ("4444xq", "Apple ProRes 4444 XQ"))),
-    ("dnxProfile", N_("Profile"), "export.video.dnxProfile", (("lb", "DNxHR LB"), ("sq", "DNxHR SQ"), ("hq", "DNxHR HQ"), ("hqx", "DNxHR HQX (10-bit)"))),
+    ("dnxProfile", N_("Profile"), "export.video.dnxProfile", (
+        ("lb", "DNxHR LB"), ("sq", "DNxHR SQ"), ("hq", "DNxHR HQ"), ("hqx", "DNxHR HQX (10-bit)"),
+        ("hd1235", "DNxHD 1080p 10-bit (CID 1235)"), ("hd1238", "DNxHD 1080p 8-bit (CID 1238)"),
+        ("hd1237", "DNxHD 1080p 8-bit (CID 1237)"), ("hd1253", "DNxHD 1080p 36 (CID 1253)"),
+        ("hd1250", "DNxHD 720p 10-bit (CID 1250)"), ("hd1251", "DNxHD 720p 8-bit (CID 1251)"),
+        ("hd1252", "DNxHD 720p 8-bit (CID 1252)"))),
     ("apvProfile", N_("Profile"), "export.video.apvProfile", (("422-10", "APV 422-10"), ("422-12", "APV 422-12"), ("444-10", "APV 444-10"), ("444-12", "APV 444-12"))),
     ("cineformProfile", N_("Encoding"), "export.video.cineformProfile", (("422", "YUV 4:2:2 10-bit"), ("444", "RGB 4:4:4 12-bit"), ("4444", "RGBA 4:4:4:4 12-bit"))),
     ("cineformQuality", N_("Quality"), "export.video.cineformQuality", (

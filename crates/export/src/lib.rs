@@ -2064,21 +2064,32 @@ fn prores_factory(format: Format, w: u32, h: u32, rate: FrameRate, s: &ExportSet
     })
 }
 
-/// The DNxHR profile named by [`ExportSettings::dnx_profile`].
+/// The DNxHR or DNxHD profile named by [`ExportSettings::dnx_profile`]: `lb`, `sq`, `hq`,
+/// `hqx`, or a 4:2:2 DNxHD compression ID as `hd1235`, `hd1237`, `hd1238`, `hd1250`, `hd1251`,
+/// `hd1252`, `hd1253` (each codes one raster).
 pub fn dnx_profile(name: &str) -> cfa4_dnx::Profile {
     use cfa4_dnx::Profile;
     match name.to_ascii_lowercase().as_str() {
         "lb" => Profile::Lb,
         "sq" => Profile::Sq,
         "hqx" => Profile::Hqx,
+        "hd1235" => Profile::Hd1235,
+        "hd1237" => Profile::Hd1237,
+        "hd1238" => Profile::Hd1238,
+        "hd1250" => Profile::Hd1250,
+        "hd1251" => Profile::Hd1251,
+        "hd1252" => Profile::Hd1252,
+        "hd1253" => Profile::Hd1253,
         _ => Profile::Hq,
     }
 }
 
-/// DNxHR encoder (RGBA8 or HDR floats → BT.709 / BT.2020 limited-range 4:2:2; 8-bit for
-/// LB/SQ/HQ, 10-bit for HQX).
+/// DNxHR / DNxHD encoder (RGBA8 or HDR floats → BT.709 / BT.2020 limited-range 4:2:2; 8-bit
+/// for LB/SQ/HQ and the 8-bit DNxHD IDs, 10-bit for HQX and CIDs 1235 / 1250). QuickTime calls
+/// DNxHD `AVdn` and DNxHR `AVdh`.
 struct DnxEncoder {
     enc: cfa4_dnx::Encoder,
+    fourcc: [u8; 4],
     w: u32,
     h: u32,
     rate: FrameRate,
@@ -2087,7 +2098,7 @@ struct DnxEncoder {
 
 impl VideoEncoder for DnxEncoder {
     fn sample_entry(&self) -> SampleEntry {
-        let mut e = SampleEntry::dnx(cfa4_isobmff::FourCc(*b"AVdh"), self.w as u16, self.h as u16);
+        let mut e = SampleEntry::dnx(cfa4_isobmff::FourCc(self.fourcc), self.w as u16, self.h as u16);
         self.signal.apply_to(&mut e, true);
         e
     }
@@ -2114,12 +2125,22 @@ impl VideoEncoder for DnxEncoder {
 
 fn dnx_factory(format: Format, w: u32, h: u32, rate: FrameRate, s: &ExportSettings) -> Option<Result<Box<dyn VideoEncoder>>> {
     (format == Format::DnxHr).then(|| {
-        let mut cfg = cfa4_dnx::EncoderConfig::new(dnx_profile(&s.dnx_profile), w, h);
+        let profile = dnx_profile(&s.dnx_profile);
+        if let Some((rw, rh, _)) = profile.hd_raster()
+            && (rw, rh) != (w, h)
+        {
+            return Err(ExportError::Unsupported(format!(
+                "{} codes only {rw}×{rh} pictures, not {w}×{h}: set the output size to {rw}×{rh} or choose a DNxHR profile",
+                profile.name()
+            )));
+        }
+        let fourcc = if profile.hd_raster().is_some() { *b"AVdn" } else { *b"AVdh" };
+        let mut cfg = cfa4_dnx::EncoderConfig::new(profile, w, h);
         if s.signal.primaries == 9 {
             cfg.color_volume = cfa4_dnx::ColorVolume::Bt2020Ncl;
         }
         let enc = cfa4_dnx::Encoder::with_config(cfg).map_err(|e| ExportError::Encode(e.to_string()))?;
-        Ok(Box::new(DnxEncoder { enc, w, h, rate, signal: s.signal }) as Box<dyn VideoEncoder>)
+        Ok(Box::new(DnxEncoder { enc, fourcc, w, h, rate, signal: s.signal }) as Box<dyn VideoEncoder>)
     })
 }
 
