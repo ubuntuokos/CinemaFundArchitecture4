@@ -135,8 +135,8 @@ graph LR
 | `cfa4-cli/serve_graphics.rs` | `cfa4-engine` | `Session` |
 | `cfa4-cli/serve_graphics.rs` | `cfa4-project` | `ClipId`, `graphic`, `gtemplate` |
 | `cfa4-cli/serve_graphics.rs` | `cfa4-time` | `Tick` |
-| `cfa4-cli/serve_live.rs` | `cfa4-engine` | `Session`, `studio` |
-| `cfa4-cli/serve_live.rs` | `cfa4-project` | `LiveStudio`, `StudioScene` |
+| `cfa4-cli/serve_live.rs` | `cfa4-engine` | `Session`, `live`, `studio` |
+| `cfa4-cli/serve_live.rs` | `cfa4-project` | `SourceKind` |
 | `cfa4-cli/serve_lumetri.rs` | `cfa4-engine` | `Session` |
 | `cfa4-cli/serve_lumetri.rs` | `cfa4-project` | `ClipId`, `Param` |
 | `cfa4-cli/serve_lumetri.rs` | `cfa4-render` | `effects`, `lumetri_presets`, `luts` |
@@ -169,6 +169,8 @@ graph LR
 | `cfa4-cli/settings_cmd.rs` | `cfa4-engine` | `Session`, `autosave` |
 | `cfa4-cli/settings_cmd.rs` | `cfa4-media` | `backend_enabled`, `set_backend_enabled` |
 | `cfa4-cli/settings_cmd.rs` | `cfa4-route` | `Backend`, `DeviceId`, `Error`, `Preferences`, `catalog`, `coverage`, `probe` |
+| `cfa4-cli/studio_feeds.rs` | `cfa4-media` | `FrameRequest`, `MediaSource` |
+| `cfa4-cli/studio_feeds.rs` | `cfa4-time` | `FrameRate`, `TICKS_PER_SECOND`, `Tick` |
 | `cfa4-engine/aaf_omf.rs` | `cfa4-export` | `ExportSettings`, `Format`, `OutputSink`, `export` |
 | `cfa4-engine/aaf_omf.rs` | `cfa4-project` | `ClipId` |
 | `cfa4-engine/aaf_omf.rs` | `cfa4-time` | `Tick` |
@@ -778,7 +780,7 @@ graph LR
 
 ## 4. Nyilvános típusok osztályonként
 
-A többi 569 nyilvános típus („other” osztály) csak a `call-graph.json`-ban szerepel.
+A többi 571 nyilvános típus („other” osztály) csak a `call-graph.json`-ban szerepel.
 
 ### Képkocka, kép, pixel (25)
 
