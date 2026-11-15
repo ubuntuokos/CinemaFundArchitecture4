@@ -19,6 +19,7 @@ mod audio;
 mod codestream;
 mod integrity;
 mod media;
+mod naming;
 mod native;
 pub mod package;
 pub mod profile;
