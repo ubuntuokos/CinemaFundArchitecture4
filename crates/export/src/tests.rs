@@ -245,6 +245,53 @@ fn dnxhr_export_roundtrip() {
     }
 }
 
+/// DNxHD (fixed-raster compression IDs): QuickTime `AVdn`, our decoder and ffprobe agree on the
+/// ID, and another output size is refused before encoding.
+#[test]
+fn dnxhd_export_roundtrip() {
+    let (p, seq, m) = project();
+    for (profile, size, label) in [("hd1251", (1280, 720), "DNxHD 720p 8-bit (CID 1251)"), ("hd1235", (1920, 1080), "DNxHD 1080p 10-bit (CID 1235)")] {
+        let path = tmp(&format!("dnx_{profile}.mov"));
+        let s = ExportSettings { format: Format::DnxHr, path: path.clone(), dnx_profile: profile.into(), frame_size: Some(size), ..Default::default() };
+        export(&p, seq, &s, &m, &Progress::default()).unwrap();
+        let data = std::fs::read(&path).unwrap();
+        assert!(data.windows(4).any(|w| w == b"AVdn"), "{profile}: DNxHD sample entry");
+        let src = cfa4_codecs::open_bytes("dnx.mov", data.into()).unwrap();
+        let info = src.info().video.clone().unwrap();
+        assert_eq!((info.codec.as_str(), info.width, info.height), (label, size.0, size.1));
+        // the centre (the edges of the up-scaled matte are filtered against the border)
+        let px = src.video_frame(FrameRequest::full(Tick(TICKS_PER_SECOND / 3))).unwrap().to_rgba8();
+        let c = ((size.1 / 2 * size.0 + size.0 / 2) * 4) as usize;
+        assert!(px[c] > 240 && px[c + 1] < 15 && px[c + 2] < 15, "{profile}: {:?}", &px[c..c + 4]);
+        if let Some(ffprobe) = cfa4_testkit::ffprobe() {
+            let out = std::process::Command::new(ffprobe)
+                .args(["-v", "error", "-select_streams", "v:0", "-show_entries", "stream=codec_name,profile,width,height", "-of", "csv=p=0"])
+                .arg(&path)
+                .output()
+                .unwrap();
+            let line = String::from_utf8_lossy(&out.stdout).trim().to_string();
+            assert_eq!(line, format!("dnxhd,DNXHD,{},{}", size.0, size.1), "{profile}");
+        }
+    }
+    // MXF OP1a carries the ID in its picture coding label
+    let path = tmp("dnx_hd1251.mxf");
+    let s = ExportSettings {
+        format: Format::MxfOp1a,
+        mxf_video_codec: MxfVideoCodec::Dnxhr,
+        path: path.clone(),
+        dnx_profile: "hd1251".into(),
+        frame_size: Some((1280, 720)),
+        ..Default::default()
+    };
+    export(&p, seq, &s, &m, &Progress::default()).unwrap();
+    let src = cfa4_codecs::open_bytes("dnx.mxf", std::fs::read(&path).unwrap().into()).unwrap();
+    assert_eq!(src.info().video.clone().unwrap().codec, "DNxHD 720p 8-bit (CID 1251)");
+    let s =
+        ExportSettings { format: Format::DnxHr, path: tmp("dnx_wrong.mov"), dnx_profile: "hd1238".into(), frame_size: Some((1280, 720)), ..Default::default() };
+    let e = export(&p, seq, &s, &m, &Progress::default()).unwrap_err().to_string();
+    assert!(e.contains("1920×1080"), "{e}");
+}
+
 /// Burn-in: an H.264 export of a dark-blue matte with a caption, decoded by ffmpeg (external test
 /// oracle only), has bright caption pixels in the lower part of the frame, and none without
 /// `burn_captions` or above the caption.

@@ -227,7 +227,7 @@ graph LR
 | `cfa4-engine/essential_sound.rs` | `cfa4-project` | `ClipId`, `essential` |
 | `cfa4-engine/essential_sound.rs` | `cfa4-render` | `SourceProvider`, `audio` |
 | `cfa4-engine/essential_sound.rs` | `cfa4-time` | `Tick` |
-| `cfa4-engine/export_tools.rs` | `cfa4-export` | `BitrateMode`, `DCP_CONTENT_KINDS`, `DcpAspect`, `DcpImmersive`, `DcpResolution`, `Exporter`, `IMF_CONTENT_KINDS`, `IabFallback`, `Mpeg2Container`, `OutputSink`, `Progress`, `Report`, `available`, `builtin_presets`, `dcp_content_kind`, `dcp_isdcf_date`, `dcp_isdcf_name`, `dcp_language`, `dcp_subtitle_language`, `export`, `export_range`, `frame_span`, `imf_content_kind`, `presets`, `probe_iab_source`, `stepped`, `unavailable_reason`, `validate_range` |
+| `cfa4-engine/export_tools.rs` | `cfa4-export` | `BitrateMode`, `DCP_CONTENT_KINDS`, `DcpAspect`, `DcpImmersive`, `DcpResolution`, `Exporter`, `IMF_CONTENT_KINDS`, `IMF_TIMED_TEXT_KINDS`, `IabFallback`, `Mpeg2Container`, `OutputSink`, `Progress`, `Report`, `available`, `builtin_presets`, `dcp_content_kind`, `dcp_isdcf_date`, `dcp_isdcf_name`, `dcp_language`, `dcp_subtitle_language`, `export`, `export_range`, `frame_span`, `imf_content_kind`, `presets`, `probe_iab_source`, `stepped`, `unavailable_reason`, `validate_range` |
 | `cfa4-engine/export_tools.rs` | `cfa4-project` | `ItemId`, `Sequence`, `legacy` |
 | `cfa4-engine/export_tools.rs` | `cfa4-qc` | `QcProfile` |
 | `cfa4-engine/export_tools.rs` | `cfa4-time` | `FrameRate` |
