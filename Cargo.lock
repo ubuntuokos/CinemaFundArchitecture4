@@ -1948,6 +1948,8 @@ dependencies = [
  "cfa4-color",
  "cfa4-frame",
  "cfa4-geom",
+ "cfa4-h264",
+ "cfa4-h264enc",
  "cfa4-media",
  "cfa4-project",
  "cfa4-text",
