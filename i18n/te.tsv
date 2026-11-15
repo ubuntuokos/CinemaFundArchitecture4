@@ -4604,6 +4604,16 @@ export.summary	Low	తక్కువ
 	software backend: {reason}	సాఫ్ట్‌వేర్ బ్యాకెండ్: {reason}
 	Start studio	స్టూడియోను ప్రారంభించు
 	Stop studio	స్టూడియోను ఆపు
+	Add Studio Scene	స్టూడియో దృశ్యాన్ని జోడించు
+	Live	ప్రత్యక్షం
+# Credits: title, opening, chapter and lower-third pages filled from a graphics template (F10-C16)
+	Opening Credits	ప్రారంభ క్రెడిట్స్
+	Chapter Title	అధ్యాయ శీర్షిక
+	Lower Third	లోయర్ థర్డ్
+	page {page}: graphics template “{template}” was not found; “{used}” is used	పేజీ {page}: గ్రాఫిక్స్ టెంప్లేట్ “{template}” కనబడలేదు; “{used}” వాడబడుతుంది
+	page {page}: graphics template “{template}” has no field for all of the block's text; the rest is left out	పేజీ {page}: గ్రాఫిక్స్ టెంప్లేట్ “{template}”లో బ్లాక్ మొత్తం వచనానికి ఫీల్డ్ లేదు; మిగిలినది వదిలివేయబడింది
+	page {page}: template field “{control}” → “{part}” is not used (no such text control, or not head, body or tail)	పేజీ {page}: టెంప్లేట్ ఫీల్డ్ “{control}” → “{part}” వాడబడదు (అటువంటి వచన నియంత్రణ లేదు, లేదా అది హెడ్, బాడీ లేదా టెయిల్ కాదు)
+	page {page}: pictures are left out on title, opening, chapter and lower-third pages	పేజీ {page}: శీర్షిక, ప్రారంభ, అధ్యాయ మరియు లోయర్ థర్డ్ పేజీలలో చిత్రాలు వదిలివేయబడతాయి
 # Auto Color, Auto Contrast, Auto Levels (EffectsSDK review)
 	Auto Color	స్వయంచాలక రంగు
 	Auto Contrast	స్వయంచాలక కాంట్రాస్ట్
@@ -4679,7 +4689,6 @@ export.summary	Low	తక్కువ
 	Device	పరికరం
 	Devices	పరికరాలు
 	Disabled	నిలిపివేయబడింది
-	HID jog/shuttle	HID జాగ్/షటిల్
 	MIDI	MIDI
 	Not connected	కనెక్ట్ కాలేదు
 	OSC	OSC
@@ -4706,8 +4715,6 @@ export.summary	Low	తక్కువ
 	{strip} Pan (knob)	{strip} ప్యాన్ (నాబ్)
 	{strip} Volume (fader)	{strip} వాల్యూమ్ (ఫేడర్)
 # Control surfaces (F1 Learn and profile, CFA4-CONTROL-SURFACE-001)
-	Control Surfaces	నియంత్రణ ఉపరితలాలు
-	Use control surfaces (MIDI controllers, jog/shuttle devices)	నియంత్రణ ఉపరితలాలను వాడు (MIDI నియంత్రకాలు, jog/shuttle)
 	Assignments run when a button is pressed (a fader or knob counts as pressed past half way); a fader or knob assigned to a mixer strip moves its volume or pan. A ShuttlePRO's shuttle ring plays at its profile's speeds and its jog wheel steps frame by frame. Endless encoders and feedback to the controller (lights, motor faders) come in a later version.	బటన్ నొక్కితే కేటాయింపులు నడుస్తాయి (ఫేడర్ లేదా నాబ్ సగం దాటితే నొక్కినట్లు); మిక్సర్ స్ట్రిప్‌కు కేటాయించిన ఫేడర్ లేదా నాబ్ వాల్యూమ్ లేదా పాన్‌ను కదుపుతుంది. ShuttlePRO షటిల్ రింగ్ ప్రొఫైల్ వేగాలతో ప్లే అవుతుంది, జాగ్ చక్రం ఫ్రేమ్‌లవారీగా అడుగు వేస్తుంది. అంతులేని ఎన్‌కోడర్లు మరియు నియంత్రకానికి స్పందన (దీపాలు, మోటారు ఫేడర్లు) తర్వాతి వెర్షన్‌లో వస్తాయి.
 	First message (ms)	మొదటి సందేశం (మి.సె)
 	Silence (ms)	నిశ్శబ్దం (మి.సె)
@@ -4751,3 +4758,23 @@ export.summary	Low	తక్కువ
 	Type: {hint}	రకం: {hint}
 	User profile file	వినియోగదారు ప్రొఫైల్ ఫైలు
 	{received} received, {dispatched} dispatched, {coalesced} coalesced, {stalls} stalls, {errors} errors	{received} అందినవి, {dispatched} పంపినవి, {coalesced} కలిపినవి, {stalls} ఆగుదలలు, {errors} లోపాలు
+
+# Control Surfaces settings page (CS-1, #1187)
+	HID jog/shuttle	HID jog/shuttle
+	Looking for devices…	పరికరాల కోసం వెతుకుతోంది…
+	No MIDI controller or jog/shuttle device was found. Connect one and press Refresh.	MIDI కంట్రోలర్ లేదా jog/shuttle పరికరం కనబడలేదు. ఒకదాన్ని కనెక్ట్ చేసి రిఫ్రెష్ చేయి నొక్కండి.
+	Control Surfaces	కంట్రోల్ సర్ఫేస్‌లు
+	Use control surfaces (MIDI controllers, jog/shuttle devices)	కంట్రోల్ సర్ఫేస్‌లను ఉపయోగించు (MIDI కంట్రోలర్లు, jog/shuttle పరికరాలు)
+	Mapping controls to commands, MIDI Learn and the MIDI Monitor come in a later version; the choices here are remembered until then.	నియంత్రణలను ఆదేశాలకు కేటాయించడం, MIDI Learn మరియు MIDI మానిటర్ తదుపరి వెర్షన్‌లో వస్తాయి; అప్పటివరకు ఇక్కడి ఎంపికలు గుర్తుంచుకోబడతాయి.
+	CFA4 ShuttlePRO	CFA4 ShuttlePRO
+	Kdenlive-style ShuttlePRO	Kdenlive శైలి ShuttlePRO
+	Generic MIDI	సాధారణ MIDI
+# LTC timecode read from clip audio (TC-7, #1285)
+	Read from LTC Audio	LTC ఆడియో నుండి చదువు
+	Find SMPTE LTC on the clip's audio and use the timecode it gives the first frame	క్లిప్ ఆడియోలో SMPTE LTC‌ను కనుగొని అది మొదటి ఫ్రేమ్‌కు ఇచ్చే టైమ్‌కోడ్‌ను ఉపయోగించు
+	Read Timecode from LTC Audio	LTC ఆడియో నుండి టైమ్‌కోడ్ చదువు
+# Credits: voices (the Voice column) in the block's properties (F10-C16)
+	Voices	గొంతులు
+# Timecode sync varispeed and user bits (TC-8, #1308)
+	Varispeed: adjust the playback speed instead of seeking	Varispeed: దాటవేయడానికి బదులు ప్లేబ్యాక్ వేగాన్ని సర్దుబాటు చేయి
+	User bits	వినియోగదారు బిట్‌లు

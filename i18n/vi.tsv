@@ -4598,6 +4598,16 @@ export.summary	Low	thấp
 	software backend: {reason}	phần phụ trợ phần mềm: {reason}
 	Start studio	Khởi động phòng thu
 	Stop studio	Dừng phòng thu
+	Add Studio Scene	Thêm cảnh studio
+	Live	Trực tiếp
+# Credits: title, opening, chapter and lower-third pages filled from a graphics template (F10-C16)
+	Opening Credits	Phần mở đầu
+	Chapter Title	Tiêu đề chương
+	Lower Third	Dải chữ dưới
+	page {page}: graphics template “{template}” was not found; “{used}” is used	trang {page}: không tìm thấy mẫu đồ họa “{template}”; dùng “{used}”
+	page {page}: graphics template “{template}” has no field for all of the block's text; the rest is left out	trang {page}: mẫu đồ họa “{template}” không có trường cho toàn bộ văn bản của khối; phần còn lại bị bỏ
+	page {page}: template field “{control}” → “{part}” is not used (no such text control, or not head, body or tail)	trang {page}: trường mẫu “{control}” → “{part}” không được dùng (không có điều khiển văn bản đó, hoặc không phải đầu, thân hay đuôi)
+	page {page}: pictures are left out on title, opening, chapter and lower-third pages	trang {page}: hình ảnh bị bỏ trên các trang tiêu đề, phần mở đầu, chương và dải chữ dưới
 # Auto Color, Auto Contrast, Auto Levels (EffectsSDK review)
 	Auto Color	Màu tự động
 	Auto Contrast	Tương phản tự động
@@ -4673,7 +4683,6 @@ export.summary	Low	thấp
 	Device	Thiết bị
 	Devices	Thiết bị
 	Disabled	Đã tắt
-	HID jog/shuttle	Jog/shuttle HID
 	MIDI	MIDI
 	Not connected	Chưa kết nối
 	OSC	OSC
@@ -4701,7 +4710,6 @@ export.summary	Low	thấp
 	{strip} Volume (fader)	{strip} âm lượng (fader)
 # Control surfaces (F1 Learn and profile, CFA4-CONTROL-SURFACE-001)
 	Control Surfaces	Bề mặt điều khiển
-	Use control surfaces (MIDI controllers, jog/shuttle devices)	Dùng bề mặt điều khiển (bộ điều khiển MIDI, jog/shuttle)
 	Assignments run when a button is pressed (a fader or knob counts as pressed past half way); a fader or knob assigned to a mixer strip moves its volume or pan. A ShuttlePRO's shuttle ring plays at its profile's speeds and its jog wheel steps frame by frame. Endless encoders and feedback to the controller (lights, motor faders) come in a later version.	Gán chạy khi nhấn nút (fader hoặc núm được tính là nhấn sau nửa đường); fader hoặc núm gán vào một dải mixer sẽ đẩy âm lượng hoặc pan. Vòng shuttle của ShuttlePRO phát theo tốc độ hồ sơ và bánh jog bước từng khung. Bộ mã hóa vô tận và phản hồi về bộ điều khiển (đèn, fader có động cơ) sẽ có ở bản sau.
 	First message (ms)	Thông điệp đầu (ms)
 	Silence (ms)	Im lặng (ms)
@@ -4745,3 +4753,22 @@ export.summary	Low	thấp
 	Type: {hint}	Kiểu: {hint}
 	User profile file	Tệp hồ sơ người dùng
 	{received} received, {dispatched} dispatched, {coalesced} coalesced, {stalls} stalls, {errors} errors	{received} đã nhận, {dispatched} đã gửi, {coalesced} đã gộp, {stalls} lần chờ, {errors} lỗi
+
+# Control Surfaces settings page (CS-1, #1187)
+	HID jog/shuttle	HID jog/shuttle
+	Looking for devices…	Đang tìm thiết bị…
+	No MIDI controller or jog/shuttle device was found. Connect one and press Refresh.	Không tìm thấy bộ điều khiển MIDI hay thiết bị jog/shuttle nào. Hãy kết nối một thiết bị rồi nhấn Làm mới.
+	Use control surfaces (MIDI controllers, jog/shuttle devices)	Dùng bề mặt điều khiển (bộ điều khiển MIDI, thiết bị jog/shuttle)
+	Mapping controls to commands, MIDI Learn and the MIDI Monitor come in a later version; the choices here are remembered until then.	Gán nút điều khiển cho lệnh, MIDI Learn và MIDI Monitor sẽ có trong phiên bản sau; cho đến lúc đó, các lựa chọn ở đây vẫn được ghi nhớ.
+	CFA4 ShuttlePRO	CFA4 ShuttlePRO
+	Kdenlive-style ShuttlePRO	ShuttlePRO kiểu Kdenlive
+	Generic MIDI	MIDI chung
+# LTC timecode read from clip audio (TC-7, #1285)
+	Read from LTC Audio	Đọc từ âm thanh LTC
+	Find SMPTE LTC on the clip's audio and use the timecode it gives the first frame	Tìm SMPTE LTC trong âm thanh của clip và dùng mã thời gian mà nó gán cho khung hình đầu tiên
+	Read Timecode from LTC Audio	Đọc mã thời gian từ âm thanh LTC
+# Credits: voices (the Voice column) in the block's properties (F10-C16)
+	Voices	Giọng lồng tiếng
+# Timecode sync varispeed and user bits (TC-8, #1308)
+	Varispeed: adjust the playback speed instead of seeking	Varispeed: điều chỉnh tốc độ phát thay vì nhảy
+	User bits	Bit người dùng

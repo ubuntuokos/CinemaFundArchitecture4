@@ -4607,6 +4607,16 @@
 	software backend: {reason}	ソフトウェアバックエンド: {reason}
 	Start studio	スタジオを開始
 	Stop studio	スタジオを停止
+	Add Studio Scene	スタジオシーンを追加
+	Live	ライブ
+# Credits: title, opening, chapter and lower-third pages filled from a graphics template (F10-C16)
+	Opening Credits	オープニングクレジット
+	Chapter Title	チャプタータイトル
+	Lower Third	ローワーサード
+	page {page}: graphics template “{template}” was not found; “{used}” is used	ページ {page}: グラフィックテンプレート“{template}”が見つかりません。“{used}”を使用します
+	page {page}: graphics template “{template}” has no field for all of the block's text; the rest is left out	ページ {page}: グラフィックテンプレート“{template}”にはブロックの全テキスト用のフィールドがありません。残りは省略します
+	page {page}: template field “{control}” → “{part}” is not used (no such text control, or not head, body or tail)	ページ {page}: テンプレートフィールド“{control}”→“{part}”は使用されません（そのテキストコントロールがないか、ヘッド・本文・テールではありません）
+	page {page}: pictures are left out on title, opening, chapter and lower-third pages	ページ {page}: タイトル、オープニング、チャプター、ローワーサードのページでは画像を省略します
 # Auto Color, Auto Contrast, Auto Levels (EffectsSDK review)
 	Auto Color	自動カラー
 	Auto Contrast	自動コントラスト
@@ -4710,7 +4720,6 @@
 	{strip} Volume (fader)	{strip} 音量（フェーダー）
 # Control surfaces (F1 Learn and profile, CFA4-CONTROL-SURFACE-001)
 	Control Surfaces	コントロールサーフェス
-	Use control surfaces (MIDI controllers, jog/shuttle devices)	コントロールサーフェスを使う（MIDI コントローラー、ジョグ／シャトル）
 	Assignments run when a button is pressed (a fader or knob counts as pressed past half way); a fader or knob assigned to a mixer strip moves its volume or pan. A ShuttlePRO's shuttle ring plays at its profile's speeds and its jog wheel steps frame by frame. Endless encoders and feedback to the controller (lights, motor faders) come in a later version.	割り当てはボタンを押したときに実行されます（フェーダーやノブは半分を超えると押された扱いになります）。ミキサーのストリップに割り当てたフェーダーやノブは音量またはパンを動かします。ShuttlePRO のシャトルリングはプロファイルの速度で再生し、ジョグホイールはフレームごとに進みます。エンドレスエンコーダーとコントローラーへの返答（ランプ、モーターフェーダー）は後の版で追加します。
 	First message (ms)	最初のメッセージ（ミリ秒）
 	Silence (ms)	無音（ミリ秒）
@@ -4754,3 +4763,21 @@
 	Type: {hint}	種類: {hint}
 	User profile file	ユーザーのプロファイルファイル
 	{received} received, {dispatched} dispatched, {coalesced} coalesced, {stalls} stalls, {errors} errors	{received} 受信、{dispatched} 配送、{coalesced} 統合、{stalls} 停滞、{errors} エラー
+
+# Control Surfaces settings page (CS-1, #1187)
+	Looking for devices…	デバイスを検索しています…
+	No MIDI controller or jog/shuttle device was found. Connect one and press Refresh.	MIDI コントローラーまたはジョグ/シャトル デバイスが見つかりません。接続してから［更新］を押してください。
+	Use control surfaces (MIDI controllers, jog/shuttle devices)	コントロールサーフェスを使用する（MIDI コントローラー、ジョグ/シャトル デバイス）
+	Mapping controls to commands, MIDI Learn and the MIDI Monitor come in a later version; the choices here are remembered until then.	コントロールへのコマンド割り当て、MIDI Learn、MIDI モニターは今後のバージョンで提供されます。それまではここでの選択が保存されます。
+	CFA4 ShuttlePRO	CFA4 ShuttlePRO
+	Kdenlive-style ShuttlePRO	Kdenlive 風 ShuttlePRO
+	Generic MIDI	汎用 MIDI
+# LTC timecode read from clip audio (TC-7, #1285)
+	Read from LTC Audio	LTC オーディオから読み取り
+	Find SMPTE LTC on the clip's audio and use the timecode it gives the first frame	クリップのオーディオから SMPTE LTC を探し、最初のフレームに対応するタイムコードを使用します
+	Read Timecode from LTC Audio	LTC オーディオからタイムコードを読み取り
+# Credits: voices (the Voice column) in the block's properties (F10-C16)
+	Voices	声の出演
+# Timecode sync varispeed and user bits (TC-8, #1308)
+	Varispeed: adjust the playback speed instead of seeking	バリスピード：シークせずに再生速度を調整する
+	User bits	ユーザービット

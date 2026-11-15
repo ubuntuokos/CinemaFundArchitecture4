@@ -1061,6 +1061,8 @@ pub fn run(mut s: Session) {
         }));
         jobs = upkeep.unwrap_or(false);
         let (sync_events, sync_on) = std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| crate::serve_tcsync::upkeep(&mut s))).unwrap_or_default();
+        // the live studio host shows the project's current scene (CFA4-LIVE-STUDIO-001 S1)
+        let _ = std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| crate::serve_live::upkeep(&s)));
         syncing = sync_on;
         let mut broken = false;
         let surface_events = match std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| crate::serve_surface::upkeep(&s))) {

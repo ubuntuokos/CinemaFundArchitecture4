@@ -4596,6 +4596,16 @@
 	software backend: {reason}	软件后端：{reason}
 	Start studio	启动演播室
 	Stop studio	停止演播室
+	Add Studio Scene	添加演播室场景
+	Live	直播
+# Credits: title, opening, chapter and lower-third pages filled from a graphics template (F10-C16)
+	Opening Credits	片头字幕
+	Chapter Title	章节标题
+	Lower Third	下方字幕条
+	page {page}: graphics template “{template}” was not found; “{used}” is used	第 {page} 页：未找到图形模板“{template}”；改用“{used}”
+	page {page}: graphics template “{template}” has no field for all of the block's text; the rest is left out	第 {page} 页：图形模板“{template}”没有容纳该块全部文本的字段；其余部分已忽略
+	page {page}: template field “{control}” → “{part}” is not used (no such text control, or not head, body or tail)	第 {page} 页：模板字段“{control}”→“{part}”未使用（没有该文本控件，或不是标题、正文或尾注）
+	page {page}: pictures are left out on title, opening, chapter and lower-third pages	第 {page} 页：标题、片头、章节和下方字幕条页面上的图片会被忽略
 # Auto Color, Auto Contrast, Auto Levels (EffectsSDK review)
 	Auto Color	自动颜色
 	Auto Contrast	自动对比度
@@ -4670,8 +4680,6 @@
 	Connected	已连接
 	Device	设备
 	Devices	设备
-	Disabled	已停用
-	HID jog/shuttle	HID 飞梭/穿梭
 	MIDI	MIDI
 	Not connected	未连接
 	OSC	OSC
@@ -4698,8 +4706,6 @@
 	{strip} Pan (knob)	{strip} 声像（旋钮）
 	{strip} Volume (fader)	{strip} 音量（推子）
 # Control surfaces (F1 Learn and profile, CFA4-CONTROL-SURFACE-001)
-	Control Surfaces	控制界面
-	Use control surfaces (MIDI controllers, jog/shuttle devices)	使用控制界面（MIDI 控制器、jog/shuttle）
 	Assignments run when a button is pressed (a fader or knob counts as pressed past half way); a fader or knob assigned to a mixer strip moves its volume or pan. A ShuttlePRO's shuttle ring plays at its profile's speeds and its jog wheel steps frame by frame. Endless encoders and feedback to the controller (lights, motor faders) come in a later version.	分配在按下按钮时执行（推子或旋钮过半即视为按下）；分配到混音条的推子或旋钮会移动音量或声像。ShuttlePRO 的穿梭环按配置的速度播放，飞梭轮逐帧步进。无极编码器和对控制器的回传（指示灯、电动推子）将在以后的版本加入。
 	First message (ms)	首条消息（毫秒）
 	Silence (ms)	静音（毫秒）
@@ -4743,3 +4749,24 @@
 	Type: {hint}	类型：{hint}
 	User profile file	用户配置文件
 	{received} received, {dispatched} dispatched, {coalesced} coalesced, {stalls} stalls, {errors} errors	{received} 已接收，{dispatched} 已分发，{coalesced} 已合并，{stalls} 停滞，{errors} 错误
+
+# Control Surfaces settings page (CS-1, #1187)
+	HID jog/shuttle	HID 飞梭
+	Disabled	已禁用
+	Looking for devices…	正在查找设备…
+	No MIDI controller or jog/shuttle device was found. Connect one and press Refresh.	未找到 MIDI 控制器或飞梭设备。请连接一个设备，然后按“刷新”。
+	Control Surfaces	控制台
+	Use control surfaces (MIDI controllers, jog/shuttle devices)	使用控制台（MIDI 控制器、飞梭设备）
+	Mapping controls to commands, MIDI Learn and the MIDI Monitor come in a later version; the choices here are remembered until then.	将控件映射到命令、MIDI Learn 和 MIDI 监视器将在后续版本中提供；在此之前，这里的选择会被记住。
+	CFA4 ShuttlePRO	CFA4 ShuttlePRO
+	Kdenlive-style ShuttlePRO	Kdenlive 风格 ShuttlePRO
+	Generic MIDI	通用 MIDI
+# LTC timecode read from clip audio (TC-7, #1285)
+	Read from LTC Audio	从 LTC 音频读取
+	Find SMPTE LTC on the clip's audio and use the timecode it gives the first frame	在片段音频中查找 SMPTE LTC，并使用它为第一帧给出的时间码
+	Read Timecode from LTC Audio	从 LTC 音频读取时间码
+# Credits: voices (the Voice column) in the block's properties (F10-C16)
+	Voices	配音
+# Timecode sync varispeed and user bits (TC-8, #1308)
+	Varispeed: adjust the playback speed instead of seeking	变速：调整播放速度而不是跳转
+	User bits	用户位

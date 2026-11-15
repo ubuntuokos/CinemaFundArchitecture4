@@ -36,11 +36,15 @@ szabadalommal védett formátumot.
 | H.264 / AVC | kódolás | `crates/h264enc`; `crates/platform` (NVENC); x264 (FFmpeg-háttér) | alap; x264: kiegészítő | függőben | | |
 | H.265 / HEVC (Main, Main 10, RExt 4:2:2 / 4:4:4, 12 bit) | dekódolás | `crates/hevc`; `crates/platform` (VA-API, NVDEC); FFmpeg-háttér | alap | függőben | | |
 | H.265 / HEVC | kódolás | `crates/hevc` (szoftveres, Main / Main 10); `crates/platform` (NVENC); x265 (FFmpeg-háttér) | alap; x265: kiegészítő | függőben | | |
-| LCEVC (MPEG-5 Part 2, ISO/IEC 23094-2) | csak felismerés (H.264 / HEVC SEI, MP4 `lvc1`, TS 0x36; a javítóréteget nem dekódolja) | `crates/lcevc` | alap | függőben | | |
+| LCEVC (MPEG-5 Part 2, ISO/IEC 23094-2) | dekódolás (H.264 / HEVC T.35 SEI); felismerés (MP4 `lvc1`, TS 0x36) | `crates/lcevc` (az LCEVCdec 4.3.1 portja; a BSD-3-Clause-Clear licenc kifejezetten nem ad szabadalmi jogot) | alap | függőben | | |
+| MPEG-5 EVC Baseline (ISO/IEC 23094-1) | dekódolás | `crates/evc` (a xevd portja) | alap | függőben | | |
+| AVS1-P2 Jizhun (GB/T 20090.2) | dekódolás | `crates/cavs` (az FFmpeg portja) | alap | függőben | | |
 | MPEG-1 / MPEG-2 videó (H.262) | dekódolás | `crates/mpeg2v`; FFmpeg-háttér | alap | függőben | | |
 | MPEG-4 Part 2 (Visual) | dekódolás, kódolás | FFmpeg-háttér | alap | függőben | | |
+| MPEG-4 Part 2 Simple Studio Profile (Sony SR) | dekódolás | `crates/sstp` (az FFmpeg portja) | alap | függőben | | |
 | VC-1 / WMV | dekódolás | FFmpeg-háttér; GStreamer | alap | függőben | | |
 | DV / DVCPRO 25 / 50, DVCPRO HD (IEC 61834-2, SMPTE 314M, SMPTE 370M) | dekódolás | `crates/dv`; FFmpeg-háttér | alap | függőben | | |
+| DV / DVCPRO 25 (IEC 61834-2, SMPTE 314M) | kódolás (25 Mbit/s) | `crates/dv` | alap | függőben | | |
 | AV1 | dekódolás | `crates/av1`; FFmpeg-háttér (dav1d) | alap | függőben | | |
 | AV1 | kódolás | tervezett (rav1e) | – | függőben | | |
 | AV2 | bitfolyam-elemzés (OBU, sequence header); dekódolás csak fejlesztői kapcsolóval (AV2-LAB) | `crates/av2`; `cfa4-av2-decode` segédprogram (dav2d, külön folyamat, ADR 0010) | alap | függőben | | |
@@ -63,6 +67,15 @@ szabadalommal védett formátumot.
 | Dirac (core szintaxis) | dekódolás; QuickTime / MP4, AVI és Matroska olvasása | `crates/dirac` (az FFmpeg Dirac-dekódolójának portja) | alap | függőben | | |
 | Huffyuv (HFYU) | dekódolás | `crates/huffyuv` | alap | függőben | | |
 | Ut Video | dekódolás | `crates/utvideo` | alap | függőben | | |
+| Lagarith | dekódolás | `crates/lagarith` (az FFmpeg Lagarith-dekódolójának portja) | alap | függőben | | |
+| MagicYUV | dekódolás | `crates/magicyuv` (az FFmpeg MagicYUV-dekódolójának portja) | alap | függőben | | |
+| RealVideo 1.0 / 2.0 (RV10, RV20) | dekódolás | `crates/realvideo` (az FFmpeg portja) | alap | függőben | | |
+| RealVideo 3.0 / 4.0 (RV30, RV40) | dekódolás | `crates/realvideo` `rv34` (az FFmpeg portja) | alap | függőben | | |
+| RealAudio Cook (RealAudio G2) | dekódolás | `crates/realaudio` (az FFmpeg portja) | alap | függőben | | |
+| ATRAC3 (Sony) | dekódolás | `crates/realaudio` (az FFmpeg portja) | alap | függőben | | |
+| ATRAC3plus (Sony) | dekódolás | `crates/realaudio` `atrac3p` (az FFmpeg portja) | alap | függőben | | |
+| ATRAC9 (Sony) | dekódolás | `crates/realaudio` `atrac9` (az FFmpeg portja) | alap | függőben | | |
+| RealAudio SIPR (ACELP.NET), RealAudio 1.0 (14.4, VSELP), RealAudio 2.0 (28.8, G.728-szerű LD-CELP) | dekódolás | `crates/realaudio` (az FFmpeg portja) | alap | függőben | | |
 | Canopus HQ, HQA, HQX | dekódolás | `crates/canopus` (az FFmpeg portja) | alap | függőben | | |
 | Hap (Hap, Hap Alpha, Hap Q, Hap Q Alpha, Hap Alpha-Only) | dekódolás | `crates/hap` | alap | függőben | | |
 
@@ -90,6 +103,8 @@ szabadalommal védett formátumot.
 | G.729, G.729 Annex B | dekódolás; nyers `.g729` fájlok olvasása | `crates/g729` (a bcg729 portja) | alap | függőben | | |
 | iLBC | dekódolás; `.lbc` fájlok olvasása | `crates/ilbc` (a WebRTC libilbc portja) | alap | függőben | | |
 | TTA (True Audio) | dekódolás; `.tta` és Matroska olvasása | `crates/tta` (a libtta portja) | alap | függőben | | |
+| Shorten | dekódolás; `.shn` fájlok olvasása | `crates/shorten` (az FFmpeg Shorten-dekódolójának portja) | alap | függőben | | |
+| TAK (Tom's lossless Audio Kompressor) | dekódolás; `.tak` fájlok olvasása | `crates/tak` (az FFmpeg TAK-dekódolójának portja) | alap | függőben | | |
 | AMR-NB, AMR-WB | dekódolás | `crates/amr` (az opencore-amr portja) | alap | függőben | | |
 | Musepack SV7, SV8 | dekódolás; `.mpc` fájlok olvasása | `crates/musepack` (a libmpcdec portja) | alap | függőben | | |
 
@@ -104,6 +119,7 @@ szabadalommal védett formátumot.
 | SMPTE ST 2110-20 (tömörítetlen kép RTP-n, RFC 4175), RTP, SDP | csomagolás, bontás | `crates/st2110` | alap | függőben | | |
 | AVI / OpenDML | olvasás | `crates/avi`; FFmpeg-háttér | alap | függőben | | |
 | Ogg | olvasás | `crates/ogg` | alap | függőben | | |
+| RealMedia (`.rm`, `.rmvb`) | olvasás | `crates/realmedia` (az FFmpeg portja) | alap | függőben | | |
 | ASF | olvasás | FFmpeg-háttér; GStreamer | alap | függőben | | |
 | AAF (Compound File Binary) | olvasás, írás | `crates/cfb` | alap | függőben | | |
 | Konténer- és kodekközpont | olvasás | `crates/codecs` (a fenti sorok formátumai) | alap | függőben | | |

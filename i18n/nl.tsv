@@ -4598,6 +4598,16 @@ export.summary	Low	laag
 	software backend: {reason}	software-backend: {reason}
 	Start studio	Studio starten
 	Stop studio	Studio stoppen
+	Add Studio Scene	Studioscène toevoegen
+	Live	Live
+# Credits: title, opening, chapter and lower-third pages filled from a graphics template (F10-C16)
+	Opening Credits	Openingstitels
+	Chapter Title	Hoofdstuktitel
+	Lower Third	Onderbalk
+	page {page}: graphics template “{template}” was not found; “{used}” is used	pagina {page}: grafische sjabloon “{template}” is niet gevonden; “{used}” wordt gebruikt
+	page {page}: graphics template “{template}” has no field for all of the block's text; the rest is left out	pagina {page}: grafische sjabloon “{template}” heeft geen veld voor alle tekst van het blok; de rest wordt weggelaten
+	page {page}: template field “{control}” → “{part}” is not used (no such text control, or not head, body or tail)	pagina {page}: sjabloonveld “{control}” → “{part}” wordt niet gebruikt (geen tekstbesturing met die naam, of geen kop, hoofdtekst of staart)
+	page {page}: pictures are left out on title, opening, chapter and lower-third pages	pagina {page}: afbeeldingen worden weggelaten op titel-, openings-, hoofdstuk- en onderbalkpagina’s
 # Auto Color, Auto Contrast, Auto Levels (EffectsSDK review)
 	Auto Color	Automatische kleur
 	Auto Contrast	Automatisch contrast
@@ -4700,8 +4710,6 @@ export.summary	Low	laag
 	{strip} Pan (knob)	{strip} panning (draaiknop)
 	{strip} Volume (fader)	{strip} volume (fader)
 # Control surfaces (F1 Learn and profile, CFA4-CONTROL-SURFACE-001)
-	Control Surfaces	Bedieningsoppervlakken
-	Use control surfaces (MIDI controllers, jog/shuttle devices)	Bedieningsoppervlakken gebruiken (MIDI-controllers, jog/shuttle)
 	Assignments run when a button is pressed (a fader or knob counts as pressed past half way); a fader or knob assigned to a mixer strip moves its volume or pan. A ShuttlePRO's shuttle ring plays at its profile's speeds and its jog wheel steps frame by frame. Endless encoders and feedback to the controller (lights, motor faders) come in a later version.	Toewijzingen lopen bij een knopdruk (een fader of knop telt als ingedrukt voorbij de helft); een fader of knop op een mixerkanaal beweegt het volume of de pan. De shuttle-ring van een ShuttlePRO speelt op de snelheden van het profiel en het jog-wiel stapt per frame. Eindeloze encoders en terugmelding naar de controller (lampjes, motorfaders) komen in een latere versie.
 	First message (ms)	Eerste bericht (ms)
 	Silence (ms)	Stilte (ms)
@@ -4745,3 +4753,22 @@ export.summary	Low	laag
 	Type: {hint}	Type: {hint}
 	User profile file	Gebruikersprofielbestand
 	{received} received, {dispatched} dispatched, {coalesced} coalesced, {stalls} stalls, {errors} errors	{received} ontvangen, {dispatched} verzonden, {coalesced} samengevoegd, {stalls} wachttijden, {errors} fouten
+
+# Control Surfaces settings page (CS-1, #1187)
+	Looking for devices…	Apparaten zoeken…
+	No MIDI controller or jog/shuttle device was found. Connect one and press Refresh.	Geen MIDI-controller of jog/shuttle-apparaat gevonden. Sluit er een aan en druk op Vernieuwen.
+	Control Surfaces	Bedieningspanelen
+	Use control surfaces (MIDI controllers, jog/shuttle devices)	Bedieningspanelen gebruiken (MIDI-controllers, jog/shuttle-apparaten)
+	Mapping controls to commands, MIDI Learn and the MIDI Monitor come in a later version; the choices here are remembered until then.	Het koppelen van bedieningselementen aan opdrachten, MIDI Learn en de MIDI-monitor komen in een latere versie; tot dan worden de keuzes hier onthouden.
+	CFA4 ShuttlePRO	CFA4 ShuttlePRO
+	Kdenlive-style ShuttlePRO	ShuttlePRO in Kdenlive-stijl
+	Generic MIDI	Algemene MIDI
+# LTC timecode read from clip audio (TC-7, #1285)
+	Read from LTC Audio	Uit LTC-audio lezen
+	Find SMPTE LTC on the clip's audio and use the timecode it gives the first frame	SMPTE LTC in de audio van de clip zoeken en de tijdcode gebruiken die het aan het eerste beeld geeft
+	Read Timecode from LTC Audio	Tijdcode uit LTC-audio lezen
+# Credits: voices (the Voice column) in the block's properties (F10-C16)
+	Voices	Stemmen
+# Timecode sync varispeed and user bits (TC-8, #1308)
+	Varispeed: adjust the playback speed instead of seeking	Varispeed: afspeelsnelheid aanpassen in plaats van te springen
+	User bits	Gebruikersbits

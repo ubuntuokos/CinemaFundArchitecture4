@@ -4600,6 +4600,16 @@ export.summary	Low	matala
 	software backend: {reason}	ohjelmistotaustaosa: {reason}
 	Start studio	Käynnistä studio
 	Stop studio	Pysäytä studio
+	Add Studio Scene	Lisää studiokohtaus
+	Live	Suora
+# Credits: title, opening, chapter and lower-third pages filled from a graphics template (F10-C16)
+	Opening Credits	Alkutekstit
+	Chapter Title	Luvun otsikko
+	Lower Third	Nimiplanssi
+	page {page}: graphics template “{template}” was not found; “{used}” is used	sivu {page}: grafiikkamallia “{template}” ei löytynyt; käytetään mallia “{used}”
+	page {page}: graphics template “{template}” has no field for all of the block's text; the rest is left out	sivu {page}: grafiikkamallissa “{template}” ei ole kenttää lohkon kaikelle tekstille; loput jätetään pois
+	page {page}: template field “{control}” → “{part}” is not used (no such text control, or not head, body or tail)	sivu {page}: mallin kenttää “{control}” → “{part}” ei käytetä (tekstiohjainta ei ole, tai se ei ole otsake, runko tai loppu)
+	page {page}: pictures are left out on title, opening, chapter and lower-third pages	sivu {page}: kuvat jätetään pois otsikko-, alkuteksti-, luku- ja nimiplanssisivuilta
 # Auto Color, Auto Contrast, Auto Levels (EffectsSDK review)
 	Auto Color	Automaattinen väri
 	Auto Contrast	Automaattinen kontrasti
@@ -4674,8 +4684,6 @@ export.summary	Low	matala
 	Connected	Yhdistetty
 	Device	Laite
 	Devices	Laitteet
-	Disabled	Poissa käytöstä
-	HID jog/shuttle	HID-jog/shuttle
 	MIDI	MIDI
 	Not connected	Ei yhdistetty
 	OSC	OSC
@@ -4703,7 +4711,6 @@ export.summary	Low	matala
 	{strip} Volume (fader)	{strip} äänenvoimakkuus (liukusäädin)
 # Control surfaces (F1 Learn and profile, CFA4-CONTROL-SURFACE-001)
 	Control Surfaces	Ohjainpinnat
-	Use control surfaces (MIDI controllers, jog/shuttle devices)	Käytä ohjainpintoja (MIDI-ohjaimet, jog/shuttle)
 	Assignments run when a button is pressed (a fader or knob counts as pressed past half way); a fader or knob assigned to a mixer strip moves its volume or pan. A ShuttlePRO's shuttle ring plays at its profile's speeds and its jog wheel steps frame by frame. Endless encoders and feedback to the controller (lights, motor faders) come in a later version.	Kytkennät käynnistyvät painalluksesta (fader tai nuppi lasketaan painetuksi puolenvälin jälkeen); mikseriraitaan kytketty fader tai nuppi liikuttaa äänenvoimakkuutta tai panorointia. ShuttlePRO:n sukkulakehä toistaa profiilin nopeuksilla ja jog-pyörä siirtyy ruutu kerrallaan. Päättymättömät enkooderit ja palaute ohjaimeen (valot, moottorifaderit) tulevat myöhemmässä versiossa.
 	First message (ms)	Ensimmäinen viesti (ms)
 	Silence (ms)	Hiljaisuus (ms)
@@ -4747,3 +4754,23 @@ export.summary	Low	matala
 	Type: {hint}	Tyyppi: {hint}
 	User profile file	Käyttäjän profiilitiedosto
 	{received} received, {dispatched} dispatched, {coalesced} coalesced, {stalls} stalls, {errors} errors	{received} vastaanotettu, {dispatched} välitetty, {coalesced} yhdistetty, {stalls} odotukset, {errors} virheet
+
+# Control Surfaces settings page (CS-1, #1187)
+	HID jog/shuttle	HID jog/shuttle
+	Disabled	Poistettu käytöstä
+	Looking for devices…	Etsitään laitteita…
+	No MIDI controller or jog/shuttle device was found. Connect one and press Refresh.	MIDI-ohjainta tai jog/shuttle-laitetta ei löytynyt. Liitä sellainen ja paina Päivitä.
+	Use control surfaces (MIDI controllers, jog/shuttle devices)	Käytä ohjainpintoja (MIDI-ohjaimet, jog/shuttle-laitteet)
+	Mapping controls to commands, MIDI Learn and the MIDI Monitor come in a later version; the choices here are remembered until then.	Säätimien liittäminen komentoihin, MIDI Learn ja MIDI-monitori tulevat myöhemmässä versiossa; tässä tehdyt valinnat muistetaan siihen asti.
+	CFA4 ShuttlePRO	CFA4 ShuttlePRO
+	Kdenlive-style ShuttlePRO	Kdenlive-tyylinen ShuttlePRO
+	Generic MIDI	Yleinen MIDI
+# LTC timecode read from clip audio (TC-7, #1285)
+	Read from LTC Audio	Lue LTC-äänestä
+	Find SMPTE LTC on the clip's audio and use the timecode it gives the first frame	Etsi leikkeen äänestä SMPTE LTC ja käytä aikakoodia, jonka se antaa ensimmäiselle kuvalle
+	Read Timecode from LTC Audio	Lue aikakoodi LTC-äänestä
+# Credits: voices (the Voice column) in the block's properties (F10-C16)
+	Voices	Äänet
+# Timecode sync varispeed and user bits (TC-8, #1308)
+	Varispeed: adjust the playback speed instead of seeking	Varispeed: säädä toistonopeutta hyppäämisen sijaan
+	User bits	Käyttäjäbitit

@@ -50,7 +50,16 @@ from .credits_workspace import PropertiesPanel, TimelineStrip, block_label
 SHEET_FILTER = N_("Spreadsheets, credits files and Cinecred projects (*.ods *.xlsx *.csv *.tsv *.txt *.cfa4credits Styling.toml)")
 CREDITS_FILE_FILTER = N_("CFA4 credits file (*.cfa4credits)")
 STYLING_FILTER = N_("Credits styling (*.json)")
-BEHAVIOURS = {"scroll": N_("Roll"), "card": N_("Card"), "crawl": N_("Crawl")}
+BEHAVIOURS = {
+    "scroll": N_("Roll"),
+    "card": N_("Card"),
+    "crawl": N_("Crawl"),
+    # F10-C16: pages whose rows fill a graphics template
+    "title": N_("Title"),
+    "opening": N_("Opening Credits"),
+    "chapter": N_("Chapter Title"),
+    "lowerThird": N_("Lower Third"),
+}
 BACKGROUNDS = {"color": N_("Color"), "gradient": N_("Gradient"), "image": N_("Picture: {file}"), "video": N_("Video: {file}")}
 LOOPED_VIDEO = N_("Looped video: {file}")
 TRANSITIONS = {"cross_dissolve": N_("Dissolve"), "push": N_("Push"), "slide": N_("Slide"), "wipe": N_("Wipe"), "dip_to_black": N_("Dip to Black")}

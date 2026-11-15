@@ -141,9 +141,7 @@ module = [
     "test_audio_backend",
     "test_calc",
     "test_export_summary",
-    "test_media_backends_settings",
     "test_qt_av_sync",
-    "test_qt_control_bridge",
     "test_qt_control_dialogs",
     "test_qt_control_export",
     "test_qt_control_quick_export",
@@ -159,7 +157,6 @@ module = [
     "test_qt_shuttle_audio",
     "test_qt_translations",
     "test_qt_trim_monitor",
-    "test_settings_backend",
 ]
 ignore_errors = true
 

@@ -4603,6 +4603,16 @@
 	software backend: {reason}	moteur logiciel : {reason}
 	Start studio	Démarrer le studio
 	Stop studio	Arrêter le studio
+	Add Studio Scene	Ajouter une scène de studio
+	Live	En direct
+# Credits: title, opening, chapter and lower-third pages filled from a graphics template (F10-C16)
+	Opening Credits	Générique de début
+	Chapter Title	Titre de chapitre
+	Lower Third	Synthé
+	page {page}: graphics template “{template}” was not found; “{used}” is used	page {page} : le modèle graphique “{template}” est introuvable ; “{used}” est utilisé
+	page {page}: graphics template “{template}” has no field for all of the block's text; the rest is left out	page {page} : le modèle graphique “{template}” n’a pas de champ pour tout le texte du bloc ; le reste est omis
+	page {page}: template field “{control}” → “{part}” is not used (no such text control, or not head, body or tail)	page {page} : le champ de modèle “{control}” → “{part}” n’est pas utilisé (pas de contrôle de texte de ce nom, ou ni tête, ni corps, ni pied)
+	page {page}: pictures are left out on title, opening, chapter and lower-third pages	page {page} : les images sont omises sur les pages de titre, de générique de début, de chapitre et de synthé
 # Auto Color, Auto Contrast, Auto Levels (EffectsSDK review)
 	Auto Color	Couleur automatique
 	Auto Contrast	Contraste automatique
@@ -4675,10 +4685,7 @@
 	AS-11 UK DPP	AS-11 UK DPP
 # Control surfaces (qt-control-surfaces-page, CFA4-CONTROL-SURFACE-001)
 	Connected	Connecté
-	Device	Périphérique
-	Devices	Périphériques
 	Disabled	Désactivé
-	HID jog/shuttle	Jog/shuttle HID
 	MIDI	MIDI
 	Not connected	Non connecté
 	OSC	OSC
@@ -4706,7 +4713,6 @@
 	{strip} Volume (fader)	{strip} volume (fader)
 # Control surfaces (F1 Learn and profile, CFA4-CONTROL-SURFACE-001)
 	Control Surfaces	Surfaces de contrôle
-	Use control surfaces (MIDI controllers, jog/shuttle devices)	Utiliser les surfaces de contrôle (contrôleurs MIDI, jog/shuttle)
 	Assignments run when a button is pressed (a fader or knob counts as pressed past half way); a fader or knob assigned to a mixer strip moves its volume or pan. A ShuttlePRO's shuttle ring plays at its profile's speeds and its jog wheel steps frame by frame. Endless encoders and feedback to the controller (lights, motor faders) come in a later version.	Les affectations partent à l'appui d'un bouton (un fader ou un bouton compte comme appuyé passé la moitié) ; un fader ou un bouton affecté à une tranche déplace son volume ou son panoramique. L'anneau shuttle d'un ShuttlePRO lit aux vitesses de son profil et la molette jog avance image par image. Les encodeurs sans fin et le retour vers le contrôleur (voyants, faders motorisés) viendront dans une version ultérieure.
 	First message (ms)	Premier message (ms)
 	Silence (ms)	Silence (ms)
@@ -4750,3 +4756,24 @@
 	Type: {hint}	Type : {hint}
 	User profile file	Fichier de profil utilisateur
 	{received} received, {dispatched} dispatched, {coalesced} coalesced, {stalls} stalls, {errors} errors	{received} reçus, {dispatched} distribués, {coalesced} fusionnés, {stalls} attentes, {errors} erreurs
+
+# Control Surfaces settings page (CS-1, #1187)
+	Devices	Appareils
+	Device	Appareil
+	HID jog/shuttle	HID jog/shuttle
+	Looking for devices…	Recherche d'appareils…
+	No MIDI controller or jog/shuttle device was found. Connect one and press Refresh.	Aucun contrôleur MIDI ni appareil jog/shuttle n'a été trouvé. Branchez-en un et cliquez sur Actualiser.
+	Use control surfaces (MIDI controllers, jog/shuttle devices)	Utiliser les surfaces de contrôle (contrôleurs MIDI, appareils jog/shuttle)
+	Mapping controls to commands, MIDI Learn and the MIDI Monitor come in a later version; the choices here are remembered until then.	L'affectation des contrôles aux commandes, MIDI Learn et le moniteur MIDI arriveront dans une version ultérieure ; d'ici là, les choix faits ici sont conservés.
+	CFA4 ShuttlePRO	CFA4 ShuttlePRO
+	Kdenlive-style ShuttlePRO	ShuttlePRO à la Kdenlive
+	Generic MIDI	MIDI générique
+# LTC timecode read from clip audio (TC-7, #1285)
+	Read from LTC Audio	Lire depuis l'audio LTC
+	Find SMPTE LTC on the clip's audio and use the timecode it gives the first frame	Rechercher le SMPTE LTC dans l'audio du clip et utiliser le timecode qu'il donne à la première image
+	Read Timecode from LTC Audio	Lire le timecode depuis l'audio LTC
+# Credits: voices (the Voice column) in the block's properties (F10-C16)
+	Voices	Voix
+# Timecode sync varispeed and user bits (TC-8, #1308)
+	Varispeed: adjust the playback speed instead of seeking	Varispeed : ajuster la vitesse de lecture au lieu de sauter
+	User bits	Bits utilisateur

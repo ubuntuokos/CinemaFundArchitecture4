@@ -19,6 +19,7 @@ pub mod color;
 pub mod commands;
 pub mod control_surfaces;
 pub mod credits;
+pub mod dcp_import;
 mod dcpomatic;
 pub mod delivery_check;
 pub mod demo;
@@ -36,6 +37,7 @@ pub mod keyboard;
 mod keyframe_move;
 pub mod legibility;
 pub mod live;
+pub mod ltc_read;
 mod marker_export;
 pub mod masks;
 pub mod media_browser;
@@ -72,6 +74,7 @@ mod smart_cut_mpeg;
 mod smart_render;
 pub mod social;
 pub mod source_monitor;
+pub mod studio;
 pub mod surface_profile;
 pub mod surface_runtime;
 pub mod sync;
@@ -1375,6 +1378,8 @@ mod beat_markers_tests;
 mod clip_ops_tests;
 #[cfg(test)]
 mod color_tests;
+#[cfg(test)]
+mod dcp_import_tests;
 #[cfg(test)]
 mod effects_inspect_tests;
 #[cfg(test)]

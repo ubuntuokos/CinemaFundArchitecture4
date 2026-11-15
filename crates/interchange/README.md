@@ -61,7 +61,13 @@ unchanged next to `cfa4` (OTIO-2.1). Where it is kept:
 | `Stack` inside a track | the nested sequence | the `Stack` |
 | (the clip instance of a nested sequence) | the clip | the `Stack`, under `cfa4.clip.interchange` |
 
-Not kept yet: metadata on markers, transitions, effects and media references. CFA4's own work has
+A clip's other media references (OTIO-2.4): CFA4 plays the active one of a `Clip.2`'s
+`media_references`. The others, and the active key when it is not `DEFAULT_MEDIA`, are kept in the
+clip's `interchange` under the `cfa4` entry (no other program's key) and written back unchanged
+under their own keys, with the same active key; that entry never goes into `metadata`. They count
+against the same 16 MB budget. A clip with only its default reference keeps nothing.
+
+Not kept yet: metadata on markers, transitions, effects and the active media reference. CFA4's own work has
 no such keys, and an empty field is not written to the project file.
 
 ## Image sequences
@@ -196,4 +202,5 @@ points at (file path, generator, offline, or a nested sequence); and the import 
 expected (an unknown generator, an effect CFA4 does not know, a file reference without a path, a
 clip directly in a stack). Any other warning, or a missing expected one, fails the test. The rates
 are 23.976, 24, 25, 29.97, 30, 50, 59.94 and 60 fps. An image sequence is checked by its first
-frame's path (as OTIO's `target_url_for_image_number(0)` gives it) and its media kind. Relative media paths resolve under `/media`, the base the test passes.
+frame's path (as OTIO's `target_url_for_image_number(0)` gives it) and its media kind. Every clip
+also expects the keys of its references that are not active, which CFA4 keeps to write back. Relative media paths resolve under `/media`, the base the test passes.

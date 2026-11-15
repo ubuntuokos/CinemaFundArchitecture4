@@ -4605,6 +4605,16 @@
 	software backend: {reason}	Software-Backend: {reason}
 	Start studio	Studio starten
 	Stop studio	Studio anhalten
+	Add Studio Scene	Studioszene hinzufügen
+	Live	Live
+# Credits: title, opening, chapter and lower-third pages filled from a graphics template (F10-C16)
+	Opening Credits	Vorspann
+	Chapter Title	Kapiteltitel
+	Lower Third	Bauchbinde
+	page {page}: graphics template “{template}” was not found; “{used}” is used	Seite {page}: Grafikvorlage “{template}” wurde nicht gefunden; “{used}” wird verwendet
+	page {page}: graphics template “{template}” has no field for all of the block's text; the rest is left out	Seite {page}: Grafikvorlage “{template}” hat nicht für den ganzen Text des Blocks ein Feld; der Rest wird weggelassen
+	page {page}: template field “{control}” → “{part}” is not used (no such text control, or not head, body or tail)	Seite {page}: Vorlagenfeld “{control}” → “{part}” wird nicht verwendet (kein solches Textfeld, oder nicht Kopf, Hauptteil oder Fuß)
+	page {page}: pictures are left out on title, opening, chapter and lower-third pages	Seite {page}: auf Titel-, Vorspann-, Kapitel- und Bauchbindenseiten werden Bilder weggelassen
 # Auto Color, Auto Contrast, Auto Levels (EffectsSDK review)
 	Auto Color	Auto-Farbe
 	Auto Contrast	Auto-Kontrast
@@ -4707,8 +4717,6 @@
 	{strip} Pan (knob)	{strip} Panorama (Drehregler)
 	{strip} Volume (fader)	{strip} Lautstärke (Fader)
 # Control surfaces (F1 Learn and profile, CFA4-CONTROL-SURFACE-001)
-	Control Surfaces	Bedienoberflächen
-	Use control surfaces (MIDI controllers, jog/shuttle devices)	Bedienoberflächen verwenden (MIDI-Controller, Jog/Shuttle-Geräte)
 	Assignments run when a button is pressed (a fader or knob counts as pressed past half way); a fader or knob assigned to a mixer strip moves its volume or pan. A ShuttlePRO's shuttle ring plays at its profile's speeds and its jog wheel steps frame by frame. Endless encoders and feedback to the controller (lights, motor faders) come in a later version.	Zuweisungen laufen bei einem Tastendruck (ein Fader oder Knopf gilt ab der Mitte als gedrückt); ein Fader oder Knopf auf einem Mixerkanal bewegt dessen Lautstärke oder Panorama. Der Shuttle-Ring eines ShuttlePRO spielt mit den Geschwindigkeiten seines Profils, das Jog-Rad springt bildweise. Endlos-Encoder und Rückmeldung an das Gerät (Leuchten, Motorfader) kommen in einer späteren Version.
 	First message (ms)	Erste Meldung (ms)
 	Silence (ms)	Stille (ms)
@@ -4752,3 +4760,22 @@
 	Type: {hint}	Typ: {hint}
 	User profile file	Benutzerprofildatei
 	{received} received, {dispatched} dispatched, {coalesced} coalesced, {stalls} stalls, {errors} errors	{received} empfangen, {dispatched} zugestellt, {coalesced} zusammengefasst, {stalls} Wartezeiten, {errors} Fehler
+
+# Control Surfaces settings page (CS-1, #1187)
+	Looking for devices…	Geräte werden gesucht…
+	No MIDI controller or jog/shuttle device was found. Connect one and press Refresh.	Kein MIDI-Controller und kein Jog/Shuttle-Gerät gefunden. Schließen Sie eines an und klicken Sie auf Aktualisieren.
+	Control Surfaces	Steueroberflächen
+	Use control surfaces (MIDI controllers, jog/shuttle devices)	Steueroberflächen verwenden (MIDI-Controller, Jog/Shuttle-Geräte)
+	Mapping controls to commands, MIDI Learn and the MIDI Monitor come in a later version; the choices here are remembered until then.	Die Zuordnung von Bedienelementen zu Befehlen, MIDI Learn und der MIDI-Monitor folgen in einer späteren Version; die Auswahl hier bleibt bis dahin gespeichert.
+	CFA4 ShuttlePRO	CFA4 ShuttlePRO
+	Kdenlive-style ShuttlePRO	ShuttlePRO im Kdenlive-Stil
+	Generic MIDI	Generisches MIDI
+# LTC timecode read from clip audio (TC-7, #1285)
+	Read from LTC Audio	Aus LTC-Audio lesen
+	Find SMPTE LTC on the clip's audio and use the timecode it gives the first frame	SMPTE-LTC im Ton des Clips suchen und den Timecode verwenden, den er dem ersten Bild gibt
+	Read Timecode from LTC Audio	Timecode aus LTC-Audio lesen
+# Credits: voices (the Voice column) in the block's properties (F10-C16)
+	Voices	Stimmen
+# Timecode sync varispeed and user bits (TC-8, #1308)
+	Varispeed: adjust the playback speed instead of seeking	Varispeed: Wiedergabegeschwindigkeit anpassen statt zu springen
+	User bits	User Bits

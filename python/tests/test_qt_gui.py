@@ -3073,6 +3073,19 @@ def test_real_engine_imf_export_writes_a_package_folder(app, tmp_path: Path):
         p = dlg.params()
         assert (p["imfContentKind"], p["imfLossless"], p["dcpLanguage"]) == ("episode", True, "hu-HU")
         assert "dcpResolution" not in p and "bitrateKbps" not in p
+        # IMF subtitles (#1234): the switch and language as for a DCP, a timed text kind, no font
+        assert dlg.dcp_subtitles.isEnabled() and p["dcpSubtitles"] is False and "imfTimedTextKind" not in p
+        assert not dlg.imf_timed_text_kind.isEnabled()
+        dlg.dcp_subtitles.setChecked(True)
+        assert dlg.imf_timed_text_kind.isEnabled() and dlg.dcp_subtitle_language.isEnabled()
+        assert not dlg.dcp_subtitle_font.isEnabled() and not dlg.dcp_subtitle_font_browse.isEnabled()
+        dlg.dcp_subtitle_language.setCurrentText("en-US")
+        dlg.imf_timed_text_kind.setCurrentIndex(dlg.imf_timed_text_kind.findData("forcedNarrative"))
+        p = dlg.params()
+        assert (p["dcpSubtitles"], p["dcpSubtitleLanguage"], p["imfTimedTextKind"]) == (True, "en-US", "forcedNarrative")
+        assert "dcpSubtitleFont" not in p
+        dlg.dcp_subtitles.setChecked(False)
+        assert not dlg.imf_timed_text_kind.isEnabled() and "imfTimedTextKind" not in dlg.params()
         # a small picture keeps the test quick
         dlg.match_size.setChecked(False)
         dlg.width_spin.setValue(320)
@@ -3098,6 +3111,7 @@ def test_real_engine_imf_export_writes_a_package_folder(app, tmp_path: Path):
         dlg.format.setCurrentIndex(dlg.format.findData("dcp"))
         kinds = [dlg.dcp_kind.itemData(i) for i in range(dlg.dcp_kind.count())]
         assert "policy" in kinds and "episode" not in kinds and not dlg.imf_lossless.isEnabled()
+        assert not dlg.imf_timed_text_kind.isEnabled()
     finally:
         if win.export_dialog is not None:
             win.export_dialog.hide()
@@ -14940,6 +14954,25 @@ def test_credits_engine_notes_are_translated():
         if literal.startswith("{what}"):
             filled = "picture" + filled[1:]
         assert any(p.match(filled) for p, _t in NOTES), literal
+
+
+def test_credits_template_pages_have_names_and_colours():
+    """F10-C16: the title, opening, chapter and lower-third pages are named in the page list (in
+    every language) and have their own colour on the Credits workspace's timeline strip."""
+    from cfa4_qt.i18n import TR
+    from cfa4_qt.panels.credits import BEHAVIOURS
+    from cfa4_qt.panels.credits_workspace import KIND_COLOURS
+
+    for kind in ("title", "opening", "chapter", "lowerThird"):
+        assert kind in BEHAVIOURS and kind in KIND_COLOURS, kind
+    assert set(KIND_COLOURS) == set(BEHAVIOURS)
+    TR.set_language("hu")
+    try:
+        assert TR.tr(BEHAVIOURS["lowerThird"]) == "Alsó sáv"
+        assert TR.tr(BEHAVIOURS["chapter"]) == "Fejezetcím"
+        assert TR.tr(BEHAVIOURS["opening"]) == "Nyitó képsor"
+    finally:
+        TR.set_language("en")
 
 
 def test_credits_card_point_text(app):
