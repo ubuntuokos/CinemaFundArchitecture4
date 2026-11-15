@@ -4687,3 +4687,9 @@
 	Use	Verwenden
 	{device} ({port})	{device} ({port})
 	{name}: {error}	{name}: {error}
+# Control surfaces (midi-monitor, CFA4-CONTROL-SURFACE-001)
+	MIDI Monitor	MIDI-Monitor
+	Press Start Monitor, then move a control.	Klicken Sie auf „Monitor starten“ und bewegen Sie dann ein Bedienelement.
+	Start Monitor	Monitor starten
+	Stop Monitor	Monitor beenden
+	… {count} messages not shown (too many at once)	… {count} Meldungen nicht angezeigt (zu viele auf einmal)

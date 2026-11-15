@@ -4689,3 +4689,9 @@
 	Use	使用
 	{device} ({port})	{device} ({port})
 	{name}: {error}	{name}: {error}
+# Control surfaces (midi-monitor, CFA4-CONTROL-SURFACE-001)
+	MIDI Monitor	MIDI モニター
+	Press Start Monitor, then move a control.	「モニター開始」を押してから、コントロールを動かしてください。
+	Start Monitor	モニター開始
+	Stop Monitor	モニター停止
+	… {count} messages not shown (too many at once)	… {count} 件のメッセージは表示されていません（一度に多すぎます）

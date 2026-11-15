@@ -4682,3 +4682,9 @@ export.summary	Low	lav
 	Use	Brug
 	{device} ({port})	{device} ({port})
 	{name}: {error}	{name}: {error}
+# Control surfaces (midi-monitor, CFA4-CONTROL-SURFACE-001)
+	MIDI Monitor	MIDI-monitor
+	Press Start Monitor, then move a control.	Tryk på Start monitor, og bevæg derefter et betjeningselement.
+	Start Monitor	Start monitor
+	Stop Monitor	Stop monitor
+	… {count} messages not shown (too many at once)	… {count} meddelelser vises ikke (for mange på én gang)

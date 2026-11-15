@@ -4678,3 +4678,9 @@
 	Use	使用
 	{device} ({port})	{device} ({port})
 	{name}: {error}	{name}: {error}
+# Control surfaces (midi-monitor, CFA4-CONTROL-SURFACE-001)
+	MIDI Monitor	MIDI 监视器
+	Press Start Monitor, then move a control.	按“开始监视”，然后移动一个控件。
+	Start Monitor	开始监视
+	Stop Monitor	停止监视
+	… {count} messages not shown (too many at once)	… {count} 条消息未显示（同时到达太多）

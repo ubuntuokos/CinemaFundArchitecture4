@@ -4683,3 +4683,9 @@ export.summary	Low	დაბალი
 	Use	გამოყენება
 	{device} ({port})	{device} ({port})
 	{name}: {error}	{name}: {error}
+# Control surfaces (midi-monitor, CFA4-CONTROL-SURFACE-001)
+	MIDI Monitor	MIDI მონიტორი
+	Press Start Monitor, then move a control.	დააჭირეთ „მონიტორის დაწყებას“, შემდეგ გაამოძრავეთ მართვის ელემენტი.
+	Start Monitor	მონიტორის დაწყება
+	Stop Monitor	მონიტორის შეჩერება
+	… {count} messages not shown (too many at once)	… {count} შეტყობინება არ ჩანს (ერთდროულად ზედმეტად ბევრია)

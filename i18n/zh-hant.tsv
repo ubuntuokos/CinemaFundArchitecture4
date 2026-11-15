@@ -4679,3 +4679,9 @@ export.summary	Low	低
 	Use	使用
 	{device} ({port})	{device} ({port})
 	{name}: {error}	{name}: {error}
+# Control surfaces (midi-monitor, CFA4-CONTROL-SURFACE-001)
+	MIDI Monitor	MIDI 監視器
+	Press Start Monitor, then move a control.	按「開始監視」，然後移動一個控制項。
+	Start Monitor	開始監視
+	Stop Monitor	停止監視
+	… {count} messages not shown (too many at once)	… {count} 則訊息未顯示（同時到達太多）

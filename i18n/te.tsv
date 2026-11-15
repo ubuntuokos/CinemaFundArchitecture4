@@ -4686,3 +4686,9 @@ export.summary	Low	తక్కువ
 	Use	ఉపయోగించు
 	{device} ({port})	{device} ({port})
 	{name}: {error}	{name}: {error}
+# Control surfaces (midi-monitor, CFA4-CONTROL-SURFACE-001)
+	MIDI Monitor	MIDI మానిటర్
+	Press Start Monitor, then move a control.	మానిటర్ ప్రారంభించు నొక్కి, ఆపై ఒక నియంత్రణను కదిలించండి.
+	Start Monitor	మానిటర్ ప్రారంభించు
+	Stop Monitor	మానిటర్ ఆపు
+	… {count} messages not shown (too many at once)	… {count} సందేశాలు చూపబడలేదు (ఒకేసారి చాలా ఎక్కువ)

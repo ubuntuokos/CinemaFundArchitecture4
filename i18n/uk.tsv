@@ -4665,3 +4665,9 @@
 	Use	Використовувати
 	{device} ({port})	{device} ({port})
 	{name}: {error}	{name}: {error}
+# Control surfaces (midi-monitor, CFA4-CONTROL-SURFACE-001)
+	MIDI Monitor	MIDI-монітор
+	Press Start Monitor, then move a control.	Натисніть «Запустити монітор», потім поворушіть елемент керування.
+	Start Monitor	Запустити монітор
+	Stop Monitor	Зупинити монітор
+	… {count} messages not shown (too many at once)	… {count} повідомлень не показано (забагато водночас)

@@ -4681,3 +4681,9 @@ export.summary	Low	düşük
 	Use	Kullan
 	{device} ({port})	{device} ({port})
 	{name}: {error}	{name}: {error}
+# Control surfaces (midi-monitor, CFA4-CONTROL-SURFACE-001)
+	MIDI Monitor	MIDI izleyici
+	Press Start Monitor, then move a control.	İzleyiciyi Başlat'a basın, ardından bir denetimi hareket ettirin.
+	Start Monitor	İzleyiciyi Başlat
+	Stop Monitor	İzleyiciyi Durdur
+	… {count} messages not shown (too many at once)	… {count} ileti gösterilmedi (aynı anda çok fazla)

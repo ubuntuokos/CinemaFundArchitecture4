@@ -4682,3 +4682,9 @@ export.summary	Low	madal
 	Use	Kasuta
 	{device} ({port})	{device} ({port})
 	{name}: {error}	{name}: {error}
+# Control surfaces (midi-monitor, CFA4-CONTROL-SURFACE-001)
+	MIDI Monitor	MIDI-monitor
+	Press Start Monitor, then move a control.	Vajutage „Käivita monitor“ ja liigutage seejärel juhtelementi.
+	Start Monitor	Käivita monitor
+	Stop Monitor	Peata monitor
+	… {count} messages not shown (too many at once)	… {count} sõnumit pole näidatud (liiga palju korraga)

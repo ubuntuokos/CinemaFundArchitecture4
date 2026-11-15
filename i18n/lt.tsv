@@ -4683,3 +4683,9 @@ export.summary	Low	žema
 	Use	Naudoti
 	{device} ({port})	{device} ({port})
 	{name}: {error}	{name}: {error}
+# Control surfaces (midi-monitor, CFA4-CONTROL-SURFACE-001)
+	MIDI Monitor	MIDI monitorius
+	Press Start Monitor, then move a control.	Paspauskite „Paleisti monitorių“, tada pajudinkite valdiklį.
+	Start Monitor	Paleisti monitorių
+	Stop Monitor	Sustabdyti monitorių
+	… {count} messages not shown (too many at once)	… {count} pranešimų nerodoma (per daug vienu metu)

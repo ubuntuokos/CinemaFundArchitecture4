@@ -4690,3 +4690,9 @@
 	Use	Usar
 	{device} ({port})	{device} ({port})
 	{name}: {error}	{name}: {error}
+# Control surfaces (midi-monitor, CFA4-CONTROL-SURFACE-001)
+	MIDI Monitor	Monitor MIDI
+	Press Start Monitor, then move a control.	Pressione Iniciar monitor e mova um controle.
+	Start Monitor	Iniciar monitor
+	Stop Monitor	Parar monitor
+	… {count} messages not shown (too many at once)	… {count} mensagens não exibidas (muitas de uma vez)

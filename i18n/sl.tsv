@@ -4683,3 +4683,9 @@ export.summary	Low	nizka
 	Use	Uporabi
 	{device} ({port})	{device} ({port})
 	{name}: {error}	{name}: {error}
+# Control surfaces (midi-monitor, CFA4-CONTROL-SURFACE-001)
+	MIDI Monitor	MIDI-nadzornik
+	Press Start Monitor, then move a control.	Pritisnite Zaženi nadzornik, nato premaknite kontrolnik.
+	Start Monitor	Zaženi nadzornik
+	Stop Monitor	Ustavi nadzornik
+	… {count} messages not shown (too many at once)	… {count} sporočil ni prikazanih (preveč naenkrat)

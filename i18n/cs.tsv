@@ -4680,3 +4680,9 @@ export.summary	Low	nízká
 	Use	Použít
 	{device} ({port})	{device} ({port})
 	{name}: {error}	{name}: {error}
+# Control surfaces (midi-monitor, CFA4-CONTROL-SURFACE-001)
+	MIDI Monitor	MIDI monitor
+	Press Start Monitor, then move a control.	Stiskněte Spustit monitor a pak pohněte ovládacím prvkem.
+	Start Monitor	Spustit monitor
+	Stop Monitor	Zastavit monitor
+	… {count} messages not shown (too many at once)	… {count} zpráv nezobrazeno (příliš mnoho najednou)

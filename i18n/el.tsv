@@ -4682,3 +4682,9 @@ export.summary	Low	χαμηλή
 	Use	Χρήση
 	{device} ({port})	{device} ({port})
 	{name}: {error}	{name}: {error}
+# Control surfaces (midi-monitor, CFA4-CONTROL-SURFACE-001)
+	MIDI Monitor	Παρακολούθηση MIDI
+	Press Start Monitor, then move a control.	Πατήστε «Έναρξη παρακολούθησης» και μετακινήστε ένα χειριστήριο.
+	Start Monitor	Έναρξη παρακολούθησης
+	Stop Monitor	Διακοπή παρακολούθησης
+	… {count} messages not shown (too many at once)	… {count} μηνύματα δεν εμφανίζονται (πάρα πολλά ταυτόχρονα)

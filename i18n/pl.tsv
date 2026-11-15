@@ -4680,3 +4680,9 @@ export.summary	Low	niska
 	Use	Używaj
 	{device} ({port})	{device} ({port})
 	{name}: {error}	{name}: {error}
+# Control surfaces (midi-monitor, CFA4-CONTROL-SURFACE-001)
+	MIDI Monitor	Monitor MIDI
+	Press Start Monitor, then move a control.	Naciśnij Uruchom monitor, a następnie porusz elementem sterującym.
+	Start Monitor	Uruchom monitor
+	Stop Monitor	Zatrzymaj monitor
+	… {count} messages not shown (too many at once)	… {count} komunikatów nie pokazano (za dużo naraz)

@@ -4682,3 +4682,9 @@ export.summary	Low	nizak
 	Use	Koristi
 	{device} ({port})	{device} ({port})
 	{name}: {error}	{name}: {error}
+# Control surfaces (midi-monitor, CFA4-CONTROL-SURFACE-001)
+	MIDI Monitor	MIDI monitor
+	Press Start Monitor, then move a control.	Pritisnite „Pokreni monitor“, a zatim pomerite kontrolu.
+	Start Monitor	Pokreni monitor
+	Stop Monitor	Zaustavi monitor
+	… {count} messages not shown (too many at once)	… {count} poruka nije prikazano (previše odjednom)

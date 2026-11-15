@@ -4688,3 +4688,9 @@
 	Use	Gunakan
 	{device} ({port})	{device} ({port})
 	{name}: {error}	{name}: {error}
+# Control surfaces (midi-monitor, CFA4-CONTROL-SURFACE-001)
+	MIDI Monitor	Monitor MIDI
+	Press Start Monitor, then move a control.	Tekan Mulai Monitor, lalu gerakkan sebuah kontrol.
+	Start Monitor	Mulai Monitor
+	Stop Monitor	Hentikan Monitor
+	… {count} messages not shown (too many at once)	… {count} pesan tidak ditampilkan (terlalu banyak sekaligus)

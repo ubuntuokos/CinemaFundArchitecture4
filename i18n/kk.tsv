@@ -4682,3 +4682,9 @@ export.summary	Low	төмен
 	Use	Пайдалану
 	{device} ({port})	{device} ({port})
 	{name}: {error}	{name}: {error}
+# Control surfaces (midi-monitor, CFA4-CONTROL-SURFACE-001)
+	MIDI Monitor	MIDI мониторы
+	Press Start Monitor, then move a control.	«Мониторды бастау» батырмасын басып, басқару элементін қозғаңыз.
+	Start Monitor	Мониторды бастау
+	Stop Monitor	Мониторды тоқтату
+	… {count} messages not shown (too many at once)	… {count} хабар көрсетілмеді (бір мезгілде тым көп)
