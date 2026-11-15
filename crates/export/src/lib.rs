@@ -3054,6 +3054,33 @@ pub fn export_chapters(project: &Project, seq: ItemId, settings: &ExportSettings
         .collect()
 }
 
+/// AS-11 programme parts of an MXF OP1a export with AS-11 metadata and no parts typed in
+/// (`ExportSettings::mxf_as11_segments` empty): the sequence's segmentation markers with a
+/// duration, cut to `range`, as (start, duration) in frames of `rate` from the first exported
+/// frame, in time order. Empty otherwise.
+pub fn export_as11_parts(project: &Project, seq: ItemId, settings: &ExportSettings, range: TimeRange, rate: FrameRate) -> Vec<(i64, i64)> {
+    if settings.format != Format::MxfOp1a || settings.mxf_as11_core.trim().is_empty() || !settings.mxf_as11_segments.trim().is_empty() {
+        return Vec::new();
+    }
+    let Some(q) = project.sequence(seq) else { return Vec::new() };
+    let start = range.start.0;
+    let end = start.saturating_add(range.duration.0);
+    let frame = |t: i64| rate.frame_at(rate.snap_nearest(Tick(t.saturating_sub(start))));
+    let mut parts: Vec<(i64, i64)> = q
+        .markers
+        .iter()
+        .filter(|m| m.kind == cfa4_project::MarkerKind::Segmentation && m.duration.0 > 0)
+        .filter_map(|m| {
+            let a = m.start.0.max(start);
+            let b = m.start.0.saturating_add(m.duration.0).min(end);
+            let (fa, fb) = (frame(a), frame(b));
+            (fb > fa).then_some((fa, fb - fa))
+        })
+        .collect();
+    parts.sort_unstable();
+    parts
+}
+
 pub fn export_range(project: &Project, seq: ItemId, settings: &ExportSettings) -> Result<TimeRange> {
     let q = project.sequence(seq).ok_or(ExportError::NoSequence)?;
     q.check_bounds().map_err(ExportError::Unsupported)?;
