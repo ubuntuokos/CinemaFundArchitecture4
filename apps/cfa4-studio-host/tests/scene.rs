@@ -181,12 +181,26 @@ fn libobs_shows_the_same_scene_as_the_software_compositor() {
     let _ = std::fs::remove_dir_all(&pics);
 }
 
-/// The S1 acceptance (plan VI): a scene with a CFA4 title over a playing video runs at 60 fps.
-/// The video is a feed the test writes at 60 fps, as the engine's player does (a moving bar);
-/// the title a still picture. Over two seconds the host must write program frames at the full
-/// rate and show (nearly) every feed frame. Timing is checked in release builds (as CI runs).
+/// A scene with a CFA4 title over a playing video: the video is a feed the test writes at 60 fps,
+/// as the engine's player does (a moving bar); the title a still picture. Over two seconds the
+/// title stays on top and the video moves; the program and shown-video rates are printed.
 #[test]
-fn a_title_over_a_playing_video_runs_at_60_fps() {
+fn a_title_over_a_playing_video_keeps_moving() {
+    // shared CI runners: only that the program and the video move (the timing is the perf test's)
+    title_over_video(10.0, 5.0);
+}
+
+/// The S1 acceptance (plan VI): the same scene runs at 60 fps: the host writes program frames at
+/// the full rate and shows (nearly) every feed frame. A measurement, so ignored by default (as
+/// the other perf tests: shared runners are not idle); run with
+/// `cargo test --release -p cfa4-studio-host --test scene -- --ignored --nocapture`.
+#[test]
+#[ignore]
+fn perf_a_title_over_a_playing_video_runs_at_60_fps() {
+    title_over_video(57.0, 54.0);
+}
+
+fn title_over_video(min_program_fps: f64, min_shown_fps: f64) {
     use cfa4_obs::ring::{RingWriter, create_sized};
     use cfa4_obs::{Frame, PixelFormat};
     let (w, h) = (1920u32, 1080u32);
@@ -266,9 +280,10 @@ fn a_title_over_a_playing_video_runs_at_60_fps() {
     eprintln!("program {program_fps:.1} fps, video shown {shown_fps:.1} fps ({fed} frames fed)");
     if cfg!(debug_assertions) {
         eprintln!("timing not checked in a debug build");
+        assert!(changes > 0, "the video moves");
     } else {
-        assert!(program_fps >= 57.0, "program at {program_fps:.1} fps");
-        assert!(shown_fps >= 54.0, "the video shown at {shown_fps:.1} fps");
+        assert!(program_fps >= min_program_fps, "program at {program_fps:.1} fps");
+        assert!(shown_fps >= min_shown_fps, "the video shown at {shown_fps:.1} fps");
     }
     cfa4_obs::ring::remove(&ring);
     let _ = std::fs::remove_dir_all(&dir);

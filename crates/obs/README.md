@@ -61,10 +61,12 @@ every feed before each program frame (`scene::Feeds`, `StudioBackend::update_lay
 software backend composites again, libobs gets the frame on the layer's `cfa4_picture` source.
 
 The software compositor works in 8-bit fixed point with rows in parallel (rayon), so a full-HD
-scene keeps up with 60 fps on the CI runners. Measured by
-`apps/cfa4-studio-host/tests/scene.rs::a_title_over_a_playing_video_runs_at_60_fps`
-(1920×1080, 60 fps, a title over a 60 fps video feed): program 60.0 fps, video shown 58.5 fps
-(release build, 4 cores).
+scene keeps up with 60 fps. Measured by the ignored perf test
+`apps/cfa4-studio-host/tests/scene.rs::perf_a_title_over_a_playing_video_runs_at_60_fps`
+(`cargo test --release -p cfa4-studio-host --test scene -- --ignored --nocapture`; 1920×1080,
+60 fps, a title over a 60 fps video feed): program 60.0 fps, video shown 58.5 fps (release build,
+4 cores, idle). On busy shared CI runners it measured 48.9 fps, so CI runs only the
+`a_title_over_a_playing_video_keeps_moving` variant (the title on top, the video moving).
 
 ## Never crash
 
