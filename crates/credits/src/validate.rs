@@ -301,7 +301,7 @@ pub fn validate(credits: &Credits, laid: &Laid, frame: Frame, measure: &dyn Meas
                     }
                 }
             }
-            Behaviour::Card => {
+            Behaviour::Card | Behaviour::Title | Behaviour::Opening | Behaviour::Chapter | Behaviour::LowerThird => {
                 let hold = secs(pg.duration) - secs(pg.fade_in) - secs(pg.fade_out);
                 if hold < MIN_CARD_HOLD_SECONDS {
                     out.add(

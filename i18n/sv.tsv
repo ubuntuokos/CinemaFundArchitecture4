@@ -4602,6 +4602,14 @@ export.summary	Low	låg
 	Stop studio	Stoppa studio
 	Add Studio Scene	Lägg till studioscen
 	Live	Live
+# Credits: title, opening, chapter and lower-third pages filled from a graphics template (F10-C16)
+	Opening Credits	Förtexter
+	Chapter Title	Kapiteltitel
+	Lower Third	Namnskylt
+	page {page}: graphics template “{template}” was not found; “{used}” is used	sida {page}: grafikmallen “{template}” hittades inte; “{used}” används
+	page {page}: graphics template “{template}” has no field for all of the block's text; the rest is left out	sida {page}: grafikmallen “{template}” har inte fält för all text i blocket; resten utelämnas
+	page {page}: template field “{control}” → “{part}” is not used (no such text control, or not head, body or tail)	sida {page}: mallfältet “{control}” → “{part}” används inte (ingen sådan textkontroll, eller inte huvud, brödtext eller svans)
+	page {page}: pictures are left out on title, opening, chapter and lower-third pages	sida {page}: bilder utelämnas på titel-, förtext-, kapitel- och namnskyltssidor
 # Auto Color, Auto Contrast, Auto Levels (EffectsSDK review)
 	Auto Color	Automatisk färg
 	Auto Contrast	Automatisk kontrast

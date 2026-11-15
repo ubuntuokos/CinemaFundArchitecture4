@@ -4585,6 +4585,14 @@
 	Stop studio	Зупинити студію
 	Add Studio Scene	Додати сцену студії
 	Live	Наживо
+# Credits: title, opening, chapter and lower-third pages filled from a graphics template (F10-C16)
+	Opening Credits	Початкові титри
+	Chapter Title	Назва розділу
+	Lower Third	Плашка
+	page {page}: graphics template “{template}” was not found; “{used}” is used	сторінка {page}: графічний шаблон “{template}” не знайдено; використовується “{used}”
+	page {page}: graphics template “{template}” has no field for all of the block's text; the rest is left out	сторінка {page}: у графічному шаблоні “{template}” немає поля для всього тексту блоку; решту пропущено
+	page {page}: template field “{control}” → “{part}” is not used (no such text control, or not head, body or tail)	сторінка {page}: поле шаблону “{control}” → “{part}” не використовується (немає такого текстового елемента або це не заголовок, основний текст чи підпис)
+	page {page}: pictures are left out on title, opening, chapter and lower-third pages	сторінка {page}: на сторінках заголовка, початкових титрів, розділу та плашки зображення пропускаються
 # Auto Color, Auto Contrast, Auto Levels (EffectsSDK review)
 	Auto Color	Автоколір
 	Auto Contrast	Автоконтраст

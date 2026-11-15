@@ -4602,6 +4602,14 @@ export.summary	Low	lav
 	Stop studio	Stop studie
 	Add Studio Scene	Tilføj studiescene
 	Live	Live
+# Credits: title, opening, chapter and lower-third pages filled from a graphics template (F10-C16)
+	Opening Credits	Fortekster
+	Chapter Title	Kapiteltitel
+	Lower Third	Navneskilt
+	page {page}: graphics template “{template}” was not found; “{used}” is used	side {page}: grafikskabelonen “{template}” blev ikke fundet; “{used}” bruges
+	page {page}: graphics template “{template}” has no field for all of the block's text; the rest is left out	side {page}: grafikskabelonen “{template}” har ikke felt til al blokkens tekst; resten udelades
+	page {page}: template field “{control}” → “{part}” is not used (no such text control, or not head, body or tail)	side {page}: skabelonfeltet “{control}” → “{part}” bruges ikke (ingen sådan tekstkontrol, eller ikke hoved, brødtekst eller hale)
+	page {page}: pictures are left out on title, opening, chapter and lower-third pages	side {page}: billeder udelades på titel-, fortekst-, kapitel- og navneskiltsider
 # Auto Color, Auto Contrast, Auto Levels (EffectsSDK review)
 	Auto Color	Automatisk farve
 	Auto Contrast	Automatisk kontrast

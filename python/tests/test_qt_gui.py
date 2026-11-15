@@ -14936,6 +14936,25 @@ def test_credits_engine_notes_are_translated():
         assert any(p.match(filled) for p, _t in NOTES), literal
 
 
+def test_credits_template_pages_have_names_and_colours():
+    """F10-C16: the title, opening, chapter and lower-third pages are named in the page list (in
+    every language) and have their own colour on the Credits workspace's timeline strip."""
+    from cfa4_qt.i18n import TR
+    from cfa4_qt.panels.credits import BEHAVIOURS
+    from cfa4_qt.panels.credits_workspace import KIND_COLOURS
+
+    for kind in ("title", "opening", "chapter", "lowerThird"):
+        assert kind in BEHAVIOURS and kind in KIND_COLOURS, kind
+    assert set(KIND_COLOURS) == set(BEHAVIOURS)
+    TR.set_language("hu")
+    try:
+        assert TR.tr(BEHAVIOURS["lowerThird"]) == "Alsó sáv"
+        assert TR.tr(BEHAVIOURS["chapter"]) == "Fejezetcím"
+        assert TR.tr(BEHAVIOURS["opening"]) == "Nyitó képsor"
+    finally:
+        TR.set_language("en")
+
+
 def test_credits_card_point_text(app):
     """C15: a card spine's point follows its offset in the block's properties, in the user's
     language; a block without one, or with bad values, does not break it."""

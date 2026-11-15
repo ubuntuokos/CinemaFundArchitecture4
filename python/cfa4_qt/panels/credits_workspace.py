@@ -15,7 +15,16 @@ from PySide6.QtWidgets import QFormLayout, QLabel, QSizePolicy, QVBoxLayout, QWi
 from ..i18n import N_, tr
 
 # colours of the strip by page type (scroll, card, crawl); neutral, readable on light and dark
-KIND_COLOURS = {"scroll": QColor("#4f7cac"), "card": QColor("#8a6fb0"), "crawl": QColor("#5f9c74")}
+KIND_COLOURS = {
+    "scroll": QColor("#4f7cac"),
+    "card": QColor("#8a6fb0"),
+    "crawl": QColor("#5f9c74"),
+    # F10-C16: titles and lower thirds filled from graphics templates
+    "title": QColor("#b0864f"),
+    "opening": QColor("#a8794a"),
+    "chapter": QColor("#9c6f5f"),
+    "lowerThird": QColor("#4f9ca0"),
+}
 OTHER_COLOUR = QColor("#808080")
 STRIP_HEIGHT = 34
 

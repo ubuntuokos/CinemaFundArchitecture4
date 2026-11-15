@@ -4607,6 +4607,14 @@
 	Stop studio	Detener estudio
 	Add Studio Scene	Añadir escena de estudio
 	Live	En directo
+# Credits: title, opening, chapter and lower-third pages filled from a graphics template (F10-C16)
+	Opening Credits	Créditos iniciales
+	Chapter Title	Título de capítulo
+	Lower Third	Rótulo inferior
+	page {page}: graphics template “{template}” was not found; “{used}” is used	página {page}: no se encontró la plantilla gráfica “{template}”; se usa “{used}”
+	page {page}: graphics template “{template}” has no field for all of the block's text; the rest is left out	página {page}: la plantilla gráfica “{template}” no tiene campo para todo el texto del bloque; el resto se omite
+	page {page}: template field “{control}” → “{part}” is not used (no such text control, or not head, body or tail)	página {page}: el campo de plantilla “{control}” → “{part}” no se usa (no existe ese control de texto, o no es cabecera, cuerpo ni pie)
+	page {page}: pictures are left out on title, opening, chapter and lower-third pages	página {page}: las imágenes se omiten en las páginas de título, créditos iniciales, capítulo y rótulo inferior
 # Auto Color, Auto Contrast, Auto Levels (EffectsSDK review)
 	Auto Color	Color automático
 	Auto Contrast	Contraste automático
