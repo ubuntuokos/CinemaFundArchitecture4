@@ -15,7 +15,7 @@
 //! - [`delivery`]: verified copy of a finished package to its delivery target, marked incomplete
 //!   until every file is read back and matches, resumable, with a deterministic SHA-256 manifest;
 //!   [`drive`]: a read-only check of a DCP delivery drive (MBR, ext2/ext3, 128-byte inodes)
-//!   (CINECERT WP13).
+//!   (CINECERT WP13); [`archive`]: the provenance report and BagIt (RFC 8493) archive bags.
 //!
 //! MXF-DIGEST and VTFP follow the draft memos published by CineCert for the HPA (`README.md` names the revisions).
 //! They are implemented from the memos' text; the memos' own test material is the test oracle.
@@ -25,6 +25,7 @@
 
 #![cfg_attr(not(test), deny(clippy::unwrap_used, clippy::expect_used, clippy::panic, clippy::unimplemented, clippy::todo, clippy::unreachable))]
 
+pub mod archive;
 mod base58;
 pub mod delivery;
 pub mod drive;
