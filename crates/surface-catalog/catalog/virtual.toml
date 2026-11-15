@@ -1,0 +1,25 @@
+# The virtual deck (plan §2, M1): a software key panel, any grid, any number of instances, driven from the UI and the control channel.
+format = "cfa4-surface-catalog"
+version = 1
+family = "virtual"
+
+[[model]]
+id = "cfa4.virtual-deck"
+vendor = "CFA4"
+name = "Virtual deck"
+kind = "virtual"
+goal = "FULL"
+adapter = "virtual"
+phase = "M1"
+connection = ["software"]
+source = "own"
+baseline = ["keys.press", "keys.release", "keys.image"]
+protocol_features = ["keys.press", "keys.release", "keys.image", "keys.brightness"]
+
+[[model.controls]]
+id = "keys"
+type = "lcd_key"
+count = 15
+rows = 3
+columns = 5
+features = { press = "UNTESTED", release = "UNTESTED", image = "UNTESTED", brightness = "UNTESTED" }

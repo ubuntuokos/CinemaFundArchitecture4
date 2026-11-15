@@ -12,10 +12,14 @@
 //! show, and handed over as raw RGBA files in a private directory (0700) next to the frame ring.
 //! A source that cannot be drawn is left out and listed in the status (`sceneProblems`).
 //!
+//! Every host status carries `ptp`: what `ptp4l` reports through `pmc` (lock, grandmaster,
+//! offset), the TAI time and the `ts-refclk` / `mediaclk` an ST 2110 sender signals now
+//! (`cfa4_obs::ptp`, ST 2110 addendum T1). It is read at most every [`PTP_REFRESH`].
+//!
 //! | method | params | result |
 //! |---|---|---|
 //! | `live.studio.host.start` | `{width?, height?, fps?: "N/D", backend?: "auto" \| "libobs" \| "software"}` | host status |
-//! | `live.studio.host.status` | – | host status (`state: "stopped"` when none runs) |
+//! | `live.studio.host.status` | – | host status (`state: "stopped"` when none runs), with `ptp` |
 //! | `live.studio.host.stop` | – | `{state: "stopped"}` |
 //! | `live.studio.frame` | `{shm?}` | `{w, h, format: "rgba8", seq, ptsNs, backend, shm? \| shmError?}` + `w·h·4` bytes |
 
@@ -29,10 +33,15 @@ use serde_json::{Value, json};
 use std::cell::RefCell;
 use std::collections::HashMap;
 use std::path::PathBuf;
+use std::time::{Duration, Instant};
+
+/// How old the PTP part of the status may be (`pmc` is a process start).
+pub const PTP_REFRESH: Duration = Duration::from_secs(1);
 
 thread_local! {
     static HOST: RefCell<Option<Supervisor>> = const { RefCell::new(None) };
     static SYNC: RefCell<SceneSync> = RefCell::new(SceneSync::default());
+    static PTP: RefCell<Option<(Instant, Value)>> = const { RefCell::new(None) };
 }
 
 /// What the host was last given, and the rendered pictures by [`studio::picture_key`].
@@ -156,6 +165,27 @@ fn build_scene(sync: &mut SceneSync, st: &cfa4_project::LiveStudio) -> HostScene
     HostScene { revision: sync.revision, layers: host_layers }
 }
 
+fn ptp_json() -> Value {
+    PTP.with(|p| {
+        let mut p = p.borrow_mut();
+        if let Some((at, v)) = p.as_ref()
+            && at.elapsed() < PTP_REFRESH
+        {
+            return v.clone();
+        }
+        let v = serde_json::to_value(cfa4_obs::ptp::query()).unwrap_or_else(|e| json!({"error": e.to_string()}));
+        *p = Some((Instant::now(), v.clone()));
+        v
+    })
+}
+
+fn with_ptp(mut status: Value) -> Value {
+    if let Some(o) = status.as_object_mut() {
+        o.insert("ptp".into(), ptp_json());
+    }
+    status
+}
+
 fn u32_param(p: &Value, key: &str, default: u32) -> Result<u32, String> {
     match p.get(key) {
         None | Some(Value::Null) => Ok(default),
@@ -202,7 +232,7 @@ pub fn start(p: &Value) -> Result<Value, String> {
     // one host per engine: a new start replaces the running one
     stop();
     let sup = Supervisor::start(opts).map_err(|e| e.to_string())?;
-    let status = status_json(&sup);
+    let status = with_ptp(status_json(&sup));
     HOST.with(|h| *h.borrow_mut() = Some(sup));
     // the new host gets the current scene from the next upkeep
     SYNC.with(|y| y.borrow_mut().sent = None);
@@ -211,7 +241,7 @@ pub fn start(p: &Value) -> Result<Value, String> {
 
 /// `live.studio.host.status`.
 pub fn status() -> Value {
-    HOST.with(|h| h.borrow().as_ref().map(status_json)).unwrap_or_else(|| json!({"state": "stopped"}))
+    with_ptp(HOST.with(|h| h.borrow().as_ref().map(status_json)).unwrap_or_else(|| json!({"state": "stopped"})))
 }
 
 /// `live.studio.host.stop` (also run when the engine ends).
@@ -350,6 +380,10 @@ mod tests {
     fn without_a_host_status_is_stopped_and_frames_are_an_error() {
         assert_eq!(stop()["state"], "stopped");
         assert_eq!(status()["state"], "stopped");
+        // The PTP part is always there; without ptp4l the sender signals its own timebase.
+        let ptp = &status()["ptp"];
+        assert!(ptp["mediaclk"] == "direct=0" || ptp["mediaclk"] == "sender", "{ptp}");
+        assert!(ptp["tsRefclk"].as_str().is_some_and(|r| r.starts_with("ptp=") || r.starts_with("localmac=")));
         assert!(frame().is_err());
     }
 }

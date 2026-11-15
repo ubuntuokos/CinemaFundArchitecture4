@@ -60,6 +60,7 @@ pub mod relink;
 pub mod remix;
 pub mod scene_detect;
 pub mod scopes;
+pub mod security;
 pub mod sequence_extras;
 pub mod sequence_tools;
 pub mod settings;
