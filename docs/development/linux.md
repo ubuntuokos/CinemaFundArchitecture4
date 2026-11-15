@@ -103,6 +103,8 @@ but WASM is **not** a supported CFA4 target or quality gate.
 
 Development dependencies of the planned DCP validation (isolated dcp_inspect reference engine,
 no system changes): [dcp-validation.md](dcp-validation.md).
+External DCP / IMF test oracles (asdcplib, Netflix Photon, Clairmeta) and the test corpus:
+[cinema-oracles.md](cinema-oracles.md) (`cargo xtask cinema-oracles`).
 
 ## HEIF / HEIC still images (local libheif, Ubuntu 26.04 AMD64)
 

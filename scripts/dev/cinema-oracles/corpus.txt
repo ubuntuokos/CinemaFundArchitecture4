@@ -1,0 +1,8 @@
+# External DCP / IMF test packages for the CineCert conformance tests (CINECERT WP01-A, plan ch. 13).
+# Never committed to this repository (AGENTS.md): fetched by
+#   bash scripts/dev/setup-cinema-oracles.sh --corpus
+# into the cache root's corpus/ directory, each checked against its sha256.
+#
+# One entry per line: <file name> <https URL> <sha256>
+# Add an entry only with its licence checked (plan ch. 13: synthetic packages first; open-licence
+# content such as CC BY 4.0 only after its terms are recorded in the PR that adds it).

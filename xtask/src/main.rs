@@ -428,6 +428,14 @@ fn bench() -> Result<(), String> {
     run(Command::new(env!("CARGO")).args(["run", "--release", "-p", "cfa4-ui-egui", "--example", "bench", "--"]).args(&extra))
 }
 
+/// The external DCP / IMF test oracles (CINECERT WP01-A): asdcplib, Photon, Clairmeta and the
+/// test corpus, installed outside the repository by `scripts/dev/setup-cinema-oracles.sh`; extra
+/// arguments go to the script (`cargo xtask cinema-oracles --install photon`). Default: `--check`.
+fn cinema_oracles() -> Result<(), String> {
+    let extra: Vec<String> = std::env::args().skip(2).collect();
+    run(Command::new("bash").arg(root().join("scripts/dev/setup-cinema-oracles.sh")).args(&extra))
+}
+
 /// L0 crates that read no untrusted input (encoders only): no fuzz target needed.
 const NO_PARSER: &[&str] = &["h264enc", "flac"];
 
@@ -489,6 +497,7 @@ fn main() -> ExitCode {
         "fuzz-targets" => fuzz_targets(),
         "ci" => ci(),
         "bench" => bench(),
+        "cinema-oracles" => cinema_oracles(),
         "bench-playback" => bench_playback(),
         "version" => {
             let rest: Vec<String> = std::env::args().skip(2).collect();
@@ -499,7 +508,7 @@ fn main() -> ExitCode {
             parity::run(&root(), &rest.iter().map(String::as_str).collect::<Vec<_>>())
         }
         _ => Err(
-            "usage: cargo xtask <layers|assets|wasm|fuzz-targets|fixtures [crate…]|parity [--area menus|effects|transitions] [--reference FILE] [--out FILE] [--min PERCENT]|version [set X.Y.Z]|ci|bench [args]|bench-playback [args]>"
+            "usage: cargo xtask <layers|assets|wasm|fuzz-targets|fixtures [crate…]|parity [--area menus|effects|transitions] [--reference FILE] [--out FILE] [--min PERCENT]|version [set X.Y.Z]|ci|bench [args]|bench-playback [args]|cinema-oracles [--check|--install …|--corpus|--print-env]>"
                 .into(),
         ),
     };
