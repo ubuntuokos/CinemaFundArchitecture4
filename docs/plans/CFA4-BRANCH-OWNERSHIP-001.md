@@ -1,6 +1,6 @@
 # CFA4-BRANCH-OWNERSHIP-001 – egy ág, egy munkamenet: az ág-tulajdon technikai védelme
 
-**Állapot:** 1.5, jóváhagyva. A tulajdonos 2026-11-14-én az 1.4-et, 2026-11-15-én a BO-1 jelentés E1–E5 pontosítását (1.5) jóváhagyta. A változatok a 9. fejezetben. A BO-1 kész (#1344); következő lépés: BO-2.
+**Állapot:** 1.6, jóváhagyva. A tulajdonos 2026-11-14-én az 1.4-et, 2026-11-15-én a BO-1 jelentés E1–E5 pontosítását (1.5) és a D12 szigorítását (1.6) jóváhagyta. A változatok a 9. fejezetben. A BO-1 kész (#1344); következő lépés: BO-2.
 
 **Összefoglaló:** a „más PR-jához, ágához ne nyúlj” szabály (`docs/coordination.md` §1 és §2.4) ma csak
 írott szabály, és semmi nem állítja meg az ügynököt, amelyik mégis megszegi. A terv után minden PR-ágnak
@@ -177,7 +177,7 @@ A D1–D6 a javasolt alapértékkel, a D7 és a D8 a tulajdonos 2026-11-14-i, a 
 | D9 | Az ág tulajdonosa honnan derül ki? (E1) | A PR leírásának `Munkamenet:` sorából; ha nincs, az első saját commitból. (Tulajdonosi döntés, 2026-11-15.) |
 | D10 | Rakott PR-ok merge commitjai (E2) | Megengedettek, ha a második szülő a `main`-en, a báziságon vagy egy másik nyitott PR fején van. (Tulajdonosi döntés, 2026-11-15.) |
 | D11 | Más nyitott PR-ból örökölt commitok (E3) | Nem ez a PR ítéli meg őket; a check kiírja a függőséget. (Tulajdonosi döntés, 2026-11-15.) |
-| D12 | Claude Projects-szál munkamenet-váltása (E4) | A szál minden munkamenete tulajdonos; a folytató munkamenet hozzáfűzi magát a `Munkamenet:` sorhoz. (Tulajdonosi döntés, 2026-11-15.) |
+| D12 | Claude Projects-szál munkamenet-váltása (E4) | A szál minden munkamenete tulajdonos; a folytató munkamenet hozzáfűzi magát a `Munkamenet:` sorhoz, és a helyi hook (T3) addig blokkolja a pushát, amíg ez nem történt meg (korábban csak kérés volt). (Tulajdonosi döntés, 2026-11-15; a blokkolás: 1.6.) |
 
 ## 6. Korlátok és kockázatok
 
@@ -234,3 +234,4 @@ A sorrendről a tulajdonos dönt; a lista mindent tartalmaz.
 | 1.3 | 2026-11-14 | Tulajdonosi döntés: kérésre a gazda is javíthat, ha a fejlesztő túlterhelt és a PR-ra máshol szükség van (D7 kivétele). |
 | 1.4 | 2026-11-14 | D8 a javaslat szerint elfogadva; a végleges szöveget a tulajdonos jóváhagyta. |
 | 1.5 | 2026-11-15 | A BO-1 jelentés E1–E5 pontosítása a tulajdonos jóváhagyásával: tulajdonos a leírásból (D9), rakott PR-ok (D10), örökölt commitok (D11), Projects-szálak (D12), a `coordination.md` új pontjai §2.11 és §2.12. |
+| 1.6 | 2026-11-15 | Tulajdonosi jóváhagyás: D12 szigorítása, a Projects-szál nem listázott munkamenetének pushát a T3 hook blokkolja a `Munkamenet:` sor kiegészítéséig. |
