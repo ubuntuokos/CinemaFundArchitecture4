@@ -4715,3 +4715,35 @@ export.summary	Low	төмен
 	Reject	Қабылдамау
 	Shows every MIDI message from the controllers as it arrives, to check that a controller sends and what it sends. MIDI Clock, Active Sensing and MIDI Time Code are left out.	Контроллерден келген әр MIDI хабарын келген бойда көрсетеді, жіберетінін және не жіберетінін тексеру үшін. MIDI сағаты, Active Sensing және MIDI уақыт коды көрсетілмейді.
 	Pick a command (or a mixer strip for a fader or knob), press Learn, then press the button or move the control past half way. Confirm keeps the assignment. OK saves the assignments.	Пәрменді таңдаңыз (фейдер не тұтқа үшін миксер жолағын), Үйренуді басыңыз, содан түймені басыңыз немесе басқаруды жартысынан асырыңыз. Растау тағайындауды сақтайды. OK жазады.
+	All devices	Барлық құрылғы
+	Builtin: {name}	Кірістірілген: {name}
+	Capturing	Түсіру
+	Confirmed	Расталды
+	Conflict	Қақтығыс
+	Connect a MIDI controller or a ShuttlePRO to edit its profile.	Профильді өңдеу үшін MIDI контроллерін немесе ShuttlePRO құрылғысын қосыңыз.
+	Control Surfaces…	Басқару беттері…
+	Filter messages	Хабарларды сүзу
+	Idle	Бос
+	Kernel dropped: {count}	Ядро тастады: {count}
+	Learn Assignments…	Тағайындауды үйрену…
+	Load profile	Профильді жүктеу
+	MIDI Monitor…	MIDI мониторы…
+	Mute shuttle sound	Shuttle дыбысын өшіру
+	No conflicts.	Қақтығыс жоқ.
+	No profile warnings.	Профиль ескертуі жоқ.
+	No project profile is stored.	Жоба профилі сақталмаған.
+	OK writes the preferences and the profile file together.	OK баптаулар мен профиль файлын бірге жазады.
+	Online	Желіде
+	Pending	Күтуде
+	Pickup (14-bit)	Ілінісу (14 бит)
+	Pickup (7-bit)	Ілінісу (7 бит)
+	Profile warnings	Профиль ескертулері
+	Rejected	Қабылданбады
+	Show Active Sensing	Active Sensing көрсету
+	Show MIDI Clock	MIDI сағатын көрсету
+	Show MIDI Time Code	MIDI уақыт кодын көрсету
+	The profile file is damaged. Preferences and the built-in profile stay in use.	Профиль файлы бүлінген. Баптаулар мен кірістірілген профиль қолданыста қалады.
+	Timed out	Уақыт бітті
+	Type: {hint}	Түрі: {hint}
+	User profile file	Пайдаланушы профилінің файлы
+	{received} received, {dispatched} dispatched, {coalesced} coalesced, {stalls} stalls, {errors} errors	{received} қабылданды, {dispatched} жіберілді, {coalesced} біріктірілді, {stalls} кідіріс, {errors} қате

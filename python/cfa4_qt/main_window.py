@@ -1732,11 +1732,12 @@ class MainWindow(QMainWindow):
         if error:
             self.events.log(text, error=True)
 
-    def open_settings(self, page: str = "general") -> PreferencesDialog:
-        """Edit ▸ Preferences ▸ <category> (egui's ``app.settings.<category>``)."""
+    def open_settings(self, page: str = "general", section: str = "") -> PreferencesDialog:
+        """Edit ▸ Preferences ▸ <category> (egui's ``app.settings.<category>``). ``section`` is an
+        object name on that page (Window ▸ MIDI Monitor, Window ▸ Learn Assignments)."""
         self.refresh_timecode_devices()  # for the next opening too: the reply comes after this one
         dialog = PreferencesDialog(self, self.engine, page, devices=self.audio_devices, memory=self.memory_usage,
-                                   commands=self.surface_commands)
+                                   commands=self.surface_commands, section=section)
         dialog.applied.connect(self._settings_applied)
         dialog.setAttribute(Qt.WidgetAttribute.WA_DeleteOnClose)
         self.settings_dialog = dialog
@@ -2339,7 +2340,9 @@ class MainWindow(QMainWindow):
                 speed = float(params.get("speed") or 0)
             except (TypeError, ValueError):
                 return
-            self.focused_monitor().shuttle_to(speed)
+            monitor = self.focused_monitor()
+            monitor.surface_shuttle_mute = params.get("sound") == "mute"
+            monitor.shuttle_to(speed)
             return
         local = self.registry.local_actions.get(cid)
         if local is not None and not params:

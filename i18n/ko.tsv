@@ -4707,3 +4707,35 @@
 	Reject	거부
 	Shows every MIDI message from the controllers as it arrives, to check that a controller sends and what it sends. MIDI Clock, Active Sensing and MIDI Time Code are left out.	컨트롤러의 MIDI 메시지가 도착하는 대로 보여, 보내는지와 내용을 확인합니다. MIDI 클록, Active Sensing, MIDI 타임코드는 빼 둡니다.
 	Pick a command (or a mixer strip for a fader or knob), press Learn, then press the button or move the control past half way. Confirm keeps the assignment. OK saves the assignments.	명령을 고르고(페이더나 노브는 믹서 스트립), 학습을 누른 뒤 버튼을 누르거나 컨트롤을 절반 너머로 움직이세요. 확인이 할당을 남깁니다. 확인(OK)이 저장합니다.
+	All devices	모든 장치
+	Builtin: {name}	기본 제공: {name}
+	Capturing	캡처 중
+	Confirmed	확인됨
+	Conflict	충돌
+	Connect a MIDI controller or a ShuttlePRO to edit its profile.	프로필을 편집하려면 MIDI 컨트롤러나 ShuttlePRO를 연결하십시오.
+	Control Surfaces…	컨트롤 서피스…
+	Filter messages	메시지 필터
+	Idle	대기
+	Kernel dropped: {count}	커널이 버림: {count}
+	Learn Assignments…	학습 할당…
+	Load profile	프로필 불러오기
+	MIDI Monitor…	MIDI 모니터…
+	Mute shuttle sound	셔틀 소리 끄기
+	No conflicts.	충돌 없음.
+	No profile warnings.	프로필 경고 없음.
+	No project profile is stored.	저장된 프로젝트 프로필이 없습니다.
+	OK writes the preferences and the profile file together.	확인은 환경설정과 프로필 파일을 함께 기록합니다.
+	Online	온라인
+	Pending	보류
+	Pickup (14-bit)	픽업(14비트)
+	Pickup (7-bit)	픽업(7비트)
+	Profile warnings	프로필 경고
+	Rejected	거부됨
+	Show Active Sensing	Active Sensing 표시
+	Show MIDI Clock	MIDI 클록 표시
+	Show MIDI Time Code	MIDI 타임코드 표시
+	The profile file is damaged. Preferences and the built-in profile stay in use.	프로필 파일이 손상되었습니다. 환경설정과 기본 프로필을 계속 사용합니다.
+	Timed out	시간 초과
+	Type: {hint}	유형: {hint}
+	User profile file	사용자 프로필 파일
+	{received} received, {dispatched} dispatched, {coalesced} coalesced, {stalls} stalls, {errors} errors	{received} 수신, {dispatched} 전달, {coalesced} 병합, {stalls} 정체, {errors} 오류

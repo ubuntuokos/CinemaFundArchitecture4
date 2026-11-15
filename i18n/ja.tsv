@@ -4722,3 +4722,35 @@
 	Reject	却下
 	Shows every MIDI message from the controllers as it arrives, to check that a controller sends and what it sends. MIDI Clock, Active Sensing and MIDI Time Code are left out.	コントローラーからの MIDI メッセージを届いた順に表示し、送っているかと内容を確認します。MIDI クロック、アクティブセンシング、MIDI タイムコードは表示しません。
 	Pick a command (or a mixer strip for a fader or knob), press Learn, then press the button or move the control past half way. Confirm keeps the assignment. OK saves the assignments.	コマンド（フェーダーやノブならミキサーのストリップ）を選び、学習を押してからボタンを押すか、コントロールを半分より先へ動かします。確定で割り当てを残します。OK で保存します。
+	All devices	すべてのデバイス
+	Builtin: {name}	組み込み: {name}
+	Capturing	取り込み中
+	Confirmed	確認済み
+	Conflict	競合
+	Connect a MIDI controller or a ShuttlePRO to edit its profile.	プロファイルを編集するには MIDI コントローラまたは ShuttlePRO を接続してください。
+	Control Surfaces…	コントロールサーフェス…
+	Filter messages	メッセージを絞り込む
+	Idle	待機
+	Kernel dropped: {count}	カーネルが破棄: {count}
+	Learn Assignments…	ラーニングと割り当て…
+	Load profile	プロファイルを読み込む
+	MIDI Monitor…	MIDI モニタ…
+	Mute shuttle sound	シャトル音をミュート
+	No conflicts.	競合はありません。
+	No profile warnings.	プロファイルの警告はありません。
+	No project profile is stored.	プロジェクトのプロファイルは保存されていません。
+	OK writes the preferences and the profile file together.	OK は環境設定とプロファイルファイルを一緒に書き込みます。
+	Online	オンライン
+	Pending	保留
+	Pickup (14-bit)	ピックアップ（14 ビット）
+	Pickup (7-bit)	ピックアップ（7 ビット）
+	Profile warnings	プロファイルの警告
+	Rejected	却下
+	Show Active Sensing	アクティブセンシングを表示
+	Show MIDI Clock	MIDI クロックを表示
+	Show MIDI Time Code	MIDI タイムコードを表示
+	The profile file is damaged. Preferences and the built-in profile stay in use.	プロファイルファイルが壊れています。環境設定と組み込みプロファイルを使い続けます。
+	Timed out	時間切れ
+	Type: {hint}	種類: {hint}
+	User profile file	ユーザーのプロファイルファイル
+	{received} received, {dispatched} dispatched, {coalesced} coalesced, {stalls} stalls, {errors} errors	{received} 受信、{dispatched} 配送、{coalesced} 統合、{stalls} 停滞、{errors} エラー

@@ -4698,3 +4698,35 @@
 	Reject	Відхилити
 	Shows every MIDI message from the controllers as it arrives, to check that a controller sends and what it sends. MIDI Clock, Active Sensing and MIDI Time Code are left out.	Показує кожне MIDI-повідомлення з пультів щойно воно надходить, щоб перевірити, чи пульт надсилає і що саме. MIDI Clock, Active Sensing і MIDI-таймкод приховано.
 	Pick a command (or a mixer strip for a fader or knob), press Learn, then press the button or move the control past half way. Confirm keeps the assignment. OK saves the assignments.	Оберіть команду (або смугу мікшера для фейдера чи ручки), натисніть Навчити, потім кнопку або зруште орган за половину. Підтвердження зберігає призначення. Гаразд записує призначення.
+	All devices	Усі пристрої
+	Builtin: {name}	Вбудований: {name}
+	Capturing	Захоплення
+	Confirmed	Підтверджено
+	Conflict	Конфлікт
+	Connect a MIDI controller or a ShuttlePRO to edit its profile.	Підключіть MIDI-контролер або ShuttlePRO, щоб змінити його профіль.
+	Control Surfaces…	Поверхні керування…
+	Filter messages	Фільтр повідомлень
+	Idle	Очікування
+	Kernel dropped: {count}	Відкинуто ядром: {count}
+	Learn Assignments…	Навчання призначень…
+	Load profile	Завантажити профіль
+	MIDI Monitor…	Монітор MIDI…
+	Mute shuttle sound	Вимкнути звук шатла
+	No conflicts.	Конфліктів немає.
+	No profile warnings.	Попереджень профілю немає.
+	No project profile is stored.	Профіль проєкту не збережено.
+	OK writes the preferences and the profile file together.	OK записує параметри і файл профілю разом.
+	Online	У мережі
+	Pending	Очікує
+	Pickup (14-bit)	Підхоплення (14 біт)
+	Pickup (7-bit)	Підхоплення (7 біт)
+	Profile warnings	Попередження профілю
+	Rejected	Відхилено
+	Show Active Sensing	Показувати Active Sensing
+	Show MIDI Clock	Показувати годинник MIDI
+	Show MIDI Time Code	Показувати часовий код MIDI
+	The profile file is damaged. Preferences and the built-in profile stay in use.	Файл профілю пошкоджено. Параметри і вбудований профіль лишаються в роботі.
+	Timed out	Час вичерпано
+	Type: {hint}	Тип: {hint}
+	User profile file	Файл профілю користувача
+	{received} received, {dispatched} dispatched, {coalesced} coalesced, {stalls} stalls, {errors} errors	{received} отримано, {dispatched} передано, {coalesced} об’єднано, {stalls} очікувань, {errors} помилок

@@ -4719,3 +4719,35 @@ export.summary	Low	తక్కువ
 	Reject	తిరస్కరించు
 	Shows every MIDI message from the controllers as it arrives, to check that a controller sends and what it sends. MIDI Clock, Active Sensing and MIDI Time Code are left out.	నియంత్రకం పంపుతుందో మరియు ఏమి పంపుతుందో చూడటానికి వచ్చిన ప్రతి MIDI సందేశాన్ని చూపిస్తుంది. MIDI గడియారం, Active Sensing మరియు MIDI సమయ కోడ్ వదిలివేయబడతాయి.
 	Pick a command (or a mixer strip for a fader or knob), press Learn, then press the button or move the control past half way. Confirm keeps the assignment. OK saves the assignments.	ఆదేశాన్ని ఎంచుకోండి (ఫేడర్ లేదా నాబ్‌కు మిక్సర్ స్ట్రిప్), నేర్చుకో నొక్కి, తర్వాత బటన్ నొక్కండి లేదా నియంత్రణను సగం దాటి కదపండి. నిర్ధారణ కేటాయింపును ఉంచుతుంది. సరే కేటాయింపులను భద్రపరుస్తుంది.
+	All devices	అన్ని పరికరాలు
+	Builtin: {name}	అంతర్నిర్మిత: {name}
+	Capturing	సంగ్రహణ
+	Confirmed	నిర్ధారించబడింది
+	Conflict	వైరుధ్యం
+	Connect a MIDI controller or a ShuttlePRO to edit its profile.	ప్రొఫైల్‌ను సవరించడానికి MIDI నియంత్రిక లేదా ShuttlePROను కలపండి.
+	Control Surfaces…	నియంత్రణ ఉపరితలాలు…
+	Filter messages	సందేశాలను వడపోయి
+	Idle	నిష్క్రియం
+	Kernel dropped: {count}	కెర్నల్ వదిలింది: {count}
+	Learn Assignments…	కేటాయింపులు నేర్చుకోండి…
+	Load profile	ప్రొఫైల్ లోడ్
+	MIDI Monitor…	MIDI మానిటర్…
+	Mute shuttle sound	షటిల్ ధ్వనిని మ్యూట్ చేయి
+	No conflicts.	వైరుధ్యాలు లేవు.
+	No profile warnings.	ప్రొఫైల్ హెచ్చరికలు లేవు.
+	No project profile is stored.	ప్రాజెక్ట్ ప్రొఫైల్ భద్రపరచబడలేదు.
+	OK writes the preferences and the profile file together.	సరే ప్రాధాన్యతలను మరియు ప్రొఫైల్ ఫైలును కలిపి వ్రాస్తుంది.
+	Online	ఆన్‌లైన్
+	Pending	పెండింగ్
+	Pickup (14-bit)	పికప్ (14 బిట్)
+	Pickup (7-bit)	పికప్ (7 బిట్)
+	Profile warnings	ప్రొఫైల్ హెచ్చరికలు
+	Rejected	తిరస్కరించబడింది
+	Show Active Sensing	Active Sensing చూపు
+	Show MIDI Clock	MIDI గడియారం చూపు
+	Show MIDI Time Code	MIDI సమయ కోడ్ చూపు
+	The profile file is damaged. Preferences and the built-in profile stay in use.	ప్రొఫైల్ ఫైలు పాడైంది. ప్రాధాన్యతలు మరియు అంతర్నిర్మిత ప్రొఫైల్ వాడుకలో ఉంటాయి.
+	Timed out	సమయం ముగిసింది
+	Type: {hint}	రకం: {hint}
+	User profile file	వినియోగదారు ప్రొఫైల్ ఫైలు
+	{received} received, {dispatched} dispatched, {coalesced} coalesced, {stalls} stalls, {errors} errors	{received} అందినవి, {dispatched} పంపినవి, {coalesced} కలిపినవి, {stalls} ఆగుదలలు, {errors} లోపాలు

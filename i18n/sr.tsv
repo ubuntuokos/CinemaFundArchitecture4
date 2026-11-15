@@ -4713,3 +4713,35 @@ export.summary	Low	низак
 	Reject	Одбаци
 	Shows every MIDI message from the controllers as it arrives, to check that a controller sends and what it sends. MIDI Clock, Active Sensing and MIDI Time Code are left out.	Приказује сваку MIDI поруку са контролера чим стигне, да се види да ли контролер шаље и шта. MIDI сат, Active Sensing и MIDI временски код се изостављају.
 	Pick a command (or a mixer strip for a fader or knob), press Learn, then press the button or move the control past half way. Confirm keeps the assignment. OK saves the assignments.	Изаберите команду (или траку миксера за фејдер или дугме), притисните Учи, затим дугме или померите контролу преко половине. Потврда чува доделу. У реду чува доделе.
+	All devices	Сви уређаји
+	Builtin: {name}	Уграђени: {name}
+	Capturing	Снимање
+	Confirmed	Потврђено
+	Conflict	Сукоб
+	Connect a MIDI controller or a ShuttlePRO to edit its profile.	Повежите MIDI контролер или ShuttlePRO да бисте уредили његов профил.
+	Control Surfaces…	Контролне површине…
+	Filter messages	Филтрирај поруке
+	Idle	Неактиван
+	Kernel dropped: {count}	Језгро је одбацило: {count}
+	Learn Assignments…	Учење додела…
+	Load profile	Учитај профил
+	MIDI Monitor…	MIDI монитор…
+	Mute shuttle sound	Искључи звук shuttle-а
+	No conflicts.	Нема сукоба.
+	No profile warnings.	Нема упозорења профила.
+	No project profile is stored.	Профил пројекта није сачуван.
+	OK writes the preferences and the profile file together.	У реду уписује подешавања и датотеку профила заједно.
+	Online	На мрежи
+	Pending	На чекању
+	Pickup (14-bit)	Хватање (14 бита)
+	Pickup (7-bit)	Хватање (7 бита)
+	Profile warnings	Упозорења профила
+	Rejected	Одбијено
+	Show Active Sensing	Прикажи Active Sensing
+	Show MIDI Clock	Прикажи MIDI сат
+	Show MIDI Time Code	Прикажи MIDI временски код
+	The profile file is damaged. Preferences and the built-in profile stay in use.	Датотека профила је оштећена. Подешавања и уграђени профил остају у употреби.
+	Timed out	Време је истекло
+	Type: {hint}	Тип: {hint}
+	User profile file	Датотека профила корисника
+	{received} received, {dispatched} dispatched, {coalesced} coalesced, {stalls} stalls, {errors} errors	{received} примљено, {dispatched} прослеђено, {coalesced} спојено, {stalls} чекања, {errors} грешака

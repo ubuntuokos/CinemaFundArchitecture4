@@ -4715,3 +4715,35 @@ export.summary	Low	χαμηλή
 	Reject	Απόρριψη
 	Shows every MIDI message from the controllers as it arrives, to check that a controller sends and what it sends. MIDI Clock, Active Sensing and MIDI Time Code are left out.	Δείχνει κάθε μήνυμα MIDI από τους ελεγκτές μόλις φτάσει, για να φανεί αν ένας ελεγκτής στέλνει και τι. Το ρολόι MIDI, το Active Sensing και ο κώδικας χρόνου MIDI παραλείπονται.
 	Pick a command (or a mixer strip for a fader or knob), press Learn, then press the button or move the control past half way. Confirm keeps the assignment. OK saves the assignments.	Διαλέξτε εντολή (ή λωρίδα μίξης για fader ή κουμπί), πατήστε Εκμάθηση, έπειτα το κουμπί ή μετακινήστε το χειριστήριο πέρα από τη μέση. Η επιβεβαίωση κρατά την ανάθεση. Το OK αποθηκεύει τις αναθέσεις.
+	All devices	Όλες οι συσκευές
+	Builtin: {name}	Ενσωματωμένο: {name}
+	Capturing	Καταγραφή
+	Confirmed	Επιβεβαιώθηκε
+	Conflict	Σύγκρουση
+	Connect a MIDI controller or a ShuttlePRO to edit its profile.	Συνδέστε ένα χειριστήριο MIDI ή ένα ShuttlePRO για να επεξεργαστείτε το προφίλ του.
+	Control Surfaces…	Επιφάνειες ελέγχου…
+	Filter messages	Φιλτράρισμα μηνυμάτων
+	Idle	Αδρανές
+	Kernel dropped: {count}	Απορρίφθηκαν από τον πυρήνα: {count}
+	Learn Assignments…	Εκμάθηση αναθέσεων…
+	Load profile	Φόρτωση προφίλ
+	MIDI Monitor…	Οθόνη MIDI…
+	Mute shuttle sound	Σίγαση ήχου shuttle
+	No conflicts.	Δεν υπάρχουν συγκρούσεις.
+	No profile warnings.	Δεν υπάρχουν προειδοποιήσεις προφίλ.
+	No project profile is stored.	Δεν έχει αποθηκευτεί προφίλ έργου.
+	OK writes the preferences and the profile file together.	Το OK γράφει μαζί τις προτιμήσεις και το αρχείο προφίλ.
+	Online	Σε σύνδεση
+	Pending	Εκκρεμεί
+	Pickup (14-bit)	Σύλληψη (14 bit)
+	Pickup (7-bit)	Σύλληψη (7 bit)
+	Profile warnings	Προειδοποιήσεις προφίλ
+	Rejected	Απορρίφθηκε
+	Show Active Sensing	Εμφάνιση Active Sensing
+	Show MIDI Clock	Εμφάνιση ρολογιού MIDI
+	Show MIDI Time Code	Εμφάνιση κώδικα χρόνου MIDI
+	The profile file is damaged. Preferences and the built-in profile stay in use.	Το αρχείο προφίλ είναι κατεστραμμένο. Οι προτιμήσεις και το ενσωματωμένο προφίλ μένουν σε χρήση.
+	Timed out	Έληξε ο χρόνος
+	Type: {hint}	Τύπος: {hint}
+	User profile file	Αρχείο προφίλ χρήστη
+	{received} received, {dispatched} dispatched, {coalesced} coalesced, {stalls} stalls, {errors} errors	{received} ελήφθησαν, {dispatched} στάλθηκαν, {coalesced} ενώθηκαν, {stalls} αναμονές, {errors} σφάλματα

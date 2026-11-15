@@ -4716,3 +4716,35 @@ export.summary	Low	nizka
 	Reject	Zavrni
 	Shows every MIDI message from the controllers as it arrives, to check that a controller sends and what it sends. MIDI Clock, Active Sensing and MIDI Time Code are left out.	Pokaže vsako MIDI sporočilo s krmilnikov, ko prispe, da se vidi, ali krmilnik pošilja in kaj. MIDI ura, Active Sensing in MIDI časovna koda so izpuščeni.
 	Pick a command (or a mixer strip for a fader or knob), press Learn, then press the button or move the control past half way. Confirm keeps the assignment. OK saves the assignments.	Izberite ukaz (ali trak mešalne mize za fader ali gumb), pritisnite Uči, nato gumb ali premaknite kontrolo čez polovico. Potrditev obdrži dodelitev. V redu shrani dodelitve.
+	All devices	Vse naprave
+	Builtin: {name}	Vgrajeno: {name}
+	Capturing	Zajemanje
+	Confirmed	Potrjeno
+	Conflict	Spor
+	Connect a MIDI controller or a ShuttlePRO to edit its profile.	Za urejanje profila priključite MIDI-krmilnik ali ShuttlePRO.
+	Control Surfaces…	Krmilne površine…
+	Filter messages	Filtriraj sporočila
+	Idle	Nedejaven
+	Kernel dropped: {count}	Jedro je zavrglo: {count}
+	Learn Assignments…	Učenje dodelitev…
+	Load profile	Naloži profil
+	MIDI Monitor…	Nadzor MIDI…
+	Mute shuttle sound	Utišaj zvok shuttle
+	No conflicts.	Ni sporov.
+	No profile warnings.	Ni opozoril profila.
+	No project profile is stored.	Profil projekta ni shranjen.
+	OK writes the preferences and the profile file together.	V redu skupaj zapiše nastavitve in datoteko profila.
+	Online	Povezano
+	Pending	V čakanju
+	Pickup (14-bit)	Zajem (14 bitov)
+	Pickup (7-bit)	Zajem (7 bitov)
+	Profile warnings	Opozorila profila
+	Rejected	Zavrnjeno
+	Show Active Sensing	Pokaži Active Sensing
+	Show MIDI Clock	Pokaži uro MIDI
+	Show MIDI Time Code	Pokaži časovno kodo MIDI
+	The profile file is damaged. Preferences and the built-in profile stay in use.	Datoteka profila je poškodovana. Nastavitve in vgrajeni profil ostaneta v uporabi.
+	Timed out	Čas je potekel
+	Type: {hint}	Vrsta: {hint}
+	User profile file	Datoteka profila uporabnika
+	{received} received, {dispatched} dispatched, {coalesced} coalesced, {stalls} stalls, {errors} errors	{received} prejeto, {dispatched} posredovano, {coalesced} združeno, {stalls} čakanja, {errors} napak

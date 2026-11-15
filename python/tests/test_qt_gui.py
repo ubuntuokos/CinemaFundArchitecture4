@@ -5074,8 +5074,14 @@ def test_window_menu_lists_every_egui_panel_with_its_shortcut(app, fake_engine: 
         entries = [a for a in menu.actions() if not a.isSeparator()]
         assert entries[0].menu() is not None and entries[0].menu().objectName() == "menu.Window.Workspaces"
         assert entries[1].text() == "New Project Panel" and not entries[1].isEnabled()
-        panels = entries[2:]
+        panels = entries[2 : 2 + len(PANELS)]
         assert [a.text() for a in panels] == [p.title for p in PANELS]
+        surfaces = entries[2 + len(PANELS) :]
+        assert [a.objectName() for a in surfaces] == [
+            "window.controlSurfaces",
+            "window.midiMonitor",
+            "window.surfaceAssignments",
+        ]
         have = {"Project", "Effects", "History", "Source", "Effect Controls", "Program", "Timeline", "Properties", "Events", "Tools", "Audio Meters", "Info", "Markers", "Metadata", "Project Notes", "Timecode", "Progress", "Audio Track Mixer", "Audio Clip Mixer", "Reference Monitor", "Lumetri Scopes", "Lumetri Color", "Media Browser", "Text", "Essential Sound", "Essential Graphics", "Text to Speech", "Libraries", "Task Manager"}
         for a, p in zip(panels, PANELS, strict=True):
             assert a.isEnabled() == (p.title in have), p.title

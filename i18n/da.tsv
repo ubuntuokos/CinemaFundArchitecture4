@@ -4715,3 +4715,35 @@ export.summary	Low	lav
 	Reject	Afvis
 	Shows every MIDI message from the controllers as it arrives, to check that a controller sends and what it sends. MIDI Clock, Active Sensing and MIDI Time Code are left out.	Viser hver MIDI-besked fra controllerne, når den kommer, så man kan se, om en controller sender, og hvad. MIDI-ur, Active Sensing og MIDI-tidskode udelades.
 	Pick a command (or a mixer strip for a fader or knob), press Learn, then press the button or move the control past half way. Confirm keeps the assignment. OK saves the assignments.	Vælg en kommando (eller et mixerspor til en fader eller knap), tryk på Lær, derefter knappen, eller flyt betjeningen forbi midten. Bekræft beholder tildelingen. OK gemmer tildelingerne.
+	All devices	Alle enheder
+	Builtin: {name}	Indbygget: {name}
+	Capturing	Optager
+	Confirmed	Bekræftet
+	Conflict	Konflikt
+	Connect a MIDI controller or a ShuttlePRO to edit its profile.	Tilslut en MIDI-controller eller en ShuttlePRO for at redigere dens profil.
+	Control Surfaces…	Kontrolflader…
+	Filter messages	Filtrér beskeder
+	Idle	I ro
+	Kernel dropped: {count}	Kernen kasserede: {count}
+	Learn Assignments…	Lær tildelinger…
+	Load profile	Indlæs profil
+	MIDI Monitor…	MIDI-overvågning…
+	Mute shuttle sound	Slå shuttle-lyd fra
+	No conflicts.	Ingen konflikter.
+	No profile warnings.	Ingen profiladvarsler.
+	No project profile is stored.	Der er ikke gemt en projektprofil.
+	OK writes the preferences and the profile file together.	OK skriver indstillingerne og profilfilen sammen.
+	Online	Online
+	Pending	Afventer
+	Pickup (14-bit)	Opsamling (14-bit)
+	Pickup (7-bit)	Opsamling (7-bit)
+	Profile warnings	Profiladvarsler
+	Rejected	Afvist
+	Show Active Sensing	Vis Active Sensing
+	Show MIDI Clock	Vis MIDI-ur
+	Show MIDI Time Code	Vis MIDI-tidskode
+	The profile file is damaged. Preferences and the built-in profile stay in use.	Profilfilen er beskadiget. Indstillingerne og den indbyggede profil bliver brugt.
+	Timed out	Tiden udløb
+	Type: {hint}	Type: {hint}
+	User profile file	Brugerprofilfil
+	{received} received, {dispatched} dispatched, {coalesced} coalesced, {stalls} stalls, {errors} errors	{received} modtaget, {dispatched} sendt, {coalesced} samlet, {stalls} ventetider, {errors} fejl

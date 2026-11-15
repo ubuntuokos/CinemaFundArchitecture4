@@ -36,11 +36,26 @@ pub struct DeviceSetting {
     pub bindings: Vec<Binding>,
     /// Assignments this version cannot read: never run, saved back as they were.
     pub unsupported: Vec<UnsupportedBinding>,
+    /// Pickup distance for a 7-bit control (D4; default 10).
+    pub pickup_threshold7: u16,
+    /// Pickup distance for a 14-bit control (D4; default 1280).
+    pub pickup_threshold14: u16,
+    /// `mute` silences the shuttle ring; empty follows the Qt playback rule (N-01).
+    pub shuttle_sound: String,
 }
 
 impl Default for DeviceSetting {
     fn default() -> Self {
-        Self { device: String::new(), enabled: true, profile: String::new(), bindings: Vec::new(), unsupported: Vec::new() }
+        Self {
+            device: String::new(),
+            enabled: true,
+            profile: String::new(),
+            bindings: Vec::new(),
+            unsupported: Vec::new(),
+            pickup_threshold7: PICKUP_THRESHOLD7,
+            pickup_threshold14: PICKUP_THRESHOLD14,
+            shuttle_sound: String::new(),
+        }
     }
 }
 
@@ -84,11 +99,41 @@ struct RawDeviceSetting {
     enabled: bool,
     profile: String,
     bindings: Vec<Value>,
+    #[serde(default = "default_threshold7", skip_serializing_if = "is_default_threshold7")]
+    pickup_threshold7: u16,
+    #[serde(default = "default_threshold14", skip_serializing_if = "is_default_threshold14")]
+    pickup_threshold14: u16,
+    #[serde(default, skip_serializing_if = "String::is_empty")]
+    shuttle_sound: String,
+}
+
+fn default_threshold7() -> u16 {
+    PICKUP_THRESHOLD7
+}
+
+fn default_threshold14() -> u16 {
+    PICKUP_THRESHOLD14
+}
+
+fn is_default_threshold7(v: &u16) -> bool {
+    *v == PICKUP_THRESHOLD7
+}
+
+fn is_default_threshold14(v: &u16) -> bool {
+    *v == PICKUP_THRESHOLD14
 }
 
 impl Default for RawDeviceSetting {
     fn default() -> Self {
-        Self { device: String::new(), enabled: true, profile: String::new(), bindings: Vec::new() }
+        Self {
+            device: String::new(),
+            enabled: true,
+            profile: String::new(),
+            bindings: Vec::new(),
+            pickup_threshold7: PICKUP_THRESHOLD7,
+            pickup_threshold14: PICKUP_THRESHOLD14,
+            shuttle_sound: String::new(),
+        }
     }
 }
 
@@ -102,14 +147,31 @@ impl From<RawDeviceSetting> for DeviceSetting {
                 Err(e) => unsupported.push(UnsupportedBinding { raw, reason: e.to_string() }),
             }
         }
-        DeviceSetting { device: r.device, enabled: r.enabled, profile: r.profile, bindings, unsupported }
+        DeviceSetting {
+            device: r.device,
+            enabled: r.enabled,
+            profile: r.profile,
+            bindings,
+            unsupported,
+            pickup_threshold7: r.pickup_threshold7,
+            pickup_threshold14: r.pickup_threshold14,
+            shuttle_sound: r.shuttle_sound,
+        }
     }
 }
 
 impl From<DeviceSetting> for RawDeviceSetting {
     fn from(d: DeviceSetting) -> Self {
         let bindings = d.bindings.iter().map(|b| serde_json::to_value(b).unwrap_or_default()).chain(d.unsupported.into_iter().map(|u| u.raw)).collect();
-        RawDeviceSetting { device: d.device, enabled: d.enabled, profile: d.profile, bindings }
+        RawDeviceSetting {
+            device: d.device,
+            enabled: d.enabled,
+            profile: d.profile,
+            bindings,
+            pickup_threshold7: d.pickup_threshold7,
+            pickup_threshold14: d.pickup_threshold14,
+            shuttle_sound: d.shuttle_sound,
+        }
     }
 }
 
@@ -280,7 +342,13 @@ impl ControlSurfacePrefs {
                 let table = if d.profile == "cfa4.shuttlepro.kdenlive" { &SHUTTLE_KDENLIVE } else { &SHUTTLE_ARDOUR };
                 let i = usize::from(position.unsigned_abs().clamp(1, 7)) - 1;
                 let speed = if *position < 0 { -table[i] } else { table[i] };
-                vec![Action { command: "playback.shuttleSpeed".into(), params: json!({"speed": speed}) }]
+                let mut params = json!({"speed": speed});
+                if d.shuttle_sound == "mute"
+                    && let Some(obj) = params.as_object_mut()
+                {
+                    obj.insert("sound".into(), json!("mute"));
+                }
+                vec![Action { command: "playback.shuttleSpeed".into(), params }]
             }
             SurfaceInput::Jog { delta, .. } => {
                 let command = if *delta > 0 { "playhead.stepForward" } else { "playhead.stepBack" };
@@ -320,6 +388,11 @@ impl ControlSurfacePrefs {
             });
             d.bindings.truncate(MAX_BINDINGS);
             d.unsupported.truncate(MAX_BINDINGS - d.bindings.len());
+            d.pickup_threshold7 = d.pickup_threshold7.min(127);
+            d.pickup_threshold14 = d.pickup_threshold14.min(16383);
+            if d.shuttle_sound != "mute" {
+                d.shuttle_sound.clear();
+            }
         }
         self.learn_first_ms = self.learn_first_ms.clamp(500, 60_000);
         self.learn_silence_ms = self.learn_silence_ms.clamp(100, 10_000);
@@ -398,6 +471,16 @@ fn run_audit(s: &mut Session, p: &Value) -> Result<Value> {
     crate::surface_runtime::cmd_audit(s, p)
 }
 
+fn run_reload(s: &mut Session, _p: &Value) -> Result<Value> {
+    let mut prefs = s.prefs.control_surfaces.clone();
+    let warnings = match s.prefs_path.as_ref().and_then(|path| path.parent()) {
+        Some(data) => crate::surface_profile::load_into(&mut prefs, &crate::surface_profile::dir_for(data)),
+        None => Vec::new(),
+    };
+    let devices = serde_json::to_value(&prefs.devices).unwrap_or(Value::Array(Vec::new()));
+    Ok(json!({"warnings": warnings, "devices": devices}))
+}
+
 pub fn commands() -> Vec<CommandSpec> {
     let spec = |id, label, params, run: fn(&mut Session, &Value) -> Result<Value>| CommandSpec {
         id,
@@ -438,6 +521,16 @@ pub fn commands() -> Vec<CommandSpec> {
             run: profiles,
             journal: false,
         },
+        CommandSpec {
+            id: "controlSurfaces.reloadProfiles",
+            label: "Reload Control Surface Profiles",
+            menu: &[],
+            shortcut: None,
+            params: "{}",
+            enabled: always,
+            run: run_reload,
+            journal: false,
+        },
     ]
 }
 
@@ -450,10 +543,10 @@ mod tests {
         let mut p = ControlSurfacePrefs {
             enabled: true,
             devices: vec![
-                DeviceSetting { device: "midi:a:b".into(), enabled: false, profile: "cfa4.generic-midi".into(), bindings: vec![], unsupported: vec![] },
-                DeviceSetting { device: "midi:a:b".into(), enabled: true, profile: String::new(), bindings: vec![], unsupported: vec![] },
-                DeviceSetting { device: String::new(), enabled: false, profile: String::new(), bindings: vec![], unsupported: vec![] },
-                DeviceSetting { device: "hid:0b33:0030:usb-1.2".into(), enabled: true, profile: "nope".into(), bindings: vec![], unsupported: vec![] },
+                DeviceSetting { device: "midi:a:b".into(), enabled: false, profile: "cfa4.generic-midi".into(), ..DeviceSetting::default() },
+                DeviceSetting { device: "midi:a:b".into(), enabled: true, profile: String::new(), ..DeviceSetting::default() },
+                DeviceSetting { device: String::new(), enabled: false, profile: String::new(), ..DeviceSetting::default() },
+                DeviceSetting { device: "hid:0b33:0030:usb-1.2".into(), enabled: true, profile: "nope".into(), ..DeviceSetting::default() },
             ],
             ..ControlSurfacePrefs::default()
         };
@@ -511,6 +604,17 @@ mod tests {
     }
 
     #[test]
+    fn learn_times_can_be_set_when_the_file_omitted_them() {
+        let mut p = crate::autosave::Preferences::default();
+        assert!(p.to_value().pointer("/controlSurfaces/learnFirstMs").is_none());
+        p.set("controlSurfaces.learnFirstMs", json!(8000)).expect("a default that was not written can still be changed");
+        assert_eq!(p.control_surfaces.learn_first_ms, 8000);
+        p.set("controlSurfaces.learnSilenceMs", json!(400)).expect("silence");
+        assert_eq!(p.control_surfaces.learn_silence_ms, 400);
+        assert!(p.set("no.such.group.leaf", json!(1)).is_err());
+    }
+
+    #[test]
     fn profile_warnings_command() {
         let mut s = Session::default();
         assert_eq!((profile_warnings)(&mut s, &Value::Null).ok(), Some(json!({"devices": []})));
@@ -562,7 +666,7 @@ mod tests {
                 enabled: true,
                 profile: String::new(),
                 bindings: vec![bind(cc(41), "playback.toggle"), bind(cc(41), "edit.undo"), bind(cc(42), " "), bind(cc(43), "edit.undo")],
-                unsupported: vec![],
+                ..DeviceSetting::default()
             }],
             ..ControlSurfacePrefs::default()
         };
@@ -600,6 +704,9 @@ mod tests {
         assert!(steps.iter().all(|a| a.command == "playhead.stepBack"));
         assert_eq!(p.motion(dev, &jog(200)).len(), MAX_JOG_STEPS as usize);
         assert!(p.motion(dev, &SurfaceInput::Raw).is_empty());
+        p.devices[0].shuttle_sound = "mute".into();
+        let muted = p.motion(dev, &shuttle(2));
+        assert_eq!(muted.first().and_then(|a| a.params.get("sound")).and_then(Value::as_str), Some("mute"));
         p.devices[0].enabled = false;
         assert!(p.motion(dev, &jog(1)).is_empty(), "a device not in use");
         p.devices[0].enabled = true;

@@ -4698,3 +4698,35 @@
 	Reject	Отклонить
 	Shows every MIDI message from the controllers as it arrives, to check that a controller sends and what it sends. MIDI Clock, Active Sensing and MIDI Time Code are left out.	Показывает каждое MIDI-сообщение с пультов по мере прихода, чтобы проверить, что пульт шлёт и что именно. MIDI Clock, Active Sensing и MIDI-таймкод скрыты.
 	Pick a command (or a mixer strip for a fader or knob), press Learn, then press the button or move the control past half way. Confirm keeps the assignment. OK saves the assignments.	Выберите команду (или полосу микшера для фейдера или ручки), нажмите Обучить, затем кнопку или сдвиньте орган за середину. Подтверждение сохраняет назначение. ОК записывает назначения.
+	All devices	Все устройства
+	Builtin: {name}	Встроенный: {name}
+	Capturing	Захват
+	Confirmed	Подтверждено
+	Conflict	Конфликт
+	Connect a MIDI controller or a ShuttlePRO to edit its profile.	Подключите MIDI-контроллер или ShuttlePRO, чтобы править его профиль.
+	Control Surfaces…	Поверхности управления…
+	Filter messages	Фильтр сообщений
+	Idle	Ожидание
+	Kernel dropped: {count}	Отброшено ядром: {count}
+	Learn Assignments…	Обучение назначениям…
+	Load profile	Загрузить профиль
+	MIDI Monitor…	Монитор MIDI…
+	Mute shuttle sound	Заглушить звук шаттла
+	No conflicts.	Конфликтов нет.
+	No profile warnings.	Предупреждений профиля нет.
+	No project profile is stored.	Профиль проекта не сохранён.
+	OK writes the preferences and the profile file together.	OK записывает настройки и файл профиля вместе.
+	Online	В сети
+	Pending	Ожидает
+	Pickup (14-bit)	Подхват (14 бит)
+	Pickup (7-bit)	Подхват (7 бит)
+	Profile warnings	Предупреждения профиля
+	Rejected	Отклонено
+	Show Active Sensing	Показывать Active Sensing
+	Show MIDI Clock	Показывать MIDI-часы
+	Show MIDI Time Code	Показывать временной код MIDI
+	The profile file is damaged. Preferences and the built-in profile stay in use.	Файл профиля повреждён. Настройки и встроенный профиль остаются в работе.
+	Timed out	Время истекло
+	Type: {hint}	Тип: {hint}
+	User profile file	Файл профиля пользователя
+	{received} received, {dispatched} dispatched, {coalesced} coalesced, {stalls} stalls, {errors} errors	{received} получено, {dispatched} передано, {coalesced} объединено, {stalls} ожиданий, {errors} ошибок

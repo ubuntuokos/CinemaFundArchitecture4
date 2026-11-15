@@ -4715,3 +4715,35 @@ export.summary	Low	matala
 	Reject	Hylkää
 	Shows every MIDI message from the controllers as it arrives, to check that a controller sends and what it sends. MIDI Clock, Active Sensing and MIDI Time Code are left out.	Näyttää jokaisen MIDI-viestin ohjaimilta sen saapuessa, jotta nähdään lähettääkö ohjain ja mitä. MIDI-kello, Active Sensing ja MIDI-aikakoodi jätetään pois.
 	Pick a command (or a mixer strip for a fader or knob), press Learn, then press the button or move the control past half way. Confirm keeps the assignment. OK saves the assignments.	Valitse komento (tai mikseriraita faderille tai nupille), paina Opi, sitten painiketta, tai siirrä säädin puolenvälin yli. Vahvistus säilyttää kytkennän. OK tallentaa kytkennät.
+	All devices	Kaikki laitteet
+	Builtin: {name}	Sisäänrakennettu: {name}
+	Capturing	Taltioidaan
+	Confirmed	Vahvistettu
+	Conflict	Ristiriita
+	Connect a MIDI controller or a ShuttlePRO to edit its profile.	Muokkaa profiilia liittämällä MIDI-ohjain tai ShuttlePRO.
+	Control Surfaces…	Ohjauspinnat…
+	Filter messages	Suodata viestit
+	Idle	Jouten
+	Kernel dropped: {count}	Ydin hylkäsi: {count}
+	Learn Assignments…	Opi kytkennät…
+	Load profile	Lataa profiili
+	MIDI Monitor…	MIDI-valvonta…
+	Mute shuttle sound	Vaimenna shuttle-ääni
+	No conflicts.	Ei ristiriitoja.
+	No profile warnings.	Ei profiilivaroituksia.
+	No project profile is stored.	Projektiprofiilia ei ole tallennettu.
+	OK writes the preferences and the profile file together.	OK kirjoittaa asetukset ja profiilitiedoston yhdessä.
+	Online	Linjalla
+	Pending	Odottaa
+	Pickup (14-bit)	Poiminta (14 bittiä)
+	Pickup (7-bit)	Poiminta (7 bittiä)
+	Profile warnings	Profiilivaroitukset
+	Rejected	Hylätty
+	Show Active Sensing	Näytä Active Sensing
+	Show MIDI Clock	Näytä MIDI-kello
+	Show MIDI Time Code	Näytä MIDI-aikakoodi
+	The profile file is damaged. Preferences and the built-in profile stay in use.	Profiilitiedosto on vioittunut. Asetukset ja sisäänrakennettu profiili jäävät käyttöön.
+	Timed out	Aika loppui
+	Type: {hint}	Tyyppi: {hint}
+	User profile file	Käyttäjän profiilitiedosto
+	{received} received, {dispatched} dispatched, {coalesced} coalesced, {stalls} stalls, {errors} errors	{received} vastaanotettu, {dispatched} välitetty, {coalesced} yhdistetty, {stalls} odotukset, {errors} virheet

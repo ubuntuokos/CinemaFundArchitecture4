@@ -4715,3 +4715,35 @@ export.summary	Low	niska
 	Reject	Odbaci
 	Shows every MIDI message from the controllers as it arrives, to check that a controller sends and what it sends. MIDI Clock, Active Sensing and MIDI Time Code are left out.	Prikazuje svaku MIDI poruku s kontrolera čim stigne, da se vidi šalje li kontroler i što. MIDI sat, Active Sensing i MIDI vremenski kod se izostavljaju.
 	Pick a command (or a mixer strip for a fader or knob), press Learn, then press the button or move the control past half way. Confirm keeps the assignment. OK saves the assignments.	Odaberite naredbu (ili traku miksera za fader ili gumb), pritisnite Uči, zatim gumb ili pomaknite kontrolu preko polovice. Potvrda čuva dodjelu. U redu sprema dodjele.
+	All devices	Svi uređaji
+	Builtin: {name}	Ugrađeno: {name}
+	Capturing	Snimanje
+	Confirmed	Potvrđeno
+	Conflict	Sukob
+	Connect a MIDI controller or a ShuttlePRO to edit its profile.	Priključite MIDI upravljač ili ShuttlePRO da biste uredili njegov profil.
+	Control Surfaces…	Upravljačke površine…
+	Filter messages	Filtriraj poruke
+	Idle	Neaktivan
+	Kernel dropped: {count}	Jezgra je odbacila: {count}
+	Learn Assignments…	Učenje dodjela…
+	Load profile	Učitaj profil
+	MIDI Monitor…	MIDI monitor…
+	Mute shuttle sound	Isključi zvuk shuttlea
+	No conflicts.	Nema sukoba.
+	No profile warnings.	Nema upozorenja profila.
+	No project profile is stored.	Profil projekta nije spremljen.
+	OK writes the preferences and the profile file together.	U redu zapisuje postavke i datoteku profila zajedno.
+	Online	Na mreži
+	Pending	Na čekanju
+	Pickup (14-bit)	Hvatanje (14 bitova)
+	Pickup (7-bit)	Hvatanje (7 bitova)
+	Profile warnings	Upozorenja profila
+	Rejected	Odbijeno
+	Show Active Sensing	Prikaži Active Sensing
+	Show MIDI Clock	Prikaži MIDI sat
+	Show MIDI Time Code	Prikaži MIDI vremenski kôd
+	The profile file is damaged. Preferences and the built-in profile stay in use.	Datoteka profila je oštećena. Postavke i ugrađeni profil ostaju u uporabi.
+	Timed out	Vrijeme je isteklo
+	Type: {hint}	Vrsta: {hint}
+	User profile file	Korisnička datoteka profila
+	{received} received, {dispatched} dispatched, {coalesced} coalesced, {stalls} stalls, {errors} errors	{received} primljeno, {dispatched} proslijeđeno, {coalesced} spojeno, {stalls} čekanja, {errors} pogrešaka

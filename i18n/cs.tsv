@@ -4713,3 +4713,35 @@ export.summary	Low	nízká
 	Reject	Odmítnout
 	Shows every MIDI message from the controllers as it arrives, to check that a controller sends and what it sends. MIDI Clock, Active Sensing and MIDI Time Code are left out.	Ukazuje každou MIDI zprávu z ovladačů hned po příchodu, aby bylo vidět, jestli ovladač vysílá a co. MIDI hodiny, Active Sensing a MIDI časový kód se vynechávají.
 	Pick a command (or a mixer strip for a fader or knob), press Learn, then press the button or move the control past half way. Confirm keeps the assignment. OK saves the assignments.	Vyberte příkaz (nebo stopu mixu pro fader či knoflík), stiskněte Učit, pak tlačítko, nebo posuňte ovladač za polovinu. Potvrzení ponechá přiřazení. OK uloží přiřazení.
+	All devices	Všechna zařízení
+	Builtin: {name}	Vestavěný: {name}
+	Capturing	Snímání
+	Confirmed	Potvrzeno
+	Conflict	Konflikt
+	Connect a MIDI controller or a ShuttlePRO to edit its profile.	Pro úpravu profilu připojte MIDI ovladač nebo ShuttlePRO.
+	Control Surfaces…	Ovládací plochy…
+	Filter messages	Filtrovat zprávy
+	Idle	Nečinný
+	Kernel dropped: {count}	Jádro zahodilo: {count}
+	Learn Assignments…	Učit přiřazení…
+	Load profile	Načíst profil
+	MIDI Monitor…	Monitor MIDI…
+	Mute shuttle sound	Ztlumit zvuk shuttle
+	No conflicts.	Žádné konflikty.
+	No profile warnings.	Žádná varování profilu.
+	No project profile is stored.	Není uložen profil projektu.
+	OK writes the preferences and the profile file together.	OK zapíše předvolby a soubor profilu společně.
+	Online	Online
+	Pending	Čeká
+	Pickup (14-bit)	Zachycení (14 bitů)
+	Pickup (7-bit)	Zachycení (7 bitů)
+	Profile warnings	Varování profilu
+	Rejected	Odmítnuto
+	Show Active Sensing	Zobrazit Active Sensing
+	Show MIDI Clock	Zobrazit MIDI hodiny
+	Show MIDI Time Code	Zobrazit časový kód MIDI
+	The profile file is damaged. Preferences and the built-in profile stay in use.	Soubor profilu je poškozen. Předvolby a vestavěný profil zůstávají v použití.
+	Timed out	Čas vypršel
+	Type: {hint}	Typ: {hint}
+	User profile file	Soubor profilu uživatele
+	{received} received, {dispatched} dispatched, {coalesced} coalesced, {stalls} stalls, {errors} errors	{received} přijato, {dispatched} předáno, {coalesced} sloučeno, {stalls} čekání, {errors} chyb

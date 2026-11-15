@@ -4713,3 +4713,35 @@ export.summary	Low	thấp
 	Reject	Từ chối
 	Shows every MIDI message from the controllers as it arrives, to check that a controller sends and what it sends. MIDI Clock, Active Sensing and MIDI Time Code are left out.	Hiện mỗi thông điệp MIDI từ bộ điều khiển ngay khi tới, để xem bộ điều khiển có gửi và gửi gì. Đồng hồ MIDI, Active Sensing và mã thời gian MIDI bị bỏ qua.
 	Pick a command (or a mixer strip for a fader or knob), press Learn, then press the button or move the control past half way. Confirm keeps the assignment. OK saves the assignments.	Chọn một lệnh (hoặc một dải mixer cho fader hay núm), nhấn Học, rồi nhấn nút hoặc đẩy điều khiển quá nửa. Xác nhận giữ gán. OK lưu các gán.
+	All devices	Mọi thiết bị
+	Builtin: {name}	Tích hợp: {name}
+	Capturing	Đang ghi
+	Confirmed	Đã xác nhận
+	Conflict	Xung đột
+	Connect a MIDI controller or a ShuttlePRO to edit its profile.	Hãy nối bộ điều khiển MIDI hoặc ShuttlePRO để sửa hồ sơ của nó.
+	Control Surfaces…	Mặt điều khiển…
+	Filter messages	Lọc thông điệp
+	Idle	Chờ
+	Kernel dropped: {count}	Nhân bỏ: {count}
+	Learn Assignments…	Học gán phím…
+	Load profile	Tải hồ sơ
+	MIDI Monitor…	Màn hình MIDI…
+	Mute shuttle sound	Tắt tiếng shuttle
+	No conflicts.	Không có xung đột.
+	No profile warnings.	Không có cảnh báo hồ sơ.
+	No project profile is stored.	Không lưu hồ sơ dự án.
+	OK writes the preferences and the profile file together.	OK ghi tùy chọn và tệp hồ sơ cùng lúc.
+	Online	Trực tuyến
+	Pending	Đang chờ
+	Pickup (14-bit)	Bắt (14 bit)
+	Pickup (7-bit)	Bắt (7 bit)
+	Profile warnings	Cảnh báo hồ sơ
+	Rejected	Đã từ chối
+	Show Active Sensing	Hiện Active Sensing
+	Show MIDI Clock	Hiện đồng hồ MIDI
+	Show MIDI Time Code	Hiện mã thời gian MIDI
+	The profile file is damaged. Preferences and the built-in profile stay in use.	Tệp hồ sơ bị hỏng. Tùy chọn và hồ sơ tích hợp vẫn được dùng.
+	Timed out	Hết giờ
+	Type: {hint}	Kiểu: {hint}
+	User profile file	Tệp hồ sơ người dùng
+	{received} received, {dispatched} dispatched, {coalesced} coalesced, {stalls} stalls, {errors} errors	{received} đã nhận, {dispatched} đã gửi, {coalesced} đã gộp, {stalls} lần chờ, {errors} lỗi

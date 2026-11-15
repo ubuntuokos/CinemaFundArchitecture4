@@ -4715,3 +4715,35 @@ export.summary	Low	madal
 	Reject	Keeldu
 	Shows every MIDI message from the controllers as it arrives, to check that a controller sends and what it sends. MIDI Clock, Active Sensing and MIDI Time Code are left out.	Näitab iga MIDI-sõnumit kontrolleritelt selle saabudes, et näha, kas kontroller saadab ja mida. MIDI-kell, Active Sensing ja MIDI ajakood jäetakse välja.
 	Pick a command (or a mixer strip for a fader or knob), press Learn, then press the button or move the control past half way. Confirm keeps the assignment. OK saves the assignments.	Vali käsk (või mikseri rada faderile või nupule), vajuta Õpi, siis nuppu või liiguta juhik üle poole. Kinnitus jätab määrangu alles. OK salvestab määrangud.
+	All devices	Kõik seadmed
+	Builtin: {name}	Sisseehitatud: {name}
+	Capturing	Hõive
+	Confirmed	Kinnitatud
+	Conflict	Konflikt
+	Connect a MIDI controller or a ShuttlePRO to edit its profile.	Profiili muutmiseks ühenda MIDI-kontroller või ShuttlePRO.
+	Control Surfaces…	Juhtimispinnad…
+	Filter messages	Filtreeri sõnumid
+	Idle	Jõude
+	Kernel dropped: {count}	Kernel jättis kõrvale: {count}
+	Learn Assignments…	Õpi määranguid…
+	Load profile	Laadi profiil
+	MIDI Monitor…	MIDI-monitor…
+	Mute shuttle sound	Vaigista shuttle-heli
+	No conflicts.	Konflikte pole.
+	No profile warnings.	Profiili hoiatusi pole.
+	No project profile is stored.	Projekti profiili ei ole salvestatud.
+	OK writes the preferences and the profile file together.	OK kirjutab eelistused ja profiilifaili koos.
+	Online	Võrgus
+	Pending	Ootel
+	Pickup (14-bit)	Haaramine (14 bitti)
+	Pickup (7-bit)	Haaramine (7 bitti)
+	Profile warnings	Profiili hoiatused
+	Rejected	Tagasi lükatud
+	Show Active Sensing	Näita Active Sensingut
+	Show MIDI Clock	Näita MIDI-kella
+	Show MIDI Time Code	Näita MIDI ajakoodi
+	The profile file is damaged. Preferences and the built-in profile stay in use.	Profiilifail on kahjustatud. Eelistused ja sisseehitatud profiil jäävad kasutusse.
+	Timed out	Aeg sai otsa
+	Type: {hint}	Tüüp: {hint}
+	User profile file	Kasutaja profiilifail
+	{received} received, {dispatched} dispatched, {coalesced} coalesced, {stalls} stalls, {errors} errors	{received} vastu võetud, {dispatched} edastatud, {coalesced} ühendatud, {stalls} ootamised, {errors} vead

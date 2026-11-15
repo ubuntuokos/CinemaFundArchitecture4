@@ -4720,3 +4720,35 @@
 	Reject	Ablehnen
 	Shows every MIDI message from the controllers as it arrives, to check that a controller sends and what it sends. MIDI Clock, Active Sensing and MIDI Time Code are left out.	Zeigt jede MIDI-Meldung der Controller, sobald sie eintrifft, um zu prüfen, ob und was ein Controller sendet. MIDI-Clock, Active Sensing und MIDI-Timecode bleiben aus.
 	Pick a command (or a mixer strip for a fader or knob), press Learn, then press the button or move the control past half way. Confirm keeps the assignment. OK saves the assignments.	Wählen Sie einen Befehl (oder einen Mixerkanal für Fader oder Knopf), drücken Sie Lernen, dann die Taste oder bewegen Sie das Element über die Mitte. Bestätigen behält die Zuweisung. OK speichert die Zuweisungen.
+	All devices	Alle Geräte
+	Builtin: {name}	Eingebaut: {name}
+	Capturing	Erfassen
+	Confirmed	Bestätigt
+	Conflict	Konflikt
+	Connect a MIDI controller or a ShuttlePRO to edit its profile.	Schließen Sie einen MIDI-Controller oder ein ShuttlePRO an, um sein Profil zu bearbeiten.
+	Control Surfaces…	Steuerungsoberflächen…
+	Filter messages	Nachrichten filtern
+	Idle	Bereit
+	Kernel dropped: {count}	Vom Kernel verworfen: {count}
+	Learn Assignments…	Lernen und Zuweisungen…
+	Load profile	Profil laden
+	MIDI Monitor…	MIDI-Monitor…
+	Mute shuttle sound	Shuttle-Ton stummschalten
+	No conflicts.	Keine Konflikte.
+	No profile warnings.	Keine Profilwarnungen.
+	No project profile is stored.	Es ist kein Projektprofil gespeichert.
+	OK writes the preferences and the profile file together.	OK schreibt die Einstellungen und die Profildatei zusammen.
+	Online	Online
+	Pending	Ausstehend
+	Pickup (14-bit)	Aufnahme (14 Bit)
+	Pickup (7-bit)	Aufnahme (7 Bit)
+	Profile warnings	Profilwarnungen
+	Rejected	Abgelehnt
+	Show Active Sensing	Active Sensing anzeigen
+	Show MIDI Clock	MIDI-Takt anzeigen
+	Show MIDI Time Code	MIDI-Zeitcode anzeigen
+	The profile file is damaged. Preferences and the built-in profile stay in use.	Die Profildatei ist beschädigt. Die Einstellungen und das eingebaute Profil bleiben in Verwendung.
+	Timed out	Zeit abgelaufen
+	Type: {hint}	Typ: {hint}
+	User profile file	Benutzerprofildatei
+	{received} received, {dispatched} dispatched, {coalesced} coalesced, {stalls} stalls, {errors} errors	{received} empfangen, {dispatched} zugestellt, {coalesced} zusammengefasst, {stalls} Wartezeiten, {errors} Fehler

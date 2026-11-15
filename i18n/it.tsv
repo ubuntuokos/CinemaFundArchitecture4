@@ -4713,3 +4713,35 @@
 	Reject	Rifiuta
 	Shows every MIDI message from the controllers as it arrives, to check that a controller sends and what it sends. MIDI Clock, Active Sensing and MIDI Time Code are left out.	Mostra ogni messaggio MIDI dei controller appena arriva, per verificare che un controller invii e che cosa invii. Clock MIDI, Active Sensing e timecode MIDI sono esclusi.
 	Pick a command (or a mixer strip for a fader or knob), press Learn, then press the button or move the control past half way. Confirm keeps the assignment. OK saves the assignments.	Scegli un comando (o una traccia del mixer per un fader o una manopola), premi Apprendi, poi il pulsante o sposta il controllo oltre la metà. Conferma tiene l'assegnazione. OK salva le assegnazioni.
+	All devices	Tutti i dispositivi
+	Builtin: {name}	Integrato: {name}
+	Capturing	Acquisizione
+	Confirmed	Confermato
+	Conflict	Conflitto
+	Connect a MIDI controller or a ShuttlePRO to edit its profile.	Collega un controller MIDI o uno ShuttlePRO per modificarne il profilo.
+	Control Surfaces…	Superfici di controllo…
+	Filter messages	Filtra messaggi
+	Idle	Inattivo
+	Kernel dropped: {count}	Scartati dal kernel: {count}
+	Learn Assignments…	Apprendi assegnazioni…
+	Load profile	Carica profilo
+	MIDI Monitor…	Monitor MIDI…
+	Mute shuttle sound	Silenzia l'audio dello shuttle
+	No conflicts.	Nessun conflitto.
+	No profile warnings.	Nessun avviso di profilo.
+	No project profile is stored.	Nessun profilo di progetto è memorizzato.
+	OK writes the preferences and the profile file together.	OK scrive insieme le preferenze e il file di profilo.
+	Online	In linea
+	Pending	In attesa
+	Pickup (14-bit)	Aggancio (14 bit)
+	Pickup (7-bit)	Aggancio (7 bit)
+	Profile warnings	Avvisi di profilo
+	Rejected	Rifiutato
+	Show Active Sensing	Mostra Active Sensing
+	Show MIDI Clock	Mostra clock MIDI
+	Show MIDI Time Code	Mostra timecode MIDI
+	The profile file is damaged. Preferences and the built-in profile stay in use.	Il file di profilo è danneggiato. Le preferenze e il profilo integrato restano in uso.
+	Timed out	Tempo scaduto
+	Type: {hint}	Tipo: {hint}
+	User profile file	File di profilo utente
+	{received} received, {dispatched} dispatched, {coalesced} coalesced, {stalls} stalls, {errors} errors	{received} ricevuti, {dispatched} inviati, {coalesced} uniti, {stalls} attese, {errors} errori
