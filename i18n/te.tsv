@@ -4604,6 +4604,8 @@ export.summary	Low	తక్కువ
 	software backend: {reason}	సాఫ్ట్‌వేర్ బ్యాకెండ్: {reason}
 	Start studio	స్టూడియోను ప్రారంభించు
 	Stop studio	స్టూడియోను ఆపు
+	Add Studio Scene	స్టూడియో దృశ్యాన్ని జోడించు
+	Live	ప్రత్యక్షం
 # Auto Color, Auto Contrast, Auto Levels (EffectsSDK review)
 	Auto Color	స్వయంచాలక రంగు
 	Auto Contrast	స్వయంచాలక కాంట్రాస్ట్
@@ -4674,3 +4676,29 @@ export.summary	Low	తక్కువ
 	AS-11 Core	AS-11 Core
 	AS-11 Parts	AS-11 భాగాలు
 	AS-11 UK DPP	AS-11 UK DPP
+
+# Control Surfaces settings page (CS-1, #1187)
+	Devices	పరికరాలు
+	Use	ఉపయోగించు
+	Device	పరికరం
+	MIDI	MIDI
+	HID jog/shuttle	HID jog/shuttle
+	OSC	OSC
+	Connected	కనెక్ట్ అయింది
+	Not connected	కనెక్ట్ కాలేదు
+	Disabled	నిలిపివేయబడింది
+	{device} ({port})	{device} ({port})
+	{name}: {error}	{name}: {error}
+	Looking for devices…	పరికరాల కోసం వెతుకుతోంది…
+	No MIDI controller or jog/shuttle device was found. Connect one and press Refresh.	MIDI కంట్రోలర్ లేదా jog/shuttle పరికరం కనబడలేదు. ఒకదాన్ని కనెక్ట్ చేసి రిఫ్రెష్ చేయి నొక్కండి.
+	Control Surfaces	కంట్రోల్ సర్ఫేస్‌లు
+	Use control surfaces (MIDI controllers, jog/shuttle devices)	కంట్రోల్ సర్ఫేస్‌లను ఉపయోగించు (MIDI కంట్రోలర్లు, jog/shuttle పరికరాలు)
+	Mapping controls to commands, MIDI Learn and the MIDI Monitor come in a later version; the choices here are remembered until then.	నియంత్రణలను ఆదేశాలకు కేటాయించడం, MIDI Learn మరియు MIDI మానిటర్ తదుపరి వెర్షన్‌లో వస్తాయి; అప్పటివరకు ఇక్కడి ఎంపికలు గుర్తుంచుకోబడతాయి.
+	CFA4 ShuttlePRO	CFA4 ShuttlePRO
+	Kdenlive-style ShuttlePRO	Kdenlive శైలి ShuttlePRO
+	Generic MIDI	సాధారణ MIDI
+
+# LTC timecode read from clip audio (TC-7, #1285)
+	Read from LTC Audio	LTC ఆడియో నుండి చదువు
+	Find SMPTE LTC on the clip's audio and use the timecode it gives the first frame	క్లిప్ ఆడియోలో SMPTE LTC‌ను కనుగొని అది మొదటి ఫ్రేమ్‌కు ఇచ్చే టైమ్‌కోడ్‌ను ఉపయోగించు
+	Read Timecode from LTC Audio	LTC ఆడియో నుండి టైమ్‌కోడ్ చదువు

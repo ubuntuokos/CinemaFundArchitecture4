@@ -4600,6 +4600,8 @@ export.summary	Low	matala
 	software backend: {reason}	ohjelmistotaustaosa: {reason}
 	Start studio	Käynnistä studio
 	Stop studio	Pysäytä studio
+	Add Studio Scene	Lisää studiokohtaus
+	Live	Suora
 # Auto Color, Auto Contrast, Auto Levels (EffectsSDK review)
 	Auto Color	Automaattinen väri
 	Auto Contrast	Automaattinen kontrasti
@@ -4670,3 +4672,29 @@ export.summary	Low	matala
 	AS-11 Core	AS-11 Core
 	AS-11 Parts	AS-11-osat
 	AS-11 UK DPP	AS-11 UK DPP
+
+# Control Surfaces settings page (CS-1, #1187)
+	Devices	Laitteet
+	Use	Käytä
+	Device	Laite
+	MIDI	MIDI
+	HID jog/shuttle	HID jog/shuttle
+	OSC	OSC
+	Connected	Yhdistetty
+	Not connected	Ei yhdistetty
+	Disabled	Poistettu käytöstä
+	{device} ({port})	{device} ({port})
+	{name}: {error}	{name}: {error}
+	Looking for devices…	Etsitään laitteita…
+	No MIDI controller or jog/shuttle device was found. Connect one and press Refresh.	MIDI-ohjainta tai jog/shuttle-laitetta ei löytynyt. Liitä sellainen ja paina Päivitä.
+	Control Surfaces	Ohjainpinnat
+	Use control surfaces (MIDI controllers, jog/shuttle devices)	Käytä ohjainpintoja (MIDI-ohjaimet, jog/shuttle-laitteet)
+	Mapping controls to commands, MIDI Learn and the MIDI Monitor come in a later version; the choices here are remembered until then.	Säätimien liittäminen komentoihin, MIDI Learn ja MIDI-monitori tulevat myöhemmässä versiossa; tässä tehdyt valinnat muistetaan siihen asti.
+	CFA4 ShuttlePRO	CFA4 ShuttlePRO
+	Kdenlive-style ShuttlePRO	Kdenlive-tyylinen ShuttlePRO
+	Generic MIDI	Yleinen MIDI
+
+# LTC timecode read from clip audio (TC-7, #1285)
+	Read from LTC Audio	Lue LTC-äänestä
+	Find SMPTE LTC on the clip's audio and use the timecode it gives the first frame	Etsi leikkeen äänestä SMPTE LTC ja käytä aikakoodia, jonka se antaa ensimmäiselle kuvalle
+	Read Timecode from LTC Audio	Lue aikakoodi LTC-äänestä

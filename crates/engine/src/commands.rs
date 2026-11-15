@@ -1537,6 +1537,17 @@ fn build() -> Vec<CommandSpec> {
                     }
                     continue;
                 }
+                // A DCP folder, asset map or composition playlist: one sequence per playlist.
+                if let Some(r) = crate::dcp_import::import_package(s, &path, bin) {
+                    match r {
+                        Ok(r) => {
+                            sequences.extend(r["sequences"].as_array().cloned().unwrap_or_default());
+                            reports.push(r);
+                        }
+                        Err(e) => errors.push(format!("{path}: {e}")),
+                    }
+                    continue;
+                }
                 // DCP / IMF subtitles: timed text track files are caption tracks, not media.
                 if let Some(r) = crate::captions::import_timed_text_mxf(s, &path) {
                     match r {
@@ -3853,6 +3864,8 @@ fn build() -> Vec<CommandSpec> {
     v.extend(crate::captions::commands());
     v.extend(crate::settings::commands());
     v.extend(crate::timecode_sync::commands());
+    v.extend(crate::control_surfaces::commands());
+    v.extend(crate::ltc_read::commands());
     v.extend(crate::mixer::commands());
     v.extend(crate::multicam::commands());
     v.extend(crate::essential_sound::commands());
@@ -3861,6 +3874,7 @@ fn build() -> Vec<CommandSpec> {
     v.extend(crate::graphic_templates::commands());
     v.extend(crate::credits::commands());
     v.extend(crate::live::commands());
+    v.extend(crate::studio::commands());
     v.extend(crate::dialog_defaults::commands());
     v.extend(crate::legibility::commands());
     v.extend(crate::shortcuts::commands());

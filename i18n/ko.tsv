@@ -4592,6 +4592,8 @@
 	software backend: {reason}	소프트웨어 백엔드: {reason}
 	Start studio	스튜디오 시작
 	Stop studio	스튜디오 중지
+	Add Studio Scene	스튜디오 장면 추가
+	Live	라이브
 # Auto Color, Auto Contrast, Auto Levels (EffectsSDK review)
 	Auto Color	자동 색상
 	Auto Contrast	자동 대비
@@ -4662,3 +4664,29 @@
 	AS-11 Core	AS-11 Core
 	AS-11 Parts	AS-11 파트
 	AS-11 UK DPP	AS-11 UK DPP
+
+# Control Surfaces settings page (CS-1, #1187)
+	Devices	장치
+	Use	사용
+	Device	장치
+	MIDI	MIDI
+	HID jog/shuttle	HID 조그/셔틀
+	OSC	OSC
+	Connected	연결됨
+	Not connected	연결 안 됨
+	Disabled	사용 안 함
+	{device} ({port})	{device} ({port})
+	{name}: {error}	{name}: {error}
+	Looking for devices…	장치를 찾는 중…
+	No MIDI controller or jog/shuttle device was found. Connect one and press Refresh.	MIDI 컨트롤러나 조그/셔틀 장치를 찾을 수 없습니다. 장치를 연결한 뒤 새로 고침을 누르세요.
+	Control Surfaces	컨트롤 서피스
+	Use control surfaces (MIDI controllers, jog/shuttle devices)	컨트롤 서피스 사용(MIDI 컨트롤러, 조그/셔틀 장치)
+	Mapping controls to commands, MIDI Learn and the MIDI Monitor come in a later version; the choices here are remembered until then.	컨트롤을 명령에 할당하는 기능, MIDI Learn, MIDI 모니터는 이후 버전에서 제공됩니다. 그때까지 여기서 고른 설정은 기억됩니다.
+	CFA4 ShuttlePRO	CFA4 ShuttlePRO
+	Kdenlive-style ShuttlePRO	Kdenlive 스타일 ShuttlePRO
+	Generic MIDI	일반 MIDI
+
+# LTC timecode read from clip audio (TC-7, #1285)
+	Read from LTC Audio	LTC 오디오에서 읽기
+	Find SMPTE LTC on the clip's audio and use the timecode it gives the first frame	클립 오디오에서 SMPTE LTC를 찾아 첫 프레임에 해당하는 타임코드를 사용합니다
+	Read Timecode from LTC Audio	LTC 오디오에서 타임코드 읽기
