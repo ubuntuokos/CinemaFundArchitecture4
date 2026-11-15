@@ -247,7 +247,8 @@ pub fn open<S: ByteSource>(src: S) -> Result<Mp4File> {
     let mut ftyp: Option<Vec<u8>> = None;
     let mut moov: Option<(u64, Vec<u8>)> = None;
     let mut moofs: Vec<(u64, Vec<u8>)> = Vec::new();
-    while offset + 8 <= len {
+    // `offset` saturates at u64::MAX after a hostile 64-bit box size: compare without adding to it
+    while len.checked_sub(offset).is_some_and(|rest| rest >= 8) {
         let n = (len - offset).min(32) as usize;
         let mut hb = [0u8; 32];
         src.read_at(offset, &mut hb[..n])?;

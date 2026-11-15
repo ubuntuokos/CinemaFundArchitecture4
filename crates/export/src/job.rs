@@ -171,10 +171,16 @@ pub enum Step {
 }
 
 /// An export of an encoded-video format, advanced one batch at a time.
-/// The first caption track of `seq` inside `range` for the ANC data track of an MXF OP1a export
-/// (`ExportSettings::mxf_anc_captions`); `None` when not asked for or the sequence has none.
-fn anc_captions(project: &Project, seq: ItemId, settings: &ExportSettings, range: TimeRange) -> Option<cfa4_captions::Document> {
-    if settings.format != Format::MxfOp1a || !settings.mxf_anc_captions {
+/// The first caption track of `seq` inside `range`, timed from the first exported frame, for the
+/// ANC data track of an MXF OP1a export (`ExportSettings::mxf_anc_captions`) or the subtitles of
+/// a DCP (`ExportSettings::dcp_subtitles`); `None` when not asked for or the sequence has none.
+fn export_captions(project: &Project, seq: ItemId, settings: &ExportSettings, range: TimeRange) -> Option<cfa4_captions::Document> {
+    let wanted = match settings.format {
+        Format::MxfOp1a => settings.mxf_anc_captions,
+        Format::Dcp => settings.dcp_subtitles,
+        _ => false,
+    };
+    if !wanted {
         return None;
     }
     let track = project.sequence(seq)?.caption_tracks.first()?;
@@ -229,8 +235,8 @@ pub struct Exporter {
     project: Arc<Project>,
     /// Chapters of MP4, MOV, HLS and WebM output ([`export_chapters`]).
     chapters: Vec<cfa4_isobmff::Chapter>,
-    /// MXF OP1a closed captions (ANC data), timed from the first exported frame.
-    anc_captions: Option<cfa4_captions::Document>,
+    /// MXF OP1a closed captions (ANC data) or DCP subtitles, timed from the first exported frame.
+    captions: Option<cfa4_captions::Document>,
     vt: usize,
     at: Option<usize>,
     t0: web_time::Instant,
@@ -339,6 +345,10 @@ impl Exporter {
             _ => None,
         };
         let measured = !settings.effects.loudness.enabled || audio.is_none();
+        let captions = export_captions(&project, seq, &settings, range);
+        if settings.format == Format::Dcp && settings.dcp_subtitles && captions.is_none() {
+            return Err(ExportError::Unsupported("DCP subtitles: the sequence has no caption track".into()));
+        }
         Ok(Self {
             pipe,
             f0,
@@ -366,7 +376,7 @@ impl Exporter {
             seq,
             project: project.clone(),
             chapters: export_chapters(&project, seq, &settings, range),
-            anc_captions: anc_captions(&project, seq, &settings, range),
+            captions,
             vt: 0,
             at: None,
             t0: web_time::Instant::now(),
@@ -547,6 +557,7 @@ impl Exporter {
                 rate: self.pipe.rate,
                 audio: self.audio.is_some(),
                 active: self.pipe.content_size(),
+                subtitles: self.captions.clone(),
             })?);
             return Ok(());
         }
@@ -625,7 +636,7 @@ impl Exporter {
                 audio: self.audio.as_ref().map(|a| (a.sr, a.channels)),
                 timecode: (start, q.settings.drop_frame),
                 mpeg: self.venc.mpeg_video(),
-                captions: self.anc_captions.clone(),
+                captions: self.captions.clone(),
             })?);
             return Ok(());
         }

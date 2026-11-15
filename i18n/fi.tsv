@@ -1944,6 +1944,7 @@
 	Counter	Laskuri
 	Typewriter	Kirjoituskone
 	Word by Word	Sana sanalta
+	Scramble	Sekoitus
 	Animator	Animaattori
 	Animator Duration	Animaattorin kesto
 	Animator Delay	Animaattorin viive
@@ -3023,6 +3024,10 @@
 	Sharpen Amount	Terävöinnin määrä
 	Shift Center To	Siirrä keskipiste kohteeseen
 	Show Focus Area	Näytä tarkennusalue
+	Rack Focus	Tarkennuksen siirto
+	Focus Point A	Tarkennuspiste A
+	Focus Point B	Tarkennuspiste B
+	Rack	Siirto
 	Show Only Noise	Näytä vain kohina
 	Shrink	Kutista
 	Shutter Angle	Suljinkulma
@@ -4178,6 +4183,11 @@ export.summary	Low	matala
 	Burn Size	Palon koko
 	Ember Width	Hiillosreunan leveys
 	Ember Color	Hiillosreunan väri
+	Tear Away	Repäisy
+	Tear Roughness	Repeämän rosoisuus
+	Paper Edge Width	Paperireunan leveys
+	Stamp Cut	Postimerkkileikkaus
+	Perforations	Rei'itys
 	Check Text Legibility	Tarkista tekstin luettavuus
 	Clear Legibility Markers	Poista luettavuusmerkit
 	Text legibility: no problems found	Tekstin luettavuus: ongelmia ei löytynyt
@@ -4217,6 +4227,9 @@ export.summary	Low	matala
 	Dither	Rasterointi
 	Pattern	Kuvio
 	Cell Size	Solukoko
+	Pixelate	Pikselöinti
+	Cell Shape	Solun muoto
+	LED	LED
 	Cyan Angle	Syaanin kulma
 	Magenta Angle	Magentan kulma
 	Yellow Angle	Keltaisen kulma
@@ -4577,6 +4590,16 @@ export.summary	Low	matala
 	Chase External Timecode	Seuraa ulkoista aikakoodia
 	Send LTC	Lähetä LTC
 	Send MIDI Timecode	Lähetä MIDI-aikakoodi
+
+# Live studio preview (CFA4-LIVE-STUDIO-001 S0)
+	Live studio preview	Suoran studion esikatselu
+	Live studio: stopped	Suora studio: pysäytetty
+	Live studio: {state}	Suora studio: {state}
+	Live studio: {error}	Suora studio: {error}
+	restarted after {count} crashes (last: {exit})	käynnistetty uudelleen {count} kaatumisen jälkeen (viimeisin: {exit})
+	software backend: {reason}	ohjelmistotaustaosa: {reason}
+	Start studio	Käynnistä studio
+	Stop studio	Pysäytä studio
 # Auto Color, Auto Contrast, Auto Levels (EffectsSDK review)
 	Auto Color	Automaattinen väri
 	Auto Contrast	Automaattinen kontrasti
@@ -4634,3 +4657,16 @@ export.summary	Low	matala
 	Freewheel	Vapaakäynti
 	Scrubbing	Selataan
 	Sending	Lähetetään
+
+# DCP subtitle export (#938)
+	Subtitles from the first caption track	Tekstitykset ensimmäiseltä tekstitysraidalta
+	The package language	Paketin kieli
+	Inter Regular (built in), or an OpenType / TrueType file	Inter Regular (sisäänrakennettu) tai OpenType- / TrueType-tiedosto
+	Subtitle language	Tekstityskieli
+	Subtitle font	Tekstitysfontti
+	Fonts	Fontit
+
+# AS-11 metadata in MXF OP1a (#96)
+	AS-11 Core	AS-11 Core
+	AS-11 Parts	AS-11-osat
+	AS-11 UK DPP	AS-11 UK DPP

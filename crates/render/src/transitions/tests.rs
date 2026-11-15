@@ -254,6 +254,52 @@ fn burn_away_leaves_an_ember_edge_between_the_clips() {
 }
 
 #[test]
+fn tear_away_opens_a_ragged_gap_with_paper_edges() {
+    let (a, b) = (frame_a(), frame_b());
+    let near = |p: [f32; 4], q: [f32; 4]| (0..3).all(|k| (p[k] - q[k]).abs() < 0.02);
+    for orientation in [0u32, 1] {
+        let mut e = cfa4_project::find_effect("tear_away").unwrap().instance();
+        e.params.get_mut("orientation").unwrap().value = ParamValue::Choice(orientation);
+        let o = apply(&e, &a, &b, 0.6);
+        // the middle of the frame shows B, the far edges still show torn-away A
+        assert!(near(o.get(W / 2, H / 2), b.get(W / 2, H / 2)), "orientation {orientation}: B in the gap");
+        let edge = if orientation == 0 { (1, H / 2) } else { (W / 2, 1) };
+        assert!(!near(o.get(edge.0, edge.1), b.get(edge.0, edge.1)), "orientation {orientation}: A still at the edge");
+        // a band of paper colour (bright, warm, neither clip) borders the tear
+        let paper = (0..H)
+            .flat_map(|y| (0..W).map(move |x| (x, y)))
+            .filter(|&(x, y)| {
+                let c = o.get(x, y);
+                c[0] > 0.6 && c[1] > 0.6 && c[2] > 0.5 && !near(c, a.get(x, y)) && !near(c, b.get(x, y))
+            })
+            .count();
+        assert!(paper > 0, "orientation {orientation}: paper edge shows");
+    }
+}
+
+#[test]
+fn stamp_cut_grows_a_perforated_stamp_from_the_centre() {
+    use crate::transitions::wipe::stamp_dist;
+    let (w, h) = (1920.0, 1080.0);
+    // the box follows the frame shape: the middle of a side is the same "radius" across and down
+    assert!((stamp_dist(500.0, 0.0, w, h, 14.0) - stamp_dist(0.0, 500.0 * h / w, w, h, 14.0)).abs() < 1.0);
+    // a hole pushes the edge in, between holes it does not
+    let side = 400.0;
+    let samples: Vec<f32> = (0..200).map(|i| stamp_dist(side, -h / w * side + 2.0 * h / w * side * i as f32 / 199.0, w, h, 14.0)).collect();
+    let (lo, hi) = samples.iter().fold((f32::INFINITY, 0.0f32), |(lo, hi), v| (lo.min(*v), hi.max(*v)));
+    assert!((lo - side).abs() < 0.5 && hi > side * 1.02, "perforations: {lo} … {hi}");
+    // twice as far is twice the value (the shape keeps its perforations at every size)
+    assert!((stamp_dist(800.0, 70.0, w, h, 14.0) - 2.0 * stamp_dist(400.0, 35.0, w, h, 14.0)).abs() < 1e-2);
+    assert_eq!(stamp_dist(0.0, 0.0, w, h, 14.0), 0.0);
+    assert!(stamp_dist(f32::NAN, 1.0, w, h, 14.0).is_finite());
+    let (a, b) = (frame_a(), frame_b());
+    let e = cfa4_project::find_effect("stamp_cut").unwrap().instance();
+    let o = apply(&e, &a, &b, 0.5);
+    assert_eq!(o.get(W / 2, H / 2), b.get(W / 2, H / 2));
+    assert_eq!(o.get(0, 0), a.get(0, 0));
+}
+
+#[test]
 fn linear_wipe_reveals_from_the_trailing_side() {
     let (a, b) = (frame_a(), frame_b());
     let e = cfa4_project::find_effect("linear_wipe").unwrap().instance(); // 90° = left → right

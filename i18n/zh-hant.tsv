@@ -1837,6 +1837,7 @@
 	Text Animator	文字動畫器
 	Counter	計數器
 	Word by Word	逐詞
+	Scramble	亂碼
 	Animator	動畫器
 	Animator Duration	動畫器持續時間
 	Animator Delay	動畫器延遲
@@ -2880,6 +2881,10 @@
 	Sharpen Amount	銳利化量
 	Shift Center To	將中心偏移至
 	Show Focus Area	顯示焦點區域
+	Rack Focus	移焦
+	Focus Point A	焦點 A
+	Focus Point B	焦點 B
+	Rack	移焦進度
 	Show Only Noise	僅顯示雜訊
 	Shrink	收縮
 	Shutter Angle	快門角度
@@ -4175,6 +4180,11 @@ export.summary	Low	低
 	Burn Size	燃燒大小
 	Ember Width	餘燼寬度
 	Ember Color	餘燼色彩
+	Tear Away	撕開
+	Tear Roughness	撕裂粗糙度
+	Paper Edge Width	紙邊寬度
+	Stamp Cut	郵票剪切
+	Perforations	齒孔
 	Check Text Legibility	檢查文字易讀性
 	Clear Legibility Markers	清除易讀性標記
 	Text legibility: no problems found	文字易讀性：未發現問題
@@ -4214,6 +4224,9 @@ export.summary	Low	低
 	Dither	遞色
 	Pattern	圖樣
 	Cell Size	儲存格大小
+	Pixelate	像素化
+	Cell Shape	儲存格形狀
+	LED	LED
 	Cyan Angle	青色角度
 	Magenta Angle	洋紅色角度
 	Yellow Angle	黃色角度
@@ -4574,6 +4587,16 @@ export.summary	Low	低
 	Chase External Timecode	追隨外部時間碼
 	Send LTC	傳送 LTC
 	Send MIDI Timecode	傳送 MIDI 時間碼
+
+# Live studio preview (CFA4-LIVE-STUDIO-001 S0)
+	Live studio preview	直播攝影棚預覽
+	Live studio: stopped	直播攝影棚：已停止
+	Live studio: {state}	直播攝影棚：{state}
+	Live studio: {error}	直播攝影棚：{error}
+	restarted after {count} crashes (last: {exit})	在 {count} 次當機後已重新啟動（最近一次：{exit}）
+	software backend: {reason}	軟體後端：{reason}
+	Start studio	啟動攝影棚
+	Stop studio	停止攝影棚
 # Auto Color, Auto Contrast, Auto Levels (EffectsSDK review)
 	Auto Color	自動色彩
 	Auto Contrast	自動對比
@@ -4631,3 +4654,16 @@ export.summary	Low	低
 	Freewheel	自由運行
 	Scrubbing	拖曳中
 	Sending	正在傳送
+
+# DCP subtitle export (#938)
+	Subtitles from the first caption track	來自第一條字幕軌道的字幕
+	The package language	套件的語言
+	Inter Regular (built in), or an OpenType / TrueType file	Inter Regular（內建）或 OpenType / TrueType 檔案
+	Subtitle language	字幕語言
+	Subtitle font	字幕字型
+	Fonts	字型
+
+# AS-11 metadata in MXF OP1a (#96)
+	AS-11 Core	AS-11 Core
+	AS-11 Parts	AS-11 部分
+	AS-11 UK DPP	AS-11 UK DPP

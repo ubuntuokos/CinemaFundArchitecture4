@@ -319,6 +319,17 @@ pub fn settings_from_params(s: &Session, p: &Value, cmd: &str) -> Result<(Option
     if let Some(v) = bool_p(p, "mxfAncCaptions") {
         settings.mxf_anc_captions = v;
     }
+    // AS-11 metadata in bmx's text forms (validated with the other settings)
+    for (key, field) in
+        [("mxfAs11Core", &mut settings.mxf_as11_core), ("mxfAs11Segments", &mut settings.mxf_as11_segments), ("mxfAs11Ukdpp", &mut settings.mxf_as11_ukdpp)]
+    {
+        if let Some(v) = str_p(p, key) {
+            if v.len() > 1 << 20 {
+                return Err(bad(cmd, format!("{key}: longer than 1 MiB")));
+            }
+            *field = v.to_string();
+        }
+    }
     if let Some(v) = str_p(p, "mpeg2Container") {
         let c = cfa4_export::Mpeg2Container::from_name(v).ok_or_else(|| bad(cmd, "mpeg2Container: ps | ts | m2ts | es"))?;
         settings.mpeg2_container = c.id().to_string();
@@ -358,6 +369,18 @@ pub fn settings_from_params(s: &Session, p: &Value, cmd: &str) -> Result<(Option
         let probe = ExportSettings { dcp_language: v.to_string(), ..Default::default() };
         let tag = cfa4_export::dcp_language(&probe).ok_or_else(|| bad(cmd, "dcpLanguage: an RFC 5646 tag such as en-US or hu-HU (empty = none)"))?;
         settings.dcp_language = tag.to_string();
+    }
+    if let Some(v) = bool_p(p, "dcpSubtitles") {
+        settings.dcp_subtitles = v;
+    }
+    if let Some(v) = str_p(p, "dcpSubtitleLanguage") {
+        let probe = ExportSettings { dcp_subtitle_language: v.to_string(), ..Default::default() };
+        let tag = cfa4_export::dcp_subtitle_language(&probe)
+            .ok_or_else(|| bad(cmd, "dcpSubtitleLanguage: an RFC 5646 tag such as en-US or hu-HU (empty = the package language)"))?;
+        settings.dcp_subtitle_language = tag.to_string();
+    }
+    if let Some(v) = str_p(p, "dcpSubtitleFont") {
+        settings.dcp_subtitle_font = v.trim().to_string();
     }
     if let Some(v) = str_p(p, "imfContentKind") {
         let probe = ExportSettings { imf_content_kind: v.to_string(), ..Default::default() };
@@ -1128,6 +1151,8 @@ fn preset_json(s: &Session, pr: &ExportPreset, full: bool) -> Value {
         "dcpIabSource": pr.settings.dcp_iab_source,
         "dcpIabFallback": pr.settings.dcp_iab_fallback,
         "dcpLanguage": pr.settings.dcp_language,
+        "dcpSubtitles": pr.settings.dcp_subtitles,
+        "dcpSubtitleLanguage": pr.settings.dcp_subtitle_language,
     });
     if full {
         v["settings"] = serde_json::to_value(&pr.settings).unwrap_or_default();

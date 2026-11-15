@@ -1890,6 +1890,7 @@
 	Counter	Бројач
 	Typewriter	Писаћа машина
 	Word by Word	Реч по реч
+	Scramble	Мешање
 	Animator	Аниматор
 	Animator Duration	Трајање аниматора
 	Animator Delay	Кашњење аниматора
@@ -2925,6 +2926,10 @@
 	Sharpen Amount	Количина изоштравања
 	Shift Center To	Помери средиште на
 	Show Focus Area	Прикажи област фокуса
+	Rack Focus	Пребацивање фокуса
+	Focus Point A	Тачка фокуса A
+	Focus Point B	Тачка фокуса B
+	Rack	Пребацивање
 	Show Only Noise	Прикажи само шум
 	Shrink	Скупи
 	Shutter Angle	Угао затварача
@@ -4176,6 +4181,11 @@ export.summary	Low	низак
 	Burn Size	Величина изгоревања
 	Ember Width	Ширина жара
 	Ember Color	Боја жара
+	Tear Away	Цепање
+	Tear Roughness	Храпавост поцепотине
+	Paper Edge Width	Ширина ивице папира
+	Stamp Cut	Исечак марке
+	Perforations	Перфорација
 	Check Text Legibility	Провери читљивост текста
 	Clear Legibility Markers	Уклони ознаке читљивости
 	Text legibility: no problems found	Читљивост текста: нису пронађени проблеми
@@ -4215,6 +4225,9 @@ export.summary	Low	низак
 	Dither	Распршивање
 	Pattern	Узорак
 	Cell Size	Величина ћелије
+	Pixelate	Пикселизација
+	Cell Shape	Облик ћелије
+	LED	LED
 	Cyan Angle	Угао цијан
 	Magenta Angle	Угао магента
 	Yellow Angle	Угао жуте
@@ -4575,6 +4588,16 @@ export.summary	Low	низак
 	Chase External Timecode	Прати спољни временски код
 	Send LTC	Шаљи LTC
 	Send MIDI Timecode	Шаљи MIDI временски код
+
+# Live studio preview (CFA4-LIVE-STUDIO-001 S0)
+	Live studio preview	Преглед студија уживо
+	Live studio: stopped	Студио уживо: заустављен
+	Live studio: {state}	Студио уживо: {state}
+	Live studio: {error}	Студио уживо: {error}
+	restarted after {count} crashes (last: {exit})	поново покренут после {count} падова (последњи: {exit})
+	software backend: {reason}	софтверска позадина: {reason}
+	Start studio	Покрени студио
+	Stop studio	Заустави студио
 # Auto Color, Auto Contrast, Auto Levels (EffectsSDK review)
 	Auto Color	Аутоматска боја
 	Auto Contrast	Аутоматски контраст
@@ -4632,3 +4655,16 @@ export.summary	Low	низак
 	Freewheel	Слободан ход
 	Scrubbing	Померање
 	Sending	Слање
+
+# DCP subtitle export (#938)
+	Subtitles from the first caption track	Титлови са прве стазе титлова
+	The package language	Језик пакета
+	Inter Regular (built in), or an OpenType / TrueType file	Inter Regular (уграђени) или датотека OpenType / TrueType
+	Subtitle language	Језик титлова
+	Subtitle font	Фонт титлова
+	Fonts	Фонтови
+
+# AS-11 metadata in MXF OP1a (#96)
+	AS-11 Core	AS-11 Core
+	AS-11 Parts	AS-11 делови
+	AS-11 UK DPP	AS-11 UK DPP
