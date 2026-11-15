@@ -11,7 +11,7 @@ environment does not carry it in that form.
 Exit 0 = allow; exit 2 = block, with the reason on stderr (Claude Code shows it to the agent). Any error of
 its own (no network, no `gh`) allows the push with a warning: the CI check still runs on the PR.
 Batch branches (`koteg/*`) are the gazda's and are not checked here. A Claude Projects thread whose new
-session is missing from the `Munkamenet:` line is not stopped (D12): the hook asks it to add itself.
+session is missing from the `Munkamenet:` line is stopped too (D12, plan 1.6): it must add itself to the line first.
 """
 
 from __future__ import annotations
@@ -94,9 +94,10 @@ def decide(
     if not foreign or not owners:
         return True, ""
     if PROJECT_THREAD.search(body) and not events:
-        return True, (
-            f"A #{pr['number']} egy Claude Projects-szál PR-ja, és a munkamenet ({', '.join(foreign)}) nincs a "
-            "leírás `Munkamenet:` sorában. Fűzd hozzá a sorhoz (docs/coordination.md §2.4, D12)."
+        return False, (
+            f"A push megállítva: a #{pr['number']} egy Claude Projects-szál PR-ja, és a munkamenet "
+            f"({', '.join(foreign)}) nincs a leírás `Munkamenet:` sorában. Fűzd hozzá a sorhoz, majd told újra "
+            "(docs/coordination.md §2.4, D12)."
         )
     return False, (
         f"A push megállítva: a #{pr['number']} ága most ezeké: {', '.join(sorted(allowed))}; a pusholt commitok "

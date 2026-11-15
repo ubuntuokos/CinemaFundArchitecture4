@@ -70,10 +70,12 @@ def test_gazda_after_takeover_and_developer_blocked() -> None:
     assert not GUARD.decide(_pr(f"Munkamenet: {A}"), [_commit(A)], comments, NOW, BO)[0]
 
 
-def test_projects_thread_is_asked_not_stopped() -> None:
+def test_projects_thread_is_stopped_until_listed() -> None:
     body = f"[project thread](https://claude.ai/code/project/chan_1?thread=c)\n\nMunkamenet: {A}"
     ok, msg = GUARD.decide(_pr(body), [_commit(B)], [], NOW, BO)
-    assert ok and "Munkamenet:" in msg
+    assert not ok and "Munkamenet:" in msg
+    listed = body + f" {B}"
+    assert GUARD.decide(_pr(listed), [_commit(B)], [], NOW, BO)[0]
 
 
 def test_no_pr_or_no_owner_allows() -> None:
