@@ -17,7 +17,8 @@
 //!   MP3 / MP2 and AC-3 audio.
 //! - [`AudioFileSource`]: standalone compressed audio files (MP3, FLAC, AIFF, …).
 //! - [`DifSource`]: raw DV (`.dv`, `.dif`) files, decoded by `cfa4-dv`, frames read on demand.
-//! - [`RmSource`]: RealMedia (`.rm`, `.rmvb`) with RealVideo 1.0 / 2.0 video.
+//! - [`RmSource`]: RealMedia (`.rm`, `.rmvb`) with RealVideo 1.0 / 2.0 / 3.0 / 4.0 video and Cook, ATRAC3, SIPR or RealAudio 1.0 / 2.0 audio.
+//! - [`SstpSource`]: MPEG-4 Simple Studio Profile (Sony SR) elementary streams (`.m4v`), every picture intra.
 //! - [`Y4mSource`]: uncompressed YUV4MPEG2 (`.y4m`) video, frames read on demand.
 //! - [`openers`]: the openers to register with the engine's media pool.
 
@@ -48,6 +49,7 @@ pub mod mpeg;
 pub mod mxf;
 pub mod ogg;
 pub mod realmedia;
+pub mod sstp;
 mod stream_color;
 pub mod streams;
 pub mod utvideo;
@@ -68,6 +70,7 @@ pub use mpeg::MpegSource;
 pub use mxf::MxfSource;
 pub use ogg::OggSource;
 pub use realmedia::RmSource;
+pub use sstp::SstpSource;
 pub use video::{DecodedFrame, VideoDecoder, VideoDecoderFactory};
 pub use y4m::Y4mSource;
 
@@ -170,7 +173,7 @@ pub fn software_video_decoder(entry: &cfa4_isobmff::SampleEntry) -> Result<Box<d
 }
 
 /// Openers for the engine's media pool (MP4/MOV, Matroska/WebM, MXF, Ogg Opus/Vorbis, MPEG TS/PS and
-/// MPEG-1/2 video elementary streams, APV raw bitstreams, YUV4MPEG2, raw DV, RealMedia, standalone audio).
+/// MPEG-1/2 and MPEG-4 Simple Studio Profile video elementary streams, APV raw bitstreams, YUV4MPEG2, raw DV, RealMedia, standalone audio).
 /// AV2 Annex B / IVF files are recognised and answered as unsupported ([`av2`]).
 pub fn openers() -> Vec<cfa4_media::Opener> {
     vec![
@@ -178,6 +181,7 @@ pub fn openers() -> Vec<cfa4_media::Opener> {
         mkv::opener,
         mxf::opener,
         ogg::opener,
+        sstp::opener,
         mpeg::opener,
         apv::opener,
         avi::opener,
@@ -197,6 +201,7 @@ fn reader_registry() -> &'static RwLock<Vec<cfa4_media::ReaderOpener>> {
             mkv::reader_opener,
             mxf::reader_opener,
             ogg::reader_opener,
+            sstp::reader_opener,
             mpeg::reader_opener,
             apv::reader_opener,
             y4m::reader_opener,

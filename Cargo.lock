@@ -1240,10 +1240,12 @@ dependencies = [
  "cfa4-ogg",
  "cfa4-opus",
  "cfa4-prores",
+ "cfa4-realaudio",
  "cfa4-realmedia",
  "cfa4-realvideo",
  "cfa4-shorten",
  "cfa4-speex",
+ "cfa4-sstp",
  "cfa4-tak",
  "cfa4-testkit",
  "cfa4-time",
@@ -1805,6 +1807,7 @@ dependencies = [
  "cfa4-heif",
  "cfa4-hevc",
  "cfa4-jxl",
+ "cfa4-realaudio",
  "cfa4-testkit",
  "cfa4-time",
  "image",
@@ -1962,6 +1965,15 @@ dependencies = [
 ]
 
 [[package]]
+name = "cfa4-realaudio"
+version = "0.10.0"
+dependencies = [
+ "cfa4-realmedia",
+ "cfa4-testkit",
+ "thiserror 2.0.21",
+]
+
+[[package]]
 name = "cfa4-realmedia"
 version = "0.10.0"
 dependencies = [
@@ -2075,6 +2087,14 @@ dependencies = [
 
 [[package]]
 name = "cfa4-speex"
+version = "0.10.0"
+dependencies = [
+ "cfa4-testkit",
+ "thiserror 2.0.21",
+]
+
+[[package]]
+name = "cfa4-sstp"
 version = "0.10.0"
 dependencies = [
  "cfa4-testkit",

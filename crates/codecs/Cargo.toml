@@ -58,12 +58,14 @@ cfa4-hap = { workspace = true }
 cfa4-canopus = { workspace = true }
 cfa4-realmedia = { workspace = true }
 cfa4-realvideo = { workspace = true }
+cfa4-realaudio = { workspace = true }
 cfa4-utvideo = { workspace = true }
 cfa4-huffyuv = { workspace = true }
 cfa4-lagarith = { workspace = true }
 cfa4-magicyuv = { workspace = true }
 cfa4-ffv1 = { workspace = true }
 cfa4-dirac = { workspace = true }
+cfa4-sstp = { workspace = true }
 cfa4-aac = { workspace = true }
 cfa4-opus = { workspace = true }
 rayon = { workspace = true }
