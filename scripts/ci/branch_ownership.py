@@ -71,6 +71,9 @@ class Event:
     new: str
 
 
+COMMIT_LIST_LIMIT = 250  # GitHub's pulls/{n}/commits endpoint never returns more
+
+
 @dataclass
 class Finding:
     sha: str
@@ -120,21 +123,33 @@ def events_from_text(body: str, comments: Iterable[tuple[datetime, str]]) -> lis
     line's date counts from the start of that day (UTC)."""
     timed = list(comments)
 
-    def when(line: str, day: str) -> datetime:
+    def when(line: str, day: str) -> datetime | None:
         for at, text in timed:
             if line in text:
                 return at
-        return datetime.fromisoformat(day).replace(tzinfo=UTC)
+        try:
+            return datetime.fromisoformat(day).replace(tzinfo=UTC)
+        except ValueError:
+            print(f"figyelem: érvénytelen dátum, az esemény kimarad: {line.strip()}", file=sys.stderr)
+            return None
 
     events: list[Event] = []
+
+    def add(kind: str, line: str, day: str, old: str | None, new: str) -> None:
+        at = when(line, day)
+        if at is not None:
+            events.append(Event(at, kind, old, new))
+
     for text in [body, *(t for _, t in timed)]:
         for m in HANDOVER.finditer(text):
-            events.append(Event(when(m.group(0), m.group(3)), "handover", m.group(1), m.group(2)))
+            add("handover", m.group(0), m.group(3), m.group(1), m.group(2))
         for m in GAZDA_TAKES.finditer(text):
-            events.append(Event(when(m.group(0), m.group(2)), "gazda_takes", None, m.group(1)))
+            add("gazda_takes", m.group(0), m.group(2), None, m.group(1))
         for m in GAZDA_GIVES.finditer(text):
-            events.append(Event(when(m.group(0), m.group(2)), "gazda_gives", None, m.group(1)))
-    unique = {(e.kind, e.old, e.new): e for e in sorted(events, key=lambda e: e.when, reverse=True)}
+            add("gazda_gives", m.group(0), m.group(2), None, m.group(1))
+    # The same line in the description and in a comment resolves to the same time, so it collapses; separate
+    # events with equal sessions at different times stay apart.
+    unique = {(e.kind, e.old, e.new, e.when): e for e in events}
     return sorted(unique.values(), key=lambda e: e.when)
 
 
@@ -182,13 +197,24 @@ def classify(
     if not owners and kind == "fejlesztői" and any(c.session for c in own):
         verdict.notes.append("a leírásban nincs `Munkamenet:` sor")
     events = events_from_text(body, comments)
+    if len(commits) >= COMMIT_LIST_LIMIT:
+        # The endpoint returns at most 250 commits; a later foreign commit would go unseen.
+        verdict.violations.append(
+            Finding(
+                "-",
+                f"a PR {COMMIT_LIST_LIMIT} vagy több commitot tartalmaz, a lista hiányos lehet; kézi ellenőrzés kell",
+            )
+        )
 
     for c in commits:
         short = c.sha[:7]
         if c.is_merge:
             if not merge_parent_ok(c.parents[1]):
                 verdict.violations.append(
-                    Finding(short, "merge commit, amelynek második szülője nem a main-en, a báziságon vagy egy másik nyitott PR fején van")
+                    Finding(
+                        short,
+                        "merge commit, amelynek második szülője nem a main-en, a báziságon vagy egy másik nyitott PR fején van",
+                    )
                 )
             continue
         if c.sha in inherited:
@@ -201,7 +227,10 @@ def classify(
         if session is None:
             if OWNER_LABEL not in labels:
                 verdict.violations.append(
-                    Finding(short, f"`Claude-Session:` sor nélküli commit ({c.author}); tulajdonosi commitnál `{OWNER_LABEL}` címke kell (D2)")
+                    Finding(
+                        short,
+                        f"`Claude-Session:` sor nélküli commit ({c.author}); tulajdonosi commitnál `{OWNER_LABEL}` címke kell (D2)",
+                    )
                 )
             continue
         allowed = writers_at(owners, events, c.date)
@@ -225,7 +254,9 @@ def _get(path: str, paginate: bool = True) -> Any:
     url: str | None = f"https://api.github.com/repos/{REPO}/{path}"
     result: Any = None
     while url:
-        req = urllib.request.Request(url, headers={"Authorization": f"Bearer {token}", "Accept": "application/vnd.github+json"})
+        req = urllib.request.Request(
+            url, headers={"Authorization": f"Bearer {token}", "Accept": "application/vnd.github+json"}
+        )
         with urllib.request.urlopen(req, timeout=60) as resp:  # noqa: S310 (fixed https host)
             page = json.load(resp)
             link = resp.headers.get("Link", "")
@@ -274,16 +305,17 @@ class Repo:
         commits = self.commits(number)
         shas = {c.sha for c in commits}
         others = [p for p in self.open_prs if p["number"] != number]
-        listed = {int(n) for n in LISTED_PR.findall(pr.get("body") or "")} if pr["head"]["ref"].startswith("koteg/") else set()
+        batch = pr["head"]["ref"].startswith("koteg/")
+        listed = {int(n) for n in LISTED_PR.findall(pr.get("body") or "")} if batch else set()
         # D11: a commit this PR shares with an older open PR (this branch is built on that one) belongs to
         # that PR. A newer PR that shares commits is stacked on this one and inherits from it, not the
         # other way round. On a batch branch the listed PRs are the source of every shared commit.
         created = parse_date(pr["created_at"])
         inherited: dict[str, int] = {}
         for other in sorted(others, key=lambda p: p["created_at"]):
-            if listed and other["number"] not in listed:
+            if batch and other["number"] not in listed:
                 continue
-            if not listed and parse_date(other["created_at"]) >= created:
+            if not batch and parse_date(other["created_at"]) >= created:
                 continue
             for c in self.commits(other["number"]):
                 if c.sha in shas:
@@ -292,10 +324,14 @@ class Repo:
         def merge_parent_ok(parent: str) -> bool:
             if self.reachable(parent, "main") or self.reachable(parent, pr["base"]["ref"]):
                 return True
-            heads = [p for p in others if not listed or p["number"] in listed]
-            return any(parent == p["head"]["sha"] or parent in {c.sha for c in self.commits(p["number"])} for p in heads)
+            heads = [p for p in others if not batch or p["number"] in listed]
+            return any(
+                parent == p["head"]["sha"] or parent in {c.sha for c in self.commits(p["number"])} for p in heads
+            )
 
-        comments = [(parse_date(c["created_at"]), c.get("body") or "") for c in _get(f"issues/{number}/comments?per_page=100")]
+        comments = [
+            (parse_date(c["created_at"]), c.get("body") or "") for c in _get(f"issues/{number}/comments?per_page=100")
+        ]
         return classify(pr, commits, comments, inherited, merge_parent_ok)
 
 

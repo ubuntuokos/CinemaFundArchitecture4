@@ -40,11 +40,19 @@ def _c(sha: str, session: str | None, when: datetime, parents: int = 1, author: 
     msg = f"BO-2: change {sha}\n\nCo-Authored-By: Claude\n"
     if session:
         msg += f"Claude-Session: https://claude.ai/code/{session}\n"
-    return BO.Commit(sha=sha * 7, message=msg, author=author, date=when, parents=tuple(f"p{sha}{i}" for i in range(parents)))
+    return BO.Commit(
+        sha=sha * 7, message=msg, author=author, date=when, parents=tuple(f"p{sha}{i}" for i in range(parents))
+    )
 
 
 def _pr(body: str, ref: str = "feature/x", labels: tuple[str, ...] = ()) -> dict[str, Any]:
-    return {"number": 1, "head": {"ref": ref, "sha": "h"}, "base": {"ref": "main"}, "body": body, "labels": [{"name": n} for n in labels]}
+    return {
+        "number": 1,
+        "head": {"ref": ref, "sha": "h"},
+        "base": {"ref": "main"},
+        "body": body,
+        "labels": [{"name": n} for n in labels],
+    }
 
 
 def _run(
@@ -144,3 +152,30 @@ def test_batch_branch_listed_and_unlisted_heads() -> None:
     assert listed.ok
     unlisted = _run(_pr(body, ref="koteg/20261115-gazda1"), commits, inherited={"x" * 7: 10}, merge_ok=False)
     assert not unlisted.ok
+
+
+def test_invalid_date_in_text_is_skipped_not_fatal() -> None:
+    body = f"Munkamenet: {A}\nGazda átvette: {G}, 2026-02-30"
+    assert BO.events_from_text(body, []) == []
+    assert not _run(_pr(body), [_c("a", A, _at(15))]).violations
+
+
+def test_repeated_takeovers_stay_separate_events() -> None:
+    comments = [
+        (_at(12), f"Gazda átvette: {G}, 2026-11-12"),
+        (_at(13), f"Gazda visszaadta: {A}, 2026-11-13"),
+        (_at(14), f"Gazda átvette: {G}, 2026-11-14"),
+    ]
+    events = BO.events_from_text(f"Munkamenet: {A}", comments)
+    assert [e.kind for e in events] == ["gazda_takes", "gazda_gives", "gazda_takes"]
+    assert BO.writers_at([A], events, _at(14, 15)) == {G}
+
+
+def test_same_line_in_description_and_comment_collapses() -> None:
+    line = f"Gazda átvette: {G}, 2026-11-14"
+    assert len(BO.events_from_text(f"Munkamenet: {A}\n{line}", [(_at(14), line)])) == 1
+
+
+def test_truncated_commit_list_is_reported() -> None:
+    commits = [_c(f"{i:02x}", A, _at(14)) for i in range(BO.COMMIT_LIST_LIMIT)]
+    assert any("hiányos" in f.reason for f in _run(_pr(f"Munkamenet: {A}"), commits).violations)
