@@ -2394,6 +2394,10 @@
 	Show Clip Mismatch Warning dialog	Показувати попередження про невідповідність кліпа
 	Show Event Indicator	Показувати індикатор подій
 	Show Focus Area	Показувати область фокуса
+	Rack Focus	Переведення фокуса
+	Focus Point A	Точка фокуса A
+	Focus Point B	Точка фокуса B
+	Rack	Переведення
 	Show Home	Показувати головну сторінку
 	Show Mask Tracker Preview	Показувати попередній перегляд трекінгу маски
 	Show Only Noise	Показувати лише шум
@@ -3634,6 +3638,7 @@
 	Social Deliverables…	Матеріали для соцмереж…
 	Counter	Лічильник
 	Word by Word	По словах
+	Scramble	Перемішування
 	Animator	Аніматор
 	Animator Duration	Тривалість аніматора
 	Animator Delay	Затримка аніматора
@@ -4161,6 +4166,11 @@
 	Burn Size	Розмір пропалу
 	Ember Width	Ширина жевріючого краю
 	Ember Color	Колір жевріючого краю
+	Tear Away	Відрив
+	Tear Roughness	Нерівність розриву
+	Paper Edge Width	Ширина паперового краю
+	Stamp Cut	Поштова марка
+	Perforations	Перфорація
 	Check Text Legibility	Перевірити читабельність тексту
 	Clear Legibility Markers	Видалити маркери читабельності
 	Text legibility: no problems found	Читабельність тексту: проблем не знайдено
@@ -4200,6 +4210,9 @@
 	Dither	Дизеринг
 	Pattern	Візерунок
 	Cell Size	Розмір комірки
+	Pixelate	Пікселізація
+	Cell Shape	Форма комірки
+	LED	LED
 	Cyan Angle	Кут блакитного
 	Magenta Angle	Кут пурпурового
 	Yellow Angle	Кут жовтого
@@ -4365,6 +4378,10 @@
 	{n} more	Ще {n}
 	Block	Блок
 	parallel	паралельно
+	page {page}: a spine's vertical position works on card pages only; it is ignored	сторінка {page}: вертикальне положення осі діє лише на сторінках-картках; його пропущено
+	on a card: centered on {y} px	на картці: по центру на {y} px
+	on a card: starts at {y} px	на картці: починається з {y} px
+	on a card: ends at {y} px	на картці: закінчується на {y} px
 # MPEG-2 export audio (#268): a product name, kept as is
 	Dolby Digital (AC-3)	Dolby Digital (AC-3)
 	In the page (OBS takes it from the Browser Source)	На сторінці (OBS бере її з джерела-браузера)
@@ -4437,7 +4454,12 @@
 	page {page}: the runtime is reached by changing the roll speed (the gaps would have to grow more than 20-fold)	сторінка {page}: тривалість досягається зміною швидкості прокручування (проміжки довелося б збільшити більш ніж у 20 разів)
 	page {page}: the transition needs the pages to touch (page gap 0); it is left out	сторінка {page}: для переходу сторінки мають торкатися одна одної (пауза між сторінками 0); його пропущено
 	page {page}: there is no transition “{name}”; the pages cut	сторінка {page}: переходу “{name}” немає; сторінки змінюються склейкою
-	spine position “{value}” is not supported (a pixel offset, optionally “parallel”, is)	положення осі “{value}” не підтримується (підтримується зміщення в пікселях, за бажанням із “parallel”)
+	spine position “{value}” is not supported (a pixel offset, optionally “parallel”, or “Hook N Bottom-Top dx dy” is)	положення осі “{value}” не підтримується (підтримується зміщення в пікселях, за бажанням із “parallel” / “Hook N Bottom-Top dx dy”)
+	page {page}: the hook reaches back further than there are spines; it hooks onto the first spine, or starts its own	сторінка {page}: гачок сягає далі назад, ніж є осей; він чіпляється за першу вісь або починає власну
+	hooked {n} spines back: its {from} meets this spine's {to}	зачеплено на {n} осі назад: її {from} зустрічається з {to} цієї осі
+	top	верх
+	middle	середина
+	bottom	низ
 	vertical gap “{value}” is not a number	вертикальний проміжок “{value}” не є числом
 	picture “{file}” was not found or cannot be read; it is left out	зображення “{file}” не знайдено або не читається; його пропущено
 	video “{file}” was not found or cannot be read; it is left out	відео “{file}” не знайдено або не читається; його пропущено
@@ -4502,7 +4524,7 @@
 	the engine sent no report	рушій не надіслав звіт
 	MXF OP1a Uncompressed 10-bit 4:2:2 (v210)	MXF OP1a без стиснення, 10 біт 4:2:2 (v210)
 	MXF OP1a, uncompressed 10-bit Y'CbCr 4:2:2 in the v210 layout (SMPTE ST 384), 24-bit 48 kHz PCM, start timecode	MXF OP1a, нестиснений 10-бітний Y'CbCr 4:2:2 у розкладці v210 (SMPTE ST 384), 24-бітний PCM 48 кГц, початковий таймкод
-	Write the captions as ANC data (CEA-608/708, 29.97 fps)	Записати субтитри як дані ANC (CEA-608/708, 29,97 кадр/с)
+	Write the captions as ANC data (CEA-608/708)	Записати субтитри як дані ANC (CEA-608/708)
 	Load KDM…	Завантажити KDM…
 	Forget DCP Keys	Забути ключі DCP
 	Load KDM	Завантажити KDM
@@ -4512,6 +4534,13 @@
 	The keys stay in memory only, until Forget DCP Keys or the end of the session.	Ключі зберігаються лише в пам’яті, до команди «Забути ключі DCP» або кінця сеансу.
 	DCP keys forgotten	Ключі DCP забуто
 	Choose the KDM file and the private key.	Виберіть файл KDM і закритий ключ.
+	Load even if the certificate chain is not verified	Завантажувати й з неперевіреним ланцюжком сертифікатів
+	Bundle: {loaded} of {total} KDMs loaded, {other} for other recipients	Пакет: завантажено {loaded} з {total} KDM, {other} для інших отримувачів
+	Not loaded: {path}: {problem}	Не завантажено: {path}: {problem}
+	Signature verified: {chain}	Підпис перевірено: {chain}
+	Signature not verified: {problem}	Підпис не перевірено: {problem}
+	KDM required	Потрібен KDM
+	Encrypted: load the KDM with content key {keys}	Зашифровано: завантажте KDM із ключем вмісту {keys}
 
 # Settings ▸ Timecode Sync (TC-4)
 	Timecode Sync	Синхронізація тайм-коду
@@ -4520,6 +4549,8 @@
 	Follow external timecode during playback	Стежити за зовнішнім тайм-кодом під час відтворення
 	Lock after	Захоплення після
 	Keep playing without signal for	Продовжувати без сигналу протягом
+	Varispeed: adjust the playback speed instead of seeking	Varispeed: підлаштовувати швидкість відтворення замість переходу
+	User bits	Користувацькі біти
 	External frame rate	Зовнішня частота кадрів
 	Offset (added to the external timecode)	Зсув (додається до зовнішнього тайм-коду)
 	LTC	LTC
@@ -4544,3 +4575,119 @@
 	Chase External Timecode	Стежити за зовнішнім тайм-кодом
 	Send LTC	Надсилати LTC
 	Send MIDI Timecode	Надсилати MIDI тайм-код
+
+# Live studio preview (CFA4-LIVE-STUDIO-001 S0)
+	Live studio preview	Попередній перегляд студії прямого ефіру
+	Live studio: stopped	Студія прямого ефіру: зупинена
+	Live studio: {state}	Студія прямого ефіру: {state}
+	Live studio: {error}	Студія прямого ефіру: {error}
+	restarted after {count} crashes (last: {exit})	перезапущена після {count} збоїв (останній: {exit})
+	software backend: {reason}	програмний бекенд: {reason}
+	Start studio	Запустити студію
+	Stop studio	Зупинити студію
+	Add Studio Scene	Додати сцену студії
+	Live	Наживо
+# Credits: title, opening, chapter and lower-third pages filled from a graphics template (F10-C16)
+	Opening Credits	Початкові титри
+	Chapter Title	Назва розділу
+	Lower Third	Плашка
+	page {page}: graphics template “{template}” was not found; “{used}” is used	сторінка {page}: графічний шаблон “{template}” не знайдено; використовується “{used}”
+	page {page}: graphics template “{template}” has no field for all of the block's text; the rest is left out	сторінка {page}: у графічному шаблоні “{template}” немає поля для всього тексту блоку; решту пропущено
+	page {page}: template field “{control}” → “{part}” is not used (no such text control, or not head, body or tail)	сторінка {page}: поле шаблону “{control}” → “{part}” не використовується (немає такого текстового елемента або це не заголовок, основний текст чи підпис)
+	page {page}: pictures are left out on title, opening, chapter and lower-third pages	сторінка {page}: на сторінках заголовка, початкових титрів, розділу та плашки зображення пропускаються
+# Auto Color, Auto Contrast, Auto Levels (EffectsSDK review)
+	Auto Color	Автоколір
+	Auto Contrast	Автоконтраст
+	Auto Levels	Авторівні
+	Temporal Smoothing (seconds)	Часове згладжування (секунди)
+	Scene Detect	Виявлення сцен
+	Black Clip	Відсікання чорного
+	White Clip	Відсікання білого
+	Snap Neutral Midtones	Нейтральні середні тони
+# Layout presets: PiP corners, split screen (EffectsSDK review)
+	PiP 35% Upper Left	«Картинка в картинці» 35% ліворуч угорі
+	Picture-in-picture: 35 % scale in the upper left	«Картинка в картинці»: масштаб 35 % у лівому верхньому куті
+	PiP 35% Lower Left	«Картинка в картинці» 35% ліворуч унизу
+	Picture-in-picture: 35 % scale in the lower left	«Картинка в картинці»: масштаб 35 % у лівому нижньому куті
+	PiP 35% Lower Right	«Картинка в картинці» 35% праворуч унизу
+	Picture-in-picture: 35 % scale in the lower right	«Картинка в картинці»: масштаб 35 % у правому нижньому куті
+	Split Screen Left	Розділений екран ліворуч
+	Split screen: the middle half of the picture fills the left half of the frame	Розділений екран: середня половина зображення заповнює ліву половину кадру
+	Split Screen Right	Розділений екран праворуч
+	Split screen: the middle half of the picture fills the right half of the frame	Розділений екран: середня половина зображення заповнює праву половину кадру
+# Creative Looks: CRT (P3)
+	CRT	CRT
+	Scanline Strength	Сила рядків
+	Line Count	Кількість рядків
+	Mask	Маска
+	Mask Strength	Сила маски
+	Corner Darkening	Затемнення кутів
+	Aperture Grille	Апертурна ґратка
+	Shadow Mask	Тіньова маска
+	Slot Mask	Щілинна маска
+# Creative Looks: Oil Paint (P4)
+	Oil Paint	Олійний живопис
+	Detail	Деталізація
+	Texture	Текстура
+	Facet	Грані
+	Daubs	Мазки
+	Dry Brush	Суха кисть
+	Fresco	Фреска
+	Knife	Мастихін
+	Sponge	Губка
+# Creative Looks: Pixel Sort (P5)
+	Pixel Sort	Сортування пікселів
+	Sort By	Сортувати за
+	Lower Threshold	Нижній поріг
+	Upper Threshold	Верхній поріг
+	Ascending	За зростанням
+# Temporal Denoise (EffectsSDK review)
+	Temporal Denoise	Часове шумозаглушення
+	Frames Each Side	Кадрів з кожного боку
+	Motion Threshold	Поріг руху
+	Show Motion	Показати рух
+	No signal	Немає сигналу
+	Locating	Пошук
+	Locked	Синхронізовано
+	Freewheel	Вільний хід
+	Scrubbing	Прокручування
+	Sending	Надсилання
+
+# DCP subtitle export (#938)
+	Subtitles from the first caption track	Субтитри з першої доріжки субтитрів
+	The package language	Мова пакета
+	Inter Regular (built in), or an OpenType / TrueType file	Inter Regular (вбудований) або файл OpenType / TrueType
+	Subtitle language	Мова субтитрів
+	Subtitle font	Шрифт субтитрів
+	Fonts	Шрифти
+
+# AS-11 metadata in MXF OP1a (#96)
+	AS-11 Core	AS-11 Core
+	AS-11 Parts	Частини AS-11
+	AS-11 UK DPP	AS-11 UK DPP
+
+# Control Surfaces settings page (CS-1, #1187)
+	Devices	Пристрої
+	Use	Використовувати
+	Device	Пристрій
+	MIDI	MIDI
+	HID jog/shuttle	HID jog/shuttle
+	OSC	OSC
+	Connected	Під'єднано
+	Not connected	Не під'єднано
+	Disabled	Вимкнено
+	{device} ({port})	{device} ({port})
+	{name}: {error}	{name}: {error}
+	Looking for devices…	Пошук пристроїв…
+	No MIDI controller or jog/shuttle device was found. Connect one and press Refresh.	Не знайдено MIDI-контролера чи пристрою jog/shuttle. Під'єднайте один і натисніть «Оновити».
+	Control Surfaces	Панелі керування
+	Use control surfaces (MIDI controllers, jog/shuttle devices)	Використовувати панелі керування (MIDI-контролери, пристрої jog/shuttle)
+	Mapping controls to commands, MIDI Learn and the MIDI Monitor come in a later version; the choices here are remembered until then.	Призначення елементів керування командам, MIDI Learn і MIDI-монітор з'являться в пізнішій версії; доти вибір тут запам'ятовується.
+	CFA4 ShuttlePRO	CFA4 ShuttlePRO
+	Kdenlive-style ShuttlePRO	ShuttlePRO у стилі Kdenlive
+	Generic MIDI	Загальний MIDI
+	Read from LTC Audio	Зчитати зі звуку LTC
+	Find SMPTE LTC on the clip's audio and use the timecode it gives the first frame	Знайти SMPTE LTC у звуці кліпу й узяти тайм-код, який він дає першому кадру
+	Read Timecode from LTC Audio	Зчитати тайм-код зі звуку LTC
+# Credits: voices (the Voice column) in the block's properties (F10-C16)
+	Voices	Голоси

@@ -13,6 +13,9 @@ package.sh and flatpak-bundle.sh; it never downloads, builds or installs anythin
                     ``PySide6/`` and ``shiboken6/``
 --doc DIR           where the licence texts and the source offer go (default: DEST)
 --requirements FILE the hash-pinned requirements (default: requirements/linux-amd64.txt)
+--licences DIR      where the LGPL-3 and LGPL-2.1 texts are read from, as files named LGPL-3 and
+                    LGPL-2.1 (default: Ubuntu's /usr/share/common-licenses; the from-source
+                    Flatpak, whose SDK has none, passes the GNU texts pinned in its manifest)
 --host-xcb          also copy the X11 helper libraries Qt's xcb plugin loads and an Ubuntu
                     desktop may lack (xcb-util-cursor, -image, -keysyms, -renderutil, -wm,
                     xkbcommon-x11) from the build host, with their copyright files (the AppImage;
@@ -211,13 +214,21 @@ def copy_host_xcb(lib: Path, doc: Path) -> None:
         shutil.copyfile(copyright, target)
 
 
-def write_notice(doc: Path, wheels: dict[str, Path]) -> None:
-    doc.mkdir(parents=True, exist_ok=True)
-    for text, name in (("LGPL-3", "LICENSE.LGPL-3.0"), ("LGPL-2.1", "LICENSE.LGPL-2.1")):
-        src = Path("/usr/share/common-licenses") / text
+LICENCE_TEXTS = (("LGPL-3", "LICENSE.LGPL-3.0"), ("LGPL-2.1", "LICENSE.LGPL-2.1"))
+
+
+def check_licences(licences: Path) -> None:
+    """Before anything is staged: the bundled Qt cannot ship without its licence texts."""
+    for text, _name in LICENCE_TEXTS:
+        src = licences / text
         if not src.is_file():
-            fail(f"{src} is missing (Ubuntu's base-files): the bundled Qt needs its licence text")
-        shutil.copyfile(src, doc / name)
+            fail(f"{src} is missing (Ubuntu's base-files, or pass --licences): the bundled Qt needs its licence text")
+
+
+def write_notice(doc: Path, wheels: dict[str, Path], licences: Path) -> None:
+    doc.mkdir(parents=True, exist_ok=True)
+    for text, name in LICENCE_TEXTS:
+        shutil.copyfile(licences / text, doc / name)
     lines = [
         "PySide6 / Qt for Python and Qt 6 in this package",
         "",
@@ -247,8 +258,10 @@ def main() -> None:
     ap.add_argument("--dest", type=Path, required=True)
     ap.add_argument("--doc", type=Path)
     ap.add_argument("--requirements", type=Path, default=ROOT / "requirements" / "linux-amd64.txt")
+    ap.add_argument("--licences", type=Path, default=Path("/usr/share/common-licenses"))
     ap.add_argument("--host-xcb", action="store_true")
     a = ap.parse_args()
+    check_licences(a.licences)
     if not a.wheels.is_dir():
         fail(f"{a.wheels} is not a directory (CFA4_PYSIDE6_WHEELS: a local wheelhouse, never downloaded here)")
     pins = pinned_hashes(a.requirements)
@@ -277,7 +290,7 @@ def main() -> None:
     if not (a.dest / "PySide6" / "Qt" / "plugins" / "platforms" / "libqxcb.so").is_file():
         fail("the wheels have no xcb platform plugin")
     kept, removed = prune_libraries(a.dest)
-    write_notice(a.doc or a.dest, wheels)
+    write_notice(a.doc or a.dest, wheels, a.licences)
     if a.host_xcb:
         copy_host_xcb(a.dest / "PySide6" / "Qt" / "lib", a.doc or a.dest)
     size = sum(p.stat().st_size for p in a.dest.rglob("*") if p.is_file())

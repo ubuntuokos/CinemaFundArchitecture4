@@ -2363,6 +2363,10 @@
 	Show Clip Mismatch Warning dialog	クリップの不一致警告ダイアログを表示
 	Show Event Indicator	イベントインジケーターを表示
 	Show Focus Area	フォーカス範囲を表示
+	Rack Focus	ラックフォーカス
+	Focus Point A	フォーカスポイント A
+	Focus Point B	フォーカスポイント B
+	Rack	ラック
 	Show Home	ホームを表示
 	Show Mask Tracker Preview	マスクトラッカーのプレビューを表示
 	Show Only Noise	ノイズのみ表示
@@ -3653,6 +3657,7 @@
 	Social Deliverables…	SNS 用書き出しセット…
 	Counter	カウンター
 	Word by Word	単語ごと
+	Scramble	スクランブル
 	Animator	アニメーター
 	Animator Duration	アニメーターのデュレーション
 	Animator Delay	アニメーターの遅延
@@ -4185,6 +4190,11 @@
 	Burn Size	焼けのサイズ
 	Ember Width	残り火の幅
 	Ember Color	残り火の色
+	Tear Away	破り取り
+	Tear Roughness	破れ目の粗さ
+	Paper Edge Width	紙の縁の幅
+	Stamp Cut	切手カット
+	Perforations	ミシン目
 	Check Text Legibility	テキストの読みやすさをチェック
 	Clear Legibility Markers	読みやすさマーカーを消去
 	Text legibility: no problems found	テキストの読みやすさ: 問題は見つかりませんでした
@@ -4224,6 +4234,9 @@
 	Dither	ディザ
 	Pattern	パターン
 	Cell Size	セルサイズ
+	Pixelate	ピクセレート
+	Cell Shape	セルの形
+	LED	LED
 	Cyan Angle	シアンの角度
 	Magenta Angle	マゼンタの角度
 	Yellow Angle	イエローの角度
@@ -4389,6 +4402,10 @@
 	{n} more	ほか {n} 件
 	Block	ブロック
 	parallel	並列
+	page {page}: a spine's vertical position works on card pages only; it is ignored	ページ{page}: 軸の縦位置はカードページでのみ有効なため、無視されます
+	on a card: centered on {y} px	カード: {y} px を中心に配置
+	on a card: starts at {y} px	カード: {y} px から開始
+	on a card: ends at {y} px	カード: {y} px で終了
 # MPEG-2 export audio (#268): a product name, kept as is
 	Dolby Digital (AC-3)	Dolby Digital (AC-3)
 	In the page (OBS takes it from the Browser Source)	ページ内（OBS がブラウザソースから取得）
@@ -4461,7 +4478,12 @@
 	page {page}: the runtime is reached by changing the roll speed (the gaps would have to grow more than 20-fold)	ページ{page}:ロール速度を変えて長さを合わせます(間隔を20倍より大きく広げる必要があります)
 	page {page}: the transition needs the pages to touch (page gap 0); it is left out	ページ{page}:トランジションにはページが接している必要があります(ページ間隔0)。省略します
 	page {page}: there is no transition “{name}”; the pages cut	ページ{page}:トランジション“{name}”はありません。ページはカットでつながります
-	spine position “{value}” is not supported (a pixel offset, optionally “parallel”, is)	スパイン位置“{value}”はサポートされていません(ピクセル単位のオフセットと、任意で“parallel”が使えます)
+	spine position “{value}” is not supported (a pixel offset, optionally “parallel”, or “Hook N Bottom-Top dx dy” is)	スパイン位置“{value}”はサポートされていません(ピクセル単位のオフセットと、任意で“parallel” / “Hook N Bottom-Top dx dy”が使えます)
+	page {page}: the hook reaches back further than there are spines; it hooks onto the first spine, or starts its own	ページ {page}: フックが既存のスパインより前を指しています。最初のスパインに掛けるか、新しいスパインを始めます
+	hooked {n} spines back: its {from} meets this spine's {to}	{n} 本前のスパインに掛けています: その{from}がこのスパインの{to}に接します
+	top	上端
+	middle	中央
+	bottom	下端
 	vertical gap “{value}” is not a number	縦の間隔“{value}”は数値ではありません
 	picture “{file}” was not found or cannot be read; it is left out	画像“{file}”が見つからないか読み込めません。省略します
 	video “{file}” was not found or cannot be read; it is left out	ビデオ“{file}”が見つからないか読み込めません。省略します
@@ -4526,7 +4548,7 @@
 	the engine sent no report	エンジンがレポートを送信しませんでした
 	MXF OP1a Uncompressed 10-bit 4:2:2 (v210)	MXF OP1a 非圧縮 10 ビット 4:2:2 (v210)
 	MXF OP1a, uncompressed 10-bit Y'CbCr 4:2:2 in the v210 layout (SMPTE ST 384), 24-bit 48 kHz PCM, start timecode	MXF OP1a、v210 レイアウトの非圧縮 10 ビット Y'CbCr 4:2:2 (SMPTE ST 384)、24 ビット 48 kHz PCM、開始タイムコード
-	Write the captions as ANC data (CEA-608/708, 29.97 fps)	字幕を ANC データとして書き出す（CEA-608/708、29.97 fps）
+	Write the captions as ANC data (CEA-608/708)	字幕を ANC データとして書き出す（CEA-608/708）
 	Load KDM…	KDM を読み込む…
 	Forget DCP Keys	DCP キーを破棄
 	Load KDM	KDM を読み込む
@@ -4536,6 +4558,13 @@
 	The keys stay in memory only, until Forget DCP Keys or the end of the session.	キーはメモリ上にのみ保持され、「DCP キーを破棄」またはセッション終了まで残ります。
 	DCP keys forgotten	DCP キーを破棄しました
 	Choose the KDM file and the private key.	KDM ファイルと秘密鍵を選択してください。
+	Load even if the certificate chain is not verified	証明書チェーンが未検証でも読み込む
+	Bundle: {loaded} of {total} KDMs loaded, {other} for other recipients	バンドル: {total} 件中 {loaded} 件の KDM を読み込み、{other} 件は他の受信者用
+	Not loaded: {path}: {problem}	読み込まれていません: {path}: {problem}
+	Signature verified: {chain}	署名を検証済み: {chain}
+	Signature not verified: {problem}	署名は未検証: {problem}
+	KDM required	KDM が必要
+	Encrypted: load the KDM with content key {keys}	暗号化済み: コンテンツキー {keys} を含む KDM を読み込んでください
 
 # Settings ▸ Timecode Sync (TC-4)
 	Timecode Sync	タイムコード同期
@@ -4568,3 +4597,125 @@
 	Chase External Timecode	外部タイムコードにチェイス
 	Send LTC	LTC を送信
 	Send MIDI Timecode	MIDI タイムコードを送信
+
+# Live studio preview (CFA4-LIVE-STUDIO-001 S0)
+	Live studio preview	ライブスタジオのプレビュー
+	Live studio: stopped	ライブスタジオ: 停止中
+	Live studio: {state}	ライブスタジオ: {state}
+	Live studio: {error}	ライブスタジオ: {error}
+	restarted after {count} crashes (last: {exit})	{count} 回のクラッシュ後に再起動しました(最後: {exit})
+	software backend: {reason}	ソフトウェアバックエンド: {reason}
+	Start studio	スタジオを開始
+	Stop studio	スタジオを停止
+	Add Studio Scene	スタジオシーンを追加
+	Live	ライブ
+# Credits: title, opening, chapter and lower-third pages filled from a graphics template (F10-C16)
+	Opening Credits	オープニングクレジット
+	Chapter Title	チャプタータイトル
+	Lower Third	ローワーサード
+	page {page}: graphics template “{template}” was not found; “{used}” is used	ページ {page}: グラフィックテンプレート“{template}”が見つかりません。“{used}”を使用します
+	page {page}: graphics template “{template}” has no field for all of the block's text; the rest is left out	ページ {page}: グラフィックテンプレート“{template}”にはブロックの全テキスト用のフィールドがありません。残りは省略します
+	page {page}: template field “{control}” → “{part}” is not used (no such text control, or not head, body or tail)	ページ {page}: テンプレートフィールド“{control}”→“{part}”は使用されません（そのテキストコントロールがないか、ヘッド・本文・テールではありません）
+	page {page}: pictures are left out on title, opening, chapter and lower-third pages	ページ {page}: タイトル、オープニング、チャプター、ローワーサードのページでは画像を省略します
+# Auto Color, Auto Contrast, Auto Levels (EffectsSDK review)
+	Auto Color	自動カラー
+	Auto Contrast	自動コントラスト
+	Auto Levels	自動レベル補正
+	Temporal Smoothing (seconds)	時間的スムージング（秒）
+	Scene Detect	シーン検出
+	Black Clip	黒のクリップ
+	White Clip	白のクリップ
+	Snap Neutral Midtones	中間色をニュートラルに
+# Layout presets: PiP corners, split screen (EffectsSDK review)
+	PiP 35% Upper Left	PiP 35% 左上
+	Picture-in-picture: 35 % scale in the upper left	ピクチャーインピクチャー: スケール 35 % で左上に配置
+	PiP 35% Lower Left	PiP 35% 左下
+	Picture-in-picture: 35 % scale in the lower left	ピクチャーインピクチャー: スケール 35 % で左下に配置
+	PiP 35% Lower Right	PiP 35% 右下
+	Picture-in-picture: 35 % scale in the lower right	ピクチャーインピクチャー: スケール 35 % で右下に配置
+	Split Screen Left	分割画面 左
+	Split screen: the middle half of the picture fills the left half of the frame	分割画面: 映像の中央半分をフレームの左半分に配置
+	Split Screen Right	分割画面 右
+	Split screen: the middle half of the picture fills the right half of the frame	分割画面: 映像の中央半分をフレームの右半分に配置
+# Creative Looks: CRT (P3)
+	CRT	CRT
+	Scanline Strength	走査線の強さ
+	Line Count	走査線の数
+	Mask	マスク
+	Mask Strength	マスクの強さ
+	Corner Darkening	四隅の減光
+	Aperture Grille	アパーチャーグリル
+	Shadow Mask	シャドウマスク
+	Slot Mask	スロットマスク
+# Creative Looks: Oil Paint (P4)
+	Oil Paint	油絵
+	Detail	ディテール
+	Texture	テクスチャ
+	Facet	ファセット
+	Daubs	厚塗り
+	Dry Brush	ドライブラシ
+	Fresco	フレスコ
+	Knife	ペインティングナイフ
+	Sponge	スポンジ
+# Creative Looks: Pixel Sort (P5)
+	Pixel Sort	ピクセルソート
+	Sort By	並べ替えの基準
+	Lower Threshold	下限しきい値
+	Upper Threshold	上限しきい値
+	Ascending	昇順
+# Temporal Denoise (EffectsSDK review)
+	Temporal Denoise	時間的ノイズ除去
+	Frames Each Side	片側のフレーム数
+	Motion Threshold	動きのしきい値
+	Show Motion	動きを表示
+	No signal	信号なし
+	Locating	位置合わせ中
+	Locked	ロック
+	Freewheel	フリーホイール
+	Scrubbing	スクラブ中
+	Sending	送信中
+
+# DCP subtitle export (#938)
+	Subtitles from the first caption track	最初のキャプショントラックからの字幕
+	The package language	パッケージの言語
+	Inter Regular (built in), or an OpenType / TrueType file	Inter Regular (組み込み)、または OpenType / TrueType ファイル
+	Subtitle language	字幕の言語
+	Subtitle font	字幕のフォント
+	Fonts	フォント
+
+# AS-11 metadata in MXF OP1a (#96)
+	AS-11 Core	AS-11 Core
+	AS-11 Parts	AS-11 パート
+	AS-11 UK DPP	AS-11 UK DPP
+
+# Control Surfaces settings page (CS-1, #1187)
+	Devices	デバイス
+	Use	使用
+	Device	デバイス
+	MIDI	MIDI
+	HID jog/shuttle	HID ジョグ/シャトル
+	OSC	OSC
+	Connected	接続済み
+	Not connected	未接続
+	Disabled	無効
+	{device} ({port})	{device} ({port})
+	{name}: {error}	{name}: {error}
+	Looking for devices…	デバイスを検索しています…
+	No MIDI controller or jog/shuttle device was found. Connect one and press Refresh.	MIDI コントローラーまたはジョグ/シャトル デバイスが見つかりません。接続してから［更新］を押してください。
+	Control Surfaces	コントロールサーフェス
+	Use control surfaces (MIDI controllers, jog/shuttle devices)	コントロールサーフェスを使用する（MIDI コントローラー、ジョグ/シャトル デバイス）
+	Mapping controls to commands, MIDI Learn and the MIDI Monitor come in a later version; the choices here are remembered until then.	コントロールへのコマンド割り当て、MIDI Learn、MIDI モニターは今後のバージョンで提供されます。それまではここでの選択が保存されます。
+	CFA4 ShuttlePRO	CFA4 ShuttlePRO
+	Kdenlive-style ShuttlePRO	Kdenlive 風 ShuttlePRO
+	Generic MIDI	汎用 MIDI
+
+# LTC timecode read from clip audio (TC-7, #1285)
+	Read from LTC Audio	LTC オーディオから読み取り
+	Find SMPTE LTC on the clip's audio and use the timecode it gives the first frame	クリップのオーディオから SMPTE LTC を探し、最初のフレームに対応するタイムコードを使用します
+	Read Timecode from LTC Audio	LTC オーディオからタイムコードを読み取り
+# Credits: voices (the Voice column) in the block's properties (F10-C16)
+	Voices	声の出演
+
+# Timecode sync varispeed and user bits (TC-8, #1308)
+	Varispeed: adjust the playback speed instead of seeking	バリスピード：シークせずに再生速度を調整する
+	User bits	ユーザービット

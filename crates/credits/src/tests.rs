@@ -284,9 +284,19 @@ fn picture_tags_parse() {
     assert_eq!(rest, " {{Bold}}x");
     assert_eq!(
         p,
-        vec![Picture { file: "logo.png".into(), height: None, video: false }, Picture { file: "Alap logó.png".into(), height: Some(120.0), video: false }]
+        vec![
+            Picture { file: "logo.png".into(), height: None, video: false, repeat: false },
+            Picture { file: "Alap logó.png".into(), height: Some(120.0), video: false, repeat: false }
+        ]
     );
-    assert_eq!(sheet::take_pictures("{{Pic}} {{Pic a b}}").1, vec![Picture { file: "a b".into(), height: None, video: false }]);
+    assert_eq!(sheet::take_pictures("{{Pic}} {{Pic a b}}").1, vec![Picture { file: "a b".into(), height: None, video: false, repeat: false }]);
+    // a video loops with a loop word, before or after its height; a picture never does
+    let v = |file: &str, height: Option<f64>, repeat: bool| Picture { file: file.into(), height, video: true, repeat };
+    assert_eq!(sheet::take_pictures("{{Video walk.mp4 loop}}").1, vec![v("walk.mp4", None, true)]);
+    assert_eq!(sheet::take_pictures("{{Video séta egy.mp4 120 ismétlés}}").1, vec![v("séta egy.mp4", Some(120.0), true)]);
+    assert_eq!(sheet::take_pictures("{{Mozgókép walk.mp4 Loop 80px}}").1, vec![v("walk.mp4", Some(80.0), true)]);
+    assert_eq!(sheet::take_pictures("{{Video loop}}").1, vec![v("loop", None, false)], "a file named loop is a file");
+    assert_eq!(sheet::take_pictures("{{Pic logo.png loop}}").1, vec![Picture { file: "logo.png loop".into(), height: None, video: false, repeat: false }]);
 }
 
 #[test]

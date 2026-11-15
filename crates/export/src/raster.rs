@@ -63,8 +63,23 @@ pub(crate) fn tga(rgba: &[u8], w: u32, h: u32, alpha: bool) -> Result<Vec<u8>> {
 const DPX_HEADER: usize = 2048;
 
 /// A DPX file: 10-bit RGB (8-bit values widened by bit replication, so 0 → 0 and 255 → 1023).
+#[cfg(test)]
 pub(crate) fn dpx(rgba: &[u8], w: u32, h: u32) -> Result<Vec<u8>> {
+    dpx_deep(rgba, None, w, h, None)
+}
+
+/// A float sample (straight sRGB R'G'B', 0..1) as a `max`-scaled code; 0 for NaN.
+fn code(v: f32, max: f32) -> u32 {
+    if v.is_finite() { (v.clamp(0.0, 1.0) * max).round() as u32 } else { 0 }
+}
+
+/// [`dpx`] from the frame's R'G'B' floats (3 per pixel) when there are any, so that deep sources
+/// keep their 10 bits; `rgba` sets the frame's size either way. With `timing`, the television
+/// header gets the time code (SMPTE ST 12-1 BCD, hours in the high byte, no user bits) and both
+/// headers the frame rate (ST 268: film 1724, television 1940).
+pub(crate) fn dpx_deep(rgba: &[u8], float: Option<&[f32]>, w: u32, h: u32, timing: Option<StillTiming>) -> Result<Vec<u8>> {
     let n = checked_len(rgba, w, h)?;
+    let float = float.filter(|f| f.len() >= n / 4 * 3);
     // one 32-bit word per pixel; `n` is already `w * h * 4`
     let size = n.checked_add(DPX_HEADER).ok_or_else(|| ExportError::Encode("frame size".into()))?;
     let file_size = u32::try_from(size).map_err(|_| ExportError::Unsupported(format!("a {w}×{h} DPX frame exceeds 4 GB")))?;
@@ -125,11 +140,32 @@ pub(crate) fn dpx(rgba: &[u8], w: u32, h: u32) -> Result<Vec<u8>> {
     put32(&mut hd, 1632, 1);
     // television header: progressive
     hd[1928] = 0;
+    if let Some(t) = timing {
+        if let Some(tc) = t.packed() {
+            put32(&mut hd, 1920, tc);
+            put32(&mut hd, 1924, 0); // user bits
+        }
+        if t.rate.num > 0 && t.rate.den > 0 {
+            let fps = (t.rate.num as f64 / t.rate.den as f64) as f32;
+            put32(&mut hd, 1724, fps.to_bits());
+            put32(&mut hd, 1940, fps.to_bits());
+        }
+    }
     let mut out = Vec::with_capacity(size);
     out.extend_from_slice(&hd);
     let ten = |v: u8| (u32::from(v) << 2) | (u32::from(v) >> 6);
-    for &[r, g, b, _] in rgba.as_chunks::<4>().0 {
-        out.extend_from_slice(&((ten(r) << 22) | (ten(g) << 12) | (ten(b) << 2)).to_be_bytes());
+    match float {
+        Some(f) => {
+            for p in f[..n / 4 * 3].as_chunks::<3>().0 {
+                let [r, g, b] = p.map(|v| code(v, 1023.0));
+                out.extend_from_slice(&((r << 22) | (g << 12) | (b << 2)).to_be_bytes());
+            }
+        }
+        None => {
+            for &[r, g, b, _] in rgba[..n].as_chunks::<4>().0 {
+                out.extend_from_slice(&((ten(r) << 22) | (ten(g) << 12) | (ten(b) << 2)).to_be_bytes());
+            }
+        }
     }
     Ok(out)
 }
@@ -168,7 +204,7 @@ fn half(v: f32) -> u16 {
 /// EXR defines alpha; the frame's straight alpha is multiplied in after linearisation).
 #[cfg(test)]
 pub(crate) fn exr(rgba: &[u8], w: u32, h: u32, alpha: bool, compression: ExrCompression) -> Result<Vec<u8>> {
-    exr_with(rgba, w, h, alpha, compression, None)
+    exr_with(rgba, None, w, h, alpha, compression, None)
 }
 
 /// The time code of a still in a sequence: `frame` counted at `rate` (drop-frame labels when
@@ -196,9 +232,21 @@ impl StillTiming {
     }
 }
 
-/// [`exr`] with the time code and frame rate of a sequence frame.
-pub(crate) fn exr_with(rgba: &[u8], w: u32, h: u32, alpha: bool, compression: ExrCompression, timing: Option<StillTiming>) -> Result<Vec<u8>> {
+/// [`exr`] with the time code and frame rate of a sequence frame, and from the frame's straight
+/// sRGB R'G'B' floats (3 per pixel) when there are any, so that deep sources keep their precision
+/// (the alpha still comes from `rgba`).
+pub(crate) fn exr_with(
+    rgba: &[u8],
+    float: Option<&[f32]>,
+    w: u32,
+    h: u32,
+    alpha: bool,
+    compression: ExrCompression,
+    timing: Option<StillTiming>,
+) -> Result<Vec<u8>> {
     let n = checked_len(rgba, w, h)?;
+    let float = float.filter(|f| f.len() >= n / 4 * 3);
+    let linear = |v: f32| if v.is_finite() { cfa4_color::srgb_to_linear(v.clamp(0.0, 1.0)) } else { 0.0 };
     let too_large = || ExportError::Unsupported(format!("an OpenEXR frame of {w}×{h} is too large"));
     let (Ok(x_max), Ok(y_max)) = (i32::try_from(w - 1), i32::try_from(h - 1)) else {
         return Err(too_large());
@@ -275,19 +323,29 @@ pub(crate) fn exr_with(rgba: &[u8], w: u32, h: u32, alpha: bool, compression: Ex
     let mut raw = Vec::with_capacity(line * lines);
     for (k, block) in rgba[..n].chunks(row * lines).enumerate() {
         raw.clear();
-        for src in block.chunks_exact(row) {
+        for (l, src) in block.chunks_exact(row).enumerate() {
+            let y = k * lines + l;
             // planar per line: every pixel of the first channel, then the next channel …
             for (x, &[r, g, b, a]) in src.as_chunks::<4>().0.iter().enumerate() {
                 let rgb = [b, g, r];
+                // linear B, G, R: from the floats when there are any
+                let deep = float.map(|f| {
+                    let i = (y * wn + x) * 3;
+                    [linear(f[i + 2]), linear(f[i + 1]), linear(f[i])]
+                });
                 if alpha {
                     let k = f32::from(a) / 255.0;
                     px[x] = half(k);
                     for (c, &v) in rgb.iter().enumerate() {
-                        px[(c + 1) * wn + x] = if a == 255 { opaque[v as usize] } else { half(lin[v as usize] * k) };
+                        px[(c + 1) * wn + x] = match deep {
+                            Some(d) => half(d[c] * k),
+                            None if a == 255 => opaque[v as usize],
+                            None => half(lin[v as usize] * k),
+                        };
                     }
                 } else {
                     for (c, &v) in rgb.iter().enumerate() {
-                        px[c * wn + x] = opaque[v as usize];
+                        px[c * wn + x] = deep.map_or(opaque[v as usize], |d| half(d[c]));
                     }
                 }
             }
@@ -380,6 +438,45 @@ mod tests {
         assert_eq!(be32(&f, 2048), 1023 << 22);
         let p = be32(&f, 2052);
         assert_eq!(((p >> 22) & 1023, (p >> 12) & 1023, (p >> 2) & 1023, p & 3), (4, 514, 1023, 0));
+    }
+
+    /// The time code and frame rate fields; ffmpeg (an external oracle, skipped when missing)
+    /// reads the time code back.
+    #[test]
+    fn dpx_records_time_code_and_rate() {
+        use cfa4_time::FrameRate;
+        let px = [255, 0, 0, 255];
+        let plain = dpx(&px, 1, 1).unwrap();
+        assert_eq!((be32(&plain, 1920), be32(&plain, 1724), be32(&plain, 1940)), (u32::MAX, u32::MAX, u32::MAX), "undefined without timing");
+        // 01:02:03:04 at 24 fps
+        let t = StillTiming { frame: 24 * 3723 + 4, rate: FrameRate::new(24, 1), drop_frame: false };
+        let f = dpx_deep(&px, None, 1, 1, Some(t)).unwrap();
+        assert_eq!(be32(&f, 1920), 0x0102_0304);
+        assert_eq!(be32(&f, 1924), 0, "no user bits");
+        assert_eq!((f32::from_bits(be32(&f, 1724)), f32::from_bits(be32(&f, 1940))), (24.0, 24.0));
+        assert_eq!(f[2048..], plain[2048..], "the pixels are unchanged");
+        // 29.97 drop-frame: 00:01:00;02 with the drop-frame flag
+        let t = StillTiming { frame: 1800, rate: FrameRate::FPS_29_97, drop_frame: true };
+        let f = dpx_deep(&px, None, 1, 1, Some(t)).unwrap();
+        assert_eq!(be32(&f, 1920), 0x0001_0042);
+        assert!((f32::from_bits(be32(&f, 1940)) - 29.97).abs() < 0.001);
+        // before 00:00:00:00: no time code, the rate still
+        let f = dpx_deep(&px, None, 1, 1, Some(StillTiming { frame: -1, rate: FrameRate::new(25, 1), drop_frame: false })).unwrap();
+        assert_eq!((be32(&f, 1920), f32::from_bits(be32(&f, 1940))), (u32::MAX, 25.0));
+
+        let Some(ffprobe) = cfa4_testkit::ffprobe() else {
+            eprintln!("SKIPPED: ffprobe is not installed");
+            return;
+        };
+        let dir = cfa4_testkit::fixtures::workspace_root().join("target").join("export-tests").join(format!("dpx-tc-{}", std::process::id()));
+        std::fs::create_dir_all(&dir).unwrap();
+        let path = dir.join("tc.dpx");
+        let t = StillTiming { frame: 24 * 3723 + 4, rate: FrameRate::new(24, 1), drop_frame: false };
+        std::fs::write(&path, dpx_deep(&px, None, 1, 1, Some(t)).unwrap()).unwrap();
+        let out = std::process::Command::new(ffprobe).args(["-v", "error", "-show_frames", "-show_entries", "frame_tags"]).arg(&path).output().unwrap();
+        let info = String::from_utf8_lossy(&out.stdout);
+        assert!(info.contains("01:02:03:04"), "{info}");
+        let _ = std::fs::remove_dir_all(&dir);
     }
 
     #[test]
@@ -653,7 +750,7 @@ mod tests {
 
         let (px, w, h) = picture();
         let t = StillTiming { frame: 24 * 3723 + 4, rate: FrameRate::new(24, 1), drop_frame: false };
-        let f = exr_with(&px, w, h, false, ExrCompression::Zip, Some(t)).unwrap();
+        let f = exr_with(&px, None, w, h, false, ExrCompression::Zip, Some(t)).unwrap();
         let src = cfa4_media::open_bytes("a.exr", f.clone().into(), &[]).unwrap();
         assert_eq!(src.info().start_timecode, Some(t.frame), "01:02:03:04");
         assert_eq!(src.info().video.as_ref().unwrap().frame_rate, FrameRate::new(24, 1));
