@@ -57,7 +57,8 @@ pub use audio_out::LoudnessReport;
 pub use dash_out::{DashMedia, DashRepresentation, dash_files, dash_mpd};
 pub use dcp_iab::{DcpImmersive, IabFallback, IabSourceInfo, fsk_sync, probe_iab_source};
 pub use dcp_out::{
-    DCP_CONTENT_KINDS, DcpAspect, DcpResolution, dcdm_code, dcp_content_kind, dcp_isdcf_date, dcp_isdcf_name, dcp_language, dcp_rate, rgba_to_xyz12,
+    DCP_CONTENT_KINDS, DcpAspect, DcpResolution, dcdm_code, dcp_content_kind, dcp_isdcf_date, dcp_isdcf_name, dcp_language, dcp_rate, dcp_subtitle_language,
+    rgba_to_xyz12,
 };
 pub use hls_out::{HlsFiles, SEGMENT_SECONDS as HLS_SEGMENT_SECONDS, hls_files};
 pub use imf_out::{IMF_CONTENT_KINDS, IMF_MAX_SIZE, IMF_RATES, imf_content_kind, imf_profile, imf_rate, rgba_to_rgb10};
@@ -461,6 +462,19 @@ pub struct ExportSettings {
     /// default.
     #[serde(default)]
     pub mxf_anc_captions: bool,
+    /// MXF OP1a: the AMWA AS-11 Core framework in bmx's text form, one `Name: value` per line
+    /// (`SeriesTitle: …`, `ShimName: UK DPP HD`, `ShimVersion: 1.1`; [`cfa4_mxf::as11`]). Empty: no
+    /// AS-11 metadata.
+    #[serde(default)]
+    pub mxf_as11_core: String,
+    /// MXF OP1a with AS-11: the programme parts, one `part/total start duration` per line, the start
+    /// a time code of the export's start time code and the duration a time code or a frame count.
+    #[serde(default)]
+    pub mxf_as11_segments: String,
+    /// MXF OP1a with AS-11: the UK DPP framework (`Name: value` lines); empty = none. The number of
+    /// parts and the programme duration are filled in from the parts when not given.
+    #[serde(default)]
+    pub mxf_as11_ukdpp: String,
     /// Container of MPEG-2 exports: `ps`, `ts`, `m2ts` or `es` (empty = from the path's
     /// extension, a program stream unless it is `.ts`, `.m2ts` / `.mts` or `.m2v`).
     #[serde(default)]
@@ -501,6 +515,17 @@ pub struct ExportSettings {
     /// IMF exports use it too (MCA labels, the CPL locale).
     #[serde(default)]
     pub dcp_language: String,
+    /// DCP: write the sequence's first caption track as subtitles (#938): an ST 428-7 subtitle
+    /// reel in an ST 429-5 timed text track file, the CPL's `MainSubtitle`.
+    #[serde(default)]
+    pub dcp_subtitles: bool,
+    /// DCP subtitle language, an RFC 5646 tag (empty = [`ExportSettings::dcp_language`]).
+    #[serde(default)]
+    pub dcp_subtitle_language: String,
+    /// DCP subtitle font: an OpenType / TrueType file embedded in the timed text track file
+    /// (empty = the bundled Inter Regular, SIL OFL 1.1).
+    #[serde(default)]
+    pub dcp_subtitle_font: String,
     /// IMF: reversible (lossless) JPEG 2000 instead of the lossy IMF profile.
     #[serde(default)]
     pub imf_lossless: bool,
@@ -778,6 +803,9 @@ impl Default for ExportSettings {
             cineform_quality: String::new(),
             mxf_video_codec: MxfVideoCodec::default(),
             mxf_anc_captions: false,
+            mxf_as11_core: String::new(),
+            mxf_as11_segments: String::new(),
+            mxf_as11_ukdpp: String::new(),
             mpeg2_container: String::new(),
             mpeg2_422: false,
             mpeg2_quantizer: None,
@@ -789,6 +817,9 @@ impl Default for ExportSettings {
             dcp_iab_source: String::new(),
             dcp_iab_fallback: String::new(),
             dcp_language: String::new(),
+            dcp_subtitles: false,
+            dcp_subtitle_language: String::new(),
+            dcp_subtitle_font: String::new(),
             imf_lossless: false,
             imf_content_kind: String::new(),
             sdr: false,
@@ -910,6 +941,21 @@ impl ExportSettings {
             {
                 return Err(ExportError::Unsupported("D-10 (IMX) carries up to 8 channels of 16- or 24-bit 48 kHz audio".into()));
             }
+        }
+        let as11 = [&self.mxf_as11_core, &self.mxf_as11_segments, &self.mxf_as11_ukdpp];
+        if as11.iter().any(|t| !t.trim().is_empty()) {
+            if self.format != Format::MxfOp1a {
+                return Err(ExportError::Unsupported("AS-11 metadata is written in MXF OP1a".into()));
+            }
+            if self.mxf_as11_core.trim().is_empty() {
+                return Err(ExportError::Unsupported("AS-11 needs the AS-11 Core framework".into()));
+            }
+            let bad = |e: String| ExportError::Unsupported(format!("AS-11: {e}"));
+            cfa4_mxf::as11::check_framework_text(&self.mxf_as11_core, false).map_err(bad)?;
+            if !self.mxf_as11_ukdpp.trim().is_empty() {
+                cfa4_mxf::as11::check_framework_text(&self.mxf_as11_ukdpp, true).map_err(bad)?;
+            }
+            cfa4_mxf::as11::parse_segments_text(&self.mxf_as11_segments, cfa4_mxf::as11::Clock { start: 0, base: 1000 }).map_err(bad)?;
         }
         if self.format.is_mxf() && self.mxf_anc_captions {
             if self.format == Format::MxfOpAtom {
@@ -3122,7 +3168,7 @@ pub fn encode_still_timed(
             .map_err(enc)?
         }
         Format::TgaSequence => return raster::tga(&rgba, w, h, alpha),
-        Format::DpxSequence => return raster::dpx_deep(&rgba, float, w, h),
+        Format::DpxSequence => return raster::dpx_deep(&rgba, float, w, h, timing),
         Format::ExrSequence => return raster::exr_with(&rgba, float, w, h, alpha, exr, timing),
         Format::PngSequence if alpha => {
             image::ImageEncoder::write_image(image::codecs::png::PngEncoder::new(&mut out), &rgba, w, h, image::ExtendedColorType::Rgba8).map_err(enc)?

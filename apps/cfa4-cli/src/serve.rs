@@ -816,6 +816,8 @@ pub fn handle(s: &mut Session, id: Value, method: &str, params: Value) -> Option
                 "autosave": s.persistence.is_some(),
                 // unsaved changes of sessions that died: the GUI offers Recover / Not Now / Discard
                 "recovery": serde_json::to_value(s.recovery_candidates()).unwrap_or_default(),
+                // additive capabilities (the protocol number stays): `surface` = `surface.devices`
+                "features": ["surface"],
             }),
         ),
         "engine.execute" => {
@@ -915,6 +917,7 @@ pub fn handle(s: &mut Session, id: Value, method: &str, params: Value) -> Option
             Ok((meta, bytes)) => Reply::with_binary(id, meta, bytes),
             Err(e) => Reply::err(id, e),
         },
+        "surface.devices" => Reply::ok(id, crate::serve_surface::devices(s)),
         "session.state" => Reply::ok(
             id,
             json!({
@@ -1025,6 +1028,8 @@ pub fn run(mut s: Session) {
         }));
         jobs = upkeep.unwrap_or(false);
         let (sync_events, sync_on) = std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| crate::serve_tcsync::upkeep(&mut s))).unwrap_or_default();
+        // the live studio host shows the project's current scene (CFA4-LIVE-STUDIO-001 S1)
+        let _ = std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| crate::serve_live::upkeep(&s)));
         syncing = sync_on;
         let mut broken = false;
         let engine_events = s.drain_events().into_iter().map(|ev| event_json(&ev));

@@ -1,0 +1,15 @@
+# 3Dconnexion SpaceMouse (plan §2, M6) through spacenavd.
+format = "cfa4-surface-catalog"
+version = 1
+family = "spacenav"
+
+[[model]]
+id = "3dconnexion.spacemouse"
+vendor = "3Dconnexion"
+name = "SpaceMouse family"
+kind = "6dof"
+goal = "BEST_EFFORT"
+adapter = "spacenav"
+phase = "M6"
+connection = ["usb", "wireless"]
+source = "spacenavd (open)"

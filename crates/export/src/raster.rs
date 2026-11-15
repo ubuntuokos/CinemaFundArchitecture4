@@ -65,7 +65,7 @@ const DPX_HEADER: usize = 2048;
 /// A DPX file: 10-bit RGB (8-bit values widened by bit replication, so 0 → 0 and 255 → 1023).
 #[cfg(test)]
 pub(crate) fn dpx(rgba: &[u8], w: u32, h: u32) -> Result<Vec<u8>> {
-    dpx_deep(rgba, None, w, h)
+    dpx_deep(rgba, None, w, h, None)
 }
 
 /// A float sample (straight sRGB R'G'B', 0..1) as a `max`-scaled code; 0 for NaN.
@@ -74,8 +74,10 @@ fn code(v: f32, max: f32) -> u32 {
 }
 
 /// [`dpx`] from the frame's R'G'B' floats (3 per pixel) when there are any, so that deep sources
-/// keep their 10 bits; `rgba` sets the frame's size either way.
-pub(crate) fn dpx_deep(rgba: &[u8], float: Option<&[f32]>, w: u32, h: u32) -> Result<Vec<u8>> {
+/// keep their 10 bits; `rgba` sets the frame's size either way. With `timing`, the television
+/// header gets the time code (SMPTE ST 12-1 BCD, hours in the high byte, no user bits) and both
+/// headers the frame rate (ST 268: film 1724, television 1940).
+pub(crate) fn dpx_deep(rgba: &[u8], float: Option<&[f32]>, w: u32, h: u32, timing: Option<StillTiming>) -> Result<Vec<u8>> {
     let n = checked_len(rgba, w, h)?;
     let float = float.filter(|f| f.len() >= n / 4 * 3);
     // one 32-bit word per pixel; `n` is already `w * h * 4`
@@ -138,6 +140,17 @@ pub(crate) fn dpx_deep(rgba: &[u8], float: Option<&[f32]>, w: u32, h: u32) -> Re
     put32(&mut hd, 1632, 1);
     // television header: progressive
     hd[1928] = 0;
+    if let Some(t) = timing {
+        if let Some(tc) = t.packed() {
+            put32(&mut hd, 1920, tc);
+            put32(&mut hd, 1924, 0); // user bits
+        }
+        if t.rate.num > 0 && t.rate.den > 0 {
+            let fps = (t.rate.num as f64 / t.rate.den as f64) as f32;
+            put32(&mut hd, 1724, fps.to_bits());
+            put32(&mut hd, 1940, fps.to_bits());
+        }
+    }
     let mut out = Vec::with_capacity(size);
     out.extend_from_slice(&hd);
     let ten = |v: u8| (u32::from(v) << 2) | (u32::from(v) >> 6);
@@ -425,6 +438,45 @@ mod tests {
         assert_eq!(be32(&f, 2048), 1023 << 22);
         let p = be32(&f, 2052);
         assert_eq!(((p >> 22) & 1023, (p >> 12) & 1023, (p >> 2) & 1023, p & 3), (4, 514, 1023, 0));
+    }
+
+    /// The time code and frame rate fields; ffmpeg (an external oracle, skipped when missing)
+    /// reads the time code back.
+    #[test]
+    fn dpx_records_time_code_and_rate() {
+        use cfa4_time::FrameRate;
+        let px = [255, 0, 0, 255];
+        let plain = dpx(&px, 1, 1).unwrap();
+        assert_eq!((be32(&plain, 1920), be32(&plain, 1724), be32(&plain, 1940)), (u32::MAX, u32::MAX, u32::MAX), "undefined without timing");
+        // 01:02:03:04 at 24 fps
+        let t = StillTiming { frame: 24 * 3723 + 4, rate: FrameRate::new(24, 1), drop_frame: false };
+        let f = dpx_deep(&px, None, 1, 1, Some(t)).unwrap();
+        assert_eq!(be32(&f, 1920), 0x0102_0304);
+        assert_eq!(be32(&f, 1924), 0, "no user bits");
+        assert_eq!((f32::from_bits(be32(&f, 1724)), f32::from_bits(be32(&f, 1940))), (24.0, 24.0));
+        assert_eq!(f[2048..], plain[2048..], "the pixels are unchanged");
+        // 29.97 drop-frame: 00:01:00;02 with the drop-frame flag
+        let t = StillTiming { frame: 1800, rate: FrameRate::FPS_29_97, drop_frame: true };
+        let f = dpx_deep(&px, None, 1, 1, Some(t)).unwrap();
+        assert_eq!(be32(&f, 1920), 0x0001_0042);
+        assert!((f32::from_bits(be32(&f, 1940)) - 29.97).abs() < 0.001);
+        // before 00:00:00:00: no time code, the rate still
+        let f = dpx_deep(&px, None, 1, 1, Some(StillTiming { frame: -1, rate: FrameRate::new(25, 1), drop_frame: false })).unwrap();
+        assert_eq!((be32(&f, 1920), f32::from_bits(be32(&f, 1940))), (u32::MAX, 25.0));
+
+        let Some(ffprobe) = cfa4_testkit::ffprobe() else {
+            eprintln!("SKIPPED: ffprobe is not installed");
+            return;
+        };
+        let dir = cfa4_testkit::fixtures::workspace_root().join("target").join("export-tests").join(format!("dpx-tc-{}", std::process::id()));
+        std::fs::create_dir_all(&dir).unwrap();
+        let path = dir.join("tc.dpx");
+        let t = StillTiming { frame: 24 * 3723 + 4, rate: FrameRate::new(24, 1), drop_frame: false };
+        std::fs::write(&path, dpx_deep(&px, None, 1, 1, Some(t)).unwrap()).unwrap();
+        let out = std::process::Command::new(ffprobe).args(["-v", "error", "-show_frames", "-show_entries", "frame_tags"]).arg(&path).output().unwrap();
+        let info = String::from_utf8_lossy(&out.stdout);
+        assert!(info.contains("01:02:03:04"), "{info}");
+        let _ = std::fs::remove_dir_all(&dir);
     }
 
     #[test]

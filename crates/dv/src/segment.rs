@@ -149,6 +149,17 @@ fn spill<'a>(blocks: impl Iterator<Item = &'a mut Block>, table: &[Entry], pool:
     pool.get(at..).unwrap_or(&[]).to_vec()
 }
 
+#[cfg(test)]
+pub(crate) fn test_block() -> Block {
+    Block { dc: 0, mode248: false, class: 0, amps: [0; 64], pos: 1, done: false, partial: Vec::new() }
+}
+
+/// Decode one block's bits to its end of block (encoder tests).
+#[cfg(test)]
+pub(crate) fn test_run(blk: &mut Block, table: &[Entry], bits: &[u8]) -> bool {
+    matches!(run(blk, table, bits, &[]), Outcome::Eob(n) if n == bits.len())
+}
+
 fn empty_block() -> Block {
     Block { dc: 0, mode248: false, class: 0, amps: [0; 64], pos: 1, done: true, partial: Vec::new() }
 }

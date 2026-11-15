@@ -1,5 +1,9 @@
 //! The libobs backend: the pinned CFA4 libobs 33.0.1 build behind [`StudioBackend`].
 //!
+//! A scene (S1) is a private libobs scene whose items are CFA4 picture sources: an asynchronous
+//! video source type registered from Rust (`cfa4_picture`, plan V.3), fed the layer pictures the
+//! engine rendered, and placed with OBS's own scene-item transform. No libobs plugin is needed.
+//!
 //! libobs is loaded at run time from `<dir>/lib/libobs.so.30` (libobs keeps the ABI soname of
 //! OBS 30), where `<dir>` is `CFA4_LIBOBS_DIR` or `/opt/cfa4/libobs-33.0.1`. Only that build is
 //! used, never the system's libobs (Ubuntu ships an older one), and a version other than
@@ -87,6 +91,7 @@ impl LibObsBackend {
         };
         me.api.startup()?;
         me.started = true;
+        me.api.register_picture_source();
         me.api.reset_video(&module, &video)?;
         me.raw = Some(me.api.add_raw_video(me.sink.clone()));
         log::info!(
@@ -120,6 +125,15 @@ impl StudioBackend for LibObsBackend {
             self.api.release_scene(old);
         }
         self.scene = Some(self.api.show_empty_scene("CFA4 empty scene")?);
+        Ok(())
+    }
+
+    fn set_scene(&mut self, scene: &crate::scene::LoadedScene) -> Result<()> {
+        let new = self.api.show_layers(&format!("CFA4 scene {}", scene.revision), &scene.layers)?;
+        if let Some(old) = self.scene.replace(new) {
+            // already off the output: `show_layers` put the new scene there
+            self.api.release_offscreen_scene(old);
+        }
         Ok(())
     }
 

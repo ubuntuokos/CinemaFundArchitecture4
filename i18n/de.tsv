@@ -2398,6 +2398,10 @@
 	Show Clip Mismatch Warning dialog	Warnung bei nicht passendem Clip anzeigen
 	Show Event Indicator	Ereignisanzeige anzeigen
 	Show Focus Area	Fokusbereich anzeigen
+	Rack Focus	Schärfeverlagerung
+	Focus Point A	Fokuspunkt A
+	Focus Point B	Fokuspunkt B
+	Rack	Verlagerung
 	Show Home	Startseite anzeigen
 	Show Mask Tracker Preview	Vorschau der Maskenverfolgung anzeigen
 	Show Only Noise	Nur Rauschen anzeigen
@@ -3639,6 +3643,7 @@
 	Social Deliverables…	Social-Media-Ausgaben…
 	Counter	Zähler
 	Word by Word	Wort für Wort
+	Scramble	Verwürfeln
 	Animator	Animator
 	Animator Duration	Animator-Dauer
 	Animator Delay	Animator-Verzögerung
@@ -4183,6 +4188,11 @@
 	Burn Size	Brandgröße
 	Ember Width	Glutbreite
 	Ember Color	Glutfarbe
+	Tear Away	Abreißen
+	Tear Roughness	Rauheit des Risses
+	Paper Edge Width	Breite des Papierrands
+	Stamp Cut	Briefmarke
+	Perforations	Perforation
 	Check Text Legibility	Textlesbarkeit prüfen
 	Clear Legibility Markers	Lesbarkeitsmarken löschen
 	Text legibility: no problems found	Textlesbarkeit: keine Probleme gefunden
@@ -4222,6 +4232,9 @@
 	Dither	Dithering
 	Pattern	Muster
 	Cell Size	Zellengröße
+	Pixelate	Verpixeln
+	Cell Shape	Zellenform
+	LED	LED
 	Cyan Angle	Cyan-Winkel
 	Magenta Angle	Magenta-Winkel
 	Yellow Angle	Gelb-Winkel
@@ -4582,6 +4595,18 @@
 	Chase External Timecode	Externem Timecode folgen
 	Send LTC	LTC senden
 	Send MIDI Timecode	MIDI-Timecode senden
+
+# Live studio preview (CFA4-LIVE-STUDIO-001 S0)
+	Live studio preview	Live-Studio-Vorschau
+	Live studio: stopped	Live-Studio: angehalten
+	Live studio: {state}	Live-Studio: {state}
+	Live studio: {error}	Live-Studio: {error}
+	restarted after {count} crashes (last: {exit})	nach {count} Abstürzen neu gestartet (zuletzt: {exit})
+	software backend: {reason}	Software-Backend: {reason}
+	Start studio	Studio starten
+	Stop studio	Studio anhalten
+	Add Studio Scene	Studioszene hinzufügen
+	Live	Live
 # Auto Color, Auto Contrast, Auto Levels (EffectsSDK review)
 	Auto Color	Auto-Farbe
 	Auto Contrast	Auto-Kontrast
@@ -4639,3 +4664,42 @@
 	Freewheel	Freilauf
 	Scrubbing	Scrubben
 	Sending	Senden
+
+# DCP subtitle export (#938)
+	Subtitles from the first caption track	Untertitel aus der ersten Untertitelspur
+	The package language	Die Sprache des Pakets
+	Inter Regular (built in), or an OpenType / TrueType file	Inter Regular (integriert) oder eine OpenType-/TrueType-Datei
+	Subtitle language	Untertitelsprache
+	Subtitle font	Untertitelschrift
+	Fonts	Schriften
+
+# AS-11 metadata in MXF OP1a (#96)
+	AS-11 Core	AS-11 Core
+	AS-11 Parts	AS-11-Teile
+	AS-11 UK DPP	AS-11 UK DPP
+
+# Control Surfaces settings page (CS-1, #1187)
+	Devices	Geräte
+	Use	Verwenden
+	Device	Gerät
+	MIDI	MIDI
+	HID jog/shuttle	HID-Jog/Shuttle
+	OSC	OSC
+	Connected	Verbunden
+	Not connected	Nicht verbunden
+	Disabled	Deaktiviert
+	{device} ({port})	{device} ({port})
+	{name}: {error}	{name}: {error}
+	Looking for devices…	Geräte werden gesucht…
+	No MIDI controller or jog/shuttle device was found. Connect one and press Refresh.	Kein MIDI-Controller und kein Jog/Shuttle-Gerät gefunden. Schließen Sie eines an und klicken Sie auf Aktualisieren.
+	Control Surfaces	Steueroberflächen
+	Use control surfaces (MIDI controllers, jog/shuttle devices)	Steueroberflächen verwenden (MIDI-Controller, Jog/Shuttle-Geräte)
+	Mapping controls to commands, MIDI Learn and the MIDI Monitor come in a later version; the choices here are remembered until then.	Die Zuordnung von Bedienelementen zu Befehlen, MIDI Learn und der MIDI-Monitor folgen in einer späteren Version; die Auswahl hier bleibt bis dahin gespeichert.
+	CFA4 ShuttlePRO	CFA4 ShuttlePRO
+	Kdenlive-style ShuttlePRO	ShuttlePRO im Kdenlive-Stil
+	Generic MIDI	Generisches MIDI
+
+# LTC timecode read from clip audio (TC-7, #1285)
+	Read from LTC Audio	Aus LTC-Audio lesen
+	Find SMPTE LTC on the clip's audio and use the timecode it gives the first frame	SMPTE-LTC im Ton des Clips suchen und den Timecode verwenden, den er dem ersten Bild gibt
+	Read Timecode from LTC Audio	Timecode aus LTC-Audio lesen

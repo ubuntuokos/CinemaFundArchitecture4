@@ -66,6 +66,7 @@ const NEW_IDS: &[&str] = &[
     "channel_blur",
     "compound_blur",
     "focus_blur",
+    "rack_focus",
     "reduce_interlace_flicker",
     "skin_smoothing",
     "low_light",
@@ -908,6 +909,37 @@ fn bokeh_and_focus_blur() {
     assert!(max_diff(&o, &pic) > 0.01);
     let (a, b) = (o.get(32, 32), pic.get(32, 32));
     assert!((0..4).all(|k| close(a[k], b[k], 1e-4)));
+}
+
+#[test]
+fn rack_focus_moves_the_sharp_area_from_a_to_b() {
+    let pic = picture(96, 48);
+    let mut e = inst("rack_focus");
+    set(&mut e, "focus_a", ParamValue::Vec2(Vec2::new(24.0, 24.0)));
+    set(&mut e, "focus_b", ParamValue::Vec2(Vec2::new(72.0, 24.0)));
+    setf(&mut e, "size", 16.0);
+    setf(&mut e, "feather", 12.0);
+    setf(&mut e, "amount", 16.0);
+    let same = |o: &Image, x: usize, y: usize| (0..4).all(|k| close(o.get(x, y)[k], pic.get(x, y)[k], 1e-4));
+    // Rack 0 %: A sharp, B soft; 100 %: the other way round
+    let o = run("rack", &e, &pic, &cx());
+    assert!(same(&o, 24, 24) && !same(&o, 72, 24));
+    setf(&mut e, "rack", 100.0);
+    let o = run("rack", &e, &pic, &cx());
+    assert!(!same(&o, 24, 24) && same(&o, 72, 24));
+    // halfway both are soft
+    setf(&mut e, "rack", 50.0);
+    let mid = run("rack", &e, &pic, &cx());
+    assert!(!same(&mid, 24, 24) && !same(&mid, 72, 24));
+    // hostile values never panic or leave NaN
+    for v in [f64::NAN, f64::INFINITY, -1e9, 1e9] {
+        setf(&mut e, "rack", v);
+        setf(&mut e, "feather", v);
+        setf(&mut e, "size", v);
+        setf(&mut e, "amount", if v.is_finite() { v.clamp(-1e3, 1e3) } else { v });
+        let o = run("rack", &e, &pic, &cx());
+        assert!(o.px.iter().all(|c| c.is_finite()), "v={v}");
+    }
 }
 
 #[test]
