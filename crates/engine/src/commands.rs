@@ -3865,6 +3865,7 @@ fn build() -> Vec<CommandSpec> {
     v.extend(crate::settings::commands());
     v.extend(crate::timecode_sync::commands());
     v.extend(crate::control_surfaces::commands());
+    v.extend(crate::ltc_read::commands());
     v.extend(crate::mixer::commands());
     v.extend(crate::multicam::commands());
     v.extend(crate::essential_sound::commands());
