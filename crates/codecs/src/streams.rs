@@ -569,6 +569,7 @@ fn mxf(f: &cfa4_mxf::MxfFile) -> StreamList {
             Codec::Uncompressed => "rawvideo".into(),
             Codec::Pcm | Codec::Aes3Element => format!("pcm_s{bits}le"),
             Codec::Iab => "iab".into(),
+            Codec::Aac => "aac".into(),
             Codec::Unknown => String::new(),
         };
         let mut s = StreamEntry::new(kind).codec(codec);
