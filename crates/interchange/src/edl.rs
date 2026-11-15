@@ -184,8 +184,11 @@ fn parse(text: &str, report: &mut Report) -> Parsed {
                 ev.files.push(value("SOURCE FILE:"));
             } else if cu.starts_with("SEGMENT NAME JSON:") {
                 // a name CFA4 could not write as plain text (empty, padded, several lines)
-                let raw = value("SEGMENT NAME JSON:");
-                ev.segment = Some(serde_json::from_str::<String>(&raw).unwrap_or(raw));
+                // a damaged encoding is refused (`source_ranges`), never read as the name itself
+                match serde_json::from_str::<String>(&value("SEGMENT NAME JSON:")) {
+                    Ok(name) => ev.segment = Some(name),
+                    Err(e) => report.warn(format!("{BAD_NAME}{} ({e})", l.chars().take(60).collect::<String>())),
+                }
             } else if cu.starts_with("SEGMENT NAME:") {
                 ev.segment = Some(value("SEGMENT NAME:"));
             } else if cu.starts_with("EFFECT NAME:") {
@@ -267,6 +270,8 @@ pub struct SourceRange {
 
 /// How the report names a line the parser could not read.
 const UNREAD: &str = "unrecognised EDL line ignored: ";
+/// How the report names a `* SEGMENT NAME JSON:` line whose name cannot be decoded.
+const BAD_NAME: &str = "EDL segment name is not valid JSON: ";
 
 /// The source ranges of an EDL's events, against `rate`. Refused (instead of converted) when the
 /// list cannot have been written at `rate`: a frame field at or above the rate's timecode base, or
@@ -277,7 +282,8 @@ pub fn source_ranges(text: &str, rate: FrameRate) -> std::result::Result<Vec<Sou
     let p = parse(text, &mut report);
     // a line that is not read could be an event: refuse rather than return fewer ranges (a split
     // line only moves sound, so the source ranges stay exact without it)
-    let unread: Vec<&str> = report.entries.iter().filter(|e| e.message.starts_with(UNREAD)).map(|e| e.message.as_str()).collect();
+    let unread: Vec<&str> =
+        report.entries.iter().filter(|e| e.message.starts_with(UNREAD) || e.message.starts_with(BAD_NAME)).map(|e| e.message.as_str()).collect();
     if let Some(first) = unread.first() {
         return Err(format!("{} line(s) of the EDL cannot be read ({first})", unread.len()));
     }
@@ -1099,6 +1105,19 @@ mod tests {
         let damaged = format!("{ok}002  AX       V     C        00:00:03:00 00:0X:04:00 00:00:01:00 00:00:02:00\n");
         let e = source_ranges(&damaged, FrameRate::FPS_25).unwrap_err();
         assert!(e.contains("cannot be read") && e.contains("002"), "{e}");
+    }
+
+    #[test]
+    fn a_damaged_encoded_segment_name_is_refused_not_read_raw() {
+        let ok = "TITLE: T\nFCM: NON-DROP FRAME\n\n001  AX       V     C        00:00:01:00 00:00:02:00 00:00:00:00 00:00:01:00\n";
+        let good = format!("{ok}* SEGMENT NAME JSON: \"two\\nlines\"\n");
+        assert_eq!(source_ranges(&good, FrameRate::FPS_25).unwrap()[0].segment.as_deref(), Some("two\nlines"));
+        let bad = format!("{ok}* SEGMENT NAME JSON: \"two\\qlines\"\n");
+        let e = source_ranges(&bad, FrameRate::FPS_25).unwrap_err();
+        assert!(e.contains("cannot be read") && e.contains("SEGMENT NAME JSON") && e.contains("not valid JSON"), "{e}");
+        // the raw key still reads its text as it is, quotes included
+        let raw = format!("{ok}* SEGMENT NAME: \"two\\qlines\"\n");
+        assert_eq!(source_ranges(&raw, FrameRate::FPS_25).unwrap()[0].segment.as_deref(), Some("\"two\\qlines\""));
     }
 
     #[test]
