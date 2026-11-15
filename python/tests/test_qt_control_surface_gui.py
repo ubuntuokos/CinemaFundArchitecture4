@@ -9,14 +9,17 @@ from __future__ import annotations
 import os
 import time
 from pathlib import Path
-from typing import Any
+from typing import TYPE_CHECKING, Any
 
 import pytest
 
 os.environ.setdefault("QT_QPA_PLATFORM", "offscreen")
-QtCore = pytest.importorskip("PySide6.QtCore", exc_type=ImportError)
-QtGui = pytest.importorskip("PySide6.QtGui", exc_type=ImportError)
-QtWidgets = pytest.importorskip("PySide6.QtWidgets", exc_type=ImportError)
+if TYPE_CHECKING:
+    from PySide6 import QtCore, QtGui, QtWidgets
+else:
+    QtCore = pytest.importorskip("PySide6.QtCore", exc_type=ImportError)
+    QtGui = pytest.importorskip("PySide6.QtGui", exc_type=ImportError)
+    QtWidgets = pytest.importorskip("PySide6.QtWidgets", exc_type=ImportError)
 
 from cfa4_qt.panels.settings import MENU, PreferencesDialog  # noqa: E402
 from cfa4_qt.window_menu import Workspaces, build_window_menu, window_commands  # noqa: E402
@@ -220,7 +223,9 @@ def test_menus_open_the_control_surface_page(app: Any, tmp_path: Path) -> None:
         ("window.midiMonitor", "settings.controlSurfaces.monitor"),
         ("window.surfaceAssignments", "settings.controlSurfaces.assign"),
     ):
-        host.findChild(QtGui.QAction, name).trigger()
+        action = host.findChild(QtGui.QAction, name)
+        assert action is not None
+        action.trigger()
         assert host.opened[-1] == ("controlSurfaces", section)
 
     edit = QtWidgets.QMenu(host)
@@ -233,7 +238,9 @@ def test_menus_open_the_control_surface_page(app: Any, tmp_path: Path) -> None:
     edit.show()
     app.processEvents()
     _save(edit, "menu-edit-preferences-control-surfaces.png")
-    host.findChild(QtGui.QAction, "app.settings.controlSurfaces").trigger()
+    preferences = host.findChild(QtGui.QAction, "app.settings.controlSurfaces")
+    assert preferences is not None
+    preferences.trigger()
     assert host.opened[-1] == ("controlSurfaces", "")
     host.close()
 
@@ -251,7 +258,9 @@ def test_built_engine_serves_the_panels(app: Any, tmp_path: Path) -> None:
     from cfa4_qt.main_window import MainWindow
 
     settings = QtCore.QSettings(str(tmp_path / "s.ini"), QtCore.QSettings.Format.IniFormat)
-    engine = EngineClient(_engine_binary(), ["--demo", "--data-dir", str(tmp_path / "data")])
+    binary = _engine_binary()
+    assert binary is not None
+    engine = EngineClient(binary, ["--demo", "--data-dir", str(tmp_path / "data")])
     win = MainWindow(engine, settings)
     engine.start()
     got: dict[str, Any] = {}
@@ -263,7 +272,9 @@ def test_built_engine_serves_the_panels(app: Any, tmp_path: Path) -> None:
         assert win.findChild(QtGui.QAction, "app.settings.controlSurfaces") is not None
         assert win.findChild(QtGui.QAction, "window.midiMonitor") is not None
         assert win.findChild(QtGui.QAction, "window.surfaceAssignments") is not None
-        win.findChild(QtGui.QAction, "window.controlSurfaces").trigger()
+        surfaces = win.findChild(QtGui.QAction, "window.controlSurfaces")
+        assert surfaces is not None
+        surfaces.trigger()
         app.processEvents()
         dialog = win.settings_dialog
         assert dialog.focus_section == "settings.controlSurfaces.devices"

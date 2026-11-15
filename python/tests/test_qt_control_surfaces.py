@@ -9,12 +9,15 @@ from __future__ import annotations
 
 import os
 from pathlib import Path
-from typing import Any
+from typing import TYPE_CHECKING, Any, cast
 
 import pytest
 
 os.environ.setdefault("QT_QPA_PLATFORM", "offscreen")
-QtWidgets = pytest.importorskip("PySide6.QtWidgets", exc_type=ImportError)
+if TYPE_CHECKING:
+    from PySide6 import QtWidgets
+else:
+    QtWidgets = pytest.importorskip("PySide6.QtWidgets", exc_type=ImportError)
 
 from cfa4_qt.panels.settings import PreferencesDialog  # noqa: E402
 
@@ -62,7 +65,7 @@ class Notifications:
     def __init__(self) -> None:
         self.slots: list[Any] = []
 
-    def connect(self, slot) -> None:
+    def connect(self, slot: Any) -> None:
         self.slots.append(slot)
 
     def emit(self, message: dict[str, Any]) -> None:
@@ -165,7 +168,7 @@ def monitor_calls(engine: StubEngine) -> list[bool]:
     return [bool(p.get("enabled")) for m, p in engine.sent if m == "surface.monitor"]
 
 
-def test_midi_monitor_shows_messages_until_stopped(app):
+def test_midi_monitor_shows_messages_until_stopped(app: Any) -> None:
     engine = StubEngine(DEVICES)
     d = PreferencesDialog(None, engine, "controlSurfaces")
     toggle = find(d, QtWidgets.QPushButton, "settings.controlSurfaces.monitor.toggle")
@@ -201,7 +204,7 @@ def test_midi_monitor_shows_messages_until_stopped(app):
     assert not [m for m, _p in engine.sent if m == "prefs.set"]
 
 
-def test_midi_monitor_says_why_it_cannot_start(app):
+def test_midi_monitor_says_why_it_cannot_start(app: Any) -> None:
     engine = StubEngine(DEVICES, monitor_error="MIDI: no ALSA sequencer (No such file or directory)")
     d = PreferencesDialog(None, engine, "controlSurfaces")
     error = find(d, QtWidgets.QLabel, "settings.controlSurfaces.monitor.error")
@@ -220,12 +223,12 @@ SHUTTLE = "hid:0b33:0030:usb-0000:00:14.0-3/input0"
 CC41 = {"midi": {"channel": 0, "kind": "cc", "number": 41}}
 
 
-def rows(d, what: str) -> list[str]:
+def rows(d: Any, what: str) -> list[str]:
     return [w.text() for w in sorted((w for w in d.findChildren(QtWidgets.QLabel) if w.objectName().startswith("settings.controlSurfaces.assign.")
                                       and w.objectName().endswith(f".{what}")), key=lambda w: w.objectName())]
 
 
-def test_learn_assigns_a_button_and_ok_saves_it(app):
+def test_learn_assigns_a_button_and_ok_saves_it(app: Any) -> None:
     engine = StubEngine(DEVICES)
     d = PreferencesDialog(None, engine, "controlSurfaces", commands=lambda: COMMANDS)
     # MIDI controllers and jog/shuttle devices are offered
@@ -284,7 +287,7 @@ def test_learn_assigns_a_button_and_ok_saves_it(app):
     assert "surface.learnCancel" not in [m for m, _p in engine.sent], "nothing was waiting"
 
 
-def test_learn_cancel_errors_and_close(app):
+def test_learn_cancel_errors_and_close(app: Any) -> None:
     engine = StubEngine(DEVICES, learn_error="MIDI: no ALSA sequencer (No such file or directory)")
     d = PreferencesDialog(None, engine, "controlSurfaces", commands=lambda: COMMANDS)
     find(d, QtWidgets.QPushButton, "settings.controlSurfaces.assign.learn").click()
@@ -309,7 +312,7 @@ def test_learn_cancel_errors_and_close(app):
     assert [m for m, _p in engine.sent if m.startswith("surface.learn")][-1] == "surface.learnCancel"
 
 
-def test_shuttlepro_buttons_are_learned_too(app):
+def test_shuttlepro_buttons_are_learned_too(app: Any) -> None:
     engine = StubEngine(DEVICES)
     d = PreferencesDialog(None, engine, "controlSurfaces", commands=lambda: COMMANDS)
     device = find(d, QtWidgets.QComboBox, "settings.controlSurfaces.assign.device")
@@ -327,7 +330,7 @@ def test_shuttlepro_buttons_are_learned_too(app):
     assert saved == [{"device": SHUTTLE, "enabled": True, "profile": "", "bindings": [{"control": button, "command": "markers.markIn"}]}]
 
 
-def test_a_fader_is_learned_onto_a_mixer_strip(app):
+def test_a_fader_is_learned_onto_a_mixer_strip(app: Any) -> None:
     engine = StubEngine(DEVICES)
     d = PreferencesDialog(None, engine, "controlSurfaces", commands=lambda: COMMANDS)
     command = find(d, QtWidgets.QComboBox, "settings.controlSurfaces.assign.command")
@@ -348,7 +351,7 @@ def test_a_fader_is_learned_onto_a_mixer_strip(app):
     assert rows(again, "command") == ["A2 Volume (fader)"]
 
 
-def test_mixer_strip_follows_a_fader(app):
+def test_mixer_strip_follows_a_fader(app: Any) -> None:
     """``TrackMixerPanel.surface_value``: touch with the fader's taper (volume) or -100..100
     (pan), one release after the control rests; an unknown strip does nothing."""
     from PySide6 import QtTest
@@ -358,7 +361,7 @@ def test_mixer_strip_follows_a_fader(app):
     m = TrackMixerPanel()
     m.strips_data = [{"id": 7, "ref": "A1", "kind": "audio"}, {"id": 0, "ref": "Mix", "kind": "mix"}]
     m.now = 1234
-    sent: list[tuple[str, dict]] = []
+    sent: list[tuple[str, dict[str, Any]]] = []
     m.command.connect(lambda c, p: sent.append((c, p)))
     m.SURFACE_RELEASE_MS = 50
     assert m.surface_value("volume", "A1", 0.76)
@@ -366,15 +369,15 @@ def test_mixer_strip_follows_a_fader(app):
     assert m.surface_value("pan", "Mix", 0.25)
     assert not m.surface_value("volume", "A9", 0.5)
     assert sent[0] == ("mixer.touch", {"strip": 7, "lane": "volume", "value": pos_to_db(0.76), "time": 1234})
-    assert abs(sent[0][1]["value"]) < 0.01, "0.76 of the way is 0 dB on the taper"
-    assert abs(sent[1][1]["value"] - 15.0) < 1e-9, "the top is +15 dB"
+    assert abs(cast(float, sent[0][1]["value"])) < 0.01, "0.76 of the way is 0 dB on the taper"
+    assert abs(cast(float, sent[1][1]["value"]) - 15.0) < 1e-9, "the top is +15 dB"
     assert sent[2] == ("mixer.touch", {"strip": 0, "lane": "pan", "value": -50.0, "time": 1234})
     QtTest.QTest.qWait(200)
     releases = [p for c, p in sent if c == "mixer.release"]
     assert sorted((p["strip"], p["lane"]) for p in releases) == [(0, "pan"), (7, "volume")], "one release per moved lane"
 
 
-def test_assignments_need_a_controller(app):
+def test_assignments_need_a_controller(app: Any) -> None:
     engine = StubEngine({"enabled": True, "devices": [], "problems": []})
     d = PreferencesDialog(None, engine, "controlSurfaces", commands=lambda: COMMANDS)
     assert "Connect a MIDI controller or a ShuttlePRO" in find(d, QtWidgets.QLabel, "settings.controlSurfaces.assign.empty").text()
@@ -423,7 +426,7 @@ def test_real_engine_reports_control_surfaces(app: Any, tmp_path: Path) -> None:
 
 
 @pytest.mark.skipif(_real_engine() is None, reason="Rust engine not built (cargo build -p cfa4-cli)")
-def test_main_window_runs_what_a_control_surface_asks(app, tmp_path: Path):
+def test_main_window_runs_what_a_control_surface_asks(app: Any, tmp_path: Path) -> None:
     """``surfaceAction`` runs its command as the command's key would: a Qt-run command through its
     action, an engine command through the menu path; an unknown one says so in the status bar."""
     import time
@@ -434,7 +437,9 @@ def test_main_window_runs_what_a_control_surface_asks(app, tmp_path: Path):
     from cfa4_qt.main_window import MainWindow
 
     settings = QtCore.QSettings(str(tmp_path / "s.ini"), QtCore.QSettings.Format.IniFormat)
-    engine = EngineClient(_real_engine(), ["--demo", "--data-dir", str(tmp_path / "data")])
+    binary = _real_engine()
+    assert binary is not None
+    engine = EngineClient(binary, ["--demo", "--data-dir", str(tmp_path / "data")])
     win = MainWindow(engine, settings)
     engine.start()
     try:
@@ -449,8 +454,8 @@ def test_main_window_runs_what_a_control_surface_asks(app, tmp_path: Path):
         win.registry.local_actions["playback.toggle"].triggered.connect(lambda *_: fired.append(1))
         win._on_event({"event": "surfaceAction", "command": "playback.toggle", "params": {}, "device": NANO, "control": CC41})
         assert fired == [1]
-        ran: list[tuple[str, dict]] = []
-        win.run_menu_command = lambda cid, params: ran.append((cid, params))
+        ran: list[tuple[str, dict[str, Any]]] = []
+        cast(Any, win).run_menu_command = lambda cid, params: ran.append((cid, params))
         enabled = next(c for c, cmd in win.registry.commands.items() if cmd.enabled and not cmd.needs_params and c not in win.registry.local_actions)
         win._on_event({"event": "surfaceAction", "command": enabled, "params": {}})
         assert ran == [(enabled, {})]
@@ -458,13 +463,13 @@ def test_main_window_runs_what_a_control_surface_asks(app, tmp_path: Path):
         assert "no.such.command" in win.statusBar().currentMessage()
         # the shuttle ring plays the focused monitor at its speed; 0 stops
         speeds: list[float] = []
-        win.focused_monitor().shuttle_to = speeds.append
+        cast(Any, win.focused_monitor()).shuttle_to = speeds.append
         win._on_event({"event": "surfaceAction", "command": "playback.shuttleSpeed", "params": {"speed": -1.5}})
         win._on_event({"event": "surfaceAction", "command": "playback.shuttleSpeed", "params": {"speed": "fast"}})
         assert speeds == [-1.5]
         # a fader or knob moves its mixer strip
-        moved: list[tuple] = []
-        win.mixer.surface_value = lambda *a: moved.append(a)
+        moved: list[tuple[Any, ...]] = []
+        cast(Any, win.mixer).surface_value = lambda *a: moved.append(a)
         win._on_event({"event": "surfaceAction", "command": "mixer.stripVolume", "params": {"strip": "A1", "value": 0.5}})
         win._on_event({"event": "surfaceAction", "command": "mixer.stripPan", "params": {"strip": "Mix", "value": 1}})
         win._on_event({"event": "surfaceAction", "command": "mixer.stripPan", "params": {"strip": "Mix"}})
@@ -475,7 +480,7 @@ def test_main_window_runs_what_a_control_surface_asks(app, tmp_path: Path):
         engine.stop()
 
 
-def test_monitor_shuttle_to_plays_at_the_ring_speed(app):
+def test_monitor_shuttle_to_plays_at_the_ring_speed(app: Any) -> None:
     """``Monitor.shuttle_to``: the speed, capped at 8×; the same speed again does not restart;
     0 stops."""
     from cfa4_qt.panels.monitor import Monitor
@@ -497,9 +502,9 @@ def test_monitor_shuttle_to_plays_at_the_ring_speed(app):
             self.playing = False
 
     m = Fake()
-    Monitor.shuttle_to(m, 2.0)
-    Monitor.shuttle_to(m, 2.0)
-    Monitor.shuttle_to(m, -60)
-    Monitor.shuttle_to(m, 0)
+    Monitor.shuttle_to(cast(Any, m), 2.0)
+    Monitor.shuttle_to(cast(Any, m), 2.0)
+    Monitor.shuttle_to(cast(Any, m), -60)
+    Monitor.shuttle_to(cast(Any, m), 0)
     assert m.calls == [("play", 2.0), ("play", -8.0), ("stop", 0.0)]
     assert m.stop_at is None and m.rest_at is None
