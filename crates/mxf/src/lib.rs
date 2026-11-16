@@ -25,6 +25,7 @@
 
 mod anc;
 pub mod as02;
+pub mod as02_version;
 pub mod as11;
 pub mod crypt;
 mod essence;
