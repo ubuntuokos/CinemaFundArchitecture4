@@ -123,6 +123,7 @@ const LAYERS: &[(&str, u8)] = &[
     ("render", 3),
     ("gpu", 3),
     ("golden", 3),
+    ("cinema-acceptance", 3),
     ("scopes", 3),
     ("qc", 3),
     ("playback", 3),
