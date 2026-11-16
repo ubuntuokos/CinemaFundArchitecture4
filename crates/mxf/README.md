@@ -338,8 +338,11 @@ w.finish()?;
 file list with roles (Annex B), identifiers (a file whose own id is a UMID gets the UUID or UMID URN
 of 9.2.1), sizes, paths and media integrity checks, and the layout rules of 4.3.7 / 4.3.8 (version
 files in the root, essence components under `media/`, a folder entry per subfolder, a simple bundle
-with one version file named like the folder). It does not open the MXF files; reading the
-version file (OP1b with external essence) and the import / export come next (#1363).
+with one version file named like the folder). It does not open the MXF files.
+`as02_version::read_version` reads a version file (OP1b / OP2 / OP3 header metadata with external
+essence): the material package's tracks with their clips (file package UMID, track, start,
+duration; fillers), each file package's network locator, and the breaches of sections 4.3.5 / 5.2
+/ 5.4 in `problems`. The bundle import / export come next (#1363).
 
 ## AS-11 descriptive metadata
 
