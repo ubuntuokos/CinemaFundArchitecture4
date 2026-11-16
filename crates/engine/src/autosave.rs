@@ -455,9 +455,23 @@ impl Preferences {
     /// Set one key (type-checked against the schema, values clamped to their ranges).
     pub fn set(&mut self, key: &str, value: Value) -> Result<(), String> {
         let mut v = self.to_value();
+        let parts: Vec<&str> = key.split('.').filter(|k| !k.is_empty()).collect();
+        if parts.is_empty() {
+            return Err(format!("unknown preference `{key}`"));
+        }
+        // Leaves omitted while they hold their default (`skip_serializing_if`) stay settable from
+        // Settings OK. Unknown keys still fail, so agents cannot invent preference paths.
+        const OMITTED_DEFAULTS: &[&str] = &["controlSurfaces.learnFirstMs", "controlSurfaces.learnSilenceMs"];
         let mut slot = &mut v;
-        for k in key.split('.') {
-            slot = slot.get_mut(k).ok_or_else(|| format!("unknown preference `{key}`"))?;
+        for (i, k) in parts.iter().enumerate() {
+            let last = i + 1 == parts.len();
+            if last && slot.get(*k).is_none() && OMITTED_DEFAULTS.contains(&key) {
+                let Some(obj) = slot.as_object_mut() else {
+                    return Err(format!("unknown preference `{key}`"));
+                };
+                obj.insert((*k).to_string(), Value::Null);
+            }
+            slot = slot.get_mut(*k).ok_or_else(|| format!("unknown preference `{key}`"))?;
         }
         if slot.is_object() {
             return Err(format!("`{key}` is a group; set one of its keys"));

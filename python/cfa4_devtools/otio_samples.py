@@ -69,7 +69,15 @@ def file_path(url: str) -> str:
 
 
 def expect_media(otio: Any, clip: Any) -> dict[str, Any]:
-    """The project item a clip must point at, from its active media reference."""
+    """The project item a clip must point at, from its active media reference, and the keys of the
+    other references CFA4 keeps to write back (OTIO-2.4)."""
+    media = _expect_active_media(otio, clip)
+    others = sorted(set(clip.media_references()) - {clip.active_media_reference_key})
+    media["other_references"] = others
+    return media
+
+
+def _expect_active_media(otio: Any, clip: Any) -> dict[str, Any]:
     ref = clip.media_reference
     if isinstance(ref, otio.schema.ExternalReference) and ref.target_url.strip():
         return {"ref": "file", "path": file_path(ref.target_url), "offline": False}

@@ -4676,19 +4676,83 @@
 	AS-11 Core	AS-11 Core
 	AS-11 Parts	AS-11 部分
 	AS-11 UK DPP	AS-11 UK DPP
-
-# Control Surfaces settings page (CS-1, #1187)
-	Devices	设备
-	Use	使用
-	Device	设备
-	MIDI	MIDI
-	HID jog/shuttle	HID 飞梭
-	OSC	OSC
+# Control surfaces (qt-control-surfaces-page, CFA4-CONTROL-SURFACE-001)
 	Connected	已连接
+	Device	设备
+	Devices	设备
+	MIDI	MIDI
 	Not connected	未连接
-	Disabled	已禁用
+	OSC	OSC
+	Use	使用
 	{device} ({port})	{device} ({port})
 	{name}: {error}	{name}: {error}
+# Control surfaces (midi-monitor, CFA4-CONTROL-SURFACE-001)
+	MIDI Monitor	MIDI 监视器
+	Press Start Monitor, then move a control.	按“开始监视”，然后移动一个控件。
+	Start Monitor	开始监视
+	Stop Monitor	停止监视
+	… {count} messages not shown (too many at once)	… {count} 条消息未显示（同时到达太多）
+# Control surfaces (midi-learn, CFA4-CONTROL-SURFACE-001)
+	A control surface asked for {command}, which does not exist.	控制台请求了不存在的 {command}。
+	Assignments	分配
+	Cancel Learn	取消学习
+	Control	控件
+	Learn	学习
+	Remove this assignment	移除此分配
+	{control} runs {command}.	{control} 运行 {command}。
+# Control surfaces (shuttlepro, CFA4-CONTROL-SURFACE-001)
+	Button {n}	按钮 {n}
+# Control surfaces (continuous-values, CFA4-CONTROL-SURFACE-001)
+	{strip} Pan (knob)	{strip} 声像（旋钮）
+	{strip} Volume (fader)	{strip} 音量（推子）
+# Control surfaces (F1 Learn and profile, CFA4-CONTROL-SURFACE-001)
+	Assignments run when a button is pressed (a fader or knob counts as pressed past half way); a fader or knob assigned to a mixer strip moves its volume or pan. A ShuttlePRO's shuttle ring plays at its profile's speeds and its jog wheel steps frame by frame. Endless encoders and feedback to the controller (lights, motor faders) come in a later version.	分配在按下按钮时执行（推子或旋钮过半即视为按下）；分配到混音条的推子或旋钮会移动音量或声像。ShuttlePRO 的穿梭环按配置的速度播放，飞梭轮逐帧步进。无极编码器和对控制器的回传（指示灯、电动推子）将在以后的版本加入。
+	First message (ms)	首条消息（毫秒）
+	Silence (ms)	静音（毫秒）
+	Waiting for the control to settle…	正在等待控件停稳…
+	Type: {hint}. Confirm this assignment.	类型：{hint}。确认此分配。
+	That control is already assigned. Confirm replaces it.	该控件已有分配。确认将替换它。
+	Learn timed out.	学习已超时。
+	Confirm	确认
+	Reject	拒绝
+	Shows every MIDI message from the controllers as it arrives, to check that a controller sends and what it sends. MIDI Clock, Active Sensing and MIDI Time Code are left out.	控制器的每条 MIDI 消息到达时都会显示，用来确认控制器是否在发送以及发送了什么。MIDI 时钟、Active Sensing 和 MIDI 时间码默认不显示。
+	Pick a command (or a mixer strip for a fader or knob), press Learn, then press the button or move the control past half way. Confirm keeps the assignment. OK saves the assignments.	选择一条命令（推子或旋钮则选择混音条），按学习，再按按钮或把控件移过一半。确认保留分配。确定保存分配。
+	All devices	所有设备
+	Builtin: {name}	内置：{name}
+	Capturing	捕获中
+	Confirmed	已确认
+	Conflict	冲突
+	Connect a MIDI controller or a ShuttlePRO to edit its profile.	要编辑配置，请连接 MIDI 控制器或 ShuttlePRO。
+	Control Surfaces…	控制界面…
+	Filter messages	筛选消息
+	Idle	空闲
+	Kernel dropped: {count}	内核丢弃：{count}
+	Learn Assignments…	学习分配…
+	Load profile	加载配置
+	MIDI Monitor…	MIDI 监视器…
+	Mute shuttle sound	静音穿梭声音
+	No conflicts.	没有冲突。
+	No profile warnings.	没有配置警告。
+	No project profile is stored.	没有保存的项目配置。
+	OK writes the preferences and the profile file together.	确定会同时写入首选项和配置文件。
+	Online	在线
+	Pending	待定
+	Pickup (14-bit)	拾取（14 位）
+	Pickup (7-bit)	拾取（7 位）
+	Profile warnings	配置警告
+	Rejected	已拒绝
+	Show Active Sensing	显示 Active Sensing
+	Show MIDI Clock	显示 MIDI 时钟
+	Show MIDI Time Code	显示 MIDI 时间码
+	The profile file is damaged. Preferences and the built-in profile stay in use.	配置文件已损坏。首选项和内置配置仍在使用。
+	Timed out	已超时
+	Type: {hint}	类型：{hint}
+	User profile file	用户配置文件
+	{received} received, {dispatched} dispatched, {coalesced} coalesced, {stalls} stalls, {errors} errors	{received} 已接收，{dispatched} 已分发，{coalesced} 已合并，{stalls} 停滞，{errors} 错误
+
+# Control Surfaces settings page (CS-1, #1187)
+	HID jog/shuttle	HID 飞梭
+	Disabled	已禁用
 	Looking for devices…	正在查找设备…
 	No MIDI controller or jog/shuttle device was found. Connect one and press Refresh.	未找到 MIDI 控制器或飞梭设备。请连接一个设备，然后按“刷新”。
 	Control Surfaces	控制台
@@ -4697,14 +4761,12 @@
 	CFA4 ShuttlePRO	CFA4 ShuttlePRO
 	Kdenlive-style ShuttlePRO	Kdenlive 风格 ShuttlePRO
 	Generic MIDI	通用 MIDI
-
 # LTC timecode read from clip audio (TC-7, #1285)
 	Read from LTC Audio	从 LTC 音频读取
 	Find SMPTE LTC on the clip's audio and use the timecode it gives the first frame	在片段音频中查找 SMPTE LTC，并使用它为第一帧给出的时间码
 	Read Timecode from LTC Audio	从 LTC 音频读取时间码
 # Credits: voices (the Voice column) in the block's properties (F10-C16)
 	Voices	配音
-
 # Timecode sync varispeed and user bits (TC-8, #1308)
 	Varispeed: adjust the playback speed instead of seeking	变速：调整播放速度而不是跳转
 	User bits	用户位

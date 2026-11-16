@@ -4686,19 +4686,83 @@
 	AS-11 Core	AS-11 Core
 	AS-11 Parts	Bagian AS-11
 	AS-11 UK DPP	AS-11 UK DPP
-
-# Control Surfaces settings page (CS-1, #1187)
-	Devices	Perangkat
-	Use	Gunakan
-	Device	Perangkat
-	MIDI	MIDI
-	HID jog/shuttle	HID jog/shuttle
-	OSC	OSC
+# Control surfaces (qt-control-surfaces-page, CFA4-CONTROL-SURFACE-001)
 	Connected	Terhubung
-	Not connected	Tidak terhubung
+	Device	Perangkat
+	Devices	Perangkat
 	Disabled	Dinonaktifkan
+	MIDI	MIDI
+	Not connected	Tidak terhubung
+	OSC	OSC
+	Use	Gunakan
 	{device} ({port})	{device} ({port})
 	{name}: {error}	{name}: {error}
+# Control surfaces (midi-monitor, CFA4-CONTROL-SURFACE-001)
+	MIDI Monitor	Monitor MIDI
+	Press Start Monitor, then move a control.	Tekan Mulai Monitor, lalu gerakkan sebuah kontrol.
+	Start Monitor	Mulai Monitor
+	Stop Monitor	Hentikan Monitor
+	… {count} messages not shown (too many at once)	… {count} pesan tidak ditampilkan (terlalu banyak sekaligus)
+# Control surfaces (midi-learn, CFA4-CONTROL-SURFACE-001)
+	A control surface asked for {command}, which does not exist.	Sebuah permukaan kontrol meminta {command}, yang tidak ada.
+	Assignments	Penetapan
+	Cancel Learn	Batalkan Pembelajaran
+	Control	Kontrol
+	Learn	Pelajari
+	Remove this assignment	Hapus penetapan ini
+	{control} runs {command}.	{control} menjalankan {command}.
+# Control surfaces (shuttlepro, CFA4-CONTROL-SURFACE-001)
+	Button {n}	Tombol {n}
+# Control surfaces (continuous-values, CFA4-CONTROL-SURFACE-001)
+	{strip} Pan (knob)	{strip} pan (kenop)
+	{strip} Volume (fader)	{strip} volume (fader)
+# Control surfaces (F1 Learn and profile, CFA4-CONTROL-SURFACE-001)
+	Assignments run when a button is pressed (a fader or knob counts as pressed past half way); a fader or knob assigned to a mixer strip moves its volume or pan. A ShuttlePRO's shuttle ring plays at its profile's speeds and its jog wheel steps frame by frame. Endless encoders and feedback to the controller (lights, motor faders) come in a later version.	Penetapan berjalan saat tombol ditekan (fader atau kenop dihitung ditekan setelah lewat setengah); fader atau kenop yang ditetapkan ke jalur mixer menggerakkan volume atau pan. Cincin shuttle ShuttlePRO memutar pada kecepatan profilnya dan roda jog melangkah per bingkai. Encoder tanpa ujung dan umpan balik ke pengontrol (lampu, fader bermotor) menyusul di versi berikutnya.
+	First message (ms)	Pesan pertama (ms)
+	Silence (ms)	Senyap (ms)
+	Waiting for the control to settle…	Menunggu kendali menetap…
+	Type: {hint}. Confirm this assignment.	Jenis: {hint}. Konfirmasi penetapan ini.
+	That control is already assigned. Confirm replaces it.	Kendali itu sudah ditetapkan. Konfirmasi menggantinya.
+	Learn timed out.	Belajar kehabisan waktu.
+	Confirm	Konfirmasi
+	Reject	Tolak
+	Shows every MIDI message from the controllers as it arrives, to check that a controller sends and what it sends. MIDI Clock, Active Sensing and MIDI Time Code are left out.	Menampilkan setiap pesan MIDI dari pengontrol saat tiba, untuk memeriksa apakah pengontrol mengirim dan apa yang dikirim. Jam MIDI, Active Sensing, dan kode waktu MIDI dihilangkan.
+	Pick a command (or a mixer strip for a fader or knob), press Learn, then press the button or move the control past half way. Confirm keeps the assignment. OK saves the assignments.	Pilih perintah (atau jalur mixer untuk fader atau kenop), tekan Pelajari, lalu tombol, atau gerakkan kendali melewati setengah. Konfirmasi menyimpan penetapan. OK menyimpan penetapan.
+	All devices	Semua perangkat
+	Builtin: {name}	Bawaan: {name}
+	Capturing	Merekam
+	Confirmed	Dikonfirmasi
+	Conflict	Konflik
+	Connect a MIDI controller or a ShuttlePRO to edit its profile.	Hubungkan pengontrol MIDI atau ShuttlePRO untuk menyunting profilnya.
+	Control Surfaces…	Permukaan kontrol…
+	Filter messages	Saring pesan
+	Idle	Diam
+	Kernel dropped: {count}	Dibuang kernel: {count}
+	Learn Assignments…	Pelajari penetapan…
+	Load profile	Muat profil
+	MIDI Monitor…	Monitor MIDI…
+	Mute shuttle sound	Bisukan suara shuttle
+	No conflicts.	Tidak ada konflik.
+	No profile warnings.	Tidak ada peringatan profil.
+	No project profile is stored.	Tidak ada profil proyek yang tersimpan.
+	OK writes the preferences and the profile file together.	OK menulis preferensi dan berkas profil bersama-sama.
+	Online	Daring
+	Pending	Menunggu
+	Pickup (14-bit)	Pickup (14 bit)
+	Pickup (7-bit)	Pickup (7 bit)
+	Profile warnings	Peringatan profil
+	Rejected	Ditolak
+	Show Active Sensing	Tampilkan Active Sensing
+	Show MIDI Clock	Tampilkan jam MIDI
+	Show MIDI Time Code	Tampilkan kode waktu MIDI
+	The profile file is damaged. Preferences and the built-in profile stay in use.	Berkas profil rusak. Preferensi dan profil bawaan tetap dipakai.
+	Timed out	Waktu habis
+	Type: {hint}	Jenis: {hint}
+	User profile file	Berkas profil pengguna
+	{received} received, {dispatched} dispatched, {coalesced} coalesced, {stalls} stalls, {errors} errors	{received} diterima, {dispatched} dikirim, {coalesced} digabung, {stalls} antrean, {errors} kesalahan
+
+# Control Surfaces settings page (CS-1, #1187)
+	HID jog/shuttle	HID jog/shuttle
 	Looking for devices…	Mencari perangkat…
 	No MIDI controller or jog/shuttle device was found. Connect one and press Refresh.	Tidak ditemukan pengontrol MIDI atau perangkat jog/shuttle. Hubungkan salah satu lalu tekan Segarkan.
 	Control Surfaces	Permukaan Kontrol
@@ -4707,14 +4771,12 @@
 	CFA4 ShuttlePRO	CFA4 ShuttlePRO
 	Kdenlive-style ShuttlePRO	ShuttlePRO gaya Kdenlive
 	Generic MIDI	MIDI umum
-
 # LTC timecode read from clip audio (TC-7, #1285)
 	Read from LTC Audio	Baca dari Audio LTC
 	Find SMPTE LTC on the clip's audio and use the timecode it gives the first frame	Cari SMPTE LTC pada audio klip dan gunakan timecode yang diberikannya untuk frame pertama
 	Read Timecode from LTC Audio	Baca Timecode dari Audio LTC
 # Credits: voices (the Voice column) in the block's properties (F10-C16)
 	Voices	Suara
-
 # Timecode sync varispeed and user bits (TC-8, #1308)
 	Varispeed: adjust the playback speed instead of seeking	Varispeed: sesuaikan kecepatan putar alih-alih melompat
 	User bits	Bit pengguna

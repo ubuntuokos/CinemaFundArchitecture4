@@ -61,7 +61,9 @@ pub use dcp_out::{
     rgba_to_xyz12,
 };
 pub use hls_out::{HlsFiles, SEGMENT_SECONDS as HLS_SEGMENT_SECONDS, hls_files};
-pub use imf_out::{IMF_CONTENT_KINDS, IMF_MAX_SIZE, IMF_RATES, imf_content_kind, imf_profile, imf_rate, rgba_to_rgb10};
+pub use imf_out::{
+    IMF_CONTENT_KINDS, IMF_MAX_SIZE, IMF_RATES, IMF_TIMED_TEXT_KINDS, imf_content_kind, imf_profile, imf_rate, imf_timed_text_sequence, rgba_to_rgb10,
+};
 pub use job::{Exporter, Step, stepped};
 pub use mpeg_out::Mpeg2Container;
 pub use mxf_out::opatom_audio_paths;
@@ -522,10 +524,12 @@ pub struct ExportSettings {
     #[serde(default)]
     pub dcp_language: String,
     /// DCP: write the sequence's first caption track as subtitles (#938): an ST 428-7 subtitle
-    /// reel in an ST 429-5 timed text track file, the CPL's `MainSubtitle`.
+    /// reel in an ST 429-5 timed text track file, the CPL's `MainSubtitle`. IMF (#1234): an
+    /// IMSC1 document in an ST 2067-2 timed text track file, a timed text virtual track of
+    /// [`ExportSettings::imf_timed_text_kind`].
     #[serde(default)]
     pub dcp_subtitles: bool,
-    /// DCP subtitle language, an RFC 5646 tag (empty = [`ExportSettings::dcp_language`]).
+    /// DCP / IMF subtitle language, an RFC 5646 tag (empty = [`ExportSettings::dcp_language`]).
     #[serde(default)]
     pub dcp_subtitle_language: String,
     /// DCP subtitle font: an OpenType / TrueType file embedded in the timed text track file
@@ -539,6 +543,11 @@ pub struct ExportSettings {
     /// [`ExportSettings::dcp_language`].
     #[serde(default)]
     pub imf_content_kind: String,
+    /// IMF timed text kind of the subtitles ([`ExportSettings::dcp_subtitles`] writes them for
+    /// IMF too, as IMSC1 in an ST 2067-2 timed text track file): one of [`IMF_TIMED_TEXT_KINDS`],
+    /// empty = `subtitles`.
+    #[serde(default)]
+    pub imf_timed_text_kind: String,
     /// Encode display-referred SDR (Rec. 709, tone mapped) even when the sequence works in
     /// Rec. 2100 PQ/HLG. Otherwise H.264 and ProRes exports of an HDR sequence are encoded in the
     /// sequence's HDR space and signal it (VUI / `colr` / `mdcv` / `clli` / SEI).
@@ -829,6 +838,7 @@ impl Default for ExportSettings {
             dcp_subtitle_font: String::new(),
             imf_lossless: false,
             imf_content_kind: String::new(),
+            imf_timed_text_kind: String::new(),
             sdr: false,
             alpha: false,
             exr_compression: ExrCompression::None,
@@ -2077,21 +2087,32 @@ fn prores_factory(format: Format, w: u32, h: u32, rate: FrameRate, s: &ExportSet
     })
 }
 
-/// The DNxHR profile named by [`ExportSettings::dnx_profile`].
+/// The DNxHR or DNxHD profile named by [`ExportSettings::dnx_profile`]: `lb`, `sq`, `hq`,
+/// `hqx`, or a 4:2:2 DNxHD compression ID as `hd1235`, `hd1237`, `hd1238`, `hd1250`, `hd1251`,
+/// `hd1252`, `hd1253` (each codes one raster).
 pub fn dnx_profile(name: &str) -> cfa4_dnx::Profile {
     use cfa4_dnx::Profile;
     match name.to_ascii_lowercase().as_str() {
         "lb" => Profile::Lb,
         "sq" => Profile::Sq,
         "hqx" => Profile::Hqx,
+        "hd1235" => Profile::Hd1235,
+        "hd1237" => Profile::Hd1237,
+        "hd1238" => Profile::Hd1238,
+        "hd1250" => Profile::Hd1250,
+        "hd1251" => Profile::Hd1251,
+        "hd1252" => Profile::Hd1252,
+        "hd1253" => Profile::Hd1253,
         _ => Profile::Hq,
     }
 }
 
-/// DNxHR encoder (RGBA8 or HDR floats → BT.709 / BT.2020 limited-range 4:2:2; 8-bit for
-/// LB/SQ/HQ, 10-bit for HQX).
+/// DNxHR / DNxHD encoder (RGBA8 or HDR floats → BT.709 / BT.2020 limited-range 4:2:2; 8-bit
+/// for LB/SQ/HQ and the 8-bit DNxHD IDs, 10-bit for HQX and CIDs 1235 / 1250). QuickTime calls
+/// DNxHD `AVdn` and DNxHR `AVdh`.
 struct DnxEncoder {
     enc: cfa4_dnx::Encoder,
+    fourcc: [u8; 4],
     w: u32,
     h: u32,
     rate: FrameRate,
@@ -2100,7 +2121,7 @@ struct DnxEncoder {
 
 impl VideoEncoder for DnxEncoder {
     fn sample_entry(&self) -> SampleEntry {
-        let mut e = SampleEntry::dnx(cfa4_isobmff::FourCc(*b"AVdh"), self.w as u16, self.h as u16);
+        let mut e = SampleEntry::dnx(cfa4_isobmff::FourCc(self.fourcc), self.w as u16, self.h as u16);
         self.signal.apply_to(&mut e, true);
         e
     }
@@ -2127,12 +2148,22 @@ impl VideoEncoder for DnxEncoder {
 
 fn dnx_factory(format: Format, w: u32, h: u32, rate: FrameRate, s: &ExportSettings) -> Option<Result<Box<dyn VideoEncoder>>> {
     (format == Format::DnxHr).then(|| {
-        let mut cfg = cfa4_dnx::EncoderConfig::new(dnx_profile(&s.dnx_profile), w, h);
+        let profile = dnx_profile(&s.dnx_profile);
+        if let Some((rw, rh, _)) = profile.hd_raster()
+            && (rw, rh) != (w, h)
+        {
+            return Err(ExportError::Unsupported(format!(
+                "{} codes only {rw}×{rh} pictures, not {w}×{h}: set the output size to {rw}×{rh} or choose a DNxHR profile",
+                profile.name()
+            )));
+        }
+        let fourcc = if profile.hd_raster().is_some() { *b"AVdn" } else { *b"AVdh" };
+        let mut cfg = cfa4_dnx::EncoderConfig::new(profile, w, h);
         if s.signal.primaries == 9 {
             cfg.color_volume = cfa4_dnx::ColorVolume::Bt2020Ncl;
         }
         let enc = cfa4_dnx::Encoder::with_config(cfg).map_err(|e| ExportError::Encode(e.to_string()))?;
-        Ok(Box::new(DnxEncoder { enc, w, h, rate, signal: s.signal }) as Box<dyn VideoEncoder>)
+        Ok(Box::new(DnxEncoder { enc, fourcc, w, h, rate, signal: s.signal }) as Box<dyn VideoEncoder>)
     })
 }
 
