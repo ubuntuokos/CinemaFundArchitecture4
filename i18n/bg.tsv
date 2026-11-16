@@ -4681,35 +4681,97 @@ export.summary	Low	ниско
 	AS-11 Core	AS-11 Core
 	AS-11 Parts	AS-11 части
 	AS-11 UK DPP	AS-11 UK DPP
-
-# Control Surfaces settings page (CS-1, #1187)
-	Devices	Устройства
-	Use	Използване
-	Device	Устройство
-	MIDI	MIDI
-	HID jog/shuttle	HID jog/shuttle
-	OSC	OSC
+# Control surfaces (qt-control-surfaces-page, CFA4-CONTROL-SURFACE-001)
 	Connected	Свързано
-	Not connected	Не е свързано
+	Device	Устройство
+	Devices	Устройства
 	Disabled	Изключено
+	HID jog/shuttle	HID jog/shuttle
+	MIDI	MIDI
+	Not connected	Не е свързано
+	OSC	OSC
+	Use	Използване
 	{device} ({port})	{device} ({port})
 	{name}: {error}	{name}: {error}
+# Control surfaces (midi-monitor, CFA4-CONTROL-SURFACE-001)
+	MIDI Monitor	MIDI монитор
+	Press Start Monitor, then move a control.	Натиснете „Старт на монитора“, след това преместете контрола.
+	Start Monitor	Старт на монитора
+	Stop Monitor	Спиране на монитора
+	… {count} messages not shown (too many at once)	… {count} съобщения не са показани (твърде много наведнъж)
+# Control surfaces (midi-learn, CFA4-CONTROL-SURFACE-001)
+	A control surface asked for {command}, which does not exist.	Контролна повърхност поиска {command}, която не съществува.
+	Assignments	Присвоявания
+	Cancel Learn	Отказ от обучението
+	Control	Контрола
+	Learn	Обучение
+	Remove this assignment	Премахване на това присвояване
+	{control} runs {command}.	{control} изпълнява {command}.
+# Control surfaces (shuttlepro, CFA4-CONTROL-SURFACE-001)
+	Button {n}	Бутон {n}
+# Control surfaces (continuous-values, CFA4-CONTROL-SURFACE-001)
+	{strip} Pan (knob)	{strip} панорама (копче)
+	{strip} Volume (fader)	{strip} сила на звука (фейдър)
+# Control surfaces (F1 Learn and profile, CFA4-CONTROL-SURFACE-001)
+	Control Surfaces	Контролни повърхности
+	Assignments run when a button is pressed (a fader or knob counts as pressed past half way); a fader or knob assigned to a mixer strip moves its volume or pan. A ShuttlePRO's shuttle ring plays at its profile's speeds and its jog wheel steps frame by frame. Endless encoders and feedback to the controller (lights, motor faders) come in a later version.	Назначенията тръгват при натискане на бутон (фейдър или копче се брои за натиснато след половината); фейдър или копче към лента на миксера мести силата или панорамата. Пръстенът shuttle на ShuttlePRO пуска със скоростите на профила, а колелото jog стъпва по кадър. Безкрайни енкодери и отговор към контролера (лампи, моторни фейдъри) идват в по-късна версия.
+	First message (ms)	Първо съобщение (ms)
+	Silence (ms)	Тишина (ms)
+	Waiting for the control to settle…	Изчакване органът да се успокои…
+	Type: {hint}. Confirm this assignment.	Тип: {hint}. Потвърдете това назначение.
+	That control is already assigned. Confirm replaces it.	Този орган вече е назначен. Потвърждението го заменя.
+	Learn timed out.	Обучението изтече.
+	Confirm	Потвърди
+	Reject	Отхвърли
+	Shows every MIDI message from the controllers as it arrives, to check that a controller sends and what it sends. MIDI Clock, Active Sensing and MIDI Time Code are left out.	Показва всяко MIDI съобщение от контролерите при пристигане, за да се види дали контролер праща и какво. MIDI часовник, Active Sensing и MIDI времеви код се пропускат.
+	Pick a command (or a mixer strip for a fader or knob), press Learn, then press the button or move the control past half way. Confirm keeps the assignment. OK saves the assignments.	Изберете команда (или лента на миксера за фейдър или копче), натиснете Обучение, после бутона или преместете органа след половината. Потвърждението запазва назначението. OK записва назначенията.
+	All devices	Всички устройства
+	Builtin: {name}	Вграден: {name}
+	Capturing	Заснемане
+	Confirmed	Потвърдено
+	Conflict	Конфликт
+	Connect a MIDI controller or a ShuttlePRO to edit its profile.	Свържете MIDI контролер или ShuttlePRO, за да редактирате профила му.
+	Control Surfaces…	Повърхности за управление…
+	Filter messages	Филтриране на съобщения
+	Idle	В покой
+	Kernel dropped: {count}	Ядрото отхвърли: {count}
+	Learn Assignments…	Научаване на назначения…
+	Load profile	Зареждане на профил
+	MIDI Monitor…	MIDI монитор…
+	Mute shuttle sound	Заглушаване на звука на совалката
+	No conflicts.	Няма конфликти.
+	No profile warnings.	Няма предупреждения за профила.
+	No project profile is stored.	Няма записан профил на проекта.
+	OK writes the preferences and the profile file together.	OK записва настройките и файла на профила заедно.
+	Online	На линия
+	Pending	Изчаква
+	Pickup (14-bit)	Захващане (14 бита)
+	Pickup (7-bit)	Захващане (7 бита)
+	Profile warnings	Предупреждения за профила
+	Rejected	Отхвърлено
+	Show Active Sensing	Показване на Active Sensing
+	Show MIDI Clock	Показване на MIDI часовник
+	Show MIDI Time Code	Показване на MIDI времеви код
+	The profile file is damaged. Preferences and the built-in profile stay in use.	Файлът на профила е повреден. Настройките и вграденият профил остават в употреба.
+	Timed out	Времето изтече
+	Type: {hint}	Тип: {hint}
+	User profile file	Файл на потребителския профил
+	{received} received, {dispatched} dispatched, {coalesced} coalesced, {stalls} stalls, {errors} errors	{received} получени, {dispatched} изпратени, {coalesced} обединени, {stalls} изчаквания, {errors} грешки
+
+# Control Surfaces settings page (CS-1, #1187)
 	Looking for devices…	Търсене на устройства…
 	No MIDI controller or jog/shuttle device was found. Connect one and press Refresh.	Не е намерен MIDI контролер или jog/shuttle устройство. Свържете такова и натиснете „Опресняване“.
-	Control Surfaces	Контролни повърхности
 	Use control surfaces (MIDI controllers, jog/shuttle devices)	Използване на контролни повърхности (MIDI контролери, jog/shuttle устройства)
 	Mapping controls to commands, MIDI Learn and the MIDI Monitor come in a later version; the choices here are remembered until then.	Свързването на контролите с команди, MIDI Learn и MIDI мониторът идват в по-късна версия; дотогава изборът тук се запомня.
 	CFA4 ShuttlePRO	CFA4 ShuttlePRO
 	Kdenlive-style ShuttlePRO	ShuttlePRO в стил Kdenlive
 	Generic MIDI	Общ MIDI
-
 # LTC timecode read from clip audio (TC-7, #1285)
 	Read from LTC Audio	Четене от LTC звук
 	Find SMPTE LTC on the clip's audio and use the timecode it gives the first frame	Търсене на SMPTE LTC в звука на клипа и използване на времевия код, който той дава на първия кадър
 	Read Timecode from LTC Audio	Четене на времеви код от LTC звук
 # Credits: voices (the Voice column) in the block's properties (F10-C16)
 	Voices	Гласове
-
 # Timecode sync varispeed and user bits (TC-8, #1308)
 	Varispeed: adjust the playback speed instead of seeking	Varispeed: настройване на скоростта на възпроизвеждане вместо прескачане
 	User bits	Потребителски битове

@@ -56,6 +56,10 @@ impl Reply {
         Self { json: json!({"id": id, "ok": false, "error": error.to_string()}), binary: None }
     }
 
+    fn err_code(id: Value, error: impl std::fmt::Display, code: &str) -> Self {
+        Self { json: json!({"id": id, "ok": false, "error": error.to_string(), "code": code}), binary: None }
+    }
+
     fn with_binary(id: Value, result: Value, bytes: Vec<u8>) -> Self {
         Self { json: json!({"id": id, "ok": true, "result": result, "binary": bytes.len()}), binary: Some(bytes) }
     }
@@ -816,8 +820,10 @@ pub fn handle(s: &mut Session, id: Value, method: &str, params: Value) -> Option
                 "autosave": s.persistence.is_some(),
                 // unsaved changes of sessions that died: the GUI offers Recover / Not Now / Discard
                 "recovery": serde_json::to_value(s.recovery_candidates()).unwrap_or_default(),
-                // additive capabilities (the protocol number stays): `surface` = `surface.devices`
-                "features": ["surface"],
+                // additive capabilities (the protocol number stays): `surface` = `surface.devices`,
+                // `surfaceMonitor` = `surface.monitor` and its `surfaceMonitor` events,
+                // `surfaceLearn` = `surface.learn` and the assignments' `surfaceAction` events
+                "features": ["surface", "surfaceMonitor", "surfaceLearn"],
             }),
         ),
         "engine.execute" => {
@@ -918,6 +924,33 @@ pub fn handle(s: &mut Session, id: Value, method: &str, params: Value) -> Option
             Err(e) => Reply::err(id, e),
         },
         "surface.devices" => Reply::ok(id, crate::serve_surface::devices(s)),
+        "surface.monitor" => match crate::serve_surface::monitor(&params) {
+            Ok(v) => Reply::ok(id, v),
+            Err(e) => Reply::err_code(id, e.message, e.code),
+        },
+        "surface.learn" => match crate::serve_surface::learn(s, &params) {
+            Ok(v) => Reply::ok(id, v),
+            Err(e) => Reply::err_code(id, e.message, e.code),
+        },
+        "surface.learnCancel" => Reply::ok(id, crate::serve_surface::learn_cancel()),
+        "surface.learnConfirm" => match crate::serve_surface::learn_confirm(s, &params) {
+            Ok(v) => Reply::ok(id, v),
+            Err(e) => Reply::err_code(id, e.message, e.code),
+        },
+        "surface.inject" => match crate::serve_surface::inject(s, &params) {
+            Ok(v) => Reply::ok(id, v),
+            Err(e) => Reply::err_code(id, e.message, e.code),
+        },
+        "surface.clock" => match crate::serve_surface::clock(&params) {
+            Ok(v) => Reply::ok(id, v),
+            Err(e) => Reply::err_code(id, e.message, e.code),
+        },
+        "surface.enable" => match crate::serve_surface::enable(s, &params) {
+            Ok(v) => Reply::ok(id, v),
+            Err(e) => Reply::err_code(id, e.message, e.code),
+        },
+        "surface.state" => Reply::ok(id, crate::serve_surface::state(s)),
+        "surface.audit" => Reply::ok(id, crate::serve_surface::audit(s)),
         "session.state" => Reply::ok(
             id,
             json!({
@@ -1032,8 +1065,12 @@ pub fn run(mut s: Session) {
         let _ = std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| crate::serve_live::upkeep(&s)));
         syncing = sync_on;
         let mut broken = false;
+        let surface_events = match std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| crate::serve_surface::upkeep(&s))) {
+            Ok(v) => v,
+            Err(_) => vec![json!({"event": "surfaceError", "code": "internal", "error": "control surfaces: a fault was contained; the session continues"})],
+        };
         let engine_events = s.drain_events().into_iter().map(|ev| event_json(&ev));
-        for json in engine_events.chain(sync_events) {
+        for json in engine_events.chain(sync_events).chain(surface_events) {
             if write_reply(&mut out, &Reply { json, binary: None }).is_err() {
                 broken = true;
                 break;
@@ -1044,6 +1081,7 @@ pub fn run(mut s: Session) {
         }
     }
     crate::serve_tcsync::shutdown();
+    crate::serve_surface::shutdown();
     s.shutdown();
     crate::serve_shm::cleanup();
     crate::serve_live::stop();

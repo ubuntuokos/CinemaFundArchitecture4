@@ -4680,35 +4680,97 @@ export.summary	Low	χαμηλή
 	AS-11 Core	AS-11 Core
 	AS-11 Parts	Τμήματα AS-11
 	AS-11 UK DPP	AS-11 UK DPP
+# Control surfaces (qt-control-surfaces-page, CFA4-CONTROL-SURFACE-001)
+	Device	Συσκευή
+	Devices	Συσκευές
+	HID jog/shuttle	HID jog/shuttle
+	MIDI	MIDI
+	OSC	OSC
+	Use	Χρήση
+	{device} ({port})	{device} ({port})
+	{name}: {error}	{name}: {error}
+# Control surfaces (midi-monitor, CFA4-CONTROL-SURFACE-001)
+	MIDI Monitor	Παρακολούθηση MIDI
+	Press Start Monitor, then move a control.	Πατήστε «Έναρξη παρακολούθησης» και μετακινήστε ένα χειριστήριο.
+	Start Monitor	Έναρξη παρακολούθησης
+	Stop Monitor	Διακοπή παρακολούθησης
+	… {count} messages not shown (too many at once)	… {count} μηνύματα δεν εμφανίζονται (πάρα πολλά ταυτόχρονα)
+# Control surfaces (midi-learn, CFA4-CONTROL-SURFACE-001)
+	A control surface asked for {command}, which does not exist.	Μια επιφάνεια ελέγχου ζήτησε {command}, που δεν υπάρχει.
+	Assignments	Αντιστοιχίσεις
+	Cancel Learn	Ακύρωση εκμάθησης
+	Control	Χειριστήριο
+	Learn	Εκμάθηση
+	Remove this assignment	Αφαίρεση αυτής της αντιστοίχισης
+	{control} runs {command}.	Το {control} εκτελεί {command}.
+# Control surfaces (shuttlepro, CFA4-CONTROL-SURFACE-001)
+	Button {n}	Κουμπί {n}
+# Control surfaces (continuous-values, CFA4-CONTROL-SURFACE-001)
+	{strip} Pan (knob)	{strip} πανοραμική (περιστροφικό)
+	{strip} Volume (fader)	{strip} ένταση (fader)
+# Control surfaces (F1 Learn and profile, CFA4-CONTROL-SURFACE-001)
+	Control Surfaces	Επιφάνειες ελέγχου
+	Assignments run when a button is pressed (a fader or knob counts as pressed past half way); a fader or knob assigned to a mixer strip moves its volume or pan. A ShuttlePRO's shuttle ring plays at its profile's speeds and its jog wheel steps frame by frame. Endless encoders and feedback to the controller (lights, motor faders) come in a later version.	Οι αναθέσεις τρέχουν με πάτημα κουμπιού (ένα fader ή κουμπί μετρά ως πατημένο μετά τη μέση)· ένα fader ή κουμπί σε λωρίδα μίξης κινεί την ένταση ή το παν. Ο δακτύλιος shuttle ενός ShuttlePRO παίζει με τις ταχύτητες του προφίλ και ο τροχός jog προχωρά καρέ-καρέ. Οι ατέρμονες κωδικοποιητές και η απόκριση στον ελεγκτή (λυχνίες, μηχανοκίνητα fader) έρχονται σε νεότερη έκδοση.
+	First message (ms)	Πρώτο μήνυμα (ms)
+	Silence (ms)	Σιωπή (ms)
+	Waiting for the control to settle…	Αναμονή να ηρεμήσει το χειριστήριο…
+	Type: {hint}. Confirm this assignment.	Τύπος: {hint}. Επιβεβαιώστε αυτή την ανάθεση.
+	That control is already assigned. Confirm replaces it.	Αυτό το χειριστήριο είναι ήδη ανατεθειμένο. Η επιβεβαίωση το αντικαθιστά.
+	Learn timed out.	Η εκμάθηση έληξε.
+	Confirm	Επιβεβαίωση
+	Reject	Απόρριψη
+	Shows every MIDI message from the controllers as it arrives, to check that a controller sends and what it sends. MIDI Clock, Active Sensing and MIDI Time Code are left out.	Δείχνει κάθε μήνυμα MIDI από τους ελεγκτές μόλις φτάσει, για να φανεί αν ένας ελεγκτής στέλνει και τι. Το ρολόι MIDI, το Active Sensing και ο κώδικας χρόνου MIDI παραλείπονται.
+	Pick a command (or a mixer strip for a fader or knob), press Learn, then press the button or move the control past half way. Confirm keeps the assignment. OK saves the assignments.	Διαλέξτε εντολή (ή λωρίδα μίξης για fader ή κουμπί), πατήστε Εκμάθηση, έπειτα το κουμπί ή μετακινήστε το χειριστήριο πέρα από τη μέση. Η επιβεβαίωση κρατά την ανάθεση. Το OK αποθηκεύει τις αναθέσεις.
+	All devices	Όλες οι συσκευές
+	Builtin: {name}	Ενσωματωμένο: {name}
+	Capturing	Καταγραφή
+	Confirmed	Επιβεβαιώθηκε
+	Conflict	Σύγκρουση
+	Connect a MIDI controller or a ShuttlePRO to edit its profile.	Συνδέστε ένα χειριστήριο MIDI ή ένα ShuttlePRO για να επεξεργαστείτε το προφίλ του.
+	Control Surfaces…	Επιφάνειες ελέγχου…
+	Filter messages	Φιλτράρισμα μηνυμάτων
+	Idle	Αδρανές
+	Kernel dropped: {count}	Απορρίφθηκαν από τον πυρήνα: {count}
+	Learn Assignments…	Εκμάθηση αναθέσεων…
+	Load profile	Φόρτωση προφίλ
+	MIDI Monitor…	Οθόνη MIDI…
+	Mute shuttle sound	Σίγαση ήχου shuttle
+	No conflicts.	Δεν υπάρχουν συγκρούσεις.
+	No profile warnings.	Δεν υπάρχουν προειδοποιήσεις προφίλ.
+	No project profile is stored.	Δεν έχει αποθηκευτεί προφίλ έργου.
+	OK writes the preferences and the profile file together.	Το OK γράφει μαζί τις προτιμήσεις και το αρχείο προφίλ.
+	Online	Σε σύνδεση
+	Pending	Εκκρεμεί
+	Pickup (14-bit)	Σύλληψη (14 bit)
+	Pickup (7-bit)	Σύλληψη (7 bit)
+	Profile warnings	Προειδοποιήσεις προφίλ
+	Rejected	Απορρίφθηκε
+	Show Active Sensing	Εμφάνιση Active Sensing
+	Show MIDI Clock	Εμφάνιση ρολογιού MIDI
+	Show MIDI Time Code	Εμφάνιση κώδικα χρόνου MIDI
+	The profile file is damaged. Preferences and the built-in profile stay in use.	Το αρχείο προφίλ είναι κατεστραμμένο. Οι προτιμήσεις και το ενσωματωμένο προφίλ μένουν σε χρήση.
+	Timed out	Έληξε ο χρόνος
+	Type: {hint}	Τύπος: {hint}
+	User profile file	Αρχείο προφίλ χρήστη
+	{received} received, {dispatched} dispatched, {coalesced} coalesced, {stalls} stalls, {errors} errors	{received} ελήφθησαν, {dispatched} στάλθηκαν, {coalesced} ενώθηκαν, {stalls} αναμονές, {errors} σφάλματα
 
 # Control Surfaces settings page (CS-1, #1187)
-	Devices	Συσκευές
-	Use	Χρήση
-	Device	Συσκευή
-	MIDI	MIDI
-	HID jog/shuttle	HID jog/shuttle
-	OSC	OSC
 	Connected	Συνδεδεμένη
 	Not connected	Μη συνδεδεμένη
 	Disabled	Απενεργοποιημένη
-	{device} ({port})	{device} ({port})
-	{name}: {error}	{name}: {error}
 	Looking for devices…	Αναζήτηση συσκευών…
 	No MIDI controller or jog/shuttle device was found. Connect one and press Refresh.	Δεν βρέθηκε ελεγκτής MIDI ή συσκευή jog/shuttle. Συνδέστε μία και πατήστε Ανανέωση.
-	Control Surfaces	Επιφάνειες ελέγχου
 	Use control surfaces (MIDI controllers, jog/shuttle devices)	Χρήση επιφανειών ελέγχου (ελεγκτές MIDI, συσκευές jog/shuttle)
 	Mapping controls to commands, MIDI Learn and the MIDI Monitor come in a later version; the choices here are remembered until then.	Η αντιστοίχιση χειριστηρίων σε εντολές, το MIDI Learn και η οθόνη MIDI έρχονται σε μεταγενέστερη έκδοση· οι επιλογές εδώ απομνημονεύονται μέχρι τότε.
 	CFA4 ShuttlePRO	CFA4 ShuttlePRO
 	Kdenlive-style ShuttlePRO	ShuttlePRO σε στυλ Kdenlive
 	Generic MIDI	Γενικό MIDI
-
 # LTC timecode read from clip audio (TC-7, #1285)
 	Read from LTC Audio	Ανάγνωση από ήχο LTC
 	Find SMPTE LTC on the clip's audio and use the timecode it gives the first frame	Εύρεση SMPTE LTC στον ήχο του κλιπ και χρήση του timecode που δίνει στο πρώτο καρέ
 	Read Timecode from LTC Audio	Ανάγνωση timecode από ήχο LTC
 # Credits: voices (the Voice column) in the block's properties (F10-C16)
 	Voices	Φωνές
-
 # Timecode sync varispeed and user bits (TC-8, #1308)
 	Varispeed: adjust the playback speed instead of seeking	Varispeed: προσαρμογή της ταχύτητας αναπαραγωγής αντί για μετάβαση
 	User bits	Bit χρήστη

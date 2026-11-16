@@ -19,6 +19,7 @@ pub mod digits;
 pub mod dpx;
 pub mod fallback;
 pub mod generators;
+pub mod oma;
 pub mod pending;
 pub mod reader;
 pub mod sequence;
@@ -249,8 +250,8 @@ pub type SharedSource = Arc<dyn MediaSource>;
 pub const STILL_EXTENSIONS: &[&str] =
     &["png", "jpg", "jpeg", "gif", "webp", "heic", "heif", "hif", "tif", "tiff", "bmp", "tga", "dpx", "exr", "hdr", "jxl", "dng"];
 pub const AUDIO_EXTENSIONS: &[&str] = &[
-    "wav", "wave", "bwf", "aif", "aiff", "mp3", "mp2", "m4a", "aac", "dts", "dtshd", "flac", "ogg", "opus", "spx", "amr", "awb", "tta", "tak", "g729", "lbc",
-    "mpc", "shn",
+    "wav", "wave", "bwf", "aif", "aiff", "mp3", "mp2", "m4a", "aac", "dts", "dtshd", "flac", "ogg", "opus", "spx", "amr", "awb", "tta", "at3", "at9", "oma",
+    "omg", "aa3", "tak", "g729", "lbc", "mpc", "shn",
 ];
 pub const VIDEO_EXTENSIONS: &[&str] = &[
     "mp4", "m4v", "mov", "mkv", "webm", "avi", "mxf", "mts", "m2ts", "m2t", "ts", "mpg", "mpeg", "vob", "mod", "tod", "m2v", "m1v", "mpv", "3gp", "y4m", "apv",
@@ -303,6 +304,9 @@ pub(crate) fn open_bytes_plain(name: &str, bytes: Arc<[u8]>, extra: &[Opener]) -
     }
     if wav::sniff(&bytes) {
         return Ok(Arc::new(wav::WavSource::parse(name, bytes)?));
+    }
+    if oma::sniff(&bytes) {
+        return Ok(Arc::new(oma::open(name, Arc::new(reader::MemReader(bytes)))?));
     }
     // APNG, animated GIF and animated WebP play as movies (#402, #87); single-frame files fall through to the stills
     if let Some(r) = animated::open(name, &bytes) {

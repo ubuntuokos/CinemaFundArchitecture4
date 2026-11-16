@@ -159,6 +159,7 @@ mkdir -p "$STAGE/usr/share/doc/cfa4"
 copy_docs "$STAGE/usr/share/doc/cfa4"
 # Debian-style copyright summary (the full texts sit next to it).
 install -Dm644 "$HERE/copyright" "$STAGE/usr/share/doc/cfa4/copyright"
+install -Dm644 "$HERE/70-cfa4-surfaces.rules" "$STAGE/usr/lib/udev/rules.d/70-cfa4-surfaces.rules"
 bash "$ROOT/scripts/ci/check-package-docs.sh" "$STAGE/usr/share/doc/cfa4"
 
 if command -v desktop-file-validate >/dev/null; then

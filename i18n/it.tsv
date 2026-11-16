@@ -4678,35 +4678,97 @@
 	AS-11 Core	AS-11 Core
 	AS-11 Parts	Parti AS-11
 	AS-11 UK DPP	AS-11 UK DPP
-
-# Control Surfaces settings page (CS-1, #1187)
-	Devices	Dispositivi
-	Use	Usa
-	Device	Dispositivo
-	MIDI	MIDI
-	HID jog/shuttle	HID jog/shuttle
-	OSC	OSC
+# Control surfaces (qt-control-surfaces-page, CFA4-CONTROL-SURFACE-001)
 	Connected	Connesso
-	Not connected	Non connesso
+	Device	Dispositivo
+	Devices	Dispositivi
 	Disabled	Disattivato
+	MIDI	MIDI
+	Not connected	Non connesso
+	OSC	OSC
+	Use	Usa
 	{device} ({port})	{device} ({port})
 	{name}: {error}	{name}: {error}
+# Control surfaces (midi-monitor, CFA4-CONTROL-SURFACE-001)
+	MIDI Monitor	Monitor MIDI
+	Press Start Monitor, then move a control.	Premi Avvia monitor, poi muovi un controllo.
+	Start Monitor	Avvia monitor
+	Stop Monitor	Ferma monitor
+	… {count} messages not shown (too many at once)	… {count} messaggi non mostrati (troppi in una volta)
+# Control surfaces (midi-learn, CFA4-CONTROL-SURFACE-001)
+	A control surface asked for {command}, which does not exist.	Una superficie di controllo ha chiesto {command}, che non esiste.
+	Assignments	Assegnazioni
+	Cancel Learn	Annulla apprendimento
+	Control	Controllo
+	Learn	Apprendi
+	Remove this assignment	Rimuovi questa assegnazione
+	{control} runs {command}.	{control} esegue {command}.
+# Control surfaces (shuttlepro, CFA4-CONTROL-SURFACE-001)
+	Button {n}	Pulsante {n}
+# Control surfaces (continuous-values, CFA4-CONTROL-SURFACE-001)
+	{strip} Pan (knob)	{strip} pan (manopola)
+	{strip} Volume (fader)	{strip} volume (fader)
+# Control surfaces (F1 Learn and profile, CFA4-CONTROL-SURFACE-001)
+	Control Surfaces	Superfici di controllo
+	Assignments run when a button is pressed (a fader or knob counts as pressed past half way); a fader or knob assigned to a mixer strip moves its volume or pan. A ShuttlePRO's shuttle ring plays at its profile's speeds and its jog wheel steps frame by frame. Endless encoders and feedback to the controller (lights, motor faders) come in a later version.	Le assegnazioni partono alla pressione di un pulsante (un fader o una manopola conta come premuto oltre la metà); un fader o una manopola assegnati a una traccia del mixer ne muovono il volume o il pan. L'anello shuttle di uno ShuttlePRO riproduce alle velocità del profilo e la rotella jog avanza di un fotogramma. Gli encoder infiniti e il ritorno al controller (spie, fader motorizzati) arriveranno in una versione successiva.
+	First message (ms)	Primo messaggio (ms)
+	Silence (ms)	Silenzio (ms)
+	Waiting for the control to settle…	In attesa che il controllo si fermi…
+	Type: {hint}. Confirm this assignment.	Tipo: {hint}. Conferma questa assegnazione.
+	That control is already assigned. Confirm replaces it.	Quel controllo è già assegnato. Conferma lo sostituisce.
+	Learn timed out.	L'apprendimento è scaduto.
+	Confirm	Conferma
+	Reject	Rifiuta
+	Shows every MIDI message from the controllers as it arrives, to check that a controller sends and what it sends. MIDI Clock, Active Sensing and MIDI Time Code are left out.	Mostra ogni messaggio MIDI dei controller appena arriva, per verificare che un controller invii e che cosa invii. Clock MIDI, Active Sensing e timecode MIDI sono esclusi.
+	Pick a command (or a mixer strip for a fader or knob), press Learn, then press the button or move the control past half way. Confirm keeps the assignment. OK saves the assignments.	Scegli un comando (o una traccia del mixer per un fader o una manopola), premi Apprendi, poi il pulsante o sposta il controllo oltre la metà. Conferma tiene l'assegnazione. OK salva le assegnazioni.
+	All devices	Tutti i dispositivi
+	Builtin: {name}	Integrato: {name}
+	Capturing	Acquisizione
+	Confirmed	Confermato
+	Conflict	Conflitto
+	Connect a MIDI controller or a ShuttlePRO to edit its profile.	Collega un controller MIDI o uno ShuttlePRO per modificarne il profilo.
+	Control Surfaces…	Superfici di controllo…
+	Filter messages	Filtra messaggi
+	Idle	Inattivo
+	Kernel dropped: {count}	Scartati dal kernel: {count}
+	Learn Assignments…	Apprendi assegnazioni…
+	Load profile	Carica profilo
+	MIDI Monitor…	Monitor MIDI…
+	Mute shuttle sound	Silenzia l'audio dello shuttle
+	No conflicts.	Nessun conflitto.
+	No profile warnings.	Nessun avviso di profilo.
+	No project profile is stored.	Nessun profilo di progetto è memorizzato.
+	OK writes the preferences and the profile file together.	OK scrive insieme le preferenze e il file di profilo.
+	Online	In linea
+	Pending	In attesa
+	Pickup (14-bit)	Aggancio (14 bit)
+	Pickup (7-bit)	Aggancio (7 bit)
+	Profile warnings	Avvisi di profilo
+	Rejected	Rifiutato
+	Show Active Sensing	Mostra Active Sensing
+	Show MIDI Clock	Mostra clock MIDI
+	Show MIDI Time Code	Mostra timecode MIDI
+	The profile file is damaged. Preferences and the built-in profile stay in use.	Il file di profilo è danneggiato. Le preferenze e il profilo integrato restano in uso.
+	Timed out	Tempo scaduto
+	Type: {hint}	Tipo: {hint}
+	User profile file	File di profilo utente
+	{received} received, {dispatched} dispatched, {coalesced} coalesced, {stalls} stalls, {errors} errors	{received} ricevuti, {dispatched} inviati, {coalesced} uniti, {stalls} attese, {errors} errori
+
+# Control Surfaces settings page (CS-1, #1187)
+	HID jog/shuttle	HID jog/shuttle
 	Looking for devices…	Ricerca dei dispositivi…
 	No MIDI controller or jog/shuttle device was found. Connect one and press Refresh.	Nessun controller MIDI o dispositivo jog/shuttle trovato. Collegane uno e premi Aggiorna.
-	Control Surfaces	Superfici di controllo
 	Use control surfaces (MIDI controllers, jog/shuttle devices)	Usa le superfici di controllo (controller MIDI, dispositivi jog/shuttle)
 	Mapping controls to commands, MIDI Learn and the MIDI Monitor come in a later version; the choices here are remembered until then.	L'assegnazione dei controlli ai comandi, MIDI Learn e il monitor MIDI arriveranno in una versione successiva; fino ad allora le scelte fatte qui vengono ricordate.
 	CFA4 ShuttlePRO	CFA4 ShuttlePRO
 	Kdenlive-style ShuttlePRO	ShuttlePRO in stile Kdenlive
 	Generic MIDI	MIDI generico
-
 # LTC timecode read from clip audio (TC-7, #1285)
 	Read from LTC Audio	Leggi dall'audio LTC
 	Find SMPTE LTC on the clip's audio and use the timecode it gives the first frame	Cerca SMPTE LTC nell'audio della clip e usa il timecode che assegna al primo fotogramma
 	Read Timecode from LTC Audio	Leggi il timecode dall'audio LTC
 # Credits: voices (the Voice column) in the block's properties (F10-C16)
 	Voices	Voci
-
 # Timecode sync varispeed and user bits (TC-8, #1308)
 	Varispeed: adjust the playback speed instead of seeking	Varispeed: regola la velocità di riproduzione invece di saltare
 	User bits	User bit
