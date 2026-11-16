@@ -4774,3 +4774,9 @@ export.summary	Low	χαμηλή
 # Timecode sync varispeed and user bits (TC-8, #1308)
 	Varispeed: adjust the playback speed instead of seeking	Varispeed: προσαρμογή της ταχύτητας αναπαραγωγής αντί για μετάβαση
 	User bits	Bit χρήστη
+# AS-11 programme parts and AS-10 metadata (G2, #1371, #1375)
+	{tc}  Segmentation	{tc}  Τμηματοποίηση
+	Marker Type	Τύπος δείκτη
+	Chapter	Κεφάλαιο
+	Segmentation (AS-11 programme part)	Τμηματοποίηση (τμήμα προγράμματος AS-11)
+	AS-10	AS-10

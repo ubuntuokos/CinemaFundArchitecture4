@@ -4772,3 +4772,9 @@ export.summary	Low	низак
 # Timecode sync varispeed and user bits (TC-8, #1308)
 	Varispeed: adjust the playback speed instead of seeking	Varispeed: прилагоди брзину репродукције уместо прескакања
 	User bits	Кориснички битови
+# AS-11 programme parts and AS-10 metadata (G2, #1371, #1375)
+	{tc}  Segmentation	{tc}  Сегментација
+	Marker Type	Тип маркера
+	Chapter	Поглавље
+	Segmentation (AS-11 programme part)	Сегментација (део програма AS-11)
+	AS-10	AS-10
