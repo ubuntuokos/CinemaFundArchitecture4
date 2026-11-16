@@ -102,7 +102,7 @@ def decide(
     return False, (
         f"A push megállítva: a #{pr['number']} ága most ezeké: {', '.join(sorted(allowed))}; a pusholt commitok "
         f"munkamenete: {', '.join(foreign)}. Más PR-jához ne nyúlj (docs/coordination.md §2.4). Ha a tulajdonos "
-        "rád bízta, előbb írd be az `Átadva:` sort (§2.11); gazdaként a `Gazda átvette:` sort (§2.12); "
+        "rád bízta, előbb írd be az `Átadva:` sort (§2.12); gazdaként a `Gazda átvette:` sort (§2.13); "
         "különben nyiss új ágat a main-ből."
     )
 

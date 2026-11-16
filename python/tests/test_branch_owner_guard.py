@@ -55,7 +55,7 @@ def test_owner_may_push() -> None:
 
 def test_foreign_session_is_stopped() -> None:
     ok, msg = GUARD.decide(_pr(f"Munkamenet: {A}"), [_commit(B)], [], NOW, BO)
-    assert not ok and "§2.11" in msg
+    assert not ok and "§2.12" in msg
 
 
 def test_handover_lets_the_new_session_push_and_stops_the_old() -> None:

@@ -63,7 +63,7 @@ $ARGUMENTS
 - Kiváltott PR-t csak megjegyzéssel zársz le, megnevezve, mi váltotta ki.
 - Ha egy ütközést csak más PR-jába vagy ágába nyúlva lehetne feloldani, előbb kérdezel.
 
-## Ágtulajdon (docs/coordination.md §2.4, §2.11, §2.12; CFA4-BRANCH-OWNERSHIP-001 T4, T7)
+## Ágtulajdon (docs/coordination.md §2.4, §2.12, §2.13; CFA4-BRANCH-OWNERSHIP-001 T4, T7)
 - **Átvétel.** A PR-on végzett első írás (ághoz igazítás, ütközésfeloldás, commit) előtt, ha a PR-nak van
   fejlesztő-tulajdonosa, beírod a PR leírásába és egy megjegyzésbe: `Gazda átvette: <saját session>, ÉÉÉÉ-HH-NN`
   (a `Claude-Session:` sorban szereplő azonosítóddal). Tiszta `update-branch` (ütközés nélküli main-merge)
