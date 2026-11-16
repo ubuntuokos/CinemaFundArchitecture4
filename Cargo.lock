@@ -1167,6 +1167,16 @@ dependencies = [
 ]
 
 [[package]]
+name = "cfa4-cinema-pkg"
+version = "0.10.0"
+dependencies = [
+ "roxmltree",
+ "sha1",
+ "sha2 0.11.1",
+ "thiserror 2.0.21",
+]
+
+[[package]]
 name = "cfa4-cli"
 version = "0.10.0"
 dependencies = [

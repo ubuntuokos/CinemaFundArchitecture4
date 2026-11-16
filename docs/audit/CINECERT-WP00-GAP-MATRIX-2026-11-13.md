@@ -72,7 +72,7 @@ Gazda: melyik jóváhagyott terv vagy issue viszi ma.
 | WP05 | IMF ingest | M | – | CPL → idővonal, supplemental package | PROCODEC-002 5b |
 | WP06 | IMF mastering | P | `crates/export/src/imf_out.rs` (#1011): App 2E, egy szegmens, CPL/PKL/ASSETMAP/VOLINDEX, RegXML descriptorok | OPL (ST 2067-100), supplemental/verziózás, IAB az IMF-ben, aláírás | PROCODEC-002 5b |
 | WP07 | J2K és szín | P | `crates/j2k`: DCI 2K/4K, IMF profilok (`ImfProfile::select`, #931); #116 lezárva; nyitott: #1113 (HTJ2K kódolás), #1126 | #117 (rétegek, csempék), mért valós idejű 2K dekódolás | PROCODEC-002 4 |
-| WP08 | MXF digest, IMF-VTFP | M | nincs találat (`vtfp`, `mxf-digest`) | teljes | **CineCert** |
+| WP08 | MXF digest, IMF-VTFP | M | `crates/cinema-pkg` (2026-11-15): MXF-DIGEST és VTFP a memók tesztanyagán ellenőrizve | lezárva ebben a PR-ban; export-integráció a PROCODEC-002 dolga | **CineCert** |
 | WP09 | metaadat, ISDCF | P | DCNC mappanév az exportban; `dcp_inspect` `naming` → `DCP.NAME.001` | ISDCF registry snapshot, natív névépítő/-ellenőrző | **CineCert** (a natív szabály: DCP-VALIDATION-nel egyeztetni) |
 | WP10 | titkosítás, aláírás, KDM | P / C | `crates/dcp/src/kdm.rs` (ST 430-1/-3 nyitás, RSA-OAEP); `crates/mxf/src/crypt.rs` (visszafejtés); nyitott: #1076 (KDM-aláírás), #1084, #1086 | titkosított írás, KDM-kiadás, XML-aláírás készítése | G2 (olvasás); írás: senki, D3 és PROCODEC-002 ellentétes (2. pont) |
 | WP11 | QC-motor | P | DCP: `cfa4-dcp-validate` 8 profil, `cfa4-dcp-report/1`; IMF: Photon-orákulum a tesztekben | natív IMF QC | DCP: DCP-VALIDATION; IMF: PROCODEC-002 5b |

@@ -1,0 +1,16 @@
+[package]
+name = "cfa4-cinema-pkg"
+description = "Digital cinema package identifiers: MXF-DIGEST of track files and the IMF virtual track fingerprint (CINECERT WP08)"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+rust-version.workspace = true
+
+[lints]
+workspace = true
+
+[dependencies]
+roxmltree = { workspace = true }
+sha1 = { workspace = true }
+sha2 = { workspace = true }
+thiserror = { workspace = true }
