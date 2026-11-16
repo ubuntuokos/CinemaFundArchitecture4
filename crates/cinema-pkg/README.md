@@ -1,6 +1,6 @@
 # cfa4-cinema-pkg
 
-Identifiers of digital cinema and IMF packages (CINECERT WP08 of
+Identifiers and names of digital cinema and IMF packages (CINECERT WP08 and WP09 of
 [`docs/plans/CFA4-CINECERT-001-v2.3.md`](../../docs/plans/CFA4-CINECERT-001-v2.3.md)). Layer L1, no
 `unsafe`, no panics on malformed input.
 
@@ -17,6 +17,16 @@ let tracks = vtfp::virtual_tracks(&cpl_xml)?;                         // TrackId
 let fp = vtfp::fingerprint(&cpl_xml, &tracks[0].track_id)?;           // accepts "urn:uuid:…" too
 let urn = fp.to_urn();                                                // urn:smpte:imf-vtfp:<40 hex>
 let ok = vtfp::urns_match(&urn, "urn:smpte:imf-vtfp:190fb72cdd")?;    // abbreviated form
+```
+
+```rust
+use cfa4_cinema_pkg::isdcf::{dcnc, Registry};
+
+let reg = Registry::builtin()?;                                       // offline ISDCF snapshot
+for f in dcnc::check("Film_FTR-1_F_EN-XX_US-13_51_2K_DI_20261115_DLB_SMPTE_OV", reg) {
+    eprintln!("{f}");                                                 // DCNC.<RULE> (field n): …
+}
+let mut name = dcnc::Name::parse(title)?;                             // fields, then to_string()
 ```
 
 A writer that produces packets can digest them itself: `packet_digest(packet)` per KLV packet (in
@@ -48,3 +58,30 @@ parallel if it wants), then `SequenceDigest::push` in file order and `finish`.
 CPLs with a DTD are refused (no entity expansion), and the parsed node count is capped at 2 million.
 The MXF reader never allocates according to a declared length. The unit tests run mutated and
 truncated inputs under `catch_unwind`.
+
+## ISDCF registries and naming (WP09)
+
+`data/isdcf-registry.json` is an offline snapshot of the ISDCF metadata registries
+(<https://github.com/ISDCF/registries>, CC BY 4.0, © ISDCF; attribution in the `.attribution`
+sidecar and `ATTRIBUTION.md`). It holds the codes the naming convention uses (content types and
+modifiers, aspect ratios, audio, languages, territories, studios, facilities) with their obsolete
+codes, plus the upstream commit and the SHA-256 of every upstream file. Contact details are left
+out. The ratings registry is not included: it is derived from MovieLabs data whose licence is not
+stated, so ratings are checked for form only.
+
+Nothing is fetched at run time. `bash scripts/dev/update-isdcf-snapshot.sh --check` reduces the
+pinned upstream commit again and compares (offline / online parity, test `tests/isdcf_snapshot.rs`);
+`--update COMMIT` rewrites the snapshot from a newer commit for review.
+
+`isdcf::dcnc::check` reports where a content title deviates from the ISDCF Digital Cinema Naming
+Convention (rules from the ISDCF registry pages, read 2026-11-15). The convention is not a
+standard, so every finding is a warning (`DCNC.FIELDS`, `DCNC.TITLE`, `DCNC.CONTENT_TYPE`,
+`DCNC.MODIFIER_ORDER`, `DCNC.ASPECT`, `DCNC.LANGUAGE`, `DCNC.TERRITORY`, `DCNC.AUDIO`,
+`DCNC.RESOLUTION`, `DCNC.STUDIO`, `DCNC.DATE`, `DCNC.FACILITY`, `DCNC.STANDARD`, `DCNC.3D`,
+`DCNC.PACKAGE`, `DCNC.OBSOLETE`). Where the pages disagree, the checker accepts both: `NULL` and
+`NUL` for an unknown facility; ratings are not checked against a list. Free modifiers such as a theatre
+chain are not judged; known ones must follow the registry order.
+
+The export (`cfa4-export`, folder name) and the validator (`cfa4-dcp-validate`, `DCP.NAME.001`)
+keep their own naming code for now; moving them onto this checker is for their owners
+(PROCODEC-002, DCP-VALIDATION).
