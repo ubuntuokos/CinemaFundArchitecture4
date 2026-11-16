@@ -1,6 +1,6 @@
 //! Encoder → decoder round trips and robustness against corrupt data (no ffmpeg needed).
 
-use cfa4_dnx::{ChromaFormat, DecodeOptions, Encoder, EncoderConfig, Frame, Profile, decode_frame, decode_frame_with, probe};
+use cfa4_dnx::{ChromaFormat, DecodeOptions, Encoder, EncoderConfig, FieldCode, Frame, Profile, decode_frame, decode_frame_with, probe};
 
 /// A synthetic picture: gradients, a ring pattern and some hashed texture.
 fn picture(w: u32, h: u32, chroma: ChromaFormat, depth: u8, seed: u32) -> Frame {
@@ -80,7 +80,15 @@ fn roundtrip_dnxhd_ids() {
         assert_eq!(data.len() as u32, enc.frame_size());
         assert_eq!(data[4], 1, "{profile:?}: HD header version");
         let hdr = probe(&data).unwrap();
-        assert_eq!((hdr.cid, hdr.width, hdr.lines, hdr.bit_depth), (profile.cid(), w, h, depth));
+        // interlaced IDs: two field coding units of half the frame size, top field first
+        let lines = if profile.interlaced() { h / 2 } else { h };
+        assert_eq!((hdr.cid, hdr.width, hdr.lines, hdr.bit_depth), (profile.cid(), w, lines, depth));
+        if profile.interlaced() {
+            assert_eq!(hdr.field, FieldCode::Field1);
+            assert!(hdr.interlaced && !hdr.frame_encoding);
+            let second = probe(&data[data.len() / 2..]).unwrap();
+            assert_eq!((second.field, second.lines), (FieldCode::Field2, lines));
+        }
         let dec = decode_frame(&data).unwrap();
         assert_eq!((dec.width, dec.height, dec.chroma, dec.bit_depth), (w, h, chroma, depth));
         let peak = ((1u32 << depth) - 1) as f64;
