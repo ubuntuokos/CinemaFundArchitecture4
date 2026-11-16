@@ -134,6 +134,15 @@ pub(crate) struct MxfSetup<'a> {
     /// Closed captions for the ANC data track (`ExportSettings::mxf_anc_captions`), timed from
     /// the first exported frame.
     pub captions: Option<cfa4_captions::Document>,
+    /// AS-11 programme parts from segmentation markers, (start, duration) in frames from the first
+    /// exported frame; used when `ExportSettings::mxf_as11_segments` is empty.
+    pub as11_parts: Vec<(i64, i64)>,
+}
+
+/// AS-11 segments of the marker parts: numbered in order, each of the total.
+fn as11_marker_parts(parts: &[(i64, i64)]) -> std::result::Result<Vec<cfa4_mxf::as11::Segment>, String> {
+    let total = u16::try_from(parts.len()).map_err(|_| format!("{} segmentation markers, more than an AS-11 part number can count", parts.len()))?;
+    Ok(parts.iter().zip(1u16..).map(|(&(start, duration), part_number)| cfa4_mxf::as11::Segment { start, duration, part_number, part_total: total }).collect())
 }
 
 /// An MXF export in progress.
@@ -180,7 +189,11 @@ impl MxfMux {
                 if settings.mxf_as11_ukdpp.trim().is_empty() { Vec::new() } else { as11::parse_framework_text(&settings.mxf_as11_ukdpp).map_err(bad)? };
             cfg.as11 = Some(as11::As11 {
                 core: as11::parse_framework_text(&settings.mxf_as11_core).map_err(bad)?,
-                segments: as11::parse_segments_text(&settings.mxf_as11_segments, clock).map_err(bad)?,
+                segments: if settings.mxf_as11_segments.trim().is_empty() {
+                    as11_marker_parts(&s.as11_parts).map_err(bad)?
+                } else {
+                    as11::parse_segments_text(&settings.mxf_as11_segments, clock).map_err(bad)?
+                },
                 ukdpp,
             });
         }

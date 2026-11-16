@@ -205,6 +205,24 @@ pub(crate) fn marker_color_p(p: &Value, cmd: &str) -> Result<Option<Label>> {
         bad(cmd, format!("unknown marker color {v}; use one of: {}", names.join(", ")))
     })
 }
+/// The marker `kind` parameter (`comment`, `chapter`, `segmentation`, `webLink`, `flashCue`, any
+/// case); `None` when absent. Segmentation markers with a duration are the AS-11 programme parts
+/// of an MXF export (#1254).
+pub(crate) fn marker_kind_p(p: &Value, cmd: &str) -> Result<Option<MarkerKind>> {
+    let v = match p.get("kind") {
+        None | Some(Value::Null) => return Ok(None),
+        Some(v) => v,
+    };
+    let kind = match v.as_str().map(str::to_ascii_lowercase).as_deref() {
+        Some("comment") => MarkerKind::Comment,
+        Some("chapter") => MarkerKind::Chapter,
+        Some("segmentation") => MarkerKind::Segmentation,
+        Some("weblink") => MarkerKind::WebLink,
+        Some("flashcue") => MarkerKind::FlashCue,
+        _ => return Err(bad(cmd, format!("unknown marker kind {v}; use one of: comment, chapter, segmentation, webLink, flashCue"))),
+    };
+    Ok(Some(kind))
+}
 pub(crate) fn str_p<'a>(p: &'a Value, k: &str) -> Option<&'a str> {
     p.get(k).and_then(Value::as_str)
 }
@@ -2753,7 +2771,7 @@ fn build() -> Vec<CommandSpec> {
             "Add Marker",
             ["Markers"],
             Some("M"),
-            r#"{"target":"program|source","time":ticks?,"name":str?,"comment":str?,"color":label?,"durationFrames":i64?}"#,
+            r#"{"target":"program|source","time":ticks?,"name":str?,"comment":str?,"color":label?,"durationFrames":i64?,"kind":"comment|chapter|segmentation|webLink|flashCue"?}"#,
             always,
             |s, p| {
                 if let Some(v) = crate::source_monitor::route(s, "markers.add", p)? {
@@ -2765,9 +2783,10 @@ fn build() -> Vec<CommandSpec> {
                 let comment = str_p(p, "comment").unwrap_or("").to_string();
                 let color = marker_color_p(p, "markers.add")?.unwrap_or(Label::Green);
                 let dur = p.get("durationFrames").and_then(Value::as_i64).map(|f| s.sequence_rate().tick_of(f)).unwrap_or_default();
+                let kind = marker_kind_p(p, "markers.add")?.unwrap_or(MarkerKind::Comment);
                 let id = s.edit_sequence("Add Marker", |q, ctx, _| {
                     let id = MarkerId(ctx.alloc());
-                    q.markers.push(Marker { id, start: t, duration: dur, name, comment, kind: MarkerKind::Comment, color });
+                    q.markers.push(Marker { id, start: t, duration: dur, name, comment, kind, color });
                     q.markers.sort_by_key(|m| m.start);
                     Ok(id)
                 })?;
@@ -2831,7 +2850,7 @@ fn build() -> Vec<CommandSpec> {
             "Edit Marker…",
             [],
             None,
-            r#"{"target":"program|source","marker":id,"name":str?,"comment":str?,"color":label?,"durationFrames":i64?}"#,
+            r#"{"target":"program|source","marker":id,"name":str?,"comment":str?,"color":label?,"durationFrames":i64?,"kind":"comment|chapter|segmentation|webLink|flashCue"?}"#,
             always,
             |s, p| {
                 if let Some(v) = crate::source_monitor::route(s, "markers.edit", p)? {
@@ -2840,6 +2859,7 @@ fn build() -> Vec<CommandSpec> {
                 let id = u64_p(p, "marker").map(MarkerId).ok_or_else(|| bad("markers.edit", "need `marker`"))?;
                 let rate = s.sequence_rate();
                 let color = marker_color_p(p, "markers.edit")?;
+                let kind = marker_kind_p(p, "markers.edit")?;
                 let p = p.clone();
                 s.edit_sequence("Edit Marker", |q, _, _| {
                     let m = q.markers.iter_mut().find(|m| m.id == id).ok_or_else(|| bad("markers.edit", "no such marker"))?;
@@ -2851,6 +2871,9 @@ fn build() -> Vec<CommandSpec> {
                     }
                     if let Some(c) = color {
                         m.color = c;
+                    }
+                    if let Some(k) = kind {
+                        m.kind = k;
                     }
                     if let Some(f) = p.get("durationFrames").and_then(Value::as_i64) {
                         m.duration = rate.tick_of(f);
