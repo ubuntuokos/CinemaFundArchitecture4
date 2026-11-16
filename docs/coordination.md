@@ -99,6 +99,8 @@ Gazdát csak a tulajdonos jelölhet ki vagy válthat le. Fejlesztő munkamenet n
     PR-t egy másik munkamenetre bíz (például egy új beszélgetésben: „jóváhagyom, vidd tovább”):
     - az új munkamenet az első push előtt a PR leírásába és egy PR-megjegyzésbe beírja:
       `Átadva: session_<régi> → session_<új>, tulajdonosi jóváhagyással, ÉÉÉÉ-HH-NN`;
+    - a `Munkamenet:` sort nem kell átírni: az átadás utáni írót az `Átadva:` sor adja meg, ezt olvassa a
+      `branch-ownership` check és a helyi push-őr is;
     - a régi munkamenet minden push előtt megnézi a PR leírását; ha átadták, nem pushol, hanem
       jelzi a tulajdonosnak;
     - ha a tulajdonos nem mondja ki az átadást, az új munkamenet nem nyúl a régi ágához: új ágat
