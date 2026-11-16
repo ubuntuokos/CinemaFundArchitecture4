@@ -84,6 +84,18 @@ Gazdát csak a tulajdonos jelölhet ki vagy válthat le. Fejlesztő munkamenet n
     - A §2.8 szerinti választás a saját projekten belül csak a jóváhagyott terv keretein belül
       érvényes.
 
+11. **Terv csak a repóba kerülhet** (tulajdonosi döntés, 2026-11-15).
+    - Minden CFA4-terv (terv, specifikáció, jelentés, felmérés, összevetés) Markdown-fájlként
+      a `docs/plans/` mappába kerül, saját ágon, PR-rel. Nem kerülhet online dokumentumba
+      (Claude-dokumentum, artifact, Google Docs, Notion vagy más külső felület), és nem maradhat
+      csak a munkamenet beszélgetésében.
+    - Ez akkor is így van, ha a tulajdonos nem mondja külön: ha a munkamenet a saját munkájához
+      vagy bármely CFA4-projekthez ír tervet, annak a helye a repó.
+    - Ha egy terv mégis repón kívül készült, a munkamenet változatlan tartalommal átviszi
+      a `docs/plans/` mappába, és ettől kezdve a repóbeli fájl az irányadó.
+    - A tervek egymásra és a repó fájljaira repóbeli relatív hivatkozással mutatnak, nem külső
+      dokumentumra.
+
 ## 3. A gazda munkamódja (minden `/gazda` hívásnál)
 
 0. **Minden hívás önálló.** A gazda a korábbi hívások eredményeire nem épít; minden tényt
