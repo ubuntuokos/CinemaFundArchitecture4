@@ -17,6 +17,7 @@ test-util = []
 aes = { workspace = true }
 chrono = { workspace = true }
 hmac = { workspace = true }
+roxmltree = { workspace = true }
 sha1 = { workspace = true }
 
 [dev-dependencies]
