@@ -1930,6 +1930,7 @@ dependencies = [
  "cfa4-st2110",
  "libloading 0.9.0",
  "log",
+ "rayon",
  "serde",
  "serde_json",
  "thiserror 2.0.21",
