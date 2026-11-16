@@ -109,6 +109,18 @@ with the ISDCF drive recommendation: MBR, one Linux (0x83) partition, ext2 or ex
 inodes. It never writes; `drive::format_hint` gives the `mkfs.ext3 -I 128` command for the
 operator. Tested on synthetic images and, where `mkfs.ext2/3/4` are installed, real ones.
 
-Still open in WP13: the provenance report and optional BagIt archive packaging, and multi-volume
-DCPs (`VOLINDEX`, `ASSETMAP` `VolumeCount`; the latter changes the export writers, so it is agreed
-with PROCODEC-002 first).
+### Provenance and archive bags
+
+`archive::Provenance` is the provenance report: package, creation time, producer and profile,
+transcoders, source assets with SHA-256, and every QC or validation run with the validator's
+name, version, profile, result and time (RFC 3339; `to_json` refuses malformed times and hashes).
+
+`archive::make_bag(package, bag_dir, date, &provenance, description)` packs a finished package
+as a BagIt 1.0 bag (RFC 8493): payload under `data/` copied through `delivery` (read back and
+verified), `manifest-sha256.txt`, `bag-info.txt` with `Payload-Oxum`, the report as
+`cfa4-provenance.json`, and `tagmanifest-sha256.txt`. It is built as `BAG.INCOMPLETE`, resumes
+after an interruption, and never overwrites. `archive::validate_bag` checks the declaration, both
+manifests, payload files missing from the manifest and the `Payload-Oxum`.
+
+Still open in WP13: multi-volume DCPs (`VOLINDEX`, `ASSETMAP` `VolumeCount`). That changes the
+export writers, so it is agreed with PROCODEC-002 first.

@@ -247,6 +247,12 @@ pub fn deliver_with(src: &Path, target: &Path, go: &mut dyn FnMut(&str) -> bool)
     Ok(Report { package: final_dir, manifest: manifest_path, files: files.len(), bytes, resumed })
 }
 
+/// A relative `/`-separated path that stays inside its directory: no empty, `.` or `..`
+/// component, no leading `/`, no backslash or NUL.
+pub fn safe_relative(p: &str) -> bool {
+    !p.is_empty() && !p.contains(['\\', '\0']) && p.split('/').all(|c| !c.is_empty() && c != "." && c != "..")
+}
+
 fn bad_name(part: &str) -> bool {
     part.is_empty() || part.len() > MAX_NAME || !part.chars().all(|c| c.is_ascii_alphanumeric() || matches!(c, '.' | '_' | '-'))
 }
@@ -258,6 +264,9 @@ pub fn verify(package: &Path, manifest: &Path) -> Result<Vec<Mismatch>> {
     let mut want = BTreeMap::new();
     for line in text.lines() {
         let (h, p) = line.split_once("  ").filter(|(h, _)| h.len() == 64).ok_or_else(|| err(format!("bad manifest line {line:?}"), manifest))?;
+        if !safe_relative(p) {
+            return Err(err(format!("manifest path {p:?} leaves the package"), manifest));
+        }
         want.insert(p.to_string(), h.to_string());
     }
     let have = package_files(package)?;
