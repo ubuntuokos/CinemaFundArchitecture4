@@ -3124,9 +3124,15 @@ fn build() -> Vec<CommandSpec> {
         cmd!("trim.applyDefaultTransition", "Apply Default Transitions to Selection", ["Sequence"], None, "{}", has_edit_points, |s, _| {
             crate::trim::apply_default_transitions(s)
         }),
-        cmd!("trim.shuttle", "Dynamic Trim (Shuttle)", [], None, r#"{"direction":"forward|reverse","slow":bool?,"clock":seconds}"#, has_edit_points, |s, p| {
-            crate::trim::shuttle(s, p)
-        }),
+        cmd!(
+            "trim.shuttle",
+            "Dynamic Trim (Shuttle)",
+            [],
+            None,
+            r#"{"direction":"forward|reverse","slow":bool?,"speed":f64?,"clock":seconds}"#,
+            has_edit_points,
+            |s, p| { crate::trim::shuttle(s, p) }
+        ),
         cmd!("trim.shuttleStop", "Dynamic Trim Stop", [], None, r#"{"clock":seconds?}"#, has_seq, |s, p| crate::trim::stop(s, p)),
         cmd!("trim.cancelDynamic", "Cancel Dynamic Trim", [], None, "{}", has_seq, |s, _| crate::trim::cancel(s)),
         cmd!("trim.playAround", "Play Around Edit", [], None, r#"{"clock":seconds,"loop":bool=true,"toggle":bool?}"#, has_seq, |s, p| {
