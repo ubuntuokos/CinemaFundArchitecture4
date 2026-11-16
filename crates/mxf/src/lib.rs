@@ -25,6 +25,7 @@
 
 mod anc;
 pub mod as02;
+pub mod as10;
 pub mod as11;
 pub mod as11_shim;
 pub mod crypt;
