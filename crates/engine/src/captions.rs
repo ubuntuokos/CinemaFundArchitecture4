@@ -171,10 +171,33 @@ pub fn import_dcst(s: &mut Session, path: &str, bytes: &[u8]) -> Result<Value> {
     })
 }
 
-/// Import a DCP or IMF timed text track file (SMPTE ST 429-5 / ST 2067-2 MXF) as a caption track;
-/// its PNG image subtitles are written beside it and placed on video tracks above the others.
-/// `None` when `path` is not an MXF timed text track file (other MXF files import as media).
-pub fn import_timed_text_mxf(s: &mut Session, path: &str) -> Option<Result<Value>> {
+/// A timed text track file opened and parsed: its bytes, its MXF structure and its document.
+struct OpenTimedText {
+    path: String,
+    src: Box<dyn cfa4_mxf::ByteSource>,
+    tt: cfa4_mxf::TimedText,
+}
+
+impl OpenTimedText {
+    /// A PNG resource of the file by UUID, written beside the file (see [`write_extracted`]).
+    fn fetch(&self, s: &Session, id: [u8; 16]) -> std::result::Result<(String, Vec<u8>), String> {
+        let tt = &self.tt;
+        let i = tt.resources.iter().position(|r| r.id == id).ok_or_else(|| format!("resource urn:uuid:{} is not in the file", uuid_text(&id)))?;
+        if tt.resources.get(i).and_then(|r| r.data).is_some_and(|d| d.size > MAX_SUBTITLE_PNG) {
+            return Err(format!("resource urn:uuid:{} is larger than {MAX_SUBTITLE_PNG} bytes", uuid_text(&id)));
+        }
+        let bytes = tt.read_resource(self.src.as_ref(), i).map_err(|e| e.to_string())?;
+        if !bytes.starts_with(PNG_MAGIC) {
+            return Err(format!("resource urn:uuid:{} is not a PNG image", uuid_text(&id)));
+        }
+        let out = write_extracted(s, &self.path, &uuid_text(&id), &bytes).map_err(|e| e.to_string())?;
+        Ok((out, bytes))
+    }
+}
+
+/// Open and parse a timed text track file. `None` when `path` is not an MXF timed text track
+/// file; `Some(Err)` when it is one that cannot be read.
+fn open_timed_text_mxf(s: &Session, path: &str) -> Option<std::result::Result<(OpenTimedText, TimedTextDoc), String>> {
     let ext = std::path::Path::new(path).extension().and_then(|e| e.to_str()).map(str::to_ascii_lowercase);
     if ext.as_deref() != Some("mxf") {
         return None;
@@ -196,36 +219,108 @@ pub fn import_timed_text_mxf(s: &mut Session, path: &str) -> Option<Result<Value
     if !cfa4_mxf::is_timed_text(&head) {
         return None;
     }
-    let parsed = cfa4_mxf::open_timed_text(src.as_ref()).map_err(|e| e.to_string()).and_then(|tt| {
+    Some(cfa4_mxf::open_timed_text(src.as_ref()).map_err(|e| e.to_string()).and_then(|tt| {
         let xml = tt.read_document(src.as_ref()).map_err(|e| e.to_string())?;
         let mut td = parse_timed_text(&xml)?;
         td.doc.warnings.extend(tt.warnings.iter().cloned());
-        Ok((td, tt))
-    });
-    Some(match parsed {
-        Ok((td, tt)) => {
+        Ok((OpenTimedText { path: path.to_string(), src, tt }, td))
+    }))
+}
+
+/// Import a DCP or IMF timed text track file (SMPTE ST 429-5 / ST 2067-2 MXF) as a caption track;
+/// its PNG image subtitles are written beside it and placed on video tracks above the others.
+/// `None` when `path` is not an MXF timed text track file (other MXF files import as media).
+pub fn import_timed_text_mxf(s: &mut Session, path: &str) -> Option<Result<Value>> {
+    Some(match open_timed_text_mxf(s, path)? {
+        Ok((file, td)) => {
             let stem = std::path::Path::new(path).file_stem().map(|n| n.to_string_lossy().to_string()).unwrap_or_else(|| "Subtitles".into());
             let name = match &td.language {
                 Some(l) => format!("{stem} ({l})"),
                 None => stem,
             };
-            s.edit_group("Import Subtitles", |s| {
-                import_reel(s, path, td, Some(&name), &mut |s, id| {
-                    let i = tt.resources.iter().position(|r| r.id == id).ok_or_else(|| format!("resource urn:uuid:{} is not in the file", uuid_text(&id)))?;
-                    if tt.resources.get(i).and_then(|r| r.data).is_some_and(|d| d.size > MAX_SUBTITLE_PNG) {
-                        return Err(format!("resource urn:uuid:{} is larger than {MAX_SUBTITLE_PNG} bytes", uuid_text(&id)));
-                    }
-                    let bytes = tt.read_resource(src.as_ref(), i).map_err(|e| e.to_string())?;
-                    if !bytes.starts_with(PNG_MAGIC) {
-                        return Err(format!("resource urn:uuid:{} is not a PNG image", uuid_text(&id)));
-                    }
-                    let out = write_extracted(s, path, &uuid_text(&id), &bytes).map_err(|e| e.to_string())?;
-                    Ok((out, bytes))
-                })
-            })
+            s.edit_group("Import Subtitles", |s| import_reel(s, path, td, Some(&name), &mut |s, id| file.fetch(s, id)))
         }
         Err(e) => Err(EngineError::Other(format!("{path}: {e}"))),
     })
+}
+
+/// One reel's timed text track file in a DCP composition: the part of the file the reel plays
+/// (from `entry`, `duration` long, in the file's time) and where the reel starts on the timeline.
+pub(crate) struct ReelText {
+    pub path: String,
+    pub entry: Tick,
+    pub duration: Tick,
+    pub at: Tick,
+}
+
+/// `t` in a reel's file time on the timeline.
+fn reel_time(r: &ReelText, t: Tick) -> Tick {
+    Tick(r.at.0.saturating_add(t.0.saturating_sub(r.entry.0)))
+}
+
+/// Import the timed text track files of a DCP composition's reels (one kind and language) as one
+/// caption track named `name` in the active sequence, with their image subtitles on video tracks
+/// above the others: each reel's cues from its entry point, cut to its duration, at the reel's
+/// start. What cannot be read is added to `warnings`; `None` when no reel could be read.
+pub(crate) fn import_dcp_timed_text(s: &mut Session, name: &str, reels: &[ReelText], warnings: &mut Vec<String>) -> Result<Option<Value>> {
+    let mut opened: Vec<OpenTimedText> = Vec::new();
+    let mut merged: Option<TimedTextDoc> = None;
+    // the reel file each image resource is read from
+    let mut sources: std::collections::HashMap<[u8; 16], usize> = std::collections::HashMap::new();
+    for r in reels {
+        let (file, td) = match open_timed_text_mxf(s, &r.path) {
+            Some(Ok(v)) => v,
+            Some(Err(e)) => {
+                warnings.push(format!("{}: {e}", r.path));
+                continue;
+            }
+            None => {
+                warnings.push(format!("{}: not a timed text track file", r.path));
+                continue;
+            }
+        };
+        let end = Tick(r.entry.0.saturating_add(r.duration.0));
+        let TimedTextDoc { mut doc, format, language, images, intrinsic_resolution } = td;
+        doc.cues.retain_mut(|c| {
+            c.start = reel_time(r, c.start.max(r.entry));
+            c.end = reel_time(r, c.end.min(end));
+            c.start < c.end
+        });
+        let index = opened.len();
+        let images: Vec<_> = images
+            .into_iter()
+            .filter_map(|mut i| {
+                i.start = reel_time(r, i.start.max(r.entry));
+                i.end = reel_time(r, i.end.min(end));
+                (i.start < i.end).then(|| {
+                    sources.entry(i.resource).or_insert(index);
+                    i
+                })
+            })
+            .collect();
+        opened.push(file);
+        match &mut merged {
+            None => merged = Some(TimedTextDoc { doc, format, language, images, intrinsic_resolution }),
+            Some(m) => {
+                m.doc.cues.extend(doc.cues);
+                m.doc.warnings.extend(doc.warnings);
+                m.images.extend(images);
+                if m.language.is_none() {
+                    m.language = language;
+                }
+                if m.intrinsic_resolution.is_none() {
+                    m.intrinsic_resolution = intrinsic_resolution;
+                }
+            }
+        }
+    }
+    let (Some(td), Some(first)) = (merged, opened.first()) else { return Ok(None) };
+    let path = first.path.clone();
+    let mut fetch = |s: &Session, id: [u8; 16]| {
+        let file = sources.get(&id).and_then(|i| opened.get(*i)).ok_or_else(|| format!("resource urn:uuid:{} is not in the file", uuid_text(&id)))?;
+        file.fetch(s, id)
+    };
+    import_reel(s, &path, td, Some(name), &mut fetch).map(Some)
 }
 
 /// The largest PNG subtitle image read (a 4K RGBA frame compresses well below this).
