@@ -508,3 +508,75 @@ def test_monitor_shuttle_to_plays_at_the_ring_speed(app: Any) -> None:
     Monitor.shuttle_to(cast(Any, m), 0)
     assert m.calls == [("play", 2.0), ("play", -8.0), ("stop", 0.0)]
     assert m.stop_at is None and m.rest_at is None
+
+
+def test_trim_mode_turns_the_shuttle_and_jog_into_trimming(app: Any) -> None:
+    """In trim mode (as J/K/L, spec §4) the ring trims dynamically at its speed and 0 commits
+    it; a jog click nudges the edit point a frame. Outside trim mode nothing is taken over."""
+    from cfa4_qt.main_window import MainWindow
+    from cfa4_qt.panels.trim_monitor import TrimMonitor
+
+    class Signal:
+        def __init__(self) -> None:
+            self.sent: list[tuple[str, dict[str, Any]]] = []
+
+        def emit(self, cid: str, params: dict[str, Any]) -> None:
+            self.sent.append((cid, params))
+
+    class Trim:
+        playing = False
+
+        def __init__(self) -> None:
+            self.runs: list[tuple[str, dict[str, Any]]] = []
+            self.command = Signal()
+
+        def clock(self) -> float:
+            return 4.5
+
+        def run(self, cid: str, params: dict[str, Any]) -> None:
+            self.runs.append((cid, params))
+            self.playing = cid == "trim.shuttle"
+
+        def ring(self, speed: float) -> None:
+            TrimMonitor.ring(cast(Any, self), speed)
+
+    class Program:
+        def __init__(self) -> None:
+            self.trim = Trim()
+            self.stopped = 0
+
+        def stop(self) -> None:
+            self.stopped += 1
+
+    class Win:
+        def __init__(self, trimming: bool) -> None:
+            self.monitor = Program()
+            self.source_monitor = object()
+            self.trimming = trimming
+
+        def focused_monitor(self) -> Any:
+            return self.monitor
+
+        def trim_mode(self) -> bool:
+            return self.trimming
+
+    w = Win(True)
+    trim = w.monitor.trim
+    assert MainWindow.surface_trim(cast(Any, w), "playback.shuttleSpeed", {"speed": 1.5})
+    assert MainWindow.surface_trim(cast(Any, w), "playback.shuttleSpeed", {"speed": -0.5})
+    assert MainWindow.surface_trim(cast(Any, w), "playback.shuttleSpeed", {"speed": 0})
+    assert MainWindow.surface_trim(cast(Any, w), "playback.shuttleSpeed", {"speed": 0}), "stopped already: nothing to commit"
+    assert trim.runs == [
+        ("trim.shuttle", {"direction": "forward", "speed": 1.5, "clock": 4.5}),
+        ("trim.shuttle", {"direction": "reverse", "speed": 0.5, "clock": 4.5}),
+        ("trim.shuttleStop", {"clock": 4.5}),
+    ]
+    assert w.monitor.stopped == 2, "the program monitor does not play while trimming"
+    assert MainWindow.surface_trim(cast(Any, w), "playhead.stepForward", {})
+    assert MainWindow.surface_trim(cast(Any, w), "playhead.stepBack", {})
+    assert trim.command.sent == [("trim.nudge", {"frames": 1}), ("trim.nudge", {"frames": -1})]
+
+    off = Win(False)
+    assert not MainWindow.surface_trim(cast(Any, off), "playback.shuttleSpeed", {"speed": 2})
+    assert not MainWindow.surface_trim(cast(Any, off), "playhead.stepForward", {})
+    assert off.monitor.trim.runs == [] and off.monitor.trim.command.sent == []
