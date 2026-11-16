@@ -198,6 +198,16 @@ python3 -m pip download --no-deps --only-binary=:all: --platform manylinux_2_34_
 export CFA4_PYSIDE6_WHEELS=/path/to/wheels
 ```
 
+The Flatpak bundle also builds MIT Kerberos (`krb5`) from a tarball pinned in its manifest, and
+`flatpak-builder` runs with `--disable-download`: `flatpak-bundle.sh` takes the tarball from a local
+directory (`CFA4_FLATPAK_SOURCES`), checks its SHA-256 against the manifest and seeds the builder's
+cache with it (`packaging/linux/flatpak-sources.py`). To fill that directory once:
+
+```bash
+bash scripts/release/fetch-flatpak-sources.sh /path/to/flatpak-sources
+export CFA4_FLATPAK_SOURCES=/path/to/flatpak-sources
+```
+
 The AppImage starts the Qt GUI by default (owner decision 2026-11-12) with the host's `python3`;
 `--egui` (or `CFA4_GUI=egui`) starts the frozen egui editor, and without `python3` the default
 falls back to egui with a message. The Flatpak (the release bundle and the from-source manifest) starts the Qt GUI too (`flatpak run io.github.ubuntuokos.cfa4`;
