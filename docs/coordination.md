@@ -51,7 +51,22 @@ Gazdát csak a tulajdonos jelölhet ki vagy válthat le. Fejlesztő munkamenet n
    - **kodek és konténer:** `crates/codecs/`, `crates/ffmpeg/`, `crates/gstreamer/`, valamint
      minden olyan crate, amelyet a [`architecture.md`](architecture.md) §1 kodek- vagy
      konténer-crate-ként sorol fel;
-   - **CI:** `.github/`;
+   - **CI** (szűkítve, tulajdonosi döntés D6, 2026-11-15): a PR akkor kockázatos, ha
+     - a beolvasztás kötelező vagy biztonsági kapuit adó workflowt módosítja: `pr-check.yml`
+       (`cargo-check`), `ci-linux.yml` (`full-validation-gate`), `cfa4-gate.yml`,
+       `cfa4-security.yml`, `codeql.yml`;
+     - kiadást vagy közzétételt végző workflowt módosít: `release` eseményre induló vagy bármilyen
+       `write` jogosultságú workflow (2026-11-15-én: `cfa4-release-candidate.yml`,
+       `cfa4-four-formats-hosted.yml`, `cfa4-f9-release-hold.yml`, `cfa4-ffmpeg-prebuilt.yml`);
+     - bármelyik workflowban jogosultságot (`permissions:`), titkot (`secrets.`),
+       `pull_request_target` vagy `workflow_run` indítót, illetve külső actiont vagy annak rögzített
+       verzióját (`uses:`) vesz fel vagy módosít;
+     - a `.github/dependabot.yml`-t vagy a `.github/actionlint.yaml`-t módosítja.
+
+     A többi `.github/` változás (például egy kézzel indítható vagy csak tesztet futtató workflow
+     lépései) nem kockázatos. Ellenőrzés: a fenti fájllista, és a workflow-diffben
+     (`git diff origin/main...HEAD -- .github/workflows/`) keresés a `permissions:`, `secrets.`,
+     `pull_request_target`, `workflow_run` és `uses:` szövegekre;
    - **szabályfájlok:** `AGENTS.md`, `CLAUDE.md`, `docs/coordination.md`, `.coderabbit.yaml`,
      `.claude/`.
 
@@ -113,8 +128,8 @@ Gazdát csak a tulajdonos jelölhet ki vagy válthat le. Fejlesztő munkamenet n
    Ezt a kötelező `full-validation-gate` ellenőrzés technikailag is kikényszeríti (tulajdonosi
    döntés, 2026-10-31): csak akkor zöld, ha minden blokkoló teljes job azon a fejen ténylegesen
    lefutott és zöld. A Qt6 GUI-tesztek a GUI elkészültéig futnak, de nem blokkolnak.
-   **CodeRabbit** (tulajdonosi döntés, 2026-11-12; D5, 2026-11-13): a gazda a fájllistából maga
-   is megnézi, kockázatos-e a PR (§2.9), a leírásban álló jelzéstől függetlenül. Kockázatos
+   **CodeRabbit** (tulajdonosi döntés, 2026-11-12; D5, 2026-11-13): a gazda a fájllistából (és
+   a workflow-diffből) maga is megnézi, kockázatos-e a PR (§2.9), a leírásban álló jelzéstől függetlenül. Kockázatos
    PR-t csak akkor olvaszt be, ha mindhárom feltétel teljesül; ha a keret elfogyott, a PR vár,
    CodeRabbit nélkül nem engedi tovább:
    (a) a fejlesztő kért ellenőrzést, vagyis a PR megjegyzései között
