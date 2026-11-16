@@ -424,6 +424,7 @@ fn midi_upkeep(st: &mut State, prefs: &ControlSurfacePrefs, now: Instant) -> Vec
         surface_runtime::with(|rt| rt.note_ok("alsa"));
     }
     let snapshot = st.reader.as_ref().map(|reader| {
+        reader.set_relative(prefs.relative_controls());
         let lost = reader.dropped();
         let inputs = reader.inputs();
         let messages = reader.drain(4_096);
