@@ -1566,6 +1566,17 @@ fn build() -> Vec<CommandSpec> {
                     }
                     continue;
                 }
+                // An AMWA AS-02 bundle: one sequence per version file.
+                if let Some(r) = crate::as02_import::import_package(s, &path, bin) {
+                    match r {
+                        Ok(r) => {
+                            sequences.extend(r["sequences"].as_array().cloned().unwrap_or_default());
+                            reports.push(r);
+                        }
+                        Err(e) => errors.push(format!("{path}: {e}")),
+                    }
+                    continue;
+                }
                 // DCP / IMF subtitles: timed text track files are caption tracks, not media.
                 if let Some(r) = crate::captions::import_timed_text_mxf(s, &path) {
                     match r {
