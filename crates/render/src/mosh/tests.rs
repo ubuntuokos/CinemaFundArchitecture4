@@ -76,3 +76,36 @@ fn odd_tiny_and_bad_inputs_never_panic() {
     let out = mosh(&bad, &[bad.clone(), bad.clone()], 255).expect("NaN input still moshes");
     assert!(out[0].px.iter().all(|v| v.is_finite()));
 }
+
+/// DM4: frame times of the mosh at 1080p (full, ½ and ¼ encode resolution). Not a gate: run on
+/// the reference machine with
+/// `cargo test -p cfa4-render --release --lib mosh::tests::frame_times_1080p -- --ignored --nocapture`.
+#[test]
+#[ignore]
+fn frame_times_1080p() {
+    use std::time::Instant;
+    let ms = |t: Instant| t.elapsed().as_secs_f64() * 1000.0;
+    for d in [1, 2, 4] {
+        let (w, h) = (1920 / d, 1080 / d);
+        let a = scene(w, h, 0, [0.9, 0.1, 0.1]);
+        let b: Vec<Image> = (0..25).map(|i| scene(w, h, i * 4 / d, [0.1, 0.2, 0.9])).collect();
+        let t = Instant::now();
+        let mut s = Session::new(&a, &b[0], 30).expect("session");
+        let start = ms(t);
+        let t = Instant::now();
+        for f in &b[1..] {
+            s.push(f).expect("push");
+        }
+        let push = ms(t) / 24.0;
+        let t = Instant::now();
+        let bloom = Bloom::new(&b[0], &b[1], 30).expect("bloom");
+        let bloom_new = ms(t);
+        let mut r = b[1].clone();
+        let t = Instant::now();
+        for _ in 0..12 {
+            r = bloom.step(&r).expect("step");
+        }
+        let step = ms(t) / 12.0;
+        eprintln!("{w}x{h}: transition start {start:.1} ms, next frame {push:.1} ms; bloom start {bloom_new:.1} ms, next repeat {step:.1} ms");
+    }
+}
