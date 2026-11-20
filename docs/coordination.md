@@ -56,8 +56,8 @@ Gazdát csak a tulajdonos jelölhet ki vagy válthat le. Fejlesztő munkamenet n
        (`cargo-check`), `ci-linux.yml` (`full-validation-gate`), `cfa4-gate.yml`,
        `cfa4-security.yml`, `codeql.yml`;
      - kiadást vagy közzétételt végző workflowt módosít: `release` eseményre induló vagy bármilyen
-       `write` jogosultságú workflow (2026-11-20-án: `cfa4-release-candidate.yml`,
-       `cfa4-four-formats-hosted.yml`, `cfa4-f9-release-hold.yml`, `cfa4-ffmpeg-prebuilt.yml`);
+       `write` jogosultságú workflow (2026-11-20-án csak a `cfa4-ffmpeg-prebuilt.yml`, amely
+       `contents: write` jogosultsággal GitHub-kiadást tölt fel);
      - bármelyik workflowban jogosultságot (`permissions:`), titkot (`secrets.`),
        `pull_request_target` vagy `workflow_run` indítót, illetve külső actiont vagy annak rögzített
        verzióját (`uses:`) vesz fel vagy módosít;
@@ -66,7 +66,10 @@ Gazdát csak a tulajdonos jelölhet ki vagy válthat le. Fejlesztő munkamenet n
      A többi `.github/` változás (például egy kézzel indítható vagy csak tesztet futtató workflow
      lépései) nem kockázatos. Ellenőrzés: a fenti fájllista, és a workflow-diffben
      (`git diff origin/main...HEAD -- .github/workflows/`) keresés a `permissions:`, `secrets.`,
-     `pull_request_target`, `workflow_run` és `uses:` szövegekre;
+     `pull_request_target`, `workflow_run` és `uses:` szövegekre; a keresés a kontextus miatt nem
+     mindig mutatja a `permissions:` szót egy többsoros blokk módosított kulcsa mellett, ezért minden
+     módosított workflow-fájl teljes `permissions:` blokkját (a felső szintűt és a jobokét is)
+     vesd össze a `main` változatával;
    - **szabályfájlok:** `AGENTS.md`, `CLAUDE.md`, `docs/coordination.md`, `.coderabbit.yaml`,
      `.claude/`.
 
