@@ -25,6 +25,7 @@ repository = "https://github.com/ubuntuokos/CinemaFundArchitecture4"
 # internal
 cfa4-time = { path = "crates/time" }
 cfa4-route = { path = "crates/route" }
+cfa4-tasks = { path = "crates/tasks" }
 cfa4-geom = { path = "crates/geom" }
 cfa4-color = { path = "crates/color" }
 cfa4-bitstream = { path = "crates/bitstream" }

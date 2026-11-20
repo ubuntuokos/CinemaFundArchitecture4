@@ -29,7 +29,7 @@ Design principles:
  L4  engine
  L3  render · gpu · export · smart-edit · qc · golden (test-only)
      DCP validation: dcp-validate · dcp-inspect · DCP mastering: dcpomatic
- L2  edit · codecs · interchange · captions · credits · speech · tts · tts-text
+ L2  tasks (cfa4-tasks) · edit · codecs · interchange · captions · credits · speech · tts · tts-text
  L1  frame · media · project · audio-dsp · text · route (cfa4-route) · tcsync · surface-model · metrics · live · sandbox · surface-catalog
  L0  foundation: time · geom · color · bitstream · testkit (dev-dependency only)
      codecs/containers: isobmff · matroska · mxf · cfb · mpegts · st2110 · ogg · h264 · h264enc · hevc · vp9 · av1 · mpeg2v · dv · lcevc · prores · dnx · apv · dng · aac · ac3 · dts · mpa · opus
@@ -103,6 +103,7 @@ Crates are named `cfa4-<dir>` (`crates/time` is `cfa4-time`); new CFA4 crates ar
 | `metrics` | L1 | image fidelity metrics for output comparison (docs/gaps.md G1): CIEDE2000 ΔE between sRGB images, SSIM of planes; depends on `color` only ([README](../crates/metrics/README.md)) |
 | `live` | L1 | `cfa4-live`: live graphics plumbing (credits plan C10): the live page server for OBS's Browser Source on **127.0.0.1 only** (the program picture as a transparent PNG, status, the cue's sound with byte ranges; other host names and methods refused), an obs-websocket 5 client over a minimal RFC 6455 WebSocket client; no rendering and no workspace dependencies ([README](../crates/live/README.md), [credits.md](credits.md)) |
 | `sandbox` | L1 | run-time security layer ([CFA4-SECURITY-001](plans/CFA4-SECURITY-001.md) B1): Landlock + seccomp profile of every CFA4 process kind (GUI, engine, media host, studio host, downloader, plug-in host, model converter), strict by default (D4), the report behind `security.status`; no `unsafe` (safe `landlock` and `seccompiler` crates), no workspace dependencies ([README](../crates/sandbox/README.md)) |
+| `tasks` | L2 | `cfa4-tasks`: CFA4-wide task and resource infrastructure (ACS, [ADR 0008 in the AI repo](../docs/plans/CFA4-ADAPTIVE-CAPABILITY-001-osszevetes.md)): nominal and current resources kept apart (RAM, cgroup limits, PSI, VRAM from sysfs), the resource manager with atomic reservations and waiting reasons, the monitor with hysteresis, the execution-path planner with time estimates, the task queue (classes, priorities, timed starts in IANA zones through `chrono-tz`, leases, missed-start decisions); no `unsafe`, depends on `cfa4-route` for the device probe |
 | `edit` | L2 | pure edit algebra (insert, overwrite, razor, ripple, roll, slip, slide, rate stretch…; text-based editing: `edit::transcript`) |
 | `credits` | L2 | credits sequences from a spreadsheet: CSV/TSV reader, page / content / letter styles, layout into graphic clips (rolls and cards) ([README](../crates/credits/README.md), [credits.md](credits.md)) |
 | `speech` | L2 | speech-to-text: `Transcriber` trait, Whisper model catalogue + verified downloader (feature `download`), pure-Rust Whisper inference on candle with word timestamps (feature `whisper`), speaker labelling ([transcripts.md](transcripts.md)) |

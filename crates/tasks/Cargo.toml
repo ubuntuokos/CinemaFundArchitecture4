@@ -1,0 +1,20 @@
+[package]
+name = "cfa4-tasks"
+description = "CFA4-wide task and resource infrastructure (ACS): hardware discovery and runtime resource monitoring, nominal and current resources kept apart; later the resource manager, queue and scheduler"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+rust-version.workspace = true
+
+[lints]
+workspace = true
+
+[dependencies]
+cfa4-route = { workspace = true }
+serde = { workspace = true }
+log = { workspace = true }
+chrono = { workspace = true }
+chrono-tz = { version = "0.10", default-features = false }
+
+[dev-dependencies]
+serde_json = { workspace = true }
