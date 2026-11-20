@@ -1,6 +1,6 @@
 # CFA4-SHOTCUT-CAPABILITY-ADAPTATION-001: F0-audit és végrehajtható terv
 
-**Állapot:** F0-audit kész; a terv tulajdonosi átnézésre vár (SC-4 és a V1-bővítés jóváhagyva 2026-11-20; a `docs/plans/` mappába másolást és a V1 átvezetését István 2026-11-20-án engedélyezte). Ez a dokumentum **nem indít el semmit**: a megvalósítás (SC-1…SC-4) külön engedélyt igényel.
+**Állapot:** F0-audit kész; **a tervet a tulajdonos jóváhagyta (István, 2026-11-20)**. A jóváhagyás nem indít megvalósítást. (Korábbi állapot: tulajdonosi átnézésre vár (SC-4 és a V1-bővítés jóváhagyva 2026-11-20; a `docs/plans/` mappába másolást és a V1 átvezetését István 2026-11-20-án engedélyezte). A dokumentum **nem indít el semmit**: a megvalósítás (SC-1…SC-4) külön engedélyt igényel.)
 **Dátum:** 2026-11-20 · **Auditált állapot:** `ubuntuokos/CinemaFundArchitecture4` `main` @ `2140a51` (2026-11-20) · **Módszer:** csak olvasás (sekély klón egy ideiglenes mappába, kódkeresés, a `docs/` átnézése, a nyitott PR-ok és ágak címeinek átfutása).
 **Nyelv:** magyar. A Shotcut forráskódját ebben az auditban **nem** vizsgáltam; a Shotcut-képességek a megbízás F1–F13 leírásából valók.
 
