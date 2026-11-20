@@ -230,3 +230,33 @@ resizes the root split; path entries use `false` for the first child and `true` 
 the second. `{"action":{"MoveFloating":{"panel":"Info","rect":[45,65,420,320]}}}`
 repositions and resizes the floating group containing Info. Invalid actions leave the
 layout unchanged. Pointer gestures dispatch through this same catalog command.
+
+## Control surfaces (`surface.*`)
+
+`PROTOCOL` stays 1. A server that can list devices adds `"surface"` to `hello.features`; the
+monitor adds `surfaceMonitor` and Learn adds `surfaceLearn`. The Qt GUI calls these as methods
+on `cfa4-cli serve` (the same names are engine commands, so `engine.execute` reaches them too).
+The field-by-field contract is
+[`docs/plans/CFA4-CONTROL-SURFACE-PROTOCOL-CONTRACT.md`](plans/CFA4-CONTROL-SURFACE-PROTOCOL-CONTRACT.md).
+An error reply may add `"code"` next to `"error"` (`invalid_params`, `alsa_unavailable`,
+`learn_busy`, `learn_idle`, `permission_denied`, `overload`, `internal`).
+
+| Method | Params | Result |
+|---|---|---|
+| `surface.devices` | `{}` | `{enabled, devices: [{device, name, protocol, state, enabled, profile, error?}], problems}` |
+| `surface.monitor` | `{enabled, device?, filter?: {clock?, sense?, mtc?}}` | `{enabled}`. Events `surfaceMonitor` at most 20 Hz. Clock, Active Sensing and MTC are left out unless the filter asks |
+| `surface.learn` | `{target?: {command, params?}, device?, firstMs?, silenceMs?}` | `{state: "learning"}`. One Learn at a time (`learn_busy`). First-message wait defaults to 7 s, silence to 1.5 s; both are preferences (`controlSurfaces.learnFirstMs`, `learnSilenceMs`) |
+| `surface.learnCancel` | `{}` | `{state: "cancelled"}`, also when Learn is idle |
+| `surface.learnConfirm` | `{accept: bool}` | `{state: "confirmed", device, control, mode, encoding?, command, params}` or `{state: "rejected"}` |
+| `surface.inject` | `{device, input, raw?}` | `{seq}`. Same mapping as a device. Events follow on the session loop |
+| `surface.clock` | `{time: ticks, playing, speed, monitor: "program"\|"source"\|"trim"}` | `{}`. A clock older than 500 ms is not valid (`surface.state` `clockValid`) |
+| `surface.enable` | `{device, enabled}` | `{device, enabled}`. `enabled: true` clears a reader that stopped after five faults |
+| `surface.state` | `{device?}` | `{learn, devices: [{device, state, received, dispatched, coalesced, stalls, gaps, errors}], kernelDropped, clockValid}` |
+| `surface.audit` | `{device?}` | `[{device, control, problem, detail}]` |
+| `surface.profile.warnings` | `{}` | `{devices: [{device, warnings}]}` for assignments this version cannot read |
+
+Events: `surfaceAction` `{command, params, device, control, seq}`, `surfaceLearn` `{state, device?, count?, captured?, conflict?}`, `surfaceMonitor`, `surfaceError` `{device?, code, error}` (the same text at most once a second).
+
+Learn states: `learning`, `capturing`, `pending`, `conflict`, `timeout`, `confirmed`, `rejected`, `cancelled`. A binding is stored by the GUI only after confirm; OK writes preferences and the schema-checked file `active-<device>.json` under `$XDG_DATA_HOME/cfa4/Control Surfaces/`.
+
+Trigger inputs are not dropped when the lane is full (the reader waits and `stalls` grows). Continuous values keep the last one (`coalesced`). The lane starts at 256. The final size is not measured yet (N-08).

@@ -56,3 +56,7 @@ bash "$(dirname "$0")/install-amr-oracle.sh" \
 # G.729 oracle tests skip without it)
 bash "$(dirname "$0")/install-g729-oracle.sh" \
   || echo "::warning::cfa4-g729-oracle build failed: the G.729 oracle tests skip"
+# LCEVC oracle `lcevc_oracle` (V-Nova LCEVCdec 4.3.1 + crates/lcevc/tests/oracle/lcevc_oracle.c,
+# built from the pinned upstream tag; the LCEVC oracle test skips without it)
+bash "$(dirname "$0")/install-lcevc-oracle.sh" \
+  || echo "::warning::lcevc_oracle build failed: the LCEVC oracle test skips"

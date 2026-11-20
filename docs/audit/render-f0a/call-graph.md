@@ -159,7 +159,7 @@ graph LR
 | `cfa4-cli/serve_scopes.rs` | `cfa4-engine` | `Session`, `scopes` |
 | `cfa4-cli/serve_scopes.rs` | `cfa4-time` | `Tick` |
 | `cfa4-cli/serve_shuttle.rs` | `cfa4-audio-dsp` | `AudioEffect` |
-| `cfa4-cli/serve_surface.rs` | `cfa4-engine` | `Session`, `control_surfaces` |
+| `cfa4-cli/serve_surface.rs` | `cfa4-engine` | `EngineError`, `Session`, `control_surfaces`, `surface_runtime` |
 | `cfa4-cli/serve_tcsync.rs` | `cfa4-engine` | `Session` |
 | `cfa4-cli/serve_tcsync.rs` | `cfa4-time` | `FrameRate`, `Tick` |
 | `cfa4-cli/serve_text.rs` | `cfa4-engine` | `Session`, `transcript` |
@@ -513,6 +513,7 @@ graph LR
 | `cfa4-media/lib.rs` | `cfa4-color` | `ColorInfo`, `HdrMetadata` |
 | `cfa4-media/lib.rs` | `cfa4-frame` | `AudioBuffer` |
 | `cfa4-media/lib.rs` | `cfa4-time` | `FrameRate` |
+| `cfa4-media/oma.rs` | `cfa4-time` | `Tick` |
 | `cfa4-media/reader.rs` | `cfa4-time` | `Tick` |
 | `cfa4-media/sequence.rs` | `cfa4-frame` | `AudioBuffer`, `PixelData` |
 | `cfa4-media/sequence.rs` | `cfa4-time` | `FrameRate`, `Tick` |
@@ -778,13 +779,14 @@ graph LR
 
 ## 4. Nyilvános típusok osztályonként
 
-A többi 569 nyilvános típus („other” osztály) csak a `call-graph.json`-ban szerepel.
+A többi 579 nyilvános típus („other” osztály) csak a `call-graph.json`-ban szerepel.
 
-### Képkocka, kép, pixel (25)
+### Képkocka, kép, pixel (26)
 
 | Crate | Modul | Fajta | Típus |
 |---|---|---|---|
 | `cfa4-audio-dsp` | `channels.rs` | enum | `Layout` |
+| `cfa4-cli` | `serve_surface.rs` | struct | `SurfaceError` |
 | `cfa4-engine` | `control_surfaces.rs` | struct | `ControlSurfacePrefs` |
 | `cfa4-engine` | `keyboard.rs` | struct | `FrameExportTarget` |
 | `cfa4-engine` | `sequence_tools.rs` | struct | `DuplicateFrames` |
