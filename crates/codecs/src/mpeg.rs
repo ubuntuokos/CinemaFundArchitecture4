@@ -112,6 +112,8 @@ pub struct MpegSource {
     /// Why the video or audio stream cannot be decoded.
     unsupported_video: Option<String>,
     unsupported_audio: Option<String>,
+    /// LCEVC in the video stream's T.35 SEI that is decoded on top of the base.
+    lcevc: Option<(cfa4_lcevc::BaseCodec, cfa4_lcevc::Framing)>,
 }
 
 fn vkind(c: &Codec) -> Option<VKind> {
@@ -228,6 +230,7 @@ impl MpegSource {
             audios: Vec::new(),
             unsupported_video: None,
             unsupported_audio: None,
+            lcevc: None,
         };
         // video
         let origin;
@@ -333,6 +336,7 @@ impl MpegSource {
             audios: Vec::new(),
             unsupported_video: None,
             unsupported_audio: None,
+            lcevc: None,
         };
         src.describe_video(None)?;
         // the first GOP's time code (non-drop-frame count at the nominal rate)
@@ -418,8 +422,23 @@ impl MpegSource {
                 seq_header = Some(header);
             }
             VKind::H264 | VKind::Hevc => {
+                // LCEVC: its own elementary stream (stream_type 0x36, not decoded), or T.35 SEI in
+                // the base's first pictures (decoded)
+                let base = if v.kind == VKind::H264 { cfa4_lcevc::BaseCodec::H264 } else { cfa4_lcevc::BaseCodec::Hevc };
+                let lcevc_stream = self.file.as_ref().is_some_and(|f| f.streams.iter().any(|s| s.stream_type == cfa4_lcevc::TS_STREAM_TYPE));
+                let carriage = if lcevc_stream {
+                    None
+                } else {
+                    crate::lcevc::scan(
+                        (0..v.units.len().min(crate::lcevc::SCAN_SAMPLES)).filter_map(|i| self.read_unit(v, i).ok()),
+                        base,
+                        cfa4_lcevc::Framing::AnnexB,
+                    )
+                };
+                self.lcevc = carriage.and_then(|c| c.decodable());
                 // decode up to the first frame for size, aspect and colour
-                let mut dec: Box<dyn VideoDecoder> = if v.kind == VKind::H264 { Box::new(H264Decoder::annexb()) } else { Box::new(HevcDecoder::annexb()) };
+                let dec: Box<dyn VideoDecoder> = if v.kind == VKind::H264 { Box::new(H264Decoder::annexb()) } else { Box::new(HevcDecoder::annexb()) };
+                let mut dec = crate::lcevc::LcevcDecoder::wrap(dec, self.lcevc);
                 let mut frame = None;
                 for i in 0..v.units.len().min(32) {
                     if let Some(f) = dec.decode(&self.read_unit(v, i)?, i as i64)?.into_iter().next() {
@@ -433,15 +452,12 @@ impl MpegSource {
                 par = frame.par;
                 color = frame.color;
                 let mut label: String = if v.kind == VKind::H264 { "H.264".into() } else { "HEVC".into() };
-                // LCEVC: its own elementary stream (stream_type 0x36), or T.35 SEI in the base's first pictures
-                let base = if v.kind == VKind::H264 { cfa4_lcevc::BaseCodec::H264 } else { cfa4_lcevc::BaseCodec::Hevc };
-                if self.file.as_ref().is_some_and(|f| f.streams.iter().any(|s| s.stream_type == cfa4_lcevc::TS_STREAM_TYPE)) {
+                if lcevc_stream {
                     crate::lcevc::mark(&self.info.name, &mut label, "stream_type 0x36 stream");
-                } else if (0..v.units.len().min(crate::lcevc::SCAN_SAMPLES))
-                    .filter_map(|i| self.read_unit(v, i).ok())
-                    .any(|d| cfa4_lcevc::sample_has_lcevc(&d, base, cfa4_lcevc::Framing::AnnexB))
-                {
-                    crate::lcevc::mark(&self.info.name, &mut label, "T.35 SEI");
+                } else if let Some(c) = carriage {
+                    let mut size = (width, height);
+                    // the probe decoder above was wrapped: the first frame has the enhanced size
+                    crate::lcevc::apply(&self.info.name, c, &mut label, &mut size);
                 }
                 codec = label;
                 rate = None;
@@ -862,8 +878,8 @@ impl VideoSamples for MpegVideo<'_> {
         }
         Ok(match self.v.kind {
             VKind::Mpeg2 => Box::new(Mpeg2Decoder::new(self.v.header.clone())),
-            VKind::H264 => Box::new(H264Decoder::annexb()),
-            VKind::Hevc => Box::new(HevcDecoder::annexb()),
+            VKind::H264 => crate::lcevc::LcevcDecoder::wrap(Box::new(H264Decoder::annexb()), self.src.lcevc),
+            VKind::Hevc => crate::lcevc::LcevcDecoder::wrap(Box::new(HevcDecoder::annexb()), self.src.lcevc),
         })
     }
 }

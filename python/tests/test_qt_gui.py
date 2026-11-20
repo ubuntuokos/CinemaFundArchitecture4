@@ -1438,7 +1438,7 @@ def test_real_engine_preferences_dialog_and_favourite_themes_as_egui(app, tmp_pa
         assert win.menuBar().findChild(QtGui.QAction, "app.settings.general").shortcut().toString() == "Ctrl+,"
         d = opened("timeline")
         assert d.objectName() == "settings" and d.findChild(QtWidgets.QPushButton, "settings.category.timeline").isChecked()
-        assert len([b for b in d.findChildren(QtWidgets.QPushButton) if b.objectName().startswith("settings.category.")]) == 17  # with Media Backends (ADR 0005)
+        assert len([b for b in d.findChildren(QtWidgets.QPushButton) if b.objectName().startswith("settings.category.")]) == 19  # every category of prefs.schema, Control Surfaces (ADR-0012) included
         scroll = d.findChild(QtWidgets.QComboBox, "settings.timeline.autoScroll")
         scroll.setCurrentIndex(scroll.findData("smoothScroll"))
         d.findChild(QtWidgets.QPushButton, "settings.cancel").click()
@@ -2974,7 +2974,7 @@ def test_real_engine_dcp_export_writes_a_package_folder(app, tmp_path: Path):
         dlg = win.export_dialog
         assert dlg is not None
         assert wait_until(app, lambda: dlg.preset.count() > 0 and dlg.format.count() > 0, 30_000)
-        assert not dlg.dcp_resolution.isEnabled()
+        assert not dlg.dcp_resolution.isEnabled() and not dlg.dcp_subtitles.isEnabled()
         assert "dcpResolution" not in dlg.params()
         dlg.preset.setCurrentIndex(dlg.preset.findData("DCP 2K Scope"))
         assert dlg.format.currentData() == "dcp" and dlg.dcp_resolution.isEnabled()
@@ -2997,6 +2997,19 @@ def test_real_engine_dcp_export_writes_a_package_folder(app, tmp_path: Path):
         assert wait_until(app, lambda: "RFC 5646" in dlg.summary.text(), 10_000), dlg.summary.text()
         assert not dlg.dcp_isdcf.isEnabled()
         dlg.dcp_language.setCurrentText("hu-HU")
+        # DCP subtitles (#938): the language and font rows follow the checkbox
+        assert dlg.dcp_subtitles.isEnabled() and not dlg.dcp_subtitles.isChecked()
+        assert not dlg.dcp_subtitle_language.isEnabled() and not dlg.dcp_subtitle_font.isEnabled()
+        assert dlg.params()["dcpSubtitles"] is False and "dcpSubtitleLanguage" not in dlg.params()
+        dlg.dcp_subtitles.setChecked(True)
+        assert dlg.dcp_subtitle_language.isEnabled() and dlg.dcp_subtitle_font_browse.isEnabled()
+        dlg.dcp_subtitle_language.setCurrentText("en")
+        dlg.dcp_subtitle_font.setText("~/fonts/sub.otf")
+        p = dlg.params()
+        assert (p["dcpSubtitles"], p["dcpSubtitleLanguage"], p["dcpSubtitleFont"]) == (True, "en", os.path.expanduser("~/fonts/sub.otf"))
+        assert wait_until(app, lambda: "_TLR-1_S_HU-EN_51_2K_" in dlg._dcp_name, 10_000), dlg._dcp_name
+        dlg.dcp_subtitles.setChecked(False)
+        assert not dlg.dcp_subtitle_font.isEnabled() and "dcpSubtitleFont" not in dlg.params()
 
         dlg.range.setCurrentIndex(dlg.range.findData("custom"))
         dlg.start.setValue(0.0)
@@ -3060,6 +3073,19 @@ def test_real_engine_imf_export_writes_a_package_folder(app, tmp_path: Path):
         p = dlg.params()
         assert (p["imfContentKind"], p["imfLossless"], p["dcpLanguage"]) == ("episode", True, "hu-HU")
         assert "dcpResolution" not in p and "bitrateKbps" not in p
+        # IMF subtitles (#1234): the switch and language as for a DCP, a timed text kind, no font
+        assert dlg.dcp_subtitles.isEnabled() and p["dcpSubtitles"] is False and "imfTimedTextKind" not in p
+        assert not dlg.imf_timed_text_kind.isEnabled()
+        dlg.dcp_subtitles.setChecked(True)
+        assert dlg.imf_timed_text_kind.isEnabled() and dlg.dcp_subtitle_language.isEnabled()
+        assert not dlg.dcp_subtitle_font.isEnabled() and not dlg.dcp_subtitle_font_browse.isEnabled()
+        dlg.dcp_subtitle_language.setCurrentText("en-US")
+        dlg.imf_timed_text_kind.setCurrentIndex(dlg.imf_timed_text_kind.findData("forcedNarrative"))
+        p = dlg.params()
+        assert (p["dcpSubtitles"], p["dcpSubtitleLanguage"], p["imfTimedTextKind"]) == (True, "en-US", "forcedNarrative")
+        assert "dcpSubtitleFont" not in p
+        dlg.dcp_subtitles.setChecked(False)
+        assert not dlg.imf_timed_text_kind.isEnabled() and "imfTimedTextKind" not in dlg.params()
         # a small picture keeps the test quick
         dlg.match_size.setChecked(False)
         dlg.width_spin.setValue(320)
@@ -3085,6 +3111,7 @@ def test_real_engine_imf_export_writes_a_package_folder(app, tmp_path: Path):
         dlg.format.setCurrentIndex(dlg.format.findData("dcp"))
         kinds = [dlg.dcp_kind.itemData(i) for i in range(dlg.dcp_kind.count())]
         assert "policy" in kinds and "episode" not in kinds and not dlg.imf_lossless.isEnabled()
+        assert not dlg.imf_timed_text_kind.isEnabled()
     finally:
         if win.export_dialog is not None:
             win.export_dialog.hide()
@@ -5061,9 +5088,15 @@ def test_window_menu_lists_every_egui_panel_with_its_shortcut(app, fake_engine: 
         entries = [a for a in menu.actions() if not a.isSeparator()]
         assert entries[0].menu() is not None and entries[0].menu().objectName() == "menu.Window.Workspaces"
         assert entries[1].text() == "New Project Panel" and not entries[1].isEnabled()
-        panels = entries[2:]
+        panels = entries[2 : 2 + len(PANELS)]
         assert [a.text() for a in panels] == [p.title for p in PANELS]
-        have = {"Project", "Effects", "History", "Source", "Effect Controls", "Program", "Timeline", "Properties", "Events", "Tools", "Audio Meters", "Info", "Markers", "Metadata", "Project Notes", "Timecode", "Progress", "Audio Track Mixer", "Audio Clip Mixer", "Reference Monitor", "Lumetri Scopes", "Lumetri Color", "Media Browser", "Text", "Essential Sound", "Essential Graphics", "Text to Speech", "Libraries"}
+        surfaces = entries[2 + len(PANELS) :]
+        assert [a.objectName() for a in surfaces] == [
+            "window.controlSurfaces",
+            "window.midiMonitor",
+            "window.surfaceAssignments",
+        ]
+        have = {"Project", "Effects", "History", "Source", "Effect Controls", "Program", "Timeline", "Properties", "Events", "Tools", "Audio Meters", "Info", "Markers", "Metadata", "Project Notes", "Timecode", "Progress", "Audio Track Mixer", "Audio Clip Mixer", "Reference Monitor", "Lumetri Scopes", "Lumetri Color", "Media Browser", "Text", "Essential Sound", "Essential Graphics", "Text to Speech", "Libraries", "Task Manager"}
         for a, p in zip(panels, PANELS, strict=True):
             assert a.isEnabled() == (p.title in have), p.title
             if p.shortcut and a.isEnabled():
@@ -9726,6 +9759,13 @@ def test_markers_info_metadata_and_project_notes(app, tmp_path: Path):
         menu = win.markers.list.menu_for(2)
         next(a for a in menu.findChildren(QtGui.QAction) if a.objectName() == "markers.menu.color.Teal").trigger()
         assert wait_until(app, lambda: next(m for m in win.sequence["markers"] if m["id"] == target["id"])["color"] == "Teal", 10_000)
+        # the marker type: a segmentation marker is an AS-11 programme part of an MXF export
+        menu = win.markers.list.menu_for(2)
+        next(a for a in menu.findChildren(QtGui.QAction) if a.objectName() == "markers.menu.kind.segmentation").trigger()
+        assert wait_until(app, lambda: next(m for m in win.sequence["markers"] if m["id"] == target["id"])["kind"] == "Segmentation", 10_000)
+        assert wait_until(
+            app, lambda: "Segmentation" in win.markers.list.label_text(next(m for m in win.markers.list.markers if m["id"] == target["id"])), 10_000
+        )
         # Metadata and Info follow the Project panel's selection
         movie = next(i for i in _items(win.project) if i.get("name") == "Ocean_Sunset.mp4")
         tree = win.project_panel.tree
@@ -14923,6 +14963,25 @@ def test_credits_engine_notes_are_translated():
         assert any(p.match(filled) for p, _t in NOTES), literal
 
 
+def test_credits_template_pages_have_names_and_colours():
+    """F10-C16: the title, opening, chapter and lower-third pages are named in the page list (in
+    every language) and have their own colour on the Credits workspace's timeline strip."""
+    from cfa4_qt.i18n import TR
+    from cfa4_qt.panels.credits import BEHAVIOURS
+    from cfa4_qt.panels.credits_workspace import KIND_COLOURS
+
+    for kind in ("title", "opening", "chapter", "lowerThird"):
+        assert kind in BEHAVIOURS and kind in KIND_COLOURS, kind
+    assert set(KIND_COLOURS) == set(BEHAVIOURS)
+    TR.set_language("hu")
+    try:
+        assert TR.tr(BEHAVIOURS["lowerThird"]) == "Alsó sáv"
+        assert TR.tr(BEHAVIOURS["chapter"]) == "Fejezetcím"
+        assert TR.tr(BEHAVIOURS["opening"]) == "Nyitó képsor"
+    finally:
+        TR.set_language("en")
+
+
 def test_credits_card_point_text(app):
     """C15: a card spine's point follows its offset in the block's properties, in the user's
     language; a block without one, or with bad values, does not break it."""
@@ -15174,3 +15233,39 @@ def test_real_engine_check_text_legibility_reports_as_egui(app, tmp_path: Path):
         win._quit_confirmed = True
         win.close()
         engine.stop()
+
+
+def test_export_mxf_as11_fields_only_for_op1a(app):
+    """#96: the AS-11 Core, parts and UK DPP text fields show for MXF OP1a only and are sent as
+    ``mxfAs11Core`` / ``mxfAs11Segments`` / ``mxfAs11Ukdpp`` once edited."""
+    from cfa4_qt.panels.export import ExportDialog
+
+    class Engine:
+        running = False
+
+        def execute(self, command, params=None, on_reply=None, on_error=None):
+            return 0
+
+    dlg = ExportDialog(Engine())  # type: ignore[arg-type]
+    dlg._on_formats([{"id": "h264", "label": "H.264"}, {"id": "mxf-op1a", "label": "MXF OP1a"}, {"id": "mxf-opatom", "label": "MXF OP-Atom"}], None)
+    core = dlg.findChild(QtWidgets.QPlainTextEdit, "export.video.mxfAs11Core")
+    parts = dlg.findChild(QtWidgets.QPlainTextEdit, "export.video.mxfAs11Segments")
+    assert core is dlg.as11_text["mxfAs11Core"] and parts is dlg.as11_text["mxfAs11Segments"]
+    assert dlg.video_form.labelForField(core).text() == "AS-11 Core"
+    dlg.format.setCurrentIndex(dlg.format.findData("mxf-op1a"))
+    dlg._sync_format_rows()
+    assert not core.isHidden() and "mxfAs11Core" not in dlg.params()
+    core.setPlainText("SeriesTitle: S\nShimName: UK DPP HD")
+    parts.setPlainText("1/1 10:00:00:00 25")
+    p = dlg.params()
+    assert p["mxfAs11Core"] == "SeriesTitle: S\nShimName: UK DPP HD" and p["mxfAs11Segments"] == "1/1 10:00:00:00 25"
+    assert "mxfAs11Ukdpp" not in p
+    dlg.format.setCurrentIndex(dlg.format.findData("mxf-opatom"))
+    dlg._sync_format_rows()
+    assert core.isHidden() and "mxfAs11Core" not in dlg.params()
+    # a preset's AS-11 text shows until the field is edited here
+    dlg2 = ExportDialog(Engine())  # type: ignore[arg-type]
+    dlg2._show_settings({"mxfAs11Ukdpp": "ProductionNumber: P1"})
+    assert dlg2.as11_text["mxfAs11Ukdpp"].toPlainText() == "ProductionNumber: P1"
+    dlg.deleteLater()
+    dlg2.deleteLater()

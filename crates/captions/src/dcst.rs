@@ -7,11 +7,16 @@
 //! `<i>`/`<b>`/`<u>` tags; ruby keeps its base text (`Rb`); `Space` is one space; control codes are
 //! dropped (§6.3). Times are subtitle time codes `HH:MM:SS:E+` counted in `TimeCodeRate` units
 //! and measured from `StartTime` (default `01:00:00:00`, §5.10), at the `EditRate` (§4.2.5).
-//! Image subtitles (`Image`, PNG) have no text: they are counted and reported.
+//! Image subtitles (`Image`, PNG) have no text: they are listed in [`Reel::images`] with their
+//! times, fades (§6.1.4-6.1.5, default two units) and position (§6.2.1-6.2.4) for the caller to
+//! place the PNG resources they name.
 
 use cfa4_time::Tick;
 
 use crate::{Cue, Document, Error, Result};
+
+/// Image subtitles kept per reel (a feature reel has a few thousand at most).
+pub const MAX_IMAGES: usize = 20_000;
 
 /// A parsed subtitle reel.
 #[derive(Clone, Debug, Default, PartialEq)]
@@ -23,8 +28,82 @@ pub struct Reel {
     pub language: Option<String>,
     /// `Id` (`urn:uuid:…`).
     pub id: Option<String>,
-    /// Subtitles given as PNG images (not converted to cues).
-    pub image_subtitles: usize,
+    /// Subtitles given as PNG images (not converted to cues), in document order.
+    pub images: Vec<ImageSubtitle>,
+    /// `IntrinsicPictureResolution` (§5.1.1): the picture size the PNGs were made for, e.g. `4K`.
+    pub intrinsic_resolution: Option<String>,
+}
+
+/// Which edge (or the centre) of an image a position is measured from (`Halign`/`Valign`).
+#[derive(Clone, Copy, Debug, Default, PartialEq, Eq)]
+pub enum Align {
+    /// `left` / `top`.
+    Start,
+    #[default]
+    Center,
+    /// `right` / `bottom`.
+    End,
+}
+
+/// An `Image` subtitle (ST 428-7 §6.2): a PNG resource shown over the picture.
+#[derive(Clone, Debug, PartialEq)]
+pub struct ImageSubtitle {
+    pub start: Tick,
+    pub end: Tick,
+    /// `FadeUpTime` / `FadeDownTime`.
+    pub fade_in: Tick,
+    pub fade_out: Tick,
+    /// UUID of the PNG resource (the element's `urn:uuid:` body).
+    pub resource: [u8; 16],
+    pub h_align: Align,
+    /// `Hposition`, percent of the picture width.
+    pub h_position: f64,
+    pub v_align: Align,
+    /// `Vposition`, percent of the picture height.
+    pub v_position: f64,
+    /// `SpotNumber` of the subtitle.
+    pub spot: Option<String>,
+}
+
+impl ImageSubtitle {
+    /// Centre of an `image`-sized picture over a `frame`-sized one, in pixels from the top left
+    /// (Tables 4 and 5).
+    pub fn centre(&self, frame: (f64, f64), image: (f64, f64)) -> (f64, f64) {
+        let place = |align: Align, pos: f64, f: f64, i: f64| match align {
+            Align::Start => f * pos / 100.0 + i / 2.0,
+            Align::Center => f / 2.0 + f * pos / 100.0,
+            Align::End => f - f * pos / 100.0 - i / 2.0,
+        };
+        (place(self.h_align, self.h_position, frame.0, image.0), place(self.v_align, self.v_position, frame.1, image.1))
+    }
+}
+
+/// The 16 bytes of a `urn:uuid:` (or bare) UUID.
+pub fn parse_uuid(s: &str) -> Option<[u8; 16]> {
+    let s = s.trim();
+    let s = s.strip_prefix("urn:uuid:").unwrap_or(s);
+    let hex: Vec<u8> = s.bytes().filter(|b| *b != b'-').collect();
+    if hex.len() != 32 || s.len() != 36 {
+        return None;
+    }
+    let mut out = [0u8; 16];
+    for (o, pair) in out.iter_mut().zip(hex.chunks(2)) {
+        *o = u8::from_str_radix(std::str::from_utf8(pair).ok()?, 16).ok()?;
+    }
+    Some(out)
+}
+
+fn align(v: Option<&str>, start: &str, end: &str) -> Align {
+    match v.map(str::trim) {
+        Some(x) if x == start => Align::Start,
+        Some(x) if x == end => Align::End,
+        _ => Align::Center,
+    }
+}
+
+fn percent(v: Option<&str>) -> f64 {
+    // a position outside the picture is clamped to a picture width/height away
+    v.and_then(|v| v.trim().parse::<f64>().ok()).filter(|v| v.is_finite()).unwrap_or(0.0).clamp(-100.0, 100.0)
 }
 
 /// Whether `text` is a DCDM subtitle document (root element `SubtitleReel`).
@@ -45,9 +124,15 @@ pub fn sniff(text: &str) -> bool {
     name.rsplit(':').next() == Some("SubtitleReel")
 }
 
-/// Parse a DCDM subtitle document into cues.
+/// Parse a DCDM subtitle document into cues (image subtitles are reported in the warnings).
 pub fn parse(text: &str) -> Result<Document> {
-    parse_reel(text).map(|r| r.document)
+    parse_reel(text).map(|r| {
+        let mut doc = r.document;
+        if !r.images.is_empty() {
+            doc.warnings.push(format!("{} image subtitle(s) (PNG) not imported as text", r.images.len()));
+        }
+        doc
+    })
 }
 
 fn child<'a, 'i>(n: roxmltree::Node<'a, 'i>, name: &str) -> Option<roxmltree::Node<'a, 'i>> {
@@ -149,7 +234,13 @@ pub fn parse_reel(text: &str) -> Result<Reel> {
     if root.tag_name().name() != "SubtitleReel" {
         return Err(Error::NotFormat("D-Cinema subtitle"));
     }
-    let mut reel = Reel { title: child_text(root, "ContentTitleText"), language: child_text(root, "Language"), id: child_text(root, "Id"), ..Reel::default() };
+    let mut reel = Reel {
+        title: child_text(root, "ContentTitleText"),
+        language: child_text(root, "Language"),
+        id: child_text(root, "Id"),
+        intrinsic_resolution: root.attribute("IntrinsicPictureResolution").map(|v| v.trim().to_string()).filter(|v| !v.is_empty()),
+        ..Reel::default()
+    };
     let doc = &mut reel.document;
     let (num, den) = match child_text(root, "EditRate") {
         Some(s) => edit_rate(&s).ok_or_else(|| Error::Syntax { line: 1, msg: format!("bad EditRate \"{s}\"") })?,
@@ -202,22 +293,208 @@ pub fn parse_reel(text: &str) -> Result<Reel> {
                 lines.push((line_y(t), s));
             }
         }
-        if lines.is_empty() {
-            if sub.descendants().any(|n| n.is_element() && n.tag_name().name() == "Image") {
-                reel.image_subtitles += 1;
+        // fades: two units unless given (§6.1.4-6.1.5), shared by the subtitle's images
+        let fade = |name: &str| match sub.attribute(name) {
+            Some(v) => time_code(v, tc_rate).unwrap_or(2),
+            None => 2,
+        };
+        let (fade_in, fade_out) = (fade("FadeUpTime"), fade("FadeDownTime"));
+        for img in sub.descendants().filter(|n| n.is_element() && n.tag_name().name() == "Image") {
+            let Some(resource) = img.text().and_then(parse_uuid) else {
+                doc.warnings.push(format!("line {}: image subtitle without a valid urn:uuid skipped", xml.text_pos_at(img.range().start).row));
+                continue;
+            };
+            if reel.images.len() >= MAX_IMAGES {
+                doc.warnings.push(format!("more than {MAX_IMAGES} image subtitles; the rest skipped"));
+                break;
             }
+            reel.images.push(ImageSubtitle {
+                start: at(t_in),
+                end: at(t_out),
+                fade_in: Tick::from_rational(fade_in, den, num),
+                fade_out: Tick::from_rational(fade_out, den, num),
+                resource,
+                h_align: align(img.attribute("Halign"), "left", "right"),
+                h_position: percent(img.attribute("Hposition")),
+                v_align: align(img.attribute("Valign"), "top", "bottom"),
+                v_position: percent(img.attribute("Vposition")),
+                spot: sub.attribute("SpotNumber").map(str::to_string),
+            });
+        }
+        if lines.is_empty() {
             continue;
         }
         lines.sort_by(|a, b| a.0.total_cmp(&b.0));
         let text = lines.into_iter().map(|l| l.1).collect::<Vec<_>>().join("\n");
         doc.cues.push(Cue { start: at(t_in), end: at(t_out), text, id: sub.attribute("SpotNumber").map(str::to_string), ..Cue::default() });
     }
-    if reel.image_subtitles > 0 {
-        doc.warnings.push(format!("{} image subtitle(s) (PNG) not imported as text", reel.image_subtitles));
-    }
+    reel.images.retain(|i| i.end > i.start);
     doc.cues.retain(|c| c.end > c.start);
     doc.cues.sort_by_key(|c| (c.start, c.end));
     Ok(reel)
+}
+
+/// The ST 428-7:2010 namespace (also of the 2014 edition).
+pub const NAMESPACE_2010: &str = "http://www.smpte-ra.org/schemas/428-7/2010/DCST";
+
+/// Font size of [`write_reel`] (points, ST 428-7 6.2.2: as DCP authoring tools default).
+pub const DEFAULT_SIZE: u32 = 42;
+/// Distance of the bottom line from the bottom edge and between lines (percent of the screen
+/// height) for the default size.
+const BOTTOM: f64 = 8.0;
+const LINE_STEP: f64 = 6.5;
+
+/// What [`write_reel`] writes besides the cues.
+#[derive(Clone, Debug, PartialEq)]
+pub struct ReelOptions {
+    /// The reel's `urn:uuid:`.
+    pub id: String,
+    pub title: String,
+    /// `IssueDate` (xs:dateTime).
+    pub issue_date: String,
+    pub reel_number: u32,
+    /// `Language` (an RFC 5646 / xs:language tag).
+    pub language: String,
+    /// `EditRate` (numerator, denominator; positive).
+    pub edit_rate: (i64, i64),
+    /// `LoadFont`: the font's `ID` in the document and its resource `urn:uuid:`.
+    pub font: Option<(String, String)>,
+    /// Font size in points.
+    pub size: u32,
+}
+
+fn escape(s: &str) -> String {
+    let mut o = String::with_capacity(s.len());
+    for c in s.chars() {
+        match c {
+            '&' => o.push_str("&amp;"),
+            '<' => o.push_str("&lt;"),
+            '>' => o.push_str("&gt;"),
+            '"' => o.push_str("&quot;"),
+            c if c.is_control() => {}
+            c => o.push(c),
+        }
+    }
+    o
+}
+
+/// A cue line as runs of text with their `<i>`/`<b>`/`<u>` formatting; other tags are dropped.
+fn runs(line: &str) -> Vec<(Fmt, String)> {
+    let mut out: Vec<(Fmt, String)> = Vec::new();
+    let mut f = Fmt::default();
+    let mut rest = line;
+    while !rest.is_empty() {
+        let (text, after) = match rest.find('<') {
+            Some(i) => (rest.get(..i).unwrap_or(""), rest.get(i..).unwrap_or("")),
+            None => (rest, ""),
+        };
+        if !text.is_empty() {
+            match out.last_mut() {
+                Some((lf, t)) if *lf == f => t.push_str(text),
+                _ => out.push((f, text.to_string())),
+            }
+        }
+        rest = after;
+        if rest.is_empty() {
+            break;
+        }
+        let Some(end) = rest.find('>') else {
+            // a lone '<' is text
+            match out.last_mut() {
+                Some((lf, t)) if *lf == f => t.push_str(rest),
+                _ => out.push((f, rest.to_string())),
+            }
+            break;
+        };
+        let tag = rest.get(1..end).unwrap_or("").trim().to_ascii_lowercase();
+        let (close, name) = match tag.strip_prefix('/') {
+            Some(n) => (true, n.trim().to_string()),
+            None => (false, tag.split(|c: char| c.is_whitespace() || c == '.').next().unwrap_or("").to_string()),
+        };
+        match name.as_str() {
+            "i" => f.italic = !close,
+            "b" => f.bold = !close,
+            "u" => f.underline = !close,
+            _ => {}
+        }
+        rest = rest.get(end + 1..).unwrap_or("");
+    }
+    out
+}
+
+/// Write cues as an ST 428-7 `SubtitleReel` (2010 namespace): times from `StartTime`
+/// `00:00:00:00` at the edit rate, each cue line a `Text` centred at the bottom of the screen
+/// (the last line [`BOTTOM`] percent up), `<i>`/`<b>`/`<u>` as `Font` attributes, cues snapped to
+/// edit units and at least one unit long. Cues that start before zero are cut at zero; empty
+/// cues are left out.
+pub fn write_reel(doc: &Document, o: &ReelOptions) -> String {
+    let (num, den) = (o.edit_rate.0.max(1), o.edit_rate.1.max(1));
+    let tc_rate = ((2 * num + den) / (2 * den)).max(1);
+    let units = |t: Tick| t.to_rational_round(den, num).max(0);
+    let tc = |u: i64| {
+        let (s, e) = (u / tc_rate, u % tc_rate);
+        format!("{:02}:{:02}:{:02}:{:02}", (s / 3600).min(99), s / 60 % 60, s % 60, e)
+    };
+    let mut x = String::from("<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n");
+    x.push_str(&format!("<SubtitleReel xmlns=\"{NAMESPACE_2010}\" xmlns:xs=\"http://www.w3.org/2001/XMLSchema\">\n"));
+    x.push_str(&format!("  <Id>{}</Id>\n", escape(&o.id)));
+    x.push_str(&format!("  <ContentTitleText>{}</ContentTitleText>\n", escape(&o.title)));
+    x.push_str(&format!("  <IssueDate>{}</IssueDate>\n", escape(&o.issue_date)));
+    x.push_str(&format!("  <ReelNumber>{}</ReelNumber>\n", o.reel_number.max(1)));
+    if !o.language.is_empty() {
+        x.push_str(&format!("  <Language>{}</Language>\n", escape(&o.language)));
+    }
+    x.push_str(&format!("  <EditRate>{num} {den}</EditRate>\n  <TimeCodeRate>{tc_rate}</TimeCodeRate>\n  <StartTime>00:00:00:00</StartTime>\n"));
+    let font_id = match &o.font {
+        Some((id, urn)) => {
+            x.push_str(&format!("  <LoadFont ID=\"{}\">{}</LoadFont>\n", escape(id), escape(urn)));
+            format!(" ID=\"{}\"", escape(id))
+        }
+        None => String::new(),
+    };
+    let size = o.size.clamp(1, 1000);
+    x.push_str("  <SubtitleList>\n");
+    x.push_str(&format!(
+        "    <Font{font_id} Size=\"{size}\" Color=\"FFFFFFFF\" Effect=\"border\" EffectColor=\"FF000000\" Weight=\"normal\" Italic=\"no\" Underline=\"no\" Script=\"normal\" AspectAdjust=\"1.0\">\n"
+    ));
+    // the line step grows with the font size
+    let step = LINE_STEP * f64::from(size) / f64::from(DEFAULT_SIZE);
+    let mut spot = 0u32;
+    for c in &doc.cues {
+        let lines: Vec<Vec<(Fmt, String)>> = c.text.lines().map(runs).filter(|r| r.iter().any(|(_, t)| !t.trim().is_empty())).collect();
+        if lines.is_empty() {
+            continue;
+        }
+        let t_in = units(c.start);
+        let t_out = units(c.end).max(t_in + 1);
+        spot += 1;
+        x.push_str(&format!(
+            "      <Subtitle SpotNumber=\"{spot}\" TimeIn=\"{}\" TimeOut=\"{}\" FadeUpTime=\"00:00:00:00\" FadeDownTime=\"00:00:00:00\">\n",
+            tc(t_in),
+            tc(t_out)
+        ));
+        let n = lines.len();
+        for (i, line) in lines.iter().enumerate() {
+            let v = BOTTOM + step * (n - 1 - i) as f64;
+            x.push_str(&format!("        <Text Valign=\"bottom\" Vposition=\"{v:.1}\" Halign=\"center\" Hposition=\"0\" Direction=\"ltr\">"));
+            for (f, t) in line {
+                let attrs: String = [(f.italic, " Italic=\"yes\""), (f.bold, " Weight=\"bold\""), (f.underline, " Underline=\"yes\"")]
+                    .into_iter()
+                    .filter(|a| a.0)
+                    .map(|a| a.1)
+                    .collect();
+                if attrs.is_empty() {
+                    x.push_str(&escape(t));
+                } else {
+                    x.push_str(&format!("<Font{attrs}>{}</Font>", escape(t)));
+                }
+            }
+            x.push_str("</Text>\n");
+        }
+        x.push_str("      </Subtitle>\n");
+    }
+    x.push_str("    </Font>\n  </SubtitleList>\n</SubtitleReel>\n");
+    x
 }
 
 #[cfg(test)]

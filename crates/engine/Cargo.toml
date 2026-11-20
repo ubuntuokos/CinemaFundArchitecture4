@@ -43,12 +43,14 @@ cfa4-format = { workspace = true }
 cfa4-interchange = { workspace = true }
 cfa4-captions = { workspace = true }
 cfa4-credits = { workspace = true }
+cfa4-surface-model = { workspace = true }
 cfa4-live = { workspace = true }
 cfa4-speech = { workspace = true }
 cfa4-tts = { workspace = true }
 cfa4-route = { workspace = true }
 cfa4-tcsync = { workspace = true }
 cfa4-qc = { workspace = true }
+cfa4-sandbox = { workspace = true }
 serde = { workspace = true }
 serde_json = { workspace = true }
 thiserror = { workspace = true }

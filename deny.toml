@@ -20,6 +20,9 @@ allow = [
     "BSD-1-Clause",
     "BSD-2-Clause",
     "BSD-3-Clause",
+    # The Clear BSD licence (BSD-3-Clause with no patent grant): FSF free and GPL-compatible;
+    # LCEVCdec code ported into cfa4-lcevc keeps it (docs/licensing.md §5).
+    "BSD-3-Clause-Clear",
     "BSL-1.0",
     "CC0-1.0",
     "ISC",
@@ -71,6 +74,10 @@ ignore = [
     { id = "RUSTSEC-2026-0429", reason = "zip extract() symlink-size abort; extract() is never called (CFA4 and candle-core only read)" },
     # Optional `whisper` / `neural-voices` only (candle-core); unmaintained, no known vulnerability.
     { id = "RUSTSEC-2024-0436", reason = "paste unmaintained; via candle-core, upstream-dependent" },
+    # chrono is a direct workspace dependency by owner decision (2026-11-03, CLAUDE.md "Calendar
+    # time goes through chrono"). Unmaintained only, no known vulnerability, no patched version.
+    # Way out: a move to jiff/time needs a new owner decision (owner kept chrono, 2026-11-20).
+    { id = "RUSTSEC-2026-0543", reason = "chrono unmaintained; workspace dependency by owner decision, no vulnerability" },
 ]
 
 [sources]

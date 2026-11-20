@@ -1865,6 +1865,7 @@
 	Text Animator	Κίνηση κειμένου
 	Counter	Μετρητής
 	Word by Word	Λέξη προς λέξη
+	Scramble	Ανακάτεμα
 	Animator	Κίνηση
 	Animator Duration	Διάρκεια κίνησης
 	Animator Delay	Καθυστέρηση κίνησης
@@ -2886,6 +2887,10 @@
 	Sharpen Amount	Ποσότητα όξυνσης
 	Shift Center To	Μετακίνηση κέντρου σε
 	Show Focus Area	Εμφάνιση περιοχής εστίασης
+	Rack Focus	Μετατόπιση εστίασης
+	Focus Point A	Σημείο εστίασης Α
+	Focus Point B	Σημείο εστίασης Β
+	Rack	Μετατόπιση
 	Show Only Noise	Εμφάνιση μόνο θορύβου
 	Shrink	Συρρίκνωση
 	Shutter Angle	Γωνία κλείστρου
@@ -4178,6 +4183,11 @@ export.summary	Low	χαμηλή
 	Burn Size	Μέγεθος καψίματος
 	Ember Width	Πλάτος θράκας
 	Ember Color	Χρώμα θράκας
+	Tear Away	Σκίσιμο
+	Tear Roughness	Τραχύτητα σκισίματος
+	Paper Edge Width	Πλάτος άκρης χαρτιού
+	Stamp Cut	Αποκοπή γραμματοσήμου
+	Perforations	Διάτρηση
 	Check Text Legibility	Έλεγχος αναγνωσιμότητας κειμένου
 	Clear Legibility Markers	Απαλοιφή δεικτών αναγνωσιμότητας
 	Text legibility: no problems found	Αναγνωσιμότητα κειμένου: δεν βρέθηκαν προβλήματα
@@ -4217,6 +4227,9 @@ export.summary	Low	χαμηλή
 	Dither	Διάχυση
 	Pattern	Μοτίβο
 	Cell Size	Μέγεθος κελιού
+	Pixelate	Εικονοστοιχειοποίηση
+	Cell Shape	Σχήμα κελιού
+	LED	LED
 	Cyan Angle	Γωνία κυανού
 	Magenta Angle	Γωνία ματζέντα
 	Yellow Angle	Γωνία κίτρινου
@@ -4577,6 +4590,26 @@ export.summary	Low	χαμηλή
 	Chase External Timecode	Παρακολούθηση εξωτερικού χρονοκώδικα
 	Send LTC	Αποστολή LTC
 	Send MIDI Timecode	Αποστολή χρονοκώδικα MIDI
+
+# Live studio preview (CFA4-LIVE-STUDIO-001 S0)
+	Live studio preview	Προεπισκόπηση ζωντανού στούντιο
+	Live studio: stopped	Ζωντανό στούντιο: σταματημένο
+	Live studio: {state}	Ζωντανό στούντιο: {state}
+	Live studio: {error}	Ζωντανό στούντιο: {error}
+	restarted after {count} crashes (last: {exit})	επανεκκίνηση μετά από {count} καταρρεύσεις (τελευταία: {exit})
+	software backend: {reason}	λογισμικό υποστήριξης: {reason}
+	Start studio	Έναρξη στούντιο
+	Stop studio	Διακοπή στούντιο
+	Add Studio Scene	Προσθήκη σκηνής στούντιο
+	Live	Ζωντανά
+# Credits: title, opening, chapter and lower-third pages filled from a graphics template (F10-C16)
+	Opening Credits	Τίτλοι αρχής
+	Chapter Title	Τίτλος κεφαλαίου
+	Lower Third	Λεζάντα ονόματος
+	page {page}: graphics template “{template}” was not found; “{used}” is used	σελίδα {page}: το πρότυπο γραφικών “{template}” δεν βρέθηκε· χρησιμοποιείται το “{used}”
+	page {page}: graphics template “{template}” has no field for all of the block's text; the rest is left out	σελίδα {page}: το πρότυπο γραφικών “{template}” δεν έχει πεδίο για όλο το κείμενο του μπλοκ· το υπόλοιπο παραλείπεται
+	page {page}: template field “{control}” → “{part}” is not used (no such text control, or not head, body or tail)	σελίδα {page}: το πεδίο προτύπου “{control}” → “{part}” δεν χρησιμοποιείται (δεν υπάρχει τέτοιο στοιχείο κειμένου ή δεν είναι κεφαλίδα, κύριο σώμα ή υποσέλιδο)
+	page {page}: pictures are left out on title, opening, chapter and lower-third pages	σελίδα {page}: οι εικόνες παραλείπονται στις σελίδες τίτλου, τίτλων αρχής, κεφαλαίου και λεζάντας ονόματος
 # Auto Color, Auto Contrast, Auto Levels (EffectsSDK review)
 	Auto Color	Αυτόματο χρώμα
 	Auto Contrast	Αυτόματη αντίθεση
@@ -4634,3 +4667,142 @@ export.summary	Low	χαμηλή
 	Freewheel	Ελεύθερη λειτουργία
 	Scrubbing	Κύλιση
 	Sending	Αποστολή
+
+# DCP subtitle export (#938)
+	Subtitles from the first caption track	Υπότιτλοι από το πρώτο κανάλι λεζάντων
+	The package language	Η γλώσσα του πακέτου
+	Inter Regular (built in), or an OpenType / TrueType file	Inter Regular (ενσωματωμένη) ή ένα αρχείο OpenType / TrueType
+	Subtitle language	Γλώσσα υποτίτλων
+	Subtitle font	Γραμματοσειρά υποτίτλων
+	Fonts	Γραμματοσειρές
+
+# AS-11 metadata in MXF OP1a (#96)
+	AS-11 Core	AS-11 Core
+	AS-11 Parts	Τμήματα AS-11
+	AS-11 UK DPP	AS-11 UK DPP
+# Control surfaces (qt-control-surfaces-page, CFA4-CONTROL-SURFACE-001)
+	Device	Συσκευή
+	Devices	Συσκευές
+	HID jog/shuttle	HID jog/shuttle
+	MIDI	MIDI
+	OSC	OSC
+	Use	Χρήση
+	{device} ({port})	{device} ({port})
+	{name}: {error}	{name}: {error}
+# Control surfaces (midi-monitor, CFA4-CONTROL-SURFACE-001)
+	MIDI Monitor	Παρακολούθηση MIDI
+	Press Start Monitor, then move a control.	Πατήστε «Έναρξη παρακολούθησης» και μετακινήστε ένα χειριστήριο.
+	Start Monitor	Έναρξη παρακολούθησης
+	Stop Monitor	Διακοπή παρακολούθησης
+	… {count} messages not shown (too many at once)	… {count} μηνύματα δεν εμφανίζονται (πάρα πολλά ταυτόχρονα)
+# Control surfaces (midi-learn, CFA4-CONTROL-SURFACE-001)
+	A control surface asked for {command}, which does not exist.	Μια επιφάνεια ελέγχου ζήτησε {command}, που δεν υπάρχει.
+	Assignments	Αντιστοιχίσεις
+	Cancel Learn	Ακύρωση εκμάθησης
+	Control	Χειριστήριο
+	Learn	Εκμάθηση
+	Remove this assignment	Αφαίρεση αυτής της αντιστοίχισης
+	{control} runs {command}.	Το {control} εκτελεί {command}.
+# Control surfaces (shuttlepro, CFA4-CONTROL-SURFACE-001)
+	Button {n}	Κουμπί {n}
+# Control surfaces (continuous-values, CFA4-CONTROL-SURFACE-001)
+	{strip} Pan (knob)	{strip} πανοραμική (περιστροφικό)
+	{strip} Volume (fader)	{strip} ένταση (fader)
+# Control surfaces (F1 Learn and profile, CFA4-CONTROL-SURFACE-001)
+	Control Surfaces	Επιφάνειες ελέγχου
+	Assignments run when a button is pressed (a fader or knob counts as pressed past half way); a fader or knob assigned to a mixer strip moves its volume or pan. A ShuttlePRO's shuttle ring plays at its profile's speeds and its jog wheel steps frame by frame. Endless encoders and feedback to the controller (lights, motor faders) come in a later version.	Οι αναθέσεις τρέχουν με πάτημα κουμπιού (ένα fader ή κουμπί μετρά ως πατημένο μετά τη μέση)· ένα fader ή κουμπί σε λωρίδα μίξης κινεί την ένταση ή το παν. Ο δακτύλιος shuttle ενός ShuttlePRO παίζει με τις ταχύτητες του προφίλ και ο τροχός jog προχωρά καρέ-καρέ. Οι ατέρμονες κωδικοποιητές και η απόκριση στον ελεγκτή (λυχνίες, μηχανοκίνητα fader) έρχονται σε νεότερη έκδοση.
+	First message (ms)	Πρώτο μήνυμα (ms)
+	Silence (ms)	Σιωπή (ms)
+	Waiting for the control to settle…	Αναμονή να ηρεμήσει το χειριστήριο…
+	Type: {hint}. Confirm this assignment.	Τύπος: {hint}. Επιβεβαιώστε αυτή την ανάθεση.
+	That control is already assigned. Confirm replaces it.	Αυτό το χειριστήριο είναι ήδη ανατεθειμένο. Η επιβεβαίωση το αντικαθιστά.
+	Learn timed out.	Η εκμάθηση έληξε.
+	Confirm	Επιβεβαίωση
+	Reject	Απόρριψη
+	Shows every MIDI message from the controllers as it arrives, to check that a controller sends and what it sends. MIDI Clock, Active Sensing and MIDI Time Code are left out.	Δείχνει κάθε μήνυμα MIDI από τους ελεγκτές μόλις φτάσει, για να φανεί αν ένας ελεγκτής στέλνει και τι. Το ρολόι MIDI, το Active Sensing και ο κώδικας χρόνου MIDI παραλείπονται.
+	Pick a command (or a mixer strip for a fader or knob), press Learn, then press the button or move the control past half way. Confirm keeps the assignment. OK saves the assignments.	Διαλέξτε εντολή (ή λωρίδα μίξης για fader ή κουμπί), πατήστε Εκμάθηση, έπειτα το κουμπί ή μετακινήστε το χειριστήριο πέρα από τη μέση. Η επιβεβαίωση κρατά την ανάθεση. Το OK αποθηκεύει τις αναθέσεις.
+	All devices	Όλες οι συσκευές
+	Builtin: {name}	Ενσωματωμένο: {name}
+	Capturing	Καταγραφή
+	Confirmed	Επιβεβαιώθηκε
+	Conflict	Σύγκρουση
+	Connect a MIDI controller or a ShuttlePRO to edit its profile.	Συνδέστε ένα χειριστήριο MIDI ή ένα ShuttlePRO για να επεξεργαστείτε το προφίλ του.
+	Control Surfaces…	Επιφάνειες ελέγχου…
+	Filter messages	Φιλτράρισμα μηνυμάτων
+	Idle	Αδρανές
+	Kernel dropped: {count}	Απορρίφθηκαν από τον πυρήνα: {count}
+	Learn Assignments…	Εκμάθηση αναθέσεων…
+	Load profile	Φόρτωση προφίλ
+	MIDI Monitor…	Οθόνη MIDI…
+	Mute shuttle sound	Σίγαση ήχου shuttle
+	No conflicts.	Δεν υπάρχουν συγκρούσεις.
+	No profile warnings.	Δεν υπάρχουν προειδοποιήσεις προφίλ.
+	No project profile is stored.	Δεν έχει αποθηκευτεί προφίλ έργου.
+	OK writes the preferences and the profile file together.	Το OK γράφει μαζί τις προτιμήσεις και το αρχείο προφίλ.
+	Online	Σε σύνδεση
+	Pending	Εκκρεμεί
+	Pickup (14-bit)	Σύλληψη (14 bit)
+	Pickup (7-bit)	Σύλληψη (7 bit)
+	Profile warnings	Προειδοποιήσεις προφίλ
+	Rejected	Απορρίφθηκε
+	Show Active Sensing	Εμφάνιση Active Sensing
+	Show MIDI Clock	Εμφάνιση ρολογιού MIDI
+	Show MIDI Time Code	Εμφάνιση κώδικα χρόνου MIDI
+	The profile file is damaged. Preferences and the built-in profile stay in use.	Το αρχείο προφίλ είναι κατεστραμμένο. Οι προτιμήσεις και το ενσωματωμένο προφίλ μένουν σε χρήση.
+	Timed out	Έληξε ο χρόνος
+	Type: {hint}	Τύπος: {hint}
+	User profile file	Αρχείο προφίλ χρήστη
+	{received} received, {dispatched} dispatched, {coalesced} coalesced, {stalls} stalls, {errors} errors	{received} ελήφθησαν, {dispatched} στάλθηκαν, {coalesced} ενώθηκαν, {stalls} αναμονές, {errors} σφάλματα
+
+# Control Surfaces settings page (CS-1, #1187)
+	Connected	Συνδεδεμένη
+	Not connected	Μη συνδεδεμένη
+	Disabled	Απενεργοποιημένη
+	Looking for devices…	Αναζήτηση συσκευών…
+	No MIDI controller or jog/shuttle device was found. Connect one and press Refresh.	Δεν βρέθηκε ελεγκτής MIDI ή συσκευή jog/shuttle. Συνδέστε μία και πατήστε Ανανέωση.
+	Use control surfaces (MIDI controllers, jog/shuttle devices)	Χρήση επιφανειών ελέγχου (ελεγκτές MIDI, συσκευές jog/shuttle)
+	Mapping controls to commands, MIDI Learn and the MIDI Monitor come in a later version; the choices here are remembered until then.	Η αντιστοίχιση χειριστηρίων σε εντολές, το MIDI Learn και η οθόνη MIDI έρχονται σε μεταγενέστερη έκδοση· οι επιλογές εδώ απομνημονεύονται μέχρι τότε.
+	CFA4 ShuttlePRO	CFA4 ShuttlePRO
+	Kdenlive-style ShuttlePRO	ShuttlePRO σε στυλ Kdenlive
+	Generic MIDI	Γενικό MIDI
+# LTC timecode read from clip audio (TC-7, #1285)
+	Read from LTC Audio	Ανάγνωση από ήχο LTC
+	Find SMPTE LTC on the clip's audio and use the timecode it gives the first frame	Εύρεση SMPTE LTC στον ήχο του κλιπ και χρήση του timecode που δίνει στο πρώτο καρέ
+	Read Timecode from LTC Audio	Ανάγνωση timecode από ήχο LTC
+# Credits: voices (the Voice column) in the block's properties (F10-C16)
+	Voices	Φωνές
+# Timecode sync varispeed and user bits (TC-8, #1308)
+	Varispeed: adjust the playback speed instead of seeking	Varispeed: προσαρμογή της ταχύτητας αναπαραγωγής αντί για μετάβαση
+	User bits	Bit χρήστη
+# AS-11 programme parts and AS-10 metadata (G2, #1371, #1375)
+	{tc}  Segmentation	{tc}  Τμηματοποίηση
+	Marker Type	Τύπος δείκτη
+	Chapter	Κεφάλαιο
+	Segmentation (AS-11 programme part)	Τμηματοποίηση (τμήμα προγράμματος AS-11)
+	AS-10	AS-10
+# AT9/AT3 converter (Tools ▸ Audio Tools, AT3-2)
+	AT9/AT3 Converter	Μετατροπέας AT9/AT3
+	AT9/AT3 Converter…	Μετατροπέας AT9/AT3…
+	Files to convert:	Αρχεία προς μετατροπή:
+	Add Files	Προσθήκη αρχείων
+	Add Files…	Προσθήκη αρχείων…
+	Convert to:	Μετατροπή σε:
+	Bit rate:	Ρυθμός bit:
+	Sample format:	Μορφή δειγμάτων:
+	Output folder:	Φάκελος εξόδου:
+	Output Folder	Φάκελος εξόδου
+	Next to each source file	Δίπλα σε κάθε αρχείο προέλευσης
+	AT9 and ATRAC3plus files convert to WAV; encoding AT9, ATRAC3plus and MP3 is not available yet.	Τα αρχεία AT9 και ATRAC3plus μετατρέπονται σε WAV· η κωδικοποίηση AT9, ATRAC3plus και MP3 δεν είναι ακόμη διαθέσιμη.
+	Convert	Μετατροπή
+	Add the files to convert first.	Προσθέστε πρώτα τα αρχεία προς μετατροπή.
+	Done: {n} file(s) converted.	Ολοκληρώθηκε: μετατράπηκαν {n} αρχεία.
+	Converting {name}…	Μετατροπή του {name}…
+	Stopping…	Διακοπή…
+	AT3 (ATRAC3, PSP / PS3)	AT3 (ATRAC3, PSP / PS3)
+	WAV (PCM)	WAV (PCM)
+	132 kbit/s (LP2)	132 kbit/s (LP2)
+	105 kbit/s	105 kbit/s
+	66 kbit/s (LP4, joint stereo)	66 kbit/s (LP4, joint stereo)
+	16-bit	16 bit
+	24-bit	24 bit
+	32-bit float	32 bit κινητής υποδιαστολής

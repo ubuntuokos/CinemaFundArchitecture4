@@ -1,17 +1,21 @@
-//! Live studio core (layer L5, CFA4-LIVE-STUDIO-001 phase S0).
+//! Live studio core (layer L5, CFA4-LIVE-STUDIO-001 phases S0–S1).
 //!
 //! The live studio composites scenes in real time. For now the work is done by **libobs** (the
 //! OBS Studio core, C, GPL-2.0-or-later) and later, part by part, by CFA4's own Rust code
 //! (plan §I.3, S12+). Both sit behind one trait, [`StudioBackend`], so a replacement changes
 //! the implementation and not the callers.
 //!
-//! - [`StudioBackend`]: what a compositor does (video settings, an empty scene, frames out).
+//! - [`StudioBackend`]: what a compositor does (video settings, a scene, frames out).
+//! - [`scene`]: the scene the engine sends (layers: a picture and its placement) and the software
+//!   compositor of it.
 //! - [`software::SoftwareBackend`]: the pure-Rust backend: always available, and the fallback
 //!   when libobs is missing or cannot start (no display, no GPU, wrong version).
 //! - [`libobs::LibObsBackend`]: the binding of the pinned CFA4 libobs build
 //!   (`scripts/dev/build-libobs-33.0.1.sh`), loaded at run time.
 //! - [`ring`]: the shared-memory frame ring the host writes and the engine (and later the Qt6
 //!   GUI) reads; a torn frame is dropped, never shown.
+//! - [`ptp`]: the PTP state `ptp4l` reports (read through `pmc`), the TAI time and the SDP clock
+//!   signalling of an ST 2110 sender (ST 2110 addendum, T1).
 //! - [`host`]: the supervisor of the `cfa4-studio-host` process. libobs never runs inside the
 //!   editor or the engine (plan D2): the engine starts the host, watches it and restarts it after
 //!   a crash, and the editor carries on.
@@ -23,7 +27,9 @@
 
 pub mod host;
 pub mod libobs;
+pub mod ptp;
 pub mod ring;
+pub mod scene;
 pub mod software;
 
 use serde::{Deserialize, Serialize};
@@ -68,12 +74,15 @@ pub enum StudioError {
 /// Result alias of this crate.
 pub type Result<T> = std::result::Result<T, StudioError>;
 
-/// Pixel layout of a studio frame. S0 uses one: 8-bit BGRA, as libobs outputs it.
+/// Pixel layout of a studio frame: 8-bit BGRA for program frames (as libobs outputs them), 8-bit
+/// straight RGBA for the moving layer pictures the engine feeds the host (S1b).
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "lowercase")]
 pub enum PixelFormat {
     /// 8-bit B, G, R, A per pixel, rows `stride` bytes apart.
     Bgra8,
+    /// 8-bit R, G, B, A (straight alpha, sRGB) per pixel, rows `stride` bytes apart.
+    Rgba8,
 }
 
 impl PixelFormat {
@@ -81,12 +90,17 @@ impl PixelFormat {
     pub fn code(self) -> u32 {
         match self {
             PixelFormat::Bgra8 => 1,
+            PixelFormat::Rgba8 => 2,
         }
     }
 
     /// Format from a ring code.
     pub fn from_code(code: u32) -> Option<Self> {
-        (code == 1).then_some(PixelFormat::Bgra8)
+        match code {
+            1 => Some(PixelFormat::Bgra8),
+            2 => Some(PixelFormat::Rgba8),
+            _ => None,
+        }
     }
 
     /// Bytes per pixel.
@@ -211,8 +225,14 @@ pub trait StudioBackend: Send {
     fn version(&self) -> String;
     /// The video the backend produces.
     fn video(&self) -> VideoSettings;
-    /// Shows an empty scene on the program output (S0: the only scene there is).
+    /// Shows an empty scene on the program output.
     fn show_empty_scene(&mut self) -> Result<()>;
+    /// Shows `scene` on the program output instead of the one shown (S1). On an error the
+    /// shown scene stays.
+    fn set_scene(&mut self, scene: &scene::LoadedScene) -> Result<()>;
+    /// Replaces the picture of layer `index` of the shown scene (a feed's new frame, S1b). The
+    /// picture has the layer's size; an index the scene does not have is ignored.
+    fn update_layer(&mut self, index: usize, picture: &scene::Picture) -> Result<()>;
     /// Waits up to `timeout` for the next program frame. `Ok(None)` when none arrived in time.
     fn next_frame(&mut self, timeout: Duration) -> Result<Option<Frame>>;
     /// Stops the backend and frees what it holds. Called once; also done on drop.

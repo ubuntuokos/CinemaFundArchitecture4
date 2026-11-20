@@ -1267,6 +1267,22 @@ fn dcp_language_param_and_isdcf_name() {
     assert!(s.execute("export.resolve", json!({"format": "h264"})).unwrap()["dcpName"].is_null());
 }
 
+/// #938: the DCP subtitle params: on/off, the language (checked; empty = the package's) and the
+/// font file; `export.resolve` names the subtitle language in the ISDCF name.
+#[test]
+fn dcp_subtitle_params() {
+    let s = demo();
+    let setting = |s: &Session, p: Value| crate::export_tools::settings_from_params(s, &p, "file.exportMedia").map(|(_, st)| st);
+    let st = setting(&s, json!({"path": "pkg", "format": "dcp", "dcpLanguage": "en-US", "dcpSubtitles": true, "dcpSubtitleLanguage": " hu ", "dcpSubtitleFont": " /fonts/a.otf "})).unwrap();
+    assert_eq!((st.dcp_subtitles, st.dcp_subtitle_language.as_str(), st.dcp_subtitle_font.as_str()), (true, "hu", "/fonts/a.otf"));
+    let e = setting(&s, json!({"path": "pkg", "format": "dcp", "dcpSubtitleLanguage": "Hungarian"})).unwrap_err().to_string();
+    assert!(e.contains("RFC 5646"), "{e}");
+    let mut s = s;
+    let r = s.execute("export.resolve", json!({"format": "dcp", "dcpLanguage": "en-US", "dcpSubtitles": true, "dcpSubtitleLanguage": "hu-HU"})).unwrap();
+    assert!(r["dcpName"].as_str().unwrap().contains("_EN-HU_51_2K_"), "{}", r["dcpName"]);
+    assert_eq!((r["settings"]["dcpSubtitles"].as_bool(), r["settings"]["dcpSubtitleLanguage"].as_str()), (Some(true), Some("hu-HU")));
+}
+
 /// #1011: the IMF params, the package folder path (no extension) and the resolved summary.
 #[test]
 fn imf_params() {
@@ -1276,9 +1292,16 @@ fn imf_params() {
     assert_eq!((st.format, st.imf_lossless, st.imf_content_kind.as_str(), st.dcp_language.as_str()), (cfa4_export::Format::Imf, true, "episode", "hu-HU"));
     let e = setting(&s, json!({"path": "pkg", "format": "imf", "imfContentKind": "policy"})).unwrap_err().to_string();
     assert!(e.contains("imfContentKind"), "{e}");
+    // #1234: IMF subtitles reuse the DCP subtitle switch and language, with a timed text kind
+    let st = setting(&s, json!({"path": "pkg", "format": "imf", "dcpSubtitles": true, "dcpSubtitleLanguage": "hu-HU", "imfTimedTextKind": "ForcedNarrative"}))
+        .unwrap();
+    assert_eq!((st.dcp_subtitles, st.dcp_subtitle_language.as_str(), st.imf_timed_text_kind.as_str()), (true, "hu-HU", "forcedNarrative"));
+    let e = setting(&s, json!({"path": "pkg", "format": "imf", "imfTimedTextKind": "karaoke"})).unwrap_err().to_string();
+    assert!(e.contains("imfTimedTextKind"), "{e}");
     let mut s = s;
-    let r = s.execute("export.resolve", json!({"format": "imf", "fps": 48.0})).unwrap();
+    let r = s.execute("export.resolve", json!({"format": "imf", "fps": 48.0, "imfTimedTextKind": "captions"})).unwrap();
     assert_eq!(r["settings"]["imfContentKind"], "");
+    assert_eq!(r["settings"]["imfTimedTextKind"], "captions");
     assert!(r["summary"]["video"].as_str().unwrap().contains("JPEG 2000 IMF lossy, 10-bit R'G'B' 4:4:4"), "{r}");
 }
 
@@ -1386,4 +1409,79 @@ fn mxf_op1a_writes_captions_as_anc_data() {
     s48.execute("captions.import", json!({"path": vtt})).unwrap();
     let err = s48.execute("file.exportMedia", p).unwrap_err().to_string();
     assert!(err.contains("59.94"), "{err}");
+}
+
+/// #1254: with no parts typed in, the AS-11 programme parts come from the sequence's segmentation
+/// markers with a duration, cut to the exported range and counted from its first frame.
+#[test]
+fn mxf_as11_parts_come_from_segmentation_markers() {
+    let dir = Scratch::new("mxf-as11-markers");
+    let mut s = Session::default();
+    s.execute("file.newSequence", json!({"name":"AS11", "fps":25, "width":320, "height":180, "video":1, "audio":1})).unwrap();
+    let rate = s.sequence_rate();
+    let add = |s: &mut Session, frame: i64, dur: i64, kind: &str| {
+        s.execute("markers.add", json!({"time": rate.tick_of(frame).0, "durationFrames": dur, "kind": kind})).unwrap()["marker"].as_u64().unwrap()
+    };
+    // part 2 first on purpose: parts are numbered in time order
+    add(&mut s, 40, 20, "segmentation");
+    add(&mut s, 10, 15, "Segmentation");
+    add(&mut s, 5, 10, "comment"); // not a part
+    add(&mut s, 30, 0, "segmentation"); // no duration: not a part
+    // a comment marker turned into a part that runs past the end of the range: cut there
+    let last = add(&mut s, 70, 30, "comment");
+    s.execute("markers.edit", json!({"marker": last, "kind": "segmentation"})).unwrap();
+    assert!(s.execute("markers.edit", json!({"marker": last, "kind": "part"})).unwrap_err().to_string().contains("segmentation"));
+    let out = dir.path("as11m.mxf");
+    let core = "SeriesTitle: Sorozat\nProgrammeTitle: Műsor\nEpisodeTitleNumber: 1\nShimName: UK DPP HD\nShimVersion: 1.1\nAudioTrackLayout: 3\nPrimaryAudioLanguage: hun\nClosedCaptionsPresent: false\n";
+    // the range starts at frame 5: parts count from there
+    s.execute(
+        "file.exportMedia",
+        json!({"format":"mxf-op1a", "path": out, "mxfAs11Core": core, "range":"custom", "startSeconds":0.2, "endSeconds":3.6, "wait":true}),
+    )
+    .unwrap();
+    let bytes = std::fs::read(&out).unwrap();
+    let m = cfa4_mxf::open(&bytes[..]).unwrap();
+    let parts: Vec<(i64, i64, u16, u16)> = m.as11.unwrap().segments.iter().map(|s| (s.start, s.duration, s.part_number, s.part_total)).collect();
+    assert_eq!(parts, vec![(5, 15, 1, 3), (35, 20, 2, 3), (65, 20, 3, 3)]);
+    // parts typed in win over the markers (typed times are timecodes: the range's first frame is 00:00:00:05)
+    s.execute("file.exportMedia", json!({"format":"mxf-op1a", "path": out, "mxfAs11Core": core, "mxfAs11Segments": "1/1 00:00:00:05 10\n", "range":"custom", "startSeconds":0.2, "endSeconds":3.6, "wait":true})).unwrap();
+    let bytes = std::fs::read(&out).unwrap();
+    let parts: Vec<(i64, i64)> = cfa4_mxf::open(&bytes[..]).unwrap().as11.unwrap().segments.iter().map(|s| (s.start, s.duration)).collect();
+    assert_eq!(parts, vec![(0, 10)]);
+}
+
+/// #96: MXF OP1a with AS-11 metadata (bmx's text forms): the Core and UK DPP frameworks and the
+/// programme parts read back with our reader, ffprobe still opens the file, and a bad item,
+/// OP-Atom and UK DPP without Core are refused before exporting.
+#[test]
+fn mxf_op1a_writes_as11_metadata() {
+    let dir = Scratch::new("mxf-as11");
+    let mut s = Session::default();
+    s.execute("file.newSequence", json!({"name":"AS11", "fps":25, "width":320, "height":180, "video":1, "audio":1})).unwrap();
+    let out = dir.path("as11.mxf");
+    let core = "SeriesTitle: Sorozat\nProgrammeTitle: Műsor\nEpisodeTitleNumber: 1. rész\nShimName: UK DPP HD\nShimVersion: 1.1\nAudioTrackLayout: 3\nPrimaryAudioLanguage: hun\nClosedCaptionsPresent: false\n";
+    let ukdpp = "ProductionNumber: P1\nSynopsis: Teszt\nOriginator: CFA4\nCopyrightYear: 2026\nThreeD: false\nPSEPass: 1\nSecondaryAudioLanguage: zxx\nTertiaryAudioLanguage: zxx\nAudioLoudnessStandard: 1\nLineUpStart: 00:00:00:00\nIdentClockStart: 00:00:00:05\nAudioDescriptionPresent: false\nOpenCaptionsPresent: false\nSigningPresent: 2\nCompletionDate: 2026-11-14\nContactEmail: info@example.com\nContactTelephoneNumber: 0\n";
+    let p = json!({"format":"mxf-op1a", "path": out, "mxfAs11Core": core, "mxfAs11Segments": "1/2 00:00:00:10 00:00:00:15\n2/2 00:00:01:05 15\n", "mxfAs11Ukdpp": ukdpp, "range":"custom", "startSeconds":0.0, "endSeconds":2.0, "wait":true});
+    s.execute("file.exportMedia", p.clone()).unwrap();
+    let bytes = std::fs::read(&out).unwrap();
+    let m = cfa4_mxf::open(&bytes[..]).unwrap();
+    assert!(m.warnings.is_empty(), "{:?}", m.warnings);
+    let a = m.as11.unwrap();
+    let get = |v: &[(String, String)], k: &str| v.iter().find(|(n, _)| n == k).map(|(_, v)| v.clone()).unwrap_or_default();
+    assert_eq!(get(&a.core, "ProgrammeTitle"), "Műsor");
+    assert_eq!(get(&a.core, "ShimVersion"), "1.1");
+    let parts: Vec<(i64, i64, u16, u16)> = a.segments.iter().map(|s| (s.start, s.duration, s.part_number, s.part_total)).collect();
+    assert_eq!(parts, vec![(10, 15, 1, 2), (30, 15, 2, 2)]);
+    assert_eq!(get(&a.ukdpp, "IdentClockStart"), "00:00:00:05");
+    assert_eq!(get(&a.ukdpp, "TotalNumberOfParts"), "2");
+    assert_eq!(get(&a.ukdpp, "TotalProgrammeDuration"), "30");
+    if let Some(j) = probe(&out) {
+        assert!(j["streams"].as_array().unwrap().iter().any(|s| s["codec_type"] == "video"), "{j}");
+    }
+    for (key, value) in [("format", json!("mxf-opatom")), ("mxfAs11Core", json!("SeriesTitle: x\nNope: 1\n")), ("mxfAs11Core", json!(""))] {
+        let mut q = p.clone();
+        q[key] = value;
+        let e = s.execute("file.exportMedia", q).unwrap_err().to_string();
+        assert!(e.contains("AS-11"), "{key}: {e}");
+    }
 }

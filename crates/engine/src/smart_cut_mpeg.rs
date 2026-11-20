@@ -176,7 +176,7 @@ pub(crate) fn analyze(s: &mut Session, _p: &Value, path: &str, view: Option<&Sou
         .collect();
     let cut = Registry::native().smart_cut(stream.codec, src.container(), src.container(), POLICY);
     let rate = src.rate();
-    Ok(json!({
+    let analysis = json!({
         "path": path,
         "item": view.map(|v| v.item.0),
         "container": src.container(),
@@ -189,7 +189,8 @@ pub(crate) fn analyze(s: &mut Session, _p: &Value, path: &str, view: Option<&Sou
         "configChanges": stream.config_changes,
         "timestampProblems": stream.timestamp_problems,
         "smartCut": {"allowed": cut.allowed, "blockers": cut.blockers()},
-    }))
+    });
+    Ok(crate::smart_cut::with_streams(s, path, analysis))
 }
 
 /// The plan of the range named in `p`, and the output stream format.

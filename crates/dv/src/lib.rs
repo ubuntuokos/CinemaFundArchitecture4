@@ -1,4 +1,4 @@
-//! DV video decoder: consumer DV / DVCAM (IEC 61834-2, 25 Mbit/s), DVCPRO 25 and 50 (SMPTE
+//! DV video decoder and encoder: consumer DV / DVCAM (IEC 61834-2, 25 Mbit/s), DVCPRO 25 and 50 (SMPTE
 //! 314M) and DVCPRO HD (SMPTE 370M).
 //!
 //! - 525/60 4:1:1 (720x480) and 625/50 4:2:0 (720x576) DV, DVCPRO 25 4:1:1 at both line
@@ -6,6 +6,7 @@
 //! - DVCPRO 50: 4:2:2 at 720x480 / 720x576. DVCPRO HD: 4:2:2 1080i (1280x1080 at 59.94 Hz,
 //!   1440x1080 at 50 Hz) and 720p (960x720 at 59.94 / 50 frames/s); the coded size is anamorphic
 //!   (16:9 display through [`Profile::sample_aspect`]).
+//! - [`Encoder`]: 25 Mbit/s DV / DVCAM and DVCPRO 25 frames with time code and 16-bit audio.
 //! - Input: one DIF frame (from a raw `.dv` / `.dif` file, an AVI, MOV or MXF sample). Output:
 //!   planar 8-bit Y, Cb, Cr at the coded size (no setup / range change; DV is bottom field
 //!   first).
@@ -24,6 +25,7 @@
 
 pub mod audio;
 pub mod dif;
+mod encode;
 mod idct;
 mod layout;
 mod pro;
@@ -36,6 +38,7 @@ use std::ops::Range;
 
 pub use audio::{Audio, AudioFormat, SOURCE_PACK_OFFSET, audio_format, decode_audio, source_pack_samples};
 pub use dif::{Aspect, ChromaFormat, Format, Profile, System, probe};
+pub use encode::{Encoder, EncoderConfig, EncoderInput};
 pub use subcode::{Timecode, timecode};
 
 use dif::{BLOCK_SIZE, SEQUENCE_SIZE};
@@ -49,6 +52,8 @@ pub enum Error {
     Truncated { need: usize, got: usize },
     #[error("unsupported DV format: {0:?}")]
     Unsupported(Format),
+    #[error("invalid encoder input: {0}")]
+    Input(String),
 }
 
 pub type Result<T> = std::result::Result<T, Error>;

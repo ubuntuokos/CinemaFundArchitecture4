@@ -44,7 +44,23 @@ sudo apt-get install -y --no-install-recommends xmlsec1 python3-lxml \
 # oracle tests (they skip without them)
 bash "$(dirname "$0")/install-speex.sh" \
   || echo "::warning::speex tools unavailable: Speex oracle tests skip"
+# Musepack oracle `mpcenc` and `cfa4-mpc-oracle` (musepack_src_r475, built from the pinned
+# source archive; the Musepack oracle tests skip without them)
+bash "$(dirname "$0")/install-musepack-oracle.sh" \
+  || echo "::warning::Musepack oracle build failed: the Musepack oracle tests skip"
 # AMR oracle `cfa4-amr-oracle` (opencore-amr + vo-amrwbenc, built from the pinned upstream tags;
 # the AMR oracle tests skip without it)
 bash "$(dirname "$0")/install-amr-oracle.sh" \
   || echo "::warning::cfa4-amr-oracle build failed: the AMR oracle tests skip"
+# G.729 oracle `cfa4-g729-oracle` (bcg729 1.1.2, built from the pinned upstream tag; the
+# G.729 oracle tests skip without it)
+bash "$(dirname "$0")/install-g729-oracle.sh" \
+  || echo "::warning::cfa4-g729-oracle build failed: the G.729 oracle tests skip"
+# LCEVC oracle `lcevc_oracle` (V-Nova LCEVCdec 4.3.1 + crates/lcevc/tests/oracle/lcevc_oracle.c,
+# built from the pinned upstream tag; the LCEVC oracle test skips without it)
+bash "$(dirname "$0")/install-lcevc-oracle.sh" \
+  || echo "::warning::lcevc_oracle build failed: the LCEVC oracle test skips"
+# MPEG-5 EVC oracles `xevdb_app` / `xeveb_app` (xevd v0.8.0, xeve v0.7.1, Baseline builds from the
+# pinned upstream tags; the EVC oracle tests skip without them)
+bash "$(dirname "$0")/install-evc-oracle.sh" \
+  || echo "::warning::xevd / xeve build failed: the EVC oracle tests skip"

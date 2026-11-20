@@ -2394,6 +2394,10 @@
 	Show Clip Mismatch Warning dialog	Показувати попередження про невідповідність кліпа
 	Show Event Indicator	Показувати індикатор подій
 	Show Focus Area	Показувати область фокуса
+	Rack Focus	Переведення фокуса
+	Focus Point A	Точка фокуса A
+	Focus Point B	Точка фокуса B
+	Rack	Переведення
 	Show Home	Показувати головну сторінку
 	Show Mask Tracker Preview	Показувати попередній перегляд трекінгу маски
 	Show Only Noise	Показувати лише шум
@@ -3634,6 +3638,7 @@
 	Social Deliverables…	Матеріали для соцмереж…
 	Counter	Лічильник
 	Word by Word	По словах
+	Scramble	Перемішування
 	Animator	Аніматор
 	Animator Duration	Тривалість аніматора
 	Animator Delay	Затримка аніматора
@@ -4161,6 +4166,11 @@
 	Burn Size	Розмір пропалу
 	Ember Width	Ширина жевріючого краю
 	Ember Color	Колір жевріючого краю
+	Tear Away	Відрив
+	Tear Roughness	Нерівність розриву
+	Paper Edge Width	Ширина паперового краю
+	Stamp Cut	Поштова марка
+	Perforations	Перфорація
 	Check Text Legibility	Перевірити читабельність тексту
 	Clear Legibility Markers	Видалити маркери читабельності
 	Text legibility: no problems found	Читабельність тексту: проблем не знайдено
@@ -4200,6 +4210,9 @@
 	Dither	Дизеринг
 	Pattern	Візерунок
 	Cell Size	Розмір комірки
+	Pixelate	Пікселізація
+	Cell Shape	Форма комірки
+	LED	LED
 	Cyan Angle	Кут блакитного
 	Magenta Angle	Кут пурпурового
 	Yellow Angle	Кут жовтого
@@ -4536,6 +4549,8 @@
 	Follow external timecode during playback	Стежити за зовнішнім тайм-кодом під час відтворення
 	Lock after	Захоплення після
 	Keep playing without signal for	Продовжувати без сигналу протягом
+	Varispeed: adjust the playback speed instead of seeking	Varispeed: підлаштовувати швидкість відтворення замість переходу
+	User bits	Користувацькі біти
 	External frame rate	Зовнішня частота кадрів
 	Offset (added to the external timecode)	Зсув (додається до зовнішнього тайм-коду)
 	LTC	LTC
@@ -4560,6 +4575,26 @@
 	Chase External Timecode	Стежити за зовнішнім тайм-кодом
 	Send LTC	Надсилати LTC
 	Send MIDI Timecode	Надсилати MIDI тайм-код
+
+# Live studio preview (CFA4-LIVE-STUDIO-001 S0)
+	Live studio preview	Попередній перегляд студії прямого ефіру
+	Live studio: stopped	Студія прямого ефіру: зупинена
+	Live studio: {state}	Студія прямого ефіру: {state}
+	Live studio: {error}	Студія прямого ефіру: {error}
+	restarted after {count} crashes (last: {exit})	перезапущена після {count} збоїв (останній: {exit})
+	software backend: {reason}	програмний бекенд: {reason}
+	Start studio	Запустити студію
+	Stop studio	Зупинити студію
+	Add Studio Scene	Додати сцену студії
+	Live	Наживо
+# Credits: title, opening, chapter and lower-third pages filled from a graphics template (F10-C16)
+	Opening Credits	Початкові титри
+	Chapter Title	Назва розділу
+	Lower Third	Плашка
+	page {page}: graphics template “{template}” was not found; “{used}” is used	сторінка {page}: графічний шаблон “{template}” не знайдено; використовується “{used}”
+	page {page}: graphics template “{template}” has no field for all of the block's text; the rest is left out	сторінка {page}: у графічному шаблоні “{template}” немає поля для всього тексту блоку; решту пропущено
+	page {page}: template field “{control}” → “{part}” is not used (no such text control, or not head, body or tail)	сторінка {page}: поле шаблону “{control}” → “{part}” не використовується (немає такого текстового елемента або це не заголовок, основний текст чи підпис)
+	page {page}: pictures are left out on title, opening, chapter and lower-third pages	сторінка {page}: на сторінках заголовка, початкових титрів, розділу та плашки зображення пропускаються
 # Auto Color, Auto Contrast, Auto Levels (EffectsSDK review)
 	Auto Color	Автоколір
 	Auto Contrast	Автоконтраст
@@ -4617,3 +4652,138 @@
 	Freewheel	Вільний хід
 	Scrubbing	Прокручування
 	Sending	Надсилання
+
+# DCP subtitle export (#938)
+	Subtitles from the first caption track	Субтитри з першої доріжки субтитрів
+	The package language	Мова пакета
+	Inter Regular (built in), or an OpenType / TrueType file	Inter Regular (вбудований) або файл OpenType / TrueType
+	Subtitle language	Мова субтитрів
+	Subtitle font	Шрифт субтитрів
+	Fonts	Шрифти
+
+# AS-11 metadata in MXF OP1a (#96)
+	AS-11 Core	AS-11 Core
+	AS-11 Parts	Частини AS-11
+	AS-11 UK DPP	AS-11 UK DPP
+# Control surfaces (qt-control-surfaces-page, CFA4-CONTROL-SURFACE-001)
+	Device	Пристрій
+	Devices	Пристрої
+	Disabled	Вимкнено
+	HID jog/shuttle	HID jog/shuttle
+	MIDI	MIDI
+	OSC	OSC
+	Use	Використовувати
+	{device} ({port})	{device} ({port})
+	{name}: {error}	{name}: {error}
+# Control surfaces (midi-monitor, CFA4-CONTROL-SURFACE-001)
+	MIDI Monitor	MIDI-монітор
+	Press Start Monitor, then move a control.	Натисніть «Запустити монітор», потім поворушіть елемент керування.
+	Start Monitor	Запустити монітор
+	Stop Monitor	Зупинити монітор
+	… {count} messages not shown (too many at once)	… {count} повідомлень не показано (забагато водночас)
+# Control surfaces (midi-learn, CFA4-CONTROL-SURFACE-001)
+	A control surface asked for {command}, which does not exist.	Поверхня керування запросила {command}, якої не існує.
+	Assignments	Призначення
+	Cancel Learn	Скасувати навчання
+	Control	Елемент керування
+	Learn	Навчити
+	Remove this assignment	Вилучити це призначення
+	{control} runs {command}.	{control} виконує {command}.
+# Control surfaces (shuttlepro, CFA4-CONTROL-SURFACE-001)
+	Button {n}	Кнопка {n}
+# Control surfaces (continuous-values, CFA4-CONTROL-SURFACE-001)
+	{strip} Pan (knob)	{strip} панорама (регулятор)
+	{strip} Volume (fader)	{strip} гучність (фейдер)
+# Control surfaces (F1 Learn and profile, CFA4-CONTROL-SURFACE-001)
+	Assignments run when a button is pressed (a fader or knob counts as pressed past half way); a fader or knob assigned to a mixer strip moves its volume or pan. A ShuttlePRO's shuttle ring plays at its profile's speeds and its jog wheel steps frame by frame. Endless encoders and feedback to the controller (lights, motor faders) come in a later version.	Призначення спрацьовують від натискання кнопки (фейдер або ручка рахуються натиснутими за половиною); фейдер або ручка, призначені на смугу мікшера, рухають гучність або панораму. Кільце shuttle ShuttlePRO грає зі швидкостями профілю, а колесо jog крокує по кадру. Нескінченні енкодери й відгук на пульт (лампи, моторні фейдери) з’являться в пізнішій версії.
+	First message (ms)	Перше повідомлення (мс)
+	Silence (ms)	Тиша (мс)
+	Waiting for the control to settle…	Очікування, поки орган заспокоїться…
+	Type: {hint}. Confirm this assignment.	Тип: {hint}. Підтвердьте це призначення.
+	That control is already assigned. Confirm replaces it.	Цей орган уже призначено. Підтвердження замінить його.
+	Learn timed out.	Час навчання вичерпано.
+	Confirm	Підтвердити
+	Reject	Відхилити
+	Shows every MIDI message from the controllers as it arrives, to check that a controller sends and what it sends. MIDI Clock, Active Sensing and MIDI Time Code are left out.	Показує кожне MIDI-повідомлення з пультів щойно воно надходить, щоб перевірити, чи пульт надсилає і що саме. MIDI Clock, Active Sensing і MIDI-таймкод приховано.
+	Pick a command (or a mixer strip for a fader or knob), press Learn, then press the button or move the control past half way. Confirm keeps the assignment. OK saves the assignments.	Оберіть команду (або смугу мікшера для фейдера чи ручки), натисніть Навчити, потім кнопку або зруште орган за половину. Підтвердження зберігає призначення. Гаразд записує призначення.
+	All devices	Усі пристрої
+	Builtin: {name}	Вбудований: {name}
+	Capturing	Захоплення
+	Confirmed	Підтверджено
+	Conflict	Конфлікт
+	Connect a MIDI controller or a ShuttlePRO to edit its profile.	Підключіть MIDI-контролер або ShuttlePRO, щоб змінити його профіль.
+	Control Surfaces…	Поверхні керування…
+	Filter messages	Фільтр повідомлень
+	Idle	Очікування
+	Kernel dropped: {count}	Відкинуто ядром: {count}
+	Learn Assignments…	Навчання призначень…
+	Load profile	Завантажити профіль
+	MIDI Monitor…	Монітор MIDI…
+	Mute shuttle sound	Вимкнути звук шатла
+	No conflicts.	Конфліктів немає.
+	No profile warnings.	Попереджень профілю немає.
+	No project profile is stored.	Профіль проєкту не збережено.
+	OK writes the preferences and the profile file together.	OK записує параметри і файл профілю разом.
+	Online	У мережі
+	Pending	Очікує
+	Pickup (14-bit)	Підхоплення (14 біт)
+	Pickup (7-bit)	Підхоплення (7 біт)
+	Profile warnings	Попередження профілю
+	Rejected	Відхилено
+	Show Active Sensing	Показувати Active Sensing
+	Show MIDI Clock	Показувати годинник MIDI
+	Show MIDI Time Code	Показувати часовий код MIDI
+	The profile file is damaged. Preferences and the built-in profile stay in use.	Файл профілю пошкоджено. Параметри і вбудований профіль лишаються в роботі.
+	Timed out	Час вичерпано
+	Type: {hint}	Тип: {hint}
+	User profile file	Файл профілю користувача
+	{received} received, {dispatched} dispatched, {coalesced} coalesced, {stalls} stalls, {errors} errors	{received} отримано, {dispatched} передано, {coalesced} об’єднано, {stalls} очікувань, {errors} помилок
+
+# Control Surfaces settings page (CS-1, #1187)
+	Connected	Під'єднано
+	Not connected	Не під'єднано
+	Looking for devices…	Пошук пристроїв…
+	No MIDI controller or jog/shuttle device was found. Connect one and press Refresh.	Не знайдено MIDI-контролера чи пристрою jog/shuttle. Під'єднайте один і натисніть «Оновити».
+	Control Surfaces	Панелі керування
+	Use control surfaces (MIDI controllers, jog/shuttle devices)	Використовувати панелі керування (MIDI-контролери, пристрої jog/shuttle)
+	Mapping controls to commands, MIDI Learn and the MIDI Monitor come in a later version; the choices here are remembered until then.	Призначення елементів керування командам, MIDI Learn і MIDI-монітор з'являться в пізнішій версії; доти вибір тут запам'ятовується.
+	CFA4 ShuttlePRO	CFA4 ShuttlePRO
+	Kdenlive-style ShuttlePRO	ShuttlePRO у стилі Kdenlive
+	Generic MIDI	Загальний MIDI
+	Read from LTC Audio	Зчитати зі звуку LTC
+	Find SMPTE LTC on the clip's audio and use the timecode it gives the first frame	Знайти SMPTE LTC у звуці кліпу й узяти тайм-код, який він дає першому кадру
+	Read Timecode from LTC Audio	Зчитати тайм-код зі звуку LTC
+# Credits: voices (the Voice column) in the block's properties (F10-C16)
+	Voices	Голоси
+# AS-11 programme parts and AS-10 metadata (G2, #1371, #1375)
+	{tc}  Segmentation	{tc}  Сегментація
+	Marker Type	Тип маркера
+	Chapter	Розділ
+	Segmentation (AS-11 programme part)	Сегментація (частина програми AS-11)
+	AS-10	AS-10
+# AT9/AT3 converter (Tools ▸ Audio Tools, AT3-2)
+	AT9/AT3 Converter	Конвертер AT9/AT3
+	AT9/AT3 Converter…	Конвертер AT9/AT3…
+	Files to convert:	Файли для перетворення:
+	Add Files	Додати файли
+	Add Files…	Додати файли…
+	Convert to:	Перетворити на:
+	Bit rate:	Бітрейт:
+	Sample format:	Формат семплів:
+	Output folder:	Тека виводу:
+	Output Folder	Тека виводу
+	Next to each source file	Поруч із кожним вихідним файлом
+	AT9 and ATRAC3plus files convert to WAV; encoding AT9, ATRAC3plus and MP3 is not available yet.	Файли AT9 і ATRAC3plus перетворюються на WAV; кодування в AT9, ATRAC3plus і MP3 поки недоступне.
+	Convert	Перетворити
+	Add the files to convert first.	Спершу додайте файли для перетворення.
+	Done: {n} file(s) converted.	Готово: перетворено файлів: {n}.
+	Converting {name}…	Перетворення {name}…
+	Stopping…	Зупинення…
+	AT3 (ATRAC3, PSP / PS3)	AT3 (ATRAC3, PSP / PS3)
+	WAV (PCM)	WAV (PCM)
+	132 kbit/s (LP2)	132 кбіт/с (LP2)
+	105 kbit/s	105 кбіт/с
+	66 kbit/s (LP4, joint stereo)	66 кбіт/с (LP4, joint stereo)
+	16-bit	16 біт
+	24-bit	24 біт
+	32-bit float	32 біт з рухомою комою

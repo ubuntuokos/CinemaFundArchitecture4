@@ -2085,6 +2085,7 @@
 	Counter	Skaitiklis
 	Typewriter	Rašomoji mašinėlė
 	Word by Word	Žodis po žodžio
+	Scramble	Maišymas
 	Animator	Animatorius
 	Animator Duration	Animatoriaus trukmė
 	Animator Delay	Animatoriaus delsa
@@ -3223,6 +3224,10 @@
 	Sharpen Amount	Ryškinimo kiekis
 	Shift Center To	Perkelti centrą į
 	Show Focus Area	Rodyti fokuso sritį
+	Rack Focus	Fokuso perkėlimas
+	Focus Point A	Fokuso taškas A
+	Focus Point B	Fokuso taškas B
+	Rack	Perkėlimas
 	Show Only Noise	Rodyti tik triukšmą
 	Shrink	Sutraukti
 	Shutter Angle	Užrakto kampas
@@ -4179,6 +4184,11 @@ export.summary	Low	žema
 	Burn Size	Išdeginimo dydis
 	Ember Width	Žarijų krašto plotis
 	Ember Color	Žarijų krašto spalva
+	Tear Away	Atplėšimas
+	Tear Roughness	Plyšio šiurkštumas
+	Paper Edge Width	Popieriaus krašto plotis
+	Stamp Cut	Pašto ženklo iškarpa
+	Perforations	Perforacija
 	Check Text Legibility	Tikrinti teksto įskaitomumą
 	Clear Legibility Markers	Išvalyti įskaitomumo žymes
 	Text legibility: no problems found	Teksto įskaitomumas: problemų nerasta
@@ -4218,6 +4228,9 @@ export.summary	Low	žema
 	Dither	Taškavimas
 	Pattern	Raštas
 	Cell Size	Langelio dydis
+	Pixelate	Pikselizavimas
+	Cell Shape	Langelio forma
+	LED	LED
 	Cyan Angle	Žydros kampas
 	Magenta Angle	Purpurinės kampas
 	Yellow Angle	Geltonos kampas
@@ -4578,6 +4591,26 @@ export.summary	Low	žema
 	Chase External Timecode	Sekti išorinį laiko kodą
 	Send LTC	Siųsti LTC
 	Send MIDI Timecode	Siųsti MIDI laiko kodą
+
+# Live studio preview (CFA4-LIVE-STUDIO-001 S0)
+	Live studio preview	Tiesioginės studijos peržiūra
+	Live studio: stopped	Tiesioginė studija: sustabdyta
+	Live studio: {state}	Tiesioginė studija: {state}
+	Live studio: {error}	Tiesioginė studija: {error}
+	restarted after {count} crashes (last: {exit})	paleista iš naujo po {count} strigčių (paskutinė: {exit})
+	software backend: {reason}	programinė posistemė: {reason}
+	Start studio	Paleisti studiją
+	Stop studio	Sustabdyti studiją
+	Add Studio Scene	Pridėti studijos sceną
+	Live	Tiesiogiai
+# Credits: title, opening, chapter and lower-third pages filled from a graphics template (F10-C16)
+	Opening Credits	Pradiniai titrai
+	Chapter Title	Skyriaus pavadinimas
+	Lower Third	Apatinė juosta
+	page {page}: graphics template “{template}” was not found; “{used}” is used	{page} puslapis: grafikos šablonas „{template}“ nerastas; naudojamas „{used}“
+	page {page}: graphics template “{template}” has no field for all of the block's text; the rest is left out	{page} puslapis: grafikos šablone „{template}“ nėra lauko visam bloko tekstui; likusi dalis praleidžiama
+	page {page}: template field “{control}” → “{part}” is not used (no such text control, or not head, body or tail)	{page} puslapis: šablono laukas „{control}“ → „{part}“ nenaudojamas (tokio teksto valdiklio nėra arba tai ne antraštė, tekstas ar pabaiga)
+	page {page}: pictures are left out on title, opening, chapter and lower-third pages	{page} puslapis: titulo, pradinių titrų, skyriaus ir apatinės juostos puslapiuose paveikslėliai praleidžiami
 # Auto Color, Auto Contrast, Auto Levels (EffectsSDK review)
 	Auto Color	Automatinė spalva
 	Auto Contrast	Automatinis kontrastas
@@ -4635,3 +4668,142 @@ export.summary	Low	žema
 	Freewheel	Laisvoji eiga
 	Scrubbing	Slinkimas
 	Sending	Siunčiama
+
+# DCP subtitle export (#938)
+	Subtitles from the first caption track	Subtitrai iš pirmojo subtitrų takelio
+	The package language	Paketo kalba
+	Inter Regular (built in), or an OpenType / TrueType file	Inter Regular (įtaisytas) arba OpenType / TrueType failas
+	Subtitle language	Subtitrų kalba
+	Subtitle font	Subtitrų šriftas
+	Fonts	Šriftai
+
+# AS-11 metadata in MXF OP1a (#96)
+	AS-11 Core	AS-11 Core
+	AS-11 Parts	AS-11 dalys
+	AS-11 UK DPP	AS-11 UK DPP
+# Control surfaces (qt-control-surfaces-page, CFA4-CONTROL-SURFACE-001)
+	Device	Įrenginys
+	Devices	Įrenginiai
+	HID jog/shuttle	HID jog/shuttle
+	MIDI	MIDI
+	OSC	OSC
+	Use	Naudoti
+	{device} ({port})	{device} ({port})
+	{name}: {error}	{name}: {error}
+# Control surfaces (midi-monitor, CFA4-CONTROL-SURFACE-001)
+	MIDI Monitor	MIDI monitorius
+	Press Start Monitor, then move a control.	Paspauskite „Paleisti monitorių“, tada pajudinkite valdiklį.
+	Start Monitor	Paleisti monitorių
+	Stop Monitor	Sustabdyti monitorių
+	… {count} messages not shown (too many at once)	… {count} pranešimų nerodoma (per daug vienu metu)
+# Control surfaces (midi-learn, CFA4-CONTROL-SURFACE-001)
+	A control surface asked for {command}, which does not exist.	Valdymo paviršius paprašė {command}, kurios nėra.
+	Assignments	Priskyrimai
+	Cancel Learn	Atšaukti mokymąsi
+	Control	Valdiklis
+	Learn	Mokytis
+	Remove this assignment	Pašalinti šį priskyrimą
+	{control} runs {command}.	{control} vykdo {command}.
+# Control surfaces (shuttlepro, CFA4-CONTROL-SURFACE-001)
+	Button {n}	Mygtukas {n}
+# Control surfaces (continuous-values, CFA4-CONTROL-SURFACE-001)
+	{strip} Pan (knob)	{strip} panorama (rankenėlė)
+	{strip} Volume (fader)	{strip} garsumas (slankiklis)
+# Control surfaces (F1 Learn and profile, CFA4-CONTROL-SURFACE-001)
+	Assignments run when a button is pressed (a fader or knob counts as pressed past half way); a fader or knob assigned to a mixer strip moves its volume or pan. A ShuttlePRO's shuttle ring plays at its profile's speeds and its jog wheel steps frame by frame. Endless encoders and feedback to the controller (lights, motor faders) come in a later version.	Priskyrimai veikia paspaudus mygtuką (faderis ar rankenėlė skaičiuojama paspausta už pusės); prie maišytuvo takelio priskirtas faderis ar rankenėlė judina garsumą arba panoramą. ShuttlePRO šatlo žiedas groja profilio greičiais, o jog ratas žingsniuoja po kadrą. Begaliniai koduotuvai ir atsakas valdikliui (lemputės, varikliniai faderiai) bus vėlesnėje versijoje.
+	First message (ms)	Pirma žinutė (ms)
+	Silence (ms)	Tyla (ms)
+	Waiting for the control to settle…	Laukiama, kol valdiklis nurims…
+	Type: {hint}. Confirm this assignment.	Tipas: {hint}. Patvirtinkite šį priskyrimą.
+	That control is already assigned. Confirm replaces it.	Šis valdiklis jau priskirtas. Patvirtinimas jį pakeičia.
+	Learn timed out.	Mokymasis baigėsi laiku.
+	Confirm	Patvirtinti
+	Reject	Atmesti
+	Shows every MIDI message from the controllers as it arrives, to check that a controller sends and what it sends. MIDI Clock, Active Sensing and MIDI Time Code are left out.	Rodo kiekvieną MIDI žinutę iš valdiklių jai atėjus, kad matytųsi, ar valdiklis siunčia ir ką. MIDI laikrodis, Active Sensing ir MIDI laiko kodas praleidžiami.
+	Pick a command (or a mixer strip for a fader or knob), press Learn, then press the button or move the control past half way. Confirm keeps the assignment. OK saves the assignments.	Pasirinkite komandą (arba maišytuvo takelį faderiui ar rankenėlei), paspauskite Mokytis, tada mygtuką arba pastumkite valdiklį už pusės. Patvirtinimas palieka priskyrimą. Gerai įrašo priskyrimus.
+	All devices	Visi įrenginiai
+	Builtin: {name}	Įtaisytas: {name}
+	Capturing	Fiksuojama
+	Confirmed	Patvirtinta
+	Conflict	Konfliktas
+	Connect a MIDI controller or a ShuttlePRO to edit its profile.	Norėdami keisti profilį, prijunkite MIDI valdiklį arba ShuttlePRO.
+	Control Surfaces…	Valdymo paviršiai…
+	Filter messages	Filtruoti pranešimus
+	Idle	Laukia
+	Kernel dropped: {count}	Branduolys atmetė: {count}
+	Learn Assignments…	Mokytis priskyrimų…
+	Load profile	Įkelti profilį
+	MIDI Monitor…	MIDI monitorius…
+	Mute shuttle sound	Nutildyti shuttle garsą
+	No conflicts.	Konfliktų nėra.
+	No profile warnings.	Profilio įspėjimų nėra.
+	No project profile is stored.	Projekto profilis neįrašytas.
+	OK writes the preferences and the profile file together.	Gerai kartu įrašo nuostatas ir profilio failą.
+	Online	Prisijungęs
+	Pending	Laukiama
+	Pickup (14-bit)	Paėmimas (14 bitų)
+	Pickup (7-bit)	Paėmimas (7 bitų)
+	Profile warnings	Profilio įspėjimai
+	Rejected	Atmesta
+	Show Active Sensing	Rodyti Active Sensing
+	Show MIDI Clock	Rodyti MIDI laikrodį
+	Show MIDI Time Code	Rodyti MIDI laiko kodą
+	The profile file is damaged. Preferences and the built-in profile stay in use.	Profilio failas pažeistas. Nuostatos ir įtaisytas profilis lieka naudojami.
+	Timed out	Laikas baigėsi
+	Type: {hint}	Tipas: {hint}
+	User profile file	Naudotojo profilio failas
+	{received} received, {dispatched} dispatched, {coalesced} coalesced, {stalls} stalls, {errors} errors	{received} gauta, {dispatched} perduota, {coalesced} sujungta, {stalls} laukimai, {errors} klaidos
+
+# Control Surfaces settings page (CS-1, #1187)
+	Connected	Prijungtas
+	Not connected	Neprijungtas
+	Disabled	Išjungtas
+	Looking for devices…	Ieškoma įrenginių…
+	No MIDI controller or jog/shuttle device was found. Connect one and press Refresh.	Nerastas nei MIDI valdiklis, nei jog/shuttle įrenginys. Prijunkite vieną ir paspauskite Atnaujinti.
+	Control Surfaces	Valdymo pultai
+	Use control surfaces (MIDI controllers, jog/shuttle devices)	Naudoti valdymo pultus (MIDI valdiklius, jog/shuttle įrenginius)
+	Mapping controls to commands, MIDI Learn and the MIDI Monitor come in a later version; the choices here are remembered until then.	Valdiklių priskyrimas komandoms, MIDI Learn ir MIDI monitorius bus vėlesnėje versijoje; iki tol čia pasirinkti nustatymai įsimenami.
+	CFA4 ShuttlePRO	CFA4 ShuttlePRO
+	Kdenlive-style ShuttlePRO	Kdenlive stiliaus ShuttlePRO
+	Generic MIDI	Bendrasis MIDI
+# LTC timecode read from clip audio (TC-7, #1285)
+	Read from LTC Audio	Nuskaityti iš LTC garso
+	Find SMPTE LTC on the clip's audio and use the timecode it gives the first frame	Rasti SMPTE LTC klipo garse ir naudoti laiko kodą, kurį jis suteikia pirmam kadrui
+	Read Timecode from LTC Audio	Nuskaityti laiko kodą iš LTC garso
+# Credits: voices (the Voice column) in the block's properties (F10-C16)
+	Voices	Balsai
+# Timecode sync varispeed and user bits (TC-8, #1308)
+	Varispeed: adjust the playback speed instead of seeking	Varispeed: užuot peršokus, koreguoti atkūrimo greitį
+	User bits	Naudotojo bitai
+# AS-11 programme parts and AS-10 metadata (G2, #1371, #1375)
+	{tc}  Segmentation	{tc}  Segmentavimas
+	Marker Type	Žymeklio tipas
+	Chapter	Skyrius
+	Segmentation (AS-11 programme part)	Segmentavimas (AS-11 programos dalis)
+	AS-10	AS-10
+# AT9/AT3 converter (Tools ▸ Audio Tools, AT3-2)
+	AT9/AT3 Converter	AT9/AT3 keitiklis
+	AT9/AT3 Converter…	AT9/AT3 keitiklis…
+	Files to convert:	Keičiami failai:
+	Add Files	Pridėti failų
+	Add Files…	Pridėti failų…
+	Convert to:	Keisti į:
+	Bit rate:	Bitų sparta:
+	Sample format:	Ėminių formatas:
+	Output folder:	Išvesties aplankas:
+	Output Folder	Išvesties aplankas
+	Next to each source file	Šalia kiekvieno šaltinio failo
+	AT9 and ATRAC3plus files convert to WAV; encoding AT9, ATRAC3plus and MP3 is not available yet.	AT9 ir ATRAC3plus failai keičiami į WAV; AT9, ATRAC3plus ir MP3 kodavimas dar neprieinamas.
+	Convert	Keisti
+	Add the files to convert first.	Pirmiausia pridėkite keičiamus failus.
+	Done: {n} file(s) converted.	Atlikta: konvertuota failų: {n}.
+	Converting {name}…	Keičiamas {name}…
+	Stopping…	Stabdoma…
+	AT3 (ATRAC3, PSP / PS3)	AT3 (ATRAC3, PSP / PS3)
+	WAV (PCM)	WAV (PCM)
+	132 kbit/s (LP2)	132 kbit/s (LP2)
+	105 kbit/s	105 kbit/s
+	66 kbit/s (LP4, joint stereo)	66 kbit/s (LP4, jungtinis stereo)
+	16-bit	16 bitų
+	24-bit	24 bitų
+	32-bit float	32 bitų slankusis kablelis
