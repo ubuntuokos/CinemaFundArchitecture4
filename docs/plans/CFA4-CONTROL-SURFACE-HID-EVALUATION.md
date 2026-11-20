@@ -1,7 +1,7 @@
 # CFA4-CONTROL-SURFACE-001 – HID-hozzáférés értékelése (ShuttlePRO)
 
-**Dátum:** 2026-11-13 · **Állapot:** asztali (forrás- és dokumentációalapú) értékelés kész; a fizikai mérés
-(4. fejezet) a referenciagépen az F1a első lépése · **Lefedi:** F0-AC-03, T0.2 · **Célgép:** a repó
+**Dátum:** 2026-11-13 · **Állapot:** asztali (forrás- és dokumentációalapú) értékelés kész, a döntés véglegesítve 2026-11-16 (N-02, N-03); a fizikai mérés
+(4. fejezet) a referenciagépen az F1 elfogadásának feltétele · **Lefedi:** F0-AC-03, T0.2 · **Célgép:** a repó
 `docs/development/reference-machine.md` fájlja (Ubuntu Studio 26.04, kernel 7.0.0-43-generic, KDE Plasma 6.6.6, Wayland)
 
 ## 1. Eredmény
