@@ -1381,9 +1381,9 @@ mod color_tests;
 #[cfg(test)]
 mod dcp_import_tests;
 #[cfg(test)]
-mod effects_inspect_tests;
-#[cfg(test)]
 mod effect_toggle_tests;
+#[cfg(test)]
+mod effects_inspect_tests;
 #[cfg(test)]
 mod essential_sound_tests;
 #[cfg(test)]
