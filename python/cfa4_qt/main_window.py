@@ -335,6 +335,7 @@ class MainWindow(QMainWindow):
         self.inspector.attach_settings(self.settings)
         self.effect_controls = EffectControlsPanel(self)
         self.effect_controls.attach(engine)
+        self.effect_controls.attach_settings(self.settings)
         self.history = HistoryPanel(self)
         self.markers = MarkersPanel(self)
         self.info = InfoPanel(self)

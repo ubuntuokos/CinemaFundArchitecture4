@@ -15269,3 +15269,39 @@ def test_export_mxf_as11_fields_only_for_op1a(app):
     assert dlg2.as11_text["mxfAs11Ukdpp"].toPlainText() == "ProductionNumber: P1"
     dlg.deleteLater()
     dlg2.deleteLater()
+
+
+def test_effect_controls_bulk_switch_and_recent_effects(app):
+    """SC-4: the bulk buttons send one effects.toggleEnabled for the selection; applying a recent
+    effect sends effects.apply to it and moves it to the front of the user's recent list."""
+    from cfa4_qt import recent_effects
+    from cfa4_qt.panels.effect_controls import EffectControlsPanel
+
+    class Store:
+        d: dict = {}
+
+        def value(self, key, default=None):
+            return self.d.get(key, default)
+
+        def setValue(self, key, value):  # noqa: N802
+            self.d[key] = value
+
+    panel = EffectControlsPanel()
+    panel.attach_settings(Store())
+    sent: list[tuple[str, dict]] = []
+    panel.command.connect(lambda c, p: sent.append((c, p)))
+    assert panel.findChild(object, "effectControls.bulk.disableAll") is not None
+    panel.set_all_enabled(False)  # nothing selected: nothing sent
+    assert sent == []
+    panel._wanted = ([4, 5], None)
+    panel.bulk_off.click()
+    panel.bulk_on.click()
+    assert sent == [("effects.toggleEnabled", {"clips": [4, 5], "all": True, "enabled": False}),
+                    ("effects.toggleEnabled", {"clips": [4, 5], "all": True, "enabled": True})]
+    sent.clear()
+    panel.apply_recent("gaussian_blur")
+    panel.apply_recent("invert")
+    panel.apply_recent("gaussian_blur")
+    assert recent_effects.load(panel.settings) == ["gaussian_blur", "invert"]
+    assert sent[-1] == ("effects.apply", {"effect": "gaussian_blur", "clips": [4, 5]})
+    panel.close()

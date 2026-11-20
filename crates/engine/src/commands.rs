@@ -3600,17 +3600,80 @@ fn build() -> Vec<CommandSpec> {
             })?;
             Ok(Value::Null)
         }),
-        cmd!("effects.toggleEnabled", "Toggle Effect", [], None, r#"{"clip":id,"index":n}"#, has_seq, |s, p| {
-            let c = clip_p(p, "clip").ok_or_else(|| bad("effects.toggleEnabled", "need `clip`"))?;
-            let idx = u64_p(p, "index").unwrap_or(0) as usize;
+        cmd!("effects.toggleEnabled", "Toggle Effect", [], None, r#"{"clip":id|"clips":[id]?,"index":n|"indices":[n]?,"effect":str?,"all":bool?,"enabled":bool?}"#, has_seq, |s, p| {
+            // SC-4: one or many clips (default: the selection) and one or many effects, one undo
+            // step. Without `enabled` every matched effect gets the opposite of "all enabled"
+            // (so one effect flips as before and a mixed set is switched on).
+            const CMD: &str = "effects.toggleEnabled";
+            let clips = match target_clips_p(s, p, CMD)? {
+                Some(c) => c,
+                None => s.state.selection.clone(),
+            };
+            let indices: Vec<usize> = match (p.get("index"), p.get("indices")) {
+                (Some(_), Some(_)) => return Err(bad(CMD, "give either `index` or `indices`, not both")),
+                (None, Some(a)) => a
+                    .as_array()
+                    .ok_or_else(|| bad(CMD, "`indices` must be an array of effect indices"))?
+                    .iter()
+                    .map(|v| v.as_u64().and_then(|n| usize::try_from(n).ok()).ok_or_else(|| bad(CMD, "`indices` elements must be non-negative integers")))
+                    .collect::<Result<_>>()?,
+                (Some(v), None) => vec![v.as_u64().and_then(|n| usize::try_from(n).ok()).ok_or_else(|| bad(CMD, "`index` must be a non-negative integer"))?],
+                (None, None) => {
+                    if p.get("effect").is_some() || p.get("all").is_some_and(|v| v.as_bool() == Some(true)) {
+                        Vec::new()
+                    } else {
+                        vec![0]
+                    }
+                }
+            };
+            let by_id = match p.get("effect") {
+                None | Some(Value::Null) => None,
+                Some(v) => Some(v.as_str().ok_or_else(|| bad(CMD, "`effect` must be an effect id string"))?.to_string()),
+            };
+            let forced = match p.get("enabled") {
+                None | Some(Value::Null) => None,
+                Some(v) => Some(v.as_bool().ok_or_else(|| bad(CMD, "`enabled` must be true or false"))?),
+            };
+            // `all`: every applied (non-intrinsic) effect of each clip, whatever its stack
+            let all = match p.get("all") {
+                None | Some(Value::Null) => false,
+                Some(v) => v.as_bool().ok_or_else(|| bad(CMD, "`all` must be true or false"))?,
+            };
+            let indices = if all && p.get("index").is_none() && p.get("indices").is_none() { Vec::new() } else { indices };
+            let matches = |it: &cfa4_project::TrackItem| -> Vec<usize> {
+                let mut m: Vec<usize> = (0..it.effects.len())
+                    .filter(|i| indices.contains(i) || (all && it.effects.get(*i).is_some_and(|e| !e.def().is_some_and(|d| d.intrinsic))) || by_id.as_deref().is_some_and(|id| it.effects.get(*i).is_some_and(|e| e.effect == id)))
+                    .collect();
+                m.dedup();
+                m
+            };
+            let (mut total, mut all_on) = (0usize, true);
+            if let Some(q) = s.active_sequence() {
+                for c in &clips {
+                    if let Some((_, it)) = q.find_item(*c) {
+                        for i in matches(it) {
+                            total += 1;
+                            all_on &= it.effects.get(i).is_some_and(|e| e.enabled);
+                        }
+                    }
+                }
+            }
+            if total == 0 {
+                return Ok(json!({"changed": 0, "enabled": Value::Null}));
+            }
+            let target = forced.unwrap_or(!all_on);
             s.edit_sequence("Toggle Effect", |q, _, _| {
-                let (_, it) = q.find_item_mut(c).ok_or(cfa4_edit::EditError::NoItem(c))?;
-                if let Some(e) = it.effects.get_mut(idx) {
-                    e.enabled = !e.enabled;
+                for c in &clips {
+                    let (_, it) = q.find_item_mut(*c).ok_or(cfa4_edit::EditError::NoItem(*c))?;
+                    for i in matches(it) {
+                        if let Some(e) = it.effects.get_mut(i) {
+                            e.enabled = target;
+                        }
+                    }
                 }
                 Ok(())
             })?;
-            Ok(Value::Null)
+            Ok(json!({"changed": total, "enabled": target}))
         }),
         cmd!("effects.reset", "Reset Effect", [], None, r#"{"clip":id,"index":n}"#, has_seq, |s, p| {
             let c = clip_p(p, "clip").ok_or_else(|| bad("effects.reset", "need `clip`"))?;
