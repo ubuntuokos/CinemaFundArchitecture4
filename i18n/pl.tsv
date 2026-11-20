@@ -4600,6 +4600,14 @@ export.summary	Low	niska
 	Stop studio	Zatrzymaj studio
 	Add Studio Scene	Dodaj scenę studia
 	Live	Na żywo
+# Credits: title, opening, chapter and lower-third pages filled from a graphics template (F10-C16)
+	Opening Credits	Napisy początkowe
+	Chapter Title	Tytuł rozdziału
+	Lower Third	Belka dolna
+	page {page}: graphics template “{template}” was not found; “{used}” is used	strona {page}: nie znaleziono szablonu graficznego „{template}”; używany jest „{used}”
+	page {page}: graphics template “{template}” has no field for all of the block's text; the rest is left out	strona {page}: szablon graficzny „{template}” nie ma pola na cały tekst bloku; reszta jest pomijana
+	page {page}: template field “{control}” → “{part}” is not used (no such text control, or not head, body or tail)	strona {page}: pole szablonu „{control}” → „{part}” nie jest używane (brak takiej kontrolki tekstu albo to nie nagłówek, treść ani stopka)
+	page {page}: pictures are left out on title, opening, chapter and lower-third pages	strona {page}: obrazy są pomijane na stronach tytułu, napisów początkowych, rozdziału i belki dolnej
 # Auto Color, Auto Contrast, Auto Levels (EffectsSDK review)
 	Auto Color	Automatyczny kolor
 	Auto Contrast	Automatyczny kontrast
@@ -4670,29 +4678,97 @@ export.summary	Low	niska
 	AS-11 Core	AS-11 Core
 	AS-11 Parts	Części AS-11
 	AS-11 UK DPP	AS-11 UK DPP
+# Control surfaces (qt-control-surfaces-page, CFA4-CONTROL-SURFACE-001)
+	Device	Urządzenie
+	Devices	Urządzenia
+	MIDI	MIDI
+	OSC	OSC
+	Use	Używaj
+	{device} ({port})	{device} ({port})
+	{name}: {error}	{name}: {error}
+# Control surfaces (midi-monitor, CFA4-CONTROL-SURFACE-001)
+	MIDI Monitor	Monitor MIDI
+	Press Start Monitor, then move a control.	Naciśnij Uruchom monitor, a następnie porusz elementem sterującym.
+	Start Monitor	Uruchom monitor
+	Stop Monitor	Zatrzymaj monitor
+	… {count} messages not shown (too many at once)	… {count} komunikatów nie pokazano (za dużo naraz)
+# Control surfaces (midi-learn, CFA4-CONTROL-SURFACE-001)
+	A control surface asked for {command}, which does not exist.	Powierzchnia sterująca zażądała {command}, które nie istnieje.
+	Assignments	Przypisania
+	Cancel Learn	Anuluj uczenie
+	Control	Element sterujący
+	Learn	Ucz
+	Remove this assignment	Usuń to przypisanie
+	{control} runs {command}.	{control} uruchamia {command}.
+# Control surfaces (shuttlepro, CFA4-CONTROL-SURFACE-001)
+	Button {n}	Przycisk {n}
+# Control surfaces (continuous-values, CFA4-CONTROL-SURFACE-001)
+	{strip} Pan (knob)	{strip} panorama (pokrętło)
+	{strip} Volume (fader)	{strip} głośność (suwak)
+# Control surfaces (F1 Learn and profile, CFA4-CONTROL-SURFACE-001)
+	Control Surfaces	Powierzchnie sterujące
+	Assignments run when a button is pressed (a fader or knob counts as pressed past half way); a fader or knob assigned to a mixer strip moves its volume or pan. A ShuttlePRO's shuttle ring plays at its profile's speeds and its jog wheel steps frame by frame. Endless encoders and feedback to the controller (lights, motor faders) come in a later version.	Przypisania działają po naciśnięciu przycisku (fader lub pokrętło liczy się jako naciśnięte po połowie); fader lub pokrętło przypisane do ścieżki miksera rusza jej głośność lub panoramę. Pierścień shuttle ShuttlePRO odtwarza z prędkościami profilu, a koło jog krokami po klatce. Enkodery bez końca i odpowiedź do kontrolera (lampki, fadery silnikowe) pojawią się w późniejszej wersji.
+	First message (ms)	Pierwsza wiadomość (ms)
+	Silence (ms)	Cisza (ms)
+	Waiting for the control to settle…	Oczekiwanie, aż element się uspokoi…
+	Type: {hint}. Confirm this assignment.	Typ: {hint}. Potwierdź to przypisanie.
+	That control is already assigned. Confirm replaces it.	Ten element jest już przypisany. Potwierdzenie je zastępuje.
+	Learn timed out.	Nauka przekroczyła czas.
+	Confirm	Potwierdź
+	Reject	Odrzuć
+	Shows every MIDI message from the controllers as it arrives, to check that a controller sends and what it sends. MIDI Clock, Active Sensing and MIDI Time Code are left out.	Pokazuje każdą wiadomość MIDI z kontrolerów w chwili nadejścia, aby sprawdzić, czy kontroler wysyła i co wysyła. Zegar MIDI, Active Sensing i kod czasowy MIDI są pomijane.
+	Pick a command (or a mixer strip for a fader or knob), press Learn, then press the button or move the control past half way. Confirm keeps the assignment. OK saves the assignments.	Wybierz polecenie (albo ścieżkę miksera dla fadera lub pokrętła), naciśnij Ucz się, a potem przycisk lub przesuń element za połowę. Potwierdzenie zachowuje przypisanie. OK zapisuje przypisania.
+	All devices	Wszystkie urządzenia
+	Builtin: {name}	Wbudowany: {name}
+	Capturing	Przechwytywanie
+	Confirmed	Potwierdzono
+	Conflict	Konflikt
+	Connect a MIDI controller or a ShuttlePRO to edit its profile.	Podłącz kontroler MIDI lub ShuttlePRO, aby edytować jego profil.
+	Control Surfaces…	Powierzchnie sterowania…
+	Filter messages	Filtruj komunikaty
+	Idle	Bezczynny
+	Kernel dropped: {count}	Porzucone przez jądro: {count}
+	Learn Assignments…	Uczenie przypisań…
+	Load profile	Wczytaj profil
+	MIDI Monitor…	Monitor MIDI…
+	Mute shuttle sound	Wycisz dźwięk shuttle
+	No conflicts.	Brak konfliktów.
+	No profile warnings.	Brak ostrzeżeń profilu.
+	No project profile is stored.	Nie zapisano profilu projektu.
+	OK writes the preferences and the profile file together.	OK zapisuje preferencje i plik profilu razem.
+	Online	W sieci
+	Pending	Oczekuje
+	Pickup (14-bit)	Przechwyt (14 bitów)
+	Pickup (7-bit)	Przechwyt (7 bitów)
+	Profile warnings	Ostrzeżenia profilu
+	Rejected	Odrzucono
+	Show Active Sensing	Pokaż Active Sensing
+	Show MIDI Clock	Pokaż zegar MIDI
+	Show MIDI Time Code	Pokaż kod czasowy MIDI
+	The profile file is damaged. Preferences and the built-in profile stay in use.	Plik profilu jest uszkodzony. Preferencje i wbudowany profil pozostają w użyciu.
+	Timed out	Przekroczono czas
+	Type: {hint}	Typ: {hint}
+	User profile file	Plik profilu użytkownika
+	{received} received, {dispatched} dispatched, {coalesced} coalesced, {stalls} stalls, {errors} errors	{received} odebrano, {dispatched} przekazano, {coalesced} scalono, {stalls} postoje, {errors} błędy
 
 # Control Surfaces settings page (CS-1, #1187)
-	Devices	Urządzenia
-	Use	Używaj
-	Device	Urządzenie
-	MIDI	MIDI
 	HID jog/shuttle	HID jog/shuttle
-	OSC	OSC
 	Connected	Połączono
 	Not connected	Nie połączono
 	Disabled	Wyłączone
-	{device} ({port})	{device} ({port})
-	{name}: {error}	{name}: {error}
 	Looking for devices…	Wyszukiwanie urządzeń…
 	No MIDI controller or jog/shuttle device was found. Connect one and press Refresh.	Nie znaleziono kontrolera MIDI ani urządzenia jog/shuttle. Podłącz jedno i naciśnij Odśwież.
-	Control Surfaces	Powierzchnie sterujące
 	Use control surfaces (MIDI controllers, jog/shuttle devices)	Używaj powierzchni sterujących (kontrolery MIDI, urządzenia jog/shuttle)
 	Mapping controls to commands, MIDI Learn and the MIDI Monitor come in a later version; the choices here are remembered until then.	Przypisywanie elementów sterujących do poleceń, MIDI Learn i monitor MIDI pojawią się w późniejszej wersji; do tego czasu wybory tutaj są zapamiętywane.
 	CFA4 ShuttlePRO	CFA4 ShuttlePRO
 	Kdenlive-style ShuttlePRO	ShuttlePRO w stylu Kdenlive
 	Generic MIDI	Ogólne MIDI
-
 # LTC timecode read from clip audio (TC-7, #1285)
 	Read from LTC Audio	Odczytaj z dźwięku LTC
 	Find SMPTE LTC on the clip's audio and use the timecode it gives the first frame	Znajdź SMPTE LTC w dźwięku klipu i użyj kodu czasowego, który daje on pierwszej klatce
 	Read Timecode from LTC Audio	Odczytaj kod czasowy z dźwięku LTC
+# Credits: voices (the Voice column) in the block's properties (F10-C16)
+	Voices	Głosy
+# Timecode sync varispeed and user bits (TC-8, #1308)
+	Varispeed: adjust the playback speed instead of seeking	Varispeed: dostosuj prędkość odtwarzania zamiast przeskakiwać
+	User bits	Bity użytkownika

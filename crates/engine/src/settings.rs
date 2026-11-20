@@ -1225,7 +1225,9 @@ static CATEGORIES: &[Category] = &[
         rows: &[
             b("controlSurfaces.enabled", "Use control surfaces (MIDI controllers, jog/shuttle devices)", false),
             Row::Custom("controlSurfaces"),
-            Row::Note("Mapping controls to commands, MIDI Learn and the MIDI Monitor come in a later version; the choices here are remembered until then."),
+            Row::Note(
+                "Assignments run when a button is pressed (a fader or knob counts as pressed past half way); a fader or knob assigned to a mixer strip moves its volume or pan. A ShuttlePRO's shuttle ring plays at its profile's speeds and its jog wheel steps frame by frame. Endless encoders and feedback to the controller (lights, motor faders) come in a later version.",
+            ),
         ],
     },
     Category {
@@ -1431,6 +1433,7 @@ static CATEGORIES: &[Category] = &[
                     sub("timecodeSync.source", "Source", Kind::Choice(crate::timecode_sync::SOURCES), "timecodeSync.chase", true),
                     sub("timecodeSync.lockFrames", "Lock after", int(1.0, 30.0, "frames"), "timecodeSync.chase", true),
                     sub("timecodeSync.freewheelFrames", "Keep playing without signal for", int(2.0, 300.0, "frames"), "timecodeSync.chase", true),
+                    sub("timecodeSync.varispeed", "Varispeed: adjust the playback speed instead of seeking", Kind::Bool, "timecodeSync.chase", true),
                 ],
             ),
             Row::Group(

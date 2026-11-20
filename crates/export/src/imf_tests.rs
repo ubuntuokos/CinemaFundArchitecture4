@@ -383,3 +383,92 @@ fn rates_kinds_and_profiles() {
     assert_eq!(rgba_to_rgb10(&[255, 128, 0, 255], 1, 1), [vec![1023], vec![514], vec![0]]);
     assert_eq!(rgba_to_rgb10(&[1, 2], 2, 2)[0].len(), 4, "short input never panics");
 }
+
+/// #1234: the first caption track as an IMSC1 Text Profile document in an IMF timed text track
+/// file (ST 2067-2 5.4): OP1a, the IMSC1 profile and the language in the descriptor, its RegXML
+/// in the playlist, a subtitles virtual track at the composition rate, cues cut at the last frame.
+#[test]
+fn subtitles_as_imsc1() {
+    let rate = FrameRate::new(25, 1);
+    let (p, seq, m) = project(rate);
+    let mut p = Arc::unwrap_or_clone(p);
+    let tid = cfa4_project::TrackId(p.alloc_id());
+    let mut ct = cfa4_project::CaptionTrack::new(tid, "Feliratok".into(), cfa4_project::CaptionFormat::Subtitle);
+    for (from, to, text) in [(2, 6, "Helló <i>világ</i>"), (8, 15, "levágva & a < b"), (20, 30, "kimarad")] {
+        let id = cfa4_project::ClipId(p.alloc_id());
+        ct.captions.push(cfa4_project::Caption {
+            id,
+            start: rate.tick_of(from),
+            duration: rate.tick_of(to - from),
+            text: text.into(),
+            speaker: None,
+            cue_id: None,
+            settings: String::new(),
+        });
+    }
+    p.sequence_mut(seq).unwrap().caption_tracks.push(ct);
+    let p = Arc::new(p);
+    let dir = tmp("subtitles");
+    let s = ExportSettings {
+        format: Format::Imf,
+        path: dir.clone(),
+        range: Some(TimeRange::new(Tick::ZERO, rate.tick_of(10))),
+        dcp_language: "en-US".into(),
+        dcp_subtitles: true,
+        dcp_subtitle_language: "hu-HU".into(),
+        ..Default::default()
+    };
+    let r = export(&p, seq, &s, &m, &Progress::default()).unwrap();
+    assert_eq!(r.extra_files.len(), 7, "{:?}", r.extra_files);
+    let text_path = file(&dir, "TEXT_");
+    let data = std::fs::read(&text_path).unwrap();
+    let tt = cfa4_mxf::open_timed_text(&data).unwrap();
+    assert!(tt.warnings.is_empty(), "{:?}", tt.warnings);
+    assert_eq!((tt.edit_rate, tt.duration), (cfa4_mxf::Rational::new(25, 1), Some(10)));
+    assert_eq!(tt.namespace.as_deref(), Some("http://www.w3.org/ns/ttml/profile/imsc1/text"));
+    assert_eq!(tt.languages.as_deref(), Some("hu-HU"));
+    assert!(tt.resources.is_empty(), "a generic font family, no font resource");
+    assert_eq!(cfa4_mxf::peek(&data).unwrap().operational_pattern, cfa4_mxf::OperationalPattern::Generalized { item: 1, package: 1 });
+    let xml = String::from_utf8(tt.read_document(&data).unwrap()).unwrap();
+    assert!(xml.contains("ttp:profile=\"http://www.w3.org/ns/ttml/profile/imsc1/text\"") && xml.contains("xml:lang=\"hu-HU\""), "{xml}");
+    let doc = cfa4_captions::ttml::parse(&xml).unwrap();
+    assert_eq!(doc.cues.len(), 2, "the cue after the last frame is left out");
+    assert_eq!((doc.cues[0].start, doc.cues[0].end), (rate.tick_of(2), rate.tick_of(6)));
+    assert_eq!(doc.cues[1].end, rate.tick_of(10), "cut at the last frame");
+    assert!(doc.cues[1].text.contains("levágva & a < b"), "{:?}", doc.cues[1].text);
+
+    let cpl = std::fs::read_to_string(file(&dir, "CPL_")).unwrap();
+    let subs = block(&cpl, "cc:SubtitlesSequence").expect("a subtitles virtual track");
+    assert_eq!(element(subs, "EditRate"), Some("25 1"));
+    assert_eq!((element(subs, "IntrinsicDuration"), element(subs, "SourceDuration"), element(subs, "EntryPoint")), (Some("10"), Some("10"), Some("0")));
+    let id = element(subs, "TrackFileId").unwrap();
+    assert!(text_path.ends_with(&format!("TEXT_{}.mxf", id.trim_start_matches("urn:uuid:"))));
+    assert_eq!(element(subs, "Hash").unwrap(), cfa4_project::gtemplate::base64_encode(&sha1(&data)));
+    let enc = element(subs, "SourceEncoding").unwrap();
+    let descriptors = block(&cpl, "EssenceDescriptorList").unwrap();
+    let d = descriptors.split("<EssenceDescriptor>").find(|d| d.contains(&format!("<Id>{enc}</Id>"))).expect("the descriptor");
+    assert!(d.contains("<r0:TimedTextDescriptor") && d.contains("<r1:RFC5646LanguageTagList>hu-HU</r1:RFC5646LanguageTagList>"), "{d}");
+    assert!(cpl.find("cc:MainAudioSequence") < cpl.find("cc:SubtitlesSequence"));
+    let pkl = std::fs::read_to_string(file(&dir, "PKL_")).unwrap();
+    assert_eq!(pkl.matches("<Asset>").count(), 4, "the CPL and three track files");
+    assert!(pkl.contains(&format!("<Id>{id}</Id>")));
+    let am = std::fs::read_to_string(Path::new(&dir).join("ASSETMAP.xml")).unwrap();
+    assert!(am.contains(&format!("<Path>{}</Path>", Path::new(&text_path).file_name().unwrap().to_string_lossy())));
+    photon(&dir);
+
+    // forced narrative: its own virtual track kind
+    let dir2 = tmp("forced");
+    let forced = ExportSettings { path: dir2.clone(), imf_timed_text_kind: "forcedNarrative".into(), ..s.clone() };
+    export(&p, seq, &forced, &m, &Progress::default()).unwrap();
+    let cpl = std::fs::read_to_string(file(&dir2, "CPL_")).unwrap();
+    assert!(cpl.contains("<cc:ForcedNarrativeSequence>") && !cpl.contains("SubtitlesSequence"));
+    // refused: an unknown kind, a bad language, subtitles without a caption track
+    assert!(export(&p, seq, &ExportSettings { path: tmp("bad-kind"), imf_timed_text_kind: "karaoke!".into(), ..s.clone() }, &m, &Progress::default()).is_err());
+    assert!(export(&p, seq, &ExportSettings { path: tmp("bad-lang"), dcp_subtitle_language: "x y".into(), ..s.clone() }, &m, &Progress::default()).is_err());
+    let (bare, bare_seq, bare_m) = project(rate);
+    let e = export(&bare, bare_seq, &ExportSettings { path: tmp("bare"), ..s.clone() }, &bare_m, &Progress::default()).unwrap_err();
+    assert!(e.to_string().contains("IMF subtitles"), "{e}");
+    for d in [&dir, &dir2] {
+        let _ = std::fs::remove_dir_all(d);
+    }
+}

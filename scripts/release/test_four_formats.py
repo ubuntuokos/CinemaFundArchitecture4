@@ -158,6 +158,7 @@ class FourFormatArtifactTests(unittest.TestCase):
         def listing(skip=()):
             files = {
                 "usr/bin/cfa4": 9, "usr/bin/cfa4-cli": 9, "usr/bin/cfa4-qt": 9,
+                "usr/lib/udev/rules.d/70-cfa4-surfaces.rules": 9,
                 "usr/lib/cfa4/python/cfa4_qt/__main__.py": 9,
                 f"usr/share/applications/{audit.APP_ID}.desktop": 9,
                 f"usr/share/mime/packages/{audit.APP_ID}.xml": 9,

@@ -4607,6 +4607,14 @@
 	Stop studio	Studio anhalten
 	Add Studio Scene	Studioszene hinzufügen
 	Live	Live
+# Credits: title, opening, chapter and lower-third pages filled from a graphics template (F10-C16)
+	Opening Credits	Vorspann
+	Chapter Title	Kapiteltitel
+	Lower Third	Bauchbinde
+	page {page}: graphics template “{template}” was not found; “{used}” is used	Seite {page}: Grafikvorlage “{template}” wurde nicht gefunden; “{used}” wird verwendet
+	page {page}: graphics template “{template}” has no field for all of the block's text; the rest is left out	Seite {page}: Grafikvorlage “{template}” hat nicht für den ganzen Text des Blocks ein Feld; der Rest wird weggelassen
+	page {page}: template field “{control}” → “{part}” is not used (no such text control, or not head, body or tail)	Seite {page}: Vorlagenfeld “{control}” → “{part}” wird nicht verwendet (kein solches Textfeld, oder nicht Kopf, Hauptteil oder Fuß)
+	page {page}: pictures are left out on title, opening, chapter and lower-third pages	Seite {page}: auf Titel-, Vorspann-, Kapitel- und Bauchbindenseiten werden Bilder weggelassen
 # Auto Color, Auto Contrast, Auto Levels (EffectsSDK review)
 	Auto Color	Auto-Farbe
 	Auto Contrast	Auto-Kontrast
@@ -4677,19 +4685,83 @@
 	AS-11 Core	AS-11 Core
 	AS-11 Parts	AS-11-Teile
 	AS-11 UK DPP	AS-11 UK DPP
-
-# Control Surfaces settings page (CS-1, #1187)
-	Devices	Geräte
-	Use	Verwenden
-	Device	Gerät
-	MIDI	MIDI
-	HID jog/shuttle	HID-Jog/Shuttle
-	OSC	OSC
+# Control surfaces (qt-control-surfaces-page, CFA4-CONTROL-SURFACE-001)
 	Connected	Verbunden
-	Not connected	Nicht verbunden
+	Device	Gerät
+	Devices	Geräte
 	Disabled	Deaktiviert
+	HID jog/shuttle	HID-Jog/Shuttle
+	MIDI	MIDI
+	Not connected	Nicht verbunden
+	OSC	OSC
+	Use	Verwenden
 	{device} ({port})	{device} ({port})
 	{name}: {error}	{name}: {error}
+# Control surfaces (midi-monitor, CFA4-CONTROL-SURFACE-001)
+	MIDI Monitor	MIDI-Monitor
+	Press Start Monitor, then move a control.	Klicken Sie auf „Monitor starten“ und bewegen Sie dann ein Bedienelement.
+	Start Monitor	Monitor starten
+	Stop Monitor	Monitor beenden
+	… {count} messages not shown (too many at once)	… {count} Meldungen nicht angezeigt (zu viele auf einmal)
+# Control surfaces (midi-learn, CFA4-CONTROL-SURFACE-001)
+	A control surface asked for {command}, which does not exist.	Eine Bedienoberfläche hat {command} angefordert, das es nicht gibt.
+	Assignments	Zuweisungen
+	Cancel Learn	Lernen abbrechen
+	Control	Bedienelement
+	Learn	Lernen
+	Remove this assignment	Diese Zuweisung entfernen
+	{control} runs {command}.	{control} führt {command} aus.
+# Control surfaces (shuttlepro, CFA4-CONTROL-SURFACE-001)
+	Button {n}	Taste {n}
+# Control surfaces (continuous-values, CFA4-CONTROL-SURFACE-001)
+	{strip} Pan (knob)	{strip} Panorama (Drehregler)
+	{strip} Volume (fader)	{strip} Lautstärke (Fader)
+# Control surfaces (F1 Learn and profile, CFA4-CONTROL-SURFACE-001)
+	Assignments run when a button is pressed (a fader or knob counts as pressed past half way); a fader or knob assigned to a mixer strip moves its volume or pan. A ShuttlePRO's shuttle ring plays at its profile's speeds and its jog wheel steps frame by frame. Endless encoders and feedback to the controller (lights, motor faders) come in a later version.	Zuweisungen laufen bei einem Tastendruck (ein Fader oder Knopf gilt ab der Mitte als gedrückt); ein Fader oder Knopf auf einem Mixerkanal bewegt dessen Lautstärke oder Panorama. Der Shuttle-Ring eines ShuttlePRO spielt mit den Geschwindigkeiten seines Profils, das Jog-Rad springt bildweise. Endlos-Encoder und Rückmeldung an das Gerät (Leuchten, Motorfader) kommen in einer späteren Version.
+	First message (ms)	Erste Meldung (ms)
+	Silence (ms)	Stille (ms)
+	Waiting for the control to settle…	Warten, bis das Bedienelement zur Ruhe kommt…
+	Type: {hint}. Confirm this assignment.	Typ: {hint}. Diese Zuweisung bestätigen.
+	That control is already assigned. Confirm replaces it.	Dieses Bedienelement ist schon zugewiesen. Bestätigen ersetzt die Zuweisung.
+	Learn timed out.	Lernen hat die Zeit überschritten.
+	Confirm	Bestätigen
+	Reject	Ablehnen
+	Shows every MIDI message from the controllers as it arrives, to check that a controller sends and what it sends. MIDI Clock, Active Sensing and MIDI Time Code are left out.	Zeigt jede MIDI-Meldung der Controller, sobald sie eintrifft, um zu prüfen, ob und was ein Controller sendet. MIDI-Clock, Active Sensing und MIDI-Timecode bleiben aus.
+	Pick a command (or a mixer strip for a fader or knob), press Learn, then press the button or move the control past half way. Confirm keeps the assignment. OK saves the assignments.	Wählen Sie einen Befehl (oder einen Mixerkanal für Fader oder Knopf), drücken Sie Lernen, dann die Taste oder bewegen Sie das Element über die Mitte. Bestätigen behält die Zuweisung. OK speichert die Zuweisungen.
+	All devices	Alle Geräte
+	Builtin: {name}	Eingebaut: {name}
+	Capturing	Erfassen
+	Confirmed	Bestätigt
+	Conflict	Konflikt
+	Connect a MIDI controller or a ShuttlePRO to edit its profile.	Schließen Sie einen MIDI-Controller oder ein ShuttlePRO an, um sein Profil zu bearbeiten.
+	Control Surfaces…	Steuerungsoberflächen…
+	Filter messages	Nachrichten filtern
+	Idle	Bereit
+	Kernel dropped: {count}	Vom Kernel verworfen: {count}
+	Learn Assignments…	Lernen und Zuweisungen…
+	Load profile	Profil laden
+	MIDI Monitor…	MIDI-Monitor…
+	Mute shuttle sound	Shuttle-Ton stummschalten
+	No conflicts.	Keine Konflikte.
+	No profile warnings.	Keine Profilwarnungen.
+	No project profile is stored.	Es ist kein Projektprofil gespeichert.
+	OK writes the preferences and the profile file together.	OK schreibt die Einstellungen und die Profildatei zusammen.
+	Online	Online
+	Pending	Ausstehend
+	Pickup (14-bit)	Aufnahme (14 Bit)
+	Pickup (7-bit)	Aufnahme (7 Bit)
+	Profile warnings	Profilwarnungen
+	Rejected	Abgelehnt
+	Show Active Sensing	Active Sensing anzeigen
+	Show MIDI Clock	MIDI-Takt anzeigen
+	Show MIDI Time Code	MIDI-Zeitcode anzeigen
+	The profile file is damaged. Preferences and the built-in profile stay in use.	Die Profildatei ist beschädigt. Die Einstellungen und das eingebaute Profil bleiben in Verwendung.
+	Timed out	Zeit abgelaufen
+	Type: {hint}	Typ: {hint}
+	User profile file	Benutzerprofildatei
+	{received} received, {dispatched} dispatched, {coalesced} coalesced, {stalls} stalls, {errors} errors	{received} empfangen, {dispatched} zugestellt, {coalesced} zusammengefasst, {stalls} Wartezeiten, {errors} Fehler
+
+# Control Surfaces settings page (CS-1, #1187)
 	Looking for devices…	Geräte werden gesucht…
 	No MIDI controller or jog/shuttle device was found. Connect one and press Refresh.	Kein MIDI-Controller und kein Jog/Shuttle-Gerät gefunden. Schließen Sie eines an und klicken Sie auf Aktualisieren.
 	Control Surfaces	Steueroberflächen
@@ -4698,8 +4770,12 @@
 	CFA4 ShuttlePRO	CFA4 ShuttlePRO
 	Kdenlive-style ShuttlePRO	ShuttlePRO im Kdenlive-Stil
 	Generic MIDI	Generisches MIDI
-
 # LTC timecode read from clip audio (TC-7, #1285)
 	Read from LTC Audio	Aus LTC-Audio lesen
 	Find SMPTE LTC on the clip's audio and use the timecode it gives the first frame	SMPTE-LTC im Ton des Clips suchen und den Timecode verwenden, den er dem ersten Bild gibt
 	Read Timecode from LTC Audio	Timecode aus LTC-Audio lesen
+# Credits: voices (the Voice column) in the block's properties (F10-C16)
+	Voices	Stimmen
+# Timecode sync varispeed and user bits (TC-8, #1308)
+	Varispeed: adjust the playback speed instead of seeking	Varispeed: Wiedergabegeschwindigkeit anpassen statt zu springen
+	User bits	User Bits

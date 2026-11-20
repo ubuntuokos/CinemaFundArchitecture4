@@ -4549,6 +4549,8 @@
 	Follow external timecode during playback	Следовать за внешним тайм-кодом при воспроизведении
 	Lock after	Захват после
 	Keep playing without signal for	Продолжать без сигнала в течение
+	Varispeed: adjust the playback speed instead of seeking	Varispeed: подстраивать скорость воспроизведения вместо перехода
+	User bits	Пользовательские биты
 	External frame rate	Внешняя частота кадров
 	Offset (added to the external timecode)	Смещение (прибавляется к внешнему тайм-коду)
 	LTC	LTC
@@ -4585,6 +4587,14 @@
 	Stop studio	Остановить студию
 	Add Studio Scene	Добавить сцену студии
 	Live	Прямой эфир
+# Credits: title, opening, chapter and lower-third pages filled from a graphics template (F10-C16)
+	Opening Credits	Начальные титры
+	Chapter Title	Название главы
+	Lower Third	Плашка
+	page {page}: graphics template “{template}” was not found; “{used}” is used	страница {page}: графический шаблон “{template}” не найден; используется “{used}”
+	page {page}: graphics template “{template}” has no field for all of the block's text; the rest is left out	страница {page}: в графическом шаблоне “{template}” нет поля для всего текста блока; остальное пропущено
+	page {page}: template field “{control}” → “{part}” is not used (no such text control, or not head, body or tail)	страница {page}: поле шаблона “{control}” → “{part}” не используется (нет такого текстового элемента или это не заголовок, основной текст или подпись)
+	page {page}: pictures are left out on title, opening, chapter and lower-third pages	страница {page}: на страницах заглавия, начальных титров, главы и плашки изображения пропускаются
 # Auto Color, Auto Contrast, Auto Levels (EffectsSDK review)
 	Auto Color	Автоцвет
 	Auto Contrast	Автоконтраст
@@ -4655,19 +4665,83 @@
 	AS-11 Core	AS-11 Core
 	AS-11 Parts	Части AS-11
 	AS-11 UK DPP	AS-11 UK DPP
-
-# Control Surfaces settings page (CS-1, #1187)
-	Devices	Устройства
-	Use	Использовать
-	Device	Устройство
-	MIDI	MIDI
-	HID jog/shuttle	HID jog/shuttle
-	OSC	OSC
+# Control surfaces (qt-control-surfaces-page, CFA4-CONTROL-SURFACE-001)
 	Connected	Подключено
-	Not connected	Не подключено
+	Device	Устройство
+	Devices	Устройства
 	Disabled	Отключено
+	HID jog/shuttle	HID jog/shuttle
+	MIDI	MIDI
+	Not connected	Не подключено
+	OSC	OSC
+	Use	Использовать
 	{device} ({port})	{device} ({port})
 	{name}: {error}	{name}: {error}
+# Control surfaces (midi-monitor, CFA4-CONTROL-SURFACE-001)
+	MIDI Monitor	MIDI-монитор
+	Press Start Monitor, then move a control.	Нажмите «Запустить монитор», затем подвигайте элемент управления.
+	Start Monitor	Запустить монитор
+	Stop Monitor	Остановить монитор
+	… {count} messages not shown (too many at once)	… {count} сообщений не показано (слишком много сразу)
+# Control surfaces (midi-learn, CFA4-CONTROL-SURFACE-001)
+	A control surface asked for {command}, which does not exist.	Поверхность управления запросила {command}, которой не существует.
+	Assignments	Назначения
+	Cancel Learn	Отменить обучение
+	Control	Элемент управления
+	Learn	Обучить
+	Remove this assignment	Удалить это назначение
+	{control} runs {command}.	{control} выполняет {command}.
+# Control surfaces (shuttlepro, CFA4-CONTROL-SURFACE-001)
+	Button {n}	Кнопка {n}
+# Control surfaces (continuous-values, CFA4-CONTROL-SURFACE-001)
+	{strip} Pan (knob)	{strip} панорама (ручка)
+	{strip} Volume (fader)	{strip} громкость (фейдер)
+# Control surfaces (F1 Learn and profile, CFA4-CONTROL-SURFACE-001)
+	Assignments run when a button is pressed (a fader or knob counts as pressed past half way); a fader or knob assigned to a mixer strip moves its volume or pan. A ShuttlePRO's shuttle ring plays at its profile's speeds and its jog wheel steps frame by frame. Endless encoders and feedback to the controller (lights, motor faders) come in a later version.	Назначения срабатывают по нажатию кнопки (фейдер или ручка считаются нажатыми за серединой); фейдер или ручка, назначенные на полосу микшера, двигают громкость или панораму. Кольцо shuttle ShuttlePRO играет со скоростями профиля, а колесо jog шагает по кадру. Бесконечные энкодеры и отклик на пульт (лампы, моторные фейдеры) появятся в следующей версии.
+	First message (ms)	Первое сообщение (мс)
+	Silence (ms)	Тишина (мс)
+	Waiting for the control to settle…	Ожидание, пока орган успокоится…
+	Type: {hint}. Confirm this assignment.	Тип: {hint}. Подтвердите это назначение.
+	That control is already assigned. Confirm replaces it.	Этот орган уже назначен. Подтверждение заменит его.
+	Learn timed out.	Время обучения истекло.
+	Confirm	Подтвердить
+	Reject	Отклонить
+	Shows every MIDI message from the controllers as it arrives, to check that a controller sends and what it sends. MIDI Clock, Active Sensing and MIDI Time Code are left out.	Показывает каждое MIDI-сообщение с пультов по мере прихода, чтобы проверить, что пульт шлёт и что именно. MIDI Clock, Active Sensing и MIDI-таймкод скрыты.
+	Pick a command (or a mixer strip for a fader or knob), press Learn, then press the button or move the control past half way. Confirm keeps the assignment. OK saves the assignments.	Выберите команду (или полосу микшера для фейдера или ручки), нажмите Обучить, затем кнопку или сдвиньте орган за середину. Подтверждение сохраняет назначение. ОК записывает назначения.
+	All devices	Все устройства
+	Builtin: {name}	Встроенный: {name}
+	Capturing	Захват
+	Confirmed	Подтверждено
+	Conflict	Конфликт
+	Connect a MIDI controller or a ShuttlePRO to edit its profile.	Подключите MIDI-контроллер или ShuttlePRO, чтобы править его профиль.
+	Control Surfaces…	Поверхности управления…
+	Filter messages	Фильтр сообщений
+	Idle	Ожидание
+	Kernel dropped: {count}	Отброшено ядром: {count}
+	Learn Assignments…	Обучение назначениям…
+	Load profile	Загрузить профиль
+	MIDI Monitor…	Монитор MIDI…
+	Mute shuttle sound	Заглушить звук шаттла
+	No conflicts.	Конфликтов нет.
+	No profile warnings.	Предупреждений профиля нет.
+	No project profile is stored.	Профиль проекта не сохранён.
+	OK writes the preferences and the profile file together.	OK записывает настройки и файл профиля вместе.
+	Online	В сети
+	Pending	Ожидает
+	Pickup (14-bit)	Подхват (14 бит)
+	Pickup (7-bit)	Подхват (7 бит)
+	Profile warnings	Предупреждения профиля
+	Rejected	Отклонено
+	Show Active Sensing	Показывать Active Sensing
+	Show MIDI Clock	Показывать MIDI-часы
+	Show MIDI Time Code	Показывать временной код MIDI
+	The profile file is damaged. Preferences and the built-in profile stay in use.	Файл профиля повреждён. Настройки и встроенный профиль остаются в работе.
+	Timed out	Время истекло
+	Type: {hint}	Тип: {hint}
+	User profile file	Файл профиля пользователя
+	{received} received, {dispatched} dispatched, {coalesced} coalesced, {stalls} stalls, {errors} errors	{received} получено, {dispatched} передано, {coalesced} объединено, {stalls} ожиданий, {errors} ошибок
+
+# Control Surfaces settings page (CS-1, #1187)
 	Looking for devices…	Поиск устройств…
 	No MIDI controller or jog/shuttle device was found. Connect one and press Refresh.	MIDI-контроллер или устройство jog/shuttle не найдено. Подключите его и нажмите «Обновить».
 	Control Surfaces	Панели управления
@@ -4679,3 +4753,5 @@
 	Read from LTC Audio	Считать из звука LTC
 	Find SMPTE LTC on the clip's audio and use the timecode it gives the first frame	Найти SMPTE LTC в звуке клипа и взять тайм-код, который он даёт первому кадру
 	Read Timecode from LTC Audio	Считать тайм-код из звука LTC
+# Credits: voices (the Voice column) in the block's properties (F10-C16)
+	Voices	Голоса

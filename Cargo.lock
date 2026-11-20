@@ -1164,6 +1164,14 @@ dependencies = [
 ]
 
 [[package]]
+name = "cfa4-cavs"
+version = "0.10.0"
+dependencies = [
+ "cfa4-testkit",
+ "thiserror 2.0.21",
+]
+
+[[package]]
 name = "cfa4-cfb"
 version = "0.10.0"
 
@@ -1231,12 +1239,14 @@ dependencies = [
  "cfa4-avi",
  "cfa4-bitstream",
  "cfa4-canopus",
+ "cfa4-cavs",
  "cfa4-cineform",
  "cfa4-color",
  "cfa4-dirac",
  "cfa4-dnx",
  "cfa4-dts",
  "cfa4-dv",
+ "cfa4-evc",
  "cfa4-ffv1",
  "cfa4-frame",
  "cfa4-g729",
@@ -1248,7 +1258,9 @@ dependencies = [
  "cfa4-ilbc",
  "cfa4-isobmff",
  "cfa4-j2k",
+ "cfa4-lagarith",
  "cfa4-lcevc",
+ "cfa4-magicyuv",
  "cfa4-matroska",
  "cfa4-media",
  "cfa4-mpa",
@@ -1259,8 +1271,13 @@ dependencies = [
  "cfa4-ogg",
  "cfa4-opus",
  "cfa4-prores",
+ "cfa4-realaudio",
+ "cfa4-realmedia",
+ "cfa4-realvideo",
  "cfa4-shorten",
  "cfa4-speex",
+ "cfa4-sstp",
+ "cfa4-tak",
  "cfa4-testkit",
  "cfa4-time",
  "cfa4-truehd",
@@ -1460,6 +1477,7 @@ dependencies = [
  "cfa4-scopes",
  "cfa4-smart-edit",
  "cfa4-speech",
+ "cfa4-surface-model",
  "cfa4-tcsync",
  "cfa4-testkit",
  "cfa4-text",
@@ -1472,6 +1490,14 @@ dependencies = [
  "serde_json",
  "thiserror 2.0.21",
  "web-time",
+]
+
+[[package]]
+name = "cfa4-evc"
+version = "0.10.0"
+dependencies = [
+ "cfa4-testkit",
+ "thiserror 2.0.21",
 ]
 
 [[package]]
@@ -1772,6 +1798,14 @@ dependencies = [
 ]
 
 [[package]]
+name = "cfa4-lagarith"
+version = "0.10.0"
+dependencies = [
+ "cfa4-testkit",
+ "thiserror 2.0.21",
+]
+
+[[package]]
 name = "cfa4-lcevc"
 version = "0.10.0"
 
@@ -1782,6 +1816,15 @@ dependencies = [
  "base64 0.22.1",
  "serde_json",
  "sha2 0.10.9",
+]
+
+[[package]]
+name = "cfa4-magicyuv"
+version = "0.10.0"
+dependencies = [
+ "cfa4-avi",
+ "cfa4-testkit",
+ "thiserror 2.0.21",
 ]
 
 [[package]]
@@ -1804,6 +1847,7 @@ dependencies = [
  "cfa4-heif",
  "cfa4-hevc",
  "cfa4-jxl",
+ "cfa4-realaudio",
  "cfa4-testkit",
  "cfa4-time",
  "image",
@@ -1961,6 +2005,32 @@ dependencies = [
 ]
 
 [[package]]
+name = "cfa4-realaudio"
+version = "0.10.0"
+dependencies = [
+ "cfa4-realmedia",
+ "cfa4-testkit",
+ "thiserror 2.0.21",
+]
+
+[[package]]
+name = "cfa4-realmedia"
+version = "0.10.0"
+dependencies = [
+ "cfa4-testkit",
+ "thiserror 2.0.21",
+]
+
+[[package]]
+name = "cfa4-realvideo"
+version = "0.10.0"
+dependencies = [
+ "cfa4-realmedia",
+ "cfa4-testkit",
+ "thiserror 2.0.21",
+]
+
+[[package]]
 name = "cfa4-render"
 version = "0.10.0"
 dependencies = [
@@ -2064,6 +2134,14 @@ dependencies = [
 ]
 
 [[package]]
+name = "cfa4-sstp"
+version = "0.10.0"
+dependencies = [
+ "cfa4-testkit",
+ "thiserror 2.0.21",
+]
+
+[[package]]
 name = "cfa4-st2110"
 version = "0.10.0"
 dependencies = [
@@ -2086,6 +2164,7 @@ version = "0.10.0"
 dependencies = [
  "alsa",
  "cfa4-surface-model",
+ "rustix 1.1.6",
  "serde",
  "serde_json",
 ]
@@ -2123,6 +2202,14 @@ version = "0.10.0"
 dependencies = [
  "serde",
  "serde_json",
+]
+
+[[package]]
+name = "cfa4-tak"
+version = "0.10.0"
+dependencies = [
+ "cfa4-testkit",
+ "thiserror 2.0.21",
 ]
 
 [[package]]

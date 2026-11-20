@@ -356,6 +356,23 @@ def build_window_menu(
         menu.addAction(a)
         if a.isEnabled():
             shortcuts.append((a, a.objectName(), entry.shortcut))
+    menu.addSeparator()
+
+    def open_surfaces(section: str) -> None:
+        opener = getattr(window, "open_settings", None)
+        if callable(opener):
+            opener("controlSurfaces", section)
+
+    for object_name, label, section in (
+        ("window.controlSurfaces", "Control Surfaces…", "settings.controlSurfaces.devices"),
+        ("window.midiMonitor", "MIDI Monitor…", "settings.controlSurfaces.monitor"),
+        ("window.surfaceAssignments", "Learn Assignments…", "settings.controlSurfaces.assign"),
+    ):
+        action = QAction(tr(label), window)
+        action.setObjectName(object_name)
+        action.triggered.connect(lambda _c=False, s=section: open_surfaces(s))
+        menu.addAction(action)
+        shortcuts.append((action, object_name, ""))
     return shortcuts
 
 
@@ -377,6 +394,11 @@ def window_commands() -> list[tuple[str, str, list[str], str]]:
         ("window.workspace.edit", N_("Edit Workspaces…"), ["Window", "Workspaces"], ""),
     ]
     out += [(f"window.panel.{e.title.replace(' ', '')}", e.title, ["Window"], e.shortcut) for e in PANELS]
+    out += [
+        ("window.controlSurfaces", N_("Control Surfaces…"), ["Window"], ""),
+        ("window.midiMonitor", N_("MIDI Monitor…"), ["Window"], ""),
+        ("window.surfaceAssignments", N_("Learn Assignments…"), ["Window"], ""),
+    ]
     return out
 
 

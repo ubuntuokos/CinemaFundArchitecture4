@@ -4602,6 +4602,14 @@ export.summary	Low	niska
 	Stop studio	Zaustavi studio
 	Add Studio Scene	Dodaj scenu studija
 	Live	Uživo
+# Credits: title, opening, chapter and lower-third pages filled from a graphics template (F10-C16)
+	Opening Credits	Uvodna špica
+	Chapter Title	Naslov poglavlja
+	Lower Third	Donji natpis
+	page {page}: graphics template “{template}” was not found; “{used}” is used	stranica {page}: grafički predložak „{template}” nije pronađen; koristi se „{used}”
+	page {page}: graphics template “{template}” has no field for all of the block's text; the rest is left out	stranica {page}: grafički predložak „{template}” nema polje za sav tekst bloka; ostatak se izostavlja
+	page {page}: template field “{control}” → “{part}” is not used (no such text control, or not head, body or tail)	stranica {page}: polje predloška „{control}” → „{part}” se ne koristi (nema takve tekstne kontrole ili nije zaglavlje, tijelo ili rep)
+	page {page}: pictures are left out on title, opening, chapter and lower-third pages	stranica {page}: slike se izostavljaju na stranicama naslova, uvodne špice, poglavlja i donjeg natpisa
 # Auto Color, Auto Contrast, Auto Levels (EffectsSDK review)
 	Auto Color	Automatska boja
 	Auto Contrast	Automatski kontrast
@@ -4672,19 +4680,83 @@ export.summary	Low	niska
 	AS-11 Core	AS-11 Core
 	AS-11 Parts	AS-11 dijelovi
 	AS-11 UK DPP	AS-11 UK DPP
-
-# Control Surfaces settings page (CS-1, #1187)
-	Devices	Uređaji
-	Use	Koristi
-	Device	Uređaj
-	MIDI	MIDI
-	HID jog/shuttle	HID jog/shuttle
-	OSC	OSC
+# Control surfaces (qt-control-surfaces-page, CFA4-CONTROL-SURFACE-001)
 	Connected	Povezano
-	Not connected	Nije povezano
+	Device	Uređaj
+	Devices	Uređaji
 	Disabled	Onemogućeno
+	HID jog/shuttle	HID jog/shuttle
+	MIDI	MIDI
+	Not connected	Nije povezano
+	OSC	OSC
+	Use	Koristi
 	{device} ({port})	{device} ({port})
 	{name}: {error}	{name}: {error}
+# Control surfaces (midi-monitor, CFA4-CONTROL-SURFACE-001)
+	MIDI Monitor	MIDI monitor
+	Press Start Monitor, then move a control.	Pritisnite Pokreni monitor, zatim pomaknite kontrolu.
+	Start Monitor	Pokreni monitor
+	Stop Monitor	Zaustavi monitor
+	… {count} messages not shown (too many at once)	… {count} poruka nije prikazano (previše odjednom)
+# Control surfaces (midi-learn, CFA4-CONTROL-SURFACE-001)
+	A control surface asked for {command}, which does not exist.	Kontrolna površina zatražila je {command}, koja ne postoji.
+	Assignments	Dodjele
+	Cancel Learn	Odustani od učenja
+	Control	Kontrola
+	Learn	Nauči
+	Remove this assignment	Ukloni ovu dodjelu
+	{control} runs {command}.	{control} pokreće {command}.
+# Control surfaces (shuttlepro, CFA4-CONTROL-SURFACE-001)
+	Button {n}	Tipka {n}
+# Control surfaces (continuous-values, CFA4-CONTROL-SURFACE-001)
+	{strip} Pan (knob)	{strip} panorama (okretni gumb)
+	{strip} Volume (fader)	{strip} glasnoća (fader)
+# Control surfaces (F1 Learn and profile, CFA4-CONTROL-SURFACE-001)
+	Assignments run when a button is pressed (a fader or knob counts as pressed past half way); a fader or knob assigned to a mixer strip moves its volume or pan. A ShuttlePRO's shuttle ring plays at its profile's speeds and its jog wheel steps frame by frame. Endless encoders and feedback to the controller (lights, motor faders) come in a later version.	Dodjele se pokreću pritiskom gumba (fader ili gumb računa se pritisnutim nakon polovice); fader ili gumb dodijeljen traci miksera miče glasnoću ili panoramu. Prsten shuttle na ShuttlePRO svira brzinama profila, a kotač jog korača po sličici. Beskonačni enkoderi i odgovor kontroleru (lampice, motorni faderi) dolaze u kasnijoj inačici.
+	First message (ms)	Prva poruka (ms)
+	Silence (ms)	Tišina (ms)
+	Waiting for the control to settle…	Čeka se da se kontrola smiri…
+	Type: {hint}. Confirm this assignment.	Vrsta: {hint}. Potvrdite ovu dodjelu.
+	That control is already assigned. Confirm replaces it.	Ta kontrola je već dodijeljena. Potvrda je zamjenjuje.
+	Learn timed out.	Učenje je isteklo.
+	Confirm	Potvrdi
+	Reject	Odbaci
+	Shows every MIDI message from the controllers as it arrives, to check that a controller sends and what it sends. MIDI Clock, Active Sensing and MIDI Time Code are left out.	Prikazuje svaku MIDI poruku s kontrolera čim stigne, da se vidi šalje li kontroler i što. MIDI sat, Active Sensing i MIDI vremenski kod se izostavljaju.
+	Pick a command (or a mixer strip for a fader or knob), press Learn, then press the button or move the control past half way. Confirm keeps the assignment. OK saves the assignments.	Odaberite naredbu (ili traku miksera za fader ili gumb), pritisnite Uči, zatim gumb ili pomaknite kontrolu preko polovice. Potvrda čuva dodjelu. U redu sprema dodjele.
+	All devices	Svi uređaji
+	Builtin: {name}	Ugrađeno: {name}
+	Capturing	Snimanje
+	Confirmed	Potvrđeno
+	Conflict	Sukob
+	Connect a MIDI controller or a ShuttlePRO to edit its profile.	Priključite MIDI upravljač ili ShuttlePRO da biste uredili njegov profil.
+	Control Surfaces…	Upravljačke površine…
+	Filter messages	Filtriraj poruke
+	Idle	Neaktivan
+	Kernel dropped: {count}	Jezgra je odbacila: {count}
+	Learn Assignments…	Učenje dodjela…
+	Load profile	Učitaj profil
+	MIDI Monitor…	MIDI monitor…
+	Mute shuttle sound	Isključi zvuk shuttlea
+	No conflicts.	Nema sukoba.
+	No profile warnings.	Nema upozorenja profila.
+	No project profile is stored.	Profil projekta nije spremljen.
+	OK writes the preferences and the profile file together.	U redu zapisuje postavke i datoteku profila zajedno.
+	Online	Na mreži
+	Pending	Na čekanju
+	Pickup (14-bit)	Hvatanje (14 bitova)
+	Pickup (7-bit)	Hvatanje (7 bitova)
+	Profile warnings	Upozorenja profila
+	Rejected	Odbijeno
+	Show Active Sensing	Prikaži Active Sensing
+	Show MIDI Clock	Prikaži MIDI sat
+	Show MIDI Time Code	Prikaži MIDI vremenski kôd
+	The profile file is damaged. Preferences and the built-in profile stay in use.	Datoteka profila je oštećena. Postavke i ugrađeni profil ostaju u uporabi.
+	Timed out	Vrijeme je isteklo
+	Type: {hint}	Vrsta: {hint}
+	User profile file	Korisnička datoteka profila
+	{received} received, {dispatched} dispatched, {coalesced} coalesced, {stalls} stalls, {errors} errors	{received} primljeno, {dispatched} proslijeđeno, {coalesced} spojeno, {stalls} čekanja, {errors} pogrešaka
+
+# Control Surfaces settings page (CS-1, #1187)
 	Looking for devices…	Traženje uređaja…
 	No MIDI controller or jog/shuttle device was found. Connect one and press Refresh.	Nije pronađen nijedan MIDI kontroler ni jog/shuttle uređaj. Priključite jedan i pritisnite Osvježi.
 	Control Surfaces	Kontrolne površine
@@ -4693,8 +4765,12 @@ export.summary	Low	niska
 	CFA4 ShuttlePRO	CFA4 ShuttlePRO
 	Kdenlive-style ShuttlePRO	ShuttlePRO u stilu Kdenlivea
 	Generic MIDI	Općeniti MIDI
-
 # LTC timecode read from clip audio (TC-7, #1285)
 	Read from LTC Audio	Čitaj iz LTC zvuka
 	Find SMPTE LTC on the clip's audio and use the timecode it gives the first frame	Pronađi SMPTE LTC u zvuku isječka i upotrijebi vremenski kod koji daje prvom kadru
 	Read Timecode from LTC Audio	Čitaj vremenski kod iz LTC zvuka
+# Credits: voices (the Voice column) in the block's properties (F10-C16)
+	Voices	Glasovi
+# Timecode sync varispeed and user bits (TC-8, #1308)
+	Varispeed: adjust the playback speed instead of seeking	Varispeed: prilagodi brzinu reprodukcije umjesto preskakanja
+	User bits	Korisnički bitovi

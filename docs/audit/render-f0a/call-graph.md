@@ -122,7 +122,7 @@ graph LR
 | `cfa4-cli/main.rs` | `cfa4-project` | `ItemId`, `Project` |
 | `cfa4-cli/main.rs` | `cfa4-render` | `Image`, `RenderOptions`, `SourceProvider` |
 | `cfa4-cli/main.rs` | `cfa4-time` | `Tick` |
-| `cfa4-cli/probe.rs` | `cfa4-media` | `MediaSource`, `open_with_fallback`, `sequence`, `wav` |
+| `cfa4-cli/probe.rs` | `cfa4-media` | `MediaInfo`, `MediaSource`, `open_with_fallback`, `reader`, `sequence`, `wav` |
 | `cfa4-cli/probe.rs` | `cfa4-time` | `FrameRate` |
 | `cfa4-cli/qc.rs` | `cfa4-qc` | `Expectation`, `check_file_with_outputs`, `profile`, `report` |
 | `cfa4-cli/serve.rs` | `cfa4-audio-dsp` | `LoudnessMeter`, `channels` |
@@ -159,7 +159,7 @@ graph LR
 | `cfa4-cli/serve_scopes.rs` | `cfa4-engine` | `Session`, `scopes` |
 | `cfa4-cli/serve_scopes.rs` | `cfa4-time` | `Tick` |
 | `cfa4-cli/serve_shuttle.rs` | `cfa4-audio-dsp` | `AudioEffect` |
-| `cfa4-cli/serve_surface.rs` | `cfa4-engine` | `Session`, `control_surfaces` |
+| `cfa4-cli/serve_surface.rs` | `cfa4-engine` | `EngineError`, `Session`, `control_surfaces`, `surface_runtime` |
 | `cfa4-cli/serve_tcsync.rs` | `cfa4-engine` | `Session` |
 | `cfa4-cli/serve_tcsync.rs` | `cfa4-time` | `FrameRate`, `Tick` |
 | `cfa4-cli/serve_text.rs` | `cfa4-engine` | `Session`, `transcript` |
@@ -227,7 +227,7 @@ graph LR
 | `cfa4-engine/essential_sound.rs` | `cfa4-project` | `ClipId`, `essential` |
 | `cfa4-engine/essential_sound.rs` | `cfa4-render` | `SourceProvider`, `audio` |
 | `cfa4-engine/essential_sound.rs` | `cfa4-time` | `Tick` |
-| `cfa4-engine/export_tools.rs` | `cfa4-export` | `BitrateMode`, `DCP_CONTENT_KINDS`, `DcpAspect`, `DcpImmersive`, `DcpResolution`, `Exporter`, `IMF_CONTENT_KINDS`, `IabFallback`, `Mpeg2Container`, `OutputSink`, `Progress`, `Report`, `available`, `builtin_presets`, `dcp_content_kind`, `dcp_isdcf_date`, `dcp_isdcf_name`, `dcp_language`, `dcp_subtitle_language`, `export`, `export_range`, `frame_span`, `imf_content_kind`, `presets`, `probe_iab_source`, `stepped`, `unavailable_reason`, `validate_range` |
+| `cfa4-engine/export_tools.rs` | `cfa4-export` | `BitrateMode`, `DCP_CONTENT_KINDS`, `DcpAspect`, `DcpImmersive`, `DcpResolution`, `Exporter`, `IMF_CONTENT_KINDS`, `IMF_TIMED_TEXT_KINDS`, `IabFallback`, `Mpeg2Container`, `OutputSink`, `Progress`, `Report`, `available`, `builtin_presets`, `dcp_content_kind`, `dcp_isdcf_date`, `dcp_isdcf_name`, `dcp_language`, `dcp_subtitle_language`, `export`, `export_range`, `frame_span`, `imf_content_kind`, `presets`, `probe_iab_source`, `stepped`, `unavailable_reason`, `validate_range` |
 | `cfa4-engine/export_tools.rs` | `cfa4-project` | `ItemId`, `Sequence`, `legacy` |
 | `cfa4-engine/export_tools.rs` | `cfa4-qc` | `QcProfile` |
 | `cfa4-engine/export_tools.rs` | `cfa4-time` | `FrameRate` |
@@ -374,7 +374,7 @@ graph LR
 | `cfa4-engine/settings.rs` | `cfa4-time` | `FrameRate` |
 | `cfa4-engine/shortcuts.rs` | `cfa4-project` | `legacy` |
 | `cfa4-engine/smart_cut.rs` | `cfa4-export` | `audio_copy`, `boundary_reencode`, `smart_cut` |
-| `cfa4-engine/smart_cut.rs` | `cfa4-media` | `SharedReader` |
+| `cfa4-engine/smart_cut.rs` | `cfa4-media` | `SharedReader`, `reader` |
 | `cfa4-engine/smart_cut.rs` | `cfa4-project` | `ItemKind` |
 | `cfa4-engine/smart_cut.rs` | `cfa4-smart-edit` | `av1_index`, `capabilities`, `copy_planner`, `h264_index`, `hevc_index`, `media_index`, `plan`, `timestamp` |
 | `cfa4-engine/smart_cut.rs` | `cfa4-time` | `FrameRate` |
@@ -513,6 +513,7 @@ graph LR
 | `cfa4-media/lib.rs` | `cfa4-color` | `ColorInfo`, `HdrMetadata` |
 | `cfa4-media/lib.rs` | `cfa4-frame` | `AudioBuffer` |
 | `cfa4-media/lib.rs` | `cfa4-time` | `FrameRate` |
+| `cfa4-media/oma.rs` | `cfa4-time` | `Tick` |
 | `cfa4-media/reader.rs` | `cfa4-time` | `Tick` |
 | `cfa4-media/sequence.rs` | `cfa4-frame` | `AudioBuffer`, `PixelData` |
 | `cfa4-media/sequence.rs` | `cfa4-time` | `FrameRate`, `Tick` |
@@ -778,13 +779,14 @@ graph LR
 
 ## 4. Nyilvános típusok osztályonként
 
-A többi 569 nyilvános típus („other” osztály) csak a `call-graph.json`-ban szerepel.
+A többi 579 nyilvános típus („other” osztály) csak a `call-graph.json`-ban szerepel.
 
-### Képkocka, kép, pixel (25)
+### Képkocka, kép, pixel (26)
 
 | Crate | Modul | Fajta | Típus |
 |---|---|---|---|
 | `cfa4-audio-dsp` | `channels.rs` | enum | `Layout` |
+| `cfa4-cli` | `serve_surface.rs` | struct | `SurfaceError` |
 | `cfa4-engine` | `control_surfaces.rs` | struct | `ControlSurfacePrefs` |
 | `cfa4-engine` | `keyboard.rs` | struct | `FrameExportTarget` |
 | `cfa4-engine` | `sequence_tools.rs` | struct | `DuplicateFrames` |
