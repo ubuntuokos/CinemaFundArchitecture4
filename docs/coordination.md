@@ -51,12 +51,12 @@ Gazdát csak a tulajdonos jelölhet ki vagy válthat le. Fejlesztő munkamenet n
    - **kodek és konténer:** `crates/codecs/`, `crates/ffmpeg/`, `crates/gstreamer/`, valamint
      minden olyan crate, amelyet a [`architecture.md`](architecture.md) §1 kodek- vagy
      konténer-crate-ként sorol fel;
-   - **CI** (szűkítve, tulajdonosi döntés D6, 2026-11-15): a PR akkor kockázatos, ha
+   - **CI** (szűkítve, tulajdonosi döntés D6, 2026-11-20): a PR akkor kockázatos, ha
      - a beolvasztás kötelező vagy biztonsági kapuit adó workflowt módosítja: `pr-check.yml`
        (`cargo-check`), `ci-linux.yml` (`full-validation-gate`), `cfa4-gate.yml`,
        `cfa4-security.yml`, `codeql.yml`;
      - kiadást vagy közzétételt végző workflowt módosít: `release` eseményre induló vagy bármilyen
-       `write` jogosultságú workflow (2026-11-15-én: `cfa4-release-candidate.yml`,
+       `write` jogosultságú workflow (2026-11-20-án: `cfa4-release-candidate.yml`,
        `cfa4-four-formats-hosted.yml`, `cfa4-f9-release-hold.yml`, `cfa4-ffmpeg-prebuilt.yml`);
      - bármelyik workflowban jogosultságot (`permissions:`), titkot (`secrets.`),
        `pull_request_target` vagy `workflow_run` indítót, illetve külső actiont vagy annak rögzített
