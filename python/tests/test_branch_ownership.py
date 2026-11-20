@@ -179,3 +179,7 @@ def test_same_line_in_description_and_comment_collapses() -> None:
 def test_truncated_commit_list_is_reported() -> None:
     commits = [_c(f"{i:02x}", A, _at(14)) for i in range(BO.COMMIT_LIST_LIMIT)]
     assert any("hiányos" in f.reason for f in _run(_pr(f"Munkamenet: {A}"), commits).violations)
+
+
+def test_listed_pr_numbers_are_bounded() -> None:
+    assert BO.LISTED_PR.findall("#12 és #" + "9" * 5000) == ["12"]
