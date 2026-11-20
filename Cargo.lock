@@ -583,12 +583,6 @@ checksum = "9e1b586273c5702936fe7b7d6896644d8be71e6314cfe09d3167c95f712589e8"
 
 [[package]]
 name = "base64"
-version = "0.22.1"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "72b3254f16251a8381aa12e40e3c4d2f0199f8c6508fbecb9d91f575e0fbb8c6"
-
-[[package]]
-name = "base64"
 version = "0.23.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "ac07cdecf99051d9a5238b80f35af32cdeba5b336e55d957b318b50137e18da5"
@@ -1167,6 +1161,32 @@ dependencies = [
 ]
 
 [[package]]
+name = "cfa4-cinema-acceptance"
+version = "0.10.0"
+dependencies = [
+ "cfa4-cinema-pkg",
+ "cfa4-export",
+ "cfa4-media",
+ "cfa4-project",
+ "cfa4-render",
+ "cfa4-time",
+ "chrono",
+]
+
+[[package]]
+name = "cfa4-cinema-pkg"
+version = "0.10.0"
+dependencies = [
+ "chrono",
+ "roxmltree",
+ "serde",
+ "serde_json",
+ "sha1",
+ "sha2 0.11.1",
+ "thiserror 2.0.21",
+]
+
+[[package]]
 name = "cfa4-cli"
 version = "0.10.0"
 dependencies = [
@@ -1299,7 +1319,7 @@ dependencies = [
 name = "cfa4-dcp"
 version = "0.10.0"
 dependencies = [
- "base64 0.22.1",
+ "base64 0.23.1",
  "chrono",
  "roxmltree",
  "rsa",
@@ -1340,6 +1360,7 @@ dependencies = [
  "cfa4-render",
  "cfa4-time",
  "chrono",
+ "roxmltree",
  "serde",
  "serde_json",
  "thiserror 2.0.21",
@@ -1422,7 +1443,7 @@ dependencies = [
 name = "cfa4-engine"
 version = "0.10.0"
 dependencies = [
- "base64 0.22.1",
+ "base64 0.23.1",
  "cfa4-audio-dsp",
  "cfa4-auro",
  "cfa4-captions",
@@ -1792,7 +1813,7 @@ version = "0.10.0"
 name = "cfa4-live"
 version = "0.10.0"
 dependencies = [
- "base64 0.22.1",
+ "base64 0.23.1",
  "serde_json",
  "sha2 0.10.9",
 ]
@@ -1886,6 +1907,7 @@ dependencies = [
  "cfa4-testkit",
  "chrono",
  "hmac",
+ "roxmltree",
  "sha1",
 ]
 
@@ -1894,8 +1916,9 @@ name = "cfa4-obs"
 version = "0.10.0"
 dependencies = [
  "cfa4-st2110",
- "libloading 0.8.9",
+ "libloading 0.9.0",
  "log",
+ "rayon",
  "serde",
  "serde_json",
  "thiserror 2.0.21",
@@ -2018,6 +2041,8 @@ dependencies = [
  "cfa4-color",
  "cfa4-frame",
  "cfa4-geom",
+ "cfa4-h264",
+ "cfa4-h264enc",
  "cfa4-media",
  "cfa4-project",
  "cfa4-text",
@@ -2208,8 +2233,8 @@ name = "cfa4-text"
 version = "0.10.0"
 dependencies = [
  "cfa4-color",
- "harfrust 0.15.0",
- "skrifa 0.49.0",
+ "harfrust 0.16.0",
+ "skrifa 0.50.0",
  "tempfile",
  "unicode-bidi",
  "unicode-linebreak",
@@ -4176,13 +4201,13 @@ dependencies = [
 
 [[package]]
 name = "harfrust"
-version = "0.15.0"
+version = "0.16.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "865dcc4105d51c323d8fedbb2d75b5e9c8ecddf5613f74c82f851d0afbc97114"
+checksum = "741c9cd8fb2f39c393366b9cf13e8c31ad6adbbd9d817f0a18fe47cff36a3cca"
 dependencies = [
  "bitflags 2.13.2",
  "bytemuck",
- "read-fonts 0.46.0",
+ "read-fonts 0.47.0",
  "smallvec",
  "yoke",
 ]
@@ -4684,9 +4709,9 @@ checksum = "7a79a3332a6609480d7d0c9eab957bca6b455b91bb84e66d19f5ff66294b85b8"
 
 [[package]]
 name = "libc"
-version = "0.2.189"
+version = "0.2.191"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "3eaf3ede3fee6db1a4c2ee091bf8a8b4dccdc6d17f656fb07896ee72867612f2"
+checksum = "65cd87c9a6d60536580b316ad985726104730a5151c99845f2490428ef91240a"
 
 [[package]]
 name = "libfuzzer-sys"
@@ -6242,9 +6267,9 @@ dependencies = [
 
 [[package]]
 name = "read-fonts"
-version = "0.46.0"
+version = "0.47.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "bdaa4fffe9ff3ca2c353fa9729792805b9b3e324695ff5a081f860612e81b330"
+checksum = "a39d2f8f681030a7bcbbcf3e8568775ac2393afd51401a2e2133ee89e3953897"
 dependencies = [
  "bytemuck",
  "foldhash",
@@ -6978,13 +7003,13 @@ dependencies = [
 
 [[package]]
 name = "skrifa"
-version = "0.49.0"
+version = "0.50.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "a7459fb60888ad9a5f367dd293fa2fb9df142cb451aa6bfd6cd66a7d6a9b739d"
+checksum = "e85ba678a6023a063d0a78c8770f1c166674ef46af13523d05eff67430f79dfe"
 dependencies = [
  "bytemuck",
  "once_cell",
- "read-fonts 0.46.0",
+ "read-fonts 0.47.0",
  "smallvec",
  "yoke",
 ]
@@ -8105,9 +8130,9 @@ checksum = "a28ac98ddc8b9274cb41bb4d9d4d5c425b6020c50c46f25559911905610b4a88"
 
 [[package]]
 name = "wgpu"
-version = "30.0.1"
+version = "30.0.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "527ccdf43dd5b2e8676eed9984ce00e2bbb0a1b85b70c1969dcb6cd2eb55ab9e"
+checksum = "146fc3d654250e6207921a66c87534c621bc886c70df83dcf466c1d66813810e"
 dependencies = [
  "arrayvec",
  "bitflags 2.13.2",
