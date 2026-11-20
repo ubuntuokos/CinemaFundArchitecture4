@@ -73,6 +73,8 @@ ignore = [
     { id = "RUSTSEC-2026-0369", reason = "zip extract() permissions via symlink; extract() is never called" },
     # Optional `whisper` / `neural-voices` only (candle-core); unmaintained, no known vulnerability.
     { id = "RUSTSEC-2024-0436", reason = "paste unmaintained; via candle-core, upstream-dependent" },
+    # Maintenance notice only, no known vulnerability. chrono is the owner-mandated calendar crate (CLAUDE.md, 2026-11-03).
+    { id = "RUSTSEC-2026-0543", reason = "chrono unmaintained notice; no vulnerability; owner-mandated calendar crate, revisit when upstream or a successor settles" },
 ]
 
 [sources]
