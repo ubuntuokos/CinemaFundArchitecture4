@@ -4775,3 +4775,9 @@ export.summary	Low	žema
 # Timecode sync varispeed and user bits (TC-8, #1308)
 	Varispeed: adjust the playback speed instead of seeking	Varispeed: užuot peršokus, koreguoti atkūrimo greitį
 	User bits	Naudotojo bitai
+# AS-11 programme parts and AS-10 metadata (G2, #1371, #1375)
+	{tc}  Segmentation	{tc}  Segmentavimas
+	Marker Type	Žymeklio tipas
+	Chapter	Skyrius
+	Segmentation (AS-11 programme part)	Segmentavimas (AS-11 programos dalis)
+	AS-10	AS-10

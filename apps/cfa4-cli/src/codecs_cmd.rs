@@ -171,6 +171,8 @@ const NOT_CODECS: &[&str] = &[
     "bitstream",
     "captions",
     "cfb",
+    "cinema-acceptance",
+    "cinema-pkg",
     "codecs",
     "color",
     "credits",

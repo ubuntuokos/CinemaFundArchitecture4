@@ -1411,6 +1411,45 @@ fn mxf_op1a_writes_captions_as_anc_data() {
     assert!(err.contains("59.94"), "{err}");
 }
 
+/// #1254: with no parts typed in, the AS-11 programme parts come from the sequence's segmentation
+/// markers with a duration, cut to the exported range and counted from its first frame.
+#[test]
+fn mxf_as11_parts_come_from_segmentation_markers() {
+    let dir = Scratch::new("mxf-as11-markers");
+    let mut s = Session::default();
+    s.execute("file.newSequence", json!({"name":"AS11", "fps":25, "width":320, "height":180, "video":1, "audio":1})).unwrap();
+    let rate = s.sequence_rate();
+    let add = |s: &mut Session, frame: i64, dur: i64, kind: &str| {
+        s.execute("markers.add", json!({"time": rate.tick_of(frame).0, "durationFrames": dur, "kind": kind})).unwrap()["marker"].as_u64().unwrap()
+    };
+    // part 2 first on purpose: parts are numbered in time order
+    add(&mut s, 40, 20, "segmentation");
+    add(&mut s, 10, 15, "Segmentation");
+    add(&mut s, 5, 10, "comment"); // not a part
+    add(&mut s, 30, 0, "segmentation"); // no duration: not a part
+    // a comment marker turned into a part that runs past the end of the range: cut there
+    let last = add(&mut s, 70, 30, "comment");
+    s.execute("markers.edit", json!({"marker": last, "kind": "segmentation"})).unwrap();
+    assert!(s.execute("markers.edit", json!({"marker": last, "kind": "part"})).unwrap_err().to_string().contains("segmentation"));
+    let out = dir.path("as11m.mxf");
+    let core = "SeriesTitle: Sorozat\nProgrammeTitle: Műsor\nEpisodeTitleNumber: 1\nShimName: UK DPP HD\nShimVersion: 1.1\nAudioTrackLayout: 3\nPrimaryAudioLanguage: hun\nClosedCaptionsPresent: false\n";
+    // the range starts at frame 5: parts count from there
+    s.execute(
+        "file.exportMedia",
+        json!({"format":"mxf-op1a", "path": out, "mxfAs11Core": core, "range":"custom", "startSeconds":0.2, "endSeconds":3.6, "wait":true}),
+    )
+    .unwrap();
+    let bytes = std::fs::read(&out).unwrap();
+    let m = cfa4_mxf::open(&bytes[..]).unwrap();
+    let parts: Vec<(i64, i64, u16, u16)> = m.as11.unwrap().segments.iter().map(|s| (s.start, s.duration, s.part_number, s.part_total)).collect();
+    assert_eq!(parts, vec![(5, 15, 1, 3), (35, 20, 2, 3), (65, 20, 3, 3)]);
+    // parts typed in win over the markers (typed times are timecodes: the range's first frame is 00:00:00:05)
+    s.execute("file.exportMedia", json!({"format":"mxf-op1a", "path": out, "mxfAs11Core": core, "mxfAs11Segments": "1/1 00:00:00:05 10\n", "range":"custom", "startSeconds":0.2, "endSeconds":3.6, "wait":true})).unwrap();
+    let bytes = std::fs::read(&out).unwrap();
+    let parts: Vec<(i64, i64)> = cfa4_mxf::open(&bytes[..]).unwrap().as11.unwrap().segments.iter().map(|s| (s.start, s.duration)).collect();
+    assert_eq!(parts, vec![(0, 10)]);
+}
+
 /// #96: MXF OP1a with AS-11 metadata (bmx's text forms): the Core and UK DPP frameworks and the
 /// programme parts read back with our reader, ffprobe still opens the file, and a bad item,
 /// OP-Atom and UK DPP without Core are refused before exporting.

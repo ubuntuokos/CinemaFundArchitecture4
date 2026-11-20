@@ -85,6 +85,17 @@ played), `missing_frame_policy: "black"` (CFA4 shows the previous frame, which i
 export writes `"hold"`), and a pattern whose files are not numbered still images (imported as one
 file). A reference without a base is offline, as before.
 
+## Sequence size from the media
+
+OTIO has no picture size (OTIO-2.5). A CFA4 file stores its sequence settings in `metadata.cfa4`,
+and they are used as written. A sequence from another program's file starts at 1920×1080 and is
+listed in `Imported::size_from_media`. When the engine imports the file it opens the media, and
+such a sequence takes the picture size and pixel aspect of its first video clip: the file media
+clip that starts first, on the lowest track when several start together. That media is opened
+first, so clip anchors are placed in the final frame. The frame rate stays the document's. Without
+that media (offline, or a size the project cannot use) the sequence keeps 1920×1080.
+`first_video_media` and `size_from_media` do this for other hosts.
+
 ## Nested sequences
 
 For the formats Premiere Pro exports (FCP7 XML, OTIO, EDL, AAF, OMF) a nested sequence is written

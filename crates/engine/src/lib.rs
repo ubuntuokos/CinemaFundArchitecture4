@@ -1433,6 +1433,8 @@ mod nesting_tests;
 #[cfg(test)]
 mod opatom_tests;
 #[cfg(test)]
+mod otio_size_tests;
+#[cfg(test)]
 mod panels_tests;
 #[cfg(test)]
 mod par_tests;

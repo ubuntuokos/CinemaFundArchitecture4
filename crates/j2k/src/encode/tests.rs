@@ -180,12 +180,17 @@ fn cinema_2k_follows_the_profile() {
     assert_eq!(&cs[..4], [0xFF, 0x4F, 0xFF, 0x51]);
     assert_eq!(&cs[6..8], [0, 3], "Rsiz");
     let h = crate::parse_header(&cs).unwrap();
-    assert_eq!((h.levels, h.layers, h.reversible, h.progression), (5, 1, false, 4));
+    assert_eq!((h.levels, h.layers, h.reversible, h.progression, h.mct), (5, 1, false, 4, true));
     let parts = tile_parts(&cs);
     assert_eq!(parts.len(), 3);
     assert_eq!(tlm(&cs), parts);
     let back = decode(&cs).unwrap();
     assert!(psnr(&img, &back) > 50.0, "{}", psnr(&img, &back));
+    // without the component transform the profile still holds (CFA4 DCPs before 2026-11)
+    let no_mct = EncodeOptions { mct: false, ..EncodeOptions::cinema_2k(24) };
+    let cs0 = encode(&img, &no_mct).unwrap();
+    assert!(!crate::parse_header(&cs0).unwrap().mct);
+    assert!(psnr(&img, &decode(&cs0).unwrap()) > 50.0);
     // a tight budget per frame and per component
     let opts = EncodeOptions { max_bytes: Some(9_000), max_component_bytes: Some(3_500), ..EncodeOptions::cinema_2k(24) };
     let cs = encode(&img, &opts).unwrap();

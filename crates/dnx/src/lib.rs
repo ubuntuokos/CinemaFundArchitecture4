@@ -112,6 +112,13 @@ pub enum Profile {
     Hd1237,
     /// DNxHD 1920 × 1080 progressive, 8-bit 4:2:2 (CID 1238; "220").
     Hd1238,
+    /// DNxHD 1920 × 1080 interlaced, 10-bit 4:2:2 (CID 1241; "220x" at 29.97 fps), two field
+    /// coding units per frame.
+    Hd1241,
+    /// DNxHD 1920 × 1080 interlaced, 8-bit 4:2:2 (CID 1242; "145").
+    Hd1242,
+    /// DNxHD 1920 × 1080 interlaced, 8-bit 4:2:2 (CID 1243; "220").
+    Hd1243,
     /// DNxHD 1280 × 720 progressive, 10-bit 4:2:2 (CID 1250; "220x" at 59.94 fps).
     Hd1250,
     /// DNxHD 1280 × 720 progressive, 8-bit 4:2:2 (CID 1251; "220").
@@ -135,6 +142,9 @@ impl Profile {
             Profile::Hd1235 => 1235,
             Profile::Hd1237 => 1237,
             Profile::Hd1238 => 1238,
+            Profile::Hd1241 => 1241,
+            Profile::Hd1242 => 1242,
+            Profile::Hd1243 => 1243,
             Profile::Hd1250 => 1250,
             Profile::Hd1251 => 1251,
             Profile::Hd1252 => 1252,
@@ -143,7 +153,7 @@ impl Profile {
         }
     }
     /// Every profile the encoder writes.
-    pub const ALL: [Profile; 13] = [
+    pub const ALL: [Profile; 16] = [
         Profile::Lb,
         Profile::Sq,
         Profile::Hq,
@@ -152,6 +162,9 @@ impl Profile {
         Profile::Hd1235,
         Profile::Hd1237,
         Profile::Hd1238,
+        Profile::Hd1241,
+        Profile::Hd1242,
+        Profile::Hd1243,
         Profile::Hd1250,
         Profile::Hd1251,
         Profile::Hd1252,
@@ -168,6 +181,11 @@ impl Profile {
             tables::Kind::Ri { .. } => None,
         }
     }
+    /// An interlaced DNxHD ID: each frame is two field coding units, field 1 (the top field,
+    /// even lines) first.
+    pub fn interlaced(self) -> bool {
+        matches!(tables::cid_info(self.cid()).map(|c| c.kind), Some(tables::Kind::Hd { interlaced: true, .. }))
+    }
     /// 4:4:4 sampling (DNxHR 444, DNxHD CID 1256); the others are 4:2:2.
     pub fn is_444(self) -> bool {
         matches!(self, Profile::R444 | Profile::Hd1256)
@@ -182,6 +200,9 @@ impl Profile {
             Profile::Hd1235 => "DNxHD 1080p 10-bit (CID 1235)",
             Profile::Hd1237 => "DNxHD 1080p 8-bit (CID 1237)",
             Profile::Hd1238 => "DNxHD 1080p 8-bit (CID 1238)",
+            Profile::Hd1241 => "DNxHD 1080i 10-bit (CID 1241)",
+            Profile::Hd1242 => "DNxHD 1080i 8-bit (CID 1242)",
+            Profile::Hd1243 => "DNxHD 1080i 8-bit (CID 1243)",
             Profile::Hd1250 => "DNxHD 720p 10-bit (CID 1250)",
             Profile::Hd1251 => "DNxHD 720p 8-bit (CID 1251)",
             Profile::Hd1252 => "DNxHD 720p 8-bit (CID 1252)",
