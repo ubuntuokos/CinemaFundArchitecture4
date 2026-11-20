@@ -57,11 +57,13 @@ class FourFormatArtifactTests(unittest.TestCase):
                 self.make_tar(path)
         self.write_sums()
 
-    def make_tar(self, path, *, remove=(), wrong_version=False, unsafe=False, extra=()):
+    def make_tar(self, path, *, remove=(), wrong_version=False, unsafe=False, extra=(), egui=False):
         entries = {
             "install.sh": b"#!/bin/sh\n",
-            "bin/cfa4": b"native editor",
+            # Q4.3: `cfa4` is a copy of the Qt GUI's launcher, unless the test plants the egui editor
+            "bin/cfa4": b"\x7fELF native egui editor" if egui else b"#!/usr/bin/python3\nqt launcher\n",
             "bin/cfa4-cli": b"native cli",
+            "bin/cfa4-qt": b"#!/usr/bin/python3\nqt launcher\n",
             f"share/applications/{audit.APP_ID}.desktop":
                 f"[Desktop Entry]\nName=CFA4\nIcon={audit.APP_ID}\n".encode(),
             f"share/mime/packages/{audit.APP_ID}.xml": b"<mime-info/>",
@@ -85,7 +87,7 @@ class FourFormatArtifactTests(unittest.TestCase):
                 if filename in remove:
                     continue
                 info = tarfile.TarInfo(f"{ROOT_NAME}/{filename}")
-                info.mode = 0o755 if filename in ("install.sh", "bin/cfa4", "bin/cfa4-cli") else 0o644
+                info.mode = 0o755 if filename in ("install.sh", "bin/cfa4", "bin/cfa4-cli", "bin/cfa4-qt") else 0o644
                 info.size = len(content)
                 archive.addfile(info, BytesIO(content))
             if unsafe:
@@ -101,7 +103,7 @@ class FourFormatArtifactTests(unittest.TestCase):
             lines.append(f"{sha}  {name}")
         (self.dist / "SHA256SUMS").write_text("\n".join(lines) + "\n")
 
-    def make_appimage(self, path, *, remove=(), extra=()):
+    def make_appimage(self, path, *, remove=(), extra=(), egui=False):
         """A real squashfs behind an ELF runtime header, laid out as package.sh builds it."""
         tree = Path(self.tmp.name) / "AppDir"
         shutil.rmtree(tree, ignore_errors=True)
@@ -110,7 +112,8 @@ class FourFormatArtifactTests(unittest.TestCase):
             "AppRun": b"#!/bin/sh\n",
             f"{audit.APP_ID}.desktop": b"[Desktop Entry]\n",
             f"{audit.APP_ID}.png": b"PNG",
-            "usr/bin/cfa4": b"editor", "usr/bin/cfa4-cli": b"cli", "usr/bin/cfa4-qt": b"qt",
+            "usr/bin/cfa4": b"\x7fELF native egui editor" if egui else b"qt", "usr/bin/cfa4-cli": b"cli",
+            "usr/bin/cfa4-qt": b"qt",
             "usr/lib/cfa4/python/cfa4_qt/__main__.py": b"main()",
             f"{audit.PYSIDE6_DIR}/PySide6/__init__.py": b"#",
             f"usr/share/metainfo/{audit.APP_ID}.metainfo.xml": b"<component/>",
@@ -155,9 +158,9 @@ class FourFormatArtifactTests(unittest.TestCase):
             audit.verify_tarball(path, VERSION)
 
     def test_deb_listing_needs_licence_files(self):
-        def listing(skip=()):
+        def listing(skip=(), cfa4_size=9):
             files = {
-                "usr/bin/cfa4": 9, "usr/bin/cfa4-cli": 9, "usr/bin/cfa4-qt": 9,
+                "usr/bin/cfa4": cfa4_size, "usr/bin/cfa4-cli": 9, "usr/bin/cfa4-qt": 9,
                 "usr/lib/udev/rules.d/70-cfa4-surfaces.rules": 9,
                 "usr/lib/cfa4/python/cfa4_qt/__main__.py": 9,
                 f"usr/share/applications/{audit.APP_ID}.desktop": 9,
@@ -198,6 +201,12 @@ class FourFormatArtifactTests(unittest.TestCase):
             self.assertRaisesRegex(audit.AuditError, "missing ./usr/bin/cfa4-qt"),
         ):
             audit.verify_deb(deb, VERSION)
+        # Q4.3: a `cfa4` that is not the Qt launcher (the egui editor, megabytes) is refused
+        with (
+            patch.object(audit.subprocess, "check_output", side_effect=fake_dpkg(listing(cfa4_size=48_000_000))),
+            self.assertRaisesRegex(audit.AuditError, "not the Qt GUI launcher"),
+        ):
+            audit.verify_deb(deb, VERSION)
 
     def test_listing_rejects_entries_outside_the_package(self):
         with self.assertRaisesRegex(audit.AuditError, "unexpected package entry"):
@@ -223,6 +232,9 @@ class FourFormatArtifactTests(unittest.TestCase):
         self.make_appimage(path, extra={f"usr/{audit.FFMPEG_DIR}/lib/libx265.so.215"})
         with self.assertRaisesRegex(audit.AuditError, "patent-restricted"):
             audit.verify_appimage(path)
+        self.make_appimage(path, egui=True)  # Q4.3: no egui editor in the AppImage
+        with self.assertRaisesRegex(audit.AuditError, "not the Qt GUI launcher"):
+            audit.verify_appimage(path)
 
     def test_reject_appimage_without_squashfs(self):
         path = self.dist / self.names[1]
@@ -247,6 +259,16 @@ class FourFormatArtifactTests(unittest.TestCase):
         path = self.dist / self.names[3]
         self.make_tar(path, remove={"bin/cfa4-cli"})
         with self.assertRaisesRegex(audit.AuditError, "missing required entries"):
+            audit.verify_tarball(path, VERSION)
+
+    def test_reject_tarball_carrying_the_egui_editor(self):
+        """Q4.3 (owner 2026-11-12, 2026-11-14): bin/cfa4 must be the Qt GUI's launcher."""
+        path = self.dist / self.names[3]
+        self.make_tar(path, egui=True)
+        with self.assertRaisesRegex(audit.AuditError, "not the Qt GUI launcher"):
+            audit.verify_tarball(path, VERSION)
+        self.make_tar(path, remove={"bin/cfa4-qt"})
+        with self.assertRaisesRegex(audit.AuditError, "missing required entries.*cfa4-qt"):
             audit.verify_tarball(path, VERSION)
 
     def test_reject_tarball_version_drift(self):

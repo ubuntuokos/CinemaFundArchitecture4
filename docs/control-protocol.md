@@ -156,7 +156,8 @@ corresponding In/Out edges. Rolls include only matching linked cuts at the same 
 audio cuts separate. Each linked group moves once and shares its tightest trim limit; turning
 Linked Selection off allows individual edges to be selected and edited.
 Dynamic trimming takes an explicit clock (seconds) so it is deterministic: `trim.shuttle
-{direction, slow?, clock}` (J/L), `trim.tick {clock}`, `trim.shuttleStop {clock?}` (K, one undo step),
+{direction, slow?, speed?, clock}` (J/L; `speed` is a jog/shuttle ring position's speed, set
+outright up to 8× instead of doubling), `trim.tick {clock}`, `trim.shuttleStop {clock?}` (K, one undo step),
 `trim.cancelDynamic` (Esc), `trim.playAround {clock, loop?}` (Space / Shift+K).
 
 **Replace With Clip**: `clip.replaceFromSource`, `clip.replaceFromSourceMatchFrame` and

@@ -4772,3 +4772,9 @@
 # Timecode sync varispeed and user bits (TC-8, #1308)
 	Varispeed: adjust the playback speed instead of seeking	Varispeed: regola la velocità di riproduzione invece di saltare
 	User bits	User bit
+# AS-11 programme parts and AS-10 metadata (G2, #1371, #1375)
+	{tc}  Segmentation	{tc}  Segmentazione
+	Marker Type	Tipo di marcatore
+	Chapter	Capitolo
+	Segmentation (AS-11 programme part)	Segmentazione (parte di programma AS-11)
+	AS-10	AS-10

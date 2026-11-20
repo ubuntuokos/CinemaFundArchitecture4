@@ -65,19 +65,19 @@ Gazda: melyik jóváhagyott terv vagy issue viszi ma.
 | WP | Tárgy | Állapot | Bizonyíték a `main`-en | Hiányzik | Gazda |
 |---|---|---|---|---|---|
 | WP00 | audit | E | ez a dokumentum | – | CineCert |
-| WP01-A | orákulum-környezet | P | [`scripts/dev/setup-dcp-inspect.sh`](../../scripts/dev/setup-dcp-inspect.sh); `CFA4_ASDCPLIB_PREFIX` ([`dcp-validation.md`](../development/dcp-validation.md)); `CFA4_PHOTON_CP` (`crates/export/src/imf_tests.rs`) | asdcplib CLI build (DCP-01 L4 nyitott), Photon és Clairmeta telepítő, DCP/IMF korpusz-letöltő | CineCert (asdcplib: DCP-VALIDATION-tel egyeztetni) |
+| WP01-A | orákulum-környezet | P → E (2026-11-15) | [`scripts/dev/setup-cinema-oracles.sh`](../../scripts/dev/setup-cinema-oracles.sh) (`cargo xtask cinema-oracles`): asdcplib 2.13.2, Photon 5.0.1, Clairmeta 1.6.3, korpusz-letöltő sha256-tal ([`cinema-oracles.md`](../development/cinema-oracles.md)); mellette [`setup-dcp-inspect.sh`](../../scripts/dev/setup-dcp-inspect.sh) (DCP-VALIDATION) | a korpusz bejegyzései (a 8. fejezet elfogadási tesztjeivel jönnek) | CineCert |
 | WP02-A | MXF bővítés | P | `crates/mxf/README.md`: ST 422 (2022) író és olvasó, ST 429-3/-4 (2023) író, ST 429-5 olvasó, ST 429-6 olvasó (AES-128-CBC, HMAC-SHA1 MIC), ST 429-18, ST 2067-2/-5 író, ST 377-4 MCA író | ST 429-10 sztereó és ST 422 mezőpárok (#102), ST 429-5 timed text **írás**, ST 429-6 titkosított **írás** | PROCODEC-002 (G10 #102) |
 | WP03 | DCP ingest/inspect | P | `crates/dcp` (ST 429-7/-8/-9/-10/-16, Interop PROTO-ASDCP), `crates/dcp-validate`, `crates/dcp-inspect`; nyitott: #1109 (DCP-06) | DCP → idővonal import (#101) | DCP-VALIDATION; #101: G10 |
 | WP04 | DCP mastering | P | `crates/export/src/dcp_out.rs`, `dcp_iab.rs`, `dcp_atmos.rs`: SMPTE, 2K/4K Flat/Scope/Full, 5.1 24 bit, IAB (ST 429-18), RDD 52, MCA, ST 429-16, DCNC mappanév; [`file-format-parity.md`](../file-format-parity.md) DCP sor | Interop írás, több reel, 3D, felirat a DCP-ben, 7.1 főhang, injektálható UUID/IssueDate | PROCODEC-002 5a |
 | WP05 | IMF ingest | M | – | CPL → idővonal, supplemental package | PROCODEC-002 5b |
 | WP06 | IMF mastering | P | `crates/export/src/imf_out.rs` (#1011): App 2E, egy szegmens, CPL/PKL/ASSETMAP/VOLINDEX, RegXML descriptorok | OPL (ST 2067-100), supplemental/verziózás, IAB az IMF-ben, aláírás | PROCODEC-002 5b |
 | WP07 | J2K és szín | P | `crates/j2k`: DCI 2K/4K, IMF profilok (`ImfProfile::select`, #931); #116 lezárva; nyitott: #1113 (HTJ2K kódolás), #1126 | #117 (rétegek, csempék), mért valós idejű 2K dekódolás | PROCODEC-002 4 |
-| WP08 | MXF digest, IMF-VTFP | M | nincs találat (`vtfp`, `mxf-digest`) | teljes | **CineCert** |
-| WP09 | metaadat, ISDCF | P | DCNC mappanév az exportban; `dcp_inspect` `naming` → `DCP.NAME.001` | ISDCF registry snapshot, natív névépítő/-ellenőrző | **CineCert** (a natív szabály: DCP-VALIDATION-nel egyeztetni) |
+| WP08 | MXF digest, IMF-VTFP | M | `crates/cinema-pkg` (2026-11-15): MXF-DIGEST és VTFP a memók tesztanyagán ellenőrizve | lezárva ebben a PR-ban; export-integráció a PROCODEC-002 dolga | **CineCert** |
+| WP09 | metaadat, ISDCF | M | `crates/cinema-pkg` `isdcf` (2026-11-15): offline registry-snapshot (CC BY 4.0, `scripts/dev/update-isdcf-snapshot.sh`), DCNC-ellenőrző és -bontó/-építő; korábbi: DCNC mappanév az exportban, `dcp_inspect` `naming` → `DCP.NAME.001` | lezárva ebben a PR-ban; az export és a `DCP.NAME.001` átállítása a PROCODEC-002 és a DCP-VALIDATION dolga | **CineCert** |
 | WP10 | titkosítás, aláírás, KDM | P / C | `crates/dcp/src/kdm.rs` (ST 430-1/-3 nyitás, RSA-OAEP); `crates/mxf/src/crypt.rs` (visszafejtés); nyitott: #1076 (KDM-aláírás), #1084, #1086 | titkosított írás, KDM-kiadás, XML-aláírás készítése | G2 (olvasás); írás: senki, D3 és PROCODEC-002 ellentétes (2. pont) |
 | WP11 | QC-motor | P | DCP: `cfa4-dcp-validate` 8 profil, `cfa4-dcp-report/1`; IMF: Photon-orákulum a tesztekben | natív IMF QC | DCP: DCP-VALIDATION; IMF: PROCODEC-002 5b |
 | WP12 | Qt6 / CLI | P | Qt IAB DCP export (#343); KDM-párbeszéd PR-ok | DCP/IMF inspect és QC panel | több projekt; D4 |
-| WP13 | átadás, archiválás | M | `VOLINDEX` egy kötetre íródik (`dcp_out.rs`, `imf_out.rs`) | ISDCF meghajtó, több kötet, provenance | **CineCert** |
+| WP13 | átadás, archiválás | P | `crates/cinema-pkg` `delivery` és `drive` (2026-11-15): ellenőrzött, folytatható átadás `.INCOMPLETE` jelöléssel és SHA-256 manifesttel, fájlnév-ellenőrzés, DCP-meghajtó ellenőrzése (MBR, ext2/ext3, 128 bájtos inode; formázás nélkül); `archive`: provenance-riport és BagIt-csomag (RFC 8493); `VOLINDEX` egy kötetre íródik (`dcp_out.rs`, `imf_out.rs`) | több kötet (az exportot érinti, PROCODEC-002-vel egyeztetni) | **CineCert** |
 | WP14 | kiadás, CI | – | a repó egészének csomagolása és CI-je (`AGENTS.md`) | nincs külön CineCert-teendő | repó |
 | WP15 | feliratok | P | `crates/captions/src/dcst.rs` (ST 428-7 2007/2010/2014 olvasás), TTML/IMSC1, ST 429-5 olvasás | ST 428-7 írás, Interop CineCanvas, CCAP (ST 429-12), IMSC1 Image | PROCODEC-002 |
 | WP16 | IMF App 2E / HDR / HTJ2K | P | HTJ2K dekódolás; App 2E 10 bit BT.709 export; #1113 | PQ/HLG, ST 2086, MaxCLL/MaxFALL, SCM (ST 2067-9) | PROCODEC-002 4/5b |
@@ -125,9 +125,16 @@ az a crate README-jéből származik; a többi a megvalósító PR-ban rögzíte
 | ST 428-7 | 2007 / 2010 / 2014 névterek | `crates/captions/src/dcst.rs` |
 | ST 2067-3 / -8 / -100 / -101 / -102, ST 2086, ST 2067-9, ST 429-12, RDD 52, ST 430-2 / -3 | nincs rögzítve | a megvalósító PR-ban |
 
-## 6. Javasolt következő lépés
+## 6. Döntés (István, 2026-11-15)
 
-A tulajdonos és a gazda dönt (§2.8). A CineCert-munkamenet javaslata: a CineCert-terv a 3. pontban
+✅ **„Csak a CineCert-only részek”**: a CineCert-terv a 3. pontban „CineCert” gazdájú részeken
+folytatódik, ebben a sorrendben: WP01-A orákulum-telepítő (asdcplib, Photon, Clairmeta, korpusz),
+WP08 mxf-digest / VTFP, WP09 ISDCF, WP13 átadás és archiválás, majd a 8. fejezet elfogadási tesztjei.
+Az átfedő munkacsomagok (WP02-A, WP03–WP07, WP10–WP12, WP15, WP16) a PROCODEC-002, a DCP-VALIDATION és
+a G2 projektnél maradnak; ezekre ebből a projektből kód nem készül. A döntés a 30 nyitott PR feletti
+új CineCert-PR-ok tulajdonosi kérése is (§2.6). A D2 és D3 eltérés (2. pont) nyitott marad.
+
+Az eredeti javaslat: a CineCert-terv a 3. pontban
 „CineCert” gazdájú részeken folytatódik (WP01-A, WP08, WP09, WP13, elfogadási tesztek), a többi
 munkacsomagnál a terv a gazda projektjének ellenőrzőlistája marad, kód nem készül rájuk ebből a
 projektből. A D2 és D3 eltérést (2. pont) a tulajdonos egy helyen rögzíti.

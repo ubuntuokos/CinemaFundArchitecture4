@@ -571,6 +571,7 @@ class ExportDialog(QDialog):
             ("mxfAs11Core", "SeriesTitle: …\nProgrammeTitle: …\nShimName: UK DPP HD\nShimVersion: 1.1"),
             ("mxfAs11Segments", "1/2 10:00:00:00 00:12:30:00\n2/2 10:13:00:00 00:11:00:00"),
             ("mxfAs11Ukdpp", "ProductionNumber: …\nSynopsis: …\nContactEmail: …"),
+            ("mxfAs10", "ShimName: NRK_HD_2012\nMainTitle: …"),
         ):
             t = QPlainTextEdit(self)
             t.setObjectName(f"export.video.{key}")
@@ -651,7 +652,7 @@ class ExportDialog(QDialog):
         fv.addRow(tr("Alpha"), self.alpha)
         fv.addRow(tr("DASH Manifest"), self.dash_manifest)
         fv.addRow(tr("Closed Captions"), self.mxf_anc)
-        for key, label in (("mxfAs11Core", N_("AS-11 Core")), ("mxfAs11Segments", N_("AS-11 Parts")), ("mxfAs11Ukdpp", N_("AS-11 UK DPP"))):
+        for key, label in (("mxfAs11Core", N_("AS-11 Core")), ("mxfAs11Segments", N_("AS-11 Parts")), ("mxfAs11Ukdpp", N_("AS-11 UK DPP")), ("mxfAs10", N_("AS-10"))):
             fv.addRow(tr(label), self.as11_text[key])
         fv.addRow(tr("Quality"), self.quality)
         self.video_form = fv

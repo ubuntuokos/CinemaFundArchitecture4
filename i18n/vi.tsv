@@ -4772,3 +4772,9 @@ export.summary	Low	thấp
 # Timecode sync varispeed and user bits (TC-8, #1308)
 	Varispeed: adjust the playback speed instead of seeking	Varispeed: điều chỉnh tốc độ phát thay vì nhảy
 	User bits	Bit người dùng
+# AS-11 programme parts and AS-10 metadata (G2, #1371, #1375)
+	{tc}  Segmentation	{tc}  Phân đoạn
+	Marker Type	Loại điểm đánh dấu
+	Chapter	Chương
+	Segmentation (AS-11 programme part)	Phân đoạn (phần chương trình AS-11)
+	AS-10	AS-10

@@ -4775,3 +4775,9 @@ export.summary	Low	დაბალი
 # Timecode sync varispeed and user bits (TC-8, #1308)
 	Varispeed: adjust the playback speed instead of seeking	Varispeed: გადახტომის ნაცვლად დაკვრის სიჩქარის მორგება
 	User bits	მომხმარებლის ბიტები
+# AS-11 programme parts and AS-10 metadata (G2, #1371, #1375)
+	{tc}  Segmentation	{tc}  სეგმენტაცია
+	Marker Type	მარკერის ტიპი
+	Chapter	თავი
+	Segmentation (AS-11 programme part)	სეგმენტაცია (AS-11 გადაცემის ნაწილი)
+	AS-10	AS-10

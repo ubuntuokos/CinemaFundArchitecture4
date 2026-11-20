@@ -108,8 +108,9 @@ Status as of 2026-11-08 (`main`, `docs/qt-parity.md`: 59 of 63 rows ✅, 4 🟡,
    the AppImage and the Flatpak do not carry it, and the desktop entry still
    starts egui (parity 1.10). Update 2026-11-12 (owner decision): the AppImage
    and the Flatpak carry it (decision 2026-11-09), and the AppImage, the Flatpak
-   and the desktop entry of every package now start the Qt GUI; egui
-   stays installed as `cfa4` until its removal.
+   and the desktop entry of every package now start the Qt GUI. Update
+   2026-11-14 (owner decision, CFA4-QT6-FINISH-001 Q4.3): no package carries or
+   starts egui; `cfa4` is the Qt GUI's launcher, only `cfa4-cli` is compiled.
 
 The remaining work (parity 1.9, 1.10, 4.2, 5.5) and the egui removal
 steps are planned in `docs/plans/CFA4-QT6-FINISH-001.md`. That plan does

@@ -49,6 +49,7 @@ mod serve_tcsync;
 mod serve_text;
 mod serve_tts;
 mod settings_cmd;
+mod studio_feeds;
 
 use args::{Args, parse_value};
 use cfa4_automation::BridgeClient;
