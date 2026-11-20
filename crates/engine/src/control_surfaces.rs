@@ -8,9 +8,9 @@
 //! device I/O (L5) and uses [`Triggers`] and [`ControlSurfacePrefs::action`] here to turn a
 //! press into the command to run.
 
-use std::collections::HashSet;
+use std::collections::{HashMap, HashSet};
 
-use cfa4_surface_model::{ControlId, SurfaceInput};
+use cfa4_surface_model::{ControlId, RelEncoding, SurfaceInput};
 use serde::{Deserialize, Serialize};
 use serde_json::{Value, json};
 
@@ -205,6 +205,10 @@ pub const SHUTTLE_KDENLIVE: [f64; 7] = [1.0, 2.0, 4.0, 5.0, 8.0, 8.0, 8.0];
 /// control's position as `value` in 0..=1.
 pub const VALUE_COMMANDS: &[&str] = &["mixer.stripVolume", "mixer.stripPan"];
 
+/// Encoder steps for the whole 0..=1 range (a 7-bit fader's resolution): one detent moves a
+/// strip as far as one step of a fader does.
+pub const ENCODER_STEPS: f64 = 127.0;
+
 /// Most frame steps one jog report runs (a fast spin is still bounded).
 pub const MAX_JOG_STEPS: u32 = 32;
 
@@ -308,22 +312,53 @@ impl ControlSurfacePrefs {
     }
 
     /// What moving `control` sets, when it is assigned to a [`VALUE_COMMANDS`] target: the
-    /// target's params plus `value` (the position in 0..=1). `None` for a press-type assignment,
-    /// an input without a position, or a device not in use.
+    /// target's params plus `value` (the position in 0..=1) for a fader or knob, or `delta` (the
+    /// signed change, one step = 1/127) for an endless encoder. `None` for a press-type
+    /// assignment, an input without a position, or a device not in use.
     pub fn value(&self, device: &str, control: &ControlId, input: &SurfaceInput) -> Option<Action> {
-        let SurfaceInput::Absolute { value, bits, .. } = input else { return None };
-        if !self.enabled {
+        if !self.enabled || !matches!(input, SurfaceInput::Absolute { .. } | SurfaceInput::Relative { .. }) {
             return None;
         }
         let d = self.devices.iter().find(|d| d.device == device && d.enabled)?;
         let b = d.bindings.iter().find(|b| &b.control == control && VALUE_COMMANDS.contains(&b.command.as_str()))?;
-        let max = (1u32 << u32::from(*bits).clamp(1, 16)) - 1;
-        let v = f64::from(*value).min(f64::from(max)) / f64::from(max);
         let mut params = if b.params.is_object() { b.params.clone() } else { json!({}) };
-        if let Some(o) = params.as_object_mut() {
-            o.insert("value".into(), json!(v));
+        let o = params.as_object_mut()?;
+        let relative = o.remove("encoding").is_some();
+        match input {
+            // an encoder's raw CC before the lane knew its encoding: no position to follow
+            SurfaceInput::Absolute { .. } if relative => return None,
+            SurfaceInput::Absolute { value, bits, .. } => {
+                let max = (1u32 << u32::from(*bits).clamp(1, 16)) - 1;
+                o.insert("value".into(), json!(f64::from(*value).min(f64::from(max)) / f64::from(max)));
+            }
+            SurfaceInput::Relative { delta, .. } => {
+                if *delta == 0 {
+                    return None;
+                }
+                o.insert("delta".into(), json!(f64::from(*delta) / ENCODER_STEPS));
+            }
+            _ => return None,
         }
         Some(Action { command: b.command.clone(), params })
+    }
+
+    /// The endless encoders of the devices in use: the controls assigned to a
+    /// [`VALUE_COMMANDS`] target with an `encoding` (learned as relative). The MIDI reader turns
+    /// their CC values into signed steps before they are queued, so fast turns add up.
+    pub fn relative_controls(&self) -> HashMap<(String, ControlId), RelEncoding> {
+        let mut out = HashMap::new();
+        if !self.enabled {
+            return out;
+        }
+        for d in self.devices.iter().filter(|d| d.enabled) {
+            for b in d.bindings.iter().filter(|b| VALUE_COMMANDS.contains(&b.command.as_str())) {
+                let encoding = b.params.get("encoding").and_then(|e| serde_json::from_value::<RelEncoding>(e.clone()).ok());
+                if let Some(encoding) = encoding {
+                    out.insert((d.device.clone(), b.control.clone()), encoding);
+                }
+            }
+        }
+        out
     }
 
     /// What a jog wheel or shuttle ring movement runs, by the device's profile: the shuttle
@@ -740,6 +775,35 @@ mod tests {
         assert_eq!(p.value(dev, &cc(0), &SurfaceInput::Button { control: cc(0), pressed: true }), None);
         p.enabled = false;
         assert_eq!(p.value(dev, &cc(0), &fader(1)), None);
+    }
+
+    #[test]
+    fn encoders_send_steps_to_their_value_target() {
+        let dev = "midi:k:p";
+        let step = |d| SurfaceInput::Relative { control: cc(16), delta: d, encoding: RelEncoding::TwosComplement };
+        let mut p = ControlSurfacePrefs {
+            enabled: true,
+            devices: vec![DeviceSetting {
+                device: dev.into(),
+                bindings: vec![
+                    Binding { control: cc(16), command: "mixer.stripPan".into(), params: json!({"strip": "Mix", "encoding": "twos-complement"}) },
+                    Binding { control: cc(17), command: "mixer.stripVolume".into(), params: json!({"strip": "A2", "encoding": "nonsense"}) },
+                    Binding { control: cc(0), command: "mixer.stripVolume".into(), params: json!({"strip": "A1"}) },
+                ],
+                ..Default::default()
+            }],
+            ..ControlSurfacePrefs::default()
+        };
+        let a = p.value(dev, &cc(16), &step(-2)).map(|a| a.params);
+        assert_eq!(a, Some(json!({"strip": "Mix", "delta": -2.0 / ENCODER_STEPS})), "the encoding stays out of the action");
+        assert_eq!(p.value(dev, &cc(16), &step(0)), None, "no movement");
+        let raw = SurfaceInput::Absolute { control: cc(16), value: 1, bits: 7 };
+        assert_eq!(p.value(dev, &cc(16), &raw), None, "an encoder's raw CC is not a position");
+        let table = p.relative_controls();
+        assert_eq!(table.len(), 1, "a fader and an unknown encoding are not encoders: {table:?}");
+        assert_eq!(table.get(&(dev.to_string(), cc(16))), Some(&RelEncoding::TwosComplement));
+        p.devices[0].enabled = false;
+        assert!(p.relative_controls().is_empty(), "a device not in use");
     }
 
     #[test]
