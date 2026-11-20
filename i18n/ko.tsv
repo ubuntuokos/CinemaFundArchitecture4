@@ -4766,3 +4766,9 @@
 # Timecode sync varispeed and user bits (TC-8, #1308)
 	Varispeed: adjust the playback speed instead of seeking	배리스피드: 이동하는 대신 재생 속도를 조정
 	User bits	사용자 비트
+# AS-11 programme parts and AS-10 metadata (G2, #1371, #1375)
+	{tc}  Segmentation	{tc}  세그먼테이션
+	Marker Type	마커 유형
+	Chapter	챕터
+	Segmentation (AS-11 programme part)	세그먼테이션(AS-11 프로그램 파트)
+	AS-10	AS-10

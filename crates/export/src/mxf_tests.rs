@@ -423,6 +423,42 @@ fn d10_imx_op1a() {
     assert_eq!(theirs.len(), r.frames as usize * 720 * 512 * 2);
 }
 
+/// #1254: AS-10 metadata in an XDCAM HD422 file reads back; a shim named in the specification is
+/// checked against the essence, and AS-10 needs OP1a with MPEG-2.
+#[test]
+fn xdcam_hd422_as10_metadata_and_shims() {
+    let (p, seq, m) = project();
+    let xd = |path: &str, as10: &str| ExportSettings {
+        frame_size: Some((1280, 720)),
+        bitrate_kbps: 50_000,
+        max_bitrate_kbps: Some(50_000),
+        keyframe_distance: Some(12),
+        mpeg2_b_frames: Some(2),
+        mxf_as10: as10.into(),
+        ..settings(Format::MxfOp1a, MxfVideoCodec::XdcamHd422, path)
+    };
+    let err = |s: ExportSettings| match export(&p, seq, &s, &m, &Progress::default()) {
+        Err(ExportError::Unsupported(e)) => e,
+        other => panic!("expected a refusal, got {other:?}"),
+    };
+    // a shim of the specification: this file is 1280x720 with two channels, not what NRK needs
+    let e = err(xd(&tmp("as10_nrk.mxf"), "ShimName: NRK_HD_2012\n"));
+    assert!(e.contains("NRK_HD_2012") && e.contains("1280x720") && e.contains("8 ch"), "{e}");
+    assert!(err(xd(&tmp("as10_cnn.mxf"), "ShimName: CNN_HD_2012\n")).contains("MP@HL"));
+    assert!(err(xd(&tmp("as10_bad.mxf"), "MainTitle: no shim\n")).contains("ShimName"));
+    assert!(err(xd(&tmp("as10_unknown.mxf"), "ShimName: x\nNope: 1\n")).contains("Nope"));
+    assert!(err(ExportSettings { format: Format::MxfOpAtom, ..xd(&tmp("as10_atom.mxf"), "ShimName: x\n") }).contains("OP1a"));
+    // a shim of the user's own is not checked
+    let path = tmp("as10_own.mxf");
+    export(&p, seq, &xd(&path, "ShimName: STATION_HD_2026\nMainTitle: Híradó\nSpanningNumber: 0\n"), &m, &Progress::default()).unwrap();
+    let bytes = std::fs::read(&path).unwrap();
+    let mx = cfa4_mxf::open(&bytes).unwrap();
+    assert!(mx.warnings.is_empty(), "{:?}", mx.warnings);
+    let mut a = mx.as11.unwrap().as10;
+    a.sort();
+    assert_eq!(a, vec![("MainTitle".to_string(), "Híradó".to_string()), ("ShimName".into(), "STATION_HD_2026".into()), ("SpanningNumber".into(), "0".into())]);
+}
+
 /// XDCAM HD422 (RDD 9): 4:2:2 MPEG-2 in system-item content packages with one mono AES3 element
 /// per channel. ffmpeg decodes the picture exactly as the elementary stream export of the same
 /// settings, and each audio stream sample-exact as the channel we read back.

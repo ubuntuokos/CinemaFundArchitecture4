@@ -3,7 +3,9 @@ name: CFA4 DCP-o-matic (pinned build, real DCP)
 # Plan CFA4-DCPOMATIC-001 D10 and phase 2 acceptance: build the pinned DCP-o-matic 2.18.51
 # (command-line tools only, scripts/dev/build-dcpomatic.sh, cached), make a real DCP from a short
 # test master through `cfa4-dcpomatic`, and check it with CFA4's native validator, profile
-# `full-integrity`, SMPTE and Interop (crates/dcpomatic/tests/real_dcpomatic.rs).
+# `full-integrity`, SMPTE and Interop, with a subtitle track (crates/dcpomatic/tests/real_dcpomatic.rs);
+# then an encrypted DCP and a KDM for a test certificate that CFA4 plays after `dcp.loadKdm`
+# (crates/engine/src/dcpomatic_real_tests.rs, phase 3).
 #
 # Non-blocking at first (D10): not a required check, `continue-on-error`. Runs only on
 # workflow_dispatch or the PR `cfa4-full-validation` label event (AGENTS.md CI rule), and on PRs
@@ -14,6 +16,7 @@ on:
     types: [labeled]
     paths:
       - crates/dcpomatic/**
+      - crates/engine/src/dcpomatic*.rs
       - scripts/dev/build-dcpomatic.sh
       - .github/workflows/dcpomatic.yml
 
@@ -58,5 +61,10 @@ jobs:
           export CFA4_DCPOMATIC_BIN_DIR="$DCPOM_DIR/prefix/bin"
           export LD_LIBRARY_PATH="$DCPOM_DIR/prefix/lib64:$DCPOM_DIR/prefix/lib"
           cargo test --locked --release -p cfa4-dcpomatic --test real_dcpomatic -- --nocapture
+      - name: Encrypted DCP + KDM for a test certificate, played by CFA4 after dcp.loadKdm (phase 3)
+        run: |
+          export CFA4_DCPOMATIC_BIN_DIR="$DCPOM_DIR/prefix/bin"
+          export LD_LIBRARY_PATH="$DCPOM_DIR/prefix/lib64:$DCPOM_DIR/prefix/lib"
+          cargo test --locked --release -p cfa4-engine --lib dcpomatic::real_tests -- --nocapture
       - name: Fake-tool tests
         run: cargo test --locked --release -p cfa4-dcpomatic
