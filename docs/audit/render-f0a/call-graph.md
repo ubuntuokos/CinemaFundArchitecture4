@@ -558,6 +558,8 @@ graph LR
 | `cfa4-project/mask.rs` | `cfa4-time` | `Tick` |
 | `cfa4-project/mixer.rs` | `cfa4-time` | `Tick` |
 | `cfa4-project/narration.rs` | `cfa4-time` | `Tick` |
+| `cfa4-project/object.rs` | `cfa4-geom` | `Rect` |
+| `cfa4-project/object.rs` | `cfa4-time` | `Tick` |
 | `cfa4-project/transcript.rs` | `cfa4-time` | `Tick` |
 | `cfa4-qc/audio.rs` | `cfa4-audio-dsp` | `loudness` |
 | `cfa4-qc/checks.rs` | `cfa4-color` | `Transfer` |
@@ -779,7 +781,7 @@ graph LR
 
 ## 4. Nyilvános típusok osztályonként
 
-A többi 579 nyilvános típus („other” osztály) csak a `call-graph.json`-ban szerepel.
+A többi 588 nyilvános típus („other” osztály) csak a `call-graph.json`-ban szerepel.
 
 ### Képkocka, kép, pixel (26)
 
@@ -855,7 +857,7 @@ A többi 579 nyilvános típus („other” osztály) csak a `call-graph.json`-b
 | `cfa4-smart-edit` | `media_index.rs` | enum | `DependencyStatus` |
 | `cfa4-testkit` | `fixtures.rs` | enum | `Status` |
 
-### Hang (41)
+### Hang (42)
 
 | Crate | Modul | Fajta | Típus |
 |---|---|---|---|
@@ -898,6 +900,7 @@ A többi 579 nyilvános típus („other” osztály) csak a `call-graph.json`-b
 | `cfa4-project` | `lib.rs` | enum | `AudioChannels` |
 | `cfa4-project` | `mixer.rs` | struct | `MixerStrip` |
 | `cfa4-project` | `multicam.rs` | enum | `MulticamAudio` |
+| `cfa4-project` | `object.rs` | struct | `ObjectSample` |
 | `cfa4-qc` | `audio.rs` | struct | `AudioFacts` |
 | `cfa4-render` | `preview.rs` | struct | `AudioSegment` |
 
@@ -923,7 +926,7 @@ A többi 579 nyilvános típus („other” osztály) csak a `call-graph.json`-b
 | `cfa4-gpu` | `lut.rs` | struct | `GpuLut` |
 | `cfa4-project` | `lib.rs` | struct | `ProjectLut` |
 
-### Render, kompozíció, előnézet, proxy (58)
+### Render, kompozíció, előnézet, proxy (59)
 
 | Crate | Modul | Fajta | Típus |
 |---|---|---|---|
@@ -964,6 +967,7 @@ A többi 579 nyilvános típus („other” osztály) csak a `call-graph.json`-b
 | `cfa4-project` | `lib.rs` | struct | `Transition` |
 | `cfa4-project` | `lib.rs` | enum | `TransitionAlign` |
 | `cfa4-project` | `multicam.rs` | struct | `MulticamSource` |
+| `cfa4-project` | `object.rs` | enum | `ObjectSource` |
 | `cfa4-project` | `studio.rs` | enum | `SourceKind` |
 | `cfa4-project` | `studio.rs` | struct | `SourceTransform` |
 | `cfa4-project` | `studio.rs` | struct | `StudioSource` |
