@@ -110,6 +110,7 @@ const LAYERS: &[(&str, u8)] = &[
     ("cinema-pkg", 1),
     ("live", 1),
     ("sandbox", 1),
+    ("tasks", 2),
     ("edit", 2),
     ("codecs", 2),
     ("keyframe", 2),
