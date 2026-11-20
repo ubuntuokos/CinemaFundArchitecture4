@@ -61,7 +61,7 @@ fn package_of(s: &Session, path: &str) -> Option<(String, Option<String>)> {
 
 /// A chunk path joined to the package root, refusing absolute paths, `..` and backslashes (the
 /// asset map is data from the package, so it must not lead outside it).
-fn resolve(root: &str, chunk: &str) -> std::result::Result<String, String> {
+pub(crate) fn resolve(root: &str, chunk: &str) -> std::result::Result<String, String> {
     let chunk = chunk.trim();
     if chunk.is_empty() {
         return Err("the path is empty".into());
@@ -179,7 +179,7 @@ fn import_root(s: &mut Session, root: &str, only_cpl: Option<&str>, bin: Option<
 }
 
 /// An asset's time in ticks: `units` edit units at `rate`.
-fn units(units: u64, rate: Rational) -> Option<Tick> {
+pub(crate) fn units(units: u64, rate: Rational) -> Option<Tick> {
     if rate.num <= 0 || rate.den <= 0 {
         return None;
     }
@@ -195,7 +195,7 @@ fn asset_range(a: &ReelAsset, fallback_rate: Option<Rational>) -> Option<(Tick, 
     Some((units(entry, rate)?, units(dur, rate)?))
 }
 
-fn import_asset(s: &mut Session, file: &str, bin: Option<BinId>, items: &mut HashMap<String, ItemId>) -> Result<ItemId> {
+pub(crate) fn import_asset(s: &mut Session, file: &str, bin: Option<BinId>, items: &mut HashMap<String, ItemId>) -> Result<ItemId> {
     if let Some(id) = items.get(file) {
         return Ok(*id);
     }
