@@ -25,6 +25,7 @@ pub mod package;
 pub mod profile;
 pub mod report;
 pub mod rules;
+mod signatures;
 mod subtitles;
 
 pub use native::NativeValidator;

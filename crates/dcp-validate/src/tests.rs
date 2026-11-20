@@ -122,10 +122,13 @@ fn quick_scan_of_a_good_package_passes() {
 fn incomplete_checks_never_pass() {
     let d = dir("incomplete");
     package_with(&d, GOOD, Edit { picture: Some(good_track_file()), ..Edit::default() });
-    let r = validate(&d, "security");
+    // DCP.REF.001 is a reference-engine rule the native backend never implements
+    let mut p = Profile::builtin("quick-scan").unwrap();
+    p.rules.push(ProfileRule { rule: REF_ENGINE.into(), required: true });
+    let r = NativeValidator.validate(&ValidationRequest::new(&d, p), &ValidationControl::new()).unwrap();
     assert_eq!(r.verdict, Verdict::Incomplete, "{:?}", outcome(&r));
-    assert_eq!(statuses(&r, SIG_SIGNATURE), [Status::Unchecked]);
-    assert!(r.findings.iter().any(|f| f.rule == SIG_SIGNATURE && f.message.contains("DCP-10")));
+    assert_eq!(statuses(&r, REF_ENGINE), [Status::Unchecked]);
+    assert!(r.findings.iter().any(|f| f.rule == REF_ENGINE && f.message.contains("not implemented")));
     // every profile rule is reported
     let r = validate(&d, "smpte-cinema");
     let p = Profile::builtin("smpte-cinema").unwrap();

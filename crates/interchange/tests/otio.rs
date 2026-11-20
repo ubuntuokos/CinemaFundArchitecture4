@@ -830,6 +830,38 @@ fn upstream_metadata_key_is_read_and_written_as_cfa4() {
 }
 
 // ---------------------------------------------------------------------------------------------
+// OTIO-2.5 (H5): OTIO stores no picture size. Sequences from other programs are listed in
+// `size_from_media`, and take their first video clip's size once its media is known.
+// ---------------------------------------------------------------------------------------------
+
+#[test]
+fn foreign_sequences_are_sized_from_their_first_video_clip() {
+    let (imp, rep) = import(image_sequence_doc("/v", ".png", "").as_bytes(), Format::Otio, None).unwrap();
+    assert!(!rep.has_warnings(), "{rep}");
+    let seq = only_seq(&imp);
+    assert_eq!(imp.size_from_media, [seq]);
+    let mut p = imp.project.clone();
+    let media = cfa4_interchange::first_video_media(&p, seq).unwrap();
+    assert!(!cfa4_interchange::size_from_media(&mut p, seq), "the default size until the media is probed");
+    let info = &mut p.item_mut(media).unwrap().as_media_mut().unwrap().info;
+    let v = info.video.as_mut().unwrap();
+    (v.width, v.height, v.par) = (4096, 1716, (1, 1));
+    assert!(cfa4_interchange::size_from_media(&mut p, seq));
+    let s = &p.sequence(seq).unwrap().settings;
+    assert_eq!((s.width, s.height, s.frame_rate), (4096, 1716, FrameRate::FPS_24));
+    // a size the project cannot use is left alone
+    let v = p.item_mut(media).unwrap().as_media_mut().unwrap().info.video.as_mut().unwrap();
+    (v.width, v.height) = (0, 0);
+    assert!(!cfa4_interchange::size_from_media(&mut p, seq));
+    assert_eq!(p.sequence(seq).unwrap().settings.width, 4096);
+
+    // CFA4's own files store the settings: nothing to size
+    let (bytes, _) = cfa4_interchange::export(&imp.project, seq, Format::Otio, &ExportOptions::default()).unwrap();
+    let (own, _) = import(&bytes, Format::Otio, None).unwrap();
+    assert!(own.size_from_media.is_empty());
+}
+
+// ---------------------------------------------------------------------------------------------
 // OTIO-2.3 (H3): `ImageSequenceReference` with its whole pattern. CFA4 keeps an image sequence as
 // image-sequence media at its first frame; the export writes the pattern back from that file name.
 // ---------------------------------------------------------------------------------------------

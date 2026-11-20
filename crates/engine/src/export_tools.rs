@@ -320,9 +320,12 @@ pub fn settings_from_params(s: &Session, p: &Value, cmd: &str) -> Result<(Option
         settings.mxf_anc_captions = v;
     }
     // AS-11 metadata in bmx's text forms (validated with the other settings)
-    for (key, field) in
-        [("mxfAs11Core", &mut settings.mxf_as11_core), ("mxfAs11Segments", &mut settings.mxf_as11_segments), ("mxfAs11Ukdpp", &mut settings.mxf_as11_ukdpp)]
-    {
+    for (key, field) in [
+        ("mxfAs11Core", &mut settings.mxf_as11_core),
+        ("mxfAs11Segments", &mut settings.mxf_as11_segments),
+        ("mxfAs11Ukdpp", &mut settings.mxf_as11_ukdpp),
+        ("mxfAs10", &mut settings.mxf_as10),
+    ] {
         if let Some(v) = str_p(p, key) {
             if v.len() > 1 << 20 {
                 return Err(bad(cmd, format!("{key}: longer than 1 MiB")));

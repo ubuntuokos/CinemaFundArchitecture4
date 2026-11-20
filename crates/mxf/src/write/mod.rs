@@ -1198,7 +1198,7 @@ impl<W: Write + Seek> MxfWriter<W> {
         let as11 = match &cfg.as11 {
             Some(a) => {
                 if cfg.pattern != Pattern::Op1a {
-                    return Err(io::Error::new(io::ErrorKind::InvalidInput, "AS-11 metadata is written in OP1a files"));
+                    return Err(io::Error::new(io::ErrorKind::InvalidInput, "AS-10 / AS-11 metadata is written in OP1a files"));
                 }
                 let tc = cfg.timecode.unwrap_or(StartTimecode { frames: 0, rate: cfg.edit_rate, drop_frame: false });
                 let clock = crate::as11::Clock { start: tc.frames, base: tc.rounded_base() };
@@ -1905,12 +1905,17 @@ impl<W: Write + Seek> MxfWriter<W> {
             let n = 1 + self.tracks.len() as u32;
             let mut track_uids: Vec<[u8; 16]> = (0..n).map(|k| self.uid(base + 1 + 3 * k)).collect();
             if material && let Some(a) = &self.as11 {
-                track_uids.push(self.uid(AS11_UID));
+                if !a.core.is_empty() {
+                    track_uids.push(self.uid(AS11_UID));
+                }
                 if !a.segments.is_empty() {
                     track_uids.push(self.uid(AS11_UID + 0x100));
                 }
                 if !a.ukdpp.is_empty() {
                     track_uids.push(self.uid(AS11_UID + 0x200));
+                }
+                if !a.as10.is_empty() {
+                    track_uids.push(self.uid(AS11_UID + 0x300));
                 }
             }
             let mut s = Set::new(if material { 0x36 } else { 0x37 }, self.uid(base));
@@ -2353,7 +2358,9 @@ impl<W: Write + Seek> MxfWriter<W> {
             s.write(out);
             framework(out, key, f, items);
         };
-        static_track(out, AS11_UID, crate::as11::CORE_TRACK, crate::as11::CORE_FRAMEWORK_KEY, &a.core);
+        if !a.core.is_empty() {
+            static_track(out, AS11_UID, crate::as11::CORE_TRACK, crate::as11::CORE_FRAMEWORK_KEY, &a.core);
+        }
         if !a.segments.is_empty() {
             let base = AS11_UID + 0x100;
             let (name, id) = crate::as11::SEGMENTATION_TRACK;
@@ -2400,6 +2407,9 @@ impl<W: Write + Seek> MxfWriter<W> {
         }
         if !a.ukdpp.is_empty() {
             static_track(out, AS11_UID + 0x200, crate::as11::UKDPP_TRACK, crate::as11::UKDPP_FRAMEWORK_KEY, &a.ukdpp);
+        }
+        if !a.as10.is_empty() {
+            static_track(out, AS11_UID + 0x300, crate::as11::AS10_TRACK, crate::as11::AS10_FRAMEWORK_KEY, &a.as10);
         }
     }
 

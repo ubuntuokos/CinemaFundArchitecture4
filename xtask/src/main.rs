@@ -106,6 +106,7 @@ const LAYERS: &[(&str, u8)] = &[
     ("tcsync-io", 5),
     ("surface", 5),
     ("metrics", 1),
+    ("cinema-pkg", 1),
     ("live", 1),
     ("sandbox", 1),
     ("edit", 2),
@@ -122,6 +123,7 @@ const LAYERS: &[(&str, u8)] = &[
     ("render", 3),
     ("gpu", 3),
     ("golden", 3),
+    ("cinema-acceptance", 3),
     ("scopes", 3),
     ("qc", 3),
     ("playback", 3),
@@ -437,6 +439,16 @@ fn bench() -> Result<(), String> {
     run(Command::new(env!("CARGO")).args(["run", "--release", "-p", "cfa4-ui-egui", "--example", "bench", "--"]).args(&extra))
 }
 
+/// The external DCP / IMF test oracles (CINECERT WP01-A): asdcplib, Photon, Clairmeta and the
+/// test corpus, installed outside the repository by `scripts/dev/setup-cinema-oracles.sh`; extra
+/// arguments go to the script (`cargo xtask cinema-oracles --install photon`). Default: `--check`.
+fn cinema_oracles() -> Result<(), String> {
+    let extra: Vec<String> = std::env::args().skip(2).collect();
+    // The script is executable (#!/usr/bin/env bash); running it directly keeps the arguments out
+    // of any shell command line.
+    run(Command::new(root().join("scripts/dev/setup-cinema-oracles.sh")).args(&extra))
+}
+
 /// L0 crates that read no untrusted input (encoders only): no fuzz target needed.
 const NO_PARSER: &[&str] = &["h264enc", "flac"];
 
@@ -498,6 +510,7 @@ fn main() -> ExitCode {
         "fuzz-targets" => fuzz_targets(),
         "ci" => ci(),
         "bench" => bench(),
+        "cinema-oracles" => cinema_oracles(),
         "bench-playback" => bench_playback(),
         "version" => {
             let rest: Vec<String> = std::env::args().skip(2).collect();
@@ -508,7 +521,7 @@ fn main() -> ExitCode {
             parity::run(&root(), &rest.iter().map(String::as_str).collect::<Vec<_>>())
         }
         _ => Err(
-            "usage: cargo xtask <layers|assets|wasm|fuzz-targets|fixtures [crate…]|parity [--area menus|effects|transitions] [--reference FILE] [--out FILE] [--min PERCENT]|version [set X.Y.Z]|ci|bench [args]|bench-playback [args]>"
+            "usage: cargo xtask <layers|assets|wasm|fuzz-targets|fixtures [crate…]|parity [--area menus|effects|transitions] [--reference FILE] [--out FILE] [--min PERCENT]|version [set X.Y.Z]|ci|bench [args]|bench-playback [args]|cinema-oracles [--check|--install …|--corpus|--print-env]>"
                 .into(),
         ),
     };

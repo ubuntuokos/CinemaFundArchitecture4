@@ -7,7 +7,7 @@ use cfa4_mxf::{
 };
 use cfa4_time::FrameRate;
 
-use crate::{ColorSignal, EncodedPacket, ExportError, ExportSettings, FieldOrder, Format, H264Profile, MpegVideoInfo, MxfVideoCodec, Out, Result};
+use crate::{BitrateMode, ColorSignal, EncodedPacket, ExportError, ExportSettings, FieldOrder, Format, H264Profile, MpegVideoInfo, MxfVideoCodec, Out, Result};
 
 /// Paths of the OP-Atom audio files for an export to `path` with `channels` channels.
 pub fn opatom_audio_paths(path: &str, channels: usize) -> Vec<String> {
@@ -134,6 +134,15 @@ pub(crate) struct MxfSetup<'a> {
     /// Closed captions for the ANC data track (`ExportSettings::mxf_anc_captions`), timed from
     /// the first exported frame.
     pub captions: Option<cfa4_captions::Document>,
+    /// AS-11 programme parts from segmentation markers, (start, duration) in frames from the first
+    /// exported frame; used when `ExportSettings::mxf_as11_segments` is empty.
+    pub as11_parts: Vec<(i64, i64)>,
+}
+
+/// AS-11 segments of the marker parts: numbered in order, each of the total.
+fn as11_marker_parts(parts: &[(i64, i64)]) -> std::result::Result<Vec<cfa4_mxf::as11::Segment>, String> {
+    let total = u16::try_from(parts.len()).map_err(|_| format!("{} segmentation markers, more than an AS-11 part number can count", parts.len()))?;
+    Ok(parts.iter().zip(1u16..).map(|(&(start, duration), part_number)| cfa4_mxf::as11::Segment { start, duration, part_number, part_total: total }).collect())
 }
 
 /// An MXF export in progress.
@@ -180,9 +189,44 @@ impl MxfMux {
                 if settings.mxf_as11_ukdpp.trim().is_empty() { Vec::new() } else { as11::parse_framework_text(&settings.mxf_as11_ukdpp).map_err(bad)? };
             cfg.as11 = Some(as11::As11 {
                 core: as11::parse_framework_text(&settings.mxf_as11_core).map_err(bad)?,
-                segments: as11::parse_segments_text(&settings.mxf_as11_segments, clock).map_err(bad)?,
+                segments: if settings.mxf_as11_segments.trim().is_empty() {
+                    as11_marker_parts(&s.as11_parts).map_err(bad)?
+                } else {
+                    as11::parse_segments_text(&settings.mxf_as11_segments, clock).map_err(bad)?
+                },
                 ukdpp,
+                as10: Vec::new(),
             });
+        }
+        if !atom && !settings.mxf_as10.trim().is_empty() {
+            use cfa4_mxf::as10;
+            let bad = |e: String| ExportError::Unsupported(format!("AS-10: {e}"));
+            let values = cfa4_mxf::as11::parse_framework_text(&settings.mxf_as10).map_err(bad)?;
+            let (profile_and_level, chroma_422) = match &cfg.picture {
+                Some(d) => match d.coding {
+                    PictureCoding::Mpeg2 { profile_and_level, .. } => (profile_and_level, profile_and_level == 0x82),
+                    _ => (0, false),
+                },
+                None => (0, false),
+            };
+            let facts = as10::Facts {
+                profile_and_level,
+                chroma_422,
+                width: s.width,
+                height: s.height,
+                audio_channels: s.audio.map_or(0, |(_, ch)| ch as u32),
+                audio_bits: bits,
+                audio_sample_rate: s.audio.map_or(0, |(sr, _)| sr),
+                cbr: Some(settings.mpeg2_quantizer.is_none() && settings.bitrate_mode == BitrateMode::Cbr),
+                bit_rate: match cfg.picture.as_ref().map(|d| d.coding) {
+                    Some(PictureCoding::Mpeg2 { bit_rate, .. }) => bit_rate,
+                    _ => 0,
+                },
+            };
+            if let Some(name) = values.iter().find(|(k, _)| k.eq_ignore_ascii_case("ShimName")).map(|(_, v)| v.as_str()) {
+                as10::check_shim(name, &facts).map_err(bad)?;
+            }
+            cfg.as11.get_or_insert_with(Default::default).as10 = values;
         }
         let cdp = match s.captions.as_ref().filter(|_| !atom) {
             Some(doc) => {

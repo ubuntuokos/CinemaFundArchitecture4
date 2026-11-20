@@ -181,7 +181,7 @@ impl Api {
         // SAFETY: the source is alive (the scene holds it); channel 0 is a valid channel. libobs
         // takes its own reference.
         unsafe { (self.set_output_source)(0, source) };
-        Ok(Scene { ptr: scene })
+        Ok(Scene { ptr: scene, sources: Vec::new() })
     }
 
     /// Registers the CFA4 picture source type ([`PICTURE_SOURCE_ID`]): an asynchronous video
@@ -261,9 +261,9 @@ impl Api {
         if scene.is_null() {
             return Err(StudioError::Backend("obs_scene_create_private failed".into()));
         }
-        let scene = Scene { ptr: scene };
+        let mut scene = Scene { ptr: scene, sources: Vec::with_capacity(layers.len()) };
         for layer in layers {
-            if let Err(e) = self.add_layer(&scene, layer) {
+            if let Err(e) = self.add_layer(&mut scene, layer) {
                 // SAFETY: the reference `obs_scene_create_private` gave us, released once; the sources
                 // added so far go with it.
                 unsafe { (self.scene_release)(scene.ptr) };
@@ -283,7 +283,7 @@ impl Api {
         Ok(scene)
     }
 
-    fn add_layer(&self, scene: &Scene, layer: &crate::scene::LoadedLayer) -> Result<()> {
+    fn add_layer(&self, scene: &mut Scene, layer: &crate::scene::LoadedLayer) -> Result<()> {
         let pic = &layer.picture;
         if pic.rgba.len() != pic.width as usize * pic.height as usize * 4 {
             return Err(StudioError::Invalid(format!("layer {}: picture data does not match its size", layer.id)));
@@ -297,6 +297,34 @@ impl Api {
         }
         // SAFETY: `source` is alive; unbuffered shows each frame as soon as it arrives.
         unsafe { (self.source_set_async_unbuffered)(source, true) };
+        self.output_picture(source, pic);
+        // SAFETY: both are alive; the scene takes its own reference to the source.
+        let item = unsafe { (self.scene_add)(scene.ptr, source) };
+        // SAFETY: our reference from `obs_source_create_private`, released once; the scene item
+        // keeps the source alive.
+        unsafe { (self.source_release)(source) };
+        if item.is_null() {
+            return Err(StudioError::Backend(format!("obs_scene_add failed for layer {}", layer.id)));
+        }
+        scene.sources.push(source);
+        let t = &layer.transform;
+        let pos = ffi::vec2 { x: t.x as f32, y: t.y as f32 };
+        let scale = ffi::vec2 { x: t.scale_x as f32, y: t.scale_y as f32 };
+        let side = |v: u32| i32::try_from(v).unwrap_or(i32::MAX);
+        let crop = ffi::obs_sceneitem_crop { left: side(t.crop[0]), top: side(t.crop[1]), right: side(t.crop[2]), bottom: side(t.crop[3]) };
+        // SAFETY: `item` is a live item of `scene` (the scene holds it); the vec2 and crop
+        // values live across the calls and libobs copies them.
+        unsafe {
+            (self.sceneitem_set_pos)(item, &pos);
+            (self.sceneitem_set_scale)(item, &scale);
+            (self.sceneitem_set_rot)(item, t.rotation as f32);
+            (self.sceneitem_set_crop)(item, &crop);
+        }
+        Ok(())
+    }
+
+    /// Gives a CFA4 picture source the picture to show (a checked `width * height * 4` bytes).
+    fn output_picture(&self, source: *mut ffi::obs_source_t, pic: &crate::scene::Picture) {
         let mut data = [std::ptr::null_mut::<u8>(); ffi::MAX_AV_PLANES];
         data[0] = pic.rgba.as_ptr() as *mut u8;
         let mut linesize = [0u32; ffi::MAX_AV_PLANES];
@@ -323,33 +351,23 @@ impl Api {
             refs: 0,
             prev_frame: false,
         };
-        // SAFETY: `frame` describes `pic.rgba` (checked size, rows `width * 4` bytes) for the
-        // duration of the call; libobs copies the pixels into its own frame cache before
-        // returning (`obs_source_output_video` → `cache_video`). libobs only reads through the
-        // `*mut` plane pointer.
+        // SAFETY: `source` is a live CFA4 picture source (callers hold it or its scene); `frame`
+        // describes `pic.rgba` (checked size, rows `width * 4` bytes) for the duration of the
+        // call; libobs copies the pixels into its own frame cache before returning
+        // (`obs_source_output_video` → `cache_video`) and only reads through the `*mut` plane
+        // pointer.
         unsafe { (self.source_output_video)(source, &frame) };
-        // SAFETY: both are alive; the scene takes its own reference to the source.
-        let item = unsafe { (self.scene_add)(scene.ptr, source) };
-        // SAFETY: our reference from `obs_source_create_private`, released once; the scene item
-        // keeps the source alive.
-        unsafe { (self.source_release)(source) };
-        if item.is_null() {
-            return Err(StudioError::Backend(format!("obs_scene_add failed for layer {}", layer.id)));
+    }
+
+    /// Shows `pic` on layer `index` of `scene` (a feed's new frame). Ignored for an index the
+    /// scene does not have or a picture of the wrong size.
+    pub fn update_layer(&self, scene: &Scene, index: usize, pic: &crate::scene::Picture) {
+        if pic.rgba.len() != pic.width as usize * pic.height as usize * 4 {
+            return;
         }
-        let t = &layer.transform;
-        let pos = ffi::vec2 { x: t.x as f32, y: t.y as f32 };
-        let scale = ffi::vec2 { x: t.scale_x as f32, y: t.scale_y as f32 };
-        let side = |v: u32| i32::try_from(v).unwrap_or(i32::MAX);
-        let crop = ffi::obs_sceneitem_crop { left: side(t.crop[0]), top: side(t.crop[1]), right: side(t.crop[2]), bottom: side(t.crop[3]) };
-        // SAFETY: `item` is a live item of `scene` (the scene holds it); the vec2 and crop
-        // values live across the calls and libobs copies them.
-        unsafe {
-            (self.sceneitem_set_pos)(item, &pos);
-            (self.sceneitem_set_scale)(item, &scale);
-            (self.sceneitem_set_rot)(item, t.rotation as f32);
-            (self.sceneitem_set_crop)(item, &crop);
+        if let Some(&source) = scene.sources.get(index) {
+            self.output_picture(source, pic);
         }
-        Ok(())
     }
 
     /// Releases a scene that is no longer on the output (one replaced by [`Api::show_layers`]).
@@ -404,6 +422,9 @@ unsafe extern "C" fn picture_destroy(_data: *mut c_void) {}
 /// A scene created by [`Api::show_empty_scene`] or [`Api::show_layers`].
 pub struct Scene {
     ptr: *mut ffi::obs_scene_t,
+    /// The picture source of each layer, borrowed: the scene's items hold them while the scene
+    /// lives (CFA4 never removes an item from a scene it built).
+    sources: Vec<*mut ffi::obs_source_t>,
 }
 
 // SAFETY: a libobs scene reference may be released from any thread (libobs reference counting is

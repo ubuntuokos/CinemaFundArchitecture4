@@ -46,5 +46,20 @@ unit at a time, which reads the same neighbour data.
   order, `evc1` samples with an `evcC` record through the MP4 decoder factory, and an MP4 that
   ffmpeg remuxed from a raw stream (ffmpeg has no EVC decoder of its own).
 
-A bit-exact comparison with xevd needs the reference decoder built as a test oracle, which waits
-for the owner's approval.
+- `tests/xevd_oracle.rs`: bit-exact against xevd v0.8.0 (`xevdb_app`, Baseline build), every
+  output picture in the same order. Streams encoded by xeve v0.7.1 (`xeveb_app`) from ffmpeg's
+  `testsrc2` (hierarchical B GOPs of 4, 8 and 16, low delay P, intra periods, intra only, an odd
+  size, the fast preset, QP 22 to 45; 10 bits, since xeve v0.7.1 crashes on 8-bit coding) and the
+  synthetic streams (random access, low delay 10 bit with CU QP deltas, 4:0:0, cropping with
+  constrained intra prediction). `CFA4_EVC_SYNTH_ROUNDS=n` repeats the synthetic cases with `n`
+  seeds (150 rounds pass locally). The tools are external test oracles, never linked or shipped:
+  `scripts/ci/install-evc-oracle.sh` builds them from the pinned upstream tags (CI does so in
+  `install-ffmpeg-oracle-deps.sh`); the tests skip without them.
+
+Two xevd quirks shape the oracle tests: its application writes the top-left corner of a cropped
+picture instead of the window the cropping offsets select (the library sets the window), so a
+cropped stream is checked against xevd's output of the same stream without cropping; and it runs
+chroma motion compensation on 4:0:0 inter pictures and crashes, so the 4:0:0 stream is intra
+only. At 10 bits and more a negative chroma QP offset can make the chroma deblocking QP negative;
+xevd then reads the end of the previous row of its edge strength table, which the port
+reproduces.
