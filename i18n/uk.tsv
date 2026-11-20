@@ -4755,3 +4755,9 @@
 	Read Timecode from LTC Audio	Зчитати тайм-код зі звуку LTC
 # Credits: voices (the Voice column) in the block's properties (F10-C16)
 	Voices	Голоси
+# AS-11 programme parts and AS-10 metadata (G2, #1371, #1375)
+	{tc}  Segmentation	{tc}  Сегментація
+	Marker Type	Тип маркера
+	Chapter	Розділ
+	Segmentation (AS-11 programme part)	Сегментація (частина програми AS-11)
+	AS-10	AS-10

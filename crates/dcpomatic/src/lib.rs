@@ -19,21 +19,26 @@
 //! to files. Cancel sends `SIGINT` to the group, then `SIGKILL`; a timeout sends `SIGKILL`.
 //!
 //! What this backend adds next to CFA4's own DCP export (`cfa4-export`, `dcp_out.rs`): Interop
-//! packages, several content files in one composition, 3D, and DCP-o-matic's own resizing, colour
-//! conversion and audio mapping (ADR 0011). Encryption and KDMs come in phase DCPOM-3.
+//! packages, several content files in one composition, 3D, subtitle files as DCP subtitle tracks,
+//! encrypted packages (ST 429-6) and their KDMs (`dcpomatic2_kdm_cli`, [`Dcpomatic::make_kdm`]),
+//! and DCP-o-matic's own resizing, colour conversion and audio mapping (ADR 0011).
 
+mod kdm;
 mod process;
 mod request;
 
 use std::path::{Path, PathBuf};
 use std::time::Duration;
 
+pub use kdm::{Formulation, KdmOutcome, KdmRequest, Validity, ValidityUnit};
 pub use request::{Channel, Container, Content, ContentKind, DcpRequest, Eye, Resolution, Standard};
 
 /// The program that writes the film directory.
 pub const CREATE: &str = "dcpomatic2_create";
 /// The program that encodes the DCP.
 pub const CLI: &str = "dcpomatic2_cli";
+/// The program that makes KDMs for encrypted DCPs.
+pub const KDM_CLI: &str = "dcpomatic2_kdm_cli";
 /// DCP-o-matic's patched OpenSSL, which makes the signing certificate chain on the first run. The
 /// other tools look for it in their own folder.
 pub const OPENSSL: &str = "dcpomatic2_openssl";
@@ -107,6 +112,8 @@ pub enum Phase {
     Create,
     /// `dcpomatic2_cli` is encoding the DCP.
     Encode,
+    /// `dcpomatic2_kdm_cli` is making KDMs.
+    Kdm,
 }
 
 /// Cancellation and progress for one run. Both hooks are called from the running thread.
@@ -161,13 +168,20 @@ pub struct DcpOutcome {
 pub struct Dcpomatic {
     create: PathBuf,
     cli: PathBuf,
+    kdm: Option<PathBuf>,
     timeout: Duration,
 }
 
 impl Dcpomatic {
     /// A backend that runs the given programs.
     pub fn new(create: impl Into<PathBuf>, cli: impl Into<PathBuf>) -> Dcpomatic {
-        Dcpomatic { create: create.into(), cli: cli.into(), timeout: Duration::from_secs(48 * 60 * 60) }
+        Dcpomatic { create: create.into(), cli: cli.into(), kdm: None, timeout: Duration::from_secs(48 * 60 * 60) }
+    }
+
+    /// The KDM program ([`KDM_CLI`]); without it [`Dcpomatic::make_kdm`] is unavailable.
+    pub fn with_kdm_program(mut self, kdm: impl Into<PathBuf>) -> Dcpomatic {
+        self.kdm = Some(kdm.into());
+        self
     }
 
     /// The folder searched for the tools: [`ENV_BIN_DIR`] when it is set (development),
@@ -182,7 +196,8 @@ impl Dcpomatic {
     }
 
     /// The tools CFA4 ships, in [`Dcpomatic::search_dir`]. `Unavailable` names what is missing
-    /// when [`CREATE`], [`CLI`] or [`OPENSSL`] is not there.
+    /// when [`CREATE`], [`CLI`] or [`OPENSSL`] is not there. [`KDM_CLI`] is taken when present;
+    /// without it only KDMs are unavailable.
     pub fn locate() -> Result<Dcpomatic, DcpomaticError> {
         Dcpomatic::locate_in(&Dcpomatic::search_dir())
     }
@@ -193,7 +208,8 @@ impl Dcpomatic {
         if !missing.is_empty() {
             return Err(DcpomaticError::Unavailable(format!("{} is missing from {}", missing.join(", "), dir.display())));
         }
-        Ok(Dcpomatic::new(dir.join(CREATE), dir.join(CLI)))
+        let d = Dcpomatic::new(dir.join(CREATE), dir.join(CLI));
+        Ok(if dir.join(KDM_CLI).is_file() { d.with_kdm_program(dir.join(KDM_CLI)) } else { d })
     }
 
     /// The longest a whole run may take (default 48 hours: a 4K feature on a small machine is
@@ -209,6 +225,10 @@ impl Dcpomatic {
 
     pub fn cli_program(&self) -> &Path {
         &self.cli
+    }
+
+    pub fn kdm_program(&self) -> Option<&Path> {
+        self.kdm.as_deref()
     }
 
     /// The installed version (from `dcpomatic2_cli --version`); `Unavailable` when it cannot be
@@ -244,10 +264,39 @@ impl Dcpomatic {
         }
 
         control.report(Phase::Create, 0.0);
-        process::run_step(&self.create, &plan.create_args, deadline, self.timeout, control, Phase::Create).map_err(cleanup)?;
-        if !film.join("metadata.xml").is_file() {
+        // An encrypted film's metadata.xml holds the content keys in clear. DCP-o-matic writes it
+        // inside a 0700 staging folder next to the film directory, which is made 0700 and then
+        // moved into place, so no other local user can read the keys at any moment.
+        let stage = match (plan.encrypt, film.parent(), film.file_name()) {
+            (false, _, _) => None,
+            (true, Some(parent), Some(leaf)) => {
+                let st = process::Scratch::bare_in(parent, ".cfa4-dcpomatic-stage")?;
+                let made = st.path().join(leaf);
+                Some((st, made))
+            }
+            (true, _, _) => return Err(DcpomaticError::Invalid(format!("{} has no parent folder", film.display()))),
+        };
+        let mut create_args = plan.create_args.clone();
+        let made = match &stage {
+            Some((_, made)) => {
+                request::set_value(&mut create_args, "--output", request::text(made)?);
+                made.clone()
+            }
+            None => film.clone(),
+        };
+        process::run_step(&self.create, &create_args, deadline, self.timeout, control, Phase::Create).map_err(cleanup)?;
+        if !made.join("metadata.xml").is_file() {
             return Err(DcpomaticError::Engine(format!("{CREATE} finished but wrote no film directory at {}", film.display())));
         }
+        if stage.is_some() {
+            use std::os::unix::fs::PermissionsExt as _;
+            std::fs::set_permissions(&made, std::fs::Permissions::from_mode(0o700))?;
+            if film.exists() {
+                return Err(DcpomaticError::Engine(format!("{} appeared while the film was being created", film.display())));
+            }
+            std::fs::rename(&made, &film)?;
+        }
+        drop(stage);
         control.report(Phase::Create, 1.0);
 
         control.report(Phase::Encode, 0.0);

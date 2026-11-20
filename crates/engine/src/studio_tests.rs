@@ -169,7 +169,7 @@ fn program_layers_render_colour_text_and_pictures() {
     let pic = source(&mut s, json!({"type": "image", "path": tga.to_string_lossy()}));
     let missing = source(&mut s, json!({"type": "image", "path": dir.join("gone.png").to_string_lossy()}));
     let hidden = source(&mut s, json!({"type": "color", "visible": false}));
-    let (layers, problems) = program_layers(&s.project.studio, render_source);
+    let (layers, problems) = program_layers(&s.project.studio, |src| render_source(&src.kind));
     assert_eq!(layers.len(), 3, "colour, text, picture; the missing file and the hidden source are not drawn");
     assert_eq!(layers[0].picture, LayerPicture::Color { rgba: [1, 2, 3, 255], width: 64, height: 32 });
     match &layers[1].picture {
@@ -197,5 +197,55 @@ fn program_layers_render_colour_text_and_pictures() {
     assert_ne!(picture_key(&kind), k1);
     assert!(render_source(&SourceKind::text("   ")).is_err());
     // no current scene: nothing to draw
-    assert!(program_layers(&cfa4_project::LiveStudio::default(), render_source).0.is_empty());
+    assert!(program_layers(&cfa4_project::LiveStudio::default(), |src| render_source(&src.kind)).0.is_empty());
+}
+
+#[test]
+fn media_and_live_graphics_are_moving_sources() {
+    let mut s = Session::default();
+    scene(&mut s, "Main");
+    let m = source(&mut s, json!({"type": "media", "path": "/videos/opener.mp4", "loop": false}));
+    let g = source(&mut s, json!({"type": "liveGraphics", "transform": {"x": 0, "y": 0}}));
+    let st = ok(&mut s, "live.studio.scenes", json!({}));
+    let srcs = &st["scenes"][0]["sources"];
+    assert_eq!(srcs[0]["kind"], json!({"type": "media", "path": "/videos/opener.mp4", "loop": false}));
+    assert_eq!(srcs[0]["name"], "opener.mp4");
+    assert_eq!(srcs[1]["kind"], json!({"type": "liveGraphics"}));
+    assert_eq!(srcs[1]["name"], "Live Graphics");
+    ok(&mut s, "live.studio.source.set", json!({"id": m, "loop": true, "path": "/videos/loop.mkv"}));
+    assert_eq!(s.project.studio.scenes[0].sources[0].kind, SourceKind::Media { path: "/videos/loop.mkv".into(), looping: true });
+    for p in [
+        json!({"type": "media"}),
+        json!({"type": "media", "path": ""}),
+        json!({"type": "media", "path": "/v.mp4", "loop": "yes"}),
+        json!({"type": "media", "path": "a\u{0}b"}),
+    ] {
+        assert!(s.execute("live.studio.source.add", p.clone()).is_err(), "{p}");
+    }
+    assert!(s.execute("live.studio.source.set", json!({"id": m, "loop": 1})).is_err());
+    // moving sources are fed by the front end: render_source refuses them, program_layers asks
+    let kinds: Vec<SourceKind> = s.project.studio.scenes[0].sources.iter().map(|x| x.kind.clone()).collect();
+    assert!(kinds.iter().all(|k| k.is_moving() && render_source(k).is_err()));
+    let (layers, problems) =
+        program_layers(&s.project.studio, |src| Ok(LayerPicture::Feed { width: 32, height: 18, ring: std::path::PathBuf::from(format!("/feeds/{}", src.id)) }));
+    assert!(problems.is_empty());
+    assert_eq!(layers.iter().map(|l| l.source).collect::<Vec<_>>(), [m, g]);
+}
+
+#[test]
+fn the_live_program_is_a_picture_for_the_studio() {
+    let mut s = Session::default();
+    ok(&mut s, "file.openDemoProject", json!({}));
+    s.prefs_path = Some(tmp_dir("studio-live-program").join("prefs.json"));
+    assert_eq!(crate::live::program_picture(&mut s, 320).expect("draw"), None, "nothing on air");
+    let (w, h) = crate::live::program_size(&s, 320);
+    let seq = s.active_sequence().map(|q| (q.settings.width, q.settings.height)).expect("sequence");
+    assert_eq!((w, h), (320, (320.0 * f64::from(seq.1) / f64::from(seq.0)).round() as u32));
+    ok(&mut s, "live.cue.add", json!({"csv": "Head,Body\nDirected by,Jordan Lee\n"}));
+    ok(&mut s, "live.take", json!({}));
+    let (rgba, pw, ph) = crate::live::program_picture(&mut s, 320).expect("draw").expect("on air");
+    assert_eq!((pw, ph), (w, h));
+    assert_eq!(rgba.len(), (w * h * 4) as usize);
+    ok(&mut s, "live.out", json!({}));
+    assert_eq!(crate::live::program_picture(&mut s, 320).expect("draw"), None, "OUT takes the program off");
 }

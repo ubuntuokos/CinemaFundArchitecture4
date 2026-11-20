@@ -716,6 +716,11 @@
   },
   {
    "crate": "cfa4-export",
+   "fn": "export_as11_parts",
+   "module": "lib.rs"
+  },
+  {
+   "crate": "cfa4-export",
    "fn": "export_chapters",
    "module": "lib.rs"
   },
@@ -2244,6 +2249,20 @@
    "kind": "struct",
    "module": "serve_surface.rs",
    "name": "Router"
+  },
+  {
+   "class": "other",
+   "crate": "cfa4-cli",
+   "kind": "struct",
+   "module": "studio_feeds.rs",
+   "name": "LiveFeed"
+  },
+  {
+   "class": "other",
+   "crate": "cfa4-cli",
+   "kind": "struct",
+   "module": "studio_feeds.rs",
+   "name": "MediaFeed"
   },
   {
    "class": "other",
@@ -5168,6 +5187,13 @@
    "class": "other",
    "crate": "cfa4-render",
    "kind": "enum",
+   "module": "mosh.rs",
+   "name": "MoshError"
+  },
+  {
+   "class": "other",
+   "crate": "cfa4-render",
+   "kind": "enum",
    "module": "offline.rs",
    "name": "OfflineReason"
   },
@@ -6549,17 +6575,17 @@
   },
   {
    "from": "cfa4-cli/serve_live.rs",
+   "item": "live",
+   "to": "cfa4-engine"
+  },
+  {
+   "from": "cfa4-cli/serve_live.rs",
    "item": "studio",
    "to": "cfa4-engine"
   },
   {
    "from": "cfa4-cli/serve_live.rs",
-   "item": "LiveStudio",
-   "to": "cfa4-project"
-  },
-  {
-   "from": "cfa4-cli/serve_live.rs",
-   "item": "StudioScene",
+   "item": "SourceKind",
    "to": "cfa4-project"
   },
   {
@@ -6841,6 +6867,31 @@
    "from": "cfa4-cli/settings_cmd.rs",
    "item": "probe",
    "to": "cfa4-route"
+  },
+  {
+   "from": "cfa4-cli/studio_feeds.rs",
+   "item": "FrameRequest",
+   "to": "cfa4-media"
+  },
+  {
+   "from": "cfa4-cli/studio_feeds.rs",
+   "item": "MediaSource",
+   "to": "cfa4-media"
+  },
+  {
+   "from": "cfa4-cli/studio_feeds.rs",
+   "item": "FrameRate",
+   "to": "cfa4-time"
+  },
+  {
+   "from": "cfa4-cli/studio_feeds.rs",
+   "item": "TICKS_PER_SECOND",
+   "to": "cfa4-time"
+  },
+  {
+   "from": "cfa4-cli/studio_feeds.rs",
+   "item": "Tick",
+   "to": "cfa4-time"
   },
   {
    "from": "cfa4-engine/aaf_omf.rs",
