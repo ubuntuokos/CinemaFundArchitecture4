@@ -4771,3 +4771,9 @@ export.summary	Low	低
 # Timecode sync varispeed and user bits (TC-8, #1308)
 	Varispeed: adjust the playback speed instead of seeking	變速：調整播放速度而非跳轉
 	User bits	使用者位元
+# AS-11 programme parts and AS-10 metadata (G2, #1371, #1375)
+	{tc}  Segmentation	{tc}  分段
+	Marker Type	標記類型
+	Chapter	章節
+	Segmentation (AS-11 programme part)	分段（AS-11 節目部分）
+	AS-10	AS-10

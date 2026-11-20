@@ -10,9 +10,9 @@ olvasztott PR-ok és ágak.
 | Szerep | Ki | Mit tehet |
 |---|---|---|
 | **Tulajdonos** | ubuntuokos | Dönt a sorrendről, jóváhagyja a beolvasztásokat, ágat töröl a GitHubon. |
-| **Beolvasztási gazda** | egyetlen gazda munkamenet, a tulajdonos `/gazda`-val hívja | **Csak a tulajdonos utasítására cselekszik.** Egyedül ő olvaszt be a `main`-be, kizárólag tulajdonosi jóváhagyással. Sorrendet javasol, ütközést old fel, lezár, ha valamit egy másik PR kivált. |
+| **Beolvasztási gazda** | egyetlen gazda munkamenet, a tulajdonos `/gazda`-val hívja | **Csak a tulajdonos utasítására cselekszik.** Egyedül ő olvaszt be a `main`-be, kizárólag tulajdonosi jóváhagyással. Sorrendet javasol, ütközést old fel, lezár, ha valamit egy másik PR kivált. Fejlesztői PR ágára csak átvétel után pushol (§2.13). |
 | **Dependabot-előkészítő** | egyetlen, erre kijelölt Claude-munkamenet (tulajdonosi döntés, 2026-11-09) | A Dependabot-PR-okat **előkészíti**: friss ágra hozza (`update-branch`), lefuttatja rajtuk a teljes CI-t (`cfa4-full-validation`), a csoportosítást a `.github/dependabot.yml`-ben saját PR-ban javítja, és „Gazda:” issue-ban átadja a beolvasztásra kész listát. **Nem olvaszt be** és nem zár le PR-t; a Dependabot-PR-okhoz kódjavítást nem tölt fel (ha egy frissítés kódmódosítást igényel, azt az érintett crate projektjének adja át). |
-| **Fejlesztő munkamenet** | minden más | Egy témán dolgozik, egy PR-ban. **Nem olvaszt be**, más PR-jához és ágához nem nyúl. A Dependabot-PR-okhoz sem. |
+| **Fejlesztő munkamenet** | minden más | Egy témán dolgozik, egy PR-ban. **Nem olvaszt be**, más PR-jához és ágához nem nyúl. A Dependabot-PR-okhoz sem. A saját PR-ja ágára is csak addig pushol, amíg az övé (§2.4, §2.12, §2.13). |
 
 Egy gazda munkamenet van. A tulajdonos a `/gazda` paranccsal hívja
 ([`.claude/skills/gazda/SKILL.md`](../.claude/skills/gazda/SKILL.md)), és minden sikeres
@@ -28,6 +28,16 @@ Gazdát csak a tulajdonos jelölhet ki vagy válthat le. Fejlesztő munkamenet n
    A beolvasztás a gazda dolga, a tulajdonos hívására.
 4. **Más PR-jához, ágához ne nyúlj** (push, rebase, lezárás, gyűjtő-PR), akkor sem, ha ütközik
    a tieddel. Az ütközést a gazda oldja fel.
+   **Egy ág, egy tulajdonos** (tulajdonosi döntés, 2026-11-14/15; terv:
+   [`plans/CFA4-BRANCH-OWNERSHIP-001.md`](plans/CFA4-BRANCH-OWNERSHIP-001.md)). A PR ágára csak a
+   tulajdonosa pushol: az a munkamenet, amely a PR leírásának `Munkamenet:` sorában áll. Ezt a sort
+   minden PR leírásába írd be: `Munkamenet: https://claude.ai/code/session_…`. Claude Projects-szál
+   új beszélgetésben új munkamenettel folytatódhat: a folytató munkamenet az első push előtt a saját
+   azonosítóját hozzáfűzi a `Munkamenet:` sorhoz (ez nem átadás); a helyi push-őr addig megállítja a pushát. A tulajdonost csak átadás (§2.12)
+   vagy gazda-átvétel (§2.13) váltja. Minden commitod végén ott a `Claude-Session:` sor. A
+   `main` behúzása a saját ágadba megengedett, és rakott PR-nál a lánc előző ágáé is. A
+   `cfa4-branch-ownership` check ezt minden PR-on ellenőrzi; a tulajdonos saját, munkamenet-sor
+   nélküli commitját a `tulajdonosi-commit` címke engedi.
 5. **Közös fájlok** (kodek-regiszter, `crates/codecs`, `crates/export/src/lib.rs`, effektlisták,
    `i18n/*.tsv`, `docs/*-parity.md`, `Cargo.toml`, `Cargo.lock`): csak a saját sorodat add hozzá,
    ne rendezd át és ne formázd újra a fájlt.
@@ -51,7 +61,22 @@ Gazdát csak a tulajdonos jelölhet ki vagy válthat le. Fejlesztő munkamenet n
    - **kodek és konténer:** `crates/codecs/`, `crates/ffmpeg/`, `crates/gstreamer/`, valamint
      minden olyan crate, amelyet a [`architecture.md`](architecture.md) §1 kodek- vagy
      konténer-crate-ként sorol fel;
-   - **CI:** `.github/`;
+   - **CI** (szűkítve, tulajdonosi döntés D6, 2026-11-15): a PR akkor kockázatos, ha
+     - a beolvasztás kötelező vagy biztonsági kapuit adó workflowt módosítja: `pr-check.yml`
+       (`cargo-check`), `ci-linux.yml` (`full-validation-gate`), `cfa4-gate.yml`,
+       `cfa4-security.yml`, `codeql.yml`;
+     - kiadást vagy közzétételt végző workflowt módosít: `release` eseményre induló vagy bármilyen
+       `write` jogosultságú workflow (2026-11-15-én: `cfa4-release-candidate.yml`,
+       `cfa4-four-formats-hosted.yml`, `cfa4-f9-release-hold.yml`, `cfa4-ffmpeg-prebuilt.yml`);
+     - bármelyik workflowban jogosultságot (`permissions:`), titkot (`secrets.`),
+       `pull_request_target` vagy `workflow_run` indítót, illetve külső actiont vagy annak rögzített
+       verzióját (`uses:`) vesz fel vagy módosít;
+     - a `.github/dependabot.yml`-t vagy a `.github/actionlint.yaml`-t módosítja.
+
+     A többi `.github/` változás (például egy kézzel indítható vagy csak tesztet futtató workflow
+     lépései) nem kockázatos. Ellenőrzés: a fenti fájllista, és a workflow-diffben
+     (`git diff origin/main...HEAD -- .github/workflows/`) keresés a `permissions:`, `secrets.`,
+     `pull_request_target`, `workflow_run` és `uses:` szövegekre;
    - **szabályfájlok:** `AGENTS.md`, `CLAUDE.md`, `docs/coordination.md`, `.coderabbit.yaml`,
      `.claude/`.
 
@@ -67,8 +92,9 @@ Gazdát csak a tulajdonos jelölhet ki vagy válthat le. Fejlesztő munkamenet n
    újra (`@coderabbitai review`). A PR-t csak akkor add át a gazdának, ha a legutóbbi kérésedre
    a PR mostani fején a `CodeRabbit` check-run `success` lett (§3.4 b), és nem maradt megválaszolatlan
    CodeRabbit-szál (§3.4). A CodeRabbit javító funkcióit (Autofix, „Fix comments”,
-   CI-javítás, ütközésfeloldás) nem indítod: a PR-ba csak te commitolsz. Dependabot-PR-on
-   és köteg-PR-on nem kérsz CodeRabbit-ellenőrzést.
+   CI-javítás, ütközésfeloldás) nem indítod: a PR-ba csak te commitolsz (gazda-átvétel után a
+   gazda, §2.13). Dependabot-PR-on és köteg-PR-on nem kérsz CodeRabbit-ellenőrzést. A gazdához
+   csak hibátlan PR mehet: ha a CodeRabbit hibát talál, javítsd ki, és kérd újra.
 
 10. **Fejlesztés csak jóváhagyott terv alapján** (tulajdonosi döntés, 2026-11-14).
     - Fejlesztés (kód, teszt, CI, csomagolás) csak akkor indulhat, ha a terve egyeztetve van
@@ -83,6 +109,43 @@ Gazdát csak a tulajdonos jelölhet ki vagy válthat le. Fejlesztő munkamenet n
       jóváhagyást kér.
     - A §2.8 szerinti választás a saját projekten belül csak a jóváhagyott terv keretein belül
       érvényes.
+
+11. **Terv csak a repóba kerülhet** (tulajdonosi döntés, 2026-11-15).
+    - Minden CFA4-terv (terv, specifikáció, jelentés, felmérés, összevetés) Markdown-fájlként
+      a `docs/plans/` mappába kerül, saját ágon, PR-rel. Nem kerülhet online dokumentumba
+      (Claude-dokumentum, artifact, Google Docs, Notion vagy más külső felület), és nem maradhat
+      csak a munkamenet beszélgetésében.
+    - Ez akkor is így van, ha a tulajdonos nem mondja külön: ha a munkamenet a saját munkájához
+      vagy bármely CFA4-projekthez ír tervet, annak a helye a repó.
+    - Ha egy terv mégis repón kívül készült, a munkamenet változatlan tartalommal átviszi
+      a `docs/plans/` mappába, és ettől kezdve a repóbeli fájl az irányadó.
+    - A tervek egymásra és a repó fájljaira repóbeli relatív hivatkozással mutatnak, nem külső
+      dokumentumra.
+
+12. **Átadás másik munkamenetnek** (tulajdonosi döntés, 2026-11-14). Ha a tulajdonos egy nyitott
+    PR-t egy másik munkamenetre bíz (például egy új beszélgetésben: „jóváhagyom, vidd tovább”):
+    - az új munkamenet az első push előtt a PR leírásába és egy PR-megjegyzésbe beírja:
+      `Átadva: session_<régi> → session_<új>, tulajdonosi jóváhagyással, ÉÉÉÉ-HH-NN`;
+    - a `Munkamenet:` sort nem kell átírni: az átadás utáni írót az `Átadva:` sor adja meg, ezt olvassa a
+      `branch-ownership` check és a helyi push-őr is;
+    - a régi munkamenet minden push előtt megnézi a PR leírását; ha átadták, nem pushol, hanem
+      jelzi a tulajdonosnak;
+    - ha a tulajdonos nem mondja ki az átadást, az új munkamenet nem nyúl a régi ágához: új ágat
+      nyit a `main`-ből, vagy megkérdezi a tulajdonost.
+
+13. **Gazda-átvétel** (tulajdonosi döntés, 2026-11-14).
+    - Amikor a PR-t „Kész”-nek jelölöd, átadod a gazdának. A gazda az első írása (ághoz igazítás,
+      ütközésfeloldás) előtt a PR leírásába és egy PR-megjegyzésbe beírja:
+      `Gazda átvette: session_<gazda>, ÉÉÉÉ-HH-NN`. Ehhez nem kell külön tulajdonosi jóváhagyás.
+    - Átvétel után a PR ágára a gazda pushol, te nem. Ha javítást látsz szükségesnek,
+      PR-megjegyzésben jelzed.
+    - Hibát a gazda nem javít: visszaadja a PR-t (`Gazda visszaadta: session_<fejlesztő>,
+      ÉÉÉÉ-HH-NN`), és onnantól megint te pusholsz, javítasz, kockázatos PR-on újra kéred a
+      CodeRabbitet, és a hibátlan PR-t újra átadod.
+    - **Kivétel:** a tulajdonos kérésére a gazda maga javíthat, ha a fejlesztő túlterhelt, és a
+      PR-ra máshol szükség van. Ilyenkor a javítás előtt beírja: `Gazda javítja tulajdonosi
+      kérésre: <ok>, ÉÉÉÉ-HH-NN`; kockázatos PR-on a javítás után ő kéri a CodeRabbitet, és ő
+      kezeli a megállapításait. A PR így is csak hibátlanul olvasztható be.
 
 ## 3. A gazda munkamódja (minden `/gazda` hívásnál)
 
@@ -101,8 +164,8 @@ Gazdát csak a tulajdonos jelölhet ki vagy válthat le. Fejlesztő munkamenet n
    Ezt a kötelező `full-validation-gate` ellenőrzés technikailag is kikényszeríti (tulajdonosi
    döntés, 2026-10-31): csak akkor zöld, ha minden blokkoló teljes job azon a fejen ténylegesen
    lefutott és zöld. A Qt6 GUI-tesztek a GUI elkészültéig futnak, de nem blokkolnak.
-   **CodeRabbit** (tulajdonosi döntés, 2026-11-12; D5, 2026-11-13): a gazda a fájllistából maga
-   is megnézi, kockázatos-e a PR (§2.9), a leírásban álló jelzéstől függetlenül. Kockázatos
+   **CodeRabbit** (tulajdonosi döntés, 2026-11-12; D5, 2026-11-13): a gazda a fájllistából (és
+   a workflow-diffből) maga is megnézi, kockázatos-e a PR (§2.9), a leírásban álló jelzéstől függetlenül. Kockázatos
    PR-t csak akkor olvaszt be, ha mindhárom feltétel teljesül; ha a keret elfogyott, a PR vár,
    CodeRabbit nélkül nem engedi tovább:
    (a) a fejlesztő kért ellenőrzést, vagyis a PR megjegyzései között
@@ -113,7 +176,10 @@ Gazdát csak a tulajdonos jelölhet ki vagy válthat le. Fejlesztő munkamenet n
    zárult, és a `completed_at`-je később van, mint az utolsó `@coderabbitai review` kérés.
    (Megállapítás nélküli review-nál a CodeRabbit nem készít review-t, csak ezt a check-runt;
    kimerült keretnél a check-run `neutral`, „Review rate limited”, ez nem elég.) Ha a fej a
-   review után változott, a fejlesztőnek újra kell kérnie;
+   review után változott, újra kell kérni: átvétel előtt a fejlesztőnek, átvétel után a gazdának
+   (§2.13). Nem kell új review, ha a változás csak a `main` ütközés nélküli behúzása, és a PR saját
+   változtatása (a diff a `main`-hez képest) nem változott; ilyenkor az előző fejen kapott sikeres
+   review elég. Ütközésfeloldás után kell (tulajdonosi döntés D8, 2026-11-14);
    (c) nincs megválaszolatlan CodeRabbit-megállapítás: sem szál
    (`GET /repos/{owner}/{repo}/pulls/{n}/ccr/review_threads` a Claude Code munkamenetekben;
    máshol a GitHub GraphQL `pullRequest.reviewThreads { isResolved }`), sem a PR bármelyik
@@ -121,8 +187,11 @@ Gazdát csak a tulajdonos jelölhet ki vagy válthat le. Fejlesztő munkamenet n
    PR-megjegyzésben. Egy megállapítás akkor lezárt, ha meg van oldva, vagy a fejlesztő
    indokolva válaszolt rá.
    Ha valamelyik hiányzik, a PR a „(c) frissíteni kell” kategóriába kerül, és a gazda a PR-ban
-   jelzi a fejlesztőnek. Ez nem technikai CI-kapu. Dependabot-PR-ra és magára a köteg-PR-ra
+   jelzi a fejlesztőnek; átvett PR-t visszaad (§2.13). Ez nem technikai CI-kapu. Dependabot-PR-ra és magára a köteg-PR-ra
    nem vonatkozik; a kötegbe kerülő kockázatos eredeti PR-okra igen (§3a.1).
+4a. **Ág-tulajdon:** a gazda a `cfa4-branch-ownership` checket is nézi. Idegen commitnál a PR a
+   (c) kategóriába kerül, és a tulajdonosnak jelzi (§2.4). Fejlesztői PR ágára csak átvétel után
+   ír (§2.13).
 5. Ha egy PR-t egy másik kivált, a gazda lezárja, és a megjegyzésben megnevezi, melyik váltotta ki.
 6. Minden hívás eredményét egy sorban beírja a [`docs/coordination-log.md`](coordination-log.md)-be.
 7. Ágat nem töröl (a munkamenetek nem kapnak rá engedélyt): a törölhető ágak listáját átadja

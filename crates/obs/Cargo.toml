@@ -25,10 +25,11 @@ undocumented_unsafe_blocks = "deny"
 [dependencies]
 cfa4-st2110 = { workspace = true }
 log = { workspace = true }
+rayon = { workspace = true }
 serde = { workspace = true }
 serde_json = { workspace = true }
 thiserror = { workspace = true }
 # libobs, libX11 and libwayland-client are loaded at run time (ISC; already in the lockfile), so
 # building needs no libobs headers and a machine without the CFA4 libobs build uses the software
 # backend.
-libloading = "0.8"
+libloading = "0.9"

@@ -637,6 +637,10 @@
 	Video {n}:	Videó {n}:
 	Video:	Videó:
 	{tc}  Chapter	{tc}  Fejezet
+	{tc}  Segmentation	{tc}  Szegmens
+	Marker Type	Jelölő típusa
+	Chapter	Fejezet
+	Segmentation (AS-11 programme part)	Szegmens (AS-11 műsorrész)
 	Media Type	Médiatípus
 	Frame Rate	Képkockasebesség
 	Media Start	Média kezdete
@@ -1376,6 +1380,7 @@
 	AS-11 Core	AS-11 Core
 	AS-11 Parts	AS-11 részek
 	AS-11 UK DPP	AS-11 UK DPP
+	AS-10	AS-10
 	Color Theme	Színtéma
 	Color…	Szín…
 	Crash Recovery	Összeomlás utáni helyreállítás

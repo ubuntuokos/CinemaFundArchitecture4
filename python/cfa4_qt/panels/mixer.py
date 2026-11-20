@@ -694,6 +694,7 @@ class TrackMixerPanel(QWidget):
         self.strips: list[Strip] = []
         # control surface faders and knobs being moved: (strip id, lane) → the timer that releases them
         self._surface_touch: dict[tuple[Any, str], QTimer] = {}
+        self._surface_pos: dict[tuple[Any, str], float] = {}  # last position a control surface sent
         body = QHBoxLayout()
         body.setContentsMargins(0, 0, 0, 0)
         body.setSpacing(0)
@@ -902,19 +903,34 @@ class TrackMixerPanel(QWidget):
     # ----- control surfaces -----
     SURFACE_RELEASE_MS = 500
 
-    def surface_value(self, lane: str, strip: str, value: float) -> bool:
+    def surface_value(self, lane: str, strip: str, value: float | None, delta: float = 0.0) -> bool:
         """A control surface fader or knob assigned to ``strip`` (``A1``, ``Mix``…) moved to
-        ``value`` (0..1): ``volume`` follows the on-screen fader's taper, ``pan`` goes -100..100.
-        It touches the lane as a mouse drag does (so automation writes in Latch/Touch/Write) and
-        releases it when the control has rested for a moment. False when there is no such strip."""
+        ``value`` (0..1), or an endless encoder turned by ``delta`` (``value`` None; the change
+        in 0..1 from where the strip is): ``volume`` follows the on-screen fader's taper, ``pan``
+        goes -100..100. It touches the lane as a mouse drag does (so automation writes in
+        Latch/Touch/Write) and releases it when the control has rested for a moment. False when
+        there is no such strip."""
         data = next((d for d in self.strips_data if str(d.get("ref")) == strip), None)
         if data is None or lane not in ("volume", "pan"):
             return False
-        v = min(1.0, max(0.0, float(value)))
-        target = pos_to_db(v) if lane == "volume" else round(v * 200.0 - 100.0, 1)
         sid = data.get("id")
-        self.command.emit("mixer.touch", {"strip": sid, "lane": lane, "value": target, "time": self.now})
         key = (sid, lane)
+        if value is None:
+            # steps add up from the last position sent while the lane is touched (the strip's
+            # data only catches up on the next refresh)
+            base = self._surface_pos.get(key) if key in self._surface_touch else None
+            if base is None:
+                at = data.get("at") or {}
+                try:
+                    now = float(at.get("volumeDb" if lane == "volume" else "pan", data.get("volumeDb" if lane == "volume" else "pan", 0.0)))
+                except (TypeError, ValueError):
+                    now = 0.0
+                base = db_to_pos(now) if lane == "volume" else (now + 100.0) / 200.0
+            value = base + delta
+        v = min(1.0, max(0.0, float(value)))
+        self._surface_pos[key] = v
+        target = pos_to_db(v) if lane == "volume" else round(v * 200.0 - 100.0, 1)
+        self.command.emit("mixer.touch", {"strip": sid, "lane": lane, "value": target, "time": self.now})
         timer = self._surface_touch.get(key)
         if timer is None:
             timer = QTimer(self)
@@ -926,6 +942,7 @@ class TrackMixerPanel(QWidget):
 
     def _surface_release(self, key: tuple[Any, str]) -> None:
         self._surface_touch.pop(key, None)
+        self._surface_pos.pop(key, None)
         self.command.emit("mixer.release", {"strip": key[0], "lane": key[1], "time": self.now})
 
 

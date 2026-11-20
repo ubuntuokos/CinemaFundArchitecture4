@@ -137,6 +137,13 @@ impl StudioBackend for LibObsBackend {
         Ok(())
     }
 
+    fn update_layer(&mut self, index: usize, picture: &crate::scene::Picture) -> Result<()> {
+        if let Some(scene) = &self.scene {
+            self.api.update_layer(scene, index, picture);
+        }
+        Ok(())
+    }
+
     fn next_frame(&mut self, timeout: Duration) -> Result<Option<Frame>> {
         if self.raw.is_none() {
             return Err(StudioError::Backend("libobs video is not running".into()));
