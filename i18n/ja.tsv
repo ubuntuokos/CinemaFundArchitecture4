@@ -4822,3 +4822,7 @@
 	Encode Resolution	エンコード解像度
 	Half	1/2
 	Quarter	1/4
+# Datamosh Bloom (Glitch, DM2)
+	Datamosh Bloom	データモッシュブルーム
+	Start Time (seconds)	開始時間 (秒)
+	Repeats	繰り返し回数

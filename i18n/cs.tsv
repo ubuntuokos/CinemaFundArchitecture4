@@ -4813,3 +4813,7 @@ export.summary	Low	nízká
 	Encode Resolution	Rozlišení kódování
 	Half	Poloviční
 	Quarter	Čtvrtinové
+# Datamosh Bloom (Glitch, DM2)
+	Datamosh Bloom	Datamosh rozkvět
+	Start Time (seconds)	Čas začátku (sekundy)
+	Repeats	Opakování

@@ -4815,3 +4815,7 @@ export.summary	Low	niska
 	Encode Resolution	Razlučivost kodiranja
 	Half	Pola
 	Quarter	Četvrtina
+# Datamosh Bloom (Glitch, DM2)
+	Datamosh Bloom	Datamosh cvat
+	Start Time (seconds)	Vrijeme početka (sekunde)
+	Repeats	Ponavljanja

@@ -4813,3 +4813,7 @@ export.summary	Low	niska
 	Encode Resolution	Rozdzielczość kodowania
 	Half	Połowa
 	Quarter	Ćwiartka
+# Datamosh Bloom (Glitch, DM2)
+	Datamosh Bloom	Rozkwit datamosh
+	Start Time (seconds)	Czas rozpoczęcia (sekundy)
+	Repeats	Powtórzenia

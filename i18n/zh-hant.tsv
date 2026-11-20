@@ -4812,3 +4812,7 @@ export.summary	Low	低
 	Encode Resolution	編碼解析度
 	Half	1/2
 	Quarter	1/4
+# Datamosh Bloom (Glitch, DM2)
+	Datamosh Bloom	資料損毀綻放
+	Start Time (seconds)	開始時間（秒）
+	Repeats	重複次數

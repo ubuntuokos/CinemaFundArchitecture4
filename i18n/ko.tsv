@@ -4807,3 +4807,7 @@
 	Encode Resolution	인코딩 해상도
 	Half	1/2
 	Quarter	1/4
+# Datamosh Bloom (Glitch, DM2)
+	Datamosh Bloom	데이터모시 블룸
+	Start Time (seconds)	시작 시간(초)
+	Repeats	반복 횟수

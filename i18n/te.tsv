@@ -4819,3 +4819,7 @@ export.summary	Low	తక్కువ
 	Encode Resolution	ఎన్‌కోడ్ రిజల్యూషన్
 	Half	సగం
 	Quarter	పావు
+# Datamosh Bloom (Glitch, DM2)
+	Datamosh Bloom	డేటామోష్ బ్లూమ్
+	Start Time (seconds)	ప్రారంభ సమయం (సెకన్లు)
+	Repeats	పునరావృత్తులు

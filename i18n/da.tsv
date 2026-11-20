@@ -4815,3 +4815,7 @@ export.summary	Low	lav
 	Encode Resolution	Kodningsopløsning
 	Half	Halv
 	Quarter	Kvart
+# Datamosh Bloom (Glitch, DM2)
+	Datamosh Bloom	Datamosh-blomstring
+	Start Time (seconds)	Starttid (sekunder)
+	Repeats	Gentagelser

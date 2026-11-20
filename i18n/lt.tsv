@@ -4816,3 +4816,7 @@ export.summary	Low	žema
 	Encode Resolution	Kodavimo raiška
 	Half	Pusė
 	Quarter	Ketvirtis
+# Datamosh Bloom (Glitch, DM2)
+	Datamosh Bloom	Datamosh žydėjimas
+	Start Time (seconds)	Pradžios laikas (sekundės)
+	Repeats	Pakartojimai

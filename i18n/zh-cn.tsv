@@ -4811,3 +4811,7 @@
 	Encode Resolution	编码分辨率
 	Half	1/2
 	Quarter	1/4
+# Datamosh Bloom (Glitch, DM2)
+	Datamosh Bloom	数据损坏绽放
+	Start Time (seconds)	开始时间（秒）
+	Repeats	重复次数

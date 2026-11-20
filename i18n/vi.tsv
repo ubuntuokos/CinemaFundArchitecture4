@@ -4813,3 +4813,7 @@ export.summary	Low	thấp
 	Encode Resolution	Độ phân giải mã hóa
 	Half	Một nửa
 	Quarter	Một phần tư
+# Datamosh Bloom (Glitch, DM2)
+	Datamosh Bloom	Datamosh nở rộ
+	Start Time (seconds)	Thời gian bắt đầu (giây)
+	Repeats	Số lần lặp lại

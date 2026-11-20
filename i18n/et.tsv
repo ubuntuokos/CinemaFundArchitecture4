@@ -4815,3 +4815,7 @@ export.summary	Low	madal
 	Encode Resolution	Kodeerimise eraldusvõime
 	Half	Pool
 	Quarter	Veerand
+# Datamosh Bloom (Glitch, DM2)
+	Datamosh Bloom	Datamoshi õitsemine
+	Start Time (seconds)	Algusaeg (sekundites)
+	Repeats	Kordused

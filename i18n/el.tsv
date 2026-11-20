@@ -4815,3 +4815,7 @@ export.summary	Low	χαμηλή
 	Encode Resolution	Ανάλυση κωδικοποίησης
 	Half	Μισή
 	Quarter	Τέταρτο
+# Datamosh Bloom (Glitch, DM2)
+	Datamosh Bloom	Άνθιση datamosh
+	Start Time (seconds)	Ώρα έναρξης (δευτερόλεπτα)
+	Repeats	Επαναλήψεις

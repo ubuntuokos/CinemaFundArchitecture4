@@ -4814,3 +4814,7 @@ export.summary	Low	düşük
 	Encode Resolution	Kodlama Çözünürlüğü
 	Half	Yarım
 	Quarter	Çeyrek
+# Datamosh Bloom (Glitch, DM2)
+	Datamosh Bloom	Datamosh Çiçeklenmesi
+	Start Time (seconds)	Başlangıç Zamanı (saniye)
+	Repeats	Tekrarlar
