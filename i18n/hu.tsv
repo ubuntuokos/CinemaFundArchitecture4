@@ -1244,6 +1244,7 @@
 	End at Cut	Befejezés a vágásnál
 	Custom Start	Egyéni kezdés
 	Eyedropper (pick a color from the Program monitor)	Pipetta (szín a Program monitorról)
+	White Balance Selector (click a neutral point in the Program monitor; Esc cancels)	Fehéregyensúly-választó (kattintson egy semleges pontra a Program monitoron; Esc megszakítja)
 	Interpret Footage	Felvétel értelmezése
 	Color Management · {n} item	Színkezelés · {n} elem
 	Color Management · {n} items	Színkezelés · {n} elem
