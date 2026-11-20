@@ -1020,6 +1020,9 @@ impl FxEnv for ClipEnv {
     fn clip_key(&self) -> u64 {
         self.key
     }
+    fn media_key(&self) -> Option<u64> {
+        Some(self.key.rotate_left(7) ^ 0xA11A)
+    }
 }
 
 fn texture(x: f64, y: f64) -> [f32; 3] {
@@ -1263,6 +1266,132 @@ fn warp_stabilizer_removes_camera_jitter() {
     assert!(st.px.as_chunks::<4>().0.iter().all(|p| p[3] > 0.99), "auto-scale leaves no border");
     // the path cache is reused
     assert!(stabilizer_path(&env, 0.0, cfa4_project::TrackMethod::Position, false).is_some());
+}
+
+/// A scratch folder under the system temp dir, removed on drop.
+struct Scratch(std::path::PathBuf);
+impl Scratch {
+    fn new(tag: &str) -> Self {
+        let p = std::env::temp_dir().join(format!("cfa4-stab-{tag}-{}", std::process::id()));
+        let _ = std::fs::remove_dir_all(&p);
+        Scratch(p)
+    }
+    fn files(&self) -> Vec<std::path::PathBuf> {
+        std::fs::read_dir(&self.0).map(|d| d.flatten().map(|e| e.path()).collect()).unwrap_or_default()
+    }
+}
+impl Drop for Scratch {
+    fn drop(&mut self) {
+        let _ = std::fs::remove_dir_all(&self.0);
+    }
+}
+
+#[test]
+fn stabilizer_analysis_is_kept_on_disk_and_reused() {
+    use cfa4_project::TrackMethod::Position;
+    let (w, h) = (192, 128);
+    let mk = |key: u64, pic: fn(f64, f64, f64) -> [f32; 3]| ClipEnv { w, h, fps: 24.0, secs: 1.0, now: 0.25, key, seq: (w as u32, h as u32), pic };
+    let dir = Scratch::new("reuse");
+    let shaky_env = mk(0x5AB1, shaky);
+    let first = temporal::stabilizer_path_in(&shaky_env, 0.25, Position, false, Some(&dir.0)).expect("analysis");
+    assert!(first.steps.iter().any(|m| (m.e.abs() + m.f.abs()) > 0.05), "the shaky clip has motion");
+    assert_eq!(dir.files().len(), 1, "one file, no leftover temporary: {:?}", dir.files());
+    // a fresh run (memory cleared) over a picture that would analyse to *no* motion: the same
+    // media key must bring back the stored motion, not a new analysis
+    clear_stabilizer_cache();
+    let still = mk(0x5AB1, |x, y, _| [x as f32 / 192.0, y as f32 / 128.0, 0.5]);
+    let again = temporal::stabilizer_path_in(&still, 0.25, Position, false, Some(&dir.0)).expect("loaded");
+    assert_eq!((again.w, again.h, again.fps), (first.w, first.h, first.fps));
+    assert_eq!(again.steps.len(), first.steps.len());
+    assert!(again.steps.iter().zip(&first.steps).all(|(a, b)| a == b), "loaded exactly as stored");
+    // another method, another file: the settings are part of the key
+    clear_stabilizer_cache();
+    let other = temporal::stabilizer_path_in(&shaky_env, 0.25, cfa4_project::TrackMethod::PositionScaleRotation, false, Some(&dir.0)).expect("analysis");
+    assert_eq!(other.steps.len(), first.steps.len());
+    assert_eq!(dir.files().len(), 2);
+    // without a folder nothing is written
+    clear_stabilizer_cache();
+    let none = Scratch::new("none");
+    assert!(temporal::stabilizer_path_in(&shaky_env, 0.25, Position, true, None).is_some());
+    assert!(none.files().is_empty());
+}
+
+#[test]
+fn stabilizer_ignores_damaged_or_foreign_analysis_files() {
+    use cfa4_project::TrackMethod::Position;
+    let (w, h) = (192, 128);
+    let env = ClipEnv { w, h, fps: 24.0, secs: 1.0, now: 0.25, key: 0x5AB2, seq: (w as u32, h as u32), pic: shaky };
+    let dir = Scratch::new("damaged");
+    let good = temporal::stabilizer_path_in(&env, 0.25, Position, false, Some(&dir.0)).expect("analysis");
+    let file = dir.files().pop().expect("stored");
+    let bytes = std::fs::read(&file).unwrap();
+    // truncated, extended, wrong magic, a NaN step, empty: each is re-analysed (and the file healed)
+    let mut nan = bytes.clone();
+    let off = 36 + 8 * 4; // first step's `e`
+    nan[off..off + 8].copy_from_slice(&f64::NAN.to_le_bytes());
+    let mut magic = bytes.clone();
+    magic[0] ^= 0xFF;
+    let mut longer = bytes.clone();
+    longer.extend_from_slice(&[0; 8]);
+    for bad in [bytes[..bytes.len() - 5].to_vec(), longer, magic, nan, Vec::new(), vec![7; 3]] {
+        std::fs::write(&file, &bad).unwrap();
+        clear_stabilizer_cache();
+        let p = temporal::stabilizer_path_in(&env, 0.25, Position, false, Some(&dir.0)).expect("re-analysed");
+        assert_eq!(p.steps.len(), good.steps.len());
+        assert!(p.steps.iter().zip(&good.steps).all(|(a, b)| a == b), "the analysis is deterministic");
+        assert_eq!(std::fs::read(&file).unwrap(), bytes, "the damaged file was replaced by a good one");
+    }
+    // a file stored for another key is refused even under this name
+    assert!(temporal::decode(1, &bytes).is_none());
+    assert!(temporal::decode(u64::from_le_bytes(bytes[8..16].try_into().unwrap()), &bytes).is_some());
+    // clips without a media identity (generators) are never stored
+    struct NoIdentity(ClipEnv);
+    impl FxEnv for NoIdentity {
+        fn frame(&self, dt: f64, e: &EffectInstance) -> Option<Image> {
+            self.0.frame(dt, e)
+        }
+        fn source_frame(&self, dt: f64, scale: f32) -> Option<Image> {
+            self.0.source_frame(dt, scale)
+        }
+        fn track(&self, i: usize) -> Option<Image> {
+            self.0.track(i)
+        }
+        fn layer_to_output(&self) -> Affine {
+            self.0.layer_to_output()
+        }
+        fn clip_seconds(&self) -> f64 {
+            self.0.clip_seconds()
+        }
+        fn clip_offset(&self) -> f64 {
+            self.0.clip_offset()
+        }
+        fn frame_rate(&self) -> f64 {
+            self.0.frame_rate()
+        }
+        fn media_timecode(&self) -> String {
+            self.0.media_timecode()
+        }
+        fn file_name(&self) -> String {
+            self.0.file_name()
+        }
+        fn sequence_name(&self) -> String {
+            self.0.sequence_name()
+        }
+        fn sequence_size(&self) -> (u32, u32) {
+            self.0.sequence_size()
+        }
+        fn source_size(&self) -> (u32, u32) {
+            self.0.source_size()
+        }
+        fn clip_key(&self) -> u64 {
+            self.0.clip_key()
+        }
+    }
+    let generated = Scratch::new("generated");
+    clear_stabilizer_cache();
+    let g = NoIdentity(ClipEnv { key: 0x5AB3, ..env });
+    assert!(temporal::stabilizer_path_in(&g, 0.25, Position, false, Some(&generated.0)).is_some());
+    assert!(generated.files().is_empty());
 }
 
 #[test]
