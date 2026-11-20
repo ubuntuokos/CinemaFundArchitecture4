@@ -6,8 +6,9 @@
 //! Lucas–Kanade and a RANSAC similarity fit (the mask tracker in [`crate::track`]) — and caches
 //! the per-frame steps in memory. Rendering smooths the accumulated camera path with a Gaussian
 //! (Smoothness) or holds it fixed (No Motion), warps each frame onto the smoothed path and frames
-//! the result (crop / auto-scale / synthesise edges). Perspective and Subspace Warp use the
-//! similarity model (no per-region warping).
+//! the result (crop / auto-scale / synthesise edges). Subspace Warp uses the similarity model
+//! (no per-region warping); Method = Perspective fits a homography per step instead, see
+//! [`super::perspective`].
 
 use std::collections::HashMap;
 use std::sync::{Arc, Mutex, OnceLock};
@@ -296,6 +297,7 @@ pub fn clear_stabilizer_cache() {
     if let Ok(mut c) = path_cache().lock() {
         c.clear();
     }
+    super::perspective::clear_cache();
 }
 
 /// Analyse (or fetch the cached analysis of) the clip `env` describes.
@@ -439,6 +441,9 @@ pub(crate) fn cover_scale(corr: &Affine, w: f64, h: f64, max: f64) -> f64 {
 /// Warp Stabilizer: see the module docs.
 pub fn warp_stabilizer(img: &mut Image, e: &EffectInstance, cx: &FxCtx<'_>) {
     let Some(env) = cx.env else { return };
+    if chv(e, "method") == 2 {
+        return super::perspective::warp_stabilizer(img, e, cx);
+    }
     let method = if chv(e, "method") == 0 { TrackMethod::Position } else { TrackMethod::PositionScaleRotation };
     let Some(path) = stabilizer_path(env, cx.seconds, method, bv(e, "detailed")) else { return };
     let n = path.steps.len() + 1;

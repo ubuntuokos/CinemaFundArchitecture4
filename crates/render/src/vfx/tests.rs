@@ -1265,6 +1265,129 @@ fn warp_stabilizer_removes_camera_jitter() {
     assert!(stabilizer_path(&env, 0.0, cfa4_project::TrackMethod::Position, false).is_some());
 }
 
+/// A camera that also pitches and yaws: a few pixels of shift and a little keystone (a perspective
+/// term of up to ±3e-4 per pixel, about 3 % across a 192 px frame), different every frame.
+fn persp_shaky(x: f64, y: f64, t: f64) -> [f32; 3] {
+    let f = (t * 24.0).round() as i64;
+    let r = |i: i64| hash01(f, i, 0, 5) as f64 - 0.5;
+    let (cx, cy) = (96.0, 64.0);
+    let wgt = 1.0 + r(2) * 6.0e-4 * (x - cx) + r(3) * 6.0e-4 * (y - cy);
+    texture((x - cx) / wgt + cx + r(0) * 6.0, (y - cy) / wgt + cy + r(1) * 6.0)
+}
+
+/// Warp Stabilizer (No Motion, Stabilize Only) with `method` over `pic`: the raw and stabilised
+/// frames at `frames`, and the mean absolute difference of their interiors to the first pair.
+fn stabilise_frames(method: usize, pic: fn(f64, f64, f64) -> [f32; 3], key: u64) -> (f64, f64) {
+    let (w, h) = (192, 128);
+    let mk = |now: f64| ClipEnv { w, h, fps: 24.0, secs: 1.0, now, key, seq: (w as u32, h as u32), pic };
+    let mut e = inst("warp_stabilizer");
+    set(&mut e, "result", ParamValue::Choice(1)); // No Motion
+    set(&mut e, "framing", ParamValue::Choice(0)); // Stabilize Only
+    set(&mut e, "method", ParamValue::Choice(method as u32));
+    clear_stabilizer_cache();
+    let frames: Vec<(Image, Image)> = [3usize, 9, 15, 21]
+        .iter()
+        .map(|&f| {
+            let now = f as f64 / 24.0;
+            let env = mk(now);
+            let raw = env.render(now, 1.0);
+            let mut st = raw.clone();
+            crate::effects::apply(&mut st, &e, &FxCtx { seconds: now, env: Some(&env), ..cx() });
+            (raw, st)
+        })
+        .collect();
+    let interior = |a: &Image, b: &Image| {
+        let (mut s, mut n) = (0.0f64, 0);
+        for y in 24..h - 24 {
+            for x in 24..w - 24 {
+                s += (a.get(x, y)[0] - b.get(x, y)[0]).abs() as f64;
+                n += 1;
+            }
+        }
+        s / n as f64
+    };
+    let (mut raw_err, mut st_err) = (0.0, 0.0);
+    for i in 1..frames.len() {
+        raw_err += interior(&frames[0].0, &frames[i].0);
+        st_err += interior(&frames[0].1, &frames[i].1);
+    }
+    (raw_err, st_err)
+}
+
+#[test]
+fn perspective_stabilizer_beats_the_similarity_methods_on_keystone_shake() {
+    let (raw, persp) = stabilise_frames(2, persp_shaky, 0x9E25);
+    let (_, similarity) = stabilise_frames(1, persp_shaky, 0x9E26);
+    // measured: raw 0.150, similarity 0.059, perspective 0.008
+    assert!(persp < raw * 0.1, "perspective {persp} vs raw {raw}");
+    assert!(persp < similarity * 0.3, "perspective {persp} vs similarity {similarity}");
+}
+
+#[test]
+fn perspective_stabilizer_leaves_a_steady_or_featureless_clip_alone() {
+    fn steady(x: f64, y: f64, _t: f64) -> [f32; 3] {
+        texture(x, y)
+    }
+    fn flat(_x: f64, _y: f64, _t: f64) -> [f32; 3] {
+        [0.4, 0.4, 0.4]
+    }
+    let (w, h) = (192, 128);
+    for (pic, key) in [(steady as fn(f64, f64, f64) -> [f32; 3], 0x9E27u64), (flat, 0x9E28)] {
+        let env = ClipEnv { w, h, fps: 24.0, secs: 1.0, now: 0.5, key, seq: (w as u32, h as u32), pic };
+        let mut e = inst("warp_stabilizer");
+        set(&mut e, "method", ParamValue::Choice(2));
+        set(&mut e, "framing", ParamValue::Choice(0));
+        clear_stabilizer_cache();
+        let raw = env.render(0.5, 1.0);
+        let mut st = raw.clone();
+        crate::effects::apply(&mut st, &e, &FxCtx { seconds: 0.5, env: Some(&env), ..cx() });
+        let worst = (8..h - 8).flat_map(|y| (8..w - 8).map(move |x| (x, y))).map(|(x, y)| (raw.get(x, y)[0] - st.get(x, y)[0]).abs()).fold(0.0f32, f32::max);
+        assert!(worst < 0.02, "key {key:#x}: a steady shot moved by {worst}");
+        assert!(st.px.iter().all(|v| v.is_finite()));
+    }
+}
+
+#[test]
+fn perspective_stabilizer_framing_hides_the_borders_and_corrections_are_sane() {
+    let (w, h) = (192, 128);
+    let mk = |now: f64| ClipEnv { w, h, fps: 24.0, secs: 1.0, now, key: 0x9E29, seq: (w as u32, h as u32), pic: persp_shaky };
+    let mut e = inst("warp_stabilizer");
+    set(&mut e, "method", ParamValue::Choice(2));
+    set(&mut e, "result", ParamValue::Choice(1));
+    set(&mut e, "framing", ParamValue::Choice(2)); // Stabilize, Crop, Auto-scale
+    setf(&mut e, "max_scale", 300.0);
+    clear_stabilizer_cache();
+    for f in [3usize, 12, 20] {
+        let now = f as f64 / 24.0;
+        let env = mk(now);
+        let mut st = env.render(now, 1.0);
+        crate::effects::apply(&mut st, &e, &FxCtx { seconds: now, env: Some(&env), ..cx() });
+        assert!(st.px.as_chunks::<4>().0.iter().all(|p| p[3] > 0.99), "frame {f}: auto-scale leaves no border");
+    }
+    // Synthesize Edges never leaves a hole either, and a crop keeps the size
+    set(&mut e, "framing", ParamValue::Choice(3));
+    let env = mk(0.5);
+    let mut st = env.render(0.5, 1.0);
+    crate::effects::apply(&mut st, &e, &FxCtx { seconds: 0.5, env: Some(&env), ..cx() });
+    assert!(st.px.as_chunks::<4>().0.iter().all(|p| p[3] > 0.99), "synthesised edges fill the frame");
+    // corrections: one per frame, finite, and the identity for a path with no motion
+    let still = perspective::PerspectivePath { w: 64, h: 48, steps: vec![crate::homography::Homography::IDENTITY; 9], fps: 24.0 };
+    let c = perspective::corrections(&still, 3.0, false);
+    assert_eq!(c.len(), 10);
+    for m in &c {
+        for p in [cfa4_geom::Vec2::new(0.0, 0.0), cfa4_geom::Vec2::new(64.0, 48.0)] {
+            assert!((m.apply(p).unwrap() - p).length() < 1e-6, "{m:?}");
+        }
+    }
+    assert_eq!(perspective::cover_scale(&crate::homography::Homography::IDENTITY, 64.0, 48.0, 3.0), 1.0);
+    // a unit shift needs a small zoom; an impossible one stops at the cap
+    let shift = crate::homography::Homography::from_affine(&cfa4_geom::Affine::translate(6.4, 0.0));
+    let z = perspective::cover_scale(&shift, 64.0, 48.0, 3.0);
+    assert!(z > 1.05 && z < 1.3, "{z}");
+    let far = crate::homography::Homography::from_affine(&cfa4_geom::Affine::translate(1e4, 0.0));
+    assert_eq!(perspective::cover_scale(&far, 64.0, 48.0, 3.0), 3.0);
+}
+
 #[test]
 fn auto_reframe_follows_the_subject() {
     fn subject(x: f64, y: f64, _t: f64) -> [f32; 3] {
