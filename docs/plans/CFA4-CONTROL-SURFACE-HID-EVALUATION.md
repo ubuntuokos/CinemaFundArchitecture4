@@ -17,6 +17,14 @@ Indoklás röviden: a hidraw a ShuttlePRO teljes riportját adja, benne a shuttl
 saját HID-meghajtója nem válik le az eszközről. Az evdev a Kdenlive (`media_ctrl`) útja, ezért tartaléknak jó,
 de a középállást csak kikövetkeztetni tudja.
 
+**Megvalósítás (2026-11-20, CS-8).** Mindkét út kész a `crates/surface`-ben. A `hid::scan` a hidraw-csomópontot
+nyitja; ha az nem olvasható, a sysfs `hidrawN/device/input/input*/event*` bejegyzéséből megkeresi
+ugyanannak az eszköznek a `/dev/input/eventN` csomópontját, és ha az nyitható, az lesz a port. Az
+`EvdevDecoder` saját kód (nem átvett), `unsafe` és új crate nélkül: `SYN_REPORT`-keretenként dolgozik, a
+`REL_WHEEL` a shuttle, a `REL_DIAL` a jog-számláló, a `BTN_MISC + n − 1` az n-edik gomb; ha egy keretben
+van jog-érték, de shuttle-érték nincs, a gyűrű középen van. A gombkódok sorrendjét az M7 mérés erősíti meg;
+grab (`EVIOCGRAB`) nincs.
+
 ## 2. Jelöltek összevetése (5.4. pont 1–12.)
 
 | # | Szempont | hidraw (std + sysfs) | evdev (std + saját parser) | `evdev` crate 0.13.2 | hidapi (`hidapi` crate) | libusb (`rusb`) |
