@@ -69,7 +69,8 @@ Gazdát csak a tulajdonos jelölhet ki vagy válthat le. Fejlesztő munkamenet n
      `pull_request_target`, `workflow_run` és `uses:` szövegekre; a keresés a kontextus miatt nem
      mindig mutatja a `permissions:` szót egy többsoros blokk módosított kulcsa mellett, ezért minden
      módosított workflow-fájl teljes `permissions:` blokkját (a felső szintűt és a jobokét is)
-     vesd össze a `main` változatával;
+     vesd össze a közös ős (`git merge-base origin/main HEAD`) változatával, így csak a PR saját
+     változása számít, a `main` közbeni változása nem;
    - **szabályfájlok:** `AGENTS.md`, `CLAUDE.md`, `docs/coordination.md`, `.coderabbit.yaml`,
      `.claude/`.
 
