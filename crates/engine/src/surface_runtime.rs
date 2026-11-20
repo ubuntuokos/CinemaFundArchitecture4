@@ -407,6 +407,14 @@ fn classify(samples: &[Sample]) -> Option<Captured> {
             Some(Captured { device: last.device.clone(), control: control.clone(), mode: mode.into(), encoding: None })
         }
         SurfaceInput::Absolute { control, .. } => Some(Captured { device: last.device.clone(), control: control.clone(), mode: "cc".into(), encoding: None }),
+        // an encoder already assigned: the lane turns its CC into steps, so learning it again
+        // keeps its encoding
+        SurfaceInput::Relative { control, encoding, .. } => Some(Captured {
+            device: last.device.clone(),
+            control: control.clone(),
+            mode: "relative".into(),
+            encoding: serde_json::to_value(encoding).ok().and_then(|v| v.as_str().map(str::to_string)),
+        }),
         SurfaceInput::ProgramChange { channel, program } => Some(Captured {
             device: last.device.clone(),
             control: ControlId::Midi { channel: *channel, kind: MidiKind::Cc, number: u16::from(*program) },
@@ -834,6 +842,34 @@ mod tests {
         let out = rt.tick(&prefs, t0 + Duration::from_millis(200));
         assert_eq!(out[0]["captured"]["mode"], "relative");
         assert_eq!(out[0]["captured"]["encoding"], "binary");
+        learn_cancel(&mut rt, t0);
+
+        // an encoder already assigned arrives as steps: learning it again keeps its encoding
+        learn(&mut rt, &prefs, &json!({"target": {"command": "edit.undo"}, "silenceMs": 200, "firstMs": 7000}), t0).ok();
+        let step = SurfaceInput::Relative {
+            control: ControlId::Midi { channel: 0, kind: MidiKind::Cc, number: 7 },
+            delta: 2,
+            encoding: cfa4_surface_model::RelEncoding::SignMagnitude,
+        };
+        let _ = rt.handle(&prefs, "d", &step, 1, t0);
+        let out = rt.tick(&prefs, t0 + Duration::from_millis(200));
+        assert_eq!(out[0]["captured"]["mode"], "relative");
+        assert_eq!(out[0]["captured"]["encoding"], "sign-magnitude");
+    }
+
+    #[test]
+    fn an_encoder_step_moves_its_value_target_without_pickup() {
+        let mut rt = Runtime::default();
+        let control = ControlId::Midi { channel: 0, kind: MidiKind::Cc, number: 16 };
+        let binding = Binding { control: control.clone(), command: "mixer.stripVolume".into(), params: json!({"strip": "A1", "encoding": "offset64"}) };
+        let prefs = prefs_with(Some(binding));
+        let t0 = Instant::now();
+        let step = |d| SurfaceInput::Relative { control: control.clone(), delta: d, encoding: cfa4_surface_model::RelEncoding::Offset64 };
+        for (i, d) in [3, -40, 5].into_iter().enumerate() {
+            let out = rt.handle(&prefs, "midi:k:p", &step(d), i as u64 + 1, t0 + Duration::from_secs(i as u64 * 5));
+            assert_eq!(out.len(), 1, "every step counts, even after a pause: {out:?}");
+            assert_eq!(out[0]["params"]["delta"], json!(f64::from(d) / crate::control_surfaces::ENCODER_STEPS));
+        }
     }
 
     #[test]
