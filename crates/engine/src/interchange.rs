@@ -88,18 +88,21 @@ pub fn import(s: &mut Session, path: &str, bytes: &[u8], format: Format) -> Resu
     }
     let before: std::collections::HashSet<ItemId> = s.project.items.keys().copied().collect();
     let name = opts.name.clone().unwrap_or_else(|| format.name().to_string());
-    let seqs = s.edit(&format!("Import {name}"), |proj, _| {
-        let seqs = cfa4_interchange::merge_into(proj, fragment, None);
+    let (seqs, sized) = s.edit(&format!("Import {name}"), |proj, _| {
+        let (seqs, sized) = cfa4_interchange::merge_into_sized(proj, fragment, None);
         // A document that sets only some Motion parameters leaves the others at their "auto"
         // (NaN) defaults. Resolve them as placing a clip does, for every format. A media file's
         // picture size is only what the document says so far (an EDL says nothing: the importer
         // assumes the sequence size), so its clips' anchors wait for Link Media below.
         proj.resolve_placed_auto_points(|seq| !before.contains(&seq), |source| !is_file_media(source));
-        Ok(seqs)
+        Ok((seqs, sized))
     })?;
+    // Sequences whose size the document does not state take their first video clip's (OTIO-2.5):
+    // that media is linked first, so every clip's anchors are placed in the final frame size.
+    let sizers: Vec<(ItemId, ItemId)> = sized.iter().filter_map(|&seq| cfa4_interchange::first_video_media(&s.project, seq).map(|m| (seq, m))).collect();
     // Link media: probe each new file-backed item that exists, through the host's reader as a
     // direct import does (only the container index is read now, not the whole file: #461).
-    let new_media: Vec<(ItemId, String)> = s
+    let mut new_media: Vec<(ItemId, String)> = s
         .project
         .items
         .values()
@@ -112,6 +115,7 @@ pub fn import(s: &mut Session, path: &str, bytes: &[u8], format: Format) -> Resu
             _ => None,
         })
         .collect();
+    new_media.sort_by_key(|(id, _)| !sizers.iter().any(|(_, m)| m == id));
     // The document's media paths are opened as stored paths of the document.
     s.media.add_stored_paths(new_media.iter().map(|(_, p)| p.clone()), Some(path));
     let mut linked = 0;
@@ -147,6 +151,9 @@ pub fn import(s: &mut Session, path: &str, bytes: &[u8], format: Format) -> Resu
                         if let (Some(tc), Some(rate)) = (rebase, rate) {
                             cfa4_interchange::rebase_source_timecode(proj, id, tc, rate);
                         }
+                    }
+                    for (seq, _) in sizers.iter().filter(|(_, m)| *m == id) {
+                        cfa4_interchange::size_from_media(proj, *seq);
                     }
                     // the picture size is now the file's own: centre the anchors of its clips in it
                     proj.resolve_placed_auto_points(|seq| !before.contains(&seq), |source| source.id == id);

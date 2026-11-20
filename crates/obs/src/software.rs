@@ -5,7 +5,7 @@
 //! grow it into the Rust replacement of libobs (plan S12+), behind the same [`StudioBackend`]
 //! trait.
 
-use crate::scene::LoadedScene;
+use crate::scene::{LoadedScene, Picture};
 use crate::{Frame, PixelFormat, Result, StudioBackend, VideoSettings};
 use std::time::{Duration, Instant};
 
@@ -14,8 +14,11 @@ pub struct SoftwareBackend {
     video: VideoSettings,
     start: Instant,
     next: u64,
-    /// The composited scene (BGRA), repeated every frame.
+    /// The composited scene (BGRA), repeated every frame until a layer changes.
     picture: Vec<u8>,
+    /// The scene shown, and whether a layer changed since `picture` was composited.
+    scene: LoadedScene,
+    dirty: bool,
 }
 
 impl SoftwareBackend {
@@ -29,7 +32,7 @@ impl SoftwareBackend {
                 *a = 255;
             }
         }
-        Ok(Self { video, start: Instant::now(), next: 0, picture })
+        Ok(Self { video, start: Instant::now(), next: 0, picture, scene: LoadedScene::default(), dirty: false })
     }
 
     fn due(&self, index: u64) -> Duration {
@@ -56,12 +59,30 @@ impl StudioBackend for SoftwareBackend {
     }
 
     fn set_scene(&mut self, scene: &LoadedScene) -> Result<()> {
-        // the layers are still pictures: one composite serves every frame until the next change
+        // one composite serves every frame until the scene or a feed's picture changes
         self.picture = crate::scene::compose(scene, &self.video, 0).data;
+        self.scene = scene.clone();
+        self.dirty = false;
+        Ok(())
+    }
+
+    fn update_layer(&mut self, index: usize, picture: &Picture) -> Result<()> {
+        if let Some(l) = self.scene.layers.get_mut(index)
+            && l.picture.width == picture.width
+            && l.picture.height == picture.height
+        {
+            l.picture = picture.clone();
+            self.dirty = true;
+        }
         Ok(())
     }
 
     fn next_frame(&mut self, timeout: Duration) -> Result<Option<Frame>> {
+        // composite a changed layer while the frame is not due yet
+        if self.dirty {
+            self.picture = crate::scene::compose(&self.scene, &self.video, 0).data;
+            self.dirty = false;
+        }
         let due = self.due(self.next);
         let now = self.start.elapsed();
         if due > now {

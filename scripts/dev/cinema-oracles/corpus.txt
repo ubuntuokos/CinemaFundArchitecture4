@@ -1,0 +1,12 @@
+# External DCP / IMF test packages for the CineCert conformance tests (CINECERT WP01-A, plan ch. 13).
+# Never committed to this repository (AGENTS.md): fetched by
+#   bash scripts/dev/setup-cinema-oracles.sh --corpus
+# into the cache root's corpus/ directory, each checked against its sha256.
+#
+# One entry per line: <file name> <https URL> <sha256>
+# Add an entry only with its licence checked (plan ch. 13: synthetic packages first; open-licence
+# content such as CC BY 4.0 only after its terms are recorded in the PR that adds it).
+
+# MXF-DIGEST reference vector (cinecert/mxf-digest, test/; BSD-2-Clause, (c) 2018 Hollywood Professional
+# Association). Expected digest: urn:smpte:mxf-digest:64pMA4dgr8iLqAEkiMpfJv2JHLubLY9wpDUeAcr3pto3gKGsszyCqr9ofBk668EJrVNagTW7WujyYZV9YEUqCRGE
+oneframe.pcm.mxf https://raw.githubusercontent.com/cinecert/mxf-digest/512e8a9723b8ffd4181a4e2e443fb7e371cc17ce/test/oneframe.pcm.mxf 1f7bbe5c8cfde2247537b44c2ae094ec1c3508f415bb428382a70da8a4cf3a88
