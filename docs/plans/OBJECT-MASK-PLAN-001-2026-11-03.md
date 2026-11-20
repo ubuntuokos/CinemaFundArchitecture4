@@ -115,16 +115,22 @@ Az A szakasz feladatai (egy feladat egy commit, `OM-A1` … `OM-A7`):
 
 Becslés (mérés nélkül): A szakasz 60–100 óra; C szakasz modellenként 30–60 óra; a B szakasz az ADR 0008 saját költsége.
 
-## 7. Nyitott kérdések
+## 7. Döntések a nyitott kérdésekre (2026-11-20, tulajdonos)
 
-- SAM2 egyedül, vagy EfficientSAM + Cutie (a libopenshot útja)? Javaslat: SAM2 a K4 szerint; a C++-worker indulhat EfficientSAM + Cutie párral, ha a Cutie tanítóadata rendben van.
-- Melyik Apache-2.0 detektor legyen az első? 2K-s sebesség mérése a referenciagép RTX A4000 kártyáján.
-- Az RLE-maszkok helye: javaslat a tartalomcímzett gyorsítótár, hash-hivatkozással a projektben.
-- A `routing.toml` ai családja és az ADR 0008 ONNX Runtime döntése eltér; ezt az ADR 0008 gazdája húzza össze.
+István válasza: „indulhat; SAM2; javaslatod szerint; gyorsítótár; javaslatod szerint”. A kérdésekhez rendelve:
+
+- **Indulhat:** a terv frissítése (Változások, 2026-11-20) és az A szakasz végrehajtása jóváhagyva.
+- **Modell:** **SAM2** egyedül (a K4 szerint); EfficientSAM + Cutie nem kell. A C++-worker csak akkor kerül elő, ha a SAM2 ONNX/Rust útja nem elég gyors.
+- **Első detektor** (javaslat szerint): az Apache-2.0 jelöltek (RT-DETR, D-FINE, YOLOX) közül a 2K-s sebesség mérése dönt a referenciagép RTX A4000 kártyáján, a C szakasz előtt.
+- **RLE-maszkok helye:** **tartalomcímzett gyorsítótár**, hash-hivatkozással (`MaskRef`) a projektben.
+- **`routing.toml` ai család és ADR 0008 ONNX-döntése** (javaslat szerint): az eltérést az ADR 0008 gazdája húzza össze; az A szakasz ezt nem érinti.
+
+Az idézett válasz sorrendje nem rendeli hozzá minden elemet külön kérdéshez; a „javaslatod szerint” tételek mind a tervben írt javaslatot jelentik, így a hozzárendelés sorrendje nem változtat az eredményen.
 
 ## Változások
 
 | Dátum | Változás |
 |---|---|
+| 2026-11-20 | A tulajdonos válaszolt a nyitott kérdésekre (7. szakasz), a frissítés és az A szakasz jóváhagyva. |
 | 2026-11-20 | Frissítés a végrehajtás előtt: (1) az AI-réteg ADR-je 0006 helyett **ADR 0008**; (2) a jobtár PostgreSQL (`cfa4-tasks`, `cfa4-store`, `cfa4-accel`), nem redb; (3) az objektumcímkék és -beágyazások később a Media Intelligence `mi` sémájába (F4) indexelhetők; (4) az ONNX nem kötelező, a worker lehet C++ vagy candle; (5) licenc: a súly és a tanítóadat a felhasználó felelőssége egyszeri elfogadással, nem kereskedelmi kód csak külön letöltött, esetenkénti worker; a Cutie/MOSE így nem tiltó ok, de a jegyzék négy licencmezőjében szerepelnie kell, az AGPL-es YOLO továbbra is kizárt; (6) a minták rendezett `Vec`-ben vannak `BTreeMap` helyett; (7) a `routing.toml` ai családjából még hiányoznak az ONNX-sorok; (8) az F0 még nyitott, de az A szakasz nem AI-crate. Az OM-A1 két részre válik: OM-A1 (típusok és RLE, ez a PR) és OM-A1b (`Project.objects`, sémaemelés, régi projektes teszt). |
 | 2026-11-03 | Első, jóváhagyott változat; elmentve, a végrehajtás külön tulajdonosi döntésre vár |

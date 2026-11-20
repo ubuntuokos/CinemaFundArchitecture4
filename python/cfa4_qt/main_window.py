@@ -2334,6 +2334,8 @@ class MainWindow(QMainWindow):
                 return
             self.mixer.surface_value("volume" if cid == "mixer.stripVolume" else "pan", str(params.get("strip") or ""), value)
             return
+        if cid in ("playback.shuttleSpeed", "playhead.stepForward", "playhead.stepBack") and self.surface_trim(cid, params):
+            return
         if cid == "playback.shuttleSpeed":
             # the shuttle ring: a speed rather than a key's step (spec §4)
             try:
@@ -2355,6 +2357,24 @@ class MainWindow(QMainWindow):
         if not cmd.enabled:
             return
         self.run_menu_command(cid, params)
+
+    def surface_trim(self, cid: str, params: dict[str, Any]) -> bool:
+        """Trim mode (as J/K/L): the shuttle ring trims dynamically at its speed, a jog click
+        nudges the edit point one frame (spec §4). False when not in trim mode."""
+        if self.focused_monitor() is self.source_monitor or not self.trim_mode():
+            return False
+        trim = self.monitor.trim
+        if cid == "playback.shuttleSpeed":
+            try:
+                speed = float(params.get("speed") or 0)
+            except (TypeError, ValueError):
+                return True
+            if speed:
+                self.monitor.stop()
+            trim.ring(speed)
+        else:
+            trim.command.emit("trim.nudge", {"frames": 1 if cid == "playhead.stepForward" else -1})
+        return True
 
     def run_menu_command(self, cid: str, params: dict[str, Any]) -> None:
         if params:

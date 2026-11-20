@@ -25,6 +25,7 @@ pub mod lumetri_presets;
 pub mod luts;
 pub mod mask;
 pub mod mixer;
+pub mod mosh;
 pub mod multicam;
 pub mod offline;
 pub mod plan;

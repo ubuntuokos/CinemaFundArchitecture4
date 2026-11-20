@@ -48,6 +48,26 @@ cfa4-cli serve upkeep ── render pictures (raw RGBA, 0700 dir) ── {"cmd":
                                                                       software: compose · libobs: cfa4_picture items
 ```
 
+### Moving sources (S1b)
+
+A media source (`{"type":"media","path":…,"loop":true}`) and the live graphics source
+(`{"type":"liveGraphics"}`, the C10 program that TAKE puts on air) change every frame. Each gets
+a frame ring of its own in the layer directory (`ring::create_sized`, straight RGBA frames,
+`PixelFormat::Rgba8`) and goes to the host as `PictureRef::Feed`. `cfa4-cli serve` writes the
+rings: a player thread per media source decodes the file with CFA4's decoders on its own clock
+(looping, dropping late frames), and the serve loop draws the live program at the host's width
+once per program frame (transparent while nothing is on air). The host takes the newest frame of
+every feed before each program frame (`scene::Feeds`, `StudioBackend::update_layer`): the
+software backend composites again, libobs gets the frame on the layer's `cfa4_picture` source.
+
+The software compositor works in 8-bit fixed point with rows in parallel (rayon), so a full-HD
+scene keeps up with 60 fps. Measured by the ignored perf test
+`apps/cfa4-studio-host/tests/scene.rs::perf_a_title_over_a_playing_video_runs_at_60_fps`
+(`cargo test --release -p cfa4-studio-host --test scene -- --ignored --nocapture`; 1920×1080,
+60 fps, a title over a 60 fps video feed): program 60.0 fps, video shown 58.5 fps (release build,
+4 cores, idle). On busy shared CI runners it measured 48.9 fps, so CI runs only the
+`a_title_over_a_playing_video_keeps_moving` variant (the title on top, the video moving).
+
 ## Never crash
 
 - libobs is C code: it runs only in `cfa4-studio-host`. A crash there (segfault, abort) ends that
