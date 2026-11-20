@@ -68,6 +68,8 @@ pub struct MkvSource {
     alpha: Option<Arc<crate::webm_alpha::AlphaLayer>>,
     /// The playable audio tracks in file order: `info.audio_streams[k]` describes `audios[k]`.
     audios: Vec<MkvAudio>,
+    /// LCEVC in the video track's T.35 SEI that is decoded on top of the base.
+    lcevc: Option<(cfa4_lcevc::BaseCodec, cfa4_lcevc::Framing)>,
 }
 
 /// Audio packet start positions in source sample frames.
@@ -379,6 +381,12 @@ fn sample_entry(c: &Codec, private: &[u8], v: Option<&cfa4_matroska::VideoInfo>,
         // Huffyuv: the VfW BITMAPINFOHEADER sets the stream up (bit count, extradata)
         Codec::VfwFourcc { fourcc, bitmap_info_header } if fourcc.eq_ignore_ascii_case(b"HFYU") => crate::huffyuv::sample_entry(bitmap_info_header, w, h),
         Codec::VfwFourcc { fourcc, .. } if crate::canopus::codec(fourcc).is_some() => crate::canopus::sample_entry(crate::canopus::codec(fourcc)?, w, h),
+        // Lagarith: the VfW BITMAPINFOHEADER bit count sets the solid-frame layout
+        Codec::VfwFourcc { fourcc, bitmap_info_header } if crate::lagarith::is_lagarith(fourcc) => {
+            let bits = bitmap_info_header.get(14..16).map_or(24, |b| u16::from_le_bytes([b[0], b[1]]));
+            crate::lagarith::sample_entry(bits, w, h)
+        }
+        Codec::VfwFourcc { fourcc, .. } if crate::magicyuv::is_magicyuv(fourcc) => crate::magicyuv::sample_entry(w, h),
         // Ut Video: the extradata follows the VfW BITMAPINFOHEADER
         Codec::VfwFourcc { fourcc, bitmap_info_header } if crate::utvideo::is_utvideo(fourcc) => {
             crate::utvideo::sample_entry(*fourcc, bitmap_info_header.get(40..).unwrap_or_default(), w, h)
@@ -446,6 +454,8 @@ fn codec_label(c: &Codec) -> String {
         Codec::Other(id) if id == "V_MPEG2" => "MPEG-2 Video".into(),
         Codec::Other(id) if id == "V_MPEG1" => "MPEG-1 Video".into(),
         Codec::VfwFourcc { fourcc, .. } if crate::utvideo::is_utvideo(fourcc) => "Ut Video".into(),
+        Codec::VfwFourcc { fourcc, .. } if crate::lagarith::is_lagarith(fourcc) => "Lagarith".into(),
+        Codec::VfwFourcc { fourcc, .. } if crate::magicyuv::is_magicyuv(fourcc) => "MagicYUV".into(),
         Codec::VfwFourcc { fourcc, .. } if fourcc.eq_ignore_ascii_case(b"HFYU") => "Huffyuv".into(),
         Codec::VfwFourcc { fourcc, .. } if crate::canopus::codec(fourcc).is_some() => {
             crate::canopus::codec(fourcc).map_or("Canopus", crate::canopus::label).into()
@@ -502,6 +512,7 @@ impl MkvSource {
         };
         let mut explicit_color = None;
         let mut ventry = None;
+        let mut lcevc = None;
         // display rotation from the track's Projection (portrait phone video is stored landscape)
         let rotation = vtrack.and_then(|i| file.tracks[i].video.as_ref()).and_then(|v| v.display_rotation()).unwrap_or(0);
         let video = vtrack.map(|i| {
@@ -542,15 +553,18 @@ impl MkvSource {
                 bitrate,
                 hdr: v.colour.as_ref().and_then(hdr_metadata),
             };
-            // LCEVC enhancement data as T.35 SEI in the first pictures
-            if let Some((base, framing)) = ventry.as_ref().and_then(|e| crate::lcevc::base_of(&e.codec))
-                && t.samples
-                    .iter()
-                    .take(crate::lcevc::SCAN_SAMPLES)
-                    .filter_map(|s| cfa4_media::reader::read_range(&*bytes.0, s.offset, s.size as usize).ok())
-                    .any(|d| cfa4_lcevc::sample_has_lcevc(&d, base, framing))
-            {
-                crate::lcevc::mark(name, &mut info.codec, "T.35 SEI");
+            // LCEVC enhancement data as T.35 SEI in the first pictures: decoded at its own size
+            if let Some(c) = ventry.as_ref().and_then(|e| crate::lcevc::base_of(&e.codec)).and_then(|(base, framing)| {
+                let heads =
+                    t.samples.iter().take(crate::lcevc::SCAN_SAMPLES).filter_map(|s| cfa4_media::reader::read_range(&*bytes.0, s.offset, s.size as usize).ok());
+                crate::lcevc::scan(heads, base, framing)
+            }) {
+                let mut size = (info.width, info.height);
+                if rotation % 2 == 1 {
+                    size = (size.1, size.0);
+                }
+                lcevc = crate::lcevc::apply(name, c, &mut info.codec, &mut size);
+                (info.width, info.height) = if rotation % 2 == 1 { (size.1, size.0) } else { size };
             }
             info
         });
@@ -598,7 +612,7 @@ impl MkvSource {
             let (n, d) = tb(t);
             crate::gop::snap_coarse_units(t.samples.iter().map(|s| s.pts), n, d, v.frame_rate)
         });
-        Ok(Self { info, bytes, file, vtrack, ventry, video: GopCache::new(explicit_color).with_rotation(rotation), snap, alpha, audios })
+        Ok(Self { info, bytes, file, vtrack, ventry, video: GopCache::new(explicit_color).with_rotation(rotation), snap, alpha, audios, lcevc })
     }
 
     fn read(&self, track: usize, i: usize) -> crate::Result<Vec<u8>> {
@@ -760,7 +774,7 @@ impl VideoSamples for MkvVideo<'_> {
         let Some(e) = &self.src.ventry else {
             return Err(CodecError::Unsupported(format!("no decoder for {} video", codec_label(&self.src.file.tracks[self.track].codec))));
         };
-        let color = make_video_decoder(e)?;
+        let color = crate::lcevc::LcevcDecoder::wrap(make_video_decoder(e)?, self.src.lcevc);
         let Some(layer) = &self.src.alpha else { return Ok(color) };
         // the alpha layer always goes through our own decoder (it is luma only)
         match crate::software_video_decoder(e) {

@@ -746,6 +746,15 @@ fn sample_item_problems(p: &Project, it: &cfa4_project::TrackItem, want: &serde_
     {
         problems.push(format!("offline {}, expected {offline}", m.offline));
     }
+    if let Some(want) = media["other_references"].as_array() {
+        let mut want: Vec<&str> = want.iter().filter_map(|k| k.as_str()).collect();
+        want.sort_unstable();
+        let kept: Vec<&str> =
+            it.interchange.get("cfa4").and_then(|o| o["media_references"].as_object()).map(|o| o.keys().map(String::as_str).collect()).unwrap_or_default();
+        if kept != want {
+            problems.push(format!("other media references {kept:?}, expected {want:?}"));
+        }
+    }
     if let Some(seq) = media["image_sequence"].as_bool()
         && (m.info.kind == cfa4_media::MediaKind::ImageSequence) != seq
     {
@@ -929,4 +938,54 @@ fn image_sequence_relative_base_and_unsupported_parts() {
     let m = imp.project.item(s.tracks(TrackKind::Video)[0].items[0].item).unwrap().as_media().unwrap();
     assert!(m.offline);
     assert!(rep.has_warnings());
+}
+
+// ---------------------------------------------------------------------------------------------
+// OTIO-2.4 (H4): a clip's media references that are not active are written back unchanged, under
+// their own keys, with the same active key.
+// ---------------------------------------------------------------------------------------------
+
+#[test]
+fn inactive_media_references_round_trip() {
+    let proxy = r#"{"OTIO_SCHEMA": "ExternalReference.1", "name": "proxy", "target_url": "file:///proxy/a.mov", "available_range": null, "metadata": {"app": {"k": 1}}}"#;
+    let doc = format!(
+        r#"{{"OTIO_SCHEMA": "Timeline.1", "name": "Refs", "tracks": {{"OTIO_SCHEMA": "Stack.1", "children": [
+            {{"OTIO_SCHEMA": "Track.1", "name": "V1", "kind": "Video", "children": [
+                {{"OTIO_SCHEMA": "Clip.2", "name": "a", "source_range": {}, "active_media_reference_key": "HIGH",
+                  "media_references": {{"DEFAULT_MEDIA": {proxy},
+                    "HIGH": {{"OTIO_SCHEMA": "ExternalReference.1", "target_url": "file:///full/a.mov", "available_range": {}}}}}}},
+                {{"OTIO_SCHEMA": "Clip.2", "name": "b", "source_range": {}, "active_media_reference_key": "DEFAULT_MEDIA",
+                  "media_references": {{"DEFAULT_MEDIA": {{"OTIO_SCHEMA": "ExternalReference.1", "target_url": "file:///full/b.mov", "available_range": null}}}}}}]}}]}}}}"#,
+        tr(0.0, 24.0, 24.0),
+        tr(0.0, 48.0, 24.0),
+        tr(0.0, 24.0, 24.0)
+    );
+    let (imp, rep) = import(doc.as_bytes(), Format::Otio, None).unwrap();
+    assert!(!rep.has_warnings(), "{rep}");
+    // the active reference is the media
+    let (path, _) = only_media(&imp);
+    assert_eq!(path, "/full/a.mov");
+    let s = imp.project.sequence(only_seq(&imp)).unwrap();
+    assert!(s.tracks(TrackKind::Video)[0].items[1].interchange.is_empty(), "a single default reference keeps nothing");
+
+    let export = |p: &Project, seq| {
+        let (bytes, _) = cfa4_interchange::export(p, seq, Format::Otio, &ExportOptions::default()).unwrap();
+        serde_json::from_slice::<serde_json::Value>(&bytes).unwrap()
+    };
+    let clips = |v: &serde_json::Value| v["tracks"]["children"][0]["children"].as_array().unwrap().clone();
+    let out = export(&imp.project, only_seq(&imp));
+    let [a, b] = <[serde_json::Value; 2]>::try_from(clips(&out)).unwrap();
+    assert_eq!(a["active_media_reference_key"], "HIGH");
+    assert_eq!(a["media_references"]["DEFAULT_MEDIA"], serde_json::from_str::<serde_json::Value>(proxy).unwrap(), "written back unchanged");
+    assert_eq!(a["media_references"]["HIGH"]["target_url"], "file:///full/a.mov");
+    assert!(a["metadata"].get("cfa4").is_some() && a["metadata"]["cfa4"].get("media_references").is_none(), "{}", a["metadata"]);
+    assert_eq!(b["active_media_reference_key"], "DEFAULT_MEDIA");
+    assert_eq!(b["media_references"].as_object().unwrap().len(), 1);
+
+    // stable: a second round trip writes the same references
+    let (again, rep) = import(out.to_string().as_bytes(), Format::Otio, None).unwrap();
+    assert!(!rep.has_warnings(), "{rep}");
+    let out2 = export(&again.project, only_seq(&again));
+    assert_eq!(clips(&out2)[0]["media_references"], a["media_references"]);
+    assert_eq!(clips(&out2)[0]["active_media_reference_key"], "HIGH");
 }

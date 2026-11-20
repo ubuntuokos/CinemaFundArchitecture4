@@ -17,6 +17,10 @@
 //!   MP3 / MP2 and AC-3 audio.
 //! - [`AudioFileSource`]: standalone compressed audio files (MP3, FLAC, AIFF, …).
 //! - [`DifSource`]: raw DV (`.dv`, `.dif`) files, decoded by `cfa4-dv`, frames read on demand.
+//! - [`RmSource`]: RealMedia (`.rm`, `.rmvb`) with RealVideo 1.0 / 2.0 / 3.0 / 4.0 video and Cook, ATRAC3, SIPR or RealAudio 1.0 / 2.0 audio.
+//! - [`EvcSource`]: raw MPEG-5 EVC Baseline (`.evc`) streams, pictures shown in their order count.
+//! - [`CavsSource`]: raw AVS1-P2 (Chinese AVS, Jizhun profile) streams (`.avs`, `.cavs`).
+//! - [`SstpSource`]: MPEG-4 Simple Studio Profile (Sony SR) elementary streams (`.m4v`), every picture intra.
 //! - [`Y4mSource`]: uncompressed YUV4MPEG2 (`.y4m`) video, frames read on demand.
 //! - [`openers`]: the openers to register with the engine's media pool.
 
@@ -29,8 +33,10 @@ pub mod av2;
 pub mod av2_external;
 pub mod avi;
 pub mod canopus;
+pub mod cavs;
 pub mod dif;
 pub mod dirac;
+pub mod evc;
 pub mod ffv1;
 pub mod gop;
 pub mod hap;
@@ -38,12 +44,16 @@ pub mod huffyuv;
 pub mod hw;
 mod hw_frame;
 pub mod j2k;
+pub mod lagarith;
 pub mod lcevc;
+pub mod magicyuv;
 pub mod mkv;
 pub mod mp4;
 pub mod mpeg;
 pub mod mxf;
 pub mod ogg;
+pub mod realmedia;
+pub mod sstp;
 mod stream_color;
 pub mod streams;
 pub mod utvideo;
@@ -56,13 +66,17 @@ use std::sync::{Arc, RwLock};
 pub use apv::ApvSource;
 pub use audio::AudioFileSource;
 pub use avi::AviSource;
+pub use cavs::CavsSource;
 pub use dif::DifSource;
+pub use evc::EvcSource;
 pub use gop::{FRAME_BUDGET, GopStats, cached_bytes, gop_stats, live_decoders, release_idle};
 pub use mkv::MkvSource;
 pub use mp4::Mp4Source;
 pub use mpeg::MpegSource;
 pub use mxf::MxfSource;
 pub use ogg::OggSource;
+pub use realmedia::RmSource;
+pub use sstp::SstpSource;
 pub use video::{DecodedFrame, VideoDecoder, VideoDecoderFactory};
 pub use y4m::Y4mSource;
 
@@ -92,7 +106,7 @@ impl From<CodecError> for cfa4_media::MediaError {
 }
 
 /// Our own (pure-Rust) decoders, in the order they are tried.
-const BUILTIN_FACTORIES: [VideoDecoderFactory; 19] = [
+const BUILTIN_FACTORIES: [VideoDecoderFactory; 22] = [
     video::h264_factory,
     video::hevc_factory,
     video::vp8_factory,
@@ -111,7 +125,10 @@ const BUILTIN_FACTORIES: [VideoDecoderFactory; 19] = [
     ffv1::ffv1_factory,
     dirac::dirac_factory,
     huffyuv::huffyuv_factory,
+    lagarith::lagarith_factory,
     utvideo::utvideo_factory,
+    magicyuv::magicyuv_factory,
+    evc::evc_factory,
 ];
 
 fn factories() -> &'static RwLock<Vec<VideoDecoderFactory>> {
@@ -163,10 +180,26 @@ pub fn software_video_decoder(entry: &cfa4_isobmff::SampleEntry) -> Result<Box<d
 }
 
 /// Openers for the engine's media pool (MP4/MOV, Matroska/WebM, MXF, Ogg Opus/Vorbis, MPEG TS/PS and
-/// MPEG-1/2 video elementary streams, APV raw bitstreams, YUV4MPEG2, raw DV, standalone audio).
+/// MPEG-1/2, MPEG-4 Simple Studio Profile, MPEG-5 EVC and AVS1 video elementary streams, APV raw bitstreams, YUV4MPEG2, raw DV, RealMedia, standalone audio).
 /// AV2 Annex B / IVF files are recognised and answered as unsupported ([`av2`]).
 pub fn openers() -> Vec<cfa4_media::Opener> {
-    vec![mp4::opener, mkv::opener, mxf::opener, ogg::opener, mpeg::opener, apv::opener, avi::opener, y4m::opener, dif::opener, av2::opener, audio::opener]
+    vec![
+        mp4::opener,
+        mkv::opener,
+        mxf::opener,
+        ogg::opener,
+        sstp::opener,
+        evc::opener,
+        cavs::opener,
+        mpeg::opener,
+        apv::opener,
+        avi::opener,
+        y4m::opener,
+        dif::opener,
+        realmedia::opener,
+        av2::opener,
+        audio::opener,
+    ]
 }
 
 fn reader_registry() -> &'static RwLock<Vec<cfa4_media::ReaderOpener>> {
@@ -177,6 +210,9 @@ fn reader_registry() -> &'static RwLock<Vec<cfa4_media::ReaderOpener>> {
             mkv::reader_opener,
             mxf::reader_opener,
             ogg::reader_opener,
+            sstp::reader_opener,
+            evc::reader_opener,
+            cavs::reader_opener,
             mpeg::reader_opener,
             apv::reader_opener,
             y4m::reader_opener,

@@ -4681,19 +4681,83 @@ export.summary	Low	žema
 	AS-11 Core	AS-11 Core
 	AS-11 Parts	AS-11 dalys
 	AS-11 UK DPP	AS-11 UK DPP
+# Control surfaces (qt-control-surfaces-page, CFA4-CONTROL-SURFACE-001)
+	Device	Įrenginys
+	Devices	Įrenginiai
+	HID jog/shuttle	HID jog/shuttle
+	MIDI	MIDI
+	OSC	OSC
+	Use	Naudoti
+	{device} ({port})	{device} ({port})
+	{name}: {error}	{name}: {error}
+# Control surfaces (midi-monitor, CFA4-CONTROL-SURFACE-001)
+	MIDI Monitor	MIDI monitorius
+	Press Start Monitor, then move a control.	Paspauskite „Paleisti monitorių“, tada pajudinkite valdiklį.
+	Start Monitor	Paleisti monitorių
+	Stop Monitor	Sustabdyti monitorių
+	… {count} messages not shown (too many at once)	… {count} pranešimų nerodoma (per daug vienu metu)
+# Control surfaces (midi-learn, CFA4-CONTROL-SURFACE-001)
+	A control surface asked for {command}, which does not exist.	Valdymo paviršius paprašė {command}, kurios nėra.
+	Assignments	Priskyrimai
+	Cancel Learn	Atšaukti mokymąsi
+	Control	Valdiklis
+	Learn	Mokytis
+	Remove this assignment	Pašalinti šį priskyrimą
+	{control} runs {command}.	{control} vykdo {command}.
+# Control surfaces (shuttlepro, CFA4-CONTROL-SURFACE-001)
+	Button {n}	Mygtukas {n}
+# Control surfaces (continuous-values, CFA4-CONTROL-SURFACE-001)
+	{strip} Pan (knob)	{strip} panorama (rankenėlė)
+	{strip} Volume (fader)	{strip} garsumas (slankiklis)
+# Control surfaces (F1 Learn and profile, CFA4-CONTROL-SURFACE-001)
+	Assignments run when a button is pressed (a fader or knob counts as pressed past half way); a fader or knob assigned to a mixer strip moves its volume or pan. A ShuttlePRO's shuttle ring plays at its profile's speeds and its jog wheel steps frame by frame. Endless encoders and feedback to the controller (lights, motor faders) come in a later version.	Priskyrimai veikia paspaudus mygtuką (faderis ar rankenėlė skaičiuojama paspausta už pusės); prie maišytuvo takelio priskirtas faderis ar rankenėlė judina garsumą arba panoramą. ShuttlePRO šatlo žiedas groja profilio greičiais, o jog ratas žingsniuoja po kadrą. Begaliniai koduotuvai ir atsakas valdikliui (lemputės, varikliniai faderiai) bus vėlesnėje versijoje.
+	First message (ms)	Pirma žinutė (ms)
+	Silence (ms)	Tyla (ms)
+	Waiting for the control to settle…	Laukiama, kol valdiklis nurims…
+	Type: {hint}. Confirm this assignment.	Tipas: {hint}. Patvirtinkite šį priskyrimą.
+	That control is already assigned. Confirm replaces it.	Šis valdiklis jau priskirtas. Patvirtinimas jį pakeičia.
+	Learn timed out.	Mokymasis baigėsi laiku.
+	Confirm	Patvirtinti
+	Reject	Atmesti
+	Shows every MIDI message from the controllers as it arrives, to check that a controller sends and what it sends. MIDI Clock, Active Sensing and MIDI Time Code are left out.	Rodo kiekvieną MIDI žinutę iš valdiklių jai atėjus, kad matytųsi, ar valdiklis siunčia ir ką. MIDI laikrodis, Active Sensing ir MIDI laiko kodas praleidžiami.
+	Pick a command (or a mixer strip for a fader or knob), press Learn, then press the button or move the control past half way. Confirm keeps the assignment. OK saves the assignments.	Pasirinkite komandą (arba maišytuvo takelį faderiui ar rankenėlei), paspauskite Mokytis, tada mygtuką arba pastumkite valdiklį už pusės. Patvirtinimas palieka priskyrimą. Gerai įrašo priskyrimus.
+	All devices	Visi įrenginiai
+	Builtin: {name}	Įtaisytas: {name}
+	Capturing	Fiksuojama
+	Confirmed	Patvirtinta
+	Conflict	Konfliktas
+	Connect a MIDI controller or a ShuttlePRO to edit its profile.	Norėdami keisti profilį, prijunkite MIDI valdiklį arba ShuttlePRO.
+	Control Surfaces…	Valdymo paviršiai…
+	Filter messages	Filtruoti pranešimus
+	Idle	Laukia
+	Kernel dropped: {count}	Branduolys atmetė: {count}
+	Learn Assignments…	Mokytis priskyrimų…
+	Load profile	Įkelti profilį
+	MIDI Monitor…	MIDI monitorius…
+	Mute shuttle sound	Nutildyti shuttle garsą
+	No conflicts.	Konfliktų nėra.
+	No profile warnings.	Profilio įspėjimų nėra.
+	No project profile is stored.	Projekto profilis neįrašytas.
+	OK writes the preferences and the profile file together.	Gerai kartu įrašo nuostatas ir profilio failą.
+	Online	Prisijungęs
+	Pending	Laukiama
+	Pickup (14-bit)	Paėmimas (14 bitų)
+	Pickup (7-bit)	Paėmimas (7 bitų)
+	Profile warnings	Profilio įspėjimai
+	Rejected	Atmesta
+	Show Active Sensing	Rodyti Active Sensing
+	Show MIDI Clock	Rodyti MIDI laikrodį
+	Show MIDI Time Code	Rodyti MIDI laiko kodą
+	The profile file is damaged. Preferences and the built-in profile stay in use.	Profilio failas pažeistas. Nuostatos ir įtaisytas profilis lieka naudojami.
+	Timed out	Laikas baigėsi
+	Type: {hint}	Tipas: {hint}
+	User profile file	Naudotojo profilio failas
+	{received} received, {dispatched} dispatched, {coalesced} coalesced, {stalls} stalls, {errors} errors	{received} gauta, {dispatched} perduota, {coalesced} sujungta, {stalls} laukimai, {errors} klaidos
 
 # Control Surfaces settings page (CS-1, #1187)
-	Devices	Įrenginiai
-	Use	Naudoti
-	Device	Įrenginys
-	MIDI	MIDI
-	HID jog/shuttle	HID jog/shuttle
-	OSC	OSC
 	Connected	Prijungtas
 	Not connected	Neprijungtas
 	Disabled	Išjungtas
-	{device} ({port})	{device} ({port})
-	{name}: {error}	{name}: {error}
 	Looking for devices…	Ieškoma įrenginių…
 	No MIDI controller or jog/shuttle device was found. Connect one and press Refresh.	Nerastas nei MIDI valdiklis, nei jog/shuttle įrenginys. Prijunkite vieną ir paspauskite Atnaujinti.
 	Control Surfaces	Valdymo pultai
@@ -4702,14 +4766,12 @@ export.summary	Low	žema
 	CFA4 ShuttlePRO	CFA4 ShuttlePRO
 	Kdenlive-style ShuttlePRO	Kdenlive stiliaus ShuttlePRO
 	Generic MIDI	Bendrasis MIDI
-
 # LTC timecode read from clip audio (TC-7, #1285)
 	Read from LTC Audio	Nuskaityti iš LTC garso
 	Find SMPTE LTC on the clip's audio and use the timecode it gives the first frame	Rasti SMPTE LTC klipo garse ir naudoti laiko kodą, kurį jis suteikia pirmam kadrui
 	Read Timecode from LTC Audio	Nuskaityti laiko kodą iš LTC garso
 # Credits: voices (the Voice column) in the block's properties (F10-C16)
 	Voices	Balsai
-
 # Timecode sync varispeed and user bits (TC-8, #1308)
 	Varispeed: adjust the playback speed instead of seeking	Varispeed: užuot peršokus, koreguoti atkūrimo greitį
 	User bits	Naudotojo bitai

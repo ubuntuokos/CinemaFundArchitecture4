@@ -1,9 +1,9 @@
 [package]
 name = "cfa4-lcevc"
-description = "MPEG-5 Part 2 LCEVC: detection of enhancement data (T.35 SEI in H.264 / HEVC, LCEVC tracks and streams); no decoding"
+description = "MPEG-5 Part 2 LCEVC: detection of enhancement data and an own enhancement decoder (LCEVCdec 4.3.1 port)"
 version.workspace = true
 edition.workspace = true
-license.workspace = true
+license = "GPL-3.0-or-later AND BSD-3-Clause-Clear"
 rust-version.workspace = true
 
 [lints]

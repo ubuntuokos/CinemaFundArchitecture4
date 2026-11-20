@@ -12,6 +12,7 @@ proposed in [DCP-00](../../docs/audit/DCP-00-CAPABILITY-AUDIT-2026-10-27.md).
 | Stereoscopic picture asset | ST 429-10:2008 | `437-Y/2007/Main-Stereo-Picture-CPL` |
 | Composition metadata asset | ST 429-16:2014 (kept as an extension asset; its fields are listed by name) | n/a |
 | Subtitle document (`subtitle` module, DCP-08) | ST 428-7:2010/2014 `SubtitleReel` (`428-7/{2007,2010,2014}/DCST`) | `DCSubtitle` (no namespace) |
+| ISDCF name (`isdcf` module, DCP-09) | the Digital Cinema Naming Convention claims of a `ContentTitleText` | same |
 | Key Delivery Message (`kdm` module) | ST 430-1:2023 (`430-1/2006/KDM`, ETM `430-3/2006/ETM`) | n/a |
 | Key Delivery Bundle (`kdb` module) | ST 430-9:2008 + Am1:2011 (ustar, `CATALOG` in `429-10/2008/KDMB`) | n/a |
 

@@ -1732,10 +1732,12 @@ class MainWindow(QMainWindow):
         if error:
             self.events.log(text, error=True)
 
-    def open_settings(self, page: str = "general") -> PreferencesDialog:
-        """Edit ▸ Preferences ▸ <category> (egui's ``app.settings.<category>``)."""
+    def open_settings(self, page: str = "general", section: str = "") -> PreferencesDialog:
+        """Edit ▸ Preferences ▸ <category> (egui's ``app.settings.<category>``). ``section`` is an
+        object name on that page (Window ▸ MIDI Monitor, Window ▸ Learn Assignments)."""
         self.refresh_timecode_devices()  # for the next opening too: the reply comes after this one
-        dialog = PreferencesDialog(self, self.engine, page, devices=self.audio_devices, memory=self.memory_usage)
+        dialog = PreferencesDialog(self, self.engine, page, devices=self.audio_devices, memory=self.memory_usage,
+                                   commands=self.surface_commands, section=section)
         dialog.applied.connect(self._settings_applied)
         dialog.setAttribute(Qt.WidgetAttribute.WA_DeleteOnClose)
         self.settings_dialog = dialog
@@ -2003,6 +2005,8 @@ class MainWindow(QMainWindow):
             self.schedule_refresh()
         elif kind == "revealInProject":
             self.docks["Project"].raise_()
+        elif kind == "surfaceAction":
+            self.run_surface_action(ev)
 
     # ----- state refresh -----
     def schedule_refresh(self) -> None:
@@ -2307,6 +2311,50 @@ class MainWindow(QMainWindow):
     def command_enabled(self, cid: str) -> bool:
         cmd = self.registry.commands.get(cid)
         return cmd is not None and cmd.enabled
+
+    # ----- control surfaces (Settings ▸ Control Surfaces ▸ Assignments) -----
+    def surface_commands(self) -> list[tuple[str, str]]:
+        """(id, label) of the commands a control surface button can run: the engine's that need no
+        parameters and the ones the Qt GUI runs itself (transport, docking, …)."""
+        out = {cid: tr(cmd.label) for cid, cmd in self.registry.commands.items() if not cmd.needs_params}
+        for cid, label, _menu, _key in self.local_commands():
+            out.setdefault(cid, tr(label))
+        return list(out.items())
+
+    def run_surface_action(self, ev: dict[str, Any]) -> None:
+        """A control surface button was pressed (``surfaceAction``): run its command as its key
+        would (a disabled command does nothing)."""
+        cid = str(ev.get("command") or "")
+        params = ev.get("params") if isinstance(ev.get("params"), dict) else {}
+        if cid in ("mixer.stripVolume", "mixer.stripPan"):
+            # a fader or knob: the Audio Track Mixer strip follows it
+            try:
+                value = float(params.get("value"))
+            except (TypeError, ValueError):
+                return
+            self.mixer.surface_value("volume" if cid == "mixer.stripVolume" else "pan", str(params.get("strip") or ""), value)
+            return
+        if cid == "playback.shuttleSpeed":
+            # the shuttle ring: a speed rather than a key's step (spec §4)
+            try:
+                speed = float(params.get("speed") or 0)
+            except (TypeError, ValueError):
+                return
+            monitor = self.focused_monitor()
+            monitor.surface_shuttle_mute = params.get("sound") == "mute"
+            monitor.shuttle_to(speed)
+            return
+        local = self.registry.local_actions.get(cid)
+        if local is not None and not params:
+            local.trigger()
+            return
+        cmd = self.registry.commands.get(cid)
+        if cmd is None:
+            self.statusBar().showMessage(fmt("A control surface asked for {command}, which does not exist.", command=cid), 5000)
+            return
+        if not cmd.enabled:
+            return
+        self.run_menu_command(cid, params)
 
     def run_menu_command(self, cid: str, params: dict[str, Any]) -> None:
         if params:

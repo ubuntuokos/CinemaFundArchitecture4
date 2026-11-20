@@ -390,6 +390,11 @@ pub fn settings_from_params(s: &Session, p: &Value, cmd: &str) -> Result<(Option
     if let Some(v) = bool_p(p, "imfLossless") {
         settings.imf_lossless = v;
     }
+    if let Some(v) = str_p(p, "imfTimedTextKind") {
+        let kinds: Vec<&str> = cfa4_export::IMF_TIMED_TEXT_KINDS.iter().map(|k| k.0).collect();
+        let k = kinds.iter().find(|k| k.eq_ignore_ascii_case(v.trim())).ok_or_else(|| bad(cmd, format!("imfTimedTextKind: {}", kinds.join(" | "))))?;
+        settings.imf_timed_text_kind = (*k).to_string();
+    }
     if let Some(v) = crate::commands::checked_u32_p(p, "mpeg2Quantizer", cmd)? {
         settings.mpeg2_quantizer = match v {
             0 => None,
@@ -1153,6 +1158,7 @@ fn preset_json(s: &Session, pr: &ExportPreset, full: bool) -> Value {
         "dcpLanguage": pr.settings.dcp_language,
         "dcpSubtitles": pr.settings.dcp_subtitles,
         "dcpSubtitleLanguage": pr.settings.dcp_subtitle_language,
+        "imfTimedTextKind": pr.settings.imf_timed_text_kind,
     });
     if full {
         v["settings"] = serde_json::to_value(&pr.settings).unwrap_or_default();

@@ -20,6 +20,9 @@ allow = [
     "BSD-1-Clause",
     "BSD-2-Clause",
     "BSD-3-Clause",
+    # The Clear BSD licence (BSD-3-Clause with no patent grant): FSF free and GPL-compatible;
+    # LCEVCdec code ported into cfa4-lcevc keeps it (docs/licensing.md §5).
+    "BSD-3-Clause-Clear",
     "BSL-1.0",
     "CC0-1.0",
     "ISC",
