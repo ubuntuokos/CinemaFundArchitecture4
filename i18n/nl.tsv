@@ -4778,3 +4778,29 @@ export.summary	Low	laag
 	Chapter	Hoofdstuk
 	Segmentation (AS-11 programme part)	Segmentatie (AS-11-programmadeel)
 	AS-10	AS-10
+# AT9/AT3 converter (Tools ▸ Audio Tools, AT3-2)
+	AT9/AT3 Converter	AT9/AT3-converter
+	AT9/AT3 Converter…	AT9/AT3-converter…
+	Files to convert:	Te converteren bestanden:
+	Add Files	Bestanden toevoegen
+	Add Files…	Bestanden toevoegen…
+	Convert to:	Converteren naar:
+	Bit rate:	Bitrate:
+	Sample format:	Sampleformaat:
+	Output folder:	Uitvoermap:
+	Output Folder	Uitvoermap
+	Next to each source file	Naast elk bronbestand
+	AT9 and ATRAC3plus files convert to WAV; encoding AT9, ATRAC3plus and MP3 is not available yet.	AT9- en ATRAC3plus-bestanden worden naar WAV geconverteerd; coderen naar AT9, ATRAC3plus en MP3 is nog niet beschikbaar.
+	Convert	Converteren
+	Add the files to convert first.	Voeg eerst de te converteren bestanden toe.
+	Done: {n} file(s) converted.	Klaar: {n} bestand(en) geconverteerd.
+	Converting {name}…	{name} converteren…
+	Stopping…	Stoppen…
+	AT3 (ATRAC3, PSP / PS3)	AT3 (ATRAC3, PSP / PS3)
+	WAV (PCM)	WAV (PCM)
+	132 kbit/s (LP2)	132 kbit/s (LP2)
+	105 kbit/s	105 kbit/s
+	66 kbit/s (LP4, joint stereo)	66 kbit/s (LP4, joint stereo)
+	16-bit	16-bits
+	24-bit	24-bits
+	32-bit float	32-bits drijvende komma

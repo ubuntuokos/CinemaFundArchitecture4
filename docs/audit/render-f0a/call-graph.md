@@ -174,6 +174,9 @@ graph LR
 | `cfa4-engine/aaf_omf.rs` | `cfa4-export` | `ExportSettings`, `Format`, `OutputSink`, `export` |
 | `cfa4-engine/aaf_omf.rs` | `cfa4-project` | `ClipId` |
 | `cfa4-engine/aaf_omf.rs` | `cfa4-time` | `Tick` |
+| `cfa4-engine/atrac_convert.rs` | `cfa4-export` | `Progress`, `Report`, `write_wav` |
+| `cfa4-engine/atrac_convert.rs` | `cfa4-media` | `open_path` |
+| `cfa4-engine/atrac_convert.rs` | `cfa4-time` | `TICKS_PER_SECOND` |
 | `cfa4-engine/autosave.rs` | `cfa4-project` | `AudioType`, `EssentialSound`, `Project` |
 | `cfa4-engine/beat_markers.rs` | `cfa4-audio-dsp` | `remix` |
 | `cfa4-engine/beat_markers.rs` | `cfa4-project` | `ClipId`, `TrackItem` |
@@ -782,7 +785,7 @@ graph LR
 
 ## 4. Nyilvános típusok osztályonként
 
-A többi 582 nyilvános típus („other” osztály) csak a `call-graph.json`-ban szerepel.
+A többi 585 nyilvános típus („other” osztály) csak a `call-graph.json`-ban szerepel.
 
 ### Képkocka, kép, pixel (26)
 

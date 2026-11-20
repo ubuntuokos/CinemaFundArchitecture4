@@ -4778,3 +4778,29 @@ export.summary	Low	thấp
 	Chapter	Chương
 	Segmentation (AS-11 programme part)	Phân đoạn (phần chương trình AS-11)
 	AS-10	AS-10
+# AT9/AT3 converter (Tools ▸ Audio Tools, AT3-2)
+	AT9/AT3 Converter	Bộ chuyển đổi AT9/AT3
+	AT9/AT3 Converter…	Bộ chuyển đổi AT9/AT3…
+	Files to convert:	Tệp cần chuyển đổi:
+	Add Files	Thêm tệp
+	Add Files…	Thêm tệp…
+	Convert to:	Chuyển đổi sang:
+	Bit rate:	Tốc độ bit:
+	Sample format:	Định dạng mẫu:
+	Output folder:	Thư mục đầu ra:
+	Output Folder	Thư mục đầu ra
+	Next to each source file	Cạnh mỗi tệp nguồn
+	AT9 and ATRAC3plus files convert to WAV; encoding AT9, ATRAC3plus and MP3 is not available yet.	Tệp AT9 và ATRAC3plus được chuyển sang WAV; chưa hỗ trợ mã hóa AT9, ATRAC3plus và MP3.
+	Convert	Chuyển đổi
+	Add the files to convert first.	Hãy thêm tệp cần chuyển đổi trước.
+	Done: {n} file(s) converted.	Xong: đã chuyển đổi {n} tệp.
+	Converting {name}…	Đang chuyển đổi {name}…
+	Stopping…	Đang dừng…
+	AT3 (ATRAC3, PSP / PS3)	AT3 (ATRAC3, PSP / PS3)
+	WAV (PCM)	WAV (PCM)
+	132 kbit/s (LP2)	132 kbit/s (LP2)
+	105 kbit/s	105 kbit/s
+	66 kbit/s (LP4, joint stereo)	66 kbit/s (LP4, stereo kết hợp)
+	16-bit	16 bit
+	24-bit	24 bit
+	32-bit float	32 bit dấu phẩy động

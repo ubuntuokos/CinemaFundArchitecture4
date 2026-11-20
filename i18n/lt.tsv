@@ -4781,3 +4781,29 @@ export.summary	Low	žema
 	Chapter	Skyrius
 	Segmentation (AS-11 programme part)	Segmentavimas (AS-11 programos dalis)
 	AS-10	AS-10
+# AT9/AT3 converter (Tools ▸ Audio Tools, AT3-2)
+	AT9/AT3 Converter	AT9/AT3 keitiklis
+	AT9/AT3 Converter…	AT9/AT3 keitiklis…
+	Files to convert:	Keičiami failai:
+	Add Files	Pridėti failų
+	Add Files…	Pridėti failų…
+	Convert to:	Keisti į:
+	Bit rate:	Bitų sparta:
+	Sample format:	Ėminių formatas:
+	Output folder:	Išvesties aplankas:
+	Output Folder	Išvesties aplankas
+	Next to each source file	Šalia kiekvieno šaltinio failo
+	AT9 and ATRAC3plus files convert to WAV; encoding AT9, ATRAC3plus and MP3 is not available yet.	AT9 ir ATRAC3plus failai keičiami į WAV; AT9, ATRAC3plus ir MP3 kodavimas dar neprieinamas.
+	Convert	Keisti
+	Add the files to convert first.	Pirmiausia pridėkite keičiamus failus.
+	Done: {n} file(s) converted.	Atlikta: konvertuota failų: {n}.
+	Converting {name}…	Keičiamas {name}…
+	Stopping…	Stabdoma…
+	AT3 (ATRAC3, PSP / PS3)	AT3 (ATRAC3, PSP / PS3)
+	WAV (PCM)	WAV (PCM)
+	132 kbit/s (LP2)	132 kbit/s (LP2)
+	105 kbit/s	105 kbit/s
+	66 kbit/s (LP4, joint stereo)	66 kbit/s (LP4, jungtinis stereo)
+	16-bit	16 bitų
+	24-bit	24 bitų
+	32-bit float	32 bitų slankusis kablelis
