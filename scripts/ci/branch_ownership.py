@@ -38,7 +38,7 @@ SESSION_ID = re.compile(SESSION)
 HANDOVER = re.compile(rf"Átadva:\s*({SESSION})\s*(?:→|->)\s*({SESSION}).*?(\d{{4}}-\d{{2}}-\d{{2}})")
 GAZDA_TAKES = re.compile(rf"Gazda átvette:\s*({SESSION}).*?(\d{{4}}-\d{{2}}-\d{{2}})")
 GAZDA_GIVES = re.compile(rf"Gazda visszaadta:\s*({SESSION}).*?(\d{{4}}-\d{{2}}-\d{{2}})")
-LISTED_PR = re.compile(r"#(\d+)")
+LISTED_PR = re.compile(r"#(\d{1,9})(?!\d)")
 
 Json = dict[str, Any]
 
@@ -322,7 +322,7 @@ class Repo:
                     inherited.setdefault(c.sha, other["number"])
 
         def merge_parent_ok(parent: str) -> bool:
-            if self.reachable(parent, "main") or self.reachable(parent, pr["base"]["ref"]):
+            if self.reachable(parent, "main") or (not batch and self.reachable(parent, pr["base"]["ref"])):
                 return True
             heads = [p for p in others if not batch or p["number"] in listed]
             return any(
