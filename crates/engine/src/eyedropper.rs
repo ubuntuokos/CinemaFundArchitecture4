@@ -80,9 +80,7 @@ fn pick_white_balance(s: &mut Session, p: &Value) -> Result<Value> {
     // the frame without this Lumetri, so a white balance already set does not skew the pick
     let rgb = sample(s, seq_id, clip, index, u, v).ok_or_else(|| bad(CMD, "no picture to sample"))?;
     let (temp, tint, clamped) = solve_white_balance(rgb).ok_or_else(|| bad(CMD, "that point is too dark to balance on; pick a neutral grey or white area"))?;
-    let set = |param: &str, value: f32, begin: bool| {
-        json!({"clip": clip.0, "effect": index, "param": param, "value": value, "merge": "whiteBalance", "begin": begin})
-    };
+    let set = |param: &str, value: f32, begin: bool| json!({"clip": clip.0, "effect": index, "param": param, "value": value, "merge": "whiteBalance", "begin": begin});
     // one undo step for both sliders: the second setParam merges into the first
     s.execute("effects.setParam", set("temperature", temp, true))?;
     s.execute("effects.setParam", set("tint", tint, false))?;
