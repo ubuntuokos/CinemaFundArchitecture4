@@ -47,7 +47,7 @@ cél: minden határ mögött olyan folyamat álljon, amelynek profilja (4. pont)
 | P3 | Böngészőforrás | weboldal → Qt WebEngine (Chromium) | (még nincs; élő stúdió S9) | – | B6 (Chromium-sandbox, AppArmor-profil a `.deb`-ben, LIVE-STUDIO S9 négy védelme) |
 | P4 | Hálózati bemenetek (SRT, RIST, WHIP/WebRTC, RTMP; libobs) | hálózat → stúdió | (még nincs) | – | B6 (a bemenet a `cfa4-studio-host`-ban, D5) |
 | P5 | Vezérlőcsatorna, MCP, élő oldal | helyi folyamat vagy böngésző → 127.0.0.1 → motor / Qt GUI | motor, Qt GUI | csak 127.0.0.1 (Semgrep-szabály), 64 hex karakteres munkamenet-token (`CFA4_CONTROL_TOKEN`), soronként 4 MiB, 16 kapcsolat | B3 (Landlock-portszabály: csak a saját port; D5) |
-| P6 | MI-modellek | letöltés → fájl → motor (`cfa4-speech`, `cfa4-tts`: safetensors a candle-lel) | motor; **a letöltés ma a motorban fut** (`cfa4-speech` `download` funkció, `ureq` + rustls) | csak safetensors-betöltés a meglévő kódban | B7 (D7: csak safetensors/ONNX/GGUF, elszigetelt átalakító); a letöltés átköltözik a `cfa4-fetch`-be (D5) |
+| P6 | MI-modellek | letöltés → fájl → motor (`cfa4-speech`, `cfa4-tts`: safetensors a candle-lel) | motor; a letöltés a `cfa4-fetch` folyamatban fut (2026-11-21-ig a motorban, a `cfa4-speech` `download` funkciójával) | csak safetensors-betöltés a meglévő kódban | B7 (D7: csak safetensors/ONNX/GGUF, elszigetelt átalakító); a letöltés átköltözik a `cfa4-fetch`-be (D5) |
 | P7 | Bővítmények (OFX, LV2/VST3, saját) | natív kód → motor | (még nincs) | – | B7 (külön `pluginHost` folyamat, D7) |
 | P8 | Betűk, képek, feliratok | fájl → `cfa4-text` (harfrust, saját raszterizáló), képdekóderek, `cfa4-captions` | motor, Qt GUI (Qt saját FreeType/HarfBuzz-a) | Rust-elemzők a motorban | B2 (fuzz a betű- és feliratelemzőkre), B3 |
 
@@ -56,6 +56,12 @@ cél: minden határ mögött olyan folyamat álljon, amelynek profilja (4. pont)
 1. **A modelletöltés a motorban fut** (P6). A D5 szerint a motor kifelé nem nyithat kapcsolatot, ezért
    a B3 előtt a letöltést a `cfa4-fetch` folyamatba kell költöztetni; addig a motor profilja nem
    lehet `Loopback`. A `security.status` a `fetch` profilt már mutatja.
+   **Megoldva (2026-11-21):** a `transcript.downloadModel` és a `tts.downloadVoices` a `cfa4-fetch`
+   programot indítja (`apps/cfa4-fetch`, a motor oldala a `cfa4-fetch-client`), amely a letöltés
+   előtt a `fetch` profillal zárja be magát: írni csak a célkönyvtárba tud, kifelé csak a 443-as
+   portra (és a beállított HTTPS-proxy portjára) csatlakozhat, programot nem indíthat, és csak
+   `https://` címet fogad el (átirányításnál is). A motorban és a `cfa4-speech`-ben nincs többé
+   hálózati kód (`ureq`, rustls).
 2. **Az FFmpeg és a GStreamer a motor folyamatában fut** (P1). A B3 önmagában a fájlrendszert és a
    hálózatot zárja le a C dekóder előtt, de egy C-hiba a motort (és a nem mentett munkát) viszi; ezt
    a B4 oldja meg.

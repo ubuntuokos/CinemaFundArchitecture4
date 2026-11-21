@@ -423,7 +423,8 @@ fn download_model(_: &mut Session, p: &Value) -> Result<Value> {
     let dir = models_dir().ok_or_else(|| EngineError::Other("no data directory for speech models".into()))?;
     #[cfg(feature = "speech-download")]
     {
-        cfa4_speech::models::download(&dir, m, &mut |_, _, _| true).map_err(speech_err)?;
+        let files = m.files.iter().map(|f| (f.name.to_string(), f.url.to_string(), f.sha256.to_string(), f.size));
+        crate::security::download(&cfa4_speech::models::model_dir(&dir, m), files, &mut |_, _, _| true).map_err(|e| speech_err(SpeechError::Download(e)))?;
         Ok(json!({"model": m.id, "dir": cfa4_speech::models::model_dir(&dir, m).to_string_lossy()}))
     }
     #[cfg(not(feature = "speech-download"))]
