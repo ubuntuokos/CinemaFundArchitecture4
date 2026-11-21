@@ -46,6 +46,7 @@ cfa4-credits = { workspace = true }
 cfa4-surface-model = { workspace = true }
 cfa4-live = { workspace = true }
 cfa4-speech = { workspace = true }
+cfa4-tasks = { workspace = true }
 cfa4-tts = { workspace = true }
 cfa4-route = { workspace = true }
 cfa4-tcsync = { workspace = true }

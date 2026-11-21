@@ -1500,6 +1500,7 @@ dependencies = [
  "cfa4-smart-edit",
  "cfa4-speech",
  "cfa4-surface-model",
+ "cfa4-tasks",
  "cfa4-tcsync",
  "cfa4-testkit",
  "cfa4-text",

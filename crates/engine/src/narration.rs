@@ -388,7 +388,7 @@ fn spawn(s: &mut Session, job: crate::Job, wait: bool, name: &str, run: impl FnO
     if wait || cfg!(target_arch = "wasm32") {
         run();
     } else {
-        std::thread::Builder::new().name(name.into()).spawn(run).map_err(|e| EngineError::Other(e.to_string()))?;
+        crate::background::start(s, id, crate::background::Need::background(512, 1), name, run)?;
     }
     Ok(id)
 }

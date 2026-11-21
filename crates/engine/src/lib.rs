@@ -13,6 +13,7 @@
 pub mod aaf_omf;
 mod atrac_convert;
 pub mod autosave;
+pub mod background;
 pub mod beat_markers;
 pub mod captions;
 pub mod clip_ops;
@@ -79,6 +80,7 @@ pub mod studio;
 pub mod surface_profile;
 pub mod surface_runtime;
 pub mod sync;
+pub mod task_host;
 pub mod timecode_sync;
 pub mod transcript;
 pub mod trim;
@@ -529,6 +531,11 @@ pub struct Session {
     pub export_presets: export_tools::ExportPresetLibrary,
     /// The export queue (session state, not saved with the project).
     pub export_queue: export_tools::ExportQueue,
+    /// The CFA4-wide task queue and resource manager this session's heavy work goes through
+    /// (ACS-6; the export queue is its first client).
+    pub tasks: task_host::TaskHost,
+    /// Background jobs waiting for, or holding, their resources ([`background`]).
+    pub background: background::Background,
     /// Media QC jobs whose results are still to be applied (`qc.*` commands).
     pub qc: qc::QcSession,
     /// Exports run a batch at a time by [`Session::pump_jobs`] (hosts without threads: web).
@@ -634,6 +641,8 @@ impl Session {
             presets: Default::default(),
             export_presets: Default::default(),
             export_queue: Default::default(),
+            tasks: Default::default(),
+            background: Default::default(),
             qc: Default::default(),
             stepped: Vec::new(),
             transcriber: None,
@@ -649,6 +658,7 @@ impl Session {
     /// whether jobs remain. A job whose media is still loading waits for the next call.
     pub fn pump_jobs(&mut self, budget: std::time::Duration) -> bool {
         export_tools::pump_queue(self, false);
+        background::pump(self);
         let t0 = web_time::Instant::now();
         while let Some(j) = self.stepped.first_mut() {
             match j.exporter.step(&j.provider, &j.progress) {
@@ -727,6 +737,7 @@ impl Session {
     /// Apply worker notifications (call regularly, e.g. once per UI frame). Also applies the
     /// results of finished proxy / ingest jobs.
     pub fn poll_persistence(&mut self) {
+        background::pump(self);
         proxies::poll(self);
         masks::poll(self);
         scene_detect::poll(self);

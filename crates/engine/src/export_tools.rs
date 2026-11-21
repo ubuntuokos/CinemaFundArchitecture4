@@ -28,11 +28,14 @@ use std::sync::atomic::Ordering;
 use cfa4_export::presets::{DEFAULT_PRESET, preset_key};
 use cfa4_export::{BitrateMode, ExportPreset, ExportSettings, Format, GpuRendering, HardwareEncoding, SampleFormat};
 use cfa4_project::{ItemId, Project};
+use cfa4_tasks::State;
+use cfa4_tasks::manager::{Class, Request};
 use cfa4_time::{FrameRate, Tick, TimeRange};
 use serde::{Deserialize, Serialize};
 use serde_json::{Value, json};
 
 use crate::commands::{CommandSpec, always, bad, bool_p, f64_p, has_seq, str_p, time_p, u64_p};
+use crate::task_host::{Admission, Outcome, TaskHost};
 use crate::{EngineError, Event, Result, Session};
 
 pub const FILE_FORMAT: &str = "cfa4.export-presets";
@@ -743,6 +746,12 @@ pub struct QueueItem {
     /// The project as it was when the item was queued.
     #[serde(skip)]
     pub project: Arc<Project>,
+    /// Its task in the CFA4 task queue ([`crate::task_host`]) while it waits or encodes.
+    #[serde(skip)]
+    pub task: Option<String>,
+    /// Why it has not started yet (the task queue's wait reasons), empty otherwise.
+    #[serde(skip)]
+    pub waiting_for: Vec<String>,
 }
 
 /// The export queue (session state).
@@ -754,6 +763,49 @@ pub struct ExportQueue {
     next_id: u64,
     /// Quick Export's preset (the last one used).
     pub quick_preset: Option<String>,
+    /// A scheduled start (`export.queue.start` with `at`): its trigger task in the task queue,
+    /// which reserves nothing; the queue starts when the task does (ACS-5).
+    pub start_task: Option<String>,
+}
+
+/// What a scheduled queue start does when its time passed while CFA4 could not start it.
+fn missed_p(p: &Value) -> Result<cfa4_tasks::MissedStart> {
+    use cfa4_tasks::MissedStart;
+    match str_p(p, "ifMissed").unwrap_or("askUser") {
+        "askUser" => Ok(MissedStart::AskUser),
+        "runLate" => Ok(MissedStart::RunLate),
+        "nextSlot" => Ok(MissedStart::NextSlot),
+        other => Err(bad("export.queue.start", format!("unknown `ifMissed` `{other}` (askUser, runLate, nextSlot)"))),
+    }
+}
+
+/// Start the queue when its scheduled start task starts; forget one that was cancelled.
+fn check_scheduled_start(s: &mut Session) {
+    let Some(id) = s.export_queue.start_task.clone() else { return };
+    s.tasks.tick();
+    match s.tasks.state(&id) {
+        Some(State::Running) => {
+            s.tasks.end(&id, Outcome::Succeeded);
+            s.export_queue.start_task = None;
+            if s.export_queue.items.iter().any(|i| i.status == QueueStatus::Ready) {
+                s.export_queue.running = true;
+                s.events.push(Event::Toast { message: "Scheduled export queue started".into(), error: false });
+            }
+        }
+        Some(State::Scheduled | State::Paused | State::Queued | State::Waiting) => {}
+        _ => s.export_queue.start_task = None,
+    }
+}
+
+fn scheduled_start_json(s: &Session) -> Value {
+    let Some(id) = s.export_queue.start_task.as_deref() else { return Value::Null };
+    let t = s.tasks.queue().get(id);
+    json!({
+        "task": id,
+        "at": t.and_then(|t| t.start.at()),
+        "state": t.map(|t| t.state),
+        "needsDecision": s.tasks.needs_decision(id),
+    })
 }
 
 impl ExportQueue {
@@ -796,6 +848,7 @@ fn item_json(s: &Session, it: &QueueItem) -> Value {
         "progress": progress,
         "etaSeconds": job.filter(|_| it.status == QueueStatus::Encoding).and_then(|j| j.progress.eta()).map(|d| d.as_secs_f64()),
         "statusText": status_text,
+        "waitingFor": it.waiting_for,
         "job": it.job,
         "error": it.error,
         "offlineMedia": it.job.map_or_else(|| json!([]), |j| offline_media_json(s, j)),
@@ -806,6 +859,7 @@ fn item_json(s: &Session, it: &QueueItem) -> Value {
 /// Advance the queue: settle finished encodes, start the next ready item. `wait` encodes all of
 /// them now (blocking).
 pub fn pump_queue(s: &mut Session, wait: bool) {
+    check_scheduled_start(s);
     loop {
         // settle
         let mut finished_any = false;
@@ -819,20 +873,31 @@ pub fn pump_queue(s: &mut Session, wait: bool) {
             let res = j.result.lock().unwrap_or_else(|e| e.into_inner()).clone();
             let Some(r) = res else { continue };
             let it = &mut s.export_queue.items[i];
-            match r {
+            let outcome = match r {
                 Ok(_) => {
                     it.status = QueueStatus::Done;
                     if it.qc.profile.is_some() {
                         checked.push(it.id);
                     }
+                    Outcome::Succeeded
                 }
-                Err(e) if e == "cancelled" => it.status = QueueStatus::Cancelled,
+                Err(e) if e == "cancelled" => {
+                    it.status = QueueStatus::Cancelled;
+                    Outcome::Cancelled
+                }
                 Err(e) => {
                     it.status = QueueStatus::Failed;
                     it.error = Some(e);
+                    Outcome::Failed
                 }
+            };
+            if let Some(task) = it.task.take() {
+                s.tasks.end(&task, outcome);
             }
             finished_any = true;
+        }
+        if !s.export_queue.running {
+            release_waiting(s);
         }
         // automatic QC of finished outputs (`export.queue.add` with `qc`)
         for id in checked {
@@ -851,6 +916,32 @@ pub fn pump_queue(s: &mut Session, wait: bool) {
             return;
         };
         let it = s.export_queue.items[i].clone();
+        // ACS-6: the item starts when the task queue gives it its resources. A blocking export
+        // (`wait`: CLI, scripts) was asked for now and runs at once.
+        let task = if wait {
+            None
+        } else {
+            let id = it.task.clone().unwrap_or_else(|| s.tasks.new_id("export"));
+            // only the head of the user's order asks; one that lost its place stops asking
+            s.tasks.withdraw("export-", Some(&id));
+            s.export_queue.items[i].task = Some(id.clone());
+            s.tasks.set_label(&id, &format!("Export: {}", it.sequence_name));
+            match s.tasks.admit(&id, |h| export_request(h, &it)) {
+                Admission::Start => Some(id),
+                Admission::Wait(reasons) => {
+                    s.export_queue.items[i].waiting_for = reasons;
+                    return;
+                }
+                Admission::Refused(reason) => {
+                    let x = &mut s.export_queue.items[i];
+                    x.task = None;
+                    x.status = QueueStatus::Failed;
+                    x.error = Some(format!("no resources for the export: {reason}"));
+                    continue;
+                }
+            }
+        };
+        s.export_queue.items[i].waiting_for.clear();
         let label = format!("Queue: {} → {}", it.sequence_name, file_name(&it.settings.path));
         match spawn_export(s, it.project.clone(), it.sequence, it.settings.clone(), label, wait) {
             Ok(job) => {
@@ -863,10 +954,32 @@ pub fn pump_queue(s: &mut Session, wait: bool) {
                 let x = &mut s.export_queue.items[i];
                 x.status = QueueStatus::Failed;
                 x.error = Some(e.to_string());
+                x.task = None;
+                if let Some(task) = task {
+                    s.tasks.end(&task, Outcome::Failed);
+                }
             }
         }
         if !wait {
             return;
+        }
+    }
+}
+
+/// What an export asks of the machine: a few frames of the output size at full precision plus the
+/// encoder's working set, and up to four CPUs (clamped to the budget by [`crate::task_host`]).
+fn export_request(h: &mut TaskHost, it: &QueueItem) -> Request {
+    let (w, hgt) = it.settings.frame_size.or_else(|| it.project.sequence(it.sequence).map(|q| (q.settings.width, q.settings.height))).unwrap_or((1920, 1080));
+    let frame = u64::from(w).saturating_mul(u64::from(hgt)).saturating_mul(16);
+    h.fit(Class::FinalRender, frame.saturating_mul(8).saturating_add(256 << 20), 4000)
+}
+
+/// The queue stopped: items that have not started give their task up (they ask again on start).
+fn release_waiting(s: &mut Session) {
+    for it in s.export_queue.items.iter_mut().filter(|i| i.status != QueueStatus::Encoding) {
+        it.waiting_for.clear();
+        if let Some(task) = it.task.take() {
+            s.tasks.end(&task, Outcome::Cancelled);
         }
     }
 }
@@ -943,6 +1056,8 @@ fn queue_add(s: &mut Session, p: &Value) -> Result<Value> {
             error: None,
             qc: crate::qc::ItemQc { profile: qc_profile.clone(), ..Default::default() },
             project: project.clone(),
+            task: None,
+            waiting_for: Vec::new(),
         });
         ids.push(id);
     }
@@ -959,21 +1074,42 @@ fn queue_list_json(s: &Session) -> Value {
 
 fn queue_list(s: &mut Session, _: &Value) -> Result<Value> {
     pump_queue(s, false);
-    Ok(json!({"running": s.export_queue.running, "items": queue_list_json(s)}))
+    Ok(json!({"running": s.export_queue.running, "scheduledStart": scheduled_start_json(s), "items": queue_list_json(s)}))
+}
+
+fn drop_scheduled_start(s: &mut Session) {
+    if let Some(id) = s.export_queue.start_task.take() {
+        s.tasks.end(&id, Outcome::Cancelled);
+    }
 }
 
 fn queue_start(s: &mut Session, p: &Value) -> Result<Value> {
     if !s.export_queue.items.iter().any(|i| matches!(i.status, QueueStatus::Ready | QueueStatus::Encoding)) {
         return Err(bad("export.queue.start", "nothing to export: the queue has no ready items"));
     }
+    if let Some(at) = p.get("at").filter(|v| !v.is_null()) {
+        // ACS-5: start at a time (UTC milliseconds), e.g. overnight
+        let at = at.as_u64().ok_or_else(|| bad("export.queue.start", "`at` is a time in UTC milliseconds"))?;
+        let zone = str_p(p, "timeZone").map(str::to_owned);
+        let missed = missed_p(p)?;
+        drop_scheduled_start(s);
+        let id = s.tasks.new_id("queue-start");
+        s.tasks.schedule(&id, at, zone, missed).map_err(|e| bad("export.queue.start", e))?;
+        s.tasks.set_label(&id, "Start the export queue");
+        s.export_queue.start_task = Some(id);
+        pump_queue(s, false);
+        return Ok(json!({"running": s.export_queue.running, "scheduledStart": scheduled_start_json(s), "items": queue_list_json(s)}));
+    }
+    drop_scheduled_start(s);
     s.export_queue.running = true;
     pump_queue(s, bool_p(p, "wait").unwrap_or(false));
     Ok(json!({"running": s.export_queue.running, "items": queue_list_json(s)}))
 }
 
 fn queue_stop(s: &mut Session, _: &Value) -> Result<Value> {
-    // the encode in progress finishes; nothing new starts
+    // the encode in progress finishes; nothing new starts, and a scheduled start is dropped
     s.export_queue.running = false;
+    drop_scheduled_start(s);
     Ok(json!({"running": false, "items": queue_list_json(s)}))
 }
 
@@ -986,7 +1122,13 @@ fn cancel_item(s: &mut Session, i: usize) {
             }
             // settled to Cancelled by `pump_queue` when the job stops
         }
-        QueueStatus::Ready => it.status = QueueStatus::Cancelled,
+        QueueStatus::Ready => {
+            it.status = QueueStatus::Cancelled;
+            it.waiting_for.clear();
+            if let Some(task) = it.task.take() {
+                s.tasks.end(&task, Outcome::Cancelled);
+            }
+        }
         _ => {}
     }
 }
@@ -1040,7 +1182,9 @@ fn queue_remove(s: &mut Session, p: &Value) -> Result<Value> {
     if s.export_queue.items[i].status == QueueStatus::Encoding {
         return Err(bad(cmd, "cancel the export before removing it"));
     }
-    s.export_queue.items.remove(i);
+    if let Some(task) = s.export_queue.items.remove(i).task {
+        s.tasks.end(&task, Outcome::Cancelled);
+    }
     Ok(json!({"items": queue_list_json(s)}))
 }
 
@@ -1064,7 +1208,12 @@ fn queue_clear(s: &mut Session, p: &Value) -> Result<Value> {
     if all && s.export_queue.items.iter().any(|i| i.status == QueueStatus::Encoding) {
         return Err(bad("export.queue.clear", "an export is encoding; cancel it first"));
     }
-    s.export_queue.items.retain(|i| !all && matches!(i.status, QueueStatus::Ready | QueueStatus::Encoding));
+    let (keep, drop): (Vec<QueueItem>, Vec<QueueItem>) =
+        std::mem::take(&mut s.export_queue.items).into_iter().partition(|i| !all && matches!(i.status, QueueStatus::Ready | QueueStatus::Encoding));
+    s.export_queue.items = keep;
+    for task in drop.into_iter().filter_map(|i| i.task) {
+        s.tasks.end(&task, Outcome::Cancelled);
+    }
     Ok(json!({"items": queue_list_json(s)}))
 }
 
@@ -1385,7 +1534,14 @@ pub(crate) fn commands() -> Vec<CommandSpec> {
             true,
         ),
         spec("export.queue.list", "List Export Queue", "{}", always, queue_list, false),
-        spec("export.queue.start", "Start Export Queue", r#"{"wait":bool=false}"#, always, queue_start, true),
+        spec(
+            "export.queue.start",
+            "Start Export Queue",
+            r#"{"wait":bool=false,"at":u64?,"timeZone":str?,"ifMissed":"askUser|runLate|nextSlot"=askUser}"#,
+            always,
+            queue_start,
+            true,
+        ),
         spec("export.queue.stop", "Stop Export Queue", "{}", always, queue_stop, true),
         spec("export.queue.cancel", "Cancel Queued Export", r#"{"id":id?,"wait":bool?}"#, always, queue_cancel, true),
         spec("export.queue.retry", "Retry Queued Export", r#"{"id":id,"start":bool?,"wait":bool?}"#, always, queue_retry, true),

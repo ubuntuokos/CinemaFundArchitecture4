@@ -315,7 +315,7 @@ fn start_job(s: &mut Session, label: String, work: Vec<(ItemId, ReservedOutput, 
         run();
         poll(s);
     } else {
-        std::thread::Builder::new().name("cfa4-proxies".into()).spawn(run).map_err(|e| EngineError::Other(e.to_string()))?;
+        crate::background::start(s, id, crate::background::Need::background(1024, 2), "cfa4-proxies", run)?;
     }
     Ok(id)
 }
