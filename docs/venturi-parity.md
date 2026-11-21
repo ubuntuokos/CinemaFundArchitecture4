@@ -87,7 +87,7 @@ szűkíti. Szünettörlés csak átirattal van (`transcript.removePauses`), ehhe
    csökkenti a csendben „hallucinált” szöveget. **Kiegészíti a K31–K35-öt** (nagyobb
    modellek, élő mikrofonos felirat: ott a VAD dönti el, mikor zárul egy mondat).
 4. Teszt: generált beszéd+zaj fixture (`target/fixtures/`), a VAD-határok tűrése ±1 ablak (32 ms).
-5. **Elfogadási feltételek bővítése** (tulajdonos, 2026-11-20; forrás:
+5. **Elfogadási feltételek bővítése** (tulajdonos, 2026-11-20; a megvalósítási terv: [`CFA4-V1-SILENCE-REMOVAL-001`](plans/CFA4-V1-SILENCE-REMOVAL-001.md); forrás:
    [`CFA4-SHOTCUT-CAPABILITY-ADAPTATION-001`](plans/CFA4-SHOTCUT-CAPABILITY-ADAPTATION-001.md) 5.2):
    - **Régióelőnézet:** az észlelt csendes régiók előnézete és markerként megjelenítése, mielőtt bármi törlődne.
    - **Szerkeszthető kijelölés:** a régiók törlés előtt szerkeszthetők és kijelölhetők; nincs automatikus romboló törlés.
