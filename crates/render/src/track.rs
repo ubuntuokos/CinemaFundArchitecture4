@@ -401,6 +401,20 @@ impl Prepared {
     }
 }
 
+/// Where each of `pts` (pixels of `a`) moved to in `b`, `None` for a point that is lost: the
+/// Lucas–Kanade track failed or its backward track does not return within the forward–backward limit.
+pub fn track_points(a: &Prepared, b: &Prepared, pts: &[Vec2]) -> Vec<Option<Vec2>> {
+    pts.par_iter()
+        .map(|p| {
+            let p = [p.x as f32, p.y as f32];
+            let q = lk(&a.levels, &b.levels, p)?;
+            let back = lk(&b.levels, &a.levels, q)?;
+            let fb = ((back[0] - p[0]).powi(2) + (back[1] - p[1]).powi(2)).sqrt();
+            (fb < FB_MAX).then(|| Vec2::new(q[0] as f64, q[1] as f64))
+        })
+        .collect()
+}
+
 /// The corner features inside `region` (polygon in frame pixels) that survive tracking from `a`
 /// to `b` with the forward–backward check: matching points `(in a, in b)`, and how many features
 /// were tried. `None` when there are fewer than 3 features to try.

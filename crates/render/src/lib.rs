@@ -34,6 +34,7 @@ pub mod preview;
 pub mod remix;
 pub mod scene;
 pub mod track;
+pub mod trajectories;
 pub mod transitions;
 pub mod vfx;
 
