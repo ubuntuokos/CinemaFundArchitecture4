@@ -20,6 +20,7 @@ pub(crate) mod distort;
 pub(crate) mod glitch;
 mod immersive;
 mod lights;
+mod perspective;
 mod pixelate;
 mod stylize;
 mod temporal;
