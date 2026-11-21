@@ -169,6 +169,52 @@ fn tlm(cs: &[u8]) -> Vec<usize> {
     cs[at + 6..at + 2 + len].chunks(5).map(|e| u32::from_be_bytes(e[1..5].try_into().unwrap()) as usize).collect()
 }
 
+/// The guard bits of the QCD marker segment.
+fn qcd_guard(cs: &[u8]) -> u8 {
+    let at = cs.windows(2).position(|w| w == [0xFF, 0x5C]).expect("QCD");
+    cs[at + 4] >> 5
+}
+
+#[test]
+fn cinema_2k_saturates_with_one_guard_bit() {
+    // 12-bit X'Y'Z' pictures: grey, coloured, and the extreme of full-range steps (0 ↔ 4095)
+    let (w, h) = (256u32, 136u32);
+    let grey = {
+        let mut img = picture(w, h, &[(12, false, 1, 1); 3], 5);
+        let first = img.components[0].data.clone();
+        for p in &mut img.components {
+            p.data.clone_from(&first);
+        }
+        img
+    };
+    let colour = picture(w, h, &[(12, false, 1, 1); 3], 77);
+    let extreme = {
+        let mut img = picture(w, h, &[(12, false, 1, 1); 3], 9);
+        for (c, p) in img.components.iter_mut().enumerate() {
+            for (k, v) in p.data.iter_mut().enumerate() {
+                let (x, y) = (k as u32 % w, k as u32 / w);
+                // single-pixel lines, checkerboards and blocks, each component shifted
+                let on = match (x / 64 + c as u32) % 3 {
+                    0 => x % 2 == 0,
+                    1 => (x + y) % 2 == 0,
+                    _ => (x / 8 + y / 8) % 2 == 0,
+                };
+                *v = if on { 4095 } else { 0 };
+            }
+        }
+        img
+    };
+    for (name, img) in [("grey", &grey), ("colour", &colour), ("extreme", &extreme)] {
+        let (cs, stats) = encode_with_stats(img, &EncodeOptions::cinema_2k(24)).unwrap();
+        assert_eq!(qcd_guard(&cs), 1, "{name}");
+        let back = decode(&cs).unwrap();
+        let q = psnr(img, &back);
+        assert!(q >= 50.0, "{name}: {q:.2} dB, {} saturated", stats.saturated);
+        // saturation is for rare coefficients beyond the nominal range only
+        assert!(stats.saturated <= u64::from(w * h) * 3 / 1000, "{name}: {} saturated", stats.saturated);
+    }
+}
+
 #[test]
 fn cinema_2k_follows_the_profile() {
     let img = picture(256, 136, &[(12, false, 1, 1); 3], 21);
@@ -181,6 +227,7 @@ fn cinema_2k_follows_the_profile() {
     assert_eq!(&cs[6..8], [0, 3], "Rsiz");
     let h = crate::parse_header(&cs).unwrap();
     assert_eq!((h.levels, h.layers, h.reversible, h.progression, h.mct), (5, 1, false, 4, true));
+    assert_eq!(qcd_guard(&cs), 1, "2K Digital Cinema: 1 guard bit");
     let parts = tile_parts(&cs);
     assert_eq!(parts.len(), 3);
     assert_eq!(tlm(&cs), parts);
@@ -207,6 +254,7 @@ fn cinema_4k_puts_the_4k_level_in_its_own_tile_parts() {
     let cs = encode(&img, &EncodeOptions::cinema_4k(24)).unwrap();
     assert_eq!(&cs[6..8], [0, 4], "Rsiz");
     assert!(cs.windows(2).any(|w| w == [0xFF, 0x5F]), "POC");
+    assert_eq!(qcd_guard(&cs), 2, "4K Digital Cinema: 2 guard bits");
     let parts = tile_parts(&cs);
     assert_eq!(parts.len(), 6);
     assert_eq!(tlm(&cs), parts);
