@@ -1540,6 +1540,13 @@
    "class": "frame",
    "crate": "cfa4-render",
    "kind": "struct",
+   "module": "mask.rs",
+   "name": "ObjectRaster"
+  },
+  {
+   "class": "frame",
+   "crate": "cfa4-render",
+   "kind": "struct",
    "module": "multicam.rs",
    "name": "PageLayout"
   },

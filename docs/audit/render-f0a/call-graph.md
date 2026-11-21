@@ -798,7 +798,7 @@ graph LR
 
 A többi 599 nyilvános típus („other” osztály) csak a `call-graph.json`-ban szerepel.
 
-### Képkocka, kép, pixel (26)
+### Képkocka, kép, pixel (27)
 
 | Crate | Modul | Fajta | Típus |
 |---|---|---|---|
@@ -825,6 +825,7 @@ A többi 599 nyilvános típus („other” osztály) csak a `call-graph.json`-b
 | `cfa4-media` | `still.rs` | struct | `Raster` |
 | `cfa4-render` | `graphic_clip.rs` | struct | `LayerRaster` |
 | `cfa4-render` | `image.rs` | struct | `Image` |
+| `cfa4-render` | `mask.rs` | struct | `ObjectRaster` |
 | `cfa4-render` | `multicam.rs` | struct | `PageLayout` |
 | `cfa4-render` | `plan.rs` | enum | `FramePlan` |
 | `cfa4-smart-edit` | `media_index.rs` | struct | `FrameIndexEntry` |
