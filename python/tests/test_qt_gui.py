@@ -15457,6 +15457,10 @@ def test_export_mxf_as11_fields_only_for_op1a(app):
     assert dlg.video_form.labelForField(as03).text() == "AS-03" and "mxfAs03" not in p
     as03.setPlainText("ShimName: PBS NGIS SD")
     assert dlg.params()["mxfAs03"] == "ShimName: PBS NGIS SD"
+    as12 = dlg.as11_text["mxfAs12"]
+    assert dlg.video_form.labelForField(as12).text() == "AS-12" and "mxfAs12" not in dlg.params()
+    as12.setPlainText("adid_prefix: ABCD")
+    assert dlg.params()["mxfAs12"] == "adid_prefix: ABCD"
     dlg.format.setCurrentIndex(dlg.format.findData("mxf-opatom"))
     dlg._sync_format_rows()
     assert core.isHidden() and "mxfAs11Core" not in dlg.params()

@@ -197,6 +197,7 @@ impl MxfMux {
                 ukdpp,
                 as10: Vec::new(),
                 as03: Vec::new(),
+                as12: Vec::new(),
             });
         }
         if !atom && !settings.mxf_as10.trim().is_empty() {
@@ -250,6 +251,10 @@ impl MxfMux {
             let name = values.iter().find(|(k, _)| k.eq_ignore_ascii_case("ShimName")).map(|(_, v)| v.as_str()).unwrap_or_default();
             as03::check_shim(name, &facts).map_err(bad)?;
             cfg.as11.get_or_insert_with(Default::default).as03 = values;
+        }
+        if !atom && !settings.mxf_as12.trim().is_empty() {
+            let bad = |e: String| ExportError::Unsupported(format!("AS-12: {e}"));
+            cfg.as11.get_or_insert_with(Default::default).as12 = cfa4_mxf::as11::parse_framework_text(&settings.mxf_as12).map_err(bad)?;
         }
         let cdp = match s.captions.as_ref().filter(|_| !atom) {
             Some(doc) => {

@@ -490,6 +490,13 @@ pub struct ExportSettings {
     /// general provisions and the named shim. Empty: no AS-03 metadata.
     #[serde(default)]
     pub mxf_as03: String,
+    /// MXF OP1a: the AMWA AS-12 (MXF Commercials Delivery) Ad-ID advertisement identification
+    /// (`adid_prefix`, `adid_code`, `ad_title`, `Brand`, `Product`, `Advertiser`,
+    /// `agency_office_location`, `Length`, `Medium`, `sd_flag`, `Parent`; `ShimName` optional,
+    /// [`cfa4_mxf::as11::ADID_SHIM_NAME`]) as `Name: value` lines. It goes beside an AS-11 Core,
+    /// AS-10 or AS-03 framework, which must be given too. Empty: no AS-12 metadata.
+    #[serde(default)]
+    pub mxf_as12: String,
     /// Container of MPEG-2 exports: `ps`, `ts`, `m2ts` or `es` (empty = from the path's
     /// extension, a program stream unless it is `.ts`, `.m2ts` / `.mts` or `.m2v`).
     #[serde(default)]
@@ -830,6 +837,7 @@ impl Default for ExportSettings {
             mxf_as11_ukdpp: String::new(),
             mxf_as10: String::new(),
             mxf_as03: String::new(),
+            mxf_as12: String::new(),
             mpeg2_container: String::new(),
             mpeg2_422: false,
             mpeg2_quantizer: None,
@@ -993,6 +1001,15 @@ impl ExportSettings {
                 return Err(ExportError::Unsupported("AS-03 metadata is written in MXF OP1a with MPEG-2 or H.264 video".into()));
             }
             cfa4_mxf::as11::check_as03_text(&self.mxf_as03).map_err(|e| ExportError::Unsupported(format!("AS-03: {e}")))?;
+        }
+        if !self.mxf_as12.trim().is_empty() {
+            if self.format != Format::MxfOp1a {
+                return Err(ExportError::Unsupported("AS-12 metadata is written in MXF OP1a".into()));
+            }
+            if [&self.mxf_as11_core, &self.mxf_as10, &self.mxf_as03].iter().all(|s| s.trim().is_empty()) {
+                return Err(ExportError::Unsupported("AS-12 goes beside an AS-11 Core, AS-10 or AS-03 framework: give one of them too".into()));
+            }
+            cfa4_mxf::as11::check_as12_text(&self.mxf_as12).map_err(|e| ExportError::Unsupported(format!("AS-12: {e}")))?;
         }
         if self.format.is_mxf() && self.mxf_anc_captions {
             if self.format == Format::MxfOpAtom {

@@ -1920,6 +1920,9 @@ impl<W: Write + Seek> MxfWriter<W> {
                 if !a.as03.is_empty() {
                     track_uids.push(self.uid(AS11_UID + 0x400));
                 }
+                if !a.as12.is_empty() {
+                    track_uids.push(self.uid(AS11_UID + 0x500));
+                }
             }
             let mut s = Set::new(if material { 0x36 } else { 0x37 }, self.uid(base));
             let (umid, name) = if material { (cfg.ids.material, &cfg.ids.material_name) } else { (cfg.ids.file, &cfg.ids.file_name) };
@@ -2416,6 +2419,29 @@ impl<W: Write + Seek> MxfWriter<W> {
         }
         if !a.as03.is_empty() {
             static_track(out, AS11_UID + 0x400, crate::as11::AS03_TRACK, crate::as11::AS03_FRAMEWORK_KEY, &a.as03);
+        }
+        if !a.as12.is_empty() {
+            // the framework holds the shim name and a strong reference to the Ad-ID slate
+            let base = AS11_UID + 0x500;
+            let (name, id) = crate::as11::AS12_TRACK;
+            let (t, q, g, f, slate) = (self.uid(base), self.uid(base + 1), self.uid(base + 2), self.uid(base + 3), self.uid(base + 4));
+            let mut s = Set::new(0x3A, t);
+            s.u32(0x4801, id).u32(0x4804, 0).p(0x4802, &utf16(name)).p(0x4803, &q);
+            s.write(out);
+            let mut s = Set::new(0x0F, q);
+            s.p(0x0201, &DEF_DESCRIPTIVE).refs(0x1001, &[g]);
+            s.write(out);
+            let mut s = Set::new(0x41, g);
+            s.p(0x0201, &DEF_DESCRIPTIVE).p(0x6101, &f);
+            s.write(out);
+            let mut s = Set { key: crate::as11::AS12_FRAMEWORK_KEY, v: Vec::new() };
+            s.p(0x3C0A, &f);
+            for (i, v) in &a.as12 {
+                s.p(tag(i), v);
+            }
+            s.p(tag(&crate::as11::AS12_SLATE), &slate);
+            s.write(out);
+            framework(out, crate::as11::ADID_SLATE_KEY, slate, &a.adid);
         }
     }
 

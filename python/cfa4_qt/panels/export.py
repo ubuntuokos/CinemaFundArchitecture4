@@ -572,6 +572,7 @@ class ExportDialog(QDialog):
             ("mxfAs11Segments", "1/2 10:00:00:00 00:12:30:00\n2/2 10:13:00:00 00:11:00:00"),
             ("mxfAs11Ukdpp", "ProductionNumber: …\nSynopsis: …\nContactEmail: …"),
             ("mxfAs10", "ShimName: NRK_HD_2012\nMainTitle: …"),
+            ("mxfAs12", "adid_prefix: ABCD\nadid_code: 1234000H\nad_title: …\nBrand: …\nProduct: …\nAdvertiser: …\nagency_office_location: …\nLength: 30\nMedium: Television\nsd_flag: N\nParent: …"),
             ("mxfAs03", "IdentifierKind: ISAN\nIdentifier: …\nShimName: PBS NGIS HD Playout\nSignalStandard: 1920/1080/59.94i/16:9\nIntendedAFD: 1000 FullHD"),
         ):
             t = QPlainTextEdit(self)
@@ -653,7 +654,7 @@ class ExportDialog(QDialog):
         fv.addRow(tr("Alpha"), self.alpha)
         fv.addRow(tr("DASH Manifest"), self.dash_manifest)
         fv.addRow(tr("Closed Captions"), self.mxf_anc)
-        for key, label in (("mxfAs11Core", N_("AS-11 Core")), ("mxfAs11Segments", N_("AS-11 Parts")), ("mxfAs11Ukdpp", N_("AS-11 UK DPP")), ("mxfAs10", N_("AS-10")), ("mxfAs03", N_("AS-03"))):
+        for key, label in (("mxfAs11Core", N_("AS-11 Core")), ("mxfAs11Segments", N_("AS-11 Parts")), ("mxfAs11Ukdpp", N_("AS-11 UK DPP")), ("mxfAs10", N_("AS-10")), ("mxfAs03", N_("AS-03")), ("mxfAs12", N_("AS-12"))):
             fv.addRow(tr(label), self.as11_text[key])
         fv.addRow(tr("Quality"), self.quality)
         self.video_form = fv
