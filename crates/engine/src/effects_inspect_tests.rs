@@ -180,6 +180,45 @@ fn graphs_an_animated_parameter_across_its_clip() {
 }
 
 #[test]
+fn program_overlay_reports_the_crop_rectangle_of_the_selected_crop() {
+    let mut s = demo();
+    let it = v1_clip(&s);
+    let c = it.id.0;
+    let mid = Tick(it.start.0 + it.duration.0 / 2);
+    s.execute("playhead.set", json!({"time": mid.0})).unwrap();
+    s.execute("timeline.select", json!({"clips": [c]})).unwrap();
+    s.execute("effects.apply", json!({"clips": [c], "effect": "crop"})).unwrap();
+    // Crop added but not selected: no rectangle
+    s.execute("effects.select", json!({"none": true})).unwrap();
+    assert!(s.execute("program.overlay", json!({})).unwrap()["crop"].is_null());
+    s.execute("effects.select", json!({"clip": c, "effect": "crop"})).unwrap();
+    let crop = |s: &mut Session| s.execute("program.overlay", json!({})).unwrap()["crop"].clone();
+    let v = crop(&mut s);
+    let [w, h] = [v["size"][0].as_f64().unwrap(), v["size"][1].as_f64().unwrap()];
+    assert_eq!((v["clip"].as_u64(), v["effectId"].as_str()), (Some(c), Some("crop")));
+    assert_eq!(v["toFrame"].as_array().unwrap().len(), 6);
+    // nothing cropped: the whole picture
+    assert_eq!(v["rect"], json!([0.0, 0.0, w, h]));
+    assert_eq!((v["left"].as_f64(), v["right"].as_f64()), (Some(0.0), Some(0.0)));
+    // cropped: the kept part, in clip pixels
+    let effect = v["effect"].as_u64().unwrap();
+    for (param, value) in [("left", 10.0), ("top", 20.0), ("right", 25.0), ("bottom", 50.0)] {
+        s.execute("effects.setParam", json!({"clip": c, "effect": effect, "param": param, "value": value})).unwrap();
+    }
+    let v = crop(&mut s);
+    let want = [w * 0.10, h * 0.20, w * 0.75, h * 0.50];
+    for (got, want) in v["rect"].as_array().unwrap().iter().zip(want) {
+        assert!((got.as_f64().unwrap() - want).abs() < 1e-6, "{v}");
+    }
+    // another effect selected, or off the clip: no rectangle
+    s.execute("effects.select", json!({"clip": c, "effect": "motion"})).unwrap();
+    assert!(crop(&mut s).is_null());
+    s.execute("effects.select", json!({"clip": c, "effect": "crop"})).unwrap();
+    s.execute("playhead.set", json!({"time": it.end().0 + 1})).unwrap();
+    assert!(crop(&mut s).is_null());
+}
+
+#[test]
 fn program_overlay_reports_the_transform_box_and_the_selected_mask() {
     let mut s = demo();
     let it = v1_clip(&s);
