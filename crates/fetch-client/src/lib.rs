@@ -297,7 +297,8 @@ fn run_with(program: &Path, extra_args: &[&str], req: &Request, progress: Progre
     if !matches!(outcome, Some(Ok(()))) || ended.is_some_and(|t| t.elapsed() > LINGER) {
         let _ = child.kill();
     }
-    let status = child.wait()?;
+    // a downloader that closed its output but does not exit is stopped too
+    let status = finish(&mut child, LINGER)?;
     // a reader waiting on the full queue stops when the queue is gone
     drop(rx);
     let _ = reader.join();
@@ -311,6 +312,21 @@ fn run_with(program: &Path, extra_args: &[&str], req: &Request, progress: Progre
             remove_parts(req, pid);
             Err(FetchError::Failed(format!("the downloader stopped without finishing ({status})")))
         }
+    }
+}
+
+/// Wait at most `grace` for `child` to exit, then stop it.
+fn finish(child: &mut std::process::Child, grace: Duration) -> std::io::Result<std::process::ExitStatus> {
+    let until = Instant::now() + grace;
+    loop {
+        if let Some(status) = child.try_wait()? {
+            return Ok(status);
+        }
+        if Instant::now() >= until {
+            let _ = child.kill();
+            return child.wait();
+        }
+        std::thread::sleep(Duration::from_millis(50));
     }
 }
 

@@ -47,6 +47,11 @@ fn events_are_one_json_line_each() {
     assert_eq!(serde_json::from_str::<Event>(r#"{"event":"error","message":"x"}"#).unwrap(), Event::Error { message: "x".into() });
 }
 
+/// The stand-in downloaders run as `/bin/sh <script>`: executing a script just written can fail with
+/// "Text file busy" while another test thread's child still holds it open for writing.
+#[cfg(unix)]
+const SH_PATH: &str = "/bin/sh";
+
 /// A stand-in downloader: a shell script printing `lines`, then sleeping `sleep` seconds.
 #[cfg(unix)]
 fn fake(dir: &Path, lines: &[&str], sleep: u32, exit: i32) -> PathBuf {
@@ -74,7 +79,7 @@ fn run_reports_progress_and_success() {
     let t = tempfile::tempdir().unwrap();
     let prog = fake(t.path(), &[r#"{"event":"progress","done":4,"total":10,"file":"model.safetensors"}"#, r#"{"event":"done"}"#], 0, 0);
     let mut seen = Vec::new();
-    run(&prog, &[], &request(t.path()), &mut |d, total, f| {
+    run(Path::new(SH_PATH), &[prog.to_str().unwrap()], &request(t.path()), &mut |d, total, f| {
         seen.push((d, total, f.to_string()));
         true
     })
@@ -91,7 +96,7 @@ fn run_reports_the_downloaders_error_and_removes_part_files() {
     std::fs::write(&other, b"theirs").unwrap();
     let pre = format!("printf half > '{}/model.safetensors.'$$'.part'", t.path().display());
     let prog = fake_with(t.path(), &pre, &[r#"{"event":"error","message":"model.safetensors: checksum mismatch"}"#], 0, 1);
-    let e = run(&prog, &[], &request(t.path()), &mut |_, _, _| true).unwrap_err();
+    let e = run(Path::new(SH_PATH), &[prog.to_str().unwrap()], &request(t.path()), &mut |_, _, _| true).unwrap_err();
     assert!(e.to_string().contains("checksum mismatch"), "{e}");
     let left: Vec<_> = std::fs::read_dir(t.path()).unwrap().map(|e| e.unwrap().file_name().into_string().unwrap()).filter(|n| n.ends_with(".part")).collect();
     assert_eq!(left, vec![part_name("model.safetensors", 1)]);
@@ -103,7 +108,10 @@ fn run_fails_when_the_downloader_stops_without_a_result() {
     let t = tempfile::tempdir().unwrap();
     for (lines, code) in [(&[][..], 0), (&["not json"][..], 0), (&[r#"{"event":"done"}"#][..], 3)] {
         let prog = fake(t.path(), lines, 0, code);
-        assert!(matches!(run(&prog, &[], &request(t.path()), &mut |_, _, _| true), Err(FetchError::Failed(_))), "{lines:?} {code}");
+        assert!(
+            matches!(run(Path::new(SH_PATH), &[prog.to_str().unwrap()], &request(t.path()), &mut |_, _, _| true), Err(FetchError::Failed(_))),
+            "{lines:?} {code}"
+        );
     }
 }
 
@@ -114,7 +122,7 @@ fn cancelling_stops_a_stalled_download() {
     let prog = fake(t.path(), &[r#"{"event":"progress","done":1,"total":10,"file":"model.safetensors"}"#], 60, 0);
     let start = std::time::Instant::now();
     let mut calls = 0;
-    let e = run(&prog, &[], &request(t.path()), &mut |_, _, _| {
+    let e = run(Path::new(SH_PATH), &[prog.to_str().unwrap()], &request(t.path()), &mut |_, _, _| {
         calls += 1;
         calls < 3
     })
@@ -129,7 +137,7 @@ fn a_silent_downloader_is_stopped() {
     let t = tempfile::tempdir().unwrap();
     let prog = fake(t.path(), &[r#"{"event":"progress","done":1,"total":10,"file":"model.safetensors"}"#], 60, 0);
     let start = std::time::Instant::now();
-    let e = run_with(&prog, &[], &request(t.path()), &mut |_, _, _| true, Duration::from_secs(1)).unwrap_err();
+    let e = run_with(Path::new(SH_PATH), &[prog.to_str().unwrap()], &request(t.path()), &mut |_, _, _| true, Duration::from_secs(1)).unwrap_err();
     assert!(e.to_string().contains("received nothing"), "{e}");
     assert!(start.elapsed() < Duration::from_secs(20), "{:?}", start.elapsed());
 }
@@ -142,10 +150,24 @@ fn a_downloader_that_stays_after_its_last_line_is_stopped() {
     for (line, want) in [(r#"{"event":"error","message":"boom"}"#, "boom"), (r#"{"event":"done"}"#, "without finishing")] {
         let prog = fake(t.path(), &[line], 60, 0);
         let start = std::time::Instant::now();
-        let e = run_with(&prog, &[], &request(t.path()), &mut |_, _, _| true, Duration::from_secs(60)).unwrap_err();
+        let e = run_with(Path::new(SH_PATH), &[prog.to_str().unwrap()], &request(t.path()), &mut |_, _, _| true, Duration::from_secs(60)).unwrap_err();
         assert!(e.to_string().contains(want), "{e}");
         assert!(start.elapsed() < Duration::from_secs(20), "{:?}", start.elapsed());
     }
+}
+
+#[cfg(unix)]
+#[test]
+fn a_downloader_that_closes_its_output_but_does_not_exit_is_stopped() {
+    use std::os::unix::fs::PermissionsExt;
+    let t = tempfile::tempdir().unwrap();
+    let prog = t.path().join("fake-fetch");
+    std::fs::write(&prog, "#!/bin/sh\ncat >/dev/null\nprintf '%s\\n' '{\"event\":\"done\"}'\nexec >&-\nexec sleep 60\n").unwrap();
+    std::fs::set_permissions(&prog, std::fs::Permissions::from_mode(0o755)).unwrap();
+    let start = std::time::Instant::now();
+    let e = run_with(Path::new(SH_PATH), &[prog.to_str().unwrap()], &request(t.path()), &mut |_, _, _| true, Duration::from_secs(60)).unwrap_err();
+    assert!(e.to_string().contains("without finishing"), "{e}");
+    assert!(start.elapsed() < Duration::from_secs(20), "{:?}", start.elapsed());
 }
 
 #[test]
