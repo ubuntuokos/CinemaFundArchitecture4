@@ -190,6 +190,13 @@ dependencies = [
 ]
 
 [[package]]
+name = "cfa4-cavs"
+version = "0.10.0"
+dependencies = [
+ "thiserror",
+]
+
+[[package]]
 name = "cfa4-cfb"
 version = "0.10.0"
 
@@ -277,6 +284,13 @@ dependencies = [
 ]
 
 [[package]]
+name = "cfa4-evc"
+version = "0.10.0"
+dependencies = [
+ "thiserror",
+]
+
+[[package]]
 name = "cfa4-ffv1"
 version = "0.10.0"
 dependencies = [
@@ -308,6 +322,7 @@ dependencies = [
  "cfa4-avi",
  "cfa4-canopus",
  "cfa4-captions",
+ "cfa4-cavs",
  "cfa4-cfb",
  "cfa4-cineform",
  "cfa4-credits",
@@ -317,35 +332,54 @@ dependencies = [
  "cfa4-dnx",
  "cfa4-dts",
  "cfa4-dv",
+ "cfa4-evc",
  "cfa4-ffv1",
+ "cfa4-g729",
  "cfa4-h264",
  "cfa4-hap",
  "cfa4-heif",
  "cfa4-hevc",
  "cfa4-huffyuv",
  "cfa4-iab",
+ "cfa4-ilbc",
  "cfa4-interchange",
  "cfa4-isobmff",
  "cfa4-j2k",
  "cfa4-jxl",
+ "cfa4-lagarith",
  "cfa4-lcevc",
+ "cfa4-magicyuv",
  "cfa4-matroska",
  "cfa4-mpa",
  "cfa4-mpeg2v",
  "cfa4-mpegts",
+ "cfa4-musepack",
  "cfa4-mxf",
  "cfa4-ogg",
  "cfa4-opus",
  "cfa4-project",
  "cfa4-prores",
+ "cfa4-realaudio",
+ "cfa4-realmedia",
+ "cfa4-realvideo",
+ "cfa4-shorten",
  "cfa4-speex",
+ "cfa4-sstp",
  "cfa4-st2110",
+ "cfa4-tak",
  "cfa4-truehd",
  "cfa4-tta",
  "cfa4-utvideo",
  "cfa4-vp8",
  "cfa4-vp9",
  "libfuzzer-sys",
+]
+
+[[package]]
+name = "cfa4-g729"
+version = "0.10.0"
+dependencies = [
+ "thiserror",
 ]
 
 [[package]]
@@ -403,6 +437,13 @@ dependencies = [
 ]
 
 [[package]]
+name = "cfa4-ilbc"
+version = "0.10.0"
+dependencies = [
+ "thiserror",
+]
+
+[[package]]
 name = "cfa4-interchange"
 version = "0.10.0"
 dependencies = [
@@ -443,8 +484,22 @@ dependencies = [
 ]
 
 [[package]]
+name = "cfa4-lagarith"
+version = "0.10.0"
+dependencies = [
+ "thiserror",
+]
+
+[[package]]
 name = "cfa4-lcevc"
 version = "0.10.0"
+
+[[package]]
+name = "cfa4-magicyuv"
+version = "0.10.0"
+dependencies = [
+ "thiserror",
+]
 
 [[package]]
 name = "cfa4-matroska"
@@ -462,6 +517,7 @@ dependencies = [
  "cfa4-heif",
  "cfa4-hevc",
  "cfa4-jxl",
+ "cfa4-realaudio",
  "cfa4-time",
  "image",
  "log",
@@ -488,6 +544,13 @@ dependencies = [
 
 [[package]]
 name = "cfa4-mpegts"
+version = "0.10.0"
+dependencies = [
+ "thiserror",
+]
+
+[[package]]
+name = "cfa4-musepack"
 version = "0.10.0"
 dependencies = [
  "thiserror",
@@ -534,6 +597,34 @@ dependencies = [
 ]
 
 [[package]]
+name = "cfa4-realaudio"
+version = "0.10.0"
+dependencies = [
+ "thiserror",
+]
+
+[[package]]
+name = "cfa4-realmedia"
+version = "0.10.0"
+dependencies = [
+ "thiserror",
+]
+
+[[package]]
+name = "cfa4-realvideo"
+version = "0.10.0"
+dependencies = [
+ "thiserror",
+]
+
+[[package]]
+name = "cfa4-shorten"
+version = "0.10.0"
+dependencies = [
+ "thiserror",
+]
+
+[[package]]
 name = "cfa4-speex"
 version = "0.10.0"
 dependencies = [
@@ -541,7 +632,21 @@ dependencies = [
 ]
 
 [[package]]
+name = "cfa4-sstp"
+version = "0.10.0"
+dependencies = [
+ "thiserror",
+]
+
+[[package]]
 name = "cfa4-st2110"
+version = "0.10.0"
+dependencies = [
+ "thiserror",
+]
+
+[[package]]
+name = "cfa4-tak"
 version = "0.10.0"
 dependencies = [
  "thiserror",
