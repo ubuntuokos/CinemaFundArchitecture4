@@ -4813,3 +4813,12 @@
 	16-bit	16 ビット
 	24-bit	24 ビット
 	32-bit float	32 ビット浮動小数点
+
+# Datamosh transition (Grunge & Distort, DM1, #1409)
+	Datamosh	データモッシュ
+	Residual	残差
+	Motion Boost	モーション増幅
+	Recovery	回復
+	Encode Resolution	エンコード解像度
+	Half	1/2
+	Quarter	1/4

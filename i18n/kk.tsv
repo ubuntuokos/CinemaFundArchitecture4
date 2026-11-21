@@ -4806,3 +4806,12 @@ export.summary	Low	төмен
 	16-bit	16 бит
 	24-bit	24 бит
 	32-bit float	32 бит қалқымалы нүкте
+
+# Datamosh transition (Grunge & Distort, DM1, #1409)
+	Datamosh	Datamosh
+	Residual	Қалдық
+	Motion Boost	Қозғалысты күшейту
+	Recovery	Қалпына келу
+	Encode Resolution	Кодтау ажыратымдылығы
+	Half	Жарты
+	Quarter	Ширек

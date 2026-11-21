@@ -4804,3 +4804,12 @@ export.summary	Low	nízká
 	16-bit	16bitový
 	24-bit	24bitový
 	32-bit float	32bitový s plovoucí desetinnou čárkou
+
+# Datamosh transition (Grunge & Distort, DM1, #1409)
+	Datamosh	Datamosh
+	Residual	Reziduum
+	Motion Boost	Zesílení pohybu
+	Recovery	Obnova
+	Encode Resolution	Rozlišení kódování
+	Half	Poloviční
+	Quarter	Čtvrtinové

@@ -4805,3 +4805,12 @@ export.summary	Low	düşük
 	16-bit	16 bit
 	24-bit	24 bit
 	32-bit float	32 bit kayan nokta
+
+# Datamosh transition (Grunge & Distort, DM1, #1409)
+	Datamosh	Datamosh
+	Residual	Artık
+	Motion Boost	Hareket Güçlendirme
+	Recovery	Toparlanma
+	Encode Resolution	Kodlama Çözünürlüğü
+	Half	Yarım
+	Quarter	Çeyrek

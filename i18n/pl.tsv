@@ -4804,3 +4804,12 @@ export.summary	Low	niska
 	16-bit	16-bitowy
 	24-bit	24-bitowy
 	32-bit float	32-bitowy zmiennoprzecinkowy
+
+# Datamosh transition (Grunge & Distort, DM1, #1409)
+	Datamosh	Datamosh
+	Residual	Reszta
+	Motion Boost	Wzmocnienie ruchu
+	Recovery	Odzyskiwanie
+	Encode Resolution	Rozdzielczość kodowania
+	Half	Połowa
+	Quarter	Ćwiartka

@@ -4787,3 +4787,12 @@
 	16-bit	16 бит
 	24-bit	24 бит
 	32-bit float	32 бит с плавающей точкой
+
+# Datamosh transition (Grunge & Distort, DM1, #1409)
+	Datamosh	Datamosh
+	Residual	Остаток
+	Motion Boost	Усиление движения
+	Recovery	Восстановление
+	Encode Resolution	Разрешение кодирования
+	Half	Половина
+	Quarter	Четверть

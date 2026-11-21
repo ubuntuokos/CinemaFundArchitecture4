@@ -4807,3 +4807,12 @@ export.summary	Low	დაბალი
 	16-bit	16 ბიტი
 	24-bit	24 ბიტი
 	32-bit float	32 ბიტი მცოცავი წერტილით
+
+# Datamosh transition (Grunge & Distort, DM1, #1409)
+	Datamosh	Datamosh
+	Residual	ნარჩენი
+	Motion Boost	მოძრაობის გაძლიერება
+	Recovery	აღდგენა
+	Encode Resolution	კოდირების გარჩევადობა
+	Half	ნახევარი
+	Quarter	მეოთხედი

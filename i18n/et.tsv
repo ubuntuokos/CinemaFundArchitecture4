@@ -4806,3 +4806,12 @@ export.summary	Low	madal
 	16-bit	16-bitine
 	24-bit	24-bitine
 	32-bit float	32-bitine ujukoma
+
+# Datamosh transition (Grunge & Distort, DM1, #1409)
+	Datamosh	Datamosh
+	Residual	Jääk
+	Motion Boost	Liikumise võimendus
+	Recovery	Taastumine
+	Encode Resolution	Kodeerimise eraldusvõime
+	Half	Pool
+	Quarter	Veerand

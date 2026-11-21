@@ -4787,3 +4787,12 @@
 	16-bit	16 біт
 	24-bit	24 біт
 	32-bit float	32 біт з рухомою комою
+
+# Datamosh transition (Grunge & Distort, DM1, #1409)
+	Datamosh	Datamosh
+	Residual	Залишок
+	Motion Boost	Підсилення руху
+	Recovery	Відновлення
+	Encode Resolution	Роздільність кодування
+	Half	Половина
+	Quarter	Чверть

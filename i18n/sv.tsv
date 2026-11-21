@@ -4806,3 +4806,12 @@ export.summary	Low	låg
 	16-bit	16 bitar
 	24-bit	24 bitar
 	32-bit float	32-bitars flyttal
+
+# Datamosh transition (Grunge & Distort, DM1, #1409)
+	Datamosh	Datamosh
+	Residual	Residual
+	Motion Boost	Rörelseförstärkning
+	Recovery	Återhämtning
+	Encode Resolution	Kodningsupplösning
+	Half	Halv
+	Quarter	Fjärdedel

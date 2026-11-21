@@ -4812,3 +4812,12 @@
 	16-bit	16-bit
 	24-bit	24-bit
 	32-bit float	32-bit float
+
+# Datamosh transition (Grunge & Distort, DM1, #1409)
+	Datamosh	Datamosh
+	Residual	Residu
+	Motion Boost	Penguatan Gerak
+	Recovery	Pemulihan
+	Encode Resolution	Resolusi Enkode
+	Half	Setengah
+	Quarter	Seperempat

@@ -4803,3 +4803,12 @@ export.summary	Low	低
 	16-bit	16 位元
 	24-bit	24 位元
 	32-bit float	32 位元浮點
+
+# Datamosh transition (Grunge & Distort, DM1, #1409)
+	Datamosh	資料損毀
+	Residual	殘差
+	Motion Boost	動態增強
+	Recovery	恢復
+	Encode Resolution	編碼解析度
+	Half	1/2
+	Quarter	1/4

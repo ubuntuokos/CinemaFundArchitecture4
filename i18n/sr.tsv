@@ -4804,3 +4804,12 @@ export.summary	Low	низак
 	16-bit	16-битни
 	24-bit	24-битни
 	32-bit float	32-битни покретни зарез
+
+# Datamosh transition (Grunge & Distort, DM1, #1409)
+	Datamosh	Datamosh
+	Residual	Остатак
+	Motion Boost	Појачање покрета
+	Recovery	Опоравак
+	Encode Resolution	Резолуција кодирања
+	Half	Пола
+	Quarter	Четвртина

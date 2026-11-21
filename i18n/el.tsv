@@ -4806,3 +4806,12 @@ export.summary	Low	χαμηλή
 	16-bit	16 bit
 	24-bit	24 bit
 	32-bit float	32 bit κινητής υποδιαστολής
+
+# Datamosh transition (Grunge & Distort, DM1, #1409)
+	Datamosh	Datamosh
+	Residual	Υπόλοιπο
+	Motion Boost	Ενίσχυση κίνησης
+	Recovery	Ανάκτηση
+	Encode Resolution	Ανάλυση κωδικοποίησης
+	Half	Μισή
+	Quarter	Τέταρτο

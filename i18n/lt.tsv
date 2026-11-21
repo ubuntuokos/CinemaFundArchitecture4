@@ -4807,3 +4807,12 @@ export.summary	Low	žema
 	16-bit	16 bitų
 	24-bit	24 bitų
 	32-bit float	32 bitų slankusis kablelis
+
+# Datamosh transition (Grunge & Distort, DM1, #1409)
+	Datamosh	Datamosh
+	Residual	Liekana
+	Motion Boost	Judesio sustiprinimas
+	Recovery	Atsistatymas
+	Encode Resolution	Kodavimo raiška
+	Half	Pusė
+	Quarter	Ketvirtis

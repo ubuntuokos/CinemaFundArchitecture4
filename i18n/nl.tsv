@@ -4804,3 +4804,12 @@ export.summary	Low	laag
 	16-bit	16-bits
 	24-bit	24-bits
 	32-bit float	32-bits drijvende komma
+
+# Datamosh transition (Grunge & Distort, DM1, #1409)
+	Datamosh	Datamosh
+	Residual	Residu
+	Motion Boost	Bewegingsversterking
+	Recovery	Herstel
+	Encode Resolution	Coderingsresolutie
+	Half	Half
+	Quarter	Kwart

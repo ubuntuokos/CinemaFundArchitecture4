@@ -4807,3 +4807,12 @@ export.summary	Low	nizka
 	16-bit	16-bitno
 	24-bit	24-bitno
 	32-bit float	32-bitno s plavajočo vejico
+
+# Datamosh transition (Grunge & Distort, DM1, #1409)
+	Datamosh	Datamosh
+	Residual	Ostanek
+	Motion Boost	Ojačitev gibanja
+	Recovery	Obnova
+	Encode Resolution	Ločljivost kodiranja
+	Half	Polovica
+	Quarter	Četrtina
