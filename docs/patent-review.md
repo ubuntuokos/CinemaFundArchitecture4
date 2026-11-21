@@ -105,6 +105,8 @@ szabadalommal védett formátumot.
 | iLBC | dekódolás; `.lbc` fájlok olvasása | `crates/ilbc` (a WebRTC libilbc portja) | alap | függőben | | |
 | TTA (True Audio) | dekódolás; `.tta` és Matroska olvasása | `crates/tta` (a libtta portja) | alap | függőben | | |
 | Shorten | dekódolás; `.shn` fájlok olvasása | `crates/shorten` (az FFmpeg Shorten-dekódolójának portja) | alap | függőben | | |
+| CRI ADX | dekódolás; `.adx` fájlok olvasása | `crates/adx` (az FFmpeg ADX-dekódolójának portja) | alap | függőben | | |
+| CRI HCA | dekódolás (kulcsos titkosítással is); `.hca` fájlok olvasása | `crates/hca` (az FFmpeg HCA-dekódolójának portja) | alap | függőben | | |
 | TAK (Tom's lossless Audio Kompressor) | dekódolás; `.tak` fájlok olvasása | `crates/tak` (az FFmpeg TAK-dekódolójának portja) | alap | függőben | | |
 | AMR-NB, AMR-WB | dekódolás | `crates/amr` (az opencore-amr portja) | alap | függőben | | |
 | Musepack SV7, SV8 | dekódolás; `.mpc` fájlok olvasása | `crates/musepack` (a libmpcdec portja) | alap | függőben | | |

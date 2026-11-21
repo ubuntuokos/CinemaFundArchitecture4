@@ -86,6 +86,8 @@ cfa4-g729 = { path = "crates/g729" }
 cfa4-ilbc = { path = "crates/ilbc" }
 cfa4-tta = { path = "crates/tta" }
 cfa4-shorten = { path = "crates/shorten" }
+cfa4-adx = { path = "crates/adx" }
+cfa4-hca = { path = "crates/hca" }
 cfa4-tak = { path = "crates/tak" }
 cfa4-realvideo = { path = "crates/realvideo" }
 cfa4-realmedia = { path = "crates/realmedia" }
@@ -197,6 +199,12 @@ opt-level = 3
 opt-level = 3
 
 [profile.dev.package.cfa4-shorten]
+opt-level = 3
+
+[profile.dev.package.cfa4-adx]
+opt-level = 3
+
+[profile.dev.package.cfa4-hca]
 opt-level = 3
 
 [profile.dev.package.cfa4-tak]

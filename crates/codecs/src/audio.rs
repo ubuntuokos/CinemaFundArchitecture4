@@ -1202,6 +1202,48 @@ impl AudioFileSource {
             };
             return Ok(Self { info, rate: tta.sample_rate, samples });
         }
+        if ext == "adx" {
+            let (adx, planes) = cfa4_adx::decode_file(&bytes).map_err(|e| CodecError::Decode(format!("{name}: {e}")))?;
+            let samples: Vec<Vec<f32>> = planes.into_iter().map(|p| p.into_iter().map(cfa4_adx::Header::to_f32).collect()).collect();
+            let frames = samples.first().map_or(0, Vec::len);
+            let info = MediaInfo {
+                name: name.to_string(),
+                kind: MediaKind::AudioOnly,
+                duration: Tick::from_units(frames as i64, i64::from(adx.sample_rate)),
+                video: None,
+                audio_streams: vec![AudioStreamInfo {
+                    sample_rate: adx.sample_rate,
+                    channels: samples.len() as u32,
+                    codec: "CRI ADX".into(),
+                    ..AudioStreamInfo::default()
+                }],
+                container: "CRI ADX".into(),
+                start_timecode: None,
+                file_size: Some(bytes.len() as u64),
+            };
+            return Ok(Self { info, rate: adx.sample_rate, samples });
+        }
+        if ext == "hca" {
+            // An encrypted stream needs its key, which this opener has no way to take: it is refused.
+            let (hca, samples, _damaged) = cfa4_hca::decode_file(&bytes, None).map_err(|e| CodecError::Decode(format!("{name}: {e}")))?;
+            let frames = samples.first().map_or(0, Vec::len);
+            let info = MediaInfo {
+                name: name.to_string(),
+                kind: MediaKind::AudioOnly,
+                duration: Tick::from_units(frames as i64, i64::from(hca.sample_rate)),
+                video: None,
+                audio_streams: vec![AudioStreamInfo {
+                    sample_rate: hca.sample_rate,
+                    channels: samples.len() as u32,
+                    codec: "CRI HCA".into(),
+                    ..AudioStreamInfo::default()
+                }],
+                container: "CRI HCA".into(),
+                start_timecode: None,
+                file_size: Some(bytes.len() as u64),
+            };
+            return Ok(Self { info, rate: hca.sample_rate, samples });
+        }
         if ext == "mpc" {
             let (mpc, samples) = cfa4_musepack::decode_file(&bytes).map_err(|e| CodecError::Decode(format!("{name}: {e}")))?;
             let frames = samples.first().map_or(0, Vec::len);
@@ -1551,6 +1593,8 @@ pub fn opener(name: &str, bytes: Arc<[u8]>) -> Option<std::result::Result<Shared
             | "lbc"
             | "mpc"
             | "shn"
+            | "adx"
+            | "hca"
     ) {
         return None;
     }

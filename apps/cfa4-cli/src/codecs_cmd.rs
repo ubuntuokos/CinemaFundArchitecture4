@@ -151,6 +151,8 @@ static ROWS: &[Row] = &[
         AudioTrack("ATRAC3 (.at3) in Tools ▸ Audio Tools ▸ AT9/AT3 Converter"),
     ),
     audio("Shorten", &["shorten"], Ported, Sw(""), NoEnc),
+    audio("CRI ADX", &["adx"], Ported, Sw(""), NoEnc),
+    audio("CRI HCA", &["hca"], Ported, Sw("unencrypted streams; keyed streams through the library API"), NoEnc),
     audio("TAK", &["tak"], Ported, Sw(""), NoEnc),
     audio("G.729 / G.729 Annex B", &["g729"], Ported, Sw(""), NoEnc),
     audio("iLBC", &["ilbc"], Ported, Sw(""), NoEnc),

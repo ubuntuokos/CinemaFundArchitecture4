@@ -93,7 +93,7 @@ Ezek többségéhez nincs nyilvános specifikáció, ezért mindegyikhez külön
 | Bink, Bink Audio (a Bink 2 kimarad, tulajdonosi döntés, 2026-11-14: nincs nyílt dekóder) | játék |
 | Smacker, Smacker Audio | játék |
 | id RoQ, Interplay MVE, Interplay ACM | játék |
-| CRIWARE Sofdec.Prime, Sofdec2, CRI ADX, CRI HCA | japán játék |
+| CRIWARE Sofdec.Prime, Sofdec2 | japán játék |
 | Nintendo THP, Mobiclip, HVQM / HVQM4 | japán játék |
 | Nintendo DSP ADPCM, BRSTM, BCSTM / BFSTM | japán játék |
 | Sony PSP MPEG-4 AVC profilok | japán játék (valószínűleg a H.264-dekóder elég, csak a konténer kell) |
