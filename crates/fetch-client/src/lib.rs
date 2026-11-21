@@ -273,6 +273,10 @@ fn run_with(program: &Path, extra_args: &[&str], req: &Request, progress: Progre
     let mut heard = Instant::now();
     // when the last line (done or error) came; the output should close right after it
     let mut ended: Option<Instant> = None;
+    // the downloader reported its own failure: it removed its partial files before saying so, and
+    // a partial file left under this download's tag then is not its own (it refuses to create one
+    // that exists), so the client removes nothing
+    let mut reported = false;
     loop {
         match rx.recv_timeout(Duration::from_millis(250)) {
             Ok(Ok(Event::Progress { done, total, file })) => {
@@ -284,6 +288,7 @@ fn run_with(program: &Path, extra_args: &[&str], req: &Request, progress: Progre
                 ended.get_or_insert_with(Instant::now);
             }
             Ok(Ok(Event::Error { message })) => {
+                reported |= outcome.is_none();
                 outcome.get_or_insert(Err(FetchError::Failed(message)));
                 ended.get_or_insert_with(Instant::now);
                 // a failed downloader is stopped now, not when it closes its output
@@ -332,7 +337,9 @@ fn run_with(program: &Path, extra_args: &[&str], req: &Request, progress: Progre
     match outcome {
         Some(Ok(())) if status.success() => Ok(()),
         Some(Err(e)) => {
-            remove_parts(req, &tag);
+            if !reported {
+                remove_parts(req, &tag);
+            }
             Err(e)
         }
         _ => {

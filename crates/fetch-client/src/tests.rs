@@ -89,18 +89,34 @@ fn run_reports_progress_and_success() {
 
 #[cfg(unix)]
 #[test]
-fn run_reports_the_downloaders_error_and_removes_part_files() {
+fn run_reports_the_downloaders_error_and_leaves_partial_files_it_does_not_own() {
     let t = tempfile::tempdir().unwrap();
-    // another downloader's partial file is left alone
-    let other = t.path().join(part_name("model.safetensors", "1"));
-    std::fs::write(&other, b"theirs").unwrap();
-    // the client passes `--tag TAG` after the script: $2 in the script
-    let pre = format!("printf half > '{}/model.safetensors.'\"$2\"'.part'", t.path().display());
+    // a partial file under this download's tag that the downloader refused to touch (another run's):
+    // the downloader reports the failure, having removed its own files, and the client removes
+    // nothing. The client passes `--tag TAG` after the script: $2 in the script.
+    let pre = format!("printf theirs > '{}/model.safetensors.'\"$2\"'.part'", t.path().display());
     let prog = fake_with(t.path(), &pre, &[r#"{"event":"error","message":"model.safetensors: checksum mismatch"}"#], 0, 1);
     let e = run(Path::new(SH_PATH), &[prog.to_str().unwrap()], &request(t.path()), &mut |_, _, _| true).unwrap_err();
     assert!(e.to_string().contains("checksum mismatch"), "{e}");
-    let left: Vec<_> = std::fs::read_dir(t.path()).unwrap().map(|e| e.unwrap().file_name().into_string().unwrap()).filter(|n| n.ends_with(".part")).collect();
-    assert_eq!(left, vec![part_name("model.safetensors", "1")]);
+    assert_eq!(parts(t.path()).len(), 1);
+}
+
+#[cfg(unix)]
+#[test]
+fn a_stopped_downloaders_partial_files_are_removed_and_no_others() {
+    let t = tempfile::tempdir().unwrap();
+    let other = part_name("model.safetensors", "1");
+    std::fs::write(t.path().join(&other), b"theirs").unwrap();
+    let pre = format!("printf half > '{}/model.safetensors.'\"$2\"'.part'", t.path().display());
+    let prog = fake_with(t.path(), &pre, &[r#"{"event":"progress","done":4,"total":10,"file":"model.safetensors"}"#], 60, 0);
+    let e = run_with(Path::new(SH_PATH), &[prog.to_str().unwrap()], &request(t.path()), &mut |_, _, _| true, Duration::from_secs(1)).unwrap_err();
+    assert!(e.to_string().contains("received nothing"), "{e}");
+    assert_eq!(parts(t.path()), vec![other]);
+}
+
+/// The partial files in `dir`.
+fn parts(dir: &Path) -> Vec<String> {
+    std::fs::read_dir(dir).unwrap().map(|e| e.unwrap().file_name().into_string().unwrap()).filter(|n| n.ends_with(".part")).collect()
 }
 
 #[cfg(unix)]

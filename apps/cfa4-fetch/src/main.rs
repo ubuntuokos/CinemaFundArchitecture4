@@ -180,7 +180,12 @@ fn download(req: &Request, proxy: Option<ureq::Proxy>, tag: &str) -> Result<(), 
             let _ = std::fs::remove_file(&part);
             return Err(e);
         }
-        std::fs::rename(&part, &dest).map_err(|e| format!("{}: {e}", dest.display()))?;
+        // on every failure this run removes its own partial file before it reports the error: the
+        // engine does not remove it then (it could not tell it from another run's)
+        std::fs::rename(&part, &dest).map_err(|e| {
+            let _ = std::fs::remove_file(&part);
+            format!("{}: {e}", dest.display())
+        })?;
         done = done.saturating_add(f.size);
     }
     Ok(())
