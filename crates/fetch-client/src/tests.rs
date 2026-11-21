@@ -44,6 +44,7 @@ fn events_are_one_json_line_each() {
     assert_eq!(e.to_line(), r#"{"event":"progress","done":5,"total":10,"file":"a.bin"}"#);
     assert_eq!(serde_json::from_str::<Event>(&e.to_line()).unwrap(), e);
     assert_eq!(Event::Done.to_line(), r#"{"event":"done"}"#);
+    assert_eq!(Event::Checking { file: "a.bin".into() }.to_line(), r#"{"event":"checking","file":"a.bin"}"#);
     assert_eq!(serde_json::from_str::<Event>(r#"{"event":"error","message":"x"}"#).unwrap(), Event::Error { message: "x".into() });
 }
 
@@ -261,4 +262,34 @@ fn every_download_gets_its_own_tag() {
     for bad in ["", "a/b", "a.b", "../x", &"x".repeat(65)] {
         assert!(!valid_tag(bad), "{bad:?}");
     }
+}
+
+#[test]
+fn only_requested_files_can_be_announced() {
+    let t = tempfile::tempdir().unwrap();
+    let req = request(t.path());
+    let mut owned = std::collections::HashSet::new();
+    for i in 0..1000 {
+        announce(&req, &mut owned, &format!("x{i}.bin"));
+    }
+    announce(&req, &mut owned, "model.safetensors");
+    announce(&req, &mut owned, "model.safetensors");
+    assert_eq!(owned.len(), 1);
+}
+
+#[cfg(unix)]
+#[test]
+fn checking_existing_files_keeps_the_downloader_alive() {
+    use std::os::unix::fs::PermissionsExt;
+    let t = tempfile::tempdir().unwrap();
+    let prog = t.path().join("slow-check");
+    // silent for longer than the stall limit as a whole, but heard every half second
+    let line = r#"{"event":"checking","file":"model.safetensors"}"#;
+    std::fs::write(
+        &prog,
+        format!("#!/bin/sh\ncat >/dev/null\nfor i in 1 2 3 4 5 6; do printf '%s\\n' '{line}'; sleep 0.5; done\nprintf '%s\\n' '{{\"event\":\"done\"}}'\n"),
+    )
+    .unwrap();
+    std::fs::set_permissions(&prog, std::fs::Permissions::from_mode(0o755)).unwrap();
+    run_with(Path::new(SH_PATH), &[prog.to_str().unwrap()], &request(t.path()), &mut |_, _, _| true, Duration::from_secs(1)).unwrap();
 }

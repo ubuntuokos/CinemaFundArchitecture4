@@ -106,7 +106,14 @@ fn confine(dir: &Path, proxy: Option<&ureq::Proxy>, unprotected: bool) -> Result
 }
 
 /// Present with the pinned size and SHA-256.
+#[cfg(test)]
 fn valid_file(path: &Path, f: &FileSpec) -> bool {
+    valid_file_beating(path, f, &mut || {})
+}
+
+/// Present with the pinned size and SHA-256, calling `beat` before reading and after every 64 MiB read, so the engine hears
+/// from the downloader while it checks a large file on slow storage.
+fn valid_file_beating(path: &Path, f: &FileSpec, beat: &mut dyn FnMut()) -> bool {
     let Ok(meta) = std::fs::metadata(path) else { return false };
     if !meta.is_file() || meta.len() != f.size {
         return false;
@@ -114,10 +121,19 @@ fn valid_file(path: &Path, f: &FileSpec) -> bool {
     let Ok(mut file) = std::fs::File::open(path) else { return false };
     let mut hasher = sha2::Sha256::new();
     let mut buf = vec![0u8; 1 << 20];
+    let mut since_beat = 0usize;
+    beat();
     loop {
         match file.read(&mut buf) {
             Ok(0) => break,
-            Ok(n) => hasher.update(buf.get(..n).unwrap_or_default()),
+            Ok(n) => {
+                hasher.update(buf.get(..n).unwrap_or_default());
+                since_beat += n;
+                if since_beat >= 64 << 20 {
+                    since_beat = 0;
+                    beat();
+                }
+            }
             Err(_) => return false,
         }
     }
@@ -155,7 +171,15 @@ fn agent(proxy: Option<ureq::Proxy>) -> ureq::Agent {
 
 fn download(req: &Request, proxy: Option<ureq::Proxy>, tag: &str) -> Result<(), String> {
     let dir = &req.dir;
-    let missing: Vec<&FileSpec> = req.files.iter().filter(|f| !valid_file(&dir.join(&f.name), f)).collect();
+    let missing: Vec<&FileSpec> = req
+        .files
+        .iter()
+        .filter(|f| {
+            !valid_file_beating(&dir.join(&f.name), f, &mut || {
+                emit(&Event::Checking { file: f.name.clone() });
+            })
+        })
+        .collect();
     if missing.is_empty() {
         return Ok(());
     }

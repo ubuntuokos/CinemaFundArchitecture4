@@ -103,6 +103,9 @@ pub enum Event {
     /// The first line naming a file comes right after the downloader created that file's partial
     /// file: a stopped downloader's partial files are removed only when announced this way.
     Progress { done: u64, total: u64, file: String },
+    /// The downloader is checking the size and SHA-256 of a file already present (a sign of life
+    /// while it reads a large file, before any download; it announces no partial file).
+    Checking { file: String },
     /// Every file is in place.
     Done,
     /// The download failed; nothing half-written is left in place of a file.
@@ -284,9 +287,10 @@ fn run_with(program: &Path, extra_args: &[&str], req: &Request, progress: Progre
         match rx.recv_timeout(Duration::from_millis(250)) {
             Ok(Ok(Event::Progress { done, total, file })) => {
                 heard = Instant::now();
-                owned.insert(file.clone());
+                announce(req, &mut owned, &file);
                 last = (done, total, file);
             }
+            Ok(Ok(Event::Checking { .. })) => heard = Instant::now(),
             Ok(Ok(Event::Done)) => {
                 outcome.get_or_insert(Ok(()));
                 ended.get_or_insert_with(Instant::now);
@@ -320,7 +324,7 @@ fn run_with(program: &Path, extra_args: &[&str], req: &Request, progress: Progre
             let _ = child.wait();
             // announcements still in the pipe count too; the reader thread then ends when the pipe
             // closes (or, waiting on the full queue, when the queue is dropped): not waited for
-            drain(&rx, &mut owned);
+            drain(req, &rx, &mut owned);
             drop(rx);
             drop(reader);
             remove_parts(req, &tag, &owned);
@@ -334,7 +338,7 @@ fn run_with(program: &Path, extra_args: &[&str], req: &Request, progress: Progre
     }
     // a downloader that closed its output but does not exit is stopped too
     let status = finish(&mut child, LINGER)?;
-    drain(&rx, &mut owned);
+    drain(req, &rx, &mut owned);
     // the reader thread is not waited for: a process the downloader left behind may still hold
     // the pipe open. It ends when the pipe closes, or at once when it waits on the full queue,
     // which is gone now.
@@ -370,15 +374,21 @@ fn finish(child: &mut std::process::Child, grace: Duration) -> std::io::Result<s
     }
 }
 
+/// Note that the downloader created the partial file of `file`, if it is one of the request's (so
+/// the set holds at most the request's names, whatever the downloader sends).
+fn announce(req: &Request, owned: &mut std::collections::HashSet<String>, file: &str) {
+    if !owned.contains(file) && req.files.iter().any(|f| f.name == file) {
+        owned.insert(file.to_string());
+    }
+}
+
 /// Collect the files announced in lines still queued from a stopped downloader, waiting at most a
 /// second for its output to end.
-fn drain(rx: &mpsc::Receiver<Result<Event, String>>, owned: &mut std::collections::HashSet<String>) {
+fn drain(req: &Request, rx: &mpsc::Receiver<Result<Event, String>>, owned: &mut std::collections::HashSet<String>) {
     let until = Instant::now() + Duration::from_secs(1);
     while let Some(left) = until.checked_duration_since(Instant::now()) {
         match rx.recv_timeout(left) {
-            Ok(Ok(Event::Progress { file, .. })) => {
-                owned.insert(file);
-            }
+            Ok(Ok(Event::Progress { file, .. })) => announce(req, owned, &file),
             Ok(_) => {}
             Err(_) => break,
         }
