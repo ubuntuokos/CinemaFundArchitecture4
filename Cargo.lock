@@ -1658,11 +1658,15 @@ dependencies = [
  "cfa4-geom",
  "cfa4-gpu",
  "cfa4-media",
+ "cfa4-metrics",
  "cfa4-project",
  "cfa4-render",
  "cfa4-testkit",
  "cfa4-time",
  "pollster 0.4.0",
+ "serde",
+ "serde_json",
+ "sha2 0.11.1",
  "wgpu",
 ]
 
