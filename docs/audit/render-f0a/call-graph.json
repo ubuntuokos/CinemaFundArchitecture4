@@ -1237,6 +1237,13 @@
   },
   {
    "class": "audio",
+   "crate": "cfa4-project",
+   "kind": "struct",
+   "module": "object.rs",
+   "name": "ObjectSample"
+  },
+  {
+   "class": "audio",
    "crate": "cfa4-qc",
    "kind": "struct",
    "module": "audio.rs",
@@ -4802,6 +4809,69 @@
    "class": "other",
    "crate": "cfa4-project",
    "kind": "struct",
+   "module": "object.rs",
+   "name": "MaskRef"
+  },
+  {
+   "class": "other",
+   "crate": "cfa4-project",
+   "kind": "struct",
+   "module": "object.rs",
+   "name": "MaskRle"
+  },
+  {
+   "class": "other",
+   "crate": "cfa4-project",
+   "kind": "enum",
+   "module": "object.rs",
+   "name": "ObjectError"
+  },
+  {
+   "class": "other",
+   "crate": "cfa4-project",
+   "kind": "struct",
+   "module": "object.rs",
+   "name": "ObjectId"
+  },
+  {
+   "class": "other",
+   "crate": "cfa4-project",
+   "kind": "struct",
+   "module": "object.rs",
+   "name": "ObjectPrompt"
+  },
+  {
+   "class": "other",
+   "crate": "cfa4-project",
+   "kind": "struct",
+   "module": "object.rs",
+   "name": "ObjectProvenance"
+  },
+  {
+   "class": "other",
+   "crate": "cfa4-project",
+   "kind": "struct",
+   "module": "object.rs",
+   "name": "ObjectTrack"
+  },
+  {
+   "class": "other",
+   "crate": "cfa4-project",
+   "kind": "struct",
+   "module": "object.rs",
+   "name": "PromptPoint"
+  },
+  {
+   "class": "other",
+   "crate": "cfa4-project",
+   "kind": "struct",
+   "module": "object.rs",
+   "name": "PromptRect"
+  },
+  {
+   "class": "other",
+   "crate": "cfa4-project",
+   "kind": "struct",
    "module": "studio.rs",
    "name": "LiveStudio"
   },
@@ -6085,6 +6155,13 @@
    "kind": "struct",
    "module": "multicam.rs",
    "name": "MulticamSource"
+  },
+  {
+   "class": "render",
+   "crate": "cfa4-project",
+   "kind": "enum",
+   "module": "object.rs",
+   "name": "ObjectSource"
   },
   {
    "class": "render",
@@ -11461,6 +11538,16 @@
   },
   {
    "from": "cfa4-project/narration.rs",
+   "item": "Tick",
+   "to": "cfa4-time"
+  },
+  {
+   "from": "cfa4-project/object.rs",
+   "item": "Rect",
+   "to": "cfa4-geom"
+  },
+  {
+   "from": "cfa4-project/object.rs",
    "item": "Tick",
    "to": "cfa4-time"
   },
