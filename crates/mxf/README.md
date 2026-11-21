@@ -342,7 +342,10 @@ with one version file named like the folder). It does not open the MXF files.
 `as02_version::read_version` reads a version file (OP1b / OP2 / OP3 header metadata with external
 essence): the material package's tracks with their clips (file package UMID, track, start,
 duration; fillers), each file package's network locator, and the breaches of sections 4.3.5 / 5.2
-/ 5.4 in `problems`. The bundle import / export come next (#1363).
+/ 5.4 in `problems`. `write_version` writes one (OP1b, material package plus a file package copy with
+a network locator per component, no essence, no Essence Container Data, no index); the file package
+copies carry a minimal file descriptor, not the component's full one. The engine imports a bundle
+(`file.import`); the export comes next (#1363).
 
 ## AS-11 descriptive metadata
 
