@@ -1248,6 +1248,7 @@
 	End at Cut	Befejezés a vágásnál
 	Custom Start	Egyéni kezdés
 	Eyedropper (pick a color from the Program monitor)	Pipetta (szín a Program monitorról)
+	White Balance Selector (click a neutral point in the Program monitor; Esc cancels)	Fehéregyensúly-választó (kattintson egy semleges pontra a Program monitoron; Esc megszakítja)
 	Interpret Footage	Felvétel értelmezése
 	Color Management · {n} item	Színkezelés · {n} elem
 	Color Management · {n} items	Színkezelés · {n} elem
@@ -1794,6 +1795,9 @@
 	Continuous	Folyamatos
 	Show Video Thumbnails	Videó-bélyegképek megjelenítése
 	Show Audio Waveform	Hanghullámforma megjelenítése
+	Merged	Egyesített
+	Per Channel	Csatornánként
+	Channel Zoom	Csatornák nagyítása
 	Timeline Display Settings	Idővonal megjelenítési beállításai
 	Snap in Timeline (S)	Illesztés az idővonalon (S)
 	Caption track options	Feliratsáv beállításai
@@ -4842,3 +4846,11 @@ export.summary	Low	alacsony
 	Datamosh Bloom	Datamosh-virágzás
 	Start Time (seconds)	Kezdőidő (másodperc)
 	Repeats	Ismétlések
+# SC-4: effect bulk switch and recent effects
+	Enable all effects	Összes effekt bekapcsolása
+	Disable all effects	Összes effekt kikapcsolása
+	Switch every effect of the selected clips on	A kijelölt klipek minden effektjének bekapcsolása
+	Switch every effect of the selected clips off	A kijelölt klipek minden effektjének kikapcsolása
+	Recent effects	Legutóbbi effektek
+	Apply a recently used effect to the selected clips	Legutóbb használt effekt alkalmazása a kijelölt klipekre
+	No recent effects	Nincs legutóbbi effekt

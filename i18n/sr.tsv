@@ -4817,3 +4817,16 @@ export.summary	Low	низак
 	Datamosh Bloom	Datamosh цветање
 	Start Time (seconds)	Време почетка (секунде)
 	Repeats	Понављања
+
+# Recent effects, per-channel waveform, white balance selector (SC-2/SC-3/SC-4, #1419 #1420 #1421)
+	Apply a recently used effect to the selected clips	Примени недавно коришћен ефекат на изабране клипове
+	Disable all effects	Искључи све ефекте
+	Enable all effects	Укључи све ефекте
+	No recent effects	Нема недавних ефеката
+	Recent effects	Недавни ефекти
+	Switch every effect of the selected clips off	Искључује сваки ефекат изабраних клипова
+	Switch every effect of the selected clips on	Укључује сваки ефекат изабраних клипова
+	Merged	Спојено
+	Per Channel	По каналу
+	Channel Zoom	Зумирање канала
+	White Balance Selector (click a neutral point in the Program monitor; Esc cancels)	Бирач баланса белог (кликните неутралну тачку на програмском монитору; Esc отказује)

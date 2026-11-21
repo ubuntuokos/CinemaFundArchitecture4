@@ -276,7 +276,7 @@ def result_status(command: str, result: Any) -> str | None:
 
 
 SYNC_DIALOGS = {"clip.synchronize": "synchronize", "clip.mergeClips": "merge", "clip.createMulticam": "multicam"}
-EDITS_AT_PLAYHEAD = frozenset({"source.insert", "source.overwrite", "sequence.lift", "sequence.extract", "effects.eyedropper"})
+EDITS_AT_PLAYHEAD = frozenset({"source.insert", "source.overwrite", "sequence.lift", "sequence.extract", "effects.eyedropper", "effects.pickWhiteBalance"})
 
 class MainWindow(QMainWindow):
     def __init__(self, engine: EngineClient, settings: QSettings | None = None) -> None:
@@ -335,6 +335,7 @@ class MainWindow(QMainWindow):
         self.inspector.attach_settings(self.settings)
         self.effect_controls = EffectControlsPanel(self)
         self.effect_controls.attach(engine)
+        self.effect_controls.attach_settings(self.settings)
         self.history = HistoryPanel(self)
         self.markers = MarkersPanel(self)
         self.info = InfoPanel(self)
@@ -514,6 +515,8 @@ class MainWindow(QMainWindow):
         self.effect_controls.seek.connect(self._seek_program)
         self.monitor.overlay.pen_finished.connect(self.effect_controls.pen_done)
         self.effect_controls.eyedropper_armed.connect(self.monitor.overlay.arm_eyedropper)
+        self.effect_controls.eyedropper_armed.connect(self.lumetri.release_eyedropper)
+        self.lumetri.eyedropper_armed.connect(self.arm_wb_eyedropper)
         self.fx_editors: dict[tuple[Any, ...], FxEditor] = {}
         # an exception that escaped a slot or event handler (crash.py): shown, the session runs on
         self.error_dialog: ErrorDialog | None = None
@@ -521,6 +524,7 @@ class MainWindow(QMainWindow):
         self.effect_controls.fx_editor.connect(self.open_fx_editor)
         self.mixer.fx_editor.connect(self.open_fx_editor)
         self.monitor.overlay.eyedropper_done.connect(lambda: self.effect_controls.arm_eyedropper(None))
+        self.monitor.overlay.eyedropper_done.connect(lambda: self.lumetri.arm_eyedropper(None))
         self.tools.tool_selected.connect(lambda tool: setattr(self.monitor.overlay, "enabled", tool == "selection"))
         self.inspector.seek.connect(self._seek_program)
         self.inspector.run.connect(self.run_preset)
@@ -2883,6 +2887,16 @@ class MainWindow(QMainWindow):
             self.essential_graphics.set_state(None)
 
         self.engine.call("graphics.inspect", {} if time is None else {"time": time}, on_reply=done, on_error=failed)
+
+    def arm_wb_eyedropper(self, target: Any) -> None:
+        """Lumetri's White Balance Selector arms the Program monitor's eyedropper; an Effect Controls
+        eyedropper armed before lets go (without disarming the overlay)."""
+        if target is not None:
+            self.effect_controls.eyedropper = None
+            for row in self.effect_controls.param_rows():
+                if row.eyedropper is not None:
+                    row.eyedropper.setChecked(False)
+        self.monitor.overlay.arm_eyedropper(target)
 
     def update_lumetri(self) -> None:
         """The Lumetri Color panel: the selected video clip's Lumetri values at the playhead."""

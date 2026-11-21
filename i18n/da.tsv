@@ -4819,3 +4819,16 @@ export.summary	Low	lav
 	Datamosh Bloom	Datamosh-blomstring
 	Start Time (seconds)	Starttid (sekunder)
 	Repeats	Gentagelser
+
+# Recent effects, per-channel waveform, white balance selector (SC-2/SC-3/SC-4, #1419 #1420 #1421)
+	Apply a recently used effect to the selected clips	Anvend en nyligt brugt effekt på de valgte klip
+	Disable all effects	Slå alle effekter fra
+	Enable all effects	Slå alle effekter til
+	No recent effects	Ingen nylige effekter
+	Recent effects	Seneste effekter
+	Switch every effect of the selected clips off	Slå alle effekter på de valgte klip fra
+	Switch every effect of the selected clips on	Slå alle effekter på de valgte klip til
+	Merged	Samlet
+	Per Channel	Pr. kanal
+	Channel Zoom	Kanalzoom
+	White Balance Selector (click a neutral point in the Program monitor; Esc cancels)	Hvidbalancevælger (klik på et neutralt punkt i programmonitoren; Esc annullerer)

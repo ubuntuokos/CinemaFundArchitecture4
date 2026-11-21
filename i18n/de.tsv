@@ -4824,3 +4824,16 @@
 	Datamosh Bloom	Datamosh-Blüte
 	Start Time (seconds)	Startzeit (Sekunden)
 	Repeats	Wiederholungen
+
+# Recent effects, per-channel waveform, white balance selector (SC-2/SC-3/SC-4, #1419 #1420 #1421)
+	Apply a recently used effect to the selected clips	Zuletzt verwendeten Effekt auf die gewählten Clips anwenden
+	Disable all effects	Alle Effekte ausschalten
+	Enable all effects	Alle Effekte einschalten
+	No recent effects	Keine zuletzt verwendeten Effekte
+	Recent effects	Zuletzt verwendete Effekte
+	Switch every effect of the selected clips off	Schaltet jeden Effekt der gewählten Clips aus
+	Switch every effect of the selected clips on	Schaltet jeden Effekt der gewählten Clips ein
+	Merged	Zusammengefasst
+	Per Channel	Pro Kanal
+	Channel Zoom	Kanalzoom
+	White Balance Selector (click a neutral point in the Program monitor; Esc cancels)	Weißabgleich-Pipette (auf einen neutralen Punkt im Programmmonitor klicken; Esc bricht ab)

@@ -4820,3 +4820,16 @@ export.summary	Low	žema
 	Datamosh Bloom	Datamosh žydėjimas
 	Start Time (seconds)	Pradžios laikas (sekundės)
 	Repeats	Pakartojimai
+
+# Recent effects, per-channel waveform, white balance selector (SC-2/SC-3/SC-4, #1419 #1420 #1421)
+	Apply a recently used effect to the selected clips	Taikyti neseniai naudotą efektą pasirinktiems klipams
+	Disable all effects	Išjungti visus efektus
+	Enable all effects	Įjungti visus efektus
+	No recent effects	Nėra naujausių efektų
+	Recent effects	Naujausi efektai
+	Switch every effect of the selected clips off	Išjungia kiekvieną pasirinktų klipų efektą
+	Switch every effect of the selected clips on	Įjungia kiekvieną pasirinktų klipų efektą
+	Merged	Sujungta
+	Per Channel	Pagal kanalus
+	Channel Zoom	Kanalų mastelis
+	White Balance Selector (click a neutral point in the Program monitor; Esc cancels)	Baltos spalvos balanso parinkiklis (spustelėkite neutralų tašką programos monitoriuje; Esc atšaukia)

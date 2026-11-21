@@ -4819,3 +4819,16 @@ export.summary	Low	nizak
 	Datamosh Bloom	Datamosh cvetanje
 	Start Time (seconds)	Vreme početka (sekunde)
 	Repeats	Ponavljanja
+
+# Recent effects, per-channel waveform, white balance selector (SC-2/SC-3/SC-4, #1419 #1420 #1421)
+	Apply a recently used effect to the selected clips	Primeni nedavno korišćen efekat na izabrane klipove
+	Disable all effects	Isključi sve efekte
+	Enable all effects	Uključi sve efekte
+	No recent effects	Nema nedavnih efekata
+	Recent effects	Nedavni efekti
+	Switch every effect of the selected clips off	Isključuje svaki efekat izabranih klipova
+	Switch every effect of the selected clips on	Uključuje svaki efekat izabranih klipova
+	Merged	Spojeno
+	Per Channel	Po kanalu
+	Channel Zoom	Zumiranje kanala
+	White Balance Selector (click a neutral point in the Program monitor; Esc cancels)	Birač balansa belog (kliknite neutralnu tačku na programskom monitoru; Esc otkazuje)

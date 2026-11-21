@@ -4819,3 +4819,16 @@ export.summary	Low	matala
 	Datamosh Bloom	Datamosh-kukinta
 	Start Time (seconds)	Aloitusaika (sekuntia)
 	Repeats	Toistot
+
+# Recent effects, per-channel waveform, white balance selector (SC-2/SC-3/SC-4, #1419 #1420 #1421)
+	Apply a recently used effect to the selected clips	Käytä äskettäin käytettyä tehostetta valittuihin klippeihin
+	Disable all effects	Poista kaikki tehosteet käytöstä
+	Enable all effects	Ota kaikki tehosteet käyttöön
+	No recent effects	Ei viimeaikaisia tehosteita
+	Recent effects	Viimeaikaiset tehosteet
+	Switch every effect of the selected clips off	Poistaa valittujen klippien kaikki tehosteet käytöstä
+	Switch every effect of the selected clips on	Ottaa valittujen klippien kaikki tehosteet käyttöön
+	Merged	Yhdistetty
+	Per Channel	Kanavittain
+	Channel Zoom	Kanavien zoom
+	White Balance Selector (click a neutral point in the Program monitor; Esc cancels)	Valkotasapainon valitsin (napsauta neutraalia pistettä ohjelmamonitorissa; Esc peruu)

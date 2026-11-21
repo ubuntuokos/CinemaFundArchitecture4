@@ -4819,3 +4819,16 @@ export.summary	Low	χαμηλή
 	Datamosh Bloom	Άνθιση datamosh
 	Start Time (seconds)	Ώρα έναρξης (δευτερόλεπτα)
 	Repeats	Επαναλήψεις
+
+# Recent effects, per-channel waveform, white balance selector (SC-2/SC-3/SC-4, #1419 #1420 #1421)
+	Apply a recently used effect to the selected clips	Εφαρμογή πρόσφατα χρησιμοποιημένου εφέ στα επιλεγμένα κλιπ
+	Disable all effects	Απενεργοποίηση όλων των εφέ
+	Enable all effects	Ενεργοποίηση όλων των εφέ
+	No recent effects	Κανένα πρόσφατο εφέ
+	Recent effects	Πρόσφατα εφέ
+	Switch every effect of the selected clips off	Απενεργοποιεί κάθε εφέ των επιλεγμένων κλιπ
+	Switch every effect of the selected clips on	Ενεργοποιεί κάθε εφέ των επιλεγμένων κλιπ
+	Merged	Συγχωνευμένα
+	Per Channel	Ανά κανάλι
+	Channel Zoom	Ζουμ καναλιών
+	White Balance Selector (click a neutral point in the Program monitor; Esc cancels)	Επιλογέας ισορροπίας λευκού (κάντε κλικ σε ουδέτερο σημείο στην οθόνη προγράμματος· το Esc ακυρώνει)

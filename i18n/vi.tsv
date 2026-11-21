@@ -4817,3 +4817,16 @@ export.summary	Low	thấp
 	Datamosh Bloom	Datamosh nở rộ
 	Start Time (seconds)	Thời gian bắt đầu (giây)
 	Repeats	Số lần lặp lại
+
+# Recent effects, per-channel waveform, white balance selector (SC-2/SC-3/SC-4, #1419 #1420 #1421)
+	Apply a recently used effect to the selected clips	Áp dụng hiệu ứng dùng gần đây cho các clip đã chọn
+	Disable all effects	Tắt tất cả hiệu ứng
+	Enable all effects	Bật tất cả hiệu ứng
+	No recent effects	Không có hiệu ứng gần đây
+	Recent effects	Hiệu ứng gần đây
+	Switch every effect of the selected clips off	Tắt mọi hiệu ứng của các clip đã chọn
+	Switch every effect of the selected clips on	Bật mọi hiệu ứng của các clip đã chọn
+	Merged	Gộp
+	Per Channel	Theo kênh
+	Channel Zoom	Thu phóng kênh
+	White Balance Selector (click a neutral point in the Program monitor; Esc cancels)	Bộ chọn cân bằng trắng (nhấp vào điểm trung tính trên màn hình Chương trình; Esc để hủy)

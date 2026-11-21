@@ -4815,3 +4815,16 @@
 	Datamosh Bloom	数据损坏绽放
 	Start Time (seconds)	开始时间（秒）
 	Repeats	重复次数
+
+# Recent effects, per-channel waveform, white balance selector (SC-2/SC-3/SC-4, #1419 #1420 #1421)
+	Apply a recently used effect to the selected clips	将最近使用的效果应用到所选剪辑
+	Disable all effects	关闭所有效果
+	Enable all effects	打开所有效果
+	No recent effects	没有最近使用的效果
+	Recent effects	最近使用的效果
+	Switch every effect of the selected clips off	关闭所选剪辑的每个效果
+	Switch every effect of the selected clips on	打开所选剪辑的每个效果
+	Merged	合并
+	Per Channel	按声道
+	Channel Zoom	声道缩放
+	White Balance Selector (click a neutral point in the Program monitor; Esc cancels)	白平衡选择器（在节目监视器中点击中性点；Esc 取消）

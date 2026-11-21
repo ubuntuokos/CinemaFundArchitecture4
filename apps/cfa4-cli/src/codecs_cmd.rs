@@ -213,6 +213,7 @@ const NOT_CODECS: &[&str] = &[
     "surface",
     "surface-catalog",
     "surface-model",
+    "tasks",
     "tcsync",
     "tcsync-io",
     "testkit",

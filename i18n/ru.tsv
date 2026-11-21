@@ -4800,3 +4800,16 @@
 	Datamosh Bloom	Datamosh-расцвет
 	Start Time (seconds)	Время начала (секунды)
 	Repeats	Повторы
+
+# Recent effects, per-channel waveform, white balance selector (SC-2/SC-3/SC-4, #1419 #1420 #1421)
+	Apply a recently used effect to the selected clips	Применить недавно использованный эффект к выбранным клипам
+	Disable all effects	Отключить все эффекты
+	Enable all effects	Включить все эффекты
+	No recent effects	Нет недавних эффектов
+	Recent effects	Недавние эффекты
+	Switch every effect of the selected clips off	Отключает каждый эффект выбранных клипов
+	Switch every effect of the selected clips on	Включает каждый эффект выбранных клипов
+	Merged	Объединённо
+	Per Channel	По каналам
+	Channel Zoom	Масштаб каналов
+	White Balance Selector (click a neutral point in the Program monitor; Esc cancels)	Выбор баланса белого (щёлкните нейтральную точку в мониторе «Программа»; Esc — отмена)

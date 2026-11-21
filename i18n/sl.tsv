@@ -4820,3 +4820,16 @@ export.summary	Low	nizka
 	Datamosh Bloom	Datamosh razcvet
 	Start Time (seconds)	Začetni čas (sekunde)
 	Repeats	Ponovitve
+
+# Recent effects, per-channel waveform, white balance selector (SC-2/SC-3/SC-4, #1419 #1420 #1421)
+	Apply a recently used effect to the selected clips	Uporabi nedavno uporabljen učinek na izbranih posnetkih
+	Disable all effects	Izklopi vse učinke
+	Enable all effects	Vklopi vse učinke
+	No recent effects	Ni nedavnih učinkov
+	Recent effects	Nedavni učinki
+	Switch every effect of the selected clips off	Izklopi vse učinke izbranih posnetkov
+	Switch every effect of the selected clips on	Vklopi vse učinke izbranih posnetkov
+	Merged	Združeno
+	Per Channel	Po kanalih
+	Channel Zoom	Povečava kanalov
+	White Balance Selector (click a neutral point in the Program monitor; Esc cancels)	Izbirnik ravnovesja beline (kliknite nevtralno točko v programskem monitorju; Esc prekliče)
