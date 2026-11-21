@@ -4828,3 +4828,42 @@ export.summary	Low	låg
 	Per Channel	Per kanal
 	Channel Zoom	Kanalzoom
 	White Balance Selector (click a neutral point in the Program monitor; Esc cancels)	Vitbalansväljare (klicka på en neutral punkt i programmonitorn; Esc avbryter)
+# Task Manager and subtitle kind (SC-2/3/4)
+	Task Manager	Aktivitetshanterare
+	Background jobs	Bakgrundsjobb
+	Exports	Exporter
+	Shared task queue	Delad uppgiftskö
+	Task	Uppgift
+	State	Tillstånd
+	Details	Detaljer
+	Time left	Återstående tid
+	Scheduled	Schemalagd
+	Queued	I kö
+	Waiting for resources	Väntar på resurser
+	Blocked	Blockerad
+	Running	Körs
+	Paused	Pausad
+	Cancelling	Avbryter
+	Interactive	Interaktiv
+	Speculative	Spekulativ
+	Final render	Slutlig rendering
+	Show finished	Visa slutförda
+	Nothing is running.	Inget körs.
+	Not reported by this engine yet.	Rapporteras ännu inte av den här motorn.
+	Not available: {why}	Inte tillgänglig: {why}
+	{name} waits: {why}	{name} väntar: {why}
+	{running} running · {waiting} waiting	{running} körs · {waiting} väntar
+	{n} active	{n} aktiva
+	{n} CPU	{n} CPU
+	{n} GiB	{n} GiB
+	{n} MiB	{n} MiB
+	Needs your decision	Behöver ditt beslut
+	Run now	Kör nu
+	Next slot	Nästa tidslucka
+	Missed its start	Missade starten
+	Missed its start at {time}	Missade starten kl. {time}
+	Starts at {time}	Startar kl. {time}
+	Subtitle kind	Typ av undertexter
+	Subtitles	Undertexter
+	Captions for the hearing impaired	Textning för hörselskadade
+	Forced narrative	Tvingad berättarröst (forced narrative)

@@ -33,6 +33,7 @@ pub mod plan;
 pub mod preview;
 pub mod remix;
 pub mod scene;
+pub mod subspace;
 pub mod track;
 pub mod trajectories;
 pub mod transitions;

@@ -4833,3 +4833,42 @@
 	Per Channel	Por canal
 	Channel Zoom	Zoom de canales
 	White Balance Selector (click a neutral point in the Program monitor; Esc cancels)	Selector de balance de blancos (haga clic en un punto neutro del monitor de programa; Esc cancela)
+# Task Manager and subtitle kind (SC-2/3/4)
+	Task Manager	Administrador de tareas
+	Background jobs	Trabajos en segundo plano
+	Exports	Exportaciones
+	Shared task queue	Cola de tareas compartida
+	Task	Tarea
+	State	Estado
+	Details	Detalles
+	Time left	Tiempo restante
+	Scheduled	Programada
+	Queued	En cola
+	Waiting for resources	Esperando recursos
+	Blocked	Bloqueada
+	Running	En ejecución
+	Paused	En pausa
+	Cancelling	Cancelando
+	Interactive	Interactiva
+	Speculative	Especulativa
+	Final render	Renderizado final
+	Show finished	Mostrar finalizadas
+	Nothing is running.	No se está ejecutando nada.
+	Not reported by this engine yet.	Este motor aún no lo informa.
+	Not available: {why}	No disponible: {why}
+	{name} waits: {why}	{name} espera: {why}
+	{running} running · {waiting} waiting	{running} en ejecución · {waiting} en espera
+	{n} active	{n} activas
+	{n} CPU	{n} CPU
+	{n} GiB	{n} GiB
+	{n} MiB	{n} MiB
+	Needs your decision	Necesita su decisión
+	Run now	Ejecutar ahora
+	Next slot	Siguiente franja
+	Missed its start	Inicio perdido
+	Missed its start at {time}	Inicio perdido a las {time}
+	Starts at {time}	Empieza a las {time}
+	Subtitle kind	Tipo de subtítulos
+	Subtitles	Subtítulos
+	Captions for the hearing impaired	Subtítulos para personas sordas o con discapacidad auditiva
+	Forced narrative	Narración forzada (forced narrative)

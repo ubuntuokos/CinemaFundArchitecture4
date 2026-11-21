@@ -4826,3 +4826,42 @@ export.summary	Low	thấp
 	Per Channel	Theo kênh
 	Channel Zoom	Thu phóng kênh
 	White Balance Selector (click a neutral point in the Program monitor; Esc cancels)	Bộ chọn cân bằng trắng (nhấp vào điểm trung tính trên màn hình Chương trình; Esc để hủy)
+# Task Manager and subtitle kind (SC-2/3/4)
+	Task Manager	Trình quản lý tác vụ
+	Background jobs	Công việc nền
+	Exports	Xuất
+	Shared task queue	Hàng đợi tác vụ dùng chung
+	Task	Tác vụ
+	State	Trạng thái
+	Details	Chi tiết
+	Time left	Thời gian còn lại
+	Scheduled	Đã lên lịch
+	Queued	Trong hàng đợi
+	Waiting for resources	Đang chờ tài nguyên
+	Blocked	Bị chặn
+	Running	Đang chạy
+	Paused	Đã tạm dừng
+	Cancelling	Đang hủy
+	Interactive	Tương tác
+	Speculative	Chạy dự phòng
+	Final render	Kết xuất cuối cùng
+	Show finished	Hiện các mục đã xong
+	Nothing is running.	Không có gì đang chạy.
+	Not reported by this engine yet.	Công cụ này chưa báo cáo.
+	Not available: {why}	Không khả dụng: {why}
+	{name} waits: {why}	{name} đang chờ: {why}
+	{running} running · {waiting} waiting	{running} đang chạy · {waiting} đang chờ
+	{n} active	{n} đang hoạt động
+	{n} CPU	{n} CPU
+	{n} GiB	{n} GiB
+	{n} MiB	{n} MiB
+	Needs your decision	Cần quyết định của bạn
+	Run now	Chạy ngay
+	Next slot	Khung giờ tiếp theo
+	Missed its start	Bỏ lỡ thời điểm bắt đầu
+	Missed its start at {time}	Bỏ lỡ thời điểm bắt đầu lúc {time}
+	Starts at {time}	Bắt đầu lúc {time}
+	Subtitle kind	Loại phụ đề
+	Subtitles	Phụ đề
+	Captions for the hearing impaired	Phụ đề cho người khiếm thính
+	Forced narrative	Thuyết minh bắt buộc (forced narrative)
