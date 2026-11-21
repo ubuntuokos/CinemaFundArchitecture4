@@ -198,6 +198,7 @@ const NOT_CODECS: &[&str] = &[
     "metrics",
     "mpegts",
     "mxf",
+    "objtrack",
     "obs",
     "ogg",
     "platform",
