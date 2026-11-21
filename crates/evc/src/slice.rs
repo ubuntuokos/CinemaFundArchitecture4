@@ -263,8 +263,8 @@ impl Decoder {
             }
         }
         if self.sh.deblocking_filter_on {
-            cx.deblock(&cus, false);
             cx.deblock(&cus, true);
+            cx.deblock(&cus, false);
         }
         for p in &mut cx.cur.planes {
             p.expand();
@@ -812,8 +812,8 @@ impl Ctx<'_> {
         }
     }
 
-    /// The deblocking pass over the picture, vertical edges first, then
-    /// horizontal ones (`xevd_deblock`, one task).
+    /// The deblocking pass over the picture, horizontal edges first, then
+    /// vertical ones (`xevd_deblock`, one task).
     fn deblock(&mut self, cus: &[(usize, usize, usize)], hor: bool) {
         let w_scu = self.seq.w_scu;
         let rows_per_ctu = CTU >> MIN_CU_LOG2;
@@ -841,11 +841,10 @@ impl Ctx<'_> {
         }
     }
 
-    /// The row of `DF_ST` for the edge between SCUs `a` and `b` (`get_tbl_qp_to_st`).
-    fn edge_strength(&self, a: usize, b: usize) -> usize {
+    fn edge_strength(&self, a: usize, b: usize) -> &'static [u8; 52] {
         let m0 = self.seq.map_scu.get(a).copied().unwrap_or(0);
         let m1 = self.seq.map_scu.get(b).copied().unwrap_or(0);
-        if m0 & IF != 0 || m1 & IF != 0 {
+        let idx = if m0 & IF != 0 || m1 & IF != 0 {
             0
         } else if m0 & CBFL != 0 || m1 & CBFL != 0 {
             1
@@ -872,20 +871,17 @@ impl Ctx<'_> {
             } else {
                 2
             }
-        }
+        };
+        &DF_ST[idx]
     }
 
-    /// Chroma edge strengths. At high bit depths a negative chroma offset can make the mapped QP
-    /// negative; xevd then reads before its table row, i.e. the end of the previous row of
-    /// `xevd_tbl_df_st` (a row-major `[4][52]` array). That is reproduced here; before row 0 it
-    /// reads unrelated memory, which is taken as 0 (no filtering).
-    fn chroma_st(&self, tbl: usize, qp: i32) -> (i32, i32) {
+    fn chroma_st(&self, tbl: &[u8; 52], qp: i32) -> (i32, i32) {
         let bdc = self.bdc() as i32;
         let lo = -6 * (bdc - 8);
         let st = |off: i32, i: usize| -> i32 {
             let q = (qp + off).clamp(lo, 57);
             let m = (self.chroma_qp)(i, q);
-            df_st(tbl, m) << (bdc - 8)
+            usize::try_from(m).ok().and_then(|m| tbl.get(m)).map_or(0, |&v| i32::from(v)) << (bdc - 8)
         };
         (st(self.qp_u_offset, 0), st(self.qp_v_offset, 1))
     }
@@ -911,7 +907,7 @@ impl Ctx<'_> {
             for i in 0..size >> MIN_CU_LOG2 {
                 let tbl = self.edge_strength(t + i, t + i - w_scu);
                 let qp = ((self.seq.map_scu.get(t + i).copied().unwrap_or(0) >> 16) & 0x7F) as i32;
-                let st = df_st(tbl, qp) << (self.bdl() - 8);
+                let st = i32::from(tbl.get(qp as usize).copied().unwrap_or(0)) << (self.bdl() - 8);
                 let (st_u, st_v) = if self.seq.chroma { self.chroma_st(tbl, qp) } else { (0, 0) };
                 let (bdl, bdc) = (self.bdl(), self.bdc());
                 if st != 0
@@ -956,7 +952,7 @@ impl Ctx<'_> {
                 let cur = t + off + i * w_scu;
                 let tbl = self.edge_strength(cur, cur - 1);
                 let qp = ((self.seq.map_scu.get(cur).copied().unwrap_or(0) >> 16) & 0x7F) as i32;
-                let st = df_st(tbl, qp) << (self.bdl() - 8);
+                let st = i32::from(tbl.get(qp as usize).copied().unwrap_or(0)) << (self.bdl() - 8);
                 let (st_u, st_v) = if self.seq.chroma { self.chroma_st(tbl, qp) } else { (0, 0) };
                 let (bdl, bdc) = (self.bdl(), self.bdc());
                 if st != 0
@@ -980,10 +976,4 @@ impl Ctx<'_> {
         }
         self.set_cod(x, y, size);
     }
-}
-
-/// `xevd_tbl_df_st[row][i]` read as xevd reads it: `i` may be negative (see `chroma_st`).
-fn df_st(row: usize, i: i32) -> i32 {
-    let flat = (row as i64) * 52 + i64::from(i);
-    usize::try_from(flat).ok().and_then(|f| DF_ST.get(f / 52).and_then(|r| r.get(f % 52))).map_or(0, |&v| i32::from(v))
 }

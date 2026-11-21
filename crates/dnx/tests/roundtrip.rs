@@ -1,6 +1,6 @@
 //! Encoder → decoder round trips and robustness against corrupt data (no ffmpeg needed).
 
-use cfa4_dnx::{ChromaFormat, DecodeOptions, Encoder, EncoderConfig, FieldCode, Frame, Profile, decode_frame, decode_frame_with, probe};
+use cfa4_dnx::{ChromaFormat, DecodeOptions, Encoder, EncoderConfig, Frame, Profile, decode_frame, decode_frame_with, probe};
 
 /// A synthetic picture: gradients, a ring pattern and some hashed texture.
 fn picture(w: u32, h: u32, chroma: ChromaFormat, depth: u8, seed: u32) -> Frame {
@@ -64,43 +64,6 @@ fn roundtrip_all_profiles() {
             assert!(p > min && pc > min, "{profile:?} {depth}-bit {w}x{h}: PSNR {p:.1}/{pc:.1}");
         }
     }
-}
-
-/// The progressive DNxHD IDs (Table C.1): fixed raster, depth and frame size, header version 1.
-#[test]
-fn roundtrip_dnxhd_ids() {
-    for profile in Profile::ALL.into_iter().filter(|p| p.hd_raster().is_some()) {
-        let (w, h, depth) = profile.hd_raster().unwrap();
-        let cfg = EncoderConfig::new(profile, w, h);
-        assert_eq!(cfg.bit_depth, depth);
-        let chroma = cfg.chroma();
-        let mut enc = Encoder::with_config(cfg).unwrap();
-        let src = picture(w, h, chroma, depth, 3);
-        let data = enc.encode(&src).unwrap();
-        assert_eq!(data.len() as u32, enc.frame_size());
-        assert_eq!(data[4], 1, "{profile:?}: HD header version");
-        let hdr = probe(&data).unwrap();
-        // interlaced IDs: two field coding units of half the frame size, top field first
-        let lines = if profile.interlaced() { h / 2 } else { h };
-        assert_eq!((hdr.cid, hdr.width, hdr.lines, hdr.bit_depth), (profile.cid(), w, lines, depth));
-        if profile.interlaced() {
-            assert_eq!(hdr.field, FieldCode::Field1);
-            assert!(hdr.interlaced && !hdr.frame_encoding);
-            let second = probe(&data[data.len() / 2..]).unwrap();
-            assert_eq!((second.field, second.lines), (FieldCode::Field2, lines));
-        }
-        let dec = decode_frame(&data).unwrap();
-        assert_eq!((dec.width, dec.height, dec.chroma, dec.bit_depth), (w, h, chroma, depth));
-        let peak = ((1u32 << depth) - 1) as f64;
-        let (p, pc) = (psnr(&src.y, &dec.y, peak), psnr(&src.cb, &dec.cb, peak));
-        let min = if profile == Profile::Hd1253 { 30.0 } else { 38.0 };
-        assert!(p > min && pc > min, "{profile:?}: PSNR {p:.1}/{pc:.1}");
-    }
-    // the raster and depth are the ID's
-    assert!(Encoder::new(Profile::Hd1238, 1280, 720).is_err());
-    let mut cfg = EncoderConfig::new(Profile::Hd1235, 1920, 1080);
-    cfg.bit_depth = 8;
-    assert!(Encoder::with_config(cfg).is_err());
 }
 
 #[test]

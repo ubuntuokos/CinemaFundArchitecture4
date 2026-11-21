@@ -1869,7 +1869,6 @@
 	Counter	Teller
 	Typewriter	Typemachine
 	Word by Word	Woord voor woord
-	Scramble	Husselen
 	Animator	Animator
 	Animator Duration	Animatorduur
 	Animator Delay	Animatorvertraging
@@ -2901,10 +2900,6 @@
 	Sharpen Amount	Mate van verscherping
 	Shift Center To	Midden verschuiven naar
 	Show Focus Area	Focusgebied tonen
-	Rack Focus	Focusverlegging
-	Focus Point A	Focuspunt A
-	Focus Point B	Focuspunt B
-	Rack	Verlegging
 	Show Only Noise	Alleen ruis tonen
 	Shrink	Krimpen
 	Shutter Angle	Sluiterhoek
@@ -4181,11 +4176,6 @@ export.summary	Low	laag
 	Burn Size	Brandgrootte
 	Ember Width	Breedte van gloeirand
 	Ember Color	Kleur van gloeirand
-	Tear Away	Afscheuren
-	Tear Roughness	Ruwheid van de scheur
-	Paper Edge Width	Breedte papierrand
-	Stamp Cut	Postzegeluitsnede
-	Perforations	Perforaties
 	Check Text Legibility	Leesbaarheid van tekst controleren
 	Clear Legibility Markers	Leesbaarheidsmarkeringen wissen
 	Text legibility: no problems found	Leesbaarheid van tekst: geen problemen gevonden
@@ -4225,9 +4215,6 @@ export.summary	Low	laag
 	Dither	Dithering
 	Pattern	Patroon
 	Cell Size	Celgrootte
-	Pixelate	Pixeleren
-	Cell Shape	Celvorm
-	LED	LED
 	Cyan Angle	Hoek cyaan
 	Magenta Angle	Hoek magenta
 	Yellow Angle	Hoek geel
@@ -4588,26 +4575,6 @@ export.summary	Low	laag
 	Chase External Timecode	Externe timecode volgen
 	Send LTC	LTC verzenden
 	Send MIDI Timecode	MIDI-timecode verzenden
-
-# Live studio preview (CFA4-LIVE-STUDIO-001 S0)
-	Live studio preview	Voorbeeld livestudio
-	Live studio: stopped	Livestudio: gestopt
-	Live studio: {state}	Livestudio: {state}
-	Live studio: {error}	Livestudio: {error}
-	restarted after {count} crashes (last: {exit})	herstart na {count} crashes (laatste: {exit})
-	software backend: {reason}	software-backend: {reason}
-	Start studio	Studio starten
-	Stop studio	Studio stoppen
-	Add Studio Scene	Studioscène toevoegen
-	Live	Live
-# Credits: title, opening, chapter and lower-third pages filled from a graphics template (F10-C16)
-	Opening Credits	Openingstitels
-	Chapter Title	Hoofdstuktitel
-	Lower Third	Onderbalk
-	page {page}: graphics template “{template}” was not found; “{used}” is used	pagina {page}: grafische sjabloon “{template}” is niet gevonden; “{used}” wordt gebruikt
-	page {page}: graphics template “{template}” has no field for all of the block's text; the rest is left out	pagina {page}: grafische sjabloon “{template}” heeft geen veld voor alle tekst van het blok; de rest wordt weggelaten
-	page {page}: template field “{control}” → “{part}” is not used (no such text control, or not head, body or tail)	pagina {page}: sjabloonveld “{control}” → “{part}” wordt niet gebruikt (geen tekstbesturing met die naam, of geen kop, hoofdtekst of staart)
-	page {page}: pictures are left out on title, opening, chapter and lower-third pages	pagina {page}: afbeeldingen worden weggelaten op titel-, openings-, hoofdstuk- en onderbalkpagina’s
 # Auto Color, Auto Contrast, Auto Levels (EffectsSDK review)
 	Auto Color	Automatische kleur
 	Auto Contrast	Automatisch contrast
@@ -4665,151 +4632,3 @@ export.summary	Low	laag
 	Freewheel	Vrijloop
 	Scrubbing	Scrubben
 	Sending	Verzenden
-
-# DCP subtitle export (#938)
-	Subtitles from the first caption track	Ondertitels uit het eerste ondertitelspoor
-	The package language	De taal van het pakket
-	Inter Regular (built in), or an OpenType / TrueType file	Inter Regular (ingebouwd) of een OpenType-/TrueType-bestand
-	Subtitle language	Ondertiteltaal
-	Subtitle font	Ondertitellettertype
-	Fonts	Lettertypen
-
-# AS-11 metadata in MXF OP1a (#96)
-	AS-11 Core	AS-11 Core
-	AS-11 Parts	AS-11-delen
-	AS-11 UK DPP	AS-11 UK DPP
-# Control surfaces (qt-control-surfaces-page, CFA4-CONTROL-SURFACE-001)
-	Connected	Verbonden
-	Device	Apparaat
-	Devices	Apparaten
-	Disabled	Uitgeschakeld
-	HID jog/shuttle	HID-jog/shuttle
-	MIDI	MIDI
-	Not connected	Niet verbonden
-	OSC	OSC
-	Use	Gebruiken
-	{device} ({port})	{device} ({port})
-	{name}: {error}	{name}: {error}
-# Control surfaces (midi-monitor, CFA4-CONTROL-SURFACE-001)
-	MIDI Monitor	MIDI-monitor
-	Press Start Monitor, then move a control.	Klik op Monitor starten en beweeg daarna een bedieningselement.
-	Start Monitor	Monitor starten
-	Stop Monitor	Monitor stoppen
-	… {count} messages not shown (too many at once)	… {count} berichten niet getoond (te veel tegelijk)
-# Control surfaces (midi-learn, CFA4-CONTROL-SURFACE-001)
-	A control surface asked for {command}, which does not exist.	Een bedieningsoppervlak vroeg om {command}, dat niet bestaat.
-	Assignments	Toewijzingen
-	Cancel Learn	Leren annuleren
-	Control	Bedieningselement
-	Learn	Leren
-	Remove this assignment	Deze toewijzing verwijderen
-	{control} runs {command}.	{control} voert {command} uit.
-# Control surfaces (shuttlepro, CFA4-CONTROL-SURFACE-001)
-	Button {n}	Knop {n}
-# Control surfaces (continuous-values, CFA4-CONTROL-SURFACE-001)
-	{strip} Pan (knob)	{strip} panning (draaiknop)
-	{strip} Volume (fader)	{strip} volume (fader)
-# Control surfaces (F1 Learn and profile, CFA4-CONTROL-SURFACE-001)
-	Assignments run when a button is pressed (a fader or knob counts as pressed past half way); a fader or knob assigned to a mixer strip moves its volume or pan. A ShuttlePRO's shuttle ring plays at its profile's speeds and its jog wheel steps frame by frame. Endless encoders and feedback to the controller (lights, motor faders) come in a later version.	Toewijzingen lopen bij een knopdruk (een fader of knop telt als ingedrukt voorbij de helft); een fader of knop op een mixerkanaal beweegt het volume of de pan. De shuttle-ring van een ShuttlePRO speelt op de snelheden van het profiel en het jog-wiel stapt per frame. Eindeloze encoders en terugmelding naar de controller (lampjes, motorfaders) komen in een latere versie.
-	First message (ms)	Eerste bericht (ms)
-	Silence (ms)	Stilte (ms)
-	Waiting for the control to settle…	Wachten tot de bediening tot rust komt…
-	Type: {hint}. Confirm this assignment.	Type: {hint}. Bevestig deze toewijzing.
-	That control is already assigned. Confirm replaces it.	Die bediening is al toegewezen. Bevestigen vervangt haar.
-	Learn timed out.	Leren duurde te lang.
-	Confirm	Bevestigen
-	Reject	Afwijzen
-	Shows every MIDI message from the controllers as it arrives, to check that a controller sends and what it sends. MIDI Clock, Active Sensing and MIDI Time Code are left out.	Toont elk MIDI-bericht van de controllers zodra het binnenkomt, om te zien of een controller zendt en wat. MIDI-clock, Active Sensing en MIDI-timecode blijven weg.
-	Pick a command (or a mixer strip for a fader or knob), press Learn, then press the button or move the control past half way. Confirm keeps the assignment. OK saves the assignments.	Kies een opdracht (of een mixerkanaal voor een fader of knop), druk op Leren en dan op de knop, of beweeg de bediening voorbij de helft. Bevestigen houdt de toewijzing. OK bewaart de toewijzingen.
-	All devices	Alle apparaten
-	Builtin: {name}	Ingebouwd: {name}
-	Capturing	Vastleggen
-	Confirmed	Bevestigd
-	Conflict	Conflict
-	Connect a MIDI controller or a ShuttlePRO to edit its profile.	Sluit een MIDI-controller of ShuttlePRO aan om het profiel te bewerken.
-	Control Surfaces…	Besturingsoppervlakken…
-	Filter messages	Berichten filteren
-	Idle	Inactief
-	Kernel dropped: {count}	Door de kernel verloren: {count}
-	Learn Assignments…	Toewijzingen leren…
-	Load profile	Profiel laden
-	MIDI Monitor…	MIDI-monitor…
-	Mute shuttle sound	Shuttle-geluid dempen
-	No conflicts.	Geen conflicten.
-	No profile warnings.	Geen profielwaarschuwingen.
-	No project profile is stored.	Er is geen projectprofiel opgeslagen.
-	OK writes the preferences and the profile file together.	OK schrijft de voorkeuren en het profielbestand samen.
-	Online	Online
-	Pending	In behandeling
-	Pickup (14-bit)	Oppakken (14-bit)
-	Pickup (7-bit)	Oppakken (7-bit)
-	Profile warnings	Profielwaarschuwingen
-	Rejected	Afgewezen
-	Show Active Sensing	Active Sensing tonen
-	Show MIDI Clock	MIDI-klok tonen
-	Show MIDI Time Code	MIDI-tijdcode tonen
-	The profile file is damaged. Preferences and the built-in profile stay in use.	Het profielbestand is beschadigd. De voorkeuren en het ingebouwde profiel blijven in gebruik.
-	Timed out	Tijd verstreken
-	Type: {hint}	Type: {hint}
-	User profile file	Gebruikersprofielbestand
-	{received} received, {dispatched} dispatched, {coalesced} coalesced, {stalls} stalls, {errors} errors	{received} ontvangen, {dispatched} verzonden, {coalesced} samengevoegd, {stalls} wachttijden, {errors} fouten
-
-# Control Surfaces settings page (CS-1, #1187)
-	Looking for devices…	Apparaten zoeken…
-	No MIDI controller or jog/shuttle device was found. Connect one and press Refresh.	Geen MIDI-controller of jog/shuttle-apparaat gevonden. Sluit er een aan en druk op Vernieuwen.
-	Control Surfaces	Bedieningspanelen
-	Use control surfaces (MIDI controllers, jog/shuttle devices)	Bedieningspanelen gebruiken (MIDI-controllers, jog/shuttle-apparaten)
-	Mapping controls to commands, MIDI Learn and the MIDI Monitor come in a later version; the choices here are remembered until then.	Het koppelen van bedieningselementen aan opdrachten, MIDI Learn en de MIDI-monitor komen in een latere versie; tot dan worden de keuzes hier onthouden.
-	CFA4 ShuttlePRO	CFA4 ShuttlePRO
-	Kdenlive-style ShuttlePRO	ShuttlePRO in Kdenlive-stijl
-	Generic MIDI	Algemene MIDI
-# LTC timecode read from clip audio (TC-7, #1285)
-	Read from LTC Audio	Uit LTC-audio lezen
-	Find SMPTE LTC on the clip's audio and use the timecode it gives the first frame	SMPTE LTC in de audio van de clip zoeken en de tijdcode gebruiken die het aan het eerste beeld geeft
-	Read Timecode from LTC Audio	Tijdcode uit LTC-audio lezen
-# Credits: voices (the Voice column) in the block's properties (F10-C16)
-	Voices	Stemmen
-# Timecode sync varispeed and user bits (TC-8, #1308)
-	Varispeed: adjust the playback speed instead of seeking	Varispeed: afspeelsnelheid aanpassen in plaats van te springen
-	User bits	Gebruikersbits
-# AS-11 programme parts and AS-10 metadata (G2, #1371, #1375)
-	{tc}  Segmentation	{tc}  Segmentatie
-	Marker Type	Markeringstype
-	Chapter	Hoofdstuk
-	Segmentation (AS-11 programme part)	Segmentatie (AS-11-programmadeel)
-	AS-10	AS-10
-# AT9/AT3 converter (Tools ▸ Audio Tools, AT3-2)
-	AT9/AT3 Converter	AT9/AT3-converter
-	AT9/AT3 Converter…	AT9/AT3-converter…
-	Files to convert:	Te converteren bestanden:
-	Add Files	Bestanden toevoegen
-	Add Files…	Bestanden toevoegen…
-	Convert to:	Converteren naar:
-	Bit rate:	Bitrate:
-	Sample format:	Sampleformaat:
-	Output folder:	Uitvoermap:
-	Output Folder	Uitvoermap
-	Next to each source file	Naast elk bronbestand
-	AT9 and ATRAC3plus files convert to WAV; encoding AT9, ATRAC3plus and MP3 is not available yet.	AT9- en ATRAC3plus-bestanden worden naar WAV geconverteerd; coderen naar AT9, ATRAC3plus en MP3 is nog niet beschikbaar.
-	Convert	Converteren
-	Add the files to convert first.	Voeg eerst de te converteren bestanden toe.
-	Done: {n} file(s) converted.	Klaar: {n} bestand(en) geconverteerd.
-	Converting {name}…	{name} converteren…
-	Stopping…	Stoppen…
-	AT3 (ATRAC3, PSP / PS3)	AT3 (ATRAC3, PSP / PS3)
-	WAV (PCM)	WAV (PCM)
-	132 kbit/s (LP2)	132 kbit/s (LP2)
-	105 kbit/s	105 kbit/s
-	66 kbit/s (LP4, joint stereo)	66 kbit/s (LP4, joint stereo)
-	16-bit	16-bits
-	24-bit	24-bits
-	32-bit float	32-bits drijvende komma
-
-# Datamosh transition (Grunge & Distort, DM1, #1409)
-	Datamosh	Datamosh
-	Residual	Residu
-	Motion Boost	Bewegingsversterking
-	Recovery	Herstel
-	Encode Resolution	Coderingsresolutie
-	Half	Half
-	Quarter	Kwart

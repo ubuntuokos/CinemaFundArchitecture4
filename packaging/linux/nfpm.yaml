@@ -23,8 +23,8 @@ description: |-
   Timeline editing with source and program monitors, color grading and scopes,
   effects and keyframes, titles and captions, audio mixing with loudness meters,
   and export; GPU compositing (wgpu).
-  The editor is the Qt 6 GUI (started by cfa4 or cfa4-qt), driving the engine of
-  cfa4-cli, which is also a headless command runner, MCP server and exporter.
+  Includes cfa4-cli, a headless command runner, MCP server and exporter, and
+  cfa4-qt, the Qt 6 editor GUI driving the same engine.
   Ships CFA4's own FFmpeg 9.0.2 build (GPL-3, shared libraries in /opt/cfa4/ffmpeg-9.0.2) as a
   supplementary media backend; it never replaces the system FFmpeg. Patent-restricted encoders
   (x264, x265) are in the separate cfa4-restricted-extras package.
@@ -84,8 +84,6 @@ overrides:
       - gstreamer1.0-plugins-good
       - gstreamer1.0-plugins-bad
 contents:
-  # `cfa4` is a copy of the Qt GUI's launcher: the package carries no egui editor and starts none
-  # (docs/plans/CFA4-QT6-FINISH-001.md Q4.3).
   - src: ${STAGE}/usr/bin/cfa4
     dst: /usr/bin/cfa4
     file_info: { mode: 0755 }
@@ -106,9 +104,6 @@ contents:
   - src: ${STAGE}/usr/share/
     dst: /usr/share/
     type: tree
-  - src: ${STAGE}/usr/lib/udev/rules.d/70-cfa4-surfaces.rules
-    dst: /usr/lib/udev/rules.d/70-cfa4-surfaces.rules
-    file_info: { mode: 0644 }
 
 scripts:
   postinstall: packaging/linux/postinst.sh

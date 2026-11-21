@@ -1,8 +1,7 @@
 //! `cfa4-studio-host`: the live studio's own process (CFA4-LIVE-STUDIO-001 D2, V.1).
 //!
 //! It runs the studio backend (libobs, or the pure-Rust software backend), shows the empty scene
-//! until the engine sends one (S1: `{"cmd":"scene",…}`, layers of pictures) and writes
-//! every program frame into the frame ring the engine created. The engine's
+//! (S0) and writes every program frame into the frame ring the engine created. The engine's
 //! supervisor (`cfa4_obs::host::Supervisor`) starts it, watches it and restarts it after a
 //! crash; libobs is C code, and its faults end this process, never the editor.
 //!
@@ -12,16 +11,13 @@
 //! ```
 //!
 //! Protocol: JSON lines. Events go to stdout (`{"event":"ready",…}`, `{"event":"error",…}`,
-//! `{"event":"sceneShown",…}`, `{"event":"stopped"}`); commands come on stdin (`{"cmd":"quit"}`,
-//! `{"cmd":"scene","scene":{…}}`; EOF also quits). Moving layers (S1b) are frame rings the engine
-//! writes; the newest frame of each is taken before every program frame. Log lines
+//! `{"event":"stopped"}`); commands come on stdin (`{"cmd":"quit"}`; EOF also quits). Log lines
 //! (ours and libobs's) go to stderr.
 
 #![deny(clippy::unwrap_used, clippy::expect_used, clippy::panic, clippy::unimplemented, clippy::todo, clippy::unreachable)]
 
 use cfa4_obs::host::{HostCommand, HostEvent};
 use cfa4_obs::ring::RingWriter;
-use cfa4_obs::scene::{Feeds, LoadedScene};
 use cfa4_obs::{BackendChoice, StudioBackend, VideoSettings};
 use std::io::{BufRead, Write};
 use std::path::PathBuf;
@@ -104,24 +100,15 @@ fn run(args: Args, events: &mut Events) -> Result<(), String> {
     backend.show_empty_scene().map_err(|e| e.to_string())?;
     events.send(&HostEvent::Ready { backend: backend.name().into(), version: backend.version(), fallback_reason: opened.fallback_reason });
 
-    // stdin: a quit command or EOF ends the loop; scenes are loaded (files read, everything
-    // checked) on this thread and handed to the frame loop
+    // stdin: a quit command or EOF ends the loop
     let quit = Arc::new(AtomicBool::new(false));
     let q2 = quit.clone();
-    let (scenes, incoming) = std::sync::mpsc::channel::<Result<LoadedScene, String>>();
     let _stdin = std::thread::Builder::new().name("cfa4-studio-host-stdin".into()).spawn(move || {
         let _ = std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| {
             for line in std::io::stdin().lock().lines() {
                 let Ok(line) = line else { break };
-                match serde_json::from_str::<HostCommand>(&line) {
-                    Ok(HostCommand::Quit) => break,
-                    Ok(HostCommand::Scene { scene }) => {
-                        let loaded = scene.load().map_err(|e| format!("scene {}: {e}", scene.revision));
-                        if scenes.send(loaded).is_err() {
-                            break;
-                        }
-                    }
-                    Err(e) => eprintln!("cfa4-studio-host: ignoring a command that cannot be read: {e}"),
+                if matches!(serde_json::from_str::<HostCommand>(&line), Ok(HostCommand::Quit)) {
+                    break;
                 }
             }
         }));
@@ -130,33 +117,9 @@ fn run(args: Args, events: &mut Events) -> Result<(), String> {
 
     let mut written: u64 = 0;
     let mut silent = 0u32;
-    // the moving pictures of the shown scene (S1b), polled before every frame
-    let mut feeds = Feeds::default();
     let result = loop {
         if quit.load(Ordering::SeqCst) {
             break Ok(());
-        }
-        // only the newest scene matters when several arrived between two frames
-        if let Some(next) = incoming.try_iter().last() {
-            let shown = next.and_then(|scene| match backend.set_scene(&scene) {
-                Ok(()) => {
-                    feeds = Feeds::of(&scene);
-                    Ok((scene.revision, scene.layers.len()))
-                }
-                Err(e) => Err(format!("scene {}: {e}", scene.revision)),
-            });
-            match shown {
-                Ok((revision, layers)) => events.send(&HostEvent::SceneShown { revision, layers }),
-                Err(message) => {
-                    eprintln!("cfa4-studio-host: {message}");
-                    events.send(&HostEvent::Error { message });
-                }
-            }
-        }
-        for (index, picture) in feeds.poll() {
-            if let Err(e) = backend.update_layer(index, &picture) {
-                eprintln!("cfa4-studio-host: layer {index}: {e}");
-            }
         }
         match backend.next_frame(Duration::from_millis(500)) {
             Ok(Some(frame)) => {

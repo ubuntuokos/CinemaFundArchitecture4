@@ -462,10 +462,9 @@ fn frames_for(s: &Session, secs: f64) -> Tick {
     rate.tick_of(if secs < 0.0 { -mag } else { mag })
 }
 
-/// `trim.shuttle {direction: "forward"|"reverse", slow?, speed?, clock}` (L / J in trim mode): start a
+/// `trim.shuttle {direction: "forward"|"reverse", slow?, clock}` (L / J in trim mode): start a
 /// dynamic trim, speed it up (pressing the same direction again doubles the speed, up to 8×) or
-/// reverse it. `speed` (a jog/shuttle ring position, ADR 0012 §4) sets the speed outright, its
-/// sign from `direction`, at most 8×.
+/// reverse it.
 pub fn shuttle(s: &mut Session, p: &Value) -> Result<Value> {
     let clock = clock_p(p);
     let dir = direction_p(p);
@@ -487,10 +486,7 @@ pub fn shuttle(s: &mut Session, p: &Value) -> Result<Value> {
     }
     let rate = s.sequence_rate();
     let d = s.trim_play.dynamic.as_mut().ok_or_else(|| EngineError::Other("dynamic trimming is not active".into()))?;
-    let ring = p.get("speed").and_then(Value::as_f64).filter(|v| v.is_finite() && *v != 0.0);
-    let speed = if let Some(v) = ring {
-        v.abs().min(8.0) * dir
-    } else if slow {
+    let speed = if slow {
         0.25 * dir
     } else if d.speed * dir > 0.0 && !d.at_limit {
         (d.speed * 2.0).clamp(-8.0, 8.0)

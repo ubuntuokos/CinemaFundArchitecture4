@@ -32,7 +32,6 @@ mod dissolve;
 mod grunge;
 mod legacy;
 mod lights;
-pub mod mosh;
 mod motion;
 mod special;
 pub mod wipe;

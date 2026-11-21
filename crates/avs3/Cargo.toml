@@ -1,9 +1,9 @@
 [package]
 name = "cfa4-avs3"
-description = "Pure-Rust AVS3-P2 (IEEE 1857.10, GB/T 33475.2) video decoder: Main-8 and Main-10 profiles"
+description = "Pure-Rust AVS3-P2 (IEEE 1857.10, GB/T 33475.2) video decoder: baseline profile, 8 and 10 bit"
 version.workspace = true
 edition.workspace = true
-license = "GPL-3.0-or-later AND BSD-3-Clause"
+license = "GPL-3.0-or-later"
 rust-version.workspace = true
 
 [lints]

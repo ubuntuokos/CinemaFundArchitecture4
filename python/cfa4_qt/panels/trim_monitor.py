@@ -495,16 +495,6 @@ class TrimMonitor(QWidget):
             return False
         return True
 
-    def ring(self, speed: float) -> None:
-        """A jog/shuttle ring position in trim mode (ADR 0012 §4): dynamic trimming at that
-        speed (negative: backwards); 0 stops it and commits the trim."""
-        if speed == 0:
-            if self.playing:
-                self.run("trim.shuttleStop", {"clock": self.clock()})
-            return
-        direction = "forward" if speed > 0 else "reverse"
-        self.run("trim.shuttle", {"direction": direction, "speed": abs(speed), "clock": self.clock()})
-
     def cancel_dynamic(self) -> bool:
         """Escape while a dynamic trim runs: drop it, restoring the edit."""
         if not isinstance(self.info.get("dynamic"), dict):

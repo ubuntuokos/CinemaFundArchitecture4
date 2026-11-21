@@ -1,375 +1,353 @@
-// SPDX-License-Identifier: BSD-3-Clause
-// Derived from uavs3d (`source/decoder/uavs3d.c`, `source/decore/pic_manager.c`), Copyright (c) 2018-2022 Peking
-// University Shenzhen Graduate School, Peng Cheng Laboratory and Guangdong Bohua UHD Innovation Corporation.
-// See LICENSE.uavs3d.
-//! Picture decoding (patches, LCU rows) and the decoded picture buffer.
+// SPDX-License-Identifier: GPL-3.0-or-later
+// Derived from uavs3d 1.2 (commit 0e20d2c2), Copyright (c) 2018-2022 Peking University Shenzhen Graduate School,
+// Peng Cheng Laboratory and Guangdong Bohua UHD Innovation Corporation, BSD 3-clause licence (docs/licensing.md).
+//! Picture-level decoding: patches and LCUs, the picture manager and the output order.
 
 use std::sync::Arc;
 
 use crate::Error;
-use crate::bits::{Bits, demulate};
-use crate::core::{Core, Maps, Picture, Plane, RefPic, SaoParam};
-use crate::header::{DoiState, MAX_QUANT_BASE, MAX_REFS, PatchHeader, PicHeader, SliceType, parse_ext_and_user_data};
+use crate::bits::{demulate, start_codes};
+use crate::core::{Core, Pic, RefInfo};
+use crate::header::{DoiState, PatchHeader, Picture, Sequence, SliceType};
 use crate::lbac::{Ctx as LbacCtx, Lbac};
-use crate::types::*;
+use crate::tables::QP_CHROMA_ADJUST;
 
-/// The most pictures the buffer holds before the stream is rejected.
-const MAX_DPB: usize = MAX_REFS + 8;
-const DOI_CYCLE_LENGTH: i64 = 256;
+/// The largest coded picture (8192×4608 samples), against hostile headers.
+const MAX_PIXELS: u64 = 8192 * 4608;
+/// The most pictures the manager keeps (`MAX_PB_SIZE` in uavs3d is smaller; this only bounds memory).
+const MAX_SLOTS: usize = 40;
 
-impl Core {
-    pub(crate) fn new(seq: crate::header::Sequence) -> Core {
-        let maps = Maps::new(&seq);
-        Core {
-            seq,
-            pichdr: PicHeader::default(),
-            pathdr: PatchHeader::default(),
-            lbac: Lbac::empty(),
-            ctx: LbacCtx::new(),
-            pic: Picture::default(),
-            maps,
-            slice_type: SliceType::I,
-            num_refp: [0; 2],
-            refp: Vec::new(),
-            cu_mode: 0,
-            pb_part: 0,
-            tb_part: 0,
-            cbfy: [0; 4],
-            cbfc: [0; 2],
-            refi: [REFI_INVALID; 2],
-            ipm: [0; 4],
-            ipm_c: 0,
-            ipf_flag: false,
-            affine_flag: 0,
-            mv: [[0; 2]; 2],
-            affine_mv: [[[0; 2]; 4]; 2],
-            affine_sb_mv: [[[0; 2]; 256]; 2],
-            cu_scup: 0,
-            cu_pix_x: 0,
-            cu_pix_y: 0,
-            cu_log2w: 0,
-            cu_log2h: 0,
-            cu_width: 0,
-            cu_height: 0,
-            tree_scup: 0,
-            tree_status: TREE_LC,
-            cons_pred_mode: NO_MODE_CONS,
-            lcu_x: 0,
-            lcu_y: 0,
-            lcu_pix_x: 0,
-            lcu_pix_y: 0,
-            lcu_qp_y: 0,
-            lcu_qp_u: 0,
-            lcu_qp_v: 0,
-            hmvp_cands_cnt: 0,
-            hmvp_cands_list: [Motion::default(); ALLOWED_HMVP_NUM],
-            sao_param_map: Vec::new(),
-            alf_enable_map: Vec::new(),
-        }
-    }
-
-    fn begin_picture(&mut self, pichdr: PicHeader, refp: Vec<[Option<RefPic>; 2]>, num_refp: [usize; 2]) {
-        let (w, h) = (self.seq.pic_width, self.seq.pic_height);
-        self.slice_type = pichdr.slice_type;
-        self.pichdr = pichdr;
-        self.refp = refp;
-        self.num_refp = num_refp;
-        self.maps = Maps::new(&self.seq);
-        self.pic = Picture { planes: [Plane::new(w, h), Plane::new(w / 2, h / 2), Plane::new(w / 2, h / 2)], ..Picture::default() };
-        for (i, r) in self.refp.iter().enumerate().take(MAX_REFS) {
-            if let Some(r) = &r[0] {
-                self.pic.list_dist[i] = r.dist as i16;
-            }
-        }
-        self.sao_param_map = vec![[SaoParam::default(); 3]; self.seq.f_lcu];
-        self.alf_enable_map = vec![[false; 3]; self.seq.f_lcu];
-        self.affine_flag = 0;
-        self.hmvp_cands_cnt = 0;
-    }
-
-    /// `dec_pic`: decodes the patches (`units` are the de-emulated slice units) of the picture started by
-    /// [`begin_picture`](Self::begin_picture), then runs the loop filters.
-    fn decode_patches(&mut self, units: &[Vec<u8>]) -> Result<(), Error> {
-        let mut unit_iter = units.iter();
-        let mut new_patch = true;
-        let mut left_lcu = self.seq.f_lcu;
-        let (mut patch_start_x, mut patch_end_x, mut patch_end_y) = (0usize, 0usize, 0usize);
-        let mut lcu_qp = 0i32;
-        let mut lcu_qp_delta = 0i32;
-        let wl = self.seq.pic_width_in_lcu;
-        loop {
-            if new_patch {
-                let unit = unit_iter.next().ok_or(Error::Truncated)?;
-                let mut b = Bits::new(unit);
-                let ph = PatchHeader::parse(&mut b, &self.seq, &self.pichdr)?;
-                if ph.index >= self.seq.patch_columns * self.seq.patch_rows {
-                    return Err(Error::Invalid("patch index out of range"));
-                }
-                self.pathdr = ph;
-                if ph.index == 0 || self.pichdr.loop_filter_disable_flag || !self.seq.cross_patch_loop_filter {
-                    self.maps.scu.fill(Scu::default());
-                } else {
-                    for s in self.maps.scu.iter_mut() {
-                        *s = Scu { cbf: s.cbf, ..Scu::default() };
-                    }
-                }
-                self.lbac.set_data(&unit[b.byte_pos()..]);
-                self.lbac.init_at(0);
-                self.ctx = LbacCtx::new();
-                let (patch_x, patch_y) = (ph.index % self.seq.patch_columns, ph.index / self.seq.patch_columns);
-                patch_start_x = self.seq.patch_column_width[..patch_x].iter().sum();
-                let patch_start_y: usize = self.seq.patch_row_height[..patch_y].iter().sum();
-                self.lcu_x = patch_start_x;
-                self.lcu_y = patch_start_y;
-                patch_end_x = patch_start_x + self.seq.patch_column_width[patch_x];
-                patch_end_y = patch_start_y + self.seq.patch_row_height[patch_y];
-                for j in patch_start_y..patch_end_y {
-                    for i in patch_start_x..patch_end_x {
-                        self.maps.patch[j * wl + i] = ph.index as i8;
-                    }
-                }
-                lcu_qp = ph.slice_qp;
-                lcu_qp_delta = 0;
-            } else {
-                self.lcu_x += 1;
-                if self.lcu_x >= patch_end_x {
-                    self.lcu_x = patch_start_x;
-                    self.lcu_y += 1;
-                    if self.lcu_y >= patch_end_y {
-                        return Err(Error::Invalid("patch overrun"));
-                    }
-                }
-            }
-            let log2 = self.seq.log2_max_cuwh;
-            self.lcu_pix_x = self.lcu_x << log2;
-            self.lcu_pix_y = self.lcu_y << log2;
-            let lcu_idx = self.lcu_y * wl + self.lcu_x;
-            if lcu_idx >= self.seq.f_lcu {
-                return Err(Error::Invalid("LCU out of range"));
-            }
-            if self.lcu_x == patch_start_x {
-                self.hmvp_cands_cnt = 0;
-            }
-            if self.pathdr.fixed_slice_qp_flag {
-                lcu_qp = self.pathdr.slice_qp;
-            } else {
-                lcu_qp_delta = self.parse_lcu_delta_qp(lcu_qp_delta);
-                lcu_qp += lcu_qp_delta;
-            }
-            let off = self.seq.bit_depth_2_qp_offset;
-            lcu_qp = clip3(0, MAX_QUANT_BASE + off, lcu_qp);
-            let adj = |delta: i32| -> i32 {
-                let a = lcu_qp + delta - off;
-                if a >= 0 { i32::from(crate::deblock::QP_CHROMA_ADJUST[a.min(MAX_QUANT_BASE) as usize]) } else { a }
-            };
-            let (adj_cb, adj_cr) = (adj(self.pichdr.chroma_quant_param_delta_cb), adj(self.pichdr.chroma_quant_param_delta_cr));
-            self.lcu_qp_y = lcu_qp;
-            self.lcu_qp_u = (adj_cb + off).max(0);
-            self.lcu_qp_v = (adj_cr + off).max(0);
-            self.maps.qp[lcu_idx] = lcu_qp as i8;
-
-            if self.seq.sao_enable_flag {
-                self.parse_sao_param(lcu_idx);
-            }
-            if self.seq.alf_enable_flag {
-                for c in 0..3 {
-                    self.alf_enable_map[lcu_idx][c] = self.pichdr.alf_param.alf_flag[c] && self.parse_alf_enable();
-                }
-            }
-            let (px, py) = (self.lcu_pix_x, self.lcu_pix_y);
-            self.decode_cu_tree(px, py, log2, log2, 0, 0, NO_MODE_CONS, TREE_LC)?;
-
-            new_patch = self.lbac.bin_trm() != 0;
-            left_lcu -= 1;
-            if left_lcu == 0 {
-                break;
-            }
-        }
-
-        if !self.pichdr.loop_filter_disable_flag {
-            self.deblock_picture();
-        }
-        if self.seq.sao_enable_flag {
-            self.sao_picture();
-        }
-        if self.seq.alf_enable_flag && self.pichdr.alf_param.pic_alf_enable {
-            self.alf_picture();
-        }
-        self.pic.map_mv = std::mem::take(&mut self.maps.mv);
-        self.pic.map_refi = std::mem::take(&mut self.maps.refi);
-        Ok(())
-    }
-}
-
-/// A picture of the buffer.
+/// A decoded picture held by the picture manager.
 struct Slot {
-    pic: Arc<Picture>,
-    doi: i64,
-    ptr: i64,
-    output_delay: i64,
+    pic: Arc<Pic>,
+    doi: i32,
     is_ref: bool,
     is_output: bool,
+    output_delay: i32,
+    ptr: i64,
     tag: i64,
 }
 
-/// A picture ready for output.
+/// A decoded picture ready for output.
 pub(crate) struct OutPic {
-    pub pic: Arc<Picture>,
     pub poc: i64,
     pub tag: i64,
+    pub pic: Arc<Pic>,
 }
 
-/// The decoder state across pictures.
+/// The state of the picture being decoded between its header and its patches.
+struct Current {
+    ph: Picture,
+    tag: i64,
+    /// First LCU row of the next patch.
+    next_row: u32,
+    patches: usize,
+}
+
 #[derive(Default)]
 pub(crate) struct Ctx {
-    pub seq: Option<crate::header::Sequence>,
-    core: Option<Core>,
-    dpb: Vec<Slot>,
+    pub seq: Option<Sequence>,
+    core: Option<Box<Core>>,
     doi: DoiState,
-    cur_doi: i64,
-}
-
-/// The start codes of `data`: the code byte and the offset of its `00 00 01`.
-fn codes(data: &[u8]) -> Vec<(u8, usize)> {
-    data.windows(4).enumerate().filter_map(|(i, w)| (w[0] == 0 && w[1] == 0 && w[2] == 1).then_some((w[3], i))).collect()
+    slots: Vec<Slot>,
+    cur: Option<Current>,
+    /// Decoded pictures not yet matched by an output attempt (`ctx->output`).
+    decoded: usize,
+    cur_decoded_doi: i32,
 }
 
 impl Ctx {
     pub(crate) fn reset(&mut self) {
-        self.dpb.clear();
+        self.slots.clear();
+        self.cur = None;
+        self.decoded = 0;
         self.doi = DoiState::default();
     }
 
-    /// Decodes one packet (a sequence header, or a picture with all its patches).
+    fn set_sequence(&mut self, seq: Sequence) -> Result<(), Error> {
+        if u64::from(seq.pic_width) * u64::from(seq.pic_height) > MAX_PIXELS {
+            return Err(Error::Unsupported("picture size"));
+        }
+        let same = self.seq.as_ref().is_some_and(|s| {
+            s.pic_width == seq.pic_width
+                && s.pic_height == seq.pic_height
+                && s.log2_max_cu == seq.log2_max_cu
+                && s.bit_depth == seq.bit_depth
+                && s.patch_height == seq.patch_height
+        });
+        if !same || self.core.is_none() {
+            self.slots.clear();
+            self.core = Some(Box::new(Core::new(&seq)));
+        } else if let Some(c) = self.core.as_mut() {
+            c.seq = seq.clone();
+        }
+        self.seq = Some(seq);
+        Ok(())
+    }
+
+    /// Decodes one packet: sequence header, sequence end or a picture header with its patches.
     pub(crate) fn decode_packet(&mut self, packet: &[u8], tag: i64) -> Result<(), Error> {
-        let cs = codes(packet);
-        let Some(&(code, at)) = cs.first() else {
+        let codes: Vec<(u8, usize)> = start_codes(packet).collect();
+        let mut result = Ok(());
+        for (k, &(code, at)) in codes.iter().enumerate() {
+            let end = codes.get(k + 1).map_or(packet.len(), |&(_, n)| n);
+            let unit = packet.get(at + 3..end).unwrap_or_default();
+            let r = match code {
+                0xB0 => {
+                    self.finish_picture();
+                    let dem = demulate(unit);
+                    Sequence::parse(dem.get(1..).unwrap_or_default()).and_then(|s| self.set_sequence(s))
+                }
+                0xB1 | 0xB7 => {
+                    self.finish_picture();
+                    Ok(())
+                }
+                0xB3 | 0xB6 => {
+                    self.finish_picture();
+                    let dem = demulate(unit);
+                    self.start_picture(code, dem.get(1..).unwrap_or_default(), tag)
+                }
+                0x00..=0x8E => {
+                    let dem = demulate(unit);
+                    self.decode_patch(code, dem.get(1..).unwrap_or_default())
+                }
+                _ => Ok(()),
+            };
+            if r.is_err() && result.is_ok() {
+                result = r;
+            }
+        }
+        self.finish_picture();
+        result
+    }
+
+    fn start_picture(&mut self, code: u8, body: &[u8], tag: i64) -> Result<(), Error> {
+        let seq = self.seq.clone().ok_or(Error::Invalid("picture before the sequence header"))?;
+        let (ph, wrapped) = Picture::parse(body, code, &seq, &mut self.doi)?;
+        if wrapped {
+            for s in &mut self.slots {
+                s.doi -= 256;
+            }
+        }
+        let cur_doi = ph.doi as i32;
+        // mark_refp
+        let keep = |s: &Slot| {
+            ph.rpl_l0.delta_doi.iter().take(ph.rpl_l0.num).any(|&d| s.doi == cur_doi - d)
+                || ph.rpl_l1.delta_doi.iter().take(ph.rpl_l1.num).any(|&d| s.doi == cur_doi - d)
+        };
+        for s in &mut self.slots {
+            if s.is_ref && !keep(s) {
+                s.is_ref = false;
+            }
+        }
+        // get_active_refp
+        let find = |slots: &[Slot], d: i32| slots.iter().position(|s| s.is_ref && s.doi == cur_doi - d);
+        let core = self.core.as_mut().ok_or(Error::Invalid("no sequence"))?;
+        core.num_refp = [0, 0];
+        for r in core.refp.iter_mut() {
+            *r = [RefInfo::default(), RefInfo::default()];
+        }
+        let dist = |ref_ptr: i64| -> i32 {
+            let d = i32::from((ph.ptr - ref_ptr) as i16);
+            if d == 0 { 1 } else { d }
+        };
+        let mut lost = false;
+        if ph.slice_type != SliceType::I {
+            for i in 0..ph.rpl_l0.active.min(ph.rpl_l0.delta_doi.len()) {
+                match find(&self.slots, ph.rpl_l0.delta_doi[i]) {
+                    Some(j) => {
+                        let s = &self.slots[j];
+                        core.refp[i][0] = RefInfo { pic: Some(s.pic.clone()), dist: dist(s.ptr) };
+                        core.num_refp[0] += 1;
+                    }
+                    None => lost = true,
+                }
+            }
+            if ph.slice_type == SliceType::B {
+                for i in 0..ph.rpl_l1.active.min(ph.rpl_l1.delta_doi.len()) {
+                    match find(&self.slots, ph.rpl_l1.delta_doi[i]) {
+                        Some(j) => {
+                            let s = &self.slots[j];
+                            core.refp[i][1] = RefInfo { pic: Some(s.pic.clone()), dist: dist(s.ptr) };
+                            core.num_refp[1] += 1;
+                        }
+                        None => lost = true,
+                    }
+                }
+            }
+            if lost || core.num_refp[0] == 0 {
+                // a leading picture after a seek, or a lost reference: skip the picture
+                self.cur = None;
+                return Ok(());
+            }
+        }
+        core.slice_type = ph.slice_type;
+        let mut pic = Core::new_pic(&seq);
+        pic.ptr = ph.ptr;
+        pic.doi = cur_doi;
+        pic.tag = tag;
+        for i in 0..core.num_refp[0] {
+            pic.list_dist[i] = core.refp[i][0].dist as i16;
+        }
+        core.cur = pic;
+        if !ph.loop_filter_disable {
+            core.map_edge.iter_mut().for_each(|e| *e = 0);
+        }
+        core.ph = ph.clone();
+        self.cur = Some(Current { ph, tag, next_row: 0, patches: 0 });
+        Ok(())
+    }
+
+    fn decode_patch(&mut self, code: u8, body: &[u8]) -> Result<(), Error> {
+        let Some(cur) = self.cur.as_mut() else {
             return Ok(());
         };
-        match code {
-            0xB0 => self.decode_sequence(packet.get(at..).unwrap_or_default()),
-            0xB1 | 0xB7 => Ok(()),
-            0xB3 | 0xB6 => self.decode_picture(packet, &cs, tag),
-            _ => Ok(()),
+        let seq = self.seq.as_ref().ok_or(Error::Invalid("no sequence"))?;
+        let core = self.core.as_mut().ok_or(Error::Invalid("no sequence"))?;
+        let rows = seq.patch_rows();
+        let idx = usize::from(code);
+        let nrows = *rows.get(idx).ok_or(Error::Invalid("patch index"))?;
+        if idx != cur.patches {
+            return Err(Error::Invalid("patch order"));
         }
-    }
-
-    fn decode_sequence(&mut self, data: &[u8]) -> Result<(), Error> {
-        let d = demulate(data);
-        let mut b = Bits::new(&d);
-        let seq = crate::header::Sequence::parse(&mut b)?;
-        parse_ext_and_user_data(&mut b, None);
-        if let Some(old) = &self.seq {
-            if old.horizontal_size != seq.horizontal_size
-                || old.vertical_size != seq.vertical_size
-                || old.log2_max_cu_width_height != seq.log2_max_cu_width_height
-                || old.encoding_precision != seq.encoding_precision
-            {
-                return Err(Error::Unsupported("sequence parameters changed inside the stream"));
-            }
-            self.seq = Some(seq.clone());
-            if let Some(c) = self.core.as_mut() {
-                c.seq = seq;
-            }
+        let pat = PatchHeader::parse(u32::from(code), body, seq, &cur.ph)?;
+        let data = body.get(pat.len..).unwrap_or_default().to_vec();
+        // map_scu reset
+        if idx == 0 || cur.ph.loop_filter_disable || !seq.cross_patch_loop_filter {
+            core.map_scu.iter_mut().for_each(|v| *v = 0);
         } else {
-            self.core = Some(Core::new(seq.clone()));
-            self.seq = Some(seq);
+            core.map_scu.iter_mut().for_each(|v| *v &= crate::core::SCU_CBF);
+        }
+        let start = cur.next_row;
+        cur.next_row += nrows;
+        cur.patches += 1;
+        core.lbac = Lbac::new(data);
+        core.ctx = LbacCtx::new();
+        core.pat = pat;
+        let (wl, hl) = (seq.w_lcu, seq.h_lcu);
+        let end = (start + nrows).min(hl);
+        for ly in start..end {
+            for lx in 0..wl {
+                if let Some(m) = core.map_patch.get_mut((ly * wl + lx) as usize) {
+                    *m = idx as i8;
+                }
+            }
+        }
+        let off = seq.bit_depth_2_qp_offset;
+        let mut lcu_qp = core.pat.slice_qp;
+        let mut delta = 0;
+        'rows: for ly in start..end {
+            for lx in 0..wl {
+                let lcu_idx = (ly * wl + lx) as usize;
+                core.lcu_x = lx as i32;
+                core.lcu_y = ly as i32;
+                core.lcu_pix_x = (lx << seq.log2_max_cu) as i32;
+                core.lcu_pix_y = (ly << seq.log2_max_cu) as i32;
+                if lx == 0 {
+                    core.hmvp_cnt = 0;
+                }
+                if core.pat.fixed_slice_qp {
+                    lcu_qp = core.pat.slice_qp;
+                } else {
+                    delta = core.dec_lcu_delta_qp(delta);
+                    lcu_qp += delta;
+                }
+                lcu_qp = lcu_qp.clamp(0, 63 + off);
+                let adj = |d: i32| {
+                    let mut a = lcu_qp + d - off;
+                    if a >= 0 {
+                        a = i32::from(QP_CHROMA_ADJUST[a.min(63) as usize]);
+                    }
+                    (a + off).max(0)
+                };
+                core.qp_y = lcu_qp;
+                core.qp_u = adj(cur.ph.chroma_qp_delta_cb);
+                core.qp_v = adj(cur.ph.chroma_qp_delta_cr);
+                if let Some(q) = core.map_qp.get_mut(lcu_idx) {
+                    *q = lcu_qp as i8;
+                }
+                if seq.sao_enable {
+                    let p = core.dec_sao_param(lcu_idx);
+                    if let Some(s) = core.sao_map.get_mut(lcu_idx) {
+                        *s = p;
+                    }
+                }
+                if seq.alf_enable {
+                    let mut f = [false; 3];
+                    for (c, v) in f.iter_mut().enumerate() {
+                        if cur.ph.alf.flag[c] {
+                            *v = core.dec_alf_enable();
+                        }
+                    }
+                    if let Some(s) = core.alf_map.get_mut(lcu_idx) {
+                        *s = f;
+                    }
+                }
+                let lc = seq.log2_max_cu;
+                core.decode_cu_tree(core.lcu_pix_x, core.lcu_pix_y, lc, lc, 0, 0, crate::core::NO_MODE_CONS, crate::core::TREE_LC);
+                if core.lbac.bin_trm() != 0 {
+                    break 'rows;
+                }
+            }
         }
         Ok(())
     }
 
-    fn decode_picture(&mut self, packet: &[u8], cs: &[(u8, usize)], tag: i64) -> Result<(), Error> {
-        let seq = self.seq.clone().ok_or(Error::Invalid("picture before the sequence header"))?;
-        // the header unit runs up to the first slice start code
-        let first_slice = cs.iter().position(|&(c, _)| c <= 0x8F);
-        let (_, hdr_at) = cs[0];
-        let hdr_end = first_slice.map_or(packet.len(), |i| cs[i].1);
-        let hdr = demulate(packet.get(hdr_at..hdr_end).unwrap_or_default());
-        let mut b = Bits::new(&hdr);
-        let mut doi = self.doi;
-        let mut ph = PicHeader::parse(&mut b, &seq, &mut doi)?;
-        parse_ext_and_user_data(&mut b, Some(&mut ph));
-        if doi.wrapped {
-            for s in &mut self.dpb {
-                s.doi -= DOI_CYCLE_LENGTH;
-            }
+    /// Runs the in-loop filters and files the decoded picture, if one is being decoded.
+    fn finish_picture(&mut self) {
+        let Some(cur) = self.cur.take() else {
+            return;
+        };
+        let (Some(core), Some(seq)) = (self.core.as_mut(), self.seq.as_ref()) else {
+            return;
+        };
+        if cur.patches == 0 {
+            return;
         }
-        self.doi = doi;
-        let cur_doi_raw = i64::from(ph.decode_order_index);
-
-        // mark the reference pictures
-        for s in &mut self.dpb {
-            if s.is_ref {
-                let keep = ph.rpl_l0.delta_doi[..ph.rpl_l0.num].iter().any(|&d| s.doi == cur_doi_raw - i64::from(d))
-                    || ph.rpl_l1.delta_doi[..ph.rpl_l1.num].iter().any(|&d| s.doi == cur_doi_raw - i64::from(d));
-                if !keep {
-                    s.is_ref = false;
-                }
-            }
+        if !cur.ph.loop_filter_disable {
+            core.deblock_picture();
         }
-        // the active reference lists
-        let mut refp: Vec<[Option<RefPic>; 2]> = (0..MAX_REFS).map(|_| [None, None]).collect();
-        let mut num_refp = [0usize; 2];
-        for lidx in 0..2 {
-            if lidx == 1 && ph.slice_type == SliceType::P {
-                break;
-            }
-            let rpl = if lidx == 0 { &ph.rpl_l0 } else { &ph.rpl_l1 };
-            for i in 0..rpl.active.min(MAX_REFS) {
-                let want = cur_doi_raw - i64::from(rpl.delta_doi[i]);
-                let slot = self.dpb.iter().find(|s| s.doi == want && s.is_ref).ok_or(Error::Invalid("missing reference picture"))?;
-                let mut dist = (ph.ptr - slot.ptr) as i16;
-                if dist == 0 {
-                    dist = 1;
-                }
-                refp[i][lidx] = Some(RefPic { pic: Arc::clone(&slot.pic), dist: i32::from(dist) });
-                num_refp[lidx] += 1;
-            }
+        if seq.sao_enable {
+            core.sao_picture();
         }
-        if ph.slice_type == SliceType::I {
-            num_refp = [0; 2];
+        if seq.alf_enable && cur.ph.alf.enable {
+            core.alf_picture();
         }
-        // free pictures that are neither references nor waiting for output
-        self.dpb.retain(|s| s.is_ref || s.is_output);
-        if self.dpb.len() >= MAX_DPB {
-            return Err(Error::Invalid("decoded picture buffer overflow"));
+        let pic = std::mem::replace(&mut core.cur, Core::new_pic(seq));
+        let doi = pic.doi;
+        self.slots.retain(|s| s.is_ref || s.is_output);
+        while self.slots.len() >= MAX_SLOTS {
+            self.slots.remove(0);
         }
-
-        // the slice units
-        let mut units: Vec<Vec<u8>> = Vec::new();
-        for (k, &(c, at)) in cs.iter().enumerate() {
-            if c <= 0x8E {
-                let end = cs.get(k + 1).map_or(packet.len(), |n| n.1);
-                units.push(demulate(packet.get(at..end).unwrap_or_default()));
-            }
-        }
-        let core = self.core.as_mut().ok_or(Error::Invalid("no decoder state"))?;
-        let ptr = ph.ptr;
-        let output_delay = i64::from(ph.output_delay);
-        core.begin_picture(ph, refp, num_refp);
-        core.decode_patches(&units)?;
-        let pic = Arc::new(std::mem::take(&mut core.pic));
-        core.refp.clear();
-        self.dpb.push(Slot { pic, doi: cur_doi_raw, ptr, output_delay, is_ref: true, is_output: true, tag });
-        self.cur_doi = cur_doi_raw;
-        Ok(())
+        self.slots.push(Slot { ptr: pic.ptr, tag: cur.tag, doi, is_ref: true, is_output: true, output_delay: cur.ph.output_delay as i32, pic: Arc::new(pic) });
+        self.cur_decoded_doi = doi;
+        self.decoded += 1;
     }
 
-    /// `com_picman_out_pic`: the next picture due for output (`flush`: bumping at the end of the stream).
+    /// `com_picman_out_pic` (one output per decoded picture, or bumping when flushing).
     pub(crate) fn next_output(&mut self, flush: bool) -> Option<OutPic> {
+        if flush {
+            let j = self.slots.iter().enumerate().filter(|(_, s)| s.is_output).min_by_key(|(_, s)| s.ptr)?.0;
+            return self.take(j);
+        }
+        if self.decoded == 0 {
+            return None;
+        }
+        let cur = self.cur_decoded_doi;
         let mut best: Option<usize> = None;
-        for (i, s) in self.dpb.iter().enumerate() {
-            if !s.is_output {
-                continue;
-            }
-            let eligible = flush || s.doi + s.output_delay <= self.cur_doi;
-            if eligible && best.is_none_or(|b| self.dpb[b].ptr >= s.ptr) {
+        for (i, s) in self.slots.iter().enumerate() {
+            if s.is_output && s.doi + s.output_delay <= cur && best.is_none_or(|b| s.ptr <= self.slots[b].ptr) {
                 best = Some(i);
             }
         }
-        let i = best?;
-        let s = &mut self.dpb[i];
+        let j = best?;
+        self.decoded -= 1;
+        self.take(j)
+    }
+
+    fn take(&mut self, j: usize) -> Option<OutPic> {
+        let s = self.slots.get_mut(j)?;
         s.is_output = false;
-        Some(OutPic { pic: Arc::clone(&s.pic), poc: s.ptr, tag: s.tag })
+        Some(OutPic { poc: s.ptr, tag: s.tag, pic: s.pic.clone() })
     }
 }

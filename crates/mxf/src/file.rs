@@ -341,8 +341,6 @@ pub struct MxfFile {
     /// Problems recovered from (truncation, unresolved references…).
     pub warnings: Vec<String>,
     pub file_size: u64,
-    /// AMWA AS-11 descriptive metadata (Core, programme parts, UK DPP), when the file has it.
-    pub as11: Option<crate::as11::As11>,
 }
 
 /// An essence element found by the KLV walk.
@@ -582,7 +580,7 @@ fn resync(src: &(impl ByteSource + ?Sized), from: u64, len: u64, budget: &mut us
 }
 
 /// Data definition labels (ST 377-1 Annex / RP 224): 06 0E 2B 34 04 01 01 01 01 03 02 kk tt 00 00 00.
-pub(crate) fn track_kind_of(def: Option<Ul>) -> Option<(bool, TrackKind)> {
+fn track_kind_of(def: Option<Ul>) -> Option<(bool, TrackKind)> {
     let d = def?;
     if !d.item_starts_with(&[0x01, 0x03, 0x02]) {
         return None;
@@ -596,7 +594,7 @@ pub(crate) fn track_kind_of(def: Option<Ul>) -> Option<(bool, TrackKind)> {
 }
 
 /// The structural components of a track's sequence (or the component itself).
-pub(crate) fn components<'a>(md: &'a Metadata, track: &Set) -> (Option<&'a Set>, Vec<&'a Set>) {
+fn components<'a>(md: &'a Metadata, track: &Set) -> (Option<&'a Set>, Vec<&'a Set>) {
     let Some(seq) = track.reference(tag::TRACK_SEQUENCE).and_then(|r| md.get(&r)) else { return (None, Vec::new()) };
     if seq.kind() == Some(st::SEQUENCE) {
         (Some(seq), seq.references(tag::STRUCTURAL_COMPONENTS).iter().filter_map(|r| md.get(r)).collect())
@@ -715,7 +713,7 @@ struct TrackRef {
     gap_after: i64,
 }
 
-pub(crate) fn umid_of(s: &Set, t: u16) -> Option<[u8; 32]> {
+fn umid_of(s: &Set, t: u16) -> Option<[u8; 32]> {
     s.get(t).and_then(|v| v.get(..32)).map(|b| b.try_into().unwrap_or([0; 32]))
 }
 
@@ -999,9 +997,7 @@ pub fn open_with_order(src: &(impl ByteSource + ?Sized), order: &PresentationOrd
     if tracks.is_empty() {
         return Err(Error::Unsupported("no essence of the material package is stored in this file".into()));
     }
-    let as11 = crate::as11::read(&md, crate::as11::Clock { start: timecode.map_or(0, |t| t.start), base: timecode.map_or(25, |t| t.rounded_base) });
     Ok(MxfFile {
-        as11,
         run_in: w.run_in,
         operational_pattern: OperationalPattern::from_ul(&op_label),
         operational_pattern_label: op_label,
@@ -1138,15 +1134,6 @@ fn build_track(
                 .unwrap_or(crate::Rational::new(48_000, 1));
             t.sound = Some(SoundInfo { sample_rate: rate, bits: 24, ..Default::default() });
             build_pictures(src, &mut t, elements, index, warnings)?;
-        }
-        TrackKind::Sound if crate::essence::is_aac(container, desc.and_then(|d| d.ul(tag::SOUND_ESSENCE_CODING))) => {
-            // AAC (ST 381-4): the elements' audio frames are decoded as one stream, each element a
-            // sample (frame wrapping) or the whole stream in one (clip wrapping)
-            t.codec = Codec::Aac;
-            t.sound_format = SoundFormat::Other;
-            t.sound = Some(desc.map(|d| sound_info(d)).unwrap_or_default());
-            build_pictures(src, &mut t, elements, index, warnings)?;
-            t.wrapping = if elements.len() == 1 && r.duration.is_some_and(|d| d > 1) { Wrapping::Clip } else { Wrapping::Frame };
         }
         TrackKind::Sound if is_iab(desc.map(|d| &**d), container, key4, src, elements, encrypted) => {
             t.codec = Codec::Iab;

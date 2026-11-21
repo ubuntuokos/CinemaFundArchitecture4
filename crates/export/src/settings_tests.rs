@@ -2163,14 +2163,3 @@ fn dash_manifest_matches_the_hls_playlists() {
     let secs: f64 = v["format"]["duration"].as_str().unwrap().parse().unwrap();
     assert!((secs - 13.0).abs() < 0.1, "{v}");
 }
-
-#[test]
-fn mxf_op1a_mixes_eight_channels_when_asked() {
-    let (p, seq, _sources) = matte([0.0, 0.0, 0.0, 1.0], 64, 36, None);
-    let range = TimeRange::new(Tick::ZERO, Tick(TICKS_PER_SECOND));
-    let mut settings = ExportSettings { format: Format::MxfOp1a, ..ExportSettings::default() };
-    settings.audio.channels = 8;
-    assert_eq!(audio_out::AudioOut::new(p.clone(), seq, &settings, range).unwrap().channels, 8, "XDCAM / D-10 take 8 channels");
-    settings.format = Format::H264;
-    assert_eq!(audio_out::AudioOut::new(p, seq, &settings, range).unwrap().channels, 6, "other formats keep the 5.1 cap");
-}

@@ -1,8 +1,8 @@
 //! OpenTimelineIO JSON (`.otio`).
 //!
 //! Schemas read and written: `Timeline.1`, `Stack.1`, `Track.1`, `Clip.1`/`Clip.2`, `Gap.1`,
-//! `Transition.1`, `Marker.1`/`Marker.2`, `ExternalReference.1`, `ImageSequenceReference.1`,
-//! `MissingReference.1`, `GeneratorReference.1`, `LinearTimeWarp.1`, `FreezeFrame.1`, `Effect.1`, `RationalTime.1`,
+//! `Transition.1`, `Marker.1`/`Marker.2`, `ExternalReference.1`, `MissingReference.1`,
+//! `GeneratorReference.1`, `LinearTimeWarp.1`, `FreezeFrame.1`, `Effect.1`, `RationalTime.1`,
 //! `TimeRange.1` and `SerializableCollection.1` (several timelines).
 //!
 //! Times are written as frames at the sequence rate (`rate` is the exact rate as a float, e.g.
@@ -14,8 +14,7 @@
 
 use std::collections::{BTreeMap, HashMap};
 
-use cfa4_media::sequence::Numbered;
-use cfa4_media::{Generator, MediaInfo, MediaKind};
+use cfa4_media::{Generator, MediaInfo};
 use cfa4_project::{
     ClipId, EffectInstance, ItemId, ItemKind, Label, Marker, MarkerId, MarkerKind, MediaRef, ParamValue, Project, Sequence, SequenceSettings, Track, TrackItem,
     TrackKind, Transition, TransitionAlign, TransitionId,
@@ -87,23 +86,6 @@ fn fc(v: &Value) -> Option<&Value> {
 /// are dropped with a warning (#744, OTIO-2.1).
 const MAX_FOREIGN_METADATA_BYTES: usize = 16 * 1024 * 1024;
 
-/// The `interchange` entry of a clip that holds OTIO data CFA4 has no field for (OTIO-2.4): the
-/// `media_references` that are not the active one, and the active key when it is not
-/// `DEFAULT_MEDIA`. Foreign metadata never has this key (`cfa4` is CFA4's own), and it is never
-/// written into `metadata`.
-const OWN: &str = "cfa4";
-
-/// OTIO's default `active_media_reference_key`.
-const DEFAULT_MEDIA: &str = "DEFAULT_MEDIA";
-
-/// A clip's kept media references and active key (see [`OWN`]): `(active key, other references)`.
-fn kept_references(interchange: &BTreeMap<String, Value>) -> (String, serde_json::Map<String, Value>) {
-    let own = interchange.get(OWN);
-    let active = own.and_then(|o| o.get("active_media_reference_key")).and_then(Value::as_str).filter(|k| !k.is_empty()).unwrap_or(DEFAULT_MEDIA);
-    let others = own.and_then(|o| o.get("media_references")).and_then(Value::as_object).cloned().unwrap_or_default();
-    (active.to_string(), others)
-}
-
 /// Approximate serialized size of `v` in bytes, or `None` once it exceeds `limit`. Iterative, so a
 /// deeply nested value cannot overflow the stack, and it stops as soon as the limit is passed.
 fn json_size(v: &Value, limit: usize) -> Option<usize> {
@@ -132,7 +114,7 @@ fn json_size(v: &Value, limit: usize) -> Option<usize> {
 
 /// A `metadata` object: the foreign keys read on import, plus CFA4's own under `cfa4`.
 fn metadata(own: Value, kept: &BTreeMap<String, Value>) -> Value {
-    let mut m: serde_json::Map<String, Value> = kept.iter().filter(|(k, _)| k.as_str() != OWN).map(|(k, v)| (k.clone(), v.clone())).collect();
+    let mut m: serde_json::Map<String, Value> = kept.iter().map(|(k, v)| (k.clone(), v.clone())).collect();
     m.insert("cfa4".into(), own);
     Value::Object(m)
 }
@@ -314,12 +296,7 @@ impl Exp<'_, '_> {
                     Some(base) => relative_path(path, base).unwrap_or_else(|| abs_url(path)),
                     None => abs_url(path),
                 };
-                match Numbered::parse(path).filter(|_| m.info.kind == MediaKind::ImageSequence) {
-                    Some(n) => image_sequence_json(&n, &url, &name, m.frame_rate(), avail, meta),
-                    None => {
-                        json!({"OTIO_SCHEMA": "ExternalReference.1", "name": name, "target_url": url, "available_range": avail, "available_image_bounds": null, "metadata": meta})
-                    }
-                }
+                json!({"OTIO_SCHEMA": "ExternalReference.1", "name": name, "target_url": url, "available_range": avail, "available_image_bounds": null, "metadata": meta})
             }
         }
     }
@@ -379,9 +356,7 @@ impl Exp<'_, '_> {
             self.report
                 .warn(format!("{clip} has no OTIO equivalent: it is written as a clip with a missing media reference and is read back as offline media"));
         }
-        let (active, mut references) = kept_references(&it.interchange);
-        references.remove(&active);
-        references.insert(active.clone(), self.media_ref(base, rate));
+        let mref = self.media_ref(base, rate);
         // OTIO source times are in the reference's time (which starts at its available_range start).
         let origin = item_media(self.p, base).and_then(|m| m.info.start_timecode.map(|f| m.frame_rate().tick_of(f))).unwrap_or(Tick::ZERO);
         let markers: Vec<Value> = it.markers.iter().map(|m| marker_json(&Marker { start: m.start + origin, ..m.clone() }, rate)).collect();
@@ -392,48 +367,11 @@ impl Exp<'_, '_> {
             "effects": effects,
             "markers": markers,
             "enabled": it.enabled,
-            "media_references": references,
-            "active_media_reference_key": active,
+            "media_references": {"DEFAULT_MEDIA": mref},
+            "active_media_reference_key": "DEFAULT_MEDIA",
             "metadata": metadata(meta["cfa4"].clone(), &it.interchange),
         })
     }
-}
-
-/// An image sequence as OTIO's pattern (OTIO-2.3, H3): `url` is the first frame's URL, so its
-/// directory part is the base; prefix, suffix and padding come from the file name as CFA4 reads it.
-/// CFA4 plays every frame and holds the previous frame for a missing one.
-fn image_sequence_json(n: &Numbered, url: &str, name: &str, rate: FrameRate, avail: Value, meta: Value) -> Value {
-    let base = match url.rfind('/') {
-        Some(i) => &url[..=i],
-        None => "./",
-    };
-    json!({
-        "OTIO_SCHEMA": "ImageSequenceReference.1",
-        "name": name,
-        "target_url_base": base,
-        "name_prefix": n.prefix,
-        "name_suffix": n.suffix,
-        "start_frame": n.number,
-        "frame_step": 1,
-        "rate": rate.as_f64(),
-        "frame_zero_padding": n.digits,
-        "missing_frame_policy": "hold",
-        "available_range": avail,
-        "available_image_bounds": null,
-        "metadata": meta,
-    })
-}
-
-/// The first frame's URL of an `ImageSequenceReference` (OTIO joins the base and the file name with
-/// `/`), or `None` without a base.
-fn image_sequence_first(r: &Value) -> Option<String> {
-    let base = r.get("target_url_base").and_then(Value::as_str).filter(|b| !b.trim().is_empty())?;
-    let text = |k: &str| r.get(k).and_then(Value::as_str).unwrap_or("");
-    let start = r.get("start_frame").and_then(Value::as_i64).unwrap_or(1);
-    let pad = r.get("frame_zero_padding").and_then(Value::as_u64).unwrap_or(0).min(18) as usize;
-    let number = if start < 0 { format!("-{:0pad$}", start.unsigned_abs()) } else { format!("{start:0pad$}") };
-    let sep = if base.ends_with('/') { "" } else { "/" };
-    Some(format!("{base}{sep}{}{number}{}", text("name_prefix"), text("name_suffix")))
 }
 
 fn abs_url(path: &str) -> String {
@@ -552,46 +490,16 @@ impl Imp<'_, '_> {
     fn foreign(&mut self, v: &Value) -> BTreeMap<String, Value> {
         let Some(m) = v.get("metadata").and_then(Value::as_object) else { return BTreeMap::new() };
         let mut kept = BTreeMap::new();
-        for (k, v) in m.iter().filter(|(k, _)| k.as_str() != OWN && k.as_str() != cfa4_project::legacy::OTIO_METADATA_KEY) {
-            if self.within_budget(k, v, "OTIO metadata from other programs") {
-                kept.insert(k.clone(), v.clone());
+        for (k, v) in m.iter().filter(|(k, _)| k.as_str() != "cfa4" && k.as_str() != cfa4_project::legacy::OTIO_METADATA_KEY) {
+            match json_size(v, self.foreign_budget.saturating_sub(k.len())) {
+                Some(n) => {
+                    self.foreign_budget = self.foreign_budget.saturating_sub(n.saturating_add(k.len()));
+                    kept.insert(k.clone(), v.clone());
+                }
+                None => self.report.warn(format!("OTIO metadata from other programs past {} MB was not kept", MAX_FOREIGN_METADATA_BYTES / (1024 * 1024))),
             }
         }
         kept
-    }
-
-    /// Whether `k: v` still fits in this import's [`MAX_FOREIGN_METADATA_BYTES`] (then it is counted),
-    /// with a warning naming `what` when it does not.
-    fn within_budget(&mut self, k: &str, v: &Value, what: &str) -> bool {
-        match json_size(v, self.foreign_budget.saturating_sub(k.len())) {
-            Some(n) => {
-                self.foreign_budget = self.foreign_budget.saturating_sub(n.saturating_add(k.len()));
-                true
-            }
-            None => {
-                self.report.warn(format!("{what} past {} MB was not kept", MAX_FOREIGN_METADATA_BYTES / (1024 * 1024)));
-                false
-            }
-        }
-    }
-
-    /// A clip's media references besides the `active` one, and the active key, as the [`OWN`]
-    /// `interchange` entry (OTIO-2.4, H4); `None` when there is nothing to keep.
-    fn other_references(&mut self, refs: &serde_json::Map<String, Value>, active: &str) -> Option<Value> {
-        let mut others = serde_json::Map::new();
-        for (k, v) in refs.iter().filter(|(k, _)| k.as_str() != active) {
-            if self.within_budget(k, v, "OTIO media references that are not active") {
-                others.insert(k.clone(), v.clone());
-            }
-        }
-        if others.is_empty() && active == DEFAULT_MEDIA {
-            return None;
-        }
-        let mut own = json!({"media_references": others});
-        if active != DEFAULT_MEDIA {
-            own["active_media_reference_key"] = json!(active);
-        }
-        Some(own)
     }
 
     fn timeline(&mut self, tl: &Value) -> ItemId {
@@ -625,15 +533,9 @@ impl Imp<'_, '_> {
     }
 
     fn sequence(&mut self, stack: &Value, name: &str, meta: Option<&Value>, rate: FrameRate) -> ItemId {
-        let stated: Option<SequenceSettings> = meta.and_then(|m| m.get("settings")).and_then(|s| serde_json::from_value(s.clone()).ok());
-        let sized = stated.is_some();
-        // OTIO has no picture size: without CFA4's settings the sequence takes its first video clip's
-        // once the host has opened the media (OTIO-2.5, H5)
-        let settings = stated.unwrap_or_else(|| settings_for(rate, 1920, 1080, false));
+        let settings: SequenceSettings =
+            meta.and_then(|m| m.get("settings")).and_then(|s| serde_json::from_value(s.clone()).ok()).unwrap_or_else(|| settings_for(rate, 1920, 1080, false));
         let id = self.b.reserve_sequence(name, settings.clone(), None);
-        if !sized {
-            self.b.size_from_media.push(id);
-        }
         if let Some(l) = meta.and_then(|m| m.get("label")).and_then(|l| serde_json::from_value::<Label>(l.clone()).ok())
             && let Some(it) = self.b.p.item_mut(id)
         {
@@ -826,15 +728,12 @@ impl Imp<'_, '_> {
     }
 
     fn clip(&mut self, c: &Value, kind: TrackKind, pos: Tick) -> Option<TrackItem> {
-        let refs = c.get("media_references").and_then(Value::as_object);
-        // the active reference: the named one, else the first (Clip.1 has a single `media_reference`)
-        let active = refs.map(|o| {
-            let key = c.get("active_media_reference_key").and_then(Value::as_str).unwrap_or(DEFAULT_MEDIA);
-            if o.contains_key(key) { key.to_string() } else { o.keys().next().cloned().unwrap_or_else(|| key.to_string()) }
-        });
-        let mref = match (refs, &active) {
-            (Some(o), Some(k)) => o.get(k),
-            _ => c.get("media_reference"),
+        let mref = match c.get("media_references") {
+            Some(refs) => {
+                let key = c.get("active_media_reference_key").and_then(Value::as_str).unwrap_or("DEFAULT_MEDIA");
+                refs.get(key).or_else(|| refs.as_object().and_then(|o| o.values().next()))
+            }
+            None => c.get("media_reference"),
         }
         .cloned()
         .unwrap_or(Value::Null);
@@ -855,11 +754,6 @@ impl Imp<'_, '_> {
         let meta = fc(c).cloned();
         self.apply_clip_meta(&mut ti, c, meta.as_ref());
         ti.interchange = self.foreign(c);
-        if let (Some(refs), Some(active)) = (refs, active)
-            && let Some(own) = self.other_references(refs, &active)
-        {
-            ti.interchange.insert(OWN.to_string(), own);
-        }
         Some(ti)
     }
 
@@ -900,18 +794,14 @@ impl Imp<'_, '_> {
             let n = name_of(r);
             if n.is_empty() { clip_name.to_string() } else { n }
         };
-        let mut spec = MediaSpec {
+        let spec = MediaSpec {
             duration: avail.map(|a| a.1),
             video: (kind == TrackKind::Video).then(|| (1920, 1080, FrameRate::default())),
             audio: (kind == TrackKind::Audio).then_some((48_000, 2)),
             start_tc: None,
             kind: None,
         };
-        let first_frame = (schema_name(r) == "ImageSequenceReference").then(|| image_sequence_first(r)).flatten();
-        if let Some(first) = &first_frame {
-            self.image_sequence_spec(r, first, &mut spec);
-        }
-        let url = first_frame.as_deref().or_else(|| r.get("target_url").and_then(Value::as_str)).unwrap_or("");
+        let url = r.get("target_url").and_then(Value::as_str).or_else(|| r.get("target_url_base").and_then(Value::as_str)).unwrap_or("");
         let id = match schema_name(r) {
             // Kdenlive writes an empty `target_url` for media it could not find: that is missing media,
             // not the project folder.
@@ -987,27 +877,6 @@ impl Imp<'_, '_> {
             }
         };
         Some(id)
-    }
-
-    /// An `ImageSequenceReference` is CFA4 image-sequence media (OTIO-2.3, H3): its first frame,
-    /// played at the reference's rate. What CFA4 cannot do is reported.
-    fn image_sequence_spec(&mut self, r: &Value, first: &str, spec: &mut MediaSpec) {
-        let name = file_name(first);
-        if Numbered::parse(first).is_none() {
-            self.report.warn(format!("OTIO image sequence {name}: not numbered still images CFA4 can play; imported as one file"));
-            return;
-        }
-        let rate = r.get("rate").and_then(Value::as_f64).filter(|r| *r > 0.0).map(rate_from_f64);
-        spec.kind = Some(MediaKind::ImageSequence);
-        spec.audio = None;
-        let (w, h, r0) = spec.video.unwrap_or((1920, 1080, FrameRate::default()));
-        spec.video = Some((w, h, rate.unwrap_or(r0)));
-        if let Some(step) = r.get("frame_step").and_then(Value::as_i64).filter(|s| *s != 1) {
-            self.report.warn(format!("OTIO image sequence {name}: frame step {step} is not supported; every frame is played"));
-        }
-        if r.get("missing_frame_policy").and_then(Value::as_str) == Some("black") {
-            self.report.warn(format!("OTIO image sequence {name}: missing frames show the previous frame, not black"));
-        }
     }
 
     fn fill_media(&mut self, id: ItemId, info: Option<MediaInfo>, meta: Option<&Value>, kind: TrackKind) {

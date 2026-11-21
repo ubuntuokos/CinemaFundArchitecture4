@@ -29,8 +29,6 @@ pub struct TimecodeSyncPrefs {
     pub lock_frames: u32,
     /// Frames to keep playing after the signal stops.
     pub freewheel_frames: u32,
-    /// Varispeed: close small drift by playing slightly faster or slower instead of seeking.
-    pub varispeed: bool,
     /// LTC input device (empty = Audio Hardware ▸ Default Input) and channel (0-based).
     pub ltc_input: String,
     pub ltc_input_channel: u32,
@@ -59,7 +57,6 @@ impl Default for TimecodeSyncPrefs {
             offset: "00:00:00:00".into(),
             lock_frames: 3,
             freewheel_frames: 10,
-            varispeed: false,
             ltc_input: String::new(),
             ltc_input_channel: 0,
             generate_ltc: false,
@@ -149,7 +146,6 @@ impl TimecodeSyncPrefs {
         cfg.offset = self.offset_ticks(rate, df)?;
         cfg.lock_frames = self.lock_frames.clamp(1, 30);
         cfg.freewheel = Tick(rate.frame_duration().0.saturating_mul(i64::from(self.freewheel_frames.clamp(2, 300))));
-        cfg.varispeed = self.varispeed;
         Ok(cfg)
     }
 }
@@ -166,13 +162,6 @@ pub struct SyncRuntime {
     pub error: Option<String>,
     /// A note for the user, e.g. that MTC has no code for the sequence rate.
     pub warning: Option<String>,
-    /// The user bits of the LTC being read (group 1 in the low nibble).
-    pub user_bits: Option<u32>,
-}
-
-/// User bits as eight hex digits, group 8 first (the order a timecode display shows them).
-pub fn user_bits_text(u: u32) -> String {
-    (0..8).rev().map(|i| char::from_digit((u >> (4 * i)) & 0xF, 16).unwrap_or('0').to_ascii_uppercase()).collect::<String>()
 }
 
 fn state_name(s: ChaseState) -> &'static str {
@@ -212,7 +201,6 @@ fn status(s: &mut Session, _: &Value) -> Result<Value> {
         "mtcOutRunning": rt.mtc_out_running,
         "error": rt.error,
         "warning": rt.warning,
-        "userBits": rt.user_bits.map(user_bits_text),
     }))
 }
 
@@ -275,15 +263,6 @@ mod tests {
         assert_eq!(c.rate, FrameRate::FPS_25);
         assert_eq!(c.lock_frames, 1);
         assert_eq!(c.freewheel, FrameRate::FPS_25.tick_of(300));
-        assert!(!c.varispeed);
-        p.varispeed = true;
-        assert!(p.chase_config(FrameRate::FPS_24, false).is_ok_and(|c| c.varispeed));
-    }
-
-    #[test]
-    fn user_bits_read_group_eight_first() {
-        assert_eq!(super::user_bits_text(0x8765_4321), "87654321");
-        assert_eq!(super::user_bits_text(0xA), "0000000A");
     }
 }
 
@@ -324,10 +303,6 @@ mod session_tests {
         let st = s.execute("timecodeSync.status", json!({})).unwrap_or_else(|e| panic!("{e}"));
         assert_eq!(st["chaseStatus"]["state"], "locked");
         assert_eq!(st["offsetValid"], true);
-        assert_eq!(st["userBits"], serde_json::Value::Null);
-        s.timecode_sync.user_bits = Some(0xDEAD_BEEF);
-        let st = s.execute("timecodeSync.status", json!({})).unwrap_or_else(|e| panic!("{e}"));
-        assert_eq!(st["userBits"], "DEADBEEF");
     }
 
     #[test]

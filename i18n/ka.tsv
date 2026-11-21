@@ -1929,7 +1929,6 @@
 	Counter	მთვლელი
 	Typewriter	საბეჭდი მანქანა
 	Word by Word	სიტყვა-სიტყვით
-	Scramble	არევა
 	Animator	ანიმატორი
 	Animator Duration	ანიმატორის ხანგრძლივობა
 	Animator Delay	ანიმატორის დაყოვნება
@@ -2997,10 +2996,6 @@
 	Sharpen Amount	გამკვეთრების რაოდენობა
 	Shift Center To	ცენტრის გადატანა
 	Show Focus Area	ფოკუსის არის ჩვენება
-	Rack Focus	ფოკუსის გადატანა
-	Focus Point A	ფოკუსის წერტილი A
-	Focus Point B	ფოკუსის წერტილი B
-	Rack	გადატანა
 	Show Only Noise	მხოლოდ ხმაურის ჩვენება
 	Shrink	შეკუმშვა
 	Shutter Angle	ობტურატორის კუთხე
@@ -4184,11 +4179,6 @@ export.summary	Low	დაბალი
 	Burn Size	წვის ზომა
 	Ember Width	ნაღვერდლის სიგანე
 	Ember Color	ნაღვერდლის ფერი
-	Tear Away	მოგლეჯა
-	Tear Roughness	გახევის უხეშობა
-	Paper Edge Width	ქაღალდის კიდის სიგანე
-	Stamp Cut	მარკის ამოჭრა
-	Perforations	პერფორაცია
 	Check Text Legibility	ტექსტის წაკითხვადობის შემოწმება
 	Clear Legibility Markers	წაკითხვადობის მარკერების წაშლა
 	Text legibility: no problems found	ტექსტის წაკითხვადობა: პრობლემები ვერ მოიძებნა
@@ -4228,9 +4218,6 @@ export.summary	Low	დაბალი
 	Dither	დიზერინგი
 	Pattern	ნიმუში
 	Cell Size	უჯრის ზომა
-	Pixelate	პიქსელიზაცია
-	Cell Shape	უჯრის ფორმა
-	LED	LED
 	Cyan Angle	ცისფერის კუთხე
 	Magenta Angle	მეწამულის კუთხე
 	Yellow Angle	ყვითლის კუთხე
@@ -4591,26 +4578,6 @@ export.summary	Low	დაბალი
 	Chase External Timecode	გარე დროის კოდისთვის მიყოლა
 	Send LTC	LTC-ის გაგზავნა
 	Send MIDI Timecode	MIDI დროის კოდის გაგზავნა
-
-# Live studio preview (CFA4-LIVE-STUDIO-001 S0)
-	Live studio preview	პირდაპირი სტუდიის გადახედვა
-	Live studio: stopped	პირდაპირი სტუდია: გაჩერებულია
-	Live studio: {state}	პირდაპირი სტუდია: {state}
-	Live studio: {error}	პირდაპირი სტუდია: {error}
-	restarted after {count} crashes (last: {exit})	ხელახლა გაეშვა {count} ავარიის შემდეგ (ბოლო: {exit})
-	software backend: {reason}	პროგრამული ბექენდი: {reason}
-	Start studio	სტუდიის გაშვება
-	Stop studio	სტუდიის გაჩერება
-	Add Studio Scene	სტუდიის სცენის დამატება
-	Live	პირდაპირი
-# Credits: title, opening, chapter and lower-third pages filled from a graphics template (F10-C16)
-	Opening Credits	საწყისი ტიტრები
-	Chapter Title	თავის სათაური
-	Lower Third	ქვედა ზოლი
-	page {page}: graphics template “{template}” was not found; “{used}” is used	გვერდი {page}: გრაფიკული შაბლონი „{template}“ ვერ მოიძებნა; გამოიყენება „{used}“
-	page {page}: graphics template “{template}” has no field for all of the block's text; the rest is left out	გვერდი {page}: გრაფიკულ შაბლონს „{template}“ არ აქვს ველი ბლოკის მთელი ტექსტისთვის; დანარჩენი გამოტოვებულია
-	page {page}: template field “{control}” → “{part}” is not used (no such text control, or not head, body or tail)	გვერდი {page}: შაბლონის ველი „{control}“ → „{part}“ არ გამოიყენება (ასეთი ტექსტური ელემენტი არ არსებობს, ან ეს არ არის თავი, ძირითადი ტექსტი ან ბოლო)
-	page {page}: pictures are left out on title, opening, chapter and lower-third pages	გვერდი {page}: სათაურის, საწყისი ტიტრების, თავისა და ქვედა ზოლის გვერდებზე სურათები გამოტოვებულია
 # Auto Color, Auto Contrast, Auto Levels (EffectsSDK review)
 	Auto Color	ავტომატური ფერი
 	Auto Contrast	ავტომატური კონტრასტი
@@ -4668,151 +4635,3 @@ export.summary	Low	დაბალი
 	Freewheel	თავისუფალი სვლა
 	Scrubbing	გადახვევა
 	Sending	გაგზავნა
-
-# DCP subtitle export (#938)
-	Subtitles from the first caption track	სუბტიტრები პირველი სუბტიტრების ბილიკიდან
-	The package language	პაკეტის ენა
-	Inter Regular (built in), or an OpenType / TrueType file	Inter Regular (ჩაშენებული) ან OpenType / TrueType ფაილი
-	Subtitle language	სუბტიტრების ენა
-	Subtitle font	სუბტიტრების შრიფტი
-	Fonts	შრიფტები
-
-# AS-11 metadata in MXF OP1a (#96)
-	AS-11 Core	AS-11 Core
-	AS-11 Parts	AS-11 ნაწილები
-	AS-11 UK DPP	AS-11 UK DPP
-# Control surfaces (qt-control-surfaces-page, CFA4-CONTROL-SURFACE-001)
-	Connected	დაკავშირებულია
-	Device	მოწყობილობა
-	Devices	მოწყობილობები
-	Disabled	გამორთულია
-	HID jog/shuttle	HID jog/shuttle
-	MIDI	MIDI
-	Not connected	არ არის დაკავშირებული
-	OSC	OSC
-	Use	გამოყენება
-	{device} ({port})	{device} ({port})
-	{name}: {error}	{name}: {error}
-# Control surfaces (midi-monitor, CFA4-CONTROL-SURFACE-001)
-	MIDI Monitor	MIDI მონიტორი
-	Press Start Monitor, then move a control.	დააჭირეთ „მონიტორის დაწყებას“, შემდეგ გაამოძრავეთ მართვის ელემენტი.
-	Start Monitor	მონიტორის დაწყება
-	Stop Monitor	მონიტორის შეჩერება
-	… {count} messages not shown (too many at once)	… {count} შეტყობინება არ ჩანს (ერთდროულად ზედმეტად ბევრია)
-# Control surfaces (midi-learn, CFA4-CONTROL-SURFACE-001)
-	A control surface asked for {command}, which does not exist.	მართვის ზედაპირმა მოითხოვა {command}, რომელიც არ არსებობს.
-	Assignments	მინიჭებები
-	Cancel Learn	სწავლის გაუქმება
-	Control	მართვის ელემენტი
-	Learn	სწავლა
-	Remove this assignment	ამ მინიჭების წაშლა
-	{control} runs {command}.	{control} უშვებს {command}-ს.
-# Control surfaces (shuttlepro, CFA4-CONTROL-SURFACE-001)
-	Button {n}	ღილაკი {n}
-# Control surfaces (continuous-values, CFA4-CONTROL-SURFACE-001)
-	{strip} Pan (knob)	{strip} პანორამა (სახელური)
-	{strip} Volume (fader)	{strip} ხმა (ფეიდერი)
-# Control surfaces (F1 Learn and profile, CFA4-CONTROL-SURFACE-001)
-	Control Surfaces	მართვის ზედაპირები
-	Assignments run when a button is pressed (a fader or knob counts as pressed past half way); a fader or knob assigned to a mixer strip moves its volume or pan. A ShuttlePRO's shuttle ring plays at its profile's speeds and its jog wheel steps frame by frame. Endless encoders and feedback to the controller (lights, motor faders) come in a later version.	მინიჭებები ღილაკის დაჭერაზე ეშვება (ფეიდერი ან სახელური ნახევრის შემდეგ დაჭერილად ითვლება); მიქსერის ზოლზე მიბმული ფეიდერი ან სახელური ხმას ან პანორამას წევს. ShuttlePRO-ს შატლის რგოლი პროფილის სიჩქარეებით უკრავს, ჯოგის ბორბალი კი კადრ-კადრ მიდის. უსასრულო ენკოდერები და პასუხი კონტროლერზე (ნათურები, მოტორიანი ფეიდერები) მოგვიანებით ვერსიაში მოვა.
-	First message (ms)	პირველი შეტყობინება (მწმ)
-	Silence (ms)	სიჩუმე (მწმ)
-	Waiting for the control to settle…	ველოდებით, სანამ სამართავი დაწყნარდება…
-	Type: {hint}. Confirm this assignment.	ტიპი: {hint}. დაადასტურეთ ეს მინიჭება.
-	That control is already assigned. Confirm replaces it.	ეს სამართავი უკვე მიბმულია. დადასტურება მას შეცვლის.
-	Learn timed out.	სწავლების დრო ამოიწურა.
-	Confirm	დადასტურება
-	Reject	უარყოფა
-	Shows every MIDI message from the controllers as it arrives, to check that a controller sends and what it sends. MIDI Clock, Active Sensing and MIDI Time Code are left out.	აჩვენებს კონტროლერებიდან ყოველ MIDI შეტყობინებას მოსვლისთანავე, რომ ჩანდეს, აგზავნის თუ არა კონტროლერი და რას. MIDI საათი, Active Sensing და MIDI დროის კოდი გამოტოვებულია.
-	Pick a command (or a mixer strip for a fader or knob), press Learn, then press the button or move the control past half way. Confirm keeps the assignment. OK saves the assignments.	აირჩიეთ ბრძანება (ფეიდერისთვის ან სახელურისთვის მიქსერის ზოლი), დააჭირეთ სწავლებას, შემდეგ ღილაკს ან გადაიტანეთ სამართავი ნახევარზე შორს. დადასტურება ინახავს მინიჭებას. კარგი წერს მინიჭებებს.
-	All devices	ყველა მოწყობილობა
-	Builtin: {name}	ჩაშენებული: {name}
-	Capturing	ჩაწერა
-	Confirmed	დადასტურებული
-	Conflict	კონფლიქტი
-	Connect a MIDI controller or a ShuttlePRO to edit its profile.	პროფილის შესაცვლელად შეაერთეთ MIDI კონტროლერი ან ShuttlePRO.
-	Control Surfaces…	მართვის ზედაპირები…
-	Filter messages	შეტყობინებების გაფილტვრა
-	Idle	უქმე
-	Kernel dropped: {count}	ბირთვმა გადააგდო: {count}
-	Learn Assignments…	შესწავლა და მინიჭებები…
-	Load profile	პროფილის ჩატვირთვა
-	MIDI Monitor…	MIDI მონიტორი…
-	Mute shuttle sound	შატლის ხმის გამორთვა
-	No conflicts.	კონფლიქტი არ არის.
-	No profile warnings.	პროფილის გაფრთხილება არ არის.
-	No project profile is stored.	პროექტის პროფილი არ არის შენახული.
-	OK writes the preferences and the profile file together.	OK ერთად წერს პარამეტრებს და პროფილის ფაილს.
-	Online	ხაზზე
-	Pending	მოლოდინში
-	Pickup (14-bit)	აყვანა (14 ბიტი)
-	Pickup (7-bit)	აყვანა (7 ბიტი)
-	Profile warnings	პროფილის გაფრთხილებები
-	Rejected	უარყოფილი
-	Show Active Sensing	Active Sensing-ის ჩვენება
-	Show MIDI Clock	MIDI საათის ჩვენება
-	Show MIDI Time Code	MIDI დროის კოდის ჩვენება
-	The profile file is damaged. Preferences and the built-in profile stay in use.	პროფილის ფაილი დაზიანებულია. პარამეტრები და ჩაშენებული პროფილი რჩება გამოყენებაში.
-	Timed out	დრო ამოიწურა
-	Type: {hint}	ტიპი: {hint}
-	User profile file	მომხმარებლის პროფილის ფაილი
-	{received} received, {dispatched} dispatched, {coalesced} coalesced, {stalls} stalls, {errors} errors	{received} მიღებული, {dispatched} გადაცემული, {coalesced} გაერთიანებული, {stalls} შეფერხება, {errors} შეცდომა
-
-# Control Surfaces settings page (CS-1, #1187)
-	Looking for devices…	მოწყობილობების ძიება…
-	No MIDI controller or jog/shuttle device was found. Connect one and press Refresh.	MIDI კონტროლერი ან jog/shuttle მოწყობილობა ვერ მოიძებნა. მიაერთეთ ერთ-ერთი და დააჭირეთ „განახლებას“.
-	Use control surfaces (MIDI controllers, jog/shuttle devices)	მართვის ზედაპირების გამოყენება (MIDI კონტროლერები, jog/shuttle მოწყობილობები)
-	Mapping controls to commands, MIDI Learn and the MIDI Monitor come in a later version; the choices here are remembered until then.	მართვის ელემენტების ბრძანებებზე მიბმა, MIDI Learn და MIDI მონიტორი მოგვიანებით ვერსიაში დაემატება; მანამდე აქ არჩეული პარამეტრები დაიმახსოვრება.
-	CFA4 ShuttlePRO	CFA4 ShuttlePRO
-	Kdenlive-style ShuttlePRO	Kdenlive-ის სტილის ShuttlePRO
-	Generic MIDI	ზოგადი MIDI
-# LTC timecode read from clip audio (TC-7, #1285)
-	Read from LTC Audio	წაკითხვა LTC ხმიდან
-	Find SMPTE LTC on the clip's audio and use the timecode it gives the first frame	კლიპის ხმაში SMPTE LTC-ის პოვნა და იმ თაიმკოდის გამოყენება, რომელსაც ის პირველ კადრს აძლევს
-	Read Timecode from LTC Audio	თაიმკოდის წაკითხვა LTC ხმიდან
-# Credits: voices (the Voice column) in the block's properties (F10-C16)
-	Voices	ხმები
-# Timecode sync varispeed and user bits (TC-8, #1308)
-	Varispeed: adjust the playback speed instead of seeking	Varispeed: გადახტომის ნაცვლად დაკვრის სიჩქარის მორგება
-	User bits	მომხმარებლის ბიტები
-# AS-11 programme parts and AS-10 metadata (G2, #1371, #1375)
-	{tc}  Segmentation	{tc}  სეგმენტაცია
-	Marker Type	მარკერის ტიპი
-	Chapter	თავი
-	Segmentation (AS-11 programme part)	სეგმენტაცია (AS-11 გადაცემის ნაწილი)
-	AS-10	AS-10
-# AT9/AT3 converter (Tools ▸ Audio Tools, AT3-2)
-	AT9/AT3 Converter	AT9/AT3 გადამყვანი
-	AT9/AT3 Converter…	AT9/AT3 გადამყვანი…
-	Files to convert:	გადასაყვანი ფაილები:
-	Add Files	ფაილების დამატება
-	Add Files…	ფაილების დამატება…
-	Convert to:	გადაყვანა ფორმატში:
-	Bit rate:	ბიტური სიჩქარე:
-	Sample format:	სემპლის ფორმატი:
-	Output folder:	გამოტანის საქაღალდე:
-	Output Folder	გამოტანის საქაღალდე
-	Next to each source file	თითოეული წყარო ფაილის გვერდით
-	AT9 and ATRAC3plus files convert to WAV; encoding AT9, ATRAC3plus and MP3 is not available yet.	AT9 და ATRAC3plus ფაილები WAV-ში გადაიყვანება; AT9, ATRAC3plus და MP3 კოდირება ჯერ არ არის ხელმისაწვდომი.
-	Convert	გადაყვანა
-	Add the files to convert first.	ჯერ დაამატეთ გადასაყვანი ფაილები.
-	Done: {n} file(s) converted.	მზადაა: გადაყვანილია {n} ფაილი.
-	Converting {name}…	{name} გადაიყვანება…
-	Stopping…	ჩერდება…
-	AT3 (ATRAC3, PSP / PS3)	AT3 (ATRAC3, PSP / PS3)
-	WAV (PCM)	WAV (PCM)
-	132 kbit/s (LP2)	132 kbit/s (LP2)
-	105 kbit/s	105 kbit/s
-	66 kbit/s (LP4, joint stereo)	66 kbit/s (LP4, joint stereo)
-	16-bit	16 ბიტი
-	24-bit	24 ბიტი
-	32-bit float	32 ბიტი მცოცავი წერტილით
-
-# Datamosh transition (Grunge & Distort, DM1, #1409)
-	Datamosh	Datamosh
-	Residual	ნარჩენი
-	Motion Boost	მოძრაობის გაძლიერება
-	Recovery	აღდგენა
-	Encode Resolution	კოდირების გარჩევადობა
-	Half	ნახევარი
-	Quarter	მეოთხედი

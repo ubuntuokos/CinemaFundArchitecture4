@@ -22,7 +22,7 @@ sdk: org.freedesktop.Sdk
 sdk-extensions:
   - org.freedesktop.Sdk.Extension.rust-stable
 # The Qt 6 GUI is what `flatpak run` and the menu entry start (owner decision 2026-11-12), as in the
-# release bundle. No egui: only the engine is built, `cfa4` is the Qt GUI's launcher too (Q4.3).
+# release bundle; the frozen egui editor: `flatpak run --command=cfa4 io.github.ubuntuokos.cfa4`.
 command: cfa4-qt
 finish-args:
   # X11 shared memory (MIT-SHM). Without it the X11 fallback is slow or fails.
@@ -87,9 +87,8 @@ modules:
         CARGO_NET_OFFLINE: 'true'
     build-commands:
       - test "$(uname -s)" = Linux && test "$(uname -m)" = x86_64
-      - cargo --offline build --release --locked -p cfa4-cli
-      # `cfa4` starts the Qt GUI, as in the release packages (Q4.3)
-      - install -Dm755 packaging/linux/cfa4-qt /app/bin/cfa4
+      - cargo --offline build --release --locked -p cfa4 -p cfa4-cli
+      - install -Dm755 target/release/cfa4 /app/bin/cfa4
       # The headless CLI and its stdio MCP server, as in the release bundle (#346).
       - install -Dm755 target/release/cfa4-cli /app/bin/cfa4-cli
       - install -Dm644 packaging/linux/io.github.ubuntuokos.cfa4.desktop /app/share/applications/io.github.ubuntuokos.cfa4.desktop

@@ -14,8 +14,6 @@
 //! - [`fit`]: fit credits to a length (their music), cards on the beat, length suggestions.
 //! - [`validate`]: checks a viewer or broadcaster would notice (names, fonts, safe area,
 //!   contrast, scroll speed, card length, pictures), with stable codes.
-//! - [`scene`]: title, opening, chapter and lower-third pages: each block fills a graphics
-//!   template (`.fcgt`).
 //! - [`layout`]: [`Credits`] → one graphic clip per page ([`layout::PageOut`]): text layers, Roll
 //!   for scroll pages, opacity fades for cards, exact [`cfa4_time::Tick`] durations.
 //!
@@ -31,7 +29,6 @@ pub mod fit;
 pub mod layout;
 pub mod markup;
 pub mod office;
-pub mod scene;
 pub mod sheet;
 pub mod style;
 pub mod table;
@@ -97,8 +94,7 @@ pub fn read(bytes: &[u8], styling: &Styling) -> Result<Credits, CreditsError> {
 pub fn read_with(bytes: &[u8], styling: &Styling, sheet: Option<&str>) -> Result<(Credits, office::Sheet), CreditsError> {
     let mut s = read_rows(bytes, sheet)?;
     let rows = std::mem::take(&mut s.rows);
-    let mut c = read_sheet(&rows, &styling.default_page_style, &styling.default_content_style)?;
-    scene::split_pages(&mut c, styling);
+    let c = read_sheet(&rows, &styling.default_page_style, &styling.default_content_style)?;
     Ok((c, s))
 }
 
@@ -134,9 +130,3 @@ mod card_tests;
 
 #[cfg(test)]
 mod body_width_tests;
-
-#[cfg(test)]
-mod scene_tests;
-
-#[cfg(test)]
-mod voice_tests;

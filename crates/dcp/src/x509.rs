@@ -273,12 +273,12 @@ impl Certificate {
         attrs.iter().filter(|(o, _)| o == oid).count()
     }
 
-    /// The Certificate Thumbprint (ST 430-2 5.4): SHA-1 of the whole DER `tbsCertificate`, its tag
-    /// and length included, as the KDM's encrypted key blocks name their signer (ST 430-1) and as
-    /// libdcp / DCP-o-matic write it (#1301).
+    /// The Certificate Thumbprint (ST 430-2 5.4): SHA-1 of the `tbsCertificate` contents (without
+    /// its DER tag and length), as the KDM's encrypted key blocks name their signer (ST 430-1).
     pub fn thumbprint(&self) -> [u8; 20] {
         use sha1::Digest as _;
-        sha1::Sha1::digest(&self.tbs).into()
+        let body = Der { b: &self.tbs }.next().map(|t| t.value).unwrap_or_default();
+        sha1::Sha1::digest(body).into()
     }
 
     /// The Public Key Thumbprint (ST 430-2 5.4): SHA-1 of the `subjectPublicKey` bits, Base64.

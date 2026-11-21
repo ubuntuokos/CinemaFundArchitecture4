@@ -15,7 +15,7 @@ runtime: org.freedesktop.Platform
 runtime-version: '25.08'
 sdk: org.freedesktop.Sdk
 # The Qt 6 GUI is what `flatpak run` and the menu entry start (owner decision 2026-11-12), as in the
-# from-source manifest. No egui: `cfa4` is the Qt GUI's launcher too (Q4.3, owner 2026-11-14).
+# from-source manifest; the frozen egui editor: `flatpak run --command=cfa4 io.github.ubuntuokos.cfa4`.
 command: cfa4-qt
 finish-args:
   # X11 shared memory (MIT-SHM). Without it the X11 fallback is slow or fails.
@@ -74,7 +74,6 @@ modules:
     buildsystem: simple
     build-commands:
       - test "$(uname -s)" = Linux && test "$(uname -m)" = x86_64
-      # the tarball's bin/cfa4 is a copy of the Qt GUI's launcher, not the egui editor (Q4.3)
       - install -Dm755 bin/cfa4 /app/bin/cfa4
       - install -Dm755 bin/cfa4-cli /app/bin/cfa4-cli
       - install -Dm644 share/applications/io.github.ubuntuokos.cfa4.desktop /app/share/applications/io.github.ubuntuokos.cfa4.desktop

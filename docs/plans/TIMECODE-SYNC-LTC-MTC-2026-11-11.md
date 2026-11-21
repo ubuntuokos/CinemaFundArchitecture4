@@ -160,7 +160,7 @@ monitoron (LOCK / FREEWHEEL / NO SIGNAL, beérkező időkód). Minden vezérlő 
 | TC-5 | `cfa4-tcsync-io` + `serve` bekötés | ALSA loopback (`snd-aloop`) LTC-re, virtuális MIDI-port MTC-re: CFA4 → CFA4 körbejárás CI-n kívül, majd a referenciagépen |
 | TC-6 | Qt6 beállítóoldal és állapotjelző | Qt-tesztek, képernyőkép |
 | TC-7 | Offline: LTC-sáv dekódolása klip hangjából → kezdő időkód / multicam-szinkron | teszt generált LTC-wav fixture-rel |
-| TC-8 | Varispeed chase (`timecodeSync.varispeed`: ±2 % sebességkorrekció legfeljebb 5 képkocka eltérésig, felette re-seek), MTC/LTC user bits megjelenítése (`userBits` a státuszban, állapotsor) | szimulált órás chase-teszt, manager-teszt, MTC user-bits SysEx, Qt-tesztek |
+| TC-8 (később) | Varispeed chase, MTC/LTC user bits megjelenítése | — |
 
 Egy fázis = egy PR, friss `main`-ből ([`docs/coordination.md`](../coordination.md)).
 

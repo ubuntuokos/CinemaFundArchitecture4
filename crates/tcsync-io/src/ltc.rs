@@ -23,12 +23,11 @@ pub struct LtcReader {
     sample_rate: u32,
     consumed: u64,
     frames: Vec<LtcDecoded>,
-    user_bits: Option<u32>,
 }
 
 impl LtcReader {
     pub fn new(sample_rate: u32, rate: ExternalRate) -> Result<Self, LtcError> {
-        Ok(LtcReader { dec: LtcDecoder::new(sample_rate)?, rate, sample_rate, consumed: 0, frames: Vec::new(), user_bits: None })
+        Ok(LtcReader { dec: LtcDecoder::new(sample_rate)?, rate, sample_rate, consumed: 0, frames: Vec::new() })
     }
 
     /// Reads `mono`, whose last sample arrived at local time `end`, and appends the frames it
@@ -43,13 +42,7 @@ impl LtcReader {
             let position = wrap_day(self.rate.rate.tick_of(if d.reverse { n } else { n.saturating_add(1) }));
             let lag = samples_ticks(self.consumed.saturating_sub(d.end), self.sample_rate);
             out.push(Observation { at: Tick(end.0.saturating_sub(lag.0)), position });
-            self.user_bits = Some(d.frame.user_bits);
         }
-    }
-
-    /// The user bits of the last frame read (group 1 in the low nibble).
-    pub fn user_bits(&self) -> Option<u32> {
-        self.user_bits
     }
 }
 
@@ -247,22 +240,5 @@ mod tests {
             let want = FrameRate::FPS_25.tick_of(130).0 as f64 - k * samples_ticks(1, sr).0 as f64;
             assert!((o.position.0 as f64 - want).abs() < FrameRate::FPS_25.frame_duration().0 as f64 / 8.0, "{o:?}");
         }
-    }
-
-    #[test]
-    fn reader_keeps_the_last_user_bits() {
-        let sr = 48_000;
-        let mut enc = LtcEncoder::new(sr, FrameRate::FPS_25, -18.0).expect("encoder");
-        let mut s = Vec::new();
-        for n in 100..110 {
-            let f = LtcFrame { user_bits: 0x1234_5678 + n as u32, ..LtcFrame::from_frame_number(n, FrameRate::FPS_25, false) };
-            enc.encode(&f, &mut s);
-        }
-        let mut r = LtcReader::new(sr, rate25()).expect("reader");
-        assert_eq!(r.user_bits(), None);
-        let mut obs = Vec::new();
-        r.push(&s, samples_ticks(s.len() as u64, sr), &mut obs);
-        assert!(!obs.is_empty());
-        assert!(r.user_bits().is_some_and(|u| (0x1234_5678 + 100..0x1234_5678 + 110).contains(&u)), "{:?}", r.user_bits());
     }
 }

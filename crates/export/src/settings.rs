@@ -22,7 +22,7 @@ pub enum Scaling {
 }
 
 /// Field order of the encoded video. Only MPEG-2 and ProRes export code interlaced frames
-/// ([`ExportSettings::codes_interlaced`]; in MXF MPEG-2, XDCAM HD422, D-10 or ProRes); the other encoders
+/// ([`crate::Format::codes_interlaced`]; in MXF MPEG-2, XDCAM HD422 or D-10); the other encoders
 /// write progressive ones. The frames are rendered progressively and coded as interlaced (no
 /// field-rate rendering yet).
 #[derive(Clone, Copy, Debug, Default, PartialEq, Eq, Serialize, Deserialize)]
@@ -581,13 +581,6 @@ impl ExportSettings {
         }
     }
 
-    /// Whether the export codes interlaced video ([`ExportSettings::field_order`]): MPEG-2 files
-    /// and ProRes ([`Format::codes_interlaced`]); in MXF MPEG-2 (also XDCAM HD422 and D-10), whose
-    /// separate-field layout the writer has, and ProRes field pictures.
-    pub fn codes_interlaced(&self) -> bool {
-        if self.format.is_mxf() { matches!(self.video_format(), Format::Mpeg2 | Format::ProRes) } else { self.format.codes_interlaced() }
-    }
-
     /// Whether the output can carry an alpha channel ([`ExportSettings::alpha`]): PNG, TIFF,
     /// Targa and OpenEXR sequences, GIF (binary transparency), ProRes 4444 / 4444 XQ and GoPro
     /// CineForm RGBA QuickTime movies.
@@ -731,10 +724,6 @@ impl ExportSettings {
             Format::Aac => 0.0,
             Format::H264 | Format::Hevc | Format::Av1 | Format::WebM | Format::Hls | Format::Mpeg2 => r.target_kbps as f64 * 1000.0,
             Format::ProRes => crate::prores_profile(&self.prores_profile).nominal_mbps_1080p30() * 1e6 * px / (1920.0 * 1080.0) * fps / 29.97,
-            Format::DnxHr if crate::dnx_profile(&self.dnx_profile).hd_raster().is_some() => {
-                // DNxHD: a fixed frame size per ID
-                f64::from(crate::dnx_profile(&self.dnx_profile).frame_size(0, 0)) * 8.0 * fps
-            }
             Format::DnxHr => {
                 // nominal 1080p29.97 data rates of the DNxHR profiles (Mb/s)
                 let mbps = match self.dnx_profile.to_ascii_lowercase().as_str() {
@@ -920,7 +909,7 @@ impl ExportSettings {
                         Profile::P4444Xq => ", ProRes 4444 XQ",
                     }
                 }
-                Format::DnxHr => v += &format!(", {}", crate::dnx_profile(&self.dnx_profile).name()),
+                Format::DnxHr => v += &format!(", DNxHR {}", if self.dnx_profile.is_empty() { "HQ".into() } else { self.dnx_profile.to_ascii_uppercase() }),
                 Format::Apv => v += &format!(", {}", crate::apv_profile(&self.apv_profile).name()),
                 Format::Cineform => {
                     let mut f = crate::cineform_profile(&self.cineform_profile);

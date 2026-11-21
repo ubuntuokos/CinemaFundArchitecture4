@@ -4,8 +4,6 @@ from __future__ import annotations
 
 import copy
 import tomllib
-from pathlib import Path
-from typing import Any
 
 from cfa4_devtools.dependency_audit import (
     ROOT,
@@ -17,7 +15,7 @@ from cfa4_devtools.dependency_audit import (
 )
 
 
-def snapshot() -> tuple[dict[str, Any], dict[str, Any]]:
+def snapshot() -> tuple[dict, dict]:
     manifest = tomllib.loads((ROOT / "Cargo.toml").read_text(encoding="utf-8"))
     lock = tomllib.loads((ROOT / "Cargo.lock").read_text(encoding="utf-8"))
     return manifest, lock
@@ -86,7 +84,7 @@ def test_docpath_is_local_without_locked_git_source() -> None:
     assert all("source" not in package for package in lock["package"] if package["name"] == "cfa4-docpath")
 
 
-def test_changed_vendor_source_is_detected(tmp_path: Path) -> None:
+def test_changed_vendor_source_is_detected(tmp_path) -> None:
     from shutil import copytree
 
     vendor = tmp_path / "vendor" / "cfa4-libs" / "docpath"

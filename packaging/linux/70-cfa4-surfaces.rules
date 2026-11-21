@@ -1,5 +1,0 @@
-# Contour Design ShuttlePRO v1/v2 and ShuttleXpress (USB vendor 0b33).
-# CFA4-CONTROL-SURFACE-001, F0 spec §6, N-12. The logged-in seat can open the
-# hidraw node. This is not MODE="0666": other users do not get access.
-SUBSYSTEM=="hidraw", ATTRS{idVendor}=="0b33", TAG+="uaccess"
-SUBSYSTEM=="input", ATTRS{idVendor}=="0b33", TAG+="uaccess"

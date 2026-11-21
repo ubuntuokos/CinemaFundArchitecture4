@@ -24,11 +24,6 @@
 #![cfg_attr(not(test), deny(clippy::unwrap_used, clippy::expect_used, clippy::panic, clippy::unimplemented, clippy::todo, clippy::unreachable))]
 
 mod anc;
-pub mod as02;
-pub mod as02_version;
-pub mod as10;
-pub mod as11;
-pub mod as11_shim;
 pub mod crypt;
 mod essence;
 mod file;
@@ -61,7 +56,7 @@ pub use timed_text::{AncillaryResource, MAX_RESOURCE_BYTES, Region, TimedText, i
 pub use uncompressed::UncompressedLayout;
 pub use write::{
     CodedKind, ColorSpace, FrameInfo, IabDesc, J2kSubDescriptor, McaLabel, McaTitles, MxfWriter, OpAtomPcm, PackageIds, Pattern, PictureCoding, PictureDesc,
-    SoundDesc, StartTimecode, TimedTextConfig, TimedTextResource, Timestamp, Umid, WriterConfig, encode_pcm, write_opatom_pcm, write_timed_text,
+    SoundDesc, StartTimecode, Timestamp, Umid, WriterConfig, encode_pcm, write_opatom_pcm,
 };
 
 use std::fmt;

@@ -3,9 +3,8 @@ name: CFA4 runtime dependencies on Ubuntu 26.04 (F2-01, F9)
 # Measures the run-time dependencies of the release binaries on a clean GitHub-hosted
 # Ubuntu 26.04 AMD64 runner (F9 gate `runtime_abi_dependencies`, docs/audit/F9-RELEASE-STATUS-2026-11-08.md).
 # Development runs in the cloud, so this replaces the measurement on the owner's machine
-# (docs/audit/F2-01-RUNTIME-DEPS-2026-10-25.md). The engine (cfa4-cli), the packages' only native
-# program, is built with the packaged features (packaging/linux/package.sh); the packages carry no
-# egui editor, so it is neither built nor measured (docs/plans/CFA4-QT6-FINISH-001.md Q4.3). The report goes to the job summary and the log; nothing is uploaded
+# (docs/audit/F2-01-RUNTIME-DEPS-2026-10-25.md). The binaries are built with the packaged features
+# (packaging/linux/package.sh). The report goes to the job summary and the log; nothing is uploaded
 # or published, and nothing is installed beyond the build packages.
 
 # Manual only (AGENTS.md CI rule): automatic PR checks compile nothing beyond the
@@ -39,10 +38,10 @@ jobs:
             libx11-dev libx11-xcb-dev libxi-dev libxcursor-dev libxrandr-dev \
             libvulkan-dev libegl1-mesa-dev libgl1-mesa-dev nasm \
             libgstreamer1.0-dev libgstreamer-plugins-base1.0-dev
-      - name: Build the engine with the packaged features
+      - name: Build the release binaries with the packaged features
         env:
           CARGO_PROFILE_RELEASE_DEBUG: "0"
-        run: cargo build --release --locked -p cfa4-cli --features cfa4-cli/gstreamer
+        run: cargo build --release --locked -p cfa4 -p cfa4-cli --features cfa4/gstreamer,cfa4-cli/gstreamer
       - name: Measure (objdump, ldd, dpkg-query)
         run: |
           bash scripts/dev/audit-runtime-deps.sh
@@ -51,7 +50,7 @@ jobs:
           {
             echo "## Runtime dependencies on $(. /etc/os-release && echo "$PRETTY_NAME") ($(uname -m))"
             echo
-            echo "Commit: \`$GITHUB_SHA\`. Binary: \`cfa4-cli\` (the packages carry no egui). Features: \`cfa4-cli/gstreamer\` (packaging/linux/package.sh)."
+            echo "Commit: \`$GITHUB_SHA\`. Features: \`cfa4/gstreamer,cfa4-cli/gstreamer\` (packaging/linux/package.sh)."
             echo
             cat "$report/runtime-deps.md"
             echo

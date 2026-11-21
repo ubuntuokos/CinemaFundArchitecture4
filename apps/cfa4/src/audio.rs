@@ -61,11 +61,6 @@ impl Note {
 }
 
 /// The host named in the settings (empty or unknown = the default host).
-/// The device's human-readable name: what cpal 0.16's `name()` returned and what the settings store.
-pub(crate) fn device_name(d: &cpal::Device) -> Option<String> {
-    d.description().ok().map(|desc| desc.name().to_string())
-}
-
 fn host(name: &str) -> cpal::Host {
     if !name.is_empty()
         && let Some(id) = cpal::available_hosts().into_iter().find(|h| h.name() == name)
@@ -107,7 +102,7 @@ fn fallback_rank(name: &str) -> u8 {
 fn output_device(h: &cpal::Host, name: &str, cache: &Mutex<Option<(String, String)>>) -> Option<DeviceChoice> {
     if !name.is_empty()
         && let Ok(mut devs) = h.output_devices()
-        && let Some(d) = devs.find(|d| device_name(d).is_some_and(|n| n == name))
+        && let Some(d) = devs.find(|d| d.name().is_ok_and(|n| n == name))
     {
         return Some(DeviceChoice { device: d, fallback: None });
     }
@@ -118,7 +113,7 @@ fn output_device(h: &cpal::Host, name: &str, cache: &Mutex<Option<(String, Strin
     }
     let host_name = h.id().name().to_string();
     let mut cache = cache.lock().unwrap_or_else(PoisonError::into_inner);
-    let mut devs: Vec<(String, cpal::Device)> = h.output_devices().ok()?.filter_map(|d| device_name(&d).map(|n| (n, d))).collect();
+    let mut devs: Vec<(String, cpal::Device)> = h.output_devices().ok()?.filter_map(|d| d.name().ok().map(|n| (n, d))).collect();
     if let Some((cached_host, cached)) = cache.as_ref()
         && *cached_host == host_name
         && let Some(i) = devs.iter().position(|(n, _)| n == cached)
@@ -153,7 +148,7 @@ impl CpalOut {
             health: Arc::new(Health::default()),
             watchdog: Watchdog::default(),
             epoch: Instant::now(),
-            rate: cfg.as_ref().map_or(48_000, |c| c.sample_rate()),
+            rate: cfg.as_ref().map_or(48_000, |c| c.sample_rate().0),
             channels: cfg.as_ref().map_or(2, |c| c.channels()),
             hw: AudioHardwarePrefs::default(),
             document_rate: None,
@@ -167,11 +162,11 @@ impl CpalOut {
         let default = dev.default_output_config().map_err(|e| e.to_string())?;
         let want = if self.hw.force_document_rate { self.document_rate.unwrap_or(self.hw.sample_rate) } else { self.hw.sample_rate };
         let exact = dev.supported_output_configs().ok().and_then(|it| {
-            it.filter(|c| c.channels() > 0 && (c.min_sample_rate()..=c.max_sample_rate()).contains(&want))
+            it.filter(|c| c.channels() > 0 && (c.min_sample_rate().0..=c.max_sample_rate().0).contains(&want))
                 .max_by_key(|c| {
                     (c.channels() == default.channels(), c.sample_format() == cpal::SampleFormat::F32, c.sample_format() == default.sample_format())
                 })
-                .and_then(|c| c.try_with_sample_rate(want))
+                .and_then(|c| c.try_with_sample_rate(cpal::SampleRate(want)))
         });
         Ok(exact.unwrap_or(default))
     }
@@ -213,13 +208,13 @@ impl CpalOut {
         self.note = fallback;
         let cfg = self.config(&dev)?;
         let channels = cfg.channels() as usize;
-        if channels == 0 || cfg.sample_rate() == 0 {
+        if channels == 0 || cfg.sample_rate().0 == 0 {
             return Err("the output device returned an invalid channel count or sample rate".into());
         }
         if let Some((rate, ch)) = expect
-            && (rate, ch) != (cfg.sample_rate(), cfg.channels())
+            && (rate, ch) != (cfg.sample_rate().0, cfg.channels())
         {
-            return Err(format!("the output device now runs at {} Hz with {} channels", cfg.sample_rate(), cfg.channels()));
+            return Err(format!("the output device now runs at {} Hz with {} channels", cfg.sample_rate().0, cfg.channels()));
         }
         let mut config: cpal::StreamConfig = cfg.clone().into();
         if let cpal::SupportedBufferSize::Range { min, max } = cfg.buffer_size()
@@ -227,7 +222,7 @@ impl CpalOut {
         {
             config.buffer_size = cpal::BufferSize::Fixed(self.hw.buffer_size);
         }
-        self.rate = cfg.sample_rate();
+        self.rate = cfg.sample_rate().0;
         self.channels = cfg.channels();
         let stream = match cfg.sample_format() {
             cpal::SampleFormat::F32 => {
@@ -370,11 +365,8 @@ fn render(fill: &Mutex<Fill>, buf: &mut [f32], channels: usize, played: &AtomicU
 
 fn stream_error(health: &Health, e: cpal::StreamError) {
     match e {
-        // A stream whose configuration was invalidated must be rebuilt, like one whose device went away.
-        cpal::StreamError::DeviceNotAvailable | cpal::StreamError::StreamInvalidated => health.lost.store(true, Ordering::SeqCst),
+        cpal::StreamError::DeviceNotAvailable => health.lost.store(true, Ordering::SeqCst),
         cpal::StreamError::BackendSpecific { .. } => health.errored.store(true, Ordering::SeqCst),
-        // An underrun is a passing glitch; the stream keeps running and the watchdog sees a stall anyway.
-        cpal::StreamError::BufferUnderrun => return,
     }
     if !health.reported.swap(true, Ordering::SeqCst) {
         eprintln!("cfa4: audio stream error: {e}");
@@ -437,8 +429,8 @@ impl AudioOut for CpalOut {
     }
     fn devices(&self) -> AudioDevices {
         let h = host(&self.hw.device_class);
-        let outputs = h.output_devices().map(|d| d.filter_map(|x| device_name(&x)).collect()).unwrap_or_default();
-        let inputs = h.input_devices().map(|d| d.filter_map(|x| device_name(&x)).collect()).unwrap_or_default();
+        let outputs = h.output_devices().map(|d| d.filter_map(|x| x.name().ok()).collect()).unwrap_or_default();
+        let inputs = h.input_devices().map(|d| d.filter_map(|x| x.name().ok()).collect()).unwrap_or_default();
         let output_channels =
             output_device(&h, &self.hw.default_output, &self.fallback).and_then(|c| self.config(&c.device).ok()).map(|cfg| cfg.channels()).unwrap_or(0);
         AudioDevices { hosts: cpal::available_hosts().iter().map(|h| h.name().to_string()).collect(), inputs, outputs, output_channels }
@@ -451,7 +443,7 @@ impl AudioOut for CpalOut {
         if let Some(choice) = output_device(&host, &self.hw.default_output, &self.fallback)
             && let Ok(cfg) = self.config(&choice.device)
         {
-            self.rate = cfg.sample_rate();
+            self.rate = cfg.sample_rate().0;
             self.channels = cfg.channels();
             self.note = choice.fallback;
         }

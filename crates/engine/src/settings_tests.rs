@@ -92,7 +92,6 @@ fn categories_follow_premiere_order() {
             "audioHardware",
             "autoSave",
             "color",
-            "controlSurfaces",
             "graphics",
             "labels",
             "media",
@@ -494,24 +493,6 @@ fn media_cache_location_policy_and_clean() {
     let r = s.execute("mediaCache.clean", json!({"all": true})).unwrap();
     assert_eq!(r["files"], 1);
     s.shutdown();
-    let _ = std::fs::remove_dir_all(&dir);
-}
-
-/// Warp Stabilizer's stored analyses live in the media cache, so its size policy, age policy and
-/// Delete… see and remove them.
-#[test]
-fn stabilizer_analyses_are_part_of_the_media_cache() {
-    let dir = tmp_dir("prefs-cache-analysis");
-    let cache = dir.join("cache").join(settings::CUSTOM_CACHE_FOLDER);
-    let analysis = settings::analysis_root(&cache);
-    assert_eq!(analysis, cache.join("Analysis"));
-    std::fs::create_dir_all(&analysis).unwrap();
-    let file = analysis.join("stabilizer-0123456789abcdef.bin");
-    std::fs::write(&file, vec![0u8; 700]).unwrap();
-    assert_eq!(settings::cache_usage(&cache), (700, 1));
-    let p = settings::MediaCachePrefs { management: "exceedsSize".into(), max_size_gb: 0, ..Default::default() };
-    assert_eq!(settings::enforce_policy(&cache, &p, None, std::time::SystemTime::now()), (1, 700));
-    assert!(!file.exists());
     let _ = std::fs::remove_dir_all(&dir);
 }
 

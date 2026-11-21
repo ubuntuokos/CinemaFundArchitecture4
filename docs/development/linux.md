@@ -103,8 +103,6 @@ but WASM is **not** a supported CFA4 target or quality gate.
 
 Development dependencies of the planned DCP validation (isolated dcp_inspect reference engine,
 no system changes): [dcp-validation.md](dcp-validation.md).
-External DCP / IMF test oracles (asdcplib, Netflix Photon, Clairmeta) and the test corpus:
-[cinema-oracles.md](cinema-oracles.md) (`cargo xtask cinema-oracles`).
 
 ## HEIF / HEIC still images (local libheif, Ubuntu 26.04 AMD64)
 
@@ -200,15 +198,13 @@ python3 -m pip download --no-deps --only-binary=:all: --platform manylinux_2_34_
 export CFA4_PYSIDE6_WHEELS=/path/to/wheels
 ```
 
-No package carries or starts the egui editor (owner decisions 2026-11-12 and 2026-11-14,
-[`docs/plans/CFA4-QT6-FINISH-001.md`](../plans/CFA4-QT6-FINISH-001.md) Q4.3). The AppImage starts the
-Qt GUI with the host's `python3` (without it, a message naming `python3`; `--egui` is refused, `CFA4_GUI`
-is not read). The Flatpak (the release bundle and the from-source manifest) starts the Qt GUI too
-(`flatpak run io.github.ubuntuokos.cfa4`), and the application-menu entry of the .deb, the tar.gz and the
-Flatpak starts `cfa4-qt` (owner decision 2026-11-12): files opened with it are handled as egui handles them
-(the first `.fcproj` opens, every other file is imported, credits files open in the Credits workspace). The
-`cfa4` command is a copy of the Qt GUI's launcher in every package; only the engine (`cfa4-cli`) is
-compiled. In a checkout the egui editor still runs with `cargo run -p cfa4` until its removal (Q5).
+The AppImage starts the Qt GUI by default (owner decision 2026-11-12) with the host's `python3`;
+`--egui` (or `CFA4_GUI=egui`) starts the frozen egui editor, and without `python3` the default
+falls back to egui with a message. The Flatpak (the release bundle and the from-source manifest) starts the Qt GUI too (`flatpak run io.github.ubuntuokos.cfa4`;
+the egui editor: `--command=cfa4`), and the application-menu entry of the .deb, the tar.gz and the Flatpak
+starts `cfa4-qt` (owner decision 2026-11-12): files opened with it are handled as egui handles them (the first
+`.fcproj` opens, every other file is imported, credits files open in the Credits workspace). The egui editor
+stays installed as `cfa4`.
 Read https://www.qt.io/development/open-source-lgpl-obligations .
 
 **Branding:** the inherited upstream brand marks, screenshots, application icons and names have

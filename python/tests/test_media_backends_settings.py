@@ -9,7 +9,6 @@ import sys
 import unittest
 from pathlib import Path
 from tempfile import TemporaryDirectory
-from typing import Any
 from unittest.mock import patch
 
 from cfa4_devtools.settings_backend import (
@@ -39,25 +38,25 @@ REPORT = {
 
 
 class Model(unittest.TestCase):
-    def test_order_status_and_restricted(self) -> None:
+    def test_order_status_and_restricted(self):
         m = MediaBackends.parse(REPORT)
         self.assertEqual([b.id for b in m.backends], ["builtin", "ffmpeg", "gstreamer"])
         self.assertEqual([b.status for b in m.backends], ["In use", "In use", "Not part of this build"])
         self.assertEqual([r.name for _b, r in m.restricted], ["libx264", "libx265"])
         self.assertEqual(m.install_command(), "sudo apt install cfa4-restricted-extras")
 
-    def test_switched_off_and_nothing_missing(self) -> None:
-        raw: Any = {"backends": [{"id": "ffmpeg", "compiledIn": True, "available": True, "enabled": False,
+    def test_switched_off_and_nothing_missing(self):
+        raw = {"backends": [{"id": "ffmpeg", "compiledIn": True, "available": True, "enabled": False,
                              "restrictedPackage": "cfa4-restricted-extras",
                              "restricted": [{"name": "libx264", "available": True}]}]}
         m = MediaBackends.parse(raw)
         self.assertEqual(m.backends[0].status, "Available, switched off")
         self.assertIsNone(m.install_command())  # all restricted codecs installed: no command
 
-    def test_router_order_and_left_out_backends(self) -> None:
+    def test_router_order_and_left_out_backends(self):
         # ADR 0005 step 2: the engine first, then the router's order; a backend the routing table
         # leaves out has no place and says why
-        raw: Any = {"route": {"task": "media.fallback", "routes": [], "declined": []}, "backends": [
+        raw = {"route": {"task": "media.fallback", "routes": [], "declined": []}, "backends": [
             {"id": "builtin", "compiledIn": True, "available": True, "enabled": True},
             {"id": "gstreamer", "compiledIn": True, "available": True, "enabled": True, "tried": 1},
             {"id": "ffmpeg", "compiledIn": True, "available": True, "enabled": True, "tried": None},
@@ -71,8 +70,7 @@ class Model(unittest.TestCase):
             raw["backends"][1]["tried"] = hostile
             self.assertIsNone(MediaBackends.parse(raw).backends[1].tried, hostile)
 
-    def test_hostile_reports(self) -> None:
-        raw: Any
+    def test_hostile_reports(self):
         for raw in (None, [], {"backends": "x"}, {}):
             with self.assertRaises(SettingsBackendError):
                 MediaBackends.parse(raw)
@@ -82,7 +80,7 @@ class Model(unittest.TestCase):
 
 
 class Cli(unittest.TestCase):
-    def test_argv(self) -> None:
+    def test_argv(self):
         with TemporaryDirectory() as d:
             cli = Path(d) / "cfa4-cli"
             cli.write_text("#!/bin/sh\nexit 0\n")
@@ -93,21 +91,7 @@ class Cli(unittest.TestCase):
             self.assertEqual(p.call_args[0][0], [str(cli), "--compact", "--data-dir", "/d", "media-backends"])
 
 
-
-def child[W](parent: Any, cls: type[W], name: str = "") -> W:
-    """``parent.findChild`` that fails the test, not the type checker, when the widget is missing."""
-    widget = parent.findChild(cls, name)
-    assert isinstance(widget, cls), f"no {cls.__name__} {name!r}"
-    return widget
-
-
-def cell(table: Any, row: int, column: int) -> str:
-    item = table.item(row, column)
-    assert item is not None, (row, column)
-    return str(item.text())
-
-
-def built_cli() -> Path | None:
+def built_cli():
     env = os.environ.get("CFA4_CLI")
     root = Path(__file__).resolve().parents[2]
     for candidate in ([Path(env)] if env else []) + [root / "target/debug/cfa4-cli", root / "target/release/cfa4-cli"]:
@@ -118,9 +102,8 @@ def built_cli() -> Path | None:
 
 @unittest.skipUnless(built_cli(), "needs a built cfa4-cli (CFA4_CLI or target/debug)")
 class RealEngine(unittest.TestCase):
-    def test_page_and_report(self) -> None:
+    def test_page_and_report(self):
         cli = built_cli()
-        assert cli is not None
         with TemporaryDirectory() as d:
             schema, _prefs = run_load(cli, Path(d))
             media = next(g for g in schema.groups if g.id == "media")
@@ -131,7 +114,7 @@ class RealEngine(unittest.TestCase):
             self.assertEqual({b.id for b in m.backends}, {"builtin", "ffmpeg", "gstreamer"})
 
 
-def qt_available() -> bool:
+def qt_available():
     try:
         from PySide6 import QtWidgets  # noqa: F401
     except ImportError:
@@ -150,30 +133,28 @@ SCHEMA = {
 
 @unittest.skipUnless(qt_available(), "needs PySide6")
 class QtPage(unittest.TestCase):
-    app: Any
-
     @classmethod
-    def setUpClass(cls) -> None:
+    def setUpClass(cls):
         os.environ.setdefault("QT_QPA_PLATFORM", "offscreen")
         from PySide6.QtWidgets import QApplication
         cls.app = QApplication.instance() or QApplication([])
 
-    def test_switches_status_and_restricted_codecs(self) -> None:
+    def test_switches_status_and_restricted_codecs(self):
         from cfa4_devtools.qt_settings import SettingsDialog
         from PySide6.QtWidgets import QCheckBox, QLabel, QTableWidget
 
         dialog = SettingsDialog(None, page=MEDIA_BACKENDS_PAGE)
         dialog._loaded((Schema.parse(SCHEMA), {"mediaBackends": {"ffmpeg": True, "gstreamer": True}}))
         self.assertEqual(dialog.current_page(), MEDIA_BACKENDS_PAGE)
-        child(dialog, QCheckBox, "settings.mediaBackends.ffmpeg").setChecked(False)
+        dialog.findChild(QCheckBox, "settings.mediaBackends.ffmpeg").setChecked(False)
         self.assertEqual(dialog.changes(), {"mediaBackends.ffmpeg": False})
         dialog._backends_loaded(MediaBackends.parse(REPORT))
-        listing = child(dialog, QTableWidget, "settings.mediaBackends.list")
+        listing = dialog.findChild(QTableWidget, "settings.mediaBackends.list")
         self.assertEqual(listing.rowCount(), 3)
-        self.assertEqual(cell(listing, 1, 1), "FFmpeg")
-        restricted = child(dialog, QTableWidget, "settings.mediaBackends.restricted.list")
+        self.assertEqual(listing.item(1, 1).text(), "FFmpeg")
+        restricted = dialog.findChild(QTableWidget, "settings.mediaBackends.restricted.list")
         self.assertEqual(restricted.rowCount(), 2)
-        install = child(dialog, QLabel, "settings.mediaBackends.restricted.install")
+        install = dialog.findChild(QLabel, "settings.mediaBackends.restricted.install")
         self.assertIn("sudo apt install cfa4-restricted-extras", install.text())
         dialog._backends_failed("boom")
         from PySide6.QtCore import QCoreApplication, QEvent
@@ -183,7 +164,7 @@ class QtPage(unittest.TestCase):
         self.assertTrue(any("Could not read the backends: boom" in t for t in texts), texts)
         dialog.close()
 
-    def test_menu_items_open_the_page(self) -> None:
+    def test_menu_items_open_the_page(self):
         """Edit ▸ Settings…, Edit ▸ Media Backends… and Help ▸ Restricted Codecs… exist in the shell."""
         root = Path(__file__).resolve().parents[1]
         env = dict(os.environ, QT_QPA_PLATFORM="offscreen", PYTHONPATH=str(root), CFA4_QT_LIST_MENUS="1")

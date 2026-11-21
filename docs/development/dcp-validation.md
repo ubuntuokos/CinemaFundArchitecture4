@@ -51,7 +51,7 @@ FFmpeg setup. Remove the cache directory to uninstall.
 | Ruby ≥ 3.0 and headers | `sudo apt install ruby ruby-dev build-essential` | `racc` and `bigdecimal` build native extensions |
 | git, sha256sum, mkfifo | base system | |
 | FFmpeg 9.0.2 | `bash scripts/ci/install-ffmpeg-9.0.2.sh` | the existing pinned oracle in `~/.cache/cfa4/`; the system FFmpeg stays untouched |
-| asdcplib CLI (`asdcp-info`, `asdcp-unwrap`) | `cargo xtask cinema-oracles --install asdcplib` builds the pinned 2.13.2 into its own prefix ([cinema-oracles.md](cinema-oracles.md)); `--print-env` gives `CFA4_ASDCPLIB_PREFIX` | BSD-3-Clause (CineCert). Without it the engine's deep MXF and audio checks report missing tools |
+| asdcplib CLI (`asdcp-info`, `asdcp-unwrap`) | package availability on 26.04 not yet verified | BSD-3-Clause (CineCert). If built from source, install it into its own prefix and set `CFA4_ASDCPLIB_PREFIX`; without it the engine's deep MXF and audio checks report missing tools |
 | fd (optional) | `sudo apt install fd-find` | faster discovery; the engine has a Ruby fallback |
 
 ### Isolation rules for the adapter (DCP-04)

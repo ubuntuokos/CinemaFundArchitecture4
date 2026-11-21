@@ -28,20 +28,6 @@ class F5StagingTests(unittest.TestCase):
             with self.assertRaisesRegex(AuditError, "lacks expected version"):
                 f5.cli_smoke(app, "0.11.0", os.environ)
 
-    def test_cfa4_must_be_the_qt_launcher_not_the_egui_editor(self):
-        """Q4.3 (owner 2026-11-12, 2026-11-14): no package carries or starts egui."""
-        with tempfile.TemporaryDirectory() as tmp:
-            bindir = Path(tmp)
-            (bindir / "cfa4-qt").write_text("#!/usr/bin/python3\nlauncher\n")
-            (bindir / "cfa4").write_text("#!/usr/bin/python3\nlauncher\n")
-            f5.assert_cfa4_is_the_qt_launcher(bindir, "the tarball")
-            (bindir / "cfa4").write_bytes(b"\x7fELF egui editor")
-            with self.assertRaisesRegex(AuditError, "not the Qt GUI launcher"):
-                f5.assert_cfa4_is_the_qt_launcher(bindir, "the tarball")
-            (bindir / "cfa4").unlink()
-            with self.assertRaisesRegex(AuditError, "not the Qt GUI launcher"):
-                f5.assert_cfa4_is_the_qt_launcher(bindir, "the .deb")
-
     def test_ldd_missing_dependency_fails_closed(self):
         with tempfile.TemporaryDirectory() as tmp:
             exe = Path(tmp) / "cfa4"

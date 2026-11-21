@@ -69,26 +69,13 @@ def file_path(url: str) -> str:
 
 
 def expect_media(otio: Any, clip: Any) -> dict[str, Any]:
-    """The project item a clip must point at, from its active media reference, and the keys of the
-    other references CFA4 keeps to write back (OTIO-2.4)."""
-    media = _expect_active_media(otio, clip)
-    others = sorted(set(clip.media_references()) - {clip.active_media_reference_key})
-    media["other_references"] = others
-    return media
-
-
-def _expect_active_media(otio: Any, clip: Any) -> dict[str, Any]:
+    """The project item a clip must point at, from its active media reference."""
     ref = clip.media_reference
     if isinstance(ref, otio.schema.ExternalReference) and ref.target_url.strip():
         return {"ref": "file", "path": file_path(ref.target_url), "offline": False}
     if isinstance(ref, otio.schema.ImageSequenceReference) and ref.target_url_base.strip():
-        # CFA4 keeps an image sequence as image-sequence media at its first frame (OTIO-2.3)
-        return {
-            "ref": "file",
-            "path": file_path(ref.target_url_for_image_number(0)),
-            "image_sequence": True,
-            "offline": False,
-        }
+        # how CFA4 keeps an image sequence is OTIO-2.3; here only that it is a file and online
+        return {"ref": "file", "path": None, "offline": False}
     if isinstance(ref, otio.schema.GeneratorReference):
         return {
             "ref": "generator",

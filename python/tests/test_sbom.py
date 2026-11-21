@@ -5,7 +5,6 @@ from __future__ import annotations
 import json
 from datetime import UTC, datetime
 from pathlib import Path
-from typing import Any
 
 import pytest
 from cfa4_devtools import sbom
@@ -13,7 +12,7 @@ from cfa4_devtools import sbom
 CRATES = sbom.CRATES_IO
 
 
-def package(name: str, version: str = "1.0.0", source: str | None = CRATES, license: str | None = "MIT") -> dict[str, Any]:
+def package(name: str, version: str = "1.0.0", source: str | None = CRATES, license: str | None = "MIT") -> dict:
     return {
         "id": f"{name} {version}",
         "name": name,
@@ -24,11 +23,11 @@ def package(name: str, version: str = "1.0.0", source: str | None = CRATES, lice
     }
 
 
-def dep(name: str, *kinds: str | None, version: str = "1.0.0") -> dict[str, Any]:
+def dep(name: str, *kinds: str | None, version: str = "1.0.0") -> dict:
     return {"pkg": f"{name} {version}", "dep_kinds": [{"kind": k, "target": None} for k in kinds]}
 
 
-def metadata() -> dict[str, Any]:
+def metadata() -> dict:
     packages = [
         package("cfa4", "0.1.0", None, "GPL-3.0-or-later"),
         package("cfa4-cli", "0.1.0", None, "GPL-3.0-or-later"),
@@ -56,7 +55,7 @@ def metadata() -> dict[str, Any]:
 CHECKSUMS = {("serde", "1.0.0"): "ab" * 32, ("rsmpeg", "0.18.1+ffmpeg.9.0"): "cd" * 32}
 
 
-def by_name(doc: dict[str, Any]) -> dict[str, dict[str, Any]]:
+def by_name(doc: dict) -> dict[str, dict]:
     return {c["name"]: c for c in doc["components"]}
 
 

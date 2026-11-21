@@ -6,17 +6,10 @@
 //! Lucas–Kanade and a RANSAC similarity fit (the mask tracker in [`crate::track`]) — and caches
 //! the per-frame steps in memory. Rendering smooths the accumulated camera path with a Gaussian
 //! (Smoothness) or holds it fixed (No Motion), warps each frame onto the smoothed path and frames
-//! the result (crop / auto-scale / synthesise edges). Subspace Warp uses the similarity model
-//! (no per-region warping); Method = Perspective fits a homography per step instead, see
-//! [`super::perspective`].
-//!
-//! The analysis is also kept on disk (the media cache's `Analysis` folder, see
-//! [`set_analysis_cache_dir`]), keyed by the media's content fingerprint, the used source range
-//! and the analysis settings, so a clip is analysed once and not again after a restart. A missing,
-//! stale, truncated or corrupt file is ignored and the clip is analysed again.
+//! the result (crop / auto-scale / synthesise edges). Perspective and Subspace Warp use the
+//! similarity model (no per-region warping).
 
 use std::collections::HashMap;
-use std::path::{Path, PathBuf};
 use std::sync::{Arc, Mutex, OnceLock};
 
 use cfa4_project::{EffectInstance, TrackMethod};
@@ -303,125 +296,16 @@ pub fn clear_stabilizer_cache() {
     if let Ok(mut c) = path_cache().lock() {
         c.clear();
     }
-    super::perspective::clear_cache();
 }
 
-/// Bump when the analysis changes (features, tracker, analysis size): old files stop matching.
-const ANALYSIS_VERSION: u64 = 1;
-const FILE_MAGIC: &[u8; 8] = b"CFA4STB1";
-
-fn analysis_dir() -> &'static Mutex<Option<PathBuf>> {
-    static D: OnceLock<Mutex<Option<PathBuf>>> = OnceLock::new();
-    D.get_or_init(Default::default)
-}
-
-/// Where analyses are kept between runs (`None`: memory only). The engine points this into the
-/// media cache folder, whose size policy and Delete… also cover these files.
-pub fn set_analysis_cache_dir(dir: Option<PathBuf>) {
-    if let Ok(mut d) = analysis_dir().lock() {
-        *d = dir;
-    }
-}
-
-fn mix(h: u64, v: u64) -> u64 {
-    (h ^ v).wrapping_mul(0x0100_0000_01b3)
-}
-
-/// The on-disk key of an analysis: the media/range key plus every setting the result depends on.
-fn disk_key(media: u64, n: usize, fps: f64, method: TrackMethod, detailed: bool) -> u64 {
-    [ANALYSIS_VERSION, media, n as u64, fps.to_bits(), method as u64, detailed as u64].into_iter().fold(0xcbf2_9ce4_8422_2325, mix)
-}
-
-fn file_for(dir: &Path, key: u64) -> PathBuf {
-    dir.join(format!("stabilizer-{key:016x}.bin"))
-}
-
-fn encode(key: u64, p: &StabilizerPath) -> Vec<u8> {
-    let mut b = Vec::with_capacity(36 + p.steps.len() * 48);
-    b.extend_from_slice(FILE_MAGIC);
-    b.extend_from_slice(&key.to_le_bytes());
-    b.extend_from_slice(&(p.w as u32).to_le_bytes());
-    b.extend_from_slice(&(p.h as u32).to_le_bytes());
-    b.extend_from_slice(&p.fps.to_le_bytes());
-    b.extend_from_slice(&(p.steps.len() as u32).to_le_bytes());
-    for m in &p.steps {
-        for v in [m.a, m.b, m.c, m.d, m.e, m.f] {
-            b.extend_from_slice(&v.to_le_bytes());
-        }
-    }
-    b
-}
-
-/// A stored analysis, or `None` for anything that is not exactly what [`encode`] wrote for `key`.
-pub(crate) fn decode(key: u64, b: &[u8]) -> Option<StabilizerPath> {
-    let (magic, rest) = b.split_at_checked(8)?;
-    if magic != FILE_MAGIC {
-        return None;
-    }
-    let u64_at = |o: usize| Some(u64::from_le_bytes(rest.get(o..o + 8)?.try_into().ok()?));
-    let u32_at = |o: usize| Some(u32::from_le_bytes(rest.get(o..o + 4)?.try_into().ok()?));
-    if u64_at(0)? != key {
-        return None;
-    }
-    let (w, h, fps, n) = (u32_at(8)? as usize, u32_at(12)? as usize, f64::from_bits(u64_at(16)?), u32_at(24)? as usize);
-    if !(1..=16_384).contains(&w) || !(1..=16_384).contains(&h) || !fps.is_finite() || fps <= 0.0 || n > 20_000 {
-        return None;
-    }
-    let body = rest.get(28..)?;
-    if body.len() != n * 48 {
-        return None;
-    }
-    let mut steps = Vec::with_capacity(n);
-    for c in body.chunks_exact(48) {
-        let f = |i: usize| f64::from_le_bytes(c[i * 8..i * 8 + 8].try_into().unwrap_or([0; 8]));
-        let m = Affine { a: f(0), b: f(1), c: f(2), d: f(3), e: f(4), f: f(5) };
-        if ![m.a, m.b, m.c, m.d, m.e, m.f].iter().all(|v| v.is_finite()) {
-            return None;
-        }
-        steps.push(m);
-    }
-    Some(StabilizerPath { w, h, steps, fps })
-}
-
-/// Write `p` under a temporary name first, then rename: a crash never leaves a half file under
-/// the real one.
-fn store(dir: &Path, key: u64, p: &StabilizerPath) {
-    let tmp = dir.join(format!(".stabilizer-{key:016x}.{}.tmp", std::process::id()));
-    let done = std::fs::create_dir_all(dir).and_then(|_| std::fs::write(&tmp, encode(key, p))).and_then(|_| std::fs::rename(&tmp, file_for(dir, key)));
-    if done.is_err() {
-        let _ = std::fs::remove_file(&tmp);
-    }
-}
-
-/// Analyse (or fetch the cached analysis of) the clip `env` describes. Looks in memory, then in
-/// the analysis cache folder, and only then analyses the clip (and stores the result in both).
+/// Analyse (or fetch the cached analysis of) the clip `env` describes.
 pub fn stabilizer_path(env: &dyn FxEnv, now: f64, method: TrackMethod, detailed: bool) -> Option<Arc<StabilizerPath>> {
-    let dir = analysis_dir().lock().ok().and_then(|d| d.clone());
-    stabilizer_path_in(env, now, method, detailed, dir.as_deref())
-}
-
-pub(crate) fn stabilizer_path_in(env: &dyn FxEnv, now: f64, method: TrackMethod, detailed: bool, dir: Option<&Path>) -> Option<Arc<StabilizerPath>> {
     let key = env.clip_key() ^ (method as u64).wrapping_mul(0x9E37) ^ (detailed as u64).wrapping_mul(0x51_7CC1);
     if let Some(p) = path_cache().lock().ok().and_then(|c| c.get(&key).cloned()) {
         return Some(p);
     }
     let fps = env.frame_rate().max(1.0);
     let n = ((env.clip_seconds() * fps).round() as usize).clamp(1, 20_000);
-    let on_disk = dir.zip(env.media_key()).map(|(d, m)| (d, disk_key(m, n, fps, method, detailed)));
-    let remember = |path: Arc<StabilizerPath>| {
-        if let Ok(mut c) = path_cache().lock() {
-            if c.len() > 64 {
-                c.clear();
-            }
-            c.insert(key, path.clone());
-        }
-        path
-    };
-    if let Some((d, k)) = on_disk
-        && let Some(p) = std::fs::read(file_for(d, k)).ok().and_then(|b| decode(k, &b))
-    {
-        return Some(remember(Arc::new(p)));
-    }
     let src_w = env.source_size().0.max(1) as f32;
     let target_w = if detailed { 960.0 } else { 480.0 };
     let scale = (target_w / src_w).min(1.0);
@@ -447,14 +331,14 @@ pub(crate) fn stabilizer_path_in(env: &dyn FxEnv, now: f64, method: TrackMethod,
             _ => Affine::IDENTITY,
         })
         .collect();
-    let path = StabilizerPath { w, h, steps, fps };
-    // a clip with frames that failed to decode stays in memory only: it may analyse fully later
-    if let Some((d, k)) = on_disk
-        && frames.iter().all(Option::is_some)
-    {
-        store(d, k, &path);
+    let path = Arc::new(StabilizerPath { w, h, steps, fps });
+    if let Ok(mut c) = path_cache().lock() {
+        if c.len() > 64 {
+            c.clear();
+        }
+        c.insert(key, path.clone());
     }
-    Some(remember(Arc::new(path)))
+    Some(path)
 }
 
 /// Similarity parameters (tx, ty, angle, log-scale) of an affine.
@@ -555,9 +439,6 @@ pub(crate) fn cover_scale(corr: &Affine, w: f64, h: f64, max: f64) -> f64 {
 /// Warp Stabilizer: see the module docs.
 pub fn warp_stabilizer(img: &mut Image, e: &EffectInstance, cx: &FxCtx<'_>) {
     let Some(env) = cx.env else { return };
-    if chv(e, "method") == 2 {
-        return super::perspective::warp_stabilizer(img, e, cx);
-    }
     let method = if chv(e, "method") == 0 { TrackMethod::Position } else { TrackMethod::PositionScaleRotation };
     let Some(path) = stabilizer_path(env, cx.seconds, method, bv(e, "detailed")) else { return };
     let n = path.steps.len() + 1;

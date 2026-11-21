@@ -63,24 +63,6 @@ $ARGUMENTS
 - Kiváltott PR-t csak megjegyzéssel zársz le, megnevezve, mi váltotta ki.
 - Ha egy ütközést csak más PR-jába vagy ágába nyúlva lehetne feloldani, előbb kérdezel.
 
-## Ágtulajdon (docs/coordination.md §2.4, §2.12, §2.13; CFA4-BRANCH-OWNERSHIP-001 T4, T7)
-- **Átvétel.** A PR-on végzett első írás (ághoz igazítás, ütközésfeloldás, commit) előtt, ha a PR-nak van
-  fejlesztő-tulajdonosa, beírod a PR leírásába és egy megjegyzésbe: `Gazda átvette: <saját session>, ÉÉÉÉ-HH-NN`
-  (a `Claude-Session:` sorban szereplő azonosítóddal). Tiszta `update-branch` (ütközés nélküli main-merge)
-  nem commit a fejlesztő munkájába, ahhoz sor nem kell. Köteg-ágat és a köteg-PR-t te birtokolod.
-- **Beolvasztás előtt** nézd a `branch-ownership` checket a PR mostani fején. Idegen commit (piros) esetén a PR
-  a (c) kategóriába kerül, és jelzed a tulajdonosnak; nem olvasztod be.
-- **Csak hibátlan PR kerül hozzád.** Hiba (CodeRabbit-megállapítás, piros kapu, ütközés, amit a fejlesztő
-  tud javítani) esetén alapesetben **nem javítasz**: beírod `Gazda visszaadta: <fejlesztő session>, ÉÉÉÉ-HH-NN`
-  (leírás + megjegyzés), és jelzed a PR-ban. A fejlesztő javít, kéri a CodeRabbitet, és a hibátlan PR újra hozzád jön.
-- **Kivétel, csak a tulajdonos kérésére** (a hívásban kimondva): ha a fejlesztő túlterhelt és a PR-ra máshol
-  szükség van, előbb beírod `Gazda javítja tulajdonosi kérésre: <ok>, ÉÉÉÉ-HH-NN`, aztán javítasz. Kockázatos PR-on
-  te kéred a CodeRabbitet és te kezeled a megállapításait; a PR csak hibátlanul olvasztható be.
-- **CodeRabbit átvétel után** (D8): ha csak ütközésmentes main-merge került a fejre, nem kérsz új review-t;
-  más commit után a (a)–(c) feltételek az új fejre érvényesek, és te kéred újra (`@coderabbitai review`).
-- Köteg esetén a `scripts/dev/gazda-koteg.sh` a köteg-PR leírásába beírja a felhasznált PR-okat és fejeiket;
-  ezt használja a `branch-ownership` ellenőrzés a köteg-ágon (D3). Ne szerkeszd ki a listát.
-
 ## Befejezés
 Egy sor a `docs/coordination-log.md`-be, rövid jelentés a tulajdonosnak, majd **megállsz**.
 Ütemezett, ismétlődő vagy háttérben futó ellenőrzést nem hozol létre.

@@ -19,8 +19,6 @@ cfa4-project = { workspace = true }
 cfa4-audio-dsp = { workspace = true }
 cfa4-captions = { workspace = true }
 cfa4-text = { workspace = true }
-cfa4-h264 = { workspace = true }
-cfa4-h264enc = { workspace = true }
 rayon = { workspace = true }
 serde = { workspace = true }
 serde_json = { workspace = true }

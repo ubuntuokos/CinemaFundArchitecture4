@@ -1335,7 +1335,7 @@ class Monitor(QWidget):
         self.transport.set_icon("toggle", "pause")
         self._play_from = self.playhead
         self._clock.start()
-        if shuttle_sounds(self.speed) and not getattr(self, "surface_shuttle_mute", False):
+        if shuttle_sounds(self.speed):
             self._start_audio()
         if self.speed == 1.0 and self.target == "program" and not self._automation_pass:
             # Audio Track Mixer: an automation pass runs while playing forward in real time (egui's)
@@ -1343,7 +1343,6 @@ class Monitor(QWidget):
             self.command.emit("mixer.recordStart", {"time": int(self.playhead)})
         self._timer.start()
         self.playback_started.emit()
-        self._surface_clock()
 
     def shuttle(self, direction: int) -> None:
         """J / L: play backwards / forwards; again in the same direction doubles the speed, up
@@ -1352,18 +1351,6 @@ class Monitor(QWidget):
             speed = min(MAX_SPEED, max(-MAX_SPEED, self.speed * 2))
         else:
             speed = float(direction)
-        self.stop_at = self.rest_at = None
-        self.play(speed)
-
-    def shuttle_to(self, speed: float) -> None:
-        """A shuttle ring (ShuttlePRO, ``playback.shuttleSpeed``): play at ``speed`` (negative:
-        backwards, at most 8×), 0 stops. The sound follows the J/L rule (heard at 0.5–4× forward)."""
-        speed = min(MAX_SPEED, max(-MAX_SPEED, float(speed)))
-        if speed == 0:
-            self.stop()
-            return
-        if self.playing and self.speed == speed:
-            return
         self.stop_at = self.rest_at = None
         self.play(speed)
 
@@ -1442,31 +1429,10 @@ class Monitor(QWidget):
             command, params = self.seek_command(self.playhead)
             self.command.emit(command, params)
         self.playback_stopped.emit()
-        self._surface_clock()
-
-    def _surface_clock(self) -> None:
-        """Tell the engine where playback is (`surface.clock`), at most 10 times a second while playing."""
-        import time
-
-        now = time.monotonic()
-        if self.playing and now - getattr(self, "_surface_clock_at", 0.0) < 0.1:
-            return
-        self._surface_clock_at = now
-        monitor = self.target if self.target in ("program", "source", "trim") else "program"
-        call = getattr(self.engine, "call", None)
-        if call is None:
-            return
-        call("surface.clock", {
-            "time": int(self.playhead),
-            "playing": bool(self.playing),
-            "speed": float(self.speed if self.playing else 0.0),
-            "monitor": monitor,
-        })
 
     def _tick(self) -> None:
         if not self.playing or not self.has_content():
             return
-        self._surface_clock()
         self._check_audio_clock()
         self._retry_audio()
         t = self._play_from + int(self._elapsed_ns() * TICKS_PER_SECOND * self.speed) // 1_000_000_000

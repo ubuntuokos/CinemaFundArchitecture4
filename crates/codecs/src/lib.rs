@@ -19,7 +19,8 @@
 //! - [`DifSource`]: raw DV (`.dv`, `.dif`) files, decoded by `cfa4-dv`, frames read on demand.
 //! - [`RmSource`]: RealMedia (`.rm`, `.rmvb`) with RealVideo 1.0 / 2.0 / 3.0 / 4.0 video and Cook, ATRAC3, SIPR or RealAudio 1.0 / 2.0 audio.
 //! - [`EvcSource`]: raw MPEG-5 EVC Baseline (`.evc`) streams, pictures shown in their order count.
-//! - [`Avs3Source`]: raw AVS3-P2 (IEEE 1857.10) Main-8 / Main-10 streams (`.avs3`).
+//! - [`Avs2Source`]: raw AVS2-P2 (IEEE 1857.4) Main / Main 10 streams (`.avs2`).
+//! - [`Avs3Source`]: raw AVS3-P2 (IEEE 1857.10) baseline streams (`.avs3`).
 //! - [`CavsSource`]: raw AVS1-P2 (Chinese AVS, Jizhun profile) streams (`.avs`, `.cavs`).
 //! - [`SstpSource`]: MPEG-4 Simple Studio Profile (Sony SR) elementary streams (`.m4v`), every picture intra.
 //! - [`Y4mSource`]: uncompressed YUV4MPEG2 (`.y4m`) video, frames read on demand.
@@ -33,6 +34,7 @@ pub mod av2;
 #[cfg(feature = "av2-external")]
 pub mod av2_external;
 pub mod avi;
+pub mod avs2;
 pub mod avs3;
 pub mod canopus;
 pub mod cavs;
@@ -46,9 +48,7 @@ pub mod huffyuv;
 pub mod hw;
 mod hw_frame;
 pub mod j2k;
-pub mod lagarith;
 pub mod lcevc;
-pub mod magicyuv;
 pub mod mkv;
 pub mod mp4;
 pub mod mpeg;
@@ -57,7 +57,6 @@ pub mod ogg;
 pub mod realmedia;
 pub mod sstp;
 mod stream_color;
-pub mod streams;
 pub mod utvideo;
 pub mod video;
 mod webm_alpha;
@@ -68,6 +67,7 @@ use std::sync::{Arc, RwLock};
 pub use apv::ApvSource;
 pub use audio::AudioFileSource;
 pub use avi::AviSource;
+pub use avs2::Avs2Source;
 pub use avs3::Avs3Source;
 pub use cavs::CavsSource;
 pub use dif::DifSource;
@@ -109,7 +109,7 @@ impl From<CodecError> for cfa4_media::MediaError {
 }
 
 /// Our own (pure-Rust) decoders, in the order they are tried.
-const BUILTIN_FACTORIES: [VideoDecoderFactory; 22] = [
+const BUILTIN_FACTORIES: [VideoDecoderFactory; 20] = [
     video::h264_factory,
     video::hevc_factory,
     video::vp8_factory,
@@ -128,9 +128,7 @@ const BUILTIN_FACTORIES: [VideoDecoderFactory; 22] = [
     ffv1::ffv1_factory,
     dirac::dirac_factory,
     huffyuv::huffyuv_factory,
-    lagarith::lagarith_factory,
     utvideo::utvideo_factory,
-    magicyuv::magicyuv_factory,
     evc::evc_factory,
 ];
 
@@ -193,6 +191,7 @@ pub fn openers() -> Vec<cfa4_media::Opener> {
         ogg::opener,
         sstp::opener,
         evc::opener,
+        avs2::opener,
         avs3::opener,
         cavs::opener,
         mpeg::opener,
@@ -216,6 +215,7 @@ fn reader_registry() -> &'static RwLock<Vec<cfa4_media::ReaderOpener>> {
             ogg::reader_opener,
             sstp::reader_opener,
             evc::reader_opener,
+            avs2::reader_opener,
             avs3::reader_opener,
             cavs::reader_opener,
             mpeg::reader_opener,

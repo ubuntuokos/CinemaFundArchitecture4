@@ -107,21 +107,10 @@ impl Signed {
         Some(Signed { dir })
     }
 
-    /// The signer certificate's thumbprint, as a KDM's encrypted key blocks name it: SHA-1 of the
-    /// whole DER `tbsCertificate` (ST 430-2 5.4), cut out by openssl, not by our DER reader (#1301).
+    /// The signer certificate's thumbprint, as a KDM's encrypted key blocks name it.
     pub fn signer_thumbprint(&self) -> [u8; 20] {
-        use sha1::Digest as _;
         run(&self.dir, "openssl", &["x509", "-in", "leaf.pem", "-outform", "DER", "-out", "leaf.der"]);
-        // the second line of the parse is the tbsCertificate: "    4:d=1  hl=4 l= 900 cons: SEQUENCE"
-        let out = Command::new("openssl").current_dir(&self.dir).args(["asn1parse", "-inform", "DER", "-in", "leaf.der"]).output().unwrap();
-        let text = String::from_utf8(out.stdout).unwrap();
-        let line = text.lines().nth(1).unwrap();
-        let field = |key: &str| -> usize { line.split(key).nth(1).unwrap().split_whitespace().next().unwrap().trim_end_matches(':').parse().unwrap() };
-        let offset: usize = line.split(':').next().unwrap().trim().parse().unwrap();
-        assert!(line.contains("d=1") && line.contains("SEQUENCE"), "{line}");
-        let (hl, l) = (field("hl="), field(" l="));
-        let der = std::fs::read(self.dir.join("leaf.der")).unwrap();
-        sha1::Sha1::digest(&der[offset..offset + hl + l]).into()
+        crate::x509::Certificate::from_der(&std::fs::read(self.dir.join("leaf.der")).unwrap()).unwrap().thumbprint()
     }
 
     /// `xml` (with a Signature template) signed by the signer, the chain in KeyInfo.

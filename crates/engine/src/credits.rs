@@ -47,8 +47,6 @@ const MAX_FILE: u64 = 16 << 20;
 /// Measures text layers with the text engine the renderer uses.
 struct EngineMeasure {
     canvas: (u32, u32),
-    /// Graphics templates the title, chapter and lower-third pages name, found beforehand.
-    templates: Vec<(String, cfa4_project::gtemplate::GraphicsTemplate)>,
     /// Folder that relative picture names are read from.
     base: Option<std::path::PathBuf>,
     /// Picture sizes already looked up.
@@ -103,10 +101,6 @@ impl Measure for EngineMeasure {
 
     fn file_exists(&self, file: &str) -> bool {
         picture_path(self.base.as_deref(), file).is_some()
-    }
-
-    fn template(&self, key: &str) -> Option<cfa4_project::gtemplate::GraphicsTemplate> {
-        self.templates.iter().find(|(k, _)| k == key.trim()).map(|(_, t)| t.clone()).or_else(|| cfa4_credits::scene::builtin_template(key))
     }
 
     fn picture_size(&self, file: &str) -> Option<(f64, f64)> {
@@ -327,28 +321,6 @@ fn notes_json(info: &SheetInfo, l: &Laid) -> Value {
     Value::Array(v)
 }
 
-/// Text measure for `doc` on a `canvas`: the graphics templates its title, chapter and
-/// lower-third pages name are looked up (installed ones by id or name, `.fcgt` files next to
-/// the spreadsheet or by path) once, before the layout.
-fn engine_measure(s: &Session, doc: &CreditsDoc, canvas: (u32, u32), base: Option<std::path::PathBuf>) -> EngineMeasure {
-    let mut templates = Vec::new();
-    for ps in &doc.styling.page_styles {
-        let key = ps.template.trim();
-        if !ps.behaviour.uses_template() || key.is_empty() || templates.iter().any(|(k, _): &(String, _)| k == key) {
-            continue;
-        }
-        let local = key.to_ascii_lowercase().ends_with(".fcgt").then(|| picture_path(base.as_deref(), key)).flatten();
-        let found = match local {
-            Some(path) => crate::graphic_templates::find_template(s, &path.to_string_lossy()),
-            None => crate::graphic_templates::find_template(s, key),
-        };
-        if let Ok(e) = found {
-            templates.push((key.to_string(), e.template));
-        }
-    }
-    EngineMeasure { canvas, templates, base, sizes: Default::default() }
-}
-
 /// Lay out a credits document for the active sequence.
 pub(crate) fn lay_doc(s: &Session, cmd: &str, doc: &CreditsDoc, base: Option<std::path::PathBuf>) -> Result<Laid> {
     lay_doc_report(s, cmd, doc, base).map(|(l, _)| l)
@@ -359,7 +331,7 @@ fn lay_doc_report(s: &Session, cmd: &str, doc: &CreditsDoc, base: Option<std::pa
     let credits = doc.credits().map_err(|e| bad(cmd, e.to_string()))?;
     let q = s.active_sequence().ok_or(EngineError::NoSequence)?;
     let frame = Frame { width: q.settings.width, height: q.settings.height, rate: q.settings.frame_rate };
-    let measure = engine_measure(s, doc, (frame.width, frame.height), base);
+    let measure = EngineMeasure { canvas: (frame.width, frame.height), base, sizes: Default::default() };
     match doc.fit.as_ref().filter(|f| f.total > 0) {
         Some(fit) => {
             let (_, l, r) = cfa4_credits::fit::fit_layout(&credits, &doc.styling, frame, &measure, fit).map_err(|e| bad(cmd, e.to_string()))?;
@@ -374,7 +346,7 @@ fn issues_json(s: &Session, cmd: &str, doc: &CreditsDoc, base: Option<std::path:
     let credits = doc.credits().map_err(|e| bad(cmd, e.to_string()))?;
     let q = s.active_sequence().ok_or(EngineError::NoSequence)?;
     let frame = Frame { width: q.settings.width, height: q.settings.height, rate: q.settings.frame_rate };
-    let measure = engine_measure(s, doc, (frame.width, frame.height), base);
+    let measure = EngineMeasure { canvas: (frame.width, frame.height), base, sizes: Default::default() };
     let issues = cfa4_credits::validate::validate(&credits, laid, frame, &measure, &EngineFonts);
     Ok(serde_json::to_value(issues).unwrap_or(Value::Array(vec![])))
 }
@@ -405,10 +377,6 @@ fn behaviour_name(b: cfa4_credits::Behaviour) -> &'static str {
         cfa4_credits::Behaviour::Card => "card",
         cfa4_credits::Behaviour::Scroll => "scroll",
         cfa4_credits::Behaviour::Crawl => "crawl",
-        cfa4_credits::Behaviour::Title => "title",
-        cfa4_credits::Behaviour::Opening => "opening",
-        cfa4_credits::Behaviour::Chapter => "chapter",
-        cfa4_credits::Behaviour::LowerThird => "lowerThird",
     }
 }
 
@@ -450,7 +418,6 @@ fn blocks_json(page: Option<&cfa4_credits::Page>, out: &cfa4_credits::PageOut, f
                     "body": b.body.iter().take(PREVIEW_BODY_CELLS).map(|c| cell_text(c)).collect::<Vec<_>>(),
                     "bodyCount": b.body.len(),
                     "tails": b.tails.len(),
-                    "voices": b.voices.len(),
                     "pictures": b.pictures.len() + b.portraits.iter().filter(|x| x.is_some()).count(),
                     "row": b.row,
                     "lastRow": b.body_rows.iter().copied().max().unwrap_or(b.row).max(b.row),
@@ -1228,9 +1195,9 @@ fn place_picture(
             value: ParamValue::Vec2(Vec2::new(cx + frame_w, cy)),
             keyframes: vec![kf(Tick::ZERO, ParamValue::Vec2(Vec2::new(cx + frame_w, cy))), kf(dur, ParamValue::Vec2(Vec2::new(cx - pg.content_width, cy)))],
         },
-        _ => Param::new(ParamValue::Vec2(Vec2::new(cx, cy))),
+        cfa4_credits::Behaviour::Card => Param::new(ParamValue::Vec2(Vec2::new(cx, cy))),
     };
-    let card = pg.behaviour.is_card();
+    let card = pg.behaviour == cfa4_credits::Behaviour::Card;
     // on a card the picture comes in and goes like the text: with the entrance, its delay and the
     // fades (or half of a transition)
     let (card_opacity, card_position) = if card {
@@ -1773,7 +1740,7 @@ fn styles(_: &mut Session, p: &Value) -> Result<Value> {
         "contentStyles": contents,
         "inlineStyles": inline,
         "starter": serde_json::to_value(&starter).unwrap_or(Value::Null),
-        "columns": ["Head", "Body", "Tail", "Vertical Gap", "Content Style", "Spine Position", "Page Style", "Page Runtime", "Page Gap", "Voice"],
+        "columns": ["Head", "Body", "Tail", "Vertical Gap", "Content Style", "Spine Position", "Page Style", "Page Runtime", "Page Gap"],
     }))
 }
 

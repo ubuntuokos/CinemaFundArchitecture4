@@ -506,8 +506,7 @@ impl Decoder {
                 }
             }
         }
-        // the coded subbands are 0..=num_subbands (FFmpeg fixed the off-by-one after n8.0)
-        let mut num_bands = (SUBBAND_TAB[num_subbands + 1] as i64 - 1) >> 8;
+        let mut num_bands = (SUBBAND_TAB[num_subbands] as i64 - 1) >> 8;
         if last_tonal >= 0 {
             num_bands = num_bands.max((last_tonal + 256) >> 8);
         }

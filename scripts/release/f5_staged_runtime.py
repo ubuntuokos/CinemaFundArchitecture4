@@ -307,14 +307,6 @@ def assert_no_gopchop(root: Path, what: str) -> None:
         raise AuditError(f"{what} ships GOPchop files: {found[:10]}")
 
 
-def assert_cfa4_is_the_qt_launcher(bindir: Path, package: str) -> None:
-    """Q4.3 (owner 2026-11-12, 2026-11-14): no package carries or starts egui; `cfa4` is a copy of
-    the Qt GUI's launcher."""
-    cfa4, qt = bindir / "cfa4", bindir / "cfa4-qt"
-    if not (cfa4.is_file() and qt.is_file()) or cfa4.read_bytes() != qt.read_bytes():
-        raise AuditError(f"{package}: bin/cfa4 is not the Qt GUI launcher (the egui editor must not ship)")
-
-
 def stage_tarball(archive_path: Path, target: Path, version: str,
                   env: dict[str, str], fixture: Path, qc_fixture: Path) -> dict:
     stage = target / "tar-source"
@@ -330,15 +322,13 @@ def stage_tarball(archive_path: Path, target: Path, version: str,
         raise AuditError("tar prefix installer omitted CFA4 desktop entry")
     if not (installed / "share/metainfo" / f"{APP_ID}.metainfo.xml").is_file():
         raise AuditError("tar prefix installer omitted CFA4 AppStream data")
-    # Q4.3: `cfa4` is the Qt GUI's launcher (a script), the engine is the only native program
-    binaries = [installed / "bin/cfa4-cli"]
-    assert_cfa4_is_the_qt_launcher(installed / "bin", "the tarball")
+    binaries = [installed / "bin/cfa4", installed / "bin/cfa4-cli"]
     assert_no_gopchop(installed, "the tarball")
     return {
         "scope": "PREFIX_INSTALL_AND_CLI_SMOKE_NOT_GUI",
-        **cli_smoke(binaries[0], version, env),
-        "smart_cut": smart_cut_smoke(binaries[0], fixture, target / "tar-smart-cut", env),
-        "qc": qc_smoke(binaries[0], qc_fixture, target / "tar-qc", env),
+        **cli_smoke(binaries[1], version, env),
+        "smart_cut": smart_cut_smoke(binaries[1], fixture, target / "tar-smart-cut", env),
+        "qc": qc_smoke(binaries[1], qc_fixture, target / "tar-qc", env),
         "libraries": [library_inventory(path, env=env) for path in binaries],
         "cleanup": "isolated temporary prefix deleted by TemporaryDirectory",
     }
@@ -349,17 +339,16 @@ def stage_deb(package: Path, target: Path, version: str,
     stage = target / "deb-unpacked"
     stage.mkdir()
     invoke(["dpkg-deb", "--extract", str(package), str(stage)], env=env)
-    binaries = [stage / "usr/bin/cfa4-cli"]
-    assert_cfa4_is_the_qt_launcher(stage / "usr/bin", "the .deb")
+    binaries = [stage / "usr/bin/cfa4", stage / "usr/bin/cfa4-cli"]
     assert_no_gopchop(stage, "the .deb")
     relations = invoke(["dpkg-deb", "--field", str(package), "Depends", "Recommends", "Suggests"], env=env)
     if "gopchop" in relations.lower():
         raise AuditError(f"the .deb depends on GOPchop: {relations.strip()}")
     return {
         "scope": "DEB_UNPACK_AND_CLI_SMOKE_NOT_DPKG_INSTALL",
-        **cli_smoke(binaries[0], version, env),
-        "smart_cut": smart_cut_smoke(binaries[0], fixture, target / "deb-smart-cut", env),
-        "qc": qc_smoke(binaries[0], qc_fixture, target / "deb-qc", env),
+        **cli_smoke(binaries[1], version, env),
+        "smart_cut": smart_cut_smoke(binaries[1], fixture, target / "deb-smart-cut", env),
+        "qc": qc_smoke(binaries[1], qc_fixture, target / "deb-qc", env),
         "libraries": [library_inventory(path, env=env) for path in binaries],
         "cleanup": "temporary extracted FHS tree removed",
     }
@@ -373,14 +362,13 @@ def stage_appimage(package: Path, target: Path, version: str,
     appdir = work / "squashfs-root"
     if not (appdir / "AppRun").exists():
         raise AuditError("AppImage extract has no AppRun")
-    binaries = [appdir / "usr/bin/cfa4-cli"]
-    assert_cfa4_is_the_qt_launcher(appdir / "usr/bin", "the AppImage")
+    binaries = [appdir / "usr/bin/cfa4", appdir / "usr/bin/cfa4-cli"]
     assert_no_gopchop(appdir, "the AppImage")
     return {
         "scope": "APPIMAGE_EXTRACT_AND_CLI_SMOKE_NOT_APPRUN",
-        **cli_smoke(binaries[0], version, env),
-        "smart_cut": smart_cut_smoke(binaries[0], fixture, target / "appimage-smart-cut", env),
-        "qc": qc_smoke(binaries[0], qc_fixture, target / "appimage-qc", env),
+        **cli_smoke(binaries[1], version, env),
+        "smart_cut": smart_cut_smoke(binaries[1], fixture, target / "appimage-smart-cut", env),
+        "qc": qc_smoke(binaries[1], qc_fixture, target / "appimage-qc", env),
         "libraries": [library_inventory(path, env=env) for path in binaries],
         "cleanup": "temporary AppDir extracted files removed",
     }

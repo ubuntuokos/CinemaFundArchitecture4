@@ -68,17 +68,10 @@ struct Geometry {
 impl Geometry {
     fn for_video(video: &VideoSettings) -> Result<Self> {
         video.validate()?;
-        Self::for_size(video.width, video.height)
-    }
-
-    fn for_size(width: u32, height: u32) -> Result<Self> {
-        if !(crate::MIN_SIDE..=crate::MAX_SIDE).contains(&width) || !(crate::MIN_SIDE..=crate::MAX_SIDE).contains(&height) {
-            return Err(StudioError::Invalid(format!("frames of {width}x{height} are outside {}..={}", crate::MIN_SIDE, crate::MAX_SIDE)));
-        }
-        let slot_size = SLOT_HEADER + u64::from(width) * u64::from(height) * 4;
+        let slot_size = SLOT_HEADER + video.frame_len() as u64;
         let total = HEADER + slot_size * u64::from(SLOTS);
         if total > MAX_FILE {
-            return Err(StudioError::Invalid(format!("frames of {width}x{height} do not fit a frame ring")));
+            return Err(StudioError::Invalid(format!("frames of {}x{} do not fit a frame ring", video.width, video.height)));
         }
         Ok(Self { slots: SLOTS, slot_size })
     }
@@ -109,16 +102,7 @@ impl Geometry {
 /// Creates a ring for `video` in `dir`: a new private file, never reused. Returns its path; the
 /// caller removes the file when done ([`remove`]).
 pub fn create(dir: &Path, video: &VideoSettings) -> Result<PathBuf> {
-    create_with(dir, Geometry::for_video(video)?)
-}
-
-/// Creates a ring for frames of `width × height` 4-byte pixels (any sides in
-/// `MIN_SIDE..=MAX_SIDE`, odd ones too): the feed of a moving layer picture (S1b).
-pub fn create_sized(dir: &Path, width: u32, height: u32) -> Result<PathBuf> {
-    create_with(dir, Geometry::for_size(width, height)?)
-}
-
-fn create_with(dir: &Path, g: Geometry) -> Result<PathBuf> {
+    let g = Geometry::for_video(video)?;
     let stamp = std::time::SystemTime::now().duration_since(std::time::UNIX_EPOCH).map_or(0, |d| d.as_nanos());
     for attempt in 0..8 {
         let path = dir.join(format!("cfa4-live-{}-{stamp:x}-{attempt}", std::process::id()));

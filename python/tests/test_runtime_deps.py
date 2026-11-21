@@ -4,7 +4,6 @@ import json
 import shutil
 import sys
 from pathlib import Path
-from typing import Any
 
 import pytest
 from cfa4_devtools.runtime_deps import (
@@ -97,7 +96,7 @@ def test_hostile_inputs_do_not_crash(tmp_path: Path) -> None:
 
 
 def test_summary_takes_the_highest_requirement_per_namespace() -> None:
-    binaries: list[dict[str, Any]] = [
+    binaries = [
         {"symbol_versions": {"GLIBC": "2.34"}, "packages": {"libc.so.6": {"package": "libc6:amd64", "version": "2.42"}},
          "dlopen_candidates": ["libvulkan.so.1"], "resolved": {"libc.so.6": "/lib/libc.so.6"}},
         {"symbol_versions": {"GLIBC": "2.39", "GCC": "3.0"}, "packages": {},

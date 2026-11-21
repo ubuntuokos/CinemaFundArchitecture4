@@ -28,15 +28,10 @@ class InstallTests(unittest.TestCase):
         shutil.copyfile(
             HERE / f"{APP_ID}.desktop", self.share / "applications" / f"{APP_ID}.desktop"
         )
-        # Stand-ins that record how they were started. As in a release tarball, bin/cfa4 is a copy of
-        # the Qt GUI's launcher (Q4.3: no package carries or starts egui).
-        recorder = '#!/bin/sh\nprintf \'%s\\n\' "$0" "$@" > "$(dirname "$0")/launched"\n'
-        for name in ("cfa4", "cfa4-cli", "cfa4-qt"):
-            (self.bundle / "bin" / name).write_text(recorder)
-        package = self.bundle / "lib/cfa4/python/cfa4_qt"
-        package.mkdir(parents=True)
-        (package / "__init__.py").write_text("")
-        (package / "__main__.py").write_text("def main():\n    return 0\n")
+        for name in ("cfa4", "cfa4-cli"):
+            (self.bundle / "bin" / name).write_text(
+                '#!/bin/sh\nprintf \'%s\\n\' "$0" "$@" > "$(dirname "$0")/launched"\n'
+            )
         for path in ("doc/cfa4/LICENSE-MIT", "icons/hicolor/test", "mime/packages/test.xml"):
             target = self.share / path
             target.parent.mkdir(parents=True, exist_ok=True)
@@ -58,7 +53,7 @@ class InstallTests(unittest.TestCase):
             (self.bundle / "share/doc/cfa4/LICENSE-MIT").write_text(version)
             result = self.install("--prefix", prefix)
             self.assertEqual(result.returncode, 0, result.stderr)
-            for name in ("cfa4", "cfa4-cli", "cfa4-qt"):
+            for name in ("cfa4", "cfa4-cli"):
                 self.assertTrue(os.access(prefix / "bin" / name, os.X_OK))
                 self.assertEqual(
                     (prefix / "bin" / name).read_bytes(), (self.bundle / "bin" / name).read_bytes()
@@ -68,59 +63,38 @@ class InstallTests(unittest.TestCase):
             self.assertTrue((prefix / "share/mime/packages/test.xml").is_file())
             self.assertEqual(other.read_text(), "unrelated\n")
         desktop = prefix / "share/applications" / f"{APP_ID}.desktop"
-        self.assertIn(f'Exec="{prefix}/bin/cfa4-qt" %F\n', desktop.read_text())
+        self.assertIn(f'Exec="{prefix}/bin/cfa4" %F\n', desktop.read_text())
         if shutil.which("desktop-file-validate"):
             subprocess.run(["desktop-file-validate", str(desktop)], check=True)
-        # this bundle has no credits entry: none is installed
+        # no Qt GUI in this bundle: no credits entry either
         self.assertFalse((prefix / "share/applications" / f"{APP_ID}.credits.desktop").exists())
 
-    def test_menu_entry_and_cfa4_start_only_the_qt_gui(self):
-        """Owner decisions 2026-11-12 and 2026-11-14 (docs/plans/CFA4-QT6-FINISH-001.md Q4.3): the
-        menu entry (and files opened with it) and the `cfa4` command start the Qt 6 GUI, never egui."""
-        self.add_qt_gui("def main():\n    return 0\n")
+    def test_menu_entry_starts_the_qt_gui_when_the_tarball_has_it(self):
+        """Owner decision 2026-11-12: the menu entry (and files opened with it) start the Qt 6 GUI;
+        a tarball without it keeps the egui editor, so the entry never points at a missing program."""
         prefix = self.root / "menu"
         result = self.install("--prefix", prefix)
         self.assertEqual(result.returncode, 0, result.stderr)
-        entry = (prefix / "share/applications" / f"{APP_ID}.desktop").read_text()
-        self.assertIn(f'Exec="{prefix}/bin/cfa4-qt" %F\n', entry)
-        self.assertIn(f"TryExec={prefix}/bin/cfa4-qt\n", entry)
-        self.assertEqual((prefix / "bin/cfa4").read_bytes(), (HERE / "cfa4-qt").read_bytes())
-        self.assertIn("Launch the Qt 6 GUI", result.stdout)
-        if shutil.which("desktop-file-validate"):
-            subprocess.run(["desktop-file-validate", str(prefix / "share/applications" / f"{APP_ID}.desktop")], check=True)
-
-    def test_a_tarball_without_the_qt_gui_does_not_install(self):
-        """No egui fallback any more (Q4.3): a tarball without the Qt GUI is incomplete."""
-        (self.bundle / "bin/cfa4-qt").unlink()
-        prefix = self.root / "destination"
-        result = self.install("--prefix", prefix)
-        self.assertNotEqual(result.returncode, 0)
-        self.assertIn("missing bin/cfa4-qt", result.stderr)
-        self.assertFalse(prefix.exists(), "refused before anything is written")
-
-    def test_a_native_cfa4_the_egui_editor_is_refused(self):
-        (self.bundle / "bin/cfa4").write_bytes(b"\x7fELF\x02\x01\x01" + bytes(57))
-        prefix = self.root / "destination"
-        result = self.install("--prefix", prefix)
-        self.assertNotEqual(result.returncode, 0)
-        self.assertIn("native program (the egui editor)", result.stderr)
-        self.assertFalse(prefix.exists(), "refused before anything is written")
-
-    def test_an_earlier_egui_cfa4_is_replaced_by_the_qt_launcher(self):
+        desktop = prefix / "share/applications" / f"{APP_ID}.desktop"
+        self.assertIn(f'Exec="{prefix}/bin/cfa4" %F\n', desktop.read_text())
         self.add_qt_gui("def main():\n    return 0\n")
-        prefix = self.root / "upgrade"
-        old = prefix / "bin/cfa4"
-        old.parent.mkdir(parents=True)
-        old.write_bytes(b"\x7fELF\x02\x01\x01" + bytes(57))
         result = self.install("--prefix", prefix)
         self.assertEqual(result.returncode, 0, result.stderr)
-        self.assertEqual(old.read_bytes(), (HERE / "cfa4-qt").read_bytes())
+        entry = desktop.read_text()
+        self.assertIn(f'Exec="{prefix}/bin/cfa4-qt" %F\n', entry)
+        self.assertIn(f"TryExec={prefix}/bin/cfa4-qt\n", entry)
+        if shutil.which("desktop-file-validate"):
+            subprocess.run(["desktop-file-validate", str(desktop)], check=True)
 
     def test_credits_entry_points_at_the_installed_qt_gui(self):
         shutil.copyfile(
             HERE / f"{APP_ID}.credits.desktop", self.share / "applications" / f"{APP_ID}.credits.desktop"
         )
         prefix = self.root / "with qt"
+        result = self.install("--prefix", prefix)
+        self.assertEqual(result.returncode, 0, result.stderr)
+        self.assertFalse((prefix / "share/applications" / f"{APP_ID}.credits.desktop").exists())
+        self.add_qt_gui("def main():\n    return 0\n")
         result = self.install("--prefix", prefix)
         self.assertEqual(result.returncode, 0, result.stderr)
         entry = (prefix / "share/applications" / f"{APP_ID}.credits.desktop").read_text()
@@ -142,18 +116,19 @@ class InstallTests(unittest.TestCase):
         launched = prefix / "bin/launched"
         for _ in range(100):
             if launched.exists() and launched.read_text().splitlines() == [
-                str(prefix / "bin/cfa4-qt"), str(document)
+                str(prefix / "bin/cfa4"), str(document)
             ]:
                 break
             time.sleep(0.01)
-        self.assertEqual(launched.read_text().splitlines(), [str(prefix / "bin/cfa4-qt"), str(document)])
+        self.assertEqual(launched.read_text().splitlines(), [str(prefix / "bin/cfa4"), str(document)])
 
     def add_qt_gui(self, main_body):
-        """The real cfa4-qt launcher (also as bin/cfa4, as package.sh stages it) and a stand-in
-        cfa4_qt package whose main() runs main_body."""
-        for name in ("cfa4-qt", "cfa4"):
-            shutil.copyfile(HERE / "cfa4-qt", self.bundle / "bin" / name)
-        (self.bundle / "lib/cfa4/python/cfa4_qt/__main__.py").write_text(main_body)
+        """The real cfa4-qt launcher and a stand-in cfa4_qt package whose main() runs main_body."""
+        shutil.copyfile(HERE / "cfa4-qt", self.bundle / "bin/cfa4-qt")
+        package = self.bundle / "lib/cfa4/python/cfa4_qt"
+        package.mkdir(parents=True)
+        (package / "__init__.py").write_text("")
+        (package / "__main__.py").write_text(main_body)
 
     def fake_pyside6(self, prefix, modules=("QtCore", "QtGui", "QtWidgets", "QtNetwork", "QtTest")):
         """A stand-in PySide6 with these modules, first on the installed launcher's path, so the
@@ -242,7 +217,7 @@ class InstallTests(unittest.TestCase):
         self.assertNotIn("apt install", started.stderr)
 
     def test_qt_launcher_without_its_package_does_not_install(self):
-        shutil.rmtree(self.bundle / "lib/cfa4/python/cfa4_qt")
+        shutil.copyfile(HERE / "cfa4-qt", self.bundle / "bin/cfa4-qt")
         prefix = self.root / "destination"
         result = self.install("--prefix", prefix)
         self.assertNotEqual(result.returncode, 0)
@@ -300,10 +275,10 @@ class InstallTests(unittest.TestCase):
         target = self.root / "target"
         binaries = target / "release"
         binaries.mkdir(parents=True)
-        # only the engine is built (Q4.3: no egui editor in the packages)
-        binary = binaries / "cfa4-cli"
-        binary.write_text("#!/bin/sh\necho 'CFA4 fixture'\n")
-        binary.chmod(0o755)
+        for name in ("cfa4", "cfa4-cli"):
+            binary = binaries / name
+            binary.write_text("#!/bin/sh\necho 'CFA4 fixture'\n")
+            binary.chmod(0o755)
         dist = self.root / "dist"
         # stand-in binaries have no crate sources to list, so ship a stand-in notice file
         notices = self.root / "THIRD-PARTY-LICENSES.txt"
@@ -326,11 +301,9 @@ class InstallTests(unittest.TestCase):
             self.assertEqual(installer.mode & 0o777, 0o755)
             self.assertEqual(archive.extractfile(installer).read(), (HERE / "install.sh").read_bytes())
             names = archive.getnames()
-            for launcher in ("/bin/cfa4-qt", "/bin/cfa4"):  # `cfa4` starts the Qt GUI too (Q4.3)
-                qt = next(m for m in archive.getmembers() if m.name.endswith(launcher))
-                self.assertTrue(qt.isfile(), launcher)
-                self.assertEqual(qt.mode & 0o777, 0o755)
-                self.assertEqual(archive.extractfile(qt).read(), (HERE / "cfa4-qt").read_bytes())
+            qt = next(m for m in archive.getmembers() if m.name.endswith("/bin/cfa4-qt"))
+            self.assertEqual(qt.mode & 0o777, 0o755)
+            self.assertEqual(archive.extractfile(qt).read(), (HERE / "cfa4-qt").read_bytes())
             for path in ("lib/cfa4/python/cfa4_qt/__main__.py", "lib/cfa4/python/cfa4_qt/i18n/hu.tsv",
                          "lib/cfa4/python/cfa4_qt/i18n/de.tsv",
                          "lib/cfa4/python/cfa4_qt/i18n/fr.tsv.attribution"):

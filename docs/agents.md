@@ -313,19 +313,7 @@ everything you need to contribute is in the public docs above. Ask a maintainer 
    first). A [gaps.md](gaps.md) entry or a maintainer status-file task counts only if it belongs to
    your project. **Never take a task from another project.** Read the relevant architecture section
    and crate README.
-2. **Plan tests first.** Write down the acceptance test before writing code. For anything larger
-   than a small fix, the plan (plan mode, see the usage budget in [CLAUDE.md](../CLAUDE.md)) also has:
-   - **Requirements with ids** (R1, R2, …), each with a checkable acceptance test, and a short
-     requirement → test → task table. Every requirement maps to at least one test.
-   - **The PR split:** one topic per PR ([coordination.md](coordination.md) §2.2), the files each PR
-     touches, and which PRs need a CodeRabbit review (§2.9).
-   - **Open owner decisions, listed, not assumed.** If the plan depends on a choice that §6 leaves to
-     a human or that your approved plan leaves to the owner (scope, sources, thresholds, licences),
-     write it down with your recommendation and stop before building the part that depends on it.
-     Choices you can make yourself still follow §6.
-
-   (Owner decision 2026-11-14, from the CFA4-DEV-SPEC-KIT-001 pilot: these three habits proved
-   useful; Spec Kit itself was not adopted, D13.)
+2. **Plan tests first.** Write down the acceptance test before writing code.
 3. **Implement and test.**
 4. **Verify.** Run all gates (`cargo xtask ci`, then the tests: `cargo test --workspace --exclude cfa4-ui --release`; [contributing.md §3](contributing.md#3-quality-gates)). For UI work, run the app with `--control`, drive it
    and look at the screenshots (§3).

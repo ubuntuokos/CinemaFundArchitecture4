@@ -6,9 +6,8 @@
 //!   rasters and 4:4:4 RGB, and the resolution-independent DNxHR IDs 1270–1274 (LB, SQ, HQ, HQX,
 //!   444) at 8, 10 and 12 bits in 4:2:0, 4:2:2 and 4:4:4, with DCT or lossless alpha. Macroblock
 //!   scan lines decode in parallel with the `threads` feature (rayon).
-//! - **Encoder** ([`Encoder`]): DNxHR LB / SQ / HQ (8-bit 4:2:2), HQX (10- or 12-bit 4:2:2) and
-//!   444, and the progressive DNxHD IDs 1235, 1237, 1238, 1250-1253 and 1256 at their fixed
-//!   rasters; CBR at the standard's frame sizes, progressive.
+//! - **Encoder** ([`Encoder`]): DNxHR SQ / HQ (8-bit 4:2:2) and HQX (10- or 12-bit 4:2:2), CBR
+//!   at the standard's frame sizes, progressive.
 //!
 //! See the crate README for accuracy, performance and limitations.
 
@@ -92,8 +91,7 @@ pub enum Interlace {
     TopFieldFirst,
 }
 
-/// The encoder's compression IDs: the DNxHR profiles (resolution-independent) and the
-/// progressive DNxHD (HD profile) IDs, whose raster, depth and frame size Table C.1 fixes.
+/// DNxHR profiles (resolution-independent compression IDs).
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 pub enum Profile {
     /// DNxHR LB (CID 1274), 8-bit.
@@ -106,29 +104,6 @@ pub enum Profile {
     Hqx,
     /// DNxHR 444 (CID 1270), 10- or 12-bit 4:4:4.
     R444,
-    /// DNxHD 1920 × 1080 progressive, 10-bit 4:2:2 (CID 1235; "220x" at 29.97 fps).
-    Hd1235,
-    /// DNxHD 1920 × 1080 progressive, 8-bit 4:2:2 (CID 1237; "145").
-    Hd1237,
-    /// DNxHD 1920 × 1080 progressive, 8-bit 4:2:2 (CID 1238; "220").
-    Hd1238,
-    /// DNxHD 1920 × 1080 interlaced, 10-bit 4:2:2 (CID 1241; "220x" at 29.97 fps), two field
-    /// coding units per frame.
-    Hd1241,
-    /// DNxHD 1920 × 1080 interlaced, 8-bit 4:2:2 (CID 1242; "145").
-    Hd1242,
-    /// DNxHD 1920 × 1080 interlaced, 8-bit 4:2:2 (CID 1243; "220").
-    Hd1243,
-    /// DNxHD 1280 × 720 progressive, 10-bit 4:2:2 (CID 1250; "220x" at 59.94 fps).
-    Hd1250,
-    /// DNxHD 1280 × 720 progressive, 8-bit 4:2:2 (CID 1251; "220").
-    Hd1251,
-    /// DNxHD 1280 × 720 progressive, 8-bit 4:2:2 (CID 1252; "145").
-    Hd1252,
-    /// DNxHD 1920 × 1080 progressive, 8-bit 4:2:2 (CID 1253; "36").
-    Hd1253,
-    /// DNxHD 1920 × 1080 progressive, 10-bit 4:4:4 (CID 1256; "444").
-    Hd1256,
 }
 
 impl Profile {
@@ -139,56 +114,10 @@ impl Profile {
             Profile::Hq => 1272,
             Profile::Hqx => 1271,
             Profile::R444 => 1270,
-            Profile::Hd1235 => 1235,
-            Profile::Hd1237 => 1237,
-            Profile::Hd1238 => 1238,
-            Profile::Hd1241 => 1241,
-            Profile::Hd1242 => 1242,
-            Profile::Hd1243 => 1243,
-            Profile::Hd1250 => 1250,
-            Profile::Hd1251 => 1251,
-            Profile::Hd1252 => 1252,
-            Profile::Hd1253 => 1253,
-            Profile::Hd1256 => 1256,
         }
     }
-    /// Every profile the encoder writes.
-    pub const ALL: [Profile; 16] = [
-        Profile::Lb,
-        Profile::Sq,
-        Profile::Hq,
-        Profile::Hqx,
-        Profile::R444,
-        Profile::Hd1235,
-        Profile::Hd1237,
-        Profile::Hd1238,
-        Profile::Hd1241,
-        Profile::Hd1242,
-        Profile::Hd1243,
-        Profile::Hd1250,
-        Profile::Hd1251,
-        Profile::Hd1252,
-        Profile::Hd1253,
-        Profile::Hd1256,
-    ];
     pub fn from_cid(cid: u32) -> Option<Profile> {
-        Profile::ALL.into_iter().find(|p| p.cid() == cid)
-    }
-    /// A DNxHD (HD profile) ID: one raster, `(width, height, bit depth)`.
-    pub fn hd_raster(self) -> Option<(u32, u32, u8)> {
-        match tables::cid_info(self.cid())?.kind {
-            tables::Kind::Hd { width, height, depth, .. } => Some((u32::from(width), u32::from(height), depth)),
-            tables::Kind::Ri { .. } => None,
-        }
-    }
-    /// An interlaced DNxHD ID: each frame is two field coding units, field 1 (the top field,
-    /// even lines) first.
-    pub fn interlaced(self) -> bool {
-        matches!(tables::cid_info(self.cid()).map(|c| c.kind), Some(tables::Kind::Hd { interlaced: true, .. }))
-    }
-    /// 4:4:4 sampling (DNxHR 444, DNxHD CID 1256); the others are 4:2:2.
-    pub fn is_444(self) -> bool {
-        matches!(self, Profile::R444 | Profile::Hd1256)
+        [Profile::Lb, Profile::Sq, Profile::Hq, Profile::Hqx, Profile::R444].into_iter().find(|p| p.cid() == cid)
     }
     pub fn name(self) -> &'static str {
         match self {
@@ -197,33 +126,15 @@ impl Profile {
             Profile::Hq => "DNxHR HQ",
             Profile::Hqx => "DNxHR HQX",
             Profile::R444 => "DNxHR 444",
-            Profile::Hd1235 => "DNxHD 1080p 10-bit (CID 1235)",
-            Profile::Hd1237 => "DNxHD 1080p 8-bit (CID 1237)",
-            Profile::Hd1238 => "DNxHD 1080p 8-bit (CID 1238)",
-            Profile::Hd1241 => "DNxHD 1080i 10-bit (CID 1241)",
-            Profile::Hd1242 => "DNxHD 1080i 8-bit (CID 1242)",
-            Profile::Hd1243 => "DNxHD 1080i 8-bit (CID 1243)",
-            Profile::Hd1250 => "DNxHD 720p 10-bit (CID 1250)",
-            Profile::Hd1251 => "DNxHD 720p 8-bit (CID 1251)",
-            Profile::Hd1252 => "DNxHD 720p 8-bit (CID 1252)",
-            Profile::Hd1253 => "DNxHD 1080p 36 (CID 1253)",
-            Profile::Hd1256 => "DNxHD 444 10-bit (CID 1256)",
         }
     }
-    /// CBR frame size: equation 7.1 for a DNxHR raster, Table C.1's fixed size for DNxHD (whose
-    /// raster is fixed; `width` and `height` are then ignored).
+    /// CBR frame size for a raster (equation 7.1).
     pub fn frame_size(self, width: u32, height: u32) -> u32 {
         let c0 = match self {
             Profile::Lb => 188416,
             Profile::Sq => 606208,
             Profile::Hq | Profile::Hqx => 917504,
             Profile::R444 => 1835008,
-            _ => {
-                return match tables::cid_info(self.cid()).map(|c| c.kind) {
-                    Some(tables::Kind::Hd { frame_size, .. }) => frame_size,
-                    _ => 0,
-                };
-            }
         };
         ri_frame_size(width, height, c0, false)
     }

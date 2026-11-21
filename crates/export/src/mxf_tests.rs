@@ -423,42 +423,6 @@ fn d10_imx_op1a() {
     assert_eq!(theirs.len(), r.frames as usize * 720 * 512 * 2);
 }
 
-/// #1254: AS-10 metadata in an XDCAM HD422 file reads back; a shim named in the specification is
-/// checked against the essence, and AS-10 needs OP1a with MPEG-2.
-#[test]
-fn xdcam_hd422_as10_metadata_and_shims() {
-    let (p, seq, m) = project();
-    let xd = |path: &str, as10: &str| ExportSettings {
-        frame_size: Some((1280, 720)),
-        bitrate_kbps: 50_000,
-        max_bitrate_kbps: Some(50_000),
-        keyframe_distance: Some(12),
-        mpeg2_b_frames: Some(2),
-        mxf_as10: as10.into(),
-        ..settings(Format::MxfOp1a, MxfVideoCodec::XdcamHd422, path)
-    };
-    let err = |s: ExportSettings| match export(&p, seq, &s, &m, &Progress::default()) {
-        Err(ExportError::Unsupported(e)) => e,
-        other => panic!("expected a refusal, got {other:?}"),
-    };
-    // a shim of the specification: this file is 1280x720 with two channels, not what NRK needs
-    let e = err(xd(&tmp("as10_nrk.mxf"), "ShimName: NRK_HD_2012\n"));
-    assert!(e.contains("NRK_HD_2012") && e.contains("1280x720") && e.contains("8 ch"), "{e}");
-    assert!(err(xd(&tmp("as10_cnn.mxf"), "ShimName: CNN_HD_2012\n")).contains("MP@HL"));
-    assert!(err(xd(&tmp("as10_bad.mxf"), "MainTitle: no shim\n")).contains("ShimName"));
-    assert!(err(xd(&tmp("as10_unknown.mxf"), "ShimName: x\nNope: 1\n")).contains("Nope"));
-    assert!(err(ExportSettings { format: Format::MxfOpAtom, ..xd(&tmp("as10_atom.mxf"), "ShimName: x\n") }).contains("OP1a"));
-    // a shim of the user's own is not checked
-    let path = tmp("as10_own.mxf");
-    export(&p, seq, &xd(&path, "ShimName: STATION_HD_2026\nMainTitle: Híradó\nSpanningNumber: 0\n"), &m, &Progress::default()).unwrap();
-    let bytes = std::fs::read(&path).unwrap();
-    let mx = cfa4_mxf::open(&bytes).unwrap();
-    assert!(mx.warnings.is_empty(), "{:?}", mx.warnings);
-    let mut a = mx.as11.unwrap().as10;
-    a.sort();
-    assert_eq!(a, vec![("MainTitle".to_string(), "Híradó".to_string()), ("ShimName".into(), "STATION_HD_2026".into()), ("SpanningNumber".into(), "0".into())]);
-}
-
 /// XDCAM HD422 (RDD 9): 4:2:2 MPEG-2 in system-item content packages with one mono AES3 element
 /// per channel. ffmpeg decodes the picture exactly as the elementary stream export of the same
 /// settings, and each audio stream sample-exact as the channel we read back.
@@ -542,8 +506,7 @@ fn interlaced_mpeg2_mxf() {
     let refused = |s: ExportSettings| matches!(export(&p, seq, &s, &m, &Progress::default()), Err(ExportError::Unsupported(_)));
     assert!(refused(ExportSettings { frame_rate: Some(FrameRate::FPS_24), ..xd(&tmp("xd_1080i24.mxf")) }), "RDD 9 has no 1080i at 24 fps");
     assert!(refused(ExportSettings { frame_size: Some((1280, 720)), ..xd(&tmp("xd_720i.mxf")) }), "720 lines are progressive");
-    // ProRes in MXF codes field pictures (`op1a_prores_interlaced`); DNxHR stays progressive
-    assert!(refused(ExportSettings { mxf_video_codec: MxfVideoCodec::Dnxhr, ..xd(&tmp("xd_dnx_i.mxf")) }), "DNxHR in MXF is progressive");
+    assert!(refused(ExportSettings { mxf_video_codec: MxfVideoCodec::ProRes, ..xd(&tmp("prores_i.mxf")) }), "ProRes in MXF is progressive");
     let path = tmp("xd_1080i.mxf");
     let r = export(&p, seq, &xd(&path), &m, &Progress::default()).unwrap();
     let n = r.frames as usize;
@@ -668,52 +631,4 @@ fn uncompressed_v210_and_uyvy() {
             }
         }
     }
-}
-
-/// Interlaced ProRes in MXF (PROCODEC-002 WP6): two field pictures per edit unit and a
-/// descriptor of separate fields (half-height stored rectangle, field dominance, the 1080-line
-/// video line map); the frames read back interlaced, like the MOV export of the same settings.
-#[test]
-fn op1a_prores_interlaced() {
-    let (p, seq, m) = project();
-    for (order, want, ff) in
-        [(FieldOrder::UpperFirst, cfa4_frame::FieldOrder::TopFirst, "tt"), (FieldOrder::LowerFirst, cfa4_frame::FieldOrder::BottomFirst, "bb")]
-    {
-        let path = tmp(&format!("op1a_prores_{ff}.mxf"));
-        // 1920 × 1080: the size with a standard video line map
-        let mut s = ExportSettings { field_order: order, scale: 6.0, ..settings(Format::MxfOp1a, MxfVideoCodec::ProRes, &path) };
-        s.range = Some(TimeRange::new(Tick::ZERO, FrameRate::FPS_24.tick_of(8)));
-        assert!(s.codes_interlaced());
-        export(&p, seq, &s, &m, &Progress::default()).unwrap();
-        let bytes = std::fs::read(&path).unwrap();
-        let mx = cfa4_mxf::open(&bytes).unwrap();
-        assert!(mx.warnings.is_empty(), "{:?}", mx.warnings);
-        let v = &mx.tracks[mx.track_of_kind(cfa4_mxf::TrackKind::Picture).unwrap()];
-        let pic = v.picture.as_ref().unwrap();
-        assert_eq!((pic.frame_layout, pic.stored_height, pic.frame_height(), pic.frame_width()), (1, 540, 1080, 1920), "{order:?}");
-        let src = cfa4_codecs::open_bytes("x.mxf", bytes.into()).unwrap();
-        assert_eq!(src.info().video.as_ref().unwrap().height, 1080);
-        let mov = tmp(&format!("op1a_prores_{ff}.mov"));
-        let ms = ExportSettings { format: Format::ProRes, multiplexer: Multiplexer::Mov, path: mov.clone(), ..s.clone() };
-        export(&p, seq, &ms, &m, &Progress::default()).unwrap();
-        let msrc = cfa4_codecs::open_bytes("x.mov", std::fs::read(&mov).unwrap().into()).unwrap();
-        for f in [0i64, 7] {
-            let t = FrameRate::FPS_24.tick_of(f) + Tick(1);
-            let a = src.video_frame(FrameRequest::full(t)).unwrap();
-            assert_eq!(a.layout.field_order, want, "{order:?}");
-            assert!(a.to_rgba8() == msrc.video_frame(FrameRequest::full(t)).unwrap().to_rgba8(), "{order:?}: frame {f} differs from the MOV export");
-        }
-        if let Some(ffprobe) = cfa4_testkit::ffprobe_or_skip("MXF ProRes field order") {
-            let j = ffprobe_json(&ffprobe, &path);
-            let st = j["streams"].as_array().unwrap().iter().find(|s| s["codec_type"] == "video").unwrap();
-            assert_eq!((st["codec_name"].as_str(), st["height"].as_i64()), (Some("prores"), Some(1080)), "{order:?}");
-            // ffprobe names the stored order (from the line map: field 1 first) and then the
-            // displayed one: "tt" upper first, "tb" lower first
-            let fo = st["field_order"].as_str().unwrap_or_default();
-            assert_eq!(fo.get(1..), Some(&ff[1..]), "{order:?}: {fo}");
-        }
-    }
-    // the other MXF codecs still write progressive frames only
-    let dnx = ExportSettings { field_order: FieldOrder::UpperFirst, ..settings(Format::MxfOp1a, MxfVideoCodec::Dnxhr, &tmp("dnx_i.mxf")) };
-    assert!(!dnx.codes_interlaced() && dnx.validate().is_err());
 }

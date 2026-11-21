@@ -13,9 +13,6 @@
 //!   measured parity of our shipped menu bar, or of the effects / transitions the Effects panel
 //!   lists, against a reference list (default: the local `plan/premiere/<area>.json`), presence and
 //!   placement reported separately (`parity.rs`, docs/gaps.md G7).
-//! - `fuzz-targets`: every L0 parser crate (containers and decoders; not the encoder-only ones in
-//!   `NO_PARSER`) has a fuzz target in `fuzz/src/lib.rs`, and every target has its
-//!   `fuzz/fuzz_targets/<name>.rs` and `[[bin]]` (CFA4-SECURITY-001 B2).
 //! - `ci`: Linux: fmt check, clippy -D warnings, tests, layers, assets.
 //!   WASM is no longer a release/CI gate; the legacy `wasm` command stays opt-in.
 
@@ -60,24 +57,20 @@ const LAYERS: &[(&str, u8)] = &[
     ("amr", 0),
     ("hap", 0),
     ("utvideo", 0),
-    ("lagarith", 0),
-    ("magicyuv", 0),
     ("huffyuv", 0),
     ("ffv1", 0),
     ("dirac", 0),
     ("g729", 0),
     ("ilbc", 0),
     ("tta", 0),
-    ("shorten", 0),
-    ("tak", 0),
     ("realvideo", 0),
     ("realmedia", 0),
     ("realaudio", 0),
-    ("atracenc", 0),
     ("canopus", 0),
     ("sstp", 0),
     ("evc", 0),
     ("cavs", 0),
+    ("avs2", 0),
     ("avs3", 0),
     ("musepack", 0),
     ("vp9", 0),
@@ -97,20 +90,15 @@ const LAYERS: &[(&str, u8)] = &[
     ("flac", 0),
     ("opus", 0),
     ("frame", 1),
-    ("surface-model", 1),
     ("media", 1),
     ("project", 1),
     ("audio-dsp", 1),
     ("text", 1),
     ("route", 1),
     ("tcsync", 1),
-    ("surface-catalog", 1),
     ("tcsync-io", 5),
-    ("surface", 5),
     ("metrics", 1),
-    ("cinema-pkg", 1),
     ("live", 1),
-    ("sandbox", 1),
     ("edit", 2),
     ("codecs", 2),
     ("keyframe", 2),
@@ -125,7 +113,6 @@ const LAYERS: &[(&str, u8)] = &[
     ("render", 3),
     ("gpu", 3),
     ("golden", 3),
-    ("cinema-acceptance", 3),
     ("scopes", 3),
     ("qc", 3),
     ("playback", 3),
@@ -441,61 +428,6 @@ fn bench() -> Result<(), String> {
     run(Command::new(env!("CARGO")).args(["run", "--release", "-p", "cfa4-ui-egui", "--example", "bench", "--"]).args(&extra))
 }
 
-/// The external DCP / IMF test oracles (CINECERT WP01-A): asdcplib, Photon, Clairmeta and the
-/// test corpus, installed outside the repository by `scripts/dev/setup-cinema-oracles.sh`; extra
-/// arguments go to the script (`cargo xtask cinema-oracles --install photon`). Default: `--check`.
-fn cinema_oracles() -> Result<(), String> {
-    let extra: Vec<String> = std::env::args().skip(2).collect();
-    // The script is executable (#!/usr/bin/env bash); running it directly keeps the arguments out
-    // of any shell command line.
-    run(Command::new(root().join("scripts/dev/setup-cinema-oracles.sh")).args(&extra))
-}
-
-/// L0 crates that read no untrusted input (encoders only): no fuzz target needed.
-const NO_PARSER: &[&str] = &["h264enc", "flac"];
-
-/// CFA4-SECURITY-001 B2: every L0 parser crate has a fuzz target, and every target is wired up.
-fn fuzz_targets() -> Result<(), String> {
-    let md = metadata()?;
-    let fuzz = root().join("fuzz");
-    let lib = std::fs::read_to_string(fuzz.join("src/lib.rs")).map_err(|e| format!("fuzz/src/lib.rs: {e}"))?;
-    let manifest = std::fs::read_to_string(fuzz.join("Cargo.toml")).map_err(|e| format!("fuzz/Cargo.toml: {e}"))?;
-    let mut errors = Vec::new();
-    // ("target", "cfa4-crate", harness) rows of TARGETS
-    let rows: Vec<(String, String)> = lib
-        .lines()
-        .filter_map(|l| {
-            let l = l.trim().strip_prefix("(\"")?;
-            let (target, rest) = l.split_once("\", \"")?;
-            let (krate, _) = rest.split_once('"')?;
-            Some((target.to_string(), krate.to_string()))
-        })
-        .collect();
-    for (name, _) in workspace_crates(&md) {
-        let s = short(&name);
-        if layer_of(&name) == Some(0) && !L0_FOUNDATION.contains(&s) && !NO_PARSER.contains(&s) && !rows.iter().any(|(_, k)| *k == name) {
-            errors.push(format!("{name}: L0 parser without a fuzz target (add it to fuzz/src/lib.rs TARGETS)"));
-        }
-    }
-    for (target, _) in &rows {
-        if !fuzz.join("fuzz_targets").join(format!("{target}.rs")).is_file() {
-            errors.push(format!("fuzz target {target}: fuzz/fuzz_targets/{target}.rs missing"));
-        }
-        if !manifest.contains(&format!("name = \"{target}\"\npath = \"fuzz_targets/{target}.rs\"")) {
-            errors.push(format!("fuzz target {target}: no [[bin]] in fuzz/Cargo.toml"));
-        }
-    }
-    if rows.is_empty() {
-        errors.push("fuzz/src/lib.rs: no TARGETS rows found".into());
-    }
-    if errors.is_empty() {
-        println!("fuzz-targets OK ({} targets)", rows.len());
-        Ok(())
-    } else {
-        Err(errors.join("\n"))
-    }
-}
-
 /// The workspace root (the parent of `xtask/`).
 fn root() -> std::path::PathBuf {
     std::path::Path::new(env!("CARGO_MANIFEST_DIR")).parent().expect("xtask lives in the workspace").to_path_buf()
@@ -509,10 +441,8 @@ fn main() -> ExitCode {
         "assets" => assets(),
         "fixtures" => fixtures(&std::env::args().skip(2).collect::<Vec<_>>()),
         "fmt-check" => fmt_check(),
-        "fuzz-targets" => fuzz_targets(),
         "ci" => ci(),
         "bench" => bench(),
-        "cinema-oracles" => cinema_oracles(),
         "bench-playback" => bench_playback(),
         "version" => {
             let rest: Vec<String> = std::env::args().skip(2).collect();
@@ -523,7 +453,7 @@ fn main() -> ExitCode {
             parity::run(&root(), &rest.iter().map(String::as_str).collect::<Vec<_>>())
         }
         _ => Err(
-            "usage: cargo xtask <layers|assets|wasm|fuzz-targets|fixtures [crate…]|parity [--area menus|effects|transitions] [--reference FILE] [--out FILE] [--min PERCENT]|version [set X.Y.Z]|ci|bench [args]|bench-playback [args]|cinema-oracles [--check|--install …|--corpus|--print-env]>"
+            "usage: cargo xtask <layers|assets|wasm|fixtures [crate…]|parity [--area menus|effects|transitions] [--reference FILE] [--out FILE] [--min PERCENT]|version [set X.Y.Z]|ci|bench [args]|bench-playback [args]>"
                 .into(),
         ),
     };

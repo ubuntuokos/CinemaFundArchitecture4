@@ -249,30 +249,6 @@ pub fn validate(credits: &Credits, laid: &Laid, frame: Frame, measure: &dyn Meas
                     }
                 }
             }
-            // voices (F10-C16): the same person in the cast and in the voices, written two ways
-            for (at, v) in &b.voices {
-                let line = crate::markup::plain(v);
-                let line = line.trim();
-                let key = name_key(line);
-                if key.is_empty() {
-                    continue;
-                }
-                let cell_row = b.body_rows.get(*at).copied().unwrap_or(b.row);
-                match seen.get(&key) {
-                    Some((first, row)) if first != line => out.add(
-                        "name-spelling",
-                        Severity::Warning,
-                        None,
-                        Some(cell_row),
-                        &[("name", line.to_string()), ("other", first.clone()), ("otherRow", row.to_string())],
-                        format!("`{line}` is written as `{first}` in row {row}"),
-                    ),
-                    Some(_) => {}
-                    None => {
-                        seen.insert(key, (line.to_string(), cell_row));
-                    }
-                }
-            }
         }
     }
 
@@ -325,7 +301,7 @@ pub fn validate(credits: &Credits, laid: &Laid, frame: Frame, measure: &dyn Meas
                     }
                 }
             }
-            Behaviour::Card | Behaviour::Title | Behaviour::Opening | Behaviour::Chapter | Behaviour::LowerThird => {
+            Behaviour::Card => {
                 let hold = secs(pg.duration) - secs(pg.fade_in) - secs(pg.fade_out);
                 if hold < MIN_CARD_HOLD_SECONDS {
                     out.add(

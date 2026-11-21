@@ -7,7 +7,6 @@ checked too.
 """
 from __future__ import annotations
 
-import importlib
 import importlib.util
 import json
 import os
@@ -15,7 +14,6 @@ import tempfile
 import unittest
 from fractions import Fraction
 from pathlib import Path
-from typing import Any
 from unittest.mock import patch
 
 from cfa4_devtools import otio_oracle as oracle
@@ -28,8 +26,8 @@ def ticks(seconds: Fraction | int) -> int:
     return int(Fraction(seconds) * TPS)
 
 
-def expected_entry(**over: Any) -> dict[str, Any]:
-    entry: dict[str, Any] = {
+def expected_entry(**over):
+    entry = {
         "file": "a.otio",
         "name": "Seq",
         "markers": 0,
@@ -44,7 +42,7 @@ def expected_entry(**over: Any) -> dict[str, Any]:
     return entry
 
 
-def observed_view(start: Fraction = Fraction(1), duration: Fraction = Fraction(2), markers: int | None = 1) -> dict[str, Any]:
+def observed_view(start=Fraction(1), duration=Fraction(2), markers=1):
     return {
         "name": "Seq",
         "markers": 0,
@@ -58,20 +56,20 @@ def observed_view(start: Fraction = Fraction(1), duration: Fraction = Fraction(2
 
 
 class CompareTests(unittest.TestCase):
-    def test_identical_views_agree(self) -> None:
+    def test_identical_views_agree(self):
         self.assertEqual(oracle.compare(expected_entry(), observed_view(), TPS), [])
 
-    def test_float_noise_below_tolerance_is_accepted(self) -> None:
+    def test_float_noise_below_tolerance_is_accepted(self):
         noisy = observed_view(start=Fraction(1) + Fraction(1, 10**8))
         self.assertEqual(oracle.compare(expected_entry(), noisy, TPS), [])
 
-    def test_one_sample_offset_is_reported(self) -> None:
+    def test_one_sample_offset_is_reported(self):
         late = observed_view(start=Fraction(1) + Fraction(1, 48_000))
         problems = oracle.compare(expected_entry(), late, TPS)
         self.assertEqual(len(problems), 1)
         self.assertIn("start", problems[0])
 
-    def test_structure_differences_are_reported(self) -> None:
+    def test_structure_differences_are_reported(self):
         obs = observed_view(markers=0)
         obs["tracks"].pop()
         obs["tracks"][0]["items"][0]["name"] = "other"
@@ -80,23 +78,23 @@ class CompareTests(unittest.TestCase):
         self.assertIn("name 'other'", problems)
         self.assertIn("0 markers, expected 1", problems)
 
-    def test_stack_items_skip_the_marker_count(self) -> None:
+    def test_stack_items_skip_the_marker_count(self):
         self.assertEqual(oracle.compare(expected_entry(), observed_view(markers=None), TPS), [])
 
 
 class ManifestTests(unittest.TestCase):
-    def write(self, directory: Path, manifest: Any) -> None:
+    def write(self, directory: Path, manifest) -> None:
         (directory / "manifest.json").write_text(json.dumps(manifest), encoding="utf-8")
 
-    def good(self) -> dict[str, Any]:
+    def good(self):
         return {"version": 1, "ticks_per_second": TPS, "fixtures": [expected_entry()]}
 
-    def test_valid_manifest_loads(self) -> None:
+    def test_valid_manifest_loads(self):
         with tempfile.TemporaryDirectory() as tmp:
             self.write(Path(tmp), self.good())
             self.assertEqual(oracle.load_manifest(Path(tmp))["ticks_per_second"], TPS)
 
-    def test_hostile_manifests_are_rejected(self) -> None:
+    def test_hostile_manifests_are_rejected(self):
         bad = [
             {**self.good(), "version": 2},
             {**self.good(), "ticks_per_second": True},
@@ -113,7 +111,7 @@ class ManifestTests(unittest.TestCase):
                 with self.assertRaises(oracle.OracleError):
                     oracle.load_manifest(Path(tmp))
 
-    def test_missing_and_broken_manifests_are_errors_not_crashes(self) -> None:
+    def test_missing_and_broken_manifests_are_errors_not_crashes(self):
         with tempfile.TemporaryDirectory() as tmp:
             with self.assertRaises(oracle.OracleError):
                 oracle.load_manifest(Path(tmp))
@@ -121,7 +119,7 @@ class ManifestTests(unittest.TestCase):
             with self.assertRaises(oracle.OracleError):
                 oracle.load_manifest(Path(tmp))
 
-    def test_missing_library_exits_with_2(self) -> None:
+    def test_missing_library_exits_with_2(self):
         with (
             patch.object(oracle, "load_otio", side_effect=oracle.OracleError("not installed")),
             tempfile.TemporaryDirectory() as tmp,
@@ -132,7 +130,7 @@ class ManifestTests(unittest.TestCase):
 @unittest.skipUnless(HAVE_OTIO, "opentimelineio is not installed")
 class OracleWithLibraryTests(unittest.TestCase):
     def build(self, directory: Path) -> None:
-        otio: Any = importlib.import_module("opentimelineio")
+        import opentimelineio as otio
 
         rate = 25
         timeline = otio.schema.Timeline(name="Seq")
@@ -149,13 +147,13 @@ class OracleWithLibraryTests(unittest.TestCase):
         manifest = {"version": 1, "ticks_per_second": TPS, "fixtures": [expected_entry()]}
         (directory / "manifest.json").write_text(json.dumps(manifest), encoding="utf-8")
 
-    def test_matching_file_passes(self) -> None:
+    def test_matching_file_passes(self):
         with tempfile.TemporaryDirectory() as tmp:
             self.build(Path(tmp))
             report = oracle.run(Path(tmp))
             self.assertEqual(report["result"], "PASS", report)
 
-    def test_shifted_clip_and_garbage_file_fail(self) -> None:
+    def test_shifted_clip_and_garbage_file_fail(self):
         with tempfile.TemporaryDirectory() as tmp:
             directory = Path(tmp)
             self.build(directory)
@@ -172,7 +170,7 @@ class OracleWithLibraryTests(unittest.TestCase):
             self.assertIn("could not process", report["fixtures"][0]["problems"][0])
 
     @unittest.skipUnless(os.environ.get("CFA4_OTIO_ORACLE_DIR"), "CFA4_OTIO_ORACLE_DIR is not set")
-    def test_cfa4_exported_fixtures_pass(self) -> None:
+    def test_cfa4_exported_fixtures_pass(self):
         report = oracle.run(Path(os.environ["CFA4_OTIO_ORACLE_DIR"]))
         self.assertEqual(report["result"], "PASS", json.dumps(report, indent=2))
 

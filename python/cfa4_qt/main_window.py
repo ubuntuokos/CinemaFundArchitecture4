@@ -80,7 +80,6 @@ from .panels.project import ProjectPanel
 from .panels.properties import PropertiesPanel
 from .panels.quick_export import QuickExport
 from .panels.readouts import ProgressPanel, TimecodePanel
-from .panels.tasks import TaskManagerPanel
 from .panels.recovery import RecoveryDialog, recovery_lines
 from .panels.reference import ReferenceMonitor
 from .panels.remix import RemixPropertiesDialog
@@ -140,7 +139,7 @@ TRACK_HEIGHT_COMMANDS = {
 }
 MAX_RESTARTS = 3
 RESTART_WINDOW_S = 60.0
-LAYOUT_VERSION = 21  # 2: Source monitor; 3: Effect Controls; 4: Properties (egui name); 5: proportional sizes; 6: Tools panel; 7: Audio Meters; 8: Info, Markers, Metadata, Project Notes, egui's groups; 9: Timecode, Progress; 10: Audio Track Mixer; 11: Audio Clip Mixer; 12: Reference Monitor; 13: Lumetri Scopes; 14: Lumetri Color; 15: Media Browser; 16: Text; 17: Essential Sound; 18: Essential Graphics; 19: Text to Speech; 20: Libraries; 21: Task Manager
+LAYOUT_VERSION = 20  # 2: Source monitor; 3: Effect Controls; 4: Properties (egui name); 5: proportional sizes; 6: Tools panel; 7: Audio Meters; 8: Info, Markers, Metadata, Project Notes, egui's groups; 9: Timecode, Progress; 10: Audio Track Mixer; 11: Audio Clip Mixer; 12: Reference Monitor; 13: Lumetri Scopes; 14: Lumetri Color; 15: Media Browser; 16: Text; 17: Essential Sound; 18: Essential Graphics; 19: Text to Speech; 20: Libraries
 # commands that can change which media an item shows, done or undone
 SOURCE_COMMANDS = frozenset({
     "media.relink", "media.replaceFootage", "media.makeOffline", "media.offlineAll", "media.autoRelink", "media.linkMedia",
@@ -167,7 +166,6 @@ DOCK_PLAN = (
     ("Reference Monitor", Qt.DockWidgetArea.LeftDockWidgetArea),
     ("Lumetri Scopes", Qt.DockWidgetArea.LeftDockWidgetArea),
     ("Progress", Qt.DockWidgetArea.LeftDockWidgetArea),
-    ("Task Manager", Qt.DockWidgetArea.LeftDockWidgetArea),
     ("Properties", Qt.DockWidgetArea.RightDockWidgetArea),
     ("Essential Graphics", Qt.DockWidgetArea.RightDockWidgetArea),
     ("Text", Qt.DockWidgetArea.RightDockWidgetArea),
@@ -347,8 +345,6 @@ class MainWindow(QMainWindow):
         self.progress = ProgressPanel(self)
         self.progress.attach_settings(self.settings)
         self.progress.poll.timeout.connect(self.update_jobs)
-        self.task_manager = TaskManagerPanel(engine, self)
-        self.task_manager.attach_settings(self.settings)
         self.mixer = TrackMixerPanel(self)
         self.mixer.transport.connect(self._mixer_transport)
         self.clip_mixer = ClipMixerPanel(self)
@@ -421,7 +417,6 @@ class MainWindow(QMainWindow):
             "Project Notes": self.notes,
             "Timecode": self.timecode_panel,
             "Progress": self.progress,
-            "Task Manager": self.task_manager,
             "Audio Track Mixer": self.mixer,
             "Audio Clip Mixer": self.clip_mixer,
             "Reference Monitor": self.reference,
@@ -477,7 +472,6 @@ class MainWindow(QMainWindow):
             self.metadata,
             self.notes,
             self.progress,
-            self.task_manager,
             self.mixer,
             self.clip_mixer,
             self.lumetri,
@@ -548,7 +542,6 @@ class MainWindow(QMainWindow):
         self.source_monitor.playhead_moved.connect(lambda _t: self.update_timecode())
         self.docks["Timecode"].visibilityChanged.connect(lambda shown: shown and self.update_timecode())
         self.docks["Progress"].visibilityChanged.connect(lambda shown: shown and self.update_jobs())
-        self.docks["Task Manager"].visibilityChanged.connect(self.task_manager.watch)
         self.docks["Audio Track Mixer"].visibilityChanged.connect(lambda shown: shown and self.update_mixer())
         self.docks["Audio Clip Mixer"].visibilityChanged.connect(lambda shown: shown and self.update_clip_mixer())
         self.docks["Lumetri Color"].visibilityChanged.connect(lambda shown: shown and self.update_lumetri())
@@ -608,8 +601,7 @@ class MainWindow(QMainWindow):
         win.tabifyDockWidget(d["History"], d["Project Notes"])
         win.tabifyDockWidget(d["Project Notes"], d["Timecode"])
         win.tabifyDockWidget(d["Timecode"], d["Progress"])
-        win.tabifyDockWidget(d["Progress"], d["Task Manager"])
-        for closed in ("Project Notes", "Timecode", "Progress", "Task Manager"):  # opened from the Window menu
+        for closed in ("Project Notes", "Timecode", "Progress"):  # opened from the Window menu
             d[closed].hide()
         win.splitDockWidget(d["Tools"], d["Timeline"], Qt.Orientation.Horizontal)  # Tools left of it
         win.splitDockWidget(d["Timeline"], d["Audio Meters"], Qt.Orientation.Horizontal)
@@ -1732,12 +1724,10 @@ class MainWindow(QMainWindow):
         if error:
             self.events.log(text, error=True)
 
-    def open_settings(self, page: str = "general", section: str = "") -> PreferencesDialog:
-        """Edit ▸ Preferences ▸ <category> (egui's ``app.settings.<category>``). ``section`` is an
-        object name on that page (Window ▸ MIDI Monitor, Window ▸ Learn Assignments)."""
+    def open_settings(self, page: str = "general") -> PreferencesDialog:
+        """Edit ▸ Preferences ▸ <category> (egui's ``app.settings.<category>``)."""
         self.refresh_timecode_devices()  # for the next opening too: the reply comes after this one
-        dialog = PreferencesDialog(self, self.engine, page, devices=self.audio_devices, memory=self.memory_usage,
-                                   commands=self.surface_commands, section=section)
+        dialog = PreferencesDialog(self, self.engine, page, devices=self.audio_devices, memory=self.memory_usage)
         dialog.applied.connect(self._settings_applied)
         dialog.setAttribute(Qt.WidgetAttribute.WA_DeleteOnClose)
         self.settings_dialog = dialog
@@ -2005,8 +1995,6 @@ class MainWindow(QMainWindow):
             self.schedule_refresh()
         elif kind == "revealInProject":
             self.docks["Project"].raise_()
-        elif kind == "surfaceAction":
-            self.run_surface_action(ev)
 
     # ----- state refresh -----
     def schedule_refresh(self) -> None:
@@ -2311,75 +2299,6 @@ class MainWindow(QMainWindow):
     def command_enabled(self, cid: str) -> bool:
         cmd = self.registry.commands.get(cid)
         return cmd is not None and cmd.enabled
-
-    # ----- control surfaces (Settings ▸ Control Surfaces ▸ Assignments) -----
-    def surface_commands(self) -> list[tuple[str, str]]:
-        """(id, label) of the commands a control surface button can run: the engine's that need no
-        parameters and the ones the Qt GUI runs itself (transport, docking, …)."""
-        out = {cid: tr(cmd.label) for cid, cmd in self.registry.commands.items() if not cmd.needs_params}
-        for cid, label, _menu, _key in self.local_commands():
-            out.setdefault(cid, tr(label))
-        return list(out.items())
-
-    def run_surface_action(self, ev: dict[str, Any]) -> None:
-        """A control surface button was pressed (``surfaceAction``): run its command as its key
-        would (a disabled command does nothing)."""
-        cid = str(ev.get("command") or "")
-        params = ev.get("params") if isinstance(ev.get("params"), dict) else {}
-        if cid in ("mixer.stripVolume", "mixer.stripPan"):
-            # a fader or knob: the Audio Track Mixer strip follows it
-            lane = "volume" if cid == "mixer.stripVolume" else "pan"
-            strip = str(params.get("strip") or "")
-            try:
-                if "delta" in params:
-                    # an endless encoder: a step from where the strip is now
-                    self.mixer.surface_value(lane, strip, None, float(params["delta"]))
-                else:
-                    self.mixer.surface_value(lane, strip, float(params.get("value")))
-            except (TypeError, ValueError):
-                return
-            return
-        if cid in ("playback.shuttleSpeed", "playhead.stepForward", "playhead.stepBack") and self.surface_trim(cid, params):
-            return
-        if cid == "playback.shuttleSpeed":
-            # the shuttle ring: a speed rather than a key's step (spec §4)
-            try:
-                speed = float(params.get("speed") or 0)
-            except (TypeError, ValueError):
-                return
-            monitor = self.focused_monitor()
-            monitor.surface_shuttle_mute = params.get("sound") == "mute"
-            monitor.shuttle_to(speed)
-            return
-        local = self.registry.local_actions.get(cid)
-        if local is not None and not params:
-            local.trigger()
-            return
-        cmd = self.registry.commands.get(cid)
-        if cmd is None:
-            self.statusBar().showMessage(fmt("A control surface asked for {command}, which does not exist.", command=cid), 5000)
-            return
-        if not cmd.enabled:
-            return
-        self.run_menu_command(cid, params)
-
-    def surface_trim(self, cid: str, params: dict[str, Any]) -> bool:
-        """Trim mode (as J/K/L): the shuttle ring trims dynamically at its speed, a jog click
-        nudges the edit point one frame (spec §4). False when not in trim mode."""
-        if self.focused_monitor() is self.source_monitor or not self.trim_mode():
-            return False
-        trim = self.monitor.trim
-        if cid == "playback.shuttleSpeed":
-            try:
-                speed = float(params.get("speed") or 0)
-            except (TypeError, ValueError):
-                return True
-            if speed:
-                self.monitor.stop()
-            trim.ring(speed)
-        else:
-            trim.command.emit("trim.nudge", {"frames": 1 if cid == "playhead.stepForward" else -1})
-        return True
 
     def run_menu_command(self, cid: str, params: dict[str, Any]) -> None:
         if params:

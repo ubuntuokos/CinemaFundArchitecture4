@@ -160,8 +160,6 @@ pub struct SyncStatus {
     pub mtc_out_running: bool,
     pub error: Option<String>,
     pub warning: Option<String>,
-    /// The user bits of the LTC being read (group 1 in the low nibble).
-    pub user_bits: Option<u32>,
 }
 
 struct Slot<C> {
@@ -199,7 +197,6 @@ pub struct SyncManager<B: Backend> {
     ltc_out: Slot<LtcOutputConfig>,
     mtc: Slot<MtcConfig>,
     input_error: Option<String>,
-    user_bits: Option<u32>,
     /// A locate was sent at this time and the player has not reported since.
     locate_sent: Option<Tick>,
 }
@@ -219,7 +216,6 @@ impl<B: Backend> SyncManager<B> {
             ltc_out: Slot::default(),
             mtc: Slot::default(),
             input_error: None,
-            user_bits: None,
             locate_sent: None,
         }
     }
@@ -241,11 +237,7 @@ impl<B: Backend> SyncManager<B> {
         match (s.chase, self.chase.as_mut()) {
             (None, _) => self.chase = None,
             (Some(cfg), Some(c)) if c.config().rate == cfg.rate => c.set_config(cfg),
-            (Some(cfg), _) => {
-                let mut c = Chase::new(cfg);
-                c.set_player_speed(lock(&self.transport).speed);
-                self.chase = Some(c);
-            }
+            (Some(cfg), _) => self.chase = Some(Chase::new(cfg)),
         }
         let tx = self.tx.clone();
         let transport = self.transport.clone();
@@ -257,7 +249,6 @@ impl<B: Backend> SyncManager<B> {
             // frames from a closed input must not reach the new chase
             while self.rx.try_recv().is_ok() {}
             self.input_error = None;
-            self.user_bits = None;
         }
         self.settings = Some(s);
     }
@@ -265,13 +256,8 @@ impl<B: Backend> SyncManager<B> {
     /// The player's transport, as it reports it.
     pub fn set_transport(&mut self, playing: bool, position: Tick, speed: f64) {
         let at = self.clock.now();
-        let speed = if speed.is_finite() { speed } else { 1.0 };
-        *lock(&self.transport) = Transport { playing, position, at, speed };
+        *lock(&self.transport) = Transport { playing, position, at, speed: if speed.is_finite() { speed } else { 1.0 } };
         self.locate_sent = None;
-        // varispeed: the chase sends a new speed only when it differs from the player's
-        if let Some(c) = self.chase.as_mut() {
-            c.set_player_speed(speed);
-        }
     }
 
     pub fn transport(&self) -> Transport {
@@ -288,7 +274,6 @@ impl<B: Backend> SyncManager<B> {
         }
         let tr = self.transport();
         let Some(chase) = self.chase.as_mut() else {
-            self.user_bits = None;
             return out;
         };
         let offset = chase.config().offset;
@@ -301,11 +286,7 @@ impl<B: Backend> SyncManager<B> {
                     }
                 }
                 Input::Error(e) => self.input_error = Some(e),
-                Input::UserBits(u) => self.user_bits = Some(u),
             }
-        }
-        if chase.status().state == ChaseState::NoSignal {
-            self.user_bits = None;
         }
         chase.tick(now, tr.playing.then(|| tr.position_at(now)), &mut out);
         // only the latest locate counts
@@ -341,7 +322,6 @@ impl<B: Backend> SyncManager<B> {
             mtc_out_running: s.is_some_and(|s| s.generate_mtc) && self.mtc.dev.as_ref().is_some_and(|d| d.error().is_none()),
             error: (!error.is_empty()).then(|| error.join("; ")),
             warning,
-            user_bits: self.user_bits,
         }
     }
 
@@ -466,38 +446,6 @@ mod tests {
         assert!(m.poll().is_empty());
         m.set_transport(true, Tick::from_units(10, 1), 1.0);
         assert_eq!(m.transport().speed, 1.0);
-    }
-
-    #[test]
-    fn varispeed_speeds_pass_through_and_user_bits_show_in_the_status() {
-        let mut m = SyncManager::new(Fake::default());
-        let mut s = settings();
-        if let Some(c) = s.chase.as_mut() {
-            c.varispeed = true;
-        }
-        m.apply(s);
-        let tx = m.backend.tx.clone().expect("input opened");
-        let frame = FrameRate::FPS_25.frame_duration().0;
-        let start = Tick(m.clock.now().0 - 3 * frame);
-        for k in 0..3 {
-            let _ = tx.send(Input::Frame(Observation { at: Tick(start.0 + k * frame), position: Tick(Tick::from_units(10, 1).0 + k * frame) }));
-        }
-        let _ = tx.send(Input::UserBits(0x8765_4321));
-        assert!(matches!(m.poll().as_slice(), [ChaseAction::Locate { play: true, .. }]));
-        assert_eq!(m.status().user_bits, Some(0x8765_4321));
-        // the player plays from two frames behind: a faster speed, not another locate
-        let now = m.clock.now();
-        let behind = Tick(Tick::from_units(10, 1).0 + 3 * frame + (now.0 - start.0 - 3 * frame) - 2 * frame);
-        m.set_transport(true, behind, 1.0);
-        let a = m.poll();
-        assert!(matches!(a.as_slice(), [ChaseAction::Speed { speed }] if *speed > 1.0), "{a:?}");
-        // the player took the speed: nothing more to send
-        m.set_transport(true, behind, if let [ChaseAction::Speed { speed }] = a.as_slice() { *speed } else { 1.0 });
-        assert!(m.poll().iter().all(|a| !matches!(a, ChaseAction::Speed { .. })));
-        // turning chase off forgets the user bits
-        m.apply(SyncSettings { generate_ltc: true, ..SyncSettings::off(ExternalRate::new(FrameRate::FPS_25, false)) });
-        m.poll();
-        assert_eq!(m.status().user_bits, None);
     }
 
     #[test]

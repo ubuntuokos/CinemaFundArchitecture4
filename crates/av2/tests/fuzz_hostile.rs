@@ -23,19 +23,6 @@ impl Rng {
 
 /// Temporal delimiter, a 64x64 Main_420_10_IP0 sequence header and a small tile group, Annex B.
 fn synthetic_stream() -> Vec<u8> {
-    // all-zero tool syntax: try lengths until the header ends exactly at its trailing bits
-    let seq = (0..400).map(sequence_payload).find(|p| SequenceHeader::parse(p).is_ok()).unwrap();
-    let mut s = vec![0x01, 0x08];
-    s.push(u8::try_from(seq.len() + 1).unwrap());
-    s.push(0x04);
-    s.extend_from_slice(&seq);
-    s.extend_from_slice(&[0x05, 7 << 2, 0x12, 0x34, 0x56, 0x78]);
-    s
-}
-
-/// A 64x64 4:2:0 10-bit sequence header with `tool_bits` zero bits after the cropping window,
-/// `obu_extension_flag` 0 and the trailing bits.
-fn sequence_payload(tool_bits: usize) -> Vec<u8> {
     let mut w = BitWriter::new();
     w.write_ue(0); // seq_header_id
     w.write_bits(0, 5); // seq_profile_idc
@@ -53,13 +40,14 @@ fn sequence_payload(tool_bits: usize) -> Vec<u8> {
     w.write_bits(63, 8);
     w.write_bits(63, 8);
     w.write_bit(false); // seq_cropping_window_present_flag
-    for _ in 0..tool_bits {
-        w.write_bit(false);
-    }
-    w.write_bit(false); // obu_extension_flag
-    w.write_bit(true); // trailing one bit
     w.align_zero();
-    w.finish()
+    let seq = w.finish();
+    let mut s = vec![0x01, 0x08];
+    s.push(u8::try_from(seq.len() + 1).unwrap());
+    s.push(0x04);
+    s.extend_from_slice(&seq);
+    s.extend_from_slice(&[0x05, 7 << 2, 0x12, 0x34, 0x56, 0x78]);
+    s
 }
 
 /// Everything a hostile stream can reach in this crate.
@@ -129,8 +117,7 @@ fn corpus_streams_survive_mutation() {
     }
 }
 
-/// The sequence headers of the AVM conformance corpus parse completely, to the geometry and tools
-/// they were encoded with.
+/// The sequence headers of the AVM conformance corpus parse to the geometry it was encoded with.
 #[test]
 fn corpus_sequence_headers() {
     let corpus = corpus();
@@ -143,13 +130,6 @@ fn corpus_sequence_headers() {
         let h = &info.sequence_header;
         let (w, ht) = h.cropped_size().unwrap();
         eprintln!("{name}: {:?} {:?} {}-bit {}x{} (max {}x{})", h.profile, h.chroma_format, h.bit_depth, w, ht, h.max_frame_width, h.max_frame_height);
-        // the whole tool syntax was read: parse() checks that the trailing bits follow it
-        let t = &h.tools;
-        assert_eq!(t.film_grain_params_present, name.contains("film-grain"), "{name}");
-        if name.contains("tiles-2x2") {
-            let tiles = t.seq_tile_info.as_ref().map(|i| (i.params.tile_cols, i.params.tile_rows));
-            assert_eq!(tiles, Some((2, 2)), "{name}");
-        }
         let bits = if name.contains("10bit") { 10 } else { 8 };
         assert_eq!(h.bit_depth, bits, "{name}");
         let chroma = format!("{:?}", h.chroma_format);

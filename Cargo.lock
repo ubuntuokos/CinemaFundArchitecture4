@@ -97,8 +97,8 @@ dependencies = [
  "accesskit_consumer 0.35.0",
  "hashbrown 0.16.1",
  "static_assertions",
- "windows",
- "windows-core",
+ "windows 0.62.2",
+ "windows-core 0.62.2",
 ]
 
 [[package]]
@@ -192,18 +192,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "alsa"
-version = "0.10.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "7c88dbbce13b232b26250e1e2e6ac18b6a891a646b8148285036ebce260ac5c3"
-dependencies = [
- "alsa-sys",
- "bitflags 2.13.2",
- "cfg-if",
- "libc",
-]
-
-[[package]]
 name = "alsa-sys"
 version = "0.3.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -246,23 +234,6 @@ checksum = "ae221649c9976a6f6c56ae1facf410f3ddb33cc661c4b7b61020a912d4237fbc"
 dependencies = [
  "libc",
 ]
-
-[[package]]
-name = "annotate-snippets"
-version = "0.12.18"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "0258346f92c78dbc5b336b9a5b27c64447aa10643bc64e651db2edb145361564"
-dependencies = [
- "anstyle",
- "memchr",
- "unicode-width",
-]
-
-[[package]]
-name = "anstyle"
-version = "1.0.14"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "940b3a0ca603d1eade50a4846a2afffd5ef57a9feac2c0e2ec2e14f9ead76000"
 
 [[package]]
 name = "anyhow"
@@ -315,12 +286,6 @@ dependencies = [
  "quote",
  "syn 2.0.119",
 ]
-
-[[package]]
-name = "arraydeque"
-version = "0.5.1"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "7d902e3d592a523def97af8f317b08ce16b7ab854c1985a0c671e6f15cebc236"
 
 [[package]]
 name = "arrayvec"
@@ -592,6 +557,12 @@ name = "base64"
 version = "0.13.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "9e1b586273c5702936fe7b7d6896644d8be71e6314cfe09d3167c95f712589e8"
+
+[[package]]
+name = "base64"
+version = "0.22.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "72b3254f16251a8381aa12e40e3c4d2f0199f8c6508fbecb9d91f575e0fbb8c6"
 
 [[package]]
 name = "base64"
@@ -1064,15 +1035,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "cfa4-atracenc"
-version = "0.10.0"
-dependencies = [
- "cfa4-realaudio",
- "cfa4-testkit",
- "thiserror 2.0.21",
-]
-
-[[package]]
 name = "cfa4-audio-dsp"
 version = "0.10.0"
 dependencies = [
@@ -1128,6 +1090,14 @@ name = "cfa4-avi"
 version = "0.10.0"
 dependencies = [
  "cfa4-testkit",
+]
+
+[[package]]
+name = "cfa4-avs2"
+version = "0.10.0"
+dependencies = [
+ "cfa4-testkit",
+ "thiserror 2.0.21",
 ]
 
 [[package]]
@@ -1190,32 +1160,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "cfa4-cinema-acceptance"
-version = "0.10.0"
-dependencies = [
- "cfa4-cinema-pkg",
- "cfa4-export",
- "cfa4-media",
- "cfa4-project",
- "cfa4-render",
- "cfa4-time",
- "chrono",
-]
-
-[[package]]
-name = "cfa4-cinema-pkg"
-version = "0.10.0"
-dependencies = [
- "chrono",
- "roxmltree",
- "serde",
- "serde_json",
- "sha1",
- "sha2 0.11.1",
- "thiserror 2.0.21",
-]
-
-[[package]]
 name = "cfa4-cli"
 version = "0.10.0"
 dependencies = [
@@ -1239,8 +1183,6 @@ dependencies = [
  "cfa4-render",
  "cfa4-route",
  "cfa4-scopes",
- "cfa4-surface",
- "cfa4-surface-model",
  "cfa4-tcsync",
  "cfa4-tcsync-io",
  "cfa4-testkit",
@@ -1265,6 +1207,7 @@ dependencies = [
  "cfa4-av1",
  "cfa4-av2",
  "cfa4-avi",
+ "cfa4-avs2",
  "cfa4-avs3",
  "cfa4-bitstream",
  "cfa4-canopus",
@@ -1287,9 +1230,7 @@ dependencies = [
  "cfa4-ilbc",
  "cfa4-isobmff",
  "cfa4-j2k",
- "cfa4-lagarith",
  "cfa4-lcevc",
- "cfa4-magicyuv",
  "cfa4-matroska",
  "cfa4-media",
  "cfa4-mpa",
@@ -1303,10 +1244,8 @@ dependencies = [
  "cfa4-realaudio",
  "cfa4-realmedia",
  "cfa4-realvideo",
- "cfa4-shorten",
  "cfa4-speex",
  "cfa4-sstp",
- "cfa4-tak",
  "cfa4-testkit",
  "cfa4-time",
  "cfa4-truehd",
@@ -1349,7 +1288,7 @@ dependencies = [
 name = "cfa4-dcp"
 version = "0.10.0"
 dependencies = [
- "base64 0.23.1",
+ "base64 0.22.1",
  "chrono",
  "roxmltree",
  "rsa",
@@ -1390,7 +1329,6 @@ dependencies = [
  "cfa4-render",
  "cfa4-time",
  "chrono",
- "roxmltree",
  "serde",
  "serde_json",
  "thiserror 2.0.21",
@@ -1473,8 +1411,7 @@ dependencies = [
 name = "cfa4-engine"
 version = "0.10.0"
 dependencies = [
- "base64 0.23.1",
- "cfa4-atracenc",
+ "base64 0.22.1",
  "cfa4-audio-dsp",
  "cfa4-auro",
  "cfa4-captions",
@@ -1504,11 +1441,9 @@ dependencies = [
  "cfa4-qc",
  "cfa4-render",
  "cfa4-route",
- "cfa4-sandbox",
  "cfa4-scopes",
  "cfa4-smart-edit",
  "cfa4-speech",
- "cfa4-surface-model",
  "cfa4-tcsync",
  "cfa4-testkit",
  "cfa4-text",
@@ -1829,14 +1764,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "cfa4-lagarith"
-version = "0.10.0"
-dependencies = [
- "cfa4-testkit",
- "thiserror 2.0.21",
-]
-
-[[package]]
 name = "cfa4-lcevc"
 version = "0.10.0"
 
@@ -1844,18 +1771,9 @@ version = "0.10.0"
 name = "cfa4-live"
 version = "0.10.0"
 dependencies = [
- "base64 0.23.1",
+ "base64 0.22.1",
  "serde_json",
  "sha2 0.10.9",
-]
-
-[[package]]
-name = "cfa4-magicyuv"
-version = "0.10.0"
-dependencies = [
- "cfa4-avi",
- "cfa4-testkit",
- "thiserror 2.0.21",
 ]
 
 [[package]]
@@ -1938,7 +1856,6 @@ dependencies = [
  "cfa4-testkit",
  "chrono",
  "hmac",
- "roxmltree",
  "sha1",
 ]
 
@@ -1946,10 +1863,8 @@ dependencies = [
 name = "cfa4-obs"
 version = "0.10.0"
 dependencies = [
- "cfa4-st2110",
- "libloading 0.9.0",
+ "libloading 0.8.9",
  "log",
- "rayon",
  "serde",
  "serde_json",
  "thiserror 2.0.21",
@@ -2072,8 +1987,6 @@ dependencies = [
  "cfa4-color",
  "cfa4-frame",
  "cfa4-geom",
- "cfa4-h264",
- "cfa4-h264enc",
  "cfa4-media",
  "cfa4-project",
  "cfa4-text",
@@ -2096,32 +2009,12 @@ dependencies = [
 ]
 
 [[package]]
-name = "cfa4-sandbox"
-version = "0.10.0"
-dependencies = [
- "landlock",
- "libc",
- "seccompiler",
- "serde",
- "serde_json",
- "thiserror 2.0.21",
-]
-
-[[package]]
 name = "cfa4-scopes"
 version = "0.10.0"
 dependencies = [
  "cfa4-color",
  "serde",
  "serde_json",
-]
-
-[[package]]
-name = "cfa4-shorten"
-version = "0.10.0"
-dependencies = [
- "cfa4-testkit",
- "thiserror 2.0.21",
 ]
 
 [[package]]
@@ -2194,43 +2087,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "cfa4-surface"
-version = "0.10.0"
-dependencies = [
- "alsa 0.9.1",
- "cfa4-surface-model",
- "rustix 1.1.6",
- "serde",
- "serde_json",
-]
-
-[[package]]
-name = "cfa4-surface-catalog"
-version = "0.10.0"
-dependencies = [
- "serde",
- "serde-saphyr",
- "thiserror 2.0.21",
- "toml",
-]
-
-[[package]]
-name = "cfa4-surface-model"
-version = "0.10.0"
-dependencies = [
- "serde",
- "serde_json",
-]
-
-[[package]]
-name = "cfa4-tak"
-version = "0.10.0"
-dependencies = [
- "cfa4-testkit",
- "thiserror 2.0.21",
-]
-
-[[package]]
 name = "cfa4-tcsync"
 version = "0.10.0"
 dependencies = [
@@ -2241,7 +2097,7 @@ dependencies = [
 name = "cfa4-tcsync-io"
 version = "0.10.0"
 dependencies = [
- "alsa 0.9.1",
+ "alsa",
  "cfa4-tcsync",
  "cfa4-time",
  "cpal",
@@ -2264,8 +2120,8 @@ name = "cfa4-text"
 version = "0.10.0"
 dependencies = [
  "cfa4-color",
- "harfrust 0.16.0",
- "skrifa 0.50.0",
+ "harfrust 0.15.0",
+ "skrifa 0.49.0",
  "tempfile",
  "unicode-bidi",
  "unicode-linebreak",
@@ -2647,11 +2503,11 @@ dependencies = [
 
 [[package]]
 name = "cpal"
-version = "0.17.1"
+version = "0.16.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "5b1f9c7312f19fc2fa12fd7acaf38de54e8320ba10d1a02dcbe21038def51ccb"
+checksum = "cbd307f43cc2a697e2d1f8bc7a1d824b5269e052209e28883e5bc04d095aaa3f"
 dependencies = [
- "alsa 0.10.0",
+ "alsa",
  "coreaudio-rs",
  "dasp_sample",
  "jni 0.21.1",
@@ -2662,17 +2518,13 @@ dependencies = [
  "ndk-context",
  "num-derive",
  "num-traits",
- "objc2 0.6.4",
  "objc2-audio-toolbox",
- "objc2-avf-audio",
  "objc2-core-audio",
  "objc2-core-audio-types",
- "objc2-core-foundation",
- "objc2-foundation 0.3.2",
  "wasm-bindgen",
  "wasm-bindgen-futures",
  "web-sys",
- "windows",
+ "windows 0.54.0",
 ]
 
 [[package]]
@@ -3199,29 +3051,6 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "52c8d4141cf0f60fb2f7aefaf352d3ffa5171ef0ab09731c64391801e95e48f1"
 dependencies = [
  "bytemuck",
-]
-
-[[package]]
-name = "encoding_rs"
-version = "0.8.44"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "89253175e704ab869b04f9db224d38630e0211a53841a79181deae0889e169f5"
-dependencies = [
- "cfg-if",
- "core_detect",
- "multiversion_no_op",
- "rustversion",
- "scopeguard",
- "simdutf8",
-]
-
-[[package]]
-name = "encoding_rs_io"
-version = "0.1.8"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "fba3fe847045ecff794b9c138293a80db914678c453ad63fbf0c6a9eb6e00b22"
-dependencies = [
- "encoding_rs",
 ]
 
 [[package]]
@@ -4003,17 +3832,7 @@ dependencies = [
  "log",
  "presser",
  "thiserror 2.0.21",
- "windows",
-]
-
-[[package]]
-name = "granit-parser"
-version = "2.1.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "05f05586d4d4df3d47123207826c40b252728b438a1a07bad3c01ee6bea401df"
-dependencies = [
- "arraydeque",
- "smallvec",
+ "windows 0.62.2",
 ]
 
 [[package]]
@@ -4236,13 +4055,13 @@ dependencies = [
 
 [[package]]
 name = "harfrust"
-version = "0.16.0"
+version = "0.15.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "741c9cd8fb2f39c393366b9cf13e8c31ad6adbbd9d817f0a18fe47cff36a3cca"
+checksum = "865dcc4105d51c323d8fedbb2d75b5e9c8ecddf5613f74c82f851d0afbc97114"
 dependencies = [
  "bitflags 2.13.2",
  "bytemuck",
- "read-fonts 0.47.0",
+ "read-fonts 0.46.0",
  "smallvec",
  "yoke",
 ]
@@ -4339,7 +4158,7 @@ dependencies = [
  "js-sys",
  "log",
  "wasm-bindgen",
- "windows-core",
+ "windows-core 0.62.2",
 ]
 
 [[package]]
@@ -4720,17 +4539,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "landlock"
-version = "0.4.7"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "4cca98e95f35b29d469dade6724c6f96cec9236640f745a0e99b0334ec320ab1"
-dependencies = [
- "enumflags2",
- "libc",
- "thiserror 2.0.21",
-]
-
-[[package]]
 name = "lazy_static"
 version = "1.5.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -4744,9 +4552,9 @@ checksum = "7a79a3332a6609480d7d0c9eab957bca6b455b91bb84e66d19f5ff66294b85b8"
 
 [[package]]
 name = "libc"
-version = "0.2.191"
+version = "0.2.189"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "65cd87c9a6d60536580b316ad985726104730a5151c99845f2490428ef91240a"
+checksum = "3eaf3ede3fee6db1a4c2ee091bf8a8b4dccdc6d17f656fb07896ee72867612f2"
 
 [[package]]
 name = "libfuzzer-sys"
@@ -4852,9 +4660,9 @@ dependencies = [
 
 [[package]]
 name = "mach2"
-version = "0.5.0"
+version = "0.4.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "6a1b95cd5421ec55b445b5ae102f5ea0e768de1f82bd3001e11f426c269c3aea"
+checksum = "d640282b302c0bb0a2a8e0233ead9035e3bed871f0b7e81fe4a1ec829765db44"
 dependencies = [
  "libc",
 ]
@@ -4994,12 +4802,6 @@ name = "muldiv"
 version = "1.0.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "956787520e75e9bd233246045d19f42fb73242759cc57fba9611d940ae96d4b0"
-
-[[package]]
-name = "multiversion_no_op"
-version = "1.0.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "743fb55ba31b18fb1ecef6bdc9aa2743314978ac084044301a7eee33fb99a20d"
 
 [[package]]
 name = "naga"
@@ -5307,16 +5109,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "objc2-avf-audio"
-version = "0.3.2"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "13a380031deed8e99db00065c45937da434ca987c034e13b87e4441f9e4090be"
-dependencies = [
- "objc2 0.6.4",
- "objc2-foundation 0.3.2",
-]
-
-[[package]]
 name = "objc2-cloud-kit"
 version = "0.2.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -5350,7 +5142,6 @@ dependencies = [
  "objc2 0.6.4",
  "objc2-core-audio-types",
  "objc2-core-foundation",
- "objc2-foundation 0.3.2",
 ]
 
 [[package]]
@@ -5382,9 +5173,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "2a180dd8642fa45cdb7dd721cd4c11b1cadd4929ce112ebd8b9f5803cc79d536"
 dependencies = [
  "bitflags 2.13.2",
- "block2 0.6.2",
  "dispatch2",
- "libc",
  "objc2 0.6.4",
 ]
 
@@ -5452,7 +5241,6 @@ checksum = "e3e0adef53c21f888deb4fa59fc59f7eb17404926ee8a6f59f5df0fd7f9f3272"
 dependencies = [
  "bitflags 2.13.2",
  "block2 0.6.2",
- "libc",
  "objc2 0.6.4",
  "objc2-core-foundation",
 ]
@@ -6316,9 +6104,9 @@ dependencies = [
 
 [[package]]
 name = "read-fonts"
-version = "0.47.0"
+version = "0.46.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "a39d2f8f681030a7bcbbcf3e8568775ac2393afd51401a2e2133ee89e3953897"
+checksum = "bdaa4fffe9ff3ca2c353fa9729792805b9b3e324695ff5a081f860612e81b330"
 dependencies = [
  "bytemuck",
  "foldhash",
@@ -6794,15 +6582,6 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "94143f37725109f92c262ed2cf5e59bce7498c01bcc1502d7b9afe439a4e9f49"
 
 [[package]]
-name = "seccompiler"
-version = "0.5.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "a4ae55de56877481d112a559bbc12667635fdaf5e005712fd4e2b2fa50ffc884"
-dependencies = [
- "libc",
-]
-
-[[package]]
 name = "security-framework"
 version = "3.7.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -6851,23 +6630,6 @@ checksum = "4148590afebada386688f18773da617792bf2ef03ffc1e4cbd2b1d45b023e0ba"
 dependencies = [
  "serde_core",
  "serde_derive",
-]
-
-[[package]]
-name = "serde-saphyr"
-version = "2.1.1"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "d43fb82d550b07e6f929a58d7d0935182602f48ddead875f5ee313c41c8f07fe"
-dependencies = [
- "annotate-snippets",
- "base64 0.23.1",
- "encoding_rs_io",
- "granit-parser",
- "nohash-hasher",
- "num-traits",
- "serde_core",
- "smallvec",
- "zmij",
 ]
 
 [[package]]
@@ -7052,13 +6814,13 @@ dependencies = [
 
 [[package]]
 name = "skrifa"
-version = "0.50.0"
+version = "0.49.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "e85ba678a6023a063d0a78c8770f1c166674ef46af13523d05eff67430f79dfe"
+checksum = "a7459fb60888ad9a5f367dd293fa2fb9df142cb451aa6bfd6cd66a7d6a9b739d"
 dependencies = [
  "bytemuck",
  "once_cell",
- "read-fonts 0.47.0",
+ "read-fonts 0.46.0",
  "smallvec",
  "yoke",
 ]
@@ -8179,9 +7941,9 @@ checksum = "a28ac98ddc8b9274cb41bb4d9d4d5c425b6020c50c46f25559911905610b4a88"
 
 [[package]]
 name = "wgpu"
-version = "30.0.2"
+version = "30.0.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "146fc3d654250e6207921a66c87534c621bc886c70df83dcf466c1d66813810e"
+checksum = "527ccdf43dd5b2e8676eed9984ce00e2bbb0a1b85b70c1969dcb6cd2eb55ab9e"
 dependencies = [
  "arrayvec",
  "bitflags 2.13.2",
@@ -8329,9 +8091,9 @@ dependencies = [
  "web-sys",
  "wgpu-naga-bridge",
  "wgpu-types",
- "windows",
- "windows-core",
- "windows-result",
+ "windows 0.62.2",
+ "windows-core 0.62.2",
+ "windows-result 0.4.1",
 ]
 
 [[package]]
@@ -8371,12 +8133,22 @@ dependencies = [
 
 [[package]]
 name = "windows"
+version = "0.54.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "9252e5725dbed82865af151df558e754e4a3c2c30818359eb17465f1346a1b49"
+dependencies = [
+ "windows-core 0.54.0",
+ "windows-targets 0.52.6",
+]
+
+[[package]]
+name = "windows"
 version = "0.62.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "527fadee13e0c05939a6a05d5bd6eec6cd2e3dbd648b9f8e447c6518133d8580"
 dependencies = [
  "windows-collections",
- "windows-core",
+ "windows-core 0.62.2",
  "windows-future",
  "windows-numerics",
 ]
@@ -8387,7 +8159,17 @@ version = "0.3.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "23b2d95af1a8a14a3c7367e1ed4fc9c20e0a26e79551b1454d72583c97cc6610"
 dependencies = [
- "windows-core",
+ "windows-core 0.62.2",
+]
+
+[[package]]
+name = "windows-core"
+version = "0.54.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "12661b9c89351d684a50a8a643ce5f608e20243b9fb84687800163429f161d65"
+dependencies = [
+ "windows-result 0.1.2",
+ "windows-targets 0.52.6",
 ]
 
 [[package]]
@@ -8399,7 +8181,7 @@ dependencies = [
  "windows-implement",
  "windows-interface",
  "windows-link",
- "windows-result",
+ "windows-result 0.4.1",
  "windows-strings",
 ]
 
@@ -8409,7 +8191,7 @@ version = "0.3.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "e1d6f90251fe18a279739e78025bd6ddc52a7e22f921070ccdc67dde84c605cb"
 dependencies = [
- "windows-core",
+ "windows-core 0.62.2",
  "windows-link",
  "windows-threading",
 ]
@@ -8448,8 +8230,17 @@ version = "0.3.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "6e2e40844ac143cdb44aead537bbf727de9b044e107a0f1220392177d15b0f26"
 dependencies = [
- "windows-core",
+ "windows-core 0.62.2",
  "windows-link",
+]
+
+[[package]]
+name = "windows-result"
+version = "0.1.2"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "5e383302e8ec8515204254685643de10811af0ed97ea37210dc26fb0032647f8"
+dependencies = [
+ "windows-targets 0.52.6",
 ]
 
 [[package]]

@@ -275,25 +275,6 @@ fn pressing_l_again_doubles_speed_and_j_reverses() {
 }
 
 #[test]
-fn a_shuttle_ring_sets_the_dynamic_trim_speed_outright() {
-    let mut s = demo();
-    let (left, cut) = select_first_cut(&mut s, "roll");
-    let rate = s.sequence_rate();
-    let r = s.execute("trim.shuttle", json!({"direction": "forward", "speed": 1.5, "clock": 0.0})).unwrap();
-    assert_eq!(r["speed"], json!(1.5));
-    // the same position again keeps the speed (a key press would double it)
-    let r = s.execute("trim.shuttle", json!({"direction": "forward", "speed": 1.5, "clock": 0.0})).unwrap();
-    assert_eq!(r["speed"], json!(1.5));
-    let r = s.execute("trim.shuttle", json!({"direction": "reverse", "speed": 20.0, "clock": 0.0})).unwrap();
-    assert_eq!(r["speed"], json!(-8.0), "at most 8×");
-    let r = s.execute("trim.shuttle", json!({"direction": "forward", "speed": 0.5, "clock": 0.0})).unwrap();
-    assert_eq!(r["speed"], json!(0.5));
-    s.execute("trim.tick", json!({"clock": 2.0})).unwrap();
-    assert_eq!(v1(&s).into_iter().find(|c| c.0 == left).unwrap().2, cut + rate.tick_of(frames(&s, 1.0)));
-    s.execute("trim.shuttleStop", json!({"clock": 2.0})).unwrap();
-}
-
-#[test]
 fn dynamic_ripple_backward_shortens_and_stops_at_a_limit() {
     let mut s = demo();
     let (clip, end0) = select_first_cut(&mut s, "ripple");

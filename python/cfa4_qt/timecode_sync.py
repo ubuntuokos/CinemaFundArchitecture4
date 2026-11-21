@@ -1,8 +1,7 @@
 """External timecode sync in the Qt GUI (plan TC-6): the Program monitor's transport goes to the
 engine (``timecodeSync.transport``), whose LTC and MIDI Timecode outputs follow it; the engine's
 ``timecodeSync.locate`` / ``timecodeSync.stop`` events move the monitor when it chases an external
-clock, and ``timecodeSync.speed`` (varispeed, plan TC-8) nudges its playback speed; a status-bar
-label shows the chase state, the LTC user bits and device errors (``timecodeSync.status``)."""
+clock; a status-bar label shows the chase state and device errors (``timecodeSync.status``)."""
 
 from __future__ import annotations
 
@@ -37,13 +36,6 @@ def transport_of(monitor: Monitor) -> dict[str, Any]:
     return {"playing": bool(monitor.playing), "time": int(monitor.playhead), "speed": float(monitor.speed) if monitor.playing else 1.0}
 
 
-def user_bits_text(ub: Any) -> str:
-    """``timecodeSync.status`` user bits (eight hex digits, group 8 first) in pairs, e.g. ``87 65 43 21``."""
-    if not isinstance(ub, str) or len(ub) != 8 or any(c not in "0123456789ABCDEFabcdef" for c in ub):
-        return ""
-    return " ".join(ub[i : i + 2].upper() for i in range(0, 8, 2))
-
-
 def status_text(st: Any) -> tuple[str, str, bool]:
     """(label text, tooltip, error) for a ``timecodeSync.status`` result; empty text when sync is off."""
     if not isinstance(st, dict):
@@ -54,9 +46,6 @@ def status_text(st: Any) -> tuple[str, str, bool]:
         state = tr(STATE_TEXT.get(str(chase.get("state")), str(chase.get("state"))))
         tc = chase.get("timecode")
         parts.append(f"{tr('Chase')} {state}" + (f" {tc}" if isinstance(tc, str) and tc else ""))
-        ub = user_bits_text(st.get("userBits"))
-        if ub:
-            parts.append(f"{tr('User bits')} {ub}")
     outs = [name for key, name in (("ltcOutRunning", "LTC"), ("mtcOutRunning", "MTC")) if st.get(key)]
     if outs:
         parts.append(f"{tr('Sending')} {' + '.join(outs)}")
@@ -125,13 +114,6 @@ class TimecodeSyncLink(QObject):
             if ev.get("play") is True:
                 self.monitor.play(1.0)
             self.report()
-            return True
-        if kind == "timecodeSync.speed":
-            speed = ev.get("speed")
-            # only a nudge of a running player (varispeed stays within a few percent of 1×)
-            if self.monitor.playing and isinstance(speed, (int, float)) and not isinstance(speed, bool) and 0.5 <= speed <= 2.0:
-                self.monitor.play(float(speed))
-                self.report()
             return True
         if kind == "timecodeSync.stop":
             self.monitor.stop()

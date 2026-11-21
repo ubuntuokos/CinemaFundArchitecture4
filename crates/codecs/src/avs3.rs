@@ -1,17 +1,17 @@
-//! Our pure-Rust AVS3-P2 (IEEE 1857.10, GB/T 33475.2) Main-8 / Main-10 decoder (`cfa4-avs3`) on raw
-//! elementary streams (`.avs3`, as xavs3 and FFmpeg's `avs3` muxer write them).
+//! Our pure-Rust AVS3-P2 (IEEE 1857.10, GB/T 33475.2) baseline decoder (`cfa4-avs3`) on raw
+//! elementary streams (`.avs3`, as uavs3e writes them).
 //!
-//! The stream is cut into pictures as davs3 cuts it. A raw stream has no timestamps: the index
-//! derives every picture's order count from its header (coding order index plus output delay)
+//! The stream is cut into packets as `cfa4_avs3::split_packets` cuts them. A raw stream has no timestamps: the index
+//! derives every picture's order count from its header (decoding order index plus output delay)
 //! and shows the pictures in that order, one per frame. Decoding starts at an I picture: a
 //! picture's sync point is the earliest I picture its references lead back to. Pictures the
 //! decoder cannot decode from the start of the stream (before the first I picture, or with a
-//! reference before it) and picture kinds it does not decode are left out.
+//! reference before it) and picture kinds it does not decode (background pictures) are left out.
 
 use std::collections::HashMap;
 use std::sync::Arc;
 
-use cfa4_avs3::{PictureType, SequenceHeader};
+use cfa4_avs3::SequenceHeader;
 use cfa4_frame::{AudioBuffer, Chroma, PixelData, VideoFrame};
 use cfa4_media::{FrameRequest, MediaError, MediaInfo, MediaKind, MediaSource, SharedSource, VideoStreamInfo};
 use cfa4_time::{FrameRate, Tick};
@@ -227,8 +227,8 @@ impl Avs3Source {
         // the pictures the decoder can decode from the start, their sync points and order counts
         let mut units = Vec::new();
         let mut pocs = Vec::new();
-        let mut by_doi: HashMap<i64, usize> = HashMap::new();
-        let (mut wrap, mut prev_doi) = (0i64, -1i64);
+        let mut by_coi: HashMap<i64, usize> = HashMap::new();
+        let (mut wrap, mut prev_coi) = (0i64, -1i64);
         for p in &packets {
             let Some(at) = p.pic else { continue };
             let head_len = (p.end - at).min(PIC_HEAD);
@@ -237,25 +237,26 @@ impl Avs3Source {
                 pic = header.picture(&read(at, p.end - at)?);
             }
             let Some(pic) = pic else { continue };
-            let doi8 = i64::from(pic.doi);
-            if doi8 < prev_doi {
+            let coi8 = i64::from(pic.doi);
+            if coi8 < prev_coi {
                 wrap += 1;
             }
-            prev_doi = doi8;
-            let doi = doi8 + wrap * 256;
-            let sync = match pic.kind {
-                PictureType::I => Some(units.len()),
-                PictureType::P | PictureType::B if !pic.refs.is_empty() => pic
-                    .refs
+            prev_coi = coi8;
+            let coi = coi8 + wrap * 256;
+            let sync = if pic.kind == 'I' {
+                Some(units.len())
+            } else if pic.refs.is_empty() {
+                None
+            } else {
+                pic.refs
                     .iter()
-                    .map(|&d| by_doi.get(&(doi - i64::from(d))).and_then(|&k| units.get(k)).map(|u: &Unit| u.sync))
+                    .map(|&d| by_coi.get(&(coi - i64::from(d))).and_then(|&k| units.get(k)).map(|u: &Unit| u.sync))
                     .collect::<Option<Vec<usize>>>()
-                    .and_then(|s| s.into_iter().min()),
-                _ => None,
+                    .and_then(|s| s.into_iter().min())
             };
             let Some(sync) = sync else { continue };
-            by_doi.insert(doi, units.len());
-            pocs.push(if si.low_delay { doi } else { doi + i64::from(pic.output_delay) - reorder });
+            by_coi.insert(coi, units.len());
+            pocs.push(if si.low_delay { coi } else { coi + i64::from(pic.output_delay) - reorder });
             units.push(Unit { off: p.off, size: p.end - p.off, sync, shown: 0 });
         }
         if units.is_empty() {

@@ -55,12 +55,6 @@ fn compare(name: &str) {
         }
     }
     eprintln!("{name}: {} samples, worst {worst:e} at {at}", ours.len());
-    // ffmpeg before 8.1 drops the last QMF band when the coded subbands end on its edge (its
-    // `num_bands` was off by one); ours decodes like 8.1 and later
-    if !cfa4_testkit::oracle::ffmpeg_at_least(&ff, 8, 1) {
-        eprintln!("{name}: ffmpeg older than 8.1, samples not compared");
-        return;
-    }
     assert!(worst < 1e-6, "{name}: sample {at}: ours {} ffmpeg {}", ours[at], theirs[at]);
 }
 

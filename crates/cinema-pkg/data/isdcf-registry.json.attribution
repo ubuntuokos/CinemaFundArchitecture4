@@ -1,8 +1,0 @@
-asset:        isdcf-registry.json
-title:        Offline snapshot of the ISDCF metadata registries used by the Digital Cinema Naming Convention
-author:       InterSociety Digital Cinema Forum (ISDCF) <info@isdcf.com>
-source:       https://github.com/ISDCF/registries, commit 497d40edf4b39c300df39f33d96d134a00df4f05 (2026-10-31), src/main/data/{contenttypes,contentmodifiers,projectoraspectratios,languages,territories,audioconfigs,studios,facilities}.json
-license:      CC-BY-4.0
-license-file: https://creativecommons.org/licenses/by/4.0/
-added:        2026-11-15 by CINECERT WP09 (Claude Code session for ubuntuokos)
-notes:        Changed from the original: reduced to code, name, obsolete codes and replacement of each entry; contact details and CPL metadata left out; merged into one JSON file with the commit and the SHA-256 of every upstream file. Made by crates/cinema-pkg/src/isdcf/mod.rs (reduce) through scripts/dev/update-isdcf-snapshot.sh. The ratings registry (MovieLabs-derived, licence not stated) is not included.

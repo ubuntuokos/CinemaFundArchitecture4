@@ -1,14 +1,21 @@
-// SPDX-License-Identifier: BSD-3-Clause
-// Derived from uavs3d (`source/decoder/parser.c`), Copyright (c) 2018-2022 Peking University Shenzhen Graduate
-// School, Peng Cheng Laboratory and Guangdong Bohua UHD Innovation Corporation. See LICENSE.uavs3d.
-//! The syntax of the coding units, the SAO parameters, the ALF flags and the delta QP.
+// SPDX-License-Identifier: GPL-3.0-or-later
+// Derived from uavs3d 1.2 (commit 0e20d2c2), Copyright (c) 2018-2022 Peking University Shenzhen Graduate School,
+// Peng Cheng Laboratory and Guangdong Bohua UHD Innovation Corporation, BSD 3-clause licence (docs/licensing.md).
+//! Coding-unit level syntax: the CU header, coefficient blocks, SAO / ALF flags and the LCU QP delta.
 
-use crate::core::{Core, SaoParam, mcu_get_logh, mcu_get_logw};
-use crate::cuutil::{part_info, part_num, tb_part_of_pb, update_map_for_intra};
+use crate::blocks::{self, NO_SPLIT, SIZE_2NX2N, SIZE_2NXHN, SIZE_2NXND, SIZE_2NXNU, SIZE_HNX2N, SIZE_NLX2N, SIZE_NRX2N, SIZE_NXN};
+use crate::blocks::{SPLIT_BI_HOR, SPLIT_BI_VER, SPLIT_EQT_HOR, SPLIT_EQT_VER, SPLIT_QUAD};
+use crate::core::{
+    CPMV_MAX, CPMV_MIN, Core, MODE_DIR, MODE_INTER, MODE_INTRA, MODE_SKIP, Motion, NO_MODE_CONS, ONLY_INTER, ONLY_INTRA, REFI_INVALID, SCU_AFFINE_SHIFT,
+    SCU_CBF, SCU_CODED, SCU_INTER, SCU_INTRA, SCU_SKIP, SaoParam, TREE_C, TREE_L, TREE_LC,
+};
 use crate::header::SliceType;
-use crate::lbac::get_log2;
+use crate::intra::{IPD_BI, IPD_BI_C, IPD_DC, IPD_DC_C, IPD_DM_C, IPD_HOR, IPD_HOR_C, IPD_IPCM, IPD_TSCPM_C, IPD_VER, IPD_VER_C};
 use crate::scan::scan;
-use crate::types::*;
+
+pub(crate) const PRED_L0: u8 = 0;
+pub(crate) const PRED_L1: u8 = 1;
+pub(crate) const PRED_BI: u8 = 2;
 
 const DQ_SHIFT: [u8; 80] = [
     14, 14, 14, 14, 14, 14, 14, 14, 13, 13, 13, 13, 13, 13, 13, 13, 13, 12, 12, 12, 12, 12, 12, 12, 11, 11, 11, 11, 11, 11, 11, 11, 11, 10, 10, 10, 10, 10, 10,
@@ -22,191 +29,181 @@ const DQ_SCALE: [u16; 80] = [
     38968, 42495, 46341, 50535, 55437, 60424, 32932, 35734, 38968, 42495, 46177, 50535, 55109, 59933,
 ];
 
-const MAX_NUM_MVR: u32 = 5;
-const MAX_NUM_AFFINE_MVR: u32 = 3;
-const IPD_CHROMA_CNT: u32 = 5;
-
-fn affine_amvr(x: i32) -> u32 {
-    match x {
-        0 => 2,
-        1 => 4,
-        _ => 0,
-    }
-}
-
-fn ipred_chk_conv(mode: u8) -> bool {
-    mode == IPD_VER || mode == IPD_HOR || mode == IPD_DC || mode == IPD_BI
+fn is_conv(m: i32) -> bool {
+    matches!(m, IPD_VER | IPD_HOR | IPD_DC | IPD_BI)
 }
 
 impl Core {
-    fn scu_at(&self, scup: i32) -> Scu {
-        self.maps.scu[self.maps.ix(scup)]
+    fn scu_flag(&self, scup: i32, bit: u8) -> u32 {
+        u32::from(self.scu(scup) & bit != 0)
     }
 
-    fn pos_at(&self, scup: i32) -> u32 {
-        self.maps.pos[self.maps.ix(scup)]
+    // ------------------------------------------------------------ small elements
+
+    fn dec_refidx(&mut self, num_refp: usize) -> i8 {
+        if num_refp > 1 { self.lbac.truncate_unary(&mut self.ctx.refi, 3, num_refp as u32) as i8 } else { 0 }
     }
 
-    fn decode_split_flag(&mut self, cu_width: usize, cu_height: usize) -> u32 {
-        let mut ctx = 0usize;
-        if self.slice_type == SliceType::I && cu_width == 128 && cu_height == 128 {
-            ctx = 3;
-        } else {
-            let i_scu = self.seq.i_scu as i32;
-            let scup = self.tree_scup;
-            if self.scu_at(scup - i_scu).coded {
-                ctx += usize::from((1usize << mcu_get_logw(self.pos_at(scup - i_scu))) < cu_width);
-            }
-            if self.scu_at(scup - 1).coded {
-                ctx += usize::from((1usize << mcu_get_logh(self.pos_at(scup - 1))) < cu_height);
-            }
+    pub(crate) fn dec_cons_pred_mode_child(&mut self) -> u8 {
+        if self.lbac.bin(&mut self.ctx.cons_mode[0]) != 0 { ONLY_INTRA } else { ONLY_INTER }
+    }
+
+    fn dec_umve_idx(&mut self) -> i32 {
+        let base = i32::from(self.lbac.bin(&mut self.ctx.umve_base_idx[0]) == 0);
+        let mut step = 0;
+        if self.lbac.bin(&mut self.ctx.umve_step_idx[0]) == 0 {
+            step = self.lbac.truncate_unary_ep(4) as i32 + 1;
         }
-        self.lbac.bin(&mut self.ctx.split_flag[ctx])
+        let mut dir = (self.lbac.bin(&mut self.ctx.umve_dir_idx[0]) as i32) << 1;
+        dir += self.lbac.bin(&mut self.ctx.umve_dir_idx[1]) as i32;
+        base * 20 + step * 4 + dir
     }
 
-    /// `dec_parse_split_mode`
-    pub(crate) fn parse_split_mode(&mut self, split_tab: u32, cu_width: usize, cu_height: usize) -> u8 {
-        if split_tab & (1 << SPLIT_QUAD) != 0 {
-            if split_tab == (1 << SPLIT_QUAD) || self.decode_split_flag(cu_width, cu_height) != 0 {
+    fn split_flag_ctx(&self, w: i32, h: i32) -> usize {
+        let s = self.tree_scup;
+        let mut ctx = 0;
+        if self.coded(s - self.i_scu) {
+            ctx += usize::from((1 << (self.pos(s - self.i_scu) & 7)) < w);
+        }
+        if self.coded(s - 1) {
+            ctx += usize::from((1 << ((self.pos(s - 1) >> 3) & 7)) < h);
+        }
+        ctx
+    }
+
+    fn dec_split_flag(&mut self, w: i32, h: i32) -> bool {
+        let ctx = if self.slice_type == SliceType::I && w == 128 && h == 128 { 3 } else { self.split_flag_ctx(w, h) };
+        self.lbac.bin(&mut self.ctx.split_flag[ctx]) != 0
+    }
+
+    /// `dec_parse_split_mode`.
+    pub(crate) fn dec_split_mode(&mut self, tab: u32, w: i32, h: i32) -> u8 {
+        if tab & (1 << SPLIT_QUAD) != 0 {
+            if tab == 1 << SPLIT_QUAD || self.dec_split_flag(w, h) {
                 return SPLIT_QUAD;
             }
-            if self.slice_type == SliceType::I && cu_width == 128 && cu_height == 128 {
+            if self.slice_type == SliceType::I && w == 128 && h == 128 {
                 return SPLIT_QUAD;
             }
         }
-        if split_tab & 0x1E != 0 {
-            let i_scu = self.seq.i_scu as i32;
-            let scup = self.tree_scup;
-            let s = cu_width * cu_height;
-            let ctx = usize::from(self.scu_at(scup - i_scu).coded && (1usize << mcu_get_logw(self.pos_at(scup - i_scu))) < cu_width)
-                + usize::from(self.scu_at(scup - 1).coded && (1usize << mcu_get_logh(self.pos_at(scup - 1))) < cu_height);
-            let sz = if s > 1024 {
-                0
-            } else if s > 256 {
-                3
-            } else {
-                6
-            };
-            if split_tab & (1 << SPLIT_NONE) != 0 && self.lbac.bin(&mut self.ctx.bt_split_flag[ctx + sz]) == 0 {
-                return SPLIT_NONE;
+        if tab & 0x1E != 0 {
+            let s = w * h;
+            let sc = self.tree_scup;
+            let ctx = usize::from(self.coded(sc - self.i_scu) && (1 << (self.pos(sc - self.i_scu) & 7)) < w)
+                + usize::from(self.coded(sc - 1) && (1 << ((self.pos(sc - 1) >> 3) & 7)) < h);
+            let no_split_ok = tab & (1 << NO_SPLIT) != 0;
+            let idx = ctx
+                + if s > 1024 {
+                    0
+                } else if s > 256 {
+                    3
+                } else {
+                    6
+                };
+            if no_split_ok && self.lbac.bin(&mut self.ctx.bt_split_flag[idx]) == 0 {
+                return NO_SPLIT;
             }
-            let enable_bt = split_tab & ((1 << SPLIT_BI_HOR) | (1 << SPLIT_BI_VER)) != 0;
-            let enable_eqt = split_tab & ((1 << SPLIT_EQT_HOR) | (1 << SPLIT_EQT_VER)) != 0;
-            let mut split_typ = 0;
-            if enable_eqt && enable_bt {
-                split_typ = self.lbac.bin(&mut self.ctx.split_mode[ctx]);
-            } else if enable_eqt {
-                split_typ = 1;
+            let en_bt = tab & ((1 << SPLIT_BI_HOR) | (1 << SPLIT_BI_VER)) != 0;
+            let en_eqt = tab & ((1 << SPLIT_EQT_HOR) | (1 << SPLIT_EQT_VER)) != 0;
+            let mut typ = 0;
+            if en_eqt && en_bt {
+                typ = self.lbac.bin(&mut self.ctx.split_mode[ctx]);
+            } else if en_eqt {
+                typ = 1;
             }
-            if (cu_width == 128 && cu_height == 64) || (cu_width == 64 && cu_height == 128) {
-                split_typ = 0;
+            if (w == 128 && h == 64) || (w == 64 && h == 128) {
+                typ = 0;
             }
-            if split_typ == 0 {
-                let mut split_dir;
-                if (split_tab >> SPLIT_BI_VER) & 3 == 3 {
-                    let ctx_dir = if cu_width == 64 && cu_height == 128 {
+            if typ == 0 {
+                let dir = if (tab >> SPLIT_BI_VER) & 3 == 3 {
+                    let cd = if w == 64 && h == 128 {
                         3
-                    } else if cu_width == 128 && cu_height == 64 {
+                    } else if w == 128 && h == 64 {
                         4
-                    } else if cu_width == cu_height {
+                    } else if w == h {
                         0
-                    } else if cu_width > cu_height {
+                    } else if w > h {
                         1
                     } else {
                         2
                     };
-                    split_dir = self.lbac.bin(&mut self.ctx.split_dir[ctx_dir]);
+                    self.lbac.bin(&mut self.ctx.split_dir[cd])
                 } else {
-                    split_dir = split_tab & (1 << SPLIT_BI_VER);
-                }
-                if cu_width == 128 && cu_height == 64 {
-                    split_dir = 1;
-                } else if cu_width == 64 && cu_height == 128 {
-                    split_dir = 0;
-                }
-                return if split_dir != 0 { SPLIT_BI_VER } else { SPLIT_BI_HOR };
-            }
-            let split_dir = if (split_tab >> SPLIT_EQT_VER) & 3 == 3 {
-                let ctx_dir = if cu_width == cu_height {
-                    0
-                } else if cu_width > cu_height {
-                    1
-                } else {
-                    2
+                    tab & (1 << SPLIT_BI_VER)
                 };
-                self.lbac.bin(&mut self.ctx.split_dir[ctx_dir])
+                let dir = if w == 128 && h == 64 {
+                    1
+                } else if w == 64 && h == 128 {
+                    0
+                } else {
+                    dir
+                };
+                if dir != 0 { SPLIT_BI_VER } else { SPLIT_BI_HOR }
             } else {
-                split_tab & (1 << SPLIT_EQT_VER)
-            };
-            return if split_dir != 0 { SPLIT_EQT_VER } else { SPLIT_EQT_HOR };
+                let dir = if (tab >> SPLIT_EQT_VER) & 3 == 3 {
+                    let cd = if w == h {
+                        0
+                    } else if w > h {
+                        1
+                    } else {
+                        2
+                    };
+                    self.lbac.bin(&mut self.ctx.split_dir[cd])
+                } else {
+                    tab & (1 << SPLIT_EQT_VER)
+                };
+                if dir != 0 { SPLIT_EQT_VER } else { SPLIT_EQT_HOR }
+            }
+        } else {
+            NO_SPLIT
         }
-        SPLIT_NONE
     }
 
-    pub(crate) fn parse_cons_pred_mode_child(&mut self) -> u8 {
-        if self.lbac.bin(&mut self.ctx.cons_mode[0]) != 0 { ONLY_INTRA } else { ONLY_INTER }
+    fn dec_affine_flag(&mut self) -> bool {
+        self.log2w >= 4 && self.log2h >= 4 && self.seq.affine_enable && self.lbac.bin(&mut self.ctx.affine_flag[0]) != 0
     }
 
-    fn decode_refidx(&mut self, num_refp: usize) -> i8 {
-        if num_refp > 1 { self.lbac.truncate_unary(&mut self.ctx.refi, 3, num_refp as u32) as i8 } else { 0 }
-    }
-
-    fn decode_skip_flag(&mut self, scup: i32) -> bool {
-        let i_scu = self.seq.i_scu as i32;
-        let ctx = if self.cu_log2w + self.cu_log2h < 6 { 3 } else { usize::from(self.scu_at(scup - i_scu).skip) + usize::from(self.scu_at(scup - 1).skip) };
-        self.lbac.bin(&mut self.ctx.skip_flag[ctx]) != 0
-    }
-
-    fn decode_umve_idx(&mut self) -> i32 {
-        let base_idx = i32::from(self.lbac.bin(&mut self.ctx.umve_base_idx[0]) == 0);
-        let mut step_idx = 0;
-        if self.lbac.bin(&mut self.ctx.umve_step_idx[0]) == 0 {
-            step_idx = self.lbac.truncate_unary_ep(UMVE_REFINE_STEP - 1) as i32 + 1;
-        }
-        let mut dir_idx = (self.lbac.bin(&mut self.ctx.umve_dir_idx[0]) << 1) as i32;
-        dir_idx += self.lbac.bin(&mut self.ctx.umve_dir_idx[1]) as i32;
-        base_idx * UMVE_MAX_REFINE_NUM + step_idx * 4 + dir_idx
-    }
-
-    fn decode_affine_flag(&mut self) -> u8 {
-        let ok = self.cu_log2w >= AFF_BITSIZE && self.cu_log2h >= AFF_BITSIZE && self.seq.affine_enable_flag;
-        u8::from(ok && self.lbac.bin(&mut self.ctx.affine_flag[0]) != 0)
-    }
-
-    fn decode_part_size(&mut self) -> u8 {
-        if !self.seq.dt_intra_enable_flag || self.cu_mode != MODE_INTRA {
+    fn dec_part_size(&mut self) -> u8 {
+        if !self.seq.dt_intra_enable || self.cu_mode != MODE_INTRA {
             return SIZE_2NX2N;
         }
-        let allow = crate::cuutil::dt_allow(self.cu_width, self.cu_height, self.seq.max_dt_size as usize);
+        let allow = blocks::dt_allow(self.cu_w, self.cu_h, self.seq.max_dt_size as i32);
         if allow == 0 {
             return SIZE_2NX2N;
         }
-        let mut part = SIZE_2NX2N;
-        if self.lbac.bin(&mut self.ctx.part_size[0]) != 0 {
-            let dir = if allow == 3 { self.lbac.bin(&mut self.ctx.part_size[1]) } else { allow & 1 };
-            if dir != 0 {
-                if self.lbac.bin(&mut self.ctx.part_size[2]) != 0 {
-                    part = SIZE_2NXHN;
+        let ps = &mut self.ctx.part_size;
+        let l = &mut self.lbac;
+        if l.bin(&mut ps[0]) != 0 {
+            let dir = if allow == 3 { l.bin(&mut ps[1]) != 0 } else { allow & 1 != 0 };
+            if dir {
+                if l.bin(&mut ps[2]) != 0 {
+                    SIZE_2NXHN
+                } else if l.bin(&mut ps[3]) != 0 {
+                    SIZE_2NXND
                 } else {
-                    part = if self.lbac.bin(&mut self.ctx.part_size[3]) != 0 { SIZE_2NXND } else { SIZE_2NXNU };
+                    SIZE_2NXNU
                 }
-            } else if self.lbac.bin(&mut self.ctx.part_size[4]) != 0 {
-                part = SIZE_HNX2N;
+            } else if l.bin(&mut ps[4]) != 0 {
+                SIZE_HNX2N
+            } else if l.bin(&mut ps[5]) != 0 {
+                SIZE_NRX2N
             } else {
-                part = if self.lbac.bin(&mut self.ctx.part_size[5]) != 0 { SIZE_NRX2N } else { SIZE_NLX2N };
+                SIZE_NLX2N
             }
+        } else {
+            SIZE_2NX2N
         }
-        part
     }
 
-    fn decode_pred_mode(&mut self, scup: i32) -> u8 {
-        let i_scu = self.seq.i_scu as i32;
-        let ctx = if self.cu_log2w > 6 || self.cu_log2h > 6 {
+    fn dec_pred_mode(&mut self) -> u8 {
+        let (lw, lh) = (self.log2w, self.log2h);
+        let sc = self.cu_scup;
+        let ctx = if lw > 6 || lh > 6 {
             5
         } else {
-            let mut c = usize::from(self.scu_at(scup - i_scu).intra) + usize::from(self.scu_at(scup - 1).intra);
+            let mut c = self.scu_flag(sc - self.i_scu, SCU_INTRA) + self.scu_flag(sc - 1, SCU_INTRA);
             if c == 0 {
-                let sample = 1usize << (self.cu_log2w + self.cu_log2h);
+                let sample = 1u32 << (lw + lh);
                 c = if sample > 256 {
                     0
                 } else if sample > 64 {
@@ -215,202 +212,247 @@ impl Core {
                     4
                 };
             }
-            c
+            c as usize
         };
         if self.lbac.bin(&mut self.ctx.pred_mode[ctx]) != 0 { MODE_INTRA } else { MODE_INTER }
     }
 
-    fn decode_mvr_idx(&mut self, affine: bool) -> i32 {
-        if affine {
-            self.lbac.truncate_unary(&mut self.ctx.affine_mvr_idx, MAX_NUM_AFFINE_MVR - 1, MAX_NUM_AFFINE_MVR) as i32
-        } else {
-            self.lbac.truncate_unary(&mut self.ctx.mvr_idx, MAX_NUM_MVR - 1, MAX_NUM_MVR) as i32
-        }
-    }
-
-    fn parse_abs_mvd(&mut self, dim: usize) -> u32 {
-        if self.lbac.bin(&mut self.ctx.mvd[dim][0]) == 0 {
+    fn dec_abs_mvd(&mut self, comp: usize) -> u32 {
+        let m = &mut self.ctx.mvd[comp];
+        let l = &mut self.lbac;
+        if l.bin(&mut m[0]) == 0 {
             0
-        } else if self.lbac.bin(&mut self.ctx.mvd[dim][1]) == 0 {
+        } else if l.bin(&mut m[1]) == 0 {
             1
-        } else if self.lbac.bin(&mut self.ctx.mvd[dim][2]) == 0 {
+        } else if l.bin(&mut m[2]) == 0 {
             2
         } else {
-            let add_one = self.lbac.bin_ep() & 1;
-            let golomb_order = self.lbac.unary_ep();
-            let sym = (1u32 << golomb_order) - 1 + self.lbac.bins_ep_msb(golomb_order);
-            3 + sym * 2 + add_one
+            let add_one = l.bin_ep() & 1;
+            let order = l.unary_ep().min(31);
+            let sym = (1u32 << order) - 1 + l.bins_ep_msb(order);
+            3u32.wrapping_add(sym.wrapping_mul(2)).wrapping_add(add_one)
         }
     }
 
-    fn decode_mvd(&mut self) -> [i32; 2] {
+    fn dec_mvd(&mut self) -> [i32; 2] {
         let mut mvd = [0i32; 2];
-        for (dim, m) in mvd.iter_mut().enumerate() {
-            // the C code stores the magnitude in an s16
-            *m = i32::from(self.parse_abs_mvd(dim) as i16);
-            if *m != 0 && self.lbac.bin_ep() != 0 {
-                *m = i32::from((-*m) as i16);
-            }
+        for (c, v) in mvd.iter_mut().enumerate() {
+            let a = i32::from(self.dec_abs_mvd(c) as i16);
+            *v = if a != 0 && self.lbac.bin_ep() != 0 { -a } else { a };
         }
         mvd
     }
 
-    fn decode_intra_dir(&mut self, mpm: [u8; 2]) -> i32 {
-        let mut ipm = if self.lbac.bin(&mut self.ctx.intra_dir[0]) != 0 {
-            self.lbac.bin(&mut self.ctx.intra_dir[6]) as i32 - 2
+    fn dec_intra_dir(&mut self, mpm: [i32; 2]) -> i32 {
+        let c = &mut self.ctx.intra_dir;
+        let l = &mut self.lbac;
+        let ipm = if l.bin(&mut c[0]) != 0 { l.bin(&mut c[6]) as i32 - 2 } else { l.bins_msb(&mut c[1..], 5) as i32 };
+        if ipm < 0 { mpm[(ipm + 2) as usize] } else { ipm + i32::from(ipm >= mpm[0]) + i32::from(ipm + 1 >= mpm[1]) }
+    }
+
+    fn dec_intra_dir_c(&mut self, ipm_l: i32) -> i32 {
+        let tscpm = self.seq.tscpm_enable;
+        let c = &mut self.ctx.intra_dir;
+        let l = &mut self.lbac;
+        if l.bin(&mut c[7]) != 0 {
+            return IPD_DM_C;
+        }
+        let chk = is_conv(ipm_l);
+        let ipm_l = if chk {
+            match ipm_l {
+                IPD_VER => IPD_VER_C,
+                IPD_HOR => IPD_HOR_C,
+                IPD_DC => IPD_DC_C,
+                _ => IPD_BI_C,
+            }
         } else {
-            self.lbac.bins_msb(&mut self.ctx.intra_dir[1..], 5) as i32
+            ipm_l
         };
-        ipm = if ipm < 0 { i32::from(mpm[(ipm + 2) as usize]) } else { ipm + i32::from(ipm >= i32::from(mpm[0])) + i32::from(ipm + 1 >= i32::from(mpm[1])) };
+        if tscpm && l.bin(&mut c[9]) != 0 {
+            return IPD_TSCPM_C;
+        }
+        let mut ipm = 1 + l.truncate_unary(&mut c[8..], 1, 4) as i32;
+        if chk && ipm >= ipm_l {
+            ipm += 1;
+        }
         ipm
     }
 
-    fn decode_intra_dir_c(&mut self, ipm_l: u8, tscpm_enable: bool) -> u8 {
-        let mut ipm = 0u32;
-        if self.lbac.bin(&mut self.ctx.intra_dir[7]) == 0 {
-            let mut ipm_l = ipm_l;
-            let chk_bypass = ipred_chk_conv(ipm_l);
-            if chk_bypass {
-                ipm_l = if ipm_l == IPD_VER {
-                    IPD_VER_C
-                } else if ipm_l == IPD_HOR {
-                    IPD_HOR_C
-                } else if ipm_l == IPD_DC {
-                    IPD_DC_C
-                } else {
-                    IPD_BI_C
-                };
-            }
-            if tscpm_enable && self.lbac.bin(&mut self.ctx.intra_dir[9]) != 0 {
-                return IPD_TSCPM_C;
-            }
-            ipm = 1 + self.lbac.truncate_unary(&mut self.ctx.intra_dir[8..], 1, IPD_CHROMA_CNT - 1);
-            if chk_bypass && ipm >= u32::from(ipm_l) {
-                ipm += 1;
-            }
-        }
-        ipm as u8
-    }
-
-    fn decode_inter_dir(&mut self) -> u8 {
-        if self.cu_log2w + self.cu_log2h < 6 {
-            self.lbac.bin(&mut self.ctx.inter_dir[2]);
-            if self.lbac.bin(&mut self.ctx.inter_dir[1]) != 0 { PRED_L1 } else { PRED_L0 }
-        } else if self.lbac.bin(&mut self.ctx.inter_dir[0]) != 0 {
+    fn dec_inter_dir(&mut self) -> u8 {
+        let c = &mut self.ctx.inter_dir;
+        let l = &mut self.lbac;
+        if self.log2w + self.log2h < 6 {
+            l.bin(&mut c[2]);
+            if l.bin(&mut c[1]) != 0 { PRED_L1 } else { PRED_L0 }
+        } else if l.bin(&mut c[0]) != 0 {
             PRED_BI
-        } else if self.lbac.bin(&mut self.ctx.inter_dir[1]) != 0 {
+        } else if l.bin(&mut c[1]) != 0 {
             PRED_L1
         } else {
             PRED_L0
         }
     }
 
-    fn decode_skip_idx(&mut self) -> usize {
+    fn dec_skip_idx(&mut self) -> i32 {
         let p = self.slice_type == SliceType::P;
-        let max_skip_num = (if p { 2 } else { TRADITIONAL_SKIP_NUM as u32 }) + self.seq.num_of_hmvp_cand;
-        let skip_idx = self.lbac.truncate_unary(&mut self.ctx.skip_idx, (MAX_SKIP_NUM - 1) as u32, max_skip_num) as usize;
-        skip_idx + (usize::from(p && skip_idx > 0) << 1)
+        let max = (if p { 2 } else { 4 }) + self.seq.num_hmvp_cand;
+        let idx = self.lbac.truncate_unary(&mut self.ctx.skip_idx, 11, max) as i32;
+        idx + if p && idx > 0 { 2 } else { 0 }
     }
 
-    fn decode_direct_flag(&mut self) -> bool {
-        let ctx = usize::from((self.cu_log2w + self.cu_log2h < 6) || self.cu_log2w > 6 || self.cu_log2h > 6);
-        self.lbac.bin(&mut self.ctx.direct_flag[ctx]) != 0
+    fn mpm(&self, scup: i32) -> [i32; 2] {
+        let ipm_at = |s: i32| -> i32 { if self.scu(s) & SCU_INTRA != 0 { self.map_ipm.get(self.ix(s)).copied().map_or(IPD_DC, i32::from) } else { IPD_DC } };
+        let l = ipm_at(scup - 1);
+        let u = ipm_at(scup - self.i_scu);
+        let mut m = [l.min(u), l.max(u)];
+        if m[0] == m[1] {
+            m[0] = IPD_DC;
+            m[1] = if m[1] == IPD_DC { IPD_BI } else { m[1] };
+        }
+        m
     }
 
-    fn parse_affine_mv(&mut self, mvr_idx: i32, inter_dir: u8) {
-        let vertex_num = usize::from(self.affine_flag) + 1;
+    fn dec_affine_mv(&mut self, mvr_idx: i32, dir: u8) {
+        let nv = usize::from(self.affine_flag) + 1;
         for lidx in 0..2usize {
-            let used = if lidx == 0 { inter_dir == PRED_L0 || inter_dir == PRED_BI } else { inter_dir == PRED_L1 || inter_dir == PRED_BI };
-            if used {
-                self.refi[lidx] = self.decode_refidx(self.num_refp[lidx]);
-                let mvp = self.scale_affine_mvp(lidx, mvr_idx);
-                for vertex in 0..vertex_num {
-                    let mvd = self.decode_mvd();
-                    let sh = affine_amvr(mvr_idx);
-                    let mv_x = mvp[vertex][0] + (mvd[0] << sh);
-                    let mv_y = mvp[vertex][1] + (mvd[1] << sh);
-                    self.affine_mv[lidx][vertex][0] = clip3(CPMV_MIN, CPMV_MAX, mv_x);
-                    self.affine_mv[lidx][vertex][1] = clip3(CPMV_MIN, CPMV_MAX, mv_y);
-                }
-            } else {
+            let used = if lidx == 0 { dir == PRED_L0 || dir == PRED_BI } else { dir == PRED_L1 || dir == PRED_BI };
+            if !used {
                 self.refi[lidx] = REFI_INVALID;
+                continue;
+            }
+            self.refi[lidx] = self.dec_refidx(self.num_refp[lidx]);
+            let mvp = self.scale_affine_mvp(lidx, mvr_idx);
+            let shift = match mvr_idx {
+                0 => 2,
+                1 => 4,
+                _ => 0,
+            };
+            for v in 0..nv.min(2) {
+                let mvd = self.dec_mvd();
+                for c in 0..2 {
+                    let mv = mvp[v][c].wrapping_add(mvd[c].wrapping_shl(shift));
+                    self.affine_mv[lidx][v][c] = mv.clamp(CPMV_MIN, CPMV_MAX);
+                }
             }
         }
     }
 
-    fn get_mpm(&self, scup: i32) -> [u8; 2] {
-        let i_scu = self.seq.i_scu as i32;
-        let m = &self.maps;
-        let ipm_l = if m.scu[m.ix(scup - 1)].intra { m.ipm[m.ix(scup - 1)] as u8 } else { IPD_DC };
-        let ipm_u = if m.scu[m.ix(scup - i_scu)].intra { m.ipm[m.ix(scup - i_scu)] as u8 } else { IPD_DC };
-        let mut mpm = [ipm_l.min(ipm_u), ipm_l.max(ipm_u)];
-        if mpm[0] == mpm[1] {
-            mpm[0] = IPD_DC;
-            mpm[1] = if mpm[1] == IPD_DC { IPD_BI } else { mpm[1] };
+    fn set_scu_ipm(&mut self, x: i32, y: i32, w: i32, h: i32, ipm: i32) {
+        let (sx, sy, sw, sh) = (x >> 2, y >> 2, w >> 2, h >> 2);
+        for j in 0..sh {
+            for i in 0..sw {
+                let k = self.ix((sy + j) * self.i_scu + sx + i);
+                if let Some(s) = self.map_scu.get_mut(k) {
+                    *s = SCU_CODED | SCU_INTRA;
+                }
+                if let Some(s) = self.map_ipm.get_mut(k) {
+                    *s = ipm as i8;
+                }
+            }
         }
-        mpm
     }
 
-    /// `dec_parse_cu_header_chroma`
-    pub(crate) fn parse_cu_header_chroma(&mut self) {
-        let scu_x = (self.cu_pix_x + self.cu_width - 1) >> 2;
-        let scu_y = (self.cu_pix_y + self.cu_height - 1) >> 2;
-        let luma_scup = (scu_x + scu_y * self.seq.i_scu) as i32;
-        let ix = self.maps.ix(luma_scup);
-        if self.maps.scu[ix].intra {
+    // ------------------------------------------------------------ cbf and header
+
+    fn dec_cbf(&mut self) {
+        let (lw, lh) = (self.log2w, self.log2h);
+        if self.cu_mode != MODE_INTRA {
+            if self.cu_mode != MODE_DIR && self.tree_status == TREE_LC {
+                let ctx = usize::from(lw > 6 || lh > 6);
+                if self.lbac.bin(&mut self.ctx.ctp_zero_flag[ctx]) != 0 {
+                    self.tb_part = SIZE_2NX2N;
+                    return;
+                }
+            }
+            let avail = matches!((lw, lh), (3, 3) | (3, 4) | (4, 3) | (4, 4) | (4, 5) | (5, 4) | (5, 5));
+            self.tb_part = if self.seq.pbt_enable && avail && self.lbac.bin(&mut self.ctx.tb_split[0]) != 0 { SIZE_NXN } else { SIZE_2NX2N };
+            if self.tree_status == TREE_LC {
+                self.cbfc[0] = self.lbac.bin(&mut self.ctx.cbf[1]) as u8;
+                self.cbfc[1] = self.lbac.bin(&mut self.ctx.cbf[2]) as u8;
+            }
+            if self.cbfc == [0, 0] && self.tb_part == SIZE_2NX2N && self.tree_status == TREE_LC {
+                self.cbfy[0] = 1;
+            } else {
+                for i in 0..blocks::PART_NUM[self.tb_part as usize] {
+                    self.cbfy[i] = self.lbac.bin(&mut self.ctx.cbf[0]) as u8;
+                }
+            }
+            if lw > 6 || lh > 6 {
+                self.cbfy[0] = 0;
+            }
+        } else {
+            if i32::from(self.ipm[0]) != IPD_IPCM {
+                self.tb_part = blocks::TB_PART[self.pb_part as usize];
+                for i in 0..blocks::PART_NUM[self.tb_part as usize] {
+                    self.cbfy[i] = self.lbac.bin(&mut self.ctx.cbf[0]) as u8;
+                }
+            }
+            if self.tree_status == TREE_LC && (i32::from(self.ipm[0]) != IPD_IPCM || i32::from(self.ipm_c) != IPD_DM_C) {
+                self.cbfc[0] = self.lbac.bin(&mut self.ctx.cbf[1]) as u8;
+                self.cbfc[1] = self.lbac.bin(&mut self.ctx.cbf[2]) as u8;
+            }
+        }
+    }
+
+    /// `dec_parse_cu_header_chroma`: the chroma-only CU of a separate tree.
+    pub(crate) fn dec_cu_header_chroma(&mut self) {
+        let sx = (self.cu_x + self.cu_w - 1) >> 2;
+        let sy = (self.cu_y + self.cu_h - 1) >> 2;
+        let luma_scup = sx + sy * self.i_scu;
+        if self.scu(luma_scup) & SCU_INTRA != 0 {
             self.cu_mode = MODE_INTRA;
-            self.ipm[0] = self.maps.ipm[ix];
-            let tscpm = self.seq.tscpm_enable_flag;
-            self.ipm_c = self.decode_intra_dir_c(self.ipm[0] as u8, tscpm);
+            self.ipm[0] = self.map_ipm.get(self.ix(luma_scup)).copied().unwrap_or(0);
+            self.ipm_c = self.dec_intra_dir_c(i32::from(self.ipm[0])) as i8;
         } else {
             self.cu_mode = MODE_INTER;
-            for lidx in 0..2 {
-                self.refi[lidx] = self.maps.refi[ix][lidx];
-                self.mv[lidx] = self.maps.mv[ix][lidx];
-            }
+            self.refi = self.refi_at(luma_scup);
+            self.mv = self.mv_at(luma_scup);
         }
-        if self.cu_mode != MODE_INTRA || self.ipm[0] as u8 != IPD_IPCM || self.ipm_c != IPD_DM_C {
+        if self.cu_mode != MODE_INTRA || i32::from(self.ipm[0]) != IPD_IPCM || i32::from(self.ipm_c) != IPD_DM_C {
             self.cbfc[0] = self.lbac.bin(&mut self.ctx.cbf[1]) as u8;
             self.cbfc[1] = self.lbac.bin(&mut self.ctx.cbf[2]) as u8;
         }
     }
 
-    /// `dec_parse_cu_header`
-    pub(crate) fn parse_cu_header(&mut self) {
-        let scup = self.cu_scup;
+    /// `dec_parse_cu_header`.
+    pub(crate) fn dec_cu_header(&mut self) {
+        let (lw, lh) = (self.log2w, self.log2h);
+        let sc = self.cu_scup;
         self.tb_part = SIZE_2NX2N;
         self.pb_part = SIZE_2NX2N;
-
         if self.slice_type != SliceType::I {
-            let mut skip_flag = false;
-            let mut direct_flag = false;
+            let mut skip = false;
+            let mut direct = false;
             if self.cons_pred_mode != ONLY_INTRA {
-                skip_flag = self.decode_skip_flag(scup);
-                if !skip_flag {
-                    direct_flag = self.decode_direct_flag();
+                let ctx = if lw + lh < 6 { 3 } else { (self.scu_flag(sc - self.i_scu, SCU_SKIP) + self.scu_flag(sc - 1, SCU_SKIP)) as usize };
+                skip = self.lbac.bin(&mut self.ctx.skip_flag[ctx]) != 0;
+                if !skip {
+                    let c = usize::from(lw + lh < 6 || lw > 6 || lh > 6);
+                    direct = self.lbac.bin(&mut self.ctx.direct_flag[c]) != 0;
                 }
             }
-            if skip_flag || direct_flag {
-                self.cu_mode = if skip_flag { MODE_SKIP } else { MODE_DIR };
-                let umve_flag = self.seq.umve_enable_flag && self.lbac.bin(&mut self.ctx.umve_flag[0]) != 0;
-                if umve_flag {
+            if skip || direct {
+                self.cu_mode = if skip { MODE_SKIP } else { MODE_DIR };
+                let umve = self.seq.umve_enable && self.lbac.bin(&mut self.ctx.umve_flag) != 0;
+                if umve {
                     self.affine_flag = 0;
-                    let idx = self.decode_umve_idx();
+                    let idx = self.dec_umve_idx();
                     self.derive_skip_mv_umve(idx);
                 } else {
-                    self.affine_flag = self.decode_affine_flag();
-                    if self.affine_flag != 0 {
-                        let idx = self.lbac.truncate_unary(&mut self.ctx.affine_mrg_idx, (AFF_MAX_NUM_MRG - 1) as u32, AFF_MAX_NUM_MRG as u32);
-                        self.derive_skip_mv_affine(idx as i32);
+                    let aff = self.dec_affine_flag();
+                    self.affine_flag = u8::from(aff);
+                    if aff {
+                        let idx = self.lbac.truncate_unary(&mut self.ctx.affine_mrg_idx, 4, 5) as i32;
+                        self.derive_skip_mv_affine(idx);
                     } else {
-                        let idx = self.decode_skip_idx();
+                        let idx = self.dec_skip_idx();
                         self.derive_skip_mv(idx);
                     }
                 }
             } else {
                 if self.cons_pred_mode == NO_MODE_CONS {
-                    self.cu_mode = self.decode_pred_mode(scup);
-                    if self.cu_log2w > 6 || self.cu_log2h > 6 {
+                    self.cu_mode = self.dec_pred_mode();
+                    if lw > 6 || lh > 6 {
                         self.cu_mode = MODE_INTER;
                     }
                 } else {
@@ -418,50 +460,7 @@ impl Core {
                 }
                 self.affine_flag = 0;
                 if self.cu_mode != MODE_INTRA {
-                    let mut inter_dir = PRED_L0;
-                    let mut mvp_from_hmvp = false;
-                    let mut mvr_idx = 0;
-                    self.affine_flag = self.decode_affine_flag();
-                    if self.seq.amvr_enable_flag {
-                        if self.seq.emvr_enable_flag && self.affine_flag == 0 {
-                            mvp_from_hmvp = self.lbac.bin(&mut self.ctx.mvp_from_hmvp_flag[0]) != 0;
-                        }
-                        mvr_idx = self.decode_mvr_idx(self.affine_flag != 0);
-                    }
-                    if self.slice_type == SliceType::B {
-                        inter_dir = self.decode_inter_dir();
-                    }
-                    if self.affine_flag != 0 {
-                        self.parse_affine_mv(mvr_idx, inter_dir);
-                    } else {
-                        let mut smvd_flag = false;
-                        let mut mvd = [0i32; 2];
-                        let same_dist = self.refp.first().is_some_and(|r| match (&r[0], &r[1]) {
-                            (Some(a), Some(b)) => a.dist == -b.dist,
-                            _ => false,
-                        });
-                        if self.seq.smvd_enable_flag && inter_dir == PRED_BI && !mvp_from_hmvp && same_dist {
-                            smvd_flag = self.lbac.bin(&mut self.ctx.smvd_flag[0]) != 0;
-                        }
-                        for lidx in 0..2usize {
-                            let used = if lidx == 0 { inter_dir == PRED_L0 || inter_dir == PRED_BI } else { inter_dir == PRED_L1 || inter_dir == PRED_BI };
-                            if !used {
-                                self.refi[lidx] = REFI_INVALID;
-                                continue;
-                            }
-                            self.refi[lidx] = if smvd_flag { 0 } else { self.decode_refidx(self.num_refp[lidx]) };
-                            let mvp = self.derive_mvp(lidx, mvp_from_hmvp, mvr_idx);
-                            if lidx == 1 && smvd_flag {
-                                mvd[0] = 32767.min(-mvd[0]);
-                                mvd[1] = 32767.min(-mvd[1]);
-                            } else {
-                                mvd = self.decode_mvd();
-                            }
-                            let mv_x = i32::from(mvp[0]) + (mvd[0] << mvr_idx);
-                            let mv_y = i32::from(mvp[1]) + (mvd[1] << mvr_idx);
-                            self.mv[lidx] = [clip3(-32768, 32767, mv_x) as i16, clip3(-32768, 32767, mv_y) as i16];
-                        }
-                    }
+                    self.dec_inter_params();
                 }
             }
         } else {
@@ -470,309 +469,338 @@ impl Core {
 
         if self.cu_mode == MODE_INTRA {
             self.ipf_flag = false;
-            self.pb_part = self.decode_part_size();
-            let parts = part_info(self.cu_pix_x, self.cu_pix_y, self.cu_width, self.cu_height, self.pb_part);
-            let i_scu = self.seq.i_scu;
-            for (part_idx, &(pb_x, pb_y, pb_w, pb_h)) in parts.iter().enumerate() {
-                let scup = ((pb_y >> 2) * i_scu + (pb_x >> 2)) as i32;
-                let mpm = self.get_mpm(scup);
-                let mut ipm = self.decode_intra_dir(mpm);
+            self.pb_part = self.dec_part_size();
+            let parts = blocks::part_info(self.pb_part, self.cu_x, self.cu_y, self.cu_w, self.cu_h);
+            for (k, &(px, py, pw, ph)) in parts.iter().enumerate().take(4) {
+                let scup = (py >> 2) * self.i_scu + (px >> 2);
+                let mpm = self.mpm(scup);
+                let mut ipm = self.dec_intra_dir(mpm);
                 if self.pb_part != SIZE_2NX2N {
-                    ipm = ipm.min(i32::from(IPD_IPCM) - 1);
+                    ipm = ipm.min(IPD_IPCM - 1);
                 }
-                self.ipm[part_idx] = ipm as i8;
-                self.refi = [-1; 2];
-                update_map_for_intra(&mut self.maps, pb_x, pb_y, pb_w, pb_h, ipm as i8);
+                self.ipm[k] = ipm as i8;
+                self.set_scu_ipm(px, py, pw, ph, ipm);
             }
+            self.refi = [-1, -1];
             if self.tree_status != TREE_L {
-                let tscpm = self.seq.tscpm_enable_flag;
-                self.ipm_c = self.decode_intra_dir_c(self.ipm[0] as u8, tscpm);
+                self.ipm_c = self.dec_intra_dir_c(i32::from(self.ipm[0])) as i8;
             }
-            let ipcm = self.ipm[0] as u8 == IPD_IPCM;
-            if !(self.tree_status == TREE_C && ipcm && self.ipm_c == IPD_DM_C)
-                && !(self.tree_status != TREE_C && ipcm)
-                && self.seq.ipf_enable_flag
-                && self.cu_width < MAX_CU_SIZE
-                && self.cu_height < MAX_CU_SIZE
+            let ipcm0 = i32::from(self.ipm[0]) == IPD_IPCM;
+            let dm = i32::from(self.ipm_c) == IPD_DM_C;
+            if !(self.tree_status == TREE_C && ipcm0 && dm)
+                && !(self.tree_status != TREE_C && ipcm0)
+                && self.seq.ipf_enable
+                && self.cu_w < 128
+                && self.cu_h < 128
                 && self.pb_part == SIZE_2NX2N
             {
                 self.ipf_flag = self.lbac.bin(&mut self.ctx.ipf_flag[0]) != 0;
             }
-            self.refi = [-1; 2];
+            self.refi = [-1, -1];
         }
-
         self.cbfy = [0; 4];
         self.cbfc = [0; 2];
         if self.cu_mode != MODE_SKIP {
-            self.parse_cbf();
+            self.dec_cbf();
         }
     }
 
-    fn parse_cbf(&mut self) {
-        let (cu_log2w, cu_log2h) = (self.cu_log2w, self.cu_log2h);
-        let tree_status = self.tree_status;
-        if self.cu_mode != MODE_INTRA {
-            if self.cu_mode != MODE_DIR && tree_status == TREE_LC {
-                let c = usize::from(cu_log2w > 6 || cu_log2h > 6);
-                if self.lbac.bin(&mut self.ctx.ctp_zero_flag[c]) != 0 {
-                    self.tb_part = SIZE_2NX2N;
-                    return;
-                }
+    fn dec_inter_params(&mut self) {
+        let mut dir = PRED_L0;
+        let mut hmvp_flag = false;
+        let mut mvr_idx = 0i32;
+        let aff = self.dec_affine_flag();
+        self.affine_flag = u8::from(aff);
+        if self.seq.amvr_enable {
+            if self.seq.emvr_enable && !aff {
+                hmvp_flag = self.lbac.bin(&mut self.ctx.mvp_from_hmvp_flag[0]) != 0;
             }
-            let tb_avail = matches!((cu_log2w, cu_log2h), (3, 3) | (3, 4) | (4, 3) | (4, 4) | (4, 5) | (5, 4) | (5, 5));
-            if self.seq.position_based_transform_enable_flag && tb_avail {
-                self.tb_part = if self.lbac.bin(&mut self.ctx.tb_split[0]) != 0 { SIZE_NXN } else { SIZE_2NX2N };
+            mvr_idx = if aff {
+                self.lbac.truncate_unary(&mut self.ctx.affine_mvr_idx, 2, 3) as i32
             } else {
-                self.tb_part = SIZE_2NX2N;
+                self.lbac.truncate_unary(&mut self.ctx.mvr_idx, 4, 5) as i32
+            };
+        }
+        if self.slice_type == SliceType::B {
+            dir = self.dec_inter_dir();
+        }
+        if aff {
+            self.dec_affine_mv(mvr_idx, dir);
+            return;
+        }
+        let mut smvd = false;
+        let d0 = self.refp.first().map_or(0, |r| r[0].dist);
+        let d1 = self.refp.first().map_or(0, |r| r[1].dist);
+        if self.seq.smvd_enable && dir == PRED_BI && !hmvp_flag && d0 == -d1 {
+            smvd = self.lbac.bin(&mut self.ctx.smvd_flag[0]) != 0;
+        }
+        let mut mvd = [0i32; 2];
+        for lidx in 0..2usize {
+            let used = if lidx == 0 { dir == PRED_L0 || dir == PRED_BI } else { dir == PRED_L1 || dir == PRED_BI };
+            if !used {
+                self.refi[lidx] = REFI_INVALID;
+                continue;
             }
-            if tree_status == TREE_LC {
-                self.cbfc[0] = self.lbac.bin(&mut self.ctx.cbf[1]) as u8;
-                self.cbfc[1] = self.lbac.bin(&mut self.ctx.cbf[2]) as u8;
-            }
-            if self.cbfc == [0, 0] && self.tb_part == SIZE_2NX2N && tree_status == TREE_LC {
-                self.cbfy[0] = 1;
+            self.refi[lidx] = if smvd { 0 } else { self.dec_refidx(self.num_refp[lidx]) };
+            let mvp = self.derive_mvp(lidx, hmvp_flag, mvr_idx);
+            if lidx == 1 && smvd {
+                mvd = [mvd[0].wrapping_neg().min(32767), mvd[1].wrapping_neg().min(32767)];
             } else {
-                for i in 0..part_num(self.tb_part) {
-                    self.cbfy[i] = self.lbac.bin(&mut self.ctx.cbf[0]) as u8;
-                }
+                mvd = self.dec_mvd();
             }
-            if cu_log2w > 6 || cu_log2h > 6 {
-                self.cbfy[0] = 0;
+            for c in 0..2 {
+                let v = i32::from(mvp[c]).wrapping_add(mvd[c].wrapping_shl(mvr_idx as u32));
+                self.mv[lidx][c] = v.clamp(-32768, 32767) as i16;
             }
+        }
+    }
+
+    // ------------------------------------------------------------ map update
+
+    /// `dec_update_map`: stores the CU's flags, motion and size into the SCU maps.
+    pub(crate) fn update_map(&mut self) {
+        let (wi, hi) = (self.cu_w >> 2, self.cu_h >> 2);
+        let intra = self.cu_mode == MODE_INTRA;
+        let cbf = self.cbfy != [0; 4] || self.cbfc != [0; 2] || intra;
+        let mut scu = SCU_CODED;
+        if intra {
+            scu |= SCU_INTRA;
         } else {
-            if self.ipm[0] as u8 != IPD_IPCM {
-                self.tb_part = tb_part_of_pb(self.pb_part);
-                for i in 0..part_num(self.tb_part) {
-                    self.cbfy[i] = self.lbac.bin(&mut self.ctx.cbf[0]) as u8;
+            scu |= SCU_INTER;
+        }
+        if self.cu_mode == MODE_SKIP {
+            scu |= SCU_SKIP;
+        }
+        if cbf {
+            scu |= SCU_CBF;
+        }
+        scu |= self.affine_flag << SCU_AFFINE_SHIFT;
+        let pos = self.log2w | (self.log2h << 3) | ((self.cu_scup as u32) << 6);
+        for j in 0..hi {
+            for i in 0..wi {
+                let k = self.ix(self.cu_scup + j * self.i_scu + i);
+                if let Some(s) = self.map_scu.get_mut(k) {
+                    *s = scu;
+                }
+                if let Some(s) = self.map_pos.get_mut(k) {
+                    *s = pos;
+                }
+                if let Some(s) = self.cur.map_refi.get_mut(k) {
+                    *s = self.refi;
+                }
+                if self.affine_flag == 0
+                    && let Some(s) = self.cur.map_mv.get_mut(k)
+                {
+                    *s = self.mv;
                 }
             }
-            if tree_status == TREE_LC && (self.ipm[0] as u8 != IPD_IPCM || self.ipm_c != IPD_DM_C) {
-                self.cbfc[0] = self.lbac.bin(&mut self.ctx.cbf[1]) as u8;
-                self.cbfc[1] = self.lbac.bin(&mut self.ctx.cbf[2]) as u8;
-            }
+        }
+        if self.affine_flag != 0 {
+            self.set_affine_mvf();
         }
     }
 
-    fn parse_run(&mut self, off: usize) -> u32 {
-        let mut sym = self.lbac.truncate_unary(&mut self.ctx.run[off..], 2, 17);
-        if sym == 16 {
-            let g = self.lbac.unary_ep();
-            sym += (1 << g) - 1 + self.lbac.bins_ep_msb(g);
-        }
-        sym
-    }
+    // ------------------------------------------------------------ coefficients
 
-    fn parse_level(&mut self, off: usize) -> u32 {
-        let mut sym = self.lbac.truncate_unary(&mut self.ctx.level[off..], 2, 9);
-        if sym == 8 {
-            let g = self.lbac.unary_ep();
-            sym += (1 << g) - 1 + self.lbac.bins_ep_msb(g);
+    /// `dec_parse_run_length_cc`: parses and de-quantises one transform block. `comp` is 0, 1 or 2.
+    pub(crate) fn dec_coefs(&mut self, log2w: u32, log2h: u32, comp: usize) -> Vec<i16> {
+        let num = 1usize << (log2w + log2h);
+        let mut coef = vec![0i16; num];
+        let scanp = scan(log2w, log2h);
+        let qp = match comp {
+            0 => self.qp_y,
+            1 => self.qp_u,
+            _ => self.qp_v,
         }
-        sym
-    }
-
-    /// `dec_parse_run_length_cc`: parses and dequantises one transform block into `coef`
-    /// (`1 << (log2_w + log2_h)` entries). `ch_type` is 0 (Y), 1 (U) or 2 (V).
-    pub(crate) fn parse_run_length_cc(&mut self, coef: &mut [i16], log2_w: u32, log2_h: u32, ch_type: usize) {
-        let scanp = scan(log2_w, log2_h);
-        let num_coeff = 1usize << (log2_w + log2_h);
-        let mut scan_pos_offset = 0usize;
+        .clamp(0, 79) as usize;
+        let log2_size = ((log2w + log2h) >> 1) as i32;
+        let refix = (log2w + log2h) & 1 != 0;
+        let scale = i64::from(DQ_SCALE[qp]);
+        let shift = (i32::from(DQ_SHIFT[qp]) - (15 - self.seq.bit_depth as i32 - log2_size) + 1).max(0);
+        let offset = if shift == 0 { 0i64 } else { 1i64 << (shift - 1) };
+        let mask = (1usize << log2w) - 1;
+        let wq_on = self.ph.pic_wq_enable;
+        let (wq_w, idx_shift): (usize, u32) = if log2w == 2 && log2h == 2 { (4, 0) } else { (8, log2w.max(log2h).saturating_sub(3)) };
+        let ch_off = usize::from(comp != 0);
         let mut prev_level = 5usize;
-        let chroma = ch_type != 0;
-        let off_last1 = if chroma { 6 } else { 0 };
-        let off_last2 = if chroma { 12 } else { 0 };
-        let off_rl = if chroma { 12 } else { 0 };
-
-        let qp = match ch_type {
-            0 => self.lcu_qp_y,
-            1 => self.lcu_qp_u,
-            _ => self.lcu_qp_v,
-        } as usize;
-        let log2_size = ((log2_w + log2_h) >> 1) as i32;
-        let refix = (log2_w + log2_h) & 1 != 0;
-        let scale = i32::from(DQ_SCALE[qp]);
-        let shift = i32::from(DQ_SHIFT[qp]) - (15 - self.seq.bit_depth_internal as i32 - log2_size) + 1;
-        let offset = if shift == 0 { 0 } else { 1i32 << (shift - 1) };
-        let mask = (1usize << log2_w) - 1;
-        let weight_quant = self.pichdr.pic_wq_enable;
-        let (wq_idx_shift, wq_width) = if log2_w == 2 && log2_h == 2 { (0, 4) } else { (log2_w.max(log2_h) - 3, 8) };
-        let small = log2_w == 2 && log2_h == 2;
-
-        coef[..num_coeff].fill(0);
+        let mut pos_off = 0usize;
         loop {
             let ctx_add = prev_level << 1;
-            let run = self.parse_run(off_rl + ctx_add) as usize;
-            let abs_level = self.parse_level(off_rl + ctx_add) as i32 + 1;
-            let level: i32 = if self.lbac.bin_ep() != 0 { -abs_level } else { abs_level };
-            let level = i32::from(level as i16);
-
-            scan_pos_offset = (scan_pos_offset + run).min(num_coeff);
-            let scan_idx = scanp.get(scan_pos_offset).copied().unwrap_or(0) as usize;
-            let x = scan_idx & mask;
-            let y = scan_idx >> log2_w;
-
-            if (x | y) & 0xE0 == 0 {
-                let mut lev = if weight_quant {
-                    let w = if small {
-                        i64::from(self.pichdr.wq_4x4_matrix[(y >> wq_idx_shift) * wq_width + (x >> wq_idx_shift)])
-                    } else {
-                        i64::from(self.pichdr.wq_8x8_matrix[(y >> wq_idx_shift) * wq_width + (x >> wq_idx_shift)])
-                    };
-                    let v = ((((i64::from(level) * w) >> 2) * i64::from(scale)) >> 4) + i64::from(offset);
-                    (v >> shift) as i32
-                } else {
-                    (level.wrapping_mul(scale).wrapping_add(offset)) >> shift
-                };
-                lev = clip3(-32768, 32767, lev);
-                if refix {
-                    lev = (lev * 181 + 128) >> 8;
+            let run = {
+                let m = &mut self.ctx.run[ch_off * 12 + ctx_add..];
+                let mut s = self.lbac.truncate_unary(m, 2, 17);
+                if s == 16 {
+                    let order = self.lbac.unary_ep().min(31);
+                    s = s.wrapping_add((1u32 << order) - 1).wrapping_add(self.lbac.bins_ep_msb(order));
                 }
-                coef[scan_idx] = lev as i16;
-            }
-
-            if scan_pos_offset >= num_coeff - 1 {
-                break;
-            }
-            let l2 = get_log2(scan_pos_offset as i32 + 1) as usize;
-            let last_flag = self.lbac.bin_w(&mut self.ctx.last1[off_last1 + prev_level], &mut self.ctx.last2[(off_last2 + l2).min(21)]);
-            prev_level = ((abs_level - 1) as usize).min(5);
-            scan_pos_offset += 1;
-            if last_flag != 0 {
-                break;
-            }
-        }
-    }
-
-    // ---- SAO, ALF flags, delta QP ----
-
-    fn parse_sao_mergeflag(&mut self, left_avail: bool, up_avail: bool) -> u32 {
-        let act_ctx = u32::from(left_avail) + u32::from(up_avail);
-        let mut sym = 0;
-        if act_ctx == 1 {
-            sym = self.lbac.bin(&mut self.ctx.sao_merge_flag[0]);
-        } else if act_ctx == 2 {
-            sym = self.lbac.bin(&mut self.ctx.sao_merge_flag[1]);
-            if sym != 1 {
-                sym += self.lbac.bin(&mut self.ctx.sao_merge_flag[2]) << 1;
-            }
-        }
-        if left_avail && !up_avail {
-            return if sym != 0 { 2 } else { 0 };
-        }
-        if up_avail && !left_avail {
-            return if sym != 0 { 1 } else { 0 };
-        }
-        if sym != 0 { 3 - sym } else { 0 }
-    }
-
-    fn parse_sao_offset(&mut self, typ: u32, offset: &mut [i32; 5], _band: &mut [i32; 4]) {
-        const THRESH: [i32; 6] = [7, 1, 0, 1, 7, 7];
-        const EO_INV: [i32; 8] = [1, 0, 2, -1, 3, 4, 5, 6];
-        offset[2] = 0;
-        for i in 0..4usize {
-            if typ == 4 {
-                let mut sym = i32::from(self.lbac.bin(&mut self.ctx.sao_offset[0]) == 0);
-                if sym != 0 {
-                    sym += self.lbac.truncate_unary_ep(THRESH[5] as u32) as i32;
-                    if self.lbac.bin_ep() != 0 {
-                        sym = -sym;
+                s
+            };
+            let abs_level = {
+                let m = &mut self.ctx.level[ch_off * 12 + ctx_add..];
+                let mut s = self.lbac.truncate_unary(m, 2, 9);
+                if s == 8 {
+                    let order = self.lbac.unary_ep().min(31);
+                    s = s.wrapping_add((1u32 << order) - 1).wrapping_add(self.lbac.bins_ep_msb(order));
+                }
+                s as i32 + 1
+            };
+            let level = if self.lbac.bin_ep() != 0 { -abs_level } else { abs_level };
+            pos_off = (pos_off + run as usize).min(num);
+            // uavs3d reads one entry past the scan table when a run lands on `num`: the first entry of the next
+            // table, which is always 0.
+            let at_pos = if pos_off == num { Some(0u16) } else { scanp.get(pos_off).copied() };
+            if let Some(si) = at_pos {
+                let si = si as usize;
+                let (x, y) = (si & mask, si >> log2w);
+                if (x | y) & 0xE0 == 0 {
+                    let mut lev = if wq_on {
+                        let w = if wq_w == 4 {
+                            self.ph.wq_4x4.get((y >> idx_shift) * 4 + (x >> idx_shift)).copied()
+                        } else {
+                            self.ph.wq_8x8.get((y >> idx_shift) * 8 + (x >> idx_shift)).copied()
+                        }
+                        .unwrap_or(0);
+                        (((((i64::from(level) * i64::from(w)) >> 2) * scale) >> 4) + offset) >> shift
+                    } else {
+                        (i64::from(level) * scale + offset) >> shift
+                    };
+                    lev = lev.clamp(-32768, 32767);
+                    if refix {
+                        lev = (lev * 181 + 128) >> 8;
+                    }
+                    if let Some(c) = coef.get_mut(si) {
+                        *c = lev as i16;
                     }
                 }
-                offset[i] = sym;
-            } else {
-                let idx = if i >= 2 { i + 1 } else { i };
-                let cnt = self.lbac.truncate_unary_ep(THRESH[idx] as u32 + 1) as i32;
-                let sym = match idx {
-                    0 => EO_INV[cnt as usize & 7],
-                    4 => -EO_INV[cnt as usize & 7],
-                    3 => -cnt,
-                    _ => cnt,
-                };
-                offset[idx] = sym;
+            }
+            if pos_off + 1 >= num {
+                break;
+            }
+            let l1 = &mut self.ctx.last1[ch_off * 6 + prev_level];
+            let l2i = ch_off * 11 + (usize::BITS - 1 - (pos_off + 1).leading_zeros()) as usize;
+            let l2 = &mut self.ctx.last2[l2i.min(21)];
+            let last = self.lbac.bin_w(l1, l2) != 0;
+            prev_level = ((abs_level - 1) as usize).min(5);
+            pos_off += 1;
+            if last {
+                break;
             }
         }
+        coef
     }
 
-    /// `dec_parse_sao_param`: fills `sao_param_map[lcu_idx]`.
-    pub(crate) fn parse_sao_param(&mut self, lcu_idx: usize) {
-        let sh = self.pathdr;
-        if !sh.slice_sao_enable.iter().any(|&e| e) {
-            for c in 0..3 {
-                self.sao_param_map[lcu_idx][c].enable = false;
-            }
-            return;
+    // ------------------------------------------------------------ SAO, ALF, QP
+
+    pub(crate) fn dec_sao_param(&mut self, lcu_idx: usize) -> [SaoParam; 3] {
+        let mut out = [SaoParam::default(); 3];
+        if !self.pat.sao_enable.iter().any(|&e| e) {
+            return out;
         }
-        let w = self.seq.pic_width_in_lcu;
-        let cur_patch = self.maps.patch[lcu_idx];
-        let up = self.lcu_y != 0 && cur_patch == self.maps.patch[lcu_idx - w];
-        let left = self.lcu_x != 0 && cur_patch == self.maps.patch[lcu_idx - 1];
-        let mut mergemode = 0;
+        let w_lcu = self.seq.w_lcu as usize;
+        let cur_patch = self.map_patch.get(lcu_idx).copied().unwrap_or(0);
+        let up = self.lcu_y != 0 && lcu_idx >= w_lcu && self.map_patch.get(lcu_idx - w_lcu).copied() == Some(cur_patch);
+        let left = self.lcu_x != 0 && lcu_idx >= 1 && self.map_patch.get(lcu_idx - 1).copied() == Some(cur_patch);
+        let mut merge = 0;
         if left || up {
-            mergemode = self.parse_sao_mergeflag(left, up);
+            let ctx = usize::from(left) + usize::from(up);
+            let mut sym = 0u32;
+            if ctx == 1 {
+                sym = self.lbac.bin(&mut self.ctx.sao_merge_flag[0]);
+            } else if ctx == 2 {
+                sym = self.lbac.bin(&mut self.ctx.sao_merge_flag[1]);
+                if sym != 1 {
+                    sym += self.lbac.bin(&mut self.ctx.sao_merge_flag[2]) << 1;
+                }
+            }
+            merge = if left && !up {
+                if sym != 0 { 2 } else { 0 }
+            } else if up && !left {
+                if sym != 0 { 1 } else { 0 }
+            } else if sym != 0 {
+                3 - sym
+            } else {
+                0
+            };
         }
-        if mergemode != 0 {
-            self.sao_param_map[lcu_idx] = if mergemode == 2 { self.sao_param_map[lcu_idx - 1] } else { self.sao_param_map[lcu_idx - w] };
-            return;
+        if merge != 0 {
+            let src = if merge == 2 { lcu_idx - 1 } else { lcu_idx - w_lcu };
+            return self.sao_map.get(src).copied().unwrap_or(out);
         }
-        let mut cur = self.sao_param_map[lcu_idx];
         for c in 0..3 {
-            let p: &mut SaoParam = &mut cur[c];
-            if !sh.slice_sao_enable[c] {
-                p.enable = false;
+            if !self.pat.sao_enable[c] {
                 continue;
             }
             let mode = if self.lbac.bin(&mut self.ctx.sao_mode[0]) == 0 { 1 + u32::from(self.lbac.bin_ep() == 0) } else { 0 };
-            match mode {
-                0 => p.enable = false,
-                1 => {
-                    p.enable = true;
-                    p.typ = 4;
-                }
-                _ => {
-                    p.enable = true;
-                    p.typ = 0;
+            if mode == 0 {
+                continue;
+            }
+            let p = &mut out[c];
+            p.enable = true;
+            p.typ = if mode == 1 { 4 } else { 0 };
+            // offsets
+            p.offset[2] = 0;
+            const INV: [i32; 8] = [1, 0, 2, -1, 3, 4, 5, 6];
+            for i in 0..4usize {
+                if p.typ == 4 {
+                    let mut sym = i32::from(self.lbac.bin(&mut self.ctx.sao_offset[0]) == 0);
+                    if sym != 0 {
+                        sym += self.lbac.truncate_unary_ep(7) as i32;
+                        if self.lbac.bin_ep() != 0 {
+                            sym = -sym;
+                        }
+                    }
+                    p.offset[i] = sym;
+                } else {
+                    let idx = if i >= 2 { i + 1 } else { i };
+                    let maxv = match idx {
+                        0 | 4 => 7,
+                        _ => 1,
+                    };
+                    let cnt = self.lbac.truncate_unary_ep(maxv + 1) as usize;
+                    let inv = INV.get(cnt).copied().unwrap_or(0);
+                    p.offset[idx] = match idx {
+                        0 => inv,
+                        4 => -inv,
+                        3 => -(cnt as i32),
+                        _ => cnt as i32,
+                    };
                 }
             }
-            if p.enable {
-                let (typ, mut off, mut band) = (p.typ, p.offset, p.band_idx);
-                self.parse_sao_offset(typ, &mut off, &mut band);
-                p.offset = off;
-                if typ == 4 {
-                    let start = self.lbac.bins_ep_lsb(5) as i32;
-                    let golomb_order = 1 + self.lbac.truncate_unary_ep(4);
-                    let act_sym = (1i32 << golomb_order) - 2 + self.lbac.bins_ep_msb(golomb_order % 4) as i32;
-                    band = [start, (start + 1) % 32, (start + 2 + act_sym) % 32, (start + 2 + act_sym + 1) % 32];
-                    p.band_idx = band;
-                } else {
-                    p.typ = self.lbac.bins_ep_lsb(2);
-                }
+            if p.typ == 4 {
+                let start = self.lbac.bins_ep_lsb(5) as i32;
+                let order = 1 + self.lbac.truncate_unary_ep(4);
+                let sym = (1i32 << order) - 2 + self.lbac.bins_ep_msb(order % 4) as i32;
+                p.band_idx = [start, (start + 1) % 32, (start + 2 + sym) % 32, (start + 3 + sym) % 32];
+            } else {
+                p.typ = self.lbac.bins_ep_lsb(2) as i32;
             }
         }
-        self.sao_param_map[lcu_idx] = cur;
+        out
     }
 
-    pub(crate) fn parse_alf_enable(&mut self) -> bool {
-        self.lbac.bin(&mut self.ctx.alf_lcu_enable[0]) != 0
-    }
-
-    pub(crate) fn parse_lcu_delta_qp(&mut self, last_dqp: i32) -> i32 {
-        let mut act_ctx = usize::from(last_dqp != 0);
-        let mut act_sym = i32::from(self.lbac.bin(&mut self.ctx.lcu_qp_delta[act_ctx]) == 0);
-        if act_sym != 0 {
-            act_ctx = 2;
+    pub(crate) fn dec_lcu_delta_qp(&mut self, last: i32) -> i32 {
+        let ctx = &mut self.ctx.lcu_qp_delta;
+        let l = &mut self.lbac;
+        let mut sym = i32::from(l.bin(&mut ctx[usize::from(last != 0)]) == 0);
+        if sym != 0 {
+            let mut c = 2usize;
             loop {
-                let bin = self.lbac.bin(&mut self.ctx.lcu_qp_delta[act_ctx]);
-                act_ctx = 3.min(act_ctx + 1);
-                act_sym += i32::from(bin == 0);
-                if !(bin == 0 && self.lbac.cur < self.lbac.end) {
+                let bin = l.bin(&mut ctx[c]);
+                c = (c + 1).min(3);
+                sym += i32::from(bin == 0);
+                if bin != 0 || l.at_end() {
                     break;
                 }
             }
         }
-        let mut dquant = (act_sym + 1) >> 1;
-        if act_sym & 1 == 0 {
-            dquant = -dquant;
-        }
-        dquant
+        let d = (sym + 1) >> 1;
+        if sym & 1 == 0 { -d } else { d }
+    }
+
+    pub(crate) fn dec_alf_enable(&mut self) -> bool {
+        self.lbac.bin(&mut self.ctx.alf_lcu_enable[0]) != 0
     }
 }
+
+#[allow(dead_code)]
+fn _unused(_: Motion) {}

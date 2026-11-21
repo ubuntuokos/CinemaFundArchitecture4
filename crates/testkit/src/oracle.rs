@@ -177,21 +177,6 @@ pub fn ffmpeg_version(ff: &Path) -> Option<String> {
     ffmpeg_version_in(&String::from_utf8_lossy(&out.stdout))
 }
 
-/// Is `version` (as [`ffmpeg_version`] reports it) `major.minor` or later? A version without a
-/// release number (a git build such as `N-12345-gabcdef`) counts as later.
-pub fn version_at_least(version: &str, major: u32, minor: u32) -> bool {
-    let mut parts = version.trim_start_matches('n').split(|c: char| !c.is_ascii_digit());
-    match parts.next().and_then(|p| p.parse::<u32>().ok()) {
-        Some(ma) => (ma, parts.next().and_then(|p| p.parse::<u32>().ok()).unwrap_or(0)) >= (major, minor),
-        None => true,
-    }
-}
-
-/// Is `ff` ffmpeg `major.minor` or later (true when the version is unknown)?
-pub fn ffmpeg_at_least(ff: &Path, major: u32, minor: u32) -> bool {
-    ffmpeg_version(ff).is_none_or(|v| version_at_least(&v, major, minor))
-}
-
 /// ffmpeg that can read `format_name`, or `None` after reporting a skip (see
 /// [`skip`]). An ffmpeg predating the format (APV needs 8.0+) skips with its
 /// detected version named, exactly like a missing tool — and fails under
@@ -209,16 +194,6 @@ pub fn ffmpeg_with_format_or_skip(context: &str, format_name: &str, min_version:
 #[cfg(test)]
 mod tests {
     use super::*;
-
-    #[test]
-    fn release_versions_compare() {
-        assert!(!version_at_least("6.1.1-3ubuntu5", 8, 1));
-        assert!(!version_at_least("8.0.1", 8, 1));
-        assert!(version_at_least("8.1", 8, 1));
-        assert!(version_at_least("9.0.2", 8, 1));
-        assert!(version_at_least("n9.0", 8, 1));
-        assert!(version_at_least("N-121000-gabcdef", 8, 1));
-    }
 
     #[test]
     fn encoder_lookup_matches_the_name_column_only() {

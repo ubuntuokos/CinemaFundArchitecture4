@@ -205,24 +205,6 @@ pub(crate) fn marker_color_p(p: &Value, cmd: &str) -> Result<Option<Label>> {
         bad(cmd, format!("unknown marker color {v}; use one of: {}", names.join(", ")))
     })
 }
-/// The marker `kind` parameter (`comment`, `chapter`, `segmentation`, `webLink`, `flashCue`, any
-/// case); `None` when absent. Segmentation markers with a duration are the AS-11 programme parts
-/// of an MXF export (#1254).
-pub(crate) fn marker_kind_p(p: &Value, cmd: &str) -> Result<Option<MarkerKind>> {
-    let v = match p.get("kind") {
-        None | Some(Value::Null) => return Ok(None),
-        Some(v) => v,
-    };
-    let kind = match v.as_str().map(str::to_ascii_lowercase).as_deref() {
-        Some("comment") => MarkerKind::Comment,
-        Some("chapter") => MarkerKind::Chapter,
-        Some("segmentation") => MarkerKind::Segmentation,
-        Some("weblink") => MarkerKind::WebLink,
-        Some("flashcue") => MarkerKind::FlashCue,
-        _ => return Err(bad(cmd, format!("unknown marker kind {v}; use one of: comment, chapter, segmentation, webLink, flashCue"))),
-    };
-    Ok(Some(kind))
-}
 pub(crate) fn str_p<'a>(p: &'a Value, k: &str) -> Option<&'a str> {
     p.get(k).and_then(Value::as_str)
 }
@@ -1555,17 +1537,6 @@ fn build() -> Vec<CommandSpec> {
                     }
                     continue;
                 }
-                // A DCP folder, asset map or composition playlist: one sequence per playlist.
-                if let Some(r) = crate::dcp_import::import_package(s, &path, bin) {
-                    match r {
-                        Ok(r) => {
-                            sequences.extend(r["sequences"].as_array().cloned().unwrap_or_default());
-                            reports.push(r);
-                        }
-                        Err(e) => errors.push(format!("{path}: {e}")),
-                    }
-                    continue;
-                }
                 // DCP / IMF subtitles: timed text track files are caption tracks, not media.
                 if let Some(r) = crate::captions::import_timed_text_mxf(s, &path) {
                     match r {
@@ -1870,13 +1841,12 @@ fn build() -> Vec<CommandSpec> {
             "Media…",
             ["File", "Export"],
             None,
-            r#"{"path":str,"preset":str?,"settings":ExportSettings?,"format":"h264|hevc|prores|dnxhr|apv|cineform|mjpeg|mxf-op1a|mxf-opatom|mpeg2|dcp|imf|png|tiff|bmp|jpg|tga|dpx|exr|gif|wav|aiff|aac|flac"?,"audioCodec":"auto|aac|pcm|flac|opus|ac3|mp2"?,"flacLevel":0..8=5,"width":u32?,"height":u32?,"fps":f64?,"bitrateKbps":u32?,"bitrateMode":"cbr|vbr1Pass|vbr2Pass|crf"?,"crf":0..51=23,"hardwareEncoding":"off|auto"?,"scale":f32=1,"audio":bool=true,"quality":0..100,"burnCaptions":bool=false,"dashManifest":bool=false,"alpha":bool=false,"exrCompression":"none|rle|zips|zip|piz"?,"captionSidecar":"srt|vtt"?,"loudnessLufs":f64?,"proresProfile":"proxy|lt|standard|hq|4444|4444xq"?,"dnxProfile":"lb|sq|hq|hqx|hd1235|hd1237|hd1238|hd1250|hd1251|hd1252|hd1253"?,"apvProfile":"422-10|422-12|444-10|444-12"?,"cineformProfile":"422|444|4444"?,"cineformQuality":"filmscan3|filmscan2|filmscan1|high|medium|low"?,"mxfVideoCodec":"dnxhr|proRes|h264|mpeg2|d10|xdcamHd422|v210|uyvy"?,"mxfAncCaptions":bool=false,"mxfAs11Core":str?,"mxfAs11Segments":str?,"mxfAs11Ukdpp":str?,"mxfAs10":str?,"mpeg2Container":"ps|ts|m2ts|es"?,"mpeg2Chroma":"420|422"?,"mpeg2Quantizer":1..31?,"mpeg2BFrames":0..7?,"dcpResolution":"2k|4k"?,"dcpAspect":"flat|scope|full"?,"dcpContentKind":"feature|trailer|teaser|short|advertisement|test|transitional|rating|policy|psa"?,"dcpImmersive":"off|bed|file"?,"dcpIabSource":str?,"dcpIabFallback":"5.1|mix|none"?,"dcpLanguage":str?,"dcpSubtitles":bool?,"dcpSubtitleLanguage":str?,"dcpSubtitleFont":str?,"imfLossless":bool?,"imfContentKind":"feature|trailer|teaser|short|advertisement|test|transitional|rating|psa|episode|highlights|event"?,"imfTimedTextKind":"subtitles|captions|forcedNarrative"?,"fieldOrder":"progressive|upperFirst|lowerFirst"?,"sequence":id?,"range":"entire|inOut|workArea|custom"?,"startSeconds":f64?,"endSeconds":f64?,"wait":bool=false}"#,
+            r#"{"path":str,"preset":str?,"settings":ExportSettings?,"format":"h264|hevc|prores|dnxhr|apv|cineform|mjpeg|mxf-op1a|mxf-opatom|mpeg2|dcp|imf|png|tiff|bmp|jpg|tga|dpx|exr|gif|wav|aiff|aac|flac"?,"audioCodec":"auto|aac|pcm|flac|opus|ac3|mp2"?,"flacLevel":0..8=5,"width":u32?,"height":u32?,"fps":f64?,"bitrateKbps":u32?,"bitrateMode":"cbr|vbr1Pass|vbr2Pass|crf"?,"crf":0..51=23,"hardwareEncoding":"off|auto"?,"scale":f32=1,"audio":bool=true,"quality":0..100,"burnCaptions":bool=false,"dashManifest":bool=false,"alpha":bool=false,"exrCompression":"none|rle|zips|zip|piz"?,"captionSidecar":"srt|vtt"?,"loudnessLufs":f64?,"proresProfile":"proxy|lt|standard|hq|4444|4444xq"?,"dnxProfile":"lb|sq|hq|hqx"?,"apvProfile":"422-10|422-12|444-10|444-12"?,"cineformProfile":"422|444|4444"?,"cineformQuality":"filmscan3|filmscan2|filmscan1|high|medium|low"?,"mxfVideoCodec":"dnxhr|proRes|h264|mpeg2|d10|xdcamHd422|v210|uyvy"?,"mxfAncCaptions":bool=false,"mpeg2Container":"ps|ts|m2ts|es"?,"mpeg2Chroma":"420|422"?,"mpeg2Quantizer":1..31?,"mpeg2BFrames":0..7?,"dcpResolution":"2k|4k"?,"dcpAspect":"flat|scope|full"?,"dcpContentKind":"feature|trailer|teaser|short|advertisement|test|transitional|rating|policy|psa"?,"dcpImmersive":"off|bed|file"?,"dcpIabSource":str?,"dcpIabFallback":"5.1|mix|none"?,"dcpLanguage":str?,"imfLossless":bool?,"imfContentKind":"feature|trailer|teaser|short|advertisement|test|transitional|rating|psa|episode|highlights|event"?,"fieldOrder":"progressive|upperFirst|lowerFirst"?,"sequence":id?,"range":"entire|inOut|workArea|custom"?,"startSeconds":f64?,"endSeconds":f64?,"wait":bool=false}"#,
             has_seq,
             crate::export_tools::export_media
         ),
         query!("jobs.list", "List Jobs", "{}", |s, _| Ok(Value::Array(s.jobs.iter().map(|j| crate::export_tools::job_json(s, j)).collect()))),
         query!("perf.stats", "Performance Statistics", "{}", |s, _| Ok(crate::perf::stats(s))),
-        query!("security.status", "Security Status", "{}", |s, _| Ok(crate::security::status(s))),
         cmd!("jobs.cancel", "Cancel Job", [], None, r#"{"job":id}"#, always, |s, p| {
             let id = u64_p(p, "job").ok_or_else(|| bad("jobs.cancel", "need `job`"))?;
             let j = s.jobs.iter().find(|j| j.id == id).ok_or_else(|| bad("jobs.cancel", "no such job"))?;
@@ -2771,7 +2741,7 @@ fn build() -> Vec<CommandSpec> {
             "Add Marker",
             ["Markers"],
             Some("M"),
-            r#"{"target":"program|source","time":ticks?,"name":str?,"comment":str?,"color":label?,"durationFrames":i64?,"kind":"comment|chapter|segmentation|webLink|flashCue"?}"#,
+            r#"{"target":"program|source","time":ticks?,"name":str?,"comment":str?,"color":label?,"durationFrames":i64?}"#,
             always,
             |s, p| {
                 if let Some(v) = crate::source_monitor::route(s, "markers.add", p)? {
@@ -2783,10 +2753,9 @@ fn build() -> Vec<CommandSpec> {
                 let comment = str_p(p, "comment").unwrap_or("").to_string();
                 let color = marker_color_p(p, "markers.add")?.unwrap_or(Label::Green);
                 let dur = p.get("durationFrames").and_then(Value::as_i64).map(|f| s.sequence_rate().tick_of(f)).unwrap_or_default();
-                let kind = marker_kind_p(p, "markers.add")?.unwrap_or(MarkerKind::Comment);
                 let id = s.edit_sequence("Add Marker", |q, ctx, _| {
                     let id = MarkerId(ctx.alloc());
-                    q.markers.push(Marker { id, start: t, duration: dur, name, comment, kind, color });
+                    q.markers.push(Marker { id, start: t, duration: dur, name, comment, kind: MarkerKind::Comment, color });
                     q.markers.sort_by_key(|m| m.start);
                     Ok(id)
                 })?;
@@ -2850,7 +2819,7 @@ fn build() -> Vec<CommandSpec> {
             "Edit Marker…",
             [],
             None,
-            r#"{"target":"program|source","marker":id,"name":str?,"comment":str?,"color":label?,"durationFrames":i64?,"kind":"comment|chapter|segmentation|webLink|flashCue"?}"#,
+            r#"{"target":"program|source","marker":id,"name":str?,"comment":str?,"color":label?,"durationFrames":i64?}"#,
             always,
             |s, p| {
                 if let Some(v) = crate::source_monitor::route(s, "markers.edit", p)? {
@@ -2859,7 +2828,6 @@ fn build() -> Vec<CommandSpec> {
                 let id = u64_p(p, "marker").map(MarkerId).ok_or_else(|| bad("markers.edit", "need `marker`"))?;
                 let rate = s.sequence_rate();
                 let color = marker_color_p(p, "markers.edit")?;
-                let kind = marker_kind_p(p, "markers.edit")?;
                 let p = p.clone();
                 s.edit_sequence("Edit Marker", |q, _, _| {
                     let m = q.markers.iter_mut().find(|m| m.id == id).ok_or_else(|| bad("markers.edit", "no such marker"))?;
@@ -2871,9 +2839,6 @@ fn build() -> Vec<CommandSpec> {
                     }
                     if let Some(c) = color {
                         m.color = c;
-                    }
-                    if let Some(k) = kind {
-                        m.kind = k;
                     }
                     if let Some(f) = p.get("durationFrames").and_then(Value::as_i64) {
                         m.duration = rate.tick_of(f);
@@ -3147,15 +3112,9 @@ fn build() -> Vec<CommandSpec> {
         cmd!("trim.applyDefaultTransition", "Apply Default Transitions to Selection", ["Sequence"], None, "{}", has_edit_points, |s, _| {
             crate::trim::apply_default_transitions(s)
         }),
-        cmd!(
-            "trim.shuttle",
-            "Dynamic Trim (Shuttle)",
-            [],
-            None,
-            r#"{"direction":"forward|reverse","slow":bool?,"speed":f64?,"clock":seconds}"#,
-            has_edit_points,
-            |s, p| { crate::trim::shuttle(s, p) }
-        ),
+        cmd!("trim.shuttle", "Dynamic Trim (Shuttle)", [], None, r#"{"direction":"forward|reverse","slow":bool?,"clock":seconds}"#, has_edit_points, |s, p| {
+            crate::trim::shuttle(s, p)
+        }),
         cmd!("trim.shuttleStop", "Dynamic Trim Stop", [], None, r#"{"clock":seconds?}"#, has_seq, |s, p| crate::trim::stop(s, p)),
         cmd!("trim.cancelDynamic", "Cancel Dynamic Trim", [], None, "{}", has_seq, |s, _| crate::trim::cancel(s)),
         cmd!("trim.playAround", "Play Around Edit", [], None, r#"{"clock":seconds,"loop":bool=true,"toggle":bool?}"#, has_seq, |s, p| {
@@ -3893,8 +3852,6 @@ fn build() -> Vec<CommandSpec> {
     v.extend(crate::captions::commands());
     v.extend(crate::settings::commands());
     v.extend(crate::timecode_sync::commands());
-    v.extend(crate::control_surfaces::commands());
-    v.extend(crate::ltc_read::commands());
     v.extend(crate::mixer::commands());
     v.extend(crate::multicam::commands());
     v.extend(crate::essential_sound::commands());
@@ -3903,13 +3860,11 @@ fn build() -> Vec<CommandSpec> {
     v.extend(crate::graphic_templates::commands());
     v.extend(crate::credits::commands());
     v.extend(crate::live::commands());
-    v.extend(crate::studio::commands());
     v.extend(crate::dialog_defaults::commands());
     v.extend(crate::legibility::commands());
     v.extend(crate::shortcuts::commands());
     v.extend(crate::relink::commands());
     v.extend(crate::kdm::commands());
-    v.extend(crate::atrac_convert::commands());
     v.extend(crate::dcpomatic::commands());
     v.extend(crate::proxies::commands());
     v.extend(crate::project_manager::commands());

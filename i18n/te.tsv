@@ -2065,7 +2065,6 @@
 	Text Animator	టెక్స్ట్ యానిమేటర్
 	Counter	కౌంటర్
 	Word by Word	పదం పదంగా
-	Scramble	కలగలుపు
 	Animator	యానిమేటర్
 	Animator Duration	యానిమేటర్ వ్యవధి
 	Animator Delay	యానిమేటర్ ఆలస్యం
@@ -3191,10 +3190,6 @@
 	Sharpen Amount	షార్పెన్ మొత్తం
 	Shift Center To	కేంద్రాన్ని దీనికి జరుపు
 	Show Focus Area	ఫోకస్ ప్రాంతాన్ని చూపు
-	Rack Focus	ర్యాక్ ఫోకస్
-	Focus Point A	ఫోకస్ బిందువు A
-	Focus Point B	ఫోకస్ బిందువు B
-	Rack	ర్యాక్
 	Show Only Noise	నాయిస్‌ను మాత్రమే చూపు
 	Shrink	కుదించు
 	Shutter Angle	షట్టర్ కోణం
@@ -4187,11 +4182,6 @@ export.summary	Low	తక్కువ
 	Burn Size	కాలే పరిమాణం
 	Ember Width	నిప్పు అంచు వెడల్పు
 	Ember Color	నిప్పు అంచు రంగు
-	Tear Away	చింపివేత
-	Tear Roughness	చిరుగు గరుకుదనం
-	Paper Edge Width	కాగితం అంచు వెడల్పు
-	Stamp Cut	స్టాంప్ కట్
-	Perforations	చిల్లులు
 	Check Text Legibility	వచనం చదవగలతను తనిఖీ చేయి
 	Clear Legibility Markers	చదవగలత మార్కర్లను తొలగించు
 	Text legibility: no problems found	వచనం చదవగలత: సమస్యలు ఏవీ కనబడలేదు
@@ -4231,9 +4221,6 @@ export.summary	Low	తక్కువ
 	Dither	డిథర్
 	Pattern	నమూనా
 	Cell Size	సెల్ పరిమాణం
-	Pixelate	పిక్సెలేట్
-	Cell Shape	సెల్ ఆకారం
-	LED	LED
 	Cyan Angle	సయాన్ కోణం
 	Magenta Angle	మెజెంటా కోణం
 	Yellow Angle	పసుపు కోణం
@@ -4594,26 +4581,6 @@ export.summary	Low	తక్కువ
 	Chase External Timecode	బాహ్య టైమ్‌కోడ్‌ను అనుసరించు
 	Send LTC	LTC పంపు
 	Send MIDI Timecode	MIDI టైమ్‌కోడ్ పంపు
-
-# Live studio preview (CFA4-LIVE-STUDIO-001 S0)
-	Live studio preview	లైవ్ స్టూడియో ప్రివ్యూ
-	Live studio: stopped	లైవ్ స్టూడియో: ఆపివేయబడింది
-	Live studio: {state}	లైవ్ స్టూడియో: {state}
-	Live studio: {error}	లైవ్ స్టూడియో: {error}
-	restarted after {count} crashes (last: {exit})	{count} క్రాష్‌ల తర్వాత మళ్లీ ప్రారంభించబడింది (చివరిది: {exit})
-	software backend: {reason}	సాఫ్ట్‌వేర్ బ్యాకెండ్: {reason}
-	Start studio	స్టూడియోను ప్రారంభించు
-	Stop studio	స్టూడియోను ఆపు
-	Add Studio Scene	స్టూడియో దృశ్యాన్ని జోడించు
-	Live	ప్రత్యక్షం
-# Credits: title, opening, chapter and lower-third pages filled from a graphics template (F10-C16)
-	Opening Credits	ప్రారంభ క్రెడిట్స్
-	Chapter Title	అధ్యాయ శీర్షిక
-	Lower Third	లోయర్ థర్డ్
-	page {page}: graphics template “{template}” was not found; “{used}” is used	పేజీ {page}: గ్రాఫిక్స్ టెంప్లేట్ “{template}” కనబడలేదు; “{used}” వాడబడుతుంది
-	page {page}: graphics template “{template}” has no field for all of the block's text; the rest is left out	పేజీ {page}: గ్రాఫిక్స్ టెంప్లేట్ “{template}”లో బ్లాక్ మొత్తం వచనానికి ఫీల్డ్ లేదు; మిగిలినది వదిలివేయబడింది
-	page {page}: template field “{control}” → “{part}” is not used (no such text control, or not head, body or tail)	పేజీ {page}: టెంప్లేట్ ఫీల్డ్ “{control}” → “{part}” వాడబడదు (అటువంటి వచన నియంత్రణ లేదు, లేదా అది హెడ్, బాడీ లేదా టెయిల్ కాదు)
-	page {page}: pictures are left out on title, opening, chapter and lower-third pages	పేజీ {page}: శీర్షిక, ప్రారంభ, అధ్యాయ మరియు లోయర్ థర్డ్ పేజీలలో చిత్రాలు వదిలివేయబడతాయి
 # Auto Color, Auto Contrast, Auto Levels (EffectsSDK review)
 	Auto Color	స్వయంచాలక రంగు
 	Auto Contrast	స్వయంచాలక కాంట్రాస్ట్
@@ -4671,151 +4638,3 @@ export.summary	Low	తక్కువ
 	Freewheel	ఫ్రీవీల్
 	Scrubbing	స్క్రబ్ చేస్తోంది
 	Sending	పంపుతోంది
-
-# DCP subtitle export (#938)
-	Subtitles from the first caption track	మొదటి క్యాప్షన్ ట్రాక్ నుండి ఉపశీర్షికలు
-	The package language	ప్యాకేజీ భాష
-	Inter Regular (built in), or an OpenType / TrueType file	Inter Regular (అంతర్నిర్మిత), లేదా OpenType / TrueType ఫైల్
-	Subtitle language	ఉపశీర్షికల భాష
-	Subtitle font	ఉపశీర్షికల ఫాంట్
-	Fonts	ఫాంట్‌లు
-
-# AS-11 metadata in MXF OP1a (#96)
-	AS-11 Core	AS-11 Core
-	AS-11 Parts	AS-11 భాగాలు
-	AS-11 UK DPP	AS-11 UK DPP
-# Control surfaces (qt-control-surfaces-page, CFA4-CONTROL-SURFACE-001)
-	Connected	కనెక్ట్ అయింది
-	Device	పరికరం
-	Devices	పరికరాలు
-	Disabled	నిలిపివేయబడింది
-	MIDI	MIDI
-	Not connected	కనెక్ట్ కాలేదు
-	OSC	OSC
-	Use	ఉపయోగించు
-	{device} ({port})	{device} ({port})
-	{name}: {error}	{name}: {error}
-# Control surfaces (midi-monitor, CFA4-CONTROL-SURFACE-001)
-	MIDI Monitor	MIDI మానిటర్
-	Press Start Monitor, then move a control.	మానిటర్ ప్రారంభించు నొక్కి, ఆపై ఒక నియంత్రణను కదిలించండి.
-	Start Monitor	మానిటర్ ప్రారంభించు
-	Stop Monitor	మానిటర్ ఆపు
-	… {count} messages not shown (too many at once)	… {count} సందేశాలు చూపబడలేదు (ఒకేసారి చాలా ఎక్కువ)
-# Control surfaces (midi-learn, CFA4-CONTROL-SURFACE-001)
-	A control surface asked for {command}, which does not exist.	నియంత్రణ ఉపరితలం లేని {command} ను అడిగింది.
-	Assignments	కేటాయింపులు
-	Cancel Learn	నేర్చుకోవడం రద్దు
-	Control	నియంత్రణ
-	Learn	నేర్చుకో
-	Remove this assignment	ఈ కేటాయింపును తీసివేయి
-	{control} runs {command}.	{control} {command} ను నడుపుతుంది.
-# Control surfaces (shuttlepro, CFA4-CONTROL-SURFACE-001)
-	Button {n}	బటన్ {n}
-# Control surfaces (continuous-values, CFA4-CONTROL-SURFACE-001)
-	{strip} Pan (knob)	{strip} ప్యాన్ (నాబ్)
-	{strip} Volume (fader)	{strip} వాల్యూమ్ (ఫేడర్)
-# Control surfaces (F1 Learn and profile, CFA4-CONTROL-SURFACE-001)
-	Assignments run when a button is pressed (a fader or knob counts as pressed past half way); a fader or knob assigned to a mixer strip moves its volume or pan. A ShuttlePRO's shuttle ring plays at its profile's speeds and its jog wheel steps frame by frame. Endless encoders and feedback to the controller (lights, motor faders) come in a later version.	బటన్ నొక్కితే కేటాయింపులు నడుస్తాయి (ఫేడర్ లేదా నాబ్ సగం దాటితే నొక్కినట్లు); మిక్సర్ స్ట్రిప్‌కు కేటాయించిన ఫేడర్ లేదా నాబ్ వాల్యూమ్ లేదా పాన్‌ను కదుపుతుంది. ShuttlePRO షటిల్ రింగ్ ప్రొఫైల్ వేగాలతో ప్లే అవుతుంది, జాగ్ చక్రం ఫ్రేమ్‌లవారీగా అడుగు వేస్తుంది. అంతులేని ఎన్‌కోడర్లు మరియు నియంత్రకానికి స్పందన (దీపాలు, మోటారు ఫేడర్లు) తర్వాతి వెర్షన్‌లో వస్తాయి.
-	First message (ms)	మొదటి సందేశం (మి.సె)
-	Silence (ms)	నిశ్శబ్దం (మి.సె)
-	Waiting for the control to settle…	నియంత్రణ ఆగే వరకు వేచి ఉంది…
-	Type: {hint}. Confirm this assignment.	రకం: {hint}. ఈ కేటాయింపును నిర్ధారించండి.
-	That control is already assigned. Confirm replaces it.	ఆ నియంత్రణ ఇప్పటికే కేటాయించబడింది. నిర్ధారణ దాన్ని మారుస్తుంది.
-	Learn timed out.	నేర్చుకోవడం గడువు ముగిసింది.
-	Confirm	నిర్ధారించు
-	Reject	తిరస్కరించు
-	Shows every MIDI message from the controllers as it arrives, to check that a controller sends and what it sends. MIDI Clock, Active Sensing and MIDI Time Code are left out.	నియంత్రకం పంపుతుందో మరియు ఏమి పంపుతుందో చూడటానికి వచ్చిన ప్రతి MIDI సందేశాన్ని చూపిస్తుంది. MIDI గడియారం, Active Sensing మరియు MIDI సమయ కోడ్ వదిలివేయబడతాయి.
-	Pick a command (or a mixer strip for a fader or knob), press Learn, then press the button or move the control past half way. Confirm keeps the assignment. OK saves the assignments.	ఆదేశాన్ని ఎంచుకోండి (ఫేడర్ లేదా నాబ్‌కు మిక్సర్ స్ట్రిప్), నేర్చుకో నొక్కి, తర్వాత బటన్ నొక్కండి లేదా నియంత్రణను సగం దాటి కదపండి. నిర్ధారణ కేటాయింపును ఉంచుతుంది. సరే కేటాయింపులను భద్రపరుస్తుంది.
-	All devices	అన్ని పరికరాలు
-	Builtin: {name}	అంతర్నిర్మిత: {name}
-	Capturing	సంగ్రహణ
-	Confirmed	నిర్ధారించబడింది
-	Conflict	వైరుధ్యం
-	Connect a MIDI controller or a ShuttlePRO to edit its profile.	ప్రొఫైల్‌ను సవరించడానికి MIDI నియంత్రిక లేదా ShuttlePROను కలపండి.
-	Control Surfaces…	నియంత్రణ ఉపరితలాలు…
-	Filter messages	సందేశాలను వడపోయి
-	Idle	నిష్క్రియం
-	Kernel dropped: {count}	కెర్నల్ వదిలింది: {count}
-	Learn Assignments…	కేటాయింపులు నేర్చుకోండి…
-	Load profile	ప్రొఫైల్ లోడ్
-	MIDI Monitor…	MIDI మానిటర్…
-	Mute shuttle sound	షటిల్ ధ్వనిని మ్యూట్ చేయి
-	No conflicts.	వైరుధ్యాలు లేవు.
-	No profile warnings.	ప్రొఫైల్ హెచ్చరికలు లేవు.
-	No project profile is stored.	ప్రాజెక్ట్ ప్రొఫైల్ భద్రపరచబడలేదు.
-	OK writes the preferences and the profile file together.	సరే ప్రాధాన్యతలను మరియు ప్రొఫైల్ ఫైలును కలిపి వ్రాస్తుంది.
-	Online	ఆన్‌లైన్
-	Pending	పెండింగ్
-	Pickup (14-bit)	పికప్ (14 బిట్)
-	Pickup (7-bit)	పికప్ (7 బిట్)
-	Profile warnings	ప్రొఫైల్ హెచ్చరికలు
-	Rejected	తిరస్కరించబడింది
-	Show Active Sensing	Active Sensing చూపు
-	Show MIDI Clock	MIDI గడియారం చూపు
-	Show MIDI Time Code	MIDI సమయ కోడ్ చూపు
-	The profile file is damaged. Preferences and the built-in profile stay in use.	ప్రొఫైల్ ఫైలు పాడైంది. ప్రాధాన్యతలు మరియు అంతర్నిర్మిత ప్రొఫైల్ వాడుకలో ఉంటాయి.
-	Timed out	సమయం ముగిసింది
-	Type: {hint}	రకం: {hint}
-	User profile file	వినియోగదారు ప్రొఫైల్ ఫైలు
-	{received} received, {dispatched} dispatched, {coalesced} coalesced, {stalls} stalls, {errors} errors	{received} అందినవి, {dispatched} పంపినవి, {coalesced} కలిపినవి, {stalls} ఆగుదలలు, {errors} లోపాలు
-
-# Control Surfaces settings page (CS-1, #1187)
-	HID jog/shuttle	HID jog/shuttle
-	Looking for devices…	పరికరాల కోసం వెతుకుతోంది…
-	No MIDI controller or jog/shuttle device was found. Connect one and press Refresh.	MIDI కంట్రోలర్ లేదా jog/shuttle పరికరం కనబడలేదు. ఒకదాన్ని కనెక్ట్ చేసి రిఫ్రెష్ చేయి నొక్కండి.
-	Control Surfaces	కంట్రోల్ సర్ఫేస్‌లు
-	Use control surfaces (MIDI controllers, jog/shuttle devices)	కంట్రోల్ సర్ఫేస్‌లను ఉపయోగించు (MIDI కంట్రోలర్లు, jog/shuttle పరికరాలు)
-	Mapping controls to commands, MIDI Learn and the MIDI Monitor come in a later version; the choices here are remembered until then.	నియంత్రణలను ఆదేశాలకు కేటాయించడం, MIDI Learn మరియు MIDI మానిటర్ తదుపరి వెర్షన్‌లో వస్తాయి; అప్పటివరకు ఇక్కడి ఎంపికలు గుర్తుంచుకోబడతాయి.
-	CFA4 ShuttlePRO	CFA4 ShuttlePRO
-	Kdenlive-style ShuttlePRO	Kdenlive శైలి ShuttlePRO
-	Generic MIDI	సాధారణ MIDI
-# LTC timecode read from clip audio (TC-7, #1285)
-	Read from LTC Audio	LTC ఆడియో నుండి చదువు
-	Find SMPTE LTC on the clip's audio and use the timecode it gives the first frame	క్లిప్ ఆడియోలో SMPTE LTC‌ను కనుగొని అది మొదటి ఫ్రేమ్‌కు ఇచ్చే టైమ్‌కోడ్‌ను ఉపయోగించు
-	Read Timecode from LTC Audio	LTC ఆడియో నుండి టైమ్‌కోడ్ చదువు
-# Credits: voices (the Voice column) in the block's properties (F10-C16)
-	Voices	గొంతులు
-# Timecode sync varispeed and user bits (TC-8, #1308)
-	Varispeed: adjust the playback speed instead of seeking	Varispeed: దాటవేయడానికి బదులు ప్లేబ్యాక్ వేగాన్ని సర్దుబాటు చేయి
-	User bits	వినియోగదారు బిట్‌లు
-# AS-11 programme parts and AS-10 metadata (G2, #1371, #1375)
-	{tc}  Segmentation	{tc}  విభజన
-	Marker Type	మార్కర్ రకం
-	Chapter	చాప్టర్
-	Segmentation (AS-11 programme part)	విభజన (AS-11 కార్యక్రమ భాగం)
-	AS-10	AS-10
-# AT9/AT3 converter (Tools ▸ Audio Tools, AT3-2)
-	AT9/AT3 Converter	AT9/AT3 కన్వర్టర్
-	AT9/AT3 Converter…	AT9/AT3 కన్వర్టర్…
-	Files to convert:	మార్చవలసిన ఫైల్‌లు:
-	Add Files	ఫైల్‌లను జోడించు
-	Add Files…	ఫైల్‌లను జోడించు…
-	Convert to:	దీనికి మార్చు:
-	Bit rate:	బిట్ రేట్:
-	Sample format:	శాంపిల్ ఫార్మాట్:
-	Output folder:	అవుట్‌పుట్ ఫోల్డర్:
-	Output Folder	అవుట్‌పుట్ ఫోల్డర్
-	Next to each source file	ప్రతి మూల ఫైల్ పక్కన
-	AT9 and ATRAC3plus files convert to WAV; encoding AT9, ATRAC3plus and MP3 is not available yet.	AT9, ATRAC3plus ఫైల్‌లు WAVకి మారతాయి; AT9, ATRAC3plus, MP3 ఎన్‌కోడింగ్ ఇంకా అందుబాటులో లేదు.
-	Convert	మార్చు
-	Add the files to convert first.	ముందుగా మార్చవలసిన ఫైల్‌లను జోడించండి.
-	Done: {n} file(s) converted.	పూర్తయింది: {n} ఫైల్(లు) మార్చబడ్డాయి.
-	Converting {name}…	{name} మార్చబడుతోంది…
-	Stopping…	ఆపుతోంది…
-	AT3 (ATRAC3, PSP / PS3)	AT3 (ATRAC3, PSP / PS3)
-	WAV (PCM)	WAV (PCM)
-	132 kbit/s (LP2)	132 kbit/s (LP2)
-	105 kbit/s	105 kbit/s
-	66 kbit/s (LP4, joint stereo)	66 kbit/s (LP4, joint stereo)
-	16-bit	16-బిట్
-	24-bit	24-బిట్
-	32-bit float	32-బిట్ ఫ్లోట్
-
-# Datamosh transition (Grunge & Distort, DM1, #1409)
-	Datamosh	డేటామోష్
-	Residual	అవశేషం
-	Motion Boost	చలన పెంపు
-	Recovery	పునరుద్ధరణ
-	Encode Resolution	ఎన్‌కోడ్ రిజల్యూషన్
-	Half	సగం
-	Quarter	పావు

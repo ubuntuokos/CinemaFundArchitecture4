@@ -1,41 +1,19 @@
-// SPDX-License-Identifier: BSD-3-Clause
-// Derived from uavs3d (`source/decoder/parser.c`), Copyright (c) 2018-2022 Peking University Shenzhen Graduate
-// School, Peng Cheng Laboratory and Guangdong Bohua UHD Innovation Corporation. See LICENSE.uavs3d.
-//! Sequence, picture and patch headers, extension and user data.
+// SPDX-License-Identifier: GPL-3.0-or-later
+//! Sequence, picture and patch headers.
+//!
+//! Derived from uavs3d 1.2 (commit 0e20d2c2), Copyright (c) 2018-2022 Peking University
+//! Shenzhen Graduate School, Peng Cheng Laboratory and Guangdong Bohua UHD Innovation
+//! Corporation, BSD 3-clause licence (docs/licensing.md).
 
 use crate::Error;
 use crate::bits::Bits;
+use crate::tables::{WQ_DEFAULT_4X4, WQ_DEFAULT_8X8, WQ_DEFAULT_PARAM, WQ_MODEL_4X4, WQ_MODEL_8X8};
 
 pub(crate) const MAX_REFS: usize = 17;
-pub(crate) const MAX_RPLS: usize = 32;
-pub(crate) const NO_VAR_BINS: usize = 16;
-pub(crate) const ALF_MAX_NUM_COEF: usize = 9;
-pub(crate) const MAX_QUANT_BASE: i32 = 63;
+const PIC_ALIGN: u32 = 8;
+const FRAME_RATES: [(u32, u32); 13] =
+    [(24000, 1001), (24, 1), (25, 1), (30000, 1001), (30, 1), (50, 1), (60000, 1001), (60, 1), (100, 1), (120, 1), (200, 1), (240, 1), (300, 1)];
 
-/// The 8x8 weighting matrix of a picture (an array that has a `Default`).
-#[derive(Clone, Copy, Debug)]
-pub(crate) struct Wq8(pub [u8; 64]);
-
-impl Default for Wq8 {
-    fn default() -> Self {
-        Wq8([0; 64])
-    }
-}
-
-impl std::ops::Deref for Wq8 {
-    type Target = [u8; 64];
-    fn deref(&self) -> &[u8; 64] {
-        &self.0
-    }
-}
-
-impl std::ops::DerefMut for Wq8 {
-    fn deref_mut(&mut self) -> &mut [u8; 64] {
-        &mut self.0
-    }
-}
-
-/// Picture coding type (`SLICE_I` = 1, `SLICE_P` = 2, `SLICE_B` = 3).
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Default)]
 pub enum SliceType {
     #[default]
@@ -44,723 +22,504 @@ pub enum SliceType {
     B,
 }
 
-#[derive(Clone, Copy, Debug, Default)]
+/// A reference picture list description.
+#[derive(Clone, Debug, Default)]
 pub(crate) struct Rpl {
     pub num: usize,
     pub active: usize,
     pub delta_doi: [i32; MAX_REFS],
 }
 
-#[derive(Clone, Debug)]
-#[allow(dead_code)] // syntax elements that are parsed (and range checked) but not needed for decoding
+fn parse_rpl(b: &mut Bits<'_>, max_dpb: u32) -> Result<Rpl, Error> {
+    let mut r = Rpl { num: b.uer(0, max_dpb)? as usize, ..Rpl::default() };
+    if r.num > 0 {
+        let v = b.uer(1, 255)? as i32;
+        r.delta_doi[0] = if b.flag()? { -v } else { v };
+    }
+    for i in 1..r.num.min(MAX_REFS) {
+        let mut d = b.uer(0, 255)? as i32;
+        if d != 0 && b.flag()? {
+            d = -d;
+        }
+        r.delta_doi[i] = r.delta_doi[i - 1].wrapping_add(d);
+    }
+    Ok(r)
+}
+
+fn read_wq(b: &mut Bits<'_>, m4: &mut [u8; 16], m8: &mut Vec<u8>) -> Result<(), Error> {
+    m8.resize(64, 0);
+    for v in m4.iter_mut() {
+        *v = b.uer(1, 255)? as u8;
+    }
+    for v in m8.iter_mut() {
+        *v = b.uer(1, 255)? as u8;
+    }
+    Ok(())
+}
+
+#[derive(Clone, Debug, Default)]
 pub(crate) struct Sequence {
     pub profile_id: u32,
     pub level_id: u32,
     pub progressive_sequence: bool,
     pub field_coded_sequence: bool,
-    pub chroma_format: u32,
-    pub encoding_precision: u32,
-    pub output_reorder_delay: u32,
+    pub horizontal_size: u32,
+    pub vertical_size: u32,
+    pub display_horizontal_size: u32,
+    pub display_vertical_size: u32,
     pub sample_precision: u32,
+    pub encoding_precision: u32,
     pub aspect_ratio: u32,
     pub frame_rate_code: u32,
-    pub bit_rate_lower: u32,
-    pub bit_rate_upper: u32,
     pub low_delay: bool,
-    pub temporal_id_enable_flag: bool,
-    pub bbv_buffer_size: u32,
-    pub horizontal_size: usize,
-    pub vertical_size: usize,
-    pub log2_max_cu_width_height: u32,
+    pub temporal_id_enable: bool,
+    pub max_dpb_size: u32,
+    pub rpl1_index_exist: bool,
+    pub rpl1_same_as_rpl0: bool,
+    pub rpls_l0: Vec<Rpl>,
+    pub rpls_l1: Vec<Rpl>,
+    pub num_ref_default_active_minus1: [u32; 2],
+    pub log2_max_cu: u32,
+    pub min_cu_size: u32,
     pub max_part_ratio_log2: u32,
     pub max_split_times: u32,
     pub min_qt_size: u32,
     pub max_bt_size: u32,
     pub max_eqt_size: u32,
-    pub max_dt_size: u32,
-    pub rpl1_index_exist_flag: bool,
-    pub rpl1_same_as_rpl0_flag: bool,
-    pub rpls_l0: Vec<Rpl>,
-    pub rpls_l1: Vec<Rpl>,
-    pub num_ref_default_active_minus1: [u32; 2],
-    pub max_dpb_size: u32,
-    pub ipcm_enable_flag: bool,
-    pub amvr_enable_flag: bool,
-    pub umve_enable_flag: bool,
-    pub ipf_enable_flag: bool,
-    pub emvr_enable_flag: bool,
-    pub affine_enable_flag: bool,
-    pub smvd_enable_flag: bool,
-    pub dt_intra_enable_flag: bool,
-    pub num_of_hmvp_cand: u32,
-    pub tscpm_enable_flag: bool,
-    pub sao_enable_flag: bool,
-    pub alf_enable_flag: bool,
-    pub secondary_transform_enable_flag: bool,
-    pub position_based_transform_enable_flag: bool,
     pub wq_enable: bool,
-    pub seq_wq_mode: bool,
-    pub wq_4x4_matrix: [u8; 16],
-    pub wq_8x8_matrix: [u8; 64],
-    pub patch_stable: bool,
+    pub wq_4x4: [u8; 16],
+    pub wq_8x8: Vec<u8>,
+    pub secondary_transform: bool,
+    pub sao_enable: bool,
+    pub alf_enable: bool,
+    pub affine_enable: bool,
+    pub smvd_enable: bool,
+    pub ipcm_enable: bool,
+    pub amvr_enable: bool,
+    pub num_hmvp_cand: u32,
+    pub umve_enable: bool,
+    pub emvr_enable: bool,
+    pub ipf_enable: bool,
+    pub tscpm_enable: bool,
+    pub dt_intra_enable: bool,
+    pub max_dt_size: u32,
+    pub pbt_enable: bool,
+    pub output_reorder_delay: u32,
     pub cross_patch_loop_filter: bool,
     pub patch_ref_colocated: bool,
-    pub patch_uniform: bool,
-    pub patch_width: usize,
-    pub patch_height: usize,
-
-    // derived (`update_seqhdr`)
-    pub bit_depth_internal: u32,
-    pub bit_depth_input: u32,
+    pub patch_height: u32,
+    // derived
+    pub bit_depth: u32,
     pub bit_depth_2_qp_offset: i32,
-    pub pic_width: usize,
-    pub pic_height: usize,
-    pub max_cuwh: usize,
-    pub log2_max_cuwh: u32,
-    pub pic_width_in_lcu: usize,
-    pub pic_height_in_lcu: usize,
-    pub f_lcu: usize,
-    pub pic_width_in_scu: usize,
-    pub pic_height_in_scu: usize,
-    pub i_scu: usize,
-    pub f_scu: usize,
-    pub a_scu: usize,
-    pub patch_columns: usize,
-    pub patch_rows: usize,
-    pub patch_column_width: Vec<usize>,
-    pub patch_row_height: Vec<usize>,
-}
-
-const WQ_DEFAULT_4X4: [u8; 16] = [64, 64, 64, 68, 64, 64, 68, 72, 64, 68, 76, 80, 72, 76, 84, 96];
-const WQ_DEFAULT_8X8: [u8; 64] = [
-    64, 64, 64, 64, 68, 68, 72, 76, 64, 64, 64, 68, 72, 76, 84, 92, 64, 64, 68, 72, 76, 80, 88, 100, 64, 68, 72, 80, 84, 92, 100, 112, 68, 72, 80, 84, 92, 104,
-    112, 128, 76, 80, 84, 92, 104, 116, 132, 152, 96, 100, 104, 116, 124, 140, 164, 188, 104, 108, 116, 128, 152, 172, 192, 216,
-];
-const WQ_DEFAULT_PARAM: [[i32; 6]; 2] = [[67, 71, 71, 80, 80, 106], [64, 49, 53, 58, 58, 64]];
-const WQ_MODEL_4X4: [[u8; 16]; 4] = [
-    [0, 4, 3, 5, 4, 2, 1, 5, 3, 1, 1, 5, 5, 5, 5, 5],
-    [0, 4, 4, 5, 3, 2, 2, 5, 3, 2, 1, 5, 5, 5, 5, 5],
-    [0, 4, 3, 5, 4, 3, 2, 5, 3, 2, 1, 5, 5, 5, 5, 5],
-    [0, 3, 1, 5, 3, 4, 2, 5, 1, 2, 2, 5, 5, 5, 5, 5],
-];
-include!("wq_model8.rs");
-
-fn parse_rpl(b: &mut Bits<'_>, max_dpb_size: u32) -> Result<Rpl, Error> {
-    let mut rpl = Rpl { num: b.ue_range(0, max_dpb_size)? as usize, ..Rpl::default() };
-    if rpl.num > MAX_REFS {
-        return Err(Error::Invalid("reference picture list too long"));
-    }
-    if rpl.num > 0 {
-        let d = b.ue_range(1, 255)? as i32;
-        rpl.delta_doi[0] = if b.read1()? != 0 { -d } else { d };
-    }
-    for i in 1..rpl.num {
-        let mut d = b.ue_range(0, 255)? as i32;
-        if d != 0 && b.read1()? != 0 {
-            d = -d;
-        }
-        rpl.delta_doi[i] = rpl.delta_doi[i - 1] + d;
-    }
-    Ok(rpl)
-}
-
-fn read_wq_matrix(b: &mut Bits<'_>, m4: &mut [u8; 16], m8: &mut [u8; 64]) -> Result<(), Error> {
-    for v in m4.iter_mut() {
-        *v = b.ue_range(1, 255)? as u8;
-    }
-    for v in m8.iter_mut() {
-        *v = b.ue_range(1, 255)? as u8;
-    }
-    Ok(())
+    pub pic_width: u32,
+    pub pic_height: u32,
+    pub max_cu: u32,
+    pub w_lcu: u32,
+    pub h_lcu: u32,
+    pub w_scu: u32,
+    pub h_scu: u32,
 }
 
 impl Sequence {
-    /// `dec_parse_sqh` + `update_seqhdr`; `b` is positioned at the start code.
-    pub(crate) fn parse(b: &mut Bits<'_>) -> Result<Self, Error> {
-        b.read_range(24, 1, 1)?;
-        b.read_range(8, 0xB0, 0xB0)?;
-        let profile_id = b.read(8)?;
-        if profile_id != 0x20 && profile_id != 0x22 {
-            return Err(Error::Unsupported("AVS3 profile"));
+    /// Parses a sequence header; `data` starts after the `00 00 01 B0` start code and is
+    /// already free of emulation-prevention bytes.
+    pub(crate) fn parse(data: &[u8]) -> Result<Sequence, Error> {
+        let mut b = Bits::new(data);
+        let mut s = Sequence { profile_id: b.u(8)?, ..Sequence::default() };
+        if s.profile_id != 0x20 && s.profile_id != 0x22 {
+            return Err(Error::Invalid("not an AVS3 profile"));
         }
-        let level_id = b.read(8)?;
-        let progressive_sequence = b.flag()?;
-        let field_coded_sequence = b.flag()?;
-        b.read1()?; // library_stream_flag
-        b.read1()?; // library_picture_enable_flag
-        b.read1()?;
-        let horizontal_size = b.read(14)? as usize;
-        b.read1()?;
-        let vertical_size = b.read(14)? as usize;
-        let chroma_format = b.read_range(2, 1, 1)?;
-        let sample_precision = b.read_range(3, 1, 2)?;
-        let encoding_precision = if profile_id == 0x22 { b.read_range(3, 1, 2)? } else { 1 };
-        b.read1()?;
-        let aspect_ratio = b.read_range(4, 1, 4)?;
-        let frame_rate_code = b.read_range(4, 1, 13)?;
-        b.read1()?;
-        let bit_rate_lower = b.read(18)?;
-        b.read1()?;
-        let bit_rate_upper = b.read(12)?;
-        let low_delay = b.flag()?;
-        let temporal_id_enable_flag = b.flag()?;
-        b.read1()?;
-        let bbv_buffer_size = b.read(18)?;
-        b.read1()?;
-        let max_dpb_size = b.read_range(4, 0, 15)? + 1;
-        let rpl1_index_exist_flag = b.flag()?;
-        let rpl1_same_as_rpl0_flag = b.flag()?;
-        b.read1()?;
-        let n0 = b.ue_range(0, 64)? as usize;
-        if n0 > MAX_RPLS {
-            return Err(Error::Invalid("too many reference picture lists"));
+        s.level_id = b.u(8)?;
+        s.progressive_sequence = b.flag()?;
+        s.field_coded_sequence = b.flag()?;
+        b.ur(1, 0, 0)?; // library_stream_flag
+        b.ur(1, 0, 0)?; // library_picture_enable_flag
+        b.marker()?;
+        s.horizontal_size = b.u(14)?;
+        b.marker()?;
+        s.vertical_size = b.u(14)?;
+        if s.horizontal_size == 0 || s.vertical_size == 0 {
+            return Err(Error::Invalid("zero picture size"));
         }
-        let mut rpls_l0 = Vec::with_capacity(n0);
+        s.display_horizontal_size = s.horizontal_size;
+        s.display_vertical_size = s.vertical_size;
+        b.ur(2, 1, 1)?; // chroma_format: 4:2:0
+        s.sample_precision = b.ur(3, 1, 2)?;
+        s.encoding_precision = if s.profile_id == 0x22 { b.ur(3, 1, 2)? } else { 1 };
+        b.marker()?;
+        s.aspect_ratio = b.ur(4, 1, 4)?;
+        s.frame_rate_code = b.ur(4, 1, 13)?;
+        b.marker()?;
+        b.u(18)?; // bit_rate_lower
+        b.marker()?;
+        b.u(12)?; // bit_rate_upper
+        s.low_delay = b.flag()?;
+        s.temporal_id_enable = b.flag()?;
+        b.marker()?;
+        b.u(18)?; // bbv_buffer_size
+        b.marker()?;
+        s.max_dpb_size = b.ur(4, 0, 15)? + 1;
+        s.rpl1_index_exist = b.flag()?;
+        s.rpl1_same_as_rpl0 = b.flag()?;
+        b.marker()?;
+        let n0 = b.uer(0, 64)?;
         for _ in 0..n0 {
-            rpls_l0.push(parse_rpl(b, max_dpb_size)?);
+            s.rpls_l0.push(parse_rpl(&mut b, s.max_dpb_size)?);
         }
-        let rpls_l1 = if rpl1_same_as_rpl0_flag {
-            rpls_l0.clone()
+        if s.rpl1_same_as_rpl0 {
+            s.rpls_l1 = s.rpls_l0.clone();
         } else {
-            let n1 = b.ue_range(0, 64)? as usize;
-            if n1 > MAX_RPLS {
-                return Err(Error::Invalid("too many reference picture lists"));
-            }
-            let mut v = Vec::with_capacity(n1);
+            let n1 = b.uer(0, 64)?;
             for _ in 0..n1 {
-                v.push(parse_rpl(b, max_dpb_size)?);
+                s.rpls_l1.push(parse_rpl(&mut b, s.max_dpb_size)?);
             }
-            v
-        };
-        let num_ref_default_active_minus1 = [b.ue_range(0, 14)?, b.ue_range(0, 14)?];
-        let log2_max_cu_width_height = b.read_range(3, 3, 5)? + 2;
-        b.read_range(2, 0, 0)?; // min_cu_size (4)
-        let max_part_ratio_log2 = b.read(2)? + 2;
-        let max_split_times = b.read(3)? + 6;
-        let min_qt_size = 1 << (b.read_range(3, 0, 5)? + 2);
-        let max_bt_size = 1 << (b.read_range(3, 0, 5)? + 2);
-        let max_eqt_size = 1 << (b.read(2)? + 3);
-        b.read1()?;
-        let wq_enable = b.flag()?;
-        let mut seq_wq_mode = false;
-        let mut wq_4x4_matrix = [0u8; 16];
-        let mut wq_8x8_matrix = [0u8; 64];
-        if wq_enable {
-            seq_wq_mode = b.flag()?;
-            if seq_wq_mode {
-                read_wq_matrix(b, &mut wq_4x4_matrix, &mut wq_8x8_matrix)?;
+        }
+        s.num_ref_default_active_minus1 = [b.uer(0, 14)?, b.uer(0, 14)?];
+        s.log2_max_cu = b.ur(3, 3, 5)? + 2;
+        s.min_cu_size = 1 << (b.ur(2, 0, 0)? + 2);
+        s.max_part_ratio_log2 = b.ur(2, 0, 3)? + 2;
+        s.max_split_times = b.ur(3, 0, 7)? + 6;
+        s.min_qt_size = 1 << (b.ur(3, 0, 5)? + 2);
+        s.max_bt_size = 1 << (b.ur(3, 0, 5)? + 2);
+        s.max_eqt_size = 1 << (b.ur(2, 0, 3)? + 3);
+        b.marker()?;
+        s.wq_enable = b.flag()?;
+        if s.wq_enable {
+            if b.flag()? {
+                read_wq(&mut b, &mut s.wq_4x4, &mut s.wq_8x8)?;
             } else {
-                wq_4x4_matrix = WQ_DEFAULT_4X4;
-                wq_8x8_matrix = WQ_DEFAULT_8X8;
+                s.wq_4x4 = WQ_DEFAULT_4X4;
+                s.wq_8x8 = WQ_DEFAULT_8X8.to_vec();
             }
         }
-        let secondary_transform_enable_flag = b.flag()?;
-        let sao_enable_flag = b.flag()?;
-        let alf_enable_flag = b.flag()?;
-        let affine_enable_flag = b.flag()?;
-        let smvd_enable_flag = b.flag()?;
-        let ipcm_enable_flag = b.flag()?;
-        let amvr_enable_flag = b.flag()?;
-        let num_of_hmvp_cand = b.read_range(4, 0, 8)?;
-        let umve_enable_flag = b.flag()?;
-        let emvr_enable_flag = if amvr_enable_flag && num_of_hmvp_cand != 0 { b.flag()? } else { false };
-        let ipf_enable_flag = b.flag()?;
-        let tscpm_enable_flag = b.flag()?;
-        b.read1()?;
-        let dt_intra_enable_flag = b.flag()?;
-        let mut max_dt_size = 0;
-        if dt_intra_enable_flag {
-            max_dt_size = 1 << (b.read_range(2, 0, 2)? + 4);
+        s.secondary_transform = b.flag()?;
+        s.sao_enable = b.flag()?;
+        s.alf_enable = b.flag()?;
+        s.affine_enable = b.flag()?;
+        s.smvd_enable = b.flag()?;
+        s.ipcm_enable = b.flag()?;
+        s.amvr_enable = b.flag()?;
+        s.num_hmvp_cand = b.ur(4, 0, 8)?;
+        s.umve_enable = b.flag()?;
+        s.emvr_enable = if s.amvr_enable && s.num_hmvp_cand > 0 { b.flag()? } else { false };
+        s.ipf_enable = b.flag()?;
+        s.tscpm_enable = b.flag()?;
+        b.marker()?;
+        s.dt_intra_enable = b.flag()?;
+        if s.dt_intra_enable {
+            s.max_dt_size = 1 << (b.ur(2, 0, 2)? + 4);
         }
-        let position_based_transform_enable_flag = b.flag()?;
-        let output_reorder_delay = if low_delay { 0 } else { b.read(5)? };
-        let cross_patch_loop_filter = b.flag()?;
-        let patch_ref_colocated = b.flag()?;
-        let patch_stable = b.flag()?;
-        let mut patch_uniform = false;
-        let (mut patch_width, mut patch_height) = (0usize, 0usize);
-        if patch_stable {
-            patch_uniform = b.flag()?;
-            if patch_uniform {
-                b.read1()?;
-                patch_width = b.ue_range(0, 255)? as usize + 1;
-                patch_height = b.ue_range(0, 143)? as usize + 1;
-            }
-        }
-        b.read(2)?;
-        b.read1()?;
-        b.align();
+        s.pbt_enable = b.flag()?;
+        s.output_reorder_delay = if s.low_delay { 0 } else { b.u(5)? };
+        s.cross_patch_loop_filter = b.flag()?;
+        s.patch_ref_colocated = b.flag()?;
+        b.ur(1, 1, 1)?; // patch_stable
+        b.ur(1, 1, 1)?; // patch_uniform
+        b.marker()?;
+        b.uer(0, 255)?; // patch_width: replaced by the picture width in LCUs
+        s.patch_height = b.uer(0, 143)? + 1;
+        b.u(2)?; // reserved
+        b.marker()?;
 
-        let bit_depth_internal = if encoding_precision == 2 { 10 } else { 8 };
-        let bit_depth_input = if sample_precision == 1 { 8 } else { 10 };
-        if horizontal_size == 0 || vertical_size == 0 {
-            return Err(Error::Invalid("empty picture"));
-        }
-        let pic_width = horizontal_size.div_ceil(8) * 8;
-        let pic_height = vertical_size.div_ceil(8) * 8;
-        let max_cuwh = 1usize << log2_max_cu_width_height;
-        let pic_width_in_lcu = pic_width.div_ceil(max_cuwh);
-        let pic_height_in_lcu = pic_height.div_ceil(max_cuwh);
-        let pic_width_in_scu = pic_width.div_ceil(4);
-        let pic_height_in_scu = pic_height.div_ceil(4);
-        let i_scu = pic_width_in_scu + 2;
-        let mut s = Self {
-            profile_id,
-            level_id,
-            progressive_sequence,
-            field_coded_sequence,
-            chroma_format,
-            encoding_precision,
-            output_reorder_delay,
-            sample_precision,
-            aspect_ratio,
-            frame_rate_code,
-            bit_rate_lower,
-            bit_rate_upper,
-            low_delay,
-            temporal_id_enable_flag,
-            bbv_buffer_size,
-            horizontal_size,
-            vertical_size,
-            log2_max_cu_width_height,
-            max_part_ratio_log2,
-            max_split_times,
-            min_qt_size,
-            max_bt_size,
-            max_eqt_size,
-            max_dt_size,
-            rpl1_index_exist_flag,
-            rpl1_same_as_rpl0_flag,
-            rpls_l0,
-            rpls_l1,
-            num_ref_default_active_minus1,
-            max_dpb_size,
-            ipcm_enable_flag,
-            amvr_enable_flag,
-            umve_enable_flag,
-            ipf_enable_flag,
-            emvr_enable_flag,
-            affine_enable_flag,
-            smvd_enable_flag,
-            dt_intra_enable_flag,
-            num_of_hmvp_cand,
-            tscpm_enable_flag,
-            sao_enable_flag,
-            alf_enable_flag,
-            secondary_transform_enable_flag,
-            position_based_transform_enable_flag,
-            wq_enable,
-            seq_wq_mode,
-            wq_4x4_matrix,
-            wq_8x8_matrix,
-            patch_stable,
-            cross_patch_loop_filter,
-            patch_ref_colocated,
-            patch_uniform,
-            patch_width,
-            patch_height,
-            bit_depth_internal,
-            bit_depth_input,
-            bit_depth_2_qp_offset: 8 * (bit_depth_internal as i32 - 8),
-            pic_width,
-            pic_height,
-            max_cuwh,
-            log2_max_cuwh: log2_max_cu_width_height,
-            pic_width_in_lcu,
-            pic_height_in_lcu,
-            f_lcu: pic_width_in_lcu * pic_height_in_lcu,
-            pic_width_in_scu,
-            pic_height_in_scu,
-            i_scu,
-            f_scu: i_scu * (pic_height_in_scu + 2),
-            a_scu: i_scu * pic_height_in_scu,
-            patch_columns: 0,
-            patch_rows: 0,
-            patch_column_width: Vec::new(),
-            patch_row_height: Vec::new(),
-        };
-        s.update_patches()?;
+        s.bit_depth = if s.encoding_precision == 2 { 10 } else { 8 };
+        s.bit_depth_2_qp_offset = 8 * (s.bit_depth as i32 - 8);
+        s.pic_width = s.horizontal_size.div_ceil(PIC_ALIGN) * PIC_ALIGN;
+        s.pic_height = s.vertical_size.div_ceil(PIC_ALIGN) * PIC_ALIGN;
+        s.max_cu = 1 << s.log2_max_cu;
+        s.w_lcu = s.pic_width.div_ceil(s.max_cu);
+        s.h_lcu = s.pic_height.div_ceil(s.max_cu);
+        s.w_scu = s.pic_width.div_ceil(4);
+        s.h_scu = s.pic_height.div_ceil(4);
+        s.patch_height = s.patch_height.min(s.h_lcu);
         Ok(s)
     }
 
-    /// The patch grid of `update_seqhdr`.
-    fn update_patches(&mut self) -> Result<(), Error> {
-        self.patch_width = self.pic_width_in_lcu;
-        self.patch_height = self.patch_height.min(self.pic_height_in_lcu);
-        if !self.patch_stable || !self.patch_uniform {
-            return Err(Error::Unsupported("non-uniform AVS3 patches"));
-        }
-        let split = |total: usize, unit: usize| -> Vec<usize> {
-            let mut v = vec![unit; total / unit];
-            if !total.is_multiple_of(unit) {
-                match v.last_mut() {
-                    Some(last) => *last += total - unit * (total / unit),
-                    None => v.push(total),
-                }
-            }
-            v
-        };
-        if self.patch_width == 0 || self.patch_height == 0 {
-            return Err(Error::Invalid("empty patch"));
-        }
-        self.patch_column_width = split(self.pic_width_in_lcu, self.patch_width);
-        self.patch_row_height = split(self.pic_height_in_lcu, self.patch_height);
-        self.patch_columns = self.patch_column_width.len();
-        self.patch_rows = self.patch_row_height.len();
-        Ok(())
+    /// Sample precision of the output (8 or 10).
+    pub(crate) fn output_bit_depth(&self) -> u32 {
+        if self.sample_precision == 1 { 8 } else { 10 }
     }
 
-    /// Frame rate as a fraction.
     pub(crate) fn frame_rate(&self) -> (u32, u32) {
-        match self.frame_rate_code {
-            1 => (24000, 1001),
-            2 => (24, 1),
-            3 => (25, 1),
-            4 => (30000, 1001),
-            5 => (30, 1),
-            6 => (50, 1),
-            7 => (60000, 1001),
-            8 => (60, 1),
-            9 => (100, 1),
-            10 => (120, 1),
-            11 => (200, 1),
-            12 => (240, 1),
-            13 => (300, 1),
-            _ => (25, 1),
+        FRAME_RATES.get(self.frame_rate_code.saturating_sub(1) as usize).copied().unwrap_or((25, 1))
+    }
+
+    /// Sizes of the patch rows in LCUs.
+    pub(crate) fn patch_rows(&self) -> Vec<u32> {
+        let ph = self.patch_height.max(1);
+        let mut v = vec![ph; (self.h_lcu / ph) as usize];
+        let rem = self.h_lcu % ph;
+        if rem != 0 {
+            match v.last_mut() {
+                Some(l) => *l += rem,
+                None => v.push(rem),
+            }
         }
+        v
     }
 }
 
 #[derive(Clone, Debug, Default)]
 pub(crate) struct AlfParam {
-    pub pic_alf_enable: bool,
-    pub alf_flag: [bool; 3],
-    pub var_ind_tab: [usize; NO_VAR_BINS],
-    pub filter_coeff_luma: [[i32; ALF_MAX_NUM_COEF]; NO_VAR_BINS],
-    pub filter_coeff_chroma: [i32; ALF_MAX_NUM_COEF * 2],
+    pub enable: bool,
+    pub flag: [bool; 3],
+    pub var_ind_tab: [i32; 16],
+    pub coeff_luma: [[i32; 9]; 16],
+    pub coeff_chroma: [i32; 18],
 }
 
 #[derive(Clone, Debug, Default)]
-pub(crate) struct PicHeader {
-    pub rpl_l0: Rpl,
-    pub rpl_l1: Rpl,
+pub(crate) struct Picture {
     pub slice_type: SliceType,
+    pub random_access_decodable: bool,
+    pub doi: u32,
     pub temporal_id: u32,
-    pub loop_filter_disable_flag: bool,
-    pub alpha_c_offset: i32,
-    pub beta_offset: i32,
-    pub chroma_quant_param_delta_cb: i32,
-    pub chroma_quant_param_delta_cr: i32,
-    pub alf_param: AlfParam,
-    pub fixed_picture_qp_flag: bool,
-    pub random_access_decodable_flag: bool,
-    pub decode_order_index: u32,
     pub output_delay: u32,
     pub progressive_frame: bool,
-    pub picture_structure: u32,
-    pub top_field_first: bool,
-    pub repeat_first_field: bool,
+    pub picture_structure: bool,
+    pub rpl_l0: Rpl,
+    pub rpl_l1: Rpl,
+    pub fixed_picture_qp: bool,
     pub picture_qp: i32,
-    pub affine_subblock_size_idx: u32,
+    pub loop_filter_disable: bool,
+    pub alpha_c_offset: i32,
+    pub beta_offset: i32,
+    pub chroma_qp_delta_cb: i32,
+    pub chroma_qp_delta_cr: i32,
     pub pic_wq_enable: bool,
-    pub wq_4x4_matrix: [u8; 16],
-    pub wq_8x8_matrix: Wq8,
-    pub pic_md5: [u8; 16],
-    pub pic_md5_exist: bool,
-    /// Picture order (`ptr`): decode order index + cycles, plus the output delay.
+    pub wq_4x4: [u8; 16],
+    pub wq_8x8: Vec<u8>,
+    pub alf: AlfParam,
+    pub affine_subblock_size_idx: u32,
+    /// The picture's order count.
     pub ptr: i64,
 }
 
-/// The state of the decode order index cycle that the picture header parse reads and updates.
-#[derive(Clone, Copy, Debug, Default)]
-pub(crate) struct DoiState {
-    pub prev_doi: u32,
-    pub doi_cycles: i64,
-    /// Set when the doi wrapped in this header (the caller shifts the doi of the stored pictures).
-    pub wrapped: bool,
-}
-
-const DOI_CYCLE_LENGTH: i64 = 256;
-
-fn parse_alf(b: &mut Bits<'_>) -> Result<AlfParam, Error> {
-    let mut p = AlfParam::default();
-    for f in p.alf_flag.iter_mut() {
+fn parse_alf(b: &mut Bits<'_>, a: &mut AlfParam) -> Result<(), Error> {
+    for f in a.flag.iter_mut() {
         *f = b.flag()?;
     }
-    p.pic_alf_enable = p.alf_flag.iter().any(|&f| f);
-    if p.alf_flag[0] {
-        let groups = b.ue_range(0, 15)? as usize + 1;
+    a.enable = a.flag.iter().any(|&f| f);
+    if a.flag[0] {
+        let groups = b.uer(0, 15)? as usize + 1;
         let mut pattern = [false; 16];
         let mut pre = 0usize;
         for g in 0..groups {
             let mut sum = 0i32;
             if g > 0 {
-                let symbol = if groups != 16 { b.ue_range(1, 15)? as usize } else { 1 };
-                let symbol = (symbol + pre).min(15);
-                pattern[symbol] = true;
-                pre = symbol;
+                let sym = if groups != 16 { b.uer(1, 15)? as usize } else { 1 };
+                let sym = (sym + pre).min(15);
+                pattern[sym] = true;
+                pre = sym;
             }
-            for i in 0..ALF_MAX_NUM_COEF - 1 {
-                let c = b.se_range(-64, 63)?;
-                p.filter_coeff_luma[g][i] = c;
+            for i in 0..8 {
+                let c = b.ser(-64, 63)?;
+                a.coeff_luma[g][i] = c;
                 sum += 2 * c;
             }
-            let lac = b.se_range(-1088, 1071)?;
-            p.filter_coeff_luma[g][ALF_MAX_NUM_COEF - 1] = (1 << 6) - sum + lac;
+            let lac = b.ser(-1088, 1071)?;
+            a.coeff_luma[g][8] = (1 << 6) - sum + lac;
         }
         if groups > 1 {
-            p.var_ind_tab[0] = 0;
-            for g in 1..NO_VAR_BINS {
-                p.var_ind_tab[g] = p.var_ind_tab[g - 1] + usize::from(pattern[g]);
+            a.var_ind_tab[0] = 0;
+            for g in 1..16 {
+                a.var_ind_tab[g] = a.var_ind_tab[g - 1] + i32::from(pattern[g]);
             }
         } else {
-            p.var_ind_tab = [0; NO_VAR_BINS];
+            a.var_ind_tab = [0; 16];
         }
     }
     for (c, start) in [(1usize, 0usize), (2, 1)] {
-        if p.alf_flag[c] {
-            let mut sum = 0i32;
-            for k in 0..ALF_MAX_NUM_COEF - 1 {
-                let v = b.se_range(-64, 63)?;
-                p.filter_coeff_chroma[start + 2 * k] = v;
+        if a.flag[c] {
+            let mut sum = 0;
+            for k in 0..8 {
+                let v = b.ser(-64, 63)?;
+                a.coeff_chroma[start + 2 * k] = v;
                 sum += 2 * v;
             }
-            let lac = b.se_range(-1088, 1071)?;
-            p.filter_coeff_chroma[start + 2 * (ALF_MAX_NUM_COEF - 1)] = (1 << 6) - sum + lac;
-        }
-    }
-    Ok(p)
-}
-
-impl PicHeader {
-    /// `dec_parse_pic_header`; `b` is positioned at the `00 00 01 B3/B6` start code.
-    pub(crate) fn parse(b: &mut Bits<'_>, seq: &Sequence, doi: &mut DoiState) -> Result<Self, Error> {
-        let mut h = PicHeader::default();
-        b.read_range(24, 1, 1)?;
-        let start_code = b.read_range(8, 0xB3, 0xB6)?;
-        if start_code != 0xB3 && start_code != 0xB6 {
-            return Err(Error::Invalid("not a picture start code"));
-        }
-        if start_code == 0xB3 {
-            h.slice_type = SliceType::I;
-        } else {
-            h.random_access_decodable_flag = b.flag()?;
-        }
-        b.read(32)?; // bbv_delay
-        if start_code == 0xB6 {
-            h.slice_type = if b.read_range(2, 1, 2)? == 1 { SliceType::P } else { SliceType::B };
-        }
-        if h.slice_type == SliceType::I && b.flag()? {
-            b.read(24)?; // time_code
-        }
-        h.decode_order_index = b.read(8)?;
-        if seq.temporal_id_enable_flag {
-            h.temporal_id = b.read(3)?;
-        }
-        if !seq.low_delay {
-            h.output_delay = b.ue_range(0, 63)?;
-        } else {
-            h.output_delay = 0;
-            b.ue()?; // bbv_check_times
-        }
-        h.progressive_frame = b.flag()?;
-        h.picture_structure = if !h.progressive_frame { b.read1()? } else { 1 };
-        h.top_field_first = b.flag()?;
-        h.repeat_first_field = b.flag()?;
-        if seq.field_coded_sequence {
-            b.read1()?; // top_field_picture_flag
-            b.read1()?;
-        }
-
-        doi.wrapped = false;
-        if h.decode_order_index < doi.prev_doi {
-            doi.doi_cycles += 1;
-            doi.wrapped = true;
-        }
-        h.ptr = i64::from(h.decode_order_index) + DOI_CYCLE_LENGTH * doi.doi_cycles + i64::from(h.output_delay) - i64::from(seq.output_reorder_delay);
-        doi.prev_doi = h.decode_order_index;
-
-        let sps0 = b.flag()?;
-        let mut idx0 = None;
-        if sps0 {
-            if !seq.rpls_l0.is_empty() {
-                let i = if seq.rpls_l0.len() > 1 { b.ue_range(0, seq.rpls_l0.len() as u32 - 1)? as usize } else { 0 };
-                h.rpl_l0 = seq.rpls_l0[i];
-                idx0 = Some(i);
-            }
-        } else {
-            h.rpl_l0 = parse_rpl(b, seq.max_dpb_size)?;
-        }
-        let sps1 = if seq.rpl1_index_exist_flag { b.flag()? } else { sps0 };
-        if sps1 {
-            let i = if seq.rpls_l1.len() > 1 && seq.rpl1_index_exist_flag {
-                b.ue_range(0, seq.rpls_l1.len() as u32 - 1)? as usize
-            } else if !seq.rpl1_index_exist_flag {
-                idx0.unwrap_or(0)
-            } else {
-                0
-            };
-            if let Some(r) = seq.rpls_l1.get(i) {
-                h.rpl_l1 = *r;
-            }
-        } else {
-            h.rpl_l1 = parse_rpl(b, seq.max_dpb_size)?;
-        }
-
-        if h.slice_type != SliceType::I {
-            if b.flag()? {
-                h.rpl_l0.active = b.ue_range(0, 14)? as usize + 1;
-                if h.slice_type == SliceType::B {
-                    h.rpl_l1.active = b.ue_range(0, 14)? as usize + 1;
-                }
-            } else {
-                h.rpl_l0.active = seq.num_ref_default_active_minus1[0] as usize + 1;
-                h.rpl_l1.active = if h.slice_type == SliceType::P { 0 } else { seq.num_ref_default_active_minus1[1] as usize + 1 };
-            }
-        } else {
-            h.rpl_l0.active = 0;
-            h.rpl_l1.active = 0;
-        }
-
-        h.fixed_picture_qp_flag = b.flag()?;
-        h.picture_qp = b.read_range(7, 0, (MAX_QUANT_BASE + seq.bit_depth_2_qp_offset) as u32)? as i32;
-        if h.slice_type != SliceType::I && !(h.slice_type == SliceType::B && h.picture_structure == 1) {
-            b.read1()?;
-        }
-        h.loop_filter_disable_flag = b.flag()?;
-        if !h.loop_filter_disable_flag && b.flag()? {
-            h.alpha_c_offset = b.se_range(-8, 8)?;
-            h.beta_offset = b.se_range(-8, 8)?;
-        }
-        if !b.flag()? {
-            h.chroma_quant_param_delta_cb = b.se_range(-16, 16)?;
-            h.chroma_quant_param_delta_cr = b.se_range(-16, 16)?;
-        }
-
-        h.wq_4x4_matrix = [64; 16];
-        h.wq_8x8_matrix = Wq8([64; 64]);
-        if seq.wq_enable {
-            h.pic_wq_enable = b.flag()?;
-            if h.pic_wq_enable {
-                let data_idx = b.read_range(2, 0, 2)?;
-                if data_idx == 0 {
-                    h.wq_4x4_matrix = seq.wq_4x4_matrix;
-                    h.wq_8x8_matrix = Wq8(seq.wq_8x8_matrix);
-                } else if data_idx == 1 {
-                    b.read1()?;
-                    let wq_param = b.read_range(2, 0, 2)?;
-                    let wq_model = b.read_range(2, 0, 3)? as usize;
-                    let mut vec = [0i32; 6];
-                    if wq_param == 0 {
-                        vec = WQ_DEFAULT_PARAM[1];
-                    } else {
-                        let base = WQ_DEFAULT_PARAM[(wq_param - 1) as usize];
-                        for (i, v) in vec.iter_mut().enumerate() {
-                            *v = b.se()?.wrapping_add(base[i]);
-                        }
-                    }
-                    for i in 0..16 {
-                        h.wq_4x4_matrix[i] = vec[usize::from(WQ_MODEL_4X4[wq_model][i])] as u8;
-                    }
-                    for i in 0..64 {
-                        h.wq_8x8_matrix[i] = vec[usize::from(WQ_MODEL_8X8[wq_model][i])] as u8;
-                    }
-                } else {
-                    read_wq_matrix(b, &mut h.wq_4x4_matrix, &mut h.wq_8x8_matrix.0)?;
-                }
-            }
-        }
-        if seq.alf_enable_flag {
-            h.alf_param = parse_alf(b)?;
-        }
-        if h.slice_type != SliceType::I && seq.affine_enable_flag {
-            h.affine_subblock_size_idx = b.read1()?;
-        }
-        b.read1()?;
-        b.align();
-        Ok(h)
-    }
-}
-
-/// Parses the extension and user data after a header; the picture MD5 signature (user data
-/// 0x10) lands in `pic`.
-pub(crate) fn parse_ext_and_user_data(b: &mut Bits<'_>, pic: Option<&mut PicHeader>) {
-    let mut pic = pic;
-    // The data is optional and only informative: parse errors end it quietly.
-    while !b.at_end() {
-        let next = b.peek(32);
-        if next == 0x1B2 {
-            if user_data(b, pic.as_deref_mut()).is_err() {
-                return;
-            }
-        } else if next == 0x1B5 {
-            // skip extension data: it holds nothing the decoder needs
-            b.skip_bytes(4);
-            while !b.at_end() && b.peek(24) != 1 {
-                b.skip_bytes(1);
-            }
-        } else {
-            return;
-        }
-    }
-}
-
-fn user_data(b: &mut Bits<'_>, pic: Option<&mut PicHeader>) -> Result<(), Error> {
-    let mut pic = pic;
-    b.read_range(24, 1, 1)?;
-    b.read_range(8, 0xB2, 0xB2)?;
-    while !b.at_end() && b.peek(24) != 1 {
-        let mut code = b.read(8)?;
-        while code != 0xFF {
-            if code != 0x10 {
-                return Err(Error::Invalid("unknown user data"));
-            }
-            let mut md5 = [0u8; 16];
-            for (i, m) in md5.iter_mut().enumerate() {
-                *m = b.read(8)? as u8;
-                if i % 2 == 1 {
-                    b.read1()?;
-                }
-            }
-            if let Some(p) = pic.as_deref_mut() {
-                p.pic_md5 = md5;
-                p.pic_md5_exist = true;
-            }
-            code = b.read(8)?;
+            let lac = b.ser(-1088, 1071)?;
+            a.coeff_chroma[16 + start] = (1 << 6) - sum + lac;
         }
     }
     Ok(())
 }
 
-/// A patch (slice) header.
-#[derive(Clone, Copy, Debug, Default)]
+/// Per-stream picture-order bookkeeping that header parsing updates.
+#[derive(Clone, Debug, Default)]
+pub(crate) struct DoiState {
+    pub prev_doi: u32,
+    pub doi_cycles: i64,
+}
+
+impl Picture {
+    /// Parses a picture header. `data` starts after the start code byte; `code` is 0xB3 or 0xB6.
+    /// Returns the header and whether the DOI counter wrapped (the caller then rebases the
+    /// references' DOIs by -256).
+    pub(crate) fn parse(data: &[u8], code: u8, seq: &Sequence, st: &mut DoiState) -> Result<(Picture, bool), Error> {
+        let mut b = Bits::new(data);
+        let mut p = Picture::default();
+        if code == 0xB3 {
+            p.slice_type = SliceType::I;
+        } else {
+            p.random_access_decodable = b.flag()?;
+        }
+        b.u(32)?; // bbv_delay
+        if code == 0xB6 {
+            p.slice_type = if b.ur(2, 1, 2)? == 1 { SliceType::P } else { SliceType::B };
+        }
+        if p.slice_type == SliceType::I && b.flag()? {
+            b.u(24)?; // time_code
+        }
+        p.doi = b.u(8)?;
+        if seq.temporal_id_enable {
+            p.temporal_id = b.u(3)?;
+        }
+        if !seq.low_delay {
+            p.output_delay = b.uer(0, 63)?;
+        } else {
+            b.ue()?; // bbv_check_times
+        }
+        p.progressive_frame = b.flag()?;
+        p.picture_structure = if p.progressive_frame { true } else { b.flag()? };
+        b.flag()?; // top_field_first
+        b.flag()?; // repeat_first_field
+        if seq.field_coded_sequence {
+            b.flag()?;
+            b.flag()?;
+        }
+        let wrapped = p.doi < st.prev_doi;
+        if wrapped {
+            st.doi_cycles += 1;
+        }
+        p.ptr = i64::from(p.doi) + 256 * st.doi_cycles + i64::from(p.output_delay) - i64::from(seq.output_reorder_delay);
+        st.prev_doi = p.doi;
+
+        let sps0 = b.flag()?;
+        let mut l0_idx = 0usize;
+        if sps0 {
+            if !seq.rpls_l0.is_empty() {
+                if seq.rpls_l0.len() > 1 {
+                    l0_idx = b.uer(0, seq.rpls_l0.len() as u32 - 1)? as usize;
+                }
+                p.rpl_l0 = seq.rpls_l0.get(l0_idx).cloned().unwrap_or_default();
+            }
+        } else {
+            p.rpl_l0 = parse_rpl(&mut b, seq.max_dpb_size)?;
+        }
+        let sps1 = if seq.rpl1_index_exist { b.flag()? } else { sps0 };
+        if sps1 {
+            let idx = if seq.rpls_l1.len() > 1 && seq.rpl1_index_exist {
+                b.uer(0, seq.rpls_l1.len() as u32 - 1)? as usize
+            } else if !seq.rpl1_index_exist {
+                l0_idx
+            } else {
+                0
+            };
+            p.rpl_l1 = seq.rpls_l1.get(idx).cloned().unwrap_or_default();
+        } else {
+            p.rpl_l1 = parse_rpl(&mut b, seq.max_dpb_size)?;
+        }
+        if p.slice_type != SliceType::I {
+            if b.flag()? {
+                p.rpl_l0.active = b.uer(0, 14)? as usize + 1;
+                if p.slice_type == SliceType::B {
+                    p.rpl_l1.active = b.uer(0, 14)? as usize + 1;
+                }
+            } else {
+                p.rpl_l0.active = seq.num_ref_default_active_minus1[0] as usize + 1;
+                p.rpl_l1.active = if p.slice_type == SliceType::P { 0 } else { seq.num_ref_default_active_minus1[1] as usize + 1 };
+            }
+        } else {
+            p.rpl_l0.active = 0;
+            p.rpl_l1.active = 0;
+        }
+        p.fixed_picture_qp = b.flag()?;
+        p.picture_qp = b.ur(7, 0, (63 + seq.bit_depth_2_qp_offset) as u32)? as i32;
+        if p.slice_type != SliceType::I && !(p.slice_type == SliceType::B && p.picture_structure) {
+            b.flag()?;
+        }
+        p.loop_filter_disable = b.flag()?;
+        if !p.loop_filter_disable && b.flag()? {
+            p.alpha_c_offset = b.ser(-8, 8)?;
+            p.beta_offset = b.ser(-8, 8)?;
+        }
+        if !b.flag()? {
+            p.chroma_qp_delta_cb = b.ser(-16, 16)?;
+            p.chroma_qp_delta_cr = b.ser(-16, 16)?;
+        }
+        p.wq_4x4 = [64; 16];
+        p.wq_8x8 = vec![64; 64];
+        if seq.wq_enable {
+            p.pic_wq_enable = b.flag()?;
+            if p.pic_wq_enable {
+                match b.ur(2, 0, 2)? {
+                    0 => {
+                        p.wq_4x4 = seq.wq_4x4;
+                        p.wq_8x8 = seq.wq_8x8.clone();
+                    }
+                    1 => {
+                        b.flag()?;
+                        let param = b.ur(2, 0, 2)? as usize;
+                        let model = b.ur(2, 0, 3)? as usize;
+                        let mut vec = [0i32; 6];
+                        if param == 0 {
+                            vec = WQ_DEFAULT_PARAM[1];
+                        } else {
+                            for (i, v) in vec.iter_mut().enumerate() {
+                                let d = b.ser(i32::MIN, i32::MAX)?;
+                                *v = d.wrapping_add(WQ_DEFAULT_PARAM[param - 1][i]);
+                            }
+                        }
+                        for i in 0..16 {
+                            p.wq_4x4[i] = vec[WQ_MODEL_4X4[model][i] as usize] as u8;
+                        }
+                        for i in 0..64 {
+                            p.wq_8x8[i] = vec[WQ_MODEL_8X8[model][i] as usize] as u8;
+                        }
+                    }
+                    _ => read_wq(&mut b, &mut p.wq_4x4, &mut p.wq_8x8)?,
+                }
+            }
+        }
+        if seq.alf_enable {
+            parse_alf(&mut b, &mut p.alf)?;
+        }
+        if p.slice_type != SliceType::I && seq.affine_enable {
+            p.affine_subblock_size_idx = u32::from(b.flag()?);
+        }
+        b.marker()?;
+        Ok((p, wrapped))
+    }
+}
+
+/// A patch header: the QP and the SAO enables of one patch.
+#[derive(Clone, Debug, Default)]
 pub(crate) struct PatchHeader {
-    pub index: usize,
-    pub fixed_slice_qp_flag: bool,
+    pub fixed_slice_qp: bool,
     pub slice_qp: i32,
-    pub slice_sao_enable: [bool; 3],
+    pub sao_enable: [bool; 3],
+    /// Offset of the first payload byte after the (byte-aligned) header.
+    pub len: usize,
 }
 
 impl PatchHeader {
-    /// `dec_parse_patch_header`; `b` is positioned at the `00 00 01 idx` start code and ends at the
-    /// first byte of the slice data.
-    pub(crate) fn parse(b: &mut Bits<'_>, seq: &Sequence, ph: &PicHeader) -> Result<Self, Error> {
+    /// `data` starts after the patch start code byte (which is the patch index).
+    pub(crate) fn parse(_index: u32, data: &[u8], seq: &Sequence, pic: &Picture) -> Result<PatchHeader, Error> {
+        let mut b = Bits::new(data);
         let mut h = PatchHeader::default();
-        b.read_range(24, 1, 1)?;
-        h.index = b.read_range(8, 0, 0x8E)? as usize;
-        if !ph.fixed_picture_qp_flag {
-            h.fixed_slice_qp_flag = b.flag()?;
-            h.slice_qp = b.read_range(7, 0, (MAX_QUANT_BASE + seq.bit_depth_2_qp_offset) as u32)? as i32;
+        if !pic.fixed_picture_qp {
+            h.fixed_slice_qp = b.flag()?;
+            h.slice_qp = b.ur(7, 0, (63 + seq.bit_depth_2_qp_offset) as u32)? as i32;
         } else {
-            h.fixed_slice_qp_flag = true;
-            h.slice_qp = ph.picture_qp;
+            h.fixed_slice_qp = true;
+            h.slice_qp = pic.picture_qp;
         }
-        if seq.sao_enable_flag {
-            for f in h.slice_sao_enable.iter_mut() {
-                *f = b.flag()?;
+        if seq.sao_enable {
+            for k in 0..3 {
+                h.sao_enable[k] = b.flag()?;
             }
         }
         b.align();
+        h.len = b.byte_pos();
         Ok(h)
     }
 }

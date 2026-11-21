@@ -1,11 +1,10 @@
 //! RegXML (SMPTE ST 2001-1) of a track file's essence descriptor: the XML fragment an IMF
 //! Composition Playlist carries in its `EssenceDescriptor` elements (ST 2067-2 6.8).
 //!
-//! Only the properties this crate's writer puts on picture, sound and timed text descriptors are
-//! mapped (generic picture, RGBA, CDCI, Wave, the JPEG 2000 sub-descriptor, the MCA label
-//! sub-descriptors, the timed text descriptor and its resource sub-descriptors). Their symbols
-//! and value types come from the SMPTE metadata registers (elements ST 335, groups ST 395, types
-//! RP 2003-2012); values follow the ST 2001-1 mapping
+//! Only the properties this crate's writer puts on picture and sound descriptors are mapped
+//! (generic picture, RGBA, CDCI, Wave, the JPEG 2000 sub-descriptor and the MCA label
+//! sub-descriptors). Their symbols and value types come from the SMPTE metadata registers
+//! (elements ST 335, groups ST 395, types RP 2003-2012); values follow the ST 2001-1 mapping
 //! rules: integers in decimal, enumerations by name, rationals as `n/d`, labels as
 //! `urn:smpte:ul:` URNs, UUIDs as `urn:uuid:` URNs, byte strings in lowercase hexadecimal, arrays
 //! and records as child elements named after their element type and members, and strong
@@ -176,14 +175,6 @@ const DYNAMIC: &[(&[u8], &str, Kind)] = &[
     (&[0x01, 0x05, 0x11], "MCATitleVersion", Kind::Utf16),
     (&[0x03, 0x02, 0x01, 0x02, 0x20], "MCAAudioContentKind", Kind::Utf16),
     (&[0x03, 0x02, 0x01, 0x02, 0x21], "MCAAudioElementKind", Kind::Utf16),
-    // the timed text descriptor and its resource sub-descriptors (ST 429-5 Annex A, ST 2067-2 Annex H)
-    (&[0x01, 0x01, 0x15, 0x12], "ResourceID", Kind::Uuid),
-    (&[0x04, 0x09, 0x05], "UCSEncoding", Kind::Utf16),
-    (&[0x01, 0x02, 0x01, 0x05, 0x01], "NamespaceURI", Kind::Utf16),
-    (&[0x03, 0x01, 0x01, 0x02, 0x02, 0x16], "RFC5646LanguageTagList", Kind::Utf16),
-    (&[0x01, 0x01, 0x15, 0x13], "AncillaryResourceID", Kind::Uuid),
-    (&[0x04, 0x09, 0x02, 0x01], "MIMEMediaType", Kind::Utf16),
-    (&[0x01, 0x03, 0x04, 0x04], "EssenceStreamID", Kind::Int { signed: false }),
 ];
 
 /// Group symbols by the set type byte.
@@ -196,8 +187,6 @@ fn group_symbol(kind: u8) -> Option<&'static str> {
         0x6B => "AudioChannelLabelSubDescriptor",
         0x6C => "SoundfieldGroupLabelSubDescriptor",
         0x6D => "GroupOfSoundfieldGroupsLabelSubDescriptor",
-        0x64 => "TimedTextDescriptor",
-        0x65 => "TimedTextResourceSubDescriptor",
         _ => return None,
     })
 }

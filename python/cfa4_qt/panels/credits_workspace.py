@@ -15,16 +15,7 @@ from PySide6.QtWidgets import QFormLayout, QLabel, QSizePolicy, QVBoxLayout, QWi
 from ..i18n import N_, tr
 
 # colours of the strip by page type (scroll, card, crawl); neutral, readable on light and dark
-KIND_COLOURS = {
-    "scroll": QColor("#4f7cac"),
-    "card": QColor("#8a6fb0"),
-    "crawl": QColor("#5f9c74"),
-    # F10-C16: titles and lower thirds filled from graphics templates
-    "title": QColor("#b0864f"),
-    "opening": QColor("#a8794a"),
-    "chapter": QColor("#9c6f5f"),
-    "lowerThird": QColor("#4f9ca0"),
-}
+KIND_COLOURS = {"scroll": QColor("#4f7cac"), "card": QColor("#8a6fb0"), "crawl": QColor("#5f9c74")}
 OTHER_COLOUR = QColor("#808080")
 STRIP_HEIGHT = 34
 
@@ -129,7 +120,6 @@ BLOCK_FIELDS = (
     ("rows", N_("Rows")),
     ("cells", N_("Names")),
     ("tails", N_("Tails")),
-    ("voices", N_("Voices")),
     ("pictures", N_("Pictures")),
     ("spine", N_("Spine")),
 )
@@ -203,7 +193,6 @@ class PropertiesPanel(QWidget):
             "rows": rows,
             "cells": str(count) if isinstance(count, int) else "",
             "tails": str(b.get("tails")) if isinstance(b.get("tails"), int) and b.get("tails") else "",
-            "voices": str(b.get("voices")) if isinstance(b.get("voices"), int) and b.get("voices") else "",
             "pictures": str(b.get("pictures")) if isinstance(b.get("pictures"), int) and b.get("pictures") else "",
             "spine": (spine_text(b) + card_point_text(b)) if b else "",
         }

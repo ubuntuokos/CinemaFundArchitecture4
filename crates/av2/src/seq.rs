@@ -1,14 +1,12 @@
-//! Sequence header OBU (AV2 v1.0.0 § 5.4.1, semantics § 6.4).
+//! Sequence header OBU (AV2 v1.0.0 § 5.4.1, semantics § 6.4), parsed up to the cropping window.
 //!
-//! The leading fields say what the picture is (profile, level, chroma format, bit depth, layers,
-//! maximum size, cropping); the tool configuration that follows is in [`SequenceTools`]. The
-//! whole payload is parsed, including the extension flag and the trailing bits (§ 5.2.1), so a
-//! header that does not end exactly where the syntax says is an error.
+//! The fields that say what the picture is (profile, level, chroma format, bit depth, layers,
+//! maximum size, cropping) are read. The tool configurations that follow (decoder model,
+//! layer dependency maps, partition … tile config, film grain flag) belong to the decoder and
+//! are parsed by a later step; [`SequenceHeader::parse`] stops before them.
 
 use cfa4_bitstream::BitReader;
 
-use crate::seq_tools::{Context, SequenceTools};
-use crate::tile::TileLimits;
 use crate::{Error, Result};
 
 /// Number of sequence header ids (`MAX_SEQ_NUM`).
@@ -133,12 +131,10 @@ pub struct SequenceHeader {
     /// `max_frame_height_minus_1 + 1`.
     pub max_frame_height: u32,
     pub cropping: CroppingWindow,
-    /// Everything after the cropping window.
-    pub tools: SequenceTools,
 }
 
 /// `uvlc()` (§ 4.11.3): at most `(1 << 32) - 1`.
-pub(crate) fn uvlc(r: &mut BitReader<'_>) -> Result<u32> {
+fn uvlc(r: &mut BitReader<'_>) -> Result<u32> {
     let mut leading_zeros = 0u32;
     while !r.read_bit()? {
         leading_zeros += 1;
@@ -153,20 +149,6 @@ pub(crate) fn uvlc(r: &mut BitReader<'_>) -> Result<u32> {
 
 fn bits_u8(r: &mut BitReader<'_>, n: u32) -> Result<u8> {
     u8::try_from(r.read_bits(n)?).map_err(|_| Error::Invalid("field wider than 8 bits"))
-}
-
-/// `trailing_bits()` (§ 5.2.3) over the rest of the payload: a one bit, then zero bits only.
-pub(crate) fn check_trailing_bits(r: &BitReader<'_>) -> Result<()> {
-    let mut r = r.clone();
-    if !r.read_bit().map_err(|_| Error::Invalid("payload ends before its trailing bits"))? {
-        return Err(Error::Invalid("trailing one bit is zero"));
-    }
-    while r.bits_left() > 0 {
-        if r.read_bit()? {
-            return Err(Error::Invalid("payload continues after its trailing bits"));
-        }
-    }
-    Ok(())
 }
 
 impl SequenceHeader {
@@ -212,20 +194,6 @@ impl SequenceHeader {
         } else {
             CroppingWindow::default()
         };
-        let cx = Context {
-            single_picture_header,
-            monochrome: chroma_format == ChromaFormat::Monochrome,
-            max_tlayer_id,
-            max_mlayer_id,
-            max_frame_size: (max_frame_width, max_frame_height),
-            limits: TileLimits { level_idx, tier },
-        };
-        let tools = SequenceTools::parse(&mut r, cx)?;
-        // the sequence header is an extensible OBU: obu_extension_flag, then either extension
-        // data (any bits) or the trailing bits
-        if !r.read_flag()? {
-            check_trailing_bits(&r)?;
-        }
         Ok(SequenceHeader {
             seq_header_id,
             profile,
@@ -243,7 +211,6 @@ impl SequenceHeader {
             max_frame_width,
             max_frame_height,
             cropping,
-            tools,
         })
     }
 
@@ -263,21 +230,6 @@ mod tests {
 
     fn write_uvlc(w: &mut BitWriter, v: u32) {
         w.write_ue(v);
-    }
-
-    /// Finish a header after its cropping window: all-zero tool syntax (as many bits as
-    /// [`SequenceTools::parse`] reads from zeros), `obu_extension_flag` 0 and the trailing bits.
-    fn finish(mut w: BitWriter, cx: Context) -> Vec<u8> {
-        let zeros = [0u8; 64];
-        let mut r = BitReader::new(&zeros);
-        SequenceTools::parse(&mut r, cx).unwrap();
-        for _ in 0..r.position() {
-            w.write_bit(false);
-        }
-        w.write_bit(false); // obu_extension_flag
-        w.write_bit(true); // trailing one bit
-        w.align_zero();
-        w.finish()
     }
 
     /// A sequence header with the given fields, written per § 5.4.1.
@@ -314,15 +266,8 @@ mod tests {
             }
             None => w.write_bit(false),
         }
-        let cx = Context {
-            single_picture_header: false,
-            monochrome: chroma == 1,
-            max_tlayer_id: 1,
-            max_mlayer_id: max_mlayer_id as u8,
-            max_frame_size: (wd, ht),
-            limits: TileLimits { level_idx: level, tier: u8::from(level > 3) },
-        };
-        finish(w, cx)
+        w.align_zero();
+        w.finish()
     }
 
     #[test]
@@ -364,18 +309,8 @@ mod tests {
         w.write_bits(99, 8);
         w.write_bits(49, 8);
         w.write_bit(false);
-        let h = SequenceHeader::parse(&finish(
-            w,
-            Context {
-                single_picture_header: true,
-                monochrome: true,
-                max_tlayer_id: 0,
-                max_mlayer_id: 0,
-                max_frame_size: (100, 50),
-                limits: TileLimits { level_idx: 5, tier: 0 },
-            },
-        ))
-        .unwrap();
+        w.align_zero();
+        let h = SequenceHeader::parse(&w.finish()).unwrap();
         assert!(h.still_picture && h.single_picture_header && h.monotonic_output_order);
         assert_eq!((h.tier, h.max_mlayer_count, h.max_frame_width, h.max_frame_height), (0, 1, 100, 50));
         assert_eq!(h.chroma_format.num_planes(), 1);
