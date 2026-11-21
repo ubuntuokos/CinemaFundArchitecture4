@@ -123,6 +123,9 @@ fn first_difference(a: &[u8], b: &[u8]) -> String {
     }
 }
 
+// xavs2 copies its option strings into fixed-size buffers: a long absolute path (CI checkouts have
+// one) overflows them for the longer case names. It therefore runs inside the fixtures directory and
+// gets bare file names.
 fn run(cases: &[Case<'_>]) {
     let (enc, dec) = if cases.iter().any(|c| c.ten_bit) { ("xavs2-10bit", "davs2-10bit") } else { ("xavs2", "davs2") };
     if !have(enc) || !have(dec) {
@@ -139,14 +142,15 @@ fn run(cases: &[Case<'_>]) {
         let depth = if case.ten_bit { "10" } else { "8" };
         let out = Command::new(tool(enc))
             .arg("-p")
-            .arg(format!("InputFile={}", input.display()))
+            .current_dir(&dir)
+            .arg(format!("InputFile={}.src.yuv", case.name))
             .arg(format!("--SourceWidth={}", case.w))
             .arg(format!("--SourceHeight={}", case.h))
             .arg(format!("--FramesToBeEncoded={}", case.frames))
             .args(["--fps=25", "--InputSampleBitDepth=8", "--thread_frames=1", "--thread_rows=1"])
             .arg(format!("--SampleBitDepth={depth}"))
-            .arg(format!("--OutputFile={}", stream.display()))
-            .arg(format!("--ReconFile={}", recon.display()))
+            .arg(format!("--OutputFile={}.avs2", case.name))
+            .arg(format!("--ReconFile={}.rec.yuv", case.name))
             .args(case.args)
             .stdin(Stdio::null())
             .output()
@@ -295,9 +299,10 @@ fn damaged_streams_do_not_panic() {
         let stream = dir.join(format!("{name}.avs2"));
         let status = Command::new(tool("xavs2"))
             .arg("-p")
-            .arg(format!("InputFile={}", input.display()))
+            .current_dir(&dir)
+            .arg(format!("InputFile={name}.src.yuv"))
             .args(["--SourceWidth=176", "--SourceHeight=144", "--FramesToBeEncoded=6", "--fps=25", "--thread_frames=1", "--thread_rows=1"])
-            .arg(format!("--OutputFile={}", stream.display()))
+            .arg(format!("--OutputFile={name}.avs2"))
             .args(&args)
             .stdout(Stdio::null())
             .stderr(Stdio::null())
