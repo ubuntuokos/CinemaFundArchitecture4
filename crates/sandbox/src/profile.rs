@@ -16,6 +16,9 @@ pub enum ProcessKind {
     MediaHost,
     /// `cfa4-studio-host`: the live studio (LIVE-STUDIO D2, phase B6).
     StudioHost,
+    /// A capture and playout host: reads a capture card or another character device and writes
+    /// recordings into one staging directory, no network, no program start (READY-001 V7).
+    IoHost,
     /// The browser source inside the studio host: confined by Chromium's sandbox and AppArmor.
     BrowserSource,
     /// `cfa4-fetch`: downloads the user asked for (D5).
@@ -28,11 +31,12 @@ pub enum ProcessKind {
 
 impl ProcessKind {
     /// Every kind, in the order of plan IV.2.
-    pub const ALL: [ProcessKind; 8] = [
+    pub const ALL: [ProcessKind; 9] = [
         ProcessKind::QtGui,
         ProcessKind::Engine,
         ProcessKind::MediaHost,
         ProcessKind::StudioHost,
+        ProcessKind::IoHost,
         ProcessKind::BrowserSource,
         ProcessKind::Fetch,
         ProcessKind::PluginHost,
@@ -46,6 +50,7 @@ impl ProcessKind {
             ProcessKind::Engine => "engine",
             ProcessKind::MediaHost => "mediaHost",
             ProcessKind::StudioHost => "studioHost",
+            ProcessKind::IoHost => "ioHost",
             ProcessKind::BrowserSource => "browserSource",
             ProcessKind::Fetch => "fetch",
             ProcessKind::PluginHost => "pluginHost",
@@ -60,6 +65,7 @@ impl ProcessKind {
             ProcessKind::Engine => "Engine",
             ProcessKind::MediaHost => "Media host (FFmpeg, GStreamer)",
             ProcessKind::StudioHost => "Live studio host",
+            ProcessKind::IoHost => "Capture and playout host",
             ProcessKind::BrowserSource => "Browser source",
             ProcessKind::Fetch => "Downloader",
             ProcessKind::PluginHost => "Plug-in host",
@@ -136,6 +142,11 @@ pub struct Context {
     /// Model converter: the source model (read) and the safetensors output (a file, read-write).
     pub model_source: Option<PathBuf>,
     pub model_output: Option<PathBuf>,
+    /// I/O host: the character devices it may open (capture cards, V4L2 nodes), read-write with
+    /// device ioctls.
+    pub capture_devices: Vec<PathBuf>,
+    /// I/O host: the directory it writes recordings into (the File Services staging directory).
+    pub recording_dir: Option<PathBuf>,
 }
 
 /// One process's rules.
@@ -155,6 +166,9 @@ pub struct Profile {
     /// The only programs this process may start. Empty: `execve` is refused (seccomp).
     pub exec: Vec<PathBuf>,
     pub network: Network,
+    /// Character devices (capture cards, V4L2 nodes) read-write with device ioctls, like `gpu`
+    /// but only the named nodes. A node that does not exist grants nothing.
+    pub devices: Vec<PathBuf>,
     /// GPU device nodes (`/dev/dri`, `/dev/nvidia*`) read-write with device ioctls.
     pub gpu: bool,
 }
@@ -196,6 +210,7 @@ impl Profile {
         let mut write = Vec::new();
         let mut outputs = Vec::new();
         let mut exec = Vec::new();
+        let mut devices = Vec::new();
         let (network, gpu) = match kind {
             ProcessKind::QtGui => {
                 read.extend(ctx.project_dirs.iter().cloned());
@@ -230,6 +245,13 @@ impl Profile {
                 exec.extend(ctx.helper_exes.iter().cloned());
                 (Network::Any, true)
             }
+            ProcessKind::IoHost => {
+                // the vendor driver stack (Desktop Video) lives under /usr, already in SYSTEM_READ;
+                // frames and recordings leave over the ring and the staging directory only
+                devices.extend(ctx.capture_devices.iter().cloned());
+                write.extend(some(&ctx.recording_dir));
+                (Network::None, false)
+            }
             ProcessKind::BrowserSource => (Network::Any, true),
             ProcessKind::Fetch => {
                 write.extend(some(&ctx.download_target));
@@ -246,12 +268,12 @@ impl Profile {
                 (Network::None, false)
             }
         };
-        Profile { kind, read, write, outputs, exec, network, gpu }
+        Profile { kind, read, write, outputs, exec, network, devices, gpu }
     }
 
     /// Whether `path` falls under one of this profile's own read or write paths (not the system ones).
     /// Lexical: does not resolve symbolic links (the kernel rules do).
     pub fn covers(&self, path: &Path) -> bool {
-        self.read.iter().chain(&self.write).any(|p| path.starts_with(p)) || self.outputs.iter().any(|p| path == p)
+        self.read.iter().chain(&self.write).any(|p| path.starts_with(p)) || self.outputs.iter().any(|p| path == p) || self.devices.iter().any(|p| path == p)
     }
 }
