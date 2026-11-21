@@ -1,6 +1,6 @@
 # CFA4-DNEG-TECHNOLOGY-ADAPTATION-001 – végleges integrációs terv (D10), 1.0
 
-> **Állapot:** JAVASOLT VÉGLEGES 1.0 – tulajdonosi jóváhagyásra vár (az öt kapcsolódó terv 0.1 jóváhagyva 2026-11-21). A terv elfogadása **nem
+> **Állapot:** JÓVÁHAGYVA (István, 2026-11-21 22:49, Europe/Budapest), VÉGLEGES 1.0; az öt kapcsolódó terv 0.1 is jóváhagyva. A terv elfogadása **nem
 > implementációs engedély**: minden fázis külön tulajdonosi engedélyt igényel (coordination.md §2.10).
 > **Dátum:** 2026-11-21 · **Kérte:** István (ubuntuokos) · **Alap:** CFA4 `main` @ `97d7982f`
 > **Bizonyíték (D1–D9):** [`CFA4-DNEG-TECHNOLOGY-ADAPTATION-001-AUDIT-D1-D9.md`](CFA4-DNEG-TECHNOLOGY-ADAPTATION-001-AUDIT-D1-D9.md)
@@ -148,7 +148,7 @@ A nehéz mérések a `docs/development/reference-machine.md` szabályai szerint 
 
 ## 8. Kockázatok és nyitott pontok a tulajdonosnak
 
-> **A §8 javaslatait a tulajdonos elfogadta** (István, 2026-11-21 22:48): a Javaslat-oszlop minden sora (Q1–Q7) a döntés. Ez a terv egészének jóváhagyása még külön nem történt meg. A Q4 és Q5 döntése továbbra is a megjelölt kapunál (G4 PoC; VISION §8) esedékes.
+> **A §8 javaslatait a tulajdonos elfogadta** (István, 2026-11-21 22:48): a Javaslat-oszlop minden sora (Q1–Q7) a döntés. A terv egészét a tulajdonos 22:49-kor jóváhagyta. A Q4 és Q5 döntése továbbra is a megjelölt kapunál (G4 PoC; VISION §8) esedékes.
 
 | # | Pont | Javaslat |
 |---|---|---|

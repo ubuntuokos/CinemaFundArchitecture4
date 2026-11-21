@@ -1,6 +1,6 @@
 # DNEG-00 – képesség- és tervütközési audit (D1–D9)
 
-> **Állapot:** audit, tervszintű; **nem implementációs engedély** (coordination.md §2.10).
+> **Állapot:** audit, tervszintű, a tulajdonos jóváhagyta (2026-11-21 22:49); **nem implementációs engedély** (coordination.md §2.10).
 > **Projekt:** CFA4-DNEG-TECHNOLOGY-ADAPTATION-001 · **Dátum:** 2026-11-21
 > **Alap:** CFA4 `main` @ `97d7982f` (git fetch, 2026-11-21). Kód nem módosult; csak dokumentáció.
 > **Hálózati ellenőrzés:** 2026-11-21 (a tulajdonos jelezte, hogy a hálózat elérhető). A DNEG- és upstream-repók shallow klónjai, licenc- és fejlécolvasás, `git rev-parse` összevetés; az eredmények a D7/D8-ban és a jegyzékben. Az AAF SDK **forrását nem olvastam** (clean-room), csak a licencszöveget és a README-t.
