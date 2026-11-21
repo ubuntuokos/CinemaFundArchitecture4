@@ -6187,6 +6187,13 @@
   {
    "class": "render",
    "crate": "cfa4-project",
+   "kind": "enum",
+   "module": "mask.rs",
+   "name": "MaskSource"
+  },
+  {
+   "class": "render",
+   "crate": "cfa4-project",
    "kind": "struct",
    "module": "multicam.rs",
    "name": "MulticamSource"
