@@ -91,7 +91,7 @@ impl<'a> Arith<'a> {
                 new = (new << 8) | byte;
             }
             if self.pos + 2 > self.data.len() {
-                self.overread += 1;
+                self.overread = self.overread.saturating_add(1);
                 self.pos = self.data.len();
             } else {
                 self.pos += 2;
@@ -252,5 +252,18 @@ pub(crate) mod tests {
             assert_eq!(d.bit(ZERO_BLOCK), v > 0);
         }
         assert!(!d.damaged());
+    }
+
+    /// Fuzz finding (cfa4-fuzz `dirac`, 2026-11-21): an over-long exp-Golomb value marks the block
+    /// damaged with `u32::MAX` overreads, and the next overread then overflowed (a panic with
+    /// overflow checks, a wrap to "not damaged" without).
+    #[test]
+    fn damaged_stays_damaged() {
+        let mut d = Arith::new(&[]);
+        d.overread = u32::MAX;
+        for _ in 0..64 {
+            d.bit(ZERO_BLOCK);
+        }
+        assert!(d.damaged());
     }
 }
