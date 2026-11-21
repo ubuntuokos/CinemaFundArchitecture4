@@ -5243,6 +5243,13 @@
    "class": "other",
    "crate": "cfa4-render",
    "kind": "struct",
+   "module": "homography.rs",
+   "name": "Homography"
+  },
+  {
+   "class": "other",
+   "crate": "cfa4-render",
+   "kind": "struct",
    "module": "lumetri_presets.rs",
    "name": "LumetriPreset"
   },
@@ -5280,6 +5287,13 @@
    "kind": "enum",
    "module": "mosh.rs",
    "name": "MoshError"
+  },
+  {
+   "class": "other",
+   "crate": "cfa4-render",
+   "kind": "struct",
+   "module": "mosh.rs",
+   "name": "Session"
   },
   {
    "class": "other",
@@ -5355,6 +5369,20 @@
    "class": "other",
    "crate": "cfa4-render",
    "kind": "struct",
+   "module": "trajectories.rs",
+   "name": "Track"
+  },
+  {
+   "class": "other",
+   "crate": "cfa4-render",
+   "kind": "struct",
+   "module": "trajectories.rs",
+   "name": "Trajectories"
+  },
+  {
+   "class": "other",
+   "crate": "cfa4-render",
+   "kind": "struct",
    "module": "transitions/cards.rs",
    "name": "Card"
   },
@@ -5392,6 +5420,13 @@
    "kind": "trait",
    "module": "vfx/mod.rs",
    "name": "FxEnv"
+  },
+  {
+   "class": "other",
+   "crate": "cfa4-render",
+   "kind": "struct",
+   "module": "vfx/perspective.rs",
+   "name": "PerspectivePath"
   },
   {
    "class": "other",
@@ -6225,6 +6260,13 @@
    "kind": "struct",
    "module": "plan.rs",
    "name": "PlanLayer"
+  },
+  {
+   "class": "render",
+   "crate": "cfa4-render",
+   "kind": "struct",
+   "module": "transitions/mosh.rs",
+   "name": "MoshSource"
   },
   {
    "class": "render",
@@ -9813,6 +9855,11 @@
   },
   {
    "from": "cfa4-engine/settings.rs",
+   "item": "vfx",
+   "to": "cfa4-render"
+  },
+  {
+   "from": "cfa4-engine/settings.rs",
    "item": "FrameRate",
    "to": "cfa4-time"
   },
@@ -12027,6 +12074,11 @@
    "to": "cfa4-geom"
   },
   {
+   "from": "cfa4-render/homography.rs",
+   "item": "Affine",
+   "to": "cfa4-geom"
+  },
+  {
    "from": "cfa4-render/image.rs",
    "item": "linear_to_srgb_index",
    "to": "cfa4-color"
@@ -12392,6 +12444,16 @@
    "to": "cfa4-project"
   },
   {
+   "from": "cfa4-render/trajectories.rs",
+   "item": "Affine",
+   "to": "cfa4-geom"
+  },
+  {
+   "from": "cfa4-render/trajectories.rs",
+   "item": "Vec2",
+   "to": "cfa4-geom"
+  },
+  {
    "from": "cfa4-render/transitions/legacy.rs",
    "item": "Affine",
    "to": "cfa4-geom"
@@ -12423,6 +12485,21 @@
   },
   {
    "from": "cfa4-render/transitions/mod.rs",
+   "item": "Tick",
+   "to": "cfa4-time"
+  },
+  {
+   "from": "cfa4-render/transitions/mosh.rs",
+   "item": "Affine",
+   "to": "cfa4-geom"
+  },
+  {
+   "from": "cfa4-render/transitions/mosh.rs",
+   "item": "EffectInstance",
+   "to": "cfa4-project"
+  },
+  {
+   "from": "cfa4-render/transitions/mosh.rs",
    "item": "Tick",
    "to": "cfa4-time"
   },
@@ -12535,6 +12612,21 @@
    "from": "cfa4-render/vfx/mod.rs",
    "item": "Tick",
    "to": "cfa4-time"
+  },
+  {
+   "from": "cfa4-render/vfx/perspective.rs",
+   "item": "linear_to_srgb",
+   "to": "cfa4-color"
+  },
+  {
+   "from": "cfa4-render/vfx/perspective.rs",
+   "item": "cancel",
+   "to": "cfa4-media"
+  },
+  {
+   "from": "cfa4-render/vfx/perspective.rs",
+   "item": "EffectInstance",
+   "to": "cfa4-project"
   },
   {
    "from": "cfa4-render/vfx/pixelate.rs",
