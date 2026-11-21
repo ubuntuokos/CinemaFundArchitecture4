@@ -40,6 +40,7 @@ szabadalommal védett formátumot.
 | MPEG-5 EVC Baseline (ISO/IEC 23094-1) | dekódolás | `crates/evc` (a xevd portja) | alap | függőben | | |
 | AVS1-P2 Jizhun (GB/T 20090.2) | dekódolás | `crates/cavs` (az FFmpeg portja) | alap | függőben | | |
 | AVS2-P2 Main / Main 10 (IEEE 1857.4, GB/T 33475.2) | dekódolás | `crates/avs2` (a davs2 1.7 portja; a GPL-2.0-or-later licenc kifejezett szabadalmi engedélyt nem ad) | alap | függőben | | |
+| AVS3-P2 baseline (IEEE 1857.10, GB/T 33475.2) | dekódolás | `crates/avs3` (az uavs3d 1.2 portja; a BSD-3-Clause licenc kifejezett szabadalmi engedélyt nem ad) | alap | függőben | | |
 | MPEG-1 / MPEG-2 videó (H.262) | dekódolás | `crates/mpeg2v`; FFmpeg-háttér | alap | függőben | | |
 | MPEG-4 Part 2 (Visual) | dekódolás, kódolás | FFmpeg-háttér | alap | függőben | | |
 | MPEG-4 Part 2 Simple Studio Profile (Sony SR) | dekódolás | `crates/sstp` (az FFmpeg portja) | alap | függőben | | |

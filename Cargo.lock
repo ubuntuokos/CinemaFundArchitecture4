@@ -1101,6 +1101,14 @@ dependencies = [
 ]
 
 [[package]]
+name = "cfa4-avs3"
+version = "0.10.0"
+dependencies = [
+ "cfa4-testkit",
+ "thiserror 2.0.21",
+]
+
+[[package]]
 name = "cfa4-bitstream"
 version = "0.10.0"
 dependencies = [
@@ -1200,6 +1208,7 @@ dependencies = [
  "cfa4-av2",
  "cfa4-avi",
  "cfa4-avs2",
+ "cfa4-avs3",
  "cfa4-bitstream",
  "cfa4-canopus",
  "cfa4-cavs",
