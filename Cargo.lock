@@ -1478,6 +1478,7 @@ dependencies = [
  "cfa4-docpath",
  "cfa4-edit",
  "cfa4-export",
+ "cfa4-fetch-client",
  "cfa4-format",
  "cfa4-frame",
  "cfa4-geom",
@@ -1570,6 +1571,29 @@ dependencies = [
  "tempfile",
  "thiserror 2.0.21",
  "web-time",
+]
+
+[[package]]
+name = "cfa4-fetch"
+version = "0.10.0"
+dependencies = [
+ "cfa4-fetch-client",
+ "cfa4-sandbox",
+ "rustls",
+ "serde_json",
+ "sha2 0.11.1",
+ "tempfile",
+ "ureq",
+]
+
+[[package]]
+name = "cfa4-fetch-client"
+version = "0.10.0"
+dependencies = [
+ "serde",
+ "serde_json",
+ "tempfile",
+ "thiserror 2.0.21",
 ]
 
 [[package]]
@@ -2163,13 +2187,11 @@ dependencies = [
  "cfa4-project",
  "cfa4-time",
  "rayon",
- "rustls",
  "serde",
  "serde_json",
  "sha2 0.11.1",
  "tempfile",
  "thiserror 2.0.21",
- "ureq",
 ]
 
 [[package]]

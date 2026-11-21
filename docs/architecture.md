@@ -24,11 +24,11 @@ Design principles:
 ## 1. Layers
 
 ```text
- L6  apps/cfa4 · apps/cfa4-cli · apps/cfa4-studio-host
+ L6  apps/cfa4 · apps/cfa4-cli · apps/cfa4-studio-host · apps/cfa4-fetch
  L5  ui-egui · automation · tcsync-io · surface · platform · gstreamer (cfa4-gstreamer, optional) · ffmpeg (cfa4-ffmpeg, optional) · obs (cfa4-obs)
  L4  engine
  L3  render · gpu · export · smart-edit · qc · golden (test-only)
-     DCP validation: dcp-validate · dcp-inspect · DCP mastering: dcpomatic
+     DCP validation: dcp-validate · dcp-inspect · DCP mastering: dcpomatic · downloads: fetch-client
  L2  tasks (cfa4-tasks) · edit · objtrack · codecs · interchange · captions · credits · speech · tts · tts-text
  L1  frame · io-core · media · project · audio-dsp · text · route (cfa4-route) · tcsync · surface-model · metrics · live · sandbox · surface-catalog
  L0  foundation: time · geom · color · bitstream · testkit (dev-dependency only)
@@ -114,7 +114,7 @@ Crates are named `cfa4-<dir>` (`crates/time` is `cfa4-time`); new CFA4 crates ar
 | `tasks` | L2 | `cfa4-tasks`: CFA4-wide task and resource infrastructure (ACS, [ADR 0008 in the AI repo](../docs/plans/CFA4-ADAPTIVE-CAPABILITY-001-osszevetes.md)): nominal and current resources kept apart (RAM, cgroup limits, PSI, VRAM from sysfs), the resource manager with atomic reservations and waiting reasons, the monitor with hysteresis, the execution-path planner with time estimates, the task queue (classes, priorities, timed starts in IANA zones through `chrono` with the IANA database bundled in `jiff`, leases, missed-start decisions); no `unsafe`, depends on `cfa4-route` for the device probe |
 | `edit` | L2 | pure edit algebra (insert, overwrite, razor, ripple, roll, slip, slide, rate stretch…; text-based editing: `edit::transcript`) |
 | `credits` | L2 | credits sequences from a spreadsheet: CSV/TSV reader, page / content / letter styles, layout into graphic clips (rolls and cards) ([README](../crates/credits/README.md), [credits.md](credits.md)) |
-| `speech` | L2 | speech-to-text: `Transcriber` trait, Whisper model catalogue + verified downloader (feature `download`), pure-Rust Whisper inference on candle with word timestamps (feature `whisper`), speaker labelling ([transcripts.md](transcripts.md)) |
+| `speech` | L2 | speech-to-text: `Transcriber` trait, Whisper model catalogue (downloads run in `cfa4-fetch`), pure-Rust Whisper inference on candle with word timestamps (feature `whisper`), speaker labelling ([transcripts.md](transcripts.md)) |
 | `tts` | L2 | text to speech: `Voice` trait, voice catalogue, pause markers, built-in formant voices; Kokoro-82M natural voices on candle and their pinned package catalogue (feature `kokoro`). Same-layer edge to `tts-text` |
 | `tts-text` | L2 | text front end for narration: normalizer (numbers, money, dates, acronyms, pauses) and English pronunciation (CMUdict + letter-to-sound) to Kokoro phonemes |
 | `codecs` | L2 | container + codec hub: MP4/MOV, MKV, MXF, Ogg and MPEG TS / PS / video elementary stream sources, GOP-aware seeking, decoder registry, audio decoding |
@@ -127,6 +127,7 @@ Crates are named `cfa4-<dir>` (`crates/time` is `cfa4-time`); new CFA4 crates ar
 | `export` | L3 | render → encode → mux pipeline, progress/cancel |
 | `dcp-validate` | L3 | DCP validation API (DCP-03): `DcpValidator` trait, seven result states and the package verdict, versioned profiles, `cfa4-dcp-report/1` JSON / Markdown report, safe package discovery, native backend ([README](../crates/dcp-validate/README.md)) |
 | `dcp-inspect` | L3 | DCP validation backend (DCP-04) that runs the isolated dcp_inspect reference engine as a separate process: argument array, own process group, private `HOME`/`TMPDIR`, timeout and cancel, `--dump-result` mapped onto the rule catalogue ([README](../crates/dcp-inspect/README.md)) |
+| `fetch-client` | L3 | `cfa4-fetch-client`: the engine's side of downloads ([CFA4-SECURITY-001](plans/CFA4-SECURITY-001.md) D5): the request (files pinned to an `https://` address, size and SHA-256) and progress protocol, finding and starting `cfa4-fetch`, cancelling it; no network code |
 | `dcpomatic` | L3 | DCP mastering with the DCP-o-matic build CFA4 ships (plan [CFA4-DCPOMATIC-001](plans/CFA4-DCPOMATIC-001-FINAL-1.0.md), ADR 0011): `dcpomatic2_create` and `dcpomatic2_cli make-dcp` as separate processes from `/usr/lib/cfa4/dcpomatic/` only (never `PATH`), argument array, own process group, private `HOME`/`TMPDIR`, timeout, cancel and progress ([README](../crates/dcpomatic/README.md)) |
 | `objtrack` | L2 | `cfa4-objtrack`: multi-object box tracking for Object Mask: IoU, constant-velocity Kalman filter, Hungarian assignment and the SORT tracker; pure Rust, depends on `cfa4-geom` only ([plan](plans/OBJECT-MASK-PLAN-001-2026-11-03.md) OM-A4, [README](../crates/objtrack/README.md)) |
 | `smart-edit` | L3 | `cfa4-smart-edit`: Smart Cut / Smart Render planning: media capability registry (WP-01), later GOP index and render plans; decides, never executes ([plan](plans/CFA4-SMART-CUT-RENDER-R1.md), [baseline](audit/smart-edit-baseline.md), [README](../crates/smart-edit/README.md)) |
@@ -142,6 +143,7 @@ Crates are named `cfa4-<dir>` (`crates/time` is `cfa4-time`); new CFA4 crates ar
 | `cfa4` | L6 | desktop binary: eframe/wgpu window, cpal audio output, file dialogs, TCP control server |
 | `cfa4-cli` | L6 | headless CLI: `exec`, `run`, `inspect`, `describe`, `commands`, `import`, `export`, `render`, `probe`, `mcp`; `--bridge` targets the running app |
 | `cfa4-studio-host` | L6 | the live studio's own process: runs libobs (or the software backend), shows the scene the engine sends (S1: the project's current studio scene, `live.studio.scene.*` / `live.studio.source.*`), writes program frames into the frame ring; started, watched and restarted by the engine (`live.studio.host.*`), so a libobs crash never ends the editor (plan D2) |
+| `cfa4-fetch` | L6 | the downloader process (D5): reads one request on stdin, confines itself with the `fetch` profile of `cfa4-sandbox` (writes only the target directory, TCP out only to port 443 or the configured HTTPS proxy, no program start; refuses to run without the protections, plan D4), downloads over HTTPS (ureq + rustls, HTTPS-only redirects), checks size and SHA-256, reports JSON lines |
 
 ### What `cargo xtask layers` enforces
 

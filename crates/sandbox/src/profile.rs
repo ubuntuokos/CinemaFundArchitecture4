@@ -131,6 +131,9 @@ pub struct Context {
     /// Downloader: the target directory (read-write) and the ports it may connect to (default 443).
     pub download_target: Option<PathBuf>,
     pub fetch_ports: Vec<u16>,
+    /// Downloader: TLS root certificates outside the system locations (`SSL_CERT_FILE`,
+    /// `SSL_CERT_DIR`) (read).
+    pub tls_roots: Vec<PathBuf>,
     /// Plug-in host: the plug-in's own files (read).
     pub plugin_dirs: Vec<PathBuf>,
     /// Model converter: the source model (read) and the safetensors output (a file, read-write).
@@ -232,6 +235,7 @@ impl Profile {
             }
             ProcessKind::BrowserSource => (Network::Any, true),
             ProcessKind::Fetch => {
+                read.extend(ctx.tls_roots.iter().cloned());
                 write.extend(some(&ctx.download_target));
                 let ports = if ctx.fetch_ports.is_empty() { vec![443] } else { ctx.fetch_ports.clone() };
                 (Network::Outbound { ports }, false)
