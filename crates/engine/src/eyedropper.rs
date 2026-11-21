@@ -189,6 +189,52 @@ mod tests {
         assert!(solve_white_balance([0.2, 0.3, 0.4]).is_some_and(|(t, _, _)| t > 0.0));
     }
 
+    /// Golden check against the real Lumetri effect (not the model above): a grey card with a
+    /// colour cast, run through Lumetri with the Temperature and Tint the selector solved, comes out
+    /// neutral; a card that is already neutral is left as it was.
+    #[test]
+    fn the_solved_values_make_a_cast_card_neutral_through_the_real_lumetri_effect() {
+        use cfa4_project::{ParamValue, find_effect};
+        use cfa4_render::{
+            effects::{FxCtx, apply},
+            image::Image,
+        };
+        let cx = FxCtx {
+            t: cfa4_time::Tick::ZERO,
+            px_scale: 1.0,
+            seconds: 0.0,
+            timecode: "00:00:00:00",
+            clip_name: "x",
+            project: None,
+            env: None,
+            frame_rate: 24.0,
+            working: cfa4_color::WorkingSpace::Rec709,
+        };
+        let through_lumetri = |card: [f32; 3], temp: f32, tint: f32| -> [f32; 3] {
+            let mut e = find_effect("lumetri").unwrap().instance();
+            e.params.get_mut("temperature").unwrap().value = ParamValue::Float(f64::from(temp));
+            e.params.get_mut("tint").unwrap().value = ParamValue::Float(f64::from(tint));
+            let mut img = Image::filled(8, 8, [card[0], card[1], card[2], 1.0]);
+            apply(&mut img, &e, &cx);
+            let p = img.get(4, 4);
+            [p[0], p[1], p[2]]
+        };
+        for cast in [[0.30_f32, 0.25, 0.20], [0.20, 0.26, 0.30], [0.22, 0.30, 0.22], [0.27, 0.22, 0.27]] {
+            let (t, n, clamped) = solve_white_balance(cast).unwrap();
+            assert!(!clamped, "{cast:?}");
+            let out = through_lumetri(cast, t, n);
+            let m = (out[0] + out[1] + out[2]) / 3.0;
+            assert!(out.iter().all(|c| (c - m).abs() < 2e-3), "{cast:?} -> {out:?}");
+            // the cast was real: without the correction the card is not neutral
+            let raw = through_lumetri(cast, 0.0, 0.0);
+            assert!((raw[0] - raw[2]).abs() > 0.02 || (raw[1] - raw[0]).abs() > 0.02, "{cast:?}");
+        }
+        let grey = [0.18_f32; 3];
+        let (t, n, _) = solve_white_balance(grey).unwrap();
+        let out = through_lumetri(grey, t, n);
+        assert!(out.iter().all(|c| (c - 0.18).abs() < 2e-3), "{out:?}");
+    }
+
     #[test]
     fn extreme_and_hostile_colours_are_clamped_or_refused() {
         let (t, _, clamped) = solve_white_balance([0.9, 0.3, 0.003]).unwrap();
