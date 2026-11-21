@@ -44,10 +44,12 @@ mod serve_project;
 mod serve_scopes;
 mod serve_shm;
 mod serve_shuttle;
+mod serve_surface;
 mod serve_tcsync;
 mod serve_text;
 mod serve_tts;
 mod settings_cmd;
+mod studio_feeds;
 
 use args::{Args, parse_value};
 use cfa4_automation::BridgeClient;

@@ -4595,8 +4595,6 @@
 	Chase External Timecode	Externem Timecode folgen
 	Send LTC	LTC senden
 	Send MIDI Timecode	MIDI-Timecode senden
-	Add Studio Scene	Studioszene hinzufügen
-	Live	Live
 
 # Live studio preview (CFA4-LIVE-STUDIO-001 S0)
 	Live studio preview	Live-Studio-Vorschau
@@ -4607,6 +4605,16 @@
 	software backend: {reason}	Software-Backend: {reason}
 	Start studio	Studio starten
 	Stop studio	Studio anhalten
+	Add Studio Scene	Studioszene hinzufügen
+	Live	Live
+# Credits: title, opening, chapter and lower-third pages filled from a graphics template (F10-C16)
+	Opening Credits	Vorspann
+	Chapter Title	Kapiteltitel
+	Lower Third	Bauchbinde
+	page {page}: graphics template “{template}” was not found; “{used}” is used	Seite {page}: Grafikvorlage “{template}” wurde nicht gefunden; “{used}” wird verwendet
+	page {page}: graphics template “{template}” has no field for all of the block's text; the rest is left out	Seite {page}: Grafikvorlage “{template}” hat nicht für den ganzen Text des Blocks ein Feld; der Rest wird weggelassen
+	page {page}: template field “{control}” → “{part}” is not used (no such text control, or not head, body or tail)	Seite {page}: Vorlagenfeld “{control}” → “{part}” wird nicht verwendet (kein solches Textfeld, oder nicht Kopf, Hauptteil oder Fuß)
+	page {page}: pictures are left out on title, opening, chapter and lower-third pages	Seite {page}: auf Titel-, Vorspann-, Kapitel- und Bauchbindenseiten werden Bilder weggelassen
 # Auto Color, Auto Contrast, Auto Levels (EffectsSDK review)
 	Auto Color	Auto-Farbe
 	Auto Contrast	Auto-Kontrast
@@ -4677,3 +4685,151 @@
 	AS-11 Core	AS-11 Core
 	AS-11 Parts	AS-11-Teile
 	AS-11 UK DPP	AS-11 UK DPP
+# Control surfaces (qt-control-surfaces-page, CFA4-CONTROL-SURFACE-001)
+	Connected	Verbunden
+	Device	Gerät
+	Devices	Geräte
+	Disabled	Deaktiviert
+	HID jog/shuttle	HID-Jog/Shuttle
+	MIDI	MIDI
+	Not connected	Nicht verbunden
+	OSC	OSC
+	Use	Verwenden
+	{device} ({port})	{device} ({port})
+	{name}: {error}	{name}: {error}
+# Control surfaces (midi-monitor, CFA4-CONTROL-SURFACE-001)
+	MIDI Monitor	MIDI-Monitor
+	Press Start Monitor, then move a control.	Klicken Sie auf „Monitor starten“ und bewegen Sie dann ein Bedienelement.
+	Start Monitor	Monitor starten
+	Stop Monitor	Monitor beenden
+	… {count} messages not shown (too many at once)	… {count} Meldungen nicht angezeigt (zu viele auf einmal)
+# Control surfaces (midi-learn, CFA4-CONTROL-SURFACE-001)
+	A control surface asked for {command}, which does not exist.	Eine Bedienoberfläche hat {command} angefordert, das es nicht gibt.
+	Assignments	Zuweisungen
+	Cancel Learn	Lernen abbrechen
+	Control	Bedienelement
+	Learn	Lernen
+	Remove this assignment	Diese Zuweisung entfernen
+	{control} runs {command}.	{control} führt {command} aus.
+# Control surfaces (shuttlepro, CFA4-CONTROL-SURFACE-001)
+	Button {n}	Taste {n}
+# Control surfaces (continuous-values, CFA4-CONTROL-SURFACE-001)
+	{strip} Pan (knob)	{strip} Panorama (Drehregler)
+	{strip} Volume (fader)	{strip} Lautstärke (Fader)
+# Control surfaces (F1 Learn and profile, CFA4-CONTROL-SURFACE-001)
+	Assignments run when a button is pressed (a fader or knob counts as pressed past half way); a fader or knob assigned to a mixer strip moves its volume or pan. A ShuttlePRO's shuttle ring plays at its profile's speeds and its jog wheel steps frame by frame. Endless encoders and feedback to the controller (lights, motor faders) come in a later version.	Zuweisungen laufen bei einem Tastendruck (ein Fader oder Knopf gilt ab der Mitte als gedrückt); ein Fader oder Knopf auf einem Mixerkanal bewegt dessen Lautstärke oder Panorama. Der Shuttle-Ring eines ShuttlePRO spielt mit den Geschwindigkeiten seines Profils, das Jog-Rad springt bildweise. Endlos-Encoder und Rückmeldung an das Gerät (Leuchten, Motorfader) kommen in einer späteren Version.
+	First message (ms)	Erste Meldung (ms)
+	Silence (ms)	Stille (ms)
+	Waiting for the control to settle…	Warten, bis das Bedienelement zur Ruhe kommt…
+	Type: {hint}. Confirm this assignment.	Typ: {hint}. Diese Zuweisung bestätigen.
+	That control is already assigned. Confirm replaces it.	Dieses Bedienelement ist schon zugewiesen. Bestätigen ersetzt die Zuweisung.
+	Learn timed out.	Lernen hat die Zeit überschritten.
+	Confirm	Bestätigen
+	Reject	Ablehnen
+	Shows every MIDI message from the controllers as it arrives, to check that a controller sends and what it sends. MIDI Clock, Active Sensing and MIDI Time Code are left out.	Zeigt jede MIDI-Meldung der Controller, sobald sie eintrifft, um zu prüfen, ob und was ein Controller sendet. MIDI-Clock, Active Sensing und MIDI-Timecode bleiben aus.
+	Pick a command (or a mixer strip for a fader or knob), press Learn, then press the button or move the control past half way. Confirm keeps the assignment. OK saves the assignments.	Wählen Sie einen Befehl (oder einen Mixerkanal für Fader oder Knopf), drücken Sie Lernen, dann die Taste oder bewegen Sie das Element über die Mitte. Bestätigen behält die Zuweisung. OK speichert die Zuweisungen.
+	All devices	Alle Geräte
+	Builtin: {name}	Eingebaut: {name}
+	Capturing	Erfassen
+	Confirmed	Bestätigt
+	Conflict	Konflikt
+	Connect a MIDI controller or a ShuttlePRO to edit its profile.	Schließen Sie einen MIDI-Controller oder ein ShuttlePRO an, um sein Profil zu bearbeiten.
+	Control Surfaces…	Steuerungsoberflächen…
+	Filter messages	Nachrichten filtern
+	Idle	Bereit
+	Kernel dropped: {count}	Vom Kernel verworfen: {count}
+	Learn Assignments…	Lernen und Zuweisungen…
+	Load profile	Profil laden
+	MIDI Monitor…	MIDI-Monitor…
+	Mute shuttle sound	Shuttle-Ton stummschalten
+	No conflicts.	Keine Konflikte.
+	No profile warnings.	Keine Profilwarnungen.
+	No project profile is stored.	Es ist kein Projektprofil gespeichert.
+	OK writes the preferences and the profile file together.	OK schreibt die Einstellungen und die Profildatei zusammen.
+	Online	Online
+	Pending	Ausstehend
+	Pickup (14-bit)	Aufnahme (14 Bit)
+	Pickup (7-bit)	Aufnahme (7 Bit)
+	Profile warnings	Profilwarnungen
+	Rejected	Abgelehnt
+	Show Active Sensing	Active Sensing anzeigen
+	Show MIDI Clock	MIDI-Takt anzeigen
+	Show MIDI Time Code	MIDI-Zeitcode anzeigen
+	The profile file is damaged. Preferences and the built-in profile stay in use.	Die Profildatei ist beschädigt. Die Einstellungen und das eingebaute Profil bleiben in Verwendung.
+	Timed out	Zeit abgelaufen
+	Type: {hint}	Typ: {hint}
+	User profile file	Benutzerprofildatei
+	{received} received, {dispatched} dispatched, {coalesced} coalesced, {stalls} stalls, {errors} errors	{received} empfangen, {dispatched} zugestellt, {coalesced} zusammengefasst, {stalls} Wartezeiten, {errors} Fehler
+
+# Control Surfaces settings page (CS-1, #1187)
+	Looking for devices…	Geräte werden gesucht…
+	No MIDI controller or jog/shuttle device was found. Connect one and press Refresh.	Kein MIDI-Controller und kein Jog/Shuttle-Gerät gefunden. Schließen Sie eines an und klicken Sie auf Aktualisieren.
+	Control Surfaces	Steueroberflächen
+	Use control surfaces (MIDI controllers, jog/shuttle devices)	Steueroberflächen verwenden (MIDI-Controller, Jog/Shuttle-Geräte)
+	Mapping controls to commands, MIDI Learn and the MIDI Monitor come in a later version; the choices here are remembered until then.	Die Zuordnung von Bedienelementen zu Befehlen, MIDI Learn und der MIDI-Monitor folgen in einer späteren Version; die Auswahl hier bleibt bis dahin gespeichert.
+	CFA4 ShuttlePRO	CFA4 ShuttlePRO
+	Kdenlive-style ShuttlePRO	ShuttlePRO im Kdenlive-Stil
+	Generic MIDI	Generisches MIDI
+# LTC timecode read from clip audio (TC-7, #1285)
+	Read from LTC Audio	Aus LTC-Audio lesen
+	Find SMPTE LTC on the clip's audio and use the timecode it gives the first frame	SMPTE-LTC im Ton des Clips suchen und den Timecode verwenden, den er dem ersten Bild gibt
+	Read Timecode from LTC Audio	Timecode aus LTC-Audio lesen
+# Credits: voices (the Voice column) in the block's properties (F10-C16)
+	Voices	Stimmen
+# Timecode sync varispeed and user bits (TC-8, #1308)
+	Varispeed: adjust the playback speed instead of seeking	Varispeed: Wiedergabegeschwindigkeit anpassen statt zu springen
+	User bits	User Bits
+# AS-11 programme parts and AS-10 metadata (G2, #1371, #1375)
+	{tc}  Segmentation	{tc}  Segmentierung
+	Marker Type	Markertyp
+	Chapter	Kapitel
+	Segmentation (AS-11 programme part)	Segmentierung (AS-11-Programmteil)
+	AS-10	AS-10
+# AT9/AT3 converter (Tools ▸ Audio Tools, AT3-2)
+	AT9/AT3 Converter	AT9/AT3-Konverter
+	AT9/AT3 Converter…	AT9/AT3-Konverter…
+	Files to convert:	Umzuwandelnde Dateien:
+	Add Files	Dateien hinzufügen
+	Add Files…	Dateien hinzufügen…
+	Convert to:	Umwandeln in:
+	Bit rate:	Bitrate:
+	Sample format:	Sampleformat:
+	Output folder:	Ausgabeordner:
+	Output Folder	Ausgabeordner
+	Next to each source file	Neben jeder Quelldatei
+	AT9 and ATRAC3plus files convert to WAV; encoding AT9, ATRAC3plus and MP3 is not available yet.	AT9- und ATRAC3plus-Dateien werden in WAV umgewandelt; das Kodieren von AT9, ATRAC3plus und MP3 ist noch nicht verfügbar.
+	Convert	Umwandeln
+	Add the files to convert first.	Füge zuerst die umzuwandelnden Dateien hinzu.
+	Done: {n} file(s) converted.	Fertig: {n} Datei(en) umgewandelt.
+	Converting {name}…	{name} wird umgewandelt…
+	Stopping…	Wird angehalten…
+	AT3 (ATRAC3, PSP / PS3)	AT3 (ATRAC3, PSP / PS3)
+	WAV (PCM)	WAV (PCM)
+	132 kbit/s (LP2)	132 kbit/s (LP2)
+	105 kbit/s	105 kbit/s
+	66 kbit/s (LP4, joint stereo)	66 kbit/s (LP4, Joint Stereo)
+	16-bit	16 Bit
+	24-bit	24 Bit
+	32-bit float	32 Bit Gleitkomma
+
+# Datamosh transition (Grunge & Distort, DM1, #1409)
+	Datamosh	Datamosh
+	Residual	Residuum
+	Motion Boost	Bewegungsverstärkung
+	Recovery	Erholung
+	Encode Resolution	Kodierauflösung
+	Half	Halb
+	Quarter	Viertel
+
+# Recent effects, per-channel waveform, white balance selector (SC-2/SC-3/SC-4, #1419 #1420 #1421)
+	Apply a recently used effect to the selected clips	Zuletzt verwendeten Effekt auf die gewählten Clips anwenden
+	Disable all effects	Alle Effekte ausschalten
+	Enable all effects	Alle Effekte einschalten
+	No recent effects	Keine zuletzt verwendeten Effekte
+	Recent effects	Zuletzt verwendete Effekte
+	Switch every effect of the selected clips off	Schaltet jeden Effekt der gewählten Clips aus
+	Switch every effect of the selected clips on	Schaltet jeden Effekt der gewählten Clips ein
+	Merged	Zusammengefasst
+	Per Channel	Pro Kanal
+	Channel Zoom	Kanalzoom
+	White Balance Selector (click a neutral point in the Program monitor; Esc cancels)	Weißabgleich-Pipette (auf einen neutralen Punkt im Programmmonitor klicken; Esc bricht ab)

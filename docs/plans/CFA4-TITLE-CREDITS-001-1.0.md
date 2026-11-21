@@ -7,6 +7,8 @@
 > [CFA4-illesztési mellékletben](CFA4-TITLE-CREDITS-001-1.0-CFA4-ILLESZTES.md) van: mi kész, mi
 > hiányzik, hol tér el, és milyen döntések kellenek. A melléklet kérdései a tulajdonos döntéséig
 > nyitottak, és nem módosítják ezt a szöveget.
+>
+> **Folytatás:** a döntésekkel (Q1–Q18) beépített szöveg: [1.1](CFA4-TITLE-CREDITS-001-1.1.md). Ez az 1.0 változatlan, történeti szöveg.
 
 | Adat | Érték |
 |---|---|

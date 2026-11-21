@@ -41,6 +41,8 @@
 //!   would drop them when saving.
 //! - **v16** (CFA4-LIVE-STUDIO-001 S1): the live studio's scenes and sources (`Project::studio`).
 //!   No-op step; older builds would drop them when saving.
+//! - **v17** (CFA4-OBJECT-MASK-PLAN-001 OM-A1b): tracked objects (`Project::objects`). No-op step;
+//!   older builds would drop them when saving.
 
 #![cfg_attr(not(test), deny(clippy::unwrap_used, clippy::expect_used, clippy::panic, clippy::unimplemented, clippy::todo, clippy::unreachable))]
 
@@ -63,7 +65,7 @@ pub type Migration = fn(Value) -> Result<Value, String>;
 /// edit a shipped one.
 pub const MIGRATIONS: &[Migration] = &[
     v1_to_v2, v2_to_v3, v3_to_v4, v4_to_v5, v5_to_v6, v6_to_v7, v7_to_v8, v8_to_v9, v9_to_v10, v10_to_v11, v11_to_v12, v12_to_v13, v13_to_v14, v14_to_v15,
-    v15_to_v16,
+    v15_to_v16, v16_to_v17,
 ];
 
 /// The schema version this build writes (and the newest it reads).
@@ -402,13 +404,18 @@ fn v15_to_v16(doc: Value) -> Result<Value, String> {
     Ok(doc)
 }
 
+/// v16 → v17: tracked objects (`Project::objects`). Nothing to convert: older files have none.
+fn v16_to_v17(doc: Value) -> Result<Value, String> {
+    Ok(doc)
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
 
     #[test]
     fn schema_version_matches_table() {
-        assert_eq!(SCHEMA_VERSION, 16);
+        assert_eq!(SCHEMA_VERSION, 17);
     }
 
     #[test]
@@ -558,6 +565,31 @@ mod tests {
         assert_eq!(loaded.project.name, "Old project");
         let saved: Value = serde_json::from_slice(&encode(&loaded.project, false)).unwrap();
         assert_eq!(saved["format"], FORMAT_ID);
+    }
+
+    /// OM-A1b: tracked objects are saved with the project, an empty map writes no key, a v16 file
+    /// (no `objects`) loads and is upgraded, and a damaged track refuses to load.
+    #[test]
+    fn tracked_objects_round_trip_and_old_files_load() {
+        use cfa4_project::object::{ObjectId, ObjectSource, ObjectTrack};
+        let mut p = Project::new("Objects");
+        let item = p.alloc_id();
+        p.objects.insert(cfa4_project::ItemId(item), vec![ObjectTrack::new(ObjectId(1), "Dog", ObjectSource::Manual)]);
+        let loaded = decode(&encode(&p, false)).unwrap();
+        assert_eq!(loaded.project.objects, p.objects);
+        let plain: Value = serde_json::from_slice(&encode(&Project::new("x"), false)).unwrap();
+        assert!(plain["project"].get("objects").is_none());
+        // a v16 file has no `objects` key
+        let mut v: Value = serde_json::from_slice(&encode(&Project::new("Old"), false)).unwrap();
+        v["schema_version"] = Value::from(16);
+        let old = decode(&serde_json::to_vec(&v).unwrap()).unwrap();
+        assert!(old.project.objects.is_empty());
+        assert_eq!(old.schema_version, 16);
+        assert!(old.migrated());
+        // a track whose JSON breaks the rules (label too long) refuses to load
+        let mut v: Value = serde_json::from_slice(&encode(&p, false)).unwrap();
+        v["project"]["objects"][item.to_string()][0]["label"] = Value::from("x".repeat(10_000));
+        assert!(decode(&serde_json::to_vec(&v).unwrap()).is_err());
     }
 
     /// CFA4-LIVE-STUDIO-001 S1: the live studio's scenes are saved with the project, and a damaged

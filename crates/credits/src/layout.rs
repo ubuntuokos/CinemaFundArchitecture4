@@ -36,6 +36,12 @@ pub trait Measure {
     fn file_exists(&self, _file: &str) -> bool {
         true
     }
+
+    /// The graphics template a title, chapter or lower-third page names (id, name or `.fcgt`
+    /// path); the default finds only the built-in ones.
+    fn template(&self, key: &str) -> Option<cfa4_project::gtemplate::GraphicsTemplate> {
+        crate::scene::builtin_template(key)
+    }
 }
 
 /// A picture to show with a page, in graphic-canvas pixels where the page was laid out (before
@@ -513,6 +519,14 @@ fn lay_block(
                 let (e, bb) = ctx.text(b.row, "Tail", &text, &cs.tail, cs.align, None)?;
                 pieces.push(Piece { row: 0, key: String::new(), layer: e, b: bb, x: spine_x, top: y + tail_gap, pic: None });
             }
+            if !b.voices.is_empty() {
+                // the voices under the names, each with its label
+                let text = b.voices.iter().map(|(_, v)| format!("{}{v}", cs.voice_label)).collect::<Vec<_>>().join("\n");
+                let (e, bb) = ctx.text(b.row, "Voice", &text, &cs.voice, cs.align, None)?;
+                let below = bottom(&pieces).unwrap_or(y);
+                let gap = finite_or(cs.voice_gap, 0.0).clamp(0.0, 10_000.0) * s;
+                pieces.push(Piece { row: 0, key: String::new(), layer: e, b: bb, x: spine_x, top: below + gap, pic: None });
+            }
         }
         Orientation::Horizontal => {
             let body = if b.pictures.is_empty() {
@@ -573,6 +587,28 @@ fn lay_block(
                 } else {
                     let text = b.tails.iter().map(|(_, t)| t.as_str()).collect::<Vec<_>>().join("\n");
                     let (e, bb) = ctx.text(b.row, "Tail", &text, &cs.tail, Align::Left, None)?;
+                    pieces.push(Piece { row: 0, key: String::new(), layer: e, b: bb, x, top: at_baseline(bb, first_baseline), pic: None });
+                }
+            }
+            if !b.voices.is_empty() {
+                // the voices in a column of their own, right of the names (and tails), each on its
+                // name's line
+                let gap = finite_or(cs.voice_gap, 0.0).clamp(0.0, 10_000.0) * s;
+                let x = pieces.iter().filter(|p| p.x >= spine_x).map(Piece::right).fold(spine_x + head_gap / 2.0, f64::max) + gap;
+                let label = |v: &str| format!("{}{v}", cs.voice_label);
+                if single_column {
+                    let (_, one) = ctx.text(b.row, "Body", "X", &cs.body, Align::Left, None)?;
+                    let (_, two) = ctx.text(b.row, "Body", "X\nX", &cs.body, Align::Left, None)?;
+                    let advance = (two[3] - two[1]) - (one[3] - one[1]);
+                    for (k, (at, v)) in b.voices.iter().enumerate() {
+                        let line: usize = b.body.iter().take(*at).map(|c| c.split('\n').count()).sum();
+                        let bl = first_baseline.map(|b0| b0 + advance * line as f64);
+                        let (e, bb) = ctx.text(b.row, &format!("Voice {}", k + 1), &label(v), &cs.voice, Align::Left, None)?;
+                        pieces.push(Piece { row: 0, key: String::new(), layer: e, b: bb, x, top: at_baseline(bb, bl), pic: None });
+                    }
+                } else {
+                    let text = b.voices.iter().map(|(_, v)| label(v)).collect::<Vec<_>>().join("\n");
+                    let (e, bb) = ctx.text(b.row, "Voice", &text, &cs.voice, Align::Left, None)?;
                     pieces.push(Piece { row: 0, key: String::new(), layer: e, b: bb, x, top: at_baseline(bb, first_baseline), pic: None });
                 }
             }
@@ -678,6 +714,9 @@ pub fn block_key(b: &Block) -> u64 {
     for (i, t) in &b.tails {
         parts.push(format!("{i}:{t}").into_bytes());
     }
+    for (i, v) in &b.voices {
+        parts.push(format!("voice {i}:{v}").into_bytes());
+    }
     for p in &b.pictures {
         parts.push(format!("{}@{:?}{}{}", p.file, p.height, if p.video { "v" } else { "" }, if p.repeat { "l" } else { "" }).into_bytes());
     }
@@ -699,7 +738,7 @@ pub fn block_key(b: &Block) -> u64 {
 
 /// A layer's key: its block, which repetition of that block it is (the first has none, so keys
 /// stay as they were before repetitions were counted), its place in the block and its name.
-fn piece_key(bk: u64, nth: usize, k: usize, name: &str) -> String {
+pub(crate) fn piece_key(bk: u64, nth: usize, k: usize, name: &str) -> String {
     if nth == 0 { format!("{bk:016x}/{k}/{name}") } else { format!("{bk:016x}#{nth}/{k}/{name}") }
 }
 
@@ -1095,6 +1134,10 @@ fn lay_page(ctx: &mut Ctx<'_>, styling: &Styling, page: &Page, frame: Frame, ind
             crate::style::PageStyle::default()
         }
     };
+    if ps.behaviour.uses_template() {
+        let (measure, nth) = (ctx.measure, ctx.occurrences.get(index).and_then(|o| o.first()).copied().unwrap_or(0));
+        return crate::scene::lay_scene(page, &ps, styling, frame, (index, nth), (last, cut_in), measure, &mut |row, m| ctx.warn(row, m));
+    }
     let crawl = ps.behaviour == Behaviour::Crawl;
     let line_y = finite_or(ps.crawl_line, 0.85).clamp(0.0, 1.0) * h;
     // a card's content top on the frame, and its spine points
@@ -1179,7 +1222,8 @@ fn lay_page(ctx: &mut Ctx<'_>, styling: &Styling, page: &Page, frame: Frame, ind
             let n = ((w + content_w) / speed).ceil().clamp(1.0, 86_400.0 * 240.0) as i64;
             (0.0, runtime.unwrap_or_else(|| frames(rate, n)))
         }
-        Behaviour::Card => {
+        // template pages were laid out above (`scene`)
+        Behaviour::Card | Behaviour::Title | Behaviour::Opening | Behaviour::Chapter | Behaviour::LowerThird => {
             if content_h > h {
                 ctx.warn(page.row, format!("card page {} is taller than the frame; use a Scroll page", index + 1));
             }

@@ -1,6 +1,6 @@
 # CFA4-CONTROL-SURFACE-001 – F0 műszaki specifikáció
 
-**Dátum:** 2026-11-13 · **Állapot:** elfogadva (a tulajdonos, 2026-11-13) · **ADR:** [ADR 0012](../adr/ADR-0012-control-surface.md) ·
+**Dátum:** 2026-11-13 · **Állapot:** elfogadva (a tulajdonos, 2026-11-13), **véglegesítve** 2026-11-16; a 13. fejezet nyitott kérdései a javaslat szerint eldöntve · **ADR:** [ADR 0012](../adr/ADR-0012-control-surface.md) ·
 **Alap:** `ubuntuokos/CinemaFundArchitecture4` main `92e29e4`; referenciagép a repó
 `docs/development/reference-machine.md` fájlja szerint (Ubuntu Studio 26.04, kernel 7.0.0-43-generic, KDE Plasma 6.6.6,
 Wayland, Qt 6.10.2) · **Lefedett elfogadási pontok:** F0-AC-02, 04, 05, 10, 11, 12, 13
@@ -231,19 +231,21 @@ engedéllyel (javaslat a 9. nyitott kérdésre; az F-OSC előtt dönt a tulajdon
 
 ## 13. Nyitott kérdések (F0-AC-13)
 
+A tulajdonos 2026-11-16-án a javasolt döntéseket elfogadta („A javasolt döntéseket elfogadom”, „A javasolt kezelés rendben”); a táblázat utolsó oszlopa a döntést rögzíti.
+
 | # | Kérdés | Javaslat | Ki dönt, mikor |
 |---|---|---|---|
 | N-01 | Shuttle közbeni hang: a spec szerint néma, a Qt ma 0,5–4× előre hallható | A Qt meglévő szabálya, ki-be kapcsolható profilbeállítással | **Eldöntve 2026-11-13:** a Qt meglévő szabálya, profilban némítható |
-| N-02 | Elsődleges HID-út | hidraw, tartalék evdev | WP3 mérése után, F1a előtt |
-| N-03 | ShuttlePRO hidraw riportformátum | 5 bájt (shuttle, jog, –, gombok) | WP3 mérés |
-| N-04 | Pontos udev-szabály és csomagolás (`.deb`, 1.10 pont) | `uaccess` szabály a csomagban | F1a előtt, a 1.10-zel együtt |
-| N-05 | ALSA-crate verzió | a meglévő `alsa 0.9.1`, nincs második verzió | Jóváhagyás F1 előtt |
-| N-06 | Profilrétegek prioritása | 8. fejezet (vezérlőnkénti felülírás) | F2 előtt |
-| N-07 | `surface.clock` | tick, 10 Hz, 500 ms érvényesség | F1 előtt |
-| N-08 | Sorstruktúra és kapacitás | 3. fejezet, 256 | F1 mérése |
-| N-09 | OSC alapkötés | localhost, LAN külön engedéllyel | F-OSC előtt |
-| N-10 | Első F2 beépített profilok | Generic MIDI, Behringer X-Touch Mini, Korg nanoKONTROL2 (saját adat, Ardour-viselkedés szerint) | F2 előtt |
-| N-11 | A Kdenlive jogshuttle-kód portolása vagy csak viselkedés | Viselkedés + a sebességtábla és az evdev-logika portolása a licencfolyamattal | F1a előtt |
+| N-02 | Elsődleges HID-út | hidraw, tartalék evdev | **Eldöntve 2026-11-16:** hidraw elsődleges, evdev tartalék; az M1–M10 mérés csak megerősíti, eltérés ADR-módosítás |
+| N-03 | ShuttlePRO hidraw riportformátum | 5 bájt (shuttle, jog, –, gombok) | **Eldöntve 2026-11-16:** 5 bájtos riport; az M3–M6 mérés megerősíti, eltérés ADR-módosítás |
+| N-04 | Pontos udev-szabály és csomagolás (`.deb`, 1.10 pont) | `uaccess` szabály a csomagban | **Eldöntve 2026-11-16:** `uaccess` szabály a csomagban (`70-cfa4-surfaces.rules`, a .deb tartalomellenőrzésében) |
+| N-05 | ALSA-crate verzió | a meglévő `alsa 0.9.1`, nincs második verzió | **Eldöntve 2026-11-16:** a meglévő `alsa 0.9.1`, második verzió nincs |
+| N-06 | Profilrétegek prioritása | 8. fejezet (vezérlőnkénti felülírás) | **Eldöntve 2026-11-16:** a 8. fejezet szerint (vezérlőnkénti felülírás) |
+| N-07 | `surface.clock` | tick, 10 Hz, 500 ms érvényesség | **Eldöntve 2026-11-16:** tick, 10 Hz, 500 ms érvényesség |
+| N-08 | Sorstruktúra és kapacitás | 3. fejezet, 256 | **Eldöntve 2026-11-16:** a 3. fejezet szerkezete, kezdő kapacitás 256; a végleges szám az M10 mérésből |
+| N-09 | OSC alapkötés | localhost, LAN külön engedéllyel | **Eldöntve 2026-11-16:** localhost, LAN csak külön engedéllyel |
+| N-10 | Első F2 beépített profilok | Generic MIDI, Behringer X-Touch Mini, Korg nanoKONTROL2 (saját adat, Ardour-viselkedés szerint) | **Eldöntve 2026-11-16:** Generic MIDI, Behringer X-Touch Mini, Korg nanoKONTROL2 (F2-ben, az F1 eszközös igazolása után) |
+| N-11 | A Kdenlive jogshuttle-kód portolása vagy csak viselkedés | Viselkedés + a sebességtábla és az evdev-logika portolása a licencfolyamattal | **Eldöntve 2026-11-16:** viselkedés + a sebességtábla és az evdev-logika portolása a licencfolyamattal |
 | N-12 | Az 1.10 (csomagolás) maradjon-e F1a-kapu | Igen, mert az udev-szabály a csomagba kerül | **Eldöntve 2026-11-13:** marad F1a-kapu |
 
 ## 14. Dokumentációs változások (F0-AC-14)

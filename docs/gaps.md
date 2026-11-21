@@ -279,7 +279,7 @@ distributions are not targets.
 
 - **Missing:** AV1 hardware export (software AV1 export exists, 8-bit and 10-bit HDR, #95), DVD / Blu-ray (#244, #245), MPEG-2
   field pictures / dual prime (#274), P-STD / T-STD buffer models in the multiplexer (#277), field-aware scaling and field-rate rendering for interlaced export (#275), MP2 audio (#267), JPEG 2000 MXF
-  (the `cfa4-j2k` encoder with the DCI 2K / 4K and IMF profiles exists, #81, #931; SMPTE DCP export is done, #115; IMF App 2E package export, #1011),
+  (the `cfa4-j2k` encoder with the DCI 2K / 4K and IMF profiles exists, #81, #931; SMPTE DCP export is done, #115; IMF App 2E package export, #1011, with IMSC1 subtitles, captions or forced narrative, #1234),
   AS-10 / AS-11, XDCAM HD MXF, P2, PXR24 / B44 / DWA OpenEXR compression, MP3 audio,
   AC-3 / E-AC-3 audio (the `cfa4-ac3` encoder exists, #86; export wiring #119),
   interlaced encoding other than MPEG-2, smart render; HEVC B pictures, SAO, 2-pass and 4:2:2 / 4:4:4 encoding
@@ -354,7 +354,7 @@ distributions are not targets.
 
 ## G18. Effects depth: approximations and missing behaviour
 
-- **Missing:** Warp Stabilizer is 2-D (Premiere's is 3-D subspace), Morph Cut has no face tracking
+- **Missing:** Warp Stabilizer's Subspace Warp is still the similarity model (Premiere's is a 3-D subspace warp; Perspective is a real homography now), Morph Cut has no face tracking
   (and occlusion edges are soft), Lumetri HDR-aware maths, multicam paging beyond 16 angles,
   redesigned 26.0 mask tools (a stored, re-editable
   corner radius: rounding bakes fillets into the path, so a rounded corner cannot be re-rounded later).
@@ -364,7 +364,11 @@ distributions are not targets.
   Setting applied as a parameter preset (#458); rectangle and polygon masks round their corners
   with circular fillets (`masks.add` `cornerRadius`, `masks.roundCorners`, every path keyframe;
   #813), from an on-monitor corner-roundness handle with a live preview (one undo step per drag;
-  #844); Shift snaps pen mask segments and dragged-out Bézier handles to 45° steps (#853), and
+  #844); Warp Stabilizer's analysis is stored in the media cache (`Analysis` folder, keyed by the
+  media fingerprint, source range and analysis settings), so a clip is analysed once, not after
+  every restart; its Perspective method fits a RANSAC homography per frame step, smooths the
+  four corner paths and warps projectively (keystone and tilt; `render::homography`,
+  `vfx::perspective`); Shift snaps pen mask segments and dragged-out Bézier handles to 45° steps (#853), and
   Shift constrains vertex and whole-mask drags to 45° steps from the press point (#1408).
 - **CFA4 candidates after GPL-3.0-or-later** (ADR 0003 §6): Natron openfx-misc effects (keyers,
   colour, tracking, retime), Rubber Band (GPL-2.0-or-later) for audio time-stretch and pitch shift,

@@ -149,6 +149,16 @@ pub enum SourceKind {
         #[serde(default = "white")]
         color: [u8; 4],
     },
+    /// A video file (any format the editor imports) playing on its own clock, from the start
+    /// again at the end when `looping`.
+    Media {
+        path: String,
+        #[serde(default = "yes", rename = "loop")]
+        looping: bool,
+    },
+    /// CFA4's live graphics program (credits plan C10): what is on air after TAKE, at the
+    /// program size, transparent while nothing is.
+    LiveGraphics {},
 }
 
 fn default_font() -> String {
@@ -164,13 +174,21 @@ fn white() -> [u8; 4] {
 }
 
 impl SourceKind {
-    /// The type name used by the commands (`color`, `image`, `text`).
+    /// The type name used by the commands (`color`, `image`, `text`, `media`, `liveGraphics`).
     pub fn type_name(&self) -> &'static str {
         match self {
             SourceKind::Color { .. } => "color",
             SourceKind::Image { .. } => "image",
             SourceKind::Text { .. } => "text",
+            SourceKind::Media { .. } => "media",
+            SourceKind::LiveGraphics {} => "liveGraphics",
         }
+    }
+
+    /// Whether the source's picture keeps changing (a playing file, the live program): the host
+    /// takes it as a feed of frames, not as one picture.
+    pub fn is_moving(&self) -> bool {
+        matches!(self, SourceKind::Media { .. } | SourceKind::LiveGraphics {})
     }
 
     /// A default text source.
@@ -237,11 +255,12 @@ impl StudioSource {
                 *width = (*width).clamp(1, MAX_SOURCE_SIDE);
                 *height = (*height).clamp(1, MAX_SOURCE_SIDE);
             }
-            SourceKind::Image { path } => {
+            SourceKind::Image { path } | SourceKind::Media { path, .. } => {
                 if path.is_empty() || path.len() > MAX_PATH_BYTES || path.contains('\0') {
                     return None;
                 }
             }
+            SourceKind::LiveGraphics {} => {}
             SourceKind::Text { text, font, size, .. } => {
                 clip_chars(text, MAX_TEXT_CHARS);
                 clip_chars(font, MAX_NAME_CHARS);
@@ -360,6 +379,16 @@ mod tests {
         assert_eq!(short.transform, SourceTransform::default());
         assert_eq!(short.kind, SourceKind::text("x"));
         assert!(LiveStudio::default().is_empty());
+        // the moving sources (S1b)
+        let media = SourceKind::Media { path: "/v/clip.mp4".into(), looping: false };
+        assert_eq!(serde_json::to_string(&media).expect("json"), r#"{"type":"media","path":"/v/clip.mp4","loop":false}"#);
+        assert_eq!(
+            serde_json::from_str::<SourceKind>(r#"{"type":"media","path":"/v/a.mkv"}"#).ok(),
+            Some(SourceKind::Media { path: "/v/a.mkv".into(), looping: true })
+        );
+        assert_eq!(serde_json::to_string(&SourceKind::LiveGraphics {}).expect("json"), r#"{"type":"liveGraphics"}"#);
+        assert_eq!(serde_json::from_str::<SourceKind>(r#"{"type":"liveGraphics"}"#).ok(), Some(SourceKind::LiveGraphics {}));
+        assert!(media.is_moving() && SourceKind::LiveGraphics {}.is_moving() && !SourceKind::text("x").is_moving());
     }
 
     /// READY-V2.6: a source of an unknown type is left out with a message that names it; the
@@ -402,17 +431,18 @@ mod tests {
         huge.transform = SourceTransform { x: 1e12, y: -1e12, scale_x: 1e9, scale_y: -1e9, rotation: -90.0, crop: [u32::MAX; 4] };
         huge.name = "n".repeat(10_000);
         let empty_path = StudioSource { kind: SourceKind::Image { path: String::new() }, ..color(13) };
+        let nul_media = StudioSource { kind: SourceKind::Media { path: "a\0b".into(), looping: true }, ..color(16) };
         let nan_text = StudioSource { kind: SourceKind::Text { text: "x".repeat(20_000), font: "F".into(), size: f64::INFINITY, color: [0; 4] }, ..color(14) };
         let big_text = StudioSource { kind: SourceKind::Text { text: "t".into(), font: "F".into(), size: 1e9, color: [0; 4] }, ..color(15) };
         let mut st = LiveStudio {
             scenes: vec![
-                StudioScene { id: 1, name: "A".into(), sources: vec![bad_t, huge, empty_path, nan_text, big_text, color(1)] },
+                StudioScene { id: 1, name: "A".into(), sources: vec![bad_t, huge, empty_path, nul_media, nan_text, big_text, color(1)] },
                 StudioScene { id: 1, name: "duplicate".into(), sources: vec![] },
             ],
             current: Some(99),
         };
         let dropped = st.repair();
-        assert_eq!(dropped, 5, "NaN transform, empty path, infinite text size, duplicate source id, duplicate scene");
+        assert_eq!(dropped, 6, "NaN transform, empty path, NUL in a media path, infinite text size, duplicate source id, duplicate scene");
         assert_eq!(st.scenes.len(), 1);
         assert_eq!(st.current, Some(1));
         let s = &st.scenes[0].sources;

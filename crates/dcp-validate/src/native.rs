@@ -29,6 +29,8 @@ const IMPLEMENTED: &[&str] = &[
     CPL_DURATIONS,
     CPL_REEL_SYNC,
     STD_CONSISTENT,
+    SIG_SIGNATURE,
+    SIG_CERTIFICATES,
     MXF_TRACK_FILES,
     J2K_CODESTREAM,
     PIC_FORMAT,
@@ -37,6 +39,7 @@ const IMPLEMENTED: &[&str] = &[
     IAB_TRACK,
     MARK_MARKERS,
     SUB_DOCUMENTS,
+    NAME_ISDCF,
 ];
 
 /// The native validator. Stateless; one value can validate many packages from many threads.
@@ -166,6 +169,8 @@ impl Run<'_> {
             CPL_DURATIONS,
             CPL_REEL_SYNC,
             STD_CONSISTENT,
+            SIG_SIGNATURE,
+            SIG_CERTIFICATES,
             MXF_TRACK_FILES,
             J2K_CODESTREAM,
             PIC_FORMAT,
@@ -174,6 +179,7 @@ impl Run<'_> {
             IAB_TRACK,
             MARK_MARKERS,
             SUB_DOCUMENTS,
+            NAME_ISDCF,
         ];
         self.control.report("discover", 0, 1);
         let maps = package::asset_maps(&self.root);
@@ -244,6 +250,10 @@ impl Run<'_> {
         if self.control.is_cancelled() {
             return;
         }
+        self.signatures(&files, &pkls, &cpls);
+        if self.control.is_cancelled() {
+            return;
+        }
         self.media(&files, &cpls);
         if self.control.is_cancelled() {
             return;
@@ -253,6 +263,24 @@ impl Run<'_> {
             return;
         }
         self.subtitles(&files, &cpls);
+        if self.control.is_cancelled() {
+            return;
+        }
+        self.naming(&files, &cpls);
+    }
+
+    /// DCP-09: the ISDCF names against the packages.
+    fn naming(&mut self, files: &Files, cpls: &[(String, Composition)]) {
+        if !self.request.profile.contains(NAME_ISDCF) {
+            return;
+        }
+        if cpls.is_empty() {
+            self.findings.push(Finding::new(NAME_ISDCF, Status::Unchecked, "no composition playlist was read"));
+            self.done.insert(NAME_ISDCF);
+            return;
+        }
+        let Some(r) = crate::naming::check(cpls, files, self.control) else { return };
+        self.rule(NAME_ISDCF, r);
     }
 
     /// DCP-08: the subtitle and caption documents with their fonts and images.
@@ -316,6 +344,18 @@ impl Run<'_> {
         self.findings.extend(findings);
         self.passed.insert(rule, passed);
         self.done.insert(rule);
+    }
+
+    /// DCP-10: the signatures of the CPLs and PKLs and their certificate chains.
+    fn signatures(&mut self, files: &Files, pkls: &[(String, PackingList)], cpls: &[(String, Composition)]) {
+        let profile = &self.request.profile;
+        if ![SIG_SIGNATURE, SIG_CERTIFICATES].iter().any(|r| profile.contains(r)) {
+            return;
+        }
+        let required = profile.rules.iter().any(|r| r.rule == SIG_SIGNATURE && r.required);
+        let Some((sig, cert)) = crate::signatures::check(pkls, cpls, files, self.request.limits.document, required, self.control) else { return };
+        self.rule(SIG_SIGNATURE, sig);
+        self.rule(SIG_CERTIFICATES, cert);
     }
 
     /// DCP-05: the rules over the documents read.
