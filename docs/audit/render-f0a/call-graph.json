@@ -161,6 +161,10 @@
    "to": "cfa4-time"
   },
   {
+   "from": "cfa4-golden",
+   "to": "cfa4-metrics"
+  },
+  {
    "from": "cfa4-gpu",
    "to": "cfa4-color"
   },
@@ -1188,6 +1192,20 @@
   },
   {
    "class": "audio",
+   "crate": "cfa4-metrics",
+   "kind": "struct",
+   "module": "audio.rs",
+   "name": "AudioNull"
+  },
+  {
+   "class": "audio",
+   "crate": "cfa4-metrics",
+   "kind": "struct",
+   "module": "audio.rs",
+   "name": "ChannelNull"
+  },
+  {
+   "class": "audio",
    "crate": "cfa4-project",
    "kind": "enum",
    "module": "essential.rs",
@@ -1489,6 +1507,13 @@
   },
   {
    "class": "frame",
+   "crate": "cfa4-golden",
+   "kind": "struct",
+   "module": "validation.rs",
+   "name": "FrameCapture"
+  },
+  {
+   "class": "frame",
    "crate": "cfa4-media",
    "kind": "struct",
    "module": "cache.rs",
@@ -1521,6 +1546,13 @@
    "kind": "struct",
    "module": "still.rs",
    "name": "Raster"
+  },
+  {
+   "class": "frame",
+   "crate": "cfa4-metrics",
+   "kind": "struct",
+   "module": "psnr.rs",
+   "name": "PlaneDiff"
   },
   {
    "class": "frame",
@@ -1660,6 +1692,13 @@
    "crate": "cfa4-ffmpeg",
    "kind": "struct",
    "module": "lib.rs",
+   "name": "Status"
+  },
+  {
+   "class": "job",
+   "crate": "cfa4-golden",
+   "kind": "enum",
+   "module": "validation.rs",
    "name": "Status"
   },
   {
@@ -3869,6 +3908,62 @@
   },
   {
    "class": "other",
+   "crate": "cfa4-golden",
+   "kind": "struct",
+   "module": "validation.rs",
+   "name": "Capture"
+  },
+  {
+   "class": "other",
+   "crate": "cfa4-golden",
+   "kind": "struct",
+   "module": "validation.rs",
+   "name": "Check"
+  },
+  {
+   "class": "other",
+   "crate": "cfa4-golden",
+   "kind": "struct",
+   "module": "validation.rs",
+   "name": "Metadata"
+  },
+  {
+   "class": "other",
+   "crate": "cfa4-golden",
+   "kind": "struct",
+   "module": "validation.rs",
+   "name": "Noise"
+  },
+  {
+   "class": "other",
+   "crate": "cfa4-golden",
+   "kind": "enum",
+   "module": "validation.rs",
+   "name": "NoiseError"
+  },
+  {
+   "class": "other",
+   "crate": "cfa4-golden",
+   "kind": "struct",
+   "module": "validation.rs",
+   "name": "Report"
+  },
+  {
+   "class": "other",
+   "crate": "cfa4-golden",
+   "kind": "struct",
+   "module": "validation.rs",
+   "name": "Thresholds"
+  },
+  {
+   "class": "other",
+   "crate": "cfa4-golden",
+   "kind": "enum",
+   "module": "validation.rs",
+   "name": "Verdict"
+  },
+  {
+   "class": "other",
    "crate": "cfa4-gpu",
    "kind": "struct",
    "module": "lib.rs",
@@ -4139,6 +4234,20 @@
    "kind": "enum",
    "module": "lib.rs",
    "name": "MetricError"
+  },
+  {
+   "class": "other",
+   "crate": "cfa4-metrics",
+   "kind": "struct",
+   "module": "timing.rs",
+   "name": "Drift"
+  },
+  {
+   "class": "other",
+   "crate": "cfa4-metrics",
+   "kind": "struct",
+   "module": "timing.rs",
+   "name": "PtsDiff"
   },
   {
    "class": "other",
@@ -5350,6 +5459,20 @@
    "kind": "struct",
    "module": "scene.rs",
    "name": "Signature"
+  },
+  {
+   "class": "other",
+   "crate": "cfa4-render",
+   "kind": "struct",
+   "module": "subspace.rs",
+   "name": "Params"
+  },
+  {
+   "class": "other",
+   "crate": "cfa4-render",
+   "kind": "struct",
+   "module": "subspace.rs",
+   "name": "Smoothed"
   },
   {
    "class": "other",
@@ -10939,6 +11062,11 @@
    "to": "cfa4-time"
   },
   {
+   "from": "cfa4-golden/validation.rs",
+   "item": "MetricError",
+   "to": "cfa4-metrics"
+  },
+  {
    "from": "cfa4-gpu/export_renderer.rs",
    "item": "FrameRenderer",
    "to": "cfa4-export"
@@ -12432,6 +12560,11 @@
    "from": "cfa4-render/remix.rs",
    "item": "Tick",
    "to": "cfa4-time"
+  },
+  {
+   "from": "cfa4-render/subspace.rs",
+   "item": "Vec2",
+   "to": "cfa4-geom"
   },
   {
    "from": "cfa4-render/track.rs",
