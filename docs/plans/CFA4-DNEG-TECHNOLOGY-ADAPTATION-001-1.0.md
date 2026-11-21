@@ -148,6 +148,8 @@ A nehéz mérések a `docs/development/reference-machine.md` szabályai szerint 
 
 ## 8. Kockázatok és nyitott pontok a tulajdonosnak
 
+> **A §8 javaslatait a tulajdonos elfogadta** (István, 2026-11-21 22:48): a Javaslat-oszlop minden sora (Q1–Q7) a döntés. Ez a terv egészének jóváhagyása még külön nem történt meg. A Q4 és Q5 döntése továbbra is a megjelölt kapunál (G4 PoC; VISION §8) esedékes.
+
 | # | Pont | Javaslat |
 |---|---|---|
 | Q1 | Az öt új terv (VFX Catalog, EffectCraft, ARF, OpenUSD/3D, Pontfelhő) jóváhagyása | Tartalmuk a te szövegedből és a repó állapotából következtetett javaslat; kérlek, nézd át, mielőtt a `?` sorok lezárulnak. |
