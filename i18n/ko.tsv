@@ -4820,3 +4820,42 @@
 	Per Channel	채널별
 	Channel Zoom	채널 확대/축소
 	White Balance Selector (click a neutral point in the Program monitor; Esc cancels)	화이트 밸런스 선택기(프로그램 모니터의 중립 지점을 클릭, Esc로 취소)
+# Task Manager and subtitle kind (SC-2/3/4)
+	Task Manager	작업 관리자
+	Background jobs	백그라운드 작업
+	Exports	내보내기
+	Shared task queue	공유 작업 대기열
+	Task	작업
+	State	상태
+	Details	세부 정보
+	Time left	남은 시간
+	Scheduled	예약됨
+	Queued	대기 중
+	Waiting for resources	리소스 대기 중
+	Blocked	차단됨
+	Running	실행 중
+	Paused	일시 중지됨
+	Cancelling	취소 중
+	Interactive	대화형
+	Speculative	선행 실행
+	Final render	최종 렌더링
+	Show finished	완료된 항목 표시
+	Nothing is running.	실행 중인 항목이 없습니다.
+	Not reported by this engine yet.	이 엔진은 아직 보고하지 않습니다.
+	Not available: {why}	사용할 수 없음: {why}
+	{name} waits: {why}	{name} 대기 중: {why}
+	{running} running · {waiting} waiting	{running}개 실행 중 · {waiting}개 대기 중
+	{n} active	{n}개 활성
+	{n} CPU	{n} CPU
+	{n} GiB	{n} GiB
+	{n} MiB	{n} MiB
+	Needs your decision	결정이 필요합니다
+	Run now	지금 실행
+	Next slot	다음 슬롯
+	Missed its start	시작 시각을 놓침
+	Missed its start at {time}	{time}의 시작을 놓침
+	Starts at {time}	{time}에 시작
+	Subtitle kind	자막 종류
+	Subtitles	자막
+	Captions for the hearing impaired	청각 장애인용 캡션
+	Forced narrative	강제 내레이션 (forced narrative)

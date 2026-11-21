@@ -50,6 +50,7 @@ graph LR
   cfa4_ffmpeg --> cfa4_time
   cfa4_frame --> cfa4_color
   cfa4_frame --> cfa4_time
+  cfa4_golden --> cfa4_metrics
   cfa4_gpu --> cfa4_color
   cfa4_gpu --> cfa4_frame
   cfa4_gpu --> cfa4_geom
@@ -482,6 +483,7 @@ graph LR
 | `cfa4-frame/lib.rs` | `cfa4-time` | `Tick` |
 | `cfa4-frame/pool.rs` | `cfa4-color` | `ColorInfo` |
 | `cfa4-frame/pool.rs` | `cfa4-time` | `Tick` |
+| `cfa4-golden/validation.rs` | `cfa4-metrics` | `MetricError` |
 | `cfa4-gpu/export_renderer.rs` | `cfa4-export` | `FrameRenderer` |
 | `cfa4-gpu/export_renderer.rs` | `cfa4-geom` | `Vec2` |
 | `cfa4-gpu/export_renderer.rs` | `cfa4-media` | `Generator`, `generators` |
@@ -649,6 +651,7 @@ graph LR
 | `cfa4-render/remix.rs` | `cfa4-frame` | `AudioBuffer` |
 | `cfa4-render/remix.rs` | `cfa4-project` | `EffectInstance` |
 | `cfa4-render/remix.rs` | `cfa4-time` | `Tick` |
+| `cfa4-render/subspace.rs` | `cfa4-geom` | `Vec2` |
 | `cfa4-render/track.rs` | `cfa4-geom` | `Affine` |
 | `cfa4-render/track.rs` | `cfa4-project` | `TrackMethod` |
 | `cfa4-render/trajectories.rs` | `cfa4-geom` | `Affine`, `Vec2` |
@@ -796,9 +799,9 @@ graph LR
 
 ## 4. Nyilvános típusok osztályonként
 
-A többi 599 nyilvános típus („other” osztály) csak a `call-graph.json`-ban szerepel.
+A többi 611 nyilvános típus („other” osztály) csak a `call-graph.json`-ban szerepel.
 
-### Képkocka, kép, pixel (27)
+### Képkocka, kép, pixel (29)
 
 | Crate | Modul | Fajta | Típus |
 |---|---|---|---|
@@ -818,11 +821,13 @@ A többi 599 nyilvános típus („other” osztály) csak a `call-graph.json`-b
 | `cfa4-frame` | `lib.rs` | enum | `PixelData` |
 | `cfa4-frame` | `lib.rs` | struct | `Region` |
 | `cfa4-frame` | `lib.rs` | struct | `VideoFrame` |
+| `cfa4-golden` | `validation.rs` | struct | `FrameCapture` |
 | `cfa4-media` | `cache.rs` | struct | `FrameCache` |
 | `cfa4-media` | `lib.rs` | struct | `FrameRequest` |
 | `cfa4-media` | `sequence.rs` | type | `FrameLoader` |
 | `cfa4-media` | `sequence.rs` | struct | `ImageSequenceSource` |
 | `cfa4-media` | `still.rs` | struct | `Raster` |
+| `cfa4-metrics` | `psnr.rs` | struct | `PlaneDiff` |
 | `cfa4-render` | `graphic_clip.rs` | struct | `LayerRaster` |
 | `cfa4-render` | `image.rs` | struct | `Image` |
 | `cfa4-render` | `mask.rs` | struct | `ObjectRaster` |
@@ -842,7 +847,7 @@ A többi 599 nyilvános típus („other” osztály) csak a `call-graph.json`-b
 | `cfa4-time` | `lib.rs` | enum | `TimeDisplay` |
 | `cfa4-time` | `lib.rs` | struct | `TimeRange` |
 
-### Job, sor, folyamat, megszakítás (26)
+### Job, sor, folyamat, megszakítás (27)
 
 | Crate | Modul | Fajta | Típus |
 |---|---|---|---|
@@ -861,6 +866,7 @@ A többi 599 nyilvános típus („other” osztály) csak a `call-graph.json`-b
 | `cfa4-export` | `lib.rs` | struct | `Progress` |
 | `cfa4-ffmpeg` | `lib.rs` | struct | `RestrictedStatus` |
 | `cfa4-ffmpeg` | `lib.rs` | struct | `Status` |
+| `cfa4-golden` | `validation.rs` | enum | `Status` |
 | `cfa4-gstreamer` | `lib.rs` | struct | `ElementStatus` |
 | `cfa4-gstreamer` | `lib.rs` | struct | `Status` |
 | `cfa4-qc` | `report.rs` | enum | `RenderStatus` |
@@ -873,7 +879,7 @@ A többi 599 nyilvános típus („other” osztály) csak a `call-graph.json`-b
 | `cfa4-smart-edit` | `media_index.rs` | enum | `DependencyStatus` |
 | `cfa4-testkit` | `fixtures.rs` | enum | `Status` |
 
-### Hang (42)
+### Hang (44)
 
 | Crate | Modul | Fajta | Típus |
 |---|---|---|---|
@@ -909,6 +915,8 @@ A többi 599 nyilvános típus („other” osztály) csak a `call-graph.json`-b
 | `cfa4-frame` | `lib.rs` | struct | `AudioBuffer` |
 | `cfa4-media` | `lib.rs` | struct | `AudioStreamInfo` |
 | `cfa4-media` | `still/exr/piz.rs` | struct | `PizChannel` |
+| `cfa4-metrics` | `audio.rs` | struct | `AudioNull` |
+| `cfa4-metrics` | `audio.rs` | struct | `ChannelNull` |
 | `cfa4-project` | `essential.rs` | enum | `AudioType` |
 | `cfa4-project` | `essential.rs` | struct | `Loudness` |
 | `cfa4-project` | `essential.rs` | struct | `Pan` |

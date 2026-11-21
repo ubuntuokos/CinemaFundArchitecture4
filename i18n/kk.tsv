@@ -4828,3 +4828,42 @@ export.summary	Low	төмен
 	Per Channel	Арналар бойынша
 	Channel Zoom	Арналарды масштабтау
 	White Balance Selector (click a neutral point in the Program monitor; Esc cancels)	Ақ түс балансын таңдау (бағдарлама мониторындағы бейтарап нүктені басыңыз; Esc бас тартады)
+# Task Manager and subtitle kind (SC-2/3/4)
+	Task Manager	Тапсырмалар реттеушісі
+	Background jobs	Фондық жұмыстар
+	Exports	Экспорттар
+	Shared task queue	Ортақ тапсырмалар кезегі
+	Task	Тапсырма
+	State	Күйі
+	Details	Мәліметтер
+	Time left	Қалған уақыт
+	Scheduled	Жоспарланған
+	Queued	Кезекте
+	Waiting for resources	Ресурстарды күтуде
+	Blocked	Бұғатталған
+	Running	Орындалуда
+	Paused	Кідіртілген
+	Cancelling	Бас тартылуда
+	Interactive	Интерактивті
+	Speculative	Болжамды
+	Final render	Соңғы рендер
+	Show finished	Аяқталғандарды көрсету
+	Nothing is running.	Ештеңе орындалып жатқан жоқ.
+	Not reported by this engine yet.	Бұл қозғалтқыш әзірге хабарламайды.
+	Not available: {why}	Қолжетімсіз: {why}
+	{name} waits: {why}	{name} күтуде: {why}
+	{running} running · {waiting} waiting	{running} орындалуда · {waiting} күтуде
+	{n} active	{n} белсенді
+	{n} CPU	{n} CPU
+	{n} GiB	{n} GiB
+	{n} MiB	{n} MiB
+	Needs your decision	Сіздің шешіміңізді қажет етеді
+	Run now	Қазір орындау
+	Next slot	Келесі слот
+	Missed its start	Бастау өткізіп алынды
+	Missed its start at {time}	{time} бастау өткізіп алынды
+	Starts at {time}	{time} басталады
+	Subtitle kind	Субтитр түрі
+	Subtitles	Субтитрлер
+	Captions for the hearing impaired	Есту қабілеті нашар адамдарға арналған субтитрлер
+	Forced narrative	Мәжбүрлі баяндау (forced narrative)

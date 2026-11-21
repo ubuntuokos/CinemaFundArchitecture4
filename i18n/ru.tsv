@@ -4809,3 +4809,42 @@
 	Per Channel	По каналам
 	Channel Zoom	Масштаб каналов
 	White Balance Selector (click a neutral point in the Program monitor; Esc cancels)	Выбор баланса белого (щёлкните нейтральную точку в мониторе «Программа»; Esc — отмена)
+# Task Manager and subtitle kind (SC-2/3/4)
+	Task Manager	Диспетчер задач
+	Background jobs	Фоновые задания
+	Exports	Экспорт
+	Shared task queue	Общая очередь задач
+	Task	Задача
+	State	Состояние
+	Details	Подробности
+	Time left	Осталось времени
+	Scheduled	Запланировано
+	Queued	В очереди
+	Waiting for resources	Ожидает ресурсы
+	Blocked	Заблокировано
+	Running	Выполняется
+	Paused	Приостановлено
+	Cancelling	Отмена
+	Interactive	Интерактивная
+	Speculative	Упреждающая
+	Final render	Финальный рендер
+	Show finished	Показать завершённые
+	Nothing is running.	Ничего не выполняется.
+	Not reported by this engine yet.	Этот движок пока не сообщает.
+	Not available: {why}	Недоступно: {why}
+	{name} waits: {why}	{name} ожидает: {why}
+	{running} running · {waiting} waiting	{running} выполняется · {waiting} ожидает
+	{n} active	{n} активных
+	{n} CPU	{n} CPU
+	{n} GiB	{n} ГиБ
+	{n} MiB	{n} МиБ
+	Needs your decision	Требуется ваше решение
+	Run now	Запустить сейчас
+	Next slot	Следующий слот
+	Missed its start	Пропущен запуск
+	Missed its start at {time}	Пропущен запуск в {time}
+	Starts at {time}	Запуск в {time}
+	Subtitle kind	Тип субтитров
+	Subtitles	Субтитры
+	Captions for the hearing impaired	Субтитры для людей с нарушением слуха
+	Forced narrative	Принудительный дубляж (forced narrative)
