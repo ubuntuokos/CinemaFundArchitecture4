@@ -33,7 +33,10 @@ pub fn download(
 ) -> std::result::Result<(), String> {
     use cfa4_fetch_client::{FileSpec, Request};
     let files = files.into_iter().map(|(name, url, sha256, size)| FileSpec { name, url, sha256, size }).collect();
-    let req = Request { dir: dir.to_path_buf(), files };
+    // a relative data directory (CFA4_DATA_DIR=./data) is taken from the working directory; the
+    // downloader wants an absolute target and still refuses one with `..`
+    let dir = std::path::absolute(dir).map_err(|e| format!("{}: {e}", dir.display()))?;
+    let req = Request { dir, files };
     let program = cfa4_fetch_client::locate().ok_or_else(|| cfa4_fetch_client::FetchError::NotFound.to_string())?;
     cfa4_fetch_client::run(&program, &[], &req, progress).map_err(|e| e.to_string())
 }

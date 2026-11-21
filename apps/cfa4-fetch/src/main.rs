@@ -9,7 +9,7 @@
 //! confines itself with the `fetch` profile of `cfa4-sandbox`: it may write only beneath the target
 //! directory, connect out only to TCP port 443 (Landlock), and start no programs (seccomp). Without
 //! the kernel protections it refuses to download (plan D4); `--unprotected` is the user's explicit
-//! opt-in to run without them. Each missing file then streams over HTTPS into `<name>.part`, its
+//! opt-in to run without them. Each missing file then streams over HTTPS into its own `<name>.<pid>.part`, its
 //! size and SHA-256 are checked, and it is renamed into place. Progress, the result and errors are
 //! JSON lines on standard output (`cfa4_fetch_client::Event`); exit status 0 means every file is in
 //! place.
@@ -65,10 +65,13 @@ fn main() -> ExitCode {
     if let Err(e) = std::fs::create_dir_all(&req.dir) {
         return fail(format!("{}: {e}", req.dir.display()), 1);
     }
-    if let Err(e) = confine(&req.dir, unprotected) {
+    // the proxy is read from the environment once (ureq's own order: ALL_PROXY, HTTPS_PROXY,
+    // HTTP_PROXY), so the port the sandbox allows is the one the agent connects to
+    let proxy = ureq::Proxy::try_from_env();
+    if let Err(e) = confine(&req.dir, proxy.as_ref(), unprotected) {
         return fail(e, 3);
     }
-    match download(&req) {
+    match download(&req, proxy) {
         Ok(()) => {
             emit(&Event::Done);
             ExitCode::SUCCESS
@@ -77,41 +80,12 @@ fn main() -> ExitCode {
     }
 }
 
-/// The port of the HTTPS proxy the environment names (`https_proxy`, `HTTPS_PROXY`, `all_proxy`,
-/// `ALL_PROXY`, as ureq reads them), if any: the downloader connects to it instead of port 443.
-fn proxy_port() -> Option<u16> {
-    let url = ["https_proxy", "HTTPS_PROXY", "all_proxy", "ALL_PROXY"].iter().find_map(|k| std::env::var(k).ok().filter(|v| !v.trim().is_empty()))?;
-    port_of(&url)
-}
-
-/// The port of a proxy address (`[scheme://][user@]host[:port][/…]`).
-fn port_of(url: &str) -> Option<u16> {
-    let url = url.trim();
-    let (scheme, rest) = url.split_once("://").unwrap_or(("http", url));
-    let authority = rest.split(['/', '?', '#']).next().unwrap_or_default();
-    let hostport = authority.rsplit_once('@').map_or(authority, |(_, h)| h);
-    let port = if let Some(v6) = hostport.strip_prefix('[') { v6.split_once("]:").map(|(_, p)| p) } else { hostport.rsplit_once(':').map(|(_, p)| p) };
-    match port {
-        Some(p) => p.parse().ok(),
-        None => default_port(scheme),
-    }
-}
-
-fn default_port(scheme: &str) -> Option<u16> {
-    match scheme.to_ascii_lowercase().as_str() {
-        "https" => Some(443),
-        "http" => Some(80),
-        "socks4" | "socks4a" | "socks5" | "socks5h" | "socks" => Some(1080),
-        _ => None,
-    }
-}
-
-/// The `fetch` profile: write beneath `dir`, TCP out to port 443 (and to the configured proxy's
-/// port), no program start; a certificate bundle named by `SSL_CERT_FILE` / `SSL_CERT_DIR` is
-/// readable, so a system or proxy root outside `/etc` still verifies.
-fn confine(dir: &Path, unprotected: bool) -> Result<(), String> {
+/// The `fetch` profile: write beneath `dir`, TCP out to port 443 (and to the port of `proxy`, the
+/// one the agent uses), no program start; a certificate bundle named by `SSL_CERT_FILE` /
+/// `SSL_CERT_DIR` is readable, so a system or proxy root outside `/etc` still verifies.
+fn confine(dir: &Path, proxy: Option<&ureq::Proxy>, unprotected: bool) -> Result<(), String> {
     let mut ports = PORTS.to_vec();
-    ports.extend(proxy_port().filter(|p| !ports.contains(p)));
+    ports.extend(proxy.map(ureq::Proxy::port).filter(|p| !ports.contains(p)));
     let tls_roots = ["SSL_CERT_FILE", "SSL_CERT_DIR"]
         .iter()
         .filter_map(std::env::var_os)
@@ -147,7 +121,12 @@ fn hex(bytes: &[u8]) -> String {
     bytes.iter().map(|b| format!("{b:02x}")).collect()
 }
 
-fn agent() -> ureq::Agent {
+/// The longest a download may take as a whole (a multi-gigabyte model on a slow link); a server
+/// that stops sending is caught sooner by the engine, which stops a downloader that has been
+/// silent for [`cfa4_fetch_client::STALL`].
+const BODY_TIMEOUT: std::time::Duration = std::time::Duration::from_secs(12 * 3600);
+
+fn agent(proxy: Option<ureq::Proxy>) -> ureq::Agent {
     let provider = std::sync::Arc::new(rustls::crypto::ring::default_provider());
     ureq::Agent::config_builder()
         .tls_config(
@@ -159,31 +138,36 @@ fn agent() -> ureq::Agent {
         )
         // redirects (model hosts send downloads to their CDN) stay on HTTPS
         .https_only(true)
+        .proxy(proxy)
         .timeout_connect(Some(std::time::Duration::from_secs(30)))
         .timeout_recv_response(Some(std::time::Duration::from_secs(60)))
+        .timeout_recv_body(Some(BODY_TIMEOUT))
         .build()
         .into()
 }
 
-fn download(req: &Request) -> Result<(), String> {
+fn download(req: &Request, proxy: Option<ureq::Proxy>) -> Result<(), String> {
     let dir = &req.dir;
     let missing: Vec<&FileSpec> = req.files.iter().filter(|f| !valid_file(&dir.join(&f.name), f)).collect();
-    let total: u64 = missing.iter().map(|f| f.size).sum();
     if missing.is_empty() {
         return Ok(());
     }
-    let agent = agent();
+    // validate() checked that the sizes of all files add up without overflow
+    let total: u64 = missing.iter().fold(0u64, |t, f| t.saturating_add(f.size));
+    let agent = agent(proxy);
+    let pid = std::process::id();
     let mut done = 0u64;
     for f in missing {
         let dest = dir.join(&f.name);
-        let part = dir.join(format!("{}.part", f.name));
+        // this process's own partial file: another download into the same directory has its own
+        let part = dir.join(cfa4_fetch_client::part_name(&f.name, pid));
         let r = fetch_one(&agent, f, &part, done, total);
         if let Err(e) = r {
             let _ = std::fs::remove_file(&part);
             return Err(e);
         }
         std::fs::rename(&part, &dest).map_err(|e| format!("{}: {e}", dest.display()))?;
-        done += f.size;
+        done = done.saturating_add(f.size);
     }
     Ok(())
 }
@@ -192,7 +176,11 @@ fn fetch_one(agent: &ureq::Agent, f: &FileSpec, part: &Path, done: u64, total: u
     let resp = agent.get(&f.url).call().map_err(|e| format!("{}: {e}", f.url))?;
     let mut body = resp.into_body();
     let mut reader = body.as_reader();
-    let mut out = std::io::BufWriter::new(std::fs::File::create(part).map_err(|e| format!("{}: {e}", part.display()))?);
+    // a leftover of an earlier process with the same id is removed; the file is then created anew,
+    // never opened through an existing entry (a symbolic link there is refused, not followed)
+    let _ = std::fs::remove_file(part);
+    let file = std::fs::OpenOptions::new().write(true).create_new(true).open(part).map_err(|e| format!("{}: {e}", part.display()))?;
+    let mut out = std::io::BufWriter::new(file);
     let mut hasher = sha2::Sha256::new();
     let mut buf = vec![0u8; 1 << 20];
     let mut got = 0u64;
@@ -211,7 +199,7 @@ fn fetch_one(agent: &ureq::Agent, f: &FileSpec, part: &Path, done: u64, total: u
         hasher.update(chunk);
         out.write_all(chunk).map_err(|e| format!("{}: {e}", part.display()))?;
         // a progress line per 256 KiB (and at the end of the file) is enough for the engine
-        if (got - reported >= 256 << 10 || got == f.size) && !emit(&Event::Progress { done: done + got, total, file: f.name.clone() }) {
+        if (got - reported >= 256 << 10 || got == f.size) && !emit(&Event::Progress { done: done.saturating_add(got), total, file: f.name.clone() }) {
             return Err("the engine stopped listening".into());
         }
         if got - reported >= 256 << 10 {
@@ -232,20 +220,16 @@ mod tests {
     use super::*;
 
     #[test]
-    fn the_proxy_port_comes_from_the_proxy_address() {
-        let cases = [
-            ("http://127.0.0.1:37921", Some(37921)),
-            ("http://user:pw@proxy.lan:3128/", Some(3128)),
-            ("proxy.lan:8080", Some(8080)),
-            ("https://proxy.lan", Some(443)),
-            ("http://proxy.lan", Some(80)),
-            ("socks5://[::1]:9050", Some(9050)),
-            ("http://[::1]", Some(80)),
-            ("http://proxy.lan:notaport", None),
-            ("weird://proxy", None),
-        ];
-        for (url, port) in cases {
-            assert_eq!(port_of(url), port, "{url}");
+    fn the_sandbox_allows_the_port_of_the_proxy_the_agent_uses() {
+        // confine() allows `Proxy::port`, the port ureq connects to, with the scheme's default
+        for (url, port) in [
+            ("http://127.0.0.1:37921", 37921),
+            ("http://user:pw@proxy.lan:3128/", 3128),
+            ("proxy.lan:8080", 8080),
+            ("http://proxy.lan", 80),
+            ("socks5://[::1]:9050", 9050),
+        ] {
+            assert_eq!(ureq::Proxy::new(url).unwrap().port(), port, "{url}");
         }
     }
 
@@ -261,6 +245,6 @@ mod tests {
         assert!(!valid_file(&p, &FileSpec { sha256: sha.replace('b', "c"), ..f.clone() }));
         assert!(!valid_file(&t.path().join("missing"), &f));
         // nothing missing: no network needed
-        assert_eq!(download(&Request { dir: t.path().to_path_buf(), files: vec![f] }), Ok(()));
+        assert_eq!(download(&Request { dir: t.path().to_path_buf(), files: vec![f] }, None), Ok(()));
     }
 }

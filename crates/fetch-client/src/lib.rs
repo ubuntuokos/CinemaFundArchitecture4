@@ -12,8 +12,8 @@
 //! - [`locate`] finds the program and [`run`] starts it, sends the request on its standard input,
 //!   reports progress and stops it when the caller cancels.
 //!
-//! Each file streams into `<dir>/<name>.part`, its size and SHA-256 are checked, and only then is it
-//! renamed into place; a file already present with the right size and SHA-256 is not downloaded again.
+//! Each file streams into `<dir>/<name>.<pid>.part` (see [`part_name`]; a partial file belongs to one
+//! downloader process), its size and SHA-256 are checked, and only then is it renamed into place; a file already present with the right size and SHA-256 is not downloaded again.
 
 #![cfg_attr(not(test), deny(clippy::unwrap_used, clippy::expect_used, clippy::panic, clippy::unimplemented, clippy::todo, clippy::unreachable))]
 
@@ -21,7 +21,7 @@ use std::io::{BufRead, BufReader, Read, Write};
 use std::path::{Path, PathBuf};
 use std::process::{Command, Stdio};
 use std::sync::mpsc;
-use std::time::Duration;
+use std::time::{Duration, Instant};
 
 use serde::{Deserialize, Serialize};
 
@@ -39,6 +39,24 @@ const MAX_LINE: u64 = 64 << 10;
 
 /// Files in one request.
 const MAX_FILES: usize = 256;
+
+/// How long the downloader may stay silent (no progress line) before it is stopped: a server that
+/// stops sending in the middle of a file would otherwise hold the download forever. A progress line
+/// comes every 256 KiB, so this fails only a link slower than about 1 KB/s.
+pub const STALL: Duration = Duration::from_secs(300);
+
+/// How long the downloader may keep its output open after its last line (done or error).
+const LINGER: Duration = Duration::from_secs(5);
+
+/// Event lines buffered between the reader thread and [`run`]; when full, the reader (and so the
+/// downloader writing to the pipe) waits.
+const QUEUE: usize = 64;
+
+/// The partial file of `name` written by the downloader process `pid`: each process has its own, so
+/// two downloads into the same directory never write or remove each other's.
+pub fn part_name(name: &str, pid: u32) -> String {
+    format!("{name}.{pid}.part")
+}
 
 /// One file to download.
 #[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
@@ -118,6 +136,9 @@ impl Request {
         if self.files.len() > MAX_FILES {
             return Err(format!("{} files in one request (at most {MAX_FILES})", self.files.len()));
         }
+        if self.total_size().is_none() {
+            return Err("the file sizes add up to more than 2^64 bytes".into());
+        }
         let mut seen = std::collections::HashSet::new();
         for f in &self.files {
             if !valid_name(&f.name) {
@@ -134,6 +155,11 @@ impl Request {
             }
         }
         Ok(())
+    }
+
+    /// The bytes of all files together, `None` if they overflow (a request that does is invalid).
+    pub fn total_size(&self) -> Option<u64> {
+        self.files.iter().try_fold(0u64, |t, f| t.checked_add(f.size))
     }
 }
 
@@ -154,6 +180,10 @@ pub type Progress<'a> = &'a mut dyn FnMut(u64, u64, &str) -> bool;
 /// process when `progress` returns false. `extra_args` are passed to the program (the engine passes
 /// `--unprotected` only after the user's explicit opt-in, plan D4).
 pub fn run(program: &Path, extra_args: &[&str], req: &Request, progress: Progress<'_>) -> Result<(), FetchError> {
+    run_with(program, extra_args, req, progress, STALL)
+}
+
+fn run_with(program: &Path, extra_args: &[&str], req: &Request, progress: Progress<'_>, stall: Duration) -> Result<(), FetchError> {
     req.validate().map_err(FetchError::Invalid)?;
     let body = serde_json::to_vec(req).map_err(|e| FetchError::Invalid(e.to_string()))?;
     let mut child = Command::new(program)
@@ -163,6 +193,7 @@ pub fn run(program: &Path, extra_args: &[&str], req: &Request, progress: Progres
         .stderr(Stdio::null())
         .spawn()
         .map_err(|e| if e.kind() == std::io::ErrorKind::NotFound { FetchError::NotFound } else { FetchError::Io(e) })?;
+    let pid = child.id();
     if let Some(mut stdin) = child.stdin.take() {
         // the program reads the whole request before it answers; a closed pipe shows in its exit
         let _ = stdin.write_all(&body);
@@ -170,11 +201,12 @@ pub fn run(program: &Path, extra_args: &[&str], req: &Request, progress: Progres
     let Some(stdout) = child.stdout.take() else {
         let _ = child.kill();
         let _ = child.wait();
+        remove_parts(req, pid);
         return Err(FetchError::Failed("no output from the downloader".into()));
     };
     // lines are read on their own thread so a stalled download can still be cancelled
-    let (tx, rx) = mpsc::channel::<Result<Event, String>>();
-    let reader = std::thread::Builder::new().name("cfa4-fetch-events".into()).spawn(move || {
+    let (tx, rx) = mpsc::sync_channel::<Result<Event, String>>(QUEUE);
+    let spawned = std::thread::Builder::new().name("cfa4-fetch-events".into()).spawn(move || {
         let mut r = BufReader::new(stdout);
         loop {
             let mut line = Vec::new();
@@ -201,19 +233,36 @@ pub fn run(program: &Path, extra_args: &[&str], req: &Request, progress: Progres
                 }
             }
         }
-    })?;
-    let mut last = (0u64, req.files.iter().map(|f| f.size).sum::<u64>(), String::new());
+    });
+    let reader = match spawned {
+        Ok(r) => r,
+        Err(e) => {
+            let _ = child.kill();
+            let _ = child.wait();
+            remove_parts(req, pid);
+            return Err(FetchError::Io(e));
+        }
+    };
+    let mut last = (0u64, req.total_size().unwrap_or(u64::MAX), String::new());
     let mut outcome: Option<Result<(), FetchError>> = None;
+    let mut heard = Instant::now();
+    // when the last line (done or error) came; the output should close right after it
+    let mut ended: Option<Instant> = None;
     loop {
         match rx.recv_timeout(Duration::from_millis(250)) {
-            Ok(Ok(Event::Progress { done, total, file })) => last = (done, total, file),
+            Ok(Ok(Event::Progress { done, total, file })) => {
+                heard = Instant::now();
+                last = (done, total, file);
+            }
             Ok(Ok(Event::Done)) => {
                 outcome.get_or_insert(Ok(()));
-                continue;
+                ended.get_or_insert_with(Instant::now);
             }
             Ok(Ok(Event::Error { message })) => {
                 outcome.get_or_insert(Err(FetchError::Failed(message)));
-                continue;
+                ended.get_or_insert_with(Instant::now);
+                // a failed downloader is stopped now, not when it closes its output
+                let _ = child.kill();
             }
             Ok(Err(e)) => {
                 outcome.get_or_insert(Err(FetchError::Failed(e)));
@@ -222,39 +271,54 @@ pub fn run(program: &Path, extra_args: &[&str], req: &Request, progress: Progres
             Err(mpsc::RecvTimeoutError::Timeout) => {}
             Err(mpsc::RecvTimeoutError::Disconnected) => break,
         }
-        if outcome.is_none() && !progress(last.0, last.1, &last.2) {
+        if let Some(t) = ended {
+            if t.elapsed() > LINGER {
+                break;
+            }
+            continue;
+        }
+        if heard.elapsed() > stall {
+            outcome = Some(Err(FetchError::Failed(format!("the downloader received nothing for {} s", stall.as_secs()))));
+            break;
+        }
+        if !progress(last.0, last.1, &last.2) {
             let _ = child.kill();
             let _ = child.wait();
-            // the reader thread ends when the pipe closes; it is not waited for here
+            // the reader thread ends when the pipe closes (or, waiting on the full queue, when the
+            // queue is dropped); it is not waited for here
+            drop(rx);
             drop(reader);
-            remove_parts(req);
+            remove_parts(req, pid);
             return Err(FetchError::Cancelled);
         }
     }
-    // an error line or the end of the output: the process is done or must be
-    if matches!(outcome, Some(Err(_))) {
+    // the output ended, or the process is stopped now: after an error, a stall, an unreadable line,
+    // or output still open after the last line (killing an exited process does nothing)
+    if !matches!(outcome, Some(Ok(()))) || ended.is_some_and(|t| t.elapsed() > LINGER) {
         let _ = child.kill();
     }
     let status = child.wait()?;
+    // a reader waiting on the full queue stops when the queue is gone
+    drop(rx);
     let _ = reader.join();
     match outcome {
         Some(Ok(())) if status.success() => Ok(()),
         Some(Err(e)) => {
-            remove_parts(req);
+            remove_parts(req, pid);
             Err(e)
         }
         _ => {
-            remove_parts(req);
+            remove_parts(req, pid);
             Err(FetchError::Failed(format!("the downloader stopped without finishing ({status})")))
         }
     }
 }
 
-/// Remove the `.part` files a stopped download may have left.
-fn remove_parts(req: &Request) {
+/// Remove the partial files the stopped downloader `pid` may have left (only its own).
+fn remove_parts(req: &Request, pid: u32) {
     for f in &req.files {
         if valid_name(&f.name) {
-            let _ = std::fs::remove_file(req.dir.join(format!("{}.part", f.name)));
+            let _ = std::fs::remove_file(req.dir.join(part_name(&f.name, pid)));
         }
     }
 }

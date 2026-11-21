@@ -10,6 +10,6 @@ confines itself with the `fetch` profile of `cfa4-sandbox` before it touches the
   file names, HTTPS only).
 - `Event`: the JSON lines `cfa4-fetch` writes (`progress`, `done`, `error`).
 - `locate()` finds the program (`CFA4_FETCH`, else next to the running program); `run()` starts it,
-  sends the request, reports progress and stops it when the caller cancels (removing `.part` files).
+  sends the request, reports progress and stops it when the caller cancels (removing the partial files of that downloader process only).
 
 No network code here; the downloading (ureq + rustls) is only in `cfa4-fetch`.

@@ -29,6 +29,13 @@ fn validation_keeps_downloads_inside_the_target_over_https() {
     }
     assert!(bad(&|r| r.files[0].sha256 = "abc".into()).contains("SHA-256"));
     assert!(bad(&|r| r.files.push(r.files[0].clone())).contains("twice"));
+    // sizes that overflow together (each alone is fine)
+    let huge = |r: &mut Request| {
+        r.files[0].size = u64::MAX;
+        r.files.push(FileSpec { name: "b.bin".into(), size: 1, ..r.files[0].clone() });
+    };
+    assert!(bad(&huge).contains("2^64"));
+    assert_eq!(ok.total_size(), Some(10));
 }
 
 #[test]
@@ -43,9 +50,15 @@ fn events_are_one_json_line_each() {
 /// A stand-in downloader: a shell script printing `lines`, then sleeping `sleep` seconds.
 #[cfg(unix)]
 fn fake(dir: &Path, lines: &[&str], sleep: u32, exit: i32) -> PathBuf {
+    fake_with(dir, "", lines, sleep, exit)
+}
+
+/// [`fake`] running the shell commands `pre` first (`$$` is the downloader's process id).
+#[cfg(unix)]
+fn fake_with(dir: &Path, pre: &str, lines: &[&str], sleep: u32, exit: i32) -> PathBuf {
     use std::os::unix::fs::PermissionsExt;
     let p = dir.join("fake-fetch");
-    let mut s = String::from("#!/bin/sh\ncat >/dev/null\n");
+    let mut s = format!("#!/bin/sh\ncat >/dev/null\n{pre}\n");
     for l in lines {
         s.push_str(&format!("printf '%s\\n' '{l}'\n"));
     }
@@ -73,11 +86,15 @@ fn run_reports_progress_and_success() {
 #[test]
 fn run_reports_the_downloaders_error_and_removes_part_files() {
     let t = tempfile::tempdir().unwrap();
-    std::fs::write(t.path().join("model.safetensors.part"), b"half").unwrap();
-    let prog = fake(t.path(), &[r#"{"event":"error","message":"model.safetensors: checksum mismatch"}"#], 0, 1);
+    // another downloader's partial file is left alone
+    let other = t.path().join(part_name("model.safetensors", 1));
+    std::fs::write(&other, b"theirs").unwrap();
+    let pre = format!("printf half > '{}/model.safetensors.'$$'.part'", t.path().display());
+    let prog = fake_with(t.path(), &pre, &[r#"{"event":"error","message":"model.safetensors: checksum mismatch"}"#], 0, 1);
     let e = run(&prog, &[], &request(t.path()), &mut |_, _, _| true).unwrap_err();
     assert!(e.to_string().contains("checksum mismatch"), "{e}");
-    assert!(!t.path().join("model.safetensors.part").exists());
+    let left: Vec<_> = std::fs::read_dir(t.path()).unwrap().map(|e| e.unwrap().file_name().into_string().unwrap()).filter(|n| n.ends_with(".part")).collect();
+    assert_eq!(left, vec![part_name("model.safetensors", 1)]);
 }
 
 #[cfg(unix)]
@@ -104,6 +121,31 @@ fn cancelling_stops_a_stalled_download() {
     .unwrap_err();
     assert!(matches!(e, FetchError::Cancelled), "{e}");
     assert!(start.elapsed() < Duration::from_secs(20), "{:?}", start.elapsed());
+}
+
+#[cfg(unix)]
+#[test]
+fn a_silent_downloader_is_stopped() {
+    let t = tempfile::tempdir().unwrap();
+    let prog = fake(t.path(), &[r#"{"event":"progress","done":1,"total":10,"file":"model.safetensors"}"#], 60, 0);
+    let start = std::time::Instant::now();
+    let e = run_with(&prog, &[], &request(t.path()), &mut |_, _, _| true, Duration::from_secs(1)).unwrap_err();
+    assert!(e.to_string().contains("received nothing"), "{e}");
+    assert!(start.elapsed() < Duration::from_secs(20), "{:?}", start.elapsed());
+}
+
+#[cfg(unix)]
+#[test]
+fn a_downloader_that_stays_after_its_last_line_is_stopped() {
+    let t = tempfile::tempdir().unwrap();
+    // an error stops it at once; after "done" it gets a few seconds to exit
+    for (line, want) in [(r#"{"event":"error","message":"boom"}"#, "boom"), (r#"{"event":"done"}"#, "without finishing")] {
+        let prog = fake(t.path(), &[line], 60, 0);
+        let start = std::time::Instant::now();
+        let e = run_with(&prog, &[], &request(t.path()), &mut |_, _, _| true, Duration::from_secs(60)).unwrap_err();
+        assert!(e.to_string().contains(want), "{e}");
+        assert!(start.elapsed() < Duration::from_secs(20), "{:?}", start.elapsed());
+    }
 }
 
 #[test]
