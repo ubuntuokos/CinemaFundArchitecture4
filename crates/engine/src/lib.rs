@@ -14,7 +14,6 @@ pub mod aaf_omf;
 mod atrac_convert;
 pub mod autosave;
 pub mod beat_markers;
-pub mod silence;
 pub mod captions;
 pub mod clip_ops;
 pub mod color;
@@ -71,6 +70,7 @@ pub mod sequence_tools;
 pub mod settings;
 pub mod shortcut_presets;
 pub mod shortcuts;
+pub mod silence;
 pub mod smart_cut;
 mod smart_cut_mpeg;
 mod smart_render;
@@ -1377,8 +1377,6 @@ mod avi_import_tests;
 #[cfg(test)]
 mod beat_markers_tests;
 #[cfg(test)]
-mod silence_tests;
-#[cfg(test)]
 mod clip_ops_tests;
 #[cfg(test)]
 mod color_tests;
@@ -1482,6 +1480,8 @@ mod sequence_tools_tests;
 mod settings_tests;
 #[cfg(test)]
 mod shortcuts_tests;
+#[cfg(test)]
+mod silence_tests;
 #[cfg(test)]
 mod smart_cut_mpeg_tests;
 #[cfg(test)]
