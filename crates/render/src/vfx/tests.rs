@@ -1391,6 +1391,69 @@ fn perspective_stabilizer_framing_hides_the_borders_and_corrections_are_sane() {
     assert_eq!(perspective::cover_scale(&far, 64.0, 48.0, 3.0), 3.0);
 }
 
+/// A shaky camera over a scene with depth that is not a plane: the shift of a point is the shake
+/// times a depth factor that grows with the square of `x` (no homography follows it).
+fn parallax_shaky(x: f64, y: f64, t: f64) -> [f32; 3] {
+    let f = (t * 24.0).round() as i64;
+    let r = |i: i64| hash01(f, i, 0, 7) as f64 - 0.5;
+    let u = x / 192.0;
+    let depth = 0.4 + 1.6 * u * u;
+    texture(x + r(0) * 10.0 * depth, y + r(1) * 10.0 * depth)
+}
+
+#[test]
+fn subspace_warp_follows_scene_depth_better_than_the_global_models() {
+    let (raw, sim) = stabilise_frames(1, parallax_shaky, 0x5B01);
+    let (_, persp) = stabilise_frames(2, parallax_shaky, 0x5B01);
+    let (_, sub) = stabilise_frames(3, parallax_shaky, 0x5B01);
+    // measured: raw 0.177, similarity 0.107, perspective 0.030, subspace 0.022
+    assert!(sub < raw * 0.25, "subspace {sub} vs raw {raw}");
+    assert!(sub < sim * 0.35 && sub < persp * 0.95, "subspace {sub} vs similarity {sim}, perspective {persp}");
+}
+
+#[test]
+fn subspace_warp_leaves_a_steady_or_featureless_clip_alone_and_hides_the_borders() {
+    fn steady(x: f64, y: f64, _t: f64) -> [f32; 3] {
+        texture(x, y)
+    }
+    fn flat(_x: f64, _y: f64, _t: f64) -> [f32; 3] {
+        [0.4, 0.4, 0.4]
+    }
+    let (w, h) = (192, 128);
+    for (pic, key) in [(steady as fn(f64, f64, f64) -> [f32; 3], 0x5B02u64), (flat, 0x5B03)] {
+        let env = ClipEnv { w, h, fps: 24.0, secs: 1.0, now: 0.5, key, seq: (w as u32, h as u32), pic };
+        let mut e = inst("warp_stabilizer");
+        set(&mut e, "method", ParamValue::Choice(3));
+        set(&mut e, "framing", ParamValue::Choice(0));
+        clear_stabilizer_cache();
+        let raw = env.render(0.5, 1.0);
+        let mut st = raw.clone();
+        crate::effects::apply(&mut st, &e, &FxCtx { seconds: 0.5, env: Some(&env), ..cx() });
+        let worst = (8..h - 8).flat_map(|y| (8..w - 8).map(move |x| (x, y))).map(|(x, y)| (raw.get(x, y)[0] - st.get(x, y)[0]).abs()).fold(0.0f32, f32::max);
+        assert!(worst < 0.02, "key {key:#x}: a steady shot moved by {worst}");
+        assert!(st.px.iter().all(|v| v.is_finite()));
+    }
+    let mk = |now: f64| ClipEnv { w, h, fps: 24.0, secs: 1.0, now, key: 0x5B04, seq: (w as u32, h as u32), pic: parallax_shaky };
+    let mut e = inst("warp_stabilizer");
+    set(&mut e, "method", ParamValue::Choice(3));
+    set(&mut e, "result", ParamValue::Choice(1));
+    set(&mut e, "framing", ParamValue::Choice(2));
+    setf(&mut e, "max_scale", 300.0);
+    clear_stabilizer_cache();
+    for f in [3usize, 12, 20] {
+        let now = f as f64 / 24.0;
+        let env = mk(now);
+        let mut st = env.render(now, 1.0);
+        crate::effects::apply(&mut st, &e, &FxCtx { seconds: now, env: Some(&env), ..cx() });
+        assert!(st.px.as_chunks::<4>().0.iter().all(|p| p[3] > 0.99), "frame {f}: auto-scale leaves no border");
+    }
+    set(&mut e, "framing", ParamValue::Choice(3));
+    let env = mk(0.5);
+    let mut st = env.render(0.5, 1.0);
+    crate::effects::apply(&mut st, &e, &FxCtx { seconds: 0.5, env: Some(&env), ..cx() });
+    assert!(st.px.as_chunks::<4>().0.iter().all(|p| p[3] > 0.99), "synthesised edges fill the frame");
+}
+
 /// A scratch folder under the system temp dir, removed on drop.
 struct Scratch(std::path::PathBuf);
 impl Scratch {
