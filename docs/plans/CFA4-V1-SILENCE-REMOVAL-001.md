@@ -1,6 +1,6 @@
 # CFA4-V1-SILENCE-REMOVAL-001: a csend-eltávolítás (V1, F6) megvalósítási terve
 
-**Állapot:** terv, **tulajdonosi jóváhagyásra vár**. A dokumentum **nem indít el semmit**: a megvalósításhoz (a tulajdonos külön engedélye és a `docs/coordination.md` §2.10 szerint) jóváhagyott terv és külön engedély kell. Ez a dokumentum csak tervet tartalmaz, kódot nem.
+**Állapot:** **jóváhagyva (István, 2026-11-21)**, a D1–D5 döntéseknél a terv javaslatai érvényesek: **D1** az energiaalapú V1-A **nem MI-funkció**, ezért az MI-réteg előtt is indulhat; **D2** a nem romboló mód csak jelölés; **D3** kötegnél metszet-mód ripple-lel, klipenkénti csak lifttel; **D4** a régió marker (nincs sémaváltozás); **D5** az alap-paraméterek `minSilence` 0,5 s, `padding` 0,1 s, mérés alapján hangolva. A **V1-A megvalósítása indulhat** (külön ágon és PR-ban, Ready for review, Gazda issue-ban jelezve, merge nélkül); a **V1-B (Silero) az MI-réteg után** jön. A jóváhagyás a V1-A-ra szól, a V1-B külön indítási engedélyt kér az MI-réteg üzembe helyezése után. A dokumentum maga csak tervet tartalmaz, kódot nem.
 **Dátum:** 2026-11-21 · **Alap:** `main` @ `fc310bd` · **Módszer:** csak olvasás: a `docs/venturi-parity.md` V1 szakasza, a `crates/speech/src/vad.rs`, a `crates/engine/src/transcript.rs`, a `crates/edit/src/transcript.rs`, a `crates/engine/src/beat_markers.rs` és a `crates/project/src/lib.rs` (`Marker`, `MarkerKind`) áttekintése. A kódot nem futtattam.
 **Nyelv:** magyar.
 **Forrás és előzmények:** [`docs/venturi-parity.md`](../venturi-parity.md) V1 (a Venturi „Silence removal” funkciója és a V1 5. pontja, az elfogadási feltételek bővítése), [`CFA4-SHOTCUT-CAPABILITY-ADAPTATION-001`](CFA4-SHOTCUT-CAPABILITY-ADAPTATION-001.md) 5.2 (a tulajdonos 2026-11-20-i döntései), a tulajdonos 2026-11-21-i jóváhagyása az elfogadási teszt nevéről (`v1_silence_removal_acceptance`).
@@ -192,7 +192,7 @@ V1-A összesen kb. 34–56 óra, V1-B kb. 20–30 óra.
 
 ---
 
-## 9. A tulajdonosnak eldöntendő kérdések
+## 9. A tulajdonosnak eldöntendő kérdések (eldöntve 2026-11-21: a javaslatok érvényesek)
 
 | # | Kérdés | Javaslatom |
 |---|---|---|
