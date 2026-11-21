@@ -120,6 +120,7 @@ static ROWS: &[Row] = &[
     video("RealVideo 1.0 / 2.0 / 3.0 / 4.0", &["realvideo", "realmedia"], Ported, Sw("in RealMedia (.rm, .rmvb)"), false, NoEnc),
     video("Ut Video", &["utvideo"], Own, Sw(""), false, NoEnc),
     video("Lagarith", &["lagarith"], Ported, Sw(""), false, NoEnc),
+    video("Autodesk FLIC", &["flic"], Ported, Sw("8-bit FLI / FLC files"), false, NoEnc),
     video("MagicYUV", &["magicyuv"], Ported, Sw(""), false, NoEnc),
     video("DV / DVCPRO", &["dv"], Ported, Sw("DV, DVCAM, DVCPRO 25 / 50, DVCPRO HD"), false, NoEnc),
     video("Animated GIF", &[], Dependency, Sw(""), false, Fmt(Format::Gif)),

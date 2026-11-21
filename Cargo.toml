@@ -61,6 +61,7 @@ cfa4-amr = { path = "crates/amr" }
 cfa4-hap = { path = "crates/hap" }
 cfa4-utvideo = { path = "crates/utvideo" }
 cfa4-lagarith = { path = "crates/lagarith" }
+cfa4-flic = { path = "crates/flic" }
 cfa4-magicyuv = { path = "crates/magicyuv" }
 cfa4-huffyuv = { path = "crates/huffyuv" }
 cfa4-ffv1 = { path = "crates/ffv1" }
@@ -230,6 +231,9 @@ opt-level = 3
 opt-level = 3
 
 [profile.dev.package.cfa4-lagarith]
+opt-level = 3
+
+[profile.dev.package.cfa4-flic]
 opt-level = 3
 
 [profile.dev.package.cfa4-magicyuv]
