@@ -1291,6 +1291,7 @@ dependencies = [
  "cfa4-ogg",
  "cfa4-opus",
  "cfa4-prores",
+ "cfa4-qcelp",
  "cfa4-realaudio",
  "cfa4-realmedia",
  "cfa4-realvideo",
@@ -2030,6 +2031,14 @@ dependencies = [
  "sha2 0.11.1",
  "thiserror 2.0.21",
  "toml",
+]
+
+[[package]]
+name = "cfa4-qcelp"
+version = "0.10.0"
+dependencies = [
+ "cfa4-testkit",
+ "thiserror 2.0.21",
 ]
 
 [[package]]

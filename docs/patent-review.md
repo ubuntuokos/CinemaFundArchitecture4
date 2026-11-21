@@ -103,6 +103,7 @@ szabadalommal védett formátumot.
 | G.711 (µ-law, A-law), G.722, IMA ADPCM, Microsoft ADPCM | dekódolás | `crates/adpcm` | alap | függőben | | |
 | G.729, G.729 Annex B | dekódolás; nyers `.g729` fájlok olvasása | `crates/g729` (a bcg729 portja) | alap | függőben | | |
 | iLBC | dekódolás; `.lbc` fájlok olvasása | `crates/ilbc` (a WebRTC libilbc portja) | alap | függőben | | |
+| QCELP (QCELP-13K) | dekódolás; `.qcp` fájlok olvasása | `crates/qcelp` (az FFmpeg portja) | alap | függőben | | |
 | TTA (True Audio) | dekódolás; `.tta` és Matroska olvasása | `crates/tta` (a libtta portja) | alap | függőben | | |
 | Shorten | dekódolás; `.shn` fájlok olvasása | `crates/shorten` (az FFmpeg Shorten-dekódolójának portja) | alap | függőben | | |
 | TAK (Tom's lossless Audio Kompressor) | dekódolás; `.tak` fájlok olvasása | `crates/tak` (az FFmpeg TAK-dekódolójának portja) | alap | függőben | | |
