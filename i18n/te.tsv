@@ -4832,3 +4832,42 @@ export.summary	Low	తక్కువ
 	Per Channel	ఛానెల్ వారీగా
 	Channel Zoom	ఛానెల్ జూమ్
 	White Balance Selector (click a neutral point in the Program monitor; Esc cancels)	వైట్ బ్యాలెన్స్ సెలెక్టర్ (ప్రోగ్రామ్ మానిటర్‌లో తటస్థ బిందువుపై క్లిక్ చేయండి; Esc రద్దు చేస్తుంది)
+# Task Manager and subtitle kind (SC-2/3/4)
+	Task Manager	టాస్క్ మేనేజర్
+	Background jobs	బ్యాక్‌గ్రౌండ్ జాబ్‌లు
+	Exports	ఎగుమతులు
+	Shared task queue	భాగస్వామ్య టాస్క్ క్యూ
+	Task	టాస్క్
+	State	స్థితి
+	Details	వివరాలు
+	Time left	మిగిలిన సమయం
+	Scheduled	షెడ్యూల్ చేయబడింది
+	Queued	క్యూలో ఉంది
+	Waiting for resources	వనరుల కోసం వేచి ఉంది
+	Blocked	నిరోధించబడింది
+	Running	నడుస్తోంది
+	Paused	పాజ్ చేయబడింది
+	Cancelling	రద్దు చేస్తోంది
+	Interactive	ఇంటరాక్టివ్
+	Speculative	ఊహాత్మక
+	Final render	తుది రెండర్
+	Show finished	పూర్తయినవి చూపించు
+	Nothing is running.	ఏదీ నడవడం లేదు.
+	Not reported by this engine yet.	ఈ ఇంజిన్ ఇంకా నివేదించడం లేదు.
+	Not available: {why}	అందుబాటులో లేదు: {why}
+	{name} waits: {why}	{name} వేచి ఉంది: {why}
+	{running} running · {waiting} waiting	{running} నడుస్తున్నాయి · {waiting} వేచి ఉన్నాయి
+	{n} active	{n} క్రియాశీలం
+	{n} CPU	{n} CPU
+	{n} GiB	{n} GiB
+	{n} MiB	{n} MiB
+	Needs your decision	మీ నిర్ణయం అవసరం
+	Run now	ఇప్పుడే అమలు చేయండి
+	Next slot	తదుపరి స్లాట్
+	Missed its start	ప్రారంభం తప్పిపోయింది
+	Missed its start at {time}	{time} వద్ద ప్రారంభం తప్పిపోయింది
+	Starts at {time}	{time} వద్ద ప్రారంభమవుతుంది
+	Subtitle kind	ఉపశీర్షికల రకం
+	Subtitles	ఉపశీర్షికలు
+	Captions for the hearing impaired	వినికిడి లోపం ఉన్నవారి కోసం క్యాప్షన్‌లు
+	Forced narrative	బలవంతపు వ్యాఖ్యానం (forced narrative)
