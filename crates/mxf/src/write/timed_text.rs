@@ -62,6 +62,13 @@ pub struct TimedTextConfig {
     pub product: String,
     pub version: String,
     pub modified: Timestamp,
+    /// An IMF timed text track file (ST 2067-2 5.4, ST 2067-5) instead of a D-Cinema one: OP1a
+    /// (internal, streamable, uni-track) instead of OP-Atom and 8 KiB of fill after the header
+    /// metadata for in-place extension.
+    pub imf: bool,
+    /// RFC 5646 language tags of the document, comma separated (ST 2067-2 Annex H); empty =
+    /// the item is left out.
+    pub languages: String,
 }
 
 impl TimedTextConfig {
@@ -76,8 +83,18 @@ impl TimedTextConfig {
             product: "CFA4".into(),
             version: env!("CARGO_PKG_VERSION").into(),
             modified: Timestamp::default(),
+            imf: false,
+            languages: String::new(),
         }
     }
+}
+
+/// Fill after the header metadata of an IMF track file (ST 2067-5 5.1.1 item 14: at least 8 KiB).
+const IMF_HEADER_FILL: usize = 8192;
+
+/// The operational pattern: OP1a for IMF (ST 2067-5 5.2.1), OP-Atom for D-Cinema (ST 429-3).
+fn op_label(cfg: &TimedTextConfig) -> [u8; 16] {
+    if cfg.imf { op1a(false) } else { OP_ATOM }
 }
 
 fn invalid(m: &str) -> io::Error {
@@ -93,9 +110,9 @@ fn uid(file: &Umid, n: u32) -> [u8; 16] {
     u
 }
 
-/// A partition pack (ST 377-1 Table 5) of an OP-Atom timed text track file, KAG 1.
+/// A partition pack (ST 377-1 Table 5) of a timed text track file (`op`: OP-Atom or OP1a), KAG 1.
 #[allow(clippy::too_many_arguments)]
-fn partition(kind: u8, status: u8, this: u64, prev: u64, footer: u64, hbc: u64, ibc: u64, index_sid: u32, body_sid: u32) -> Vec<u8> {
+fn partition(op: &[u8; 16], kind: u8, status: u8, this: u64, prev: u64, footer: u64, hbc: u64, ibc: u64, index_sid: u32, body_sid: u32) -> Vec<u8> {
     let mut v = Vec::with_capacity(112);
     v.extend_from_slice(&1u16.to_be_bytes());
     v.extend_from_slice(&3u16.to_be_bytes());
@@ -106,7 +123,7 @@ fn partition(kind: u8, status: u8, this: u64, prev: u64, footer: u64, hbc: u64, 
     v.extend_from_slice(&index_sid.to_be_bytes());
     v.extend_from_slice(&0u64.to_be_bytes());
     v.extend_from_slice(&body_sid.to_be_bytes());
-    v.extend_from_slice(&OP_ATOM);
+    v.extend_from_slice(op);
     // a generic stream partition carries no essence container of the generic container
     let containers: &[&[u8]] = if status == 0x11 { &[] } else { &[&EC_TIMED_TEXT] };
     v.extend_from_slice(&batch(containers, 16));
@@ -151,7 +168,7 @@ fn metadata(cfg: &TimedTextConfig, resources: &[TimedTextResource]) -> Vec<u8> {
     let ts = cfg.modified.bytes();
     // Preface: the file package is the primary package (ST 429-3)
     let mut s = Set::new(0x2F, u(1));
-    s.p(0x3B02, &ts).u16(0x3B05, 0x0103).u32(0x3B07, 1).refs(0x3B06, &[u(2)]).p(0x3B03, &u(3)).p(0x3B09, &OP_ATOM).p(0x3B08, &u(2000));
+    s.p(0x3B02, &ts).u16(0x3B05, 0x0103).u32(0x3B07, 1).refs(0x3B06, &[u(2)]).p(0x3B03, &u(3)).p(0x3B09, &op_label(cfg)).p(0x3B08, &u(2000));
     s.p(0x3B0A, &batch(&[&EC_TIMED_TEXT], 16)).p(0x3B0B, &batch(&[], 16));
     s.write(&mut out);
     let mut s = Set::new(0x30, u(2));
@@ -199,6 +216,9 @@ fn metadata(cfg: &TimedTextConfig, resources: &[TimedTextResource]) -> Vec<u8> {
     let mut s = Set::new(0x64, u(3000));
     s.u32(0x3006, 2).rat(0x3001, rate).i64(0x3002, dur).p(0x3004, &EC_TIMED_TEXT);
     s.p(TAG_TIMED_TEXT, &cfg.resource_id).p(TAG_TIMED_TEXT + 1, &utf16("UTF-8")).p(TAG_TIMED_TEXT + 2, &utf16(&cfg.namespace));
+    if !cfg.languages.is_empty() {
+        s.p(TAG_TIMED_TEXT + 6, &utf16(&cfg.languages));
+    }
     if !subs.is_empty() {
         s.refs(TAG_SUB_DESCRIPTORS, &subs);
     }
@@ -231,10 +251,17 @@ pub fn write_timed_text(cfg: &TimedTextConfig, document: &[u8], resources: &[Tim
             return Err(invalid("timed text resources need distinct ids"));
         }
     }
-    let meta = metadata(cfg, resources);
-    let header_len = partition(2, 4, 0, 0, 0, 0, 0, 0, 0).len();
+    if cfg.languages.len() > 4096 || cfg.languages.chars().any(|c| !(c.is_ascii_alphanumeric() || c == '-' || c == ',')) {
+        return Err(invalid("timed text languages must be RFC 5646 tags separated by commas"));
+    }
+    let op = op_label(cfg);
+    let mut meta = metadata(cfg, resources);
+    if cfg.imf {
+        klv(&mut meta, &KLV_FILL, &[0u8; IMF_HEADER_FILL]);
+    }
+    let header_len = partition(&op, 2, 4, 0, 0, 0, 0, 0, 0, 0).len();
     let body_at = (header_len + meta.len()) as u64;
-    let mut body = partition(3, 4, body_at, 0, 0, 0, 0, 0, BODY_SID);
+    let mut body = partition(&op, 3, 4, body_at, 0, 0, 0, 0, 0, BODY_SID);
     klv(&mut body, &TIMED_TEXT_ELEMENT, document);
     // the generic stream partitions: the pack, then the resource KLV, nothing between (6.1)
     let mut streams = Vec::new();
@@ -242,7 +269,7 @@ pub fn write_timed_text(cfg: &TimedTextConfig, document: &[u8], resources: &[Tim
     let mut prev = body_at;
     let mut at = body_at + body.len() as u64;
     for (k, r) in resources.iter().enumerate() {
-        let mut p = partition(3, 0x11, at, 0, 0, 0, 0, 0, BODY_SID + 1 + k as u32);
+        let mut p = partition(&op, 3, 0x11, at, 0, 0, 0, 0, 0, BODY_SID + 1 + k as u32);
         klv(&mut p, &GENERIC_STREAM_ELEMENT, &r.data);
         offsets.push((BODY_SID + 1 + k as u32, at));
         prev = at;
@@ -259,21 +286,21 @@ pub fn write_timed_text(cfg: &TimedTextConfig, document: &[u8], resources: &[Tim
     s.p(0x3F0A, &batch(&[&entry], 11));
     s.write(&mut index);
     // rewrite the packs that need the footer offset
-    let mut out = partition(2, 4, 0, 0, footer, meta.len() as u64, 0, 0, 0);
+    let mut out = partition(&op, 2, 4, 0, 0, footer, meta.len() as u64, 0, 0, 0);
     out.extend_from_slice(&meta);
-    let body_pack_len = partition(3, 4, body_at, 0, 0, 0, 0, 0, BODY_SID).len();
-    out.extend_from_slice(&partition(3, 4, body_at, 0, footer, 0, 0, 0, BODY_SID));
+    let body_pack_len = partition(&op, 3, 4, body_at, 0, 0, 0, 0, 0, BODY_SID).len();
+    out.extend_from_slice(&partition(&op, 3, 4, body_at, 0, footer, 0, 0, 0, BODY_SID));
     out.extend_from_slice(body.get(body_pack_len..).unwrap_or_default());
     for (p, &(sid, this)) in streams.iter().zip(&offsets) {
-        let pack_len = partition(3, 0x11, this, 0, 0, 0, 0, 0, sid).len();
+        let pack_len = partition(&op, 3, 0x11, this, 0, 0, 0, 0, 0, sid).len();
         let before = offsets.iter().take_while(|o| o.1 < this).last().map_or(body_at, |o| o.1);
-        out.extend_from_slice(&partition(3, 0x11, this, before, footer, 0, 0, 0, sid));
+        out.extend_from_slice(&partition(&op, 3, 0x11, this, before, footer, 0, 0, 0, sid));
         out.extend_from_slice(p.get(pack_len..).unwrap_or_default());
     }
     if out.len() as u64 != footer {
         return Err(io::Error::other("internal: timed text partition sizes changed"));
     }
-    out.extend_from_slice(&partition(4, 4, footer, prev, footer, 0, index.len() as u64, INDEX_SID, 0));
+    out.extend_from_slice(&partition(&op, 4, 4, footer, prev, footer, 0, index.len() as u64, INDEX_SID, 0));
     out.extend_from_slice(&index);
     let mut rip = Vec::new();
     let mut parts = vec![(0u32, 0u64), (BODY_SID, body_at)];

@@ -1225,7 +1225,9 @@ static CATEGORIES: &[Category] = &[
         rows: &[
             b("controlSurfaces.enabled", "Use control surfaces (MIDI controllers, jog/shuttle devices)", false),
             Row::Custom("controlSurfaces"),
-            Row::Note("Mapping controls to commands, MIDI Learn and the MIDI Monitor come in a later version; the choices here are remembered until then."),
+            Row::Note(
+                "Assignments run when a button is pressed (a fader or knob counts as pressed past half way); a fader or knob assigned to a mixer strip moves its volume or pan. A ShuttlePRO's shuttle ring plays at its profile's speeds and its jog wheel steps frame by frame. Endless encoders and feedback to the controller (lights, motor faders) come in a later version.",
+            ),
         ],
     },
     Category {
@@ -1800,6 +1802,11 @@ pub fn media_cache_dir(prefs: &MediaCachePrefs, data_dir: Option<&Path>) -> Opti
     data_dir.map(|d| d.join("Media Cache"))
 }
 
+/// Where Warp Stabilizer keeps its analyses inside the media cache.
+pub fn analysis_root(cache: &Path) -> PathBuf {
+    cache.join("Analysis")
+}
+
 /// Where unsaved projects keep their render previews inside the media cache.
 pub fn previews_root(cache: &Path) -> PathBuf {
     cache.join("Previews")
@@ -1937,7 +1944,10 @@ impl Session {
     /// Point unsaved projects' render previews into the media cache and apply the automatic
     /// deletion policy (on startup and when the Media Cache settings change).
     pub fn apply_media_cache(&mut self) {
-        let Some(dir) = self.media_cache_dir() else { return };
+        let dir = self.media_cache_dir();
+        // Warp Stabilizer keeps its analyses in the media cache (so its policy and Delete… apply)
+        cfa4_render::vfx::set_analysis_cache_dir(dir.as_deref().map(analysis_root));
+        let Some(dir) = dir else { return };
         let root = previews_root(&dir);
         if self.previews.temp_root() != Some(root.clone()) {
             self.previews.set_temp_root(Some(root));

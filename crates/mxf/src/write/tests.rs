@@ -1686,6 +1686,58 @@ fn imf_sample_regxml() {
     assert!(x.contains("<r1:InstanceID>urn:uuid:"), "{x}");
 }
 
+/// An IMF timed text track file (ST 2067-2 5.4): OP1a (internal, streamable, uni-track), 8 KiB of
+/// fill after the header metadata, the RFC 5646 language tag list, and a RegXML descriptor that
+/// names every timed text item.
+#[test]
+fn imf_timed_text_track_file() {
+    let doc = br#"<?xml version="1.0" encoding="UTF-8"?><tt xmlns="http://www.w3.org/ns/ttml" xml:lang="hu"><body/></tt>"#;
+    let ids = PackageIds { material: Umid::dcinema([7; 16]), file: Umid::dcinema([9; 16]), material_name: "Title".into(), file_name: "Title subtitles".into() };
+    let mut cfg = TimedTextConfig::new(Rational::new(24, 1), 48, [0x11; 16], "http://www.w3.org/ns/ttml/profile/imsc1/text", ids);
+    cfg.imf = true;
+    cfg.languages = "hu-HU".into();
+    let f = write_timed_text(&cfg, doc, &[]).unwrap();
+    let tt = crate::open_timed_text(&f).unwrap();
+    assert!(tt.warnings.is_empty(), "{:?}", tt.warnings);
+    assert_eq!((tt.edit_rate, tt.duration, tt.resource_id), (Rational::new(24, 1), Some(48), Some([0x11; 16])));
+    assert_eq!(tt.namespace.as_deref(), Some("http://www.w3.org/ns/ttml/profile/imsc1/text"));
+    assert_eq!(tt.languages.as_deref(), Some("hu-HU"));
+    assert_eq!(tt.read_document(&f).unwrap(), doc);
+    let peek = crate::peek(&f).unwrap();
+    assert_eq!(peek.operational_pattern, OperationalPattern::Generalized { item: 1, package: 1 });
+    // every partition pack names OP1a with the uni-track qualifier (ST 2067-5 5.2.1)
+    let op = op1a(false);
+    assert!(f.windows(16).filter(|w| *w == op).count() >= 4, "header, body, footer packs and the preface");
+    assert!(!f.windows(16).any(|w| w == OP_ATOM));
+    // fill of at least 8 KiB inside the header metadata
+    let fill = f.windows(16).position(|w| w == KLV_FILL).expect("fill");
+    let hbc = u64::from_be_bytes(f[20 + 32..20 + 40].try_into().unwrap()) as usize;
+    let element = f.windows(16).position(|w| w == TIMED_TEXT_ELEMENT).expect("timed text element");
+    assert!(fill < element && hbc >= 8192, "fill at {fill}, element at {element}, header byte count {hbc}");
+    let xml = crate::regxml::essence_descriptor(&f[..]).unwrap();
+    for item in [
+        "<r0:TimedTextDescriptor ",
+        "<r1:ResourceID>urn:uuid:11111111-1111-1111-1111-111111111111</r1:ResourceID>",
+        "<r1:UCSEncoding>UTF-8</r1:UCSEncoding>",
+        "<r1:NamespaceURI>http://www.w3.org/ns/ttml/profile/imsc1/text</r1:NamespaceURI>",
+        "<r1:RFC5646LanguageTagList>hu-HU</r1:RFC5646LanguageTagList>",
+        "<r1:SampleRate>24/1</r1:SampleRate>",
+    ] {
+        assert!(xml.contains(item), "{item} in {xml}");
+    }
+    // with a resource: the sub-descriptor is nested in the descriptor
+    let png = TimedTextResource { id: [0x22; 16], mime: MIME_PNG.into(), data: b"\x89PNG\r\n\x1a\nfake".to_vec() };
+    let g = write_timed_text(&cfg, doc, &[png]).unwrap();
+    let xml = crate::regxml::essence_descriptor(&g[..]).unwrap();
+    assert!(xml.contains("<r0:TimedTextResourceSubDescriptor>") && xml.contains("<r1:MIMEMediaType>image/png</r1:MIMEMediaType>"), "{xml}");
+    assert!(xml.contains("<r1:EssenceStreamID>2</r1:EssenceStreamID>"), "{xml}");
+    // a language list that is not RFC 5646 tags is refused
+    assert!(write_timed_text(&TimedTextConfig { languages: "hu\"><x".into(), ..cfg.clone() }, doc, &[]).is_err());
+    for cut in (0..f.len()).step_by(101) {
+        let _ = crate::open_timed_text(&f[..cut]);
+    }
+}
+
 /// ST 429-5: the document clip-wrapped, each resource in its own generic stream partition, read
 /// back by the timed text reader; the header peek sees the D-Cinema file package; cutting the
 /// file anywhere never panics.
@@ -1805,7 +1857,7 @@ fn as11_metadata_reads_back() {
     let segments = vec![Segment { start: 2, duration: 5, part_number: 1, part_total: 2 }, Segment { start: 7, duration: 2, part_number: 2, part_total: 2 }];
     let mut cfg = op1a_config(Rational::new(25, 1), PictureCoding::ProRes { profile: 3 });
     cfg.sound.truncate(1);
-    cfg.as11 = Some(As11 { core: core.clone(), segments: segments.clone(), ukdpp: ukdpp.clone() });
+    cfg.as11 = Some(As11 { core: core.clone(), segments: segments.clone(), ukdpp: ukdpp.clone(), ..Default::default() });
     let mut w = MxfWriter::new(Cursor::new(Vec::new()), cfg.clone()).unwrap();
     for i in 0..10 {
         w.push_picture(&prores_like(i), FrameInfo::intra()).unwrap();
@@ -1852,8 +1904,54 @@ fn as11_metadata_reads_back() {
     let mut bad = core.clone();
     bad[4].1 = "one.two".into();
     assert!(refuse(As11 { core: bad, ..Default::default() }).contains("ShimVersion"));
-    let e = refuse(As11 { core: core.clone(), segments: segments.clone(), ukdpp: vec![] });
+    let e = refuse(As11 { core: core.clone(), segments: segments.clone(), ukdpp: vec![], ..Default::default() });
     assert!(e.contains("after the programme"), "{e}");
-    let e = refuse(As11 { core: core.clone(), segments: vec![segments[1], segments[0]], ukdpp: vec![] });
+    let e = refuse(As11 { core: core.clone(), segments: vec![segments[1], segments[0]], ukdpp: vec![], ..Default::default() });
     assert!(e.contains("starts before"), "{e}");
+}
+
+/// #1254: AMWA AS-10 metadata (a DMS_AS_10 framework, no AS-11 Core needed) reads back, and
+/// malformed AS-10 metadata is refused.
+#[test]
+fn as10_metadata_round_trips() {
+    use crate::as11::{As11, Segment};
+    let kv = |v: &[(&str, &str)]| -> Vec<(String, String)> { v.iter().map(|(k, v)| (k.to_string(), v.to_string())).collect() };
+    let umid = "060a2b340101010501010d4313000000".to_string() + "0123456789abcdef0123456789abcdef";
+    let as10 = kv(&[
+        ("ShimName", "NRK_HD_2012"),
+        ("MainTitle", "Tést"),
+        ("Type", "News"),
+        ("CommonSpanningID", &umid),
+        ("SpanningNumber", "2"),
+        ("CumulativeDuration", "250"),
+    ]);
+    let mut cfg = op1a_config(Rational::new(25, 1), PictureCoding::ProRes { profile: 3 });
+    cfg.sound.truncate(1);
+    cfg.as11 = Some(As11 { as10: as10.clone(), ..Default::default() });
+    let mut w = MxfWriter::new(Cursor::new(Vec::new()), cfg).unwrap();
+    for i in 0..4 {
+        w.push_picture(&prores_like(i), FrameInfo::intra()).unwrap();
+        w.push_sound(0, &pcm16(i * 1920, 1920)).unwrap();
+    }
+    let bytes = w.finish().unwrap().into_inner();
+    let f = open(&bytes).unwrap();
+    assert_eq!(f.tracks.len(), 2, "the DM track is not an essence track");
+    let a = f.as11.unwrap();
+    assert!(a.core.is_empty() && a.segments.is_empty() && a.ukdpp.is_empty());
+    let sorted = |mut v: Vec<(String, String)>| {
+        v.sort();
+        v
+    };
+    assert_eq!(sorted(a.as10), sorted(as10.clone()));
+    // a missing ShimName, an unknown item, a bad UMID and AS-10 with parts but no Core are refused
+    let refuse = |a: As11| {
+        let mut cfg = op1a_config(Rational::new(25, 1), PictureCoding::ProRes { profile: 3 });
+        cfg.as11 = Some(a);
+        MxfWriter::new(Cursor::new(Vec::new()), cfg).err().unwrap().to_string()
+    };
+    assert!(refuse(As11 { as10: kv(&[("MainTitle", "x")]), ..Default::default() }).contains("ShimName"));
+    assert!(refuse(As11 { as10: kv(&[("ShimName", "x"), ("Nope", "1")]), ..Default::default() }).contains("Nope"));
+    assert!(refuse(As11 { as10: kv(&[("ShimName", "x"), ("CommonSpanningID", "1234")]), ..Default::default() }).contains("CommonSpanningID"));
+    let part = Segment { start: 0, duration: 2, part_number: 1, part_total: 1 };
+    assert!(refuse(As11 { as10: as10.clone(), segments: vec![part], ..Default::default() }).contains("Core"));
 }

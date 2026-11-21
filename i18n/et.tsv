@@ -4680,19 +4680,83 @@ export.summary	Low	madal
 	AS-11 Core	AS-11 Core
 	AS-11 Parts	AS-11 osad
 	AS-11 UK DPP	AS-11 UK DPP
-
-# Control Surfaces settings page (CS-1, #1187)
-	Devices	Seadmed
-	Use	Kasuta
-	Device	Seade
-	MIDI	MIDI
-	HID jog/shuttle	HID jog/shuttle
-	OSC	OSC
+# Control surfaces (qt-control-surfaces-page, CFA4-CONTROL-SURFACE-001)
 	Connected	Ühendatud
-	Not connected	Pole ühendatud
+	Device	Seade
+	Devices	Seadmed
 	Disabled	Keelatud
+	HID jog/shuttle	HID jog/shuttle
+	MIDI	MIDI
+	Not connected	Pole ühendatud
+	OSC	OSC
+	Use	Kasuta
 	{device} ({port})	{device} ({port})
 	{name}: {error}	{name}: {error}
+# Control surfaces (midi-monitor, CFA4-CONTROL-SURFACE-001)
+	MIDI Monitor	MIDI-monitor
+	Press Start Monitor, then move a control.	Vajutage „Käivita monitor“ ja liigutage seejärel juhtelementi.
+	Start Monitor	Käivita monitor
+	Stop Monitor	Peata monitor
+	… {count} messages not shown (too many at once)	… {count} sõnumit pole näidatud (liiga palju korraga)
+# Control surfaces (midi-learn, CFA4-CONTROL-SURFACE-001)
+	A control surface asked for {command}, which does not exist.	Juhtpind küsis käsku {command}, mida pole olemas.
+	Assignments	Määrangud
+	Cancel Learn	Tühista õppimine
+	Control	Juhtelement
+	Learn	Õpi
+	Remove this assignment	Eemalda see määrang
+	{control} runs {command}.	{control} käivitab {command}.
+# Control surfaces (shuttlepro, CFA4-CONTROL-SURFACE-001)
+	Button {n}	Nupp {n}
+# Control surfaces (continuous-values, CFA4-CONTROL-SURFACE-001)
+	{strip} Pan (knob)	{strip} panoraam (nupp)
+	{strip} Volume (fader)	{strip} helitugevus (fader)
+# Control surfaces (F1 Learn and profile, CFA4-CONTROL-SURFACE-001)
+	Assignments run when a button is pressed (a fader or knob counts as pressed past half way); a fader or knob assigned to a mixer strip moves its volume or pan. A ShuttlePRO's shuttle ring plays at its profile's speeds and its jog wheel steps frame by frame. Endless encoders and feedback to the controller (lights, motor faders) come in a later version.	Määrangud käivituvad nupuvajutusel (fader või nupp loetakse vajutatuks pärast poolt); mikseri rajale määratud fader või nupp liigutab helitugevust või panoraami. ShuttlePRO süstikurõngas mängib profiili kiirustel ja jog-ratas astub kaaderhaaval. Lõputud koodrid ja vastus kontrollerile (tuled, mootorfaderid) tulevad hilisemas versioonis.
+	First message (ms)	Esimene sõnum (ms)
+	Silence (ms)	Vaikus (ms)
+	Waiting for the control to settle…	Oodatakse, kuni juhik rahuneb…
+	Type: {hint}. Confirm this assignment.	Tüüp: {hint}. Kinnita see määrang.
+	That control is already assigned. Confirm replaces it.	See juhik on juba määratud. Kinnitus asendab selle.
+	Learn timed out.	Õppimise aeg sai otsa.
+	Confirm	Kinnita
+	Reject	Keeldu
+	Shows every MIDI message from the controllers as it arrives, to check that a controller sends and what it sends. MIDI Clock, Active Sensing and MIDI Time Code are left out.	Näitab iga MIDI-sõnumit kontrolleritelt selle saabudes, et näha, kas kontroller saadab ja mida. MIDI-kell, Active Sensing ja MIDI ajakood jäetakse välja.
+	Pick a command (or a mixer strip for a fader or knob), press Learn, then press the button or move the control past half way. Confirm keeps the assignment. OK saves the assignments.	Vali käsk (või mikseri rada faderile või nupule), vajuta Õpi, siis nuppu või liiguta juhik üle poole. Kinnitus jätab määrangu alles. OK salvestab määrangud.
+	All devices	Kõik seadmed
+	Builtin: {name}	Sisseehitatud: {name}
+	Capturing	Hõive
+	Confirmed	Kinnitatud
+	Conflict	Konflikt
+	Connect a MIDI controller or a ShuttlePRO to edit its profile.	Profiili muutmiseks ühenda MIDI-kontroller või ShuttlePRO.
+	Control Surfaces…	Juhtimispinnad…
+	Filter messages	Filtreeri sõnumid
+	Idle	Jõude
+	Kernel dropped: {count}	Kernel jättis kõrvale: {count}
+	Learn Assignments…	Õpi määranguid…
+	Load profile	Laadi profiil
+	MIDI Monitor…	MIDI-monitor…
+	Mute shuttle sound	Vaigista shuttle-heli
+	No conflicts.	Konflikte pole.
+	No profile warnings.	Profiili hoiatusi pole.
+	No project profile is stored.	Projekti profiili ei ole salvestatud.
+	OK writes the preferences and the profile file together.	OK kirjutab eelistused ja profiilifaili koos.
+	Online	Võrgus
+	Pending	Ootel
+	Pickup (14-bit)	Haaramine (14 bitti)
+	Pickup (7-bit)	Haaramine (7 bitti)
+	Profile warnings	Profiili hoiatused
+	Rejected	Tagasi lükatud
+	Show Active Sensing	Näita Active Sensingut
+	Show MIDI Clock	Näita MIDI-kella
+	Show MIDI Time Code	Näita MIDI ajakoodi
+	The profile file is damaged. Preferences and the built-in profile stay in use.	Profiilifail on kahjustatud. Eelistused ja sisseehitatud profiil jäävad kasutusse.
+	Timed out	Aeg sai otsa
+	Type: {hint}	Tüüp: {hint}
+	User profile file	Kasutaja profiilifail
+	{received} received, {dispatched} dispatched, {coalesced} coalesced, {stalls} stalls, {errors} errors	{received} vastu võetud, {dispatched} edastatud, {coalesced} ühendatud, {stalls} ootamised, {errors} vead
+
+# Control Surfaces settings page (CS-1, #1187)
 	Looking for devices…	Seadmete otsimine…
 	No MIDI controller or jog/shuttle device was found. Connect one and press Refresh.	Ühtegi MIDI-kontrollerit ega jog/shuttle-seadet ei leitud. Ühendage üks ja vajutage Värskenda.
 	Control Surfaces	Juhtpaneelid
@@ -4701,14 +4765,66 @@ export.summary	Low	madal
 	CFA4 ShuttlePRO	CFA4 ShuttlePRO
 	Kdenlive-style ShuttlePRO	Kdenlive'i stiilis ShuttlePRO
 	Generic MIDI	Üldine MIDI
-
 # LTC timecode read from clip audio (TC-7, #1285)
 	Read from LTC Audio	Loe LTC-helist
 	Find SMPTE LTC on the clip's audio and use the timecode it gives the first frame	Otsi klipi helist SMPTE LTC-d ja kasuta ajakoodi, mille see annab esimesele kaadrile
 	Read Timecode from LTC Audio	Loe ajakood LTC-helist
 # Credits: voices (the Voice column) in the block's properties (F10-C16)
 	Voices	Hääled
-
 # Timecode sync varispeed and user bits (TC-8, #1308)
 	Varispeed: adjust the playback speed instead of seeking	Varispeed: hüppamise asemel kohanda taasesituse kiirust
 	User bits	Kasutajabitid
+# AS-11 programme parts and AS-10 metadata (G2, #1371, #1375)
+	{tc}  Segmentation	{tc}  Segmenteerimine
+	Marker Type	Markeri tüüp
+	Chapter	Peatükk
+	Segmentation (AS-11 programme part)	Segmenteerimine (AS-11 saateosa)
+	AS-10	AS-10
+# AT9/AT3 converter (Tools ▸ Audio Tools, AT3-2)
+	AT9/AT3 Converter	AT9/AT3 teisendaja
+	AT9/AT3 Converter…	AT9/AT3 teisendaja…
+	Files to convert:	Teisendatavad failid:
+	Add Files	Lisa failid
+	Add Files…	Lisa failid…
+	Convert to:	Teisenda vormingusse:
+	Bit rate:	Bitikiirus:
+	Sample format:	Diskreetimisvorming:
+	Output folder:	Väljundkaust:
+	Output Folder	Väljundkaust
+	Next to each source file	Iga lähtefaili kõrvale
+	AT9 and ATRAC3plus files convert to WAV; encoding AT9, ATRAC3plus and MP3 is not available yet.	AT9- ja ATRAC3plus-failid teisendatakse WAV-iks; AT9-, ATRAC3plus- ja MP3-kodeerimine pole veel saadaval.
+	Convert	Teisenda
+	Add the files to convert first.	Lisa esmalt teisendatavad failid.
+	Done: {n} file(s) converted.	Valmis: {n} faili teisendatud.
+	Converting {name}…	Teisendan faili {name}…
+	Stopping…	Peatan…
+	AT3 (ATRAC3, PSP / PS3)	AT3 (ATRAC3, PSP / PS3)
+	WAV (PCM)	WAV (PCM)
+	132 kbit/s (LP2)	132 kbit/s (LP2)
+	105 kbit/s	105 kbit/s
+	66 kbit/s (LP4, joint stereo)	66 kbit/s (LP4, liitstereo)
+	16-bit	16-bitine
+	24-bit	24-bitine
+	32-bit float	32-bitine ujukoma
+
+# Datamosh transition (Grunge & Distort, DM1, #1409)
+	Datamosh	Datamosh
+	Residual	Jääk
+	Motion Boost	Liikumise võimendus
+	Recovery	Taastumine
+	Encode Resolution	Kodeerimise eraldusvõime
+	Half	Pool
+	Quarter	Veerand
+
+# Recent effects, per-channel waveform, white balance selector (SC-2/SC-3/SC-4, #1419 #1420 #1421)
+	Apply a recently used effect to the selected clips	Rakenda hiljuti kasutatud efekt valitud klippidele
+	Disable all effects	Lülita kõik efektid välja
+	Enable all effects	Lülita kõik efektid sisse
+	No recent effects	Hiljutisi efekte pole
+	Recent effects	Hiljutised efektid
+	Switch every effect of the selected clips off	Lülitab valitud klippide kõik efektid välja
+	Switch every effect of the selected clips on	Lülitab valitud klippide kõik efektid sisse
+	Merged	Ühendatud
+	Per Channel	Kanalite kaupa
+	Channel Zoom	Kanalite suum
+	White Balance Selector (click a neutral point in the Program monitor; Esc cancels)	Valge tasakaalu valija (klõpsake programmimonitoris neutraalsel punktil; Esc tühistab)

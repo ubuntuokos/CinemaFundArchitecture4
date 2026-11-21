@@ -4672,35 +4672,151 @@
 	AS-11 Core	AS-11 Core
 	AS-11 Parts	AS-11 파트
 	AS-11 UK DPP	AS-11 UK DPP
-
-# Control Surfaces settings page (CS-1, #1187)
-	Devices	장치
-	Use	사용
-	Device	장치
-	MIDI	MIDI
-	HID jog/shuttle	HID 조그/셔틀
-	OSC	OSC
+# Control surfaces (qt-control-surfaces-page, CFA4-CONTROL-SURFACE-001)
 	Connected	연결됨
-	Not connected	연결 안 됨
+	Device	장치
+	Devices	장치
 	Disabled	사용 안 함
+	HID jog/shuttle	HID 조그/셔틀
+	MIDI	MIDI
+	Not connected	연결 안 됨
+	OSC	OSC
+	Use	사용
 	{device} ({port})	{device} ({port})
 	{name}: {error}	{name}: {error}
+# Control surfaces (midi-monitor, CFA4-CONTROL-SURFACE-001)
+	MIDI Monitor	MIDI 모니터
+	Press Start Monitor, then move a control.	모니터 시작을 누른 다음 컨트롤을 움직이세요.
+	Start Monitor	모니터 시작
+	Stop Monitor	모니터 중지
+	… {count} messages not shown (too many at once)	… {count}개 메시지가 표시되지 않음 (한 번에 너무 많음)
+# Control surfaces (midi-learn, CFA4-CONTROL-SURFACE-001)
+	A control surface asked for {command}, which does not exist.	컨트롤 서피스가 존재하지 않는 {command}을(를) 요청했습니다.
+	Assignments	할당
+	Cancel Learn	학습 취소
+	Control	컨트롤
+	Learn	학습
+	Remove this assignment	이 할당 제거
+	{control} runs {command}.	{control}이(가) {command}을(를) 실행합니다.
+# Control surfaces (shuttlepro, CFA4-CONTROL-SURFACE-001)
+	Button {n}	버튼 {n}
+# Control surfaces (continuous-values, CFA4-CONTROL-SURFACE-001)
+	{strip} Pan (knob)	{strip} 팬 (노브)
+	{strip} Volume (fader)	{strip} 볼륨 (페이더)
+# Control surfaces (F1 Learn and profile, CFA4-CONTROL-SURFACE-001)
+	Control Surfaces	컨트롤 서피스
+	Assignments run when a button is pressed (a fader or knob counts as pressed past half way); a fader or knob assigned to a mixer strip moves its volume or pan. A ShuttlePRO's shuttle ring plays at its profile's speeds and its jog wheel steps frame by frame. Endless encoders and feedback to the controller (lights, motor faders) come in a later version.	할당은 버튼을 누를 때 실행됩니다(페이더나 노브는 절반을 넘으면 눌린 것으로 봅니다). 믹서 스트립에 할당된 페이더나 노브는 음량이나 팬을 움직입니다. ShuttlePRO의 셔틀 링은 프로필 속도로 재생하고 조그 휠은 프레임 단위로 이동합니다. 무한 인코더와 컨트롤러로의 응답(램프, 모터 페이더)은 이후 버전에 옵니다.
+	First message (ms)	첫 메시지(ms)
+	Silence (ms)	무음(ms)
+	Waiting for the control to settle…	컨트롤이 멈추기를 기다리는 중…
+	Type: {hint}. Confirm this assignment.	유형: {hint}. 이 할당을 확인하세요.
+	That control is already assigned. Confirm replaces it.	그 컨트롤은 이미 할당되어 있습니다. 확인하면 바뀝니다.
+	Learn timed out.	학습 시간이 초과되었습니다.
+	Confirm	확인
+	Reject	거부
+	Shows every MIDI message from the controllers as it arrives, to check that a controller sends and what it sends. MIDI Clock, Active Sensing and MIDI Time Code are left out.	컨트롤러의 MIDI 메시지가 도착하는 대로 보여, 보내는지와 내용을 확인합니다. MIDI 클록, Active Sensing, MIDI 타임코드는 빼 둡니다.
+	Pick a command (or a mixer strip for a fader or knob), press Learn, then press the button or move the control past half way. Confirm keeps the assignment. OK saves the assignments.	명령을 고르고(페이더나 노브는 믹서 스트립), 학습을 누른 뒤 버튼을 누르거나 컨트롤을 절반 너머로 움직이세요. 확인이 할당을 남깁니다. 확인(OK)이 저장합니다.
+	All devices	모든 장치
+	Builtin: {name}	기본 제공: {name}
+	Capturing	캡처 중
+	Confirmed	확인됨
+	Conflict	충돌
+	Connect a MIDI controller or a ShuttlePRO to edit its profile.	프로필을 편집하려면 MIDI 컨트롤러나 ShuttlePRO를 연결하십시오.
+	Control Surfaces…	컨트롤 서피스…
+	Filter messages	메시지 필터
+	Idle	대기
+	Kernel dropped: {count}	커널이 버림: {count}
+	Learn Assignments…	학습 할당…
+	Load profile	프로필 불러오기
+	MIDI Monitor…	MIDI 모니터…
+	Mute shuttle sound	셔틀 소리 끄기
+	No conflicts.	충돌 없음.
+	No profile warnings.	프로필 경고 없음.
+	No project profile is stored.	저장된 프로젝트 프로필이 없습니다.
+	OK writes the preferences and the profile file together.	확인은 환경설정과 프로필 파일을 함께 기록합니다.
+	Online	온라인
+	Pending	보류
+	Pickup (14-bit)	픽업(14비트)
+	Pickup (7-bit)	픽업(7비트)
+	Profile warnings	프로필 경고
+	Rejected	거부됨
+	Show Active Sensing	Active Sensing 표시
+	Show MIDI Clock	MIDI 클록 표시
+	Show MIDI Time Code	MIDI 타임코드 표시
+	The profile file is damaged. Preferences and the built-in profile stay in use.	프로필 파일이 손상되었습니다. 환경설정과 기본 프로필을 계속 사용합니다.
+	Timed out	시간 초과
+	Type: {hint}	유형: {hint}
+	User profile file	사용자 프로필 파일
+	{received} received, {dispatched} dispatched, {coalesced} coalesced, {stalls} stalls, {errors} errors	{received} 수신, {dispatched} 전달, {coalesced} 병합, {stalls} 정체, {errors} 오류
+
+# Control Surfaces settings page (CS-1, #1187)
 	Looking for devices…	장치를 찾는 중…
 	No MIDI controller or jog/shuttle device was found. Connect one and press Refresh.	MIDI 컨트롤러나 조그/셔틀 장치를 찾을 수 없습니다. 장치를 연결한 뒤 새로 고침을 누르세요.
-	Control Surfaces	컨트롤 서피스
 	Use control surfaces (MIDI controllers, jog/shuttle devices)	컨트롤 서피스 사용(MIDI 컨트롤러, 조그/셔틀 장치)
 	Mapping controls to commands, MIDI Learn and the MIDI Monitor come in a later version; the choices here are remembered until then.	컨트롤을 명령에 할당하는 기능, MIDI Learn, MIDI 모니터는 이후 버전에서 제공됩니다. 그때까지 여기서 고른 설정은 기억됩니다.
 	CFA4 ShuttlePRO	CFA4 ShuttlePRO
 	Kdenlive-style ShuttlePRO	Kdenlive 스타일 ShuttlePRO
 	Generic MIDI	일반 MIDI
-
 # LTC timecode read from clip audio (TC-7, #1285)
 	Read from LTC Audio	LTC 오디오에서 읽기
 	Find SMPTE LTC on the clip's audio and use the timecode it gives the first frame	클립 오디오에서 SMPTE LTC를 찾아 첫 프레임에 해당하는 타임코드를 사용합니다
 	Read Timecode from LTC Audio	LTC 오디오에서 타임코드 읽기
 # Credits: voices (the Voice column) in the block's properties (F10-C16)
 	Voices	목소리
-
 # Timecode sync varispeed and user bits (TC-8, #1308)
 	Varispeed: adjust the playback speed instead of seeking	배리스피드: 이동하는 대신 재생 속도를 조정
 	User bits	사용자 비트
+# AS-11 programme parts and AS-10 metadata (G2, #1371, #1375)
+	{tc}  Segmentation	{tc}  세그먼테이션
+	Marker Type	마커 유형
+	Chapter	챕터
+	Segmentation (AS-11 programme part)	세그먼테이션(AS-11 프로그램 파트)
+	AS-10	AS-10
+# AT9/AT3 converter (Tools ▸ Audio Tools, AT3-2)
+	AT9/AT3 Converter	AT9/AT3 변환기
+	AT9/AT3 Converter…	AT9/AT3 변환기…
+	Files to convert:	변환할 파일:
+	Add Files	파일 추가
+	Add Files…	파일 추가…
+	Convert to:	변환 형식:
+	Bit rate:	비트레이트:
+	Sample format:	샘플 형식:
+	Output folder:	출력 폴더:
+	Output Folder	출력 폴더
+	Next to each source file	각 원본 파일 옆
+	AT9 and ATRAC3plus files convert to WAV; encoding AT9, ATRAC3plus and MP3 is not available yet.	AT9 및 ATRAC3plus 파일은 WAV로 변환됩니다. AT9, ATRAC3plus, MP3 인코딩은 아직 지원되지 않습니다.
+	Convert	변환
+	Add the files to convert first.	먼저 변환할 파일을 추가하세요.
+	Done: {n} file(s) converted.	완료: 파일 {n}개를 변환했습니다.
+	Converting {name}…	{name} 변환 중…
+	Stopping…	중지하는 중…
+	AT3 (ATRAC3, PSP / PS3)	AT3 (ATRAC3, PSP / PS3)
+	WAV (PCM)	WAV (PCM)
+	132 kbit/s (LP2)	132 kbit/s (LP2)
+	105 kbit/s	105 kbit/s
+	66 kbit/s (LP4, joint stereo)	66 kbit/s (LP4, 조인트 스테레오)
+	16-bit	16비트
+	24-bit	24비트
+	32-bit float	32비트 부동 소수점
+
+# Datamosh transition (Grunge & Distort, DM1, #1409)
+	Datamosh	데이터모시
+	Residual	잔차
+	Motion Boost	모션 증폭
+	Recovery	복구
+	Encode Resolution	인코딩 해상도
+	Half	1/2
+	Quarter	1/4
+
+# Recent effects, per-channel waveform, white balance selector (SC-2/SC-3/SC-4, #1419 #1420 #1421)
+	Apply a recently used effect to the selected clips	최근 사용한 효과를 선택한 클립에 적용
+	Disable all effects	모든 효과 끄기
+	Enable all effects	모든 효과 켜기
+	No recent effects	최근 효과 없음
+	Recent effects	최근 효과
+	Switch every effect of the selected clips off	선택한 클립의 모든 효과를 끕니다
+	Switch every effect of the selected clips on	선택한 클립의 모든 효과를 켭니다
+	Merged	병합
+	Per Channel	채널별
+	Channel Zoom	채널 확대/축소
+	White Balance Selector (click a neutral point in the Program monitor; Esc cancels)	화이트 밸런스 선택기(프로그램 모니터의 중립 지점을 클릭, Esc로 취소)

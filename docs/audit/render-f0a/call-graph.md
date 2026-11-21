@@ -135,8 +135,8 @@ graph LR
 | `cfa4-cli/serve_graphics.rs` | `cfa4-engine` | `Session` |
 | `cfa4-cli/serve_graphics.rs` | `cfa4-project` | `ClipId`, `graphic`, `gtemplate` |
 | `cfa4-cli/serve_graphics.rs` | `cfa4-time` | `Tick` |
-| `cfa4-cli/serve_live.rs` | `cfa4-engine` | `Session`, `studio` |
-| `cfa4-cli/serve_live.rs` | `cfa4-project` | `LiveStudio`, `StudioScene` |
+| `cfa4-cli/serve_live.rs` | `cfa4-engine` | `Session`, `live`, `studio` |
+| `cfa4-cli/serve_live.rs` | `cfa4-project` | `SourceKind` |
 | `cfa4-cli/serve_lumetri.rs` | `cfa4-engine` | `Session` |
 | `cfa4-cli/serve_lumetri.rs` | `cfa4-project` | `ClipId`, `Param` |
 | `cfa4-cli/serve_lumetri.rs` | `cfa4-render` | `effects`, `lumetri_presets`, `luts` |
@@ -159,7 +159,7 @@ graph LR
 | `cfa4-cli/serve_scopes.rs` | `cfa4-engine` | `Session`, `scopes` |
 | `cfa4-cli/serve_scopes.rs` | `cfa4-time` | `Tick` |
 | `cfa4-cli/serve_shuttle.rs` | `cfa4-audio-dsp` | `AudioEffect` |
-| `cfa4-cli/serve_surface.rs` | `cfa4-engine` | `Session`, `control_surfaces` |
+| `cfa4-cli/serve_surface.rs` | `cfa4-engine` | `EngineError`, `Session`, `control_surfaces`, `surface_runtime` |
 | `cfa4-cli/serve_tcsync.rs` | `cfa4-engine` | `Session` |
 | `cfa4-cli/serve_tcsync.rs` | `cfa4-time` | `FrameRate`, `Tick` |
 | `cfa4-cli/serve_text.rs` | `cfa4-engine` | `Session`, `transcript` |
@@ -169,9 +169,14 @@ graph LR
 | `cfa4-cli/settings_cmd.rs` | `cfa4-engine` | `Session`, `autosave` |
 | `cfa4-cli/settings_cmd.rs` | `cfa4-media` | `backend_enabled`, `set_backend_enabled` |
 | `cfa4-cli/settings_cmd.rs` | `cfa4-route` | `Backend`, `DeviceId`, `Error`, `Preferences`, `catalog`, `coverage`, `probe` |
+| `cfa4-cli/studio_feeds.rs` | `cfa4-media` | `FrameRequest`, `MediaSource` |
+| `cfa4-cli/studio_feeds.rs` | `cfa4-time` | `FrameRate`, `TICKS_PER_SECOND`, `Tick` |
 | `cfa4-engine/aaf_omf.rs` | `cfa4-export` | `ExportSettings`, `Format`, `OutputSink`, `export` |
 | `cfa4-engine/aaf_omf.rs` | `cfa4-project` | `ClipId` |
 | `cfa4-engine/aaf_omf.rs` | `cfa4-time` | `Tick` |
+| `cfa4-engine/atrac_convert.rs` | `cfa4-export` | `Progress`, `Report`, `write_wav` |
+| `cfa4-engine/atrac_convert.rs` | `cfa4-media` | `open_path` |
+| `cfa4-engine/atrac_convert.rs` | `cfa4-time` | `TICKS_PER_SECOND` |
 | `cfa4-engine/autosave.rs` | `cfa4-project` | `AudioType`, `EssentialSound`, `Project` |
 | `cfa4-engine/beat_markers.rs` | `cfa4-audio-dsp` | `remix` |
 | `cfa4-engine/beat_markers.rs` | `cfa4-project` | `ClipId`, `TrackItem` |
@@ -227,7 +232,7 @@ graph LR
 | `cfa4-engine/essential_sound.rs` | `cfa4-project` | `ClipId`, `essential` |
 | `cfa4-engine/essential_sound.rs` | `cfa4-render` | `SourceProvider`, `audio` |
 | `cfa4-engine/essential_sound.rs` | `cfa4-time` | `Tick` |
-| `cfa4-engine/export_tools.rs` | `cfa4-export` | `BitrateMode`, `DCP_CONTENT_KINDS`, `DcpAspect`, `DcpImmersive`, `DcpResolution`, `Exporter`, `IMF_CONTENT_KINDS`, `IabFallback`, `Mpeg2Container`, `OutputSink`, `Progress`, `Report`, `available`, `builtin_presets`, `dcp_content_kind`, `dcp_isdcf_date`, `dcp_isdcf_name`, `dcp_language`, `dcp_subtitle_language`, `export`, `export_range`, `frame_span`, `imf_content_kind`, `presets`, `probe_iab_source`, `stepped`, `unavailable_reason`, `validate_range` |
+| `cfa4-engine/export_tools.rs` | `cfa4-export` | `BitrateMode`, `DCP_CONTENT_KINDS`, `DcpAspect`, `DcpImmersive`, `DcpResolution`, `Exporter`, `IMF_CONTENT_KINDS`, `IMF_TIMED_TEXT_KINDS`, `IabFallback`, `Mpeg2Container`, `OutputSink`, `Progress`, `Report`, `available`, `builtin_presets`, `dcp_content_kind`, `dcp_isdcf_date`, `dcp_isdcf_name`, `dcp_language`, `dcp_subtitle_language`, `export`, `export_range`, `frame_span`, `imf_content_kind`, `presets`, `probe_iab_source`, `stepped`, `unavailable_reason`, `validate_range` |
 | `cfa4-engine/export_tools.rs` | `cfa4-project` | `ItemId`, `Sequence`, `legacy` |
 | `cfa4-engine/export_tools.rs` | `cfa4-qc` | `QcProfile` |
 | `cfa4-engine/export_tools.rs` | `cfa4-time` | `FrameRate` |
@@ -371,6 +376,7 @@ graph LR
 | `cfa4-engine/sequence_tools.rs` | `cfa4-time` | `FrameRate` |
 | `cfa4-engine/settings.rs` | `cfa4-media` | `MediaKind`, `backend_enabled`, `registered_fallbacks`, `set_backend_enabled` |
 | `cfa4-engine/settings.rs` | `cfa4-project` | `Label`, `Param`, `ParamValue`, `TrackItem` |
+| `cfa4-engine/settings.rs` | `cfa4-render` | `vfx` |
 | `cfa4-engine/settings.rs` | `cfa4-time` | `FrameRate` |
 | `cfa4-engine/shortcuts.rs` | `cfa4-project` | `legacy` |
 | `cfa4-engine/smart_cut.rs` | `cfa4-export` | `audio_copy`, `boundary_reencode`, `smart_cut` |
@@ -513,6 +519,7 @@ graph LR
 | `cfa4-media/lib.rs` | `cfa4-color` | `ColorInfo`, `HdrMetadata` |
 | `cfa4-media/lib.rs` | `cfa4-frame` | `AudioBuffer` |
 | `cfa4-media/lib.rs` | `cfa4-time` | `FrameRate` |
+| `cfa4-media/oma.rs` | `cfa4-time` | `Tick` |
 | `cfa4-media/reader.rs` | `cfa4-time` | `Tick` |
 | `cfa4-media/sequence.rs` | `cfa4-frame` | `AudioBuffer`, `PixelData` |
 | `cfa4-media/sequence.rs` | `cfa4-time` | `FrameRate`, `Tick` |
@@ -557,6 +564,8 @@ graph LR
 | `cfa4-project/mask.rs` | `cfa4-time` | `Tick` |
 | `cfa4-project/mixer.rs` | `cfa4-time` | `Tick` |
 | `cfa4-project/narration.rs` | `cfa4-time` | `Tick` |
+| `cfa4-project/object.rs` | `cfa4-geom` | `Rect` |
+| `cfa4-project/object.rs` | `cfa4-time` | `Tick` |
 | `cfa4-project/transcript.rs` | `cfa4-time` | `Tick` |
 | `cfa4-qc/audio.rs` | `cfa4-audio-dsp` | `loudness` |
 | `cfa4-qc/checks.rs` | `cfa4-color` | `Transfer` |
@@ -601,6 +610,7 @@ graph LR
 | `cfa4-render/graphic_clip.rs` | `cfa4-time` | `FrameRate`, `Tick`, `TimeRange` |
 | `cfa4-render/graphics.rs` | `cfa4-color` | `srgb_to_linear` |
 | `cfa4-render/graphics.rs` | `cfa4-geom` | `Vec2` |
+| `cfa4-render/homography.rs` | `cfa4-geom` | `Affine` |
 | `cfa4-render/image.rs` | `cfa4-color` | `linear_to_srgb_index`, `linear_to_srgb_u8_table` |
 | `cfa4-render/image.rs` | `cfa4-frame` | `linear_premul_to_srgb8` |
 | `cfa4-render/image.rs` | `cfa4-geom` | `Affine`, `Rect` |
@@ -641,6 +651,7 @@ graph LR
 | `cfa4-render/remix.rs` | `cfa4-time` | `Tick` |
 | `cfa4-render/track.rs` | `cfa4-geom` | `Affine` |
 | `cfa4-render/track.rs` | `cfa4-project` | `TrackMethod` |
+| `cfa4-render/trajectories.rs` | `cfa4-geom` | `Affine`, `Vec2` |
 | `cfa4-render/transitions/legacy.rs` | `cfa4-geom` | `Affine` |
 | `cfa4-render/transitions/legacy.rs` | `cfa4-project` | `EffectInstance` |
 | `cfa4-render/transitions/legacy.rs` | `cfa4-time` | `Tick` |
@@ -648,6 +659,9 @@ graph LR
 | `cfa4-render/transitions/mod.rs` | `cfa4-geom` | `Vec2` |
 | `cfa4-render/transitions/mod.rs` | `cfa4-project` | `EffectInstance` |
 | `cfa4-render/transitions/mod.rs` | `cfa4-time` | `Tick` |
+| `cfa4-render/transitions/mosh.rs` | `cfa4-geom` | `Affine` |
+| `cfa4-render/transitions/mosh.rs` | `cfa4-project` | `EffectInstance` |
+| `cfa4-render/transitions/mosh.rs` | `cfa4-time` | `Tick` |
 | `cfa4-render/vfx/auto.rs` | `cfa4-color` | `luma709` |
 | `cfa4-render/vfx/auto.rs` | `cfa4-project` | `EffectInstance` |
 | `cfa4-render/vfx/blur.rs` | `cfa4-color` | `linear_to_srgb` |
@@ -664,6 +678,9 @@ graph LR
 | `cfa4-render/vfx/mod.rs` | `cfa4-geom` | `Affine` |
 | `cfa4-render/vfx/mod.rs` | `cfa4-project` | `EffectInstance`, `ItemKind`, `effect`, `graphic` |
 | `cfa4-render/vfx/mod.rs` | `cfa4-time` | `Tick` |
+| `cfa4-render/vfx/perspective.rs` | `cfa4-color` | `linear_to_srgb` |
+| `cfa4-render/vfx/perspective.rs` | `cfa4-media` | `cancel` |
+| `cfa4-render/vfx/perspective.rs` | `cfa4-project` | `EffectInstance` |
 | `cfa4-render/vfx/pixelate.rs` | `cfa4-color` | `WorkingSpace` |
 | `cfa4-render/vfx/pixelate.rs` | `cfa4-project` | `EffectInstance`, `ParamValue`, `effect` |
 | `cfa4-render/vfx/pixelate.rs` | `cfa4-time` | `Tick` |
@@ -732,6 +749,7 @@ graph LR
 | `cfa4-export` | `lib.rs` | `encode_still_with_quality` |
 | `cfa4-export` | `lib.rs` | `encoder_registered` |
 | `cfa4-export` | `lib.rs` | `export` |
+| `cfa4-export` | `lib.rs` | `export_as11_parts` |
 | `cfa4-export` | `lib.rs` | `export_chapters` |
 | `cfa4-export` | `lib.rs` | `export_lock_wait` |
 | `cfa4-export` | `lib.rs` | `export_range` |
@@ -778,13 +796,14 @@ graph LR
 
 ## 4. Nyilvános típusok osztályonként
 
-A többi 569 nyilvános típus („other” osztály) csak a `call-graph.json`-ban szerepel.
+A többi 599 nyilvános típus („other” osztály) csak a `call-graph.json`-ban szerepel.
 
-### Képkocka, kép, pixel (25)
+### Képkocka, kép, pixel (26)
 
 | Crate | Modul | Fajta | Típus |
 |---|---|---|---|
 | `cfa4-audio-dsp` | `channels.rs` | enum | `Layout` |
+| `cfa4-cli` | `serve_surface.rs` | struct | `SurfaceError` |
 | `cfa4-engine` | `control_surfaces.rs` | struct | `ControlSurfacePrefs` |
 | `cfa4-engine` | `keyboard.rs` | struct | `FrameExportTarget` |
 | `cfa4-engine` | `sequence_tools.rs` | struct | `DuplicateFrames` |
@@ -853,7 +872,7 @@ A többi 569 nyilvános típus („other” osztály) csak a `call-graph.json`-b
 | `cfa4-smart-edit` | `media_index.rs` | enum | `DependencyStatus` |
 | `cfa4-testkit` | `fixtures.rs` | enum | `Status` |
 
-### Hang (41)
+### Hang (42)
 
 | Crate | Modul | Fajta | Típus |
 |---|---|---|---|
@@ -896,6 +915,7 @@ A többi 569 nyilvános típus („other” osztály) csak a `call-graph.json`-b
 | `cfa4-project` | `lib.rs` | enum | `AudioChannels` |
 | `cfa4-project` | `mixer.rs` | struct | `MixerStrip` |
 | `cfa4-project` | `multicam.rs` | enum | `MulticamAudio` |
+| `cfa4-project` | `object.rs` | struct | `ObjectSample` |
 | `cfa4-qc` | `audio.rs` | struct | `AudioFacts` |
 | `cfa4-render` | `preview.rs` | struct | `AudioSegment` |
 
@@ -921,7 +941,7 @@ A többi 569 nyilvános típus („other” osztály) csak a `call-graph.json`-b
 | `cfa4-gpu` | `lut.rs` | struct | `GpuLut` |
 | `cfa4-project` | `lib.rs` | struct | `ProjectLut` |
 
-### Render, kompozíció, előnézet, proxy (58)
+### Render, kompozíció, előnézet, proxy (60)
 
 | Crate | Modul | Fajta | Típus |
 |---|---|---|---|
@@ -962,6 +982,7 @@ A többi 569 nyilvános típus („other” osztály) csak a `call-graph.json`-b
 | `cfa4-project` | `lib.rs` | struct | `Transition` |
 | `cfa4-project` | `lib.rs` | enum | `TransitionAlign` |
 | `cfa4-project` | `multicam.rs` | struct | `MulticamSource` |
+| `cfa4-project` | `object.rs` | enum | `ObjectSource` |
 | `cfa4-project` | `studio.rs` | enum | `SourceKind` |
 | `cfa4-project` | `studio.rs` | struct | `SourceTransform` |
 | `cfa4-project` | `studio.rs` | struct | `StudioSource` |
@@ -971,6 +992,7 @@ A többi 569 nyilvános típus („other” osztály) csak a `call-graph.json`-b
 | `cfa4-render` | `lib.rs` | struct | `SourceMap` |
 | `cfa4-render` | `lib.rs` | trait | `SourceProvider` |
 | `cfa4-render` | `plan.rs` | struct | `PlanLayer` |
+| `cfa4-render` | `transitions/mosh.rs` | struct | `MoshSource` |
 | `cfa4-smart-edit` | `capabilities.rs` | struct | `CompositeDecision` |
 | `cfa4-smart-edit` | `copy_planner.rs` | enum | `PlanRefusal` |
 | `cfa4-smart-edit` | `copy_planner.rs` | struct | `SmartCutPlan` |

@@ -4678,35 +4678,151 @@ export.summary	Low	nízká
 	AS-11 Core	AS-11 Core
 	AS-11 Parts	AS-11 části
 	AS-11 UK DPP	AS-11 UK DPP
-
-# Control Surfaces settings page (CS-1, #1187)
-	Devices	Zařízení
-	Use	Použít
-	Device	Zařízení
-	MIDI	MIDI
-	HID jog/shuttle	HID jog/shuttle
-	OSC	OSC
+# Control surfaces (qt-control-surfaces-page, CFA4-CONTROL-SURFACE-001)
 	Connected	Připojeno
-	Not connected	Nepřipojeno
+	Device	Zařízení
+	Devices	Zařízení
 	Disabled	Vypnuto
+	HID jog/shuttle	HID jog/shuttle
+	MIDI	MIDI
+	Not connected	Nepřipojeno
+	OSC	OSC
+	Use	Použít
 	{device} ({port})	{device} ({port})
 	{name}: {error}	{name}: {error}
+# Control surfaces (midi-monitor, CFA4-CONTROL-SURFACE-001)
+	MIDI Monitor	MIDI monitor
+	Press Start Monitor, then move a control.	Stiskněte Spustit monitor a pak pohněte ovládacím prvkem.
+	Start Monitor	Spustit monitor
+	Stop Monitor	Zastavit monitor
+	… {count} messages not shown (too many at once)	… {count} zpráv nezobrazeno (příliš mnoho najednou)
+# Control surfaces (midi-learn, CFA4-CONTROL-SURFACE-001)
+	A control surface asked for {command}, which does not exist.	Ovládací plocha požádala o {command}, který neexistuje.
+	Assignments	Přiřazení
+	Cancel Learn	Zrušit učení
+	Control	Ovládací prvek
+	Learn	Naučit
+	Remove this assignment	Odebrat toto přiřazení
+	{control} runs {command}.	{control} spouští {command}.
+# Control surfaces (shuttlepro, CFA4-CONTROL-SURFACE-001)
+	Button {n}	Tlačítko {n}
+# Control surfaces (continuous-values, CFA4-CONTROL-SURFACE-001)
+	{strip} Pan (knob)	{strip} panoráma (otočný ovladač)
+	{strip} Volume (fader)	{strip} hlasitost (fader)
+# Control surfaces (F1 Learn and profile, CFA4-CONTROL-SURFACE-001)
+	Control Surfaces	Ovládací povrchy
+	Assignments run when a button is pressed (a fader or knob counts as pressed past half way); a fader or knob assigned to a mixer strip moves its volume or pan. A ShuttlePRO's shuttle ring plays at its profile's speeds and its jog wheel steps frame by frame. Endless encoders and feedback to the controller (lights, motor faders) come in a later version.	Přiřazení se spustí stiskem tlačítka (fader nebo knoflík se počítá jako stisknutý za polovinou); fader nebo knoflík přiřazený ke stopě mixu hýbe její hlasitostí nebo panoramou. Kroužek shuttle u ShuttlePRO přehrává rychlostmi profilu a kolečko jog krokne o snímek. Nekonečné enkodéry a odezva do ovladače (kontrolky, motorové fadéry) přijdou v pozdější verzi.
+	First message (ms)	První zpráva (ms)
+	Silence (ms)	Ticho (ms)
+	Waiting for the control to settle…	Čeká se, až se ovladač ustálí…
+	Type: {hint}. Confirm this assignment.	Typ: {hint}. Potvrďte toto přiřazení.
+	That control is already assigned. Confirm replaces it.	Tento ovladač už je přiřazen. Potvrzení ho nahradí.
+	Learn timed out.	Učení vypršelo.
+	Confirm	Potvrdit
+	Reject	Odmítnout
+	Shows every MIDI message from the controllers as it arrives, to check that a controller sends and what it sends. MIDI Clock, Active Sensing and MIDI Time Code are left out.	Ukazuje každou MIDI zprávu z ovladačů hned po příchodu, aby bylo vidět, jestli ovladač vysílá a co. MIDI hodiny, Active Sensing a MIDI časový kód se vynechávají.
+	Pick a command (or a mixer strip for a fader or knob), press Learn, then press the button or move the control past half way. Confirm keeps the assignment. OK saves the assignments.	Vyberte příkaz (nebo stopu mixu pro fader či knoflík), stiskněte Učit, pak tlačítko, nebo posuňte ovladač za polovinu. Potvrzení ponechá přiřazení. OK uloží přiřazení.
+	All devices	Všechna zařízení
+	Builtin: {name}	Vestavěný: {name}
+	Capturing	Snímání
+	Confirmed	Potvrzeno
+	Conflict	Konflikt
+	Connect a MIDI controller or a ShuttlePRO to edit its profile.	Pro úpravu profilu připojte MIDI ovladač nebo ShuttlePRO.
+	Control Surfaces…	Ovládací plochy…
+	Filter messages	Filtrovat zprávy
+	Idle	Nečinný
+	Kernel dropped: {count}	Jádro zahodilo: {count}
+	Learn Assignments…	Učit přiřazení…
+	Load profile	Načíst profil
+	MIDI Monitor…	Monitor MIDI…
+	Mute shuttle sound	Ztlumit zvuk shuttle
+	No conflicts.	Žádné konflikty.
+	No profile warnings.	Žádná varování profilu.
+	No project profile is stored.	Není uložen profil projektu.
+	OK writes the preferences and the profile file together.	OK zapíše předvolby a soubor profilu společně.
+	Online	Online
+	Pending	Čeká
+	Pickup (14-bit)	Zachycení (14 bitů)
+	Pickup (7-bit)	Zachycení (7 bitů)
+	Profile warnings	Varování profilu
+	Rejected	Odmítnuto
+	Show Active Sensing	Zobrazit Active Sensing
+	Show MIDI Clock	Zobrazit MIDI hodiny
+	Show MIDI Time Code	Zobrazit časový kód MIDI
+	The profile file is damaged. Preferences and the built-in profile stay in use.	Soubor profilu je poškozen. Předvolby a vestavěný profil zůstávají v použití.
+	Timed out	Čas vypršel
+	Type: {hint}	Typ: {hint}
+	User profile file	Soubor profilu uživatele
+	{received} received, {dispatched} dispatched, {coalesced} coalesced, {stalls} stalls, {errors} errors	{received} přijato, {dispatched} předáno, {coalesced} sloučeno, {stalls} čekání, {errors} chyb
+
+# Control Surfaces settings page (CS-1, #1187)
 	Looking for devices…	Hledání zařízení…
 	No MIDI controller or jog/shuttle device was found. Connect one and press Refresh.	Nebyl nalezen žádný MIDI ovladač ani zařízení jog/shuttle. Jedno připojte a stiskněte Obnovit.
-	Control Surfaces	Ovládací povrchy
 	Use control surfaces (MIDI controllers, jog/shuttle devices)	Používat ovládací povrchy (MIDI ovladače, zařízení jog/shuttle)
 	Mapping controls to commands, MIDI Learn and the MIDI Monitor come in a later version; the choices here are remembered until then.	Přiřazení ovládacích prvků k příkazům, MIDI Learn a MIDI monitor přijdou v pozdější verzi; volby zde zadané se do té doby zapamatují.
 	CFA4 ShuttlePRO	CFA4 ShuttlePRO
 	Kdenlive-style ShuttlePRO	ShuttlePRO ve stylu Kdenlive
 	Generic MIDI	Obecné MIDI
-
 # LTC timecode read from clip audio (TC-7, #1285)
 	Read from LTC Audio	Načíst ze zvuku LTC
 	Find SMPTE LTC on the clip's audio and use the timecode it gives the first frame	Najít SMPTE LTC ve zvuku klipu a použít časový kód, který dává prvnímu snímku
 	Read Timecode from LTC Audio	Načíst časový kód ze zvuku LTC
 # Credits: voices (the Voice column) in the block's properties (F10-C16)
 	Voices	Hlasy
-
 # Timecode sync varispeed and user bits (TC-8, #1308)
 	Varispeed: adjust the playback speed instead of seeking	Varispeed: upravit rychlost přehrávání místo skoku
 	User bits	Uživatelské bity
+# AS-11 programme parts and AS-10 metadata (G2, #1371, #1375)
+	{tc}  Segmentation	{tc}  Segmentace
+	Marker Type	Typ značky
+	Chapter	Kapitola
+	Segmentation (AS-11 programme part)	Segmentace (část pořadu AS-11)
+	AS-10	AS-10
+# AT9/AT3 converter (Tools ▸ Audio Tools, AT3-2)
+	AT9/AT3 Converter	Převodník AT9/AT3
+	AT9/AT3 Converter…	Převodník AT9/AT3…
+	Files to convert:	Soubory k převodu:
+	Add Files	Přidat soubory
+	Add Files…	Přidat soubory…
+	Convert to:	Převést na:
+	Bit rate:	Datový tok:
+	Sample format:	Formát vzorků:
+	Output folder:	Výstupní složka:
+	Output Folder	Výstupní složka
+	Next to each source file	Vedle každého zdrojového souboru
+	AT9 and ATRAC3plus files convert to WAV; encoding AT9, ATRAC3plus and MP3 is not available yet.	Soubory AT9 a ATRAC3plus se převádějí do WAV; kódování AT9, ATRAC3plus a MP3 zatím není k dispozici.
+	Convert	Převést
+	Add the files to convert first.	Nejprve přidejte soubory k převodu.
+	Done: {n} file(s) converted.	Hotovo: převedeno souborů: {n}.
+	Converting {name}…	Převádí se {name}…
+	Stopping…	Zastavování…
+	AT3 (ATRAC3, PSP / PS3)	AT3 (ATRAC3, PSP / PS3)
+	WAV (PCM)	WAV (PCM)
+	132 kbit/s (LP2)	132 kbit/s (LP2)
+	105 kbit/s	105 kbit/s
+	66 kbit/s (LP4, joint stereo)	66 kbit/s (LP4, joint stereo)
+	16-bit	16bitový
+	24-bit	24bitový
+	32-bit float	32bitový s plovoucí desetinnou čárkou
+
+# Datamosh transition (Grunge & Distort, DM1, #1409)
+	Datamosh	Datamosh
+	Residual	Reziduum
+	Motion Boost	Zesílení pohybu
+	Recovery	Obnova
+	Encode Resolution	Rozlišení kódování
+	Half	Poloviční
+	Quarter	Čtvrtinové
+
+# Recent effects, per-channel waveform, white balance selector (SC-2/SC-3/SC-4, #1419 #1420 #1421)
+	Apply a recently used effect to the selected clips	Použít naposledy použitý efekt na vybrané klipy
+	Disable all effects	Vypnout všechny efekty
+	Enable all effects	Zapnout všechny efekty
+	No recent effects	Žádné nedávné efekty
+	Recent effects	Nedávné efekty
+	Switch every effect of the selected clips off	Vypne každý efekt vybraných klipů
+	Switch every effect of the selected clips on	Zapne každý efekt vybraných klipů
+	Merged	Sloučené
+	Per Channel	Po kanálech
+	Channel Zoom	Zvětšení kanálů
+	White Balance Selector (click a neutral point in the Program monitor; Esc cancels)	Výběr vyvážení bílé (klikněte na neutrální bod v programovém monitoru; Esc ruší)

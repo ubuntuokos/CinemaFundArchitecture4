@@ -4688,35 +4688,151 @@
 	AS-11 Core	AS-11 Core
 	AS-11 Parts	Partes AS-11
 	AS-11 UK DPP	AS-11 UK DPP
-
-# Control Surfaces settings page (CS-1, #1187)
-	Devices	Dispositivos
-	Use	Usar
-	Device	Dispositivo
-	MIDI	MIDI
-	HID jog/shuttle	HID jog/shuttle
-	OSC	OSC
+# Control surfaces (qt-control-surfaces-page, CFA4-CONTROL-SURFACE-001)
 	Connected	Conectado
-	Not connected	Não conectado
+	Device	Dispositivo
+	Devices	Dispositivos
 	Disabled	Desativado
+	MIDI	MIDI
+	Not connected	Não conectado
+	OSC	OSC
+	Use	Usar
 	{device} ({port})	{device} ({port})
 	{name}: {error}	{name}: {error}
+# Control surfaces (midi-monitor, CFA4-CONTROL-SURFACE-001)
+	MIDI Monitor	Monitor MIDI
+	Press Start Monitor, then move a control.	Pressione Iniciar monitor e mova um controle.
+	Start Monitor	Iniciar monitor
+	Stop Monitor	Parar monitor
+	… {count} messages not shown (too many at once)	… {count} mensagens não exibidas (muitas de uma vez)
+# Control surfaces (midi-learn, CFA4-CONTROL-SURFACE-001)
+	A control surface asked for {command}, which does not exist.	Uma superfície de controle pediu {command}, que não existe.
+	Assignments	Atribuições
+	Cancel Learn	Cancelar aprendizado
+	Control	Controle
+	Learn	Aprender
+	Remove this assignment	Remover esta atribuição
+	{control} runs {command}.	{control} executa {command}.
+# Control surfaces (shuttlepro, CFA4-CONTROL-SURFACE-001)
+	Button {n}	Botão {n}
+# Control surfaces (continuous-values, CFA4-CONTROL-SURFACE-001)
+	{strip} Pan (knob)	{strip} pan (botão giratório)
+	{strip} Volume (fader)	{strip} volume (fader)
+# Control surfaces (F1 Learn and profile, CFA4-CONTROL-SURFACE-001)
+	Control Surfaces	Superfícies de controle
+	Assignments run when a button is pressed (a fader or knob counts as pressed past half way); a fader or knob assigned to a mixer strip moves its volume or pan. A ShuttlePRO's shuttle ring plays at its profile's speeds and its jog wheel steps frame by frame. Endless encoders and feedback to the controller (lights, motor faders) come in a later version.	As atribuições disparam ao pressionar um botão (um fader ou knob conta como pressionado depois da metade); um fader ou knob atribuído a um canal do mixer move o volume ou o panorama. O anel shuttle de um ShuttlePRO reproduz nas velocidades do perfil e o jog avança quadro a quadro. Encoders sem fim e o retorno ao controlador (luzes, faders motorizados) vêm numa versão posterior.
+	First message (ms)	Primeira mensagem (ms)
+	Silence (ms)	Silêncio (ms)
+	Waiting for the control to settle…	Aguardando o controle assentar…
+	Type: {hint}. Confirm this assignment.	Tipo: {hint}. Confirme esta atribuição.
+	That control is already assigned. Confirm replaces it.	Esse controle já está atribuído. Confirmar substitui.
+	Learn timed out.	O aprendizado expirou.
+	Confirm	Confirmar
+	Reject	Rejeitar
+	Shows every MIDI message from the controllers as it arrives, to check that a controller sends and what it sends. MIDI Clock, Active Sensing and MIDI Time Code are left out.	Mostra cada mensagem MIDI dos controladores ao chegar, para ver se um controlador envia e o que envia. Clock MIDI, Active Sensing e timecode MIDI ficam de fora.
+	Pick a command (or a mixer strip for a fader or knob), press Learn, then press the button or move the control past half way. Confirm keeps the assignment. OK saves the assignments.	Escolha um comando (ou um canal do mixer para um fader ou knob), pressione Aprender e depois o botão, ou mova o controle além da metade. Confirmar mantém a atribuição. OK salva as atribuições.
+	All devices	Todos os dispositivos
+	Builtin: {name}	Integrado: {name}
+	Capturing	Capturando
+	Confirmed	Confirmado
+	Conflict	Conflito
+	Connect a MIDI controller or a ShuttlePRO to edit its profile.	Ligue um controlador MIDI ou um ShuttlePRO para editar o perfil.
+	Control Surfaces…	Superfícies de controle…
+	Filter messages	Filtrar mensagens
+	Idle	Ocioso
+	Kernel dropped: {count}	Descartados pelo kernel: {count}
+	Learn Assignments…	Aprender atribuições…
+	Load profile	Carregar perfil
+	MIDI Monitor…	Monitor MIDI…
+	Mute shuttle sound	Silenciar o som do shuttle
+	No conflicts.	Não há conflitos.
+	No profile warnings.	Não há avisos de perfil.
+	No project profile is stored.	Nenhum perfil de projeto está gravado.
+	OK writes the preferences and the profile file together.	OK grava as preferências e o arquivo de perfil juntos.
+	Online	Online
+	Pending	Pendente
+	Pickup (14-bit)	Pickup (14 bits)
+	Pickup (7-bit)	Pickup (7 bits)
+	Profile warnings	Avisos de perfil
+	Rejected	Rejeitado
+	Show Active Sensing	Mostrar Active Sensing
+	Show MIDI Clock	Mostrar relógio MIDI
+	Show MIDI Time Code	Mostrar código de tempo MIDI
+	The profile file is damaged. Preferences and the built-in profile stay in use.	O arquivo de perfil está danificado. As preferências e o perfil integrado continuam em uso.
+	Timed out	Tempo esgotado
+	Type: {hint}	Tipo: {hint}
+	User profile file	Arquivo de perfil do usuário
+	{received} received, {dispatched} dispatched, {coalesced} coalesced, {stalls} stalls, {errors} errors	{received} recebidos, {dispatched} despachados, {coalesced} reunidos, {stalls} esperas, {errors} erros
+
+# Control Surfaces settings page (CS-1, #1187)
+	HID jog/shuttle	HID jog/shuttle
 	Looking for devices…	Procurando dispositivos…
 	No MIDI controller or jog/shuttle device was found. Connect one and press Refresh.	Nenhum controlador MIDI ou dispositivo jog/shuttle foi encontrado. Conecte um e clique em Atualizar.
-	Control Surfaces	Superfícies de controle
 	Use control surfaces (MIDI controllers, jog/shuttle devices)	Usar superfícies de controle (controladores MIDI, dispositivos jog/shuttle)
 	Mapping controls to commands, MIDI Learn and the MIDI Monitor come in a later version; the choices here are remembered until then.	O mapeamento de controles para comandos, o MIDI Learn e o Monitor MIDI chegam em uma versão futura; até lá, as escolhas feitas aqui ficam salvas.
 	CFA4 ShuttlePRO	CFA4 ShuttlePRO
 	Kdenlive-style ShuttlePRO	ShuttlePRO no estilo do Kdenlive
 	Generic MIDI	MIDI genérico
-
 # LTC timecode read from clip audio (TC-7, #1285)
 	Read from LTC Audio	Ler do áudio LTC
 	Find SMPTE LTC on the clip's audio and use the timecode it gives the first frame	Procurar SMPTE LTC no áudio do clipe e usar o timecode que ele dá ao primeiro quadro
 	Read Timecode from LTC Audio	Ler timecode do áudio LTC
 # Credits: voices (the Voice column) in the block's properties (F10-C16)
 	Voices	Vozes
-
 # Timecode sync varispeed and user bits (TC-8, #1308)
 	Varispeed: adjust the playback speed instead of seeking	Varispeed: ajustar a velocidade de reprodução em vez de saltar
 	User bits	Bits de usuário
+# AS-11 programme parts and AS-10 metadata (G2, #1371, #1375)
+	{tc}  Segmentation	{tc}  Segmentação
+	Marker Type	Tipo de marcador
+	Chapter	Capítulo
+	Segmentation (AS-11 programme part)	Segmentação (parte de programa AS-11)
+	AS-10	AS-10
+# AT9/AT3 converter (Tools ▸ Audio Tools, AT3-2)
+	AT9/AT3 Converter	Conversor AT9/AT3
+	AT9/AT3 Converter…	Conversor AT9/AT3…
+	Files to convert:	Arquivos a converter:
+	Add Files	Adicionar arquivos
+	Add Files…	Adicionar arquivos…
+	Convert to:	Converter para:
+	Bit rate:	Taxa de bits:
+	Sample format:	Formato de amostra:
+	Output folder:	Pasta de saída:
+	Output Folder	Pasta de saída
+	Next to each source file	Ao lado de cada arquivo de origem
+	AT9 and ATRAC3plus files convert to WAV; encoding AT9, ATRAC3plus and MP3 is not available yet.	Arquivos AT9 e ATRAC3plus são convertidos para WAV; a codificação AT9, ATRAC3plus e MP3 ainda não está disponível.
+	Convert	Converter
+	Add the files to convert first.	Adicione primeiro os arquivos a converter.
+	Done: {n} file(s) converted.	Concluído: {n} arquivo(s) convertido(s).
+	Converting {name}…	Convertendo {name}…
+	Stopping…	Parando…
+	AT3 (ATRAC3, PSP / PS3)	AT3 (ATRAC3, PSP / PS3)
+	WAV (PCM)	WAV (PCM)
+	132 kbit/s (LP2)	132 kbit/s (LP2)
+	105 kbit/s	105 kbit/s
+	66 kbit/s (LP4, joint stereo)	66 kbit/s (LP4, estéreo conjunto)
+	16-bit	16 bits
+	24-bit	24 bits
+	32-bit float	32 bits de ponto flutuante
+
+# Datamosh transition (Grunge & Distort, DM1, #1409)
+	Datamosh	Datamosh
+	Residual	Resíduo
+	Motion Boost	Reforço de movimento
+	Recovery	Recuperação
+	Encode Resolution	Resolução de codificação
+	Half	Metade
+	Quarter	Um quarto
+
+# Recent effects, per-channel waveform, white balance selector (SC-2/SC-3/SC-4, #1419 #1420 #1421)
+	Apply a recently used effect to the selected clips	Aplicar um efeito usado recentemente aos clipes selecionados
+	Disable all effects	Desativar todos os efeitos
+	Enable all effects	Ativar todos os efeitos
+	No recent effects	Nenhum efeito recente
+	Recent effects	Efeitos recentes
+	Switch every effect of the selected clips off	Desativa todos os efeitos dos clipes selecionados
+	Switch every effect of the selected clips on	Ativa todos os efeitos dos clipes selecionados
+	Merged	Mesclado
+	Per Channel	Por canal
+	Channel Zoom	Zoom dos canais
+	White Balance Selector (click a neutral point in the Program monitor; Esc cancels)	Seletor de balanço de branco (clique em um ponto neutro no monitor de programa; Esc cancela)

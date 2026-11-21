@@ -840,8 +840,20 @@ fn video_section(ui: &mut egui::Ui, reg: &mut Reg, s: &mut ExportSettings, t: &T
         }
         Format::DnxHr => {
             row(ui, t, tl!("Profile"), |ui| {
-                let keys = ["lb", "sq", "hq", "hqx"];
-                let labels = ["DNxHR LB", "DNxHR SQ", "DNxHR HQ", "DNxHR HQX (10-bit)"];
+                let keys = ["lb", "sq", "hq", "hqx", "hd1235", "hd1238", "hd1237", "hd1253", "hd1250", "hd1251", "hd1252"];
+                let labels = [
+                    "DNxHR LB",
+                    "DNxHR SQ",
+                    "DNxHR HQ",
+                    "DNxHR HQX (10-bit)",
+                    "DNxHD 1080p 10-bit (CID 1235)",
+                    "DNxHD 1080p 8-bit (CID 1238)",
+                    "DNxHD 1080p 8-bit (CID 1237)",
+                    "DNxHD 1080p 36 (CID 1253)",
+                    "DNxHD 720p 10-bit (CID 1250)",
+                    "DNxHD 720p 8-bit (CID 1251)",
+                    "DNxHD 720p 8-bit (CID 1252)",
+                ];
                 let cur = keys.iter().position(|k| *k == s.dnx_profile).unwrap_or(2);
                 if let Some(i) = combo(ui, reg, "export.video.dnxProfile", labels[cur], &opts(&labels), 220.0) {
                     s.dnx_profile = keys[i].into();

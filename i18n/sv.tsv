@@ -4680,35 +4680,151 @@ export.summary	Low	låg
 	AS-11 Core	AS-11 Core
 	AS-11 Parts	AS-11-delar
 	AS-11 UK DPP	AS-11 UK DPP
-
-# Control Surfaces settings page (CS-1, #1187)
-	Devices	Enheter
-	Use	Använd
-	Device	Enhet
-	MIDI	MIDI
-	HID jog/shuttle	HID jog/shuttle
-	OSC	OSC
+# Control surfaces (qt-control-surfaces-page, CFA4-CONTROL-SURFACE-001)
 	Connected	Ansluten
-	Not connected	Inte ansluten
+	Device	Enhet
+	Devices	Enheter
 	Disabled	Inaktiverad
+	MIDI	MIDI
+	Not connected	Inte ansluten
+	OSC	OSC
+	Use	Använd
 	{device} ({port})	{device} ({port})
 	{name}: {error}	{name}: {error}
+# Control surfaces (midi-monitor, CFA4-CONTROL-SURFACE-001)
+	MIDI Monitor	MIDI-övervakning
+	Press Start Monitor, then move a control.	Tryck på Starta övervakning och rör sedan en kontroll.
+	Start Monitor	Starta övervakning
+	Stop Monitor	Stoppa övervakning
+	… {count} messages not shown (too many at once)	… {count} meddelanden visas inte (för många på en gång)
+# Control surfaces (midi-learn, CFA4-CONTROL-SURFACE-001)
+	A control surface asked for {command}, which does not exist.	En kontrollyta bad om {command}, som inte finns.
+	Assignments	Tilldelningar
+	Cancel Learn	Avbryt inlärning
+	Control	Kontroll
+	Learn	Lär in
+	Remove this assignment	Ta bort denna tilldelning
+	{control} runs {command}.	{control} kör {command}.
+# Control surfaces (shuttlepro, CFA4-CONTROL-SURFACE-001)
+	Button {n}	Knapp {n}
+# Control surfaces (continuous-values, CFA4-CONTROL-SURFACE-001)
+	{strip} Pan (knob)	{strip} panorering (vred)
+	{strip} Volume (fader)	{strip} volym (fader)
+# Control surfaces (F1 Learn and profile, CFA4-CONTROL-SURFACE-001)
+	Control Surfaces	Kontrollytor
+	Assignments run when a button is pressed (a fader or knob counts as pressed past half way); a fader or knob assigned to a mixer strip moves its volume or pan. A ShuttlePRO's shuttle ring plays at its profile's speeds and its jog wheel steps frame by frame. Endless encoders and feedback to the controller (lights, motor faders) come in a later version.	Tilldelningar körs vid en knapptryckning (ett reglage eller en ratt räknas som nedtryckt förbi mitten); ett reglage eller en ratt kopplad till ett mixerkanal flyttar volym eller panorering. Shuttle-ringen på en ShuttlePRO spelar med profilens hastigheter och jog-hjulet stegar bildruta för bildruta. Ändlösa enkodrar och återkoppling till kontrollen (lampor, motorreglage) kommer i en senare version.
+	First message (ms)	Första meddelandet (ms)
+	Silence (ms)	Tystnad (ms)
+	Waiting for the control to settle…	Väntar tills kontrollen lugnar sig…
+	Type: {hint}. Confirm this assignment.	Typ: {hint}. Bekräfta den här tilldelningen.
+	That control is already assigned. Confirm replaces it.	Den kontrollen är redan tilldelad. Bekräfta ersätter den.
+	Learn timed out.	Inlärningen tog för lång tid.
+	Confirm	Bekräfta
+	Reject	Avvisa
+	Shows every MIDI message from the controllers as it arrives, to check that a controller sends and what it sends. MIDI Clock, Active Sensing and MIDI Time Code are left out.	Visar varje MIDI-meddelande från kontrollerna när det kommer, för att se att en kontroll sänder och vad. MIDI-klocka, Active Sensing och MIDI-tidskod lämnas ute.
+	Pick a command (or a mixer strip for a fader or knob), press Learn, then press the button or move the control past half way. Confirm keeps the assignment. OK saves the assignments.	Välj ett kommando (eller en mixerkanal för reglage eller ratt), tryck på Lär, sedan knappen, eller flytta kontrollen förbi mitten. Bekräfta behåller tilldelningen. OK sparar tilldelningarna.
+	All devices	Alla enheter
+	Builtin: {name}	Inbyggd: {name}
+	Capturing	Fångar
+	Confirmed	Bekräftad
+	Conflict	Konflikt
+	Connect a MIDI controller or a ShuttlePRO to edit its profile.	Anslut en MIDI-kontroll eller en ShuttlePRO för att redigera dess profil.
+	Control Surfaces…	Kontrollytor…
+	Filter messages	Filtrera meddelanden
+	Idle	Vilande
+	Kernel dropped: {count}	Kärnan släppte: {count}
+	Learn Assignments…	Lär tilldelningar…
+	Load profile	Läs in profil
+	MIDI Monitor…	MIDI-övervakning…
+	Mute shuttle sound	Tysta shuttle-ljudet
+	No conflicts.	Inga konflikter.
+	No profile warnings.	Inga profilvarningar.
+	No project profile is stored.	Ingen projektprofil är sparad.
+	OK writes the preferences and the profile file together.	OK skriver inställningarna och profilfilen tillsammans.
+	Online	Online
+	Pending	Väntar
+	Pickup (14-bit)	Upptagning (14 bitar)
+	Pickup (7-bit)	Upptagning (7 bitar)
+	Profile warnings	Profilvarningar
+	Rejected	Avvisad
+	Show Active Sensing	Visa Active Sensing
+	Show MIDI Clock	Visa MIDI-klocka
+	Show MIDI Time Code	Visa MIDI-tidskod
+	The profile file is damaged. Preferences and the built-in profile stay in use.	Profilfilen är skadad. Inställningarna och den inbyggda profilen används fortfarande.
+	Timed out	Tiden gick ut
+	Type: {hint}	Typ: {hint}
+	User profile file	Användarprofilfil
+	{received} received, {dispatched} dispatched, {coalesced} coalesced, {stalls} stalls, {errors} errors	{received} mottagna, {dispatched} skickade, {coalesced} sammanslagna, {stalls} väntan, {errors} fel
+
+# Control Surfaces settings page (CS-1, #1187)
+	HID jog/shuttle	HID jog/shuttle
 	Looking for devices…	Söker efter enheter…
 	No MIDI controller or jog/shuttle device was found. Connect one and press Refresh.	Ingen MIDI-kontroller eller jog/shuttle-enhet hittades. Anslut en och tryck på Uppdatera.
-	Control Surfaces	Kontrollytor
 	Use control surfaces (MIDI controllers, jog/shuttle devices)	Använd kontrollytor (MIDI-kontroller, jog/shuttle-enheter)
 	Mapping controls to commands, MIDI Learn and the MIDI Monitor come in a later version; the choices here are remembered until then.	Att koppla kontroller till kommandon, MIDI Learn och MIDI-monitorn kommer i en senare version; valen här sparas tills dess.
 	CFA4 ShuttlePRO	CFA4 ShuttlePRO
 	Kdenlive-style ShuttlePRO	ShuttlePRO i Kdenlive-stil
 	Generic MIDI	Allmän MIDI
-
 # LTC timecode read from clip audio (TC-7, #1285)
 	Read from LTC Audio	Läs från LTC-ljud
 	Find SMPTE LTC on the clip's audio and use the timecode it gives the first frame	Hitta SMPTE LTC i klippets ljud och använd den tidkod som det ger den första bildrutan
 	Read Timecode from LTC Audio	Läs tidkod från LTC-ljud
 # Credits: voices (the Voice column) in the block's properties (F10-C16)
 	Voices	Röster
-
 # Timecode sync varispeed and user bits (TC-8, #1308)
 	Varispeed: adjust the playback speed instead of seeking	Varispeed: justera uppspelningshastigheten i stället för att hoppa
 	User bits	Användarbitar
+# AS-11 programme parts and AS-10 metadata (G2, #1371, #1375)
+	{tc}  Segmentation	{tc}  Segmentering
+	Marker Type	Markörtyp
+	Chapter	Kapitel
+	Segmentation (AS-11 programme part)	Segmentering (AS-11-programdel)
+	AS-10	AS-10
+# AT9/AT3 converter (Tools ▸ Audio Tools, AT3-2)
+	AT9/AT3 Converter	AT9/AT3-konverterare
+	AT9/AT3 Converter…	AT9/AT3-konverterare…
+	Files to convert:	Filer att konvertera:
+	Add Files	Lägg till filer
+	Add Files…	Lägg till filer…
+	Convert to:	Konvertera till:
+	Bit rate:	Bithastighet:
+	Sample format:	Samplingsformat:
+	Output folder:	Utdatamapp:
+	Output Folder	Utdatamapp
+	Next to each source file	Bredvid varje källfil
+	AT9 and ATRAC3plus files convert to WAV; encoding AT9, ATRAC3plus and MP3 is not available yet.	AT9- och ATRAC3plus-filer konverteras till WAV; kodning till AT9, ATRAC3plus och MP3 är inte tillgänglig ännu.
+	Convert	Konvertera
+	Add the files to convert first.	Lägg först till filerna som ska konverteras.
+	Done: {n} file(s) converted.	Klart: {n} fil(er) konverterade.
+	Converting {name}…	Konverterar {name}…
+	Stopping…	Stoppar…
+	AT3 (ATRAC3, PSP / PS3)	AT3 (ATRAC3, PSP / PS3)
+	WAV (PCM)	WAV (PCM)
+	132 kbit/s (LP2)	132 kbit/s (LP2)
+	105 kbit/s	105 kbit/s
+	66 kbit/s (LP4, joint stereo)	66 kbit/s (LP4, joint stereo)
+	16-bit	16 bitar
+	24-bit	24 bitar
+	32-bit float	32-bitars flyttal
+
+# Datamosh transition (Grunge & Distort, DM1, #1409)
+	Datamosh	Datamosh
+	Residual	Residual
+	Motion Boost	Rörelseförstärkning
+	Recovery	Återhämtning
+	Encode Resolution	Kodningsupplösning
+	Half	Halv
+	Quarter	Fjärdedel
+
+# Recent effects, per-channel waveform, white balance selector (SC-2/SC-3/SC-4, #1419 #1420 #1421)
+	Apply a recently used effect to the selected clips	Använd en nyligen använd effekt på de valda klippen
+	Disable all effects	Stäng av alla effekter
+	Enable all effects	Slå på alla effekter
+	No recent effects	Inga senaste effekter
+	Recent effects	Senaste effekter
+	Switch every effect of the selected clips off	Stänger av varje effekt på de valda klippen
+	Switch every effect of the selected clips on	Slår på varje effekt på de valda klippen
+	Merged	Sammanslagen
+	Per Channel	Per kanal
+	Channel Zoom	Kanalzoom
+	White Balance Selector (click a neutral point in the Program monitor; Esc cancels)	Vitbalansväljare (klicka på en neutral punkt i programmonitorn; Esc avbryter)

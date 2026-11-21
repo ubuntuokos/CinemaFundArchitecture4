@@ -4680,35 +4680,151 @@ export.summary	Low	төмен
 	AS-11 Core	AS-11 Core
 	AS-11 Parts	AS-11 бөліктері
 	AS-11 UK DPP	AS-11 UK DPP
-
-# Control Surfaces settings page (CS-1, #1187)
-	Devices	Құрылғылар
-	Use	Пайдалану
-	Device	Құрылғы
-	MIDI	MIDI
-	HID jog/shuttle	HID jog/shuttle
-	OSC	OSC
+# Control surfaces (qt-control-surfaces-page, CFA4-CONTROL-SURFACE-001)
 	Connected	Қосылған
-	Not connected	Қосылмаған
+	Device	Құрылғы
+	Devices	Құрылғылар
 	Disabled	Өшірілген
+	HID jog/shuttle	HID jog/shuttle
+	MIDI	MIDI
+	Not connected	Қосылмаған
+	OSC	OSC
+	Use	Пайдалану
 	{device} ({port})	{device} ({port})
 	{name}: {error}	{name}: {error}
+# Control surfaces (midi-monitor, CFA4-CONTROL-SURFACE-001)
+	MIDI Monitor	MIDI мониторы
+	Press Start Monitor, then move a control.	«Мониторды бастау» батырмасын басып, басқару элементін қозғаңыз.
+	Start Monitor	Мониторды бастау
+	Stop Monitor	Мониторды тоқтату
+	… {count} messages not shown (too many at once)	… {count} хабар көрсетілмеді (бір мезгілде тым көп)
+# Control surfaces (midi-learn, CFA4-CONTROL-SURFACE-001)
+	A control surface asked for {command}, which does not exist.	Басқару беті жоқ {command} командасын сұрады.
+	Assignments	Тағайындаулар
+	Cancel Learn	Үйренуді болдырмау
+	Control	Басқару элементі
+	Learn	Үйрену
+	Remove this assignment	Бұл тағайындауды өшіру
+	{control} runs {command}.	{control} {command} іске қосады.
+# Control surfaces (shuttlepro, CFA4-CONTROL-SURFACE-001)
+	Button {n}	{n}-түйме
+# Control surfaces (continuous-values, CFA4-CONTROL-SURFACE-001)
+	{strip} Pan (knob)	{strip} панорама (тұтқа)
+	{strip} Volume (fader)	{strip} дыбыс деңгейі (фейдер)
+# Control surfaces (F1 Learn and profile, CFA4-CONTROL-SURFACE-001)
+	Control Surfaces	Басқару беттері
+	Assignments run when a button is pressed (a fader or knob counts as pressed past half way); a fader or knob assigned to a mixer strip moves its volume or pan. A ShuttlePRO's shuttle ring plays at its profile's speeds and its jog wheel steps frame by frame. Endless encoders and feedback to the controller (lights, motor faders) come in a later version.	Тағайындаулар түйме басылғанда орындалады (фейдер не тұтқа жартысынан асқанда басылған саналады); миксер жолағына тағайындалған фейдер не тұтқа дыбыс деңгейін немесе панораманы жылжытады. ShuttlePRO шаттл сақинасы профиль жылдамдығымен ойнатады, jog дөңгелегі кадрлап жылжиды. Шексіз кодтауыштар мен контроллерге жауап (шамдар, моторлы фейдерлер) кейінгі нұсқада келеді.
+	First message (ms)	Бірінші хабар (мс)
+	Silence (ms)	Тыныштық (мс)
+	Waiting for the control to settle…	Басқару тоқтағанын күту…
+	Type: {hint}. Confirm this assignment.	Түрі: {hint}. Осы тағайындауды растаңыз.
+	That control is already assigned. Confirm replaces it.	Бұл басқару бұрын тағайындалған. Растау оны ауыстырады.
+	Learn timed out.	Үйрену уақыты бітті.
+	Confirm	Растау
+	Reject	Қабылдамау
+	Shows every MIDI message from the controllers as it arrives, to check that a controller sends and what it sends. MIDI Clock, Active Sensing and MIDI Time Code are left out.	Контроллерден келген әр MIDI хабарын келген бойда көрсетеді, жіберетінін және не жіберетінін тексеру үшін. MIDI сағаты, Active Sensing және MIDI уақыт коды көрсетілмейді.
+	Pick a command (or a mixer strip for a fader or knob), press Learn, then press the button or move the control past half way. Confirm keeps the assignment. OK saves the assignments.	Пәрменді таңдаңыз (фейдер не тұтқа үшін миксер жолағын), Үйренуді басыңыз, содан түймені басыңыз немесе басқаруды жартысынан асырыңыз. Растау тағайындауды сақтайды. OK жазады.
+	All devices	Барлық құрылғы
+	Builtin: {name}	Кірістірілген: {name}
+	Capturing	Түсіру
+	Confirmed	Расталды
+	Conflict	Қақтығыс
+	Connect a MIDI controller or a ShuttlePRO to edit its profile.	Профильді өңдеу үшін MIDI контроллерін немесе ShuttlePRO құрылғысын қосыңыз.
+	Control Surfaces…	Басқару беттері…
+	Filter messages	Хабарларды сүзу
+	Idle	Бос
+	Kernel dropped: {count}	Ядро тастады: {count}
+	Learn Assignments…	Тағайындауды үйрену…
+	Load profile	Профильді жүктеу
+	MIDI Monitor…	MIDI мониторы…
+	Mute shuttle sound	Shuttle дыбысын өшіру
+	No conflicts.	Қақтығыс жоқ.
+	No profile warnings.	Профиль ескертуі жоқ.
+	No project profile is stored.	Жоба профилі сақталмаған.
+	OK writes the preferences and the profile file together.	OK баптаулар мен профиль файлын бірге жазады.
+	Online	Желіде
+	Pending	Күтуде
+	Pickup (14-bit)	Ілінісу (14 бит)
+	Pickup (7-bit)	Ілінісу (7 бит)
+	Profile warnings	Профиль ескертулері
+	Rejected	Қабылданбады
+	Show Active Sensing	Active Sensing көрсету
+	Show MIDI Clock	MIDI сағатын көрсету
+	Show MIDI Time Code	MIDI уақыт кодын көрсету
+	The profile file is damaged. Preferences and the built-in profile stay in use.	Профиль файлы бүлінген. Баптаулар мен кірістірілген профиль қолданыста қалады.
+	Timed out	Уақыт бітті
+	Type: {hint}	Түрі: {hint}
+	User profile file	Пайдаланушы профилінің файлы
+	{received} received, {dispatched} dispatched, {coalesced} coalesced, {stalls} stalls, {errors} errors	{received} қабылданды, {dispatched} жіберілді, {coalesced} біріктірілді, {stalls} кідіріс, {errors} қате
+
+# Control Surfaces settings page (CS-1, #1187)
 	Looking for devices…	Құрылғылар ізделуде…
 	No MIDI controller or jog/shuttle device was found. Connect one and press Refresh.	MIDI контроллері немесе jog/shuttle құрылғысы табылмады. Біреуін қосып, «Жаңарту» түймесін басыңыз.
-	Control Surfaces	Басқару беттері
 	Use control surfaces (MIDI controllers, jog/shuttle devices)	Басқару беттерін пайдалану (MIDI контроллерлері, jog/shuttle құрылғылары)
 	Mapping controls to commands, MIDI Learn and the MIDI Monitor come in a later version; the choices here are remembered until then.	Басқару элементтерін пәрмендерге байлау, MIDI Learn және MIDI мониторы кейінгі нұсқада келеді; оған дейін мұндағы таңдаулар есте сақталады.
 	CFA4 ShuttlePRO	CFA4 ShuttlePRO
 	Kdenlive-style ShuttlePRO	Kdenlive стиліндегі ShuttlePRO
 	Generic MIDI	Жалпы MIDI
-
 # LTC timecode read from clip audio (TC-7, #1285)
 	Read from LTC Audio	LTC дыбысынан оқу
 	Find SMPTE LTC on the clip's audio and use the timecode it gives the first frame	Клип дыбысынан SMPTE LTC тауып, оның бірінші кадрға беретін уақыт кодын пайдалану
 	Read Timecode from LTC Audio	Уақыт кодын LTC дыбысынан оқу
 # Credits: voices (the Voice column) in the block's properties (F10-C16)
 	Voices	Дауыстар
-
 # Timecode sync varispeed and user bits (TC-8, #1308)
 	Varispeed: adjust the playback speed instead of seeking	Varispeed: секіру орнына ойнату жылдамдығын реттеу
 	User bits	Пайдаланушы биттері
+# AS-11 programme parts and AS-10 metadata (G2, #1371, #1375)
+	{tc}  Segmentation	{tc}  Сегменттеу
+	Marker Type	Маркер түрі
+	Chapter	Тарау
+	Segmentation (AS-11 programme part)	Сегменттеу (AS-11 бағдарлама бөлігі)
+	AS-10	AS-10
+# AT9/AT3 converter (Tools ▸ Audio Tools, AT3-2)
+	AT9/AT3 Converter	AT9/AT3 түрлендіргіші
+	AT9/AT3 Converter…	AT9/AT3 түрлендіргіші…
+	Files to convert:	Түрлендірілетін файлдар:
+	Add Files	Файлдарды қосу
+	Add Files…	Файлдарды қосу…
+	Convert to:	Мынаған түрлендіру:
+	Bit rate:	Бит жылдамдығы:
+	Sample format:	Үлгі пішімі:
+	Output folder:	Шығыс қалтасы:
+	Output Folder	Шығыс қалтасы
+	Next to each source file	Әр бастапқы файлдың жанына
+	AT9 and ATRAC3plus files convert to WAV; encoding AT9, ATRAC3plus and MP3 is not available yet.	AT9 және ATRAC3plus файлдары WAV пішіміне түрлендіріледі; AT9, ATRAC3plus және MP3 кодтауы әзірге қолжетімсіз.
+	Convert	Түрлендіру
+	Add the files to convert first.	Алдымен түрлендірілетін файлдарды қосыңыз.
+	Done: {n} file(s) converted.	Дайын: {n} файл түрлендірілді.
+	Converting {name}…	{name} түрлендірілуде…
+	Stopping…	Тоқтатылуда…
+	AT3 (ATRAC3, PSP / PS3)	AT3 (ATRAC3, PSP / PS3)
+	WAV (PCM)	WAV (PCM)
+	132 kbit/s (LP2)	132 кбит/с (LP2)
+	105 kbit/s	105 кбит/с
+	66 kbit/s (LP4, joint stereo)	66 кбит/с (LP4, joint stereo)
+	16-bit	16 бит
+	24-bit	24 бит
+	32-bit float	32 бит қалқымалы нүкте
+
+# Datamosh transition (Grunge & Distort, DM1, #1409)
+	Datamosh	Datamosh
+	Residual	Қалдық
+	Motion Boost	Қозғалысты күшейту
+	Recovery	Қалпына келу
+	Encode Resolution	Кодтау ажыратымдылығы
+	Half	Жарты
+	Quarter	Ширек
+
+# Recent effects, per-channel waveform, white balance selector (SC-2/SC-3/SC-4, #1419 #1420 #1421)
+	Apply a recently used effect to the selected clips	Соңғы қолданылған эффектті таңдалған клиптерге қолдану
+	Disable all effects	Барлық эффектілерді өшіру
+	Enable all effects	Барлық эффектілерді қосу
+	No recent effects	Соңғы эффектілер жоқ
+	Recent effects	Соңғы эффектілер
+	Switch every effect of the selected clips off	Таңдалған клиптердің әр эффектісін өшіреді
+	Switch every effect of the selected clips on	Таңдалған клиптердің әр эффектісін қосады
+	Merged	Біріктірілген
+	Per Channel	Арналар бойынша
+	Channel Zoom	Арналарды масштабтау
+	White Balance Selector (click a neutral point in the Program monitor; Esc cancels)	Ақ түс балансын таңдау (бағдарлама мониторындағы бейтарап нүктені басыңыз; Esc бас тартады)

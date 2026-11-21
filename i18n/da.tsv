@@ -4680,19 +4680,83 @@ export.summary	Low	lav
 	AS-11 Core	AS-11 Core
 	AS-11 Parts	AS-11-dele
 	AS-11 UK DPP	AS-11 UK DPP
-
-# Control Surfaces settings page (CS-1, #1187)
-	Devices	Enheder
-	Use	Brug
-	Device	Enhed
-	MIDI	MIDI
-	HID jog/shuttle	HID jog/shuttle
-	OSC	OSC
+# Control surfaces (qt-control-surfaces-page, CFA4-CONTROL-SURFACE-001)
 	Connected	Tilsluttet
-	Not connected	Ikke tilsluttet
+	Device	Enhed
+	Devices	Enheder
 	Disabled	Deaktiveret
+	MIDI	MIDI
+	Not connected	Ikke tilsluttet
+	OSC	OSC
+	Use	Brug
 	{device} ({port})	{device} ({port})
 	{name}: {error}	{name}: {error}
+# Control surfaces (midi-monitor, CFA4-CONTROL-SURFACE-001)
+	MIDI Monitor	MIDI-monitor
+	Press Start Monitor, then move a control.	Tryk på Start monitor, og bevæg derefter et betjeningselement.
+	Start Monitor	Start monitor
+	Stop Monitor	Stop monitor
+	… {count} messages not shown (too many at once)	… {count} meddelelser vises ikke (for mange på én gang)
+# Control surfaces (midi-learn, CFA4-CONTROL-SURFACE-001)
+	A control surface asked for {command}, which does not exist.	En kontroloverflade bad om {command}, som ikke findes.
+	Assignments	Tildelinger
+	Cancel Learn	Annuller indlæring
+	Control	Betjeningselement
+	Learn	Indlær
+	Remove this assignment	Fjern denne tildeling
+	{control} runs {command}.	{control} kører {command}.
+# Control surfaces (shuttlepro, CFA4-CONTROL-SURFACE-001)
+	Button {n}	Knap {n}
+# Control surfaces (continuous-values, CFA4-CONTROL-SURFACE-001)
+	{strip} Pan (knob)	{strip} panorering (drejeknap)
+	{strip} Volume (fader)	{strip} lydstyrke (fader)
+# Control surfaces (F1 Learn and profile, CFA4-CONTROL-SURFACE-001)
+	Assignments run when a button is pressed (a fader or knob counts as pressed past half way); a fader or knob assigned to a mixer strip moves its volume or pan. A ShuttlePRO's shuttle ring plays at its profile's speeds and its jog wheel steps frame by frame. Endless encoders and feedback to the controller (lights, motor faders) come in a later version.	Tildelinger kører ved et tryk (en fader eller knap tæller som trykket forbi midten); en fader eller knap tildelt et mixerspor flytter lydstyrke eller panorering. Shuttle-ringen på en ShuttlePRO afspiller med profilens hastigheder, og jog-hjulet træder et billede ad gangen. Endeløse encodere og tilbagemelding til controlleren (lamper, motorfadere) kommer i en senere version.
+	First message (ms)	Første besked (ms)
+	Silence (ms)	Stilhed (ms)
+	Waiting for the control to settle…	Venter på at betjeningen falder til ro…
+	Type: {hint}. Confirm this assignment.	Type: {hint}. Bekræft denne tildeling.
+	That control is already assigned. Confirm replaces it.	Den betjening er allerede tildelt. Bekræft erstatter den.
+	Learn timed out.	Indlæringen udløb.
+	Confirm	Bekræft
+	Reject	Afvis
+	Shows every MIDI message from the controllers as it arrives, to check that a controller sends and what it sends. MIDI Clock, Active Sensing and MIDI Time Code are left out.	Viser hver MIDI-besked fra controllerne, når den kommer, så man kan se, om en controller sender, og hvad. MIDI-ur, Active Sensing og MIDI-tidskode udelades.
+	Pick a command (or a mixer strip for a fader or knob), press Learn, then press the button or move the control past half way. Confirm keeps the assignment. OK saves the assignments.	Vælg en kommando (eller et mixerspor til en fader eller knap), tryk på Lær, derefter knappen, eller flyt betjeningen forbi midten. Bekræft beholder tildelingen. OK gemmer tildelingerne.
+	All devices	Alle enheder
+	Builtin: {name}	Indbygget: {name}
+	Capturing	Optager
+	Confirmed	Bekræftet
+	Conflict	Konflikt
+	Connect a MIDI controller or a ShuttlePRO to edit its profile.	Tilslut en MIDI-controller eller en ShuttlePRO for at redigere dens profil.
+	Control Surfaces…	Kontrolflader…
+	Filter messages	Filtrér beskeder
+	Idle	I ro
+	Kernel dropped: {count}	Kernen kasserede: {count}
+	Learn Assignments…	Lær tildelinger…
+	Load profile	Indlæs profil
+	MIDI Monitor…	MIDI-overvågning…
+	Mute shuttle sound	Slå shuttle-lyd fra
+	No conflicts.	Ingen konflikter.
+	No profile warnings.	Ingen profiladvarsler.
+	No project profile is stored.	Der er ikke gemt en projektprofil.
+	OK writes the preferences and the profile file together.	OK skriver indstillingerne og profilfilen sammen.
+	Online	Online
+	Pending	Afventer
+	Pickup (14-bit)	Opsamling (14-bit)
+	Pickup (7-bit)	Opsamling (7-bit)
+	Profile warnings	Profiladvarsler
+	Rejected	Afvist
+	Show Active Sensing	Vis Active Sensing
+	Show MIDI Clock	Vis MIDI-ur
+	Show MIDI Time Code	Vis MIDI-tidskode
+	The profile file is damaged. Preferences and the built-in profile stay in use.	Profilfilen er beskadiget. Indstillingerne og den indbyggede profil bliver brugt.
+	Timed out	Tiden udløb
+	Type: {hint}	Type: {hint}
+	User profile file	Brugerprofilfil
+	{received} received, {dispatched} dispatched, {coalesced} coalesced, {stalls} stalls, {errors} errors	{received} modtaget, {dispatched} sendt, {coalesced} samlet, {stalls} ventetider, {errors} fejl
+
+# Control Surfaces settings page (CS-1, #1187)
+	HID jog/shuttle	HID jog/shuttle
 	Looking for devices…	Søger efter enheder…
 	No MIDI controller or jog/shuttle device was found. Connect one and press Refresh.	Der blev ikke fundet nogen MIDI-controller eller jog/shuttle-enhed. Tilslut en, og tryk på Opdater.
 	Control Surfaces	Kontrolflader
@@ -4701,14 +4765,66 @@ export.summary	Low	lav
 	CFA4 ShuttlePRO	CFA4 ShuttlePRO
 	Kdenlive-style ShuttlePRO	ShuttlePRO i Kdenlive-stil
 	Generic MIDI	Generisk MIDI
-
 # LTC timecode read from clip audio (TC-7, #1285)
 	Read from LTC Audio	Læs fra LTC-lyd
 	Find SMPTE LTC on the clip's audio and use the timecode it gives the first frame	Find SMPTE LTC i klippets lyd, og brug den tidskode, det giver det første billede
 	Read Timecode from LTC Audio	Læs tidskode fra LTC-lyd
 # Credits: voices (the Voice column) in the block's properties (F10-C16)
 	Voices	Stemmer
-
 # Timecode sync varispeed and user bits (TC-8, #1308)
 	Varispeed: adjust the playback speed instead of seeking	Varispeed: juster afspilningshastigheden i stedet for at springe
 	User bits	Brugerbits
+# AS-11 programme parts and AS-10 metadata (G2, #1371, #1375)
+	{tc}  Segmentation	{tc}  Segmentering
+	Marker Type	Markørtype
+	Chapter	Kapitel
+	Segmentation (AS-11 programme part)	Segmentering (AS-11-programdel)
+	AS-10	AS-10
+# AT9/AT3 converter (Tools ▸ Audio Tools, AT3-2)
+	AT9/AT3 Converter	AT9/AT3-konverter
+	AT9/AT3 Converter…	AT9/AT3-konverter…
+	Files to convert:	Filer, der skal konverteres:
+	Add Files	Tilføj filer
+	Add Files…	Tilføj filer…
+	Convert to:	Konvertér til:
+	Bit rate:	Bithastighed:
+	Sample format:	Sampleformat:
+	Output folder:	Outputmappe:
+	Output Folder	Outputmappe
+	Next to each source file	Ved siden af hver kildefil
+	AT9 and ATRAC3plus files convert to WAV; encoding AT9, ATRAC3plus and MP3 is not available yet.	AT9- og ATRAC3plus-filer konverteres til WAV; kodning til AT9, ATRAC3plus og MP3 er endnu ikke tilgængelig.
+	Convert	Konvertér
+	Add the files to convert first.	Tilføj først de filer, der skal konverteres.
+	Done: {n} file(s) converted.	Færdig: {n} fil(er) konverteret.
+	Converting {name}…	Konverterer {name}…
+	Stopping…	Stopper…
+	AT3 (ATRAC3, PSP / PS3)	AT3 (ATRAC3, PSP / PS3)
+	WAV (PCM)	WAV (PCM)
+	132 kbit/s (LP2)	132 kbit/s (LP2)
+	105 kbit/s	105 kbit/s
+	66 kbit/s (LP4, joint stereo)	66 kbit/s (LP4, joint stereo)
+	16-bit	16 bit
+	24-bit	24 bit
+	32-bit float	32-bit flydende komma
+
+# Datamosh transition (Grunge & Distort, DM1, #1409)
+	Datamosh	Datamosh
+	Residual	Residual
+	Motion Boost	Bevægelsesforstærkning
+	Recovery	Gendannelse
+	Encode Resolution	Kodningsopløsning
+	Half	Halv
+	Quarter	Kvart
+
+# Recent effects, per-channel waveform, white balance selector (SC-2/SC-3/SC-4, #1419 #1420 #1421)
+	Apply a recently used effect to the selected clips	Anvend en nyligt brugt effekt på de valgte klip
+	Disable all effects	Slå alle effekter fra
+	Enable all effects	Slå alle effekter til
+	No recent effects	Ingen nylige effekter
+	Recent effects	Seneste effekter
+	Switch every effect of the selected clips off	Slå alle effekter på de valgte klip fra
+	Switch every effect of the selected clips on	Slå alle effekter på de valgte klip til
+	Merged	Samlet
+	Per Channel	Pr. kanal
+	Channel Zoom	Kanalzoom
+	White Balance Selector (click a neutral point in the Program monitor; Esc cancels)	Hvidbalancevælger (klik på et neutralt punkt i programmonitoren; Esc annullerer)
