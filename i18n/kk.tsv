@@ -4815,6 +4815,10 @@ export.summary	Low	төмен
 	Encode Resolution	Кодтау ажыратымдылығы
 	Half	Жарты
 	Quarter	Ширек
+# Datamosh Bloom (Glitch, DM2)
+	Datamosh Bloom	Datamosh гүлденуі
+	Start Time (seconds)	Басталу уақыты (секунд)
+	Repeats	Қайталаулар
 
 # Recent effects, per-channel waveform, white balance selector (SC-2/SC-3/SC-4, #1419 #1420 #1421)
 	Apply a recently used effect to the selected clips	Соңғы қолданылған эффектті таңдалған клиптерге қолдану

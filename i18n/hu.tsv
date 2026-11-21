@@ -4842,6 +4842,10 @@ export.summary	Low	alacsony
 	Encode Resolution	Kódolási felbontás
 	Half	Fél
 	Quarter	Negyed
+# Datamosh Bloom (Glitch, DM2)
+	Datamosh Bloom	Datamosh-virágzás
+	Start Time (seconds)	Kezdőidő (másodperc)
+	Repeats	Ismétlések
 # SC-4: effect bulk switch and recent effects
 	Enable all effects	Összes effekt bekapcsolása
 	Disable all effects	Összes effekt kikapcsolása
