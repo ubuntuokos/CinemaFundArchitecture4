@@ -171,6 +171,17 @@ fn a_downloader_that_closes_its_output_but_does_not_exit_is_stopped() {
     assert!(start.elapsed() < Duration::from_secs(20), "{:?}", start.elapsed());
 }
 
+#[cfg(unix)]
+#[test]
+fn a_process_left_behind_holding_the_output_does_not_hold_the_download() {
+    let t = tempfile::tempdir().unwrap();
+    // the downloader starts a process that inherits its output, reports done and exits
+    let prog = fake_with(t.path(), "sleep 60 &", &[r#"{"event":"done"}"#], 0, 0);
+    let start = std::time::Instant::now();
+    run_with(Path::new(SH_PATH), &[prog.to_str().unwrap()], &request(t.path()), &mut |_, _, _| true, Duration::from_secs(60)).unwrap();
+    assert!(start.elapsed() < Duration::from_secs(20), "{:?}", start.elapsed());
+}
+
 #[test]
 fn a_missing_program_or_a_bad_request_fails_cleanly() {
     let t = tempfile::tempdir().unwrap();

@@ -315,9 +315,11 @@ fn run_with(program: &Path, extra_args: &[&str], req: &Request, progress: Progre
     }
     // a downloader that closed its output but does not exit is stopped too
     let status = finish(&mut child, LINGER)?;
-    // a reader waiting on the full queue stops when the queue is gone
+    // the reader thread is not waited for: a process the downloader left behind may still hold
+    // the pipe open. It ends when the pipe closes, or at once when it waits on the full queue,
+    // which is gone now.
     drop(rx);
-    let _ = reader.join();
+    drop(reader);
     match outcome {
         Some(Ok(())) if status.success() => Ok(()),
         Some(Err(e)) => {
