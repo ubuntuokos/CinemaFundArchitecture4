@@ -181,6 +181,26 @@ pub(crate) fn ticks(t: Option<i64>, tb: Rational) -> Value {
     t.and_then(|v| MediaTime::new(v, tb).to_tick()).map(|t| json!(t.0)).unwrap_or(Value::Null)
 }
 
+/// `analysis` with the source's complete stream list and chapters added (Media Cutter K13): every
+/// stream the container carries, so a cut that copies only some of them shows what it leaves out.
+pub(crate) fn with_streams(s: &Session, path: &str, mut analysis: Value) -> Value {
+    let reader: Option<cfa4_media::SharedReader> = match s.services.reader(path) {
+        Some(r) => r.ok(),
+        None => s.services.read_file(path).ok().map(|b| std::sync::Arc::new(cfa4_media::reader::MemReader(b.into())) as cfa4_media::SharedReader),
+    };
+    let list = reader.as_deref().and_then(cfa4_codecs::streams::stream_list);
+    match list {
+        Some(Ok(l)) => {
+            let l = l.to_json();
+            analysis["streams"] = l["streams"].clone();
+            analysis["chapters"] = l["chapters"].clone();
+        }
+        Some(Err(e)) => analysis["streamListError"] = json!(e),
+        None => {}
+    }
+    analysis
+}
+
 fn analyze(s: &mut Session, p: &Value) -> Result<Value> {
     let cmd = "export.analyze";
     let (path, view) = source_p(s, p, cmd)?;
@@ -208,7 +228,7 @@ fn analyze(s: &mut Session, p: &Value) -> Result<Value> {
     let registry = Registry::native();
     let cut = registry.smart_cut(stream.codec, src.container, src.container, POLICY);
     let rate = src.rate();
-    Ok(json!({
+    let analysis = json!({
         "path": path,
         "item": view.as_ref().map(|v| v.item.0),
         "container": src.container,
@@ -221,7 +241,8 @@ fn analyze(s: &mut Session, p: &Value) -> Result<Value> {
         "configChanges": stream.config_changes,
         "timestampProblems": stream.timestamp_problems,
         "smartCut": {"allowed": cut.allowed, "blockers": cut.blockers()},
-    }))
+    });
+    Ok(with_streams(s, &path, analysis))
 }
 
 /// The copy guarantee named in `p` (`"guarantee"`, default bit-exact).

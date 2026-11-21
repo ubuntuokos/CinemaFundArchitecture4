@@ -4600,6 +4600,16 @@ export.summary	Low	matala
 	software backend: {reason}	ohjelmistotaustaosa: {reason}
 	Start studio	Käynnistä studio
 	Stop studio	Pysäytä studio
+	Add Studio Scene	Lisää studiokohtaus
+	Live	Suora
+# Credits: title, opening, chapter and lower-third pages filled from a graphics template (F10-C16)
+	Opening Credits	Alkutekstit
+	Chapter Title	Luvun otsikko
+	Lower Third	Nimiplanssi
+	page {page}: graphics template “{template}” was not found; “{used}” is used	sivu {page}: grafiikkamallia “{template}” ei löytynyt; käytetään mallia “{used}”
+	page {page}: graphics template “{template}” has no field for all of the block's text; the rest is left out	sivu {page}: grafiikkamallissa “{template}” ei ole kenttää lohkon kaikelle tekstille; loput jätetään pois
+	page {page}: template field “{control}” → “{part}” is not used (no such text control, or not head, body or tail)	sivu {page}: mallin kenttää “{control}” → “{part}” ei käytetä (tekstiohjainta ei ole, tai se ei ole otsake, runko tai loppu)
+	page {page}: pictures are left out on title, opening, chapter and lower-third pages	sivu {page}: kuvat jätetään pois otsikko-, alkuteksti-, luku- ja nimiplanssisivuilta
 # Auto Color, Auto Contrast, Auto Levels (EffectsSDK review)
 	Auto Color	Automaattinen väri
 	Auto Contrast	Automaattinen kontrasti
@@ -4670,3 +4680,151 @@ export.summary	Low	matala
 	AS-11 Core	AS-11 Core
 	AS-11 Parts	AS-11-osat
 	AS-11 UK DPP	AS-11 UK DPP
+# Control surfaces (qt-control-surfaces-page, CFA4-CONTROL-SURFACE-001)
+	Connected	Yhdistetty
+	Device	Laite
+	Devices	Laitteet
+	MIDI	MIDI
+	Not connected	Ei yhdistetty
+	OSC	OSC
+	Use	Käytä
+	{device} ({port})	{device} ({port})
+	{name}: {error}	{name}: {error}
+# Control surfaces (midi-monitor, CFA4-CONTROL-SURFACE-001)
+	MIDI Monitor	MIDI-valvonta
+	Press Start Monitor, then move a control.	Paina Käynnistä valvonta ja liikuta sitten säädintä.
+	Start Monitor	Käynnistä valvonta
+	Stop Monitor	Pysäytä valvonta
+	… {count} messages not shown (too many at once)	… {count} viestiä jäi näyttämättä (liian monta kerralla)
+# Control surfaces (midi-learn, CFA4-CONTROL-SURFACE-001)
+	A control surface asked for {command}, which does not exist.	Ohjauspinta pyysi komentoa {command}, jota ei ole.
+	Assignments	Määritykset
+	Cancel Learn	Peruuta opettelu
+	Control	Säädin
+	Learn	Opettele
+	Remove this assignment	Poista tämä määritys
+	{control} runs {command}.	{control} suorittaa komennon {command}.
+# Control surfaces (shuttlepro, CFA4-CONTROL-SURFACE-001)
+	Button {n}	Painike {n}
+# Control surfaces (continuous-values, CFA4-CONTROL-SURFACE-001)
+	{strip} Pan (knob)	{strip} panorointi (kiertonuppi)
+	{strip} Volume (fader)	{strip} äänenvoimakkuus (liukusäädin)
+# Control surfaces (F1 Learn and profile, CFA4-CONTROL-SURFACE-001)
+	Control Surfaces	Ohjainpinnat
+	Assignments run when a button is pressed (a fader or knob counts as pressed past half way); a fader or knob assigned to a mixer strip moves its volume or pan. A ShuttlePRO's shuttle ring plays at its profile's speeds and its jog wheel steps frame by frame. Endless encoders and feedback to the controller (lights, motor faders) come in a later version.	Kytkennät käynnistyvät painalluksesta (fader tai nuppi lasketaan painetuksi puolenvälin jälkeen); mikseriraitaan kytketty fader tai nuppi liikuttaa äänenvoimakkuutta tai panorointia. ShuttlePRO:n sukkulakehä toistaa profiilin nopeuksilla ja jog-pyörä siirtyy ruutu kerrallaan. Päättymättömät enkooderit ja palaute ohjaimeen (valot, moottorifaderit) tulevat myöhemmässä versiossa.
+	First message (ms)	Ensimmäinen viesti (ms)
+	Silence (ms)	Hiljaisuus (ms)
+	Waiting for the control to settle…	Odotetaan, että säädin asettuu…
+	Type: {hint}. Confirm this assignment.	Tyyppi: {hint}. Vahvista tämä kytkentä.
+	That control is already assigned. Confirm replaces it.	Tämä säädin on jo kytketty. Vahvistus korvaa sen.
+	Learn timed out.	Oppiminen aikakatkaistiin.
+	Confirm	Vahvista
+	Reject	Hylkää
+	Shows every MIDI message from the controllers as it arrives, to check that a controller sends and what it sends. MIDI Clock, Active Sensing and MIDI Time Code are left out.	Näyttää jokaisen MIDI-viestin ohjaimilta sen saapuessa, jotta nähdään lähettääkö ohjain ja mitä. MIDI-kello, Active Sensing ja MIDI-aikakoodi jätetään pois.
+	Pick a command (or a mixer strip for a fader or knob), press Learn, then press the button or move the control past half way. Confirm keeps the assignment. OK saves the assignments.	Valitse komento (tai mikseriraita faderille tai nupille), paina Opi, sitten painiketta, tai siirrä säädin puolenvälin yli. Vahvistus säilyttää kytkennän. OK tallentaa kytkennät.
+	All devices	Kaikki laitteet
+	Builtin: {name}	Sisäänrakennettu: {name}
+	Capturing	Taltioidaan
+	Confirmed	Vahvistettu
+	Conflict	Ristiriita
+	Connect a MIDI controller or a ShuttlePRO to edit its profile.	Muokkaa profiilia liittämällä MIDI-ohjain tai ShuttlePRO.
+	Control Surfaces…	Ohjauspinnat…
+	Filter messages	Suodata viestit
+	Idle	Jouten
+	Kernel dropped: {count}	Ydin hylkäsi: {count}
+	Learn Assignments…	Opi kytkennät…
+	Load profile	Lataa profiili
+	MIDI Monitor…	MIDI-valvonta…
+	Mute shuttle sound	Vaimenna shuttle-ääni
+	No conflicts.	Ei ristiriitoja.
+	No profile warnings.	Ei profiilivaroituksia.
+	No project profile is stored.	Projektiprofiilia ei ole tallennettu.
+	OK writes the preferences and the profile file together.	OK kirjoittaa asetukset ja profiilitiedoston yhdessä.
+	Online	Linjalla
+	Pending	Odottaa
+	Pickup (14-bit)	Poiminta (14 bittiä)
+	Pickup (7-bit)	Poiminta (7 bittiä)
+	Profile warnings	Profiilivaroitukset
+	Rejected	Hylätty
+	Show Active Sensing	Näytä Active Sensing
+	Show MIDI Clock	Näytä MIDI-kello
+	Show MIDI Time Code	Näytä MIDI-aikakoodi
+	The profile file is damaged. Preferences and the built-in profile stay in use.	Profiilitiedosto on vioittunut. Asetukset ja sisäänrakennettu profiili jäävät käyttöön.
+	Timed out	Aika loppui
+	Type: {hint}	Tyyppi: {hint}
+	User profile file	Käyttäjän profiilitiedosto
+	{received} received, {dispatched} dispatched, {coalesced} coalesced, {stalls} stalls, {errors} errors	{received} vastaanotettu, {dispatched} välitetty, {coalesced} yhdistetty, {stalls} odotukset, {errors} virheet
+
+# Control Surfaces settings page (CS-1, #1187)
+	HID jog/shuttle	HID jog/shuttle
+	Disabled	Poistettu käytöstä
+	Looking for devices…	Etsitään laitteita…
+	No MIDI controller or jog/shuttle device was found. Connect one and press Refresh.	MIDI-ohjainta tai jog/shuttle-laitetta ei löytynyt. Liitä sellainen ja paina Päivitä.
+	Use control surfaces (MIDI controllers, jog/shuttle devices)	Käytä ohjainpintoja (MIDI-ohjaimet, jog/shuttle-laitteet)
+	Mapping controls to commands, MIDI Learn and the MIDI Monitor come in a later version; the choices here are remembered until then.	Säätimien liittäminen komentoihin, MIDI Learn ja MIDI-monitori tulevat myöhemmässä versiossa; tässä tehdyt valinnat muistetaan siihen asti.
+	CFA4 ShuttlePRO	CFA4 ShuttlePRO
+	Kdenlive-style ShuttlePRO	Kdenlive-tyylinen ShuttlePRO
+	Generic MIDI	Yleinen MIDI
+# LTC timecode read from clip audio (TC-7, #1285)
+	Read from LTC Audio	Lue LTC-äänestä
+	Find SMPTE LTC on the clip's audio and use the timecode it gives the first frame	Etsi leikkeen äänestä SMPTE LTC ja käytä aikakoodia, jonka se antaa ensimmäiselle kuvalle
+	Read Timecode from LTC Audio	Lue aikakoodi LTC-äänestä
+# Credits: voices (the Voice column) in the block's properties (F10-C16)
+	Voices	Äänet
+# Timecode sync varispeed and user bits (TC-8, #1308)
+	Varispeed: adjust the playback speed instead of seeking	Varispeed: säädä toistonopeutta hyppäämisen sijaan
+	User bits	Käyttäjäbitit
+# AS-11 programme parts and AS-10 metadata (G2, #1371, #1375)
+	{tc}  Segmentation	{tc}  Segmentointi
+	Marker Type	Merkin tyyppi
+	Chapter	Luku
+	Segmentation (AS-11 programme part)	Segmentointi (AS-11-ohjelmaosa)
+	AS-10	AS-10
+# AT9/AT3 converter (Tools ▸ Audio Tools, AT3-2)
+	AT9/AT3 Converter	AT9/AT3-muunnin
+	AT9/AT3 Converter…	AT9/AT3-muunnin…
+	Files to convert:	Muunnettavat tiedostot:
+	Add Files	Lisää tiedostoja
+	Add Files…	Lisää tiedostoja…
+	Convert to:	Muunna muotoon:
+	Bit rate:	Bittinopeus:
+	Sample format:	Näytemuoto:
+	Output folder:	Tulostekansio:
+	Output Folder	Tulostekansio
+	Next to each source file	Kunkin lähdetiedoston viereen
+	AT9 and ATRAC3plus files convert to WAV; encoding AT9, ATRAC3plus and MP3 is not available yet.	AT9- ja ATRAC3plus-tiedostot muunnetaan WAV-muotoon; AT9-, ATRAC3plus- ja MP3-koodaus ei ole vielä käytettävissä.
+	Convert	Muunna
+	Add the files to convert first.	Lisää ensin muunnettavat tiedostot.
+	Done: {n} file(s) converted.	Valmis: {n} tiedosto(a) muunnettu.
+	Converting {name}…	Muunnetaan {name}…
+	Stopping…	Pysäytetään…
+	AT3 (ATRAC3, PSP / PS3)	AT3 (ATRAC3, PSP / PS3)
+	WAV (PCM)	WAV (PCM)
+	132 kbit/s (LP2)	132 kbit/s (LP2)
+	105 kbit/s	105 kbit/s
+	66 kbit/s (LP4, joint stereo)	66 kbit/s (LP4, joint stereo)
+	16-bit	16-bittinen
+	24-bit	24-bittinen
+	32-bit float	32-bittinen liukuluku
+
+# Datamosh transition (Grunge & Distort, DM1, #1409)
+	Datamosh	Datamosh
+	Residual	Jäännös
+	Motion Boost	Liikkeen vahvistus
+	Recovery	Palautuminen
+	Encode Resolution	Koodaustarkkuus
+	Half	Puolikas
+	Quarter	Neljännes
+
+# Recent effects, per-channel waveform, white balance selector (SC-2/SC-3/SC-4, #1419 #1420 #1421)
+	Apply a recently used effect to the selected clips	Käytä äskettäin käytettyä tehostetta valittuihin klippeihin
+	Disable all effects	Poista kaikki tehosteet käytöstä
+	Enable all effects	Ota kaikki tehosteet käyttöön
+	No recent effects	Ei viimeaikaisia tehosteita
+	Recent effects	Viimeaikaiset tehosteet
+	Switch every effect of the selected clips off	Poistaa valittujen klippien kaikki tehosteet käytöstä
+	Switch every effect of the selected clips on	Ottaa valittujen klippien kaikki tehosteet käyttöön
+	Merged	Yhdistetty
+	Per Channel	Kanavittain
+	Channel Zoom	Kanavien zoom
+	White Balance Selector (click a neutral point in the Program monitor; Esc cancels)	Valkotasapainon valitsin (napsauta neutraalia pistettä ohjelmamonitorissa; Esc peruu)

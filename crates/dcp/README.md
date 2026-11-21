@@ -12,6 +12,7 @@ proposed in [DCP-00](../../docs/audit/DCP-00-CAPABILITY-AUDIT-2026-10-27.md).
 | Stereoscopic picture asset | ST 429-10:2008 | `437-Y/2007/Main-Stereo-Picture-CPL` |
 | Composition metadata asset | ST 429-16:2014 (kept as an extension asset; its fields are listed by name) | n/a |
 | Subtitle document (`subtitle` module, DCP-08) | ST 428-7:2010/2014 `SubtitleReel` (`428-7/{2007,2010,2014}/DCST`) | `DCSubtitle` (no namespace) |
+| ISDCF name (`isdcf` module, DCP-09) | the Digital Cinema Naming Convention claims of a `ContentTitleText` | same |
 | Key Delivery Message (`kdm` module) | ST 430-1:2023 (`430-1/2006/KDM`, ETM `430-3/2006/ETM`) | n/a |
 | Key Delivery Bundle (`kdb` module) | ST 430-9:2008 + Am1:2011 (ustar, `CATALOG` in `429-10/2008/KDMB`) | n/a |
 
@@ -54,7 +55,8 @@ decision 2026-11-13: the engine's `dcp.loadKdm` always refuses `Missing` and `In
 an `Untrusted` KDM only with `allowUnverified`.
 
 `xmldsig::verify` checks an enveloped XML Signature in two steps. First the signed content:
-same-document references (`URI="#id"`, optional enveloped-signature and C14N transforms) with
+same-document references (`URI="#id"`, or `URI=""` for the whole document without comments as
+CPL and PKL signatures use; optional enveloped-signature and C14N transforms) with
 SHA-256 or SHA-1 digests, inclusive Canonical XML 1.0 with or without comments (`c14n`), and the
 RSA PKCS#1 v1.5 (SHA-256 or SHA-1) signature value under the signer certificate's key. A failure
 there is an error. Then the certificate chain in `KeyInfo`, whose failure is

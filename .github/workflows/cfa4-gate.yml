@@ -93,7 +93,7 @@ jobs:
         with:
           persist-credentials: false
       - name: Python
-        uses: actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1 # v6.3.0
+        uses: actions/setup-python@6d4fd22b20465ccc0f7354476588e8df7c9ca0e0 # v7.1.0
         with:
           python-version: "3.13"
       - name: Install Ruff
@@ -125,7 +125,7 @@ jobs:
           sparse-checkout: pyproject.toml
           sparse-checkout-cone-mode: false
       - name: Python
-        uses: actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1 # v6.3.0
+        uses: actions/setup-python@6d4fd22b20465ccc0f7354476588e8df7c9ca0e0 # v7.1.0
         with:
           python-version: "3.13"
       - name: Install the locked dependencies (mypy, and PySide6 for its type stubs)
@@ -148,7 +148,7 @@ jobs:
         with:
           persist-credentials: false
       - name: Python
-        uses: actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1 # v6.3.0
+        uses: actions/setup-python@6d4fd22b20465ccc0f7354476588e8df7c9ca0e0 # v7.1.0
         with:
           python-version: "3.13"
       - name: Install linters

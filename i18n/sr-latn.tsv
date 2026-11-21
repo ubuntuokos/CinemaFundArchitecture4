@@ -4600,6 +4600,16 @@ export.summary	Low	nizak
 	software backend: {reason}	softverska pozadina: {reason}
 	Start studio	Pokreni studio
 	Stop studio	Zaustavi studio
+	Add Studio Scene	Dodaj scenu studija
+	Live	Uživo
+# Credits: title, opening, chapter and lower-third pages filled from a graphics template (F10-C16)
+	Opening Credits	Uvodna špica
+	Chapter Title	Naslov poglavlja
+	Lower Third	Donji natpis
+	page {page}: graphics template “{template}” was not found; “{used}” is used	stranica {page}: grafički šablon „{template}” nije pronađen; koristi se „{used}”
+	page {page}: graphics template “{template}” has no field for all of the block's text; the rest is left out	stranica {page}: grafički šablon „{template}” nema polje za sav tekst bloka; ostatak se izostavlja
+	page {page}: template field “{control}” → “{part}” is not used (no such text control, or not head, body or tail)	stranica {page}: polje šablona „{control}” → „{part}” se ne koristi (nema takve tekstualne kontrole ili nije zaglavlje, telo ili rep)
+	page {page}: pictures are left out on title, opening, chapter and lower-third pages	stranica {page}: slike se izostavljaju na stranicama naslova, uvodne špice, poglavlja i donjeg natpisa
 # Auto Color, Auto Contrast, Auto Levels (EffectsSDK review)
 	Auto Color	Automatska boja
 	Auto Contrast	Automatski kontrast
@@ -4670,3 +4680,151 @@ export.summary	Low	nizak
 	AS-11 Core	AS-11 Core
 	AS-11 Parts	AS-11 delovi
 	AS-11 UK DPP	AS-11 UK DPP
+# Control surfaces (qt-control-surfaces-page, CFA4-CONTROL-SURFACE-001)
+	Connected	Povezano
+	Device	Uređaj
+	Devices	Uređaji
+	Disabled	Onemogućeno
+	HID jog/shuttle	HID jog/shuttle
+	MIDI	MIDI
+	Not connected	Nije povezano
+	OSC	OSC
+	Use	Koristi
+	{device} ({port})	{device} ({port})
+	{name}: {error}	{name}: {error}
+# Control surfaces (midi-monitor, CFA4-CONTROL-SURFACE-001)
+	MIDI Monitor	MIDI monitor
+	Press Start Monitor, then move a control.	Pritisnite „Pokreni monitor“, a zatim pomerite kontrolu.
+	Start Monitor	Pokreni monitor
+	Stop Monitor	Zaustavi monitor
+	… {count} messages not shown (too many at once)	… {count} poruka nije prikazano (previše odjednom)
+# Control surfaces (midi-learn, CFA4-CONTROL-SURFACE-001)
+	A control surface asked for {command}, which does not exist.	Kontrolna površina je zatražila {command}, koja ne postoji.
+	Assignments	Dodeljivanja
+	Cancel Learn	Otkaži učenje
+	Control	Kontrola
+	Learn	Nauči
+	Remove this assignment	Ukloni ovo dodeljivanje
+	{control} runs {command}.	{control} pokreće {command}.
+# Control surfaces (shuttlepro, CFA4-CONTROL-SURFACE-001)
+	Button {n}	Dugme {n}
+# Control surfaces (continuous-values, CFA4-CONTROL-SURFACE-001)
+	{strip} Pan (knob)	{strip} panorama (dugme)
+	{strip} Volume (fader)	{strip} jačina (fejder)
+# Control surfaces (F1 Learn and profile, CFA4-CONTROL-SURFACE-001)
+	Control Surfaces	Kontrolne površine
+	Assignments run when a button is pressed (a fader or knob counts as pressed past half way); a fader or knob assigned to a mixer strip moves its volume or pan. A ShuttlePRO's shuttle ring plays at its profile's speeds and its jog wheel steps frame by frame. Endless encoders and feedback to the controller (lights, motor faders) come in a later version.	Dodele se pokreću pritiskom dugmeta (fejder ili dugme se računa kao pritisnuto posle polovine); fejder ili dugme dodeljeno traci miksera pomera jačinu ili panoramu. Prsten shuttle na ShuttlePRO pušta brzinama profila, a točak jog korača po kadru. Beskonačni enkoderi i odgovor kontroleru (lampice, motorni fejderi) dolaze u kasnijoj verziji.
+	First message (ms)	Prva poruka (ms)
+	Silence (ms)	Tišina (ms)
+	Waiting for the control to settle…	Čeka se da se kontrola smiri…
+	Type: {hint}. Confirm this assignment.	Tip: {hint}. Potvrdite ovu dodelu.
+	That control is already assigned. Confirm replaces it.	Ta kontrola je već dodeljena. Potvrda je zamenjuje.
+	Learn timed out.	Učenje je isteklo.
+	Confirm	Potvrdi
+	Reject	Odbaci
+	Shows every MIDI message from the controllers as it arrives, to check that a controller sends and what it sends. MIDI Clock, Active Sensing and MIDI Time Code are left out.	Prikazuje svaku MIDI poruku sa kontrolera čim stigne, da se vidi da li kontroler šalje i šta. MIDI sat, Active Sensing i MIDI vremenski kod se izostavljaju.
+	Pick a command (or a mixer strip for a fader or knob), press Learn, then press the button or move the control past half way. Confirm keeps the assignment. OK saves the assignments.	Izaberite komandu (ili traku miksera za fejder ili dugme), pritisnite Uči, zatim dugme ili pomerite kontrolu preko polovine. Potvrda čuva dodelu. U redu čuva dodele.
+	All devices	Svi uređaji
+	Builtin: {name}	Ugrađeni: {name}
+	Capturing	Snimanje
+	Confirmed	Potvrđeno
+	Conflict	Sukob
+	Connect a MIDI controller or a ShuttlePRO to edit its profile.	Povežite MIDI kontroler ili ShuttlePRO da biste uredili njegov profil.
+	Control Surfaces…	Kontrolne površine…
+	Filter messages	Filtriraj poruke
+	Idle	Neaktivan
+	Kernel dropped: {count}	Jezgro je odbacilo: {count}
+	Learn Assignments…	Učenje dodela…
+	Load profile	Učitaj profil
+	MIDI Monitor…	MIDI monitor…
+	Mute shuttle sound	Isključi zvuk shuttle-a
+	No conflicts.	Nema sukoba.
+	No profile warnings.	Nema upozorenja profila.
+	No project profile is stored.	Profil projekta nije sačuvan.
+	OK writes the preferences and the profile file together.	U redu upisuje podešavanja i datoteku profila zajedno.
+	Online	Na mreži
+	Pending	Na čekanju
+	Pickup (14-bit)	Hvatanje (14 bita)
+	Pickup (7-bit)	Hvatanje (7 bita)
+	Profile warnings	Upozorenja profila
+	Rejected	Odbijeno
+	Show Active Sensing	Prikaži Active Sensing
+	Show MIDI Clock	Prikaži MIDI sat
+	Show MIDI Time Code	Prikaži MIDI vremenski kod
+	The profile file is damaged. Preferences and the built-in profile stay in use.	Datoteka profila je oštećena. Podešavanja i ugrađeni profil ostaju u upotrebi.
+	Timed out	Vreme je isteklo
+	Type: {hint}	Tip: {hint}
+	User profile file	Datoteka profila korisnika
+	{received} received, {dispatched} dispatched, {coalesced} coalesced, {stalls} stalls, {errors} errors	{received} primljeno, {dispatched} prosleđeno, {coalesced} spojeno, {stalls} čekanja, {errors} grešaka
+
+# Control Surfaces settings page (CS-1, #1187)
+	Looking for devices…	Traženje uređaja…
+	No MIDI controller or jog/shuttle device was found. Connect one and press Refresh.	Nije pronađen nijedan MIDI kontroler ni jog/shuttle uređaj. Priključite jedan i pritisnite Osveži.
+	Use control surfaces (MIDI controllers, jog/shuttle devices)	Koristi kontrolne površine (MIDI kontroleri, jog/shuttle uređaji)
+	Mapping controls to commands, MIDI Learn and the MIDI Monitor come in a later version; the choices here are remembered until then.	Dodela kontrola komandama, MIDI Learn i MIDI monitor dolaze u kasnijoj verziji; do tada se izbori ovde pamte.
+	CFA4 ShuttlePRO	CFA4 ShuttlePRO
+	Kdenlive-style ShuttlePRO	ShuttlePRO u stilu Kdenlive-a
+	Generic MIDI	Opšti MIDI
+# LTC timecode read from clip audio (TC-7, #1285)
+	Read from LTC Audio	Čitaj iz LTC zvuka
+	Find SMPTE LTC on the clip's audio and use the timecode it gives the first frame	Pronađi SMPTE LTC u zvuku klipa i upotrebi vremenski kod koji daje prvom kadru
+	Read Timecode from LTC Audio	Čitaj vremenski kod iz LTC zvuka
+# Credits: voices (the Voice column) in the block's properties (F10-C16)
+	Voices	Glasovi
+# Timecode sync varispeed and user bits (TC-8, #1308)
+	Varispeed: adjust the playback speed instead of seeking	Varispeed: prilagodi brzinu reprodukcije umesto preskakanja
+	User bits	Korisnički bitovi
+# AS-11 programme parts and AS-10 metadata (G2, #1371, #1375)
+	{tc}  Segmentation	{tc}  Segmentacija
+	Marker Type	Tip markera
+	Chapter	Poglavlje
+	Segmentation (AS-11 programme part)	Segmentacija (deo programa AS-11)
+	AS-10	AS-10
+# AT9/AT3 converter (Tools ▸ Audio Tools, AT3-2)
+	AT9/AT3 Converter	Konverter AT9/AT3
+	AT9/AT3 Converter…	Konverter AT9/AT3…
+	Files to convert:	Datoteke za konverziju:
+	Add Files	Dodaj datoteke
+	Add Files…	Dodaj datoteke…
+	Convert to:	Konvertuj u:
+	Bit rate:	Brzina protoka:
+	Sample format:	Format uzoraka:
+	Output folder:	Izlazna fascikla:
+	Output Folder	Izlazna fascikla
+	Next to each source file	Pored svake izvorne datoteke
+	AT9 and ATRAC3plus files convert to WAV; encoding AT9, ATRAC3plus and MP3 is not available yet.	Datoteke AT9 i ATRAC3plus konvertuju se u WAV; kodiranje AT9, ATRAC3plus i MP3 još nije dostupno.
+	Convert	Konvertuj
+	Add the files to convert first.	Prvo dodajte datoteke za konverziju.
+	Done: {n} file(s) converted.	Gotovo: konvertovano datoteka: {n}.
+	Converting {name}…	Konvertovanje {name}…
+	Stopping…	Zaustavljanje…
+	AT3 (ATRAC3, PSP / PS3)	AT3 (ATRAC3, PSP / PS3)
+	WAV (PCM)	WAV (PCM)
+	132 kbit/s (LP2)	132 kbit/s (LP2)
+	105 kbit/s	105 kbit/s
+	66 kbit/s (LP4, joint stereo)	66 kbit/s (LP4, združeni stereo)
+	16-bit	16-bitni
+	24-bit	24-bitni
+	32-bit float	32-bitni pokretni zarez
+
+# Datamosh transition (Grunge & Distort, DM1, #1409)
+	Datamosh	Datamosh
+	Residual	Ostatak
+	Motion Boost	Pojačanje pokreta
+	Recovery	Oporavak
+	Encode Resolution	Rezolucija kodiranja
+	Half	Pola
+	Quarter	Četvrtina
+
+# Recent effects, per-channel waveform, white balance selector (SC-2/SC-3/SC-4, #1419 #1420 #1421)
+	Apply a recently used effect to the selected clips	Primeni nedavno korišćen efekat na izabrane klipove
+	Disable all effects	Isključi sve efekte
+	Enable all effects	Uključi sve efekte
+	No recent effects	Nema nedavnih efekata
+	Recent effects	Nedavni efekti
+	Switch every effect of the selected clips off	Isključuje svaki efekat izabranih klipova
+	Switch every effect of the selected clips on	Uključuje svaki efekat izabranih klipova
+	Merged	Spojeno
+	Per Channel	Po kanalu
+	Channel Zoom	Zumiranje kanala
+	White Balance Selector (click a neutral point in the Program monitor; Esc cancels)	Birač balansa belog (kliknite neutralnu tačku na programskom monitoru; Esc otkazuje)

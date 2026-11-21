@@ -120,6 +120,8 @@ pub enum Input {
     Locate(Observation),
     /// The device stopped with an error.
     Error(String),
+    /// The LTC user bits changed (group 1 in the low nibble).
+    UserBits(u32),
 }
 
 /// The external clock's rate and timecode counting.

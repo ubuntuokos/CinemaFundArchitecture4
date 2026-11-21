@@ -61,7 +61,9 @@ pub use dcp_out::{
     rgba_to_xyz12,
 };
 pub use hls_out::{HlsFiles, SEGMENT_SECONDS as HLS_SEGMENT_SECONDS, hls_files};
-pub use imf_out::{IMF_CONTENT_KINDS, IMF_MAX_SIZE, IMF_RATES, imf_content_kind, imf_profile, imf_rate, rgba_to_rgb10};
+pub use imf_out::{
+    IMF_CONTENT_KINDS, IMF_MAX_SIZE, IMF_RATES, IMF_TIMED_TEXT_KINDS, imf_content_kind, imf_profile, imf_rate, imf_timed_text_sequence, rgba_to_rgb10,
+};
 pub use job::{Exporter, Step, stepped};
 pub use mpeg_out::Mpeg2Container;
 pub use mxf_out::opatom_audio_paths;
@@ -475,6 +477,12 @@ pub struct ExportSettings {
     /// parts and the programme duration are filled in from the parts when not given.
     #[serde(default)]
     pub mxf_as11_ukdpp: String,
+    /// MXF OP1a with MPEG-2 (XDCAM HD): the AMWA AS-10 (MXF for Production) framework in bmx's text
+    /// form, `Name: value` lines (`ShimName: NRK_HD_2012`, `MainTitle: …`; [`cfa4_mxf::as10`],
+    /// [`cfa4_mxf::as11::AS10_ITEMS`]); a shim named in the AS-10 specification is checked against the
+    /// essence. Empty: no AS-10 metadata.
+    #[serde(default)]
+    pub mxf_as10: String,
     /// Container of MPEG-2 exports: `ps`, `ts`, `m2ts` or `es` (empty = from the path's
     /// extension, a program stream unless it is `.ts`, `.m2ts` / `.mts` or `.m2v`).
     #[serde(default)]
@@ -516,10 +524,12 @@ pub struct ExportSettings {
     #[serde(default)]
     pub dcp_language: String,
     /// DCP: write the sequence's first caption track as subtitles (#938): an ST 428-7 subtitle
-    /// reel in an ST 429-5 timed text track file, the CPL's `MainSubtitle`.
+    /// reel in an ST 429-5 timed text track file, the CPL's `MainSubtitle`. IMF (#1234): an
+    /// IMSC1 document in an ST 2067-2 timed text track file, a timed text virtual track of
+    /// [`ExportSettings::imf_timed_text_kind`].
     #[serde(default)]
     pub dcp_subtitles: bool,
-    /// DCP subtitle language, an RFC 5646 tag (empty = [`ExportSettings::dcp_language`]).
+    /// DCP / IMF subtitle language, an RFC 5646 tag (empty = [`ExportSettings::dcp_language`]).
     #[serde(default)]
     pub dcp_subtitle_language: String,
     /// DCP subtitle font: an OpenType / TrueType file embedded in the timed text track file
@@ -533,6 +543,11 @@ pub struct ExportSettings {
     /// [`ExportSettings::dcp_language`].
     #[serde(default)]
     pub imf_content_kind: String,
+    /// IMF timed text kind of the subtitles ([`ExportSettings::dcp_subtitles`] writes them for
+    /// IMF too, as IMSC1 in an ST 2067-2 timed text track file): one of [`IMF_TIMED_TEXT_KINDS`],
+    /// empty = `subtitles`.
+    #[serde(default)]
+    pub imf_timed_text_kind: String,
     /// Encode display-referred SDR (Rec. 709, tone mapped) even when the sequence works in
     /// Rec. 2100 PQ/HLG. Otherwise H.264 and ProRes exports of an HDR sequence are encoded in the
     /// sequence's HDR space and signal it (VUI / `colr` / `mdcv` / `clli` / SEI).
@@ -806,6 +821,7 @@ impl Default for ExportSettings {
             mxf_as11_core: String::new(),
             mxf_as11_segments: String::new(),
             mxf_as11_ukdpp: String::new(),
+            mxf_as10: String::new(),
             mpeg2_container: String::new(),
             mpeg2_422: false,
             mpeg2_quantizer: None,
@@ -822,6 +838,7 @@ impl Default for ExportSettings {
             dcp_subtitle_font: String::new(),
             imf_lossless: false,
             imf_content_kind: String::new(),
+            imf_timed_text_kind: String::new(),
             sdr: false,
             alpha: false,
             exr_compression: ExrCompression::None,
@@ -956,6 +973,12 @@ impl ExportSettings {
                 cfa4_mxf::as11::check_framework_text(&self.mxf_as11_ukdpp, true).map_err(bad)?;
             }
             cfa4_mxf::as11::parse_segments_text(&self.mxf_as11_segments, cfa4_mxf::as11::Clock { start: 0, base: 1000 }).map_err(bad)?;
+        }
+        if !self.mxf_as10.trim().is_empty() {
+            if self.format != Format::MxfOp1a || self.video_format() != Format::Mpeg2 {
+                return Err(ExportError::Unsupported("AS-10 metadata is written in MXF OP1a with MPEG-2 video (XDCAM HD)".into()));
+            }
+            cfa4_mxf::as11::check_as10_text(&self.mxf_as10).map_err(|e| ExportError::Unsupported(format!("AS-10: {e}")))?;
         }
         if self.format.is_mxf() && self.mxf_anc_captions {
             if self.format == Format::MxfOpAtom {
@@ -2064,21 +2087,32 @@ fn prores_factory(format: Format, w: u32, h: u32, rate: FrameRate, s: &ExportSet
     })
 }
 
-/// The DNxHR profile named by [`ExportSettings::dnx_profile`].
+/// The DNxHR or DNxHD profile named by [`ExportSettings::dnx_profile`]: `lb`, `sq`, `hq`,
+/// `hqx`, or a 4:2:2 DNxHD compression ID as `hd1235`, `hd1237`, `hd1238`, `hd1250`, `hd1251`,
+/// `hd1252`, `hd1253` (each codes one raster).
 pub fn dnx_profile(name: &str) -> cfa4_dnx::Profile {
     use cfa4_dnx::Profile;
     match name.to_ascii_lowercase().as_str() {
         "lb" => Profile::Lb,
         "sq" => Profile::Sq,
         "hqx" => Profile::Hqx,
+        "hd1235" => Profile::Hd1235,
+        "hd1237" => Profile::Hd1237,
+        "hd1238" => Profile::Hd1238,
+        "hd1250" => Profile::Hd1250,
+        "hd1251" => Profile::Hd1251,
+        "hd1252" => Profile::Hd1252,
+        "hd1253" => Profile::Hd1253,
         _ => Profile::Hq,
     }
 }
 
-/// DNxHR encoder (RGBA8 or HDR floats → BT.709 / BT.2020 limited-range 4:2:2; 8-bit for
-/// LB/SQ/HQ, 10-bit for HQX).
+/// DNxHR / DNxHD encoder (RGBA8 or HDR floats → BT.709 / BT.2020 limited-range 4:2:2; 8-bit
+/// for LB/SQ/HQ and the 8-bit DNxHD IDs, 10-bit for HQX and CIDs 1235 / 1250). QuickTime calls
+/// DNxHD `AVdn` and DNxHR `AVdh`.
 struct DnxEncoder {
     enc: cfa4_dnx::Encoder,
+    fourcc: [u8; 4],
     w: u32,
     h: u32,
     rate: FrameRate,
@@ -2087,7 +2121,7 @@ struct DnxEncoder {
 
 impl VideoEncoder for DnxEncoder {
     fn sample_entry(&self) -> SampleEntry {
-        let mut e = SampleEntry::dnx(cfa4_isobmff::FourCc(*b"AVdh"), self.w as u16, self.h as u16);
+        let mut e = SampleEntry::dnx(cfa4_isobmff::FourCc(self.fourcc), self.w as u16, self.h as u16);
         self.signal.apply_to(&mut e, true);
         e
     }
@@ -2114,12 +2148,22 @@ impl VideoEncoder for DnxEncoder {
 
 fn dnx_factory(format: Format, w: u32, h: u32, rate: FrameRate, s: &ExportSettings) -> Option<Result<Box<dyn VideoEncoder>>> {
     (format == Format::DnxHr).then(|| {
-        let mut cfg = cfa4_dnx::EncoderConfig::new(dnx_profile(&s.dnx_profile), w, h);
+        let profile = dnx_profile(&s.dnx_profile);
+        if let Some((rw, rh, _)) = profile.hd_raster()
+            && (rw, rh) != (w, h)
+        {
+            return Err(ExportError::Unsupported(format!(
+                "{} codes only {rw}×{rh} pictures, not {w}×{h}: set the output size to {rw}×{rh} or choose a DNxHR profile",
+                profile.name()
+            )));
+        }
+        let fourcc = if profile.hd_raster().is_some() { *b"AVdn" } else { *b"AVdh" };
+        let mut cfg = cfa4_dnx::EncoderConfig::new(profile, w, h);
         if s.signal.primaries == 9 {
             cfg.color_volume = cfa4_dnx::ColorVolume::Bt2020Ncl;
         }
         let enc = cfa4_dnx::Encoder::with_config(cfg).map_err(|e| ExportError::Encode(e.to_string()))?;
-        Ok(Box::new(DnxEncoder { enc, w, h, rate, signal: s.signal }) as Box<dyn VideoEncoder>)
+        Ok(Box::new(DnxEncoder { enc, fourcc, w, h, rate, signal: s.signal }) as Box<dyn VideoEncoder>)
     })
 }
 
@@ -3052,6 +3096,33 @@ pub fn export_chapters(project: &Project, seq: ItemId, settings: &ExportSettings
             cfa4_isobmff::Chapter { start_100ns: u64::try_from(start_100ns).unwrap_or(0), title }
         })
         .collect()
+}
+
+/// AS-11 programme parts of an MXF OP1a export with AS-11 metadata and no parts typed in
+/// (`ExportSettings::mxf_as11_segments` empty): the sequence's segmentation markers with a
+/// duration, cut to `range`, as (start, duration) in frames of `rate` from the first exported
+/// frame, in time order. Empty otherwise.
+pub fn export_as11_parts(project: &Project, seq: ItemId, settings: &ExportSettings, range: TimeRange, rate: FrameRate) -> Vec<(i64, i64)> {
+    if settings.format != Format::MxfOp1a || settings.mxf_as11_core.trim().is_empty() || !settings.mxf_as11_segments.trim().is_empty() {
+        return Vec::new();
+    }
+    let Some(q) = project.sequence(seq) else { return Vec::new() };
+    let start = range.start.0;
+    let end = start.saturating_add(range.duration.0);
+    let frame = |t: i64| rate.frame_at(rate.snap_nearest(Tick(t.saturating_sub(start))));
+    let mut parts: Vec<(i64, i64)> = q
+        .markers
+        .iter()
+        .filter(|m| m.kind == cfa4_project::MarkerKind::Segmentation && m.duration.0 > 0)
+        .filter_map(|m| {
+            let a = m.start.0.max(start);
+            let b = m.start.0.saturating_add(m.duration.0).min(end);
+            let (fa, fb) = (frame(a), frame(b));
+            (fb > fa).then_some((fa, fb - fa))
+        })
+        .collect();
+    parts.sort_unstable();
+    parts
 }
 
 pub fn export_range(project: &Project, seq: ItemId, settings: &ExportSettings) -> Result<TimeRange> {

@@ -27,7 +27,8 @@ only as an external fixture generator and test oracle.
 | CBR padding, VBR, scan-line indices, EOF signature / CRC flag | done |
 | Encoder: DNxHR LB, SQ, HQ (8-bit), HQX (10/12-bit), 444 (10/12-bit); CBR | done |
 | Encoder: DNxHD progressive HD CIDs 1235, 1237, 1238, 1250, 1251, 1252, 1253, 1256 | done (`tests/oracle_encode.rs`: ffmpeg decodes them within ±2 LSB) |
-| Encoder: interlaced and thin-raster DNxHD (1241–1244, 1258–1260), alpha, VBR | not yet |
+| Encoder: interlaced DNxHD 1241, 1242, 1243 (two field coding units, top field first) | done (`tests/oracle_encode.rs`: ffmpeg decodes them within ±2 LSB) |
+| Encoder: thin-raster DNxHD (1244, 1258–1260), alpha, VBR | not yet |
 
 ## API
 
@@ -103,6 +104,10 @@ the prose of §7.3.1.2; we follow the prose (normative text takes precedence).
 - `export::Format::DnxHr` (`file.exportMedia {"format":"dnxhr","dnxProfile":"lb|sq|hq|hqx"}`)
   writes QuickTime `AVdh` + PCM. The Avid-specific `ACLR`/`ADHR` sample-entry atoms are not
   written (ffmpeg and our reader don't need them).
+- The 4:2:2 DNxHD IDs are export profiles too (`"dnxProfile":"hd1235|hd1237|hd1238|hd1250|hd1251|hd1252|hd1253"`),
+  written as QuickTime `AVdn` or in MXF (OP1a / OP-Atom, the ID in the picture coding label).
+  Each codes one raster, so another output size is refused before encoding. CID 1256
+  (RGB 4:4:4) is not offered: the export path feeds the encoder 4:2:2.
 
 ## Accuracy (vs ffmpeg as an external oracle)
 
@@ -141,7 +146,7 @@ lower bounds by a factor of roughly 4–10:
 ## Gaps
 
 - Decode is within IDCT precision of ffmpeg, not bit-exact (see above).
-- Encoder: no DNxHD (HD CIDs), interlaced, alpha or VBR output; no RDO/trellis.
+- Encoder: no thin-raster DNxHD (1244, 1258–1260), alpha or VBR output; no RDO/trellis.
 - CIDs 1256/1260 and alpha decoding are implemented from the standard but have no oracle
   fixtures, because no available encoder produces them.
 - No MXF; DNx in MOV only (via `cfa4-isobmff` / `cfa4-codecs`).

@@ -25,6 +25,7 @@ repository = "https://github.com/ubuntuokos/CinemaFundArchitecture4"
 # internal
 cfa4-time = { path = "crates/time" }
 cfa4-route = { path = "crates/route" }
+cfa4-tasks = { path = "crates/tasks" }
 cfa4-geom = { path = "crates/geom" }
 cfa4-color = { path = "crates/color" }
 cfa4-bitstream = { path = "crates/bitstream" }
@@ -45,6 +46,8 @@ cfa4-truehd = { path = "crates/truehd" }
 cfa4-tcsync = { path = "crates/tcsync" }
 cfa4-surface-catalog = { path = "crates/surface-catalog" }
 cfa4-tcsync-io = { path = "crates/tcsync-io" }
+cfa4-surface-model = { path = "crates/surface-model" }
+cfa4-surface = { path = "crates/surface" }
 cfa4-mpa = { path = "crates/mpa" }
 cfa4-ogg = { path = "crates/ogg" }
 cfa4-h264 = { path = "crates/h264" }
@@ -57,9 +60,14 @@ cfa4-speex = { path = "crates/speex" }
 cfa4-amr = { path = "crates/amr" }
 cfa4-hap = { path = "crates/hap" }
 cfa4-utvideo = { path = "crates/utvideo" }
+cfa4-lagarith = { path = "crates/lagarith" }
+cfa4-magicyuv = { path = "crates/magicyuv" }
 cfa4-huffyuv = { path = "crates/huffyuv" }
 cfa4-ffv1 = { path = "crates/ffv1" }
 cfa4-canopus = { path = "crates/canopus" }
+cfa4-sstp = { path = "crates/sstp" }
+cfa4-evc = { path = "crates/evc" }
+cfa4-cavs = { path = "crates/cavs" }
 cfa4-dirac = { path = "crates/dirac" }
 cfa4-vp9 = { path = "crates/vp9" }
 cfa4-prores = { path = "crates/prores" }
@@ -76,6 +84,12 @@ cfa4-dng = { path = "crates/dng" }
 cfa4-g729 = { path = "crates/g729" }
 cfa4-ilbc = { path = "crates/ilbc" }
 cfa4-tta = { path = "crates/tta" }
+cfa4-shorten = { path = "crates/shorten" }
+cfa4-tak = { path = "crates/tak" }
+cfa4-realvideo = { path = "crates/realvideo" }
+cfa4-realmedia = { path = "crates/realmedia" }
+cfa4-realaudio = { path = "crates/realaudio" }
+cfa4-atracenc = { path = "crates/atracenc" }
 cfa4-musepack = { path = "crates/musepack" }
 cfa4-av1 = { path = "crates/av1" }
 cfa4-av2 = { path = "crates/av2" }
@@ -133,8 +147,9 @@ roxmltree = "0.21"
 aes = "0.9"
 hmac = "0.13"
 sha1 = "0.11"
+sha2 = "0.11"
 rsa = { version = "0.10", default-features = false, features = ["std", "encoding", "pkcs1v15"] }
-base64 = "0.22"
+base64 = "0.23"
 cfa4-docpath = { version = "0.1.0", path = "vendor/cfa4-libs/docpath" }
 
 # ui
@@ -178,7 +193,31 @@ opt-level = 3
 [profile.dev.package.cfa4-tta]
 opt-level = 3
 
+[profile.dev.package.cfa4-shorten]
+opt-level = 3
+
+[profile.dev.package.cfa4-tak]
+opt-level = 3
+
+[profile.dev.package.cfa4-realvideo]
+opt-level = 3
+
+[profile.dev.package.cfa4-realaudio]
+opt-level = 3
+
+[profile.dev.package.cfa4-atracenc]
+opt-level = 3
+
 [profile.dev.package.cfa4-canopus]
+opt-level = 3
+
+[profile.dev.package.cfa4-sstp]
+opt-level = 3
+
+[profile.dev.package.cfa4-cavs]
+opt-level = 3
+
+[profile.dev.package.cfa4-evc]
 opt-level = 3
 
 [profile.dev.package.cfa4-musepack]
@@ -188,6 +227,12 @@ opt-level = 3
 opt-level = 3
 
 [profile.dev.package.cfa4-utvideo]
+opt-level = 3
+
+[profile.dev.package.cfa4-lagarith]
+opt-level = 3
+
+[profile.dev.package.cfa4-magicyuv]
 opt-level = 3
 
 [profile.dev.package."*"]

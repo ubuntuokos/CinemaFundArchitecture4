@@ -637,6 +637,10 @@
 	Video {n}:	Videó {n}:
 	Video:	Videó:
 	{tc}  Chapter	{tc}  Fejezet
+	{tc}  Segmentation	{tc}  Szegmens
+	Marker Type	Jelölő típusa
+	Chapter	Fejezet
+	Segmentation (AS-11 programme part)	Szegmens (AS-11 műsorrész)
 	Media Type	Médiatípus
 	Frame Rate	Képkockasebesség
 	Media Start	Média kezdete
@@ -1244,6 +1248,7 @@
 	End at Cut	Befejezés a vágásnál
 	Custom Start	Egyéni kezdés
 	Eyedropper (pick a color from the Program monitor)	Pipetta (szín a Program monitorról)
+	White Balance Selector (click a neutral point in the Program monitor; Esc cancels)	Fehéregyensúly-választó (kattintson egy semleges pontra a Program monitoron; Esc megszakítja)
 	Interpret Footage	Felvétel értelmezése
 	Color Management · {n} item	Színkezelés · {n} elem
 	Color Management · {n} items	Színkezelés · {n} elem
@@ -1375,6 +1380,7 @@
 	AS-11 Core	AS-11 Core
 	AS-11 Parts	AS-11 részek
 	AS-11 UK DPP	AS-11 UK DPP
+	AS-10	AS-10
 	Color Theme	Színtéma
 	Color…	Szín…
 	Crash Recovery	Összeomlás utáni helyreállítás
@@ -1789,6 +1795,9 @@
 	Continuous	Folyamatos
 	Show Video Thumbnails	Videó-bélyegképek megjelenítése
 	Show Audio Waveform	Hanghullámforma megjelenítése
+	Merged	Egyesített
+	Per Channel	Csatornánként
+	Channel Zoom	Csatornák nagyítása
 	Timeline Display Settings	Idővonal megjelenítési beállításai
 	Snap in Timeline (S)	Illesztés az idővonalon (S)
 	Caption track options	Feliratsáv beállításai
@@ -2165,6 +2174,10 @@
 	Inter Regular (built in), or an OpenType / TrueType file	Inter Regular (beépített), vagy egy OpenType / TrueType fájl
 	Subtitle language	Felirat nyelve
 	Subtitle font	Felirat betűkészlete
+	Subtitle kind	Felirat fajtája
+	Subtitles	Feliratok
+	Captions for the hearing impaired	Feliratok hallássérülteknek
+	Forced narrative	Kötelező felirat (forced narrative)
 	Fonts	Betűkészletek
 	4:2:0 (Main Profile)	4:2:0 (Main profil)
 	4:2:2 (4:2:2 Profile)	4:2:2 (4:2:2 profil)
@@ -4570,6 +4583,8 @@ export.summary	Low	alacsony
 	Follow external timecode during playback	Külső időkód követése lejátszáskor
 	Lock after	Zárolás ennyi után
 	Keep playing without signal for	Jel nélkül tovább játszik
+	Varispeed: adjust the playback speed instead of seeking	Varispeed: ugrás helyett a lejátszási sebességet igazítja
+	User bits	Felhasználói bitek
 	External frame rate	Külső képkockasebesség
 	Offset (added to the external timecode)	Eltolás (a külső időkódhoz adva)
 	LTC	LTC
@@ -4594,6 +4609,27 @@ export.summary	Low	alacsony
 	Chase External Timecode	Külső időkód követése
 	Send LTC	LTC küldése
 	Send MIDI Timecode	MIDI-időkód küldése
+	Assignments run when a button is pressed (a fader or knob counts as pressed past half way); a fader or knob assigned to a mixer strip moves its volume or pan. A ShuttlePRO's shuttle ring plays at its profile's speeds and its jog wheel steps frame by frame. Endless encoders and feedback to the controller (lights, motor faders) come in a later version.	A hozzárendelések gombnyomásra futnak (egy fader vagy forgatógomb a félúton túl számít lenyomásnak); a keverősávhoz rendelt fader vagy forgatógomb a sáv hangerejét vagy panorámáját mozgatja. A ShuttlePRO shuttle-gyűrűje a profil sebességeivel játszik le, a jog-tárcsája képkockánként léptet. A végtelenített enkóderek és a vezérlőnek küldött visszajelzés (fények, motoros faderek) egy későbbi verzióban jönnek.
+	MIDI Monitor	MIDI-figyelő
+	Shows every MIDI message from the controllers as it arrives, to check that a controller sends and what it sends. MIDI Clock and Active Sensing are left out.	Megmutat minden MIDI-üzenetet, amely a vezérlőkről érkezik, így ellenőrizhető, hogy egy vezérlő küld-e, és mit küld. A MIDI Clock és az Active Sensing üzenetek nem jelennek meg.
+	Start Monitor	Figyelés indítása
+	Stop Monitor	Figyelés leállítása
+	Press Start Monitor, then move a control.	Nyomja meg a Figyelés indítása gombot, majd mozdítson meg egy kezelőszervet.
+	… {count} messages not shown (too many at once)	… {count} üzenet nem látszik (egyszerre túl sok érkezett)
+	Assignments	Hozzárendelések
+	Control	Kezelőszerv
+	Remove this assignment	Hozzárendelés törlése
+	No assignments yet.	Még nincs hozzárendelés.
+	Learn	Tanítás
+	Cancel Learn	Tanítás megszakítása
+	Press or move a control on the controller…	Nyomjon meg vagy mozdítson meg egy kezelőszervet a vezérlőn…
+	Pick a command (or a mixer strip for a fader or knob), press Learn, then press the button or move the control past half way. OK saves the assignments.	Válasszon parancsot (fader vagy forgatógomb esetén keverősávot), nyomja meg a Tanítás gombot, majd nyomja meg a gombot, vagy mozdítsa a kezelőszervet félúton túl. Az OK menti a hozzárendeléseket.
+	Connect a MIDI controller or a ShuttlePRO to assign commands to its buttons.	Csatlakoztasson egy MIDI-vezérlőt vagy egy ShuttlePRO-t, hogy parancsokat rendelhessen a gombjaihoz.
+	{control} runs {command}.	{control}: {command}.
+	A control surface asked for {command}, which does not exist.	Egy vezérlő a(z) {command} parancsot kérte, de ilyen parancs nincs.
+	Button {n}	{n}. gomb
+	{strip} Volume (fader)	{strip} hangerő (fader)
+	{strip} Pan (knob)	{strip} panoráma (forgatógomb)
 
 # Live studio preview (CFA4-LIVE-STUDIO-001 S0)
 	Live studio preview	Élő stúdió előnézet
@@ -4638,6 +4674,35 @@ export.summary	Low	alacsony
 	Missed its start	Lekéste az indulást
 	Missed its start at {time}	Lekéste az indulást ({time})
 	Starts at {time}	Indulás: {time}
+	Devices	Eszközök
+	Use	Használat
+	Device	Eszköz
+	MIDI	MIDI
+	HID jog/shuttle	HID jog/shuttle
+	OSC	OSC
+	Connected	Csatlakoztatva
+	Not connected	Nincs csatlakoztatva
+	Disabled	Letiltva
+	{device} ({port})	{device} ({port})
+	{name}: {error}	{name}: {error}
+	Looking for devices…	Eszközök keresése…
+	No MIDI controller or jog/shuttle device was found. Connect one and press Refresh.	Nem található MIDI-vezérlő vagy jog/shuttle eszköz. Csatlakoztasson egyet, majd nyomja meg a Frissítés gombot.
+	Control Surfaces	Vezérlőfelületek
+	Use control surfaces (MIDI controllers, jog/shuttle devices)	Vezérlőfelületek használata (MIDI-vezérlők, jog/shuttle eszközök)
+	Mapping controls to commands, MIDI Learn and the MIDI Monitor come in a later version; the choices here are remembered until then.	A vezérlők parancsokhoz rendelése, a MIDI Learn és a MIDI-monitor egy későbbi változatban érkezik; az itt megadott beállításokat addig is megjegyzi a program.
+	CFA4 ShuttlePRO	CFA4 ShuttlePRO
+	Kdenlive-style ShuttlePRO	Kdenlive-szerű ShuttlePRO
+	Generic MIDI	Általános MIDI
+	Add Studio Scene	Stúdiójelenet hozzáadása
+	Live	Élő
+# Credits: title, opening, chapter and lower-third pages filled from a graphics template (F10-C16)
+	Opening Credits	Nyitó képsor
+	Chapter Title	Fejezetcím
+	Lower Third	Alsó sáv
+	page {page}: graphics template “{template}” was not found; “{used}” is used	{page}. oldal: a(z) „{template}” grafikasablon nem található; helyette „{used}”
+	page {page}: graphics template “{template}” has no field for all of the block's text; the rest is left out	{page}. oldal: a(z) „{template}” grafikasablonban nincs mező a blokk minden szövegének; a többi kimarad
+	page {page}: template field “{control}” → “{part}” is not used (no such text control, or not head, body or tail)	{page}. oldal: a(z) „{control}” → „{part}” sablonmező nincs használva (nincs ilyen szövegvezérlő, vagy nem fej, törzs vagy láb)
+	page {page}: pictures are left out on title, opening, chapter and lower-third pages	{page}. oldal: a cím-, nyitó-, fejezetcím- és alsósáv-oldalakon a képek kimaradnak
 # Auto Color, Auto Contrast, Auto Levels (EffectsSDK review)
 	Auto Color	Automatikus szín
 	Auto Contrast	Automatikus kontraszt
@@ -4695,3 +4760,93 @@ export.summary	Low	alacsony
 	Freewheel	Szabadonfutás
 	Scrubbing	Léptetés
 	Sending	Küldés
+	AT9/AT3 Converter	AT9/AT3 átalakító
+	AT9/AT3 Converter…	AT9/AT3 átalakító…
+	Files to convert:	Átalakítandó fájlok:
+	Add Files	Fájlok hozzáadása
+	Add Files…	Fájlok hozzáadása…
+	Convert to:	Átalakítás erre:
+	Bit rate:	Bitráta:
+	Sample format:	Mintaformátum:
+	Output folder:	Kimeneti mappa:
+	Output Folder	Kimeneti mappa
+	Next to each source file	Minden forrásfájl mellé
+	AT9 and ATRAC3plus files convert to WAV; encoding AT9, ATRAC3plus and MP3 is not available yet.	Az AT9 és ATRAC3plus fájlok WAV-ba alakíthatók; AT9, ATRAC3plus és MP3 kódolás még nem érhető el.
+	Convert	Átalakítás
+	Add the files to convert first.	Előbb add hozzá az átalakítandó fájlokat.
+	Done: {n} file(s) converted.	Kész: {n} fájl átalakítva.
+	Converting {name}…	{name} átalakítása…
+	Stopping…	Leállítás…
+	AT3 (ATRAC3, PSP / PS3)	AT3 (ATRAC3, PSP / PS3)
+	WAV (PCM)	WAV (PCM)
+	132 kbit/s (LP2)	132 kbit/s (LP2)
+	105 kbit/s	105 kbit/s
+	66 kbit/s (LP4, joint stereo)	66 kbit/s (LP4, közös sztereó)
+	16-bit	16 bites
+	24-bit	24 bites
+	32-bit float	32 bites lebegőpontos
+# Control surfaces (F1 Learn and profile, CFA4-CONTROL-SURFACE-001)
+	First message (ms)	Első üzenet (ms)
+	Silence (ms)	Csend (ms)
+	Waiting for the control to settle…	Várakozás, amíg a kezelőszerv megnyugszik…
+	Type: {hint}. Confirm this assignment.	Típus: {hint}. Erősítse meg a hozzárendelést.
+	That control is already assigned. Confirm replaces it.	Ez a kezelőszerv már hozzá van rendelve. A megerősítés lecseréli.
+	Learn timed out.	A tanítás ideje lejárt.
+	Confirm	Megerősítés
+	Reject	Elutasítás
+	Shows every MIDI message from the controllers as it arrives, to check that a controller sends and what it sends. MIDI Clock, Active Sensing and MIDI Time Code are left out.	Megmutat minden MIDI-üzenetet, amely a vezérlőkről érkezik, így ellenőrizhető, hogy egy vezérlő küld-e, és mit küld. A MIDI Clock, az Active Sensing és a MIDI-időkód nem jelenik meg.
+	Pick a command (or a mixer strip for a fader or knob), press Learn, then press the button or move the control past half way. Confirm keeps the assignment. OK saves the assignments.	Válasszon parancsot (fader vagy forgatógomb esetén keverősávot), nyomja meg a Tanítás gombot, majd nyomja meg a gombot, vagy mozdítsa a kezelőszervet félúton túl. A megerősítés megtartja a hozzárendelést. Az OK menti a hozzárendeléseket.
+	All devices	Minden eszköz
+	Builtin: {name}	Beépített: {name}
+	Capturing	Rögzítés
+	Confirmed	Megerősítve
+	Conflict	Ütközés
+	Connect a MIDI controller or a ShuttlePRO to edit its profile.	A profil szerkesztéséhez csatlakoztasson MIDI-vezérlőt vagy ShuttlePRO-t.
+	Control Surfaces…	Vezérlőfelületek…
+	Filter messages	Üzenetek szűrése
+	Idle	Tétlen
+	Kernel dropped: {count}	Kernel eldobott: {count}
+	Learn Assignments…	Tanulás és hozzárendelések…
+	Load profile	Profil betöltése
+	MIDI Monitor…	MIDI-figyelő…
+	Mute shuttle sound	Shuttle hang némítása
+	No conflicts.	Nincs ütközés.
+	No profile warnings.	Nincs profilfigyelmeztetés.
+	No project profile is stored.	Nincs tárolt projektprofil.
+	OK writes the preferences and the profile file together.	Az OK a beállításokat és a profilfájlt együtt írja ki.
+	Online	Elérhető
+	Pending	Függőben
+	Pickup (14-bit)	Felvétel (14 bites)
+	Pickup (7-bit)	Felvétel (7 bites)
+	Profile warnings	Profilfigyelmeztetések
+	Rejected	Elutasítva
+	Show Active Sensing	Active Sensing megjelenítése
+	Show MIDI Clock	MIDI-óra megjelenítése
+	Show MIDI Time Code	MIDI időkód megjelenítése
+	The profile file is damaged. Preferences and the built-in profile stay in use.	A profilfájl sérült. A beállítások és a beépített profil marad használatban.
+	Timed out	Lejárt
+	Type: {hint}	Típus: {hint}
+	User profile file	Felhasználói profilfájl
+	{received} received, {dispatched} dispatched, {coalesced} coalesced, {stalls} stalls, {errors} errors	{received} érkezett, {dispatched} kiosztott, {coalesced} összevont, {stalls} várakozás, {errors} hiba
+	Read from LTC Audio	Beolvasás LTC-hangból
+	Find SMPTE LTC on the clip's audio and use the timecode it gives the first frame	SMPTE LTC keresése a klip hangjában, és az első képkockára adódó időkód használata
+	Read Timecode from LTC Audio	Időkód beolvasása LTC-hangból
+# Credits: voices (the Voice column) in the block's properties (F10-C16)
+	Voices	Hangok
+
+# Datamosh transition (Grunge & Distort, DM1, #1409)
+	Datamosh	Datamosh
+	Residual	Maradék
+	Motion Boost	Mozgáserősítés
+	Recovery	Helyreállás
+	Encode Resolution	Kódolási felbontás
+	Half	Fél
+	Quarter	Negyed
+# SC-4: effect bulk switch and recent effects
+	Enable all effects	Összes effekt bekapcsolása
+	Disable all effects	Összes effekt kikapcsolása
+	Switch every effect of the selected clips on	A kijelölt klipek minden effektjének bekapcsolása
+	Switch every effect of the selected clips off	A kijelölt klipek minden effektjének kikapcsolása
+	Recent effects	Legutóbbi effektek
+	Apply a recently used effect to the selected clips	Legutóbb használt effekt alkalmazása a kijelölt klipekre
+	No recent effects	Nincs legutóbbi effekt

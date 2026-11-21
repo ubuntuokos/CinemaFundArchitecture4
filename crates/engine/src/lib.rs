@@ -11,13 +11,16 @@
 #![cfg_attr(not(test), deny(clippy::unwrap_used, clippy::expect_used, clippy::panic, clippy::unimplemented, clippy::todo, clippy::unreachable))]
 
 pub mod aaf_omf;
+mod atrac_convert;
 pub mod autosave;
 pub mod beat_markers;
 pub mod captions;
 pub mod clip_ops;
 pub mod color;
 pub mod commands;
+pub mod control_surfaces;
 pub mod credits;
+pub mod dcp_import;
 mod dcpomatic;
 pub mod delivery_check;
 pub mod demo;
@@ -35,6 +38,7 @@ pub mod keyboard;
 mod keyframe_move;
 pub mod legibility;
 pub mod live;
+pub mod ltc_read;
 mod marker_export;
 pub mod masks;
 pub mod media_browser;
@@ -71,6 +75,9 @@ mod smart_cut_mpeg;
 mod smart_render;
 pub mod social;
 pub mod source_monitor;
+pub mod studio;
+pub mod surface_profile;
+pub mod surface_runtime;
 pub mod sync;
 pub mod timecode_sync;
 pub mod transcript;
@@ -672,6 +679,9 @@ impl Session {
     pub fn start_autosave(&mut self, cfg: autosave::AutosaveConfig) -> std::io::Result<()> {
         let prefs_path = cfg.data_dir.join("preferences.json");
         self.prefs = autosave::Preferences::load(&prefs_path);
+        for warning in crate::surface_profile::load_into(&mut self.prefs.control_surfaces, &crate::surface_profile::dir_for(&cfg.data_dir)) {
+            self.log.push(crate::panels::Level::Warning, "surface", warning);
+        }
         self.prefs.apply_hardware_decoding();
         self.media.set_use_proxies(self.prefs.media.enable_proxies);
         self.shortcuts.set_dir(&cfg.data_dir);
@@ -744,6 +754,7 @@ impl Session {
     /// Replace preferences (persisting them and updating the worker).
     pub fn set_prefs(&mut self, p: autosave::Preferences) -> std::io::Result<()> {
         let cache_changed = self.prefs.media_cache != p.media_cache;
+        let surfaces_changed = self.prefs.control_surfaces != p.control_surfaces;
         self.prefs = p;
         self.prefs.apply_hardware_decoding();
         if cache_changed {
@@ -756,10 +767,19 @@ impl Session {
         if let Some(w) = &self.persistence {
             w.set_prefs(self.prefs.auto_save.clone());
         }
-        match &self.prefs_path {
+        let saved = match &self.prefs_path {
             Some(path) => self.prefs.save(path),
             None => Ok(()),
+        };
+        if surfaces_changed
+            && let Some(path) = &self.prefs_path
+            && let Some(data) = path.parent()
+        {
+            for warning in crate::surface_profile::save_all(&self.prefs.control_surfaces, &crate::surface_profile::dir_for(data)) {
+                self.log.push(crate::panels::Level::Warning, "surface", warning);
+            }
         }
+        saved
     }
 
     /// Keep render previews next to the saved project (moves an unsaved project's previews).
@@ -1360,6 +1380,10 @@ mod clip_ops_tests;
 #[cfg(test)]
 mod color_tests;
 #[cfg(test)]
+mod dcp_import_tests;
+#[cfg(test)]
+mod effect_toggle_tests;
+#[cfg(test)]
 mod effects_inspect_tests;
 #[cfg(test)]
 mod essential_sound_tests;
@@ -1411,6 +1435,8 @@ mod nest_fidelity_tests;
 mod nesting_tests;
 #[cfg(test)]
 mod opatom_tests;
+#[cfg(test)]
+mod otio_size_tests;
 #[cfg(test)]
 mod panels_tests;
 #[cfg(test)]
