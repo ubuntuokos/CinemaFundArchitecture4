@@ -126,6 +126,11 @@ fn audio_starts(file: &MkvFile, bytes: &crate::Src, ti: usize, rate: i64) -> Vec
         let packets = t.samples.iter().enumerate().map(|(i, s)| PacketTime { stamp: at(s.pts), stamped: own_stamp(s), samples: (i < last).then_some(full) });
         return contiguous_starts(packets, stamp_tolerance(t, rate));
     }
+    if matches!(&t.codec, Codec::Other(id) if id == "A_ATRAC/AT1") {
+        // every ATRAC1 packet is one 512-sample sound unit per channel
+        let packets = t.samples.iter().map(|s| PacketTime { stamp: at(s.pts), stamped: own_stamp(s), samples: Some(512) });
+        return contiguous_starts(packets, stamp_tolerance(t, rate));
+    }
     if let Some(Ok(c)) = acm_codec(t) {
         // G.711 / ADPCM packets hold whole frames or blocks: they run on like PCM
         let channels = t.audio.as_ref().map_or(1, |a| a.channels.max(1));
@@ -463,6 +468,7 @@ fn codec_label(c: &Codec) -> String {
         Codec::Other(id) if id == "V_FFV1" => "FFV1".into(),
         Codec::Other(id) if id == "V_DIRAC" => "VC-2 / Dirac".into(),
         Codec::Other(id) if id == "A_TTA1" => "TTA".into(),
+        Codec::Other(id) if id == "A_ATRAC/AT1" => "ATRAC1".into(),
         Codec::VfwFourcc { fourcc, .. } if fourcc.eq_ignore_ascii_case(b"FFV1") => "FFV1".into(),
         other => other.name().to_string(),
     }
@@ -647,6 +653,9 @@ impl MkvSource {
         if matches!(&t.codec, Codec::Other(id) if id == "A_TTA1") {
             let bits = ainfo.bits_per_sample.unwrap_or(16);
             return PacketDecoder::tta(u16::try_from(ainfo.channels).unwrap_or(0), u16::try_from(bits).unwrap_or(0), rate);
+        }
+        if matches!(&t.codec, Codec::Other(id) if id == "A_ATRAC/AT1") {
+            return PacketDecoder::atrac1(usize::try_from(ainfo.channels).unwrap_or(0));
         }
         match &t.codec {
             Codec::Aac { asc } => PacketDecoder::aac(asc, rate),
