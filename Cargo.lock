@@ -1995,6 +1995,7 @@ dependencies = [
  "cfa4-geom",
  "cfa4-media",
  "cfa4-time",
+ "log",
  "proptest",
  "serde",
  "serde_json",
