@@ -315,6 +315,11 @@ class MainWindow(QMainWindow):
         self.monitor = ProgramMonitor(engine, self)
         self.source_monitor = SourceMonitor(engine, self)
         self.timeline = TimelinePanel(self)
+        # SC-3: the waveform channel mode and channel zoom are kept between sessions
+        self.timeline.canvas.restore_waveform_display(
+            self.settings.value("timeline/waveformChannels"), self.settings.value("timeline/channelZoom")
+        )
+        self.timeline.canvas.display_changed.connect(self._save_waveform_display)
         self.timeline.canvas.media.attach(engine)  # clip thumbnails and waveforms
         self.tools = ToolsPanel(self)
         self.tools.tool_selected.connect(self.timeline.set_tool)
@@ -1927,6 +1932,11 @@ class MainWindow(QMainWindow):
     def _refresh_enabled(self) -> None:
         if self.engine.running:
             self.engine.call("engine.commands", on_reply=lambda r, _b: self.registry.update_enabled(r))
+
+    def _save_waveform_display(self) -> None:
+        canvas = self.timeline.canvas
+        self.settings.setValue("timeline/waveformChannels", canvas.waveform_channels)
+        self.settings.setValue("timeline/channelZoom", canvas.channel_zoom)
 
     def _on_engine_stopped(self, reason: str) -> None:
         self.status_engine.setText(tr("Engine stopped"))

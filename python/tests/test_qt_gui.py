@@ -308,6 +308,33 @@ def test_timecode():
 
 
 # ----- window against the fake engine -----
+def test_waveform_channel_display_is_kept_between_sessions(app, fake_engine: Path, tmp_path: Path):
+    """SC-3: Per Channel and the channel zoom are display settings the window keeps (QSettings);
+    a hostile saved value falls back to the merged view."""
+    from cfa4_qt.main_window import MainWindow
+
+    ini = str(tmp_path / "s.ini")
+    settings = QtCore.QSettings(ini, QtCore.QSettings.Format.IniFormat)
+    win = MainWindow(EngineClient(fake_engine), settings)
+    try:
+        assert (win.timeline.canvas.waveform_channels, win.timeline.canvas.channel_zoom) == ("merged", 1.0)
+        win.timeline.canvas._set_display(waveform_channels="channels")
+        win.timeline.canvas._set_display(channel_zoom=4.0)
+    finally:
+        win._quit_confirmed = True
+        win.close()
+    settings.sync()
+    again = MainWindow(EngineClient(fake_engine), QtCore.QSettings(ini, QtCore.QSettings.Format.IniFormat))
+    try:
+        assert (again.timeline.canvas.waveform_channels, again.timeline.canvas.channel_zoom) == ("channels", 4.0)
+        again.timeline.canvas.restore_waveform_display("sideways", "nan?")
+        assert (again.timeline.canvas.waveform_channels, again.timeline.canvas.channel_zoom) == ("channels", 1.0)
+        again.timeline.canvas.restore_waveform_display(None, None)  # nothing saved: nothing changes
+    finally:
+        again._quit_confirmed = True
+        again.close()
+
+
 def test_transport_buttons_named_as_egui(app, fake_engine: Path, tmp_path: Path):
     """The monitors' and the Audio Track Mixer's transport buttons carry egui's automation ids
     (``<monitor>.transport.<command>``, ``mixer.transport.<command>``: monitor.rs / mixer.rs)."""
@@ -4187,6 +4214,104 @@ def test_real_engine_program_monitor_transform_box_masks_and_pen(app, tmp_path: 
         assert ov.pen is None and not pen.isChecked()
         assert wait_until(app, lambda: len(next(e for e in ec.clip["effects"] if e["effect"] == "opacity")["maskList"]) == 2,
                           10_000)
+    finally:
+        win._quit_confirmed = True
+        win.close()
+
+
+@pytest.mark.skipif(REAL is None, reason="Rust engine not built (cargo build -p cfa4-cli)")
+def test_real_engine_program_monitor_crop_handles(app, tmp_path: Path):
+    """SC-1: the selected Crop effect draws its rectangle on the Program monitor; a handle drag
+    sets the same Crop values as the Properties number fields (one undo step per drag), the move
+    box shifts it, nothing else changes, no box while another effect is selected, and the values
+    survive Save and Open."""
+    from cfa4_qt.main_window import MainWindow
+
+    settings = QtCore.QSettings(str(tmp_path / "s.ini"), QtCore.QSettings.Format.IniFormat)
+    engine = EngineClient(REAL, ["--demo", "--data-dir", str(tmp_path / "data")])
+    win = MainWindow(engine, settings)
+    win.resize(1600, 1000)
+    win.show()
+    engine.start()
+    view = win.monitor.view
+    ov = win.monitor.overlay
+    left, none = QtCore.Qt.MouseButton.LeftButton, QtCore.Qt.MouseButton.NoButton
+    nomod = QtCore.Qt.KeyboardModifier.NoModifier
+
+    def send(kind, at: QtCore.QPointF, button, buttons, mods=nomod) -> None:
+        p = QtCore.QPointF(at)
+        QtWidgets.QApplication.sendEvent(view, QtGui.QMouseEvent(kind, p, p, view.mapToGlobal(p), button, buttons, mods))
+
+    def drag(a: QtCore.QPointF, b: QtCore.QPointF, mods=nomod) -> None:
+        send(QtCore.QEvent.Type.MouseButtonPress, a, left, left, mods)
+        for i in range(1, 5):
+            send(QtCore.QEvent.Type.MouseMove, a + (b - a) * (i / 4), none, left, mods)
+        send(QtCore.QEvent.Type.MouseButtonRelease, b, left, none, mods)
+
+    def crop() -> dict:
+        return (ov.data or {}).get("crop") or {}
+
+    def history() -> int:
+        return win.history.list.count()
+
+    try:
+        assert wait_until(app, lambda: win.sequence is not None and len(win.registry.commands) > 100, 60_000)
+        clip = win.sequence["video"][0]["items"][1]
+        cid = clip["clip"]
+        win._seek_program(clip["start"] + (clip["end"] - clip["start"]) // 2)
+        win.execute("timeline.select", {"clips": [cid]})
+        win.execute("effects.apply", {"clips": [cid], "effect": "crop"})
+        # Crop added but another effect selected: no box
+        win.execute("effects.select", {"clip": cid, "effect": "motion"})
+        assert wait_until(app, lambda: ov.data is not None and not crop() and ov.hit("crop.box") is None, 20_000)
+        win.execute("effects.select", {"clip": cid, "effect": "crop"})
+        assert wait_until(app, lambda: crop().get("clip") == cid and ov.hit("crop.box") is not None, 20_000)
+        base = {k: crop()[k] for k in ("left", "top", "right", "bottom")}
+        assert base == {"left": 0.0, "top": 0.0, "right": 0.0, "bottom": 0.0}
+
+        # the left edge handle (7): Left grows, the other sides keep their values, one undo step
+        steps = history()
+        h = ov.hit("crop.handle.7")
+        drag(h, h + QtCore.QPointF(60, 0))
+        assert wait_until(app, lambda: crop().get("left", 0) > 1.0 and history() == steps + 1, 10_000), crop()
+        assert (crop()["top"], crop()["right"], crop()["bottom"]) == (0.0, 0.0, 0.0)
+        # the same value typed as a number field sets: the handle's value is the Crop effect's own Left
+        typed = crop()["left"]
+        win.execute("edit.undo", {})
+        assert wait_until(app, lambda: crop().get("left") == 0.0, 10_000)
+        win.execute("effects.setParam", {"clip": cid, "effect": "crop", "param": "left", "value": typed})
+        assert wait_until(app, lambda: crop().get("left") == typed, 10_000)
+        assert ov.hit("crop.box").x() > h.x(), "the rectangle follows the new value"
+
+        # the bottom right corner (2) with Alt, then the move box: values stay inside the picture
+        steps = history()
+        c2 = ov.hit("crop.handle.2")
+        drag(c2, c2 - QtCore.QPointF(40, 30), QtCore.Qt.KeyboardModifier.AltModifier)
+        assert wait_until(app, lambda: crop().get("right", 0) > 1.0 and crop().get("bottom", 0) > 1.0, 10_000)
+        assert crop()["top"] > 1.0, "Alt resizes about the centre: the opposite corner moves too"
+        assert wait_until(app, lambda: history() == steps + 1, 10_000)
+        before = {k: crop()[k] for k in ("left", "top", "right", "bottom")}
+        box = ov.hit("crop.box")
+        drag(box, box + QtCore.QPointF(20, 0))
+        assert wait_until(app, lambda: crop().get("left") != before["left"], 10_000)
+        assert abs((crop()["left"] + crop()["right"]) - (before["left"] + before["right"])) < 1e-3, "a move keeps the width"
+        assert crop()["top"] == before["top"]
+        # cropping never moves or trims the clip on the Timeline
+        now = win.sequence["video"][0]["items"][1]
+        assert (now["clip"], now["start"], now["end"]) == (cid, clip["start"], clip["end"])
+
+        # Save and Open: the Crop values come back
+        want = {k: crop()[k] for k in ("left", "top", "right", "bottom")}
+        project = tmp_path / "crop.fcproj"
+        win.execute("file.saveAs", {"path": str(project)})
+        assert wait_until(app, lambda: project.is_file() and not win.state.get("dirty", True), 10_000)
+        win.execute("file.open", {"path": str(project)})
+        assert wait_until(app, lambda: win.sequence is not None and not win.state.get("dirty", True), 20_000)
+        clip = win.sequence["video"][0]["items"][1]
+        win._seek_program(clip["start"] + (clip["end"] - clip["start"]) // 2)
+        win.execute("timeline.select", {"clips": [clip["clip"]]})
+        win.execute("effects.select", {"clip": clip["clip"], "effect": "crop"})
+        assert wait_until(app, lambda: {k: crop().get(k) for k in want} == want, 20_000), (crop(), want)
     finally:
         win._quit_confirmed = True
         win.close()

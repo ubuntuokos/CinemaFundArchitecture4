@@ -4815,6 +4815,10 @@ export.summary	Low	matala
 	Encode Resolution	Koodaustarkkuus
 	Half	Puolikas
 	Quarter	Neljännes
+# Datamosh Bloom (Glitch, DM2)
+	Datamosh Bloom	Datamosh-kukinta
+	Start Time (seconds)	Aloitusaika (sekuntia)
+	Repeats	Toistot
 
 # Recent effects, per-channel waveform, white balance selector (SC-2/SC-3/SC-4, #1419 #1420 #1421)
 	Apply a recently used effect to the selected clips	Käytä äskettäin käytettyä tehostetta valittuihin klippeihin

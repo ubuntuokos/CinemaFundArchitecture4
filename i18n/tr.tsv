@@ -4814,6 +4814,10 @@ export.summary	Low	düşük
 	Encode Resolution	Kodlama Çözünürlüğü
 	Half	Yarım
 	Quarter	Çeyrek
+# Datamosh Bloom (Glitch, DM2)
+	Datamosh Bloom	Datamosh Çiçeklenmesi
+	Start Time (seconds)	Başlangıç Zamanı (saniye)
+	Repeats	Tekrarlar
 
 # Recent effects, per-channel waveform, white balance selector (SC-2/SC-3/SC-4, #1419 #1420 #1421)
 	Apply a recently used effect to the selected clips	Son kullanılan efekti seçili kliplere uygula

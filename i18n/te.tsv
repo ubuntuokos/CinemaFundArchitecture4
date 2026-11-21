@@ -4819,6 +4819,10 @@ export.summary	Low	తక్కువ
 	Encode Resolution	ఎన్‌కోడ్ రిజల్యూషన్
 	Half	సగం
 	Quarter	పావు
+# Datamosh Bloom (Glitch, DM2)
+	Datamosh Bloom	డేటామోష్ బ్లూమ్
+	Start Time (seconds)	ప్రారంభ సమయం (సెకన్లు)
+	Repeats	పునరావృత్తులు
 
 # Recent effects, per-channel waveform, white balance selector (SC-2/SC-3/SC-4, #1419 #1420 #1421)
 	Apply a recently used effect to the selected clips	ఇటీవల ఉపయోగించిన ఎఫెక్ట్‌ను ఎంచుకున్న క్లిప్‌లకు వర్తింపజేయండి

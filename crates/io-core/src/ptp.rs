@@ -1,4 +1,5 @@
-//! PTP state for the live studio (CFA4-LIVE-STUDIO-001 ST 2110 addendum, phase T1).
+//! PTP state for the live studio and other media I/O hosts (CFA4-LIVE-STUDIO-001 ST 2110
+//! addendum, phase T1; moved from `cfa4-obs` by CFA4-DECKLINK-READY-001 V1).
 //!
 //! `linuxptp` runs PTP (`ptp4l` with the ST 2059-2 profile, `phc2sys` disciplining the system
 //! clock); CFA4 only reads it (plan D9). This module asks `ptp4l` through `pmc` over its local
@@ -145,12 +146,22 @@ fn parse_mac(s: &str) -> Option<[u8; 6]> {
     parts.next().is_none().then_some(out)
 }
 
-/// The PTP report now: `pmc` (domain from `CFA4_PTP_DOMAIN`, else 127), the system clock and
-/// the local MAC.
+/// The PTP report now: `pmc` (domain from `CFA4_PTP_DOMAIN`, else 127, the ST 2059 default),
+/// stopped after [`PMC_TIMEOUT`], the system clock and the local MAC.
 pub fn query() -> PtpReport {
     let domain = std::env::var("CFA4_PTP_DOMAIN").ok().and_then(|d| d.parse().ok()).unwrap_or(ST2059_DEFAULT_DOMAIN);
-    let answer = match find_pmc() {
-        Some(pmc) => run_pmc(&pmc, domain, PMC_TIMEOUT),
+    query_with(domain, PMC_TIMEOUT)
+}
+
+/// The PTP report now for PTP `domain`, giving `pmc` at most `timeout`. Never fails: without
+/// `pmc`, without an answer in time, or with an unreadable answer the report says why.
+pub fn query_with(domain: u8, timeout: Duration) -> PtpReport {
+    query_with_pmc(find_pmc().as_deref(), domain, timeout)
+}
+
+fn query_with_pmc(pmc: Option<&Path>, domain: u8, timeout: Duration) -> PtpReport {
+    let answer = match pmc {
+        Some(pmc) => run_pmc(pmc, domain, timeout),
         None => Err("pmc not found (install linuxptp)".into()),
     };
     report_from(answer, SystemTime::now(), local_mac())
@@ -204,6 +215,53 @@ mod tests {
         assert_eq!(parse_mac("3c:2c:30:a1:b2:c3:00"), None);
         let m = local_mac();
         assert!(m.iter().any(|&b| b != 0));
+    }
+
+    /// A stand-in `pmc`: a shell script in its own temporary directory.
+    fn fake_pmc(name: &str, body: &str) -> PathBuf {
+        use std::os::unix::fs::PermissionsExt as _;
+        let dir = std::env::temp_dir().join(format!("cfa4-io-core-ptp-{}-{name}", std::process::id()));
+        let _ = std::fs::create_dir_all(&dir);
+        let path = dir.join("pmc");
+        std::fs::write(&path, format!("#!/bin/sh\n{body}\n")).expect("write fake pmc");
+        std::fs::set_permissions(&path, std::fs::Permissions::from_mode(0o700)).expect("chmod fake pmc");
+        path
+    }
+
+    /// READY-V1.4: a missing `pmc`, one that hangs and one that prints nonsense each give a
+    /// report that says why, never a panic.
+    #[test]
+    fn missing_hanging_and_broken_pmc_give_a_report() {
+        let r = query_with_pmc(None, ST2059_DEFAULT_DOMAIN, PMC_TIMEOUT);
+        assert!(!r.available && !r.locked);
+        assert_eq!(r.reason.as_deref(), Some("pmc not found (install linuxptp)"));
+        let r = query_with_pmc(Some(Path::new("/nonexistent/cfa4/pmc")), 0, PMC_TIMEOUT);
+        assert!(!r.available && r.reason.is_some_and(|w| w.starts_with("cannot run ")));
+
+        let hang = fake_pmc("hang", "sleep 30");
+        let start = Instant::now();
+        let r = query_with_pmc(Some(&hang), 127, Duration::from_millis(200));
+        assert!(start.elapsed() < Duration::from_secs(10), "the timeout stops pmc");
+        assert_eq!(r.reason.as_deref(), Some("pmc did not finish in time"));
+        assert!(!r.ts_refclk.is_empty() && !r.mediaclk.is_empty());
+
+        let junk = fake_pmc("junk", "printf '\\377\\376 portState \\n\\t\\tmaster_offset x\\n'");
+        let r = query_with_pmc(Some(&junk), 127, PMC_TIMEOUT);
+        assert!(!r.available && !r.locked && r.reason.is_some(), "{r:?}");
+
+        let locked = fake_pmc("locked", &format!("printf '{}'", LOCKED.replace('\t', "\\t").replace('\n', "\\n")));
+        let r = query_with_pmc(Some(&locked), 127, PMC_TIMEOUT);
+        assert!(r.available && r.locked, "{r:?}");
+        for p in [hang, junk, locked] {
+            let _ = std::fs::remove_dir_all(p.parent().unwrap_or(&p));
+        }
+    }
+
+    #[test]
+    fn query_with_takes_the_domain_and_timeout() {
+        let r = query_with(ST2059_DEFAULT_DOMAIN, Duration::from_millis(500));
+        assert!(!r.ts_refclk.is_empty() && !r.mediaclk.is_empty());
+        assert!(r.tai_seconds.is_some());
     }
 
     #[test]

@@ -1505,6 +1505,69 @@ mod tests {
         }
     }
 
+    /// SC-3: a 5.1 file whose channels carry different, known levels. Each channel's series is that
+    /// channel's own, in the stream's order (L R C LFE Ls Rs); a file with more channels than the
+    /// cap is cut at `MAX_PEAK_CHANNELS`; a stereo file keeps its left and right apart.
+    #[test]
+    fn media_peaks_per_channel_follow_the_channels_of_a_5_1_file() {
+        let dir = std::env::temp_dir().join(format!("cfa4-peaks-5-1-{}", std::process::id()));
+        std::fs::create_dir_all(&dir).expect("dir");
+        // channel c swings between -(c + 1) / 20 and +(c + 1) / 20 for a second: its own min and max
+        let write = |name: &str, channels: u16| -> String {
+            let mut pcm = Vec::new();
+            for i in 0..48_000 {
+                for c in 0..channels {
+                    pcm.push(if i % 2 == 0 { 1.0 } else { -1.0 } * f32::from(c + 1) / 20.0);
+                }
+            }
+            let path = dir.join(name);
+            std::fs::write(&path, cfa4_media::wav::write_wav16(&pcm, channels, 48_000)).expect("wav");
+            path.to_string_lossy().into_owned()
+        };
+        let mut s = Session::default();
+        let imported = s.execute("file.import", json!({"paths": [write("l6.wav", 6), write("l2.wav", 2), write("l12.wav", 12)]})).expect("import");
+        assert!(imported["errors"].as_array().is_none_or(Vec::is_empty), "{imported}");
+        let with_channels = |s: &Session, n: u32| {
+            s.project
+                .items
+                .values()
+                .find(|i| i.as_media().is_some_and(|m| m.info.audio_streams.first().is_some_and(|a| a.channels == n)))
+                .map(|i| i.id)
+                .expect("imported")
+        };
+        let tps = cfa4_time::TICKS_PER_SECOND;
+        let peaks = |s: &mut Session, item: cfa4_project::ItemId| {
+            let r = handle(s, json!(1), "media.peaks", json!({"item": item.0, "start": 0, "end": tps / 2, "buckets": 20, "perChannel": true})).expect("reply");
+            assert_eq!(r.json["ok"], json!(true), "{}", r.json);
+            let n = usize::try_from(r.json["result"]["channels"].as_u64().expect("channels")).expect("count");
+            let v: Vec<f32> = r.binary.expect("peaks").chunks_exact(4).map(|c| f32::from_le_bytes([c[0], c[1], c[2], c[3]])).collect();
+            assert_eq!(v.len(), n * 20 * 2, "channel after channel");
+            (n, v)
+        };
+        // 5.1: six series, each swinging to its own level, in channel order
+        let item = with_channels(&s, 6);
+        let (n, v) = peaks(&mut s, item);
+        assert_eq!(n, 6);
+        for c in 0..6 {
+            let level = (c + 1) as f32 / 20.0;
+            for b in 0..20 {
+                let (lo, hi) = (v[c * 40 + b * 2], v[c * 40 + b * 2 + 1]);
+                assert!((lo + level).abs() < 1e-3 && (hi - level).abs() < 1e-3, "channel {c} bucket {b}: {lo} {hi} want {level}");
+            }
+        }
+        // stereo: left and right stay apart
+        let item = with_channels(&s, 2);
+        let (n, v) = peaks(&mut s, item);
+        assert_eq!(n, 2);
+        assert!((v[1] - 0.05).abs() < 1e-3 && (v[41] - 0.10).abs() < 1e-3, "{} {}", v[1], v[41]);
+        // more channels than the cap: cut at the cap, the first ones kept
+        let item = with_channels(&s, 12);
+        let (n, v) = peaks(&mut s, item);
+        assert_eq!(n, MAX_PEAK_CHANNELS);
+        assert!((v[(MAX_PEAK_CHANNELS - 1) * 40 + 1] - MAX_PEAK_CHANNELS as f32 / 20.0).abs() < 1e-3);
+        let _ = std::fs::remove_dir_all(&dir);
+    }
+
     #[test]
     fn replies_are_framed_with_their_binary_tail() {
         let mut buf = Vec::new();
