@@ -21,6 +21,7 @@
 //! - [`EvcSource`]: raw MPEG-5 EVC Baseline (`.evc`) streams, pictures shown in their order count.
 //! - [`CavsSource`]: raw AVS1-P2 (Chinese AVS, Jizhun profile) streams (`.avs`, `.cavs`).
 //! - [`SstpSource`]: MPEG-4 Simple Studio Profile (Sony SR) elementary streams (`.m4v`), every picture intra.
+//! - [`FlicSource`]: Autodesk Animator FLI / FLC (`.fli`, `.flc`) 8-bit animations.
 //! - [`Y4mSource`]: uncompressed YUV4MPEG2 (`.y4m`) video, frames read on demand.
 //! - [`openers`]: the openers to register with the engine's media pool.
 
@@ -38,6 +39,7 @@ pub mod dif;
 pub mod dirac;
 pub mod evc;
 pub mod ffv1;
+pub mod flic;
 pub mod gop;
 pub mod hap;
 pub mod huffyuv;
@@ -69,6 +71,7 @@ pub use avi::AviSource;
 pub use cavs::CavsSource;
 pub use dif::DifSource;
 pub use evc::EvcSource;
+pub use flic::FlicSource;
 pub use gop::{FRAME_BUDGET, GopStats, cached_bytes, gop_stats, live_decoders, release_idle};
 pub use mkv::MkvSource;
 pub use mp4::Mp4Source;
@@ -194,6 +197,7 @@ pub fn openers() -> Vec<cfa4_media::Opener> {
         mpeg::opener,
         apv::opener,
         avi::opener,
+        flic::opener,
         y4m::opener,
         dif::opener,
         realmedia::opener,
@@ -215,6 +219,7 @@ fn reader_registry() -> &'static RwLock<Vec<cfa4_media::ReaderOpener>> {
             cavs::reader_opener,
             mpeg::reader_opener,
             apv::reader_opener,
+            flic::reader_opener,
             y4m::reader_opener,
             avi::reader_opener,
             dif::reader_opener,
