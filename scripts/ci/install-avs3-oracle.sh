@@ -3,7 +3,8 @@
 #   uavs3d (0e20d2c2, BSD-3-Clause, the decoder crates/avs3 is ported from)  -> uavs3d
 #   uavs3e (e1ff0f37, BSD-4-Clause, the encoder that makes the test streams)  -> uavs3e
 #   the same two built for 10-bit samples                                     -> uavs3d-10bit, uavs3e-10bit
-# Plain cmake builds, no patches. Nothing here is linked or shipped with CFA4. The AVS3 oracle test
+# Plain cmake builds; uavs3d is built C-only (its x86 SIMD paths differ from its own C code on extreme
+# content such as noise at high bit rates, and the C code is what crates/avs3 is ported from). Nothing here is linked or shipped with CFA4. The AVS3 oracle test
 # skips when a tool is missing.
 set -euo pipefail
 uavs3d_commit=0e20d2c291853f196c68922a264bcd8471d75b68
@@ -28,6 +29,7 @@ build() { # dir bit-depth(0|1 for COMPILE_10BIT)
 
 fetch uavs3d "$uavs3d_commit" "$work/uavs3d"
 fetch uavs3e "$uavs3e_commit" "$work/uavs3e"
+sed -i '/^#define ENABLE_FUNCTION_X86 1$/d' "$work/uavs3d/source/decore/com_util.h"
 cp -a "$work/uavs3d" "$work/uavs3d-10bit"
 cp -a "$work/uavs3e" "$work/uavs3e-10bit"
 build "$work/uavs3d" 0

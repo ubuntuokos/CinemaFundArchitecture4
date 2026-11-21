@@ -241,6 +241,33 @@ fn main10_matches_uavs3d() {
     ]);
 }
 
+/// Settings the other tests leave at their defaults: the encoder's own GOP structure, CTU 128,
+/// all-intra, tiny pictures, delta QP with chroma offsets and the intra tool groups off.
+#[test]
+fn defaults_and_extremes_match_uavs3d() {
+    run(&[
+        case("default_ra", 176, 144, 12, &["-q", "30"]),
+        case("default_ctu128", 176, 144, 10, &["-q", "34", "--ctu_size", "128"]),
+        case("all_intra", 176, 144, 10, &["-q", "38", "-g", "1"]),
+        case("closed_gop", 176, 144, 12, &["-q", "30", "-g", "7", "--close_gop", "1"]),
+        case("tiny", 40, 24, 4, &["-q", "30"]),
+        case("small", 72, 56, 5, &["-q", "30"]),
+        case("hmvp4", 176, 144, 8, &["-q", "30", "--hmvp", "4"]),
+        case("intra_tools_off", 176, 144, 8, &["-q", "30", "--dt_intra", "0", "--sectrans", "0", "--pbt", "0", "--tscpm", "0", "--ipf", "0"]),
+        case("delta_qp", 176, 144, 8, &["-q", "30", "--adaptive_dqp", "1", "--chroma_dqp", "1", "--qp_offset_cb", "3", "--qp_offset_cr", "-2"]),
+        case("inter_tools_off", 176, 144, 10, &["-q", "26", "--umve", "0", "--affine", "0", "--smvd", "0", "--amvr", "0"]),
+    ]);
+}
+
+#[test]
+fn main10_loop_filters_match_uavs3d() {
+    run(&[
+        Case { name: "main10_default", w: 176, h: 144, frames: 10, ten_bit: true, args: &["-q", "30"] },
+        Case { name: "main10_odd", w: 200, h: 136, frames: 8, ten_bit: true, args: &["-q", "28"] },
+        Case { name: "main10_nofilter", w: 176, h: 144, frames: 10, ten_bit: true, args: &["-q", "30", "--sao", "0", "--alf", "0"] },
+    ]);
+}
+
 /// Decoding-order-index wrap: 300 pictures overflow the 8-bit DOI.
 #[test]
 fn doi_wrap_matches_uavs3d() {
