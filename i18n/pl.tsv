@@ -4772,3 +4772,35 @@ export.summary	Low	niska
 # Timecode sync varispeed and user bits (TC-8, #1308)
 	Varispeed: adjust the playback speed instead of seeking	Varispeed: dostosuj prędkość odtwarzania zamiast przeskakiwać
 	User bits	Bity użytkownika
+# AS-11 programme parts and AS-10 metadata (G2, #1371, #1375)
+	{tc}  Segmentation	{tc}  Segmentacja
+	Marker Type	Typ znacznika
+	Chapter	Rozdział
+	Segmentation (AS-11 programme part)	Segmentacja (część programu AS-11)
+	AS-10	AS-10
+# AT9/AT3 converter (Tools ▸ Audio Tools, AT3-2)
+	AT9/AT3 Converter	Konwerter AT9/AT3
+	AT9/AT3 Converter…	Konwerter AT9/AT3…
+	Files to convert:	Pliki do konwersji:
+	Add Files	Dodaj pliki
+	Add Files…	Dodaj pliki…
+	Convert to:	Konwertuj do:
+	Bit rate:	Szybkość transmisji:
+	Sample format:	Format próbek:
+	Output folder:	Folder wyjściowy:
+	Output Folder	Folder wyjściowy
+	Next to each source file	Obok każdego pliku źródłowego
+	AT9 and ATRAC3plus files convert to WAV; encoding AT9, ATRAC3plus and MP3 is not available yet.	Pliki AT9 i ATRAC3plus są konwertowane do WAV; kodowanie AT9, ATRAC3plus i MP3 nie jest jeszcze dostępne.
+	Convert	Konwertuj
+	Add the files to convert first.	Najpierw dodaj pliki do konwersji.
+	Done: {n} file(s) converted.	Gotowe: przekonwertowano plików: {n}.
+	Converting {name}…	Konwertowanie {name}…
+	Stopping…	Zatrzymywanie…
+	AT3 (ATRAC3, PSP / PS3)	AT3 (ATRAC3, PSP / PS3)
+	WAV (PCM)	WAV (PCM)
+	132 kbit/s (LP2)	132 kbit/s (LP2)
+	105 kbit/s	105 kbit/s
+	66 kbit/s (LP4, joint stereo)	66 kbit/s (LP4, joint stereo)
+	16-bit	16-bitowy
+	24-bit	24-bitowy
+	32-bit float	32-bitowy zmiennoprzecinkowy

@@ -4774,3 +4774,35 @@ export.summary	Low	төмен
 # Timecode sync varispeed and user bits (TC-8, #1308)
 	Varispeed: adjust the playback speed instead of seeking	Varispeed: секіру орнына ойнату жылдамдығын реттеу
 	User bits	Пайдаланушы биттері
+# AS-11 programme parts and AS-10 metadata (G2, #1371, #1375)
+	{tc}  Segmentation	{tc}  Сегменттеу
+	Marker Type	Маркер түрі
+	Chapter	Тарау
+	Segmentation (AS-11 programme part)	Сегменттеу (AS-11 бағдарлама бөлігі)
+	AS-10	AS-10
+# AT9/AT3 converter (Tools ▸ Audio Tools, AT3-2)
+	AT9/AT3 Converter	AT9/AT3 түрлендіргіші
+	AT9/AT3 Converter…	AT9/AT3 түрлендіргіші…
+	Files to convert:	Түрлендірілетін файлдар:
+	Add Files	Файлдарды қосу
+	Add Files…	Файлдарды қосу…
+	Convert to:	Мынаған түрлендіру:
+	Bit rate:	Бит жылдамдығы:
+	Sample format:	Үлгі пішімі:
+	Output folder:	Шығыс қалтасы:
+	Output Folder	Шығыс қалтасы
+	Next to each source file	Әр бастапқы файлдың жанына
+	AT9 and ATRAC3plus files convert to WAV; encoding AT9, ATRAC3plus and MP3 is not available yet.	AT9 және ATRAC3plus файлдары WAV пішіміне түрлендіріледі; AT9, ATRAC3plus және MP3 кодтауы әзірге қолжетімсіз.
+	Convert	Түрлендіру
+	Add the files to convert first.	Алдымен түрлендірілетін файлдарды қосыңыз.
+	Done: {n} file(s) converted.	Дайын: {n} файл түрлендірілді.
+	Converting {name}…	{name} түрлендірілуде…
+	Stopping…	Тоқтатылуда…
+	AT3 (ATRAC3, PSP / PS3)	AT3 (ATRAC3, PSP / PS3)
+	WAV (PCM)	WAV (PCM)
+	132 kbit/s (LP2)	132 кбит/с (LP2)
+	105 kbit/s	105 кбит/с
+	66 kbit/s (LP4, joint stereo)	66 кбит/с (LP4, joint stereo)
+	16-bit	16 бит
+	24-bit	24 бит
+	32-bit float	32 бит қалқымалы нүкте

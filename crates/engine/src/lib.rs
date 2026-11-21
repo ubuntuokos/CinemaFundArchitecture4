@@ -11,6 +11,7 @@
 #![cfg_attr(not(test), deny(clippy::unwrap_used, clippy::expect_used, clippy::panic, clippy::unimplemented, clippy::todo, clippy::unreachable))]
 
 pub mod aaf_omf;
+mod atrac_convert;
 pub mod autosave;
 pub mod beat_markers;
 pub mod captions;
@@ -1432,6 +1433,8 @@ mod nest_fidelity_tests;
 mod nesting_tests;
 #[cfg(test)]
 mod opatom_tests;
+#[cfg(test)]
+mod otio_size_tests;
 #[cfg(test)]
 mod panels_tests;
 #[cfg(test)]

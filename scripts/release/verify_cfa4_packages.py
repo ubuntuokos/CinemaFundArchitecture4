@@ -114,6 +114,16 @@ def verify_docs(sizes: dict[str, int], base: str, package: str) -> None:
         raise AuditError(f"{package} lacks licence/attribution files in {base}: {missing}")
 
 
+def verify_launcher_is_qt(sizes: dict[str, int], bindir: str, package: str) -> None:
+    """Q4.3 (owner 2026-11-12, 2026-11-14): `cfa4` is a copy of the Qt GUI's launcher, never the
+    egui editor. A listing gives sizes only: the launcher is a small script of the same size as
+    `cfa4-qt`, the editor a native program of many megabytes."""
+    cfa4, qt = sizes.get(f"{bindir}/cfa4", 0), sizes.get(f"{bindir}/cfa4-qt", 0)
+    if cfa4 != qt:
+        raise AuditError(f"{package} {bindir}/cfa4 is not the Qt GUI launcher ({cfa4} bytes, cfa4-qt {qt}); "
+                         "the egui editor must not ship")
+
+
 def parse_listing(listing: str, strip: str) -> dict[str, int]:
     """Regular files and links of a `dpkg-deb --contents` / `unsquashfs -lls` listing
     ("-rw-r--r-- root/root 1234 2026-11-08 07:00 ./usr/bin/cfa4"), relative to `strip`, with their
@@ -143,6 +153,7 @@ def verify_tarball(path: Path, version: str) -> None:
         "install.sh",
         "bin/cfa4",
         "bin/cfa4-cli",
+        "bin/cfa4-qt",
         f"share/applications/{APP_ID}.desktop",
         f"share/mime/packages/{APP_ID}.xml",
         f"share/metainfo/{APP_ID}.metainfo.xml",
@@ -167,7 +178,7 @@ def verify_tarball(path: Path, version: str) -> None:
             raise AuditError(f"tarball missing required entries: {sorted(missing)}")
         verify_ffmpeg(set(files), FFMPEG_DIR, "tarball")
         verify_docs({name: member.size for name, member in files.items()}, "share/doc/cfa4", "tarball")
-        for name in ("install.sh", "bin/cfa4", "bin/cfa4-cli"):
+        for name in ("install.sh", "bin/cfa4", "bin/cfa4-cli", "bin/cfa4-qt"):
             if not files[name].mode & 0o111 or files[name].size == 0:
                 raise AuditError(f"tarball executable invalid: {name}")
         def read(name: str) -> bytes:
@@ -175,6 +186,11 @@ def verify_tarball(path: Path, version: str) -> None:
             if stream is None:
                 raise AuditError(f"cannot read tar member: {name}")
             return stream.read()
+
+        # Q4.3 (owner 2026-11-12, 2026-11-14): no package carries or starts egui; `cfa4` is a copy of
+        # the Qt GUI's launcher
+        if read("bin/cfa4") != read("bin/cfa4-qt"):
+            raise AuditError("tarball bin/cfa4 is not the Qt GUI launcher (the egui editor must not ship)")
 
         desktop = read(f"share/applications/{APP_ID}.desktop").decode("utf-8")
         if "Name=CFA4" not in desktop or f"Icon={APP_ID}" not in desktop:
@@ -220,6 +236,7 @@ def verify_deb(path: Path, version: str) -> None:
     ):
         if sizes.get(entry, 0) <= 0:
             raise AuditError(f".deb missing ./{entry}")
+    verify_launcher_is_qt(sizes, "usr/bin", ".deb")
     names = set(sizes)
     verify_ffmpeg(names, FFMPEG_DEB_DIR, ".deb")
     verify_docs(sizes, "usr/share/doc/cfa4", ".deb")
@@ -270,6 +287,7 @@ def verify_appimage(path: Path) -> None:
     ):
         if sizes.get(entry, 0) <= 0:
             raise AuditError(f"AppImage missing {entry}")
+    verify_launcher_is_qt(sizes, "usr/bin", "AppImage")
     verify_ffmpeg(set(sizes), f"usr/{FFMPEG_DIR}", "AppImage")
     verify_docs(sizes, "usr/share/doc/cfa4", "AppImage")
     missing = [doc for doc in PYSIDE6_DOCS if sizes.get(f"usr/share/doc/cfa4/pyside6/{doc}", 0) <= 0]

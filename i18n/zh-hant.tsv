@@ -4771,3 +4771,35 @@ export.summary	Low	低
 # Timecode sync varispeed and user bits (TC-8, #1308)
 	Varispeed: adjust the playback speed instead of seeking	變速：調整播放速度而非跳轉
 	User bits	使用者位元
+# AS-11 programme parts and AS-10 metadata (G2, #1371, #1375)
+	{tc}  Segmentation	{tc}  分段
+	Marker Type	標記類型
+	Chapter	章節
+	Segmentation (AS-11 programme part)	分段（AS-11 節目部分）
+	AS-10	AS-10
+# AT9/AT3 converter (Tools ▸ Audio Tools, AT3-2)
+	AT9/AT3 Converter	AT9/AT3 轉換器
+	AT9/AT3 Converter…	AT9/AT3 轉換器…
+	Files to convert:	要轉換的檔案:
+	Add Files	加入檔案
+	Add Files…	加入檔案…
+	Convert to:	轉換為:
+	Bit rate:	位元速率:
+	Sample format:	取樣格式:
+	Output folder:	輸出資料夾:
+	Output Folder	輸出資料夾
+	Next to each source file	與各來源檔案相同位置
+	AT9 and ATRAC3plus files convert to WAV; encoding AT9, ATRAC3plus and MP3 is not available yet.	AT9 與 ATRAC3plus 檔案可轉換為 WAV；尚不支援 AT9、ATRAC3plus 與 MP3 編碼。
+	Convert	轉換
+	Add the files to convert first.	請先加入要轉換的檔案。
+	Done: {n} file(s) converted.	完成：已轉換 {n} 個檔案。
+	Converting {name}…	正在轉換 {name}…
+	Stopping…	正在停止…
+	AT3 (ATRAC3, PSP / PS3)	AT3 (ATRAC3, PSP / PS3)
+	WAV (PCM)	WAV (PCM)
+	132 kbit/s (LP2)	132 kbit/s (LP2)
+	105 kbit/s	105 kbit/s
+	66 kbit/s (LP4, joint stereo)	66 kbit/s (LP4，聯合立體聲)
+	16-bit	16 位元
+	24-bit	24 位元
+	32-bit float	32 位元浮點

@@ -19,7 +19,10 @@
 //! | `live.studio.source.move` | `{id, index}` | its place in the stack (0: bottom) |
 //!
 //! Kind fields: `color` `{color: "#RRGGBB[AA]" \| [r,g,b,a], width, height}`, `image` `{path}`,
-//! `text` `{text, font?, size?, color?}`. A transform is `{x, y, scaleX, scaleY, rotation,
+//! `text` `{text, font?, size?, color?}`, `media` `{path, loop?}` (a video file playing, from the
+//! start again at the end unless `loop` is false), `liveGraphics` `{}` (the C10 live graphics
+//! program: what TAKE put on air). Media and live graphics are moving pictures: the front end
+//! feeds their frames to the host ([`LayerPicture::Feed`]). A transform is `{x, y, scaleX, scaleY, rotation,
 //! crop: [l, t, r, b]}`; any field may be left out (it keeps its value).
 
 use std::sync::Arc;
@@ -32,6 +35,8 @@ use crate::{Result, Session};
 
 /// The default canvas of a new colour source (the studio's default video).
 const DEFAULT_COLOR_SIZE: (u32, u32) = (1920, 1080);
+/// The source types, for messages.
+const TYPES: &str = "color, image, text, media or liveGraphics";
 /// Largest picture file read for an image source.
 const MAX_PICTURE_BYTES: u64 = 512 << 20;
 
@@ -103,6 +108,18 @@ fn name_p(cmd: &str, p: &Value) -> Result<Option<String>> {
     }
 }
 
+/// Applies `p.path` (a file path) to `path`.
+fn path_p(cmd: &str, p: &Value, path: &mut String, what: &str) -> Result<()> {
+    if let Some(v) = p.get("path").filter(|v| !v.is_null()) {
+        let s = v.as_str().map(str::trim).filter(|s| !s.is_empty()).ok_or_else(|| bad(cmd, format!("`path` must name a {what} file")))?;
+        if s.len() > model::MAX_PATH_BYTES || s.contains('\0') {
+            return Err(bad(cmd, format!("the {what} path is too long or not a path")));
+        }
+        *path = s.to_string();
+    }
+    Ok(())
+}
+
 /// Applies the kind fields of `p` to `kind` (the type stays).
 fn apply_kind(cmd: &str, kind: &mut SourceKind, p: &Value) -> Result<()> {
     match kind {
@@ -117,15 +134,14 @@ fn apply_kind(cmd: &str, kind: &mut SourceKind, p: &Value) -> Result<()> {
                 *height = h;
             }
         }
-        SourceKind::Image { path } => {
-            if let Some(v) = p.get("path").filter(|v| !v.is_null()) {
-                let s = v.as_str().map(str::trim).filter(|s| !s.is_empty()).ok_or_else(|| bad(cmd, "`path` must name a picture file"))?;
-                if s.len() > model::MAX_PATH_BYTES || s.contains('\0') {
-                    return Err(bad(cmd, "the picture path is too long or not a path"));
-                }
-                *path = s.to_string();
+        SourceKind::Image { path } => path_p(cmd, p, path, "picture")?,
+        SourceKind::Media { path, looping } => {
+            path_p(cmd, p, path, "video")?;
+            if let Some(v) = p.get("loop").filter(|v| !v.is_null()) {
+                *looping = v.as_bool().ok_or_else(|| bad(cmd, "`loop` must be true or false"))?;
             }
         }
+        SourceKind::LiveGraphics {} => {}
         SourceKind::Text { text, font, size, color } => {
             if let Some(v) = p.get("text").filter(|v| !v.is_null()) {
                 let s = v.as_str().ok_or_else(|| bad(cmd, "`text` must be a string"))?;
@@ -313,8 +329,15 @@ fn source_add(s: &mut Session, p: &Value) -> Result<Value> {
             SourceKind::Image { path: String::new() }
         }
         Some("text") => SourceKind::text(""),
-        Some(other) => return Err(bad(CMD, format!("unknown source type `{other}` (color, image or text)"))),
-        None => return Err(bad(CMD, "give the source `type`: color, image or text")),
+        Some("media") => {
+            if str_p(p, "path").is_none_or(|x| x.trim().is_empty()) {
+                return Err(bad(CMD, "a media source needs the video file (`path`)"));
+            }
+            SourceKind::Media { path: String::new(), looping: true }
+        }
+        Some("liveGraphics") => SourceKind::LiveGraphics {},
+        Some(other) => return Err(bad(CMD, format!("unknown source type `{other}` ({TYPES})"))),
+        None => return Err(bad(CMD, format!("give the source `type`: {TYPES}"))),
     };
     apply_kind(CMD, &mut kind, p)?;
     let mut transform = SourceTransform::default();
@@ -323,6 +346,8 @@ fn source_add(s: &mut Session, p: &Value) -> Result<Value> {
     let name = name_p(CMD, p)?.filter(|n| !n.is_empty()).unwrap_or_else(|| match &kind {
         SourceKind::Color { .. } => "Color".into(),
         SourceKind::Image { path } => std::path::Path::new(path).file_name().map_or_else(|| "Image".into(), |f| f.to_string_lossy().into_owned()),
+        SourceKind::Media { path, .. } => std::path::Path::new(path).file_name().map_or_else(|| "Media".into(), |f| f.to_string_lossy().into_owned()),
+        SourceKind::LiveGraphics {} => "Live Graphics".into(),
         SourceKind::Text { text, .. } => {
             let first: String = text.lines().next().unwrap_or("").chars().take(40).collect();
             if first.trim().is_empty() { "Text".into() } else { first }
@@ -464,6 +489,8 @@ pub enum LayerPicture {
     Color { rgba: [u8; 4], width: u32, height: u32 },
     /// Straight sRGB RGBA8 pixels, `width * height * 4` bytes.
     Pixels { width: u32, height: u32, rgba: Arc<Vec<u8>> },
+    /// A moving picture of this size: the frame ring `ring` the front end keeps writing.
+    Feed { width: u32, height: u32, ring: std::path::PathBuf },
 }
 
 /// A visible source of the current scene, rendered.
@@ -508,6 +535,7 @@ pub fn render_source(kind: &SourceKind) -> std::result::Result<LayerPicture, Str
             Ok(LayerPicture::Pixels { width: r.width, height: r.height, rgba: Arc::new(r.rgba) })
         }
         SourceKind::Text { text, font, size, color } => render_text(text, font, *size, *color),
+        SourceKind::Media { .. } | SourceKind::LiveGraphics {} => Err("a moving source is fed by the front end, not rendered once".into()),
     }
 }
 
@@ -554,17 +582,18 @@ fn render_text(text: &str, font: &str, size: f64, color: [u8; 4]) -> std::result
 }
 
 /// The visible sources of the current scene, bottom first, rendered by `render` (normally
-/// [`render_source`]; the caller may cache by [`picture_key`]). A source that cannot be drawn
-/// (a missing picture file…) is left out and reported with its id and the reason.
+/// [`render_source`] of the source's kind, a feed for a moving one; the caller may cache by
+/// [`picture_key`]). A source that cannot be drawn (a missing picture file…) is left out and
+/// reported with its id and the reason.
 pub fn program_layers(
     studio: &LiveStudio,
-    mut render: impl FnMut(&SourceKind) -> std::result::Result<LayerPicture, String>,
+    mut render: impl FnMut(&StudioSource) -> std::result::Result<LayerPicture, String>,
 ) -> (Vec<ProgramLayer>, Vec<(u64, String)>) {
     let mut layers = Vec::new();
     let mut problems = Vec::new();
     let Some(scene) = studio.current_scene() else { return (layers, problems) };
     for src in scene.sources.iter().filter(|x| x.visible) {
-        match render(&src.kind) {
+        match render(src) {
             Ok(picture) => layers.push(ProgramLayer { source: src.id, picture, transform: src.transform }),
             Err(e) => problems.push((src.id, e)),
         }

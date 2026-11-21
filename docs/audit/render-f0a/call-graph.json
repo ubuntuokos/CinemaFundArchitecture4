@@ -716,6 +716,11 @@
   },
   {
    "crate": "cfa4-export",
+   "fn": "export_as11_parts",
+   "module": "lib.rs"
+  },
+  {
+   "crate": "cfa4-export",
    "fn": "export_chapters",
    "module": "lib.rs"
   },
@@ -2247,6 +2252,20 @@
   },
   {
    "class": "other",
+   "crate": "cfa4-cli",
+   "kind": "struct",
+   "module": "studio_feeds.rs",
+   "name": "LiveFeed"
+  },
+  {
+   "class": "other",
+   "crate": "cfa4-cli",
+   "kind": "struct",
+   "module": "studio_feeds.rs",
+   "name": "MediaFeed"
+  },
+  {
+   "class": "other",
    "crate": "cfa4-color",
    "kind": "enum",
    "module": "grade.rs",
@@ -2335,6 +2354,27 @@
    "kind": "struct",
    "module": "transform.rs",
    "name": "OutputTransform"
+  },
+  {
+   "class": "other",
+   "crate": "cfa4-engine",
+   "kind": "struct",
+   "module": "atrac_convert.rs",
+   "name": "Outcome"
+  },
+  {
+   "class": "other",
+   "crate": "cfa4-engine",
+   "kind": "struct",
+   "module": "atrac_convert.rs",
+   "name": "Request"
+  },
+  {
+   "class": "other",
+   "crate": "cfa4-engine",
+   "kind": "enum",
+   "module": "atrac_convert.rs",
+   "name": "Target"
   },
   {
    "class": "other",
@@ -5168,6 +5208,13 @@
    "class": "other",
    "crate": "cfa4-render",
    "kind": "enum",
+   "module": "mosh.rs",
+   "name": "MoshError"
+  },
+  {
+   "class": "other",
+   "crate": "cfa4-render",
+   "kind": "enum",
    "module": "offline.rs",
    "name": "OfflineReason"
   },
@@ -6549,17 +6596,17 @@
   },
   {
    "from": "cfa4-cli/serve_live.rs",
+   "item": "live",
+   "to": "cfa4-engine"
+  },
+  {
+   "from": "cfa4-cli/serve_live.rs",
    "item": "studio",
    "to": "cfa4-engine"
   },
   {
    "from": "cfa4-cli/serve_live.rs",
-   "item": "LiveStudio",
-   "to": "cfa4-project"
-  },
-  {
-   "from": "cfa4-cli/serve_live.rs",
-   "item": "StudioScene",
+   "item": "SourceKind",
    "to": "cfa4-project"
   },
   {
@@ -6843,6 +6890,31 @@
    "to": "cfa4-route"
   },
   {
+   "from": "cfa4-cli/studio_feeds.rs",
+   "item": "FrameRequest",
+   "to": "cfa4-media"
+  },
+  {
+   "from": "cfa4-cli/studio_feeds.rs",
+   "item": "MediaSource",
+   "to": "cfa4-media"
+  },
+  {
+   "from": "cfa4-cli/studio_feeds.rs",
+   "item": "FrameRate",
+   "to": "cfa4-time"
+  },
+  {
+   "from": "cfa4-cli/studio_feeds.rs",
+   "item": "TICKS_PER_SECOND",
+   "to": "cfa4-time"
+  },
+  {
+   "from": "cfa4-cli/studio_feeds.rs",
+   "item": "Tick",
+   "to": "cfa4-time"
+  },
+  {
    "from": "cfa4-engine/aaf_omf.rs",
    "item": "ExportSettings",
    "to": "cfa4-export"
@@ -6870,6 +6942,31 @@
   {
    "from": "cfa4-engine/aaf_omf.rs",
    "item": "Tick",
+   "to": "cfa4-time"
+  },
+  {
+   "from": "cfa4-engine/atrac_convert.rs",
+   "item": "Progress",
+   "to": "cfa4-export"
+  },
+  {
+   "from": "cfa4-engine/atrac_convert.rs",
+   "item": "Report",
+   "to": "cfa4-export"
+  },
+  {
+   "from": "cfa4-engine/atrac_convert.rs",
+   "item": "write_wav",
+   "to": "cfa4-export"
+  },
+  {
+   "from": "cfa4-engine/atrac_convert.rs",
+   "item": "open_path",
+   "to": "cfa4-media"
+  },
+  {
+   "from": "cfa4-engine/atrac_convert.rs",
+   "item": "TICKS_PER_SECOND",
    "to": "cfa4-time"
   },
   {

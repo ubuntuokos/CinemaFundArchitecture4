@@ -92,14 +92,15 @@ fi
 echo "==> CFA4 $VERSION for Linux $ARCH ($FORMATS)"
 
 if [ "$SKIP_BUILD" = 0 ]; then
-  features=cfa4/gstreamer,cfa4-cli/gstreamer
+  # Only the engine: the packages carry no egui editor (docs/plans/CFA4-QT6-FINISH-001.md Q4.3).
+  features=cfa4-cli/gstreamer
   if [[ "$WITH_FFMPEG" == 1 ]]; then
-    features+=,cfa4/ffmpeg,cfa4-cli/ffmpeg
+    features+=,cfa4-cli/ffmpeg
     # Link against the build, but keep the canonical /opt/cfa4 run-time path (no CFA4_FFMPEG_PREFIX).
     (cd "$ROOT" && env -u CFA4_FFMPEG_PREFIX PKG_CONFIG_PATH="$FFMPEG_BUILD/lib/pkgconfig${PKG_CONFIG_PATH:+:$PKG_CONFIG_PATH}" \
-      cargo build --release --locked -p cfa4 -p cfa4-cli --features "$features")
+      cargo build --release --locked -p cfa4-cli --features "$features")
   else
-    (cd "$ROOT" && cargo build --release --locked -p cfa4 -p cfa4-cli --features "$features")
+    (cd "$ROOT" && cargo build --release --locked -p cfa4-cli --features "$features")
   fi
 fi
 BIN="$CARGO_TARGET_DIR/release"
@@ -107,25 +108,26 @@ WORK="$CARGO_TARGET_DIR/linux-package"
 STAGE="$WORK/root"
 rm -rf "$WORK"
 if [[ "$WITH_FFMPEG" == 1 ]]; then
-  for binary in cfa4 cfa4-cli; do
-    runpath="$(readelf -d "$BIN/$binary" | sed -n 's/.*(RUNPATH).*\[\(.*\)\]/\1/p')"
-    if [[ "$runpath" != *"$FFMPEG_RUNPATH"* ]]; then
-      echo "error: $BIN/$binary has RUNPATH '$runpath', expected '$FFMPEG_RUNPATH' (built without the ffmpeg feature, or with CFA4_FFMPEG_PREFIX?)" >&2
-      exit 1
-    fi
-  done
+  runpath="$(readelf -d "$BIN/cfa4-cli" | sed -n 's/.*(RUNPATH).*\[\(.*\)\]/\1/p')"
+  if [[ "$runpath" != *"$FFMPEG_RUNPATH"* ]]; then
+    echo "error: $BIN/cfa4-cli has RUNPATH '$runpath', expected '$FFMPEG_RUNPATH' (built without the ffmpeg feature, or with CFA4_FFMPEG_PREFIX?)" >&2
+    exit 1
+  fi
 fi
 
 # ---- stage an FHS tree (shared by every format) -------------------------------------------------
-install -Dm755 "$BIN/cfa4" "$STAGE/usr/bin/cfa4"
 install -Dm755 "$BIN/cfa4-cli" "$STAGE/usr/bin/cfa4-cli"
-strip "$STAGE/usr/bin/cfa4" "$STAGE/usr/bin/cfa4-cli" 2>/dev/null || true
+strip "$STAGE/usr/bin/cfa4-cli" 2>/dev/null || true
 # The Qt 6 GUI (ADR F8 phase 7): its Python package and the cfa4-qt launcher. In the .deb and the
 # tarball PySide6 comes from Ubuntu's archive (python3-pyside6.*, LGPL-3.0); the AppImage (below) and
 # the Flatpak (flatpak-bundle.sh) carry their own (stage-pyside6.py). The top-level i18n/
 # catalogs (with their attribution sidecars) go with it, so an installed GUI translates as a
 # checkout does.
 install -Dm755 "$HERE/cfa4-qt" "$STAGE/usr/bin/cfa4-qt"
+# No package starts egui by any path (owner decisions 2026-11-12 and 2026-11-14; Q4.3): the familiar
+# `cfa4` command is a copy of the Qt GUI's launcher (a file, not a link: the tarball audit takes no
+# links), so it starts the Qt GUI too.
+install -Dm755 "$HERE/cfa4-qt" "$STAGE/usr/bin/cfa4"
 QT_PY="$STAGE/usr/lib/cfa4/python"
 mkdir -p "$QT_PY"
 cp -R "$ROOT/python/cfa4_qt" "$QT_PY/"
@@ -211,7 +213,7 @@ if has appimage; then
   python3 "$HERE/stage-pyside6.py" --wheels "${CFA4_PYSIDE6_WHEELS:?set CFA4_PYSIDE6_WHEELS to the local PySide6 wheelhouse}" \
     --dest "$APPDIR/usr/lib/cfa4/pyside6" --doc "$APPDIR/usr/share/doc/cfa4/pyside6" --host-xcb
   # Keep usr/share/doc: licences, NOTICE and attributions must ship inside the AppImage too.
-  # AppRun starts the Qt GUI by default, or egui with --egui / CFA4_GUI=egui.
+  # AppRun starts the Qt GUI, and nothing else (Q4.3).
   install -m755 "$HERE/AppRun" "$APPDIR/AppRun"
   cp "$HERE/$APP_ID.desktop" "$APPDIR/$APP_ID.desktop"
   # the CFA4 logo is raster artwork: the 256 px PNG is the AppImage icon
@@ -268,13 +270,12 @@ fi
 "$STAGE/usr/bin/cfa4-cli" --version
 if [[ "$WITH_FFMPEG" == 1 ]]; then
   # The staged binaries must start on the bundled FFmpeg alone (no /opt/cfa4 needed) and report it.
-  for binary in cfa4 cfa4-cli; do
-    if env -u LD_LIBRARY_PATH ldd "$STAGE/usr/bin/$binary" | grep -q 'not found'; then
-      env -u LD_LIBRARY_PATH ldd "$STAGE/usr/bin/$binary" | grep 'not found' >&2
-      echo "error: the staged $binary misses libraries" >&2
-      exit 1
-    fi
-  done
+  # the engine is the packages' only native program (Q4.3)
+  if env -u LD_LIBRARY_PATH ldd "$STAGE/usr/bin/cfa4-cli" | grep -q 'not found'; then
+    env -u LD_LIBRARY_PATH ldd "$STAGE/usr/bin/cfa4-cli" | grep 'not found' >&2
+    echo "error: the staged cfa4-cli misses libraries" >&2
+    exit 1
+  fi
   backends="$(env -u LD_LIBRARY_PATH "$STAGE/usr/bin/cfa4-cli" media-backends --data-dir "$WORK/data")"
   python3 -c '
 import json, sys

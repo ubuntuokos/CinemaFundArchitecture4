@@ -4778,3 +4778,35 @@ export.summary	Low	తక్కువ
 # Timecode sync varispeed and user bits (TC-8, #1308)
 	Varispeed: adjust the playback speed instead of seeking	Varispeed: దాటవేయడానికి బదులు ప్లేబ్యాక్ వేగాన్ని సర్దుబాటు చేయి
 	User bits	వినియోగదారు బిట్‌లు
+# AS-11 programme parts and AS-10 metadata (G2, #1371, #1375)
+	{tc}  Segmentation	{tc}  విభజన
+	Marker Type	మార్కర్ రకం
+	Chapter	చాప్టర్
+	Segmentation (AS-11 programme part)	విభజన (AS-11 కార్యక్రమ భాగం)
+	AS-10	AS-10
+# AT9/AT3 converter (Tools ▸ Audio Tools, AT3-2)
+	AT9/AT3 Converter	AT9/AT3 కన్వర్టర్
+	AT9/AT3 Converter…	AT9/AT3 కన్వర్టర్…
+	Files to convert:	మార్చవలసిన ఫైల్‌లు:
+	Add Files	ఫైల్‌లను జోడించు
+	Add Files…	ఫైల్‌లను జోడించు…
+	Convert to:	దీనికి మార్చు:
+	Bit rate:	బిట్ రేట్:
+	Sample format:	శాంపిల్ ఫార్మాట్:
+	Output folder:	అవుట్‌పుట్ ఫోల్డర్:
+	Output Folder	అవుట్‌పుట్ ఫోల్డర్
+	Next to each source file	ప్రతి మూల ఫైల్ పక్కన
+	AT9 and ATRAC3plus files convert to WAV; encoding AT9, ATRAC3plus and MP3 is not available yet.	AT9, ATRAC3plus ఫైల్‌లు WAVకి మారతాయి; AT9, ATRAC3plus, MP3 ఎన్‌కోడింగ్ ఇంకా అందుబాటులో లేదు.
+	Convert	మార్చు
+	Add the files to convert first.	ముందుగా మార్చవలసిన ఫైల్‌లను జోడించండి.
+	Done: {n} file(s) converted.	పూర్తయింది: {n} ఫైల్(లు) మార్చబడ్డాయి.
+	Converting {name}…	{name} మార్చబడుతోంది…
+	Stopping…	ఆపుతోంది…
+	AT3 (ATRAC3, PSP / PS3)	AT3 (ATRAC3, PSP / PS3)
+	WAV (PCM)	WAV (PCM)
+	132 kbit/s (LP2)	132 kbit/s (LP2)
+	105 kbit/s	105 kbit/s
+	66 kbit/s (LP4, joint stereo)	66 kbit/s (LP4, joint stereo)
+	16-bit	16-బిట్
+	24-bit	24-బిట్
+	32-bit float	32-బిట్ ఫ్లోట్

@@ -4766,3 +4766,35 @@
 # Timecode sync varispeed and user bits (TC-8, #1308)
 	Varispeed: adjust the playback speed instead of seeking	배리스피드: 이동하는 대신 재생 속도를 조정
 	User bits	사용자 비트
+# AS-11 programme parts and AS-10 metadata (G2, #1371, #1375)
+	{tc}  Segmentation	{tc}  세그먼테이션
+	Marker Type	마커 유형
+	Chapter	챕터
+	Segmentation (AS-11 programme part)	세그먼테이션(AS-11 프로그램 파트)
+	AS-10	AS-10
+# AT9/AT3 converter (Tools ▸ Audio Tools, AT3-2)
+	AT9/AT3 Converter	AT9/AT3 변환기
+	AT9/AT3 Converter…	AT9/AT3 변환기…
+	Files to convert:	변환할 파일:
+	Add Files	파일 추가
+	Add Files…	파일 추가…
+	Convert to:	변환 형식:
+	Bit rate:	비트레이트:
+	Sample format:	샘플 형식:
+	Output folder:	출력 폴더:
+	Output Folder	출력 폴더
+	Next to each source file	각 원본 파일 옆
+	AT9 and ATRAC3plus files convert to WAV; encoding AT9, ATRAC3plus and MP3 is not available yet.	AT9 및 ATRAC3plus 파일은 WAV로 변환됩니다. AT9, ATRAC3plus, MP3 인코딩은 아직 지원되지 않습니다.
+	Convert	변환
+	Add the files to convert first.	먼저 변환할 파일을 추가하세요.
+	Done: {n} file(s) converted.	완료: 파일 {n}개를 변환했습니다.
+	Converting {name}…	{name} 변환 중…
+	Stopping…	중지하는 중…
+	AT3 (ATRAC3, PSP / PS3)	AT3 (ATRAC3, PSP / PS3)
+	WAV (PCM)	WAV (PCM)
+	132 kbit/s (LP2)	132 kbit/s (LP2)
+	105 kbit/s	105 kbit/s
+	66 kbit/s (LP4, joint stereo)	66 kbit/s (LP4, 조인트 스테레오)
+	16-bit	16비트
+	24-bit	24비트
+	32-bit float	32비트 부동 소수점
