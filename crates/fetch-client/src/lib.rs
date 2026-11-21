@@ -210,9 +210,18 @@ fn run_with(program: &Path, extra_args: &[&str], req: &Request, progress: Progre
         .stderr(Stdio::null())
         .spawn()
         .map_err(|e| if e.kind() == std::io::ErrorKind::NotFound { FetchError::NotFound } else { FetchError::Io(e) })?;
+    // the request is written on its own thread: a downloader that does not read it would otherwise
+    // block this call before the stall watchdog runs. The thread ends when the request is written or
+    // the pipe closes (a closed pipe shows in the downloader's exit); it is not waited for.
     if let Some(mut stdin) = child.stdin.take() {
-        // the program reads the whole request before it answers; a closed pipe shows in its exit
-        let _ = stdin.write_all(&body);
+        let writer = std::thread::Builder::new().name("cfa4-fetch-request".into()).spawn(move || {
+            let _ = stdin.write_all(&body);
+        });
+        if let Err(e) = writer {
+            let _ = child.kill();
+            let _ = child.wait();
+            return Err(FetchError::Io(e));
+        }
     }
     let Some(stdout) = child.stdout.take() else {
         let _ = child.kill();

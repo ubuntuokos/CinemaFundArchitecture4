@@ -182,6 +182,23 @@ fn a_process_left_behind_holding_the_output_does_not_hold_the_download() {
     assert!(start.elapsed() < Duration::from_secs(20), "{:?}", start.elapsed());
 }
 
+#[cfg(unix)]
+#[test]
+fn a_downloader_that_does_not_read_the_request_is_stopped() {
+    let t = tempfile::tempdir().unwrap();
+    let prog = t.path().join("deaf-fetch");
+    std::fs::write(&prog, "#!/bin/sh\nexec sleep 60\n").unwrap();
+    // a request larger than a pipe's buffer (64 KiB), so writing it would block
+    let mut req = request(t.path());
+    let long = format!("https://example.org/{}", "x".repeat(2000));
+    req.files = (0..100).map(|i| file(&format!("f{i}.bin"), &long)).collect();
+    assert!(serde_json::to_vec(&req).unwrap().len() > 128 << 10);
+    let start = std::time::Instant::now();
+    let e = run_with(Path::new(SH_PATH), &[prog.to_str().unwrap()], &req, &mut |_, _, _| true, Duration::from_secs(1)).unwrap_err();
+    assert!(e.to_string().contains("received nothing"), "{e}");
+    assert!(start.elapsed() < Duration::from_secs(20), "{:?}", start.elapsed());
+}
+
 #[test]
 fn a_missing_program_or_a_bad_request_fails_cleanly() {
     let t = tempfile::tempdir().unwrap();
