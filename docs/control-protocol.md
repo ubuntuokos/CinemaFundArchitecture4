@@ -255,6 +255,7 @@ An error reply may add `"code"` next to `"error"` (`invalid_params`, `alsa_unava
 | `surface.state` | `{device?}` | `{learn, devices: [{device, state, received, dispatched, coalesced, stalls, gaps, errors}], kernelDropped, clockValid}` |
 | `surface.audit` | `{device?}` | `[{device, control, problem, detail}]` |
 | `surface.profile.warnings` | `{}` | `{devices: [{device, warnings}]}` for assignments this version cannot read |
+| `surface.feedback.test` | `{target: {type: "tally", index}, value: {type: "tally", value: {program?, preview?, aux?}}, device?, led?}` | `{feedback, dominant, led, output}`: the tally feedback the engine would send and what the device's LED shows, without hardware (READY-V4.2). `led` (`"color"` or `"onOff"`) overrides the LED the device's active profile names in `feedback.tally.led` (default on/off). Colour LED: program red, preview green, aux yellow, none off; on/off LED: on for program only; program beats preview beats aux. Only tally can be tested yet; sending to devices is not implemented |
 
 Events: `surfaceAction` `{command, params, device, control, seq}`, `surfaceLearn` `{state, device?, count?, captured?, conflict?}`, `surfaceMonitor`, `surfaceError` `{device?, code, error}` (the same text at most once a second).
 
