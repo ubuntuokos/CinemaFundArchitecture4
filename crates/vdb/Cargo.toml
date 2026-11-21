@@ -1,0 +1,15 @@
+[package]
+name = "cfa4-vdb"
+description = "Host side of the OpenVDB worker (layer L1): runs workers/vdb as a separate process, parses its answer, never lets a worker failure reach the engine (plan CFA4-DNEG-TECHNOLOGY-ADAPTATION-001, N1)"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+rust-version.workspace = true
+
+[lints]
+workspace = true
+
+[dependencies]
+serde = { workspace = true }
+serde_json = { workspace = true }
+thiserror = { workspace = true }

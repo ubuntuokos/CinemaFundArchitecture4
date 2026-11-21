@@ -2320,6 +2320,15 @@ dependencies = [
 ]
 
 [[package]]
+name = "cfa4-vdb"
+version = "0.10.0"
+dependencies = [
+ "serde",
+ "serde_json",
+ "thiserror 2.0.21",
+]
+
+[[package]]
 name = "cfa4-vp8"
 version = "0.10.0"
 dependencies = [
