@@ -3,12 +3,14 @@
 //! Each `hidrawN` directory has a `device/uevent` file with `HID_ID=<bus>:<vendor>:<product>`,
 //! `HID_NAME` and `HID_PHYS`. Only the devices CFA4 has a driver for are listed. Whether the node
 //! in `/dev` can be read is checked by opening it: without the `uaccess` udev rule it cannot, and
-//! the device is listed with the reason, so the user knows what to fix.
+//! the device is listed with the reason, so the user knows what to fix. When the hidraw node
+//! cannot be opened but the device's `/dev/input/eventN` node can, that node is the port and the
+//! reader decodes evdev records instead (decision N-02).
 
 use crate::DeviceInfo;
 use cfa4_surface_model::{DeviceId, DeviceState, SurfaceProtocol};
 use std::fs;
-use std::path::Path;
+use std::path::{Path, PathBuf};
 
 /// Contour Design's USB vendor id.
 pub const CONTOUR_VID: u16 = 0x0b33;
@@ -68,14 +70,22 @@ pub fn scan(sys_hidraw: &Path, dev: &Path) -> Result<Vec<DeviceInfo>, String> {
         let Ok(text) = fs::read_to_string(sys_hidraw.join(&n).join("device").join("uevent")) else { continue };
         let Some(u) = parse_uevent(&text) else { continue };
         let Some(&(_, _, model, _)) = known(u.vid, u.pid) else { continue };
-        let node = dev.join(&n);
-        let error = match fs::File::open(&node) {
+        let mut node = dev.join(&n);
+        let mut error = match fs::File::open(&node) {
             Ok(_) => None,
             Err(e) if e.kind() == std::io::ErrorKind::PermissionDenied => {
                 Some("no permission to read the device: install CFA4's udev rule (uaccess) and plug it in again".to_string())
             }
             Err(e) => Some(format!("cannot open {}: {e}", node.display())),
         };
+        // the evdev node of the same device is the fallback (decision N-02)
+        if error.is_some()
+            && let Some(event) = evdev_node(&sys_hidraw.join(&n), dev)
+            && fs::File::open(&event).is_ok()
+        {
+            node = event;
+            error = None;
+        }
         let phys = if u.phys.is_empty() { n.clone() } else { u.phys.clone() };
         out.push(DeviceInfo {
             device: DeviceId::hid(u.vid, u.pid, &phys),
@@ -90,6 +100,20 @@ pub fn scan(sys_hidraw: &Path, dev: &Path) -> Result<Vec<DeviceInfo>, String> {
         });
     }
     Ok(out)
+}
+
+/// The `/dev/input/eventN` node of the device behind a hidraw directory, from
+/// `<hidrawN>/device/input/input*/event*`. The first one in name order when there are several.
+pub fn evdev_node(hidraw_dir: &Path, dev: &Path) -> Option<PathBuf> {
+    let inputs = fs::read_dir(hidraw_dir.join("device").join("input")).ok()?;
+    let mut events: Vec<String> = inputs
+        .filter_map(|e| e.ok())
+        .filter_map(|input| fs::read_dir(input.path()).ok())
+        .flat_map(|d| d.filter_map(|e| e.ok()).map(|e| e.file_name().to_string_lossy().into_owned()))
+        .filter(|n| n.strip_prefix("event").is_some_and(|k| !k.is_empty() && k.bytes().all(|c| c.is_ascii_digit())))
+        .collect();
+    events.sort_by_key(|n| (n.len(), n.clone()));
+    events.first().map(|e| dev.join("input").join(e))
 }
 
 #[cfg(test)]
@@ -156,6 +180,50 @@ mod tests {
         assert_eq!(found[0].state, DeviceState::Error);
         assert!(found[0].error.as_deref().unwrap_or_default().contains("cannot open"));
         assert_eq!(found[0].name, "Contour ShuttlePRO");
+    }
+
+    fn add_event(sys: &Path, dev: &Path, node: &str, event: &str) {
+        let dir = sys.join(node).join("device").join("input").join("input7");
+        assert!(fs::create_dir_all(dir.join(event)).is_ok());
+        assert!(fs::create_dir_all(dir.join("mouse2")).is_ok());
+        assert!(fs::create_dir_all(dev.join("input")).is_ok());
+        assert!(fs::write(dev.join("input").join(event), b"").is_ok());
+    }
+
+    #[test]
+    fn an_unreadable_hidraw_node_falls_back_to_evdev() {
+        let t = tree("evdev");
+        let (sys, dev) = (t.0.join("sys"), t.0.join("dev"));
+        add(&sys, &dev, "hidraw0", "HID_ID=0003:00000B33:00000030\n");
+        add_event(&sys, &dev, "hidraw0", "event12");
+        assert!(fs::remove_file(dev.join("hidraw0")).is_ok());
+        let found = scan(&sys, &dev).unwrap_or_default();
+        assert_eq!(found.len(), 1);
+        assert_eq!(found[0].state, DeviceState::Online);
+        assert_eq!(found[0].error, None);
+        assert!(found[0].port.ends_with("input/event12"), "{}", found[0].port);
+        assert!(crate::hid_in::is_evdev(Path::new(&found[0].port)));
+    }
+
+    #[test]
+    fn a_readable_hidraw_node_wins_over_evdev() {
+        let t = tree("hidraw-first");
+        let (sys, dev) = (t.0.join("sys"), t.0.join("dev"));
+        add(&sys, &dev, "hidraw0", "HID_ID=0003:00000B33:00000030\n");
+        add_event(&sys, &dev, "hidraw0", "event3");
+        let found = scan(&sys, &dev).unwrap_or_default();
+        assert!(found[0].port.ends_with("hidraw0"));
+    }
+
+    #[test]
+    fn the_evdev_node_is_found_in_sysfs() {
+        let t = tree("evdev-node");
+        let (sys, dev) = (t.0.join("sys"), t.0.join("dev"));
+        add(&sys, &dev, "hidraw1", "HID_ID=0003:00000B33:00000030\n");
+        assert_eq!(evdev_node(&sys.join("hidraw1"), &dev), None, "no input directory");
+        add_event(&sys, &dev, "hidraw1", "event10");
+        add_event(&sys, &dev, "hidraw1", "event9");
+        assert_eq!(evdev_node(&sys.join("hidraw1"), &dev), Some(dev.join("input").join("event9")));
     }
 
     #[test]
