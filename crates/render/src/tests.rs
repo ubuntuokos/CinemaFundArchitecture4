@@ -289,6 +289,43 @@ fn morph_cut_frames_render_on_the_cpu_with_the_morph() {
     assert_eq!(plan::execute_cpu(&plan).px, render_sequence(&p, seq, rate.tick_of(24), opts, &map).px);
 }
 
+#[test]
+fn datamosh_frames_mosh_on_the_cpu_from_b_earlier_frames() {
+    // Datamosh reads B's frames from the start of the transition: planned whole on the CPU, the
+    // same pictures whether played forward or rendered out of order, and not a dissolve
+    let (mut p, red, ocean, seq, map) = setup();
+    let a = place(&mut p, seq, 0, red, 0, 24);
+    let b = place(&mut p, seq, 0, ocean, 24, 24);
+    let rate = FrameRate::FPS_24;
+    let mut tr = cfa4_project::Transition {
+        id: cfa4_project::TransitionId(997),
+        effect: cfa4_project::find_effect("datamosh").unwrap().instance(),
+        start: rate.tick_of(18),
+        duration: rate.tick_of(12),
+        from: Some(a),
+        to: Some(b),
+        align: Default::default(),
+        reverse: false,
+    };
+    p.sequence_mut(seq).unwrap().video_tracks[0].transitions.push(tr.clone());
+    let opts = RenderOptions { scale: 0.5, ..Default::default() };
+    assert!(plan::is_cpu_frame(&p, seq, rate.tick_of(24)));
+    let forward: Vec<Image> = (18..30).map(|f| render_sequence(&p, seq, rate.tick_of(f), opts, &map)).collect();
+    assert!(forward.iter().all(|i| i.px.iter().all(|v| v.is_finite())));
+    for f in [27, 20, 24] {
+        assert_eq!(render_sequence(&p, seq, rate.tick_of(f), opts, &map).px, forward[(f - 18) as usize].px, "frame {f}");
+    }
+    let plan = plan::plan_frame(&p, seq, rate.tick_of(24), opts, &map);
+    assert!(matches!(plan, plan::FramePlan::Image(_)));
+    assert_eq!(plan::execute_cpu(&plan).px, forward[6].px);
+    // the same frame as a cross dissolve is a different picture
+    tr.effect = cfa4_project::find_effect("cross_dissolve").unwrap().instance();
+    p.sequence_mut(seq).unwrap().video_tracks[0].transitions[0] = tr;
+    let dissolve = render_sequence(&p, seq, rate.tick_of(24), opts, &map);
+    let d = dissolve.px.iter().zip(&forward[6].px).map(|(x, y)| (x - y).abs()).sum::<f32>() / dissolve.px.len() as f32;
+    assert!(d > 1e-3, "datamosh looks like a dissolve ({d})");
+}
+
 /// A project with a 4 s bars-and-tone clip (1 kHz at −20 dBFS) on A1, with extra audio effects.
 fn tone_with(effects: &[(&str, &[(&str, f64)])]) -> (Project, ItemId, SourceMap) {
     let mut p = Project::new("fx");

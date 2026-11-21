@@ -4785,3 +4785,38 @@
 	Chapter	Kapitel
 	Segmentation (AS-11 programme part)	Segmentierung (AS-11-Programmteil)
 	AS-10	AS-10
+# AT9/AT3 converter (Tools ▸ Audio Tools, AT3-2)
+	AT9/AT3 Converter	AT9/AT3-Konverter
+	AT9/AT3 Converter…	AT9/AT3-Konverter…
+	Files to convert:	Umzuwandelnde Dateien:
+	Add Files	Dateien hinzufügen
+	Add Files…	Dateien hinzufügen…
+	Convert to:	Umwandeln in:
+	Bit rate:	Bitrate:
+	Sample format:	Sampleformat:
+	Output folder:	Ausgabeordner:
+	Output Folder	Ausgabeordner
+	Next to each source file	Neben jeder Quelldatei
+	AT9 and ATRAC3plus files convert to WAV; encoding AT9, ATRAC3plus and MP3 is not available yet.	AT9- und ATRAC3plus-Dateien werden in WAV umgewandelt; das Kodieren von AT9, ATRAC3plus und MP3 ist noch nicht verfügbar.
+	Convert	Umwandeln
+	Add the files to convert first.	Füge zuerst die umzuwandelnden Dateien hinzu.
+	Done: {n} file(s) converted.	Fertig: {n} Datei(en) umgewandelt.
+	Converting {name}…	{name} wird umgewandelt…
+	Stopping…	Wird angehalten…
+	AT3 (ATRAC3, PSP / PS3)	AT3 (ATRAC3, PSP / PS3)
+	WAV (PCM)	WAV (PCM)
+	132 kbit/s (LP2)	132 kbit/s (LP2)
+	105 kbit/s	105 kbit/s
+	66 kbit/s (LP4, joint stereo)	66 kbit/s (LP4, Joint Stereo)
+	16-bit	16 Bit
+	24-bit	24 Bit
+	32-bit float	32 Bit Gleitkomma
+
+# Datamosh transition (Grunge & Distort, DM1, #1409)
+	Datamosh	Datamosh
+	Residual	Residuum
+	Motion Boost	Bewegungsverstärkung
+	Recovery	Erholung
+	Encode Resolution	Kodierauflösung
+	Half	Halb
+	Quarter	Viertel

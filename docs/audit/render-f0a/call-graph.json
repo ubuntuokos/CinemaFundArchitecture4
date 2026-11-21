@@ -1237,6 +1237,13 @@
   },
   {
    "class": "audio",
+   "crate": "cfa4-project",
+   "kind": "struct",
+   "module": "object.rs",
+   "name": "ObjectSample"
+  },
+  {
+   "class": "audio",
    "crate": "cfa4-qc",
    "kind": "struct",
    "module": "audio.rs",
@@ -2354,6 +2361,27 @@
    "kind": "struct",
    "module": "transform.rs",
    "name": "OutputTransform"
+  },
+  {
+   "class": "other",
+   "crate": "cfa4-engine",
+   "kind": "struct",
+   "module": "atrac_convert.rs",
+   "name": "Outcome"
+  },
+  {
+   "class": "other",
+   "crate": "cfa4-engine",
+   "kind": "struct",
+   "module": "atrac_convert.rs",
+   "name": "Request"
+  },
+  {
+   "class": "other",
+   "crate": "cfa4-engine",
+   "kind": "enum",
+   "module": "atrac_convert.rs",
+   "name": "Target"
   },
   {
    "class": "other",
@@ -4781,6 +4809,69 @@
    "class": "other",
    "crate": "cfa4-project",
    "kind": "struct",
+   "module": "object.rs",
+   "name": "MaskRef"
+  },
+  {
+   "class": "other",
+   "crate": "cfa4-project",
+   "kind": "struct",
+   "module": "object.rs",
+   "name": "MaskRle"
+  },
+  {
+   "class": "other",
+   "crate": "cfa4-project",
+   "kind": "enum",
+   "module": "object.rs",
+   "name": "ObjectError"
+  },
+  {
+   "class": "other",
+   "crate": "cfa4-project",
+   "kind": "struct",
+   "module": "object.rs",
+   "name": "ObjectId"
+  },
+  {
+   "class": "other",
+   "crate": "cfa4-project",
+   "kind": "struct",
+   "module": "object.rs",
+   "name": "ObjectPrompt"
+  },
+  {
+   "class": "other",
+   "crate": "cfa4-project",
+   "kind": "struct",
+   "module": "object.rs",
+   "name": "ObjectProvenance"
+  },
+  {
+   "class": "other",
+   "crate": "cfa4-project",
+   "kind": "struct",
+   "module": "object.rs",
+   "name": "ObjectTrack"
+  },
+  {
+   "class": "other",
+   "crate": "cfa4-project",
+   "kind": "struct",
+   "module": "object.rs",
+   "name": "PromptPoint"
+  },
+  {
+   "class": "other",
+   "crate": "cfa4-project",
+   "kind": "struct",
+   "module": "object.rs",
+   "name": "PromptRect"
+  },
+  {
+   "class": "other",
+   "crate": "cfa4-project",
+   "kind": "struct",
    "module": "studio.rs",
    "name": "LiveStudio"
   },
@@ -5152,6 +5243,13 @@
    "class": "other",
    "crate": "cfa4-render",
    "kind": "struct",
+   "module": "homography.rs",
+   "name": "Homography"
+  },
+  {
+   "class": "other",
+   "crate": "cfa4-render",
+   "kind": "struct",
    "module": "lumetri_presets.rs",
    "name": "LumetriPreset"
   },
@@ -5189,6 +5287,13 @@
    "kind": "enum",
    "module": "mosh.rs",
    "name": "MoshError"
+  },
+  {
+   "class": "other",
+   "crate": "cfa4-render",
+   "kind": "struct",
+   "module": "mosh.rs",
+   "name": "Session"
   },
   {
    "class": "other",
@@ -5264,6 +5369,20 @@
    "class": "other",
    "crate": "cfa4-render",
    "kind": "struct",
+   "module": "trajectories.rs",
+   "name": "Track"
+  },
+  {
+   "class": "other",
+   "crate": "cfa4-render",
+   "kind": "struct",
+   "module": "trajectories.rs",
+   "name": "Trajectories"
+  },
+  {
+   "class": "other",
+   "crate": "cfa4-render",
+   "kind": "struct",
    "module": "transitions/cards.rs",
    "name": "Card"
   },
@@ -5301,6 +5420,13 @@
    "kind": "trait",
    "module": "vfx/mod.rs",
    "name": "FxEnv"
+  },
+  {
+   "class": "other",
+   "crate": "cfa4-render",
+   "kind": "struct",
+   "module": "vfx/perspective.rs",
+   "name": "PerspectivePath"
   },
   {
    "class": "other",
@@ -6069,6 +6195,13 @@
    "class": "render",
    "crate": "cfa4-project",
    "kind": "enum",
+   "module": "object.rs",
+   "name": "ObjectSource"
+  },
+  {
+   "class": "render",
+   "crate": "cfa4-project",
+   "kind": "enum",
    "module": "studio.rs",
    "name": "SourceKind"
   },
@@ -6127,6 +6260,13 @@
    "kind": "struct",
    "module": "plan.rs",
    "name": "PlanLayer"
+  },
+  {
+   "class": "render",
+   "crate": "cfa4-render",
+   "kind": "struct",
+   "module": "transitions/mosh.rs",
+   "name": "MoshSource"
   },
   {
    "class": "render",
@@ -6921,6 +7061,31 @@
   {
    "from": "cfa4-engine/aaf_omf.rs",
    "item": "Tick",
+   "to": "cfa4-time"
+  },
+  {
+   "from": "cfa4-engine/atrac_convert.rs",
+   "item": "Progress",
+   "to": "cfa4-export"
+  },
+  {
+   "from": "cfa4-engine/atrac_convert.rs",
+   "item": "Report",
+   "to": "cfa4-export"
+  },
+  {
+   "from": "cfa4-engine/atrac_convert.rs",
+   "item": "write_wav",
+   "to": "cfa4-export"
+  },
+  {
+   "from": "cfa4-engine/atrac_convert.rs",
+   "item": "open_path",
+   "to": "cfa4-media"
+  },
+  {
+   "from": "cfa4-engine/atrac_convert.rs",
+   "item": "TICKS_PER_SECOND",
    "to": "cfa4-time"
   },
   {
@@ -9690,6 +9855,11 @@
   },
   {
    "from": "cfa4-engine/settings.rs",
+   "item": "vfx",
+   "to": "cfa4-render"
+  },
+  {
+   "from": "cfa4-engine/settings.rs",
    "item": "FrameRate",
    "to": "cfa4-time"
   },
@@ -11419,6 +11589,16 @@
    "to": "cfa4-time"
   },
   {
+   "from": "cfa4-project/object.rs",
+   "item": "Rect",
+   "to": "cfa4-geom"
+  },
+  {
+   "from": "cfa4-project/object.rs",
+   "item": "Tick",
+   "to": "cfa4-time"
+  },
+  {
    "from": "cfa4-project/transcript.rs",
    "item": "Tick",
    "to": "cfa4-time"
@@ -11894,6 +12074,11 @@
    "to": "cfa4-geom"
   },
   {
+   "from": "cfa4-render/homography.rs",
+   "item": "Affine",
+   "to": "cfa4-geom"
+  },
+  {
    "from": "cfa4-render/image.rs",
    "item": "linear_to_srgb_index",
    "to": "cfa4-color"
@@ -12259,6 +12444,16 @@
    "to": "cfa4-project"
   },
   {
+   "from": "cfa4-render/trajectories.rs",
+   "item": "Affine",
+   "to": "cfa4-geom"
+  },
+  {
+   "from": "cfa4-render/trajectories.rs",
+   "item": "Vec2",
+   "to": "cfa4-geom"
+  },
+  {
    "from": "cfa4-render/transitions/legacy.rs",
    "item": "Affine",
    "to": "cfa4-geom"
@@ -12290,6 +12485,21 @@
   },
   {
    "from": "cfa4-render/transitions/mod.rs",
+   "item": "Tick",
+   "to": "cfa4-time"
+  },
+  {
+   "from": "cfa4-render/transitions/mosh.rs",
+   "item": "Affine",
+   "to": "cfa4-geom"
+  },
+  {
+   "from": "cfa4-render/transitions/mosh.rs",
+   "item": "EffectInstance",
+   "to": "cfa4-project"
+  },
+  {
+   "from": "cfa4-render/transitions/mosh.rs",
    "item": "Tick",
    "to": "cfa4-time"
   },
@@ -12402,6 +12612,21 @@
    "from": "cfa4-render/vfx/mod.rs",
    "item": "Tick",
    "to": "cfa4-time"
+  },
+  {
+   "from": "cfa4-render/vfx/perspective.rs",
+   "item": "linear_to_srgb",
+   "to": "cfa4-color"
+  },
+  {
+   "from": "cfa4-render/vfx/perspective.rs",
+   "item": "cancel",
+   "to": "cfa4-media"
+  },
+  {
+   "from": "cfa4-render/vfx/perspective.rs",
+   "item": "EffectInstance",
+   "to": "cfa4-project"
   },
   {
    "from": "cfa4-render/vfx/pixelate.rs",

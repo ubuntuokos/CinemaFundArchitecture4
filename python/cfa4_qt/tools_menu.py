@@ -3,8 +3,8 @@
 - **Video Tools**: GOP Smart Cut of the Source monitor's clip (moved here from the Source
   monitor's wrench menu), the Export window's Smart Export, and the timeline's GOP boundary
   marks (WP-08 of CFA4-SMART-CUT-RENDER-R1).
-- **Audio Tools**: the engine's audio commands (Audio Gain, Add Beat Markers) and the audio
-  panels.
+- **Audio Tools**: the engine's audio commands (Audio Gain, Add Beat Markers), the AT9/AT3
+  Converter (``atrac_converter.py``, owner request 2026-11-14) and the audio panels.
 - **Publication Tools**: export and delivery (Export Media, Quick Export, Check Before Export,
   Social Deliverables, Batch Variants).
 
@@ -21,6 +21,7 @@ from typing import TYPE_CHECKING
 from PySide6.QtGui import QAction
 from PySide6.QtWidgets import QMenu
 
+from .atrac_converter import open_atrac_converter
 from .i18n import N_, tr
 
 if TYPE_CHECKING:
@@ -94,6 +95,10 @@ def build_tools_menu(win: MainWindow, menu: QMenu) -> None:
     audio = menu.addMenu(tr("Audio Tools"))
     audio.setObjectName("menu.Tools.Audio")
     _engine_actions(win, audio, AUDIO_COMMANDS)
+    if "audio.atracConvert" in getattr(win.registry, "commands", {"audio.atracConvert": None}):
+        atrac = audio.addAction(tr("AT9/AT3 Converter…"))
+        atrac.setObjectName("tools.audio.atracConverter")
+        atrac.triggered.connect(lambda _c=False: open_atrac_converter(win))
     if audio.actions():
         audio.addSeparator()
     for oid, name in AUDIO_PANELS:
