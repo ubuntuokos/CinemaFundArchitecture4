@@ -137,7 +137,7 @@ fn run(cases: &[Case<'_>]) {
         let recon = dir.join(format!("{}.rec.yuv", case.name));
         let reference = dir.join(format!("{}.davs2.yuv", case.name));
         let depth = if case.ten_bit { "10" } else { "8" };
-        let status = Command::new(tool(enc))
+        let out = Command::new(tool(enc))
             .arg("-p")
             .arg(format!("InputFile={}", input.display()))
             .arg(format!("--SourceWidth={}", case.w))
@@ -148,11 +148,10 @@ fn run(cases: &[Case<'_>]) {
             .arg(format!("--OutputFile={}", stream.display()))
             .arg(format!("--ReconFile={}", recon.display()))
             .args(case.args)
-            .stdout(Stdio::null())
-            .stderr(Stdio::null())
-            .status()
+            .stdin(Stdio::null())
+            .output()
             .unwrap();
-        assert!(status.success(), "{}: {enc} failed", case.name);
+        assert!(out.status.success(), "{}: {enc} failed ({}): {}", case.name, out.status, tail(&out));
         let data = std::fs::read(&stream).unwrap();
         let ours = decode(&data);
         let size = case.w * case.h * 3 / 2;
@@ -169,6 +168,13 @@ fn run(cases: &[Case<'_>]) {
         }
         eprintln!("{}: {} pictures bit-exact", case.name, case.frames);
     }
+}
+
+/// The last lines an oracle tool printed, for a failure message.
+fn tail(out: &std::process::Output) -> String {
+    let text = format!("{}{}", String::from_utf8_lossy(&out.stdout), String::from_utf8_lossy(&out.stderr));
+    let lines: Vec<&str> = text.lines().collect();
+    lines[lines.len().saturating_sub(8)..].join(" | ")
 }
 
 const TOOLS: &[&str] = &["--SAOEnable=1", "--ALFEnable=1", "--NSQT=1", "--SDIP=1", "--SECTEnable=1", "--InterAMP=1", "--PMVREnable=1"];
