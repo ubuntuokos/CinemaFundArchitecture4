@@ -1295,6 +1295,7 @@ dependencies = [
  "cfa4-realmedia",
  "cfa4-realvideo",
  "cfa4-shorten",
+ "cfa4-smacker",
  "cfa4-speex",
  "cfa4-sstp",
  "cfa4-tak",
@@ -2159,6 +2160,14 @@ dependencies = [
 
 [[package]]
 name = "cfa4-shorten"
+version = "0.10.0"
+dependencies = [
+ "cfa4-testkit",
+ "thiserror 2.0.21",
+]
+
+[[package]]
+name = "cfa4-smacker"
 version = "0.10.0"
 dependencies = [
  "cfa4-testkit",

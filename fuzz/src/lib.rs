@@ -653,6 +653,26 @@ pub fn tak(data: &[u8]) {
     }
 }
 
+/// Smacker: the whole file through the frame table, each frame's parts, the video decoder and
+/// every audio track.
+pub fn smacker(data: &[u8]) {
+    let _ = cfa4_smacker::probe(data);
+    let Ok(smk) = cfa4_smacker::Smk::parse(data) else { return };
+    let mut dec = cfa4_smacker::Decoder::new(&smk).ok();
+    for i in 0..smk.frames.min(64) {
+        let parts = smk.split(data, i);
+        for (slot, track) in smk.tracks.iter().enumerate() {
+            if let (Some(t), Some(chunk)) = (track, parts.audio.get(slot).copied().flatten()) {
+                let _ = cfa4_smacker::decode_audio(t, chunk);
+            }
+        }
+        if let (Some(d), Some(v)) = (dec.as_mut(), parts.video) {
+            let _ = d.decode(parts.palette, v);
+            std::hint::black_box(d.rgba());
+        }
+    }
+}
+
 // ---------------------------------------------------------------- projects and interchange (B5)
 
 pub fn project(data: &[u8]) {
@@ -748,6 +768,7 @@ pub const TARGETS: &[(&str, &str, Target)] = &[
     ("musepack", "cfa4-musepack", musepack),
     ("shorten", "cfa4-shorten", shorten),
     ("tak", "cfa4-tak", tak),
+    ("smacker", "cfa4-smacker", smacker),
     ("project", "cfa4-project", project),
     ("interchange", "cfa4-interchange", interchange),
     ("captions", "cfa4-captions", captions),
