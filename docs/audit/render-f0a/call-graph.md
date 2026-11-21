@@ -803,7 +803,7 @@ graph LR
 
 ## 4. Nyilvános típusok osztályonként
 
-A többi 614 nyilvános típus („other” osztály) csak a `call-graph.json`-ban szerepel.
+A többi 617 nyilvános típus („other” osztály) csak a `call-graph.json`-ban szerepel.
 
 ### Képkocka, kép, pixel (29)
 
@@ -883,7 +883,7 @@ A többi 614 nyilvános típus („other” osztály) csak a `call-graph.json`-b
 | `cfa4-smart-edit` | `media_index.rs` | enum | `DependencyStatus` |
 | `cfa4-testkit` | `fixtures.rs` | enum | `Status` |
 
-### Hang (44)
+### Hang (45)
 
 | Crate | Modul | Fajta | Típus |
 |---|---|---|---|
@@ -931,6 +931,7 @@ A többi 614 nyilvános típus („other” osztály) csak a `call-graph.json`-b
 | `cfa4-project` | `object.rs` | struct | `ObjectSample` |
 | `cfa4-qc` | `audio.rs` | struct | `AudioFacts` |
 | `cfa4-render` | `preview.rs` | struct | `AudioSegment` |
+| `cfa4-testkit` | `smk.rs` | enum | `AudioKind` |
 
 ### Szín (18)
 
