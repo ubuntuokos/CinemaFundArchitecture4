@@ -1,6 +1,6 @@
 # CFA4-V1-SILENCE-REMOVAL-001: a csend-eltávolítás (V1, F6) megvalósítási terve
 
-**Állapot:** **jóváhagyva (István, 2026-11-21)**, a D1–D5 döntéseknél a terv javaslatai érvényesek: **D1** az energiaalapú V1-A **nem MI-funkció**, ezért az MI-réteg előtt is indulhat; **D2** a nem romboló mód csak jelölés; **D3** kötegnél metszet-mód ripple-lel, klipenkénti csak lifttel; **D4** a régió marker (nincs sémaváltozás); **D5** az alap-paraméterek `minSilence` 0,5 s, `padding` 0,1 s, mérés alapján hangolva. A **V1-A megvalósítása indulhat** (külön ágon és PR-ban, Ready for review, Gazda issue-ban jelezve, merge nélkül); a **V1-B (Silero) az MI-réteg után** jön. A jóváhagyás a V1-A-ra szól, a V1-B külön indítási engedélyt kér az MI-réteg üzembe helyezése után. A dokumentum maga csak tervet tartalmaz, kódot nem.
+**Állapot:** **jóváhagyva (István, 2026-11-21)**, a D1–D5 döntéseknél a terv javaslatai érvényesek: **D1** az energiaalapú V1-A **nem MI-funkció**, ezért az MI-réteg előtt is indulhat; **D2** a nem romboló mód csak jelölés; **D3** kötegnél metszet-mód ripple-lel, klipenkénti csak lifttel; **D4** a régió marker (nincs sémaváltozás); **D5** az alap-paraméterek `minSilence` 0,5 s, `padding` 0,1 s, mérés alapján hangolva. A **V1-A megvalósítása indulhat** (külön ágon és PR-ban, Ready for review, Gazda issue-ban jelezve, merge nélkül); a **V1-B (Silero) az MI-réteg után** jön. A jóváhagyás a V1-A-ra szól, a V1-B külön indítási engedélyt kér az MI-réteg üzembe helyezése után. **A V1-B az MI-réteg zárási feltételei közé tartozik** (István, 2026-11-21; 12. pont). A dokumentum maga csak tervet tartalmaz, kódot nem.
 **Dátum:** 2026-11-21 · **Alap:** `main` @ `fc310bd` · **Módszer:** csak olvasás: a `docs/venturi-parity.md` V1 szakasza, a `crates/speech/src/vad.rs`, a `crates/engine/src/transcript.rs`, a `crates/edit/src/transcript.rs`, a `crates/engine/src/beat_markers.rs` és a `crates/project/src/lib.rs` (`Marker`, `MarkerKind`) áttekintése. A kódot nem futtattam.
 **Nyelv:** magyar.
 **Forrás és előzmények:** [`docs/venturi-parity.md`](../venturi-parity.md) V1 (a Venturi „Silence removal” funkciója és a V1 5. pontja, az elfogadási feltételek bővítése), [`CFA4-SHOTCUT-CAPABILITY-ADAPTATION-001`](CFA4-SHOTCUT-CAPABILITY-ADAPTATION-001.md) 5.2 (a tulajdonos 2026-11-20-i döntései), a tulajdonos 2026-11-21-i jóváhagyása az elfogadási teszt nevéről (`v1_silence_removal_acceptance`).
@@ -217,3 +217,22 @@ V1-A összesen kb. 34–56 óra, V1-B kb. 20–30 óra.
 ## 11. Fázis-lezárási bizonyíték (a megvalósításra)
 
 Minden fázis lezárásához kötelező: CI-napló (`cargo xtask ci` + tesztek), a golden összevetés kimenete (R11), az undo/redo és a mentés-újratöltés teszt kimenete, a GUI-automatizálási napló, regressziós összevetés (`transcript.removePauses` változatlan), `docs/venturi-parity.md` V1 sorának és a `docs/qt-parity.md`-nek a frissítése. A V1-A akkor **kész**, ha a `v1_silence_removal_acceptance` mindhárom ellenőrzése zöld, és a 6.2 táblázat minden sorára van teszt; a V1 **teljes**, ha a V1-B is kész.
+
+---
+
+## 12. A V1-B az MI-réteg zárási feltételei között (István, 2026-11-21)
+
+**Döntés (István, 2026-11-21):** a V1-B (Silero VAD) az **MI-réteg zárásának feltételei közé** kerül. Az MI-réteg ezért addig nem tekinthető lezártnak, amíg a V1-B nincs kész. A V1-B továbbra is **az MI-réteg üzembe helyezése után** indul és külön indítási engedélyt kér (a V1-A jóváhagyása nem terjed ki rá); ez a pont csak azt rögzíti, hogy a lezárásnak a V1-B is feltétele.
+
+A V1-B akkor **kész** (az MI-réteg lezárásához ennyit kell igazolni):
+
+1. a `detector: "silero"` kiválasztható, az `audio.detectSpeech` a Silero-alapú régiókat adja ugyanazzal a parancsfelülettel és ugyanazzal a régióképző lépéssel, mint az energiaalapú (a V1-A-ban ez ma hibaüzenet);
+2. a Silero modul a Venturi `vv-vad` alapján, a 16 kHz-re fagyasztott modell `.attribution` fájllal (MIT), az eredet-fejléc és a `licensing.md` §5 nyilvántartás ugyanabban a commitban, `cargo deny` zöld;
+3. a VAD-határok a generált fixture-hez képest ±1 ablakon (32 ms) belül vannak (a V1 4. pontja), CPU-n;
+4. a `v1_silence_removal_acceptance` mindhárom ellenőrzése (a, b, c) a `silero` észlelővel is zöld, és a 6.2 táblázat sorai a `silero` esetre is le vannak fedve;
+5. a Qt6 párbeszéd Detector listája a „Speech model” értéket is kínálja (a V1-A-ban csak az „Energy”);
+6. a Whisper-előszűrő (V1 3. pont) külön tételként kész, vagy a tulajdonos kifejezetten kiveszi a V1-B-ből;
+7. a `docs/venturi-parity.md` V1 sora és a `docs/qt-parity.md` 3.31 sora frissítve.
+
+**Mit nem tudtam elvégezni:** az MI-réteg saját zárási feltételeinek listája az MI-réteg tervében (a `CFA4-AI_modules` repó ADR 0006-ja) van, amely ebből a munkamenetből nem érhető el és nem is módosítható. Ezért a V1-B-t itt (a V1 tervében), a V1-A Gazda issue-ban (#1487) és a Gazda issue-ban (#1447) rögzítettem; **az MI-réteg saját zárási listájába a tulajdonosnak vagy az MI-réteg szálának kell felvennie**, hogy a feltétel ott is látszódjon.
+
