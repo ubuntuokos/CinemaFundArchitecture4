@@ -4871,3 +4871,7 @@ export.summary	Low	låg
 	Subtitles	Undertexter
 	Captions for the hearing impaired	Textning för hörselskadade
 	Forced narrative	Tvingad berättarröst (forced narrative)
+	Silence	Tystnad
+	Detect Silence	Identifiera tystnad
+	Remove Silence	Ta bort tystnad
+	Clear Silence Markers	Rensa tystnadsmarkörer

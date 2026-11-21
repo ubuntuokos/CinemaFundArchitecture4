@@ -4871,3 +4871,7 @@ export.summary	Low	matala
 	Subtitles	Tekstitykset
 	Captions for the hearing impaired	Tekstitykset kuulovammaisille
 	Forced narrative	Pakotettu selostus (forced narrative)
+	Silence	Hiljaisuus
+	Detect Silence	Tunnista hiljaisuus
+	Remove Silence	Poista hiljaisuus
+	Clear Silence Markers	Tyhjennä hiljaisuusmerkit

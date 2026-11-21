@@ -4871,3 +4871,7 @@ export.summary	Low	χαμηλή
 	Subtitles	Υπότιτλοι
 	Captions for the hearing impaired	Υπότιτλοι για κωφούς και βαρήκοους
 	Forced narrative	Αναγκαστική αφήγηση (forced narrative)
+	Silence	Σιωπή
+	Detect Silence	Εντοπισμός σιωπής
+	Remove Silence	Αφαίρεση σιωπής
+	Clear Silence Markers	Εκκαθάριση δεικτών σιωπής

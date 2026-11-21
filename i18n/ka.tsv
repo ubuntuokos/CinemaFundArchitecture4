@@ -4872,3 +4872,7 @@ export.summary	Low	დაბალი
 	Subtitles	სუბტიტრები
 	Captions for the hearing impaired	სუბტიტრები სმენადაქვეითებულთათვის
 	Forced narrative	იძულებითი თხრობა (forced narrative)
+	Silence	სიჩუმე
+	Detect Silence	სიჩუმის აღმოჩენა
+	Remove Silence	სიჩუმის წაშლა
+	Clear Silence Markers	სიჩუმის მარკერების გასუფთავება
