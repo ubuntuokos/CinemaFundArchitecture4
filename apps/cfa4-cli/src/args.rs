@@ -26,6 +26,7 @@ const VALUED: &[&str] = &[
     "--profile",
     "--expect",
     "--contact-sheet",
+    "--adapter",
 ];
 
 #[derive(Debug, Default)]

@@ -106,6 +106,7 @@ const LAYERS: &[(&str, u8)] = &[
     ("surface-catalog", 1),
     ("tcsync-io", 5),
     ("surface", 5),
+    ("surface-adapters", 5),
     ("metrics", 1),
     ("cinema-pkg", 1),
     ("live", 1),

@@ -211,6 +211,7 @@ const NOT_CODECS: &[&str] = &[
     "speech",
     "st2110",
     "surface",
+    "surface-adapters",
     "surface-catalog",
     "surface-model",
     "tcsync",

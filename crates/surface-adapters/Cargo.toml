@@ -1,0 +1,31 @@
+[package]
+name = "cfa4-surface-adapters"
+description = "Hardware control surface adapter processes for CFA4 (CFA4-HW-CONTROL-SURFACES-001): the adapter wire protocol and the mirabox-family adapter (AJAZZ / MiraBox decks through mirajazz), run as a child process by `cfa4-cli surfaces --adapter`"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+rust-version.workspace = true
+
+[lints]
+workspace = true
+
+[features]
+default = ["mirabox"]
+# The real AJAZZ / MiraBox backend (mirajazz, MPL-2.0; async-hid, MIT). Without it only the wire
+# protocol, the profiles and the test backend are built.
+mirabox = ["dep:mirajazz", "dep:async-hid"]
+# A backend without hardware, for tests of the adapter loop and of its supervisor.
+testing = []
+
+[dependencies]
+serde = { workspace = true }
+serde_json = { workspace = true }
+thiserror = { workspace = true }
+toml = "1"
+base64 = "0.22"
+sha2 = "0.11"
+image = { version = "0.25", default-features = false }
+tokio = { version = "1", features = ["rt-multi-thread", "macros", "io-util", "io-std", "sync", "time"] }
+mirajazz = { version = "0.16.3", optional = true }
+async-hid = { version = "0.5.3", optional = true, default-features = false, features = ["tokio"] }
+futures-lite = "2"
