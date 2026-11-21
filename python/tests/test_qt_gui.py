@@ -4344,6 +4344,74 @@ def test_real_engine_colour_eyedropper_picks_from_the_program_monitor(app, tmp_p
         win.close()
 
 
+def test_lumetri_white_balance_selector_arms_and_lets_go(app):
+    """Lumetri's White Balance Selector (``lumetri.wbSelector``): armed it targets the shown clip's
+    Lumetri effect with ``mode: whiteBalance``; a second click, another clip and Effect Controls'
+    own eyedropper all let go of it."""
+    from cfa4_qt.panels.lumetri import LumetriColorPanel
+
+    panel = LumetriColorPanel()
+    armed: list = []
+    panel.eyedropper_armed.connect(armed.append)
+    btn = panel.wb_button
+    assert btn is not None and btn.objectName() == "lumetri.wbSelector"
+    panel.set_state({"clip": 7, "effect": 2, "params": {}})
+    btn.click()
+    assert armed == [{"clip": 7, "effect": 2, "mode": "whiteBalance"}] and btn.isChecked()
+    btn.click()
+    assert armed[-1] is None and not btn.isChecked()
+    # another clip shown: an armed pick does not carry over
+    btn.click()
+    panel.set_state({"clip": 8, "effect": 0, "params": {}})
+    assert armed[-1] is None and not btn.isChecked() and panel.wb_target is None
+    # Esc / a pick elsewhere (the overlay's eyedropper_done)
+    btn.click()
+    panel.arm_eyedropper(None)
+    assert armed[-1] is None and not btn.isChecked()
+    # an Effect Controls eyedropper armed meanwhile: lets go without disarming it
+    btn.click()
+    count = len(armed)
+    panel.release_eyedropper({"clip": 8, "effect": 1, "param": "key_color"})
+    assert not btn.isChecked() and panel.wb_target is None and len(armed) == count
+
+
+@pytest.mark.skipif(REAL is None, reason="Rust engine not built (cargo build -p cfa4-cli)")
+def test_real_engine_lumetri_white_balance_selector_sets_temperature_and_tint(app, tmp_path: Path):
+    """The armed selector's next click on the Program picture sets Temperature and Tint in one
+    undo step and lets go; Esc lets go without picking."""
+    from cfa4_qt.main_window import MainWindow
+
+    settings = QtCore.QSettings(str(tmp_path / "s.ini"), QtCore.QSettings.Format.IniFormat)
+    engine = EngineClient(REAL, ["--demo", "--data-dir", str(tmp_path / "data")])
+    win = MainWindow(engine, settings)
+    win.resize(1600, 1000)
+    win.show()
+    engine.start()
+    lm, view, ov = win.lumetri, win.monitor.view, win.monitor.overlay
+    try:
+        assert wait_until(app, lambda: win.sequence is not None and len(win.registry.commands) > 100, 60_000)
+        clip = win.sequence["video"][0]["items"][1]
+        win._seek_program(clip["start"] + (clip["end"] - clip["start"]) // 2)
+        win.execute("timeline.select", {"clips": [clip["clip"]]})
+        win.execute("effects.apply", {"clips": [clip["clip"]], "effect": "lumetri"})
+        win.docks["Lumetri Color"].show()
+        assert wait_until(app, lambda: lm.clip_id == clip["clip"] and lm.effect is not None, 20_000)
+        lm.wb_button.click()
+        assert ov.eyedropper == {"clip": clip["clip"], "effect": lm.effect, "mode": "whiteBalance"}
+        view.setFocus()
+        QtTest.QTest.keyClick(view, QtCore.Qt.Key.Key_Escape)
+        assert ov.eyedropper is None and not lm.wb_button.isChecked()
+        steps = win.history.list.count()
+        lm.wb_button.click()
+        QtTest.QTest.mouseClick(view, QtCore.Qt.MouseButton.LeftButton, QtCore.Qt.KeyboardModifier.NoModifier,
+                                view.picture_rect().center().toPoint())
+        assert ov.eyedropper is None and not lm.wb_button.isChecked()
+        assert wait_until(app, lambda: win.history.list.count() == steps + 1, 10_000)
+    finally:
+        win._quit_confirmed = True
+        win.close()
+
+
 @pytest.mark.skipif(REAL is None, reason="Rust engine not built (cargo build -p cfa4-cli)")
 def test_real_engine_fx_editor_windows_edit_eq_and_dynamics_as_egui(app, tmp_path: Path):
     """egui's Clip / Track Fx Editor: Effect Controls' "Custom Setup ▸ Edit…" opens the clip
@@ -15269,3 +15337,39 @@ def test_export_mxf_as11_fields_only_for_op1a(app):
     assert dlg2.as11_text["mxfAs11Ukdpp"].toPlainText() == "ProductionNumber: P1"
     dlg.deleteLater()
     dlg2.deleteLater()
+
+
+def test_effect_controls_bulk_switch_and_recent_effects(app):
+    """SC-4: the bulk buttons send one effects.toggleEnabled for the selection; applying a recent
+    effect sends effects.apply to it and moves it to the front of the user's recent list."""
+    from cfa4_qt import recent_effects
+    from cfa4_qt.panels.effect_controls import EffectControlsPanel
+
+    class Store:
+        d: dict = {}
+
+        def value(self, key, default=None):
+            return self.d.get(key, default)
+
+        def setValue(self, key, value):  # noqa: N802
+            self.d[key] = value
+
+    panel = EffectControlsPanel()
+    panel.attach_settings(Store())
+    sent: list[tuple[str, dict]] = []
+    panel.command.connect(lambda c, p: sent.append((c, p)))
+    assert panel.findChild(object, "effectControls.bulk.disableAll") is not None
+    panel.set_all_enabled(False)  # nothing selected: nothing sent
+    assert sent == []
+    panel._wanted = ([4, 5], None)
+    panel.bulk_off.click()
+    panel.bulk_on.click()
+    assert sent == [("effects.toggleEnabled", {"clips": [4, 5], "all": True, "enabled": False}),
+                    ("effects.toggleEnabled", {"clips": [4, 5], "all": True, "enabled": True})]
+    sent.clear()
+    panel.apply_recent("gaussian_blur")
+    panel.apply_recent("invert")
+    panel.apply_recent("gaussian_blur")
+    assert recent_effects.load(panel.settings) == ["gaussian_blur", "invert"]
+    assert sent[-1] == ("effects.apply", {"effect": "gaussian_blur", "clips": [4, 5]})
+    panel.close()

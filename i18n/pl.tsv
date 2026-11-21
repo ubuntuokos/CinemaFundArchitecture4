@@ -4813,3 +4813,16 @@ export.summary	Low	niska
 	Encode Resolution	Rozdzielczość kodowania
 	Half	Połowa
 	Quarter	Ćwiartka
+
+# Recent effects, per-channel waveform, white balance selector (SC-2/SC-3/SC-4, #1419 #1420 #1421)
+	Apply a recently used effect to the selected clips	Zastosuj ostatnio użyty efekt do zaznaczonych klipów
+	Disable all effects	Wyłącz wszystkie efekty
+	Enable all effects	Włącz wszystkie efekty
+	No recent effects	Brak ostatnich efektów
+	Recent effects	Ostatnie efekty
+	Switch every effect of the selected clips off	Wyłącza każdy efekt zaznaczonych klipów
+	Switch every effect of the selected clips on	Włącza każdy efekt zaznaczonych klipów
+	Merged	Połączone
+	Per Channel	Według kanałów
+	Channel Zoom	Powiększenie kanałów
+	White Balance Selector (click a neutral point in the Program monitor; Esc cancels)	Wybór balansu bieli (kliknij neutralny punkt w monitorze programu; Esc anuluje)

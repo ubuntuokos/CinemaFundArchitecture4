@@ -4807,3 +4807,16 @@
 	Encode Resolution	인코딩 해상도
 	Half	1/2
 	Quarter	1/4
+
+# Recent effects, per-channel waveform, white balance selector (SC-2/SC-3/SC-4, #1419 #1420 #1421)
+	Apply a recently used effect to the selected clips	최근 사용한 효과를 선택한 클립에 적용
+	Disable all effects	모든 효과 끄기
+	Enable all effects	모든 효과 켜기
+	No recent effects	최근 효과 없음
+	Recent effects	최근 효과
+	Switch every effect of the selected clips off	선택한 클립의 모든 효과를 끕니다
+	Switch every effect of the selected clips on	선택한 클립의 모든 효과를 켭니다
+	Merged	병합
+	Per Channel	채널별
+	Channel Zoom	채널 확대/축소
+	White Balance Selector (click a neutral point in the Program monitor; Esc cancels)	화이트 밸런스 선택기(프로그램 모니터의 중립 지점을 클릭, Esc로 취소)

@@ -4819,3 +4819,16 @@ export.summary	Low	తక్కువ
 	Encode Resolution	ఎన్‌కోడ్ రిజల్యూషన్
 	Half	సగం
 	Quarter	పావు
+
+# Recent effects, per-channel waveform, white balance selector (SC-2/SC-3/SC-4, #1419 #1420 #1421)
+	Apply a recently used effect to the selected clips	ఇటీవల ఉపయోగించిన ఎఫెక్ట్‌ను ఎంచుకున్న క్లిప్‌లకు వర్తింపజేయండి
+	Disable all effects	అన్ని ఎఫెక్ట్‌లను ఆఫ్ చేయండి
+	Enable all effects	అన్ని ఎఫెక్ట్‌లను ఆన్ చేయండి
+	No recent effects	ఇటీవలి ఎఫెక్ట్‌లు లేవు
+	Recent effects	ఇటీవలి ఎఫెక్ట్‌లు
+	Switch every effect of the selected clips off	ఎంచుకున్న క్లిప్‌ల ప్రతి ఎఫెక్ట్‌ను ఆఫ్ చేస్తుంది
+	Switch every effect of the selected clips on	ఎంచుకున్న క్లిప్‌ల ప్రతి ఎఫెక్ట్‌ను ఆన్ చేస్తుంది
+	Merged	కలిపినవి
+	Per Channel	ఛానెల్ వారీగా
+	Channel Zoom	ఛానెల్ జూమ్
+	White Balance Selector (click a neutral point in the Program monitor; Esc cancels)	వైట్ బ్యాలెన్స్ సెలెక్టర్ (ప్రోగ్రామ్ మానిటర్‌లో తటస్థ బిందువుపై క్లిక్ చేయండి; Esc రద్దు చేస్తుంది)

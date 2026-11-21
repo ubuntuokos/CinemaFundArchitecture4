@@ -4822,3 +4822,16 @@
 	Encode Resolution	エンコード解像度
 	Half	1/2
 	Quarter	1/4
+
+# Recent effects, per-channel waveform, white balance selector (SC-2/SC-3/SC-4, #1419 #1420 #1421)
+	Apply a recently used effect to the selected clips	最近使ったエフェクトを選択したクリップに適用
+	Disable all effects	すべてのエフェクトをオフ
+	Enable all effects	すべてのエフェクトをオン
+	No recent effects	最近のエフェクトはありません
+	Recent effects	最近のエフェクト
+	Switch every effect of the selected clips off	選択したクリップのすべてのエフェクトをオフにします
+	Switch every effect of the selected clips on	選択したクリップのすべてのエフェクトをオンにします
+	Merged	統合
+	Per Channel	チャンネル別
+	Channel Zoom	チャンネルズーム
+	White Balance Selector (click a neutral point in the Program monitor; Esc cancels)	ホワイトバランスセレクター（プログラムモニターの無彩色の点をクリック。Esc でキャンセル）
