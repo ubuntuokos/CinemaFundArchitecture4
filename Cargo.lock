@@ -1938,6 +1938,13 @@ dependencies = [
 ]
 
 [[package]]
+name = "cfa4-objtrack"
+version = "0.10.0"
+dependencies = [
+ "cfa4-geom",
+]
+
+[[package]]
 name = "cfa4-obs"
 version = "0.10.0"
 dependencies = [
