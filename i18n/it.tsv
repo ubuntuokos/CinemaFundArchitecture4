@@ -4813,3 +4813,16 @@
 	Encode Resolution	Risoluzione di codifica
 	Half	Metà
 	Quarter	Un quarto
+
+# Recent effects, per-channel waveform, white balance selector (SC-2/SC-3/SC-4, #1419 #1420 #1421)
+	Apply a recently used effect to the selected clips	Applica un effetto usato di recente alle clip selezionate
+	Disable all effects	Disattiva tutti gli effetti
+	Enable all effects	Attiva tutti gli effetti
+	No recent effects	Nessun effetto recente
+	Recent effects	Effetti recenti
+	Switch every effect of the selected clips off	Disattiva ogni effetto delle clip selezionate
+	Switch every effect of the selected clips on	Attiva ogni effetto delle clip selezionate
+	Merged	Unito
+	Per Channel	Per canale
+	Channel Zoom	Zoom canali
+	White Balance Selector (click a neutral point in the Program monitor; Esc cancels)	Selettore bilanciamento del bianco (fai clic su un punto neutro nel monitor Programma; Esc annulla)

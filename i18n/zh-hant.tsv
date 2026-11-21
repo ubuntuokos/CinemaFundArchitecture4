@@ -4812,3 +4812,16 @@ export.summary	Low	低
 	Encode Resolution	編碼解析度
 	Half	1/2
 	Quarter	1/4
+
+# Recent effects, per-channel waveform, white balance selector (SC-2/SC-3/SC-4, #1419 #1420 #1421)
+	Apply a recently used effect to the selected clips	將最近使用的效果套用到所選剪輯
+	Disable all effects	關閉所有效果
+	Enable all effects	開啟所有效果
+	No recent effects	沒有最近使用的效果
+	Recent effects	最近使用的效果
+	Switch every effect of the selected clips off	關閉所選剪輯的每個效果
+	Switch every effect of the selected clips on	開啟所選剪輯的每個效果
+	Merged	合併
+	Per Channel	依聲道
+	Channel Zoom	聲道縮放
+	White Balance Selector (click a neutral point in the Program monitor; Esc cancels)	白平衡選擇器（在節目監視器中點擊中性點；Esc 取消）

@@ -4821,3 +4821,16 @@
 	Encode Resolution	Resolusi Enkode
 	Half	Setengah
 	Quarter	Seperempat
+
+# Recent effects, per-channel waveform, white balance selector (SC-2/SC-3/SC-4, #1419 #1420 #1421)
+	Apply a recently used effect to the selected clips	Terapkan efek yang baru dipakai ke klip terpilih
+	Disable all effects	Nonaktifkan semua efek
+	Enable all effects	Aktifkan semua efek
+	No recent effects	Tidak ada efek terbaru
+	Recent effects	Efek terbaru
+	Switch every effect of the selected clips off	Menonaktifkan setiap efek pada klip terpilih
+	Switch every effect of the selected clips on	Mengaktifkan setiap efek pada klip terpilih
+	Merged	Gabungan
+	Per Channel	Per Kanal
+	Channel Zoom	Zoom Kanal
+	White Balance Selector (click a neutral point in the Program monitor; Esc cancels)	Pemilih Keseimbangan Putih (klik titik netral di monitor Program; Esc membatalkan)

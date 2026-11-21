@@ -4815,3 +4815,16 @@ export.summary	Low	төмен
 	Encode Resolution	Кодтау ажыратымдылығы
 	Half	Жарты
 	Quarter	Ширек
+
+# Recent effects, per-channel waveform, white balance selector (SC-2/SC-3/SC-4, #1419 #1420 #1421)
+	Apply a recently used effect to the selected clips	Соңғы қолданылған эффектті таңдалған клиптерге қолдану
+	Disable all effects	Барлық эффектілерді өшіру
+	Enable all effects	Барлық эффектілерді қосу
+	No recent effects	Соңғы эффектілер жоқ
+	Recent effects	Соңғы эффектілер
+	Switch every effect of the selected clips off	Таңдалған клиптердің әр эффектісін өшіреді
+	Switch every effect of the selected clips on	Таңдалған клиптердің әр эффектісін қосады
+	Merged	Біріктірілген
+	Per Channel	Арналар бойынша
+	Channel Zoom	Арналарды масштабтау
+	White Balance Selector (click a neutral point in the Program monitor; Esc cancels)	Ақ түс балансын таңдау (бағдарлама мониторындағы бейтарап нүктені басыңыз; Esc бас тартады)
