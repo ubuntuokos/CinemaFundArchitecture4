@@ -396,6 +396,7 @@ fn sample_entry(c: &Codec, private: &[u8], v: Option<&cfa4_matroska::VideoInfo>,
         }
         Codec::Other(id) if id == "V_FFV1" => crate::ffv1::sample_entry(private, w, h),
         Codec::Other(id) if id == "V_DIRAC" => crate::dirac::sample_entry(w, h),
+        Codec::Theora { private } => crate::theora::sample_entry(private, w, h),
         Codec::Other(id) if id == "V_CAVS" => crate::cavs::sample_entry(private, w, h),
         Codec::Other(id) if id == "V_JPEG2000" => crate::j2k::sample_entry(w, h),
         // ffmpeg writes JPEG 2000 as a VfW `mjp2` track
@@ -485,6 +486,7 @@ fn codec_label(c: &Codec) -> String {
         }
         Codec::Other(id) if id == "V_FFV1" => "FFV1".into(),
         Codec::Other(id) if id == "V_DIRAC" => "VC-2 / Dirac".into(),
+        Codec::Theora { .. } => "Theora".into(),
         Codec::Other(id) if id == "V_CAVS" => crate::cavs::NAME.into(),
         Codec::Other(id) if id == "V_JPEG2000" => "JPEG 2000".into(),
         Codec::VfwFourcc { fourcc, .. } if fourcc.eq_ignore_ascii_case(b"mjp2") => "JPEG 2000".into(),

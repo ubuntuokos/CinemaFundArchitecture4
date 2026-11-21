@@ -66,6 +66,7 @@ cfa4-magicyuv = { path = "crates/magicyuv" }
 cfa4-huffyuv = { path = "crates/huffyuv" }
 cfa4-ffv1 = { path = "crates/ffv1" }
 cfa4-canopus = { path = "crates/canopus" }
+cfa4-theora = { path = "crates/theora" }
 cfa4-sstp = { path = "crates/sstp" }
 cfa4-evc = { path = "crates/evc" }
 cfa4-cavs = { path = "crates/cavs" }
@@ -212,6 +213,9 @@ opt-level = 3
 opt-level = 3
 
 [profile.dev.package.cfa4-canopus]
+opt-level = 3
+
+[profile.dev.package.cfa4-theora]
 opt-level = 3
 
 [profile.dev.package.cfa4-sstp]
