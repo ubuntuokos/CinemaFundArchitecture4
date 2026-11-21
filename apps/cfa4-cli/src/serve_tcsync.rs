@@ -46,6 +46,8 @@ pub fn settings(s: &Session) -> Result<SyncSettings, String> {
     Ok(SyncSettings {
         chase,
         source: if p.source == "mtc" { Source::Mtc } else { Source::Ltc },
+        // an external feed is not a preference yet (READY-V6: no user of it)
+        external_source: String::new(),
         rate,
         offset,
         audio_host: s.prefs.audio_hardware.device_class.clone(),
