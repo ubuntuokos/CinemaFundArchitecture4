@@ -950,7 +950,7 @@ A többi 611 nyilvános típus („other” osztály) csak a `call-graph.json`-b
 | `cfa4-gpu` | `lut.rs` | struct | `GpuLut` |
 | `cfa4-project` | `lib.rs` | struct | `ProjectLut` |
 
-### Render, kompozíció, előnézet, proxy (60)
+### Render, kompozíció, előnézet, proxy (61)
 
 | Crate | Modul | Fajta | Típus |
 |---|---|---|---|
@@ -990,6 +990,7 @@ A többi 611 nyilvános típus („other” osztály) csak a `call-graph.json`-b
 | `cfa4-project` | `graphic_design.rs` | type | `SourceGraphics` |
 | `cfa4-project` | `lib.rs` | struct | `Transition` |
 | `cfa4-project` | `lib.rs` | enum | `TransitionAlign` |
+| `cfa4-project` | `mask.rs` | enum | `MaskSource` |
 | `cfa4-project` | `multicam.rs` | struct | `MulticamSource` |
 | `cfa4-project` | `object.rs` | enum | `ObjectSource` |
 | `cfa4-project` | `studio.rs` | enum | `SourceKind` |
