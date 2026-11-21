@@ -107,7 +107,11 @@ fn a_hostile_request_is_refused_before_anything_is_created() {
         assert!(!r.done() && !r.errors().is_empty(), "{what}: one error event, no result");
     }
     // not JSON at all, the wrong shape, and a request over the size limit
-    for (what, body) in [("not JSON", b"hello".to_vec()), ("empty", Vec::new()), ("wrong shape", b"[1,2,3]".to_vec()), ("huge", vec![b' '; (1 << 20) + 16])] {
+    // the oversized request is a valid one padded with whitespace: without the size limit it would be
+    // accepted and fail later as a download (exit 1), not be refused as a bad request
+    let mut padded = request(&target, "model.bin", url, SHA, 1).to_string().into_bytes();
+    padded.resize((1 << 20) + 16, b' ');
+    for (what, body) in [("not JSON", b"hello".to_vec()), ("empty", Vec::new()), ("wrong shape", b"[1,2,3]".to_vec()), ("huge", padded)] {
         let r = run(&[], &body);
         assert_eq!(r.code, 2, "{what}: refused ({:?})", r.errors());
         assert!(!r.done(), "{what}: no result");
