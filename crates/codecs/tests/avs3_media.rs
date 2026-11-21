@@ -66,6 +66,7 @@ fn encode(name: &str, w: usize, h: usize, frames: usize, args: &[&str]) -> Optio
     std::fs::write(&input, source(w, h, frames)).unwrap();
     let out = dir.join(format!("{name}.avs3"));
     let status = Command::new(uavs3enc())
+        .current_dir(&dir)
         .arg("-i")
         .arg(&input)
         .args(["-w", &w.to_string(), "-h", &h.to_string(), "-f", &frames.to_string()])

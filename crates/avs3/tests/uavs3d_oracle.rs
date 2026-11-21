@@ -136,6 +136,7 @@ fn encode(c: &Case<'_>) -> Option<(PathBuf, PathBuf)> {
     std::fs::write(&input, source(c.w, c.h, c.frames, c.bits)).unwrap();
     let (stream, recon) = (dir.join(format!("{}.avs3", c.name)), dir.join(format!("{}.rec.yuv", c.name)));
     let mut cmd = Command::new(tool(enc));
+    cmd.current_dir(&dir); // the encoder writes a psnr log into its working directory
     cmd.args(["-i"]).arg(&input);
     cmd.args(["-w", &c.w.to_string(), "-h", &c.h.to_string(), "-f", &c.frames.to_string()]);
     cmd.args(["-d", &c.bits.to_string(), "--fps_num", "25", "--fps_den", "1", "-v", "0"]);
