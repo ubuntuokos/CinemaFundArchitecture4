@@ -442,6 +442,212 @@ pub fn auro(data: &[u8]) {
     let _ = cfa4_auro::cfa4::unfold(&refs);
 }
 
+// ---------------------------------------------------------------- RealMedia, MPEG-4 SStP, EVC, AVS and lossless
+
+/// RealMedia: the header and every data packet (at most 256), with each audio stream's
+/// `.ra\xfd` header parsed and its packets deinterleaved, as the engine reads a `.rm` file.
+pub fn realmedia(data: &[u8]) {
+    let _ = cfa4_realmedia::probe(data);
+    let Ok(mut demux) = cfa4_realmedia::Demuxer::new(std::io::Cursor::new(data)) else { return };
+    let mut audio: Vec<Option<cfa4_realmedia::audio::Deinterleaver>> = demux
+        .header()
+        .streams
+        .iter()
+        .map(|s| match &s.kind {
+            cfa4_realmedia::StreamKind::Audio { codec_data } => {
+                cfa4_realmedia::audio::parse_audio_info(codec_data).ok().map(|i| cfa4_realmedia::audio::Deinterleaver::new(&i))
+            }
+            _ => None,
+        })
+        .collect();
+    for _ in 0..256 {
+        let Ok(Some(p)) = demux.next_packet() else { break };
+        if let Some(Some(d)) = audio.get_mut(p.stream) {
+            std::hint::black_box(d.push(&p));
+        }
+    }
+    let _ = demux.seek(0);
+}
+
+/// RealAudio: the first byte picks the codec (Cook, ATRAC3, ATRAC3plus, ATRAC9, 14.4, 28.8, SIPR),
+/// the next bytes the stream parameters, the rest is fed as frames of the block size.
+pub fn realaudio(data: &[u8]) {
+    use cfa4_realaudio::{atrac3, atrac3p, atrac9, cook, ra144, ra288, sipr};
+    let mut i = Input::new(data);
+    let pick = i.byte() % 7;
+    let channels = 1 + u16::from(i.byte() % 8);
+    let block_align = 1 + usize::from(i.u16() % 4096);
+    let extra_len = usize::from(i.byte() % 32);
+    let extradata: Vec<u8> = (0..extra_len).map(|_| i.byte()).collect();
+    let frames = || i.rest().chunks(block_align).take(64);
+    match pick {
+        0 => {
+            let p = cook::Params { channels, sample_rate: 44_100, block_align, extradata: extradata.clone() };
+            if let Ok(mut d) = cook::Decoder::new(&p) {
+                for f in frames() {
+                    let _ = d.decode(f);
+                }
+            }
+        }
+        1 => {
+            let p = atrac3::Params { channels, block_align, extradata: extradata.clone() };
+            if let Ok(mut d) = atrac3::Decoder::new(&p) {
+                for f in frames() {
+                    let _ = d.decode(f);
+                }
+            }
+        }
+        2 => {
+            if let Ok(mut d) = atrac3p::Decoder::new(channels, block_align) {
+                for f in frames() {
+                    let _ = d.decode(f);
+                }
+            }
+        }
+        3 => {
+            if let Ok(mut d) = atrac9::Decoder::new(&extradata, block_align) {
+                for f in frames() {
+                    let _ = d.decode(f);
+                }
+            }
+        }
+        4 => {
+            let mut d = ra144::Decoder::new();
+            for f in frames() {
+                let _ = d.decode(f);
+            }
+        }
+        5 => {
+            let mut d = ra288::Decoder::new();
+            for f in frames() {
+                let _ = d.decode(f);
+            }
+        }
+        _ => {
+            if let Ok(mut d) = sipr::Decoder::new(block_align) {
+                for f in frames() {
+                    let _ = d.decode(f);
+                }
+            }
+        }
+    }
+}
+
+/// RealVideo 1.0/2.0 and 3.0/4.0: the first byte picks the codec, then the coded size and
+/// 8–23 bytes of codec data, then length-prefixed packets; `flush` drains the held picture.
+pub fn realvideo(data: &[u8]) {
+    use cfa4_realvideo::{Codec, rv34};
+    let mut i = Input::new(data);
+    let pick = i.byte() % 4;
+    let (w, h) = (i.side(), i.side());
+    let extra_len = 8 + usize::from(i.byte() % 16);
+    let extradata: Vec<u8> = (0..extra_len).map(|_| i.byte()).collect();
+    if pick < 2 {
+        let codec = if pick == 0 { Codec::Rv10 } else { Codec::Rv20 };
+        if let Ok(mut d) = cfa4_realvideo::Decoder::new(codec, w, h, &extradata) {
+            for p in packets(i.rest()) {
+                let _ = cfa4_realvideo::picture_type(codec, p);
+                let _ = d.decode(p);
+            }
+            let _ = d.flush();
+        }
+    } else {
+        let codec = if pick == 2 { rv34::Codec::Rv30 } else { rv34::Codec::Rv40 };
+        if let Ok(mut d) = rv34::Decoder::new(codec, w, h, &extradata) {
+            for p in packets(i.rest()) {
+                let _ = rv34::picture_type(codec, p);
+                let _ = d.decode(p);
+            }
+            let _ = d.flush();
+        }
+    }
+}
+
+/// MPEG-4 Studio Profile: the access-unit scanner and probe over the whole input, then the
+/// first packet as configuration headers and the others as access units.
+pub fn sstp(data: &[u8]) {
+    let _ = cfa4_sstp::probe(data);
+    let mut starts = Vec::new();
+    cfa4_sstp::AccessUnits::new().feed(0, data, &mut starts);
+    std::hint::black_box(starts);
+    let mut d = cfa4_sstp::Decoder::new();
+    let mut ps = packets(data);
+    if let Some(head) = ps.next() {
+        let _ = d.parse_headers(head);
+    }
+    for p in ps {
+        let _ = d.decode(p);
+    }
+}
+
+/// EVC: the probe, the picture scanner and the decoder over the input's NAL units (at most 64).
+pub fn evc(data: &[u8]) {
+    let _ = cfa4_evc::probe(data);
+    let mut scanner = cfa4_evc::Scanner::new();
+    let mut d = cfa4_evc::Decoder::new();
+    for nal in cfa4_evc::split_nal_units(data).take(64) {
+        let _ = cfa4_evc::nal_type(nal);
+        let _ = scanner.push(nal);
+        let _ = d.decode_nal(nal);
+    }
+    std::hint::black_box(d.flush());
+}
+
+/// AVS (Chinese AVS1-P2 / CAVS): the probe and stream info, then the decoder over the packets.
+pub fn cavs(data: &[u8]) {
+    let _ = (cfa4_cavs::probe(data), cfa4_cavs::stream_info(data));
+    let mut d = cfa4_cavs::Decoder::new();
+    for p in cfa4_cavs::split_packets(data).into_iter().take(64) {
+        let _ = cfa4_cavs::picture_type(p);
+        let _ = d.decode(p);
+    }
+    let _ = d.flush();
+}
+
+pub fn lagarith(data: &[u8]) {
+    let mut i = Input::new(data);
+    let (w, h) = (i.side(), i.side());
+    let bits = [24u16, 32][usize::from(i.byte() & 1)];
+    if let Ok(mut d) = cfa4_lagarith::Decoder::new(w, h, bits) {
+        let _ = d.decode(i.rest());
+    }
+}
+
+pub fn magicyuv(data: &[u8]) {
+    let _ = cfa4_magicyuv::Decoder::new().decode(data);
+}
+
+pub fn g729(data: &[u8]) {
+    let _ = cfa4_g729::decode_file(data);
+}
+
+pub fn ilbc(data: &[u8]) {
+    let _ = cfa4_ilbc::parse_header(data);
+    let _ = cfa4_ilbc::decode_file(data);
+}
+
+pub fn musepack(data: &[u8]) {
+    let _ = cfa4_musepack::probe(data);
+    let _ = cfa4_musepack::decode_file(data);
+}
+
+pub fn shorten(data: &[u8]) {
+    let _ = cfa4_shorten::probe(data);
+    let _ = cfa4_shorten::decode_file(data);
+}
+
+/// TAK: the whole-file decoder, and a STREAMINFO block followed by frames for the packet decoder.
+pub fn tak(data: &[u8]) {
+    let _ = cfa4_tak::probe(data);
+    let _ = cfa4_tak::decode_file(data);
+    let mut ps = packets(data);
+    let info = ps.next().and_then(|b| cfa4_tak::parse_streaminfo_block(b).ok());
+    let mut d = cfa4_tak::Decoder::new(info);
+    for p in ps {
+        let _ = d.decode(p);
+    }
+}
+
 // ---------------------------------------------------------------- projects and interchange (B5)
 
 pub fn project(data: &[u8]) {
@@ -524,6 +730,19 @@ pub const TARGETS: &[(&str, &str, Target)] = &[
     ("opus", "cfa4-opus", opus),
     ("adpcm", "cfa4-adpcm", adpcm),
     ("auro", "cfa4-auro", auro),
+    ("realmedia", "cfa4-realmedia", realmedia),
+    ("realaudio", "cfa4-realaudio", realaudio),
+    ("realvideo", "cfa4-realvideo", realvideo),
+    ("sstp", "cfa4-sstp", sstp),
+    ("evc", "cfa4-evc", evc),
+    ("cavs", "cfa4-cavs", cavs),
+    ("lagarith", "cfa4-lagarith", lagarith),
+    ("magicyuv", "cfa4-magicyuv", magicyuv),
+    ("g729", "cfa4-g729", g729),
+    ("ilbc", "cfa4-ilbc", ilbc),
+    ("musepack", "cfa4-musepack", musepack),
+    ("shorten", "cfa4-shorten", shorten),
+    ("tak", "cfa4-tak", tak),
     ("project", "cfa4-project", project),
     ("interchange", "cfa4-interchange", interchange),
     ("captions", "cfa4-captions", captions),
