@@ -12,10 +12,13 @@ cfa4-cli surfaces --adapter mirabox-family          # the child process; JSON li
 cfa4-cli surfaces --adapter mirabox-family --probe  # lists the family's HID devices and exits
 ```
 
-## Wire protocol (`cfa4-surface-adapter`, version 1)
+## Wire protocol (`cfa4-surface-adapter`, version 2)
 
-One JSON object per line ([`src/wire.rs`](src/wire.rs)). The child writes events on stdout:
-`hello` (first), `connected` (model, USB id, firmware, `serialHash` (never the serial), whether the
+One JSON object per line ([`src/wire.rs`](src/wire.rs)); the rules every CFA4 adapter process
+shares (transport, handshake, versioning, errors) are in
+[`docs/adapter-process-protocol.md`](../../docs/adapter-process-protocol.md). The child writes
+events on stdout: `hello` (first; `protocolVersion`, `family`, `kind: "surface"`, checked by the
+supervisor with `wire::handshake`, which refuses another version with `protocol_mismatch`), `connected` (model, USB id, firmware, `serialHash` (never the serial), whether the
 serial is unique, the control groups), `disconnected`, `input` (`control` `keys` or `buttons`,
 0-based `index`, `press` / `release`), `ack` (for a command with a `seq`) and `error` (a machine
 code: `permission_denied`, `device_busy`, `firmware_unknown`, `protocol_mismatch`, `io_timeout`,
