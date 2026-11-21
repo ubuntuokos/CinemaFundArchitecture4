@@ -681,6 +681,7 @@ graph LR
 | `cfa4-render/vfx/mod.rs` | `cfa4-geom` | `Affine` |
 | `cfa4-render/vfx/mod.rs` | `cfa4-project` | `EffectInstance`, `ItemKind`, `effect`, `graphic` |
 | `cfa4-render/vfx/mod.rs` | `cfa4-time` | `Tick` |
+| `cfa4-render/vfx/mosh.rs` | `cfa4-project` | `EffectInstance` |
 | `cfa4-render/vfx/perspective.rs` | `cfa4-color` | `linear_to_srgb` |
 | `cfa4-render/vfx/perspective.rs` | `cfa4-media` | `cancel` |
 | `cfa4-render/vfx/perspective.rs` | `cfa4-project` | `EffectInstance` |
@@ -799,7 +800,7 @@ graph LR
 
 ## 4. Nyilvános típusok osztályonként
 
-A többi 611 nyilvános típus („other” osztály) csak a `call-graph.json`-ban szerepel.
+A többi 612 nyilvános típus („other” osztály) csak a `call-graph.json`-ban szerepel.
 
 ### Képkocka, kép, pixel (29)
 

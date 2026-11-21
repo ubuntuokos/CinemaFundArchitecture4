@@ -5400,6 +5400,13 @@
   {
    "class": "other",
    "crate": "cfa4-render",
+   "kind": "struct",
+   "module": "mosh.rs",
+   "name": "Bloom"
+  },
+  {
+   "class": "other",
+   "crate": "cfa4-render",
    "kind": "enum",
    "module": "mosh.rs",
    "name": "MoshError"
@@ -12774,6 +12781,11 @@
    "from": "cfa4-render/vfx/mod.rs",
    "item": "Tick",
    "to": "cfa4-time"
+  },
+  {
+   "from": "cfa4-render/vfx/mosh.rs",
+   "item": "EffectInstance",
+   "to": "cfa4-project"
   },
   {
    "from": "cfa4-render/vfx/perspective.rs",
