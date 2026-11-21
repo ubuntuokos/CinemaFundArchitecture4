@@ -261,15 +261,27 @@ impl SurfaceInput {
 #[derive(Clone, Debug, PartialEq, Eq, Hash, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase", tag = "type")]
 pub enum FeedbackTarget {
-    Led { control: ControlId },
-    Fader { control: ControlId },
-    Ring { control: ControlId },
-    Display { index: u16 },
+    Led {
+        control: ControlId,
+    },
+    Fader {
+        control: ControlId,
+    },
+    Ring {
+        control: ControlId,
+    },
+    Display {
+        index: u16,
+    },
     Timecode,
-    Meter { index: u16 },
+    Meter {
+        index: u16,
+    },
     DeviceState,
     /// The tally light of source or camera `index` (READY-V4.1).
-    Tally { index: u16 },
+    Tally {
+        index: u16,
+    },
 }
 
 /// A feedback value; the I/O crate turns it into the device's own protocol.
