@@ -6738,6 +6738,11 @@
   },
   {
    "from": "cfa4-cli/serve.rs",
+   "item": "wav",
+   "to": "cfa4-media"
+  },
+  {
+   "from": "cfa4-cli/serve.rs",
    "item": "ItemId",
    "to": "cfa4-project"
   },
@@ -8273,6 +8278,11 @@
   },
   {
    "from": "cfa4-engine/eyedropper.rs",
+   "item": "WorkingSpace",
+   "to": "cfa4-color"
+  },
+  {
+   "from": "cfa4-engine/eyedropper.rs",
    "item": "linear_to_srgb_u8",
    "to": "cfa4-color"
   },
@@ -8289,6 +8299,11 @@
   {
    "from": "cfa4-engine/eyedropper.rs",
    "item": "ItemId",
+   "to": "cfa4-project"
+  },
+  {
+   "from": "cfa4-engine/eyedropper.rs",
+   "item": "ParamValue",
    "to": "cfa4-project"
   },
   {
