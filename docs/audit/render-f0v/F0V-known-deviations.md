@@ -8,7 +8,7 @@ Forrás: PR #271 és #331 teszt-megjegyzései, a terv 2. pontja és az F0V-1 mé
 | KD-02 | HEIC | `heif-enc` / libheif hiányában a HEIC round-trip és a HEIF orákulum kimarad | #271, #331 | Géppel generált kihagyási lista kell a riportba (AC-12) | PENDING |
 | KD-03 | `phone_vfr` | A `cli phone_vfr` workflow-teszt orákulumot igényel (FFmpeg ≥ 9.0.2) | #331 | A valódi mobilfelvétel nincs; a `vfr_synthetic` csak pótlék | PENDING |
 | KD-04 | EXR / TIFF YCbCr | Az EXR és YCbCr TIFF orákulumok f16 pixelformátumot kérnek az FFmpeg-től | #271, #331 | Ahol az FFmpeg-build nem tudja, kimarad | PENDING (build-függő) |
-| KD-05 | A/V drift | A mérő kész, de motoron átvitt `sync_flash_beep` render még nincs | F0V-1 | Az ítélet `Incomplete` | PENDING |
+| KD-05 | A/V drift | A mérő kész és bizonyított (`timing::rising_edges`, `timing::beep_onsets`, `validation::compare_with` + `SyncSpec`; szintetikus flash-és-sípszó: állandó eltolás és kúszó drift is elbukik). A motoron átvitt `sync_flash_beep` render még nincs, és a SyncSpec határai ideiglenesek (eltolás ≤ 20 ms, drift ≤ 1 ms), mert nincs róluk mért zaj | F0V-1, F0b | `compare` továbbra is `Incomplete`; `compare_with` mért drifttel `Pass`/`Fail` | MÉRŐ KÉSZ; motoros render és mért határ PENDING |
 | KD-06 | 16 bites / EXR golden | Még nincs 16 bites PNG és EXR golden fájl; a meglévő golden 8 bites RGBA (`testkit`, 50 KiB korlát) | testkit | A bit-azonos CPU-kapu csak a procedurális jelenetre áll | PENDING |
 | KD-07 | Gép-/GPU-zaj | A küszöbök egy gép CPU-útját fedik | F0V-1 | AC-04 GPU-ága nem mérhető | PENDING (referenciagép) |
 | KD-08 | Futtató gép | A mérések Ubuntu 24.04 konténeren futottak (nem 26.04) | környezet | A referenciagépes ismétlés kötelező a hivatalos küszöbhöz | PENDING |

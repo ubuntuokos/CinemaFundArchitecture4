@@ -224,9 +224,8 @@ distributions are not targets.
 - **CFA4 decision (2026-10-24, ADR 0003 §4):** no closed plug-ins are loaded and there is no GPL
   plug-in exception; the capabilities of useful, indispensable closed plug-ins are implemented in
   our own code. Hosts load only GPL-3-compatible plug-ins.
-- **CFA4 candidates after GPL-3.0-or-later** (ADR 0003 §6): an OpenFX host loading Natron's
-  openfx-misc (GPL-2.0-or-later: keying, colour, transform and tracking, retime, deinterlace,
-  denoise, sharpen); an LV2 host on lilv (ISC); frei0r (GPL-2.0-or-later). Candidates are not commitments: each needs its own ADR (FFI rule, own engine as fallback).
+- **CFA4 candidates after GPL-3.0-or-later** (ADR 0003 §6): an OpenFX host whose first pack is our own clean-room implementation of the openfx-misc capability list (keying, colour, transform and tracking, retime, deinterlace,
+  denoise, sharpen; owner decision 2026-11-21, ADR 0003 §14: no Natron code is taken); an LV2 host on lilv (ISC); frei0r (GPL-2.0-or-later). Candidates are not commitments: each needs its own ADR (FFI rule, own engine as fallback).
 
 ## G12. AI features
 
@@ -370,8 +369,8 @@ distributions are not targets.
   four corner paths and warps projectively (keystone and tilt; `render::homography`,
   `vfx::perspective`); Shift snaps pen mask segments and dragged-out Bézier handles to 45° steps (#853), and
   Shift constrains vertex and whole-mask drags to 45° steps from the press point (#1408).
-- **CFA4 candidates after GPL-3.0-or-later** (ADR 0003 §6): Natron openfx-misc effects (keyers,
-  colour, tracking, retime), Rubber Band (GPL-2.0-or-later) for audio time-stretch and pitch shift,
+- **CFA4 candidates after GPL-3.0-or-later** (ADR 0003 §6): clean-room OpenFX effects with the openfx-misc capability list (keyers,
+  colour, tracking, retime; ADR 0003 §14: no Natron code), Rubber Band (GPL-2.0-or-later) for audio time-stretch and pitch shift,
   frei0r effects. Candidates are not commitments: each needs its own ADR (FFI rule, own engine as fallback).
 - **Estimate:** 60–110 h.
 
