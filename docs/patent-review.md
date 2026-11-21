@@ -107,6 +107,7 @@ szabadalommal védett formátumot.
 | Shorten | dekódolás; `.shn` fájlok olvasása | `crates/shorten` (az FFmpeg Shorten-dekódolójának portja) | alap | függőben | | |
 | TAK (Tom's lossless Audio Kompressor) | dekódolás; `.tak` fájlok olvasása | `crates/tak` (az FFmpeg TAK-dekódolójának portja) | alap | függőben | | |
 | Interplay ACM | dekódolás; `.acm` fájlok olvasása | `crates/acm` (az FFmpeg Interplay ACM-dekódolójának portja) | alap | függőben | | |
+| id RoQ (video, DPCM-hang) | dekódolás; `.roq` fájlok olvasása | `crates/roq` (az FFmpeg id RoQ-dekódolóinak portja) | alap | függőben | | |
 | AMR-NB, AMR-WB | dekódolás | `crates/amr` (az opencore-amr portja) | alap | függőben | | |
 | Musepack SV7, SV8 | dekódolás; `.mpc` fájlok olvasása | `crates/musepack` (a libmpcdec portja) | alap | függőben | | |
 

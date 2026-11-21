@@ -21,6 +21,7 @@
 //! - [`EvcSource`]: raw MPEG-5 EVC Baseline (`.evc`) streams, pictures shown in their order count.
 //! - [`CavsSource`]: raw AVS1-P2 (Chinese AVS, Jizhun profile) streams (`.avs`, `.cavs`).
 //! - [`SstpSource`]: MPEG-4 Simple Studio Profile (Sony SR) elementary streams (`.m4v`), every picture intra.
+//! - [`RoqSource`]: id RoQ (`.roq`) video (full range YUV 4:4:4) with DPCM sound.
 //! - [`Y4mSource`]: uncompressed YUV4MPEG2 (`.y4m`) video, frames read on demand.
 //! - [`openers`]: the openers to register with the engine's media pool.
 
@@ -32,6 +33,7 @@ pub mod av2;
 #[cfg(feature = "av2-external")]
 pub mod av2_external;
 pub mod avi;
+mod ckpt;
 pub mod canopus;
 pub mod cavs;
 pub mod dif;
@@ -53,6 +55,7 @@ pub mod mpeg;
 pub mod mxf;
 pub mod ogg;
 pub mod realmedia;
+pub mod roq;
 pub mod sstp;
 mod stream_color;
 pub mod streams;
@@ -76,6 +79,7 @@ pub use mpeg::MpegSource;
 pub use mxf::MxfSource;
 pub use ogg::OggSource;
 pub use realmedia::RmSource;
+pub use roq::RoqSource;
 pub use sstp::SstpSource;
 pub use video::{DecodedFrame, VideoDecoder, VideoDecoderFactory};
 pub use y4m::Y4mSource;
@@ -197,6 +201,7 @@ pub fn openers() -> Vec<cfa4_media::Opener> {
         y4m::opener,
         dif::opener,
         realmedia::opener,
+        roq::opener,
         av2::opener,
         audio::opener,
     ]
