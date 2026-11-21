@@ -56,3 +56,7 @@ bash "$(dirname "$0")/install-lcevc-oracle.sh" \
 # tests skip without them)
 bash "$(dirname "$0")/install-avs2-oracle.sh" \
   || echo "::warning::AVS2 oracle build failed: the AVS2 oracle tests skip"
+# AVS3 oracles `uavs3d`, `uavs3e` and their 10-bit builds (pinned upstream commits; the AVS3 oracle
+# tests skip without them)
+bash "$(dirname "$0")/install-avs3-oracle.sh" \
+  || echo "::warning::AVS3 oracle build failed: the AVS3 oracle tests skip"

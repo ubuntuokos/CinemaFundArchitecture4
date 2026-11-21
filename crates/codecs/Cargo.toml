@@ -64,6 +64,7 @@ cfa4-dirac = { workspace = true }
 cfa4-sstp = { workspace = true }
 cfa4-evc = { workspace = true }
 cfa4-avs2 = { workspace = true }
+cfa4-avs3 = { workspace = true }
 cfa4-cavs = { workspace = true }
 cfa4-aac = { workspace = true }
 cfa4-opus = { workspace = true }

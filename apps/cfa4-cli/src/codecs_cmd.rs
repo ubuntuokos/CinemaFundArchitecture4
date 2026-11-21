@@ -102,6 +102,7 @@ static ROWS: &[Row] = &[
     video("MPEG-5 EVC", &["evc"], Ported, Sw("Baseline profile: raw .evc streams and MP4 evc1"), false, NoEnc),
     video("AVS1-P2", &["cavs"], Ported, Sw("Jizhun profile (AVS1, not AVS+): raw .avs / .cavs streams"), false, NoEnc),
     video("AVS2-P2", &["avs2"], Ported, Sw("Main / Main 10 profiles (8- and 10-bit): raw .avs2 streams"), false, NoEnc),
+    video("AVS3-P2", &["avs3"], Ported, Sw("baseline profiles (8- and 10-bit): raw .avs3 streams"), false, NoEnc),
     video("AV1", &["av1"], Own, Sw("Main 8/10-bit"), false, Fmt(Format::Av1)),
     video("AV2", &["av2"], Own, Detect("bitstream parsing only"), false, NoEnc),
     video("VP8", &["vp8"], Own, Sw("RFC 6386"), false, NoEnc),
