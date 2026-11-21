@@ -2359,6 +2359,27 @@
    "class": "other",
    "crate": "cfa4-engine",
    "kind": "struct",
+   "module": "atrac_convert.rs",
+   "name": "Outcome"
+  },
+  {
+   "class": "other",
+   "crate": "cfa4-engine",
+   "kind": "struct",
+   "module": "atrac_convert.rs",
+   "name": "Request"
+  },
+  {
+   "class": "other",
+   "crate": "cfa4-engine",
+   "kind": "enum",
+   "module": "atrac_convert.rs",
+   "name": "Target"
+  },
+  {
+   "class": "other",
+   "crate": "cfa4-engine",
+   "kind": "struct",
    "module": "autosave.rs",
    "name": "AutoSavePrefs"
   },
@@ -6921,6 +6942,31 @@
   {
    "from": "cfa4-engine/aaf_omf.rs",
    "item": "Tick",
+   "to": "cfa4-time"
+  },
+  {
+   "from": "cfa4-engine/atrac_convert.rs",
+   "item": "Progress",
+   "to": "cfa4-export"
+  },
+  {
+   "from": "cfa4-engine/atrac_convert.rs",
+   "item": "Report",
+   "to": "cfa4-export"
+  },
+  {
+   "from": "cfa4-engine/atrac_convert.rs",
+   "item": "write_wav",
+   "to": "cfa4-export"
+  },
+  {
+   "from": "cfa4-engine/atrac_convert.rs",
+   "item": "open_path",
+   "to": "cfa4-media"
+  },
+  {
+   "from": "cfa4-engine/atrac_convert.rs",
+   "item": "TICKS_PER_SECOND",
    "to": "cfa4-time"
   },
   {

@@ -78,7 +78,7 @@ fidelity and the remaining work.
 | AMR-NB / AMR-WB | audio | `crates/amr` | ported | yes | no |
 | Speex | audio | `crates/speex` | ported | yes: Ogg Speex | no |
 | TTA (True Audio) | audio | `crates/tta` | ported | yes | no |
-| RealAudio Cook / SIPR / 1.0 (14.4) / 2.0 (28.8), ATRAC3, ATRAC3plus, ATRAC9 | audio | `crates/realaudio` | ported | yes: in RealMedia (.rm, .rmvb); ATRAC3 also in WAV (.wav, .at3), ATRAC3plus in WAV and OpenMG (.at3, .oma, .aa3), ATRAC9 in WAV (.at9) | no |
+| RealAudio Cook / SIPR / 1.0 (14.4) / 2.0 (28.8), ATRAC3, ATRAC3plus, ATRAC9 | audio | `crates/realaudio`, `crates/atracenc` | ported | yes: in RealMedia (.rm, .rmvb); ATRAC3 also in WAV (.wav, .at3), ATRAC3plus in WAV and OpenMG (.at3, .oma, .aa3), ATRAC9 in WAV (.at9) | yes: ATRAC3 (.at3) in Tools ▸ Audio Tools ▸ AT9/AT3 Converter |
 | Shorten | audio | `crates/shorten` | ported | yes | no |
 | TAK | audio | `crates/tak` | ported | yes | no |
 | G.729 / G.729 Annex B | audio | `crates/g729` | ported | yes | no |

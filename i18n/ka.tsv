@@ -4781,3 +4781,29 @@ export.summary	Low	დაბალი
 	Chapter	თავი
 	Segmentation (AS-11 programme part)	სეგმენტაცია (AS-11 გადაცემის ნაწილი)
 	AS-10	AS-10
+# AT9/AT3 converter (Tools ▸ Audio Tools, AT3-2)
+	AT9/AT3 Converter	AT9/AT3 გადამყვანი
+	AT9/AT3 Converter…	AT9/AT3 გადამყვანი…
+	Files to convert:	გადასაყვანი ფაილები:
+	Add Files	ფაილების დამატება
+	Add Files…	ფაილების დამატება…
+	Convert to:	გადაყვანა ფორმატში:
+	Bit rate:	ბიტური სიჩქარე:
+	Sample format:	სემპლის ფორმატი:
+	Output folder:	გამოტანის საქაღალდე:
+	Output Folder	გამოტანის საქაღალდე
+	Next to each source file	თითოეული წყარო ფაილის გვერდით
+	AT9 and ATRAC3plus files convert to WAV; encoding AT9, ATRAC3plus and MP3 is not available yet.	AT9 და ATRAC3plus ფაილები WAV-ში გადაიყვანება; AT9, ATRAC3plus და MP3 კოდირება ჯერ არ არის ხელმისაწვდომი.
+	Convert	გადაყვანა
+	Add the files to convert first.	ჯერ დაამატეთ გადასაყვანი ფაილები.
+	Done: {n} file(s) converted.	მზადაა: გადაყვანილია {n} ფაილი.
+	Converting {name}…	{name} გადაიყვანება…
+	Stopping…	ჩერდება…
+	AT3 (ATRAC3, PSP / PS3)	AT3 (ATRAC3, PSP / PS3)
+	WAV (PCM)	WAV (PCM)
+	132 kbit/s (LP2)	132 kbit/s (LP2)
+	105 kbit/s	105 kbit/s
+	66 kbit/s (LP4, joint stereo)	66 kbit/s (LP4, joint stereo)
+	16-bit	16 ბიტი
+	24-bit	24 ბიტი
+	32-bit float	32 ბიტი მცოცავი წერტილით

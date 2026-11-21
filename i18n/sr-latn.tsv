@@ -4780,3 +4780,29 @@ export.summary	Low	nizak
 	Chapter	Poglavlje
 	Segmentation (AS-11 programme part)	Segmentacija (deo programa AS-11)
 	AS-10	AS-10
+# AT9/AT3 converter (Tools ▸ Audio Tools, AT3-2)
+	AT9/AT3 Converter	Konverter AT9/AT3
+	AT9/AT3 Converter…	Konverter AT9/AT3…
+	Files to convert:	Datoteke za konverziju:
+	Add Files	Dodaj datoteke
+	Add Files…	Dodaj datoteke…
+	Convert to:	Konvertuj u:
+	Bit rate:	Brzina protoka:
+	Sample format:	Format uzoraka:
+	Output folder:	Izlazna fascikla:
+	Output Folder	Izlazna fascikla
+	Next to each source file	Pored svake izvorne datoteke
+	AT9 and ATRAC3plus files convert to WAV; encoding AT9, ATRAC3plus and MP3 is not available yet.	Datoteke AT9 i ATRAC3plus konvertuju se u WAV; kodiranje AT9, ATRAC3plus i MP3 još nije dostupno.
+	Convert	Konvertuj
+	Add the files to convert first.	Prvo dodajte datoteke za konverziju.
+	Done: {n} file(s) converted.	Gotovo: konvertovano datoteka: {n}.
+	Converting {name}…	Konvertovanje {name}…
+	Stopping…	Zaustavljanje…
+	AT3 (ATRAC3, PSP / PS3)	AT3 (ATRAC3, PSP / PS3)
+	WAV (PCM)	WAV (PCM)
+	132 kbit/s (LP2)	132 kbit/s (LP2)
+	105 kbit/s	105 kbit/s
+	66 kbit/s (LP4, joint stereo)	66 kbit/s (LP4, združeni stereo)
+	16-bit	16-bitni
+	24-bit	24-bitni
+	32-bit float	32-bitni pokretni zarez

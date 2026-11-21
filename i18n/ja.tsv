@@ -4787,3 +4787,29 @@
 	Chapter	チャプター
 	Segmentation (AS-11 programme part)	セグメンテーション（AS-11 番組パート）
 	AS-10	AS-10
+# AT9/AT3 converter (Tools ▸ Audio Tools, AT3-2)
+	AT9/AT3 Converter	AT9/AT3 コンバーター
+	AT9/AT3 Converter…	AT9/AT3 コンバーター…
+	Files to convert:	変換するファイル:
+	Add Files	ファイルを追加
+	Add Files…	ファイルを追加…
+	Convert to:	変換先:
+	Bit rate:	ビットレート:
+	Sample format:	サンプル形式:
+	Output folder:	出力フォルダー:
+	Output Folder	出力フォルダー
+	Next to each source file	各ソースファイルと同じ場所
+	AT9 and ATRAC3plus files convert to WAV; encoding AT9, ATRAC3plus and MP3 is not available yet.	AT9 と ATRAC3plus のファイルは WAV に変換できます。AT9、ATRAC3plus、MP3 へのエンコードはまだ使用できません。
+	Convert	変換
+	Add the files to convert first.	先に変換するファイルを追加してください。
+	Done: {n} file(s) converted.	完了: {n} 個のファイルを変換しました。
+	Converting {name}…	{name} を変換中…
+	Stopping…	停止中…
+	AT3 (ATRAC3, PSP / PS3)	AT3 (ATRAC3, PSP / PS3)
+	WAV (PCM)	WAV (PCM)
+	132 kbit/s (LP2)	132 kbit/s (LP2)
+	105 kbit/s	105 kbit/s
+	66 kbit/s (LP4, joint stereo)	66 kbit/s (LP4, ジョイントステレオ)
+	16-bit	16 ビット
+	24-bit	24 ビット
+	32-bit float	32 ビット浮動小数点
