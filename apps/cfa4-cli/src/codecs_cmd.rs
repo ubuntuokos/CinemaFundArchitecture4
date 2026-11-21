@@ -213,6 +213,7 @@ const NOT_CODECS: &[&str] = &[
     "smart-edit",
     "speech",
     "st2110",
+    "store",
     "surface",
     "surface-catalog",
     "surface-model",
