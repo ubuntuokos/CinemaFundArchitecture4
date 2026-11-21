@@ -354,7 +354,7 @@ distributions are not targets.
 
 ## G18. Effects depth: approximations and missing behaviour
 
-- **Missing:** Warp Stabilizer's Subspace Warp is still the similarity model (Premiere's is a 3-D subspace warp; Perspective is a real homography now), Morph Cut has no face tracking
+- **Missing:** Warp Stabilizer's Subspace Warp is a mesh warp over smoothed feature trajectories now, but its analysis is not stored on disk yet and it has no rolling-shutter model (Perspective is a real homography), Morph Cut has no face tracking
   (and occlusion edges are soft), Lumetri HDR-aware maths, multicam paging beyond 16 angles,
   redesigned 26.0 mask tools (a stored, re-editable
   corner radius: rounding bakes fillets into the path, so a rounded corner cannot be re-rounded later).

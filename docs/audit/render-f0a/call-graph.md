@@ -691,6 +691,9 @@ graph LR
 | `cfa4-render/vfx/stylize.rs` | `cfa4-color` | `linear_to_srgb`, `luma709`, `rgb_to_hsl`, `srgb_to_linear` |
 | `cfa4-render/vfx/stylize.rs` | `cfa4-project` | `EffectInstance` |
 | `cfa4-render/vfx/stylize.rs` | `cfa4-time` | `Tick` |
+| `cfa4-render/vfx/subspace_warp.rs` | `cfa4-color` | `linear_to_srgb` |
+| `cfa4-render/vfx/subspace_warp.rs` | `cfa4-media` | `cancel` |
+| `cfa4-render/vfx/subspace_warp.rs` | `cfa4-project` | `EffectInstance` |
 | `cfa4-render/vfx/temporal.rs` | `cfa4-color` | `linear_to_srgb` |
 | `cfa4-render/vfx/temporal.rs` | `cfa4-media` | `cancel` |
 | `cfa4-render/vfx/temporal.rs` | `cfa4-project` | `EffectInstance` |
@@ -800,7 +803,7 @@ graph LR
 
 ## 4. Nyilvános típusok osztályonként
 
-A többi 612 nyilvános típus („other” osztály) csak a `call-graph.json`-ban szerepel.
+A többi 614 nyilvános típus („other” osztály) csak a `call-graph.json`-ban szerepel.
 
 ### Képkocka, kép, pixel (29)
 
@@ -929,7 +932,7 @@ A többi 612 nyilvános típus („other” osztály) csak a `call-graph.json`-b
 | `cfa4-qc` | `audio.rs` | struct | `AudioFacts` |
 | `cfa4-render` | `preview.rs` | struct | `AudioSegment` |
 
-### Szín (17)
+### Szín (18)
 
 | Crate | Modul | Fajta | Típus |
 |---|---|---|---|
@@ -947,6 +950,7 @@ A többi 612 nyilvános típus („other” osztály) csak a `call-graph.json`-b
 | `cfa4-color` | `transform.rs` | struct | `ToneMap` |
 | `cfa4-engine` | `settings.rs` | struct | `ColorPrefs` |
 | `cfa4-engine` | `settings.rs` | struct | `LabelColor` |
+| `cfa4-engine` | `surface_feedback.rs` | enum | `TallyColor` |
 | `cfa4-export` | `lib.rs` | struct | `ColorSignal` |
 | `cfa4-gpu` | `lut.rs` | struct | `GpuLut` |
 | `cfa4-project` | `lib.rs` | struct | `ProjectLut` |

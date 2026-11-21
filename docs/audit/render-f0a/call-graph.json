@@ -1374,6 +1374,13 @@
   },
   {
    "class": "colour",
+   "crate": "cfa4-engine",
+   "kind": "enum",
+   "module": "surface_feedback.rs",
+   "name": "TallyColor"
+  },
+  {
+   "class": "colour",
    "crate": "cfa4-export",
    "kind": "struct",
    "module": "lib.rs",
@@ -3247,6 +3254,20 @@
    "kind": "struct",
    "module": "studio.rs",
    "name": "ProgramLayer"
+  },
+  {
+   "class": "other",
+   "crate": "cfa4-engine",
+   "kind": "enum",
+   "module": "surface_feedback.rs",
+   "name": "LedOutput"
+  },
+  {
+   "class": "other",
+   "crate": "cfa4-engine",
+   "kind": "enum",
+   "module": "surface_feedback.rs",
+   "name": "TallyLed"
   },
   {
    "class": "other",
@@ -12856,6 +12877,21 @@
    "from": "cfa4-render/vfx/stylize.rs",
    "item": "Tick",
    "to": "cfa4-time"
+  },
+  {
+   "from": "cfa4-render/vfx/subspace_warp.rs",
+   "item": "linear_to_srgb",
+   "to": "cfa4-color"
+  },
+  {
+   "from": "cfa4-render/vfx/subspace_warp.rs",
+   "item": "cancel",
+   "to": "cfa4-media"
+  },
+  {
+   "from": "cfa4-render/vfx/subspace_warp.rs",
+   "item": "EffectInstance",
+   "to": "cfa4-project"
   },
   {
    "from": "cfa4-render/vfx/temporal.rs",

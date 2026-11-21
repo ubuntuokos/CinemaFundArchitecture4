@@ -44,9 +44,9 @@ pub const LIBOBS_VERSION: &str = "33.0.1";
 pub const LIBOBS_DEFAULT_DIR: &str = "/opt/cfa4/libobs-33.0.1";
 
 /// Largest frame side the studio accepts (8K).
-pub const MAX_SIDE: u32 = 8192;
+pub const MAX_SIDE: u32 = cfa4_io_core::ring::MAX_SIDE;
 /// Smallest frame side.
-pub const MIN_SIDE: u32 = 16;
+pub const MIN_SIDE: u32 = cfa4_io_core::ring::MIN_SIDE;
 /// Highest frame rate the studio accepts.
 pub const MAX_FPS: u32 = 240;
 
@@ -73,43 +73,21 @@ pub enum StudioError {
     Io(String, std::io::Error),
 }
 
+impl From<cfa4_io_core::ring::RingError> for StudioError {
+    fn from(e: cfa4_io_core::ring::RingError) -> Self {
+        use cfa4_io_core::ring::RingError;
+        match e {
+            RingError::Invalid(m) => StudioError::Invalid(m),
+            RingError::Ring(m) => StudioError::Ring(m),
+            RingError::Io(what, e) => StudioError::Io(what, e),
+        }
+    }
+}
+
 /// Result alias of this crate.
 pub type Result<T> = std::result::Result<T, StudioError>;
 
-/// Pixel layout of a studio frame: 8-bit BGRA for program frames (as libobs outputs them), 8-bit
-/// straight RGBA for the moving layer pictures the engine feeds the host (S1b).
-#[derive(Clone, Copy, Debug, PartialEq, Eq, Serialize, Deserialize)]
-#[serde(rename_all = "lowercase")]
-pub enum PixelFormat {
-    /// 8-bit B, G, R, A per pixel, rows `stride` bytes apart.
-    Bgra8,
-    /// 8-bit R, G, B, A (straight alpha, sRGB) per pixel, rows `stride` bytes apart.
-    Rgba8,
-}
-
-impl PixelFormat {
-    /// Code stored in the frame ring.
-    pub fn code(self) -> u32 {
-        match self {
-            PixelFormat::Bgra8 => 1,
-            PixelFormat::Rgba8 => 2,
-        }
-    }
-
-    /// Format from a ring code.
-    pub fn from_code(code: u32) -> Option<Self> {
-        match code {
-            1 => Some(PixelFormat::Bgra8),
-            2 => Some(PixelFormat::Rgba8),
-            _ => None,
-        }
-    }
-
-    /// Bytes per pixel.
-    pub fn bytes_per_pixel(self) -> u32 {
-        4
-    }
-}
+pub use cfa4_io_core::frame::{Frame, PixelFormat};
 
 /// Output video of the studio: the canvas size and the frame rate.
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Serialize, Deserialize)]
@@ -165,23 +143,6 @@ impl VideoSettings {
         }
         Duration::from_nanos(1_000_000_000u64.saturating_mul(u64::from(self.fps_den)) / u64::from(self.fps_num))
     }
-}
-
-/// One output frame of the studio.
-#[derive(Clone, Debug, PartialEq, Eq)]
-pub struct Frame {
-    /// Width in pixels.
-    pub width: u32,
-    /// Height in pixels.
-    pub height: u32,
-    /// Bytes per row in `data`.
-    pub stride: u32,
-    /// Pixel layout.
-    pub format: PixelFormat,
-    /// Presentation time from the backend's clock, in nanoseconds.
-    pub pts_ns: u64,
-    /// Pixel rows, `stride * height` bytes.
-    pub data: Vec<u8>,
 }
 
 /// Which backend the host should use.

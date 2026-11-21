@@ -158,6 +158,7 @@ const L0_FOUNDATION: &[&str] = &["time", "geom", "color", "bitstream", "testkit"
 const SAME_LAYER: &[(&str, &str)] = &[
     ("dcp-inspect", "dcp-validate"),
     ("media", "frame"),
+    ("io-core", "frame"),
     ("project", "media"),
     ("project", "frame"),
     ("effects", "keyframe"),
