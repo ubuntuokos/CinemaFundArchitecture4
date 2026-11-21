@@ -105,13 +105,41 @@ fn run_reports_the_downloaders_error_and_leaves_partial_files_it_does_not_own() 
 #[test]
 fn a_stopped_downloaders_partial_files_are_removed_and_no_others() {
     let t = tempfile::tempdir().unwrap();
+    // another tag's file, and one under this download's tag that the downloader never announced
+    // (another run's): both stay; the announced one goes
     let other = part_name("model.safetensors", "1");
     std::fs::write(t.path().join(&other), b"theirs").unwrap();
-    let pre = format!("printf half > '{}/model.safetensors.'\"$2\"'.part'", t.path().display());
-    let prog = fake_with(t.path(), &pre, &[r#"{"event":"progress","done":4,"total":10,"file":"model.safetensors"}"#], 60, 0);
-    let e = run_with(Path::new(SH_PATH), &[prog.to_str().unwrap()], &request(t.path()), &mut |_, _, _| true, Duration::from_secs(1)).unwrap_err();
+    let mut req = request(t.path());
+    req.files.push(file("b.bin", "https://example.org/b.bin"));
+    let dir = t.path().display();
+    let pre = format!("printf half > '{dir}/model.safetensors.'\"$2\"'.part'; printf theirs > '{dir}/b.bin.'\"$2\"'.part'");
+    let prog = fake_with(t.path(), &pre, &[r#"{"event":"progress","done":0,"total":20,"file":"model.safetensors"}"#], 60, 0);
+    let e = run_with(Path::new(SH_PATH), &[prog.to_str().unwrap()], &req, &mut |_, _, _| true, Duration::from_secs(1)).unwrap_err();
     assert!(e.to_string().contains("received nothing"), "{e}");
-    assert_eq!(parts(t.path()), vec![other]);
+    let mut left = parts(t.path());
+    left.sort();
+    assert_eq!(left.len(), 2, "{left:?}");
+    assert!(left[0].starts_with("b.bin.") && left[1] == other, "{left:?}");
+}
+
+#[cfg(unix)]
+#[test]
+fn cancelling_removes_only_announced_partial_files() {
+    let t = tempfile::tempdir().unwrap();
+    let mut req = request(t.path());
+    req.files.push(file("b.bin", "https://example.org/b.bin"));
+    let dir = t.path().display();
+    let pre = format!("printf half > '{dir}/model.safetensors.'\"$2\"'.part'; printf theirs > '{dir}/b.bin.'\"$2\"'.part'");
+    let prog = fake_with(t.path(), &pre, &[r#"{"event":"progress","done":0,"total":20,"file":"model.safetensors"}"#], 60, 0);
+    let mut calls = 0;
+    let e = run(Path::new(SH_PATH), &[prog.to_str().unwrap()], &req, &mut |_, _, _| {
+        calls += 1;
+        calls < 3
+    })
+    .unwrap_err();
+    assert!(matches!(e, FetchError::Cancelled), "{e}");
+    let left = parts(t.path());
+    assert!(left.len() == 1 && left[0].starts_with("b.bin."), "{left:?}");
 }
 
 /// The partial files in `dir`.

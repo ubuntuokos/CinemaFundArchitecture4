@@ -175,6 +175,13 @@ fn download(req: &Request, proxy: Option<ureq::Proxy>, tag: &str) -> Result<(), 
             .create_new(true)
             .open(&part)
             .map_err(|e| format!("{}: {e} (is another download with the same tag running?)", part.display()))?;
+        // the first progress line of a file says this run created its partial file: the engine
+        // removes, after stopping this process, only the partial files announced this way
+        if !emit(&Event::Progress { done, total, file: f.name.clone() }) {
+            drop(file);
+            let _ = std::fs::remove_file(&part);
+            return Err("the engine stopped listening".into());
+        }
         let r = fetch_one(&agent, f, file, &part, done, total);
         if let Err(e) = r {
             let _ = std::fs::remove_file(&part);

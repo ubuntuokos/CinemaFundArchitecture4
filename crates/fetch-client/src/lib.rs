@@ -100,6 +100,8 @@ pub struct Request {
 #[serde(tag = "event", rename_all = "camelCase")]
 pub enum Event {
     /// Bytes done of the bytes still missing when the download started, and the file in progress.
+    /// The first line naming a file comes right after the downloader created that file's partial
+    /// file: a stopped downloader's partial files are removed only when announced this way.
     Progress { done: u64, total: u64, file: String },
     /// Every file is in place.
     Done,
@@ -226,7 +228,6 @@ fn run_with(program: &Path, extra_args: &[&str], req: &Request, progress: Progre
     let Some(stdout) = child.stdout.take() else {
         let _ = child.kill();
         let _ = child.wait();
-        remove_parts(req, &tag);
         return Err(FetchError::Failed("no output from the downloader".into()));
     };
     // lines are read on their own thread so a stalled download can still be cancelled
@@ -264,7 +265,6 @@ fn run_with(program: &Path, extra_args: &[&str], req: &Request, progress: Progre
         Err(e) => {
             let _ = child.kill();
             let _ = child.wait();
-            remove_parts(req, &tag);
             return Err(FetchError::Io(e));
         }
     };
@@ -277,10 +277,14 @@ fn run_with(program: &Path, extra_args: &[&str], req: &Request, progress: Progre
     // a partial file left under this download's tag then is not its own (it refuses to create one
     // that exists), so the client removes nothing
     let mut reported = false;
+    // the files whose partial file the downloader announced (see Event::Progress): the only ones
+    // removed after it is stopped
+    let mut owned = std::collections::HashSet::new();
     loop {
         match rx.recv_timeout(Duration::from_millis(250)) {
             Ok(Ok(Event::Progress { done, total, file })) => {
                 heard = Instant::now();
+                owned.insert(file.clone());
                 last = (done, total, file);
             }
             Ok(Ok(Event::Done)) => {
@@ -314,11 +318,12 @@ fn run_with(program: &Path, extra_args: &[&str], req: &Request, progress: Progre
         if !progress(last.0, last.1, &last.2) {
             let _ = child.kill();
             let _ = child.wait();
-            // the reader thread ends when the pipe closes (or, waiting on the full queue, when the
-            // queue is dropped); it is not waited for here
+            // announcements still in the pipe count too; the reader thread then ends when the pipe
+            // closes (or, waiting on the full queue, when the queue is dropped): not waited for
+            drain(&rx, &mut owned);
             drop(rx);
             drop(reader);
-            remove_parts(req, &tag);
+            remove_parts(req, &tag, &owned);
             return Err(FetchError::Cancelled);
         }
     }
@@ -329,6 +334,7 @@ fn run_with(program: &Path, extra_args: &[&str], req: &Request, progress: Progre
     }
     // a downloader that closed its output but does not exit is stopped too
     let status = finish(&mut child, LINGER)?;
+    drain(&rx, &mut owned);
     // the reader thread is not waited for: a process the downloader left behind may still hold
     // the pipe open. It ends when the pipe closes, or at once when it waits on the full queue,
     // which is gone now.
@@ -338,12 +344,12 @@ fn run_with(program: &Path, extra_args: &[&str], req: &Request, progress: Progre
         Some(Ok(())) if status.success() => Ok(()),
         Some(Err(e)) => {
             if !reported {
-                remove_parts(req, &tag);
+                remove_parts(req, &tag, &owned);
             }
             Err(e)
         }
         _ => {
-            remove_parts(req, &tag);
+            remove_parts(req, &tag, &owned);
             Err(FetchError::Failed(format!("the downloader stopped without finishing ({status})")))
         }
     }
@@ -364,10 +370,26 @@ fn finish(child: &mut std::process::Child, grace: Duration) -> std::io::Result<s
     }
 }
 
-/// Remove the partial files the stopped download `tag` may have left (only its own).
-fn remove_parts(req: &Request, tag: &str) {
+/// Collect the files announced in lines still queued from a stopped downloader, waiting at most a
+/// second for its output to end.
+fn drain(rx: &mpsc::Receiver<Result<Event, String>>, owned: &mut std::collections::HashSet<String>) {
+    let until = Instant::now() + Duration::from_secs(1);
+    while let Some(left) = until.checked_duration_since(Instant::now()) {
+        match rx.recv_timeout(left) {
+            Ok(Ok(Event::Progress { file, .. })) => {
+                owned.insert(file);
+            }
+            Ok(_) => {}
+            Err(_) => break,
+        }
+    }
+}
+
+/// Remove the partial files the stopped download `tag` left: only those of the files it announced
+/// (another run's file under the same tag is never touched).
+fn remove_parts(req: &Request, tag: &str, owned: &std::collections::HashSet<String>) {
     for f in &req.files {
-        if valid_name(&f.name) {
+        if valid_name(&f.name) && owned.contains(&f.name) {
             let _ = std::fs::remove_file(req.dir.join(part_name(&f.name, tag)));
         }
     }
