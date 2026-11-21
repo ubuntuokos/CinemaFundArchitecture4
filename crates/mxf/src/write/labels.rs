@@ -260,7 +260,7 @@ pub const MCA_PRIMER: &[(u16, [u8; 16])] = &[
 ];
 
 /// A property label: 06 0E 2B 34 followed by `rest`, zero padded.
-const fn ul(rest: &[u8]) -> [u8; 16] {
+pub(super) const fn ul(rest: &[u8]) -> [u8; 16] {
     let mut k = [0u8; 16];
     k[0] = 0x06;
     k[1] = 0x0E;

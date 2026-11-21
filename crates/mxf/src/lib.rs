@@ -61,6 +61,7 @@ pub use write::{
     CodedKind, ColorSpace, FrameInfo, IabDesc, J2kSubDescriptor, McaLabel, McaTitles, MxfWriter, OpAtomPcm, PackageIds, Pattern, PictureCoding, PictureDesc,
     SoundDesc, StartTimecode, TimedTextConfig, TimedTextResource, Timestamp, Umid, WriterConfig, encode_pcm, write_opatom_pcm, write_timed_text,
 };
+pub use write::{ComponentSpec, VersionClipSpec, VersionConfig, VersionTrackKind, VersionTrackSpec, write_version};
 
 use std::fmt;
 use std::io;
