@@ -192,13 +192,8 @@ fn alac_in_matroska_matches_ffmpeg() {
 
 /// The audio of a RealMedia file as a Matroska track (`A_REAL/*`, the RealAudio header as
 /// `CodecPrivate`, one block per data packet), against the same file's own RealMedia source.
-fn real_audio_in_matroska_matches_realmedia(file: &str, id: &str, dir: &str, codec: &str) {
-    let p = cfa4_testkit::fixtures_dir(dir).join(file);
-    if !p.exists() {
-        cfa4_testkit::oracle::skip(file, "the FATE sample is not in target/fixtures");
-        return;
-    }
-    let rm = std::fs::read(&p).unwrap();
+fn real_audio_in_matroska_matches_realmedia(file: &str, id: &str, p: &std::path::Path, codec: &str) {
+    let rm = std::fs::read(p).unwrap();
     let mut dm = cfa4_realmedia::Demuxer::new(Cursor::new(&rm)).expect("realmedia");
     let (stream, private) = dm
         .header()
@@ -249,12 +244,24 @@ fn real_audio_in_matroska_matches_realmedia(file: &str, id: &str, dir: &str, cod
 
 #[test]
 fn realaudio_in_matroska_decodes_like_realmedia() {
+    // RealAudio 1.0 comes from ffmpeg's encoder; the others from FATE samples, when they are in
+    // `target/fixtures` (as `realmedia_oracle` does)
+    let ff = cfa4_testkit::require_ffmpeg!();
+    if let Some(p) = fixture(&ff, "mkv_ra144.rm", &["-f", "lavfi", "-i", "sine=frequency=440:sample_rate=8000:duration=4", "-c:a", "real_144", "-f", "rm"]) {
+        real_audio_in_matroska_matches_realmedia("ra144.rm", "A_REAL/14_4", &p, "RealAudio 1.0 (14.4)");
+    } else {
+        cfa4_testkit::oracle::skip("ra144", "ffmpeg can't write it");
+    }
     for (file, id, dir, codec) in [
-        ("ra144.rm", "A_REAL/14_4", "realmedia", "RealAudio 1.0 (14.4)"),
         ("ra_288.rm", "A_REAL/28_8", "real", "RealAudio 2.0 (28.8)"),
         ("ra_cook.rm", "A_REAL/COOK", "real", "Cook"),
         ("sipr_8k5.rm", "A_REAL/SIPR", "sipr", "RealAudio SIPR"),
     ] {
-        real_audio_in_matroska_matches_realmedia(file, id, dir, codec);
+        let p = cfa4_testkit::fixtures_dir(dir).join(file);
+        if !p.exists() {
+            eprintln!("skipping: {} not present", p.display());
+            continue;
+        }
+        real_audio_in_matroska_matches_realmedia(file, id, &p, codec);
     }
 }
