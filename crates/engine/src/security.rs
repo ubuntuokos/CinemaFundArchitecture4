@@ -23,6 +23,21 @@ pub fn status(s: &Session) -> Value {
     cfa4_sandbox::status(&context(s))
 }
 
+/// Download `files` into `dir` through the confined `cfa4-fetch` process (plan D5): the engine
+/// opens no connection to the internet itself. `progress` gets `(bytes done, bytes total, file)`
+/// and returns false to cancel. Each file is `(name, https url, SHA-256, size)`.
+pub fn download(
+    dir: &std::path::Path,
+    files: impl IntoIterator<Item = (String, String, String, u64)>,
+    progress: &mut dyn FnMut(u64, u64, &str) -> bool,
+) -> std::result::Result<(), String> {
+    use cfa4_fetch_client::{FileSpec, Request};
+    let files = files.into_iter().map(|(name, url, sha256, size)| FileSpec { name, url, sha256, size }).collect();
+    let req = Request { dir: dir.to_path_buf(), files };
+    let program = cfa4_fetch_client::locate().ok_or_else(|| cfa4_fetch_client::FetchError::NotFound.to_string())?;
+    cfa4_fetch_client::run(&program, &[], &req, progress).map_err(|e| e.to_string())
+}
+
 #[cfg(test)]
 mod tests {
     use serde_json::json;

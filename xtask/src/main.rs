@@ -134,6 +134,7 @@ const LAYERS: &[(&str, u8)] = &[
     ("dcp-inspect", 3),
     ("dcpomatic", 3),
     ("smart-edit", 3),
+    ("fetch-client", 3),
     ("format", 3),
     ("engine", 4),
     ("platform", 5),
@@ -145,6 +146,7 @@ const LAYERS: &[(&str, u8)] = &[
     ("cfa4", 6),
     ("cli", 6),
     ("studio-host", 6),
+    ("fetch", 6),
 ];
 
 /// L0 crates that are not codecs/containers (no `bitstream`-only restriction).
