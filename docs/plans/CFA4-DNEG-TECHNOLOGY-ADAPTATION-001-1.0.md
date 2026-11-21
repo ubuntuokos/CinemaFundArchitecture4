@@ -3,25 +3,26 @@
 > **Állapot:** JAVASOLT VÉGLEGES 1.0 – **tulajdonosi jóváhagyásra vár**. A terv elfogadása **nem
 > implementációs engedély**: minden fázis külön tulajdonosi engedélyt igényel (coordination.md §2.10).
 > **Dátum:** 2026-11-21 · **Kérte:** István (ubuntuokos) · **Alap:** CFA4 `main` @ `97d7982f`
-> **Bizonyíték (D1–D9):** [`docs/audit/DNEG-00-OVERLAP-AND-GAP-AUDIT-2026-11-21.md`](../audit/DNEG-00-OVERLAP-AND-GAP-AUDIT-2026-11-21.md)
+> **Bizonyíték (D1–D9):** [`CFA4-DNEG-TECHNOLOGY-ADAPTATION-001-AUDIT-D1-D9.md`](CFA4-DNEG-TECHNOLOGY-ADAPTATION-001-AUDIT-D1-D9.md)
 > **Platform:** Linux amd64, Ubuntu 26.04; Conda/Miniforge kizárva; automatikus letöltés nincs; az eredeti DNEG-projektek nem módosulnak.
 > Ez a dokumentum csak dokumentáció: **kód nem módosult**.
+> **Frissítve 2026-11-21 (hálózati ellenőrzés után):** a donor-licencek és a USD-fork diff igazoltak (audit D7, D8); a hiányzó tervekhez új, külön tervek készültek (§1 pont 6).
 
 ## 1. Eredmény röviden
 
 1. **A DNEG-forkok egyike sem kerül be** (openvdb, openvdb_ax, openvdb_points_dev, USD, aaf). Technológiai donorként az **ASWF upstream** OpenVDB (core, AX, points) jöhet szóba – az ADR-0003 A7 ezt már megnevezi („3D/VFX-szakasz, külön tervezendő”), ez a terv annak első, szűk szeletét részletezi.
 2. **AAF: nincs új fejlesztés.** A CFA4-nek már van saját, clean-room AAF import+export. F4 döntés: **3. lehetőség** (a meglévő fedi). A DNEG AAF SDK forrása a clean-room szabály miatt nem is olvasható.
-3. **USD: nincs scope.** A `main`-ben nincs USD-terv; a fork-diff hálózat nélkül nem végezhető el, a D7 **ELLENŐRIZETLEN**.
+3. **USD: a DNEG-fork nem kell.** Igazolt: a `dneg/USD` `HEAD`-je azonos az upstream `v23.05` tag commitjával (`b53573ea…`), a delta üres, a fork 2023-ban megállt. USD csak upstream OpenUSD lehet, a [`CFA4-OPENUSD-3D-001`](CFA4-OPENUSD-3D-001-0.1.md) terv keretében.
 4. **Valóban új** (C) csak: `.vdb` volume-adat kezelése (N1), annak renderelt megjelenítése a meglévő médiaútvonalon (N2), és – feltételesen, biztonsági kapu mögött – térbeli kifejezés (AX, N3).
 5. **Erőforrás-kezelés (D9): nincs új rendszer**; a worker az ACS/TASKSTORE keretbe regisztrál.
-6. **Öt hivatkozott terv (VFX Catalog, EffectCraft, ARF, OpenUSD/3D-csere, Potree) nincs a `main`-ben** (audit §0.1). Amíg a tulajdonos nem emeli be őket, az általuk esetleg lefedett képességek (pontfelhő/ARF, Points-rétegek, USD, 3D) **nem kerülnek a scope-ba**, és az N1–N3 is csak a G0 kapu után indulhat.
-7. **Licenc: nincs igazolt licenc.** Az OpenVDB licencéről három állítás ütközik (megbízás: Apache-2.0; ADR-0003: BSD-3/Apache-2.0; saját ismeretem: MPL-2.0). Egyik sem ellenőrizhető hálózat nélkül → **G1 belépési feltétel: a `LICENSE` fájl olvasása**.
+6. **Öt hivatkozott terv nem volt a `main`-ben** (audit §0.1). A tulajdonos döntése szerint mindegyikhez új terv készült (javaslat, jóváhagyásra vár): [VFX Catalog](CFA4-VFX-CATALOG-001-0.1.md), [EffectCraft](CFA4-EFFECTCRAFT-001-0.1.md), [ARF](CFA4-ARF-001-0.1.md), [OpenUSD/3D](CFA4-OPENUSD-3D-001-0.1.md), [Pontfelhő/Potree](CFA4-POINTCLOUD-001-0.1.md). Az általuk lefedett képességek **nem kerülnek e terv scope-jába**; az N1–N3 a G0 kapu után indulhat.
+7. **Licenc (igazolt a repókból, 2026-11-21):** az ASWF OpenVDB (core, points, NanoVDB, AX; 14.0.0) **Apache-2.0** (a közreműködők az MPL-2.0-ról relicenszeltek, `RE-LICENSE_NOTE.txt`); a DNEG-forkok MPL-2.0-s, 2017–2023-ban megállt pillanatképek (a points-repó deprecated, licencfájl nélkül); a DNEG AAF SDK saját *AAF SDK PSL 2.0*, GPL-3-kompatibilitása nem igazolt. **Ubuntu 26.04 csomagverziók továbbra is ELLENŐRIZETLENEK** (G1).
 
 ## 2. Alapelvek (a megbízás 0. pontja és a CFA4-szabályok)
 
 - A CFA4 projektmodellje, Rust-motorja, Qt6 GUI-ja, idővonala, render- és VFX-architektúrája **változatlan marad**; a donorok nem írják felül.
 - **Nincs párhuzamos rendszer:** nincs új editor, timeline, projektmodell, render engine, particle/volume motor, kompozitor.
-- **Futtatási modell** (AGENTS „Port or keep the original language”, ADR 0001 / worker-elv): az OpenVDB C++ marad, **külön felügyelt worker-folyamatban** fut, Rust-interfész mögött; a CFA4-folyamatban nincs `unsafe`, nincs in-process VDB. Összeomlása hiba, nem a CFA4 összeomlása. „Nem lassít”: a lejátszás és render képkockaidői a worker futása alatt változatlanok (referenciagépen mérve). Az eredet-megőrzés indoka: nincs érett, GPL-kompatibilis Rust-megfelelő (ELLENŐRIZETLEN: nincs hálózat, nem néztem utána); a port ellenjavallt, mert aránytalanul hosszú.
+- **Futtatási modell** (AGENTS „Port or keep the original language”, ADR 0001 / worker-elv): az OpenVDB C++ marad, **külön felügyelt worker-folyamatban** fut, Rust-interfész mögött; a CFA4-folyamatban nincs `unsafe`, nincs in-process VDB. Összeomlása hiba, nem a CFA4 összeomlása. „Nem lassít”: a lejátszás és render képkockaidői a worker futása alatt változatlanok (referenciagépen mérve). Az eredet-megőrzés indoka: nincs érett, GPL-kompatibilis Rust-megfelelő (**ELLENŐRIZETLEN**: nem kerestem Rust-portot); a port ellenjavallt, mert aránytalanul hosszú.
 - **Never crash:** hibás/csonka/hostile `.vdb` → `Result::Err`, mutation-fuzz teszt.
 - **Gyártófüggetlenség:** CPU az alap és kötelező; GPU opcionális; CUDA/NanoVDB-CUDA csak vendorfüggetlen párral.
 - **Qt6:** minden felületi elem a `python/cfa4_qt`-ban; minden művelet engine-parancs automation-id-vel (CLAUDE.md).
@@ -33,14 +34,14 @@ A megbízás F10 sorrendje szerinti munkacsomagok (F0…F9) megmaradnak; a kapuk
 
 | Kapu | Mi | Belépési feltétel | Kilépési (átvételi) feltétel |
 |---|---|---|---|
-| **G0** | **Terv-alap**: a hivatkozott VFX Catalog / EffectCraft / ARF / OpenUSD-3D / Potree-tervek a `main`-ben (vagy a tulajdonos explicit nyilatkozata, hogy nincsenek) | ez a terv jóváhagyva | ARF/VFX/USD-tervek elérhetők → a D1 `?` sorai lezárva (A vagy B/C), a D4 leképezési táblázat elkészült; vagy tulajdonosi döntés: „nincs ilyen terv, a `?` sorok C-nek számítanak” |
-| **G1** | **OpenVDB licenc- és csomagfelmérés (F8 első fele)** | G0; hálózat vagy 26.04-es csomagforrás | `LICENSE` + fejlécminta olvasva és a D8 tábla kitöltve; libopenvdb/oneTBB/Blosc/Boost (+LLVM AX-hez) verzió és licenc dokumentálva; ADR-0003 táblasora javítva, ha eltér; `cargo deny`/SBOM-terv. **Ha a licenc nem GPL-3-kompatibilis → a fázisok megállnak.** |
+| **G0** | **Terv-alap**: a VFX Catalog / EffectCraft / ARF / OpenUSD-3D / Pontfelhő tervek (a javaslatok a `docs/plans/`-ben) a tulajdonos által jóváhagyva és a `main`-ben | ez a terv jóváhagyva | a D1 `?` sorai lezárva (A vagy B/C), a D4 leképezési táblázat (ARF ↔ OpenVDB Points) elkészült |
+| **G1** | **OpenVDB csomagfelmérés (F8 második fele)** – a licenc már igazolt (Apache-2.0) | G0; 26.04-es csomagforrás | libopenvdb/oneTBB/zlib/Zstd (+LLVM ≥ 18 AX-hez) **Ubuntu 26.04-es** verziója és transzitív licence dokumentálva; ADR-0003 táblasora javítva („Apache-2.0”); `cargo deny`/SBOM-terv. **Ha a 26.04-es csomag nem teljesíti a minimumot (TBB ≥ 2021, LLVM ≥ 18) → a fázisok megállnak.** |
 | **G2** | **N1 – VDB adatréteg (F1)** | G0, G1, ACS-6 (PR #1471) beolvasva | N1 átvételi feltételek (§4) mind zöldek |
 | **G3** | **N2 – Volume megjelenítés (F6 része)** | G2 | N2 feltételek zöldek |
 | **G4** | **N3 – AX (F2)** – *csak biztonsági PoC után* | G2, CFA4-SECURITY-001 B3/B4 (a folyamat-sandbox alkalmazva) | sandbox-PoC zöld (§4 N3-S) + a döntés: AX-worker vagy saját interpreter; N3 feltételek zöldek |
 | **G5** | **Volumetrikus/procedurális VFX-bővítés (F6 többi)** | G3 és (G4, ha AX-et használ) | külön, e terv *módosításaként* jóváhagyott lista (VFX-katalógus tényleges hiányai G0 után ismertek); jelenleg **nincs scope** |
 | **G6** | **Erőforrás-illesztés (F7)** | G2 | N4 feltételek zöldek |
-| **G7** | **USD differenciális audit (F5)** | USD/3D-csere terv a `main`-ben **és** hálózat | D7 tábla kitöltve; amíg zárt, a D7 ELLENŐRIZETLEN |
+| **G7** | **USD differenciális audit (F5)** | – | **lezárva (2026-11-21): a delta üres**, a DNEG-fork nem kell; az upstream OpenUSD integrációja a [`CFA4-OPENUSD-3D-001`](CFA4-OPENUSD-3D-001-0.1.md) terv dolga |
 | **G8** | **AAF (F4)** | – | **lezárva: 3. döntés**; nincs további fázis; az opcionális külső AAF-orákulum külön, kicsi PR (licenc előbb) |
 | **G9** | **Validációs keret (F9)** | G2-től minden fázissal együtt | §6 regressziókapu minden fázis PR-ján zöld |
 
@@ -124,7 +125,7 @@ Feladattípusok (`vdb.inspect`, `vdb.render`, `vdb.ax`) regisztrálása az **ACS
 
 - Függőség csak Ubuntu-tárolóból, pinelve, `Depends/Recommends` a `.deb`-ben, SBOM-mal; AppImage/Flatpak külön packaging-audit; **nincs build-idejű vagy futásidejű letöltés.**
 - Kód-átvétel nincs; ha a G1 szerint mégis kell, a `docs/licensing.md` §5 sor és a fejlécek ugyanabban a commitban.
-- Az OpenVDB licenc **nem igazolt**: a G1-ig semmi nem tekinthető teljesítettnek. MPL-2.0 vagy Apache-2.0 esetén megengedett; GPL-2.0-only/AGPL/ismeretlen esetén a fázisok megállnak.
+- Az OpenVDB licence **igazolt: Apache-2.0** (megengedett, licensing.md §3). A 26.04-es csomagverziók és a transzitív licencek (oneTBB, zlib, Zstd, LLVM) a G1-ig **ellenőrizetlenek**; GPL-2.0-only/AGPL/ismeretlen licencű függőség esetén a fázisok megállnak. A DNEG AAF SDK (PSL 2.0) nem GPL-kompatibilisnek tekintendő jogi vélemény nélkül.
 - Python csak a meglévő CFA4-környezetben (`.venv`, `--require-hashes`); a worker nem igényel Python-t.
 
 ## 6. Regressziókapu (minden fázis PR-jára)
@@ -149,8 +150,8 @@ A nehéz mérések a `docs/development/reference-machine.md` szabályai szerint 
 
 | # | Pont | Javaslat |
 |---|---|---|
-| Q1 | Az öt hivatkozott terv (VFX Catalog, EffectCraft, ARF, OpenUSD/3D, Potree) hol van? | Emeld a `main`-be (VISION §2.6), vagy erősítsd meg, hogy nincsenek: a G0 ettől függ. |
-| Q2 | OpenVDB-licenc: az ADR-0003 és a megbízás eltér, és a saját emlékem szerint MPL-2.0 | G1: a `LICENSE` olvasása; az ADR táblasorának javítása külön kis PR-ban. |
+| Q1 | Az öt új terv (VFX Catalog, EffectCraft, ARF, OpenUSD/3D, Pontfelhő) jóváhagyása | Tartalmuk a te szövegedből és a repó állapotából következtetett javaslat; kérlek, nézd át, mielőtt a `?` sorok lezárulnak. |
+| Q2 | OpenVDB-licenc | **Lezárva:** Apache-2.0 (igazolt). Az ADR-0003 táblasorát („BSD-3 / Apache-2.0”) „Apache-2.0”-ra javítani külön kis PR-ban. |
 | Q3 | Az N1 külön folyamatú C++ worker (AGENTS „keep original language”) – elfogadod? | Javasolt: igen; az alternatíva (Rust-port) aránytalan. |
 | Q4 | AX: LLVM-JIT worker vagy saját korlátozott interpreter? | G4 PoC-ból döntsön; addig egyik sem engedélyezett. |
 | Q5 | A 3D/VFX-mélység (VISION §8) nyitott döntés; ez a terv ezt nem dönti el | Az N1–N2 csak adat+megjelenítés; 3D-jelenet nincs scope. |
@@ -161,18 +162,18 @@ A nehéz mérések a `docs/development/reference-machine.md` szabályai szerint 
 
 | Kritérium | Állapot |
 |---|---|
-| Minden releváns korábbi CFA4-terv összevetése | **Részben**: a `main`-ben lévő tervekkel megtörtént; öt hivatkozott terv hiányzik (Q1), ezért az érintett sorok `?`. Nem jelölöm teljesítettnek. |
+| Minden releváns korábbi CFA4-terv összevetése | **Részben**: a `main`-ben lévő tervekkel megtörtént; az öt hiányzó terv most javaslatként készült el, de jóváhagyásig a sorok `?`-ek. Nem jelölöm teljesítettnek. |
 | Megvalósítástól független összevetés | igen (D1 a tervekhez, nem a kódhoz) |
 | Nincs elfogadott funkció újrafelvéve | igen (D1 A-sorai a „Kimarad”-ban) |
 | OpenVDB / AX / Points scope egyértelmű | igen: N1/N2; N3 feltételes; Points nincs scope |
 | AAF gap audit kész | igen, döntés: 3. |
-| USD diff audit kész | **nem**: ELLENŐRIZETLEN (hálózat, hiányzó terv) |
+| USD diff audit kész | **igen**: a delta üres (fork = upstream v23.05); Ubuntu 26.04-es build nincs próbálva |
 | VFX-integráció a meglévő rendszerekbe | igen (D5) |
-| Dependency- és licenc-audit dokumentált | **dokumentált mint ELLENŐRIZETLEN**; a tényleges ellenőrzés G1 |
+| Dependency- és licenc-audit dokumentált | **igen a licencekre** (forrásfájlból); a 26.04-es csomagverziók és transzitív licencek **ELLENŐRIZETLENEK** (G1) |
 | Ubuntu 26.04 amd64 kompatibilitás | **nem igazolt** (U6); tervszinten csak rendszercsomag + külön folyamat |
 | CPU-only tervezett; GPU opcionális | igen |
 | Erőforrás-adaptáció dokumentált | igen (D9, N4) |
 | Regressziókapuk meghatározottak | igen (§6) |
 | Minden scope-nak van elfogadási feltétele | igen (N1–N4) |
-| Repó-módosítás nem történt | **a kód nem módosult**; két új dokumentum került a tárba |
+| Repó-módosítás nem történt | **a kód nem módosult**; hét új dokumentum került a `docs/plans/` alá (D1–D10 terv + audit + öt új terv) |
 | Implementáció külön engedélyhez kötött | igen |

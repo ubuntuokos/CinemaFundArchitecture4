@@ -3,7 +3,8 @@
 > **Állapot:** audit, tervszintű; **nem implementációs engedély** (coordination.md §2.10).
 > **Projekt:** CFA4-DNEG-TECHNOLOGY-ADAPTATION-001 · **Dátum:** 2026-11-21
 > **Alap:** CFA4 `main` @ `97d7982f` (git fetch, 2026-11-21). Kód nem módosult; csak dokumentáció.
-> **A végleges terv:** [`docs/plans/CFA4-DNEG-TECHNOLOGY-ADAPTATION-001-1.0.md`](../plans/CFA4-DNEG-TECHNOLOGY-ADAPTATION-001-1.0.md) (D10, kapuk, elfogadási feltételek).
+> **Hálózati ellenőrzés:** 2026-11-21 (a tulajdonos jelezte, hogy a hálózat elérhető). A DNEG- és upstream-repók shallow klónjai, licenc- és fejlécolvasás, `git rev-parse` összevetés; az eredmények a D7/D8-ban és a jegyzékben. Az AAF SDK **forrását nem olvastam** (clean-room), csak a licencszöveget és a README-t.
+> **A végleges terv:** [`CFA4-DNEG-TECHNOLOGY-ADAPTATION-001-1.0.md`](CFA4-DNEG-TECHNOLOGY-ADAPTATION-001-1.0.md) (D10, kapuk, elfogadási feltételek).
 
 ## 0. Módszer, és ami ebből az auditból hiányzik
 
@@ -38,6 +39,8 @@ A klónban csak a `main` ág látszik; a nyitott PR-ok (31 db a lekérdezéskor,
 3. A tervek valószínűleg más tárolóban (CFA4-AI_modules, cfa4-sdk, korábbi CFA3/FA3 anyag) vagy
    a tulajdonos gépén vannak. Ezt nem tudtam ellenőrizni (a munkamenethez csak ez a tároló van
    csatolva). **Tulajdonosi teendő:** a hiányzó tervek `main`-be emelése vagy elérhetővé tétele (G0).
+
+4. **Frissítés (2026-11-21, tulajdonosi döntés):** a hiányzó tervekhez *új terv készül*, a `docs/plans/` alatt (javaslatok, jóváhagyásra várnak): [`CFA4-VFX-CATALOG-001`](CFA4-VFX-CATALOG-001-0.1.md), [`CFA4-EFFECTCRAFT-001`](CFA4-EFFECTCRAFT-001-0.1.md), [`CFA4-ARF-001`](CFA4-ARF-001-0.1.md), [`CFA4-OPENUSD-3D-001`](CFA4-OPENUSD-3D-001-0.1.md), [`CFA4-POINTCLOUD-001`](CFA4-POINTCLOUD-001-0.1.md). Amíg ezek nincsenek jóváhagyva, a D1 `?` sorai nem zárulnak (a besorolás nem változik).
 
 ### 0.2 Ami a `main`-ben ténylegesen van (a viszonyítási alap)
 
@@ -80,14 +83,14 @@ Jelölés: **A** már elfogadott CFA4-tervben; **B** meglévő terv valódi bőv
 
 | # | Capability (donor) | Besorolás | Kapcsolódó CFA4-terv | Új érték | Integrációs hely | Dup. | Döntés és indok |
 |---|---|---|---|---|---|---|---|
-| T1 | **DNEG OpenVDB fork** (`dneg/openvdb`) | **D** | ADR-0003 §2 (OpenVDB = ASWF-projekt, A7) | nincs külön: az ADR az **ASWF upstreamet** nevezi meg | – | magas (fork-függés) | A fork nem kerül be; csak az ASWF upstream OpenVDB a jelölt. A fork→upstream állapot ELLENŐRIZETLEN (D7/D8 elv). |
+| T1 | **DNEG OpenVDB fork** (`dneg/openvdb`) | **D** | ADR-0003 §2 (OpenVDB = ASWF-projekt, A7) | nincs külön: az ADR az **ASWF upstreamet** nevezi meg | – | magas (fork-függés) | A fork nem kerül be; csak az ASWF upstream OpenVDB (14.0.0, Apache-2.0) a jelölt. A fork 2020-12-i, MPL-2.0 pillanatkép (igazolt, D8). |
 | T2 | **ASWF OpenVDB core** (ritka voxelrács, I/O, transzform, grid típusok) | **B** (a donor az A7-ben megnevezett, integrációs terv nincs) | ADR-0003 A7 | Volumetrikus adat tárolása/olvasása (`.vdb`): CFA4-ben nincs volume-adat sem terv, sem kód | külön folyamatú worker + média-eszköz típus (D10 N1) | közepes: ne legyen második render/timeline | **Scope** (N1), csak adat+inspekció+renderelt kimenet; a 0.1 szerint ha az ARF-terv már fedi, a mapping csak annak kiegészítése. |
 | T3 | **OpenVDB AX** (JIT kifejezésnyelv) | **C** | – (CFA4 kulcskocka-/kifejezésrendszere képkocka-paraméter, nem térbeli; `grep expression` nem ad térbeli kifejezésnyelvet) | Pozíciófüggő, voxel/pont-szintű programozható módosítás | N1 workerben; GUI: a meglévő effekt-szerkesztő panel (Qt6) | alacsony, **de** biztonsági kockázat (LLVM JIT) | **Feltételes scope** (N3): csak sandbox-PoC kapu (G4) után. Alternatíva: Rust-oldali korlátozott interpreter. |
-| T4 | **DNEG openvdb_points_dev** (archivált, béta) | **D** | – | A koncepció az upstream OpenVDB `points` moduljába ment át (ELLENŐRIZETLEN, ismeret alapján) | – | magas | Nem kerül be; csak az upstream points modul a jelölt. |
+| T4 | **DNEG openvdb_points_dev** (archivált, béta) | **D** | – | A koncepció az upstream OpenVDB `openvdb/points/` moduljában él (igazolt: a klónban megvan; a DNEG-repó README-je deprecated-nek jelöli) | – | magas | Nem kerül be; csak az upstream points modul a jelölt. |
 | T5 | **OpenVDB Points** (attribútum, group, iteráció, régiószűrés) | **B?** | ARF (hivatkozott, nincs a `main`-ben) | Típusos attribútumok, point group, régió-lekérdezés, tömörítés | N1 worker; ARF-ra képezve | magas, ha az ARF létezik | **Nincs önálló scope**; D4 szerint csak a *leképezési specifikáció* készül, ha az ARF-terv elérhető (G0). |
 | T6 | **NanoVDB** (GPU/CPU csak-olvasható VDB) | **B?** | wgpu-s GPU út (`crates/gpu`), ADR-0004 | gyors, csak-olvasható mintavétel | opcionális gyorsító a workerben | alacsony | **Nincs scope**: a CUDA-út csak vendor-párral lenne engedélyezett (AGENTS); CPU-útvonal az alap. Későbbi, mérésen alapuló döntés. |
-| T7 | **DNEG AAF SDK** (`dneg/aaf`) | **D** | OTIO-INTEGRATION; `cfa4-interchange` AAF (clean-room) | nincs: az AAF import/export már megvan | – | magas | **F4 döntés = 3.** (lásd D6). Az SDK forrása nem olvasható (clean-room, interchange README). |
-| T8 | **DNEG USD fork** (`dneg/USD`) | **D** | nincs USD-terv a `main`-ben | – | – | magas | Nem kerül be; fork-diff csak a USD-integráció tervének `main`-be kerülése után értelmezhető (D7). |
+| T7 | **DNEG AAF SDK** (`dneg/aaf`) | **D** | OTIO-INTEGRATION; `cfa4-interchange` AAF (clean-room) | nincs: az AAF import/export már megvan | – | magas | **F4 döntés = 3.** (lásd D6). Az SDK forrása nem olvasható (clean-room, interchange README); licence: AAF SDK PSL 2.0, GPL-3-kompatibilitás nem igazolt (D8). |
+| T8 | **DNEG USD fork** (`dneg/USD`) | **D** | nincs USD-terv a `main`-ben | – | – | magas | Nem kerül be; a fork-diff elkészült: a fork = upstream v23.05, delta üres (D7). |
 | T9 | **OpenUSD upstream** | **C?/nem besorolható** | „OpenUSD / 3D Scene Exchange” – hivatkozott, nincs a `main`-ben | 3D jelenetcsere | – | – | **Nincs scope** G0-ig. Nem a DNEG-terv tárgya (a DNEG-fork nem kell). |
 
 ### D1.2 – A–E területek (F0 §1.2) képességei
@@ -157,8 +160,8 @@ D10 N1.)
 | Térbeli, pozíciófüggő kifejezés | a CFA4-ben csak idő/képkocka-függő paraméter és kulcskocka van | AX valódi új képesség (C) |
 | Voxel/pont attribútum-programozás | nincs voxel/pont adatmodell (D2, D4) | AX csak N1 **után** értelmezhető |
 | JIT-biztonság | LLVM-JIT kódgenerálás; CFA4 §0 + SECURITY-001 | Kötelező: külön folyamat + Landlock/seccomp-profil + idő- és memóriakorlát (G4 PoC); a `cfa4-sandbox` jelenleg még nincs folyamatra alkalmazva |
-| LLVM-függőség (Ubuntu 26.04) | ELLENŐRIZETLEN (csomagnév/verzió hálózat nélkül nem állapítható meg) | D8: telepítési felmérés a G4 előtt |
-| AX állapota/licence | az upstream ASWF-projektben él; a DNEG-repó karbantartási módban (a megbízás állítása); licenc: ELLENŐRIZETLEN | D8 |
+| LLVM-függőség (Ubuntu 26.04) | LLVM ≥ 18 igazolt (OpenVDB `dependencies.txt`); az Ubuntu 26.04-es csomag ELLENŐRIZETLEN | D8: telepítési felmérés a G4 előtt |
+| AX állapota/licence | az upstream ASWF-projektben él; a DNEG-repó karbantartási módban (a megbízás állítása); licenc igazolt: Apache-2.0 (upstream `openvdb_ax/`), a DNEG-fork MPL-2.0 | D8 |
 | Alternatíva | Rust-oldali, korlátozott (nem JIT) kifejezés-interpreter a közös adatkörnyezetre | G4 döntési pont: AX-worker vs. saját interpreter; nincs döntés ebben a tervben |
 
 ## D4 – Points: attribútum, group, iteráció, régió, memória
@@ -204,8 +207,8 @@ készül új AAF-integráció, és a DNEG AAF SDK nem kerül be.** A felsorolt k
 a jelentésben látszanak; ha valamelyik (pl. sebességváltás AAF-ben) bővítendő, az Premiere-paritás
 (`gaps.md`), nem DNEG-munka.
 
-**Licenc/SDK-audit:** a DNEG AAF-repó és az AAF SDK licence **ELLENŐRIZETLEN** (nincs hálózat);
-nem tekintem GPL-kompatibilisnek. **Clean-room-védelem:** az SDK-forrás olvasása a `cfa4-interchange`
+**Licenc/SDK-audit:** az AAF SDK licence az *AAF SDK Public Source License 2.0* (igazolt a szövegből, D8); a GPL-3-kompatibilitás jogilag **nem minősített**,
+ezért nem tekintem GPL-kompatibilisnek. **Clean-room-védelem:** az SDK-forrás olvasása a `cfa4-interchange`
 README-jével ütközne, ezért **nem olvasható**. Megengedett: a kész SDK/`pyaaf2` jellegű eszköz
 **külső tesztorákulumként** (futtatható program, nem forrás), ha a licencét előbb ellenőrizzük
 (a hivatalos OTIO-hoz hasonló, ADR-0003 §2.1 szerinti mód). Ezt az OTIO-terv A1-fázisának mintájára,
@@ -214,49 +217,53 @@ külön, kicsi PR-ban lehet bevezetni; ebben a tervben **nincs** vállalva.
 **Tesztstratégia (ha az orákulum jóváhagyást kap):** meglévő `aaf_omf` tesztek + oda-vissza egy külső
 olvasóval + hostile-fuzz (`aaf/hostile_tests.rs`). Új AAF-kód nem készül.
 
-## D7 – USD differenciális audit
+## D7 – USD differenciális audit (hálózati ellenőrzéssel, 2026-11-21)
 
-**Hálózat nélkül ellenőrizhető:**
-- A `main`-ben **nincs USD-terv és USD-kód** (grep, 0.1) → a „CFA4 korábbi OpenUSD-terve” nem alap.
-- ADR-0003 nem sorolja a USD-t az ASWF-projektek közé (az OpenUSD nem ASWF-projekt a listában).
-- Az `upstream OpenUSD` lecserélése DNEG-forkra a megbízás kizárása (12.), ezt átveszem.
+**Módszer:** `dneg/USD` és `PixarAnimationStudios/OpenUSD` shallow klón; a DNEG-fork `HEAD` commitját és az upstream `v23.05` tag commitját `git rev-parse`-szal, majd `git diff --stat`-tal összevetve.
 
-**Nem ellenőrizhető (ELLENŐRIZETLEN – nem teljesített):**
-fork-állapot, upstream-verzió, commit-különbségek, DNEG-specifikus feature-ök, függőségek,
-build-mód, Linux-kompatibilitás, licenc, karbantartás, downstream-kompatibilitás.
-Ezek mind a `dneg/USD` és `PixarAnimationStudios/OpenUSD` repók elérését igénylik; a munkamenethez
-ezek nincsenek csatolva, és az API 403-at adott.
+| Vizsgálat | Eredmény | Állapot |
+|---|---|---|
+| Fork állapot | `dneg/USD` `HEAD` = `b53573ea2a6b29bc4a6b129f604bbb342c35df5c`, „Merge release v23.05”, 2023-04-18; egyetlen ág (`release`) | **IGAZOLT** |
+| Upstream-verzió | az upstream `v23.05` tag commitja **azonos** (`b53573ea…`); az upstream `release` ága 2026-11-18-ig halad („Add sparse mung buffer locking debug output…”) | **IGAZOLT** |
+| Commit-különbségek | a fork `HEAD`-je és az upstream `v23.05` közt `git diff --stat`: **üres** (0 fájl) | **IGAZOLT** |
+| DNEG-specifikus módosítás | **nincs** a fa szintjén (azonos a v23.05-tel). A „dneg” szó csak upstream-dokumentációban és teszt-baseline fájlokban fordul elő | **IGAZOLT** (a fa; a fork 2023-ig tartó előtörténete nem vizsgált: a shallow klón nem tartalmazza) |
+| DNEG-egyedi feature | **nincs** | **IGAZOLT** a fára |
+| Függőség, build | az upstream `build_scripts/build_usd.py`-t használja (letöltő script: a CFA4 szabálya szerint **tilos** automatikusan futtatni) | részben (fájl olvasva, build nem futtatva) |
+| Linux/Ubuntu 26.04 build | nem próbáltam | **ELLENŐRIZETLEN** |
+| Licenc | `LICENSE.txt`: a fork „Modified Apache 2.0”, az upstream HEAD „Tomorrow Open Source Technology License 1.0” (az Apache-2.0-tól csak a 6. szakasz, a védjegyek, tér el) | **IGAZOLT a szövegből**; a GPL-3 kompatibilitás jogi minősítése: Apache-2.0-szerű, a CFA4 szabálya engedi az Apache-2.0-t; a TOST-1.0 különbségét (védjegy) a tulajdonos hagyja jóvá → **nyitott** |
+| Karbantartás | a fork 2023 óta áll; az upstream aktív | **IGAZOLT** |
 
-**Döntés:** a USD-ből **nincs scope**. A differenciális audit akkor fut le, ha (a) a USD/3D-jelenetcsere
-terve a `main`-be került (G0), és (b) hálózati hozzáférés van; a „Gate G7” addig zárva. A D7 „diff
-report” táblázata (`DNEG delta | upstreamben van | CFA4-ben tervezett | egyedi | adaptálható`) ezért
-**kitöltetlen**, nem „üres = nincs eltérés”.
+**Eredmény a D7-táblára:** `DNEG delta` = **üres** (a fork a v23.05 tükre); `upstreamben már elérhető` = minden; `egyedi DNEG-funkció` = **nincs**; `adaptálható` = nincs mit; `nem adaptálható` = a fork mint hordozó (elavult, nincs értéke). **Döntés:** a DNEG USD-fork **nem kerül be és nem is vizsgálandó tovább**; ha a CFA4 USD-t használ, az az upstream OpenUSD (lásd [`CFA4-OPENUSD-3D-001`](CFA4-OPENUSD-3D-001-0.1.md)).
 
-## D8 – Licenc és függőségek
+## D8 – Licenc és függőségek (hálózati ellenőrzéssel, 2026-11-21)
 
-Hálózat nélkül **semelyik donor licence nem ellenőrizhető a forrásfájlból**, ezért a következő
-táblázat *nem* teljesített audit; minden sor **ELLENŐRIZETLEN**, a megadott érték a megbízás/ADR állítása.
+Az ellenőrzés a repók `LICENSE`-fájljaiból és forrásfejlécek `SPDX-License-Identifier` sorából történt (a fájlok olvasása; az AAF SDK forrásának olvasása nélkül).
 
-| Donor | Állított licenc (forrás) | Ellenőrzés állapota | CFA4-szabály szerinti következmény |
+| Donor | Licenc (igazolt, forrás) | Állapot | Következmény |
 |---|---|---|---|
-| ASWF OpenVDB | megbízás: Apache-2.0; ADR-0003: „BSD-3 / Apache-2.0”; **saját emlékem szerint MPL-2.0** | **ELLENŐRIZETLEN és ELLENTMONDÁS** a két állítás és az emlékem között | A `LICENSE` fájl olvasása kötelező (G1 belépési kapu). MPL-2.0 megengedett (licensing.md §3: „MPL files stay MPL; a módosítások közzététele”). Apache-2.0 is megengedett. Az ADR-0003 táblázatsora javítandó, ha eltér (külön, kis PR). |
-| OpenVDB AX | megbízás: upstream ASWF; DNEG-repó MPL-2.0 | ELLENŐRIZETLEN | fájlonkénti fejléc-ellenőrzés a felhasznált fájlokon; LLVM licenc (Apache-2.0 WITH LLVM-exception, ismeret) is ellenőrizendő |
-| OpenVDB Points | megbízás: DNEG-repó MPL-2.0, archivált | ELLENŐRIZETLEN | a DNEG-repó nem használandó; upstream modul |
-| DNEG AAF SDK | – | ELLENŐRIZETLEN | nem GPL-kompatibilisnek tekintendő, míg nincs igazolva; forrás nem olvasható |
-| DNEG USD fork | – | ELLENŐRIZETLEN | nincs scope |
-| NanoVDB | az OpenVDB része (ismeret) | ELLENŐRIZETLEN | – |
+| **ASWF OpenVDB** (core, `points`, `nanovdb`, `openvdb_ax`) | **Apache-2.0** (`LICENSE`; fejlécek: `Grid.h`, `AST.h`: `SPDX-License-Identifier: Apache-2.0`; `RE-LICENSE_NOTE.txt`: a közreműködők az MPL-2.0-ról Apache-2.0-ra relicenszelték, köztük a „Double Negative”). Verzió a klónban: CMake `14.0.0`; a klón HEAD 2026-11-20 | **IGAZOLT** | GPL-3-kompatibilis (licensing.md §3). Az előző állításom (MPL-2.0) **téves** volt: az MPL a relicenc előtti állapot. A megbízás állítása helyes. ADR-0003 táblasora („BSD-3 / Apache-2.0”) pontosítandó: **Apache-2.0**. |
+| `dneg/openvdb` fork | **MPL-2.0** (`LICENSE`; fejléc: `SPDX … MPL-2.0`); utolsó commit 2020-12-24, tehát az upstream relicencelése *előtti* pillanatkép | **IGAZOLT** | MPL-2.0 megengedett, de a fork elavult; **nem használjuk** |
+| `dneg/openvdb_ax` | **MPL-2.0** (`LICENSE`); a README: „as of OpenVDB AX 1.0.0 and OpenVDB 8.0.0 this repository has been merged into the OpenVDB ASWF repository”; utolsó commit 2021-01-18 | **IGAZOLT** | AX elsődleges forrása = az ASWF-repó `openvdb_ax/` (Apache-2.0 fejlécek) |
+| `dneg/openvdb_points_dev` | a repóban **csak `README.md`** van, licencfájl nincs; a README: „This repository is deprecated … integrated into the Dreamworks Animation OpenVDB repository”; utolsó commit 2017-01-20 | **IGAZOLT** | licenc a repóban **nem megállapítható**; **nem használható**; a Points = az upstream `openvdb/points/` (a klónban megvan: AttributeArray/Set/Group, PointGroup, PointCount, PointDelete, PointMove, PointScatter, StreamCompression…) |
+| **DNEG AAF SDK** (`dneg/aaf`) | **AAF SDK Public Source License 2.0** (`LEGAL/AAFSDKPSL.TXT`, 2008): saját, MPL-szerű szöveg: szerzői jogi és szabadalmi licenc, **kölcsönös szabadalmi licenc** (2.2), védekező felfüggesztés (2.3), az „AAF” név használata csak „Standard Version” esetén (2.1.5); a licenc maga jelzi, hogy nem ad szabadalmi jogot az AAF-szabványra. Utolsó commit 2012-12-14, SDK 1.1.5 | **IGAZOLT a szöveg**; **GPL-3-kompatibilitás NEM igazolt** | az SDK **nem** GPL-kompatibilisnek tekintendő jogi vélemény nélkül; amúgy is clean-room-szabály tiltja a forrás olvasását. |
+| **DNEG USD** | „Modified Apache 2.0” (a fork); az upstream: Tomorrow Open Source Technology License 1.0 | **IGAZOLT** | lásd D7 |
 
-**Transzitív függőségek (OpenVDB, ismeret alapján, ELLENŐRIZETLEN):** Boost, oneTBB, Blosc, zlib,
-Imath, (AX:) LLVM; Ubuntu 26.04 csomagnevei/verziói **nem állapíthatók meg** hálózat nélkül.
+**Függőségek (OpenVDB `doc/dependencies.txt`, upstream HEAD – igazolt a szövegből):** core: CMake, C++17, **oneTBB** (min. 2021, aj. ≥ 2022), zlib (≥ 1.2.7), Zstd (opcionális), Imath (3.2; mellékelve), VCL (mellékelve); render: OpenEXR, libpng; **AX: LLVM ≥ 18**, Bison, Flex; **NanoVDB: CUDA/TBB/zlib – a GPU-ág CUDA-s** (vendor-semlegességi szabály: csak CPU-párral). A dokumentum Ubuntu-példát is ad (`apt-get install libtbb-dev … llvm-18-dev`).
+
+**Még ELLENŐRIZETLEN (nem tudtam ellenőrizni):**
+- Ubuntu **26.04** csomagok és verziók (libopenvdb, libtbb, LLVM) – a munkamenet nem 26.04-es csomagforrást lát.
+- Az AX LLVM-ismert hibái (a dokumentum „known issues”) a 26.04-es LLVM-verzióval.
+- A transzitív függőségek licence (oneTBB: Apache-2.0, zlib, Zstd: BSD/GPL kettős, LLVM: Apache-2.0 + LLVM-kivétel) – ismereten alapul, fájlból nem olvastam.
+- Redistributió/`.deb` `Depends` kialakítása és AppImage/Flatpak-csomagolás.
+- A DNEG-forkok 2020–2021-es közreműködői előtörténete (shallow klónok).
 
 **CFA4-szabályok az integrációra (rögzítve):**
-- Függőség csak az Ubuntu-tárolóból (rendszercsomag, `Depends`/`Recommends` a `.deb`-ben; AppImage/Flatpak: külön audit, packaging), **pinelve** és `cargo deny`-vel/SBOM-mal auditálva (`docs/audit/F1-01-SBOM-*`).
-- A build nem tölthet le semmit; nincs Conda/Miniforge; nincs Windows/macOS ág.
-- Reused-code register sor (`licensing.md` §5) minden átvett fájlra; kód átvétele **nincs** a tervben: a worker rendszer-OpenVDB-t **dinamikusan linkel**, Rust-interfész mögött.
-- Védjegy: „DNEG” és „OpenVDB” nevek a UI-ban nem védjegyhasználatként (a VISION: „a nevüket nem veszi át”).
+- Függőség csak az Ubuntu-tárolóból (rendszercsomag, `Depends`/`Recommends` a `.deb`-ben; AppImage/Flatpak: külön audit), **pinelve** és `cargo deny`-vel/SBOM-mal auditálva (`docs/audit/F1-01-SBOM-*`).
+- A build nem tölthet le semmit; a `build_usd.py` jellegű letöltő scriptek nem futnak; nincs Conda/Miniforge; nincs Windows/macOS ág.
+- Kód átvétele **nincs** a tervben: a worker rendszer-OpenVDB-t **dinamikusan linkel**, Rust-interfész mögött; átvétel esetén reused-code register sor (`licensing.md` §5).
+- Védjegy: „OpenVDB”, „DNEG” nevek csak megnevezésként; a licenc a közreműködők védjegyhasználatát tiltja a projekt társításában.
 
-**Karbantarthatóság:** DNEG-forkok (openvdb, openvdb_ax, openvdb_points_dev, USD, aaf) – a megbízás szerint
-maintenance/archivált; ez **nem** ellenőrzött. Ezért egyikre sem épül a CFA4.
+**Karbantarthatóság (igazolt):** ASWF OpenVDB aktív (HEAD 2026-11-20; 14.0.0); DNEG-forkok állnak (2012–2023), a points-repó deprecated; ezért **csak az upstream** jöhet szóba.
 
 ## D9 – Erőforrás-alkalmazkodás
 
@@ -280,15 +287,17 @@ A DNEG-eredetű képességek ehhez **csak** a következőket adják hozzá, a wo
 
 ---
 
-## Nem teljesített / ellenőrizetlen tételek jegyzéke
+## Nem teljesített / ellenőrizetlen tételek jegyzéke (frissítve 2026-11-21, hálózati ellenőrzés után)
 
-| ID | Tétel | Miért nem teljesített | Mi oldja fel |
+| ID | Tétel | Állapot | Mi oldja fel |
 |---|---|---|---|
-| U1 | VFX Catalog, EffectCraft, ARF, OpenUSD/3D-csere, Potree-terv tartalma | nincs a `main`-ben | G0: a tulajdonos beemeli/elérhetővé teszi |
-| U2 | OpenVDB / AX / Points / NanoVDB licenc és verzió | nincs hálózat; az állítások ellentmondanak | G1: `LICENSE`-fájl és csomaginfo olvasása a G1 előtt |
-| U3 | DNEG-fork állapotok (karbantartás, archiválás, delta az upstreamhez) | nincs hálózat | opcionális, mert a forkok nem kerülnek be |
-| U4 | USD fork-diff (D7 minden eleme) | nincs hálózat; nincs USD-terv | G7 |
-| U5 | AAF SDK licence/dependency | nincs hálózat | külön PR (orákulum), ha kell |
-| U6 | Ubuntu 26.04 csomagok (libopenvdb, LLVM, TBB, Blosc) | nincs hálózat a csomagforráshoz | G1 felmérés egy 26.04 gépen/konténerben |
+| U1 | VFX Catalog, EffectCraft, ARF, OpenUSD/3D, Potree/pontfelhő terv | **javaslatok megírva** (`docs/plans/…-0.1.md`), tulajdonosi jóváhagyásra várnak | jóváhagyás |
+| U2 | OpenVDB / AX / Points / NanoVDB licenc | **IGAZOLT: Apache-2.0** (upstream); DNEG-forkok MPL-2.0 (nem használjuk) | – |
+| U3 | DNEG-fork állapotok | **IGAZOLT** (stagnáló/deprecated; D8) | – |
+| U4 | USD fork-diff | **IGAZOLT: delta üres** (fork = upstream v23.05); Ubuntu 26.04-es build nincs próbálva | – / U6 |
+| U5 | AAF SDK licence | **IGAZOLT a szöveg** (PSL 2.0); GPL-3-kompatibilitás **jogilag nem minősített** | jogi vélemény, ha egyáltalán kell |
+| U6 | Ubuntu 26.04 csomagok (libopenvdb, TBB, LLVM ≥ 18) | **ELLENŐRIZETLEN** | 26.04-es gépen/konténerben `apt-cache policy` |
 | U7 | AX sandbox-PoC | nincs implementáció | G4 |
 | U8 | Teljesítmény- és memóriamérések | nincs implementáció | G2–G5 |
+| U9 | Transzitív licencek (TBB, zlib, Zstd, LLVM) | ismeret, fájlból nem olvasva | G1 |
+| U10 | OpenUSD upstream HEAD verziószáma | nem olvastam (csak a v23.05 tag és a 2026-11-18-i HEAD dátum) | G7 |
