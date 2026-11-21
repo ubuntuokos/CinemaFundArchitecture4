@@ -4005,6 +4005,7 @@ fn build() -> Vec<CommandSpec> {
     v.extend(crate::scopes::commands());
     v.extend(crate::remix::commands());
     v.extend(crate::beat_markers::commands());
+    v.extend(crate::silence::commands());
     v.extend(crate::social::commands());
     v.extend(crate::delivery_check::commands());
     v.extend(crate::variants::commands());

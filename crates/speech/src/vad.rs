@@ -27,6 +27,8 @@ use cfa4_time::Tick;
 use crate::{SAMPLE_RATE, TICKS_PER_SAMPLE};
 
 const FRAME: usize = (SAMPLE_RATE / 100) as usize;
+/// Samples per 10 ms analysis frame (read audio in whole multiples of this).
+pub const FRAME_SAMPLES: usize = FRAME;
 const MIN_WORD_FRAMES: usize = 6;
 /// A run of silence this long (10 ms frames) inside a word's span is a pause between words.
 const MIN_PAUSE_FRAMES: usize = 20;
@@ -218,13 +220,18 @@ impl Default for SilenceParams {
 /// Audio with no voiced frame at all (digital silence, a flat tone below the floor) gives no region:
 /// there is no speech to measure the silence against.
 pub fn silence_regions(audio: &[f32], p: &SilenceParams) -> Vec<(Tick, Tick)> {
-    let db = frame_db(audio);
+    silence_regions_from_db(&frame_db(audio), audio.len(), p)
+}
+
+/// [`silence_regions`] from the [`frame_db`] levels of `samples` samples of audio, so a long clip
+/// can be read in pieces (a multiple of [`FRAME_SAMPLES`] each) and only the levels kept.
+pub fn silence_regions_from_db(db: &[f32], samples: usize, p: &SilenceParams) -> Vec<(Tick, Tick)> {
     if db.is_empty() {
         return Vec::new();
     }
     let th = match p.threshold_db {
         Some(t) if t.is_finite() => t,
-        _ => threshold(&db),
+        _ => threshold(db),
     };
     let voiced: Vec<bool> = db.iter().map(|&v| v >= th).collect();
     if !voiced.iter().any(|&v| v) {
@@ -255,7 +262,7 @@ pub fn silence_regions(audio: &[f32], p: &SilenceParams) -> Vec<(Tick, Tick)> {
         if to > from {
             let start = Tick((from as i64).saturating_mul(frame_ticks));
             // the last frame can be partial: the region ends with the audio
-            let end_ticks = (audio.len() as i64).saturating_mul(TICKS_PER_SAMPLE);
+            let end_ticks = (samples as i64).saturating_mul(TICKS_PER_SAMPLE);
             let end = Tick((to as i64).saturating_mul(frame_ticks)).min(Tick(end_ticks));
             if end > start {
                 out.push((start, Tick(end.0 - start.0)));

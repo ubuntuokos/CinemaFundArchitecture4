@@ -14,6 +14,7 @@ pub mod aaf_omf;
 mod atrac_convert;
 pub mod autosave;
 pub mod beat_markers;
+pub mod silence;
 pub mod captions;
 pub mod clip_ops;
 pub mod color;
@@ -1375,6 +1376,8 @@ mod autosave_tests;
 mod avi_import_tests;
 #[cfg(test)]
 mod beat_markers_tests;
+#[cfg(test)]
+mod silence_tests;
 #[cfg(test)]
 mod clip_ops_tests;
 #[cfg(test)]
