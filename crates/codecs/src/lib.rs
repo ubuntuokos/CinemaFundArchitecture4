@@ -106,7 +106,7 @@ impl From<CodecError> for cfa4_media::MediaError {
 }
 
 /// Our own (pure-Rust) decoders, in the order they are tried.
-const BUILTIN_FACTORIES: [VideoDecoderFactory; 22] = [
+const BUILTIN_FACTORIES: [VideoDecoderFactory; 25] = [
     video::h264_factory,
     video::hevc_factory,
     video::vp8_factory,
@@ -129,6 +129,9 @@ const BUILTIN_FACTORIES: [VideoDecoderFactory; 22] = [
     utvideo::utvideo_factory,
     magicyuv::magicyuv_factory,
     evc::evc_factory,
+    cavs::cavs_factory,
+    j2k::j2k_factory,
+    realmedia::realvideo_factory,
 ];
 
 fn factories() -> &'static RwLock<Vec<VideoDecoderFactory>> {
