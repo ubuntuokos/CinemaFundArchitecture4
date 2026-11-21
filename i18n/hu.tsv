@@ -4854,3 +4854,31 @@ export.summary	Low	alacsony
 	Recent effects	Legutóbbi effektek
 	Apply a recently used effect to the selected clips	Legutóbb használt effekt alkalmazása a kijelölt klipekre
 	No recent effects	Nincs legutóbbi effekt
+	Analyzing…	Elemzés…
+	Automatic threshold	Automatikus küszöb
+	Clear silence markers	Csendmarkerek törlése
+	Detector:	Észlelő:
+	Energy (level)	Energiaalapú (szint)
+	Mark only	Csak jelölés
+	Marked only: nothing was deleted.	Csak jelölés: semmi nem törlődött.
+	Minimum silence:	Legrövidebb csend:
+	Mode:	Mód:
+	No region is checked.	Nincs kijelölt régió.
+	No silence found with these settings.	Ezekkel a beállításokkal nincs csend.
+	Padding:	Ráhagyás:
+	Remove Silence	Csend eltávolítása
+	Remove Silence…	Csend eltávolítása…
+	Remove selected	Kijelöltek eltávolítása
+	Ripple (close the gaps)	Ripple (a hézagok bezárulnak)
+	Scope:	Hatókör:
+	Select all	Összes kijelölése
+	Select none	Kijelölés megszüntetése
+	Selected clips	Kijelölt klipek
+	Silence markers cleared.	A csendmarkerek törölve.
+	Silent regions (checked ones are removed):	Csendes régiók (a bejelöltek törlődnek):
+	Threshold:	Küszöb:
+	Track of the selected clips	A kijelölt klipek sávja
+	Whole sequence	A teljes sorozat
+	{n} regions removed	{n} régió eltávolítva
+	{n} silent regions, {s} s in all	{n} csendes régió, összesen {s} s
+	{n}: {start} s, {dur} s long	{n}.: {start} s-tól, {dur} s hosszú

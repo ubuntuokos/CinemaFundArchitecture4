@@ -4,8 +4,12 @@
 //!
 //! | command | what it does |
 //! |---|---|
+//! Both deleting-capable entry points have no engine menu entry: the Qt6 dialog (Tools ▸ Audio
+//! Tools ▸ Remove Silence…) shows the regions first, so a menu click can never delete blindly.
+//!
 //! | `audio.detectSpeech` | measures the audio clips and returns the silent regions (`mode: "query"`) or also puts them on the sequence as range markers (`mode: "preview"`, the default). **Never deletes.** |
 //! | `silence.regions` | lists the silence markers (id, start, duration, kept or not, clip) |
+//! | `silence.clear` | removes the silence markers (nothing else) |
 //! | `silence.keep` | marks silence markers as kept (the removal skips them) or not |
 //! | `clip.removeSilence` | deletes the silence markers' ranges (`mode: "cut"`, ripple by default, or lift with `ripple: false`) in one undo step; `mode: "mark"` deletes nothing. Refuses to run without silence markers, so it never deletes blindly. |
 //!
@@ -107,9 +111,22 @@ fn pick_clips(s: &Session, p: &Value) -> Result<(Vec<ClipId>, usize)> {
             .filter(|c| seq.find_item(*c).and_then(|(t, _)| seq.track(t)).is_some_and(|t| t.kind == TrackKind::Audio))
             .collect(),
         "track" => {
-            let tid = p.get("track").and_then(Value::as_u64).ok_or_else(|| bad(CMD_DETECT, "`scope: track` needs `track`"))?;
-            let t = seq.audio_tracks.iter().find(|t| t.id.0 == tid).ok_or_else(|| bad(CMD_DETECT, "no such audio track"))?;
-            t.items.iter().map(|i| i.id).collect()
+            // `track`, or else every audio track that holds a selected clip
+            let tids: Vec<u64> = match p.get("track") {
+                None | Some(Value::Null) => {
+                    seq.audio_tracks.iter().filter(|t| t.items.iter().any(|i| s.state.selection.contains(&i.id))).map(|t| t.id.0).collect()
+                }
+                Some(v) => vec![v.as_u64().ok_or_else(|| bad(CMD_DETECT, "`track` must be a track id"))?],
+            };
+            if tids.is_empty() {
+                return Err(bad(CMD_DETECT, "`scope: track` needs `track`, or a selected audio clip"));
+            }
+            let mut out = Vec::new();
+            for tid in tids {
+                let t = seq.audio_tracks.iter().find(|t| t.id.0 == tid).ok_or_else(|| bad(CMD_DETECT, "no such audio track"))?;
+                out.extend(t.items.iter().map(|i| i.id));
+            }
+            out
         }
         "sequence" => seq.audio_tracks.iter().flat_map(|t| t.items.iter().map(|i| i.id)).collect(),
         other => return Err(bad(CMD_DETECT, format!("unknown scope `{other}`: use selection, track or sequence"))),
@@ -323,6 +340,15 @@ fn keep(s: &mut Session, p: &Value) -> Result<Value> {
     Ok(json!({"changed": n}))
 }
 
+fn clear(s: &mut Session, _: &Value) -> Result<Value> {
+    let n = s.edit_sequence("Clear Silence Markers", |q, _, _| {
+        let before = q.markers.len();
+        q.markers.retain(|m| !is_silence(m));
+        Ok(before - q.markers.len())
+    })?;
+    Ok(json!({"removed": n}))
+}
+
 fn remove(s: &mut Session, p: &Value) -> Result<Value> {
     let ripple = bool_p(p, "ripple").unwrap_or(true);
     let keep_markers = bool_p(p, "keepMarkers").unwrap_or(false);
@@ -398,7 +424,7 @@ pub fn commands() -> Vec<CommandSpec> {
         CommandSpec {
             id: CMD_DETECT,
             label: "Detect Silence",
-            menu: &["Sequence"],
+            menu: &[],
             shortcut: None,
             params: r#"{"clips":[id]?,"track":id?,"scope":"selection"|"track"|"sequence"="selection","detector":"energy"="energy","thresholdDb":f?,"minSilence":ticks?,"padding":ticks?,"mode":"preview"|"query"="preview"}"#,
             enabled: has_seq,
@@ -426,9 +452,19 @@ pub fn commands() -> Vec<CommandSpec> {
             journal: true,
         },
         CommandSpec {
+            id: "silence.clear",
+            label: "Clear Silence Markers",
+            menu: &[],
+            shortcut: None,
+            params: "{}",
+            enabled: has_silence_markers,
+            run: clear,
+            journal: true,
+        },
+        CommandSpec {
             id: CMD_REMOVE,
             label: "Remove Silence",
-            menu: &["Sequence"],
+            menu: &[],
             // no one-key binding: the command deletes media from the sequence
             shortcut: None,
             params: r#"{"regions":"markers"|[id]="markers","ripple":bool=true,"mode":"cut"|"mark"="cut","keepMarkers":bool=false}"#,

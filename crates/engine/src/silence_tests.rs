@@ -3,7 +3,7 @@
 use std::sync::Arc;
 
 use cfa4_project::ClipId;
-use cfa4_time::TICKS_PER_SECOND;
+use cfa4_time::{TICKS_PER_SECOND, Tick};
 use serde_json::{Value, json};
 
 use super::*;
@@ -206,6 +206,20 @@ fn removal_without_silence_markers_refuses_and_deletes_nothing() {
 }
 
 #[test]
+fn clearing_removes_only_the_silence_markers() {
+    let (mut s, _) = one_clip();
+    s.execute("markers.add", json!({"seconds": 1.0, "name": "mine"})).unwrap();
+    s.execute("audio.detectSpeech", PARAMS()).unwrap();
+    let len = seq_len(&s);
+    let r = s.execute("silence.clear", json!({})).unwrap();
+    assert_eq!(r["removed"], json!(3));
+    assert!(silence_markers(&s).is_empty());
+    assert!(s.active_sequence().unwrap().markers.iter().any(|m| m.name == "mine"));
+    assert_eq!(seq_len(&s), len);
+    assert!(s.execute("silence.clear", json!({})).is_err(), "nothing to clear");
+}
+
+#[test]
 fn detection_never_deletes() {
     let (mut s, _) = one_clip();
     let before = s.active_sequence().unwrap().audio_tracks.clone();
@@ -266,7 +280,6 @@ fn unsupported_clips_and_hostile_parameters_are_errors_not_panics() {
         json!({"detector": "nope"}),
         json!({"mode": "nope"}),
         json!({"scope": "nope"}),
-        json!({"scope": "track"}),
         json!({"clips": "x"}),
         json!({"clips": [999_999]}),
         json!({"thresholdDb": "loud"}),
@@ -278,8 +291,15 @@ fn unsupported_clips_and_hostile_parameters_are_errors_not_panics() {
     }
     assert_eq!(saved(&s), before, "nothing changed");
     // a track scope with a good id works; a clip-less sequence does not
+    // without a track the selected clips' tracks are used; with nothing selected it is an error
+    s.execute("timeline.select", json!({"clips": []})).unwrap();
+    assert!(s.execute("audio.detectSpeech", json!({"scope": "track"})).is_err());
     let tid = s.active_sequence().unwrap().audio_tracks[0].id.0;
     assert!(s.execute("audio.detectSpeech", json!({"scope": "track", "track": tid, "mode": "query"})).is_ok());
+    // the selected clip's own track
+    s.execute("timeline.select", json!({"clips": [c.0]})).unwrap();
+    let r = s.execute("audio.detectSpeech", json!({"scope": "track", "mode": "query"})).unwrap();
+    assert_eq!(r["clips"], json!(1));
     let mut empty = new_session();
     assert!(empty.execute("audio.detectSpeech", json!({"scope": "sequence"})).is_err());
     assert!(empty.execute("clip.removeSilence", json!({})).is_err());
@@ -317,4 +337,83 @@ fn markers_and_the_kept_flag_survive_save_and_reload() {
     let got: Vec<_> = seq.markers.iter().filter(|m| m.comment.starts_with(SILENCE_COMMENT)).collect();
     assert_eq!(got.len(), 3);
     assert!(got.iter().any(|m| m.comment.contains("[silence:keep]")));
+}
+
+/// The whole sequence's audio mix (left channel) through the real mixer.
+fn mix_left(s: &Session) -> Vec<f32> {
+    let seq = s.active_sequence().unwrap();
+    let sr = i64::from(seq.settings.sample_rate);
+    let frames = seq.duration().to_units_floor(sr).max(0) as usize;
+    let provider = s.media.full_res_provider(s.project.clone(), s.services.clone());
+    cfa4_render::audio::mix_sequence(&s.project, seq, 0, frames, &provider).channels[0].clone()
+}
+
+/// The acceptance test of plan CFA4-V1-SILENCE-REMOVAL-001 (6.1): (a) picture and sound stay in
+/// sync and the sequence shrinks by exactly the removed silence, (b) removal, undo and redo are
+/// single steps and byte-exact, (c) the mix after the removal is the mix before with exactly the
+/// removed samples taken out, and what was taken out was silent.
+#[test]
+fn v1_silence_removal_acceptance() {
+    use cfa4_media::{Generator, generators::GeneratorSource};
+    use cfa4_project::Label;
+    use cfa4_time::FrameRate;
+
+    // 25 fps at 48 kHz is 1920 samples per frame: every cut falls on a whole sample
+    let mut s = Session::default();
+    s.execute("file.newSequence", json!({"name": "acceptance", "width": 64, "height": 36, "fps": 25.0, "audio": 2, "video": 1})).unwrap();
+    let audio = place(&mut s, "/speech.wav", speech(), "A1");
+    let mut p = (*s.project).clone();
+    let matte = crate::demo::add_generator(
+        &mut p,
+        &s.media,
+        GeneratorSource::new(Generator::ColorMatte { color: [0.2, 0.5, 0.8, 1.0] }, 64, 36, FrameRate::FPS_25, Tick(5 * TICKS_PER_SECOND)),
+        "Matte",
+        Label::Iris,
+        None,
+    );
+    s.project = Arc::new(p);
+    s.execute("timeline.place", json!({"item": matte.0, "videoTrack": "V1", "seconds": 0.0})).unwrap();
+    s.execute("timeline.select", json!({"clips": [audio.0]})).unwrap();
+    assert_eq!(seq_len(&s), 5 * TICKS_PER_SECOND);
+
+    s.execute("audio.detectSpeech", PARAMS()).unwrap();
+    let regions = silence_markers(&s);
+    assert_eq!(regions.len(), 3);
+    let removed_ticks: i64 = regions.iter().map(|m| m.2).sum();
+    let sr = 48_000i64;
+    let ranges: Vec<(usize, usize)> = regions.iter().map(|m| (Tick(m.1).to_units_floor(sr) as usize, Tick(m.1 + m.2).to_units_floor(sr) as usize)).collect();
+    let before_mix = mix_left(&s);
+    let before_state = saved(&s);
+    let steps = s.history.undo.len();
+
+    s.execute("clip.removeSilence", json!({})).unwrap();
+
+    // (a) sync: the picture was cut with the sound, the length is exact
+    assert_eq!(s.history.undo.len(), steps + 1, "one undo step");
+    assert_eq!(seq_len(&s), 5 * TICKS_PER_SECOND - removed_ticks);
+    let seq = s.active_sequence().unwrap();
+    let span = |t: &cfa4_project::Track| t.items.iter().map(|i| (i.start.0, i.duration.0)).collect::<Vec<_>>();
+    assert!(!seq.video_tracks[0].items.is_empty());
+    assert_eq!(span(&seq.video_tracks[0]), span(&seq.audio_tracks[0]), "the picture is cut exactly where the sound is");
+    let after_state = saved(&s);
+
+    // (c) the mix: before, with the removed samples taken out, is the mix after
+    let after_mix = mix_left(&s);
+    let mut expected = Vec::with_capacity(before_mix.len());
+    let mut at = 0usize;
+    for &(a, b) in &ranges {
+        expected.extend_from_slice(&before_mix[at..a]);
+        assert!(before_mix[a..b].iter().all(|v| v.abs() < 0.001), "what is removed was silent");
+        at = b;
+    }
+    expected.extend_from_slice(&before_mix[at..]);
+    assert_eq!(after_mix.len(), expected.len());
+    assert_eq!(after_mix, expected, "the kept audio is untouched, sample for sample");
+
+    // (b) undo and redo are byte-exact single steps
+    s.execute("edit.undo", json!({})).unwrap();
+    assert_eq!(saved(&s), before_state);
+    assert_eq!(mix_left(&s), before_mix);
+    s.execute("edit.redo", json!({})).unwrap();
+    assert_eq!(saved(&s), after_state);
 }
