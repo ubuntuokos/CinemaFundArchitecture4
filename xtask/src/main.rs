@@ -96,6 +96,7 @@ const LAYERS: &[(&str, u8)] = &[
     ("flac", 0),
     ("opus", 0),
     ("frame", 1),
+    ("io-core", 1),
     ("surface-model", 1),
     ("media", 1),
     ("project", 1),
@@ -112,6 +113,7 @@ const LAYERS: &[(&str, u8)] = &[
     ("sandbox", 1),
     ("tasks", 2),
     ("edit", 2),
+    ("objtrack", 2),
     ("codecs", 2),
     ("keyframe", 2),
     ("effects", 2),
@@ -134,6 +136,7 @@ const LAYERS: &[(&str, u8)] = &[
     ("dcp-inspect", 3),
     ("dcpomatic", 3),
     ("smart-edit", 3),
+    ("fetch-client", 3),
     ("format", 3),
     ("engine", 4),
     ("platform", 5),
@@ -145,6 +148,7 @@ const LAYERS: &[(&str, u8)] = &[
     ("cfa4", 6),
     ("cli", 6),
     ("studio-host", 6),
+    ("fetch", 6),
 ];
 
 /// L0 crates that are not codecs/containers (no `bitstream`-only restriction).
@@ -154,6 +158,7 @@ const L0_FOUNDATION: &[&str] = &["time", "geom", "color", "bitstream", "testkit"
 const SAME_LAYER: &[(&str, &str)] = &[
     ("dcp-inspect", "dcp-validate"),
     ("media", "frame"),
+    ("io-core", "frame"),
     ("project", "media"),
     ("project", "frame"),
     ("effects", "keyframe"),

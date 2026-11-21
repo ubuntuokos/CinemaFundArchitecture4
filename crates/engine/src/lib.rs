@@ -77,6 +77,7 @@ mod smart_render;
 pub mod social;
 pub mod source_monitor;
 pub mod studio;
+pub mod surface_feedback;
 pub mod surface_profile;
 pub mod surface_runtime;
 pub mod sync;

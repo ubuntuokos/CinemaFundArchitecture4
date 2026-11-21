@@ -1374,6 +1374,13 @@
   },
   {
    "class": "colour",
+   "crate": "cfa4-engine",
+   "kind": "enum",
+   "module": "surface_feedback.rs",
+   "name": "TallyColor"
+  },
+  {
+   "class": "colour",
    "crate": "cfa4-export",
    "kind": "struct",
    "module": "lib.rs",
@@ -1567,6 +1574,13 @@
    "kind": "struct",
    "module": "image.rs",
    "name": "Image"
+  },
+  {
+   "class": "frame",
+   "crate": "cfa4-render",
+   "kind": "struct",
+   "module": "mask.rs",
+   "name": "ObjectRaster"
   },
   {
    "class": "frame",
@@ -3240,6 +3254,20 @@
    "kind": "struct",
    "module": "studio.rs",
    "name": "ProgramLayer"
+  },
+  {
+   "class": "other",
+   "crate": "cfa4-engine",
+   "kind": "enum",
+   "module": "surface_feedback.rs",
+   "name": "LedOutput"
+  },
+  {
+   "class": "other",
+   "crate": "cfa4-engine",
+   "kind": "enum",
+   "module": "surface_feedback.rs",
+   "name": "TallyLed"
   },
   {
    "class": "other",
@@ -5393,6 +5421,13 @@
   {
    "class": "other",
    "crate": "cfa4-render",
+   "kind": "struct",
+   "module": "mosh.rs",
+   "name": "Bloom"
+  },
+  {
+   "class": "other",
+   "crate": "cfa4-render",
    "kind": "enum",
    "module": "mosh.rs",
    "name": "MoshError"
@@ -6310,6 +6345,13 @@
   {
    "class": "render",
    "crate": "cfa4-project",
+   "kind": "enum",
+   "module": "mask.rs",
+   "name": "MaskSource"
+  },
+  {
+   "class": "render",
+   "crate": "cfa4-project",
    "kind": "struct",
    "module": "multicam.rs",
    "name": "MulticamSource"
@@ -6734,6 +6776,11 @@
   {
    "from": "cfa4-cli/serve.rs",
    "item": "cancel",
+   "to": "cfa4-media"
+  },
+  {
+   "from": "cfa4-cli/serve.rs",
+   "item": "wav",
    "to": "cfa4-media"
   },
   {
@@ -8273,6 +8320,11 @@
   },
   {
    "from": "cfa4-engine/eyedropper.rs",
+   "item": "WorkingSpace",
+   "to": "cfa4-color"
+  },
+  {
+   "from": "cfa4-engine/eyedropper.rs",
    "item": "linear_to_srgb_u8",
    "to": "cfa4-color"
   },
@@ -8289,6 +8341,11 @@
   {
    "from": "cfa4-engine/eyedropper.rs",
    "item": "ItemId",
+   "to": "cfa4-project"
+  },
+  {
+   "from": "cfa4-engine/eyedropper.rs",
+   "item": "ParamValue",
    "to": "cfa4-project"
   },
   {
@@ -12747,6 +12804,11 @@
    "to": "cfa4-time"
   },
   {
+   "from": "cfa4-render/vfx/mosh.rs",
+   "item": "EffectInstance",
+   "to": "cfa4-project"
+  },
+  {
    "from": "cfa4-render/vfx/perspective.rs",
    "item": "linear_to_srgb",
    "to": "cfa4-color"
@@ -12815,6 +12877,21 @@
    "from": "cfa4-render/vfx/stylize.rs",
    "item": "Tick",
    "to": "cfa4-time"
+  },
+  {
+   "from": "cfa4-render/vfx/subspace_warp.rs",
+   "item": "linear_to_srgb",
+   "to": "cfa4-color"
+  },
+  {
+   "from": "cfa4-render/vfx/subspace_warp.rs",
+   "item": "cancel",
+   "to": "cfa4-media"
+  },
+  {
+   "from": "cfa4-render/vfx/subspace_warp.rs",
+   "item": "EffectInstance",
+   "to": "cfa4-project"
   },
   {
    "from": "cfa4-render/vfx/temporal.rs",

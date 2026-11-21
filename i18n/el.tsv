@@ -4815,6 +4815,10 @@ export.summary	Low	χαμηλή
 	Encode Resolution	Ανάλυση κωδικοποίησης
 	Half	Μισή
 	Quarter	Τέταρτο
+# Datamosh Bloom (Glitch, DM2)
+	Datamosh Bloom	Άνθιση datamosh
+	Start Time (seconds)	Ώρα έναρξης (δευτερόλεπτα)
+	Repeats	Επαναλήψεις
 
 # Recent effects, per-channel waveform, white balance selector (SC-2/SC-3/SC-4, #1419 #1420 #1421)
 	Apply a recently used effect to the selected clips	Εφαρμογή πρόσφατα χρησιμοποιημένου εφέ στα επιλεγμένα κλιπ

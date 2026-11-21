@@ -129,7 +129,7 @@ graph LR
 | `cfa4-cli/serve.rs` | `cfa4-audio-dsp` | `LoudnessMeter`, `channels` |
 | `cfa4-cli/serve.rs` | `cfa4-engine` | `DisplayRenderer`, `Event`, `clip_ops`, `mixer`, `voiceover` |
 | `cfa4-cli/serve.rs` | `cfa4-gpu` | `ExportRenderer` |
-| `cfa4-cli/serve.rs` | `cfa4-media` | `cancel` |
+| `cfa4-cli/serve.rs` | `cfa4-media` | `cancel`, `wav` |
 | `cfa4-cli/serve.rs` | `cfa4-project` | `ItemId`, `ItemKind`, `Project`, `par_ratio` |
 | `cfa4-cli/serve.rs` | `cfa4-render` | `Image`, `RenderOptions`, `SourceProvider`, `audio`, `mixer`, `render_item` |
 | `cfa4-cli/serve.rs` | `cfa4-time` | `FrameRate`, `TICKS_PER_SECOND`, `Tick`, `parse_timecode` |
@@ -237,8 +237,8 @@ graph LR
 | `cfa4-engine/export_tools.rs` | `cfa4-project` | `ItemId`, `Sequence`, `legacy` |
 | `cfa4-engine/export_tools.rs` | `cfa4-qc` | `QcProfile` |
 | `cfa4-engine/export_tools.rs` | `cfa4-time` | `FrameRate` |
-| `cfa4-engine/eyedropper.rs` | `cfa4-color` | `linear_to_srgb_u8`, `srgb_u8_to_linear_table` |
-| `cfa4-engine/eyedropper.rs` | `cfa4-project` | `ClipId`, `ItemId`, `mask` |
+| `cfa4-engine/eyedropper.rs` | `cfa4-color` | `WorkingSpace`, `linear_to_srgb_u8`, `srgb_u8_to_linear_table` |
+| `cfa4-engine/eyedropper.rs` | `cfa4-project` | `ClipId`, `ItemId`, `ParamValue`, `mask` |
 | `cfa4-engine/eyedropper.rs` | `cfa4-render` | `Image`, `RenderOptions`, `render_sequence` |
 | `cfa4-engine/eyedropper.rs` | `cfa4-time` | `Tick` |
 | `cfa4-engine/fx_editor.rs` | `cfa4-project` | `EffectInstance`, `Param`, `effect` |
@@ -681,6 +681,7 @@ graph LR
 | `cfa4-render/vfx/mod.rs` | `cfa4-geom` | `Affine` |
 | `cfa4-render/vfx/mod.rs` | `cfa4-project` | `EffectInstance`, `ItemKind`, `effect`, `graphic` |
 | `cfa4-render/vfx/mod.rs` | `cfa4-time` | `Tick` |
+| `cfa4-render/vfx/mosh.rs` | `cfa4-project` | `EffectInstance` |
 | `cfa4-render/vfx/perspective.rs` | `cfa4-color` | `linear_to_srgb` |
 | `cfa4-render/vfx/perspective.rs` | `cfa4-media` | `cancel` |
 | `cfa4-render/vfx/perspective.rs` | `cfa4-project` | `EffectInstance` |
@@ -690,6 +691,9 @@ graph LR
 | `cfa4-render/vfx/stylize.rs` | `cfa4-color` | `linear_to_srgb`, `luma709`, `rgb_to_hsl`, `srgb_to_linear` |
 | `cfa4-render/vfx/stylize.rs` | `cfa4-project` | `EffectInstance` |
 | `cfa4-render/vfx/stylize.rs` | `cfa4-time` | `Tick` |
+| `cfa4-render/vfx/subspace_warp.rs` | `cfa4-color` | `linear_to_srgb` |
+| `cfa4-render/vfx/subspace_warp.rs` | `cfa4-media` | `cancel` |
+| `cfa4-render/vfx/subspace_warp.rs` | `cfa4-project` | `EffectInstance` |
 | `cfa4-render/vfx/temporal.rs` | `cfa4-color` | `linear_to_srgb` |
 | `cfa4-render/vfx/temporal.rs` | `cfa4-media` | `cancel` |
 | `cfa4-render/vfx/temporal.rs` | `cfa4-project` | `EffectInstance` |
@@ -799,9 +803,9 @@ graph LR
 
 ## 4. Nyilvános típusok osztályonként
 
-A többi 611 nyilvános típus („other” osztály) csak a `call-graph.json`-ban szerepel.
+A többi 614 nyilvános típus („other” osztály) csak a `call-graph.json`-ban szerepel.
 
-### Képkocka, kép, pixel (28)
+### Képkocka, kép, pixel (29)
 
 | Crate | Modul | Fajta | Típus |
 |---|---|---|---|
@@ -830,6 +834,7 @@ A többi 611 nyilvános típus („other” osztály) csak a `call-graph.json`-b
 | `cfa4-metrics` | `psnr.rs` | struct | `PlaneDiff` |
 | `cfa4-render` | `graphic_clip.rs` | struct | `LayerRaster` |
 | `cfa4-render` | `image.rs` | struct | `Image` |
+| `cfa4-render` | `mask.rs` | struct | `ObjectRaster` |
 | `cfa4-render` | `multicam.rs` | struct | `PageLayout` |
 | `cfa4-render` | `plan.rs` | enum | `FramePlan` |
 | `cfa4-smart-edit` | `media_index.rs` | struct | `FrameIndexEntry` |
@@ -927,7 +932,7 @@ A többi 611 nyilvános típus („other” osztály) csak a `call-graph.json`-b
 | `cfa4-qc` | `audio.rs` | struct | `AudioFacts` |
 | `cfa4-render` | `preview.rs` | struct | `AudioSegment` |
 
-### Szín (17)
+### Szín (18)
 
 | Crate | Modul | Fajta | Típus |
 |---|---|---|---|
@@ -945,11 +950,12 @@ A többi 611 nyilvános típus („other” osztály) csak a `call-graph.json`-b
 | `cfa4-color` | `transform.rs` | struct | `ToneMap` |
 | `cfa4-engine` | `settings.rs` | struct | `ColorPrefs` |
 | `cfa4-engine` | `settings.rs` | struct | `LabelColor` |
+| `cfa4-engine` | `surface_feedback.rs` | enum | `TallyColor` |
 | `cfa4-export` | `lib.rs` | struct | `ColorSignal` |
 | `cfa4-gpu` | `lut.rs` | struct | `GpuLut` |
 | `cfa4-project` | `lib.rs` | struct | `ProjectLut` |
 
-### Render, kompozíció, előnézet, proxy (60)
+### Render, kompozíció, előnézet, proxy (61)
 
 | Crate | Modul | Fajta | Típus |
 |---|---|---|---|
@@ -989,6 +995,7 @@ A többi 611 nyilvános típus („other” osztály) csak a `call-graph.json`-b
 | `cfa4-project` | `graphic_design.rs` | type | `SourceGraphics` |
 | `cfa4-project` | `lib.rs` | struct | `Transition` |
 | `cfa4-project` | `lib.rs` | enum | `TransitionAlign` |
+| `cfa4-project` | `mask.rs` | enum | `MaskSource` |
 | `cfa4-project` | `multicam.rs` | struct | `MulticamSource` |
 | `cfa4-project` | `object.rs` | enum | `ObjectSource` |
 | `cfa4-project` | `studio.rs` | enum | `SourceKind` |

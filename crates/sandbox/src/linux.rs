@@ -130,6 +130,10 @@ fn landlock(profile: &Profile, abi: ABI, strict: bool, en: &mut Enforcement) -> 
             c = allow(c, &p, gpu, abi)?;
         }
     }
+    let device = read | AccessFs::WriteFile | ioctl;
+    for p in &profile.devices {
+        c = allow(c, p, device, abi)?;
+    }
     for p in &profile.read {
         c = allow(c, p, read, abi)?;
     }

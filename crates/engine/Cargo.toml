@@ -13,8 +13,9 @@ workspace = true
 default = []
 # Speech-to-text with Whisper (candle, CPU). Off by default and in wasm builds.
 whisper = ["cfa4-speech/whisper"]
-# Speech-model downloads over HTTPS.
-speech-download = ["cfa4-speech/download"]
+# Speech-model downloads, run by the confined cfa4-fetch process (CFA4-SECURITY-001 D5): the
+# engine itself has no network code.
+speech-download = []
 # Natural voices for Text to Speech: Kokoro-82M on candle (CPU) and their download.
 neural-voices = ["cfa4-tts/kokoro", "speech-download"]
 
@@ -47,6 +48,7 @@ cfa4-surface-model = { workspace = true }
 cfa4-live = { workspace = true }
 cfa4-speech = { workspace = true }
 cfa4-tasks = { workspace = true }
+cfa4-fetch-client = { workspace = true }
 cfa4-tts = { workspace = true }
 cfa4-route = { workspace = true }
 cfa4-tcsync = { workspace = true }
