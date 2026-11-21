@@ -1,4 +1,4 @@
-//! `cargo xtask parity [--area menus|effects|transitions] [--reference FILE] [--ours FILE]
+//! `cargo xtask parity [--area menus|commands|effects|transitions] [--reference FILE] [--ours FILE]
 //! [--out FILE] [--min PERCENT]`: measured parity (docs/gaps.md G7).
 //!
 //! Compares one area of what CFA4 ships with a reference list, and reports presence and
@@ -9,6 +9,9 @@
 //! - `menus` (default): the shipped menu bar (`crates/ui-egui/examples/menu_tree.rs`); paths are
 //!   menu paths. App, Apple and Help menus, recent-file lists, account / cloud items and macOS
 //!   system items are counted out of scope.
+//! - `commands`: the engine's command registry (`crates/engine/examples/command_list.rs`), queries
+//!   left out; a command's path is its menu path and label, or the label alone when it is in no
+//!   menu. A reference entry may be a menu path or a bare name.
 //! - `effects` / `transitions`: the effects (video and audio) or transitions (video and audio) the
 //!   Effects panel lists, from the engine's effect definitions
 //!   (`crates/project/examples/effect_catalog.rs`); paths are Effects-panel folders
@@ -46,28 +49,39 @@ const CHILD_KEYS: [&str; 6] = ["children", "items", "submenu", "menu", "menuItem
 /// Keys of a wrapper object around the whole menu bar, or the whole effect list.
 const MENU_WRAPPER_KEYS: [&str; 5] = ["menus", "menuBar", "menu_bar", "menubar", "items"];
 const EFFECT_WRAPPER_KEYS: [&str; 4] = ["effects", "transitions", "folders", "items"];
+const COMMAND_WRAPPER_KEYS: [&str; 2] = ["commands", "items"];
 
 /// What a parity run measures.
 #[derive(Clone, Copy, Debug, PartialEq)]
 enum Area {
     Menus,
+    Commands,
     Effects,
     Transitions,
+}
+
+/// One item on our side: its full path (menu path or folders, then the label) and its id.
+#[derive(Clone, Debug, PartialEq)]
+struct OurItem {
+    path: Vec<String>,
+    id: String,
 }
 
 impl Area {
     fn parse(s: &str) -> Result<Self, String> {
         match s {
             "menus" => Ok(Area::Menus),
+            "commands" => Ok(Area::Commands),
             "effects" => Ok(Area::Effects),
             "transitions" => Ok(Area::Transitions),
-            other => Err(format!("--area {other}: expected menus, effects or transitions")),
+            other => Err(format!("--area {other}: expected menus, commands, effects or transitions")),
         }
     }
 
     fn name(self) -> &'static str {
         match self {
             Area::Menus => "menus",
+            Area::Commands => "commands",
             Area::Effects => "effects",
             Area::Transitions => "transitions",
         }
@@ -77,6 +91,7 @@ impl Area {
     fn ours(self) -> &'static str {
         match self {
             Area::Menus => "shipped menu bar",
+            Area::Commands => "engine commands",
             Area::Effects => "Effects panel effects",
             Area::Transitions => "Effects panel transitions",
         }
@@ -85,7 +100,7 @@ impl Area {
     /// What a path is made of: "menu path" or "folder".
     fn place(self) -> &'static str {
         match self {
-            Area::Menus => "menu path",
+            Area::Menus | Area::Commands => "menu path",
             Area::Effects | Area::Transitions => "folder",
         }
     }
@@ -102,13 +117,14 @@ impl Area {
     fn min_len(self) -> usize {
         match self {
             Area::Menus => 2,
-            Area::Effects | Area::Transitions => 1,
+            Area::Commands | Area::Effects | Area::Transitions => 1,
         }
     }
 
     fn wrapper_keys(self) -> &'static [&'static str] {
         match self {
             Area::Menus => &MENU_WRAPPER_KEYS,
+            Area::Commands => &COMMAND_WRAPPER_KEYS,
             Area::Effects | Area::Transitions => &EFFECT_WRAPPER_KEYS,
         }
     }
@@ -116,7 +132,7 @@ impl Area {
     /// The effect kinds (`EffectKind` names in the catalog dump) this area counts.
     fn kinds(self) -> &'static [&'static str] {
         match self {
-            Area::Menus => &[],
+            Area::Menus | Area::Commands => &[],
             Area::Effects => &["Video", "Audio"],
             Area::Transitions => &["VideoTransition", "AudioTransition"],
         }
@@ -126,6 +142,10 @@ impl Area {
     fn group(self, path: &[String]) -> String {
         match self {
             Area::Menus => path.first().cloned().unwrap_or_default(),
+            Area::Commands => match path.split_first() {
+                Some((menu, rest)) if !rest.is_empty() => menu.clone(),
+                _ => "(no menu)".into(),
+            },
             Area::Effects | Area::Transitions => match path.split_last() {
                 Some((_, folders)) if !folders.is_empty() => show(folders),
                 _ => "(no folder)".into(),
@@ -162,7 +182,7 @@ fn parse_args(args: &[&str]) -> Result<Args, String> {
             }
             other => {
                 return Err(format!(
-                    "parity: unknown argument {other} (usage: cargo xtask parity [--area menus|effects|transitions] [--reference FILE] [--ours FILE] [--out FILE] [--min PERCENT])"
+                    "parity: unknown argument {other} (usage: cargo xtask parity [--area menus|commands|effects|transitions] [--reference FILE] [--ours FILE] [--out FILE] [--min PERCENT])"
                 ));
             }
         }
@@ -180,6 +200,7 @@ pub fn run(root: &Path, args: &[&str]) -> Result<(), String> {
     let ours_value: Value = serde_json::from_str(&ours_json).map_err(|e| format!("our {} dump: {e}", area.name()))?;
     let ours = match area {
         Area::Menus => our_items(&ours_value)?,
+        Area::Commands => our_commands(&ours_value)?,
         Area::Effects | Area::Transitions => our_catalog(&ours_value, area)?,
     };
     let default_ref = root.join(format!("plan/premiere/{}.json", area.name()));
@@ -214,57 +235,86 @@ pub fn run(root: &Path, args: &[&str]) -> Result<(), String> {
     }
 }
 
-/// Our side as JSON: the menu bar from the `menu_tree` example, or the Effects panel catalog from
-/// the `effect_catalog` example.
+/// Our side as JSON: the menu bar from the `menu_tree` example, the command registry from the
+/// `command_list` example, or the Effects panel catalog from the `effect_catalog` example.
 fn dump_ours(area: Area) -> Result<String, String> {
     let (package, example) = match area {
         Area::Menus => ("cfa4-ui-egui", "menu_tree"),
+        Area::Commands => ("cfa4-engine", "command_list"),
         Area::Effects | Area::Transitions => ("cfa4-project", "effect_catalog"),
     };
     let mut cmd = Command::new(env!("CARGO"));
     cmd.args(["run", "-q", "-p", package, "--example", example]).stderr(Stdio::inherit());
-    let out = cmd.output().map_err(|e| format!("{example}: {e}"))?;
+    let out = cmd.output().map_err(|e| format!("{example}: {e} (or pass a saved dump with --ours FILE)"))?;
     if !out.status.success() {
-        return Err(format!("{example} failed: {}", out.status));
+        return Err(format!("{example} failed: {} (or pass a saved dump with --ours FILE)", out.status));
     }
     String::from_utf8(out.stdout).map_err(|e| format!("{example}: {e}"))
 }
 
-/// Full paths (menu path + label) of our menu items, from the `menu_tree` dump.
-fn our_items(v: &Value) -> Result<Vec<Vec<String>>, String> {
+/// The string elements of a JSON array field (`path`, `menu`); other elements are skipped.
+fn strings(it: &Value, key: &str) -> Option<Vec<String>> {
+    Some(it.get(key)?.as_array()?.iter().filter_map(|p| p.as_str().map(str::to_string)).collect())
+}
+
+fn id_of(it: &Value) -> String {
+    it.get("id").and_then(Value::as_str).unwrap_or_default().to_string()
+}
+
+/// Our menu items (menu path + label), from the `menu_tree` dump.
+fn our_items(v: &Value) -> Result<Vec<OurItem>, String> {
     let items = v.as_array().ok_or("our menu dump is not an array")?;
     Ok(items
         .iter()
         .filter_map(|it| {
             let label = it.get("label")?.as_str()?;
-            let mut path: Vec<String> = it.get("path")?.as_array()?.iter().filter_map(|p| p.as_str().map(str::to_string)).collect();
+            let mut path = strings(it, "path")?;
             path.push(label.to_string());
-            (path.len() >= 2).then_some(path)
+            (path.len() >= 2).then(|| OurItem { path, id: id_of(it) })
+        })
+        .collect())
+}
+
+/// Our commands (menu path + label, or the label alone), queries left out, from the
+/// `command_list` dump.
+fn our_commands(v: &Value) -> Result<Vec<OurItem>, String> {
+    let items = v.as_array().ok_or("our command dump is not an array")?;
+    Ok(items
+        .iter()
+        .filter(|it| it.get("journal").and_then(Value::as_bool) == Some(true))
+        .filter_map(|it| {
+            let label = it.get("label")?.as_str()?.trim();
+            if label.is_empty() {
+                return None;
+            }
+            let mut path = strings(it, "menu")?;
+            path.push(label.to_string());
+            Some(OurItem { path, id: id_of(it) })
         })
         .collect())
 }
 
 /// Full paths (Effects-panel folders + name) of the catalog items of `area`, from the
 /// `effect_catalog` dump.
-fn our_catalog(v: &Value, area: Area) -> Result<Vec<Vec<String>>, String> {
+fn our_catalog(v: &Value, area: Area) -> Result<Vec<OurItem>, String> {
     let items = v.as_array().ok_or("our effect catalog dump is not an array")?;
     Ok(items
         .iter()
         .filter(|it| it.get("kind").and_then(Value::as_str).is_some_and(|k| area.kinds().contains(&k)))
         .filter_map(|it| {
             let name = it.get("name")?.as_str()?;
-            let mut path: Vec<String> = it.get("path")?.as_array()?.iter().filter_map(|p| p.as_str().map(str::to_string)).collect();
+            let mut path = strings(it, "path")?;
             path.push(name.to_string());
-            Some(path)
+            Some(OurItem { path, id: id_of(it) })
         })
         .collect())
 }
 
 /// Item counts per group (top-level menu, or folder), for runs without a reference.
-fn inventory(area: Area, ours: &[Vec<String>]) -> String {
+fn inventory(area: Area, ours: &[OurItem]) -> String {
     let mut per: BTreeMap<String, usize> = BTreeMap::new();
-    for p in ours {
-        *per.entry(area.group(p)).or_default() += 1;
+    for it in ours {
+        *per.entry(area.group(&it.path)).or_default() += 1;
     }
     let mut s = format!("CFA4 {}: {} items\n", area.ours(), ours.len());
     let width = per.keys().map(|g| g.chars().count()).max().unwrap_or(0).max(22);
@@ -395,6 +445,7 @@ fn norm(label: &str) -> String {
 fn out_of_scope(area: Area, path: &[String]) -> Option<&'static str> {
     match area {
         Area::Menus => menu_out_of_scope(path),
+        Area::Commands => None,
         Area::Effects | Area::Transitions => {
             let top = norm(path.first()?);
             if path.len() >= 2 && (top == "presets" || top == "lumetri presets") {
@@ -429,30 +480,34 @@ fn menu_out_of_scope(path: &[String]) -> Option<&'static str> {
     None
 }
 
+/// Where a reference item is on our side; `Same` and `Elsewhere` carry the index of our item.
 enum Placement {
-    Same,
-    Elsewhere(Vec<String>),
+    Same(#[cfg_attr(not(test), expect(dead_code, reason = "read by the fidelity tiers (G7.6); the tests read it already"))] usize),
+    Elsewhere(usize),
     Missing,
 }
 
 struct Report {
     area: Area,
+    /// Our items, which `Placement` points into.
+    ours: Vec<OurItem>,
     /// (reference path, where it is in CFA4).
     items: Vec<(Vec<String>, Placement)>,
     out_of_scope: BTreeMap<&'static str, usize>,
     ours_only: Vec<Vec<String>>,
 }
 
-fn compare(area: Area, reference: &[Vec<String>], ours: &[Vec<String>]) -> Report {
+fn compare(area: Area, reference: &[Vec<String>], ours: &[OurItem]) -> Report {
     let key = |p: &[String]| p.iter().map(|s| norm(s)).collect::<Vec<_>>();
-    let our_paths: HashSet<Vec<String>> = ours.iter().map(|p| key(p)).collect();
-    let mut by_label: HashMap<String, &Vec<String>> = HashMap::new();
-    for p in ours {
-        if let Some(l) = p.last() {
-            by_label.entry(norm(l)).or_insert(p);
+    let mut by_path: HashMap<Vec<String>, usize> = HashMap::new();
+    let mut by_label: HashMap<String, usize> = HashMap::new();
+    for (i, it) in ours.iter().enumerate() {
+        by_path.entry(key(&it.path)).or_insert(i);
+        if let Some(l) = it.path.last() {
+            by_label.entry(norm(l)).or_insert(i);
         }
     }
-    let mut report = Report { area, items: Vec::new(), out_of_scope: BTreeMap::new(), ours_only: Vec::new() };
+    let mut report = Report { area, ours: ours.to_vec(), items: Vec::new(), out_of_scope: BTreeMap::new(), ours_only: Vec::new() };
     let mut seen = HashSet::new();
     for p in reference {
         if !seen.insert(key(p)) {
@@ -464,17 +519,16 @@ fn compare(area: Area, reference: &[Vec<String>], ours: &[Vec<String>]) -> Repor
         }
         let label = p.last().map(|l| norm(l)).unwrap_or_default();
         // a bare name (no folder) has no place to compare: found is all it can be
-        let placement = if our_paths.contains(&key(p)) || (p.len() == 1 && by_label.contains_key(&label)) {
-            Placement::Same
-        } else if let Some(at) = by_label.get(&label) {
-            Placement::Elsewhere((*at).clone())
-        } else {
-            Placement::Missing
+        let placement = match (by_path.get(&key(p)), by_label.get(&label)) {
+            (Some(&i), _) => Placement::Same(i),
+            (None, Some(&i)) if p.len() == 1 => Placement::Same(i),
+            (None, Some(&i)) => Placement::Elsewhere(i),
+            (None, None) => Placement::Missing,
         };
         report.items.push((p.clone(), placement));
     }
     let ref_labels: HashSet<String> = reference.iter().filter_map(|p| p.last().map(|l| norm(l))).collect();
-    report.ours_only = ours.iter().filter(|p| p.last().is_some_and(|l| !ref_labels.contains(&norm(l)))).cloned().collect();
+    report.ours_only = ours.iter().filter(|it| it.path.last().is_some_and(|l| !ref_labels.contains(&norm(l)))).map(|it| it.path.clone()).collect();
     report
 }
 
@@ -488,7 +542,7 @@ fn show(p: &[String]) -> String {
 
 impl Report {
     fn counts(&self) -> (usize, usize, usize) {
-        let same = self.items.iter().filter(|(_, pl)| matches!(pl, Placement::Same)).count();
+        let same = self.items.iter().filter(|(_, pl)| matches!(pl, Placement::Same(_))).count();
         let elsewhere = self.items.iter().filter(|(_, pl)| matches!(pl, Placement::Elsewhere(_))).count();
         (same, elsewhere, self.items.len().saturating_sub(same + elsewhere))
     }
@@ -518,6 +572,7 @@ impl Report {
         let area = self.area;
         let (title, column) = match area {
             Area::Menus => ("Menu", "Menu"),
+            Area::Commands => ("Command", "Menu"),
             Area::Effects => ("Effect", "Folder"),
             Area::Transitions => ("Transition", "Folder"),
         };
@@ -531,6 +586,7 @@ impl Report {
             area.ours(),
             match area {
                 Area::Menus => "",
+                Area::Commands => " A bare name with no menu in the reference is matched by label alone; queries are left out.",
                 Area::Effects | Area::Transitions => " A bare name with no folder in the reference is matched by name alone.",
             },
             place = area.place(),
@@ -547,7 +603,7 @@ impl Report {
                 }
             };
             let col = match pl {
-                Placement::Same => 0,
+                Placement::Same(_) => 0,
                 Placement::Elsewhere(_) => 1,
                 Placement::Missing => 2,
             };
@@ -566,8 +622,10 @@ impl Report {
         }
         s.push_str(&format!("\n## Elsewhere in CFA4 ({elsewhere})\n\n"));
         for (p, pl) in &self.items {
-            if let Placement::Elsewhere(at) = pl {
-                s.push_str(&format!("- {} → {}\n", show(p), show(at)));
+            if let Placement::Elsewhere(i) = pl
+                && let Some(at) = self.ours.get(*i)
+            {
+                s.push_str(&format!("- {} → {}\n", show(p), show(&at.path)));
             }
         }
         s.push_str("\n## Out of scope\n\n");
@@ -589,6 +647,14 @@ mod tests {
 
     fn paths(v: &[&[&str]]) -> Vec<Vec<String>> {
         v.iter().map(|p| p.iter().map(|s| s.to_string()).collect()).collect()
+    }
+
+    fn items(v: &[&[&str]]) -> Vec<OurItem> {
+        paths(v).into_iter().map(|path| OurItem { path, id: String::new() }).collect()
+    }
+
+    fn item_paths(v: &[OurItem]) -> Vec<Vec<String>> {
+        v.iter().map(|it| it.path.clone()).collect()
     }
 
     #[test]
@@ -647,7 +713,7 @@ mod tests {
             &["Edit", "AutoFill"],
             &["Edit", "Spelling"],
         ]);
-        let ours = paths(&[&["File", "New", "Sequence…"], &["File", "Export", "Export Frame"], &["Edit", "Find and Replace…"], &["Clip", "Nest…"]]);
+        let ours = items(&[&["File", "New", "Sequence…"], &["File", "Export", "Export Frame"], &["Edit", "Find and Replace…"], &["Clip", "Nest…"]]);
         let r = compare(Area::Menus, &reference, &ours);
         assert_eq!(r.counts(), (2, 1, 1), "duplicates count once; out-of-scope items are not counted");
         assert!((r.presence() - 75.0).abs() < 1e-9);
@@ -662,7 +728,7 @@ mod tests {
 
     #[test]
     fn empty_reference_measures_zero_without_dividing_by_zero() {
-        let r = compare(Area::Menus, &[], &paths(&[&["File", "Save"]]));
+        let r = compare(Area::Menus, &[], &items(&[&["File", "Save"]]));
         assert_eq!(r.presence(), 0.0);
         assert!(r.summary().contains("presence 0/0 (0.0%)"));
     }
@@ -670,7 +736,7 @@ mod tests {
     #[test]
     fn our_dump_and_arguments_are_checked() {
         let ours = our_items(&json!([{"id": "file.save", "label": "Save", "path": ["File"]}, {"id": "x", "label": "Orphan", "path": []}, {"bad": 1}])).unwrap();
-        assert_eq!(ours, paths(&[&["File", "Save"]]));
+        assert_eq!(ours, vec![OurItem { path: paths(&[&["File", "Save"]]).remove(0), id: "file.save".into() }]);
         assert!(our_items(&json!({})).is_err());
         assert!(parse_args(&["--min", "101"]).is_err());
         assert!(parse_args(&["--min", "x"]).is_err());
@@ -699,7 +765,7 @@ mod tests {
     fn effect_catalog_splits_into_effects_and_transitions() {
         let fx = our_catalog(&catalog(), Area::Effects).unwrap();
         assert_eq!(
-            fx,
+            item_paths(&fx),
             paths(&[
                 &["Video Effects", "Blur & Sharpen", "Gaussian Blur"],
                 &["Video Effects", "Stylize", "Mosaic"],
@@ -708,7 +774,7 @@ mod tests {
         );
         let tr = our_catalog(&catalog(), Area::Transitions).unwrap();
         assert_eq!(tr.len(), 3);
-        assert!(tr.contains(&paths(&[&["Legacy", "Video Transitions", "Push (Legacy)"]])[0]));
+        assert!(item_paths(&tr).contains(&paths(&[&["Legacy", "Video Transitions", "Push (Legacy)"]])[0]));
         assert!(our_catalog(&json!({"effects": []}), Area::Effects).is_err());
         let inv = inventory(Area::Effects, &fx);
         assert!(inv.starts_with("CFA4 Effects panel effects: 3 items"), "{inv}");
@@ -750,5 +816,67 @@ mod tests {
         assert_eq!(tr.counts(), (2, 0, 1), "{}", tr.summary());
         assert_eq!(tr.out_of_scope.get("effects (--area effects)"), Some(&3));
         assert!(tr.markdown("effects.json", 3).contains("- [ ] Video Transitions ▸ Dissolve ▸ Film Dissolve"));
+    }
+
+    #[test]
+    fn compare_points_at_our_item_for_same_and_elsewhere() {
+        let ours = vec![
+            OurItem { path: paths(&[&["File", "Save"]]).remove(0), id: "file.save".into() },
+            OurItem { path: paths(&[&["File", "Export", "Export Frame"]]).remove(0), id: "export.frame".into() },
+        ];
+        let r = compare(Area::Menus, &paths(&[&["File", "Save"], &["File", "Export Frame"], &["Edit", "Undo"]]), &ours);
+        let ids: Vec<Option<&str>> = r
+            .items
+            .iter()
+            .map(|(_, pl)| match pl {
+                Placement::Same(i) | Placement::Elsewhere(i) => r.ours.get(*i).map(|it| it.id.as_str()),
+                Placement::Missing => None,
+            })
+            .collect();
+        assert_eq!(ids, vec![Some("file.save"), Some("export.frame"), None]);
+    }
+
+    #[test]
+    fn command_dump_skips_queries_and_keeps_menuless_commands() {
+        let dump = json!([
+            {"id": "timeline.razor", "label": "Razor", "menu": ["Sequence"], "journal": true},
+            {"id": "clip.speed", "label": "Speed/Duration…", "menu": [], "journal": true},
+            {"id": "command.list", "label": "List commands", "menu": [], "journal": false},
+            {"id": "x", "label": "  ", "menu": [], "journal": true},
+            {"id": "y", "label": "No journal flag", "menu": []},
+            {"bad": 1}
+        ]);
+        let ours = our_commands(&dump).unwrap();
+        assert_eq!(item_paths(&ours), paths(&[&["Sequence", "Razor"], &["Speed/Duration…"]]));
+        assert_eq!(ours.first().map(|it| it.id.as_str()), Some("timeline.razor"));
+        assert!(our_commands(&json!({"commands": []})).is_err());
+        let inv = inventory(Area::Commands, &ours);
+        assert!(inv.starts_with("CFA4 engine commands: 2 items"), "{inv}");
+        assert!(inv.contains("(no menu)"), "{inv}");
+    }
+
+    #[test]
+    fn commands_reference_of_menu_paths_and_bare_names_is_measured() {
+        let ours = our_commands(&json!([
+            {"id": "timeline.razor", "label": "Razor", "menu": ["Sequence"], "journal": true},
+            {"id": "clip.nest", "label": "Nest…", "menu": ["Clip"], "journal": true},
+            {"id": "clip.speed", "label": "Speed/Duration…", "menu": [], "journal": true},
+            {"id": "edit.ripple", "label": "Ripple Delete", "menu": [], "journal": true}
+        ]))
+        .unwrap();
+        let reference =
+            reference_paths(&json!({"commands": ["Sequence > Razor", "Sequence > Nest", "Speed/Duration", "Match Frame"]}), Area::Commands).unwrap();
+        assert_eq!(reference.len(), 4);
+        let r = compare(Area::Commands, &reference, &ours);
+        // Razor same; Nest elsewhere (Clip); Speed/Duration by bare name; Match Frame missing
+        assert_eq!(r.counts(), (2, 1, 1), "{}", r.summary());
+        assert_eq!(r.ours_only, paths(&[&["Ripple Delete"]]));
+        let md = r.markdown("commands.json", ours.len());
+        assert!(md.starts_with("# Command parity checklist"), "{md}");
+        assert!(md.contains("| Sequence | 2 | 1 | 1 | 0 | 100.0% |"), "{md}");
+        assert!(md.contains("| (no menu) | 2 | 1 | 0 | 1 | 50.0% |"), "{md}");
+        assert!(md.contains("- Sequence ▸ Nest → Clip ▸ Nest…"), "{md}");
+        assert!(r.summary().starts_with("commands: presence 3/4 (75.0%)"), "{}", r.summary());
+        assert!(parse_args(&["--area", "commands"]).is_ok_and(|a| a.area == Area::Commands));
     }
 }
