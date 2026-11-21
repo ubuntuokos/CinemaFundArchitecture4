@@ -129,7 +129,7 @@ graph LR
 | `cfa4-cli/serve.rs` | `cfa4-audio-dsp` | `LoudnessMeter`, `channels` |
 | `cfa4-cli/serve.rs` | `cfa4-engine` | `DisplayRenderer`, `Event`, `clip_ops`, `mixer`, `voiceover` |
 | `cfa4-cli/serve.rs` | `cfa4-gpu` | `ExportRenderer` |
-| `cfa4-cli/serve.rs` | `cfa4-media` | `cancel` |
+| `cfa4-cli/serve.rs` | `cfa4-media` | `cancel`, `wav` |
 | `cfa4-cli/serve.rs` | `cfa4-project` | `ItemId`, `ItemKind`, `Project`, `par_ratio` |
 | `cfa4-cli/serve.rs` | `cfa4-render` | `Image`, `RenderOptions`, `SourceProvider`, `audio`, `mixer`, `render_item` |
 | `cfa4-cli/serve.rs` | `cfa4-time` | `FrameRate`, `TICKS_PER_SECOND`, `Tick`, `parse_timecode` |
@@ -237,8 +237,8 @@ graph LR
 | `cfa4-engine/export_tools.rs` | `cfa4-project` | `ItemId`, `Sequence`, `legacy` |
 | `cfa4-engine/export_tools.rs` | `cfa4-qc` | `QcProfile` |
 | `cfa4-engine/export_tools.rs` | `cfa4-time` | `FrameRate` |
-| `cfa4-engine/eyedropper.rs` | `cfa4-color` | `linear_to_srgb_u8`, `srgb_u8_to_linear_table` |
-| `cfa4-engine/eyedropper.rs` | `cfa4-project` | `ClipId`, `ItemId`, `mask` |
+| `cfa4-engine/eyedropper.rs` | `cfa4-color` | `WorkingSpace`, `linear_to_srgb_u8`, `srgb_u8_to_linear_table` |
+| `cfa4-engine/eyedropper.rs` | `cfa4-project` | `ClipId`, `ItemId`, `ParamValue`, `mask` |
 | `cfa4-engine/eyedropper.rs` | `cfa4-render` | `Image`, `RenderOptions`, `render_sequence` |
 | `cfa4-engine/eyedropper.rs` | `cfa4-time` | `Tick` |
 | `cfa4-engine/fx_editor.rs` | `cfa4-project` | `EffectInstance`, `Param`, `effect` |
