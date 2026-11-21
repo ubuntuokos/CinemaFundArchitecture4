@@ -4823,3 +4823,43 @@
 	Encode Resolution	Resolução de codificação
 	Half	Metade
 	Quarter	Um quarto
+
+# Task Manager and subtitle kind (SC-2/3/4)
+	Task Manager	Gerenciador de tarefas
+	Background jobs	Tarefas em segundo plano
+	Exports	Exportações
+	Shared task queue	Fila de tarefas compartilhada
+	Task	Tarefa
+	State	Estado
+	Details	Detalhes
+	Time left	Tempo restante
+	Scheduled	Agendada
+	Queued	Na fila
+	Waiting for resources	Aguardando recursos
+	Blocked	Bloqueada
+	Running	Em execução
+	Paused	Em pausa
+	Cancelling	Cancelando
+	Interactive	Interativa
+	Speculative	Especulativa
+	Final render	Renderização final
+	Show finished	Mostrar concluídas
+	Nothing is running.	Nada está em execução.
+	Not reported by this engine yet.	Este mecanismo ainda não informa isso.
+	Not available: {why}	Indisponível: {why}
+	{name} waits: {why}	{name} aguarda: {why}
+	{running} running · {waiting} waiting	{running} em execução · {waiting} aguardando
+	{n} active	{n} ativas
+	{n} CPU	{n} CPU
+	{n} GiB	{n} GiB
+	{n} MiB	{n} MiB
+	Needs your decision	Precisa da sua decisão
+	Run now	Executar agora
+	Next slot	Próximo horário
+	Missed its start	Início perdido
+	Missed its start at {time}	Início perdido às {time}
+	Starts at {time}	Começa às {time}
+	Subtitle kind	Tipo de legenda
+	Subtitles	Legendas
+	Captions for the hearing impaired	Legendas para surdos e ensurdecidos
+	Forced narrative	Narração forçada (forced narrative)

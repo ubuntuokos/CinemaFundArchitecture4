@@ -4816,3 +4816,43 @@ export.summary	Low	ниско
 	Encode Resolution	Резолюция на кодиране
 	Half	Половина
 	Quarter	Четвърт
+
+# Task Manager and subtitle kind (SC-2/3/4)
+	Task Manager	Диспечер на задачите
+	Background jobs	Фонови задачи
+	Exports	Експорти
+	Shared task queue	Споделена опашка със задачи
+	Task	Задача
+	State	Състояние
+	Details	Подробности
+	Time left	Оставащо време
+	Scheduled	Планирана
+	Queued	На опашка
+	Waiting for resources	Чака ресурси
+	Blocked	Блокирана
+	Running	Изпълнява се
+	Paused	На пауза
+	Cancelling	Отказване
+	Interactive	Интерактивна
+	Speculative	Спекулативна
+	Final render	Окончателно рендиране
+	Show finished	Показване на завършените
+	Nothing is running.	Нищо не се изпълнява.
+	Not reported by this engine yet.	Все още не се съобщава от този енджин.
+	Not available: {why}	Не е налично: {why}
+	{name} waits: {why}	{name} чака: {why}
+	{running} running · {waiting} waiting	{running} се изпълняват · {waiting} чакат
+	{n} active	{n} активни
+	{n} CPU	{n} CPU
+	{n} GiB	{n} GiB
+	{n} MiB	{n} MiB
+	Needs your decision	Чака вашето решение
+	Run now	Изпълни сега
+	Next slot	Следващ слот
+	Missed its start	Пропуснат старт
+	Missed its start at {time}	Пропуснат старт в {time}
+	Starts at {time}	Стартира в {time}
+	Subtitle kind	Вид субтитри
+	Subtitles	Субтитри
+	Captions for the hearing impaired	Надписи за хора с увреден слух
+	Forced narrative	Принудителен разказ (forced narrative)

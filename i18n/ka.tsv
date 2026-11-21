@@ -4816,3 +4816,43 @@ export.summary	Low	დაბალი
 	Encode Resolution	კოდირების გარჩევადობა
 	Half	ნახევარი
 	Quarter	მეოთხედი
+
+# Task Manager and subtitle kind (SC-2/3/4)
+	Task Manager	ამოცანების მენეჯერი
+	Background jobs	ფონური დავალებები
+	Exports	ექსპორტები
+	Shared task queue	საერთო ამოცანების რიგი
+	Task	ამოცანა
+	State	მდგომარეობა
+	Details	დეტალები
+	Time left	დარჩენილი დრო
+	Scheduled	დაგეგმილი
+	Queued	რიგშია
+	Waiting for resources	რესურსებს ელოდება
+	Blocked	დაბლოკილი
+	Running	სრულდება
+	Paused	შეჩერებულია
+	Cancelling	უქმდება
+	Interactive	ინტერაქტიული
+	Speculative	სპეკულაციური
+	Final render	საბოლოო რენდერი
+	Show finished	დასრულებულების ჩვენება
+	Nothing is running.	არაფერი სრულდება.
+	Not reported by this engine yet.	ეს ძრავა ჯერ არ აცხადებს.
+	Not available: {why}	მიუწვდომელია: {why}
+	{name} waits: {why}	{name} ელოდება: {why}
+	{running} running · {waiting} waiting	{running} სრულდება · {waiting} ელოდება
+	{n} active	{n} აქტიური
+	{n} CPU	{n} CPU
+	{n} GiB	{n} GiB
+	{n} MiB	{n} MiB
+	Needs your decision	საჭიროებს თქვენს გადაწყვეტილებას
+	Run now	გაშვება ახლავე
+	Next slot	შემდეგი სლოტი
+	Missed its start	გამოტოვებულია დაწყება
+	Missed its start at {time}	გამოტოვებულია დაწყება {time}-ზე
+	Starts at {time}	იწყება {time}-ზე
+	Subtitle kind	სუბტიტრების სახეობა
+	Subtitles	სუბტიტრები
+	Captions for the hearing impaired	სუბტიტრები სმენადაქვეითებულთათვის
+	Forced narrative	იძულებითი თხრობა (forced narrative)

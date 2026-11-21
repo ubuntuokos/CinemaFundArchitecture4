@@ -4815,3 +4815,43 @@ export.summary	Low	madal
 	Encode Resolution	Kodeerimise eraldusvõime
 	Half	Pool
 	Quarter	Veerand
+
+# Task Manager and subtitle kind (SC-2/3/4)
+	Task Manager	Tegumihaldur
+	Background jobs	Taustatööd
+	Exports	Eksportimised
+	Shared task queue	Jagatud tööde järjekord
+	Task	Ülesanne
+	State	Olek
+	Details	Üksikasjad
+	Time left	Järelejäänud aeg
+	Scheduled	Ajastatud
+	Queued	Järjekorras
+	Waiting for resources	Ootab ressursse
+	Blocked	Blokeeritud
+	Running	Töötab
+	Paused	Peatatud
+	Cancelling	Tühistamine
+	Interactive	Interaktiivne
+	Speculative	Spekulatiivne
+	Final render	Lõplik renderdus
+	Show finished	Näita lõpetatud
+	Nothing is running.	Midagi ei tööta.
+	Not reported by this engine yet.	See mootor ei ole seda veel teatanud.
+	Not available: {why}	Pole saadaval: {why}
+	{name} waits: {why}	{name} ootab: {why}
+	{running} running · {waiting} waiting	{running} töötab · {waiting} ootab
+	{n} active	{n} aktiivset
+	{n} CPU	{n} CPU
+	{n} GiB	{n} GiB
+	{n} MiB	{n} MiB
+	Needs your decision	Vajab teie otsust
+	Run now	Käivita kohe
+	Next slot	Järgmine ajavahemik
+	Missed its start	Algus jäi vahele
+	Missed its start at {time}	Algus kell {time} jäi vahele
+	Starts at {time}	Algab kell {time}
+	Subtitle kind	Subtiitrite liik
+	Subtitles	Subtiitrid
+	Captions for the hearing impaired	Subtiitrid kuulmispuudega inimestele
+	Forced narrative	Sunnitud jutustus (forced narrative)

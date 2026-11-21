@@ -4796,3 +4796,43 @@
 	Encode Resolution	Роздільність кодування
 	Half	Половина
 	Quarter	Чверть
+
+# Task Manager and subtitle kind (SC-2/3/4)
+	Task Manager	Диспетчер завдань
+	Background jobs	Фонові завдання
+	Exports	Експорт
+	Shared task queue	Спільна черга завдань
+	Task	Завдання
+	State	Стан
+	Details	Подробиці
+	Time left	Залишилося часу
+	Scheduled	Заплановано
+	Queued	У черзі
+	Waiting for resources	Очікує на ресурси
+	Blocked	Заблоковано
+	Running	Виконується
+	Paused	Призупинено
+	Cancelling	Скасування
+	Interactive	Інтерактивне
+	Speculative	Випереджальне
+	Final render	Фінальний рендер
+	Show finished	Показати завершені
+	Nothing is running.	Нічого не виконується.
+	Not reported by this engine yet.	Цей рушій поки що не повідомляє.
+	Not available: {why}	Недоступно: {why}
+	{name} waits: {why}	{name} очікує: {why}
+	{running} running · {waiting} waiting	{running} виконується · {waiting} очікує
+	{n} active	{n} активних
+	{n} CPU	{n} CPU
+	{n} GiB	{n} ГіБ
+	{n} MiB	{n} МіБ
+	Needs your decision	Потрібне ваше рішення
+	Run now	Запустити зараз
+	Next slot	Наступний слот
+	Missed its start	Пропущено запуск
+	Missed its start at {time}	Пропущено запуск о {time}
+	Starts at {time}	Запуск о {time}
+	Subtitle kind	Тип субтитрів
+	Subtitles	Субтитри
+	Captions for the hearing impaired	Субтитри для людей із порушенням слуху
+	Forced narrative	Примусовий переклад (forced narrative)

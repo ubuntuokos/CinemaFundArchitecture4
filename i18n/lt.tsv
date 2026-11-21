@@ -4816,3 +4816,43 @@ export.summary	Low	žema
 	Encode Resolution	Kodavimo raiška
 	Half	Pusė
 	Quarter	Ketvirtis
+
+# Task Manager and subtitle kind (SC-2/3/4)
+	Task Manager	Užduočių tvarkytuvė
+	Background jobs	Foninės užduotys
+	Exports	Eksportai
+	Shared task queue	Bendra užduočių eilė
+	Task	Užduotis
+	State	Būsena
+	Details	Išsami informacija
+	Time left	Likęs laikas
+	Scheduled	Suplanuota
+	Queued	Eilėje
+	Waiting for resources	Laukia išteklių
+	Blocked	Užblokuota
+	Running	Vykdoma
+	Paused	Pristabdyta
+	Cancelling	Atšaukiama
+	Interactive	Interaktyvi
+	Speculative	Spekuliatyvi
+	Final render	Galutinis atvaizdavimas
+	Show finished	Rodyti baigtas
+	Nothing is running.	Nieko nevykdoma.
+	Not reported by this engine yet.	Šis variklis dar nepraneša.
+	Not available: {why}	Nepasiekiama: {why}
+	{name} waits: {why}	{name} laukia: {why}
+	{running} running · {waiting} waiting	{running} vykdoma · {waiting} laukia
+	{n} active	{n} aktyvių
+	{n} CPU	{n} CPU
+	{n} GiB	{n} GiB
+	{n} MiB	{n} MiB
+	Needs your decision	Laukia jūsų sprendimo
+	Run now	Vykdyti dabar
+	Next slot	Kitas laikotarpis
+	Missed its start	Praleistas pradžios laikas
+	Missed its start at {time}	Praleistas pradžios laikas {time}
+	Starts at {time}	Prasideda {time}
+	Subtitle kind	Subtitrų rūšis
+	Subtitles	Subtitrai
+	Captions for the hearing impaired	Subtitrai neprigirdintiesiems
+	Forced narrative	Priverstinis pasakojimas (forced narrative)

@@ -4821,3 +4821,43 @@
 	Encode Resolution	Resolusi Enkode
 	Half	Setengah
 	Quarter	Seperempat
+
+# Task Manager and subtitle kind (SC-2/3/4)
+	Task Manager	Pengelola Tugas
+	Background jobs	Tugas latar belakang
+	Exports	Ekspor
+	Shared task queue	Antrean tugas bersama
+	Task	Tugas
+	State	Status
+	Details	Detail
+	Time left	Sisa waktu
+	Scheduled	Dijadwalkan
+	Queued	Dalam antrean
+	Waiting for resources	Menunggu sumber daya
+	Blocked	Terblokir
+	Running	Berjalan
+	Paused	Dijeda
+	Cancelling	Membatalkan
+	Interactive	Interaktif
+	Speculative	Spekulatif
+	Final render	Render akhir
+	Show finished	Tampilkan yang selesai
+	Nothing is running.	Tidak ada yang berjalan.
+	Not reported by this engine yet.	Belum dilaporkan oleh mesin ini.
+	Not available: {why}	Tidak tersedia: {why}
+	{name} waits: {why}	{name} menunggu: {why}
+	{running} running · {waiting} waiting	{running} berjalan · {waiting} menunggu
+	{n} active	{n} aktif
+	{n} CPU	{n} CPU
+	{n} GiB	{n} GiB
+	{n} MiB	{n} MiB
+	Needs your decision	Memerlukan keputusan Anda
+	Run now	Jalankan sekarang
+	Next slot	Slot berikutnya
+	Missed its start	Awal terlewat
+	Missed its start at {time}	Awal pukul {time} terlewat
+	Starts at {time}	Mulai pukul {time}
+	Subtitle kind	Jenis subtitel
+	Subtitles	Subtitel
+	Captions for the hearing impaired	Teks untuk penyandang tunarungu
+	Forced narrative	Narasi paksa (forced narrative)

@@ -4820,3 +4820,43 @@
 	Encode Resolution	Kodierauflösung
 	Half	Halb
 	Quarter	Viertel
+
+# Task Manager and subtitle kind (SC-2/3/4)
+	Task Manager	Aufgabenverwaltung
+	Background jobs	Hintergrundjobs
+	Exports	Exporte
+	Shared task queue	Gemeinsame Aufgabenwarteschlange
+	Task	Aufgabe
+	State	Status
+	Details	Details
+	Time left	Verbleibende Zeit
+	Scheduled	Geplant
+	Queued	In der Warteschlange
+	Waiting for resources	Wartet auf Ressourcen
+	Blocked	Blockiert
+	Running	Läuft
+	Paused	Pausiert
+	Cancelling	Wird abgebrochen
+	Interactive	Interaktiv
+	Speculative	Spekulativ
+	Final render	Finales Rendern
+	Show finished	Abgeschlossene anzeigen
+	Nothing is running.	Es läuft nichts.
+	Not reported by this engine yet.	Von dieser Engine noch nicht gemeldet.
+	Not available: {why}	Nicht verfügbar: {why}
+	{name} waits: {why}	{name} wartet: {why}
+	{running} running · {waiting} waiting	{running} laufen · {waiting} warten
+	{n} active	{n} aktiv
+	{n} CPU	{n} CPU
+	{n} GiB	{n} GiB
+	{n} MiB	{n} MiB
+	Needs your decision	Braucht Ihre Entscheidung
+	Run now	Jetzt ausführen
+	Next slot	Nächster Slot
+	Missed its start	Start verpasst
+	Missed its start at {time}	Start um {time} verpasst
+	Starts at {time}	Startet um {time}
+	Subtitle kind	Untertitelart
+	Subtitles	Untertitel
+	Captions for the hearing impaired	Untertitel für Hörgeschädigte
+	Forced narrative	Erzwungene Untertitel (forced narrative)

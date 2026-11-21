@@ -4814,3 +4814,43 @@ export.summary	Low	düşük
 	Encode Resolution	Kodlama Çözünürlüğü
 	Half	Yarım
 	Quarter	Çeyrek
+
+# Task Manager and subtitle kind (SC-2/3/4)
+	Task Manager	Görev Yöneticisi
+	Background jobs	Arka plan işleri
+	Exports	Dışa aktarmalar
+	Shared task queue	Paylaşılan görev kuyruğu
+	Task	Görev
+	State	Durum
+	Details	Ayrıntılar
+	Time left	Kalan süre
+	Scheduled	Zamanlandı
+	Queued	Kuyrukta
+	Waiting for resources	Kaynaklar bekleniyor
+	Blocked	Engellendi
+	Running	Çalışıyor
+	Paused	Duraklatıldı
+	Cancelling	İptal ediliyor
+	Interactive	Etkileşimli
+	Speculative	Önceden yürütülen
+	Final render	Son render
+	Show finished	Tamamlananları göster
+	Nothing is running.	Çalışan bir şey yok.
+	Not reported by this engine yet.	Bu motor henüz bildirmiyor.
+	Not available: {why}	Kullanılamıyor: {why}
+	{name} waits: {why}	{name} bekliyor: {why}
+	{running} running · {waiting} waiting	{running} çalışıyor · {waiting} bekliyor
+	{n} active	{n} etkin
+	{n} CPU	{n} CPU
+	{n} GiB	{n} GiB
+	{n} MiB	{n} MiB
+	Needs your decision	Kararınızı bekliyor
+	Run now	Şimdi çalıştır
+	Next slot	Sonraki aralık
+	Missed its start	Başlangıç kaçırıldı
+	Missed its start at {time}	{time} başlangıcı kaçırıldı
+	Starts at {time}	Başlangıç: {time}
+	Subtitle kind	Altyazı türü
+	Subtitles	Altyazılar
+	Captions for the hearing impaired	İşitme engelliler için altyazı
+	Forced narrative	Zorunlu anlatım (forced narrative)

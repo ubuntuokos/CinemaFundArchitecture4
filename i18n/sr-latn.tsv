@@ -4815,3 +4815,43 @@ export.summary	Low	nizak
 	Encode Resolution	Rezolucija kodiranja
 	Half	Pola
 	Quarter	Četvrtina
+
+# Task Manager and subtitle kind (SC-2/3/4)
+	Task Manager	Menadžer zadataka
+	Background jobs	Pozadinski poslovi
+	Exports	Izvozi
+	Shared task queue	Zajednički red zadataka
+	Task	Zadatak
+	State	Stanje
+	Details	Detalji
+	Time left	Preostalo vreme
+	Scheduled	Zakazano
+	Queued	U redu čekanja
+	Waiting for resources	Čeka resurse
+	Blocked	Blokirano
+	Running	Radi
+	Paused	Pauzirano
+	Cancelling	Otkazivanje
+	Interactive	Interaktivno
+	Speculative	Spekulativno
+	Final render	Završni render
+	Show finished	Prikaži završeno
+	Nothing is running.	Ništa se ne izvršava.
+	Not reported by this engine yet.	Ovaj mehanizam to još ne prijavljuje.
+	Not available: {why}	Nije dostupno: {why}
+	{name} waits: {why}	{name} čeka: {why}
+	{running} running · {waiting} waiting	{running} se izvršava · {waiting} čeka
+	{n} active	{n} aktivnih
+	{n} CPU	{n} CPU
+	{n} GiB	{n} GiB
+	{n} MiB	{n} MiB
+	Needs your decision	Čeka vašu odluku
+	Run now	Pokreni sada
+	Next slot	Sledeći termin
+	Missed its start	Propušten početak
+	Missed its start at {time}	Propušten početak u {time}
+	Starts at {time}	Počinje u {time}
+	Subtitle kind	Vrsta titlova
+	Subtitles	Titlovi
+	Captions for the hearing impaired	Titlovi za osobe oštećenog sluha
+	Forced narrative	Prinudna naracija (forced narrative)

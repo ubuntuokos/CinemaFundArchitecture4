@@ -4813,3 +4813,43 @@ export.summary	Low	nízká
 	Encode Resolution	Rozlišení kódování
 	Half	Poloviční
 	Quarter	Čtvrtinové
+
+# Task Manager and subtitle kind (SC-2/3/4)
+	Task Manager	Správce úloh
+	Background jobs	Úlohy na pozadí
+	Exports	Exporty
+	Shared task queue	Sdílená fronta úloh
+	Task	Úloha
+	State	Stav
+	Details	Podrobnosti
+	Time left	Zbývající čas
+	Scheduled	Naplánováno
+	Queued	Ve frontě
+	Waiting for resources	Čeká na prostředky
+	Blocked	Blokováno
+	Running	Běží
+	Paused	Pozastaveno
+	Cancelling	Ruší se
+	Interactive	Interaktivní
+	Speculative	Spekulativní
+	Final render	Konečné vykreslení
+	Show finished	Zobrazit dokončené
+	Nothing is running.	Nic neběží.
+	Not reported by this engine yet.	Tento engine zatím nehlásí.
+	Not available: {why}	Není k dispozici: {why}
+	{name} waits: {why}	{name} čeká: {why}
+	{running} running · {waiting} waiting	{running} běží · {waiting} čeká
+	{n} active	{n} aktivních
+	{n} CPU	{n} CPU
+	{n} GiB	{n} GiB
+	{n} MiB	{n} MiB
+	Needs your decision	Čeká na vaše rozhodnutí
+	Run now	Spustit hned
+	Next slot	Další slot
+	Missed its start	Zmeškaný začátek
+	Missed its start at {time}	Zmeškaný začátek v {time}
+	Starts at {time}	Začíná v {time}
+	Subtitle kind	Druh titulků
+	Subtitles	Titulky
+	Captions for the hearing impaired	Titulky pro neslyšící a nedoslýchavé
+	Forced narrative	Vynucený komentář (forced narrative)
