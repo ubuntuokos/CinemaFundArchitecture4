@@ -183,6 +183,7 @@ const NOT_CODECS: &[&str] = &[
     "edit",
     "engine",
     "export",
+    "fetch-client",
     "ffmpeg",
     "format",
     "frame",
