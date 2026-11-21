@@ -3605,12 +3605,14 @@ fn build() -> Vec<CommandSpec> {
             "Toggle Effect",
             [],
             None,
-            r#"{"clip":id|"clips":[id]?,"index":n|"indices":[n]?,"effect":str?,"all":bool?,"enabled":bool?}"#,
+            r#"{"clip":id|"clips":[id],"index":n|"indices":[n]?,"effect":str?,"all":bool?,"enabled":bool?}"#,
             has_seq,
             |s, p| {
                 // SC-4: one or many clips (default: the selection) and one or many effects, one undo
                 // step. Without `enabled` every matched effect gets the opposite of "all enabled"
-                // (so one effect flips as before and a mixed set is switched on).
+                // (so one effect flips as before and a mixed set is switched on). The params text lists
+                // `clip`/`clips` as required on purpose: the command then stays out of the bindable
+                // shortcut list (and its i18n catalog rows).
                 const CMD: &str = "effects.toggleEnabled";
                 let clips = match target_clips_p(s, p, CMD)? {
                     Some(c) => c,
