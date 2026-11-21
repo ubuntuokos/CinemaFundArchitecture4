@@ -76,6 +76,7 @@ azt, amit a profil megad.
 | Motor (`engine`) | olvas: hozzáadott média; ír: projekt, gyorsítótár, beállítások, az exportfájl (csak maga a fájl) | csak a megadott helyi TCP-portok, UDP nincs | csak a saját segédfolyamatai | tiltólista + `socket(AF_INET*, SOCK_DGRAM/SOCK_RAW)` |
 | Médiaszolgáltató (`mediaHost`) | csak a megnyitott fájl, olvasásra | nincs (IPv4/IPv6 socket sem) | nincs | tiltólista + `execve` + `socket(AF_INET*)` |
 | Stúdió (`studioHost`) | olvas: jelenet forrásai; ír: a felvétel fájlja | bármi (streamelési célok, bemenetek) | a Chromium segédfolyamata | tiltólista, de névterek engedve (Chromium-sandbox) |
+| Rögzítő és lejátszó (`ioHost`) | olvas: a rendszer (`/usr`, így a gyártói meghajtó is); eszköz: csak a megadott karaktereszközök (olvasás-írás, eszköz-ioctl); ír: csak a rögzítési könyvtár (a File Services staging könyvtára) | nincs (IPv4/IPv6 socket sem) | nincs | tiltólista + `execve` + `socket(AF_INET*)` |
 | Böngészőforrás (`browserSource`) | a Chromium-sandbox és az AppArmor zárja (B6), nem a `cfa4-sandbox` | | | |
 | Letöltő (`fetch`) | ír: csak a letöltés célja | kimenő TCP csak a 443-as portra; UDP a névfeloldáshoz | nincs | tiltólista + `execve` + `socket(AF_INET*, SOCK_RAW)` |
 | Bővítmény (`pluginHost`) | olvas: a bővítmény saját fájljai | nincs | nincs | tiltólista + `execve` + `socket(AF_INET*)` |
