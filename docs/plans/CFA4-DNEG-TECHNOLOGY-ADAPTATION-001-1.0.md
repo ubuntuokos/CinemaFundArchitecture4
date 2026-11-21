@@ -162,7 +162,7 @@ A nehéz mérések a `docs/development/reference-machine.md` szabályai szerint 
 
 | Kritérium | Állapot |
 |---|---|
-| Minden releváns korábbi CFA4-terv összevetése | **Részben**: a `main`-ben lévő tervekkel megtörtént; az öt hiányzó terv most javaslatként készült el, de jóváhagyásig a sorok `?`-ek. Nem jelölöm teljesítettnek. |
+| Minden releváns korábbi CFA4-terv összevetése | **Részben**: a `main`-ben lévő tervekkel megtörtént; az öt hiányzó terv külön, draft PR-okban javaslatként készült el, de jóváhagyásig a sorok `?`-ek. Nem jelölöm teljesítettnek. |
 | Megvalósítástól független összevetés | igen (D1 a tervekhez, nem a kódhoz) |
 | Nincs elfogadott funkció újrafelvéve | igen (D1 A-sorai a „Kimarad”-ban) |
 | OpenVDB / AX / Points scope egyértelmű | igen: N1/N2; N3 feltételes; Points nincs scope |
@@ -175,5 +175,5 @@ A nehéz mérések a `docs/development/reference-machine.md` szabályai szerint 
 | Erőforrás-adaptáció dokumentált | igen (D9, N4) |
 | Regressziókapuk meghatározottak | igen (§6) |
 | Minden scope-nak van elfogadási feltétele | igen (N1–N4) |
-| Repó-módosítás nem történt | **a kód nem módosult**; hét új dokumentum került a `docs/plans/` alá (D1–D10 terv + audit + öt új terv) |
+| Repó-módosítás nem történt | **a kód nem módosult**; két új dokumentum került a `docs/plans/` alá (D1–D10 terv + audit); az öt új terv külön PR-okban, jóváhagyásig draftként készül (coordination.md §2.2) |
 | Implementáció külön engedélyhez kötött | igen |
