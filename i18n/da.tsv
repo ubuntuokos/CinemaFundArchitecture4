@@ -4828,3 +4828,42 @@ export.summary	Low	lav
 	Per Channel	Pr. kanal
 	Channel Zoom	Kanalzoom
 	White Balance Selector (click a neutral point in the Program monitor; Esc cancels)	Hvidbalancevælger (klik på et neutralt punkt i programmonitoren; Esc annullerer)
+# Task Manager and subtitle kind (SC-2/3/4)
+	Task Manager	Jobstyring
+	Background jobs	Baggrundsjob
+	Exports	Eksporter
+	Shared task queue	Delt opgavekø
+	Task	Opgave
+	State	Tilstand
+	Details	Detaljer
+	Time left	Tid tilbage
+	Scheduled	Planlagt
+	Queued	I kø
+	Waiting for resources	Venter på ressourcer
+	Blocked	Blokeret
+	Running	Kører
+	Paused	Sat på pause
+	Cancelling	Annullerer
+	Interactive	Interaktiv
+	Speculative	Spekulativ
+	Final render	Endelig rendering
+	Show finished	Vis afsluttede
+	Nothing is running.	Intet kører.
+	Not reported by this engine yet.	Rapporteres endnu ikke af denne motor.
+	Not available: {why}	Ikke tilgængelig: {why}
+	{name} waits: {why}	{name} venter: {why}
+	{running} running · {waiting} waiting	{running} kører · {waiting} venter
+	{n} active	{n} aktive
+	{n} CPU	{n} CPU
+	{n} GiB	{n} GiB
+	{n} MiB	{n} MiB
+	Needs your decision	Kræver din beslutning
+	Run now	Kør nu
+	Next slot	Næste slot
+	Missed its start	Startede ikke til tiden
+	Missed its start at {time}	Startede ikke kl. {time}
+	Starts at {time}	Starter kl. {time}
+	Subtitle kind	Undertekststype
+	Subtitles	Undertekster
+	Captions for the hearing impaired	Tekstning for hørehæmmede
+	Forced narrative	Tvungen fortælling (forced narrative)

@@ -4829,3 +4829,42 @@ export.summary	Low	nizka
 	Per Channel	Po kanalih
 	Channel Zoom	Povečava kanalov
 	White Balance Selector (click a neutral point in the Program monitor; Esc cancels)	Izbirnik ravnovesja beline (kliknite nevtralno točko v programskem monitorju; Esc prekliče)
+# Task Manager and subtitle kind (SC-2/3/4)
+	Task Manager	Upravitelj opravil
+	Background jobs	Opravila v ozadju
+	Exports	Izvozi
+	Shared task queue	Skupna čakalna vrsta opravil
+	Task	Opravilo
+	State	Stanje
+	Details	Podrobnosti
+	Time left	Preostali čas
+	Scheduled	Načrtovano
+	Queued	V čakalni vrsti
+	Waiting for resources	Čaka na vire
+	Blocked	Blokirano
+	Running	Teče
+	Paused	Začasno ustavljeno
+	Cancelling	Preklic
+	Interactive	Interaktivno
+	Speculative	Špekulativno
+	Final render	Končno upodabljanje
+	Show finished	Pokaži dokončana
+	Nothing is running.	Nič ne teče.
+	Not reported by this engine yet.	Ta pogon tega še ne poroča.
+	Not available: {why}	Ni na voljo: {why}
+	{name} waits: {why}	{name} čaka: {why}
+	{running} running · {waiting} waiting	{running} teče · {waiting} čaka
+	{n} active	{n} aktivnih
+	{n} CPU	{n} CPU
+	{n} GiB	{n} GiB
+	{n} MiB	{n} MiB
+	Needs your decision	Potrebuje vašo odločitev
+	Run now	Zaženi zdaj
+	Next slot	Naslednji termin
+	Missed its start	Zamujen začetek
+	Missed its start at {time}	Zamujen začetek ob {time}
+	Starts at {time}	Začne se ob {time}
+	Subtitle kind	Vrsta podnapisov
+	Subtitles	Podnapisi
+	Captions for the hearing impaired	Podnapisi za naglušne
+	Forced narrative	Prisilna pripoved (forced narrative)

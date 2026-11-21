@@ -4828,3 +4828,42 @@ export.summary	Low	χαμηλή
 	Per Channel	Ανά κανάλι
 	Channel Zoom	Ζουμ καναλιών
 	White Balance Selector (click a neutral point in the Program monitor; Esc cancels)	Επιλογέας ισορροπίας λευκού (κάντε κλικ σε ουδέτερο σημείο στην οθόνη προγράμματος· το Esc ακυρώνει)
+# Task Manager and subtitle kind (SC-2/3/4)
+	Task Manager	Διαχείριση εργασιών
+	Background jobs	Εργασίες παρασκηνίου
+	Exports	Εξαγωγές
+	Shared task queue	Κοινή ουρά εργασιών
+	Task	Εργασία
+	State	Κατάσταση
+	Details	Λεπτομέρειες
+	Time left	Χρόνος που απομένει
+	Scheduled	Προγραμματισμένη
+	Queued	Στην ουρά
+	Waiting for resources	Αναμονή για πόρους
+	Blocked	Αποκλεισμένη
+	Running	Εκτελείται
+	Paused	Σε παύση
+	Cancelling	Ακύρωση
+	Interactive	Διαδραστική
+	Speculative	Πρόβλεψης
+	Final render	Τελική απόδοση
+	Show finished	Εμφάνιση ολοκληρωμένων
+	Nothing is running.	Τίποτα δεν εκτελείται.
+	Not reported by this engine yet.	Δεν αναφέρεται ακόμη από αυτή τη μηχανή.
+	Not available: {why}	Μη διαθέσιμο: {why}
+	{name} waits: {why}	Το {name} περιμένει: {why}
+	{running} running · {waiting} waiting	{running} εκτελούνται · {waiting} περιμένουν
+	{n} active	{n} ενεργές
+	{n} CPU	{n} CPU
+	{n} GiB	{n} GiB
+	{n} MiB	{n} MiB
+	Needs your decision	Χρειάζεται την απόφασή σας
+	Run now	Εκτέλεση τώρα
+	Next slot	Επόμενο διάστημα
+	Missed its start	Χάθηκε η εκκίνηση
+	Missed its start at {time}	Χάθηκε η εκκίνηση στις {time}
+	Starts at {time}	Ξεκινά στις {time}
+	Subtitle kind	Είδος υποτίτλων
+	Subtitles	Υπότιτλοι
+	Captions for the hearing impaired	Υπότιτλοι για κωφούς και βαρήκοους
+	Forced narrative	Αναγκαστική αφήγηση (forced narrative)

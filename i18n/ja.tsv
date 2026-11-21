@@ -4835,3 +4835,42 @@
 	Per Channel	チャンネル別
 	Channel Zoom	チャンネルズーム
 	White Balance Selector (click a neutral point in the Program monitor; Esc cancels)	ホワイトバランスセレクター（プログラムモニターの無彩色の点をクリック。Esc でキャンセル）
+# Task Manager and subtitle kind (SC-2/3/4)
+	Task Manager	タスクマネージャー
+	Background jobs	バックグラウンドジョブ
+	Exports	書き出し
+	Shared task queue	共有タスクキュー
+	Task	タスク
+	State	状態
+	Details	詳細
+	Time left	残り時間
+	Scheduled	予約済み
+	Queued	待機中
+	Waiting for resources	リソース待ち
+	Blocked	ブロック中
+	Running	実行中
+	Paused	一時停止中
+	Cancelling	キャンセル中
+	Interactive	対話型
+	Speculative	先行実行
+	Final render	最終レンダリング
+	Show finished	完了したものを表示
+	Nothing is running.	実行中のものはありません。
+	Not reported by this engine yet.	このエンジンはまだ報告していません。
+	Not available: {why}	利用できません: {why}
+	{name} waits: {why}	{name} は待機中: {why}
+	{running} running · {waiting} waiting	{running} 件実行中 · {waiting} 件待機中
+	{n} active	{n} 件が実行中
+	{n} CPU	{n} CPU
+	{n} GiB	{n} GiB
+	{n} MiB	{n} MiB
+	Needs your decision	判断が必要です
+	Run now	今すぐ実行
+	Next slot	次のスロット
+	Missed its start	開始時刻を逃しました
+	Missed its start at {time}	{time} の開始を逃しました
+	Starts at {time}	{time} に開始
+	Subtitle kind	字幕の種類
+	Subtitles	字幕
+	Captions for the hearing impaired	聴覚障害者向けキャプション
+	Forced narrative	強制ナレーション (forced narrative)
