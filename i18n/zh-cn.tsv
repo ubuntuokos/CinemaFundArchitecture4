@@ -4824,3 +4824,42 @@
 	Per Channel	按声道
 	Channel Zoom	声道缩放
 	White Balance Selector (click a neutral point in the Program monitor; Esc cancels)	白平衡选择器（在节目监视器中点击中性点；Esc 取消）
+# Task Manager and subtitle kind (SC-2/3/4)
+	Task Manager	任务管理器
+	Background jobs	后台作业
+	Exports	导出
+	Shared task queue	共享任务队列
+	Task	任务
+	State	状态
+	Details	详细信息
+	Time left	剩余时间
+	Scheduled	已计划
+	Queued	排队中
+	Waiting for resources	等待资源
+	Blocked	已阻塞
+	Running	正在运行
+	Paused	已暂停
+	Cancelling	正在取消
+	Interactive	交互式
+	Speculative	预先执行
+	Final render	最终渲染
+	Show finished	显示已完成
+	Nothing is running.	没有正在运行的内容。
+	Not reported by this engine yet.	此引擎尚未报告。
+	Not available: {why}	不可用：{why}
+	{name} waits: {why}	{name} 正在等待：{why}
+	{running} running · {waiting} waiting	{running} 个正在运行 · {waiting} 个正在等待
+	{n} active	{n} 个活动
+	{n} CPU	{n} CPU
+	{n} GiB	{n} GiB
+	{n} MiB	{n} MiB
+	Needs your decision	需要您做出决定
+	Run now	立即运行
+	Next slot	下一时段
+	Missed its start	错过了开始时间
+	Missed its start at {time}	错过了 {time} 的开始
+	Starts at {time}	将于 {time} 开始
+	Subtitle kind	字幕类型
+	Subtitles	字幕
+	Captions for the hearing impaired	听障人士字幕
+	Forced narrative	强制旁白 (forced narrative)

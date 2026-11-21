@@ -9,9 +9,9 @@
 //! - `fixtures [crate…]`: pre-generate the ffmpeg fixture matrix of the oracle tests (runs each
 //!   crate's ignored `generate_fixtures` test, i.e. the same generators the tests use) and print
 //!   what was made, reused or skipped.
-//! - `parity [--area menus|effects|transitions] [--reference FILE] [--out FILE] [--min PERCENT]`:
-//!   measured parity of our shipped menu bar, or of the effects / transitions the Effects panel
-//!   lists, against a reference list (default: the local `plan/premiere/<area>.json`), presence and
+//! - `parity [--area menus|commands|effects|transitions] [--reference FILE] [--out FILE] [--min PERCENT]`:
+//!   measured parity of our shipped menu bar, of the engine's commands, or of the effects /
+//!   transitions the Effects panel lists, against a reference list (default: the local `plan/premiere/<area>.json`), presence and
 //!   placement reported separately (`parity.rs`, docs/gaps.md G7).
 //! - `fuzz-targets`: every L0 parser crate (containers and decoders; not the encoder-only ones in
 //!   `NO_PARSER`) has a fuzz target in `fuzz/src/lib.rs`, and every target has its
@@ -524,7 +524,7 @@ fn main() -> ExitCode {
             parity::run(&root(), &rest.iter().map(String::as_str).collect::<Vec<_>>())
         }
         _ => Err(
-            "usage: cargo xtask <layers|assets|wasm|fuzz-targets|fixtures [crate…]|parity [--area menus|effects|transitions] [--reference FILE] [--out FILE] [--min PERCENT]|version [set X.Y.Z]|ci|bench [args]|bench-playback [args]|cinema-oracles [--check|--install …|--corpus|--print-env]>"
+            "usage: cargo xtask <layers|assets|wasm|fuzz-targets|fixtures [crate…]|parity [--area menus|commands|effects|transitions] [--reference FILE] [--out FILE] [--min PERCENT]|version [set X.Y.Z]|ci|bench [args]|bench-playback [args]|cinema-oracles [--check|--install …|--corpus|--print-env]>"
                 .into(),
         ),
     };

@@ -4828,3 +4828,42 @@ export.summary	Low	matala
 	Per Channel	Kanavittain
 	Channel Zoom	Kanavien zoom
 	White Balance Selector (click a neutral point in the Program monitor; Esc cancels)	Valkotasapainon valitsin (napsauta neutraalia pistettä ohjelmamonitorissa; Esc peruu)
+# Task Manager and subtitle kind (SC-2/3/4)
+	Task Manager	Tehtävienhallinta
+	Background jobs	Taustatyöt
+	Exports	Viennit
+	Shared task queue	Jaettu tehtäväjono
+	Task	Tehtävä
+	State	Tila
+	Details	Tiedot
+	Time left	Aikaa jäljellä
+	Scheduled	Ajastettu
+	Queued	Jonossa
+	Waiting for resources	Odottaa resursseja
+	Blocked	Estetty
+	Running	Käynnissä
+	Paused	Keskeytetty
+	Cancelling	Peruutetaan
+	Interactive	Interaktiivinen
+	Speculative	Spekulatiivinen
+	Final render	Lopullinen renderöinti
+	Show finished	Näytä valmistuneet
+	Nothing is running.	Mitään ei ole käynnissä.
+	Not reported by this engine yet.	Tämä moottori ei vielä raportoi tätä.
+	Not available: {why}	Ei saatavilla: {why}
+	{name} waits: {why}	{name} odottaa: {why}
+	{running} running · {waiting} waiting	{running} käynnissä · {waiting} odottaa
+	{n} active	{n} aktiivista
+	{n} CPU	{n} CPU
+	{n} GiB	{n} GiB
+	{n} MiB	{n} MiB
+	Needs your decision	Tarvitsee päätöksesi
+	Run now	Suorita nyt
+	Next slot	Seuraava aikaväli
+	Missed its start	Alku jäi väliin
+	Missed its start at {time}	Alku klo {time} jäi väliin
+	Starts at {time}	Alkaa klo {time}
+	Subtitle kind	Tekstityksen laji
+	Subtitles	Tekstitykset
+	Captions for the hearing impaired	Tekstitykset kuulovammaisille
+	Forced narrative	Pakotettu selostus (forced narrative)

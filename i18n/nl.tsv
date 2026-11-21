@@ -4826,3 +4826,42 @@ export.summary	Low	laag
 	Per Channel	Per kanaal
 	Channel Zoom	Kanaalzoom
 	White Balance Selector (click a neutral point in the Program monitor; Esc cancels)	Witbalanskiezer (klik op een neutraal punt in de programmamonitor; Esc annuleert)
+# Task Manager and subtitle kind (SC-2/3/4)
+	Task Manager	Taakbeheer
+	Background jobs	Achtergrondtaken
+	Exports	Exports
+	Shared task queue	Gedeelde taakwachtrij
+	Task	Taak
+	State	Status
+	Details	Details
+	Time left	Resterende tijd
+	Scheduled	Gepland
+	Queued	In de wachtrij
+	Waiting for resources	Wacht op bronnen
+	Blocked	Geblokkeerd
+	Running	Actief
+	Paused	Gepauzeerd
+	Cancelling	Annuleren
+	Interactive	Interactief
+	Speculative	Speculatief
+	Final render	Definitieve render
+	Show finished	Voltooide tonen
+	Nothing is running.	Er wordt niets uitgevoerd.
+	Not reported by this engine yet.	Nog niet gemeld door deze engine.
+	Not available: {why}	Niet beschikbaar: {why}
+	{name} waits: {why}	{name} wacht: {why}
+	{running} running · {waiting} waiting	{running} actief · {waiting} wachtend
+	{n} active	{n} actief
+	{n} CPU	{n} CPU
+	{n} GiB	{n} GiB
+	{n} MiB	{n} MiB
+	Needs your decision	Heeft uw beslissing nodig
+	Run now	Nu uitvoeren
+	Next slot	Volgende slot
+	Missed its start	Start gemist
+	Missed its start at {time}	Start om {time} gemist
+	Starts at {time}	Start om {time}
+	Subtitle kind	Soort ondertitels
+	Subtitles	Ondertitels
+	Captions for the hearing impaired	Ondertitels voor doven en slechthorenden
+	Forced narrative	Geforceerde vertelling (forced narrative)
