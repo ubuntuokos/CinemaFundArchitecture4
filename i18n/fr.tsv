@@ -4818,3 +4818,16 @@
 	Encode Resolution	Résolution d’encodage
 	Half	Moitié
 	Quarter	Quart
+
+# Recent effects, per-channel waveform, white balance selector (SC-2/SC-3/SC-4, #1419 #1420 #1421)
+	Apply a recently used effect to the selected clips	Appliquer un effet récemment utilisé aux clips sélectionnés
+	Disable all effects	Désactiver tous les effets
+	Enable all effects	Activer tous les effets
+	No recent effects	Aucun effet récent
+	Recent effects	Effets récents
+	Switch every effect of the selected clips off	Désactive tous les effets des clips sélectionnés
+	Switch every effect of the selected clips on	Active tous les effets des clips sélectionnés
+	Merged	Fusionné
+	Per Channel	Par canal
+	Channel Zoom	Zoom des canaux
+	White Balance Selector (click a neutral point in the Program monitor; Esc cancels)	Sélecteur de balance des blancs (cliquez sur un point neutre dans le moniteur Programme ; Échap annule)

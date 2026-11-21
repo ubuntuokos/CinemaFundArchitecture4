@@ -4816,3 +4816,16 @@ export.summary	Low	დაბალი
 	Encode Resolution	კოდირების გარჩევადობა
 	Half	ნახევარი
 	Quarter	მეოთხედი
+
+# Recent effects, per-channel waveform, white balance selector (SC-2/SC-3/SC-4, #1419 #1420 #1421)
+	Apply a recently used effect to the selected clips	ბოლოს გამოყენებული ეფექტის გამოყენება არჩეულ კლიპებზე
+	Disable all effects	ყველა ეფექტის გამორთვა
+	Enable all effects	ყველა ეფექტის ჩართვა
+	No recent effects	ბოლო ეფექტები არ არის
+	Recent effects	ბოლო ეფექტები
+	Switch every effect of the selected clips off	რთავს გამორთულად არჩეული კლიპების ყველა ეფექტს
+	Switch every effect of the selected clips on	რთავს ჩართულად არჩეული კლიპების ყველა ეფექტს
+	Merged	გაერთიანებული
+	Per Channel	არხების მიხედვით
+	Channel Zoom	არხების მასშტაბი
+	White Balance Selector (click a neutral point in the Program monitor; Esc cancels)	თეთრის ბალანსის ამომრჩევი (დააწკაპუნეთ ნეიტრალურ წერტილზე პროგრამის მონიტორზე; Esc აუქმებს)

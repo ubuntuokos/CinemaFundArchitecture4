@@ -4814,3 +4814,16 @@ export.summary	Low	düşük
 	Encode Resolution	Kodlama Çözünürlüğü
 	Half	Yarım
 	Quarter	Çeyrek
+
+# Recent effects, per-channel waveform, white balance selector (SC-2/SC-3/SC-4, #1419 #1420 #1421)
+	Apply a recently used effect to the selected clips	Son kullanılan efekti seçili kliplere uygula
+	Disable all effects	Tüm efektleri kapat
+	Enable all effects	Tüm efektleri aç
+	No recent effects	Son efekt yok
+	Recent effects	Son efektler
+	Switch every effect of the selected clips off	Seçili klipların her efektini kapatır
+	Switch every effect of the selected clips on	Seçili klipların her efektini açar
+	Merged	Birleşik
+	Per Channel	Kanal başına
+	Channel Zoom	Kanal yakınlaştırma
+	White Balance Selector (click a neutral point in the Program monitor; Esc cancels)	Beyaz dengesi seçici (Program monitöründe nötr bir noktaya tıklayın; Esc iptal eder)

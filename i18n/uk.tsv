@@ -4796,3 +4796,16 @@
 	Encode Resolution	Роздільність кодування
 	Half	Половина
 	Quarter	Чверть
+
+# Recent effects, per-channel waveform, white balance selector (SC-2/SC-3/SC-4, #1419 #1420 #1421)
+	Apply a recently used effect to the selected clips	Застосувати нещодавно використаний ефект до вибраних кліпів
+	Disable all effects	Вимкнути всі ефекти
+	Enable all effects	Увімкнути всі ефекти
+	No recent effects	Немає нещодавніх ефектів
+	Recent effects	Нещодавні ефекти
+	Switch every effect of the selected clips off	Вимикає кожен ефект вибраних кліпів
+	Switch every effect of the selected clips on	Вмикає кожен ефект вибраних кліпів
+	Merged	Об’єднано
+	Per Channel	За каналами
+	Channel Zoom	Масштаб каналів
+	White Balance Selector (click a neutral point in the Program monitor; Esc cancels)	Вибір балансу білого (клацніть нейтральну точку в моніторі «Програма»; Esc — скасувати)

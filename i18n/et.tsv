@@ -4815,3 +4815,16 @@ export.summary	Low	madal
 	Encode Resolution	Kodeerimise eraldusvõime
 	Half	Pool
 	Quarter	Veerand
+
+# Recent effects, per-channel waveform, white balance selector (SC-2/SC-3/SC-4, #1419 #1420 #1421)
+	Apply a recently used effect to the selected clips	Rakenda hiljuti kasutatud efekt valitud klippidele
+	Disable all effects	Lülita kõik efektid välja
+	Enable all effects	Lülita kõik efektid sisse
+	No recent effects	Hiljutisi efekte pole
+	Recent effects	Hiljutised efektid
+	Switch every effect of the selected clips off	Lülitab valitud klippide kõik efektid välja
+	Switch every effect of the selected clips on	Lülitab valitud klippide kõik efektid sisse
+	Merged	Ühendatud
+	Per Channel	Kanalite kaupa
+	Channel Zoom	Kanalite suum
+	White Balance Selector (click a neutral point in the Program monitor; Esc cancels)	Valge tasakaalu valija (klõpsake programmimonitoris neutraalsel punktil; Esc tühistab)
