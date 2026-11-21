@@ -21,6 +21,7 @@ pub mod commands;
 pub mod control_surfaces;
 pub mod credits;
 pub mod dcp_import;
+pub mod dcp_validation;
 mod dcpomatic;
 pub mod delivery_check;
 pub mod demo;
@@ -531,6 +532,8 @@ pub struct Session {
     pub export_queue: export_tools::ExportQueue,
     /// Media QC jobs whose results are still to be applied (`qc.*` commands).
     pub qc: qc::QcSession,
+    /// DCP validation jobs and the latest report of each package (`dcp.validate*` commands).
+    pub dcp_validation: dcp_validation::DcpValidationSession,
     /// Exports run a batch at a time by [`Session::pump_jobs`] (hosts without threads: web).
     pub stepped: Vec<SteppedJob>,
     /// Speech recogniser for `transcript.generate` (None = the Whisper model named by the command,
@@ -635,6 +638,7 @@ impl Session {
             export_presets: Default::default(),
             export_queue: Default::default(),
             qc: Default::default(),
+            dcp_validation: Default::default(),
             stepped: Vec::new(),
             transcriber: None,
             log: Default::default(),
@@ -670,7 +674,7 @@ impl Session {
                 break;
             }
         }
-        !self.stepped.is_empty() || self.export_queue.is_active() || !self.qc.pending.is_empty()
+        !self.stepped.is_empty() || self.export_queue.is_active() || !self.qc.pending.is_empty() || !self.dcp_validation.pending.is_empty()
     }
 
     /// Start auto-save and the crash-recovery journal (native frontends). Loads preferences from
@@ -732,6 +736,7 @@ impl Session {
         scene_detect::poll(self);
         export_tools::pump_queue(self, false);
         qc::poll(self);
+        dcp_validation::poll(self);
         panels::log_jobs(self);
         let Some(p) = self.persistence.as_mut() else { return };
         for ev in p.drain_events() {
