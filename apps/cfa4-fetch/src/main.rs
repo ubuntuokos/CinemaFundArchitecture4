@@ -167,7 +167,15 @@ fn download(req: &Request, proxy: Option<ureq::Proxy>, tag: &str) -> Result<(), 
         let dest = dir.join(&f.name);
         // this run's own partial file: another download into the same directory has its own
         let part = dir.join(cfa4_fetch_client::part_name(&f.name, tag));
-        let r = fetch_one(&agent, f, &part, done, total);
+        // created anew, never opened through an existing entry: a symbolic link there is refused,
+        // not followed, and so is another run's partial file with the same tag, which is then
+        // left alone (nothing is removed when this fails)
+        let file = std::fs::OpenOptions::new()
+            .write(true)
+            .create_new(true)
+            .open(&part)
+            .map_err(|e| format!("{}: {e} (is another download with the same tag running?)", part.display()))?;
+        let r = fetch_one(&agent, f, file, &part, done, total);
         if let Err(e) = r {
             let _ = std::fs::remove_file(&part);
             return Err(e);
@@ -178,14 +186,10 @@ fn download(req: &Request, proxy: Option<ureq::Proxy>, tag: &str) -> Result<(), 
     Ok(())
 }
 
-fn fetch_one(agent: &ureq::Agent, f: &FileSpec, part: &Path, done: u64, total: u64) -> Result<(), String> {
+fn fetch_one(agent: &ureq::Agent, f: &FileSpec, file: std::fs::File, part: &Path, done: u64, total: u64) -> Result<(), String> {
     let resp = agent.get(&f.url).call().map_err(|e| format!("{}: {e}", f.url))?;
     let mut body = resp.into_body();
     let mut reader = body.as_reader();
-    // a leftover of an earlier run with the same tag is removed; the file is then created anew,
-    // never opened through an existing entry (a symbolic link there is refused, not followed)
-    let _ = std::fs::remove_file(part);
-    let file = std::fs::OpenOptions::new().write(true).create_new(true).open(part).map_err(|e| format!("{}: {e}", part.display()))?;
     let mut out = std::io::BufWriter::new(file);
     let mut hasher = sha2::Sha256::new();
     let mut buf = vec![0u8; 1 << 20];
@@ -252,5 +256,18 @@ mod tests {
         assert!(!valid_file(&t.path().join("missing"), &f));
         // nothing missing: no network needed
         assert_eq!(download(&Request { dir: t.path().to_path_buf(), files: vec![f] }, None, "t"), Ok(()));
+    }
+
+    #[test]
+    fn another_runs_partial_file_with_the_same_tag_is_refused_and_left_alone() {
+        let t = tempfile::tempdir().unwrap();
+        let f = FileSpec { name: "m.bin".into(), url: "https://example.invalid/m.bin".into(), sha256: "0".repeat(64), size: 3 };
+        let part = t.path().join(cfa4_fetch_client::part_name("m.bin", "t"));
+        std::fs::write(&part, b"theirs").unwrap();
+        // the partial file is created before any connection, so this needs no network
+        let e = download(&Request { dir: t.path().to_path_buf(), files: vec![f] }, None, "t").unwrap_err();
+        assert!(e.contains("same tag"), "{e}");
+        assert_eq!(std::fs::read(&part).unwrap(), b"theirs");
+        assert!(!t.path().join("m.bin").exists());
     }
 }
