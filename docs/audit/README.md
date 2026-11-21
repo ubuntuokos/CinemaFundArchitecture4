@@ -71,6 +71,7 @@ PR- és beolvasztási szabályok, gazda: [`docs/coordination.md`](../coordinatio
 | F6 | [F6-XDG-SOURCE-2026-10-23.md](F6-XDG-SOURCE-2026-10-23.md) | Asztali integráció: menü, ikon, fájltársítás, AppStream |
 | F7 | [F7-NATIVE-MEDIA-GATE-2026-10-23.md](F7-NATIVE-MEDIA-GATE-2026-10-23.md) + [`f7-media-capability-status.json`](f7-media-capability-status.json) | Mi működik ténylegesen a médiakezelésben |
 | — | [HEIF-HEIC-LINUX-2026-10-22.md](HEIF-HEIC-LINUX-2026-10-22.md) | HEIF/HEIC képek importja és exportja |
+| — | [render-f1/](render-f1/) | Render-terv F1: forrás-, licenc-, függőség-, gazdagép- és sandbox-audit (csak olvasás) |
 
 Az F0-nak, F2-nek, F4-nek és F8-nak a fentieken kívül nincs külön auditdokumentuma; ezek
 az azonos nevű ágakon és PR-okban vannak.

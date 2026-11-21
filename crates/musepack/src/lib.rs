@@ -53,6 +53,9 @@ pub struct Info {
 /// The decoded output is capped at this many samples per channel (about 6 hours at 48 kHz).
 pub const MAX_SAMPLES: u64 = 1 << 30;
 
+/// Samples per channel reserved before decoding (16 MiB of `f32`), whatever the header announces.
+const MAX_RESERVE: u64 = 1 << 22;
+
 const SAMPLE_RATES: [u32; 8] = [44100, 48000, 37800, 32000, 0, 0, 0, 0];
 
 /// `mpc_demux_skip_id3v2`: the size of a leading ID3v2 tag.
@@ -248,7 +251,9 @@ pub fn decode_file(data: &[u8]) -> Result<(Info, Vec<Vec<f32>>), Error> {
         return Err(Error::TooLong(info.samples));
     }
     let channels = usize::from(info.channels);
-    let cap = usize::try_from(info.samples.min(MAX_SAMPLES)).unwrap_or(0);
+    // The header's sample count is only a hint: a few bytes can announce hours, so at most
+    // `MAX_RESERVE` samples are reserved up front and the planes grow with what really decodes.
+    let cap = usize::try_from(info.samples.min(MAX_RESERVE)).unwrap_or(0);
     let mut planes = vec![Vec::with_capacity(cap); channels];
     match start {
         Start::Sv7 { words, mut bit, frames, true_gapless } => {

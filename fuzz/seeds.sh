@@ -215,6 +215,14 @@ for codec, name in [(3, "ima.wav"), (5, "ms.wav"), (2, "g722.wav"), (0, "mulaw.w
     put("adpcm", name, bytes([channels - 1]) + struct.pack(">H", max(align - 1, 0)) + bytes([codec]) + body)
 PY
 
+# RealMedia (RealVideo 1.0/2.0 with RealAudio 1.0) and one MagicYUV frame per pixel format
+mkdir -p "$C/realmedia" "$C/magicyuv"
+ff $V -c:v rv10 -f lavfi -i sine=frequency=440:sample_rate=8000:duration=0.2 -c:a real_144 -f rm "$C/realmedia/rv10-ra144.rm"
+ff $V -c:v rv20 -an -f rm "$C/realmedia/rv20.rm"
+for pf in gbrp yuv420p yuv422p10le; do
+    ff $V -frames:v 1 -pix_fmt "$pf" -c:v magicyuv -f rawvideo "$C/magicyuv/$pf"
+done
+
 # text formats
 mkdir -p "$C/captions" "$C/interchange" "$C/project"
 printf '\x00%s' $'1\n00:00:01,000 --> 00:00:02,500\nHello <i>world</i>\n\n2\n00:00:03,000 --> 00:00:04,000\nSecond\n' >"$C/captions/srt"

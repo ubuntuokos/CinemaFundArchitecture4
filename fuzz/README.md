@@ -27,7 +27,8 @@ would wrap.
 
 The nightly workflow [`cfa4-fuzz.yml`](../.github/workflows/cfa4-fuzz.yml) runs every target for 5
 minutes in six shards and keeps the growing corpus in the Actions cache; `cargo xtask fuzz-targets`
-(its first job) fails when an L0 parser crate has no target.
+(its coverage job) fails when an L0 parser crate has no target; the shards run regardless, so a new
+crate without a target never stops the fuzzing of the others.
 
 ## A finding
 
