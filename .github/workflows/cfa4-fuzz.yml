@@ -38,9 +38,10 @@ jobs:
       - name: cargo xtask fuzz-targets
         run: cargo xtask fuzz-targets
 
+  # Not `needs: coverage`: a new L0 crate without a target fails the coverage job, but the existing
+  # targets keep being fuzzed meanwhile (from 2026-11-15 a missing target skipped every shard).
   fuzz:
     name: Fuzz shard ${{ matrix.shard }}/6
-    needs: coverage
     runs-on: ubuntu-26.04
     timeout-minutes: 180
     strategy:
