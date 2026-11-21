@@ -1726,6 +1726,15 @@ dependencies = [
 ]
 
 [[package]]
+name = "cfa4-io-core"
+version = "0.10.0"
+dependencies = [
+ "cfa4-st2110",
+ "serde",
+ "serde_json",
+]
+
+[[package]]
 name = "cfa4-isobmff"
 version = "0.10.0"
 dependencies = [
@@ -1871,6 +1880,7 @@ dependencies = [
 name = "cfa4-obs"
 version = "0.10.0"
 dependencies = [
+ "cfa4-io-core",
  "cfa4-st2110",
  "libloading 0.8.9",
  "log",

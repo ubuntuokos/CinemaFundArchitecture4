@@ -15,7 +15,8 @@
 //! - [`ring`]: the shared-memory frame ring the host writes and the engine (and later the Qt6
 //!   GUI) reads; a torn frame is dropped, never shown.
 //! - [`ptp`]: the PTP state `ptp4l` reports (read through `pmc`), the TAI time and the SDP clock
-//!   signalling of an ST 2110 sender (ST 2110 addendum, T1).
+//!   signalling of an ST 2110 sender (ST 2110 addendum, T1); it lives in `cfa4-io-core` and is
+//!   re-exported here unchanged.
 //! - [`host`]: the supervisor of the `cfa4-studio-host` process. libobs never runs inside the
 //!   editor or the engine (plan D2): the engine starts the host, watches it and restarts it after
 //!   a crash, and the editor carries on.
@@ -27,7 +28,8 @@
 
 pub mod host;
 pub mod libobs;
-pub mod ptp;
+/// Moved to `cfa4-io-core` (CFA4-DECKLINK-READY-001 V1); the path `cfa4_obs::ptp` stays.
+pub use cfa4_io_core::ptp;
 pub mod ring;
 pub mod scene;
 pub mod software;
