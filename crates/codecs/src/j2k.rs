@@ -14,11 +14,29 @@ use std::sync::Arc;
 
 use cfa4_color::{ColorInfo, Gamut, Matrix, Primaries, Range, Transfer, spaces};
 use cfa4_frame::{Chroma, PixelData, VideoFrame};
+use cfa4_isobmff::{CodecConfig, FourCc, SampleEntry};
 use cfa4_j2k::{Header, Image, Plane};
 use cfa4_time::Tick;
 
 use crate::video::{DecodedFrame, VideoDecoder};
 use crate::{CodecError, Result};
+
+/// The sample entry format of a JPEG 2000 track read from Matroska (`V_JPEG2000`). Each frame is a
+/// codestream (or a JP2 file); the codestream says all there is about the components.
+pub const MKV_J2K: FourCc = FourCc(*b"mkj2");
+
+/// A sample entry for a Matroska JPEG 2000 track of `w` x `h`.
+pub fn sample_entry(w: u16, h: u16) -> SampleEntry {
+    SampleEntry::video(MKV_J2K, CodecConfig::Unknown { fourcc: MKV_J2K, raw: Vec::new() }, w, h)
+}
+
+/// The decoder of a Matroska JPEG 2000 sample entry.
+pub fn j2k_factory(e: &SampleEntry) -> Option<Result<Box<dyn VideoDecoder>>> {
+    if e.format != MKV_J2K {
+        return None;
+    }
+    Some(Ok(Box::new(J2kDecoder::new(J2kHints::default()))))
+}
 
 /// What the container says about the components.
 #[derive(Clone, Copy, Debug, Default, PartialEq, Eq)]
