@@ -96,6 +96,7 @@ const LAYERS: &[(&str, u8)] = &[
     ("flac", 0),
     ("opus", 0),
     ("frame", 1),
+    ("io-core", 1),
     ("surface-model", 1),
     ("media", 1),
     ("project", 1),

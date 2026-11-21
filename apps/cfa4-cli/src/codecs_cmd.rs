@@ -191,6 +191,7 @@ const NOT_CODECS: &[&str] = &[
     "gpu",
     "gstreamer",
     "interchange",
+    "io-core",
     "isobmff",
     "live",
     "matroska",
