@@ -1,6 +1,6 @@
 # CFA4-DNEG-TECHNOLOGY-ADAPTATION-001 – végleges integrációs terv (D10), 1.0
 
-> **Állapot:** JAVASOLT VÉGLEGES 1.0 – **tulajdonosi jóváhagyásra vár**. A terv elfogadása **nem
+> **Állapot:** JAVASOLT VÉGLEGES 1.0 – tulajdonosi jóváhagyásra vár (az öt kapcsolódó terv 0.1 jóváhagyva 2026-11-21). A terv elfogadása **nem
 > implementációs engedély**: minden fázis külön tulajdonosi engedélyt igényel (coordination.md §2.10).
 > **Dátum:** 2026-11-21 · **Kérte:** István (ubuntuokos) · **Alap:** CFA4 `main` @ `97d7982f`
 > **Bizonyíték (D1–D9):** [`CFA4-DNEG-TECHNOLOGY-ADAPTATION-001-AUDIT-D1-D9.md`](CFA4-DNEG-TECHNOLOGY-ADAPTATION-001-AUDIT-D1-D9.md)
@@ -34,7 +34,7 @@ A megbízás F10 sorrendje szerinti munkacsomagok (F0…F9) megmaradnak; a kapuk
 
 | Kapu | Mi | Belépési feltétel | Kilépési (átvételi) feltétel |
 |---|---|---|---|
-| **G0** | **Terv-alap**: a VFX Catalog / EffectCraft / ARF / OpenUSD-3D / Pontfelhő tervek (a javaslatok a `docs/plans/`-ben) a tulajdonos által jóváhagyva és a `main`-ben | ez a terv jóváhagyva | a D1 `?` sorai lezárva (A vagy B/C), a D4 leképezési táblázat (ARF ↔ OpenVDB Points) elkészült |
+| **G0** | **Terv-alap**: a VFX Catalog / EffectCraft / ARF / OpenUSD-3D / Pontfelhő tervek (`docs/plans/*-0.1.md`, a tulajdonos 2026-11-21-én jóváhagyta) a `main`-ben | ez a terv jóváhagyva | a D1 `?` sorai lezárva (A vagy B/C), a D4 leképezési táblázat (ARF ↔ OpenVDB Points) elkészült |
 | **G1** | **OpenVDB csomagfelmérés (F8 második fele)** – a licenc már igazolt (Apache-2.0) | G0; 26.04-es csomagforrás | libopenvdb/oneTBB/zlib/Zstd (+LLVM ≥ 18 AX-hez) **Ubuntu 26.04-es** verziója és transzitív licence dokumentálva; ADR-0003 táblasora javítva („Apache-2.0”); `cargo deny`/SBOM-terv. **Ha a 26.04-es csomag nem teljesíti a minimumot (TBB ≥ 2021, LLVM ≥ 18) → a fázisok megállnak.** |
 | **G2** | **N1 – VDB adatréteg (F1)** | G0, G1, ACS-6 (PR #1471) beolvasva | N1 átvételi feltételek (§4) mind zöldek |
 | **G3** | **N2 – Volume megjelenítés (F6 része)** | G2 | N2 feltételek zöldek |
