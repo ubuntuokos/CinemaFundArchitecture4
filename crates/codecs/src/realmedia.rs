@@ -19,6 +19,7 @@ use std::io::Cursor;
 use std::sync::{Arc, Mutex};
 
 use cfa4_frame::{AudioBuffer, Chroma, PixelData, VideoFrame};
+use cfa4_isobmff::{CodecConfig, FourCc, SampleEntry};
 use cfa4_media::{AudioStreamInfo, FrameRequest, MediaError, MediaInfo, MediaKind, MediaSource, SharedSource, VideoStreamInfo};
 use cfa4_realaudio::{atrac3, cook, ra144, ra288, sipr};
 use cfa4_realmedia::audio::{AudioInfo, Deinterleaver, parse_audio_info};
@@ -61,6 +62,26 @@ fn codec_of(fourcc: &[u8; 4]) -> Option<Codec> {
         b"RV40" => Some(Codec::Rv34(rv34::Codec::Rv40)),
         _ => None,
     }
+}
+
+/// A sample entry for a RealVideo track read from Matroska (`V_REAL/RV10` ... `V_REAL/RV40`): the
+/// format is the RealMedia FourCC; `private` is the `real_video_props_t` of the `CodecPrivate`
+/// (the `VIDO` type-specific data), whose bytes after the frame rate are the extradata.
+pub fn mkv_sample_entry(codec_id: &str, private: &[u8], w: u16, h: u16) -> Option<SampleEntry> {
+    let fourcc: [u8; 4] = codec_id.strip_prefix("V_REAL/")?.as_bytes().try_into().ok()?;
+    codec_of(&fourcc)?;
+    let extradata = if private.get(4..8) == Some(b"VIDO".as_slice()) { private.get(26..).unwrap_or_default() } else { &[] };
+    let f = FourCc(fourcc);
+    Some(SampleEntry::video(f, CodecConfig::Unknown { fourcc: f, raw: extradata.to_vec() }, w, h))
+}
+
+/// The decoder of a RealVideo sample entry made by [`mkv_sample_entry`]. Samples are frames as the
+/// RealMedia demuxer assembles them (slice count, slice table, slices), as Matroska stores them.
+pub fn realvideo_factory(e: &SampleEntry) -> Option<Result<Box<dyn VideoDecoder>>> {
+    let codec = codec_of(&e.format.0)?;
+    let CodecConfig::Unknown { raw, .. } = &e.codec else { return None };
+    let (w, h) = e.video.as_ref().map_or((0, 0), |v| (u32::from(v.width), u32::from(v.height)));
+    Some(RealVideoDecoder::new(codec, w, h, raw, FrameRate::new(25, 1)).map(|d| Box::new(d) as Box<dyn VideoDecoder>))
 }
 
 fn label(codec: Codec) -> &'static str {

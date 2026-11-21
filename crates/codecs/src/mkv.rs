@@ -96,6 +96,8 @@ fn audio_starts(file: &MkvFile, bytes: &crate::Src, ti: usize, rate: i64) -> Vec
         Codec::Ac3 => fixed_packet_samples(FixedFrames::Ac3, &first(), out_rate),
         Codec::Eac3 => fixed_packet_samples(FixedFrames::Eac3, &first(), out_rate),
         Codec::Dts => fixed_packet_samples(FixedFrames::Dts, &first(), out_rate),
+        // ALAC packets are whole frames of the cookie's frame length
+        Codec::Other(id) if id == "A_ALAC" => alac_cookie(&t.codec_private).map(|c| i64::from(c.frame_length)).filter(|&n| n > 0),
         _ => None,
     };
     if matches!(t.codec, Codec::TrueHd) {
@@ -223,6 +225,22 @@ fn audio_info(t: &cfa4_matroska::Track) -> Option<AudioStreamInfo> {
         _ => codec_label(&t.codec),
     };
     Some(AudioStreamInfo { sample_rate: rate, channels, codec, bits_per_sample: bits.map(|b| b as u32), speakers: Vec::new() })
+}
+
+/// The fields of an ALAC `CodecPrivate` (the magic cookie, `ALACSpecificConfig` first, big-endian).
+struct AlacCookie {
+    frame_length: u32,
+    sample_rate: Option<u32>,
+}
+
+fn alac_cookie(private: &[u8]) -> Option<AlacCookie> {
+    let be32 = |at: usize| private.get(at..at + 4).map(|b| u32::from_be_bytes([b[0], b[1], b[2], b[3]]));
+    if private.len() < 24 {
+        return None;
+    }
+    // frameLength u32, compatibleVersion u8, bitDepth u8, pb, mb, kb u8, numChannels u8, maxRun u16,
+    // maxFrameBytes u32, avgBitRate u32, sampleRate u32
+    Some(AlacCookie { frame_length: be32(0)?, sample_rate: be32(20).filter(|&r| r > 0) })
 }
 
 /// Whether the track is AMR, and wideband: `A_AMR/NB` / `A_AMR/WB`, or an `A_MS/ACM` track
@@ -383,6 +401,11 @@ fn sample_entry(c: &Codec, private: &[u8], v: Option<&cfa4_matroska::VideoInfo>,
         }
         Codec::Other(id) if id == "V_FFV1" => crate::ffv1::sample_entry(private, w, h),
         Codec::Other(id) if id == "V_DIRAC" => crate::dirac::sample_entry(w, h),
+        Codec::Other(id) if id == "V_CAVS" => crate::cavs::sample_entry(private, w, h),
+        Codec::Other(id) if id == "V_JPEG2000" => crate::j2k::sample_entry(w, h),
+        // ffmpeg writes JPEG 2000 as a VfW `mjp2` track
+        Codec::VfwFourcc { fourcc, .. } if fourcc.eq_ignore_ascii_case(b"mjp2") => crate::j2k::sample_entry(w, h),
+        Codec::Other(id) if id.starts_with("V_REAL/") => crate::realmedia::mkv_sample_entry(id, private, w, h)?,
         // Huffyuv: the VfW BITMAPINFOHEADER sets the stream up (bit count, extradata)
         Codec::VfwFourcc { fourcc, bitmap_info_header } if fourcc.eq_ignore_ascii_case(b"HFYU") => crate::huffyuv::sample_entry(bitmap_info_header, w, h),
         Codec::VfwFourcc { fourcc, .. } if crate::canopus::codec(fourcc).is_some() => crate::canopus::sample_entry(crate::canopus::codec(fourcc)?, w, h),
@@ -467,8 +490,12 @@ fn codec_label(c: &Codec) -> String {
         }
         Codec::Other(id) if id == "V_FFV1" => "FFV1".into(),
         Codec::Other(id) if id == "V_DIRAC" => "VC-2 / Dirac".into(),
+        Codec::Other(id) if id == "V_CAVS" => crate::cavs::NAME.into(),
+        Codec::Other(id) if id == "V_JPEG2000" => "JPEG 2000".into(),
+        Codec::VfwFourcc { fourcc, .. } if fourcc.eq_ignore_ascii_case(b"mjp2") => "JPEG 2000".into(),
         Codec::Other(id) if id == "A_TTA1" => "TTA".into(),
         Codec::Other(id) if id == "A_ATRAC/AT1" => "ATRAC1".into(),
+        Codec::Other(id) if id == "A_ALAC" => "ALAC".into(),
         Codec::VfwFourcc { fourcc, .. } if fourcc.eq_ignore_ascii_case(b"FFV1") => "FFV1".into(),
         other => other.name().to_string(),
     }
@@ -539,7 +566,16 @@ impl MkvSource {
                     FrameRate::from_f64(1.0 / step)
                 }
             };
-            ventry = sample_entry(&t.codec, &t.codec_private, t.video.as_ref(), w as u16, h as u16);
+            // AVS1 in Matroska has no `CodecPrivate`: the sequence header of the first picture
+            // primes every decoder that starts at a later one
+            let avs1_seq = match &t.codec {
+                Codec::Other(id) if id == "V_CAVS" && t.codec_private.is_empty() && !t.samples.is_empty() => {
+                    file.read_sample(&bytes, i, 0).ok().and_then(|s| crate::cavs::first_sequence_header(&s))
+                }
+                _ => None,
+            };
+            let private = avs1_seq.as_deref().unwrap_or(&t.codec_private);
+            ventry = sample_entry(&t.codec, private, t.video.as_ref(), w as u16, h as u16);
             let (color, explicit) = color_of(&v, w, h, ventry.as_ref().and_then(|e| crate::stream_color::from_codec_config(&e.codec)));
             if explicit {
                 explicit_color = Some(color);
@@ -656,6 +692,15 @@ impl MkvSource {
         }
         if matches!(&t.codec, Codec::Other(id) if id == "A_ATRAC/AT1") {
             return PacketDecoder::atrac1(usize::try_from(ainfo.channels).unwrap_or(0));
+        }
+        if matches!(&t.codec, Codec::Other(id) if id == "A_ALAC") {
+            // the magic cookie: the 24-byte ALACSpecificConfig and the optional channel layout
+            let cookie = alac_cookie(&t.codec_private).ok_or_else(|| CodecError::Unsupported("ALAC: unreadable magic cookie".into()))?;
+            return PacketDecoder::new(
+                symphonia::core::codecs::audio::well_known::CODEC_ID_ALAC,
+                cookie.sample_rate.unwrap_or(rate),
+                Some(t.codec_private.clone()),
+            );
         }
         match &t.codec {
             Codec::Aac { asc } => PacketDecoder::aac(asc, rate),
