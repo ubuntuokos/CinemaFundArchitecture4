@@ -52,6 +52,11 @@ fn profiles_follow_plan_table() {
     assert_eq!(f.write, vec![PathBuf::from("/home/u/.cache/cfa4/models")]);
     assert_eq!(f.network, Network::Outbound { ports: vec![443] });
     assert!(f.exec.is_empty());
+    // a certificate bundle named by SSL_CERT_FILE is read, nothing else is added
+    let roots = Context { tls_roots: vec![PathBuf::from("/home/u/ca.pem")], ..c.clone() };
+    let fr = Profile::for_process(ProcessKind::Fetch, &roots);
+    assert_eq!(fr.read, vec![PathBuf::from("/opt/cfa4"), PathBuf::from("/home/u/ca.pem")]);
+    assert!(Profile::for_process(ProcessKind::Engine, &roots).read.iter().all(|r| r != &PathBuf::from("/home/u/ca.pem")));
 
     // plug-ins and the model converter: no network, no program start (D7)
     for k in [ProcessKind::PluginHost, ProcessKind::ModelConverter] {

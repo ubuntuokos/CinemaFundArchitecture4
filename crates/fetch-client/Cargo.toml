@@ -1,0 +1,19 @@
+[package]
+name = "cfa4-fetch-client"
+description = "CFA4 downloads through the cfa4-fetch process: the request and progress protocol and the starter the engine uses (CFA4-SECURITY-001 D5)"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+rust-version.workspace = true
+
+[lints]
+workspace = true
+
+# No network code here: the engine links this crate, the downloading happens in cfa4-fetch.
+[dependencies]
+serde = { workspace = true }
+serde_json = { workspace = true }
+thiserror = { workspace = true }
+
+[dev-dependencies]
+tempfile = "3.27"
