@@ -64,3 +64,7 @@ bash "$(dirname "$0")/install-lcevc-oracle.sh" \
 # pinned upstream tags; the EVC oracle tests skip without them)
 bash "$(dirname "$0")/install-evc-oracle.sh" \
   || echo "::warning::xevd / xeve build failed: the EVC oracle tests skip"
+# AVS3 oracles `uavs3dec` (C-only build), `uavs3enc` and their 10-bit builds (pinned upstream
+# commits; the AVS3 oracle tests skip without them)
+bash "$(dirname "$0")/install-avs3-oracle.sh" \
+  || echo "::warning::AVS3 oracle build failed: the AVS3 oracle tests skip"

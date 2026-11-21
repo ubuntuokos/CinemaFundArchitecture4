@@ -36,6 +36,7 @@ fidelity and the remaining work.
 | HEVC / H.265 | video | `crates/hevc` | own | yes: up to 12-bit 4:4:4; no RExt coding tools; encoder Main / Main 10 4:2:0 | yes: H.265 (HEVC) |
 | MPEG-5 EVC | video | `crates/evc` | ported | yes: Baseline profile: raw .evc streams and MP4 evc1 | no |
 | AVS1-P2 | video | `crates/cavs` | ported | yes: Jizhun profile (AVS1, not AVS+): raw .avs / .cavs streams | no |
+| AVS3-P2 | video | `crates/avs3` | ported | yes: Main-8 / Main-10 profiles (8- and 10-bit): raw .avs3 streams | no |
 | AV1 | video | `crates/av1` | own | yes: Main 8/10-bit | yes: AV1 |
 | AV2 | video | `crates/av2` | own | detect only: bitstream parsing only | no |
 | VP8 | video | `crates/vp8` | own | yes: RFC 6386 | no |
