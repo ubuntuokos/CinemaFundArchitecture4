@@ -157,16 +157,84 @@ fn config(w: usize, h: usize, qp: u8) -> EncoderConfig {
     cfg
 }
 
-fn encode_all(cfg: EncoderConfig, frames: &[&Yuv]) -> Result<Vec<cfa4_h264enc::Packet>, MoshError> {
-    let mut e = Encoder::new(cfg).map_err(|e| MoshError::Encode(e.to_string()))?;
-    let mut out = Vec::new();
-    for (i, f) in frames.iter().enumerate() {
-        let frame = YuvFrame { y: &f.y, u: &f.u, v: &f.v, y_stride: f.w, uv_stride: f.w / 2 };
-        out.extend(e.try_encode(&frame, i as i64).map_err(|e| MoshError::Encode(e.to_string()))?);
+fn yuv_frame(f: &Yuv) -> YuvFrame<'_> {
+    YuvFrame { y: &f.y, u: &f.u, v: &f.v, y_stride: f.w, uv_stride: f.w / 2 }
+}
+
+/// A running mosh: B's pictures are fed one at a time and each comes back predicted from A (and
+/// the moshed pictures before it). Feeding is incremental, so a transition that plays forward
+/// pays one encode and one decode per frame, not the whole run again.
+pub struct Session {
+    w: usize,
+    h: usize,
+    enc: Encoder,
+    dec: cfa4_h264::Decoder,
+    /// Pictures of B fed so far, `b[0]` included.
+    fed: usize,
+}
+
+impl Session {
+    /// Start a mosh of `b0` (B's first picture, the key frame that gets dropped) onto `a`.
+    pub fn new(a: &Image, b0: &Image, qp: u8) -> Result<Self, MoshError> {
+        let (w, h) = (a.w, a.h);
+        if (b0.w, b0.h) != (w, h) {
+            return Err(MoshError::BadInput);
+        }
+        let ya = to_yuv(a).ok_or(MoshError::BadInput)?;
+        let yb = to_yuv(b0).ok_or(MoshError::BadInput)?;
+        let cfg = config(ya.w, ya.h, qp);
+        let enc_err = |e: cfa4_h264enc::Error| MoshError::Encode(e.to_string());
+        // A's key frame from its own encoder (same configuration, so the same SPS / PPS)
+        let mut ea = Encoder::new(cfg.clone()).map_err(enc_err)?;
+        let mut pa = ea.try_encode(&yuv_frame(&ya), 0).map_err(enc_err)?;
+        pa.extend(ea.flush());
+        let key = match pa.as_slice() {
+            [p] if p.frame_type == FrameType::Idr => p,
+            _ => return Err(MoshError::Encode("no IDR for the reference".into())),
+        };
+        // B's key frame is encoded (so its P pictures follow it) but never decoded
+        let mut enc = Encoder::new(cfg).map_err(enc_err)?;
+        let pb = enc.try_encode(&yuv_frame(&yb), 0).map_err(enc_err)?;
+        if !matches!(pb.as_slice(), [p] if p.frame_type == FrameType::Idr) {
+            return Err(MoshError::Encode("B does not start with one IDR".into()));
+        }
+        let mut dec = cfa4_h264::Decoder::with_threads(1);
+        let pics = dec.decode(&key.data, 0).map_err(|e| MoshError::Decode(e.to_string()))?;
+        if pics.len() != 1 {
+            return Err(MoshError::MissingPictures);
+        }
+        Ok(Self { w, h, enc, dec, fed: 1 })
     }
-    out.extend(e.flush());
-    out.sort_by_key(|p| p.dts);
-    Ok(out)
+
+    /// Pictures of B fed so far (`b[0]` included).
+    pub fn fed(&self) -> usize {
+        self.fed
+    }
+
+    /// Feed B's next picture; returns it moshed (opaque, `a`'s size).
+    pub fn push(&mut self, b: &Image) -> Result<Image, MoshError> {
+        if (b.w, b.h) != (self.w, self.h) || self.fed >= MAX_FRAMES {
+            return Err(MoshError::BadInput);
+        }
+        let yb = to_yuv(b).ok_or(MoshError::BadInput)?;
+        let pts = self.fed as i64;
+        let packets = self.enc.try_encode(&yuv_frame(&yb), pts).map_err(|e| MoshError::Encode(e.to_string()))?;
+        if packets.iter().any(|p| p.frame_type != FrameType::P) {
+            return Err(MoshError::Encode("B is not one IDR followed by P pictures".into()));
+        }
+        let mut pics = Vec::new();
+        for p in &packets {
+            pics.extend(self.dec.decode(&p.data, pts).map_err(|e| MoshError::Decode(e.to_string()))?);
+        }
+        if let Some(e) = self.dec.take_error() {
+            return Err(MoshError::Decode(e.to_string()));
+        }
+        self.fed += 1;
+        match pics.as_slice() {
+            [p] => from_picture(p, self.w, self.h).ok_or(MoshError::MissingPictures),
+            _ => Err(MoshError::MissingPictures),
+        }
+    }
 }
 
 /// Datamosh `b` onto `a`: the pictures of `b` after its first, predicted from `a` instead of
@@ -178,30 +246,8 @@ pub fn mosh(a: &Image, b: &[Image], qp: u8) -> Result<Vec<Image>, MoshError> {
     if b.len() < 2 || b.len() > MAX_FRAMES || b.iter().any(|f| f.w != w || f.h != h) {
         return Err(MoshError::BadInput);
     }
-    let ya = to_yuv(a).ok_or(MoshError::BadInput)?;
-    let yb: Vec<Yuv> = b.iter().map(to_yuv).collect::<Option<_>>().ok_or(MoshError::BadInput)?;
-    let cfg = config(ya.w, ya.h, qp);
-    let pb = encode_all(cfg.clone(), &yb.iter().collect::<Vec<_>>())?;
-    let pa = encode_all(cfg, &[&ya])?;
-    let key = pa.first().filter(|p| p.frame_type == FrameType::Idr).ok_or(MoshError::Encode("no IDR for the reference".into()))?;
-    if pb.first().map(|p| p.frame_type) != Some(FrameType::Idr) || pb.iter().skip(1).any(|p| p.frame_type != FrameType::P) {
-        return Err(MoshError::Encode("B is not one IDR followed by P pictures".into()));
-    }
-    let mut d = cfa4_h264::Decoder::with_threads(1);
-    let mut pics = d.decode(&key.data, 0).map_err(|e| MoshError::Decode(e.to_string()))?;
-    for (i, p) in pb.iter().enumerate().skip(1) {
-        pics.extend(d.decode(&p.data, i as i64).map_err(|e| MoshError::Decode(e.to_string()))?);
-    }
-    pics.extend(d.flush());
-    if let Some(e) = d.take_error() {
-        return Err(MoshError::Decode(e.to_string()));
-    }
-    pics.sort_by_key(|p| p.pts);
-    // the first picture is A itself
-    if pics.len() != b.len() {
-        return Err(MoshError::MissingPictures);
-    }
-    pics.iter().skip(1).map(|p| from_picture(p, w, h).ok_or(MoshError::MissingPictures)).collect()
+    let mut s = Session::new(a, &b[0], qp)?;
+    b[1..].iter().map(|f| s.push(f)).collect()
 }
 
 #[cfg(test)]

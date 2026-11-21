@@ -139,6 +139,11 @@ fn every_parameter_changes_the_picture() {
     let (a, b) = (frame_a(), frame_b());
     let mut failures = Vec::new();
     for d in transitions() {
+        // Datamosh's parameters act on B's motion, which two still pictures do not have (its
+        // parameters are tested with moving pictures in `transitions/mosh/tests.rs`)
+        if d.id == "datamosh" {
+            continue;
+        }
         let mut base = d.instance();
         // make shape/border parameters observable on the small test frame
         let mut set = |id: &str, v: ParamValue| {
