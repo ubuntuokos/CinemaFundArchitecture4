@@ -213,5 +213,5 @@ RecordReport {
 - Az idő végig `cfa4_time::Tick`; a `dropped` az "elejtett képkocka nélkül" feltétel mérhető bizonyítéka.
 - A `lost` lista teszi láthatóvá, ha egy konténer egy metaadatot nem tud megőrizni: nincs csendes veszteség.
 - A rögzítő a BLAKE3-at írás közben számolhatja és átadja a `stage_commit`-nak (`digestSource: "writer"`).
-- Nyitott, István később felülbírálhatja: az `Mxf` az első S5 körben nem kötelező, csak a natív (DeckLink)
+- Döntés (István, 2026-11-21): az `Mxf` az első S5 körben nem kötelező, csak a natív (DeckLink)
   háttérnél.
