@@ -58,7 +58,7 @@ fn fake(dir: &Path, lines: &[&str], sleep: u32, exit: i32) -> PathBuf {
     fake_with(dir, "", lines, sleep, exit)
 }
 
-/// [`fake`] running the shell commands `pre` first (`$$` is the downloader's process id).
+/// [`fake`] running the shell commands `pre` first (`$2` is the tag the client passes).
 #[cfg(unix)]
 fn fake_with(dir: &Path, pre: &str, lines: &[&str], sleep: u32, exit: i32) -> PathBuf {
     use std::os::unix::fs::PermissionsExt;
@@ -92,14 +92,15 @@ fn run_reports_progress_and_success() {
 fn run_reports_the_downloaders_error_and_removes_part_files() {
     let t = tempfile::tempdir().unwrap();
     // another downloader's partial file is left alone
-    let other = t.path().join(part_name("model.safetensors", 1));
+    let other = t.path().join(part_name("model.safetensors", "1"));
     std::fs::write(&other, b"theirs").unwrap();
-    let pre = format!("printf half > '{}/model.safetensors.'$$'.part'", t.path().display());
+    // the client passes `--tag TAG` after the script: $2 in the script
+    let pre = format!("printf half > '{}/model.safetensors.'\"$2\"'.part'", t.path().display());
     let prog = fake_with(t.path(), &pre, &[r#"{"event":"error","message":"model.safetensors: checksum mismatch"}"#], 0, 1);
     let e = run(Path::new(SH_PATH), &[prog.to_str().unwrap()], &request(t.path()), &mut |_, _, _| true).unwrap_err();
     assert!(e.to_string().contains("checksum mismatch"), "{e}");
     let left: Vec<_> = std::fs::read_dir(t.path()).unwrap().map(|e| e.unwrap().file_name().into_string().unwrap()).filter(|n| n.ends_with(".part")).collect();
-    assert_eq!(left, vec![part_name("model.safetensors", 1)]);
+    assert_eq!(left, vec![part_name("model.safetensors", "1")]);
 }
 
 #[cfg(unix)]
@@ -178,4 +179,14 @@ fn a_missing_program_or_a_bad_request_fails_cleanly() {
     let mut r = request(t.path());
     r.files[0].url = "http://example.org/x".into();
     assert!(matches!(run(Path::new("/bin/true"), &[], &r, &mut |_, _, _| true), Err(FetchError::Invalid(_))));
+}
+
+#[test]
+fn every_download_gets_its_own_tag() {
+    let (a, b) = (unique_tag(), unique_tag());
+    assert_ne!(a, b);
+    assert!(valid_tag(&a) && valid_tag(&b), "{a} {b}");
+    for bad in ["", "a/b", "a.b", "../x", &"x".repeat(65)] {
+        assert!(!valid_tag(bad), "{bad:?}");
+    }
 }

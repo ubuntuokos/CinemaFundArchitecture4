@@ -2,14 +2,15 @@
 //! (CFA4-SECURITY-001, decision D5).
 //!
 //! ```text
-//! cfa4-fetch [--unprotected] < request.json      (cfa4_fetch_client::Request)
+//! cfa4-fetch [--unprotected] [--tag TAG] < request.json      (cfa4_fetch_client::Request)
 //! ```
 //!
 //! It reads one request from standard input, checks it, creates the target directory and then
 //! confines itself with the `fetch` profile of `cfa4-sandbox`: it may write only beneath the target
 //! directory, connect out only to TCP port 443 (Landlock), and start no programs (seccomp). Without
 //! the kernel protections it refuses to download (plan D4); `--unprotected` is the user's explicit
-//! opt-in to run without them. Each missing file then streams over HTTPS into its own `<name>.<pid>.part`, its
+//! opt-in to run without them. Each missing file then streams over HTTPS into its own `<name>.<tag>.part` (the tag the engine passes, unique to the download; by default the
+//! process id), its
 //! size and SHA-256 are checked, and it is renamed into place. Progress, the result and errors are
 //! JSON lines on standard output (`cfa4_fetch_client::Event`); exit status 0 means every file is in
 //! place.
@@ -38,9 +39,15 @@ fn fail(message: String, code: u8) -> ExitCode {
 
 fn main() -> ExitCode {
     let mut unprotected = false;
-    for a in std::env::args().skip(1) {
+    let mut tag = std::process::id().to_string();
+    let mut args = std::env::args().skip(1);
+    while let Some(a) = args.next() {
         match a.as_str() {
             "--unprotected" => unprotected = true,
+            "--tag" => match args.next() {
+                Some(t) if cfa4_fetch_client::valid_tag(&t) => tag = t,
+                _ => return fail("--tag needs 1 to 64 ASCII letters, digits or '-'".into(), 2),
+            },
             "--version" => {
                 println!("cfa4-fetch {}", env!("CARGO_PKG_VERSION"));
                 return ExitCode::SUCCESS;
@@ -71,7 +78,7 @@ fn main() -> ExitCode {
     if let Err(e) = confine(&req.dir, proxy.as_ref(), unprotected) {
         return fail(e, 3);
     }
-    match download(&req, proxy) {
+    match download(&req, proxy, &tag) {
         Ok(()) => {
             emit(&Event::Done);
             ExitCode::SUCCESS
@@ -146,7 +153,7 @@ fn agent(proxy: Option<ureq::Proxy>) -> ureq::Agent {
         .into()
 }
 
-fn download(req: &Request, proxy: Option<ureq::Proxy>) -> Result<(), String> {
+fn download(req: &Request, proxy: Option<ureq::Proxy>, tag: &str) -> Result<(), String> {
     let dir = &req.dir;
     let missing: Vec<&FileSpec> = req.files.iter().filter(|f| !valid_file(&dir.join(&f.name), f)).collect();
     if missing.is_empty() {
@@ -155,12 +162,11 @@ fn download(req: &Request, proxy: Option<ureq::Proxy>) -> Result<(), String> {
     // validate() checked that the sizes of all files add up without overflow
     let total: u64 = missing.iter().fold(0u64, |t, f| t.saturating_add(f.size));
     let agent = agent(proxy);
-    let pid = std::process::id();
     let mut done = 0u64;
     for f in missing {
         let dest = dir.join(&f.name);
-        // this process's own partial file: another download into the same directory has its own
-        let part = dir.join(cfa4_fetch_client::part_name(&f.name, pid));
+        // this run's own partial file: another download into the same directory has its own
+        let part = dir.join(cfa4_fetch_client::part_name(&f.name, tag));
         let r = fetch_one(&agent, f, &part, done, total);
         if let Err(e) = r {
             let _ = std::fs::remove_file(&part);
@@ -176,7 +182,7 @@ fn fetch_one(agent: &ureq::Agent, f: &FileSpec, part: &Path, done: u64, total: u
     let resp = agent.get(&f.url).call().map_err(|e| format!("{}: {e}", f.url))?;
     let mut body = resp.into_body();
     let mut reader = body.as_reader();
-    // a leftover of an earlier process with the same id is removed; the file is then created anew,
+    // a leftover of an earlier run with the same tag is removed; the file is then created anew,
     // never opened through an existing entry (a symbolic link there is refused, not followed)
     let _ = std::fs::remove_file(part);
     let file = std::fs::OpenOptions::new().write(true).create_new(true).open(part).map_err(|e| format!("{}: {e}", part.display()))?;
@@ -245,6 +251,6 @@ mod tests {
         assert!(!valid_file(&p, &FileSpec { sha256: sha.replace('b', "c"), ..f.clone() }));
         assert!(!valid_file(&t.path().join("missing"), &f));
         // nothing missing: no network needed
-        assert_eq!(download(&Request { dir: t.path().to_path_buf(), files: vec![f] }, None), Ok(()));
+        assert_eq!(download(&Request { dir: t.path().to_path_buf(), files: vec![f] }, None, "t"), Ok(()));
     }
 }

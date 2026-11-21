@@ -12,8 +12,8 @@
 //! - [`locate`] finds the program and [`run`] starts it, sends the request on its standard input,
 //!   reports progress and stops it when the caller cancels.
 //!
-//! Each file streams into `<dir>/<name>.<pid>.part` (see [`part_name`]; a partial file belongs to one
-//! downloader process), its size and SHA-256 are checked, and only then is it renamed into place; a file already present with the right size and SHA-256 is not downloaded again.
+//! Each file streams into `<dir>/<name>.<tag>.part` (see [`part_name`]; the tag is unique to one
+//! download, so a partial file belongs to one downloader run), its size and SHA-256 are checked, and only then is it renamed into place; a file already present with the right size and SHA-256 is not downloaded again.
 
 #![cfg_attr(not(test), deny(clippy::unwrap_used, clippy::expect_used, clippy::panic, clippy::unimplemented, clippy::todo, clippy::unreachable))]
 
@@ -52,10 +52,25 @@ const LINGER: Duration = Duration::from_secs(5);
 /// downloader writing to the pipe) waits.
 const QUEUE: usize = 64;
 
-/// The partial file of `name` written by the downloader process `pid`: each process has its own, so
-/// two downloads into the same directory never write or remove each other's.
-pub fn part_name(name: &str, pid: u32) -> String {
-    format!("{name}.{pid}.part")
+/// The partial file of `name` written by the download tagged `tag` (`cfa4-fetch --tag`): each run
+/// has its own, so two downloads into the same directory never write or remove each other's.
+pub fn part_name(name: &str, tag: &str) -> String {
+    format!("{name}.{tag}.part")
+}
+
+/// A tag [`part_name`] accepts: 1 to 64 ASCII letters, digits and `-`.
+pub fn valid_tag(tag: &str) -> bool {
+    !tag.is_empty() && tag.len() <= 64 && tag.chars().all(|c| c.is_ascii_alphanumeric() || c == '-')
+}
+
+/// A tag no other download running now has: this process's id (unique among running processes),
+/// the time and a counter (unique within this process). Unlike the downloader's process id, it is
+/// not reused when the downloader exits, so cleaning up after it cannot touch a newer run's file.
+fn unique_tag() -> String {
+    static COUNTER: std::sync::atomic::AtomicU64 = std::sync::atomic::AtomicU64::new(0);
+    let n = COUNTER.fetch_add(1, std::sync::atomic::Ordering::Relaxed);
+    let t = std::time::SystemTime::now().duration_since(std::time::UNIX_EPOCH).map(|d| d.as_nanos()).unwrap_or_default();
+    format!("{:x}-{t:x}-{n:x}", std::process::id())
 }
 
 /// One file to download.
@@ -186,14 +201,15 @@ pub fn run(program: &Path, extra_args: &[&str], req: &Request, progress: Progres
 fn run_with(program: &Path, extra_args: &[&str], req: &Request, progress: Progress<'_>, stall: Duration) -> Result<(), FetchError> {
     req.validate().map_err(FetchError::Invalid)?;
     let body = serde_json::to_vec(req).map_err(|e| FetchError::Invalid(e.to_string()))?;
+    let tag = unique_tag();
     let mut child = Command::new(program)
         .args(extra_args)
+        .args(["--tag", tag.as_str()])
         .stdin(Stdio::piped())
         .stdout(Stdio::piped())
         .stderr(Stdio::null())
         .spawn()
         .map_err(|e| if e.kind() == std::io::ErrorKind::NotFound { FetchError::NotFound } else { FetchError::Io(e) })?;
-    let pid = child.id();
     if let Some(mut stdin) = child.stdin.take() {
         // the program reads the whole request before it answers; a closed pipe shows in its exit
         let _ = stdin.write_all(&body);
@@ -201,7 +217,7 @@ fn run_with(program: &Path, extra_args: &[&str], req: &Request, progress: Progre
     let Some(stdout) = child.stdout.take() else {
         let _ = child.kill();
         let _ = child.wait();
-        remove_parts(req, pid);
+        remove_parts(req, &tag);
         return Err(FetchError::Failed("no output from the downloader".into()));
     };
     // lines are read on their own thread so a stalled download can still be cancelled
@@ -239,7 +255,7 @@ fn run_with(program: &Path, extra_args: &[&str], req: &Request, progress: Progre
         Err(e) => {
             let _ = child.kill();
             let _ = child.wait();
-            remove_parts(req, pid);
+            remove_parts(req, &tag);
             return Err(FetchError::Io(e));
         }
     };
@@ -288,7 +304,7 @@ fn run_with(program: &Path, extra_args: &[&str], req: &Request, progress: Progre
             // queue is dropped); it is not waited for here
             drop(rx);
             drop(reader);
-            remove_parts(req, pid);
+            remove_parts(req, &tag);
             return Err(FetchError::Cancelled);
         }
     }
@@ -305,11 +321,11 @@ fn run_with(program: &Path, extra_args: &[&str], req: &Request, progress: Progre
     match outcome {
         Some(Ok(())) if status.success() => Ok(()),
         Some(Err(e)) => {
-            remove_parts(req, pid);
+            remove_parts(req, &tag);
             Err(e)
         }
         _ => {
-            remove_parts(req, pid);
+            remove_parts(req, &tag);
             Err(FetchError::Failed(format!("the downloader stopped without finishing ({status})")))
         }
     }
@@ -330,11 +346,11 @@ fn finish(child: &mut std::process::Child, grace: Duration) -> std::io::Result<s
     }
 }
 
-/// Remove the partial files the stopped downloader `pid` may have left (only its own).
-fn remove_parts(req: &Request, pid: u32) {
+/// Remove the partial files the stopped download `tag` may have left (only its own).
+fn remove_parts(req: &Request, tag: &str) {
     for f in &req.files {
         if valid_name(&f.name) {
-            let _ = std::fs::remove_file(req.dir.join(part_name(&f.name, pid)));
+            let _ = std::fs::remove_file(req.dir.join(part_name(&f.name, tag)));
         }
     }
 }
