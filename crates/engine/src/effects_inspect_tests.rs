@@ -339,6 +339,52 @@ fn the_eyedropper_fills_a_colour_parameter_from_the_program_picture() {
 }
 
 #[test]
+fn the_white_balance_selector_sets_temperature_and_tint_in_one_undo_step() {
+    let mut s = demo();
+    let it = v1_clip(&s);
+    s.execute("playhead.set", json!({"time": (it.start + Tick(it.duration.0 / 2)).0})).unwrap();
+    s.execute("effects.apply", json!({"clips": [it.id.0], "effect": "lumetri"})).unwrap();
+    let index = v1_clip(&s).effects.iter().position(|e| e.effect == "lumetri").unwrap();
+    let pick = |s: &mut Session| s.execute("effects.pickWhiteBalance", json!({"clip": it.id.0, "effect": index, "u": 0.5, "v": 0.5}));
+    let undo = s.history.undo.len();
+    let r = pick(&mut s).unwrap();
+    let (temp, tint) = (r["temperature"].as_f64().unwrap(), r["tint"].as_f64().unwrap());
+    assert!((-100.0..=100.0).contains(&temp) && (-100.0..=100.0).contains(&tint), "{r}");
+    let v = s.execute("effects.inspect", json!({"clip": it.id.0})).unwrap();
+    assert!((param(&v, "lumetri", "temperature")["value"].as_f64().unwrap() - temp).abs() < 1e-3);
+    assert!((param(&v, "lumetri", "tint")["value"].as_f64().unwrap() - tint).abs() < 1e-3);
+    assert_eq!(s.history.undo.len(), undo + 1, "Temperature and Tint are one undo step");
+    s.execute("edit.undo", json!({})).unwrap();
+    let v = s.execute("effects.inspect", json!({"clip": it.id.0})).unwrap();
+    assert_eq!(param(&v, "lumetri", "temperature")["value"].as_f64(), Some(0.0));
+    assert_eq!(param(&v, "lumetri", "tint")["value"].as_f64(), Some(0.0));
+    // the pick is taken from the frame without this Lumetri, so it does not depend on a white balance already set
+    s.execute("effects.setParam", json!({"clip": it.id.0, "effect": index, "param": "temperature", "value": 60.0})).unwrap();
+    let again = pick(&mut s).unwrap();
+    assert!((again["temperature"].as_f64().unwrap() - temp).abs() < 1e-3 && (again["tint"].as_f64().unwrap() - tint).abs() < 1e-3, "{again} vs {r}");
+    // the Eyedropper arm of the Lumetri panel reaches it through `effects.eyedropper`
+    let via = s.execute("effects.eyedropper", json!({"clip": it.id.0, "effect": index, "mode": "whiteBalance", "u": 0.5, "v": 0.5})).unwrap();
+    assert_eq!(via["temperature"], again["temperature"]);
+    // hostile or wrong arguments are refused, never a crash
+    let ultra = {
+        s.execute("effects.apply", json!({"clips": [it.id.0], "effect": "ultra_key"})).unwrap();
+        v1_clip(&s).effects.iter().position(|e| e.effect == "ultra_key").unwrap()
+    };
+    for bad in [
+        json!({"clip": it.id.0, "effect": ultra, "u": 0.5, "v": 0.5}),
+        json!({"clip": it.id.0, "effect": 999, "u": 0.5, "v": 0.5}),
+        json!({"clip": 987_654_321, "effect": index, "u": 0.5, "v": 0.5}),
+        json!({"clip": it.id.0, "effect": index, "u": f64::NAN, "v": 0.5}),
+        json!({"clip": it.id.0, "effect": index, "u": 0.5}),
+        json!({"effect": index, "u": 0.5, "v": 0.5}),
+    ] {
+        assert!(s.execute("effects.pickWhiteBalance", bad.clone()).is_err(), "{bad}");
+    }
+    // far outside the picture is its corner: an answer or a clear error (too dark), never a crash
+    let _ = s.execute("effects.pickWhiteBalance", json!({"clip": it.id.0, "effect": index, "u": 1e300, "v": -5.0}));
+}
+
+#[test]
 fn program_overlay_follows_effects_that_animate_through_a_frame_hold() {
     // Hold Filters off: the picture holds, its Motion keeps animating (as rendered), so the box
     // follows the effect time, not the held media time
