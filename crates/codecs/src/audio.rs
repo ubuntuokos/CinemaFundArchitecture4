@@ -1123,6 +1123,30 @@ impl AudioFileSource {
             };
             return Ok(Self { info, rate, samples });
         }
+        if ext == "acm" {
+            let (acm, pcm) = cfa4_acm::decode_file(&bytes).map_err(|e| CodecError::Decode(format!("{name}: {e}")))?;
+            let ch = acm.channels as usize;
+            let samples: Vec<Vec<f32>> = (0..ch).map(|c| pcm.iter().skip(c).step_by(ch).map(|&v| f32::from(v) / 32768.0).collect()).collect();
+            let frames = samples.first().map_or(0, Vec::len);
+            let rate = acm.sample_rate.max(1);
+            let info = MediaInfo {
+                name: name.to_string(),
+                kind: MediaKind::AudioOnly,
+                duration: Tick::from_units(frames as i64, i64::from(rate)),
+                video: None,
+                audio_streams: vec![AudioStreamInfo {
+                    sample_rate: rate,
+                    channels: acm.channels,
+                    codec: "Interplay ACM".into(),
+                    bits_per_sample: Some(16),
+                    ..AudioStreamInfo::default()
+                }],
+                container: "Interplay ACM".into(),
+                start_timecode: None,
+                file_size: Some(bytes.len() as u64),
+            };
+            return Ok(Self { info, rate, samples });
+        }
         if ext == "tak" {
             let (tak, planes) = cfa4_tak::decode_file(&bytes).map_err(|e| CodecError::Decode(format!("{name}: {e}")))?;
             let samples: Vec<Vec<f32>> = planes.into_iter().map(|p| p.into_iter().map(|v| tak.to_f32(v)).collect()).collect();
@@ -1547,6 +1571,7 @@ pub fn opener(name: &str, bytes: Arc<[u8]>) -> Option<std::result::Result<Shared
             | "awb"
             | "tta"
             | "tak"
+            | "acm"
             | "g729"
             | "lbc"
             | "mpc"
