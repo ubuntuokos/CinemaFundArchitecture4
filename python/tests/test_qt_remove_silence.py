@@ -86,9 +86,18 @@ class FakeWindow(QtWidgets.QMainWindow):
         self.seeks.append(ticks)
 
 
-def test_the_dialog_sends_ticks_and_never_deletes_on_analyze(app: Any) -> None:
-    win = FakeWindow()
-    d = RemoveSilenceDialog(win)
+@pytest.fixture
+def win(app: Any) -> Any:
+    """A window the dialogs are children of, deleted before the application goes."""
+    w = FakeWindow()
+    yield w
+    w.close()
+    w.deleteLater()
+    app.sendPostedEvents(None, QtCore.QEvent.Type.DeferredDelete)
+
+
+def test_the_dialog_sends_ticks_and_never_deletes_on_analyze(app: Any, win: FakeWindow) -> None:
+    d = RemoveSilenceDialog(win, win)
     d.set_ui_state({"minSilenceSeconds": 0.75, "paddingSeconds": 0.2, "scope": "sequence"})
     analyze(d)
     cmd, p = win.engine.calls[0]
@@ -109,9 +118,8 @@ def test_the_dialog_sends_ticks_and_never_deletes_on_analyze(app: Any) -> None:
     assert d.params()["thresholdDb"] == -35.0
 
 
-def test_unchecking_keeps_a_region_and_remove_sends_only_the_checked_ones(app: Any) -> None:
-    win = FakeWindow()
-    d = RemoveSilenceDialog(win)
+def test_unchecking_keeps_a_region_and_remove_sends_only_the_checked_ones(app: Any, win: FakeWindow) -> None:
+    d = RemoveSilenceDialog(win, win)
     analyze(d)
     d.regions.item(0).setCheckState(QtCore.Qt.CheckState.Unchecked)
     assert win.engine.calls[-1] == ("silence.keep", {"ids": [11], "keep": True})
@@ -123,9 +131,8 @@ def test_unchecking_keeps_a_region_and_remove_sends_only_the_checked_ones(app: A
     assert d.regions.count() == 0 and not d.remove.isEnabled()
 
 
-def test_remove_with_nothing_checked_sends_nothing(app: Any) -> None:
-    win = FakeWindow()
-    d = RemoveSilenceDialog(win)
+def test_remove_with_nothing_checked_sends_nothing(app: Any, win: FakeWindow) -> None:
+    d = RemoveSilenceDialog(win, win)
     analyze(d)
     d.select_none.click()
     n = len(win.engine.calls)
@@ -134,9 +141,8 @@ def test_remove_with_nothing_checked_sends_nothing(app: Any) -> None:
     assert d.status.text() == "No region is checked."
 
 
-def test_the_analysis_is_a_job_that_can_be_cancelled_and_its_errors_are_shown(app: Any) -> None:
-    win = FakeWindow()
-    d = RemoveSilenceDialog(win)
+def test_the_analysis_is_a_job_that_can_be_cancelled_and_its_errors_are_shown(app: Any, win: FakeWindow) -> None:
+    d = RemoveSilenceDialog(win, win)
     d.run_analyze()
     assert d.running() and d.analyze.text() == "Cancel"
     assert [c for c, _ in win.engine.calls if c == "silence.mark"] == [], "nothing is marked while it runs"
@@ -154,9 +160,8 @@ def test_the_analysis_is_a_job_that_can_be_cancelled_and_its_errors_are_shown(ap
     assert d.status.text() == "reading the clip's audio: boom" and not d.running()
 
 
-def test_mark_mode_and_hostile_replies(app: Any) -> None:
-    win = FakeWindow()
-    d = RemoveSilenceDialog(win)
+def test_mark_mode_and_hostile_replies(app: Any, win: FakeWindow) -> None:
+    d = RemoveSilenceDialog(win, win)
     analyze(d)
     d.set_ui_state({"mode": "mark"})
     d.run_remove()
@@ -174,9 +179,8 @@ def test_mark_mode_and_hostile_replies(app: Any) -> None:
     assert seconds(True) == 0.0 and seconds("x") == 0.0 and seconds(TICKS_PER_SECOND) == 1.0
 
 
-def test_selecting_a_row_moves_the_playhead_and_the_dialog_is_one_per_window(app: Any) -> None:
-    win = FakeWindow()
-    d = RemoveSilenceDialog(win)
+def test_selecting_a_row_moves_the_playhead_and_the_dialog_is_one_per_window(app: Any, win: FakeWindow) -> None:
+    d = RemoveSilenceDialog(win, win)
     analyze(d)
     d.regions.setCurrentRow(1)
     assert win.seeks[-1] == 3 * TICKS_PER_SECOND
@@ -281,3 +285,6 @@ def test_real_engine_analyze_take_one_out_remove_and_undo(app: Any, tmp_path: Pa
         assert wait_until(app, lambda: audio_end() == full, 20_000)
     finally:
         engine.stop()
+        win.close()
+        win.deleteLater()
+        app.sendPostedEvents(None, QtCore.QEvent.Type.DeferredDelete)
