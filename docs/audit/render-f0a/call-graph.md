@@ -799,7 +799,7 @@ graph LR
 
 ## 4. Nyilvános típusok osztályonként
 
-A többi 611 nyilvános típus („other” osztály) csak a `call-graph.json`-ban szerepel.
+A többi 613 nyilvános típus („other” osztály) csak a `call-graph.json`-ban szerepel.
 
 ### Képkocka, kép, pixel (28)
 
@@ -927,7 +927,7 @@ A többi 611 nyilvános típus („other” osztály) csak a `call-graph.json`-b
 | `cfa4-qc` | `audio.rs` | struct | `AudioFacts` |
 | `cfa4-render` | `preview.rs` | struct | `AudioSegment` |
 
-### Szín (17)
+### Szín (18)
 
 | Crate | Modul | Fajta | Típus |
 |---|---|---|---|
@@ -945,6 +945,7 @@ A többi 611 nyilvános típus („other” osztály) csak a `call-graph.json`-b
 | `cfa4-color` | `transform.rs` | struct | `ToneMap` |
 | `cfa4-engine` | `settings.rs` | struct | `ColorPrefs` |
 | `cfa4-engine` | `settings.rs` | struct | `LabelColor` |
+| `cfa4-engine` | `surface_feedback.rs` | enum | `TallyColor` |
 | `cfa4-export` | `lib.rs` | struct | `ColorSignal` |
 | `cfa4-gpu` | `lut.rs` | struct | `GpuLut` |
 | `cfa4-project` | `lib.rs` | struct | `ProjectLut` |
