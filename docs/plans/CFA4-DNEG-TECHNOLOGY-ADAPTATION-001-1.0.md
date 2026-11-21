@@ -38,7 +38,7 @@ A megbízás F10 sorrendje szerinti munkacsomagok (F0…F9) megmaradnak; a kapuk
 | **G1** | **OpenVDB csomagfelmérés (F8 második fele)** – a licenc már igazolt (Apache-2.0) | G0; 26.04-es csomagforrás | libopenvdb/oneTBB/zlib/Zstd (+LLVM ≥ 18 AX-hez) **Ubuntu 26.04-es** verziója és transzitív licence dokumentálva; ADR-0003 táblasora javítva („Apache-2.0”); `cargo deny`/SBOM-terv. **Ha a 26.04-es csomag nem teljesíti a minimumot (TBB ≥ 2021, LLVM ≥ 18) → a fázisok megállnak.** |
 | **G2** | **N1 – VDB adatréteg (F1)** | G0, G1, ACS-6 (PR #1471) beolvasva | N1 átvételi feltételek (§4) mind zöldek |
 | **G3** | **N2 – Volume megjelenítés (F6 része)** | G2 | N2 feltételek zöldek |
-| **G4** | **N3 – AX (F2)** – *csak biztonsági PoC után* | G2, CFA4-SECURITY-001 B3/B4 (a folyamat-sandbox alkalmazva) | sandbox-PoC zöld (§4 N3-S) + a döntés: AX-worker vagy saját interpreter; N3 feltételek zöldek |
+| **G4** | **N3 – AX (F2)** – *csak biztonsági PoC után* | G2, CFA4-SECURITY-001 B3/B4 (a folyamat-sandbox alkalmazva) | sandbox-PoC zöld (§4 N3-S) + a döntés lezárva (Q4): saját interpreter; N3 feltételek zöldek |
 | **G5** | **Volumetrikus/procedurális VFX-bővítés (F6 többi)** | G3 és (G4, ha AX-et használ) | külön, e terv *módosításaként* jóváhagyott lista (VFX-katalógus tényleges hiányai G0 után ismertek); jelenleg **nincs scope** |
 | **G6** | **Erőforrás-illesztés (F7)** | G2 | N4 feltételek zöldek |
 | **G7** | **USD differenciális audit (F5)** | – | **lezárva (2026-11-21): a delta üres**, a DNEG-fork nem kell; az upstream OpenUSD integrációja a [`CFA4-OPENUSD-3D-001`](CFA4-OPENUSD-3D-001-0.1.md) terv dolga |
@@ -155,7 +155,7 @@ A nehéz mérések a `docs/development/reference-machine.md` szabályai szerint 
 | Q1 | Az öt új terv (VFX Catalog, EffectCraft, ARF, OpenUSD/3D, Pontfelhő) jóváhagyása | Tartalmuk a te szövegedből és a repó állapotából következtetett javaslat; kérlek, nézd át, mielőtt a `?` sorok lezárulnak. |
 | Q2 | OpenVDB-licenc | **Lezárva:** Apache-2.0 (igazolt). Az ADR-0003 táblasorát („BSD-3 / Apache-2.0”) „Apache-2.0”-ra javítani külön kis PR-ban. |
 | Q3 | Az N1 külön folyamatú C++ worker (AGENTS „keep original language”) – elfogadod? | Javasolt: igen; az alternatíva (Rust-port) aránytalan. |
-| Q4 | AX: LLVM-JIT worker vagy saját korlátozott interpreter? | G4 PoC-ból döntsön; addig egyik sem engedélyezett. |
+| Q4 | AX: LLVM-JIT worker vagy saját korlátozott interpreter? | **Lezárva (István, 2026-11-21 22:49): saját, korlátozott interpreter.** Az LLVM-JIT-worker nem scope; az N3-S1–S4 JIT-sandbox sorai ezért az interpreterre értendők (nincs LLVM-függőség). Az interpreter tervét a G4 külön, jóváhagyandó tervben rögzíti. |
 | Q5 | A 3D/VFX-mélység (VISION §8) nyitott döntés; ez a terv ezt nem dönti el | Az N1–N2 csak adat+megjelenítés; 3D-jelenet nincs scope. |
 | Q6 | Opcionális külső AAF-orákulum (licenc után)? | Nem sürgős; külön PR. |
 | Q7 | A megbízás sorrendje szerint az F8 (licenc) a 9. lépés; a CFA4-szabály szerint integráció előtt kötelező | Megoldás: a G1 belépési kapu **minden** fázis előtt – ez nem tervmódosítás a sorrenden, csak előfeltétel. |
