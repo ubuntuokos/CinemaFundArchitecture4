@@ -266,11 +266,10 @@ mod tests {
     use super::*;
     use crate::trajectories::Track;
 
-    /// Deterministic noise in -1..1.
-    fn noise(i: u64, k: u64, salt: u64) -> f64 {
-        let mut h = (i.wrapping_mul(0x9E37_79B9_7F4A_7C15) ^ k.wrapping_mul(0xC2B2_AE3D_27D4_EB4F) ^ salt).wrapping_mul(0x1656_67B1_9E37_79F9);
-        h ^= h >> 29;
-        (h % 20001) as f64 / 10000.0 - 1.0
+    /// Deterministic pseudo-random test signal in -1..1 for (track, frame, channel).
+    fn noise(track: u64, frame: u64, channel: u64) -> f64 {
+        let x = (track as f64 * 12.9898 + frame as f64 * 78.233 + channel as f64 * 37.719).sin() * 43758.5453;
+        (x - x.floor()) * 2.0 - 1.0
     }
 
     /// The smooth camera path and the shake on top of it (frame `k`).
