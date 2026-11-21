@@ -89,6 +89,7 @@ cfa4-shorten = { path = "crates/shorten" }
 cfa4-tak = { path = "crates/tak" }
 cfa4-realvideo = { path = "crates/realvideo" }
 cfa4-realmedia = { path = "crates/realmedia" }
+cfa4-bink = { path = "crates/bink" }
 cfa4-realaudio = { path = "crates/realaudio" }
 cfa4-atracenc = { path = "crates/atracenc" }
 cfa4-musepack = { path = "crates/musepack" }

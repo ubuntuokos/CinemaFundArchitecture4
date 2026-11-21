@@ -120,6 +120,7 @@ static ROWS: &[Row] = &[
     video("RealVideo 1.0 / 2.0 / 3.0 / 4.0", &["realvideo", "realmedia"], Ported, Sw("in RealMedia (.rm, .rmvb)"), false, NoEnc),
     video("Ut Video", &["utvideo"], Own, Sw(""), false, NoEnc),
     video("Lagarith", &["lagarith"], Ported, Sw(""), false, NoEnc),
+    video("Bink video (Bink 1, with alpha)", &["bink"], Ported, Sw("in Bink (.bik)"), false, NoEnc),
     video("MagicYUV", &["magicyuv"], Ported, Sw(""), false, NoEnc),
     video("DV / DVCPRO", &["dv"], Ported, Sw("DV, DVCAM, DVCPRO 25 / 50, DVCPRO HD"), false, NoEnc),
     video("Animated GIF", &[], Dependency, Sw(""), false, Fmt(Format::Gif)),
@@ -143,6 +144,7 @@ static ROWS: &[Row] = &[
     audio("AMR-NB / AMR-WB", &["amr"], Ported, Sw(""), NoEnc),
     audio("Speex", &["speex"], Ported, Sw("Ogg Speex"), NoEnc),
     audio("TTA (True Audio)", &["tta"], Ported, Sw(""), NoEnc),
+    audio("Bink audio (RDFT, DCT)", &["bink"], Ported, Sw("in Bink (.bik)"), NoEnc),
     audio(
         "RealAudio Cook / SIPR / 1.0 (14.4) / 2.0 (28.8), ATRAC3, ATRAC3plus, ATRAC9",
         &["realaudio", "atracenc"],

@@ -57,6 +57,7 @@ cfa4-apv = { workspace = true }
 cfa4-hap = { workspace = true }
 cfa4-canopus = { workspace = true }
 cfa4-realmedia = { workspace = true }
+cfa4-bink = { workspace = true }
 cfa4-realvideo = { workspace = true }
 cfa4-realaudio = { workspace = true }
 cfa4-utvideo = { workspace = true }

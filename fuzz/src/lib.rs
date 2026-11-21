@@ -609,6 +609,22 @@ pub fn cavs(data: &[u8]) {
     let _ = d.flush();
 }
 
+pub fn bink(data: &[u8]) {
+    let _ = cfa4_bink::container::probe(data);
+    let Ok(b) = cfa4_bink::container::Bink::parse(data) else { return };
+    let Ok(mut v) = cfa4_bink::video::Decoder::new(b.width.min(256), b.height.min(256), b.tag, b.flags) else { return };
+    let mut a: Vec<_> = b.tracks.iter().filter_map(|t| cfa4_bink::audio::Decoder::new(t.sample_rate, t.channels, t.dct, b.tag[3]).ok()).collect();
+    for i in 0..b.frame_count().min(16) {
+        let Ok(f) = b.frame(i) else { continue };
+        let _ = v.decode(f.video);
+        for (t, pkt) in f.audio {
+            if let Some(d) = a.get_mut(t) {
+                let _ = d.decode(pkt);
+            }
+        }
+    }
+}
+
 pub fn lagarith(data: &[u8]) {
     let mut i = Input::new(data);
     let (w, h) = (i.side(), i.side());
@@ -742,6 +758,7 @@ pub const TARGETS: &[(&str, &str, Target)] = &[
     ("evc", "cfa4-evc", evc),
     ("cavs", "cfa4-cavs", cavs),
     ("lagarith", "cfa4-lagarith", lagarith),
+    ("bink", "cfa4-bink", bink),
     ("magicyuv", "cfa4-magicyuv", magicyuv),
     ("g729", "cfa4-g729", g729),
     ("ilbc", "cfa4-ilbc", ilbc),
