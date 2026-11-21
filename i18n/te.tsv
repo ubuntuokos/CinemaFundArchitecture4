@@ -4810,3 +4810,12 @@ export.summary	Low	తక్కువ
 	16-bit	16-బిట్
 	24-bit	24-బిట్
 	32-bit float	32-బిట్ ఫ్లోట్
+
+# Datamosh transition (Grunge & Distort, DM1, #1409)
+	Datamosh	డేటామోష్
+	Residual	అవశేషం
+	Motion Boost	చలన పెంపు
+	Recovery	పునరుద్ధరణ
+	Encode Resolution	ఎన్‌కోడ్ రిజల్యూషన్
+	Half	సగం
+	Quarter	పావు

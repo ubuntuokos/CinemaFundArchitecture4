@@ -1,7 +1,7 @@
 # CFA4-CODERABBIT-001 – a Claude és a CodeRabbit összehangolása
 
 **Állapot:** 1.2. A tulajdonos 2026-11-12-én a D1–D4 döntési pontokat a javasolt alapértékkel elfogadta,
-2026-11-13-án a próba után a D5-öt, 2026-11-15-én a D6-ot (4. fejezet). A K0–K2 lépések és a próba első része ebben a PR-ban
+2026-11-13-án a próba után a D5-öt, 2026-11-20-án a D6-ot (4. fejezet). A K0–K2 lépések és a próba első része ebben a PR-ban
 vannak; a K3 többi része a beolvasztás után következik.
 
 **Összefoglaló:** a CodeRabbit a CFA4 tárolójában telepítve van, de eddig egyetlen PR-t sem ellenőrzött,
@@ -54,12 +54,6 @@ bővítése egy CodeRabbit-oszloppal, hogy a gazdának ne kelljen PR-onként lek
 - **D3 – Dependabot:** a Dependabot-PR-ok kimaradnak, ahogy az upstreamnél is; ezeket a
   Dependabot-előkészítő munkamenet a teljes CI-vel ellenőrzi.
 - **D4 – nyelv:** magyar.
-- **D6 – a CI-feltétel szűkítése (2026-11-15, a D5 CI-pontját váltja):** nem minden `.github/` változás
-  kockázatos, csak a kötelező és biztonsági kapuk workflowjai, a kiadást vagy közzétételt végző
-  workflowk, a jogosultságot, titkot, `pull_request_target` / `workflow_run` indítót vagy külső
-  actiont (`uses:`) felvevő vagy módosító változások, valamint a `dependabot.yml` és az
-  `actionlint.yaml`. Ok: egy kézzel indítható mérő-workflow egysoros változása is a keretre várt (#1339).
-  A pontos szöveg csak a `docs/coordination.md` §2.9-ben van.
 - **D5 – az ingyenes keret miatt (2026-11-13, a D1 és a D2 hatókörét szűkíti):** CodeRabbit-ellenőrzés
   csak **kockázatos** PR-on kell: biztonság (CFA4-SECURITY-001, `crates/platform/`, `deny.toml`,
   `.semgrep/`), kodek és konténer (`crates/codecs/`, `crates/ffmpeg/`, `crates/gstreamer/` és a
@@ -68,6 +62,12 @@ bővítése egy CodeRabbit-oszloppal, hogy a gazdának ne kelljen PR-onként lek
   `docs/coordination.md` §2.9-ben szerepel. Ha a keret elfogyott, a kockázatos PR vár, és a fejlesztő a
   jelzett idő után újra kér; a gazda CodeRabbit nélkül nem engedi tovább. Más PR-on nem kérünk
   ellenőrzést, hogy a keret a kockázatos PR-oknak maradjon.
+- **D6 – a CI-feltétel szűkítése (2026-11-20, a D5 CI-pontját váltja):** nem minden `.github/` változás
+  kockázatos, csak a kötelező és biztonsági kapuk workflowjai, a kiadást vagy közzétételt végző
+  workflowk, a jogosultságot, titkot, `pull_request_target` / `workflow_run` indítót vagy külső
+  actiont (`uses:`) felvevő vagy módosító változások, valamint a `dependabot.yml` és az
+  `actionlint.yaml`. Ok: egy kézzel indítható mérő-workflow egysoros változása is a keretre várt (#1339).
+  A pontos szöveg csak a `docs/coordination.md` §2.9-ben van.
 
 ## 5. Kockázatok és a próba eredménye (2026-11-12, #1118)
 

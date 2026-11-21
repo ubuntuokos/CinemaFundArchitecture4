@@ -4802,3 +4802,12 @@
 	16-bit	16 位
 	24-bit	24 位
 	32-bit float	32 位浮点
+
+# Datamosh transition (Grunge & Distort, DM1, #1409)
+	Datamosh	数据损坏
+	Residual	残差
+	Motion Boost	运动增强
+	Recovery	恢复
+	Encode Resolution	编码分辨率
+	Half	1/2
+	Quarter	1/4

@@ -4811,3 +4811,12 @@
 	16-bit	16 Bit
 	24-bit	24 Bit
 	32-bit float	32 Bit Gleitkomma
+
+# Datamosh transition (Grunge & Distort, DM1, #1409)
+	Datamosh	Datamosh
+	Residual	Residuum
+	Motion Boost	Bewegungsverstärkung
+	Recovery	Erholung
+	Encode Resolution	Kodierauflösung
+	Half	Halb
+	Quarter	Viertel

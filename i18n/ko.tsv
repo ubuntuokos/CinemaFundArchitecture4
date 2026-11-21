@@ -4798,3 +4798,12 @@
 	16-bit	16비트
 	24-bit	24비트
 	32-bit float	32비트 부동 소수점
+
+# Datamosh transition (Grunge & Distort, DM1, #1409)
+	Datamosh	데이터모시
+	Residual	잔차
+	Motion Boost	모션 증폭
+	Recovery	복구
+	Encode Resolution	인코딩 해상도
+	Half	1/2
+	Quarter	1/4

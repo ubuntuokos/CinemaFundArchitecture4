@@ -4811,3 +4811,12 @@
 	16-bit	16 bits
 	24-bit	24 bits
 	32-bit float	32 bits de coma flotante
+
+# Datamosh transition (Grunge & Distort, DM1, #1409)
+	Datamosh	Datamosh
+	Residual	Residuo
+	Motion Boost	Refuerzo de movimiento
+	Recovery	Recuperación
+	Encode Resolution	Resolución de codificación
+	Half	Mitad
+	Quarter	Cuarto

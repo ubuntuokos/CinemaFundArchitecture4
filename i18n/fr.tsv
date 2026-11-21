@@ -4809,3 +4809,12 @@
 	16-bit	16 bits
 	24-bit	24 bits
 	32-bit float	32 bits virgule flottante
+
+# Datamosh transition (Grunge & Distort, DM1, #1409)
+	Datamosh	Datamosh
+	Residual	Résidu
+	Motion Boost	Amplification du mouvement
+	Recovery	Récupération
+	Encode Resolution	Résolution d’encodage
+	Half	Moitié
+	Quarter	Quart

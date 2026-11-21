@@ -4806,3 +4806,12 @@ export.summary	Low	matala
 	16-bit	16-bittinen
 	24-bit	24-bittinen
 	32-bit float	32-bittinen liukuluku
+
+# Datamosh transition (Grunge & Distort, DM1, #1409)
+	Datamosh	Datamosh
+	Residual	Jäännös
+	Motion Boost	Liikkeen vahvistus
+	Recovery	Palautuminen
+	Encode Resolution	Koodaustarkkuus
+	Half	Puolikas
+	Quarter	Neljännes

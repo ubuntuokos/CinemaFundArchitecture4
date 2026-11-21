@@ -354,7 +354,7 @@ distributions are not targets.
 
 ## G18. Effects depth: approximations and missing behaviour
 
-- **Missing:** Warp Stabilizer is 2-D (Premiere's is 3-D subspace), Morph Cut has no face tracking
+- **Missing:** Warp Stabilizer's Subspace Warp is still the similarity model (Premiere's is a 3-D subspace warp; Perspective is a real homography now), Morph Cut has no face tracking
   (and occlusion edges are soft), Lumetri HDR-aware maths, multicam paging beyond 16 angles,
   redesigned 26.0 mask tools (a stored, re-editable
   corner radius: rounding bakes fillets into the path, so a rounded corner cannot be re-rounded later).
@@ -364,7 +364,11 @@ distributions are not targets.
   Setting applied as a parameter preset (#458); rectangle and polygon masks round their corners
   with circular fillets (`masks.add` `cornerRadius`, `masks.roundCorners`, every path keyframe;
   #813), from an on-monitor corner-roundness handle with a live preview (one undo step per drag;
-  #844); Shift snaps pen mask segments and dragged-out Bézier handles to 45° steps (#853), and
+  #844); Warp Stabilizer's analysis is stored in the media cache (`Analysis` folder, keyed by the
+  media fingerprint, source range and analysis settings), so a clip is analysed once, not after
+  every restart; its Perspective method fits a RANSAC homography per frame step, smooths the
+  four corner paths and warps projectively (keystone and tilt; `render::homography`,
+  `vfx::perspective`); Shift snaps pen mask segments and dragged-out Bézier handles to 45° steps (#853), and
   Shift constrains vertex and whole-mask drags to 45° steps from the press point (#1408).
 - **CFA4 candidates after GPL-3.0-or-later** (ADR 0003 §6): Natron openfx-misc effects (keyers,
   colour, tracking, retime), Rubber Band (GPL-2.0-or-later) for audio time-stretch and pitch shift,

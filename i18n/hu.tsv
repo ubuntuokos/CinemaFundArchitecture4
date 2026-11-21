@@ -4829,3 +4829,12 @@ export.summary	Low	alacsony
 	Read Timecode from LTC Audio	Időkód beolvasása LTC-hangból
 # Credits: voices (the Voice column) in the block's properties (F10-C16)
 	Voices	Hangok
+
+# Datamosh transition (Grunge & Distort, DM1, #1409)
+	Datamosh	Datamosh
+	Residual	Maradék
+	Motion Boost	Mozgáserősítés
+	Recovery	Helyreállás
+	Encode Resolution	Kódolási felbontás
+	Half	Fél
+	Quarter	Negyed

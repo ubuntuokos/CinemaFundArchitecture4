@@ -4804,3 +4804,12 @@ export.summary	Low	thấp
 	16-bit	16 bit
 	24-bit	24 bit
 	32-bit float	32 bit dấu phẩy động
+
+# Datamosh transition (Grunge & Distort, DM1, #1409)
+	Datamosh	Datamosh
+	Residual	Phần dư
+	Motion Boost	Tăng cường chuyển động
+	Recovery	Phục hồi
+	Encode Resolution	Độ phân giải mã hóa
+	Half	Một nửa
+	Quarter	Một phần tư

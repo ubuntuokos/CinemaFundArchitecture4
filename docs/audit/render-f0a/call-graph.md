@@ -376,6 +376,7 @@ graph LR
 | `cfa4-engine/sequence_tools.rs` | `cfa4-time` | `FrameRate` |
 | `cfa4-engine/settings.rs` | `cfa4-media` | `MediaKind`, `backend_enabled`, `registered_fallbacks`, `set_backend_enabled` |
 | `cfa4-engine/settings.rs` | `cfa4-project` | `Label`, `Param`, `ParamValue`, `TrackItem` |
+| `cfa4-engine/settings.rs` | `cfa4-render` | `vfx` |
 | `cfa4-engine/settings.rs` | `cfa4-time` | `FrameRate` |
 | `cfa4-engine/shortcuts.rs` | `cfa4-project` | `legacy` |
 | `cfa4-engine/smart_cut.rs` | `cfa4-export` | `audio_copy`, `boundary_reencode`, `smart_cut` |
@@ -563,6 +564,8 @@ graph LR
 | `cfa4-project/mask.rs` | `cfa4-time` | `Tick` |
 | `cfa4-project/mixer.rs` | `cfa4-time` | `Tick` |
 | `cfa4-project/narration.rs` | `cfa4-time` | `Tick` |
+| `cfa4-project/object.rs` | `cfa4-geom` | `Rect` |
+| `cfa4-project/object.rs` | `cfa4-time` | `Tick` |
 | `cfa4-project/transcript.rs` | `cfa4-time` | `Tick` |
 | `cfa4-qc/audio.rs` | `cfa4-audio-dsp` | `loudness` |
 | `cfa4-qc/checks.rs` | `cfa4-color` | `Transfer` |
@@ -607,6 +610,7 @@ graph LR
 | `cfa4-render/graphic_clip.rs` | `cfa4-time` | `FrameRate`, `Tick`, `TimeRange` |
 | `cfa4-render/graphics.rs` | `cfa4-color` | `srgb_to_linear` |
 | `cfa4-render/graphics.rs` | `cfa4-geom` | `Vec2` |
+| `cfa4-render/homography.rs` | `cfa4-geom` | `Affine` |
 | `cfa4-render/image.rs` | `cfa4-color` | `linear_to_srgb_index`, `linear_to_srgb_u8_table` |
 | `cfa4-render/image.rs` | `cfa4-frame` | `linear_premul_to_srgb8` |
 | `cfa4-render/image.rs` | `cfa4-geom` | `Affine`, `Rect` |
@@ -647,6 +651,7 @@ graph LR
 | `cfa4-render/remix.rs` | `cfa4-time` | `Tick` |
 | `cfa4-render/track.rs` | `cfa4-geom` | `Affine` |
 | `cfa4-render/track.rs` | `cfa4-project` | `TrackMethod` |
+| `cfa4-render/trajectories.rs` | `cfa4-geom` | `Affine`, `Vec2` |
 | `cfa4-render/transitions/legacy.rs` | `cfa4-geom` | `Affine` |
 | `cfa4-render/transitions/legacy.rs` | `cfa4-project` | `EffectInstance` |
 | `cfa4-render/transitions/legacy.rs` | `cfa4-time` | `Tick` |
@@ -654,6 +659,9 @@ graph LR
 | `cfa4-render/transitions/mod.rs` | `cfa4-geom` | `Vec2` |
 | `cfa4-render/transitions/mod.rs` | `cfa4-project` | `EffectInstance` |
 | `cfa4-render/transitions/mod.rs` | `cfa4-time` | `Tick` |
+| `cfa4-render/transitions/mosh.rs` | `cfa4-geom` | `Affine` |
+| `cfa4-render/transitions/mosh.rs` | `cfa4-project` | `EffectInstance` |
+| `cfa4-render/transitions/mosh.rs` | `cfa4-time` | `Tick` |
 | `cfa4-render/vfx/auto.rs` | `cfa4-color` | `luma709` |
 | `cfa4-render/vfx/auto.rs` | `cfa4-project` | `EffectInstance` |
 | `cfa4-render/vfx/blur.rs` | `cfa4-color` | `linear_to_srgb` |
@@ -670,6 +678,9 @@ graph LR
 | `cfa4-render/vfx/mod.rs` | `cfa4-geom` | `Affine` |
 | `cfa4-render/vfx/mod.rs` | `cfa4-project` | `EffectInstance`, `ItemKind`, `effect`, `graphic` |
 | `cfa4-render/vfx/mod.rs` | `cfa4-time` | `Tick` |
+| `cfa4-render/vfx/perspective.rs` | `cfa4-color` | `linear_to_srgb` |
+| `cfa4-render/vfx/perspective.rs` | `cfa4-media` | `cancel` |
+| `cfa4-render/vfx/perspective.rs` | `cfa4-project` | `EffectInstance` |
 | `cfa4-render/vfx/pixelate.rs` | `cfa4-color` | `WorkingSpace` |
 | `cfa4-render/vfx/pixelate.rs` | `cfa4-project` | `EffectInstance`, `ParamValue`, `effect` |
 | `cfa4-render/vfx/pixelate.rs` | `cfa4-time` | `Tick` |
@@ -785,7 +796,7 @@ graph LR
 
 ## 4. Nyilvános típusok osztályonként
 
-A többi 585 nyilvános típus („other” osztály) csak a `call-graph.json`-ban szerepel.
+A többi 599 nyilvános típus („other” osztály) csak a `call-graph.json`-ban szerepel.
 
 ### Képkocka, kép, pixel (26)
 
@@ -861,7 +872,7 @@ A többi 585 nyilvános típus („other” osztály) csak a `call-graph.json`-b
 | `cfa4-smart-edit` | `media_index.rs` | enum | `DependencyStatus` |
 | `cfa4-testkit` | `fixtures.rs` | enum | `Status` |
 
-### Hang (41)
+### Hang (42)
 
 | Crate | Modul | Fajta | Típus |
 |---|---|---|---|
@@ -904,6 +915,7 @@ A többi 585 nyilvános típus („other” osztály) csak a `call-graph.json`-b
 | `cfa4-project` | `lib.rs` | enum | `AudioChannels` |
 | `cfa4-project` | `mixer.rs` | struct | `MixerStrip` |
 | `cfa4-project` | `multicam.rs` | enum | `MulticamAudio` |
+| `cfa4-project` | `object.rs` | struct | `ObjectSample` |
 | `cfa4-qc` | `audio.rs` | struct | `AudioFacts` |
 | `cfa4-render` | `preview.rs` | struct | `AudioSegment` |
 
@@ -929,7 +941,7 @@ A többi 585 nyilvános típus („other” osztály) csak a `call-graph.json`-b
 | `cfa4-gpu` | `lut.rs` | struct | `GpuLut` |
 | `cfa4-project` | `lib.rs` | struct | `ProjectLut` |
 
-### Render, kompozíció, előnézet, proxy (58)
+### Render, kompozíció, előnézet, proxy (60)
 
 | Crate | Modul | Fajta | Típus |
 |---|---|---|---|
@@ -970,6 +982,7 @@ A többi 585 nyilvános típus („other” osztály) csak a `call-graph.json`-b
 | `cfa4-project` | `lib.rs` | struct | `Transition` |
 | `cfa4-project` | `lib.rs` | enum | `TransitionAlign` |
 | `cfa4-project` | `multicam.rs` | struct | `MulticamSource` |
+| `cfa4-project` | `object.rs` | enum | `ObjectSource` |
 | `cfa4-project` | `studio.rs` | enum | `SourceKind` |
 | `cfa4-project` | `studio.rs` | struct | `SourceTransform` |
 | `cfa4-project` | `studio.rs` | struct | `StudioSource` |
@@ -979,6 +992,7 @@ A többi 585 nyilvános típus („other” osztály) csak a `call-graph.json`-b
 | `cfa4-render` | `lib.rs` | struct | `SourceMap` |
 | `cfa4-render` | `lib.rs` | trait | `SourceProvider` |
 | `cfa4-render` | `plan.rs` | struct | `PlanLayer` |
+| `cfa4-render` | `transitions/mosh.rs` | struct | `MoshSource` |
 | `cfa4-smart-edit` | `capabilities.rs` | struct | `CompositeDecision` |
 | `cfa4-smart-edit` | `copy_planner.rs` | enum | `PlanRefusal` |
 | `cfa4-smart-edit` | `copy_planner.rs` | struct | `SmartCutPlan` |

@@ -4804,3 +4804,12 @@
 	16-bit	16 bit
 	24-bit	24 bit
 	32-bit float	32 bit a virgola mobile
+
+# Datamosh transition (Grunge & Distort, DM1, #1409)
+	Datamosh	Datamosh
+	Residual	Residuo
+	Motion Boost	Amplificazione movimento
+	Recovery	Recupero
+	Encode Resolution	Risoluzione di codifica
+	Half	Metà
+	Quarter	Un quarto
