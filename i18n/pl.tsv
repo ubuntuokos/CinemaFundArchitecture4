@@ -4813,6 +4813,10 @@ export.summary	Low	niska
 	Encode Resolution	Rozdzielczość kodowania
 	Half	Połowa
 	Quarter	Ćwiartka
+# Datamosh Bloom (Glitch, DM2)
+	Datamosh Bloom	Rozkwit datamosh
+	Start Time (seconds)	Czas rozpoczęcia (sekundy)
+	Repeats	Powtórzenia
 
 # Recent effects, per-channel waveform, white balance selector (SC-2/SC-3/SC-4, #1419 #1420 #1421)
 	Apply a recently used effect to the selected clips	Zastosuj ostatnio użyty efekt do zaznaczonych klipów

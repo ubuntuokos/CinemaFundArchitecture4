@@ -4813,6 +4813,10 @@ export.summary	Low	низак
 	Encode Resolution	Резолуција кодирања
 	Half	Пола
 	Quarter	Четвртина
+# Datamosh Bloom (Glitch, DM2)
+	Datamosh Bloom	Datamosh цветање
+	Start Time (seconds)	Време почетка (секунде)
+	Repeats	Понављања
 
 # Recent effects, per-channel waveform, white balance selector (SC-2/SC-3/SC-4, #1419 #1420 #1421)
 	Apply a recently used effect to the selected clips	Примени недавно коришћен ефекат на изабране клипове

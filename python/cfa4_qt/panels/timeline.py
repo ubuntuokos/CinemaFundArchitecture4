@@ -504,6 +504,7 @@ class TimelineCanvas(QWidget):
     files_dropped_empty = Signal(list)  # paths dropped on an empty Timeline: import, then a sequence from them
     voiceover = Signal(object)  # an audio track header's microphone: record on that track (id) / stop
     voiceover_settings = Signal()  # …its menu: Voice-Over Record Settings…
+    display_changed = Signal()  # SC-3: the waveform channel mode / channel zoom changed (the window keeps them)
     caption_opened = Signal()  # a caption block double-clicked: the Text panel's Captions tab
     gop_marks_wanted = Signal()  # Show GOP Boundaries turned on: the window fetches export.gopMarks
 
@@ -2339,6 +2340,20 @@ class TimelineCanvas(QWidget):
     def _set_display(self, **kw: Any) -> None:
         for k, v in kw.items():
             setattr(self, k, v)
+        self.update()
+        if "waveform_channels" in kw or "channel_zoom" in kw:
+            self.display_changed.emit()
+
+    def restore_waveform_display(self, mode: Any, zoom: Any) -> None:
+        """Takes back the saved waveform channel mode and channel zoom; anything else is ignored."""
+        if mode in {m for m, _label in WAVEFORM_CHANNEL_MODES}:
+            self.waveform_channels = str(mode)
+        try:
+            z = float(zoom)
+        except (TypeError, ValueError):
+            z = 1.0
+        if z in WAVEFORM_CHANNEL_ZOOMS:
+            self.channel_zoom = z
         self.update()
 
     # ----- mouse -----

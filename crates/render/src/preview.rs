@@ -419,6 +419,7 @@ pub fn effect_cost_ms(id: &str) -> f64 {
         | "echo"
         | "slit_scan"
         | "temporal_denoise"
+        | "datamosh_bloom"
         | "echo_glow"
         | "glint"
         | "wonder_glow"
