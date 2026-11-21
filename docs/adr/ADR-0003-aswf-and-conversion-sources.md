@@ -189,7 +189,7 @@ A hardveres kódolás gyártónkénti útja (5. pont) nem itt, hanem az ADR 0002
 | A1 | OTIO: legalább 10 saját tesztidővonal exportja és visszaolvasása után a sávok, klipek, be- és kipontok, sebességek és jelölők egyeznek. OpenAPV: a hivatalos tesztfolyamok minden kockája bitre egyezik. OCIO: az ACES-transzformok egy rácsra mért legnagyobb eltérése ΔE2000 ≤ 1,0, vagy az eltérés dokumentált hibaként a `docs/gaps.md`-be kerül |
 | A2 | Az OCIO-s előnézet és export a CPU-s OCIO-referenciától ΔE2000 ≤ 1,0-ra tér el; OCIO nélkül a program a `crates/color`-ral fut tovább; az ADR 0001 minden feltétele teljesül (`// SAFETY:`, `Result` API, opcionális funkció) |
 | A3 | Minden új formátum fájljai megnyílnak, és a kép egyezik az `oiiotool` referenciájával; sérült fájlra hibaüzenet jön, nem összeomlás (mutációs fuzz-teszttel) |
-| A4 | Az első csomag effektjei (a 14. pont képességlistája) betöltődnek és renderelnek az OpenFX-hoston; az eredmény a nyilvános specifikációból vagy képletből számolt, kódfüggetlen referenciától PSNR ≥ 50 dB (a render-terv F0V-küszöbfájlja szerint mérve); egy összeomló bővítmény nem viszi magával a programot. A Natron kimenete referenciaként nem szerepel (14. pont) |
+| A4 | Az első csomag effektjei (a 14. pont képességlistája) betöltődnek és renderelnek az OpenFX-hoston; az eredmény a nyilvános specifikációból vagy képletből számolt, kódfüggetlen referenciától PSNR ≥ 50 dB (a render-terv F0V-küszöbfájlja szerint mérve); egy összeomló bővítmény nem viszi magával a programot. A Natron kimenete referenciaként nem szerepel, külső programként sem (14. pont) |
 | A5 | A kimenetet az ffprobe és a saját dekóder is helyesnek látja; bitráta–PSNR görbe dokumentálva; a szabadalmi vizsgálat eredménye rögzítve |
 | A6 | Az időnyújtás és a hangmagasság-váltás hallható hibák nélkül, mérve; egy összeomló LV2-bővítmény nem viszi magával a programot |
 
@@ -330,8 +330,11 @@ nincs átvétel.
   felhasználó által telepített OFX-bővítményeinek betöltése a 4. pont szerint változatlan; a cél
   továbbra is az, hogy minden betölthető bővítmény fusson, a hiányzó host-képességeket a CFA4 saját
   kóddal pótolja (render-terv F5O, AC-20).
-- **Nyitott pont a tulajdonosnak:** a Natront *külső programként* lehetne-e kimenet-összevetési
-  orákulumnak használni (futtatás, kimenet összevetése, kód nélkül). Ezt ez a pont **nem** dönti el;
-  addig az A4 elfogadási feltétele kódfüggetlen referenciát használ.
+- **A Natron nem használható külső kimenet-összevetési orákulumnak sem** (a tulajdonos által
+  a koordinátorra bízott döntés, 2026-11-21). A Natron Qt4-re épül, a tulajdonos Kubuntu 26.04
+  gépén nem indul el, illetve összeomlik, ezért reprodukálhatóan nem futtatható. Az orákulum: a
+  committolt golden fájlok, az OpenColorIO és a már meglévő orákulumok (`crates/testkit`,
+  `cfa4-metrics`, az F0V-küszöbök). Ha később független OFX-összevetés kell, azt egy másik,
+  karbantartott OFX-host adja; ehhez új döntés kell.
 - A render-terv (`docs/plans/CFA4-RENDER-INTEGRATION-PLAN-001.md`) Natron-sorait a terv véglegesítője
   igazítja ehhez; ez a PR a tervet nem módosítja (`docs/coordination.md` §2.10).
