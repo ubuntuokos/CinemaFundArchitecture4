@@ -1,14 +1,21 @@
-//! `cargo xtask parity [--area menus|commands|effects|transitions] [--reference FILE] [--ours FILE]
-//! [--out FILE] [--min PERCENT]`: measured parity (docs/gaps.md G7).
+//! `cargo xtask parity [--area menus|commands|panels|effects|transitions|menus-egui] [--reference FILE]
+//! [--ours FILE] [--out FILE] [--min PERCENT]`: measured parity (docs/gaps.md G7).
 //!
 //! Compares one area of what CFA4 ships with a reference list, and reports presence and
 //! placement separately: a reference item is *same place* when we have its label at the same path,
 //! *elsewhere* when we have the label under another path, and *missing* otherwise. A label match is
 //! presence only, not behaviour. The areas:
 //!
-//! - `menus` (default): the shipped menu bar (`crates/ui-egui/examples/menu_tree.rs`); paths are
-//!   menu paths. App, Apple and Help menus, recent-file lists, account / cloud items and macOS
-//!   system items are counted out of scope.
+//! - `menus` (default): the menu bar of the Qt 6 GUI, read from the live window by
+//!   `scripts/dev/qt_ui_inventory.py --menus` (run with `.venv/bin/python`; needs a built
+//!   `cfa4-cli`); paths are menu paths. App, Apple and Help menus, recent-file lists, account /
+//!   cloud items and macOS system items are counted out of scope.
+//! - `menus-egui`: the same measurement of the frozen egui menu bar
+//!   (`crates/ui-egui/examples/menu_tree.rs`), against the same reference (`menus.json`).
+//! - `panels`: the panels of the Qt 6 GUI (`qt_ui_inventory.py --panels`): the docks, the central
+//!   Program monitor and the panels the Window menu lists. A panel is matched by its title. A
+//!   panel that is only a placeholder dock, or only listed in the Window menu with no dock, is an
+//!   automatic *stub*: present, but not the real panel; the report lists the stubs.
 //! - `commands`: the engine's command registry (`crates/engine/examples/command_list.rs`), queries
 //!   left out; a command's path is its menu path and label, or the label alone when it is in no
 //!   menu. A reference entry may be a menu path or a bare name.
@@ -20,7 +27,7 @@
 //!   scope, and so are the other area's items (a folder named `… Transitions`), so one reference
 //!   of the whole Effects panel serves both areas.
 //!
-//! `--ours` reads a saved dump of our side instead of running the example. The reference defaults
+//! `--ours` reads a saved dump of our side instead of running the example or the Qt dump. The reference defaults
 //! to the maintainers' local snapshot `plan/premiere/<area>.json` (gitignored, never committed).
 //! Without one the tool prints our own inventory and measures nothing. The reference may be any
 //! JSON of paths: an array of paths (`["File", "New", "Sequence…"]`) or of
@@ -50,48 +57,70 @@ const CHILD_KEYS: [&str; 6] = ["children", "items", "submenu", "menu", "menuItem
 const MENU_WRAPPER_KEYS: [&str; 5] = ["menus", "menuBar", "menu_bar", "menubar", "items"];
 const EFFECT_WRAPPER_KEYS: [&str; 4] = ["effects", "transitions", "folders", "items"];
 const COMMAND_WRAPPER_KEYS: [&str; 2] = ["commands", "items"];
+const PANEL_WRAPPER_KEYS: [&str; 2] = ["panels", "items"];
+/// The Qt 6 GUI dump script, from the repository root.
+const QT_DUMP: &str = "scripts/dev/qt_ui_inventory.py";
 
 /// What a parity run measures.
 #[derive(Clone, Copy, Debug, PartialEq)]
 enum Area {
     Menus,
+    MenusEgui,
     Commands,
+    Panels,
     Effects,
     Transitions,
 }
 
-/// One item on our side: its full path (menu path or folders, then the label) and its id.
-#[derive(Clone, Debug, PartialEq)]
+/// One item on our side: its full path (menu path or folders, then the label), its id, and why
+/// it is an automatic stub, if it is one (a panel with no real content yet).
+#[derive(Clone, Debug, Default, PartialEq)]
 struct OurItem {
     path: Vec<String>,
     id: String,
+    stub: Option<&'static str>,
 }
 
 impl Area {
     fn parse(s: &str) -> Result<Self, String> {
         match s {
             "menus" => Ok(Area::Menus),
+            "menus-egui" => Ok(Area::MenusEgui),
             "commands" => Ok(Area::Commands),
+            "panels" => Ok(Area::Panels),
             "effects" => Ok(Area::Effects),
             "transitions" => Ok(Area::Transitions),
-            other => Err(format!("--area {other}: expected menus, commands, effects or transitions")),
+            other => Err(format!("--area {other}: expected menus, commands, panels, effects, transitions or menus-egui")),
         }
     }
 
     fn name(self) -> &'static str {
         match self {
             Area::Menus => "menus",
+            Area::MenusEgui => "menus-egui",
             Area::Commands => "commands",
+            Area::Panels => "panels",
             Area::Effects => "effects",
             Area::Transitions => "transitions",
+        }
+    }
+
+    /// The reference file name in `plan/premiere/`: the egui menu bar is measured against the
+    /// same menu reference as the Qt one.
+    fn reference_name(self) -> &'static str {
+        match self {
+            Area::MenusEgui => Area::Menus.name(),
+            other => other.name(),
         }
     }
 
     /// Our side, as the report names it.
     fn ours(self) -> &'static str {
         match self {
-            Area::Menus => "shipped menu bar",
+            Area::Menus => "Qt 6 GUI menu bar",
+            Area::MenusEgui => "frozen egui menu bar",
             Area::Commands => "engine commands",
+            Area::Panels => "Qt 6 GUI panels",
             Area::Effects => "Effects panel effects",
             Area::Transitions => "Effects panel transitions",
         }
@@ -100,7 +129,8 @@ impl Area {
     /// What a path is made of: "menu path" or "folder".
     fn place(self) -> &'static str {
         match self {
-            Area::Menus | Area::Commands => "menu path",
+            Area::Menus | Area::MenusEgui | Area::Commands => "menu path",
+            Area::Panels => "group",
             Area::Effects | Area::Transitions => "folder",
         }
     }
@@ -116,15 +146,16 @@ impl Area {
     /// bare name.
     fn min_len(self) -> usize {
         match self {
-            Area::Menus => 2,
-            Area::Commands | Area::Effects | Area::Transitions => 1,
+            Area::Menus | Area::MenusEgui => 2,
+            Area::Commands | Area::Panels | Area::Effects | Area::Transitions => 1,
         }
     }
 
     fn wrapper_keys(self) -> &'static [&'static str] {
         match self {
-            Area::Menus => &MENU_WRAPPER_KEYS,
+            Area::Menus | Area::MenusEgui => &MENU_WRAPPER_KEYS,
             Area::Commands => &COMMAND_WRAPPER_KEYS,
+            Area::Panels => &PANEL_WRAPPER_KEYS,
             Area::Effects | Area::Transitions => &EFFECT_WRAPPER_KEYS,
         }
     }
@@ -132,7 +163,7 @@ impl Area {
     /// The effect kinds (`EffectKind` names in the catalog dump) this area counts.
     fn kinds(self) -> &'static [&'static str] {
         match self {
-            Area::Menus | Area::Commands => &[],
+            Area::Menus | Area::MenusEgui | Area::Commands | Area::Panels => &[],
             Area::Effects => &["Video", "Audio"],
             Area::Transitions => &["VideoTransition", "AudioTransition"],
         }
@@ -141,7 +172,11 @@ impl Area {
     /// The group a path is tallied under in the report: the top-level menu, or the folder path.
     fn group(self, path: &[String]) -> String {
         match self {
-            Area::Menus => path.first().cloned().unwrap_or_default(),
+            Area::Menus | Area::MenusEgui => path.first().cloned().unwrap_or_default(),
+            Area::Panels => match path.split_last() {
+                Some((_, groups)) if !groups.is_empty() => show(groups),
+                _ => "Panels".into(),
+            },
             Area::Commands => match path.split_first() {
                 Some((menu, rest)) if !rest.is_empty() => menu.clone(),
                 _ => "(no menu)".into(),
@@ -182,7 +217,7 @@ fn parse_args(args: &[&str]) -> Result<Args, String> {
             }
             other => {
                 return Err(format!(
-                    "parity: unknown argument {other} (usage: cargo xtask parity [--area menus|commands|effects|transitions] [--reference FILE] [--ours FILE] [--out FILE] [--min PERCENT])"
+                    "parity: unknown argument {other} (usage: cargo xtask parity [--area menus|commands|panels|effects|transitions|menus-egui] [--reference FILE] [--ours FILE] [--out FILE] [--min PERCENT])"
                 ));
             }
         }
@@ -195,23 +230,23 @@ pub fn run(root: &Path, args: &[&str]) -> Result<(), String> {
     let area = args.area;
     let ours_json = match &args.ours {
         Some(p) => std::fs::read_to_string(p).map_err(|e| format!("{}: {e}", p.display()))?,
-        None => dump_ours(area)?,
+        None => dump_ours(root, area)?,
     };
     let ours_value: Value = serde_json::from_str(&ours_json).map_err(|e| format!("our {} dump: {e}", area.name()))?;
     let ours = match area {
-        Area::Menus => our_items(&ours_value)?,
+        Area::Menus | Area::MenusEgui => our_items(&ours_value)?,
         Area::Commands => our_commands(&ours_value)?,
+        Area::Panels => our_panels(&ours_value)?,
         Area::Effects | Area::Transitions => our_catalog(&ours_value, area)?,
     };
-    let default_ref = root.join(format!("plan/premiere/{}.json", area.name()));
+    let default_ref = root.join(format!("plan/premiere/{}.json", area.reference_name()));
     let reference = match &args.reference {
         Some(p) => Some(p.clone()),
         None => default_ref.exists().then_some(default_ref),
     };
     let Some(reference) = reference else {
         print!("{}", inventory(area, &ours));
-        let a = area.name();
-        println!("\nno reference list (plan/premiere/{a}.json, or --reference FILE): {a} parity not measured");
+        println!("\nno reference list (plan/premiere/{}.json, or --reference FILE): {} parity not measured", area.reference_name(), area.name());
         return match args.min {
             Some(_) => Err("--min needs a reference list".into()),
             None => Ok(()),
@@ -235,21 +270,60 @@ pub fn run(root: &Path, args: &[&str]) -> Result<(), String> {
     }
 }
 
-/// Our side as JSON: the menu bar from the `menu_tree` example, the command registry from the
-/// `command_list` example, or the Effects panel catalog from the `effect_catalog` example.
-fn dump_ours(area: Area) -> Result<String, String> {
-    let (package, example) = match area {
-        Area::Menus => ("cfa4-ui-egui", "menu_tree"),
-        Area::Commands => ("cfa4-engine", "command_list"),
-        Area::Effects | Area::Transitions => ("cfa4-project", "effect_catalog"),
-    };
-    let mut cmd = Command::new(env!("CARGO"));
-    cmd.args(["run", "-q", "-p", package, "--example", example]).stderr(Stdio::inherit());
-    let out = cmd.output().map_err(|e| format!("{example}: {e} (or pass a saved dump with --ours FILE)"))?;
-    if !out.status.success() {
-        return Err(format!("{example} failed: {} (or pass a saved dump with --ours FILE)", out.status));
+/// How our side is dumped: a cargo example, or the Qt 6 GUI dump script.
+#[derive(Debug, PartialEq)]
+enum Dump {
+    Example { package: &'static str, example: &'static str },
+    Qt { flag: &'static str },
+}
+
+fn dump_of(area: Area) -> Dump {
+    match area {
+        Area::Menus => Dump::Qt { flag: "--menus" },
+        Area::Panels => Dump::Qt { flag: "--panels" },
+        Area::MenusEgui => Dump::Example { package: "cfa4-ui-egui", example: "menu_tree" },
+        Area::Commands => Dump::Example { package: "cfa4-engine", example: "command_list" },
+        Area::Effects | Area::Transitions => Dump::Example { package: "cfa4-project", example: "effect_catalog" },
     }
-    String::from_utf8(out.stdout).map_err(|e| format!("{example}: {e}"))
+}
+
+/// Our side as JSON: the Qt 6 GUI menu bar or panels from the live window (`qt_ui_inventory.py`),
+/// the egui menu bar from the `menu_tree` example, the command registry from the `command_list`
+/// example, or the Effects panel catalog from the `effect_catalog` example.
+fn dump_ours(root: &Path, area: Area) -> Result<String, String> {
+    let (mut cmd, what) = match dump_of(area) {
+        Dump::Example { package, example } => {
+            let mut cmd = Command::new(env!("CARGO"));
+            cmd.args(["run", "-q", "-p", package, "--example", example]);
+            (cmd, example.to_string())
+        }
+        Dump::Qt { flag } => {
+            let python = root.join(".venv/bin/python");
+            if !python.exists() {
+                return Err(format!(
+                    "{}: missing; set up the Python environment (docs/development/linux.md), or pass a saved dump with --ours FILE",
+                    python.display()
+                ));
+            }
+            let mut cmd = Command::new(python);
+            cmd.arg(root.join(QT_DUMP)).arg(flag).current_dir(root);
+            let engine = crate::target_dir().join("release").join("cfa4-cli");
+            if engine.exists() {
+                cmd.arg("--engine").arg(engine);
+            }
+            (cmd, format!("{QT_DUMP} {flag}"))
+        }
+    };
+    cmd.stderr(Stdio::inherit());
+    let hint = match dump_of(area) {
+        Dump::Qt { .. } => " (needs a built engine: cargo build --release -p cfa4-cli; or pass a saved dump with --ours FILE)",
+        Dump::Example { .. } => " (or pass a saved dump with --ours FILE)",
+    };
+    let out = cmd.output().map_err(|e| format!("{what}: {e}{hint}"))?;
+    if !out.status.success() {
+        return Err(format!("{what} failed: {}{hint}", out.status));
+    }
+    String::from_utf8(out.stdout).map_err(|e| format!("{what}: {e}"))
 }
 
 /// The string elements of a JSON array field (`path`, `menu`); other elements are skipped.
@@ -270,7 +344,7 @@ fn our_items(v: &Value) -> Result<Vec<OurItem>, String> {
             let label = it.get("label")?.as_str()?;
             let mut path = strings(it, "path")?;
             path.push(label.to_string());
-            (path.len() >= 2).then(|| OurItem { path, id: id_of(it) })
+            (path.len() >= 2).then(|| OurItem { path, id: id_of(it), stub: None })
         })
         .collect())
 }
@@ -289,7 +363,33 @@ fn our_commands(v: &Value) -> Result<Vec<OurItem>, String> {
             }
             let mut path = strings(it, "menu")?;
             path.push(label.to_string());
-            Some(OurItem { path, id: id_of(it) })
+            Some(OurItem { path, id: id_of(it), stub: None })
+        })
+        .collect())
+}
+
+/// Why a panel of the given status (`qt_ui_inventory.py --panels`) is an automatic stub, if it is.
+fn panel_stub(status: &str) -> Option<&'static str> {
+    match status {
+        "placeholder" => Some("placeholder dock: no content yet"),
+        "listed" => Some("not yet in the Qt GUI: listed in the Window menu, no dock"),
+        _ => None,
+    }
+}
+
+/// Our panels (by title), from the `qt_ui_inventory.py --panels` dump; placeholder and
+/// listed-only panels are automatic stubs.
+fn our_panels(v: &Value) -> Result<Vec<OurItem>, String> {
+    let items = v.as_array().ok_or("our panel dump is not an array")?;
+    Ok(items
+        .iter()
+        .filter_map(|it| {
+            let title = it.get("title")?.as_str()?.trim();
+            if title.is_empty() {
+                return None;
+            }
+            let status = it.get("status").and_then(Value::as_str).unwrap_or_default();
+            Some(OurItem { path: vec![title.to_string()], id: title.to_string(), stub: panel_stub(status) })
         })
         .collect())
 }
@@ -305,7 +405,7 @@ fn our_catalog(v: &Value, area: Area) -> Result<Vec<OurItem>, String> {
             let name = it.get("name")?.as_str()?;
             let mut path = strings(it, "path")?;
             path.push(name.to_string());
-            Some(OurItem { path, id: id_of(it) })
+            Some(OurItem { path, id: id_of(it), stub: None })
         })
         .collect())
 }
@@ -317,9 +417,13 @@ fn inventory(area: Area, ours: &[OurItem]) -> String {
         *per.entry(area.group(&it.path)).or_default() += 1;
     }
     let mut s = format!("CFA4 {}: {} items\n", area.ours(), ours.len());
+    let stubs: Vec<&OurItem> = ours.iter().filter(|it| it.stub.is_some()).collect();
     let width = per.keys().map(|g| g.chars().count()).max().unwrap_or(0).max(22);
     for (group, n) in per {
         s.push_str(&format!("  {group:<width$} {n}\n"));
+    }
+    for it in stubs {
+        s.push_str(&format!("  stub: {} ({})\n", show(&it.path), it.stub.unwrap_or_default()));
     }
     s
 }
@@ -444,8 +548,8 @@ fn norm(label: &str) -> String {
 /// Why a reference item is not counted, if it isn't.
 fn out_of_scope(area: Area, path: &[String]) -> Option<&'static str> {
     match area {
-        Area::Menus => menu_out_of_scope(path),
-        Area::Commands => None,
+        Area::Menus | Area::MenusEgui => menu_out_of_scope(path),
+        Area::Commands | Area::Panels => None,
         Area::Effects | Area::Transitions => {
             let top = norm(path.first()?);
             if path.len() >= 2 && (top == "presets" || top == "lumetri presets") {
@@ -482,7 +586,7 @@ fn menu_out_of_scope(path: &[String]) -> Option<&'static str> {
 
 /// Where a reference item is on our side; `Same` and `Elsewhere` carry the index of our item.
 enum Placement {
-    Same(#[cfg_attr(not(test), expect(dead_code, reason = "read by the fidelity tiers (G7.6); the tests read it already"))] usize),
+    Same(usize),
     Elsewhere(usize),
     Missing,
 }
@@ -553,11 +657,28 @@ impl Report {
         pct(same + elsewhere, self.items.len())
     }
 
+    /// Our item a reference item was found as, if it was.
+    fn found(&self, pl: &Placement) -> Option<&OurItem> {
+        match pl {
+            Placement::Same(i) | Placement::Elsewhere(i) => self.ours.get(*i),
+            Placement::Missing => None,
+        }
+    }
+
+    /// Reference items found only as an automatic stub, with our item.
+    fn stubs(&self) -> Vec<(&[String], &OurItem)> {
+        self.items.iter().filter_map(|(p, pl)| self.found(pl).filter(|it| it.stub.is_some()).map(|it| (p.as_slice(), it))).collect()
+    }
+
     fn summary(&self) -> String {
         let (same, elsewhere, missing) = self.counts();
         let n = self.items.len();
+        let stubs = match self.stubs().len() {
+            0 => String::new(),
+            k => format!(" (of which stub {k})"),
+        };
         format!(
-            "{}: presence {}/{n} ({:.1}%), same place {same}/{n} ({:.1}%), elsewhere {elsewhere}, missing {missing}, out of scope {}",
+            "{}: presence {}/{n} ({:.1}%){stubs}, same place {same}/{n} ({:.1}%), elsewhere {elsewhere}, missing {missing}, out of scope {}",
             self.area.name(),
             same + elsewhere,
             self.presence(),
@@ -571,8 +692,9 @@ impl Report {
         let n = self.items.len();
         let area = self.area;
         let (title, column) = match area {
-            Area::Menus => ("Menu", "Menu"),
+            Area::Menus | Area::MenusEgui => ("Menu", "Menu"),
             Area::Commands => ("Command", "Menu"),
+            Area::Panels => ("Panel", "Group"),
             Area::Effects => ("Effect", "Folder"),
             Area::Transitions => ("Transition", "Folder"),
         };
@@ -585,7 +707,8 @@ impl Report {
             self.out_of_scope.values().sum::<usize>(),
             area.ours(),
             match area {
-                Area::Menus => "",
+                Area::Menus | Area::MenusEgui => "",
+                Area::Panels => " A panel is matched by its title. A panel that is only a placeholder dock, or only listed in the Window menu, is an automatic stub: present, but not the real panel (listed below).",
                 Area::Commands => " A bare name with no menu in the reference is matched by label alone; queries are left out.",
                 Area::Effects | Area::Transitions => " A bare name with no folder in the reference is matched by name alone.",
             },
@@ -628,6 +751,13 @@ impl Report {
                 s.push_str(&format!("- {} → {}\n", show(p), show(&at.path)));
             }
         }
+        let stubs = self.stubs();
+        if !stubs.is_empty() {
+            s.push_str(&format!("\n## Automatic stubs ({})\n\n", stubs.len()));
+            for (p, it) in stubs {
+                s.push_str(&format!("- {} → {}: {}\n", show(p), show(&it.path), it.stub.unwrap_or_default()));
+            }
+        }
         s.push_str("\n## Out of scope\n\n");
         for (why, k) in &self.out_of_scope {
             s.push_str(&format!("- {why}: {k}\n"));
@@ -650,7 +780,7 @@ mod tests {
     }
 
     fn items(v: &[&[&str]]) -> Vec<OurItem> {
-        paths(v).into_iter().map(|path| OurItem { path, id: String::new() }).collect()
+        paths(v).into_iter().map(|path| OurItem { path, ..OurItem::default() }).collect()
     }
 
     fn item_paths(v: &[OurItem]) -> Vec<Vec<String>> {
@@ -736,7 +866,7 @@ mod tests {
     #[test]
     fn our_dump_and_arguments_are_checked() {
         let ours = our_items(&json!([{"id": "file.save", "label": "Save", "path": ["File"]}, {"id": "x", "label": "Orphan", "path": []}, {"bad": 1}])).unwrap();
-        assert_eq!(ours, vec![OurItem { path: paths(&[&["File", "Save"]]).remove(0), id: "file.save".into() }]);
+        assert_eq!(ours, vec![OurItem { path: paths(&[&["File", "Save"]]).remove(0), id: "file.save".into(), stub: None }]);
         assert!(our_items(&json!({})).is_err());
         assert!(parse_args(&["--min", "101"]).is_err());
         assert!(parse_args(&["--min", "x"]).is_err());
@@ -744,7 +874,7 @@ mod tests {
         assert!(parse_args(&["--bogus"]).is_err());
         assert!(parse_args(&["--min", "90", "--reference", "r.json"]).is_ok_and(|a| a.min == Some(90.0) && a.reference.is_some() && a.area == Area::Menus));
         assert!(parse_args(&["--area", "transitions"]).is_ok_and(|a| a.area == Area::Transitions));
-        assert!(parse_args(&["--area", "panels"]).is_err());
+        assert!(parse_args(&["--area", "windows"]).is_err());
         assert!(parse_args(&["--area"]).is_err());
     }
 
@@ -821,18 +951,11 @@ mod tests {
     #[test]
     fn compare_points_at_our_item_for_same_and_elsewhere() {
         let ours = vec![
-            OurItem { path: paths(&[&["File", "Save"]]).remove(0), id: "file.save".into() },
-            OurItem { path: paths(&[&["File", "Export", "Export Frame"]]).remove(0), id: "export.frame".into() },
+            OurItem { path: paths(&[&["File", "Save"]]).remove(0), id: "file.save".into(), stub: None },
+            OurItem { path: paths(&[&["File", "Export", "Export Frame"]]).remove(0), id: "export.frame".into(), stub: None },
         ];
         let r = compare(Area::Menus, &paths(&[&["File", "Save"], &["File", "Export Frame"], &["Edit", "Undo"]]), &ours);
-        let ids: Vec<Option<&str>> = r
-            .items
-            .iter()
-            .map(|(_, pl)| match pl {
-                Placement::Same(i) | Placement::Elsewhere(i) => r.ours.get(*i).map(|it| it.id.as_str()),
-                Placement::Missing => None,
-            })
-            .collect();
+        let ids: Vec<Option<&str>> = r.items.iter().map(|(_, pl)| r.found(pl).map(|it| it.id.as_str())).collect();
         assert_eq!(ids, vec![Some("file.save"), Some("export.frame"), None]);
     }
 
@@ -878,5 +1001,80 @@ mod tests {
         assert!(md.contains("- Sequence ▸ Nest → Clip ▸ Nest…"), "{md}");
         assert!(r.summary().starts_with("commands: presence 3/4 (75.0%)"), "{}", r.summary());
         assert!(parse_args(&["--area", "commands"]).is_ok_and(|a| a.area == Area::Commands));
+    }
+
+    fn panel_dump() -> Value {
+        json!([
+            {"title": "Program", "status": "central"},
+            {"title": "Timeline", "status": "docked"},
+            {"title": "Effect Controls", "status": "docked"},
+            {"title": "Libraries", "status": "placeholder"},
+            {"title": "Reference Monitor", "status": "listed"},
+            {"title": "  ", "status": "docked"},
+            {"status": "docked"}
+        ])
+    }
+
+    #[test]
+    fn panels_status_maps_to_stub() {
+        let ours = our_panels(&panel_dump()).unwrap();
+        let stubs: Vec<(&str, bool)> = ours.iter().map(|it| (it.id.as_str(), it.stub.is_some())).collect();
+        assert_eq!(stubs, vec![("Program", false), ("Timeline", false), ("Effect Controls", false), ("Libraries", true), ("Reference Monitor", true)]);
+        assert_eq!(ours.get(3).and_then(|it| it.stub), Some("placeholder dock: no content yet"));
+        assert!(our_panels(&json!({"panels": []})).is_err());
+        let inv = inventory(Area::Panels, &ours);
+        assert!(inv.starts_with("CFA4 Qt 6 GUI panels: 5 items"), "{inv}");
+        assert!(inv.contains("stub: Libraries (placeholder dock: no content yet)"), "{inv}");
+    }
+
+    #[test]
+    fn panels_reference_bare_names() {
+        let reference =
+            reference_paths(&json!({"panels": ["Program", "Timeline", "Libraries", "Reference Monitor", "Essential Graphics"]}), Area::Panels).unwrap();
+        assert_eq!(reference.len(), 5);
+        let r = compare(Area::Panels, &reference, &our_panels(&panel_dump()).unwrap());
+        // bare names have no place to compare: all found are "same"; stubs still count as present
+        assert_eq!(r.counts(), (4, 0, 1), "{}", r.summary());
+        assert!(r.summary().starts_with("panels: presence 4/5 (80.0%) (of which stub 2)"), "{}", r.summary());
+        assert_eq!(r.ours_only, paths(&[&["Effect Controls"]]));
+        let md = r.markdown("panels.json", 5);
+        assert!(md.starts_with("# Panel parity checklist"), "{md}");
+        assert!(md.contains("| Panels | 5 | 4 | 0 | 1 | 80.0% |"), "{md}");
+        assert!(md.contains("## Automatic stubs (2)"), "{md}");
+        assert!(md.contains("- Reference Monitor → Reference Monitor: not yet in the Qt GUI"), "{md}");
+        assert!(md.contains("- [ ] Essential Graphics"), "{md}");
+        assert!(parse_args(&["--area", "panels"]).is_ok_and(|a| a.area == Area::Panels));
+    }
+
+    #[test]
+    fn menus_area_uses_qt_dump() {
+        assert_eq!(dump_of(Area::Menus), Dump::Qt { flag: "--menus" });
+        assert_eq!(dump_of(Area::Panels), Dump::Qt { flag: "--panels" });
+        assert_eq!(dump_of(Area::MenusEgui), Dump::Example { package: "cfa4-ui-egui", example: "menu_tree" });
+        // the Qt dump has the menu_tree shape, so it parses the same way
+        let ours = our_items(&json!([{"id": "", "label": "Timeline", "path": ["Window"]}, {"id": "app.quit", "label": "Quit", "path": ["File"]}])).unwrap();
+        assert_eq!(item_paths(&ours), paths(&[&["Window", "Timeline"], &["File", "Quit"]]));
+        let r = compare(Area::Menus, &paths(&[&["Window", "Timeline"], &["Help", "About"]]), &ours);
+        assert_eq!(r.counts(), (1, 0, 0), "Help is out of scope: {}", r.summary());
+        assert!(r.markdown("menus.json", 2).contains("CFA4's Qt 6 GUI menu bar"));
+        // a missing Python environment is an error that names the fix, not an empty list
+        let err = dump_ours(Path::new("/nonexistent-cfa4-root"), Area::Menus).unwrap_err();
+        assert!(err.contains("docs/development/linux.md") && err.contains("--ours FILE"), "{err}");
+    }
+
+    #[test]
+    fn menus_egui_still_parses() {
+        let a = parse_args(&["--area", "menus-egui"]).unwrap();
+        assert_eq!(a.area, Area::MenusEgui);
+        assert_eq!(a.area.reference_name(), "menus");
+        assert_eq!(a.area.out_file(), "parity-menus-egui.md");
+        let ours = our_items(&json!([{"id": "file.save", "label": "Save", "path": ["File"]}])).unwrap();
+        let reference = reference_paths(&json!(["File > Save", "Help > About", "Export Frame"]), Area::MenusEgui).unwrap();
+        // menu items need a menu: the bare name is dropped; Help is out of scope
+        assert_eq!(reference.len(), 2);
+        let r = compare(Area::MenusEgui, &reference, &ours);
+        assert_eq!(r.counts(), (1, 0, 0));
+        assert!(r.summary().starts_with("menus-egui: presence 1/1"), "{}", r.summary());
+        assert!(r.markdown("menus.json", 1).contains("frozen egui menu bar"));
     }
 }
