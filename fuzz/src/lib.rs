@@ -259,10 +259,15 @@ pub fn mpeg2v(data: &[u8]) {
     let _ = dec.decode(data, 0);
 }
 
+/// Only key frames set the VP8 picture size, so one larger than `MAX_SIDE` is skipped: a 1 KiB
+/// packet may ask for a 16383 × 16383 picture, valid but slow to decode (a 10 s timeout, not a bug).
 pub fn vp8(data: &[u8]) {
     let _ = cfa4_vp8::keyframe_info(data);
     let mut dec = cfa4_vp8::Decoder::new();
     for p in packets(data) {
+        if cfa4_vp8::keyframe_info(p).is_some_and(|k| k.width > MAX_SIDE || k.height > MAX_SIDE) {
+            continue;
+        }
         let _ = dec.decode(p, 0);
     }
 }
