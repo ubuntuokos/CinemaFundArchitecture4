@@ -15,7 +15,7 @@ from __future__ import annotations
 
 from typing import Any
 
-from PySide6.QtCore import Qt
+from PySide6.QtCore import QTimer, Qt
 from PySide6.QtWidgets import (
     QCheckBox,
     QComboBox,
@@ -26,6 +26,7 @@ from PySide6.QtWidgets import (
     QLabel,
     QListWidget,
     QListWidgetItem,
+    QProgressBar,
     QPushButton,
     QVBoxLayout,
     QWidget,
@@ -41,6 +42,7 @@ SCOPES = (
 )
 MODES = (("cut", N_("Delete")), ("mark", N_("Mark only")))
 ID_ROLE = int(Qt.ItemDataRole.UserRole)
+POLL_MS = 150
 
 
 def seconds(ticks: Any) -> float:
@@ -61,6 +63,10 @@ class RemoveSilenceDialog(QDialog):
         self.resize(520, 560)
         # the regions as the engine reported them: (id, start ticks, duration ticks)
         self._regions: list[tuple[int, int, int]] = []
+        self._job: int | None = None
+        self._timer = QTimer(self)
+        self._timer.setInterval(POLL_MS)
+        self._timer.timeout.connect(self._poll)
 
         root = QVBoxLayout(self)
         form = QFormLayout()
@@ -107,6 +113,11 @@ class RemoveSilenceDialog(QDialog):
         self.analyze.setObjectName("removeSilence.analyze")
         self.analyze.clicked.connect(self.run_analyze)
         root.addWidget(self.analyze)
+        self.progress = QProgressBar()
+        self.progress.setObjectName("removeSilence.progress")
+        self.progress.setRange(0, 1000)
+        self.progress.setVisible(False)
+        root.addWidget(self.progress)
 
         root.addWidget(QLabel(tr("Silent regions (checked ones are removed):")))
         self.regions = QListWidget()
@@ -168,7 +179,7 @@ class RemoveSilenceDialog(QDialog):
         p: dict[str, Any] = {
             "scope": str(self.scope.currentData()),
             "detector": str(self.detector.currentData()),
-            "mode": "preview",
+            "background": True,
             "minSilence": round(self.min_silence.value() * TICKS_PER_SECOND),
             "padding": round(self.padding.value() * TICKS_PER_SECOND),
         }
@@ -275,19 +286,77 @@ class RemoveSilenceDialog(QDialog):
         self.status.setText(message)
 
     # ----- the commands -----
+    def running(self) -> bool:
+        return self._job is not None
+
     def run_analyze(self) -> None:
-        def done(result: Any, _blob: bytes | None) -> None:
-            regions = result.get("regions") if isinstance(result, dict) else None
-            self._fill(regions if isinstance(regions, list) else [])
-            total = seconds(result.get("ticks")) if isinstance(result, dict) else 0.0
-            if self._regions:
-                self.status.setText(fmt("{n} silent regions, {s} s in all", n=len(self._regions), s=f"{total:.2f}"))
-            else:
-                self.status.setText(tr("No silence found with these settings."))
-            self.win.schedule_refresh()
+        """Start the analysis as a background job; the Analyze button becomes Cancel."""
+        if self.running():
+            self._cancel()
+            return
+
+        def started(result: Any, _blob: bytes | None) -> None:
+            job = result.get("job") if isinstance(result, dict) else None
+            if not isinstance(job, int) or isinstance(job, bool):
+                self._stop(tr("Analysis failed."))
+                return
+            self._job = job
+            self.progress.setValue(0)
+            self.progress.setVisible(True)
+            self.analyze.setText(tr("Cancel"))
+            self._timer.start()
 
         self.status.setText(tr("Analyzing…"))
-        self.engine.execute("audio.detectSpeech", self.params(), on_reply=done, on_error=self._failed)
+        self.engine.execute("audio.detectSpeech", self.params(), on_reply=started, on_error=self._stop)
+
+    def _cancel(self) -> None:
+        if self._job is not None:
+            self.engine.execute("jobs.cancel", {"job": self._job}, on_error=lambda _m: None)
+            self.status.setText(tr("Stopping…"))
+
+    def _stop(self, text: str) -> None:
+        self._timer.stop()
+        self._job = None
+        self.progress.setVisible(False)
+        self.analyze.setText(tr("Analyze"))
+        self.status.setText(text)
+
+    def _poll(self) -> None:
+        job = self._job
+        if job is None:
+            return
+
+        def got(result: Any, _blob: bytes | None) -> None:
+            if self._job != job or not isinstance(result, list):
+                return
+            mine = next((j for j in result if isinstance(j, dict) and j.get("id") == job), None)
+            if mine is None:
+                self._stop(tr("Analysis failed."))
+                return
+            fraction = mine.get("progress")
+            if isinstance(fraction, (int, float)) and not isinstance(fraction, bool):
+                self.progress.setValue(round(max(0.0, min(1.0, float(fraction))) * 1000))
+            if not mine.get("finished"):
+                return
+            res = mine.get("result")
+            if isinstance(res, dict) and res.get("error"):
+                error = str(res["error"])
+                self._stop(tr("Analysis cancelled.") if "cancel" in error else error)
+                return
+            self._stop(tr("Analyzing…"))
+            self.engine.execute("silence.mark", {"job": job}, on_reply=self._marked, on_error=self._stop)
+
+        self.engine.execute("jobs.list", {}, on_reply=got, on_error=lambda _m: None)
+
+    def _marked(self, result: Any, _blob: bytes | None) -> None:
+        regions = result.get("regions") if isinstance(result, dict) else None
+        self._fill(regions if isinstance(regions, list) else [])
+        total = seconds(result.get("ticks")) if isinstance(result, dict) else 0.0
+        if self._regions:
+            self.status.setText(fmt("{n} silent regions, {s} s in all", n=len(self._regions), s=f"{total:.2f}"))
+        else:
+            self.status.setText(tr("No silence found with these settings."))
+        self.win.schedule_refresh()
 
     def run_remove(self) -> None:
         ids = self.checked_ids()

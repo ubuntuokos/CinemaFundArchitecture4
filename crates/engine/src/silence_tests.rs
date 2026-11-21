@@ -417,3 +417,59 @@ fn v1_silence_removal_acceptance() {
     s.execute("edit.redo", json!({})).unwrap();
     assert_eq!(saved(&s), after_state);
 }
+
+/// Wait for a job to finish; its `result` as JSON.
+fn finished(s: &mut Session, job: u64) -> Value {
+    for _ in 0..400 {
+        let list = s.execute("jobs.list", json!({})).unwrap();
+        if let Some(j) = list.as_array().unwrap().iter().find(|j| j["id"] == json!(job))
+            && j["finished"] == json!(true)
+        {
+            return j["result"].clone();
+        }
+        std::thread::sleep(std::time::Duration::from_millis(25));
+    }
+    panic!("the job did not finish");
+}
+
+#[test]
+fn a_background_analysis_is_a_job_and_marks_exactly_what_the_direct_run_does() {
+    let mut s = new_session();
+    let a = place(&mut s, "/a.wav", speech(), "A1");
+    let b = place(&mut s, "/b.wav", wav(5.0, &[(1.5, 3.0)]), "A2");
+    let p = json!({"clips": [a.0, b.0], "minSilence": TICKS_PER_SECOND / 4, "padding": 0});
+    let direct = s.execute("audio.detectSpeech", p.clone()).unwrap();
+    let want = silence_markers(&s);
+    s.execute("silence.clear", json!({})).unwrap();
+    let before = saved(&s);
+    let mut bg = p.clone();
+    bg["background"] = json!(true);
+    let r = s.execute("audio.detectSpeech", bg).unwrap();
+    let job = r["job"].as_u64().unwrap();
+    assert_eq!(saved(&s), before, "starting the job changes nothing");
+    assert!(finished(&mut s, job)["error"].is_null());
+    assert_eq!(saved(&s), before, "neither does finishing it");
+    let marked = s.execute("silence.mark", json!({"job": job})).unwrap();
+    assert_eq!(marked["regions"].as_array().unwrap().len(), direct["regions"].as_array().unwrap().len());
+    let got: Vec<(i64, i64)> = silence_markers(&s).iter().map(|m| (m.1, m.2)).collect();
+    assert_eq!(got, want.iter().map(|m| (m.1, m.2)).collect::<Vec<_>>());
+    assert!(s.execute("silence.mark", json!({"job": job})).is_err(), "taken once");
+    assert!(s.execute("silence.mark", json!({"job": 99_999})).is_err());
+    assert!(s.execute("silence.mark", json!({})).is_err());
+}
+
+#[test]
+fn a_cancelled_analysis_leaves_the_sequence_alone_and_cannot_be_marked() {
+    let mut s = new_session();
+    // eight pieces of audio to read: the cancel arrives long before the end
+    let c = place(&mut s, "/long.wav", wav(240.0, &[(1.0, 2.0)]), "A1");
+    let before = saved(&s);
+    let r = s.execute("audio.detectSpeech", json!({"clips": [c.0], "background": true})).unwrap();
+    let job = r["job"].as_u64().unwrap();
+    s.execute("jobs.cancel", json!({"job": job})).unwrap();
+    let result = finished(&mut s, job);
+    assert!(result["error"].as_str().is_some_and(|e| e.contains("cancel")), "{result}");
+    assert!(s.execute("silence.mark", json!({"job": job})).is_err());
+    assert_eq!(saved(&s), before);
+    assert!(silence_markers(&s).is_empty());
+}

@@ -32,8 +32,12 @@ def app() -> Any:
 
 
 class FakeEngine:
+    """Answers at once; the analysis is a job that `jobs.list` reports finished on the second poll."""
+
     def __init__(self) -> None:
         self.calls: list[tuple[str, dict[str, Any]]] = []
+        self.polls = 0
+        self.fail: str | None = None
         self.regions: list[Any] = [
             {"id": 11, "start": 0, "duration": TICKS_PER_SECOND, "keep": False},
             {"id": 12, "start": 3 * TICKS_PER_SECOND, "duration": TICKS_PER_SECOND // 2, "keep": True},
@@ -45,12 +49,27 @@ class FakeEngine:
         self.calls.append((command, params or {}))
         reply: Any = {}
         if command == "audio.detectSpeech":
+            self.polls = 0
+            reply = {"job": 7}
+        elif command == "jobs.list":
+            self.polls += 1
+            done = self.polls >= 2
+            result = {"error": self.fail} if done and self.fail else ({"path": "x"} if done else None)
+            reply = [{"id": 7, "progress": 1.0 if done else 0.4, "finished": done, "result": result}]
+        elif command == "silence.mark":
             reply = {"regions": self.regions, "ticks": 1.5 * TICKS_PER_SECOND}
         elif command == "clip.removeSilence":
             reply = {"removed": len((params or {}).get("regions", []))}
         if on_reply:
             on_reply(reply, None)
         return 0
+
+
+def analyze(d: RemoveSilenceDialog) -> None:
+    """Click Analyze and let the dialog's poll timer run until the job is done."""
+    d.run_analyze()
+    while d.running():
+        d._poll()
 
 
 class FakeWindow(QtWidgets.QMainWindow):
@@ -71,13 +90,13 @@ def test_the_dialog_sends_ticks_and_never_deletes_on_analyze(app: Any) -> None:
     win = FakeWindow()
     d = RemoveSilenceDialog(win)
     d.set_ui_state({"minSilenceSeconds": 0.75, "paddingSeconds": 0.2, "scope": "sequence"})
-    d.run_analyze()
+    analyze(d)
     cmd, p = win.engine.calls[0]
     assert cmd == "audio.detectSpeech"
     assert p == {
         "scope": "sequence",
         "detector": "energy",
-        "mode": "preview",
+        "background": True,
         "minSilence": round(0.75 * TICKS_PER_SECOND),
         "padding": round(0.2 * TICKS_PER_SECOND),
     }
@@ -93,7 +112,7 @@ def test_the_dialog_sends_ticks_and_never_deletes_on_analyze(app: Any) -> None:
 def test_unchecking_keeps_a_region_and_remove_sends_only_the_checked_ones(app: Any) -> None:
     win = FakeWindow()
     d = RemoveSilenceDialog(win)
-    d.run_analyze()
+    analyze(d)
     d.regions.item(0).setCheckState(QtCore.Qt.CheckState.Unchecked)
     assert win.engine.calls[-1] == ("silence.keep", {"ids": [11], "keep": True})
     d.select_all.click()
@@ -107,7 +126,7 @@ def test_unchecking_keeps_a_region_and_remove_sends_only_the_checked_ones(app: A
 def test_remove_with_nothing_checked_sends_nothing(app: Any) -> None:
     win = FakeWindow()
     d = RemoveSilenceDialog(win)
-    d.run_analyze()
+    analyze(d)
     d.select_none.click()
     n = len(win.engine.calls)
     d.run_remove()
@@ -115,10 +134,30 @@ def test_remove_with_nothing_checked_sends_nothing(app: Any) -> None:
     assert d.status.text() == "No region is checked."
 
 
-def test_mark_mode_and_hostile_replies(app: Any) -> None:
+def test_the_analysis_is_a_job_that_can_be_cancelled_and_its_errors_are_shown(app: Any) -> None:
     win = FakeWindow()
     d = RemoveSilenceDialog(win)
     d.run_analyze()
+    assert d.running() and d.analyze.text() == "Cancel"
+    assert [c for c, _ in win.engine.calls if c == "silence.mark"] == [], "nothing is marked while it runs"
+    d.run_analyze()  # the button is now Cancel
+    assert win.engine.calls[-1] == ("jobs.cancel", {"job": 7})
+    win.engine.fail = "cancelled"
+    d._poll()
+    d._poll()
+    assert not d.running() and d.analyze.text() == "Analyze"
+    assert d.status.text() == "Analysis cancelled."
+    assert d.regions.count() == 0
+    assert [c for c, _ in win.engine.calls if c == "silence.mark"] == []
+    win.engine.fail = "reading the clip's audio: boom"
+    analyze(d)
+    assert d.status.text() == "reading the clip's audio: boom" and not d.running()
+
+
+def test_mark_mode_and_hostile_replies(app: Any) -> None:
+    win = FakeWindow()
+    d = RemoveSilenceDialog(win)
+    analyze(d)
     d.set_ui_state({"mode": "mark"})
     d.run_remove()
     assert win.engine.calls[-1][1]["mode"] == "mark"
@@ -130,7 +169,7 @@ def test_mark_mode_and_hostile_replies(app: Any) -> None:
         {"id": 1, "start": True, "duration": 5},
         {"id": 2, "start": 1.5, "duration": 2},
     ]
-    d.run_analyze()
+    analyze(d)
     assert d.ui_state()["regions"] == []
     assert seconds(True) == 0.0 and seconds("x") == 0.0 and seconds(TICKS_PER_SECOND) == 1.0
 
@@ -138,7 +177,7 @@ def test_mark_mode_and_hostile_replies(app: Any) -> None:
 def test_selecting_a_row_moves_the_playhead_and_the_dialog_is_one_per_window(app: Any) -> None:
     win = FakeWindow()
     d = RemoveSilenceDialog(win)
-    d.run_analyze()
+    analyze(d)
     d.regions.setCurrentRow(1)
     assert win.seeks[-1] == 3 * TICKS_PER_SECOND
     assert open_remove_silence(win) is open_remove_silence(win)

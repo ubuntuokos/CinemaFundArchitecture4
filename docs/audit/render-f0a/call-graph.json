@@ -10029,7 +10029,17 @@
   },
   {
    "from": "cfa4-engine/silence.rs",
+   "item": "Report",
+   "to": "cfa4-export"
+  },
+  {
+   "from": "cfa4-engine/silence.rs",
    "item": "ClipId",
+   "to": "cfa4-project"
+  },
+  {
+   "from": "cfa4-engine/silence.rs",
+   "item": "ItemId",
    "to": "cfa4-project"
   },
   {

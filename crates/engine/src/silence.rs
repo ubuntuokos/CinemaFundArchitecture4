@@ -8,6 +8,7 @@
 //! Tools ▸ Remove Silence…) shows the regions first, so a menu click can never delete blindly.
 //!
 //! | `audio.detectSpeech` | measures the audio clips and returns the silent regions (`mode: "query"`) or also puts them on the sequence as range markers (`mode: "preview"`, the default). **Never deletes.** |
+//! | `silence.mark` | with `background: true` the analysis runs as a cancellable job (`jobs.list`, `jobs.cancel`); this puts its finished result on the sequence as markers |
 //! | `silence.regions` | lists the silence markers (id, start, duration, kept or not, clip) |
 //! | `silence.clear` | removes the silence markers (nothing else) |
 //! | `silence.keep` | marks silence markers as kept (the removal skips them) or not |
@@ -24,6 +25,10 @@
 //! comes with the AI layer and is refused until then. Speed-changed, reversed and remixed clips
 //! are refused (their audio is not the source read at 1×).
 
+use std::collections::HashMap;
+use std::sync::atomic::{AtomicBool, AtomicU64, Ordering};
+use std::sync::{Mutex, OnceLock, PoisonError};
+
 use cfa4_edit::transcript::{self as tx, merge_ranges};
 use cfa4_project::{ClipId, Label, Marker, MarkerId, MarkerKind, TrackKind};
 use cfa4_speech::vad::{self, FRAME_SAMPLES, SilenceParams};
@@ -39,6 +44,7 @@ pub const SILENCE_COMMENT: &str = "Silence region";
 pub const KEEP_FLAG: &str = " [silence:keep]";
 
 const CMD_DETECT: &str = "audio.detectSpeech";
+const CMD_MARK: &str = "silence.mark";
 const CMD_KEEP: &str = "silence.keep";
 const CMD_REMOVE: &str = "clip.removeSilence";
 /// Audio is read in pieces of this many seconds (a whole number of analysis frames).
@@ -176,24 +182,50 @@ fn params(p: &Value) -> Result<SilenceParams> {
     Ok(sp)
 }
 
-/// The levels of a clip's audio (16 kHz mono, 10 ms frames), read in pieces so a long clip is
-/// never held whole.
-fn clip_levels(s: &Session, c: ClipId) -> Result<(Vec<f32>, usize)> {
+/// What the analysis of one clip needs, so it can run on a thread that has no session.
+#[derive(Clone)]
+struct ClipRead {
+    id: ClipId,
+    item: cfa4_project::ItemId,
+    stream: usize,
+    /// First sample (16 kHz) of the clip's audio in its source.
+    m0: i64,
+    /// Samples (16 kHz) the clip plays.
+    total: usize,
+    start: Tick,
+    duration: Tick,
+}
+
+fn read_info(s: &Session, c: ClipId) -> Result<ClipRead> {
     let seq = s.active_sequence().ok_or(EngineError::NoSequence)?;
     let (_, it) = seq.find_item(c).ok_or_else(|| bad(CMD_DETECT, "no such clip"))?;
+    let sr = i64::from(cfa4_speech::SAMPLE_RATE);
+    Ok(ClipRead {
+        id: c,
+        item: it.item,
+        stream: it.audio_stream,
+        m0: it.source_in.to_units_floor(sr),
+        total: it.duration.to_units_floor(sr).max(0) as usize,
+        start: it.start,
+        duration: it.duration,
+    })
+}
+
+/// Measure one clip: its audio (16 kHz mono, 10 ms frames) is read in pieces, so a long clip is
+/// never held whole, and `cancel` is looked at between pieces. `done` counts the samples read.
+fn analyse(provider: &dyn cfa4_render::SourceProvider, r: &ClipRead, sp: &SilenceParams, cancel: &AtomicBool, done: &AtomicU64) -> Result<Analysed> {
     let sr = cfa4_speech::SAMPLE_RATE;
-    let m0 = it.source_in.to_units_floor(i64::from(sr));
-    let total = it.duration.to_units_floor(i64::from(sr)).max(0) as usize;
-    let provider = s.media.provider(s.project.clone(), s.services.clone());
-    let src = cfa4_render::SourceProvider::source(&provider, it.item).ok_or_else(|| EngineError::Other("the clip's media is offline".into()))?;
+    let src = provider.source(r.item).ok_or_else(|| EngineError::Other("the clip's media is offline".into()))?;
     let chunk = CHUNK_SECONDS * sr as usize / FRAME_SAMPLES * FRAME_SAMPLES;
-    let mut db = Vec::with_capacity(total / FRAME_SAMPLES + 1);
-    let mut done = 0usize;
-    while done < total {
-        let n = chunk.min(total - done);
-        let buf = src
-            .audio_stream(it.audio_stream, m0.saturating_add(done as i64), n, sr)
-            .map_err(|e| EngineError::Other(format!("reading the clip's audio: {e}")))?;
+    let mut db = Vec::with_capacity(r.total / FRAME_SAMPLES + 1);
+    let mut at = 0usize;
+    while at < r.total {
+        if cancel.load(Ordering::Relaxed) {
+            return Err(EngineError::Other("cancelled".into()));
+        }
+        let n = chunk.min(r.total - at);
+        let buf =
+            src.audio_stream(r.stream, r.m0.saturating_add(at as i64), n, sr).map_err(|e| EngineError::Other(format!("reading the clip's audio: {e}")))?;
         let chans = buf.channels.len().max(1) as f32;
         let mut mono = vec![0.0f32; n];
         for ch in &buf.channels {
@@ -202,9 +234,11 @@ fn clip_levels(s: &Session, c: ClipId) -> Result<(Vec<f32>, usize)> {
             }
         }
         db.extend(vad::frame_db(&mono));
-        done += n;
+        at += n;
+        done.fetch_add(n as u64, Ordering::Relaxed);
     }
-    Ok((db, total))
+    let silent = vad::silence_regions_from_db(&db, r.total, sp).iter().map(|(a, d)| (r.start + *a, r.start + *a + *d)).collect();
+    Ok(Analysed { id: r.id, span: (r.start, r.start + r.duration), silent })
 }
 
 /// The time where every analysed clip that is present is silent, snapped inwards to the
@@ -251,17 +285,19 @@ fn detect(s: &mut Session, p: &Value) -> Result<Value> {
     };
     let sp = params(p)?;
     let (ids, skipped) = pick_clips(s, p)?;
-    let rate = s.sequence_rate();
-    let mut analysed = Vec::with_capacity(ids.len());
-    for c in &ids {
-        let (db, samples) = clip_levels(s, *c)?;
-        let regions = vad::silence_regions_from_db(&db, samples, &sp);
-        let seq = s.active_sequence().ok_or(EngineError::NoSequence)?;
-        let (_, it) = seq.find_item(*c).ok_or_else(|| bad(CMD_DETECT, "no such clip"))?;
-        let silent = regions.iter().map(|(a, d)| (it.start + *a, it.start + *a + *d)).collect();
-        analysed.push(Analysed { id: *c, span: (it.start, it.start + it.duration), silent });
+    let reads = ids.iter().map(|c| read_info(s, *c)).collect::<Result<Vec<_>>>()?;
+    if bool_p(p, "background").unwrap_or(false) {
+        return start_job(s, reads, sp, skipped);
     }
-    let regions = intersect(&analysed, rate);
+    let provider = s.media.provider(s.project.clone(), s.services.clone());
+    let (never, done) = (AtomicBool::new(false), AtomicU64::new(0));
+    let analysed = reads.iter().map(|r| analyse(&provider, r, &sp, &never, &done)).collect::<Result<Vec<_>>>()?;
+    finish(s, &analysed, preview, skipped)
+}
+
+/// The regions of the analysed clips, and with `preview` the markers for them.
+fn finish(s: &mut Session, analysed: &[Analysed], preview: bool, skipped: usize) -> Result<Value> {
+    let regions = intersect(analysed, s.sequence_rate());
     let total: i64 = regions.iter().map(|(a, b)| b.0 - a.0).sum();
     let clip = if analysed.len() == 1 { analysed.first().map(|a| a.id.0) } else { None };
     if !preview {
@@ -291,6 +327,68 @@ fn detect(s: &mut Session, p: &Value) -> Result<Value> {
         Ok(made)
     })?;
     Ok(json!({"regions": made, "clips": analysed.len(), "skipped": skipped, "ticks": total, "seconds": total as f64 / TICKS_PER_SECOND as f64, "clip": clip}))
+}
+
+/// Finished background analyses, by job id, until `silence.mark` takes them.
+fn mailbox() -> &'static Mutex<HashMap<u64, Vec<Analysed>>> {
+    static M: OnceLock<Mutex<HashMap<u64, Vec<Analysed>>>> = OnceLock::new();
+    M.get_or_init(Default::default)
+}
+
+/// `audio.detectSpeech` with `background: true`: the same analysis as a cancellable job
+/// (`jobs.list` shows its progress, `jobs.cancel` stops it between pieces of audio). The session
+/// is not touched; `silence.mark {job}` then puts the result on the sequence.
+fn start_job(s: &mut Session, reads: Vec<ClipRead>, sp: SilenceParams, skipped: usize) -> Result<Value> {
+    let id = s.jobs.iter().map(|j| j.id).max().unwrap_or(0) + 1;
+    let n = reads.len();
+    let job = crate::Job { id, label: format!("Detect Silence ({n} clips)"), progress: Default::default(), result: Default::default() };
+    let total: usize = reads.iter().map(|r| r.total).sum();
+    job.progress.total.store(total.max(1) as u64, Ordering::Relaxed);
+    let (prog, res) = (job.progress.clone(), job.result.clone());
+    let provider = s.media.full_res_provider(s.project.clone(), s.services.clone());
+    let work = move || {
+        let t0 = web_time::Instant::now();
+        let outcome: std::result::Result<Vec<Analysed>, String> =
+            reads.iter().map(|r| analyse(&provider, r, &sp, &prog.cancel, &prog.done).map_err(|e| e.to_string())).collect();
+        let r = outcome.map(|a| {
+            let found = a.iter().map(|c| c.silent.len() as u64).sum();
+            mailbox().lock().unwrap_or_else(PoisonError::into_inner).insert(id, a);
+            *prog.status.lock().unwrap_or_else(PoisonError::into_inner) = format!("{n} clips analysed");
+            cfa4_export::Report {
+                path: format!("silence-analysis:{id}"),
+                frames: found,
+                seconds: t0.elapsed().as_secs_f64(),
+                bytes: 0,
+                render_fps: 0.0,
+                extra_files: Vec::new(),
+            }
+        });
+        if let Err(e) = &r {
+            *prog.status.lock().unwrap_or_else(PoisonError::into_inner) = e.clone();
+            *prog.error.lock().unwrap_or_else(PoisonError::into_inner) = Some(e.clone());
+        }
+        prog.finished.store(true, Ordering::Relaxed);
+        *res.lock().unwrap_or_else(PoisonError::into_inner) = Some(r);
+    };
+    let work = crate::export_tools::guard_job(job.progress.clone(), job.result.clone(), work);
+    s.jobs.push(job);
+    std::thread::Builder::new().name("cfa4-silence".into()).spawn(work).map_err(|e| EngineError::Other(e.to_string()))?;
+    Ok(json!({"job": id, "clips": n, "skipped": skipped}))
+}
+
+/// `silence.mark {job}`: the result of a finished background analysis as silence markers (one
+/// undo step), exactly what `audio.detectSpeech` does in `preview` mode.
+fn mark(s: &mut Session, p: &Value) -> Result<Value> {
+    let id = p.get("job").and_then(Value::as_u64).ok_or_else(|| bad(CMD_MARK, "`job` must be the id `audio.detectSpeech` returned"))?;
+    let state = s.jobs.iter().find(|j| j.id == id).map(|j| j.result.lock().unwrap_or_else(PoisonError::into_inner).clone());
+    match state {
+        None => return Err(bad(CMD_MARK, "no such job")),
+        Some(None) => return Err(bad(CMD_MARK, "the analysis is still running")),
+        Some(Some(Err(e))) => return Err(bad(CMD_MARK, e)),
+        Some(Some(Ok(_))) => {}
+    }
+    let analysed = mailbox().lock().unwrap_or_else(PoisonError::into_inner).remove(&id).ok_or_else(|| bad(CMD_MARK, "the result was already taken"))?;
+    finish(s, &analysed, true, 0)
 }
 
 fn regions(s: &mut Session, _: &Value) -> Result<Value> {
@@ -426,9 +524,19 @@ pub fn commands() -> Vec<CommandSpec> {
             label: "Detect Silence",
             menu: &[],
             shortcut: None,
-            params: r#"{"clips":[id]?,"track":id?,"scope":"selection"|"track"|"sequence"="selection","detector":"energy"="energy","thresholdDb":f?,"minSilence":ticks?,"padding":ticks?,"mode":"preview"|"query"="preview"}"#,
+            params: r#"{"clips":[id]?,"track":id?,"scope":"selection"|"track"|"sequence"="selection","detector":"energy"="energy","thresholdDb":f?,"minSilence":ticks?,"padding":ticks?,"mode":"preview"|"query"="preview","background":bool=false}"#,
             enabled: has_seq,
             run: detect,
+            journal: true,
+        },
+        CommandSpec {
+            id: CMD_MARK,
+            label: "Mark Detected Silence",
+            menu: &[],
+            shortcut: None,
+            params: r#"{"job":id}"#,
+            enabled: has_seq,
+            run: mark,
             journal: true,
         },
         CommandSpec {

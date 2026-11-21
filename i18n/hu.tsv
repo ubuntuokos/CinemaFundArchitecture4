@@ -4882,3 +4882,5 @@ export.summary	Low	alacsony
 	{n} regions removed	{n} régió eltávolítva
 	{n} silent regions, {s} s in all	{n} csendes régió, összesen {s} s
 	{n}: {start} s, {dur} s long	{n}.: {start} s-tól, {dur} s hosszú
+	Analysis failed.	Az elemzés nem sikerült.
+	Analysis cancelled.	Az elemzés megszakítva.
