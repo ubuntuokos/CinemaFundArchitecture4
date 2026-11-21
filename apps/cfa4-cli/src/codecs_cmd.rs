@@ -154,6 +154,7 @@ static ROWS: &[Row] = &[
     audio("TAK", &["tak"], Ported, Sw(""), NoEnc),
     audio("G.729 / G.729 Annex B", &["g729"], Ported, Sw(""), NoEnc),
     audio("iLBC", &["ilbc"], Ported, Sw(""), NoEnc),
+    audio("QCELP (QCP files)", &["qcelp"], Ported, Sw(""), NoEnc),
     audio("Musepack SV7 / SV8", &["musepack"], Ported, Sw(""), NoEnc),
     audio("ADPCM, G.711, G.722", &["adpcm"], Own, Sw(""), NoEnc),
     audio("IAB (SMPTE ST 2098-2)", &["iab"], Own, Sw("decode and render"), AudioTrack("IAB track in DCP exports")),

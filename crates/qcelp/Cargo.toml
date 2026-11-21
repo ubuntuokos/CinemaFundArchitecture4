@@ -1,0 +1,16 @@
+[package]
+name = "cfa4-qcelp"
+description = "Pure-Rust QCELP (QCELP-13K, IS-733) speech decoder and QCP file reader, ported from FFmpeg"
+version.workspace = true
+edition.workspace = true
+license = "GPL-3.0-or-later AND LGPL-2.1-or-later"
+rust-version.workspace = true
+
+[lints]
+workspace = true
+
+[dependencies]
+thiserror = { workspace = true }
+
+[dev-dependencies]
+cfa4-testkit = { workspace = true }

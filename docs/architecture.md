@@ -91,6 +91,7 @@ Crates are named `cfa4-<dir>` (`crates/time` is `cfa4-time`); new CFA4 crates ar
 | `amr` | L0 | AMR-NB and AMR-WB speech decoders, ported from opencore-amr (Apache-2.0) ([README](../crates/amr/README.md)) |
 | `g729` | L0 | ITU-T G.729 speech decoder with Annex B comfort noise, ported from bcg729 (GPL-3.0-or-later) ([README](../crates/g729/README.md)) |
 | `ilbc` | L0 | iLBC (RFC 3951) speech decoder, ported from WebRTC's fixed-point libilbc (BSD-3-Clause) ([README](../crates/ilbc/README.md)) |
+| `qcelp` | L0 | QCELP-13K (IS-733) speech decoder and QCP file reader, ported from FFmpeg (LGPL-2.1-or-later) ([README](../crates/qcelp/README.md)) |
 | `tta` | L0 | TTA (True Audio) lossless audio decoder, ported from libtta (LGPL-3.0) ([README](../crates/tta/README.md)) |
 | `shorten` | L0 | Shorten (`.shn`) lossless audio decoder, ported from FFmpeg (LGPL-2.1-or-later, owner-approved exception) ([README](../crates/shorten/README.md)) |
 | `tak` | L0 | TAK (Tom's lossless Audio Kompressor) decoder, ported from FFmpeg (LGPL-2.1-or-later, owner-approved exception) ([README](../crates/tak/README.md)) |

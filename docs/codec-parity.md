@@ -83,6 +83,7 @@ fidelity and the remaining work.
 | TAK | audio | `crates/tak` | ported | yes | no |
 | G.729 / G.729 Annex B | audio | `crates/g729` | ported | yes | no |
 | iLBC | audio | `crates/ilbc` | ported | yes | no |
+| QCELP (QCP files) | audio | `crates/qcelp` | ported | yes | no |
 | Musepack SV7 / SV8 | audio | `crates/musepack` | ported | yes | no |
 | ADPCM, G.711, G.722 | audio | `crates/adpcm` | own | yes | no |
 | IAB (SMPTE ST 2098-2) | audio | `crates/iab` | own | yes: decode and render | yes: IAB track in DCP exports |
@@ -158,6 +159,7 @@ fidelity and the remaining work.
 | G.729, G.729 Annex B | not checked | own decoder ([`cfa4-g729`](../crates/g729/README.md), backlog CB-11.2, ported from bcg729 1.1.2): 8 kbit/s speech, Annex B SID frames and comfort noise, lost-frame concealment; raw `.g729` streams and ITU-T `.bit` bitstreams | none | bit-exact vs bcg729 on its decoder test patterns (the ITU-T G.729 and Annex B vectors, local) and vs bcg729 built from source in CI (its own encoder's output with and without Annex B DTX, random streams with SID, untransmitted and erased frames); within 15 dB SNR of ffmpeg's separate decoder on synthetic streams; read through the media source also from the middle | — | — |
 | TAK | not checked | own decoder ([`cfa4-tak`](../crates/tak/README.md), backlog CB-10.1, ported from FFmpeg n7.1.1): mono / stereo and multichannel codecs, 8 / 16 / 24 bits, 1–6 channels, LPC subframes, windowed residual codes, every decorrelation mode; `.tak` files | none | same samples as ffmpeg's `tak` decoder on ffmpeg's FATE sample (local) and on 64 synthetic streams of random syntax (the test's own encoder; 480 checked once), lossless against the source on 8 more; through the media source also from the middle; 2400 damaged streams without a panic | — | — |
 | iLBC | not checked | own decoder ([`cfa4-ilbc`](../crates/ilbc/README.md), backlog CB-12.1, ported from WebRTC libilbc 3.0.4 without the enhancer, as ffmpeg decodes): 20 ms and 30 ms frames, lost-frame concealment; RFC 3952 `.lbc` files | none | bit-exact vs ffmpeg's `ilbc` decoder on synthetic 20 ms and 30 ms streams (from ffmpeg's initial state; ffmpeg zeroes the LSF history where RFC 3951 starts from the mean); read through the media source also from the middle | — | — |
+| QCELP (QCELP-13K) | not checked | own decoder ([`cfa4-qcelp`](../crates/qcelp/README.md), backlog CB-38.2, ported from FFmpeg n7.1.1 `qcelpdec.c` and its CELP helpers): full, half, quarter and eighth rate, blank frames, erasure concealment, postfilter; QCP (RFC 3625) files with FFmpeg's demuxer rules | none | bit-exact (float bits) vs ffmpeg's `qcelp` decoder and `qcp` demuxer on synthetic streams: valid frames of every rate, erasures, packets without the rate byte, packets of an unknown size, fixed-size files; read through the media source also from the middle | — | — |
 | AMR-NB, AMR-WB | not checked | own decoders (`cfa4-amr`, CB-6.2), ported from opencore-amr: every mode, DTX comfort noise, lost frames; `.amr` / `.awb`, 3GP / MP4 / MOV (`samr`, `sawb`), Matroska | none | bit-exact vs opencore-amr in every container, also after a seek (decoder checkpoints) | 90% | — |
 | Musepack SV7, SV8 | not checked | own decoder (`cfa4-musepack`, CB-10.2), ported from libmpcdec r475 (float build): SV7 and SV8 streams, mid/side, noise substitution, gapless length, ID3v2-tagged files (`.mpc`) | none | exactly libmpcdec's float samples (reference r475 built from source in CI) on SV8 streams from the reference encoder (qualities 0–10, 32–48 kHz, mono and stereo) and on the 2 FATE samples (SV7 and SV8, local); within 1 LSB of ffmpeg (fixed-point) at 16 bits on the FATE samples; through the media source also from the middle; 2000 damaged files without a panic | — | — |
 
@@ -175,6 +177,7 @@ fidelity and the remaining work.
 
 | Date | Change | Summary |
 |---|---|---|
+| 2026-11-21 | minor | QCELP decode and QCP files (`cfa4-qcelp`, codec backlog CB-38.2) |
 | 2026-11-14 | minor | Lagarith decode (`cfa4-lagarith`, codec backlog CB-3.1) |
 | 2026-11-14 | minor | Shorten decode (`cfa4-shorten`, codec backlog CB-9.2) |
 | 2026-11-14 | minor | MagicYUV decode (`cfa4-magicyuv`, codec backlog CB-2.2) |
