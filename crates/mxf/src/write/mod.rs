@@ -1917,6 +1917,9 @@ impl<W: Write + Seek> MxfWriter<W> {
                 if !a.as10.is_empty() {
                     track_uids.push(self.uid(AS11_UID + 0x300));
                 }
+                if !a.as03.is_empty() {
+                    track_uids.push(self.uid(AS11_UID + 0x400));
+                }
             }
             let mut s = Set::new(if material { 0x36 } else { 0x37 }, self.uid(base));
             let (umid, name) = if material { (cfg.ids.material, &cfg.ids.material_name) } else { (cfg.ids.file, &cfg.ids.file_name) };
@@ -2410,6 +2413,9 @@ impl<W: Write + Seek> MxfWriter<W> {
         }
         if !a.as10.is_empty() {
             static_track(out, AS11_UID + 0x300, crate::as11::AS10_TRACK, crate::as11::AS10_FRAMEWORK_KEY, &a.as10);
+        }
+        if !a.as03.is_empty() {
+            static_track(out, AS11_UID + 0x400, crate::as11::AS03_TRACK, crate::as11::AS03_FRAMEWORK_KEY, &a.as03);
         }
     }
 

@@ -483,6 +483,13 @@ pub struct ExportSettings {
     /// essence. Empty: no AS-10 metadata.
     #[serde(default)]
     pub mxf_as10: String,
+    /// MXF OP1a with MPEG-2 or H.264 video: the AMWA AS-03 (MXF Program Delivery) DMS-AS-03
+    /// framework in bmx's text form, `Name: value` lines (`IdentifierKind`, `Identifier`,
+    /// `ShimName: PBS NGIS HD Playout`, `SignalStandard`, `IntendedAFD` required;
+    /// [`cfa4_mxf::as03`], [`cfa4_mxf::as11::AS03_ITEMS`]); the essence is checked against the
+    /// general provisions and the named shim. Empty: no AS-03 metadata.
+    #[serde(default)]
+    pub mxf_as03: String,
     /// Container of MPEG-2 exports: `ps`, `ts`, `m2ts` or `es` (empty = from the path's
     /// extension, a program stream unless it is `.ts`, `.m2ts` / `.mts` or `.m2v`).
     #[serde(default)]
@@ -822,6 +829,7 @@ impl Default for ExportSettings {
             mxf_as11_segments: String::new(),
             mxf_as11_ukdpp: String::new(),
             mxf_as10: String::new(),
+            mxf_as03: String::new(),
             mpeg2_container: String::new(),
             mpeg2_422: false,
             mpeg2_quantizer: None,
@@ -979,6 +987,12 @@ impl ExportSettings {
                 return Err(ExportError::Unsupported("AS-10 metadata is written in MXF OP1a with MPEG-2 video (XDCAM HD)".into()));
             }
             cfa4_mxf::as11::check_as10_text(&self.mxf_as10).map_err(|e| ExportError::Unsupported(format!("AS-10: {e}")))?;
+        }
+        if !self.mxf_as03.trim().is_empty() {
+            if self.format != Format::MxfOp1a || !matches!(self.video_format(), Format::Mpeg2 | Format::H264) {
+                return Err(ExportError::Unsupported("AS-03 metadata is written in MXF OP1a with MPEG-2 or H.264 video".into()));
+            }
+            cfa4_mxf::as11::check_as03_text(&self.mxf_as03).map_err(|e| ExportError::Unsupported(format!("AS-03: {e}")))?;
         }
         if self.format.is_mxf() && self.mxf_anc_captions {
             if self.format == Format::MxfOpAtom {

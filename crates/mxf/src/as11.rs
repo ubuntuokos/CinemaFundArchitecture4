@@ -133,6 +133,29 @@ pub const AS10_ITEMS: &[Item] = &[
     as10(0x0B, "CumulativeDuration", Length, false),
 ];
 
+const fn as03(n: u8, name: &'static str, required: bool) -> Item {
+    Item { name, ul: [0x06, 0x0E, 0x2B, 0x34, 0x01, 0x01, 0x01, 0x01, 0x0D, 0x01, 0x04, 0x01, 0x03, 0x01, n, 0x00], kind: Text, required }
+}
+
+/// The AMWA AS-03 (MXF Program Delivery) DMS-AS-03 framework items (AS-03 rev 1.0, 5.4.2). Every
+/// item is a UTF-16 string; the first five are required.
+pub const AS03_ITEMS: &[Item] = &[
+    as03(0x01, "IdentifierKind", true),
+    as03(0x02, "Identifier", true),
+    as03(0x03, "ShimName", true),
+    as03(0x04, "SignalStandard", true),
+    as03(0x05, "IntendedAFD", true),
+    as03(0x06, "SlateTitle", false),
+    as03(0x07, "NOLACode", false),
+    as03(0x08, "Rating", false),
+    as03(0x09, "NielsenStreamIdentifier", false),
+];
+
+/// DMS_AS_03_Framework set key and DMS_AS_03 scheme label.
+pub const AS03_FRAMEWORK_KEY: [u8; 16] = [0x06, 0x0E, 0x2B, 0x34, 0x02, 0x53, 0x01, 0x01, 0x0D, 0x01, 0x04, 0x01, 0x03, 0x01, 0x00, 0x00];
+pub const AS03_SCHEME: [u8; 16] = [0x06, 0x0E, 0x2B, 0x34, 0x04, 0x01, 0x01, 0x01, 0x0D, 0x01, 0x04, 0x01, 0x03, 0x00, 0x00, 0x00];
+pub const AS03_TRACK: (&str, u32) = ("AS_03", 5301);
+
 /// DMS_AS_10_Core_Framework set key and DMS_AS_10_Core scheme label.
 pub const AS10_FRAMEWORK_KEY: [u8; 16] = [0x06, 0x0E, 0x2B, 0x34, 0x02, 0x53, 0x01, 0x01, 0x0D, 0x01, 0x07, 0x01, 0x0A, 0x01, 0x01, 0x00];
 pub const AS10_SCHEME: [u8; 16] = [0x06, 0x0E, 0x2B, 0x34, 0x04, 0x01, 0x01, 0x01, 0x0D, 0x01, 0x07, 0x01, 0x0A, 0x01, 0x00, 0x00];
@@ -171,6 +194,8 @@ pub struct As11 {
     pub ukdpp: Vec<(String, String)>,
     /// The AMWA AS-10 framework ([`AS10_ITEMS`], empty = absent; an AS-10 file needs no AS-11).
     pub as10: Vec<(String, String)>,
+    /// The AMWA AS-03 framework ([`AS03_ITEMS`], empty = absent; an AS-03 file needs no AS-11).
+    pub as03: Vec<(String, String)>,
 }
 
 /// Frame counting for positions and lengths: the material package's start time code.
@@ -373,6 +398,7 @@ pub(crate) fn read(md: &crate::meta::Metadata, clock: Clock) -> Option<As11> {
     let core = values(CORE_FRAMEWORK_KEY, CORE_ITEMS);
     let ukdpp = values(UKDPP_FRAMEWORK_KEY, UKDPP_ITEMS);
     let as10 = values(AS10_FRAMEWORK_KEY, AS10_ITEMS);
+    let as03 = values(AS03_FRAMEWORK_KEY, AS03_ITEMS);
     // segmentation: the DM segments of the sequence whose segments hold segmentation frameworks
     let mut segments = Vec::new();
     for seq in md.of_kind(0x0F) {
@@ -399,14 +425,20 @@ pub(crate) fn read(md: &crate::meta::Metadata, clock: Clock) -> Option<As11> {
         }
         break;
     }
-    (!core.is_empty() || !ukdpp.is_empty() || !segments.is_empty() || !as10.is_empty()).then_some(As11 { core, segments, ukdpp, as10 })
+    (!core.is_empty() || !ukdpp.is_empty() || !segments.is_empty() || !as10.is_empty() || !as03.is_empty()).then_some(As11 {
+        core,
+        segments,
+        ukdpp,
+        as10,
+        as03,
+    })
 }
 
-/// First dynamic local tag of the AS-11 items (in the order Core, Segmentation, UK DPP, AS-10).
+/// First dynamic local tag of the AS-11 items (in the order Core, Segmentation, UK DPP, AS-10, AS-03).
 const FIRST_TAG: u16 = 0x8060;
 
 fn all_items() -> impl Iterator<Item = &'static Item> {
-    CORE_ITEMS.iter().chain(SEGMENTATION_ITEMS).chain(UKDPP_ITEMS).chain(AS10_ITEMS)
+    CORE_ITEMS.iter().chain(SEGMENTATION_ITEMS).chain(UKDPP_ITEMS).chain(AS10_ITEMS).chain(AS03_ITEMS)
 }
 
 /// The primer entries of every AS-11 item.
@@ -425,12 +457,13 @@ pub(crate) struct Encoded {
     pub core: Vec<(&'static Item, Vec<u8>)>,
     pub ukdpp: Vec<(&'static Item, Vec<u8>)>,
     pub as10: Vec<(&'static Item, Vec<u8>)>,
+    pub as03: Vec<(&'static Item, Vec<u8>)>,
     pub segments: Vec<Segment>,
 }
 
 impl Encoded {
     pub(crate) fn new(a: &As11, clock: Clock) -> Result<Encoded, String> {
-        if a.core.is_empty() && (a.as10.is_empty() || !a.segments.is_empty() || !a.ukdpp.is_empty()) {
+        if a.core.is_empty() && ((a.as10.is_empty() && a.as03.is_empty()) || !a.segments.is_empty() || !a.ukdpp.is_empty()) {
             return Err("AS-11 needs the AS-11 Core framework".into());
         }
         check_segments(&a.segments, None)?;
@@ -439,8 +472,9 @@ impl Encoded {
         }
         let core = if a.core.is_empty() { Vec::new() } else { encode_all(CORE_ITEMS, &a.core, clock)? };
         let as10 = if a.as10.is_empty() { Vec::new() } else { encode_all(AS10_ITEMS, &a.as10, clock)? };
+        let as03 = if a.as03.is_empty() { Vec::new() } else { encode_all(AS03_ITEMS, &a.as03, clock)? };
         let ukdpp = if a.ukdpp.is_empty() { Vec::new() } else { encode_all(UKDPP_ITEMS, &complete_ukdpp(&a.ukdpp, &a.segments), clock)? };
-        Ok(Encoded { core, ukdpp, as10, segments: a.segments.clone() })
+        Ok(Encoded { core, ukdpp, as10, as03, segments: a.segments.clone() })
     }
 
     /// The preface's DMSchemes.
@@ -457,6 +491,9 @@ impl Encoded {
         }
         if !self.as10.is_empty() {
             v.push(AS10_SCHEME);
+        }
+        if !self.as03.is_empty() {
+            v.push(AS03_SCHEME);
         }
         v
     }
@@ -511,6 +548,12 @@ pub fn parse_segments_text(text: &str, clock: Clock) -> Result<Vec<Segment>, Str
 pub fn check_as10_text(text: &str) -> Result<(), String> {
     let values = parse_framework_text(text)?;
     encode_all(AS10_ITEMS, &values, Clock { start: 0, base: 1000 }).map(|_| ())
+}
+
+/// Check AS-03 framework text (names, values, the five required items given) without a file.
+pub fn check_as03_text(text: &str) -> Result<(), String> {
+    let values = parse_framework_text(text)?;
+    encode_all(AS03_ITEMS, &values, Clock { start: 0, base: 1000 }).map(|_| ())
 }
 
 /// Check framework text against its item list (names, values, required items) without a file:

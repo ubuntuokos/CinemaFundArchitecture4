@@ -375,6 +375,19 @@ export writes the NRK and HIGH shims' essence; the 4:2:0 shims (CNN, JVC) need 1
 MP@H-14 pictures, which CFA4 does not encode yet. The growing-file and spanning-file rules of
 section 6 (open and incomplete header partitions) are not written.
 
+### AS-03 (MXF Program Delivery)
+
+`As11::as03` holds the AMWA AS-03 rev 1.0 DMS-AS-03 framework (`IdentifierKind`, `Identifier`,
+`ShimName`, `SignalStandard` and `IntendedAFD` required; `SlateTitle`, `NOLACode`, `Rating`,
+`NielsenStreamIdentifier` optional, all UTF-16 strings): one static DM track in the material
+package and the DMS-AS-03 label in the Preface. An AS-03 file needs no AS-11 Core. `as03` holds the
+three PBS NGIS shims of the annexes (HD Playout, HD Distribution, SD) and `check_shim` compares what
+an export writes (MPEG-2 or H.264, frame size, bit rate, audio channels, bit depth and rate) with the
+named shim and with the general provisions (5 to 50 Mbit/s, 48 kHz PCM, up to 16 channels); an
+unknown shim name is a shim of the user's own and keeps only the general provisions. The DMS-NGIS
+and DMS-PODS / PBCore schemes of the shims, the segmentation SOM / EOM track, the content integrity
+tracks, the OP1a full index table layout and the 1-minute partitions are not written.
+
 ## Tests
 
 - `src/tests.rs`: a small OP1a writer builds synthetic files (temporal offsets, key flags, PCM,
