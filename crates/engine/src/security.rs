@@ -36,7 +36,7 @@ mod tests {
         assert!(v["support"]["landlockAbi"].is_u64(), "{v}");
         assert!(v["support"]["seccomp"].is_boolean());
         let kinds: Vec<&str> = v["processes"].as_array().unwrap().iter().filter_map(|p| p["kind"].as_str()).collect();
-        assert_eq!(kinds, ["qtGui", "engine", "mediaHost", "studioHost", "browserSource", "fetch", "pluginHost", "modelConverter"]);
+        assert_eq!(kinds, ["qtGui", "engine", "mediaHost", "studioHost", "ioHost", "browserSource", "fetch", "pluginHost", "modelConverter"]);
         // the engine process itself is not confined yet (phase B3)
         assert!(v["self"]["kind"].is_null());
         // hostile parameters are ignored, never a crash
