@@ -4818,6 +4818,10 @@
 	Encode Resolution	Résolution d’encodage
 	Half	Moitié
 	Quarter	Quart
+# Datamosh Bloom (Glitch, DM2)
+	Datamosh Bloom	Floraison datamosh
+	Start Time (seconds)	Heure de début (secondes)
+	Repeats	Répétitions
 
 # Recent effects, per-channel waveform, white balance selector (SC-2/SC-3/SC-4, #1419 #1420 #1421)
 	Apply a recently used effect to the selected clips	Appliquer un effet récemment utilisé aux clips sélectionnés

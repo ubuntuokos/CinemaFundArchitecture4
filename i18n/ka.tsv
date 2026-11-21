@@ -4816,6 +4816,10 @@ export.summary	Low	დაბალი
 	Encode Resolution	კოდირების გარჩევადობა
 	Half	ნახევარი
 	Quarter	მეოთხედი
+# Datamosh Bloom (Glitch, DM2)
+	Datamosh Bloom	Datamosh-ის აყვავება
+	Start Time (seconds)	დაწყების დრო (წამი)
+	Repeats	გამეორებები
 
 # Recent effects, per-channel waveform, white balance selector (SC-2/SC-3/SC-4, #1419 #1420 #1421)
 	Apply a recently used effect to the selected clips	ბოლოს გამოყენებული ეფექტის გამოყენება არჩეულ კლიპებზე

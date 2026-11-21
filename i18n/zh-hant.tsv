@@ -4812,6 +4812,10 @@ export.summary	Low	低
 	Encode Resolution	編碼解析度
 	Half	1/2
 	Quarter	1/4
+# Datamosh Bloom (Glitch, DM2)
+	Datamosh Bloom	資料損毀綻放
+	Start Time (seconds)	開始時間（秒）
+	Repeats	重複次數
 
 # Recent effects, per-channel waveform, white balance selector (SC-2/SC-3/SC-4, #1419 #1420 #1421)
 	Apply a recently used effect to the selected clips	將最近使用的效果套用到所選剪輯

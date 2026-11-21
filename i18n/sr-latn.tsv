@@ -4815,6 +4815,10 @@ export.summary	Low	nizak
 	Encode Resolution	Rezolucija kodiranja
 	Half	Pola
 	Quarter	Četvrtina
+# Datamosh Bloom (Glitch, DM2)
+	Datamosh Bloom	Datamosh cvetanje
+	Start Time (seconds)	Vreme početka (sekunde)
+	Repeats	Ponavljanja
 
 # Recent effects, per-channel waveform, white balance selector (SC-2/SC-3/SC-4, #1419 #1420 #1421)
 	Apply a recently used effect to the selected clips	Primeni nedavno korišćen efekat na izabrane klipove
