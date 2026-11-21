@@ -20,6 +20,8 @@ use tables::{
     WINDOW,
 };
 
+/// The most samples (all channels together) one [`decode_file`] may produce: 2 GiB of `f32`.
+pub const MAX_SAMPLES: usize = 1 << 29;
 /// Samples per channel in one HCA block.
 pub const BLOCK_SAMPLES: usize = 1024;
 /// The most channels a stream can have.
@@ -44,6 +46,8 @@ pub enum Error {
     Block(&'static str),
     #[error("no audio in the HCA file")]
     Empty,
+    #[error("the decoded audio would exceed {MAX_SAMPLES} samples")]
+    TooLarge,
 }
 
 /// The cipher key of an encrypted HCA stream (CRIWARE "key code" and the optional AWB subkey).
@@ -150,6 +154,19 @@ fn ceil2(a: u32, b: u32) -> u32 {
     a.checked_div(b).map_or(0, |q| q + u32::from(!a.is_multiple_of(b)))
 }
 
+/// The number of high-frequency groups of a band layout; the layout must fit the 128 bands.
+fn hfr_groups(total: u8, base: u8, stereo: u8, bands_per_hfr: u8) -> Result<u32, Error> {
+    if total > 128 || total < base {
+        return Err(Error::Invalid("band count"));
+    }
+    let a = (i32::from(total) - (i32::from(base) + i32::from(stereo))) as u32;
+    let groups = ceil2(a, u32::from(bands_per_hfr));
+    if u64::from(base) + u64::from(stereo) + u64::from(groups) > 128 {
+        return Err(Error::Invalid("band layout"));
+    }
+    Ok(groups)
+}
+
 /// Parse the header at the start of `bytes`.
 pub fn parse_header(bytes: &[u8]) -> Result<Header, Error> {
     if bytes.len() < 12 {
@@ -240,14 +257,7 @@ pub fn parse_header(bytes: &[u8]) -> Result<Header, Error> {
             break; // "pad" or anything unknown ends the chunks
         }
     }
-    if total < base {
-        return Err(Error::Invalid("base band count above total"));
-    }
-    let a = (i32::from(total) - (i32::from(base) + i32::from(stereo))) as u32;
-    let hfr_group_count = ceil2(a, u32::from(bands_per_hfr));
-    if u64::from(base) + u64::from(stereo) + u64::from(hfr_group_count) > 128 {
-        return Err(Error::Invalid("band layout"));
-    }
+    let hfr_group_count = hfr_groups(total, base, stereo, bands_per_hfr)?;
     Ok(Header {
         version,
         data_offset,
@@ -499,7 +509,16 @@ fn ath_init(ath_type: u16, sample_rate: u32) -> Result<[u8; 128], Error> {
 impl Decoder {
     /// A decoder for the stream whose header is `header` (from [`parse_header`]); `key` is needed
     /// for an encrypted stream.
-    pub fn new(header: Header, key: Option<Key>) -> Result<Self, Error> {
+    pub fn new(mut header: Header, key: Option<Key>) -> Result<Self, Error> {
+        // The fields are public: check again what `parse_header` checked, and derive the group
+        // count from the values in use.
+        if header.channels == 0 || usize::from(header.channels) > MAX_CHANNELS {
+            return Err(Error::Invalid("channel count"));
+        }
+        if header.sample_rate == 0 {
+            return Err(Error::Invalid("sample rate"));
+        }
+        header.hfr_group_count = hfr_groups(header.total_band_count, header.base_band_count, header.stereo_band_count, header.bands_per_hfr_group)?;
         let cipher = match header.cipher_type {
             0 => None,
             56 => match key {
@@ -771,7 +790,17 @@ pub fn decode_file(bytes: &[u8], key: Option<Key>) -> Result<(Header, Vec<Vec<f3
     let size = usize::from(header.block_size);
     let data = &bytes[header.data_offset..];
     let blocks = (data.len() / size).min(header.block_count as usize);
-    let mut planes: Vec<Vec<f32>> = vec![Vec::with_capacity(blocks * BLOCK_SAMPLES); usize::from(header.channels)];
+    let channels = usize::from(header.channels);
+    match blocks.checked_mul(BLOCK_SAMPLES).and_then(|n| n.checked_mul(channels)) {
+        Some(n) if n <= MAX_SAMPLES => {}
+        _ => return Err(Error::TooLarge),
+    }
+    let mut planes: Vec<Vec<f32>> = Vec::with_capacity(channels);
+    for _ in 0..channels {
+        let mut p = Vec::new();
+        p.try_reserve_exact(blocks * BLOCK_SAMPLES).map_err(|_| Error::TooLarge)?;
+        planes.push(p);
+    }
     let mut damaged = 0;
     for b in 0..blocks {
         if dec.decode_block(&data[b * size..(b + 1) * size], &mut planes).is_err() {

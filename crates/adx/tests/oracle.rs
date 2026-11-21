@@ -182,21 +182,40 @@ fn ffmpeg_encoder_files_match_ffmpeg_and_stay_close_to_the_source() {
     }
 }
 
+/// `decode_file` on `data` must return (an `Ok` or an `Err`), never panic.
+fn no_panic(data: &[u8], what: &str) {
+    let r = std::panic::catch_unwind(|| {
+        let _ = cfa4_adx::decode_file(data);
+    });
+    assert!(r.is_ok(), "decode_file panicked: {what}");
+}
+
 #[test]
 fn damaged_streams_never_panic() {
     let mut rng = Rng(777);
     let base = random_file(&mut rng, 2, 44100, 700, 20, 0x8000);
     for cut in 0..base.len() {
-        let _ = cfa4_adx::decode_file(&base[..cut]);
+        no_panic(&base[..cut], &format!("cut at {cut}"));
     }
-    for _ in 0..3000 {
+    for n in 0..3000 {
         let mut d = base.clone();
         for _ in 0..1 + rng.next() % 6 {
             let i = (rng.next() as usize) % d.len();
             d[i] = rng.next() as u8;
         }
-        let _ = cfa4_adx::decode_file(&d);
+        no_panic(&d, &format!("mutation {n}"));
     }
     let noise: Vec<u8> = (0..4096).map(|_| rng.next() as u8).collect();
-    let _ = cfa4_adx::decode_file(&noise);
+    no_panic(&noise, "noise");
+}
+
+#[test]
+fn a_changed_header_is_checked_again() {
+    let mut f = header(2, 44100, 500, 64);
+    f.extend_from_slice(&[0u8; 72]);
+    let mut h = cfa4_adx::parse_header(&f).unwrap();
+    for ch in [0u8, 7, 255] {
+        h.channels = ch;
+        assert!(matches!(cfa4_adx::decode_blocks(&h, &f[0x20..]), Err(cfa4_adx::Error::Invalid(_))));
+    }
 }

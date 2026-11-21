@@ -203,6 +203,8 @@ fn interleave(planes: &[Vec<f32>]) -> Vec<f32> {
 /// Largest error relative to the peak of the reference.
 fn rel_error(ours: &[f32], theirs: &[f32]) -> f64 {
     assert_eq!(ours.len(), theirs.len());
+    // `f64::max` ignores a NaN, so a non-finite sample would pass the comparison below.
+    assert!(ours.iter().chain(theirs).all(|v| v.is_finite()), "non-finite sample");
     let peak = theirs.iter().fold(0f64, |a, &v| a.max(f64::from(v).abs())).max(1e-30);
     ours.iter().zip(theirs).fold(0f64, |a, (&x, &y)| a.max((f64::from(x) - f64::from(y)).abs())) / peak
 }
@@ -374,6 +376,45 @@ fn damaged_blocks_become_silence_and_headers_are_checked() {
     assert_eq!(decode_file(&file(&s5, &mut rng), None).unwrap_err(), Error::Empty);
 }
 
+/// `decode_file` on `data` must return (an `Ok` or an `Err`), never panic.
+fn no_panic(data: &[u8], what: &str) {
+    let r = std::panic::catch_unwind(|| {
+        let _ = decode_file(data, None);
+    });
+    assert!(r.is_ok(), "decode_file panicked: {what}");
+}
+
+#[test]
+fn non_finite_samples_are_rejected_by_the_comparison() {
+    let r = std::panic::catch_unwind(|| rel_error(&[f32::NAN], &[1.0]));
+    assert!(r.is_err());
+}
+
+#[test]
+fn a_changed_header_is_checked_again() {
+    let mut rng = Rng(3);
+    let mut s = Spec::new(2);
+    s.blocks = 1;
+    let data = file(&s, &mut rng);
+    let h = cfa4_hca::parse_header(&data).unwrap();
+    for mutate in [
+        (|h: &mut cfa4_hca::Header| (h.total_band_count, h.base_band_count, h.stereo_band_count) = (128, 128, 1)) as fn(&mut cfa4_hca::Header),
+        |h| (h.total_band_count, h.base_band_count, h.stereo_band_count, h.bands_per_hfr_group) = (128, 100, 40, 1),
+        |h| h.channels = 0,
+        |h| h.channels = 17,
+        |h| h.sample_rate = 0,
+        |h| h.total_band_count = 129,
+    ]
+    .into_iter()
+    .enumerate()
+    {
+        let (i, mutate) = mutate;
+        let mut m = h.clone();
+        mutate(&mut m);
+        assert!(matches!(cfa4_hca::Decoder::new(m, None), Err(Error::Invalid(_))), "mutation {i}");
+    }
+}
+
 #[test]
 fn damaged_streams_never_panic() {
     let mut rng = Rng(31337);
@@ -382,15 +423,15 @@ fn damaged_streams_never_panic() {
     (s.total, s.base, s.stereo, s.bands_per_hfr) = (100, 50, 20, 6);
     let base = file(&s, &mut rng);
     for cut in (0..base.len()).step_by(7) {
-        let _ = decode_file(&base[..cut], None);
+        no_panic(&base[..cut], &format!("cut at {cut}"));
     }
-    for _ in 0..600 {
+    for n in 0..600 {
         let mut d = base.clone();
         for _ in 0..1 + rng.next() % 8 {
             let i = (rng.next() as usize) % d.len().min(96);
             d[i] = rng.next() as u8;
         }
-        let _ = decode_file(&d, None);
+        no_panic(&d, &format!("mutation {n}"));
     }
     // random blocks of every small size (reads past the end give zeros)
     let hdr = header(&Spec::new(2));
@@ -399,14 +440,14 @@ fn damaged_streams_never_panic() {
         // patch the comp block size
         let at = h.windows(4).position(|w| w == b"comp").unwrap() + 4;
         h[at..at + 2].copy_from_slice(&(size as u16).to_be_bytes());
-        for _ in 0..50 {
+        for n in 0..50 {
             let mut f = h.clone();
             f.push(0xFF);
             f.push(0xFF);
             f.extend((0..size * 3).map(|_| rng.next() as u8));
-            let _ = decode_file(&f, None);
+            no_panic(&f, &format!("block size {size}, case {n}"));
         }
     }
     let noise: Vec<u8> = (0..4096).map(|_| rng.next() as u8).collect();
-    let _ = decode_file(&noise, None);
+    no_panic(&noise, "noise");
 }

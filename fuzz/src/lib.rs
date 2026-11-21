@@ -636,6 +636,15 @@ pub fn musepack(data: &[u8]) {
     let _ = cfa4_musepack::decode_file(data);
 }
 
+pub fn adx(data: &[u8]) {
+    let _ = cfa4_adx::decode_file(data);
+}
+
+pub fn hca(data: &[u8]) {
+    let _ = cfa4_hca::decode_file(data, None);
+    let _ = cfa4_hca::decode_file(data, Some(cfa4_hca::Key { key: 0xCF22_2F1F_E074_8978, subkey: 0x3B8E }));
+}
+
 pub fn shorten(data: &[u8]) {
     let _ = cfa4_shorten::probe(data);
     let _ = cfa4_shorten::decode_file(data);
@@ -747,6 +756,8 @@ pub const TARGETS: &[(&str, &str, Target)] = &[
     ("ilbc", "cfa4-ilbc", ilbc),
     ("musepack", "cfa4-musepack", musepack),
     ("shorten", "cfa4-shorten", shorten),
+    ("adx", "cfa4-adx", adx),
+    ("hca", "cfa4-hca", hca),
     ("tak", "cfa4-tak", tak),
     ("project", "cfa4-project", project),
     ("interchange", "cfa4-interchange", interchange),

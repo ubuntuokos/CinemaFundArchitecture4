@@ -1,4 +1,4 @@
-// Ported from FFmpeg n7.1.1 libavcodec/adxdec.c, libavcodec/adx.c (Copyright (c) 2001,2003 BERO,
+// Ported from FFmpeg n9.0.2 libavcodec/adxdec.c, libavcodec/adx.c (Copyright (c) 2001,2003 BERO,
 // Copyright (c) 2011 Justin Ruggles) and libavformat/adxdec.c, LGPL-2.1-or-later; see
 // docs/licensing.md §5. CFA4 changes GPL-3.0-or-later.
 
@@ -15,6 +15,8 @@ pub const BLOCK_SIZE: usize = 18;
 pub const BLOCK_SAMPLES: usize = 32;
 /// The most channels the decoder accepts (ffmpeg's `MAX_CHANNELS`).
 pub const MAX_CHANNELS: usize = 6;
+/// The most samples (all channels together) one decode may produce: 1 GiB of `i16`.
+pub const MAX_SAMPLES: usize = 1 << 29;
 /// Fixed-point bits of the predictor coefficients.
 const COEFF_BITS: u32 = 12;
 
@@ -29,6 +31,8 @@ pub enum Error {
     Unsupported(&'static str),
     #[error("no audio in the ADX file")]
     Empty,
+    #[error("the decoded audio would exceed {MAX_SAMPLES} samples")]
+    TooLarge,
 }
 
 /// The stream parameters of the ADX header.
@@ -96,10 +100,22 @@ pub fn parse_header(buf: &[u8]) -> Result<Header, Error> {
 /// Decode the block data (everything behind the header): one plane per channel. Decoding stops
 /// at an end-of-stream block (scale with bit 15 set) and drops a trailing partial block group,
 /// as ffmpeg does.
-pub fn decode_blocks(header: &Header, data: &[u8]) -> Vec<Vec<i16>> {
+pub fn decode_blocks(header: &Header, data: &[u8]) -> Result<Vec<Vec<i16>>, Error> {
     let ch = usize::from(header.channels);
+    // The fields are public: a header changed after `parse_header` must not reach the division.
+    if ch == 0 || ch > MAX_CHANNELS {
+        return Err(Error::Invalid("channel count"));
+    }
     let groups = data.len() / (BLOCK_SIZE * ch);
-    let mut planes: Vec<Vec<i16>> = vec![Vec::with_capacity(groups * BLOCK_SAMPLES); ch];
+    if groups * BLOCK_SAMPLES * ch > MAX_SAMPLES {
+        return Err(Error::TooLarge);
+    }
+    let mut planes: Vec<Vec<i16>> = Vec::with_capacity(ch);
+    for _ in 0..ch {
+        let mut p = Vec::new();
+        p.try_reserve_exact(groups * BLOCK_SAMPLES).map_err(|_| Error::TooLarge)?;
+        planes.push(p);
+    }
     let mut hist = [(0i32, 0i32); MAX_CHANNELS];
     'groups: for g in 0..groups {
         // A group is decoded only when none of its channel blocks is an end marker.
@@ -125,7 +141,7 @@ pub fn decode_blocks(header: &Header, data: &[u8]) -> Vec<Vec<i16>> {
             hist[c] = (s1, s2);
         }
     }
-    planes
+    Ok(planes)
 }
 
 /// Decode a whole `.adx` file.
@@ -133,7 +149,7 @@ pub fn decode_file(bytes: &[u8]) -> Result<(Header, Vec<Vec<i16>>), Error> {
     let header = parse_header(bytes)?;
     // ffmpeg's demuxer reads the header as extradata and fails when the file ends inside it.
     let data = bytes.get(header.data_offset..).ok_or(Error::Invalid("file ends inside the header"))?;
-    let planes = decode_blocks(&header, data);
+    let planes = decode_blocks(&header, data)?;
     if planes.first().is_none_or(Vec::is_empty) {
         return Err(Error::Empty);
     }
