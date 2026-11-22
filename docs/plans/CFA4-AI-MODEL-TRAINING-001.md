@@ -1,7 +1,8 @@
 # CFA4 helyi AI-modellképzés, finomhangolás és tanulás (CFA4-AI-MODEL-TRAINING-001)
 
-> **Állapot:** TERVEZET 1.1, a tulajdonosi döntések beépítve (István, 2026-11-07); IMPLEMENTÁCIÓ
-> NINCS ENGEDÉLYEZVE · **Utolsó átnézés:** 2026-11-07 · **Változás:** az 1.0 vázlat (István,
+> **Állapot:** JÓVÁHAGYVA 1.2 (István, 2026-11-22); a fejlesztés a 11. fejezet kapui szerint indulhat,
+> az előfeltételek teljesülése után. Egy függő pont: a D5 hivatkozás átírása a CFA4-MEDIA-INTELLIGENCE-001
+> tervre, amint az a `docs/plans`-ban van · **Utolsó átnézés:** 2026-11-22 · **Változás:** az 1.0 vázlat (István,
 > 2026-11-07) igazítása a CFA4 AI-tervéhez · **Platform:** Ubuntu 26.04, amd64 · **Kapcsolódik:**
 > [CFA4-AI_modules ADR 0008](https://github.com/ubuntuokos/CFA4-AI_modules/blob/main/docs/adr/ADR-0008-ai-processing-layer.md)
 > (AI-feldolgozó réteg, F0–F6 kapuk), [`CFA4-TASKSTORE-PG-001`](CFA4-TASKSTORE-PG-001.md)
