@@ -168,3 +168,34 @@ fn damaged_streams_never_panic() {
         }
     }
 }
+
+/// Huffyuv MT (the multi-threaded VfW build) writes the same `HFYU` bitstream as Huffyuv 2.x, so
+/// the decoder covers it (codec backlog CB-36.1). Decoding the same stream on several threads at
+/// once, each with its own decoder, gives the same pictures as a single thread.
+#[test]
+fn threaded_decoding_is_identical() {
+    if !have_ffmpeg() {
+        eprintln!("ffmpeg not installed: skipped");
+        return;
+    }
+    let f = &FIXTURES[2];
+    let (avi, raw) = make(f);
+    let decode_all = || {
+        let (mut dec, chunks) = open(&avi);
+        let mut out = Vec::new();
+        for c in &chunks {
+            if let Ok(p) = dec.decode(c) {
+                out.extend(to_raw(&p));
+            }
+        }
+        out
+    };
+    let single = decode_all();
+    assert_eq!(single, raw);
+    let results: Vec<Vec<u8>> = std::thread::scope(|s| {
+        let hs: Vec<_> = (0..4).map(|_| s.spawn(decode_all)).collect();
+        hs.into_iter().filter_map(|h| h.join().ok()).collect()
+    });
+    assert_eq!(results.len(), 4);
+    assert!(results.iter().all(|r| *r == single));
+}

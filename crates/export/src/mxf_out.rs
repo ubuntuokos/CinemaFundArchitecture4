@@ -231,6 +231,7 @@ impl MxfMux {
                 ukdpp,
                 as10: Vec::new(),
                 as03: Vec::new(),
+                as12: Vec::new(),
             });
         }
         if !atom && !settings.mxf_as10.trim().is_empty() {
@@ -284,6 +285,10 @@ impl MxfMux {
             let name = values.iter().find(|(k, _)| k.eq_ignore_ascii_case("ShimName")).map(|(_, v)| v.as_str()).unwrap_or_default();
             as03::check_shim(name, &facts).map_err(bad)?;
             cfg.as11.get_or_insert_with(Default::default).as03 = values;
+        }
+        if !atom && !settings.mxf_as12.trim().is_empty() {
+            let bad = |e: String| ExportError::Unsupported(format!("AS-12: {e}"));
+            cfg.as11.get_or_insert_with(Default::default).as12 = cfa4_mxf::as11::parse_framework_text(&settings.mxf_as12).map_err(bad)?;
         }
         let cdp = match s.captions.as_ref().filter(|_| !atom) {
             Some(doc) => {
@@ -493,6 +498,29 @@ fn finish_bundle(b: As02Bundle, video: MxfWriter<Out>, audio: Vec<(String, MxfWr
         File { id: file_id_of_umid(&material.0), role: Role::Version, size: bytes.len() as u64, path: version_rel, mic: None, annotations: Vec::new() },
     );
     std::fs::write(&version_path, &bytes).map_err(|e| ExportError::Io(format!("{version_path}: {e}")))?;
+    // the shim file (section 10): the bundle follows the general provisions, mono essence OP1a
+    // components and a version file, with no named shim
+    let shim = cfa4_mxf::as02::Shim {
+        name: "CFA4 general AS-02 bundle".into(),
+        id: None,
+        annotations: vec!["Mono-essence OP1a components with an OP1b version file; no further constraints.".into()],
+    }
+    .to_xml();
+    let shim_path = format!("{}/shim.xml", b.dir);
+    std::fs::write(&shim_path, shim.as_bytes()).map_err(|e| ExportError::Io(format!("{shim_path}: {e}")))?;
+    total += shim.len() as u64;
+    files.insert(
+        1,
+        File {
+            id: uuid_urn(&format!("shim:{}", b.seed)),
+            role: Role::Shim,
+            size: shim.len() as u64,
+            path: "shim.xml".into(),
+            mic: None,
+            annotations: Vec::new(),
+        },
+    );
+    extra.push(shim_path);
     let manifest = Manifest {
         bundle_name: b.name.clone(),
         bundle_id: uuid_urn(&format!("bundle:{}", b.seed)),

@@ -372,7 +372,11 @@ with timecodes or frame counts). Codec shims (AVC-Intra, XDCAM HD422, D-10) are 
 `as07::check_baseband` (and `baseband_problems`) checks a read file against Appendix J of AMWA AS-07
 (`specs/amwa/as-07-mxf-archive-and-preservation-spec.pdf`): OP1a, one picture track of JPEG 2000 or ST 384
 uncompressed pictures with 8, 10, 12 or 16 bit components, no clip wrapping, linear PCM sound at 48 kHz, 16 or
-24 bit. DMS-AS-07 metadata, the raster subset, several timecodes, captions and content integrity are not
+24 bit. The uncompressed OP1a exports (v210, UYVY with 24-bit PCM) keep the shim, so they are the AS-07
+master export (tested, #1366); there is no JPEG 2000 OP1a export yet. `MxfFile::dm_schemes` lists the preface's
+DMSchemes; a file that lists the AS-07 core scheme (`as07::CORE_SCHEME`, which every AS-07 file has) gets the
+breaches as `AS-07 Baseband Shim: …` warnings when it is opened, so an import logs them. DMS-AS-07 metadata, the
+raster subset, several timecodes, captions and content integrity are not
 covered.
 
 `as03::file_problems` checks a read file: OP1a, a timecode, the DMS-AS-03 framework and the essence
@@ -407,6 +411,18 @@ named shim and with the general provisions (5 to 50 Mbit/s, 48 kHz PCM, up to 16
 unknown shim name is a shim of the user's own and keeps only the general provisions. The DMS-NGIS
 and DMS-PODS / PBCore schemes of the shims, the segmentation SOM / EOM track, the content integrity
 tracks, the OP1a full index table layout and the 1-minute partitions are not written.
+
+### AS-12 (MXF Commercials Delivery)
+
+`As11::as12` holds the AMWA AS-12 (2013) Ad-ID advertisement identification: a DMS_AS_12_Framework
+(`ShimName`, which is `Ad-ID Digital Identification` and filled in when not given) whose `Slate`
+strong reference points to the DMS_AS_12_AdID_Slate descriptive object with the eleven Ad-ID items
+of annex A, all required (`adid_prefix`, `adid_code`, `ad_title` up to 128 characters, `Brand`,
+`Advertiser` and `agency_office_location` up to 64, `Product` up to 32, `Length`, `Medium`,
+`sd_flag`, `Parent`): one static DM track in the material package and the DMS_AS_12 label in the
+Preface. AS-12 goes beside an AS-11 Core, AS-10 or AS-03 framework (5.1), and the writer refuses it
+alone. The AS-02 rule (every version file, no component file) is for the AS-02 export (#1477); other
+AS-12 shims than Ad-ID are not defined by the specification.
 
 ## Tests
 
