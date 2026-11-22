@@ -1,6 +1,6 @@
 # CFA4-VFX-001 – VFX és motion graphics: tartalmi réteg a CFA4 render-infrastruktúráján
 
-**Verzió:** 1.0 (véglegesítve) · **Dátum:** 2026-11-22
+**Verzió:** 1.1 (végleges) · **Dátum:** 2026-11-22 · a változások: 11. fejezet
 **Előzmények:** `CFA4_VFX_EGYESITETT_TERV.md` v0.9.8 (a master- és az After Effects-terv egyesítése) és `CFA4_VFX_OSSZEVETES_A_REPO_TERVEKKEL.md` (összevetés a `main` `3d1615e` állapotával). A bemeneti tervek és a v0.9.8 lépésről lépésre megőrzik a részleteket; ahol ez a terv eltér tőlük, **ez az irányadó**.
 **Állapot:** `JÓVÁHAGYOTT` a tulajdonos által, 2026-11-22; a fejlesztés a 5. fejezet sorrendje szerint indul (VFX-0a → 0b → 1; a VFX-2…6 a render-terv függőségeinek készültéig vár; a VFX-8 az X-4/X-5 döntésig áll). A repóba vitel PR-ral történik (`coordination.md` §2.11).
 **Névhasználat:** a repó márkaszűrője (`python/tests/test_independence.py`) miatt a szövegben „EC-donor (#11)” és „upstream” szerepel; a márkanevek és a donor-URL-ek nincsenek kiírva. A fájl így közvetlenül a `docs/plans/`-ba vihető.
@@ -164,14 +164,27 @@ A tesztek a render-terv harnessén és kapuin (F0V, MQ-1…8, AC-01…18) futnak
 
 D-1 egy katalógus (a `G-xx` mátrix; a VFX-CATALOG-001 szűkül); D-2 egy kifejezésmag, gazdája a VFX-4; D-3 egy worker/job-szerződés (render C0), az N1/N2 saját indítója átmeneti; D-4 USD: külső EXR-csere az alap, natív import feltételes; D-5…D-8 pontosítások (N2-3, „G” névkonvenció, OpenVDB-licenc, DNEG-donorok pillanatképe); D-9 az FX-AUTHORING név marad. Az X-4 (3D-mélység) **nem** dőlt el: az OPENUSD, ARF, POINTCLOUD és a VFX-8 addig áll.
 
-## 9. Nyitott tulajdonosi döntések
+## 9. Nyitott pontok
 
-1. **X-4:** a 3D/VFX mélysége (`VISION.md` §8). A VFX-8 ettől függ.
+**Tulajdonosi döntésre vár:**
+1. **X-4:** a 3D/VFX mélysége (`VISION.md` §8). Ettől függ: VFX-8, valamint a `CFA4-OPENUSD-3D-001`, `CFA4-ARF-001` és `CFA4-POINTCLOUD-001` kódot érintő része. Addig ezek állnak.
 2. **X-6:** a `VISION.md` §4 bővítése az After Effects-szel és a VFX-donorokkal.
-3. **X-2:** a terv repóba vitele (PR) és a terv jóváhagyása.
-4. **VFX-0a:** donor-pillanatkép (SHA, szülő licenc) rögzítése; a fork leválasztása nem szükséges, a donorok befagyasztva maradnak.
-5. A WP-k indítása a render-terv megfelelő fázisai után (`coordination.md` §2.10).
+
+**Egyéb nyitott:**
+3. Az elágazási pont SHA az EC- és a Gaffer-donornál (a szülő története nem ellenőrzött; a VFX-0a és VFX-0b dokumentum jelzi).
+4. A WP-k indítása a render-terv megfelelő fázisai után, külön engedéllyel (`coordination.md` §2.10).
+
+**Lezárt:** a terv repóba vitele és jóváhagyása (X-2, PR #1531), a donor-pillanatkép (VFX-0a, PR #1538), az egyeztetési döntések D-1…D-9 (8a. fejezet).
 
 ## 10. Mit nem állít ez a terv
 
 Egyik szám (307, 306, 280, 3032, 2984, 38) sincs újramérve. A nyitott PR-ok, az AI-modulok repója, a donor-repók tartalma és az elágazási pontok nincsenek ellenőrizve. A tervezett útvonalak és parancsnevek tervek, nem létező kód. A hivatkozott `main`-állapot: `3d1615e`.
+
+## 11. Változásnapló
+
+| Verzió | Dátum | Változás |
+|---|---|---|
+| 1.0 | 2026-11-22 | Az összevont VFX-terv repóra szabott változata: X-1…X-8 az ajánlások szerint, WP-k VFX-0a…X1, a `G-xx` mátrix kiterjesztése. A tulajdonos jóváhagyta. |
+| 1.0a | 2026-11-22 | A Lumit-donor felvétele (csak olvasott; `GPL-3.0-only` fájlok így maradnak); a donorok befagyasztva, a fork leválasztása nem előfeltétel. |
+| 1.0b | 2026-11-22 | Csak Linux-hatókör: macOS-, Windows-, FreeBSD- és web-specifikus rész nem kerül át. |
+| 1.1 | 2026-11-22 | Egyeztetés a nyitott projektekkel (`CFA4-DNEG-VFX-EGYEZTETES-001`, D-1…D-9 elfogadva): új sorok a projekthatár-táblázatban (3.1), port-vagy-marad szabály (2. fejezet), 8a. fejezet, a 9. fejezet nyitott pontjai (X-4, X-6) frissítve. A donorokhoz csak olvasással nyúlunk. |
