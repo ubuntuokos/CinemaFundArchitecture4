@@ -912,7 +912,12 @@ fn rdd9_rejects_other_essence() {
 }
 /// Three uncompressed pictures of `layout` (32×4), each a different flat colour.
 fn build_uncompressed(pattern: Pattern, layout: crate::UncompressedLayout) -> (Vec<u8>, Vec<Vec<u8>>) {
+    build_uncompressed_with(pattern, layout, &[])
+}
+
+fn build_uncompressed_with(pattern: Pattern, layout: crate::UncompressedLayout, dm_schemes: &[[u8; 16]]) -> (Vec<u8>, Vec<Vec<u8>>) {
     let mut cfg = WriterConfig::new(pattern, Rational::new(25, 1), PackageIds::from_seed("raw", "Raw Clip"));
+    cfg.dm_schemes = dm_schemes.to_vec();
     cfg.picture = Some(PictureDesc::new(PictureCoding::Uncompressed { layout }, 48, 4));
     let mut w = MxfWriter::new(Cursor::new(Vec::new()), cfg).unwrap();
     let mut pictures = Vec::new();
@@ -2017,4 +2022,28 @@ fn as07_baseband_shim_check() {
     let f = open(&build_op1a()[..]).unwrap();
     let e = check_baseband(&f).unwrap_err();
     assert!(e.contains("not JPEG 2000"), "{e}");
+}
+
+/// A file that lists the AS-07 core scheme claims the AS-07 shims, so the reader reports where it
+/// breaks the Baseband Shim as warnings; other files get none.
+#[test]
+fn as07_files_get_baseband_shim_warnings_on_open() {
+    use crate::as07::{CORE_SCHEME, claims_as07};
+    let layout = crate::UncompressedLayout::V210;
+    let shim = |f: &crate::MxfFile| f.warnings.iter().filter(|w| w.starts_with("AS-07 Baseband Shim")).count();
+    // OP-Atom breaks the shim; without the scheme label nothing is said
+    let (bytes, _) = build_uncompressed(Pattern::OpAtom, layout);
+    let f = open(&bytes[..]).unwrap();
+    assert!(!claims_as07(&f));
+    assert_eq!(shim(&f), 0);
+    // with the label the breaches are warnings
+    let (bytes, _) = build_uncompressed_with(Pattern::OpAtom, layout, &[CORE_SCHEME]);
+    let f = open(&bytes[..]).unwrap();
+    assert!(claims_as07(&f) && f.dm_schemes.contains(&crate::Ul(CORE_SCHEME)));
+    assert!(shim(&f) >= 2, "{:?}", f.warnings);
+    // a conforming OP1a file with the label has none
+    let (bytes, _) = build_uncompressed_with(Pattern::Op1a, layout, &[CORE_SCHEME]);
+    let f = open(&bytes[..]).unwrap();
+    assert!(claims_as07(&f));
+    assert_eq!(shim(&f), 0, "{:?}", f.warnings);
 }
