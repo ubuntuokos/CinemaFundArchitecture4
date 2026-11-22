@@ -1798,6 +1798,9 @@ class ExportDialog(QDialog):
             status = str(it.get("status") or "").lower()
             qc = it.get("qc") if isinstance(it.get("qc"), dict) else {}
             qc_status = str(qc.get("status") or "notChecked")
+            dcp = it.get("dcpValidation") if isinstance(it.get("dcpValidation"), dict) else {}
+            if dcp.get("profile"):  # a DCP package is validated (DCP-13), not media-checked: its result fills the column
+                qc, qc_status = dcp, str(dcp.get("status") or "notChecked")
             texts = [
                 str(it.get("sequenceName") or ""),
                 str(it.get("path") or ""),
@@ -1849,7 +1852,10 @@ class ExportDialog(QDialog):
                 self.table.selectRow(row)
         self._update_move_buttons()
         running = bool(data.get("running")) or any(
-            str(i.get("status") or "").lower() == "encoding" or (i.get("qc") or {}).get("status") == "running" for i in items
+            str(i.get("status") or "").lower() == "encoding"
+            or (i.get("qc") or {}).get("status") == "running"
+            or (i.get("dcpValidation") or {}).get("status") == "running"
+            for i in items
         )
         if not running and not self.isVisible():
             self._poll.stop()
