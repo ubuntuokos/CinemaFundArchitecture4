@@ -198,6 +198,23 @@ pub fn cfb(data: &[u8]) {
     }
 }
 
+/// glTF / GLB, OBJ (+ MTL) and STL readers (CFA4-OPENUSD-3D-001 U1-A2): every format on every input, and
+/// the format guessed from the bytes; external resources are answered with the input itself, so buffer
+/// and material-library paths are exercised too. A small memory budget keeps each call fast.
+pub fn model3d(data: &[u8]) {
+    use cfa4_model3d::{Format, Limits, read, read_as};
+    let limits = Limits { max_memory_bytes: 64 << 20, max_input_bytes: 8 << 20, ..Limits::default() };
+    let mut res = |_: &str| Some(data.to_vec());
+    if let Ok(s) = read(data, None, &mut res, &limits) {
+        std::hint::black_box(s);
+    }
+    for format in [Format::Gltf, Format::Obj, Format::Stl] {
+        if let Ok(s) = read_as(format, data, &mut res, &limits) {
+            std::hint::black_box(s);
+        }
+    }
+}
+
 pub fn heif(data: &[u8]) {
     let _ = cfa4_heif::parse(data);
 }
@@ -495,6 +512,7 @@ pub const TARGETS: &[(&str, &str, Target)] = &[
     ("speex", "cfa4-speex", speex),
     ("cfb", "cfa4-cfb", cfb),
     ("heif", "cfa4-heif", heif),
+    ("model3d", "cfa4-model3d", model3d),
     ("dcp", "cfa4-dcp", dcp),
     ("iab", "cfa4-iab", iab),
     ("dv", "cfa4-dv", dv),

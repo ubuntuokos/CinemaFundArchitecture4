@@ -1845,6 +1845,13 @@ dependencies = [
 ]
 
 [[package]]
+name = "cfa4-model3d"
+version = "0.10.0"
+dependencies = [
+ "serde_json",
+]
+
+[[package]]
 name = "cfa4-mpa"
 version = "0.10.0"
 dependencies = [

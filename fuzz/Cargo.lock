@@ -330,6 +330,7 @@ dependencies = [
  "cfa4-jxl",
  "cfa4-lcevc",
  "cfa4-matroska",
+ "cfa4-model3d",
  "cfa4-mpa",
  "cfa4-mpeg2v",
  "cfa4-mpegts",
@@ -462,12 +463,20 @@ dependencies = [
  "cfa4-heif",
  "cfa4-hevc",
  "cfa4-jxl",
+ "cfa4-realaudio",
  "cfa4-time",
  "image",
  "log",
  "rayon",
  "serde",
  "thiserror",
+]
+
+[[package]]
+name = "cfa4-model3d"
+version = "0.10.0"
+dependencies = [
+ "serde_json",
 ]
 
 [[package]]
@@ -530,6 +539,13 @@ version = "0.10.0"
 dependencies = [
  "cfa4-bitstream",
  "rayon",
+ "thiserror",
+]
+
+[[package]]
+name = "cfa4-realaudio"
+version = "0.10.0"
+dependencies = [
  "thiserror",
 ]
 
