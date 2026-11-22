@@ -37,6 +37,7 @@ pub mod av2_external;
 pub mod avi;
 pub mod canopus;
 pub mod cavs;
+pub mod cinepak;
 mod ckpt;
 pub mod dif;
 pub mod dirac;
@@ -118,7 +119,7 @@ impl From<CodecError> for cfa4_media::MediaError {
 }
 
 /// Our own (pure-Rust) decoders, in the order they are tried.
-const BUILTIN_FACTORIES: [VideoDecoderFactory; 27] = [
+const BUILTIN_FACTORIES: [VideoDecoderFactory; 28] = [
     video::h264_factory,
     video::hevc_factory,
     video::vp8_factory,
@@ -140,6 +141,7 @@ const BUILTIN_FACTORIES: [VideoDecoderFactory; 27] = [
     huffyuv::huffyuv_factory,
     lagarith::lagarith_factory,
     indeo::indeo_factory,
+    cinepak::cinepak_factory,
     utvideo::utvideo_factory,
     magicyuv::magicyuv_factory,
     evc::evc_factory,

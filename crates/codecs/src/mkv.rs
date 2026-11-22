@@ -450,6 +450,11 @@ fn sample_entry(c: &Codec, private: &[u8], v: Option<&cfa4_matroska::VideoInfo>,
         Codec::VfwFourcc { fourcc, bitmap_info_header } if fourcc.eq_ignore_ascii_case(b"HFYU") => crate::huffyuv::sample_entry(bitmap_info_header, w, h),
         Codec::VfwFourcc { fourcc, .. } if crate::canopus::codec(fourcc).is_some() => crate::canopus::sample_entry(crate::canopus::codec(fourcc)?, w, h),
         Codec::VfwFourcc { fourcc, .. } if crate::indeo::is_indeo2(fourcc) => crate::indeo::sample_entry_indeo2(w, h),
+        // Cinepak: the VfW BITMAPINFOHEADER bit count (8: palette video) and the palette after it
+        Codec::VfwFourcc { fourcc, bitmap_info_header } if crate::cinepak::is_cinepak(fourcc) => {
+            let bits = bitmap_info_header.get(14..16).map_or(24, |b| u16::from_le_bytes([b[0], b[1]]));
+            crate::cinepak::sample_entry(bits, bitmap_info_header.get(40..).unwrap_or_default(), w, h)
+        }
         // Lagarith: the VfW BITMAPINFOHEADER bit count sets the solid-frame layout
         Codec::VfwFourcc { fourcc, bitmap_info_header } if crate::lagarith::is_lagarith(fourcc) => {
             let bits = bitmap_info_header.get(14..16).map_or(24, |b| u16::from_le_bytes([b[0], b[1]]));
@@ -548,6 +553,7 @@ fn codec_label(c: &Codec) -> String {
         Codec::VfwFourcc { fourcc, .. } if crate::utvideo::is_utvideo(fourcc) => "Ut Video".into(),
         Codec::VfwFourcc { fourcc, .. } if crate::lagarith::is_lagarith(fourcc) => "Lagarith".into(),
         Codec::VfwFourcc { fourcc, .. } if crate::indeo::is_indeo2(fourcc) => "Indeo 2".into(),
+        Codec::VfwFourcc { fourcc, .. } if crate::cinepak::is_cinepak(fourcc) => "Cinepak".into(),
         Codec::VfwFourcc { fourcc, .. } if crate::magicyuv::is_magicyuv(fourcc) => "MagicYUV".into(),
         Codec::VfwFourcc { fourcc, .. } if crate::hap::is_hap(fourcc) => "Hap".into(),
         Codec::VfwFourcc { fourcc, .. } if is_dv_fourcc(fourcc) => "DV".into(),

@@ -1230,6 +1230,14 @@ dependencies = [
 ]
 
 [[package]]
+name = "cfa4-cinepak"
+version = "0.10.0"
+dependencies = [
+ "cfa4-testkit",
+ "thiserror 2.0.21",
+]
+
+[[package]]
 name = "cfa4-cli"
 version = "0.10.0"
 dependencies = [
@@ -1285,6 +1293,7 @@ dependencies = [
  "cfa4-canopus",
  "cfa4-cavs",
  "cfa4-cineform",
+ "cfa4-cinepak",
  "cfa4-color",
  "cfa4-dirac",
  "cfa4-dnx",
