@@ -17,11 +17,11 @@ Without the worker the real-worker tests return early and the engine works as be
 |---|---|
 | N1-1 `vdb.inspect` | done: worker, host and the engine command `vdb.inspect`, tested on a synthetic file; Qt panel open (N1-10) |
 | N1-2 ≥ 1 GiB, memory | done with a deviation: a 650³ dense file (2.7·10⁸ active voxels = 1.02 GiB of data, 122 MB on disk) is inspected with a peak RSS of ~160 MB (the worker reports `VmHWM`; `tests/big.rs`, `--ignored`). Measured as the worker's own peak RSS, **not** under a cgroup limit (not available in this container); sparse files are covered by the small synthetic test |
-| N1-3 hostile files | host side tested (60 mutated/truncated files, crash/hang/garbage/flood fakes); long fuzz run **open** |
+| N1-3 hostile files | done for the unit: 7 500 mutated/truncated files (`CFA4_VDB_FUZZ_ITERS`) never panic the host or hang; the first 5 000-file run showed an out-of-memory kill of a worker, so the worker now caps its address space (`CFA4_VDB_MEM_LIMIT_MB`, default 4096) and the 2 500-file rerun was clean. Crash/hang/garbage/flood fakes also covered. A coverage-guided fuzzer (cargo-fuzz style) is not set up |
 | N1-4 round trip | grid and metadata identity on the synthetic file; bit-identity over all supported types **open** |
 | N1-5 image sequence import | done: `vdb.import` makes one `ItemKind::Volume` item for a file or a numbered `.vdb` sequence (gaps reported), no timeline; tested |
-| N1-6 CPU only, GPUs hidden | **open** (the worker uses no GPU) |
+| N1-6 CPU only, GPUs hidden | by construction (the worker links no GPU library and opens no device; the sandbox grants no GPU nodes); the run on the reference machine with both cards hidden and `--hw off` is **open** (no GPU here) |
 | N1-7 project save/restore | done: the reference is saved with the project and restored (`*t.project == *s.project`), `vdb.check` reports missing files, `vdb.relink` repoints (undoable); tested |
 | N1-8 sandbox profile | done: `cfa4-vdb-launch` confines itself (Landlock + seccomp, strict) and `exec`s the worker: reads only the granted file, writes only the granted output, no network, no other program; tested with a probe worker and the real worker (skips on a kernel without Landlock). The engine uses it when the launcher is found next to the worker, in `CFA4_VDB_LAUNCHER` or in `/opt/cfa4/bin` |
-| N1-9 frame-time reference | **open** |
+| N1-9 frame-time reference | **open**: needs the reference-machine measurement before/after (docs/development/reference-machine.md); not measurable in this container |
 | N1-10 Qt6 panel | **open** |

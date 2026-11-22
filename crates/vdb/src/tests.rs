@@ -106,7 +106,9 @@ fn real_worker_survives_hostile_files() {
     assert!(w.inspect(&d.join("missing.vdb")).is_err());
     // Truncations and byte flips: always Ok or Err, never a panic, never a hang.
     let mut seed = 0x9e37_79b9_u32;
-    for i in 0..60 {
+    // `CFA4_VDB_FUZZ_ITERS=20000` for the long run of N1-3
+    let iters: u32 = std::env::var("CFA4_VDB_FUZZ_ITERS").ok().and_then(|v| v.parse().ok()).unwrap_or(60);
+    for i in 0..iters {
         let mut bytes = good.clone();
         if i % 2 == 0 {
             bytes.truncate((seed as usize) % bytes.len());

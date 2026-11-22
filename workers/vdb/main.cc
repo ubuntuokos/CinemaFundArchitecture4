@@ -7,6 +7,7 @@
 #include <openvdb/openvdb.h>
 #include <openvdb/points/PointDataGrid.h>
 #include <openvdb/util/logging.h>
+#include <sys/resource.h>
 #include <cstdio>
 #include <cstdlib>
 #include <cstring>
@@ -79,7 +80,19 @@ static std::string inspect(const std::string& path) {
     return o.str();
 }
 
+// A hostile file can ask for absurd allocations: cap the address space (CFA4_VDB_MEM_LIMIT_MB, default 4096) so
+// the worker fails with std::bad_alloc, reported as an error, instead of starving the machine (N1-3).
+static void limitMemory() {
+    long mb = 4096;
+    if (const char* e = std::getenv("CFA4_VDB_MEM_LIMIT_MB")) mb = std::atol(e);
+    if (mb <= 0) return;
+    struct rlimit rl;
+    rl.rlim_cur = rl.rlim_max = (rlim_t)mb * 1024 * 1024;
+    setrlimit(RLIMIT_AS, &rl);
+}
+
 int main(int argc, char** argv) {
+    limitMemory();
     try {
         openvdb::initialize();
         // OpenVDB's logger writes warnings to stdout, which is the JSON channel: silence it.
