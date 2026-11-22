@@ -25,3 +25,14 @@ Without the worker the real-worker tests return early and the engine works as be
 | N1-8 sandbox profile | done: `cfa4-vdb-launch` confines itself (Landlock + seccomp, strict) and `exec`s the worker: reads only the granted file, writes only the granted output, no network, no other program; tested with a probe worker and the real worker (skips on a kernel without Landlock). The engine uses it when the launcher is found next to the worker, in `CFA4_VDB_LAUNCHER` or in `/opt/cfa4/bin` |
 | N1-9 frame-time reference | **open**: needs the reference-machine measurement before/after (docs/development/reference-machine.md); not measurable in this container |
 | N1-10 Qt6 panel | **open** |
+
+## N2 acceptance status (volume preview as plain media)
+`cfa4-vdb-worker render` ray-marches one float grid (orthographic, step 2 / 1 / 0.5 voxels for `preview` / `standard` / `high`) into an RGBA PNG; `vdb.render` imports the PNG as an ordinary still. EXR/AOV output is not done (single-part PNG, as the plan allows for the first round).
+
+| Criterion | State |
+|---|---|
+| N2-1 quality levels, no silent reduction | done: three levels; the level that was asked for is the level that runs (tested twice in a row); the engine never lowers it |
+| N2-2 determinism | done: every pixel is independent, so two runs and one thread against many give **byte-identical** PNGs (no tolerance needed; tested) |
+| N2-3 plain clip, no new render path | done: the PNG is imported with `file.import` and placed with `timeline.place` (tested). Note: N1 added `Volume` arms to three exhaustive `match`es in `crates/render` (no new path, but the literal "git diff of crates/render is 0" does not hold) |
+| N2-4 cancel, time limit, OOM → error | done at the host: `Worker::render` kills the worker on cancel (<5 s) and on the time limit; the worker's address-space cap turns an out-of-memory render into an error (tested). The `vdb.render` command runs synchronously and has no cancel from the GUI yet |
+| N2-5 background, GUI responsive | **open**: needs the engine's background-job queue (ACS-6, PR #1471, not on `main`); `vdb.render` currently blocks the engine command loop for the length of the render |

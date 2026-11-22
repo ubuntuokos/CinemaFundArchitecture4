@@ -6,6 +6,7 @@
 //!
 //! | `vdb.import` | adds a `.vdb` file, or a numbered sequence (`name.0001.vdb`), to the Project panel as a volume item (N1-5); no timeline is created |
 //! | `vdb.check` | the files of a volume item that are missing on disk (the relink report, N1-7) |
+//! | `vdb.render` | a density preview of a volume item (one frame of a sequence) rendered by the worker to an RGBA PNG and imported as an ordinary still: the compositor and the renderer are unchanged (N2) |
 //! | `vdb.relink` | points a volume item at another first file; frames are found again; one undo step |
 //!
 //! A missing or failing worker is an ordinary error message; the engine never depends on it to cut, play or save.
@@ -117,6 +118,63 @@ fn inspect(_: &mut Session, p: &Value) -> Result<Value> {
     serde_json::to_value(&info).map(|v| json!({"path": path, "inspection": v})).map_err(|e| EngineError::Other(e.to_string()))
 }
 
+/// Where a preview goes when the caller names no file: the temp folder, one file per item, frame, size and quality.
+fn default_preview_path(item: ItemId, frame: usize, w: u32, h: u32, q: cfa4_vdb::Quality) -> std::path::PathBuf {
+    crate::temp_dir().join("CFA4 Volume Previews").join(format!("volume-{}-f{frame}-{w}x{h}-{}.png", item.0, q.id()))
+}
+
+fn render(s: &mut Session, p: &Value) -> Result<Value> {
+    const CMD: &str = "vdb.render";
+    let (id, v) = volume_p(s, p, CMD)?;
+    let frame = u64_p(p, "frame").unwrap_or(0) as usize;
+    let input = if v.is_sequence() {
+        match v.frames.get(frame) {
+            Some(Some(f)) => f.clone(),
+            Some(None) => return Err(EngineError::Other(format!("frame {frame} of {} is missing", v.path))),
+            None => return Err(bad(CMD, format!("frame {frame} is outside the sequence of {} frames", v.frames.len()))),
+        }
+    } else if frame == 0 {
+        v.path.clone()
+    } else {
+        return Err(bad(CMD, "a single file has only frame 0"));
+    };
+    let dim = |k: &str, default: u32| -> Result<u32> {
+        match u64_p(p, k) {
+            None => Ok(default),
+            Some(n) if (1..=8192).contains(&n) => Ok(n as u32),
+            Some(_) => Err(bad(CMD, format!("`{k}` must be 1..8192"))),
+        }
+    };
+    let (w, h) = (dim("width", 640)?, dim("height", 360)?);
+    // the level is the user's: it is never lowered automatically (N2-1)
+    let quality = match str_p(p, "quality") {
+        None => cfa4_vdb::Quality::Standard,
+        Some(q) => cfa4_vdb::Quality::from_id(q).ok_or_else(|| bad(CMD, "`quality` must be preview, standard or high"))?,
+    };
+    let mut req = cfa4_vdb::RenderRequest::new(w, h, quality);
+    req.grid = str_p(p, "grid").map(str::to_string);
+    if let Some(a) = p.get("azimuth").and_then(Value::as_f64) {
+        req.azimuth_deg = a;
+    }
+    if let Some(e) = p.get("elevation").and_then(Value::as_f64) {
+        req.elevation_deg = e;
+    }
+    let out = match str_p(p, "out") {
+        Some(o) => std::path::PathBuf::from(o),
+        None => default_preview_path(id, frame, w, h, quality),
+    };
+    if let Some(dir) = out.parent() {
+        std::fs::create_dir_all(dir).map_err(|e| EngineError::Other(format!("{}: {e}", dir.display())))?;
+    }
+    let worker = cfa4_vdb::Worker::discover().map_err(|e| EngineError::Other(e.to_string()))?;
+    let info = worker.render(std::path::Path::new(&input), &out, &req, None).map_err(|e| EngineError::Other(e.to_string()))?;
+    // the picture is ordinary media from here on
+    let out_s = out.to_string_lossy().to_string();
+    let imported = s.execute("file.import", json!({"paths": [out_s]}))?;
+    let new_items = imported.get("items").cloned().unwrap_or(Value::Null);
+    Ok(json!({"volume": id.0, "frame": frame, "png": out_s, "items": new_items, "info": serde_json::to_value(&info).unwrap_or(Value::Null)}))
+}
+
 fn spec(id: &'static str, label: &'static str, params: &'static str, run: crate::commands::Run, journal: bool) -> CommandSpec {
     CommandSpec { id, label, menu: &[], shortcut: None, params, enabled: always, run, journal }
 }
@@ -126,6 +184,13 @@ pub fn commands() -> Vec<CommandSpec> {
         spec("vdb.inspect", "Inspect VDB File", r#"{"path":"file.vdb"}"#, inspect, false),
         spec("vdb.import", "Import VDB Volume", r#"{"paths":[str],"sequence":bool?,"bin":binId?}"#, import, true),
         spec("vdb.check", "Check VDB Volume", r#"{"item":id?}"#, check, false),
+        spec(
+            "vdb.render",
+            "Render VDB Preview",
+            r#"{"item":id?,"frame":n?,"width":n?,"height":n?,"quality":"preview|standard|high"?,"grid":str?,"azimuth":deg?,"elevation":deg?,"out":path?}"#,
+            render,
+            true,
+        ),
         spec("vdb.relink", "Relink VDB Volume", r#"{"item":id?,"path":str}"#, relink, true),
     ]
 }

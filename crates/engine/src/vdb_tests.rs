@@ -108,3 +108,29 @@ fn project_round_trip_and_relink_report() {
     t.execute("edit.undo", json!({})).unwrap();
     assert_eq!(t.execute("vdb.check", json!({"item": id})).unwrap()["online"], false);
 }
+
+#[test]
+fn a_volume_preview_is_a_plain_still_the_timeline_takes() {
+    // needs a built worker; returns early without one
+    let Ok(w) = cfa4_vdb::Worker::discover() else { return };
+    let d = dir("render");
+    let vdb = d.join("t.vdb");
+    w.write_selftest(&vdb).unwrap();
+    let mut s = Session::default();
+    s.execute("file.newSequence", json!({"name": "v", "audio": 1, "video": 1})).unwrap();
+    let r = s.execute("vdb.import", json!({"paths": [vdb.to_string_lossy()]})).unwrap();
+    let vol = r["items"][0]["item"].as_u64().unwrap();
+    // a bad quality or size is refused before any worker runs
+    assert!(s.execute("vdb.render", json!({"item": vol, "quality": "ultra"})).is_err());
+    assert!(s.execute("vdb.render", json!({"item": vol, "width": 0})).is_err());
+    assert!(s.execute("vdb.render", json!({"item": vol, "frame": 3})).is_err());
+    let out = d.join("p.png");
+    let r = s.execute("vdb.render", json!({"item": vol, "width": 160, "height": 90, "quality": "preview", "out": out.to_string_lossy()})).unwrap();
+    let still = r["items"][0].as_u64().expect("the picture is imported as an item");
+    let it = s.project.item(cfa4_project::ItemId(still)).unwrap();
+    assert_eq!(it.type_label(), "Still Image");
+    assert_eq!(s.project.source_size(cfa4_project::ItemId(still)), Some((160, 90)));
+    // placed as an ordinary clip: no new render path
+    s.execute("timeline.place", json!({"item": still, "videoTrack": "V1", "seconds": 0.0})).unwrap();
+    assert_eq!(r["info"]["grid"], "density");
+}
