@@ -85,7 +85,7 @@ A worker CPU-n **sűrűség-/mélységelőnézetet és AOV-t renderel** EXR-be (
 
 ### N3 – AX térbeli kifejezés (C, feltételes; G4)
 
-Csak a G4 után. **`[MÓD-5]`** Az interpreter a `CFA4-VFX-001` VFX-4 **kifejezésmagjának térbeli kontextus-kiterjesztése** (pont-/voxel-attribútum), nem külön parser és korlátrendszer; a G4 a VFX-4 magjára is vár. Nincs külön DNEG-szerkesztő: a kifejezés az Effect Controls egyik effekt-szerű bejegyzése, paraméterekkel és preset-könyvtárral; a Qt6-os szerkesztő a meglévő szerkesztőfelület része.
+Csak a G4 után. **`[MÓD-5]`** Az interpreter a `CFA4-VFX-001` VFX-4 **kifejezésmagjának térbeli kontextus-kiterjesztése** (pont-/voxel-attribútum), nem külön parser és korlátrendszer; a G4 a VFX-4 magjára is vár (VFX-4 ← VFX-2 ← render C0/F3, `cfa4-sandbox`: az N3 ezért sokkal később indulhat). A mag eredete (Lumit-átvétel, `GPL-3.0-only`, vagy tiszta szoba) a VFX-1 auditban dől el N3 előtt; Lumit-eredetnél a bővítés fájljainak licencét a VFX-0b szabálya szerint kell rögzíteni (D-10). Nincs külön DNEG-szerkesztő: a kifejezés az Effect Controls egyik effekt-szerű bejegyzése, paraméterekkel és preset-könyvtárral; a Qt6-os szerkesztő a meglévő szerkesztőfelület része.
 
 **N3-S – sandbox-PoC (kötelező előfeltétel):**
 
