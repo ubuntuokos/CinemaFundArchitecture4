@@ -4876,3 +4876,27 @@
 	Subtitles	Subtítulos
 	Captions for the hearing impaired	Subtítulos para personas sordas o con discapacidad auditiva
 	Forced narrative	Narración forzada (forced narrative)
+# DCP Validation window (DCP-12)
+	AS-03	AS-03
+	Choose the DCP folder.	Elige la carpeta del DCP.
+	DCP Validation	Validación de DCP
+	DCP folder	Carpeta del DCP
+	DCP folder (the one holding ASSETMAP)	Carpeta del DCP (la que contiene el ASSETMAP)
+	Evidence	Evidencia
+	How to fix	Cómo corregirlo
+	Interrupted	Interrumpido
+	Not applicable	No aplicable
+	Report	Informe
+	Report saved: {path}	Informe guardado: {path}
+	Required	Obligatorio
+	Rule	Regla
+	Rules	Reglas
+	Save JSON…	Guardar JSON…
+	Save Markdown…	Guardar Markdown…
+	Save report	Guardar informe
+	Skipped	Omitido
+	Standard: {standard}	Norma: {standard}
+	Validate	Validar
+	Validate DCP…	Validar DCP…
+	the engine sent no profiles	el motor no envió ningún perfil
+	{n} files checked	{n} archivos comprobados

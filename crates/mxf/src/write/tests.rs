@@ -1955,3 +1955,66 @@ fn as10_metadata_round_trips() {
     let part = Segment { start: 0, duration: 2, part_number: 1, part_total: 1 };
     assert!(refuse(As11 { as10: as10.clone(), segments: vec![part], ..Default::default() }).contains("Core"));
 }
+
+#[test]
+fn as03_metadata_round_trips() {
+    use crate::as11::As11;
+    let kv = |v: &[(&str, &str)]| -> Vec<(String, String)> { v.iter().map(|(k, v)| (k.to_string(), v.to_string())).collect() };
+    let as03 = kv(&[
+        ("IdentifierKind", "ISAN"),
+        ("Identifier", "ISAN 0000-0001-8947-0000-8-0000-0000-D"),
+        ("ShimName", "PBS NGIS HD Playout"),
+        ("SignalStandard", "1920/1080/59.94i/16:9"),
+        ("IntendedAFD", "1000 FullHD"),
+        ("SlateTitle", "Tést"),
+        ("Rating", "TV-G"),
+    ]);
+    let mut cfg = op1a_config(Rational::new(25, 1), PictureCoding::ProRes { profile: 3 });
+    cfg.sound.truncate(1);
+    cfg.as11 = Some(As11 { as03: as03.clone(), ..Default::default() });
+    let mut w = MxfWriter::new(Cursor::new(Vec::new()), cfg).unwrap();
+    for i in 0..4 {
+        w.push_picture(&prores_like(i), FrameInfo::intra()).unwrap();
+        w.push_sound(0, &pcm16(i * 1920, 1920)).unwrap();
+    }
+    let bytes = w.finish().unwrap().into_inner();
+    let f = open(&bytes).unwrap();
+    assert_eq!(f.tracks.len(), 2, "the DM track is not an essence track");
+    let a = f.as11.unwrap();
+    assert!(a.core.is_empty() && a.segments.is_empty() && a.ukdpp.is_empty() && a.as10.is_empty());
+    let sorted = |mut v: Vec<(String, String)>| {
+        v.sort();
+        v
+    };
+    assert_eq!(sorted(a.as03), sorted(as03.clone()));
+    // a missing required item, an unknown item and AS-03 with parts but no Core are refused
+    let refuse = |a: As11| {
+        let mut cfg = op1a_config(Rational::new(25, 1), PictureCoding::ProRes { profile: 3 });
+        cfg.as11 = Some(a);
+        MxfWriter::new(Cursor::new(Vec::new()), cfg).err().unwrap().to_string()
+    };
+    assert!(refuse(As11 { as03: kv(&[("ShimName", "x")]), ..Default::default() }).contains("is required"));
+    let mut bad = as03.clone();
+    bad.push(("Nope".into(), "1".into()));
+    assert!(refuse(As11 { as03: bad, ..Default::default() }).contains("Nope"));
+    let part = crate::as11::Segment { start: 0, duration: 2, part_number: 1, part_total: 1 };
+    assert!(refuse(As11 { as03, segments: vec![part], ..Default::default() }).contains("Core"));
+}
+
+#[test]
+fn as07_baseband_shim_check() {
+    use crate::as07::{baseband_problems, check_baseband};
+    // uncompressed 10-bit pictures in OP1a with frame wrapping conform
+    let (bytes, _) = build_uncompressed(Pattern::Op1a, crate::UncompressedLayout::V210);
+    let f = open(&bytes[..]).unwrap();
+    assert_eq!(check_baseband(&f), Ok(()), "{:?}", baseband_problems(&f));
+    // OP-Atom is not OP1a and its pictures are clip wrapped
+    let (bytes, _) = build_uncompressed(Pattern::OpAtom, crate::UncompressedLayout::V210);
+    let f = open(&bytes[..]).unwrap();
+    let e = check_baseband(&f).unwrap_err();
+    assert!(e.contains("OP1a") && e.contains("clip wrapped"), "{e}");
+    // a ProRes file has the wrong picture coding
+    let f = open(&build_op1a()[..]).unwrap();
+    let e = check_baseband(&f).unwrap_err();
+    assert!(e.contains("not JPEG 2000"), "{e}");
+}

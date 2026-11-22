@@ -196,6 +196,7 @@ impl MxfMux {
                 },
                 ukdpp,
                 as10: Vec::new(),
+                as03: Vec::new(),
             });
         }
         if !atom && !settings.mxf_as10.trim().is_empty() {
@@ -227,6 +228,28 @@ impl MxfMux {
                 as10::check_shim(name, &facts).map_err(bad)?;
             }
             cfg.as11.get_or_insert_with(Default::default).as10 = values;
+        }
+        if !atom && !settings.mxf_as03.trim().is_empty() {
+            use cfa4_mxf::as03;
+            let bad = |e: String| ExportError::Unsupported(format!("AS-03: {e}"));
+            let values = cfa4_mxf::as11::parse_framework_text(&settings.mxf_as03).map_err(bad)?;
+            let (video, bit_rate) = match cfg.picture.as_ref().map(|d| d.coding) {
+                Some(PictureCoding::Mpeg2 { bit_rate, .. }) => (as03::Video::Mpeg2, bit_rate),
+                Some(PictureCoding::Avc { .. }) => (as03::Video::H264, settings.bitrate_kbps.saturating_mul(1000)),
+                _ => (as03::Video::Other, 0),
+            };
+            let facts = as03::Facts {
+                video,
+                width: s.width,
+                height: s.height,
+                bit_rate,
+                audio_channels: s.audio.map_or(0, |(_, ch)| ch as u32),
+                audio_bits: bits,
+                audio_sample_rate: s.audio.map_or(0, |(sr, _)| sr),
+            };
+            let name = values.iter().find(|(k, _)| k.eq_ignore_ascii_case("ShimName")).map(|(_, v)| v.as_str()).unwrap_or_default();
+            as03::check_shim(name, &facts).map_err(bad)?;
+            cfg.as11.get_or_insert_with(Default::default).as03 = values;
         }
         let cdp = match s.captions.as_ref().filter(|_| !atom) {
             Some(doc) => {

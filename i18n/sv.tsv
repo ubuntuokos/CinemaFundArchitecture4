@@ -4871,3 +4871,27 @@ export.summary	Low	låg
 	Subtitles	Undertexter
 	Captions for the hearing impaired	Textning för hörselskadade
 	Forced narrative	Tvingad berättarröst (forced narrative)
+# DCP Validation window (DCP-12)
+	AS-03	AS-03
+	Choose the DCP folder.	Välj DCP-mappen.
+	DCP Validation	DCP-validering
+	DCP folder	DCP-mapp
+	DCP folder (the one holding ASSETMAP)	DCP-mapp (den som innehåller ASSETMAP)
+	Evidence	Belägg
+	How to fix	Så åtgärdar du det
+	Interrupted	Avbruten
+	Not applicable	Ej tillämpligt
+	Report	Rapport
+	Report saved: {path}	Rapport sparad: {path}
+	Required	Obligatoriskt
+	Rule	Regel
+	Rules	Regler
+	Save JSON…	Spara JSON…
+	Save Markdown…	Spara Markdown…
+	Save report	Spara rapport
+	Skipped	Hoppades över
+	Standard: {standard}	Standard: {standard}
+	Validate	Validera
+	Validate DCP…	Validera DCP…
+	the engine sent no profiles	motorn skickade inga profiler
+	{n} files checked	{n} filer kontrollerade
