@@ -1,6 +1,6 @@
 # CFA4-SHOTCUT-CAPABILITY-ADAPTATION-001 / SC-5: Shotcut-projekt (`.mlt`) import, tervpótlás
 
-**Állapot:** **tulajdonosi jóváhagyásra vár.** A dokumentum **nem indít el semmit**: a megvalósítás (SC-5.0…SC-5.6) csak a tulajdonos jóváhagyása után kezdődhet (`docs/coordination.md` §2.10). A D1–D6 döntések (9. pont) a tulajdonosé.
+**Állapot:** **tulajdonosi jóváhagyásra vár.** A dokumentum **nem indít el semmit**: a megvalósítás (SC-5.0…SC-5.6) csak a tulajdonos jóváhagyása után kezdődhet (`docs/coordination.md` §2.10). A **D1 eldöntve (István, 2026-11-22): közös MLT-mag**; a D2–D6 (9. pont) javasolt alapértelmezéssel és indoklással jóváhagyásra vár.
 **Dátum:** 2026-11-22 · **Alap:** `main` @ `bd84c4d` · **Módszer:** csak olvasás: `VISION.md`, `AGENTS.md`, `docs/coordination.md`, a [`CFA4-SHOTCUT-CAPABILITY-ADAPTATION-001`](CFA4-SHOTCUT-CAPABILITY-ADAPTATION-001.md) F0-terv, a [`CFA4-V1-SILENCE-REMOVAL-001`](CFA4-V1-SILENCE-REMOVAL-001.md) terv (formai minta), a Kdenlive-terv K1/K20/K25/K42 pontjai, a `crates/interchange` fejléce és `Report` típusa. A kódot nem futtattam, a Shotcut forrását és fájlformátum-leírását nem vizsgáltam.
 **Nyelv:** magyar.
 **Forrás és előzmények:** a tulajdonos 2026-11-22-i észrevétele az F0-tervről: kimaradt, hogy a Shotcut projektfájl importálható legyen a CFA4-be; az **exportálás szándékosan kimarad**, mert a CFA4 funkciói sokkal összetettebbek a Shotcutnál, ezért az export értelmetlen lenne. Az F0-terv F4 sora csak az MLT/Kdenlive-importot és a „nincs MLT-export” döntést említi (2026-11-03, E10/E11); a **Shotcut-projekt importja** nem szerepelt benne, és más terv sem fedi.
@@ -15,7 +15,7 @@
 
 **Az export nem cél** (5. pont): a CFA4-projekt nem írható vissza Shotcut-formátumba.
 
-**Fontos átfedés (9. pont, D1):** a Kdenlive-terv **K1/K42/K20/K25** ugyanazt a fájlcsaládot (MLT XML) olvassa. A Shotcut és a Kdenlive ugyanarra az MLT-szerkezetre épül, csak a saját tulajdonságaik és szűrőazonosítóik különböznek. A `main`-en jelenleg **nincs MLT-olvasó** (ellenőrizve: a `crates/interchange` modullistájában nincs, a repóban `.mlt` kezelés nem található). A javaslat: **egy közös MLT-mag, két dialektus**, és az SC-5 a K1-gyel egyeztetve épüljön (`docs/coordination.md` §2.8: a döntés a tulajdonosé és a gazdáé).
+**Fontos átfedés (9. pont, D1, eldöntve):** a Kdenlive-terv **K1/K42/K20/K25** ugyanazt a fájlcsaládot (MLT XML) olvassa. A Shotcut és a Kdenlive ugyanarra az MLT-szerkezetre épül, csak a saját tulajdonságaik és szűrőazonosítóik különböznek. A `main`-en jelenleg **nincs MLT-olvasó** (ellenőrizve: a `crates/interchange` modullistájában nincs, a repóban `.mlt` kezelés nem található). **Döntés (István, 2026-11-22, D1): egy közös MLT-mag, két dialektus** (Kdenlive és Shotcut); nem készül két vagy több külön MLT-implementáció, mert azok karbantartása értelmetlen. Az SC-5 a K1 magjára épül, vagy a mag közös PR-sorozatban készül.
 
 | Tétel | Tartalom | Prioritás | Becslés* |
 |---|---|---|---|
@@ -234,12 +234,12 @@ Minden fázis **külön tulajdonosi engedélyt** igényel, és csak a terv jóv�
 
 | # | Kérdés | Javaslatom |
 |---|---|---|
-| **D1** | Az MLT XML olvasó legyen-e **közös** a Kdenlive-terv K1/K42/K20/K25 tételével (egy mag, két dialektus: Kdenlive és Shotcut)? Ez átfedés két projekt között, ezért a tulajdonos és a gazda dönt (`docs/coordination.md` §2.8). | Igen: közös MLT-mag a `crates/interchange`-ben, a dialektusonkénti tábla külön; az SC-5 a K1 magjára épül, vagy a mag közös PR-sorozatban készül |
-| **D2** | A modul helye és neve: új `Format` változat (`Mlt`) a `crates/interchange`-ben, a `file.import` automatikus felismerésével? | Igen, egyetlen `Mlt` formátum, a dialektust a fájl tartalma dönti el |
-| **D3** | A nem támogatott szűrő/átmenet kezelése: **jelentés + klipmarker** a klipen, vagy csak jelentés? (Helyettesítő „hasonló” effekt nincs.) | Jelentés és klipmarker |
-| **D4** | Melyik Shotcut-verzió(k)kel készüljenek a fixture-ek és melyik legkorábbi verzió projektjét kell olvasnia az importernek? | A legfrissebb stabil kiadás és egy régebbi, a tulajdonos által megnevezett verzió; amit a régebbi nem teljesít, az az SC-5.0 jelentésében áll |
-| **D5** | A fade be/ki szűrők: a CFA4 **Fade In/Out effektjére** képezzük, ahol a minta felismerhető, egyébként kulcskockás Opacity/Volume-ra? | Igen |
-| **D6** | Az eredeti `.mlt` fájl **megőrzése** a projekt mappájában import után (a K22 „az eredeti megőrzése” mintájára), hogy később újraimportálható és összevethető legyen? | Igen, csak olvasott másolat, a CFA4-projekt nem hivatkozik rá élőben |
+| **D1** | Az MLT XML olvasó legyen-e **közös** a Kdenlive-terv K1/K42/K20/K25 tételével? | **ELDÖNTVE (István, 2026-11-22): igen.** Egyetlen közös MLT-mag a `crates/interchange`-ben, a dialektusonkénti tábla (Kdenlive, Shotcut) külön; további MLT-alapú formátum is ugyanerre a magra épül. Az SC-5 a K1 magjára épül, vagy a mag közös PR-sorozatban készül. A Kdenlive-terv K1 sora erre hivatkozik |
+| **D2** | A modul helye és neve: új `Format` változat (`Mlt`) a `crates/interchange`-ben, a `file.import` automatikus felismerésével? | **Alapértelmezés: igen**, egyetlen `Mlt` formátum, a dialektust a fájl tartalma dönti el. *Indoklás:* a D1 közös magot ír elő; a Shotcut- és a Kdenlive-fájl is `.mlt`/MLT XML lehet, a kiterjesztésből nem dönthető el, a tartalomból (`shotcut:` / `kdenlive:` tulajdonságok) igen, így a felhasználónak nem kell formátumot választania |
+| **D3** | A nem támogatott szűrő/átmenet kezelése: **jelentés + klipmarker** a klipen, vagy csak jelentés? (Helyettesítő „hasonló” effekt nincs.) | **Alapértelmezés: jelentés és klipmarker.** *Indoklás:* a jelentés külön ablak, amit könnyű elfelejteni; a marker az idővonalon mutatja, hol hiányzik szűrő vagy átmenet. A „hasonló” helyettesítő effekt csendes tartalmi hibát adna, ezért nincs |
+| **D4** | Melyik Shotcut-verzió(k)kel készüljenek a fixture-ek és melyik legkorábbi verzió projektjét kell olvasnia az importernek? | **Alapértelmezés: a legfrissebb stabil Shotcut-kiadás és egy régebbi, István által megnevezett verzió** (ha nem nevez meg, az SC-5.0 a kiadási előzményekből választ és jelzi). *Indoklás:* a felhasználók régi projektjeit is meg akarják nyitni, de a régi verzió összes eltérésének vállalása határtalan; amit a régebbi nem teljesít, az az SC-5.0 jelentésében áll |
+| **D5** | A fade be/ki szűrők: a CFA4 **Fade In/Out effektjére** képezzük, ahol a minta felismerhető, egyébként kulcskockás Opacity/Volume-ra? | **Alapértelmezés: igen.** *Indoklás:* a Fade In/Out a CFA4-ben már létező, ismert effekt, a felhasználó így a megszokott kezelőt kapja; ahol a minta nem ismerhető fel, a kulcskockás Opacity/Volume pontos marad |
+| **D6** | Az eredeti `.mlt` fájl **megőrzése** a projekt mappájában import után (a K22 „az eredeti megőrzése” mintájára), hogy később újraimportálható és összevethető legyen? | **Alapértelmezés: igen**, csak olvasott másolat, a CFA4-projekt nem hivatkozik rá élőben. *Indoklás:* a jelentés és az importált szekvencia később is összevethető az eredetivel, és a bővülő leképezés mellett újraimportálható; élő hivatkozás nem készül (F0 F12 döntésével egyező) |
 
 ---
 
