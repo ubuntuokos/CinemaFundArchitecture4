@@ -921,15 +921,12 @@ pub const TARGETS: &[(&str, &str, Target)] = &[
     ("musepack", "cfa4-musepack", musepack),
     ("shorten", "cfa4-shorten", shorten),
     ("adx", "cfa4-adx", adx),
-<<<<<<< HEAD
     ("acm", "cfa4-acm", acm),
     ("roq", "cfa4-roq", roq),
     ("mve", "cfa4-mve", mve),
     ("thp", "cfa4-thp", thp),
     ("mobiclip", "cfa4-mobiclip", mobiclip),
-=======
     ("nstream", "cfa4-nstream", nstream),
->>>>>>> r1570
     ("hca", "cfa4-hca", hca),
     ("tak", "cfa4-tak", tak),
     ("smacker", "cfa4-smacker", smacker),
