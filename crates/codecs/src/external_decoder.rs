@@ -38,7 +38,7 @@ use std::sync::Arc;
 use std::sync::mpsc::{Receiver, RecvTimeoutError, sync_channel};
 use std::time::Duration;
 
-use cfa4_frame::{Chroma, PixelData, VideoFrame};
+use cfa4_frame::{Chroma, FieldOrder, FrameLayout, PixelData, VideoFrame};
 
 use crate::video::DecodedFrame;
 use crate::{CodecError, Result};
@@ -94,6 +94,8 @@ pub struct RawPicture {
     pub colour_present: bool,
     pub pts: i64,
     pub structure: Structure,
+    /// Temporal order of the two fields of a woven frame (`Progressive` for anything else).
+    pub field_order: FieldOrder,
     /// Y, U, V (Y only for 4:0:0), packed as described in the module docs.
     pub planes: Vec<Vec<u8>>,
 }
@@ -153,6 +155,7 @@ impl RawPicture {
             colour_present: byte(14) != 0,
             pts,
             structure,
+            field_order: FieldOrder::Progressive,
             planes: out,
         })
     }
@@ -175,8 +178,9 @@ impl RawPicture {
     }
 
     /// One frame whose even lines come from `top` and odd lines from `bottom` (both of the same
-    /// format, which the caller checked). It takes `top`'s colour description and `pts`.
-    fn weave(top: &RawPicture, bottom: &RawPicture, pts: i64) -> RawPicture {
+    /// format, which the caller checked). It takes `top`'s colour description, the given `pts` and
+    /// `field_order` (the temporal order of the two fields).
+    fn weave(top: &RawPicture, bottom: &RawPicture, pts: i64, field_order: FieldOrder) -> RawPicture {
         let mut planes = Vec::with_capacity(top.planes.len());
         for (i, (row, rows)) in top.plane_rows().into_iter().enumerate() {
             let (t, b) = (top.planes.get(i).map_or(&[][..], |p| p.as_slice()), bottom.planes.get(i).map_or(&[][..], |p| p.as_slice()));
@@ -187,13 +191,27 @@ impl RawPicture {
             }
             planes.push(out);
         }
-        RawPicture { height: top.height * 2, structure: Structure::Frame, pts, planes, ..top.clone() }
+        RawPicture {
+            width: top.width,
+            height: top.height * 2,
+            layout: top.layout,
+            bit_depth: top.bit_depth,
+            matrix: top.matrix,
+            transfer: top.transfer,
+            primaries: top.primaries,
+            full_range: top.full_range,
+            colour_present: top.colour_present,
+            pts,
+            structure: Structure::Frame,
+            field_order,
+            planes,
+        }
     }
 
     /// A field without its partner as a full-height frame (every line twice), so that the frame
     /// size does not change in the middle of a stream.
     fn lone_field(field: &RawPicture) -> RawPicture {
-        RawPicture::weave(field, field, field.pts)
+        RawPicture::weave(field, field, field.pts, FieldOrder::Progressive)
     }
 
     /// Convert to the engine's frame type (4:0:0 gets neutral chroma planes, like the AV1 path).
@@ -227,7 +245,15 @@ impl RawPicture {
         };
         DecodedFrame {
             pts: self.pts,
-            frame: VideoFrame { width: self.width, height: self.height, data, color, par: (1, 1), pts: cfa4_time::Tick::ZERO, layout: Default::default() },
+            frame: VideoFrame {
+                width: self.width,
+                height: self.height,
+                data,
+                color,
+                par: (1, 1),
+                pts: cfa4_time::Tick::ZERO,
+                layout: FrameLayout { field_order: self.field_order, ..Default::default() },
+            },
             draft: false,
         }
     }
@@ -252,8 +278,10 @@ impl FieldPairer {
         match self.held.take() {
             Some(first) if first.structure != pic.structure && first.same_format(&pic) => {
                 let pts = first.pts;
-                let (top, bottom) = if first.structure == Structure::TopField { (&first, &pic) } else { (&pic, &first) };
-                out.push(RawPicture::weave(top, bottom, pts));
+                let first_is_top = first.structure == Structure::TopField;
+                let (top, bottom) = if first_is_top { (&first, &pic) } else { (&pic, &first) };
+                let order = if first_is_top { FieldOrder::TopFirst } else { FieldOrder::BottomFirst };
+                out.push(RawPicture::weave(top, bottom, pts, order));
             }
             Some(first) => {
                 out.push(RawPicture::lone_field(&first));
@@ -510,6 +538,7 @@ impl ExternalDecoder {
 
     /// Forget all state (`RSET`); a helper that fails it is restarted on the next request.
     pub fn reset(&mut self) {
+        self.fields.clear();
         if self.call(b"RSET", &[]).is_err() {
             self.helper = None;
         }
@@ -596,7 +625,10 @@ mod tests {
             assert_eq!(crows, [ctop, cbottom]);
             assert_eq!(f.planes[1].len(), 4);
             // the conversion sees a frame of the full height
-            assert_eq!(out.into_iter().next().unwrap().into_decoded().frame.height, 4);
+            let decoded = out.into_iter().next().unwrap().into_decoded();
+            assert_eq!(decoded.frame.height, 4);
+            let want = if first == 1 { FieldOrder::TopFirst } else { FieldOrder::BottomFirst };
+            assert_eq!(decoded.frame.layout.field_order, want);
         }
     }
 
@@ -611,6 +643,7 @@ mod tests {
         let out = feed(&mut pairer, [picture(1, 3, 0x21, 0x22)]);
         assert_eq!(out.len(), 1);
         assert_eq!((out[0].height, out[0].pts, out[0].planes[0].iter().all(|&b| b == 0x11)), (4, 2, true));
+        assert_eq!(out[0].field_order, FieldOrder::Progressive);
         // a frame after a held field pushes the field out first, in order
         let out = feed(&mut pairer, [picture(0, 4, 1, 1)]);
         assert_eq!(out.iter().map(|p| p.pts).collect::<Vec<_>>(), [3, 4]);
