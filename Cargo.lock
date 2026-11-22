@@ -1961,6 +1961,7 @@ dependencies = [
  "cfa4-realaudio",
  "cfa4-testkit",
  "cfa4-time",
+ "cfa4-yamaha-oki",
  "image",
  "log",
  "png",
@@ -2528,6 +2529,13 @@ dependencies = [
  "cfa4-testkit",
  "rayon",
  "thiserror 2.0.21",
+]
+
+[[package]]
+name = "cfa4-yamaha-oki"
+version = "0.10.0"
+dependencies = [
+ "cfa4-testkit",
 ]
 
 [[package]]

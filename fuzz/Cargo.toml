@@ -64,6 +64,7 @@ cfa4-truehd = { path = "../crates/truehd" }
 cfa4-utvideo = { path = "../crates/utvideo" }
 cfa4-vp8 = { path = "../crates/vp8" }
 cfa4-vp9 = { path = "../crates/vp9" }
+cfa4-yamaha-oki = { path = "../crates/yamaha-oki" }
 cfa4-realmedia = { path = "../crates/realmedia" }
 cfa4-realaudio = { path = "../crates/realaudio" }
 cfa4-realvideo = { path = "../crates/realvideo" }
@@ -542,6 +543,13 @@ bench = false
 [[bin]]
 name = "smacker"
 path = "fuzz_targets/smacker.rs"
+test = false
+doc = false
+bench = false
+
+[[bin]]
+name = "yamaha_oki"
+path = "fuzz_targets/yamaha_oki.rs"
 test = false
 doc = false
 bench = false

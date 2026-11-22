@@ -165,6 +165,7 @@ static ROWS: &[Row] = &[
     audio("iLBC", &["ilbc"], Ported, Sw(""), NoEnc),
     audio("Musepack SV7 / SV8", &["musepack"], Ported, Sw(""), NoEnc),
     audio("ADPCM, G.711, G.722", &["adpcm"], Own, Sw(""), NoEnc),
+    audio("Yamaha ADPCM / Dialogic OKI ADPCM", &["yamaha-oki"], Ported, Sw("in WAV files (tags 0x0020, 0x0010)"), NoEnc),
     audio("IAB (SMPTE ST 2098-2)", &["iab"], Own, Sw("decode and render"), AudioTrack("IAB track in DCP exports")),
     audio("Auro-3D", &["auro"], Ported, Sw("side channel in 24-bit PCM"), NoEnc),
     audio("WMA", &[], Missing, No, NoEnc),

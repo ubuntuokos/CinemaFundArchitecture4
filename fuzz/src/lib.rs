@@ -645,6 +645,18 @@ pub fn hca(data: &[u8]) {
     let _ = cfa4_hca::decode_file(data, Some(cfa4_hca::Key { key: 0xCF22_2F1F_E074_8978, subkey: 0x3B8E }));
 }
 
+pub fn yamaha_oki(data: &[u8]) {
+    use cfa4_yamaha_oki::{Kind, State};
+    for kind in [Kind::Yamaha, Kind::Oki] {
+        for channels in 1..=2 {
+            if let Some(mut s) = State::new(kind, channels) {
+                let mut out = vec![Vec::new(); channels];
+                s.decode(data, &mut out);
+            }
+        }
+    }
+}
+
 pub fn shorten(data: &[u8]) {
     let _ = cfa4_shorten::probe(data);
     let _ = cfa4_shorten::decode_file(data);
@@ -751,6 +763,7 @@ pub const TARGETS: &[(&str, &str, Target)] = &[
     ("mpeg2v", "cfa4-mpeg2v", mpeg2v),
     ("vp8", "cfa4-vp8", vp8),
     ("vp9", "cfa4-vp9", vp9),
+    ("yamaha_oki", "cfa4-yamaha-oki", yamaha_oki),
     ("av1", "cfa4-av1", av1),
     ("prores", "cfa4-prores", prores),
     ("dnx", "cfa4-dnx", dnx),
