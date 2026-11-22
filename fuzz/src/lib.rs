@@ -168,6 +168,35 @@ pub fn canopus(data: &[u8]) {
     }
 }
 
+/// Theora: an even first byte takes synthetic valid headers and decodes the rest as packets (a
+/// length byte, then that many bytes of packet); an odd one reads the rest as three header packets.
+pub fn theora(data: &[u8]) {
+    let Some((&pick, rest)) = data.split_first() else { return };
+    if pick & 1 == 1 {
+        let (a, b) = (rest.len() / 3, 2 * rest.len() / 3);
+        if let (Some(i), Some(c), Some(s)) = (rest.get(..a), rest.get(a..b), rest.get(b..)) {
+            if let Ok(mut d) = cfa4_theora::Decoder::new(i, c, s) {
+                std::hint::black_box(d.decode(&[]).ok());
+            }
+        }
+        return;
+    }
+    let seed = rest.iter().take(8).fold(0u64, |a, &b| a << 8 | u64::from(b));
+    let mut rng = cfa4_theora::synth::Rng::new(seed);
+    let (i, c, s) = (
+        cfa4_theora::synth::ident(48, 32, u64::from(pick >> 1) % 4 / 2 * 2 + u64::from(pick >> 3 & 1)),
+        cfa4_theora::synth::comment(),
+        cfa4_theora::synth::setup(&mut rng),
+    );
+    let Ok(mut d) = cfa4_theora::Decoder::new(&i, &c, &s) else { return };
+    let mut at = rest.get(8..).unwrap_or(&[]);
+    while let Some((&n, tail)) = at.split_first() {
+        let (packet, next) = tail.split_at(usize::from(n).min(tail.len()));
+        std::hint::black_box(d.decode(packet).ok());
+        at = next;
+    }
+}
+
 /// Dirac / VC-2: the sequence header probe and the decoder over the whole input.
 pub fn dirac(data: &[u8]) {
     std::hint::black_box((cfa4_dirac::sequence_header(data), cfa4_dirac::is_vc2(data)));
@@ -609,6 +638,22 @@ pub fn cavs(data: &[u8]) {
     let _ = d.flush();
 }
 
+pub fn bink(data: &[u8]) {
+    let _ = cfa4_bink::container::probe(data);
+    let Ok(b) = cfa4_bink::container::Bink::parse(data) else { return };
+    let Ok(mut v) = cfa4_bink::video::Decoder::new(b.width.min(256), b.height.min(256), b.tag, b.flags) else { return };
+    let mut a: Vec<_> = b.tracks.iter().filter_map(|t| cfa4_bink::audio::Decoder::new(t.sample_rate, t.channels, t.dct, b.tag[3]).ok()).collect();
+    for i in 0..b.frame_count().min(16) {
+        let Ok(f) = b.frame(i) else { continue };
+        let _ = v.decode(f.video);
+        for (t, pkt) in f.audio {
+            if let Some(d) = a.get_mut(t) {
+                let _ = d.decode(pkt);
+            }
+        }
+    }
+}
+
 pub fn lagarith(data: &[u8]) {
     let mut i = Input::new(data);
     let (w, h) = (i.side(), i.side());
@@ -738,6 +783,7 @@ pub const TARGETS: &[(&str, &str, Target)] = &[
     ("amr", "cfa4-amr", amr),
     ("av2", "cfa4-av2", av2),
     ("canopus", "cfa4-canopus", canopus),
+    ("theora", "cfa4-theora", theora),
     ("dirac", "cfa4-dirac", dirac),
     ("speex", "cfa4-speex", speex),
     ("cfb", "cfa4-cfb", cfb),
@@ -778,6 +824,7 @@ pub const TARGETS: &[(&str, &str, Target)] = &[
     ("evc", "cfa4-evc", evc),
     ("cavs", "cfa4-cavs", cavs),
     ("lagarith", "cfa4-lagarith", lagarith),
+    ("bink", "cfa4-bink", bink),
     ("magicyuv", "cfa4-magicyuv", magicyuv),
     ("g729", "cfa4-g729", g729),
     ("ilbc", "cfa4-ilbc", ilbc),
