@@ -1,6 +1,6 @@
 # CFA4-OPENUSD-3D-001 – 3D-jelenetcsere (glTF/OBJ/STL, OpenUSD), projektfüggő 3D, 1.0
 
-> **Állapot:** VÉGLEGES JAVASLAT, tulajdonosi jóváhagyásra vár (a jóváhagyás helye a PR). **Dokumentum-szintű terv (U0); kódolási engedélyt nem ad:** U1 és U2 külön tulajdonosi fázisengedélyt igényel (`docs/coordination.md` §2.10). Jóváhagyásig a [0.1 változat](https://github.com/ubuntuokos/CinemaFundArchitecture4/pull/1478) érvényes.
+> **Állapot:** VÉGLEGES JAVASLAT; a §11 hat nyitott döntését István 2026-11-22 16:55-kor lezárta (§11). A terv egésze tulajdonosi jóváhagyásra vár (a jóváhagyás helye a PR). **Dokumentum-szintű terv (U0); kódolási engedélyt nem ad:** U1 és U2 külön tulajdonosi fázisengedélyt igényel (`docs/coordination.md` §2.10). Jóváhagyásig a [0.1 változat](https://github.com/ubuntuokos/CinemaFundArchitecture4/pull/1478) érvényes.
 > **Verzió:** 1.0 · **Dátum:** 2026-11-22 · **Kérte:** István (ubuntuokos). A 0.1 helyébe lép (a fájl átnevezve: `…-0.1.md` → `…-1.0.md`).
 > **Beépítve:** a `[MÓD-6]` (két USD-út) és `[MÓD-8]` (3D projektfüggő) javaslatok a [`CFA4-DNEG-VFX-EGYEZTETES-001`](CFA4-DNEG-VFX-EGYEZTETES-001-0.1.md)-ből (K-3, K-4, K-5, D-4, D-12) és a `CFA4-VFX-001` v1.1 (§3.1, §8a; VFX-8, X-4, X-5).
 > **Alap:** CFA4 `main` @ `2ff5b412`; ez a dokumentum csak dokumentáció, a `VISION.md`-t nem módosítja.
@@ -17,6 +17,7 @@
 | **Dönt-2** | **Két út** minden 3D-tartalomhoz, **projektenként/tartalmanként választható, alapértelmezés A:** **A)** külső EXR-csere (a külső backend maga olvassa a fájlt, EXR/AOV-t ad; a CFA4-nek nincs 3D-értelmezője); **B)** natív import (U1/U2). | István 15:36; VFX-001 VFX-8/X-5; K-4 |
 | **Dönt-3** | **Egy worker/job-szerződés:** a render-terv C0 szerződése. Az USD-worker és a 3D-render ennek kliense, nincs saját protokoll. | K-3, D-3 |
 | **Dönt-4** | **Nincs DNEG USD-fork**; USD csak upstream OpenUSD lehet. | DNEG-audit D7 |
+| **Dönt-6** | **Import és export egyaránt cél** (István, 2026-11-22 16:55): az U3 export nem marad ki, de külön fázisengedély kell hozzá. | §11 3. pont |
 | **Javaslat-5** | **Megvalósítási sorrend:** glTF/OBJ/STL (U1, tiszta Rust) → USD (U2, külön folyamat). | 0.1 §3, változatlan |
 
 ## 3. Igazolt tények (dátumozva)
@@ -50,12 +51,12 @@
 3. **Régi projekt változatlan:** 3D-tartalom nélküli projekt ugyanúgy nyílik, renderel és exportál (render-terv AC-15); a séma additív, az ismeretlen szakaszt a régi verzió megőrzi/figyelmen kívül hagyja a projekt szabálya szerint.
 4. **Út projektenként/tartalmanként:** egy 3D-asset útját a felhasználó a projektben váltja (A↔B); alapértelmezés A. Az út váltása nem veszíthet adatot: a hivatkozás és a jelentés megmarad.
 5. **Felület:** nincs globális 3D-beállítás. A 3D-panel és az importpanel akkor jelenik meg, ha a projekt tartalmaz 3D-assetet, vagy a felhasználó éppen importál ilyet. Automation-id minden elemen.
-6. **Mélység tartalomtípusonként** fokozódik; a felső határ (egyszerű 3D-cím vs. teljes jelenetszerkesztés) **még nem dőlt el**, az U1 tapasztalata után kérendő (Nyitott-2). Saját 3D-szerkesztő és render-motor e tervben nincs.
+6. **Mélység tartalomtípusonként** fokozódik; a felső határ (egyszerű 3D-cím vs. teljes jelenetszerkesztés) **még nem dőlt el**, az U1 tapasztalata után kérendő (§11 2. pont). Saját 3D-szerkesztő és render-motor e tervben nincs.
 7. **Az A út mit kíván e tervtől:** csak a közös projekt-hivatkozást (2. pont) és a jelentést; a végrehajtás (backend-indítás, EXR/AOV, hibaágak) a `CFA4-VFX-001` VFX-8-é (X-5 szerződés, Blender, majd Gaffer, a render C0 szerint). Ez a terv **nem** ír backend-szerződést.
 
 ## 5. Hatókör
 
-**Benne:** (1) a 4. fejezet modellje; (2) **U1:** glTF/OBJ/STL olvasó (hierarchia, transzform, kamera, háló, kulcskocka-animáció, anyag-hivatkozás); (3) **U2:** USD-import worker (B-út, feltételes); (4) **unsupported-jelentés** (nincs csendes veszteség, mint az AAF-nál); (5) U3 export, feltételesen.
+**Benne:** (1) a 4. fejezet modellje; (2) **U1:** glTF/OBJ/STL olvasó (hierarchia, transzform, kamera, háló, kulcskocka-animáció, anyag-hivatkozás); (3) **U2:** USD-import worker (B-út, feltételes); (4) **unsupported-jelentés** (nincs csendes veszteség, mint az AAF-nál); (5) **U3 export** (cél, külön fázisengedéllyel; az export-kapuk U3-A1… az U3 indítása előtt íródnak).
 
 **Nincs benne:** DNEG USD-fork; az upstream OpenUSD lecserélése forkra; második worker-protokoll; saját 3D-szerkesztő; render-motor; a 3D→kép render (VFX-8/C0 tárgya; előnézet-minta a DNEG N2: worker → EXR/AOV vagy PNG → sima média); pontfelhő és VDB (saját tervük); második részecskemotor (VFX-6).
 
@@ -63,7 +64,7 @@
 
 ## 6. Futtatási modell (B-út)
 
-- **U1:** a glTF/OBJ/STL olvasók Rust-ban, folyamaton belül futhatnak, **ha** a crate licence (GPL-3 kompatibilis, `cargo deny check licenses`), karbantartása és a fuzz-kapu (U1-A2) megfelel. A `gltf` utolsó kiadása 2024-05 (karbantartási kockázat, Nyitott-4); ha egy crate a kaput nem teljesíti, az olvasó külön folyamatba (az USD-workerrel azonos modellbe) kerül. Nincs `unsafe` a CFA4-folyamatban.
+- **U1:** a glTF/OBJ/STL olvasók Rust-ban, folyamaton belül futhatnak, **ha** a crate licence (GPL-3 kompatibilis, `cargo deny check licenses`), karbantartása és a fuzz-kapu (U1-A2) megfelel. A `gltf` utolsó kiadása 2024-05 (karbantartási kockázat; §11 4. pont: in-process fuzz-kapuval); ha egy crate a kaput nem teljesíti, az olvasó külön folyamatba (az USD-workerrel azonos modellbe) kerül. Nincs `unsafe` a CFA4-folyamatban.
 - **U2:** az USD C++ marad („keep original language”, `AGENTS.md`), **külön felügyelt worker-folyamat**, Rust-interfész mögött, a render-terv **C0 szerződésén** és az ACS/ADR-0004 útján; `cfa4-sandbox` Landlock-profil (nincs hálózat, csak a megnyitott fájl és a kimeneti könyvtár), CPU-only. Összeomlása hiba, nem a CFA4 összeomlása. A port-vagy-marad indoklást (nem lassítja a lejátszást/renderelést, referenciagépen mérve) az átvételi PR rögzíti.
 
 ## 7. Fázisok és kapuk
@@ -73,7 +74,7 @@
 | **U0** | Ez a terv: formátum-, modell- és útdöntés | tulajdonosi jóváhagyás (ez a PR). A `VISION.md` §8 formális átvezetése a tulajdonos/gazda dolga |
 | **U1** | glTF/OBJ/STL olvasó + `scene3d` projektszakasz + unsupported-jelentés | külön fázisengedély; a projektséma-bővítés egyeztetése a VFX-2 (`VfxGraph`) és az ARF sémával (két független additív szakasz, közös verziózási szabály); U1-A1…A5 |
 | **U2** | USD-import worker (B-út) | külön fázisengedély; **G-USD-1** (lent); render C0 kész; U2-A1…A5 |
-| **U3** | Export | külön engedély; csak ha az import bevált és kell (Nyitott-3) |
+| **U3** | Export (glTF/USD kiírás, import mellett cél: István, 2026-11-22 16:55) | külön fázisengedély; az U1 (glTF/OBJ/STL export) illetve U2 (USD export) után; elfogadási feltételek az U3 indítása előtt, a tulajdonos jóváhagyásával kiegészítendők (§8) |
 
 **G-USD-1 (átfogalmazva, 26.04-es csomag nincs):** az U2 csak akkor indulhat, ha a tulajdonos kiválaszt egy beszerzési utat, és az auditált: **(a)** a PyPI `usd-core` kerék rögzítve (verzió + SHA-256, `--require-hashes`, a repó Python-szabálya szerint), a bundle-ölt könyvtárak licence- és eredetaudittal; **(b)** forrásbuild a rögzített `v26.11.1` címkéből (commit-SHA), a letöltő `build_usd.py` nélkül, a függőségek (Boost/oneTBB/OpenSubdiv/MaterialX…, verziófüggő) külön auditjával és a csomagolási hatás (deb/AppImage/Flatpak) felmérésével; **(c)** nincs natív USD (csak A út). A javaslat: **(c) most, (a) mérlegelendő az U2 indításakor**, mert az A út USD-értelmező nélkül is ad értéket.
 
@@ -101,7 +102,7 @@
 
 ## 9. Licenc és függőség
 
-- **OpenUSD (TOST-1.0):** Apache-2.0-szerű; a CFA4 szabálya szerint elfogadhatónak *látszik*, de a védjegy-szakasz (6.) eltérését és a GPL-3.0-or-later kompatibilitást **a tulajdonos hagyja jóvá** (Nyitott-1). Dinamikus/folyamat-szintű használat, kódátvétel nincs.
+- **OpenUSD (TOST-1.0):** Apache-2.0-szerű; a CFA4 szabálya szerint elfogadhatónak *látszik*, de a védjegy-szakasz (6.) eltérését és a GPL-3.0-or-later kompatibilitást **a tulajdonos hagyja jóvá** (§11 1. pont: elfogadva az U2 indításáig). Dinamikus/folyamat-szintű használat, kódátvétel nincs.
 - **Függőségek:** OpenUSD függőségei és a kerék bundle-jei **nincsenek auditálva** (G-USD-1). Letöltő build-szkript nem futtatható, modell/bináris nem töltődik le a felhasználó tudta nélkül.
 - **Rust olvasók:** a 3. fejezet táblája szerint a felsorolt licencek (MIT / Apache-2.0) GPL-3 kompatibilisek; a `cargo deny check licenses` és a kódátvizsgálás az U1 első PR-ja.
 - A donor-pillanatkép (`v26.11.1`, commit `96c1989167d2…`) csak referencia; a VFX-001 donorai külön, befagyasztva.
@@ -118,14 +119,18 @@
 | `G-xx` mátrix | Egy sor: `DNEG-M5` (ideiglenes azonosító; a végleges számot a mátrix gazdája adja, a CSV-hez e PR nem nyúl). Állapot-javaslat: `GAP_STATIC` → `GAP` (U1 indítható dokumentum-döntés után) |
 | `CFA4-RENDER-INTEGRATION-PLAN-001` | A render-motorhoz nem nyúlunk |
 
-## 11. Nyitott döntések (tulajdonosi)
+## 11. Döntések (István, 2026-11-22 16:55)
 
-1. **TOST-1.0 elfogadása** (védjegy-szakasz, GPL-3.0-or-later kompatibilitás). *Javaslat:* igen, az U2 indításáig kell.
-2. **A mélység felső határa tartalomtípusonként** (Dönt-1 maradéka). *Javaslat:* az U1 után döntsön.
-3. **Kell-e USD-/glTF-export (U3), vagy elég az import.** *Javaslat:* csak import, az export külön döntés.
-4. **U1 Rust-crate-ek:** a `gltf` karbantartási kockázata elfogadható-e, vagy az olvasó eleve külön folyamatban fusson. *Javaslat:* in-process, fuzz-kapuval; kudarc esetén worker.
-5. **G-USD-1:** (a), (b) vagy (c) (lásd 7.). *Javaslat:* (c) most.
-6. **Dönt-1 értelmezése megerősítendő** (4. fejezet 1–7. pont: projektszintű bekapcsolás, projektben tárolt állapot, A/B asset-enként), és a `VISION.md` §8 átvezetése (tulajdonos/gazda).
+| # | Döntés | Eredmény |
+|---|---|---|
+| 1 | TOST-1.0 elfogadása | **Igen, az U2 indításáig kell** (javaslat szerint). A GPL-3.0-or-later kompatibilitás ellenőrzése az U2 kapuja. |
+| 2 | A mélység felső határa tartalomtípusonként | **Az U1 után döntendő** (javaslat szerint). |
+| 3 | Import és/vagy export | **Import és export egyaránt cél** (a javaslattól eltérően): az U3 export bekerül a tervbe, külön fázisengedéllyel. |
+| 4 | U1 Rust-crate-ek | **In-process, fuzz-kapuval; kudarc esetén worker** (javaslat szerint). |
+| 5 | G-USD-1 | **„Most”: most nincs natív USD** (c út; az A út adja az USD-támogatást). Értelmezés: „most” = a javaslatom „(c) most”-ja; ha a PyPI-kerék (a) vagy a forrásbuild (b) mérlegelését kérted, jelezd. A (a)/(b) az U2 indításakor újra előkerül. |
+| 6 | Projektfüggő értelmezés és a `VISION.md` §8 | **Megerősítve** (javaslat szerint): a 4. fejezet 1–7. pontja érvényes. A `VISION.md` §8 formális átvezetése a tulajdonos/gazda dolga, ez a PR nem módosítja. |
+
+**Nyitott maradt:** a 2. pont (az U1 után), az U2-hez a (a)/(b) beszerzési út, és az U3 elfogadási feltételei.
 
 ## 12. Mit nem állít ez a terv
 
@@ -136,4 +141,5 @@ Nem néztem meg a Rust-crate-ek forráskódját, nem futtattam `cargo deny`-t; a
 | Verzió | Dátum | Változás |
 |---|---|---|
 | 0.1 | 2026-11-21 | Első javaslat; jóváhagyva dokumentumként (22:45), kódolási engedély nélkül. |
+| 1.0a | 2026-11-22 | A §11 döntései rögzítve (István, 16:55): import és export egyaránt cél (U3 bekerül), a többi a javaslat szerint; G-USD-1: most nincs natív USD. |
 | 1.0 | 2026-11-22 | Végleges javaslat: `[MÓD-6]` (két út) és `[MÓD-8]` (projektfüggő 3D) beépítve; projektfüggő modell (4. fejezet) és új `P-A1…A4` kapuk; a tények frissítve (OpenUSD v26.11.1, nincs 26.04-es csomag, `usd-core` kerék, Rust-crate-ek licence); G-USD-1 átfogalmazva; egy szerződés (C0); nyitott döntések szűkítve. |
