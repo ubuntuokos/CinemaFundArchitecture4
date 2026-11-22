@@ -93,6 +93,7 @@ Crates are named `cfa4-<dir>` (`crates/time` is `cfa4-time`); new CFA4 crates ar
 | `ilbc` | L0 | iLBC (RFC 3951) speech decoder, ported from WebRTC's fixed-point libilbc (BSD-3-Clause) ([README](../crates/ilbc/README.md)) |
 | `tta` | L0 | TTA (True Audio) lossless audio decoder, ported from libtta (LGPL-3.0) ([README](../crates/tta/README.md)) |
 | `adx` | L0 | CRI ADX (`.adx`) ADPCM audio decoder, ported from FFmpeg (LGPL-2.1-or-later, owner-approved exception) ([README](../crates/adx/README.md)) |
+| `expr` | L0 | CFX restricted spatial expression language: parser, type checker, bytecode compiler, fuel-limited VM; pure Rust, no I/O in the language ([README](../crates/expr/README.md); plan `CFA4-AX-INTERPRETER-001`) |
 | `hca` | L0 | CRI HCA (`.hca`) MDCT audio decoder with the keyed cipher, ported from FFmpeg (LGPL-2.1-or-later, owner-approved exception) ([README](../crates/hca/README.md)) |
 | `shorten` | L0 | Shorten (`.shn`) lossless audio decoder, ported from FFmpeg (LGPL-2.1-or-later, owner-approved exception) ([README](../crates/shorten/README.md)) |
 | `tak` | L0 | TAK (Tom's lossless Audio Kompressor) decoder, ported from FFmpeg (LGPL-2.1-or-later, owner-approved exception) ([README](../crates/tak/README.md)) |

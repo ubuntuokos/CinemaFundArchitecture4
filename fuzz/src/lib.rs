@@ -640,6 +640,34 @@ pub fn adx(data: &[u8]) {
     let _ = cfa4_adx::decode_file(data);
 }
 
+/// CFX expressions: the bytes as source text, compiled for a volume and a point schema, and the
+/// programs that compile are run on a few elements with a small fuel budget.
+pub fn expr(data: &[u8]) {
+    use cfa4_expr::{Context, Env, Schema, Ty, Value};
+    let src = String::from_utf8_lossy(data);
+    for context in [Context::Volume, Context::Points] {
+        let schema = Schema {
+            context,
+            attrs: vec![
+                ("density".into(), Ty::Float),
+                ("temperature".into(), Ty::Float),
+                ("color".into(), Ty::Vec3),
+                ("mask".into(), Ty::Float),
+                ("n".into(), Ty::Int),
+                ("flag".into(), Ty::Bool),
+            ],
+        };
+        let Ok(program) = cfa4_expr::compile(&src, &schema) else { continue };
+        let mut vm = program.new_vm();
+        let inputs: Vec<Value> = schema.attrs.iter().map(|(_, t)| Value::zero(*t)).collect();
+        for k in 0..3 {
+            let env = Env { p: [k as f32 * 3.7, -1.5, 1e30], ijk: [k, -k, i32::MAX], voxel_size: 0.1, id: k };
+            let mut outputs = inputs.clone();
+            let _ = program.run(&mut vm, 2_000, &env, &[], &inputs, &mut outputs);
+        }
+    }
+}
+
 pub fn hca(data: &[u8]) {
     let _ = cfa4_hca::decode_file(data, None);
     let _ = cfa4_hca::decode_file(data, Some(cfa4_hca::Key { key: 0xCF22_2F1F_E074_8978, subkey: 0x3B8E }));
@@ -784,6 +812,7 @@ pub const TARGETS: &[(&str, &str, Target)] = &[
     ("musepack", "cfa4-musepack", musepack),
     ("shorten", "cfa4-shorten", shorten),
     ("adx", "cfa4-adx", adx),
+    ("expr", "cfa4-expr", expr),
     ("hca", "cfa4-hca", hca),
     ("tak", "cfa4-tak", tak),
     ("smacker", "cfa4-smacker", smacker),
