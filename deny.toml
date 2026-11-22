@@ -13,6 +13,8 @@ confidence-threshold = 0.9
 unused-allowed-license = "allow"
 # Every licence below is compatible with distributing CFA4 under GPL-3.0-or-later.
 # NOT allowed on purpose: GPL-2.0-only (incompatible with GPL-3.0), AGPL-3.0, non-free licences.
+# (AGPL-3.0 may run only as a separate optional worker process, never as a crate dependency:
+#  docs/licensing.md §3, owner decision 2026-11-22.)
 allow = [
     "0BSD",
     "Apache-2.0",

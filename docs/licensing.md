@@ -12,6 +12,12 @@
 - **Nem vehető át:** GPL-2.0-only kód (pl. HandBrake), AGPL, nem szabad licencű vagy ismeretlen
   licencű kód, és bármely zárt program (Adobe Premiere, DaVinci Resolve) kódja vagy eszközei.
   Ezeknek a képességét saját kóddal vagy külső programként hívva kell megvalósítani.
+- **AGPL választható workerként (tulajdonosi döntés, 2026-11-22; feloldja az általános
+  AGPL-tilalmat):** AGPL-3.0 licencű kód és modell (pl. Ultralytics YOLO) külön letöltött,
+  választható workerként futhat, saját, homokozóba zárt folyamatban, a nem kereskedelmi workerek
+  mintájára (CFA4-AI_modules ADR 0008 §8). A CFA4 folyamatába nem töltődik be, a CFA4 kódjába nem
+  másolható és nem portolható, és nem lehet alapértelmezés. A worker licence a jegyzékben
+  szerepel, a forrása vele együtt elérhető (AGPL-3.0 13. pont), és a felület megnevezi a licencet.
 - **Nincs fizetős rész** (a tulajdonos döntése, 2026-11-08; felváltja a 2026-10-24-i „ingyenes
   alap, fizetős kiegészítők” modellt): a CFA4 minden része ingyenes és szabadon terjeszthető.
   Nincs fizetős kiegészítő, fizetős LTS-ág vagy csomag, licenckulcs, vízjel, próbaidő vagy
@@ -96,8 +102,17 @@ Not allowed:
 | Source | Why | Alternative |
 |---|---|---|
 | GPL-2.0-only (e.g. HandBrake, parts of the Linux kernel) | incompatible with GPL-3.0 | call the program as an external process, or reimplement |
-| AGPL-3.0 | network-use obligations we do not want on the whole product | reimplement |
+| AGPL-3.0, in CFA4's own code or process | network-use obligations we do not want on the whole product | reimplement; or run it as an optional AGPL worker (below) |
 | GPL code linked with GPL-incompatible libraries | cannot be distributed | — |
+
+**AGPL-3.0 optional workers** (owner decision 2026-11-22, lifts the blanket AGPL ban; no paid or
+closed part exists since 2026-11-08, so GPL-3.0 §13 combination is no obstacle): AGPL-3.0 code or
+models may be offered as a separately downloaded, optional worker that runs in its own sandboxed
+process (CFA4-SECURITY-001), as non-commercial workers are (CFA4-AI_modules ADR 0008 §8). Never
+loaded into the CFA4 process, never copied or ported into CFA4's code, never a default. The model
+manifest records the licence in its `code`, `dependencies`, `weights` and `dataset` fields, the
+worker's source is offered with it (AGPL-3.0 §13), and the UI names the licence when the worker is
+chosen. `deny.toml` keeps refusing AGPL crates as dependencies of CFA4's own code.
 | Proprietary software (Adobe Premiere, DaVinci Resolve, …) | no licence | reimplement the behaviour from public documentation and observation; never copy code, icons, presets, LUTs or fonts |
 | Unknown / no licence | all rights reserved | ask the author or leave it out |
 
