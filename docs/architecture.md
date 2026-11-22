@@ -91,6 +91,7 @@ Crates are named `cfa4-<dir>` (`crates/time` is `cfa4-time`); new CFA4 crates ar
 | `adpcm` | L0 | G.711 μ-law / A-law, G.722, IMA ADPCM (WAV, QuickTime `ima4`) and Microsoft ADPCM decoders ([README](../crates/adpcm/README.md)) |
 | `amr` | L0 | AMR-NB and AMR-WB speech decoders, ported from opencore-amr (Apache-2.0) ([README](../crates/amr/README.md)) |
 | `g729` | L0 | ITU-T G.729 speech decoder with Annex B comfort noise, ported from bcg729 (GPL-3.0-or-later) ([README](../crates/g729/README.md)) |
+| `mace` | L0 | Apple MACE 3:1 and 6:1 audio decoders (QuickTime), ported from FFmpeg (LGPL-2.1-or-later, owner-approved exception) ([README](../crates/mace/README.md)) |
 | `ilbc` | L0 | iLBC (RFC 3951) speech decoder, ported from WebRTC's fixed-point libilbc (BSD-3-Clause) ([README](../crates/ilbc/README.md)) |
 | `tta` | L0 | TTA (True Audio) lossless audio decoder, ported from libtta (LGPL-3.0) ([README](../crates/tta/README.md)) |
 | `adx` | L0 | CRI ADX (`.adx`) ADPCM audio decoder, ported from FFmpeg (LGPL-2.1-or-later, owner-approved exception) ([README](../crates/adx/README.md)) |

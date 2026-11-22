@@ -351,6 +351,8 @@ fn mp4_fourcc_codec(kind: StreamType, fc: &[u8; 4]) -> &'static str {
         b"samr" => "amr_nb",
         b"sawb" => "amr_wb",
         b"ima4" => "adpcm_ima_qt",
+        b"MAC3" => "mace3",
+        b"MAC6" => "mace6",
         b"ulaw" => "pcm_mulaw",
         b"alaw" => "pcm_alaw",
         _ => "",

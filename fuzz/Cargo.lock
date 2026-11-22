@@ -357,6 +357,7 @@ dependencies = [
  "cfa4-jxl",
  "cfa4-lagarith",
  "cfa4-lcevc",
+ "cfa4-mace",
  "cfa4-magicyuv",
  "cfa4-matroska",
  "cfa4-mpa",
@@ -510,6 +511,13 @@ dependencies = [
 [[package]]
 name = "cfa4-lcevc"
 version = "0.10.0"
+
+[[package]]
+name = "cfa4-mace"
+version = "0.10.0"
+dependencies = [
+ "thiserror",
+]
 
 [[package]]
 name = "cfa4-magicyuv"

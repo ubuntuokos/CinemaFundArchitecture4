@@ -468,9 +468,10 @@ impl Mp4Source {
             CodecConfig::Pcm(p) => (decode_pcm(&data, p), false),
             c => {
                 if st.decoder.is_none() {
-                    st.decoder = Some(match qt_adpcm(c) {
-                        Some(codec) => PacketDecoder::adpcm(codec, ainfo.channels as usize)?,
-                        None => PacketDecoder::for_isobmff(c, ainfo.sample_rate)?,
+                    st.decoder = Some(match (qt_adpcm(c), qt_mace(c)) {
+                        (Some(codec), _) => PacketDecoder::adpcm(codec, ainfo.channels as usize)?,
+                        (None, Some(v)) => PacketDecoder::mace(v, ainfo.channels as usize)?,
+                        (None, None) => PacketDecoder::for_isobmff(c, ainfo.sample_rate)?,
                     });
                 }
                 // Non-sequential access: reset and prime with the preceding packets (codec pre-roll:
@@ -690,9 +691,20 @@ fn qt_adpcm(c: &CodecConfig) -> Option<cfa4_adpcm::Codec> {
     }
 }
 
+/// QuickTime Apple MACE 3:1 / 6:1 (`MAC3`, `MAC6`) sample descriptions.
+fn qt_mace(c: &CodecConfig) -> Option<cfa4_mace::Version> {
+    match c {
+        CodecConfig::Unknown { fourcc, .. } => cfa4_mace::Version::from_fourcc(&fourcc.0),
+        _ => None,
+    }
+}
+
 fn codec_label(c: &CodecConfig) -> String {
     if let Some(a) = qt_adpcm(c) {
         return a.name().into();
+    }
+    if let Some(v) = qt_mace(c) {
+        return v.name().into();
     }
     match c {
         CodecConfig::Avc(a) => format!(

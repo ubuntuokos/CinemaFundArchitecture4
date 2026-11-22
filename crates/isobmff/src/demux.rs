@@ -686,7 +686,10 @@ fn parse_stbl(stbl: &[u8], t: &mut Track, is_qt: bool, file_len: u64) -> Result<
                     sample_count = n;
                 } else {
                     // Samples of constant size must fit in the file: clamp absurd counts.
-                    sample_count = (n as u64).min(file_len / const_size as u64) as usize;
+                    // A size of 1 counts sample frames of packed audio (`ima4`, MACE: up to 6 frames per
+                    // byte); such tables are grouped per chunk, so the count allocates nothing.
+                    let per_byte = if const_size == 1 { 64 } else { 1 };
+                    sample_count = (n as u64).min(file_len.saturating_mul(per_byte) / const_size as u64) as usize;
                 }
             }
             b"stz2" => {
@@ -764,7 +767,7 @@ fn parse_stbl(stbl: &[u8], t: &mut Track, is_qt: bool, file_len: u64) -> Result<
     if stsc[0].0 == 0 || stsc.windows(2).any(|w| w[1].0 <= w[0].0) {
         return invalid("stsc first_chunk values are not increasing from 1");
     }
-    // Tables that count single sample frames (QuickTime PCM, and `ulaw` / `alaw` / `ima4` with a
+    // Tables that count single sample frames (QuickTime PCM, and `ulaw` / `alaw` / `ima4` / `MAC3` / `MAC6` with a
     // sample size of 1) are grouped into one sample per chunk: (bytes, frames) of the smallest unit
     // when the sound description gives no packet sizes.
     let pcm = match t.entries.first().map(|e| &e.codec) {
@@ -774,6 +777,8 @@ fn parse_stbl(stbl: &[u8], t: &mut Track, is_qt: bool, file_len: u64) -> Result<
             match &fourcc.0 {
                 b"ulaw" | b"alaw" => Some((ch, 1)),
                 b"ima4" => Some((34 * ch, 64)),
+                b"MAC3" => Some((2 * ch, 6)),
+                b"MAC6" => Some((ch, 6)),
                 _ => None,
             }
         }
