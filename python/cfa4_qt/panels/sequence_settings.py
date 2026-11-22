@@ -230,10 +230,14 @@ class SequenceSettingsDialog(QDialog):
         run: Callable[[str, dict[str, Any], Callable[[bool], None]], None],
         cur_name: str = "",
         audio_samples: bool = True,
+        profiles: list[dict[str, Any]] | None = None,
     ) -> None:
         super().__init__(parent)
         self.setObjectName("sequenceSettings")
         self.d = draft
+        # New Sequence only: the sequence profiles on offer, and the one picked (None = Custom)
+        self.profiles = [p for p in (profiles or []) if isinstance(p, dict)] if draft.new_sequence else []
+        self.profile: str | None = None
         self.cur = replace(draft) if not draft.new_sequence else replace(Draft(), new_sequence=True)
         self.cur_name = cur_name
         self.run = run
@@ -321,7 +325,14 @@ class SequenceSettingsDialog(QDialog):
         self._named(self.name, "name")
         self.name.textEdited.connect(lambda t: setattr(self.d, "name", t))
         form.addRow(tr("Sequence Name:"), self.name)
-        form.addRow(tr("Editing Mode:"), self._fixed_combo("editingMode", N_("Custom")))
+        if self.profiles:
+            self.preset = self._combo("profile", self._pick_profile)
+            self.preset.addItem(tr("Custom"), None)
+            for prof in self.profiles:
+                self.preset.addItem(str(prof.get("description", "")), prof.get("description"))
+            form.addRow(tr("Sequence Profile:"), self.preset)
+        else:
+            form.addRow(tr("Editing Mode:"), self._fixed_combo("editingMode", N_("Custom")))
         self.timebase = self._combo("timebase", self._pick_timebase)
         form.addRow(tr("Timebase:"), self.timebase)
         lay.addLayout(form)
@@ -477,6 +488,31 @@ class SequenceSettingsDialog(QDialog):
 
     def _set(self, attr: str, value: Any) -> None:
         setattr(self.d, attr, value)
+        if attr in ("width", "height"):
+            self._custom()
+        self._sync()
+
+    def _custom(self) -> None:
+        """The size or timebase was edited by hand: no longer the picked profile."""
+        if self.profile is not None:
+            self.profile = None
+            if hasattr(self, "preset"):
+                self.preset.setCurrentIndex(0)
+
+    def _pick_profile(self, i: int) -> None:
+        name = self.preset.itemData(i)
+        prof = next((p for p in self.profiles if p.get("description") == name), None)
+        if prof is None:
+            self.profile = None
+            return
+        fps = prof.get("fps") if isinstance(prof.get("fps"), list) and len(prof["fps"]) == 2 else [25, 1]
+        self.d.width = _int(prof.get("width"), self.d.width, 1, MAX_FRAME_SIDE)
+        self.d.height = _int(prof.get("height"), self.d.height, 1, MAX_FRAME_SIDE)
+        self.d.fps = sane_rate(_int(fps[0], 25, 1, 10**9), _int(fps[1], 1, 1, 10**9))
+        self.d.drop_frame = supports_drop_frame(*self.d.fps)
+        par = prof.get("pixelAspect") if isinstance(prof.get("pixelAspect"), list) and len(prof["pixelAspect"]) == 2 else [1, 1]
+        self.d.par = (_int(par[0], 1, 1), _int(par[1], 1, 1))
+        self.profile = str(name)
         self._sync()
 
     def _pick_timebase(self, i: int) -> None:
@@ -485,6 +521,7 @@ class SequenceSettingsDialog(QDialog):
             # a new timebase starts on its usual timecode (drop-frame for the NTSC rates)
             self.d.fps = (int(rate[0]), int(rate[1]))
             self.d.drop_frame = supports_drop_frame(*self.d.fps)
+            self._custom()
         self._sync()
 
     def _pick_display(self, i: int) -> None:
@@ -558,6 +595,10 @@ class SequenceSettingsDialog(QDialog):
             def made(ok: bool) -> None:
                 if not ok:
                     return
+                if self.profile is not None:  # the pixel aspect file.newSequence has no parameter for
+                    q = {"description": self.profile}
+                    self.sent.append(("sequenceProfiles.apply", q))
+                    self.run("sequenceProfiles.apply", q, lambda _ok: None)
                 if rest:
                     self.sent.append(("sequence.settings", rest))
                     self.run("sequence.settings", rest, lambda _ok: None)
