@@ -21,6 +21,7 @@
 //! - [`EvcSource`]: raw MPEG-5 EVC Baseline (`.evc`) streams, pictures shown in their order count.
 //! - [`CavsSource`]: raw AVS1-P2 (Chinese AVS, Jizhun profile) streams (`.avs`, `.cavs`).
 //! - [`SstpSource`]: MPEG-4 Simple Studio Profile (Sony SR) elementary streams (`.m4v`), every picture intra.
+//! - [`ThpSource`]: Nintendo THP (`.thp`) JPEG video (full range YUV) with THP ADPCM sound.
 //! - [`Y4mSource`]: uncompressed YUV4MPEG2 (`.y4m`) video, frames read on demand.
 //! - [`openers`]: the openers to register with the engine's media pool.
 
@@ -56,6 +57,7 @@ pub mod realmedia;
 pub mod sstp;
 mod stream_color;
 pub mod streams;
+pub mod thp;
 pub mod utvideo;
 pub mod video;
 mod webm_alpha;
@@ -77,6 +79,7 @@ pub use mxf::MxfSource;
 pub use ogg::OggSource;
 pub use realmedia::RmSource;
 pub use sstp::SstpSource;
+pub use thp::ThpSource;
 pub use video::{DecodedFrame, VideoDecoder, VideoDecoderFactory};
 pub use y4m::Y4mSource;
 
@@ -200,6 +203,7 @@ pub fn openers() -> Vec<cfa4_media::Opener> {
         y4m::opener,
         dif::opener,
         realmedia::opener,
+        thp::opener,
         av2::opener,
         audio::opener,
     ]

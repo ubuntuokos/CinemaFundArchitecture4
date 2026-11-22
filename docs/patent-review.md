@@ -68,6 +68,7 @@ szabadalommal védett formátumot.
 | Huffyuv (HFYU) | dekódolás | `crates/huffyuv` | alap | függőben | | |
 | Ut Video | dekódolás | `crates/utvideo` | alap | függőben | | |
 | Lagarith | dekódolás | `crates/lagarith` (az FFmpeg Lagarith-dekódolójának portja) | alap | függőben | | |
+| Nintendo THP (JPEG-videó, THP ADPCM-hang) | dekódolás; `.thp` fájlok olvasása | `crates/thp` (az FFmpeg THP-demuxerének, MJPEG-dekóderének és ADPCM-dekóderének portja) | alap | függőben | | |
 | MagicYUV | dekódolás | `crates/magicyuv` (az FFmpeg MagicYUV-dekódolójának portja) | alap | függőben | | |
 | RealVideo 1.0 / 2.0 (RV10, RV20) | dekódolás | `crates/realvideo` (az FFmpeg portja) | alap | függőben | | |
 | RealVideo 3.0 / 4.0 (RV30, RV40) | dekódolás | `crates/realvideo` `rv34` (az FFmpeg portja) | alap | függőben | | |

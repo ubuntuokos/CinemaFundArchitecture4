@@ -255,7 +255,7 @@ pub const AUDIO_EXTENSIONS: &[&str] = &[
 ];
 pub const VIDEO_EXTENSIONS: &[&str] = &[
     "mp4", "m4v", "mov", "mkv", "webm", "avi", "mxf", "mts", "m2ts", "m2t", "ts", "mpg", "mpeg", "vob", "mod", "tod", "m2v", "m1v", "mpv", "3gp", "y4m", "apv",
-    "dv", "dif", "obu", "ivf", "rm", "rmvb",
+    "dv", "dif", "obu", "ivf", "rm", "rmvb", "thp",
 ];
 
 pub use backends::{BackendEntry, BackendReport, RestrictedItem, backend_enabled, backend_reports, register_backend, set_backend_enabled};
