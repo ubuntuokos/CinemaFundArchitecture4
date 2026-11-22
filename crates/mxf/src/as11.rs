@@ -30,6 +30,10 @@ pub enum ItemType {
     Timestamp,
     /// A 32-byte UMID, as 64 hex digits (or `urn:smpte:umid:` and hex groups).
     Umid,
+    /// A UTF-8 string.
+    Utf8,
+    /// An AUID / UL, as 32 hex digits (or an AS-07 audio layout name).
+    Auid,
 }
 
 /// One framework item.
@@ -314,6 +318,13 @@ pub fn encode(item: &Item, value: &str, clock: Clock) -> Result<Vec<u8>, String>
         Length => clock.frames(v).ok_or_else(bad)?.max(0).to_be_bytes().to_vec(),
         Timestamp => timestamp(v).ok_or_else(bad)?.to_vec(),
         Umid => umid(v).ok_or_else(bad)?.to_vec(),
+        Utf8 => {
+            if value.len() > 0xFFFF {
+                return Err(format!("{}: longer than 65535 bytes", item.name));
+            }
+            value.as_bytes().to_vec()
+        }
+        Auid => crate::as07_dms::auid(v).ok_or_else(bad)?.to_vec(),
     })
 }
 
@@ -336,6 +347,8 @@ pub fn decode(item: &Item, v: &[u8], clock: Clock) -> Option<String> {
             if (h, mi, s) == (0, 0, 0) { format!("{y:04}-{mo:02}-{d:02}") } else { format!("{y:04}-{mo:02}-{d:02}T{h:02}:{mi:02}:{s:02}") }
         }
         Umid => (v.len() == 32).then(|| v.iter().map(|b| format!("{b:02x}")).collect::<String>())?,
+        Utf8 => String::from_utf8_lossy(v).trim_end_matches('\0').to_string(),
+        Auid => crate::as07_dms::auid_text(v)?,
     })
 }
 

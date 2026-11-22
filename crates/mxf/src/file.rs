@@ -343,6 +343,8 @@ pub struct MxfFile {
     pub file_size: u64,
     /// AMWA AS-11 descriptive metadata (Core, programme parts, UK DPP), when the file has it.
     pub as11: Option<crate::as11::As11>,
+    /// AMWA AS-07 core descriptive metadata, when the file has the AS_07_Core_DMS framework.
+    pub as07: Option<crate::as07_dms::Dms07>,
 }
 
 /// An essence element found by the KLV walk.
@@ -999,9 +1001,12 @@ pub fn open_with_order(src: &(impl ByteSource + ?Sized), order: &PresentationOrd
     if tracks.is_empty() {
         return Err(Error::Unsupported("no essence of the material package is stored in this file".into()));
     }
-    let as11 = crate::as11::read(&md, crate::as11::Clock { start: timecode.map_or(0, |t| t.start), base: timecode.map_or(25, |t| t.rounded_base) });
+    let clock = crate::as11::Clock { start: timecode.map_or(0, |t| t.start), base: timecode.map_or(25, |t| t.rounded_base) };
+    let as11 = crate::as11::read(&md, clock);
+    let as07 = crate::as07_dms::read(&md, clock);
     Ok(MxfFile {
         as11,
+        as07,
         run_in: w.run_in,
         operational_pattern: OperationalPattern::from_ul(&op_label),
         operational_pattern_label: op_label,

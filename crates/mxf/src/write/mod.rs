@@ -673,6 +673,10 @@ pub struct WriterConfig {
     /// AMWA AS-11 descriptive metadata (OP1a): the Core framework, the programme parts and the UK
     /// DPP framework as DM tracks of the material package ([`crate::as11`]).
     pub as11: Option<crate::as11::As11>,
+    /// AMWA AS-07 core descriptive metadata (OP1a): the AS_07_Core_DMS framework with its identifier
+    /// and device sets as a DM track of the material package ([`crate::as07_dms`]); the AS-07 core
+    /// scheme label is added to the preface.
+    pub as07: Option<crate::as07_dms::Dms07>,
 }
 
 /// One ST 377-4 multichannel audio label: a soundfield group (`channel` is `None`) or an audio
@@ -729,6 +733,7 @@ impl WriterConfig {
             reference_audio_alignment_level: None,
             anc: false,
             as11: None,
+            as07: None,
         }
     }
 }
@@ -945,6 +950,8 @@ struct TrackW {
 const HEADER_RESERVE: usize = 4096;
 /// First instance number of the AS-11 sets (clear of the essence, index and partition sets).
 const AS11_UID: u32 = 0x4153_0000;
+/// Set ids of the AS-07 core track: the track, its identifier sets (+0x100) and device sets (+0x200).
+const AS07_UID: u32 = 0x4153_8000;
 /// IMF track files: at least 8 KiB of fill after the header metadata (ST 2067-5 5.1.1), on top
 /// of the usual room for the metadata growing by `finish`.
 const IMF_HEADER_RESERVE: usize = HEADER_RESERVE + 8192;
@@ -994,6 +1001,8 @@ pub struct MxfWriter<W: Write + Seek> {
     anc_buf: VecDeque<Vec<u8>>,
     /// The AS-11 frameworks as stored.
     as11: Option<crate::as11::Encoded>,
+    /// The AS-07 metadata as stored.
+    as07: Option<crate::as07_dms::Encoded>,
     // OP-Atom
     clip_len: u64,
     clip_kl: u64,
@@ -1211,6 +1220,17 @@ impl<W: Write + Seek> MxfWriter<W> {
             }
             None => None,
         };
+        let as07 = match &cfg.as07 {
+            Some(a) => {
+                if cfg.pattern != Pattern::Op1a {
+                    return Err(io::Error::new(io::ErrorKind::InvalidInput, "AS-07 metadata is written in OP1a files"));
+                }
+                let tc = cfg.timecode.unwrap_or(StartTimecode { frames: 0, rate: cfg.edit_rate, drop_frame: false });
+                let clock = crate::as11::Clock { start: tc.frames, base: tc.rounded_base() };
+                Some(crate::as07_dms::Encoded::new(a, clock).map_err(|e| io::Error::new(io::ErrorKind::InvalidInput, e))?)
+            }
+            None => None,
+        };
         if cfg.sound.iter().any(|s| s.sample_rate == 0 || s.channels == 0 || !(1..=32).contains(&s.bits)) {
             return Err(io::Error::new(io::ErrorKind::InvalidInput, "invalid PCM sound description"));
         }
@@ -1321,6 +1341,7 @@ impl<W: Write + Seek> MxfWriter<W> {
             sound_buf: vec![Vec::new(); nsound],
             anc_buf: VecDeque::new(),
             as11,
+            as07,
             clip_len: 0,
             clip_kl: 0,
             samples: 0,
@@ -1859,6 +1880,7 @@ impl<W: Write + Seek> MxfWriter<W> {
         let fields = cfg.picture.as_ref().is_some_and(|p| p.field_dominance.is_some());
         let d10_primer = if self.d10.is_some() || !mpeg_primer.is_empty() || fields { D10_PRIMER } else { &[] };
         let as11_primer = if self.as11.is_some() { crate::as11::primer() } else { Vec::new() };
+        let as07_primer = if self.as07.is_some() { crate::as07_dms::primer() } else { Vec::new() };
         let primer: Vec<Vec<u8>> = PRIMER
             .iter()
             .chain(iab_primer)
@@ -1866,6 +1888,7 @@ impl<W: Write + Seek> MxfWriter<W> {
             .chain(mpeg_primer)
             .chain(d10_primer)
             .chain(as11_primer.iter())
+            .chain(as07_primer.iter())
             .map(|(t, ul)| {
                 let mut e = t.to_be_bytes().to_vec();
                 e.extend_from_slice(ul);
@@ -1884,7 +1907,10 @@ impl<W: Write + Seek> MxfWriter<W> {
             s.p(0x3B08, &self.uid(2000));
         }
         let ec: Vec<&[u8]> = containers.iter().map(|c| &c[..]).collect();
-        let schemes = self.as11.as_ref().map(crate::as11::Encoded::schemes).unwrap_or_default();
+        let mut schemes = self.as11.as_ref().map(crate::as11::Encoded::schemes).unwrap_or_default();
+        if self.as07.is_some() {
+            schemes.push(crate::as07_dms::CORE_SCHEME);
+        }
         let schemes: Vec<&[u8]> = schemes.iter().map(|c| &c[..]).collect();
         s.p(0x3B0A, &batch(&ec, 16)).p(0x3B0B, &batch(&schemes, 16));
         s.write(&mut out);
@@ -1925,6 +1951,9 @@ impl<W: Write + Seek> MxfWriter<W> {
                 if !a.as03.is_empty() {
                     track_uids.push(self.uid(AS11_UID + 0x400));
                 }
+            }
+            if material && self.as07.is_some() {
+                track_uids.push(self.uid(AS07_UID));
             }
             let mut s = Set::new(if material { 0x36 } else { 0x37 }, self.uid(base));
             let (umid, name) = if material { (cfg.ids.material, &cfg.ids.material_name) } else { (cfg.ids.file, &cfg.ids.file_name) };
@@ -1975,6 +2004,9 @@ impl<W: Write + Seek> MxfWriter<W> {
             }
             if material && let Some(a) = &self.as11 {
                 self.as11_tracks(&mut out, a, d);
+            }
+            if material && let Some(a) = &self.as07 {
+                self.as07_track(&mut out, a);
             }
         }
         // Descriptors
@@ -2421,6 +2453,49 @@ impl<W: Write + Seek> MxfWriter<W> {
         }
         if !a.as03.is_empty() {
             static_track(out, AS11_UID + 0x400, crate::as11::AS03_TRACK, crate::as11::AS03_FRAMEWORK_KEY, &a.as03);
+        }
+    }
+
+    /// The AS_07_Core_DMS track: a static DM track whose segment refers to the framework, which
+    /// refers to the identifier and device sets.
+    fn as07_track(&self, out: &mut Vec<u8>, a: &crate::as07_dms::Encoded) {
+        use crate::as07_dms::{DEVICE_KEY, DEVICES, FRAMEWORK_KEY, IDENTIFIER_KEY, IDENTIFIERS, TRACK, tag};
+        use crate::as11::DEF_DESCRIPTIVE;
+        let (t, q, g, f) = (self.uid(AS07_UID), self.uid(AS07_UID + 1), self.uid(AS07_UID + 2), self.uid(AS07_UID + 3));
+        let mut s = Set::new(0x3A, t);
+        s.u32(0x4801, TRACK.1).u32(0x4804, 0).p(0x4802, &utf16(TRACK.0)).p(0x4803, &q);
+        s.write(out);
+        let mut s = Set::new(0x0F, q);
+        s.p(0x0201, &DEF_DESCRIPTIVE).refs(0x1001, &[g]);
+        s.write(out);
+        let mut s = Set::new(0x41, g);
+        s.p(0x0201, &DEF_DESCRIPTIVE).p(0x6101, &f);
+        s.write(out);
+        let ids: Vec<[u8; 16]> = (0..a.identifiers.len() as u32).map(|k| self.uid(AS07_UID + 0x100 + k)).collect();
+        let devs: Vec<[u8; 16]> = (0..a.devices.len() as u32).map(|k| self.uid(AS07_UID + 0x200 + k)).collect();
+        let batch_value = |uids: &[[u8; 16]]| {
+            let items: Vec<&[u8]> = uids.iter().map(|u| &u[..]).collect();
+            batch(&items, 16)
+        };
+        let mut s = Set { key: FRAMEWORK_KEY, v: Vec::new() };
+        s.p(0x3C0A, &f);
+        for (i, v) in &a.core {
+            s.p(tag(i), v);
+        }
+        s.p(tag(&IDENTIFIERS), &batch_value(&ids));
+        if !devs.is_empty() {
+            s.p(tag(&DEVICES), &batch_value(&devs));
+        }
+        s.write(out);
+        for (uid, key, items) in
+            ids.iter().zip(&a.identifiers).map(|(u, i)| (u, IDENTIFIER_KEY, i)).chain(devs.iter().zip(&a.devices).map(|(u, i)| (u, DEVICE_KEY, i)))
+        {
+            let mut s = Set { key, v: Vec::new() };
+            s.p(0x3C0A, uid);
+            for (i, v) in items {
+                s.p(tag(i), v);
+            }
+            s.write(out);
         }
     }
 
