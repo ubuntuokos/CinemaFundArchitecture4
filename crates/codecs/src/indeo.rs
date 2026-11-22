@@ -60,6 +60,11 @@ impl VideoDecoder for Indeo2Decoder {
     fn name(&self) -> &str {
         "CFA4 Indeo 2"
     }
+    // AVI marks every sample as a sync sample: only an intra frame can start a run
+    fn is_random_access(&self, sample: &[u8]) -> Option<bool> {
+        let mut fresh = cfa4_indeo::ir2::Decoder::new(self.size.0, self.size.1).ok()?;
+        Some(fresh.decode(sample).is_ok_and(|p| p.key))
+    }
     // intra frames and delta frames
     fn intra_only(&self) -> bool {
         false
