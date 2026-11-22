@@ -1,6 +1,6 @@
 # CFA4-OPENUSD-3D-001 – 3D-jelenetcsere (glTF/OBJ/STL, OpenUSD), projektfüggő 3D, 1.0
 
-> **Állapot:** JÓVÁHAGYVA (István, 2026-11-22 18:01, Europe/Budapest); a §11 döntéseit István 16:55-kor zárta le. **Dokumentum-szintű terv (U0); kódolási engedélyt nem ad:** U1, U2 és U3 külön tulajdonosi fázisengedélyt igényel (`docs/coordination.md` §2.10). A 0.1 változat helyébe lép.
+> **Állapot:** JÓVÁHAGYVA (István, 2026-11-22 18:01, Europe/Budapest); a §11 döntéseit István 16:55-kor zárta le. **Fázisengedélyek:** István 2026-11-22 18:03-kor megadta az U1, U2 és U3 fázisengedélyeket (`docs/coordination.md` §2.10). Ez **nem** kerüli meg a fázisok saját kapuit (§7): az U1 a tervnek a `main`-be kerülése után, friss `main`-ből indulhat; az U2-höz kell a render C0 és a G-USD-1 (most: nincs natív USD, §11 5. pont); az U3 elfogadási feltételeit az indítása előtt meg kell írni. Terv-változtatás (a fázisok lépéseinek, sorrendjének vagy feltételeinek módosítása) újra jóváhagyást kér. A 0.1 változat helyébe lép.
 > **Verzió:** 1.0 · **Dátum:** 2026-11-22 · **Kérte:** István (ubuntuokos). A 0.1 helyébe lép (a fájl átnevezve: `…-0.1.md` → `…-1.0.md`).
 > **Beépítve:** a `[MÓD-6]` (két USD-út) és `[MÓD-8]` (3D projektfüggő) javaslatok a [`CFA4-DNEG-VFX-EGYEZTETES-001`](CFA4-DNEG-VFX-EGYEZTETES-001-0.1.md)-ből (K-3, K-4, K-5, D-4, D-12) és a `CFA4-VFX-001` v1.1 (§3.1, §8a; VFX-8, X-4, X-5).
 > **Alap:** CFA4 `main` @ `2ff5b412`; ez a dokumentum csak dokumentáció, a `VISION.md`-t nem módosítja.
@@ -141,6 +141,7 @@ Nem néztem meg a Rust-crate-ek forráskódját, nem futtattam `cargo deny`-t; a
 | Verzió | Dátum | Változás |
 |---|---|---|
 | 0.1 | 2026-11-21 | Első javaslat; jóváhagyva dokumentumként (22:45), kódolási engedély nélkül. |
+| 1.0b | 2026-11-22 | Fázisengedélyek rögzítve (István, 18:03): U1, U2, U3; a fázis-kapuk érvényesek. Tartalmi változás nincs. |
 | 1.0 (jóváhagyva) | 2026-11-22 | István jóváhagyta (18:01); további tartalmi változás nincs, a 1.0a döntései érvényesek. |
 | 1.0a | 2026-11-22 | A §11 döntései rögzítve (István, 16:55): import és export egyaránt cél (U3 bekerül), a többi a javaslat szerint; G-USD-1: most nincs natív USD. |
 | 1.0 | 2026-11-22 | Végleges javaslat: `[MÓD-6]` (két út) és `[MÓD-8]` (projektfüggő 3D) beépítve; projektfüggő modell (4. fejezet) és új `P-A1…A4` kapuk; a tények frissítve (OpenUSD v26.11.1, nincs 26.04-es csomag, `usd-core` kerék, Rust-crate-ek licence); G-USD-1 átfogalmazva; egy szerződés (C0); nyitott döntések szűkítve. |
