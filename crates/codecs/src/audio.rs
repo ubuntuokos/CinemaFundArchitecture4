@@ -105,6 +105,8 @@ enum Inner {
     Amr(cfa4_amr::Decoder),
     /// TTA (`cfa4-tta`): each packet is one frame with its CRC.
     Tta(cfa4_tta::Decoder),
+    /// ATRAC1 (`cfa4-realaudio`): each packet is one 212-byte sound unit per channel.
+    Atrac1(Box<cfa4_realaudio::atrac1::Decoder>),
 }
 
 /// Packets between two saved decoder states (see [`Checkpoints`]).
@@ -331,6 +333,12 @@ impl PacketDecoder {
         let d = cfa4_tta::Decoder::new(info, None).map_err(|e| CodecError::Unsupported(format!("TTA: {e}")))?;
         Ok(Self { inner: Inner::Tta(d), channels: usize::from(channels) })
     }
+    /// ATRAC1 (Matroska `A_ATRAC/AT1`) with the track's channel count.
+    pub fn atrac1(channels: usize) -> Result<Self> {
+        let d = cfa4_realaudio::atrac1::Decoder::new(channels, cfa4_realaudio::atrac1::SU_SIZE.saturating_mul(channels))
+            .map_err(|e| CodecError::Unsupported(format!("ATRAC1: {e}")))?;
+        Ok(Self { inner: Inner::Atrac1(Box::new(d)), channels })
+    }
     /// Whether this decodes Opus (which needs [`OPUS_PRE_ROLL`] of pre-roll after a seek).
     pub fn is_opus(&self) -> bool {
         matches!(self.inner, Inner::Opus { .. })
@@ -430,6 +438,7 @@ impl PacketDecoder {
                 let info = *d.info();
                 return Ok(planes.into_iter().map(|p| p.into_iter().map(|v| info.to_f32(v)).collect()).collect());
             }
+            Inner::Atrac1(d) => return d.decode(data).map_err(|e| CodecError::Decode(format!("ATRAC1: {e}"))),
             Inner::Amr(d) => {
                 let mut pcm = Vec::new();
                 d.decode_packet(data, &mut pcm).map_err(|e| CodecError::Decode(format!("AMR: {e}")))?;
@@ -498,6 +507,7 @@ impl PacketDecoder {
             Inner::TrueHd(d) => d.reset(),
             Inner::Adpcm(d) => d.reset(),
             Inner::Amr(d) => d.reset(),
+            Inner::Atrac1(d) => d.reset(),
             Inner::AacPending | Inner::MpegPending(_) | Inner::Tta(_) => {}
         }
     }
@@ -1123,6 +1133,30 @@ impl AudioFileSource {
             };
             return Ok(Self { info, rate, samples });
         }
+        if ext == "acm" {
+            let (acm, pcm) = cfa4_acm::decode_file(&bytes).map_err(|e| CodecError::Decode(format!("{name}: {e}")))?;
+            let ch = acm.channels as usize;
+            let samples: Vec<Vec<f32>> = (0..ch).map(|c| pcm.iter().skip(c).step_by(ch).map(|&v| f32::from(v) / 32768.0).collect()).collect();
+            let frames = samples.first().map_or(0, Vec::len);
+            let rate = acm.sample_rate.max(1);
+            let info = MediaInfo {
+                name: name.to_string(),
+                kind: MediaKind::AudioOnly,
+                duration: Tick::from_units(frames as i64, i64::from(rate)),
+                video: None,
+                audio_streams: vec![AudioStreamInfo {
+                    sample_rate: rate,
+                    channels: acm.channels,
+                    codec: "Interplay ACM".into(),
+                    bits_per_sample: Some(16),
+                    ..AudioStreamInfo::default()
+                }],
+                container: "Interplay ACM".into(),
+                start_timecode: None,
+                file_size: Some(bytes.len() as u64),
+            };
+            return Ok(Self { info, rate, samples });
+        }
         if ext == "tak" {
             let (tak, planes) = cfa4_tak::decode_file(&bytes).map_err(|e| CodecError::Decode(format!("{name}: {e}")))?;
             let samples: Vec<Vec<f32>> = planes.into_iter().map(|p| p.into_iter().map(|v| tak.to_f32(v)).collect()).collect();
@@ -1201,6 +1235,48 @@ impl AudioFileSource {
                 file_size: Some(bytes.len() as u64),
             };
             return Ok(Self { info, rate: tta.sample_rate, samples });
+        }
+        if ext == "adx" {
+            let (adx, planes) = cfa4_adx::decode_file(&bytes).map_err(|e| CodecError::Decode(format!("{name}: {e}")))?;
+            let samples: Vec<Vec<f32>> = planes.into_iter().map(|p| p.into_iter().map(cfa4_adx::Header::to_f32).collect()).collect();
+            let frames = samples.first().map_or(0, Vec::len);
+            let info = MediaInfo {
+                name: name.to_string(),
+                kind: MediaKind::AudioOnly,
+                duration: Tick::from_units(frames as i64, i64::from(adx.sample_rate)),
+                video: None,
+                audio_streams: vec![AudioStreamInfo {
+                    sample_rate: adx.sample_rate,
+                    channels: samples.len() as u32,
+                    codec: "CRI ADX".into(),
+                    ..AudioStreamInfo::default()
+                }],
+                container: "CRI ADX".into(),
+                start_timecode: None,
+                file_size: Some(bytes.len() as u64),
+            };
+            return Ok(Self { info, rate: adx.sample_rate, samples });
+        }
+        if ext == "hca" {
+            // An encrypted stream needs its key, which this opener has no way to take: it is refused.
+            let (hca, samples, _damaged) = cfa4_hca::decode_file(&bytes, None).map_err(|e| CodecError::Decode(format!("{name}: {e}")))?;
+            let frames = samples.first().map_or(0, Vec::len);
+            let info = MediaInfo {
+                name: name.to_string(),
+                kind: MediaKind::AudioOnly,
+                duration: Tick::from_units(frames as i64, i64::from(hca.sample_rate)),
+                video: None,
+                audio_streams: vec![AudioStreamInfo {
+                    sample_rate: hca.sample_rate,
+                    channels: samples.len() as u32,
+                    codec: "CRI HCA".into(),
+                    ..AudioStreamInfo::default()
+                }],
+                container: "CRI HCA".into(),
+                start_timecode: None,
+                file_size: Some(bytes.len() as u64),
+            };
+            return Ok(Self { info, rate: hca.sample_rate, samples });
         }
         if ext == "mpc" {
             let (mpc, samples) = cfa4_musepack::decode_file(&bytes).map_err(|e| CodecError::Decode(format!("{name}: {e}")))?;
@@ -1547,10 +1623,13 @@ pub fn opener(name: &str, bytes: Arc<[u8]>) -> Option<std::result::Result<Shared
             | "awb"
             | "tta"
             | "tak"
+            | "acm"
             | "g729"
             | "lbc"
             | "mpc"
             | "shn"
+            | "adx"
+            | "hca"
     ) {
         return None;
     }

@@ -9,7 +9,7 @@ Minden sor a meglévő elemet nevezi meg; új crate nem készül (tulajdonosi sz
 | AC-02 Alap export | képkockaszám, PTS-lista, színmetaadat; PSNR/SSIM | `cfa4_metrics` (`psnr`, `timing`), fixture `sdr_1080p25` | MÉRŐ KÉSZ, FIXTURE VÁR | a decode→render→encode→reimport szál a következő lépés |
 | AC-03 CPU-only | workflow-lista futtatása GPU nélkül | `crates/cinema-acceptance`, `crates/testkit` | PENDING | az F0-ban listázandó workflow-k még nincsenek felsorolva |
 | AC-04 Renderhelyesség | `diff_u16/f32`, SSIM, ΔE, alfa-eltérés; golden | `cfa4_metrics`, `cfa4_golden::validation` | **MÉRŐ VAN** (CPU) | GPU-tolerancia, HDR/EXR golden PENDING |
-| AC-05 Időzítés | `pts_diff`, `av_drift`, `seek_error_frames` | `cfa4_metrics::timing` | MÉRŐ KÉSZ, FIXTURE VÁR | `sync_flash_beep` fixture kész, motoros átvitel kell |
+| AC-05 Időzítés | `pts_diff`, `av_drift`, `rising_edges` (villanás), `beep_onsets` (sípszó), `seek_error_frames` | `cfa4_metrics::timing`, `cfa4_golden::validation::compare_with` | MÉRŐ KÉSZ (szintetikus bizonyítással), FIXTURE VÁR | `sync_flash_beep` fixture kész; a motoros átvitel és a mért határ kell (KD-05) |
 | AC-06 GPU-hibainjektálás | – | – | PENDING | referenciagép és hibainjektáló eszköz kell |
 | AC-07 Erőforrások | `/proc`, NVML mintavétel | – | PENDING | rootless mérő még nincs; hosszú futás kell |
 | AC-08 Resume/cancel | atomikus kimenet | `crates/export/src/atomic.rs` (meglévő) | PENDING | a SIGKILL-ciklus tesztje nincs |
@@ -19,7 +19,7 @@ Minden sor a meglévő elemet nevezi meg; új crate nem készül (tulajdonosi sz
 | AC-11b Bemenet-biztonság | path traversal / symlink | – | PENDING | `crates/sandbox` (meglévő) a védelem, a teszt még nincs |
 | AC-11c Sandbox | worker-teszt | `crates/sandbox` (meglévő) | PENDING | a sandbox még nincs alkalmazva (SECURITY-001 B3/B4) |
 | AC-12 Ismert rések | `F0V-known-deviations.md`, kihagyási lista | ez a PR | MÉRŐ VAN (lista) | a géppel generált lista a riportban a következő lépés |
-| AC-13 Audio | `null_test` dBFS csatornánként | `cfa4_metrics::audio` | **MÉRŐ VAN** | `audio_51/71_24bit` fixture-ök kész |
+| AC-13 Audio | `null_test` dBFS csatornánként; ST 428-2 paraméterek (24 bit, 48/96 kHz, 1–16 csatorna, azonos hossz, nincs teljes skála fölötti minta) | `cfa4_metrics::audio`, `cfa4_golden::validation::compare_with` (`Extras::audio_bits`) | **MÉRŐ VAN** | `audio_51/71_24bit` fixture-ök kész. A csomagszintű szabály már létezik (`DCP.AUD.001`, `cfa4-dcp-validate`): ez ugyanazt a renderkimeneten méri, nem másolja a validátort. A 6/8/16 csatorna (ST 429-2) csak tájékoztató. Az MCA-címkéket a `cfa4-mxf` még nem adja (nyitott) |
 | AC-14 Preview–export | – | – | PENDING | kell hozzá a preview-render hívása a harnessből |
 | AC-15 Projektmigráció | – | `crates/project/src/legacy.rs` (meglévő) | PENDING | nincs régi sémájú projekt-fixture |
 | AC-16 Teljesítmény | renderidő, csúcsmemória | – | PENDING | 10 futás és baseline kell |

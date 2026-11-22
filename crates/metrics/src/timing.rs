@@ -114,6 +114,51 @@ pub fn av_drift(video_ticks: &[i64], audio_samples: &[i64], ticks_per_second: i6
     Ok(Drift { initial_offset_ms: first, max_drift_ms })
 }
 
+/// Indices where `values` rises to `high` or above after having been at `low` or below (a
+/// hysteresis edge detector). The start counts as low, so a series that begins high gives an event
+/// at index 0. Used to find the flash frames of a flash-and-beep fixture from the mean picture level.
+pub fn rising_edges(values: &[f64], low: f64, high: f64) -> Vec<usize> {
+    let mut out = Vec::new();
+    let mut is_high = false;
+    for (i, &v) in values.iter().enumerate() {
+        if is_high {
+            if v <= low {
+                is_high = false;
+            }
+        } else if v >= high {
+            is_high = true;
+            out.push(i);
+        }
+    }
+    out
+}
+
+/// Sample positions where a beep starts: the first sample at or above `level` (linear, full scale
+/// 1.0, any channel) that follows at least `quiet_ms` without one. Positions are sample indices.
+pub fn beep_onsets(channels: &[Vec<f32>], sample_rate: u32, level: f32, quiet_ms: u32) -> Result<Vec<i64>, MetricError> {
+    if sample_rate == 0 || !level.is_finite() || level <= 0.0 {
+        return Err(MetricError::DataRange);
+    }
+    let len = channels.iter().map(Vec::len).max().unwrap_or(0);
+    if len == 0 {
+        return Err(MetricError::TooSmall { width: 0, height: 0 });
+    }
+    let quiet = (u64::from(sample_rate) * u64::from(quiet_ms) / 1000).max(1);
+    let mut out = Vec::new();
+    let mut last_loud: Option<u64> = None;
+    for i in 0..len {
+        let loud = channels.iter().any(|ch| ch.get(i).is_some_and(|s| s.abs() >= level));
+        if loud {
+            let i = i as u64;
+            if last_loud.is_none_or(|l| i - l > quiet) {
+                out.push(i as i64);
+            }
+            last_loud = Some(i);
+        }
+    }
+    Ok(out)
+}
+
 /// Largest seek error in frames: `|delivered − requested| / frame_duration` over all seeks.
 pub fn seek_error_frames(requested: &[i64], delivered: &[i64], frame_duration: i64) -> Result<f64, MetricError> {
     if requested.len() != delivered.len() {
@@ -132,6 +177,46 @@ pub fn seek_error_frames(requested: &[i64], delivered: &[i64], frame_duration: i
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn rising_edges_need_the_signal_to_fall_back_first() {
+        let v = [0.0, 0.9, 0.9, 0.4, 0.9, 0.1, 0.0, 0.8];
+        // 0.4 is between the thresholds: still high, so no new event at index 4
+        assert_eq!(rising_edges(&v, 0.25, 0.5), vec![1, 7]);
+        assert_eq!(rising_edges(&[0.9, 0.0, 0.9], 0.25, 0.5), vec![0, 2]);
+        assert!(rising_edges(&[], 0.25, 0.5).is_empty());
+    }
+
+    fn beeps_at(positions: &[usize], len: usize) -> Vec<f32> {
+        let mut a = vec![0.0f32; len];
+        for &p in positions {
+            for k in 0..480 {
+                if let Some(s) = a.get_mut(p + k) {
+                    *s = (2.0 * std::f32::consts::PI * 1000.0 * k as f32 / 48_000.0).sin() * 0.8;
+                }
+            }
+        }
+        a
+    }
+
+    #[test]
+    fn beep_onsets_find_each_beep_once() {
+        let a = beeps_at(&[0, 48_000, 96_000], 144_000);
+        let on = beep_onsets(&[a], 48_000, 0.1, 100).unwrap();
+        assert_eq!(on.len(), 3);
+        // sin(0) = 0: the first sample at 0.1 comes within two samples of the true start
+        for (o, t) in on.iter().zip([0i64, 48_000, 96_000]) {
+            assert!((0..3).contains(&(o - t)), "{o} vs {t}");
+        }
+    }
+
+    #[test]
+    fn beep_onsets_reject_bad_input_and_report_silence_as_no_beep() {
+        assert_eq!(beep_onsets(&[vec![0.0; 10]], 0, 0.1, 100), Err(MetricError::DataRange));
+        assert_eq!(beep_onsets(&[vec![0.0; 10]], 48_000, f32::NAN, 100), Err(MetricError::DataRange));
+        assert!(beep_onsets(&[], 48_000, 0.1, 100).is_err());
+        assert_eq!(beep_onsets(&[vec![0.0; 1000]], 48_000, 0.1, 100).unwrap(), Vec::<i64>::new());
+    }
 
     const FD: i64 = 1000;
 

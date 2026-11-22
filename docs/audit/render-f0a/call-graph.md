@@ -511,6 +511,7 @@ graph LR
 | `cfa4-gstreamer/source.rs` | `cfa4-frame` | `AudioBuffer` |
 | `cfa4-gstreamer/source.rs` | `cfa4-media` | `AudioStreamInfo`, `MAX_AUDIO_STREAMS`, `Result` |
 | `cfa4-gstreamer/source.rs` | `cfa4-time` | `FrameRate` |
+| `cfa4-media/aea.rs` | `cfa4-time` | `Tick` |
 | `cfa4-media/animated.rs` | `cfa4-color` | `ColorInfo` |
 | `cfa4-media/animated.rs` | `cfa4-frame` | `AudioBuffer` |
 | `cfa4-media/animated.rs` | `cfa4-time` | `FrameRate` |
@@ -810,7 +811,7 @@ graph LR
 
 ## 4. Nyilvános típusok osztályonként
 
-A többi 616 nyilvános típus („other” osztály) csak a `call-graph.json`-ban szerepel.
+A többi 625 nyilvános típus („other” osztály) csak a `call-graph.json`-ban szerepel.
 
 ### Képkocka, kép, pixel (29)
 
@@ -858,7 +859,7 @@ A többi 616 nyilvános típus („other” osztály) csak a `call-graph.json`-b
 | `cfa4-time` | `lib.rs` | enum | `TimeDisplay` |
 | `cfa4-time` | `lib.rs` | struct | `TimeRange` |
 
-### Job, sor, folyamat, megszakítás (27)
+### Job, sor, folyamat, megszakítás (28)
 
 | Crate | Modul | Fajta | Típus |
 |---|---|---|---|
@@ -872,6 +873,7 @@ A többi 616 nyilvános típus („other” osztály) csak a `call-graph.json`-b
 | `cfa4-engine` | `media_pool.rs` | struct | `OfflineStatus` |
 | `cfa4-engine` | `proxies.rs` | struct | `PendingJob` |
 | `cfa4-engine` | `qc.rs` | enum | `QcStatus` |
+| `cfa4-engine` | `task_host.rs` | struct | `TaskHost` |
 | `cfa4-export` | `job.rs` | struct | `Exporter` |
 | `cfa4-export` | `job.rs` | enum | `Step` |
 | `cfa4-export` | `lib.rs` | struct | `Progress` |
@@ -890,7 +892,7 @@ A többi 616 nyilvános típus („other” osztály) csak a `call-graph.json`-b
 | `cfa4-smart-edit` | `media_index.rs` | enum | `DependencyStatus` |
 | `cfa4-testkit` | `fixtures.rs` | enum | `Status` |
 
-### Hang (44)
+### Hang (46)
 
 | Crate | Modul | Fajta | Típus |
 |---|---|---|---|
@@ -907,6 +909,7 @@ A többi 616 nyilvános típus („other” osztály) csak a `call-graph.json`-b
 | `cfa4-engine` | `autosave.rs` | struct | `AudioPrefs` |
 | `cfa4-engine` | `project_panel.rs` | struct | `ProjectPanelPrefs` |
 | `cfa4-engine` | `settings.rs` | struct | `AudioHardwarePrefs` |
+| `cfa4-engine` | `task_host.rs` | type | `Sampler` |
 | `cfa4-engine` | `voiceover.rs` | trait | `AudioInput` |
 | `cfa4-export` | `audio_copy.rs` | struct | `AudioDrop` |
 | `cfa4-export` | `audio_copy.rs` | struct | `AudioPlan` |
@@ -938,6 +941,7 @@ A többi 616 nyilvános típus („other” osztály) csak a `call-graph.json`-b
 | `cfa4-project` | `object.rs` | struct | `ObjectSample` |
 | `cfa4-qc` | `audio.rs` | struct | `AudioFacts` |
 | `cfa4-render` | `preview.rs` | struct | `AudioSegment` |
+| `cfa4-testkit` | `smk.rs` | enum | `AudioKind` |
 
 ### Szín (18)
 
@@ -962,7 +966,7 @@ A többi 616 nyilvános típus („other” osztály) csak a `call-graph.json`-b
 | `cfa4-gpu` | `lut.rs` | struct | `GpuLut` |
 | `cfa4-project` | `lib.rs` | struct | `ProjectLut` |
 
-### Render, kompozíció, előnézet, proxy (61)
+### Render, kompozíció, előnézet, proxy (62)
 
 | Crate | Modul | Fajta | Típus |
 |---|---|---|---|
@@ -976,6 +980,7 @@ A többi 616 nyilvános típus („other” osztály) csak a `call-graph.json`-b
 | `cfa4-engine` | `presets.rs` | struct | `EffectPreset` |
 | `cfa4-engine` | `previews.rs` | struct | `PreviewStore` |
 | `cfa4-engine` | `previews.rs` | enum | `RenderMode` |
+| `cfa4-engine` | `task_host.rs` | struct | `Preview` |
 | `cfa4-export` | `dcp_iab.rs` | struct | `IabSourceInfo` |
 | `cfa4-export` | `lib.rs` | struct | `GpuRenderStats` |
 | `cfa4-export` | `settings.rs` | struct | `ExportEffects` |
