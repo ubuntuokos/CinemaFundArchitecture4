@@ -15632,3 +15632,35 @@ def test_dcp_validation_window_runs_shows_and_saves(app):
         assert "inside the package" in dlg.message.text()
     finally:
         dlg.close()
+
+
+def test_export_mxf_as02_switch_only_for_op1a_without_interleaved_codecs(app):
+    """#1477: the AS-02 bundle switch shows for MXF OP1a (not D-10, XDCAM HD422 or OP-Atom) and is
+    sent as ``mxfAs02`` once changed."""
+    from cfa4_qt.panels.export import ExportDialog
+
+    class Engine:
+        running = False
+
+        def execute(self, command, params=None, on_reply=None, on_error=None):
+            return 0
+
+    dlg = ExportDialog(Engine())  # type: ignore[arg-type]
+    dlg._on_formats([{"id": "h264", "label": "H.264"}, {"id": "mxf-op1a", "label": "MXF OP1a"}, {"id": "mxf-opatom", "label": "MXF OP-Atom"}], None)
+    box = dlg.findChild(QtWidgets.QCheckBox, "export.video.mxfAs02")
+    assert box is dlg.mxf_as02
+    dlg.format.setCurrentIndex(dlg.format.findData("mxf-op1a"))
+    dlg._sync_format_rows()
+    assert not box.isHidden()
+    assert "mxfAs02" not in dlg.params()
+    box.setChecked(True)
+    assert dlg.params()["mxfAs02"] is True
+    codec = dlg.format_choices["mxfVideoCodec"]
+    codec.setCurrentIndex(codec.findData("xdcamHd422"))
+    dlg._sync_format_rows()
+    assert box.isHidden() and "mxfAs02" not in dlg.params()
+    codec.setCurrentIndex(codec.findData("dnxhr"))
+    dlg.format.setCurrentIndex(dlg.format.findData("mxf-opatom"))
+    dlg._sync_format_rows()
+    assert box.isHidden() and "mxfAs02" not in dlg.params()
+    dlg.deleteLater()

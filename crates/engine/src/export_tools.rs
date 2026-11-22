@@ -316,6 +316,9 @@ pub fn settings_from_params(s: &Session, p: &Value, cmd: &str) -> Result<(Option
         settings.mxf_video_codec =
             serde_json::from_value(json!(v)).map_err(|_| bad(cmd, "mxfVideoCodec: dnxhr | proRes | h264 | mpeg2 | d10 | xdcamHd422 | v210 | uyvy"))?;
     }
+    if let Some(v) = bool_p(p, "mxfAs02") {
+        settings.mxf_as02 = v;
+    }
     if let Some(v) = bool_p(p, "mxfAncCaptions") {
         settings.mxf_anc_captions = v;
     }
@@ -529,8 +532,8 @@ pub fn file_safe(n: &str) -> String {
 
 /// `path` with the settings' extension (added when missing; image sequences keep theirs).
 fn with_extension(path: &str, settings: &ExportSettings) -> String {
-    // a DCP or IMF package is a folder
-    if matches!(settings.format, Format::Dcp | Format::Imf) {
+    // a DCP or IMF package and an AS-02 bundle are folders
+    if matches!(settings.format, Format::Dcp | Format::Imf) || settings.mxf_as02 {
         return path.to_string();
     }
     let ext = settings.extension();
@@ -577,7 +580,7 @@ fn output_path(s: &Session, p: &Value, seq: ItemId, settings: &ExportSettings, s
     };
     let path = with_extension(&base, settings);
     match suffix {
-        Some(n) if n > 0 && matches!(settings.format, Format::Dcp | Format::Imf) => format!("{path}_{}", n + 1),
+        Some(n) if n > 0 && (matches!(settings.format, Format::Dcp | Format::Imf) || settings.mxf_as02) => format!("{path}_{}", n + 1),
         Some(n) if n > 0 => match path.rsplit_once('.') {
             Some((a, e)) => format!("{a}_{}.{e}", n + 1),
             None => format!("{path}_{}", n + 1),

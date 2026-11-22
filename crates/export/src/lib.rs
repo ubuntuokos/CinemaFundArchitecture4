@@ -490,6 +490,11 @@ pub struct ExportSettings {
     /// general provisions and the named shim. Empty: no AS-03 metadata.
     #[serde(default)]
     pub mxf_as03: String,
+    /// MXF OP1a: write an AMWA AS-02 (MXF Versioning) bundle. The output path is the bundle
+    /// folder: the version file `<name>.mxf` and `manifest.xml` in it, the picture and every audio
+    /// channel as mono OP1a component files under `media/` ([`cfa4_mxf::as02`]).
+    #[serde(default)]
+    pub mxf_as02: bool,
     /// Container of MPEG-2 exports: `ps`, `ts`, `m2ts` or `es` (empty = from the path's
     /// extension, a program stream unless it is `.ts`, `.m2ts` / `.mts` or `.m2v`).
     #[serde(default)]
@@ -830,6 +835,7 @@ impl Default for ExportSettings {
             mxf_as11_ukdpp: String::new(),
             mxf_as10: String::new(),
             mxf_as03: String::new(),
+            mxf_as02: false,
             mpeg2_container: String::new(),
             mpeg2_422: false,
             mpeg2_quantizer: None,
@@ -987,6 +993,21 @@ impl ExportSettings {
                 return Err(ExportError::Unsupported("AS-10 metadata is written in MXF OP1a with MPEG-2 video (XDCAM HD)".into()));
             }
             cfa4_mxf::as11::check_as10_text(&self.mxf_as10).map_err(|e| ExportError::Unsupported(format!("AS-10: {e}")))?;
+        }
+        if self.mxf_as02 {
+            let bad = |m: &str| ExportError::Unsupported(format!("AS-02: {m}"));
+            if self.format != Format::MxfOp1a {
+                return Err(bad("a bundle is written in MXF OP1a"));
+            }
+            if self.sink.is_some() || self.output_file.is_some() {
+                return Err(bad("a bundle is a folder, it cannot go to a sink or an open file"));
+            }
+            if self.mxf_anc_captions || !self.mxf_as11_core.trim().is_empty() || !self.mxf_as10.trim().is_empty() || !self.mxf_as03.trim().is_empty() {
+                return Err(bad("the AS-10 / AS-11 / AS-03 frameworks and ANC captions belong to single-file OP1a, not to a bundle"));
+            }
+            if matches!(self.mxf_video_codec, MxfVideoCodec::D10 | MxfVideoCodec::XdcamHd422) {
+                return Err(bad("D-10 and XDCAM HD422 interleave sound with the picture: AS-02 components are mono files"));
+            }
         }
         if !self.mxf_as03.trim().is_empty() {
             if self.format != Format::MxfOp1a || !matches!(self.video_format(), Format::Mpeg2 | Format::H264) {
