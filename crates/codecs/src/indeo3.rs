@@ -68,6 +68,10 @@ impl VideoDecoder for Indeo3Decoder {
     fn name(&self) -> &str {
         "CFA4 Indeo 3"
     }
+    // AVI marks every sample as a sync sample: only a key frame can start a run
+    fn is_random_access(&self, sample: &[u8]) -> Option<bool> {
+        Some(cfa4_indeo3::Decoder::new().decode(sample).ok().flatten().is_some_and(|p| p.key))
+    }
     // key frames and delta frames
     fn intra_only(&self) -> bool {
         false
