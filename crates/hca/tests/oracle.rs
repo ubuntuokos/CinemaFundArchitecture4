@@ -404,6 +404,7 @@ fn a_changed_header_is_checked_again() {
         |h| h.channels = 17,
         |h| h.sample_rate = 0,
         |h| h.total_band_count = 129,
+        |h| (h.total_band_count, h.base_band_count, h.stereo_band_count, h.bands_per_hfr_group) = (64, 32, 40, 0),
     ]
     .into_iter()
     .enumerate()

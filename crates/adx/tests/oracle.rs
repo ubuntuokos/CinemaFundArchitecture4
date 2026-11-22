@@ -219,3 +219,20 @@ fn a_changed_header_is_checked_again() {
         assert!(matches!(cfa4_adx::decode_blocks(&h, &f[0x20..]), Err(cfa4_adx::Error::Invalid(_))));
     }
 }
+
+#[test]
+fn encrypted_headers_are_refused() {
+    let mut h = vec![0u8; 0x24];
+    h[..4].copy_from_slice(&[0x80, 0, 0, 0x20]);
+    h[4..8].copy_from_slice(&[3, 18, 4, 1]);
+    h[8..12].copy_from_slice(&44100u32.to_be_bytes());
+    h[16..18].copy_from_slice(&500u16.to_be_bytes());
+    h[0x1e..].copy_from_slice(b"(c)CRI");
+    h[18] = 3;
+    assert!(cfa4_adx::parse_header(&h).is_ok());
+    for flags in [8u8, 9] {
+        h[18] = 4;
+        h[19] = flags;
+        assert!(matches!(cfa4_adx::parse_header(&h), Err(cfa4_adx::Error::Unsupported(_))));
+    }
+}

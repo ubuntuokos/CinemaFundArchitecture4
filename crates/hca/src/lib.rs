@@ -156,7 +156,7 @@ fn ceil2(a: u32, b: u32) -> u32 {
 
 /// The number of high-frequency groups of a band layout; the layout must fit the 128 bands.
 fn hfr_groups(total: u8, base: u8, stereo: u8, bands_per_hfr: u8) -> Result<u32, Error> {
-    if total > 128 || total < base {
+    if total > 128 || u16::from(base) + u16::from(stereo) > u16::from(total) {
         return Err(Error::Invalid("band count"));
     }
     let a = (i32::from(total) - (i32::from(base) + i32::from(stereo))) as u32;

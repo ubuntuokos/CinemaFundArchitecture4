@@ -85,6 +85,10 @@ pub fn parse_header(buf: &[u8]) -> Result<Header, Error> {
     if buf[4] != 3 || buf[5] != 18 || buf[6] != 4 {
         return Err(Error::Unsupported("encoding other than 3 with 18-byte blocks of 4-bit samples"));
     }
+    // Version 4 with flags 8 or 9 marks an encrypted file: the samples would be noise.
+    if buf[18] == 4 && matches!(buf[19], 8 | 9) {
+        return Err(Error::Unsupported("encrypted ADX"));
+    }
     let channels = buf[7];
     if channels == 0 || usize::from(channels) > MAX_CHANNELS {
         return Err(Error::Invalid("channel count"));
