@@ -345,7 +345,11 @@ duration; fillers), each file package's network locator, and the breaches of sec
 / 5.4 in `problems`. `write_version` writes one (OP1b, material package plus a file package copy with
 a network locator per component, no essence, no Essence Container Data, no index); the file package
 copies carry a minimal file descriptor, not the component's full one. The engine imports a bundle
-(`file.import`); the export comes next (#1363).
+(`file.import`). The exporter (`ExportSettings::mxf_as02`, MXF OP1a; `mxfAs02` in `file.exportMedia`)
+writes a simple bundle: the output path is the folder, the picture and each audio channel are mono
+OP1a files in `media/` with file packages of their own, then the version file and `manifest.xml`
+(checked with `check_simple` before it is written). Not written yet: `shim.xml`, media integrity
+checks and the component's full descriptor in the version file (#1477).
 
 ## AS-11 descriptive metadata
 
