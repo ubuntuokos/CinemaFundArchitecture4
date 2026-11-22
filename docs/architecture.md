@@ -98,6 +98,7 @@ Crates are named `cfa4-<dir>` (`crates/time` is `cfa4-time`); new CFA4 crates ar
 | `g729` | L0 | ITU-T G.729 speech decoder with Annex B comfort noise, ported from bcg729 (GPL-3.0-or-later) ([README](../crates/g729/README.md)) |
 | `ilbc` | L0 | iLBC (RFC 3951) speech decoder, ported from WebRTC's fixed-point libilbc (BSD-3-Clause) ([README](../crates/ilbc/README.md)) |
 | `tta` | L0 | TTA (True Audio) lossless audio decoder, ported from libtta (LGPL-3.0) ([README](../crates/tta/README.md)) |
+| `nstream` | L0 | Nintendo BRSTM / BFSTM / BCSTM audio streams: header, block walk, PCM and DSP ADPCM sound, ported from FFmpeg (LGPL-2.1-or-later, owner-approved exception) ([README](../crates/nstream/README.md)) |
 | `adx` | L0 | CRI ADX (`.adx`) ADPCM audio decoder, ported from FFmpeg (LGPL-2.1-or-later, owner-approved exception) ([README](../crates/adx/README.md)) |
 | `expr` | L0 | CFX restricted spatial expression language: parser, type checker, bytecode compiler, fuel-limited VM; pure Rust, no I/O in the language ([README](../crates/expr/README.md); plan `CFA4-AX-INTERPRETER-001`) |
 | `hca` | L0 | CRI HCA (`.hca`) MDCT audio decoder with the keyed cipher, ported from FFmpeg (LGPL-2.1-or-later, owner-approved exception) ([README](../crates/hca/README.md)) |

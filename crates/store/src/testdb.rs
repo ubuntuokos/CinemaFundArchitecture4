@@ -8,7 +8,7 @@ use std::path::{Path, PathBuf};
 use std::process::Command;
 use std::sync::atomic::{AtomicU32, Ordering};
 
-use crate::StoreConfig;
+use crate::{LOGIN_ROLE, Store, StoreConfig};
 
 static NEXT: AtomicU32 = AtomicU32::new(0);
 
@@ -135,4 +135,90 @@ impl Drop for TestDb {
         let _ = self.command("pg_ctl").arg("-D").arg(self.dir.join("data")).args(["-m", "immediate", "stop"]).output();
         let _ = std::fs::remove_dir_all(&self.dir);
     }
+}
+
+const ROLE_SQL: &str = "\
+DO $$
+BEGIN
+  IF NOT EXISTS (SELECT 1 FROM pg_roles WHERE rolname = 'cfa4_login') THEN
+    CREATE ROLE cfa4_login LOGIN;
+  END IF;
+  IF NOT EXISTS (SELECT 1 FROM pg_roles WHERE rolname = 'cfa4_owner_tasks') THEN
+    CREATE ROLE cfa4_owner_tasks NOLOGIN;
+  END IF;
+  IF NOT EXISTS (SELECT 1 FROM pg_roles WHERE rolname = 'cfa4_app_tasks') THEN
+    CREATE ROLE cfa4_app_tasks NOLOGIN;
+  END IF;
+  IF NOT EXISTS (SELECT 1 FROM pg_roles WHERE rolname = 'cfa4_owner_cfa4_store') THEN
+    CREATE ROLE cfa4_owner_cfa4_store NOLOGIN;
+  END IF;
+  IF NOT EXISTS (SELECT 1 FROM pg_roles WHERE rolname = 'cfa4_app_cfa4_store') THEN
+    CREATE ROLE cfa4_app_cfa4_store NOLOGIN;
+  END IF;
+  IF NOT EXISTS (SELECT 1 FROM pg_roles WHERE rolname = 'cfa4_owner_ai') THEN
+    CREATE ROLE cfa4_owner_ai NOLOGIN;
+  END IF;
+  IF NOT EXISTS (SELECT 1 FROM pg_roles WHERE rolname = 'cfa4_app_ai') THEN
+    CREATE ROLE cfa4_app_ai NOLOGIN;
+  END IF;
+  IF NOT EXISTS (SELECT 1 FROM pg_roles WHERE rolname = 'cfa4_owner_cache') THEN
+    CREATE ROLE cfa4_owner_cache NOLOGIN;
+  END IF;
+  IF NOT EXISTS (SELECT 1 FROM pg_roles WHERE rolname = 'cfa4_app_cache') THEN
+    CREATE ROLE cfa4_app_cache NOLOGIN;
+  END IF;
+END $$;
+GRANT cfa4_owner_tasks TO cfa4_login;
+GRANT cfa4_app_tasks TO cfa4_login;
+GRANT cfa4_owner_cfa4_store TO cfa4_login;
+GRANT cfa4_app_cfa4_store TO cfa4_login;
+GRANT CREATE ON DATABASE postgres TO cfa4_owner_tasks;
+GRANT CREATE ON DATABASE postgres TO cfa4_owner_cfa4_store;
+GRANT cfa4_owner_ai TO cfa4_login;
+GRANT cfa4_app_ai TO cfa4_login;
+GRANT CREATE ON DATABASE postgres TO cfa4_owner_ai;
+GRANT cfa4_owner_cache TO cfa4_login;
+GRANT cfa4_app_cache TO cfa4_login;
+GRANT CREATE ON DATABASE postgres TO cfa4_owner_cache;
+";
+
+pub(crate) fn skip_or_fail(reason: impl std::fmt::Display) -> Option<(TestDb, Store)> {
+    if required() {
+        panic!("PostgreSQL 18 test cluster required but not usable: {reason}");
+    }
+    eprintln!("{reason}");
+    None
+}
+
+pub(crate) async fn setup() -> Option<(TestDb, Store)> {
+    let db = match TestDb::start() {
+        Start::Ready(db) => db,
+        Start::Skip(reason) => return skip_or_fail(reason),
+    };
+    let admin = match Store::connect(&db.admin_config()).await {
+        Ok(store) => store,
+        Err(e) => return skip_or_fail(format!("cfa4-store tests: cannot connect as the test superuser: {e}")),
+    };
+    let client = match admin.client().await {
+        Ok(client) => client,
+        Err(e) => return skip_or_fail(format!("cfa4-store tests: {e}")),
+    };
+    if let Err(e) = client.batch_execute(ROLE_SQL).await {
+        return skip_or_fail(format!("cfa4-store tests: cannot install the role model: {e}"));
+    }
+    drop(client);
+    drop(admin);
+    let store = match Store::connect(&db.config()).await {
+        Ok(store) => store,
+        Err(e) => return skip_or_fail(format!("cfa4-store tests: cannot connect as {LOGIN_ROLE}: {e}")),
+    };
+    if let Err(e) = store.migrate().await {
+        return skip_or_fail(format!("cfa4-store tests: migration failed: {e}"));
+    }
+    Some((db, store))
+}
+
+pub(crate) async fn count(store: &Store, sql: &str) -> i64 {
+    let Ok(client) = store.client().await else { return -1 };
+    client.query_one(sql, &[]).await.and_then(|r| r.try_get(0)).unwrap_or(-1)
 }
