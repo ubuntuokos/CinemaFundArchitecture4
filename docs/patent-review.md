@@ -72,6 +72,7 @@ szabadalommal védett formátumot.
 | RealVideo 1.0 / 2.0 (RV10, RV20) | dekódolás | `crates/realvideo` (az FFmpeg portja) | alap | függőben | | |
 | RealVideo 3.0 / 4.0 (RV30, RV40) | dekódolás | `crates/realvideo` `rv34` (az FFmpeg portja) | alap | függőben | | |
 | RealAudio Cook (RealAudio G2) | dekódolás | `crates/realaudio` (az FFmpeg portja) | alap | függőben | | |
+| ATRAC1 (Sony) | dekódolás | `crates/realaudio` `atrac1` (az FFmpeg portja) | alap | függőben | | |
 | ATRAC3 (Sony) | dekódolás | `crates/realaudio` (az FFmpeg portja) | alap | függőben | | |
 | ATRAC3plus (Sony) | dekódolás | `crates/realaudio` `atrac3p` (az FFmpeg portja) | alap | függőben | | |
 | ATRAC9 (Sony) | dekódolás | `crates/realaudio` `atrac9` (az FFmpeg portja) | alap | függőben | | |

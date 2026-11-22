@@ -105,6 +105,8 @@ enum Inner {
     Amr(cfa4_amr::Decoder),
     /// TTA (`cfa4-tta`): each packet is one frame with its CRC.
     Tta(cfa4_tta::Decoder),
+    /// ATRAC1 (`cfa4-realaudio`): each packet is one 212-byte sound unit per channel.
+    Atrac1(Box<cfa4_realaudio::atrac1::Decoder>),
 }
 
 /// Packets between two saved decoder states (see [`Checkpoints`]).
@@ -331,6 +333,12 @@ impl PacketDecoder {
         let d = cfa4_tta::Decoder::new(info, None).map_err(|e| CodecError::Unsupported(format!("TTA: {e}")))?;
         Ok(Self { inner: Inner::Tta(d), channels: usize::from(channels) })
     }
+    /// ATRAC1 (Matroska `A_ATRAC/AT1`) with the track's channel count.
+    pub fn atrac1(channels: usize) -> Result<Self> {
+        let d = cfa4_realaudio::atrac1::Decoder::new(channels, cfa4_realaudio::atrac1::SU_SIZE.saturating_mul(channels))
+            .map_err(|e| CodecError::Unsupported(format!("ATRAC1: {e}")))?;
+        Ok(Self { inner: Inner::Atrac1(Box::new(d)), channels })
+    }
     /// Whether this decodes Opus (which needs [`OPUS_PRE_ROLL`] of pre-roll after a seek).
     pub fn is_opus(&self) -> bool {
         matches!(self.inner, Inner::Opus { .. })
@@ -430,6 +438,7 @@ impl PacketDecoder {
                 let info = *d.info();
                 return Ok(planes.into_iter().map(|p| p.into_iter().map(|v| info.to_f32(v)).collect()).collect());
             }
+            Inner::Atrac1(d) => return d.decode(data).map_err(|e| CodecError::Decode(format!("ATRAC1: {e}"))),
             Inner::Amr(d) => {
                 let mut pcm = Vec::new();
                 d.decode_packet(data, &mut pcm).map_err(|e| CodecError::Decode(format!("AMR: {e}")))?;
@@ -498,6 +507,7 @@ impl PacketDecoder {
             Inner::TrueHd(d) => d.reset(),
             Inner::Adpcm(d) => d.reset(),
             Inner::Amr(d) => d.reset(),
+            Inner::Atrac1(d) => d.reset(),
             Inner::AacPending | Inner::MpegPending(_) | Inner::Tta(_) => {}
         }
     }
