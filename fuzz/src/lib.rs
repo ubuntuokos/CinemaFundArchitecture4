@@ -774,6 +774,12 @@ pub fn hca(data: &[u8]) {
     let _ = cfa4_hca::decode_file(data, Some(cfa4_hca::Key { key: 0xCF22_2F1F_E074_8978, subkey: 0x3B8E }));
 }
 
+pub fn nstream(data: &[u8]) {
+    if let Ok(s) = cfa4_nstream::parse(data) {
+        let _ = cfa4_nstream::decode(data, &s);
+    }
+}
+
 pub fn shorten(data: &[u8]) {
     let _ = cfa4_shorten::probe(data);
     let _ = cfa4_shorten::decode_file(data);
@@ -915,11 +921,15 @@ pub const TARGETS: &[(&str, &str, Target)] = &[
     ("musepack", "cfa4-musepack", musepack),
     ("shorten", "cfa4-shorten", shorten),
     ("adx", "cfa4-adx", adx),
+<<<<<<< HEAD
     ("acm", "cfa4-acm", acm),
     ("roq", "cfa4-roq", roq),
     ("mve", "cfa4-mve", mve),
     ("thp", "cfa4-thp", thp),
     ("mobiclip", "cfa4-mobiclip", mobiclip),
+=======
+    ("nstream", "cfa4-nstream", nstream),
+>>>>>>> r1570
     ("hca", "cfa4-hca", hca),
     ("tak", "cfa4-tak", tak),
     ("smacker", "cfa4-smacker", smacker),
