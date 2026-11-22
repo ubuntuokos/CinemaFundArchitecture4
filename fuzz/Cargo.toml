@@ -71,6 +71,7 @@ cfa4-sstp = { path = "../crates/sstp" }
 cfa4-evc = { path = "../crates/evc" }
 cfa4-cavs = { path = "../crates/cavs" }
 cfa4-lagarith = { path = "../crates/lagarith" }
+cfa4-indeo45 = { path = "../crates/indeo45" }
 cfa4-magicyuv = { path = "../crates/magicyuv" }
 cfa4-g729 = { path = "../crates/g729" }
 cfa4-ilbc = { path = "../crates/ilbc" }
@@ -472,6 +473,13 @@ bench = false
 [[bin]]
 name = "cavs"
 path = "fuzz_targets/cavs.rs"
+test = false
+doc = false
+bench = false
+
+[[bin]]
+name = "indeo45"
+path = "fuzz_targets/indeo45.rs"
 test = false
 doc = false
 bench = false

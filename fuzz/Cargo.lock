@@ -355,6 +355,7 @@ dependencies = [
  "cfa4-isobmff",
  "cfa4-j2k",
  "cfa4-jxl",
+ "cfa4-indeo45",
  "cfa4-lagarith",
  "cfa4-lcevc",
  "cfa4-magicyuv",
@@ -497,6 +498,13 @@ name = "cfa4-jxl"
 version = "0.10.0"
 dependencies = [
  "rayon",
+ "thiserror",
+]
+
+[[package]]
+name = "cfa4-indeo45"
+version = "0.10.0"
+dependencies = [
  "thiserror",
 ]
 

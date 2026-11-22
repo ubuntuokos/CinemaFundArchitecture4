@@ -47,6 +47,7 @@ pub mod hap;
 pub mod huffyuv;
 pub mod hw;
 mod hw_frame;
+pub mod indeo45;
 pub mod j2k;
 pub mod lagarith;
 pub mod lcevc;
@@ -116,7 +117,7 @@ impl From<CodecError> for cfa4_media::MediaError {
 }
 
 /// Our own (pure-Rust) decoders, in the order they are tried.
-const BUILTIN_FACTORIES: [VideoDecoderFactory; 25] = [
+const BUILTIN_FACTORIES: [VideoDecoderFactory; 26] = [
     video::h264_factory,
     video::hevc_factory,
     video::vp8_factory,
@@ -136,6 +137,7 @@ const BUILTIN_FACTORIES: [VideoDecoderFactory; 25] = [
     dirac::dirac_factory,
     huffyuv::huffyuv_factory,
     lagarith::lagarith_factory,
+    indeo45::indeo45_factory,
     utvideo::utvideo_factory,
     magicyuv::magicyuv_factory,
     evc::evc_factory,
