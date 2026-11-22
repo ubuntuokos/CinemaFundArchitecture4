@@ -112,6 +112,7 @@ const LAYERS: &[(&str, u8)] = &[
     ("live", 1),
     ("sandbox", 1),
     ("tasks", 2),
+    ("store", 5),
     ("edit", 2),
     ("objtrack", 2),
     ("codecs", 2),

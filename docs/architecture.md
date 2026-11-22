@@ -25,7 +25,7 @@ Design principles:
 
 ```text
  L6  apps/cfa4 · apps/cfa4-cli · apps/cfa4-studio-host · apps/cfa4-fetch
- L5  ui-egui · automation · tcsync-io · surface · platform · gstreamer (cfa4-gstreamer, optional) · ffmpeg (cfa4-ffmpeg, optional) · obs (cfa4-obs)
+ L5  ui-egui · automation · store (cfa4-store) · tcsync-io · surface · platform · gstreamer (cfa4-gstreamer, optional) · ffmpeg (cfa4-ffmpeg, optional) · obs (cfa4-obs)
  L4  engine
  L3  render · gpu · export · smart-edit · qc · golden (test-only)
      DCP validation: dcp-validate · dcp-inspect · DCP mastering: dcpomatic · downloads: fetch-client
@@ -112,6 +112,7 @@ Crates are named `cfa4-<dir>` (`crates/time` is `cfa4-time`); new CFA4 crates ar
 | `live` | L1 | `cfa4-live`: live graphics plumbing (credits plan C10): the live page server for OBS's Browser Source on **127.0.0.1 only** (the program picture as a transparent PNG, status, the cue's sound with byte ranges; other host names and methods refused), an obs-websocket 5 client over a minimal RFC 6455 WebSocket client; no rendering and no workspace dependencies ([README](../crates/live/README.md), [credits.md](credits.md)) |
 | `sandbox` | L1 | run-time security layer ([CFA4-SECURITY-001](plans/CFA4-SECURITY-001.md) B1): Landlock + seccomp profile of every CFA4 process kind (GUI, engine, media host, studio host, downloader, plug-in host, model converter), strict by default (D4), the report behind `security.status`; no `unsafe` (safe `landlock` and `seccompiler` crates), no workspace dependencies ([README](../crates/sandbox/README.md)) |
 | `tasks` | L2 | `cfa4-tasks`: CFA4-wide task and resource infrastructure (ACS, [ADR 0008 in the AI repo](../docs/plans/CFA4-ADAPTIVE-CAPABILITY-001-osszevetes.md)): nominal and current resources kept apart (RAM, cgroup limits, PSI, VRAM from sysfs), the resource manager with atomic reservations and waiting reasons, the monitor with hysteresis, the execution-path planner with time estimates, the task queue (classes, priorities, timed starts in IANA zones through `chrono` with the IANA database bundled in `jiff`, leases, missed-start decisions); no `unsafe`, depends on `cfa4-route` for the device probe |
+| `store` | L5 | `cfa4-store`: CFA4's PostgreSQL client ([plan](plans/CFA4-TASKSTORE-PG-001.md), PG-1/PG-2): pool (`tokio-postgres` + `deadpool-postgres`, Unix socket), embedded migrations with one step back, the `cfa4-db-setup` cluster setup command, the `tasks` schema, and the `TaskBackend` trait with PostgreSQL and in-memory implementations of the `cfa4-tasks` queue; a missing server is a handled error, editing and playback never need it; no `unsafe` ([README](../crates/store/README.md)) |
 | `edit` | L2 | pure edit algebra (insert, overwrite, razor, ripple, roll, slip, slide, rate stretch…; text-based editing: `edit::transcript`) |
 | `credits` | L2 | credits sequences from a spreadsheet: CSV/TSV reader, page / content / letter styles, layout into graphic clips (rolls and cards) ([README](../crates/credits/README.md), [credits.md](credits.md)) |
 | `speech` | L2 | speech-to-text: `Transcriber` trait, Whisper model catalogue (downloads run in `cfa4-fetch`), pure-Rust Whisper inference on candle with word timestamps (feature `whisper`), speaker labelling ([transcripts.md](transcripts.md)) |
