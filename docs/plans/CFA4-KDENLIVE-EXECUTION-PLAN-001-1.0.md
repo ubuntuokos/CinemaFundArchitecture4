@@ -40,6 +40,7 @@
 
 - `VISION.md` §2.1–2.4, §5, §6 (Qt6 az első; MI helyi; gyártófüggetlen gyorsítás; MI-kapuk); `AGENTS.md` (nincs összeomlás, clean-room kodekekre, GPL-3.0-or-later, nincs fizetős rész).
 - `coordination.md` §2.8 (projekthatár), §2.10 (fejlesztés csak jóváhagyott terv alapján), §2.11 (terv csak a repóban), §2.6 (30-nál több nyitott PR esetén új munka csak a tulajdonos kérésére; **a lekérdezéskor (2026-11-22) 60 körüli nyitott PR volt**, ezért minden hullám indításához tulajdonosi kérés kell).
+- **Import kötelező, export nem feltétel** (István, 2026-11-22; megerősíti a 2026-10-25-i döntést): a `.kdenlive` projektfájlnak importálhatónak kell lennie (K1, W1 első eleme); Kdenlive/MLT-exportra nincs szükség, és nem kerül a tervbe.
 - Alapterv 12. pont döntései változatlanok: K1 kötelező és **nincs Kdenlive/MLT-export**; az MLT csak tesztorákulum (E11); a backend-sorrend saját motor → FFmpeg ≥ 9.0.2 → GStreamer a `cfa4-route` alatt (ADR 0005); az x264/x265/LAME a felhasználó csomagja (K62); Qt Widgets idővonal.
 - **MI-szabály:** minden MI-funkció csak az ADR 0008 megfelelő kapuja után. A K2 az egyetlen kivétel (ADR 0008 F0). A V1-A nem MI-funkció (jóváhagyva 2026-11-21).
 - Az ADR 0003, ADR 0005 és a render-terv már jóváhagyott függőségei nem nyílnak újra itt.
