@@ -363,6 +363,14 @@ segments); `MxfFile::as11` returns what a file carries. `parse_framework_text` a
 `parse_segments_text` read the bmx text forms (`Name: value` lines; `part/total start duration`
 with timecodes or frame counts). Codec shims (AVC-Intra, XDCAM HD422, D-10) are not enforced.
 
+### AS-07 (Archive and Preservation, Baseband Shim)
+
+`as07::check_baseband` (and `baseband_problems`) checks a read file against Appendix J of AMWA AS-07
+(`specs/amwa/as-07-mxf-archive-and-preservation-spec.pdf`): OP1a, one picture track of JPEG 2000 or ST 384
+uncompressed pictures with 8, 10, 12 or 16 bit components, no clip wrapping, linear PCM sound at 48 kHz, 16 or
+24 bit. DMS-AS-07 metadata, the raster subset, several timecodes, captions and content integrity are not
+covered.
+
 ### AS-10 (MXF for Production)
 
 `As11::as10` holds the AMWA AS-10 v1.1 DMS_AS_10_Core framework (`ShimName` required; `Type`,
