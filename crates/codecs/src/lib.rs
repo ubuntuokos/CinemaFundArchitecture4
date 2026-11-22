@@ -29,6 +29,7 @@
 //! - [`AmvSource`]: AMV (`.amv`) video (JPEG variant, full range YUV 4:2:0) with IMA ADPCM sound.
 //! - [`MveSource`]: Interplay MVE (`.mve`) video (8-bit palette or RGB 5:5:5) with PCM or DPCM sound.
 //! - [`Y4mSource`]: uncompressed YUV4MPEG2 (`.y4m`) video, frames read on demand.
+//! - [`NstreamSource`]: Nintendo BRSTM / BFSTM / BCSTM (`.brstm`, `.bfstm`, `.bcstm`) audio streams (PCM or DSP ADPCM).
 //! - [`openers`]: the openers to register with the engine's media pool.
 
 #![cfg_attr(not(test), deny(clippy::unwrap_used, clippy::expect_used, clippy::panic, clippy::unimplemented, clippy::todo, clippy::unreachable))]
@@ -65,6 +66,7 @@ pub mod mp4;
 pub mod mpeg;
 pub mod mve;
 pub mod mxf;
+pub mod nstream;
 pub mod ogg;
 pub mod realmedia;
 pub mod roq;
@@ -96,6 +98,7 @@ pub use mp4::Mp4Source;
 pub use mpeg::MpegSource;
 pub use mve::MveSource;
 pub use mxf::MxfSource;
+pub use nstream::NstreamSource;
 pub use ogg::OggSource;
 pub use realmedia::RmSource;
 pub use roq::RoqSource;
@@ -231,6 +234,7 @@ pub fn openers() -> Vec<cfa4_media::Opener> {
         bink::opener,
         thp::opener,
         mobiclip::opener,
+        nstream::opener,
         smacker::opener,
         roq::opener,
         amv::opener,

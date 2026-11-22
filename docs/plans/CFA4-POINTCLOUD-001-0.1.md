@@ -1,5 +1,11 @@
 # CFA4-POINTCLOUD-001 – pontfelhő (Potree-donorvizsgálattal), 0.1
 
+> **[MÓD-7] MÓDOSÍTÁS JÓVÁHAGYÁSRA VÁR** (egyeztetés: [`CFA4-DNEG-VFX-EGYEZTETES-001`](CFA4-DNEG-VFX-EGYEZTETES-001-0.1.md) K-3, K-7, D-3). A jóváhagyásig a 0.1 szöveg érvényes; utána:
+> - A PC-4 render-kimenet a render-terv C0 job-szerződésén és a VFX-001 X-5 EXR-szerződésén megy (a DNEG N2 mintája), nem külön protokollon.
+> - A pontfelhő-effektek (scatter, térbeli maszk) a VFX-6 mátrixsorain jelennek meg; második részecskemotor nincs. A pontfelhő mátrixsora: `DNEG-M6`.
+> **[MÓD-8] 3D videó-projekt-függő (István, 2026-11-22 15:36; egyeztetés: [`CFA4-DNEG-VFX-EGYEZTETES-001`](CFA4-DNEG-VFX-EGYEZTETES-001-0.1.md) K-5, D-12).** A VISION §8 kérdése így dőlt el: a 3D nem globális szint, hanem attól függ, mit importált a felhasználó az adott projektbe; a 3D-állapot a projektben tárolódik, 3D-tartalom nélküli projektet nem érint. A pontfelhő-képesség csak olyan projektben aktív, amely pontfelhőt importált; a PC-0 előfeltétele („VISION §8”) ennek megfelelően szűkül, a „kell-e egyáltalán” (§8 2. pont) kérdés projektfüggő bekapcsolással kezelhető. A jóváhagyásig a 0.1 szöveg érvényes.
+> - **Donor-tények újraolvasva (2026-11-22):** `potree/potree` HEAD 2026-11-20 (BSD-2, © 2011–2020 Markus Schütz); `potree/PotreeConverter` HEAD 2026-11-02, legutóbbi címke 2.1.5 (BSD-2, © 2020).
+
 > **Állapot:** JÓVÁHAGYVA (István, 2026-11-21 22:45, Europe/Budapest). **Kódolási engedélyt nem ad:** minden fázis külön tulajdonosi engedélyt igényel (coordination.md §2.10). **Dátum:** 2026-11-21 · **Kérte:** István (ubuntuokos).
 > **Alap:** CFA4 `main` @ `97d7982f`; ez a dokumentum csak dokumentáció.
 > **Előfeltétel kódhoz:** VISION §8 (3D/VFX mélysége) és az [ARF](CFA4-ARF-001-0.1.md) jóváhagyása.

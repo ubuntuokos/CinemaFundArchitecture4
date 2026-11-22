@@ -220,3 +220,13 @@ keverhet.
   fájlrendszeren marad, a DB-ben csak hivatkozás és SHA-256.
 - **ADR-számozás:** az AI-réteg ADR-je 2026-11-07-én 0006-ról 0008-ra változott (CFA4-AI_modules #32), mert
   itt a 0006 a BacklotHub PostgreSQL-döntése, a 0007 a Media Services.
+
+## 13. Lezárt kérdések (tulajdonosi válaszok, 2026-11-22)
+
+1. és 2. kérdés: a terv javaslata szerint, a terv szövege változatlan.
+3. kérdés: a `cfa4-store` (PG-1, PG-2) **most** kerül a CFA4 főágba, mert egyes projektek a hiánya
+   miatt állnak. Az átvétel nem várja meg az AI-workereket; a feladatok a motorban memóriában
+   maradnak (a vágás és a lejátszás nem függhet az adatbázistól), a tartós tár az adatbázis
+   mellé kerül, és az alkalmazás bekötése külön lépés.
+4. kérdés: az írási jog megvan a CFA4 repóban, de a hatékonyság miatt az átvételt **külön szál**
+   viszi, nem az AI-réteg szála.
