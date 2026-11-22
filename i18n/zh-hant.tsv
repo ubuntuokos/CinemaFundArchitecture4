@@ -4896,3 +4896,7 @@ export.summary	Low	低
 	Validate DCP…	驗證 DCP…
 	the engine sent no profiles	引擎未傳送任何設定檔
 	{n} files checked	已檢查 {n} 個檔案
+
+# AS-02 export
+	Write an AS-02 bundle (the path is a folder)	寫入 AS-02 套件(路徑為資料夾)
+	AS-02	AS-02

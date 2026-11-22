@@ -4906,3 +4906,7 @@
 	Validate DCP…	DCPを検証…
 	the engine sent no profiles	エンジンからプロファイルが送られませんでした
 	{n} files checked	{n} 個のファイルを確認しました
+
+# AS-02 export
+	Write an AS-02 bundle (the path is a folder)	AS-02バンドルを書き出す(パスはフォルダー)
+	AS-02	AS-02

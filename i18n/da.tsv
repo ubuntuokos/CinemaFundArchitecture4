@@ -4899,3 +4899,7 @@ export.summary	Low	lav
 	Validate DCP…	Valider DCP…
 	the engine sent no profiles	motoren sendte ingen profiler
 	{n} files checked	{n} filer kontrolleret
+
+# AS-02 export
+	Write an AS-02 bundle (the path is a folder)	Skriv en AS-02-pakke (stien er en mappe)
+	AS-02	AS-02

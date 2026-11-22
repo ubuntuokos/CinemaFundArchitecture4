@@ -4891,3 +4891,7 @@
 	Validate DCP…	DCP 검증…
 	the engine sent no profiles	엔진이 프로필을 보내지 않았습니다
 	{n} files checked	파일 {n}개 확인함
+
+# AS-02 export
+	Write an AS-02 bundle (the path is a folder)	AS-02 번들 쓰기(경로는 폴더)
+	AS-02	AS-02
