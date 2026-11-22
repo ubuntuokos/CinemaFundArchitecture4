@@ -81,7 +81,7 @@ fidelity and the remaining work.
 | AMR-NB / AMR-WB | audio | `crates/amr` | ported | yes | no |
 | Speex | audio | `crates/speex` | ported | yes: Ogg Speex | no |
 | TTA (True Audio) | audio | `crates/tta` | ported | yes | no |
-| RealAudio Cook / SIPR / 1.0 (14.4) / 2.0 (28.8), ATRAC3, ATRAC3plus, ATRAC9 | audio | `crates/realaudio`, `crates/atracenc` | ported | yes: in RealMedia (.rm, .rmvb); ATRAC3 also in WAV (.wav, .at3), ATRAC3plus in WAV and OpenMG (.at3, .oma, .aa3), ATRAC9 in WAV (.at9) | yes: ATRAC3 (.at3) in Tools ▸ Audio Tools ▸ AT9/AT3 Converter |
+| RealAudio Cook / SIPR / 1.0 (14.4) / 2.0 (28.8), ATRAC1, ATRAC3, ATRAC3plus, ATRAC9 | audio | `crates/realaudio`, `crates/atracenc` | ported | yes: in RealMedia (.rm, .rmvb); ATRAC1 in MiniDisc (.aea) and Matroska, ATRAC3 also in WAV (.wav, .at3), ATRAC3plus in WAV and OpenMG (.at3, .oma, .aa3), ATRAC9 in WAV (.at9) | yes: ATRAC3 (.at3) in Tools ▸ Audio Tools ▸ AT9/AT3 Converter |
 | Shorten | audio | `crates/shorten` | ported | yes | no |
 | CRI ADX | audio | `crates/adx` | ported | yes | no |
 | CRI HCA | audio | `crates/hca` | ported | yes: unencrypted streams; keyed streams through the library API | no |
