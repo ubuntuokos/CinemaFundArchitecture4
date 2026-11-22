@@ -82,10 +82,13 @@ and decoder cannot disagree on them.
 - Tier-2: tag trees, Lblock, Table B.4 pass counts, bit stuffing; any progression and precincts;
   one tile-part per component (and per progression change); TLM.
 - Guard bits are chosen so that every subband's largest index fits; samples outside a
-  component's range are clamped.
+  component's range are clamped. The 2K Digital Cinema profile writes 1 guard bit, as libdcp's
+  encoder and `dcpverify` expect: the rare indices beyond the band's nominal range saturate at
+  the largest value 1 guard bit carries, and `encode_with_stats` counts them.
 - `EncodeOptions::cinema_2k(fps)` / `cinema_4k(fps)`: Rsiz 3 / 4, 12-bit X'Y'Z' (the caller
-  converts), 9/7, 5 / 6 levels, 32×32 code-blocks, CPRL, precincts 128 at resolution 0 and 256
-  above, a tile-part per component (4K: the 4K resolution in its own progression by POC, so six
+  converts), 9/7, 5 / 6 levels, the ICT on the three components (MCT = 1, which libdcp's
+  `dcpverify` requires; `mct: false` is still accepted), 32×32 code-blocks, CPRL, precincts 128 at
+  resolution 0 and 256 above, a tile-part per component (4K: the 4K resolution in its own progression by POC, so six
   tile-parts), TLM; at most 250 Mbit/s per frame and 200 Mbit/s per component (1 302 083 and
   1 041 666 bytes at 24 fps). The image and options are checked against the profile.
 

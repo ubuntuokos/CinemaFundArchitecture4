@@ -51,8 +51,13 @@ Both are **optional features**, off by default and never built for the web:
 
 - `whisper` (on `cfa4-speech`, `cfa4-engine`, and the `cfa4` / `cfa4-cli`
   apps, where it also enables downloads): candle inference.
-- `download` (`speech-download` on the engine): HTTPS downloads with rustls + RustCrypto and the
-  operating system's certificate verifier.
+- `speech-download` (on the engine): model downloads. The engine has no network code: it starts
+  the `cfa4-fetch` program (`apps/cfa4-fetch`, found next to the running program or through
+  `CFA4_FETCH`), which confines itself with the `fetch` profile of `cfa4-sandbox` (writes only the
+  model directory, connects out only to port 443 or the configured HTTPS proxy, starts no
+  programs) and downloads over HTTPS with rustls and the operating system's certificate verifier
+  ([CFA4-SECURITY-001](plans/CFA4-SECURITY-001.md) D5). Build it with `cargo build -p cfa4-fetch`
+  next to `cfa4-cli`; without the kernel protections it refuses to download (plan D4).
 
 Without `whisper`, and with no recogniser installed, `transcript.generate` and Transcribe Sequence
 are disabled, with "speech-to-text is not available in this build" as the reason (`describe`,

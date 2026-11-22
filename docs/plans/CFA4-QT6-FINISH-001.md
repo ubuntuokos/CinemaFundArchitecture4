@@ -1,7 +1,8 @@
 # CFA4-QT6-FINISH-001 – a Qt6 GUI befejezése és az egui eltávolítása
 
-**Állapot:** FINAL 1.2 – a tulajdonos 2026-11-14-én jóváhagyta (1.1: 2026-11-10; 1.0: 2026-11-08).
-Az 1.2 változásai: D2 és D3 eldőlt, a Q4.3 a tulajdonos 2026-11-12-i és 2026-11-14-i döntése szerint
+**Állapot:** FINAL 1.3 – a tulajdonos 2026-11-15-én jóváhagyta (1.2: 2026-11-14; 1.1: 2026-11-10;
+1.0: 2026-11-08). Az 1.3 változása: a Q4.3-ba bekerült a futásidejű függőségek mérése (a fejlesztő
+kérte, a tulajdonos jóváhagyta). Az 1.2 változásai: D2 és D3 eldőlt, a Q4.3 a tulajdonos 2026-11-12-i és 2026-11-14-i döntése szerint
 (a csomagok semmilyen úton nem indítanak egui-t), a Q2 és a Q5.3 ehhez igazítva. Fejlesztés csak e
 terv szerint folyik; a terv minden további módosítása után a munka a tulajdonos újabb jóváhagyásáig
 áll (`docs/coordination.md` §2.10).
@@ -113,6 +114,10 @@ megszűnt, a Q4 ehhez igazodik:
    - **.deb, tar.gz, AppImage, Flatpak**: a csomagok nem tartalmazzák az egui binárisát (`cfa4`);
      a `cfa4` parancs megmarad, de a Qt6 GUI-t indítja (a `cfa4-qt` indítója), hogy a terminálból
      megszokott parancs is működjön. A csomagépítés (`package.sh`) az egui-t nem fordítja.
+   - **Futásidejű függőségek mérése** (F2-01 / F9, `.github/workflows/cfa4-runtime-deps.yml`,
+     `scripts/dev/audit-runtime-deps.sh`; 1.3, tulajdonosi jóváhagyás 2026-11-15): csak azt méri, ami
+     a csomagokba kerül, vagyis a motort (`cfa4-cli`), a csomagolt funkciókkal; az egui-t nem fordítja
+     és nem méri.
    - Az egui forrása (`apps/cfa4`, `crates/ui-egui`) ettől még a tárolóban marad a Q5-ig; fejlesztői
      gépen `cargo run -p cfa4` továbbra is elérhető.
 

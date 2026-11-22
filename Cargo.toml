@@ -25,6 +25,7 @@ repository = "https://github.com/ubuntuokos/CinemaFundArchitecture4"
 # internal
 cfa4-time = { path = "crates/time" }
 cfa4-route = { path = "crates/route" }
+cfa4-tasks = { path = "crates/tasks" }
 cfa4-geom = { path = "crates/geom" }
 cfa4-color = { path = "crates/color" }
 cfa4-bitstream = { path = "crates/bitstream" }
@@ -35,6 +36,7 @@ cfa4-mxf = { path = "crates/mxf" }
 cfa4-cfb = { path = "crates/cfb" }
 cfa4-mpegts = { path = "crates/mpegts" }
 cfa4-st2110 = { path = "crates/st2110" }
+cfa4-io-core = { path = "crates/io-core" }
 cfa4-mpeg2v = { path = "crates/mpeg2v" }
 cfa4-dv = { path = "crates/dv" }
 cfa4-lcevc = { path = "crates/lcevc" }
@@ -84,10 +86,17 @@ cfa4-g729 = { path = "crates/g729" }
 cfa4-ilbc = { path = "crates/ilbc" }
 cfa4-tta = { path = "crates/tta" }
 cfa4-shorten = { path = "crates/shorten" }
+cfa4-adx = { path = "crates/adx" }
+cfa4-hca = { path = "crates/hca" }
 cfa4-tak = { path = "crates/tak" }
+cfa4-smacker = { path = "crates/smacker" }
+cfa4-acm = { path = "crates/acm" }
+cfa4-roq = { path = "crates/roq" }
+cfa4-mve = { path = "crates/mve" }
 cfa4-realvideo = { path = "crates/realvideo" }
 cfa4-realmedia = { path = "crates/realmedia" }
 cfa4-realaudio = { path = "crates/realaudio" }
+cfa4-atracenc = { path = "crates/atracenc" }
 cfa4-musepack = { path = "crates/musepack" }
 cfa4-av1 = { path = "crates/av1" }
 cfa4-av2 = { path = "crates/av2" }
@@ -112,6 +121,7 @@ cfa4-tts-text = { path = "crates/tts-text" }
 cfa4-render = { path = "crates/render" }
 cfa4-gpu = { path = "crates/gpu" }
 cfa4-scopes = { path = "crates/scopes" }
+cfa4-objtrack = { path = "crates/objtrack" }
 cfa4-qc = { path = "crates/qc" }
 cfa4-export = { path = "crates/export" }
 cfa4-smart-edit = { path = "crates/smart-edit" }
@@ -130,6 +140,7 @@ rsmpeg = { version = "0.18.1", path = "vendor/ffmpeg-bindings/rsmpeg", default-f
 rusty_ffmpeg = { version = "0.18.1", path = "vendor/ffmpeg-bindings/rusty_ffmpeg" }
 cfa4-metrics = { path = "crates/metrics" }
 cfa4-sandbox = { path = "crates/sandbox" }
+cfa4-fetch-client = { path = "crates/fetch-client" }
 
 # foundation
 thiserror = "2"
@@ -145,8 +156,9 @@ roxmltree = "0.21"
 aes = "0.9"
 hmac = "0.13"
 sha1 = "0.11"
+sha2 = "0.11"
 rsa = { version = "0.10", default-features = false, features = ["std", "encoding", "pkcs1v15"] }
-base64 = "0.22"
+base64 = "0.23"
 cfa4-docpath = { version = "0.1.0", path = "vendor/cfa4-libs/docpath" }
 
 # ui
@@ -193,13 +205,34 @@ opt-level = 3
 [profile.dev.package.cfa4-shorten]
 opt-level = 3
 
+[profile.dev.package.cfa4-adx]
+opt-level = 3
+
+[profile.dev.package.cfa4-hca]
+opt-level = 3
+
 [profile.dev.package.cfa4-tak]
+opt-level = 3
+
+[profile.dev.package.cfa4-smacker]
+opt-level = 3
+
+[profile.dev.package.cfa4-acm]
+opt-level = 3
+
+[profile.dev.package.cfa4-roq]
+opt-level = 3
+
+[profile.dev.package.cfa4-mve]
 opt-level = 3
 
 [profile.dev.package.cfa4-realvideo]
 opt-level = 3
 
 [profile.dev.package.cfa4-realaudio]
+opt-level = 3
+
+[profile.dev.package.cfa4-atracenc]
 opt-level = 3
 
 [profile.dev.package.cfa4-canopus]

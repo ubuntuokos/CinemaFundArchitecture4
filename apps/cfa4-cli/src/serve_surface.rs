@@ -1,6 +1,6 @@
 //! Control surfaces on `cfa4-cli serve` (CFA4-CONTROL-SURFACE-001, ADR 0012).
 //!
-//! L5 (`cfa4-surface`) reads MIDI and hidraw. This module empties those lanes on the session
+//! L5 (`cfa4-surface`) reads MIDI and hidraw (evdev when hidraw cannot be read). This module empties those lanes on the session
 //! thread and asks the engine (`surface_runtime`) to map them. `surface.inject` uses that same
 //! mapping. The MIDI Monitor is display only: clock, active sensing and MTC are left out unless
 //! the filter asks (F0 spec §5).
@@ -424,6 +424,7 @@ fn midi_upkeep(st: &mut State, prefs: &ControlSurfacePrefs, now: Instant) -> Vec
         surface_runtime::with(|rt| rt.note_ok("alsa"));
     }
     let snapshot = st.reader.as_ref().map(|reader| {
+        reader.set_relative(prefs.relative_controls());
         let lost = reader.dropped();
         let inputs = reader.inputs();
         let messages = reader.drain(4_096);

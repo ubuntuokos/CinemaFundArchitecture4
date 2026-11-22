@@ -423,6 +423,42 @@ fn d10_imx_op1a() {
     assert_eq!(theirs.len(), r.frames as usize * 720 * 512 * 2);
 }
 
+/// #1254: AS-10 metadata in an XDCAM HD422 file reads back; a shim named in the specification is
+/// checked against the essence, and AS-10 needs OP1a with MPEG-2.
+#[test]
+fn xdcam_hd422_as10_metadata_and_shims() {
+    let (p, seq, m) = project();
+    let xd = |path: &str, as10: &str| ExportSettings {
+        frame_size: Some((1280, 720)),
+        bitrate_kbps: 50_000,
+        max_bitrate_kbps: Some(50_000),
+        keyframe_distance: Some(12),
+        mpeg2_b_frames: Some(2),
+        mxf_as10: as10.into(),
+        ..settings(Format::MxfOp1a, MxfVideoCodec::XdcamHd422, path)
+    };
+    let err = |s: ExportSettings| match export(&p, seq, &s, &m, &Progress::default()) {
+        Err(ExportError::Unsupported(e)) => e,
+        other => panic!("expected a refusal, got {other:?}"),
+    };
+    // a shim of the specification: this file is 1280x720 with two channels, not what NRK needs
+    let e = err(xd(&tmp("as10_nrk.mxf"), "ShimName: NRK_HD_2012\n"));
+    assert!(e.contains("NRK_HD_2012") && e.contains("1280x720") && e.contains("8 ch"), "{e}");
+    assert!(err(xd(&tmp("as10_cnn.mxf"), "ShimName: CNN_HD_2012\n")).contains("MP@HL"));
+    assert!(err(xd(&tmp("as10_bad.mxf"), "MainTitle: no shim\n")).contains("ShimName"));
+    assert!(err(xd(&tmp("as10_unknown.mxf"), "ShimName: x\nNope: 1\n")).contains("Nope"));
+    assert!(err(ExportSettings { format: Format::MxfOpAtom, ..xd(&tmp("as10_atom.mxf"), "ShimName: x\n") }).contains("OP1a"));
+    // a shim of the user's own is not checked
+    let path = tmp("as10_own.mxf");
+    export(&p, seq, &xd(&path, "ShimName: STATION_HD_2026\nMainTitle: Híradó\nSpanningNumber: 0\n"), &m, &Progress::default()).unwrap();
+    let bytes = std::fs::read(&path).unwrap();
+    let mx = cfa4_mxf::open(&bytes).unwrap();
+    assert!(mx.warnings.is_empty(), "{:?}", mx.warnings);
+    let mut a = mx.as11.unwrap().as10;
+    a.sort();
+    assert_eq!(a, vec![("MainTitle".to_string(), "Híradó".to_string()), ("ShimName".into(), "STATION_HD_2026".into()), ("SpanningNumber".into(), "0".into())]);
+}
+
 /// XDCAM HD422 (RDD 9): 4:2:2 MPEG-2 in system-item content packages with one mono AES3 element
 /// per channel. ffmpeg decodes the picture exactly as the elementary stream export of the same
 /// settings, and each audio stream sample-exact as the channel we read back.
@@ -680,4 +716,41 @@ fn op1a_prores_interlaced() {
     // the other MXF codecs still write progressive frames only
     let dnx = ExportSettings { field_order: FieldOrder::UpperFirst, ..settings(Format::MxfOp1a, MxfVideoCodec::Dnxhr, &tmp("dnx_i.mxf")) };
     assert!(!dnx.codes_interlaced() && dnx.validate().is_err());
+}
+
+/// AS-03 (MXF Program Delivery): the DMS-AS-03 framework is written and read back, the shim of
+/// the specification is checked against the essence, the required items are enforced.
+#[test]
+fn xdcam_hd422_as03_metadata_and_shims() {
+    let (p, seq, m) = project();
+    let required = "IdentifierKind: ISAN\nIdentifier: ISAN 0000-0001-8947-0000-8-0000-0000-D\nSignalStandard: 1280/720/25p/16:9\nIntendedAFD: 1000 FullHD\n";
+    let xd = |path: &str, as03: &str| ExportSettings {
+        frame_size: Some((1280, 720)),
+        bitrate_kbps: 25_000,
+        max_bitrate_kbps: Some(25_000),
+        keyframe_distance: Some(12),
+        mpeg2_b_frames: Some(2),
+        mxf_as03: as03.into(),
+        ..settings(Format::MxfOp1a, MxfVideoCodec::XdcamHd422, path)
+    };
+    let err = |s: ExportSettings| match export(&p, seq, &s, &m, &Progress::default()) {
+        Err(ExportError::Unsupported(e)) => e,
+        other => panic!("expected a refusal, got {other:?}"),
+    };
+    // the HD shim wants 1920x1080
+    let e = err(xd(&tmp("as03_hd.mxf"), &format!("{required}ShimName: PBS NGIS HD Playout\n")));
+    assert!(e.contains("PBS NGIS HD Playout") && e.contains("1280x720"), "{e}");
+    assert!(err(xd(&tmp("as03_missing.mxf"), "ShimName: x\n")).contains("is required"));
+    assert!(err(xd(&tmp("as03_unknown.mxf"), &format!("{required}ShimName: x\nNope: 1\n"))).contains("Nope"));
+    assert!(err(ExportSettings { format: Format::MxfOpAtom, ..xd(&tmp("as03_atom.mxf"), &format!("{required}ShimName: x\n")) }).contains("OP1a"));
+    // a shim of the user's own keeps the general provisions only
+    let path = tmp("as03_own.mxf");
+    export(&p, seq, &xd(&path, &format!("{required}ShimName: STATION_HD_2026\nSlateTitle: Híradó\n")), &m, &Progress::default()).unwrap();
+    let bytes = std::fs::read(&path).unwrap();
+    let mx = cfa4_mxf::open(&bytes).unwrap();
+    assert!(mx.warnings.is_empty(), "{:?}", mx.warnings);
+    let mut a = mx.as11.unwrap().as03;
+    a.sort();
+    assert!(a.contains(&("SlateTitle".to_string(), "Híradó".to_string())) && a.contains(&("ShimName".into(), "STATION_HD_2026".into())), "{a:?}");
+    assert_eq!(a.len(), 6);
 }

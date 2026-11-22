@@ -117,6 +117,8 @@ jelzést is el kell fogadnia (a táblázat utolsó oszlopa).
 4. **PTP:** a rendszer `linuxptp` csomagja (Ubuntu-tároló, GPL-2) futtatja a `ptp4l`-t az ST 2059-2
    profillal és a `phc2sys`-t; a CFA4 csak olvassa az órát (`CLOCK_TAI`) és az állapotot (D9). A
    menedzsment-API `ts-refclk`-ja a PTP nagymester azonosítóját és tartományát jelzi.
+   A PTP-olvasó (`pmc`-lekérdezés, `PtpReport`) a `cfa4-io-core` crate-ben él (READY-V1), a `cfa4-obs` csak
+   újra-exportálja; a T1 erre épít, nem készít másodikat.
 5. **Küldési ütemezés:** a Type W tűrése a szoftveres küldőnek is elérhető. Az első lépés a kernel
    `SO_TXTIME` + ETF qdisc időzített küldése (nincs kernelmegkerülés); ha a referenciagépen mérve nem
    elég, az AF_XDP a következő lépés (külön döntés). Saját -21 elemző méri a kimenetet
