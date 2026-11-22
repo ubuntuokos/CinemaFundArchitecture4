@@ -1445,6 +1445,7 @@ dependencies = [
  "cfa4-isobmff",
  "cfa4-live",
  "cfa4-media",
+ "cfa4-model3d",
  "cfa4-mpeg2v",
  "cfa4-mpegts",
  "cfa4-mxf",
@@ -1467,6 +1468,7 @@ dependencies = [
  "log",
  "serde",
  "serde_json",
+ "sha2 0.11.1",
  "thiserror 2.0.21",
  "web-time",
 ]

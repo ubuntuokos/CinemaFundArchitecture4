@@ -22,6 +22,7 @@ pub mod mask;
 pub mod mixer;
 pub mod multicam;
 pub mod narration;
+pub mod scene3d;
 pub mod studio;
 pub mod text_animator;
 pub mod transcript;
@@ -44,6 +45,7 @@ pub use mask::{Mask, MaskMode, MaskPath, MaskVertex, TrackMethod, Tracker};
 pub use mixer::{AutomationMode, InputMap, MixerStrip, TrackSend};
 pub use multicam::{Camera, MergedClip, MulticamAudio, MulticamSel, MulticamSource};
 pub use narration::{Narration, VocalPitch};
+pub use scene3d::Scene3d;
 pub use studio::{LiveStudio, SourceKind, SourceTransform, StudioScene, StudioSource};
 pub use transcript::{Speaker, Transcript, Word};
 
@@ -1314,6 +1316,10 @@ pub struct Project {
     /// Schema v16.
     #[serde(default, skip_serializing_if = "LiveStudio::is_empty")]
     pub studio: LiveStudio,
+    /// The 3D assets the project references (CFA4-OPENUSD-3D-001 U1). Absent unless 3D content was
+    /// imported: there is no global 3D mode. Schema v17.
+    #[serde(default, skip_serializing_if = "Scene3d::is_empty")]
+    pub scene3d: Scene3d,
 }
 
 /// How a sequence is shown in the Timeline panel: its zoom, scroll position and track heights.
@@ -1420,6 +1426,7 @@ impl Project {
             notes: String::new(),
             credits_templates: Vec::new(),
             studio: LiveStudio::default(),
+            scene3d: Scene3d::default(),
         }
     }
 
@@ -1448,6 +1455,7 @@ impl Project {
         }
         self.search_bins.iter().for_each(|b| see(b.id.0));
         self.studio.ids().for_each(&mut see);
+        self.scene3d.ids().for_each(&mut see);
         // deleting an item leaves these entries behind: a new item taking that id would inherit them
         self.transcripts.keys().chain(self.source_graphics.keys()).chain(self.narrations.keys()).for_each(|i| see(i.0));
         // `lut.import` names LUTs `lut<id>`
