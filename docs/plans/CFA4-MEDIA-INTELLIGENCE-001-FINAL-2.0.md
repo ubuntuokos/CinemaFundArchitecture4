@@ -6,7 +6,7 @@
 **Státusz:** **APPROVED / FINAL 2.0**  
 **Jóváhagyás:** A felhasználó a `FINAL DRAFT 2.0` teljes tervét kifejezetten jóváhagyta.  
 **Végrehajtási korlát:** **A fejlesztés és a telepítés NINCS engedélyezve, NEM indulhat el.** Ez kizárólag a terv dokumentációs véglegesítése.  
-**Módosítási szabály:** FilmCraft upstream nem módosítható; későbbi implementáció kizárólag CFA4-ben, külön végrehajtási jóváhagyással.  
+**Módosítási szabály:** az upstream nem módosítható; későbbi implementáció kizárólag CFA4-ben, külön végrehajtási jóváhagyással.  
 **Igazítás (2026-11-22):** a tulajdonos kérésére a szöveg a 2026-10-31 óta hozott CFA4-döntésekhez igazodik. A név és a FINAL 2.0 jelölés nem változik, így a rá hivatkozó tervekhez nem kell nyúlni. Az eredeti szöveg a git-történetben van (`f70a4e4`, sha256 `2ce3a2db…fb06d`). A módosítások listája a 18. pontban.
 
 ## 1. Cél és hatókör
@@ -221,7 +221,7 @@ A fázisok részben párhuzamosíthatók, de a UI készültsége, kodekvalidáci
 
 ## 15. Kizárások és tilalmak
 
-Nem része: teljes CFA3 Document Manager / Office/DTP; kötelező felhő; új autoritatív DB vagy új adatbázismotor; Object Mask, Enhance Speech vagy Generative Extend funkció implementálása; Windows/macOS/Android célplatform; FilmCraft upstream módosítása; modell szállítása a CFA4 csomagjaiban, vagy licenc rögzítése és felhasználói elfogadás nélküli modell; zárt (nem GPL) kód vagy plugin; fizetős rész, licenckulcs, használati korlát vagy vízjel; jogosulatlan fejlesztés, deploy vagy telepítés.
+Nem része: teljes CFA3 Document Manager / Office/DTP; kötelező felhő; új autoritatív DB vagy új adatbázismotor; Object Mask, Enhance Speech vagy Generative Extend funkció implementálása; Windows/macOS/Android célplatform; az upstream módosítása; modell szállítása a CFA4 csomagjaiban, vagy licenc rögzítése és felhasználói elfogadás nélküli modell; zárt (nem GPL) kód vagy plugin; fizetős rész, licenckulcs, használati korlát vagy vízjel; jogosulatlan fejlesztés, deploy vagy telepítés.
 
 ## 16. Döntés és dokumentumlezárás
 
