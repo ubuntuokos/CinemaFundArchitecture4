@@ -4854,3 +4854,27 @@ export.summary	Low	alacsony
 	Recent effects	Legutóbbi effektek
 	Apply a recently used effect to the selected clips	Legutóbb használt effekt alkalmazása a kijelölt klipekre
 	No recent effects	Nincs legutóbbi effekt
+# DCP Validation window (DCP-12)
+	AS-03	AS-03
+	Choose the DCP folder.	Válaszd ki a DCP mappát.
+	DCP Validation	DCP-ellenőrzés
+	DCP folder	DCP mappa
+	DCP folder (the one holding ASSETMAP)	DCP mappa (amelyik az ASSETMAP-ot tartalmazza)
+	Evidence	Bizonyíték
+	How to fix	Javítás módja
+	Interrupted	Megszakítva
+	Not applicable	Nem alkalmazható
+	Report	Jelentés
+	Report saved: {path}	Jelentés mentve: {path}
+	Required	Kötelező
+	Rule	Szabály
+	Rules	Szabályok
+	Save JSON…	JSON mentése…
+	Save Markdown…	Markdown mentése…
+	Save report	Jelentés mentése
+	Skipped	Kihagyva
+	Standard: {standard}	Szabvány: {standard}
+	Validate	Ellenőrzés
+	Validate DCP…	DCP ellenőrzése…
+	the engine sent no profiles	a motor nem küldött profilokat
+	{n} files checked	{n} fájl ellenőrizve
