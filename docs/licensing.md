@@ -17,7 +17,8 @@
   választható workerként futhat, saját, homokozóba zárt folyamatban, a nem kereskedelmi workerek
   mintájára (CFA4-AI_modules ADR 0008 §8). A CFA4 folyamatába nem töltődik be, a CFA4 kódjába nem
   másolható és nem portolható, és nem lehet alapértelmezés. A worker licence a jegyzékben
-  szerepel, a forrása vele együtt elérhető (AGPL-3.0 13. pont), és a felület megnevezi a licencet.
+  szerepel, és a worker, valamint minden AGPL-es modell- vagy adatkészlet-komponens megfelelő
+  forrása vele együtt elérhető (AGPL-3.0 13. pont), és a felület megnevezi a licencet.
 - **Nincs fizetős rész** (a tulajdonos döntése, 2026-11-08; felváltja a 2026-10-24-i „ingyenes
   alap, fizetős kiegészítők” modellt): a CFA4 minden része ingyenes és szabadon terjeszthető.
   Nincs fizetős kiegészítő, fizetős LTS-ág vagy csomag, licenckulcs, vízjel, próbaidő vagy
@@ -114,7 +115,8 @@ process (CFA4-SECURITY-001), as non-commercial workers are (CFA4-AI_modules ADR 
 loaded into the CFA4 process, never copied or ported into CFA4's code, never a default. The model
 manifest records each component's licence in its own field (`code`, `dependencies`, `weights`,
 `dataset`; e.g. AGPL weights under an MIT worker: `weights` = AGPL-3.0), the
-worker's source is offered with it (AGPL-3.0 §13), and the UI names the licence when the worker is
+worker's source, and the corresponding source of each AGPL-licensed model or dataset component, is
+offered with it (AGPL-3.0 §13), and the UI names the licence when the worker is
 chosen. `deny.toml` keeps refusing AGPL crates as dependencies of CFA4's own code.
 
 A project's overall licence is not enough: **check the header of every file you take**, because

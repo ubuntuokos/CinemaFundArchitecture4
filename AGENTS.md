@@ -50,7 +50,8 @@ attribution and original copyright/licence requirements remain in force.
     AGPL-3.0 code and models (e.g. Ultralytics YOLO) may run as a separately downloaded, optional
     worker in its own sandboxed process, like non-commercial workers (CFA4-AI_modules ADR 0008 §8).
     Never in the CFA4 process, never copied or ported into CFA4's code, and never a default.
-    The worker records its licence, and its source is offered with it (AGPL-3.0 §13); the UI names
+    The worker records its licence; its source, and the corresponding source of each AGPL-licensed
+    model or dataset component, is offered with it (AGPL-3.0 §13); the UI names
     the licence. Details: [`docs/licensing.md`](docs/licensing.md) §3.
   - Dependencies must use GPL-3.0-compatible licences and pass `cargo deny check licenses`
     (`deny.toml`); GPL-2.0-only and AGPL dependencies are not allowed in CFA4's own crates
