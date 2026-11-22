@@ -1,6 +1,6 @@
 # VFX-0b – donor-licenc- és eredetaudit (előzetes)
 
-**Dátum:** 2026-11-22 · **Terv:** `CFA4-VFX-001` §5 (VFX-0b) · **Alap:** `docs/audit/vfx-0a/VFX-0a-donor-snapshot.md` · **Hatókör:** csak Linux (terv 2. fejezet)
+**Dátum:** 2026-11-22 · **Terv:** `CFA4-VFX-001` §5 (VFX-0b) · **Alap:** `docs/plans/CFA4-VFX-001-VFX-0A-DONOR-SNAPSHOT.md` · **Hatókör:** csak Linux (terv 2. fejezet)
 
 Olvasással készült (a függőségek forrásának letöltésével, fordítás nélkül). Ez nem jogi tanács (`docs/licensing.md`); átvétel előtt a tulajdonos és a gazda jóváhagyása kell. A márkaszűrő miatt a donor- és könyvtárnevek általánosan szerepelnek.
 
