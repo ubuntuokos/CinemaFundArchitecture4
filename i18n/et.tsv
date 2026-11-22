@@ -4899,3 +4899,7 @@ export.summary	Low	madal
 	Validate DCP…	Valideeri DCP…
 	the engine sent no profiles	mootor ei saatnud ühtegi profiili
 	{n} files checked	{n} faili kontrollitud
+
+# AS-02 export
+	Write an AS-02 bundle (the path is a folder)	Kirjuta AS-02 pakett (tee on kaust)
+	AS-02	AS-02

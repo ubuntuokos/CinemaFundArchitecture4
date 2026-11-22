@@ -4900,3 +4900,7 @@ export.summary	Low	nizka
 	Validate DCP…	Preveri DCP…
 	the engine sent no profiles	pogon ni poslal nobenih profilov
 	{n} files checked	Preverjenih datotek: {n}
+
+# AS-02 export
+	Write an AS-02 bundle (the path is a folder)	Zapiši paket AS-02 (pot je mapa)
+	AS-02	AS-02

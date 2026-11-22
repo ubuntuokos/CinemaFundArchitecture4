@@ -4900,3 +4900,7 @@ export.summary	Low	ниско
 	Validate DCP…	Провери DCP…
 	the engine sent no profiles	машината не изпрати профили
 	{n} files checked	Проверени файлове: {n}
+
+# AS-02 export
+	Write an AS-02 bundle (the path is a folder)	Запис на пакет AS-02 (пътят е папка)
+	AS-02	AS-02

@@ -4897,3 +4897,7 @@ export.summary	Low	nízká
 	Validate DCP…	Zkontrolovat DCP…
 	the engine sent no profiles	jádro neposlalo žádné profily
 	{n} files checked	Zkontrolováno souborů: {n}
+
+# AS-02 export
+	Write an AS-02 bundle (the path is a folder)	Zapsat balíček AS-02 (cesta je složka)
+	AS-02	AS-02
