@@ -4,6 +4,17 @@
 
 Ez **csak leltár**: olvasással és statikus számolással készült, a donorokat nem fordítottuk le és nem futtattuk. Az effekt-szintű besorolás (`PASS`/`BLOCKED`/`REFERENCE_ONLY`, a render-terv F1/F2 kapuja) még **nincs** kész; azt a render-terv F1/F2 keretében, az `F0-capability-gap-matrix.csv` sorain kell elvégezni. A márkaszűrő miatt a donor-repók neve nincs kiírva.
 
+## 0. Hatókör: csak Linux (tulajdonosi utasítás, 2026-11-22)
+A leltárból és az átvételből ki van zárva minden macOS-, Windows-, FreeBSD- és web-specifikus rész; ezek nem kerülnek átvételre, és nem futnak miattuk fordítások vagy tesztek (terv 2. fejezet). Statikus számolás a rögzített SHA-kon (platformfeltételes Rust-sorok és platformkönyvtárak):
+
+| Donor | `cfg(windows)` / `cfg(target_os = "macos")` sor | Platform-könyvtárak |
+|---|---|---|
+| EC-donor | 42 | `packaging/windows`, `packaging/macos`, `packaging/freebsd`, `packaging/web` |
+| Lumit-donor | 101 | `packaging/windows`, `packaging/macos`; a Flutter UI `windows/`, `macos/` mappái (a Flutter UI amúgy sem használható) |
+| Gaffer-donor | 0 | – |
+
+A CFA4 saját CI-jében nincs macOS- vagy Windows-job (az összes `runs-on` Ubuntu), és a nyitott VFX-PR-ok csak dokumentumot érintenek, ezért ezek nem indítanak ilyen jobot.
+
 ## 1. EC-donor (#11), SHA `171e92b0…`
 
 | Mérés | Érték | Jelleg |
