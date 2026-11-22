@@ -440,6 +440,7 @@ fn sample_entry(c: &Codec, private: &[u8], v: Option<&cfa4_matroska::VideoInfo>,
         }
         Codec::Other(id) if id == "V_FFV1" => crate::ffv1::sample_entry(private, w, h),
         Codec::Other(id) if id == "V_DIRAC" => crate::dirac::sample_entry(w, h),
+        Codec::Theora { private } => crate::theora::sample_entry(private, w, h),
         Codec::Other(id) if id == "V_CAVS" => crate::cavs::sample_entry(private, w, h),
         Codec::Other(id) if id == "V_JPEG2000" => crate::j2k::sample_entry(w, h),
         // ffmpeg writes JPEG 2000 as a VfW `mjp2` track
@@ -448,6 +449,12 @@ fn sample_entry(c: &Codec, private: &[u8], v: Option<&cfa4_matroska::VideoInfo>,
         // Huffyuv: the VfW BITMAPINFOHEADER sets the stream up (bit count, extradata)
         Codec::VfwFourcc { fourcc, bitmap_info_header } if fourcc.eq_ignore_ascii_case(b"HFYU") => crate::huffyuv::sample_entry(bitmap_info_header, w, h),
         Codec::VfwFourcc { fourcc, .. } if crate::canopus::codec(fourcc).is_some() => crate::canopus::sample_entry(crate::canopus::codec(fourcc)?, w, h),
+        Codec::VfwFourcc { fourcc, .. } if crate::indeo::is_indeo2(fourcc) => crate::indeo::sample_entry_indeo2(w, h),
+        // Cinepak: the VfW BITMAPINFOHEADER bit count (8: palette video) and the palette after it
+        Codec::VfwFourcc { fourcc, bitmap_info_header } if crate::cinepak::is_cinepak(fourcc) => {
+            let bits = bitmap_info_header.get(14..16).map_or(24, |b| u16::from_le_bytes([b[0], b[1]]));
+            crate::cinepak::sample_entry(bits, bitmap_info_header.get(40..).unwrap_or_default(), w, h)
+        }
         // Lagarith: the VfW BITMAPINFOHEADER bit count sets the solid-frame layout
         Codec::VfwFourcc { fourcc, bitmap_info_header } if crate::lagarith::is_lagarith(fourcc) => {
             let bits = bitmap_info_header.get(14..16).map_or(24, |b| u16::from_le_bytes([b[0], b[1]]));
@@ -464,8 +471,31 @@ fn sample_entry(c: &Codec, private: &[u8], v: Option<&cfa4_matroska::VideoInfo>,
         Codec::VfwFourcc { fourcc, bitmap_info_header } if crate::utvideo::is_utvideo(fourcc) => {
             crate::utvideo::sample_entry(*fourcc, bitmap_info_header.get(40..).unwrap_or_default(), w, h)
         }
+        // Hap: the VfW FourCC (`Hap1`, `Hap5`, `HapY`, …) names the texture format
+        Codec::VfwFourcc { fourcc, .. } if crate::hap::is_hap(fourcc) => crate::hap::sample_entry(*fourcc, w, h),
+        // DV / DVCPRO: one DIF frame per block, the same decoder as in AVI and QuickTime
+        Codec::VfwFourcc { fourcc, .. } if is_dv_fourcc(fourcc) => cfa4_isobmff::SampleEntry::dv(FourCc(dv_sample_fourcc(fourcc)), w, h),
         _ => return None,
     })
+}
+
+/// The VfW FourCCs DV streams carry (case-insensitive), as in the AVI demuxer plus the QuickTime names.
+fn is_dv_fourcc(f: &[u8; 4]) -> bool {
+    let mut f = *f;
+    f.make_ascii_lowercase();
+    matches!(&f, b"dvsd" | b"dv25" | b"dv50" | b"dvhd" | b"dvsl" | b"cdvc" | b"dvcp" | b"dvpp" | b"dvc " | b"dv5n" | b"dv5p" | b"avdv" | b"avd1")
+        || (f.starts_with(b"dvh") && f[3].is_ascii_digit())
+}
+
+/// The QuickTime sample-entry FourCC of a VfW DV FourCC (the decoder reads the DIF frame, not the name).
+fn dv_sample_fourcc(f: &[u8; 4]) -> [u8; 4] {
+    let mut f = *f;
+    f.make_ascii_lowercase();
+    match &f {
+        b"dv50" => *b"dv5n",
+        b"dvsd" | b"dv25" | b"cdvc" | b"dvhd" | b"dvsl" => *b"dvc ",
+        _ => f,
+    }
 }
 
 /// HDR static metadata from the Matroska `Colour` element.
@@ -528,16 +558,21 @@ fn codec_label(c: &Codec) -> String {
         Codec::Other(id) if id == "V_MPEG1" => "MPEG-1 Video".into(),
         Codec::VfwFourcc { fourcc, .. } if crate::utvideo::is_utvideo(fourcc) => "Ut Video".into(),
         Codec::VfwFourcc { fourcc, .. } if crate::lagarith::is_lagarith(fourcc) => "Lagarith".into(),
+        Codec::VfwFourcc { fourcc, .. } if crate::indeo::is_indeo2(fourcc) => "Indeo 2".into(),
+        Codec::VfwFourcc { fourcc, .. } if crate::cinepak::is_cinepak(fourcc) => "Cinepak".into(),
         Codec::VfwFourcc { fourcc, .. } if crate::magicyuv::is_magicyuv(fourcc) => "MagicYUV".into(),
         Codec::VfwFourcc { fourcc, .. } if crate::msvideo::kind(fourcc).is_some() => {
             crate::msvideo::kind(fourcc).map_or("", crate::msvideo::Kind::label).into()
         }
+        Codec::VfwFourcc { fourcc, .. } if crate::hap::is_hap(fourcc) => "Hap".into(),
+        Codec::VfwFourcc { fourcc, .. } if is_dv_fourcc(fourcc) => "DV".into(),
         Codec::VfwFourcc { fourcc, .. } if fourcc.eq_ignore_ascii_case(b"HFYU") => "Huffyuv".into(),
         Codec::VfwFourcc { fourcc, .. } if crate::canopus::codec(fourcc).is_some() => {
             crate::canopus::codec(fourcc).map_or("Canopus", crate::canopus::label).into()
         }
         Codec::Other(id) if id == "V_FFV1" => "FFV1".into(),
         Codec::Other(id) if id == "V_DIRAC" => "VC-2 / Dirac".into(),
+        Codec::Theora { .. } => "Theora".into(),
         Codec::Other(id) if id == "V_CAVS" => crate::cavs::NAME.into(),
         Codec::Other(id) if id == "V_JPEG2000" => "JPEG 2000".into(),
         Codec::VfwFourcc { fourcc, .. } if fourcc.eq_ignore_ascii_case(b"mjp2") => "JPEG 2000".into(),
@@ -1142,5 +1177,28 @@ mod ms_acm_tests {
                 assert_eq!((v * 8_388_608.0).round() as i32, value(i as i32, c as i32), "channel {c} sample {i}");
             }
         }
+    }
+}
+
+#[cfg(test)]
+mod vfw_fourcc_tests {
+    use cfa4_matroska::Codec;
+
+    fn entry(fourcc: &[u8; 4]) -> Option<cfa4_isobmff::SampleEntry> {
+        let mut bih = vec![0u8; 40];
+        bih[16..20].copy_from_slice(fourcc);
+        let codec = Codec::VfwFourcc { fourcc: *fourcc, bitmap_info_header: bih.clone() };
+        super::sample_entry(&codec, &bih, None, 64, 32)
+    }
+
+    /// Every FourCC with a decoder of ours opens from a `V_MS/VFW/FOURCC` track: an entry a
+    /// decoder factory takes.
+    #[test]
+    fn decoders_open_from_vfw_fourcc() {
+        for f in [b"Hap1", b"Hap5", b"HapY", b"dvsd", b"DVSD", b"dv25", b"dv50", b"dvhd", b"dvcp", b"dvpp", b"cdvc", b"dvh1", b"LAGS", b"M8RG", b"CFHD"] {
+            let e = entry(f).unwrap_or_else(|| panic!("{} has no sample entry", String::from_utf8_lossy(f)));
+            assert!(crate::make_video_decoder(&e).is_ok(), "{} has no decoder", String::from_utf8_lossy(f));
+        }
+        assert!(entry(b"ZZZZ").is_none());
     }
 }

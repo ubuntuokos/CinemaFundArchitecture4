@@ -17,6 +17,9 @@ pub enum Codec {
     Vp9 { private: Vec<u8> },
     /// `V_AV1`; payload is an `AV1CodecConfigurationRecord` (av1C).
     Av1 { av1c: Vec<u8> },
+    /// `V_THEORA`; `private` is the Xiph-laced `CodecPrivate` (identification, comment and setup
+    /// headers).
+    Theora { private: Vec<u8> },
     /// `V_APV`; payload is an `APVDecoderConfigurationRecord` (apvC), if present.
     Apv { apvc: Vec<u8> },
     /// `V_PRORES`; `fourcc` from `CodecPrivate` (e.g. `apcn`), if present.
@@ -51,12 +54,15 @@ pub enum Codec {
     Mp2,
     /// `A_MPEG/L1`.
     Mp1,
-    /// `S_TEXT/UTF8` (SubRip-style plain text).
+    /// `S_TEXT/UTF8` (SubRip-style plain text), and the obsolete `S_TEXT/ASCII` (the same,
+    /// 7-bit text, so read as UTF-8).
     SubRip,
     /// `S_TEXT/WEBVTT`, or WebM's `D_WEBVTT/{SUBTITLES,CAPTIONS,DESCRIPTIONS,METADATA}`.
     WebVtt,
     /// `S_TEXT/ASS` / `S_TEXT/SSA`; `header` is the script header from `CodecPrivate`.
     Ass { header: Vec<u8>, ssa: bool },
+    /// `S_TEXT/USF` (Universal Subtitle Format); `header` is the USF XML header from `CodecPrivate`.
+    Usf { header: Vec<u8> },
     /// Any other CodecID (kept verbatim along with `Track::codec_private`).
     Other(String),
 }
@@ -71,6 +77,7 @@ impl Codec {
             Codec::Vp9 { .. } => "vp9".into(),
             Codec::Av1 { .. } => "av1".into(),
             Codec::Apv { .. } => "apv".into(),
+            Codec::Theora { .. } => "theora".into(),
             Codec::ProRes { .. } => "prores".into(),
             Codec::Mjpeg => "mjpeg".into(),
             Codec::VfwFourcc { fourcc, .. } => String::from_utf8_lossy(fourcc).trim().to_ascii_lowercase(),
@@ -98,6 +105,7 @@ impl Codec {
             Codec::SubRip => "subrip".into(),
             Codec::WebVtt => "webvtt".into(),
             Codec::Ass { ssa, .. } => if *ssa { "ssa" } else { "ass" }.into(),
+            Codec::Usf { .. } => "usf".into(),
             Codec::Other(id) => id.clone(),
         }
     }
@@ -184,6 +192,7 @@ pub(crate) fn map_codec(id: &str, private: &[u8], audio: Option<&crate::AudioInf
         "V_VP9" => Codec::Vp9 { private: p },
         "V_AV1" => Codec::Av1 { av1c: p },
         "V_APV" => Codec::Apv { apvc: p },
+        "V_THEORA" => Codec::Theora { private: p },
         "V_PRORES" => Codec::ProRes { fourcc: private.get(..4).and_then(|f| f.try_into().ok()) },
         "V_MJPEG" => Codec::Mjpeg,
         "V_MS/VFW/FOURCC" => {
@@ -212,10 +221,11 @@ pub(crate) fn map_codec(id: &str, private: &[u8], audio: Option<&crate::AudioInf
         "A_MPEG/L3" => Codec::Mp3,
         "A_MPEG/L2" => Codec::Mp2,
         "A_MPEG/L1" => Codec::Mp1,
-        "S_TEXT/UTF8" => Codec::SubRip,
+        "S_TEXT/UTF8" | "S_TEXT/ASCII" => Codec::SubRip,
         "S_TEXT/WEBVTT" | "D_WEBVTT/SUBTITLES" | "D_WEBVTT/CAPTIONS" | "D_WEBVTT/DESCRIPTIONS" | "D_WEBVTT/METADATA" => Codec::WebVtt,
         "S_TEXT/ASS" | "S_ASS" => Codec::Ass { header: p, ssa: false },
         "S_TEXT/SSA" | "S_SSA" => Codec::Ass { header: p, ssa: true },
+        "S_TEXT/USF" => Codec::Usf { header: p },
         _ if id.starts_with("A_AAC/") => {
             if !private.is_empty() {
                 return Codec::Aac { asc: p };
@@ -258,6 +268,9 @@ mod tests {
         // legacy AAC LC 44.1k stereo → 0x12 0x10
         assert_eq!(map_codec("A_AAC/MPEG4/LC", &[], Some(&a)), Codec::Aac { asc: vec![0x12, 0x10] });
         assert_eq!(map_codec("S_TEXT/UTF8", &[], None).name(), "subrip");
+        assert_eq!(map_codec("S_TEXT/ASCII", &[], None), Codec::SubRip);
+        assert_eq!(map_codec("S_TEXT/USF", b"<USFSubtitles/>", None), Codec::Usf { header: b"<USFSubtitles/>".to_vec() });
+        assert_eq!(map_codec("S_TEXT/USF", &[], None).name(), "usf");
         assert_eq!(map_codec("X_WHATEVER", &[], None), Codec::Other("X_WHATEVER".into()));
     }
 

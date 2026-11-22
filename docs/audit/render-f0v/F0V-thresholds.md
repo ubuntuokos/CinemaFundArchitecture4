@@ -21,8 +21,8 @@ A küszöb a **mért zajból** jön, nem becslésből. A zajt `measure_noise` m�
 
 - A küszöbök a **CPU-útra, egy gépre** érvényesek. Gép- és GPU-közötti zaj (AC-04 GPU-tolerancia) a referenciagépen mérendő: **PENDING**.
 - Pontos kép-hash **nem kapu** (a libm-eltérések platformonként piros CI-t okoznának); a futás hash-ei csak a riportba kerülnek.
-- A/V drift (AC-05): a mérő kész (`cfa4_metrics::timing::av_drift`, a villanás- és sípszó-érzékelővel, `validation::compare_with`).
-  A `SyncSpec` ideiglenes határai (eltolás ≤ 20 ms, drift ≤ 1 ms) **nem mért zajból** származnak; a hivatalos érték az `sync_flash_beep`
-  fixture motoron átvitt, ≥ 10 futásos renderéből jön (PENDING). `compare` (drift nélkül) ítélete továbbra is `Incomplete`.
+- A/V drift (AC-05): mérve a motoron átvitt `sync_flash_beep` renderen (`crates/golden/tests/sync_render.rs`): eltolás −0,0208 ms (egy minta),
+  drift 0, 10 futásban azonos. Határok: eltolás ≤ 0,1 ms, drift ≤ 0,1 ms (négy minta); egy 80 ms-os hangkésés elbukik. Egy gép, CPU-út;
+  referenciagépen ismétlendő. A `compare` drift nélkül ítélete továbbra is `Incomplete`.
 - AC-07 (RSS/VRAM), AC-09 (főszál-szünet) és AC-16 (renderidő) küszöbe időalapú mérésből jön, nem ebből a mérésből: PENDING.
 - Frissítés csak `CFA4_BLESS=1`-gyel és review-zott változtatással lehet.

@@ -21,7 +21,9 @@
 
 #![deny(clippy::unwrap_used, clippy::expect_used, clippy::panic, clippy::unimplemented, clippy::todo, clippy::unreachable)]
 
+pub mod ai;
 pub mod backend;
+pub mod cache;
 pub mod dbtoml;
 pub mod migrate;
 pub(crate) mod role;
@@ -203,6 +205,29 @@ impl StoreError {
     }
 }
 
+/// Input checks shared by the typed schemas: every value from a caller is hostile, so lengths,
+/// the SHA-256 form and the UUID form are checked before they reach SQL (which checks them again).
+pub(crate) fn check_text(field: &str, value: &str, min: usize, max: usize) -> Result<(), StoreError> {
+    let n = value.chars().count();
+    if n < min || n > max || value.contains('\0') {
+        return Err(StoreError::Query { detail: format!("{field} must be {min}..={max} characters without NUL") });
+    }
+    Ok(())
+}
+
+pub(crate) fn check_sha256(field: &str, value: &str) -> Result<(), StoreError> {
+    if value.len() == 64 && value.bytes().all(|b| b.is_ascii_digit() || (b'a'..=b'f').contains(&b)) {
+        Ok(())
+    } else {
+        Err(StoreError::Query { detail: format!("{field} must be 64 lowercase hex characters") })
+    }
+}
+
+pub(crate) fn check_uuid(field: &str, value: &str) -> Result<(), StoreError> {
+    let ok = value.len() == 36 && value.bytes().enumerate().all(|(i, b)| if matches!(i, 8 | 13 | 18 | 23) { b == b'-' } else { b.is_ascii_hexdigit() });
+    if ok { Ok(()) } else { Err(StoreError::Query { detail: format!("{field} must be a UUID") }) }
+}
+
 pub(crate) fn postgres_detail(e: &tokio_postgres::Error) -> String {
     if let Some(db) = e.as_db_error() {
         let mut text = format!("{}: {}", db.code().code(), db.message());
@@ -315,6 +340,16 @@ impl Store {
     /// was applied.
     pub async fn rollback(&self, component: &str) -> Result<Option<u32>, StoreError> {
         migrate::down(self, component).await
+    }
+
+    /// The AI job store, model registry and licence acceptances in the `ai` schema.
+    pub fn ai(&self) -> ai::AiStore {
+        ai::AiStore::new(self.clone())
+    }
+
+    /// The cache index in the `cache` schema.
+    pub fn cache(&self) -> cache::CacheIndex {
+        cache::CacheIndex::new(self.clone())
     }
 
     /// The task queue in the `tasks` schema.

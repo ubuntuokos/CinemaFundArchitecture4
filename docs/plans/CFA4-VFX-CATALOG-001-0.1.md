@@ -1,5 +1,11 @@
 # CFA4-VFX-CATALOG-001 – a VFX-katalógus terve, 0.1
 
+> **[MÓD-1] MÓDOSÍTÁS JÓVÁHAGYÁSRA VÁR** (egyeztetés: [`CFA4-DNEG-VFX-EGYEZTETES-001`](CFA4-DNEG-VFX-EGYEZTETES-001-0.1.md) K-1, K-6, D-1). A jóváhagyásig a lenti 0.1 szöveg érvényes; jóváhagyás után az alábbi szűkítés **felülírja** az érintett pontokat.
+> A `CFA4-VFX-001` v1.0 (X-3, jóváhagyva 2026-11-22) szerint **egy** katalógus van: a `docs/audit/render-f0v/F0-capability-gap-matrix.csv` (`G-xx`). Ezért:
+> - **Törlődik** a külön katalógus: a §3 1. pont (generált manifeszt), a `docs/vfx-catalog.md`, a VC-A1 és VC-A4 külön-manifeszt része, a VC-1 és VC-4 fázis (az effektböngésző a meglévő effektregiszterből épül, külön manifeszt nélkül).
+> - **Marad** (a VFX-1 részeként): (a) a regisztrációs szabály: minden új effekt (OFX, VDB, kifejezés, saját) csak mátrixsorral együtt kerülhet be (VC-A5); (b) egy `cargo xtask` **konzisztencia-ellenőrzés**: a mátrix `EXISTING` effektsorai és a regisztrált `EffectDef`-ek száma/azonosítója egyezik, azonos `id` kétszer tilos; azonos név eltérő `id`-vel csak deklarált `aliases`/`integration_decision` mezővel megengedett (a VFX-001 `ec.*`-aliasa és „az azonos nevű eszköz nem ekvivalens” szabálya miatt, VC-A2 helyett) (VC-A1, VC-A2, hálózat nélkül, determinisztikusan); (c) az eredet/licenc oszlopok a VFX-001 §6 mezői (`source_project`, `license_status`), nem külön oszlopok.
+> - **Jelölés:** a lenti „G18/G11” a `gaps.md` tételeit jelenti (effektmélység / plugin-hosting), **nem** a mátrix G-18/G-11 sorát (OpenFX-host / alfa és ProRes 4444).
+
 > **Állapot:** JÓVÁHAGYVA (István, 2026-11-21 22:45, Europe/Budapest). **Kódolási engedélyt nem ad:** minden fázis külön tulajdonosi engedélyt igényel (coordination.md §2.10).
 > **Dátum:** 2026-11-21 · **Kérte:** István (ubuntuokos); a [DNEG-adaptációs terv](CFA4-DNEG-TECHNOLOGY-ADAPTATION-001-1.0.md) hivatkozott rá, de a `main`-ben nem volt ilyen terv.
 > **Alap:** CFA4 `main` @ `97d7982f`. Ez a dokumentum csak dokumentáció.

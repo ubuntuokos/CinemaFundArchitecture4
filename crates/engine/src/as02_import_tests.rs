@@ -151,3 +151,24 @@ fn not_a_bundle_is_left_to_the_other_importers() {
     assert!(e.contains("nothing could be imported"), "{e}");
     let _ = std::fs::remove_dir_all(&dir);
 }
+
+/// #1477: a bundle exported with `mxfAs02` comes back through `file.import` as one sequence with
+/// a picture track and the audio channel tracks, as long as the export.
+#[test]
+fn an_exported_bundle_imports_again() {
+    let mut s = Session::default();
+    s.execute("file.newSequence", json!({"name": "Bundle", "fps": 25.0, "width": 320, "height": 180, "video": 1, "audio": 1})).unwrap();
+    let dir = cfa4_testkit::workspace_root().join("target").join("export-tests").join(format!("engine-as02-roundtrip-{}", std::process::id()));
+    let _ = std::fs::remove_dir_all(&dir);
+    let out = dir.to_string_lossy().to_string();
+    let p = json!({"format": "mxf-op1a", "path": out, "mxfAs02": true, "range": "custom", "startSeconds": 0.0, "endSeconds": 1.0, "wait": true});
+    s.execute("file.exportMedia", p).unwrap();
+    assert!(dir.join("manifest.xml").exists() && dir.join("media").is_dir());
+    let r = s.execute("file.import", json!({"paths": [out]})).unwrap();
+    let d = &r["documents"][0];
+    assert_eq!(d["format"], "AS-02", "{r}");
+    assert_eq!(d["versions"].as_array().map(Vec::len), Some(1), "{r}");
+    assert_eq!(d["versions"][0]["placed"], 3, "picture + two audio channels: {r}");
+    assert!(d["warnings"].as_array().is_none_or(Vec::is_empty), "{r}");
+    let _ = std::fs::remove_dir_all(&dir);
+}
