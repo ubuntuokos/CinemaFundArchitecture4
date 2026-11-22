@@ -79,6 +79,11 @@ cfa4-ilbc = { path = "../crates/ilbc" }
 cfa4-musepack = { path = "../crates/musepack" }
 cfa4-shorten = { path = "../crates/shorten" }
 cfa4-adx = { path = "../crates/adx" }
+cfa4-acm = { path = "../crates/acm" }
+cfa4-roq = { path = "../crates/roq" }
+cfa4-mve = { path = "../crates/mve" }
+cfa4-thp = { path = "../crates/thp" }
+cfa4-mobiclip = { path = "../crates/mobiclip" }
 cfa4-hca = { path = "../crates/hca" }
 cfa4-tak = { path = "../crates/tak" }
 cfa4-smacker = { path = "../crates/smacker" }
@@ -530,6 +535,41 @@ bench = false
 [[bin]]
 name = "adx"
 path = "fuzz_targets/adx.rs"
+test = false
+doc = false
+bench = false
+
+[[bin]]
+name = "acm"
+path = "fuzz_targets/acm.rs"
+test = false
+doc = false
+bench = false
+
+[[bin]]
+name = "roq"
+path = "fuzz_targets/roq.rs"
+test = false
+doc = false
+bench = false
+
+[[bin]]
+name = "mve"
+path = "fuzz_targets/mve.rs"
+test = false
+doc = false
+bench = false
+
+[[bin]]
+name = "thp"
+path = "fuzz_targets/thp.rs"
+test = false
+doc = false
+bench = false
+
+[[bin]]
+name = "mobiclip"
+path = "fuzz_targets/mobiclip.rs"
 test = false
 doc = false
 bench = false
