@@ -22,7 +22,7 @@ Kiindulás: `VISION.md` §4 (Resolve: „Fusion-szerű csomópontos kompozitál�
 | Hiba | Nincs `unwrap`/`panic`/`unsafe`; minden bemenet ellenséges; mutációs fuzz | `AGENTS.md` §0 |
 | Licenc | GPL-3.0-or-later; kód csak GPL-kompatibilis forrásból, fájlszintű fejléc-ellenőrzéssel és `docs/licensing.md` §5 regisztersorral; zárt, GPL-2.0-only és AGPL kód nem; nincs fizetős rész | `AGENTS.md` |
 | Adobe | After Effects csak viselkedési referencia (megfigyelés használattal). Nincs Adobe-eszköz, -SDK/UXP-kompatibilitás vagy zárt bővítmény | `AGENTS.md` §1–2, ADR 0003 §4 |
-| Donorok | Az upstream ős, az EC-donor, a Gaffer-fork és a Kdenlive-fork **csak olvasott** forrás; a kód a CFA4-be portolódik | István döntése, 2026-10-27 |
+| Donorok | Az upstream ős, az EC-donor, a Gaffer-fork, a **Lumit-donor** (`CFA4_Lumit`, Rust+wgpu, `GPL-3.0-only`) és a Kdenlive-fork **csak olvasott** forrás; a kód a CFA4-be portolódik. A donorok a 2026-11-22-i állapoton befagyasztva maradnak a megvalósítás végéig | István döntése, 2026-10-27 és 2026-11-22 |
 | MI | Helyi, opt-in; a modell- és erőforrásszabályok az AI-terv hatásköre. Önálló GPU nélküli AI-út nincs | `VISION.md` §5 |
 | Fordítás, közös fájlok | Csak `i18n/*.tsv`; közös fájlokba (effektlisták) csak a saját sor kerül | `AGENTS.md`, `coordination.md` §2.5 |
 | Folyamat | Egy PR = egy téma; a `main`-be csak a gazda olvaszt; kész PR „Ready for review”, „Gazda: …” issue; kockázatos PR-on CodeRabbit; `Munkamenet:` sor | `coordination.md` |
@@ -63,7 +63,7 @@ Kiindulás: `VISION.md` §4 (Resolve: „Fusion-szerű csomópontos kompozitál�
 
 1. **Kifejezésmotor** (valueAtTime, wiggle, loop, property-hivatkozás), determinisztikus seeddel, a `cfa4-sandbox` korlátai szerint (nincs fájl- és hálózathozzáférés, idő- és memóriakorlát). Ez a repóban nem létezik.
 2. **Szerkesztési adatmodell és csomópont-szerkesztő** (`VfxGraph` L1-adat, Qt6-panel a meglévő munkaterület-rendszerben), a render-terv F3 szerződésére.
-3. **EC-donor (#11) effektek átvétele** a meglévő effektregiszterbe és render-pipeline-ra, a render-terv F1/F2 keretében (a korábbi BLOCKED ok, a hiányzó repo-hivatkozás, elhárult).
+3. **EC-donor (#11) és Lumit-donor effektek és modulok átvétele** a meglévő effektregiszterbe és render-pipeline-ra, a render-terv F1/F2 keretében (a korábbi BLOCKED ok, a hiányzó repo-hivatkozás, elhárult).
 4. **Részecskék kiterjesztése** a meglévő `particles` effektből (`crates/project/src/effect/vfx.rs`): emitter, erők, ütközés, sprite, checkpoint, seed+Tick determinisztika.
 5. **Referencialeltár** az After Effects 26.5 (stabil) és a béta képességeiről, `reference_status = STABLE/BETA`, a `G-xx` mátrix bővítéseként.
 6. **3D és külső 3D-backend**: csak a `VISION.md` §8 tulajdonosi döntése után (X-4, X-5).
@@ -76,7 +76,7 @@ Jelölés: a **render-terv fázisai (F3, F4, F5, C0, F9)**, az **OBJECT-MASK** �
 |---|---|---|---|---|
 | **VFX-0a** | Donor-pillanatkép rögzítése: az EC-donor (#11) és a Gaffer-donor a 2026-11-22-i állapoton marad a terv megvalósításának végéig (tulajdonosi döntés; nem frissülnek, a frissítést a tulajdonos jelzi a fejlesztő szálnak). A fork leválasztása nem előfeltétel | rögzítve: donor-SHA, elágazási pont SHA, szülő `LICENSE`/NOTICE | – | az eredet a `docs/licensing.md` §5 regiszterében |
 | **VFX-0b** | Donor-licencregiszter és fájlszintű eredet | regiszterfrissítés (PR) | VFX-0a | minden átvett fájlhoz fejléc-ellenőrzés |
-| **VFX-1** | Katalógusbővítés: `G-xx` mátrix + EC-donor F1/F2 + AE-referencialeltár | bővített `F0-capability-gap-matrix.csv`, `F1-…` audit | VFX-0b; render F1/F2 | minden sorhoz forrás; a számok (307/306/280/3032/2984) a donor rögzített SHA-ján mérve; nincs duplikátum a `G-xx` sorokkal |
+| **VFX-1** | Katalógusbővítés: `G-xx` mátrix + EC-donor és Lumit-donor F1/F2 (modulonként: kifejezés/script, csomópontgráf, roto, követés, Lottie, OFX, 3D-jelenet, AE-import, effektek; a Flutter UI nem jelölt) + AE-referencialeltár | bővített `F0-capability-gap-matrix.csv`, `F1-…` audit | VFX-0b; render F1/F2 | minden sorhoz forrás; a számok (307/306/280/3032/2984) a donor rögzített SHA-ján mérve; nincs duplikátum a `G-xx` sorokkal |
 | **VFX-2** | `VfxGraph` L1-adatmodell + parancsok (a névtérről a gazdával egyeztetve) | `crates/project` adat, `crates/engine` parancsok, additív sémaverzió | render C0 (szerződés), F3 (gráf) | régi projekt változatlanul nyílik és renderel (AC-15); ellenséges bemenet nem pánik |
 | **VFX-3** | Qt6 csomópont-szerkesztő | panel a meglévő munkaterületben, undo/redo, automatizálási azonosítók, `i18n/*.tsv` | VFX-2 | Qt-teszt, Wayland és X11; stale async válasz nem állít vissza kijelölést |
 | **VFX-4** | Kifejezésmotor | determinisztikus motor, sandbox-profil | VFX-2; `cfa4-sandbox` | seedelt `wiggle` azonos képkockát ad lineáris és véletlen elérésnél; fuel/idő/memória korlát; fuzz |
@@ -146,6 +146,8 @@ A tesztek a render-terv harnessén és kapuin (F0V, MQ-1…8, AC-01…18) futnak
 | A gazdaprojektek menet közben változnak | A VFX-csomag indulása előtt újraellenőrzés a `main`-ből; a WP-k a függőség kész állapotára várnak |
 | Azonos név, eltérő viselkedés | `ec.*`-alias, golden, paraméterösszevetés; nincs vak felülírás |
 | Licenc/eredet (fork a `storytold`-ból, külső függőségek) | VFX-0a/0b; fájlszintű fejléc; regisztersor minden átvételhez |
+| **Lumit-kód licence: `GPL-3.0-only`** a CFA4 `GPL-3.0-or-later` kikötésével szemben | A tulajdonos elfogadta (2026-11-22): a Lumit-ból átvett fájl `GPL-3.0-only` marad, fájlszintű SPDX-fejléccel és regisztersorral; a `GPL-3.0-or-later` kikötés ezekre nem terjed ki. A `docs/licensing.md` §5 regiszterét és a `cargo deny` konfigurációt a VFX-0b frissíti, a csomagolási jogi megjegyzés (`packaging/linux/copyright`) a gazdával egyeztetve |
+| A Lumit modulai kiváltják a saját hatókör egyes elemeit | A VFX-1 audit dönt elemenként (átvétel / tiszta szobás / saját építés); a 4. fejezet addig nem szűkül |
 | Márkaszűrő | Semleges nevek a repóban; a tesztet a PR előtt le kell futtatni |
 | A 3D-döntés késik | VFX-8 külön, a többit nem blokkolja |
 | 30-nál több nyitott PR (`coordination.md` §2.6) | Új munka csak a tulajdonos kérésére |
