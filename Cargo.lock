@@ -1052,6 +1052,14 @@ dependencies = [
 ]
 
 [[package]]
+name = "cfa4-adx"
+version = "0.10.0"
+dependencies = [
+ "cfa4-testkit",
+ "thiserror 2.0.21",
+]
+
+[[package]]
 name = "cfa4-amr"
 version = "0.10.0"
 dependencies = [
@@ -1257,6 +1265,7 @@ dependencies = [
  "cfa4-aac",
  "cfa4-ac3",
  "cfa4-adpcm",
+ "cfa4-adx",
  "cfa4-amr",
  "cfa4-apv",
  "cfa4-auro",
@@ -1278,6 +1287,7 @@ dependencies = [
  "cfa4-g729",
  "cfa4-h264",
  "cfa4-hap",
+ "cfa4-hca",
  "cfa4-hevc",
  "cfa4-huffyuv",
  "cfa4-iab",
@@ -1763,6 +1773,14 @@ dependencies = [
 name = "cfa4-hap"
 version = "0.10.0"
 dependencies = [
+ "thiserror 2.0.21",
+]
+
+[[package]]
+name = "cfa4-hca"
+version = "0.10.0"
+dependencies = [
+ "cfa4-testkit",
  "thiserror 2.0.21",
 ]
 
