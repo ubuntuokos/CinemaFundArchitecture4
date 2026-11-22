@@ -4871,6 +4871,10 @@ export.summary	Low	madal
 	Subtitles	Subtiitrid
 	Captions for the hearing impaired	Subtiitrid kuulmispuudega inimestele
 	Forced narrative	Sunnitud jutustus (forced narrative)
+	Silence	Vaikus
+	Detect Silence	Tuvasta vaikus
+	Remove Silence	Eemalda vaikus
+	Clear Silence Markers	Tühjenda vaikuse märgid
 # DCP Validation window (DCP-12)
 	AS-03	AS-03
 	Choose the DCP folder.	Vali DCP kaust.

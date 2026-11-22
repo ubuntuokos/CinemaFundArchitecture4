@@ -18,11 +18,14 @@
 //! - [`AudioFileSource`]: standalone compressed audio files (MP3, FLAC, AIFF, …).
 //! - [`DifSource`]: raw DV (`.dv`, `.dif`) files, decoded by `cfa4-dv`, frames read on demand.
 //! - [`RmSource`]: RealMedia (`.rm`, `.rmvb`) with RealVideo 1.0 / 2.0 / 3.0 / 4.0 video and Cook, ATRAC3, SIPR or RealAudio 1.0 / 2.0 audio.
+//! - [`SmkSource`]: Smacker (`.smk`, SMK2 and SMK4) with palette video and up to seven audio tracks.
 //! - [`EvcSource`]: raw MPEG-5 EVC Baseline (`.evc`) streams, pictures shown in their order count.
 //! - [`CavsSource`]: raw AVS1-P2 (Chinese AVS, Jizhun profile) streams (`.avs`, `.cavs`).
 //! - [`SstpSource`]: MPEG-4 Simple Studio Profile (Sony SR) elementary streams (`.m4v`), every picture intra.
 //! - [`ThpSource`]: Nintendo THP (`.thp`) JPEG video (full range YUV) with THP ADPCM sound.
 //! - [`MobiclipSource`]: Nintendo MobiClip (`.moflex`) video with FastAudio, IMA ADPCM or PCM sound.
+//! - [`RoqSource`]: id RoQ (`.roq`) video (full range YUV 4:4:4) with DPCM sound.
+//! - [`MveSource`]: Interplay MVE (`.mve`) video (8-bit palette or RGB 5:5:5) with PCM or DPCM sound.
 //! - [`Y4mSource`]: uncompressed YUV4MPEG2 (`.y4m`) video, frames read on demand.
 //! - [`openers`]: the openers to register with the engine's media pool.
 
@@ -36,6 +39,7 @@ pub mod av2_external;
 pub mod avi;
 pub mod canopus;
 pub mod cavs;
+mod ckpt;
 pub mod dif;
 pub mod dirac;
 pub mod evc;
@@ -53,9 +57,12 @@ pub mod mkv;
 pub mod mobiclip;
 pub mod mp4;
 pub mod mpeg;
+pub mod mve;
 pub mod mxf;
 pub mod ogg;
 pub mod realmedia;
+pub mod roq;
+pub mod smacker;
 pub mod sstp;
 mod stream_color;
 pub mod streams;
@@ -78,9 +85,12 @@ pub use mkv::MkvSource;
 pub use mobiclip::MobiclipSource;
 pub use mp4::Mp4Source;
 pub use mpeg::MpegSource;
+pub use mve::MveSource;
 pub use mxf::MxfSource;
 pub use ogg::OggSource;
 pub use realmedia::RmSource;
+pub use roq::RoqSource;
+pub use smacker::SmkSource;
 pub use sstp::SstpSource;
 pub use thp::ThpSource;
 pub use video::{DecodedFrame, VideoDecoder, VideoDecoderFactory};
@@ -189,7 +199,7 @@ pub fn software_video_decoder(entry: &cfa4_isobmff::SampleEntry) -> Result<Box<d
 }
 
 /// Openers for the engine's media pool (MP4/MOV, Matroska/WebM, MXF, Ogg Opus/Vorbis, MPEG TS/PS and
-/// MPEG-1/2, MPEG-4 Simple Studio Profile, MPEG-5 EVC and AVS1 video elementary streams, APV raw bitstreams, YUV4MPEG2, raw DV, RealMedia, standalone audio).
+/// MPEG-1/2, MPEG-4 Simple Studio Profile, MPEG-5 EVC and AVS1 video elementary streams, APV raw bitstreams, YUV4MPEG2, raw DV, RealMedia, Smacker, standalone audio).
 /// AV2 Annex B / IVF files are recognised and answered as unsupported ([`av2`]).
 pub fn openers() -> Vec<cfa4_media::Opener> {
     vec![
@@ -208,6 +218,9 @@ pub fn openers() -> Vec<cfa4_media::Opener> {
         realmedia::opener,
         thp::opener,
         mobiclip::opener,
+        smacker::opener,
+        roq::opener,
+        mve::opener,
         av2::opener,
         audio::opener,
     ]

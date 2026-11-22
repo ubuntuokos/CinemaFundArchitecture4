@@ -11,8 +11,10 @@ R-09,ReelForge,single maintainer; 8-bit fixed-point pixel path,medium,high,D1,pa
 R-10,avio,single maintainer; FFmpeg 7/8 only; own libav binding with unsafe,high,high,D1,reference only; keep crates/ffmpeg (existing),accepted
 R-11,rust-motion,single maintainer; shares upstream-derived code with CFA4 (duplicate),medium,high,D1,reference only for vector/path/shape ideas; no code taken,accepted
 R-12,rust-motion,overlap with Dioxuscut and CFA4 text/captions crates not decided,low,medium,F6,decide with the owner; no new crate before the overlap decision,open
-R-13,EC candidate,upstream link missing in the repository (brand filter); not audited,medium,certain,F1,coordinator supplies the link; audit then,blocked
+R-13,EC candidate,8/16-bit projects quantise after every layer; DCI-P3/X'Y'Z' and OCIO not described; alpha-stage maturity claim,high,medium,F2,run MQ-1/3/4/8 in 32 bpc at the start of F2; fall out of the POC on any MQ FAIL,open
 R-14,Blender,licence variant and version not pinned,low,certain,F5,pin version and record licence before the external-workflow phase,open
 R-15,Natron,code incompatible (older Qt; GPL); ADR 0003 A4 names openfx-misc as first pack,medium,certain,A4,capability reference only; wait for owner answer on ADR 0003 A4,open
 R-16,all Rust candidates,MSRV drift against toolchain 1.97.1,low,low,F1,only ReelForge (1.97) is near the limit; satisfied today,accepted
 R-17,all,reference machine facts (Python; driver) still PENDING,medium,certain,F0a,run render_environment.py on the reference machine,open
+R-18,EC candidate,second project model (JSON project file) conflicts with A1,medium,high,F2,import/export at the boundary only; no second timeline,open
+R-19,EC candidate,brand marks under docs/brand are not open source; repository brand filter,low,medium,F2,copy no brand assets or names into CFA4; reuse the external-helper process pattern only,open
