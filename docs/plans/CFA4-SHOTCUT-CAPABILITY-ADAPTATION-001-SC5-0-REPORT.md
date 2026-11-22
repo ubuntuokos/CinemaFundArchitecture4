@@ -48,7 +48,7 @@
 | **C6** | 3.4: „fade be/ki” | A Shotcutban háromféle: kép `brightness` kulcskockával (CPU) vagy `movit.opacity` (GPU), hang `volume` kulcskockával (`level`); az `autofade` szolgáltatás is létezik. D5 (CFA4 Fade In/Out) ezekre érvényes |
 | **C7** | 1. pont: „`.mlt` kiterjesztés és `<mlt>` gyökér” felismerés | A Shotcut-eredet a `shotcut`=1 tractor-tulajdonságból és a `shotcut:*` annotációkból ismerhető fel; a közös MLT-mag (D1) ezt dialektus-jelzőnek használja, nem kizárási feltételnek |
 
-Ezek a terv szövegét nem módosítják jóváhagyás nélkül (`docs/coordination.md` §2.10): a C1–C7 **javasolt pontosítás** az SC-5.1–5.3 indításához, a tulajdonos jóváhagyását kéri (lásd a PR leírása).
+**A C1–C7 pontosításokat István elfogadta (2026-11-22)**, és átvezetésre kerültek a tervbe (SC-5 terv, 13. pont; PR #1559).
 
 ---
 
