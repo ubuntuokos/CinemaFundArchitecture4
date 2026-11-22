@@ -77,6 +77,7 @@ cfa4-ilbc = { path = "../crates/ilbc" }
 cfa4-musepack = { path = "../crates/musepack" }
 cfa4-shorten = { path = "../crates/shorten" }
 cfa4-adx = { path = "../crates/adx" }
+cfa4-nstream = { path = "../crates/nstream" }
 cfa4-hca = { path = "../crates/hca" }
 cfa4-tak = { path = "../crates/tak" }
 cfa4-smacker = { path = "../crates/smacker" }
@@ -514,6 +515,13 @@ bench = false
 [[bin]]
 name = "adx"
 path = "fuzz_targets/adx.rs"
+test = false
+doc = false
+bench = false
+
+[[bin]]
+name = "nstream"
+path = "fuzz_targets/nstream.rs"
 test = false
 doc = false
 bench = false
