@@ -26,6 +26,7 @@ otio = ["opentimelineio>=0.18,<0.19"]
 cfa4-doctor = "cfa4_devtools.health:main"
 cfa4-qt = "cfa4_qt.__main__:main"
 cfa4-qt-shell = "cfa4_devtools.qt_app:main"
+cfa4-audit = "cfa4_audit.__main__:main"
 
 [tool.setuptools.packages.find]
 where = ["python"]
