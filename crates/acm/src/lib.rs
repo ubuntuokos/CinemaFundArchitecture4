@@ -129,8 +129,8 @@ enum Filler {
 const FILLERS: [Filler; 32] = {
     use Filler::{Bad, K12, K13, K23, K24, K34, K35, K44, K45, Linear, T15, T27, T37, Zero};
     [
-        Zero, Bad, Bad, Linear, Linear, Linear, Linear, Linear, Linear, Linear, Linear, Linear, Linear, Linear, Linear, Linear, Linear, K13, K12, T15, K24, K23,
-        T27, K35, K34, Bad, K45, K44, Bad, T37, Bad, Bad,
+        Zero, Bad, Bad, Linear, Linear, Linear, Linear, Linear, Linear, Linear, Linear, Linear, Linear, Linear, Linear, Linear, Linear, K13, K12, T15, K24,
+        K23, T27, K35, K34, Bad, K45, K44, Bad, T37, Bad, Bad,
     ]
 };
 
@@ -471,9 +471,8 @@ impl Decoder {
 }
 
 fn juggle(wrap: &mut [i32], wrap_p: usize, block: &mut [i32], block_p: usize, sub_len: usize, sub_count: usize) {
-    let mut bp = block_p;
     let mut wp = wrap_p;
-    for _ in 0..sub_len {
+    for bp in (block_p..).take(sub_len) {
         let mut p = bp;
         let mut r0 = wrap[wp] as u32;
         let mut r1 = wrap[wp + 1] as u32;
@@ -490,7 +489,6 @@ fn juggle(wrap: &mut [i32], wrap_p: usize, block: &mut [i32], block_p: usize, su
         wrap[wp] = r0 as i32;
         wrap[wp + 1] = r1 as i32;
         wp += 2;
-        bp += 1;
     }
 }
 

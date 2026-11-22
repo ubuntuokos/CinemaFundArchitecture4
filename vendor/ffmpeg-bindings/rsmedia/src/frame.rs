@@ -23,26 +23,13 @@ use ndarray::{Array2, Array3, ArrayView2, ArrayViewMut2};
 use rsmpeg::avutil::{AVChannelLayout, AVFrame};
 use rsmpeg::ffi;
 
-use yuv::{
-    BufferStoreMut, YuvConversionMode, YuvPlanarImage, YuvPlanarImageMut, YuvRange,
-    YuvStandardMatrix,
-};
+use yuv::{BufferStoreMut, YuvConversionMode, YuvPlanarImage, YuvPlanarImageMut, YuvRange, YuvStandardMatrix};
 
 /// Element types a [`FrameData`] plane may hold.
 ///
 /// The bound is what the sample helpers rely on: signed/unsigned integers and
 /// floats that can be cloned, defaulted, compared and cast between one another.
-pub trait ElementType:
-    'static
-    + Send
-    + Sync
-    + bytemuck::Pod
-    + std::fmt::Debug
-    + num_traits::Zero
-    + num_traits::NumCast
-    + num_traits::NumAssign
-{
-}
+pub trait ElementType: 'static + Send + Sync + bytemuck::Pod + std::fmt::Debug + num_traits::Zero + num_traits::NumCast + num_traits::NumAssign {}
 
 impl ElementType for u8 {}
 impl ElementType for u16 {}
@@ -163,16 +150,10 @@ impl<T> FrameData<T> {
                     return Err(no_such_plane(plane, 1));
                 }
                 let (rows, cols, components) = array.dim();
-                let flat = array
-                    .as_slice()
-                    .ok_or_else(|| not_contiguous(plane, "interleaved"))?;
-                ArrayView2::from_shape((rows, cols * components), flat)
-                    .map_err(|error| RsmediaError::msg(format!("Plane {plane}: {error}")))
+                let flat = array.as_slice().ok_or_else(|| not_contiguous(plane, "interleaved"))?;
+                ArrayView2::from_shape((rows, cols * components), flat).map_err(|error| RsmediaError::msg(format!("Plane {plane}: {error}")))
             }
-            Self::Planar(planes) => planes
-                .get(plane)
-                .map(|plane| plane.view())
-                .ok_or_else(|| no_such_plane(plane, planes.len())),
+            Self::Planar(planes) => planes.get(plane).map(|plane| plane.view()).ok_or_else(|| no_such_plane(plane, planes.len())),
         }
     }
 
@@ -184,18 +165,12 @@ impl<T> FrameData<T> {
                     return Err(no_such_plane(plane, 1));
                 }
                 let (rows, cols, components) = array.dim();
-                let flat = array
-                    .as_slice_mut()
-                    .ok_or_else(|| not_contiguous(plane, "interleaved"))?;
-                ArrayViewMut2::from_shape((rows, cols * components), flat)
-                    .map_err(|error| RsmediaError::msg(format!("Plane {plane}: {error}")))
+                let flat = array.as_slice_mut().ok_or_else(|| not_contiguous(plane, "interleaved"))?;
+                ArrayViewMut2::from_shape((rows, cols * components), flat).map_err(|error| RsmediaError::msg(format!("Plane {plane}: {error}")))
             }
             Self::Planar(planes) => {
                 let count = planes.len();
-                planes
-                    .get_mut(plane)
-                    .map(|plane| plane.view_mut())
-                    .ok_or_else(|| no_such_plane(plane, count))
+                planes.get_mut(plane).map(|plane| plane.view_mut()).ok_or_else(|| no_such_plane(plane, count))
             }
         }
     }
@@ -231,20 +206,9 @@ impl<T> FrameData<T> {
     /// asks for.
     pub fn matches(&self, layout: &DataLayout) -> bool {
         match (self, layout) {
-            (
-                Self::Packed(array),
-                DataLayout::Interleaved {
-                    rows,
-                    cols,
-                    components,
-                },
-            ) => array.dim() == (*rows, *cols, *components),
+            (Self::Packed(array), DataLayout::Interleaved { rows, cols, components }) => array.dim() == (*rows, *cols, *components),
             (Self::Planar(planes), DataLayout::Planar(shapes)) => {
-                planes.len() == shapes.len()
-                    && planes
-                        .iter()
-                        .zip(shapes)
-                        .all(|(plane, &shape)| plane.dim() == shape)
+                planes.len() == shapes.len() && planes.iter().zip(shapes).all(|(plane, &shape)| plane.dim() == shape)
             }
             _ => false,
         }
@@ -255,17 +219,8 @@ impl<T: ElementType> FrameData<T> {
     /// Zero-initialised samples shaped exactly as `layout` requires.
     pub fn zeros(layout: &DataLayout) -> Self {
         match layout {
-            DataLayout::Interleaved {
-                rows,
-                cols,
-                components,
-            } => Self::Packed(Array3::zeros((*rows, *cols, *components))),
-            DataLayout::Planar(shapes) => Self::Planar(
-                shapes
-                    .iter()
-                    .map(|&(rows, cols)| Array2::zeros((rows, cols)))
-                    .collect(),
-            ),
+            DataLayout::Interleaved { rows, cols, components } => Self::Packed(Array3::zeros((*rows, *cols, *components))),
+            DataLayout::Planar(shapes) => Self::Planar(shapes.iter().map(|&(rows, cols)| Array2::zeros((rows, cols))).collect()),
         }
     }
 
@@ -277,26 +232,20 @@ impl<T: ElementType> FrameData<T> {
     /// media kind — and returns its replacement. Plane-wise processing (tone
     /// mapping, per-plane resampling, custom conversions) is therefore written
     /// once instead of once per layout.
-    pub fn map_planes<U: ElementType>(
-        &self,
-        mut f: impl FnMut(usize, ArrayView2<'_, T>) -> Result<Array2<U>>,
-    ) -> Result<FrameData<U>> {
+    pub fn map_planes<U: ElementType>(&self, mut f: impl FnMut(usize, ArrayView2<'_, T>) -> Result<Array2<U>>) -> Result<FrameData<U>> {
         match self {
             Self::Packed(array) => {
                 let (rows, cols, components) = array.dim();
                 let view = ArrayView2::from_shape(
                     (rows, cols * components),
-                    array
-                        .as_slice()
-                        .ok_or_else(|| RsmediaError::msg("Interleaved frame must be contiguous"))?,
+                    array.as_slice().ok_or_else(|| RsmediaError::msg("Interleaved frame must be contiguous"))?,
                 )
                 .map_err(|e| RsmediaError::msg(format!("Failed to view interleaved plane: {e}")))?;
                 let mapped = f(0, view)?;
                 let samples: Vec<U> = mapped.iter().cloned().collect();
                 Ok(FrameData::Packed(
-                    Array3::from_shape_vec((rows, cols, components), samples).map_err(|e| {
-                        RsmediaError::msg(format!("Failed to rebuild interleaved frame: {e}"))
-                    })?,
+                    Array3::from_shape_vec((rows, cols, components), samples)
+                        .map_err(|e| RsmediaError::msg(format!("Failed to rebuild interleaved frame: {e}")))?,
                 ))
             }
             Self::Planar(planes) => {
@@ -322,18 +271,9 @@ impl<T: ElementType> FrameData<T> {
                 }
                 array.as_standard_layout().iter().copied().collect()
             }
-            Self::Planar(planes) => planes
-                .get(plane)
-                .ok_or_else(|| no_such_plane(plane, planes.len()))?
-                .as_standard_layout()
-                .iter()
-                .copied()
-                .collect(),
+            Self::Planar(planes) => planes.get(plane).ok_or_else(|| no_such_plane(plane, planes.len()))?.as_standard_layout().iter().copied().collect(),
         };
-        Ok(samples
-            .into_iter()
-            .map(|value| num_traits::cast::<T, U>(value).unwrap_or(U::zero()))
-            .collect())
+        Ok(samples.into_iter().map(|value| num_traits::cast::<T, U>(value).unwrap_or(U::zero())).collect())
     }
 }
 
@@ -361,15 +301,10 @@ fn not_contiguous(plane: usize, layout: &str) -> RsmediaError {
 /// Samples are read as `u8`, which is what both of these formats mean — an 8-bit
 /// component. A 9..16-bit picture is a *different* pixel format (e.g.
 /// `YUV420P10LE`), and goes through the scaler instead.
-fn rgb24_to_yuv420p<T: ElementType>(
-    data: &FrameData<T>,
-    matrix: YuvStandardMatrix,
-) -> Result<FrameData<T>> {
+fn rgb24_to_yuv420p<T: ElementType>(data: &FrameData<T>, matrix: YuvStandardMatrix) -> Result<FrameData<T>> {
     let (height, width) = rgb24_extent(data)?;
     if !width.is_multiple_of(2) || !height.is_multiple_of(2) {
-        return Err(RsmediaError::msg(format!(
-            "RGB24 -> YUV420P requires even dimensions, got {width}x{height}"
-        )));
+        return Err(RsmediaError::msg(format!("RGB24 -> YUV420P requires even dimensions, got {width}x{height}")));
     }
 
     let (uv_width, uv_height) = (width / 2, height / 2);
@@ -389,40 +324,25 @@ fn rgb24_to_yuv420p<T: ElementType>(
             width: width as u32,
             height: height as u32,
         };
-        yuv::rgb_to_yuv420(
-            &mut planar,
-            &rgb,
-            (width * 3) as u32,
-            YuvRange::Full,
-            matrix,
-            YuvConversionMode::Professional,
-        )
-        .map_err(|e| RsmediaError::msg(format!("convert rgb24 to yuv420p error:{e}")))?;
+        yuv::rgb_to_yuv420(&mut planar, &rgb, (width * 3) as u32, YuvRange::Full, matrix, YuvConversionMode::Professional)
+            .map_err(|e| RsmediaError::msg(format!("convert rgb24 to yuv420p error:{e}")))?;
     }
 
-    Ok(FrameData::Planar(vec![
-        plane_from(y_plane, height, width)?,
-        plane_from(u_plane, uv_height, uv_width)?,
-        plane_from(v_plane, uv_height, uv_width)?,
-    ]))
+    Ok(FrameData::Planar(vec![plane_from(y_plane, height, width)?, plane_from(u_plane, uv_height, uv_width)?, plane_from(v_plane, uv_height, uv_width)?]))
 }
 
 /// Converts a planar `YUV420P` frame into a packed `RGB24` frame.
 ///
 /// The size comes from the luma plane, whose `(height, width)` shape the
 /// `YUV420P` layout fixes.
-fn yuv420p_to_rgb24<T: ElementType>(
-    data: &FrameData<T>,
-    matrix: YuvStandardMatrix,
-) -> Result<FrameData<T>> {
+fn yuv420p_to_rgb24<T: ElementType>(data: &FrameData<T>, matrix: YuvStandardMatrix) -> Result<FrameData<T>> {
     let (height, width) = yuv420p_extent(data)?;
     let (uv_width, uv_height) = (width / 2, height / 2);
 
     let y = data.plane_samples::<u8>(0)?;
     let u = data.plane_samples::<u8>(1)?;
     let v = data.plane_samples::<u8>(2)?;
-    if y.len() < width * height || u.len() < uv_width * uv_height || v.len() < uv_width * uv_height
-    {
+    if y.len() < width * height || u.len() < uv_width * uv_height || v.len() < uv_width * uv_height {
         return Err(RsmediaError::msg("YUV420P plane buffer too small"));
     }
 
@@ -437,18 +357,11 @@ fn yuv420p_to_rgb24<T: ElementType>(
         height: height as u32,
     };
     let mut rgb = vec![0u8; width * height * 3];
-    yuv::yuv420_to_rgb(
-        &planar,
-        &mut rgb,
-        (width * 3) as u32,
-        YuvRange::Full,
-        matrix,
-    )
-    .map_err(|e| RsmediaError::msg(format!("convert yuv420p to rgb24 error:{e}")))?;
+    yuv::yuv420_to_rgb(&planar, &mut rgb, (width * 3) as u32, YuvRange::Full, matrix)
+        .map_err(|e| RsmediaError::msg(format!("convert yuv420p to rgb24 error:{e}")))?;
 
     Ok(FrameData::Packed(
-        Array3::from_shape_vec((height, width, 3), cast_samples::<u8, T>(rgb))
-            .map_err(|e| RsmediaError::msg(format!("Failed to build RGB24 frame: {e}")))?,
+        Array3::from_shape_vec((height, width, 3), cast_samples::<u8, T>(rgb)).map_err(|e| RsmediaError::msg(format!("Failed to build RGB24 frame: {e}")))?,
     ))
 }
 
@@ -701,23 +614,12 @@ where
     /// [`SampleFormat::data_layout`]), so it applies to video and audio alike.
     pub fn data_layout(&self) -> Result<DataLayout> {
         if self.media_type == MediaType::VIDEO {
-            let format = self
-                .format
-                .into_pixel()
-                .ok_or_else(|| RsmediaError::msg("Video frame needs a pixel format"))?;
+            let format = self.format.into_pixel().ok_or_else(|| RsmediaError::msg("Video frame needs a pixel format"))?;
             format.data_layout(self.width, self.height).ok_or_else(|| {
-                RsmediaError::msg(format!(
-                    "Pixel format {} cannot be stored as sample planes at {}x{}",
-                    format.get_pix_fmt_name(),
-                    self.width,
-                    self.height
-                ))
+                RsmediaError::msg(format!("Pixel format {} cannot be stored as sample planes at {}x{}", format.get_pix_fmt_name(), self.width, self.height))
             })
         } else {
-            let format = self
-                .format
-                .into_sample()
-                .ok_or_else(|| RsmediaError::msg("Audio frame needs a sample format"))?;
+            let format = self.format.into_sample().ok_or_else(|| RsmediaError::msg("Audio frame needs a sample format"))?;
             Ok(format.data_layout(self.nb_channels as usize, self.nb_samples as usize))
         }
     }
@@ -732,33 +634,17 @@ where
     /// 时间基保持未设置：分辨率里没有帧率信息，而编码器会用自己的输入时间基解释
     /// pts（见 [`time_base`](Self::time_base)）。要按自己的时间基表达 pts 时再调
     /// [`set_time_base`](Self::set_time_base)。
-    pub fn new_video(
-        width: usize,
-        height: usize,
-        format: PixelFormat,
-        data: impl Into<FrameData<T>>,
-    ) -> Result<Self> {
-        Self {
-            width,
-            height,
-            data: data.into(),
-            media_type: MediaType::VIDEO,
-            format: FrameFormat::Pixel(format),
-            ..Self::default()
-        }
-        .validated()
+    pub fn new_video(width: usize, height: usize, format: PixelFormat, data: impl Into<FrameData<T>>) -> Result<Self> {
+        Self { width, height, data: data.into(), media_type: MediaType::VIDEO, format: FrameFormat::Pixel(format), ..Self::default() }.validated()
     }
 
     /// 创建视频帧（各平面零初始化）。
     ///
     /// 只需 `width` / `height` / `format`；时间基的处理见 [`new_video`](Self::new_video)。
     pub fn new_video_frame(width: usize, height: usize, format: PixelFormat) -> Result<Self> {
-        let layout = format.data_layout(width, height).ok_or_else(|| {
-            RsmediaError::msg(format!(
-                "Pixel format {} cannot be stored as sample planes at {width}x{height}",
-                format.get_pix_fmt_name()
-            ))
-        })?;
+        let layout = format
+            .data_layout(width, height)
+            .ok_or_else(|| RsmediaError::msg(format!("Pixel format {} cannot be stored as sample planes at {width}x{height}", format.get_pix_fmt_name())))?;
         Self::new_video(width, height, format, FrameData::zeros(&layout))
     }
 
@@ -775,21 +661,11 @@ where
     /// 二者不同时编码器会自动重采样，所以应当填数据真实的采样率。确实不想声明时可传
     /// `0`，帧上留空（`time_base` 随之留空，见 [`time_base`](Self::time_base)），
     /// 编码器接收该帧时会按自己的目标率补齐。
-    pub fn new_audio(
-        format: SampleFormat,
-        nb_channels: u32,
-        nb_samples: u32,
-        sample_rate: u32,
-        data: impl Into<FrameData<T>>,
-    ) -> Result<Self> {
+    pub fn new_audio(format: SampleFormat, nb_channels: u32, nb_samples: u32, sample_rate: u32, data: impl Into<FrameData<T>>) -> Result<Self> {
         Self {
             format: FrameFormat::Sample(format),
             data: data.into(),
-            time_base: if sample_rate > 0 {
-                time::new_rational(1, sample_rate as i32)
-            } else {
-                time::new_rational(0, 1)
-            },
+            time_base: if sample_rate > 0 { time::new_rational(1, sample_rate as i32) } else { time::new_rational(0, 1) },
             sample_rate,
             nb_samples,
             nb_channels,
@@ -803,20 +679,9 @@ where
     ///
     /// 只需 `format` / `nb_channels` / `nb_samples` / `sample_rate`；时间基由
     /// `sample_rate` 推出，见 [`new_audio`](Self::new_audio)。
-    pub fn new_audio_frame(
-        format: SampleFormat,
-        nb_channels: u32,
-        nb_samples: u32,
-        sample_rate: u32,
-    ) -> Result<Self> {
+    pub fn new_audio_frame(format: SampleFormat, nb_channels: u32, nb_samples: u32, sample_rate: u32) -> Result<Self> {
         let layout = format.data_layout(nb_channels as usize, nb_samples as usize);
-        Self::new_audio(
-            format,
-            nb_channels,
-            nb_samples,
-            sample_rate,
-            FrameData::zeros(&layout),
-        )
+        Self::new_audio(format, nb_channels, nb_samples, sample_rate, FrameData::zeros(&layout))
     }
 
     /// 校验 [`data`](Self::data) 的形状与格式要求的布局一致，且 `T` 的宽度与该格式
@@ -857,15 +722,9 @@ where
     /// 返回 `Err` 表示格式无法确定样本宽度（位流 / 调色板 / 硬件格式等）。
     fn element_size(&self) -> Result<usize> {
         if self.media_type == MediaType::VIDEO {
-            self.format
-                .into_pixel()
-                .and_then(PixelFormat::bytes_per_component)
-                .ok_or_else(|| RsmediaError::msg("Unsupported pixel format"))
+            self.format.into_pixel().and_then(PixelFormat::bytes_per_component).ok_or_else(|| RsmediaError::msg("Unsupported pixel format"))
         } else {
-            self.format
-                .into_sample()
-                .and_then(|format| format.get_bytes_per_sample())
-                .ok_or_else(|| RsmediaError::msg("Unsupported sample format"))
+            self.format.into_sample().and_then(|format| format.get_bytes_per_sample()).ok_or_else(|| RsmediaError::msg("Unsupported sample format"))
         }
     }
 
@@ -877,8 +736,7 @@ where
     /// [`FrameFormat::Sample`] for audio; `None` for other media types.
     #[inline]
     pub fn format(&self) -> Option<FrameFormat> {
-        (self.media_type == MediaType::VIDEO || self.media_type == MediaType::AUDIO)
-            .then_some(self.format)
+        (self.media_type == MediaType::VIDEO || self.media_type == MediaType::AUDIO).then_some(self.format)
     }
 
     pub fn set_pkt_dts(&mut self, pkt_dts: i64) {
@@ -915,10 +773,7 @@ where
             if frame.nb_samples > 0 && frame.sample_rate > 0 {
                 time::new_rational(1, frame.sample_rate)
             } else {
-                log::warn!(
-                    "AVFrame has no valid time_base ({:?}); call MediaFrame::set_time_base",
-                    frame.time_base
-                );
+                log::warn!("AVFrame has no valid time_base ({:?}); call MediaFrame::set_time_base", frame.time_base);
                 frame.time_base
             }
         } else {
@@ -930,9 +785,7 @@ where
         if frame.nb_samples > 0 {
             let sample_format = SampleFormat::from(format);
             let frame_format = FrameFormat::Sample(sample_format);
-            let element_bytes = sample_format
-                .get_bytes_per_sample()
-                .ok_or_else(|| RsmediaError::msg("Unsupported sample format"))?;
+            let element_bytes = sample_format.get_bytes_per_sample().ok_or_else(|| RsmediaError::msg("Unsupported sample format"))?;
             validate_element_size::<T>(frame_format, element_bytes)?;
 
             let mut media = Self {
@@ -955,9 +808,7 @@ where
         } else if width > 0 && height > 0 {
             let pixel_format = PixelFormat::from(format);
             let frame_format = FrameFormat::Pixel(pixel_format);
-            let element_bytes = pixel_format
-                .bytes_per_component()
-                .ok_or_else(|| RsmediaError::msg("Unsupported pixel format"))?;
+            let element_bytes = pixel_format.bytes_per_component().ok_or_else(|| RsmediaError::msg("Unsupported pixel format"))?;
             validate_element_size::<T>(frame_format, element_bytes)?;
 
             let mut media = Self {
@@ -1024,11 +875,7 @@ where
             // `copy_avframe_meta`），因此写出时也要让它生效：否则
             // `frame.key_frame = true` 会被静默丢弃，两个字段互相矛盾。
             let key = ffi::AV_FRAME_FLAG_KEY as i32;
-            (*raw).flags = if self.key_frame {
-                self.flags | key
-            } else {
-                self.flags & !key
-            };
+            (*raw).flags = if self.key_frame { self.flags | key } else { self.flags & !key };
             (*raw).quality = self.quality;
             (*raw).repeat_pict = self.repeat_pict;
             (*raw).colorspace = self.colorspace;
@@ -1163,13 +1010,9 @@ where
         } else {
             frame.set_nb_samples(self.nb_samples as i32);
             frame.set_sample_rate(self.sample_rate as i32);
-            frame.set_ch_layout(
-                AVChannelLayout::from_nb_channels(self.nb_channels as i32).into_inner(),
-            );
+            frame.set_ch_layout(AVChannelLayout::from_nb_channels(self.nb_channels as i32).into_inner());
         }
-        frame
-            .alloc_buffer()
-            .context("Failed to allocate frame buffer")?;
+        frame.alloc_buffer().context("Failed to allocate frame buffer")?;
         write_samples(&mut frame, &self.data)?;
 
         // 写回 setter 无法覆盖的元数据（与 copy_avframe_meta 对称）。
@@ -1205,9 +1048,7 @@ where
                 FrameFormat::Pixel(p) => p.get_pix_fmt_name(),
                 FrameFormat::Sample(_) => "<audio format>".to_string(),
             };
-            return Err(RsmediaError::msg(format!(
-                "Expected {expected_desc} format, got {got}"
-            )));
+            return Err(RsmediaError::msg(format!("Expected {expected_desc} format, got {got}")));
         }
         Ok(())
     }
@@ -1329,41 +1170,25 @@ where
     /// swscale cannot serve, and for `dst` formats with no sample planes.
     pub fn convert_to(&self, dst: PixelFormat) -> Result<Self> {
         if self.media_type != MediaType::VIDEO {
-            return Err(RsmediaError::msg(
-                "Only video frames have a pixel format to convert",
-            ));
+            return Err(RsmediaError::msg("Only video frames have a pixel format to convert"));
         }
         if self.format == FrameFormat::Pixel(dst) {
             return Ok(self.clone());
         }
         let dst_layout = dst.data_layout(self.width, self.height).ok_or_else(|| {
-            RsmediaError::msg(format!(
-                "Pixel format {} cannot be stored as sample planes at {}x{}",
-                dst.get_pix_fmt_name(),
-                self.width,
-                self.height
-            ))
+            RsmediaError::msg(format!("Pixel format {} cannot be stored as sample planes at {}x{}", dst.get_pix_fmt_name(), self.width, self.height))
         })?;
         // `read_samples::<T>` reads `size_of::<T>()`-wide elements, so a target
         // with a different component width must be rejected here rather than
         // reinterpreted: asking for `YUV420P10LE` out of a `MediaFrame<u8>`
         // would otherwise read half a plane of garbage.
-        let element_bytes = dst.bytes_per_component().ok_or_else(|| {
-            RsmediaError::msg(format!(
-                "Pixel format {} has no per-component size",
-                dst.get_pix_fmt_name()
-            ))
-        })?;
+        let element_bytes =
+            dst.bytes_per_component().ok_or_else(|| RsmediaError::msg(format!("Pixel format {} has no per-component size", dst.get_pix_fmt_name())))?;
         validate_element_size::<T>(FrameFormat::Pixel(dst), element_bytes)?;
 
         let src = self.to_avframe()?;
         // 尺寸不变，只换格式：swscale 的同一上下文即可完成格式与色彩空间转换。
-        let converted = crate::scale::Scaler::new().scale_frame(
-            &src,
-            self.width as i32,
-            self.height as i32,
-            dst,
-        )?;
+        let converted = crate::scale::Scaler::new().scale_frame(&src, self.width as i32, self.height as i32, dst)?;
         let data = read_samples::<T>(&converted, &dst_layout)?;
         Ok(self.with_data(data, dst))
     }
@@ -1391,8 +1216,8 @@ impl MediaFrame<u8> {
         let rgb = img.to_rgb8();
         let (width, height) = rgb.dimensions();
         let (width, height) = (width as usize, height as usize);
-        let array = Array3::from_shape_vec((height, width, 3), rgb.into_raw())
-            .map_err(|e| RsmediaError::msg(format!("Failed to build ndarray from image: {e}")))?;
+        let array =
+            Array3::from_shape_vec((height, width, 3), rgb.into_raw()).map_err(|e| RsmediaError::msg(format!("Failed to build ndarray from image: {e}")))?;
         Self::new_video(width, height, PixelFormat::RGB24, array)
     }
 }
@@ -1419,12 +1244,7 @@ fn plane_ptr(frame: &AVFrame, plane: usize) -> *mut u8 {
 /// stride never comes into play for them — one routine therefore covers packed
 /// and planar, video and audio. The stride is applied as a signed offset because
 /// `linesize` is negative for bottom-up frames.
-fn read_plane<T: ElementType>(
-    frame: &AVFrame,
-    plane: usize,
-    rows: usize,
-    row_len: usize,
-) -> Result<Vec<T>> {
+fn read_plane<T: ElementType>(frame: &AVFrame, plane: usize, rows: usize, row_len: usize) -> Result<Vec<T>> {
     let source = plane_ptr(frame, plane) as *const T;
     if source.is_null() {
         return Err(RsmediaError::msg(format!("Frame plane {plane} is null")));
@@ -1446,19 +1266,9 @@ fn read_plane<T: ElementType>(
 /// Writes `rows` rows of `row_len` samples each into one `AVFrame` plane.
 ///
 /// The mirror of [`read_plane`], with the same one-row-tall shortcut for audio.
-fn write_plane<T: ElementType>(
-    frame: &mut AVFrame,
-    plane: usize,
-    rows: usize,
-    row_len: usize,
-    samples: &[T],
-) -> Result<()> {
+fn write_plane<T: ElementType>(frame: &mut AVFrame, plane: usize, rows: usize, row_len: usize, samples: &[T]) -> Result<()> {
     if samples.len() < rows * row_len {
-        return Err(RsmediaError::msg(format!(
-            "Plane {plane} needs {} samples, got {}",
-            rows * row_len,
-            samples.len()
-        )));
+        return Err(RsmediaError::msg(format!("Plane {plane} needs {} samples, got {}", rows * row_len, samples.len())));
     }
     let destination = plane_ptr(frame, plane) as *mut T;
     let stride = frame.linesize[plane] as i64 / std::mem::size_of::<T>() as i64;
@@ -1467,11 +1277,7 @@ fn write_plane<T: ElementType>(
     // and the frame outlives the copies; each write stays within `row_len`.
     unsafe {
         for row in 0..rows {
-            std::ptr::copy_nonoverlapping(
-                samples.as_ptr().add(row * row_len),
-                destination.offset(row as isize * stride as isize),
-                row_len,
-            );
+            std::ptr::copy_nonoverlapping(samples.as_ptr().add(row * row_len), destination.offset(row as isize * stride as isize), row_len);
         }
     }
     Ok(())
@@ -1480,26 +1286,16 @@ fn write_plane<T: ElementType>(
 /// Reads every plane of `layout` out of `frame` into a [`FrameData`].
 fn read_samples<T: ElementType>(frame: &AVFrame, layout: &DataLayout) -> Result<FrameData<T>> {
     match layout {
-        DataLayout::Interleaved {
-            rows,
-            cols,
-            components,
-        } => Ok(FrameData::Packed(
-            Array3::from_shape_vec(
-                (*rows, *cols, *components),
-                read_plane::<T>(frame, 0, *rows, cols * components)?,
-            )
-            .map_err(|e| RsmediaError::msg(format!("Failed to build frame samples: {e}")))?,
+        DataLayout::Interleaved { rows, cols, components } => Ok(FrameData::Packed(
+            Array3::from_shape_vec((*rows, *cols, *components), read_plane::<T>(frame, 0, *rows, cols * components)?)
+                .map_err(|e| RsmediaError::msg(format!("Failed to build frame samples: {e}")))?,
         )),
         DataLayout::Planar(shapes) => {
             let mut planes = Vec::with_capacity(shapes.len());
             for (plane, &(rows, cols)) in shapes.iter().enumerate() {
                 planes.push(
-                    Array2::from_shape_vec(
-                        (rows, cols),
-                        read_plane::<T>(frame, plane, rows, cols)?,
-                    )
-                    .map_err(|e| RsmediaError::msg(format!("Failed to build frame plane: {e}")))?,
+                    Array2::from_shape_vec((rows, cols), read_plane::<T>(frame, plane, rows, cols)?)
+                        .map_err(|e| RsmediaError::msg(format!("Failed to build frame plane: {e}")))?,
                 );
             }
             Ok(FrameData::Planar(planes))
@@ -1512,17 +1308,13 @@ fn write_samples<T: ElementType>(frame: &mut AVFrame, data: &FrameData<T>) -> Re
     match data {
         FrameData::Packed(array) => {
             let (rows, cols, components) = array.dim();
-            let samples = array
-                .as_slice()
-                .ok_or_else(|| RsmediaError::msg("Frame plane is not contiguous"))?;
+            let samples = array.as_slice().ok_or_else(|| RsmediaError::msg("Frame plane is not contiguous"))?;
             write_plane(frame, 0, rows, cols * components, samples)
         }
         FrameData::Planar(planes) => {
             for (plane, array) in planes.iter().enumerate() {
                 let (rows, cols) = array.dim();
-                let samples = array
-                    .as_slice()
-                    .ok_or_else(|| RsmediaError::msg("Frame plane is not contiguous"))?;
+                let samples = array.as_slice().ok_or_else(|| RsmediaError::msg("Frame plane is not contiguous"))?;
                 write_plane(frame, plane, rows, cols, samples)?;
             }
             Ok(())
@@ -1533,9 +1325,7 @@ fn write_samples<T: ElementType>(frame: &mut AVFrame, data: &FrameData<T>) -> Re
 /// The `(height, width)` of a packed `RGB24` frame, validated against the layout
 /// `RGB24` implies.
 fn rgb24_extent<T>(data: &FrameData<T>) -> Result<(usize, usize)> {
-    let packed = data.as_packed().ok_or_else(|| {
-        RsmediaError::msg("RGB24 samples must be interleaved (packed), not planar")
-    })?;
+    let packed = data.as_packed().ok_or_else(|| RsmediaError::msg("RGB24 samples must be interleaved (packed), not planar"))?;
     let (height, width, _) = packed.dim();
     check_layout(data, PixelFormat::RGB24, width, height)?;
     Ok((height, width))
@@ -1544,59 +1334,33 @@ fn rgb24_extent<T>(data: &FrameData<T>) -> Result<(usize, usize)> {
 /// The `(height, width)` of a planar `YUV420P` frame, validated against the
 /// layout `YUV420P` implies.
 fn yuv420p_extent<T>(data: &FrameData<T>) -> Result<(usize, usize)> {
-    let planes = data
-        .as_planes()
-        .ok_or_else(|| RsmediaError::msg("YUV420P samples must be planar, not interleaved"))?;
-    let (height, width) = planes
-        .first()
-        .map(|plane| plane.dim())
-        .ok_or_else(|| RsmediaError::msg("YUV420P frame has no luma plane"))?;
+    let planes = data.as_planes().ok_or_else(|| RsmediaError::msg("YUV420P samples must be planar, not interleaved"))?;
+    let (height, width) = planes.first().map(|plane| plane.dim()).ok_or_else(|| RsmediaError::msg("YUV420P frame has no luma plane"))?;
     check_layout(data, PixelFormat::YUV420P, width, height)?;
     Ok((height, width))
 }
 
 /// Checks `data` against the layout `format` requires at `width` x `height`.
-fn check_layout<T>(
-    data: &FrameData<T>,
-    format: PixelFormat,
-    width: usize,
-    height: usize,
-) -> Result<()> {
-    let layout = format.data_layout(width, height).ok_or_else(|| {
-        RsmediaError::msg(format!(
-            "Pixel format {} has no data layout at {width}x{height}",
-            format.get_pix_fmt_name()
-        ))
-    })?;
+fn check_layout<T>(data: &FrameData<T>, format: PixelFormat, width: usize, height: usize) -> Result<()> {
+    let layout = format
+        .data_layout(width, height)
+        .ok_or_else(|| RsmediaError::msg(format!("Pixel format {} has no data layout at {width}x{height}", format.get_pix_fmt_name())))?;
     if data.matches(&layout) {
         Ok(())
     } else {
-        Err(RsmediaError::msg(format!(
-            "{} expects planes {:?}, got {:?}",
-            format.get_pix_fmt_name(),
-            layout.shapes(),
-            data.shapes()
-        )))
+        Err(RsmediaError::msg(format!("{} expects planes {:?}, got {:?}", format.get_pix_fmt_name(), layout.shapes(), data.shapes())))
     }
 }
 
 /// Builds a `(rows, cols)` plane from flat samples, converting `S` to `T`.
-fn plane_from<S: ElementType, T: ElementType>(
-    samples: Vec<S>,
-    rows: usize,
-    cols: usize,
-) -> Result<Array2<T>> {
-    Array2::from_shape_vec((rows, cols), cast_samples::<S, T>(samples))
-        .map_err(|e| RsmediaError::msg(format!("Failed to build frame plane: {e}")))
+fn plane_from<S: ElementType, T: ElementType>(samples: Vec<S>, rows: usize, cols: usize) -> Result<Array2<T>> {
+    Array2::from_shape_vec((rows, cols), cast_samples::<S, T>(samples)).map_err(|e| RsmediaError::msg(format!("Failed to build frame plane: {e}")))
 }
 
 /// Casts flat samples from `S` to `T`, falling back to zero for values the
 /// conversion cannot represent.
 fn cast_samples<S: ElementType, T: ElementType>(samples: Vec<S>) -> Vec<T> {
-    samples
-        .into_iter()
-        .map(|value| num_traits::cast::<S, T>(value).unwrap_or(T::zero()))
-        .collect()
+    samples.into_iter().map(|value| num_traits::cast::<S, T>(value).unwrap_or(T::zero())).collect()
 }
 
 /// 验证采样元素类型 `T` 的大小与格式要求的每样本字节数一致。
@@ -1606,9 +1370,7 @@ fn cast_samples<S: ElementType, T: ElementType>(samples: Vec<S>) -> Vec<T> {
 fn validate_element_size<T>(format: FrameFormat, expected_size: usize) -> Result<()> {
     let type_size = std::mem::size_of::<T>();
     if type_size != expected_size {
-        return Err(RsmediaError::msg(format!(
-            "format:{format}, expected {expected_size}, got {type_size}"
-        )));
+        return Err(RsmediaError::msg(format!("format:{format}, expected {expected_size}, got {type_size}")));
     }
     Ok(())
 }
@@ -1656,15 +1418,9 @@ fn write_side_data(frame: &mut AVFrame, entries: &[FrameSideData]) {
         }
         // SAFETY: `frame` is a live AVFrame we own and the frame has no side data yet,
         // so this neither aliases nor overwrites existing entries.
-        let raw = unsafe {
-            ffi::av_frame_new_side_data(frame.as_mut_ptr(), entry.type_, entry.data.len())
-        };
+        let raw = unsafe { ffi::av_frame_new_side_data(frame.as_mut_ptr(), entry.type_, entry.data.len()) };
         if raw.is_null() {
-            log::warn!(
-                "Failed to allocate side data of type {} ({} bytes)",
-                entry.type_,
-                entry.data.len()
-            );
+            log::warn!("Failed to allocate side data of type {} ({} bytes)", entry.type_, entry.data.len());
             continue;
         }
         // SAFETY: `av_frame_new_side_data` allocated exactly `entry.data.len()` bytes,
@@ -1690,19 +1446,12 @@ mod tests {
 
     /// 用 `Color::from_rgb` 生成渐变测试图案并填充 RGB24 帧。
     /// 返回 r/g/b 三个平面，方便调用方做断言。
-    fn fill_rgb_data(
-        frame: &mut MediaFrame<u8>,
-        width: usize,
-        height: usize,
-    ) -> (Vec<u8>, Vec<u8>, Vec<u8>) {
+    fn fill_rgb_data(frame: &mut MediaFrame<u8>, width: usize, height: usize) -> (Vec<u8>, Vec<u8>, Vec<u8>) {
         let mut r = vec![0u8; width * height];
         let mut g = vec![0u8; width * height];
         let mut b = vec![0u8; width * height];
 
-        let rgb = frame
-            .data
-            .as_packed_mut()
-            .expect("RGB24 frames are interleaved");
+        let rgb = frame.data.as_packed_mut().expect("RGB24 frames are interleaved");
         for y in 0..height {
             for x in 0..width {
                 let idx = y * width + x;
@@ -1738,53 +1487,24 @@ mod tests {
             (PixelFormat::RGBA, 4),
             (PixelFormat::BGRA, 4),
         ] {
-            assert_eq!(
-                format.data_layout(width, height),
-                Some(DataLayout::Interleaved {
-                    rows: height,
-                    cols: width,
-                    components: elements,
-                }),
-                "{format:?}"
-            );
+            assert_eq!(format.data_layout(width, height), Some(DataLayout::Interleaved { rows: height, cols: width, components: elements }), "{format:?}");
         }
 
         // 平面格式：每分量一个平面，色度按 log2_chroma 右移
-        assert_eq!(
-            PixelFormat::YUV420P.data_layout(width, height),
-            Some(DataLayout::Planar(vec![(48, 64), (24, 32), (24, 32)]))
-        );
-        assert_eq!(
-            PixelFormat::YUV422P.data_layout(width, height),
-            Some(DataLayout::Planar(vec![(48, 64), (48, 32), (48, 32)]))
-        );
-        assert_eq!(
-            PixelFormat::YUV444P.data_layout(width, height),
-            Some(DataLayout::Planar(vec![(48, 64), (48, 64), (48, 64)]))
-        );
+        assert_eq!(PixelFormat::YUV420P.data_layout(width, height), Some(DataLayout::Planar(vec![(48, 64), (24, 32), (24, 32)])));
+        assert_eq!(PixelFormat::YUV422P.data_layout(width, height), Some(DataLayout::Planar(vec![(48, 64), (48, 32), (48, 32)])));
+        assert_eq!(PixelFormat::YUV444P.data_layout(width, height), Some(DataLayout::Planar(vec![(48, 64), (48, 64), (48, 64)])));
         // 平面 RGB：无色度抽样
-        assert_eq!(
-            PixelFormat::GBRP.data_layout(width, height),
-            Some(DataLayout::Planar(vec![(48, 64), (48, 64), (48, 64)]))
-        );
+        assert_eq!(PixelFormat::GBRP.data_layout(width, height), Some(DataLayout::Planar(vec![(48, 64), (48, 64), (48, 64)])));
         // 半平面 NV12：色度平面 U/V 交错，故列数为 2 * ceil(w/2)
-        assert_eq!(
-            PixelFormat::NV12.data_layout(width, height),
-            Some(DataLayout::Planar(vec![(48, 64), (24, 64)]))
-        );
+        assert_eq!(PixelFormat::NV12.data_layout(width, height), Some(DataLayout::Planar(vec![(48, 64), (24, 64)])));
         // 10bit 平面：元素为 2 字节，形状仍是样本数
-        assert_eq!(
-            PixelFormat::YUV420P10LE.data_layout(width, height),
-            Some(DataLayout::Planar(vec![(48, 64), (24, 32), (24, 32)]))
-        );
+        assert_eq!(PixelFormat::YUV420P10LE.data_layout(width, height), Some(DataLayout::Planar(vec![(48, 64), (24, 32), (24, 32)])));
         assert_eq!(PixelFormat::YUV420P10LE.bytes_per_component(), Some(2));
         assert_eq!(PixelFormat::YUV420P.bytes_per_component(), Some(1));
 
         // 奇数尺寸：色度按 ceil 右移，因此仍可表达
-        assert_eq!(
-            PixelFormat::YUV420P.data_layout(65, 49),
-            Some(DataLayout::Planar(vec![(49, 65), (25, 33), (25, 33)]))
-        );
+        assert_eq!(PixelFormat::YUV420P.data_layout(65, 49), Some(DataLayout::Planar(vec![(49, 65), (25, 33), (25, 33)])));
 
         // 位流 / 调色板 / 硬件格式无法用整块样本数组表达
         assert_eq!(PixelFormat::MONOWHITE.data_layout(width, height), None);
@@ -1800,24 +1520,13 @@ mod tests {
     #[test]
     fn test_element_width_checked_at_construction() {
         // S16 每样本 2 字节，u8 数据即使形状正确也不能构成 S16 帧。
-        let audio = MediaFrame::<u8>::new_audio(
-            SampleFormat::S16,
-            2,
-            8,
-            44100,
-            FrameData::from(Array3::<u8>::zeros((1, 8, 2))),
-        );
+        let audio = MediaFrame::<u8>::new_audio(SampleFormat::S16, 2, 8, 44100, FrameData::from(Array3::<u8>::zeros((1, 8, 2))));
         assert!(audio.is_err(), "u8 data must not build an S16 frame");
 
         // YUV420P10LE 的平面形状与 YUV420P 完全一致，只有元素宽度能区分两者，
         // 形状校验拦不住，必须靠宽度校验。
-        let planes = vec![
-            Array2::<u8>::zeros((4, 4)),
-            Array2::<u8>::zeros((2, 2)),
-            Array2::<u8>::zeros((2, 2)),
-        ];
-        let video =
-            MediaFrame::<u8>::new_video(4, 4, PixelFormat::YUV420P10LE, FrameData::from(planes));
+        let planes = vec![Array2::<u8>::zeros((4, 4)), Array2::<u8>::zeros((2, 2)), Array2::<u8>::zeros((2, 2))];
+        let video = MediaFrame::<u8>::new_video(4, 4, PixelFormat::YUV420P10LE, FrameData::from(planes));
         assert!(video.is_err(), "u8 planes must not build a 10-bit frame");
 
         // 宽度匹配时照常通过：10bit 用 u16，8bit 用 u8。
@@ -1828,21 +1537,11 @@ mod tests {
     #[test]
     fn test_audio_data_layout() {
         // 平面格式：每声道一个 `(1, samples)` 平面
-        assert_eq!(
-            SampleFormat::FLTP.data_layout(2, 1024),
-            DataLayout::Planar(vec![(1, 1024), (1, 1024)])
-        );
+        assert_eq!(SampleFormat::FLTP.data_layout(2, 1024), DataLayout::Planar(vec![(1, 1024), (1, 1024)]));
         assert_eq!(SampleFormat::FLTP.data_layout(2, 1024).num_planes(), 2);
 
         // 交错格式：单个 `(1, samples, channels)` 数组
-        assert_eq!(
-            SampleFormat::S16.data_layout(2, 1024),
-            DataLayout::Interleaved {
-                rows: 1,
-                cols: 1024,
-                components: 2,
-            }
-        );
+        assert_eq!(SampleFormat::S16.data_layout(2, 1024), DataLayout::Interleaved { rows: 1, cols: 1024, components: 2 });
         assert_eq!(SampleFormat::S16.data_layout(2, 1024).num_planes(), 1);
     }
 
@@ -1857,10 +1556,7 @@ mod tests {
         assert!(packed.plane(1).is_err());
         assert_eq!(packed.len(), 72);
 
-        let planar = FrameData::from(vec![
-            Array2::<u8>::zeros((4, 6)),
-            Array2::<u8>::zeros((2, 3)),
-        ]);
+        let planar = FrameData::from(vec![Array2::<u8>::zeros((4, 6)), Array2::<u8>::zeros((2, 3))]);
         assert_eq!(planar.num_planes(), 2);
         assert!(planar.as_packed().is_none());
         assert_eq!(planar.plane(1).map(|p| p.dim()).ok(), Some((2, 3)));
@@ -1878,17 +1574,13 @@ mod tests {
     fn test_frame_data_map_planes() -> Result<()> {
         // 交错帧经 map_planes 后仍是交错帧，形状不变
         let packed = FrameData::from(Array3::<u8>::from_elem((2, 3, 3), 4));
-        let mapped =
-            packed.map_planes(|_, plane| Ok(Array2::from_elem(plane.dim(), plane[[0, 0]] + 1)))?;
+        let mapped = packed.map_planes(|_, plane| Ok(Array2::from_elem(plane.dim(), plane[[0, 0]] + 1)))?;
         assert_eq!(mapped.as_packed().map(|a| a.dim()), Some((2, 3, 3)));
         assert!(mapped.as_planes().is_none());
         assert_eq!(mapped.as_packed().unwrap()[[0, 0, 0]], 5);
 
         // 平面帧经 map_planes 后仍是平面帧
-        let planar = FrameData::from(vec![
-            Array2::<u8>::from_elem((2, 3), 1),
-            Array2::<u8>::from_elem((1, 1), 2),
-        ]);
+        let planar = FrameData::from(vec![Array2::<u8>::from_elem((2, 3), 1), Array2::<u8>::from_elem((1, 1), 2)]);
         let mapped = planar.map_planes(|_, plane| Ok(plane.mapv(|v| v * 2)))?;
         assert_eq!(mapped.num_planes(), 2);
         assert_eq!(mapped.as_planes().unwrap()[0][[1, 2]], 2);
@@ -1898,23 +1590,13 @@ mod tests {
 
     #[test]
     fn test_frame_data_matches() -> Result<()> {
-        let layout = DataLayout::Interleaved {
-            rows: 4,
-            cols: 6,
-            components: 3,
-        };
+        let layout = DataLayout::Interleaved { rows: 4, cols: 6, components: 3 };
         assert!(FrameData::from(Array3::<u8>::zeros((4, 6, 3))).matches(&layout));
         assert!(!FrameData::from(Array3::<u8>::zeros((4, 6, 4))).matches(&layout));
         assert!(!FrameData::from(vec![Array2::<u8>::zeros((4, 6))]).matches(&layout));
 
         let layout = DataLayout::Planar(vec![(4, 6), (2, 3)]);
-        assert!(
-            FrameData::from(vec![
-                Array2::<u8>::zeros((4, 6)),
-                Array2::<u8>::zeros((2, 3))
-            ])
-            .matches(&layout)
-        );
+        assert!(FrameData::from(vec![Array2::<u8>::zeros((4, 6)), Array2::<u8>::zeros((2, 3))]).matches(&layout));
         assert!(!FrameData::from(vec![Array2::<u8>::zeros((4, 6))]).matches(&layout));
 
         Ok(())
@@ -1922,13 +1604,9 @@ mod tests {
 
     #[test]
     fn test_frame_data_access() -> Result<()> {
-        let mut frame =
-            MediaFrame::<u8>::new_video_frame(TEST_WIDTH, TEST_HEIGHT, PixelFormat::RGB24)?;
+        let mut frame = MediaFrame::<u8>::new_video_frame(TEST_WIDTH, TEST_HEIGHT, PixelFormat::RGB24)?;
         assert_eq!(frame.data.num_planes(), 1);
-        assert_eq!(
-            frame.data.as_packed().map(|a| a.dim()),
-            Some((TEST_HEIGHT, TEST_WIDTH, 3))
-        );
+        assert_eq!(frame.data.as_packed().map(|a| a.dim()), Some((TEST_HEIGHT, TEST_WIDTH, 3)));
 
         // 测试数据访问和修改
         let (r, g, b) = fill_rgb_data(&mut frame, TEST_WIDTH, TEST_HEIGHT);
@@ -1951,23 +1629,15 @@ mod tests {
     fn test_different_pixel_types() -> Result<()> {
         // 元素类型是泛型参数，但必须与该格式的每样本字节数一致：
         // 8bit 格式配 u8、10bit 格式配 u16、浮点采样配 f32。
-        let frame_u8 =
-            MediaFrame::<u8>::new_video_frame(TEST_WIDTH, TEST_HEIGHT, PixelFormat::RGB24)?;
-        assert_eq!(
-            std::mem::size_of_val(&frame_u8.data.as_packed().unwrap()[[0, 0, 0]]),
-            1
-        );
+        let frame_u8 = MediaFrame::<u8>::new_video_frame(TEST_WIDTH, TEST_HEIGHT, PixelFormat::RGB24)?;
+        assert_eq!(std::mem::size_of_val(&frame_u8.data.as_packed().unwrap()[[0, 0, 0]]), 1);
 
-        let frame_u16 =
-            MediaFrame::<u16>::new_video_frame(TEST_WIDTH, TEST_HEIGHT, PixelFormat::YUV420P10LE)?;
+        let frame_u16 = MediaFrame::<u16>::new_video_frame(TEST_WIDTH, TEST_HEIGHT, PixelFormat::YUV420P10LE)?;
         let luma = &frame_u16.data.as_planes().unwrap()[0];
         assert_eq!(std::mem::size_of_val(&luma[[0, 0]]), 2);
 
         let frame_f32 = MediaFrame::<f32>::new_audio_frame(SampleFormat::FLT, 2, 128, 44100)?;
-        assert_eq!(
-            std::mem::size_of_val(&frame_f32.data.as_packed().unwrap()[[0, 0, 0]]),
-            4
-        );
+        assert_eq!(std::mem::size_of_val(&frame_f32.data.as_packed().unwrap()[[0, 0, 0]]), 4);
 
         Ok(())
     }
@@ -1981,12 +1651,8 @@ mod tests {
 
         let mut frames = Vec::new();
         for i in 0..5 {
-            let mut frame =
-                MediaFrame::<u8>::new_video_frame(TEST_WIDTH, TEST_HEIGHT, PixelFormat::RGB24)?;
-            assert_eq!(
-                frame.time_base.num, 0,
-                "video frames start with no time base"
-            );
+            let mut frame = MediaFrame::<u8>::new_video_frame(TEST_WIDTH, TEST_HEIGHT, PixelFormat::RGB24)?;
+            assert_eq!(frame.time_base.num, 0, "video frames start with no time base");
             frame.set_time_base(TIME_BASE);
             frame.set_pts(i as i64);
             frames.push(frame);
@@ -1995,9 +1661,7 @@ mod tests {
         // 验证时间戳的正确性（pts 按显式声明的 1/30 换算为物理时间）
         for (i, frame) in frames.iter().enumerate() {
             let expected_time = frame_duration * i as u32;
-            let actual_time = Duration::from_secs_f64(
-                frame.pts as f64 * frame.time_base.num as f64 / frame.time_base.den as f64,
-            );
+            let actual_time = Duration::from_secs_f64(frame.pts as f64 * frame.time_base.num as f64 / frame.time_base.den as f64);
             assert!((actual_time - expected_time).as_secs_f32().abs() < 0.01);
         }
 
@@ -2027,39 +1691,23 @@ mod tests {
             PixelFormat::GRAY8,
         ] {
             let converted = frame.convert_to(dst)?;
-            assert_eq!(
-                converted.format,
-                FrameFormat::Pixel(dst),
-                "target {dst:?} not reported back"
-            );
+            assert_eq!(converted.format, FrameFormat::Pixel(dst), "target {dst:?} not reported back");
             assert_eq!((converted.width, converted.height), (width, height));
-            assert!(
-                converted.data.matches(&converted.data_layout()?),
-                "target {dst:?} produced a layout its own format disagrees with"
-            );
+            assert!(converted.data.matches(&converted.data_layout()?), "target {dst:?} produced a layout its own format disagrees with");
         }
 
         // 经 YUV444P 回到 RGB24：色度未二次采样，误差应很小。
-        let round_trip = frame
-            .convert_to(PixelFormat::YUV444P)?
-            .convert_to(PixelFormat::RGB24)?;
+        let round_trip = frame.convert_to(PixelFormat::YUV444P)?.convert_to(PixelFormat::RGB24)?;
         let back = round_trip.data.as_packed().expect("RGB24 is interleaved");
         let max_error = (0..height)
             .flat_map(|y| (0..width).map(move |x| (y, x)))
             .flat_map(|(y, x)| {
                 let idx = y * width + x;
-                [
-                    back[[y, x, 0]].abs_diff(r[idx]),
-                    back[[y, x, 1]].abs_diff(g[idx]),
-                    back[[y, x, 2]].abs_diff(b[idx]),
-                ]
+                [back[[y, x, 0]].abs_diff(r[idx]), back[[y, x, 1]].abs_diff(g[idx]), back[[y, x, 2]].abs_diff(b[idx])]
             })
             .max()
             .unwrap_or(0);
-        assert!(
-            max_error <= 2,
-            "RGB24 -> YUV444P -> RGB24 drifted by {max_error} levels"
-        );
+        assert!(max_error <= 2, "RGB24 -> YUV444P -> RGB24 drifted by {max_error} levels");
 
         // 音频帧没有像素格式可换。
         let audio = MediaFrame::<f32>::new_audio_frame(SampleFormat::FLTP, 2, 128, 48_000)?;
@@ -2070,10 +1718,7 @@ mod tests {
             Ok(_) => panic!("a 10-bit target needs a 16-bit frame"),
             Err(e) => e,
         };
-        assert!(
-            err.to_string().contains("expected 2, got 1"),
-            "unexpected error for a width mismatch: {err}"
-        );
+        assert!(err.to_string().contains("expected 2, got 1"), "unexpected error for a width mismatch: {err}");
 
         // 已是指定格式时原样返回（无需转换）。
         let same = frame.convert_to(PixelFormat::RGB24)?;
@@ -2090,22 +1735,13 @@ mod tests {
         let mut frame = MediaFrame::<u8>::new_video_frame(width, height, PixelFormat::RGB24)?;
 
         // 验证元数据与布局
-        assert_eq!(
-            frame.data.as_packed().expect("RGB24 is interleaved").dim(),
-            (height, width, 3)
-        );
+        assert_eq!(frame.data.as_packed().expect("RGB24 is interleaved").dim(), (height, width, 3));
         assert_eq!(frame.width, width);
         assert_eq!(frame.height, height);
         assert_eq!(frame.format, FrameFormat::Pixel(PixelFormat::RGB24));
         // 视频帧不带时间基：分辨率里没有帧率信息，编码器会用自身的输入时间基解释 pts。
-        assert_eq!(
-            frame.time_base.num, 0,
-            "video frames start with no time base"
-        );
-        assert!(
-            frame.data.as_packed().unwrap().is_standard_layout(),
-            "RGB24 应为行主序连续布局"
-        );
+        assert_eq!(frame.time_base.num, 0, "video frames start with no time base");
+        assert!(frame.data.as_packed().unwrap().is_standard_layout(), "RGB24 应为行主序连续布局");
 
         // 填充并读回验证
         let rgb = frame.data.as_packed_mut().unwrap();
@@ -2130,8 +1766,7 @@ mod tests {
 
     #[test]
     fn test_create_yuv420p_planes() -> Result<()> {
-        let frame =
-            MediaFrame::<u8>::new_video_frame(TEST_WIDTH, TEST_HEIGHT, PixelFormat::YUV420P)?;
+        let frame = MediaFrame::<u8>::new_video_frame(TEST_WIDTH, TEST_HEIGHT, PixelFormat::YUV420P)?;
 
         // 平面原生尺寸：Y 满分辨率，U/V 各半尺寸（不复制成 2x2 块）
         let planes = frame.data.as_planes().expect("YUV420P is planar");
@@ -2139,10 +1774,7 @@ mod tests {
         assert_eq!(planes[0].dim(), (TEST_HEIGHT, TEST_WIDTH));
         assert_eq!(planes[1].dim(), (TEST_HEIGHT / 2, TEST_WIDTH / 2));
         assert_eq!(planes[2].dim(), (TEST_HEIGHT / 2, TEST_WIDTH / 2));
-        assert_eq!(
-            frame.data.len(),
-            TEST_WIDTH * TEST_HEIGHT + TEST_WIDTH * TEST_HEIGHT / 2
-        );
+        assert_eq!(frame.data.len(), TEST_WIDTH * TEST_HEIGHT + TEST_WIDTH * TEST_HEIGHT / 2);
 
         Ok(())
     }
@@ -2150,59 +1782,19 @@ mod tests {
     #[test]
     fn test_video_layout_validation() -> Result<()> {
         // 分量数不对
-        assert!(
-            MediaFrame::<u8>::new_video(
-                16,
-                16,
-                PixelFormat::RGB24,
-                Array3::<u8>::zeros((16, 16, 4))
-            )
-            .is_err()
-        );
+        assert!(MediaFrame::<u8>::new_video(16, 16, PixelFormat::RGB24, Array3::<u8>::zeros((16, 16, 4))).is_err());
 
         // 尺寸不对
-        assert!(
-            MediaFrame::<u8>::new_video(
-                16,
-                16,
-                PixelFormat::RGB24,
-                Array3::<u8>::zeros((16, 32, 3))
-            )
-            .is_err()
-        );
+        assert!(MediaFrame::<u8>::new_video(16, 16, PixelFormat::RGB24, Array3::<u8>::zeros((16, 32, 3))).is_err());
 
         // 平面格式收到交错数据
-        assert!(
-            MediaFrame::<u8>::new_video(
-                16,
-                16,
-                PixelFormat::YUV420P,
-                Array3::<u8>::zeros((16, 16, 3))
-            )
-            .is_err()
-        );
+        assert!(MediaFrame::<u8>::new_video(16, 16, PixelFormat::YUV420P, Array3::<u8>::zeros((16, 16, 3))).is_err());
 
         // 交错格式收到平面数据
-        assert!(
-            MediaFrame::<u8>::new_video(
-                16,
-                16,
-                PixelFormat::RGB24,
-                vec![Array2::<u8>::zeros((16, 16))]
-            )
-            .is_err()
-        );
+        assert!(MediaFrame::<u8>::new_video(16, 16, PixelFormat::RGB24, vec![Array2::<u8>::zeros((16, 16))]).is_err());
 
         // 正确布局应通过
-        assert!(
-            MediaFrame::<u8>::new_video(
-                16,
-                16,
-                PixelFormat::RGB24,
-                Array3::<u8>::zeros((16, 16, 3))
-            )
-            .is_ok()
-        );
+        assert!(MediaFrame::<u8>::new_video(16, 16, PixelFormat::RGB24, Array3::<u8>::zeros((16, 16, 3))).is_ok());
 
         Ok(())
     }
@@ -2214,17 +1806,13 @@ mod tests {
         let sample_rate = 44100;
 
         // FLTP 是平面格式：每个声道一个 `(1, nb_samples)` 平面
-        let mut frame =
-            MediaFrame::<f32>::new_audio_frame(SampleFormat::FLTP, channels, samples, sample_rate)?;
+        let mut frame = MediaFrame::<f32>::new_audio_frame(SampleFormat::FLTP, channels, samples, sample_rate)?;
 
         // 音频帧的时间基由采样率推出，无需调用方传递。
         assert_eq!((frame.time_base.num, frame.time_base.den), (1, 44100));
 
         assert_eq!(frame.data.num_planes(), channels as usize);
-        assert_eq!(
-            frame.data.as_planes().unwrap()[0].dim(),
-            (1, samples as usize)
-        );
+        assert_eq!(frame.data.as_planes().unwrap()[0].dim(), (1, samples as usize));
         assert!(!frame.data.is_empty());
 
         // 填充一些测试数据
@@ -2251,10 +1839,7 @@ mod tests {
     fn test_create_interleaved_audio_frame() -> Result<()> {
         // S16 是交错格式：单个 `(1, nb_samples, nb_channels)` 数组
         let frame = MediaFrame::<i16>::new_audio_frame(SampleFormat::S16, 2, 480, 48000)?;
-        assert_eq!(
-            frame.data.as_packed().expect("S16 is interleaved").dim(),
-            (1, 480, 2)
-        );
+        assert_eq!(frame.data.as_packed().expect("S16 is interleaved").dim(), (1, 480, 2));
         assert!(frame.data.as_planes().is_none());
 
         Ok(())
@@ -2263,40 +1848,13 @@ mod tests {
     #[test]
     fn test_audio_layout_validation() -> Result<()> {
         // FLTP 需要每声道一个平面，交错数组应被拒绝
-        assert!(
-            MediaFrame::<f32>::new_audio(
-                SampleFormat::FLTP,
-                2,
-                16,
-                48000,
-                Array3::<f32>::zeros((1, 16, 2))
-            )
-            .is_err()
-        );
+        assert!(MediaFrame::<f32>::new_audio(SampleFormat::FLTP, 2, 16, 48000, Array3::<f32>::zeros((1, 16, 2))).is_err());
 
         // 交错格式收到平面数据也不行
-        assert!(
-            MediaFrame::<f32>::new_audio(
-                SampleFormat::FLT,
-                2,
-                16,
-                48000,
-                vec![Array2::<f32>::zeros((1, 16)), Array2::<f32>::zeros((1, 16))]
-            )
-            .is_err()
-        );
+        assert!(MediaFrame::<f32>::new_audio(SampleFormat::FLT, 2, 16, 48000, vec![Array2::<f32>::zeros((1, 16)), Array2::<f32>::zeros((1, 16))]).is_err());
 
         // 平面数与声道数不符
-        assert!(
-            MediaFrame::<f32>::new_audio(
-                SampleFormat::FLTP,
-                2,
-                16,
-                48000,
-                vec![Array2::<f32>::zeros((1, 16))]
-            )
-            .is_err()
-        );
+        assert!(MediaFrame::<f32>::new_audio(SampleFormat::FLTP, 2, 16, 48000, vec![Array2::<f32>::zeros((1, 16))]).is_err());
 
         Ok(())
     }

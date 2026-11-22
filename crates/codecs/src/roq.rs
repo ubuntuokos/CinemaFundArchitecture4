@@ -80,7 +80,13 @@ impl RoqSource {
                 hdr: None,
             });
             let state_bytes = dec.state_bytes().max(stream.width as usize * stream.height as usize * 6);
-            video = Some(Video { width: stream.width, height: stream.height, rate, cache: GopCache::new(Some(color())), checkpoints: Arc::new(Checkpoints::new(SPACING, state_bytes)) });
+            video = Some(Video {
+                width: stream.width,
+                height: stream.height,
+                rate,
+                cache: GopCache::new(Some(color())),
+                checkpoints: Arc::new(Checkpoints::new(SPACING, state_bytes)),
+            });
         }
         let mut audio = None;
         let mut audio_streams = Vec::new();

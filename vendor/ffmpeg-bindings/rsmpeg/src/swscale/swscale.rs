@@ -59,12 +59,8 @@ impl SwsContext {
                 dst_h,
                 dst_format,
                 flags as i32,
-                src_filter
-                    .map(|x| x as *const _ as *mut _)
-                    .unwrap_or_else(ptr::null_mut),
-                dst_filter
-                    .map(|x| x as *const _ as *mut _)
-                    .unwrap_or_else(ptr::null_mut),
+                src_filter.map(|x| x as *const _ as *mut _).unwrap_or_else(ptr::null_mut),
+                dst_filter.map(|x| x as *const _ as *mut _).unwrap_or_else(ptr::null_mut),
                 param.map(|x| x.as_ptr()).unwrap_or_else(ptr::null),
             )
         }
@@ -112,12 +108,8 @@ impl SwsContext {
                 dst_h,
                 dst_format,
                 flags as i32,
-                src_filter
-                    .map(|x| x as *const _ as *mut _)
-                    .unwrap_or_else(ptr::null_mut),
-                dst_filter
-                    .map(|x| x as *const _ as *mut _)
-                    .unwrap_or_else(ptr::null_mut),
+                src_filter.map(|x| x as *const _ as *mut _).unwrap_or_else(ptr::null_mut),
+                dst_filter.map(|x| x as *const _ as *mut _).unwrap_or_else(ptr::null_mut),
                 param.map(|x| x.as_ptr()).unwrap_or_else(ptr::null),
             )
         }
@@ -148,29 +140,12 @@ impl SwsContext {
         // ATTENTION, ffmpeg's documentation doesn't say `sws_scale` could
         // return negative number, but after checking it's implementation, you
         // will find it returns negative number on error.
-        unsafe {
-            ffi::sws_scale(
-                self.as_mut_ptr(),
-                src_slice,
-                src_stride,
-                src_slice_y,
-                src_slice_h,
-                dst,
-                dst_stride,
-            )
-        }
-        .upgrade()?;
+        unsafe { ffi::sws_scale(self.as_mut_ptr(), src_slice, src_stride, src_slice_y, src_slice_h, dst, dst_stride) }.upgrade()?;
         Ok(())
     }
 
     /// A wrapper of [`Self::scale`], check it's documentation.
-    pub fn scale_frame(
-        &mut self,
-        src_frame: &AVFrame,
-        src_slice_y: i32,
-        src_slice_h: i32,
-        dst_frame: &mut AVFrame,
-    ) -> Result<()> {
+    pub fn scale_frame(&mut self, src_frame: &AVFrame, src_slice_y: i32, src_slice_h: i32, dst_frame: &mut AVFrame) -> Result<()> {
         unsafe {
             self.scale(
                 src_frame.data.as_ptr() as _,
@@ -236,8 +211,7 @@ impl SwsContext {
     /// Return `Ok(())` on success, `Err(_)` with a negative AVERROR code on
     /// failure.
     pub fn scale_full_frame(&mut self, dst: &mut AVFrame, src: &AVFrame) -> Result<()> {
-        unsafe { ffi::sws_scale_frame(self.as_mut_ptr(), dst.as_mut_ptr(), src.as_ptr()) }
-            .upgrade()?;
+        unsafe { ffi::sws_scale_frame(self.as_mut_ptr(), dst.as_mut_ptr(), src.as_ptr()) }.upgrade()?;
         Ok(())
     }
 }

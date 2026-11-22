@@ -150,7 +150,11 @@ pub fn parse(data: &[u8]) -> Result<Stream> {
                     s.audio_channels = Some(if kind as u16 == SOUND_STEREO { 2 } else { 1 });
                 }
                 let span = Span { start: pos - PREAMBLE, len: size + PREAMBLE };
-                if kind as u16 == QUAD_VQ { s.video.push(span) } else { s.audio.push(span) }
+                if kind as u16 == QUAD_VQ {
+                    s.video.push(span)
+                } else {
+                    s.audio.push(span)
+                }
                 pos += size;
             }
             _ => {
@@ -162,7 +166,7 @@ pub fn parse(data: &[u8]) -> Result<Stream> {
     if s.video.is_empty() && s.audio.is_empty() {
         return Err(Error::Invalid("no packets"));
     }
-    if !s.video.is_empty() && (s.width == 0 || s.height == 0 || s.width % 16 != 0 || s.height % 16 != 0) {
+    if !s.video.is_empty() && (s.width == 0 || s.height == 0 || !s.width.is_multiple_of(16) || !s.height.is_multiple_of(16)) {
         return Err(Error::Unsupported("picture size not a multiple of 16"));
     }
     if u64::from(s.width) * u64::from(s.height) > MAX_PIXELS {
@@ -278,7 +282,7 @@ pub struct Decoder {
 
 impl Decoder {
     pub fn new(width: u32, height: u32) -> Result<Self> {
-        if width == 0 || height == 0 || width % 16 != 0 || height % 16 != 0 {
+        if width == 0 || height == 0 || !width.is_multiple_of(16) || !height.is_multiple_of(16) {
             return Err(Error::Unsupported("picture size not a multiple of 16"));
         }
         if u64::from(width) * u64::from(height) > MAX_PIXELS {

@@ -41,9 +41,7 @@
 //! ```
 
 use crate::error::{Result, RsmediaError};
-use rsmpeg::avcodec::{
-    AVBSFContext, AVBSFContextUninit, AVBitStreamFilter, AVCodecParameters, AVPacket,
-};
+use rsmpeg::avcodec::{AVBSFContext, AVBSFContextUninit, AVBitStreamFilter, AVCodecParameters, AVPacket};
 use rsmpeg::error::RsmpegError;
 use rsmpeg::ffi;
 use std::ffi::CString;
@@ -65,9 +63,7 @@ impl std::fmt::Debug for Bsf {
 impl Bsf {
     /// 列出当前 FFmpeg 构建支持的全部 bitstream filter 名字。
     pub fn list() -> Vec<String> {
-        AVBitStreamFilter::iterate()
-            .map(|f| f.name().to_string_lossy().into_owned())
-            .collect()
+        AVBitStreamFilter::iterate().map(|f| f.name().to_string_lossy().into_owned()).collect()
     }
 
     /// 创建并初始化一个 bitstream filter。
@@ -77,18 +73,10 @@ impl Bsf {
     /// * `name` - filter 名（如 `h264_mp4toannexb`，完整列表见 [`Bsf::list`]）
     /// * `codecpar` - 输入流的 codec 参数（决定 filter 是否适用该 codec）
     /// * `time_base` - 输入包的时间基（写入 `AVBSFContext.time_base_in`）
-    pub fn new(
-        name: &str,
-        codecpar: &AVCodecParameters,
-        time_base: ffi::AVRational,
-    ) -> Result<Self> {
-        let name_c = CString::new(name)
-            .map_err(|e| RsmediaError::invalid_config(format!("bsf name {name:?}: {e}")))?;
-        let filter = AVBitStreamFilter::find_by_name(&name_c).ok_or_else(|| {
-            RsmediaError::invalid_config(format!(
-                "bitstream filter '{name}' not found in this FFmpeg build"
-            ))
-        })?;
+    pub fn new(name: &str, codecpar: &AVCodecParameters, time_base: ffi::AVRational) -> Result<Self> {
+        let name_c = CString::new(name).map_err(|e| RsmediaError::invalid_config(format!("bsf name {name:?}: {e}")))?;
+        let filter = AVBitStreamFilter::find_by_name(&name_c)
+            .ok_or_else(|| RsmediaError::invalid_config(format!("bitstream filter '{name}' not found in this FFmpeg build")))?;
         let mut ctx = AVBSFContextUninit::new(&filter);
         ctx.set_par_in(codecpar);
         ctx.set_time_base_in(time_base);
@@ -107,9 +95,7 @@ impl Bsf {
     fn send_packet(&mut self, packet: &mut AVPacket) -> Result<()> {
         match self.inner.send_packet(Some(packet)) {
             Ok(()) => Ok(()),
-            Err(RsmpegError::BitstreamFullError) => Err(RsmediaError::msg(
-                "bitstream filter is full: drain received packets first",
-            )),
+            Err(RsmpegError::BitstreamFullError) => Err(RsmediaError::msg("bitstream filter is full: drain received packets first")),
             Err(e) => Err(e.into()),
         }
     }
@@ -159,9 +145,7 @@ impl Bsf {
                     // push an empty packet downstream as if it were real data.
                     let ret = unsafe { ffi::av_packet_ref(owned.as_mut_ptr(), holder.as_ptr()) };
                     if ret < 0 {
-                        return Err(RsmediaError::msg(format!(
-                            "av_packet_ref failed while draining the bitstream filter: {ret}"
-                        )));
+                        return Err(RsmediaError::msg(format!("av_packet_ref failed while draining the bitstream filter: {ret}")));
                     }
                     out.push(owned);
                 }
@@ -193,10 +177,7 @@ mod tests {
         let mut demuxer = Demuxer::new("assets/mp4.mp4")?;
         let nb = demuxer.nb_streams();
         let infos: Vec<_> = (0..nb).map(|i| demuxer.stream_info(i).unwrap()).collect();
-        let v_in = infos
-            .iter()
-            .position(|i| i.media_type == MediaType::VIDEO)
-            .expect("mp4 asset has a video stream");
+        let v_in = infos.iter().position(|i| i.media_type == MediaType::VIDEO).expect("mp4 asset has a video stream");
         let a_in = infos.iter().position(|i| i.media_type == MediaType::AUDIO);
 
         let mut muxer = Muxer::new(&out)?;
@@ -255,12 +236,7 @@ mod tests {
     #[test]
     fn test_bsf_unknown_name_rejected() {
         let codecpar = AVCodecParameters::new();
-        let err = Bsf::new(
-            "no_such_bsf",
-            &codecpar,
-            ffi::AVRational { num: 1, den: 30 },
-        )
-        .expect_err("unknown filter must be rejected");
+        let err = Bsf::new("no_such_bsf", &codecpar, ffi::AVRational { num: 1, den: 30 }).expect_err("unknown filter must be rejected");
         assert!(err.is_invalid_config(), "{err}");
     }
 }

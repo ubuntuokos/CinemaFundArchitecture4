@@ -56,7 +56,7 @@ fn random_packet(w: usize, h: usize, first: bool, codebook: Option<(usize, usize
             (0..4).for_each(|_| body.push(rng.below(n1 as u64) as u8));
         }
         // a count of 256 is written as 0 (and 0 quad entries means 256 when the chunk is big enough)
-        out.extend(chunk(0x1002, body.len() as u32, ((n1 % 256) << 8 | n2 % 256) as u16, &body));
+        out.extend(chunk(0x1002, body.len() as u32, (((n1 % 256) << 8) | (n2 % 256)) as u16, &body));
     }
     let (n1, n2) = loaded;
     let mut data = Vec::new();

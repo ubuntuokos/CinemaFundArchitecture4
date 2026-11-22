@@ -40,28 +40,12 @@ impl Theme {
     pub fn palette(self) -> Palette {
         let rgb = |[r, g, b]: [u8; 3]| Color32::from_rgb(r, g, b);
         let colors = match self {
-            Self::Light => [
-                [226, 232, 240],
-                [186, 230, 253],
-                [125, 211, 252],
-                [37, 99, 235],
-                [148, 163, 184],
-                [15, 23, 42],
-                [12, 74, 110],
-                [8, 47, 73],
-                [220, 38, 38],
-            ],
-            Self::Dark => [
-                [31, 41, 55],
-                [55, 65, 81],
-                [75, 85, 99],
-                [67, 56, 202],
-                [100, 116, 139],
-                [226, 232, 240],
-                [243, 244, 246],
-                [255, 255, 255],
-                [56, 189, 248],
-            ],
+            Self::Light => {
+                [[226, 232, 240], [186, 230, 253], [125, 211, 252], [37, 99, 235], [148, 163, 184], [15, 23, 42], [12, 74, 110], [8, 47, 73], [220, 38, 38]]
+            }
+            Self::Dark => {
+                [[31, 41, 55], [55, 65, 81], [75, 85, 99], [67, 56, 202], [100, 116, 139], [226, 232, 240], [243, 244, 246], [255, 255, 255], [56, 189, 248]]
+            }
         };
         Palette {
             normal: rgb(colors[0]),
@@ -214,8 +198,7 @@ pub fn actual(ui: &mut Ui, case: Case, mutation: Mutation) -> Vec<Response> {
     if case.component.is_split() {
         let axis = if matches!(case.component, Component::HorizontalSplit) { SplitAxis::Horizontal } else { SplitAxis::Vertical };
         let area = Rect::from_min_size(pos2(12.0, 12.0), if case.compact { vec2(52.0, 20.0) } else { vec2(104.0, 44.0) });
-        let split =
-            split_rect(area, axis, SplitSize::Ratio(if case.compact { 0.5 } else { 0.375 }), if case.compact { 3.0 } else { 4.0 }, 4.0).unwrap();
+        let split = split_rect(area, axis, SplitSize::Ratio(if case.compact { 0.5 } else { 0.375 }), if case.compact { 3.0 } else { 4.0 }, 4.0).unwrap();
         ui.painter().rect_filled(split.first, 0.0, p.normal);
         ui.painter().rect_filled(split.second, 0.0, p.hovered);
         let response = ui

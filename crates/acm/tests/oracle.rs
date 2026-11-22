@@ -249,4 +249,3 @@ fn damaged_streams_do_not_panic() {
         let _ = decode_file(&data);
     }
 }
-

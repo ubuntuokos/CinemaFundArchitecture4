@@ -75,9 +75,10 @@ impl<'a> ResizeHandle<'a> {
             && (0.0..=4096.0).contains(&self.hit_margin)
             && self.step.is_finite()
             && self.step > 0.0
-            && self.value.as_ref().is_none_or(|(value, range)| {
-                value.is_finite() && range.start().is_finite() && range.end().is_finite() && range.start() <= range.end()
-            });
+            && self
+                .value
+                .as_ref()
+                .is_none_or(|(value, range)| value.is_finite() && range.start().is_finite() && range.end().is_finite() && range.start() <= range.end());
         let inert = Rect::from_min_size(ui.min_rect().min, Vec2::ZERO);
         let mut response = ui.interact(if valid { hit } else { inert }, self.id, if valid { Sense::drag() } else { Sense::hover() });
         let enabled = valid && response.enabled();

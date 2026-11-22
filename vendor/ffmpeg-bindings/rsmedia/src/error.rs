@@ -39,10 +39,7 @@ pub enum RsmediaError {
     /// Any other error with a human readable message.
     Other(String),
     /// An error with additional context attached (produced by [`Context`]).
-    Context {
-        context: String,
-        source: Box<RsmediaError>,
-    },
+    Context { context: String, source: Box<RsmediaError> },
 }
 
 impl RsmediaError {
@@ -50,18 +47,11 @@ impl RsmediaError {
     pub fn with_context(mut self, context: impl Into<String>) -> Self {
         // Nested contexts collapse into a single message chain: keep the
         // innermost error and join the context strings outermost-first.
-        if let RsmediaError::Context {
-            context: inner,
-            source,
-        } = self
-        {
+        if let RsmediaError::Context { context: inner, source } = self {
             self = *source;
             self.with_context(format!("{}: {inner}", context.into()))
         } else {
-            RsmediaError::Context {
-                context: context.into(),
-                source: Box::new(self),
-            }
+            RsmediaError::Context { context: context.into(), source: Box::new(self) }
         }
     }
 
@@ -173,9 +163,7 @@ impl From<std::io::Error> for RsmediaError {
 
 impl From<std::ffi::NulError> for RsmediaError {
     fn from(e: std::ffi::NulError) -> Self {
-        RsmediaError::InvalidConfig(format!(
-            "string passed to FFmpeg contains interior NUL byte: {e}"
-        ))
+        RsmediaError::InvalidConfig(format!("string passed to FFmpeg contains interior NUL byte: {e}"))
     }
 }
 
@@ -242,43 +230,25 @@ mod tests {
 
     #[test]
     fn test_display_variants() {
-        assert_eq!(
-            RsmediaError::codec_not_found("libx265").to_string(),
-            "codec not found in this FFmpeg build: 'libx265'"
-        );
-        assert_eq!(
-            RsmediaError::format_not_found("mkv").to_string(),
-            "format not found in this FFmpeg build: 'mkv'"
-        );
-        assert_eq!(
-            RsmediaError::unsupported("qsv on this platform").to_string(),
-            "unsupported operation: qsv on this platform"
-        );
+        assert_eq!(RsmediaError::codec_not_found("libx265").to_string(), "codec not found in this FFmpeg build: 'libx265'");
+        assert_eq!(RsmediaError::format_not_found("mkv").to_string(), "format not found in this FFmpeg build: 'mkv'");
+        assert_eq!(RsmediaError::unsupported("qsv on this platform").to_string(), "unsupported operation: qsv on this platform");
     }
 
     #[test]
     fn test_context_chain() {
         let err: std::result::Result<(), RsmpegError> = Err(RsmpegError::DecoderDrainError);
         let wrapped = err.context("Failed to drain decoder").unwrap_err();
-        assert_eq!(
-            wrapped.to_string(),
-            "Failed to drain decoder: FFmpeg error: Decoder have no frame currently, Try send new input."
-        );
+        assert_eq!(wrapped.to_string(), "Failed to drain decoder: FFmpeg error: Decoder have no frame currently, Try send new input.");
         // source() must walk down to the rsmpeg error.
         let src = wrapped.source().expect("context has a source");
-        assert_eq!(
-            src.to_string(),
-            "FFmpeg error: Decoder have no frame currently, Try send new input."
-        );
+        assert_eq!(src.to_string(), "FFmpeg error: Decoder have no frame currently, Try send new input.");
     }
 
     #[test]
     fn test_context_option() {
         let missing: Option<u8> = None;
-        assert_eq!(
-            missing.context("no device found").unwrap_err().to_string(),
-            "no device found"
-        );
+        assert_eq!(missing.context("no device found").unwrap_err().to_string(), "no device found");
     }
 
     #[test]
@@ -293,33 +263,15 @@ mod tests {
     #[test]
     fn test_is_predicates_track_their_variants() {
         for (error, test) in [
-            (
-                RsmediaError::format_not_found("nope"),
-                RsmediaError::is_format_not_found as fn(&RsmediaError) -> bool,
-            ),
-            (
-                RsmediaError::codec_not_found("nope"),
-                RsmediaError::is_codec_not_found as fn(&RsmediaError) -> bool,
-            ),
-            (
-                RsmediaError::unsupported("nope"),
-                RsmediaError::is_unsupported as fn(&RsmediaError) -> bool,
-            ),
-            (
-                RsmediaError::invalid_config("nope"),
-                RsmediaError::is_invalid_config as fn(&RsmediaError) -> bool,
-            ),
+            (RsmediaError::format_not_found("nope"), RsmediaError::is_format_not_found as fn(&RsmediaError) -> bool),
+            (RsmediaError::codec_not_found("nope"), RsmediaError::is_codec_not_found as fn(&RsmediaError) -> bool),
+            (RsmediaError::unsupported("nope"), RsmediaError::is_unsupported as fn(&RsmediaError) -> bool),
+            (RsmediaError::invalid_config("nope"), RsmediaError::is_invalid_config as fn(&RsmediaError) -> bool),
         ] {
-            assert!(
-                test(&error),
-                "{error:?} must be recognised by its predicate"
-            );
+            assert!(test(&error), "{error:?} must be recognised by its predicate");
             // 加了 context 之后根因仍是同一个，谓词必须继续生效。
             let wrapped = error.with_context("outer");
-            assert!(
-                test(&wrapped),
-                "context must not hide the root cause: {wrapped:?}"
-            );
+            assert!(test(&wrapped), "context must not hide the root cause: {wrapped:?}");
         }
     }
 }
