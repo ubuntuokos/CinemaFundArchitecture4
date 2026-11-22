@@ -28,6 +28,8 @@ pub const MAX_PATH_BYTES: usize = 4096;
 pub const MAX_REPORT_ITEMS: usize = 1_000;
 /// Longest report path or message (characters).
 pub const MAX_REPORT_CHARS: usize = 500;
+/// Most dependencies kept per asset.
+pub const MAX_DEPENDENCIES: usize = 1_000;
 
 /// Source file format of an asset.
 #[derive(Clone, Copy, Debug, PartialEq, Eq, PartialOrd, Ord, Serialize, Deserialize)]
@@ -106,6 +108,14 @@ pub struct ReportEntry {
     pub message: String,
 }
 
+/// A file the asset needs besides its main file (a glTF `.bin`, an OBJ `.mtl`, a texture image), by the
+/// relative URI the format names, with the SHA-256 it had at import.
+#[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
+pub struct Dependency {
+    pub uri: String,
+    pub sha256: String,
+}
+
 /// What the importer found, for the asset panel.
 #[derive(Clone, Copy, Debug, Default, PartialEq, Eq, Serialize, Deserialize)]
 pub struct AssetStats {
@@ -139,6 +149,10 @@ pub struct Asset3d {
     /// The unsupported report, kept when the route changes.
     #[serde(default, skip_serializing_if = "Vec::is_empty")]
     pub report: Vec<ReportEntry>,
+    /// External files read with the asset (buffers, materials, textures), each with its SHA-256, so a
+    /// change in any of them is noticed like a change in the main file.
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    pub dependencies: Vec<Dependency>,
     /// Report entries beyond the importer's cap, counted only.
     #[serde(default, skip_serializing_if = "is_zero")]
     pub dropped: u64,
@@ -212,6 +226,11 @@ impl Scene3d {
             if a.route == Route::B && !Route::native_supported(a.format) {
                 a.route = Route::A;
             }
+            a.dependencies.retain_mut(|d| {
+                d.sha256.make_ascii_lowercase();
+                is_sha256_hex(&d.sha256) && !d.uri.is_empty() && d.uri.len() <= MAX_PATH_BYTES && !d.uri.contains('\0')
+            });
+            a.dependencies.truncate(MAX_DEPENDENCIES);
             a.report.truncate(MAX_REPORT_ITEMS);
             for r in &mut a.report {
                 clip(&mut r.path, MAX_REPORT_CHARS);
@@ -240,6 +259,7 @@ mod tests {
             importer: None,
             stats: None,
             report: Vec::new(),
+            dependencies: Vec::new(),
             dropped: 0,
         }
     }

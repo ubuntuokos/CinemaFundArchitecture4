@@ -220,3 +220,30 @@ fn lod_plans_against_the_frame_and_needs_approval_to_reduce_quality() {
     assert!(s.execute("scene3d.lod", json!({"id": id})).is_err());
     assert!(!s.project.scene3d.is_empty() && s.project.scene3d.assets.len() == 1, "planning stores nothing");
 }
+
+#[test]
+fn buffers_and_textures_are_hashed_and_a_change_in_them_is_noticed() {
+    let dir = tmp_dir("scene3d-deps");
+    let mut s = Session::default();
+    std::fs::write(dir.join("m.mtl"), "newmtl red\nKd 1 0 0\nmap_Kd tex.png\n").unwrap();
+    std::fs::write(dir.join("tex.png"), b"png-bytes").unwrap();
+    let f = write(&dir, "tri.obj", format!("mtllib m.mtl\nusemtl red\n{TRIANGLE_OBJ}").as_bytes());
+    let a = ok(&mut s, "scene3d.import", json!({"path": f}));
+    let uris: Vec<&str> = a["dependencies"].as_array().unwrap().iter().filter_map(|d| d["uri"].as_str()).collect();
+    assert!(uris.contains(&"m.mtl") && uris.contains(&"tex.png"), "{uris:?}");
+    assert!(a["dependencies"].as_array().unwrap().iter().all(|d| d["sha256"].as_str().unwrap().len() == 64));
+    assert_eq!(ok(&mut s, "scene3d.check", json!({}))["problems"], 0);
+
+    std::fs::write(dir.join("tex.png"), b"other").unwrap();
+    let c = ok(&mut s, "scene3d.check", json!({}));
+    assert_eq!(c["assets"][0]["status"], "changed");
+    assert!(c["assets"][0]["message"].as_str().unwrap().contains("tex.png"));
+    std::fs::remove_file(dir.join("m.mtl")).unwrap();
+    assert_eq!(ok(&mut s, "scene3d.check", json!({}))["assets"][0]["status"], "missing");
+
+    // a texture that is not there is in the report, not silently ignored
+    let g = write(&dir, "g.obj", format!("mtllib n.mtl\nusemtl x\n{TRIANGLE_OBJ}").as_bytes());
+    std::fs::write(dir.join("n.mtl"), "newmtl x\nmap_Kd nope.png\n").unwrap();
+    let b = ok(&mut s, "scene3d.import", json!({"path": g}));
+    assert!(b["report"].as_array().unwrap().iter().any(|r| r["message"].as_str().unwrap().contains("nope.png")), "{}", b["report"]);
+}

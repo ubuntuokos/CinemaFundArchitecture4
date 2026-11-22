@@ -20,7 +20,7 @@ use std::io::Read;
 use std::path::{Path, PathBuf};
 
 use cfa4_model3d as m3d;
-use cfa4_project::scene3d::{self as model, Asset3d, AssetStats, Format3d, ReportEntry, ReportSeverity, Route};
+use cfa4_project::scene3d::{self as model, Asset3d, AssetStats, Dependency, Format3d, ReportEntry, ReportSeverity, Route};
 use serde_json::{Value, json};
 use sha2::{Digest, Sha256};
 
@@ -101,7 +101,12 @@ struct Imported {
     importer: Option<String>,
     stats: Option<AssetStats>,
     report: Vec<ReportEntry>,
+    dependencies: Vec<Dependency>,
     dropped: u64,
+}
+
+fn sha256_bytes(data: &[u8]) -> String {
+    hex(&Sha256::digest(data))
 }
 
 fn convert_report(r: &m3d::Report) -> (Vec<ReportEntry>, u64) {
@@ -139,15 +144,20 @@ fn read_file(path: &Path, memory: usize) -> std::result::Result<Imported, String
             path: "usd".into(),
             message: "USD is not read natively in this build; the file is referenced and handed to the external backend (route A)".into(),
         }];
-        return Ok(Imported { format, sha256, importer: None, stats: None, report, dropped: 0 });
+        return Ok(Imported { format, sha256, importer: None, stats: None, report, dependencies: Vec::new(), dropped: 0 });
     }
     let data = std::fs::read(path).map_err(|e| format!("{}: {e}", path.display()))?;
     let dir = path.parent().map(Path::to_path_buf).unwrap_or_default();
-    let mut resolver = move |uri: &str| -> Option<Vec<u8>> {
+    let mut deps: Vec<Dependency> = Vec::new();
+    let mut resolver = |uri: &str| -> Option<Vec<u8>> {
         // the reader has already refused absolute paths, `..` and schemes
         let p = dir.join(uri);
         let meta = std::fs::metadata(&p).ok()?;
-        (meta.is_file() && meta.len() <= MAX_FILE_BYTES).then(|| std::fs::read(&p).ok()).flatten()
+        let bytes = (meta.is_file() && meta.len() <= MAX_FILE_BYTES).then(|| std::fs::read(&p).ok()).flatten()?;
+        if !deps.iter().any(|d| d.uri == uri) {
+            deps.push(Dependency { uri: uri.to_string(), sha256: sha256_bytes(&bytes) });
+        }
+        Some(bytes)
     };
     let mformat = match format {
         Format3d::Gltf => m3d::Format::Gltf,
@@ -157,6 +167,22 @@ fn read_file(path: &Path, memory: usize) -> std::result::Result<Imported, String
     };
     let limits = m3d::Limits { max_memory_bytes: memory, ..m3d::Limits::default() };
     let scene = m3d::read_as(mformat, &data, &mut resolver, &limits).map_err(|e| format!("{}: {e}", path.display()))?;
+    let mut extra_report = Vec::new();
+    // texture images are references the reader does not open: hash the ones that are there
+    for (mi, tex) in scene.materials.iter().enumerate().flat_map(|(i, m)| m.textures.iter().map(move |t| (i, t))) {
+        let Some(uri) = tex.uri.as_deref().filter(|u| m3d::safe_relative_uri(u)) else { continue };
+        if deps.iter().any(|d| d.uri == uri) {
+            continue;
+        }
+        let p = dir.join(uri);
+        match std::fs::metadata(&p) {
+            Ok(m) if m.is_file() && m.len() <= MAX_FILE_BYTES => match sha256_file(&p) {
+                Ok(h) => deps.push(Dependency { uri: uri.to_string(), sha256: h }),
+                Err(e) => extra_report.push((mi, tex.slot.clone(), format!("{uri}: {e}"))),
+            },
+            _ => extra_report.push((mi, tex.slot.clone(), format!("{uri}: not found next to the file"))),
+        }
+    }
     let stats = AssetStats {
         nodes: scene.nodes.len() as u64,
         meshes: scene.meshes.len() as u64,
@@ -166,8 +192,18 @@ fn read_file(path: &Path, memory: usize) -> std::result::Result<Imported, String
         materials: scene.materials.len() as u64,
         animations: scene.animations.len() as u64,
     };
-    let (report, dropped) = convert_report(&scene.report);
-    Ok(Imported { format, sha256, importer: Some(IMPORTER.into()), stats: Some(stats), report, dropped })
+    let (mut report, dropped) = convert_report(&scene.report);
+    for (mi, slot, msg) in extra_report {
+        if report.len() < model::MAX_REPORT_ITEMS {
+            report.push(ReportEntry {
+                severity: ReportSeverity::Approximated,
+                path: format!("materials[{mi}].{slot}"),
+                message: format!("texture image: {msg}"),
+            });
+        }
+    }
+    deps.truncate(model::MAX_DEPENDENCIES);
+    Ok(Imported { format, sha256, importer: Some(IMPORTER.into()), stats: Some(stats), report, dependencies: deps, dropped })
 }
 
 fn name_of(cmd: &str, p: &Value, path: &Path) -> Result<String> {
@@ -226,6 +262,7 @@ fn import(s: &mut Session, p: &Value) -> Result<Value> {
             importer: got.importer,
             stats: got.stats,
             report: got.report,
+            dependencies: got.dependencies,
             dropped: got.dropped,
         });
         pr.scene3d.refresh_capabilities();
@@ -280,6 +317,7 @@ fn relink(s: &mut Session, p: &Value) -> Result<Value> {
                 a.importer = got.importer;
                 a.stats = got.stats;
                 a.report = got.report;
+                a.dependencies = got.dependencies;
                 a.dropped = got.dropped;
             }
         }
@@ -293,12 +331,25 @@ fn check_one(a: &Asset3d) -> Value {
         Err(e) => ("missing", format!("{}: {e}; relink it (scene3d.relink)", a.path)),
         Ok(m) if !m.is_file() => ("missing", format!("{}: not a file; relink it (scene3d.relink)", a.path)),
         Ok(_) => match sha256_file(Path::new(&a.path)) {
-            Ok(h) if h == a.sha256 => ("ok", String::new()),
+            Ok(h) if h == a.sha256 => dependency_status(a),
             Ok(h) => ("changed", format!("SHA-256 is {h}, imported as {}; relink with allowChanged to read it again", a.sha256)),
             Err(e) => ("missing", format!("{}: {e}", a.path)),
         },
     };
     json!({"id": a.id, "name": a.name, "status": status, "message": message})
+}
+
+/// The main file is as imported: are its buffers, materials and textures too?
+fn dependency_status(a: &Asset3d) -> (&'static str, String) {
+    let dir = Path::new(&a.path).parent().map(Path::to_path_buf).unwrap_or_default();
+    for d in &a.dependencies {
+        match sha256_file(&dir.join(&d.uri)) {
+            Ok(h) if h == d.sha256 => {}
+            Ok(h) => return ("changed", format!("{}: SHA-256 is {h}, imported as {}; relink with allowChanged to read it again", d.uri, d.sha256)),
+            Err(e) => return ("missing", format!("{}: {e}; put it back next to the file", d.uri)),
+        }
+    }
+    ("ok", String::new())
 }
 
 fn check(s: &mut Session, p: &Value) -> Result<Value> {

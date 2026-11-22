@@ -630,6 +630,7 @@ mod tests {
             importer: Some("cfa4-model3d 1".into()),
             stats: None,
             report: Vec::new(),
+            dependencies: Vec::new(),
             dropped: 0,
         };
         p.scene3d.assets.push(asset(id, &"0a".repeat(32)));
