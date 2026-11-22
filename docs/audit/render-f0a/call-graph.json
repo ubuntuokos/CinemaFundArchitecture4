@@ -2586,6 +2586,20 @@
   {
    "class": "other",
    "crate": "cfa4-engine",
+   "kind": "struct",
+   "module": "dcp_validation.rs",
+   "name": "DcpValidationSession"
+  },
+  {
+   "class": "other",
+   "crate": "cfa4-engine",
+   "kind": "struct",
+   "module": "dcp_validation.rs",
+   "name": "PendingValidation"
+  },
+  {
+   "class": "other",
+   "crate": "cfa4-engine",
    "kind": "enum",
    "module": "doc_path.rs",
    "name": "NotFollowed"
@@ -7234,6 +7248,16 @@
    "to": "cfa4-time"
   },
   {
+   "from": "cfa4-engine/as02_import.rs",
+   "item": "BinId",
+   "to": "cfa4-project"
+  },
+  {
+   "from": "cfa4-engine/as02_import.rs",
+   "item": "Tick",
+   "to": "cfa4-time"
+  },
+  {
    "from": "cfa4-engine/atrac_convert.rs",
    "item": "Progress",
    "to": "cfa4-export"
@@ -7962,6 +7986,11 @@
    "from": "cfa4-engine/dcp_import.rs",
    "item": "Tick",
    "to": "cfa4-time"
+  },
+  {
+   "from": "cfa4-engine/dcp_validation.rs",
+   "item": "Report",
+   "to": "cfa4-export"
   },
   {
    "from": "cfa4-engine/dcpomatic.rs",

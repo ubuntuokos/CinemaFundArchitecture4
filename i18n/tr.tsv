@@ -4870,3 +4870,27 @@ export.summary	Low	düşük
 	Subtitles	Altyazılar
 	Captions for the hearing impaired	İşitme engelliler için altyazı
 	Forced narrative	Zorunlu anlatım (forced narrative)
+# DCP Validation window (DCP-12)
+	AS-03	AS-03
+	Choose the DCP folder.	DCP klasörünü seçin.
+	DCP Validation	DCP doğrulama
+	DCP folder	DCP klasörü
+	DCP folder (the one holding ASSETMAP)	DCP klasörü (ASSETMAP'i içeren)
+	Evidence	Kanıt
+	How to fix	Nasıl düzeltilir
+	Interrupted	Kesintiye uğradı
+	Not applicable	Uygulanamaz
+	Report	Rapor
+	Report saved: {path}	Rapor kaydedildi: {path}
+	Required	Zorunlu
+	Rule	Kural
+	Rules	Kurallar
+	Save JSON…	JSON kaydet…
+	Save Markdown…	Markdown kaydet…
+	Save report	Raporu kaydet
+	Skipped	Atlandı
+	Standard: {standard}	Standart: {standard}
+	Validate	Doğrula
+	Validate DCP…	DCP'yi doğrula…
+	the engine sent no profiles	motor hiç profil göndermedi
+	{n} files checked	{n} dosya denetlendi

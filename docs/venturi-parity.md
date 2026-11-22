@@ -87,13 +87,13 @@ szűkíti. Szünettörlés csak átirattal van (`transcript.removePauses`), ehhe
    csökkenti a csendben „hallucinált” szöveget. **Kiegészíti a K31–K35-öt** (nagyobb
    modellek, élő mikrofonos felirat: ott a VAD dönti el, mikor zárul egy mondat).
 4. Teszt: generált beszéd+zaj fixture (`target/fixtures/`), a VAD-határok tűrése ±1 ablak (32 ms).
-5. **Elfogadási feltételek bővítése** (tulajdonos, 2026-11-20; forrás:
+5. **Elfogadási feltételek bővítése** (tulajdonos, 2026-11-20; a megvalósítási terv: [`CFA4-V1-SILENCE-REMOVAL-001`](plans/CFA4-V1-SILENCE-REMOVAL-001.md); forrás:
    [`CFA4-SHOTCUT-CAPABILITY-ADAPTATION-001`](plans/CFA4-SHOTCUT-CAPABILITY-ADAPTATION-001.md) 5.2):
    - **Régióelőnézet:** az észlelt csendes régiók előnézete és markerként megjelenítése, mielőtt bármi törlődne.
    - **Szerkeszthető kijelölés:** a régiók törlés előtt szerkeszthetők és kijelölhetők; nincs automatikus romboló törlés.
    - **Kötegelt elemzés:** több klip elemzése egy lépésben.
    - **Opcionális ripple-törlés** és **nem romboló mód** (a régiók törlés nélkül, jelölésként maradnak).
-   - **Elfogadási teszt (javasolt név, a tulajdonos megerősítésére vár):** `v1_silence_removal_acceptance` (a V1 tesztjeinek mellé, `crates/speech` + `crates/engine`). Három ellenőrzés egy generált beszéd+csend fixture-ön: (a) a hangszinkron megmarad: a megmaradó klipek hang- és képoldala azonos időtartományú, a kötött (linked) hang nem csúszik el, a ripple-törlés után a sorozat hossza a törölt régiók összegével rövidül; (b) undo/redo: a törlés (és a kötegelt futás) egy-egy visszavonási lépés, az undo után a sorozat bájtra azonos az eredetivel, a redo után az eredménnyel; (c) render-ellenőrzés: a törlés előtti és utáni kimenet a megmaradt részeken azonos (golden összevetés), a törölt régiókban nincs hang. Amíg a tulajdonos a nevet és a tartalmat nem hagyja jóvá, ez a V1 megvalósítása előtt tisztázandó marad; a V1 kódja nem része az SC-1…SC-4 tételeknek.
+   - **Elfogadási teszt (a neve jóváhagyva, tulajdonos, 2026-11-21):** `v1_silence_removal_acceptance` (a V1 tesztjeinek mellé, `crates/speech` + `crates/engine`). Három ellenőrzés egy generált beszéd+csend fixture-ön: (a) a hangszinkron megmarad: a megmaradó klipek hang- és képoldala azonos időtartományú, a kötött (linked) hang nem csúszik el, a ripple-törlés után a sorozat hossza a törölt régiók összegével rövidül; (b) undo/redo: a törlés (és a kötegelt futás) egy-egy visszavonási lépés, az undo után a sorozat bájtra azonos az eredetivel, a redo után az eredménnyel; (c) render-ellenőrzés: a törlés előtti és utáni kimenet a megmaradt részeken azonos (golden összevetés), a törölt régiókban nincs hang. A V1 kódja nem része az SC-1…SC-4 tételeknek; erről külön döntés készül, addig ez dokumentált elfogadási feltétel.
 
 ### V2 · Hardveres kódoló önellenőrzése · P1 · 12–20 óra
 

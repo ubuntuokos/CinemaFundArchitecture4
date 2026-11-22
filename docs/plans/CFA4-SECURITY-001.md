@@ -113,6 +113,9 @@ kihasználható.
 - **Módosítás (tulajdonosi döntés, 2026-11-21):** a `cfa4-fetch` letöltő (D5) a B3 elé kerül, és
   most készül el, mert nem függ a Qt6-tól, és a B3 előfeltétele (a fenyegetésmodell 3.1 pontja):
   a modell- és hangletöltés a motorból a saját, `fetch` profillal bezárt folyamatába költözik.
+- **Módosítás (tulajdonosi döntés, 2026-11-21):** a B9 „mit nem érhet el” tesztjei közül a
+  `cfa4-fetch`-é előre készül (`apps/cfa4-fetch/tests/confinement.rs`: rosszindulatú kérések,
+  szimbolikus link a `~/.ssh`-ra, sikertelen letöltés nyoma); a többi folyamaté a Qt6 után, a B9-cel.
 
 ## VII. Döntések (2026-11-11-én lépésenként egyeztetve, mind eldöntve)
 

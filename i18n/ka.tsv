@@ -4872,3 +4872,27 @@ export.summary	Low	დაბალი
 	Subtitles	სუბტიტრები
 	Captions for the hearing impaired	სუბტიტრები სმენადაქვეითებულთათვის
 	Forced narrative	იძულებითი თხრობა (forced narrative)
+# DCP Validation window (DCP-12)
+	AS-03	AS-03
+	Choose the DCP folder.	აირჩიეთ DCP-ის საქაღალდე.
+	DCP Validation	DCP-ის შემოწმება
+	DCP folder	DCP-ის საქაღალდე
+	DCP folder (the one holding ASSETMAP)	DCP-ის საქაღალდე (რომელშიც ASSETMAP არის)
+	Evidence	მტკიცებულება
+	How to fix	როგორ გამოსწორდეს
+	Interrupted	შეწყვეტილია
+	Not applicable	არ ვრცელდება
+	Report	ანგარიში
+	Report saved: {path}	ანგარიში შენახულია: {path}
+	Required	სავალდებულო
+	Rule	წესი
+	Rules	წესები
+	Save JSON…	JSON-ის შენახვა…
+	Save Markdown…	Markdown-ის შენახვა…
+	Save report	ანგარიშის შენახვა
+	Skipped	გამოტოვებულია
+	Standard: {standard}	სტანდარტი: {standard}
+	Validate	შემოწმება
+	Validate DCP…	DCP-ის შემოწმება…
+	the engine sent no profiles	ძრავმა პროფილები არ გამოგზავნა
+	{n} files checked	შემოწმებულია {n} ფაილი

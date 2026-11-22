@@ -4871,3 +4871,27 @@ export.summary	Low	төмен
 	Subtitles	Субтитрлер
 	Captions for the hearing impaired	Есту қабілеті нашар адамдарға арналған субтитрлер
 	Forced narrative	Мәжбүрлі баяндау (forced narrative)
+# DCP Validation window (DCP-12)
+	AS-03	AS-03
+	Choose the DCP folder.	DCP қалтасын таңдаңыз.
+	DCP Validation	DCP тексеру
+	DCP folder	DCP қалтасы
+	DCP folder (the one holding ASSETMAP)	DCP қалтасы (ASSETMAP бар қалта)
+	Evidence	Дәлел
+	How to fix	Қалай түзетуге болады
+	Interrupted	Үзілді
+	Not applicable	Қолданылмайды
+	Report	Есеп
+	Report saved: {path}	Есеп сақталды: {path}
+	Required	Міндетті
+	Rule	Ереже
+	Rules	Ережелер
+	Save JSON…	JSON сақтау…
+	Save Markdown…	Markdown сақтау…
+	Save report	Есепті сақтау
+	Skipped	Өткізілді
+	Standard: {standard}	Стандарт: {standard}
+	Validate	Тексеру
+	Validate DCP…	DCP тексеру…
+	the engine sent no profiles	қозғалтқыш профильдерді жібермеді
+	{n} files checked	{n} файл тексерілді
