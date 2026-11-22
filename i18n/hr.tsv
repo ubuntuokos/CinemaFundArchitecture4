@@ -4871,6 +4871,10 @@ export.summary	Low	niska
 	Subtitles	Titlovi
 	Captions for the hearing impaired	Titlovi za osobe oštećena sluha
 	Forced narrative	Prisilna naracija (forced narrative)
+	Silence	Tišina
+	Detect Silence	Otkrij tišinu
+	Remove Silence	Ukloni tišinu
+	Clear Silence Markers	Obriši oznake tišine
 # DCP Validation window (DCP-12)
 	AS-03	AS-03
 	Choose the DCP folder.	Odaberite mapu DCP-a.

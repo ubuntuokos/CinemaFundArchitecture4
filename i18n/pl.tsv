@@ -4869,6 +4869,10 @@ export.summary	Low	niska
 	Subtitles	Napisy
 	Captions for the hearing impaired	Napisy dla niesłyszących
 	Forced narrative	Narracja wymuszona (forced narrative)
+	Silence	Cisza
+	Detect Silence	Wykryj ciszę
+	Remove Silence	Usuń ciszę
+	Clear Silence Markers	Wyczyść znaczniki ciszy
 # DCP Validation window (DCP-12)
 	AS-03	AS-03
 	Choose the DCP folder.	Wybierz folder DCP.
