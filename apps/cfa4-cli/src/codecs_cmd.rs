@@ -122,6 +122,7 @@ static ROWS: &[Row] = &[
     video("Ut Video", &["utvideo"], Own, Sw(""), false, NoEnc),
     video("Lagarith", &["lagarith"], Ported, Sw(""), false, NoEnc),
     video("Indeo 2", &["indeo"], Ported, Sw(""), false, NoEnc),
+    video("Sorenson Video 3 (SVQ3)", &["svq3"], Ported, Sw(""), false, NoEnc),
     video("MagicYUV", &["magicyuv"], Ported, Sw(""), false, NoEnc),
     video("id RoQ", &["roq"], Ported, Sw("in .roq files, with the DPCM sound (22.05 kHz)"), false, NoEnc),
     video("Interplay MVE", &["mve"], Ported, Sw("in .mve files, 8-bit palette and 16-bit pictures, with the sound"), false, NoEnc),

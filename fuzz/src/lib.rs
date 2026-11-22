@@ -618,6 +618,17 @@ pub fn lagarith(data: &[u8]) {
     }
 }
 
+pub fn svq3(data: &[u8]) {
+    let mut i = Input::new(data);
+    let n = usize::from(i.byte() % 64);
+    let extra: Vec<u8> = (0..n).map(|_| i.byte()).collect();
+    if let Ok(mut d) = cfa4_svq3::Decoder::new(0, 0, &extra) {
+        let _ = d.decode(i.rest(), 0);
+        let _ = d.decode(i.rest(), 1);
+        let _ = d.flush();
+    }
+}
+
 pub fn magicyuv(data: &[u8]) {
     let _ = cfa4_magicyuv::Decoder::new().decode(data);
 }
@@ -778,6 +789,7 @@ pub const TARGETS: &[(&str, &str, Target)] = &[
     ("evc", "cfa4-evc", evc),
     ("cavs", "cfa4-cavs", cavs),
     ("lagarith", "cfa4-lagarith", lagarith),
+    ("svq3", "cfa4-svq3", svq3),
     ("magicyuv", "cfa4-magicyuv", magicyuv),
     ("g729", "cfa4-g729", g729),
     ("ilbc", "cfa4-ilbc", ilbc),

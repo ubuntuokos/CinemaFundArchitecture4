@@ -62,6 +62,7 @@ cfa4-amr = { path = "crates/amr" }
 cfa4-hap = { path = "crates/hap" }
 cfa4-utvideo = { path = "crates/utvideo" }
 cfa4-lagarith = { path = "crates/lagarith" }
+cfa4-svq3 = { path = "crates/svq3" }
 cfa4-indeo = { path = "crates/indeo" }
 cfa4-magicyuv = { path = "crates/magicyuv" }
 cfa4-huffyuv = { path = "crates/huffyuv" }

@@ -447,6 +447,9 @@ fn sample_entry(c: &Codec, private: &[u8], v: Option<&cfa4_matroska::VideoInfo>,
         Codec::Other(id) if id.starts_with("V_REAL/") => crate::realmedia::mkv_sample_entry(id, private, w, h)?,
         // Huffyuv: the VfW BITMAPINFOHEADER sets the stream up (bit count, extradata)
         Codec::VfwFourcc { fourcc, bitmap_info_header } if fourcc.eq_ignore_ascii_case(b"HFYU") => crate::huffyuv::sample_entry(bitmap_info_header, w, h),
+        Codec::VfwFourcc { fourcc, bitmap_info_header } if crate::svq3::is_svq3(fourcc) => {
+            crate::svq3::sample_entry(w, h, bitmap_info_header.get(40..).unwrap_or(&[]))
+        }
         Codec::VfwFourcc { fourcc, .. } if crate::canopus::codec(fourcc).is_some() => crate::canopus::sample_entry(crate::canopus::codec(fourcc)?, w, h),
         Codec::VfwFourcc { fourcc, .. } if crate::indeo::is_indeo2(fourcc) => crate::indeo::sample_entry_indeo2(w, h),
         // Lagarith: the VfW BITMAPINFOHEADER bit count sets the solid-frame layout
@@ -546,6 +549,7 @@ fn codec_label(c: &Codec) -> String {
         Codec::Other(id) if id == "V_MPEG1" => "MPEG-1 Video".into(),
         Codec::VfwFourcc { fourcc, .. } if crate::utvideo::is_utvideo(fourcc) => "Ut Video".into(),
         Codec::VfwFourcc { fourcc, .. } if crate::lagarith::is_lagarith(fourcc) => "Lagarith".into(),
+        Codec::VfwFourcc { fourcc, .. } if crate::svq3::is_svq3(fourcc) => "Sorenson Video 3".into(),
         Codec::VfwFourcc { fourcc, .. } if crate::indeo::is_indeo2(fourcc) => "Indeo 2".into(),
         Codec::VfwFourcc { fourcc, .. } if crate::magicyuv::is_magicyuv(fourcc) => "MagicYUV".into(),
         Codec::VfwFourcc { fourcc, .. } if crate::hap::is_hap(fourcc) => "Hap".into(),
