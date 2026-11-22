@@ -4873,3 +4873,27 @@ export.summary	Low	nízká
 	Detect Silence	Zjistit ticho
 	Remove Silence	Odstranit ticho
 	Clear Silence Markers	Vymazat značky ticha
+# DCP Validation window (DCP-12)
+	AS-03	AS-03
+	Choose the DCP folder.	Vyberte složku DCP.
+	DCP Validation	Kontrola DCP
+	DCP folder	Složka DCP
+	DCP folder (the one holding ASSETMAP)	Složka DCP (ta, která obsahuje ASSETMAP)
+	Evidence	Důkaz
+	How to fix	Jak to opravit
+	Interrupted	Přerušeno
+	Not applicable	Netýká se
+	Report	Zpráva
+	Report saved: {path}	Zpráva uložena: {path}
+	Required	Povinné
+	Rule	Pravidlo
+	Rules	Pravidla
+	Save JSON…	Uložit JSON…
+	Save Markdown…	Uložit Markdown…
+	Save report	Uložit zprávu
+	Skipped	Přeskočeno
+	Standard: {standard}	Norma: {standard}
+	Validate	Zkontrolovat
+	Validate DCP…	Zkontrolovat DCP…
+	the engine sent no profiles	jádro neposlalo žádné profily
+	{n} files checked	Zkontrolováno souborů: {n}

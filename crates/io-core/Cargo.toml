@@ -10,8 +10,12 @@ rust-version.workspace = true
 workspace = true
 
 [dependencies]
+cfa4-color = { workspace = true }
+cfa4-frame = { workspace = true }
 cfa4-st2110 = { workspace = true }
+cfa4-time = { workspace = true }
 serde = { workspace = true }
+thiserror = { workspace = true }
 
 [dev-dependencies]
 serde_json = { workspace = true }

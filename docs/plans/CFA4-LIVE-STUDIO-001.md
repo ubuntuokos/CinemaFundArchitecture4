@@ -1,14 +1,15 @@
 # CFA4-LIVE-STUDIO-001 – Az OBS Studio képességei a CFA4-ben
 
-**Verzió:** 1.3
-**Dátum:** 2026-11-11 (1.2: 2026-11-11, 1.1: 2026-11-10, 1.0: 2026-11-09)
+**Verzió:** 1.4
+**Dátum:** 2026-11-21 (1.3: 2026-11-11, 1.2: 2026-11-11, 1.1: 2026-11-10, 1.0: 2026-11-09)
 **Projekt:** CinemaFundArchitecture4 (CFA4)
 **Állapot:** a tulajdonos (`ubuntuokos`) 2026-11-09-én lépésenként egyeztette és jóváhagyta; az **S0
 fázis indítását is jóváhagyta** (2026-11-09). Az S1-től a munka a Qt6 felület befejezése után indul (D7).
 Az 1.1-ben a D3 újra nyitott (a WPE WebKit nincs az Ubuntu 26.04-ben), és rögzítve, hogy a C10 a
 terv előfeltétele; az 1.2-ben a tulajdonos a D3-at a Qt WebEngine-nel döntötte el (2026-11-11). Az 1.3-ban
 a D4 kiegészítve: az SMPTE ST 2110 is nyílt protokoll ([kiegészítés](CFA4-LIVE-STUDIO-001-ST2110.md), a
-tulajdonos 2026-11-11-i megerősítésével).
+tulajdonos 2026-11-11-i megerősítésével). Az 1.4-ben az S5 a közös rögzítési szerződésen át történik
+(CFA4-DECKLINK-READY-001 V3, R2; a tulajdonos jóváhagyta 2026-11-21-én; lásd a X. mellékletet).
 **Kapcsolódik:** [`VISION.md`](../../VISION.md) 4. és 8. pont (élő adás), `docs/credits-plan.md`
 C10 (élő grafika, `crates/live`; a #803-ban, előfeltétel), [ADR 0001](../adr/0001-platform-ffi.md) (FFI),
 [ADR 0004](../adr/ADR-0004-compute-routing.md) (`cfa4-route`), [ADR 0005](../adr/ADR-0005-media-backends.md)
@@ -120,7 +121,7 @@ munkával ütközésnél a Qt6 megy előre.
 | **S3** – Hangkeverő | sávok, hangerő, némítás, monitorozás, VU-mérők, hangszűrők, szinkroneltolás | a keverő minden forrásra; a szűrők hangja mérve |
 | **S4** – Stúdió mód | előnézet/program, átmenetek, multiview, kivetítők, gyorsbillentyűk | TAKE-kel jelenetváltás átmenettel; a C10 élő grafika is itt fut |
 | **S4a** – Műsorterv (rundown) | tételek és blokkok a projektben (jelenet, C10-grafika, bejátszás, megjegyzés), tervezett hossz, adás közben „következő tétel” egy gombbal, hátralévő és csúszási idő; később import (CSV/táblázat) és ügynöki vezérlés | egy próbaműsor végigvezetve a tételeken, az időszámlálás mérve |
-| **S5** – Felvétel | MKV/MP4/fMP4/MOV, sávok, szétválasztás, fejezetjelek; a felvétel egy mozdulattal a projekt idővonalára | egy órás felvétel elejtett képkocka nélkül a referenciagépen |
+| **S5** – Felvétel | MKV/MP4/fMP4/MOV, sávok, szétválasztás, fejezetjelek; a felvétel egy mozdulattal a projekt idővonalára; a felvétel a közös rögzítési szerződésen át történik (R2, X. melléklet), a libobs ennek egyik háttere | egy órás felvétel elejtett képkocka nélkül a referenciagépen; a felvételről `RecordReport` készül, és a fájl véglegesítése a File Servicesben megtörténik (V9: `StagedFile`, `files.stage.*`) |
 | **S6** – Streamelés | RTMP/RTMPS, SRT, RIST, WHIP; több cél; újrakapcsolódás; stream-kulcs a kulcstartóban | próbaadás helyi kiszolgálóra (mediamtx) és egy valódi szolgáltatásra |
 | **S7** – Kódolók | VA-API (Intel/AMD), NVENC (opcionális), QSV, SVT-AV1 a `cfa4-route`-on át; restricted-extras | a router választ, CPU-tartalék mindig van; a referenciagép GPU-in mérve |
 | **S8** – Videószűrők | key-ek, színkorrekció, LUT, maszk, vágás, késleltetés; a CFA4 saját effektjei forrásszűrőként | a szűrők képe összevetve a CFA4 renderelővel |
@@ -178,3 +179,39 @@ munkával ütközésnél a Qt6 megy előre.
   `wpebackend-fdo` eltávolítása a 24.04-től; a `wpewebkit` és a `cog` a szinkronizálási tiltólistán).
 - Qt WebEngine az Ubuntu 26.04-ben: <https://packages.ubuntu.com/resolute/libqt6webenginequick6>,
   <https://lists.snapcraft.io/archives/resolute-changes/2026-February/020982.html> (qt6-webengine 6.10.2).
+
+## X. Melléklet: közös rögzítési szerződés (vázlat)
+
+*CFA4-DECKLINK-READY-001 V3.2, R2. Vázlat: a kód az S5 indulásakor készül, és a későbbi `cfa4-ingest` (natív,
+DeckLink) ugyanezt valósítja meg. Az S5 elején egyszer felülvizsgálandó; ha a szerződés jelentése marad, a
+módosítás nem tervváltozás.*
+
+Két háttér egy szerződés mögött: **libobs** (a stúdióprogram, S5) és **natív** (DeckLink, később). A rögzítő a
+File Services által adott `StagedFile`-ba ír (CFA4-FILE-SERVICES-001 6. fejezet, V9), és `stop` után a fájl
+véglegesítve van.
+
+```text
+RecordJob {
+  target: StagedFile,
+  container: Container(Mkv | Mp4 | FragmentedMp4 | Mov | Mxf),
+  video: Vec<VideoTrackSpec>,
+  audio: Vec<AudioTrackSpec>,
+  split: Option<SplitRule>,
+  start_timecode: Option<Timecode>,
+}
+trait Recorder: Send {
+  start(job) -> Result<RecordHandle, RecordError>;
+  marker(&h, at: Tick, label) -> Result<(), RecordError>;   // fejezetjelek
+  stop(h) -> Result<RecordReport, RecordError>;
+}
+RecordReport {
+  files: Vec<FileId>, frames: u64, dropped: u64,
+  preserved: Vec<MetadataKind>, lost: Vec<(MetadataKind, String)>,
+}
+```
+
+- Az idő végig `cfa4_time::Tick`; a `dropped` az "elejtett képkocka nélkül" feltétel mérhető bizonyítéka.
+- A `lost` lista teszi láthatóvá, ha egy konténer egy metaadatot nem tud megőrizni: nincs csendes veszteség.
+- A rögzítő a BLAKE3-at írás közben számolhatja és átadja a `stage_commit`-nak (`digestSource: "writer"`).
+- Döntés (István, 2026-11-21): az `Mxf` az első S5 körben nem kötelező, csak a natív (DeckLink)
+  háttérnél.

@@ -342,7 +342,10 @@ with one version file named like the folder). It does not open the MXF files.
 `as02_version::read_version` reads a version file (OP1b / OP2 / OP3 header metadata with external
 essence): the material package's tracks with their clips (file package UMID, track, start,
 duration; fillers), each file package's network locator, and the breaches of sections 4.3.5 / 5.2
-/ 5.4 in `problems`. The bundle import / export come next (#1363).
+/ 5.4 in `problems`. `write_version` writes one (OP1b, material package plus a file package copy with
+a network locator per component, no essence, no Essence Container Data, no index); the file package
+copies carry a minimal file descriptor, not the component's full one. The engine imports a bundle
+(`file.import`); the export comes next (#1363).
 
 ## AS-11 descriptive metadata
 
@@ -360,6 +363,14 @@ segments); `MxfFile::as11` returns what a file carries. `parse_framework_text` a
 `parse_segments_text` read the bmx text forms (`Name: value` lines; `part/total start duration`
 with timecodes or frame counts). Codec shims (AVC-Intra, XDCAM HD422, D-10) are not enforced.
 
+### AS-07 (Archive and Preservation, Baseband Shim)
+
+`as07::check_baseband` (and `baseband_problems`) checks a read file against Appendix J of AMWA AS-07
+(`specs/amwa/as-07-mxf-archive-and-preservation-spec.pdf`): OP1a, one picture track of JPEG 2000 or ST 384
+uncompressed pictures with 8, 10, 12 or 16 bit components, no clip wrapping, linear PCM sound at 48 kHz, 16 or
+24 bit. DMS-AS-07 metadata, the raster subset, several timecodes, captions and content integrity are not
+covered.
+
 ### AS-10 (MXF for Production)
 
 `As11::as10` holds the AMWA AS-10 v1.1 DMS_AS_10_Core framework (`ShimName` required; `Type`,
@@ -374,6 +385,19 @@ named shim; an unknown shim name is a shim of the user's own and is not checked.
 export writes the NRK and HIGH shims' essence; the 4:2:0 shims (CNN, JVC) need 1440x1080 MP@HL /
 MP@H-14 pictures, which CFA4 does not encode yet. The growing-file and spanning-file rules of
 section 6 (open and incomplete header partitions) are not written.
+
+### AS-03 (MXF Program Delivery)
+
+`As11::as03` holds the AMWA AS-03 rev 1.0 DMS-AS-03 framework (`IdentifierKind`, `Identifier`,
+`ShimName`, `SignalStandard` and `IntendedAFD` required; `SlateTitle`, `NOLACode`, `Rating`,
+`NielsenStreamIdentifier` optional, all UTF-16 strings): one static DM track in the material
+package and the DMS-AS-03 label in the Preface. An AS-03 file needs no AS-11 Core. `as03` holds the
+three PBS NGIS shims of the annexes (HD Playout, HD Distribution, SD) and `check_shim` compares what
+an export writes (MPEG-2 or H.264, frame size, bit rate, audio channels, bit depth and rate) with the
+named shim and with the general provisions (5 to 50 Mbit/s, 48 kHz PCM, up to 16 channels); an
+unknown shim name is a shim of the user's own and keeps only the general provisions. The DMS-NGIS
+and DMS-PODS / PBCore schemes of the shims, the segmentation SOM / EOM track, the content integrity
+tracks, the OP1a full index table layout and the 1-minute partitions are not written.
 
 ## Tests
 

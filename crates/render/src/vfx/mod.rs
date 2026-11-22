@@ -24,6 +24,7 @@ pub mod mosh;
 mod perspective;
 mod pixelate;
 mod stylize;
+mod subspace_warp;
 mod temporal;
 mod text;
 

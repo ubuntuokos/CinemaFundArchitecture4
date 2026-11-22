@@ -4881,3 +4881,27 @@
 	Detect Silence	Deteksi hening
 	Remove Silence	Hapus hening
 	Clear Silence Markers	Hapus penanda hening
+# DCP Validation window (DCP-12)
+	AS-03	AS-03
+	Choose the DCP folder.	Pilih folder DCP.
+	DCP Validation	Validasi DCP
+	DCP folder	Folder DCP
+	DCP folder (the one holding ASSETMAP)	Folder DCP (yang berisi ASSETMAP)
+	Evidence	Bukti
+	How to fix	Cara memperbaiki
+	Interrupted	Terhenti
+	Not applicable	Tidak berlaku
+	Report	Laporan
+	Report saved: {path}	Laporan disimpan: {path}
+	Required	Wajib
+	Rule	Aturan
+	Rules	Aturan
+	Save JSON…	Simpan JSON…
+	Save Markdown…	Simpan Markdown…
+	Save report	Simpan laporan
+	Skipped	Dilewati
+	Standard: {standard}	Standar: {standard}
+	Validate	Validasi
+	Validate DCP…	Validasi DCP…
+	the engine sent no profiles	mesin tidak mengirim profil apa pun
+	{n} files checked	{n} berkas diperiksa

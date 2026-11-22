@@ -4875,3 +4875,27 @@ export.summary	Low	lav
 	Detect Silence	Find stilhed
 	Remove Silence	Fjern stilhed
 	Clear Silence Markers	Ryd stilhedsmarkører
+# DCP Validation window (DCP-12)
+	AS-03	AS-03
+	Choose the DCP folder.	Vælg DCP-mappen.
+	DCP Validation	DCP-validering
+	DCP folder	DCP-mappe
+	DCP folder (the one holding ASSETMAP)	DCP-mappe (den der indeholder ASSETMAP)
+	Evidence	Bevis
+	How to fix	Sådan rettes det
+	Interrupted	Afbrudt
+	Not applicable	Ikke relevant
+	Report	Rapport
+	Report saved: {path}	Rapport gemt: {path}
+	Required	Påkrævet
+	Rule	Regel
+	Rules	Regler
+	Save JSON…	Gem JSON…
+	Save Markdown…	Gem Markdown…
+	Save report	Gem rapport
+	Skipped	Sprunget over
+	Standard: {standard}	Standard: {standard}
+	Validate	Valider
+	Validate DCP…	Valider DCP…
+	the engine sent no profiles	motoren sendte ingen profiler
+	{n} files checked	{n} filer kontrolleret

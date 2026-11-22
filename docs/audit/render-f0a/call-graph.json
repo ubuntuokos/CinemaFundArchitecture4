@@ -1374,6 +1374,13 @@
   },
   {
    "class": "colour",
+   "crate": "cfa4-engine",
+   "kind": "enum",
+   "module": "surface_feedback.rs",
+   "name": "TallyColor"
+  },
+  {
+   "class": "colour",
    "crate": "cfa4-export",
    "kind": "struct",
    "module": "lib.rs",
@@ -2579,6 +2586,20 @@
   {
    "class": "other",
    "crate": "cfa4-engine",
+   "kind": "struct",
+   "module": "dcp_validation.rs",
+   "name": "DcpValidationSession"
+  },
+  {
+   "class": "other",
+   "crate": "cfa4-engine",
+   "kind": "struct",
+   "module": "dcp_validation.rs",
+   "name": "PendingValidation"
+  },
+  {
+   "class": "other",
+   "crate": "cfa4-engine",
    "kind": "enum",
    "module": "doc_path.rs",
    "name": "NotFollowed"
@@ -3247,6 +3268,20 @@
    "kind": "struct",
    "module": "studio.rs",
    "name": "ProgramLayer"
+  },
+  {
+   "class": "other",
+   "crate": "cfa4-engine",
+   "kind": "enum",
+   "module": "surface_feedback.rs",
+   "name": "LedOutput"
+  },
+  {
+   "class": "other",
+   "crate": "cfa4-engine",
+   "kind": "enum",
+   "module": "surface_feedback.rs",
+   "name": "TallyLed"
   },
   {
    "class": "other",
@@ -7213,6 +7248,16 @@
    "to": "cfa4-time"
   },
   {
+   "from": "cfa4-engine/as02_import.rs",
+   "item": "BinId",
+   "to": "cfa4-project"
+  },
+  {
+   "from": "cfa4-engine/as02_import.rs",
+   "item": "Tick",
+   "to": "cfa4-time"
+  },
+  {
    "from": "cfa4-engine/atrac_convert.rs",
    "item": "Progress",
    "to": "cfa4-export"
@@ -7941,6 +7986,11 @@
    "from": "cfa4-engine/dcp_import.rs",
    "item": "Tick",
    "to": "cfa4-time"
+  },
+  {
+   "from": "cfa4-engine/dcp_validation.rs",
+   "item": "Report",
+   "to": "cfa4-export"
   },
   {
    "from": "cfa4-engine/dcpomatic.rs",
@@ -12896,6 +12946,21 @@
    "from": "cfa4-render/vfx/stylize.rs",
    "item": "Tick",
    "to": "cfa4-time"
+  },
+  {
+   "from": "cfa4-render/vfx/subspace_warp.rs",
+   "item": "linear_to_srgb",
+   "to": "cfa4-color"
+  },
+  {
+   "from": "cfa4-render/vfx/subspace_warp.rs",
+   "item": "cancel",
+   "to": "cfa4-media"
+  },
+  {
+   "from": "cfa4-render/vfx/subspace_warp.rs",
+   "item": "EffectInstance",
+   "to": "cfa4-project"
   },
   {
    "from": "cfa4-render/vfx/temporal.rs",

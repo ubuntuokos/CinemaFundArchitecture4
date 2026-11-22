@@ -4882,3 +4882,27 @@
 	Detect Silence	無音を検出
 	Remove Silence	無音を削除
 	Silence	無音
+# DCP Validation window (DCP-12)
+	AS-03	AS-03
+	Choose the DCP folder.	DCPフォルダーを選択してください。
+	DCP Validation	DCP検証
+	DCP folder	DCPフォルダー
+	DCP folder (the one holding ASSETMAP)	DCPフォルダー(ASSETMAPがあるもの)
+	Evidence	根拠
+	How to fix	修正方法
+	Interrupted	中断
+	Not applicable	該当なし
+	Report	レポート
+	Report saved: {path}	レポートを保存しました: {path}
+	Required	必須
+	Rule	ルール
+	Rules	ルール
+	Save JSON…	JSONを保存…
+	Save Markdown…	Markdownを保存…
+	Save report	レポートを保存
+	Skipped	スキップ
+	Standard: {standard}	規格: {standard}
+	Validate	検証
+	Validate DCP…	DCPを検証…
+	the engine sent no profiles	エンジンからプロファイルが送られませんでした
+	{n} files checked	{n} 個のファイルを確認しました

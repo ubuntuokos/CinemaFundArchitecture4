@@ -629,6 +629,31 @@ mod tests {
         assert!(loaded.project.next_id > 5000, "studio ids count for next_id");
     }
 
+    /// READY-V2.6: a studio source of an unknown type does not stop the project from opening.
+    #[test]
+    fn a_studio_source_of_an_unknown_type_leaves_the_project_openable() {
+        let mut p = Project::new("x");
+        let scene = p.alloc_id();
+        let src = p.alloc_id();
+        p.studio.scenes.push(cfa4_project::StudioScene {
+            id: scene,
+            name: "Main".into(),
+            sources: vec![cfa4_project::StudioSource {
+                id: src,
+                name: "Title".into(),
+                kind: cfa4_project::SourceKind::text("Hello"),
+                transform: cfa4_project::SourceTransform::default(),
+                visible: true,
+            }],
+        });
+        let mut v: Value = serde_json::from_slice(&encode(&p, false)).unwrap();
+        let sources = v["project"]["studio"]["scenes"][0]["sources"].as_array_mut().unwrap();
+        sources.insert(0, serde_json::json!({"id": 900, "name": "Camera 1", "kind": {"type": "capture", "device": "card0"}}));
+        let loaded = decode(&serde_json::to_vec(&v).unwrap()).expect("the project opens");
+        assert_eq!(loaded.project.name, p.name);
+        assert_eq!(loaded.project.studio, p.studio, "the unknown source is left out, the rest is as saved");
+    }
+
     #[test]
     fn refuses_newer() {
         let mut v: Value = serde_json::from_slice(&encode(&Project::new("x"), false)).unwrap();

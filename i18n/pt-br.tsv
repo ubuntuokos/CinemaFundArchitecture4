@@ -4883,3 +4883,27 @@
 	Detect Silence	Detectar silêncio
 	Remove Silence	Remover silêncio
 	Clear Silence Markers	Limpar marcadores de silêncio
+# DCP Validation window (DCP-12)
+	AS-03	AS-03
+	Choose the DCP folder.	Escolha a pasta do DCP.
+	DCP Validation	Validação de DCP
+	DCP folder	Pasta do DCP
+	DCP folder (the one holding ASSETMAP)	Pasta do DCP (a que contém o ASSETMAP)
+	Evidence	Evidência
+	How to fix	Como corrigir
+	Interrupted	Interrompido
+	Not applicable	Não se aplica
+	Report	Relatório
+	Report saved: {path}	Relatório salvo: {path}
+	Required	Obrigatório
+	Rule	Regra
+	Rules	Regras
+	Save JSON…	Salvar JSON…
+	Save Markdown…	Salvar Markdown…
+	Save report	Salvar relatório
+	Skipped	Ignorado
+	Standard: {standard}	Padrão: {standard}
+	Validate	Validar
+	Validate DCP…	Validar DCP…
+	the engine sent no profiles	o mecanismo não enviou nenhum perfil
+	{n} files checked	{n} arquivos verificados
