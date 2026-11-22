@@ -4869,6 +4869,10 @@ export.summary	Low	thấp
 	Subtitles	Phụ đề
 	Captions for the hearing impaired	Phụ đề cho người khiếm thính
 	Forced narrative	Thuyết minh bắt buộc (forced narrative)
+	Silence	Im lặng
+	Detect Silence	Phát hiện khoảng lặng
+	Remove Silence	Xóa khoảng lặng
+	Clear Silence Markers	Xóa dấu khoảng lặng
 # DCP Validation window (DCP-12)
 	AS-03	AS-03
 	Choose the DCP folder.	Chọn thư mục DCP.

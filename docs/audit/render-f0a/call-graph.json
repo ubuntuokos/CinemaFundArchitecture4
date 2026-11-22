@@ -10078,6 +10078,46 @@
    "to": "cfa4-project"
   },
   {
+   "from": "cfa4-engine/silence.rs",
+   "item": "Report",
+   "to": "cfa4-export"
+  },
+  {
+   "from": "cfa4-engine/silence.rs",
+   "item": "ClipId",
+   "to": "cfa4-project"
+  },
+  {
+   "from": "cfa4-engine/silence.rs",
+   "item": "ItemId",
+   "to": "cfa4-project"
+  },
+  {
+   "from": "cfa4-engine/silence.rs",
+   "item": "ItemKind",
+   "to": "cfa4-project"
+  },
+  {
+   "from": "cfa4-engine/silence.rs",
+   "item": "SourceProvider",
+   "to": "cfa4-render"
+  },
+  {
+   "from": "cfa4-engine/silence.rs",
+   "item": "remix",
+   "to": "cfa4-render"
+  },
+  {
+   "from": "cfa4-engine/silence.rs",
+   "item": "FrameRate",
+   "to": "cfa4-time"
+  },
+  {
+   "from": "cfa4-engine/silence.rs",
+   "item": "TICKS_PER_SECOND",
+   "to": "cfa4-time"
+  },
+  {
    "from": "cfa4-engine/smart_cut.rs",
    "item": "audio_copy",
    "to": "cfa4-export"
