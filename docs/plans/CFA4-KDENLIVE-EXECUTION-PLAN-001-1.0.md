@@ -2,7 +2,7 @@
 
 | Dokumentumadat | Érték |
 |---|---|
-| Verzió | 1.0 (javaslat) |
+| Verzió | 1.1 (javaslat; a szűrés után) |
 | Állapot | **Jóváhagyásra vár** (tulajdonos: ubuntuokos). A jóváhagyás nem indít megvalósítást; minden hullám és K-pont külön tulajdonosi indítási engedélyt igényel (`coordination.md` §2.10) |
 | Dátum | 2026-11-22 |
 | Alap | CFA4 `main` @ `963b0313` (2026-11-22); `CFA4-AI_modules` @ `e2746cb` (2026-11-16) |
@@ -12,11 +12,11 @@
 
 ## 0. Röviden
 
-1. **A K36 kapu elvégezve** (a tulajdonos elfogadására vár). A K37–K41 és a többi K-pont kiadhatóvá válik, a 6. pont hullámai szerint.
+1. **A K36 kapu elvégezve** (a tulajdonos elfogadására vár). Az 5B pontjai a 6. pont hullámai szerint adhatók ki.
 2. **Ami azóta megváltozott és a Kdenlive-tervet érinti:** (a) az MI-réteg ADR-je **ADR 0008** lett (régen 0006), kód még nincs, az F0 kapu (Qt6 kész, egui kint) még nem nyílt; (b) az MLT-olvasó **közös a Shotcut-importtal** (SC-5, tulajdonosi döntés 2026-11-22); (c) a VFX-terv 1.1 (jóváhagyva 2026-11-22) a K20-táblát és a K43-at hivatkozza; (d) a K17 PostgreSQL-re és JSON-ra bomlott (D-8, 2026-11-15); (e) a Qt6 GUI 66 ✅ / 5 🟡 / 1 ❌ (volt 40/19/9); (f) az Event Fabric terv bekerült a repóba; (g) a jobtár, az erőforrás-kezelés és a render-feladatok közös infrastruktúrát kaptak (`cfa4-tasks`, `cfa4-store`, render C0), amelyre a K14, K16, K34, K39 épül.
-3. **Kész vagy szűkült K-pontok:** K19 (easing), K54 (history.clear) kész; K10, K11, K15, K18 részben fedett; K17 szűkült. Részletek: 5. pont.
+3. **Szűrés (István, 2026-11-22): csak az marad, ami még nincs a CFA4-ben és más tervben sem.** 62 K-pontból 28 kikerül (kész, vagy más terv hordozza; a K42 az SC-5 része, a K36 ez a dokumentum: 5A), 34 marad (5B), ebből öt szűkítve (K10, K11, K15, K18, K37). Részletek: 5. pont.
 4. **A kiegészítő tárolók közül egy sem változott 2026-10-25 óta**, a `kdenlive` kivételével (261 commit; a `.kdenlive` formátum verziója változatlan, MLT 7.42 az új minimum). Nyolc tároló elavult vagy elhagyott, a működési elvük használható, a kódjuk nem (3. pont).
-5. **Az MI-pontok** (K2 kivételével) továbbra is csak az ADR 0008 megfelelő kapuja után indulnak. Az **első indítható hullám MI nélküli**: K1/K42/K20/K25 közös MLT-mag, K22, K10-szűkítés, K11-bővítés, K12, K15-maradék, K37, K38.
+5. **Az MI-pontok** (K2 kivételével) továbbra is csak az ADR 0008 megfelelő kapuja után indulnak; a legtöbb ilyen pont más terv hordozza, ezért kikerült. Az **első indítható hullám MI nélküli**: a `.kdenlive`-dialektus az SC-5 közös magján, K10-szűkítés, K11-bővítés, K12, K37-szűkítés.
 6. **Tulajdonosi döntést igénylő pontok:** 7. pont (D-1…D-7), a legfontosabb: a K43 (Lottie) gazdája jelenleg nincs, a K13 (gyroflow-core) licencének tisztázása, és az ADR-számozás ütközése.
 
 ## 1. Mi változott a 2026-11-03-i FINAL 1.0 óta (delta a CFA4-ben)
@@ -92,72 +92,71 @@ A vizsgálat a README-ken, a fa- és commitlistákon, a tesztszerkezeten és a t
 
 **Licenc-szabály a forkokra:** kód csak GPL-3.0-kompatibilis, ellenőrzött fejlécű forrásból; a licenc nélküli `mcp-kdenlive` és a LICENSE nélküli `kdenlive-api` kódja **nem használható**, csak a nyilvános eszköznevek mint ötlet. A forkok a VFX-terv szerint is csak olvasott donorok.
 
-## 5. K-pontonkénti delta (K1–K62)
+## 5. Szűrés: csak ami még nincs a CFA4-ben és egyik folyamatban lévő tervében sem
 
-Jelmagyarázat: **KÉSZ** (a `main`-ben, bizonyítékkal), **RÉSZBEN** (átfed vagy részben kész, a kapunál ellenőrizendő), **SZŰKÜL / ÁTKERÜL** (más terv gazdája), **VÁR** (kapura), **INDÍTHATÓ** (a kapu megengedi, külön engedéllyel). Az „ellenőrizendő” azt jelenti: ebben a körben csak kódkeresés történt, a pont végrehajtása előtt a IV. pont kapuja újra lefut.
+**Szabály (István, 2026-11-22):** a Kdenlive-tervben csak az a képesség marad, amely a `main`-ben nincs meg, és amelyet más jóváhagyott vagy nyitott terv sem hordoz. Ami kész, vagy más terv gazdája, az innen kikerül, itt legfeljebb hivatkozás marad. A szűrés kódkeresésen és a tervek szövegén alapul; ahol a bizonyíték gyenge, a pont „kapunál ellenőrizendő” jelölést kap (a IV. pont kapuja úgyis lefut).
 
-| K | Állapot 2026-11-22 | Változás az alaptervhez képest | Hullám |
+### 5A. Kikerül: kész, vagy más terv hordozza
+
+| K | Miért kerül ki | Hol él |
+|---|---|---|
+| **K7** | Kész: a Qt6 számmező számolást fogad (`python/cfa4_qt/calc.py`, `hot_number.py`; az egui `calc.rs` portja) | `main` |
+| **K19** | Kész: Sine, Expo, Circ, Overshoot, Elastic, Bounce… az `Interpolation`-ben (`crates/project/src/keyframe.rs`) | `main` |
+| **K54** | Kész: `history.clear`, `history.deleteRedoable` | `main` |
+| **K22** | A Link Media / `media.autoRelink` és a médiaazonosság megvan; a forráscsere és az ujjlenyomat a FILE-SERVICES-001-ben; az eredeti fájl megőrzése az SC-5 D6-ban. A Kdenlive-eredeti megőrzése a K1 része | `main`; `CFA4-FILE-SERVICES-001`; SC-5 |
+| **K17** | D-8: JSON + projektfájl-UUID + PG `registry` séma | `CFA4-DATA-PG-001` §4.6 |
+| **K2, K31, K32, K33** | Whisper-kiadás (G19), modellkezelő, GPU-futtatás, WER: az ADR 0008 kapui és a Subtitle Studio AC-08 | ADR 0008 (F0/F1/F5), `gaps.md` G19, Subtitle Studio |
+| **K3** | Wayland/X11, Qt6-befejezés | `CFA4-QT6-FINISH-001` (Q2 PR nyitva) |
+| **K4** | SAM2-maszk, objektumszegmentálás | `OBJECT-MASK-PLAN-001` (OM-A5…, AI-F4 után) |
+| **K5** | frei0r és LV2 külön folyamatban | ADR 0003 A6–A7 |
+| **K6, K9, K26–K30** | fordítás, ASS/SSA, hangleválasztás, igazítás, felirat-QC, SBV | Subtitle Studio 1.2 (F2, F5), ADR 0008 M10/M15 |
+| **K35** | élő felirat | `CFA4-LIVE-STUDIO-001` (ST2110 melléklet említi) |
+| **K39** | eseményfeliratkozás | `CFA4-EVENT-FABRIC-001` 1.0 |
+| **K40** | Python-kliens és minták | `open-editors-parity.md` E11 |
+| **K41** | MI-vágási munkafolyamatok (csendvágás, durva vágás) | V1-A/V1-B, E1, E3, E5 és az ADR 0008 kapuk |
+| **K43** | Lottie | VFX X-7 / `CFA4-TITLE-CREDITS-001`; **figyelem:** a TITLE-CREDITS 1.1 szövege nem említi, ezt a terv gazdájának kell pótolnia (D-1) |
+| **K44** | FFmpeg-szűrők a routeren át | `CFA4-FFMPEG-BACKEND-R1` (filter-interfész), ADR 0005 |
+| **K62** | x264/x265/LAME felismerése, inaktív állapot | `CFA4-FFMPEG-BACKEND-R1` (`cfa4-restricted-extras` modell), ADR 0005 |
+| **K36** | Ez a dokumentum | – |
+
+### 5B. Marad: új képesség, amelyet semmi más nem hordoz
+
+| K | Képesség | Állapot / megjegyzés | Hullám |
 |---|---|---|---|
-| **K1** | INDÍTHATÓ | Közös MLT-mag az SC-5-tel (Δ3); a `main`-en nincs `.kdenlive`-olvasó, csak az OTIO-út (`tests/kdenlive_otio.rs`). Mintaprojektek: 26.08.3 és 26.11 dev. Doc version 1.1 változatlan | W1 |
-| **K2** | INDÍTHATÓ (AI-F0 kivétel) | A `whisper` feature még ki van kapcsolva a kiadásokban (G19). Az ADR 0008 F5-höz kötött a gazdagabb modellkezelés | W2 |
-| **K3** | RÉSZBEN | Q2 (KDE ellenőrzőlista, PR nyitva); Qt6 66/5/1 | a QT6-FINISH-001 szerint |
-| **K4** | ÁTKERÜL | Az OBJECT-MASK-PLAN szegmentálási lépései; AI-F4 után | OBJECT-MASK |
-| **K5** | VÁR | frei0r + LV2 külön folyamatban (ADR 0003 A6–A7), nincs kezdett munka; 10 új Kdenlive-frei0r effekt a K20-ban „nem támogatott” sor | ADR 0003 |
-| **K6, K28** | VÁR | Subtitle Studio F5 + AI-F4/F5; a CFA4 nem szállít modellt | Subtitle Studio |
-| **K7** | INDÍTHATÓ | Közös Qt6-spinbox; a számmező-kifejezés a VFX-4 kifejezésmaggal **nem** közös (más cél: számolás, nem animáció) | W4 |
-| **K8** | INDÍTHATÓ | Spektrogram-panel nincs (a `speech/mel.rs` ASR-hez van); Qt6 | W4 |
-| **K9** | VÁR | Subtitle Studio F2 (ASS/SSA még nincs a `crates/captions`-ben) | Subtitle Studio |
-| **K10** | RÉSZBEN | Van `cfa4-cli serve` (a Qt-motor külön folyamat) és `cfa4-cli render` (**csak egy képkocka PNG-ben**, nem export). A K10 szűkül: export-munka külön folyamatban, JSON-soros előrehaladással, megszakítás félkész fájl nélkül; a render C0 worker-szerződésével egyeztetve | W1 |
-| **K11** | RÉSZBEN | Vannak YouTube/WebM VP9/H.264-presetek (`crates/export/src/presets.rs`) és Social Deliverables (`social.rs`). Hiányzik a `kdenlive-export-profiles` 72 presetjének összevetése (AV1, HEVC, iPhone, VA-API, archív). **Licenc előbb** (D-2) | W1 |
-| **K12** | INDÍTHATÓ | Kameraproxy-felismerés (GoPro LRV, DJI LRF…) nincs; a `MediaPool` proxy-csatolása megvan. Forrás: `externalproxies.rc`, `camcorderfilters.rc` (CC0) | W1 |
-| **K13** | VÁR | Nincs gyroflow-integráció; a Warp Stabilizer javult (G18). **Licenc-tisztázás előbb** (D-4) | W3 |
-| **K14** | VÁR | Épül: render C0, `cfa4-tasks`, Smart Render; Event Fabric. Saját sor nincs | render-terv |
-| **K15** | RÉSZBEN | Fejezetek az MP4/MOV/HLS/MKV exportban megvannak (CHAPTERS-DASH). Maradék: borítókép, YouTube-fejezetszöveg, felhasználói render utáni parancs | W2 |
-| **K16** | VÁR | A közös feladatsorra (`cfa4-tasks`) épül | W3 |
-| **K17** | SZŰKÜL | D-8: JSON (sablon, preset), projektfájl-UUID, PG `registry` séma; SQLite nincs; előfeltétel a PG-3 | W3 |
-| **K18** | RÉSZBEN | `cfa4-fetch` megvan; a szolgáltatói adatfájl, a jóváhagyó és modellfelület hiányzik; közös a VIDEO-EXTERNAL-SOURCES F-fázisaival | W3 |
-| **K19** | **KÉSZ** | A `Interpolation` már tartalmazza a Sine, Expo, Circ, Overshoot, Elastic, Bounce… presetet (`crates/project/src/keyframe.rs`). A K19 lezárható; a hiányzó Penner-változatok listázása a kapunál | — |
-| **K20** | INDÍTHATÓ | A K1 része; kimenet: azonosító → CFA4-effekt tábla, `aliases`-kompatibilis a VFX-katalógussal (Δ4) | W1 |
-| **K21** | INDÍTHATÓ | CC0 lumák, LUT-ok, előnézetek; `.attribution` + `cargo xtask assets` | W2 |
-| **K22** | INDÍTHATÓ | A K1-gyel; az eredeti `.kdenlive` megőrzése (SC-5 D6 mintájára) | W1 |
-| **K23** | INDÍTHATÓ | `cfa4-qc` szabálya; a modell a projektből, nem XML-ből | W2 |
-| **K24** | VÁR | Licenc-ellenőrzés, P3 | W5 |
-| **K25** | INDÍTHATÓ | A K1 része; a `melt` verzió rögzítése (MLT ≥ 7.42-es a Kdenlive 26.11-hez) | W1 |
-| **K26, K27, K29, K30** | VÁR | Subtitle Studio / ADR 0008 (alapterv 11.2). A K29 (szabályalapú QC) nem MI | Subtitle Studio |
-| **K31–K35** | VÁR | AI-F1/F5 és a K18; a K33 (WER-mérés) a K2 után. A V1-B Silero-modellt a felhasználó tölti le | W2–W5 |
-| **K36** | **KÉSZ** (ez a dokumentum) | A tulajdonos elfogadására vár | — |
-| **K37** | INDÍTHATÓ | Parancsonkénti összevetés a 4. pont listájával; új parancs csak a regiszterbe | W1 |
-| **K38** | VÁR | V3 (Unix socket 0600, mozdulat alatti visszatartás) a `main`-en **nincs**; a vezérlőcsatorna TCP + token (`control-protocol.md`). A K38 szintjei az MCP-annotációkra épülnek | W2 (V3 után) |
-| **K39** | VÁR | V3 + Event Fabric; K37 után | W3 |
-| **K40** | INDÍTHATÓ | Python-minták összevetése a `python/` klienseivel | W2 |
-| **K41** | VÁR | E1 (`plan.prepare`/`plan.commit`) a `main`-en **nincs**; AI-F3; a csendvágás a V1-A-ra épül | W5 |
-| **K42** | INDÍTHATÓ | A K1 része (leképezési tábla a közös magban) | W1 |
-| **K43** | **GAZDA NÉLKÜL** | A VFX X-7 szerint a főcímgenerátor, de a TITLE-CREDITS 1.1-ben nincs Lottie | D-1 |
-| **K44** | VÁR | ADR 0005 2. lépés után; a saját effekt az első | W5 |
-| **K45–K48** | INDÍTHATÓ | Motoros, kicsi; K48 az `edit.editOriginal`-ra épül | W2 |
-| **K49–K53, K55–K59** | INDÍTHATÓ (felület: Qt6) | Egyenként kicsi; a Qt6-állapot miatt a felületi részük a QT6-FINISH-001 szerint | W4 |
-| **K54** | **KÉSZ** | `history.clear` és `history.deleteRedoable` megvan (`crates/engine/src/commands.rs`) | — |
-| **K56** | VÁR | Saját effekt; a VFX-katalógusba regisztrálandó | W5 |
-| **K60** | VÁR | Többmonitoros munka; K3-mal együtt tesztelve | W4 |
-| **K61** | INDÍTHATÓ | Az export-sorban megvan a szünet egyes elemei (`serve.rs`); ellenőrizendő | W2 |
-| **K62** | RÉSZBEN | A CI-orákulum már x264/x265 nélkül fut (PR #1125); a futásidejű felismerés és az inaktív állapot útmutatója a K62 | W2 |
+| **K1** (Kdenlive-dialektus) + **K20** + **K25** | `.kdenlive` olvasása: `kdenlive:` tulajdonságok, effekt/átmenet-azonosítók → CFA4-effekt tábla (a VFX-katalógus `aliases`-ához igazítva), `melt`-összevetés CI-ben. A **mag és az általános leképezés (K42) az SC-5 része**, nem készül kétszer | A `main`-en nincs `.kdenlive`-olvasó (csak OTIO). Közös PR-sorozat az SC-5.1-gyel | W1 |
+| **K10** (szűkítve) | Export külön folyamatban (összeomlás-elszigetelés, JSON-soros előrehaladás, megszakítás félkész fájl nélkül). A `serve` és a képkocka-`render` megvan; az exportmunka külön folyamata ellenőrizendő | részben | W1 |
+| **K11** (szűkítve) | A hiányzó platform-presetek: AV1, HEVC, iPhone, VA-API/GPU, archív (YouTube, WebM VP9, Social Deliverables megvan). **D-2 előbb** (licenc) | részben | W1 |
+| **K12** | Kamerák saját proxyfájljainak felismerése (GoPro LRV, DJI LRF, Sony, Insta360), újrakódolás nélkül. A `camera-raw.md` csak metaadat/proxy-megjegyzés; az E12 (automatikus proxydöntés) más képesség | nincs | W1 |
+| **K37** (szűkítve) | A forkok eszközlistájának parancsonkénti összevetése a regiszterrel; csak a hiányzó parancs készül (az E6 kis MCP-felületével egyeztetve) | nincs összevetés | W1 |
+| **K15** (szűkítve) | Borítókép, YouTube-fejezetszöveg, felhasználói render utáni parancs (a fejezet az MP4/MOV/HLS/MKV exportban megvan) | részben | W2 |
+| **K21** | CC0 lumák, LUT-ok, átmenet-előnézetek eszközként (`.attribution`) | nincs | W2 |
+| **K23** | Projekt-ellenőrző (hiányzó források, proxyk, effektek, integritás); az SC-F0 terv is erre hivatkozik | nincs | W2 |
+| **K38** | Jogosultsági szintek (olvasó/szerkesztő/romboló) az MCP-annotációkra építve; a **V3** (Unix socket, mozdulat alatti visszatartás) előfeltétele a `main`-en még nincs | nincs | W2 (V3 után) |
+| **K45, K46, K47, K48** | zip/tar projektarchívum; távoli erőforrás figyelmeztetés; renderelt fájl a Bin-be; külső szerkesztés visszatöltése | kapunál ellenőrizendő (a K46-ot az SC-F0 és a VIDEO-EXTERNAL-SOURCES is említi) | W2 |
+| **K61** | Render szüneteltetése és folytatása | kapunál ellenőrizendő (`serve.rs` említ szünetet) | W2 |
+| **K13** | Giroszkópos stabilizálás `gyroflow-core`-ral; **D-4 előbb** (licenc) | nincs (G18 a 2-D/3-D stabilizátort fedi, a giroszkópot nem) | W3 |
+| **K14** | Párhuzamos és hálózati render, render-only kliens; a render C0 worker-szerződésére és a `cfa4-tasks`-ra épül | semmi sem fedi (a render-terv helyi) | W3 |
+| **K16** | Kötegelt átkódolás a közös feladatsoron; egyeztetni a `LOSSLESS-MEDIA-TOOLS-001`-gyel (#1124) és a VISION konvertálás-területtel | részben a VISION-ban, terv nincs | W3 |
+| **K18** (szűkítve) | Szolgáltatói adatfájl (Hugging Face, Freesound, Pixabay), jóváhagyó felület; a letöltő maga (`cfa4-fetch`) megvan | részben | W3 |
+| **K8** | Hangspektrum- és spektrogram-panel | nincs (a `speech/mel.rs` ASR-hez van) | W4 |
+| **K49–K53, K55–K60** | sávátrendezés; marker a résekbe; áttűnés-előnézet; több klip sebessége; rögzített lejátszófej; minden effekt ki/be; Delogo; lekerekített téglalap a címszerkesztőben; szóló Shift+kattintással; hanghullám beágyazott szekvencián; többmonitoros munka (a #466 lebegő ablakai részben fedik) | kapunál ellenőrizendő pontonként | W4 |
+| **K24** | Diavetítés-automatizálás (Ken Burns, ütemhez igazítás); licencellenőrzés előbb | nincs | W5 |
+| **K34** | Figyelt mappa: bedobott médiából átirat és felirat automatikusan (K16 feladatsor, AI-F5) | nincs; MI-kapu | W5 |
 
-## 6. Végrehajtási terv (hullámok)
+## 6. Végrehajtási terv (hullámok, csak az 5B pontjai)
 
-Minden hullám **külön tulajdonosi indítási engedélyt** igényel, és mindegyik K-pont előtt a IV. pont kapuja lefut (friss `main`, nyitott PR-ok, függőség-ellenőrzés). Egy PR egy K-pont (vagy lépése), kész PR „Ready for review”, „Gazda: …” issue. A becslések ügynökórák, nem mértek.
+Minden hullám **külön tulajdonosi indítási engedélyt** igényel, és mindegyik K-pont előtt a IV. pont kapuja lefut (friss `main`, nyitott PR-ok, függőség-ellenőrzés). Egy PR egy K-pont (vagy lépése), kész PR „Ready for review”, „Gazda: …” issue. A becslések ügynökórák, nem mértek; a K-pontok alaptervi becsléseiből, a szűkítésekkel.
 
 | Hullám | Tartalom | Előfeltétel | Becslés (ó) | Kilépési bizonyíték |
 |---|---|---|---|---|
-| **W0** | Ez a terv elfogadása; D-1…D-7 eldöntése; az alapterv frissítésének átvezetése | tulajdonosi jóváhagyás | – | jóváhagyás, a döntések az alaptervben |
-| **W1 — MI nélküli mag** | **K1 + K42 + K20 + K25 + K22 közös MLT-maggal (SC-5.1-gyel közös PR-sorozat)**; **K10 szűkített** (export külön folyamatban); **K11** (a CC0-tisztázás után); **K12**; **K37** (parancs-összevetés) | W0; D-2; a #1559 beolvasztása; render C0 szerződés a K10-hez | K1-család 40–75 (SC-5-tel együtt), K10 10–20, K11 10–20, K12 8–15, K37 10–20 | a K1 „Kész, ha”: mintaprojektek megnyílnak, vágópontok képkocka-pontosak, kompatibilitási jelentés, ellenséges bemenet nem pánik; `melt`-összevetés CI-ben |
-| **W2 — kis motoros és AI-F0 kivétel** | **K2** (Whisper a kiadásokban, G19); **K15** maradéka; **K21, K23**; **K40**; **K45–K48**, **K61**, **K62**; **K38** (V3 után) | W1 K1 a K23-hoz; V3 a K38-hoz | K2 5–10, K15 6–10, K21 6–10, K23 12–20, K40 6–12, K45–K48 12–24, K61 6–12, K62 10–20, K38 10–20 | pontonként a K-pont „Kész, ha” sora |
-| **W3 — közös infrastruktúrára épülők** | **K14** (render C0 + `cfa4-tasks`), **K16**, **K17** (D-8), **K18**, **K39**, **K13** | render F3/C0; PG-3; ACS-8; Event Fabric; D-4 | K14 70–120, K16 25–40, K17 20–35, K18 15–30, K39 15–30, K13 35–55 | két gépen azonos kimenet (K14); PG nélkül JSON-fallback (K17); hash-ellenőrzött letöltés (K18) |
-| **W4 — Qt6-felület és motor** | **K7, K8, K49, K51, K53, K58, K60, K50, K52, K55, K57, K59** | a QT6-FINISH-001 kapui | 70–130 | Qt-teszt Wayland/X11 (K60), automatizálási azonosítók |
-| **W5 — MI-kapuhoz kötött** | **K31–K35, K26–K28, K41, K44, K56, K24** (és a K4, K6, K9 a saját tervükben) | AI-F1…F5; E1; K18 | a K-pontok saját becslése | az ADR 0008 kapuk kilépési feltételei |
+| **W0** | Terv elfogadása; D-1…D-7; az alapterv átvezetése (az 5A pontjainak törlése, hivatkozásra cserélve) | tulajdonosi jóváhagyás | – | jóváhagyás |
+| **W1 — `.kdenlive` és MI nélküli mag** | K1 (Kdenlive-dialektus), K20, K25 az SC-5 közös magjára; K10 (szűkítve); K11 (szűkítve); K12; K37 (szűkítve) | W0; D-2; a #1559 beolvasztása; render C0 a K10-hez | K1+K20+K25 25–45 (a mag az SC-5-é), K10 10–20, K11 10–20, K12 8–15, K37 5–10 | a K1 „Kész, ha”: mintaprojektek megnyílnak, vágópontok képkocka-pontosak, kompatibilitási jelentés, ellenséges bemenet nem pánik; `melt`-összevetés CI-ben |
+| **W2 — kicsi, motoros** | K15 (szűkítve), K21, K23, K45–K48, K61, K38 (V3 után) | W1 K1 a K23-hoz; V3 a K38-hoz | K15 6–10, K21 6–10, K23 12–20, K45–K48 12–24, K61 6–12, K38 10–20 | pontonként a „Kész, ha” sor |
+| **W3 — közös infrastruktúrára épülők** | K14, K16, K18 (szűkítve), K13 | render F3/C0; ACS-8/`cfa4-tasks`; D-4 | K14 70–120, K16 25–40, K18 8–15, K13 35–55 | két gépen azonos kimenet (K14); hash-ellenőrzött letöltés (K18) |
+| **W4 — Qt6-felület és motor** | K8, K49–K53, K55–K60 | a QT6-FINISH-001 kapui | 60–120 | Qt-teszt Wayland/X11 (K60), automatizálási azonosítók |
+| **W5 — licenc- vagy MI-kapuhoz kötött** | K24, K34 | licenc-ellenőrzés; AI-F5; K16 | 23–37 | az ADR 0008 kapuk kilépési feltételei |
 
-**Sorrend és indoklás:** W1 a legnagyobb értékű és MI nélküli (a `.kdenlive` megnyitása a kötelező döntés, K1), és a Shotcut-import ugyanazt a magot használja. A W2 a kis, kockázatmentes pontokat és a K2-t hozza. A W3 nem indulhat a közös infrastruktúra (render C0, PG, ACS, Event Fabric) nélkül, hogy ne készüljön párhuzamos sor. A W5 az MI-rétegé.
-
-**Összes becslés:** W1–W4 kb. 400–730 ó (az alaptervben szereplő számokból, a K1 közös magos megtakarításával és a K17/K19/K54 szűkítésével); a W5 az ADR 0008 kapuit követi. Az alapterv 610–1035 órás becslése így nem nő.
+**Összes becslés:** kb. 330–590 ó (az alaptervi 610–1035 helyett; a különbség a kikerült, kész vagy más terv által hordozott pontok). A W1 a legnagyobb értékű és MI nélküli: a `.kdenlive` megnyitása a kötelező döntés (K1), és az SC-5 ugyanazt a magot használja.
 
 ## 7. Tulajdonosi döntést igénylő pontok
 
@@ -184,4 +183,5 @@ Minden hullám **külön tulajdonosi indítási engedélyt** igényel, és minde
 
 | Dátum | Változás |
 |---|---|
+| 2026-11-22 | 1.1 (javaslat): István kérésére az 5. pont szűrve: csak a CFA4-ben és más tervben nem szereplő képességek maradnak (5A kikerül, 5B marad); a hullámok ennek megfelelően újraszámolva |
 | 2026-11-22 | 1.0 (javaslat): K36 elvégezve; delta, tárolók és forkok állapota, K-pontonkénti állapot, hullámok, nyitott döntések |
