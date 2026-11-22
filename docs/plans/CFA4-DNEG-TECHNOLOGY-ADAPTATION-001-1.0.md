@@ -159,7 +159,7 @@ A nehéz mérések a `docs/development/reference-machine.md` szabályai szerint 
 | Q5 | A 3D/VFX-mélység (VISION §8) nyitott döntés; ez a terv ezt nem dönti el | Az N1–N2 csak adat+megjelenítés; 3D-jelenet nincs scope. |
 | Q6 | Opcionális külső AAF-orákulum (licenc után)? | Nem sürgős; külön PR. |
 | Q7 | A megbízás sorrendje szerint az F8 (licenc) a 9. lépés; a CFA4-szabály szerint integráció előtt kötelező | Megoldás: a G1 belépési kapu **minden** fázis előtt – ez nem tervmódosítás a sorrenden, csak előfeltétel. |
-| Q8 | A megbízásban a második hivatkozott terv neve a repó függetlenségi tesztje (`python/tests/test_independence.py`) tiltott márkanév-családjába esik, ezért a CI piros volt | **Lezárva:** a terv neve `CFA4-FX-AUTHORING-001` (fájl: `docs/plans/CFA4-FX-AUTHORING-001-0.1.md`); a tartalom változatlan. Ha más nevet kérsz, az is átnevezés, a tiltott családon kívül. |
+| Q8 | A megbízásban a második hivatkozott terv neve a repó függetlenségi tesztje (`python/tests/test_independence.py`) tiltott márkanév-családjába esik, ezért a CI piros volt | **Lezárva:** a terv neve `CFA4-EFFECTCHAIN-001` (fájl: `docs/plans/CFA4-EFFECTCHAIN-001-0.1.md`); a tartalom változatlan. Ha más nevet kérsz, az is átnevezés, a tiltott családon kívül. |
 
 ## 9. Összefüggés a megbízás elfogadási kritériumaival (14. pont)
 
