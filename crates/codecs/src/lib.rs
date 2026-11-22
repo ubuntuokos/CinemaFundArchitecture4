@@ -17,6 +17,7 @@
 //!   MP3 / MP2 and AC-3 audio.
 //! - [`AudioFileSource`]: standalone compressed audio files (MP3, FLAC, AIFF, …).
 //! - [`DifSource`]: raw DV (`.dv`, `.dif`) files, decoded by `cfa4-dv`, frames read on demand.
+//! - [`BinkSource`]: Bink 1 (`.bik`) with Bink video (with alpha) and RDFT / DCT Bink audio.
 //! - [`RmSource`]: RealMedia (`.rm`, `.rmvb`) with RealVideo 1.0 / 2.0 / 3.0 / 4.0 video and Cook, ATRAC3, SIPR or RealAudio 1.0 / 2.0 audio.
 //! - [`SmkSource`]: Smacker (`.smk`, SMK2 and SMK4) with palette video and up to seven audio tracks.
 //! - [`EvcSource`]: raw MPEG-5 EVC Baseline (`.evc`) streams, pictures shown in their order count.
@@ -35,6 +36,7 @@ pub mod av2;
 #[cfg(feature = "av2-external")]
 pub mod av2_external;
 pub mod avi;
+pub mod bink;
 pub mod canopus;
 pub mod cavs;
 pub mod cinepak;
@@ -76,6 +78,7 @@ use std::sync::{Arc, RwLock};
 pub use apv::ApvSource;
 pub use audio::AudioFileSource;
 pub use avi::AviSource;
+pub use bink::BinkSource;
 pub use cavs::CavsSource;
 pub use dif::DifSource;
 pub use evc::EvcSource;
@@ -216,6 +219,7 @@ pub fn openers() -> Vec<cfa4_media::Opener> {
         y4m::opener,
         dif::opener,
         realmedia::opener,
+        bink::opener,
         smacker::opener,
         roq::opener,
         mve::opener,
