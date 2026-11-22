@@ -1311,6 +1311,7 @@ dependencies = [
  "cfa4-mpa",
  "cfa4-mpeg2v",
  "cfa4-mpegts",
+ "cfa4-msvideo",
  "cfa4-musepack",
  "cfa4-mve",
  "cfa4-mxf",
@@ -1986,6 +1987,14 @@ dependencies = [
 
 [[package]]
 name = "cfa4-mpegts"
+version = "0.10.0"
+dependencies = [
+ "cfa4-testkit",
+ "thiserror 2.0.21",
+]
+
+[[package]]
+name = "cfa4-msvideo"
 version = "0.10.0"
 dependencies = [
  "cfa4-testkit",

@@ -72,6 +72,7 @@ cfa4-evc = { path = "../crates/evc" }
 cfa4-cavs = { path = "../crates/cavs" }
 cfa4-lagarith = { path = "../crates/lagarith" }
 cfa4-magicyuv = { path = "../crates/magicyuv" }
+cfa4-msvideo = { path = "../crates/msvideo" }
 cfa4-g729 = { path = "../crates/g729" }
 cfa4-ilbc = { path = "../crates/ilbc" }
 cfa4-musepack = { path = "../crates/musepack" }
@@ -486,6 +487,13 @@ bench = false
 [[bin]]
 name = "magicyuv"
 path = "fuzz_targets/magicyuv.rs"
+test = false
+doc = false
+bench = false
+
+[[bin]]
+name = "msvideo"
+path = "fuzz_targets/msvideo.rs"
 test = false
 doc = false
 bench = false

@@ -618,6 +618,25 @@ pub fn lagarith(data: &[u8]) {
     }
 }
 
+pub fn msvideo(data: &[u8]) {
+    // the first bytes pick the codec and the layout, the rest is a run of packets
+    let (head, body) = data.split_at(data.len().min(4));
+    let &[sel, w, h, pal] = head else { return };
+    let (w, h) = (4 + u32::from(w) % 60, 4 + u32::from(h) % 60);
+    let palette: Vec<u8> = (0..1024).map(|i| (i as u8).wrapping_mul(pal | 1)).collect();
+    let (bits1, bits2) = ([8u16, 16][usize::from(sel & 1)], [1u16, 4, 8, 24][usize::from(sel >> 1 & 3)]);
+    let mut v1 = cfa4_msvideo::video1::Decoder::new(w, h, bits1, &palette);
+    let mut rle = cfa4_msvideo::rle::Decoder::new(w, h, bits2, &palette);
+    for pkt in body.chunks(1 + usize::from(sel >> 3) * 8 + 24) {
+        if let Ok(d) = &mut v1 {
+            let _ = d.decode(pkt);
+        }
+        if let Ok(d) = &mut rle {
+            let _ = d.decode(pkt);
+        }
+    }
+}
+
 pub fn magicyuv(data: &[u8]) {
     let _ = cfa4_magicyuv::Decoder::new().decode(data);
 }
@@ -779,6 +798,7 @@ pub const TARGETS: &[(&str, &str, Target)] = &[
     ("cavs", "cfa4-cavs", cavs),
     ("lagarith", "cfa4-lagarith", lagarith),
     ("magicyuv", "cfa4-magicyuv", magicyuv),
+    ("msvideo", "cfa4-msvideo", msvideo),
     ("g729", "cfa4-g729", g729),
     ("ilbc", "cfa4-ilbc", ilbc),
     ("musepack", "cfa4-musepack", musepack),
