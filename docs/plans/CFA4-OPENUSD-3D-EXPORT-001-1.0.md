@@ -1,6 +1,6 @@
-# CFA4-OPENUSD-3D-EXPORT-001 – 3D-export (U3): glTF/OBJ/STL és USD kiírás, 0.1
+# CFA4-OPENUSD-3D-EXPORT-001 – 3D-export (U3): glTF/OBJ/STL és USD kiírás, 1.0
 
-> **Állapot:** JAVASLAT, tulajdonosi jóváhagyásra vár. **Dokumentum-szintű terv; kódot nem indít.** Az U3 fázisengedélyt István 2026-11-22 18:03-kor megadta, az elfogadási feltételeket ez a dokumentum írja meg ([`CFA4-OPENUSD-3D-001-1.0.md`](CFA4-OPENUSD-3D-001-1.0.md) §7: „az U3 elfogadási feltételeit az indítása előtt meg kell írni”). A feltételek jóváhagyásáig az U3 kódja nem indulhat (`docs/coordination.md` §2.10).
+> **Állapot:** JÓVÁHAGYVA (István, 2026-11-22 18:07): az E-1…E-5 javaslatok elfogadva (§7), az elfogadási feltételek érvényesek. **Dokumentum-szintű terv; kódot nem indít.** Az U3 fázisengedélyt István 2026-11-22 18:03-kor megadta; az elfogadási feltételeket ez a dokumentum írja meg ([`CFA4-OPENUSD-3D-001-1.0.md`](CFA4-OPENUSD-3D-001-1.0.md) §7). A fázis kapui érvényesek: az U3a az U1 után, a terv `main`-be kerülése után indulhat; az U3b az U2-től és a G-USD-1 (a)/(b) kiválasztásától függ (`docs/coordination.md` §2.10).
 > **Dátum:** 2026-11-22 · **Kérte:** István (ubuntuokos) · **Döntés, amelyre épül:** import és export egyaránt cél (István, 2026-11-22 16:55).
 > **Alap:** CFA4 `main` @ `2ff5b412`; a `main`-ben 3D-kód nincs.
 
@@ -71,9 +71,9 @@ Minden fázis külön PR-ban, egy témával; a fázis lépéseinek, sorrendjéne
 - **U3b-A2:** a worker összeomlása hiba, nem a CFA4 összeomlása; hálózat nélkül fut; idő- és memóriakeret; a render C0 szerződésén megy.
 - **U3b-A3:** csak az az USD-tartalom íródik, amelyet az importer ismer (réteg, variáns, referencia: a támogatott részhalmaz a jelentésben).
 
-## 7. Döntések, amelyeket a tulajdonostól kérek
+## 7. Döntések (István, 2026-11-22 18:07: mind a javaslat szerint elfogadva)
 
-| # | Kérdés | Javaslat |
+| # | Kérdés | Döntés |
 |---|---|---|
 | E-1 | Mit jelent az „export” (1. fejezet értelmezése)? | hű kiírás a CFA4-beli módosításokkal; az idővonal 3D-jelenetként nincs benne |
 | E-2 | Az USD-export a G-USD-1 (a)/(b) kiválasztásáig blokkolt | az U3b várja az U2-t; az U3a ettől független indulhat |
@@ -89,4 +89,5 @@ A Rust-crate-ek kódját nem olvastam, `cargo deny` nem futott; a külső glTF-v
 
 | Verzió | Dátum | Változás |
 |---|---|---|
+| 1.0 | 2026-11-22 | Jóváhagyva (István, 18:07): E-1…E-5 a javaslat szerint; fájl átnevezve (`…-0.1.md` → `…-1.0.md`). |
 | 0.1 | 2026-11-22 | Első javaslat az U3 exportra: formátumok, szabályok, fázisok, elfogadási feltételek, döntések. |
