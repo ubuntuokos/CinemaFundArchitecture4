@@ -1,7 +1,7 @@
 # CFA4-AX-INTERPRETER-001 – saját, korlátozott kifejezés-interpreter (N3, G4), 0.1
 
 > **Állapot:** JÓVÁHAGYVA (István, 2026-11-22 18:56, Europe/Budapest), a §9 javaslatai (Q-X1…Q-X5) elfogadva. A jóváhagyás **nem implementációs engedély**:
-> X0 (nyelvleírás, kód nélkül) indulhat; X1-től minden fázishoz külön engedélyt kérek (coordination.md §2.10). A Q-X2 futásidő-határ számát a tulajdonos az X2 mérése előtt adja meg.
+> X0 (nyelvleírás, kód nélkül) elkészült és elfogadva (István, 2026-11-22 18:57); X1-től minden fázishoz külön engedélyt kérek (coordination.md §2.10). A Q-X2 futásidő-határ számát a tulajdonos az X2 mérése előtt adja meg.
 > **Dátum:** 2026-11-22 · **Kérte:** István (ubuntuokos) · **Szülő terv:** [`CFA4-DNEG-TECHNOLOGY-ADAPTATION-001-1.0.md`](CFA4-DNEG-TECHNOLOGY-ADAPTATION-001-1.0.md) (§4 N3, G4, Q4)
 > **Platform:** Linux amd64, Ubuntu 26.04; nincs automatikus letöltés, nincs Conda; nincs LLVM-függőség.
 > **Tulajdonosi döntés (2026-11-21 22:49, Q4):** az AX-szerű térbeli kifejezést **saját, korlátozott interpreter** futtatja; az LLVM-JIT-worker nem scope.

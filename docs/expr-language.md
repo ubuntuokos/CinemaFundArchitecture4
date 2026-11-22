@@ -1,6 +1,6 @@
 # CFX v1 – a CFA4 térbeli kifejezésnyelv leírása (X0)
 
-> **Állapot:** X0 tervezet, a [CFA4-AX-INTERPRETER-001](plans/CFA4-AX-INTERPRETER-001-0.1.md) terv szerint; átnézésre vár. **Kód még nincs**: ez a szöveg a nyelv szerződése, amelyet X1 valósít meg és tesztel.
+> **Állapot:** JÓVÁHAGYVA (István, 2026-11-22 18:57), X0 elfogadva; a [CFA4-AX-INTERPRETER-001](plans/CFA4-AX-INTERPRETER-001-0.1.md) terv szerint. **Kód még nincs**: ez a szöveg a nyelv szerződése, amelyet X1 valósít meg és tesztel.
 > A CFX az OpenVDB AX ötletéből indul, de **nem AX-kompatibilis**; az AX forrását és szövegét nem használtuk.
 
 ## 1. Mire való
