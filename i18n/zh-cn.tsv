@@ -4867,3 +4867,27 @@
 	Subtitles	字幕
 	Captions for the hearing impaired	听障人士字幕
 	Forced narrative	强制旁白 (forced narrative)
+# DCP Validation window (DCP-12)
+	AS-03	AS-03
+	Choose the DCP folder.	请选择 DCP 文件夹。
+	DCP Validation	DCP 验证
+	DCP folder	DCP 文件夹
+	DCP folder (the one holding ASSETMAP)	DCP 文件夹(包含 ASSETMAP 的文件夹)
+	Evidence	依据
+	How to fix	修复方法
+	Interrupted	已中断
+	Not applicable	不适用
+	Report	报告
+	Report saved: {path}	报告已保存:{path}
+	Required	必需
+	Rule	规则
+	Rules	规则
+	Save JSON…	保存 JSON…
+	Save Markdown…	保存 Markdown…
+	Save report	保存报告
+	Skipped	已跳过
+	Standard: {standard}	标准:{standard}
+	Validate	验证
+	Validate DCP…	验证 DCP…
+	the engine sent no profiles	引擎未发送任何配置文件
+	{n} files checked	已检查 {n} 个文件

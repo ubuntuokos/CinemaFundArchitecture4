@@ -1,0 +1,189 @@
+//! Comparing our side with a reference list, and the report (summary and markdown).
+
+use super::*;
+
+/// Where a reference item is on our side; `Same` and `Elsewhere` carry the index of our item.
+pub(super) enum Placement {
+    Same(usize),
+    Elsewhere(usize),
+    Missing,
+}
+
+pub(super) struct Report {
+    pub(super) area: Area,
+    /// Our items, which `Placement` points into.
+    pub(super) ours: Vec<OurItem>,
+    /// (reference path, where it is in CFA4).
+    pub(super) items: Vec<(Vec<String>, Placement)>,
+    pub(super) out_of_scope: BTreeMap<&'static str, usize>,
+    pub(super) ours_only: Vec<Vec<String>>,
+}
+
+pub(super) fn compare(area: Area, reference: &[Vec<String>], ours: &[OurItem]) -> Report {
+    let key = |p: &[String]| p.iter().map(|s| norm(s)).collect::<Vec<_>>();
+    let mut by_path: HashMap<Vec<String>, usize> = HashMap::new();
+    let mut by_label: HashMap<String, usize> = HashMap::new();
+    for (i, it) in ours.iter().enumerate() {
+        by_path.entry(key(&it.path)).or_insert(i);
+        if let Some(l) = it.path.last() {
+            by_label.entry(norm(l)).or_insert(i);
+        }
+    }
+    let mut report = Report { area, ours: ours.to_vec(), items: Vec::new(), out_of_scope: BTreeMap::new(), ours_only: Vec::new() };
+    let mut seen = HashSet::new();
+    for p in reference {
+        if !seen.insert(key(p)) {
+            continue;
+        }
+        if let Some(why) = out_of_scope(area, p) {
+            *report.out_of_scope.entry(why).or_default() += 1;
+            continue;
+        }
+        let label = p.last().map(|l| norm(l)).unwrap_or_default();
+        // a bare name (no folder) has no place to compare: found is all it can be
+        let placement = match (by_path.get(&key(p)), by_label.get(&label)) {
+            (Some(&i), _) => Placement::Same(i),
+            (None, Some(&i)) if p.len() == 1 => Placement::Same(i),
+            (None, Some(&i)) => Placement::Elsewhere(i),
+            (None, None) => Placement::Missing,
+        };
+        report.items.push((p.clone(), placement));
+    }
+    let ref_labels: HashSet<String> = reference.iter().filter_map(|p| p.last().map(|l| norm(l))).collect();
+    report.ours_only = ours.iter().filter(|it| it.path.last().is_some_and(|l| !ref_labels.contains(&norm(l)))).map(|it| it.path.clone()).collect();
+    report
+}
+
+pub(super) fn pct(n: usize, of: usize) -> f64 {
+    if of == 0 { 0.0 } else { n as f64 * 100.0 / of as f64 }
+}
+
+pub(super) fn show(p: &[String]) -> String {
+    p.join(" ▸ ")
+}
+
+impl Report {
+    pub(super) fn counts(&self) -> (usize, usize, usize) {
+        let same = self.items.iter().filter(|(_, pl)| matches!(pl, Placement::Same(_))).count();
+        let elsewhere = self.items.iter().filter(|(_, pl)| matches!(pl, Placement::Elsewhere(_))).count();
+        (same, elsewhere, self.items.len().saturating_sub(same + elsewhere))
+    }
+
+    /// Reference items whose label we have anywhere, in percent of the items in scope.
+    pub(super) fn presence(&self) -> f64 {
+        let (same, elsewhere, _) = self.counts();
+        pct(same + elsewhere, self.items.len())
+    }
+
+    /// Our item a reference item was found as, if it was.
+    pub(super) fn found(&self, pl: &Placement) -> Option<&OurItem> {
+        match pl {
+            Placement::Same(i) | Placement::Elsewhere(i) => self.ours.get(*i),
+            Placement::Missing => None,
+        }
+    }
+
+    /// Reference items found only as an automatic stub, with our item.
+    pub(super) fn stubs(&self) -> Vec<(&[String], &OurItem)> {
+        self.items.iter().filter_map(|(p, pl)| self.found(pl).filter(|it| it.stub.is_some()).map(|it| (p.as_slice(), it))).collect()
+    }
+
+    pub(super) fn summary(&self) -> String {
+        let (same, elsewhere, missing) = self.counts();
+        let n = self.items.len();
+        let stubs = match self.stubs().len() {
+            0 => String::new(),
+            k => format!(" (of which stub {k})"),
+        };
+        format!(
+            "{}: presence {}/{n} ({:.1}%){stubs}, same place {same}/{n} ({:.1}%), elsewhere {elsewhere}, missing {missing}, out of scope {}",
+            self.area.name(),
+            same + elsewhere,
+            self.presence(),
+            pct(same, n),
+            self.out_of_scope.values().sum::<usize>()
+        )
+    }
+
+    pub(super) fn markdown(&self, reference: &str, ours: usize) -> String {
+        let (same, elsewhere, missing) = self.counts();
+        let n = self.items.len();
+        let area = self.area;
+        let (title, column) = match area {
+            Area::Menus | Area::MenusEgui => ("Menu", "Menu"),
+            Area::Commands => ("Command", "Menu"),
+            Area::Panels => ("Panel", "Group"),
+            Area::Effects => ("Effect", "Folder"),
+            Area::Transitions => ("Transition", "Folder"),
+        };
+        let mut s = format!("# {title} parity checklist\n\n");
+        s.push_str(&format!(
+            "Generated by `cargo xtask parity --area {}` from `{reference}` ({n} items in scope, {} out of scope) against \
+             CFA4's {} ({ours} items). *Same place*: we have the label at the same {place}; *elsewhere*: under \
+             another {place}; *missing*: nowhere. A label match is presence only, not behaviour.{}\n\n",
+            area.name(),
+            self.out_of_scope.values().sum::<usize>(),
+            area.ours(),
+            match area {
+                Area::Menus | Area::MenusEgui => "",
+                Area::Panels => " A panel is matched by its title. A panel that is only a placeholder dock, or only listed in the Window menu, is an automatic stub: present, but not the real panel (listed below).",
+                Area::Commands => " A bare name with no menu in the reference is matched by label alone; queries are left out.",
+                Area::Effects | Area::Transitions => " A bare name with no folder in the reference is matched by name alone.",
+            },
+            place = area.place(),
+        ));
+        s.push_str(&format!("| {column} | Items | Same place | Elsewhere | Missing | Presence |\n|---|---|---|---|---|---|\n"));
+        let mut per: Vec<(String, [usize; 3])> = Vec::new();
+        for (p, pl) in &self.items {
+            let top = area.group(p);
+            let i = match per.iter().position(|(t, _)| *t == top) {
+                Some(i) => i,
+                None => {
+                    per.push((top, [0; 3]));
+                    per.len() - 1
+                }
+            };
+            let col = match pl {
+                Placement::Same(_) => 0,
+                Placement::Elsewhere(_) => 1,
+                Placement::Missing => 2,
+            };
+            if let Some(c) = per.get_mut(i).and_then(|(_, c)| c.get_mut(col)) {
+                *c += 1;
+            }
+        }
+        for (top, [a, b, c]) in &per {
+            let total = a + b + c;
+            s.push_str(&format!("| {top} | {total} | {a} | {b} | {c} | {:.1}% |\n", pct(a + b, total)));
+        }
+        s.push_str(&format!("| **Total** | **{n}** | **{same}** | **{elsewhere}** | **{missing}** | **{:.1}%** |\n", self.presence()));
+        s.push_str(&format!("\n## Missing ({missing})\n\n"));
+        for (p, _) in self.items.iter().filter(|(_, pl)| matches!(pl, Placement::Missing)) {
+            s.push_str(&format!("- [ ] {}\n", show(p)));
+        }
+        s.push_str(&format!("\n## Elsewhere in CFA4 ({elsewhere})\n\n"));
+        for (p, pl) in &self.items {
+            if let Placement::Elsewhere(i) = pl
+                && let Some(at) = self.ours.get(*i)
+            {
+                s.push_str(&format!("- {} → {}\n", show(p), show(&at.path)));
+            }
+        }
+        let stubs = self.stubs();
+        if !stubs.is_empty() {
+            s.push_str(&format!("\n## Automatic stubs ({})\n\n", stubs.len()));
+            for (p, it) in stubs {
+                s.push_str(&format!("- {} → {}: {}\n", show(p), show(&it.path), it.stub.unwrap_or_default()));
+            }
+        }
+        s.push_str("\n## Out of scope\n\n");
+        for (why, k) in &self.out_of_scope {
+            s.push_str(&format!("- {why}: {k}\n"));
+        }
+        s.push_str(&format!("\n## CFA4 only ({})\n\n", self.ours_only.len()));
+        for p in &self.ours_only {
+            s.push_str(&format!("- {}\n", show(p)));
+        }
+        s
+    }
+}
