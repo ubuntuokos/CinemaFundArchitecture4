@@ -4880,3 +4880,8 @@
 	Validate DCP…	Перевірити DCP…
 	the engine sent no profiles	рушій не надіслав профілів
 	{n} files checked	Перевірено файлів: {n}
+
+# AS-02 export
+	Write an AS-02 bundle (the path is a folder)	Записати пакет AS-02 (шлях — це тека)
+	AS-02	AS-02
+	AS-12	AS-12

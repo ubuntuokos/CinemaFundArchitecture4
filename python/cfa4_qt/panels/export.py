@@ -564,6 +564,9 @@ class ExportDialog(QDialog):
         # MXF OP1a: the caption track as closed captions in an ANC data track (ST 436-1, CEA-608/708)
         self.mxf_anc = QCheckBox(tr("Write the captions as ANC data (CEA-608/708)"), self)
         self.mxf_anc.setObjectName("export.video.mxfAncCaptions")
+        # MXF OP1a: an AMWA AS-02 bundle (version file, manifest, mono components under media/)
+        self.mxf_as02 = QCheckBox(tr("Write an AS-02 bundle (the path is a folder)"), self)
+        self.mxf_as02.setObjectName("export.video.mxfAs02")
         # MXF OP1a: AMWA AS-11 metadata in bmx's text forms (empty Core = no AS-11 metadata)
         self.as11_text: dict[str, QPlainTextEdit] = {}
         # the placeholders show bmx's text forms (item names and time codes, not translated)
@@ -572,6 +575,7 @@ class ExportDialog(QDialog):
             ("mxfAs11Segments", "1/2 10:00:00:00 00:12:30:00\n2/2 10:13:00:00 00:11:00:00"),
             ("mxfAs11Ukdpp", "ProductionNumber: …\nSynopsis: …\nContactEmail: …"),
             ("mxfAs10", "ShimName: NRK_HD_2012\nMainTitle: …"),
+            ("mxfAs12", "adid_prefix: ABCD\nadid_code: 1234000H\nad_title: …\nBrand: …\nProduct: …\nAdvertiser: …\nagency_office_location: …\nLength: 30\nMedium: Television\nsd_flag: N\nParent: …"),
             ("mxfAs03", "IdentifierKind: ISAN\nIdentifier: …\nShimName: PBS NGIS HD Playout\nSignalStandard: 1920/1080/59.94i/16:9\nIntendedAFD: 1000 FullHD"),
         ):
             t = QPlainTextEdit(self)
@@ -653,7 +657,8 @@ class ExportDialog(QDialog):
         fv.addRow(tr("Alpha"), self.alpha)
         fv.addRow(tr("DASH Manifest"), self.dash_manifest)
         fv.addRow(tr("Closed Captions"), self.mxf_anc)
-        for key, label in (("mxfAs11Core", N_("AS-11 Core")), ("mxfAs11Segments", N_("AS-11 Parts")), ("mxfAs11Ukdpp", N_("AS-11 UK DPP")), ("mxfAs10", N_("AS-10")), ("mxfAs03", N_("AS-03"))):
+        fv.addRow(tr("AS-02"), self.mxf_as02)
+        for key, label in (("mxfAs11Core", N_("AS-11 Core")), ("mxfAs11Segments", N_("AS-11 Parts")), ("mxfAs11Ukdpp", N_("AS-11 UK DPP")), ("mxfAs10", N_("AS-10")), ("mxfAs03", N_("AS-03")), ("mxfAs12", N_("AS-12"))):
             fv.addRow(tr(label), self.as11_text[key])
         fv.addRow(tr("Quality"), self.quality)
         self.video_form = fv
@@ -871,7 +876,7 @@ class ExportDialog(QDialog):
         self.imf_lossless.toggled.connect(self._changed)
         for key, c in (("bitrateMode", self.bitrate_mode), ("audioCodec", self.audio_codec), ("chroma", self.chroma)):
             c.currentIndexChanged.connect(lambda _i, k=key: self._touch(k))
-        for key, b in (("hardware", self.hardware), ("audio", self.audio), ("alpha", self.alpha), ("dashManifest", self.dash_manifest), ("mxfAncCaptions", self.mxf_anc)):
+        for key, b in (("hardware", self.hardware), ("audio", self.audio), ("alpha", self.alpha), ("dashManifest", self.dash_manifest), ("mxfAncCaptions", self.mxf_anc), ("mxfAs02", self.mxf_as02)):
             b.toggled.connect(lambda _on, k=key: self._touch(k))
         for key, t in self.as11_text.items():
             t.textChanged.connect(lambda k=key: self._touch(k))
@@ -1124,6 +1129,7 @@ class ExportDialog(QDialog):
         rows["quality"] = enc in QUALITY_FORMATS
         rows["dashManifest"] = fmt == "hls"
         rows["mxfAncCaptions"] = fmt == "mxf-op1a" and self._choice("mxfVideoCodec") != "d10"
+        rows["mxfAs02"] = fmt == "mxf-op1a" and self._choice("mxfVideoCodec") not in ("d10", "xdcamHd422")
         for key in self.as11_text:
             rows[key] = fmt == "mxf-op1a"
         return rows
@@ -1170,6 +1176,7 @@ class ExportDialog(QDialog):
             "quality": self.quality,
             "dashManifest": self.dash_manifest,
             "mxfAncCaptions": self.mxf_anc,
+            "mxfAs02": self.mxf_as02,
             **self.as11_text,
         }
         for key, shown in self._format_rows().items():
@@ -1184,7 +1191,7 @@ class ExportDialog(QDialog):
                 c.blockSignals(True)
                 c.setCurrentIndex(i)
                 c.blockSignals(False)
-        for key, box in (("alpha", self.alpha), ("dashManifest", self.dash_manifest), ("mxfAncCaptions", self.mxf_anc)):
+        for key, box in (("alpha", self.alpha), ("dashManifest", self.dash_manifest), ("mxfAncCaptions", self.mxf_anc), ("mxfAs02", self.mxf_as02)):
             if key not in self.touched and isinstance(settings.get(key), bool):
                 box.blockSignals(True)
                 box.setChecked(settings[key])
@@ -1474,6 +1481,8 @@ class ExportDialog(QDialog):
             p["dashManifest"] = self.dash_manifest.isChecked()
         if rows["mxfAncCaptions"] and "mxfAncCaptions" in self.touched:
             p["mxfAncCaptions"] = self.mxf_anc.isChecked()
+        if rows["mxfAs02"] and "mxfAs02" in self.touched:
+            p["mxfAs02"] = self.mxf_as02.isChecked()
         for key, t in self.as11_text.items():
             if rows[key] and key in self.touched:
                 p[key] = t.toPlainText()
@@ -1798,6 +1807,9 @@ class ExportDialog(QDialog):
             status = str(it.get("status") or "").lower()
             qc = it.get("qc") if isinstance(it.get("qc"), dict) else {}
             qc_status = str(qc.get("status") or "notChecked")
+            dcp = it.get("dcpValidation") if isinstance(it.get("dcpValidation"), dict) else {}
+            if dcp.get("profile"):  # a DCP package is validated (DCP-13), not media-checked: its result fills the column
+                qc, qc_status = dcp, str(dcp.get("status") or "notChecked")
             texts = [
                 str(it.get("sequenceName") or ""),
                 str(it.get("path") or ""),
@@ -1849,7 +1861,10 @@ class ExportDialog(QDialog):
                 self.table.selectRow(row)
         self._update_move_buttons()
         running = bool(data.get("running")) or any(
-            str(i.get("status") or "").lower() == "encoding" or (i.get("qc") or {}).get("status") == "running" for i in items
+            str(i.get("status") or "").lower() == "encoding"
+            or (i.get("qc") or {}).get("status") == "running"
+            or (i.get("dcpValidation") or {}).get("status") == "running"
+            for i in items
         )
         if not running and not self.isVisible():
             self._poll.stop()
