@@ -77,7 +77,10 @@ cfa4-g729 = { path = "../crates/g729" }
 cfa4-ilbc = { path = "../crates/ilbc" }
 cfa4-musepack = { path = "../crates/musepack" }
 cfa4-shorten = { path = "../crates/shorten" }
+cfa4-adx = { path = "../crates/adx" }
+cfa4-hca = { path = "../crates/hca" }
 cfa4-tak = { path = "../crates/tak" }
+cfa4-smacker = { path = "../crates/smacker" }
 
 # Opt-level 3 and debug assertions (overflow checks) for every crate under test, as release fuzzing does.
 [profile.release]
@@ -517,6 +520,20 @@ doc = false
 bench = false
 
 [[bin]]
+name = "adx"
+path = "fuzz_targets/adx.rs"
+test = false
+doc = false
+bench = false
+
+[[bin]]
+name = "hca"
+path = "fuzz_targets/hca.rs"
+test = false
+doc = false
+bench = false
+
+[[bin]]
 name = "shorten"
 path = "fuzz_targets/shorten.rs"
 test = false
@@ -526,6 +543,13 @@ bench = false
 [[bin]]
 name = "tak"
 path = "fuzz_targets/tak.rs"
+test = false
+doc = false
+bench = false
+
+[[bin]]
+name = "smacker"
+path = "fuzz_targets/smacker.rs"
 test = false
 doc = false
 bench = false

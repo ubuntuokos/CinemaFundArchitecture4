@@ -4863,3 +4863,31 @@
 	Subtitles	자막
 	Captions for the hearing impaired	청각 장애인용 캡션
 	Forced narrative	강제 내레이션 (forced narrative)
+	Silence	무음
+	Detect Silence	무음 감지
+	Remove Silence	무음 제거
+	Clear Silence Markers	무음 마커 지우기
+# DCP Validation window (DCP-12)
+	AS-03	AS-03
+	Choose the DCP folder.	DCP 폴더를 선택하세요.
+	DCP Validation	DCP 검증
+	DCP folder	DCP 폴더
+	DCP folder (the one holding ASSETMAP)	DCP 폴더(ASSETMAP이 있는 폴더)
+	Evidence	근거
+	How to fix	해결 방법
+	Interrupted	중단됨
+	Not applicable	해당 없음
+	Report	보고서
+	Report saved: {path}	보고서 저장됨: {path}
+	Required	필수
+	Rule	규칙
+	Rules	규칙
+	Save JSON…	JSON 저장…
+	Save Markdown…	Markdown 저장…
+	Save report	보고서 저장
+	Skipped	건너뜀
+	Standard: {standard}	표준: {standard}
+	Validate	검증
+	Validate DCP…	DCP 검증…
+	the engine sent no profiles	엔진이 프로필을 보내지 않았습니다
+	{n} files checked	파일 {n}개 확인함

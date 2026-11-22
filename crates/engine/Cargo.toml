@@ -39,6 +39,7 @@ cfa4-smart-edit = { workspace = true }
 cfa4-isobmff = { workspace = true }
 cfa4-mxf = { workspace = true }
 cfa4-dcp = { workspace = true }
+cfa4-dcp-validate = { workspace = true }
 cfa4-dcpomatic = { workspace = true }
 cfa4-format = { workspace = true }
 cfa4-interchange = { workspace = true }
@@ -47,6 +48,7 @@ cfa4-credits = { workspace = true }
 cfa4-surface-model = { workspace = true }
 cfa4-live = { workspace = true }
 cfa4-speech = { workspace = true }
+cfa4-tasks = { workspace = true }
 cfa4-fetch-client = { workspace = true }
 cfa4-tts = { workspace = true }
 cfa4-route = { workspace = true }

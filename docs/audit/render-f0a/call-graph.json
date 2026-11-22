@@ -1060,6 +1060,13 @@
   {
    "class": "audio",
    "crate": "cfa4-engine",
+   "kind": "type",
+   "module": "task_host.rs",
+   "name": "Sampler"
+  },
+  {
+   "class": "audio",
+   "crate": "cfa4-engine",
    "kind": "trait",
    "module": "voiceover.rs",
    "name": "AudioInput"
@@ -1273,6 +1280,13 @@
    "kind": "struct",
    "module": "preview.rs",
    "name": "AudioSegment"
+  },
+  {
+   "class": "audio",
+   "crate": "cfa4-testkit",
+   "kind": "enum",
+   "module": "smk.rs",
+   "name": "AudioKind"
   },
   {
    "class": "colour",
@@ -1672,6 +1686,13 @@
    "kind": "enum",
    "module": "qc.rs",
    "name": "QcStatus"
+  },
+  {
+   "class": "job",
+   "crate": "cfa4-engine",
+   "kind": "struct",
+   "module": "task_host.rs",
+   "name": "TaskHost"
   },
   {
    "class": "job",
@@ -2538,6 +2559,20 @@
    "class": "other",
    "crate": "cfa4-engine",
    "kind": "struct",
+   "module": "background.rs",
+   "name": "Background"
+  },
+  {
+   "class": "other",
+   "crate": "cfa4-engine",
+   "kind": "struct",
+   "module": "background.rs",
+   "name": "Need"
+  },
+  {
+   "class": "other",
+   "crate": "cfa4-engine",
+   "kind": "struct",
    "module": "commands.rs",
    "name": "CommandSpec"
   },
@@ -2582,6 +2617,20 @@
    "kind": "struct",
    "module": "control_surfaces.rs",
    "name": "UnsupportedBinding"
+  },
+  {
+   "class": "other",
+   "crate": "cfa4-engine",
+   "kind": "struct",
+   "module": "dcp_validation.rs",
+   "name": "DcpValidationSession"
+  },
+  {
+   "class": "other",
+   "crate": "cfa4-engine",
+   "kind": "struct",
+   "module": "dcp_validation.rs",
+   "name": "PendingValidation"
   },
   {
    "class": "other",
@@ -3314,6 +3363,20 @@
   {
    "class": "other",
    "crate": "cfa4-engine",
+   "kind": "enum",
+   "module": "task_host.rs",
+   "name": "Admission"
+  },
+  {
+   "class": "other",
+   "crate": "cfa4-engine",
+   "kind": "enum",
+   "module": "task_host.rs",
+   "name": "Outcome"
+  },
+  {
+   "class": "other",
+   "crate": "cfa4-engine",
    "kind": "struct",
    "module": "timecode_sync.rs",
    "name": "SyncRuntime"
@@ -3953,6 +4016,13 @@
    "crate": "cfa4-golden",
    "kind": "struct",
    "module": "validation.rs",
+   "name": "Extras"
+  },
+  {
+   "class": "other",
+   "crate": "cfa4-golden",
+   "kind": "struct",
+   "module": "validation.rs",
    "name": "Metadata"
   },
   {
@@ -3975,6 +4045,13 @@
    "kind": "struct",
    "module": "validation.rs",
    "name": "Report"
+  },
+  {
+   "class": "other",
+   "crate": "cfa4-golden",
+   "kind": "struct",
+   "module": "validation.rs",
+   "name": "SyncSpec"
   },
   {
    "class": "other",
@@ -6085,6 +6162,27 @@
   },
   {
    "class": "other",
+   "crate": "cfa4-testkit",
+   "kind": "struct",
+   "module": "smk.rs",
+   "name": "Rng"
+  },
+  {
+   "class": "other",
+   "crate": "cfa4-testkit",
+   "kind": "struct",
+   "module": "smk.rs",
+   "name": "Spec"
+  },
+  {
+   "class": "other",
+   "crate": "cfa4-testkit",
+   "kind": "struct",
+   "module": "smk.rs",
+   "name": "TrackSpec"
+  },
+  {
+   "class": "other",
    "crate": "cfa4-time",
    "kind": "struct",
    "module": "lib.rs",
@@ -6159,6 +6257,13 @@
    "kind": "enum",
    "module": "previews.rs",
    "name": "RenderMode"
+  },
+  {
+   "class": "render",
+   "crate": "cfa4-engine",
+   "kind": "struct",
+   "module": "task_host.rs",
+   "name": "Preview"
   },
   {
    "class": "render",
@@ -7234,6 +7339,16 @@
    "to": "cfa4-time"
   },
   {
+   "from": "cfa4-engine/as02_import.rs",
+   "item": "BinId",
+   "to": "cfa4-project"
+  },
+  {
+   "from": "cfa4-engine/as02_import.rs",
+   "item": "Tick",
+   "to": "cfa4-time"
+  },
+  {
    "from": "cfa4-engine/atrac_convert.rs",
    "item": "Progress",
    "to": "cfa4-export"
@@ -7962,6 +8077,11 @@
    "from": "cfa4-engine/dcp_import.rs",
    "item": "Tick",
    "to": "cfa4-time"
+  },
+  {
+   "from": "cfa4-engine/dcp_validation.rs",
+   "item": "Report",
+   "to": "cfa4-export"
   },
   {
    "from": "cfa4-engine/dcpomatic.rs",
@@ -10049,6 +10169,46 @@
    "to": "cfa4-project"
   },
   {
+   "from": "cfa4-engine/silence.rs",
+   "item": "Report",
+   "to": "cfa4-export"
+  },
+  {
+   "from": "cfa4-engine/silence.rs",
+   "item": "ClipId",
+   "to": "cfa4-project"
+  },
+  {
+   "from": "cfa4-engine/silence.rs",
+   "item": "ItemId",
+   "to": "cfa4-project"
+  },
+  {
+   "from": "cfa4-engine/silence.rs",
+   "item": "ItemKind",
+   "to": "cfa4-project"
+  },
+  {
+   "from": "cfa4-engine/silence.rs",
+   "item": "SourceProvider",
+   "to": "cfa4-render"
+  },
+  {
+   "from": "cfa4-engine/silence.rs",
+   "item": "remix",
+   "to": "cfa4-render"
+  },
+  {
+   "from": "cfa4-engine/silence.rs",
+   "item": "FrameRate",
+   "to": "cfa4-time"
+  },
+  {
+   "from": "cfa4-engine/silence.rs",
+   "item": "TICKS_PER_SECOND",
+   "to": "cfa4-time"
+  },
+  {
    "from": "cfa4-engine/smart_cut.rs",
    "item": "audio_copy",
    "to": "cfa4-export"
@@ -11351,6 +11511,11 @@
   {
    "from": "cfa4-gstreamer/source.rs",
    "item": "FrameRate",
+   "to": "cfa4-time"
+  },
+  {
+   "from": "cfa4-media/aea.rs",
+   "item": "Tick",
    "to": "cfa4-time"
   },
   {

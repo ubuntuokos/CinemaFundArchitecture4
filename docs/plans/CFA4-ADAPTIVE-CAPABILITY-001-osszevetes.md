@@ -52,14 +52,12 @@ Az összevetés **hét ütközést és kilenc hiányt** talált. Mára:
 
 ### 2.3 Ami még nyitva van
 
-1. **Az ACS-crate-ek a CFA4 főágában.** A `cfa4-tasks`, a motor `TaskHost`-ja és a `tasks.*`
-   parancsok a CFA4-AI_modules repóban vannak. Amíg nincsenek a főágban, a főág motorja nem ad:
-   - `tasks.list`-et és `tasks.check`-et;
-   - várakozási okot;
-   - döntési lehetőséget.
-
-   A feladatkezelő panel ezt jelzi, és a háttérfeladatokat meg az exportsort mutatja. Az átvétel
-   másik projekt területe: a tulajdonos és a merge koordinátor dönt róla (`docs/coordination.md` §2.8).
+1. **Az ACS-crate-ek a CFA4 főágában.** A `cfa4-tasks` a főágon van (#1423, `jiff` időzóna-adatbázissal).
+   A motor `TaskHost`-ja, a háttérfeladatok, az exportsor mint kliens és a `tasks.list`, `tasks.check`,
+   `tasks.decide` parancsok az ACS-6 átvételével kerülnek a főágba; ezzel a feladatkezelő panel a
+   várakozási okot, a hátralévő időt és a döntési lehetőséget is mutatja. Még hiányzik a `cfa4-store`
+   (PostgreSQL), lásd a 3. pontot. Az átvétel másik projekt területe: a tulajdonos és a merge
+   koordinátor dönt róla (`docs/coordination.md` §2.8).
 2. **Tájékoztatási kategória a feladatkezelőben** (normál / lassabb / nagyon hosszú / nem
    végrehajtható). Az AI #50 után; a kategória a manifest útjaiból számolt becslésből jön, ezért
    az AI-feladatoknál lesz értelme.

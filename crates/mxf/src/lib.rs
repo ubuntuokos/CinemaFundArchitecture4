@@ -26,6 +26,8 @@
 mod anc;
 pub mod as02;
 pub mod as02_version;
+pub mod as03;
+pub mod as07;
 pub mod as10;
 pub mod as11;
 pub mod as11_shim;
@@ -63,6 +65,7 @@ pub use write::{
     CodedKind, ColorSpace, FrameInfo, IabDesc, J2kSubDescriptor, McaLabel, McaTitles, MxfWriter, OpAtomPcm, PackageIds, Pattern, PictureCoding, PictureDesc,
     SoundDesc, StartTimecode, TimedTextConfig, TimedTextResource, Timestamp, Umid, WriterConfig, encode_pcm, write_opatom_pcm, write_timed_text,
 };
+pub use write::{ComponentSpec, VersionClipSpec, VersionConfig, VersionTrackKind, VersionTrackSpec, write_version};
 
 use std::fmt;
 use std::io;

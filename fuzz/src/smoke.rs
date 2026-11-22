@@ -112,7 +112,54 @@ fn builtin_seeds(target: &str) -> Vec<Vec<u8>> {
         _ => &[],
     };
     seeds.extend(magic.iter().map(|m| m.to_vec()));
+    // Valid files for the decoders whose headers are too long to write as a literal, so the
+    // mutations reach the block decoding.
+    match target {
+        "adx" => seeds.push(adx_seed()),
+        "hca" => seeds.push(hca_seed()),
+        _ => {}
+    }
     seeds
+}
+
+/// A stereo ADX file: 0x20-byte header, "(c)CRI", three blocks per channel.
+fn adx_seed() -> Vec<u8> {
+    let mut v = vec![0u8; 0x24];
+    v[..4].copy_from_slice(&[0x80, 0, 0, 0x20]);
+    v[4..8].copy_from_slice(&[3, 18, 4, 2]);
+    v[8..12].copy_from_slice(&44100u32.to_be_bytes());
+    v[16..18].copy_from_slice(&500u16.to_be_bytes());
+    v[18] = 3;
+    v[0x1e..0x24].copy_from_slice(b"(c)CRI");
+    v.extend((0..6 * 18u32).map(|i| (i.wrapping_mul(37) >> 1) as u8));
+    v
+}
+
+/// A mono HCA file: fmt, comp, pad chunks and two blocks.
+fn hca_seed() -> Vec<u8> {
+    let block_size = 64u16;
+    let mut h = Vec::new();
+    h.extend_from_slice(b"HCA\0");
+    h.extend_from_slice(&0x0200u16.to_be_bytes());
+    h.extend_from_slice(&[0, 0]);
+    h.extend_from_slice(b"fmt\0");
+    h.push(1);
+    h.extend_from_slice(&48000u32.to_be_bytes()[1..]);
+    h.extend_from_slice(&2u32.to_be_bytes());
+    h.extend_from_slice(&128u16.to_be_bytes());
+    h.extend_from_slice(&64u16.to_be_bytes());
+    h.extend_from_slice(b"comp");
+    h.extend_from_slice(&block_size.to_be_bytes());
+    h.extend_from_slice(&[1, 15, 1, 0, 128, 128, 0, 0, 0, 0]);
+    h.extend_from_slice(b"pad\0");
+    let len = (h.len() + 2) as u16;
+    h[6..8].copy_from_slice(&len.to_be_bytes());
+    h.extend_from_slice(&[0, 0]); // the header CRC is not checked
+    for b in 0..2u32 {
+        h.extend_from_slice(&[0xff, 0xff]);
+        h.extend((2..u32::from(block_size)).map(|i| (i.wrapping_mul(29) ^ b) as u8));
+    }
+    h
 }
 
 fn corpus(target: &str) -> Vec<Vec<u8>> {
@@ -198,5 +245,16 @@ fn targets_are_unique_and_have_a_bin() {
         assert!(seen.insert(name), "duplicate target {name}");
         assert!(krate.starts_with("cfa4-"), "{krate}");
         assert!(dir.join(format!("{name}.rs")).is_file(), "fuzz_targets/{name}.rs missing");
+    }
+}
+
+#[cfg(test)]
+mod seed_tests {
+    #[test]
+    fn the_cri_seeds_are_valid_files() {
+        let adx = super::adx_seed();
+        assert_eq!(cfa4_adx::decode_file(&adx).unwrap().1.len(), 2);
+        let (_, planes, bad) = cfa4_hca::decode_file(&super::hca_seed(), None).unwrap();
+        assert_eq!((planes.len(), bad), (1, 0));
     }
 }

@@ -25,7 +25,7 @@ Design principles:
 
 ```text
  L6  apps/cfa4 · apps/cfa4-cli · apps/cfa4-studio-host · apps/cfa4-fetch
- L5  ui-egui · automation · tcsync-io · surface · platform · gstreamer (cfa4-gstreamer, optional) · ffmpeg (cfa4-ffmpeg, optional) · obs (cfa4-obs)
+ L5  ui-egui · automation · store (cfa4-store) · tcsync-io · surface · platform · gstreamer (cfa4-gstreamer, optional) · ffmpeg (cfa4-ffmpeg, optional) · obs (cfa4-obs)
  L4  engine
  L3  render · gpu · export · smart-edit · qc · golden (test-only)
      DCP validation: dcp-validate · dcp-inspect · DCP mastering: dcpomatic · downloads: fetch-client
@@ -69,7 +69,7 @@ Crates are named `cfa4-<dir>` (`crates/time` is `cfa4-time`); new CFA4 crates ar
 | `magicyuv` | L0 | MagicYUV (`MAGY`, `M8..` / `M0..` / `M2..` / `M4..`) lossless video decoder: 8-bit RGB / RGBA / YUV / YUVA / grey, 10-bit YUV / grey, 10- to 14-bit RGB / RGBA; slices; left, gradient and median prediction; interlaced; ported from FFmpeg (LGPL-2.1-or-later, owner-approved exception) ([README](../crates/magicyuv/README.md)) |
 | `realvideo` | L0 | RealVideo 1.0 / 2.0 (RV10, RV20) decoder, H.263-based with B-frames and the RV20 loop filter, and RealVideo 3.0 / 4.0 (RV30, RV40, H.264-like), ported from FFmpeg (LGPL-2.1-or-later, owner-approved exception) ([README](../crates/realvideo/README.md)) |
 | `realmedia` | L0 | RealMedia (`.rm`, `.rmvb`) demuxer: header chunks, index, packet sync, video frame reassembly and RealAudio packet deinterleaving, ported from FFmpeg (LGPL-2.1-or-later, owner-approved exception) ([README](../crates/realmedia/README.md)) |
-| `realaudio` | L0 | RealAudio decoders: Cook (RealAudio G2), SIPR, RealAudio 1.0 (14.4) and 2.0 (28.8), ATRAC3, ATRAC3plus and ATRAC9, ported from FFmpeg (LGPL-2.1-or-later, owner-approved exception) ([README](../crates/realaudio/README.md)) |
+| `realaudio` | L0 | RealAudio decoders: Cook (RealAudio G2), SIPR, RealAudio 1.0 (14.4) and 2.0 (28.8), ATRAC1, ATRAC3, ATRAC3plus and ATRAC9, ported from FFmpeg (LGPL-2.1-or-later, owner-approved exception) ([README](../crates/realaudio/README.md)) |
 | `atracenc` | L0 | ATRAC3 encoder and the AT3 (RIFF WAVE) writer for the AT9/AT3 converter (Tools ▸ Audio Tools), ported from atracdenc 0.2.3 (LGPL-2.1-or-later) ([README](../crates/atracenc/README.md)) |
 | `sstp` | L0 | MPEG-4 Simple Studio Profile (Sony HDCAM SR / SRMASTER) intra video decoder: 10-bit 4:2:2, 4:4:4 and RGB, DCT and DPCM macroblocks, ported from FFmpeg (LGPL-2.1-or-later) ([README](../crates/sstp/README.md)) |
 | `cavs` | L0 | AVS1-P2 (GB/T 20090.2, Chinese AVS) Jizhun profile decoder: I / P / B pictures, quarter-sample MC, 2D-VLC residuals, deblocking, ported from FFmpeg (LGPL-2.1-or-later) ([README](../crates/cavs/README.md)) |
@@ -93,9 +93,15 @@ Crates are named `cfa4-<dir>` (`crates/time` is `cfa4-time`); new CFA4 crates ar
 | `g729` | L0 | ITU-T G.729 speech decoder with Annex B comfort noise, ported from bcg729 (GPL-3.0-or-later) ([README](../crates/g729/README.md)) |
 | `ilbc` | L0 | iLBC (RFC 3951) speech decoder, ported from WebRTC's fixed-point libilbc (BSD-3-Clause) ([README](../crates/ilbc/README.md)) |
 | `tta` | L0 | TTA (True Audio) lossless audio decoder, ported from libtta (LGPL-3.0) ([README](../crates/tta/README.md)) |
+| `adx` | L0 | CRI ADX (`.adx`) ADPCM audio decoder, ported from FFmpeg (LGPL-2.1-or-later, owner-approved exception) ([README](../crates/adx/README.md)) |
+| `hca` | L0 | CRI HCA (`.hca`) MDCT audio decoder with the keyed cipher, ported from FFmpeg (LGPL-2.1-or-later, owner-approved exception) ([README](../crates/hca/README.md)) |
 | `shorten` | L0 | Shorten (`.shn`) lossless audio decoder, ported from FFmpeg (LGPL-2.1-or-later, owner-approved exception) ([README](../crates/shorten/README.md)) |
 | `tak` | L0 | TAK (Tom's lossless Audio Kompressor) decoder, ported from FFmpeg (LGPL-2.1-or-later, owner-approved exception) ([README](../crates/tak/README.md)) |
+| `smacker` | L0 | Smacker (`.smk`, SMK2 and SMK4) demuxer, paletted 4×4-block video decoder and packed Huffman audio decoder, ported from FFmpeg (LGPL-2.1-or-later, owner-approved exception) ([README](../crates/smacker/README.md)) |
 | `musepack` | L0 | Musepack SV7 and SV8 audio decoder, ported from the reference library libmpcdec (BSD-3-Clause) in its floating-point build ([README](../crates/musepack/README.md)) |
+| `acm` | L0 | Interplay ACM audio decoder, ported from FFmpeg (ISC and LGPL-2.1-or-later, owner-approved exception) ([README](../crates/acm/README.md)) |
+| `roq` | L0 | id RoQ video and DPCM audio decoders and the `.roq` chunk layout, ported from FFmpeg (LGPL-2.1-or-later, owner-approved exception) ([README](../crates/roq/README.md)) |
+| `mve` | L0 | Interplay MVE video (8-bit palette and 16-bit) and DPCM / PCM audio decoders and the `.mve` chunk layout, ported from FFmpeg (LGPL-2.1-or-later, owner-approved exception) ([README](../crates/mve/README.md)) |
 | `testkit` | L0 | test-only helpers, used only as a dev-dependency: ffmpeg/ffprobe discovery, fixture dirs, golden images ([testing.md](testing.md)) |
 | `io-core` | L1 | `cfa4-io-core`: shared media I/O core (CFA4-DECKLINK-READY-001 R1): the PTP state reader (`ptp4l` through `pmc`, TAI time, ST 2110 sender clock signalling), used by the live studio and later media I/O hosts; next the versioned frame ring ([README](../crates/io-core/README.md)) |
 | `frame` | L1 | `VideoFrame` (planar YUV / RGBA8 / linear RGBA f32, colour metadata), `AudioBuffer` |
@@ -113,6 +119,7 @@ Crates are named `cfa4-<dir>` (`crates/time` is `cfa4-time`); new CFA4 crates ar
 | `live` | L1 | `cfa4-live`: live graphics plumbing (credits plan C10): the live page server for OBS's Browser Source on **127.0.0.1 only** (the program picture as a transparent PNG, status, the cue's sound with byte ranges; other host names and methods refused), an obs-websocket 5 client over a minimal RFC 6455 WebSocket client; no rendering and no workspace dependencies ([README](../crates/live/README.md), [credits.md](credits.md)) |
 | `sandbox` | L1 | run-time security layer ([CFA4-SECURITY-001](plans/CFA4-SECURITY-001.md) B1): Landlock + seccomp profile of every CFA4 process kind (GUI, engine, media host, studio host, downloader, plug-in host, model converter), strict by default (D4), the report behind `security.status`; no `unsafe` (safe `landlock` and `seccompiler` crates), no workspace dependencies ([README](../crates/sandbox/README.md)) |
 | `tasks` | L2 | `cfa4-tasks`: CFA4-wide task and resource infrastructure (ACS, [ADR 0008 in the AI repo](../docs/plans/CFA4-ADAPTIVE-CAPABILITY-001-osszevetes.md)): nominal and current resources kept apart (RAM, cgroup limits, PSI, VRAM from sysfs), the resource manager with atomic reservations and waiting reasons, the monitor with hysteresis, the execution-path planner with time estimates, the task queue (classes, priorities, timed starts in IANA zones through `chrono` with the IANA database bundled in `jiff`, leases, missed-start decisions); no `unsafe`, depends on `cfa4-route` for the device probe |
+| `store` | L5 | `cfa4-store`: CFA4's PostgreSQL client ([plan](plans/CFA4-TASKSTORE-PG-001.md), PG-1/PG-2): pool (`tokio-postgres` + `deadpool-postgres`, Unix socket), embedded migrations with one step back, the `cfa4-db-setup` cluster setup command, the `tasks` schema, and the `TaskBackend` trait with PostgreSQL and in-memory implementations of the `cfa4-tasks` queue; a missing server is a handled error, editing and playback never need it; no `unsafe` ([README](../crates/store/README.md)) |
 | `edit` | L2 | pure edit algebra (insert, overwrite, razor, ripple, roll, slip, slide, rate stretch…; text-based editing: `edit::transcript`) |
 | `credits` | L2 | credits sequences from a spreadsheet: CSV/TSV reader, page / content / letter styles, layout into graphic clips (rolls and cards) ([README](../crates/credits/README.md), [credits.md](credits.md)) |
 | `speech` | L2 | speech-to-text: `Transcriber` trait, Whisper model catalogue (downloads run in `cfa4-fetch`), pure-Rust Whisper inference on candle with word timestamps (feature `whisper`), speaker labelling ([transcripts.md](transcripts.md)) |

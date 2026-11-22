@@ -4871,3 +4871,31 @@ export.summary	Low	matala
 	Subtitles	Tekstitykset
 	Captions for the hearing impaired	Tekstitykset kuulovammaisille
 	Forced narrative	Pakotettu selostus (forced narrative)
+	Silence	Hiljaisuus
+	Detect Silence	Tunnista hiljaisuus
+	Remove Silence	Poista hiljaisuus
+	Clear Silence Markers	Tyhjennä hiljaisuusmerkit
+# DCP Validation window (DCP-12)
+	AS-03	AS-03
+	Choose the DCP folder.	Valitse DCP-kansio.
+	DCP Validation	DCP-validointi
+	DCP folder	DCP-kansio
+	DCP folder (the one holding ASSETMAP)	DCP-kansio (se, jossa ASSETMAP on)
+	Evidence	Todiste
+	How to fix	Korjausohje
+	Interrupted	Keskeytetty
+	Not applicable	Ei sovellettavissa
+	Report	Raportti
+	Report saved: {path}	Raportti tallennettu: {path}
+	Required	Pakollinen
+	Rule	Sääntö
+	Rules	Säännöt
+	Save JSON…	Tallenna JSON…
+	Save Markdown…	Tallenna Markdown…
+	Save report	Tallenna raportti
+	Skipped	Ohitettu
+	Standard: {standard}	Standardi: {standard}
+	Validate	Validoi
+	Validate DCP…	Validoi DCP…
+	the engine sent no profiles	moottori ei lähettänyt profiileja
+	{n} files checked	{n} tiedostoa tarkistettu
