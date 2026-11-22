@@ -491,10 +491,7 @@ mod tests {
         use crate::io::AVSeekFlag;
 
         // Discriminants are the FFmpeg values.
-        assert_eq!(
-            AVSeekFlag::BACKWARD.as_raw(),
-            ffi::AVSEEK_FLAG_BACKWARD as i32
-        );
+        assert_eq!(AVSeekFlag::BACKWARD.as_raw(), ffi::AVSEEK_FLAG_BACKWARD as i32);
 
         // `Into<repr>`: a single flag can be handed to an `impl Into<i32>` parameter.
         let single: i32 = AVSeekFlag::FRAME.into();
@@ -502,17 +499,11 @@ mod tests {
 
         // `BitOr<Self>`: two named flags combine into the raw mask.
         let two = AVSeekFlag::BACKWARD | AVSeekFlag::ANY;
-        assert_eq!(
-            two,
-            (ffi::AVSEEK_FLAG_BACKWARD | ffi::AVSEEK_FLAG_ANY) as i32
-        );
+        assert_eq!(two, (ffi::AVSEEK_FLAG_BACKWARD | ffi::AVSEEK_FLAG_ANY) as i32);
 
         // `BitOr<repr>`: a named flag can be mixed with an already-raw mask.
         let mixed = AVSeekFlag::FRAME | (ffi::AVSEEK_FLAG_BYTE as i32);
-        assert_eq!(
-            mixed,
-            (ffi::AVSEEK_FLAG_FRAME | ffi::AVSEEK_FLAG_BYTE) as i32
-        );
+        assert_eq!(mixed, (ffi::AVSEEK_FLAG_FRAME | ffi::AVSEEK_FLAG_BYTE) as i32);
 
         // The result is the raw integer, so further combination stays in the raw domain —
         // and `repr | Variant` is provided precisely so that a chain can be written as
@@ -599,10 +590,7 @@ mod tests {
 
         // Listed values round-trip in both directions as usual.
         assert_eq!(ProbeId::from(ffi::AV_PIX_FMT_RGB24), ProbeId::RGB24);
-        assert_eq!(
-            ffi::AVPixelFormat::from(ProbeId::RGB24),
-            ffi::AV_PIX_FMT_RGB24
-        );
+        assert_eq!(ffi::AVPixelFormat::from(ProbeId::RGB24), ffi::AV_PIX_FMT_RGB24);
         // ...while an unlisted value takes the expression fallback instead of panicking.
         assert_eq!(ProbeId::from(i32::MIN), ProbeId::NONE);
     }
@@ -635,9 +623,6 @@ mod tests {
         // by hand — `ProbeWrapFlags::BE | ProbeWrapFlags::PLANAR` would not compile, whereas the
         // same expression on an `ffi_enum!` bit set does.
         let both = ProbeWrapFlags::BE.as_raw() | ProbeWrapFlags::PLANAR.as_raw();
-        assert_eq!(
-            both,
-            (ffi::AV_PIX_FMT_FLAG_BE | ffi::AV_PIX_FMT_FLAG_PLANAR) as i32
-        );
+        assert_eq!(both, (ffi::AV_PIX_FMT_FLAG_BE | ffi::AV_PIX_FMT_FLAG_PLANAR) as i32);
     }
 }

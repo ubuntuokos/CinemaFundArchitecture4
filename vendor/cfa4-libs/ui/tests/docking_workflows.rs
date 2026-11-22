@@ -64,11 +64,7 @@ impl Harness {
             output: FullOutput::default(),
             width,
             frame: 0,
-            values: BTreeMap::from([
-                (BRUSHES, "Soft round 24 px".into()),
-                (PROPERTIES, "72% opacity".into()),
-                (LAYERS, "Foreground selected".into()),
-            ]),
+            values: BTreeMap::from([(BRUSHES, "Soft round 24 px".into()), (PROPERTIES, "72% opacity".into()), (LAYERS, "Foreground selected".into())]),
             body_ids: BTreeMap::new(),
             edit_ids: BTreeMap::new(),
             applied: Vec::new(),
@@ -166,9 +162,7 @@ impl Harness {
             // Apps send renderer actions through their JSON command boundary before applying.
             #[cfg(feature = "serde")]
             let action: Action<u32> = serde_json::from_value(serde_json::to_value(&action).unwrap()).unwrap();
-            self.layout
-                .apply_with_permissions(action.clone(), |panel| if *panel == CANVAS { Permissions::PROTECTED } else { Permissions::default() })
-                .unwrap();
+            self.layout.apply_with_permissions(action.clone(), |panel| if *panel == CANVAS { Permissions::PROTECTED } else { Permissions::default() }).unwrap();
             self.applied.push(action);
         }
         self.layout.validate().unwrap();

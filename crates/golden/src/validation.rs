@@ -184,8 +184,111 @@ fn fmt_f(v: f64) -> String {
     if v.is_infinite() { if v > 0.0 { "inf".into() } else { "-inf".into() } } else { format!("{v:.6}") }
 }
 
-/// Measure `test` against `reference` and hold each figure to `t`.
+/// Measure `test` against `reference` and hold each figure to `t`. The A/V drift and the cinema
+/// audio parameters are not measured (see [`compare_with`]), so the verdict is at best
+/// [`Verdict::Incomplete`].
 pub fn compare(reference: &Capture, test: &Capture, t: &Thresholds) -> Vec<Check> {
+    compare_with(reference, test, t, &Extras::default())
+}
+
+/// Measurements that need a fixture or a declared target, so they are opt-in.
+#[derive(Clone, Debug, Default, PartialEq)]
+pub struct Extras {
+    /// The capture is a flash-and-beep render (`sync_flash_beep` fixture): measure A/V drift.
+    pub sync: Option<SyncSpec>,
+    /// Bit depth the audio was written at (a render's `f32` samples cannot tell); when set, the
+    /// audio is held to the D-Cinema parameters of SMPTE ST 428-2 (24 bit, 48 or 96 kHz, 1-16
+    /// channels). The package-level rule is `DCP.AUD.001` of `cfa4-dcp-validate`; this is the same
+    /// rule applied to what a render produced, before any package exists.
+    pub audio_bits: Option<u32>,
+}
+
+/// What the flash-and-beep fixture contains and how far the engine may stray from it.
+///
+/// The fixture shows a white flash on frame 0 of every second and sounds a 1 kHz beep at the same
+/// instants (`python/cfa4_devtools/render_fixtures.py`, `sync_flash_beep`).
+#[derive(Clone, Debug, PartialEq)]
+pub struct SyncSpec {
+    /// Unit of `Capture::pts`.
+    pub ticks_per_second: i64,
+    /// Flashes (and beeps) the fixture holds; any other count is a failure.
+    pub expected_events: usize,
+    /// Largest allowed |video − audio| offset of the first event, in milliseconds (lip-sync error).
+    pub max_abs_offset_ms: f64,
+    /// Largest allowed change of that offset over the clip, in milliseconds (drift proper).
+    pub max_drift_ms: f64,
+}
+
+/// Mean picture level above which a frame counts as a flash, and below which it is dark again.
+const FLASH_HIGH: f64 = 0.5;
+const FLASH_LOW: f64 = 0.25;
+/// Beep detection: a sample above this level (−20 dBFS), after this long a quiet spell.
+const BEEP_LEVEL: f32 = 0.1;
+const BEEP_QUIET_MS: u32 = 100;
+
+/// Mean of R, G and B of a frame, 0..1.
+fn mean_level(f: &FrameCapture) -> f64 {
+    let (sum, n) = f.rgba16.chunks_exact(4).fold((0.0f64, 0u64), |(s, n), p| (s + p.iter().take(3).map(|&v| f64::from(v)).sum::<f64>(), n + 3));
+    if n == 0 { 0.0 } else { sum / (n as f64 * 65_535.0) }
+}
+
+/// The A/V drift check of a flash-and-beep capture.
+fn sync_check(c: &Capture, s: &SyncSpec) -> Check {
+    let id = "sync.av_drift";
+    let levels: Vec<f64> = c.frames.iter().map(mean_level).collect();
+    let flashes = timing::rising_edges(&levels, FLASH_LOW, FLASH_HIGH);
+    let beeps = match timing::beep_onsets(&c.audio, c.sample_rate, BEEP_LEVEL, BEEP_QUIET_MS) {
+        Ok(b) => b,
+        Err(e) => return fail_metric(id, &e),
+    };
+    if flashes.len() != s.expected_events || beeps.len() != s.expected_events {
+        return check(id, false, format!("{} flashes, {} beeps", flashes.len(), beeps.len()), format!("{} of each", s.expected_events));
+    }
+    let Some(video): Option<Vec<i64>> = flashes.iter().map(|&i| c.pts.get(i).copied()).collect() else {
+        return check(id, false, "a flash frame has no presentation time", "one time per frame");
+    };
+    match timing::av_drift(&video, &beeps, s.ticks_per_second, c.sample_rate) {
+        Ok(d) => check(
+            id,
+            d.initial_offset_ms.abs() <= s.max_abs_offset_ms && d.max_drift_ms <= s.max_drift_ms,
+            format!("offset {} ms, drift {} ms", fmt_f(d.initial_offset_ms), fmt_f(d.max_drift_ms)),
+            format!("offset ≤ {} ms, drift ≤ {} ms", fmt_f(s.max_abs_offset_ms), fmt_f(s.max_drift_ms)),
+        ),
+        Err(e) => fail_metric(id, &e),
+    }
+}
+
+/// Sample rates of SMPTE ST 428-2 sound.
+pub const ST_428_2_SAMPLE_RATES: [u32; 2] = [48_000, 96_000];
+/// Most channels of SMPTE ST 428-2 sound.
+pub const ST_428_2_MAX_CHANNELS: usize = 16;
+
+/// The D-Cinema audio parameters of a capture (ST 428-2): 24 bit, 48 or 96 kHz, 1-16 channels of
+/// one length, no sample beyond full scale. The usual channel counts (6, 8, 16: ST 429-2) are
+/// reported for information only, as `cfa4-dcp-validate` does (a warning there).
+fn audio_checks(c: &Capture, bits: u32) -> Vec<Check> {
+    let mut out = Vec::new();
+    let channels = c.audio.len();
+    let equal = c.audio.windows(2).all(|w| w[0].len() == w[1].len());
+    let peak = c.audio.iter().flatten().fold(0.0f32, |m, s| m.max(s.abs()));
+    out.push(check("audio.st428_2.bits", bits == 24, bits, 24));
+    out.push(check("audio.st428_2.sample_rate", ST_428_2_SAMPLE_RATES.contains(&c.sample_rate), c.sample_rate, "48000 or 96000"));
+    out.push(check("audio.st428_2.channels", (1..=ST_428_2_MAX_CHANNELS).contains(&channels), channels, "1 to 16"));
+    out.push(check("audio.st428_2.channel_length", equal, if equal { "equal" } else { "differs" }, "equal"));
+    out.push(check("audio.st428_2.full_scale", peak.is_finite() && peak <= 1.0, format!("{peak:.6}"), "≤ 1.0"));
+    out.push(Check {
+        id: "audio.st429_2.channel_count".into(),
+        status: if matches!(channels, 6 | 8 | 16) { Status::Pass } else { Status::Fail },
+        value: channels.to_string(),
+        limit: "6, 8 or 16 (informational)".into(),
+        gating: false,
+    });
+    out
+}
+
+/// [`compare`] plus the opt-in measurements of `extras`. A requested measurement that cannot be
+/// made is a failure; one that was not requested stays [`Status::Skipped`] (never a pass).
+pub fn compare_with(reference: &Capture, test: &Capture, t: &Thresholds, extras: &Extras) -> Vec<Check> {
     let mut out = Vec::new();
 
     // frame count and size first: nothing else is comparable without them
@@ -266,14 +369,20 @@ pub fn compare(reference: &Capture, test: &Capture, t: &Thresholds) -> Vec<Check
         Err(e) => out.push(fail_metric("audio.null_peak_dbfs", &e)),
     }
 
-    // not measured by this harness version: reported as skipped, never as passed
-    out.push(Check {
-        id: "sync.av_drift".into(),
-        status: Status::Skipped,
-        value: "needs a flash-and-beep fixture rendered through the engine (F0V fixtures)".into(),
-        limit: String::new(),
-        gating: true,
-    });
+    // A/V drift: measured on a flash-and-beep render, otherwise reported as skipped, never as passed
+    match &extras.sync {
+        Some(spec) => out.push(sync_check(test, spec)),
+        None => out.push(Check {
+            id: "sync.av_drift".into(),
+            status: Status::Skipped,
+            value: "needs a flash-and-beep fixture rendered through the engine (F0V fixtures)".into(),
+            limit: String::new(),
+            gating: true,
+        }),
+    }
+    if let Some(bits) = extras.audio_bits {
+        out.extend(audio_checks(test, bits));
+    }
     out
 }
 
@@ -790,5 +899,112 @@ mod tests {
     fn frame_capture_checks_its_size() {
         assert!(FrameCapture::new(2, 2, vec![0; 15]).is_none());
         assert!(FrameCapture::new(2, 2, vec![0; 16]).is_some());
+    }
+
+    // ---- A/V drift and cinema audio parameters --------------------------------------------
+
+    const FPS: i64 = 25;
+    const TICKS: i64 = 25_000; // one tick per millisecond/25: 1000 ticks per frame
+    const RATE: u32 = 48_000;
+
+    /// 4 seconds, a flash on frame 0 of each second, a beep `audio_delay` samples after each flash
+    /// plus `creep` samples more per second.
+    fn flash_beep(audio_delay: usize, creep: usize) -> Capture {
+        let frames: Vec<FrameCapture> = (0..4 * FPS)
+            .map(|n| {
+                let v: u16 = if n % FPS == 0 { 60_000 } else { 2_000 };
+                FrameCapture::new(32, 32, [v, v, v, 65_535].repeat(1024)).unwrap()
+            })
+            .collect();
+        let mut a = vec![0.0f32; 4 * RATE as usize];
+        for sec in 0..4usize {
+            let start = sec * RATE as usize + audio_delay + creep * sec;
+            for k in 0..480 {
+                if let Some(s) = a.get_mut(start + k) {
+                    *s = (2.0 * std::f32::consts::PI * 1000.0 * k as f32 / RATE as f32).sin() * 0.8;
+                }
+            }
+        }
+        Capture { frames, pts: (0..4 * FPS).map(|i| i * (TICKS / FPS)).collect(), frame_duration: TICKS / FPS, audio: vec![a.clone(), a], sample_rate: RATE }
+    }
+
+    fn sync_spec() -> SyncSpec {
+        SyncSpec { ticks_per_second: TICKS, expected_events: 4, max_abs_offset_ms: 20.0, max_drift_ms: 1.0 }
+    }
+
+    fn sync_status(c: &Capture) -> Check {
+        let x = Extras { sync: Some(sync_spec()), audio_bits: None };
+        compare_with(c, c, &exact(), &x).into_iter().find(|k| k.id == "sync.av_drift").unwrap()
+    }
+
+    #[test]
+    fn a_synchronised_flash_and_beep_passes_and_completes_the_verdict() {
+        let c = flash_beep(0, 0);
+        let x = Extras { sync: Some(sync_spec()), audio_bits: Some(24) };
+        let checks = compare_with(&c, &c, &exact(), &x);
+        assert!(!measured_failure(&checks), "{checks:#?}");
+        assert_eq!(verdict(&checks), Verdict::Pass, "{checks:#?}");
+    }
+
+    #[test]
+    fn a_constant_lip_sync_error_is_caught_by_the_offset() {
+        // audio 3 frames (120 ms) late: no drift at all, but far beyond 20 ms
+        let k = sync_status(&flash_beep(3 * (RATE as usize / FPS as usize), 0));
+        assert_eq!(k.status, Status::Fail, "{k:?}");
+    }
+
+    #[test]
+    fn a_creeping_drift_is_caught_by_the_drift_limit() {
+        // 48 samples (1 ms) more every second: offset stays small, drift reaches 3 ms
+        let k = sync_status(&flash_beep(0, 48));
+        assert_eq!(k.status, Status::Fail, "{k:?}");
+        assert!(k.value.contains("drift"), "{k:?}");
+    }
+
+    #[test]
+    fn missing_or_extra_events_fail_instead_of_passing_or_skipping() {
+        let mut silent = flash_beep(0, 0);
+        for ch in &mut silent.audio {
+            ch.fill(0.0);
+        }
+        assert_eq!(sync_status(&silent).status, Status::Fail);
+        let mut few = flash_beep(0, 0);
+        few.frames.truncate(2 * FPS as usize);
+        few.pts.truncate(2 * FPS as usize);
+        assert_eq!(sync_status(&few).status, Status::Fail);
+    }
+
+    #[test]
+    fn without_a_sync_fixture_the_drift_stays_skipped() {
+        let c = flash_beep(0, 0);
+        let k = compare(&c, &c, &exact()).into_iter().find(|k| k.id == "sync.av_drift").unwrap();
+        assert_eq!(k.status, Status::Skipped);
+    }
+
+    #[test]
+    fn st_428_2_audio_parameters() {
+        let ok = |c: &Capture, bits| {
+            let x = Extras { sync: None, audio_bits: Some(bits) };
+            compare_with(c, c, &exact(), &x).into_iter().filter(|k| k.id.starts_with("audio.st428_2")).all(|k| k.status == Status::Pass)
+        };
+        let c = capture();
+        assert!(ok(&c, 24));
+        assert!(!ok(&c, 16), "16 bit is not D-Cinema sound");
+        let mut r44 = capture();
+        r44.sample_rate = 44_100;
+        assert!(!ok(&r44, 24));
+        let mut too_many = capture();
+        too_many.audio = vec![vec![0.0; 10]; 17];
+        assert!(!ok(&too_many, 24));
+        let mut hot = capture();
+        hot.audio[0][3] = 1.5;
+        assert!(!ok(&hot, 24), "a sample beyond full scale clips on the way to 24 bit");
+        let mut ragged = capture();
+        ragged.audio[1].pop();
+        assert!(!ok(&ragged, 24));
+        // 2 channels: allowed by ST 428-2, only informational for ST 429-2
+        let x = Extras { sync: None, audio_bits: Some(24) };
+        let info = compare_with(&c, &c, &exact(), &x).into_iter().find(|k| k.id == "audio.st429_2.channel_count").unwrap();
+        assert!(!info.gating);
     }
 }

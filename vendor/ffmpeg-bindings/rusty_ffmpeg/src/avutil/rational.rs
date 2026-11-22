@@ -50,8 +50,5 @@ pub fn av_q2d(a: AVRational) -> c_double {
 /// @param q value
 /// @return 1 / q
 pub const fn av_inv_q(q: AVRational) -> AVRational {
-    AVRational {
-        num: q.den,
-        den: q.num,
-    }
+    AVRational { num: q.den, den: q.num }
 }

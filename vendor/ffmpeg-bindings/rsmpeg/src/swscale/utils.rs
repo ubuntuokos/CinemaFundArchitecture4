@@ -11,26 +11,9 @@ impl Drop for SwsFilter {
 }
 
 impl SwsFilter {
-    pub fn get_default(
-        luma_g_blur: f32,
-        chroma_g_blur: f32,
-        luma_sharpen: f32,
-        chroma_sharpen: f32,
-        chroma_h_shift: f32,
-        chroma_v_shift: f32,
-    ) -> Option<Self> {
-        let filter = unsafe {
-            ffi::sws_getDefaultFilter(
-                luma_g_blur,
-                chroma_g_blur,
-                luma_sharpen,
-                chroma_sharpen,
-                chroma_h_shift,
-                chroma_v_shift,
-                0,
-            )
-        }
-        .upgrade()?;
+    pub fn get_default(luma_g_blur: f32, chroma_g_blur: f32, luma_sharpen: f32, chroma_sharpen: f32, chroma_h_shift: f32, chroma_v_shift: f32) -> Option<Self> {
+        let filter =
+            unsafe { ffi::sws_getDefaultFilter(luma_g_blur, chroma_g_blur, luma_sharpen, chroma_sharpen, chroma_h_shift, chroma_v_shift, 0) }.upgrade()?;
         Some(unsafe { Self::from_raw(filter) })
     }
 
@@ -81,18 +64,14 @@ impl SwsVector {
     /// If length is bigger than `INT_MAX / sizeof(double)` or smaller than 0, `None` is returned.
     #[must_use]
     pub fn new(length: i32) -> Option<Self> {
-        unsafe { ffi::sws_allocVec(length) }
-            .upgrade()
-            .map(|x| unsafe { Self::from_raw(x) })
+        unsafe { ffi::sws_allocVec(length) }.upgrade().map(|x| unsafe { Self::from_raw(x) })
     }
 
     /// Return a normalized Gaussian curve used to filter stuff.
     /// quality = 3 is high quality, lower is lower quality.
     #[must_use]
     pub fn get_gaussian_vec(variance: f64, quality: f64) -> Option<Self> {
-        unsafe { ffi::sws_getGaussianVec(variance, quality) }
-            .upgrade()
-            .map(|x| unsafe { Self::from_raw(x) })
+        unsafe { ffi::sws_getGaussianVec(variance, quality) }.upgrade().map(|x| unsafe { Self::from_raw(x) })
     }
 
     /// Scale all the coefficients of a by the scalar value.

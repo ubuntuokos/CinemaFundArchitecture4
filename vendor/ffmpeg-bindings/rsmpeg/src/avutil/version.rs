@@ -17,11 +17,7 @@ pub struct AvVersion {
 
 impl AvVersion {
     pub const fn new(major: u8, minor: u8, micro: u8) -> Self {
-        Self {
-            major,
-            minor,
-            micro,
-        }
+        Self { major, minor, micro }
     }
 
     pub const fn from_av_int(version: c_uint) -> Self {
@@ -30,11 +26,7 @@ impl AvVersion {
 
         // We use little-endian to avoid potential issues on systems where c_uint is not exactly 4 bytes.
         let bytes = version.to_le_bytes();
-        Self {
-            major: bytes[2],
-            minor: bytes[1],
-            micro: bytes[0],
-        }
+        Self { major: bytes[2], minor: bytes[1], micro: bytes[0] }
     }
 
     pub const fn to_av_int(self) -> c_uint {
@@ -114,7 +106,7 @@ macro_rules! _impl_version {
                 unsafe { core::ffi::CStr::from_ptr(crate::ffi::[< $modname _configuration >]()) }
             }
         }
-    }
+    };
 }
 
 pub(crate) use _impl_version as impl_version;
@@ -149,59 +141,19 @@ mod tests {
 
     #[test]
     fn test_avversion_semver_order() {
-        let a = AvVersion {
-            major: 100,
-            minor: 100,
-            micro: 100,
-        };
+        let a = AvVersion { major: 100, minor: 100, micro: 100 };
 
         // Major overrules minor and micro
-        assert!(
-            a < AvVersion {
-                major: 101,
-                minor: 0,
-                micro: 0
-            }
-        );
-        assert!(
-            a > AvVersion {
-                major: 99,
-                minor: 255,
-                micro: 255
-            }
-        );
+        assert!(a < AvVersion { major: 101, minor: 0, micro: 0 });
+        assert!(a > AvVersion { major: 99, minor: 255, micro: 255 });
 
         // Minor overrules micro
-        assert!(
-            a < AvVersion {
-                major: 100,
-                minor: 101,
-                micro: 0
-            }
-        );
-        assert!(
-            a > AvVersion {
-                major: 100,
-                minor: 99,
-                micro: 255
-            }
-        );
+        assert!(a < AvVersion { major: 100, minor: 101, micro: 0 });
+        assert!(a > AvVersion { major: 100, minor: 99, micro: 255 });
 
         // Micro is not ignored
-        assert!(
-            a < AvVersion {
-                major: 100,
-                minor: 100,
-                micro: 101
-            }
-        );
-        assert!(
-            a > AvVersion {
-                major: 100,
-                minor: 100,
-                micro: 99
-            }
-        );
+        assert!(a < AvVersion { major: 100, minor: 100, micro: 101 });
+        assert!(a > AvVersion { major: 100, minor: 100, micro: 99 });
     }
 
     #[test]
@@ -210,14 +162,7 @@ mod tests {
         let av_int: c_uint = 3999588;
         let version = AvVersion::from_av_int(av_int);
 
-        assert_eq!(
-            version,
-            AvVersion {
-                major: 61,
-                minor: 7,
-                micro: 100
-            }
-        );
+        assert_eq!(version, AvVersion { major: 61, minor: 7, micro: 100 });
         assert_eq!(version.to_av_int(), av_int);
     }
 }

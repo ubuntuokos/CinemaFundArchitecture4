@@ -11,9 +11,7 @@ impl AVCodecParserContext {
     /// Allocate a [`AVCodecParserContext`] with given [`AVCodecID`].
     pub fn init(codec_id: AVCodecID) -> Option<Self> {
         // ffmpeg9 changed the parameter type from `u32` to `enum AVCodecID`.
-        unsafe { ffi::av_parser_init(codec_id as _) }
-            .upgrade()
-            .map(|x| unsafe { Self::from_raw(x) })
+        unsafe { ffi::av_parser_init(codec_id as _) }.upgrade().map(|x| unsafe { Self::from_raw(x) })
     }
 
     /// Parse a packet.
@@ -28,12 +26,7 @@ impl AVCodecParserContext {
     ///
     /// Note: if `data.len()` exceeds [`i32::MAX`], this function returns
     /// [`RsmpegError::TryFromIntError`].
-    pub fn parse_packet(
-        &mut self,
-        codec_context: &mut AVCodecContext,
-        packet: &mut AVPacket,
-        data: &[u8],
-    ) -> Result<(bool, usize)> {
+    pub fn parse_packet(&mut self, codec_context: &mut AVCodecContext, packet: &mut AVPacket, data: &[u8]) -> Result<(bool, usize)> {
         // According to the documentation of `av_parser_parse2()`:
         //
         // `buf_size`: Input length in bytes **without** the padding. I.e. the
@@ -86,9 +79,7 @@ impl AVCodecParserContext {
         // Allocate the buffer owned by `packet`, then fill it with the parsed
         // data. Note that the `av_packet_unref()` above makes sure that nothing
         // the packet held before is leaked here.
-        unsafe { ffi::av_new_packet(packet.as_mut_ptr(), packet_size) }
-            .upgrade()
-            .map_err(RsmpegError::AVError)?;
+        unsafe { ffi::av_new_packet(packet.as_mut_ptr(), packet_size) }.upgrade().map_err(RsmpegError::AVError)?;
         unsafe {
             std::ptr::copy_nonoverlapping(packet_data, packet.data, packet_size as usize);
         }
@@ -135,13 +126,7 @@ mod tests {
             let mut parsed = false;
             let mut offset = 0;
             while !parsed {
-                let (ready, used) = parser
-                    .parse_packet(
-                        &mut codec_context,
-                        &mut packet,
-                        &data[offset..offset + 2048],
-                    )
-                    .unwrap();
+                let (ready, used) = parser.parse_packet(&mut codec_context, &mut packet, &data[offset..offset + 2048]).unwrap();
                 parsed = ready;
                 offset += used.max(1);
                 assert!(parsed || offset + 2048 <= data.len());
@@ -184,9 +169,7 @@ mod tests {
         let mut packets = 0;
         let mut offset = 0;
         while offset < data.len() {
-            let (ready, used) = parser
-                .parse_packet(&mut codec_context, &mut packet, &data[offset..])
-                .unwrap();
+            let (ready, used) = parser.parse_packet(&mut codec_context, &mut packet, &data[offset..]).unwrap();
             packets += i32::from(ready);
             offset += used.max(1);
         }

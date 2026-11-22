@@ -50,13 +50,8 @@ mod tests {
         let mut widgets = egui::Visuals::light().widgets;
         widgets.active.bg_stroke = Stroke::new(3.0, Color32::YELLOW);
         widgets.hovered.expansion = 7.0;
-        let original_borders = [
-            widgets.noninteractive.bg_stroke,
-            widgets.inactive.bg_stroke,
-            widgets.hovered.bg_stroke,
-            widgets.active.bg_stroke,
-            widgets.open.bg_stroke,
-        ];
+        let original_borders =
+            [widgets.noninteractive.bg_stroke, widgets.inactive.bg_stroke, widgets.hovered.bg_stroke, widgets.active.bg_stroke, widgets.open.bg_stroke];
         let palette = WidgetPalette {
             noninteractive: Color32::BLACK,
             inactive: Color32::RED,
@@ -78,13 +73,7 @@ mod tests {
         }
         assert_eq!(widgets.hovered.expansion, 7.0);
         assert_eq!(
-            [
-                widgets.noninteractive.bg_stroke,
-                widgets.inactive.bg_stroke,
-                widgets.hovered.bg_stroke,
-                widgets.active.bg_stroke,
-                widgets.open.bg_stroke
-            ],
+            [widgets.noninteractive.bg_stroke, widgets.inactive.bg_stroke, widgets.hovered.bg_stroke, widgets.active.bg_stroke, widgets.open.bg_stroke],
             original_borders
         );
         // A second theme application replaces prior fills, including an app's outline override.

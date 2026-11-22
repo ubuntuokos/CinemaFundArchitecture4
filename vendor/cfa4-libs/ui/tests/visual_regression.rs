@@ -245,8 +245,7 @@ fn toolbar_fitting_matches_literal_group_and_overflow_positions() {
     let mut artifacts = Artifacts::new("toolbar");
     let mut count = 0;
     // Independently specified rectangles: three natural groups, one group + More, More only.
-    for (available, expected) in
-        [(112.0, vec![(12.0, 24.0), (40.0, 28.0), (72.0, 36.0)]), (64.0, vec![(12.0, 24.0), (40.0, 20.0)]), (20.0, vec![(12.0, 20.0)])]
+    for (available, expected) in [(112.0, vec![(12.0, 24.0), (40.0, 28.0), (72.0, 36.0)]), (64.0, vec![(12.0, 24.0), (40.0, 20.0)]), (20.0, vec![(12.0, 20.0)])]
     {
         for theme in [Theme::Light, Theme::Dark] {
             for scale in [1.0, 1.5, 2.0] {
@@ -263,14 +262,11 @@ fn toolbar_fitting_matches_literal_group_and_overflow_positions() {
                     let fit = fit_toolbar(&[24.0, 28.0, 36.0], available, 4.0, 20.0).unwrap();
                     let style = fixtures::button_style(theme);
                     ui.scope_builder(
-                        UiBuilder::new()
-                            .max_rect(Rect::from_min_size(pos2(12.0, 12.0), vec2(available, 24.0)))
-                            .layout(Layout::left_to_right(Align::Min)),
+                        UiBuilder::new().max_rect(Rect::from_min_size(pos2(12.0, 12.0), vec2(available, 24.0))).layout(Layout::left_to_right(Align::Min)),
                         |ui| {
                             ui.spacing_mut().item_spacing.x = 4.0;
                             for &(_, width) in &fit.shown {
-                                IconButton::new("Group", vec2(width, 24.0), &style)
-                                    .show(ui, |ui, rect, tint| fixtures::icon(ui.painter(), rect, tint, true));
+                                IconButton::new("Group", vec2(width, 24.0), &style).show(ui, |ui, rect, tint| fixtures::icon(ui.painter(), rect, tint, true));
                             }
                             if !fit.overflow.is_empty() {
                                 IconButton::new("More", vec2(fit.overflow_width, 24.0), &style)
@@ -316,32 +312,30 @@ fn widget_palette_renders_all_five_states_with_existing_borders_and_expansion() 
                         // A separate inset uses the weak fill, so omission of either fill is visible.
                         ui.painter().rect_filled(rect.shrink(3.0), 0.0, fills[index]);
                         ui.painter().rect_stroke(rect, 2.0, Stroke::new(1.0, borders[index]), StrokeKind::Inside);
-                        ui.painter()
-                            .line_segment([rect.left_center() + vec2(4.0, 0.0), rect.right_center() - vec2(4.0, 0.0)], Stroke::new(1.5, p.icon));
+                        ui.painter().line_segment([rect.left_center() + vec2(4.0, 0.0), rect.right_center() - vec2(4.0, 0.0)], Stroke::new(1.5, p.icon));
                     }
                 });
-                let after = static_capture(&mut renderer, theme, scale, |ui| {
-                    let mut widgets = ui.visuals().widgets.clone();
-                    for (index, widget) in
-                        [&mut widgets.noninteractive, &mut widgets.inactive, &mut widgets.hovered, &mut widgets.active, &mut widgets.open]
-                            .into_iter()
-                            .enumerate()
-                    {
-                        widget.bg_stroke = Stroke::new(1.0, borders[index]);
-                        widget.expansion = if index % 2 == 0 { 0.0 } else { 0.5 };
-                    }
-                    WidgetPalette { noninteractive: p.normal, inactive: p.hovered, hovered: p.pressed, active: p.selected, open: theme.surface() }
-                        .apply_to(&mut widgets, CornerRadius::same(2), Stroke::new(1.5, p.icon));
-                    for (index, widget) in
-                        [widgets.noninteractive, widgets.inactive, widgets.hovered, widgets.active, widgets.open].iter().enumerate()
-                    {
-                        let rect = rect(index).expand(widget.expansion);
-                        ui.painter().rect_filled(rect, widget.corner_radius, widget.bg_fill);
-                        ui.painter().rect_filled(rect.shrink(3.0), 0.0, widget.weak_bg_fill);
-                        ui.painter().rect_stroke(rect, widget.corner_radius, widget.bg_stroke, StrokeKind::Inside);
-                        ui.painter().line_segment([rect.left_center() + vec2(4.0, 0.0), rect.right_center() - vec2(4.0, 0.0)], widget.fg_stroke);
-                    }
-                });
+                let after =
+                    static_capture(&mut renderer, theme, scale, |ui| {
+                        let mut widgets = ui.visuals().widgets.clone();
+                        for (index, widget) in
+                            [&mut widgets.noninteractive, &mut widgets.inactive, &mut widgets.hovered, &mut widgets.active, &mut widgets.open]
+                                .into_iter()
+                                .enumerate()
+                        {
+                            widget.bg_stroke = Stroke::new(1.0, borders[index]);
+                            widget.expansion = if index % 2 == 0 { 0.0 } else { 0.5 };
+                        }
+                        WidgetPalette { noninteractive: p.normal, inactive: p.hovered, hovered: p.pressed, active: p.selected, open: theme.surface() }
+                            .apply_to(&mut widgets, CornerRadius::same(2), Stroke::new(1.5, p.icon));
+                        for (index, widget) in [widgets.noninteractive, widgets.inactive, widgets.hovered, widgets.active, widgets.open].iter().enumerate() {
+                            let rect = rect(index).expand(widget.expansion);
+                            ui.painter().rect_filled(rect, widget.corner_radius, widget.bg_fill);
+                            ui.painter().rect_filled(rect.shrink(3.0), 0.0, widget.weak_bg_fill);
+                            ui.painter().rect_stroke(rect, widget.corner_radius, widget.bg_stroke, StrokeKind::Inside);
+                            ui.painter().line_segment([rect.left_center() + vec2(4.0, 0.0), rect.right_center() - vec2(4.0, 0.0)], widget.fg_stroke);
+                        }
+                    });
                 let name = format!("palette-{}-{scale}x-{}", theme.name(), if compact { "compact" } else { "normal" });
                 let changed = artifacts.record(&name, &before, &after, false);
                 assert_eq!(before.meshes, after.meshes, "{name}");
@@ -363,8 +357,7 @@ fn svg_preparation_matches_literal_raster_references_at_all_scales() {
     const LIGHT: &[u8] = br##"<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="#0f172a" stroke-width="1.75"><rect x="4" y="4" width="16" height="16"/><path d="M4 4L20 20"/></svg>"##;
     const DARK: &[u8] = br##"<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="#e2e8f0" stroke-width="1.75"><rect x="4" y="4" width="16" height="16"/><path d="M4 4L20 20"/></svg>"##;
     fn raster(ctx: &Context, uri: &str, size: u32) -> Capture {
-        let ImagePoll::Ready { image } = ctx.try_load_image(uri, SizeHint::Size { width: size, height: size, maintain_aspect_ratio: true }).unwrap()
-        else {
+        let ImagePoll::Ready { image } = ctx.try_load_image(uri, SizeHint::Size { width: size, height: size, maintain_aspect_ratio: true }).unwrap() else {
             panic!("compiled-in SVG must rasterize synchronously")
         };
         assert_eq!(image.size, [size as usize; 2]);
@@ -379,8 +372,7 @@ fn svg_preparation_matches_literal_raster_references_at_all_scales() {
                 let ctx = Context::default();
                 egui_extras::install_image_loaders(&ctx);
                 ctx.include_bytes("bytes://literal-reference.svg", Bytes::Static(literal));
-                let icons =
-                    SvgIconSet::new(&[("box", SOURCE)], SvgStyle { current_color: color, stroke_width: Some("1.75") }, "bytes://actual/", "box");
+                let icons = SvgIconSet::new(&[("box", SOURCE)], SvgStyle { current_color: color, stroke_width: Some("1.75") }, "bytes://actual/", "box");
                 let ImageSource::Bytes { uri, bytes } = icons.source("box") else { panic!("catalog must return embedded bytes") };
                 ctx.include_bytes(uri.clone(), bytes);
                 let size = logical_size * numerator / 2;

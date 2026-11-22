@@ -41,9 +41,7 @@ impl AVFilterContext {
     /// destroys the dictionary handed to it, failures included. It is given a
     /// duplicate instead, which keeps that out of our own ownership.
     pub fn init_dict(&mut self, options: &mut Option<AVDictionary>) -> Result<()> {
-        let ret = with_copied_options(options, |options_ptr| unsafe {
-            ffi::avfilter_init_dict(self.as_mut_ptr(), options_ptr)
-        })?;
+        let ret = with_copied_options(options, |options_ptr| unsafe { ffi::avfilter_init_dict(self.as_mut_ptr(), options_ptr) })?;
 
         ret.upgrade()?;
 
@@ -56,13 +54,7 @@ impl AVFilterContext {
     ///   May be NULL if the options have been set directly using the
     ///   AVOptions API or there are no options that need to be set.
     pub fn init_str(&mut self, args: Option<&CStr>) -> Result<()> {
-        unsafe {
-            ffi::avfilter_init_str(
-                self.as_mut_ptr(),
-                args.map(|x| x.as_ptr()).unwrap_or_else(ptr::null),
-            )
-        }
-        .upgrade()?;
+        unsafe { ffi::avfilter_init_str(self.as_mut_ptr(), args.map(|x| x.as_ptr()).unwrap_or_else(ptr::null)) }.upgrade()?;
         Ok(())
     }
 
@@ -83,57 +75,25 @@ impl AVFilterContext {
 
     /// Set property of a [`AVFilterContext`].
     pub fn opt_set(&mut self, key: &CStr, value: &CStr) -> Result<()> {
-        unsafe {
-            ffi::av_opt_set(
-                self.as_mut_ptr().cast(),
-                key.as_ptr(),
-                value.as_ptr(),
-                ffi::AV_OPT_SEARCH_CHILDREN as i32,
-            )
-        }
-        .upgrade()?;
+        unsafe { ffi::av_opt_set(self.as_mut_ptr().cast(), key.as_ptr(), value.as_ptr(), ffi::AV_OPT_SEARCH_CHILDREN as i32) }.upgrade()?;
         Ok(())
     }
 
     /// Set integer property of a [`AVFilterContext`].
     pub fn opt_set_int(&mut self, key: &CStr, value: i64) -> Result<()> {
-        unsafe {
-            ffi::av_opt_set_int(
-                self.as_mut_ptr().cast(),
-                key.as_ptr(),
-                value,
-                ffi::AV_OPT_SEARCH_CHILDREN as i32,
-            )
-        }
-        .upgrade()?;
+        unsafe { ffi::av_opt_set_int(self.as_mut_ptr().cast(), key.as_ptr(), value, ffi::AV_OPT_SEARCH_CHILDREN as i32) }.upgrade()?;
         Ok(())
     }
 
     /// Set double property of a [`AVFilterContext`].
     pub fn opt_set_double(&mut self, key: &CStr, value: f64) -> Result<()> {
-        unsafe {
-            ffi::av_opt_set_double(
-                self.as_mut_ptr().cast(),
-                key.as_ptr(),
-                value,
-                ffi::AV_OPT_SEARCH_CHILDREN as i32,
-            )
-        }
-        .upgrade()?;
+        unsafe { ffi::av_opt_set_double(self.as_mut_ptr().cast(), key.as_ptr(), value, ffi::AV_OPT_SEARCH_CHILDREN as i32) }.upgrade()?;
         Ok(())
     }
 
     /// Set AVRational property of a [`AVFilterContext`].
     pub fn opt_set_q(&mut self, key: &CStr, value: ffi::AVRational) -> Result<()> {
-        unsafe {
-            ffi::av_opt_set_q(
-                self.as_mut_ptr().cast(),
-                key.as_ptr(),
-                value,
-                ffi::AV_OPT_SEARCH_CHILDREN as i32,
-            )
-        }
-        .upgrade()?;
+        unsafe { ffi::av_opt_set_q(self.as_mut_ptr().cast(), key.as_ptr(), value, ffi::AV_OPT_SEARCH_CHILDREN as i32) }.upgrade()?;
         Ok(())
     }
 
@@ -147,41 +107,18 @@ impl AVFilterContext {
     ///
     /// Note: This wrapper always searches children (AV_OPT_SEARCH_CHILDREN).
     #[cfg(feature = "ffmpeg7_1")]
-    pub fn opt_set_array<T>(
-        &mut self,
-        key: &CStr,
-        start_elem: u32,
-        vals: Option<&[T]>,
-        val_type: ffi::AVOptionType,
-    ) -> Result<()> {
+    pub fn opt_set_array<T>(&mut self, key: &CStr, start_elem: u32, vals: Option<&[T]>, val_type: ffi::AVOptionType) -> Result<()> {
         let (nb_elems, val_ptr) = match vals {
-            Some(slice) => (
-                slice.len() as u32,
-                slice.as_ptr() as *const std::os::raw::c_void,
-            ),
+            Some(slice) => (slice.len() as u32, slice.as_ptr() as *const std::os::raw::c_void),
             None => (0u32, std::ptr::null()),
         };
-        unsafe {
-            ffi::av_opt_set_array(
-                self.as_mut_ptr().cast(),
-                key.as_ptr(),
-                ffi::AV_OPT_SEARCH_CHILDREN as i32,
-                start_elem,
-                nb_elems,
-                val_type,
-                val_ptr,
-            )
-        }
-        .upgrade()?;
+        unsafe { ffi::av_opt_set_array(self.as_mut_ptr().cast(), key.as_ptr(), ffi::AV_OPT_SEARCH_CHILDREN as i32, start_elem, nb_elems, val_type, val_ptr) }
+            .upgrade()?;
         Ok(())
     }
 
     /// Add a frame to the buffer source.
-    pub fn buffersrc_add_frame(
-        &mut self,
-        mut frame: Option<AVFrame>,
-        flags: Option<i32>,
-    ) -> Result<()> {
+    pub fn buffersrc_add_frame(&mut self, mut frame: Option<AVFrame>, flags: Option<i32>) -> Result<()> {
         let frame_ptr = match frame.as_mut() {
             Some(frame) => frame.as_mut_ptr(),
             None => ptr::null_mut(),
@@ -190,8 +127,7 @@ impl AVFilterContext {
         // `av_buffersrc_add_frame_flags(..., 0)`, so this is legal.
         let flags = flags.unwrap_or(0);
 
-        unsafe { ffi::av_buffersrc_add_frame_flags(self.as_mut_ptr(), frame_ptr, flags) }
-            .upgrade()?;
+        unsafe { ffi::av_buffersrc_add_frame_flags(self.as_mut_ptr(), frame_ptr, flags) }.upgrade()?;
         Ok(())
     }
 
@@ -200,11 +136,7 @@ impl AVFilterContext {
         // `av_buffersink_get_frame(...)` just calls
         // `av_buffersink_get_frame_flags(..., 0)`, so this is legal.
         let flags = flags.unwrap_or(0);
-        match unsafe {
-            ffi::av_buffersink_get_frame_flags(self.as_mut_ptr(), frame.as_mut_ptr(), flags)
-        }
-        .upgrade()
-        {
+        match unsafe { ffi::av_buffersink_get_frame_flags(self.as_mut_ptr(), frame.as_mut_ptr(), flags) }.upgrade() {
             Ok(_) => Ok(frame),
             Err(AVERROR_EAGAIN) => Err(RsmpegError::BufferSinkDrainError),
             Err(ffi::AVERROR_EOF) => Err(RsmpegError::BufferSinkEofError),
@@ -255,9 +187,7 @@ impl AVFilterContext {
 
     pub fn get_ch_layout(&self) -> AVChannelLayout {
         let mut ch_layout = MaybeUninit::<ffi::AVChannelLayout>::uninit();
-        unsafe { ffi::av_buffersink_get_ch_layout(self.as_ptr(), ch_layout.as_mut_ptr()) }
-            .upgrade()
-            .unwrap();
+        unsafe { ffi::av_buffersink_get_ch_layout(self.as_ptr(), ch_layout.as_mut_ptr()) }.upgrade().unwrap();
         let ch_layout = Box::leak(Box::new(unsafe { ch_layout.assume_init() }));
         unsafe { AVChannelLayout::from_raw(NonNull::new(ch_layout).unwrap()) }
     }
@@ -268,8 +198,7 @@ impl AVFilterContext {
 
     /// Link this filter's output pad to another filter's input pad.
     pub fn link(&mut self, srcpad: u32, dst: &mut AVFilterContext, dstpad: u32) -> Result<()> {
-        unsafe { ffi::avfilter_link(self.as_mut_ptr(), srcpad, dst.as_mut_ptr(), dstpad) }
-            .upgrade()?;
+        unsafe { ffi::avfilter_link(self.as_mut_ptr(), srcpad, dst.as_mut_ptr(), dstpad) }.upgrade()?;
         Ok(())
     }
 }
@@ -322,14 +251,8 @@ impl AVFilterGraph {
         mut inputs: Option<AVFilterInOut>,
         mut outputs: Option<AVFilterInOut>,
     ) -> Result<(Option<AVFilterInOut>, Option<AVFilterInOut>)> {
-        let mut inputs_new = inputs
-            .as_mut()
-            .map(|x| x.as_mut_ptr())
-            .unwrap_or(ptr::null_mut());
-        let mut outputs_new = outputs
-            .as_mut()
-            .map(|x| x.as_mut_ptr())
-            .unwrap_or(ptr::null_mut());
+        let mut inputs_new = inputs.as_mut().map(|x| x.as_mut_ptr()).unwrap_or(ptr::null_mut());
+        let mut outputs_new = outputs.as_mut().map(|x| x.as_mut_ptr()).unwrap_or(ptr::null_mut());
 
         // FFmpeg `avfilter_graph_parse*`'s documentation states:
         //
@@ -339,16 +262,7 @@ impl AVFilterGraph {
         // parameter will contain outputs of the newly created filters.
         //
         // So the function is designed to take immutable reference to the FilterGraph
-        unsafe {
-            ffi::avfilter_graph_parse_ptr(
-                self.as_ptr() as _,
-                filter_spec.as_ptr(),
-                &mut inputs_new,
-                &mut outputs_new,
-                ptr::null_mut(),
-            )
-        }
-        .upgrade()?;
+        unsafe { ffi::avfilter_graph_parse_ptr(self.as_ptr() as _, filter_spec.as_ptr(), &mut inputs_new, &mut outputs_new, ptr::null_mut()) }.upgrade()?;
 
         // If no error, inputs and outputs pointer are dangling, manually erase
         // them *without* dropping. Do this because we need to drop inputs and
@@ -357,30 +271,21 @@ impl AVFilterGraph {
         let _ = outputs.map(|x| x.into_raw());
 
         // ATTENTION: TODO here we didn't bind the AVFilterInOut to the lifetime of the AVFilterGraph
-        let new_inputs = inputs_new
-            .upgrade()
-            .map(|raw| unsafe { AVFilterInOut::from_raw(raw) });
-        let new_outputs = outputs_new
-            .upgrade()
-            .map(|raw| unsafe { AVFilterInOut::from_raw(raw) });
+        let new_inputs = inputs_new.upgrade().map(|raw| unsafe { AVFilterInOut::from_raw(raw) });
+        let new_outputs = outputs_new.upgrade().map(|raw| unsafe { AVFilterInOut::from_raw(raw) });
         Ok((new_inputs, new_outputs))
     }
 
     /// Check validity and configure all the links and formats in the graph.
     pub fn config(&self) -> Result<()> {
         // ATTENTION: This takes immutable reference since it doesn't delete any filter.
-        unsafe { ffi::avfilter_graph_config(self.as_ptr() as *mut _, ptr::null_mut()) }
-            .upgrade()?;
+        unsafe { ffi::avfilter_graph_config(self.as_ptr() as *mut _, ptr::null_mut()) }.upgrade()?;
         Ok(())
     }
 
     /// Get a filter instance identified by instance name from graph.
     pub fn get_filter(&self, name: &CStr) -> Option<AVFilterContextMut<'_>> {
-        unsafe {
-            ffi::avfilter_graph_get_filter(self.as_ptr() as *mut _, name.as_ptr())
-                .upgrade()
-                .map(|raw| AVFilterContextMut::from_raw(raw))
-        }
+        unsafe { ffi::avfilter_graph_get_filter(self.as_ptr() as *mut _, name.as_ptr()).upgrade().map(|raw| AVFilterContextMut::from_raw(raw)) }
     }
 }
 
@@ -388,12 +293,7 @@ impl<'graph> AVFilterGraph {
     /// A convenience wrapper that allocates and initializes a filter in a single
     /// step. The filter instance is created from the filter filt and inited with the
     /// parameter args.
-    pub fn create_filter_context(
-        &'graph self,
-        filter: &AVFilter,
-        name: &CStr,
-        args: Option<&CStr>,
-    ) -> Result<AVFilterContextMut<'graph>> {
+    pub fn create_filter_context(&'graph self, filter: &AVFilter, name: &CStr, args: Option<&CStr>) -> Result<AVFilterContextMut<'graph>> {
         let args_ptr = args.map(|s| s.as_ptr()).unwrap_or(ptr::null());
         let mut filter_context = ptr::null_mut();
         unsafe {
@@ -417,11 +317,7 @@ impl<'graph> AVFilterGraph {
     }
 
     /// Create a new filter instance in a filter graph.
-    pub fn alloc_filter_context(
-        &'graph self,
-        filter: &AVFilter,
-        name: &CStr,
-    ) -> Option<AVFilterContextMut<'graph>> {
+    pub fn alloc_filter_context(&'graph self, filter: &AVFilter, name: &CStr) -> Option<AVFilterContextMut<'graph>> {
         unsafe {
             ffi::avfilter_graph_alloc_filter(
                 // ATTENTION: We restrict the API for not removing filter, then
@@ -506,10 +402,7 @@ mod tests {
 
         // The recognized options are consumed, the rest is left for the caller.
         let options = options.unwrap();
-        let mut unused: Vec<String> = options
-            .iter()
-            .map(|entry| entry.key().to_string_lossy().into_owned())
-            .collect();
+        let mut unused: Vec<String> = options.iter().map(|entry| entry.key().to_string_lossy().into_owned()).collect();
         unused.sort_unstable();
         assert_eq!(unused, ["unknown_option_of_rsmpeg"]);
     }

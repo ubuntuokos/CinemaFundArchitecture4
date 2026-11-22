@@ -4871,6 +4871,10 @@ export.summary	Low	lav
 	Subtitles	Undertekster
 	Captions for the hearing impaired	Tekstning for hørehæmmede
 	Forced narrative	Tvungen fortælling (forced narrative)
+	Silence	Stilhed
+	Detect Silence	Find stilhed
+	Remove Silence	Fjern stilhed
+	Clear Silence Markers	Ryd stilhedsmarkører
 # DCP Validation window (DCP-12)
 	AS-03	AS-03
 	Choose the DCP folder.	Vælg DCP-mappen.

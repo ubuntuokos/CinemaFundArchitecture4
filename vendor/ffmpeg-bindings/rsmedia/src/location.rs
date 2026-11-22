@@ -69,9 +69,7 @@ impl From<&Url> for Location {
 /// whose `C` would otherwise look like a scheme) is treated as a plain path.
 fn location_from_str(value: &str) -> Location {
     match Url::parse(value) {
-        Ok(url) if url.scheme() == "file" => {
-            Location::File(url.to_file_path().unwrap_or_else(|_| value.into()))
-        }
+        Ok(url) if url.scheme() == "file" => Location::File(url.to_file_path().unwrap_or_else(|_| value.into())),
         // A one-character scheme is a Windows drive letter, not a protocol.
         Ok(url) if url.scheme().len() == 1 => Location::File(value.into()),
         Ok(url) => Location::Network(url),
@@ -114,33 +112,15 @@ mod tests {
     #[test]
     fn test_str_classification() {
         // Plain paths -> File.
-        assert_eq!(
-            Location::from("/tmp/aaa.mov"),
-            Location::File("/tmp/aaa.mov".into())
-        );
-        assert_eq!(
-            Location::from("assets/mp4.mp4"),
-            Location::File("assets/mp4.mp4".into())
-        );
+        assert_eq!(Location::from("/tmp/aaa.mov"), Location::File("/tmp/aaa.mov".into()));
+        assert_eq!(Location::from("assets/mp4.mp4"), Location::File("assets/mp4.mp4".into()));
         // Relative names with a colon still parse as URLs; document the edge.
-        assert!(matches!(
-            Location::from("protocol:style.mp4"),
-            Location::Network(_)
-        ));
+        assert!(matches!(Location::from("protocol:style.mp4"), Location::Network(_)));
 
         // Network schemes -> Network.
-        assert!(matches!(
-            Location::from("http://127.0.0.1:8088/aaa/video.mp4"),
-            Location::Network(_)
-        ));
-        assert!(matches!(
-            Location::from("rtsp://cam.local/stream"),
-            Location::Network(_)
-        ));
-        assert!(matches!(
-            Location::from("srt://host:9000"),
-            Location::Network(_)
-        ));
+        assert!(matches!(Location::from("http://127.0.0.1:8088/aaa/video.mp4"), Location::Network(_)));
+        assert!(matches!(Location::from("rtsp://cam.local/stream"), Location::Network(_)));
+        assert!(matches!(Location::from("srt://host:9000"), Location::Network(_)));
 
         // `file:` URLs map back to a plain path. On Unix, `file:///tmp/...` maps to
         // `/tmp/...`. On Windows, `file:///tmp/...` is not a valid Windows absolute
@@ -153,17 +133,11 @@ mod tests {
         assert_eq!(file_url, expected);
 
         // Windows drive letters are paths, not a "c:" protocol.
-        assert_eq!(
-            Location::from("C:\\video\\aaa.mov"),
-            Location::File("C:\\video\\aaa.mov".into())
-        );
+        assert_eq!(Location::from("C:\\video\\aaa.mov"), Location::File("C:\\video\\aaa.mov".into()));
 
         // Owned/borrowed string wrappers agree.
         let owned = String::from("http://example.com/a.mp4");
-        assert_eq!(
-            Location::from(owned.clone()),
-            Location::from(owned.as_str())
-        );
+        assert_eq!(Location::from(owned.clone()), Location::from(owned.as_str()));
     }
 
     #[test]

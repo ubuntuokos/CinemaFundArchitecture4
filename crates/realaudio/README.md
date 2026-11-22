@@ -2,7 +2,7 @@
 
 Pure-Rust (no `unsafe`) RealAudio decoders: **Cook** (RealAudio G2, FourCC `cook`), the audio
 codec of most RealMedia files; **SIPR** (ACELP.NET, `sipr`); **RealAudio 1.0** (14.4, `lpcJ`)
-and **RealAudio 2.0** (28.8, `28_8`); **ATRAC3** (Sony, RealMedia `atrc` and WAV `.at3`),
+and **RealAudio 2.0** (28.8, `28_8`); **ATRAC1** (Sony MiniDisc, `.aea` and Matroska `A_ATRAC/AT1`); **ATRAC3** (Sony, RealMedia `atrc` and WAV `.at3`),
 which shares Cook's bit reader, prefix codes and IMDCT; **ATRAC3plus** (Sony's ATRAC3+, in
 OpenMG `.oma` / `.aa3` and WAV `.at3`); and **ATRAC9** (PlayStation Vita and 4, WAV `.at9`). It
 is an L0 crate: it depends only on `thiserror`. Codec backlog items CB-14.1, CB-14.2, CB-15.1,
@@ -17,6 +17,7 @@ readers in `cfa4-media`.
 |---|---|---|
 | FFmpeg | n7.1.1, LGPL-2.1-or-later, Sascha Sommer, Benjamin Larsson and the FFmpeg developers | `libavcodec/cook.c` (re-expressed in `cook.rs`), `cookdata.h` (generated into `tables.rs`), `libavutil/lfg.h` / `lfg.c` (the noise generator and its seed-0 state), `sinewin_tablegen.h` (the window), `get_bits.h` (the checked bit reader in `bits.rs`) |
 | FFmpeg | n7.1.1, LGPL-2.1-or-later, the FFmpeg project, Vitor Sessak, Vladimir Voroshilov, Reynaldo H. Verdejo Pinochet | `ra144.c` / `ra144dec.c` (`ra144.rs`, tables in `tables144.rs`), `ra288.c` / `ra288.h` (`ra288.rs`, `tables288.rs`), `sipr.c` / `sipr16k.c` / `siprdata.h` / `sipr16kdata.h` (`sipr.rs`, `tables_sipr.rs`), and the CELP helpers they use from `celp_filters.c`, `acelp_filters.c`, `acelp_vectors.c`, `acelp_pitch_delay.c`, `lsp.c`, `lpc_functions.h`, `libavutil/float_dsp.c` (`celp.rs`) |
+| FFmpeg | n7.1.1, LGPL-2.1-or-later, Maxim Poliakovski, Benjamin Larsson | `atrac1.c`, `atrac1data.h` (`atrac1.rs`), `aeadec.c` (the AEA reader in `cfa4-media`), `atrac.c` (`iqmf`, the scale factor table) |
 | FFmpeg | n7.1.1, LGPL-2.1-or-later, Maxim Poliakovski, Benjamin Larsson | `atrac3.c`, `atrac3data.h`, `atrac.c`, `atrac.h` (`atrac3.rs`) |
 | FFmpeg | n7.1.1, LGPL-2.1-or-later, Rostislav Pehlivanov | `atrac9dec.c` (`atrac9.rs`; a short packet decodes as in n9.0.2, see below), `atrac9tab.h` (generated into `tables_atrac9.rs`, with the `av_lfg_init(0xFBADF00D)` state and n9.0.2's fix of `at9_tab_b_dist[24]`, 16 instead of 6), `libavutil/lfg.c` `av_bmg_get` and `float_dsp.c` `vector_fmul_window` (`lfg.rs`, `atrac9.rs`) |
 | FFmpeg | n7.1.1, LGPL-2.1-or-later, Maxim Poliakovski | `atrac3plus.c`, `atrac3plusdec.c`, `atrac3plusdsp.c`, `atrac3plus.h` (`atrac3p.rs`), `atrac3plus_data.h` and the tables of `atrac3plusdsp.c` (generated into `tables_atrac3p.rs`), `atrac.c` (gain compensation) |
@@ -38,6 +39,7 @@ ported code keeps FFmpeg's licence (`COPYING.LGPL-2.1`); CFA4's changes are GPL-
 | RealAudio 1.0 (14.4) | done: 20-byte frames of 160 samples, fixed point, FFmpeg's 16-bit samples bit for bit |
 | RealAudio 2.0 (28.8) | done: 38-byte frames of 160 samples, FFmpeg's `f32` samples bit for bit (same `f32`/`f64` operation order) |
 | SIPR | done: 5.0, 6.5, 8.5 kbit/s (8 kHz) and 16 kbit/s (16 kHz), FFmpeg's `f32` samples bit for bit |
+| ATRAC1 | done: mono and stereo sound units of 212 bytes, long and short blocks in every band, 20 to 52 coded block floating units, the three-band QMF synthesis; within 2·10⁻⁷ of the peak against FFmpeg (the IMDCT rounds differently, as for Cook). Raw `.aea` files and Matroska `A_ATRAC/AT1` packets (one sound unit per channel, 512 samples) |
 | ATRAC3 | done: single channels and joint stereo, 1 to 8 channels, tonal components, gain control, QMF synthesis; WAV (14-byte extra data) and RealMedia (scrambled) streams; within 3·10⁻⁷ of FFmpeg (the IMDCT, as for Cook). ATRAC3 AL is not supported |
 | ATRAC3plus | done: 1 to 8 channels (mono and stereo channel units), power compensation noise, gain control, GHA sine-wave tones, the 16-band PQF; within 1.2·10⁻⁷ of FFmpeg on its FATE samples. Channel unit extensions, GHA amplitude mode 0 (FFmpeg has neither) and ATRAC3plus AL are not supported |
 | ATRAC9 | done: all six block layouts (mono, dual mono, stereo, quad, 5.1, 7.1 with LFE), all 16 sample rates, superframes of 1, 2 or 4 frames, intensity stereo, all five band extension modes (noise from FFmpeg's generator); within 5·10⁻⁷ of each packet's peak against FFmpeg 9.0.2 (CI's oracle). Two changes since n7.1.1 are followed: the band extension distance table fix, and a short packet (less than a superframe) decoded as its whole frames, then again from the byte after them until less than a frame is left |
@@ -72,6 +74,7 @@ decodes on exactly like the original (the media source keeps one every 32 superb
   OpenMG files with all seven channel layouts, the multichannel frames assembled from valid mono
   and stereo units, within 10⁻⁵ of each frame's peak (worst 4·10⁻⁷). Unit tests: the Huffman
   codes are complete, bad parameters refused, random frames in eight layouts without a panic.
+- `tests/atrac1_oracle.rs`: ffmpeg has no ATRAC1 encoder, so the streams are random sound units the format allows (every block size mode, 20 to 52 coded BFUs, word lengths up to 7 or 14 bits, every scale factor; 150 packets, mono and stereo), written as `.aea` files and decoded by ffmpeg's `atrac1`: within 10⁻⁵ of the peak (worst 2·10⁻⁷). Random and short packets without a panic.
 - `tests/atrac9_oracle.rs`: there is no public ATRAC9 sample and no free encoder, so the streams
   are synthetic: packets the decoder's strict mode accepts (no read past the packet), grown block
   by block from random bits, in all six block layouts and at 11 to 176 kHz, written as WAV `.at9`
@@ -86,6 +89,7 @@ decodes on exactly like the original (the media source keeps one every 32 superb
 - `crates/codecs/tests/openmg_oracle.rs`: ATRAC3plus through the media source, random valid frames
   in OpenMG and WAV `.at3` files (CI) and the FATE samples (local), read in order and with jumps
   backwards across decoder checkpoints.
+- `crates/codecs/tests/atrac1_oracle.rs`: ATRAC1 through the media source, in `.aea` files and in Matroska files written by the test (ffmpeg's muxer does not know `A_ATRAC/AT1`), read in order and with jumps (the overlap and filter memories of one earlier packet are enough).
 - `crates/codecs/tests/atrac9_oracle.rs`: ATRAC9 through the media source, synthetic stereo and
   5.1 `.at9` files of 200 packets with a short last packet, read in order and with jumps
   backwards across decoder checkpoints.
