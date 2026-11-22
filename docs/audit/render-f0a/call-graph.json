@@ -9558,6 +9558,31 @@
    "to": "cfa4-time"
   },
   {
+   "from": "cfa4-engine/objects.rs",
+   "item": "Rect",
+   "to": "cfa4-geom"
+  },
+  {
+   "from": "cfa4-engine/objects.rs",
+   "item": "ClipId",
+   "to": "cfa4-project"
+  },
+  {
+   "from": "cfa4-engine/objects.rs",
+   "item": "Project",
+   "to": "cfa4-project"
+  },
+  {
+   "from": "cfa4-engine/objects.rs",
+   "item": "object",
+   "to": "cfa4-project"
+  },
+  {
+   "from": "cfa4-engine/objects.rs",
+   "item": "Tick",
+   "to": "cfa4-time"
+  },
+  {
    "from": "cfa4-engine/opatom.rs",
    "item": "SharedReader",
    "to": "cfa4-media"
