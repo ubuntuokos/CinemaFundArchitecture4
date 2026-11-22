@@ -1,32 +1,63 @@
-//! Theora (`cfa4-theora`) in Matroska (`V_THEORA`) against ffmpeg's decode of the same file: every
-//! frame equal, in order, backwards and after jumps. Needs an ffmpeg with the libtheora encoder
-//! (the file is skipped otherwise).
+//! Theora (`cfa4-theora`) in Matroska (`V_THEORA`) against ffmpeg's decode of the same stream:
+//! every frame equal, in order, backwards and after jumps.
+//!
+//! The streams in `data/theora/*.bin` were produced once by libtheora (4:2:0, 4:2:2, 4:4:4, a
+//! cropped picture, three quality settings); each file is the packet list (`u32` LE length +
+//! bytes): three headers, then the frames. So the test needs ffmpeg only as a *decoder* (the
+//! ffmpeg 9 build in CI has no libtheora encoder): it muxes the packets into Matroska here and
+//! compares our decode with ffmpeg's.
 
 mod common;
 
+use std::io::Cursor;
+use std::sync::Arc;
+
+use cfa4_matroska::{MkvWriter, MuxOptions, TrackKind, TrackSpec};
+use cfa4_theora::synth::laced;
 use common::*;
+
+/// Split a `.bin` fixture into its packets.
+fn packets(mut d: &[u8]) -> Vec<&[u8]> {
+    let mut out = Vec::new();
+    while !d.is_empty() {
+        let n = u32::from_le_bytes(d[..4].try_into().unwrap()) as usize;
+        out.push(&d[4..4 + n]);
+        d = &d[4 + n..];
+    }
+    out
+}
 
 #[test]
 fn theora_in_matroska_matches_ffmpeg() {
     let ff = cfa4_testkit::require_ffmpeg!();
-    // (name, size, pixel format, extra encoder options)
-    let cases: [(&str, (u32, u32), &str, &[&str]); 6] = [
-        ("theora_420.mkv", (176, 144), "yuv420p", &["-g", "5", "-b:v", "300k"]),
-        ("theora_420_q.mkv", (176, 144), "yuv420p", &["-g", "100", "-q:v", "10"]),
-        ("theora_420_lowq.mkv", (176, 144), "yuv420p", &["-g", "7", "-q:v", "2"]),
-        ("theora_422.mkv", (160, 96), "yuv422p", &["-g", "4", "-q:v", "7"]),
-        ("theora_444.mkv", (160, 96), "yuv444p", &["-g", "4", "-q:v", "7"]),
-        ("theora_crop.mkv", (170, 130), "yuv420p", &["-g", "6", "-q:v", "6"]),
+    // (name, size, pixel format, stream)
+    let cases: [(&str, (u32, u32), &str, &[u8]); 6] = [
+        ("theora_420", (96, 64), "yuv420p", include_bytes!("data/theora/theora_420.bin")),
+        ("theora_420_q", (96, 64), "yuv420p", include_bytes!("data/theora/theora_420_q.bin")),
+        ("theora_420_lowq", (96, 64), "yuv420p", include_bytes!("data/theora/theora_420_lowq.bin")),
+        ("theora_422", (80, 48), "yuv422p", include_bytes!("data/theora/theora_422.bin")),
+        ("theora_444", (80, 48), "yuv444p", include_bytes!("data/theora/theora_444.bin")),
+        ("theora_crop", (90, 66), "yuv420p", include_bytes!("data/theora/theora_crop.bin")),
     ];
-    for (name, (w, h), pix, opts) in cases {
-        let src = format!("testsrc2=size={w}x{h}:rate=25:duration=0.8");
-        let mut args = vec!["-f", "lavfi", "-i", &src, "-pix_fmt", pix, "-c:v", "libtheora"];
-        args.extend_from_slice(opts);
-        let Some(path) = fixture(&ff, name, &args) else {
-            cfa4_testkit::oracle::skip(name, "ffmpeg can't write it");
-            continue;
-        };
-        let src = cfa4_codecs::open_bytes(name, bytes(&path)).unwrap_or_else(|e| panic!("{name}: {e}"));
+    for (name, (w, h), pix, stream) in cases {
+        let pk = packets(stream);
+        let frames = &pk[3..];
+        let mut t = TrackSpec::new(TrackKind::Video, "V_THEORA");
+        t.video_size = Some((w, h));
+        t.codec_private = laced([pk[0], pk[1], pk[2]]);
+        t.default_duration_ns = Some(40_000_000);
+        let mut mux = MkvWriter::new(Cursor::new(Vec::new()), vec![t], MuxOptions::default()).expect("writer");
+        for (i, p) in frames.iter().enumerate() {
+            // bit 6 of the first byte: 0 = intra frame
+            mux.write_frame(0, i as i64 * 40_000_000, p[0] & 0x40 == 0, p, Some(40_000_000)).expect("frame");
+        }
+        let data = mux.finish().expect("finish").into_inner();
+        let file = format!("{name}.mkv");
+        let path = dir().join(&file);
+        std::fs::create_dir_all(dir()).unwrap();
+        std::fs::write(&path, &data).unwrap();
+
+        let src = cfa4_codecs::open_bytes(&file, Arc::<[u8]>::from(data)).unwrap_or_else(|e| panic!("{name}: {e}"));
         let v = src.info().video.clone().unwrap();
         assert_eq!((v.width, v.height), (w, h), "{name}: reported size");
         let (sx, sy) = match pix {
@@ -38,7 +69,7 @@ fn theora_in_matroska_matches_ffmpeg() {
         let raw = ffmpeg_frames(&ff, &path, pix);
         let frame_bytes = (w * h) as usize + 2 * cw * ch;
         let want: Vec<&[u8]> = raw.chunks(frame_bytes).collect();
-        assert_eq!(want.len(), 20, "{name}");
+        assert_eq!(want.len(), frames.len(), "{name}: ffmpeg's frame count");
         for i in (0..want.len()).rev().chain(0..want.len()) {
             let f = src.video_frame(cfa4_media::FrameRequest::full(v.frame_rate.tick_of(i as i64))).unwrap_or_else(|e| panic!("{name}: frame {i}: {e}"));
             assert_eq!((f.width, f.height), (w, h), "{name}: frame {i} size");
