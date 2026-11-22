@@ -16,6 +16,7 @@ pub mod audio;
 mod ciede2000;
 mod lab;
 mod psnr;
+pub mod resource;
 mod ssim;
 pub mod timing;
 

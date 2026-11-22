@@ -8,6 +8,8 @@
 //! 16-bit PCM. The general provisions (5.1.6, 7.1) allow 5 to 50 Mbit/s and 48 kHz PCM with up to
 //! 16 channels. An unknown shim name is a shim of the user's own, so nothing is checked for it.
 
+use crate::{Codec, MxfFile, OperationalPattern, TrackKind};
+
 /// The video coding of the file.
 #[derive(Clone, Copy, Debug, Default, PartialEq, Eq)]
 pub enum Video {
@@ -117,6 +119,63 @@ pub fn check_shim(name: &str, facts: &Facts) -> Result<(), String> {
         problems.push(format!("audio has {} channels, the shim lists up to {}", facts.audio_channels, s.max_channels));
     }
     if problems.is_empty() { Ok(()) } else { Err(format!("shim {}: {}", s.name, problems.join("; "))) }
+}
+
+/// The facts of a read file, to compare with its shim. The video bit rate is estimated from the
+/// stored pictures when the file runs at least a second (0 otherwise).
+pub fn facts_of(f: &MxfFile) -> Facts {
+    let mut facts = Facts::default();
+    if let Some(t) = f.tracks.iter().find(|t| t.kind == TrackKind::Picture) {
+        facts.video = match t.codec {
+            Codec::Mpeg2 => Video::Mpeg2,
+            Codec::Avc { .. } => Video::H264,
+            _ => Video::Other,
+        };
+        if let Some(p) = &t.picture {
+            facts.width = p.display_width;
+            facts.height = p.display_height;
+        }
+        let (num, den) = (i64::from(t.edit_rate.num), i64::from(t.edit_rate.den));
+        let frames = i64::try_from(t.samples.len()).unwrap_or(i64::MAX);
+        if num > 0 && den > 0 && frames.saturating_mul(den) >= num {
+            let bits: i128 = t.samples.iter().map(|s| i128::from(s.size) * 8).sum();
+            let bps = bits * i128::from(num) / (i128::from(frames) * i128::from(den));
+            facts.bit_rate = u32::try_from(bps).unwrap_or(u32::MAX);
+        }
+    }
+    for t in f.tracks.iter().filter(|t| t.kind == TrackKind::Sound) {
+        if let Some(s) = &t.sound {
+            facts.audio_channels = facts.audio_channels.saturating_add(s.channels);
+            facts.audio_bits = s.bits;
+            facts.audio_sample_rate = u32::try_from(s.sample_rate.num / s.sample_rate.den.max(1)).unwrap_or(0);
+        }
+    }
+    facts
+}
+
+/// The breaches of AS-03 in a read file; empty when it conforms: OP1a (5.1.1), the DMS-AS-03
+/// framework with its `ShimName` (5.4), a start timecode (5.1.2), and the essence against the
+/// general provisions and the named shim. The partition layout, content integrity tracks and
+/// the DMS-NGIS / PODS / PBCore frameworks are not checked.
+pub fn file_problems(f: &MxfFile) -> Vec<String> {
+    let mut p: Vec<String> = Vec::new();
+    if f.operational_pattern != (OperationalPattern::Generalized { item: 1, package: 1 }) {
+        p.push(format!("the operational pattern is {}, AS-03 needs OP1a", f.operational_pattern.name()));
+    }
+    if f.timecode.is_none() {
+        p.push("the Material Package has no timecode track".into());
+    }
+    let name = match f.as11.as_ref().filter(|a| !a.as03.is_empty()) {
+        None => {
+            p.push("the file has no DMS-AS-03 framework".into());
+            String::new()
+        }
+        Some(a) => a.as03.iter().find(|(k, _)| k.eq_ignore_ascii_case("ShimName")).map(|(_, v)| v.clone()).unwrap_or_default(),
+    };
+    if let Err(e) = check_shim(&name, &facts_of(f)) {
+        p.push(e);
+    }
+    p
 }
 
 #[cfg(test)]

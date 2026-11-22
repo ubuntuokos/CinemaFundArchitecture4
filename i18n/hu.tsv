@@ -4561,6 +4561,7 @@ export.summary	Low	alacsony
 	MXF OP1a Uncompressed 10-bit 4:2:2 (v210)	MXF OP1a tömörítetlen 10 bites 4:2:2 (v210)
 	MXF OP1a, uncompressed 10-bit Y'CbCr 4:2:2 in the v210 layout (SMPTE ST 384), 24-bit 48 kHz PCM, start timecode	MXF OP1a, tömörítetlen 10 bites Y'CbCr 4:2:2 v210 elrendezésben (SMPTE ST 384), 24 bites 48 kHz-es PCM, kezdő időkód
 	Write the captions as ANC data (CEA-608/708)	Feliratok írása ANC-adatként (CEA-608/708)
+	Write an AS-02 bundle (the path is a folder)	AS-02 csomag írása (az útvonal egy mappa)
 	Load KDM…	KDM betöltése…
 	Forget DCP Keys	DCP kulcsok elfelejtése
 	Load KDM	KDM betöltése
@@ -4889,6 +4890,7 @@ export.summary	Low	alacsony
 	Silence	Csend
 # DCP Validation window (DCP-12)
 	AS-03	AS-03
+	AS-02	AS-02
 	Choose the DCP folder.	Válaszd ki a DCP mappát.
 	DCP Validation	DCP-ellenőrzés
 	DCP folder	DCP mappa
@@ -4911,3 +4913,4 @@ export.summary	Low	alacsony
 	Validate DCP…	DCP ellenőrzése…
 	the engine sent no profiles	a motor nem küldött profilokat
 	{n} files checked	{n} fájl ellenőrizve
+	AS-12	AS-12
