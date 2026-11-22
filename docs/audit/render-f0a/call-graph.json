@@ -1275,6 +1275,13 @@
    "name": "AudioSegment"
   },
   {
+   "class": "audio",
+   "crate": "cfa4-testkit",
+   "kind": "enum",
+   "module": "smk.rs",
+   "name": "AudioKind"
+  },
+  {
    "class": "colour",
    "crate": "cfa4-color",
    "kind": "struct",
@@ -6096,6 +6103,27 @@
    "kind": "struct",
    "module": "golden.rs",
    "name": "Tolerance"
+  },
+  {
+   "class": "other",
+   "crate": "cfa4-testkit",
+   "kind": "struct",
+   "module": "smk.rs",
+   "name": "Rng"
+  },
+  {
+   "class": "other",
+   "crate": "cfa4-testkit",
+   "kind": "struct",
+   "module": "smk.rs",
+   "name": "Spec"
+  },
+  {
+   "class": "other",
+   "crate": "cfa4-testkit",
+   "kind": "struct",
+   "module": "smk.rs",
+   "name": "TrackSpec"
   },
   {
    "class": "other",

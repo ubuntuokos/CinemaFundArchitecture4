@@ -89,6 +89,7 @@ cfa4-shorten = { path = "crates/shorten" }
 cfa4-adx = { path = "crates/adx" }
 cfa4-hca = { path = "crates/hca" }
 cfa4-tak = { path = "crates/tak" }
+cfa4-smacker = { path = "crates/smacker" }
 cfa4-realvideo = { path = "crates/realvideo" }
 cfa4-realmedia = { path = "crates/realmedia" }
 cfa4-realaudio = { path = "crates/realaudio" }
@@ -208,6 +209,9 @@ opt-level = 3
 opt-level = 3
 
 [profile.dev.package.cfa4-tak]
+opt-level = 3
+
+[profile.dev.package.cfa4-smacker]
 opt-level = 3
 
 [profile.dev.package.cfa4-realvideo]
