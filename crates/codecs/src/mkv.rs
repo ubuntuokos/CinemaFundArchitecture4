@@ -40,6 +40,23 @@ struct AudioState {
     last_decoded: Option<usize>,
     /// Saved decoder states for exact jumps (AMR).
     checkpoints: crate::audio::Checkpoints,
+    /// RealAudio (`A_REAL/*`): the decoder and the superblock it decodes next.
+    real: Option<RealState>,
+}
+
+/// The state of a RealAudio track: superblocks are decoded forward from the nearest checkpoint.
+struct RealState {
+    dec: crate::realmedia::MkvRealAudio,
+    next: usize,
+    checkpoints: std::collections::BTreeMap<usize, crate::realmedia::MkvRealAudio>,
+}
+
+/// Superblocks between saved RealAudio decoder states.
+const REAL_CHECKPOINT_GROUPS: usize = 32;
+
+/// The RealAudio decoder of an `A_REAL/*` track (`None` for any other track).
+fn real_audio(t: &cfa4_matroska::Track) -> Option<std::result::Result<crate::realmedia::MkvRealAudio, String>> {
+    matches!(&t.codec, Codec::Other(id) if id.starts_with("A_REAL/")).then(|| crate::realmedia::MkvRealAudio::new(&t.codec_private))
 }
 
 /// One playable audio track with its own decoder state and timing tables.
@@ -88,6 +105,22 @@ fn audio_starts(file: &MkvFile, bytes: &crate::Src, ti: usize, rate: i64) -> Vec
         return opus_starts(file, bytes, ti, &h, rate);
     }
     let at = stamp_to_samples(t, rate, codec_delay_samples(t, rate));
+    if let Some(Ok(r)) = real_audio(t) {
+        // a superblock of `group_len` blocks is decoded at once and starts where its first block
+        // does: every block of it carries that start (the last one holds the samples)
+        let base = t.samples.first().map_or(0, |s| at(s.pts));
+        let (h, mut acc) = (r.group_len(), 0i64);
+        return (0..t.samples.len())
+            .map(|i| {
+                if r.blocked() {
+                    return base + (i / h) as i64 * i64::try_from(r.group_samples(0)).unwrap_or(0);
+                }
+                let start = base + acc;
+                acc += i64::try_from(r.group_samples(usize::try_from(t.sample_size(i).unwrap_or(0)).unwrap_or(0))).unwrap_or(0);
+                start
+            })
+            .collect();
+    }
     let first = || file.read_sample(bytes, ti, 0).unwrap_or_default();
     let out_rate = u32::try_from(rate).unwrap_or(0);
     let frame = match &t.codec {
@@ -203,6 +236,11 @@ fn audio_info(t: &cfa4_matroska::Track) -> Option<AudioStreamInfo> {
         rate = crate::audio::OPUS_RATE;
         channels = h.channels as u32;
     }
+    let real = real_audio(t).and_then(Result::ok);
+    if let Some(r) = &real {
+        rate = r.sample_rate();
+        channels = r.channels() as u32;
+    }
     let amr = amr_track(t);
     if let Some(wide) = amr {
         rate = if wide { cfa4_amr::wb::SAMPLE_RATE } else { cfa4_amr::nb::SAMPLE_RATE };
@@ -217,6 +255,7 @@ fn audio_info(t: &cfa4_matroska::Track) -> Option<AudioStreamInfo> {
     let codec = match (amr, acm_codec(t)) {
         (Some(wide), _) => if wide { "AMR-WB" } else { "AMR-NB" }.to_string(),
         (_, Some(Ok(c))) => c.name().to_string(),
+        _ if real.is_some() => real.as_ref().map_or_else(String::new, |r| r.label().to_string()),
         _ => codec_label(&t.codec),
     };
     Some(AudioStreamInfo { sample_rate: rate, channels, codec, bits_per_sample: bits.map(|b| b as u32), speakers: Vec::new() })
@@ -633,8 +672,14 @@ impl MkvSource {
                     Codec::TrueHd => crate::audio::truehd_preroll(ainfo.sample_rate),
                     _ => 0,
                 };
-                let state =
-                    Mutex::new(AudioState { decoder: None, packets: HashMap::new(), order: Vec::new(), last_decoded: None, checkpoints: Default::default() });
+                let state = Mutex::new(AudioState {
+                    decoder: None,
+                    packets: HashMap::new(),
+                    order: Vec::new(),
+                    last_decoded: None,
+                    checkpoints: Default::default(),
+                    real: None,
+                });
                 Some(MkvAudio { track: i, state, starts, preroll })
             })
             .collect();
@@ -715,6 +760,44 @@ impl MkvSource {
         }
     }
 
+    /// RealAudio block `i`: nothing until the last block of its superblock, which brings the whole
+    /// superblock's samples (the blocks are sub-packets the deinterleaver puts back in order).
+    fn real_audio_packet(&self, ti: usize, track: &cfa4_matroska::Track, st: &mut AudioState, i: usize) -> crate::Result<Vec<Vec<f32>>> {
+        if st.real.is_none() {
+            let dec = crate::realmedia::MkvRealAudio::new(&track.codec_private).map_err(|e| CodecError::Unsupported(format!("RealAudio: {e}")))?;
+            st.real = Some(RealState { next: 0, checkpoints: std::collections::BTreeMap::from([(0, dec.clone())]), dec });
+        }
+        let Some(rs) = st.real.as_mut() else { return Ok(Vec::new()) };
+        let h = rs.dec.group_len();
+        if i % h != h - 1 {
+            return Ok(Vec::new());
+        }
+        let g = i / h;
+        // restore a checkpoint unless the decoder is already between it and `g`
+        if (rs.next > g || g - rs.next > REAL_CHECKPOINT_GROUPS)
+            && let Some((&j, d)) = rs.checkpoints.range(..=g).next_back()
+            && !(j <= rs.next && rs.next <= g)
+        {
+            rs.dec = d.clone();
+            rs.next = j;
+        }
+        let mut out = Vec::new();
+        while rs.next <= g {
+            let n = rs.next;
+            if n.is_multiple_of(REAL_CHECKPOINT_GROUPS) && !rs.checkpoints.contains_key(&n) {
+                rs.checkpoints.insert(n, rs.dec.clone());
+            }
+            // a block that cannot be read leaves a hole the deinterleaver zero-fills
+            let blocks: Vec<Vec<u8>> = (n * h..(n + 1) * h).map(|k| self.read(ti, k).unwrap_or_default()).collect();
+            let decoded = rs.dec.decode_group(&blocks);
+            rs.next = n + 1;
+            if n == g {
+                out = decoded;
+            }
+        }
+        Ok(out)
+    }
+
     /// Decoded packet `i` of audio stream `a` (`ainfo` is its `AudioStreamInfo`; `st` its decoder state).
     fn audio_packet(&self, a: &MkvAudio, ainfo: &AudioStreamInfo, st: &mut AudioState, i: usize) -> crate::Result<Arc<Vec<Vec<f32>>>> {
         if let Some(p) = st.packets.get(&i) {
@@ -736,6 +819,7 @@ impl MkvSource {
                 };
                 decode_pcm(&data, &cfg)
             }
+            Codec::Other(id) if id.starts_with("A_REAL/") => self.real_audio_packet(ti, track, st, i)?,
             _ => {
                 if st.decoder.is_none() {
                     st.decoder = Some(self.audio_decoder(track, ainfo)?);

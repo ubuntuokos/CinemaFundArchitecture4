@@ -4869,3 +4869,27 @@ export.summary	Low	laag
 	Subtitles	Ondertitels
 	Captions for the hearing impaired	Ondertitels voor doven en slechthorenden
 	Forced narrative	Geforceerde vertelling (forced narrative)
+# DCP Validation window (DCP-12)
+	AS-03	AS-03
+	Choose the DCP folder.	Kies de DCP-map.
+	DCP Validation	DCP-validatie
+	DCP folder	DCP-map
+	DCP folder (the one holding ASSETMAP)	DCP-map (de map met de ASSETMAP)
+	Evidence	Bewijs
+	How to fix	Hoe op te lossen
+	Interrupted	Onderbroken
+	Not applicable	Niet van toepassing
+	Report	Rapport
+	Report saved: {path}	Rapport opgeslagen: {path}
+	Required	Vereist
+	Rule	Regel
+	Rules	Regels
+	Save JSON…	JSON opslaan…
+	Save Markdown…	Markdown opslaan…
+	Save report	Rapport opslaan
+	Skipped	Overgeslagen
+	Standard: {standard}	Standaard: {standard}
+	Validate	Valideren
+	Validate DCP…	DCP valideren…
+	the engine sent no profiles	de engine stuurde geen profielen
+	{n} files checked	{n} bestanden gecontroleerd

@@ -4871,3 +4871,27 @@ export.summary	Low	niska
 	Subtitles	Titlovi
 	Captions for the hearing impaired	Titlovi za osobe oštećena sluha
 	Forced narrative	Prisilna naracija (forced narrative)
+# DCP Validation window (DCP-12)
+	AS-03	AS-03
+	Choose the DCP folder.	Odaberite mapu DCP-a.
+	DCP Validation	Provjera DCP-a
+	DCP folder	Mapa DCP-a
+	DCP folder (the one holding ASSETMAP)	Mapa DCP-a (ona koja sadrži ASSETMAP)
+	Evidence	Dokaz
+	How to fix	Kako popraviti
+	Interrupted	Prekinuto
+	Not applicable	Nije primjenjivo
+	Report	Izvješće
+	Report saved: {path}	Izvješće spremljeno: {path}
+	Required	Obavezno
+	Rule	Pravilo
+	Rules	Pravila
+	Save JSON…	Spremi JSON…
+	Save Markdown…	Spremi Markdown…
+	Save report	Spremi izvješće
+	Skipped	Preskočeno
+	Standard: {standard}	Norma: {standard}
+	Validate	Provjeri
+	Validate DCP…	Provjeri DCP…
+	the engine sent no profiles	motor nije poslao nijedan profil
+	{n} files checked	Provjereno datoteka: {n}
