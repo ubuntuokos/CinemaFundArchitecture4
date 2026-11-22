@@ -1,8 +1,8 @@
-# CFA4-EFFECTCRAFT-001 – effektszerkesztés és -láncok, 0.1
+# CFA4-FX-AUTHORING-001 – effektszerkesztés és -láncok, 0.1
 
 > **Állapot:** JÓVÁHAGYVA (István, 2026-11-21 22:45, Europe/Budapest). **Kódolási engedélyt nem ad:** minden fázis külön tulajdonosi engedélyt igényel (coordination.md §2.10). **Dátum:** 2026-11-21 · **Kérte:** István (ubuntuokos).
 > **Alap:** CFA4 `main` @ `97d7982f`; ez a dokumentum csak dokumentáció.
-> **Értelmezés (a jóváhagyással elfogadva; változtatása tervmódosítás):** az „EffectCraft” = az **effektek összeállításának és újrahasználatának rétege**: effektláncok, felhasználói előbeállítások (preset), paraméter-kifejezések és sablonok, a meglévő effektrendszerre építve. Nem külön szerkesztő és nem új motor. A névről a `main`-ben semmi nincs, a tartalom a tulajdonos szövegéből (DNEG-terv §1.2 A. pont: „effektek és effektláncok, procedurális effektek, keyframe és expression rendszer”) és a kódból következtetett.
+> **Értelmezés (a jóváhagyással elfogadva; változtatása tervmódosítás):** az „FX Authoring” = az **effektek összeállításának és újrahasználatának rétege**: effektláncok, felhasználói előbeállítások (preset), paraméter-kifejezések és sablonok, a meglévő effektrendszerre építve. Nem külön szerkesztő és nem új motor. A névről a `main`-ben semmi nincs, a tartalom a tulajdonos szövegéből (DNEG-terv §1.2 A. pont: „effektek és effektláncok, procedurális effektek, keyframe és expression rendszer”) és a kódból következtetett.
 
 ## 1. Cél
 
@@ -56,6 +56,6 @@ A felhasználó a meglévő effektekből **saját, paraméterezhető, menthető 
 
 ## 7. Nyitott döntések
 
-1. Az „EffectCraft” értelmezése (fenti feltételezés). Ha a tulajdonos egy csomópontos/grafikus effektszerkesztőt értett, az új, nagyobb terv (Resolve-Fusion-szintű kompozitor, VISION §4).
+1. Az „FX Authoring” értelmezése (fenti feltételezés). Ha a tulajdonos egy csomópontos/grafikus effektszerkesztőt értett, az új, nagyobb terv (Resolve-Fusion-szintű kompozitor, VISION §4).
 2. A kifejezésnyelv szintaxisa (javaslat: a Rust-oldali egyszerű aritmetikai nyelv; AX-kompatibilitás **nem** cél).
 3. A preset-formátum neve és kiterjesztése.
