@@ -1,5 +1,11 @@
 # CFA4-ARF-001 – Adaptive Representation Fabric, 0.1
 
+> **[MÓD-3] MÓDOSÍTÁS JÓVÁHAGYÁSRA VÁR** (egyeztetés: [`CFA4-DNEG-VFX-EGYEZTETES-001`](CFA4-DNEG-VFX-EGYEZTETES-001-0.1.md) K-3, K-7, K-9, D-3). Viszony a `CFA4-VFX-001`-hez, a jóváhagyás után:
+> - Az ARF-reprezentációk a `G-xx` mátrixban sorok (`DNEG-M4`); külön lista nincs.
+> - **Egy részecskemotor van:** a VFX-6 (`particles` bővítése). Az ARF *Points* (és az OpenVDB Points, pontfelhő) **bemenet** (forrás, emitter-eloszlás), nem szimuláció.
+> - A worker/job-szerződés a render-terv C0 szerződése (worker protokoll, job API); az ARF-3 ezt használja, nem új protokollt.
+> - Az ARF nem `VfxGraph`: a leíró csak hivatkozik a külső adatra (út + SHA-256), a kompozíciós szerkesztési adat a VFX-2 dolga.
+
 > **Állapot:** JÓVÁHAGYVA (István, 2026-11-21 22:45, Europe/Budapest). **Kódolási engedélyt nem ad:** minden fázis külön tulajdonosi engedélyt igényel (coordination.md §2.10). **Dátum:** 2026-11-21 · **Kérte:** István (ubuntuokos).
 > **Alap:** CFA4 `main` @ `97d7982f`; ez a dokumentum csak dokumentáció.
 > **Forrás a tartalomhoz:** a tulajdonos DNEG-megbízásának 4.2. pontja nevezi meg az ARF elemeit: *Mesh, Points, Volume, Curves, Instances, Impostors, LOD, point-cloud processing, streaming, spatial indexing*. A `main`-ben az ARF-ről semmi nem volt; a terv ezekből és a CFA4 meglévő szabályaiból (ACS, ADR-0004) épül. Ahol találgatnom kellene, **nyitott döntésként** jelölöm.
