@@ -22,6 +22,7 @@ pub mod color;
 pub mod commands;
 pub mod control_surfaces;
 pub mod credits;
+pub mod dcp_export;
 pub mod dcp_import;
 pub mod dcp_validation;
 mod dcpomatic;

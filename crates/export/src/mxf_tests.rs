@@ -797,3 +797,37 @@ fn as02_bundle_has_version_manifest_and_mono_components() {
     assert!(bad(ExportSettings { mxf_anc_captions: true, ..base.clone() }).contains("AS-02"));
     assert!(bad(ExportSettings { mxf_video_codec: MxfVideoCodec::XdcamHd422, ..base.clone() }).contains("mono"));
 }
+
+/// AS-12 (MXF Commercials Delivery): the Ad-ID identification is written beside an AS-03
+/// framework and read back; AS-12 alone or with a missing item is refused.
+#[test]
+fn xdcam_hd422_as12_adid_beside_as03() {
+    let (p, seq, m) = project();
+    let as03 = "IdentifierKind: Ad-ID\nIdentifier: ABCD1234000H\nShimName: STATION\nSignalStandard: 1280/720/25p/16:9\nIntendedAFD: 1000 FullHD\n";
+    let adid = "adid_prefix: ABCD\nadid_code: 1234000H\nad_title: Spot\nBrand: Joe\nProduct: Bread\nAdvertiser: Joe\nagency_office_location: Budapest\nLength: 30\nMedium: Television\nsd_flag: N\nParent: Joe Holding\n";
+    let xd = |path: &str, as03: &str, as12: &str| ExportSettings {
+        frame_size: Some((1280, 720)),
+        bitrate_kbps: 25_000,
+        max_bitrate_kbps: Some(25_000),
+        keyframe_distance: Some(12),
+        mpeg2_b_frames: Some(2),
+        mxf_as03: as03.into(),
+        mxf_as12: as12.into(),
+        ..settings(Format::MxfOp1a, MxfVideoCodec::XdcamHd422, path)
+    };
+    let err = |s: ExportSettings| match export(&p, seq, &s, &m, &Progress::default()) {
+        Err(ExportError::Unsupported(e)) => e,
+        other => panic!("expected a refusal, got {other:?}"),
+    };
+    assert!(err(xd(&tmp("as12_alone.mxf"), "", adid)).contains("beside"));
+    assert!(err(xd(&tmp("as12_missing.mxf"), as03, "adid_prefix: ABCD\n")).contains("is required"));
+    assert!(err(ExportSettings { format: Format::MxfOpAtom, ..xd(&tmp("as12_atom.mxf"), as03, adid) }).contains("OP1a"));
+    let path = tmp("as12_ok.mxf");
+    export(&p, seq, &xd(&path, as03, adid), &m, &Progress::default()).unwrap();
+    let bytes = std::fs::read(&path).unwrap();
+    let mx = cfa4_mxf::open(&bytes).unwrap();
+    assert!(mx.warnings.is_empty(), "{:?}", mx.warnings);
+    let a = mx.as11.unwrap().as12;
+    assert_eq!(a.len(), 12, "{a:?}");
+    assert!(a.contains(&("Brand".to_string(), "Joe".to_string())) && a.contains(&("ShimName".into(), cfa4_mxf::as11::ADID_SHIM_NAME.into())));
+}
