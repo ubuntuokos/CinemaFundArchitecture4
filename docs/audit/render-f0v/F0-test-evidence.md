@@ -17,7 +17,7 @@ vizsgálta; a `full-validation-gate` a címke nélkül tervezetten piros.
 
 A terv szerint a Qt6 GUI készültsége kb. 53% (közlés, 2026-10-28), a paritáshibák listája nincs csatolva. A repó saját listája: [`docs/qt-parity.md`](../../qt-parity.md);
 a Qt GUI tesztjei (`test_qt_gui.py`) futnak, de nem kapuznak, amíg a GUI nincs kész (`docs/coordination.md` §3.4). A főszál-watchdog (AC-09) nem létezik
-(G-27). Az akadálylista pontosítása a `qt-parity.md` egyenkénti ellenőrzését igényli: **PENDING** (nem végeztem el ebben a körben).
+(G-27). A paritás-táblázat nem ✅ sorainak géppel kivonatolt listája: [`F0-qt6-blockers.md`](F0-qt6-blockers.md) (67 pontból 63 ✅, 4 🟡, 0 ❌; a nyitott pontok: 1.9 Wayland/X11 valódi szerveren, 1.10 csomagolás, 4.14 médiaminőség-ellenőrzés, 5.5 GPU-képút). Ez az egui-paritás mércéje, nem a plan 53%-os „készültség” becslése; a kettő nem ugyanaz, és nem vezethető le egymásból.
 
 ## R0 NVENC/NVDEC újrafuttatás
 

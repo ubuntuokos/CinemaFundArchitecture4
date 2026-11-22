@@ -582,6 +582,22 @@ mod tests {
     use crate::{Demuxer, TrackKind};
     use std::io::Cursor;
 
+    /// `S_TEXT/ASCII` reads as SubRip text, `S_TEXT/USF` keeps its XML header.
+    #[test]
+    fn legacy_text_subtitles_map() {
+        let mut a = TrackSpec::new(TrackKind::Subtitle, "S_TEXT/ASCII");
+        a.language = Some("eng".into());
+        let mut u = TrackSpec::new(TrackKind::Subtitle, "S_TEXT/USF");
+        u.codec_private = b"<USFSubtitles version=\"1.0\"/>".to_vec();
+        let mut m = MkvWriter::new(Cursor::new(Vec::new()), vec![a, u], MuxOptions::default()).unwrap();
+        m.write_frame(0, 0, true, b"plain", Some(1_000_000_000)).unwrap();
+        m.write_frame(1, 0, true, b"<subtitle/>", Some(1_000_000_000)).unwrap();
+        let bytes = m.finish().unwrap().into_inner();
+        let d = Demuxer::from_slice(&bytes).unwrap();
+        assert_eq!(d.tracks()[0].codec, crate::Codec::SubRip);
+        assert_eq!(d.tracks()[1].codec, crate::Codec::Usf { header: b"<USFSubtitles version=\"1.0\"/>".to_vec() });
+    }
+
     fn roundtrip(lacing: LacingMode) {
         let mut v = TrackSpec::new(TrackKind::Video, "V_MJPEG");
         v.video_size = Some((16, 16));
