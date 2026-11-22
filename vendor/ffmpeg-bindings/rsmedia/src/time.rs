@@ -37,7 +37,10 @@ impl Time {
     ///
     /// * `nth` - Denominator of the time in seconds as in `1 / nth`.
     pub fn from_nth_of_a_second(nth: usize) -> Self {
-        Self { time: Some(1), time_base: new_rational(1, nth as i32) }
+        Self {
+            time: Some(1),
+            time_base: new_rational(1, nth as i32),
+        }
     }
 
     /// Creates a new timestamp from a number of seconds.
@@ -46,7 +49,10 @@ impl Time {
     ///
     /// * `secs` - Number of seconds.
     pub fn from_secs(secs: f32) -> Self {
-        Self { time: Some((secs * TIME_BASE.den as f32).round() as i64), time_base: TIME_BASE }
+        Self {
+            time: Some((secs * TIME_BASE.den as f32).round() as i64),
+            time_base: TIME_BASE,
+        }
     }
 
     /// Creates a new timestamp from a number of seconds.
@@ -55,7 +61,10 @@ impl Time {
     ///
     /// * `secs` - Number of seconds.
     pub fn from_secs_f64(secs: f64) -> Self {
-        Self { time: Some((secs * TIME_BASE.den as f64).round() as i64), time_base: TIME_BASE }
+        Self {
+            time: Some((secs * TIME_BASE.den as f64).round() as i64),
+            time_base: TIME_BASE,
+        }
     }
 
     /// Creates a new timestamp with `time` time units, each represents one / `base_den` seconds.
@@ -65,7 +74,10 @@ impl Time {
     /// * `time` - Relative time in `time_base` units.
     /// * `base_den` - Time base denominator i.e. time base is `1 / base_den`.
     pub fn from_units(time: usize, base_den: usize) -> Self {
-        Self { time: Some(time as i64), time_base: new_rational(1, base_den as i32) }
+        Self {
+            time: Some(time as i64),
+            time_base: new_rational(1, base_den as i32),
+        }
     }
 
     /// Create a new zero-valued timestamp.
@@ -74,7 +86,10 @@ impl Time {
     /// `Time::from_secs(0.0)`）完全相等 —— 早先这里硬编码 `1/90000`，会出现
     /// "同为 0 秒却不相等" 的荒谬结果。
     pub fn zero() -> Self {
-        Time { time: Some(0), time_base: TIME_BASE }
+        Time {
+            time: Some(0),
+            time_base: TIME_BASE,
+        }
     }
 
     /// Whether the [`Time`] carries a usable value at all.
@@ -98,7 +113,13 @@ impl Time {
     ///
     /// Two timestamps that are aligned.
     pub fn aligned_with(&self, rhs: Time) -> Aligned {
-        Aligned { lhs: self.time, rhs: rhs.time.map(|rhs_time| rhs_time.rescale(rhs.time_base, self.time_base)), time_base: self.time_base }
+        Aligned {
+            lhs: self.time,
+            rhs: rhs
+                .time
+                .map(|rhs_time| rhs_time.rescale(rhs.time_base, self.time_base)),
+            time_base: self.time_base,
+        }
     }
 
     /// Get number of seconds as floating point value.
@@ -108,7 +129,11 @@ impl Time {
         if self.time_base.num == 0 || self.time_base.den == 0 {
             return 0.0;
         }
-        if let Some(time) = self.time { (time as f32) * (self.time_base.num as f32 / self.time_base.den as f32) } else { 0.0 }
+        if let Some(time) = self.time {
+            (time as f32) * (self.time_base.num as f32 / self.time_base.den as f32)
+        } else {
+            0.0
+        }
     }
 
     /// Get number of seconds as floating point value.
@@ -116,7 +141,11 @@ impl Time {
         if self.time_base.num == 0 || self.time_base.den == 0 {
             return 0.0;
         }
-        if let Some(time) = self.time { (time as f64) * (self.time_base.num as f64 / self.time_base.den as f64) } else { 0.0 }
+        if let Some(time) = self.time {
+            (time as f64) * (self.time_base.num as f64 / self.time_base.den as f64)
+        } else {
+            0.0
+        }
     }
 
     /// Convert to underlying time to `i64` (the number of time units).
@@ -133,7 +162,12 @@ impl Time {
     ///
     /// * `time_base` - Target time base.
     pub fn aligned_with_rational(&self, time_base: AVRational) -> Time {
-        Time { time: self.time.map(|time| time.rescale(self.time_base, time_base)), time_base }
+        Time {
+            time: self
+                .time
+                .map(|time| time.rescale(self.time_base, time_base)),
+            time_base,
+        }
     }
 }
 
@@ -168,7 +202,12 @@ impl<T: Into<i64> + Clone> Rescale for T {
         S: Into<AVRational>,
         D: Into<AVRational>,
     {
-        avutil::av_rescale_q_rnd(self.clone().into(), source.into(), destination.into(), rounding as _)
+        avutil::av_rescale_q_rnd(
+            self.clone().into(),
+            source.into(),
+            destination.into(),
+            rounding as _,
+        )
     }
 }
 
@@ -184,7 +223,9 @@ pub fn av_rational_eq(a: &AVRational, b: &AVRational) -> bool {
 
 impl PartialEq for Time {
     fn eq(&self, other: &Self) -> bool {
-        self.time == other.time && self.time_base.num == other.time_base.num && self.time_base.den == other.time_base.den
+        self.time == other.time
+            && self.time_base.num == other.time_base.num
+            && self.time_base.den == other.time_base.den
     }
 }
 
@@ -277,8 +318,14 @@ impl Aligned {
         F: FnOnce(i64, i64) -> i64,
     {
         match (self.lhs, self.rhs) {
-            (Some(lhs_time), Some(rhs_time)) => Time { time: Some(f(lhs_time, rhs_time)), time_base: self.time_base },
-            _ => Time { time: None, time_base: self.time_base },
+            (Some(lhs_time), Some(rhs_time)) => Time {
+                time: Some(f(lhs_time, rhs_time)),
+                time_base: self.time_base,
+            },
+            _ => Time {
+                time: None,
+                time_base: self.time_base,
+            },
         }
     }
 }
@@ -376,7 +423,11 @@ mod tests {
         let a = Time::new(None, new_rational(1, 2));
         let b = Time::new(None, new_rational(1, 4));
         assert_ne!(a, b);
-        assert_eq!(a.partial_cmp(&b), None, "different time bases must be unordered");
+        assert_eq!(
+            a.partial_cmp(&b),
+            None,
+            "different time bases must be unordered"
+        );
 
         let same = Time::new(None, new_rational(1, 2));
         assert_eq!(a, same);
@@ -449,19 +500,30 @@ mod tests {
     fn test_apply() {
         let a = Time::from_secs(2.0);
         let b = Time::from_secs(0.25);
-        assert_eq!(a.aligned_with(b).apply(|x, y| (2 * x) + (3 * y)), Time::from_secs(4.75));
+        assert_eq!(
+            a.aligned_with(b).apply(|x, y| (2 * x) + (3 * y)),
+            Time::from_secs(4.75)
+        );
     }
 
     #[test]
     fn test_apply_different_time_bases() {
         let a = Time::new(Some(3), new_rational(2, 32));
         let b = Time::from_nth_of_a_second(4);
-        assert!((a.aligned_with(b).apply(|x, y| x + y).as_secs() - Time::from_secs(7.0 / 16.0).as_secs()).abs() < 0.001);
+        assert!(
+            (a.aligned_with(b).apply(|x, y| x + y).as_secs()
+                - Time::from_secs(7.0 / 16.0).as_secs())
+            .abs()
+                < 0.001
+        );
     }
 
     #[test]
     fn test_negative_into_duration_clamps() {
-        assert_eq!(Duration::from(Time::new(Some(-100), new_rational(0, 0))), Duration::ZERO,)
+        assert_eq!(
+            Duration::from(Time::new(Some(-100), new_rational(0, 0))),
+            Duration::ZERO,
+        )
     }
 
     #[test]

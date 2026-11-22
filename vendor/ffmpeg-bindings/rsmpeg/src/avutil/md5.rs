@@ -11,7 +11,9 @@ impl Default for AVMD5 {
 impl AVMD5 {
     /// Allocate a new MD5 context.
     pub fn new() -> Self {
-        let ptr = unsafe { ffi::av_md5_alloc() }.upgrade().expect("av_md5_alloc returned null");
+        let ptr = unsafe { ffi::av_md5_alloc() }
+            .upgrade()
+            .expect("av_md5_alloc returned null");
         unsafe { Self::from_raw(ptr) }
     }
 

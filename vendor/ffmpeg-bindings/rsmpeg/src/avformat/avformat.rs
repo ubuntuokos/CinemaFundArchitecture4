@@ -5,7 +5,9 @@ use std::{
 };
 
 use crate::{
-    avcodec::{AVCodecParameters, AVCodecParametersMut, AVCodecParametersRef, AVCodecRef, AVPacket},
+    avcodec::{
+        AVCodecParameters, AVCodecParametersMut, AVCodecParametersRef, AVCodecRef, AVPacket,
+    },
     avformat::{AVIOContext, AVIOContextCustom, AVIOContextURL},
     avutil::{AVDictionary, AVDictionaryMut, AVDictionaryRef, AVRational, with_copied_options},
     error::{Result, RsmpegError},
@@ -91,7 +93,9 @@ impl AVFormatContextInput {
         // which frees it, and only puts the leftovers back on the success
         // return. `with_copied_options()` gives libavformat a duplicate, so the
         // caller's dictionary always stays ours to release.
-        let ret = with_copied_options(options, |options_ptr| unsafe { ffi::avformat_open_input(&mut input_format_context, url_ptr, fmt_ptr, options_ptr) })?;
+        let ret = with_copied_options(options, |options_ptr| unsafe {
+            ffi::avformat_open_input(&mut input_format_context, url_ptr, fmt_ptr, options_ptr)
+        })?;
 
         ret.upgrade().map_err(RsmpegError::OpenInputError)?;
 
@@ -100,7 +104,9 @@ impl AVFormatContextInput {
         let mut context = unsafe { Self::from_raw(NonNull::new(input_format_context).unwrap()) };
         context.io_context = io_context;
 
-        unsafe { ffi::avformat_find_stream_info(context.as_mut_ptr(), ptr::null_mut()) }.upgrade().map_err(RsmpegError::FindStreamInfoError)?;
+        unsafe { ffi::avformat_find_stream_info(context.as_mut_ptr(), ptr::null_mut()) }
+            .upgrade()
+            .map_err(RsmpegError::FindStreamInfoError)?;
 
         Ok(context)
     }
@@ -153,13 +159,17 @@ impl AVFormatContextInput {
 
     /// Seek to the keyframe at timestamp, 'timestamp' in 'stream_index'.
     pub fn seek(&mut self, stream_index: i32, timestamp: i64, flags: i32) -> Result<()> {
-        unsafe { ffi::av_seek_frame(self.as_mut_ptr(), stream_index, timestamp, flags) }.upgrade()?;
+        unsafe { ffi::av_seek_frame(self.as_mut_ptr(), stream_index, timestamp, flags) }
+            .upgrade()?;
         Ok(())
     }
 
     /// Return the stream index and stream decoder if there is any "best" stream.
     /// "best" means the most likely what the user wants.
-    pub fn find_best_stream(&self, media_type: ffi::AVMediaType) -> Result<Option<(usize, AVCodecRef<'static>)>> {
+    pub fn find_best_stream(
+        &self,
+        media_type: ffi::AVMediaType,
+    ) -> Result<Option<(usize, AVCodecRef<'static>)>> {
         // After FFmpeg 4.4 this should be changed to *const AVCodec, here we
         // preserve the backward compatibility.
         let dec = ptr::null_mut();
@@ -169,8 +179,14 @@ impl AVFormatContextInput {
         //
         // According to ffmpeg's source code, here we legally assume that
         // `av_find_best_stream` doesn't change given `*mut AVFormatContext`.
-        match unsafe { ffi::av_find_best_stream(self.as_ptr() as *mut _, media_type, -1, -1, &mut dec, 0) }.upgrade() {
-            Ok(index) => Ok(Some((index as usize, unsafe { AVCodecRef::from_raw(NonNull::new(dec as *mut _).unwrap()) }))),
+        match unsafe {
+            ffi::av_find_best_stream(self.as_ptr() as *mut _, media_type, -1, -1, &mut dec, 0)
+        }
+        .upgrade()
+        {
+            Ok(index) => Ok(Some((index as usize, unsafe {
+                AVCodecRef::from_raw(NonNull::new(dec as *mut _).unwrap())
+            }))),
             Err(ffi::AVERROR_STREAM_NOT_FOUND) => Ok(None),
             Err(e) => Err(RsmpegError::AVError(e)),
         }
@@ -194,7 +210,9 @@ impl<'stream> AVFormatContextInput {
         // I trust that FFmpeg won't give me null pointers :-(
         #[cfg(debug_assertions)]
         {
-            let arr = unsafe { std::slice::from_raw_parts(self.streams as *const *const ffi::AVStream, len) };
+            let arr = unsafe {
+                std::slice::from_raw_parts(self.streams as *const *const ffi::AVStream, len)
+            };
             for ptr in arr {
                 assert!(!ptr.is_null());
             }
@@ -219,7 +237,9 @@ impl<'stream> AVFormatContextInput {
         // I trust that FFmpeg won't give me null pointers :-(
         #[cfg(debug_assertions)]
         {
-            let arr = unsafe { std::slice::from_raw_parts(self.streams as *const *const ffi::AVStream, len) };
+            let arr = unsafe {
+                std::slice::from_raw_parts(self.streams as *const *const ffi::AVStream, len)
+            };
             for ptr in arr {
                 assert!(!ptr.is_null());
             }
@@ -278,14 +298,29 @@ impl AVFormatContextOutput {
         io_context: Option<AVIOContextContainer>,
     ) -> Result<Self> {
         let mut output_format_context = ptr::null_mut();
-        let oformat = oformat.map(AVOutputFormat::as_ptr).unwrap_or_else(|| ptr::null_mut());
-        let format_name = format_name.map(CStr::as_ptr).unwrap_or_else(|| ptr::null_mut());
-        let filename_ptr = filename.map(CStr::as_ptr).unwrap_or_else(|| ptr::null_mut());
+        let oformat = oformat
+            .map(AVOutputFormat::as_ptr)
+            .unwrap_or_else(|| ptr::null_mut());
+        let format_name = format_name
+            .map(CStr::as_ptr)
+            .unwrap_or_else(|| ptr::null_mut());
+        let filename_ptr = filename
+            .map(CStr::as_ptr)
+            .unwrap_or_else(|| ptr::null_mut());
 
         // Alloc the context
-        unsafe { ffi::avformat_alloc_output_context2(&mut output_format_context, oformat, format_name, filename_ptr) }.upgrade()?;
+        unsafe {
+            ffi::avformat_alloc_output_context2(
+                &mut output_format_context,
+                oformat,
+                format_name,
+                filename_ptr,
+            )
+        }
+        .upgrade()?;
 
-        let mut output_format_context = unsafe { Self::from_raw(NonNull::new(output_format_context).unwrap()) };
+        let mut output_format_context =
+            unsafe { Self::from_raw(NonNull::new(output_format_context).unwrap()) };
 
         // Documentation of [`ffi::AVFormatContext::pb`] states:
         //
@@ -299,7 +334,11 @@ impl AVFormatContextOutput {
             let io_context = if let Some(io_context) = io_context {
                 Some(io_context)
             } else if let Some(filename) = filename {
-                Some(AVIOContextContainer::Url(AVIOContextURL::open(filename, ffi::AVIO_FLAG_WRITE, options)?))
+                Some(AVIOContextContainer::Url(AVIOContextURL::open(
+                    filename,
+                    ffi::AVIO_FLAG_WRITE,
+                    options,
+                )?))
             } else {
                 None
             };
@@ -322,12 +361,17 @@ impl AVFormatContextOutput {
     ///     with a dict containing options that were not found. Set this to `None`
     ///     if it's not needed.
     pub fn write_header(&mut self, dict: &mut Option<AVDictionary>) -> Result<()> {
-        let mut dict_ptr = dict.take().map(|x| x.into_raw().as_ptr()).unwrap_or_else(ptr::null_mut);
+        let mut dict_ptr = dict
+            .take()
+            .map(|x| x.into_raw().as_ptr())
+            .unwrap_or_else(ptr::null_mut);
 
         let result = unsafe { ffi::avformat_write_header(self.as_mut_ptr(), &mut dict_ptr as _) };
 
         // Move back the ownership if not consumed.
-        *dict = dict_ptr.upgrade().map(|x| unsafe { AVDictionary::from_raw(x) });
+        *dict = dict_ptr
+            .upgrade()
+            .map(|x| unsafe { AVDictionary::from_raw(x) });
 
         result.upgrade()?;
 
@@ -371,7 +415,8 @@ impl AVFormatContextOutput {
     /// increasing dts. Callers doing their own interleaving should call
     /// [`Self::write_frame()`] instead of this function.
     pub fn interleaved_write_frame(&mut self, packet: &mut AVPacket) -> Result<()> {
-        unsafe { ffi::av_interleaved_write_frame(self.as_mut_ptr(), packet.as_mut_ptr()) }.upgrade()?;
+        unsafe { ffi::av_interleaved_write_frame(self.as_mut_ptr(), packet.as_mut_ptr()) }
+            .upgrade()?;
         Ok(())
     }
 }
@@ -393,7 +438,9 @@ impl<'stream> AVFormatContextOutput {
         // I trust that FFmpeg won't give me null pointers :-(
         #[cfg(debug_assertions)]
         {
-            let arr = unsafe { std::slice::from_raw_parts(self.streams as *const *const ffi::AVStream, len) };
+            let arr = unsafe {
+                std::slice::from_raw_parts(self.streams as *const *const ffi::AVStream, len)
+            };
             for ptr in arr {
                 assert!(!ptr.is_null());
             }
@@ -422,7 +469,9 @@ impl<'stream> AVFormatContextOutput {
     pub fn new_stream(&'stream mut self) -> AVStreamMut<'stream> {
         // According to the FFmpeg documention and inner implementation, the
         // second parameter of avformat_new_stream is unused. So ignore it.
-        let new_stream = unsafe { ffi::avformat_new_stream(self.as_mut_ptr(), ptr::null()) }.upgrade().unwrap();
+        let new_stream = unsafe { ffi::avformat_new_stream(self.as_mut_ptr(), ptr::null()) }
+            .upgrade()
+            .unwrap();
 
         unsafe { AVStreamMut::from_raw(new_stream) }
     }
@@ -449,12 +498,16 @@ wrap_ref!(AVInputFormat: ffi::AVInputFormat);
 impl AVInputFormat {
     /// Find [`AVInputFormat`] based on the short name of the input format.
     pub fn find(short_name: &CStr) -> Option<AVInputFormatRef<'static>> {
-        unsafe { ffi::av_find_input_format(short_name.as_ptr()) }.upgrade().map(|x| unsafe { AVInputFormatRef::from_raw(x) })
+        unsafe { ffi::av_find_input_format(short_name.as_ptr()) }
+            .upgrade()
+            .map(|x| unsafe { AVInputFormatRef::from_raw(x) })
     }
 
     /// Iterate over all registered demuxers.
     pub fn iterate() -> AVInputFormatIter {
-        AVInputFormatIter { opaque: ptr::null_mut() }
+        AVInputFormatIter {
+            opaque: ptr::null_mut(),
+        }
     }
 
     /// A comma separated list of short names for the format. New names
@@ -479,7 +532,9 @@ impl Iterator for AVInputFormatIter {
     type Item = AVInputFormatRef<'static>;
 
     fn next(&mut self) -> Option<Self::Item> {
-        unsafe { ffi::av_demuxer_iterate(&mut self.opaque) }.upgrade().map(|x| unsafe { AVInputFormatRef::from_raw(x) })
+        unsafe { ffi::av_demuxer_iterate(&mut self.opaque) }
+            .upgrade()
+            .map(|x| unsafe { AVInputFormatRef::from_raw(x) })
     }
 }
 
@@ -489,17 +544,25 @@ impl AVOutputFormat {
     /// Return the output format in the list of registered output formats which
     /// best matches the provided parameters, or return NULL if there is no
     /// match.
-    pub fn guess_format(short_name: Option<&CStr>, filename: Option<&CStr>, mime_type: Option<&CStr>) -> Option<AVOutputFormatRef<'static>> {
+    pub fn guess_format(
+        short_name: Option<&CStr>,
+        filename: Option<&CStr>,
+        mime_type: Option<&CStr>,
+    ) -> Option<AVOutputFormatRef<'static>> {
         let short_name = short_name.map(|x| x.as_ptr()).unwrap_or_else(ptr::null);
         let filename = filename.map(|x| x.as_ptr()).unwrap_or_else(ptr::null);
         let mime_type = mime_type.map(|x| x.as_ptr()).unwrap_or_else(ptr::null);
 
-        unsafe { ffi::av_guess_format(short_name, filename, mime_type) }.upgrade().map(|x| unsafe { AVOutputFormatRef::from_raw(x) })
+        unsafe { ffi::av_guess_format(short_name, filename, mime_type) }
+            .upgrade()
+            .map(|x| unsafe { AVOutputFormatRef::from_raw(x) })
     }
 
     /// Iterate over all registered muxers.
     pub fn iterate() -> AVOutputFormatIter {
-        AVOutputFormatIter { opaque: ptr::null_mut() }
+        AVOutputFormatIter {
+            opaque: ptr::null_mut(),
+        }
     }
 
     /// A comma separated list of short names for the format. New names
@@ -524,7 +587,9 @@ impl Iterator for AVOutputFormatIter {
     type Item = AVOutputFormatRef<'static>;
 
     fn next(&mut self) -> Option<Self::Item> {
-        unsafe { ffi::av_muxer_iterate(&mut self.opaque) }.upgrade().map(|x| unsafe { AVOutputFormatRef::from_raw(x) })
+        unsafe { ffi::av_muxer_iterate(&mut self.opaque) }
+            .upgrade()
+            .map(|x| unsafe { AVOutputFormatRef::from_raw(x) })
     }
 }
 
@@ -596,7 +661,9 @@ impl<'stream> AVStream {
 
         // Move in the new dict.
         unsafe {
-            self.deref_mut().metadata = dict.map(|x| x.into_raw().as_ptr()).unwrap_or(ptr::null_mut());
+            self.deref_mut().metadata = dict
+                .map(|x| x.into_raw().as_ptr())
+                .unwrap_or(ptr::null_mut());
         }
     }
 }
@@ -613,7 +680,10 @@ mod test {
 
         let name = c"asf";
         let filter_ref = AVInputFormat::find(name).unwrap();
-        assert_eq!(filter_ref.long_name(), c"ASF (Advanced / Active Streaming Format)");
+        assert_eq!(
+            filter_ref.long_name(),
+            c"ASF (Advanced / Active Streaming Format)"
+        );
 
         let name = c"__random__";
         assert!(AVInputFormat::find(name).is_none());
@@ -621,7 +691,9 @@ mod test {
 
     #[test]
     fn test_iterate_input_formats() {
-        let inputs = AVInputFormat::iterate().map(|x| x.name().to_string_lossy().into_owned()).collect::<Vec<_>>();
+        let inputs = AVInputFormat::iterate()
+            .map(|x| x.name().to_string_lossy().into_owned())
+            .collect::<Vec<_>>();
         dbg!(&inputs);
         assert!(!inputs.is_empty());
         assert!(inputs.contains(&"mpeg".to_string()));
@@ -630,7 +702,9 @@ mod test {
 
     #[test]
     fn test_iterate_output_formats() {
-        let outputs = AVOutputFormat::iterate().map(|x| x.name().to_string_lossy().into_owned()).collect::<Vec<_>>();
+        let outputs = AVOutputFormat::iterate()
+            .map(|x| x.name().to_string_lossy().into_owned())
+            .collect::<Vec<_>>();
         dbg!(&outputs);
         assert!(!outputs.is_empty());
         assert!(outputs.contains(&"mpeg".to_string()));
@@ -642,11 +716,26 @@ mod test {
     /// rather than leaked or freed twice.
     #[test]
     fn test_open_reports_unused_options() {
-        let mut options = Some(AVDictionary::new(c"rsmpeg_not_an_option", c"1", 0).set(c"probesize", c"5000000", 0));
+        let mut options = Some(AVDictionary::new(c"rsmpeg_not_an_option", c"1", 0).set(
+            c"probesize",
+            c"5000000",
+            0,
+        ));
 
-        let _context = AVFormatContextInput::builder().url(c"tests/assets/vids/centaur.mpg").options(&mut options).open().unwrap();
+        let _context = AVFormatContextInput::builder()
+            .url(c"tests/assets/vids/centaur.mpg")
+            .options(&mut options)
+            .open()
+            .unwrap();
 
-        let unused = options.as_ref().map(|dict| dict.iter().map(|entry| entry.key().to_string_lossy().into_owned()).collect::<Vec<_>>()).unwrap_or_default();
+        let unused = options
+            .as_ref()
+            .map(|dict| {
+                dict.iter()
+                    .map(|entry| entry.key().to_string_lossy().into_owned())
+                    .collect::<Vec<_>>()
+            })
+            .unwrap_or_default();
         assert_eq!(unused, ["rsmpeg_not_an_option"]);
     }
 
@@ -657,7 +746,10 @@ mod test {
     fn test_open_failure_leaves_options_usable() {
         let mut options = Some(AVDictionary::new(c"rsmpeg_not_an_option", c"1", 0));
 
-        let result = AVFormatContextInput::builder().url(c"/definitely/not/a/real/path/rsmpeg_open_failure_test").options(&mut options).open();
+        let result = AVFormatContextInput::builder()
+            .url(c"/definitely/not/a/real/path/rsmpeg_open_failure_test")
+            .options(&mut options)
+            .open();
         assert!(result.is_err(), "opening a missing path must fail");
 
         // Reading the dictionary and then dropping it is the guard itself.

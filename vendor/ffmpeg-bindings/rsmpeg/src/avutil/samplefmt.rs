@@ -22,7 +22,11 @@ pub use ffi::AVSampleFormat;
 /// # }
 /// ```
 pub fn get_sample_fmt_name(sample_fmt: AVSampleFormat) -> Option<&'static CStr> {
-    unsafe { ffi::av_get_sample_fmt_name(sample_fmt).upgrade().map(|x| CStr::from_ptr(x.as_ptr())) }
+    unsafe {
+        ffi::av_get_sample_fmt_name(sample_fmt)
+            .upgrade()
+            .map(|x| CStr::from_ptr(x.as_ptr()))
+    }
 }
 
 /// Return a sample format corresponding to name, or None on error.
@@ -92,7 +96,9 @@ pub fn get_planar_sample_fmt(sample_fmt: AVSampleFormat) -> Option<AVSampleForma
 
 /// Return number of bytes per sample, return `None` when sample format is unknown.
 pub fn get_bytes_per_sample(sample_fmt: AVSampleFormat) -> Option<usize> {
-    NonZeroI32::new(unsafe { ffi::av_get_bytes_per_sample(sample_fmt) }).map(NonZeroI32::get).and_then(|x| x.try_into().ok())
+    NonZeroI32::new(unsafe { ffi::av_get_bytes_per_sample(sample_fmt) })
+        .map(NonZeroI32::get)
+        .and_then(|x| x.try_into().ok())
 }
 
 /// Check if the sample format is planar.
@@ -135,12 +141,25 @@ impl AVSamples {
     /// sample_fmt          Audio sample formats
     /// align               buffer size alignment (0 = default, 1 = no alignment)
     /// ```
-    pub fn get_buffer_size(nb_channels: i32, nb_samples: i32, sample_fmt: i32, align: i32) -> Option<(i32, i32)> {
+    pub fn get_buffer_size(
+        nb_channels: i32,
+        nb_samples: i32,
+        sample_fmt: i32,
+        align: i32,
+    ) -> Option<(i32, i32)> {
         let mut linesize = 0;
-        unsafe { ffi::av_samples_get_buffer_size(&mut linesize, nb_channels, nb_samples, sample_fmt, align) }
-            .upgrade()
-            .ok()
-            .map(|buffer_size| (linesize, buffer_size))
+        unsafe {
+            ffi::av_samples_get_buffer_size(
+                &mut linesize,
+                nb_channels,
+                nb_samples,
+                sample_fmt,
+                align,
+            )
+        }
+        .upgrade()
+        .ok()
+        .map(|buffer_size| (linesize, buffer_size))
     }
 
     /// Allocate a data pointers array, samples buffer for nb_samples samples,
@@ -154,19 +173,39 @@ impl AVSamples {
     /// ```
     ///
     /// Return `None` on invalid parameters, panic on no memory.
-    pub fn new(nb_channels: i32, nb_samples: i32, sample_fmt: AVSampleFormat, align: i32) -> Option<Self> {
+    pub fn new(
+        nb_channels: i32,
+        nb_samples: i32,
+        sample_fmt: AVSampleFormat,
+        align: i32,
+    ) -> Option<Self> {
         // Implementation inspired by `av_samples_alloc_array_and_samples` and `av_samples_alloc`.
-        let (_, buffer_size) = AVSamples::get_buffer_size(nb_channels, nb_samples, sample_fmt, align)?;
+        let (_, buffer_size) =
+            AVSamples::get_buffer_size(nb_channels, nb_samples, sample_fmt, align)?;
         let buffer = vec![0u8; buffer_size as usize].into_boxed_slice();
 
-        let nb_planes = if sample_fmt_is_planar(sample_fmt) { nb_channels } else { 1 };
+        let nb_planes = if sample_fmt_is_planar(sample_fmt) {
+            nb_channels
+        } else {
+            1
+        };
         let mut audio_data = vec![ptr::null_mut(); nb_planes as usize].into_boxed_slice();
         let mut linesize = 0;
         // From the documentation, this function only error on no memory, so
         // unwrap.
-        unsafe { ffi::av_samples_fill_arrays(audio_data.as_mut_ptr(), &mut linesize, buffer.as_ptr(), nb_channels, nb_samples, sample_fmt, align) }
-            .upgrade()
-            .unwrap();
+        unsafe {
+            ffi::av_samples_fill_arrays(
+                audio_data.as_mut_ptr(),
+                &mut linesize,
+                buffer.as_ptr(),
+                nb_channels,
+                nb_samples,
+                sample_fmt,
+                align,
+            )
+        }
+        .upgrade()
+        .unwrap();
 
         // Leaks a Vec.
         let buffer = Box::leak(Box::new(buffer));
@@ -185,7 +224,15 @@ impl AVSamples {
     /// `offset` offset in samples at which to start filling.
     /// `nb_samples` number of samples to fill.
     pub fn set_silence(&mut self, offset: i32, nb_samples: i32) {
-        let x = unsafe { ffi::av_samples_set_silence(self.audio_data.as_mut_ptr(), offset, nb_samples, self.nb_channels, self.sample_fmt) };
+        let x = unsafe {
+            ffi::av_samples_set_silence(
+                self.audio_data.as_mut_ptr(),
+                offset,
+                nb_samples,
+                self.nb_channels,
+                self.sample_fmt,
+            )
+        };
         // From the ffmpeg implementation, `av_samples_set_silence` function
         // returns nothing but 0, so we can confidently throw the function
         // output. If this assert is triggered, please file an issue.

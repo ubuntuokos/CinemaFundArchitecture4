@@ -76,7 +76,8 @@ impl AVBufferPool {
         // Safety: plain FFI call; NULL is triaged below. The allocation
         // callback is a bare function with no state, so no cleanup contract
         // beyond `av_buffer_pool_uninit` (see [`Drop`]) is created.
-        let pool = unsafe { ffi::av_buffer_pool_init(buffer_size, Some(alloc_zeroed)) }.upgrade_or(ffi::AVERROR(ffi::ENOMEM))?;
+        let pool = unsafe { ffi::av_buffer_pool_init(buffer_size, Some(alloc_zeroed)) }
+            .upgrade_or(ffi::AVERROR(ffi::ENOMEM))?;
         // Safety: `pool` comes from a successful FFmpeg allocation.
         let mut pool = unsafe { Self::from_raw(pool) };
         pool.buffer_size = buffer_size;
@@ -92,7 +93,8 @@ impl AVBufferPool {
     /// the pool has already been dropped, see [`AVBufferPool::drop`]).
     pub fn get(&mut self) -> Result<AVBufferRef> {
         // Safety: `self` owns a valid pool for as long as it is not dropped.
-        let raw = unsafe { ffi::av_buffer_pool_get(self.as_mut_ptr()) }.upgrade_or(ffi::AVERROR(ffi::ENOMEM))?;
+        let raw = unsafe { ffi::av_buffer_pool_get(self.as_mut_ptr()) }
+            .upgrade_or(ffi::AVERROR(ffi::ENOMEM))?;
         // Safety: `raw` comes from a successful FFmpeg call.
         Ok(unsafe { AVBufferRef::from_raw(raw) })
     }

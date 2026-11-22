@@ -186,13 +186,21 @@ impl Color {
 
 impl LowerHex for Color {
     fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
-        write!(f, "{:02x}{:02x}{:02x}{:02x}", self.r, self.g, self.b, self.a)
+        write!(
+            f,
+            "{:02x}{:02x}{:02x}{:02x}",
+            self.r, self.g, self.b, self.a
+        )
     }
 }
 
 impl UpperHex for Color {
     fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
-        write!(f, "{:02X}{:02X}{:02X}{:02X}", self.r, self.g, self.b, self.a)
+        write!(
+            f,
+            "{:02X}{:02X}{:02X}{:02X}",
+            self.r, self.g, self.b, self.a
+        )
     }
 }
 
@@ -265,7 +273,11 @@ impl From<colorous::Color> for Color {
 /// channel is dropped, since colorous colors carry no alpha.
 impl From<Color> for colorous::Color {
     fn from(c: Color) -> Self {
-        Self { r: c.r, g: c.g, b: c.b }
+        Self {
+            r: c.r,
+            g: c.g,
+            b: c.b,
+        }
     }
 }
 
@@ -282,7 +294,9 @@ impl TryFrom<&str> for Color {
             _ => return Err("Failed to convert `Color` from str: invalid length"),
         };
 
-        u32::from_str_radix(&hex, 16).map(Self::from).map_err(|_| "Failed to convert `Color` from str: invalid hex")
+        u32::from_str_radix(&hex, 16)
+            .map(Self::from)
+            .map_err(|_| "Failed to convert `Color` from str: invalid hex")
     }
 }
 
@@ -370,8 +384,18 @@ pub fn color_delta_e(c1: &Color, c2: Color) -> f32 {
     use palette::color_difference::Ciede2000;
     use palette::{IntoColor, Lab, Srgb};
 
-    let lab1: Lab = Srgb::new(c1.r() as f32 / 255.0, c1.g() as f32 / 255.0, c1.b() as f32 / 255.0).into_color();
-    let lab2: Lab = Srgb::new(c2.r() as f32 / 255.0, c2.g() as f32 / 255.0, c2.b() as f32 / 255.0).into_color();
+    let lab1: Lab = Srgb::new(
+        c1.r() as f32 / 255.0,
+        c1.g() as f32 / 255.0,
+        c1.b() as f32 / 255.0,
+    )
+    .into_color();
+    let lab2: Lab = Srgb::new(
+        c2.r() as f32 / 255.0,
+        c2.g() as f32 / 255.0,
+        c2.b() as f32 / 255.0,
+    )
+    .into_color();
     lab1.difference(lab2)
 }
 
@@ -399,9 +423,18 @@ mod tests {
 
     #[test]
     fn test_hex_to_color() {
-        assert_eq!(Color::try_from("#FF0000").unwrap(), Color::from_rgb(255, 0, 0));
-        assert_eq!(Color::try_from("00FF00").unwrap(), Color::from_rgb(0, 255, 0));
-        assert_eq!(Color::try_from("#0000FF").unwrap(), Color::from_rgb(0, 0, 255));
+        assert_eq!(
+            Color::try_from("#FF0000").unwrap(),
+            Color::from_rgb(255, 0, 0)
+        );
+        assert_eq!(
+            Color::try_from("00FF00").unwrap(),
+            Color::from_rgb(0, 255, 0)
+        );
+        assert_eq!(
+            Color::try_from("#0000FF").unwrap(),
+            Color::from_rgb(0, 0, 255)
+        );
     }
 
     #[test]
@@ -438,14 +471,25 @@ mod tests {
 
         for &(r, g, b, eh, es, ev) in cases {
             let [h, s, v] = rgb_to_hsv(r, g, b);
-            assert!((h - eh).abs() < 2.0, "Hue mismatch for RGB({r},{g},{b}): {h} vs {eh}");
-            assert!((s - es).abs() <= 2.0, "S mismatch for RGB({r},{g},{b}): {s} vs {es}");
-            assert!((v - ev).abs() <= 2.0, "V mismatch for RGB({r},{g},{b}): {v} vs {ev}");
+            assert!(
+                (h - eh).abs() < 2.0,
+                "Hue mismatch for RGB({r},{g},{b}): {h} vs {eh}"
+            );
+            assert!(
+                (s - es).abs() <= 2.0,
+                "S mismatch for RGB({r},{g},{b}): {s} vs {es}"
+            );
+            assert!(
+                (v - ev).abs() <= 2.0,
+                "V mismatch for RGB({r},{g},{b}): {v} vs {ev}"
+            );
 
             // 往返转换允许 ±2 的取整误差
             let [r2, g2, b2] = hsv_to_rgb(h, s, v);
             assert!(
-                (r as i32 - r2 as i32).abs() <= 2 && (g as i32 - g2 as i32).abs() <= 2 && (b as i32 - b2 as i32).abs() <= 2,
+                (r as i32 - r2 as i32).abs() <= 2
+                    && (g as i32 - g2 as i32).abs() <= 2
+                    && (b as i32 - b2 as i32).abs() <= 2,
                 "roundtrip mismatch for RGB({r},{g},{b}): [{r2},{g2},{b2}]"
             );
         }
@@ -486,9 +530,30 @@ mod tests {
         for (r, g, b) in test_cases.iter() {
             let hsv_f32 = rgb_to_hsv(*r, *g, *b);
             // HSV 输出必须落在合法范围内
-            assert!((0.0..360.0).contains(&hsv_f32[0]), "Hue out of range for RGB({}, {}, {}): {}", r, g, b, hsv_f32[0]);
-            assert!((0.0..=100.0).contains(&hsv_f32[1]), "Saturation out of range for RGB({}, {}, {}): {}", r, g, b, hsv_f32[1]);
-            assert!((0.0..=100.0).contains(&hsv_f32[2]), "Value out of range for RGB({}, {}, {}): {}", r, g, b, hsv_f32[2]);
+            assert!(
+                (0.0..360.0).contains(&hsv_f32[0]),
+                "Hue out of range for RGB({}, {}, {}): {}",
+                r,
+                g,
+                b,
+                hsv_f32[0]
+            );
+            assert!(
+                (0.0..=100.0).contains(&hsv_f32[1]),
+                "Saturation out of range for RGB({}, {}, {}): {}",
+                r,
+                g,
+                b,
+                hsv_f32[1]
+            );
+            assert!(
+                (0.0..=100.0).contains(&hsv_f32[2]),
+                "Value out of range for RGB({}, {}, {}): {}",
+                r,
+                g,
+                b,
+                hsv_f32[2]
+            );
         }
     }
 
@@ -534,7 +599,10 @@ mod tests {
         // Example 6: Linear SRGB to standard SRGB
         let linear_srgb: LinSrgb<f32> = LinSrgb::new(0.5, 0.5, 0.5);
         let standard_srgb: Srgb<f32> = linear_srgb.into_color();
-        println!("Linear SRGB: {:?} -> SRGB: {:?}", linear_srgb, standard_srgb);
+        println!(
+            "Linear SRGB: {:?} -> SRGB: {:?}",
+            linear_srgb, standard_srgb
+        );
 
         println!("\n--- Component Type Conversions ---");
 
@@ -550,7 +618,10 @@ mod tests {
 
         // Example 9: SRGB u8 to Oklab f32
         let oklab_f32_from_u8: Oklab<f32> = rgb_u8.into_color();
-        println!("SRGB u8: {:?} -> Oklab f32: {:?}", rgb_u8, oklab_f32_from_u8);
+        println!(
+            "SRGB u8: {:?} -> Oklab f32: {:?}",
+            rgb_u8, oklab_f32_from_u8
+        );
 
         println!("\n--- Using Specific Encodings/White Points (Advanced) ---");
         // For Lab/Lch/Xyz, you might need to specify the white point if not using the default (D65)
@@ -570,13 +641,22 @@ mod tests {
         // Convert Lab D50 back to SRGB f32 (implicitly D65)
         // 1. Lab(D50) -> Xyz(D50)
         let xyz_d50_from_lab: Xyz<D50, f32> = lab_d50.into_color_unclamped();
-        println!("Lab (D50): {:?} -> Xyz (D50): {:?}", lab_d50, xyz_d50_from_lab);
+        println!(
+            "Lab (D50): {:?} -> Xyz (D50): {:?}",
+            lab_d50, xyz_d50_from_lab
+        );
         // 2. Xyz(D50) -> Xyz(D65) (Adapt back)
         let xyz_d65_from_d50: Xyz<D65, f32> = xyz_d50_from_lab.adapt_into_unclamped();
-        println!("Xyz (D50): {:?} -> Xyz (D65): {:?}", xyz_d50_from_lab, xyz_d65_from_d50);
+        println!(
+            "Xyz (D50): {:?} -> Xyz (D65): {:?}",
+            xyz_d50_from_lab, xyz_d65_from_d50
+        );
         // 3. Xyz(D65) -> Srgb(D65)
         let srgb_from_lab_d50: Srgb<f32> = xyz_d65_from_d50.into_color_unclamped();
-        println!("Xyz (D65): {:?} -> SRGB (D65): {:?}", xyz_d65_from_d50, srgb_from_lab_d50);
+        println!(
+            "Xyz (D65): {:?} -> SRGB (D65): {:?}",
+            xyz_d65_from_d50, srgb_from_lab_d50
+        );
     }
 
     #[test]
