@@ -7,6 +7,7 @@ Build (optional, never part of `cargo` or CI; the user installs the packages, no
 
     sudo apt install cmake g++ libopenvdb-dev libtbb-dev libboost-iostreams-dev libboost-system-dev
     cmake -S workers/vdb -B target/vdb-worker -DCMAKE_BUILD_TYPE=Release && cmake --build target/vdb-worker
+    cargo build -p cfa4-vdb --release   # builds the launcher too
     CFA4_VDB_WORKER=$PWD/target/vdb-worker/cfa4-vdb-worker cargo test -p cfa4-vdb --release
 
 Without the worker the real-worker tests return early and the engine works as before (`Error::Unavailable`).
@@ -21,6 +22,6 @@ Without the worker the real-worker tests return early and the engine works as be
 | N1-5 image sequence import | **open** |
 | N1-6 CPU only, GPUs hidden | **open** (the worker uses no GPU) |
 | N1-7 project save/restore | **open** |
-| N1-8 sandbox profile | **open** (worker not yet confined) |
+| N1-8 sandbox profile | done: `cfa4-vdb-launch` confines itself (Landlock + seccomp, strict) and `exec`s the worker: reads only the granted file, writes only the granted output, no network, no other program; tested with a probe worker and the real worker (skips on a kernel without Landlock). The engine uses it when the launcher is found next to the worker, in `CFA4_VDB_LAUNCHER` or in `/opt/cfa4/bin` |
 | N1-9 frame-time reference | **open** |
 | N1-10 Qt6 panel | **open** |

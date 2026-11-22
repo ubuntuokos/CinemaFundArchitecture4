@@ -150,6 +150,7 @@ const L0_FOUNDATION: &[&str] = &["time", "geom", "color", "bitstream", "testkit"
 /// Allowed same-layer edges (from, to).
 const SAME_LAYER: &[(&str, &str)] = &[
     ("dcp-inspect", "dcp-validate"),
+    ("vdb", "sandbox"),
     ("media", "frame"),
     ("project", "media"),
     ("project", "frame"),

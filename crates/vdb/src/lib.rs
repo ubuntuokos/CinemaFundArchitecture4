@@ -14,6 +14,10 @@ use serde::{Deserialize, Serialize};
 
 /// Environment variable naming the worker executable.
 pub const WORKER_ENV: &str = "CFA4_VDB_WORKER";
+/// Environment variable naming the confining launcher (`cfa4-vdb-launch`).
+pub const LAUNCHER_ENV: &str = "CFA4_VDB_LAUNCHER";
+/// Where an installed CFA4 keeps the launcher.
+pub const INSTALLED_LAUNCHER: &str = "/opt/cfa4/bin/cfa4-vdb-launch";
 /// Where an installed CFA4 keeps the worker.
 pub const INSTALLED_WORKER: &str = "/opt/cfa4/bin/cfa4-vdb-worker";
 /// The most the host reads from a worker's stdout.
@@ -99,26 +103,51 @@ struct Ack {
 pub struct Worker {
     exe: PathBuf,
     timeout: Duration,
+    launcher: Option<PathBuf>,
 }
 
 impl Worker {
     /// A worker at an explicit path.
     #[must_use]
     pub fn at(exe: impl Into<PathBuf>) -> Self {
-        Self { exe: exe.into(), timeout: DEFAULT_TIMEOUT }
+        Self { exe: exe.into(), timeout: DEFAULT_TIMEOUT, launcher: None }
     }
 
     /// Finds the worker: `CFA4_VDB_WORKER`, else the installed path. [`Error::Unavailable`] if neither exists.
+    /// The confining launcher (`CFA4_VDB_LAUNCHER`, the installed path, or `cfa4-vdb-launch` next to the worker)
+    /// is used when found: every command then runs under Landlock and seccomp (N1-8).
     ///
     /// # Errors
     /// [`Error::Unavailable`] when no worker executable is found.
     pub fn discover() -> Result<Self, Error> {
-        if let Some(p) = std::env::var_os(WORKER_ENV) {
-            let p = PathBuf::from(p);
-            return if p.is_file() { Ok(Self::at(p)) } else { Err(Error::Unavailable) };
+        let exe = match std::env::var_os(WORKER_ENV) {
+            Some(p) => PathBuf::from(p),
+            None => PathBuf::from(INSTALLED_WORKER),
+        };
+        if !exe.is_file() {
+            return Err(Error::Unavailable);
         }
-        let p = PathBuf::from(INSTALLED_WORKER);
-        if p.is_file() { Ok(Self::at(p)) } else { Err(Error::Unavailable) }
+        let beside = exe.parent().map(|d| d.join("cfa4-vdb-launch"));
+        let launcher = std::env::var_os(LAUNCHER_ENV)
+            .map(PathBuf::from)
+            .into_iter()
+            .chain(std::iter::once(PathBuf::from(INSTALLED_LAUNCHER)))
+            .chain(beside)
+            .find(|p| p.is_file());
+        Ok(Self { launcher, ..Self::at(exe) })
+    }
+
+    /// Runs every command through this confining launcher (`cfa4-vdb-launch`).
+    #[must_use]
+    pub fn with_launcher(mut self, launcher: impl Into<PathBuf>) -> Self {
+        self.launcher = Some(launcher.into());
+        self
+    }
+
+    /// Whether commands run confined.
+    #[must_use]
+    pub fn is_confined(&self) -> bool {
+        self.launcher.is_some()
     }
 
     /// Sets the time limit of one command.
@@ -133,7 +162,7 @@ impl Worker {
     /// # Errors
     /// Any [`Error`]; a worker failure never panics the caller.
     pub fn inspect(&self, file: &Path) -> Result<Inspection, Error> {
-        let out = self.run(&["inspect".as_ref(), file.as_os_str()])?;
+        let out = self.run(&["inspect".as_ref(), file.as_os_str()], &[file], &[])?;
         serde_json::from_str(&out).map_err(|e| Error::BadAnswer(e.to_string()))
     }
 
@@ -142,7 +171,7 @@ impl Worker {
     /// # Errors
     /// Any [`Error`].
     pub fn copy(&self, input: &Path, output: &Path) -> Result<(), Error> {
-        let out = self.run(&["copy".as_ref(), input.as_os_str(), output.as_os_str()])?;
+        let out = self.run(&["copy".as_ref(), input.as_os_str(), output.as_os_str()], &[input], &[output])?;
         match serde_json::from_str::<Ack>(&out) {
             Ok(a) if a.ok => Ok(()),
             Ok(_) => Err(Error::BadAnswer("ok is false".into())),
@@ -155,24 +184,44 @@ impl Worker {
     /// # Errors
     /// Any [`Error`].
     pub fn write_selftest(&self, output: &Path) -> Result<(), Error> {
-        let out = self.run(&["selftest-write".as_ref(), output.as_os_str()])?;
+        let out = self.run(&["selftest-write".as_ref(), output.as_os_str()], &[], &[output])?;
         match serde_json::from_str::<Ack>(&out) {
             Ok(a) if a.ok => Ok(()),
             _ => Err(Error::BadAnswer(out)),
         }
     }
 
-    fn run(&self, args: &[&std::ffi::OsStr]) -> Result<String, Error> {
+    fn run(&self, args: &[&std::ffi::OsStr], reads: &[&Path], outs: &[&Path]) -> Result<String, Error> {
         if !self.exe.is_file() {
             return Err(Error::Unavailable);
         }
-        let mut child = Command::new(&self.exe)
-            .args(args)
-            .stdin(Stdio::null())
-            .stdout(Stdio::piped())
-            .stderr(Stdio::null())
-            .spawn()
-            .map_err(|e| Error::Spawn(e.to_string()))?;
+        let mut cmd = match &self.launcher {
+            Some(l) => {
+                let mut c = Command::new(l);
+                for r in reads {
+                    c.arg("--read").arg(r);
+                }
+                for o in outs {
+                    c.arg("--out").arg(o);
+                }
+                c.arg("--").arg(&self.exe);
+                c
+            }
+            None => Command::new(&self.exe),
+        };
+        cmd.args(args).stdin(Stdio::null()).stdout(Stdio::piped()).stderr(Stdio::null());
+        // `ETXTBSY` happens when another thread is still writing a freshly installed executable: retry briefly.
+        let mut tries = 0;
+        let mut child = loop {
+            match cmd.spawn() {
+                Ok(c) => break c,
+                Err(e) if e.kind() == std::io::ErrorKind::ExecutableFileBusy && tries < 20 => {
+                    tries += 1;
+                    std::thread::sleep(Duration::from_millis(25));
+                }
+                Err(e) => return Err(Error::Spawn(e.to_string())),
+            }
+        };
         let Some(stdout) = child.stdout.take() else {
             let _ = child.kill();
             return Err(Error::Spawn("no stdout pipe".into()));
@@ -209,7 +258,9 @@ impl Worker {
         if bytes.len() > MAX_OUTPUT {
             return Err(Error::OutputTooLarge);
         }
-        let text = String::from_utf8_lossy(&bytes).into_owned();
+        // The answer is the last line that starts with `{`; a library may print warnings before it.
+        let all = String::from_utf8_lossy(&bytes).into_owned();
+        let text = all.lines().rev().find(|l| l.starts_with('{')).map_or(all.clone(), str::to_owned);
         // A reported error is JSON `{"error": "..."}` (exit 2); anything else abnormal is a death.
         if let Some(msg) =
             serde_json::from_str::<serde_json::Value>(&text).ok().and_then(|v| v.get("error").and_then(serde_json::Value::as_str).map(str::to_owned))

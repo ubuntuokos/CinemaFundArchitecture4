@@ -5,6 +5,7 @@
 // Every failure is {"error":"..."} on stdout and exit code 2; the host treats a crash as an error too.
 #include <openvdb/openvdb.h>
 #include <openvdb/points/PointDataGrid.h>
+#include <openvdb/util/logging.h>
 #include <cstdio>
 #include <cstring>
 #include <exception>
@@ -31,6 +32,7 @@ static int fail(const std::string& m) {
 
 static std::string inspect(const std::string& path) {
     openvdb::io::File file(path);
+    file.setCopyMaxBytes(0);  // never copy the file for delayed loading: the confined worker has no temp directory
     file.open();
     openvdb::GridPtrVecPtr grids = file.getGrids();
     openvdb::MetaMap::Ptr fmeta = file.getMetadata();
@@ -66,12 +68,17 @@ static std::string inspect(const std::string& path) {
 int main(int argc, char** argv) {
     try {
         openvdb::initialize();
+        // OpenVDB's logger writes warnings to stdout, which is the JSON channel: silence it.
+#ifdef OPENVDB_USE_LOG4CPLUS
+        openvdb::logging::setLevel(openvdb::logging::Level::Fatal);
+#endif
         if (argc == 3 && !std::strcmp(argv[1], "inspect")) {
             std::cout << inspect(argv[2]) << "\n";
             return 0;
         }
         if (argc == 4 && !std::strcmp(argv[1], "copy")) {
             openvdb::io::File in(argv[2]);
+            in.setCopyMaxBytes(0);
             in.open();
             openvdb::GridPtrVecPtr grids = in.getGrids();
             openvdb::MetaMap::Ptr meta = in.getMetadata();
