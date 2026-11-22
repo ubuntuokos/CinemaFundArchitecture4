@@ -1044,6 +1044,14 @@ dependencies = [
 ]
 
 [[package]]
+name = "cfa4-acm"
+version = "0.10.0"
+dependencies = [
+ "cfa4-testkit",
+ "thiserror 2.0.21",
+]
+
+[[package]]
 name = "cfa4-adpcm"
 version = "0.10.0"
 dependencies = [
@@ -1264,6 +1272,7 @@ version = "0.10.0"
 dependencies = [
  "cfa4-aac",
  "cfa4-ac3",
+ "cfa4-acm",
  "cfa4-adpcm",
  "cfa4-adx",
  "cfa4-amr",
@@ -1303,6 +1312,7 @@ dependencies = [
  "cfa4-mpeg2v",
  "cfa4-mpegts",
  "cfa4-musepack",
+ "cfa4-mve",
  "cfa4-mxf",
  "cfa4-ogg",
  "cfa4-opus",
@@ -1310,6 +1320,7 @@ dependencies = [
  "cfa4-realaudio",
  "cfa4-realmedia",
  "cfa4-realvideo",
+ "cfa4-roq",
  "cfa4-shorten",
  "cfa4-smacker",
  "cfa4-speex",
@@ -1990,6 +2001,14 @@ dependencies = [
 ]
 
 [[package]]
+name = "cfa4-mve"
+version = "0.10.0"
+dependencies = [
+ "cfa4-testkit",
+ "thiserror 2.0.21",
+]
+
+[[package]]
 name = "cfa4-mxf"
 version = "0.10.0"
 dependencies = [
@@ -2151,6 +2170,14 @@ dependencies = [
  "rustix 1.1.6",
  "serde",
  "serde_json",
+]
+
+[[package]]
+name = "cfa4-roq"
+version = "0.10.0"
+dependencies = [
+ "cfa4-testkit",
+ "thiserror 2.0.21",
 ]
 
 [[package]]

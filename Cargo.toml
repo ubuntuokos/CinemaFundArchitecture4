@@ -90,6 +90,9 @@ cfa4-adx = { path = "crates/adx" }
 cfa4-hca = { path = "crates/hca" }
 cfa4-tak = { path = "crates/tak" }
 cfa4-smacker = { path = "crates/smacker" }
+cfa4-acm = { path = "crates/acm" }
+cfa4-roq = { path = "crates/roq" }
+cfa4-mve = { path = "crates/mve" }
 cfa4-realvideo = { path = "crates/realvideo" }
 cfa4-realmedia = { path = "crates/realmedia" }
 cfa4-realaudio = { path = "crates/realaudio" }
@@ -212,6 +215,15 @@ opt-level = 3
 opt-level = 3
 
 [profile.dev.package.cfa4-smacker]
+opt-level = 3
+
+[profile.dev.package.cfa4-acm]
+opt-level = 3
+
+[profile.dev.package.cfa4-roq]
+opt-level = 3
+
+[profile.dev.package.cfa4-mve]
 opt-level = 3
 
 [profile.dev.package.cfa4-realvideo]

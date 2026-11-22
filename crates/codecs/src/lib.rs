@@ -22,6 +22,8 @@
 //! - [`EvcSource`]: raw MPEG-5 EVC Baseline (`.evc`) streams, pictures shown in their order count.
 //! - [`CavsSource`]: raw AVS1-P2 (Chinese AVS, Jizhun profile) streams (`.avs`, `.cavs`).
 //! - [`SstpSource`]: MPEG-4 Simple Studio Profile (Sony SR) elementary streams (`.m4v`), every picture intra.
+//! - [`RoqSource`]: id RoQ (`.roq`) video (full range YUV 4:4:4) with DPCM sound.
+//! - [`MveSource`]: Interplay MVE (`.mve`) video (8-bit palette or RGB 5:5:5) with PCM or DPCM sound.
 //! - [`Y4mSource`]: uncompressed YUV4MPEG2 (`.y4m`) video, frames read on demand.
 //! - [`openers`]: the openers to register with the engine's media pool.
 
@@ -35,6 +37,7 @@ pub mod av2_external;
 pub mod avi;
 pub mod canopus;
 pub mod cavs;
+mod ckpt;
 pub mod dif;
 pub mod dirac;
 pub mod evc;
@@ -51,10 +54,12 @@ pub mod magicyuv;
 pub mod mkv;
 pub mod mp4;
 pub mod mpeg;
+pub mod mve;
 pub mod mxf;
 pub mod ogg;
 pub mod realmedia;
 pub mod smacker;
+pub mod roq;
 pub mod sstp;
 mod stream_color;
 pub mod streams;
@@ -75,10 +80,12 @@ pub use gop::{FRAME_BUDGET, GopStats, cached_bytes, gop_stats, live_decoders, re
 pub use mkv::MkvSource;
 pub use mp4::Mp4Source;
 pub use mpeg::MpegSource;
+pub use mve::MveSource;
 pub use mxf::MxfSource;
 pub use ogg::OggSource;
 pub use realmedia::RmSource;
 pub use smacker::SmkSource;
+pub use roq::RoqSource;
 pub use sstp::SstpSource;
 pub use video::{DecodedFrame, VideoDecoder, VideoDecoderFactory};
 pub use y4m::Y4mSource;
@@ -204,6 +211,8 @@ pub fn openers() -> Vec<cfa4_media::Opener> {
         dif::opener,
         realmedia::opener,
         smacker::opener,
+        roq::opener,
+        mve::opener,
         av2::opener,
         audio::opener,
     ]
