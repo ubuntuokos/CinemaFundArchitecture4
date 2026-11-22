@@ -82,6 +82,7 @@ pub mod timecode_sync;
 pub mod transcript;
 pub mod trim;
 pub mod variants;
+pub mod vdb;
 pub mod voiceover;
 
 use std::sync::Arc;
@@ -1496,6 +1497,8 @@ mod track_params_tests;
 mod transcript_tests;
 #[cfg(test)]
 mod trim_tests;
+#[cfg(test)]
+mod vdb_tests;
 #[cfg(test)]
 mod vfx_tests;
 #[cfg(test)]

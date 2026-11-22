@@ -14,7 +14,7 @@ Without the worker the real-worker tests return early and the engine works as be
 ## N1 acceptance status
 | Criterion | State |
 |---|---|
-| N1-1 `vdb.inspect` | worker + host done, tested on a synthetic file; engine command not yet registered |
+| N1-1 `vdb.inspect` | done: worker, host and the engine command `vdb.inspect`, tested on a synthetic file; Qt panel open (N1-10) |
 | N1-2 ≥ 1 GiB, cgroup memory | **open** |
 | N1-3 hostile files | host side tested (60 mutated/truncated files, crash/hang/garbage/flood fakes); long fuzz run **open** |
 | N1-4 round trip | grid and metadata identity on the synthetic file; bit-identity over all supported types **open** |

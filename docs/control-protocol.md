@@ -113,6 +113,8 @@ record|soloSafe|output|input|fx.<n>|send.<n>|meter|name>` (popup entries below t
 `clipMixer.A1.<fader|pan|mute|solo|keyframe|value>`, `timeline.track.A1.keyframes[.<lane>|.clip]`,
 `timeline.track.A1.lane[.kf.<n>]`, `audioGain.<set|adjust|normalizeMax|normalizeAll|ok|cancel|peak>`.
 
+OpenVDB: `vdb.inspect {path}` returns `{path, inspection: {grids: [{name, type, gridClass, voxelSize, activeVoxels, bbox, isPoints, meta}], fileMetaCount}}`, read by the separate `cfa4-vdb-worker` process; without the worker it is a plain error (`workers/vdb/README.md`).
+
 Essential Sound: `essentialSound.inspect`, `essentialSound.setType {type: dialogue|music|sfx|ambience}`,
 `essentialSound.clearType`, `essentialSound.set {key, value}` or `{values: {key: value}}` (keys such as
 `repair.noise.on`, `repair.noise.amount` (0–10), `repair.humHz`, `clarity.eqPreset`, `clarity.enhanceTone`,
