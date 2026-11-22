@@ -4774,3 +4774,128 @@ export.summary	Low	niska
 # Timecode sync varispeed and user bits (TC-8, #1308)
 	Varispeed: adjust the playback speed instead of seeking	Varispeed: prilagodi brzinu reprodukcije umjesto preskakanja
 	User bits	Korisnički bitovi
+# AS-11 programme parts and AS-10 metadata (G2, #1371, #1375)
+	{tc}  Segmentation	{tc}  Segmentacija
+	Marker Type	Vrsta oznake
+	Chapter	Poglavlje
+	Segmentation (AS-11 programme part)	Segmentacija (dio programa AS-11)
+	AS-10	AS-10
+# AT9/AT3 converter (Tools ▸ Audio Tools, AT3-2)
+	AT9/AT3 Converter	Pretvarač AT9/AT3
+	AT9/AT3 Converter…	Pretvarač AT9/AT3…
+	Files to convert:	Datoteke za pretvorbu:
+	Add Files	Dodaj datoteke
+	Add Files…	Dodaj datoteke…
+	Convert to:	Pretvori u:
+	Bit rate:	Brzina prijenosa:
+	Sample format:	Format uzoraka:
+	Output folder:	Izlazna mapa:
+	Output Folder	Izlazna mapa
+	Next to each source file	Pokraj svake izvorne datoteke
+	AT9 and ATRAC3plus files convert to WAV; encoding AT9, ATRAC3plus and MP3 is not available yet.	Datoteke AT9 i ATRAC3plus pretvaraju se u WAV; kodiranje AT9, ATRAC3plus i MP3 još nije dostupno.
+	Convert	Pretvori
+	Add the files to convert first.	Najprije dodajte datoteke za pretvorbu.
+	Done: {n} file(s) converted.	Gotovo: pretvoreno datoteka: {n}.
+	Converting {name}…	Pretvaranje {name}…
+	Stopping…	Zaustavljanje…
+	AT3 (ATRAC3, PSP / PS3)	AT3 (ATRAC3, PSP / PS3)
+	WAV (PCM)	WAV (PCM)
+	132 kbit/s (LP2)	132 kbit/s (LP2)
+	105 kbit/s	105 kbit/s
+	66 kbit/s (LP4, joint stereo)	66 kbit/s (LP4, združeni stereo)
+	16-bit	16-bitni
+	24-bit	24-bitni
+	32-bit float	32-bitni s pomičnim zarezom
+
+# Datamosh transition (Grunge & Distort, DM1, #1409)
+	Datamosh	Datamosh
+	Residual	Ostatak
+	Motion Boost	Pojačanje pokreta
+	Recovery	Oporavak
+	Encode Resolution	Razlučivost kodiranja
+	Half	Pola
+	Quarter	Četvrtina
+# Datamosh Bloom (Glitch, DM2)
+	Datamosh Bloom	Datamosh cvat
+	Start Time (seconds)	Vrijeme početka (sekunde)
+	Repeats	Ponavljanja
+
+# Recent effects, per-channel waveform, white balance selector (SC-2/SC-3/SC-4, #1419 #1420 #1421)
+	Apply a recently used effect to the selected clips	Primijeni nedavno korišteni efekt na odabrane klipove
+	Disable all effects	Isključi sve efekte
+	Enable all effects	Uključi sve efekte
+	No recent effects	Nema nedavnih efekata
+	Recent effects	Nedavni efekti
+	Switch every effect of the selected clips off	Isključuje svaki efekt odabranih klipova
+	Switch every effect of the selected clips on	Uključuje svaki efekt odabranih klipova
+	Merged	Spojeno
+	Per Channel	Po kanalu
+	Channel Zoom	Zumiranje kanala
+	White Balance Selector (click a neutral point in the Program monitor; Esc cancels)	Birač balansa bijele (kliknite neutralnu točku na programskom monitoru; Esc otkazuje)
+# Task Manager and subtitle kind (SC-2/3/4)
+	Task Manager	Upravitelj zadataka
+	Background jobs	Poslovi u pozadini
+	Exports	Izvozi
+	Shared task queue	Zajednički red zadataka
+	Task	Zadatak
+	State	Stanje
+	Details	Pojedinosti
+	Time left	Preostalo vrijeme
+	Scheduled	Zakazano
+	Queued	U redu čekanja
+	Waiting for resources	Čeka resurse
+	Blocked	Blokirano
+	Running	Radi
+	Paused	Pauzirano
+	Cancelling	Otkazivanje
+	Interactive	Interaktivno
+	Speculative	Spekulativno
+	Final render	Završni render
+	Show finished	Prikaži dovršeno
+	Nothing is running.	Ništa se ne izvodi.
+	Not reported by this engine yet.	Ovaj mehanizam to još ne izvješćuje.
+	Not available: {why}	Nije dostupno: {why}
+	{name} waits: {why}	{name} čeka: {why}
+	{running} running · {waiting} waiting	{running} se izvodi · {waiting} čeka
+	{n} active	{n} aktivnih
+	{n} CPU	{n} CPU
+	{n} GiB	{n} GiB
+	{n} MiB	{n} MiB
+	Needs your decision	Čeka vašu odluku
+	Run now	Pokreni sada
+	Next slot	Sljedeći termin
+	Missed its start	Propušten početak
+	Missed its start at {time}	Propušten početak u {time}
+	Starts at {time}	Počinje u {time}
+	Subtitle kind	Vrsta titlova
+	Subtitles	Titlovi
+	Captions for the hearing impaired	Titlovi za osobe oštećena sluha
+	Forced narrative	Prisilna naracija (forced narrative)
+	Silence	Tišina
+	Detect Silence	Otkrij tišinu
+	Remove Silence	Ukloni tišinu
+	Clear Silence Markers	Obriši oznake tišine
+# DCP Validation window (DCP-12)
+	AS-03	AS-03
+	Choose the DCP folder.	Odaberite mapu DCP-a.
+	DCP Validation	Provjera DCP-a
+	DCP folder	Mapa DCP-a
+	DCP folder (the one holding ASSETMAP)	Mapa DCP-a (ona koja sadrži ASSETMAP)
+	Evidence	Dokaz
+	How to fix	Kako popraviti
+	Interrupted	Prekinuto
+	Not applicable	Nije primjenjivo
+	Report	Izvješće
+	Report saved: {path}	Izvješće spremljeno: {path}
+	Required	Obavezno
+	Rule	Pravilo
+	Rules	Pravila
+	Save JSON…	Spremi JSON…
+	Save Markdown…	Spremi Markdown…
+	Save report	Spremi izvješće
+	Skipped	Preskočeno
+	Standard: {standard}	Norma: {standard}
+	Validate	Provjeri
+	Validate DCP…	Provjeri DCP…
+	the engine sent no profiles	motor nije poslao nijedan profil
+	{n} files checked	Provjereno datoteka: {n}

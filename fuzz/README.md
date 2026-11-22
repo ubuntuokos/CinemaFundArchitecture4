@@ -25,9 +25,10 @@ any other version). Builds use
 debug assertions (overflow checks), so an arithmetic overflow is a finding even where the release build
 would wrap.
 
-The nightly workflow [`cfa4-fuzz.yml`](../.github/workflows/cfa4-fuzz.yml) runs every target for 5
-minutes in six shards and keeps the growing corpus in the Actions cache; `cargo xtask fuzz-targets`
-(its first job) fails when an L0 parser crate has no target.
+The workflow [`cfa4-fuzz.yml`](../.github/workflows/cfa4-fuzz.yml) runs every 4th night (owner decision
+2026-11-21; the UTC day number divisible by 4, manual runs any time) every target for 5 minutes in six shards and keeps the growing corpus in the Actions cache; `cargo xtask fuzz-targets`
+(its coverage job) fails when an L0 parser crate has no target; the shards run regardless, so a new
+crate without a target never stops the fuzzing of the others.
 
 ## A finding
 

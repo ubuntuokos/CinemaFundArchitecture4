@@ -12,6 +12,6 @@ workspace = true
 [dependencies]
 cfa4-tcsync = { workspace = true }
 cfa4-time = { workspace = true }
-cpal = "0.16"
+cpal = "0.17"
 # the ALSA sequencer for MIDI Timecode; the same version cpal already builds on
 alsa = "0.9"

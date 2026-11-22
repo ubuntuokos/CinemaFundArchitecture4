@@ -744,12 +744,17 @@ fn time_readout(s: &Session, p: &Value) -> Result<Value, String> {
 
 /// Most buckets one `media.peaks` returns.
 const MAX_PEAK_BUCKETS: usize = 20_000;
+/// Most channels a per-channel `media.peaks` returns (7.1.2 is ten); further channels are left out.
+const MAX_PEAK_CHANNELS: usize = 10;
 /// Longest media span one `media.peaks` reads (10 minutes at 48 kHz), so a request stays short.
 const MAX_PEAK_FRAMES: i64 = 48_000 * 600;
 
 /// `media.peaks {item, start, end, buckets}`: the waveform of a media item's sound between two
 /// media times (ticks), as `buckets` (min, max) pairs over all the channels, f32le. The
-/// timeline draws its audio clips from these.
+/// timeline draws its audio clips from these. With `"perChannel": true` the reply holds one
+/// (min, max) series per channel of the stream (at most `MAX_PEAK_CHANNELS`), channel after channel
+/// (`channels` x `buckets` x 2 values, the stream's own channel order, e.g. L R C LFE Ls Rs); a
+/// silent or missing sound gives one silent channel. Without it the reply is the merged series.
 fn media_peaks(s: &Session, p: &Value) -> Result<(Value, Vec<u8>), String> {
     let item = source_item(s, p)?;
     let media = media_of(s, item);
@@ -769,6 +774,11 @@ fn media_peaks(s: &Session, p: &Value) -> Result<(Value, Vec<u8>), String> {
         None | Some(Value::Null) => 0,
         Some(v) => v.as_u64().and_then(|n| usize::try_from(n).ok()).filter(|n| *n < 256).ok_or("`stream` must be an audio stream index")?,
     };
+    let per_channel = match p.get("perChannel") {
+        None | Some(Value::Null) => false,
+        Some(Value::Bool(b)) => *b,
+        Some(_) => return Err("`perChannel` must be true or false".into()),
+    };
     let sr: u32 = 48_000;
     let f0 = cfa4_time::Tick(t0).to_units_floor(i64::from(sr)).max(0);
     let f1 = cfa4_time::Tick(t1).to_units_floor(i64::from(sr)).max(f0 + 1);
@@ -777,6 +787,8 @@ fn media_peaks(s: &Session, p: &Value) -> Result<(Value, Vec<u8>), String> {
     }
     let total = usize::try_from(f1 - f0).map_err(|_| "span too long")?;
     let mut out = vec![0f32; buckets * 2];
+    // per channel: the series of each channel, grown when the first decoded block shows how many
+    let mut per: Vec<Vec<f32>> = Vec::new();
     let has_audio = s.project.item(media).is_some_and(|i| i.has_audio());
     if has_audio {
         let provider = s.media.provider(s.project.clone(), s.services.clone());
@@ -788,6 +800,23 @@ fn media_peaks(s: &Session, p: &Value) -> Result<(Value, Vec<u8>), String> {
             let n = chunk.min(total - done);
             let start = f0 + i64::try_from(done).map_err(|_| "span too long")?;
             let sound = source.audio_stream(stream, start, n, sr).map_err(|e| format!("audio decoding failed: {e}"))?;
+            if per_channel {
+                let count = sound.channels.len().min(MAX_PEAK_CHANNELS);
+                while per.len() < count {
+                    per.push(vec![0f32; buckets * 2]);
+                }
+                for (series, samples) in per.iter_mut().zip(&sound.channels) {
+                    for i in 0..n {
+                        let b = ((done + i) as u128 * buckets as u128 / total as u128) as usize;
+                        if let (Some(pair), Some(v)) = (series.get_mut(b * 2..b * 2 + 2), samples.get(i).copied()) {
+                            pair[0] = pair[0].min(v);
+                            pair[1] = pair[1].max(v);
+                        }
+                    }
+                }
+                done += n;
+                continue;
+            }
             for i in 0..n {
                 let b = ((done + i) as u128 * buckets as u128 / total as u128) as usize;
                 if let Some(pair) = out.get_mut(b * 2..b * 2 + 2) {
@@ -801,11 +830,21 @@ fn media_peaks(s: &Session, p: &Value) -> Result<(Value, Vec<u8>), String> {
             done += n;
         }
     }
+    if per_channel {
+        if per.is_empty() {
+            per.push(out);
+        }
+        out = per.concat();
+    }
+    let channels = if per_channel { out.len() / (buckets * 2) } else { 1 };
     let mut bytes = Vec::with_capacity(out.len() * 4);
     for v in out {
         bytes.extend_from_slice(&v.to_le_bytes());
     }
-    Ok((json!({"item": media.0, "buckets": buckets, "start": t0, "end": t1, "hasAudio": has_audio, "format": "f32le min,max"}), bytes))
+    Ok((
+        json!({"item": media.0, "buckets": buckets, "start": t0, "end": t1, "hasAudio": has_audio, "channels": channels, "perChannel": per_channel, "format": "f32le min,max"}),
+        bytes,
+    ))
 }
 
 /// Handles one request. `Ok(None)` asks the loop to end the session.
@@ -1010,8 +1049,10 @@ pub fn run(mut s: Session) {
     let mut out = stdout.lock();
     let mut jobs = false;
     let mut syncing = false;
+    // a live graphics source of the studio is drawn here about once per program frame
+    let mut studio_feeding = false;
     loop {
-        let wait = if jobs {
+        let wait = if jobs || studio_feeding {
             Duration::from_millis(5)
         } else if syncing {
             // the chase checks the player about every frame
@@ -1062,7 +1103,7 @@ pub fn run(mut s: Session) {
         jobs = upkeep.unwrap_or(false);
         let (sync_events, sync_on) = std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| crate::serve_tcsync::upkeep(&mut s))).unwrap_or_default();
         // the live studio host shows the project's current scene (CFA4-LIVE-STUDIO-001 S1)
-        let _ = std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| crate::serve_live::upkeep(&s)));
+        studio_feeding = std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| crate::serve_live::upkeep(&mut s))).unwrap_or(false);
         syncing = sync_on;
         let mut broken = false;
         let surface_events = match std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| crate::serve_surface::upkeep(&s))) {
@@ -1424,6 +1465,107 @@ mod tests {
         let t = &q.json["result"]["targeting"];
         assert!(t["targeted"].as_array().is_some_and(|a| !a.is_empty()), "{t}");
         assert!(t["videoDest"].is_u64() && t["audioDest"].is_u64(), "{t}");
+    }
+
+    #[test]
+    fn media_peaks_per_channel_split_the_merged_waveform() {
+        let mut s = Session::default();
+        let _ = s.execute("file.openDemoProject", json!({}));
+        let music = s
+            .project
+            .items
+            .values()
+            .find(|i| i.as_media().is_some_and(|m| m.info.video.is_none() && !m.info.audio_streams.is_empty()))
+            .map(|i| i.id)
+            .expect("demo music");
+        let tps = cfa4_time::TICKS_PER_SECOND;
+        let floats = |b: &[u8]| -> Vec<f32> { b.chunks_exact(4).map(|c| f32::from_le_bytes([c[0], c[1], c[2], c[3]])).collect() };
+        let merged = handle(&mut s, json!(1), "media.peaks", json!({"item": music.0, "start": 0, "end": 2 * tps, "buckets": 50})).expect("reply");
+        assert_eq!(merged.json["result"]["channels"], json!(1));
+        assert_eq!(merged.json["result"]["perChannel"], json!(false));
+        let merged = floats(&merged.binary.expect("peaks"));
+        let r =
+            handle(&mut s, json!(2), "media.peaks", json!({"item": music.0, "start": 0, "end": 2 * tps, "buckets": 50, "perChannel": true})).expect("reply");
+        assert_eq!(r.json["ok"], json!(true), "{}", r.json);
+        let n = usize::try_from(r.json["result"]["channels"].as_u64().expect("channels")).expect("count");
+        assert!((1..=MAX_PEAK_CHANNELS).contains(&n));
+        let all = floats(&r.binary.expect("peaks"));
+        assert_eq!(all.len(), n * 50 * 2, "channel after channel");
+        assert!(all.iter().all(|v| v.is_finite()));
+        // the merged series is the envelope over the channels
+        for b in 0..50 {
+            let lo = (0..n).map(|c| all[c * 100 + b * 2]).fold(0.0_f32, f32::min);
+            let hi = (0..n).map(|c| all[c * 100 + b * 2 + 1]).fold(0.0_f32, f32::max);
+            assert!((lo - merged[b * 2]).abs() < 1e-6 && (hi - merged[b * 2 + 1]).abs() < 1e-6, "bucket {b}");
+        }
+        // hostile parameter
+        for bad in [json!("yes"), json!(1), json!([])] {
+            let r = handle(&mut s, json!(3), "media.peaks", json!({"item": music.0, "start": 0, "end": tps, "buckets": 10, "perChannel": bad})).expect("reply");
+            assert_eq!(r.json["ok"], json!(false), "{bad}");
+        }
+    }
+
+    /// SC-3: a 5.1 file whose channels carry different, known levels. Each channel's series is that
+    /// channel's own, in the stream's order (L R C LFE Ls Rs); a file with more channels than the
+    /// cap is cut at `MAX_PEAK_CHANNELS`; a stereo file keeps its left and right apart.
+    #[test]
+    fn media_peaks_per_channel_follow_the_channels_of_a_5_1_file() {
+        let dir = std::env::temp_dir().join(format!("cfa4-peaks-5-1-{}", std::process::id()));
+        std::fs::create_dir_all(&dir).expect("dir");
+        // channel c swings between -(c + 1) / 20 and +(c + 1) / 20 for a second: its own min and max
+        let write = |name: &str, channels: u16| -> String {
+            let mut pcm = Vec::new();
+            for i in 0..48_000 {
+                for c in 0..channels {
+                    pcm.push(if i % 2 == 0 { 1.0 } else { -1.0 } * f32::from(c + 1) / 20.0);
+                }
+            }
+            let path = dir.join(name);
+            std::fs::write(&path, cfa4_media::wav::write_wav16(&pcm, channels, 48_000)).expect("wav");
+            path.to_string_lossy().into_owned()
+        };
+        let mut s = Session::default();
+        let imported = s.execute("file.import", json!({"paths": [write("l6.wav", 6), write("l2.wav", 2), write("l12.wav", 12)]})).expect("import");
+        assert!(imported["errors"].as_array().is_none_or(Vec::is_empty), "{imported}");
+        let with_channels = |s: &Session, n: u32| {
+            s.project
+                .items
+                .values()
+                .find(|i| i.as_media().is_some_and(|m| m.info.audio_streams.first().is_some_and(|a| a.channels == n)))
+                .map(|i| i.id)
+                .expect("imported")
+        };
+        let tps = cfa4_time::TICKS_PER_SECOND;
+        let peaks = |s: &mut Session, item: cfa4_project::ItemId| {
+            let r = handle(s, json!(1), "media.peaks", json!({"item": item.0, "start": 0, "end": tps / 2, "buckets": 20, "perChannel": true})).expect("reply");
+            assert_eq!(r.json["ok"], json!(true), "{}", r.json);
+            let n = usize::try_from(r.json["result"]["channels"].as_u64().expect("channels")).expect("count");
+            let v: Vec<f32> = r.binary.expect("peaks").chunks_exact(4).map(|c| f32::from_le_bytes([c[0], c[1], c[2], c[3]])).collect();
+            assert_eq!(v.len(), n * 20 * 2, "channel after channel");
+            (n, v)
+        };
+        // 5.1: six series, each swinging to its own level, in channel order
+        let item = with_channels(&s, 6);
+        let (n, v) = peaks(&mut s, item);
+        assert_eq!(n, 6);
+        for c in 0..6 {
+            let level = (c + 1) as f32 / 20.0;
+            for b in 0..20 {
+                let (lo, hi) = (v[c * 40 + b * 2], v[c * 40 + b * 2 + 1]);
+                assert!((lo + level).abs() < 1e-3 && (hi - level).abs() < 1e-3, "channel {c} bucket {b}: {lo} {hi} want {level}");
+            }
+        }
+        // stereo: left and right stay apart
+        let item = with_channels(&s, 2);
+        let (n, v) = peaks(&mut s, item);
+        assert_eq!(n, 2);
+        assert!((v[1] - 0.05).abs() < 1e-3 && (v[41] - 0.10).abs() < 1e-3, "{} {}", v[1], v[41]);
+        // more channels than the cap: cut at the cap, the first ones kept
+        let item = with_channels(&s, 12);
+        let (n, v) = peaks(&mut s, item);
+        assert_eq!(n, MAX_PEAK_CHANNELS);
+        assert!((v[(MAX_PEAK_CHANNELS - 1) * 40 + 1] - MAX_PEAK_CHANNELS as f32 / 20.0).abs() < 1e-3);
+        let _ = std::fs::remove_dir_all(&dir);
     }
 
     #[test]

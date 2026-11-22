@@ -1,0 +1,24 @@
+[package]
+name = "cfa4-cinema-acceptance"
+description = "CineCert pre-release acceptance tests (plan ch. 8): CFA4 DCP / IMF output through cfa4-cinema-pkg and the external test oracles (test-only crate)"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+rust-version.workspace = true
+publish = false
+
+[lints]
+workspace = true
+
+# Test-only: the library is empty and everything is a dev-dependency, so the crate adds no edges
+# to the layer graph (as cfa4-golden).
+[dependencies]
+
+[dev-dependencies]
+cfa4-cinema-pkg = { path = "../cinema-pkg" }
+cfa4-export = { workspace = true }
+cfa4-media = { workspace = true }
+cfa4-project = { workspace = true }
+cfa4-render = { workspace = true }
+cfa4-time = { workspace = true }
+chrono = { workspace = true }

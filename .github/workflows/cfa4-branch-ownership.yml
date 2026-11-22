@@ -1,0 +1,40 @@
+name: CFA4 branch ownership
+
+# CFA4-BRANCH-OWNERSHIP-001 T2 (BO-2): one PR branch, one owner session. Checks that every commit on the
+# PR branch comes from the session(s) that own it (PR description `Munkamenet:` line), a recorded hand-over
+# or gazda takeover, an allowed merge (main, the base branch, another open PR head), a commit inherited from
+# an older open PR, Dependabot, or an owner commit with the `tulajdonosi-commit` label.
+# Read-only: it never writes to the PR. Report mode for the plan's one-week D4 period (warnings, exit 0);
+# BO-6 switches it to `--mode enforce` and makes the check required on main.
+on:
+  pull_request:
+    branches: [main]
+    types: [opened, synchronize, reopened, edited, labeled, unlabeled]
+
+permissions:
+  contents: read
+  pull-requests: read
+  issues: read
+
+concurrency:
+  group: cfa4-branch-ownership-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+
+jobs:
+  branch-ownership:
+    name: branch-ownership
+    runs-on: ubuntu-26.04
+    timeout-minutes: 15
+    steps:
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+          sparse-checkout: scripts/ci/branch_ownership.py
+          sparse-checkout-cone-mode: false
+
+      - name: Check who wrote to the branch (report mode)
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+        run: python3 scripts/ci/branch_ownership.py --pr "$PR_NUMBER" --mode report
