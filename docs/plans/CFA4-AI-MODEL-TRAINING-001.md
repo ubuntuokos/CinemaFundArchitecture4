@@ -22,6 +22,8 @@
 | D5 | Media Intelligence hivatkozás | A CFA4-MEDIA-INTELLIGENCE-001 FINAL 2.0 nincs a tárolókban; a hivatkozás a [`CFA4-TASKSTORE-PG-001`](CFA4-TASKSTORE-PG-001.md) 4. pontjának `mi` sémája. |
 | D6 | Hová kerül? | Ide, a CFA4 `docs/plans` mappájába; az ADR 0008 egy hivatkozó sort kap. |
 
+A D1–D4 döntést István 2026-11-22-én a javaslat szerint megerősítette; az 1.1-es szöveg ezt már tartalmazza.
+
 ## 1. Cél és szerep
 
 A CFA4 alkalmazás (nem a fejlesztési AI-koordináció) helyi képzési és adaptációs képességet kap:
@@ -232,9 +234,11 @@ Center, Checkpoint Manager, Model Registry (a `cfa4-ai-models` nézete).
 CPU, RAM, GPU, VRAM, becsült hátralévő idő (nem garancia), checkpointállapot, fázis.
 
 **Vezérlés:** Pause, Resume, Stop, Cancel, Save checkpoint, Resume from checkpoint, Export
-configuration. A leállítás nem hagyhat érvényesnek jelölt félkész checkpointot. A `paused` állapot
-felvétele az ADR 0008 állapotlistájába az ACS-javaslattal együtt dől el; addig a Pause = checkpoint
-+ leállítás, a Resume = új futtatás ugyanabból a checkpointból.
+configuration. A leállítás nem hagyhat érvényesnek jelölt félkész checkpointot. A `scheduled` és a `paused`
+állapot felvétele eldőlt (2026-11-07) és a `cfa4-tasks` sora ismeri; a Pause = checkpoint + a feladat
+`paused` állapota, a Resume = új futtatás ugyanabból a checkpointból. Az alapmodell vagy az adat
+licencelfogadására váró feladat `blocked` állapotban `awaiting: licenseAcceptance`-t kap (ACS-8), és
+elfogadásig nem indul.
 
 ## 10. Kapcsolat a CFA4 AI-funkcióival
 
