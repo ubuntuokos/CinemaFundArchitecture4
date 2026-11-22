@@ -4871,6 +4871,10 @@ export.summary	Low	χαμηλή
 	Subtitles	Υπότιτλοι
 	Captions for the hearing impaired	Υπότιτλοι για κωφούς και βαρήκοους
 	Forced narrative	Αναγκαστική αφήγηση (forced narrative)
+	Silence	Σιωπή
+	Detect Silence	Εντοπισμός σιωπής
+	Remove Silence	Αφαίρεση σιωπής
+	Clear Silence Markers	Εκκαθάριση δεικτών σιωπής
 # DCP Validation window (DCP-12)
 	AS-03	AS-03
 	Choose the DCP folder.	Επιλέξτε τον φάκελο του DCP.
