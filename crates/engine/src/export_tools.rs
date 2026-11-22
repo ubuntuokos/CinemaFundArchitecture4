@@ -325,6 +325,7 @@ pub fn settings_from_params(s: &Session, p: &Value, cmd: &str) -> Result<(Option
         ("mxfAs11Segments", &mut settings.mxf_as11_segments),
         ("mxfAs11Ukdpp", &mut settings.mxf_as11_ukdpp),
         ("mxfAs10", &mut settings.mxf_as10),
+        ("mxfAs03", &mut settings.mxf_as03),
     ] {
         if let Some(v) = str_p(p, key) {
             if v.len() > 1 << 20 {
