@@ -173,6 +173,8 @@ pub mod tag {
     pub const DROP_FRAME: u16 = 0x1503;
     // Preface / identification / content storage
     pub const OPERATIONAL_PATTERN: u16 = 0x3B09;
+    /// The preface's DMSchemes (batch of ULs).
+    pub const DM_SCHEMES: u16 = 0x3B0B;
     /// GenericDescriptor locators (batch of strong references) and a network locator's URL.
     pub const LOCATORS: u16 = 0x2F01;
     pub const URL_STRING: u16 = 0x4001;

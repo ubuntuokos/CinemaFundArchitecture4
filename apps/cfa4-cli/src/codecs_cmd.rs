@@ -153,6 +153,7 @@ static ROWS: &[Row] = &[
     audio("QDesign Music 2", &["qdm2"], Ported, Sw("in QuickTime .mov and MP4 files (`QDM2`)"), NoEnc),
     audio("Speex", &["speex"], Ported, Sw("Ogg Speex"), NoEnc),
     audio("TTA (True Audio)", &["tta"], Ported, Sw(""), NoEnc),
+    audio("Nintendo DSP ADPCM / PCM streams", &["nstream"], Ported, Sw("in .brstm, .bfstm and .bcstm files"), NoEnc),
     audio(
         "RealAudio Cook / SIPR / 1.0 (14.4) / 2.0 (28.8), ATRAC1, ATRAC3, ATRAC3plus, ATRAC9",
         &["realaudio", "atracenc"],
