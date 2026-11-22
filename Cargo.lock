@@ -1283,6 +1283,7 @@ dependencies = [
  "cfa4-magicyuv",
  "cfa4-matroska",
  "cfa4-media",
+ "cfa4-mobiclip",
  "cfa4-mpa",
  "cfa4-mpeg2v",
  "cfa4-mpegts",
@@ -1928,6 +1929,14 @@ name = "cfa4-metrics"
 version = "0.10.0"
 dependencies = [
  "cfa4-color",
+]
+
+[[package]]
+name = "cfa4-mobiclip"
+version = "0.10.0"
+dependencies = [
+ "cfa4-testkit",
+ "thiserror 2.0.21",
 ]
 
 [[package]]

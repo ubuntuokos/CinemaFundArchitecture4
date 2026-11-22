@@ -69,6 +69,7 @@ const LAYERS: &[(&str, u8)] = &[
     ("ilbc", 0),
     ("tta", 0),
     ("thp", 0),
+    ("mobiclip", 0),
     ("shorten", 0),
     ("tak", 0),
     ("realvideo", 0),

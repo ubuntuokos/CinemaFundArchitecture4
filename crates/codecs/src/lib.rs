@@ -22,6 +22,7 @@
 //! - [`CavsSource`]: raw AVS1-P2 (Chinese AVS, Jizhun profile) streams (`.avs`, `.cavs`).
 //! - [`SstpSource`]: MPEG-4 Simple Studio Profile (Sony SR) elementary streams (`.m4v`), every picture intra.
 //! - [`ThpSource`]: Nintendo THP (`.thp`) JPEG video (full range YUV) with THP ADPCM sound.
+//! - [`MobiclipSource`]: Nintendo MobiClip (`.moflex`) video with FastAudio, IMA ADPCM or PCM sound.
 //! - [`Y4mSource`]: uncompressed YUV4MPEG2 (`.y4m`) video, frames read on demand.
 //! - [`openers`]: the openers to register with the engine's media pool.
 
@@ -49,6 +50,7 @@ pub mod lagarith;
 pub mod lcevc;
 pub mod magicyuv;
 pub mod mkv;
+pub mod mobiclip;
 pub mod mp4;
 pub mod mpeg;
 pub mod mxf;
@@ -73,6 +75,7 @@ pub use dif::DifSource;
 pub use evc::EvcSource;
 pub use gop::{FRAME_BUDGET, GopStats, cached_bytes, gop_stats, live_decoders, release_idle};
 pub use mkv::MkvSource;
+pub use mobiclip::MobiclipSource;
 pub use mp4::Mp4Source;
 pub use mpeg::MpegSource;
 pub use mxf::MxfSource;
@@ -204,6 +207,7 @@ pub fn openers() -> Vec<cfa4_media::Opener> {
         dif::opener,
         realmedia::opener,
         thp::opener,
+        mobiclip::opener,
         av2::opener,
         audio::opener,
     ]
