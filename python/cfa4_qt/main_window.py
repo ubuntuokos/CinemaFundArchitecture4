@@ -1658,7 +1658,7 @@ class MainWindow(QMainWindow):
 
             self.engine.execute(cid, params, on_reply=lambda _r, _b: (self.schedule_refresh(), then(True)), on_error=failed)
 
-        def show(general: Any) -> None:
+        def show(general: Any, profiles: Any = None) -> None:
             samples = not (isinstance(general, dict) and general.get("audioDisplay") == "Milliseconds")
             if new:
                 n = count_sequences((self.project or {}).get("root")) + 1
@@ -1668,12 +1668,21 @@ class MainWindow(QMainWindow):
                 seq = self.sequence or {}
                 cur_name = str(seq.get("name") or "")
                 draft = seq_draft_from(seq.get("settings"), cur_name)
-            dialog = SequenceSettingsDialog(self, draft, run, cur_name, samples)
+            dialog = SequenceSettingsDialog(self, draft, run, cur_name, samples, profiles)
             dialog.setAttribute(Qt.WidgetAttribute.WA_DeleteOnClose)
             self.last_dialog = dialog
             dialog.open()
 
-        self.engine.execute("file.projectSettings.general", {}, on_reply=lambda r, _b: show(r), on_error=lambda _m: show(None))
+        def with_profiles(general: Any) -> None:
+            if not new:
+                show(general)
+                return
+            listed = lambda r, _b: show(general, r.get("profiles") if isinstance(r, dict) else None)  # noqa: E731
+            self.engine.execute("sequenceProfiles.list", {}, on_reply=listed, on_error=lambda _m: show(general))
+
+        self.engine.execute(
+            "file.projectSettings.general", {}, on_reply=lambda r, _b: with_profiles(r), on_error=lambda _m: with_profiles(None)
+        )
 
     def open_sequence_profiles(self) -> None:
         """Sequence ▸ Sequence Profiles… (``panels/sequence_profiles.py``)."""

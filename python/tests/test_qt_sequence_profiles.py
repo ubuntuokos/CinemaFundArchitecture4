@@ -231,3 +231,36 @@ def test_real_engine_sequence_profiles(app, tmp_path: Path):
         dlg.deleteLater()
     finally:
         engine.stop()
+
+
+def test_new_sequence_offers_the_profiles_and_applies_the_picked_one(app):
+    from cfa4_qt.panels.sequence_settings import Draft, SequenceSettingsDialog
+
+    sent: list[tuple[str, dict[str, Any]]] = []
+
+    def run(command, params, then):
+        sent.append((command, params))
+        then(True)
+
+    dlg = SequenceSettingsDialog(
+        None, Draft(new_sequence=True, name="Sequence 01"), run, "", True, [BUILTIN, USER]
+    )
+    try:
+        assert dlg.preset.count() == 3  # Custom + the two profiles
+        dlg.preset.setCurrentIndex(2)
+        dlg._pick_profile(2)
+        assert (dlg.d.width, dlg.d.height, dlg.d.par, dlg.d.fps) == (1440, 1080, (4, 3), (25, 1))
+        dlg.width_box.setValue(1280)  # a hand edit leaves the profile
+        assert dlg.profile is None and dlg.preset.currentIndex() == 0
+        dlg._pick_profile(2)
+        dlg.apply()
+        assert [c for c, _ in sent] == ["file.newSequence", "sequenceProfiles.apply"]
+        assert sent[1][1] == {"description": "My HDV"}
+    finally:
+        dlg.deleteLater()
+
+    plain = SequenceSettingsDialog(None, Draft(), run, "Seq", True, [BUILTIN])
+    try:
+        assert not hasattr(plain, "preset")  # Sequence Settings has no profile picker
+    finally:
+        plain.deleteLater()
