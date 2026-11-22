@@ -1641,6 +1641,13 @@
   {
    "class": "job",
    "crate": "cfa4-engine",
+   "kind": "enum",
+   "module": "dcp_export.rs",
+   "name": "DcpStatus"
+  },
+  {
+   "class": "job",
+   "crate": "cfa4-engine",
    "kind": "struct",
    "module": "export_tools.rs",
    "name": "ExportQueue"
@@ -2624,6 +2631,27 @@
    "kind": "struct",
    "module": "control_surfaces.rs",
    "name": "UnsupportedBinding"
+  },
+  {
+   "class": "other",
+   "crate": "cfa4-engine",
+   "kind": "struct",
+   "module": "dcp_export.rs",
+   "name": "ItemDcp"
+  },
+  {
+   "class": "other",
+   "crate": "cfa4-engine",
+   "kind": "struct",
+   "module": "dcp_export.rs",
+   "name": "Preflight"
+  },
+  {
+   "class": "other",
+   "crate": "cfa4-engine",
+   "kind": "enum",
+   "module": "dcp_export.rs",
+   "name": "Severity"
   },
   {
    "class": "other",
@@ -8087,6 +8115,31 @@
   {
    "from": "cfa4-engine/credits.rs",
    "item": "TimeRange",
+   "to": "cfa4-time"
+  },
+  {
+   "from": "cfa4-engine/dcp_export.rs",
+   "item": "DcpAspect",
+   "to": "cfa4-export"
+  },
+  {
+   "from": "cfa4-engine/dcp_export.rs",
+   "item": "dcp_rate",
+   "to": "cfa4-export"
+  },
+  {
+   "from": "cfa4-engine/dcp_export.rs",
+   "item": "export_range",
+   "to": "cfa4-export"
+  },
+  {
+   "from": "cfa4-engine/dcp_export.rs",
+   "item": "ItemId",
+   "to": "cfa4-project"
+  },
+  {
+   "from": "cfa4-engine/dcp_export.rs",
+   "item": "Tick",
    "to": "cfa4-time"
   },
   {
