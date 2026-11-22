@@ -1020,6 +1020,9 @@ impl FxEnv for ClipEnv {
     fn clip_key(&self) -> u64 {
         self.key
     }
+    fn media_key(&self) -> Option<u64> {
+        Some(self.key.rotate_left(7) ^ 0xA11A)
+    }
 }
 
 fn texture(x: f64, y: f64) -> [f32; 3] {
@@ -1263,6 +1266,318 @@ fn warp_stabilizer_removes_camera_jitter() {
     assert!(st.px.as_chunks::<4>().0.iter().all(|p| p[3] > 0.99), "auto-scale leaves no border");
     // the path cache is reused
     assert!(stabilizer_path(&env, 0.0, cfa4_project::TrackMethod::Position, false).is_some());
+}
+
+/// A camera that also pitches and yaws: a few pixels of shift and a little keystone (a perspective
+/// term of up to ±3e-4 per pixel, about 3 % across a 192 px frame), different every frame.
+fn persp_shaky(x: f64, y: f64, t: f64) -> [f32; 3] {
+    let f = (t * 24.0).round() as i64;
+    let r = |i: i64| hash01(f, i, 0, 5) as f64 - 0.5;
+    let (cx, cy) = (96.0, 64.0);
+    let wgt = 1.0 + r(2) * 6.0e-4 * (x - cx) + r(3) * 6.0e-4 * (y - cy);
+    texture((x - cx) / wgt + cx + r(0) * 6.0, (y - cy) / wgt + cy + r(1) * 6.0)
+}
+
+/// Warp Stabilizer (No Motion, Stabilize Only) with `method` over `pic`: the raw and stabilised
+/// frames at `frames`, and the mean absolute difference of their interiors to the first pair.
+fn stabilise_frames(method: usize, pic: fn(f64, f64, f64) -> [f32; 3], key: u64) -> (f64, f64) {
+    let (w, h) = (192, 128);
+    let mk = |now: f64| ClipEnv { w, h, fps: 24.0, secs: 1.0, now, key, seq: (w as u32, h as u32), pic };
+    let mut e = inst("warp_stabilizer");
+    set(&mut e, "result", ParamValue::Choice(1)); // No Motion
+    set(&mut e, "framing", ParamValue::Choice(0)); // Stabilize Only
+    set(&mut e, "method", ParamValue::Choice(method as u32));
+    clear_stabilizer_cache();
+    let frames: Vec<(Image, Image)> = [3usize, 9, 15, 21]
+        .iter()
+        .map(|&f| {
+            let now = f as f64 / 24.0;
+            let env = mk(now);
+            let raw = env.render(now, 1.0);
+            let mut st = raw.clone();
+            crate::effects::apply(&mut st, &e, &FxCtx { seconds: now, env: Some(&env), ..cx() });
+            (raw, st)
+        })
+        .collect();
+    let interior = |a: &Image, b: &Image| {
+        let (mut s, mut n) = (0.0f64, 0);
+        for y in 24..h - 24 {
+            for x in 24..w - 24 {
+                s += (a.get(x, y)[0] - b.get(x, y)[0]).abs() as f64;
+                n += 1;
+            }
+        }
+        s / n as f64
+    };
+    let (mut raw_err, mut st_err) = (0.0, 0.0);
+    for i in 1..frames.len() {
+        raw_err += interior(&frames[0].0, &frames[i].0);
+        st_err += interior(&frames[0].1, &frames[i].1);
+    }
+    (raw_err, st_err)
+}
+
+#[test]
+fn perspective_stabilizer_beats_the_similarity_methods_on_keystone_shake() {
+    let (raw, persp) = stabilise_frames(2, persp_shaky, 0x9E25);
+    let (_, similarity) = stabilise_frames(1, persp_shaky, 0x9E26);
+    // measured: raw 0.150, similarity 0.059, perspective 0.008
+    assert!(persp < raw * 0.1, "perspective {persp} vs raw {raw}");
+    assert!(persp < similarity * 0.3, "perspective {persp} vs similarity {similarity}");
+}
+
+#[test]
+fn perspective_stabilizer_leaves_a_steady_or_featureless_clip_alone() {
+    fn steady(x: f64, y: f64, _t: f64) -> [f32; 3] {
+        texture(x, y)
+    }
+    fn flat(_x: f64, _y: f64, _t: f64) -> [f32; 3] {
+        [0.4, 0.4, 0.4]
+    }
+    let (w, h) = (192, 128);
+    for (pic, key) in [(steady as fn(f64, f64, f64) -> [f32; 3], 0x9E27u64), (flat, 0x9E28)] {
+        let env = ClipEnv { w, h, fps: 24.0, secs: 1.0, now: 0.5, key, seq: (w as u32, h as u32), pic };
+        let mut e = inst("warp_stabilizer");
+        set(&mut e, "method", ParamValue::Choice(2));
+        set(&mut e, "framing", ParamValue::Choice(0));
+        clear_stabilizer_cache();
+        let raw = env.render(0.5, 1.0);
+        let mut st = raw.clone();
+        crate::effects::apply(&mut st, &e, &FxCtx { seconds: 0.5, env: Some(&env), ..cx() });
+        let worst = (8..h - 8).flat_map(|y| (8..w - 8).map(move |x| (x, y))).map(|(x, y)| (raw.get(x, y)[0] - st.get(x, y)[0]).abs()).fold(0.0f32, f32::max);
+        assert!(worst < 0.02, "key {key:#x}: a steady shot moved by {worst}");
+        assert!(st.px.iter().all(|v| v.is_finite()));
+    }
+}
+
+#[test]
+fn perspective_stabilizer_framing_hides_the_borders_and_corrections_are_sane() {
+    let (w, h) = (192, 128);
+    let mk = |now: f64| ClipEnv { w, h, fps: 24.0, secs: 1.0, now, key: 0x9E29, seq: (w as u32, h as u32), pic: persp_shaky };
+    let mut e = inst("warp_stabilizer");
+    set(&mut e, "method", ParamValue::Choice(2));
+    set(&mut e, "result", ParamValue::Choice(1));
+    set(&mut e, "framing", ParamValue::Choice(2)); // Stabilize, Crop, Auto-scale
+    setf(&mut e, "max_scale", 300.0);
+    clear_stabilizer_cache();
+    for f in [3usize, 12, 20] {
+        let now = f as f64 / 24.0;
+        let env = mk(now);
+        let mut st = env.render(now, 1.0);
+        crate::effects::apply(&mut st, &e, &FxCtx { seconds: now, env: Some(&env), ..cx() });
+        assert!(st.px.as_chunks::<4>().0.iter().all(|p| p[3] > 0.99), "frame {f}: auto-scale leaves no border");
+    }
+    // Synthesize Edges never leaves a hole either, and a crop keeps the size
+    set(&mut e, "framing", ParamValue::Choice(3));
+    let env = mk(0.5);
+    let mut st = env.render(0.5, 1.0);
+    crate::effects::apply(&mut st, &e, &FxCtx { seconds: 0.5, env: Some(&env), ..cx() });
+    assert!(st.px.as_chunks::<4>().0.iter().all(|p| p[3] > 0.99), "synthesised edges fill the frame");
+    // corrections: one per frame, finite, and the identity for a path with no motion
+    let still = perspective::PerspectivePath { w: 64, h: 48, steps: vec![crate::homography::Homography::IDENTITY; 9], fps: 24.0 };
+    let c = perspective::corrections(&still, 3.0, false);
+    assert_eq!(c.len(), 10);
+    for m in &c {
+        for p in [cfa4_geom::Vec2::new(0.0, 0.0), cfa4_geom::Vec2::new(64.0, 48.0)] {
+            assert!((m.apply(p).unwrap() - p).length() < 1e-6, "{m:?}");
+        }
+    }
+    assert_eq!(perspective::cover_scale(&crate::homography::Homography::IDENTITY, 64.0, 48.0, 3.0), 1.0);
+    // a unit shift needs a small zoom; an impossible one stops at the cap
+    let shift = crate::homography::Homography::from_affine(&cfa4_geom::Affine::translate(6.4, 0.0));
+    let z = perspective::cover_scale(&shift, 64.0, 48.0, 3.0);
+    assert!(z > 1.05 && z < 1.3, "{z}");
+    let far = crate::homography::Homography::from_affine(&cfa4_geom::Affine::translate(1e4, 0.0));
+    assert_eq!(perspective::cover_scale(&far, 64.0, 48.0, 3.0), 3.0);
+}
+
+/// A shaky camera over a scene with depth that is not a plane: the shift of a point is the shake
+/// times a depth factor that grows with the square of `x` (no homography follows it).
+fn parallax_shaky(x: f64, y: f64, t: f64) -> [f32; 3] {
+    let f = (t * 24.0).round() as i64;
+    let r = |i: i64| hash01(f, i, 0, 7) as f64 - 0.5;
+    let u = x / 192.0;
+    let depth = 0.4 + 1.6 * u * u;
+    texture(x + r(0) * 10.0 * depth, y + r(1) * 10.0 * depth)
+}
+
+#[test]
+fn subspace_warp_follows_scene_depth_better_than_the_global_models() {
+    let (raw, sim) = stabilise_frames(1, parallax_shaky, 0x5B01);
+    let (_, persp) = stabilise_frames(2, parallax_shaky, 0x5B01);
+    let (_, sub) = stabilise_frames(3, parallax_shaky, 0x5B01);
+    // measured: raw 0.177, similarity 0.107, perspective 0.030, subspace 0.022
+    assert!(sub < raw * 0.25, "subspace {sub} vs raw {raw}");
+    assert!(sub < sim * 0.35 && sub < persp * 0.95, "subspace {sub} vs similarity {sim}, perspective {persp}");
+}
+
+#[test]
+fn subspace_warp_leaves_a_steady_or_featureless_clip_alone_and_hides_the_borders() {
+    fn steady(x: f64, y: f64, _t: f64) -> [f32; 3] {
+        texture(x, y)
+    }
+    fn flat(_x: f64, _y: f64, _t: f64) -> [f32; 3] {
+        [0.4, 0.4, 0.4]
+    }
+    let (w, h) = (192, 128);
+    for (pic, key) in [(steady as fn(f64, f64, f64) -> [f32; 3], 0x5B02u64), (flat, 0x5B03)] {
+        let env = ClipEnv { w, h, fps: 24.0, secs: 1.0, now: 0.5, key, seq: (w as u32, h as u32), pic };
+        let mut e = inst("warp_stabilizer");
+        set(&mut e, "method", ParamValue::Choice(3));
+        set(&mut e, "framing", ParamValue::Choice(0));
+        clear_stabilizer_cache();
+        let raw = env.render(0.5, 1.0);
+        let mut st = raw.clone();
+        crate::effects::apply(&mut st, &e, &FxCtx { seconds: 0.5, env: Some(&env), ..cx() });
+        let worst = (8..h - 8).flat_map(|y| (8..w - 8).map(move |x| (x, y))).map(|(x, y)| (raw.get(x, y)[0] - st.get(x, y)[0]).abs()).fold(0.0f32, f32::max);
+        assert!(worst < 0.02, "key {key:#x}: a steady shot moved by {worst}");
+        assert!(st.px.iter().all(|v| v.is_finite()));
+    }
+    let mk = |now: f64| ClipEnv { w, h, fps: 24.0, secs: 1.0, now, key: 0x5B04, seq: (w as u32, h as u32), pic: parallax_shaky };
+    let mut e = inst("warp_stabilizer");
+    set(&mut e, "method", ParamValue::Choice(3));
+    set(&mut e, "result", ParamValue::Choice(1));
+    set(&mut e, "framing", ParamValue::Choice(2));
+    setf(&mut e, "max_scale", 300.0);
+    clear_stabilizer_cache();
+    for f in [3usize, 12, 20] {
+        let now = f as f64 / 24.0;
+        let env = mk(now);
+        let mut st = env.render(now, 1.0);
+        crate::effects::apply(&mut st, &e, &FxCtx { seconds: now, env: Some(&env), ..cx() });
+        assert!(st.px.as_chunks::<4>().0.iter().all(|p| p[3] > 0.99), "frame {f}: auto-scale leaves no border");
+    }
+    set(&mut e, "framing", ParamValue::Choice(3));
+    let env = mk(0.5);
+    let mut st = env.render(0.5, 1.0);
+    crate::effects::apply(&mut st, &e, &FxCtx { seconds: 0.5, env: Some(&env), ..cx() });
+    assert!(st.px.as_chunks::<4>().0.iter().all(|p| p[3] > 0.99), "synthesised edges fill the frame");
+}
+
+/// A scratch folder under the system temp dir, removed on drop.
+struct Scratch(std::path::PathBuf);
+impl Scratch {
+    fn new(tag: &str) -> Self {
+        let p = std::env::temp_dir().join(format!("cfa4-stab-{tag}-{}", std::process::id()));
+        let _ = std::fs::remove_dir_all(&p);
+        Scratch(p)
+    }
+    fn files(&self) -> Vec<std::path::PathBuf> {
+        std::fs::read_dir(&self.0).map(|d| d.flatten().map(|e| e.path()).collect()).unwrap_or_default()
+    }
+}
+impl Drop for Scratch {
+    fn drop(&mut self) {
+        let _ = std::fs::remove_dir_all(&self.0);
+    }
+}
+
+#[test]
+fn stabilizer_analysis_is_kept_on_disk_and_reused() {
+    use cfa4_project::TrackMethod::Position;
+    let (w, h) = (192, 128);
+    let mk = |key: u64, pic: fn(f64, f64, f64) -> [f32; 3]| ClipEnv { w, h, fps: 24.0, secs: 1.0, now: 0.25, key, seq: (w as u32, h as u32), pic };
+    let dir = Scratch::new("reuse");
+    let shaky_env = mk(0x5AB1, shaky);
+    let first = temporal::stabilizer_path_in(&shaky_env, 0.25, Position, false, Some(&dir.0)).expect("analysis");
+    assert!(first.steps.iter().any(|m| (m.e.abs() + m.f.abs()) > 0.05), "the shaky clip has motion");
+    assert_eq!(dir.files().len(), 1, "one file, no leftover temporary: {:?}", dir.files());
+    // a fresh run (memory cleared) over a picture that would analyse to *no* motion: the same
+    // media key must bring back the stored motion, not a new analysis
+    clear_stabilizer_cache();
+    let still = mk(0x5AB1, |x, y, _| [x as f32 / 192.0, y as f32 / 128.0, 0.5]);
+    let again = temporal::stabilizer_path_in(&still, 0.25, Position, false, Some(&dir.0)).expect("loaded");
+    assert_eq!((again.w, again.h, again.fps), (first.w, first.h, first.fps));
+    assert_eq!(again.steps.len(), first.steps.len());
+    assert!(again.steps.iter().zip(&first.steps).all(|(a, b)| a == b), "loaded exactly as stored");
+    // another method, another file: the settings are part of the key
+    clear_stabilizer_cache();
+    let other = temporal::stabilizer_path_in(&shaky_env, 0.25, cfa4_project::TrackMethod::PositionScaleRotation, false, Some(&dir.0)).expect("analysis");
+    assert_eq!(other.steps.len(), first.steps.len());
+    assert_eq!(dir.files().len(), 2);
+    // without a folder nothing is written
+    clear_stabilizer_cache();
+    let none = Scratch::new("none");
+    assert!(temporal::stabilizer_path_in(&shaky_env, 0.25, Position, true, None).is_some());
+    assert!(none.files().is_empty());
+}
+
+#[test]
+fn stabilizer_ignores_damaged_or_foreign_analysis_files() {
+    use cfa4_project::TrackMethod::Position;
+    let (w, h) = (192, 128);
+    let env = ClipEnv { w, h, fps: 24.0, secs: 1.0, now: 0.25, key: 0x5AB2, seq: (w as u32, h as u32), pic: shaky };
+    let dir = Scratch::new("damaged");
+    let good = temporal::stabilizer_path_in(&env, 0.25, Position, false, Some(&dir.0)).expect("analysis");
+    let file = dir.files().pop().expect("stored");
+    let bytes = std::fs::read(&file).unwrap();
+    // truncated, extended, wrong magic, a NaN step, empty: each is re-analysed (and the file healed)
+    let mut nan = bytes.clone();
+    let off = 36 + 8 * 4; // first step's `e`
+    nan[off..off + 8].copy_from_slice(&f64::NAN.to_le_bytes());
+    let mut magic = bytes.clone();
+    magic[0] ^= 0xFF;
+    let mut longer = bytes.clone();
+    longer.extend_from_slice(&[0; 8]);
+    for bad in [bytes[..bytes.len() - 5].to_vec(), longer, magic, nan, Vec::new(), vec![7; 3]] {
+        std::fs::write(&file, &bad).unwrap();
+        clear_stabilizer_cache();
+        let p = temporal::stabilizer_path_in(&env, 0.25, Position, false, Some(&dir.0)).expect("re-analysed");
+        assert_eq!(p.steps.len(), good.steps.len());
+        assert!(p.steps.iter().zip(&good.steps).all(|(a, b)| a == b), "the analysis is deterministic");
+        assert_eq!(std::fs::read(&file).unwrap(), bytes, "the damaged file was replaced by a good one");
+    }
+    // a file stored for another key is refused even under this name
+    assert!(temporal::decode(1, &bytes).is_none());
+    assert!(temporal::decode(u64::from_le_bytes(bytes[8..16].try_into().unwrap()), &bytes).is_some());
+    // clips without a media identity (generators) are never stored
+    struct NoIdentity(ClipEnv);
+    impl FxEnv for NoIdentity {
+        fn frame(&self, dt: f64, e: &EffectInstance) -> Option<Image> {
+            self.0.frame(dt, e)
+        }
+        fn source_frame(&self, dt: f64, scale: f32) -> Option<Image> {
+            self.0.source_frame(dt, scale)
+        }
+        fn track(&self, i: usize) -> Option<Image> {
+            self.0.track(i)
+        }
+        fn layer_to_output(&self) -> Affine {
+            self.0.layer_to_output()
+        }
+        fn clip_seconds(&self) -> f64 {
+            self.0.clip_seconds()
+        }
+        fn clip_offset(&self) -> f64 {
+            self.0.clip_offset()
+        }
+        fn frame_rate(&self) -> f64 {
+            self.0.frame_rate()
+        }
+        fn media_timecode(&self) -> String {
+            self.0.media_timecode()
+        }
+        fn file_name(&self) -> String {
+            self.0.file_name()
+        }
+        fn sequence_name(&self) -> String {
+            self.0.sequence_name()
+        }
+        fn sequence_size(&self) -> (u32, u32) {
+            self.0.sequence_size()
+        }
+        fn source_size(&self) -> (u32, u32) {
+            self.0.source_size()
+        }
+        fn clip_key(&self) -> u64 {
+            self.0.clip_key()
+        }
+    }
+    let generated = Scratch::new("generated");
+    clear_stabilizer_cache();
+    let g = NoIdentity(ClipEnv { key: 0x5AB3, ..env });
+    assert!(temporal::stabilizer_path_in(&g, 0.25, Position, false, Some(&generated.0)).is_some());
+    assert!(generated.files().is_empty());
 }
 
 #[test]

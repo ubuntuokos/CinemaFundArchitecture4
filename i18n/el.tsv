@@ -4774,3 +4774,133 @@ export.summary	Low	χαμηλή
 # Timecode sync varispeed and user bits (TC-8, #1308)
 	Varispeed: adjust the playback speed instead of seeking	Varispeed: προσαρμογή της ταχύτητας αναπαραγωγής αντί για μετάβαση
 	User bits	Bit χρήστη
+# AS-11 programme parts and AS-10 metadata (G2, #1371, #1375)
+	{tc}  Segmentation	{tc}  Τμηματοποίηση
+	Marker Type	Τύπος δείκτη
+	Chapter	Κεφάλαιο
+	Segmentation (AS-11 programme part)	Τμηματοποίηση (τμήμα προγράμματος AS-11)
+	AS-10	AS-10
+# AT9/AT3 converter (Tools ▸ Audio Tools, AT3-2)
+	AT9/AT3 Converter	Μετατροπέας AT9/AT3
+	AT9/AT3 Converter…	Μετατροπέας AT9/AT3…
+	Files to convert:	Αρχεία προς μετατροπή:
+	Add Files	Προσθήκη αρχείων
+	Add Files…	Προσθήκη αρχείων…
+	Convert to:	Μετατροπή σε:
+	Bit rate:	Ρυθμός bit:
+	Sample format:	Μορφή δειγμάτων:
+	Output folder:	Φάκελος εξόδου:
+	Output Folder	Φάκελος εξόδου
+	Next to each source file	Δίπλα σε κάθε αρχείο προέλευσης
+	AT9 and ATRAC3plus files convert to WAV; encoding AT9, ATRAC3plus and MP3 is not available yet.	Τα αρχεία AT9 και ATRAC3plus μετατρέπονται σε WAV· η κωδικοποίηση AT9, ATRAC3plus και MP3 δεν είναι ακόμη διαθέσιμη.
+	Convert	Μετατροπή
+	Add the files to convert first.	Προσθέστε πρώτα τα αρχεία προς μετατροπή.
+	Done: {n} file(s) converted.	Ολοκληρώθηκε: μετατράπηκαν {n} αρχεία.
+	Converting {name}…	Μετατροπή του {name}…
+	Stopping…	Διακοπή…
+	AT3 (ATRAC3, PSP / PS3)	AT3 (ATRAC3, PSP / PS3)
+	WAV (PCM)	WAV (PCM)
+	132 kbit/s (LP2)	132 kbit/s (LP2)
+	105 kbit/s	105 kbit/s
+	66 kbit/s (LP4, joint stereo)	66 kbit/s (LP4, joint stereo)
+	16-bit	16 bit
+	24-bit	24 bit
+	32-bit float	32 bit κινητής υποδιαστολής
+
+# Datamosh transition (Grunge & Distort, DM1, #1409)
+	Datamosh	Datamosh
+	Residual	Υπόλοιπο
+	Motion Boost	Ενίσχυση κίνησης
+	Recovery	Ανάκτηση
+	Encode Resolution	Ανάλυση κωδικοποίησης
+	Half	Μισή
+	Quarter	Τέταρτο
+# Datamosh Bloom (Glitch, DM2)
+	Datamosh Bloom	Άνθιση datamosh
+	Start Time (seconds)	Ώρα έναρξης (δευτερόλεπτα)
+	Repeats	Επαναλήψεις
+
+# Recent effects, per-channel waveform, white balance selector (SC-2/SC-3/SC-4, #1419 #1420 #1421)
+	Apply a recently used effect to the selected clips	Εφαρμογή πρόσφατα χρησιμοποιημένου εφέ στα επιλεγμένα κλιπ
+	Disable all effects	Απενεργοποίηση όλων των εφέ
+	Enable all effects	Ενεργοποίηση όλων των εφέ
+	No recent effects	Κανένα πρόσφατο εφέ
+	Recent effects	Πρόσφατα εφέ
+	Switch every effect of the selected clips off	Απενεργοποιεί κάθε εφέ των επιλεγμένων κλιπ
+	Switch every effect of the selected clips on	Ενεργοποιεί κάθε εφέ των επιλεγμένων κλιπ
+	Merged	Συγχωνευμένα
+	Per Channel	Ανά κανάλι
+	Channel Zoom	Ζουμ καναλιών
+	White Balance Selector (click a neutral point in the Program monitor; Esc cancels)	Επιλογέας ισορροπίας λευκού (κάντε κλικ σε ουδέτερο σημείο στην οθόνη προγράμματος· το Esc ακυρώνει)
+# Task Manager and subtitle kind (SC-2/3/4)
+	Task Manager	Διαχείριση εργασιών
+	Background jobs	Εργασίες παρασκηνίου
+	Exports	Εξαγωγές
+	Shared task queue	Κοινή ουρά εργασιών
+	Task	Εργασία
+	State	Κατάσταση
+	Details	Λεπτομέρειες
+	Time left	Χρόνος που απομένει
+	Scheduled	Προγραμματισμένη
+	Queued	Στην ουρά
+	Waiting for resources	Αναμονή για πόρους
+	Blocked	Αποκλεισμένη
+	Running	Εκτελείται
+	Paused	Σε παύση
+	Cancelling	Ακύρωση
+	Interactive	Διαδραστική
+	Speculative	Πρόβλεψης
+	Final render	Τελική απόδοση
+	Show finished	Εμφάνιση ολοκληρωμένων
+	Nothing is running.	Τίποτα δεν εκτελείται.
+	Not reported by this engine yet.	Δεν αναφέρεται ακόμη από αυτή τη μηχανή.
+	Not available: {why}	Μη διαθέσιμο: {why}
+	{name} waits: {why}	Το {name} περιμένει: {why}
+	{running} running · {waiting} waiting	{running} εκτελούνται · {waiting} περιμένουν
+	{n} active	{n} ενεργές
+	{n} CPU	{n} CPU
+	{n} GiB	{n} GiB
+	{n} MiB	{n} MiB
+	Needs your decision	Χρειάζεται την απόφασή σας
+	Run now	Εκτέλεση τώρα
+	Next slot	Επόμενο διάστημα
+	Missed its start	Χάθηκε η εκκίνηση
+	Missed its start at {time}	Χάθηκε η εκκίνηση στις {time}
+	Starts at {time}	Ξεκινά στις {time}
+	Subtitle kind	Είδος υποτίτλων
+	Subtitles	Υπότιτλοι
+	Captions for the hearing impaired	Υπότιτλοι για κωφούς και βαρήκοους
+	Forced narrative	Αναγκαστική αφήγηση (forced narrative)
+	Silence	Σιωπή
+	Detect Silence	Εντοπισμός σιωπής
+	Remove Silence	Αφαίρεση σιωπής
+	Clear Silence Markers	Εκκαθάριση δεικτών σιωπής
+# DCP Validation window (DCP-12)
+	AS-03	AS-03
+	Choose the DCP folder.	Επιλέξτε τον φάκελο του DCP.
+	DCP Validation	Επικύρωση DCP
+	DCP folder	Φάκελος DCP
+	DCP folder (the one holding ASSETMAP)	Φάκελος DCP (αυτός που περιέχει το ASSETMAP)
+	Evidence	Τεκμήριο
+	How to fix	Πώς να διορθωθεί
+	Interrupted	Διακόπηκε
+	Not applicable	Μη εφαρμόσιμο
+	Report	Αναφορά
+	Report saved: {path}	Η αναφορά αποθηκεύτηκε: {path}
+	Required	Απαιτείται
+	Rule	Κανόνας
+	Rules	Κανόνες
+	Save JSON…	Αποθήκευση JSON…
+	Save Markdown…	Αποθήκευση Markdown…
+	Save report	Αποθήκευση αναφοράς
+	Skipped	Παραλείφθηκε
+	Standard: {standard}	Πρότυπο: {standard}
+	Validate	Επικύρωση
+	Validate DCP…	Επικύρωση DCP…
+	the engine sent no profiles	η μηχανή δεν έστειλε προφίλ
+	{n} files checked	Ελέγχθηκαν {n} αρχεία
+
+# AS-02 export
+	Write an AS-02 bundle (the path is a folder)	Εγγραφή πακέτου AS-02 (η διαδρομή είναι φάκελος)
+	AS-02	AS-02
+	AS-12	AS-12

@@ -9,9 +9,9 @@
 //! - `fixtures [crate…]`: pre-generate the ffmpeg fixture matrix of the oracle tests (runs each
 //!   crate's ignored `generate_fixtures` test, i.e. the same generators the tests use) and print
 //!   what was made, reused or skipped.
-//! - `parity [--area menus|effects|transitions] [--reference FILE] [--out FILE] [--min PERCENT]`:
-//!   measured parity of our shipped menu bar, or of the effects / transitions the Effects panel
-//!   lists, against a reference list (default: the local `plan/premiere/<area>.json`), presence and
+//! - `parity [--area menus|commands|panels|effects|transitions|menus-egui] [--reference FILE] [--out FILE] [--min PERCENT]`:
+//!   measured parity of the Qt 6 GUI menu bar or panels (the frozen egui menu bar as
+//!   `menus-egui`), of the engine's commands, or of the effects / transitions the Effects panel lists, against a reference list (default: the local `plan/premiere/<area>.json`), presence and
 //!   placement reported separately (`parity.rs`, docs/gaps.md G7).
 //! - `fuzz-targets`: every L0 parser crate (containers and decoders; not the encoder-only ones in
 //!   `NO_PARSER`) has a fuzz target in `fuzz/src/lib.rs`, and every target has its
@@ -62,6 +62,8 @@ const LAYERS: &[(&str, u8)] = &[
     ("hap", 0),
     ("utvideo", 0),
     ("lagarith", 0),
+    ("indeo", 0),
+    ("cinepak", 0),
     ("magicyuv", 0),
     ("huffyuv", 0),
     ("ffv1", 0),
@@ -69,12 +71,23 @@ const LAYERS: &[(&str, u8)] = &[
     ("g729", 0),
     ("ilbc", 0),
     ("tta", 0),
+    ("thp", 0),
+    ("mobiclip", 0),
     ("shorten", 0),
+    ("adx", 0),
+    ("hca", 0),
     ("tak", 0),
+    ("smacker", 0),
+    ("acm", 0),
+    ("roq", 0),
+    ("mve", 0),
     ("realvideo", 0),
     ("realmedia", 0),
+    ("bink", 0),
     ("realaudio", 0),
+    ("atracenc", 0),
     ("canopus", 0),
+    ("theora", 0),
     ("sstp", 0),
     ("evc", 0),
     ("cavs", 0),
@@ -96,6 +109,7 @@ const LAYERS: &[(&str, u8)] = &[
     ("flac", 0),
     ("opus", 0),
     ("frame", 1),
+    ("io-core", 1),
     ("surface-model", 1),
     ("media", 1),
     ("project", 1),
@@ -107,9 +121,13 @@ const LAYERS: &[(&str, u8)] = &[
     ("tcsync-io", 5),
     ("surface", 5),
     ("metrics", 1),
+    ("cinema-pkg", 1),
     ("live", 1),
     ("sandbox", 1),
+    ("tasks", 2),
+    ("store", 5),
     ("edit", 2),
+    ("objtrack", 2),
     ("codecs", 2),
     ("keyframe", 2),
     ("effects", 2),
@@ -123,6 +141,7 @@ const LAYERS: &[(&str, u8)] = &[
     ("render", 3),
     ("gpu", 3),
     ("golden", 3),
+    ("cinema-acceptance", 3),
     ("scopes", 3),
     ("qc", 3),
     ("playback", 3),
@@ -131,6 +150,7 @@ const LAYERS: &[(&str, u8)] = &[
     ("dcp-inspect", 3),
     ("dcpomatic", 3),
     ("smart-edit", 3),
+    ("fetch-client", 3),
     ("format", 3),
     ("engine", 4),
     ("platform", 5),
@@ -142,6 +162,7 @@ const LAYERS: &[(&str, u8)] = &[
     ("cfa4", 6),
     ("cli", 6),
     ("studio-host", 6),
+    ("fetch", 6),
 ];
 
 /// L0 crates that are not codecs/containers (no `bitstream`-only restriction).
@@ -151,6 +172,7 @@ const L0_FOUNDATION: &[&str] = &["time", "geom", "color", "bitstream", "testkit"
 const SAME_LAYER: &[(&str, &str)] = &[
     ("dcp-inspect", "dcp-validate"),
     ("media", "frame"),
+    ("io-core", "frame"),
     ("project", "media"),
     ("project", "frame"),
     ("effects", "keyframe"),
@@ -438,8 +460,18 @@ fn bench() -> Result<(), String> {
     run(Command::new(env!("CARGO")).args(["run", "--release", "-p", "cfa4-ui-egui", "--example", "bench", "--"]).args(&extra))
 }
 
+/// The external DCP / IMF test oracles (CINECERT WP01-A): asdcplib, Photon, Clairmeta and the
+/// test corpus, installed outside the repository by `scripts/dev/setup-cinema-oracles.sh`; extra
+/// arguments go to the script (`cargo xtask cinema-oracles --install photon`). Default: `--check`.
+fn cinema_oracles() -> Result<(), String> {
+    let extra: Vec<String> = std::env::args().skip(2).collect();
+    // The script is executable (#!/usr/bin/env bash); running it directly keeps the arguments out
+    // of any shell command line.
+    run(Command::new(root().join("scripts/dev/setup-cinema-oracles.sh")).args(&extra))
+}
+
 /// L0 crates that read no untrusted input (encoders only): no fuzz target needed.
-const NO_PARSER: &[&str] = &["h264enc", "flac"];
+const NO_PARSER: &[&str] = &["h264enc", "flac", "atracenc"];
 
 /// CFA4-SECURITY-001 B2: every L0 parser crate has a fuzz target, and every target is wired up.
 fn fuzz_targets() -> Result<(), String> {
@@ -499,6 +531,7 @@ fn main() -> ExitCode {
         "fuzz-targets" => fuzz_targets(),
         "ci" => ci(),
         "bench" => bench(),
+        "cinema-oracles" => cinema_oracles(),
         "bench-playback" => bench_playback(),
         "version" => {
             let rest: Vec<String> = std::env::args().skip(2).collect();
@@ -509,7 +542,7 @@ fn main() -> ExitCode {
             parity::run(&root(), &rest.iter().map(String::as_str).collect::<Vec<_>>())
         }
         _ => Err(
-            "usage: cargo xtask <layers|assets|wasm|fuzz-targets|fixtures [crate…]|parity [--area menus|effects|transitions] [--reference FILE] [--out FILE] [--min PERCENT]|version [set X.Y.Z]|ci|bench [args]|bench-playback [args]>"
+            "usage: cargo xtask <layers|assets|wasm|fuzz-targets|fixtures [crate…]|parity [--area menus|commands|panels|effects|transitions|menus-egui] [--reference FILE] [--out FILE] [--min PERCENT]|version [set X.Y.Z]|ci|bench [args]|bench-playback [args]|cinema-oracles [--check|--install …|--corpus|--print-env]>"
                 .into(),
         ),
     };

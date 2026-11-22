@@ -90,6 +90,11 @@ impl MidiReader {
         self.lane.drain()
     }
 
+    /// Which controls are endless encoders (see [`LaneOut::set_relative`]).
+    pub fn set_relative(&self, table: HashMap<(String, cfa4_surface_model::ControlId), cfa4_surface_model::RelEncoding>) {
+        self.lane.set_relative(table);
+    }
+
     /// Monitor lines lost because the monitor queue was full, plus sequencer overruns.
     /// A full trigger lane is [`MidiReader::counters`] `stalls`, not a drop.
     pub fn dropped(&self) -> u64 {

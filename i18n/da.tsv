@@ -4774,3 +4774,133 @@ export.summary	Low	lav
 # Timecode sync varispeed and user bits (TC-8, #1308)
 	Varispeed: adjust the playback speed instead of seeking	Varispeed: juster afspilningshastigheden i stedet for at springe
 	User bits	Brugerbits
+# AS-11 programme parts and AS-10 metadata (G2, #1371, #1375)
+	{tc}  Segmentation	{tc}  Segmentering
+	Marker Type	Markørtype
+	Chapter	Kapitel
+	Segmentation (AS-11 programme part)	Segmentering (AS-11-programdel)
+	AS-10	AS-10
+# AT9/AT3 converter (Tools ▸ Audio Tools, AT3-2)
+	AT9/AT3 Converter	AT9/AT3-konverter
+	AT9/AT3 Converter…	AT9/AT3-konverter…
+	Files to convert:	Filer, der skal konverteres:
+	Add Files	Tilføj filer
+	Add Files…	Tilføj filer…
+	Convert to:	Konvertér til:
+	Bit rate:	Bithastighed:
+	Sample format:	Sampleformat:
+	Output folder:	Outputmappe:
+	Output Folder	Outputmappe
+	Next to each source file	Ved siden af hver kildefil
+	AT9 and ATRAC3plus files convert to WAV; encoding AT9, ATRAC3plus and MP3 is not available yet.	AT9- og ATRAC3plus-filer konverteres til WAV; kodning til AT9, ATRAC3plus og MP3 er endnu ikke tilgængelig.
+	Convert	Konvertér
+	Add the files to convert first.	Tilføj først de filer, der skal konverteres.
+	Done: {n} file(s) converted.	Færdig: {n} fil(er) konverteret.
+	Converting {name}…	Konverterer {name}…
+	Stopping…	Stopper…
+	AT3 (ATRAC3, PSP / PS3)	AT3 (ATRAC3, PSP / PS3)
+	WAV (PCM)	WAV (PCM)
+	132 kbit/s (LP2)	132 kbit/s (LP2)
+	105 kbit/s	105 kbit/s
+	66 kbit/s (LP4, joint stereo)	66 kbit/s (LP4, joint stereo)
+	16-bit	16 bit
+	24-bit	24 bit
+	32-bit float	32-bit flydende komma
+
+# Datamosh transition (Grunge & Distort, DM1, #1409)
+	Datamosh	Datamosh
+	Residual	Residual
+	Motion Boost	Bevægelsesforstærkning
+	Recovery	Gendannelse
+	Encode Resolution	Kodningsopløsning
+	Half	Halv
+	Quarter	Kvart
+# Datamosh Bloom (Glitch, DM2)
+	Datamosh Bloom	Datamosh-blomstring
+	Start Time (seconds)	Starttid (sekunder)
+	Repeats	Gentagelser
+
+# Recent effects, per-channel waveform, white balance selector (SC-2/SC-3/SC-4, #1419 #1420 #1421)
+	Apply a recently used effect to the selected clips	Anvend en nyligt brugt effekt på de valgte klip
+	Disable all effects	Slå alle effekter fra
+	Enable all effects	Slå alle effekter til
+	No recent effects	Ingen nylige effekter
+	Recent effects	Seneste effekter
+	Switch every effect of the selected clips off	Slå alle effekter på de valgte klip fra
+	Switch every effect of the selected clips on	Slå alle effekter på de valgte klip til
+	Merged	Samlet
+	Per Channel	Pr. kanal
+	Channel Zoom	Kanalzoom
+	White Balance Selector (click a neutral point in the Program monitor; Esc cancels)	Hvidbalancevælger (klik på et neutralt punkt i programmonitoren; Esc annullerer)
+# Task Manager and subtitle kind (SC-2/3/4)
+	Task Manager	Jobstyring
+	Background jobs	Baggrundsjob
+	Exports	Eksporter
+	Shared task queue	Delt opgavekø
+	Task	Opgave
+	State	Tilstand
+	Details	Detaljer
+	Time left	Tid tilbage
+	Scheduled	Planlagt
+	Queued	I kø
+	Waiting for resources	Venter på ressourcer
+	Blocked	Blokeret
+	Running	Kører
+	Paused	Sat på pause
+	Cancelling	Annullerer
+	Interactive	Interaktiv
+	Speculative	Spekulativ
+	Final render	Endelig rendering
+	Show finished	Vis afsluttede
+	Nothing is running.	Intet kører.
+	Not reported by this engine yet.	Rapporteres endnu ikke af denne motor.
+	Not available: {why}	Ikke tilgængelig: {why}
+	{name} waits: {why}	{name} venter: {why}
+	{running} running · {waiting} waiting	{running} kører · {waiting} venter
+	{n} active	{n} aktive
+	{n} CPU	{n} CPU
+	{n} GiB	{n} GiB
+	{n} MiB	{n} MiB
+	Needs your decision	Kræver din beslutning
+	Run now	Kør nu
+	Next slot	Næste slot
+	Missed its start	Startede ikke til tiden
+	Missed its start at {time}	Startede ikke kl. {time}
+	Starts at {time}	Starter kl. {time}
+	Subtitle kind	Undertekststype
+	Subtitles	Undertekster
+	Captions for the hearing impaired	Tekstning for hørehæmmede
+	Forced narrative	Tvungen fortælling (forced narrative)
+	Silence	Stilhed
+	Detect Silence	Find stilhed
+	Remove Silence	Fjern stilhed
+	Clear Silence Markers	Ryd stilhedsmarkører
+# DCP Validation window (DCP-12)
+	AS-03	AS-03
+	Choose the DCP folder.	Vælg DCP-mappen.
+	DCP Validation	DCP-validering
+	DCP folder	DCP-mappe
+	DCP folder (the one holding ASSETMAP)	DCP-mappe (den der indeholder ASSETMAP)
+	Evidence	Bevis
+	How to fix	Sådan rettes det
+	Interrupted	Afbrudt
+	Not applicable	Ikke relevant
+	Report	Rapport
+	Report saved: {path}	Rapport gemt: {path}
+	Required	Påkrævet
+	Rule	Regel
+	Rules	Regler
+	Save JSON…	Gem JSON…
+	Save Markdown…	Gem Markdown…
+	Save report	Gem rapport
+	Skipped	Sprunget over
+	Standard: {standard}	Standard: {standard}
+	Validate	Valider
+	Validate DCP…	Valider DCP…
+	the engine sent no profiles	motoren sendte ingen profiler
+	{n} files checked	{n} filer kontrolleret
+
+# AS-02 export
+	Write an AS-02 bundle (the path is a folder)	Skriv en AS-02-pakke (stien er en mappe)
+	AS-02	AS-02
+	AS-12	AS-12

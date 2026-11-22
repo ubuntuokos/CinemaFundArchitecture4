@@ -15,6 +15,21 @@ use crate::{Clock, ExternalRate, Input, SharedTransport, Transport, lock};
 pub enum Source {
     Ltc,
     Mtc,
+    /// A feed registered with [`SyncManager::external_feed`] under the name in
+    /// [`SyncSettings::external_source`] (for example the timecode embedded in a video input).
+    /// Not offered in the `timecodeSync.*` preferences until a feed exists to choose.
+    External,
+}
+
+impl Source {
+    /// The name the status shows: `LTC`, `MTC`, or the external feed's own name.
+    pub fn label<'a>(&self, external: &'a str) -> &'a str {
+        match self {
+            Source::Ltc => "LTC",
+            Source::Mtc => "MTC",
+            Source::External => external,
+        }
+    }
 }
 
 /// Resolved settings (the engine's `timecodeSync.*` preferences plus the sequence).
@@ -23,6 +38,8 @@ pub struct SyncSettings {
     /// `Some` when chase is on.
     pub chase: Option<ChaseConfig>,
     pub source: Source,
+    /// The feed chase reads when `source` is [`Source::External`].
+    pub external_source: String,
     pub rate: ExternalRate,
     /// Added to the external time to get the sequence time (includes the sequence start time).
     pub offset: Tick,
@@ -47,6 +64,7 @@ impl SyncSettings {
         SyncSettings {
             chase: None,
             source: Source::Ltc,
+            external_source: String::new(),
             rate,
             offset: Tick(0),
             audio_host: String::new(),
@@ -156,6 +174,8 @@ pub trait Backend {
 #[derive(Clone, Debug, Default, PartialEq)]
 pub struct SyncStatus {
     pub chase: Option<ChaseStatus>,
+    /// The source chase reads (`LTC`, `MTC` or an external feed's name) while chase is on.
+    pub source: Option<String>,
     pub ltc_out_running: bool,
     pub mtc_out_running: bool,
     pub error: Option<String>,
@@ -199,6 +219,8 @@ pub struct SyncManager<B: Backend> {
     ltc_out: Slot<LtcOutputConfig>,
     mtc: Slot<MtcConfig>,
     input_error: Option<String>,
+    /// Feeds from [`SyncManager::external_feed`], by name.
+    external: Vec<(String, Receiver<Input>)>,
     user_bits: Option<u32>,
     /// A locate was sent at this time and the player has not reported since.
     locate_sent: Option<Tick>,
@@ -219,6 +241,7 @@ impl<B: Backend> SyncManager<B> {
             ltc_out: Slot::default(),
             mtc: Slot::default(),
             input_error: None,
+            external: Vec::new(),
             user_bits: None,
             locate_sent: None,
         }
@@ -230,6 +253,25 @@ impl<B: Backend> SyncManager<B> {
 
     pub fn backend(&self) -> &B {
         &self.backend
+    }
+
+    /// Registers an external timecode source and returns where it sends its input.
+    ///
+    /// The feed sends [`Input::Frame`] observations (local [`Clock`] time and external time of
+    /// day), and optionally [`Input::Locate`] and [`Input::Error`], exactly as the LTC and MTC
+    /// readers do. Chase reads it while the settings say [`Source::External`] with this `name`;
+    /// otherwise its input is dropped at the next [`poll`](Self::poll). Registering a name again
+    /// replaces the earlier feed (its sender stops counting).
+    pub fn external_feed(&mut self, name: &str) -> Sender<Input> {
+        let (tx, rx) = channel();
+        self.external.retain(|(n, _)| n != name);
+        self.external.push((name.to_owned(), rx));
+        tx
+    }
+
+    /// Whether the settings read an external feed, and which one.
+    fn external_selected(&self) -> Option<&str> {
+        self.settings.as_ref().filter(|s| s.chase.is_some() && s.source == Source::External).map(|s| s.external_source.as_str())
     }
 
     /// Applies new settings, reopening only the devices whose settings changed.
@@ -253,6 +295,14 @@ impl<B: Backend> SyncManager<B> {
         let reopened_in = reopen(&mut self.ltc_in, s.ltc_input(clock), |c| backend.ltc_input(c, tx.clone()));
         reopen(&mut self.ltc_out, s.ltc_output(clock), |c| backend.ltc_output(c, transport.clone()));
         let reopened_mtc = reopen(&mut self.mtc, s.mtc(clock), |c| backend.mtc(c, tx.clone(), transport.clone()));
+        let old = self.settings.as_ref().map(|o| (o.source, o.external_source.as_str()));
+        if old != Some((s.source, s.external_source.as_str())) {
+            // input of a feed chase no longer reads (or did not read) must not reach the chase
+            for (_, rx) in &self.external {
+                while rx.try_recv().is_ok() {}
+            }
+            self.input_error = None;
+        }
         if reopened_in || reopened_mtc {
             // frames from a closed input must not reach the new chase
             while self.rx.try_recv().is_ok() {}
@@ -285,6 +335,15 @@ impl<B: Backend> SyncManager<B> {
         let mut inputs = Vec::new();
         while let Ok(i) = self.rx.try_recv() {
             inputs.push(i);
+        }
+        let selected = self.external_selected().map(str::to_owned);
+        for (name, rx) in &self.external {
+            let read = selected.as_deref() == Some(name.as_str());
+            while let Ok(i) = rx.try_recv() {
+                if read {
+                    inputs.push(i);
+                }
+            }
         }
         let tr = self.transport();
         let Some(chase) = self.chase.as_mut() else {
@@ -331,12 +390,16 @@ impl<B: Backend> SyncManager<B> {
 
     pub fn status(&self) -> SyncStatus {
         let s = self.settings.as_ref();
-        let error = [self.ltc_in.error(), self.ltc_out.error(), self.mtc.error(), self.input_error.clone()].into_iter().flatten().collect::<Vec<_>>();
+        let missing_feed =
+            self.external_selected().filter(|n| !self.external.iter().any(|(e, _)| e == n)).map(|n| format!("no external timecode source named `{n}`"));
+        let error =
+            [self.ltc_in.error(), self.ltc_out.error(), self.mtc.error(), self.input_error.clone(), missing_feed].into_iter().flatten().collect::<Vec<_>>();
         let warning = s.filter(|s| (s.generate_mtc || (s.chase.is_some() && s.source == Source::Mtc)) && !MtcScheduler::exact(s.rate)).map(|s| {
             format!("MIDI Timecode has no code for {} fps: it carries the labels with the nearest code, at the real {0} fps speed", s.rate.rate.label())
         });
         SyncStatus {
             chase: self.chase.as_ref().map(Chase::status),
+            source: s.filter(|s| s.chase.is_some()).map(|s| s.source.label(&s.external_source).to_owned()),
             ltc_out_running: self.ltc_out.dev.as_ref().is_some_and(|d| d.error().is_none()),
             mtc_out_running: s.is_some_and(|s| s.generate_mtc) && self.mtc.dev.as_ref().is_some_and(|d| d.error().is_none()),
             error: (!error.is_empty()).then(|| error.join("; ")),
@@ -515,6 +578,94 @@ mod tests {
         let _ = tx.send(Input::Error("MIDI port gone".into()));
         m.poll();
         assert_eq!(m.status().error.as_deref(), Some("MIDI port gone"));
+    }
+
+    fn external(name: &str) -> SyncSettings {
+        let rate = ExternalRate::new(FrameRate::FPS_50, false);
+        let mut chase = ChaseConfig::new(FrameRate::FPS_50);
+        chase.freewheel = Tick::from_units(1, 2); // 25 frames: room for a slow test machine
+        SyncSettings { chase: Some(chase), source: Source::External, external_source: name.into(), ..SyncSettings::off(rate) }
+    }
+
+    /// READY-V6.2: a synthetic, frame-accurate 50p source on `external_feed` locks, freewheels
+    /// through a dropout, stops after it, and locks again, like LTC does.
+    #[test]
+    fn an_external_50p_feed_locks_freewheels_and_relocks() {
+        let mut m = SyncManager::new(Fake::default());
+        let tx = m.external_feed("SDI 1 RP188");
+        m.apply(external("SDI 1 RP188"));
+        assert!(m.backend.opened.is_empty(), "an external source opens no LTC or MTC device");
+        let frame = FrameRate::FPS_50.frame_duration().0;
+        let pos0 = Tick::from_units(36_000, 1).0; // 10:00:00:00
+        // The last of three frames arrived 100 ms ago: lock, then freewheel at the same check.
+        let t0 = m.clock.now().0 - 5 * frame - 2 * frame;
+        let frame_at = |k: i64| Input::Frame(Observation { at: Tick(t0 + k * frame), position: Tick(pos0 + k * frame) });
+        for k in 0..3 {
+            tx.send(frame_at(k)).expect("feed open");
+        }
+        let a = m.poll();
+        assert!(matches!(a.as_slice(), [ChaseAction::Locate { play: true, .. }]), "{a:?}");
+        let st = m.status();
+        assert_eq!(st.source.as_deref(), Some("SDI 1 RP188"));
+        assert_eq!(st.error, None);
+        assert_eq!(st.chase.map(|c| c.state), Some(ChaseState::Freewheel), "signal 100 ms old: freewheel");
+        // The signal comes back on the same timeline: locked again without a new locate.
+        let k = (m.clock.now().0 - t0) / frame;
+        tx.send(frame_at(k)).expect("feed open");
+        let a = m.poll();
+        assert!(a.iter().all(|a| !matches!(a, ChaseAction::Stop)), "{a:?}");
+        assert_eq!(m.status().chase.map(|c| c.state), Some(ChaseState::Locked));
+        // A dropout longer than the freewheel time stops the player.
+        std::thread::sleep(std::time::Duration::from_millis(600));
+        assert_eq!(m.poll(), [ChaseAction::Stop]);
+        assert_eq!(m.status().chase.map(|c| c.state), Some(ChaseState::NoSignal));
+        // A fresh run of frames locks again.
+        let t1 = m.clock.now().0 - 2 * frame;
+        for j in 0..3 {
+            tx.send(Input::Frame(Observation { at: Tick(t1 + j * frame), position: Tick(pos0 + j * frame) })).expect("feed open");
+        }
+        let a = m.poll();
+        assert!(matches!(a.as_slice(), [ChaseAction::Locate { play: true, .. }]), "{a:?}");
+        assert_eq!(m.status().chase.map(|c| c.state), Some(ChaseState::Locked));
+    }
+
+    #[test]
+    fn only_the_selected_source_reaches_the_chase() {
+        let mut m = SyncManager::new(Fake::default());
+        let a = m.external_feed("a");
+        let b = m.external_feed("b");
+        let frame = FrameRate::FPS_50.frame_duration().0;
+        let start = m.clock.now().0 - 2 * frame;
+        let burst = |tx: &Sender<Input>| {
+            for k in 0..3 {
+                tx.send(Input::Frame(Observation { at: Tick(start + k * frame), position: Tick(Tick::from_units(10, 1).0 + k * frame) })).expect("feed open");
+            }
+        };
+        // Chase on LTC: the external feeds are not read.
+        let mut ltc = external("a");
+        ltc.source = Source::Ltc;
+        m.apply(ltc);
+        burst(&a);
+        assert!(m.poll().is_empty());
+        assert_eq!(m.status().source.as_deref(), Some("LTC"));
+        // Feed `a` selected: what `b` sends is dropped, what `a` sends locks.
+        m.apply(external("a"));
+        burst(&b);
+        assert!(m.poll().is_empty(), "the other feed is not read");
+        burst(&a);
+        assert!(matches!(m.poll().as_slice(), [ChaseAction::Locate { play: true, .. }]));
+        // An error from the feed shows; a feed that is not registered is an error, not a crash.
+        a.send(Input::Error("SDI input lost".into())).expect("feed open");
+        m.poll();
+        assert_eq!(m.status().error.as_deref(), Some("SDI input lost"));
+        m.apply(external("c"));
+        assert_eq!(m.status().error.as_deref(), Some("no external timecode source named `c`"));
+        assert!(m.poll().is_empty());
+        // A feed whose sender is gone is just silent.
+        drop(b);
+        m.apply(external("b"));
+        assert!(m.poll().is_empty());
+        assert_eq!(m.status().error, None);
     }
 
     #[test]

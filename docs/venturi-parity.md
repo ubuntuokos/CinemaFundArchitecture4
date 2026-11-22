@@ -32,7 +32,7 @@ CFA4-gyel. A Kdenlive-tervben már szereplő tételeket **nem ismétli**, csak h
 | Rész | Licenc | Átvehető? | Megjegyzés |
 |---|---|:-:|---|
 | Venturi forráskód (`crates/*`) | GPL-3.0-or-later (`LICENSE`, `Cargo.toml` `license`) | ✅ | A fájlokban nincs SPDX-fejléc, ezért átvételkor **mi írjuk** a fejlécet: eredet (repó + commit), szerző (`morrolinux`, Venturi contributors), GPL-3.0-or-later. Bejegyzés a [`licensing.md` §5](licensing.md) nyilvántartásba ugyanabban a commitban |
-| Silero VAD modell (`vv-vad/model`) | MIT (`LICENSE-silero-vad`) | ✅ | Eszköz, ezért `.attribution` oldalfájl és `ATTRIBUTION.md`-sor kell (`cargo xtask assets`) |
+| Silero VAD modell (`vv-vad/model`) | MIT (`LICENSE-silero-vad`) | ✅ | A CFA4 a modellt **nem terjeszti és nem ágyazza be**: a felhasználó az első használatkor, a licenc megmutatása és egyszeri elfogadása után maga tölti le (V1-B, 2026-11-21; CFA4-AI_modules ADR 0008 F5). Ezért nem kerül modellfájl a repóba; a licenc a letöltőfelületen jelenik meg, a modell a közös modelltárba kerül |
 | `tract-onnx` (ONNX-futtató) | MIT OR Apache-2.0 | ✅ | Tiszta Rust, `cargo deny` szerint ellenőrizendő |
 | `vst3` crate, VST3 SDK | MIT (az SDK 2025 óta MIT) | ✅ | Csak V6-hoz, külön folyamatban; a Steinberg/VST logó nem kerülhet be |
 | Venturi név, logó, ikonok, képernyőképek | — | ❌ | Márka, nem vesszük át (ahogy a Kdenlive/KDE nevét sem) |
@@ -80,13 +80,22 @@ szűkíti. Szünettörlés csak átirattal van (`transcript.removePauses`), ehhe
 
 **Teendő:**
 1. `crates/speech`: `vad::silero` modul `tract-onnx`-szel, a Venturi `vv-vad` alapján
-   (fejléc + nyilvántartás), 16 kHz-re fagyasztott modell `.attribution` fájllal.
+   (fejléc + nyilvántartás). A modellt (16 kHz) a CFA4 nem szállítja és nem ágyazza be: a felhasználó az első
+   használatkor, a licenc (MIT) elfogadása után tölti le a közös modelltárba (V1-B, az MI-réteg után; V1-A a
+   megvalósítási tervben).
 2. Új parancs `audio.detectSpeech` / `clip.removeSilence` (paraméterek: küszöb, minimális
    szünet, megtartott ráhagyás, `Tick`-ben), átirat nélkül, bármilyen nyelven.
 3. A Whisper elé VAD-szűrő: csak a beszédes szakaszok mennek a modellbe. Ez gyorsít, és
    csökkenti a csendben „hallucinált” szöveget. **Kiegészíti a K31–K35-öt** (nagyobb
    modellek, élő mikrofonos felirat: ott a VAD dönti el, mikor zárul egy mondat).
 4. Teszt: generált beszéd+zaj fixture (`target/fixtures/`), a VAD-határok tűrése ±1 ablak (32 ms).
+5. **Elfogadási feltételek bővítése** (tulajdonos, 2026-11-20; a megvalósítási terv: [`CFA4-V1-SILENCE-REMOVAL-001`](plans/CFA4-V1-SILENCE-REMOVAL-001.md); forrás:
+   [`CFA4-SHOTCUT-CAPABILITY-ADAPTATION-001`](plans/CFA4-SHOTCUT-CAPABILITY-ADAPTATION-001.md) 5.2):
+   - **Régióelőnézet:** az észlelt csendes régiók előnézete és markerként megjelenítése, mielőtt bármi törlődne.
+   - **Szerkeszthető kijelölés:** a régiók törlés előtt szerkeszthetők és kijelölhetők; nincs automatikus romboló törlés.
+   - **Kötegelt elemzés:** több klip elemzése egy lépésben.
+   - **Opcionális ripple-törlés** és **nem romboló mód** (a régiók törlés nélkül, jelölésként maradnak).
+   - **Elfogadási teszt (a neve jóváhagyva, tulajdonos, 2026-11-21):** `v1_silence_removal_acceptance` (a V1 tesztjeinek mellé, `crates/speech` + `crates/engine`). Három ellenőrzés egy generált beszéd+csend fixture-ön: (a) a hangszinkron megmarad: a megmaradó klipek hang- és képoldala azonos időtartományú, a kötött (linked) hang nem csúszik el, a ripple-törlés után a sorozat hossza a törölt régiók összegével rövidül; (b) undo/redo: a törlés (és a kötegelt futás) egy-egy visszavonási lépés, az undo után a sorozat bájtra azonos az eredetivel, a redo után az eredménnyel; (c) render-ellenőrzés: a törlés előtti és utáni kimenet a megmaradt részeken azonos (golden összevetés), a törölt régiókban nincs hang. A V1 kódja nem része az SC-1…SC-4 tételeknek; erről külön döntés készül, addig ez dokumentált elfogadási feltétel.
 
 ### V2 · Hardveres kódoló önellenőrzése · P1 · 12–20 óra
 
@@ -248,3 +257,4 @@ kódrészhez sor a [`licensing.md` §5](licensing.md) nyilvántartásban.
 - 2026-10-27: első változat (V1–V10).
 - 2026-10-27: a tulajdonos jóváhagyta; 5. pont döntésekké alakítva.
 - 2026-10-27: MI-réteg szabály: V1 és V7 az MI-réteg után; javasolt kezdés V2, V3.
+- 2026-11-21: V1-A (energiaalapú csend-eltávolítás, `CFA4-V1-SILENCE-REMOVAL-001`) megvalósítva: `audio.detectSpeech`, `silence.regions`, `silence.keep`, `silence.clear`, `clip.removeSilence`, Qt6 párbeszéd; az elfogadási teszt `v1_silence_removal_acceptance` (`crates/engine/src/silence_tests.rs`). A V1-B (Silero) az MI-réteg után marad.

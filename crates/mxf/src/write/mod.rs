@@ -36,11 +36,16 @@
 //! [`WriterConfig::iab`] the immersive audio track file of ST 429-18 (one IABitstream frame per
 //! data element, [`MxfWriter::push_data`]).
 
+mod as02_version;
 mod labels;
 #[cfg(test)]
 mod tests;
 mod timed_text;
 
+pub use as02_version::{
+    ComponentSpec, MAX_VERSION_CLIPS, MAX_VERSION_COMPONENTS, MAX_VERSION_TRACKS, VersionClipSpec, VersionConfig, VersionTrackKind, VersionTrackSpec,
+    write_version,
+};
 pub use timed_text::{MAX_TIMED_TEXT_RESOURCES, MIME_OPENTYPE, MIME_PNG, TimedTextConfig, TimedTextResource, write_timed_text};
 
 use std::collections::VecDeque;
@@ -1198,7 +1203,7 @@ impl<W: Write + Seek> MxfWriter<W> {
         let as11 = match &cfg.as11 {
             Some(a) => {
                 if cfg.pattern != Pattern::Op1a {
-                    return Err(io::Error::new(io::ErrorKind::InvalidInput, "AS-11 metadata is written in OP1a files"));
+                    return Err(io::Error::new(io::ErrorKind::InvalidInput, "AS-10 / AS-11 metadata is written in OP1a files"));
                 }
                 let tc = cfg.timecode.unwrap_or(StartTimecode { frames: 0, rate: cfg.edit_rate, drop_frame: false });
                 let clock = crate::as11::Clock { start: tc.frames, base: tc.rounded_base() };
@@ -1905,12 +1910,23 @@ impl<W: Write + Seek> MxfWriter<W> {
             let n = 1 + self.tracks.len() as u32;
             let mut track_uids: Vec<[u8; 16]> = (0..n).map(|k| self.uid(base + 1 + 3 * k)).collect();
             if material && let Some(a) = &self.as11 {
-                track_uids.push(self.uid(AS11_UID));
+                if !a.core.is_empty() {
+                    track_uids.push(self.uid(AS11_UID));
+                }
                 if !a.segments.is_empty() {
                     track_uids.push(self.uid(AS11_UID + 0x100));
                 }
                 if !a.ukdpp.is_empty() {
                     track_uids.push(self.uid(AS11_UID + 0x200));
+                }
+                if !a.as10.is_empty() {
+                    track_uids.push(self.uid(AS11_UID + 0x300));
+                }
+                if !a.as03.is_empty() {
+                    track_uids.push(self.uid(AS11_UID + 0x400));
+                }
+                if !a.as12.is_empty() {
+                    track_uids.push(self.uid(AS11_UID + 0x500));
                 }
             }
             let mut s = Set::new(if material { 0x36 } else { 0x37 }, self.uid(base));
@@ -2353,7 +2369,9 @@ impl<W: Write + Seek> MxfWriter<W> {
             s.write(out);
             framework(out, key, f, items);
         };
-        static_track(out, AS11_UID, crate::as11::CORE_TRACK, crate::as11::CORE_FRAMEWORK_KEY, &a.core);
+        if !a.core.is_empty() {
+            static_track(out, AS11_UID, crate::as11::CORE_TRACK, crate::as11::CORE_FRAMEWORK_KEY, &a.core);
+        }
         if !a.segments.is_empty() {
             let base = AS11_UID + 0x100;
             let (name, id) = crate::as11::SEGMENTATION_TRACK;
@@ -2400,6 +2418,35 @@ impl<W: Write + Seek> MxfWriter<W> {
         }
         if !a.ukdpp.is_empty() {
             static_track(out, AS11_UID + 0x200, crate::as11::UKDPP_TRACK, crate::as11::UKDPP_FRAMEWORK_KEY, &a.ukdpp);
+        }
+        if !a.as10.is_empty() {
+            static_track(out, AS11_UID + 0x300, crate::as11::AS10_TRACK, crate::as11::AS10_FRAMEWORK_KEY, &a.as10);
+        }
+        if !a.as03.is_empty() {
+            static_track(out, AS11_UID + 0x400, crate::as11::AS03_TRACK, crate::as11::AS03_FRAMEWORK_KEY, &a.as03);
+        }
+        if !a.as12.is_empty() {
+            // the framework holds the shim name and a strong reference to the Ad-ID slate
+            let base = AS11_UID + 0x500;
+            let (name, id) = crate::as11::AS12_TRACK;
+            let (t, q, g, f, slate) = (self.uid(base), self.uid(base + 1), self.uid(base + 2), self.uid(base + 3), self.uid(base + 4));
+            let mut s = Set::new(0x3A, t);
+            s.u32(0x4801, id).u32(0x4804, 0).p(0x4802, &utf16(name)).p(0x4803, &q);
+            s.write(out);
+            let mut s = Set::new(0x0F, q);
+            s.p(0x0201, &DEF_DESCRIPTIVE).refs(0x1001, &[g]);
+            s.write(out);
+            let mut s = Set::new(0x41, g);
+            s.p(0x0201, &DEF_DESCRIPTIVE).p(0x6101, &f);
+            s.write(out);
+            let mut s = Set { key: crate::as11::AS12_FRAMEWORK_KEY, v: Vec::new() };
+            s.p(0x3C0A, &f);
+            for (i, v) in &a.as12 {
+                s.p(tag(i), v);
+            }
+            s.p(tag(&crate::as11::AS12_SLATE), &slate);
+            s.write(out);
+            framework(out, crate::as11::ADID_SLATE_KEY, slate, &a.adid);
         }
     }
 

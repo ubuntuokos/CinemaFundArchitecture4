@@ -40,6 +40,23 @@ struct AudioState {
     last_decoded: Option<usize>,
     /// Saved decoder states for exact jumps (AMR).
     checkpoints: crate::audio::Checkpoints,
+    /// RealAudio (`A_REAL/*`): the decoder and the superblock it decodes next.
+    real: Option<RealState>,
+}
+
+/// The state of a RealAudio track: superblocks are decoded forward from the nearest checkpoint.
+struct RealState {
+    dec: crate::realmedia::MkvRealAudio,
+    next: usize,
+    checkpoints: std::collections::BTreeMap<usize, crate::realmedia::MkvRealAudio>,
+}
+
+/// Superblocks between saved RealAudio decoder states.
+const REAL_CHECKPOINT_GROUPS: usize = 32;
+
+/// The RealAudio decoder of an `A_REAL/*` track (`None` for any other track).
+fn real_audio(t: &cfa4_matroska::Track) -> Option<std::result::Result<crate::realmedia::MkvRealAudio, String>> {
+    matches!(&t.codec, Codec::Other(id) if id.starts_with("A_REAL/")).then(|| crate::realmedia::MkvRealAudio::new(&t.codec_private))
 }
 
 /// One playable audio track with its own decoder state and timing tables.
@@ -88,6 +105,22 @@ fn audio_starts(file: &MkvFile, bytes: &crate::Src, ti: usize, rate: i64) -> Vec
         return opus_starts(file, bytes, ti, &h, rate);
     }
     let at = stamp_to_samples(t, rate, codec_delay_samples(t, rate));
+    if let Some(Ok(r)) = real_audio(t) {
+        // a superblock of `group_len` blocks is decoded at once and starts where its first block
+        // does: every block of it carries that start (the last one holds the samples)
+        let base = t.samples.first().map_or(0, |s| at(s.pts));
+        let (h, mut acc) = (r.group_len(), 0i64);
+        return (0..t.samples.len())
+            .map(|i| {
+                if r.blocked() {
+                    return base + (i / h) as i64 * i64::try_from(r.group_samples(0)).unwrap_or(0);
+                }
+                let start = base + acc;
+                acc += i64::try_from(r.group_samples(usize::try_from(t.sample_size(i).unwrap_or(0)).unwrap_or(0))).unwrap_or(0);
+                start
+            })
+            .collect();
+    }
     let first = || file.read_sample(bytes, ti, 0).unwrap_or_default();
     let out_rate = u32::try_from(rate).unwrap_or(0);
     let frame = match &t.codec {
@@ -96,6 +129,8 @@ fn audio_starts(file: &MkvFile, bytes: &crate::Src, ti: usize, rate: i64) -> Vec
         Codec::Ac3 => fixed_packet_samples(FixedFrames::Ac3, &first(), out_rate),
         Codec::Eac3 => fixed_packet_samples(FixedFrames::Eac3, &first(), out_rate),
         Codec::Dts => fixed_packet_samples(FixedFrames::Dts, &first(), out_rate),
+        // ALAC packets are whole frames of the cookie's frame length
+        Codec::Other(id) if id == "A_ALAC" => alac_cookie(&t.codec_private).map(|c| i64::from(c.frame_length)).filter(|&n| n > 0),
         _ => None,
     };
     if matches!(t.codec, Codec::TrueHd) {
@@ -124,6 +159,11 @@ fn audio_starts(file: &MkvFile, bytes: &crate::Src, ti: usize, rate: i64) -> Vec
         let full = 256 * rate / 245;
         let last = t.samples.len().saturating_sub(1);
         let packets = t.samples.iter().enumerate().map(|(i, s)| PacketTime { stamp: at(s.pts), stamped: own_stamp(s), samples: (i < last).then_some(full) });
+        return contiguous_starts(packets, stamp_tolerance(t, rate));
+    }
+    if matches!(&t.codec, Codec::Other(id) if id == "A_ATRAC/AT1") {
+        // every ATRAC1 packet is one 512-sample sound unit per channel
+        let packets = t.samples.iter().map(|s| PacketTime { stamp: at(s.pts), stamped: own_stamp(s), samples: Some(512) });
         return contiguous_starts(packets, stamp_tolerance(t, rate));
     }
     if let Some(Ok(c)) = acm_codec(t) {
@@ -201,6 +241,11 @@ fn audio_info(t: &cfa4_matroska::Track) -> Option<AudioStreamInfo> {
         rate = crate::audio::OPUS_RATE;
         channels = h.channels as u32;
     }
+    let real = real_audio(t).and_then(Result::ok);
+    if let Some(r) = &real {
+        rate = r.sample_rate();
+        channels = r.channels() as u32;
+    }
     let amr = amr_track(t);
     if let Some(wide) = amr {
         rate = if wide { cfa4_amr::wb::SAMPLE_RATE } else { cfa4_amr::nb::SAMPLE_RATE };
@@ -215,9 +260,26 @@ fn audio_info(t: &cfa4_matroska::Track) -> Option<AudioStreamInfo> {
     let codec = match (amr, acm_codec(t)) {
         (Some(wide), _) => if wide { "AMR-WB" } else { "AMR-NB" }.to_string(),
         (_, Some(Ok(c))) => c.name().to_string(),
+        _ if real.is_some() => real.as_ref().map_or_else(String::new, |r| r.label().to_string()),
         _ => codec_label(&t.codec),
     };
     Some(AudioStreamInfo { sample_rate: rate, channels, codec, bits_per_sample: bits.map(|b| b as u32), speakers: Vec::new() })
+}
+
+/// The fields of an ALAC `CodecPrivate` (the magic cookie, `ALACSpecificConfig` first, big-endian).
+struct AlacCookie {
+    frame_length: u32,
+    sample_rate: Option<u32>,
+}
+
+fn alac_cookie(private: &[u8]) -> Option<AlacCookie> {
+    let be32 = |at: usize| private.get(at..at + 4).map(|b| u32::from_be_bytes([b[0], b[1], b[2], b[3]]));
+    if private.len() < 24 {
+        return None;
+    }
+    // frameLength u32, compatibleVersion u8, bitDepth u8, pb, mb, kb u8, numChannels u8, maxRun u16,
+    // maxFrameBytes u32, avgBitRate u32, sampleRate u32
+    Some(AlacCookie { frame_length: be32(0)?, sample_rate: be32(20).filter(|&r| r > 0) })
 }
 
 /// Whether the track is AMR, and wideband: `A_AMR/NB` / `A_AMR/WB`, or an `A_MS/ACM` track
@@ -378,9 +440,21 @@ fn sample_entry(c: &Codec, private: &[u8], v: Option<&cfa4_matroska::VideoInfo>,
         }
         Codec::Other(id) if id == "V_FFV1" => crate::ffv1::sample_entry(private, w, h),
         Codec::Other(id) if id == "V_DIRAC" => crate::dirac::sample_entry(w, h),
+        Codec::Theora { private } => crate::theora::sample_entry(private, w, h),
+        Codec::Other(id) if id == "V_CAVS" => crate::cavs::sample_entry(private, w, h),
+        Codec::Other(id) if id == "V_JPEG2000" => crate::j2k::sample_entry(w, h),
+        // ffmpeg writes JPEG 2000 as a VfW `mjp2` track
+        Codec::VfwFourcc { fourcc, .. } if fourcc.eq_ignore_ascii_case(b"mjp2") => crate::j2k::sample_entry(w, h),
+        Codec::Other(id) if id.starts_with("V_REAL/") => crate::realmedia::mkv_sample_entry(id, private, w, h)?,
         // Huffyuv: the VfW BITMAPINFOHEADER sets the stream up (bit count, extradata)
         Codec::VfwFourcc { fourcc, bitmap_info_header } if fourcc.eq_ignore_ascii_case(b"HFYU") => crate::huffyuv::sample_entry(bitmap_info_header, w, h),
         Codec::VfwFourcc { fourcc, .. } if crate::canopus::codec(fourcc).is_some() => crate::canopus::sample_entry(crate::canopus::codec(fourcc)?, w, h),
+        Codec::VfwFourcc { fourcc, .. } if crate::indeo::is_indeo2(fourcc) => crate::indeo::sample_entry_indeo2(w, h),
+        // Cinepak: the VfW BITMAPINFOHEADER bit count (8: palette video) and the palette after it
+        Codec::VfwFourcc { fourcc, bitmap_info_header } if crate::cinepak::is_cinepak(fourcc) => {
+            let bits = bitmap_info_header.get(14..16).map_or(24, |b| u16::from_le_bytes([b[0], b[1]]));
+            crate::cinepak::sample_entry(bits, bitmap_info_header.get(40..).unwrap_or_default(), w, h)
+        }
         // Lagarith: the VfW BITMAPINFOHEADER bit count sets the solid-frame layout
         Codec::VfwFourcc { fourcc, bitmap_info_header } if crate::lagarith::is_lagarith(fourcc) => {
             let bits = bitmap_info_header.get(14..16).map_or(24, |b| u16::from_le_bytes([b[0], b[1]]));
@@ -391,8 +465,31 @@ fn sample_entry(c: &Codec, private: &[u8], v: Option<&cfa4_matroska::VideoInfo>,
         Codec::VfwFourcc { fourcc, bitmap_info_header } if crate::utvideo::is_utvideo(fourcc) => {
             crate::utvideo::sample_entry(*fourcc, bitmap_info_header.get(40..).unwrap_or_default(), w, h)
         }
+        // Hap: the VfW FourCC (`Hap1`, `Hap5`, `HapY`, …) names the texture format
+        Codec::VfwFourcc { fourcc, .. } if crate::hap::is_hap(fourcc) => crate::hap::sample_entry(*fourcc, w, h),
+        // DV / DVCPRO: one DIF frame per block, the same decoder as in AVI and QuickTime
+        Codec::VfwFourcc { fourcc, .. } if is_dv_fourcc(fourcc) => cfa4_isobmff::SampleEntry::dv(FourCc(dv_sample_fourcc(fourcc)), w, h),
         _ => return None,
     })
+}
+
+/// The VfW FourCCs DV streams carry (case-insensitive), as in the AVI demuxer plus the QuickTime names.
+fn is_dv_fourcc(f: &[u8; 4]) -> bool {
+    let mut f = *f;
+    f.make_ascii_lowercase();
+    matches!(&f, b"dvsd" | b"dv25" | b"dv50" | b"dvhd" | b"dvsl" | b"cdvc" | b"dvcp" | b"dvpp" | b"dvc " | b"dv5n" | b"dv5p" | b"avdv" | b"avd1")
+        || (f.starts_with(b"dvh") && f[3].is_ascii_digit())
+}
+
+/// The QuickTime sample-entry FourCC of a VfW DV FourCC (the decoder reads the DIF frame, not the name).
+fn dv_sample_fourcc(f: &[u8; 4]) -> [u8; 4] {
+    let mut f = *f;
+    f.make_ascii_lowercase();
+    match &f {
+        b"dv50" => *b"dv5n",
+        b"dvsd" | b"dv25" | b"cdvc" | b"dvhd" | b"dvsl" => *b"dvc ",
+        _ => f,
+    }
 }
 
 /// HDR static metadata from the Matroska `Colour` element.
@@ -455,14 +552,24 @@ fn codec_label(c: &Codec) -> String {
         Codec::Other(id) if id == "V_MPEG1" => "MPEG-1 Video".into(),
         Codec::VfwFourcc { fourcc, .. } if crate::utvideo::is_utvideo(fourcc) => "Ut Video".into(),
         Codec::VfwFourcc { fourcc, .. } if crate::lagarith::is_lagarith(fourcc) => "Lagarith".into(),
+        Codec::VfwFourcc { fourcc, .. } if crate::indeo::is_indeo2(fourcc) => "Indeo 2".into(),
+        Codec::VfwFourcc { fourcc, .. } if crate::cinepak::is_cinepak(fourcc) => "Cinepak".into(),
         Codec::VfwFourcc { fourcc, .. } if crate::magicyuv::is_magicyuv(fourcc) => "MagicYUV".into(),
+        Codec::VfwFourcc { fourcc, .. } if crate::hap::is_hap(fourcc) => "Hap".into(),
+        Codec::VfwFourcc { fourcc, .. } if is_dv_fourcc(fourcc) => "DV".into(),
         Codec::VfwFourcc { fourcc, .. } if fourcc.eq_ignore_ascii_case(b"HFYU") => "Huffyuv".into(),
         Codec::VfwFourcc { fourcc, .. } if crate::canopus::codec(fourcc).is_some() => {
             crate::canopus::codec(fourcc).map_or("Canopus", crate::canopus::label).into()
         }
         Codec::Other(id) if id == "V_FFV1" => "FFV1".into(),
         Codec::Other(id) if id == "V_DIRAC" => "VC-2 / Dirac".into(),
+        Codec::Theora { .. } => "Theora".into(),
+        Codec::Other(id) if id == "V_CAVS" => crate::cavs::NAME.into(),
+        Codec::Other(id) if id == "V_JPEG2000" => "JPEG 2000".into(),
+        Codec::VfwFourcc { fourcc, .. } if fourcc.eq_ignore_ascii_case(b"mjp2") => "JPEG 2000".into(),
         Codec::Other(id) if id == "A_TTA1" => "TTA".into(),
+        Codec::Other(id) if id == "A_ATRAC/AT1" => "ATRAC1".into(),
+        Codec::Other(id) if id == "A_ALAC" => "ALAC".into(),
         Codec::VfwFourcc { fourcc, .. } if fourcc.eq_ignore_ascii_case(b"FFV1") => "FFV1".into(),
         other => other.name().to_string(),
     }
@@ -533,7 +640,16 @@ impl MkvSource {
                     FrameRate::from_f64(1.0 / step)
                 }
             };
-            ventry = sample_entry(&t.codec, &t.codec_private, t.video.as_ref(), w as u16, h as u16);
+            // AVS1 in Matroska has no `CodecPrivate`: the sequence header of the first picture
+            // primes every decoder that starts at a later one
+            let avs1_seq = match &t.codec {
+                Codec::Other(id) if id == "V_CAVS" && t.codec_private.is_empty() && !t.samples.is_empty() => {
+                    file.read_sample(&bytes, i, 0).ok().and_then(|s| crate::cavs::first_sequence_header(&s))
+                }
+                _ => None,
+            };
+            let private = avs1_seq.as_deref().unwrap_or(&t.codec_private);
+            ventry = sample_entry(&t.codec, private, t.video.as_ref(), w as u16, h as u16);
             let (color, explicit) = color_of(&v, w, h, ventry.as_ref().and_then(|e| crate::stream_color::from_codec_config(&e.codec)));
             if explicit {
                 explicit_color = Some(color);
@@ -595,8 +711,14 @@ impl MkvSource {
                     Codec::TrueHd => crate::audio::truehd_preroll(ainfo.sample_rate),
                     _ => 0,
                 };
-                let state =
-                    Mutex::new(AudioState { decoder: None, packets: HashMap::new(), order: Vec::new(), last_decoded: None, checkpoints: Default::default() });
+                let state = Mutex::new(AudioState {
+                    decoder: None,
+                    packets: HashMap::new(),
+                    order: Vec::new(),
+                    last_decoded: None,
+                    checkpoints: Default::default(),
+                    real: None,
+                });
                 Some(MkvAudio { track: i, state, starts, preroll })
             })
             .collect();
@@ -648,6 +770,18 @@ impl MkvSource {
             let bits = ainfo.bits_per_sample.unwrap_or(16);
             return PacketDecoder::tta(u16::try_from(ainfo.channels).unwrap_or(0), u16::try_from(bits).unwrap_or(0), rate);
         }
+        if matches!(&t.codec, Codec::Other(id) if id == "A_ATRAC/AT1") {
+            return PacketDecoder::atrac1(usize::try_from(ainfo.channels).unwrap_or(0));
+        }
+        if matches!(&t.codec, Codec::Other(id) if id == "A_ALAC") {
+            // the magic cookie: the 24-byte ALACSpecificConfig and the optional channel layout
+            let cookie = alac_cookie(&t.codec_private).ok_or_else(|| CodecError::Unsupported("ALAC: unreadable magic cookie".into()))?;
+            return PacketDecoder::new(
+                symphonia::core::codecs::audio::well_known::CODEC_ID_ALAC,
+                cookie.sample_rate.unwrap_or(rate),
+                Some(t.codec_private.clone()),
+            );
+        }
         match &t.codec {
             Codec::Aac { asc } => PacketDecoder::aac(asc, rate),
             Codec::Opus { head } => PacketDecoder::opus(cfa4_opus::OpusHead::parse(head).map_err(|e| CodecError::Unsupported(format!("Opus: {e}")))?),
@@ -666,6 +800,44 @@ impl MkvSource {
             }
             other => Err(CodecError::Unsupported(format!("{} audio", codec_label(other)))),
         }
+    }
+
+    /// RealAudio block `i`: nothing until the last block of its superblock, which brings the whole
+    /// superblock's samples (the blocks are sub-packets the deinterleaver puts back in order).
+    fn real_audio_packet(&self, ti: usize, track: &cfa4_matroska::Track, st: &mut AudioState, i: usize) -> crate::Result<Vec<Vec<f32>>> {
+        if st.real.is_none() {
+            let dec = crate::realmedia::MkvRealAudio::new(&track.codec_private).map_err(|e| CodecError::Unsupported(format!("RealAudio: {e}")))?;
+            st.real = Some(RealState { next: 0, checkpoints: std::collections::BTreeMap::from([(0, dec.clone())]), dec });
+        }
+        let Some(rs) = st.real.as_mut() else { return Ok(Vec::new()) };
+        let h = rs.dec.group_len();
+        if i % h != h - 1 {
+            return Ok(Vec::new());
+        }
+        let g = i / h;
+        // restore a checkpoint unless the decoder is already between it and `g`
+        if (rs.next > g || g - rs.next > REAL_CHECKPOINT_GROUPS)
+            && let Some((&j, d)) = rs.checkpoints.range(..=g).next_back()
+            && !(j <= rs.next && rs.next <= g)
+        {
+            rs.dec = d.clone();
+            rs.next = j;
+        }
+        let mut out = Vec::new();
+        while rs.next <= g {
+            let n = rs.next;
+            if n.is_multiple_of(REAL_CHECKPOINT_GROUPS) && !rs.checkpoints.contains_key(&n) {
+                rs.checkpoints.insert(n, rs.dec.clone());
+            }
+            // a block that cannot be read leaves a hole the deinterleaver zero-fills
+            let blocks: Vec<Vec<u8>> = (n * h..(n + 1) * h).map(|k| self.read(ti, k).unwrap_or_default()).collect();
+            let decoded = rs.dec.decode_group(&blocks);
+            rs.next = n + 1;
+            if n == g {
+                out = decoded;
+            }
+        }
+        Ok(out)
     }
 
     /// Decoded packet `i` of audio stream `a` (`ainfo` is its `AudioStreamInfo`; `st` its decoder state).
@@ -689,6 +861,7 @@ impl MkvSource {
                 };
                 decode_pcm(&data, &cfg)
             }
+            Codec::Other(id) if id.starts_with("A_REAL/") => self.real_audio_packet(ti, track, st, i)?,
             _ => {
                 if st.decoder.is_none() {
                     st.decoder = Some(self.audio_decoder(track, ainfo)?);
@@ -995,5 +1168,28 @@ mod ms_acm_tests {
                 assert_eq!((v * 8_388_608.0).round() as i32, value(i as i32, c as i32), "channel {c} sample {i}");
             }
         }
+    }
+}
+
+#[cfg(test)]
+mod vfw_fourcc_tests {
+    use cfa4_matroska::Codec;
+
+    fn entry(fourcc: &[u8; 4]) -> Option<cfa4_isobmff::SampleEntry> {
+        let mut bih = vec![0u8; 40];
+        bih[16..20].copy_from_slice(fourcc);
+        let codec = Codec::VfwFourcc { fourcc: *fourcc, bitmap_info_header: bih.clone() };
+        super::sample_entry(&codec, &bih, None, 64, 32)
+    }
+
+    /// Every FourCC with a decoder of ours opens from a `V_MS/VFW/FOURCC` track: an entry a
+    /// decoder factory takes.
+    #[test]
+    fn decoders_open_from_vfw_fourcc() {
+        for f in [b"Hap1", b"Hap5", b"HapY", b"dvsd", b"DVSD", b"dv25", b"dv50", b"dvhd", b"dvcp", b"dvpp", b"cdvc", b"dvh1", b"LAGS", b"M8RG", b"CFHD"] {
+            let e = entry(f).unwrap_or_else(|| panic!("{} has no sample entry", String::from_utf8_lossy(f)));
+            assert!(crate::make_video_decoder(&e).is_ok(), "{} has no decoder", String::from_utf8_lossy(f));
+        }
+        assert!(entry(b"ZZZZ").is_none());
     }
 }

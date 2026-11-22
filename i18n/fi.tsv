@@ -4774,3 +4774,133 @@ export.summary	Low	matala
 # Timecode sync varispeed and user bits (TC-8, #1308)
 	Varispeed: adjust the playback speed instead of seeking	Varispeed: säädä toistonopeutta hyppäämisen sijaan
 	User bits	Käyttäjäbitit
+# AS-11 programme parts and AS-10 metadata (G2, #1371, #1375)
+	{tc}  Segmentation	{tc}  Segmentointi
+	Marker Type	Merkin tyyppi
+	Chapter	Luku
+	Segmentation (AS-11 programme part)	Segmentointi (AS-11-ohjelmaosa)
+	AS-10	AS-10
+# AT9/AT3 converter (Tools ▸ Audio Tools, AT3-2)
+	AT9/AT3 Converter	AT9/AT3-muunnin
+	AT9/AT3 Converter…	AT9/AT3-muunnin…
+	Files to convert:	Muunnettavat tiedostot:
+	Add Files	Lisää tiedostoja
+	Add Files…	Lisää tiedostoja…
+	Convert to:	Muunna muotoon:
+	Bit rate:	Bittinopeus:
+	Sample format:	Näytemuoto:
+	Output folder:	Tulostekansio:
+	Output Folder	Tulostekansio
+	Next to each source file	Kunkin lähdetiedoston viereen
+	AT9 and ATRAC3plus files convert to WAV; encoding AT9, ATRAC3plus and MP3 is not available yet.	AT9- ja ATRAC3plus-tiedostot muunnetaan WAV-muotoon; AT9-, ATRAC3plus- ja MP3-koodaus ei ole vielä käytettävissä.
+	Convert	Muunna
+	Add the files to convert first.	Lisää ensin muunnettavat tiedostot.
+	Done: {n} file(s) converted.	Valmis: {n} tiedosto(a) muunnettu.
+	Converting {name}…	Muunnetaan {name}…
+	Stopping…	Pysäytetään…
+	AT3 (ATRAC3, PSP / PS3)	AT3 (ATRAC3, PSP / PS3)
+	WAV (PCM)	WAV (PCM)
+	132 kbit/s (LP2)	132 kbit/s (LP2)
+	105 kbit/s	105 kbit/s
+	66 kbit/s (LP4, joint stereo)	66 kbit/s (LP4, joint stereo)
+	16-bit	16-bittinen
+	24-bit	24-bittinen
+	32-bit float	32-bittinen liukuluku
+
+# Datamosh transition (Grunge & Distort, DM1, #1409)
+	Datamosh	Datamosh
+	Residual	Jäännös
+	Motion Boost	Liikkeen vahvistus
+	Recovery	Palautuminen
+	Encode Resolution	Koodaustarkkuus
+	Half	Puolikas
+	Quarter	Neljännes
+# Datamosh Bloom (Glitch, DM2)
+	Datamosh Bloom	Datamosh-kukinta
+	Start Time (seconds)	Aloitusaika (sekuntia)
+	Repeats	Toistot
+
+# Recent effects, per-channel waveform, white balance selector (SC-2/SC-3/SC-4, #1419 #1420 #1421)
+	Apply a recently used effect to the selected clips	Käytä äskettäin käytettyä tehostetta valittuihin klippeihin
+	Disable all effects	Poista kaikki tehosteet käytöstä
+	Enable all effects	Ota kaikki tehosteet käyttöön
+	No recent effects	Ei viimeaikaisia tehosteita
+	Recent effects	Viimeaikaiset tehosteet
+	Switch every effect of the selected clips off	Poistaa valittujen klippien kaikki tehosteet käytöstä
+	Switch every effect of the selected clips on	Ottaa valittujen klippien kaikki tehosteet käyttöön
+	Merged	Yhdistetty
+	Per Channel	Kanavittain
+	Channel Zoom	Kanavien zoom
+	White Balance Selector (click a neutral point in the Program monitor; Esc cancels)	Valkotasapainon valitsin (napsauta neutraalia pistettä ohjelmamonitorissa; Esc peruu)
+# Task Manager and subtitle kind (SC-2/3/4)
+	Task Manager	Tehtävienhallinta
+	Background jobs	Taustatyöt
+	Exports	Viennit
+	Shared task queue	Jaettu tehtäväjono
+	Task	Tehtävä
+	State	Tila
+	Details	Tiedot
+	Time left	Aikaa jäljellä
+	Scheduled	Ajastettu
+	Queued	Jonossa
+	Waiting for resources	Odottaa resursseja
+	Blocked	Estetty
+	Running	Käynnissä
+	Paused	Keskeytetty
+	Cancelling	Peruutetaan
+	Interactive	Interaktiivinen
+	Speculative	Spekulatiivinen
+	Final render	Lopullinen renderöinti
+	Show finished	Näytä valmistuneet
+	Nothing is running.	Mitään ei ole käynnissä.
+	Not reported by this engine yet.	Tämä moottori ei vielä raportoi tätä.
+	Not available: {why}	Ei saatavilla: {why}
+	{name} waits: {why}	{name} odottaa: {why}
+	{running} running · {waiting} waiting	{running} käynnissä · {waiting} odottaa
+	{n} active	{n} aktiivista
+	{n} CPU	{n} CPU
+	{n} GiB	{n} GiB
+	{n} MiB	{n} MiB
+	Needs your decision	Tarvitsee päätöksesi
+	Run now	Suorita nyt
+	Next slot	Seuraava aikaväli
+	Missed its start	Alku jäi väliin
+	Missed its start at {time}	Alku klo {time} jäi väliin
+	Starts at {time}	Alkaa klo {time}
+	Subtitle kind	Tekstityksen laji
+	Subtitles	Tekstitykset
+	Captions for the hearing impaired	Tekstitykset kuulovammaisille
+	Forced narrative	Pakotettu selostus (forced narrative)
+	Silence	Hiljaisuus
+	Detect Silence	Tunnista hiljaisuus
+	Remove Silence	Poista hiljaisuus
+	Clear Silence Markers	Tyhjennä hiljaisuusmerkit
+# DCP Validation window (DCP-12)
+	AS-03	AS-03
+	Choose the DCP folder.	Valitse DCP-kansio.
+	DCP Validation	DCP-validointi
+	DCP folder	DCP-kansio
+	DCP folder (the one holding ASSETMAP)	DCP-kansio (se, jossa ASSETMAP on)
+	Evidence	Todiste
+	How to fix	Korjausohje
+	Interrupted	Keskeytetty
+	Not applicable	Ei sovellettavissa
+	Report	Raportti
+	Report saved: {path}	Raportti tallennettu: {path}
+	Required	Pakollinen
+	Rule	Sääntö
+	Rules	Säännöt
+	Save JSON…	Tallenna JSON…
+	Save Markdown…	Tallenna Markdown…
+	Save report	Tallenna raportti
+	Skipped	Ohitettu
+	Standard: {standard}	Standardi: {standard}
+	Validate	Validoi
+	Validate DCP…	Validoi DCP…
+	the engine sent no profiles	moottori ei lähettänyt profiileja
+	{n} files checked	{n} tiedostoa tarkistettu
+
+# AS-02 export
+	Write an AS-02 bundle (the path is a folder)	Kirjoita AS-02-paketti (polku on kansio)
+	AS-02	AS-02
+	AS-12	AS-12

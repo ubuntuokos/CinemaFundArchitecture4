@@ -10,9 +10,15 @@ publish = false
 [lints]
 workspace = true
 
-# Test-only: the library is empty and everything is a dev-dependency, so the crate adds no edges
-# to the layer graph. Goldens live in `goldens/` (see docs/testing.md §3).
+# Test-only crate. The library holds the render validation harness (`validation`, CFA4-RENDER-
+# INTEGRATION-PLAN-001 F0V): it only measures captured output, so it needs the metrics crate (L1)
+# and serialisation, never the renderer. Scenes and rendering stay in the dev-dependencies.
+# Goldens live in `goldens/` (see docs/testing.md §3).
 [dependencies]
+cfa4-metrics = { workspace = true }
+serde = { workspace = true }
+serde_json = { workspace = true }
+sha2 = { workspace = true }
 
 [dev-dependencies]
 cfa4-testkit = { workspace = true }
@@ -21,6 +27,7 @@ cfa4-frame = { workspace = true }
 cfa4-time = { workspace = true }
 cfa4-geom = { workspace = true }
 cfa4-media = { workspace = true }
+cfa4-codecs = { workspace = true }
 cfa4-project = { workspace = true }
 cfa4-render = { workspace = true }
 cfa4-gpu = { workspace = true }

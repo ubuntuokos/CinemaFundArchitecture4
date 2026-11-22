@@ -1,6 +1,6 @@
 # Kodek-backlog végrehajtási terv
 
-> **Utolsó frissítés:** 2026-11-14 · **Változás:** minor (tulajdonosi döntések: a B csoportról, valamint a MagicYUV és a Shorten portja) · **Forrás:** [CODEC-BACKLOG-2026-10-27.md](CODEC-BACKLOG-2026-10-27.md)
+> **Utolsó frissítés:** 2026-11-21 · **Változás:** minor (Matroska-lefedettségi kiegészítés a heti ütemen kívül) · **Forrás:** [CODEC-BACKLOG-2026-10-27.md](CODEC-BACKLOG-2026-10-27.md)
 
 A [CODEC-BACKLOG-2026-10-27.md](CODEC-BACKLOG-2026-10-27.md) 82 tétele heti ütemezésben. **Követelmény: minden héten
 legalább 2 tétel elkészül** (a tulajdonos döntése, 2026-10-27). Így a backlog 41 hét alatt fogy el:
@@ -76,13 +76,13 @@ Sávok: K1 az 1–6. hét, K2 a 7–22. hét, K3 a 23–40. hét, K4 a 40–41. 
 | 23 | 2027-04-05 | K3 | Bink Video 📄 | ~~Bink 2~~ kimarad (2026-11-14) |
 | 24 | 2027-04-12 | K3 | Bink Audio 📄 | Smacker + Smacker Audio 📄 |
 | 25 | 2027-04-19 | K3 | id RoQ 📄 | Interplay MVE + ACM 📄 |
-| 26 | 2027-04-26 | K3 | CRI ADX 📄 | CRI HCA 📄 |
+| 26 | 2027-04-26 | K3 | ✅ CRI ADX | ✅ CRI HCA |
 | 27 | 2027-05-03 | K3 | Sofdec.Prime 📄🔎 | Sofdec2 (konténer) 📄 |
 | 28 | 2027-05-10 | K3 | Nintendo THP 📄 | Nintendo Mobiclip 📄 |
 | 29 | 2027-05-17 | K3 | Nintendo HVQM / HVQM4 📄🔎 | Nintendo DSP ADPCM + BRSTM 📄 |
 | 30 | 2027-05-24 | K3 | BFSTM (port) + BCSTM 📄🔎 | PSP MPEG-4 AVC (PMF) 📄🔎 |
 | 31 | 2027-05-31 | K3 | Yamaha + OKI ADPCM 📄 | NTT TwinVQ 📄 |
-| 32 | 2027-06-07 | K3 | AMV Video 📄 | Cinepak 📄 |
+| 32 | 2027-06-07 | K3 | AMV Video 📄 | ✅ Cinepak |
 | 33 | 2027-06-14 | K3 | Intel Indeo 2 / 3 📄 | Intel Indeo 4 / 5 📄 |
 | 34 | 2027-06-21 | K3 | Sorenson Video 1 📄 | Sorenson Video 3 📄 |
 | 35 | 2027-06-28 | K3 | Microsoft RLE + Video 1 📄 | Autodesk FLIC / FLC |
@@ -93,6 +93,19 @@ Sávok: K1 az 1–6. hét, K2 a 7–22. hét, K3 a 23–40. hét, K4 a 40–41. 
 | 40 | 2027-08-02 | K3 / K4 | AVS3 RTC Speech | TPG |
 | 41 | 2027-08-09 | K4 | SMT (Smart Media Transport) | AVS3 Immersive Media |
 
+## Kiegészítő tételek (Matroska-lefedettség, 2026-11-21)
+
+A [backlog](CODEC-BACKLOG-2026-10-27.md) „Matroska-lefedettségi kiegészítés” szakasza a heti ütemet
+**nem tolja el**, a 41 hét és a határidők nem változnak.
+
+| Tétel | Mikor | Megjegyzés |
+|---|---|---|
+| **CB-M.1** MKV-leképezések kész dekóderekre (`V_CAVS`, `V_REAL/*`, `A_REAL/*`, `V_JPEG2000`, `A_ALAC`, VFW FourCC: Ut Video, HAP, DV) | a heti 2 tételen felül, bármelyik héten | kb. 1–2 nap, ellenőrző teszttel; egy commit, `CB-M.1: Matroska-leképezések` |
+| `V_AVS2`, `V_AVS3`, `A_WAVPACK4` leképezése | az AVS2 (#1346), AVS3 (#1440) és WavPack (#858) beolvasztása után, a CB-M.1 mellé | csak leképezés |
+| Theora, `V_UNCOMPRESSED`, VobSub, PGS, DVB-felirat, USF, `S_TEXT/ASCII` | szabad hetekre a K1 és K2 közé, ha a heti két tétel kifogy vagy kimarad | nyílt specifikáció |
+| ATRAC1, MS MPEG-4 v3 (FFmpeg-port) | szabad hetekre, a K2 végén | licensing.md §5 nyilvántartás |
+| RealAudio Lossless, QDMC, S_HDMV/TEXTST, S_ARIBSUB 📄 | döntés 2026-12-28-ig | nemleges döntésnél kimarad |
+
 ## Követés
 
 Minden hét végén a hét két tételét pipálni kell ebben a fájlban (✅ a tétel neve elé), és ha
@@ -102,6 +115,9 @@ valamelyik nem készült el, a következő hétre kell vinni a pótlással együ
 
 | Dátum | Változás | Összefoglaló |
 |---|---|---|
+| 2026-11-21 | minor | Matroska-lefedettségi kiegészítés (CB-M.1 és a hozzá tartozó tételek) a heti ütemen kívül; a hetek és a határidők nem változtak |
+| 2026-11-21 | patch | Pipálva (✅) a Cinepak (CB-32.2, FFmpeg n7.1.1 port, a 2026-11-14-i általános engedély alapján) |
+| 2026-11-21 | patch | Pipálva (✅) a CRI ADX és a CRI HCA (CB-26.1, CB-26.2): az FFmpeg n9.0.2 LGPL-2.1+ dekóderének portja a tulajdonos 2026-11-14-i általános engedélyével; a backlogból kikerültek |
 | 2026-11-14 | minor | Tulajdonosi döntés: a MagicYUV és a Shorten az FFmpeg LGPL-2.1+ dekóderének portjaként készül; a MagicYUV a következő tétel |
 | 2026-11-14 | minor | Tulajdonosi döntés: az OptimFROG, a Sony SR Codec és a Bink 2 kimarad; a HVQM / HVQM4, a Sofdec.Prime, a BCSTM és a PMF előbb forráskeresés (🔎); a BFSTM portként mehet. Dátumok nem változtak |
 | 2026-11-13 | patch | Pipálva (✅) a beolvasztott vagy zöld CI-vel a beolvasztási gazdának (#781) átadott tételek: FFV1, Huffyuv, Ut Video, HAP, G.711 / G.722, ADPCM, WavPack, APE, Speex, AMR, Matrox MPEG-2, VC-2, Dirac, Canopus HQ / HQX, TTA, Musepack, G.729, iLBC. Nyitott: MagicYUV és Shorten (tulajdonosi döntésre vár), a 📄 tételek |

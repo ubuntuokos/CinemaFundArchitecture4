@@ -1,0 +1,11 @@
+{
+  "schema": "cfa4.render-validation/1",
+  "rgb_max_abs_16": 0,
+  "rgb_min_psnr_db": 96.0,
+  "alpha_max_abs_16": 0,
+  "rgb_min_ssim": 0.9999,
+  "max_delta_e": 0.0,
+  "pts_max_abs_error": 0,
+  "pts_max_dropped": 0,
+  "audio_max_peak_dbfs": -200.0
+}

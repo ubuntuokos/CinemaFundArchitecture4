@@ -401,3 +401,18 @@ fn premiere_style_layers_and_nested_compositions_are_read() {
     assert_eq!(nest.link, q.audio_tracks[0].items[0].link);
     assert!(nest.link.is_some());
 }
+
+/// Found with the AAF SDK as test oracle (#1367): the SDK takes a file for an AAF file only when
+/// the 16 bytes after the compound file signature carry the AAF label of its sector size.
+#[test]
+fn the_header_carries_the_aaf_label_of_the_sector_size() {
+    let (p, s) = project();
+    for (small, label) in [
+        (true, [0x41u8, 0x41, 0x46, 0x42, 0x0D, 0x00, 0x4F, 0x4D, 0x06, 0x0E, 0x2B, 0x34, 0x01, 0x01, 0x01, 0xFF]),
+        (false, [0x01, 0x02, 0x01, 0x0D, 0x00, 0x02, 0x00, 0x00, 0x06, 0x0E, 0x2B, 0x34, 0x03, 0x02, 0x01, 0x01]),
+    ] {
+        let (bytes, _) = export(&p, s, &AafOptions { small_sectors: small, ..Default::default() }).unwrap();
+        assert_eq!(bytes.get(8..24), Some(&label[..]), "small_sectors {small}");
+        assert!(cfa4_cfb::CompoundFile::open(&bytes).is_ok());
+    }
+}

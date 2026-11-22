@@ -4773,3 +4773,133 @@ export.summary	Low	düşük
 # Timecode sync varispeed and user bits (TC-8, #1308)
 	Varispeed: adjust the playback speed instead of seeking	Varispeed: atlamak yerine oynatma hızını ayarla
 	User bits	Kullanıcı bitleri
+# AS-11 programme parts and AS-10 metadata (G2, #1371, #1375)
+	{tc}  Segmentation	{tc}  Bölütleme
+	Marker Type	İşaretçi Türü
+	Chapter	Bölüm
+	Segmentation (AS-11 programme part)	Bölütleme (AS-11 program bölümü)
+	AS-10	AS-10
+# AT9/AT3 converter (Tools ▸ Audio Tools, AT3-2)
+	AT9/AT3 Converter	AT9/AT3 Dönüştürücü
+	AT9/AT3 Converter…	AT9/AT3 Dönüştürücü…
+	Files to convert:	Dönüştürülecek dosyalar:
+	Add Files	Dosya Ekle
+	Add Files…	Dosya Ekle…
+	Convert to:	Dönüştürülecek biçim:
+	Bit rate:	Bit hızı:
+	Sample format:	Örnek biçimi:
+	Output folder:	Çıktı klasörü:
+	Output Folder	Çıktı Klasörü
+	Next to each source file	Her kaynak dosyanın yanına
+	AT9 and ATRAC3plus files convert to WAV; encoding AT9, ATRAC3plus and MP3 is not available yet.	AT9 ve ATRAC3plus dosyaları WAV'a dönüştürülür; AT9, ATRAC3plus ve MP3 kodlama henüz kullanılamıyor.
+	Convert	Dönüştür
+	Add the files to convert first.	Önce dönüştürülecek dosyaları ekleyin.
+	Done: {n} file(s) converted.	Tamamlandı: {n} dosya dönüştürüldü.
+	Converting {name}…	{name} dönüştürülüyor…
+	Stopping…	Durduruluyor…
+	AT3 (ATRAC3, PSP / PS3)	AT3 (ATRAC3, PSP / PS3)
+	WAV (PCM)	WAV (PCM)
+	132 kbit/s (LP2)	132 kbit/s (LP2)
+	105 kbit/s	105 kbit/s
+	66 kbit/s (LP4, joint stereo)	66 kbit/s (LP4, ortak stereo)
+	16-bit	16 bit
+	24-bit	24 bit
+	32-bit float	32 bit kayan nokta
+
+# Datamosh transition (Grunge & Distort, DM1, #1409)
+	Datamosh	Datamosh
+	Residual	Artık
+	Motion Boost	Hareket Güçlendirme
+	Recovery	Toparlanma
+	Encode Resolution	Kodlama Çözünürlüğü
+	Half	Yarım
+	Quarter	Çeyrek
+# Datamosh Bloom (Glitch, DM2)
+	Datamosh Bloom	Datamosh Çiçeklenmesi
+	Start Time (seconds)	Başlangıç Zamanı (saniye)
+	Repeats	Tekrarlar
+
+# Recent effects, per-channel waveform, white balance selector (SC-2/SC-3/SC-4, #1419 #1420 #1421)
+	Apply a recently used effect to the selected clips	Son kullanılan efekti seçili kliplere uygula
+	Disable all effects	Tüm efektleri kapat
+	Enable all effects	Tüm efektleri aç
+	No recent effects	Son efekt yok
+	Recent effects	Son efektler
+	Switch every effect of the selected clips off	Seçili klipların her efektini kapatır
+	Switch every effect of the selected clips on	Seçili klipların her efektini açar
+	Merged	Birleşik
+	Per Channel	Kanal başına
+	Channel Zoom	Kanal yakınlaştırma
+	White Balance Selector (click a neutral point in the Program monitor; Esc cancels)	Beyaz dengesi seçici (Program monitöründe nötr bir noktaya tıklayın; Esc iptal eder)
+# Task Manager and subtitle kind (SC-2/3/4)
+	Task Manager	Görev Yöneticisi
+	Background jobs	Arka plan işleri
+	Exports	Dışa aktarmalar
+	Shared task queue	Paylaşılan görev kuyruğu
+	Task	Görev
+	State	Durum
+	Details	Ayrıntılar
+	Time left	Kalan süre
+	Scheduled	Zamanlandı
+	Queued	Kuyrukta
+	Waiting for resources	Kaynaklar bekleniyor
+	Blocked	Engellendi
+	Running	Çalışıyor
+	Paused	Duraklatıldı
+	Cancelling	İptal ediliyor
+	Interactive	Etkileşimli
+	Speculative	Önceden yürütülen
+	Final render	Son render
+	Show finished	Tamamlananları göster
+	Nothing is running.	Çalışan bir şey yok.
+	Not reported by this engine yet.	Bu motor henüz bildirmiyor.
+	Not available: {why}	Kullanılamıyor: {why}
+	{name} waits: {why}	{name} bekliyor: {why}
+	{running} running · {waiting} waiting	{running} çalışıyor · {waiting} bekliyor
+	{n} active	{n} etkin
+	{n} CPU	{n} CPU
+	{n} GiB	{n} GiB
+	{n} MiB	{n} MiB
+	Needs your decision	Kararınızı bekliyor
+	Run now	Şimdi çalıştır
+	Next slot	Sonraki aralık
+	Missed its start	Başlangıç kaçırıldı
+	Missed its start at {time}	{time} başlangıcı kaçırıldı
+	Starts at {time}	Başlangıç: {time}
+	Subtitle kind	Altyazı türü
+	Subtitles	Altyazılar
+	Captions for the hearing impaired	İşitme engelliler için altyazı
+	Forced narrative	Zorunlu anlatım (forced narrative)
+	Silence	Sessizlik
+	Detect Silence	Sessizliği algıla
+	Remove Silence	Sessizliği kaldır
+	Clear Silence Markers	Sessizlik işaretçilerini temizle
+# DCP Validation window (DCP-12)
+	AS-03	AS-03
+	Choose the DCP folder.	DCP klasörünü seçin.
+	DCP Validation	DCP doğrulama
+	DCP folder	DCP klasörü
+	DCP folder (the one holding ASSETMAP)	DCP klasörü (ASSETMAP'i içeren)
+	Evidence	Kanıt
+	How to fix	Nasıl düzeltilir
+	Interrupted	Kesintiye uğradı
+	Not applicable	Uygulanamaz
+	Report	Rapor
+	Report saved: {path}	Rapor kaydedildi: {path}
+	Required	Zorunlu
+	Rule	Kural
+	Rules	Kurallar
+	Save JSON…	JSON kaydet…
+	Save Markdown…	Markdown kaydet…
+	Save report	Raporu kaydet
+	Skipped	Atlandı
+	Standard: {standard}	Standart: {standard}
+	Validate	Doğrula
+	Validate DCP…	DCP'yi doğrula…
+	the engine sent no profiles	motor hiç profil göndermedi
+	{n} files checked	{n} dosya denetlendi
+
+# AS-02 export
+	Write an AS-02 bundle (the path is a folder)	AS-02 paketi yaz (yol bir klasördür)
+	AS-02	AS-02
+	AS-12	AS-12

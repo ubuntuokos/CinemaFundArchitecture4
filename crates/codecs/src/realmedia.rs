@@ -19,6 +19,7 @@ use std::io::Cursor;
 use std::sync::{Arc, Mutex};
 
 use cfa4_frame::{AudioBuffer, Chroma, PixelData, VideoFrame};
+use cfa4_isobmff::{CodecConfig, FourCc, SampleEntry};
 use cfa4_media::{AudioStreamInfo, FrameRequest, MediaError, MediaInfo, MediaKind, MediaSource, SharedSource, VideoStreamInfo};
 use cfa4_realaudio::{atrac3, cook, ra144, ra288, sipr};
 use cfa4_realmedia::audio::{AudioInfo, Deinterleaver, parse_audio_info};
@@ -61,6 +62,26 @@ fn codec_of(fourcc: &[u8; 4]) -> Option<Codec> {
         b"RV40" => Some(Codec::Rv34(rv34::Codec::Rv40)),
         _ => None,
     }
+}
+
+/// A sample entry for a RealVideo track read from Matroska (`V_REAL/RV10` ... `V_REAL/RV40`): the
+/// format is the RealMedia FourCC; `private` is the `real_video_props_t` of the `CodecPrivate`
+/// (the `VIDO` type-specific data), whose bytes after the frame rate are the extradata.
+pub fn mkv_sample_entry(codec_id: &str, private: &[u8], w: u16, h: u16) -> Option<SampleEntry> {
+    let fourcc: [u8; 4] = codec_id.strip_prefix("V_REAL/")?.as_bytes().try_into().ok()?;
+    codec_of(&fourcc)?;
+    let extradata = if private.get(4..8) == Some(b"VIDO".as_slice()) { private.get(26..).unwrap_or_default() } else { &[] };
+    let f = FourCc(fourcc);
+    Some(SampleEntry::video(f, CodecConfig::Unknown { fourcc: f, raw: extradata.to_vec() }, w, h))
+}
+
+/// The decoder of a RealVideo sample entry made by [`mkv_sample_entry`]. Samples are frames as the
+/// RealMedia demuxer assembles them (slice count, slice table, slices), as Matroska stores them.
+pub fn realvideo_factory(e: &SampleEntry) -> Option<Result<Box<dyn VideoDecoder>>> {
+    let codec = codec_of(&e.format.0)?;
+    let CodecConfig::Unknown { raw, .. } = &e.codec else { return None };
+    let (w, h) = e.video.as_ref().map_or((0, 0), |v| (u32::from(v.width), u32::from(v.height)));
+    Some(RealVideoDecoder::new(codec, w, h, raw, FrameRate::new(25, 1)).map(|d| Box::new(d) as Box<dyn VideoDecoder>))
 }
 
 fn label(codec: Codec) -> &'static str {
@@ -272,6 +293,81 @@ impl AudioDecoder {
                 Self::Cook(_) | Self::Atrac3(_) => {}
             }
         }
+    }
+}
+
+/// A RealAudio stream read from Matroska (`A_REAL/*`): the `CodecPrivate` is the RealAudio header
+/// (`real_audio_v4_props_t` / `v5`, the RealMedia type-specific data), and every block is one data
+/// packet of a RealMedia interleaved superblock, so a superblock is [`Self::group_len`] blocks in
+/// a row, starting with the first block of the track.
+#[derive(Clone)]
+pub(crate) struct MkvRealAudio {
+    info: AudioInfo,
+    dec: AudioDecoder,
+}
+
+impl MkvRealAudio {
+    /// The decoder of an `A_REAL/*` track, or why it cannot be decoded.
+    pub(crate) fn new(codec_private: &[u8]) -> std::result::Result<Self, String> {
+        let info = parse_audio_info(codec_private).map_err(|e| format!("RealAudio header: {e}"))?;
+        let dec = AudioDecoder::new(&info)?;
+        Ok(Self { info, dec })
+    }
+
+    pub(crate) fn label(&self) -> &'static str {
+        self.dec.label()
+    }
+
+    pub(crate) fn sample_rate(&self) -> u32 {
+        self.info.sample_rate
+    }
+
+    pub(crate) fn channels(&self) -> usize {
+        self.dec.channels()
+    }
+
+    /// Whether blocks are sub-packets of an interleaved superblock.
+    pub(crate) fn blocked(&self) -> bool {
+        matches!(
+            self.info.interleaver,
+            cfa4_realmedia::audio::Interleaver::Genr | cfa4_realmedia::audio::Interleaver::Int4 | cfa4_realmedia::audio::Interleaver::Sipr
+        )
+    }
+
+    /// Blocks per superblock (1 when the stream is not interleaved).
+    pub(crate) fn group_len(&self) -> usize {
+        if self.blocked() { usize::from(self.info.sub_packet_h).max(1) } else { 1 }
+    }
+
+    /// Samples per channel of a complete superblock of an interleaved stream, or of a block of
+    /// `len` bytes of a stream that is not.
+    pub(crate) fn group_samples(&self, len: usize) -> usize {
+        if self.blocked() {
+            let frames = (usize::from(self.info.sub_packet_h) * self.info.audio_framesize as usize).checked_div(self.info.block_align as usize).unwrap_or(0);
+            frames.saturating_mul(self.dec.samples_for(self.info.block_align as usize))
+        } else {
+            self.dec.samples_for(len)
+        }
+    }
+
+    /// Decodes one superblock (its blocks in order): planar samples. A damaged frame and Cook's
+    /// start-up frames give silence.
+    pub(crate) fn decode_group(&mut self, blocks: &[Vec<u8>]) -> Vec<Vec<f32>> {
+        let mut di = Deinterleaver::new(&self.info);
+        let mut out = vec![Vec::new(); self.channels().max(1)];
+        for b in blocks {
+            let p = cfa4_realmedia::Packet { stream: 0, timestamp_ms: 0, keyframe: false, pos: 0, partial: false, data: b.clone() };
+            for f in di.push(&p) {
+                self.dec.decode_into(&f.data, &mut out);
+            }
+        }
+        if self.blocked() {
+            let n = self.group_samples(0);
+            for o in &mut out {
+                o.resize(n, 0.0);
+            }
+        }
+        out
     }
 }
 
