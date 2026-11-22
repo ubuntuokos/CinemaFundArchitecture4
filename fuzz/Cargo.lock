@@ -119,6 +119,13 @@ dependencies = [
 ]
 
 [[package]]
+name = "cfa4-acm"
+version = "0.10.0"
+dependencies = [
+ "thiserror",
+]
+
+[[package]]
 name = "cfa4-adpcm"
 version = "0.10.0"
 dependencies = [
@@ -320,6 +327,7 @@ version = "0.0.0"
 dependencies = [
  "cfa4-aac",
  "cfa4-ac3",
+ "cfa4-acm",
  "cfa4-adpcm",
  "cfa4-adx",
  "cfa4-amr",
@@ -359,10 +367,12 @@ dependencies = [
  "cfa4-lcevc",
  "cfa4-magicyuv",
  "cfa4-matroska",
+ "cfa4-mobiclip",
  "cfa4-mpa",
  "cfa4-mpeg2v",
  "cfa4-mpegts",
  "cfa4-musepack",
+ "cfa4-mve",
  "cfa4-mxf",
  "cfa4-ogg",
  "cfa4-opus",
@@ -371,12 +381,14 @@ dependencies = [
  "cfa4-realaudio",
  "cfa4-realmedia",
  "cfa4-realvideo",
+ "cfa4-roq",
  "cfa4-shorten",
  "cfa4-smacker",
  "cfa4-speex",
  "cfa4-sstp",
  "cfa4-st2110",
  "cfa4-tak",
+ "cfa4-thp",
  "cfa4-truehd",
  "cfa4-tta",
  "cfa4-utvideo",
@@ -544,6 +556,13 @@ dependencies = [
 ]
 
 [[package]]
+name = "cfa4-mobiclip"
+version = "0.10.0"
+dependencies = [
+ "thiserror",
+]
+
+[[package]]
 name = "cfa4-mpa"
 version = "0.10.0"
 dependencies = [
@@ -568,6 +587,13 @@ dependencies = [
 
 [[package]]
 name = "cfa4-musepack"
+version = "0.10.0"
+dependencies = [
+ "thiserror",
+]
+
+[[package]]
+name = "cfa4-mve"
 version = "0.10.0"
 dependencies = [
  "thiserror",
@@ -637,6 +663,13 @@ dependencies = [
 ]
 
 [[package]]
+name = "cfa4-roq"
+version = "0.10.0"
+dependencies = [
+ "thiserror",
+]
+
+[[package]]
 name = "cfa4-shorten"
 version = "0.10.0"
 dependencies = [
@@ -688,6 +721,13 @@ dependencies = [
  "unicode-bidi",
  "unicode-linebreak",
  "unicode-segmentation",
+]
+
+[[package]]
+name = "cfa4-thp"
+version = "0.10.0"
+dependencies = [
+ "thiserror",
 ]
 
 [[package]]
