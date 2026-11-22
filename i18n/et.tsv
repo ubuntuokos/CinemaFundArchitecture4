@@ -4871,3 +4871,27 @@ export.summary	Low	madal
 	Subtitles	Subtiitrid
 	Captions for the hearing impaired	Subtiitrid kuulmispuudega inimestele
 	Forced narrative	Sunnitud jutustus (forced narrative)
+# DCP Validation window (DCP-12)
+	AS-03	AS-03
+	Choose the DCP folder.	Vali DCP kaust.
+	DCP Validation	DCP valideerimine
+	DCP folder	DCP kaust
+	DCP folder (the one holding ASSETMAP)	DCP kaust (see, milles on ASSETMAP)
+	Evidence	Tõend
+	How to fix	Kuidas parandada
+	Interrupted	Katkestatud
+	Not applicable	Ei kohaldu
+	Report	Aruanne
+	Report saved: {path}	Aruanne salvestatud: {path}
+	Required	Kohustuslik
+	Rule	Reegel
+	Rules	Reeglid
+	Save JSON…	Salvesta JSON…
+	Save Markdown…	Salvesta Markdown…
+	Save report	Salvesta aruanne
+	Skipped	Vahele jäetud
+	Standard: {standard}	Standard: {standard}
+	Validate	Valideeri
+	Validate DCP…	Valideeri DCP…
+	the engine sent no profiles	mootor ei saatnud ühtegi profiili
+	{n} files checked	{n} faili kontrollitud

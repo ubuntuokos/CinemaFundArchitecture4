@@ -15352,7 +15352,7 @@ def test_real_engine_load_kdm_dialog(app, tmp_path: Path):
     try:
         assert wait_until(app, lambda: len(win.registry.commands) > 100, 60_000)
         names = {a.objectName() for m in win.menuBar().actions() if m.menu() for a in m.menu().actions()}
-        assert {"qt.file.loadKdm", "qt.file.forgetDcpKeys"} <= names
+        assert {"qt.file.loadKdm", "qt.file.validateDcp", "qt.file.forgetDcpKeys"} <= names
         # dcp.loadKdm without parameters (menu, control channel) opens the dialog
         win.run_command(win.registry.commands["dcp.loadKdm"])
         dlg = win.kdm_dialog
@@ -15506,3 +15506,133 @@ def test_effect_controls_bulk_switch_and_recent_effects(app):
     assert recent_effects.load(panel.settings) == ["gaussian_blur", "invert"]
     assert sent[-1] == ("effects.apply", {"effect": "gaussian_blur", "clips": [4, 5]})
     panel.close()
+
+
+def test_dcp_validation_window_runs_shows_and_saves(app):
+    """DCP Validation (DCP-12): the profiles come from the engine, a check runs as a job and its
+    report fills the findings (worst first) and rules tables; a reply for an older check is
+    dropped; failures leave the window usable; saving names the report format."""
+    from cfa4_qt.panels.dcp_validation import DcpValidationDialog, location_text, sorted_findings
+
+    class Engine:
+        running = True
+
+        def __init__(self):
+            self.pending = []
+
+        def execute(self, command, params=None, on_reply=None, on_error=None):
+            self.pending.append((command, dict(params or {}), on_reply, on_error))
+            return 0
+
+        def take(self, command):
+            for i, (c, params, ok, err) in enumerate(self.pending):
+                if c == command:
+                    del self.pending[i]
+                    return params, ok, err
+            raise AssertionError(f"no pending {command}")
+
+    def report(root, verdict="FAIL"):
+        return {
+            "root": root,
+            "verdict": verdict,
+            "markdown": "# DCP report\n",
+            "report": {
+                "verdict": verdict,
+                "profile": {"id": "quick-scan", "version": 1, "title": "Quick Scan"},
+                "standard": "SMPTE",
+                "assets_checked": 3,
+                "counts": {"pass": 1, "fail": 1, "warning": 0},
+                "findings": [
+                    {"rule": "DCP.AM.001", "status": "PASS", "message": "ok"},
+                    {
+                        "rule": "DCP.PKL.002",
+                        "status": "FAIL",
+                        "message": "hash differs",
+                        "location": {"file": "pkl.xml", "element": "Asset[1]", "line": 4, "column": 2},
+                        "evidence": "a != b",
+                        "remedy": "re-export",
+                    },
+                ],
+            },
+        }
+
+    assert location_text({"file": "a.xml", "element": "X", "line": 3, "column": 1}) == "a.xml › X (3:1)"
+    assert location_text(None) == "" and location_text({}) == ""
+    assert [f["status"] for f in sorted_findings([{"status": "PASS"}, {"status": "FAIL"}, {"status": "WARNING"}])] == [
+        "FAIL",
+        "WARNING",
+        "PASS",
+    ]
+
+    engine = Engine()
+    dlg = DcpValidationDialog(engine)  # type: ignore[arg-type]
+    try:
+        dlg.open_for("/dcp/a")
+        _p, ok, _e = engine.take("dcp.validate.profiles")
+        ok({"profiles": [{"id": "quick-scan", "version": 1, "title": "Quick Scan"}, {"id": "security", "version": 1, "title": "Security"}]}, None)
+        assert dlg.profile.count() == 2 and dlg.profile.currentData() == "quick-scan"
+        assert not dlg.save_json.isEnabled()
+
+        # an empty field is refused before anything is sent
+        dlg.folder.setText("")
+        dlg.run_check()
+        assert not engine.pending and dlg.message.text()
+
+        # a check for a, replaced by a check for b: a's late reply must not start following job 1
+        dlg.folder.setText("/dcp/a")
+        dlg.run_check()
+        _p, started_a, _e = engine.take("dcp.validate")
+        dlg.folder.setText("/dcp/b")
+        dlg.profile.setCurrentIndex(1)
+        dlg.run_check()
+        params_b, started_b, _e = engine.take("dcp.validate")
+        assert params_b == {"root": "/dcp/b", "profile": "security"}
+        started_a({"job": 1}, None)
+        assert dlg._job is None
+        started_b({"job": 2}, None)
+        assert dlg._job == 2 and dlg._poll.isActive() and dlg.cancel_button.isEnabled() and not dlg.run_button.isEnabled()
+
+        dlg._poll_job()
+        engine.take("jobs.list")[1]([{"id": 2, "finished": False, "status": "rules 3/9"}], None)
+        assert dlg.message.text() == "rules 3/9"
+        dlg._poll_job()
+        engine.take("jobs.list")[1]([{"id": 2, "finished": True, "result": {}}], None)
+        assert not dlg._poll.isActive() and dlg.run_button.isEnabled()
+        params, got, _e = engine.take("dcp.validate.report")
+        assert params == {"root": "/dcp/b"}
+        got(report("/dcp/b"), None)
+        assert dlg.verdict.text() == "Failed" and dlg.save_json.isEnabled() and dlg.save_md.isEnabled()
+        assert dlg.findings.rowCount() == 2
+        assert dlg.findings.item(0, 1).text() == "DCP.PKL.002"  # worst first
+        assert dlg.findings.item(0, 2).text() == "pkl.xml › Asset[1] (4:2)"
+        assert dlg.findings.item(0, 5).text() == "re-export"
+        assert "Quick Scan" not in dlg.summary.text() and "quick-scan v1" in dlg.summary.text()
+        assert dlg.rules.rowCount() == 2 and dlg.text.toPlainText().startswith("# DCP report")
+
+        # cancel asks the engine to cancel the job
+        dlg.run_check()
+        engine.take("dcp.validate")[1]({"job": 3}, None)
+        dlg.cancel_check()
+        params, _ok, _e = engine.take("jobs.cancel")
+        assert params == {"job": 3}
+
+        # a refused run and a failed job leave the window usable
+        dlg.run_check()
+        engine.take("dcp.validate")[2]("/dcp/b: not a folder")
+        assert dlg.message.text() == "/dcp/b: not a folder" and dlg.run_button.isEnabled() and dlg._job is None
+        dlg.run_check()
+        engine.take("dcp.validate")[1]({"job": 4}, None)
+        dlg._poll_job()
+        engine.take("jobs.list")[1]([{"id": 4, "finished": True, "result": {"error": "boom"}}], None)
+        assert dlg.message.text() == "boom" and dlg.run_button.isEnabled() and not dlg._poll.isActive()
+
+        # saving: the engine gets the root, the path and the format; its refusal is shown
+        dlg.report = report("/dcp/b")["report"]
+        dlg.root = "/dcp/b"
+        dlg.save_report("md", "/out/r.md")
+        params, _ok, err = engine.take("dcp.validate.save")
+        assert params == {"root": "/dcp/b", "path": "/out/r.md", "format": "md"}
+        err("/dcp/b/r.md is inside the package")
+        assert "inside the package" in dlg.message.text()
+    finally:
+        dlg.close()

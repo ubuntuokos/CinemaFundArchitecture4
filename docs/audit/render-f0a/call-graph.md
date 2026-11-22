@@ -175,6 +175,8 @@ graph LR
 | `cfa4-engine/aaf_omf.rs` | `cfa4-export` | `ExportSettings`, `Format`, `OutputSink`, `export` |
 | `cfa4-engine/aaf_omf.rs` | `cfa4-project` | `ClipId` |
 | `cfa4-engine/aaf_omf.rs` | `cfa4-time` | `Tick` |
+| `cfa4-engine/as02_import.rs` | `cfa4-project` | `BinId` |
+| `cfa4-engine/as02_import.rs` | `cfa4-time` | `Tick` |
 | `cfa4-engine/atrac_convert.rs` | `cfa4-export` | `Progress`, `Report`, `write_wav` |
 | `cfa4-engine/atrac_convert.rs` | `cfa4-media` | `open_path` |
 | `cfa4-engine/atrac_convert.rs` | `cfa4-time` | `TICKS_PER_SECOND` |
@@ -216,6 +218,7 @@ graph LR
 | `cfa4-engine/credits.rs` | `cfa4-time` | `FrameRate`, `TICKS_PER_SECOND`, `Tick`, `TimeRange` |
 | `cfa4-engine/dcp_import.rs` | `cfa4-project` | `BinId` |
 | `cfa4-engine/dcp_import.rs` | `cfa4-time` | `Tick` |
+| `cfa4-engine/dcp_validation.rs` | `cfa4-export` | `Report` |
 | `cfa4-engine/dcpomatic.rs` | `cfa4-export` | `Report` |
 | `cfa4-engine/delivery_check.rs` | `cfa4-geom` | `Rect` |
 | `cfa4-engine/delivery_check.rs` | `cfa4-project` | `ItemKind`, `graphic` |
@@ -803,7 +806,7 @@ graph LR
 
 ## 4. Nyilvános típusok osztályonként
 
-A többi 614 nyilvános típus („other” osztály) csak a `call-graph.json`-ban szerepel.
+A többi 616 nyilvános típus („other” osztály) csak a `call-graph.json`-ban szerepel.
 
 ### Képkocka, kép, pixel (29)
 

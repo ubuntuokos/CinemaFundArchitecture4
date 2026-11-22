@@ -36,11 +36,16 @@
 //! [`WriterConfig::iab`] the immersive audio track file of ST 429-18 (one IABitstream frame per
 //! data element, [`MxfWriter::push_data`]).
 
+mod as02_version;
 mod labels;
 #[cfg(test)]
 mod tests;
 mod timed_text;
 
+pub use as02_version::{
+    ComponentSpec, MAX_VERSION_CLIPS, MAX_VERSION_COMPONENTS, MAX_VERSION_TRACKS, VersionClipSpec, VersionConfig, VersionTrackKind, VersionTrackSpec,
+    write_version,
+};
 pub use timed_text::{MAX_TIMED_TEXT_RESOURCES, MIME_OPENTYPE, MIME_PNG, TimedTextConfig, TimedTextResource, write_timed_text};
 
 use std::collections::VecDeque;

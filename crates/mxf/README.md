@@ -342,7 +342,10 @@ with one version file named like the folder). It does not open the MXF files.
 `as02_version::read_version` reads a version file (OP1b / OP2 / OP3 header metadata with external
 essence): the material package's tracks with their clips (file package UMID, track, start,
 duration; fillers), each file package's network locator, and the breaches of sections 4.3.5 / 5.2
-/ 5.4 in `problems`. The bundle import / export come next (#1363).
+/ 5.4 in `problems`. `write_version` writes one (OP1b, material package plus a file package copy with
+a network locator per component, no essence, no Essence Container Data, no index); the file package
+copies carry a minimal file descriptor, not the component's full one. The engine imports a bundle
+(`file.import`); the export comes next (#1363).
 
 ## AS-11 descriptive metadata
 
@@ -359,6 +362,14 @@ the UK DPP framework, laid out as bmx writes them (static DM tracks 5001 / 5101,
 segments); `MxfFile::as11` returns what a file carries. `parse_framework_text` and
 `parse_segments_text` read the bmx text forms (`Name: value` lines; `part/total start duration`
 with timecodes or frame counts). Codec shims (AVC-Intra, XDCAM HD422, D-10) are not enforced.
+
+### AS-07 (Archive and Preservation, Baseband Shim)
+
+`as07::check_baseband` (and `baseband_problems`) checks a read file against Appendix J of AMWA AS-07
+(`specs/amwa/as-07-mxf-archive-and-preservation-spec.pdf`): OP1a, one picture track of JPEG 2000 or ST 384
+uncompressed pictures with 8, 10, 12 or 16 bit components, no clip wrapping, linear PCM sound at 48 kHz, 16 or
+24 bit. DMS-AS-07 metadata, the raster subset, several timecodes, captions and content integrity are not
+covered.
 
 ### AS-10 (MXF for Production)
 

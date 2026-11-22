@@ -2060,3 +2060,21 @@ fn as12_adid_round_trips_beside_as03() {
     long[2].1 = "x".repeat(129);
     assert!(refuse(As11 { as03, as12: long, ..Default::default() }).contains("128"));
 }
+
+#[test]
+fn as07_baseband_shim_check() {
+    use crate::as07::{baseband_problems, check_baseband};
+    // uncompressed 10-bit pictures in OP1a with frame wrapping conform
+    let (bytes, _) = build_uncompressed(Pattern::Op1a, crate::UncompressedLayout::V210);
+    let f = open(&bytes[..]).unwrap();
+    assert_eq!(check_baseband(&f), Ok(()), "{:?}", baseband_problems(&f));
+    // OP-Atom is not OP1a and its pictures are clip wrapped
+    let (bytes, _) = build_uncompressed(Pattern::OpAtom, crate::UncompressedLayout::V210);
+    let f = open(&bytes[..]).unwrap();
+    let e = check_baseband(&f).unwrap_err();
+    assert!(e.contains("OP1a") && e.contains("clip wrapped"), "{e}");
+    // a ProRes file has the wrong picture coding
+    let f = open(&build_op1a()[..]).unwrap();
+    let e = check_baseband(&f).unwrap_err();
+    assert!(e.contains("not JPEG 2000"), "{e}");
+}
