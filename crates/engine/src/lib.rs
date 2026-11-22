@@ -51,6 +51,7 @@ pub mod media_watch;
 pub mod mixer;
 pub mod multicam;
 pub mod narration;
+pub mod objects;
 mod opatom;
 pub mod panels;
 pub mod paste_media;
@@ -1454,6 +1455,8 @@ mod nest_editing_tests;
 mod nest_fidelity_tests;
 #[cfg(test)]
 mod nesting_tests;
+#[cfg(test)]
+mod objects_tests;
 #[cfg(test)]
 mod opatom_tests;
 #[cfg(test)]

@@ -315,6 +315,9 @@ graph LR
 | `cfa4-engine/narration.rs` | `cfa4-export` | `Progress`, `Report` |
 | `cfa4-engine/narration.rs` | `cfa4-project` | `ClipId` |
 | `cfa4-engine/narration.rs` | `cfa4-time` | `Tick` |
+| `cfa4-engine/objects.rs` | `cfa4-geom` | `Rect` |
+| `cfa4-engine/objects.rs` | `cfa4-project` | `ClipId`, `Project`, `object` |
+| `cfa4-engine/objects.rs` | `cfa4-time` | `Tick` |
 | `cfa4-engine/opatom.rs` | `cfa4-media` | `SharedReader` |
 | `cfa4-engine/panels.rs` | `cfa4-color` | `ColorSpace` |
 | `cfa4-engine/panels.rs` | `cfa4-project` | `ClipId`, `ItemId`, `find` |
