@@ -1,6 +1,6 @@
 //! Pure-Rust RealAudio decoders: **Cook** (RealAudio G2, `cook`; mono, stereo, joint stereo and
 //! multichannel) and **RealAudio 1.0** (14.4, `lpcJ`, [`ra144`]), as stored in RealMedia files
-//! (`cfa4-realmedia` deinterleaves the packets), **ATRAC3** ([`atrac3`]; RealMedia `atrc` and
+//! (`cfa4-realmedia` deinterleaves the packets), **ATRAC1** ([`atrac1`]; MiniDisc `.aea` and Matroska `A_ATRAC/AT1`), **ATRAC3** ([`atrac3`]; RealMedia `atrc` and
 //! WAV `.at3`) and **ATRAC3plus** ([`atrac3p`]; OpenMG `.oma` / `.aa3` and WAV `.at3`) and **ATRAC9**
 //! ([`atrac9`]; WAV `.at9`).
 //!
@@ -10,6 +10,7 @@
 //! Codec backlog items CB-14.1, CB-14.2, CB-15.1, CB-15.2 and CB-16.1. Every number in the stream is treated as hostile: a
 //! damaged frame is an error, never a panic.
 
+pub mod atrac1;
 pub mod atrac3;
 pub mod atrac3p;
 pub mod atrac9;

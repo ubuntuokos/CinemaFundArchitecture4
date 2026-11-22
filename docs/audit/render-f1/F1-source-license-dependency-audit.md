@@ -12,7 +12,7 @@ azt nem építjük újra; **meglévőként** jelöljük, az audit csak rögzít�
 | VapourSynth | **PASS**, csak külön folyamatban futó worker (POC) | LGPL-2.1 (mag); a bővítmények külön lásd 3. pont | R83, `3b2c049876f6` (2026-11-15) | A retusáló szűrők (zajszűrés, deband, deinterlace, IVTC) POC-jelöltje; a Python-kérdés eldöntve (4. pont). |
 | ReelForge | **REFERENCE_ONLY** (legfeljebb ADAPT_PATTERN_ONLY) | MIT | 0.2.1, `ac85a94cfbf8` (2026-10-20), 1 kiadási címke | Egyetlen karbantartó: az életképességi szabály (≥2) miatt csak minta; a DAG/dirty-region ötletei használhatók, kód nem. |
 | avio / `ff-*` | **REFERENCE_ONLY** | MIT OR Apache-2.0 | 0.18.4, `453c67b992c4` (2026-11-03), 34 címke | Egyetlen karbantartó; FFmpeg 7.x/8.x-ra épül, a CFA4 FFmpeg 9.0.2; saját libav-kötés (A7 sérülne), a CFA4-nek már van `crates/ffmpeg`. |
-| EC-jelölt (#11) | **BLOCKED** | nem vizsgált | – | A repo-hivatkozása nincs a CFA4 repóban (márkaszűrő), ez a munkamenet nem látta; a blokkoló: az upstream link. |
+| EC-jelölt (#11) | **PASS** (POC-jelölt, feltételes; MQ-1/3/4/8 az F2 elején) | MIT OR Apache-2.0 (a márkajelek külön, nem nyílt licencűek) | 0.24.1, `171e92b07720` (2026-11-22), 27 címke | A terv hivatkozása elírt tulajdonost tartalmaz; a valódi repó a `storytold` szervezeté. Pure Rust, FFmpeg nélkül, `unsafe` tiltva, sok aktív szerző; a képút `f32`, de 8/16 bites projektben rétegenként kvantál (lásd 9. pont). |
 | rust-motion | **REFERENCE_ONLY** | MIT OR Apache-2.0 | 1.0.0, `b1873581ac02` (2026-11-20), 1 kiadási címke | Egyetlen karbantartó; a CFA4-gyel közös upstream-eredetű kódot tartalmaz (5. pont), az új rész (vektor, útvonal, alakzat, diagram, `tiny-skia`/`resvg` raszterizáló) minta. |
 | Blender | **PASS** csak külső folyamatként | GPL (a pontos változat a rögzítéskor ellenőrzendő) | verzió PENDING (a rögzítés az F5-höz) | Nem linkelünk hozzá; EXR-szekvencia cserével, külön folyamatban fut. |
 | Natron | **REFERENCE_ONLY** (tulajdonos, 2026-11-21) | GPL-2.0 (a `openfx-misc` GPL-2.0-or-later, `docs/gaps.md`) | – | Csak képességi minta, kódátvétel nincs; az ADR 0003 A4 változatlan, amíg a tulajdonos nem válaszol. |
@@ -89,9 +89,32 @@ Az egyedi rész: `vector`, `paths`, `shapes`, `charts`, `animation`, `rasterizer
 Mérés nem történt: az F1 csak olvas. A minőségi kapu (MQ-1..8) előszűrése: egyik REFERENCE_ONLY jelölt sem kerül POC-ba,
 ezért MQ-mérésre csak az OpenImageIO (EXR-pontosság) és a VapourSynth (szűrőminőség) kerül.
 
+## 9. EC-jelölt (#11): audit (2026-11-22, csak olvasás)
+
+A terv hivatkozása nem létező tulajdonosra mutat; a repó a `storytold` szervezet alatt van, a terv szerinti nevén. A márkaszűrő miatt a nevét
+itt nem írom ki, a rögzített állapot: `171e92b07720` (2026-11-22), 0.24.1, MSRV 1.95 (a CFA4 toolchain 1.97.1 megfelel).
+
+| Szempont | Eredmény |
+|---|---|
+| Licenc | MIT OR Apache-2.0, GPL-3.0-or-later-rel kompatibilis; a márkajelek (`docs/brand/`) nem nyílt licencűek, nem kerülhetnek át |
+| Életképesség | 27 címke, a legutóbbi v0.9.2; a 400 commitos történetben legalább hat jelentős szerző → teljesíti a ≥ 2 karbantartó szabályt |
+| Eredet | a CFA4 közös upstream-családjából való (`NOTICE`: upstream csapat); a `geom`, `color`, `time` crate-ek ott is megvannak, tehát nem új képesség (meglévő) |
+| FFmpeg / A7 | „No FFmpeg”: dekódolás és kódolás tiszta Rust; nincs második libav |
+| `unsafe` | a workspace tiltja (`unsafe_code = "forbid"`), nincs `unsafe` kivétel |
+| Függőségek | `Cargo.lock` 832 bejegyzés; SBOM-hoz egyenként nézendő, ha POC-ba kerül |
+| Képpontpontosság (MQ-1 előszűrés) | a képpont `f32`; 8 és 16 bites projektben viszont minden réteg és effekt után kvantál (16 bit: 0..32768), a szuper-tartomány csak 32 bpc-ben marad meg → **MQ-1-hez 32 bpc üzemmód kell**, mérendő |
+| Színkezelés (MQ-3 előszűrés) | sRGB, Rec. 709, Rec. 2020, Display P3 munkatér; DCI-P3/X'Y'Z' és OCIO nincs a leírásban → MQ-3 valószínűleg csak részleges, mérendő |
+| Alfa, EXR | ProRes 4444 alfával, 32 bites EXR-sorozat exportja a README szerint; mérendő (MQ-4) |
+| Projektmodell (A1) | saját JSON (`.ecproj`): második projektmodell, csak import/export peremen lehet |
+| Érettség | a README szerint alfa állapot (~91% funkció); az állítás upstream marketing, nem PASS |
+| **Hasznos minta a CFA4-nek** | a külső effekt-helper folyamat (ADR 0001, protokoll v1): az OpenFX-host **külön folyamatban** fut, mert az `unsafe` C ABI és a zárt natív kód nem lehet a fő folyamatban; hibára újraindítás, 3 leállás után tiltólista. Ez az ADR 0003 A4 és a SECURITY-001 `pluginHost` profil szempontjából közvetlenül releváns minta (az OpenFX-cél megvalósításához; kód nem kerül át, a minta igen) |
+
+Döntés: **PASS**, feltételes POC-jelölt (a terv szerint). Az MQ-1/3/4/8 mérés nélkül nem integrációs döntés. A helper-folyamat minta az OFX-célhoz
+külön, kód nélküli hivatkozásként használható.
+
 ## 8. Nyitott tételek
 
-1. EC-jelölt (#11): az upstream link megadása után pótolandó (BLOCKED).
+1. EC-jelölt (#11): auditálva (9. pont); a nyitott tétel az MQ-1/3/4/8 mérés az F2 elején.
 2. A QTGMC motorok licencei (mvtools, nnedi3/znedi3, eedi3, fft3dfilter, dfttest).
 3. Blender: licencváltozat és a rögzítendő verzió.
 4. A referenciagép Python-verziója és `render_environment.py` futtatása.

@@ -4871,6 +4871,10 @@ export.summary	Low	төмен
 	Subtitles	Субтитрлер
 	Captions for the hearing impaired	Есту қабілеті нашар адамдарға арналған субтитрлер
 	Forced narrative	Мәжбүрлі баяндау (forced narrative)
+	Silence	Үнсіздік
+	Detect Silence	Үнсіздікті анықтау
+	Remove Silence	Үнсіздікті жою
+	Clear Silence Markers	Үнсіздік маркерлерін тазалау
 # DCP Validation window (DCP-12)
 	AS-03	AS-03
 	Choose the DCP folder.	DCP қалтасын таңдаңыз.
