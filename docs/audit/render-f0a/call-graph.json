@@ -1060,6 +1060,13 @@
   {
    "class": "audio",
    "crate": "cfa4-engine",
+   "kind": "type",
+   "module": "task_host.rs",
+   "name": "Sampler"
+  },
+  {
+   "class": "audio",
+   "crate": "cfa4-engine",
    "kind": "trait",
    "module": "voiceover.rs",
    "name": "AudioInput"
@@ -1679,6 +1686,13 @@
    "kind": "enum",
    "module": "qc.rs",
    "name": "QcStatus"
+  },
+  {
+   "class": "job",
+   "crate": "cfa4-engine",
+   "kind": "struct",
+   "module": "task_host.rs",
+   "name": "TaskHost"
   },
   {
    "class": "job",
@@ -2545,6 +2559,20 @@
    "class": "other",
    "crate": "cfa4-engine",
    "kind": "struct",
+   "module": "background.rs",
+   "name": "Background"
+  },
+  {
+   "class": "other",
+   "crate": "cfa4-engine",
+   "kind": "struct",
+   "module": "background.rs",
+   "name": "Need"
+  },
+  {
+   "class": "other",
+   "crate": "cfa4-engine",
+   "kind": "struct",
    "module": "commands.rs",
    "name": "CommandSpec"
   },
@@ -3335,6 +3363,20 @@
   {
    "class": "other",
    "crate": "cfa4-engine",
+   "kind": "enum",
+   "module": "task_host.rs",
+   "name": "Admission"
+  },
+  {
+   "class": "other",
+   "crate": "cfa4-engine",
+   "kind": "enum",
+   "module": "task_host.rs",
+   "name": "Outcome"
+  },
+  {
+   "class": "other",
+   "crate": "cfa4-engine",
    "kind": "struct",
    "module": "timecode_sync.rs",
    "name": "SyncRuntime"
@@ -3974,6 +4016,13 @@
    "crate": "cfa4-golden",
    "kind": "struct",
    "module": "validation.rs",
+   "name": "Extras"
+  },
+  {
+   "class": "other",
+   "crate": "cfa4-golden",
+   "kind": "struct",
+   "module": "validation.rs",
    "name": "Metadata"
   },
   {
@@ -3996,6 +4045,13 @@
    "kind": "struct",
    "module": "validation.rs",
    "name": "Report"
+  },
+  {
+   "class": "other",
+   "crate": "cfa4-golden",
+   "kind": "struct",
+   "module": "validation.rs",
+   "name": "SyncSpec"
   },
   {
    "class": "other",
@@ -6201,6 +6257,13 @@
    "kind": "enum",
    "module": "previews.rs",
    "name": "RenderMode"
+  },
+  {
+   "class": "render",
+   "crate": "cfa4-engine",
+   "kind": "struct",
+   "module": "task_host.rs",
+   "name": "Preview"
   },
   {
    "class": "render",
@@ -11408,6 +11471,11 @@
   {
    "from": "cfa4-gstreamer/source.rs",
    "item": "FrameRate",
+   "to": "cfa4-time"
+  },
+  {
+   "from": "cfa4-media/aea.rs",
+   "item": "Tick",
    "to": "cfa4-time"
   },
   {
