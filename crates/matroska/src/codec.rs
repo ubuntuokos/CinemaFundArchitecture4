@@ -17,6 +17,9 @@ pub enum Codec {
     Vp9 { private: Vec<u8> },
     /// `V_AV1`; payload is an `AV1CodecConfigurationRecord` (av1C).
     Av1 { av1c: Vec<u8> },
+    /// `V_THEORA`; `private` is the Xiph-laced `CodecPrivate` (identification, comment and setup
+    /// headers).
+    Theora { private: Vec<u8> },
     /// `V_APV`; payload is an `APVDecoderConfigurationRecord` (apvC), if present.
     Apv { apvc: Vec<u8> },
     /// `V_PRORES`; `fourcc` from `CodecPrivate` (e.g. `apcn`), if present.
@@ -74,6 +77,7 @@ impl Codec {
             Codec::Vp9 { .. } => "vp9".into(),
             Codec::Av1 { .. } => "av1".into(),
             Codec::Apv { .. } => "apv".into(),
+            Codec::Theora { .. } => "theora".into(),
             Codec::ProRes { .. } => "prores".into(),
             Codec::Mjpeg => "mjpeg".into(),
             Codec::VfwFourcc { fourcc, .. } => String::from_utf8_lossy(fourcc).trim().to_ascii_lowercase(),
@@ -188,6 +192,7 @@ pub(crate) fn map_codec(id: &str, private: &[u8], audio: Option<&crate::AudioInf
         "V_VP9" => Codec::Vp9 { private: p },
         "V_AV1" => Codec::Av1 { av1c: p },
         "V_APV" => Codec::Apv { apvc: p },
+        "V_THEORA" => Codec::Theora { private: p },
         "V_PRORES" => Codec::ProRes { fourcc: private.get(..4).and_then(|f| f.try_into().ok()) },
         "V_MJPEG" => Codec::Mjpeg,
         "V_MS/VFW/FOURCC" => {
