@@ -17,12 +17,12 @@ Minden állítás mellett ott a forrás (fájl vagy parancs). Ami nem ellenőriz
 
 ### 0.1 Kritikus megállapítás: öt hivatkozott terv nincs a `main`-ben
 
-A megbízás ezekre a „korábbi CFA4-tervekre” hivatkozik: **CFA4 VFX Catalog**, **Effektlánc**,
+A megbízás ezekre a „korábbi CFA4-tervekre” hivatkozik: **CFA4 VFX Catalog**, **FX Authoring**,
 **Adaptive Representation Fabric (ARF)**, **OpenUSD / 3D Scene Exchange / procedurális 3D**,
 **Potree-alapú point-cloud donorvizsgálat** (és Gaffer). Ellenőrzés a `main`-en:
 
 ```
-grep -rliE "Effektlánc|Adaptive Representation|VFX Catalog|Gaffer|Potree|NanoVDB|glTF" \
+grep -rliE "FX Authoring|Adaptive Representation|VFX Catalog|Gaffer|Potree|NanoVDB|glTF" \
      --include=*.md --include=*.rs --include=*.py --include=*.toml .   # (vendor/ nélkül)  → 0 találat
 grep -rliE "OpenVDB" …                                                  → csak ADR-0003
 grep -rliE "OpenUSD|\bUSD\b" …                                          → csak spec-kit/superpowers (nem média-USD)
@@ -99,7 +99,7 @@ Jelölés: **A** már elfogadott CFA4-tervben; **B** meglévő terv valódi bőv
 | # | Képesség | Besorolás | Kapcsolódó terv / tény | Új érték (DNEG) | Hely | Dup. | Döntés |
 |---|---|---|---|---|---|---|---|
 | A1 | VFX-effektkatalógus, effektláncok | **A** | M5.11 katalógus (`crates/render/src/vfx`), G18 | – | – | – | Nem fejlesztési feladat. A „CFA4 VFX Catalog” elnevezésű terv nincs a `main`-ben (0.1). |
-| A2 | Effektlánc | **A?** | nincs a `main`-ben | – | – | – | Kimarad (G0). |
+| A2 | FX Authoring | **A?** | nincs a `main`-ben | – | – | – | Kimarad (G0). |
 | A3 | Procedurális effektek (2D) | **A** | `particles`, glitch, stylize | – | – | – | Kimarad. |
 | A4 | GPU/CPU végrehajtás | **A** | wgpu, ADR-0004, ACS | – | – | – | Kimarad (D9). |
 | A5 | Kulcskocka (kifejezés: képkocka-paraméter) | **A** | Effect Controls kulcskockák | – | – | – | Kimarad. |
