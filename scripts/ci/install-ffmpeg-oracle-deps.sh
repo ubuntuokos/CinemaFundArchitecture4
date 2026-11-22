@@ -60,3 +60,7 @@ bash "$(dirname "$0")/install-g729-oracle.sh" \
 # built from the pinned upstream tag; the LCEVC oracle test skips without it)
 bash "$(dirname "$0")/install-lcevc-oracle.sh" \
   || echo "::warning::lcevc_oracle build failed: the LCEVC oracle test skips"
+# MPEG-5 EVC oracles `xevdb_app` / `xeveb_app` (xevd v0.8.0, xeve v0.7.1, Baseline builds from the
+# pinned upstream tags; the EVC oracle tests skip without them)
+bash "$(dirname "$0")/install-evc-oracle.sh" \
+  || echo "::warning::xevd / xeve build failed: the EVC oracle tests skip"

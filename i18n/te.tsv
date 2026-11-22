@@ -4778,3 +4778,124 @@ export.summary	Low	తక్కువ
 # Timecode sync varispeed and user bits (TC-8, #1308)
 	Varispeed: adjust the playback speed instead of seeking	Varispeed: దాటవేయడానికి బదులు ప్లేబ్యాక్ వేగాన్ని సర్దుబాటు చేయి
 	User bits	వినియోగదారు బిట్‌లు
+# AS-11 programme parts and AS-10 metadata (G2, #1371, #1375)
+	{tc}  Segmentation	{tc}  విభజన
+	Marker Type	మార్కర్ రకం
+	Chapter	చాప్టర్
+	Segmentation (AS-11 programme part)	విభజన (AS-11 కార్యక్రమ భాగం)
+	AS-10	AS-10
+# AT9/AT3 converter (Tools ▸ Audio Tools, AT3-2)
+	AT9/AT3 Converter	AT9/AT3 కన్వర్టర్
+	AT9/AT3 Converter…	AT9/AT3 కన్వర్టర్…
+	Files to convert:	మార్చవలసిన ఫైల్‌లు:
+	Add Files	ఫైల్‌లను జోడించు
+	Add Files…	ఫైల్‌లను జోడించు…
+	Convert to:	దీనికి మార్చు:
+	Bit rate:	బిట్ రేట్:
+	Sample format:	శాంపిల్ ఫార్మాట్:
+	Output folder:	అవుట్‌పుట్ ఫోల్డర్:
+	Output Folder	అవుట్‌పుట్ ఫోల్డర్
+	Next to each source file	ప్రతి మూల ఫైల్ పక్కన
+	AT9 and ATRAC3plus files convert to WAV; encoding AT9, ATRAC3plus and MP3 is not available yet.	AT9, ATRAC3plus ఫైల్‌లు WAVకి మారతాయి; AT9, ATRAC3plus, MP3 ఎన్‌కోడింగ్ ఇంకా అందుబాటులో లేదు.
+	Convert	మార్చు
+	Add the files to convert first.	ముందుగా మార్చవలసిన ఫైల్‌లను జోడించండి.
+	Done: {n} file(s) converted.	పూర్తయింది: {n} ఫైల్(లు) మార్చబడ్డాయి.
+	Converting {name}…	{name} మార్చబడుతోంది…
+	Stopping…	ఆపుతోంది…
+	AT3 (ATRAC3, PSP / PS3)	AT3 (ATRAC3, PSP / PS3)
+	WAV (PCM)	WAV (PCM)
+	132 kbit/s (LP2)	132 kbit/s (LP2)
+	105 kbit/s	105 kbit/s
+	66 kbit/s (LP4, joint stereo)	66 kbit/s (LP4, joint stereo)
+	16-bit	16-బిట్
+	24-bit	24-బిట్
+	32-bit float	32-బిట్ ఫ్లోట్
+
+# Datamosh transition (Grunge & Distort, DM1, #1409)
+	Datamosh	డేటామోష్
+	Residual	అవశేషం
+	Motion Boost	చలన పెంపు
+	Recovery	పునరుద్ధరణ
+	Encode Resolution	ఎన్‌కోడ్ రిజల్యూషన్
+	Half	సగం
+	Quarter	పావు
+# Datamosh Bloom (Glitch, DM2)
+	Datamosh Bloom	డేటామోష్ బ్లూమ్
+	Start Time (seconds)	ప్రారంభ సమయం (సెకన్లు)
+	Repeats	పునరావృత్తులు
+
+# Recent effects, per-channel waveform, white balance selector (SC-2/SC-3/SC-4, #1419 #1420 #1421)
+	Apply a recently used effect to the selected clips	ఇటీవల ఉపయోగించిన ఎఫెక్ట్‌ను ఎంచుకున్న క్లిప్‌లకు వర్తింపజేయండి
+	Disable all effects	అన్ని ఎఫెక్ట్‌లను ఆఫ్ చేయండి
+	Enable all effects	అన్ని ఎఫెక్ట్‌లను ఆన్ చేయండి
+	No recent effects	ఇటీవలి ఎఫెక్ట్‌లు లేవు
+	Recent effects	ఇటీవలి ఎఫెక్ట్‌లు
+	Switch every effect of the selected clips off	ఎంచుకున్న క్లిప్‌ల ప్రతి ఎఫెక్ట్‌ను ఆఫ్ చేస్తుంది
+	Switch every effect of the selected clips on	ఎంచుకున్న క్లిప్‌ల ప్రతి ఎఫెక్ట్‌ను ఆన్ చేస్తుంది
+	Merged	కలిపినవి
+	Per Channel	ఛానెల్ వారీగా
+	Channel Zoom	ఛానెల్ జూమ్
+	White Balance Selector (click a neutral point in the Program monitor; Esc cancels)	వైట్ బ్యాలెన్స్ సెలెక్టర్ (ప్రోగ్రామ్ మానిటర్‌లో తటస్థ బిందువుపై క్లిక్ చేయండి; Esc రద్దు చేస్తుంది)
+# Task Manager and subtitle kind (SC-2/3/4)
+	Task Manager	టాస్క్ మేనేజర్
+	Background jobs	బ్యాక్‌గ్రౌండ్ జాబ్‌లు
+	Exports	ఎగుమతులు
+	Shared task queue	భాగస్వామ్య టాస్క్ క్యూ
+	Task	టాస్క్
+	State	స్థితి
+	Details	వివరాలు
+	Time left	మిగిలిన సమయం
+	Scheduled	షెడ్యూల్ చేయబడింది
+	Queued	క్యూలో ఉంది
+	Waiting for resources	వనరుల కోసం వేచి ఉంది
+	Blocked	నిరోధించబడింది
+	Running	నడుస్తోంది
+	Paused	పాజ్ చేయబడింది
+	Cancelling	రద్దు చేస్తోంది
+	Interactive	ఇంటరాక్టివ్
+	Speculative	ఊహాత్మక
+	Final render	తుది రెండర్
+	Show finished	పూర్తయినవి చూపించు
+	Nothing is running.	ఏదీ నడవడం లేదు.
+	Not reported by this engine yet.	ఈ ఇంజిన్ ఇంకా నివేదించడం లేదు.
+	Not available: {why}	అందుబాటులో లేదు: {why}
+	{name} waits: {why}	{name} వేచి ఉంది: {why}
+	{running} running · {waiting} waiting	{running} నడుస్తున్నాయి · {waiting} వేచి ఉన్నాయి
+	{n} active	{n} క్రియాశీలం
+	{n} CPU	{n} CPU
+	{n} GiB	{n} GiB
+	{n} MiB	{n} MiB
+	Needs your decision	మీ నిర్ణయం అవసరం
+	Run now	ఇప్పుడే అమలు చేయండి
+	Next slot	తదుపరి స్లాట్
+	Missed its start	ప్రారంభం తప్పిపోయింది
+	Missed its start at {time}	{time} వద్ద ప్రారంభం తప్పిపోయింది
+	Starts at {time}	{time} వద్ద ప్రారంభమవుతుంది
+	Subtitle kind	ఉపశీర్షికల రకం
+	Subtitles	ఉపశీర్షికలు
+	Captions for the hearing impaired	వినికిడి లోపం ఉన్నవారి కోసం క్యాప్షన్‌లు
+	Forced narrative	బలవంతపు వ్యాఖ్యానం (forced narrative)
+# DCP Validation window (DCP-12)
+	AS-03	AS-03
+	Choose the DCP folder.	DCP ఫోల్డర్‌ను ఎంచుకోండి.
+	DCP Validation	DCP ధృవీకరణ
+	DCP folder	DCP ఫోల్డర్
+	DCP folder (the one holding ASSETMAP)	DCP ఫోల్డర్ (ASSETMAP ఉన్నది)
+	Evidence	రుజువు
+	How to fix	ఎలా సరిచేయాలి
+	Interrupted	అంతరాయం కలిగింది
+	Not applicable	వర్తించదు
+	Report	నివేదిక
+	Report saved: {path}	నివేదిక సేవ్ చేయబడింది: {path}
+	Required	తప్పనిసరి
+	Rule	నియమం
+	Rules	నియమాలు
+	Save JSON…	JSON సేవ్ చేయి…
+	Save Markdown…	Markdown సేవ్ చేయి…
+	Save report	నివేదికను సేవ్ చేయి
+	Skipped	దాటవేయబడింది
+	Standard: {standard}	ప్రమాణం: {standard}
+	Validate	ధృవీకరించు
+	Validate DCP…	DCPని ధృవీకరించు…
+	the engine sent no profiles	ఇంజిన్ ఎలాంటి ప్రొఫైళ్లను పంపలేదు
+	{n} files checked	{n} ఫైళ్లు తనిఖీ చేయబడ్డాయి

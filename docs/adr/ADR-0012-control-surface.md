@@ -1,6 +1,6 @@
 # ADR 0012 – CFA4-CONTROL-SURFACE-001: Egységes vezérlőfelület-motor (Unified Control Surface Engine)
 
-**Dátum:** 2026-11-13 · **Állapot:** elfogadva (a tulajdonos, `ubuntuokos`, 2026-11-13) ·
+**Dátum:** 2026-11-13 · **Állapot:** elfogadva (a tulajdonos, `ubuntuokos`, 2026-11-13), az F0-val együtt **véglegesítve** 2026-11-16 ·
 **Specifikáció:** CFA4-CONTROL-SURFACE-001 F0 v1.0; F0-dokumentumok: [műszaki specifikáció](../plans/CFA4-CONTROL-SURFACE-F0-TECHNICAL-SPEC.md), [átvételi jegyzőkönyv](../plans/CFA4-CONTROL-SURFACE-F0-ACCEPTANCE-REPORT.md) · **Alap:** `ubuntuokos/CinemaFundArchitecture4` main `92e29e4`, újraellenőrizve `5baa2fe`-n ·
 **Repóbeli név:** `docs/adr/ADR-0012-control-surface.md` (a 0011-et a nyitott #1173 foglalja) ·
 **Érintett rész:** új crate-ek (`cfa4-surface-model` L1, `cfa4-surface` L5), új modul (`crates/engine/src/surface/`, L4),

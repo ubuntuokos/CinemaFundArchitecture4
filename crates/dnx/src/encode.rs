@@ -5,6 +5,10 @@
 //! midpoint). Rate control: a binary search finds the smallest uniform quantisation scale factor
 //! whose frame fits the CBR payload, then macroblocks get one finer step in scan order while the
 //! budget allows.
+//!
+//! Interlaced DNxHD IDs (1241–1243) are field coded: each frame becomes two coding units of half
+//! the Table C.1 frame size, field 1 (the top field, even lines) then field 2, each with its own
+//! rate control (§7.2.2: `FFC`, `SST` = 1, `FFE` = 0).
 
 use crate::bits::Writer;
 use crate::dct::fdct8x8;
@@ -93,7 +97,7 @@ impl Encoder {
         }
         let info = cid_info(cfg.profile.cid()).ok_or_else(|| Error::Input(format!("no compression table for {}", cfg.profile.name())))?;
         let frame_size = cfg.profile.frame_size(cfg.width, cfg.height);
-        let header_size = header::header_size_for(cfg.height);
+        let header_size = header::header_size_for(if cfg.profile.interlaced() { cfg.height / 2 } else { cfg.height });
         Ok(Encoder { cfg, info, frame_size, header_size, last_q: 8 })
     }
 
@@ -101,7 +105,7 @@ impl Encoder {
         &self.cfg
     }
 
-    /// Size of every encoded frame in bytes (CBR).
+    /// Size of every encoded frame in bytes (CBR; both coding units of a field-coded frame).
     pub fn frame_size(&self) -> u32 {
         self.frame_size
     }
@@ -124,11 +128,23 @@ impl Encoder {
         if f.y.len() != n || f.cb.len() != cn || f.cr.len() != cn {
             return Err(Error::Input("plane sizes do not match the frame geometry".into()));
         }
+        if !self.cfg.profile.interlaced() {
+            return self.encode_unit(f, FieldCode::Frame, self.frame_size);
+        }
+        // field coding: field 1 (top, even lines) then field 2, each half the frame size
+        let unit = self.frame_size / 2;
+        let mut out = self.encode_unit(&field_of(f, 0), FieldCode::Field1, unit)?;
+        out.extend(self.encode_unit(&field_of(f, 1), FieldCode::Field2, unit)?);
+        Ok(out)
+    }
+
+    /// Encode `f` (a frame, or one field) as a single coding unit of `unit_size` bytes.
+    fn encode_unit(&mut self, f: &Frame, field: FieldCode, unit_size: u32) -> Result<Vec<u8>> {
         let prep = self.prepare(f);
         let vlc = vlc(self.info.vlc);
-        let budget_bits = (self.frame_size as u64 - self.header_size as u64 - 4) * 8;
+        let budget_bits = (unit_size as u64 - self.header_size as u64 - 4) * 8;
         let q = self.rate_control(&prep, vlc, budget_bits);
-        self.write(&prep, vlc, &q, f.rgb)
+        self.write(&prep, vlc, &q, f, field, unit_size)
     }
 
     fn mb_layout(&self) -> &'static [(u8, u8, u8)] {
@@ -142,8 +158,8 @@ impl Encoder {
 
     fn prepare(&self, f: &Frame) -> Prepared {
         let cfg = &self.cfg;
-        let nw = cfg.width.div_ceil(16) as usize;
-        let ns = cfg.height.div_ceil(16) as usize;
+        let nw = f.width.div_ceil(16) as usize;
+        let ns = f.height.div_ceil(16) as usize;
         let layout = self.mb_layout();
         let nblk = layout.len();
         let depth = cfg.bit_depth as i32;
@@ -292,7 +308,8 @@ impl Encoder {
         qs
     }
 
-    fn write(&self, prep: &Prepared, vlc: &VlcSet, qs: &[u32], rgb: bool) -> Result<Vec<u8>> {
+    fn write(&self, prep: &Prepared, vlc: &VlcSet, qs: &[u32], f: &Frame, field: FieldCode, unit_size: u32) -> Result<Vec<u8>> {
+        let rgb = f.rgb;
         let cfg = &self.cfg;
         let p_bits = if cfg.bit_depth == 8 { 4 } else { 6 };
         let max_amp = if p_bits == 4 { 1024 } else { 4096 };
@@ -339,18 +356,18 @@ impl Encoder {
             version: if cfg.profile.hd_raster().is_some() { 1 } else { 3 },
             cid: self.info.cid,
             vbr: false,
-            field: FieldCode::Frame,
+            field,
             macf: false,
             crc: false,
             alpha: false,
             lossless_alpha: false,
             premultiplied_alpha: false,
             width: cfg.width,
-            lines: cfg.height,
+            lines: f.height,
             par: cfg.par,
             bit_depth: cfg.bit_depth,
-            interlaced: false,
-            frame_encoding: true,
+            interlaced: field != FieldCode::Frame,
+            frame_encoding: field == FieldCode::Frame,
             chroma: cfg.chroma(),
             rgb: ycbcr444,
             color_volume: cfg.color_volume,
@@ -358,7 +375,7 @@ impl Encoder {
             mb_rows: prep.ns as u32,
         };
         let mut out = header::write(&h);
-        out.reserve(self.frame_size as usize - out.len());
+        out.reserve((unit_size as usize).saturating_sub(out.len()));
         let mut off = 0u32;
         for (s, r) in rows.iter().enumerate() {
             let o = SCAN_INDEX_OFFSET + 4 * s;
@@ -368,7 +385,7 @@ impl Encoder {
         for r in rows {
             out.extend_from_slice(&r);
         }
-        let end = self.frame_size as usize - 4;
+        let end = unit_size as usize - 4;
         if out.len() > end {
             return Err(Error::Input("rate control overflow".into()));
         }
@@ -379,6 +396,27 @@ impl Encoder {
 }
 
 #[inline]
+/// Field `parity` (0 = top, even lines; 1 = bottom) of `f` as a frame of half the height.
+fn field_of(f: &Frame, parity: usize) -> Frame {
+    let lines = |d: &[u16], w: usize| -> Vec<u16> { d.chunks_exact(w).skip(parity).step_by(2).flatten().copied().collect() };
+    let (w, cw) = (f.width as usize, f.chroma_width() as usize);
+    Frame {
+        width: f.width,
+        height: f.height / 2,
+        chroma: f.chroma,
+        rgb: f.rgb,
+        bit_depth: f.bit_depth,
+        y: lines(&f.y, w),
+        cb: lines(&f.cb, cw),
+        cr: lines(&f.cr, cw),
+        alpha: None,
+        interlace: f.interlace,
+        color_volume: f.color_volume,
+        cid: f.cid,
+        par: f.par,
+    }
+}
+
 fn row_bytes(bits: u64) -> u64 {
     bits.div_ceil(32) * 4
 }

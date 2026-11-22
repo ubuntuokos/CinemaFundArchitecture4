@@ -177,6 +177,38 @@ fn child_engine() {
     println!("CHILD-OK");
 }
 
+/// READY-001 V7.4: the I/O host writes inside its recording directory and nowhere else, opens its
+/// device (`/dev/null` stands in for a capture card), and gets no socket, no `execve`, no `$HOME`.
+#[test]
+fn io_host_writes_only_its_recording_dir() {
+    let t = Tree::new("iohost");
+    run_child("child_io_host", &t.root);
+    let _ = fs::remove_dir_all(&t.root);
+}
+
+#[test]
+fn child_io_host() {
+    let Some(t) = child_tree() else { return };
+    assert!(readable(&t.p("home/.ssh/id_ed25519")) && can_exec() && can_inet_socket(), "unconfined baseline");
+    let ctx = Context { capture_devices: vec![PathBuf::from("/dev/null")], recording_dir: Some(t.p("out")), ..Context::default() };
+    if !confine(&Profile::for_process(ProcessKind::IoHost, &ctx)) {
+        return;
+    }
+    assert!(fs::write(t.p("out/take1.mxf"), b"frames").is_ok(), "writes inside the recording directory");
+    assert!(fs::create_dir(t.p("out/sub")).is_ok() && fs::write(t.p("out/sub/x"), b"x").is_ok(), "also beneath it");
+    let denied = fs::write(t.p("media/new.bin"), b"x").expect_err("writing outside the recording directory");
+    assert_eq!(denied.kind(), ErrorKind::PermissionDenied, "EPERM/EACCES: {denied}");
+    assert!(fs::write(t.p("home/notes.txt"), b"x").is_err(), "no $HOME");
+    assert!(!readable(&t.p("home/.ssh/id_ed25519")), "~/.ssh is out of reach");
+    assert!(!readable(&t.p("media/clip.mov")), "no media either: frames come over the ring");
+    assert!(fs::OpenOptions::new().read(true).write(true).open("/dev/null").is_ok(), "its device opens read-write");
+    let udp = UdpSocket::bind("127.0.0.1:0").expect_err("a socket");
+    assert_eq!(udp.kind(), ErrorKind::PermissionDenied, "no sockets: {udp}");
+    assert!(TcpListener::bind("127.0.0.1:0").is_err(), "no TCP either");
+    assert!(!can_exec(), "no program start");
+    println!("CHILD-OK");
+}
+
 #[test]
 fn model_converter_writes_only_its_output() {
     let t = Tree::new("model");

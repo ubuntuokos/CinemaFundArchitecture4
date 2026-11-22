@@ -16,11 +16,15 @@ cfa4-iab = { workspace = true }
 cfa4-j2k = { workspace = true }
 cfa4-mxf = { workspace = true }
 chrono = { workspace = true }
+# DCP-10: the CPL and PKL are read again for their ds:Signature (cfa4_dcp::xmldsig takes a roxmltree document).
+roxmltree = { workspace = true }
 serde = { workspace = true }
 serde_json = { workspace = true }
 thiserror = { workspace = true }
 
 [dev-dependencies]
+# DCP-10: XML-signed CPLs and PKLs for the signature tests (openssl and xmlsec1 oracles).
+cfa4-dcp = { workspace = true, features = ["test-util"] }
 # The round trip: a package written by CFA4's own DCP export, validated by the native backend.
 cfa4-export = { workspace = true }
 cfa4-media = { workspace = true }

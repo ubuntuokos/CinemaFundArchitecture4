@@ -41,7 +41,7 @@ mod xml;
 
 use std::collections::{BTreeMap, HashMap};
 
-use cfa4_project::{BinEntry, BinId, ClipId, ItemId, ItemKind, MarkerId, Project, TrackId, TransitionId};
+use cfa4_project::{BinEntry, BinId, ClipId, ItemId, ItemKind, MarkerId, MediaRef, Project, TrackId, TrackKind, TransitionId};
 use cfa4_time::{FrameRate, Tick};
 use serde::{Deserialize, Serialize};
 
@@ -236,6 +236,10 @@ pub struct Imported {
     pub project: Project,
     /// Top-level sequences, in document order (nested sequences are items too but not listed here).
     pub sequences: Vec<ItemId>,
+    /// Sequences (top-level or nested) whose picture size the document does not state, so they have
+    /// the default 1920×1080: a host that opens the media sizes them from their first video clip
+    /// ([`first_video_media`], [`size_from_media`]; OTIO-2.5).
+    pub size_from_media: Vec<ItemId>,
 }
 
 /// Import options beyond the defaults of [`import`].
@@ -424,7 +428,12 @@ pub fn export_edl_per_track(project: &Project, sequence: ItemId, opts: &ExportOp
 /// fragment's root children go into `bin` (or the root). Returns the new ids of the fragment's
 /// top-level sequences.
 pub fn merge_into(target: &mut Project, fragment: Imported, bin: Option<BinId>) -> Vec<ItemId> {
-    let Imported { project: frag, sequences } = fragment;
+    merge_into_sized(target, fragment, bin).0
+}
+
+/// [`merge_into`], also returning the new ids of [`Imported::size_from_media`].
+pub fn merge_into_sized(target: &mut Project, fragment: Imported, bin: Option<BinId>) -> (Vec<ItemId>, Vec<ItemId>) {
+    let Imported { project: frag, sequences, size_from_media } = fragment;
     let mut items: HashMap<ItemId, ItemId> = HashMap::new();
     for id in frag.items.keys() {
         items.insert(*id, ItemId(target.alloc_id()));
@@ -498,7 +507,44 @@ pub fn merge_into(target: &mut Project, fragment: Imported, bin: Option<BinId>) 
         None => &mut target.root,
     };
     dest.children.extend(root.children);
-    sequences.iter().filter_map(|s| items.get(s).copied()).collect()
+    let mapped = |ids: &[ItemId]| ids.iter().filter_map(|s| items.get(s).copied()).collect();
+    (mapped(&sequences), mapped(&size_from_media))
+}
+
+/// The media item whose picture sizes sequence `seq` when the document does not state its size
+/// ([`Imported::size_from_media`]): the file media of the video clip that starts first (on the
+/// lowest track when several start together), as a sequence made from that clip would be.
+pub fn first_video_media(project: &Project, seq: ItemId) -> Option<ItemId> {
+    let s = project.sequence(seq)?;
+    s.tracks(TrackKind::Video)
+        .iter()
+        .enumerate()
+        .flat_map(|(i, t)| t.items.iter().map(move |c| (c.start, i, c.item)))
+        .filter(|(_, _, item)| project.item(*item).and_then(|i| i.as_media()).is_some_and(|m| matches!(m.media, MediaRef::File { .. })))
+        .min()
+        .map(|(_, _, item)| item)
+}
+
+/// Give `seq` the picture size (and pixel aspect) of its [`first_video_media`] once that media's
+/// own size is known (probed). Returns whether the size changed; a size the project cannot use is
+/// left alone.
+pub fn size_from_media(project: &mut Project, seq: ItemId) -> bool {
+    let Some(v) = first_video_media(project, seq).and_then(|m| project.item(m)).and_then(|i| i.as_media()).and_then(|m| m.info.video.clone()) else {
+        return false;
+    };
+    let Some(s) = project.sequence_mut(seq) else { return false };
+    let mut settings = s.settings.clone();
+    settings.width = v.width;
+    settings.height = v.height;
+    if let Some(par) = cfa4_project::checked_par(v.par) {
+        settings.par = par;
+    }
+    settings.preset = format!("Custom {}x{} {}", v.width, v.height, settings.frame_rate.label());
+    if settings == s.settings || settings.validate().is_err() {
+        return false;
+    }
+    s.settings = settings;
+    true
 }
 
 /// After probing a media file imported from an EDL (whose source times are absolute timecode),

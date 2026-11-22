@@ -1396,14 +1396,15 @@ class PreferencesDialog(QDialog):
         if isinstance(surfaces, dict):
             surfaces[key] = value
 
-    def _store_learned(self, control: Any) -> None:
+    def _store_learned(self, control: Any, encoding: str = "") -> None:
         if not isinstance(control, dict) or not self.assign_command:
             return
         kept = [b for b in self._bindings(self.assign_device) if b.get("control") != control]
         command, _, strip = self.assign_command.partition("|")
         binding: dict[str, Any] = {"control": control, "command": command}
         if strip:
-            binding["params"] = {"strip": strip}
+            # an endless encoder keeps its encoding: it then moves the strip step by step
+            binding["params"] = {"strip": strip, "encoding": encoding} if encoding else {"strip": strip}
         self._set_bindings(self.assign_device, [*kept, binding])
         labels = {**dict(self.commands()), **dict(value_targets())}
         self.learn_message = fmt("{control} runs {command}.", control=control_label(control),
@@ -1416,7 +1417,7 @@ class PreferencesDialog(QDialog):
         self.learn_pending = None
         self.learn_phase = "confirmed" if accept else "rejected"
         if accept:
-            self._store_learned(pending.get("control"))
+            self._store_learned(pending.get("control"), str(pending.get("encoding") or ""))
         else:
             self.learn_message = ""
         self._rebuild_if_shown()
@@ -1440,7 +1441,9 @@ class PreferencesDialog(QDialog):
                 return
             self.learning = True
             self.learn_phase = "conflict" if state == "conflict" else "pending"
-            self.learn_pending = {"control": control, "mode": str(captured.get("mode") or "")}
+            mode = str(captured.get("mode") or "")
+            encoding = str(captured.get("encoding") or "") if mode == "relative" else ""
+            self.learn_pending = {"control": control, "mode": mode, "encoding": encoding}
             hint = self.learn_pending["mode"] or "control"
             self.learn_hint = hint
             if state == "conflict":
@@ -1452,7 +1455,7 @@ class PreferencesDialog(QDialog):
         if state == "confirmed":
             # Confirm already stored the draft; a late event must not add it twice.
             if self.learn_pending is not None:
-                self._store_learned(message.get("control") or captured.get("control"))
+                self._store_learned(message.get("control") or captured.get("control"), str(self.learn_pending.get("encoding") or ""))
             self.learning = False
             self.learn_pending = None
             self.learn_phase = "confirmed"

@@ -1,5 +1,6 @@
 //! Enveloped XML Signature checking (W3C XML Signature Syntax and Processing) as D-Cinema
-//! messages use it (ST 430-3 via ST 430-1): same-document references (`URI="#id"`) with SHA-256
+//! messages use it (ST 430-3 via ST 430-1): same-document references (`URI="#id"`, or `URI=""`
+//! for the whole document as CPLs and PKLs use it) with SHA-256
 //! or SHA-1 digests, inclusive Canonical XML 1.0 with or without comments, RSA PKCS#1 v1.5
 //! signatures, and the signer's certificate chain carried in `KeyInfo`.
 //!
@@ -34,7 +35,8 @@ const MAX_CHAIN: usize = 16;
 pub struct Verified {
     /// The signer's chain, signer first, root last (as far as it was followed).
     pub chain: Vec<Certificate>,
-    /// The `Id`s of the elements the signature covers.
+    /// The `Id`s of the elements the signature covers; an empty string for the whole document
+    /// (`URI=""`).
     pub references: Vec<String>,
     /// Why the certificate chain does not check out, when it does not. The content is intact
     /// either way: this is about who signed it.
@@ -94,12 +96,20 @@ pub fn verify(doc: &Document<'_>, sig: Node<'_, '_>, signer_serial: Option<&str>
     let mut references = Vec::new();
     for r in ds_children(si, "Reference") {
         let uri = r.attribute("URI").ok_or("Reference without URI")?;
-        let id = uri.strip_prefix('#').ok_or_else(|| format!("only same-document references are supported, not {uri:?}"))?;
-        let mut targets = doc.descendants().filter(|n| n.is_element() && ["Id", "ID", "id"].iter().any(|a| n.attribute(*a) == Some(id)));
-        let target = targets.next().ok_or_else(|| format!("no element with Id {id:?}"))?;
-        if targets.next().is_some() {
-            return Err(format!("several elements with Id {id:?}"));
-        }
+        // `URI=""` is the whole document (as CPL and PKL signatures use it, ST 429-7 / ST 429-8
+        // with ST 430-3); its root element stands for it, as nothing but the XML declaration and
+        // whitespace lies outside it in these documents
+        let (target, id) = if uri.is_empty() {
+            (doc.root_element(), "")
+        } else {
+            let id = uri.strip_prefix('#').ok_or_else(|| format!("only same-document references are supported, not {uri:?}"))?;
+            let mut targets = doc.descendants().filter(|n| n.is_element() && ["Id", "ID", "id"].iter().any(|a| n.attribute(*a) == Some(id)));
+            let target = targets.next().ok_or_else(|| format!("no element with Id {id:?}"))?;
+            if targets.next().is_some() {
+                return Err(format!("several elements with Id {id:?}"));
+            }
+            (target, id)
+        };
         // a same-document reference is canonicalized without comments unless a transform says
         let (mut comments, mut skip) = (false, None);
         if let Some(ts) = ds_child(r, "Transforms") {
@@ -110,10 +120,14 @@ pub fn verify(doc: &Document<'_>, sig: Node<'_, '_>, signer_serial: Option<&str>
                 }
             }
         }
+        // a whole-document reference leaves comments out whatever the transform (XML Signature
+        // 4.4.3.2: URI="" is the document without comments)
+        let comments = comments && !uri.is_empty();
         let data = canonicalize(target, comments, skip)?;
         let want = b64(ds_child(r, "DigestValue"), "DigestValue")?;
         if digest(algorithm(ds_child(r, "DigestMethod"), "DigestMethod")?, &data)? != want {
-            return Err(format!("the digest of {id:?} does not match: the signed content was changed"));
+            let what = if id.is_empty() { "the document".to_string() } else { format!("{id:?}") };
+            return Err(format!("the digest of {what} does not match: the signed content was changed"));
         }
         references.push(id.to_string());
     }

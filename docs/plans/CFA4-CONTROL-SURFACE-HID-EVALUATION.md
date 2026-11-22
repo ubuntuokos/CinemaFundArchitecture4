@@ -1,7 +1,7 @@
 # CFA4-CONTROL-SURFACE-001 – HID-hozzáférés értékelése (ShuttlePRO)
 
-**Dátum:** 2026-11-13 · **Állapot:** asztali (forrás- és dokumentációalapú) értékelés kész; a fizikai mérés
-(4. fejezet) a referenciagépen az F1a első lépése · **Lefedi:** F0-AC-03, T0.2 · **Célgép:** a repó
+**Dátum:** 2026-11-13 · **Állapot:** asztali (forrás- és dokumentációalapú) értékelés kész, a döntés véglegesítve 2026-11-16 (N-02, N-03); a fizikai mérés
+(4. fejezet) a referenciagépen az F1 elfogadásának feltétele · **Lefedi:** F0-AC-03, T0.2 · **Célgép:** a repó
 `docs/development/reference-machine.md` fájlja (Ubuntu Studio 26.04, kernel 7.0.0-43-generic, KDE Plasma 6.6.6, Wayland)
 
 ## 1. Eredmény
@@ -16,6 +16,14 @@ Indoklás röviden: a hidraw a ShuttlePRO teljes riportját adja, benne a shuttl
 így az evdev középállás-hibája nem jelentkezik; sem C-könyvtár, sem `unsafe` nem kell, és a kernel
 saját HID-meghajtója nem válik le az eszközről. Az evdev a Kdenlive (`media_ctrl`) útja, ezért tartaléknak jó,
 de a középállást csak kikövetkeztetni tudja.
+
+**Megvalósítás (2026-11-20, CS-8).** Mindkét út kész a `crates/surface`-ben. A `hid::scan` a hidraw-csomópontot
+nyitja; ha az nem olvasható, a sysfs `hidrawN/device/input/input*/event*` bejegyzéséből megkeresi
+ugyanannak az eszköznek a `/dev/input/eventN` csomópontját, és ha az nyitható, az lesz a port. Az
+`EvdevDecoder` saját kód (nem átvett), `unsafe` és új crate nélkül: `SYN_REPORT`-keretenként dolgozik, a
+`REL_WHEEL` a shuttle, a `REL_DIAL` a jog-számláló, a `BTN_MISC + n − 1` az n-edik gomb; ha egy keretben
+van jog-érték, de shuttle-érték nincs, a gyűrű középen van. A gombkódok sorrendjét az M7 mérés erősíti meg;
+grab (`EVIOCGRAB`) nincs.
 
 ## 2. Jelöltek összevetése (5.4. pont 1–12.)
 

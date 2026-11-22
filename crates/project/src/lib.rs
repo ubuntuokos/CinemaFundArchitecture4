@@ -22,6 +22,7 @@ pub mod mask;
 pub mod mixer;
 pub mod multicam;
 pub mod narration;
+pub mod object;
 pub mod studio;
 pub mod text_animator;
 pub mod transcript;
@@ -40,7 +41,7 @@ pub use essential::{AudioType, EssentialSound};
 pub use find::{FindOp, FindQuery, FindRow, SearchBin};
 pub use graphic_design::{CharStyle, CreditsLink, GraphicMeta, LayerExtra, LayerStamp, Pin, PinTarget, Roll, RollMode, SourceGraphic, StyleRun};
 pub use keyframe::{Interpolation, Keyframe, Param, ParamValue};
-pub use mask::{Mask, MaskMode, MaskPath, MaskVertex, TrackMethod, Tracker};
+pub use mask::{Mask, MaskMode, MaskPath, MaskSource, MaskVertex, TrackMethod, Tracker};
 pub use mixer::{AutomationMode, InputMap, MixerStrip, TrackSend};
 pub use multicam::{Camera, MergedClip, MulticamAudio, MulticamSel, MulticamSource};
 pub use narration::{Narration, VocalPitch};
@@ -1356,6 +1357,10 @@ pub struct Project {
     /// Schema v16.
     #[serde(default, skip_serializing_if = "LiveStudio::is_empty")]
     pub studio: LiveStudio,
+    /// Tracked objects (Object Mask): the object tracks of each media item, keyed by the item;
+    /// sample times are media time. Schema v17.
+    #[serde(default, skip_serializing_if = "BTreeMap::is_empty")]
+    pub objects: BTreeMap<ItemId, Vec<object::ObjectTrack>>,
 }
 
 /// How a sequence is shown in the Timeline panel: its zoom, scroll position and track heights.
@@ -1462,6 +1467,7 @@ impl Project {
             notes: String::new(),
             credits_templates: Vec::new(),
             studio: LiveStudio::default(),
+            objects: BTreeMap::new(),
         }
     }
 
@@ -1491,7 +1497,8 @@ impl Project {
         self.search_bins.iter().for_each(|b| see(b.id.0));
         self.studio.ids().for_each(&mut see);
         // deleting an item leaves these entries behind: a new item taking that id would inherit them
-        self.transcripts.keys().chain(self.source_graphics.keys()).chain(self.narrations.keys()).for_each(|i| see(i.0));
+        self.transcripts.keys().chain(self.source_graphics.keys()).chain(self.narrations.keys()).chain(self.objects.keys()).for_each(|i| see(i.0));
+        self.objects.values().flatten().for_each(|t| see(t.id.0));
         // `lut.import` names LUTs `lut<id>`
         self.luts.iter().filter_map(|l| l.id.strip_prefix("lut")?.parse().ok()).for_each(&mut see);
         fn mixer(m: &MixerStrip) -> impl Iterator<Item = u64> + '_ {

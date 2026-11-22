@@ -52,6 +52,11 @@ fn profiles_follow_plan_table() {
     assert_eq!(f.write, vec![PathBuf::from("/home/u/.cache/cfa4/models")]);
     assert_eq!(f.network, Network::Outbound { ports: vec![443] });
     assert!(f.exec.is_empty());
+    // a certificate bundle named by SSL_CERT_FILE is read, nothing else is added
+    let roots = Context { tls_roots: vec![PathBuf::from("/home/u/ca.pem")], ..c.clone() };
+    let fr = Profile::for_process(ProcessKind::Fetch, &roots);
+    assert_eq!(fr.read, vec![PathBuf::from("/opt/cfa4"), PathBuf::from("/home/u/ca.pem")]);
+    assert!(Profile::for_process(ProcessKind::Engine, &roots).read.iter().all(|r| r != &PathBuf::from("/home/u/ca.pem")));
 
     // plug-ins and the model converter: no network, no program start (D7)
     for k in [ProcessKind::PluginHost, ProcessKind::ModelConverter] {
@@ -72,11 +77,45 @@ fn profiles_follow_plan_table() {
 }
 
 #[test]
+fn io_host_gets_devices_and_one_directory_and_nothing_else() {
+    let c = Context {
+        capture_devices: vec![PathBuf::from("/dev/blackmagic/io0")],
+        recording_dir: Some(PathBuf::from("/home/u/.local/share/cfa4/files/staging")),
+        // everything else a context can name must not reach the I/O host
+        project_dirs: vec![PathBuf::from("/work/film")],
+        media: vec![PathBuf::from("/media/rushes")],
+        export_targets: vec![PathBuf::from("/work/out/film.mp4")],
+        helper_exes: vec![PathBuf::from("/opt/cfa4/bin/helper")],
+        loopback_ports: vec![9876],
+        runtime_dir: Some(PathBuf::from("/run/user/1000")),
+        ..ctx()
+    };
+    let p = Profile::for_process(ProcessKind::IoHost, &c);
+    assert_eq!(p.devices, vec![PathBuf::from("/dev/blackmagic/io0")]);
+    assert_eq!(p.write, vec![PathBuf::from("/home/u/.local/share/cfa4/files/staging")]);
+    assert_eq!(p.read, vec![PathBuf::from("/opt/cfa4")], "only the program files, the system read paths come on top");
+    assert!(p.outputs.is_empty() && p.exec.is_empty(), "no single files, no program start");
+    assert_eq!(p.network, Network::None, "no network");
+    assert!(!p.gpu, "no GPU");
+    assert!(p.covers(&PathBuf::from("/dev/blackmagic/io0")) && !p.covers(&PathBuf::from("/dev/blackmagic/io1")), "only the named node");
+    assert!(!p.covers(&PathBuf::from("/home/u/.ssh/id_ed25519")) && !p.covers(&PathBuf::from("/home/u")), "never $HOME");
+    assert_eq!(ProcessKind::IoHost.id(), "ioHost");
+    assert_eq!(ProcessKind::IoHost.label(), "Capture and playout host");
+    // the no-network seccomp filter applies, including the program-start ban
+    #[cfg(target_os = "linux")]
+    assert!(linux::seccomp_program(&p).unwrap().len() > linux::seccomp_program(&Profile::for_process(ProcessKind::StudioHost, &c)).unwrap().len());
+    // an empty context grants nothing, and it can start wherever a media host can
+    let bare = Profile::for_process(ProcessKind::IoHost, &Context::default());
+    assert!(bare.devices.is_empty() && bare.write.is_empty());
+    assert_eq!(missing(&p, &full_support()), Vec::<String>::new());
+}
+
+#[test]
 fn no_profile_reads_home_by_default() {
     let empty = Context::default();
     for k in ProcessKind::ALL {
         let p = Profile::for_process(k, &empty);
-        assert!(p.read.is_empty() && p.write.is_empty() && p.outputs.is_empty() && p.exec.is_empty(), "{k:?}: {p:?}");
+        assert!(p.read.is_empty() && p.write.is_empty() && p.outputs.is_empty() && p.exec.is_empty() && p.devices.is_empty(), "{k:?}: {p:?}");
     }
     for s in profile::SYSTEM_READ {
         assert!(!s.starts_with("/home") && !s.starts_with("/root") && *s != "/proc", "{s}");
@@ -133,7 +172,7 @@ fn status_lists_every_process_kind() {
     let procs = v["processes"].as_array().unwrap();
     assert_eq!(procs.len(), ProcessKind::ALL.len());
     for p in procs {
-        for k in ["kind", "label", "read", "write", "outputs", "exec", "network", "gpu", "canStart", "missing"] {
+        for k in ["kind", "label", "read", "write", "outputs", "exec", "network", "devices", "gpu", "canStart", "missing"] {
             assert!(!p[k].is_null(), "{k} in {p}");
         }
     }
