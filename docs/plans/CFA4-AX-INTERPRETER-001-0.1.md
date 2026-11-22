@@ -1,7 +1,7 @@
 # CFA4-AX-INTERPRETER-001 – saját, korlátozott kifejezés-interpreter (N3, G4), 0.1
 
-> **Állapot:** JAVASLAT, jóváhagyásra vár. **Kód nem készül**, amíg a tulajdonos ezt a tervet nem hagyja jóvá; a jóváhagyás után az
-> implementációs engedélyt külön kérem (coordination.md §2.10).
+> **Állapot:** JÓVÁHAGYVA (István, 2026-11-22 18:56, Europe/Budapest), a §9 javaslatai (Q-X1…Q-X5) elfogadva. A jóváhagyás **nem implementációs engedély**:
+> X0 (nyelvleírás, kód nélkül) indulhat; X1-től minden fázishoz külön engedélyt kérek (coordination.md §2.10). A Q-X2 futásidő-határ számát a tulajdonos az X2 mérése előtt adja meg.
 > **Dátum:** 2026-11-22 · **Kérte:** István (ubuntuokos) · **Szülő terv:** [`CFA4-DNEG-TECHNOLOGY-ADAPTATION-001-1.0.md`](CFA4-DNEG-TECHNOLOGY-ADAPTATION-001-1.0.md) (§4 N3, G4, Q4)
 > **Platform:** Linux amd64, Ubuntu 26.04; nincs automatikus letöltés, nincs Conda; nincs LLVM-függőség.
 > **Tulajdonosi döntés (2026-11-21 22:49, Q4):** az AX-szerű térbeli kifejezést **saját, korlátozott interpreter** futtatja; az LLVM-JIT-worker nem scope.
@@ -63,7 +63,7 @@ Blokkos végrehajtás: egy voxel kiértékelése tiszta függvény a bemeneti bl
 
 | Fázis | Tartalom | Elfogadás |
 |---|---|---|
-| **X0** | Nyelvleírás (`docs/expr-language.md`), nyelvtan, hiba-katalógus, példák | a tulajdonos átnézte a nyelvet; a 3. szakasz minden eleme példával; nincs kód |
+| **X0** | Nyelvleírás ([`docs/expr-language.md`](../expr-language.md)), nyelvtan, hiba-katalógus, példák | a tulajdonos átnézte a nyelvet; a 3. szakasz minden eleme példával; nincs kód |
 | **X1** | `cfa4-expr`: lexer, parser, típusellenőrzés, bájtkód, VM, fuel, determinisztikus zaj | lásd N3-1′…N3-4′ lent; `cargo xtask ci` + `cargo test -p cfa4-expr` zöld; fuzz 0 összeomlás |
 | **X2** | Volume-híd (worker tile-parancsok + `cfa4-vdb` API) és `expr.run_preview` | a N2 előnézeti útvonalon látható eredmény; 1 és N szál bitazonos; megszakítás ≤ 1 blokk idő |
 | **X3** | Engine-parancsok, projektmentés, jóváhagyási jelző, `expr.bake` | N3-5′, N3-7′ |
@@ -97,7 +97,7 @@ A bájtkód-VM voxelenként jellemzően tízszer–százszor lassabb a JIT-nél;
 - **OpenUSD/3D, Pontfelhő:** a pont-kontextus valós forrása onnan jön, nem innen.
 - **CFA4-SECURITY-001 B3/B4:** nem előfeltétel (a nyelv nem ír/olvas semmit magától); a worker sandboxa B3-tól függetlenül már él (N1).
 
-## 9. Nyitott döntések a tulajdonosnak (javaslattal)
+## 9. Döntések (a javaslatok elfogadva, István 2026-11-22 18:56)
 
 | ID | Kérdés | Javaslat |
 |---|---|---|
@@ -106,6 +106,8 @@ A bájtkód-VM voxelenként jellemzően tízszer–százszor lassabb a JIT-nél;
 | Q-X3 | Zaj: saját egyszerű gradiens-zaj vagy kell Perlin/Simplex-szerű, ismert mintázat? (szabadalmi átnézés kell) | Saját hash-alapú gradiens-zaj, ismert algoritmus megnevezése nélkül; szabadalmi átnézés X1 előtt |
 | Q-X4 | Kell-e AX-szkriptek részleges importja (konverter)? | Nem; csak ha később valós szükség és a licenc rendben |
 | Q-X5 | A pont-kontextus mehet-e szintetikus oszlopokon, a valós forrás nélkül? | Igen; a bizonyítás szintetikus, a valós forrás a Pontfelhő terv |
+
+A Q-X2 számszerű határa még nem ismert (a javaslat: háttérfeladat, perc nagyságrend); X2 mérése előtt kérem.
 
 ## 10. Ellenőrizetlen / nyitott
 
