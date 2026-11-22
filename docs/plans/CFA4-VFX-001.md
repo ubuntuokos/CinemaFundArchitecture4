@@ -74,7 +74,7 @@ Jelölés: a **render-terv fázisai (F3, F4, F5, C0, F9)**, az **OBJECT-MASK** �
 
 | WP | Munkacsomag | Kimenet | Függőség | Átvételi kapu |
 |---|---|---|---|---|
-| **VFX-0a** | Az EC-donor (#11) és a Gaffer-donor forkjának leválasztása (István) | önálló repók; rögzítve: elágazási pont SHA, szülő `LICENSE`/NOTICE | – | az eredet a `docs/licensing.md` §5 regiszterében |
+| **VFX-0a** | Donor-pillanatkép rögzítése: az EC-donor (#11) és a Gaffer-donor a 2026-11-22-i állapoton marad a terv megvalósításának végéig (tulajdonosi döntés; nem frissülnek, a frissítést a tulajdonos jelzi a fejlesztő szálnak). A fork leválasztása nem előfeltétel | rögzítve: donor-SHA, elágazási pont SHA, szülő `LICENSE`/NOTICE | – | az eredet a `docs/licensing.md` §5 regiszterében |
 | **VFX-0b** | Donor-licencregiszter és fájlszintű eredet | regiszterfrissítés (PR) | VFX-0a | minden átvett fájlhoz fejléc-ellenőrzés |
 | **VFX-1** | Katalógusbővítés: `G-xx` mátrix + EC-donor F1/F2 + AE-referencialeltár | bővített `F0-capability-gap-matrix.csv`, `F1-…` audit | VFX-0b; render F1/F2 | minden sorhoz forrás; a számok (307/306/280/3032/2984) a donor rögzített SHA-ján mérve; nincs duplikátum a `G-xx` sorokkal |
 | **VFX-2** | `VfxGraph` L1-adatmodell + parancsok (a névtérről a gazdával egyeztetve) | `crates/project` adat, `crates/engine` parancsok, additív sémaverzió | render C0 (szerződés), F3 (gráf) | régi projekt változatlanul nyílik és renderel (AC-15); ellenséges bemenet nem pánik |
@@ -155,7 +155,7 @@ A tesztek a render-terv harnessén és kapuin (F0V, MQ-1…8, AC-01…18) futnak
 1. **X-4:** a 3D/VFX mélysége (`VISION.md` §8). A VFX-8 ettől függ.
 2. **X-6:** a `VISION.md` §4 bővítése az After Effects-szel és a VFX-donorokkal.
 3. **X-2:** a terv repóba vitele (PR) és a terv jóváhagyása.
-4. **VFX-0a:** a két fork leválasztása (a GitHub-on a tulajdonos végzi).
+4. **VFX-0a:** donor-pillanatkép (SHA, szülő licenc) rögzítése; a fork leválasztása nem szükséges, a donorok befagyasztva maradnak.
 5. A WP-k indítása a render-terv megfelelő fázisai után (`coordination.md` §2.10).
 
 ## 10. Mit nem állít ez a terv
