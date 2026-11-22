@@ -9,11 +9,11 @@ Minden sor a meglévő elemet nevezi meg; új crate nem készül (tulajdonosi sz
 | AC-02 Alap export | képkockaszám, PTS-lista, színmetaadat; PSNR/SSIM | `cfa4_metrics` (`psnr`, `timing`), fixture `sdr_1080p25` | MÉRŐ KÉSZ, FIXTURE VÁR | a decode→render→encode→reimport szál a következő lépés |
 | AC-03 CPU-only | workflow-lista futtatása GPU nélkül | `crates/cinema-acceptance`, `crates/testkit` | PENDING | az F0-ban listázandó workflow-k még nincsenek felsorolva |
 | AC-04 Renderhelyesség | `diff_u16/f32`, SSIM, ΔE, alfa-eltérés; golden | `cfa4_metrics`, `cfa4_golden::validation` | **MÉRŐ VAN** (CPU) | GPU-tolerancia, HDR/EXR golden PENDING |
-| AC-05 Időzítés | `pts_diff`, `av_drift`, `rising_edges` (villanás), `beep_onsets` (sípszó), `seek_error_frames` | `cfa4_metrics::timing`, `cfa4_golden::validation::compare_with` | MÉRŐ KÉSZ (szintetikus bizonyítással), FIXTURE VÁR | `sync_flash_beep` fixture kész; a motoros átvitel és a mért határ kell (KD-05) |
+| AC-05 Időzítés | `pts_diff`, `av_drift`, `rising_edges`, `beep_onsets`, `seek_error_frames` | `cfa4_metrics::timing`, `cfa4_golden::validation::compare_with`, `crates/golden/tests/sync_render.rs` | **MÉRŐ VAN** (motoron átvitt `sync_flash_beep`: eltolás 0,02 ms, drift 0) | VFR, loop, trim és seek-teszt még PENDING |
 | AC-06 GPU-hibainjektálás | – | – | PENDING | referenciagép és hibainjektáló eszköz kell |
-| AC-07 Erőforrások | `/proc`, NVML mintavétel | – | PENDING | rootless mérő még nincs; hosszú futás kell |
+| AC-07 Erőforrások | `cfa4_metrics::resource::{read_status, growth_after}` (RSS-növekedés bemelegítés után) | `crates/metrics/src/resource.rs` (F0V-3 PR) | MÉRŐ KÉSZ (a mintavevő hurok és a 10 perces futás hiányzik) | VRAM (NVML) és ASan/heaptrack: PENDING, referenciagép kell |
 | AC-08 Resume/cancel | atomikus kimenet | `crates/export/src/atomic.rs` (meglévő) | PENDING | a SIGKILL-ciklus tesztje nincs |
-| AC-09 Qt6 főszál | watchdog | `python/cfa4_qt` (nincs ilyen mérő) | PENDING | interfész-definíció a következő PR-ban |
+| AC-09 Qt6 főszál | `cfa4_metrics::resource::max_pause_ms` (szívverés-sorozat) | `crates/metrics/src/resource.rs` (F0V-3 PR) | MÉRŐ KÉSZ (a Qt oldali szívverés-szonda hiányzik) | `python/cfa4_qt`: szonda és küszöb PENDING |
 | AC-10 Coexistence | előtte/utána pillanatkép | – | PENDING | `render_environment.py` bővítendő a fájlrendszer-pillanatképpel |
 | AC-11a Licenc | SBOM, licencmátrix | F1-audit (PR #1436), `docs/audit/F1-01-SBOM-2026-10-25.md` | részben | az F1 doksik fedik a jelölteket |
 | AC-11b Bemenet-biztonság | path traversal / symlink | – | PENDING | `crates/sandbox` (meglévő) a védelem, a teszt még nincs |

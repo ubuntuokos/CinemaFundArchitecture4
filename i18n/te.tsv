@@ -4899,3 +4899,8 @@ export.summary	Low	తక్కువ
 	Validate DCP…	DCPని ధృవీకరించు…
 	the engine sent no profiles	ఇంజిన్ ఎలాంటి ప్రొఫైళ్లను పంపలేదు
 	{n} files checked	{n} ఫైళ్లు తనిఖీ చేయబడ్డాయి
+
+# AS-02 export
+	Write an AS-02 bundle (the path is a folder)	AS-02 బండిల్ రాయండి (మార్గం ఒక ఫోల్డర్)
+	AS-02	AS-02
+	AS-12	AS-12
