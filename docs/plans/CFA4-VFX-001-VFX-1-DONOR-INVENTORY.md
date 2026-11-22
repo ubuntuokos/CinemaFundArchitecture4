@@ -1,6 +1,6 @@
 # VFX-1 – donor-leltár (előzetes, `PRELIMINARY`)
 
-**Dátum:** 2026-11-22 · **Terv:** `CFA4-VFX-001` §5 (VFX-1) · **Alap:** `docs/audit/vfx-0a/VFX-0a-donor-snapshot.md` (rögzített SHA-k)
+**Dátum:** 2026-11-22 · **Terv:** `CFA4-VFX-001` §5 (VFX-1) · **Alap:** `docs/plans/CFA4-VFX-001-VFX-0A-DONOR-SNAPSHOT.md` (rögzített SHA-k)
 
 Ez **csak leltár**: olvasással és statikus számolással készült, a donorokat nem fordítottuk le és nem futtattuk. Az effekt-szintű besorolás (`PASS`/`BLOCKED`/`REFERENCE_ONLY`, a render-terv F1/F2 kapuja) még **nincs** kész; azt a render-terv F1/F2 keretében, az `F0-capability-gap-matrix.csv` sorain kell elvégezni. A márkaszűrő miatt a donor-repók neve nincs kiírva.
 
