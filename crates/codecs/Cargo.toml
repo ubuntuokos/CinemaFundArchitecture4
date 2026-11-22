@@ -62,7 +62,6 @@ cfa4-av1 = { workspace = true }
 cfa4-apv = { workspace = true }
 cfa4-hap = { workspace = true }
 cfa4-canopus = { workspace = true }
-cfa4-theora = { workspace = true }
 cfa4-realmedia = { workspace = true }
 cfa4-realvideo = { workspace = true }
 cfa4-realaudio = { workspace = true }

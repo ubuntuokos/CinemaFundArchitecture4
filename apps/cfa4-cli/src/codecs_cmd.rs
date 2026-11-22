@@ -117,7 +117,6 @@ static ROWS: &[Row] = &[
     video("Hap", &["hap"], Own, Sw(""), false, NoEnc),
     video("Huffyuv", &["huffyuv"], Own, Sw(""), false, NoEnc),
     video("Canopus HQ / HQA / HQX", &["canopus"], Ported, Sw(""), false, NoEnc),
-    video("Theora", &["theora"], Ported, Sw(""), false, NoEnc),
     video("RealVideo 1.0 / 2.0 / 3.0 / 4.0", &["realvideo", "realmedia"], Ported, Sw("in RealMedia (.rm, .rmvb)"), false, NoEnc),
     video("Smacker Video (SMK2, SMK4) and Smacker Audio", &["smacker"], Ported, Sw("in Smacker (.smk)"), false, NoEnc),
     video("Ut Video", &["utvideo"], Own, Sw(""), false, NoEnc),

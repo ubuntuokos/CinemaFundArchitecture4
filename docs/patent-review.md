@@ -80,7 +80,6 @@ szabadalommal védett formátumot.
 | ATRAC3 (Sony) | kódolás | `crates/atracenc` (az atracdenc 0.2.3 portja) | alap | függőben | | |
 | RealAudio SIPR (ACELP.NET), RealAudio 1.0 (14.4, VSELP), RealAudio 2.0 (28.8, G.728-szerű LD-CELP) | dekódolás | `crates/realaudio` (az FFmpeg portja) | alap | függőben | | |
 | Canopus HQ, HQA, HQX | dekódolás | `crates/canopus` (az FFmpeg portja) | alap | függőben | | |
-| Theora (VP3) | dekódolás | `crates/theora` (az FFmpeg portja, a Xiph-specifikáció szerint) | alap | függőben | | |
 | Hap (Hap, Hap Alpha, Hap Q, Hap Q Alpha, Hap Alpha-Only) | dekódolás | `crates/hap` | alap | függőben | | |
 | Smacker Video (SMK2, SMK4) | dekódolás | `crates/smacker` (az FFmpeg portja) | alap | függőben | | |
 
