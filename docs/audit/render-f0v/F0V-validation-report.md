@@ -3,7 +3,11 @@
 > **Eredet:** a `cargo test -p cfa4-golden --release` (`crates/golden/tests/validation.rs`, PR #1427) írta a
 > `target/f0v-report/` alá; ide változtatás nélkül másoltam, a fejléc és a lábjegyzet az egyetlen hozzáadott szöveg.
 > A teszt a CPU-útvonalat méri, 320×180, 24 fps, 12 képkocka, procedurális jelenet. **Az ítélet `Incomplete`, nem PASS:**
-> az A/V drift ellenőrzés még nem mért (`Skipped`), és mért hiányzó ellenőrzés sosem lehet PASS (tervszabály).
+> ebben a futásban az A/V drift ellenőrzés nem mért (`Skipped`), mert a procedurális jelenetben nincs villanás és sípszó, és mért
+> hiányzó ellenőrzés sosem lehet PASS (tervszabály). A drift mérése a másik jelenetben, a `sync_flash_beep` fixture-rel megvan:
+> [`F0V-validation-report-sync.md`](F0V-validation-report-sync.md) (`crates/golden/tests/sync_render.rs`; eltolás −0,02 ms, drift 0,
+> az ítélet ott `Pass`, a 80 ms-os késleltetést elkapja). **A két jelenet két riport, mindkettő ugyanabba a `target/f0v-report/` mappába
+> íródik; együtt adják az F0V futást.** A szinkron-riport az önmagához mért képi ellenőrzéseket triviálisan teljesíti, érdemi benne csak a drift.
 > A futtató gép az Ubuntu 24.04 ellenőrző konténer, nem a referenciagép (Ubuntu 26.04); a referenciagépes futás PENDING.
 
 
