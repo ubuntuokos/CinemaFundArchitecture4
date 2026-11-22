@@ -383,6 +383,10 @@ graph LR
 | `cfa4-engine/settings.rs` | `cfa4-render` | `vfx` |
 | `cfa4-engine/settings.rs` | `cfa4-time` | `FrameRate` |
 | `cfa4-engine/shortcuts.rs` | `cfa4-project` | `legacy` |
+| `cfa4-engine/silence.rs` | `cfa4-export` | `Report` |
+| `cfa4-engine/silence.rs` | `cfa4-project` | `ClipId`, `ItemId`, `ItemKind` |
+| `cfa4-engine/silence.rs` | `cfa4-render` | `SourceProvider`, `remix` |
+| `cfa4-engine/silence.rs` | `cfa4-time` | `FrameRate`, `TICKS_PER_SECOND` |
 | `cfa4-engine/smart_cut.rs` | `cfa4-export` | `audio_copy`, `boundary_reencode`, `smart_cut` |
 | `cfa4-engine/smart_cut.rs` | `cfa4-media` | `SharedReader`, `reader` |
 | `cfa4-engine/smart_cut.rs` | `cfa4-project` | `ItemKind` |

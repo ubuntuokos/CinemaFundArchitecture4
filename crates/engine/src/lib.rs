@@ -73,6 +73,7 @@ pub mod sequence_tools;
 pub mod settings;
 pub mod shortcut_presets;
 pub mod shortcuts;
+pub mod silence;
 pub mod smart_cut;
 mod smart_cut_mpeg;
 mod smart_render;
@@ -1499,6 +1500,8 @@ mod sequence_tools_tests;
 mod settings_tests;
 #[cfg(test)]
 mod shortcuts_tests;
+#[cfg(test)]
+mod silence_tests;
 #[cfg(test)]
 mod smart_cut_mpeg_tests;
 #[cfg(test)]

@@ -4869,6 +4869,10 @@ export.summary	Low	nízká
 	Subtitles	Titulky
 	Captions for the hearing impaired	Titulky pro neslyšící a nedoslýchavé
 	Forced narrative	Vynucený komentář (forced narrative)
+	Silence	Ticho
+	Detect Silence	Zjistit ticho
+	Remove Silence	Odstranit ticho
+	Clear Silence Markers	Vymazat značky ticha
 # DCP Validation window (DCP-12)
 	AS-03	AS-03
 	Choose the DCP folder.	Vyberte složku DCP.

@@ -4867,6 +4867,10 @@
 	Subtitles	字幕
 	Captions for the hearing impaired	听障人士字幕
 	Forced narrative	强制旁白 (forced narrative)
+	Silence	静音
+	Detect Silence	检测静音
+	Remove Silence	移除静音
+	Clear Silence Markers	清除静音标记
 # DCP Validation window (DCP-12)
 	AS-03	AS-03
 	Choose the DCP folder.	请选择 DCP 文件夹。

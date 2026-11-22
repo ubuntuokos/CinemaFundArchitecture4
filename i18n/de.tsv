@@ -4876,6 +4876,10 @@
 	Subtitles	Untertitel
 	Captions for the hearing impaired	Untertitel für Hörgeschädigte
 	Forced narrative	Erzwungene Untertitel (forced narrative)
+	Silence	Stille
+	Detect Silence	Stille erkennen
+	Remove Silence	Stille entfernen
+	Clear Silence Markers	Stille-Marker löschen
 # DCP Validation window (DCP-12)
 	AS-03	AS-03
 	Choose the DCP folder.	Wähle den DCP-Ordner.

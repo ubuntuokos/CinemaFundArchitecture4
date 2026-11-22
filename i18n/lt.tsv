@@ -4872,6 +4872,10 @@ export.summary	Low	žema
 	Subtitles	Subtitrai
 	Captions for the hearing impaired	Subtitrai neprigirdintiesiems
 	Forced narrative	Priverstinis pasakojimas (forced narrative)
+	Silence	Tyla
+	Detect Silence	Aptikti tylą
+	Remove Silence	Pašalinti tylą
+	Clear Silence Markers	Išvalyti tylos žymeklius
 # DCP Validation window (DCP-12)
 	AS-03	AS-03
 	Choose the DCP folder.	Pasirinkite DCP aplanką.
