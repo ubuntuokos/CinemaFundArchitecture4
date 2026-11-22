@@ -4,6 +4,8 @@
 
 A tulajdonos döntése (2026-11-22): a donorok a mai állapoton, befagyasztva maradnak a VFX-terv megvalósításának végéig, nem frissülnek, és a fork leválasztása nem előfeltétel. Ha frissítés kell, a tulajdonos jelzi a fejlesztő szálnak. A donorokba nem írunk.
 
+**Hatókör (2026-11-22):** csak Linux; a macOS-, Windows-, FreeBSD- és web-specifikus részek nem képezik a pillanatkép és az átvétel tárgyát (`CFA4-VFX-001` 2. fejezet).
+
 A márkaszűrő (`python/tests/test_independence.py`) miatt a donor-repók neve és URL-je itt nem szerepel; a tulajdonosi nyilvántartásban a megfelelő `ubuntuokos/CFA4_*` repók azok.
 
 | Donor | Rögzített `HEAD` (SHA) | A SHA kelte | Licenc (a repó fájljai szerint) | Megjegyzés |
