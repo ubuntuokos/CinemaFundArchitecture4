@@ -26,7 +26,7 @@ cfa4-qt-shell = "cfa4_devtools.qt_app:main"
 
 [tool.setuptools.packages.find]
 where = ["python"]
-include = ["cfa4_devtools*", "cfa4_qt*"]
+include = ["cfa4_devtools*", "cfa4_qt*", "cfa4_audit*"]
 
 [tool.ruff]
 target-version = "py312"
