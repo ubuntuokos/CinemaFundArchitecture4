@@ -150,6 +150,7 @@ static ROWS: &[Row] = &[
     audio("FLAC", &["flac"], Own, Sw(""), Fmt(Format::Flac)),
     audio("ALAC, Vorbis", &[], Dependency, Sw(""), NoEnc),
     audio("AMR-NB / AMR-WB", &["amr"], Ported, Sw(""), NoEnc),
+    audio("QDesign Music 2", &["qdm2"], Ported, Sw("in QuickTime .mov and MP4 files (`QDM2`)"), NoEnc),
     audio("Speex", &["speex"], Ported, Sw("Ogg Speex"), NoEnc),
     audio("TTA (True Audio)", &["tta"], Ported, Sw(""), NoEnc),
     audio(

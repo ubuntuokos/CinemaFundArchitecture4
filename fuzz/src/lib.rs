@@ -681,6 +681,26 @@ pub fn musepack(data: &[u8]) {
     let _ = cfa4_musepack::decode_file(data);
 }
 
+pub fn qdm2(data: &[u8]) {
+    // a configuration, and blocks decoded with a valid one built from the first bytes
+    let _ = cfa4_qdm2::Decoder::new(data);
+    let [ch, fft, block, rest @ ..] = data else { return };
+    let mut e = Vec::new();
+    e.extend_from_slice(&12u32.to_be_bytes());
+    e.extend_from_slice(b"frmaQDM2");
+    e.extend_from_slice(&44u32.to_be_bytes());
+    e.extend_from_slice(b"QDCA");
+    let fft = 128u32 << (fft % 3);
+    for v in [1, u32::from(ch % 2) + 1, 44100, 48000, fft * 16, fft, 256 + u32::from(*block) * 8] {
+        e.extend_from_slice(&v.to_be_bytes());
+    }
+    if let Ok(mut d) = cfa4_qdm2::Decoder::new(&e) {
+        for packet in rest.chunks(2048).take(4) {
+            let _ = d.decode(packet);
+        }
+    }
+}
+
 pub fn adx(data: &[u8]) {
     let _ = cfa4_adx::decode_file(data);
 }
@@ -831,6 +851,7 @@ pub const TARGETS: &[(&str, &str, Target)] = &[
     ("musepack", "cfa4-musepack", musepack),
     ("shorten", "cfa4-shorten", shorten),
     ("adx", "cfa4-adx", adx),
+    ("qdm2", "cfa4-qdm2", qdm2),
     ("hca", "cfa4-hca", hca),
     ("tak", "cfa4-tak", tak),
     ("smacker", "cfa4-smacker", smacker),

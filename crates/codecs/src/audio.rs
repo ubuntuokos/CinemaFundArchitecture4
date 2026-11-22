@@ -107,6 +107,9 @@ enum Inner {
     Tta(cfa4_tta::Decoder),
     /// ATRAC1 (`cfa4-realaudio`): each packet is one 212-byte sound unit per channel.
     Atrac1(Box<cfa4_realaudio::atrac1::Decoder>),
+    /// QDesign Music 2 (`cfa4-qdm2`): one packet is one superblock; `extra` rebuilds the decoder
+    /// on a reset.
+    Qdm2 { dec: Box<cfa4_qdm2::Decoder>, extra: Vec<u8> },
 }
 
 /// Packets between two saved decoder states (see [`Checkpoints`]).
@@ -323,6 +326,12 @@ impl PacketDecoder {
             _ => None,
         }
     }
+    /// QDesign Music 2 from the QuickTime sample description (it holds the `QDCA` configuration).
+    pub fn qdm2(extra: &[u8]) -> Result<Self> {
+        let d = cfa4_qdm2::Decoder::new(extra).map_err(|e| CodecError::Unsupported(format!("QDM2: {e}")))?;
+        let channels = d.channels;
+        Ok(Self { inner: Inner::Qdm2 { dec: Box::new(d), extra: extra.to_vec() }, channels })
+    }
     /// AMR wideband (`wide`) or narrowband, mono.
     pub fn amr(wide: bool) -> Self {
         Self { inner: Inner::Amr(cfa4_amr::Decoder::new(wide)), channels: 1 }
@@ -355,6 +364,7 @@ impl PacketDecoder {
             // the decoder needs the STREAMINFO body: `dfLa` holds it after the 4-byte block header
             C::Flac(f) => Self::new(CODEC_ID_FLAC, rate, f.metadata_blocks.get(4..38).map(<[u8]>::to_vec)),
             C::Opus(o) => Self::opus(cfa4_opus::OpusHead::from_dops(&o.to_bytes()).map_err(|e| CodecError::Unsupported(format!("Opus: {e}")))?),
+            C::Unknown { fourcc, raw } if fourcc.0 == *b"QDM2" => Self::qdm2(raw),
             C::Unknown { fourcc, .. } if fourcc.0 == *b"samr" => Ok(Self::amr(false)),
             C::Unknown { fourcc, .. } if fourcc.0 == *b"sawb" => Ok(Self::amr(true)),
             C::Unknown { fourcc, .. } if fourcc.0 == *b"a3ds" => Err(CodecError::Unsupported(AURO_CX_UNSUPPORTED.into())),
@@ -439,6 +449,16 @@ impl PacketDecoder {
                 return Ok(planes.into_iter().map(|p| p.into_iter().map(|v| info.to_f32(v)).collect()).collect());
             }
             Inner::Atrac1(d) => return d.decode(data).map_err(|e| CodecError::Decode(format!("ATRAC1: {e}"))),
+            Inner::Qdm2 { dec, .. } => {
+                let pcm = dec.decode(data).map_err(|e| CodecError::Decode(format!("QDM2: {e}")))?;
+                let ch = dec.channels.max(1);
+                self.channels = ch;
+                let mut out = vec![Vec::with_capacity(pcm.len() / ch); ch];
+                for (i, v) in pcm.into_iter().enumerate() {
+                    out[i % ch].push(f32::from(v) / 32768.0);
+                }
+                return Ok(out);
+            }
             Inner::Amr(d) => {
                 let mut pcm = Vec::new();
                 d.decode_packet(data, &mut pcm).map_err(|e| CodecError::Decode(format!("AMR: {e}")))?;
@@ -507,6 +527,11 @@ impl PacketDecoder {
             Inner::TrueHd(d) => d.reset(),
             Inner::Adpcm(d) => d.reset(),
             Inner::Amr(d) => d.reset(),
+            Inner::Qdm2 { dec, extra } => {
+                if let Ok(fresh) = cfa4_qdm2::Decoder::new(extra) {
+                    **dec = fresh;
+                }
+            }
             Inner::Atrac1(d) => d.reset(),
             Inner::AacPending | Inner::MpegPending(_) | Inner::Tta(_) => {}
         }

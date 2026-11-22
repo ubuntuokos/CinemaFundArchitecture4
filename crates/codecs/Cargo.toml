@@ -35,6 +35,7 @@ cfa4-ac3 = { workspace = true }
 cfa4-thp = { workspace = true }
 cfa4-mobiclip = { workspace = true }
 cfa4-tta = { workspace = true }
+cfa4-qdm2 = { workspace = true }
 cfa4-shorten = { workspace = true }
 cfa4-adx = { workspace = true }
 cfa4-hca = { workspace = true }
