@@ -66,6 +66,7 @@ pub mod mve;
 pub mod mxf;
 pub mod nstream;
 pub mod ogg;
+pub mod ogg_video;
 pub mod realmedia;
 pub mod roq;
 pub mod smacker;
@@ -210,7 +211,7 @@ pub fn software_video_decoder(entry: &cfa4_isobmff::SampleEntry) -> Result<Box<d
     Err(no_decoder(entry))
 }
 
-/// Openers for the engine's media pool (MP4/MOV, Matroska/WebM, MXF, Ogg Opus/Vorbis, MPEG TS/PS and
+/// Openers for the engine's media pool (MP4/MOV, Matroska/WebM, MXF, Ogg Opus/Vorbis, Ogg Theora, MPEG TS/PS and
 /// MPEG-1/2, MPEG-4 Simple Studio Profile, MPEG-5 EVC and AVS1 video elementary streams, APV raw bitstreams, YUV4MPEG2, raw DV, RealMedia, Smacker, standalone audio).
 /// AV2 Annex B / IVF files are recognised and answered as unsupported ([`av2`]).
 pub fn openers() -> Vec<cfa4_media::Opener> {
@@ -219,6 +220,7 @@ pub fn openers() -> Vec<cfa4_media::Opener> {
         mkv::opener,
         mxf::opener,
         ogg::opener,
+        ogg_video::opener,
         sstp::opener,
         evc::opener,
         cavs::opener,
@@ -248,6 +250,7 @@ fn reader_registry() -> &'static RwLock<Vec<cfa4_media::ReaderOpener>> {
             mkv::reader_opener,
             mxf::reader_opener,
             ogg::reader_opener,
+            ogg_video::reader_opener,
             sstp::reader_opener,
             evc::reader_opener,
             cavs::reader_opener,
