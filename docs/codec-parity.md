@@ -186,6 +186,7 @@ fidelity and the remaining work.
 | 2026-11-21 | minor | Interplay MVE video and sound decode (`cfa4-mve`, codec backlog CB-25.2) |
 | 2026-11-21 | minor | id RoQ video and DPCM sound decode (`cfa4-roq`, codec backlog CB-25.1) |
 | 2026-11-21 | minor | Interplay ACM decode (`cfa4-acm`, codec backlog CB-25.2) |
+| 2026-11-21 | minor | Matroska mappings for decoders that existed outside it: AVS1 `V_CAVS`, RealVideo `V_REAL/RV10`-`RV40`, JPEG 2000 `V_JPEG2000` / VfW `mjp2`, ALAC `A_ALAC` (`cfa4-codecs::mkv`; RealAudio `A_REAL/*` is not mapped yet) |
 | 2026-11-14 | minor | Lagarith decode (`cfa4-lagarith`, codec backlog CB-3.1) |
 | 2026-11-14 | minor | Shorten decode (`cfa4-shorten`, codec backlog CB-9.2) |
 | 2026-11-14 | minor | MagicYUV decode (`cfa4-magicyuv`, codec backlog CB-2.2) |
