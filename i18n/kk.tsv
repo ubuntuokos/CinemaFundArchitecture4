@@ -4899,3 +4899,8 @@ export.summary	Low	төмен
 	Validate DCP…	DCP тексеру…
 	the engine sent no profiles	қозғалтқыш профильдерді жібермеді
 	{n} files checked	{n} файл тексерілді
+
+# AS-02 export
+	Write an AS-02 bundle (the path is a folder)	AS-02 бумасын жазу (жол — қалта)
+	AS-02	AS-02
+	AS-12	AS-12
