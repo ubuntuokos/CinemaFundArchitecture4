@@ -47,6 +47,7 @@ pub mod hap;
 pub mod huffyuv;
 pub mod hw;
 mod hw_frame;
+pub mod indeo;
 pub mod j2k;
 pub mod lagarith;
 pub mod lcevc;
@@ -138,6 +139,7 @@ const BUILTIN_FACTORIES: [VideoDecoderFactory; 26] = [
     theora::theora_factory,
     huffyuv::huffyuv_factory,
     lagarith::lagarith_factory,
+    indeo::indeo_factory,
     utvideo::utvideo_factory,
     magicyuv::magicyuv_factory,
     evc::evc_factory,
