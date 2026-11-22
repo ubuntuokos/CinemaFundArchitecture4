@@ -180,6 +180,131 @@ fn graphs_an_animated_parameter_across_its_clip() {
 }
 
 #[test]
+fn program_overlay_reports_the_crop_rectangle_of_the_selected_crop() {
+    let mut s = demo();
+    let it = v1_clip(&s);
+    let c = it.id.0;
+    let mid = Tick(it.start.0 + it.duration.0 / 2);
+    s.execute("playhead.set", json!({"time": mid.0})).unwrap();
+    s.execute("timeline.select", json!({"clips": [c]})).unwrap();
+    s.execute("effects.apply", json!({"clips": [c], "effect": "crop"})).unwrap();
+    // Crop added but not selected: no rectangle
+    s.execute("effects.select", json!({"none": true})).unwrap();
+    assert!(s.execute("program.overlay", json!({})).unwrap()["crop"].is_null());
+    s.execute("effects.select", json!({"clip": c, "effect": "crop"})).unwrap();
+    let crop = |s: &mut Session| s.execute("program.overlay", json!({})).unwrap()["crop"].clone();
+    let v = crop(&mut s);
+    let [w, h] = [v["size"][0].as_f64().unwrap(), v["size"][1].as_f64().unwrap()];
+    assert_eq!((v["clip"].as_u64(), v["effectId"].as_str()), (Some(c), Some("crop")));
+    assert_eq!(v["toFrame"].as_array().unwrap().len(), 6);
+    // nothing cropped: the whole picture
+    assert_eq!(v["rect"], json!([0.0, 0.0, w, h]));
+    assert_eq!((v["left"].as_f64(), v["right"].as_f64()), (Some(0.0), Some(0.0)));
+    // cropped: the kept part, in clip pixels
+    let effect = v["effect"].as_u64().unwrap();
+    for (param, value) in [("left", 10.0), ("top", 20.0), ("right", 25.0), ("bottom", 50.0)] {
+        s.execute("effects.setParam", json!({"clip": c, "effect": effect, "param": param, "value": value})).unwrap();
+    }
+    let v = crop(&mut s);
+    let want = [w * 0.10, h * 0.20, w * 0.75, h * 0.50];
+    for (got, want) in v["rect"].as_array().unwrap().iter().zip(want) {
+        assert!((got.as_f64().unwrap() - want).abs() < 1e-6, "{v}");
+    }
+    // another effect selected, or off the clip: no rectangle
+    s.execute("effects.select", json!({"clip": c, "effect": "motion"})).unwrap();
+    assert!(crop(&mut s).is_null());
+    s.execute("effects.select", json!({"clip": c, "effect": "crop"})).unwrap();
+    s.execute("playhead.set", json!({"time": it.end().0 + 1})).unwrap();
+    assert!(crop(&mut s).is_null());
+    // an adjustment layer has no picture to crop a rectangle out of: no rectangle
+    let item = s.execute("file.newAdjustmentLayer", json!({"seconds": 4})).unwrap()["item"].as_u64().unwrap();
+    let layer = s.execute("timeline.place", json!({"item": item, "track": "V3", "seconds": 1.5})).unwrap()["clips"][0].as_u64().unwrap();
+    s.execute("playhead.set", json!({"time": Tick::from_seconds_f64(3.0).0})).unwrap();
+    s.execute("timeline.select", json!({"clips": [layer]})).unwrap();
+    s.execute("effects.apply", json!({"clips": [layer], "effect": "crop"})).unwrap();
+    s.execute("effects.select", json!({"clip": layer, "effect": "crop"})).unwrap();
+    assert!(crop(&mut s).is_null(), "{}", crop(&mut s));
+}
+
+/// SC-1 golden check: the rectangle the overlay draws is the part of the picture the Crop effect
+/// keeps when it is rendered, and the values a handle drag sends (the percents of the rectangle's
+/// edges, as `effects.setParam` carries them) bring the same picture as typing the numbers.
+#[test]
+fn the_crop_rectangle_is_the_part_the_crop_effect_keeps() {
+    use cfa4_render::{
+        effects::{FxCtx, apply},
+        image::Image,
+    };
+    let mut s = demo();
+    let it = v1_clip(&s);
+    let c = it.id.0;
+    s.execute("playhead.set", json!({"time": it.start.0 + it.duration.0 / 2})).unwrap();
+    s.execute("timeline.select", json!({"clips": [c]})).unwrap();
+    s.execute("effects.apply", json!({"clips": [c], "effect": "crop"})).unwrap();
+    s.execute("effects.select", json!({"clip": c, "effect": "crop"})).unwrap();
+    let overlay = |s: &mut Session| s.execute("program.overlay", json!({})).unwrap()["crop"].clone();
+    let v = overlay(&mut s);
+    let (w, h) = (v["size"][0].as_f64().unwrap(), v["size"][1].as_f64().unwrap());
+    let index = v["effect"].as_u64().unwrap() as usize;
+    let render = |s: &Session| -> Image {
+        let e = v1_clip(s).effects[index].clone();
+        let cx = FxCtx {
+            t: cfa4_time::Tick::ZERO,
+            px_scale: 1.0,
+            seconds: 0.0,
+            timecode: "00:00:00:00",
+            clip_name: "x",
+            project: None,
+            env: None,
+            frame_rate: 24.0,
+            working: cfa4_color::WorkingSpace::Rec709,
+        };
+        let mut img = Image::filled(100, 50, [1.0, 1.0, 1.0, 1.0]);
+        apply(&mut img, &e, &cx);
+        img
+    };
+    // the kept rectangles a drag can produce: an edge, a corner, a moved box
+    for rect in [[0.1, 0.2, 0.75, 0.5], [0.0, 0.0, 0.5, 1.0], [0.25, 0.1, 1.0, 0.9], [0.3, 0.3, 0.7, 0.7]] {
+        let drag = |s: &mut Session| {
+            // what the Qt drag sends: left, top, right, bottom as percents of the picture
+            let percents = [rect[0] * 100.0, rect[1] * 100.0, (1.0 - rect[2]) * 100.0, (1.0 - rect[3]) * 100.0];
+            for (param, value) in ["left", "top", "right", "bottom"].into_iter().zip(percents) {
+                s.execute("effects.setParam", json!({"clip": c, "effect": index, "param": param, "value": value})).unwrap();
+            }
+        };
+        drag(&mut s);
+        let v = overlay(&mut s);
+        let got: Vec<f64> = v["rect"].as_array().unwrap().iter().map(|x| x.as_f64().unwrap()).collect();
+        for (g, want) in got.iter().zip([rect[0] * w, rect[1] * h, rect[2] * w, rect[3] * h]) {
+            assert!((g - want).abs() < 1e-6, "{rect:?} {v}");
+        }
+        // pixels well inside the rectangle stay opaque, well outside are cleared (the edge is one pixel of antialiasing)
+        let img = render(&s);
+        for y in 0..50usize {
+            for x in 0..100usize {
+                let (cx, cy) = (x as f64 + 0.5, y as f64 + 0.5);
+                let d = (cx - rect[0] * 100.0).min(rect[2] * 100.0 - cx).min(cy - rect[1] * 50.0).min(rect[3] * 50.0 - cy);
+                let a = img.get(x, y)[3] as f64;
+                if d > 1.0 {
+                    assert!(a > 0.999, "{rect:?} ({x},{y}) alpha {a}");
+                } else if d < -1.0 {
+                    assert!(a < 0.001, "{rect:?} ({x},{y}) alpha {a}");
+                }
+            }
+        }
+        // the same numbers typed one by one in the opposite order bring the identical picture
+        let first = render(&s);
+        s.execute("effects.reset", json!({"clip": c, "index": index})).unwrap();
+        for (param, value) in
+            ["bottom", "right", "top", "left"].into_iter().zip([(1.0 - rect[3]) * 100.0, (1.0 - rect[2]) * 100.0, rect[1] * 100.0, rect[0] * 100.0])
+        {
+            s.execute("effects.setParam", json!({"clip": c, "effect": index, "param": param, "value": value})).unwrap();
+        }
+        assert_eq!(first.px, render(&s).px, "{rect:?}");
+    }
+}
+
+#[test]
 fn program_overlay_reports_the_transform_box_and_the_selected_mask() {
     let mut s = demo();
     let it = v1_clip(&s);
@@ -297,6 +422,52 @@ fn the_eyedropper_fills_a_colour_parameter_from_the_program_picture() {
     }
     // far outside the picture is its edge
     assert!(s.execute("effects.eyedropper", json!({"clip": it.id.0, "effect": index, "param": "key_color", "u": 1e300, "v": -5.0})).is_ok());
+}
+
+#[test]
+fn the_white_balance_selector_sets_temperature_and_tint_in_one_undo_step() {
+    let mut s = demo();
+    let it = v1_clip(&s);
+    s.execute("playhead.set", json!({"time": (it.start + Tick(it.duration.0 / 2)).0})).unwrap();
+    s.execute("effects.apply", json!({"clips": [it.id.0], "effect": "lumetri"})).unwrap();
+    let index = v1_clip(&s).effects.iter().position(|e| e.effect == "lumetri").unwrap();
+    let pick = |s: &mut Session| s.execute("effects.pickWhiteBalance", json!({"clip": it.id.0, "effect": index, "u": 0.5, "v": 0.5}));
+    let undo = s.history.undo.len();
+    let r = pick(&mut s).unwrap();
+    let (temp, tint) = (r["temperature"].as_f64().unwrap(), r["tint"].as_f64().unwrap());
+    assert!((-100.0..=100.0).contains(&temp) && (-100.0..=100.0).contains(&tint), "{r}");
+    let v = s.execute("effects.inspect", json!({"clip": it.id.0})).unwrap();
+    assert!((param(&v, "lumetri", "temperature")["value"].as_f64().unwrap() - temp).abs() < 1e-3);
+    assert!((param(&v, "lumetri", "tint")["value"].as_f64().unwrap() - tint).abs() < 1e-3);
+    assert_eq!(s.history.undo.len(), undo + 1, "Temperature and Tint are one undo step");
+    s.execute("edit.undo", json!({})).unwrap();
+    let v = s.execute("effects.inspect", json!({"clip": it.id.0})).unwrap();
+    assert_eq!(param(&v, "lumetri", "temperature")["value"].as_f64(), Some(0.0));
+    assert_eq!(param(&v, "lumetri", "tint")["value"].as_f64(), Some(0.0));
+    // the pick is taken from the frame without this Lumetri, so it does not depend on a white balance already set
+    s.execute("effects.setParam", json!({"clip": it.id.0, "effect": index, "param": "temperature", "value": 60.0})).unwrap();
+    let again = pick(&mut s).unwrap();
+    assert!((again["temperature"].as_f64().unwrap() - temp).abs() < 1e-3 && (again["tint"].as_f64().unwrap() - tint).abs() < 1e-3, "{again} vs {r}");
+    // the Eyedropper arm of the Lumetri panel reaches it through `effects.eyedropper`
+    let via = s.execute("effects.eyedropper", json!({"clip": it.id.0, "effect": index, "mode": "whiteBalance", "u": 0.5, "v": 0.5})).unwrap();
+    assert_eq!(via["temperature"], again["temperature"]);
+    // hostile or wrong arguments are refused, never a crash
+    let ultra = {
+        s.execute("effects.apply", json!({"clips": [it.id.0], "effect": "ultra_key"})).unwrap();
+        v1_clip(&s).effects.iter().position(|e| e.effect == "ultra_key").unwrap()
+    };
+    for bad in [
+        json!({"clip": it.id.0, "effect": ultra, "u": 0.5, "v": 0.5}),
+        json!({"clip": it.id.0, "effect": 999, "u": 0.5, "v": 0.5}),
+        json!({"clip": 987_654_321, "effect": index, "u": 0.5, "v": 0.5}),
+        json!({"clip": it.id.0, "effect": index, "u": f64::NAN, "v": 0.5}),
+        json!({"clip": it.id.0, "effect": index, "u": 0.5}),
+        json!({"effect": index, "u": 0.5, "v": 0.5}),
+    ] {
+        assert!(s.execute("effects.pickWhiteBalance", bad.clone()).is_err(), "{bad}");
+    }
+    // far outside the picture is its corner: an answer or a clear error (too dark), never a crash
+    let _ = s.execute("effects.pickWhiteBalance", json!({"clip": it.id.0, "effect": index, "u": 1e300, "v": -5.0}));
 }
 
 #[test]

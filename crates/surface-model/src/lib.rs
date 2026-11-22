@@ -261,13 +261,27 @@ impl SurfaceInput {
 #[derive(Clone, Debug, PartialEq, Eq, Hash, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase", tag = "type")]
 pub enum FeedbackTarget {
-    Led { control: ControlId },
-    Fader { control: ControlId },
-    Ring { control: ControlId },
-    Display { index: u16 },
+    Led {
+        control: ControlId,
+    },
+    Fader {
+        control: ControlId,
+    },
+    Ring {
+        control: ControlId,
+    },
+    Display {
+        index: u16,
+    },
     Timecode,
-    Meter { index: u16 },
+    Meter {
+        index: u16,
+    },
     DeviceState,
+    /// The tally light of source or camera `index` (READY-V4.1).
+    Tally {
+        index: u16,
+    },
 }
 
 /// A feedback value; the I/O crate turns it into the device's own protocol.
@@ -281,6 +295,43 @@ pub enum FeedbackValue {
     Level(f32),
     /// `cfa4_time::Tick` units (254 016 000 000 per second).
     Tick(i64),
+    /// A tally light state (READY-V4.1).
+    Tally(TallyState),
+}
+
+/// Which tally lights a source has on. A source on air is `program`; one lined up is `preview`;
+/// `aux` is a third output (an isolated recording, an aux bus). Any combination can be set.
+#[derive(Clone, Copy, Debug, Default, PartialEq, Eq, Hash, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase", default)]
+pub struct TallyState {
+    pub program: bool,
+    pub preview: bool,
+    pub aux: bool,
+}
+
+/// What a tally light shows when only one thing can be shown at a time. Program beats preview,
+/// preview beats aux.
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Hash, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub enum TallyLevel {
+    Program,
+    Preview,
+    Aux,
+}
+
+impl TallyState {
+    /// The one thing to show: program before preview before aux; `None` when all are off.
+    pub fn dominant(self) -> Option<TallyLevel> {
+        if self.program {
+            Some(TallyLevel::Program)
+        } else if self.preview {
+            Some(TallyLevel::Preview)
+        } else if self.aux {
+            Some(TallyLevel::Aux)
+        } else {
+            None
+        }
+    }
 }
 
 /// How urgently feedback goes out.
@@ -410,5 +461,28 @@ mod tests {
         assert_eq!(fj["value"]["type"], "tick");
         let fb: Option<SurfaceFeedback> = serde_json::from_value(fj).ok();
         assert_eq!(fb, Some(f));
+    }
+
+    #[test]
+    fn tally_feedback_round_trips_and_program_beats_preview() {
+        let f = SurfaceFeedback {
+            device: DeviceId("midi:x:0".into()),
+            target: FeedbackTarget::Tally { index: 3 },
+            value: FeedbackValue::Tally(TallyState { program: true, preview: true, aux: false }),
+            priority: FeedbackPriority::Immediate,
+            at: MonoNs(7),
+        };
+        let j = serde_json::to_value(&f).unwrap_or_default();
+        assert_eq!(j["target"], serde_json::json!({"type": "tally", "index": 3}));
+        assert_eq!(j["value"], serde_json::json!({"type": "tally", "value": {"program": true, "preview": true, "aux": false}}));
+        assert_eq!(serde_json::from_value::<SurfaceFeedback>(j).ok(), Some(f));
+        // missing fields read as off
+        let t: Option<TallyState> = serde_json::from_value(serde_json::json!({"preview": true})).ok();
+        assert_eq!(t, Some(TallyState { program: false, preview: true, aux: false }));
+        let all = TallyState { program: true, preview: true, aux: true };
+        assert_eq!(all.dominant(), Some(TallyLevel::Program));
+        assert_eq!(TallyState { preview: true, aux: true, ..TallyState::default() }.dominant(), Some(TallyLevel::Preview));
+        assert_eq!(TallyState { aux: true, ..TallyState::default() }.dominant(), Some(TallyLevel::Aux));
+        assert_eq!(TallyState::default().dominant(), None);
     }
 }

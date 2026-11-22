@@ -4775,3 +4775,128 @@ export.summary	Low	žema
 # Timecode sync varispeed and user bits (TC-8, #1308)
 	Varispeed: adjust the playback speed instead of seeking	Varispeed: užuot peršokus, koreguoti atkūrimo greitį
 	User bits	Naudotojo bitai
+# AS-11 programme parts and AS-10 metadata (G2, #1371, #1375)
+	{tc}  Segmentation	{tc}  Segmentavimas
+	Marker Type	Žymeklio tipas
+	Chapter	Skyrius
+	Segmentation (AS-11 programme part)	Segmentavimas (AS-11 programos dalis)
+	AS-10	AS-10
+# AT9/AT3 converter (Tools ▸ Audio Tools, AT3-2)
+	AT9/AT3 Converter	AT9/AT3 keitiklis
+	AT9/AT3 Converter…	AT9/AT3 keitiklis…
+	Files to convert:	Keičiami failai:
+	Add Files	Pridėti failų
+	Add Files…	Pridėti failų…
+	Convert to:	Keisti į:
+	Bit rate:	Bitų sparta:
+	Sample format:	Ėminių formatas:
+	Output folder:	Išvesties aplankas:
+	Output Folder	Išvesties aplankas
+	Next to each source file	Šalia kiekvieno šaltinio failo
+	AT9 and ATRAC3plus files convert to WAV; encoding AT9, ATRAC3plus and MP3 is not available yet.	AT9 ir ATRAC3plus failai keičiami į WAV; AT9, ATRAC3plus ir MP3 kodavimas dar neprieinamas.
+	Convert	Keisti
+	Add the files to convert first.	Pirmiausia pridėkite keičiamus failus.
+	Done: {n} file(s) converted.	Atlikta: konvertuota failų: {n}.
+	Converting {name}…	Keičiamas {name}…
+	Stopping…	Stabdoma…
+	AT3 (ATRAC3, PSP / PS3)	AT3 (ATRAC3, PSP / PS3)
+	WAV (PCM)	WAV (PCM)
+	132 kbit/s (LP2)	132 kbit/s (LP2)
+	105 kbit/s	105 kbit/s
+	66 kbit/s (LP4, joint stereo)	66 kbit/s (LP4, jungtinis stereo)
+	16-bit	16 bitų
+	24-bit	24 bitų
+	32-bit float	32 bitų slankusis kablelis
+
+# Datamosh transition (Grunge & Distort, DM1, #1409)
+	Datamosh	Datamosh
+	Residual	Liekana
+	Motion Boost	Judesio sustiprinimas
+	Recovery	Atsistatymas
+	Encode Resolution	Kodavimo raiška
+	Half	Pusė
+	Quarter	Ketvirtis
+# Datamosh Bloom (Glitch, DM2)
+	Datamosh Bloom	Datamosh žydėjimas
+	Start Time (seconds)	Pradžios laikas (sekundės)
+	Repeats	Pakartojimai
+
+# Recent effects, per-channel waveform, white balance selector (SC-2/SC-3/SC-4, #1419 #1420 #1421)
+	Apply a recently used effect to the selected clips	Taikyti neseniai naudotą efektą pasirinktiems klipams
+	Disable all effects	Išjungti visus efektus
+	Enable all effects	Įjungti visus efektus
+	No recent effects	Nėra naujausių efektų
+	Recent effects	Naujausi efektai
+	Switch every effect of the selected clips off	Išjungia kiekvieną pasirinktų klipų efektą
+	Switch every effect of the selected clips on	Įjungia kiekvieną pasirinktų klipų efektą
+	Merged	Sujungta
+	Per Channel	Pagal kanalus
+	Channel Zoom	Kanalų mastelis
+	White Balance Selector (click a neutral point in the Program monitor; Esc cancels)	Baltos spalvos balanso parinkiklis (spustelėkite neutralų tašką programos monitoriuje; Esc atšaukia)
+# Task Manager and subtitle kind (SC-2/3/4)
+	Task Manager	Užduočių tvarkytuvė
+	Background jobs	Foninės užduotys
+	Exports	Eksportai
+	Shared task queue	Bendra užduočių eilė
+	Task	Užduotis
+	State	Būsena
+	Details	Išsami informacija
+	Time left	Likęs laikas
+	Scheduled	Suplanuota
+	Queued	Eilėje
+	Waiting for resources	Laukia išteklių
+	Blocked	Užblokuota
+	Running	Vykdoma
+	Paused	Pristabdyta
+	Cancelling	Atšaukiama
+	Interactive	Interaktyvi
+	Speculative	Spekuliatyvi
+	Final render	Galutinis atvaizdavimas
+	Show finished	Rodyti baigtas
+	Nothing is running.	Nieko nevykdoma.
+	Not reported by this engine yet.	Šis variklis dar nepraneša.
+	Not available: {why}	Nepasiekiama: {why}
+	{name} waits: {why}	{name} laukia: {why}
+	{running} running · {waiting} waiting	{running} vykdoma · {waiting} laukia
+	{n} active	{n} aktyvių
+	{n} CPU	{n} CPU
+	{n} GiB	{n} GiB
+	{n} MiB	{n} MiB
+	Needs your decision	Laukia jūsų sprendimo
+	Run now	Vykdyti dabar
+	Next slot	Kitas laikotarpis
+	Missed its start	Praleistas pradžios laikas
+	Missed its start at {time}	Praleistas pradžios laikas {time}
+	Starts at {time}	Prasideda {time}
+	Subtitle kind	Subtitrų rūšis
+	Subtitles	Subtitrai
+	Captions for the hearing impaired	Subtitrai neprigirdintiesiems
+	Forced narrative	Priverstinis pasakojimas (forced narrative)
+	Silence	Tyla
+	Detect Silence	Aptikti tylą
+	Remove Silence	Pašalinti tylą
+	Clear Silence Markers	Išvalyti tylos žymeklius
+# DCP Validation window (DCP-12)
+	AS-03	AS-03
+	Choose the DCP folder.	Pasirinkite DCP aplanką.
+	DCP Validation	DCP patikra
+	DCP folder	DCP aplankas
+	DCP folder (the one holding ASSETMAP)	DCP aplankas (tas, kuriame yra ASSETMAP)
+	Evidence	Įrodymas
+	How to fix	Kaip ištaisyti
+	Interrupted	Nutraukta
+	Not applicable	Netaikoma
+	Report	Ataskaita
+	Report saved: {path}	Ataskaita išsaugota: {path}
+	Required	Privaloma
+	Rule	Taisyklė
+	Rules	Taisyklės
+	Save JSON…	Įrašyti JSON…
+	Save Markdown…	Įrašyti Markdown…
+	Save report	Įrašyti ataskaitą
+	Skipped	Praleista
+	Standard: {standard}	Standartas: {standard}
+	Validate	Patikrinti
+	Validate DCP…	Patikrinti DCP…
+	the engine sent no profiles	variklis nesiuntė jokių profilių
+	{n} files checked	Patikrinta failų: {n}

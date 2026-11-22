@@ -51,7 +51,7 @@ FFmpeg setup. Remove the cache directory to uninstall.
 | Ruby ≥ 3.0 and headers | `sudo apt install ruby ruby-dev build-essential` | `racc` and `bigdecimal` build native extensions |
 | git, sha256sum, mkfifo | base system | |
 | FFmpeg 9.0.2 | `bash scripts/ci/install-ffmpeg-9.0.2.sh` | the existing pinned oracle in `~/.cache/cfa4/`; the system FFmpeg stays untouched |
-| asdcplib CLI (`asdcp-info`, `asdcp-unwrap`) | package availability on 26.04 not yet verified | BSD-3-Clause (CineCert). If built from source, install it into its own prefix and set `CFA4_ASDCPLIB_PREFIX`; without it the engine's deep MXF and audio checks report missing tools |
+| asdcplib CLI (`asdcp-info`, `asdcp-unwrap`) | `cargo xtask cinema-oracles --install asdcplib` builds the pinned 2.13.2 into its own prefix ([cinema-oracles.md](cinema-oracles.md)); `--print-env` gives `CFA4_ASDCPLIB_PREFIX` | BSD-3-Clause (CineCert). Without it the engine's deep MXF and audio checks report missing tools |
 | fd (optional) | `sudo apt install fd-find` | faster discovery; the engine has a Ruby fallback |
 
 ### Isolation rules for the adapter (DCP-04)
@@ -62,6 +62,24 @@ FFmpeg setup. Remove the cache directory to uninstall.
 - Never run it with elevated privileges. No network access is needed: schemas resolve through the
   engine's local XML catalogue.
 - The Qt GUI never talks to Ruby: it asks the Rust engine, which runs the backend.
+
+## Commands and the Qt window (DCP-12)
+
+The engine runs the native backend as a background job; the Qt6 GUI and the control channel drive it
+through these commands (none writes into the package):
+
+| Command | What it does |
+|---|---|
+| `dcp.validate.profiles` | the built-in profiles with their rules (required / optional) |
+| `dcp.validate` `{root, profile?, wait?}` | validates the DCP folder `root` (default profile `quick-scan`, or a `.json` profile file) as a job followed in `jobs.list`; `wait` returns the report |
+| `dcp.validate.report` `{root}` | the latest report of that package (`cfa4-dcp-report/1`) and its Markdown |
+| `dcp.validate.save` `{root, path, format?}` | writes the report as `json` or `md`; refuses a path inside the package |
+
+The window is **File ▸ Validate DCP…** (`python/cfa4_qt/panels/dcp_validation.py`): folder field, profile
+selector, Validate / Cancel, the verdict with its counts, the findings (worst first, with rule id,
+location, evidence and how to fix it), the profile rules with their result so Unchecked and Skipped rules
+stay visible, the Markdown report, and Save JSON / Markdown. The package browser, tree and the
+audio / video / subtitle / security detail pages of the plan's DCP-F19 follow in later steps.
 
 ## Test data
 

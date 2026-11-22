@@ -49,6 +49,7 @@ const ATRAC9_GUID: [u8; 16] = [0xD2, 0x42, 0xE1, 0x47, 0xBA, 0x36, 0x8D, 0x4D, 0
 /// An ATRAC decoder state (cloned at checkpoints).
 #[derive(Clone)]
 pub(crate) enum Atrac {
+    One(Box<cfa4_realaudio::atrac1::Decoder>),
     Three(Box<cfa4_realaudio::atrac3::Decoder>),
     Plus(Box<cfa4_realaudio::atrac3p::Decoder>),
     Nine(Box<cfa4_realaudio::atrac9::Decoder>),
@@ -58,6 +59,7 @@ impl Atrac {
     /// One frame as planar samples, `None` for a damaged one.
     fn decode(&mut self, f: &[u8]) -> Option<Vec<Vec<f32>>> {
         match self {
+            Atrac::One(d) => d.decode(f).ok(),
             Atrac::Three(d) => d.decode(f).ok(),
             Atrac::Plus(d) => d.decode(f).ok(),
             Atrac::Nine(d) => d.decode(f).ok(),
@@ -66,6 +68,7 @@ impl Atrac {
 
     fn samples_per_channel(&self) -> usize {
         match self {
+            Atrac::One(d) => d.samples_per_channel(),
             Atrac::Three(d) => d.samples_per_channel(),
             Atrac::Plus(d) => d.samples_per_channel(),
             Atrac::Nine(d) => d.samples_per_channel(),
@@ -74,6 +77,7 @@ impl Atrac {
 
     fn label(&self) -> &'static str {
         match self {
+            Atrac::One(_) => "ATRAC1",
             Atrac::Three(_) => "ATRAC3",
             Atrac::Plus(_) => "ATRAC3plus",
             Atrac::Nine(_) => "ATRAC9",
@@ -393,7 +397,7 @@ fn atrac_encoding(d: Atrac, block: u64, dlen: u64, tail: impl FnOnce(u64, usize)
     let spf = d.samples_per_channel() as u64;
     let frames = match &d {
         Atrac::Plus(_) => dlen.div_ceil(block.max(1)).saturating_mul(spf),
-        Atrac::Three(_) => (dlen / block.max(1)).saturating_mul(spf),
+        Atrac::One(_) | Atrac::Three(_) => (dlen / block.max(1)).saturating_mul(spf),
         // a short last packet: what the decoder makes of it (from the stream's start state)
         Atrac::Nine(n) => {
             let short = dlen % block.max(1);
@@ -409,11 +413,13 @@ impl WavSource {
     pub(crate) fn atrac_stream(name: &str, reader: SharedReader, data: (u64, u64), rate: u32, d: Atrac, container: &str) -> Self {
         let (data_off, data_len) = data;
         let channels = match &d {
+            Atrac::One(d) => d.channels(),
             Atrac::Three(d) => d.channels(),
             Atrac::Plus(d) => d.channels(),
             Atrac::Nine(d) => d.channels(),
         };
         let block = match &d {
+            Atrac::One(d) => d.block_align(),
             Atrac::Three(d) => d.block_align(),
             Atrac::Plus(d) => d.block_align(),
             Atrac::Nine(d) => d.block_align(),

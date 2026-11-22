@@ -422,6 +422,34 @@ pub struct Mask {
     pub track_method: TrackMethod,
     #[serde(default)]
     pub tracker: Tracker,
+    /// Where the shape comes from: the drawn path (`path`), or a tracked object whose per-frame
+    /// coverage is used instead (Object Mask; `Project::objects`). Older projects have drawn masks.
+    #[serde(default, skip_serializing_if = "MaskSource::is_path")]
+    pub source: MaskSource,
+}
+
+/// What a [`Mask`] is cut from.
+#[derive(Clone, Copy, Debug, Default, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub enum MaskSource {
+    /// The Bézier path in [`Mask::path`].
+    #[default]
+    Path,
+    /// A tracked object of the clip's media item ([`crate::object::ObjectTrack::id`]).
+    Object(crate::object::ObjectId),
+}
+
+impl MaskSource {
+    pub fn is_path(&self) -> bool {
+        matches!(self, MaskSource::Path)
+    }
+    /// The tracked object this mask follows, if it follows one.
+    pub fn object(&self) -> Option<crate::object::ObjectId> {
+        match self {
+            MaskSource::Object(id) => Some(*id),
+            MaskSource::Path => None,
+        }
+    }
 }
 
 /// Mask parameter ids (keyframe commands address them with `"mask": n`).
@@ -439,6 +467,7 @@ impl Mask {
             mode: MaskMode::Add,
             track_method: TrackMethod::default(),
             tracker: Tracker::default(),
+            source: MaskSource::Path,
         }
     }
     pub fn param(&self, id: &str) -> Option<&Param> {
@@ -500,6 +529,30 @@ pub fn mask_param_defs() -> &'static [ParamDef] {
 mod tests {
     use super::*;
     use cfa4_time::Tick;
+
+    /// OM-A2: a mask follows its drawn path unless it names a tracked object; projects saved
+    /// before `source` existed load as drawn masks, and a drawn mask writes no `source` key.
+    #[test]
+    fn mask_source_defaults_to_the_path_and_round_trips() {
+        use crate::object::ObjectId;
+        let m = Mask::new("Mask 1", MaskPath::ellipse(Vec2::new(100.0, 50.0), Vec2::new(40.0, 20.0)));
+        assert_eq!(m.source, MaskSource::Path);
+        let mut json: serde_json::Value = serde_json::to_value(&m).unwrap();
+        assert!(json.get("source").is_none());
+        let back: Mask = serde_json::from_value(json.clone()).unwrap();
+        assert_eq!(back, m);
+        let mut obj = m.clone();
+        obj.source = MaskSource::Object(ObjectId(7));
+        assert_eq!(obj.source.object(), Some(ObjectId(7)));
+        assert_eq!(m.source.object(), None);
+        json = serde_json::to_value(&obj).unwrap();
+        assert_eq!(json["source"], serde_json::json!({"object": 7}));
+        assert_eq!(serde_json::from_value::<Mask>(json).unwrap(), obj);
+        // a source that is neither "path" nor an object is refused, not guessed
+        let mut bad = serde_json::to_value(&m).unwrap();
+        bad["source"] = serde_json::json!("sprite");
+        assert!(serde_json::from_value::<Mask>(bad).is_err());
+    }
 
     #[test]
     fn ellipse_flattens_onto_the_ellipse() {

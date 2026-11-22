@@ -7,10 +7,14 @@
 //! asset's `EntryPoint` and `Duration` at its `EditRate`. The track files import as media items
 //! in a bin named after the CPL; the sequence takes the first picture's frame size and rate.
 //!
+//! The timed text track files (ST 429-5) of `MainSubtitle`, `MainCaption` and `MainClosedCaption`
+//! become caption tracks, one per kind and language: each reel's cues from its entry point, cut to
+//! its duration, at the reel's start; their PNG image subtitles go on video tracks above V1.
+//!
 //! What is not placed is reported, never silent: an asset missing from the package (a version
 //! file that names the original version's assets), an encrypted track file whose content key is
 //! not loaded (`dcp.loadKdm` first), an unsafe path in the asset map, a reel asset of a kind this
-//! import does not place yet (subtitles, captions, auxiliary data).
+//! import does not place (auxiliary data, extension assets).
 
 use std::collections::HashMap;
 use std::path::Path;
@@ -61,7 +65,7 @@ fn package_of(s: &Session, path: &str) -> Option<(String, Option<String>)> {
 
 /// A chunk path joined to the package root, refusing absolute paths, `..` and backslashes (the
 /// asset map is data from the package, so it must not lead outside it).
-fn resolve(root: &str, chunk: &str) -> std::result::Result<String, String> {
+pub(crate) fn resolve(root: &str, chunk: &str) -> std::result::Result<String, String> {
     let chunk = chunk.trim();
     if chunk.is_empty() {
         return Err("the path is empty".into());
@@ -179,7 +183,7 @@ fn import_root(s: &mut Session, root: &str, only_cpl: Option<&str>, bin: Option<
 }
 
 /// An asset's time in ticks: `units` edit units at `rate`.
-fn units(units: u64, rate: Rational) -> Option<Tick> {
+pub(crate) fn units(units: u64, rate: Rational) -> Option<Tick> {
     if rate.num <= 0 || rate.den <= 0 {
         return None;
     }
@@ -195,7 +199,7 @@ fn asset_range(a: &ReelAsset, fallback_rate: Option<Rational>) -> Option<(Tick, 
     Some((units(entry, rate)?, units(dur, rate)?))
 }
 
-fn import_asset(s: &mut Session, file: &str, bin: Option<BinId>, items: &mut HashMap<String, ItemId>) -> Result<ItemId> {
+pub(crate) fn import_asset(s: &mut Session, file: &str, bin: Option<BinId>, items: &mut HashMap<String, ItemId>) -> Result<ItemId> {
     if let Some(id) = items.get(file) {
         return Ok(*id);
     }
@@ -222,6 +226,8 @@ fn import_composition(
     let cpl_bin = s.edit(&format!("New Bin {name}"), |p, _| Ok(p.add_bin(name, bin)))?;
     // the track files of each reel asset that can be placed, imported once
     let mut placed_assets: Vec<(usize, AssetKind, ItemId, Tick, Tick)> = Vec::new();
+    // timed text: (kind, CPL language) -> (reel, file, entry, duration)
+    let mut texts: Vec<((AssetKind, Option<String>), Vec<(usize, String, Tick, Tick)>)> = Vec::new();
     let mut reel_lengths: Vec<Tick> = Vec::new();
     for (ri, reel) in cpl.reels.iter().take(MAX_REELS).enumerate() {
         let picture_rate = reel.assets.iter().find(|a| matches!(a.kind, AssetKind::MainPicture | AssetKind::MainStereoscopicPicture)).and_then(|a| a.edit_rate);
@@ -230,9 +236,10 @@ fn import_composition(
             let what = format!("reel {} {}", ri + 1, a.element);
             match a.kind {
                 AssetKind::MainPicture | AssetKind::MainStereoscopicPicture | AssetKind::MainSound => {}
+                AssetKind::MainSubtitle | AssetKind::MainCaption | AssetKind::MainClosedCaption => {}
                 AssetKind::CompositionMetadata | AssetKind::MainMarkers => continue,
                 _ => {
-                    warnings.push(format!("{what}: not placed (this import places picture and sound)"));
+                    warnings.push(format!("{what}: not placed (this import places picture, sound, subtitles and captions)"));
                     continue;
                 }
             }
@@ -240,7 +247,7 @@ fn import_composition(
                 warnings.push(format!("{what}: no usable EditRate / Duration"));
                 continue;
             };
-            if a.kind != AssetKind::MainSound || length == Tick::ZERO {
+            if matches!(a.kind, AssetKind::MainPicture | AssetKind::MainStereoscopicPicture) || (a.kind == AssetKind::MainSound && length == Tick::ZERO) {
                 length = length.max(dur);
             }
             let Some(id) = a.id else {
@@ -257,6 +264,15 @@ fn import_composition(
                 warnings.push(format!("{what}: encrypted, and the content key {key} is not loaded (load its KDM with dcp.loadKdm first)"));
                 continue;
             }
+            if is_timed_text(a.kind) {
+                let key = (a.kind, a.language.as_deref().map(str::trim).filter(|l| !l.is_empty()).map(str::to_string));
+                let entry_ = (ri, file.clone(), entry, dur);
+                match texts.iter_mut().find(|t| t.0 == key) {
+                    Some(t) => t.1.push(entry_),
+                    None => texts.push((key, vec![entry_])),
+                }
+                continue;
+            }
             match import_asset(s, file, Some(cpl_bin), items) {
                 Ok(item) => placed_assets.push((ri, a.kind, item, entry, dur)),
                 Err(e) => warnings.push(format!("{what}: {file}: {e}")),
@@ -268,7 +284,7 @@ fn import_composition(
         warnings.push(format!("more than {MAX_REELS} reels; the rest are not imported"));
     }
     // the sequence: the first picture's size and rate
-    let first_picture = placed_assets.iter().find(|p| p.1 != AssetKind::MainSound).map(|p| p.2);
+    let first_picture = placed_assets.iter().find(|p| matches!(p.1, AssetKind::MainPicture | AssetKind::MainStereoscopicPicture)).map(|p| p.2);
     let settings =
         first_picture.and_then(|i| s.project.item(i).and_then(|it| it.as_media().map(crate::commands::default_seq_settings_for))).unwrap_or_default();
     let rate = settings.frame_rate;
@@ -292,5 +308,36 @@ fn import_composition(
             Err(e) => warnings.push(format!("reel {}: {e}", ri + 1)),
         }
     }
-    Ok(json!({"sequence": seq.0, "name": name, "reels": reel_lengths.len(), "placed": placed}))
+    let mut captions = Vec::new();
+    for ((kind, language), reels) in texts {
+        let reels: Vec<crate::captions::ReelText> = reels
+            .into_iter()
+            .map(|(ri, path, entry, duration)| crate::captions::ReelText { path, entry, duration, at: starts.get(ri).copied().unwrap_or_default() })
+            .collect();
+        let what = match kind {
+            AssetKind::MainCaption => "captions",
+            AssetKind::MainClosedCaption => "closed captions",
+            _ => "subtitles",
+        };
+        let track = match &language {
+            Some(l) => format!("{name} {what} ({l})"),
+            None => format!("{name} {what}"),
+        };
+        if let Some(mut r) = crate::captions::import_dcp_timed_text(s, &track, &reels, warnings)? {
+            if let Some(w) = r.get_mut("warnings").and_then(Value::as_array_mut) {
+                warnings.extend(w.drain(..).filter_map(|w| w.as_str().map(|w| format!("{track}: {w}"))));
+            }
+            if let Some(o) = r.as_object_mut() {
+                o.remove("warnings");
+                o.remove("sequence");
+                o.insert("name".into(), json!(track));
+            }
+            captions.push(r);
+        }
+    }
+    Ok(json!({"sequence": seq.0, "name": name, "reels": reel_lengths.len(), "placed": placed, "captions": captions}))
+}
+
+fn is_timed_text(kind: AssetKind) -> bool {
+    matches!(kind, AssetKind::MainSubtitle | AssetKind::MainCaption | AssetKind::MainClosedCaption)
 }
