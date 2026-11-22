@@ -1153,6 +1153,14 @@ dependencies = [
 ]
 
 [[package]]
+name = "cfa4-bink"
+version = "0.10.0"
+dependencies = [
+ "cfa4-testkit",
+ "thiserror 2.0.21",
+]
+
+[[package]]
 name = "cfa4-bitstream"
 version = "0.10.0"
 dependencies = [
@@ -1230,6 +1238,14 @@ dependencies = [
 ]
 
 [[package]]
+name = "cfa4-cinepak"
+version = "0.10.0"
+dependencies = [
+ "cfa4-testkit",
+ "thiserror 2.0.21",
+]
+
+[[package]]
 name = "cfa4-cli"
 version = "0.10.0"
 dependencies = [
@@ -1281,10 +1297,12 @@ dependencies = [
  "cfa4-av1",
  "cfa4-av2",
  "cfa4-avi",
+ "cfa4-bink",
  "cfa4-bitstream",
  "cfa4-canopus",
  "cfa4-cavs",
  "cfa4-cineform",
+ "cfa4-cinepak",
  "cfa4-color",
  "cfa4-dirac",
  "cfa4-dnx",
@@ -1309,12 +1327,14 @@ dependencies = [
  "cfa4-magicyuv",
  "cfa4-matroska",
  "cfa4-media",
+ "cfa4-mobiclip",
  "cfa4-mpa",
  "cfa4-mpeg2v",
  "cfa4-mpegts",
  "cfa4-musepack",
  "cfa4-mve",
  "cfa4-mxf",
+ "cfa4-nstream",
  "cfa4-ogg",
  "cfa4-opus",
  "cfa4-prores",
@@ -1328,6 +1348,8 @@ dependencies = [
  "cfa4-sstp",
  "cfa4-tak",
  "cfa4-testkit",
+ "cfa4-theora",
+ "cfa4-thp",
  "cfa4-time",
  "cfa4-truehd",
  "cfa4-truespeech",
@@ -1979,6 +2001,14 @@ dependencies = [
 ]
 
 [[package]]
+name = "cfa4-mobiclip"
+version = "0.10.0"
+dependencies = [
+ "cfa4-testkit",
+ "thiserror 2.0.21",
+]
+
+[[package]]
 name = "cfa4-mpa"
 version = "0.10.0"
 dependencies = [
@@ -2030,6 +2060,14 @@ dependencies = [
  "hmac",
  "roxmltree",
  "sha1",
+]
+
+[[package]]
+name = "cfa4-nstream"
+version = "0.10.0"
+dependencies = [
+ "cfa4-testkit",
+ "thiserror 2.0.21",
 ]
 
 [[package]]
@@ -2409,6 +2447,22 @@ dependencies = [
  "unicode-bidi",
  "unicode-linebreak",
  "unicode-segmentation",
+]
+
+[[package]]
+name = "cfa4-theora"
+version = "0.10.0"
+dependencies = [
+ "cfa4-testkit",
+ "thiserror 2.0.21",
+]
+
+[[package]]
+name = "cfa4-thp"
+version = "0.10.0"
+dependencies = [
+ "cfa4-testkit",
+ "thiserror 2.0.21",
 ]
 
 [[package]]
