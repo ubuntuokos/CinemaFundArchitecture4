@@ -93,6 +93,7 @@ Crates are named `cfa4-<dir>` (`crates/time` is `cfa4-time`); new CFA4 crates ar
 | `g729` | L0 | ITU-T G.729 speech decoder with Annex B comfort noise, ported from bcg729 (GPL-3.0-or-later) ([README](../crates/g729/README.md)) |
 | `ilbc` | L0 | iLBC (RFC 3951) speech decoder, ported from WebRTC's fixed-point libilbc (BSD-3-Clause) ([README](../crates/ilbc/README.md)) |
 | `tta` | L0 | TTA (True Audio) lossless audio decoder, ported from libtta (LGPL-3.0) ([README](../crates/tta/README.md)) |
+| `twinvq` | L0 | NTT TwinVQ (VQF) audio decoder, all nine VQF modes, ported from FFmpeg (LGPL-2.1-or-later, owner-approved exception) ([README](../crates/twinvq/README.md)) |
 | `adx` | L0 | CRI ADX (`.adx`) ADPCM audio decoder, ported from FFmpeg (LGPL-2.1-or-later, owner-approved exception) ([README](../crates/adx/README.md)) |
 | `hca` | L0 | CRI HCA (`.hca`) MDCT audio decoder with the keyed cipher, ported from FFmpeg (LGPL-2.1-or-later, owner-approved exception) ([README](../crates/hca/README.md)) |
 | `shorten` | L0 | Shorten (`.shn`) lossless audio decoder, ported from FFmpeg (LGPL-2.1-or-later, owner-approved exception) ([README](../crates/shorten/README.md)) |

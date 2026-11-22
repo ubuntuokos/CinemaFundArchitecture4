@@ -147,6 +147,7 @@ static ROWS: &[Row] = &[
     audio("AMR-NB / AMR-WB", &["amr"], Ported, Sw(""), NoEnc),
     audio("Speex", &["speex"], Ported, Sw("Ogg Speex"), NoEnc),
     audio("TTA (True Audio)", &["tta"], Ported, Sw(""), NoEnc),
+    audio("NTT TwinVQ", &["twinvq"], Ported, Sw("in .vqf, .vql and .vqe files"), NoEnc),
     audio(
         "RealAudio Cook / SIPR / 1.0 (14.4) / 2.0 (28.8), ATRAC1, ATRAC3, ATRAC3plus, ATRAC9",
         &["realaudio", "atracenc"],

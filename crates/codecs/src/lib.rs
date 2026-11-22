@@ -24,6 +24,7 @@
 //! - [`SstpSource`]: MPEG-4 Simple Studio Profile (Sony SR) elementary streams (`.m4v`), every picture intra.
 //! - [`RoqSource`]: id RoQ (`.roq`) video (full range YUV 4:4:4) with DPCM sound.
 //! - [`MveSource`]: Interplay MVE (`.mve`) video (8-bit palette or RGB 5:5:5) with PCM or DPCM sound.
+//! - [`TwinvqSource`]: NTT TwinVQ (`.vqf`, `.vql`, `.vqe`) audio.
 //! - [`Y4mSource`]: uncompressed YUV4MPEG2 (`.y4m`) video, frames read on demand.
 //! - [`openers`]: the openers to register with the engine's media pool.
 
@@ -64,6 +65,7 @@ pub mod smacker;
 pub mod sstp;
 mod stream_color;
 pub mod streams;
+pub mod twinvq;
 pub mod utvideo;
 pub mod video;
 mod webm_alpha;
@@ -88,6 +90,7 @@ pub use realmedia::RmSource;
 pub use roq::RoqSource;
 pub use smacker::SmkSource;
 pub use sstp::SstpSource;
+pub use twinvq::TwinvqSource;
 pub use video::{DecodedFrame, VideoDecoder, VideoDecoderFactory};
 pub use y4m::Y4mSource;
 
@@ -216,6 +219,7 @@ pub fn openers() -> Vec<cfa4_media::Opener> {
         roq::opener,
         mve::opener,
         av2::opener,
+        twinvq::opener,
         audio::opener,
     ]
 }
