@@ -52,7 +52,7 @@ fidelity and the remaining work.
 | Hap | video | `crates/hap` | own | yes | no |
 | Huffyuv | video | `crates/huffyuv` | own | yes | no |
 | Canopus HQ / HQA / HQX | video | `crates/canopus` | ported | yes | no |
-| Theora | video | `crates/theora` | ported | yes | no |
+| Theora | video | `crates/theora` | ported | yes: in Matroska (V_THEORA); Ogg video is not read yet | no |
 | RealVideo 1.0 / 2.0 / 3.0 / 4.0 | video | `crates/realvideo`, `crates/realmedia` | ported | yes: in RealMedia (.rm, .rmvb) | no |
 | Smacker Video (SMK2, SMK4) and Smacker Audio | video | `crates/smacker` | ported | yes: in Smacker (.smk) | no |
 | Ut Video | video | `crates/utvideo` | own | yes | no |

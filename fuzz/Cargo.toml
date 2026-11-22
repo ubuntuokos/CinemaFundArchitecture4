@@ -55,6 +55,7 @@ cfa4-tta = { path = "../crates/tta" }
 cfa4-amr = { path = "../crates/amr" }
 cfa4-av2 = { path = "../crates/av2" }
 cfa4-canopus = { path = "../crates/canopus" }
+cfa4-theora = { path = "../crates/theora" }
 cfa4-dirac = { path = "../crates/dirac" }
 cfa4-speex = { path = "../crates/speex" }
 cfa4-opus = { path = "../crates/opus" }
@@ -157,6 +158,13 @@ bench = false
 [[bin]]
 name = "canopus"
 path = "fuzz_targets/canopus.rs"
+test = false
+doc = false
+bench = false
+
+[[bin]]
+name = "theora"
+path = "fuzz_targets/theora.rs"
 test = false
 doc = false
 bench = false
