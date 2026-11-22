@@ -328,9 +328,13 @@ pub fn smk_file(rng: &mut Rng, spec: &Spec) -> Vec<u8> {
 
 pub fn random_spec(rng: &mut Rng) -> Spec {
     let mut tracks: [Option<TrackSpec>; 7] = Default::default();
-    let count = rng.below(4) as usize;
-    for _ in 0..count {
-        let slot = rng.below(7) as usize;
+    // mostly up to three tracks, now and then four to seven on distinct slots
+    let count = if rng.chance(25) { 4 + rng.below(4) as usize } else { rng.below(4) as usize };
+    let mut slots = [0usize, 1, 2, 3, 4, 5, 6];
+    for n in 0..count {
+        let k = n + rng.below((7 - n) as u64) as usize;
+        slots.swap(n, k);
+        let slot = slots[n];
         let kind = match rng.below(5) {
             0 => AudioKind::Pcm,
             _ => AudioKind::Packed,

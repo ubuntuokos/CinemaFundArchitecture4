@@ -79,6 +79,7 @@ szabadalommal védett formátumot.
 | RealAudio SIPR (ACELP.NET), RealAudio 1.0 (14.4, VSELP), RealAudio 2.0 (28.8, G.728-szerű LD-CELP) | dekódolás | `crates/realaudio` (az FFmpeg portja) | alap | függőben | | |
 | Canopus HQ, HQA, HQX | dekódolás | `crates/canopus` (az FFmpeg portja) | alap | függőben | | |
 | Hap (Hap, Hap Alpha, Hap Q, Hap Q Alpha, Hap Alpha-Only) | dekódolás | `crates/hap` | alap | függőben | | |
+| Smacker Video (SMK2, SMK4) | dekódolás | `crates/smacker` (az FFmpeg portja) | alap | függőben | | |
 
 ## Hang
 
@@ -106,7 +107,7 @@ szabadalommal védett formátumot.
 | TTA (True Audio) | dekódolás; `.tta` és Matroska olvasása | `crates/tta` (a libtta portja) | alap | függőben | | |
 | Shorten | dekódolás; `.shn` fájlok olvasása | `crates/shorten` (az FFmpeg Shorten-dekódolójának portja) | alap | függőben | | |
 | TAK (Tom's lossless Audio Kompressor) | dekódolás; `.tak` fájlok olvasása | `crates/tak` (az FFmpeg TAK-dekódolójának portja) | alap | függőben | | |
-| Smacker Video és Smacker Audio | dekódolás | `crates/smacker` (az FFmpeg portja) | alap | függőben | | |
+| Smacker Audio | dekódolás | `crates/smacker` (az FFmpeg portja) | alap | függőben | | |
 | AMR-NB, AMR-WB | dekódolás | `crates/amr` (az opencore-amr portja) | alap | függőben | | |
 | Musepack SV7, SV8 | dekódolás; `.mpc` fájlok olvasása | `crates/musepack` (a libmpcdec portja) | alap | függőben | | |
 

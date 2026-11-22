@@ -666,9 +666,16 @@ pub fn smacker(data: &[u8]) {
                 let _ = cfa4_smacker::decode_audio(t, chunk);
             }
         }
-        if let (Some(d), Some(v)) = (dec.as_mut(), parts.video) {
-            let _ = d.decode(parts.palette, v);
-            std::hint::black_box(d.rgba());
+        match (dec.as_mut(), parts.video, parts.palette) {
+            (Some(d), Some(v), _) => {
+                let _ = d.decode(parts.palette, v);
+                std::hint::black_box(d.rgba());
+            }
+            // a frame whose video is lost keeps its palette update
+            (Some(d), None, Some(p)) => {
+                let _ = d.update_palette(p);
+            }
+            _ => {}
         }
     }
 }

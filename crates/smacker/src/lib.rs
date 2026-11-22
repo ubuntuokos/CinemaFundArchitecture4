@@ -1,7 +1,25 @@
-// Ported from FFmpeg n9.0.2 libavcodec/smacker.c (Copyright (c) 2006 Konstantin Shishkov) and
-// libavformat/smacker.c (Copyright (c) 2006 Konstantin Shishkov), LGPL-2.1-or-later, which in
-// turn follow the public Smacker description at wiki.multimedia.cx; see docs/licensing.md §5.
-// CFA4 changes GPL-3.0-or-later.
+// Smacker video and audio decoders and demuxer, ported from FFmpeg n9.0.2 (libavcodec/smacker.c
+// and libavformat/smacker.c), which follow the public Smacker description at wiki.multimedia.cx.
+// Copyright (c) 2006 Konstantin Shishkov
+//
+// This file is part of FFmpeg.
+//
+// FFmpeg is free software; you can redistribute it and/or
+// modify it under the terms of the GNU Lesser General Public
+// License as published by the Free Software Foundation; either
+// version 2.1 of the License, or (at your option) any later version.
+//
+// FFmpeg is distributed in the hope that it will be useful,
+// but WITHOUT ANY WARRANTY; without even the implied warranty of
+// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+// Lesser General Public License for more details.
+//
+// You should have received a copy of the GNU Lesser General Public
+// License along with FFmpeg; if not, write to the Free Software
+// Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
+//
+// CFA4 changes (the Rust re-expression, the frame splitting and palette handling shaped for
+// seeking, the size limits, the snapshots) are GPL-3.0-or-later; see docs/licensing.md §5.
 
 //! Pure-Rust decoder for **Smacker** files (`.smk`, RAD Game Tools; SMK2 and SMK4): the
 //! container, the paletted 4×4-block video and the packed Huffman audio. The output is the same
@@ -195,6 +213,21 @@ struct BigCtx<'a> {
 }
 
 impl BigCtx<'_> {
+    /// Stores `v` at `at`, growing the table as the tree is read (the declared size is only an
+    /// upper bound, so a short tree cannot make a large allocation).
+    fn set(&mut self, at: usize, v: u32) -> Result<()> {
+        if at >= self.length + 3 {
+            return Err(Error::Invalid("header tree larger than declared"));
+        }
+        if at >= self.values.len() {
+            self.values.resize(at + 1, 0);
+        }
+        if let Some(slot) = self.values.get_mut(at) {
+            *slot = v;
+        }
+        Ok(())
+    }
+
     fn bigtree(&mut self, bits: &mut Bits<'_>, length: usize) -> Result<usize> {
         if length > BIGTREE_MAX_DEPTH {
             return Err(Error::Invalid("header tree too deep"));
@@ -216,14 +249,14 @@ impl BigCtx<'_> {
                     break;
                 }
             }
-            *self.values.get_mut(self.current).ok_or(Error::Invalid("header tree larger than declared"))? = val;
+            self.set(self.current, val)?;
             self.current += 1;
             Ok(1)
         } else {
             let t = self.current;
             self.current += 1;
             let mut r = self.bigtree(bits, length + 1)?;
-            *self.values.get_mut(t).ok_or(Error::Invalid("header tree larger than declared"))? = SMK_NODE | r as u32;
+            self.set(t, SMK_NODE | r as u32)?;
             r += 1;
             let r_new = self.bigtree(bits, length + 1)?;
             Ok(r + r_new)
@@ -251,7 +284,7 @@ impl Recode {
         }
         let escapes = [bits.get(16), bits.get(16), bits.get(16)];
         let length = ((size as usize) + 3) >> 2;
-        let mut ctx = BigCtx { current: 0, length, values: vec![0; length + 3], v1: &trees[0], v2: &trees[1], escapes, last: [None; 3] };
+        let mut ctx = BigCtx { current: 0, length, values: Vec::new(), v1: &trees[0], v2: &trees[1], escapes, last: [None; 3] };
         ctx.bigtree(bits, 0)?;
         bits.bit();
         let mut last = [0usize; 3];
@@ -264,6 +297,11 @@ impl Recode {
                     v
                 }
             };
+        }
+        // the three most-recent-value slots live after the tree
+        let need = last.iter().copied().max().map_or(0, |m| m + 1).max(ctx.current);
+        if ctx.values.len() < need {
+            ctx.values.resize(need, 0);
         }
         Ok(Self { tbl: ctx.values, last })
     }
@@ -354,6 +392,9 @@ pub struct FrameLoc {
     pub key: bool,
     /// The frame flags byte: bit 0 palette update, bit `1 + i` audio track `i`.
     pub flags: u8,
+    /// The file ends inside the frame: `len` is what is there, and the video is lost (the
+    /// palette and the audio chunks that are whole still count, as in ffmpeg's demuxer).
+    pub truncated: bool,
 }
 
 /// A parsed Smacker file header and frame table.
@@ -394,6 +435,10 @@ pub fn probe(head: &[u8]) -> bool {
     matches!(head.get(..4), Some(b"SMK2" | b"SMK4"))
 }
 
+fn valid_size(width: u32, height: u32) -> bool {
+    width != 0 && height != 0 && u64::from(width) * u64::from(height) <= MAX_PIXELS && width <= 65_535 && height <= 65_535
+}
+
 impl Smk {
     /// Reads the header and the frame table of `data`.
     pub fn parse(data: &[u8]) -> Result<Self> {
@@ -421,7 +466,7 @@ impl Smk {
         if frames > MAX_FRAMES {
             return Err(Error::Invalid("too many frames"));
         }
-        if width == 0 || height == 0 || u64::from(width) * u64::from(height) > MAX_PIXELS || width > 65_535 || height > 65_535 {
+        if !valid_size(width, height) {
             return Err(Error::Unsupported("picture size"));
         }
         let tree_bytes = rd(52)?;
@@ -461,14 +506,24 @@ impl Smk {
             let size = rd(sizes_at + i * 4)?;
             let len = (size & !3) as usize;
             let end = offset.checked_add(len).ok_or(Error::Invalid("frame size"))?;
-            // a frame cut short by the end of the file ends the table
+            let key = i == 0 || size & 1 != 0;
+            let flags = data.get(flags_at + i).copied().unwrap_or(0);
+            // a frame cut short by the end of the file ends the table, keeping what is there
             if end > data.len() {
+                if offset < data.len() {
+                    frame_table.push(FrameLoc { offset, len: data.len() - offset, key, flags, truncated: true });
+                }
                 break;
             }
-            frame_table.push(FrameLoc { offset, len, key: i == 0 || size & 1 != 0, flags: data.get(flags_at + i).copied().unwrap_or(0) });
+            frame_table.push(FrameLoc { offset, len, key, flags, truncated: false });
             offset = end;
         }
         Ok(Self { v4, width, height, frames: frame_table.len(), pts_inc, flags, tracks, frame_table, tree_sizes, tree_data })
+    }
+
+    /// The frames that have a picture: the file's frames, less a last one the file ends inside.
+    pub fn video_frames(&self) -> usize {
+        self.frames - usize::from(self.frame_table.last().is_some_and(|f| f.truncated))
     }
 
     /// The frame rate as numerator and denominator (frames per second).
@@ -510,11 +565,16 @@ impl Smk {
         if loc.flags & SMACKER_PAL != 0 {
             let size = frame.first().map_or(0, |&b| usize::from(b) * 4);
             let pal = frame.get(1..).unwrap_or_default();
-            if size == 0 || size > frame.len() || apply_palette(&[0; 768], pal).is_err() {
+            if size == 0 || size > frame.len() {
                 parts.damaged = true;
                 return parts;
             }
+            // what the update changed before it failed stays in the demuxer's palette
             parts.palette = Some(pal);
+            if apply_palette(&[0; 768], pal).1.is_err() {
+                parts.damaged = true;
+                return parts;
+            }
             pos = size;
         }
         for t in 0..MAX_TRACKS {
@@ -531,7 +591,7 @@ impl Smk {
             parts.audio[t] = frame.get(pos + 4..pos + size);
             pos += size;
         }
-        parts.video = frame.get(pos..);
+        parts.video = if loc.truncated { None } else { frame.get(pos..) };
         parts
     }
 }
@@ -541,9 +601,15 @@ fn gcd(a: i64, b: i64) -> i64 {
 }
 
 /// Applies a palette update to `old` (the demuxer's palette handling): runs of kept entries, of
-/// entries copied from elsewhere in the old palette, and of new 6-bit entries.
-fn apply_palette(old: &[u8; 768], chunk: &[u8]) -> Result<[u8; 768]> {
+/// entries copied from elsewhere in the old palette, and of new 6-bit entries. The palette comes
+/// back whole even when the update fails, with the entries changed before the failure.
+fn apply_palette(old: &[u8; 768], chunk: &[u8]) -> ([u8; 768], Result<()>) {
     let mut pal = *old;
+    let r = apply_palette_into(old, chunk, &mut pal);
+    (pal, r)
+}
+
+fn apply_palette_into(old: &[u8; 768], chunk: &[u8], pal: &mut [u8; 768]) -> Result<()> {
     let mut src = chunk.iter().copied();
     let mut next = || src.next().ok_or(Error::Invalid("palette update truncated"));
     let (mut sz, mut at) = (0usize, 0usize);
@@ -584,7 +650,7 @@ fn apply_palette(old: &[u8; 768], chunk: &[u8]) -> Result<[u8; 768]> {
             sz += 1;
         }
     }
-    Ok(pal)
+    Ok(())
 }
 
 // ---------------------------------------------------------------------------------------------
@@ -634,6 +700,9 @@ impl Decoder {
         let (Some(mmap), Some(mclr), Some(full), Some(kind)) = (it.next(), it.next(), it.next(), it.next()) else {
             return Err(Error::Invalid("header trees"));
         };
+        if !valid_size(smk.width, smk.height) {
+            return Err(Error::Unsupported("picture size"));
+        }
         let (width, height) = (smk.width as usize, smk.height as usize);
         Ok(Self { width, height, v4: smk.v4, mmap, mclr, full, kind, pic: vec![0; width * height], pal: [0; 768] })
     }
@@ -677,15 +746,18 @@ impl Decoder {
     /// Applies a palette update of a frame that has no video to decode (the demuxer keeps the
     /// palette even when the frame is damaged after it).
     pub fn update_palette(&mut self, palette: &[u8]) -> Result<()> {
-        self.pal = apply_palette(&self.pal, palette)?;
-        Ok(())
+        let (pal, r) = apply_palette(&self.pal, palette);
+        self.pal = pal;
+        r
     }
 
     /// Decodes one frame: `palette` is the frame's palette update, `video` its video data. On
     /// an error the picture keeps what was decoded before it.
     pub fn decode(&mut self, palette: Option<&[u8]>, video: &[u8]) -> Result<()> {
         if let Some(p) = palette {
-            self.pal = apply_palette(&self.pal, p)?;
+            let (pal, r) = apply_palette(&self.pal, p);
+            self.pal = pal;
+            r?;
         }
         if video.is_empty() {
             return Err(Error::Invalid("video data too small"));
@@ -812,6 +884,16 @@ impl Decoder {
 /// The samples one audio chunk decodes to, interleaved; 8-bit samples are the unsigned code
 /// less 128.
 pub fn decode_audio(track: &Track, chunk: &[u8]) -> Result<Vec<i32>> {
+    decode_audio_checked(track, chunk, true)
+}
+
+/// [`decode_audio`] as the ffmpeg releases before n8 do it: without the check that a packed
+/// chunk holds its first samples (for the tests against such an ffmpeg).
+pub fn decode_audio_lenient(track: &Track, chunk: &[u8]) -> Result<Vec<i32>> {
+    decode_audio_checked(track, chunk, false)
+}
+
+fn decode_audio_checked(track: &Track, chunk: &[u8], first_samples_check: bool) -> Result<Vec<i32>> {
     let ch = usize::from(track.channels.max(1));
     match track.kind {
         TrackKind::Bink => Err(Error::Unsupported("Bink audio")),
@@ -819,7 +901,7 @@ pub fn decode_audio(track: &Track, chunk: &[u8]) -> Result<Vec<i32>> {
             Ok(chunk.chunks_exact(2 * ch).flat_map(|f| f.chunks_exact(2)).map(|b| i32::from(i16::from_le_bytes([b[0], b[1]]))).collect())
         }
         TrackKind::Pcm => Ok(chunk.chunks_exact(ch).flatten().map(|&b| i32::from(b) - 128).collect()),
-        TrackKind::Packed => decode_packed(track, chunk),
+        TrackKind::Packed => decode_packed(track, chunk, first_samples_check),
     }
 }
 
@@ -830,17 +912,36 @@ pub fn chunk_samples(track: &Track, chunk: &[u8]) -> usize {
     match track.kind {
         TrackKind::Bink => 0,
         TrackKind::Pcm => chunk.len() / (ch * bytes),
-        TrackKind::Packed => le32(chunk, 0).map_or(0, |v| v as usize / (ch * bytes)),
+        TrackKind::Packed => {
+            // a chunk that says "no data" is skipped one byte at a time, as `decode_packed` does,
+            // and the first chunk that has data gives the length (the declared one when none has)
+            let declared = le32(chunk, 0).map_or(0, |v| v as usize / (ch * bytes));
+            let mut buf = chunk;
+            while buf.len() > 4 {
+                let Some(unp) = le32(buf, 0).map(|v| v as usize) else { break };
+                if unp > MAX_PACKED_BYTES {
+                    break;
+                }
+                if Bits::new(buf.get(4..).unwrap_or_default()).bit() == 1 {
+                    return unp / (ch * bytes);
+                }
+                buf = buf.get(1..).unwrap_or_default();
+            }
+            declared
+        }
     }
 }
 
-fn decode_packed(track: &Track, buf: &[u8]) -> Result<Vec<i32>> {
+/// Most bytes one packed audio chunk may unpack to.
+pub const MAX_PACKED_BYTES: usize = 1 << 24;
+
+fn decode_packed(track: &Track, buf: &[u8], first_samples_check: bool) -> Result<Vec<i32>> {
     // A chunk that says "no data" is consumed one byte long, and ffmpeg's decoding loop feeds the
     // rest of the packet to the decoder again as a packet of its own (the bytes after the first
     // are then read as an unpacked size and a bitstream).
     let mut buf = buf;
     loop {
-        match decode_packed_once(track, buf)? {
+        match decode_packed_once(track, buf, first_samples_check)? {
             Some(out) => return Ok(out),
             None => buf = buf.get(1..).unwrap_or_default(),
         }
@@ -848,12 +949,12 @@ fn decode_packed(track: &Track, buf: &[u8]) -> Result<Vec<i32>> {
 }
 
 /// One decoder call: `None` for a chunk without data.
-fn decode_packed_once(track: &Track, buf: &[u8]) -> Result<Option<Vec<i32>>> {
+fn decode_packed_once(track: &Track, buf: &[u8], first_samples_check: bool) -> Result<Option<Vec<i32>>> {
     if buf.len() <= 4 {
         return Err(Error::Invalid("audio chunk too small"));
     }
     let unp = le32(buf, 0).ok_or(Error::Invalid("audio chunk too small"))? as usize;
-    if unp > 1 << 24 {
+    if unp > MAX_PACKED_BYTES {
         return Err(Error::Invalid("audio chunk too big"));
     }
     let mut bits = Bits::new(&buf[4..]);
@@ -880,7 +981,7 @@ fn decode_packed_once(track: &Track, buf: &[u8]) -> Result<Option<Vec<i32>>> {
         bits.bit();
         trees.push(t);
     }
-    if bits.left() < (stereo as i64 + 1) * (b16 as i64 + 1) * 8 {
+    if first_samples_check && bits.left() < (stereo as i64 + 1) * (b16 as i64 + 1) * 8 {
         return Err(Error::Invalid("audio chunk too short for its first samples"));
     }
     let value = |t: &SmallTree, bits: &mut Bits<'_>| i64::from(t.decode(bits));

@@ -152,13 +152,28 @@ fn audio_tracks_match() {
     assert!(checked > 5, "the random files held {checked} audio tracks");
 }
 
+/// Opens a damaged file and asks for pictures and audio; the result does not matter, a panic does.
+fn exercise(m: Vec<u8>) {
+    let Ok(s) = open_bytes("bad.smk", m.into()) else { return };
+    let rate = s.info().video.as_ref().map_or(FrameRate::new(10, 1), |v| v.frame_rate);
+    for i in [0i64, 3, 1, 9] {
+        let _ = s.video_frame(frame_at(rate, i));
+    }
+    for k in 0..s.info().audio_streams.len() {
+        let _ = s.audio_stream(k, 0, 4000, 44100);
+    }
+}
+
 #[test]
 fn damaged_files_open_or_fail_cleanly() {
     let mut rng = Rng(0xda3a);
-    for _ in 0..4 {
+    let mut panicked = Vec::new();
+    for case in 0..4 {
         let spec = random_spec(&mut rng);
         let data = smk_file(&mut rng, &spec);
-        for _ in 0..120 {
+        let mut files: Vec<(String, Vec<u8>)> = Vec::new();
+        // random bytes and truncation
+        for n in 0..120 {
             let mut m = data.clone();
             for _ in 0..1 + rng.below(6) {
                 let at = if rng.chance(50) { rng.below(m.len().min(200) as u64) } else { rng.below(m.len() as u64) } as usize;
@@ -167,14 +182,30 @@ fn damaged_files_open_or_fail_cleanly() {
             if rng.chance(30) {
                 m.truncate(rng.below(m.len() as u64) as usize);
             }
-            let Ok(s) = open_bytes("bad.smk", m.into()) else { continue };
-            let rate = s.info().video.as_ref().map_or(FrameRate::new(10, 1), |v| v.frame_rate);
-            for i in [0i64, 3, 1, 9] {
-                let _ = s.video_frame(frame_at(rate, i));
+            files.push((format!("case {case} bytes {n}"), m));
+        }
+        // single bit flips
+        for n in 0..120 {
+            let mut m = data.clone();
+            let at = if rng.chance(60) { rng.below(m.len().min(400) as u64) } else { rng.below(m.len() as u64) } as usize;
+            m[at] ^= 1 << rng.below(8);
+            files.push((format!("case {case} flip {n}"), m));
+        }
+        // corrupt size fields: the header's sizes, the frame sizes, the first audio chunk sizes
+        for at in (4..104).step_by(4).chain((104..160.min(data.len())).step_by(4)) {
+            for v in [0u32, 1, 0x7FFF_FFFF, 0xFFFF_FFFF, 0x0100_0000] {
+                let mut m = data.clone();
+                if let Some(w) = m.get_mut(at..at + 4) {
+                    w.copy_from_slice(&v.to_le_bytes());
+                }
+                files.push((format!("case {case} size at {at} = {v:#x}"), m));
             }
-            for k in 0..s.info().audio_streams.len() {
-                let _ = s.audio_stream(k, 0, 4000, 44100);
+        }
+        for (name, m) in files {
+            if std::panic::catch_unwind(|| exercise(m)).is_err() {
+                panicked.push(name);
             }
         }
     }
+    assert!(panicked.is_empty(), "panics on damaged files: {panicked:?}");
 }

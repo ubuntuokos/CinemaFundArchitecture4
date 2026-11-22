@@ -31,6 +31,8 @@ const MAX_SNAPSHOTS: usize = 256;
 const SNAPSHOT_BUDGET: usize = 48 << 20;
 /// Decoded audio chunks kept per track.
 const AUDIO_CACHE_CHUNKS: usize = 64;
+/// Bytes of decoded audio kept per track (a chunk bigger than this is not kept at all).
+const AUDIO_CACHE_BYTES: usize = 16 << 20;
 
 pub fn sniff(head: &[u8]) -> bool {
     cfa4_smacker::probe(head)
@@ -48,6 +50,8 @@ struct Shared {
     par: (u32, u32),
     /// Frames between snapshots.
     every: usize,
+    /// Bytes one snapshot takes.
+    per_snapshot: usize,
     snapshots: Mutex<BTreeMap<usize, Snapshot>>,
 }
 
@@ -124,7 +128,10 @@ impl SmkDecoder {
             return;
         }
         let mut snaps = self.shared.snapshots.lock().unwrap_or_else(|e| e.into_inner());
-        if snaps.len() < MAX_SNAPSHOTS && !snaps.contains_key(&k) {
+        // the snapshots of a file stay within the byte budget (a picture too big for it is not
+        // kept, and the frames are replayed from the start)
+        let room = (snaps.len() + 1).saturating_mul(self.shared.per_snapshot) <= SNAPSHOT_BUDGET;
+        if room && snaps.len() < MAX_SNAPSHOTS && !snaps.contains_key(&k) {
             snaps.insert(k, self.dec.snapshot());
         }
     }
@@ -174,7 +181,7 @@ struct SmkVideo(Arc<Shared>);
 
 impl VideoSamples for SmkVideo {
     fn count(&self) -> usize {
-        self.0.smk.frames
+        self.0.smk.video_frames()
     }
     fn pts(&self, i: usize) -> i64 {
         i as i64
@@ -183,7 +190,7 @@ impl VideoSamples for SmkVideo {
         i - i % SYNC_EVERY
     }
     fn sample_at(&self, t: i64) -> Option<usize> {
-        let last = self.0.smk.frames.checked_sub(1)?;
+        let last = self.0.smk.video_frames().checked_sub(1)?;
         Some(usize::try_from(t.max(0)).ok()?.min(last))
     }
     fn read(&self, i: usize) -> Result<Vec<u8>> {
@@ -197,6 +204,12 @@ impl VideoSamples for SmkVideo {
 struct AudioCache {
     chunks: HashMap<usize, Arc<Vec<Vec<f32>>>>,
     order: VecDeque<usize>,
+    /// Bytes of the samples held.
+    bytes: usize,
+}
+
+fn planes_bytes(planes: &[Vec<f32>]) -> usize {
+    planes.iter().map(|p| p.len().saturating_mul(4)).sum()
 }
 
 /// One decodable audio track.
@@ -221,7 +234,7 @@ pub struct SmkSource {
 impl SmkSource {
     pub fn open(name: &str, bytes: Arc<[u8]>) -> Result<Self> {
         let smk = Smk::parse(&bytes).map_err(container)?;
-        if smk.frames == 0 {
+        if smk.video_frames() == 0 {
             return Err(container(format!("{name}: no frames")));
         }
         // the decoder checks the header trees
@@ -231,8 +244,8 @@ impl SmkSource {
         let par = smk.pixel_aspect();
         let (w, h) = (smk.width, smk.height);
         let per_snapshot = (w as usize * h as usize + 768).max(1);
-        let max_snaps = (SNAPSHOT_BUDGET / per_snapshot).clamp(8, MAX_SNAPSHOTS);
-        let every = smk.frames.div_ceil(max_snaps).max(128).div_ceil(SYNC_EVERY) * SYNC_EVERY;
+        let max_snaps = (SNAPSHOT_BUDGET / per_snapshot).clamp(1, MAX_SNAPSHOTS);
+        let every = smk.video_frames().div_ceil(max_snaps).max(128).div_ceil(SYNC_EVERY) * SYNC_EVERY;
         // the audio chunks of every decodable track
         let mut audio: Vec<ATrack> = smk
             .tracks
@@ -244,7 +257,7 @@ impl SmkSource {
                     track,
                     frames: Vec::new(),
                     starts: vec![0],
-                    cache: Mutex::new(AudioCache { chunks: HashMap::new(), order: VecDeque::new() }),
+                    cache: Mutex::new(AudioCache { chunks: HashMap::new(), order: VecDeque::new(), bytes: 0 }),
                 })
             })
             .collect();
@@ -260,9 +273,12 @@ impl SmkSource {
                     }
                 }
             }
-            audio.retain(|a| a.starts.last().copied().unwrap_or(0) > 0);
+            // a track the media layer would refuse (its rate and channels) is left out
+            audio.retain(|a| {
+                a.starts.last().copied().unwrap_or(0) > 0 && cfa4_media::bounded_audio_dimensions(a.track.rate, u32::from(a.track.channels)).is_ok()
+            });
         }
-        let mut duration = rate.tick_of(smk.frames as i64);
+        let mut duration = rate.tick_of(smk.video_frames() as i64);
         let mut audio_streams = Vec::new();
         for a in &audio {
             let total = a.starts.last().copied().unwrap_or(0);
@@ -278,7 +294,7 @@ impl SmkSource {
                 speakers: Vec::new(),
             });
         }
-        let secs = u64::try_from(rate.tick_of(smk.frames as i64).to_rational_round(1, 1)).ok().filter(|&s| s > 0);
+        let secs = u64::try_from(rate.tick_of(smk.video_frames() as i64).to_rational_round(1, 1)).ok().filter(|&s| s > 0);
         let video_info = VideoStreamInfo {
             width: w,
             height: h,
@@ -301,7 +317,7 @@ impl SmkSource {
             start_timecode: None,
             file_size: Some(bytes.len() as u64),
         };
-        let shared = Arc::new(Shared { bytes, smk, rate, par, every, snapshots: Mutex::new(BTreeMap::new()) });
+        let shared = Arc::new(Shared { bytes, smk, rate, par, every, per_snapshot, snapshots: Mutex::new(BTreeMap::new()) });
         Ok(Self { info, shared, rate, cache: GopCache::new(None), audio })
     }
 
@@ -316,27 +332,38 @@ impl SmkSource {
             (Some(x), Some(y)) => usize::try_from(y.saturating_sub(*x)).unwrap_or(0),
             _ => 0,
         };
-        let mut planes = vec![vec![0.0f32; len]; ch];
         let decoded = a.frames.get(k).and_then(|&f| {
             let frame = self.shared.smk.frame_bytes(&self.shared.bytes, f)?;
             let chunk = self.shared.smk.split_frame(f, frame).audio.get(a.slot).copied().flatten()?;
             decode_audio(&a.track, chunk).ok()
         });
+        // a chunk that cannot be decoded is silence: it takes no memory, the reader treats the
+        // missing samples as zeros (the timeline still has its declared length)
+        let mut planes: Vec<Vec<f32>> = vec![Vec::new(); ch];
         if let Some(s) = decoded {
             // the timeline holds `len` samples: a chunk that decodes to more or fewer is cut or
             // padded with silence
+            let len = len.min(s.len().div_ceil(ch));
+            for p in &mut planes {
+                p.resize(len, 0.0);
+            }
             for (i, v) in s.iter().enumerate() {
                 if let Some(p) = planes.get_mut(i % ch).and_then(|p| p.get_mut(i / ch)) {
                     *p = a.track.to_f32(*v);
                 }
             }
         }
+        let bytes = planes_bytes(&planes);
         let c = Arc::new(planes);
-        cache.chunks.insert(k, c.clone());
-        cache.order.push_back(k);
-        while cache.order.len() > AUDIO_CACHE_CHUNKS {
-            if let Some(old) = cache.order.pop_front() {
-                cache.chunks.remove(&old);
+        if bytes <= AUDIO_CACHE_BYTES {
+            cache.chunks.insert(k, c.clone());
+            cache.order.push_back(k);
+            cache.bytes += bytes;
+            while cache.order.len() > AUDIO_CACHE_CHUNKS || cache.bytes > AUDIO_CACHE_BYTES {
+                let Some(old) = cache.order.pop_front() else { break };
+                if let Some(o) = cache.chunks.remove(&old) {
+                    cache.bytes = cache.bytes.saturating_sub(planes_bytes(&o));
+                }
             }
         }
         c
