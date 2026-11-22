@@ -343,6 +343,8 @@ pub struct MxfFile {
     pub file_size: u64,
     /// AMWA AS-11 descriptive metadata (Core, programme parts, UK DPP), when the file has it.
     pub as11: Option<crate::as11::As11>,
+    /// The preface's DMSchemes: the descriptive metadata schemes the file says it uses.
+    pub dm_schemes: Vec<Ul>,
 }
 
 /// An essence element found by the KLV walk.
@@ -932,6 +934,8 @@ pub fn open_with_order(src: &(impl ByteSource + ?Sized), order: &PresentationOrd
     let ident = md.of_kind(st::IDENTIFICATION).last();
     let product_name = ident.and_then(|i| i.string(tag::PRODUCT_NAME));
     let company_name = ident.and_then(|i| i.string(tag::COMPANY_NAME));
+    let dm_schemes: Vec<Ul> =
+        preface.and_then(|p| p.get(tag::DM_SCHEMES)).map(|v| crate::klv::batch_of(v).into_iter().filter_map(crate::klv::ul_of).collect()).unwrap_or_default();
     let (refs, timecode, material_name) = resolve_tracks(&md, &mut warnings);
     // ST 429-6: one Cryptographic Context per encrypted track file
     let encryption = md.sets.iter().find_map(crate::crypt::Encryption::from_set);
@@ -1000,7 +1004,7 @@ pub fn open_with_order(src: &(impl ByteSource + ?Sized), order: &PresentationOrd
         return Err(Error::Unsupported("no essence of the material package is stored in this file".into()));
     }
     let as11 = crate::as11::read(&md, crate::as11::Clock { start: timecode.map_or(0, |t| t.start), base: timecode.map_or(25, |t| t.rounded_base) });
-    Ok(MxfFile {
+    let mut file = MxfFile {
         as11,
         run_in: w.run_in,
         operational_pattern: OperationalPattern::from_ul(&op_label),
@@ -1015,7 +1019,14 @@ pub fn open_with_order(src: &(impl ByteSource + ?Sized), order: &PresentationOrd
         metadata_partition: *meta_partition,
         warnings,
         file_size: src.len(),
-    })
+        dm_schemes,
+    };
+    // A file that carries the AS-07 core scheme claims the AS-07 shims: say where it breaks the Baseband Shim.
+    if crate::as07::claims_as07(&file) {
+        let problems = crate::as07::baseband_problems(&file);
+        file.warnings.extend(problems.into_iter().map(|p| format!("AS-07 Baseband Shim: {p}")));
+    }
+    Ok(file)
 }
 
 /// Index entries per stored edit unit for an index SID (all segments when `sid` is 0 or unmatched).

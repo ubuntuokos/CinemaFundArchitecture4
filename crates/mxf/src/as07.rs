@@ -3,10 +3,19 @@
 //!
 //! The shim wants one picture track of JPEG 2000 or ST 384 uncompressed pictures (component
 //! depth 8, 10, 12 or 16 bits) in an OP1a file with frame or line wrapping, and linear PCM sound
-//! at 48 kHz, 16 or 24 bit. The check reports every breach; the DMS-AS-07 metadata and the
+//! at 48 kHz, 16 or 24 bit. The check reports every breach (the reader adds them to the warnings of a file that lists the AS-07 core scheme); the DMS-AS-07 metadata and the
 //! content integrity checks of the specification are not covered.
 
 use crate::{Codec, MxfFile, OperationalPattern, TrackKind, Wrapping};
+
+/// The DM scheme label of AS_07_Core_DMS (appendix D.1), which every AS-07 file lists in its
+/// preface's DMSchemes.
+pub const CORE_SCHEME: [u8; 16] = [0x06, 0x0E, 0x2B, 0x34, 0x04, 0x01, 0x01, 0x01, 0x0D, 0x01, 0x07, 0x01, 0x07, 0x01, 0x00, 0x00];
+
+/// Whether the file lists the AS-07 core descriptive metadata scheme, which marks it as an AS-07 file.
+pub fn claims_as07(f: &MxfFile) -> bool {
+    f.dm_schemes.iter().any(|s| s.0 == CORE_SCHEME)
+}
 
 /// Component depths the shim allows.
 pub const DEPTHS: &[u32] = &[8, 10, 12, 16];

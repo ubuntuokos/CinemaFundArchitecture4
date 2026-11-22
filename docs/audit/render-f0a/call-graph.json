@@ -1213,6 +1213,13 @@
   },
   {
    "class": "audio",
+   "crate": "cfa4-metrics",
+   "kind": "struct",
+   "module": "resource.rs",
+   "name": "MemSample"
+  },
+  {
+   "class": "audio",
    "crate": "cfa4-project",
    "kind": "enum",
    "module": "essential.rs",
@@ -1630,6 +1637,13 @@
    "kind": "enum",
    "module": "autosave.rs",
    "name": "WorkerEvent"
+  },
+  {
+   "class": "job",
+   "crate": "cfa4-engine",
+   "kind": "enum",
+   "module": "dcp_export.rs",
+   "name": "DcpStatus"
   },
   {
    "class": "job",
@@ -2617,6 +2631,27 @@
    "kind": "struct",
    "module": "control_surfaces.rs",
    "name": "UnsupportedBinding"
+  },
+  {
+   "class": "other",
+   "crate": "cfa4-engine",
+   "kind": "struct",
+   "module": "dcp_export.rs",
+   "name": "ItemDcp"
+  },
+  {
+   "class": "other",
+   "crate": "cfa4-engine",
+   "kind": "struct",
+   "module": "dcp_export.rs",
+   "name": "Preflight"
+  },
+  {
+   "class": "other",
+   "crate": "cfa4-engine",
+   "kind": "enum",
+   "module": "dcp_export.rs",
+   "name": "Severity"
   },
   {
    "class": "other",
@@ -4339,6 +4374,20 @@
    "kind": "enum",
    "module": "lib.rs",
    "name": "MetricError"
+  },
+  {
+   "class": "other",
+   "crate": "cfa4-metrics",
+   "kind": "struct",
+   "module": "resource.rs",
+   "name": "Growth"
+  },
+  {
+   "class": "other",
+   "crate": "cfa4-metrics",
+   "kind": "struct",
+   "module": "resource.rs",
+   "name": "ProcessMemory"
   },
   {
    "class": "other",
@@ -8066,6 +8115,31 @@
   {
    "from": "cfa4-engine/credits.rs",
    "item": "TimeRange",
+   "to": "cfa4-time"
+  },
+  {
+   "from": "cfa4-engine/dcp_export.rs",
+   "item": "DcpAspect",
+   "to": "cfa4-export"
+  },
+  {
+   "from": "cfa4-engine/dcp_export.rs",
+   "item": "dcp_rate",
+   "to": "cfa4-export"
+  },
+  {
+   "from": "cfa4-engine/dcp_export.rs",
+   "item": "export_range",
+   "to": "cfa4-export"
+  },
+  {
+   "from": "cfa4-engine/dcp_export.rs",
+   "item": "ItemId",
+   "to": "cfa4-project"
+  },
+  {
+   "from": "cfa4-engine/dcp_export.rs",
+   "item": "Tick",
    "to": "cfa4-time"
   },
   {

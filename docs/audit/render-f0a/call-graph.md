@@ -216,6 +216,9 @@ graph LR
 | `cfa4-engine/credits.rs` | `cfa4-project` | `ClipId`, `EffectKind`, `GraphicMeta`, `ItemKind`, `Label`, `Project`, `Track`, `TrackId`, `TrackItem`, `TrackKind`, `Transition`, `TransitionId`, `find_effect`, `graphic`, `graphic_design`, `gtemplate`, `vtransition` |
 | `cfa4-engine/credits.rs` | `cfa4-render` | `SourceProvider`, `audio`, `graphic_clip`, `image` |
 | `cfa4-engine/credits.rs` | `cfa4-time` | `FrameRate`, `TICKS_PER_SECOND`, `Tick`, `TimeRange` |
+| `cfa4-engine/dcp_export.rs` | `cfa4-export` | `DcpAspect`, `dcp_rate`, `export_range` |
+| `cfa4-engine/dcp_export.rs` | `cfa4-project` | `ItemId` |
+| `cfa4-engine/dcp_export.rs` | `cfa4-time` | `Tick` |
 | `cfa4-engine/dcp_import.rs` | `cfa4-project` | `BinId` |
 | `cfa4-engine/dcp_import.rs` | `cfa4-time` | `Tick` |
 | `cfa4-engine/dcp_validation.rs` | `cfa4-export` | `Report` |
@@ -811,7 +814,7 @@ graph LR
 
 ## 4. Nyilvános típusok osztályonként
 
-A többi 625 nyilvános típus („other” osztály) csak a `call-graph.json`-ban szerepel.
+A többi 630 nyilvános típus („other” osztály) csak a `call-graph.json`-ban szerepel.
 
 ### Képkocka, kép, pixel (29)
 
@@ -859,12 +862,13 @@ A többi 625 nyilvános típus („other” osztály) csak a `call-graph.json`-b
 | `cfa4-time` | `lib.rs` | enum | `TimeDisplay` |
 | `cfa4-time` | `lib.rs` | struct | `TimeRange` |
 
-### Job, sor, folyamat, megszakítás (28)
+### Job, sor, folyamat, megszakítás (29)
 
 | Crate | Modul | Fajta | Típus |
 |---|---|---|---|
 | `cfa4-engine` | `autosave.rs` | struct | `Status` |
 | `cfa4-engine` | `autosave.rs` | enum | `WorkerEvent` |
+| `cfa4-engine` | `dcp_export.rs` | enum | `DcpStatus` |
 | `cfa4-engine` | `export_tools.rs` | struct | `ExportQueue` |
 | `cfa4-engine` | `export_tools.rs` | struct | `QueueItem` |
 | `cfa4-engine` | `export_tools.rs` | enum | `QueueStatus` |
@@ -892,7 +896,7 @@ A többi 625 nyilvános típus („other” osztály) csak a `call-graph.json`-b
 | `cfa4-smart-edit` | `media_index.rs` | enum | `DependencyStatus` |
 | `cfa4-testkit` | `fixtures.rs` | enum | `Status` |
 
-### Hang (46)
+### Hang (47)
 
 | Crate | Modul | Fajta | Típus |
 |---|---|---|---|
@@ -931,6 +935,7 @@ A többi 625 nyilvános típus („other” osztály) csak a `call-graph.json`-b
 | `cfa4-media` | `still/exr/piz.rs` | struct | `PizChannel` |
 | `cfa4-metrics` | `audio.rs` | struct | `AudioNull` |
 | `cfa4-metrics` | `audio.rs` | struct | `ChannelNull` |
+| `cfa4-metrics` | `resource.rs` | struct | `MemSample` |
 | `cfa4-project` | `essential.rs` | enum | `AudioType` |
 | `cfa4-project` | `essential.rs` | struct | `Loudness` |
 | `cfa4-project` | `essential.rs` | struct | `Pan` |

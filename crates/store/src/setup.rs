@@ -25,7 +25,7 @@ const SOCKET_DIR: &str = "/var/run/postgresql";
 const SCHEMAS: &[&str] = &["backlot", "cfa4_audit", "cfa4_files", "tasks", "ai", "cache", "mi", "registry", "train", "cfa4_store"];
 
 /// Owners that create objects from this crate's migrations, so they need CREATE on the database.
-const MIGRATE_SCHEMAS: &[&str] = &["tasks", "cfa4_store"];
+const MIGRATE_SCHEMAS: &[&str] = &["tasks", "ai", "cache", "cfa4_store"];
 
 pub struct SetupOptions {
     /// Config home. The file is `<config_dir>/cfa4/db.toml`.
