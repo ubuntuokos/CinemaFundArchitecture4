@@ -32,3 +32,27 @@ fn indeo4_avi_reads_through_the_media_source() {
 fn indeo5_avi_reads_through_the_media_source() {
     check("iv50/Educ_Movie_DeadlyForce.avi", "Indeo 5");
 }
+
+/// A cold seek (AVI marks every sample as a sync sample) gives the picture a sequential run does.
+#[test]
+fn indeo45_cold_seek_equals_sequential_decoding() {
+    for name in ["iv41/indeo41-partial.avi", "iv50/Educ_Movie_DeadlyForce.avi"] {
+        let path = cfa4_testkit::fixtures::fixtures_root().join("fate").join(name);
+        let Ok(bytes) = std::fs::read(&path) else {
+            eprintln!("no FATE sample {name}, skipping");
+            continue;
+        };
+        let frame = |src: &dyn cfa4_media::MediaSource, i: usize| {
+            let v = src.info().video.clone().unwrap();
+            let f = src.video_frame(cfa4_media::FrameRequest::full(v.frame_rate.tick_of(i as i64))).unwrap();
+            let cfa4_frame::PixelData::Yuv8 { planes, .. } = &f.data else { panic!("YUV 8-bit frame") };
+            planes[0].to_vec()
+        };
+        let cold = cfa4_codecs::open_bytes("a.avi", bytes.clone().into()).unwrap();
+        let warm = cfa4_codecs::open_bytes("b.avi", bytes.into()).unwrap();
+        for i in 0..=60 {
+            frame(&*warm, i);
+        }
+        assert!(frame(&*cold, 60) == frame(&*warm, 60), "{name}: cold seek differs");
+    }
+}

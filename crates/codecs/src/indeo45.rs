@@ -60,6 +60,7 @@ fn to_frame(p: cfa4_indeo45::Picture) -> Result<VideoFrame> {
 
 pub struct Indeo45Decoder {
     dec: cfa4_indeo45::Decoder,
+    codec: Codec,
     name: &'static str,
     /// The last picture shown, repeated for frames the stream drops.
     last: Option<VideoFrame>,
@@ -88,6 +89,10 @@ impl VideoDecoder for Indeo45Decoder {
     fn name(&self) -> &str {
         self.name
     }
+    // AVI marks every sample as a sync sample: only a key frame can start a run
+    fn is_random_access(&self, sample: &[u8]) -> Option<bool> {
+        Some(cfa4_indeo45::Decoder::new(self.codec).decode(sample).ok().flatten().is_some_and(|p| p.key))
+    }
     // key frames and delta frames
     fn intra_only(&self) -> bool {
         false
@@ -97,7 +102,7 @@ impl VideoDecoder for Indeo45Decoder {
 pub fn indeo45_factory(e: &SampleEntry) -> Option<Result<Box<dyn VideoDecoder>>> {
     let codec = codec_of(&e.format.0)?;
     let name = if codec == Codec::Indeo5 { "CFA4 Indeo 5" } else { "CFA4 Indeo 4" };
-    Some(Ok(Box::new(Indeo45Decoder { dec: cfa4_indeo45::Decoder::new(codec), name, last: None })))
+    Some(Ok(Box::new(Indeo45Decoder { dec: cfa4_indeo45::Decoder::new(codec), codec, name, last: None })))
 }
 
 #[cfg(test)]
