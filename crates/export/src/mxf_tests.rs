@@ -831,3 +831,18 @@ fn xdcam_hd422_as12_adid_beside_as03() {
     assert_eq!(a.len(), 12, "{a:?}");
     assert!(a.contains(&("Brand".to_string(), "Joe".to_string())) && a.contains(&("ShimName".into(), cfa4_mxf::as11::ADID_SHIM_NAME.into())));
 }
+
+/// #1366: the uncompressed MXF OP1a exports (ST 384, v210 10-bit and UYVY 8-bit) with 24-bit
+/// 48 kHz PCM keep the AS-07 Baseband Shim, so they serve as the AS-07 master export; a coded
+/// picture (DNxHR) does not.
+#[test]
+fn uncompressed_op1a_exports_keep_the_as07_baseband_shim() {
+    let (p, seq, m) = project();
+    for (codec, ok) in [(MxfVideoCodec::V210, true), (MxfVideoCodec::Uyvy, true), (MxfVideoCodec::Dnxhr, false)] {
+        let path = tmp(&format!("as07_{codec:?}.mxf"));
+        export(&p, seq, &settings(Format::MxfOp1a, codec, &path), &m, &Progress::default()).unwrap();
+        let f = cfa4_mxf::open(&std::fs::read(&path).unwrap()[..]).unwrap();
+        let r = cfa4_mxf::as07::check_baseband(&f);
+        assert_eq!(r.is_ok(), ok, "{codec:?}: {r:?}");
+    }
+}
