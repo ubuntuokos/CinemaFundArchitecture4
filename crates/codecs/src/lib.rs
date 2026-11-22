@@ -132,8 +132,7 @@ impl From<CodecError> for cfa4_media::MediaError {
 }
 
 /// Our own (pure-Rust) decoders, in the order they are tried.
-const BUILTIN_FACTORIES: [VideoDecoderFactory; 27] = [
-const BUILTIN_FACTORIES: [VideoDecoderFactory; 28] = [
+const BUILTIN_FACTORIES: [VideoDecoderFactory; 29] = [
     video::h264_factory,
     video::hevc_factory,
     video::vp8_factory,
