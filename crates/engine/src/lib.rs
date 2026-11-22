@@ -11,6 +11,7 @@
 #![cfg_attr(not(test), deny(clippy::unwrap_used, clippy::expect_used, clippy::panic, clippy::unimplemented, clippy::todo, clippy::unreachable))]
 
 pub mod aaf_omf;
+pub mod as02_import;
 mod atrac_convert;
 pub mod autosave;
 pub mod beat_markers;
@@ -21,6 +22,7 @@ pub mod commands;
 pub mod control_surfaces;
 pub mod credits;
 pub mod dcp_import;
+pub mod dcp_validation;
 mod dcpomatic;
 pub mod delivery_check;
 pub mod demo;
@@ -70,6 +72,7 @@ pub mod sequence_tools;
 pub mod settings;
 pub mod shortcut_presets;
 pub mod shortcuts;
+pub mod silence;
 pub mod smart_cut;
 mod smart_cut_mpeg;
 mod smart_render;
@@ -532,6 +535,8 @@ pub struct Session {
     pub export_queue: export_tools::ExportQueue,
     /// Media QC jobs whose results are still to be applied (`qc.*` commands).
     pub qc: qc::QcSession,
+    /// DCP validation jobs and the latest report of each package (`dcp.validate*` commands).
+    pub dcp_validation: dcp_validation::DcpValidationSession,
     /// Exports run a batch at a time by [`Session::pump_jobs`] (hosts without threads: web).
     pub stepped: Vec<SteppedJob>,
     /// Speech recogniser for `transcript.generate` (None = the Whisper model named by the command,
@@ -636,6 +641,7 @@ impl Session {
             export_presets: Default::default(),
             export_queue: Default::default(),
             qc: Default::default(),
+            dcp_validation: Default::default(),
             stepped: Vec::new(),
             transcriber: None,
             log: Default::default(),
@@ -671,7 +677,7 @@ impl Session {
                 break;
             }
         }
-        !self.stepped.is_empty() || self.export_queue.is_active() || !self.qc.pending.is_empty()
+        !self.stepped.is_empty() || self.export_queue.is_active() || !self.qc.pending.is_empty() || !self.dcp_validation.pending.is_empty()
     }
 
     /// Start auto-save and the crash-recovery journal (native frontends). Loads preferences from
@@ -733,6 +739,7 @@ impl Session {
         scene_detect::poll(self);
         export_tools::pump_queue(self, false);
         qc::poll(self);
+        dcp_validation::poll(self);
         panels::log_jobs(self);
         let Some(p) = self.persistence.as_mut() else { return };
         for ev in p.drain_events() {
@@ -1365,6 +1372,8 @@ mod aaf_omf_tests;
 #[cfg(test)]
 mod animated_image_tests;
 #[cfg(test)]
+mod as02_import_tests;
+#[cfg(test)]
 mod audio_effects_tests;
 #[cfg(test)]
 mod audio_placement_tests;
@@ -1480,6 +1489,8 @@ mod sequence_tools_tests;
 mod settings_tests;
 #[cfg(test)]
 mod shortcuts_tests;
+#[cfg(test)]
+mod silence_tests;
 #[cfg(test)]
 mod smart_cut_mpeg_tests;
 #[cfg(test)]

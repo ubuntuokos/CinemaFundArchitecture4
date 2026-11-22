@@ -4872,3 +4872,31 @@ export.summary	Low	žema
 	Subtitles	Subtitrai
 	Captions for the hearing impaired	Subtitrai neprigirdintiesiems
 	Forced narrative	Priverstinis pasakojimas (forced narrative)
+	Silence	Tyla
+	Detect Silence	Aptikti tylą
+	Remove Silence	Pašalinti tylą
+	Clear Silence Markers	Išvalyti tylos žymeklius
+# DCP Validation window (DCP-12)
+	AS-03	AS-03
+	Choose the DCP folder.	Pasirinkite DCP aplanką.
+	DCP Validation	DCP patikra
+	DCP folder	DCP aplankas
+	DCP folder (the one holding ASSETMAP)	DCP aplankas (tas, kuriame yra ASSETMAP)
+	Evidence	Įrodymas
+	How to fix	Kaip ištaisyti
+	Interrupted	Nutraukta
+	Not applicable	Netaikoma
+	Report	Ataskaita
+	Report saved: {path}	Ataskaita išsaugota: {path}
+	Required	Privaloma
+	Rule	Taisyklė
+	Rules	Taisyklės
+	Save JSON…	Įrašyti JSON…
+	Save Markdown…	Įrašyti Markdown…
+	Save report	Įrašyti ataskaitą
+	Skipped	Praleista
+	Standard: {standard}	Standartas: {standard}
+	Validate	Patikrinti
+	Validate DCP…	Patikrinti DCP…
+	the engine sent no profiles	variklis nesiuntė jokių profilių
+	{n} files checked	Patikrinta failų: {n}

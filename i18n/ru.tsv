@@ -4852,3 +4852,31 @@
 	Subtitles	Субтитры
 	Captions for the hearing impaired	Субтитры для людей с нарушением слуха
 	Forced narrative	Принудительный дубляж (forced narrative)
+	Silence	Тишина
+	Detect Silence	Обнаружить тишину
+	Remove Silence	Удалить тишину
+	Clear Silence Markers	Очистить маркеры тишины
+# DCP Validation window (DCP-12)
+	AS-03	AS-03
+	Choose the DCP folder.	Выберите папку DCP.
+	DCP Validation	Проверка DCP
+	DCP folder	Папка DCP
+	DCP folder (the one holding ASSETMAP)	Папка DCP (та, где лежит ASSETMAP)
+	Evidence	Доказательство
+	How to fix	Как исправить
+	Interrupted	Прервано
+	Not applicable	Неприменимо
+	Report	Отчёт
+	Report saved: {path}	Отчёт сохранён: {path}
+	Required	Обязательно
+	Rule	Правило
+	Rules	Правила
+	Save JSON…	Сохранить JSON…
+	Save Markdown…	Сохранить Markdown…
+	Save report	Сохранить отчёт
+	Skipped	Пропущено
+	Standard: {standard}	Стандарт: {standard}
+	Validate	Проверить
+	Validate DCP…	Проверить DCP…
+	the engine sent no profiles	движок не прислал профили
+	{n} files checked	Проверено файлов: {n}

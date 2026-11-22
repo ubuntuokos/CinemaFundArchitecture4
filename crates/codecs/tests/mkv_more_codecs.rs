@@ -189,3 +189,79 @@ fn alac_in_matroska_matches_ffmpeg() {
         assert!(part.channels[0] == chan(0, mid, 3000), "{name}: read from the middle differs");
     }
 }
+
+/// The audio of a RealMedia file as a Matroska track (`A_REAL/*`, the RealAudio header as
+/// `CodecPrivate`, one block per data packet), against the same file's own RealMedia source.
+fn real_audio_in_matroska_matches_realmedia(file: &str, id: &str, p: &std::path::Path, codec: &str) {
+    let rm = std::fs::read(p).unwrap();
+    let mut dm = cfa4_realmedia::Demuxer::new(Cursor::new(&rm)).expect("realmedia");
+    let (stream, private) = dm
+        .header()
+        .streams
+        .iter()
+        .enumerate()
+        .find_map(|(i, s)| match &s.kind {
+            cfa4_realmedia::StreamKind::Audio { codec_data } => Some((i, codec_data.clone())),
+            _ => None,
+        })
+        .expect("an audio stream");
+    let rm_src = open(file, rm.clone());
+    let a = rm_src.info().audio_streams[0].clone();
+    let mut t = TrackSpec::new(TrackKind::Audio, id);
+    t.codec_private = private;
+    t.audio = Some((f64::from(a.sample_rate), u64::from(a.channels), None));
+    let mut w = MkvWriter::new(Cursor::new(Vec::new()), vec![t], MuxOptions::default()).expect("writer");
+    let first = std::cell::Cell::new(None);
+    while let Some(pk) = dm.next_packet().expect("packet") {
+        if pk.stream == stream && !pk.partial {
+            let ts = i64::from(pk.timestamp_ms) * 1_000_000;
+            first.set(first.get().or(Some(ts)));
+            w.write_frame(0, ts - first.get().unwrap_or(0), true, &pk.data, None).expect("frame");
+        }
+    }
+    let mkv = open("real_audio.mka", w.finish().expect("finish").into_inner());
+    let b = mkv.info().audio_streams.first().cloned().expect("audio");
+    assert_eq!((b.codec.as_str(), b.channels, b.sample_rate), (codec, a.channels, a.sample_rate), "{file}");
+    let secs = (rm_src.info().duration.to_rational_round(1, 1).max(0) as usize).min(3);
+    let frames = a.sample_rate as usize * secs;
+    assert!(frames > 12_000, "{file}: too short");
+    let mut heard = false;
+    let ch = a.channels as usize;
+    // in order, then jumps (backwards, into the middle of superblocks)
+    for (from, n) in [(0usize, frames), (frames / 2 + 123, 3000), (777, 5000), (frames - 4000, 3000), (10, 700)] {
+        let x = rm_src.audio(from as i64, n, a.sample_rate).unwrap();
+        let y = mkv.audio(from as i64, n, a.sample_rate).unwrap_or_else(|e| panic!("{file}: {e}"));
+        for c in 0..ch {
+            if let Some(i) = x.channels[c].iter().zip(&y.channels[c]).position(|(p, q)| p != q) {
+                panic!("{file}: from {from}, channel {c}, sample {i}: RealMedia {}, Matroska {}", x.channels[c][i], y.channels[c][i]);
+            }
+        }
+        let peak = |b: &cfa4_frame::AudioBuffer| b.channels[0].iter().fold(0f32, |m, v| m.max(v.abs()));
+        heard |= peak(&x) > 0.0 && peak(&y) > 0.0;
+    }
+    assert!(heard, "{file}: silence");
+}
+
+#[test]
+fn realaudio_in_matroska_decodes_like_realmedia() {
+    // RealAudio 1.0 comes from ffmpeg's encoder; the others from FATE samples, when they are in
+    // `target/fixtures` (as `realmedia_oracle` does)
+    let ff = cfa4_testkit::require_ffmpeg!();
+    if let Some(p) = fixture(&ff, "mkv_ra144.rm", &["-f", "lavfi", "-i", "sine=frequency=440:sample_rate=8000:duration=4", "-c:a", "real_144", "-f", "rm"]) {
+        real_audio_in_matroska_matches_realmedia("ra144.rm", "A_REAL/14_4", &p, "RealAudio 1.0 (14.4)");
+    } else {
+        cfa4_testkit::oracle::skip("ra144", "ffmpeg can't write it");
+    }
+    for (file, id, dir, codec) in [
+        ("ra_288.rm", "A_REAL/28_8", "real", "RealAudio 2.0 (28.8)"),
+        ("ra_cook.rm", "A_REAL/COOK", "real", "Cook"),
+        ("sipr_8k5.rm", "A_REAL/SIPR", "sipr", "RealAudio SIPR"),
+    ] {
+        let p = cfa4_testkit::fixtures_dir(dir).join(file);
+        if !p.exists() {
+            eprintln!("skipping: {} not present", p.display());
+            continue;
+        }
+        real_audio_in_matroska_matches_realmedia(file, id, &p, codec);
+    }
+}

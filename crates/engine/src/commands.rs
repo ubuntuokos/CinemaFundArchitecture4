@@ -1566,6 +1566,17 @@ fn build() -> Vec<CommandSpec> {
                     }
                     continue;
                 }
+                // An AMWA AS-02 bundle: one sequence per version file.
+                if let Some(r) = crate::as02_import::import_package(s, &path, bin) {
+                    match r {
+                        Ok(r) => {
+                            sequences.extend(r["sequences"].as_array().cloned().unwrap_or_default());
+                            reports.push(r);
+                        }
+                        Err(e) => errors.push(format!("{path}: {e}")),
+                    }
+                    continue;
+                }
                 // DCP / IMF subtitles: timed text track files are caption tracks, not media.
                 if let Some(r) = crate::captions::import_timed_text_mxf(s, &path) {
                     match r {
@@ -1870,7 +1881,7 @@ fn build() -> Vec<CommandSpec> {
             "Media…",
             ["File", "Export"],
             None,
-            r#"{"path":str,"preset":str?,"settings":ExportSettings?,"format":"h264|hevc|prores|dnxhr|apv|cineform|mjpeg|mxf-op1a|mxf-opatom|mpeg2|dcp|imf|png|tiff|bmp|jpg|tga|dpx|exr|gif|wav|aiff|aac|flac"?,"audioCodec":"auto|aac|pcm|flac|opus|ac3|mp2"?,"flacLevel":0..8=5,"width":u32?,"height":u32?,"fps":f64?,"bitrateKbps":u32?,"bitrateMode":"cbr|vbr1Pass|vbr2Pass|crf"?,"crf":0..51=23,"hardwareEncoding":"off|auto"?,"scale":f32=1,"audio":bool=true,"quality":0..100,"burnCaptions":bool=false,"dashManifest":bool=false,"alpha":bool=false,"exrCompression":"none|rle|zips|zip|piz"?,"captionSidecar":"srt|vtt"?,"loudnessLufs":f64?,"proresProfile":"proxy|lt|standard|hq|4444|4444xq"?,"dnxProfile":"lb|sq|hq|hqx|hd1235|hd1237|hd1238|hd1250|hd1251|hd1252|hd1253"?,"apvProfile":"422-10|422-12|444-10|444-12"?,"cineformProfile":"422|444|4444"?,"cineformQuality":"filmscan3|filmscan2|filmscan1|high|medium|low"?,"mxfVideoCodec":"dnxhr|proRes|h264|mpeg2|d10|xdcamHd422|v210|uyvy"?,"mxfAncCaptions":bool=false,"mxfAs11Core":str?,"mxfAs11Segments":str?,"mxfAs11Ukdpp":str?,"mxfAs10":str?,"mpeg2Container":"ps|ts|m2ts|es"?,"mpeg2Chroma":"420|422"?,"mpeg2Quantizer":1..31?,"mpeg2BFrames":0..7?,"dcpResolution":"2k|4k"?,"dcpAspect":"flat|scope|full"?,"dcpContentKind":"feature|trailer|teaser|short|advertisement|test|transitional|rating|policy|psa"?,"dcpImmersive":"off|bed|file"?,"dcpIabSource":str?,"dcpIabFallback":"5.1|mix|none"?,"dcpLanguage":str?,"dcpSubtitles":bool?,"dcpSubtitleLanguage":str?,"dcpSubtitleFont":str?,"imfLossless":bool?,"imfContentKind":"feature|trailer|teaser|short|advertisement|test|transitional|rating|psa|episode|highlights|event"?,"imfTimedTextKind":"subtitles|captions|forcedNarrative"?,"fieldOrder":"progressive|upperFirst|lowerFirst"?,"sequence":id?,"range":"entire|inOut|workArea|custom"?,"startSeconds":f64?,"endSeconds":f64?,"wait":bool=false}"#,
+            r#"{"path":str,"preset":str?,"settings":ExportSettings?,"format":"h264|hevc|prores|dnxhr|apv|cineform|mjpeg|mxf-op1a|mxf-opatom|mpeg2|dcp|imf|png|tiff|bmp|jpg|tga|dpx|exr|gif|wav|aiff|aac|flac"?,"audioCodec":"auto|aac|pcm|flac|opus|ac3|mp2"?,"flacLevel":0..8=5,"width":u32?,"height":u32?,"fps":f64?,"bitrateKbps":u32?,"bitrateMode":"cbr|vbr1Pass|vbr2Pass|crf"?,"crf":0..51=23,"hardwareEncoding":"off|auto"?,"scale":f32=1,"audio":bool=true,"quality":0..100,"burnCaptions":bool=false,"dashManifest":bool=false,"alpha":bool=false,"exrCompression":"none|rle|zips|zip|piz"?,"captionSidecar":"srt|vtt"?,"loudnessLufs":f64?,"proresProfile":"proxy|lt|standard|hq|4444|4444xq"?,"dnxProfile":"lb|sq|hq|hqx|hd1235|hd1237|hd1238|hd1250|hd1251|hd1252|hd1253"?,"apvProfile":"422-10|422-12|444-10|444-12"?,"cineformProfile":"422|444|4444"?,"cineformQuality":"filmscan3|filmscan2|filmscan1|high|medium|low"?,"mxfVideoCodec":"dnxhr|proRes|h264|mpeg2|d10|xdcamHd422|v210|uyvy"?,"mxfAncCaptions":bool=false,"mxfAs11Core":str?,"mxfAs11Segments":str?,"mxfAs11Ukdpp":str?,"mxfAs03":str?,"mxfAs10":str?,"mpeg2Container":"ps|ts|m2ts|es"?,"mpeg2Chroma":"420|422"?,"mpeg2Quantizer":1..31?,"mpeg2BFrames":0..7?,"dcpResolution":"2k|4k"?,"dcpAspect":"flat|scope|full"?,"dcpContentKind":"feature|trailer|teaser|short|advertisement|test|transitional|rating|policy|psa"?,"dcpImmersive":"off|bed|file"?,"dcpIabSource":str?,"dcpIabFallback":"5.1|mix|none"?,"dcpLanguage":str?,"dcpSubtitles":bool?,"dcpSubtitleLanguage":str?,"dcpSubtitleFont":str?,"imfLossless":bool?,"imfContentKind":"feature|trailer|teaser|short|advertisement|test|transitional|rating|psa|episode|highlights|event"?,"imfTimedTextKind":"subtitles|captions|forcedNarrative"?,"fieldOrder":"progressive|upperFirst|lowerFirst"?,"sequence":id?,"range":"entire|inOut|workArea|custom"?,"startSeconds":f64?,"endSeconds":f64?,"wait":bool=false}"#,
             has_seq,
             crate::export_tools::export_media
         ),
@@ -4000,11 +4011,13 @@ fn build() -> Vec<CommandSpec> {
     v.extend(crate::export_tools::commands());
     v.extend(crate::smart_cut::commands());
     v.extend(crate::qc::commands());
+    v.extend(crate::dcp_validation::commands());
     v.extend(crate::transcript::commands());
     v.extend(crate::panels::commands());
     v.extend(crate::scopes::commands());
     v.extend(crate::remix::commands());
     v.extend(crate::beat_markers::commands());
+    v.extend(crate::silence::commands());
     v.extend(crate::social::commands());
     v.extend(crate::delivery_check::commands());
     v.extend(crate::variants::commands());

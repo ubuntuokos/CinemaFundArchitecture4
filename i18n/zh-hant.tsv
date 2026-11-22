@@ -4868,3 +4868,31 @@ export.summary	Low	低
 	Subtitles	字幕
 	Captions for the hearing impaired	聽障人士字幕
 	Forced narrative	強制旁白 (forced narrative)
+	Silence	靜音
+	Detect Silence	偵測靜音
+	Remove Silence	移除靜音
+	Clear Silence Markers	清除靜音標記
+# DCP Validation window (DCP-12)
+	AS-03	AS-03
+	Choose the DCP folder.	請選擇 DCP 資料夾。
+	DCP Validation	DCP 驗證
+	DCP folder	DCP 資料夾
+	DCP folder (the one holding ASSETMAP)	DCP 資料夾(包含 ASSETMAP 的資料夾)
+	Evidence	依據
+	How to fix	修正方式
+	Interrupted	已中斷
+	Not applicable	不適用
+	Report	報告
+	Report saved: {path}	報告已儲存:{path}
+	Required	必要
+	Rule	規則
+	Rules	規則
+	Save JSON…	儲存 JSON…
+	Save Markdown…	儲存 Markdown…
+	Save report	儲存報告
+	Skipped	已略過
+	Standard: {standard}	標準:{standard}
+	Validate	驗證
+	Validate DCP…	驗證 DCP…
+	the engine sent no profiles	引擎未傳送任何設定檔
+	{n} files checked	已檢查 {n} 個檔案

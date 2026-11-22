@@ -4869,3 +4869,31 @@ export.summary	Low	низак
 	Subtitles	Титлови
 	Captions for the hearing impaired	Титлови за особе оштећеног слуха
 	Forced narrative	Принудна нарација (forced narrative)
+	Silence	Тишина
+	Detect Silence	Откриј тишину
+	Remove Silence	Уклони тишину
+	Clear Silence Markers	Обриши ознаке тишине
+# DCP Validation window (DCP-12)
+	AS-03	AS-03
+	Choose the DCP folder.	Изаберите фасциклу DCP-а.
+	DCP Validation	Провера DCP-а
+	DCP folder	Фасцикла DCP-а
+	DCP folder (the one holding ASSETMAP)	Фасцикла DCP-а (она која садржи ASSETMAP)
+	Evidence	Доказ
+	How to fix	Како исправити
+	Interrupted	Прекинуто
+	Not applicable	Није применљиво
+	Report	Извештај
+	Report saved: {path}	Извештај сачуван: {path}
+	Required	Обавезно
+	Rule	Правило
+	Rules	Правила
+	Save JSON…	Сачувај JSON…
+	Save Markdown…	Сачувај Markdown…
+	Save report	Сачувај извештај
+	Skipped	Прескочено
+	Standard: {standard}	Стандард: {standard}
+	Validate	Провери
+	Validate DCP…	Провери DCP…
+	the engine sent no profiles	механизам није послао ниједан профил
+	{n} files checked	Проверено датотека: {n}

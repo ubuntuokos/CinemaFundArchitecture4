@@ -174,7 +174,26 @@ fn ffmpeg_decode(ff: &Path, data: &[u8], tag: &str) -> Option<Vec<i16>> {
     std::fs::write(&input, data).ok()?;
     let out = Command::new(ff).args(["-v", "error", "-f", "acm", "-i"]).arg(&input).args(["-f", "s16le", "-c:a", "pcm_s16le", "-"]).output().ok()?;
     let _ = std::fs::remove_dir_all(&dir);
-    out.status.success().then(|| out.stdout.chunks_exact(2).map(|c| i16::from_le_bytes([c[0], c[1]])).collect())
+    // ffmpeg 9.0.2 turns the end of an ACM stream into an exit failure: once the header's sample
+    // count is reached (or the last block ends inside a byte) it keeps draining the leftover
+    // bytes into zero-sample frames, which `ff_get_buffer` refuses, and gives up with "Too many
+    // errors when draining" (exit 69) after all samples are already out. ffmpeg 6.1 prints the
+    // same errors but exits 0, and n7.1.1 (the port's source) decodes the same samples. So the
+    // exit status is not what is compared: the samples are, and the caller checks their count.
+    // Any other message on stderr is still a failure.
+    let drain_noise = [
+        "get_buffer() failed",
+        "Error submitting packet",
+        "Decoding error",
+        "Decode error rate",
+        "Too many errors when draining",
+        "Task finished with error",
+        "Terminating thread",
+    ];
+    let stderr = String::from_utf8_lossy(&out.stderr);
+    let only_drain_noise = stderr.lines().all(|l| l.trim().is_empty() || drain_noise.iter().any(|n| l.contains(n)));
+    (out.status.success() || (only_drain_noise && !out.stdout.is_empty()))
+        .then(|| out.stdout.chunks_exact(2).map(|c| i16::from_le_bytes([c[0], c[1]])).collect())
 }
 
 /// (channels, level, rows, blocks, samples per channel when it is not the whole data)

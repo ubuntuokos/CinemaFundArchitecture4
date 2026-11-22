@@ -1484,6 +1484,7 @@ dependencies = [
  "cfa4-color",
  "cfa4-credits",
  "cfa4-dcp",
+ "cfa4-dcp-validate",
  "cfa4-dcpomatic",
  "cfa4-dng",
  "cfa4-docpath",

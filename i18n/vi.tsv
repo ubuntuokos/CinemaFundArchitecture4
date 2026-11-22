@@ -4869,3 +4869,31 @@ export.summary	Low	thấp
 	Subtitles	Phụ đề
 	Captions for the hearing impaired	Phụ đề cho người khiếm thính
 	Forced narrative	Thuyết minh bắt buộc (forced narrative)
+	Silence	Im lặng
+	Detect Silence	Phát hiện khoảng lặng
+	Remove Silence	Xóa khoảng lặng
+	Clear Silence Markers	Xóa dấu khoảng lặng
+# DCP Validation window (DCP-12)
+	AS-03	AS-03
+	Choose the DCP folder.	Chọn thư mục DCP.
+	DCP Validation	Kiểm tra DCP
+	DCP folder	Thư mục DCP
+	DCP folder (the one holding ASSETMAP)	Thư mục DCP (thư mục chứa ASSETMAP)
+	Evidence	Bằng chứng
+	How to fix	Cách khắc phục
+	Interrupted	Bị gián đoạn
+	Not applicable	Không áp dụng
+	Report	Báo cáo
+	Report saved: {path}	Đã lưu báo cáo: {path}
+	Required	Bắt buộc
+	Rule	Quy tắc
+	Rules	Các quy tắc
+	Save JSON…	Lưu JSON…
+	Save Markdown…	Lưu Markdown…
+	Save report	Lưu báo cáo
+	Skipped	Đã bỏ qua
+	Standard: {standard}	Tiêu chuẩn: {standard}
+	Validate	Kiểm tra
+	Validate DCP…	Kiểm tra DCP…
+	the engine sent no profiles	công cụ không gửi hồ sơ nào
+	{n} files checked	Đã kiểm tra {n} tệp

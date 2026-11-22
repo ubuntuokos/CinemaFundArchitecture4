@@ -4871,3 +4871,31 @@ export.summary	Low	χαμηλή
 	Subtitles	Υπότιτλοι
 	Captions for the hearing impaired	Υπότιτλοι για κωφούς και βαρήκοους
 	Forced narrative	Αναγκαστική αφήγηση (forced narrative)
+	Silence	Σιωπή
+	Detect Silence	Εντοπισμός σιωπής
+	Remove Silence	Αφαίρεση σιωπής
+	Clear Silence Markers	Εκκαθάριση δεικτών σιωπής
+# DCP Validation window (DCP-12)
+	AS-03	AS-03
+	Choose the DCP folder.	Επιλέξτε τον φάκελο του DCP.
+	DCP Validation	Επικύρωση DCP
+	DCP folder	Φάκελος DCP
+	DCP folder (the one holding ASSETMAP)	Φάκελος DCP (αυτός που περιέχει το ASSETMAP)
+	Evidence	Τεκμήριο
+	How to fix	Πώς να διορθωθεί
+	Interrupted	Διακόπηκε
+	Not applicable	Μη εφαρμόσιμο
+	Report	Αναφορά
+	Report saved: {path}	Η αναφορά αποθηκεύτηκε: {path}
+	Required	Απαιτείται
+	Rule	Κανόνας
+	Rules	Κανόνες
+	Save JSON…	Αποθήκευση JSON…
+	Save Markdown…	Αποθήκευση Markdown…
+	Save report	Αποθήκευση αναφοράς
+	Skipped	Παραλείφθηκε
+	Standard: {standard}	Πρότυπο: {standard}
+	Validate	Επικύρωση
+	Validate DCP…	Επικύρωση DCP…
+	the engine sent no profiles	η μηχανή δεν έστειλε προφίλ
+	{n} files checked	Ελέγχθηκαν {n} αρχεία

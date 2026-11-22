@@ -36,11 +36,16 @@
 //! [`WriterConfig::iab`] the immersive audio track file of ST 429-18 (one IABitstream frame per
 //! data element, [`MxfWriter::push_data`]).
 
+mod as02_version;
 mod labels;
 #[cfg(test)]
 mod tests;
 mod timed_text;
 
+pub use as02_version::{
+    ComponentSpec, MAX_VERSION_CLIPS, MAX_VERSION_COMPONENTS, MAX_VERSION_TRACKS, VersionClipSpec, VersionConfig, VersionTrackKind, VersionTrackSpec,
+    write_version,
+};
 pub use timed_text::{MAX_TIMED_TEXT_RESOURCES, MIME_OPENTYPE, MIME_PNG, TimedTextConfig, TimedTextResource, write_timed_text};
 
 use std::collections::VecDeque;
@@ -1917,6 +1922,9 @@ impl<W: Write + Seek> MxfWriter<W> {
                 if !a.as10.is_empty() {
                     track_uids.push(self.uid(AS11_UID + 0x300));
                 }
+                if !a.as03.is_empty() {
+                    track_uids.push(self.uid(AS11_UID + 0x400));
+                }
             }
             let mut s = Set::new(if material { 0x36 } else { 0x37 }, self.uid(base));
             let (umid, name) = if material { (cfg.ids.material, &cfg.ids.material_name) } else { (cfg.ids.file, &cfg.ids.file_name) };
@@ -2410,6 +2418,9 @@ impl<W: Write + Seek> MxfWriter<W> {
         }
         if !a.as10.is_empty() {
             static_track(out, AS11_UID + 0x300, crate::as11::AS10_TRACK, crate::as11::AS10_FRAMEWORK_KEY, &a.as10);
+        }
+        if !a.as03.is_empty() {
+            static_track(out, AS11_UID + 0x400, crate::as11::AS03_TRACK, crate::as11::AS03_FRAMEWORK_KEY, &a.as03);
         }
     }
 
