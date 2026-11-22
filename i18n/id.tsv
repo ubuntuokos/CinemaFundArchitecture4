@@ -4780,3 +4780,133 @@
 # Timecode sync varispeed and user bits (TC-8, #1308)
 	Varispeed: adjust the playback speed instead of seeking	Varispeed: sesuaikan kecepatan putar alih-alih melompat
 	User bits	Bit pengguna
+# AS-11 programme parts and AS-10 metadata (G2, #1371, #1375)
+	{tc}  Segmentation	{tc}  Segmentasi
+	Marker Type	Jenis Penanda
+	Chapter	Bab
+	Segmentation (AS-11 programme part)	Segmentasi (bagian program AS-11)
+	AS-10	AS-10
+# AT9/AT3 converter (Tools ▸ Audio Tools, AT3-2)
+	AT9/AT3 Converter	Konverter AT9/AT3
+	AT9/AT3 Converter…	Konverter AT9/AT3…
+	Files to convert:	Berkas yang akan dikonversi:
+	Add Files	Tambah Berkas
+	Add Files…	Tambah Berkas…
+	Convert to:	Konversi ke:
+	Bit rate:	Laju bit:
+	Sample format:	Format sampel:
+	Output folder:	Folder keluaran:
+	Output Folder	Folder Keluaran
+	Next to each source file	Di samping setiap berkas sumber
+	AT9 and ATRAC3plus files convert to WAV; encoding AT9, ATRAC3plus and MP3 is not available yet.	Berkas AT9 dan ATRAC3plus dikonversi ke WAV; enkode AT9, ATRAC3plus, dan MP3 belum tersedia.
+	Convert	Konversi
+	Add the files to convert first.	Tambahkan dulu berkas yang akan dikonversi.
+	Done: {n} file(s) converted.	Selesai: {n} berkas dikonversi.
+	Converting {name}…	Mengonversi {name}…
+	Stopping…	Menghentikan…
+	AT3 (ATRAC3, PSP / PS3)	AT3 (ATRAC3, PSP / PS3)
+	WAV (PCM)	WAV (PCM)
+	132 kbit/s (LP2)	132 kbit/s (LP2)
+	105 kbit/s	105 kbit/s
+	66 kbit/s (LP4, joint stereo)	66 kbit/s (LP4, joint stereo)
+	16-bit	16-bit
+	24-bit	24-bit
+	32-bit float	32-bit float
+
+# Datamosh transition (Grunge & Distort, DM1, #1409)
+	Datamosh	Datamosh
+	Residual	Residu
+	Motion Boost	Penguatan Gerak
+	Recovery	Pemulihan
+	Encode Resolution	Resolusi Enkode
+	Half	Setengah
+	Quarter	Seperempat
+# Datamosh Bloom (Glitch, DM2)
+	Datamosh Bloom	Datamosh Mekar
+	Start Time (seconds)	Waktu Mulai (detik)
+	Repeats	Pengulangan
+
+# Recent effects, per-channel waveform, white balance selector (SC-2/SC-3/SC-4, #1419 #1420 #1421)
+	Apply a recently used effect to the selected clips	Terapkan efek yang baru dipakai ke klip terpilih
+	Disable all effects	Nonaktifkan semua efek
+	Enable all effects	Aktifkan semua efek
+	No recent effects	Tidak ada efek terbaru
+	Recent effects	Efek terbaru
+	Switch every effect of the selected clips off	Menonaktifkan setiap efek pada klip terpilih
+	Switch every effect of the selected clips on	Mengaktifkan setiap efek pada klip terpilih
+	Merged	Gabungan
+	Per Channel	Per Kanal
+	Channel Zoom	Zoom Kanal
+	White Balance Selector (click a neutral point in the Program monitor; Esc cancels)	Pemilih Keseimbangan Putih (klik titik netral di monitor Program; Esc membatalkan)
+# Task Manager and subtitle kind (SC-2/3/4)
+	Task Manager	Pengelola Tugas
+	Background jobs	Tugas latar belakang
+	Exports	Ekspor
+	Shared task queue	Antrean tugas bersama
+	Task	Tugas
+	State	Status
+	Details	Detail
+	Time left	Sisa waktu
+	Scheduled	Dijadwalkan
+	Queued	Dalam antrean
+	Waiting for resources	Menunggu sumber daya
+	Blocked	Terblokir
+	Running	Berjalan
+	Paused	Dijeda
+	Cancelling	Membatalkan
+	Interactive	Interaktif
+	Speculative	Spekulatif
+	Final render	Render akhir
+	Show finished	Tampilkan yang selesai
+	Nothing is running.	Tidak ada yang berjalan.
+	Not reported by this engine yet.	Belum dilaporkan oleh mesin ini.
+	Not available: {why}	Tidak tersedia: {why}
+	{name} waits: {why}	{name} menunggu: {why}
+	{running} running · {waiting} waiting	{running} berjalan · {waiting} menunggu
+	{n} active	{n} aktif
+	{n} CPU	{n} CPU
+	{n} GiB	{n} GiB
+	{n} MiB	{n} MiB
+	Needs your decision	Memerlukan keputusan Anda
+	Run now	Jalankan sekarang
+	Next slot	Slot berikutnya
+	Missed its start	Awal terlewat
+	Missed its start at {time}	Awal pukul {time} terlewat
+	Starts at {time}	Mulai pukul {time}
+	Subtitle kind	Jenis subtitel
+	Subtitles	Subtitel
+	Captions for the hearing impaired	Teks untuk penyandang tunarungu
+	Forced narrative	Narasi paksa (forced narrative)
+	Silence	Hening
+	Detect Silence	Deteksi hening
+	Remove Silence	Hapus hening
+	Clear Silence Markers	Hapus penanda hening
+# DCP Validation window (DCP-12)
+	AS-03	AS-03
+	Choose the DCP folder.	Pilih folder DCP.
+	DCP Validation	Validasi DCP
+	DCP folder	Folder DCP
+	DCP folder (the one holding ASSETMAP)	Folder DCP (yang berisi ASSETMAP)
+	Evidence	Bukti
+	How to fix	Cara memperbaiki
+	Interrupted	Terhenti
+	Not applicable	Tidak berlaku
+	Report	Laporan
+	Report saved: {path}	Laporan disimpan: {path}
+	Required	Wajib
+	Rule	Aturan
+	Rules	Aturan
+	Save JSON…	Simpan JSON…
+	Save Markdown…	Simpan Markdown…
+	Save report	Simpan laporan
+	Skipped	Dilewati
+	Standard: {standard}	Standar: {standard}
+	Validate	Validasi
+	Validate DCP…	Validasi DCP…
+	the engine sent no profiles	mesin tidak mengirim profil apa pun
+	{n} files checked	{n} berkas diperiksa
+
+# AS-02 export
+	Write an AS-02 bundle (the path is a folder)	Tulis paket AS-02 (jalurnya adalah folder)
+	AS-02	AS-02
+	AS-12	AS-12

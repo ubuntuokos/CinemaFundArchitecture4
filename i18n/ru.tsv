@@ -4755,3 +4755,133 @@
 	Read Timecode from LTC Audio	Считать тайм-код из звука LTC
 # Credits: voices (the Voice column) in the block's properties (F10-C16)
 	Voices	Голоса
+# AS-11 programme parts and AS-10 metadata (G2, #1371, #1375)
+	{tc}  Segmentation	{tc}  Сегментация
+	Marker Type	Тип маркера
+	Chapter	Глава
+	Segmentation (AS-11 programme part)	Сегментация (часть программы AS-11)
+	AS-10	AS-10
+# AT9/AT3 converter (Tools ▸ Audio Tools, AT3-2)
+	AT9/AT3 Converter	Конвертер AT9/AT3
+	AT9/AT3 Converter…	Конвертер AT9/AT3…
+	Files to convert:	Файлы для преобразования:
+	Add Files	Добавить файлы
+	Add Files…	Добавить файлы…
+	Convert to:	Преобразовать в:
+	Bit rate:	Битрейт:
+	Sample format:	Формат сэмплов:
+	Output folder:	Папка вывода:
+	Output Folder	Папка вывода
+	Next to each source file	Рядом с каждым исходным файлом
+	AT9 and ATRAC3plus files convert to WAV; encoding AT9, ATRAC3plus and MP3 is not available yet.	Файлы AT9 и ATRAC3plus преобразуются в WAV; кодирование в AT9, ATRAC3plus и MP3 пока недоступно.
+	Convert	Преобразовать
+	Add the files to convert first.	Сначала добавьте файлы для преобразования.
+	Done: {n} file(s) converted.	Готово: преобразовано файлов: {n}.
+	Converting {name}…	Преобразование {name}…
+	Stopping…	Остановка…
+	AT3 (ATRAC3, PSP / PS3)	AT3 (ATRAC3, PSP / PS3)
+	WAV (PCM)	WAV (PCM)
+	132 kbit/s (LP2)	132 кбит/с (LP2)
+	105 kbit/s	105 кбит/с
+	66 kbit/s (LP4, joint stereo)	66 кбит/с (LP4, joint stereo)
+	16-bit	16 бит
+	24-bit	24 бит
+	32-bit float	32 бит с плавающей точкой
+
+# Datamosh transition (Grunge & Distort, DM1, #1409)
+	Datamosh	Datamosh
+	Residual	Остаток
+	Motion Boost	Усиление движения
+	Recovery	Восстановление
+	Encode Resolution	Разрешение кодирования
+	Half	Половина
+	Quarter	Четверть
+# Datamosh Bloom (Glitch, DM2)
+	Datamosh Bloom	Datamosh-расцвет
+	Start Time (seconds)	Время начала (секунды)
+	Repeats	Повторы
+
+# Recent effects, per-channel waveform, white balance selector (SC-2/SC-3/SC-4, #1419 #1420 #1421)
+	Apply a recently used effect to the selected clips	Применить недавно использованный эффект к выбранным клипам
+	Disable all effects	Отключить все эффекты
+	Enable all effects	Включить все эффекты
+	No recent effects	Нет недавних эффектов
+	Recent effects	Недавние эффекты
+	Switch every effect of the selected clips off	Отключает каждый эффект выбранных клипов
+	Switch every effect of the selected clips on	Включает каждый эффект выбранных клипов
+	Merged	Объединённо
+	Per Channel	По каналам
+	Channel Zoom	Масштаб каналов
+	White Balance Selector (click a neutral point in the Program monitor; Esc cancels)	Выбор баланса белого (щёлкните нейтральную точку в мониторе «Программа»; Esc — отмена)
+# Task Manager and subtitle kind (SC-2/3/4)
+	Task Manager	Диспетчер задач
+	Background jobs	Фоновые задания
+	Exports	Экспорт
+	Shared task queue	Общая очередь задач
+	Task	Задача
+	State	Состояние
+	Details	Подробности
+	Time left	Осталось времени
+	Scheduled	Запланировано
+	Queued	В очереди
+	Waiting for resources	Ожидает ресурсы
+	Blocked	Заблокировано
+	Running	Выполняется
+	Paused	Приостановлено
+	Cancelling	Отмена
+	Interactive	Интерактивная
+	Speculative	Упреждающая
+	Final render	Финальный рендер
+	Show finished	Показать завершённые
+	Nothing is running.	Ничего не выполняется.
+	Not reported by this engine yet.	Этот движок пока не сообщает.
+	Not available: {why}	Недоступно: {why}
+	{name} waits: {why}	{name} ожидает: {why}
+	{running} running · {waiting} waiting	{running} выполняется · {waiting} ожидает
+	{n} active	{n} активных
+	{n} CPU	{n} CPU
+	{n} GiB	{n} ГиБ
+	{n} MiB	{n} МиБ
+	Needs your decision	Требуется ваше решение
+	Run now	Запустить сейчас
+	Next slot	Следующий слот
+	Missed its start	Пропущен запуск
+	Missed its start at {time}	Пропущен запуск в {time}
+	Starts at {time}	Запуск в {time}
+	Subtitle kind	Тип субтитров
+	Subtitles	Субтитры
+	Captions for the hearing impaired	Субтитры для людей с нарушением слуха
+	Forced narrative	Принудительный дубляж (forced narrative)
+	Silence	Тишина
+	Detect Silence	Обнаружить тишину
+	Remove Silence	Удалить тишину
+	Clear Silence Markers	Очистить маркеры тишины
+# DCP Validation window (DCP-12)
+	AS-03	AS-03
+	Choose the DCP folder.	Выберите папку DCP.
+	DCP Validation	Проверка DCP
+	DCP folder	Папка DCP
+	DCP folder (the one holding ASSETMAP)	Папка DCP (та, где лежит ASSETMAP)
+	Evidence	Доказательство
+	How to fix	Как исправить
+	Interrupted	Прервано
+	Not applicable	Неприменимо
+	Report	Отчёт
+	Report saved: {path}	Отчёт сохранён: {path}
+	Required	Обязательно
+	Rule	Правило
+	Rules	Правила
+	Save JSON…	Сохранить JSON…
+	Save Markdown…	Сохранить Markdown…
+	Save report	Сохранить отчёт
+	Skipped	Пропущено
+	Standard: {standard}	Стандарт: {standard}
+	Validate	Проверить
+	Validate DCP…	Проверить DCP…
+	the engine sent no profiles	движок не прислал профили
+	{n} files checked	Проверено файлов: {n}
+
+# AS-02 export
+	Write an AS-02 bundle (the path is a folder)	Записать пакет AS-02 (путь — это папка)
+	AS-02	AS-02
+	AS-12	AS-12

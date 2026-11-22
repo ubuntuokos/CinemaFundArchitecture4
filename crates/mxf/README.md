@@ -332,7 +332,31 @@ w.finish()?;
 - `write_opatom_pcm(&OpAtomPcm, &[i32])` builds a complete in-memory OP-Atom PCM file (AAF media
   consolidation); `encode_pcm` interleaves planar f32 as little-endian PCM.
 
+## AS-02 bundle manifest
+
+`as02` reads, writes and checks the `manifest.xml` of an AMWA AS-02 (MXF Versioning) bundle: the
+file list with roles (Annex B), identifiers (a file whose own id is a UMID gets the UUID or UMID URN
+of 9.2.1), sizes, paths and media integrity checks, and the layout rules of 4.3.7 / 4.3.8 (version
+files in the root, essence components under `media/`, a folder entry per subfolder, a simple bundle
+with one version file named like the folder). It does not open the MXF files.
+`as02_version::read_version` reads a version file (OP1b / OP2 / OP3 header metadata with external
+essence): the material package's tracks with their clips (file package UMID, track, start,
+duration; fillers), each file package's network locator, and the breaches of sections 4.3.5 / 5.2
+/ 5.4 in `problems`. `write_version` writes one (OP1b, material package plus a file package copy with
+a network locator per component, no essence, no Essence Container Data, no index); the file package
+copies carry a minimal file descriptor, not the component's full one. The engine imports a bundle
+(`file.import`). The exporter (`ExportSettings::mxf_as02`, MXF OP1a; `mxfAs02` in `file.exportMedia`)
+writes a simple bundle: the output path is the folder, the picture and each audio channel are mono
+OP1a files in `media/` with file packages of their own, then the version file and `manifest.xml`
+(checked with `check_simple` before it is written). Not written yet: `shim.xml`, media integrity
+checks and the component's full descriptor in the version file (#1477).
+
 ## AS-11 descriptive metadata
+
+`as11_shim` checks a file against the AS-11 shims `UK DPP HD` and `UK DPP SD` (version 1.1, from
+the Apache-2.0 AMWA specifications): `check_metadata` (Core and UK DPP conditions, enumerations,
+text limits, picture ratios, audio track layouts) and `check_essence` (picture coding and format,
+channel count, 24-bit 48 kHz audio). The export wiring is a follow-up.
 
 `as11` reads and writes AMWA AS-11 descriptive metadata in OP1a files: the AS-11 Core framework,
 the Segmentation framework (part number / total on a timeline track with the programme parts) and
@@ -342,6 +366,59 @@ the UK DPP framework, laid out as bmx writes them (static DM tracks 5001 / 5101,
 segments); `MxfFile::as11` returns what a file carries. `parse_framework_text` and
 `parse_segments_text` read the bmx text forms (`Name: value` lines; `part/total start duration`
 with timecodes or frame counts). Codec shims (AVC-Intra, XDCAM HD422, D-10) are not enforced.
+
+### AS-07 (Archive and Preservation, Baseband Shim)
+
+`as07::check_baseband` (and `baseband_problems`) checks a read file against Appendix J of AMWA AS-07
+(`specs/amwa/as-07-mxf-archive-and-preservation-spec.pdf`): OP1a, one picture track of JPEG 2000 or ST 384
+uncompressed pictures with 8, 10, 12 or 16 bit components, no clip wrapping, linear PCM sound at 48 kHz, 16 or
+24 bit. DMS-AS-07 metadata, the raster subset, several timecodes, captions and content integrity are not
+covered.
+
+`as03::file_problems` checks a read file: OP1a, a timecode, the DMS-AS-03 framework and the essence
+against the general provisions and the named shim (`facts_of` takes the video bit rate from the
+stored pictures when the file runs a second or more). The partition layout, content integrity
+tracks and the other frameworks are not checked (#1485).
+
+### AS-10 (MXF for Production)
+
+`As11::as10` holds the AMWA AS-10 v1.1 DMS_AS_10_Core framework (`ShimName` required; `Type`,
+`MainTitle`, `SubTitle`, `TitleDescription`, `OrganizationName`, `PersonName`,
+`LocationDescription`, and the spanning items `CommonSpanningID` (a UMID as 64 hex digits),
+`SpanningNumber`, `CumulativeDuration`): one static DM track in the material package and the
+DMS_AS_10_Core label in the Preface. An AS-10 file needs no AS-11 Core. The labels and keys are
+section 7.5 of the specification (`specs/amwa/as-10-mxf-for-production-spec.pdf`). `as10` holds the
+four shims of section 8.2 (CNN, NRK, HIGH / CANAL, JVC) and `check_shim` compares what an export
+writes (profile and level, chroma format, frame size, audio channels and bit depth, bit rate) with the
+named shim; an unknown shim name is a shim of the user's own and is not checked. The XDCAM HD422
+export writes the NRK and HIGH shims' essence; the 4:2:0 shims (CNN, JVC) need 1440x1080 MP@HL /
+MP@H-14 pictures, which CFA4 does not encode yet. The growing-file and spanning-file rules of
+section 6 (open and incomplete header partitions) are not written.
+
+### AS-03 (MXF Program Delivery)
+
+`As11::as03` holds the AMWA AS-03 rev 1.0 DMS-AS-03 framework (`IdentifierKind`, `Identifier`,
+`ShimName`, `SignalStandard` and `IntendedAFD` required; `SlateTitle`, `NOLACode`, `Rating`,
+`NielsenStreamIdentifier` optional, all UTF-16 strings): one static DM track in the material
+package and the DMS-AS-03 label in the Preface. An AS-03 file needs no AS-11 Core. `as03` holds the
+three PBS NGIS shims of the annexes (HD Playout, HD Distribution, SD) and `check_shim` compares what
+an export writes (MPEG-2 or H.264, frame size, bit rate, audio channels, bit depth and rate) with the
+named shim and with the general provisions (5 to 50 Mbit/s, 48 kHz PCM, up to 16 channels); an
+unknown shim name is a shim of the user's own and keeps only the general provisions. The DMS-NGIS
+and DMS-PODS / PBCore schemes of the shims, the segmentation SOM / EOM track, the content integrity
+tracks, the OP1a full index table layout and the 1-minute partitions are not written.
+
+### AS-12 (MXF Commercials Delivery)
+
+`As11::as12` holds the AMWA AS-12 (2013) Ad-ID advertisement identification: a DMS_AS_12_Framework
+(`ShimName`, which is `Ad-ID Digital Identification` and filled in when not given) whose `Slate`
+strong reference points to the DMS_AS_12_AdID_Slate descriptive object with the eleven Ad-ID items
+of annex A, all required (`adid_prefix`, `adid_code`, `ad_title` up to 128 characters, `Brand`,
+`Advertiser` and `agency_office_location` up to 64, `Product` up to 32, `Length`, `Medium`,
+`sd_flag`, `Parent`): one static DM track in the material package and the DMS_AS_12 label in the
+Preface. AS-12 goes beside an AS-11 Core, AS-10 or AS-03 framework (5.1), and the writer refuses it
+alone. The AS-02 rule (every version file, no component file) is for the AS-02 export (#1477); other
+AS-12 shims than Ad-ID are not defined by the specification.
 
 ## Tests
 

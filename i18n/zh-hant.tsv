@@ -4771,3 +4771,133 @@ export.summary	Low	低
 # Timecode sync varispeed and user bits (TC-8, #1308)
 	Varispeed: adjust the playback speed instead of seeking	變速：調整播放速度而非跳轉
 	User bits	使用者位元
+# AS-11 programme parts and AS-10 metadata (G2, #1371, #1375)
+	{tc}  Segmentation	{tc}  分段
+	Marker Type	標記類型
+	Chapter	章節
+	Segmentation (AS-11 programme part)	分段（AS-11 節目部分）
+	AS-10	AS-10
+# AT9/AT3 converter (Tools ▸ Audio Tools, AT3-2)
+	AT9/AT3 Converter	AT9/AT3 轉換器
+	AT9/AT3 Converter…	AT9/AT3 轉換器…
+	Files to convert:	要轉換的檔案:
+	Add Files	加入檔案
+	Add Files…	加入檔案…
+	Convert to:	轉換為:
+	Bit rate:	位元速率:
+	Sample format:	取樣格式:
+	Output folder:	輸出資料夾:
+	Output Folder	輸出資料夾
+	Next to each source file	與各來源檔案相同位置
+	AT9 and ATRAC3plus files convert to WAV; encoding AT9, ATRAC3plus and MP3 is not available yet.	AT9 與 ATRAC3plus 檔案可轉換為 WAV；尚不支援 AT9、ATRAC3plus 與 MP3 編碼。
+	Convert	轉換
+	Add the files to convert first.	請先加入要轉換的檔案。
+	Done: {n} file(s) converted.	完成：已轉換 {n} 個檔案。
+	Converting {name}…	正在轉換 {name}…
+	Stopping…	正在停止…
+	AT3 (ATRAC3, PSP / PS3)	AT3 (ATRAC3, PSP / PS3)
+	WAV (PCM)	WAV (PCM)
+	132 kbit/s (LP2)	132 kbit/s (LP2)
+	105 kbit/s	105 kbit/s
+	66 kbit/s (LP4, joint stereo)	66 kbit/s (LP4，聯合立體聲)
+	16-bit	16 位元
+	24-bit	24 位元
+	32-bit float	32 位元浮點
+
+# Datamosh transition (Grunge & Distort, DM1, #1409)
+	Datamosh	資料損毀
+	Residual	殘差
+	Motion Boost	動態增強
+	Recovery	恢復
+	Encode Resolution	編碼解析度
+	Half	1/2
+	Quarter	1/4
+# Datamosh Bloom (Glitch, DM2)
+	Datamosh Bloom	資料損毀綻放
+	Start Time (seconds)	開始時間（秒）
+	Repeats	重複次數
+
+# Recent effects, per-channel waveform, white balance selector (SC-2/SC-3/SC-4, #1419 #1420 #1421)
+	Apply a recently used effect to the selected clips	將最近使用的效果套用到所選剪輯
+	Disable all effects	關閉所有效果
+	Enable all effects	開啟所有效果
+	No recent effects	沒有最近使用的效果
+	Recent effects	最近使用的效果
+	Switch every effect of the selected clips off	關閉所選剪輯的每個效果
+	Switch every effect of the selected clips on	開啟所選剪輯的每個效果
+	Merged	合併
+	Per Channel	依聲道
+	Channel Zoom	聲道縮放
+	White Balance Selector (click a neutral point in the Program monitor; Esc cancels)	白平衡選擇器（在節目監視器中點擊中性點；Esc 取消）
+# Task Manager and subtitle kind (SC-2/3/4)
+	Task Manager	工作管理員
+	Background jobs	背景工作
+	Exports	匯出
+	Shared task queue	共用工作佇列
+	Task	工作
+	State	狀態
+	Details	詳細資料
+	Time left	剩餘時間
+	Scheduled	已排程
+	Queued	佇列中
+	Waiting for resources	等待資源
+	Blocked	已封鎖
+	Running	執行中
+	Paused	已暫停
+	Cancelling	正在取消
+	Interactive	互動式
+	Speculative	預先執行
+	Final render	最終算圖
+	Show finished	顯示已完成
+	Nothing is running.	沒有正在執行的項目。
+	Not reported by this engine yet.	此引擎尚未回報。
+	Not available: {why}	無法使用：{why}
+	{name} waits: {why}	{name} 正在等待：{why}
+	{running} running · {waiting} waiting	{running} 個執行中 · {waiting} 個等待中
+	{n} active	{n} 個使用中
+	{n} CPU	{n} CPU
+	{n} GiB	{n} GiB
+	{n} MiB	{n} MiB
+	Needs your decision	需要您做出決定
+	Run now	立即執行
+	Next slot	下一個時段
+	Missed its start	錯過了開始時間
+	Missed its start at {time}	錯過了 {time} 的開始
+	Starts at {time}	將於 {time} 開始
+	Subtitle kind	字幕類型
+	Subtitles	字幕
+	Captions for the hearing impaired	聽障人士字幕
+	Forced narrative	強制旁白 (forced narrative)
+	Silence	靜音
+	Detect Silence	偵測靜音
+	Remove Silence	移除靜音
+	Clear Silence Markers	清除靜音標記
+# DCP Validation window (DCP-12)
+	AS-03	AS-03
+	Choose the DCP folder.	請選擇 DCP 資料夾。
+	DCP Validation	DCP 驗證
+	DCP folder	DCP 資料夾
+	DCP folder (the one holding ASSETMAP)	DCP 資料夾(包含 ASSETMAP 的資料夾)
+	Evidence	依據
+	How to fix	修正方式
+	Interrupted	已中斷
+	Not applicable	不適用
+	Report	報告
+	Report saved: {path}	報告已儲存:{path}
+	Required	必要
+	Rule	規則
+	Rules	規則
+	Save JSON…	儲存 JSON…
+	Save Markdown…	儲存 Markdown…
+	Save report	儲存報告
+	Skipped	已略過
+	Standard: {standard}	標準:{standard}
+	Validate	驗證
+	Validate DCP…	驗證 DCP…
+	the engine sent no profiles	引擎未傳送任何設定檔
+	{n} files checked	已檢查 {n} 個檔案
+
+# AS-02 export
+	Write an AS-02 bundle (the path is a folder)	寫入 AS-02 套件(路徑為資料夾)
+	AS-02	AS-02
+	AS-12	AS-12

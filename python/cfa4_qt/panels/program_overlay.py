@@ -11,6 +11,11 @@ the edits back as ordinary commands:
   outside it for Rotation, the anchor point for Anchor Point (the picture stays where it is). One
   drag is one undo step (``effects.setParam`` with a ``merge`` key). A click beside the box lets go
   of it; double-clicking a clip's picture selects its Motion.
+* Crop (selected in Effect Controls, its clip selected and under the playhead): the kept part of
+  the picture is framed with eight handles and the cropped part is dimmed; drag a handle to move
+  an edge or two (Shift keeps the shape of the rectangle, Alt works from its centre) or drag
+  inside it to move the rectangle. One drag is one undo step (``effects.setParam`` on Left, Top,
+  Right and Bottom with a ``merge`` key).
 * Mask (selected in Effect Controls, its clip selected and under the playhead): drag inside it to
   move it, a vertex or a Bezier handle to reshape it (Alt breaks the handles), the top handle for
   Feather, the bottom one for Expansion, the corner handle to round its sharp corners; Alt-click a
@@ -21,7 +26,8 @@ the edits back as ordinary commands:
   last point, Esc cancels.
 
 Automation: ``overlay.hit(name)`` locates ``transform.box|anchor|handle.<n>|rotate.<n>``,
-``mask.body|vertex.<i>|in.<i>|out.<i>|feather|expansion|roundness`` in the view's coordinates.
+``crop.box|handle.<n>``, ``mask.body|vertex.<i>|in.<i>|out.<i>|feather|expansion|roundness`` in the
+view's coordinates.
 """
 
 from __future__ import annotations
@@ -48,6 +54,9 @@ EDGE = 4.0
 ROTATE_REACH = 24.0
 REACH_INSET = 12.0 + CORNER
 TRANSFORM_MERGE = "programTransform"
+CROP_MERGE = "programCrop"
+# the smallest part of the picture a crop keeps, per axis (percent of its size)
+MIN_CROP = 1.0
 
 
 def finite(v: Any, fallback: float = 0.0) -> float:
@@ -131,6 +140,95 @@ def handle_points(quad: list[QPointF]) -> list[QPointF]:
     bottom and left edges."""
     tl, tr, br, bl = quad
     return [tl, tr, br, bl, (tl + tr) / 2, (tr + br) / 2, (br + bl) / 2, (bl + tl) / 2]
+
+
+def _crop_axis(lo: float, hi: float, size: float, move_lo: bool, move_hi: bool, d: float, centered: bool,
+               min_len: float) -> tuple[float, float]:
+    """One axis of a crop drag: the edges after the pointer moved ``d`` (clip pixels), kept inside
+    ``0..size`` and at least ``min_len`` apart. ``centered``: the opposite edge mirrors the move."""
+    if not (move_lo or move_hi):
+        return lo, hi
+    if centered:
+        grow = d if move_hi else -d
+        grow = max(-(hi - lo - min_len) / 2, min(grow, min(lo, size - hi)))
+        return lo - grow, hi + grow
+    if move_lo:
+        return max(0.0, min(lo + d, hi - min_len)), hi
+    return lo, min(size, max(hi + d, lo + min_len))
+
+
+def crop_edges(grab: Any, start: tuple[float, float, float, float], size: tuple[float, float],
+               cur: tuple[float, float], press: tuple[float, float], lock: bool = False,
+               centered: bool = False) -> tuple[float, float, float, float]:
+    """The crop rectangle ``(x0, y0, x1, y1)`` (clip pixels) after dragging ``grab`` (a handle 0-7:
+    corners TL, TR, BR, BL, then the middles of the top, right, bottom and left edges; or
+    ``"move"``) from ``press`` to ``cur``, starting from ``start`` in a picture of ``size``.
+    ``lock`` keeps the rectangle's shape, ``centered`` resizes it about its centre."""
+    x0, y0, x1, y1 = start
+    width, height = size
+    dx, dy = cur[0] - press[0], cur[1] - press[1]
+    w, h = x1 - x0, y1 - y0
+    if grab == "move":
+        nx0 = max(0.0, min(x0 + dx, width - w))
+        ny0 = max(0.0, min(y0 + dy, height - h))
+        return nx0, ny0, nx0 + w, ny0 + h
+    move_l, move_r = grab in (0, 3, 7), grab in (1, 2, 5)
+    move_t, move_b = grab in (0, 1, 4), grab in (2, 3, 6)
+    min_w, min_h = width * MIN_CROP / 100, height * MIN_CROP / 100
+    ux0, ux1 = _crop_axis(x0, x1, width, move_l, move_r, dx, centered, min_w)
+    uy0, uy1 = _crop_axis(y0, y1, height, move_t, move_b, dy, centered, min_h)
+    if not lock or w <= 0 or h <= 0:
+        return ux0, uy0, ux1, uy1
+    cx, cy = (x0 + x1) / 2, (y0 + y1) / 2
+    move_x, move_y = move_l or move_r, move_t or move_b
+    f = max((ux1 - ux0) / w if move_x else 0.0, (uy1 - uy0) / h if move_y else 0.0)
+    # the largest rectangle of this shape that still fits from the fixed edge (or the centre)
+    if centered or not move_x:
+        max_w = 2 * min(cx, width - cx)
+    else:
+        max_w = x1 if move_l else width - x0
+    if centered or not move_y:
+        max_h = 2 * min(cy, height - cy)
+    else:
+        max_h = y1 if move_t else height - y0
+    f = min(min(max_w / w, max_h / h), max(max(min_w / w, min_h / h), f))
+    w2, h2 = w * f, h * f
+    if centered or not move_x:
+        nx0, nx1 = cx - w2 / 2, cx + w2 / 2
+    elif move_l:
+        nx0, nx1 = x1 - w2, x1
+    else:
+        nx0, nx1 = x0, x0 + w2
+    if centered or not move_y:
+        ny0, ny1 = cy - h2 / 2, cy + h2 / 2
+    elif move_t:
+        ny0, ny1 = y1 - h2, y1
+    else:
+        ny0, ny1 = y0, y0 + h2
+    return nx0, ny0, nx1, ny1
+
+
+def crop_percents(rect: tuple[float, float, float, float], size: tuple[float, float]) -> dict[str, float]:
+    """Crop's Left, Top, Right and Bottom (percent of the picture) for the rectangle ``rect``."""
+    x0, y0, x1, y1 = rect
+    width, height = size
+    values = {"left": x0 / width * 100, "top": y0 / height * 100,
+              "right": (width - x1) / width * 100, "bottom": (height - y1) / height * 100}
+    return {k: round(max(0.0, min(100.0, v)), 4) for k, v in values.items()}
+
+
+def handle_cursor(quad: list[QPointF], n: int) -> Qt.CursorShape:
+    """The resize cursor for handle ``n`` of the box ``quad``."""
+    mid = (quad[0] + quad[2]) / 2
+    v = handle_points(quad)[n] - mid
+    deg = math.degrees(math.atan2(v.y(), v.x())) % 180
+    if not 22.5 <= deg < 157.5:
+        return Qt.CursorShape.SizeHorCursor
+    if deg < 67.5:
+        return Qt.CursorShape.SizeFDiagCursor
+    if deg < 112.5:
+        return Qt.CursorShape.SizeVerCursor
+    return Qt.CursorShape.SizeBDiagCursor
 
 
 def cubic(p0: QPointF, c1: QPointF, c2: QPointF, p3: QPointF, t: float) -> QPointF:
@@ -247,6 +345,37 @@ class ProgramOverlay(QObject):
                 "width": finite(t.get("width"), 100.0), "rotation": finite(t.get("rotation")),
                 "uniform": t.get("uniform") is not False}
 
+    def crop_geometry(self) -> dict[str, Any] | None:
+        """The crop rectangle on screen: the kept part, the whole picture and the eight handles."""
+        c = (self.data or {}).get("crop")
+        if not isinstance(c, dict) or not self.enabled or self.pen is not None:
+            return None
+        to_screen = self.to_view(c.get("toFrame"))
+        size, rect = c.get("size"), c.get("rect")
+        if to_screen is None or not (isinstance(size, list) and len(size) == 2 and isinstance(rect, list) and len(rect) == 4):
+            return None
+        width, height = finite(size[0]), finite(size[1])
+        x0, y0, x1, y1 = (finite(v) for v in rect)
+        if width <= 0 or height <= 0 or x1 <= x0 or y1 <= y0:
+            return None
+        corners = [(x0, y0), (x1, y0), (x1, y1), (x0, y1)]
+        quad = [to_screen.map(QPointF(x, y)) for x, y in corners]
+        full = [to_screen.map(QPointF(x, y)) for x, y in ((0, 0), (width, 0), (width, height), (0, height))]
+        reach = QRectF(self.view.rect()).adjusted(REACH_INSET, REACH_INSET, -REACH_INSET, -REACH_INSET)
+        handles = handle_points(quad)
+        if reach.width() > 0 and reach.height() > 0:
+            handles = [QPointF(min(max(h.x(), reach.left()), reach.right()), min(max(h.y(), reach.top()), reach.bottom()))
+                       for h in handles]
+        return {"c": c, "toScreen": to_screen, "rect": (x0, y0, x1, y1), "size": (width, height), "quad": quad,
+                "full": full, "handles": handles}
+
+    @staticmethod
+    def _crop_grab(g: dict[str, Any], p: QPointF) -> Any:
+        for n, h in enumerate(g["handles"]):
+            if length(h - p) <= GRAB:
+                return n
+        return "move" if inside(g["quad"], p) else None
+
     def mask_geometry(self) -> dict[str, Any] | None:
         m = (self.data or {}).get("mask")
         if not isinstance(m, dict) or self.pen is not None:
@@ -311,6 +440,16 @@ class ProgramOverlay(QObject):
                 mid = (pl["quad"][0] + pl["quad"][2]) / 2
                 return q + normalized(q - mid) * 14.0
             return None
+        if kind == "crop":
+            cg = self.crop_geometry()
+            if cg is None:
+                return None
+            if rest == "box":  # the middle of the kept part
+                return (cg["quad"][0] + cg["quad"][2]) / 2
+            what, _, n = rest.partition(".")
+            if what == "handle" and n.isdigit() and int(n) < 8:
+                return cg["handles"][int(n)]
+            return None
         if kind == "mask":
             g = self.mask_geometry()
             if g is None:
@@ -348,6 +487,9 @@ class ProgramOverlay(QObject):
             pl = self.placement()
             if pl is not None:
                 self._paint_transform(p, pl)
+            cg = self.crop_geometry()
+            if cg is not None:
+                self._paint_crop(p, cg)
             if self.drag is not None and self.snap_lines and hasattr(self.view, "picture_rect"):
                 pic = self.view.picture_rect()
                 p.setPen(QPen(SNAP_COLOR, 1.0))
@@ -377,6 +519,24 @@ class ProgramOverlay(QObject):
         p.drawEllipse(a, ANCHOR_RADIUS, ANCHOR_RADIUS)
         p.drawLine(a - QPointF(ANCHOR_RADIUS, 0), a + QPointF(ANCHOR_RADIUS, 0))
         p.drawLine(a - QPointF(0, ANCHOR_RADIUS), a + QPointF(0, ANCHOR_RADIUS))
+
+    def _paint_crop(self, p: QPainter, g: dict[str, Any]) -> None:
+        accent = theme.current().c("accent")
+        shade = QPainterPath()
+        shade.setFillRule(Qt.FillRule.OddEvenFill)
+        shade.addPolygon(QPolygonF([*g["full"], g["full"][0]]))
+        shade.addPolygon(QPolygonF([*g["quad"], g["quad"][0]]))
+        p.setPen(Qt.PenStyle.NoPen)
+        p.setBrush(QColor(0, 0, 0, 110))
+        p.drawPath(shade)
+        p.setPen(QPen(accent, 1))
+        p.setBrush(Qt.BrushStyle.NoBrush)
+        p.drawPolygon(QPolygonF(g["quad"]))
+        for n, h in enumerate(g["handles"]):
+            s = CORNER if n < 4 else EDGE
+            p.setPen(QPen(accent, 1) if n < 4 else Qt.PenStyle.NoPen)
+            p.setBrush(QColor("white"))
+            p.drawRect(QRectF(h.x() - s / 2, h.y() - s / 2, s, s))
 
     def _paint_mask(self, p: QPainter, g: dict[str, Any]) -> None:
         col = MASK_COLOR
@@ -583,7 +743,8 @@ class ProgramOverlay(QObject):
             return False
         draw = self.graphics.tool in DRAW_TOOLS
         if getattr(self.monitor, "playing", False) and (
-            draw or self.placement() is not None or self.mask_geometry() is not None or bool(self.graphics.layers())
+            draw or self.placement() is not None or self.mask_geometry() is not None or self.crop_geometry() is not None
+            or bool(self.graphics.layers())
         ):
             # the boxes and the engine's playhead are where playback started: stop on the shown frame
             # (the overlay follows it) so the next press edits, or draws, what is on screen
@@ -647,6 +808,21 @@ class ProgramOverlay(QObject):
             self.drag = {"kind": "marquee", "press": at, "cur": None, "shift": shift, "target": target,
                          "vertices": [QPointF(v["p"]) for v in g["vertices"]]}
             return True
+        cg = self.crop_geometry()
+        if cg is not None:
+            grab = self._crop_grab(cg, at)
+            inv, ok = cg["toScreen"].inverted()
+            if grab is not None and ok:
+                start = inv.map(at)
+                c = cg["c"]
+                self.drag = {"kind": "crop", "grab": grab, "press": at, "press_clip": (start.x(), start.y()),
+                             "start": cg["rect"], "size": cg["size"], "toScreen": cg["toScreen"], "target": c,
+                             "sent": {k: finite(c.get(k)) for k in ("left", "top", "right", "bottom")}, "begin": True}
+                return True
+            if QPolygonF(cg["full"] + cg["handles"]).boundingRect().adjusted(
+                    -2 * ROTATE_REACH, -2 * ROTATE_REACH, 2 * ROTATE_REACH, 2 * ROTATE_REACH).contains(at):
+                self.drag = {"kind": "deselectEffect", "press": at}
+                return True
         pl = self.placement()
         if pl is not None:
             grab = self._grab_at(pl, at)
@@ -680,6 +856,8 @@ class ProgramOverlay(QObject):
         kind = d["kind"]
         if kind == "transform":
             self._transform_move(d, at, free=bool(e.modifiers() & Qt.KeyboardModifier.ControlModifier))
+        elif kind == "crop":
+            self._crop_move(d, at, lock=shift, centered=bool(e.modifiers() & Qt.KeyboardModifier.AltModifier))
         elif kind in ("vertex", "body"):
             raw = at - d["press"]
             want = constrain_45(QPointF(), raw) if shift else raw
@@ -932,6 +1110,23 @@ class ProgramOverlay(QObject):
                                            "merge": TRANSFORM_MERGE, "begin": d["begin"]})
             d["begin"] = False
 
+    def _crop_move(self, d: dict[str, Any], cur: QPointF, lock: bool = False, centered: bool = False) -> None:
+        """The Crop values a drag sets with the pointer at ``cur`` (``lock``: Shift, keeps the shape
+        of the rectangle; ``centered``: Alt, resizes it about its centre)."""
+        inv, ok = d["toScreen"].inverted()
+        if not ok:
+            return
+        at = inv.map(cur)
+        rect = crop_edges(d["grab"], d["start"], d["size"], (at.x(), at.y()), d["press_clip"], lock=lock, centered=centered)
+        t = d["target"]
+        for param, value in crop_percents(rect, d["size"]).items():
+            if abs(value - d["sent"][param]) < 1e-6:
+                continue
+            d["sent"][param] = value
+            self.send("effects.setParam", {"clip": t.get("clip"), "effect": t.get("effect"), "param": param, "value": value,
+                                           "merge": CROP_MERGE, "begin": d["begin"]})
+            d["begin"] = False
+
     def _snap(self, pl: dict[str, Any], moved: QPointF) -> tuple[QPointF, list[tuple[bool, float]]]:
         """Snap in Program Monitor: the move adjusted so the object's edges or centre meet the
         frame's edges / centre or a guide (egui's)."""
@@ -944,6 +1139,15 @@ class ProgramOverlay(QObject):
         return snap_move(mv, self.view.picture_rect(), full, box, moved)
 
     def _hover_cursor(self, at: QPointF) -> None:
+        cg = self.crop_geometry()
+        crop_grab = self._crop_grab(cg, at) if cg is not None else None
+        if crop_grab is not None:
+            assert cg is not None
+            if crop_grab == "move":
+                self.view.setCursor(Qt.CursorShape.SizeAllCursor)
+            else:
+                self.view.setCursor(handle_cursor(cg["quad"], crop_grab))
+            return
         pl = self.placement()
         grab = self._grab_at(pl, at) if pl is not None else None
         if grab is None:
@@ -955,18 +1159,7 @@ class ProgramOverlay(QObject):
         elif grab in ("anchor", "rotate"):
             self.view.setCursor(Qt.CursorShape.CrossCursor if grab == "rotate" else Qt.CursorShape.ArrowCursor)
         else:
-            mid = (pl["quad"][0] + pl["quad"][2]) / 2
-            v = handle_points(pl["quad"])[grab] - mid
-            deg = math.degrees(math.atan2(v.y(), v.x())) % 180
-            if not 22.5 <= deg < 157.5:
-                shape = Qt.CursorShape.SizeHorCursor
-            elif deg < 67.5:
-                shape = Qt.CursorShape.SizeFDiagCursor
-            elif deg < 112.5:
-                shape = Qt.CursorShape.SizeVerCursor
-            else:
-                shape = Qt.CursorShape.SizeBDiagCursor
-            self.view.setCursor(shape)
+            self.view.setCursor(handle_cursor(pl["quad"], grab))
 
     def _add_vertex(self, g: dict[str, Any], at: QPointF, target: dict[str, Any]) -> bool:
         """Ctrl-click on an edge adds a vertex there."""

@@ -4772,3 +4772,133 @@ export.summary	Low	низак
 # Timecode sync varispeed and user bits (TC-8, #1308)
 	Varispeed: adjust the playback speed instead of seeking	Varispeed: прилагоди брзину репродукције уместо прескакања
 	User bits	Кориснички битови
+# AS-11 programme parts and AS-10 metadata (G2, #1371, #1375)
+	{tc}  Segmentation	{tc}  Сегментација
+	Marker Type	Тип маркера
+	Chapter	Поглавље
+	Segmentation (AS-11 programme part)	Сегментација (део програма AS-11)
+	AS-10	AS-10
+# AT9/AT3 converter (Tools ▸ Audio Tools, AT3-2)
+	AT9/AT3 Converter	Конвертер AT9/AT3
+	AT9/AT3 Converter…	Конвертер AT9/AT3…
+	Files to convert:	Датотеке за конверзију:
+	Add Files	Додај датотеке
+	Add Files…	Додај датотеке…
+	Convert to:	Конвертуј у:
+	Bit rate:	Брзина протока:
+	Sample format:	Формат узорака:
+	Output folder:	Излазна фасцикла:
+	Output Folder	Излазна фасцикла
+	Next to each source file	Поред сваке изворне датотеке
+	AT9 and ATRAC3plus files convert to WAV; encoding AT9, ATRAC3plus and MP3 is not available yet.	Датотеке AT9 и ATRAC3plus конвертују се у WAV; кодирање AT9, ATRAC3plus и MP3 још није доступно.
+	Convert	Конвертуј
+	Add the files to convert first.	Прво додајте датотеке за конверзију.
+	Done: {n} file(s) converted.	Готово: конвертовано датотека: {n}.
+	Converting {name}…	Конвертовање {name}…
+	Stopping…	Заустављање…
+	AT3 (ATRAC3, PSP / PS3)	AT3 (ATRAC3, PSP / PS3)
+	WAV (PCM)	WAV (PCM)
+	132 kbit/s (LP2)	132 kbit/s (LP2)
+	105 kbit/s	105 kbit/s
+	66 kbit/s (LP4, joint stereo)	66 kbit/s (LP4, здружени стерео)
+	16-bit	16-битни
+	24-bit	24-битни
+	32-bit float	32-битни покретни зарез
+
+# Datamosh transition (Grunge & Distort, DM1, #1409)
+	Datamosh	Datamosh
+	Residual	Остатак
+	Motion Boost	Појачање покрета
+	Recovery	Опоравак
+	Encode Resolution	Резолуција кодирања
+	Half	Пола
+	Quarter	Четвртина
+# Datamosh Bloom (Glitch, DM2)
+	Datamosh Bloom	Datamosh цветање
+	Start Time (seconds)	Време почетка (секунде)
+	Repeats	Понављања
+
+# Recent effects, per-channel waveform, white balance selector (SC-2/SC-3/SC-4, #1419 #1420 #1421)
+	Apply a recently used effect to the selected clips	Примени недавно коришћен ефекат на изабране клипове
+	Disable all effects	Искључи све ефекте
+	Enable all effects	Укључи све ефекте
+	No recent effects	Нема недавних ефеката
+	Recent effects	Недавни ефекти
+	Switch every effect of the selected clips off	Искључује сваки ефекат изабраних клипова
+	Switch every effect of the selected clips on	Укључује сваки ефекат изабраних клипова
+	Merged	Спојено
+	Per Channel	По каналу
+	Channel Zoom	Зумирање канала
+	White Balance Selector (click a neutral point in the Program monitor; Esc cancels)	Бирач баланса белог (кликните неутралну тачку на програмском монитору; Esc отказује)
+# Task Manager and subtitle kind (SC-2/3/4)
+	Task Manager	Менаџер задатака
+	Background jobs	Позадински послови
+	Exports	Извози
+	Shared task queue	Заједнички ред задатака
+	Task	Задатак
+	State	Стање
+	Details	Детаљи
+	Time left	Преостало време
+	Scheduled	Заказано
+	Queued	У реду чекања
+	Waiting for resources	Чека ресурсе
+	Blocked	Блокирано
+	Running	Ради
+	Paused	Паузирано
+	Cancelling	Отказивање
+	Interactive	Интерактивно
+	Speculative	Спекулативно
+	Final render	Завршни рендер
+	Show finished	Прикажи завршено
+	Nothing is running.	Ништа се не извршава.
+	Not reported by this engine yet.	Овај механизам то још не пријављује.
+	Not available: {why}	Није доступно: {why}
+	{name} waits: {why}	{name} чека: {why}
+	{running} running · {waiting} waiting	{running} се извршава · {waiting} чека
+	{n} active	{n} активних
+	{n} CPU	{n} CPU
+	{n} GiB	{n} GiB
+	{n} MiB	{n} MiB
+	Needs your decision	Чека вашу одлуку
+	Run now	Покрени сада
+	Next slot	Следећи термин
+	Missed its start	Пропуштен почетак
+	Missed its start at {time}	Пропуштен почетак у {time}
+	Starts at {time}	Почиње у {time}
+	Subtitle kind	Врста титлова
+	Subtitles	Титлови
+	Captions for the hearing impaired	Титлови за особе оштећеног слуха
+	Forced narrative	Принудна нарација (forced narrative)
+	Silence	Тишина
+	Detect Silence	Откриј тишину
+	Remove Silence	Уклони тишину
+	Clear Silence Markers	Обриши ознаке тишине
+# DCP Validation window (DCP-12)
+	AS-03	AS-03
+	Choose the DCP folder.	Изаберите фасциклу DCP-а.
+	DCP Validation	Провера DCP-а
+	DCP folder	Фасцикла DCP-а
+	DCP folder (the one holding ASSETMAP)	Фасцикла DCP-а (она која садржи ASSETMAP)
+	Evidence	Доказ
+	How to fix	Како исправити
+	Interrupted	Прекинуто
+	Not applicable	Није применљиво
+	Report	Извештај
+	Report saved: {path}	Извештај сачуван: {path}
+	Required	Обавезно
+	Rule	Правило
+	Rules	Правила
+	Save JSON…	Сачувај JSON…
+	Save Markdown…	Сачувај Markdown…
+	Save report	Сачувај извештај
+	Skipped	Прескочено
+	Standard: {standard}	Стандард: {standard}
+	Validate	Провери
+	Validate DCP…	Провери DCP…
+	the engine sent no profiles	механизам није послао ниједан профил
+	{n} files checked	Проверено датотека: {n}
+
+# AS-02 export
+	Write an AS-02 bundle (the path is a folder)	Упиши AS-02 пакет (путања је фасцикла)
+	AS-02	AS-02
+	AS-12	AS-12

@@ -22,7 +22,7 @@ pub fn dir_for(data_dir: &Path) -> PathBuf {
     data_dir.join("Control Surfaces")
 }
 
-fn active_path(dir: &Path, device: &str) -> PathBuf {
+pub(crate) fn active_path(dir: &Path, device: &str) -> PathBuf {
     dir.join(format!("active-{}.json", DeviceId(device.to_string()).file_stem()))
 }
 

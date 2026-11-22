@@ -4772,3 +4772,133 @@ export.summary	Low	laag
 # Timecode sync varispeed and user bits (TC-8, #1308)
 	Varispeed: adjust the playback speed instead of seeking	Varispeed: afspeelsnelheid aanpassen in plaats van te springen
 	User bits	Gebruikersbits
+# AS-11 programme parts and AS-10 metadata (G2, #1371, #1375)
+	{tc}  Segmentation	{tc}  Segmentatie
+	Marker Type	Markeringstype
+	Chapter	Hoofdstuk
+	Segmentation (AS-11 programme part)	Segmentatie (AS-11-programmadeel)
+	AS-10	AS-10
+# AT9/AT3 converter (Tools ▸ Audio Tools, AT3-2)
+	AT9/AT3 Converter	AT9/AT3-converter
+	AT9/AT3 Converter…	AT9/AT3-converter…
+	Files to convert:	Te converteren bestanden:
+	Add Files	Bestanden toevoegen
+	Add Files…	Bestanden toevoegen…
+	Convert to:	Converteren naar:
+	Bit rate:	Bitrate:
+	Sample format:	Sampleformaat:
+	Output folder:	Uitvoermap:
+	Output Folder	Uitvoermap
+	Next to each source file	Naast elk bronbestand
+	AT9 and ATRAC3plus files convert to WAV; encoding AT9, ATRAC3plus and MP3 is not available yet.	AT9- en ATRAC3plus-bestanden worden naar WAV geconverteerd; coderen naar AT9, ATRAC3plus en MP3 is nog niet beschikbaar.
+	Convert	Converteren
+	Add the files to convert first.	Voeg eerst de te converteren bestanden toe.
+	Done: {n} file(s) converted.	Klaar: {n} bestand(en) geconverteerd.
+	Converting {name}…	{name} converteren…
+	Stopping…	Stoppen…
+	AT3 (ATRAC3, PSP / PS3)	AT3 (ATRAC3, PSP / PS3)
+	WAV (PCM)	WAV (PCM)
+	132 kbit/s (LP2)	132 kbit/s (LP2)
+	105 kbit/s	105 kbit/s
+	66 kbit/s (LP4, joint stereo)	66 kbit/s (LP4, joint stereo)
+	16-bit	16-bits
+	24-bit	24-bits
+	32-bit float	32-bits drijvende komma
+
+# Datamosh transition (Grunge & Distort, DM1, #1409)
+	Datamosh	Datamosh
+	Residual	Residu
+	Motion Boost	Bewegingsversterking
+	Recovery	Herstel
+	Encode Resolution	Coderingsresolutie
+	Half	Half
+	Quarter	Kwart
+# Datamosh Bloom (Glitch, DM2)
+	Datamosh Bloom	Datamosh-bloei
+	Start Time (seconds)	Begintijd (seconden)
+	Repeats	Herhalingen
+
+# Recent effects, per-channel waveform, white balance selector (SC-2/SC-3/SC-4, #1419 #1420 #1421)
+	Apply a recently used effect to the selected clips	Een onlangs gebruikt effect toepassen op de geselecteerde clips
+	Disable all effects	Alle effecten uitschakelen
+	Enable all effects	Alle effecten inschakelen
+	No recent effects	Geen recente effecten
+	Recent effects	Recente effecten
+	Switch every effect of the selected clips off	Schakelt elk effect van de geselecteerde clips uit
+	Switch every effect of the selected clips on	Schakelt elk effect van de geselecteerde clips in
+	Merged	Samengevoegd
+	Per Channel	Per kanaal
+	Channel Zoom	Kanaalzoom
+	White Balance Selector (click a neutral point in the Program monitor; Esc cancels)	Witbalanskiezer (klik op een neutraal punt in de programmamonitor; Esc annuleert)
+# Task Manager and subtitle kind (SC-2/3/4)
+	Task Manager	Taakbeheer
+	Background jobs	Achtergrondtaken
+	Exports	Exports
+	Shared task queue	Gedeelde taakwachtrij
+	Task	Taak
+	State	Status
+	Details	Details
+	Time left	Resterende tijd
+	Scheduled	Gepland
+	Queued	In de wachtrij
+	Waiting for resources	Wacht op bronnen
+	Blocked	Geblokkeerd
+	Running	Actief
+	Paused	Gepauzeerd
+	Cancelling	Annuleren
+	Interactive	Interactief
+	Speculative	Speculatief
+	Final render	Definitieve render
+	Show finished	Voltooide tonen
+	Nothing is running.	Er wordt niets uitgevoerd.
+	Not reported by this engine yet.	Nog niet gemeld door deze engine.
+	Not available: {why}	Niet beschikbaar: {why}
+	{name} waits: {why}	{name} wacht: {why}
+	{running} running · {waiting} waiting	{running} actief · {waiting} wachtend
+	{n} active	{n} actief
+	{n} CPU	{n} CPU
+	{n} GiB	{n} GiB
+	{n} MiB	{n} MiB
+	Needs your decision	Heeft uw beslissing nodig
+	Run now	Nu uitvoeren
+	Next slot	Volgende slot
+	Missed its start	Start gemist
+	Missed its start at {time}	Start om {time} gemist
+	Starts at {time}	Start om {time}
+	Subtitle kind	Soort ondertitels
+	Subtitles	Ondertitels
+	Captions for the hearing impaired	Ondertitels voor doven en slechthorenden
+	Forced narrative	Geforceerde vertelling (forced narrative)
+	Silence	Stilte
+	Detect Silence	Stilte detecteren
+	Remove Silence	Stilte verwijderen
+	Clear Silence Markers	Stiltemarkeringen wissen
+# DCP Validation window (DCP-12)
+	AS-03	AS-03
+	Choose the DCP folder.	Kies de DCP-map.
+	DCP Validation	DCP-validatie
+	DCP folder	DCP-map
+	DCP folder (the one holding ASSETMAP)	DCP-map (de map met de ASSETMAP)
+	Evidence	Bewijs
+	How to fix	Hoe op te lossen
+	Interrupted	Onderbroken
+	Not applicable	Niet van toepassing
+	Report	Rapport
+	Report saved: {path}	Rapport opgeslagen: {path}
+	Required	Vereist
+	Rule	Regel
+	Rules	Regels
+	Save JSON…	JSON opslaan…
+	Save Markdown…	Markdown opslaan…
+	Save report	Rapport opslaan
+	Skipped	Overgeslagen
+	Standard: {standard}	Standaard: {standard}
+	Validate	Valideren
+	Validate DCP…	DCP valideren…
+	the engine sent no profiles	de engine stuurde geen profielen
+	{n} files checked	{n} bestanden gecontroleerd
+
+# AS-02 export
+	Write an AS-02 bundle (the path is a folder)	Een AS-02-bundel schrijven (het pad is een map)
+	AS-02	AS-02
+	AS-12	AS-12

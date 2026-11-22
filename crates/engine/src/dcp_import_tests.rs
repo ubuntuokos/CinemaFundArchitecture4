@@ -137,6 +137,125 @@ fn reels_follow_each_other_and_problems_are_reported() {
     let _ = std::fs::remove_dir_all(&dir);
 }
 
+/// #1245: the subtitle track file of each reel becomes one caption track, the cues of each reel
+/// from its entry point, cut to its duration, at the reel's start.
+#[test]
+fn subtitles_become_one_caption_track() {
+    let dir = scratch("subs");
+    let mut s = demo();
+    s.execute("playhead.set", json!({"seconds": 1.05})).unwrap();
+    s.execute("captions.add", json!({"text": "Szia", "durationSeconds": 0.1})).unwrap();
+    let path = dir.join("Demo").to_string_lossy().to_string();
+    let r = s
+        .execute(
+            "file.exportMedia",
+            json!({"preset": "DCP 2K Flat", "path": path, "range": "custom", "startSeconds": 1.0, "endSeconds": 1.25, "dcpSubtitles": true, "dcpSubtitleLanguage": "hu", "wait": true}),
+        )
+        .unwrap();
+    let pkg = PathBuf::from(r["path"].as_str().unwrap());
+    let cpl_name = file_starting(&pkg, "cpl_");
+    let cpl = std::fs::read_to_string(pkg.join(&cpl_name)).unwrap();
+    assert!(cpl.contains("<MainSubtitle>"), "{cpl}");
+
+    // one reel as exported
+    let mut s = demo();
+    let r = s.execute("file.import", json!({"paths": [pkg.to_string_lossy()]})).unwrap();
+    let doc = &r["documents"][0];
+    assert!(doc["warnings"].as_array().unwrap().is_empty(), "{r}");
+    assert_eq!(doc["compositions"][0]["captions"][0]["captions"], 1, "{r}");
+    let q = s.active_sequence().unwrap();
+    let rate = q.settings.frame_rate;
+    assert_eq!(q.caption_tracks.len(), 1);
+    let c = &q.caption_tracks[0].captions;
+    assert_eq!(c.len(), 1);
+    assert!(c[0].text.contains("Szia"), "{:?}", c[0].text);
+    assert!(q.caption_tracks[0].name.contains("(hu)"), "{}", q.caption_tracks[0].name);
+    let (start, end) = (rate.frame_at(c[0].start), rate.frame_at(c[0].start + c[0].duration));
+    assert!(start >= 1 && end > start && end <= 6, "{start}..{end}");
+
+    // two reels: the second plays the file from the cue's last frame, so its part is cut there
+    let pic = asset_id(&cpl, "MainPicture");
+    let sub = asset_id(&cpl, "MainSubtitle");
+    let reel = |id: &str, entry: i64, dur: i64| {
+        format!(
+            "<Reel><Id>{id}</Id><AssetList>\
+             <MainPicture><Id>{pic}</Id><EditRate>24 1</EditRate><IntrinsicDuration>6</IntrinsicDuration><EntryPoint>{entry}</EntryPoint><Duration>{dur}</Duration><FrameRate>24 1</FrameRate><ScreenAspectRatio>1998 1080</ScreenAspectRatio></MainPicture>\
+             <MainSubtitle><Id>{sub}</Id><EditRate>24 1</EditRate><IntrinsicDuration>6</IntrinsicDuration><EntryPoint>{entry}</EntryPoint><Duration>{dur}</Duration><Language>hu</Language></MainSubtitle>\
+             </AssetList></Reel>"
+        )
+    };
+    let reels =
+        [reel("urn:uuid:bbbbbbbb-0000-4000-8000-000000000011", 0, 6), reel("urn:uuid:bbbbbbbb-0000-4000-8000-000000000012", end - 1, 6 - (end - 1))].concat();
+    let at = cpl.find("<ReelList>").unwrap() + "<ReelList>".len();
+    let stop = cpl.find("</ReelList>").unwrap();
+    std::fs::write(pkg.join(&cpl_name), format!("{}{}{}", &cpl[..at], reels, &cpl[stop..])).unwrap();
+    let mut s = demo();
+    let r = s.execute("file.import", json!({"paths": [pkg.to_string_lossy()]})).unwrap();
+    assert!(r["documents"][0]["warnings"].as_array().unwrap().is_empty(), "{r}");
+    let q = s.active_sequence().unwrap();
+    assert_eq!(q.caption_tracks.len(), 1, "one track for both reels");
+    let c: Vec<(i64, i64)> = q.caption_tracks[0].captions.iter().map(|c| (rate.frame_at(c.start), rate.frame_at(c.start + c.duration))).collect();
+    assert_eq!(c, vec![(start, end), (6, 7)], "reel 2 starts at frame 6 with the cue's last frame");
+    let _ = std::fs::remove_dir_all(&dir);
+}
+
+/// #1245: PNG image subtitles of the reels go on a video track above the picture, each reel's
+/// part from its entry point at the reel's start.
+#[test]
+fn image_subtitles_follow_the_reels() {
+    const REEL: &str = r#"<?xml version="1.0" encoding="UTF-8"?>
+<SubtitleReel xmlns="http://www.smpte-ra.org/schemas/428-7/2010/DCST">
+  <Language>hu</Language>
+  <EditRate>24 1</EditRate>
+  <TimeCodeRate>24</TimeCodeRate>
+  <StartTime>00:00:00:00</StartTime>
+  <SubtitleList>
+    <Subtitle SpotNumber="1" TimeIn="00:00:00:02" TimeOut="00:00:00:05" FadeUpTime="00:00:00:00" FadeDownTime="00:00:00:00">
+      <Image Valign="bottom" Vposition="10">urn:uuid:20202020-2020-2020-2020-202020202020</Image>
+    </Subtitle>
+  </SubtitleList>
+</SubtitleReel>
+"#;
+    let dir = scratch("img-subs");
+    let pkg = export_dcp(&dir);
+    let mut png = Vec::new();
+    image::RgbaImage::from_pixel(200, 50, image::Rgba([255, 255, 255, 200])).write_to(&mut std::io::Cursor::new(&mut png), image::ImageFormat::Png).unwrap();
+    std::fs::write(pkg.join("sub_img.mxf"), cfa4_mxf::testing::build_timed_text(REEL.as_bytes(), &[("image/png", &png)])).unwrap();
+    let sub = "urn:uuid:dddddddd-0000-4000-8000-000000000001";
+    let map = std::fs::read_to_string(pkg.join("ASSETMAP.xml")).unwrap();
+    let extra = format!("<Asset><Id>{sub}</Id><ChunkList><Chunk><Path>sub_img.mxf</Path></Chunk></ChunkList></Asset></AssetList>");
+    std::fs::write(pkg.join("ASSETMAP.xml"), map.replacen("</AssetList>", &extra, 1)).unwrap();
+    let cpl_name = file_starting(&pkg, "cpl_");
+    let cpl = std::fs::read_to_string(pkg.join(&cpl_name)).unwrap();
+    let pic = asset_id(&cpl, "MainPicture");
+    let reel = |id: &str, entry: u32, dur: u32| {
+        format!(
+            "<Reel><Id>{id}</Id><AssetList>\
+             <MainPicture><Id>{pic}</Id><EditRate>24 1</EditRate><IntrinsicDuration>6</IntrinsicDuration><EntryPoint>{entry}</EntryPoint><Duration>{dur}</Duration><FrameRate>24 1</FrameRate><ScreenAspectRatio>1998 1080</ScreenAspectRatio></MainPicture>\
+             <MainSubtitle><Id>{sub}</Id><EditRate>24 1</EditRate><IntrinsicDuration>6</IntrinsicDuration><EntryPoint>{entry}</EntryPoint><Duration>{dur}</Duration></MainSubtitle>\
+             </AssetList></Reel>"
+        )
+    };
+    let reels = [reel("urn:uuid:bbbbbbbb-0000-4000-8000-000000000021", 0, 6), reel("urn:uuid:bbbbbbbb-0000-4000-8000-000000000022", 3, 3)].concat();
+    let at = cpl.find("<ReelList>").unwrap() + "<ReelList>".len();
+    let stop = cpl.find("</ReelList>").unwrap();
+    std::fs::write(pkg.join(&cpl_name), format!("{}{}{}", &cpl[..at], reels, &cpl[stop..])).unwrap();
+
+    let mut s = demo();
+    let r = s.execute("file.import", json!({"paths": [pkg.to_string_lossy()]})).unwrap();
+    let doc = &r["documents"][0];
+    assert!(doc["warnings"].as_array().unwrap().is_empty(), "{r}");
+    assert_eq!(doc["compositions"][0]["captions"][0]["images"], 2, "{r}");
+    let q = s.active_sequence().unwrap();
+    let f = |n: i64| Tick(q.settings.frame_rate.frame_duration().0 * n);
+    assert!(q.caption_tracks.is_empty(), "no text, no caption track");
+    let clips: Vec<(Tick, Tick)> = q.video_tracks.iter().skip(1).flat_map(|t| t.items.iter().map(|i| (i.start, i.duration))).collect();
+    // reel 1: frames 2-4; reel 2 plays the file from frame 3: frames 3-4 at its start (frame 6)
+    assert_eq!(clips, vec![(f(2), f(3)), (f(6), f(2))]);
+    assert!(pkg.join("sub_img_20202020-2020-2020-2020-202020202020.png").exists(), "the PNG is written beside the MXF");
+    let _ = std::fs::remove_dir_all(&dir);
+}
+
 #[test]
 fn not_a_dcp_is_left_to_the_other_importers() {
     let dir = scratch("none");

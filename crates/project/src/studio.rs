@@ -11,6 +11,13 @@
 //! hostile file from growing the project or the host's work without limit.
 //!
 //! Passwords and stream keys never live here (plan V.5): they belong to the user's keyring.
+//!
+//! A source of a type this version does not know (`"type": "capture"`, written by a hand edit
+//! or a build with more source types at the same project schema) does not stop the project from
+//! opening: [`read_sources`] leaves that one source out of its scene and logs a warning that
+//! names it (`source "Camera 1" (id 7) in scene "Main": type "capture" is not supported by this
+//! version; left out`). The rest of the scene, the studio and the project open as usual
+//! (READY-V2.6). Saving the project then writes the scene without it.
 
 use serde::{Deserialize, Serialize};
 
@@ -52,8 +59,9 @@ pub struct StudioScene {
     /// Project-wide id (from `Project::alloc_id`).
     pub id: u64,
     pub name: String,
-    /// The sources, bottom first (the last one is drawn on top).
-    #[serde(default)]
+    /// The sources, bottom first (the last one is drawn on top). Sources of an unknown type are
+    /// left out with a warning ([`read_sources`]).
+    #[serde(default, deserialize_with = "tolerant_sources")]
     pub sources: Vec<StudioSource>,
 }
 
@@ -77,6 +85,51 @@ fn yes() -> bool {
     true
 }
 
+/// Reads a scene's sources one by one: the ones this version can read, and one message for each
+/// source it cannot (its name, id and type, or why it is unreadable). Never fails.
+pub fn read_sources(scene: Option<&str>, values: Vec<serde_json::Value>) -> (Vec<StudioSource>, Vec<String>) {
+    let mut sources = Vec::with_capacity(values.len());
+    let mut skipped = Vec::new();
+    for v in values {
+        match serde_json::from_value::<StudioSource>(v.clone()) {
+            Ok(s) => sources.push(s),
+            Err(e) => {
+                let mut name = v.get("name").and_then(|n| n.as_str()).unwrap_or("").to_owned();
+                clip_chars(&mut name, MAX_NAME_CHARS);
+                let id = v.get("id").and_then(|i| i.as_u64()).map_or_else(String::new, |i| format!(" (id {i})"));
+                let what = match v.get("kind").and_then(|k| k.get("type")).and_then(|t| t.as_str()) {
+                    Some(t) if !KNOWN_KINDS.contains(&t) => {
+                        let mut t = t.to_owned();
+                        clip_chars(&mut t, MAX_NAME_CHARS);
+                        format!("type {t:?} is not supported by this version")
+                    }
+                    _ => format!("it cannot be read ({e})"),
+                };
+                let place = scene.map_or_else(String::new, |s| {
+                    let mut s = s.to_owned();
+                    clip_chars(&mut s, MAX_NAME_CHARS);
+                    format!(" in scene {s:?}")
+                });
+                skipped.push(format!("source {name:?}{id}{place}: {what}; left out"));
+            }
+        }
+    }
+    (sources, skipped)
+}
+
+/// The `type` names of [`SourceKind`].
+const KNOWN_KINDS: &[&str] = &["color", "image", "text"];
+
+fn tolerant_sources<'de, D: serde::Deserializer<'de>>(d: D) -> Result<Vec<StudioSource>, D::Error> {
+    let values = Vec::<serde_json::Value>::deserialize(d)?;
+    // the scene's name is a sibling field, not known here: the messages name the source
+    let (sources, skipped) = read_sources(None, values);
+    for m in skipped {
+        log::warn!("live studio: {m}");
+    }
+    Ok(sources)
+}
+
 /// What a source shows. Colours are sRGB-encoded straight RGBA, 8 bits per channel.
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
 #[serde(tag = "type", rename_all = "camelCase")]
@@ -96,6 +149,16 @@ pub enum SourceKind {
         #[serde(default = "white")]
         color: [u8; 4],
     },
+    /// A video file (any format the editor imports) playing on its own clock, from the start
+    /// again at the end when `looping`.
+    Media {
+        path: String,
+        #[serde(default = "yes", rename = "loop")]
+        looping: bool,
+    },
+    /// CFA4's live graphics program (credits plan C10): what is on air after TAKE, at the
+    /// program size, transparent while nothing is.
+    LiveGraphics {},
 }
 
 fn default_font() -> String {
@@ -111,13 +174,21 @@ fn white() -> [u8; 4] {
 }
 
 impl SourceKind {
-    /// The type name used by the commands (`color`, `image`, `text`).
+    /// The type name used by the commands (`color`, `image`, `text`, `media`, `liveGraphics`).
     pub fn type_name(&self) -> &'static str {
         match self {
             SourceKind::Color { .. } => "color",
             SourceKind::Image { .. } => "image",
             SourceKind::Text { .. } => "text",
+            SourceKind::Media { .. } => "media",
+            SourceKind::LiveGraphics {} => "liveGraphics",
         }
+    }
+
+    /// Whether the source's picture keeps changing (a playing file, the live program): the host
+    /// takes it as a feed of frames, not as one picture.
+    pub fn is_moving(&self) -> bool {
+        matches!(self, SourceKind::Media { .. } | SourceKind::LiveGraphics {})
     }
 
     /// A default text source.
@@ -184,11 +255,12 @@ impl StudioSource {
                 *width = (*width).clamp(1, MAX_SOURCE_SIDE);
                 *height = (*height).clamp(1, MAX_SOURCE_SIDE);
             }
-            SourceKind::Image { path } => {
+            SourceKind::Image { path } | SourceKind::Media { path, .. } => {
                 if path.is_empty() || path.len() > MAX_PATH_BYTES || path.contains('\0') {
                     return None;
                 }
             }
+            SourceKind::LiveGraphics {} => {}
             SourceKind::Text { text, font, size, .. } => {
                 clip_chars(text, MAX_TEXT_CHARS);
                 clip_chars(font, MAX_NAME_CHARS);
@@ -307,6 +379,47 @@ mod tests {
         assert_eq!(short.transform, SourceTransform::default());
         assert_eq!(short.kind, SourceKind::text("x"));
         assert!(LiveStudio::default().is_empty());
+        // the moving sources (S1b)
+        let media = SourceKind::Media { path: "/v/clip.mp4".into(), looping: false };
+        assert_eq!(serde_json::to_string(&media).expect("json"), r#"{"type":"media","path":"/v/clip.mp4","loop":false}"#);
+        assert_eq!(
+            serde_json::from_str::<SourceKind>(r#"{"type":"media","path":"/v/a.mkv"}"#).ok(),
+            Some(SourceKind::Media { path: "/v/a.mkv".into(), looping: true })
+        );
+        assert_eq!(serde_json::to_string(&SourceKind::LiveGraphics {}).expect("json"), r#"{"type":"liveGraphics"}"#);
+        assert_eq!(serde_json::from_str::<SourceKind>(r#"{"type":"liveGraphics"}"#).ok(), Some(SourceKind::LiveGraphics {}));
+        assert!(media.is_moving() && SourceKind::LiveGraphics {}.is_moving() && !SourceKind::text("x").is_moving());
+    }
+
+    /// READY-V2.6: a source of an unknown type is left out with a message that names it; the
+    /// other sources of its scene and the other scenes load.
+    #[test]
+    fn unknown_source_types_are_left_out_and_named() {
+        let json = r#"{"scenes":[
+            {"id":1,"name":"Main","sources":[
+                {"id":2,"name":"Logo","kind":{"type":"color","color":[1,2,3,4],"width":10,"height":10}},
+                {"id":7,"name":"Camera 1","kind":{"type":"capture","device":"x","input":0}},
+                {"id":8,"name":"Broken","kind":{"type":"text"}},
+                {"id":3,"name":"Title","kind":{"type":"text","text":"Hi"}}
+            ]},
+            {"id":4,"name":"Second","sources":[]}
+        ],"current":1}"#;
+        let st: LiveStudio = serde_json::from_str(json).expect("an unknown source type does not fail the studio");
+        assert_eq!(st.scenes.len(), 2);
+        let names: Vec<&str> = st.scenes[0].sources.iter().map(|s| s.name.as_str()).collect();
+        assert_eq!(names, ["Logo", "Title"]);
+        assert_eq!(st.current, Some(1));
+        let values: Vec<serde_json::Value> =
+            serde_json::from_str::<serde_json::Value>(json).ok().and_then(|v| v["scenes"][0]["sources"].as_array().cloned()).unwrap_or_default();
+        let (kept, skipped) = read_sources(Some("Main"), values);
+        assert_eq!(kept.len(), 2);
+        assert_eq!(skipped[0], r#"source "Camera 1" (id 7) in scene "Main": type "capture" is not supported by this version; left out"#);
+        assert!(skipped[1].starts_with(r#"source "Broken" (id 8) in scene "Main": it cannot be read ("#), "{}", skipped[1]);
+        // a hostile name or type is cut, not echoed at any length
+        let long = serde_json::json!({"id": 1, "name": "n".repeat(100_000), "kind": {"type": "t".repeat(100_000)}});
+        let (_, skipped) = read_sources(Some("S"), vec![long, serde_json::json!(42)]);
+        assert!(skipped[0].len() < 1000, "{}", skipped[0].len());
+        assert!(skipped[1].starts_with(r#"source "" in scene "S": it cannot be read"#), "{}", skipped[1]);
     }
 
     #[test]
@@ -318,17 +431,18 @@ mod tests {
         huge.transform = SourceTransform { x: 1e12, y: -1e12, scale_x: 1e9, scale_y: -1e9, rotation: -90.0, crop: [u32::MAX; 4] };
         huge.name = "n".repeat(10_000);
         let empty_path = StudioSource { kind: SourceKind::Image { path: String::new() }, ..color(13) };
+        let nul_media = StudioSource { kind: SourceKind::Media { path: "a\0b".into(), looping: true }, ..color(16) };
         let nan_text = StudioSource { kind: SourceKind::Text { text: "x".repeat(20_000), font: "F".into(), size: f64::INFINITY, color: [0; 4] }, ..color(14) };
         let big_text = StudioSource { kind: SourceKind::Text { text: "t".into(), font: "F".into(), size: 1e9, color: [0; 4] }, ..color(15) };
         let mut st = LiveStudio {
             scenes: vec![
-                StudioScene { id: 1, name: "A".into(), sources: vec![bad_t, huge, empty_path, nan_text, big_text, color(1)] },
+                StudioScene { id: 1, name: "A".into(), sources: vec![bad_t, huge, empty_path, nul_media, nan_text, big_text, color(1)] },
                 StudioScene { id: 1, name: "duplicate".into(), sources: vec![] },
             ],
             current: Some(99),
         };
         let dropped = st.repair();
-        assert_eq!(dropped, 5, "NaN transform, empty path, infinite text size, duplicate source id, duplicate scene");
+        assert_eq!(dropped, 6, "NaN transform, empty path, NUL in a media path, infinite text size, duplicate source id, duplicate scene");
         assert_eq!(st.scenes.len(), 1);
         assert_eq!(st.current, Some(1));
         let s = &st.scenes[0].sources;

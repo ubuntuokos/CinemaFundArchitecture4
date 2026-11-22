@@ -477,6 +477,31 @@ pub struct ExportSettings {
     /// parts and the programme duration are filled in from the parts when not given.
     #[serde(default)]
     pub mxf_as11_ukdpp: String,
+    /// MXF OP1a with MPEG-2 (XDCAM HD): the AMWA AS-10 (MXF for Production) framework in bmx's text
+    /// form, `Name: value` lines (`ShimName: NRK_HD_2012`, `MainTitle: …`; [`cfa4_mxf::as10`],
+    /// [`cfa4_mxf::as11::AS10_ITEMS`]); a shim named in the AS-10 specification is checked against the
+    /// essence. Empty: no AS-10 metadata.
+    #[serde(default)]
+    pub mxf_as10: String,
+    /// MXF OP1a with MPEG-2 or H.264 video: the AMWA AS-03 (MXF Program Delivery) DMS-AS-03
+    /// framework in bmx's text form, `Name: value` lines (`IdentifierKind`, `Identifier`,
+    /// `ShimName: PBS NGIS HD Playout`, `SignalStandard`, `IntendedAFD` required;
+    /// [`cfa4_mxf::as03`], [`cfa4_mxf::as11::AS03_ITEMS`]); the essence is checked against the
+    /// general provisions and the named shim. Empty: no AS-03 metadata.
+    #[serde(default)]
+    pub mxf_as03: String,
+    /// MXF OP1a: write an AMWA AS-02 (MXF Versioning) bundle. The output path is the bundle
+    /// folder: the version file `<name>.mxf` and `manifest.xml` in it, the picture and every audio
+    /// channel as mono OP1a component files under `media/` ([`cfa4_mxf::as02`]).
+    #[serde(default)]
+    pub mxf_as02: bool,
+    /// MXF OP1a: the AMWA AS-12 (MXF Commercials Delivery) Ad-ID advertisement identification
+    /// (`adid_prefix`, `adid_code`, `ad_title`, `Brand`, `Product`, `Advertiser`,
+    /// `agency_office_location`, `Length`, `Medium`, `sd_flag`, `Parent`; `ShimName` optional,
+    /// [`cfa4_mxf::as11::ADID_SHIM_NAME`]) as `Name: value` lines. It goes beside an AS-11 Core,
+    /// AS-10 or AS-03 framework, which must be given too. Empty: no AS-12 metadata.
+    #[serde(default)]
+    pub mxf_as12: String,
     /// Container of MPEG-2 exports: `ps`, `ts`, `m2ts` or `es` (empty = from the path's
     /// extension, a program stream unless it is `.ts`, `.m2ts` / `.mts` or `.m2v`).
     #[serde(default)]
@@ -815,6 +840,10 @@ impl Default for ExportSettings {
             mxf_as11_core: String::new(),
             mxf_as11_segments: String::new(),
             mxf_as11_ukdpp: String::new(),
+            mxf_as10: String::new(),
+            mxf_as03: String::new(),
+            mxf_as02: false,
+            mxf_as12: String::new(),
             mpeg2_container: String::new(),
             mpeg2_422: false,
             mpeg2_quantizer: None,
@@ -966,6 +995,42 @@ impl ExportSettings {
                 cfa4_mxf::as11::check_framework_text(&self.mxf_as11_ukdpp, true).map_err(bad)?;
             }
             cfa4_mxf::as11::parse_segments_text(&self.mxf_as11_segments, cfa4_mxf::as11::Clock { start: 0, base: 1000 }).map_err(bad)?;
+        }
+        if !self.mxf_as10.trim().is_empty() {
+            if self.format != Format::MxfOp1a || self.video_format() != Format::Mpeg2 {
+                return Err(ExportError::Unsupported("AS-10 metadata is written in MXF OP1a with MPEG-2 video (XDCAM HD)".into()));
+            }
+            cfa4_mxf::as11::check_as10_text(&self.mxf_as10).map_err(|e| ExportError::Unsupported(format!("AS-10: {e}")))?;
+        }
+        if self.mxf_as02 {
+            let bad = |m: &str| ExportError::Unsupported(format!("AS-02: {m}"));
+            if self.format != Format::MxfOp1a {
+                return Err(bad("a bundle is written in MXF OP1a"));
+            }
+            if self.sink.is_some() || self.output_file.is_some() {
+                return Err(bad("a bundle is a folder, it cannot go to a sink or an open file"));
+            }
+            if self.mxf_anc_captions || !self.mxf_as11_core.trim().is_empty() || !self.mxf_as10.trim().is_empty() || !self.mxf_as03.trim().is_empty() {
+                return Err(bad("the AS-10 / AS-11 / AS-03 frameworks and ANC captions belong to single-file OP1a, not to a bundle"));
+            }
+            if matches!(self.mxf_video_codec, MxfVideoCodec::D10 | MxfVideoCodec::XdcamHd422) {
+                return Err(bad("D-10 and XDCAM HD422 interleave sound with the picture: AS-02 components are mono files"));
+            }
+        }
+        if !self.mxf_as03.trim().is_empty() {
+            if self.format != Format::MxfOp1a || !matches!(self.video_format(), Format::Mpeg2 | Format::H264) {
+                return Err(ExportError::Unsupported("AS-03 metadata is written in MXF OP1a with MPEG-2 or H.264 video".into()));
+            }
+            cfa4_mxf::as11::check_as03_text(&self.mxf_as03).map_err(|e| ExportError::Unsupported(format!("AS-03: {e}")))?;
+        }
+        if !self.mxf_as12.trim().is_empty() {
+            if self.format != Format::MxfOp1a {
+                return Err(ExportError::Unsupported("AS-12 metadata is written in MXF OP1a".into()));
+            }
+            if [&self.mxf_as11_core, &self.mxf_as10, &self.mxf_as03].iter().all(|s| s.trim().is_empty()) {
+                return Err(ExportError::Unsupported("AS-12 goes beside an AS-11 Core, AS-10 or AS-03 framework: give one of them too".into()));
+            }
+            cfa4_mxf::as11::check_as12_text(&self.mxf_as12).map_err(|e| ExportError::Unsupported(format!("AS-12: {e}")))?;
         }
         if self.format.is_mxf() && self.mxf_anc_captions {
             if self.format == Format::MxfOpAtom {
@@ -3083,6 +3148,33 @@ pub fn export_chapters(project: &Project, seq: ItemId, settings: &ExportSettings
             cfa4_isobmff::Chapter { start_100ns: u64::try_from(start_100ns).unwrap_or(0), title }
         })
         .collect()
+}
+
+/// AS-11 programme parts of an MXF OP1a export with AS-11 metadata and no parts typed in
+/// (`ExportSettings::mxf_as11_segments` empty): the sequence's segmentation markers with a
+/// duration, cut to `range`, as (start, duration) in frames of `rate` from the first exported
+/// frame, in time order. Empty otherwise.
+pub fn export_as11_parts(project: &Project, seq: ItemId, settings: &ExportSettings, range: TimeRange, rate: FrameRate) -> Vec<(i64, i64)> {
+    if settings.format != Format::MxfOp1a || settings.mxf_as11_core.trim().is_empty() || !settings.mxf_as11_segments.trim().is_empty() {
+        return Vec::new();
+    }
+    let Some(q) = project.sequence(seq) else { return Vec::new() };
+    let start = range.start.0;
+    let end = start.saturating_add(range.duration.0);
+    let frame = |t: i64| rate.frame_at(rate.snap_nearest(Tick(t.saturating_sub(start))));
+    let mut parts: Vec<(i64, i64)> = q
+        .markers
+        .iter()
+        .filter(|m| m.kind == cfa4_project::MarkerKind::Segmentation && m.duration.0 > 0)
+        .filter_map(|m| {
+            let a = m.start.0.max(start);
+            let b = m.start.0.saturating_add(m.duration.0).min(end);
+            let (fa, fb) = (frame(a), frame(b));
+            (fb > fa).then_some((fa, fb - fa))
+        })
+        .collect();
+    parts.sort_unstable();
+    parts
 }
 
 pub fn export_range(project: &Project, seq: ItemId, settings: &ExportSettings) -> Result<TimeRange> {

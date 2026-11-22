@@ -55,6 +55,8 @@ impl AudioOut {
         // main sound is folded from it); every other output is mono, stereo or 5.1
         let channels = match (settings.format, crate::dcp_iab::DcpImmersive::of(settings), q.settings.audio_master.fixed_channels()) {
             (crate::Format::Dcp, crate::dcp_iab::DcpImmersive::Bed, Some(n @ (8 | 10))) => n,
+            // MXF OP1a (XDCAM HD422, D-10) carries up to eight channels: a 7.1 mix when 8 are set
+            (crate::Format::MxfOp1a, _, _) if settings.audio.channels == 8 => 8,
             _ => r.channels as usize,
         };
         let ln = &settings.effects.loudness;
