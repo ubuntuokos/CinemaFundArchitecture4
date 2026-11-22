@@ -79,6 +79,7 @@ const LAYERS: &[(&str, u8)] = &[
     ("smacker", 0),
     ("acm", 0),
     ("roq", 0),
+    ("amv", 0),
     ("mve", 0),
     ("realvideo", 0),
     ("realmedia", 0),

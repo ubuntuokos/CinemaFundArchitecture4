@@ -119,6 +119,7 @@ szabadalommal védett formátumot.
 | Smacker Audio | dekódolás | `crates/smacker` (az FFmpeg portja) | alap | függőben | | |
 | Bink Audio (RDFT, DCT) | dekódolás | `crates/bink` (az FFmpeg portja) | alap | függőben | | |
 | Interplay ACM | dekódolás; `.acm` fájlok olvasása | `crates/acm` (az FFmpeg Interplay ACM-dekódolójának portja) | alap | függőben | | |
+| AMV (video, IMA ADPCM-hang) | dekódolás; `.amv` fájlok olvasása | `crates/amv` (az FFmpeg AMV-dekódolóinak portja) | alap | függőben | | |
 | id RoQ (video, DPCM-hang) | dekódolás; `.roq` fájlok olvasása | `crates/roq` (az FFmpeg id RoQ-dekódolóinak portja) | alap | függőben | | |
 | Interplay MVE (video, DPCM-hang) | dekódolás; `.mve` fájlok olvasása | `crates/mve` (az FFmpeg Interplay-dekódolóinak portja) | alap | függőben | | |
 | AMR-NB, AMR-WB | dekódolás | `crates/amr` (az opencore-amr portja) | alap | függőben | | |
