@@ -49,6 +49,6 @@ pub use class::{AiFloor, FloorReason, RamProfile, ai_floor, ram_profile};
 pub use manager::{Class, Denied, GpuRequest, Grant, Manager, Request, ReservationId, Resource, WaitReason};
 pub use monitor::{Event, Level, Monitor, MonitorConfig, NominalChange, Signal};
 pub use plan::{Assessment, Confidence, Decision, Estimate, ExecutionPath, Fit, Job, Metric, Plan, Provider, Tolerance, plan};
-pub use queue::{Actor, MissedStart, NewTask, Priority, Queue, QueueConfig, QueueError, QueueEvent, StartMode, State, Task, Transition, UtcMs};
+pub use queue::{Actor, Awaiting, MissedStart, NewTask, Priority, Queue, QueueConfig, QueueError, QueueEvent, StartMode, State, Task, Transition, UtcMs};
 pub use resources::{Current, GpuCurrent, GpuNominal, Nominal, Snapshot, sample, sample_root};
 pub use system::Pressure;

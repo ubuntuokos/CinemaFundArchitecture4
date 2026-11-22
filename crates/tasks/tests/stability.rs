@@ -131,6 +131,7 @@ fn run(seed: u64) {
                     missed: [MissedStart::RunLate, MissedStart::NextSlot, MissedStart::AskUser][rng.below(3) as usize],
                     resumable: rng.below(2) == 0,
                     time_zone: [None, Some("Europe/Budapest".to_owned()), Some("America/New_York".to_owned())][rng.below(3) as usize].clone(),
+                    batch_key: None,
                 };
                 let _ = q.submit(new, now);
             }
