@@ -91,6 +91,9 @@ pub struct Inspection {
     pub grids: Vec<GridInfo>,
     /// Number of file-level metadata entries.
     pub file_meta_count: u64,
+    /// The worker's peak resident memory in KiB while reading (0 if unknown).
+    #[serde(default)]
+    pub peak_rss_kb: u64,
 }
 
 #[derive(Deserialize)]

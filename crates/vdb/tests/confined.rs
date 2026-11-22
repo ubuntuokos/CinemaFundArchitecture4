@@ -94,6 +94,6 @@ fn real_worker_runs_confined() {
     let ia = w.inspect(&a).unwrap();
     assert_eq!(ia.grids.len(), 2);
     w.copy(&a, &b).unwrap();
-    assert_eq!(ia, w.inspect(&b).unwrap());
+    assert_eq!(ia.grids, w.inspect(&b).unwrap().grids);
     assert!(w.inspect(&d.join("missing.vdb")).is_err());
 }

@@ -1,12 +1,14 @@
 // cfa4-vdb-worker: one command per process, JSON on stdout, nothing else.
 //   inspect <file>          -> {"grids":[...]}                       (N1-1)
 //   copy <in> <out>         -> {"ok":true}  read, write (round trip) (N1-4)
+//   selftest-write-big <out> <n>  n^3 dense voxels (size tests)
 //   selftest-write <out>    -> {"ok":true}  writes a small synthetic VDB for tests (no binary fixtures in the repo)
 // Every failure is {"error":"..."} on stdout and exit code 2; the host treats a crash as an error too.
 #include <openvdb/openvdb.h>
 #include <openvdb/points/PointDataGrid.h>
 #include <openvdb/util/logging.h>
 #include <cstdio>
+#include <cstdlib>
 #include <cstring>
 #include <exception>
 #include <iostream>
@@ -28,6 +30,18 @@ static std::string esc(const std::string& s) {
 static int fail(const std::string& m) {
     std::cout << "{\"error\":\"" << esc(m) << "\"}\n";
     return 2;
+}
+
+// Peak resident set of this process in KiB (VmHWM), 0 if unknown: the size tests (N1-2) read it back.
+static long peakRssKb() {
+    FILE* f = std::fopen("/proc/self/status", "r");
+    if (!f) return 0;
+    char line[256];
+    long kb = 0;
+    while (std::fgets(line, sizeof line, f))
+        if (std::sscanf(line, "VmHWM: %ld kB", &kb) == 1) break;
+    std::fclose(f);
+    return kb;
 }
 
 static std::string inspect(const std::string& path) {
@@ -60,7 +74,7 @@ static std::string inspect(const std::string& path) {
         }
         o << "}}";
     }
-    o << "],\"fileMetaCount\":" << (fmeta ? fmeta->metaCount() : 0) << "}";
+    o << "],\"fileMetaCount\":" << (fmeta ? fmeta->metaCount() : 0) << ",\"peakRssKb\":" << peakRssKb() << "}";
     file.close();
     return o.str();
 }
@@ -101,6 +115,22 @@ int main(int argc, char** argv) {
             v->setName("vel");
             v->tree().setValue(openvdb::Coord(1, 2, 3), openvdb::Vec3f(1, 2, 3));
             openvdb::GridPtrVec gs{f, v};
+            openvdb::io::File file(argv[2]);
+            file.write(gs);
+            file.close();
+            std::cout << "{\"ok\":true}\n";
+            return 0;
+        }
+        if (argc == 4 && !std::strcmp(argv[1], "selftest-write-big")) {
+            // n^3 dense float voxels (n = 650 is about 1 GiB of active data), written leaf by leaf for the size tests
+            const int n = std::atoi(argv[3]);
+            if (n < 1 || n > 2000) return fail("n out of range");
+            auto f = openvdb::FloatGrid::create(0.0f);
+            f->setName("big");
+            f->denseFill(openvdb::CoordBBox(openvdb::Coord(0), openvdb::Coord(n - 1)), 1.0f, true);
+            // denseFill makes tiles when it can; touch every leaf so the data is really dense
+            f->tree().voxelizeActiveTiles();
+            openvdb::GridPtrVec gs{f};
             openvdb::io::File file(argv[2]);
             file.write(gs);
             file.close();

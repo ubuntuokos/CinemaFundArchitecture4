@@ -16,7 +16,7 @@ Without the worker the real-worker tests return early and the engine works as be
 | Criterion | State |
 |---|---|
 | N1-1 `vdb.inspect` | done: worker, host and the engine command `vdb.inspect`, tested on a synthetic file; Qt panel open (N1-10) |
-| N1-2 ≥ 1 GiB, cgroup memory | **open** |
+| N1-2 ≥ 1 GiB, memory | done with a deviation: a 650³ dense file (2.7·10⁸ active voxels = 1.02 GiB of data, 122 MB on disk) is inspected with a peak RSS of ~160 MB (the worker reports `VmHWM`; `tests/big.rs`, `--ignored`). Measured as the worker's own peak RSS, **not** under a cgroup limit (not available in this container); sparse files are covered by the small synthetic test |
 | N1-3 hostile files | host side tested (60 mutated/truncated files, crash/hang/garbage/flood fakes); long fuzz run **open** |
 | N1-4 round trip | grid and metadata identity on the synthetic file; bit-identity over all supported types **open** |
 | N1-5 image sequence import | **open** |

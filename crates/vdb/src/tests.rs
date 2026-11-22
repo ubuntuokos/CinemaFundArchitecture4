@@ -93,7 +93,7 @@ fn real_worker_inspect_and_round_trip() {
     assert_eq!(density.bbox, Bbox { min: [0, 0, 0], max: [19, 19, 19] });
     assert!(ia.grids.iter().any(|g| g.name == "vel" && g.value_type == "vec3s"));
     w.copy(&a, &b).unwrap();
-    assert_eq!(ia, w.inspect(&b).unwrap());
+    assert_eq!(ia.grids, w.inspect(&b).unwrap().grids);
 }
 
 #[test]
