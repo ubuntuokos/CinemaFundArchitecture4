@@ -2,23 +2,24 @@
 
 **Cím:** Media Intelligence – egységes intelligens multimédiás kereső- és tartalomértelmező rendszer  
 **Projekt:** CinemaFundArchitecture4 (CFA4)  
-**Dátum:** 2026-10-31  
+**Dátum:** 2026-10-31 (igazítva a CFA4 akkori állapotához: 2026-11-22)  
 **Státusz:** **APPROVED / FINAL 2.0**  
 **Jóváhagyás:** A felhasználó a `FINAL DRAFT 2.0` teljes tervét kifejezetten jóváhagyta.  
 **Végrehajtási korlát:** **A fejlesztés és a telepítés NINCS engedélyezve, NEM indulhat el.** Ez kizárólag a terv dokumentációs véglegesítése.  
-**Módosítási szabály:** FilmCraft upstream nem módosítható; későbbi implementáció kizárólag CFA4-ben, külön végrehajtási jóváhagyással.
+**Módosítási szabály:** FilmCraft upstream nem módosítható; későbbi implementáció kizárólag CFA4-ben, külön végrehajtási jóváhagyással.  
+**Igazítás (2026-11-22):** a tulajdonos kérésére a szöveg a 2026-10-31 óta hozott CFA4-döntésekhez igazodik. A név és a FINAL 2.0 jelölés nem változik, így a rá hivatkozó tervekhez nem kell nyúlni. Az eredeti szöveg a git-történetben van (`f70a4e4`, sha256 `2ce3a2db…fb06d`). A módosítások listája a 18. pontban.
 
 ## 1. Cél és hatókör
 
 A CFA4 önálló, újrahasznosítható Media Intelligence szolgáltatást kap. Magyar nyelven és többnyelvű környezetben kereshet videókban, jelenetekben, beszédben, hangeffektekben, objektumokban, metaadatokban és kapcsolt produkciós dokumentumokban. A keresési infrastruktúra a Media Bin, Timeline, Source Monitor, feliratozó, Story/Shot és kapcsolódó modulok közös szolgáltatása lesz.
 
-**Alapelvek:** offline-first; CPU-only kötelező; GPU opcionális; nem destruktív; magyar nyelvi elsőbbség; különálló, cserélhető AI-modellek; igazolt források és eredetkövetés; jogosultságszűrés; nincs kötelező felhő vagy második autoritatív adatbázis.
+**Alapelvek:** offline-first; CPU-only kötelező; GPU/NPU opcionális és gyártófüggetlen (`cfa4-route`); nem destruktív; magyar nyelvi elsőbbség; különálló, cserélhető AI-modellek; igazolt források és eredetkövetés; jogosultságszűrés; nincs kötelező felhő vagy második autoritatív adatbázis.
 
 **Kiadási elv:** a teljes Media Intelligence nem előfeltétele a CFA4 kezdeti terjesztésének. Magyar metaadat-, beszéd- és szövegkeresés + Qt6 integráció az első önállóan kiadható szint, megfelelő tesztek után.
 
 ## 2. CFA3-ból adaptált képességek
 
-A CFA3 Document Manager / Document Fabric / Source Manager / Knowledge Fabric tervei *tervezési források*, nem bizonyítottan kész szoftverek. Az átvétel szerződés- és képességadaptáció, nem upstream kódmásolás.
+A CFA3 Document Manager / Document Fabric / Source Manager / Knowledge Fabric tervei *tervezési források*, nem bizonyítottan kész szoftverek. Az átvétel szerződés- és képességadaptáció, nem upstream kódmásolás. A CFA3 tároló hamarosan lekerül a GitHubról; a felhasznált szerződéseket az F0 a CFA4 `docs/` alá rögzíti, mielőtt a forrás elérhetetlenné válik.
 
 | ID | Képesség | CFA4 szerep | Fázis |
 |---|---|---|---|
@@ -68,7 +69,9 @@ A CFA3 Document Manager / Document Fabric / Source Manager / Knowledge Fabric te
 
 ## 4. Modularchitektúra
 
-**Felső szint:** CFA4 Qt6 alkalmazások → Universal Search API → Rust Media Intelligence Core → AI-adapterek és Media Knowledge Layer → PostgreSQL/pgvector + CFA4 FFmpeg Engine.
+**Felső szint:** CFA4 Qt6 alkalmazások (`cfa4-cli serve`-en át) → Universal Search API → Rust Media Intelligence Core → AI-adapterek (a CFA4-AI_modules ADR 0008 AI-rétege) és Media Knowledge Layer → PostgreSQL/pgvector (`cfa4-store`) + a CFA4 médiamotorja (saját Rust motor elsődlegesen; FFmpeg ≥ 9.0.2 és GStreamer kiegészítőként a `cfa4-route` útválasztón át, ADR 0005).
+
+**Logikai modulok:** az alábbi 15 modul felelősségi felosztás, nem kötelező crate-lista. A crate-határokat az F0 dönti el a rétegszabályok (`cargo xtask layers`) és a meglévő crate-ek (`cfa4-store`, `cfa4-tasks`, `cfa4-route`, `cfa4-speech`, `cfa4-objtrack`, `cfa4-sandbox`) alapján; ahol meglévő crate lefedi a felelősséget, nem készül új.
 
 | Modul | Felelősség |
 |---|---|
@@ -88,26 +91,28 @@ A CFA3 Document Manager / Document Fabric / Source Manager / Knowledge Fabric te
 | `cfa4-mi-models` | Modellek és erőforrás-felügyelet |
 | `cfa4-mi-qt` | Qt6 dokkolható felület |
 
-**Határ:** az AI-workerek csak típusos feldolgozási kimenetet adhatnak vissza; közvetlen, autoritatív projektadatbázis-írásuk tilos. A keresés nem függhet kötelező LLM-től.
+**Határ:** az AI-workerek csak típusos feldolgozási kimenetet adhatnak vissza; közvetlen, autoritatív projektadatbázis-írásuk tilos. A keresés nem függhet kötelező LLM-től. Az indexelés és az elemzés a közös `cfa4-tasks` feladatsorban fut (CFA4-TASKSTORE-PG-001), a workerek külön folyamatban, homokozóban (CFA4-SECURITY-001).
 
 ## 5. Technológiai jelöltek és elfogadási feltételek
 
 | Feladat | Jelölt | Kapu |
 |---|---|---|
-| Média-dekódolás | CFA4 FFmpeg 9.0.2 célbaseline | Host-validáció |
-| Jelenethatárok | PySceneDetect módszerek / FFmpeg | Licenc + snittteszt |
-| Magyar ASR | faster-whisper, alternatíva whisper.cpp | Magyar WER + CPU |
-| Szóidőzítés | WhisperX | Magyar igazítás teszt |
-| Diarizáció | pyannote.audio | Modelllicenc + minőség |
+| Média-dekódolás | A CFA4 saját Rust motorja; FFmpeg ≥ 9.0.2 és GStreamer kiegészítőként a `cfa4-route`-on át (ADR 0005) | Host-validáció |
+| Jelenethatárok | A meglévő `scene_detect` (`crates/engine`); PySceneDetect módszerek / FFmpeg összevetésre | Licenc + snittteszt |
+| Magyar ASR | A meglévő `cfa4-speech` (Whisper candle-on, szóidőkkel); faster-whisper / whisper.cpp alternatívaként | Magyar WER + CPU |
+| Szóidőzítés | `cfa4-speech` szóidők; WhisperX, ha a magyar igazítás jobb | Magyar igazítás teszt |
+| Diarizáció | A `cfa4-speech` klasszikus diarizációja; pyannote.audio | Modelllicenc + minőség |
 | Kép/text | OpenCLIP / SigLIP-típusok | Magyar cross-modal benchmark |
-| Objektumok | YOLO-család / RT-DETR | Modell- és súlylicenc |
+| Objektumok | RT-DETR és más Apache/MIT detektorok; YOLO-család (AGPL-3.0) külön folyamatban futó, választható workerként (18. pont, AGPL-feloldás 2026-11-22) | Modell- és súlylicenc |
 | Audio/text | LAION CLAP | Magyar hangteszt |
 | OCR | PaddleOCR / kisebb CPU adapter | Magyar OCR teszt |
 | Szövegembedding | Többnyelvű embedding modell | Recall@K + licencek |
-| Adatbázis | PostgreSQL + pgvector | Tranzakciók, méretezés |
+| Adatbázis | PostgreSQL 18 + pgvector a `cfa4` klaszterben (`cfa4-store`, ADR 0006) | Tranzakciók, méretezés |
 | ANN opció | FAISS | Csak mért szükség esetén |
 
-Kerülendő a nem kereskedelmi súlyok alapcsomagba foglalása és minden automatikus licencfeltételezés. A konkrét modellverziók F0 során választandók ki.
+**Futtatók:** Rust-first. Nem Rust (pl. Python) komponens akkor maradhat, ha nem lassítja a CFA4-et; külön folyamatban fut, és később lépésenként Rustra portolható (AGENTS.md CFA4-szakasz). Ahol a CFA4-ben már van képesség (`cfa4-speech`, `scene_detect`, `cfa4-objtrack`), az az alap, és a külső jelölt csak mért előnnyel váltja le.
+
+**Modellek és licenc (2026-11-08 óta nincs fizetős rész):** a modelleket az ADR 0008 modellkezelője kezeli, a kapuk (AI-F3–F6) szerint. A CFA4 modellt nem szállít: a felhasználó tölti le, egyszeri licencelfogadással. A súly és a tanítóadat licence a felhasználó felelőssége, de rögzíteni és megjeleníteni kell (a jegyzék négy licencmezője: `code`, `dependencies`, `weights`, `dataset`). Nem kereskedelmi súly ezért nem kizáró ok. Nem kereskedelmi vagy AGPL-es *kód* csak külön letöltött, külön folyamatban futó, választható workerként jöhet, a felület jelzésével. Nem kereskedelmi kódnál ehhez tételenként tulajdonosi döntés is kell (ADR 0008 §8). Automatikus licencfeltételezés tilos. A konkrét modellverziók F0 során választandók ki.
 
 ## 6. Adatséma és azonosítók
 
@@ -115,7 +120,9 @@ Kerülendő a nem kereskedelmi súlyok alapcsomagba foglalása és minden automa
 
 **Sémacsoportok:** `assets`, `streams`, `sources`, `locations`; `segments`, `time_anchors`, `scene_boundaries`; `transcripts`, `words`, `speakers`; `objects`, `object_tracks`, `ocr_text`; `audio_events`, `audio_segments`; `embeddings`, `embedding_models`; `graph_nodes`, `graph_edges`; `documents`, `document_anchors`, `asset_links`; `evidence`, `provenance`, `review_status`; `jobs`, `job_checkpoints`, `index_generations`; `saved_queries`, `collections`, `feedback`; `revisions`, `change_events`, `tombstones`.
 
-Eredeti médiák a CFA4 fájlkezelésében maradnak, nem kötelező BLOB-ként SQL-be menteni. Időalap: eredeti PTS/racionális timebase; VFR-helyesség és timeline-leképezés kötelező. Indexgenerációk tranzakcióbiztos cseréje, változáskor célzott újraindexelés; fájlátnevezés ne váltson ki felesleges médiaelemzést.
+**Fizikai séma:** a fenti csoportok logikai felosztást adnak. A fizikai séma a PostgreSQL `mi` sémája (CFA4-TASKSTORE-PG-001 4. pont, CFA4-DATA-PG-001 4.5), a feladatok és ellenőrzőpontok a `tasks` sémában. Ami ezen túl kell (pl. `graph_*`, `documents`, `evidence`, `revisions`), azt az F0 sémabővítésként javasolja, a DATA-PG projekttel egyeztetve (`docs/coordination.md` §2.8). Új adatbázismotor nem jöhet. A `mi` tisztán származtatott adat: ha eltér a `.fcproj`-tól, a projektfájl nyer.
+
+Eredeti médiák a CFA4 fájlkezelésében maradnak, nem kötelező BLOB-ként SQL-be menteni. Időalap: minden tárolt időpont és szakaszhatár `cfa4_time::Tick` (egész szám). Az eredeti PTS és a racionális timebase forrásadatként megmarad, a Tickre váltás pontos racionális átváltással történik, kerekítési hiba nélkül. VFR-helyesség és timeline-leképezés kötelező. Indexgenerációk tranzakcióbiztos cseréje, változáskor célzott újraindexelés; fájlátnevezés ne váltson ki felesleges médiaelemzést.
 
 ## 7. Keresési terv és bizonyíték
 
@@ -135,15 +142,15 @@ Dokkolható Media Intelligence panel, Media Bin/Timeline kontextuális keresés,
 
 ## 10. Célplatform, erőforrások és indexelés
 
-**Platform:** Ubuntu 26.04 LTS és variánsok, amd64, Qt6, KDE Plasma/Wayland elsődleges, Rust, Python pip+venv (conda/mamba nélkül), PostgreSQL/pgvector. Csomagformák: DEB, Flatpak, AppImage. FFmpeg 9.0.2 célbaseline.
+**Platform:** Ubuntu 26.04 LTS (minimumkövetelmény) és variánsok, amd64, Qt6, elsőként KDE Plasma Wayland- és X11-munkamenetben (CFA4-QT6-FINISH-001 D3), Rust, Python pip+venv (conda/mamba nélkül), PostgreSQL/pgvector. Csomagformák: DEB, Flatpak, AppImage, tar.gz. FFmpeg ≥ 9.0.2 kiegészítő háttérként (ADR 0005); a rögzített FFmpeg 9.0.2 CLI tesztorákulum marad.
 
-**Erőforrás:** kötelező CPU-only; opcionális NVIDIA. Interaktív videószerkesztés prioritása háttérindex előtt; VRAM- és RAM-keretek, szüneteltetés, checkpoint, folytatás, degradált üzemmód. A 8 GB VRAM-os kártyán nagy modellek korlátlan párhuzamos futtatása tilos.
+**Erőforrás:** kötelező CPU-only tartalék minden funkcióhoz; GPU/NPU opcionális és gyártófüggetlen (NVIDIA, AMD, Intel; Intel NPU elsőként), a `cfa4-route` útválasztón át. Csak CUDA-n futó választható worker megengedett, ha van gyártófüggetlen párja (ADR 0008 §8). Az AI-funkciók alsó határa 12 GB VRAM / 16 GB RAM (ADR 0008, AI-MODEL-TRAINING D1); a 8 GB-os profil megszűnt. Referenciagép: RTX A1000 (`docs/development/reference-machine.md`). Interaktív videószerkesztés prioritása háttérindex előtt (a közös feladatsor R és P1 osztálya a P2-es indexelés előtt); a VRAM- és RAM-kereteket az ACS-erőforráskezelő adja; szüneteltetés, checkpoint, folytatás, degradált üzemmód. Nagy modellek korlátlan párhuzamos futtatása tilos.
 
 **Indexszintek:** L0 metaadat/importált felirat; L1 jelenet és beszéd; L2 vizuális, hang és tudásgráf. Részlegesen elkészült indexeken is kereshető, jól látható lefedettségjelzéssel.
 
 ## 11. Biztonság, provenance és adatvédelem
 
-Alapértelmezett offline üzem; engedély nélküli cloud-adatküldés tilos. Jogosultság vizsgálata lekérdezéskor és megnyitáskor; tenant-/projektizoláció. Modellek hash-, forrás- és licencellenőrzése. Prompt injectionnek ellenálló dokumentumfeldolgozás. Törlések és jogosultság-visszavonások index- és cache-invalidationje.
+Alapértelmezett offline üzem; engedély nélküli cloud-adatküldés tilos. Az index és a médiából készült származékok nem hagyják el a gépet (VISION 2.3); a motor nem nyit kimenő kapcsolatot, modellt csak a jóváhagyásos letöltő tölthet le (CFA4-SECURITY-001 D5). Jogosultság vizsgálata lekérdezéskor és megnyitáskor; projektizoláció. Ma egy helyi klaszter van, modulonkénti szerepekkel (CFA4-DATA-PG-001 4.1). A többfelhasználós, tenant-szintű jogosultság a BacklotHub-bal együtt dől el, ez **[nyitott]** tulajdonosi döntés. A modellworkerek külön folyamatban, homokozóban (Landlock, seccomp) futnak, csak biztonságos modellformátummal (pickle nélkül; CFA4-SECURITY-001). Arcbeágyazás csak projektenkénti, kifejezett bekapcsolással, alapból ki, egy lépésben törölhető (`mi.face_consent`). Modellek hash-, forrás- és licencellenőrzése. Prompt injectionnek ellenálló dokumentumfeldolgozás. Törlések és jogosultság-visszavonások index- és cache-invalidationje.
 
 Provenance osztályok: `HUMAN`, `AI_GENERATED`, `AI_TRANSFORMED`, `AI_DERIVED_HUMAN_EDITED`, `SOURCE_DERIVED`, `MACHINE_EXTRACTED`, `MIXED`, `UNKNOWN`.
 
@@ -214,7 +221,7 @@ A fázisok részben párhuzamosíthatók, de a UI készültsége, kodekvalidáci
 
 ## 15. Kizárások és tilalmak
 
-Nem része: teljes CFA3 Document Manager / Office/DTP; kötelező felhő; új autoritatív DB; Object Mask, Enhance Speech vagy Generative Extend funkció implementálása; Windows/macOS/Android célplatform; FilmCraft upstream módosítása; szerződés nélküli licencelt modell beépítése; jogosulatlan fejlesztés, deploy vagy telepítés.
+Nem része: teljes CFA3 Document Manager / Office/DTP; kötelező felhő; új autoritatív DB vagy új adatbázismotor; Object Mask, Enhance Speech vagy Generative Extend funkció implementálása; Windows/macOS/Android célplatform; FilmCraft upstream módosítása; modell szállítása a CFA4 csomagjaiban, vagy licenc rögzítése és felhasználói elfogadás nélküli modell; zárt (nem GPL) kód vagy plugin; fizetős rész, licenckulcs, használati korlát vagy vízjel; jogosulatlan fejlesztés, deploy vagy telepítés.
 
 ## 16. Döntés és dokumentumlezárás
 
@@ -234,3 +241,26 @@ Nem része: teljes CFA3 Document Manager / Office/DTP; kötelező felhő; új au
 - E beszélgetés jóváhagyott `CFA4-MEDIA-INTELLIGENCE-001 FINAL DRAFT 2.0` tervének részei.
 
 **Megjegyzés:** E forrásokra való hivatkozás nem állítja, hogy a CFA3 moduljai elkészültek vagy a CFA4 adott komponensei jelenleg igazoltan működnek.
+
+## 18. Igazítás a CFA4 állapotához (2026-11-22)
+
+A tulajdonos 2026-11-22-én adta át az eredeti szöveget, és azt kérte, hogy a FINAL 2.0 ugyanazon a néven igazodjon a CFA4 azóta hozott döntéseihez, a rá hivatkozó tervek változatlanul hagyásával. A célok, a képességek (DM-01–DM-18, MI-01–MI-18), a fázisok, az elfogadási tesztek és a végrehajtási korlát nem változtak.
+
+| Pont | Eredeti | Igazítva | Forrás |
+|---|---|---|---|
+| 1, 10 | GPU opcionális, opcionális NVIDIA | GPU/NPU opcionális és gyártófüggetlen, `cfa4-route` | AGENTS.md (vendor neutrality); ADR 0004 |
+| 2 | CFA3 tervek mint források | A felhasznált CFA3-szerződéseket az F0 a CFA4-be rögzíti, mert a CFA3 tároló lekerül | tulajdonos, 2026-11-09 |
+| 4, 5, 10 | „CFA4 FFmpeg Engine”, FFmpeg 9.0.2 célbaseline | Saját Rust motor elsődleges; FFmpeg ≥ 9.0.2 és GStreamer kiegészítő a routeren át; a 9.0.2 CLI tesztorákulum | ADR 0005; tulajdonos, 2026-10-24/25 |
+| 4 | 15 `cfa4-mi-*` modul | Logikai felosztás; a crate-határokat az F0 dönti el, meglévő crate-ekre építve | `cargo xtask layers`; meglévő crate-ek |
+| 4 | — | Indexelés a `cfa4-tasks` sorban, workerek homokozóban | CFA4-TASKSTORE-PG-001; CFA4-SECURITY-001 |
+| 5 | Python-jelöltek elsődlegesen | Meglévő Rust képességek az alap; nem Rust komponens csak akkor maradhat, ha nem lassít | AGENTS.md CFA4-szakasz (2026-11-03, 2026-11-07) |
+| 5 | YOLO-család jelölt | Apache/MIT detektor az alap; AGPL-es YOLO külön folyamatban futó, választható workerként | AGPL-feloldás: tulajdonos, 2026-11-22 (külön szabály-PR) |
+| 5 | Kerülendő a nem kereskedelmi súlyok alapcsomagba foglalása | Modellt a CFA4 nem szállít; súly- és adatlicenc a felhasználó felelőssége, rögzítve és megjelenítve; nem kereskedelmi kód tételenkénti döntéssel | „Nincs fizetős rész”: tulajdonos, 2026-11-08; ADR 0008 §8 |
+| 5 | PostgreSQL + pgvector | PostgreSQL 18, `cfa4` klaszter, `cfa4-store` | ADR 0006; CFA4-DATA-PG-001 |
+| 6 | Sémacsoportok | Logikai csoportok; fizikai séma a `mi` és a `tasks` séma, bővítés a DATA-PG projekttel egyeztetve | CFA4-TASKSTORE-PG-001 §4; CFA4-DATA-PG-001 §4.5 |
+| 6 | Időalap: eredeti PTS / racionális timebase | Tárolás `cfa4_time::Tick`-ben, pontos átváltással; a PTS forrásadat marad | AGENTS.md / CLAUDE.md (Exact time) |
+| 10 | KDE Plasma/Wayland elsődleges | Elsőként KDE Plasma, Wayland és X11 | CFA4-QT6-FINISH-001 D3 |
+| 10 | DEB, Flatpak, AppImage | + tar.gz | docs/releasing.md |
+| 10 | 8 GB VRAM-os kártya | Alsó határ 12 GB VRAM / 16 GB RAM; ACS-keretek | ADR 0008; CFA4-AI-MODEL-TRAINING-001 D1 |
+| 11 | Tenant-/projektizoláció | Projektizoláció; a többfelhasználós jogosultság **[nyitott]** (BacklotHub); homokozó, pickle nélküli modellek, arcadat hozzájárulással | CFA4-SECURITY-001; CFA4-DATA-PG-001 4.1 |
+| 15 | Szerződés nélküli licencelt modell beépítése tilos | Modell szállítása tilos; licenc rögzítése és elfogadás nélküli modell tilos; zárt kód és fizetős rész tilos | docs/licensing.md 4. pont |
