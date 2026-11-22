@@ -1,6 +1,6 @@
 # CFA4-CONTROL-SURFACE-001 – F0 átvételi jegyzőkönyv
 
-**Dátum:** 2026-11-13 · **Alap:** `ubuntuokos/CinemaFundArchitecture4` main `92e29e4` · **Állapot:** elfogadva (a tulajdonos, 2026-11-13: „Haladj tovább logikusan!”, a nyitott döntések az ajánlás szerint). Az F0 a spec 17. fejezete szerint csak akkor zárul, ha minden sorhoz ellenőrizhető bizonyíték van
+**Dátum:** 2026-11-13 · **Alap:** `ubuntuokos/CinemaFundArchitecture4` main `92e29e4` · **Állapot:** **véglegesítve, az F0 lezárva** (a tulajdonos, 2026-11-16: „CFA4-CONTROL-SURFACE-001 F0 JÓVÁHAGYOM VÉGLEGESÍTSD”); elfogadva 2026-11-13 („Haladj tovább logikusan!”). Az F0 a spec 17. fejezete szerint csak akkor zárul, ha minden sorhoz ellenőrizhető bizonyíték van
 és a tulajdonos elfogadta.
 
 Jelmagyarázat: **✅ kész** (bizonyíték megvan, jóváhagyásra vár) · **🟡 részben** (a hiányzó rész és a pótlás ideje megnevezve) · **⬜ nyitott**
@@ -11,7 +11,7 @@ Jelmagyarázat: **✅ kész** (bizonyíték megvan, jóváhagyásra vár) · **�
 |---|---|---|---|---|
 | F0-AC-01 | Architektúra és réteghatárok rögzítve | [ADR 0012](../adr/ADR-0012-control-surface.md) Döntés 1–2.; műszaki spec 1. fejezet | ✅ | Repóban: `docs/adr/ADR-0012-control-surface.md` |
 | F0-AC-02 | Az L5 crate felelőssége dokumentált | Műszaki spec 1., 3., 6., 9. fejezet | ✅ | |
-| F0-AC-03 | HID-meghajtó kiválasztása dokumentált | [`CFA4-CONTROL-SURFACE-HID-EVALUATION.md`](CFA4-CONTROL-SURFACE-HID-EVALUATION.md) | 🟡 | Asztali értékelés kész (elsődleges hidraw, tartalék evdev). A fizikai mérés (M1–M10) a referenciagépen és eszközzel az F1a első lépése; az F1a-kapu a mérési jegyzőkönyv. |
+| F0-AC-03 | HID-meghajtó kiválasztása dokumentált | [`CFA4-CONTROL-SURFACE-HID-EVALUATION.md`](CFA4-CONTROL-SURFACE-HID-EVALUATION.md) | ✅ | Eldöntve 2026-11-16 (N-02): elsődleges hidraw, tartalék evdev. A fizikai mérés (M1–M10, [jegyzőkönyv-sablon](../audit/hw/CFA4-CONTROL-SURFACE-M1-M10.md)) az F1 elfogadásának feltétele, nem az F0-é; eltérés ADR-módosítás. |
 | F0-AC-04 | ShuttlePRO eseménymodell meghatározott | Műszaki spec 4. fejezet | ✅ | A hidraw riport bájtkiosztása mérendő (N-03) |
 | F0-AC-05 | Közös SurfaceEvent és Feedback szerződés | Műszaki spec 2. fejezet | ✅ | |
 | F0-AC-06 | MIDI/ALSA függőségek ellenőrzöttek | [`CFA4-CONTROL-SURFACE-DEPENDENCY-AND-LICENSE-REVIEW.md`](CFA4-CONTROL-SURFACE-DEPENDENCY-AND-LICENSE-REVIEW.md) 1–3. fejezet; `cargo tree -i alsa` | ✅ | Új crate nem kell; az `alsa-sys` `links = "alsa"` miatt egy verzió lehet |
@@ -21,19 +21,19 @@ Jelmagyarázat: **✅ kész** (bizonyíték megvan, jóváhagyásra vár) · **�
 | F0-AC-10 | MIDI Learn állapotgép meghatározott | Műszaki spec 7. fejezet; protokoll `surface.learn*`, `surfaceLearn` | ✅ | |
 | F0-AC-11 | Hibakezelési és izolációs szabályok | Műszaki spec 9. fejezet | ✅ | |
 | F0-AC-12 | F1a/F1/F2 belépési feltételek egyértelműek | Műszaki spec 12. fejezet | ✅ | |
-| F0-AC-13 | Nyitott kérdések külön listában | Műszaki spec 13. fejezet (N-01…N-12) | ✅ | |
-| F0-AC-14 | Dokumentációs változások ellenőrzöttek | Műszaki spec 14. fejezet (jegyzék) | 🟡 | A jegyzék kész. Az ADR, a hat F0-dokumentum és a `hardware-parity.md` sora egy PR-ban megy be (tulajdonosi döntés 2026-11-13); a többi sor (architektúra, protokoll, Qt GUI, licenc) a 14. fejezet szerinti fázisban. A Kdenlive-terv jog-shuttle sora a Kdenlive-projekt döntése (§2.8). |
+| F0-AC-13 | Nyitott kérdések külön listában | Műszaki spec 13. fejezet (N-01…N-12) | ✅ | Mind eldöntve (N-01, N-12: 2026-11-13; a többi a javaslat szerint 2026-11-16) |
+| F0-AC-14 | Dokumentációs változások ellenőrzöttek | Műszaki spec 14. fejezet (jegyzék) | ✅ | Bekerült: ADR, a hat F0-dokumentum, `hardware-parity.md` (#1184); `architecture.md` (`surface-model` L1, `surface` L5), `control-protocol.md` és `qt-gui.md` (`surface.*`), `qt-parity.md`, `licensing.md` (az F1 PR-okkal, #1311, #1385). A Kdenlive-terv jog-shuttle sora a Kdenlive-projekt döntése (§2.8). |
 
 ## 2. Teszttervi ellenőrzések (spec 15. fejezet)
 
 | Teszt | Eredmény |
 |---|---|
 | T0.1 Architektúra | L4/L5/L6 határ, OS-I/O csak L5, Qt-ban nincs leképezés, OSC külön modul, egy igazságforrás: ADR + spec 1. és 11. fejezet ✅ |
-| T0.2 HID | Jelöltek, licenc, azonosítás, olvashatóság, hot-plug, jogosultság, elsődleges/tartalék: HID-értékelés ✅ asztali, mérés 🟡 |
+| T0.2 HID | Jelöltek, licenc, azonosítás, olvashatóság, hot-plug, jogosultság, elsődleges/tartalék: HID-értékelés ✅; a mérés (M1–M10) az F1 feltétele |
 | T0.3 ALSA/MIDI | Lockfile, verzióütközés (`links`), licenc, `/dev/snd/seq` jogosultság, PipeWire-út, hot-plug-út: függőségi jegyzőkönyv + spec 5. fejezet ✅; PipeWire-út a referenciagépen mérendő (`aconnect -l`) |
 | T0.4 Protokoll | `surface.*`, események, hibakódok, `surface.clock`, `surface.inject`, MCP, additív bővítés: protokollszerződés ✅ |
 | T0.5 Profil | JSON-séma, verziózás, ütközés (`surface.audit`, `binding_conflict`), XDG-út, atomikus írás, beépített/felhasználói/projekt réteg: séma + spec 8. fejezet ✅ |
-| T0.6 Licenc és dokumentáció | `deny.toml`, `licensing.md`, `NOTICE`, architektúra, protokoll, Qt GUI, parity: jegyzék ✅, repóba írás 🟡 (engedélyre vár) |
+| T0.6 Licenc és dokumentáció | `deny.toml`, `licensing.md`, `NOTICE`, architektúra, protokoll, Qt GUI, parity: jegyzék ✅, repóba írva ✅ |
 
 ## 3. A WP0 újraértékelés eredménye (2026-11-13)
 
@@ -69,3 +69,18 @@ Két új tény az újraértékelésből, amely a specifikációtól eltér:
 | Szerep | Név | Dátum | Döntés |
 |---|---|---|---|
 | Tulajdonos | | | |
+
+## 5. Véglegesítés (2026-11-16)
+
+A tulajdonos az F0-t „CFA4-CONTROL-SURFACE-001 F0 JÓVÁHAGYOM VÉGLEGESÍTSD” üzenettel véglegesítette, és a nyitott kérdésekre javasolt döntéseket
+elfogadta („A javasolt döntéseket elfogadom”, „A javasolt kezelés rendben”). Ezzel az F0 lezárult; a
+műszaki spec 13. fejezete rögzíti a döntéseket.
+
+Ami az F0 után következik (a spec 12. fejezete szerint):
+
+| Fázis | Állapot 2026-11-16 |
+|---|---|
+| F1a / F1 kód | A mainen: Settings ▸ Control Surfaces, MIDI-figyelő, a teljes Learn-állapotgép, ShuttlePRO hidraw, fader/potméter pickuppal, profilfájlok, udev-szabály (#1311, #1383, #1385). Nyitott PR: trim mód (#1389), végtelenített forgatógombok (#1399). |
+| F1 elfogadás | Az M1–M10 mérés a referenciagépen fizikai ShuttlePRO-val ([sablon](../audit/hw/CFA4-CONTROL-SURFACE-M1-M10.md), még üres). |
+| F2 | Az F1 eszközös igazolása után: beépített profilok (N-10), visszajelzés (LED, motoros fader), projektprofil. |
+| F-OSC | Külön modul, localhost alapkötéssel (N-09). |

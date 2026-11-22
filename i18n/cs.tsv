@@ -4772,3 +4772,128 @@ export.summary	Low	nízká
 # Timecode sync varispeed and user bits (TC-8, #1308)
 	Varispeed: adjust the playback speed instead of seeking	Varispeed: upravit rychlost přehrávání místo skoku
 	User bits	Uživatelské bity
+# AS-11 programme parts and AS-10 metadata (G2, #1371, #1375)
+	{tc}  Segmentation	{tc}  Segmentace
+	Marker Type	Typ značky
+	Chapter	Kapitola
+	Segmentation (AS-11 programme part)	Segmentace (část pořadu AS-11)
+	AS-10	AS-10
+# AT9/AT3 converter (Tools ▸ Audio Tools, AT3-2)
+	AT9/AT3 Converter	Převodník AT9/AT3
+	AT9/AT3 Converter…	Převodník AT9/AT3…
+	Files to convert:	Soubory k převodu:
+	Add Files	Přidat soubory
+	Add Files…	Přidat soubory…
+	Convert to:	Převést na:
+	Bit rate:	Datový tok:
+	Sample format:	Formát vzorků:
+	Output folder:	Výstupní složka:
+	Output Folder	Výstupní složka
+	Next to each source file	Vedle každého zdrojového souboru
+	AT9 and ATRAC3plus files convert to WAV; encoding AT9, ATRAC3plus and MP3 is not available yet.	Soubory AT9 a ATRAC3plus se převádějí do WAV; kódování AT9, ATRAC3plus a MP3 zatím není k dispozici.
+	Convert	Převést
+	Add the files to convert first.	Nejprve přidejte soubory k převodu.
+	Done: {n} file(s) converted.	Hotovo: převedeno souborů: {n}.
+	Converting {name}…	Převádí se {name}…
+	Stopping…	Zastavování…
+	AT3 (ATRAC3, PSP / PS3)	AT3 (ATRAC3, PSP / PS3)
+	WAV (PCM)	WAV (PCM)
+	132 kbit/s (LP2)	132 kbit/s (LP2)
+	105 kbit/s	105 kbit/s
+	66 kbit/s (LP4, joint stereo)	66 kbit/s (LP4, joint stereo)
+	16-bit	16bitový
+	24-bit	24bitový
+	32-bit float	32bitový s plovoucí desetinnou čárkou
+
+# Datamosh transition (Grunge & Distort, DM1, #1409)
+	Datamosh	Datamosh
+	Residual	Reziduum
+	Motion Boost	Zesílení pohybu
+	Recovery	Obnova
+	Encode Resolution	Rozlišení kódování
+	Half	Poloviční
+	Quarter	Čtvrtinové
+# Datamosh Bloom (Glitch, DM2)
+	Datamosh Bloom	Datamosh rozkvět
+	Start Time (seconds)	Čas začátku (sekundy)
+	Repeats	Opakování
+
+# Recent effects, per-channel waveform, white balance selector (SC-2/SC-3/SC-4, #1419 #1420 #1421)
+	Apply a recently used effect to the selected clips	Použít naposledy použitý efekt na vybrané klipy
+	Disable all effects	Vypnout všechny efekty
+	Enable all effects	Zapnout všechny efekty
+	No recent effects	Žádné nedávné efekty
+	Recent effects	Nedávné efekty
+	Switch every effect of the selected clips off	Vypne každý efekt vybraných klipů
+	Switch every effect of the selected clips on	Zapne každý efekt vybraných klipů
+	Merged	Sloučené
+	Per Channel	Po kanálech
+	Channel Zoom	Zvětšení kanálů
+	White Balance Selector (click a neutral point in the Program monitor; Esc cancels)	Výběr vyvážení bílé (klikněte na neutrální bod v programovém monitoru; Esc ruší)
+# Task Manager and subtitle kind (SC-2/3/4)
+	Task Manager	Správce úloh
+	Background jobs	Úlohy na pozadí
+	Exports	Exporty
+	Shared task queue	Sdílená fronta úloh
+	Task	Úloha
+	State	Stav
+	Details	Podrobnosti
+	Time left	Zbývající čas
+	Scheduled	Naplánováno
+	Queued	Ve frontě
+	Waiting for resources	Čeká na prostředky
+	Blocked	Blokováno
+	Running	Běží
+	Paused	Pozastaveno
+	Cancelling	Ruší se
+	Interactive	Interaktivní
+	Speculative	Spekulativní
+	Final render	Konečné vykreslení
+	Show finished	Zobrazit dokončené
+	Nothing is running.	Nic neběží.
+	Not reported by this engine yet.	Tento engine zatím nehlásí.
+	Not available: {why}	Není k dispozici: {why}
+	{name} waits: {why}	{name} čeká: {why}
+	{running} running · {waiting} waiting	{running} běží · {waiting} čeká
+	{n} active	{n} aktivních
+	{n} CPU	{n} CPU
+	{n} GiB	{n} GiB
+	{n} MiB	{n} MiB
+	Needs your decision	Čeká na vaše rozhodnutí
+	Run now	Spustit hned
+	Next slot	Další slot
+	Missed its start	Zmeškaný začátek
+	Missed its start at {time}	Zmeškaný začátek v {time}
+	Starts at {time}	Začíná v {time}
+	Subtitle kind	Druh titulků
+	Subtitles	Titulky
+	Captions for the hearing impaired	Titulky pro neslyšící a nedoslýchavé
+	Forced narrative	Vynucený komentář (forced narrative)
+	Silence	Ticho
+	Detect Silence	Zjistit ticho
+	Remove Silence	Odstranit ticho
+	Clear Silence Markers	Vymazat značky ticha
+# DCP Validation window (DCP-12)
+	AS-03	AS-03
+	Choose the DCP folder.	Vyberte složku DCP.
+	DCP Validation	Kontrola DCP
+	DCP folder	Složka DCP
+	DCP folder (the one holding ASSETMAP)	Složka DCP (ta, která obsahuje ASSETMAP)
+	Evidence	Důkaz
+	How to fix	Jak to opravit
+	Interrupted	Přerušeno
+	Not applicable	Netýká se
+	Report	Zpráva
+	Report saved: {path}	Zpráva uložena: {path}
+	Required	Povinné
+	Rule	Pravidlo
+	Rules	Pravidla
+	Save JSON…	Uložit JSON…
+	Save Markdown…	Uložit Markdown…
+	Save report	Uložit zprávu
+	Skipped	Přeskočeno
+	Standard: {standard}	Norma: {standard}
+	Validate	Zkontrolovat
+	Validate DCP…	Zkontrolovat DCP…
+	the engine sent no profiles	jádro neposlalo žádné profily
+	{n} files checked	Zkontrolováno souborů: {n}

@@ -2,7 +2,7 @@
 
 > **Nem cél / Non-goal (2026-10-30):** a Windows-, macOS- és Android-paritás nem cél. A CFA4 kizárólag Ubuntu/Kubuntu 26.04 AMD64-re készül; a célalkalmazás más platformokon elérhető funkciói csak a Linuxra átültethető részükben számítanak. Az Apple-formátumok (ProRes, Apple Log, QuickTime/MOV) támogatása formátum, nem platform, ezért marad. / Windows, macOS and Android parity is not a goal; CFA4 targets Ubuntu 26.04 AMD64 only. Apple formats stay supported.
 
-> **Last reviewed:** 2026-10-10 · **Last updated:** 2026-11-11 · **Change:** minor (`cfa4-metrics`, G1) · **Target:** Adobe Premiere Pro 2026 (26.5.2)
+> **Last reviewed:** 2026-10-10 · **Last updated:** 2026-11-21 · **Change:** minor (datamosh, G18) · **Target:** Adobe Premiere Pro 2026 (26.5.2)
 
 Every known shortfall, one entry each, ranked by what most stops an editor using CFA4 for real
 work. This is the work list: agents should prefer it over adding checklist items. Numbers are in
@@ -354,7 +354,7 @@ distributions are not targets.
 
 ## G18. Effects depth: approximations and missing behaviour
 
-- **Missing:** Warp Stabilizer is 2-D (Premiere's is 3-D subspace), Morph Cut has no face tracking
+- **Missing:** Warp Stabilizer's Subspace Warp is a mesh warp over smoothed feature trajectories now, but its analysis is not stored on disk yet and it has no rolling-shutter model (Perspective is a real homography), Morph Cut has no face tracking
   (and occlusion edges are soft), Lumetri HDR-aware maths, multicam paging beyond 16 angles,
   redesigned 26.0 mask tools (a stored, re-editable
   corner radius: rounding bakes fillets into the path, so a rounded corner cannot be re-rounded later).
@@ -364,8 +364,16 @@ distributions are not targets.
   Setting applied as a parameter preset (#458); rectangle and polygon masks round their corners
   with circular fillets (`masks.add` `cornerRadius`, `masks.roundCorners`, every path keyframe;
   #813), from an on-monitor corner-roundness handle with a live preview (one undo step per drag;
-  #844); Shift snaps pen mask segments and dragged-out Bézier handles to 45° steps (#853), and
-  Shift constrains vertex and whole-mask drags to 45° steps from the press point (#1408).
+  #844); Warp Stabilizer's analysis is stored in the media cache (`Analysis` folder, keyed by the
+  media fingerprint, source range and analysis settings), so a clip is analysed once, not after
+  every restart; its Perspective method fits a RANSAC homography per frame step, smooths the
+  four corner paths and warps projectively (keystone and tilt; `render::homography`,
+  `vfx::perspective`); Shift snaps pen mask segments and dragged-out Bézier handles to 45° steps (#853), and
+  Shift constrains vertex and whole-mask drags to 45° steps from the press point (#1408); a real
+  codec datamosh with CFA4's own H.264 encoder and decoder, as the Datamosh transition (Grunge &
+  Distort: B's P pictures decoded onto A; #1409) and the Datamosh Bloom effect (Glitch: one P
+  picture repeated; #1430), with no codec changed and no FFmpeg. Not yet: an encoder switch that
+  bans intra macroblocks in P pictures, which would give a "dirtier" mosh (a codec-crate change).
 - **CFA4 candidates after GPL-3.0-or-later** (ADR 0003 §6): Natron openfx-misc effects (keyers,
   colour, tracking, retime), Rubber Band (GPL-2.0-or-later) for audio time-stretch and pitch shift,
   frei0r effects. Candidates are not commitments: each needs its own ADR (FFI rule, own engine as fallback).
@@ -395,3 +403,4 @@ distributions are not targets.
 | 2026-10-26 | minor | G10: JPEG 2000 MXF import, DCP picture tracks included (#77) |
 | 2026-10-26 | minor | G12: AI candidates from the repository reviews (word-highlight captions, low light, face detection, background matting, foley) |
 | 2026-11-11 | minor | G1: `cfa4-metrics` (CIEDE2000 ΔE, SSIM) as the harness's scoring layer |
+| 2026-11-21 | minor | G18: real codec datamosh (Datamosh transition, Datamosh Bloom effect) |

@@ -4774,3 +4774,128 @@ export.summary	Low	төмен
 # Timecode sync varispeed and user bits (TC-8, #1308)
 	Varispeed: adjust the playback speed instead of seeking	Varispeed: секіру орнына ойнату жылдамдығын реттеу
 	User bits	Пайдаланушы биттері
+# AS-11 programme parts and AS-10 metadata (G2, #1371, #1375)
+	{tc}  Segmentation	{tc}  Сегменттеу
+	Marker Type	Маркер түрі
+	Chapter	Тарау
+	Segmentation (AS-11 programme part)	Сегменттеу (AS-11 бағдарлама бөлігі)
+	AS-10	AS-10
+# AT9/AT3 converter (Tools ▸ Audio Tools, AT3-2)
+	AT9/AT3 Converter	AT9/AT3 түрлендіргіші
+	AT9/AT3 Converter…	AT9/AT3 түрлендіргіші…
+	Files to convert:	Түрлендірілетін файлдар:
+	Add Files	Файлдарды қосу
+	Add Files…	Файлдарды қосу…
+	Convert to:	Мынаған түрлендіру:
+	Bit rate:	Бит жылдамдығы:
+	Sample format:	Үлгі пішімі:
+	Output folder:	Шығыс қалтасы:
+	Output Folder	Шығыс қалтасы
+	Next to each source file	Әр бастапқы файлдың жанына
+	AT9 and ATRAC3plus files convert to WAV; encoding AT9, ATRAC3plus and MP3 is not available yet.	AT9 және ATRAC3plus файлдары WAV пішіміне түрлендіріледі; AT9, ATRAC3plus және MP3 кодтауы әзірге қолжетімсіз.
+	Convert	Түрлендіру
+	Add the files to convert first.	Алдымен түрлендірілетін файлдарды қосыңыз.
+	Done: {n} file(s) converted.	Дайын: {n} файл түрлендірілді.
+	Converting {name}…	{name} түрлендірілуде…
+	Stopping…	Тоқтатылуда…
+	AT3 (ATRAC3, PSP / PS3)	AT3 (ATRAC3, PSP / PS3)
+	WAV (PCM)	WAV (PCM)
+	132 kbit/s (LP2)	132 кбит/с (LP2)
+	105 kbit/s	105 кбит/с
+	66 kbit/s (LP4, joint stereo)	66 кбит/с (LP4, joint stereo)
+	16-bit	16 бит
+	24-bit	24 бит
+	32-bit float	32 бит қалқымалы нүкте
+
+# Datamosh transition (Grunge & Distort, DM1, #1409)
+	Datamosh	Datamosh
+	Residual	Қалдық
+	Motion Boost	Қозғалысты күшейту
+	Recovery	Қалпына келу
+	Encode Resolution	Кодтау ажыратымдылығы
+	Half	Жарты
+	Quarter	Ширек
+# Datamosh Bloom (Glitch, DM2)
+	Datamosh Bloom	Datamosh гүлденуі
+	Start Time (seconds)	Басталу уақыты (секунд)
+	Repeats	Қайталаулар
+
+# Recent effects, per-channel waveform, white balance selector (SC-2/SC-3/SC-4, #1419 #1420 #1421)
+	Apply a recently used effect to the selected clips	Соңғы қолданылған эффектті таңдалған клиптерге қолдану
+	Disable all effects	Барлық эффектілерді өшіру
+	Enable all effects	Барлық эффектілерді қосу
+	No recent effects	Соңғы эффектілер жоқ
+	Recent effects	Соңғы эффектілер
+	Switch every effect of the selected clips off	Таңдалған клиптердің әр эффектісін өшіреді
+	Switch every effect of the selected clips on	Таңдалған клиптердің әр эффектісін қосады
+	Merged	Біріктірілген
+	Per Channel	Арналар бойынша
+	Channel Zoom	Арналарды масштабтау
+	White Balance Selector (click a neutral point in the Program monitor; Esc cancels)	Ақ түс балансын таңдау (бағдарлама мониторындағы бейтарап нүктені басыңыз; Esc бас тартады)
+# Task Manager and subtitle kind (SC-2/3/4)
+	Task Manager	Тапсырмалар реттеушісі
+	Background jobs	Фондық жұмыстар
+	Exports	Экспорттар
+	Shared task queue	Ортақ тапсырмалар кезегі
+	Task	Тапсырма
+	State	Күйі
+	Details	Мәліметтер
+	Time left	Қалған уақыт
+	Scheduled	Жоспарланған
+	Queued	Кезекте
+	Waiting for resources	Ресурстарды күтуде
+	Blocked	Бұғатталған
+	Running	Орындалуда
+	Paused	Кідіртілген
+	Cancelling	Бас тартылуда
+	Interactive	Интерактивті
+	Speculative	Болжамды
+	Final render	Соңғы рендер
+	Show finished	Аяқталғандарды көрсету
+	Nothing is running.	Ештеңе орындалып жатқан жоқ.
+	Not reported by this engine yet.	Бұл қозғалтқыш әзірге хабарламайды.
+	Not available: {why}	Қолжетімсіз: {why}
+	{name} waits: {why}	{name} күтуде: {why}
+	{running} running · {waiting} waiting	{running} орындалуда · {waiting} күтуде
+	{n} active	{n} белсенді
+	{n} CPU	{n} CPU
+	{n} GiB	{n} GiB
+	{n} MiB	{n} MiB
+	Needs your decision	Сіздің шешіміңізді қажет етеді
+	Run now	Қазір орындау
+	Next slot	Келесі слот
+	Missed its start	Бастау өткізіп алынды
+	Missed its start at {time}	{time} бастау өткізіп алынды
+	Starts at {time}	{time} басталады
+	Subtitle kind	Субтитр түрі
+	Subtitles	Субтитрлер
+	Captions for the hearing impaired	Есту қабілеті нашар адамдарға арналған субтитрлер
+	Forced narrative	Мәжбүрлі баяндау (forced narrative)
+	Silence	Үнсіздік
+	Detect Silence	Үнсіздікті анықтау
+	Remove Silence	Үнсіздікті жою
+	Clear Silence Markers	Үнсіздік маркерлерін тазалау
+# DCP Validation window (DCP-12)
+	AS-03	AS-03
+	Choose the DCP folder.	DCP қалтасын таңдаңыз.
+	DCP Validation	DCP тексеру
+	DCP folder	DCP қалтасы
+	DCP folder (the one holding ASSETMAP)	DCP қалтасы (ASSETMAP бар қалта)
+	Evidence	Дәлел
+	How to fix	Қалай түзетуге болады
+	Interrupted	Үзілді
+	Not applicable	Қолданылмайды
+	Report	Есеп
+	Report saved: {path}	Есеп сақталды: {path}
+	Required	Міндетті
+	Rule	Ереже
+	Rules	Ережелер
+	Save JSON…	JSON сақтау…
+	Save Markdown…	Markdown сақтау…
+	Save report	Есепті сақтау
+	Skipped	Өткізілді
+	Standard: {standard}	Стандарт: {standard}
+	Validate	Тексеру
+	Validate DCP…	DCP тексеру…
+	the engine sent no profiles	қозғалтқыш профильдерді жібермеді
+	{n} files checked	{n} файл тексерілді

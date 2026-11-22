@@ -42,26 +42,29 @@ prefix="$(realpath -m -- "$prefix")"
 source_dir="$(CDPATH='' cd -- "$(dirname -- "$0")" && pwd -P)"
 case "$prefix/" in "$source_dir/"*) fail 'choose an installation prefix outside the extracted tarball' ;; esac
 app_id=io.github.ubuntuokos.cfa4
-for binary in cfa4 cfa4-cli; do
+for binary in cfa4 cfa4-cli cfa4-qt; do
   [ -f "$source_dir/bin/$binary" ] || fail "missing bin/$binary; extract the complete tarball first"
 done
 [ -f "$source_dir/share/applications/$app_id.desktop" ] || fail 'missing desktop entry; extract the complete tarball first'
 # the Qt GUI's launcher comes with its Python package: checked before anything is written
-if [ -f "$source_dir/bin/cfa4-qt" ] && [ ! -f "$source_dir/lib/cfa4/python/cfa4_qt/__main__.py" ]; then
-  fail 'missing lib/cfa4/python/cfa4_qt; extract the complete tarball first'
+[ -f "$source_dir/lib/cfa4/python/cfa4_qt/__main__.py" ] \
+  || fail 'missing lib/cfa4/python/cfa4_qt; extract the complete tarball first'
+# No egui is installed or started (owner decisions 2026-11-12 and 2026-11-14,
+# docs/plans/CFA4-QT6-FINISH-001.md Q4.3): bin/cfa4 is the Qt GUI's launcher, never a native program.
+if [ "$(head -c 4 -- "$source_dir/bin/cfa4" | od -An -c | tr -d ' ')" = '177ELF' ]; then
+  fail 'bin/cfa4 is a native program (the egui editor), not the Qt GUI launcher; use a current CFA4 tarball'
 fi
 
 mkdir -p -- "$prefix/bin" "$prefix/share"
+# `cfa4` and `cfa4-qt` both start the Qt 6 GUI; an egui `cfa4` of an earlier release is replaced.
 install -m755 -- "$source_dir/bin/cfa4" "$prefix/bin/cfa4"
 install -m755 -- "$source_dir/bin/cfa4-cli" "$prefix/bin/cfa4-cli"
 cp -R -- "$source_dir/share/." "$prefix/share/"
 # The Qt 6 GUI: its launcher finds the Python package in ../lib/cfa4/python.
-if [ -f "$source_dir/bin/cfa4-qt" ]; then
-  install -m755 -- "$source_dir/bin/cfa4-qt" "$prefix/bin/cfa4-qt"
-  rm -rf -- "$prefix/lib/cfa4/python/cfa4_qt"
-  mkdir -p -- "$prefix/lib/cfa4/python"
-  cp -R -- "$source_dir/lib/cfa4/python/cfa4_qt" "$prefix/lib/cfa4/python/"
-fi
+install -m755 -- "$source_dir/bin/cfa4-qt" "$prefix/bin/cfa4-qt"
+rm -rf -- "$prefix/lib/cfa4/python/cfa4_qt"
+mkdir -p -- "$prefix/lib/cfa4/python"
+cp -R -- "$source_dir/lib/cfa4/python/cfa4_qt" "$prefix/lib/cfa4/python/"
 # CFA4's FFmpeg 9.0.2 (ADR 0005): the binaries find it in ../lib/cfa4/ffmpeg-9.0.2 ($ORIGIN RUNPATH)
 # when /opt/cfa4 has none. Replaced as a whole, so no library of an older release stays behind.
 ffmpeg_dir=lib/cfa4/ffmpeg-9.0.2
@@ -74,13 +77,9 @@ fi
 # Use an absolute path so launching from the application menu does not depend on PATH.
 # Escape the Exec argument, then the desktop entry's string value (two separate layers).
 # https://specifications.freedesktop.org/desktop-entry/latest/exec-variables.html
-# The menu entry starts the Qt 6 GUI (owner decision 2026-11-12); a tarball without it keeps egui.
-gui=cfa4
-if [ -f "$source_dir/bin/cfa4-qt" ]; then
-  gui=cfa4-qt
-fi
-exec_path="$(printf '%s' "$prefix/bin/$gui" | sed 's/[\\"`$]/\\&/g; s/\\/\\\\/g')"
-try_path="$(printf '%s' "$prefix/bin/$gui" | sed 's/\\/\\\\/g')"
+# The menu entry starts the Qt 6 GUI (owner decision 2026-11-12), and only it (Q4.3).
+exec_path="$(printf '%s' "$prefix/bin/cfa4-qt" | sed 's/[\\"`$]/\\&/g; s/\\/\\\\/g')"
+try_path="$(printf '%s' "$prefix/bin/cfa4-qt" | sed 's/\\/\\\\/g')"
 while IFS= read -r line || [ -n "$line" ]; do
   case "$line" in
     Exec=*) printf 'Exec="%s" %%F\n' "$exec_path" ;;
@@ -89,9 +88,9 @@ while IFS= read -r line || [ -n "$line" ]; do
   esac
 done <"$source_dir/share/applications/$app_id.desktop" >"$prefix/share/applications/$app_id.desktop"
 # Credits files open in the Qt GUI (cfa4-qt): its entry with the absolute launcher, or none
-# when this tarball has no Qt GUI.
+# when this tarball has no credits entry.
 credits_entry="$prefix/share/applications/$app_id.credits.desktop"
-if [ -f "$source_dir/bin/cfa4-qt" ] && [ -f "$source_dir/share/applications/$app_id.credits.desktop" ]; then
+if [ -f "$source_dir/share/applications/$app_id.credits.desktop" ]; then
   qt_exec="$(printf '%s' "$prefix/bin/cfa4-qt" | sed 's/[\\"`$]/\\&/g; s/\\/\\\\/g')"
   qt_try="$(printf '%s' "$prefix/bin/cfa4-qt" | sed 's/\\/\\\\/g')"
   while IFS= read -r line || [ -n "$line" ]; do
@@ -118,13 +117,13 @@ fi
 # The few libraries the tarball leaves to the system (VA-API, DRM, zlib, libstdc++, GStreamer):
 # name what a minimal system lacks instead of failing at the first start.
 if command -v ldd >/dev/null 2>&1; then
-  missing="$(ldd "$prefix/bin/cfa4" 2>/dev/null | awk '$2 == "=>" && $3 == "not" {print $1}' | sort -u | tr '\n' ' ' || true)"
+  missing="$(ldd "$prefix/bin/cfa4-cli" 2>/dev/null | awk '$2 == "=>" && $3 == "not" {print $1}' | sort -u | tr '\n' ' ' || true)"
   if [ -n "$missing" ]; then
     echo "warning: CFA4 needs these libraries from Ubuntu's archive: $missing" >&2
     echo "  e.g. sudo apt install libva2 libva-drm2 libdrm2 libgstreamer1.0-0 libgstreamer-plugins-base1.0-0" >&2
   fi
 fi
-printf 'Installed CFA4 in %s\nLaunch it from the application menu or run "%s/bin/cfa4".\n' "$prefix" "$prefix"
+printf 'Installed CFA4 in %s\nLaunch the Qt 6 GUI from the application menu or run "%s/bin/cfa4".\n' "$prefix" "$prefix"
 case ":${PATH:-}:" in
   *":$prefix/bin:"*) ;;
   *) printf 'For terminal commands, add %s/bin to your PATH.\n' "$prefix" ;;

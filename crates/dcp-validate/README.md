@@ -134,6 +134,8 @@ The native backend implements these rules:
 | `DCP.SUB.001` | Subtitle and caption documents (see below). |
 | `DCP.NAME.001` | The ISDCF name in `ContentTitleText` (see below). |
 | `DCP.MARK.001` | Markers (see below). |
+| `DCP.SIG.001` | XML signatures of the compositions and packing lists (see below). |
+| `DCP.SIG.002` | Signer certificate chains (see below). |
 
 `DCP.MARK.001` checks each composition's markers:
 
@@ -152,7 +154,7 @@ The native backend implements these rules:
 Tools differ on whether FFOC sits at offset 0 or 1 (CFA4's export writes 1), so both are accepted.
 
 If no packing list or composition playlist was read, the rules over them are `UNCHECKED`, never a
-vacuous pass. The signatures come with DCP-10.
+vacuous pass.
 
 ### Track files and pictures (DCP-06)
 
@@ -286,6 +288,28 @@ On CFA4 export packages renamed to ISDCF names, every mismatch dcp_inspect repor
 resolution, 3D, VF) is reported here too. The native rule also compares the content kind, aspect
 ratio, audio channels and the frame rate that a name without one implies (24); dcp_inspect does not.
 
+### Signatures (DCP-10)
+
+`DCP.SIG.001` (ST 429-7 / ST 429-8 with ST 430-3) re-reads every signed composition playlist and
+packing list and verifies its enveloped `ds:Signature` with `cfa4_dcp::xmldsig`:
+
+- `FAIL`: the signature does not verify (digest, signature value, key), naming the reason;
+- `FAIL`: it does not cover the whole document (`URI=""`);
+- `FAIL`: a `Signer` without a `Signature`, or the other way round, or more than one `Signature`;
+- `FAIL`: the certificate the `Signer` names (its serial number) is not the one that signed;
+- `FAIL`: an unsigned document where the profile requires the rule (`security`);
+- `WARNING`: an unsigned document beside signed ones, where the rule is optional;
+- `NOT_APPLICABLE`: nothing in the package is signed, where the rule is optional.
+
+`DCP.SIG.002` checks, for each verified signature, the certificate chain in `KeyInfo` against
+ST 430-2 6.2 and that the signer has the content signer role (`CS` in its CommonName). A document
+whose signature did not verify is `UNCHECKED` here. Whether the root is trusted is not decided.
+
+Not checked natively: that the `Signer`'s `X509IssuerName` matches the certificate, and that names
+are ASN.1 PrintableString (dcp_inspect checks both). The tests sign with xmlsec1 over openssl ST 430-2
+chains and skip without them, unless `CFA4_REQUIRE_ORACLES` is set as in CI. A package signed with
+another signer (signxml) verified both natively and in dcp_inspect, and a changed title failed both.
+
 ### Comparison with dcp_inspect
 
 On CFA4 exports the rules were compared with dcp_inspect: a flipped byte, a grown file and a marker
@@ -294,8 +318,9 @@ outside its reel. Both backends report the same failures.
 For DCP-06 the export's picture file was replaced by files asdcplib 2.13.3 wrapped from the same
 frames: one for another asset, one with MXF Interop labels, one stereoscopic. dcp_inspect and the
 native backend report the same problems: the asset id, the edit rate, the labels of the other
-standard, the stereoscopic file in a `MainPicture`. On the export itself both report the J2K QCD
-guard bits: CFA4's encoder writes 2 where the 2K profile has 1.
+standard, the stereoscopic file in a `MainPicture`. On the export itself both reported the J2K QCD
+guard bits then: CFA4's encoder wrote 2 where the 2K profile has 1. It writes 1 since plan
+CFA4-DCPVAL-LIBDCP-001 v1.1 phase 6.
 
 ## Report
 
@@ -349,7 +374,10 @@ The HTML report is DCP-15.
   convention.
 - `tests/profiles.rs` checks the history of the built-in profiles, a profile file that extends one,
   every kind of bad profile file and the size limit.
+- `tests/signatures.rs` signs small SMPTE packages with xmlsec1: a good one, a changed document, a
+  chain outside ST 430-2, an unsigned document beside a signed one, unsigned packages per profile,
+  a `Signer` without a `Signature` and an unfilled signature template.
 - `tests/export_round_trip.rs` writes a DCP with `cfa4-export` and runs three profiles on it:
   - Quick Scan and Full Integrity, including the hashes, must pass;
-  - SMPTE Cinema: the track files and the sound pass, the picture format is a warning (25 fps), and the only
-    failure allowed is the J2K guard bits above.
+  - SMPTE Cinema: the track files and the sound pass, the picture format is a warning (25 fps), and
+    nothing fails.

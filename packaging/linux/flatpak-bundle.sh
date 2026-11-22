@@ -59,6 +59,10 @@ rm -rf "$WORK"
 mkdir -p "$WORK/stage"
 tar -xzf "$TARBALL" -C "$WORK/stage" --strip-components=1
 [ -x "$WORK/stage/bin/cfa4" ] || { echo "error: $TARBALL has no bin/cfa4" >&2; exit 1; }
+# Q4.3: bin/cfa4 is the Qt GUI's launcher; a tarball with the native egui editor there is refused
+if [ "$(head -c 4 -- "$WORK/stage/bin/cfa4" | od -An -c | tr -d ' ')" = '177ELF' ]; then
+  echo "error: $TARBALL carries the egui editor as bin/cfa4 (build it with the current package.sh)" >&2; exit 1
+fi
 # ADR 0005 step 4: a release bundle carries CFA4's FFmpeg 9.0.2 (package.sh without --without-ffmpeg)
 [ -f "$WORK/stage/lib/cfa4/ffmpeg-9.0.2/share/doc/ffmpeg/BUILDINFO" ] \
   || { echo "error: $TARBALL has no lib/cfa4/ffmpeg-9.0.2 (build it with package.sh, not --without-ffmpeg)" >&2; exit 1; }

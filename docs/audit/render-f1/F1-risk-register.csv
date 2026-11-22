@@ -1,0 +1,18 @@
+id,candidate,risk,severity,likelihood,owner_phase,mitigation,status
+R-01,OpenImageIO,FFmpeg plugin builds a second libav (A7),high,medium,A3,build with FFmpeg support OFF; CI check of the resulting library dependencies,open
+R-02,OpenImageIO,optional proprietary R3DSDK or Nuke plugin pulled in,medium,low,A3,build with an explicit allow-list of formats; SBOM review,open
+R-03,OpenImageIO,C++ via FFI needs its own ADR (ADR 0003 rule 2),medium,certain,A3,write the ADR before any binding (existing decision; not rebuilt here),existing
+R-04,VapourSynth,Python version conflict with the Qt environment (A11),medium,medium,F5,worker uses the same system Python 3.13+; confirm on reference machine,open
+R-05,VapourSynth,plug-in licence unknown or GPL-2.0-only,high,medium,F1,per-plug-in licence gate at pin time; no GPL-2.0-only,open
+R-06,VapourSynth,GPL-3.0 plug-in (neo_f3kdb) linked into an Apache/LGPL process,low,low,F5,separate worker process only; never linked into the engine,open
+R-07,VapourSynth,QTGMC engines (mvtools/nnedi3/eedi3/fft3dfilter/dfttest) licences not checked,high,medium,F1,check each licence at its pin before the POC,open
+R-08,VapourSynth,native code in a worker parses untrusted media,high,medium,B4,run under cfa4-sandbox (existing) with a worker profile (see sandbox decision),open
+R-09,ReelForge,single maintainer; 8-bit fixed-point pixel path,medium,high,D1,pattern only; no code or dependency taken,accepted
+R-10,avio,single maintainer; FFmpeg 7/8 only; own libav binding with unsafe,high,high,D1,reference only; keep crates/ffmpeg (existing),accepted
+R-11,rust-motion,single maintainer; shares upstream-derived code with CFA4 (duplicate),medium,high,D1,reference only for vector/path/shape ideas; no code taken,accepted
+R-12,rust-motion,overlap with Dioxuscut and CFA4 text/captions crates not decided,low,medium,F6,decide with the owner; no new crate before the overlap decision,open
+R-13,EC candidate,upstream link missing in the repository (brand filter); not audited,medium,certain,F1,coordinator supplies the link; audit then,blocked
+R-14,Blender,licence variant and version not pinned,low,certain,F5,pin version and record licence before the external-workflow phase,open
+R-15,Natron,code incompatible (older Qt; GPL); ADR 0003 A4 names openfx-misc as first pack,medium,certain,A4,capability reference only; wait for owner answer on ADR 0003 A4,open
+R-16,all Rust candidates,MSRV drift against toolchain 1.97.1,low,low,F1,only ReelForge (1.97) is near the limit; satisfied today,accepted
+R-17,all,reference machine facts (Python; driver) still PENDING,medium,certain,F0a,run render_environment.py on the reference machine,open

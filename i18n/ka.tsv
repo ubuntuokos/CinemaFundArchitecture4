@@ -4775,3 +4775,128 @@ export.summary	Low	დაბალი
 # Timecode sync varispeed and user bits (TC-8, #1308)
 	Varispeed: adjust the playback speed instead of seeking	Varispeed: გადახტომის ნაცვლად დაკვრის სიჩქარის მორგება
 	User bits	მომხმარებლის ბიტები
+# AS-11 programme parts and AS-10 metadata (G2, #1371, #1375)
+	{tc}  Segmentation	{tc}  სეგმენტაცია
+	Marker Type	მარკერის ტიპი
+	Chapter	თავი
+	Segmentation (AS-11 programme part)	სეგმენტაცია (AS-11 გადაცემის ნაწილი)
+	AS-10	AS-10
+# AT9/AT3 converter (Tools ▸ Audio Tools, AT3-2)
+	AT9/AT3 Converter	AT9/AT3 გადამყვანი
+	AT9/AT3 Converter…	AT9/AT3 გადამყვანი…
+	Files to convert:	გადასაყვანი ფაილები:
+	Add Files	ფაილების დამატება
+	Add Files…	ფაილების დამატება…
+	Convert to:	გადაყვანა ფორმატში:
+	Bit rate:	ბიტური სიჩქარე:
+	Sample format:	სემპლის ფორმატი:
+	Output folder:	გამოტანის საქაღალდე:
+	Output Folder	გამოტანის საქაღალდე
+	Next to each source file	თითოეული წყარო ფაილის გვერდით
+	AT9 and ATRAC3plus files convert to WAV; encoding AT9, ATRAC3plus and MP3 is not available yet.	AT9 და ATRAC3plus ფაილები WAV-ში გადაიყვანება; AT9, ATRAC3plus და MP3 კოდირება ჯერ არ არის ხელმისაწვდომი.
+	Convert	გადაყვანა
+	Add the files to convert first.	ჯერ დაამატეთ გადასაყვანი ფაილები.
+	Done: {n} file(s) converted.	მზადაა: გადაყვანილია {n} ფაილი.
+	Converting {name}…	{name} გადაიყვანება…
+	Stopping…	ჩერდება…
+	AT3 (ATRAC3, PSP / PS3)	AT3 (ATRAC3, PSP / PS3)
+	WAV (PCM)	WAV (PCM)
+	132 kbit/s (LP2)	132 kbit/s (LP2)
+	105 kbit/s	105 kbit/s
+	66 kbit/s (LP4, joint stereo)	66 kbit/s (LP4, joint stereo)
+	16-bit	16 ბიტი
+	24-bit	24 ბიტი
+	32-bit float	32 ბიტი მცოცავი წერტილით
+
+# Datamosh transition (Grunge & Distort, DM1, #1409)
+	Datamosh	Datamosh
+	Residual	ნარჩენი
+	Motion Boost	მოძრაობის გაძლიერება
+	Recovery	აღდგენა
+	Encode Resolution	კოდირების გარჩევადობა
+	Half	ნახევარი
+	Quarter	მეოთხედი
+# Datamosh Bloom (Glitch, DM2)
+	Datamosh Bloom	Datamosh-ის აყვავება
+	Start Time (seconds)	დაწყების დრო (წამი)
+	Repeats	გამეორებები
+
+# Recent effects, per-channel waveform, white balance selector (SC-2/SC-3/SC-4, #1419 #1420 #1421)
+	Apply a recently used effect to the selected clips	ბოლოს გამოყენებული ეფექტის გამოყენება არჩეულ კლიპებზე
+	Disable all effects	ყველა ეფექტის გამორთვა
+	Enable all effects	ყველა ეფექტის ჩართვა
+	No recent effects	ბოლო ეფექტები არ არის
+	Recent effects	ბოლო ეფექტები
+	Switch every effect of the selected clips off	რთავს გამორთულად არჩეული კლიპების ყველა ეფექტს
+	Switch every effect of the selected clips on	რთავს ჩართულად არჩეული კლიპების ყველა ეფექტს
+	Merged	გაერთიანებული
+	Per Channel	არხების მიხედვით
+	Channel Zoom	არხების მასშტაბი
+	White Balance Selector (click a neutral point in the Program monitor; Esc cancels)	თეთრის ბალანსის ამომრჩევი (დააწკაპუნეთ ნეიტრალურ წერტილზე პროგრამის მონიტორზე; Esc აუქმებს)
+# Task Manager and subtitle kind (SC-2/3/4)
+	Task Manager	ამოცანების მენეჯერი
+	Background jobs	ფონური დავალებები
+	Exports	ექსპორტები
+	Shared task queue	საერთო ამოცანების რიგი
+	Task	ამოცანა
+	State	მდგომარეობა
+	Details	დეტალები
+	Time left	დარჩენილი დრო
+	Scheduled	დაგეგმილი
+	Queued	რიგშია
+	Waiting for resources	რესურსებს ელოდება
+	Blocked	დაბლოკილი
+	Running	სრულდება
+	Paused	შეჩერებულია
+	Cancelling	უქმდება
+	Interactive	ინტერაქტიული
+	Speculative	სპეკულაციური
+	Final render	საბოლოო რენდერი
+	Show finished	დასრულებულების ჩვენება
+	Nothing is running.	არაფერი სრულდება.
+	Not reported by this engine yet.	ეს ძრავა ჯერ არ აცხადებს.
+	Not available: {why}	მიუწვდომელია: {why}
+	{name} waits: {why}	{name} ელოდება: {why}
+	{running} running · {waiting} waiting	{running} სრულდება · {waiting} ელოდება
+	{n} active	{n} აქტიური
+	{n} CPU	{n} CPU
+	{n} GiB	{n} GiB
+	{n} MiB	{n} MiB
+	Needs your decision	საჭიროებს თქვენს გადაწყვეტილებას
+	Run now	გაშვება ახლავე
+	Next slot	შემდეგი სლოტი
+	Missed its start	გამოტოვებულია დაწყება
+	Missed its start at {time}	გამოტოვებულია დაწყება {time}-ზე
+	Starts at {time}	იწყება {time}-ზე
+	Subtitle kind	სუბტიტრების სახეობა
+	Subtitles	სუბტიტრები
+	Captions for the hearing impaired	სუბტიტრები სმენადაქვეითებულთათვის
+	Forced narrative	იძულებითი თხრობა (forced narrative)
+	Silence	სიჩუმე
+	Detect Silence	სიჩუმის აღმოჩენა
+	Remove Silence	სიჩუმის წაშლა
+	Clear Silence Markers	სიჩუმის მარკერების გასუფთავება
+# DCP Validation window (DCP-12)
+	AS-03	AS-03
+	Choose the DCP folder.	აირჩიეთ DCP-ის საქაღალდე.
+	DCP Validation	DCP-ის შემოწმება
+	DCP folder	DCP-ის საქაღალდე
+	DCP folder (the one holding ASSETMAP)	DCP-ის საქაღალდე (რომელშიც ASSETMAP არის)
+	Evidence	მტკიცებულება
+	How to fix	როგორ გამოსწორდეს
+	Interrupted	შეწყვეტილია
+	Not applicable	არ ვრცელდება
+	Report	ანგარიში
+	Report saved: {path}	ანგარიში შენახულია: {path}
+	Required	სავალდებულო
+	Rule	წესი
+	Rules	წესები
+	Save JSON…	JSON-ის შენახვა…
+	Save Markdown…	Markdown-ის შენახვა…
+	Save report	ანგარიშის შენახვა
+	Skipped	გამოტოვებულია
+	Standard: {standard}	სტანდარტი: {standard}
+	Validate	შემოწმება
+	Validate DCP…	DCP-ის შემოწმება…
+	the engine sent no profiles	ძრავმა პროფილები არ გამოგზავნა
+	{n} files checked	შემოწმებულია {n} ფაილი

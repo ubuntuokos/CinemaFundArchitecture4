@@ -4755,3 +4755,128 @@
 	Read Timecode from LTC Audio	Зчитати тайм-код зі звуку LTC
 # Credits: voices (the Voice column) in the block's properties (F10-C16)
 	Voices	Голоси
+# AS-11 programme parts and AS-10 metadata (G2, #1371, #1375)
+	{tc}  Segmentation	{tc}  Сегментація
+	Marker Type	Тип маркера
+	Chapter	Розділ
+	Segmentation (AS-11 programme part)	Сегментація (частина програми AS-11)
+	AS-10	AS-10
+# AT9/AT3 converter (Tools ▸ Audio Tools, AT3-2)
+	AT9/AT3 Converter	Конвертер AT9/AT3
+	AT9/AT3 Converter…	Конвертер AT9/AT3…
+	Files to convert:	Файли для перетворення:
+	Add Files	Додати файли
+	Add Files…	Додати файли…
+	Convert to:	Перетворити на:
+	Bit rate:	Бітрейт:
+	Sample format:	Формат семплів:
+	Output folder:	Тека виводу:
+	Output Folder	Тека виводу
+	Next to each source file	Поруч із кожним вихідним файлом
+	AT9 and ATRAC3plus files convert to WAV; encoding AT9, ATRAC3plus and MP3 is not available yet.	Файли AT9 і ATRAC3plus перетворюються на WAV; кодування в AT9, ATRAC3plus і MP3 поки недоступне.
+	Convert	Перетворити
+	Add the files to convert first.	Спершу додайте файли для перетворення.
+	Done: {n} file(s) converted.	Готово: перетворено файлів: {n}.
+	Converting {name}…	Перетворення {name}…
+	Stopping…	Зупинення…
+	AT3 (ATRAC3, PSP / PS3)	AT3 (ATRAC3, PSP / PS3)
+	WAV (PCM)	WAV (PCM)
+	132 kbit/s (LP2)	132 кбіт/с (LP2)
+	105 kbit/s	105 кбіт/с
+	66 kbit/s (LP4, joint stereo)	66 кбіт/с (LP4, joint stereo)
+	16-bit	16 біт
+	24-bit	24 біт
+	32-bit float	32 біт з рухомою комою
+
+# Datamosh transition (Grunge & Distort, DM1, #1409)
+	Datamosh	Datamosh
+	Residual	Залишок
+	Motion Boost	Підсилення руху
+	Recovery	Відновлення
+	Encode Resolution	Роздільність кодування
+	Half	Половина
+	Quarter	Чверть
+# Datamosh Bloom (Glitch, DM2)
+	Datamosh Bloom	Datamosh-розквіт
+	Start Time (seconds)	Час початку (секунди)
+	Repeats	Повтори
+
+# Recent effects, per-channel waveform, white balance selector (SC-2/SC-3/SC-4, #1419 #1420 #1421)
+	Apply a recently used effect to the selected clips	Застосувати нещодавно використаний ефект до вибраних кліпів
+	Disable all effects	Вимкнути всі ефекти
+	Enable all effects	Увімкнути всі ефекти
+	No recent effects	Немає нещодавніх ефектів
+	Recent effects	Нещодавні ефекти
+	Switch every effect of the selected clips off	Вимикає кожен ефект вибраних кліпів
+	Switch every effect of the selected clips on	Вмикає кожен ефект вибраних кліпів
+	Merged	Об’єднано
+	Per Channel	За каналами
+	Channel Zoom	Масштаб каналів
+	White Balance Selector (click a neutral point in the Program monitor; Esc cancels)	Вибір балансу білого (клацніть нейтральну точку в моніторі «Програма»; Esc — скасувати)
+# Task Manager and subtitle kind (SC-2/3/4)
+	Task Manager	Диспетчер завдань
+	Background jobs	Фонові завдання
+	Exports	Експорт
+	Shared task queue	Спільна черга завдань
+	Task	Завдання
+	State	Стан
+	Details	Подробиці
+	Time left	Залишилося часу
+	Scheduled	Заплановано
+	Queued	У черзі
+	Waiting for resources	Очікує на ресурси
+	Blocked	Заблоковано
+	Running	Виконується
+	Paused	Призупинено
+	Cancelling	Скасування
+	Interactive	Інтерактивне
+	Speculative	Випереджальне
+	Final render	Фінальний рендер
+	Show finished	Показати завершені
+	Nothing is running.	Нічого не виконується.
+	Not reported by this engine yet.	Цей рушій поки що не повідомляє.
+	Not available: {why}	Недоступно: {why}
+	{name} waits: {why}	{name} очікує: {why}
+	{running} running · {waiting} waiting	{running} виконується · {waiting} очікує
+	{n} active	{n} активних
+	{n} CPU	{n} CPU
+	{n} GiB	{n} ГіБ
+	{n} MiB	{n} МіБ
+	Needs your decision	Потрібне ваше рішення
+	Run now	Запустити зараз
+	Next slot	Наступний слот
+	Missed its start	Пропущено запуск
+	Missed its start at {time}	Пропущено запуск о {time}
+	Starts at {time}	Запуск о {time}
+	Subtitle kind	Тип субтитрів
+	Subtitles	Субтитри
+	Captions for the hearing impaired	Субтитри для людей із порушенням слуху
+	Forced narrative	Примусовий переклад (forced narrative)
+	Silence	Тиша
+	Detect Silence	Виявити тишу
+	Remove Silence	Видалити тишу
+	Clear Silence Markers	Очистити маркери тиші
+# DCP Validation window (DCP-12)
+	AS-03	AS-03
+	Choose the DCP folder.	Виберіть теку DCP.
+	DCP Validation	Перевірка DCP
+	DCP folder	Тека DCP
+	DCP folder (the one holding ASSETMAP)	Тека DCP (та, де лежить ASSETMAP)
+	Evidence	Доказ
+	How to fix	Як виправити
+	Interrupted	Перервано
+	Not applicable	Не застосовується
+	Report	Звіт
+	Report saved: {path}	Звіт збережено: {path}
+	Required	Обов'язково
+	Rule	Правило
+	Rules	Правила
+	Save JSON…	Зберегти JSON…
+	Save Markdown…	Зберегти Markdown…
+	Save report	Зберегти звіт
+	Skipped	Пропущено
+	Standard: {standard}	Стандарт: {standard}
+	Validate	Перевірити
+	Validate DCP…	Перевірити DCP…
+	the engine sent no profiles	рушій не надіслав профілів
+	{n} files checked	Перевірено файлів: {n}
