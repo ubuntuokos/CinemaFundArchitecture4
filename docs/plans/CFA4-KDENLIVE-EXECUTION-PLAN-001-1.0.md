@@ -2,8 +2,8 @@
 
 | Dokumentumadat | Érték |
 |---|---|
-| Verzió | 1.1 (javaslat; a szűrés után) |
-| Állapot | **Jóváhagyásra vár** (tulajdonos: ubuntuokos). A jóváhagyás nem indít megvalósítást; minden hullám és K-pont külön tulajdonosi indítási engedélyt igényel (`coordination.md` §2.10) |
+| Verzió | 1.1 (jóváhagyva; a szűrés után) |
+| Állapot | **Jóváhagyva** (István, 2026-11-22 22:44, „a tervet jóváhagyom, véglegesítsd és kezd el a fejlesztést”). A fejlesztés a 6. pont sorrendjében indul; a D-2 (K11) és a D-4 (K13) pontig az érintett K-pont áll |
 | Dátum | 2026-11-22 |
 | Alap | CFA4 `main` @ `963b0313` (2026-11-22); `CFA4-AI_modules` @ `e2746cb` (2026-11-16) |
 | Módszer | Csak olvasás: a `main` fája és tervei, a nyitott PR-ok címei (a #1559 diffje), a `CFA4-AI_modules` ADR 0008-ja, a 11 kiegészítő tároló és a 7 Kdenlive-automatizálási fork. Kódot nem futtattam, tesztet nem indítottam |
@@ -184,5 +184,5 @@ Minden hullám **külön tulajdonosi indítási engedélyt** igényel, és minde
 
 | Dátum | Változás |
 |---|---|
-| 2026-11-22 | 1.1 (javaslat): István kérésére az 5. pont szűrve: csak a CFA4-ben és más tervben nem szereplő képességek maradnak (5A kikerül, 5B marad); a hullámok ennek megfelelően újraszámolva |
+| 2026-11-22 | 1.1 (jóváhagyva 22:44):  István kérésére az 5. pont szűrve: csak a CFA4-ben és más tervben nem szereplő képességek maradnak (5A kikerül, 5B marad); a hullámok ennek megfelelően újraszámolva |
 | 2026-11-22 | 1.0 (javaslat): K36 elvégezve; delta, tárolók és forkok állapota, K-pontonkénti állapot, hullámok, nyitott döntések |

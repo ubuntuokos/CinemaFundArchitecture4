@@ -10,7 +10,7 @@
 | Helye | `docs/plans/CFA4-KDENLIVE-PLAN-001-FINAL-1.0.md` a CinemaFundArchitecture4 `main` ágán (tulajdonosi szabály, 2026-11-03: terv csak itt lehet) |
 | Felváltja | `docs/kdenlive-parity.md` (CinemaFundArchitecture4, `c9b024f`, 2026-10-27); `docs/kdenlive-parity.md` (CFA4-AI_modules, `e241771`, 2026-10-30); CFA4-KDENLIVE-CAPABILITY-ADAPTATION-001 v1.0 (2026-11-03) |
 | Végrehajtás | A dokumentum elfogadása nem indít végrehajtást; minden K-pont előtt a IV. pont kapuja kötelező |
-| K36 frissítés (2026-11-22, **jóváhagyásra vár**) | A K36 kaput és a frissített végrehajtási tervet (hullámok W0–W5, K-pontonkénti delta, kiegészítő tárolók és forkok állapota, nyitott döntések) a [`CFA4-KDENLIVE-EXECUTION-PLAN-001-1.0.md`](CFA4-KDENLIVE-EXECUTION-PLAN-001-1.0.md) tartalmazza. Elfogadásig ez a FINAL 1.0 az érvényes; elfogadás után az ott rögzített átszámozások (ADR 0006 → ADR 0008 az MI-rétegnél; K19 és K54 kész; K17 szűkítve) ebbe a fájlba is átvezetendők |
+| K36 frissítés (2026-11-22, **jóváhagyva**) | A K36 kaput és a frissített végrehajtási tervet (hullámok W0–W5, K-pontonkénti delta, kiegészítő tárolók és forkok állapota, nyitott döntések) a [`CFA4-KDENLIVE-EXECUTION-PLAN-001-1.0.md`](CFA4-KDENLIVE-EXECUTION-PLAN-001-1.0.md) tartalmazza. A végrehajtási terv 5A pontjában kikerült K-pontokat (kész, vagy más terv hordozza) ebben a fájlban már nem szabad végrehajtani; az ott rögzített átszámozások (ADR 0006 → ADR 0008 az MI-rétegnél; K19 és K54 kész; K17 szűkítve) ebbe a fájlba is átvezetendők |
 
 ## I. Összefoglaló
 
@@ -705,4 +705,4 @@ a saját tervében, külön tulajdonosi döntéssel készül.
 | 2026-11-03 | minor | K43 (Lottie/Glaxnimate) a főcímgenerátor eleme (tulajdonosi döntés) |
 | 2026-11-03 | minor | K60 átírva: többmonitoros munka az első, SDI/Blackmagic később opcionális |
 | 2026-11-03 | major | Jóváhagyva a tulajdonos által; E10 megerősítve; a 11.7 pontjai később jönnek; a korábbi Kdenlive-tervek elavultak (T1, T8) |
-| 2026-11-22 | minor | K36 elvégezve (javaslat, jóváhagyásra vár): [`CFA4-KDENLIVE-EXECUTION-PLAN-001-1.0.md`](CFA4-KDENLIVE-EXECUTION-PLAN-001-1.0.md); S7 forrásként felvéve. A K-sorok tartalma elfogadásig nem változik |
+| 2026-11-22 | minor | K36 elvégezve, a végrehajtási tervet István jóváhagyta (22:44): [`CFA4-KDENLIVE-EXECUTION-PLAN-001-1.0.md`](CFA4-KDENLIVE-EXECUTION-PLAN-001-1.0.md); S7 forrásként felvéve. A K-sorok tartalma elfogadásig nem változik |
