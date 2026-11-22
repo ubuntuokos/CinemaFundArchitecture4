@@ -2881,6 +2881,13 @@
    "class": "other",
    "crate": "cfa4-engine",
    "kind": "struct",
+   "module": "objects_track.rs",
+   "name": "PendingObjectTrack"
+  },
+  {
+   "class": "other",
+   "crate": "cfa4-engine",
+   "kind": "struct",
    "module": "panels.rs",
    "name": "EventLog"
   },
@@ -9501,6 +9508,51 @@
   },
   {
    "from": "cfa4-engine/narration.rs",
+   "item": "Tick",
+   "to": "cfa4-time"
+  },
+  {
+   "from": "cfa4-engine/objects_track.rs",
+   "item": "Report",
+   "to": "cfa4-export"
+  },
+  {
+   "from": "cfa4-engine/objects_track.rs",
+   "item": "Affine",
+   "to": "cfa4-geom"
+  },
+  {
+   "from": "cfa4-engine/objects_track.rs",
+   "item": "FrameRequest",
+   "to": "cfa4-media"
+  },
+  {
+   "from": "cfa4-engine/objects_track.rs",
+   "item": "ItemId",
+   "to": "cfa4-project"
+  },
+  {
+   "from": "cfa4-engine/objects_track.rs",
+   "item": "object",
+   "to": "cfa4-project"
+  },
+  {
+   "from": "cfa4-engine/objects_track.rs",
+   "item": "cftrack",
+   "to": "cfa4-render"
+  },
+  {
+   "from": "cfa4-engine/objects_track.rs",
+   "item": "source_size",
+   "to": "cfa4-render"
+  },
+  {
+   "from": "cfa4-engine/objects_track.rs",
+   "item": "track",
+   "to": "cfa4-render"
+  },
+  {
+   "from": "cfa4-engine/objects_track.rs",
    "item": "Tick",
    "to": "cfa4-time"
   },
