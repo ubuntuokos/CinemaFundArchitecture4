@@ -328,6 +328,55 @@ impl Manifest {
     }
 }
 
+/// The shim namespace (section 10.2).
+pub const SHIM_NS: &str = "http://www.amwa.tv/as-02/1.0/shim";
+
+/// The shim file (`shim.xml`, section 10): the name of the shim, optionally its identifier URI
+/// and annotations.
+#[derive(Clone, Debug, Default, PartialEq, Eq)]
+pub struct Shim {
+    pub name: String,
+    /// `ShimID`, an `xs:anyURI`.
+    pub id: Option<String>,
+    pub annotations: Vec<String>,
+}
+
+impl Shim {
+    /// The shim file as XML (the sample of section 10.3 has this layout).
+    pub fn to_xml(&self) -> String {
+        let mut o = String::new();
+        let _ = writeln!(o, "<?xml version=\"1.0\" encoding=\"UTF-8\"?>");
+        let _ = writeln!(o, "<Shim xmlns=\"{SHIM_NS}\">");
+        let _ = writeln!(o, "  <ShimName>{}</ShimName>", escape(&self.name));
+        if let Some(id) = &self.id {
+            let _ = writeln!(o, "  <ShimID>{}</ShimID>", escape(id));
+        }
+        for a in &self.annotations {
+            let _ = writeln!(o, "  <AnnotationText>{}</AnnotationText>", escape(a));
+        }
+        let _ = writeln!(o, "</Shim>");
+        o
+    }
+
+    /// Read a shim file: a `Shim` element in the shim namespace with a `ShimName`.
+    pub fn parse(xml: &str) -> Result<Shim, String> {
+        let opt = roxmltree::ParsingOptions { allow_dtd: false, nodes_limit: 100_000, entity_resolver: None };
+        let doc = roxmltree::Document::parse_with_options(xml, opt).map_err(|e| format!("shim: not well-formed XML: {e}"))?;
+        let root = doc.root_element();
+        if root.tag_name().name() != "Shim" || root.tag_name().namespace() != Some(SHIM_NS) {
+            return Err(format!("shim: the root element must be Shim in {SHIM_NS}"));
+        }
+        let text_of = |name: &str| {
+            root.children()
+                .filter(|c| c.is_element() && c.tag_name().name() == name && c.tag_name().namespace() == Some(SHIM_NS))
+                .map(|c| c.text().unwrap_or("").trim().to_string())
+                .collect::<Vec<_>>()
+        };
+        let name = text_of("ShimName").into_iter().next().ok_or("shim: ShimName is missing")?;
+        Ok(Shim { name, id: text_of("ShimID").into_iter().next(), annotations: text_of("AnnotationText") })
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -411,5 +460,20 @@ mod tests {
         let mut s = bundle();
         s.bundle_name = "other".into();
         assert!(s.check_simple().iter().any(|e| e.contains("is called other.mxf")));
+    }
+
+    #[test]
+    fn shim_round_trips() {
+        let sh =
+            Shim { name: "Network <HD> Contribution".into(), id: Some("http://amwa.tv/AS-02-shim/2010/hd-j2k.txt".into()), annotations: vec!["a & b".into()] };
+        assert_eq!(Shim::parse(&sh.to_xml()).unwrap(), sh);
+        let bare = Shim { name: "x".into(), ..Default::default() };
+        assert_eq!(Shim::parse(&bare.to_xml()).unwrap(), bare);
+        // the sample of section 10.3
+        let sample = "<?xml version=\"1.0\" encoding=\"UTF-8\"?><Shim xmlns=\"http://www.amwa.tv/as-02/1.0/shim\"><ShimName>Network HD Contribution</ShimName><ShimID>http://amwa.tv/AS-02-shim/2010/hd-j2k.txt</ShimID><AnnotationText>An example</AnnotationText></Shim>";
+        assert_eq!(Shim::parse(sample).unwrap().name, "Network HD Contribution");
+        assert!(Shim::parse("<Shim xmlns=\"http://www.amwa.tv/as-02/1.0/shim\"/>").unwrap_err().contains("ShimName"));
+        assert!(Shim::parse("<Shim/>").is_err());
+        assert!(Shim::parse("<<").is_err());
     }
 }
