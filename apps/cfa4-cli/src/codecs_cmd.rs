@@ -121,7 +121,7 @@ static ROWS: &[Row] = &[
     video("Smacker Video (SMK2, SMK4) and Smacker Audio", &["smacker"], Ported, Sw("in Smacker (.smk)"), false, NoEnc),
     video("Ut Video", &["utvideo"], Own, Sw(""), false, NoEnc),
     video("Lagarith", &["lagarith"], Ported, Sw(""), false, NoEnc),
-    video("Bink video (Bink 1, with alpha)", &["bink"], Ported, Sw("in Bink (.bik)"), false, NoEnc),
+    video("Bink video (Bink 1, with alpha) and Bink audio (RDFT, DCT)", &["bink"], Ported, Sw("in Bink (.bik)"), false, NoEnc),
     video("MagicYUV", &["magicyuv"], Ported, Sw(""), false, NoEnc),
     video("id RoQ", &["roq"], Ported, Sw("in .roq files, with the DPCM sound (22.05 kHz)"), false, NoEnc),
     video("Interplay MVE", &["mve"], Ported, Sw("in .mve files, 8-bit palette and 16-bit pictures, with the sound"), false, NoEnc),
@@ -147,7 +147,6 @@ static ROWS: &[Row] = &[
     audio("AMR-NB / AMR-WB", &["amr"], Ported, Sw(""), NoEnc),
     audio("Speex", &["speex"], Ported, Sw("Ogg Speex"), NoEnc),
     audio("TTA (True Audio)", &["tta"], Ported, Sw(""), NoEnc),
-    audio("Bink audio (RDFT, DCT)", &["bink"], Ported, Sw("in Bink (.bik)"), NoEnc),
     audio(
         "RealAudio Cook / SIPR / 1.0 (14.4) / 2.0 (28.8), ATRAC1, ATRAC3, ATRAC3plus, ATRAC9",
         &["realaudio", "atracenc"],

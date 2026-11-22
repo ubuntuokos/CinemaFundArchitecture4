@@ -56,7 +56,7 @@ fidelity and the remaining work.
 | Smacker Video (SMK2, SMK4) and Smacker Audio | video | `crates/smacker` | ported | yes: in Smacker (.smk) | no |
 | Ut Video | video | `crates/utvideo` | own | yes | no |
 | Lagarith | video | `crates/lagarith` | ported | yes | no |
-| Bink video (Bink 1, with alpha) | video | `crates/bink` | ported | yes: in Bink (.bik) | no |
+| Bink video (Bink 1, with alpha) and Bink audio (RDFT, DCT) | video | `crates/bink` | ported | yes: in Bink (.bik) | no |
 | MagicYUV | video | `crates/magicyuv` | ported | yes | no |
 | id RoQ | video | `crates/roq` | ported | yes: in .roq files, with the DPCM sound (22.05 kHz) | no |
 | Interplay MVE | video | `crates/mve` | ported | yes: in .mve files, 8-bit palette and 16-bit pictures, with the sound | no |
@@ -82,7 +82,6 @@ fidelity and the remaining work.
 | AMR-NB / AMR-WB | audio | `crates/amr` | ported | yes | no |
 | Speex | audio | `crates/speex` | ported | yes: Ogg Speex | no |
 | TTA (True Audio) | audio | `crates/tta` | ported | yes | no |
-| Bink audio (RDFT, DCT) | audio | `crates/bink` | ported | yes: in Bink (.bik) | no |
 | RealAudio Cook / SIPR / 1.0 (14.4) / 2.0 (28.8), ATRAC1, ATRAC3, ATRAC3plus, ATRAC9 | audio | `crates/realaudio`, `crates/atracenc` | ported | yes: in RealMedia (.rm, .rmvb); ATRAC1 in MiniDisc (.aea) and Matroska, ATRAC3 also in WAV (.wav, .at3), ATRAC3plus in WAV and OpenMG (.at3, .oma, .aa3), ATRAC9 in WAV (.at9) | yes: ATRAC3 (.at3) in Tools ▸ Audio Tools ▸ AT9/AT3 Converter |
 | Shorten | audio | `crates/shorten` | ported | yes | no |
 | CRI ADX | audio | `crates/adx` | ported | yes | no |
