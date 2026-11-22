@@ -37,7 +37,11 @@ impl AVIOContextURL {
     ///
     /// `options` A dictionary filled with protocol-private options. After this
     /// call it holds the options that were not recognized, if any.
-    pub fn open(url: &CStr, flags: u32, options: Option<&mut Option<AVDictionary>>) -> Result<Self> {
+    pub fn open(
+        url: &CStr,
+        flags: u32,
+        options: Option<&mut Option<AVDictionary>>,
+    ) -> Result<Self> {
         let mut io_context = ptr::null_mut();
         let mut dummy_options = None;
         let options = options.unwrap_or(&mut dummy_options);
@@ -46,17 +50,29 @@ impl AVIOContextURL {
         // frees it as soon as it succeeds — while the connect that follows can
         // still fail. `with_copied_options()` gives libavformat a duplicate, so
         // a failure can never leave the caller with a freed dictionary.
-        let ret = with_copied_options(options, |options_ptr| unsafe { ffi::avio_open2(&mut io_context, url.as_ptr(), flags as _, ptr::null(), options_ptr) })?;
+        let ret = with_copied_options(options, |options_ptr| unsafe {
+            ffi::avio_open2(
+                &mut io_context,
+                url.as_ptr(),
+                flags as _,
+                ptr::null(),
+                options_ptr,
+            )
+        })?;
 
         ret.upgrade()?;
 
-        Ok(Self(unsafe { AVIOContext::from_raw(NonNull::new(io_context).unwrap()) }))
+        Ok(Self(unsafe {
+            AVIOContext::from_raw(NonNull::new(io_context).unwrap())
+        }))
     }
 }
 
 impl Drop for AVIOContextURL {
     fn drop(&mut self) {
-        unsafe { ffi::avio_close(self.as_mut_ptr()) }.upgrade().unwrap();
+        unsafe { ffi::avio_close(self.as_mut_ptr()) }
+            .upgrade()
+            .unwrap();
     }
 }
 
@@ -141,7 +157,12 @@ impl AVIOContextCustom {
             )
         };
 
-        let mut opaque = Box::new(Opaque { data, read_packet, write_packet, seek });
+        let mut opaque = Box::new(Opaque {
+            data,
+            read_packet,
+            write_packet,
+            seek,
+        });
 
         // After reading the implementation, avio_alloc_context only fails on no
         // memory.
@@ -164,7 +185,10 @@ impl AVIOContextCustom {
         // it will be freed in `AVIOContext::drop`.
         let _ = buffer.into_raw();
 
-        Self { inner: unsafe { AVIOContext::from_raw(context) }, _opaque: opaque }
+        Self {
+            inner: unsafe { AVIOContext::from_raw(context) },
+            _opaque: opaque,
+        }
     }
 
     /// Re-take the ownership of the `data` passed in `alloc_context`.
@@ -199,17 +223,27 @@ pub struct AVIOProtocol;
 impl AVIOProtocol {
     /// Return the name of the protocol that will handle the passed URL.
     pub fn find_protocol_name(url: &CStr) -> Option<&'static CStr> {
-        unsafe { ffi::avio_find_protocol_name(url.as_ptr()).upgrade().map(|x| CStr::from_ptr(x.as_ptr())) }
+        unsafe {
+            ffi::avio_find_protocol_name(url.as_ptr())
+                .upgrade()
+                .map(|x| CStr::from_ptr(x.as_ptr()))
+        }
     }
 
     /// Iterate through names of available output protocols.
     pub fn outputs() -> AVIOProtocolIter {
-        AVIOProtocolIter { opaque: ptr::null_mut(), output: 1 }
+        AVIOProtocolIter {
+            opaque: ptr::null_mut(),
+            output: 1,
+        }
     }
 
     /// Iterate through names of available input protocols.
     pub fn inputs() -> AVIOProtocolIter {
-        AVIOProtocolIter { opaque: ptr::null_mut(), output: 0 }
+        AVIOProtocolIter {
+            opaque: ptr::null_mut(),
+            output: 0,
+        }
     }
 }
 
@@ -222,7 +256,11 @@ impl Iterator for AVIOProtocolIter {
     type Item = &'static CStr;
 
     fn next(&mut self) -> Option<Self::Item> {
-        unsafe { ffi::avio_enum_protocols(&mut self.opaque, self.output).upgrade().map(|x| CStr::from_ptr(x.as_ptr())) }
+        unsafe {
+            ffi::avio_enum_protocols(&mut self.opaque, self.output)
+                .upgrade()
+                .map(|x| CStr::from_ptr(x.as_ptr()))
+        }
     }
 }
 
@@ -232,7 +270,9 @@ mod test {
 
     #[test]
     fn test_iterate_output_protocols() {
-        let outputs = AVIOProtocol::outputs().map(|x| x.to_str().unwrap()).collect::<Vec<_>>();
+        let outputs = AVIOProtocol::outputs()
+            .map(|x| x.to_str().unwrap())
+            .collect::<Vec<_>>();
         dbg!(&outputs);
         assert!(!outputs.is_empty());
         assert!(outputs.contains(&"file"));
@@ -242,7 +282,9 @@ mod test {
 
     #[test]
     fn test_iterate_input_protocols() {
-        let inputs = AVIOProtocol::inputs().map(|x| x.to_str().unwrap()).collect::<Vec<_>>();
+        let inputs = AVIOProtocol::inputs()
+            .map(|x| x.to_str().unwrap())
+            .collect::<Vec<_>>();
         dbg!(&inputs);
         assert!(!inputs.is_empty());
         assert!(inputs.contains(&"file"));
@@ -260,7 +302,11 @@ mod test {
     fn test_open_failure_leaves_options_usable() {
         let mut options = Some(AVDictionary::new(c"rsmpeg_not_an_option", c"1", 0));
 
-        let result = AVIOContextURL::open(c"/definitely/not/a/real/path/rsmpeg_open_failure_test", 0, Some(&mut options));
+        let result = AVIOContextURL::open(
+            c"/definitely/not/a/real/path/rsmpeg_open_failure_test",
+            0,
+            Some(&mut options),
+        );
         assert!(result.is_err(), "opening a missing path must fail");
         drop(result);
 

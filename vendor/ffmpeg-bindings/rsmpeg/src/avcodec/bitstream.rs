@@ -14,7 +14,9 @@ wrap_ref!(AVBitStreamFilter: ffi::AVBitStreamFilter);
 impl AVBitStreamFilter {
     /// Find a bitstream filter instance with it's short name.
     pub fn find_by_name(name: &CStr) -> Option<AVBitStreamFilterRef<'_>> {
-        unsafe { ffi::av_bsf_get_by_name(name.as_ptr()) }.upgrade().map(|x| unsafe { AVBitStreamFilterRef::from_raw(x) })
+        unsafe { ffi::av_bsf_get_by_name(name.as_ptr()) }
+            .upgrade()
+            .map(|x| unsafe { AVBitStreamFilterRef::from_raw(x) })
     }
 
     /// Get name of the bitstream filter.
@@ -26,7 +28,9 @@ impl AVBitStreamFilter {
 
     /// Create an iterator on all the [`AVBitStreamFilterRef`]s.
     pub fn iterate() -> AVBitStreamFilterIter {
-        AVBitStreamFilterIter { opaque: ptr::null_mut() }
+        AVBitStreamFilterIter {
+            opaque: ptr::null_mut(),
+        }
     }
 }
 
@@ -39,12 +43,16 @@ pub struct AVBitStreamFilterIter {
 impl std::iter::Iterator for AVBitStreamFilterIter {
     type Item = AVBitStreamFilterRef<'static>;
     fn next(&mut self) -> Option<Self::Item> {
-        unsafe { ffi::av_bsf_iterate(&mut self.opaque as *mut _ as _) }.upgrade().map(|x| unsafe { AVBitStreamFilterRef::from_raw(x) })
+        unsafe { ffi::av_bsf_iterate(&mut self.opaque as *mut _ as _) }
+            .upgrade()
+            .map(|x| unsafe { AVBitStreamFilterRef::from_raw(x) })
     }
 }
 
 wrap!(AVBSFContextUninit: ffi::AVBSFContext);
-settable!(AVBSFContextUninit { time_base_in: ffi::AVRational });
+settable!(AVBSFContextUninit {
+    time_base_in: ffi::AVRational
+});
 
 /// AVBSFContextUninit exists because you must first init an AVBSFContext before
 /// you can send/receive packets.  Use [`AVBSFContextUninit::init`] to get an
@@ -111,7 +119,9 @@ impl AVBSFContext {
     /// the one that changed by [`Self::send_packet()`], or this function will
     /// returns [`RsmpegError::BitstreamFlushedError`].
     pub fn receive_packet(&mut self, packet: &mut AVPacket) -> Result<()> {
-        match unsafe { ffi::av_bsf_receive_packet(self.as_mut_ptr(), packet.as_mut_ptr()) }.upgrade() {
+        match unsafe { ffi::av_bsf_receive_packet(self.as_mut_ptr(), packet.as_mut_ptr()) }
+            .upgrade()
+        {
             Ok(_) => Ok(()),
             Err(AVERROR_EAGAIN) => Err(RsmpegError::BitstreamDrainError),
             Err(ffi::AVERROR_EOF) => Err(RsmpegError::BitstreamFlushedError),
@@ -179,7 +189,9 @@ impl AVBSFContextUninit {
     /// Copies `source_params` into [`ffi::AVBSFContext`]'s `par_in` field. So
     /// we only need a reference to `source_params`.
     pub fn set_par_in(&mut self, source_params: &AVCodecParameters) {
-        unsafe { ffi::avcodec_parameters_copy(self.par_in, source_params.as_ptr()) }.upgrade().unwrap();
+        unsafe { ffi::avcodec_parameters_copy(self.par_in, source_params.as_ptr()) }
+            .upgrade()
+            .unwrap();
     }
 
     /// Get null/pass-through bitstream filter("bsf_list").

@@ -34,7 +34,12 @@ use std::ffi::CStr;
 /// `out_index`. No decode/encode — the codec is preserved as-is.
 ///
 /// Returns the number of packets copied.
-pub fn copy_subtitle_stream<R: Reader, W: Writer>(reader: &mut R, writer: &mut W, src_index: usize, out_index: usize) -> Result<usize> {
+pub fn copy_subtitle_stream<R: Reader, W: Writer>(
+    reader: &mut R,
+    writer: &mut W,
+    src_index: usize,
+    out_index: usize,
+) -> Result<usize> {
     // 两个流索引都必须存在：源索引写错会让每个时间戳都按错误的时间基换算，
     // 目标索引写错则包会被投到不存在的流上。这里按索引错误上报，而不是回退到一个
     // 猜测的时间基（1/1000）——那只会静默产出时间戳错乱的字幕。
@@ -43,7 +48,12 @@ pub fn copy_subtitle_stream<R: Reader, W: Writer>(reader: &mut R, writer: &mut W
         .streams()
         .get(src_index)
         .map(|s| s.time_base)
-        .ok_or_else(|| RsmediaError::msg(format!("Input stream {src_index} does not exist ({} streams)", reader.input().nb_streams)))?;
+        .ok_or_else(|| {
+            RsmediaError::msg(format!(
+                "Input stream {src_index} does not exist ({} streams)",
+                reader.input().nb_streams
+            ))
+        })?;
 
     let out_tb = writer.stream_time_base(out_index)?;
 
@@ -71,7 +81,11 @@ pub fn copy_subtitle_stream<R: Reader, W: Writer>(reader: &mut R, writer: &mut W
 ///   2. 写 header；
 ///   3. 逐段编码并把包 pts 从编码器 time_base 换算到输出流 time_base 后写盘；
 ///   4. flush 编码器（字幕路径为 no-op）+ 写 trailer。
-pub fn encode_subtitle_segments(writer: &mut impl Writer, encoder: &mut crate::encode::Encoder, segments: &[SubtitleSegment]) -> Result<()> {
+pub fn encode_subtitle_segments(
+    writer: &mut impl Writer,
+    encoder: &mut crate::encode::Encoder,
+    segments: &[SubtitleSegment],
+) -> Result<()> {
     let enc_tb = encoder.time_base();
     let index = writer.add_stream(encoder.codecpar(), enc_tb);
     writer.write_header()?;
@@ -107,7 +121,11 @@ pub struct SubtitleSegment {
 impl SubtitleSegment {
     /// Create a new subtitle segment.
     pub fn new(start_ms: i64, end_ms: i64, text: impl Into<String>) -> Self {
-        Self { start_ms, end_ms, text: text.into() }
+        Self {
+            start_ms,
+            end_ms,
+            text: text.into(),
+        }
     }
 
     /// Duration in milliseconds.
@@ -171,7 +189,11 @@ impl SubtitleSegment {
         if texts.is_empty() {
             return None;
         }
-        Some(Self { start_ms, end_ms, text: texts.join("\n") })
+        Some(Self {
+            start_ms,
+            end_ms,
+            text: texts.join("\n"),
+        })
     }
 }
 
@@ -260,13 +282,18 @@ mod tests {
 
         // 1) Encode: mov_text segments into an MP4
         let segments = sample_segments();
-        let mut encoder = EncoderBuilder::new_subtitle().with_codec_name(Some("mov_text".to_string())).with_subtitle_header(ASS_HEADER).build()?;
+        let mut encoder = EncoderBuilder::new_subtitle()
+            .with_codec_name(Some("mov_text".to_string()))
+            .with_subtitle_header(ASS_HEADER)
+            .build()?;
         let mut writer = crate::io::StreamWriter::new(&path)?;
         encode_subtitle_segments(&mut writer, &mut encoder, &segments)?;
 
         // 2) Decode: via the generic Decoder subtitle channel
         let mut reader = crate::io::StreamReader::new(&path)?;
-        let mut decoder = DecoderBuilder::new(MediaType::SUBTITLE).with_codec_name(Some("mov_text".to_string())).build_from_reader(&reader)?;
+        let mut decoder = DecoderBuilder::new(MediaType::SUBTITLE)
+            .with_codec_name(Some("mov_text".to_string()))
+            .build_from_reader(&reader)?;
         let mut decoded: Vec<SubtitleSegment> = Vec::new();
         while let Some(segment) = decoder.decode_subtitle_segment(&mut reader)? {
             decoded.push(segment);
@@ -294,9 +321,12 @@ mod tests {
 
         let mut sub = AVSubtitle::new();
         // 正文 "Hello, world, with, commas" 含 4 个逗号，若按逗号无脑切分会截断
-        sub.push_ass_rect(c"Dialogue: 0,0:00:01.00,0:00:03.50,Default,,0,0,0,,Hello, world, with, commas")?;
+        sub.push_ass_rect(
+            c"Dialogue: 0,0:00:01.00,0:00:03.50,Default,,0,0,0,,Hello, world, with, commas",
+        )?;
 
-        let seg = SubtitleSegment::from_avsubtitle(&sub).expect("ASS rect should convert to a segment");
+        let seg =
+            SubtitleSegment::from_avsubtitle(&sub).expect("ASS rect should convert to a segment");
         assert_eq!(seg.text, "Hello, world, with, commas");
         // Dialogue 行内的时间戳不参与换算：展示时间来自 pts + display_time
         // （此处 AVSubtitle::new 的 pts 为 0，仅验证 display_time 路径）
@@ -305,7 +335,9 @@ mod tests {
 
         // \N 硬换行 → 换行符
         let mut sub2 = AVSubtitle::new();
-        sub2.push_ass_rect(c"Dialogue: 0,0:00:00.00,0:00:02.00,Default,,0,0,0,,line one\\Nline two")?;
+        sub2.push_ass_rect(
+            c"Dialogue: 0,0:00:00.00,0:00:02.00,Default,,0,0,0,,line one\\Nline two",
+        )?;
         let seg2 = SubtitleSegment::from_avsubtitle(&sub2).expect("should convert");
         assert_eq!(seg2.text, "line one\nline two");
 
@@ -331,7 +363,10 @@ mod tests {
 
         // 1) Write: create an MP4 with a mov_text subtitle stream
         let segments = sample_segments();
-        let mut encoder = EncoderBuilder::new_subtitle().with_codec_name(Some("mov_text".to_string())).with_subtitle_header(ASS_HEADER).build()?;
+        let mut encoder = EncoderBuilder::new_subtitle()
+            .with_codec_name(Some("mov_text".to_string()))
+            .with_subtitle_header(ASS_HEADER)
+            .build()?;
         let mut writer = crate::io::StreamWriter::new(&path)?;
         encode_subtitle_segments(&mut writer, &mut encoder, &segments)?;
 
@@ -342,10 +377,15 @@ mod tests {
             let stream = reader.input().streams().get(index).unwrap();
             (stream.codecpar().codec_id, stream.time_base)
         };
-        assert_eq!(codec_id, ffi::AV_CODEC_ID_MOV_TEXT, "subtitle codec should be mov_text, got codec_id={codec_id}");
+        assert_eq!(
+            codec_id,
+            ffi::AV_CODEC_ID_MOV_TEXT,
+            "subtitle codec should be mov_text, got codec_id={codec_id}"
+        );
 
         // 3) Decode roundtrip: demux packets -> decode_subtitle -> rect payload
-        let decoder = AVCodec::find_decoder(codec_id).ok_or_else(|| RsmediaError::msg("mov_text decoder not available"))?;
+        let decoder = AVCodec::find_decoder(codec_id)
+            .ok_or_else(|| RsmediaError::msg("mov_text decoder not available"))?;
         let mut dctx = AVCodecContext::new(&decoder);
         dctx.open(None)?;
 
@@ -356,7 +396,11 @@ mod tests {
                 continue;
             }
             // pts (stream time_base) -> milliseconds (encoder time base 1/1000)
-            start_ms.push(packet.pts.rescale(stream_tb, crate::time::new_rational(1, 1000)));
+            start_ms.push(
+                packet
+                    .pts
+                    .rescale(stream_tb, crate::time::new_rational(1, 1000)),
+            );
             if let Some(subtitle) = dctx.decode_subtitle(Some(&mut packet))? {
                 for rect in subtitle.rect_iter() {
                     if let Some(ass) = rect.ass() {
@@ -366,7 +410,11 @@ mod tests {
             }
         }
 
-        assert_eq!(start_ms, vec![0, 2000, 4000], "packet pts must round-trip to the segment start times");
+        assert_eq!(
+            start_ms,
+            vec![0, 2000, 4000],
+            "packet pts must round-trip to the segment start times"
+        );
         let all = texts.join("\n");
         assert!(all.contains("Hello World"), "decoded text: {all:?}");
         assert!(all.contains("Second subtitle"), "decoded text: {all:?}");
@@ -386,22 +434,36 @@ mod tests {
         test_support::remove_test_output(&path);
 
         let segments = sample_segments();
-        let mut encoder = EncoderBuilder::new_subtitle().with_subtitle_header(ASS_HEADER).build()?;
+        let mut encoder = EncoderBuilder::new_subtitle()
+            .with_subtitle_header(ASS_HEADER)
+            .build()?;
         let mut writer = crate::io::StreamWriter::new(&path)?;
         encode_subtitle_segments(&mut writer, &mut encoder, &segments)?;
 
         let content = std::fs::read_to_string(&path)?;
         // 时间戳行：由 packet pts/duration（毫秒）端到端生成，验证整条时间戳链路
-        assert!(content.contains("00:00:00,000 --> 00:00:02,000"), "missing first timestamp line, content:\n{content}");
-        assert!(content.contains("00:00:02,000 --> 00:00:04,000"), "missing second timestamp line, content:\n{content}");
-        assert!(content.contains("00:00:04,000 --> 00:00:06,000"), "missing third timestamp line, content:\n{content}");
+        assert!(
+            content.contains("00:00:00,000 --> 00:00:02,000"),
+            "missing first timestamp line, content:\n{content}"
+        );
+        assert!(
+            content.contains("00:00:02,000 --> 00:00:04,000"),
+            "missing second timestamp line, content:\n{content}"
+        );
+        assert!(
+            content.contains("00:00:04,000 --> 00:00:06,000"),
+            "missing third timestamp line, content:\n{content}"
+        );
         // 文本行
         assert!(content.contains("Hello World"), "content:\n{content}");
         assert!(content.contains("Second subtitle"), "content:\n{content}");
         assert!(content.contains("Third subtitle"), "content:\n{content}");
         // 序号行（SRT 序号 1..N）
         for serial in ["1", "2", "3"] {
-            assert!(content.lines().any(|l| l.trim() == serial), "missing SRT serial {serial}, content:\n{content}");
+            assert!(
+                content.lines().any(|l| l.trim() == serial),
+                "missing SRT serial {serial}, content:\n{content}"
+            );
         }
 
         test_support::remove_test_output(&path);
@@ -417,7 +479,9 @@ mod tests {
         test_support::remove_test_output(&input_path);
 
         let segments = sample_segments();
-        let mut encoder = EncoderBuilder::new_subtitle().with_subtitle_header(ASS_HEADER).build()?;
+        let mut encoder = EncoderBuilder::new_subtitle()
+            .with_subtitle_header(ASS_HEADER)
+            .build()?;
         let mut writer = crate::io::StreamWriter::new(&input_path)?;
         encode_subtitle_segments(&mut writer, &mut encoder, &segments)?;
 
@@ -448,8 +512,16 @@ mod tests {
 
         // 3) Verify output has the subtitle stream with correct codec
         let out_reader = StreamReader::new(&output_path)?;
-        let subtitle_streams: Vec<_> = out_reader.input().streams().iter().filter(|s| s.codecpar().codec_type().is_subtitle()).collect();
-        assert!(!subtitle_streams.is_empty(), "output should have subtitle stream");
+        let subtitle_streams: Vec<_> = out_reader
+            .input()
+            .streams()
+            .iter()
+            .filter(|s| s.codecpar().codec_type().is_subtitle())
+            .collect();
+        assert!(
+            !subtitle_streams.is_empty(),
+            "output should have subtitle stream"
+        );
 
         test_support::remove_test_output(&input_path);
         test_support::remove_test_output(&output_path);
@@ -468,7 +540,10 @@ mod tests {
 
         // 1) Write: create an MKV with an ASS subtitle stream
         let segments = sample_segments();
-        let mut encoder = EncoderBuilder::new_subtitle().with_codec_name(Some("ass".to_string())).with_subtitle_header(ASS_HEADER).build()?;
+        let mut encoder = EncoderBuilder::new_subtitle()
+            .with_codec_name(Some("ass".to_string()))
+            .with_subtitle_header(ASS_HEADER)
+            .build()?;
         let mut writer = crate::io::StreamWriter::new(&path)?;
         encode_subtitle_segments(&mut writer, &mut encoder, &segments)?;
 
@@ -479,10 +554,15 @@ mod tests {
             let stream = reader.input().streams().get(index).unwrap();
             (stream.codecpar().codec_id, stream.time_base)
         };
-        assert_eq!(codec_id, ffi::AV_CODEC_ID_ASS, "subtitle codec should be ass, got codec_id={codec_id}");
+        assert_eq!(
+            codec_id,
+            ffi::AV_CODEC_ID_ASS,
+            "subtitle codec should be ass, got codec_id={codec_id}"
+        );
 
         // 3) Decode roundtrip: demux packets -> decode_subtitle -> rect payload
-        let decoder = AVCodec::find_decoder(codec_id).ok_or_else(|| RsmediaError::msg("ass decoder not available"))?;
+        let decoder = AVCodec::find_decoder(codec_id)
+            .ok_or_else(|| RsmediaError::msg("ass decoder not available"))?;
         let mut dctx = AVCodecContext::new(&decoder);
         dctx.open(None)?;
 
@@ -493,7 +573,11 @@ mod tests {
                 continue;
             }
             // pts (stream time_base) -> milliseconds (encoder time base 1/1000)
-            start_ms.push(packet.pts.rescale(stream_tb, crate::time::new_rational(1, 1000)));
+            start_ms.push(
+                packet
+                    .pts
+                    .rescale(stream_tb, crate::time::new_rational(1, 1000)),
+            );
             if let Some(subtitle) = dctx.decode_subtitle(Some(&mut packet))? {
                 for rect in subtitle.rect_iter() {
                     if let Some(ass) = rect.ass() {
@@ -503,7 +587,11 @@ mod tests {
             }
         }
 
-        assert_eq!(start_ms, vec![0, 2000, 4000], "packet pts must round-trip to the segment start times");
+        assert_eq!(
+            start_ms,
+            vec![0, 2000, 4000],
+            "packet pts must round-trip to the segment start times"
+        );
         let all = texts.join("\n");
         assert!(all.contains("Hello World"), "decoded text: {all:?}");
         assert!(all.contains("Second subtitle"), "decoded text: {all:?}");
@@ -517,7 +605,9 @@ mod tests {
     #[test]
     fn test_encode_subtitle_segment_wrong_media_type() -> Result<()> {
         let mut encoder = crate::encode::Encoder::new_video(64, 64)?;
-        let err = encoder.encode_subtitle_segment(&SubtitleSegment::new(0, 1000, "x")).unwrap_err();
+        let err = encoder
+            .encode_subtitle_segment(&SubtitleSegment::new(0, 1000, "x"))
+            .unwrap_err();
         assert!(err.is_unsupported(), "{err}");
         Ok(())
     }

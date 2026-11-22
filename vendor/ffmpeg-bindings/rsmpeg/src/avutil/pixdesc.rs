@@ -29,7 +29,11 @@ impl AVPixFmtDescriptorRef {
     ///
     /// Return next descriptor or None after the last descriptor
     pub fn next(&self) -> Option<Self> {
-        unsafe { ffi::av_pix_fmt_desc_next(self.0.as_ptr()).upgrade().map(Self) }
+        unsafe {
+            ffi::av_pix_fmt_desc_next(self.0.as_ptr())
+                .upgrade()
+                .map(Self)
+        }
     }
 
     /// Return an AVPixelFormat id described by desc, or
@@ -48,7 +52,9 @@ impl AVPixFmtDescriptorRef {
 
     pub fn alias(&self) -> Option<&CStr> {
         // FFmpeg's implementation: alias can be null, always valid UTF-8.
-        self.alias.upgrade().map(|x| unsafe { CStr::from_ptr(x.as_ptr()) })
+        self.alias
+            .upgrade()
+            .map(|x| unsafe { CStr::from_ptr(x.as_ptr()) })
     }
 }
 
@@ -66,7 +72,11 @@ impl AVPixFmtDescriptorRef {
 /// assert_eq!(name.as_deref(), Some("yuv420p"));
 /// ```
 pub fn get_pix_fmt_name(pix_fmt: ffi::AVPixelFormat) -> Option<&'static CStr> {
-    unsafe { ffi::av_get_pix_fmt_name(pix_fmt).upgrade().map(|x| CStr::from_ptr(x.as_ptr())) }
+    unsafe {
+        ffi::av_get_pix_fmt_name(pix_fmt)
+            .upgrade()
+            .map(|x| CStr::from_ptr(x.as_ptr()))
+    }
 }
 
 #[cfg(test)]

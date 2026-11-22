@@ -119,11 +119,16 @@ impl Options {
     /// Reads entries back from an [`AVDictionary`].
     pub fn from_dict(dict: &AVDictionary) -> Self {
         dict.into_iter()
-            .filter_map(|entry| match (strutils::cstr_to_string(entry.key()), strutils::cstr_to_string(entry.value())) {
-                (Ok(key), Ok(value)) => Some((key, value)),
-                (bad_key, bad_value) => {
-                    log::warn!("Skip non-UTF8 option: {bad_key:?}={bad_value:?}");
-                    None
+            .filter_map(|entry| {
+                match (
+                    strutils::cstr_to_string(entry.key()),
+                    strutils::cstr_to_string(entry.value()),
+                ) {
+                    (Ok(key), Ok(value)) => Some((key, value)),
+                    (bad_key, bad_value) => {
+                        log::warn!("Skip non-UTF8 option: {bad_key:?}={bad_value:?}");
+                        None
+                    }
                 }
             })
             .collect()
@@ -193,7 +198,10 @@ impl Options {
     /// Muxer output should be compatiable with MSE.
     pub fn preset_avformat_fragmented_mov() -> Self {
         let mut opts = Self::new();
-        opts.insert("movflags", "faststart+frag_keyframe+frag_custom+empty_moov+omit_tfhd_offset");
+        opts.insert(
+            "movflags",
+            "faststart+frag_keyframe+frag_custom+empty_moov+omit_tfhd_offset",
+        );
         opts
     }
 
@@ -386,7 +394,15 @@ impl std::fmt::Display for Options {
 /// Single source of truth: used by [`EncoderBuilder::with_quality`](crate::EncoderBuilder::with_quality) /
 /// [`Quality::Crf`] (fall back to bit-rate control for other codecs) and the
 /// [`Quality::Crf`] capability documentation.
-pub const CRF_CAPABLE_CODECS: &[&str] = &["libx264", "libx265", "libvpx", "libvpx-vp9", "libaom-av1", "libsvtav1", "libopenh264"];
+pub const CRF_CAPABLE_CODECS: &[&str] = &[
+    "libx264",
+    "libx265",
+    "libvpx",
+    "libvpx-vp9",
+    "libaom-av1",
+    "libsvtav1",
+    "libopenh264",
+];
 
 /// Rate control strategy for video encode, set via
 /// [`crate::EncoderBuilder::with_quality`].
@@ -569,7 +585,10 @@ mod tests {
         let mut dest: *mut ffi::AVDictionary = std::ptr::null_mut();
         // SAFETY: `dest` 为 NULL。
         unsafe { Options::new().write_into_raw_dict(&mut dest) };
-        assert!(dest.is_null(), "empty Options must store NULL (no metadata)");
+        assert!(
+            dest.is_null(),
+            "empty Options must store NULL (no metadata)"
+        );
 
         // 已有内容时写入空 Options：旧字典被释放并清回 NULL。
         let owned = AVDictionary::new(c"title", c"hello", 0);

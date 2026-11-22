@@ -99,7 +99,10 @@ macro_rules! wrap_ref_pure {
             /// This function should only be called when `raw` is valid and can
             /// be dropped. Please ensure its lifetime when used.
             pub unsafe fn from_raw(raw: std::ptr::NonNull<$ffi_type>) -> Self {
-                Self { inner: std::mem::ManuallyDrop::new(unsafe { $wrapped_type::from_raw(raw) }), _marker: std::marker::PhantomData }
+                Self {
+                    inner: std::mem::ManuallyDrop::new(unsafe { $wrapped_type::from_raw(raw) }),
+                    _marker: std::marker::PhantomData,
+                }
             }
         }
 
@@ -143,7 +146,10 @@ macro_rules! wrap_mut_pure {
             /// be dropped. Please ensure its lifetime when used.
             #[must_use]
             pub unsafe fn from_raw(raw: std::ptr::NonNull<$ffi_type>) -> Self {
-                Self { inner: std::mem::ManuallyDrop::new(unsafe { $wrapped_type::from_raw(raw) }), _marker: std::marker::PhantomData }
+                Self {
+                    inner: std::mem::ManuallyDrop::new(unsafe { $wrapped_type::from_raw(raw) }),
+                    _marker: std::marker::PhantomData,
+                }
             }
         }
 
@@ -290,7 +296,9 @@ mod test {
             }
 
             fn to_str(&self) -> &str {
-                unsafe { std::str::from_utf8_unchecked(slice::from_raw_parts(self.as_ptr(), self.len)) }
+                unsafe {
+                    std::str::from_utf8_unchecked(slice::from_raw_parts(self.as_ptr(), self.len))
+                }
             }
         }
 
