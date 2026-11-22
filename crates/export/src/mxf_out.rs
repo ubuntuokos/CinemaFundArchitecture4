@@ -3,11 +3,12 @@
 //! `<stem>_A1.mxf`, `<stem>_A2.mxf`, …), written with [`cfa4_mxf::MxfWriter`].
 
 use cfa4_mxf::{
-    CodedKind, ColorSpace, FrameInfo, MxfWriter, PackageIds, Pattern, PictureCoding, PictureDesc, Rational, SoundDesc, StartTimecode, Timestamp, WriterConfig,
+    CodedKind, ColorSpace, ComponentSpec, FrameInfo, MxfWriter, PackageIds, Pattern, PictureCoding, PictureDesc, Rational, SoundDesc, StartTimecode, Timestamp,
+    VersionClipSpec, VersionConfig, VersionTrackKind, VersionTrackSpec, WriterConfig, write_version,
 };
 use cfa4_time::FrameRate;
 
-use crate::{ColorSignal, EncodedPacket, ExportError, ExportSettings, FieldOrder, Format, H264Profile, MpegVideoInfo, MxfVideoCodec, Out, Result};
+use crate::{BitrateMode, ColorSignal, EncodedPacket, ExportError, ExportSettings, FieldOrder, Format, H264Profile, MpegVideoInfo, MxfVideoCodec, Out, Result};
 
 /// Paths of the OP-Atom audio files for an export to `path` with `channels` channels.
 pub fn opatom_audio_paths(path: &str, channels: usize) -> Vec<String> {
@@ -134,6 +135,42 @@ pub(crate) struct MxfSetup<'a> {
     /// Closed captions for the ANC data track (`ExportSettings::mxf_anc_captions`), timed from
     /// the first exported frame.
     pub captions: Option<cfa4_captions::Document>,
+    /// AS-11 programme parts from segmentation markers, (start, duration) in frames from the first
+    /// exported frame; used when `ExportSettings::mxf_as11_segments` is empty.
+    pub as11_parts: Vec<(i64, i64)>,
+}
+
+/// AS-11 segments of the marker parts: numbered in order, each of the total.
+fn as11_marker_parts(parts: &[(i64, i64)]) -> std::result::Result<Vec<cfa4_mxf::as11::Segment>, String> {
+    let total = u16::try_from(parts.len()).map_err(|_| format!("{} segmentation markers, more than an AS-11 part number can count", parts.len()))?;
+    Ok(parts.iter().zip(1u16..).map(|(&(start, duration), part_number)| cfa4_mxf::as11::Segment { start, duration, part_number, part_total: total }).collect())
+}
+
+/// What an AS-02 bundle export needs to write the version file and the manifest at the end.
+struct As02Bundle {
+    /// The bundle folder and its name (the folder's name, also the version file's stem).
+    dir: String,
+    name: String,
+    rate: Rational,
+    modified: Timestamp,
+    seed: String,
+    /// File package UMID and bundle-relative path of the picture component and of every sound one.
+    picture: (cfa4_mxf::Umid, String),
+    sound: Vec<(cfa4_mxf::Umid, String)>,
+}
+
+/// A UUID URN from a seed (version 4 layout).
+fn uuid_urn(seed: &str) -> String {
+    let mut b = cfa4_mxf::Umid::from_seed(seed.as_bytes()).material_number();
+    b[6] = (b[6] & 0x0F) | 0x40;
+    b[8] = (b[8] & 0x3F) | 0x80;
+    let h: String = b.iter().map(|x| format!("{x:02x}")).collect();
+    format!("urn:uuid:{}-{}-{}-{}-{}", &h[..8], &h[8..12], &h[12..16], &h[16..20], &h[20..])
+}
+
+/// An `xs:dateTime` in UTC.
+fn xs_date_time(t: Timestamp) -> String {
+    format!("{:04}-{:02}-{:02}T{:02}:{:02}:{:02}Z", t.year, t.month, t.day, t.hour, t.minute, t.second)
 }
 
 /// An MXF export in progress.
@@ -142,6 +179,8 @@ pub(crate) struct MxfMux {
     /// OP-Atom: one writer per audio channel.
     audio: Vec<(String, MxfWriter<Out>)>,
     atom: bool,
+    /// AS-02: the files of the bundle are separate mono OP1a files (`audio` holds the sound ones).
+    as02: Option<As02Bundle>,
     bits: u32,
     channels: usize,
     /// Stored pictures so far, and the composition offset of the first (H.264 reorder delay).
@@ -157,6 +196,7 @@ impl MxfMux {
     pub fn new(s: MxfSetup<'_>) -> Result<Self> {
         let settings = s.settings;
         let atom = settings.format == Format::MxfOpAtom;
+        let as02_on = settings.mxf_as02;
         let rate = Rational::new(s.rate.num as i32, s.rate.den as i32);
         let now = web_time::SystemTime::now().duration_since(web_time::UNIX_EPOCH).map(|d| d.as_nanos()).unwrap_or(0);
         let seed = format!("{}|{now}", settings.path);
@@ -167,7 +207,10 @@ impl MxfMux {
         cfg.picture = Some(picture(settings, s.width, s.height, s.rate, s.mpeg)?);
         cfg.modified = Timestamp::from_unix((now / 1_000_000_000) as i64);
         cfg.timecode = Some(StartTimecode { frames: s.timecode.0, rate, drop_frame: s.timecode.1 && s.rate.supports_drop_frame() });
-        if !atom && let Some((sr, ch)) = s.audio {
+        if !atom
+            && !as02_on
+            && let Some((sr, ch)) = s.audio
+        {
             cfg.sound = vec![SoundDesc { sample_rate: sr, channels: ch as u32, bits }];
         }
         cfg.rdd9 = settings.mxf_video_codec == MxfVideoCodec::XdcamHd422;
@@ -180,9 +223,72 @@ impl MxfMux {
                 if settings.mxf_as11_ukdpp.trim().is_empty() { Vec::new() } else { as11::parse_framework_text(&settings.mxf_as11_ukdpp).map_err(bad)? };
             cfg.as11 = Some(as11::As11 {
                 core: as11::parse_framework_text(&settings.mxf_as11_core).map_err(bad)?,
-                segments: as11::parse_segments_text(&settings.mxf_as11_segments, clock).map_err(bad)?,
+                segments: if settings.mxf_as11_segments.trim().is_empty() {
+                    as11_marker_parts(&s.as11_parts).map_err(bad)?
+                } else {
+                    as11::parse_segments_text(&settings.mxf_as11_segments, clock).map_err(bad)?
+                },
                 ukdpp,
+                as10: Vec::new(),
+                as03: Vec::new(),
+                as12: Vec::new(),
             });
+        }
+        if !atom && !settings.mxf_as10.trim().is_empty() {
+            use cfa4_mxf::as10;
+            let bad = |e: String| ExportError::Unsupported(format!("AS-10: {e}"));
+            let values = cfa4_mxf::as11::parse_framework_text(&settings.mxf_as10).map_err(bad)?;
+            let (profile_and_level, chroma_422) = match &cfg.picture {
+                Some(d) => match d.coding {
+                    PictureCoding::Mpeg2 { profile_and_level, .. } => (profile_and_level, profile_and_level == 0x82),
+                    _ => (0, false),
+                },
+                None => (0, false),
+            };
+            let facts = as10::Facts {
+                profile_and_level,
+                chroma_422,
+                width: s.width,
+                height: s.height,
+                audio_channels: s.audio.map_or(0, |(_, ch)| ch as u32),
+                audio_bits: bits,
+                audio_sample_rate: s.audio.map_or(0, |(sr, _)| sr),
+                cbr: Some(settings.mpeg2_quantizer.is_none() && settings.bitrate_mode == BitrateMode::Cbr),
+                bit_rate: match cfg.picture.as_ref().map(|d| d.coding) {
+                    Some(PictureCoding::Mpeg2 { bit_rate, .. }) => bit_rate,
+                    _ => 0,
+                },
+            };
+            if let Some(name) = values.iter().find(|(k, _)| k.eq_ignore_ascii_case("ShimName")).map(|(_, v)| v.as_str()) {
+                as10::check_shim(name, &facts).map_err(bad)?;
+            }
+            cfg.as11.get_or_insert_with(Default::default).as10 = values;
+        }
+        if !atom && !settings.mxf_as03.trim().is_empty() {
+            use cfa4_mxf::as03;
+            let bad = |e: String| ExportError::Unsupported(format!("AS-03: {e}"));
+            let values = cfa4_mxf::as11::parse_framework_text(&settings.mxf_as03).map_err(bad)?;
+            let (video, bit_rate) = match cfg.picture.as_ref().map(|d| d.coding) {
+                Some(PictureCoding::Mpeg2 { bit_rate, .. }) => (as03::Video::Mpeg2, bit_rate),
+                Some(PictureCoding::Avc { .. }) => (as03::Video::H264, settings.bitrate_kbps.saturating_mul(1000)),
+                _ => (as03::Video::Other, 0),
+            };
+            let facts = as03::Facts {
+                video,
+                width: s.width,
+                height: s.height,
+                bit_rate,
+                audio_channels: s.audio.map_or(0, |(_, ch)| ch as u32),
+                audio_bits: bits,
+                audio_sample_rate: s.audio.map_or(0, |(sr, _)| sr),
+            };
+            let name = values.iter().find(|(k, _)| k.eq_ignore_ascii_case("ShimName")).map(|(_, v)| v.as_str()).unwrap_or_default();
+            as03::check_shim(name, &facts).map_err(bad)?;
+            cfg.as11.get_or_insert_with(Default::default).as03 = values;
+        }
+        if !atom && !settings.mxf_as12.trim().is_empty() {
+            let bad = |e: String| ExportError::Unsupported(format!("AS-12: {e}"));
+            cfg.as11.get_or_insert_with(Default::default).as12 = cfa4_mxf::as11::parse_framework_text(&settings.mxf_as12).map_err(bad)?;
         }
         let cdp = match s.captions.as_ref().filter(|_| !atom) {
             Some(doc) => {
@@ -198,7 +304,44 @@ impl MxfMux {
             None => None,
         };
         let mut audio = Vec::new();
-        if atom && let Some((sr, ch)) = s.audio {
+        let mut as02 = None;
+        let mut video_path = settings.path.clone();
+        if as02_on {
+            // AS-02 6.2: every essence component is a mono OP1a file under media/, with a file
+            // package of its own; the version file ties them together (written in `finish`)
+            let dir = settings.path.trim_end_matches(['/', '\\']).to_string();
+            let name =
+                std::path::Path::new(&dir).file_name().map(|n| n.to_string_lossy().to_string()).filter(|n| !n.is_empty()).unwrap_or_else(|| "bundle".into());
+            std::fs::create_dir_all(format!("{dir}/media")).map_err(io)?;
+            let component = |tag: &str| {
+                let rel = format!("media/{name}_{tag}.mxf");
+                let ids = PackageIds {
+                    material: cfa4_mxf::Umid::from_seed(format!("material:{seed}:{tag}").as_bytes()),
+                    file: cfa4_mxf::Umid::from_seed(format!("file:{seed}:{tag}").as_bytes()),
+                    material_name: format!("{} {tag}", s.name),
+                    file_name: format!("{} {tag}", s.name),
+                };
+                (rel, ids)
+            };
+            let (rel, vids) = component("V");
+            cfg.ids = vids.clone();
+            video_path = format!("{dir}/{rel}");
+            let picture = (vids.file, rel);
+            let mut sound = Vec::new();
+            if let Some((sr, ch)) = s.audio {
+                for k in 1..=ch {
+                    let (rel, ids) = component(&format!("A{k}"));
+                    let mut a = WriterConfig::new(Pattern::Op1a, rate, ids.clone());
+                    a.sound = vec![SoundDesc { sample_rate: sr, channels: 1, bits }];
+                    a.timecode = cfg.timecode;
+                    a.modified = cfg.modified;
+                    let path = format!("{dir}/{rel}");
+                    audio.push((path.clone(), MxfWriter::new(Out::create_path(settings, &path)?, a).map_err(io)?));
+                    sound.push((ids.file, rel));
+                }
+            }
+            as02 = Some(As02Bundle { dir, name, rate, modified: cfg.modified, seed: seed.clone(), picture, sound });
+        } else if atom && let Some((sr, ch)) = s.audio {
             for (k, path) in opatom_audio_paths(&settings.path, ch).into_iter().enumerate() {
                 // Avid style: the files share the material package; each has its own file package.
                 let mut a = WriterConfig::new(
@@ -219,11 +362,12 @@ impl MxfMux {
                 audio.push((path, MxfWriter::new(out, a).map_err(io)?));
             }
         }
-        let video = MxfWriter::new(Out::create_path(settings, &settings.path)?, cfg).map_err(io)?;
+        let video = MxfWriter::new(Out::create_path(settings, &video_path)?, cfg).map_err(io)?;
         Ok(MxfMux {
             video,
             audio,
             atom,
+            as02,
             bits,
             channels: s.audio.map_or(0, |a| a.1),
             stored: 0,
@@ -274,7 +418,7 @@ impl MxfMux {
         if self.channels == 0 || planar.first().is_none_or(Vec::is_empty) {
             return Ok(());
         }
-        if self.atom {
+        if self.atom || self.as02.is_some() {
             for (k, (_, w)) in self.audio.iter_mut().enumerate() {
                 if let Some(c) = planar.get(k) {
                     w.push_sound(0, &cfa4_mxf::encode_pcm(std::slice::from_ref(c), self.bits)).map_err(io)?;
@@ -288,6 +432,9 @@ impl MxfMux {
 
     /// Finish every file; returns (total bytes, extra files written besides `settings.path`).
     pub fn finish(self, settings: &ExportSettings) -> Result<(u64, Vec<String>)> {
+        if let Some(b) = self.as02 {
+            return finish_bundle(b, self.video, self.audio, settings);
+        }
         let mut total = self.video.finish().map_err(io)?.finish_path(settings, &settings.path)?;
         let mut extra = Vec::new();
         for (path, w) in self.audio {
@@ -296,4 +443,78 @@ impl MxfMux {
         }
         Ok((total, extra))
     }
+}
+
+/// Finish the component files of an AS-02 bundle, then write the version file (the material
+/// package that cuts them together, OP1b with external essence) and the manifest.
+fn finish_bundle(b: As02Bundle, video: MxfWriter<Out>, audio: Vec<(String, MxfWriter<Out>)>, settings: &ExportSettings) -> Result<(u64, Vec<String>)> {
+    use cfa4_mxf::as02::{File, Manifest, Role, file_id_of_umid};
+    let mut files: Vec<File> = vec![File { id: String::new(), role: Role::Folder, size: 0, path: "media".into(), mic: None, annotations: Vec::new() }];
+    let mut extra = Vec::new();
+    let mut total = 0u64;
+    let mut components = Vec::new();
+    let mut tracks: Vec<VersionTrackSpec> = Vec::new();
+    let mut add = |kind: VersionTrackKind, umid: cfa4_mxf::Umid, rel: &str, units: u64, size: u64| {
+        let duration = i64::try_from(units).unwrap_or(i64::MAX);
+        files.push(File { id: file_id_of_umid(&umid.0), role: Role::EssenceComponent, size, path: rel.to_string(), mic: None, annotations: Vec::new() });
+        components.push(ComponentSpec { umid, kind, edit_rate: b.rate, duration, track_id: 2, locator: rel.to_string() });
+        let n = tracks.len() as u32;
+        tracks.push(VersionTrackSpec {
+            kind,
+            track_id: 10 + n,
+            track_number: 1 + n,
+            name: match kind {
+                VersionTrackKind::Picture => "V1".to_string(),
+                VersionTrackKind::Sound => format!("A{n}"),
+            },
+            edit_rate: b.rate,
+            clips: vec![VersionClipSpec { package: Some(umid), source_track: 2, start: 0, duration }],
+        });
+    };
+    let units = video.edit_units();
+    let vpath = format!("{}/{}", b.dir, b.picture.1);
+    let size = video.finish().map_err(io)?.finish_path(settings, &vpath)?;
+    total += size;
+    add(VersionTrackKind::Picture, b.picture.0, &b.picture.1, units, size);
+    extra.push(vpath);
+    for ((path, w), (umid, rel)) in audio.into_iter().zip(&b.sound) {
+        let units = w.edit_units();
+        let size = w.finish().map_err(io)?.finish_path(settings, &path)?;
+        total += size;
+        add(VersionTrackKind::Sound, *umid, rel, units, size);
+        extra.push(path);
+    }
+    let material = cfa4_mxf::Umid::from_seed(format!("version:{}", b.seed).as_bytes());
+    let mut v = VersionConfig::new(material, &b.name);
+    v.tracks = tracks;
+    v.components = components;
+    v.modified = b.modified;
+    let bytes = write_version(&v).map_err(io)?;
+    let version_rel = format!("{}.mxf", b.name);
+    let version_path = format!("{}/{version_rel}", b.dir);
+    total += bytes.len() as u64;
+    files.insert(
+        0,
+        File { id: file_id_of_umid(&material.0), role: Role::Version, size: bytes.len() as u64, path: version_rel, mic: None, annotations: Vec::new() },
+    );
+    std::fs::write(&version_path, &bytes).map_err(|e| ExportError::Io(format!("{version_path}: {e}")))?;
+    let manifest = Manifest {
+        bundle_name: b.name.clone(),
+        bundle_id: uuid_urn(&format!("bundle:{}", b.seed)),
+        creator: "CFA4".into(),
+        creation_date: xs_date_time(b.modified),
+        annotations: Vec::new(),
+        files,
+    };
+    let problems = manifest.check_simple();
+    if !problems.is_empty() {
+        return Err(ExportError::Encode(format!("AS-02 bundle: {}", problems.join("; "))));
+    }
+    let xml = manifest.to_xml();
+    let manifest_path = format!("{}/manifest.xml", b.dir);
+    std::fs::write(&manifest_path, xml.as_bytes()).map_err(|e| ExportError::Io(format!("{manifest_path}: {e}")))?;
+    total += xml.len() as u64;
+    extra.push(version_path);
+    extra.push(manifest_path);
+    Ok((total, extra))
 }

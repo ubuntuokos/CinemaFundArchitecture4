@@ -4781,3 +4781,133 @@
 # Timecode sync varispeed and user bits (TC-8, #1308)
 	Varispeed: adjust the playback speed instead of seeking	バリスピード：シークせずに再生速度を調整する
 	User bits	ユーザービット
+# AS-11 programme parts and AS-10 metadata (G2, #1371, #1375)
+	{tc}  Segmentation	{tc}  セグメンテーション
+	Marker Type	マーカーの種類
+	Chapter	チャプター
+	Segmentation (AS-11 programme part)	セグメンテーション（AS-11 番組パート）
+	AS-10	AS-10
+# AT9/AT3 converter (Tools ▸ Audio Tools, AT3-2)
+	AT9/AT3 Converter	AT9/AT3 コンバーター
+	AT9/AT3 Converter…	AT9/AT3 コンバーター…
+	Files to convert:	変換するファイル:
+	Add Files	ファイルを追加
+	Add Files…	ファイルを追加…
+	Convert to:	変換先:
+	Bit rate:	ビットレート:
+	Sample format:	サンプル形式:
+	Output folder:	出力フォルダー:
+	Output Folder	出力フォルダー
+	Next to each source file	各ソースファイルと同じ場所
+	AT9 and ATRAC3plus files convert to WAV; encoding AT9, ATRAC3plus and MP3 is not available yet.	AT9 と ATRAC3plus のファイルは WAV に変換できます。AT9、ATRAC3plus、MP3 へのエンコードはまだ使用できません。
+	Convert	変換
+	Add the files to convert first.	先に変換するファイルを追加してください。
+	Done: {n} file(s) converted.	完了: {n} 個のファイルを変換しました。
+	Converting {name}…	{name} を変換中…
+	Stopping…	停止中…
+	AT3 (ATRAC3, PSP / PS3)	AT3 (ATRAC3, PSP / PS3)
+	WAV (PCM)	WAV (PCM)
+	132 kbit/s (LP2)	132 kbit/s (LP2)
+	105 kbit/s	105 kbit/s
+	66 kbit/s (LP4, joint stereo)	66 kbit/s (LP4, ジョイントステレオ)
+	16-bit	16 ビット
+	24-bit	24 ビット
+	32-bit float	32 ビット浮動小数点
+
+# Datamosh transition (Grunge & Distort, DM1, #1409)
+	Datamosh	データモッシュ
+	Residual	残差
+	Motion Boost	モーション増幅
+	Recovery	回復
+	Encode Resolution	エンコード解像度
+	Half	1/2
+	Quarter	1/4
+# Datamosh Bloom (Glitch, DM2)
+	Datamosh Bloom	データモッシュブルーム
+	Start Time (seconds)	開始時間 (秒)
+	Repeats	繰り返し回数
+
+# Recent effects, per-channel waveform, white balance selector (SC-2/SC-3/SC-4, #1419 #1420 #1421)
+	Apply a recently used effect to the selected clips	最近使ったエフェクトを選択したクリップに適用
+	Disable all effects	すべてのエフェクトをオフ
+	Enable all effects	すべてのエフェクトをオン
+	No recent effects	最近のエフェクトはありません
+	Recent effects	最近のエフェクト
+	Switch every effect of the selected clips off	選択したクリップのすべてのエフェクトをオフにします
+	Switch every effect of the selected clips on	選択したクリップのすべてのエフェクトをオンにします
+	Merged	統合
+	Per Channel	チャンネル別
+	Channel Zoom	チャンネルズーム
+	White Balance Selector (click a neutral point in the Program monitor; Esc cancels)	ホワイトバランスセレクター（プログラムモニターの無彩色の点をクリック。Esc でキャンセル）
+# Task Manager and subtitle kind (SC-2/3/4)
+	Task Manager	タスクマネージャー
+	Background jobs	バックグラウンドジョブ
+	Exports	書き出し
+	Shared task queue	共有タスクキュー
+	Task	タスク
+	State	状態
+	Details	詳細
+	Time left	残り時間
+	Scheduled	予約済み
+	Queued	待機中
+	Waiting for resources	リソース待ち
+	Blocked	ブロック中
+	Running	実行中
+	Paused	一時停止中
+	Cancelling	キャンセル中
+	Interactive	対話型
+	Speculative	先行実行
+	Final render	最終レンダリング
+	Show finished	完了したものを表示
+	Nothing is running.	実行中のものはありません。
+	Not reported by this engine yet.	このエンジンはまだ報告していません。
+	Not available: {why}	利用できません: {why}
+	{name} waits: {why}	{name} は待機中: {why}
+	{running} running · {waiting} waiting	{running} 件実行中 · {waiting} 件待機中
+	{n} active	{n} 件が実行中
+	{n} CPU	{n} CPU
+	{n} GiB	{n} GiB
+	{n} MiB	{n} MiB
+	Needs your decision	判断が必要です
+	Run now	今すぐ実行
+	Next slot	次のスロット
+	Missed its start	開始時刻を逃しました
+	Missed its start at {time}	{time} の開始を逃しました
+	Starts at {time}	{time} に開始
+	Subtitle kind	字幕の種類
+	Subtitles	字幕
+	Captions for the hearing impaired	聴覚障害者向けキャプション
+	Forced narrative	強制ナレーション (forced narrative)
+	Clear Silence Markers	無音マーカーを消去
+	Detect Silence	無音を検出
+	Remove Silence	無音を削除
+	Silence	無音
+# DCP Validation window (DCP-12)
+	AS-03	AS-03
+	Choose the DCP folder.	DCPフォルダーを選択してください。
+	DCP Validation	DCP検証
+	DCP folder	DCPフォルダー
+	DCP folder (the one holding ASSETMAP)	DCPフォルダー(ASSETMAPがあるもの)
+	Evidence	根拠
+	How to fix	修正方法
+	Interrupted	中断
+	Not applicable	該当なし
+	Report	レポート
+	Report saved: {path}	レポートを保存しました: {path}
+	Required	必須
+	Rule	ルール
+	Rules	ルール
+	Save JSON…	JSONを保存…
+	Save Markdown…	Markdownを保存…
+	Save report	レポートを保存
+	Skipped	スキップ
+	Standard: {standard}	規格: {standard}
+	Validate	検証
+	Validate DCP…	DCPを検証…
+	the engine sent no profiles	エンジンからプロファイルが送られませんでした
+	{n} files checked	{n} 個のファイルを確認しました
+
+# AS-02 export
+	Write an AS-02 bundle (the path is a folder)	AS-02バンドルを書き出す(パスはフォルダー)
+	AS-02	AS-02
+	AS-12	AS-12

@@ -67,11 +67,20 @@ def swatch(color: str | QColor, size: int = 12) -> QIcon:
 
 
 # ----- Markers -----
+# (markers.edit `kind`, the engine's MarkerKind name, menu text)
+MARKER_KINDS = (
+    ("comment", "Comment", N_("Comment")),
+    ("chapter", "Chapter", N_("Chapter")),
+    ("segmentation", "Segmentation", N_("Segmentation (AS-11 programme part)")),
+)
+
+
 class MarkerList(QWidget):
     """The sequence's markers, one 38 px row each: colour bar, name, start (and duration)."""
 
     go = Signal(object)  # marker start, ticks
     recolor = Signal(object, str)  # marker id, label
+    retype = Signal(object, str)  # marker id, kind (markers.edit `kind`)
 
     ROW = 38
 
@@ -114,6 +123,8 @@ class MarkerList(QWidget):
             tc += f"  ({format_timecode(int(m['duration']), self.frame)})"
         if m.get("kind") == "Chapter":
             tc = fmt("{tc}  Chapter", tc=tc)
+        elif m.get("kind") == "Segmentation":
+            tc = fmt("{tc}  Segmentation", tc=tc)
         return tc
 
     def paintEvent(self, _e: QPaintEvent) -> None:
@@ -177,6 +188,15 @@ class MarkerList(QWidget):
             a.setCheckable(True)
             a.setChecked(m.get("color") == name)
             a.triggered.connect(lambda _c=False, mid=marker_id, n=name: self.recolor.emit(mid, n))
+        # the marker type: segmentation markers with a duration are the AS-11 programme parts of an MXF export
+        kinds = menu.addMenu(tr("Marker Type"))
+        kinds.setObjectName("markers.menu.kind")
+        for kind, engine_name, text in MARKER_KINDS:
+            a = kinds.addAction(tr(text))
+            a.setObjectName(f"markers.menu.kind.{kind}")
+            a.setCheckable(True)
+            a.setChecked(m.get("kind") == engine_name)
+            a.triggered.connect(lambda _c=False, mid=marker_id, k=kind: self.retype.emit(mid, k))
         return menu
 
 
@@ -209,6 +229,7 @@ class MarkersPanel(QWidget):
         self.list = MarkerList(self)
         self.list.go.connect(lambda t: self.command.emit("playhead.set", {"time": t}))
         self.list.recolor.connect(lambda mid, n: self.command.emit("markers.edit", {"target": "program", "marker": mid, "color": n}))
+        self.list.retype.connect(lambda mid, k: self.command.emit("markers.edit", {"target": "program", "marker": mid, "kind": k}))
         scroll = QScrollArea(self)
         scroll.setWidgetResizable(True)
         scroll.setFrameShape(QFrame.Shape.NoFrame)

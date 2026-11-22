@@ -55,6 +55,7 @@ cfa4-tta = { path = "../crates/tta" }
 cfa4-amr = { path = "../crates/amr" }
 cfa4-av2 = { path = "../crates/av2" }
 cfa4-canopus = { path = "../crates/canopus" }
+cfa4-theora = { path = "../crates/theora" }
 cfa4-dirac = { path = "../crates/dirac" }
 cfa4-speex = { path = "../crates/speex" }
 cfa4-opus = { path = "../crates/opus" }
@@ -64,6 +65,23 @@ cfa4-truehd = { path = "../crates/truehd" }
 cfa4-utvideo = { path = "../crates/utvideo" }
 cfa4-vp8 = { path = "../crates/vp8" }
 cfa4-vp9 = { path = "../crates/vp9" }
+cfa4-realmedia = { path = "../crates/realmedia" }
+cfa4-realaudio = { path = "../crates/realaudio" }
+cfa4-realvideo = { path = "../crates/realvideo" }
+cfa4-sstp = { path = "../crates/sstp" }
+cfa4-evc = { path = "../crates/evc" }
+cfa4-cavs = { path = "../crates/cavs" }
+cfa4-lagarith = { path = "../crates/lagarith" }
+cfa4-bink = { path = "../crates/bink" }
+cfa4-magicyuv = { path = "../crates/magicyuv" }
+cfa4-g729 = { path = "../crates/g729" }
+cfa4-ilbc = { path = "../crates/ilbc" }
+cfa4-musepack = { path = "../crates/musepack" }
+cfa4-shorten = { path = "../crates/shorten" }
+cfa4-adx = { path = "../crates/adx" }
+cfa4-hca = { path = "../crates/hca" }
+cfa4-tak = { path = "../crates/tak" }
+cfa4-smacker = { path = "../crates/smacker" }
 
 # Opt-level 3 and debug assertions (overflow checks) for every crate under test, as release fuzzing does.
 [profile.release]
@@ -141,6 +159,13 @@ bench = false
 [[bin]]
 name = "canopus"
 path = "fuzz_targets/canopus.rs"
+test = false
+doc = false
+bench = false
+
+[[bin]]
+name = "theora"
+path = "fuzz_targets/theora.rs"
 test = false
 doc = false
 bench = false
@@ -414,6 +439,125 @@ bench = false
 [[bin]]
 name = "graphics_template"
 path = "fuzz_targets/graphics_template.rs"
+test = false
+doc = false
+bench = false
+
+[[bin]]
+name = "realmedia"
+path = "fuzz_targets/realmedia.rs"
+test = false
+doc = false
+bench = false
+
+[[bin]]
+name = "realaudio"
+path = "fuzz_targets/realaudio.rs"
+test = false
+doc = false
+bench = false
+
+[[bin]]
+name = "realvideo"
+path = "fuzz_targets/realvideo.rs"
+test = false
+doc = false
+bench = false
+
+[[bin]]
+name = "sstp"
+path = "fuzz_targets/sstp.rs"
+test = false
+doc = false
+bench = false
+
+[[bin]]
+name = "evc"
+path = "fuzz_targets/evc.rs"
+test = false
+doc = false
+bench = false
+
+[[bin]]
+name = "cavs"
+path = "fuzz_targets/cavs.rs"
+test = false
+doc = false
+bench = false
+
+[[bin]]
+name = "bink"
+path = "fuzz_targets/bink.rs"
+test = false
+doc = false
+bench = false
+
+[[bin]]
+name = "lagarith"
+path = "fuzz_targets/lagarith.rs"
+test = false
+doc = false
+bench = false
+
+[[bin]]
+name = "magicyuv"
+path = "fuzz_targets/magicyuv.rs"
+test = false
+doc = false
+bench = false
+
+[[bin]]
+name = "g729"
+path = "fuzz_targets/g729.rs"
+test = false
+doc = false
+bench = false
+
+[[bin]]
+name = "ilbc"
+path = "fuzz_targets/ilbc.rs"
+test = false
+doc = false
+bench = false
+
+[[bin]]
+name = "musepack"
+path = "fuzz_targets/musepack.rs"
+test = false
+doc = false
+bench = false
+
+[[bin]]
+name = "adx"
+path = "fuzz_targets/adx.rs"
+test = false
+doc = false
+bench = false
+
+[[bin]]
+name = "hca"
+path = "fuzz_targets/hca.rs"
+test = false
+doc = false
+bench = false
+
+[[bin]]
+name = "shorten"
+path = "fuzz_targets/shorten.rs"
+test = false
+doc = false
+bench = false
+
+[[bin]]
+name = "tak"
+path = "fuzz_targets/tak.rs"
+test = false
+doc = false
+bench = false
+
+[[bin]]
+name = "smacker"
+path = "fuzz_targets/smacker.rs"
 test = false
 doc = false
 bench = false
