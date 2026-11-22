@@ -37,11 +37,16 @@ impl Numbered {
     /// Split `path` at the last run of digits in its file stem. `None` when the stem has no digits
     /// or the file is not a still image.
     pub fn parse(path: &str) -> Option<Numbered> {
+        Self::parse_with(path, crate::STILL_EXTENSIONS)
+    }
+
+    /// [`Numbered::parse`] for another kind of numbered file (`extensions` lower case, e.g. `["vdb"]`).
+    pub fn parse_with(path: &str, extensions: &[&str]) -> Option<Numbered> {
         let cut = path.rfind(['/', '\\']).map_or(0, |i| i + 1);
         let (dir, name) = path.split_at(cut);
         let ext_at = name.rfind('.').filter(|&i| i > 0)?;
         let ext = name[ext_at + 1..].to_ascii_lowercase();
-        if !crate::STILL_EXTENSIONS.contains(&ext.as_str()) {
+        if !extensions.contains(&ext.as_str()) {
             return None;
         }
         let stem = &name[..ext_at];

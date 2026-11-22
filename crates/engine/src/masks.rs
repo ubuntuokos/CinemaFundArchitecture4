@@ -165,6 +165,7 @@ fn source_size(s: &Session, clip: ClipId) -> (f64, f64) {
         cfa4_project::ItemKind::Subclip { parent, .. } => {
             s.project.item(*parent).and_then(|pp| pp.as_media()).and_then(|m| m.info.video.as_ref()).map(|v| (v.width, v.height))
         }
+        cfa4_project::ItemKind::Volume(_) => None,
     });
     let (w, h) = dims.or_else(|| seq.map(|q| (q.settings.width, q.settings.height))).unwrap_or((1920, 1080));
     (w as f64, h as f64)

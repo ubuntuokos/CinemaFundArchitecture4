@@ -343,6 +343,7 @@ fn hash_source(h: &mut Fnv128, project: &Project, id: ItemId, kind: TrackKind, d
             hash_source(h, project, *parent, kind, depth + 1);
         }
         ItemKind::AdjustmentLayer { .. } => h.json(&("adjustment", &pi.kind)),
+        ItemKind::Volume(v) => h.json(&("volume", v)),
         ItemKind::Graphic { .. } => h.json(&("graphic", &pi.kind)),
         ItemKind::Sequence(s) => {
             h.json(&("sequence", &s.settings));
@@ -462,7 +463,7 @@ fn decode_cost_ms(project: &Project, id: ItemId, depth: u32) -> f64 {
             base * px
         }
         ItemKind::Subclip { parent, .. } => decode_cost_ms(project, *parent, depth + 1),
-        ItemKind::AdjustmentLayer { .. } => 0.0,
+        ItemKind::AdjustmentLayer { .. } | ItemKind::Volume(_) => 0.0,
         // vector layers are drawn on the CPU (cached while static)
         ItemKind::Graphic { .. } => 1.5,
         ItemKind::Sequence(s) => {

@@ -1350,7 +1350,7 @@ pub fn media_duration(p: &Project, _pool: &MediaPool, id: ItemId) -> Option<Tick
                 id = *parent;
                 continue;
             }
-            cfa4_project::ItemKind::AdjustmentLayer { .. } | cfa4_project::ItemKind::Graphic { .. } => None,
+            cfa4_project::ItemKind::AdjustmentLayer { .. } | cfa4_project::ItemKind::Graphic { .. } | cfa4_project::ItemKind::Volume(_) => None,
         };
     }
     None
