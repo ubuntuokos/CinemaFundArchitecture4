@@ -2002,6 +2002,66 @@ fn as03_metadata_round_trips() {
 }
 
 #[test]
+fn as12_adid_round_trips_beside_as03() {
+    use crate::as11::{ADID_SHIM_NAME, As11};
+    let kv = |v: &[(&str, &str)]| -> Vec<(String, String)> { v.iter().map(|(k, v)| (k.to_string(), v.to_string())).collect() };
+    let as03 = kv(&[
+        ("IdentifierKind", "Ad-ID"),
+        ("Identifier", "ABCD1234000H"),
+        ("ShimName", "STATION"),
+        ("SignalStandard", "1920/1080/25p/16:9"),
+        ("IntendedAFD", "1000 FullHD"),
+    ]);
+    let adid = kv(&[
+        ("adid_prefix", "ABCD"),
+        ("adid_code", "1234000H"),
+        ("ad_title", "Spot"),
+        ("Brand", "Joe's Bakery"),
+        ("Product", "Baked Goods"),
+        ("Advertiser", "Joe's Bakery"),
+        ("agency_office_location", "Agency, Budapest"),
+        ("Length", "30"),
+        ("Medium", "Television"),
+        ("sd_flag", "N"),
+        ("Parent", "Joe Holding"),
+    ]);
+    let mut cfg = op1a_config(Rational::new(25, 1), PictureCoding::ProRes { profile: 3 });
+    cfg.sound.truncate(1);
+    cfg.as11 = Some(As11 { as03: as03.clone(), as12: adid.clone(), ..Default::default() });
+    let mut w = MxfWriter::new(Cursor::new(Vec::new()), cfg).unwrap();
+    for i in 0..4 {
+        w.push_picture(&prores_like(i), FrameInfo::intra()).unwrap();
+        w.push_sound(0, &pcm16(i * 1920, 1920)).unwrap();
+    }
+    let bytes = w.finish().unwrap().into_inner();
+    let f = open(&bytes).unwrap();
+    assert_eq!(f.tracks.len(), 2, "the DM tracks are not essence tracks");
+    let a = f.as11.unwrap();
+    let sorted = |mut v: Vec<(String, String)>| {
+        v.sort();
+        v
+    };
+    assert_eq!(sorted(a.as03), sorted(as03.clone()));
+    let mut want = adid.clone();
+    want.push(("ShimName".into(), ADID_SHIM_NAME.into()));
+    assert_eq!(sorted(a.as12), sorted(want));
+    // AS-12 alone, a wrong shim name, a missing item and an over-long title are refused
+    let refuse = |a: As11| {
+        let mut cfg = op1a_config(Rational::new(25, 1), PictureCoding::ProRes { profile: 3 });
+        cfg.as11 = Some(a);
+        MxfWriter::new(Cursor::new(Vec::new()), cfg).err().unwrap().to_string()
+    };
+    assert!(refuse(As11 { as12: adid.clone(), ..Default::default() }).contains("beside"));
+    let mut wrong = adid.clone();
+    wrong.push(("ShimName".into(), "Other".into()));
+    assert!(refuse(As11 { as03: as03.clone(), as12: wrong, ..Default::default() }).contains("ShimName"));
+    assert!(refuse(As11 { as03: as03.clone(), as12: adid[1..].to_vec(), ..Default::default() }).contains("adid_prefix is required"));
+    let mut long = adid.clone();
+    long[2].1 = "x".repeat(129);
+    assert!(refuse(As11 { as03, as12: long, ..Default::default() }).contains("128"));
+}
+
+#[test]
 fn as07_baseband_shim_check() {
     use crate::as07::{baseband_problems, check_baseband};
     // uncompressed 10-bit pictures in OP1a with frame wrapping conform
@@ -2017,4 +2077,41 @@ fn as07_baseband_shim_check() {
     let f = open(&build_op1a()[..]).unwrap();
     let e = check_baseband(&f).unwrap_err();
     assert!(e.contains("not JPEG 2000"), "{e}");
+}
+
+#[test]
+fn as03_file_conformance_check() {
+    use crate::as03::file_problems;
+    use crate::as11::As11;
+    let kv = |v: &[(&str, &str)]| -> Vec<(String, String)> { v.iter().map(|(k, v)| (k.to_string(), v.to_string())).collect() };
+    let as03 = kv(&[
+        ("IdentifierKind", "ISAN"),
+        ("Identifier", "ISAN 0000-0001-8947-0000-8-0000-0000-D"),
+        ("ShimName", "PBS NGIS HD Playout"),
+        ("SignalStandard", "1920/1080/25i/16:9"),
+        ("IntendedAFD", "1000 FullHD"),
+    ]);
+    let rate = Rational::new(25, 1);
+    let build = |as11: Option<As11>, frame_bytes: usize| {
+        let mut cfg = rdd9_config(rate, 4);
+        cfg.as11 = as11;
+        let mut w = MxfWriter::new(Cursor::new(Vec::new()), cfg).unwrap();
+        let n = 26;
+        let mut a = 0;
+        for i in 0..n {
+            w.push_sound(0, &pcm24x4(a, 1920)).unwrap();
+            a += 1920;
+            w.push_picture(&d10_picture(i, frame_bytes), rdd9_frame(i)).unwrap();
+        }
+        open(&w.finish().unwrap().into_inner()).unwrap()
+    };
+    // MPEG-2 1080 at 25 Mbit/s with the framework: conforms
+    let f = build(Some(As11 { as03: as03.clone(), ..Default::default() }), 125_000);
+    assert_eq!(file_problems(&f), Vec::<String>::new());
+    // no framework, and a rate far from the shim's
+    let f = build(None, 125_000);
+    assert!(file_problems(&f).iter().any(|e| e.contains("no DMS-AS-03")));
+    let f = build(Some(As11 { as03, ..Default::default() }), 250_000);
+    let e = file_problems(&f).join("; ");
+    assert!(e.contains("50.0 Mbit/s") && e.contains("PBS NGIS HD Playout"), "{e}");
 }

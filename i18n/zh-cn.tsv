@@ -4895,3 +4895,8 @@
 	Validate DCP…	验证 DCP…
 	the engine sent no profiles	引擎未发送任何配置文件
 	{n} files checked	已检查 {n} 个文件
+
+# AS-02 export
+	Write an AS-02 bundle (the path is a folder)	写入 AS-02 包(路径为文件夹)
+	AS-02	AS-02
+	AS-12	AS-12

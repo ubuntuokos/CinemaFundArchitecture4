@@ -754,3 +754,80 @@ fn xdcam_hd422_as03_metadata_and_shims() {
     assert!(a.contains(&("SlateTitle".to_string(), "Híradó".to_string())) && a.contains(&("ShimName".into(), "STATION_HD_2026".into())), "{a:?}");
     assert_eq!(a.len(), 6);
 }
+
+/// #1477: `mxf_as02` writes a simple AS-02 bundle: the version file and `manifest.xml` in the
+/// folder, the picture and each audio channel as a mono OP1a file under `media/`.
+#[test]
+fn as02_bundle_has_version_manifest_and_mono_components() {
+    use cfa4_mxf::as02::{Manifest, Role};
+    let (p, seq, m) = project();
+    let dir = tmp("as02_bundle");
+    let _ = std::fs::remove_dir_all(&dir);
+    let r = export(&p, seq, &ExportSettings { mxf_as02: true, ..settings(Format::MxfOp1a, MxfVideoCodec::Dnxhr, &dir) }, &m, &Progress::default()).unwrap();
+    assert_eq!(r.frames, 24);
+    let name = std::path::Path::new(&dir).file_name().unwrap().to_string_lossy().to_string();
+    let xml = std::fs::read_to_string(format!("{dir}/manifest.xml")).unwrap();
+    let man = Manifest::parse(&xml).unwrap();
+    assert_eq!(man.check_simple(), Vec::<String>::new());
+    assert_eq!(man.bundle_name, name);
+    assert_eq!(man.essence_components().count(), 3, "picture + two audio channels");
+    for f in man.files.iter().filter(|f| f.role != Role::Folder) {
+        assert_eq!(std::fs::metadata(format!("{dir}/{}", f.path)).unwrap().len(), f.size, "{}", f.path);
+    }
+    // the components are mono OP1a files with one 24-frame track each
+    for (tag, kind) in [("V", cfa4_mxf::TrackKind::Picture), ("A1", cfa4_mxf::TrackKind::Sound), ("A2", cfa4_mxf::TrackKind::Sound)] {
+        let b = std::fs::read(format!("{dir}/media/{name}_{tag}.mxf")).unwrap();
+        let mx = cfa4_mxf::open(&b).unwrap();
+        assert_eq!(mx.operational_pattern.name(), "OP1a", "{tag}");
+        assert_eq!(mx.tracks.len(), 1, "{tag}");
+        assert_eq!(mx.tracks[0].kind, kind, "{tag}");
+        assert_eq!(mx.tracks[0].duration, Some(24), "{tag}");
+    }
+    // the version file reads back with one 24-frame clip per component
+    let v = std::fs::read(format!("{dir}/{name}.mxf")).unwrap();
+    let ver = cfa4_mxf::as02_version::read_version(&v).unwrap();
+    assert_eq!(ver.tracks.len(), 3);
+    assert!(ver.tracks.iter().all(|t| t.clips.len() == 1 && t.clips[0].duration == 24));
+    assert_eq!(ver.components.len(), 3);
+    let _ = std::fs::remove_dir_all(&dir);
+    // refused with the single-file frameworks and for the codecs that interleave sound
+    let bad = |s: ExportSettings| s.validate().unwrap_err().to_string();
+    let base = ExportSettings { mxf_as02: true, ..settings(Format::MxfOp1a, MxfVideoCodec::Dnxhr, &tmp("as02_bad")) };
+    assert!(bad(ExportSettings { format: Format::MxfOpAtom, ..base.clone() }).contains("OP1a"));
+    assert!(bad(ExportSettings { mxf_anc_captions: true, ..base.clone() }).contains("AS-02"));
+    assert!(bad(ExportSettings { mxf_video_codec: MxfVideoCodec::XdcamHd422, ..base.clone() }).contains("mono"));
+}
+
+/// AS-12 (MXF Commercials Delivery): the Ad-ID identification is written beside an AS-03
+/// framework and read back; AS-12 alone or with a missing item is refused.
+#[test]
+fn xdcam_hd422_as12_adid_beside_as03() {
+    let (p, seq, m) = project();
+    let as03 = "IdentifierKind: Ad-ID\nIdentifier: ABCD1234000H\nShimName: STATION\nSignalStandard: 1280/720/25p/16:9\nIntendedAFD: 1000 FullHD\n";
+    let adid = "adid_prefix: ABCD\nadid_code: 1234000H\nad_title: Spot\nBrand: Joe\nProduct: Bread\nAdvertiser: Joe\nagency_office_location: Budapest\nLength: 30\nMedium: Television\nsd_flag: N\nParent: Joe Holding\n";
+    let xd = |path: &str, as03: &str, as12: &str| ExportSettings {
+        frame_size: Some((1280, 720)),
+        bitrate_kbps: 25_000,
+        max_bitrate_kbps: Some(25_000),
+        keyframe_distance: Some(12),
+        mpeg2_b_frames: Some(2),
+        mxf_as03: as03.into(),
+        mxf_as12: as12.into(),
+        ..settings(Format::MxfOp1a, MxfVideoCodec::XdcamHd422, path)
+    };
+    let err = |s: ExportSettings| match export(&p, seq, &s, &m, &Progress::default()) {
+        Err(ExportError::Unsupported(e)) => e,
+        other => panic!("expected a refusal, got {other:?}"),
+    };
+    assert!(err(xd(&tmp("as12_alone.mxf"), "", adid)).contains("beside"));
+    assert!(err(xd(&tmp("as12_missing.mxf"), as03, "adid_prefix: ABCD\n")).contains("is required"));
+    assert!(err(ExportSettings { format: Format::MxfOpAtom, ..xd(&tmp("as12_atom.mxf"), as03, adid) }).contains("OP1a"));
+    let path = tmp("as12_ok.mxf");
+    export(&p, seq, &xd(&path, as03, adid), &m, &Progress::default()).unwrap();
+    let bytes = std::fs::read(&path).unwrap();
+    let mx = cfa4_mxf::open(&bytes).unwrap();
+    assert!(mx.warnings.is_empty(), "{:?}", mx.warnings);
+    let a = mx.as11.unwrap().as12;
+    assert_eq!(a.len(), 12, "{a:?}");
+    assert!(a.contains(&("Brand".to_string(), "Joe".to_string())) && a.contains(&("ShimName".into(), cfa4_mxf::as11::ADID_SHIM_NAME.into())));
+}
