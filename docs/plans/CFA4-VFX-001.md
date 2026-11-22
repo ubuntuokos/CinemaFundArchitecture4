@@ -1,8 +1,8 @@
 # CFA4-VFX-001 – VFX és motion graphics: tartalmi réteg a CFA4 render-infrastruktúráján
 
-**Verzió:** 1.0 (jóváhagyásra) · **Dátum:** 2026-11-22
+**Verzió:** 1.0 (véglegesítve) · **Dátum:** 2026-11-22
 **Előzmények:** `CFA4_VFX_EGYESITETT_TERV.md` v0.9.8 (a master- és az After Effects-terv egyesítése) és `CFA4_VFX_OSSZEVETES_A_REPO_TERVEKKEL.md` (összevetés a `main` `3d1615e` állapotával). A bemeneti tervek és a v0.9.8 lépésről lépésre megőrzik a részleteket; ahol ez a terv eltér tőlük, **ez az irányadó**.
-**Állapot:** `TERV`. Implementáció, audit, repómódosítás és PR nem történt. A repóba vitel (`docs/plans/`) PR-t igényel (`coordination.md` §2.11), ezért ez a fájl addig vázlat.
+**Állapot:** `JÓVÁHAGYOTT` a tulajdonos által, 2026-11-22; a fejlesztés a 5. fejezet sorrendje szerint indul (VFX-0a → 0b → 1; a VFX-2…6 a render-terv függőségeinek készültéig vár; a VFX-8 az X-4/X-5 döntésig áll). A repóba vitel PR-ral történik (`coordination.md` §2.11).
 **Névhasználat:** a repó márkaszűrője (`python/tests/test_independence.py`) miatt a szövegben „EC-donor (#11)” és „upstream” szerepel; a márkanevek és a donor-URL-ek nincsenek kiírva. A fájl így közvetlenül a `docs/plans/`-ba vihető.
 
 ## 1. Cél és hely a CFA4-ben
