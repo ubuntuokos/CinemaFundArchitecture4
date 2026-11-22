@@ -41,7 +41,7 @@ A klónban csak a `main` ág látszik; a nyitott PR-ok (31 db a lekérdezéskor,
    a tulajdonos gépén vannak. Ezt nem tudtam ellenőrizni (a munkamenethez csak ez a tároló van
    csatolva). **Tulajdonosi teendő:** a hiányzó tervek `main`-be emelése vagy elérhetővé tétele (G0).
 
-4. **Frissítés (2026-11-21, tulajdonosi döntés):** a hiányzó tervekhez *új terv készül*, a `docs/plans/` alatt (javaslatok, jóváhagyásra várnak): [`CFA4-VFX-CATALOG-001`](CFA4-VFX-CATALOG-001-0.1.md), [`CFA4-FX-AUTHORING-001`](CFA4-FX-AUTHORING-001-0.1.md), [`CFA4-ARF-001`](CFA4-ARF-001-0.1.md), [`CFA4-OPENUSD-3D-001`](CFA4-OPENUSD-3D-001-0.1.md), [`CFA4-POINTCLOUD-001`](CFA4-POINTCLOUD-001-0.1.md). Amíg ezek nincsenek jóváhagyva, a D1 `?` sorai nem zárulnak (a besorolás nem változik).
+4. **Frissítés (2026-11-21, tulajdonosi döntés):** a hiányzó tervekhez *új terv készül*, a `docs/plans/` alatt (javaslatok, jóváhagyásra várnak): [`CFA4-VFX-CATALOG-001`](CFA4-VFX-CATALOG-001-0.1.md), [`CFA4-FX-AUTHORING-001`](CFA4-FX-AUTHORING-001-0.1.md), [`CFA4-ARF-001`](CFA4-ARF-001-0.1.md), [`CFA4-OPENUSD-3D-001`](CFA4-OPENUSD-3D-001-1.0.md), [`CFA4-POINTCLOUD-001`](CFA4-POINTCLOUD-001-0.1.md). Amíg ezek nincsenek jóváhagyva, a D1 `?` sorai nem zárulnak (a besorolás nem változik).
 
 ### 0.2 Ami a `main`-ben ténylegesen van (a viszonyítási alap)
 
@@ -234,7 +234,7 @@ olvasóval + hostile-fuzz (`aaf/hostile_tests.rs`). Új AAF-kód nem készül.
 | Licenc | `LICENSE.txt`: a fork „Modified Apache 2.0”, az upstream HEAD „Tomorrow Open Source Technology License 1.0” (az Apache-2.0-tól csak a 6. szakasz, a védjegyek, tér el) | **IGAZOLT a szövegből**; a GPL-3 kompatibilitás jogi minősítése: Apache-2.0-szerű, a CFA4 szabálya engedi az Apache-2.0-t; a TOST-1.0 különbségét (védjegy) a tulajdonos hagyja jóvá → **nyitott** |
 | Karbantartás | a fork 2023 óta áll; az upstream aktív | **IGAZOLT** |
 
-**Eredmény a D7-táblára:** `DNEG delta` = **üres** (a fork a v23.05 tükre); `upstreamben már elérhető` = minden; `egyedi DNEG-funkció` = **nincs**; `adaptálható` = nincs mit; `nem adaptálható` = a fork mint hordozó (elavult, nincs értéke). **Döntés:** a DNEG USD-fork **nem kerül be és nem is vizsgálandó tovább**; ha a CFA4 USD-t használ, az az upstream OpenUSD (lásd [`CFA4-OPENUSD-3D-001`](CFA4-OPENUSD-3D-001-0.1.md)).
+**Eredmény a D7-táblára:** `DNEG delta` = **üres** (a fork a v23.05 tükre); `upstreamben már elérhető` = minden; `egyedi DNEG-funkció` = **nincs**; `adaptálható` = nincs mit; `nem adaptálható` = a fork mint hordozó (elavult, nincs értéke). **Döntés:** a DNEG USD-fork **nem kerül be és nem is vizsgálandó tovább**; ha a CFA4 USD-t használ, az az upstream OpenUSD (lásd [`CFA4-OPENUSD-3D-001`](CFA4-OPENUSD-3D-001-1.0.md)).
 
 ## D8 – Licenc és függőségek (hálózati ellenőrzéssel, 2026-11-21)
 

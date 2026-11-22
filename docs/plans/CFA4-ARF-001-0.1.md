@@ -23,7 +23,7 @@ Egyetlen **reprezentáció-réteg** (adatmodell + kiválasztási szabály), amel
 | 3D, pontfelhő, volumetria: sem terv, sem kód | `VISION.md` §4, §8; DNEG-audit §0.2 |
 | Erőforrás-keret: feladattípusok, memóriakeret, prioritás, ellenőrzőpont, jóváhagyás minőségcsökkentéshez | ACS-összevetés, TASKSTORE-PG-001, ADR-0004 |
 | 2D `particles` effekt (nem térbeli) | `crates/project/src/effect/vfx.rs:509` |
-| Külső formátumok jelöltjei: OpenVDB (Apache-2.0, igazolt), USD (upstream), pontfelhő (Potree/LAS/…) | DNEG-audit D8; [OPENUSD-3D](CFA4-OPENUSD-3D-001-0.1.md), [POINTCLOUD](CFA4-POINTCLOUD-001-0.1.md) |
+| Külső formátumok jelöltjei: OpenVDB (Apache-2.0, igazolt), USD (upstream), pontfelhő (Potree/LAS/…) | DNEG-audit D8; [OPENUSD-3D](CFA4-OPENUSD-3D-001-1.0.md), [POINTCLOUD](CFA4-POINTCLOUD-001-0.1.md) |
 
 ## 3. A reprezentációk (a tulajdonos listája szerint)
 
