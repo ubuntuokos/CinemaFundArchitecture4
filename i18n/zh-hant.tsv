@@ -4868,6 +4868,10 @@ export.summary	Low	低
 	Subtitles	字幕
 	Captions for the hearing impaired	聽障人士字幕
 	Forced narrative	強制旁白 (forced narrative)
+	Silence	靜音
+	Detect Silence	偵測靜音
+	Remove Silence	移除靜音
+	Clear Silence Markers	清除靜音標記
 # DCP Validation window (DCP-12)
 	AS-03	AS-03
 	Choose the DCP folder.	請選擇 DCP 資料夾。

@@ -4877,6 +4877,10 @@
 	Subtitles	Subtitel
 	Captions for the hearing impaired	Teks untuk penyandang tunarungu
 	Forced narrative	Narasi paksa (forced narrative)
+	Silence	Hening
+	Detect Silence	Deteksi hening
+	Remove Silence	Hapus hening
+	Clear Silence Markers	Hapus penanda hening
 # DCP Validation window (DCP-12)
 	AS-03	AS-03
 	Choose the DCP folder.	Pilih folder DCP.
