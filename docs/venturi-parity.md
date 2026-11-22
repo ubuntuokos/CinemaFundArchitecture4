@@ -32,7 +32,7 @@ CFA4-gyel. A Kdenlive-tervben már szereplő tételeket **nem ismétli**, csak h
 | Rész | Licenc | Átvehető? | Megjegyzés |
 |---|---|:-:|---|
 | Venturi forráskód (`crates/*`) | GPL-3.0-or-later (`LICENSE`, `Cargo.toml` `license`) | ✅ | A fájlokban nincs SPDX-fejléc, ezért átvételkor **mi írjuk** a fejlécet: eredet (repó + commit), szerző (`morrolinux`, Venturi contributors), GPL-3.0-or-later. Bejegyzés a [`licensing.md` §5](licensing.md) nyilvántartásba ugyanabban a commitban |
-| Silero VAD modell (`vv-vad/model`) | MIT (`LICENSE-silero-vad`) | ✅ | Eszköz, ezért `.attribution` oldalfájl és `ATTRIBUTION.md`-sor kell (`cargo xtask assets`) |
+| Silero VAD modell (`vv-vad/model`) | MIT (`LICENSE-silero-vad`) | ✅ | A CFA4 a modellt **nem terjeszti és nem ágyazza be**: a felhasználó az első használatkor, a licenc megmutatása és egyszeri elfogadása után maga tölti le (V1-B, 2026-11-21; CFA4-AI_modules ADR 0008 F5). Ezért nem kerül modellfájl a repóba; a licenc a letöltőfelületen jelenik meg, a modell a közös modelltárba kerül |
 | `tract-onnx` (ONNX-futtató) | MIT OR Apache-2.0 | ✅ | Tiszta Rust, `cargo deny` szerint ellenőrizendő |
 | `vst3` crate, VST3 SDK | MIT (az SDK 2025 óta MIT) | ✅ | Csak V6-hoz, külön folyamatban; a Steinberg/VST logó nem kerülhet be |
 | Venturi név, logó, ikonok, képernyőképek | — | ❌ | Márka, nem vesszük át (ahogy a Kdenlive/KDE nevét sem) |
@@ -80,7 +80,9 @@ szűkíti. Szünettörlés csak átirattal van (`transcript.removePauses`), ehhe
 
 **Teendő:**
 1. `crates/speech`: `vad::silero` modul `tract-onnx`-szel, a Venturi `vv-vad` alapján
-   (fejléc + nyilvántartás), 16 kHz-re fagyasztott modell `.attribution` fájllal.
+   (fejléc + nyilvántartás). A modellt (16 kHz) a CFA4 nem szállítja és nem ágyazza be: a felhasználó az első
+   használatkor, a licenc (MIT) elfogadása után tölti le a közös modelltárba (V1-B, az MI-réteg után; V1-A a
+   megvalósítási tervben).
 2. Új parancs `audio.detectSpeech` / `clip.removeSilence` (paraméterek: küszöb, minimális
    szünet, megtartott ráhagyás, `Tick`-ben), átirat nélkül, bármilyen nyelven.
 3. A Whisper elé VAD-szűrő: csak a beszédes szakaszok mennek a modellbe. Ez gyorsít, és
