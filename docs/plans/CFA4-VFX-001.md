@@ -17,6 +17,7 @@ Kiindulás: `VISION.md` §4 (Resolve: „Fusion-szerű csomópontos kompozitál�
 |---|---|---|
 | Platform, GUI | Ubuntu 26.04 LTS, amd64, Wayland és X11; új felület csak Qt6/PySide6; az egui fagyasztott | `VISION.md` §2–3, `AGENTS.md` |
 | **Csak Linux-hatókör** | A donorokból **nem** veszünk át macOS-, Windows-, FreeBSD- és böngésző/web-specifikus részt: sem forráskódot (`cfg(windows)`, `cfg(target_os = "macos")` ágak, platformmodulok), sem csomagolást (`packaging/windows`, `packaging/macos`, `packaging/freebsd`), sem UI-hidat (a Flutter `windows/`, `macos/` részei), sem CI-t, fordítást vagy tesztet ezekre. Portoláskor a platformágakat elhagyjuk, nem portoljuk át „későbbre”. A CFA4 CI-jébe nem kerül macOS- vagy Windows-job; a donor-tesztek csak Ubuntu 26.04 amd64-en futnak | `VISION.md` §2, `.github/workflows/ci-linux.yml` (`platform-scope`), István 2026-11-22 |
+| Port vagy marad (`AGENTS.md`, tulajdonosi döntés 2026-11-03) | Az átvett kód alapból Rustra portolódik (EC-donor, Lumit-donor). A C++/Python kód (Gaffer-donor) nem kerül a szerkesztő folyamatába: csak külső, felügyelt workerként, Rust-interfész mögött, a render C0 worker-szerződésén át futhat, és csak ha a referenciagépen mérve nem lassítja a lejátszást és a renderelést. A port-vagy-marad indoklást minden átvételi PR rögzíti | `AGENTS.md` CFA4-szakasz |
 | Motor | Rust; minden parancs `Session::execute(id, params)`; idő mindig `cfa4_time::Tick` (254 016 000 000/s) | `CLAUDE.md` |
 | Egy projektmodell | Nincs második projektmodell vagy kiértékelő; a kompozíció adat marad | render-terv A1 |
 | Kép | Premultiplikált, lineáris fényű RGBA f32 a referencia; CPU-referencia, GPU a CPU-hoz mérve | `docs/architecture.md`, render-terv MQ |
@@ -59,6 +60,12 @@ Kiindulás: `VISION.md` §4 (Resolve: „Fusion-szerű csomópontos kompozitál�
 | Élő grafika | `LIVE-STUDIO-001` (C10) | A közös grafikus réteget nem törheti |
 | Kdenlive/MLT | Külön projekt (K1, K20, K43) | Nincs; a K20 táblát a katalógus hivatkozza |
 | AI-modellek, model manager | `CFA4-AI_modules` ADR 0008, `AI-MODEL-TRAINING-001` | Csak interfész |
+| OpenVDB-adat, volume-előnézet, térbeli kifejezés (kontextus a közös kifejezésmagon) | `CFA4-DNEG-TECHNOLOGY-ADAPTATION-001` (N1–N3) | A kifejezésmagot (VFX-4) adja; a DNEG-munka a mátrixban `DNEG-M1…M3` |
+| Reprezentáció-réteg (mesh, pont, volume, görbe, példány, impostor) | `CFA4-ARF-001` | Csak bemenet a VFX-6-nak; nincs második részecskemotor |
+| Effektlánc-preset, macro | `CFA4-FX-AUTHORING-001` | A preset a `VfxGraph` részgráfjává migrálható; a kifejezés a VFX-4 magja |
+| Jelenetcsere (glTF/OBJ/STL, natív USD-import) | `CFA4-OPENUSD-3D-001` | VFX-8 külső EXR-csere az alap; a natív import az X-4 döntés után |
+| Pontfelhő | `CFA4-POINTCLOUD-001` | Effektek (scatter) csak a VFX-6 sorain |
+| EC-donor besorolása (`PASS`/`BLOCKED`/`REFERENCE_ONLY`) | render-terv F1 (EC-jelölt #11 audit) | A VFX-1 csak leltárat és átvételi sorrendet ad, a besorolást nem ismétli |
 
 ## 4. Mit épít a VFX-projekt (jogosult hatókör)
 
@@ -152,6 +159,10 @@ A tesztek a render-terv harnessén és kapuin (F0V, MQ-1…8, AC-01…18) futnak
 | Márkaszűrő | Semleges nevek a repóban; a tesztet a PR előtt le kell futtatni |
 | A 3D-döntés késik | VFX-8 külön, a többit nem blokkolja |
 | 30-nál több nyitott PR (`coordination.md` §2.6) | Új munka csak a tulajdonos kérésére |
+
+## 8a. Elfogadott egyeztetési döntések (2026-11-22, a `CFA4-DNEG-VFX-EGYEZTETES-001` D-1…D-9 szerint)
+
+D-1 egy katalógus (a `G-xx` mátrix; a VFX-CATALOG-001 szűkül); D-2 egy kifejezésmag, gazdája a VFX-4; D-3 egy worker/job-szerződés (render C0), az N1/N2 saját indítója átmeneti; D-4 USD: külső EXR-csere az alap, natív import feltételes; D-5…D-8 pontosítások (N2-3, „G” névkonvenció, OpenVDB-licenc, DNEG-donorok pillanatképe); D-9 az FX-AUTHORING név marad. Az X-4 (3D-mélység) **nem** dőlt el: az OPENUSD, ARF, POINTCLOUD és a VFX-8 addig áll.
 
 ## 9. Nyitott tulajdonosi döntések
 
