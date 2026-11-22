@@ -1334,6 +1334,7 @@ dependencies = [
  "cfa4-musepack",
  "cfa4-mve",
  "cfa4-mxf",
+ "cfa4-nstream",
  "cfa4-ogg",
  "cfa4-opus",
  "cfa4-prores",
@@ -2057,6 +2058,14 @@ dependencies = [
  "hmac",
  "roxmltree",
  "sha1",
+]
+
+[[package]]
+name = "cfa4-nstream"
+version = "0.10.0"
+dependencies = [
+ "cfa4-testkit",
+ "thiserror 2.0.21",
 ]
 
 [[package]]
