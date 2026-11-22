@@ -28,6 +28,8 @@ pub enum ItemType {
     Length,
     /// An MXF timestamp (the date part is what AS-11 uses).
     Timestamp,
+    /// A 32-byte UMID, as 64 hex digits (or `urn:smpte:umid:` and hex groups).
+    Umid,
 }
 
 /// One framework item.
@@ -112,6 +114,95 @@ pub const UKDPP_ITEMS: &[Item] = &[
 ];
 
 /// Set keys of the frameworks.
+const fn as10(n: u8, name: &'static str, kind: ItemType, required: bool) -> Item {
+    Item { name, ul: [0x06, 0x0E, 0x2B, 0x34, 0x01, 0x01, 0x01, 0x01, 0x0D, 0x01, 0x07, 0x01, 0x0A, 0x01, 0x01, n], kind, required }
+}
+
+/// The AMWA AS-10 (MXF for Production) DMS_AS_10_Core framework items (AS-10 v1.1, 7.5 and 6.2).
+pub const AS10_ITEMS: &[Item] = &[
+    as10(0x01, "ShimName", Text, true),
+    as10(0x02, "Type", Text, false),
+    as10(0x03, "MainTitle", Text, false),
+    as10(0x04, "SubTitle", Text, false),
+    as10(0x05, "TitleDescription", Text, false),
+    as10(0x06, "OrganizationName", Text, false),
+    as10(0x07, "PersonName", Text, false),
+    as10(0x08, "LocationDescription", Text, false),
+    as10(0x09, "CommonSpanningID", Umid, false),
+    as10(0x0A, "SpanningNumber", U16, false),
+    as10(0x0B, "CumulativeDuration", Length, false),
+];
+
+const fn as03(n: u8, name: &'static str, required: bool) -> Item {
+    Item { name, ul: [0x06, 0x0E, 0x2B, 0x34, 0x01, 0x01, 0x01, 0x01, 0x0D, 0x01, 0x04, 0x01, 0x03, 0x01, n, 0x00], kind: Text, required }
+}
+
+/// The AMWA AS-03 (MXF Program Delivery) DMS-AS-03 framework items (AS-03 rev 1.0, 5.4.2). Every
+/// item is a UTF-16 string; the first five are required.
+pub const AS03_ITEMS: &[Item] = &[
+    as03(0x01, "IdentifierKind", true),
+    as03(0x02, "Identifier", true),
+    as03(0x03, "ShimName", true),
+    as03(0x04, "SignalStandard", true),
+    as03(0x05, "IntendedAFD", true),
+    as03(0x06, "SlateTitle", false),
+    as03(0x07, "NOLACode", false),
+    as03(0x08, "Rating", false),
+    as03(0x09, "NielsenStreamIdentifier", false),
+];
+
+/// DMS_AS_03_Framework set key and DMS_AS_03 scheme label.
+pub const AS03_FRAMEWORK_KEY: [u8; 16] = [0x06, 0x0E, 0x2B, 0x34, 0x02, 0x53, 0x01, 0x01, 0x0D, 0x01, 0x04, 0x01, 0x03, 0x01, 0x00, 0x00];
+pub const AS03_SCHEME: [u8; 16] = [0x06, 0x0E, 0x2B, 0x34, 0x04, 0x01, 0x01, 0x01, 0x0D, 0x01, 0x04, 0x01, 0x03, 0x00, 0x00, 0x00];
+pub const AS03_TRACK: (&str, u32) = ("AS_03", 5301);
+
+const fn as12(n: u8, name: &'static str) -> Item {
+    Item { name, ul: [0x06, 0x0E, 0x2B, 0x34, 0x01, 0x01, 0x01, 0x01, 0x0D, 0x01, 0x07, 0x01, 0x0C, 0x01, 0x01, n], kind: Text, required: false }
+}
+
+const fn adid(n: u8, name: &'static str) -> Item {
+    Item { name, ul: [0x06, 0x0E, 0x2B, 0x34, 0x01, 0x01, 0x01, 0x0D, 0x0D, 0x0D, 0x01, n, 0x00, 0x00, 0x00, 0x00], kind: Text, required: true }
+}
+
+/// The AMWA AS-12 (MXF Commercials Delivery, 2013) DMS_AS_12_Framework item `ShimName` (section 6).
+pub const AS12_ITEMS: &[Item] = &[Item {
+    name: "ShimName",
+    ul: [0x06, 0x0E, 0x2B, 0x34, 0x01, 0x01, 0x01, 0x01, 0x0D, 0x01, 0x07, 0x01, 0x0C, 0x01, 0x01, 0x01],
+    kind: Text,
+    required: false,
+}];
+/// The strong reference from the framework to the shim's descriptive object: it holds no text,
+/// only a local tag.
+pub const AS12_SLATE: Item = as12(0x02, "Slate");
+/// The informative shim name of the Ad-ID shim (annex A).
+pub const ADID_SHIM_NAME: &str = "Ad-ID Digital Identification";
+/// The Ad-ID shim's descriptive object items (annex A, the properties of `adid.xsd`), all required.
+pub const ADID_ITEMS: &[Item] = &[
+    adid(0x01, "adid_prefix"),
+    adid(0x02, "adid_code"),
+    adid(0x03, "ad_title"),
+    adid(0x04, "Brand"),
+    adid(0x05, "Product"),
+    adid(0x06, "Advertiser"),
+    adid(0x07, "agency_office_location"),
+    adid(0x08, "Length"),
+    adid(0x09, "Medium"),
+    adid(0x0A, "sd_flag"),
+    adid(0x0B, "Parent"),
+];
+/// Longest values in characters (annex A).
+const ADID_MAX: &[(&str, usize)] = &[("ad_title", 128), ("Brand", 64), ("Advertiser", 64), ("agency_office_location", 64), ("Product", 32)];
+/// DMS_AS_12_Framework and DMS_AS_12_AdID_Slate set keys and the DMS_AS_12 scheme label.
+pub const AS12_FRAMEWORK_KEY: [u8; 16] = [0x06, 0x0E, 0x2B, 0x34, 0x02, 0x53, 0x01, 0x01, 0x0D, 0x01, 0x07, 0x01, 0x0C, 0x01, 0x01, 0x00];
+pub const ADID_SLATE_KEY: [u8; 16] = [0x06, 0x0E, 0x2B, 0x34, 0x02, 0x53, 0x01, 0x0D, 0x0D, 0x0D, 0x01, 0x00, 0x00, 0x00, 0x00, 0x00];
+pub const AS12_SCHEME: [u8; 16] = [0x06, 0x0E, 0x2B, 0x34, 0x04, 0x01, 0x01, 0x01, 0x0D, 0x01, 0x07, 0x01, 0x0C, 0x01, 0x00, 0x00];
+pub const AS12_TRACK: (&str, u32) = ("AS_12", 5401);
+
+/// DMS_AS_10_Core_Framework set key and DMS_AS_10_Core scheme label.
+pub const AS10_FRAMEWORK_KEY: [u8; 16] = [0x06, 0x0E, 0x2B, 0x34, 0x02, 0x53, 0x01, 0x01, 0x0D, 0x01, 0x07, 0x01, 0x0A, 0x01, 0x01, 0x00];
+pub const AS10_SCHEME: [u8; 16] = [0x06, 0x0E, 0x2B, 0x34, 0x04, 0x01, 0x01, 0x01, 0x0D, 0x01, 0x07, 0x01, 0x0A, 0x01, 0x00, 0x00];
+pub const AS10_TRACK: (&str, u32) = ("AS_10_Core", 5201);
+
 pub const CORE_FRAMEWORK_KEY: [u8; 16] = [0x06, 0x0E, 0x2B, 0x34, 0x02, 0x53, 0x01, 0x01, 0x0D, 0x01, 0x07, 0x01, 0x0B, 0x01, 0x01, 0x00];
 pub const SEGMENTATION_FRAMEWORK_KEY: [u8; 16] = [0x06, 0x0E, 0x2B, 0x34, 0x02, 0x53, 0x01, 0x01, 0x0D, 0x01, 0x07, 0x01, 0x0B, 0x02, 0x01, 0x00];
 pub const UKDPP_FRAMEWORK_KEY: [u8; 16] = [0x06, 0x0E, 0x2B, 0x34, 0x02, 0x53, 0x01, 0x01, 0x0D, 0x0C, 0x01, 0x01, 0x01, 0x01, 0x00, 0x00];
@@ -143,6 +234,14 @@ pub struct As11 {
     pub core: Vec<(String, String)>,
     pub segments: Vec<Segment>,
     pub ukdpp: Vec<(String, String)>,
+    /// The AMWA AS-10 framework ([`AS10_ITEMS`], empty = absent; an AS-10 file needs no AS-11).
+    pub as10: Vec<(String, String)>,
+    /// The AMWA AS-03 framework ([`AS03_ITEMS`], empty = absent; an AS-03 file needs no AS-11).
+    pub as03: Vec<(String, String)>,
+    /// The AMWA AS-12 Ad-ID advertisement identification ([`ADID_ITEMS`] all required, `ShimName`
+    /// optional: [`ADID_SHIM_NAME`]; empty = absent). It needs an AS-11 Core, AS-10 or AS-03
+    /// framework beside it (AS-12 5.1).
+    pub as12: Vec<(String, String)>,
 }
 
 /// Frame counting for positions and lengths: the material package's start time code.
@@ -193,6 +292,29 @@ fn timestamp(s: &str) -> Option<[u8; 8]> {
     Some([y[0], y[1], d.month() as u8, d.day() as u8, t.hour() as u8, t.minute() as u8, t.second() as u8, 0])
 }
 
+/// The 32 bytes of a UMID from 64 hex digits (an optional `urn:smpte:umid:` prefix, `.` / `-` / `:`
+/// / space separators ignored).
+fn umid(s: &str) -> Option<[u8; 32]> {
+    let s = s.trim();
+    let s = s.strip_prefix("urn:smpte:umid:").unwrap_or(s);
+    let mut digits: Vec<u8> = Vec::with_capacity(64);
+    for c in s.chars().filter(|c| !matches!(c, '.' | '-' | ':' | ' ')) {
+        // at most 64 digits are kept, a longer input is refused without storing it
+        if digits.len() == 64 {
+            return None;
+        }
+        digits.push(c.to_digit(16)? as u8);
+    }
+    if digits.len() != 64 {
+        return None;
+    }
+    let mut out = [0u8; 32];
+    for (o, pair) in out.iter_mut().zip(digits.chunks(2)) {
+        *o = pair.first()? << 4 | pair.get(1)?;
+    }
+    Some(out)
+}
+
 fn boolean(s: &str) -> Option<bool> {
     match s.trim().to_ascii_lowercase().as_str() {
         "true" | "1" | "yes" => Some(true),
@@ -237,6 +359,7 @@ pub fn encode(item: &Item, value: &str, clock: Clock) -> Result<Vec<u8>, String>
         }
         Length => clock.frames(v).ok_or_else(bad)?.max(0).to_be_bytes().to_vec(),
         Timestamp => timestamp(v).ok_or_else(bad)?.to_vec(),
+        Umid => umid(v).ok_or_else(bad)?.to_vec(),
     })
 }
 
@@ -258,6 +381,7 @@ pub fn decode(item: &Item, v: &[u8], clock: Clock) -> Option<String> {
             let (mo, d, h, mi, s) = (*v.get(2)?, *v.get(3)?, *v.get(4)?, *v.get(5)?, *v.get(6)?);
             if (h, mi, s) == (0, 0, 0) { format!("{y:04}-{mo:02}-{d:02}") } else { format!("{y:04}-{mo:02}-{d:02}T{h:02}:{mi:02}:{s:02}") }
         }
+        Umid => (v.len() == 32).then(|| v.iter().map(|b| format!("{b:02x}")).collect::<String>())?,
     })
 }
 
@@ -319,6 +443,10 @@ pub(crate) fn read(md: &crate::meta::Metadata, clock: Clock) -> Option<As11> {
     };
     let core = values(CORE_FRAMEWORK_KEY, CORE_ITEMS);
     let ukdpp = values(UKDPP_FRAMEWORK_KEY, UKDPP_ITEMS);
+    let as10 = values(AS10_FRAMEWORK_KEY, AS10_ITEMS);
+    let as03 = values(AS03_FRAMEWORK_KEY, AS03_ITEMS);
+    let mut as12 = values(AS12_FRAMEWORK_KEY, AS12_ITEMS);
+    as12.extend(values(ADID_SLATE_KEY, ADID_ITEMS));
     // segmentation: the DM segments of the sequence whose segments hold segmentation frameworks
     let mut segments = Vec::new();
     for seq in md.of_kind(0x0F) {
@@ -345,14 +473,29 @@ pub(crate) fn read(md: &crate::meta::Metadata, clock: Clock) -> Option<As11> {
         }
         break;
     }
-    (!core.is_empty() || !ukdpp.is_empty() || !segments.is_empty()).then_some(As11 { core, segments, ukdpp })
+    (!core.is_empty() || !ukdpp.is_empty() || !segments.is_empty() || !as10.is_empty() || !as03.is_empty() || !as12.is_empty()).then_some(As11 {
+        core,
+        segments,
+        ukdpp,
+        as10,
+        as03,
+        as12,
+    })
 }
 
-/// First dynamic local tag of the AS-11 items (in the order Core, Segmentation, UK DPP).
+/// First dynamic local tag of the AS-11 items (in the order Core, Segmentation, UK DPP, AS-10, AS-03, AS-12).
 const FIRST_TAG: u16 = 0x8060;
 
 fn all_items() -> impl Iterator<Item = &'static Item> {
-    CORE_ITEMS.iter().chain(SEGMENTATION_ITEMS).chain(UKDPP_ITEMS)
+    CORE_ITEMS
+        .iter()
+        .chain(SEGMENTATION_ITEMS)
+        .chain(UKDPP_ITEMS)
+        .chain(AS10_ITEMS)
+        .chain(AS03_ITEMS)
+        .chain(AS12_ITEMS)
+        .chain(std::iter::once(&AS12_SLATE))
+        .chain(ADID_ITEMS)
 }
 
 /// The primer entries of every AS-11 item.
@@ -370,31 +513,54 @@ pub(crate) fn tag(item: &Item) -> u16 {
 pub(crate) struct Encoded {
     pub core: Vec<(&'static Item, Vec<u8>)>,
     pub ukdpp: Vec<(&'static Item, Vec<u8>)>,
+    pub as10: Vec<(&'static Item, Vec<u8>)>,
+    pub as03: Vec<(&'static Item, Vec<u8>)>,
+    /// The AS-12 framework's `ShimName` and the Ad-ID slate's items.
+    pub as12: Vec<(&'static Item, Vec<u8>)>,
+    pub adid: Vec<(&'static Item, Vec<u8>)>,
     pub segments: Vec<Segment>,
 }
 
 impl Encoded {
     pub(crate) fn new(a: &As11, clock: Clock) -> Result<Encoded, String> {
-        if a.core.is_empty() {
+        if !a.as12.is_empty() && a.core.is_empty() && a.as10.is_empty() && a.as03.is_empty() {
+            return Err("AS-12 goes beside an AS-11 Core, AS-10 or AS-03 framework".into());
+        }
+        if a.core.is_empty() && ((a.as10.is_empty() && a.as03.is_empty()) || !a.segments.is_empty() || !a.ukdpp.is_empty()) {
             return Err("AS-11 needs the AS-11 Core framework".into());
         }
         check_segments(&a.segments, None)?;
         if a.segments.len() > 10_000 {
             return Err("more than 10 000 AS-11 parts".into());
         }
-        let core = encode_all(CORE_ITEMS, &a.core, clock)?;
+        let core = if a.core.is_empty() { Vec::new() } else { encode_all(CORE_ITEMS, &a.core, clock)? };
+        let as10 = if a.as10.is_empty() { Vec::new() } else { encode_all(AS10_ITEMS, &a.as10, clock)? };
+        let as03 = if a.as03.is_empty() { Vec::new() } else { encode_all(AS03_ITEMS, &a.as03, clock)? };
+        let (as12, adid) = encode_as12(&a.as12, clock)?;
         let ukdpp = if a.ukdpp.is_empty() { Vec::new() } else { encode_all(UKDPP_ITEMS, &complete_ukdpp(&a.ukdpp, &a.segments), clock)? };
-        Ok(Encoded { core, ukdpp, segments: a.segments.clone() })
+        Ok(Encoded { core, ukdpp, as10, as03, as12, adid, segments: a.segments.clone() })
     }
 
     /// The preface's DMSchemes.
     pub(crate) fn schemes(&self) -> Vec<[u8; 16]> {
-        let mut v = vec![CORE_SCHEME];
+        let mut v = Vec::new();
+        if !self.core.is_empty() {
+            v.push(CORE_SCHEME);
+        }
         if !self.segments.is_empty() {
             v.push(SEGMENTATION_SCHEME);
         }
         if !self.ukdpp.is_empty() {
             v.push(UKDPP_SCHEME);
+        }
+        if !self.as10.is_empty() {
+            v.push(AS10_SCHEME);
+        }
+        if !self.as03.is_empty() {
+            v.push(AS03_SCHEME);
+        }
+        if !self.as12.is_empty() {
+            v.push(AS12_SCHEME);
         }
         v
     }
@@ -443,6 +609,57 @@ pub fn parse_segments_text(text: &str, clock: Clock) -> Result<Vec<Segment>, Str
         }
     }
     Ok(out)
+}
+
+/// Check AS-10 framework text (names, values, `ShimName` given) without a file.
+pub fn check_as10_text(text: &str) -> Result<(), String> {
+    let values = parse_framework_text(text)?;
+    encode_all(AS10_ITEMS, &values, Clock { start: 0, base: 1000 }).map(|_| ())
+}
+
+type EncodedAs12 = (Vec<(&'static Item, Vec<u8>)>, Vec<(&'static Item, Vec<u8>)>);
+
+/// The AS-12 values as the framework's `ShimName` and the Ad-ID slate's items: every Ad-ID item
+/// given and within its length, the shim name (when given) [`ADID_SHIM_NAME`]. No values: nothing.
+fn encode_as12(values: &[(String, String)], clock: Clock) -> Result<EncodedAs12, String> {
+    if values.is_empty() {
+        return Ok((Vec::new(), Vec::new()));
+    }
+    let mut shim: Vec<(String, String)> = Vec::new();
+    let mut adid: Vec<(String, String)> = Vec::new();
+    for (k, v) in values {
+        if k.trim().eq_ignore_ascii_case("ShimName") {
+            if v.trim() != ADID_SHIM_NAME {
+                return Err(format!("the AS-12 ShimName of the Ad-ID shim is \"{ADID_SHIM_NAME}\""));
+            }
+            shim.push((k.clone(), v.clone()));
+        } else {
+            adid.push((k.clone(), v.clone()));
+        }
+    }
+    if shim.is_empty() {
+        shim.push(("ShimName".into(), ADID_SHIM_NAME.into()));
+    }
+    for (k, v) in &adid {
+        if let Some((_, max)) = ADID_MAX.iter().find(|(n, _)| n.eq_ignore_ascii_case(k.trim()))
+            && v.chars().count() > *max
+        {
+            return Err(format!("{k}: longer than {max} characters"));
+        }
+    }
+    Ok((encode_all(AS12_ITEMS, &shim, clock)?, encode_all(ADID_ITEMS, &adid, clock)?))
+}
+
+/// Check AS-12 (Ad-ID) framework text (names, values, lengths, every item given) without a file.
+pub fn check_as12_text(text: &str) -> Result<(), String> {
+    let values = parse_framework_text(text)?;
+    encode_as12(&values, Clock { start: 0, base: 1000 }).map(|_| ())
+}
+
+/// Check AS-03 framework text (names, values, the five required items given) without a file.
+pub fn check_as03_text(text: &str) -> Result<(), String> {
+    let values = parse_framework_text(text)?;
+    encode_all(AS03_ITEMS, &values, Clock { start: 0, base: 1000 }).map(|_| ())
 }
 
 /// Check framework text against its item list (names, values, required items) without a file:

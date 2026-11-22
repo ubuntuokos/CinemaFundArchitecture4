@@ -1857,7 +1857,7 @@ fn as11_metadata_reads_back() {
     let segments = vec![Segment { start: 2, duration: 5, part_number: 1, part_total: 2 }, Segment { start: 7, duration: 2, part_number: 2, part_total: 2 }];
     let mut cfg = op1a_config(Rational::new(25, 1), PictureCoding::ProRes { profile: 3 });
     cfg.sound.truncate(1);
-    cfg.as11 = Some(As11 { core: core.clone(), segments: segments.clone(), ukdpp: ukdpp.clone() });
+    cfg.as11 = Some(As11 { core: core.clone(), segments: segments.clone(), ukdpp: ukdpp.clone(), ..Default::default() });
     let mut w = MxfWriter::new(Cursor::new(Vec::new()), cfg.clone()).unwrap();
     for i in 0..10 {
         w.push_picture(&prores_like(i), FrameInfo::intra()).unwrap();
@@ -1904,8 +1904,214 @@ fn as11_metadata_reads_back() {
     let mut bad = core.clone();
     bad[4].1 = "one.two".into();
     assert!(refuse(As11 { core: bad, ..Default::default() }).contains("ShimVersion"));
-    let e = refuse(As11 { core: core.clone(), segments: segments.clone(), ukdpp: vec![] });
+    let e = refuse(As11 { core: core.clone(), segments: segments.clone(), ukdpp: vec![], ..Default::default() });
     assert!(e.contains("after the programme"), "{e}");
-    let e = refuse(As11 { core: core.clone(), segments: vec![segments[1], segments[0]], ukdpp: vec![] });
+    let e = refuse(As11 { core: core.clone(), segments: vec![segments[1], segments[0]], ukdpp: vec![], ..Default::default() });
     assert!(e.contains("starts before"), "{e}");
+}
+
+/// #1254: AMWA AS-10 metadata (a DMS_AS_10 framework, no AS-11 Core needed) reads back, and
+/// malformed AS-10 metadata is refused.
+#[test]
+fn as10_metadata_round_trips() {
+    use crate::as11::{As11, Segment};
+    let kv = |v: &[(&str, &str)]| -> Vec<(String, String)> { v.iter().map(|(k, v)| (k.to_string(), v.to_string())).collect() };
+    let umid = "060a2b340101010501010d4313000000".to_string() + "0123456789abcdef0123456789abcdef";
+    let as10 = kv(&[
+        ("ShimName", "NRK_HD_2012"),
+        ("MainTitle", "Tést"),
+        ("Type", "News"),
+        ("CommonSpanningID", &umid),
+        ("SpanningNumber", "2"),
+        ("CumulativeDuration", "250"),
+    ]);
+    let mut cfg = op1a_config(Rational::new(25, 1), PictureCoding::ProRes { profile: 3 });
+    cfg.sound.truncate(1);
+    cfg.as11 = Some(As11 { as10: as10.clone(), ..Default::default() });
+    let mut w = MxfWriter::new(Cursor::new(Vec::new()), cfg).unwrap();
+    for i in 0..4 {
+        w.push_picture(&prores_like(i), FrameInfo::intra()).unwrap();
+        w.push_sound(0, &pcm16(i * 1920, 1920)).unwrap();
+    }
+    let bytes = w.finish().unwrap().into_inner();
+    let f = open(&bytes).unwrap();
+    assert_eq!(f.tracks.len(), 2, "the DM track is not an essence track");
+    let a = f.as11.unwrap();
+    assert!(a.core.is_empty() && a.segments.is_empty() && a.ukdpp.is_empty());
+    let sorted = |mut v: Vec<(String, String)>| {
+        v.sort();
+        v
+    };
+    assert_eq!(sorted(a.as10), sorted(as10.clone()));
+    // a missing ShimName, an unknown item, a bad UMID and AS-10 with parts but no Core are refused
+    let refuse = |a: As11| {
+        let mut cfg = op1a_config(Rational::new(25, 1), PictureCoding::ProRes { profile: 3 });
+        cfg.as11 = Some(a);
+        MxfWriter::new(Cursor::new(Vec::new()), cfg).err().unwrap().to_string()
+    };
+    assert!(refuse(As11 { as10: kv(&[("MainTitle", "x")]), ..Default::default() }).contains("ShimName"));
+    assert!(refuse(As11 { as10: kv(&[("ShimName", "x"), ("Nope", "1")]), ..Default::default() }).contains("Nope"));
+    assert!(refuse(As11 { as10: kv(&[("ShimName", "x"), ("CommonSpanningID", "1234")]), ..Default::default() }).contains("CommonSpanningID"));
+    let part = Segment { start: 0, duration: 2, part_number: 1, part_total: 1 };
+    assert!(refuse(As11 { as10: as10.clone(), segments: vec![part], ..Default::default() }).contains("Core"));
+}
+
+#[test]
+fn as03_metadata_round_trips() {
+    use crate::as11::As11;
+    let kv = |v: &[(&str, &str)]| -> Vec<(String, String)> { v.iter().map(|(k, v)| (k.to_string(), v.to_string())).collect() };
+    let as03 = kv(&[
+        ("IdentifierKind", "ISAN"),
+        ("Identifier", "ISAN 0000-0001-8947-0000-8-0000-0000-D"),
+        ("ShimName", "PBS NGIS HD Playout"),
+        ("SignalStandard", "1920/1080/59.94i/16:9"),
+        ("IntendedAFD", "1000 FullHD"),
+        ("SlateTitle", "Tést"),
+        ("Rating", "TV-G"),
+    ]);
+    let mut cfg = op1a_config(Rational::new(25, 1), PictureCoding::ProRes { profile: 3 });
+    cfg.sound.truncate(1);
+    cfg.as11 = Some(As11 { as03: as03.clone(), ..Default::default() });
+    let mut w = MxfWriter::new(Cursor::new(Vec::new()), cfg).unwrap();
+    for i in 0..4 {
+        w.push_picture(&prores_like(i), FrameInfo::intra()).unwrap();
+        w.push_sound(0, &pcm16(i * 1920, 1920)).unwrap();
+    }
+    let bytes = w.finish().unwrap().into_inner();
+    let f = open(&bytes).unwrap();
+    assert_eq!(f.tracks.len(), 2, "the DM track is not an essence track");
+    let a = f.as11.unwrap();
+    assert!(a.core.is_empty() && a.segments.is_empty() && a.ukdpp.is_empty() && a.as10.is_empty());
+    let sorted = |mut v: Vec<(String, String)>| {
+        v.sort();
+        v
+    };
+    assert_eq!(sorted(a.as03), sorted(as03.clone()));
+    // a missing required item, an unknown item and AS-03 with parts but no Core are refused
+    let refuse = |a: As11| {
+        let mut cfg = op1a_config(Rational::new(25, 1), PictureCoding::ProRes { profile: 3 });
+        cfg.as11 = Some(a);
+        MxfWriter::new(Cursor::new(Vec::new()), cfg).err().unwrap().to_string()
+    };
+    assert!(refuse(As11 { as03: kv(&[("ShimName", "x")]), ..Default::default() }).contains("is required"));
+    let mut bad = as03.clone();
+    bad.push(("Nope".into(), "1".into()));
+    assert!(refuse(As11 { as03: bad, ..Default::default() }).contains("Nope"));
+    let part = crate::as11::Segment { start: 0, duration: 2, part_number: 1, part_total: 1 };
+    assert!(refuse(As11 { as03, segments: vec![part], ..Default::default() }).contains("Core"));
+}
+
+#[test]
+fn as12_adid_round_trips_beside_as03() {
+    use crate::as11::{ADID_SHIM_NAME, As11};
+    let kv = |v: &[(&str, &str)]| -> Vec<(String, String)> { v.iter().map(|(k, v)| (k.to_string(), v.to_string())).collect() };
+    let as03 = kv(&[
+        ("IdentifierKind", "Ad-ID"),
+        ("Identifier", "ABCD1234000H"),
+        ("ShimName", "STATION"),
+        ("SignalStandard", "1920/1080/25p/16:9"),
+        ("IntendedAFD", "1000 FullHD"),
+    ]);
+    let adid = kv(&[
+        ("adid_prefix", "ABCD"),
+        ("adid_code", "1234000H"),
+        ("ad_title", "Spot"),
+        ("Brand", "Joe's Bakery"),
+        ("Product", "Baked Goods"),
+        ("Advertiser", "Joe's Bakery"),
+        ("agency_office_location", "Agency, Budapest"),
+        ("Length", "30"),
+        ("Medium", "Television"),
+        ("sd_flag", "N"),
+        ("Parent", "Joe Holding"),
+    ]);
+    let mut cfg = op1a_config(Rational::new(25, 1), PictureCoding::ProRes { profile: 3 });
+    cfg.sound.truncate(1);
+    cfg.as11 = Some(As11 { as03: as03.clone(), as12: adid.clone(), ..Default::default() });
+    let mut w = MxfWriter::new(Cursor::new(Vec::new()), cfg).unwrap();
+    for i in 0..4 {
+        w.push_picture(&prores_like(i), FrameInfo::intra()).unwrap();
+        w.push_sound(0, &pcm16(i * 1920, 1920)).unwrap();
+    }
+    let bytes = w.finish().unwrap().into_inner();
+    let f = open(&bytes).unwrap();
+    assert_eq!(f.tracks.len(), 2, "the DM tracks are not essence tracks");
+    let a = f.as11.unwrap();
+    let sorted = |mut v: Vec<(String, String)>| {
+        v.sort();
+        v
+    };
+    assert_eq!(sorted(a.as03), sorted(as03.clone()));
+    let mut want = adid.clone();
+    want.push(("ShimName".into(), ADID_SHIM_NAME.into()));
+    assert_eq!(sorted(a.as12), sorted(want));
+    // AS-12 alone, a wrong shim name, a missing item and an over-long title are refused
+    let refuse = |a: As11| {
+        let mut cfg = op1a_config(Rational::new(25, 1), PictureCoding::ProRes { profile: 3 });
+        cfg.as11 = Some(a);
+        MxfWriter::new(Cursor::new(Vec::new()), cfg).err().unwrap().to_string()
+    };
+    assert!(refuse(As11 { as12: adid.clone(), ..Default::default() }).contains("beside"));
+    let mut wrong = adid.clone();
+    wrong.push(("ShimName".into(), "Other".into()));
+    assert!(refuse(As11 { as03: as03.clone(), as12: wrong, ..Default::default() }).contains("ShimName"));
+    assert!(refuse(As11 { as03: as03.clone(), as12: adid[1..].to_vec(), ..Default::default() }).contains("adid_prefix is required"));
+    let mut long = adid.clone();
+    long[2].1 = "x".repeat(129);
+    assert!(refuse(As11 { as03, as12: long, ..Default::default() }).contains("128"));
+}
+
+#[test]
+fn as07_baseband_shim_check() {
+    use crate::as07::{baseband_problems, check_baseband};
+    // uncompressed 10-bit pictures in OP1a with frame wrapping conform
+    let (bytes, _) = build_uncompressed(Pattern::Op1a, crate::UncompressedLayout::V210);
+    let f = open(&bytes[..]).unwrap();
+    assert_eq!(check_baseband(&f), Ok(()), "{:?}", baseband_problems(&f));
+    // OP-Atom is not OP1a and its pictures are clip wrapped
+    let (bytes, _) = build_uncompressed(Pattern::OpAtom, crate::UncompressedLayout::V210);
+    let f = open(&bytes[..]).unwrap();
+    let e = check_baseband(&f).unwrap_err();
+    assert!(e.contains("OP1a") && e.contains("clip wrapped"), "{e}");
+    // a ProRes file has the wrong picture coding
+    let f = open(&build_op1a()[..]).unwrap();
+    let e = check_baseband(&f).unwrap_err();
+    assert!(e.contains("not JPEG 2000"), "{e}");
+}
+
+#[test]
+fn as03_file_conformance_check() {
+    use crate::as03::file_problems;
+    use crate::as11::As11;
+    let kv = |v: &[(&str, &str)]| -> Vec<(String, String)> { v.iter().map(|(k, v)| (k.to_string(), v.to_string())).collect() };
+    let as03 = kv(&[
+        ("IdentifierKind", "ISAN"),
+        ("Identifier", "ISAN 0000-0001-8947-0000-8-0000-0000-D"),
+        ("ShimName", "PBS NGIS HD Playout"),
+        ("SignalStandard", "1920/1080/25i/16:9"),
+        ("IntendedAFD", "1000 FullHD"),
+    ]);
+    let rate = Rational::new(25, 1);
+    let build = |as11: Option<As11>, frame_bytes: usize| {
+        let mut cfg = rdd9_config(rate, 4);
+        cfg.as11 = as11;
+        let mut w = MxfWriter::new(Cursor::new(Vec::new()), cfg).unwrap();
+        let n = 26;
+        let mut a = 0;
+        for i in 0..n {
+            w.push_sound(0, &pcm24x4(a, 1920)).unwrap();
+            a += 1920;
+            w.push_picture(&d10_picture(i, frame_bytes), rdd9_frame(i)).unwrap();
+        }
+        open(&w.finish().unwrap().into_inner()).unwrap()
+    };
+    // MPEG-2 1080 at 25 Mbit/s with the framework: conforms
+    let f = build(Some(As11 { as03: as03.clone(), ..Default::default() }), 125_000);
+    assert_eq!(file_problems(&f), Vec::<String>::new());
+    // no framework, and a rate far from the shim's
+    let f = build(None, 125_000);
+    assert!(file_problems(&f).iter().any(|e| e.contains("no DMS-AS-03")));
+    let f = build(Some(As11 { as03, ..Default::default() }), 250_000);
+    let e = file_problems(&f).join("; ");
+    assert!(e.contains("50.0 Mbit/s") && e.contains("PBS NGIS HD Playout"), "{e}");
 }

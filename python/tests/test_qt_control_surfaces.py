@@ -351,6 +351,44 @@ def test_a_fader_is_learned_onto_a_mixer_strip(app: Any) -> None:
     assert rows(again, "command") == ["A2 Volume (fader)"]
 
 
+def test_an_encoder_is_learned_with_its_encoding(app: Any) -> None:
+    """A relative capture keeps its encoding on the value target, so the engine reads the
+    control as steps; a fader capture stays a position."""
+    engine = StubEngine(DEVICES)
+    d = PreferencesDialog(None, engine, "controlSurfaces", commands=lambda: COMMANDS)
+    command = find(d, QtWidgets.QComboBox, "settings.controlSurfaces.assign.command")
+    command.setCurrentIndex(command.findData("mixer.stripPan|Mix"))
+    command.activated.emit(command.currentIndex())
+    find(d, QtWidgets.QPushButton, "settings.controlSurfaces.assign.learn").click()
+    knob = {"midi": {"channel": 0, "kind": "cc", "number": 16}}
+    engine.event.emit({"event": "surfaceLearn", "state": "pending", "device": NANO,
+                       "captured": {"device": NANO, "control": knob, "mode": "relative", "encoding": "twos-complement"}})
+    find(d, QtWidgets.QPushButton, "settings.controlSurfaces.assign.confirm").click()
+    find(d, QtWidgets.QPushButton, "settings.ok").click()
+    saved = [p for m, p in engine.sent if m == "prefs.set"][0]["values"]["controlSurfaces.devices"]
+    assert saved[0]["bindings"] == [{"control": knob, "command": "mixer.stripPan", "params": {"strip": "Mix", "encoding": "twos-complement"}}]
+
+
+def test_mixer_strip_follows_an_encoder(app: Any) -> None:
+    """``surface_value(lane, strip, None, delta)``: a step from the strip's value, then from the
+    last position sent while the lane stays touched; clamped to the range."""
+    from cfa4_qt.panels.mixer import TrackMixerPanel, db_to_pos, pos_to_db
+
+    m = TrackMixerPanel()
+    m.strips_data = [{"id": 7, "ref": "A1", "kind": "audio", "volumeDb": 0.0}, {"id": 0, "ref": "Mix", "kind": "mix", "pan": 50.0}]
+    m.now = 10
+    sent: list[tuple[str, dict[str, Any]]] = []
+    m.command.connect(lambda c, p: sent.append((c, p)))
+    assert m.surface_value("pan", "Mix", None, 0.1)
+    assert m.surface_value("pan", "Mix", None, 0.1)
+    assert m.surface_value("pan", "Mix", None, 5.0)
+    pans = [p["value"] for c, p in sent if c == "mixer.touch" and p["lane"] == "pan"]
+    assert pans == [70.0, 90.0, 100.0], "50 → +20 per 0.1 step, at most 100"
+    assert m.surface_value("volume", "A1", None, -1 / 127)
+    vol = [p["value"] for c, p in sent if c == "mixer.touch" and p["lane"] == "volume"]
+    assert vol == [pos_to_db(db_to_pos(0.0) - 1 / 127)]
+
+
 def test_mixer_strip_follows_a_fader(app: Any) -> None:
     """``TrackMixerPanel.surface_value``: touch with the fader's taper (volume) or -100..100
     (pan), one release after the control rests; an unknown strip does nothing."""
@@ -372,7 +410,11 @@ def test_mixer_strip_follows_a_fader(app: Any) -> None:
     assert abs(cast(float, sent[0][1]["value"])) < 0.01, "0.76 of the way is 0 dB on the taper"
     assert abs(cast(float, sent[1][1]["value"]) - 15.0) < 1e-9, "the top is +15 dB"
     assert sent[2] == ("mixer.touch", {"strip": 0, "lane": "pan", "value": -50.0, "time": 1234})
-    QtTest.QTest.qWait(200)
+    # the release timers fire once the event loop runs; under a loaded suite that can take a while
+    for _ in range(100):
+        if sum(c == "mixer.release" for c, _p in sent) >= 2:
+            break
+        QtTest.QTest.qWait(20)
     releases = [p for c, p in sent if c == "mixer.release"]
     assert sorted((p["strip"], p["lane"]) for p in releases) == [(0, "pan"), (7, "volume")], "one release per moved lane"
 
@@ -473,7 +515,9 @@ def test_main_window_runs_what_a_control_surface_asks(app: Any, tmp_path: Path) 
         win._on_event({"event": "surfaceAction", "command": "mixer.stripVolume", "params": {"strip": "A1", "value": 0.5}})
         win._on_event({"event": "surfaceAction", "command": "mixer.stripPan", "params": {"strip": "Mix", "value": 1}})
         win._on_event({"event": "surfaceAction", "command": "mixer.stripPan", "params": {"strip": "Mix"}})
-        assert moved == [("volume", "A1", 0.5), ("pan", "Mix", 1.0)]
+        # an endless encoder sends a step instead of a position
+        win._on_event({"event": "surfaceAction", "command": "mixer.stripPan", "params": {"strip": "A3", "delta": -0.25}})
+        assert moved == [("volume", "A1", 0.5), ("pan", "Mix", 1.0), ("pan", "A3", None, -0.25)]
     finally:
         win._quit_confirmed = True
         win.close()
@@ -508,3 +552,75 @@ def test_monitor_shuttle_to_plays_at_the_ring_speed(app: Any) -> None:
     Monitor.shuttle_to(cast(Any, m), 0)
     assert m.calls == [("play", 2.0), ("play", -8.0), ("stop", 0.0)]
     assert m.stop_at is None and m.rest_at is None
+
+
+def test_trim_mode_turns_the_shuttle_and_jog_into_trimming(app: Any) -> None:
+    """In trim mode (as J/K/L, spec §4) the ring trims dynamically at its speed and 0 commits
+    it; a jog click nudges the edit point a frame. Outside trim mode nothing is taken over."""
+    from cfa4_qt.main_window import MainWindow
+    from cfa4_qt.panels.trim_monitor import TrimMonitor
+
+    class Signal:
+        def __init__(self) -> None:
+            self.sent: list[tuple[str, dict[str, Any]]] = []
+
+        def emit(self, cid: str, params: dict[str, Any]) -> None:
+            self.sent.append((cid, params))
+
+    class Trim:
+        playing = False
+
+        def __init__(self) -> None:
+            self.runs: list[tuple[str, dict[str, Any]]] = []
+            self.command = Signal()
+
+        def clock(self) -> float:
+            return 4.5
+
+        def run(self, cid: str, params: dict[str, Any]) -> None:
+            self.runs.append((cid, params))
+            self.playing = cid == "trim.shuttle"
+
+        def ring(self, speed: float) -> None:
+            TrimMonitor.ring(cast(Any, self), speed)
+
+    class Program:
+        def __init__(self) -> None:
+            self.trim = Trim()
+            self.stopped = 0
+
+        def stop(self) -> None:
+            self.stopped += 1
+
+    class Win:
+        def __init__(self, trimming: bool) -> None:
+            self.monitor = Program()
+            self.source_monitor = object()
+            self.trimming = trimming
+
+        def focused_monitor(self) -> Any:
+            return self.monitor
+
+        def trim_mode(self) -> bool:
+            return self.trimming
+
+    w = Win(True)
+    trim = w.monitor.trim
+    assert MainWindow.surface_trim(cast(Any, w), "playback.shuttleSpeed", {"speed": 1.5})
+    assert MainWindow.surface_trim(cast(Any, w), "playback.shuttleSpeed", {"speed": -0.5})
+    assert MainWindow.surface_trim(cast(Any, w), "playback.shuttleSpeed", {"speed": 0})
+    assert MainWindow.surface_trim(cast(Any, w), "playback.shuttleSpeed", {"speed": 0}), "stopped already: nothing to commit"
+    assert trim.runs == [
+        ("trim.shuttle", {"direction": "forward", "speed": 1.5, "clock": 4.5}),
+        ("trim.shuttle", {"direction": "reverse", "speed": 0.5, "clock": 4.5}),
+        ("trim.shuttleStop", {"clock": 4.5}),
+    ]
+    assert w.monitor.stopped == 2, "the program monitor does not play while trimming"
+    assert MainWindow.surface_trim(cast(Any, w), "playhead.stepForward", {})
+    assert MainWindow.surface_trim(cast(Any, w), "playhead.stepBack", {})
+    assert trim.command.sent == [("trim.nudge", {"frames": 1}), ("trim.nudge", {"frames": -1})]
+
+    off = Win(False)
+    assert not MainWindow.surface_trim(cast(Any, off), "playback.shuttleSpeed", {"speed": 2})
+    assert not MainWindow.surface_trim(cast(Any, off), "playhead.stepForward", {})
+    assert off.monitor.trim.runs == [] and off.monitor.trim.command.sent == []

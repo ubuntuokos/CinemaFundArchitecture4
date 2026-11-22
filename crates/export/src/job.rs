@@ -237,6 +237,9 @@ pub struct Exporter {
     chapters: Vec<cfa4_isobmff::Chapter>,
     /// MXF OP1a closed captions (ANC data) or DCP subtitles, timed from the first exported frame.
     captions: Option<cfa4_captions::Document>,
+    /// AS-11 programme parts of an MXF OP1a export from the sequence's segmentation markers
+    /// ([`crate::export_as11_parts`]).
+    as11_parts: Vec<(i64, i64)>,
     vt: usize,
     at: Option<usize>,
     t0: web_time::Instant,
@@ -346,6 +349,7 @@ impl Exporter {
         };
         let measured = !settings.effects.loudness.enabled || audio.is_none();
         let captions = export_captions(&project, seq, &settings, range);
+        let as11_parts = crate::export_as11_parts(&project, seq, &settings, range, pipe.rate);
         if matches!(settings.format, Format::Dcp | Format::Imf) && settings.dcp_subtitles && captions.is_none() {
             let what = if settings.format == Format::Dcp { "DCP" } else { "IMF" };
             return Err(ExportError::Unsupported(format!("{what} subtitles: the sequence has no caption track")));
@@ -378,6 +382,7 @@ impl Exporter {
             project: project.clone(),
             chapters: export_chapters(&project, seq, &settings, range),
             captions,
+            as11_parts,
             vt: 0,
             at: None,
             t0: web_time::Instant::now(),
@@ -645,6 +650,7 @@ impl Exporter {
                 timecode: (start, q.settings.drop_frame),
                 mpeg: self.venc.mpeg_video(),
                 captions: self.captions.clone(),
+                as11_parts: self.as11_parts.clone(),
             })?);
             return Ok(());
         }

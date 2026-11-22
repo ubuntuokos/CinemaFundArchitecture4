@@ -603,6 +603,7 @@ A repó koordinációs szabálya (egy téma / PR, friss `main`, csak a merge-koo
 
 ## Változásnapló
 
+- **Hatókör-szűkítés (István, 2026-11-15):** a WP00 gap matrix (6. pont) alapján a 15. fejezet PR-sorrendje helyett csak a más projektben nem szereplő részek: WP01-A, WP08, WP09, WP13 és a 8. fejezet elfogadási tesztjei. Az átfedő munkacsomagok a PROCODEC-002, a DCP-VALIDATION és a G2 projektnél maradnak.
 - **v2.3 jóváhagyás (2026-11-13):** István a tervet egészében jóváhagyta, és elrendelte a fejlesztés indítását a 15. fejezet szerinti PR-sorrendben (1. PR: WP00 `docs`).
 - **v2.3 (2026-11-09):** a v2.1 (WP17, D6) és v2.2 (OpenDCP mint legacy fixture-forrás) kiegészítéseket István jóváhagyta; D6 eldöntve.
 - **v2.2 (2026-11-08):** 🆕 tmeiczin/opendcp értékelése: forrássor (3) és 6. fixture-forrás (13) – csak legacy DCP fixture-generátorként.

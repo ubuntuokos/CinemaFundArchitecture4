@@ -4772,3 +4772,133 @@ export.summary	Low	niska
 # Timecode sync varispeed and user bits (TC-8, #1308)
 	Varispeed: adjust the playback speed instead of seeking	Varispeed: dostosuj prędkość odtwarzania zamiast przeskakiwać
 	User bits	Bity użytkownika
+# AS-11 programme parts and AS-10 metadata (G2, #1371, #1375)
+	{tc}  Segmentation	{tc}  Segmentacja
+	Marker Type	Typ znacznika
+	Chapter	Rozdział
+	Segmentation (AS-11 programme part)	Segmentacja (część programu AS-11)
+	AS-10	AS-10
+# AT9/AT3 converter (Tools ▸ Audio Tools, AT3-2)
+	AT9/AT3 Converter	Konwerter AT9/AT3
+	AT9/AT3 Converter…	Konwerter AT9/AT3…
+	Files to convert:	Pliki do konwersji:
+	Add Files	Dodaj pliki
+	Add Files…	Dodaj pliki…
+	Convert to:	Konwertuj do:
+	Bit rate:	Szybkość transmisji:
+	Sample format:	Format próbek:
+	Output folder:	Folder wyjściowy:
+	Output Folder	Folder wyjściowy
+	Next to each source file	Obok każdego pliku źródłowego
+	AT9 and ATRAC3plus files convert to WAV; encoding AT9, ATRAC3plus and MP3 is not available yet.	Pliki AT9 i ATRAC3plus są konwertowane do WAV; kodowanie AT9, ATRAC3plus i MP3 nie jest jeszcze dostępne.
+	Convert	Konwertuj
+	Add the files to convert first.	Najpierw dodaj pliki do konwersji.
+	Done: {n} file(s) converted.	Gotowe: przekonwertowano plików: {n}.
+	Converting {name}…	Konwertowanie {name}…
+	Stopping…	Zatrzymywanie…
+	AT3 (ATRAC3, PSP / PS3)	AT3 (ATRAC3, PSP / PS3)
+	WAV (PCM)	WAV (PCM)
+	132 kbit/s (LP2)	132 kbit/s (LP2)
+	105 kbit/s	105 kbit/s
+	66 kbit/s (LP4, joint stereo)	66 kbit/s (LP4, joint stereo)
+	16-bit	16-bitowy
+	24-bit	24-bitowy
+	32-bit float	32-bitowy zmiennoprzecinkowy
+
+# Datamosh transition (Grunge & Distort, DM1, #1409)
+	Datamosh	Datamosh
+	Residual	Reszta
+	Motion Boost	Wzmocnienie ruchu
+	Recovery	Odzyskiwanie
+	Encode Resolution	Rozdzielczość kodowania
+	Half	Połowa
+	Quarter	Ćwiartka
+# Datamosh Bloom (Glitch, DM2)
+	Datamosh Bloom	Rozkwit datamosh
+	Start Time (seconds)	Czas rozpoczęcia (sekundy)
+	Repeats	Powtórzenia
+
+# Recent effects, per-channel waveform, white balance selector (SC-2/SC-3/SC-4, #1419 #1420 #1421)
+	Apply a recently used effect to the selected clips	Zastosuj ostatnio użyty efekt do zaznaczonych klipów
+	Disable all effects	Wyłącz wszystkie efekty
+	Enable all effects	Włącz wszystkie efekty
+	No recent effects	Brak ostatnich efektów
+	Recent effects	Ostatnie efekty
+	Switch every effect of the selected clips off	Wyłącza każdy efekt zaznaczonych klipów
+	Switch every effect of the selected clips on	Włącza każdy efekt zaznaczonych klipów
+	Merged	Połączone
+	Per Channel	Według kanałów
+	Channel Zoom	Powiększenie kanałów
+	White Balance Selector (click a neutral point in the Program monitor; Esc cancels)	Wybór balansu bieli (kliknij neutralny punkt w monitorze programu; Esc anuluje)
+# Task Manager and subtitle kind (SC-2/3/4)
+	Task Manager	Menedżer zadań
+	Background jobs	Zadania w tle
+	Exports	Eksporty
+	Shared task queue	Wspólna kolejka zadań
+	Task	Zadanie
+	State	Stan
+	Details	Szczegóły
+	Time left	Pozostały czas
+	Scheduled	Zaplanowane
+	Queued	W kolejce
+	Waiting for resources	Czeka na zasoby
+	Blocked	Zablokowane
+	Running	Uruchomione
+	Paused	Wstrzymane
+	Cancelling	Anulowanie
+	Interactive	Interaktywne
+	Speculative	Spekulatywne
+	Final render	Renderowanie końcowe
+	Show finished	Pokaż zakończone
+	Nothing is running.	Nic nie jest uruchomione.
+	Not reported by this engine yet.	Ten silnik jeszcze tego nie raportuje.
+	Not available: {why}	Niedostępne: {why}
+	{name} waits: {why}	{name} czeka: {why}
+	{running} running · {waiting} waiting	{running} uruchomionych · {waiting} oczekujących
+	{n} active	{n} aktywnych
+	{n} CPU	{n} CPU
+	{n} GiB	{n} GiB
+	{n} MiB	{n} MiB
+	Needs your decision	Wymaga Twojej decyzji
+	Run now	Uruchom teraz
+	Next slot	Następny termin
+	Missed its start	Pominięty start
+	Missed its start at {time}	Pominięty start o {time}
+	Starts at {time}	Start o {time}
+	Subtitle kind	Rodzaj napisów
+	Subtitles	Napisy
+	Captions for the hearing impaired	Napisy dla niesłyszących
+	Forced narrative	Narracja wymuszona (forced narrative)
+	Silence	Cisza
+	Detect Silence	Wykryj ciszę
+	Remove Silence	Usuń ciszę
+	Clear Silence Markers	Wyczyść znaczniki ciszy
+# DCP Validation window (DCP-12)
+	AS-03	AS-03
+	Choose the DCP folder.	Wybierz folder DCP.
+	DCP Validation	Walidacja DCP
+	DCP folder	Folder DCP
+	DCP folder (the one holding ASSETMAP)	Folder DCP (ten, w którym jest ASSETMAP)
+	Evidence	Dowód
+	How to fix	Jak naprawić
+	Interrupted	Przerwano
+	Not applicable	Nie dotyczy
+	Report	Raport
+	Report saved: {path}	Raport zapisany: {path}
+	Required	Wymagane
+	Rule	Reguła
+	Rules	Reguły
+	Save JSON…	Zapisz JSON…
+	Save Markdown…	Zapisz Markdown…
+	Save report	Zapisz raport
+	Skipped	Pominięto
+	Standard: {standard}	Standard: {standard}
+	Validate	Waliduj
+	Validate DCP…	Waliduj DCP…
+	the engine sent no profiles	silnik nie przysłał żadnych profili
+	{n} files checked	Sprawdzono plików: {n}
+
+# AS-02 export
+	Write an AS-02 bundle (the path is a folder)	Zapisz pakiet AS-02 (ścieżka to folder)
+	AS-02	AS-02
+	AS-12	AS-12

@@ -4772,3 +4772,133 @@ export.summary	Low	thấp
 # Timecode sync varispeed and user bits (TC-8, #1308)
 	Varispeed: adjust the playback speed instead of seeking	Varispeed: điều chỉnh tốc độ phát thay vì nhảy
 	User bits	Bit người dùng
+# AS-11 programme parts and AS-10 metadata (G2, #1371, #1375)
+	{tc}  Segmentation	{tc}  Phân đoạn
+	Marker Type	Loại điểm đánh dấu
+	Chapter	Chương
+	Segmentation (AS-11 programme part)	Phân đoạn (phần chương trình AS-11)
+	AS-10	AS-10
+# AT9/AT3 converter (Tools ▸ Audio Tools, AT3-2)
+	AT9/AT3 Converter	Bộ chuyển đổi AT9/AT3
+	AT9/AT3 Converter…	Bộ chuyển đổi AT9/AT3…
+	Files to convert:	Tệp cần chuyển đổi:
+	Add Files	Thêm tệp
+	Add Files…	Thêm tệp…
+	Convert to:	Chuyển đổi sang:
+	Bit rate:	Tốc độ bit:
+	Sample format:	Định dạng mẫu:
+	Output folder:	Thư mục đầu ra:
+	Output Folder	Thư mục đầu ra
+	Next to each source file	Cạnh mỗi tệp nguồn
+	AT9 and ATRAC3plus files convert to WAV; encoding AT9, ATRAC3plus and MP3 is not available yet.	Tệp AT9 và ATRAC3plus được chuyển sang WAV; chưa hỗ trợ mã hóa AT9, ATRAC3plus và MP3.
+	Convert	Chuyển đổi
+	Add the files to convert first.	Hãy thêm tệp cần chuyển đổi trước.
+	Done: {n} file(s) converted.	Xong: đã chuyển đổi {n} tệp.
+	Converting {name}…	Đang chuyển đổi {name}…
+	Stopping…	Đang dừng…
+	AT3 (ATRAC3, PSP / PS3)	AT3 (ATRAC3, PSP / PS3)
+	WAV (PCM)	WAV (PCM)
+	132 kbit/s (LP2)	132 kbit/s (LP2)
+	105 kbit/s	105 kbit/s
+	66 kbit/s (LP4, joint stereo)	66 kbit/s (LP4, stereo kết hợp)
+	16-bit	16 bit
+	24-bit	24 bit
+	32-bit float	32 bit dấu phẩy động
+
+# Datamosh transition (Grunge & Distort, DM1, #1409)
+	Datamosh	Datamosh
+	Residual	Phần dư
+	Motion Boost	Tăng cường chuyển động
+	Recovery	Phục hồi
+	Encode Resolution	Độ phân giải mã hóa
+	Half	Một nửa
+	Quarter	Một phần tư
+# Datamosh Bloom (Glitch, DM2)
+	Datamosh Bloom	Datamosh nở rộ
+	Start Time (seconds)	Thời gian bắt đầu (giây)
+	Repeats	Số lần lặp lại
+
+# Recent effects, per-channel waveform, white balance selector (SC-2/SC-3/SC-4, #1419 #1420 #1421)
+	Apply a recently used effect to the selected clips	Áp dụng hiệu ứng dùng gần đây cho các clip đã chọn
+	Disable all effects	Tắt tất cả hiệu ứng
+	Enable all effects	Bật tất cả hiệu ứng
+	No recent effects	Không có hiệu ứng gần đây
+	Recent effects	Hiệu ứng gần đây
+	Switch every effect of the selected clips off	Tắt mọi hiệu ứng của các clip đã chọn
+	Switch every effect of the selected clips on	Bật mọi hiệu ứng của các clip đã chọn
+	Merged	Gộp
+	Per Channel	Theo kênh
+	Channel Zoom	Thu phóng kênh
+	White Balance Selector (click a neutral point in the Program monitor; Esc cancels)	Bộ chọn cân bằng trắng (nhấp vào điểm trung tính trên màn hình Chương trình; Esc để hủy)
+# Task Manager and subtitle kind (SC-2/3/4)
+	Task Manager	Trình quản lý tác vụ
+	Background jobs	Công việc nền
+	Exports	Xuất
+	Shared task queue	Hàng đợi tác vụ dùng chung
+	Task	Tác vụ
+	State	Trạng thái
+	Details	Chi tiết
+	Time left	Thời gian còn lại
+	Scheduled	Đã lên lịch
+	Queued	Trong hàng đợi
+	Waiting for resources	Đang chờ tài nguyên
+	Blocked	Bị chặn
+	Running	Đang chạy
+	Paused	Đã tạm dừng
+	Cancelling	Đang hủy
+	Interactive	Tương tác
+	Speculative	Chạy dự phòng
+	Final render	Kết xuất cuối cùng
+	Show finished	Hiện các mục đã xong
+	Nothing is running.	Không có gì đang chạy.
+	Not reported by this engine yet.	Công cụ này chưa báo cáo.
+	Not available: {why}	Không khả dụng: {why}
+	{name} waits: {why}	{name} đang chờ: {why}
+	{running} running · {waiting} waiting	{running} đang chạy · {waiting} đang chờ
+	{n} active	{n} đang hoạt động
+	{n} CPU	{n} CPU
+	{n} GiB	{n} GiB
+	{n} MiB	{n} MiB
+	Needs your decision	Cần quyết định của bạn
+	Run now	Chạy ngay
+	Next slot	Khung giờ tiếp theo
+	Missed its start	Bỏ lỡ thời điểm bắt đầu
+	Missed its start at {time}	Bỏ lỡ thời điểm bắt đầu lúc {time}
+	Starts at {time}	Bắt đầu lúc {time}
+	Subtitle kind	Loại phụ đề
+	Subtitles	Phụ đề
+	Captions for the hearing impaired	Phụ đề cho người khiếm thính
+	Forced narrative	Thuyết minh bắt buộc (forced narrative)
+	Silence	Im lặng
+	Detect Silence	Phát hiện khoảng lặng
+	Remove Silence	Xóa khoảng lặng
+	Clear Silence Markers	Xóa dấu khoảng lặng
+# DCP Validation window (DCP-12)
+	AS-03	AS-03
+	Choose the DCP folder.	Chọn thư mục DCP.
+	DCP Validation	Kiểm tra DCP
+	DCP folder	Thư mục DCP
+	DCP folder (the one holding ASSETMAP)	Thư mục DCP (thư mục chứa ASSETMAP)
+	Evidence	Bằng chứng
+	How to fix	Cách khắc phục
+	Interrupted	Bị gián đoạn
+	Not applicable	Không áp dụng
+	Report	Báo cáo
+	Report saved: {path}	Đã lưu báo cáo: {path}
+	Required	Bắt buộc
+	Rule	Quy tắc
+	Rules	Các quy tắc
+	Save JSON…	Lưu JSON…
+	Save Markdown…	Lưu Markdown…
+	Save report	Lưu báo cáo
+	Skipped	Đã bỏ qua
+	Standard: {standard}	Tiêu chuẩn: {standard}
+	Validate	Kiểm tra
+	Validate DCP…	Kiểm tra DCP…
+	the engine sent no profiles	công cụ không gửi hồ sơ nào
+	{n} files checked	Đã kiểm tra {n} tệp
+
+# AS-02 export
+	Write an AS-02 bundle (the path is a folder)	Ghi gói AS-02 (đường dẫn là một thư mục)
+	AS-02	AS-02
+	AS-12	AS-12

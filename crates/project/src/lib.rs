@@ -22,6 +22,7 @@ pub mod mask;
 pub mod mixer;
 pub mod multicam;
 pub mod narration;
+pub mod object;
 pub mod scene3d;
 pub mod studio;
 pub mod text_animator;
@@ -41,7 +42,7 @@ pub use essential::{AudioType, EssentialSound};
 pub use find::{FindOp, FindQuery, FindRow, SearchBin};
 pub use graphic_design::{CharStyle, CreditsLink, GraphicMeta, LayerExtra, LayerStamp, Pin, PinTarget, Roll, RollMode, SourceGraphic, StyleRun};
 pub use keyframe::{Interpolation, Keyframe, Param, ParamValue};
-pub use mask::{Mask, MaskMode, MaskPath, MaskVertex, TrackMethod, Tracker};
+pub use mask::{Mask, MaskMode, MaskPath, MaskSource, MaskVertex, TrackMethod, Tracker};
 pub use mixer::{AutomationMode, InputMap, MixerStrip, TrackSend};
 pub use multicam::{Camera, MergedClip, MulticamAudio, MulticamSel, MulticamSource};
 pub use narration::{Narration, VocalPitch};
@@ -1316,8 +1317,12 @@ pub struct Project {
     /// Schema v16.
     #[serde(default, skip_serializing_if = "LiveStudio::is_empty")]
     pub studio: LiveStudio,
+    /// Tracked objects (Object Mask): the object tracks of each media item, keyed by the item;
+    /// sample times are media time. Schema v17.
+    #[serde(default, skip_serializing_if = "BTreeMap::is_empty")]
+    pub objects: BTreeMap<ItemId, Vec<object::ObjectTrack>>,
     /// The 3D assets the project references (CFA4-OPENUSD-3D-001 U1). Absent unless 3D content was
-    /// imported: there is no global 3D mode. Schema v17.
+    /// imported: there is no global 3D mode. Schema v18.
     #[serde(default, skip_serializing_if = "Scene3d::is_empty")]
     pub scene3d: Scene3d,
 }
@@ -1426,6 +1431,7 @@ impl Project {
             notes: String::new(),
             credits_templates: Vec::new(),
             studio: LiveStudio::default(),
+            objects: BTreeMap::new(),
             scene3d: Scene3d::default(),
         }
     }
@@ -1457,7 +1463,8 @@ impl Project {
         self.studio.ids().for_each(&mut see);
         self.scene3d.ids().for_each(&mut see);
         // deleting an item leaves these entries behind: a new item taking that id would inherit them
-        self.transcripts.keys().chain(self.source_graphics.keys()).chain(self.narrations.keys()).for_each(|i| see(i.0));
+        self.transcripts.keys().chain(self.source_graphics.keys()).chain(self.narrations.keys()).chain(self.objects.keys()).for_each(|i| see(i.0));
+        self.objects.values().flatten().for_each(|t| see(t.id.0));
         // `lut.import` names LUTs `lut<id>`
         self.luts.iter().filter_map(|l| l.id.strip_prefix("lut")?.parse().ok()).for_each(&mut see);
         fn mixer(m: &MixerStrip) -> impl Iterator<Item = u64> + '_ {

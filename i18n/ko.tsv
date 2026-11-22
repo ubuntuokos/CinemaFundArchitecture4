@@ -4766,3 +4766,133 @@
 # Timecode sync varispeed and user bits (TC-8, #1308)
 	Varispeed: adjust the playback speed instead of seeking	배리스피드: 이동하는 대신 재생 속도를 조정
 	User bits	사용자 비트
+# AS-11 programme parts and AS-10 metadata (G2, #1371, #1375)
+	{tc}  Segmentation	{tc}  세그먼테이션
+	Marker Type	마커 유형
+	Chapter	챕터
+	Segmentation (AS-11 programme part)	세그먼테이션(AS-11 프로그램 파트)
+	AS-10	AS-10
+# AT9/AT3 converter (Tools ▸ Audio Tools, AT3-2)
+	AT9/AT3 Converter	AT9/AT3 변환기
+	AT9/AT3 Converter…	AT9/AT3 변환기…
+	Files to convert:	변환할 파일:
+	Add Files	파일 추가
+	Add Files…	파일 추가…
+	Convert to:	변환 형식:
+	Bit rate:	비트레이트:
+	Sample format:	샘플 형식:
+	Output folder:	출력 폴더:
+	Output Folder	출력 폴더
+	Next to each source file	각 원본 파일 옆
+	AT9 and ATRAC3plus files convert to WAV; encoding AT9, ATRAC3plus and MP3 is not available yet.	AT9 및 ATRAC3plus 파일은 WAV로 변환됩니다. AT9, ATRAC3plus, MP3 인코딩은 아직 지원되지 않습니다.
+	Convert	변환
+	Add the files to convert first.	먼저 변환할 파일을 추가하세요.
+	Done: {n} file(s) converted.	완료: 파일 {n}개를 변환했습니다.
+	Converting {name}…	{name} 변환 중…
+	Stopping…	중지하는 중…
+	AT3 (ATRAC3, PSP / PS3)	AT3 (ATRAC3, PSP / PS3)
+	WAV (PCM)	WAV (PCM)
+	132 kbit/s (LP2)	132 kbit/s (LP2)
+	105 kbit/s	105 kbit/s
+	66 kbit/s (LP4, joint stereo)	66 kbit/s (LP4, 조인트 스테레오)
+	16-bit	16비트
+	24-bit	24비트
+	32-bit float	32비트 부동 소수점
+
+# Datamosh transition (Grunge & Distort, DM1, #1409)
+	Datamosh	데이터모시
+	Residual	잔차
+	Motion Boost	모션 증폭
+	Recovery	복구
+	Encode Resolution	인코딩 해상도
+	Half	1/2
+	Quarter	1/4
+# Datamosh Bloom (Glitch, DM2)
+	Datamosh Bloom	데이터모시 블룸
+	Start Time (seconds)	시작 시간(초)
+	Repeats	반복 횟수
+
+# Recent effects, per-channel waveform, white balance selector (SC-2/SC-3/SC-4, #1419 #1420 #1421)
+	Apply a recently used effect to the selected clips	최근 사용한 효과를 선택한 클립에 적용
+	Disable all effects	모든 효과 끄기
+	Enable all effects	모든 효과 켜기
+	No recent effects	최근 효과 없음
+	Recent effects	최근 효과
+	Switch every effect of the selected clips off	선택한 클립의 모든 효과를 끕니다
+	Switch every effect of the selected clips on	선택한 클립의 모든 효과를 켭니다
+	Merged	병합
+	Per Channel	채널별
+	Channel Zoom	채널 확대/축소
+	White Balance Selector (click a neutral point in the Program monitor; Esc cancels)	화이트 밸런스 선택기(프로그램 모니터의 중립 지점을 클릭, Esc로 취소)
+# Task Manager and subtitle kind (SC-2/3/4)
+	Task Manager	작업 관리자
+	Background jobs	백그라운드 작업
+	Exports	내보내기
+	Shared task queue	공유 작업 대기열
+	Task	작업
+	State	상태
+	Details	세부 정보
+	Time left	남은 시간
+	Scheduled	예약됨
+	Queued	대기 중
+	Waiting for resources	리소스 대기 중
+	Blocked	차단됨
+	Running	실행 중
+	Paused	일시 중지됨
+	Cancelling	취소 중
+	Interactive	대화형
+	Speculative	선행 실행
+	Final render	최종 렌더링
+	Show finished	완료된 항목 표시
+	Nothing is running.	실행 중인 항목이 없습니다.
+	Not reported by this engine yet.	이 엔진은 아직 보고하지 않습니다.
+	Not available: {why}	사용할 수 없음: {why}
+	{name} waits: {why}	{name} 대기 중: {why}
+	{running} running · {waiting} waiting	{running}개 실행 중 · {waiting}개 대기 중
+	{n} active	{n}개 활성
+	{n} CPU	{n} CPU
+	{n} GiB	{n} GiB
+	{n} MiB	{n} MiB
+	Needs your decision	결정이 필요합니다
+	Run now	지금 실행
+	Next slot	다음 슬롯
+	Missed its start	시작 시각을 놓침
+	Missed its start at {time}	{time}의 시작을 놓침
+	Starts at {time}	{time}에 시작
+	Subtitle kind	자막 종류
+	Subtitles	자막
+	Captions for the hearing impaired	청각 장애인용 캡션
+	Forced narrative	강제 내레이션 (forced narrative)
+	Silence	무음
+	Detect Silence	무음 감지
+	Remove Silence	무음 제거
+	Clear Silence Markers	무음 마커 지우기
+# DCP Validation window (DCP-12)
+	AS-03	AS-03
+	Choose the DCP folder.	DCP 폴더를 선택하세요.
+	DCP Validation	DCP 검증
+	DCP folder	DCP 폴더
+	DCP folder (the one holding ASSETMAP)	DCP 폴더(ASSETMAP이 있는 폴더)
+	Evidence	근거
+	How to fix	해결 방법
+	Interrupted	중단됨
+	Not applicable	해당 없음
+	Report	보고서
+	Report saved: {path}	보고서 저장됨: {path}
+	Required	필수
+	Rule	규칙
+	Rules	규칙
+	Save JSON…	JSON 저장…
+	Save Markdown…	Markdown 저장…
+	Save report	보고서 저장
+	Skipped	건너뜀
+	Standard: {standard}	표준: {standard}
+	Validate	검증
+	Validate DCP…	DCP 검증…
+	the engine sent no profiles	엔진이 프로필을 보내지 않았습니다
+	{n} files checked	파일 {n}개 확인함
+
+# AS-02 export
+	Write an AS-02 bundle (the path is a folder)	AS-02 번들 쓰기(경로는 폴더)
+	AS-02	AS-02
+	AS-12	AS-12

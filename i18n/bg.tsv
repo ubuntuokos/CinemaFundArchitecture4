@@ -4775,3 +4775,133 @@ export.summary	Low	ниско
 # Timecode sync varispeed and user bits (TC-8, #1308)
 	Varispeed: adjust the playback speed instead of seeking	Varispeed: настройване на скоростта на възпроизвеждане вместо прескачане
 	User bits	Потребителски битове
+# AS-11 programme parts and AS-10 metadata (G2, #1371, #1375)
+	{tc}  Segmentation	{tc}  Сегментиране
+	Marker Type	Тип маркер
+	Chapter	Глава
+	Segmentation (AS-11 programme part)	Сегментиране (част от програма по AS-11)
+	AS-10	AS-10
+# AT9/AT3 converter (Tools ▸ Audio Tools, AT3-2)
+	AT9/AT3 Converter	Конвертор AT9/AT3
+	AT9/AT3 Converter…	Конвертор AT9/AT3…
+	Files to convert:	Файлове за конвертиране:
+	Add Files	Добавяне на файлове
+	Add Files…	Добавяне на файлове…
+	Convert to:	Конвертиране в:
+	Bit rate:	Битрейт:
+	Sample format:	Формат на семплите:
+	Output folder:	Изходна папка:
+	Output Folder	Изходна папка
+	Next to each source file	До всеки изходен файл
+	AT9 and ATRAC3plus files convert to WAV; encoding AT9, ATRAC3plus and MP3 is not available yet.	Файловете AT9 и ATRAC3plus се конвертират в WAV; кодирането в AT9, ATRAC3plus и MP3 все още не е налично.
+	Convert	Конвертиране
+	Add the files to convert first.	Първо добавете файловете за конвертиране.
+	Done: {n} file(s) converted.	Готово: конвертирани файлове: {n}.
+	Converting {name}…	Конвертиране на {name}…
+	Stopping…	Спиране…
+	AT3 (ATRAC3, PSP / PS3)	AT3 (ATRAC3, PSP / PS3)
+	WAV (PCM)	WAV (PCM)
+	132 kbit/s (LP2)	132 kbit/s (LP2)
+	105 kbit/s	105 kbit/s
+	66 kbit/s (LP4, joint stereo)	66 kbit/s (LP4, joint stereo)
+	16-bit	16 бита
+	24-bit	24 бита
+	32-bit float	32 бита с плаваща запетая
+
+# Datamosh transition (Grunge & Distort, DM1, #1409)
+	Datamosh	Datamosh
+	Residual	Остатък
+	Motion Boost	Усилване на движението
+	Recovery	Възстановяване
+	Encode Resolution	Резолюция на кодиране
+	Half	Половина
+	Quarter	Четвърт
+# Datamosh Bloom (Glitch, DM2)
+	Datamosh Bloom	Datamosh разцъфване
+	Start Time (seconds)	Начално време (секунди)
+	Repeats	Повторения
+
+# Recent effects, per-channel waveform, white balance selector (SC-2/SC-3/SC-4, #1419 #1420 #1421)
+	Apply a recently used effect to the selected clips	Прилагане на наскоро използван ефект към избраните клипове
+	Disable all effects	Изключване на всички ефекти
+	Enable all effects	Включване на всички ефекти
+	No recent effects	Няма скорошни ефекти
+	Recent effects	Скорошни ефекти
+	Switch every effect of the selected clips off	Изключва всеки ефект на избраните клипове
+	Switch every effect of the selected clips on	Включва всеки ефект на избраните клипове
+	Merged	Обединени
+	Per Channel	По канали
+	Channel Zoom	Мащаб на каналите
+	White Balance Selector (click a neutral point in the Program monitor; Esc cancels)	Избор на баланс на бялото (щракнете върху неутрална точка в монитора Програма; Esc отказва)
+# Task Manager and subtitle kind (SC-2/3/4)
+	Task Manager	Диспечер на задачите
+	Background jobs	Фонови задачи
+	Exports	Експорти
+	Shared task queue	Споделена опашка със задачи
+	Task	Задача
+	State	Състояние
+	Details	Подробности
+	Time left	Оставащо време
+	Scheduled	Планирана
+	Queued	На опашка
+	Waiting for resources	Чака ресурси
+	Blocked	Блокирана
+	Running	Изпълнява се
+	Paused	На пауза
+	Cancelling	Отказване
+	Interactive	Интерактивна
+	Speculative	Спекулативна
+	Final render	Окончателно рендиране
+	Show finished	Показване на завършените
+	Nothing is running.	Нищо не се изпълнява.
+	Not reported by this engine yet.	Все още не се съобщава от този енджин.
+	Not available: {why}	Не е налично: {why}
+	{name} waits: {why}	{name} чака: {why}
+	{running} running · {waiting} waiting	{running} се изпълняват · {waiting} чакат
+	{n} active	{n} активни
+	{n} CPU	{n} CPU
+	{n} GiB	{n} GiB
+	{n} MiB	{n} MiB
+	Needs your decision	Чака вашето решение
+	Run now	Изпълни сега
+	Next slot	Следващ слот
+	Missed its start	Пропуснат старт
+	Missed its start at {time}	Пропуснат старт в {time}
+	Starts at {time}	Стартира в {time}
+	Subtitle kind	Вид субтитри
+	Subtitles	Субтитри
+	Captions for the hearing impaired	Надписи за хора с увреден слух
+	Forced narrative	Принудителен разказ (forced narrative)
+	Silence	Тишина
+	Detect Silence	Откриване на тишина
+	Remove Silence	Премахване на тишина
+	Clear Silence Markers	Изчистване на маркерите за тишина
+# DCP Validation window (DCP-12)
+	AS-03	AS-03
+	Choose the DCP folder.	Изберете папката на DCP.
+	DCP Validation	Проверка на DCP
+	DCP folder	Папка на DCP
+	DCP folder (the one holding ASSETMAP)	Папка на DCP (тази, която съдържа ASSETMAP)
+	Evidence	Доказателство
+	How to fix	Как да се поправи
+	Interrupted	Прекъснато
+	Not applicable	Неприложимо
+	Report	Отчет
+	Report saved: {path}	Отчетът е запазен: {path}
+	Required	Задължително
+	Rule	Правило
+	Rules	Правила
+	Save JSON…	Запиши JSON…
+	Save Markdown…	Запиши Markdown…
+	Save report	Запиши отчета
+	Skipped	Пропуснато
+	Standard: {standard}	Стандарт: {standard}
+	Validate	Провери
+	Validate DCP…	Провери DCP…
+	the engine sent no profiles	машината не изпрати профили
+	{n} files checked	Проверени файлове: {n}
+
+# AS-02 export
+	Write an AS-02 bundle (the path is a folder)	Запис на пакет AS-02 (пътят е папка)
+	AS-02	AS-02
+	AS-12	AS-12

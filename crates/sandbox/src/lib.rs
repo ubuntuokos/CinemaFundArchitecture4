@@ -179,6 +179,7 @@ pub fn status(ctx: &Context) -> Value {
                 "outputs": p.outputs,
                 "exec": p.exec,
                 "network": p.network,
+                "devices": p.devices,
                 "gpu": p.gpu,
                 "canStart": gaps.is_empty(),
                 "missing": gaps,
