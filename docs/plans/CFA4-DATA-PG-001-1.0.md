@@ -229,7 +229,7 @@ Mind `uuid` és `timestamptz`.
 
 ### 4.5 `mi` séma: Media Intelligence és pgvector (PG-4, részletesen)
 
-**Alap:** TASKSTORE §4 (80–125), P1, P8, P10. A CFA4-MEDIA-INTELLIGENCE-001 FINAL 2.0 szövege [nyitott]: „nincs a tárolókban” (AI-MODEL-TRAINING-001 22. sor). Az ACS-specifikáció is [nyitott] (OSSZEVETES 8–9); belőle csak az OSSZEVETES 110. sorban idézett §10 és §7.3 ismert.
+**Alap:** TASKSTORE §4 (80–125), P1, P8, P10. A [`CFA4-MEDIA-INTELLIGENCE-001 FINAL 2.0`](CFA4-MEDIA-INTELLIGENCE-001-FINAL-2.0.md) szövege 2026-11-22 óta a tárolóban van; az eltéréseket a PG-4 kapuja előtti felülvizsgálat rendezi (13. pont, kockázatok). Az ACS-specifikáció is [nyitott] (OSSZEVETES 8–9); belőle csak az OSSZEVETES 110. sorban idézett §10 és §7.3 ismert.
 
 **Cél:** szöveges és képes keresés jelenetre, felvételre, elhangzott mondatra, címkére; a találat egy klip adott szakaszára mutat (TASKSTORE 82–86). Ma a Media Intelligence keresés hiányzó funkció (docs/gaps.md 234), és a `transcript.search` kifejezés-egyezéssel keres a `.fcproj`-ban (transcripts.md 29).
 
@@ -551,7 +551,7 @@ Megjegyzések:
 ## 14. Meghozott döntések
 
 **István, 2026-11-15:**
-- **P1** A pgvector-rész a TASKSTORE §4-re épül. A MEDIA-INTELLIGENCE-001 FINAL 2.0, az ACS-specifikáció és a BACKLOTHUB-001 [nyitott].
+- **P1** A pgvector-rész a TASKSTORE §4-re épül. A [`CFA4-MEDIA-INTELLIGENCE-001 FINAL 2.0`](CFA4-MEDIA-INTELLIGENCE-001-FINAL-2.0.md) 2026-11-22 óta a tárolóban van; az ACS-specifikáció és a BACKLOTHUB-001 [nyitott].
 - **P2** A pgvector a PG-4-ben marad, az AI-F4 kapunál, a Qt 6 átállás és az egui-eltávolítás után; előtte PG-0…PG-3.
 - **P3** tokio-postgres + deadpool-postgres, az ADR-0006-ban rögzítve, a TASKSTORE §9 igazodik. A PG-4-ben a `pgvector` crate (`postgres` feature): 0.4.2, MIT OR Apache-2.0 (crates.io, ellenőrizve).
 - **P4** A `cfa4-store` L5, indok: socketes OS-I/O. Az AI #50 és a TASKSTORE igazodik.
@@ -595,7 +595,7 @@ Megjegyzések:
 ## 15. Nyitott tételek
 
 **[nyitott], a forrás nem elérhető:**
-1. CFA4-MEDIA-INTELLIGENCE-001 FINAL 2.0 szövege (AI-MODEL-TRAINING-001 22).
+1. ~~CFA4-MEDIA-INTELLIGENCE-001 FINAL 2.0 szövege~~ – 2026-11-22 óta a tárolóban: [`CFA4-MEDIA-INTELLIGENCE-001 FINAL 2.0`](CFA4-MEDIA-INTELLIGENCE-001-FINAL-2.0.md).
 2. CFA4-ADAPTIVE-CAPABILITY-001 (ACS) szövege (OSSZEVETES 8–9).
 3. CFA4-BACKLOTHUB-001 és a BacklotHub #14–#56 issue-k: egyik repóban sincsenek.
 4. Az AI ADR-0008 10–11. sorában hivatkozott claude.ai artifaktok: csak üres JS-vázat adnak.

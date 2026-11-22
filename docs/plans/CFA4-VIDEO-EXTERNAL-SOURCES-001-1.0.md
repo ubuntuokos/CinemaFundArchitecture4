@@ -53,7 +53,7 @@ Harmadik fél scraperei (S2) teljesen ki vannak zárva (V-2). A donorkatalógust
 
 | Szabály | Forrás | Mit jelent itt |
 |---|---|---|
-| „FINAL 2.0” adatküldési tilalom | **[nyitott]**: a CFA4-MEDIA-INTELLIGENCE-001 FINAL 2.0 szövege „nincs a tárolókban” (docs/plans/CFA4-AI-MODEL-TRAINING-001.md:22; DATA-PG terv:232) | Nem hivatkozunk rá. A tartalmát az alábbi valós szabályok fedik le. |
+| „FINAL 2.0” adatküldési tilalom | [`CFA4-MEDIA-INTELLIGENCE-001 FINAL 2.0`](CFA4-MEDIA-INTELLIGENCE-001-FINAL-2.0.md) 11. pont: „engedély nélküli cloud-adatküldés tilos” (2026-11-22 óta a tárolóban) | Ugyanazt mondja, mint az alábbi szabályok. |
 | A felhasználó adatai nem hagyják el a gépet | VISION.md:49 | S1 és letöltés csak kérésenkénti jóváhagyással, a kimenő adat megmutatásával |
 | Nincs futásidejű hálózati függőség | docs/adr/ADR-F8-QT6-RUST-ENGINE-2026-10-23.md:17–19 | Minden funkció hálózat nélkül is működik. A hálózat külön folyamat opcionális része. |
 | A motor nem nyit kimenő kapcsolatot | ADR-F8:36; docs/plans/CFA4-SECURITY-001.md:122 (D5) | Hálózatot csak a `cfa4-fetch` használ |
@@ -542,7 +542,7 @@ Kötelező CI-kapuk:
 
 ## 12. Nyitott pontok (tények, nem döntések)
 
-- **[nyitott]** A CFA4-MEDIA-INTELLIGENCE-001 FINAL 2.0 szövege nincs a tárolókban (AI-MODEL-TRAINING-001.md:22).
+- ~~[nyitott] A CFA4-MEDIA-INTELLIGENCE-001 FINAL 2.0 szövege nincs a tárolókban~~ – 2026-11-22 óta a tárolóban: [`CFA4-MEDIA-INTELLIGENCE-001 FINAL 2.0`](CFA4-MEDIA-INTELLIGENCE-001-FINAL-2.0.md).
 - **[nyitott]** Mely platformok ÁSZF-je engedi kifejezetten az oEmbed-lekérést vagy a letöltést. Ez az F2 kimenete.
 - **[nyitott]** A Hugging Face letöltési átirányításainak pontos hostjai. Az F3 állapítja meg (5.2).
 - **[nyitott]** Van-e a `.fcproj`-nak stabil projektazonosítója a `mi.project_link`-hez (DATA-PG terv:241).

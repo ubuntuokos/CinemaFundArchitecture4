@@ -20,7 +20,7 @@
 | D2 | CPU-s tanítás csak adat-előkészítésre és CI-tesztmodellre? | Igen. Nincs GPU nélküli felhasználói tanítási út. |
 | D3 | Adat- és modelllicenc: rögzítés és megjelenítés tiltás helyett? | Igen, ugyanúgy, mint a letöltött modelleknél. |
 | D4 | A tanító worker az AI-terv F6 közös uv-környezetét bővíti? | Ellenőrizve (13. fejezet): igen, külön környezet nem kell. |
-| D5 | Media Intelligence hivatkozás | A CFA4-MEDIA-INTELLIGENCE-001 FINAL 2.0 nincs a tárolókban; a hivatkozás a [`CFA4-TASKSTORE-PG-001`](CFA4-TASKSTORE-PG-001.md) 4. pontjának `mi` sémája. |
+| D5 | Media Intelligence hivatkozás | [`CFA4-MEDIA-INTELLIGENCE-001 FINAL 2.0`](CFA4-MEDIA-INTELLIGENCE-001-FINAL-2.0.md) (a tulajdonos 2026-11-22-én adta át, azóta a tárolóban van); az adatréteg a [`CFA4-TASKSTORE-PG-001`](CFA4-TASKSTORE-PG-001.md) 4. pontjának `mi` sémája. |
 | D6 | Hová kerül? | Ide, a CFA4 `docs/plans` mappájába; az ADR 0008 egy hivatkozó sort kap. |
 
 A D1–D4 döntést István 2026-11-22-én a javaslat szerint megerősítette; az 1.1-es szöveg ezt már tartalmazza.
