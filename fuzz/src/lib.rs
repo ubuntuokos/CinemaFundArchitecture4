@@ -636,6 +636,15 @@ pub fn musepack(data: &[u8]) {
     let _ = cfa4_musepack::decode_file(data);
 }
 
+pub fn adx(data: &[u8]) {
+    let _ = cfa4_adx::decode_file(data);
+}
+
+pub fn hca(data: &[u8]) {
+    let _ = cfa4_hca::decode_file(data, None);
+    let _ = cfa4_hca::decode_file(data, Some(cfa4_hca::Key { key: 0xCF22_2F1F_E074_8978, subkey: 0x3B8E }));
+}
+
 pub fn shorten(data: &[u8]) {
     let _ = cfa4_shorten::probe(data);
     let _ = cfa4_shorten::decode_file(data);
@@ -650,6 +659,33 @@ pub fn tak(data: &[u8]) {
     let mut d = cfa4_tak::Decoder::new(info);
     for p in ps {
         let _ = d.decode(p);
+    }
+}
+
+/// Smacker: the whole file through the frame table, each frame's parts, the video decoder and
+/// every audio track.
+pub fn smacker(data: &[u8]) {
+    let _ = cfa4_smacker::probe(data);
+    let Ok(smk) = cfa4_smacker::Smk::parse(data) else { return };
+    let mut dec = cfa4_smacker::Decoder::new(&smk).ok();
+    for i in 0..smk.frames.min(64) {
+        let parts = smk.split(data, i);
+        for (slot, track) in smk.tracks.iter().enumerate() {
+            if let (Some(t), Some(chunk)) = (track, parts.audio.get(slot).copied().flatten()) {
+                let _ = cfa4_smacker::decode_audio(t, chunk);
+            }
+        }
+        match (dec.as_mut(), parts.video, parts.palette) {
+            (Some(d), Some(v), _) => {
+                let _ = d.decode(parts.palette, v);
+                std::hint::black_box(d.rgba());
+            }
+            // a frame whose video is lost keeps its palette update
+            (Some(d), None, Some(p)) => {
+                let _ = d.update_palette(p);
+            }
+            _ => {}
+        }
     }
 }
 
@@ -747,7 +783,10 @@ pub const TARGETS: &[(&str, &str, Target)] = &[
     ("ilbc", "cfa4-ilbc", ilbc),
     ("musepack", "cfa4-musepack", musepack),
     ("shorten", "cfa4-shorten", shorten),
+    ("adx", "cfa4-adx", adx),
+    ("hca", "cfa4-hca", hca),
     ("tak", "cfa4-tak", tak),
+    ("smacker", "cfa4-smacker", smacker),
     ("project", "cfa4-project", project),
     ("interchange", "cfa4-interchange", interchange),
     ("captions", "cfa4-captions", captions),
