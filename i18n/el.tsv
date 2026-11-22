@@ -4899,3 +4899,8 @@ export.summary	Low	χαμηλή
 	Validate DCP…	Επικύρωση DCP…
 	the engine sent no profiles	η μηχανή δεν έστειλε προφίλ
 	{n} files checked	Ελέγχθηκαν {n} αρχεία
+
+# AS-02 export
+	Write an AS-02 bundle (the path is a folder)	Εγγραφή πακέτου AS-02 (η διαδρομή είναι φάκελος)
+	AS-02	AS-02
+	AS-12	AS-12

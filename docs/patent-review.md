@@ -68,6 +68,10 @@ szabadalommal védett formátumot.
 | Huffyuv (HFYU) | dekódolás | `crates/huffyuv` | alap | függőben | | |
 | Ut Video | dekódolás | `crates/utvideo` | alap | függőben | | |
 | Lagarith | dekódolás | `crates/lagarith` (az FFmpeg Lagarith-dekódolójának portja) | alap | függőben | | |
+| Indeo 2 | dekódolás | `crates/indeo` (az FFmpeg Indeo 2-dekódolójának portja) | alap | függőben | | |
+| Cinepak | dekódolás | `crates/cinepak` (az FFmpeg Cinepak-dekódolójának portja) | alap | függőben | | |
+| Nintendo THP (JPEG-videó, THP ADPCM-hang) | dekódolás; `.thp` fájlok olvasása | `crates/thp` (az FFmpeg THP-demuxerének, MJPEG-dekóderének és ADPCM-dekóderének portja) | alap | függőben | | |
+| Nintendo MobiClip (MOFLEX: MobiClip-videó, FastAudio, IMA ADPCM) | dekódolás; `.moflex` fájlok olvasása | `crates/mobiclip` (az FFmpeg moflex-demuxerének, MobiClip-dekóderének, FastAudio- és ADPCM-dekóderének portja) | alap | függőben | | |
 | MagicYUV | dekódolás | `crates/magicyuv` (az FFmpeg MagicYUV-dekódolójának portja) | alap | függőben | | |
 | RealVideo 1.0 / 2.0 (RV10, RV20) | dekódolás | `crates/realvideo` (az FFmpeg portja) | alap | függőben | | |
 | RealVideo 3.0 / 4.0 (RV30, RV40) | dekódolás | `crates/realvideo` `rv34` (az FFmpeg portja) | alap | függőben | | |
@@ -82,6 +86,7 @@ szabadalommal védett formátumot.
 | Theora (VP3) | dekódolás | `crates/theora` (az FFmpeg portja, a Xiph-specifikáció szerint) | alap | függőben | | |
 | Hap (Hap, Hap Alpha, Hap Q, Hap Q Alpha, Hap Alpha-Only) | dekódolás | `crates/hap` | alap | függőben | | |
 | Smacker Video (SMK2, SMK4) | dekódolás | `crates/smacker` (az FFmpeg portja) | alap | függőben | | |
+| Bink Video (Bink 1, alfával) | dekódolás | `crates/bink` (az FFmpeg portja) | alap | függőben | | |
 
 ## Hang
 
@@ -112,6 +117,7 @@ szabadalommal védett formátumot.
 | CRI HCA | dekódolás (kulcsos titkosítással is); `.hca` fájlok olvasása | `crates/hca` (az FFmpeg HCA-dekódolójának portja) | alap | függőben | | |
 | TAK (Tom's lossless Audio Kompressor) | dekódolás; `.tak` fájlok olvasása | `crates/tak` (az FFmpeg TAK-dekódolójának portja) | alap | függőben | | |
 | Smacker Audio | dekódolás | `crates/smacker` (az FFmpeg portja) | alap | függőben | | |
+| Bink Audio (RDFT, DCT) | dekódolás | `crates/bink` (az FFmpeg portja) | alap | függőben | | |
 | Interplay ACM | dekódolás; `.acm` fájlok olvasása | `crates/acm` (az FFmpeg Interplay ACM-dekódolójának portja) | alap | függőben | | |
 | id RoQ (video, DPCM-hang) | dekódolás; `.roq` fájlok olvasása | `crates/roq` (az FFmpeg id RoQ-dekódolóinak portja) | alap | függőben | | |
 | Interplay MVE (video, DPCM-hang) | dekódolás; `.mve` fájlok olvasása | `crates/mve` (az FFmpeg Interplay-dekódolóinak portja) | alap | függőben | | |
@@ -131,6 +137,7 @@ szabadalommal védett formátumot.
 | Ogg | olvasás | `crates/ogg` | alap | függőben | | |
 | RealMedia (`.rm`, `.rmvb`) | olvasás | `crates/realmedia` (az FFmpeg portja) | alap | függőben | | |
 | Smacker (`.smk`) | olvasás | `crates/smacker` (az FFmpeg portja) | alap | függőben | | |
+| Bink (`.bik`) | olvasás | `crates/bink` (az FFmpeg portja) | alap | függőben | | |
 | ASF | olvasás | FFmpeg-háttér; GStreamer | alap | függőben | | |
 | AAF (Compound File Binary) | olvasás, írás | `crates/cfb` | alap | függőben | | |
 | Konténer- és kodekközpont | olvasás | `crates/codecs` (a fenti sorok formátumai) | alap | függőben | | |
