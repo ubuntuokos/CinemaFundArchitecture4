@@ -649,6 +649,13 @@ pub fn twinvq(data: &[u8]) {
     if let Ok(s) = cfa4_twinvq::parse(data) {
         let _ = cfa4_twinvq::decode(data, &s);
     }
+    // MetaSound: the first 16 bytes stand for the format extradata, the next two for the block size
+    if let (Some(extra), Some(a)) = (data.get(..16), data.get(16..18)) {
+        let align = usize::from(u16::from_le_bytes([a[0], a[1]]));
+        if let Ok(s) = cfa4_twinvq::parse_metasound(extra, align) {
+            let _ = cfa4_twinvq::decode(data.get(18..).unwrap_or(&[]), &s);
+        }
+    }
 }
 
 pub fn shorten(data: &[u8]) {

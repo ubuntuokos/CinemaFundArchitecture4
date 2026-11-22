@@ -13,8 +13,10 @@
 //! The decoder follows ffmpeg's float arithmetic, so the samples agree with ffmpeg's to a few
 //! ulps (the inverse MDCT is computed in double precision).
 
+mod ms_tables;
 mod tables;
 
+use ms_tables::MS_MODES;
 use tables as t;
 
 #[derive(Debug, Clone, PartialEq, Eq, thiserror::Error)]
@@ -47,7 +49,23 @@ pub struct Stream {
     pub frame_bits: usize,
     /// Byte offset of the first frame.
     pub data_start: usize,
+    pub codec: Codec,
+    /// Frames in each packet (VQF: one; MetaSound: one or two).
+    pub frames_per_packet: usize,
+    /// Bytes of a MetaSound packet (the container's block alignment); unused for VQF.
+    pub block_align: usize,
+    is_6kbps: bool,
     mode: usize,
+}
+
+/// The two codecs this crate decodes.
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub enum Codec {
+    /// NTT TwinVQ in VQF files.
+    Vqf,
+    /// Voxware MetaSound (WAV format 0x0075): the same transform coder with its own tables,
+    /// bit order (little endian) and parameter coding.
+    Metasound,
 }
 
 /// The decoded sound.
@@ -150,7 +168,90 @@ pub fn parse(data: &[u8]) -> Result<Stream> {
     let frame_samples = MODES[mode].size;
     let bit_rate = read_bitrate * 1000;
     let frame_bits = (u64::from(bit_rate) * frame_samples as u64 / u64::from(sample_rate)) as usize;
-    Ok(Stream { channels: channels as usize, sample_rate, bit_rate, frame_samples, frame_bits, data_start: pos, mode })
+    Ok(Stream {
+        channels: channels as usize,
+        sample_rate,
+        bit_rate,
+        frame_samples,
+        frame_bits,
+        data_start: pos,
+        codec: Codec::Vqf,
+        frames_per_packet: 1,
+        block_align: 0,
+        is_6kbps: false,
+        mode,
+    })
+}
+
+/// The WAV format tag of Voxware MetaSound.
+pub const WAVE_FORMAT_METASOUND: u16 = 0x0075;
+
+/// A MetaSound stream from a WAV `fmt ` chunk's extra bytes (the codec tag sits at offset 12) and
+/// its block alignment, like ffmpeg's `metasound` decoder reads them.
+pub fn parse_metasound(extra: &[u8], block_align: usize) -> Result<Stream> {
+    let tag: [u8; 4] = extra.get(12..16).and_then(|b| b.try_into().ok()).ok_or(Error::Invalid("missing or incomplete extradata"))?;
+    // (tag, kbit/s, channels, rate)
+    const PROPS: [(&[u8; 4], u32, u32, u32); 16] = [
+        (b"VX03", 6, 1, 8000),
+        (b"VX04", 12, 2, 8000),
+        (b"VOXi", 8, 1, 8000),
+        (b"VOXj", 10, 1, 11025),
+        (b"VOXk", 16, 1, 16000),
+        (b"VOXL", 24, 1, 22050),
+        (b"VOXq", 32, 1, 44100),
+        (b"VOXr", 40, 1, 44100),
+        (b"VOXs", 48, 1, 44100),
+        (b"VOXt", 16, 2, 8000),
+        (b"VOXu", 20, 2, 11025),
+        (b"VOXv", 32, 2, 16000),
+        (b"VOXw", 48, 2, 22050),
+        (b"VOXx", 64, 2, 44100),
+        (b"VOXy", 80, 2, 44100),
+        (b"VOXz", 96, 2, 44100),
+    ];
+    let &(_, kbps, channels, sample_rate) = PROPS.iter().find(|p| *p.0 == tag).ok_or(Error::Unsupported("codec tag"))?;
+    let ibps = kbps / channels;
+    let isampf = sample_rate / 1000;
+    let mode = match (channels, isampf, ibps) {
+        (1, 8, 6) => 0,
+        (2, 8, 6) => 1,
+        (1, 8, 8) => 2,
+        (2, 8, 8) => 3,
+        (1, 11, 10) => 4,
+        (2, 11, 10) => 5,
+        (1, 16, 16) => 6,
+        (2, 16, 16) => 7,
+        (1, 22, 24) => 8,
+        (2, 22, 24) => 9,
+        (_, 44, 32) => 10,
+        (_, 44, 40) => 11,
+        (_, 44, 48) => 12,
+        _ => return Err(Error::Unsupported("rate and bit rate combination")),
+    };
+    let frame_samples = MS_MODES[mode].size;
+    let bit_rate = kbps * 1000;
+    let frame_bits = (u64::from(bit_rate) * frame_samples as u64 / u64::from(sample_rate)) as usize;
+    let frames_per_packet = block_align * 8 / frame_bits.max(1);
+    if frames_per_packet == 0 || frames_per_packet > 2 {
+        return Err(Error::Invalid("block alignment"));
+    }
+    Ok(Stream {
+        channels: channels as usize,
+        sample_rate,
+        bit_rate,
+        frame_samples,
+        frame_bits,
+        data_start: 0,
+        codec: Codec::Metasound,
+        frames_per_packet,
+        block_align,
+        is_6kbps: ibps == 6,
+        mode: MODES.len() + mode,
+    })
+}
+
+fn mode_ref(id: usize) -> &'static Mode {
+    MODES.get(id).or_else(|| MS_MODES.get(id.wrapping_sub(MODES.len()))).unwrap_or(&MODES[0])
 }
 
 /// Decode every whole frame of the file (the first two frames only prime the overlap and give no
@@ -159,6 +260,13 @@ pub fn decode(data: &[u8], s: &Stream) -> Decoded {
     let mut dec = Decoder::new(s);
     let mut out = vec![Vec::new(); s.channels];
     let body = data.get(s.data_start..).unwrap_or(&[]);
+    if s.codec == Codec::Metasound {
+        // whole packets of `block_align` bytes (a short last one is dropped, as ffmpeg's decoder does)
+        for pkt in body.chunks_exact(s.block_align.max(1)) {
+            dec.packet(pkt, &mut out);
+        }
+        return Decoded { channels: out };
+    }
     let mut pos = 0usize;
     let mut remaining: i32 = 0;
     let mut last_bits = 0u8;
@@ -337,18 +445,21 @@ impl LnF64 for f32 {
     }
 }
 
-/// An MSB-first bit reader: reads past the end give zeros (ffmpeg's buffers are zero padded).
+/// A bit reader, MSB first (VQF) or LSB first (MetaSound): reads past the end give zeros
+/// (ffmpeg's buffers are zero padded).
 struct Bits<'a> {
     d: &'a [u8],
     pos: usize,
+    little_endian: bool,
 }
 
 impl Bits<'_> {
     fn get(&mut self, n: u32) -> u32 {
         let mut v = 0u32;
-        for _ in 0..n {
+        for i in 0..n {
             let byte = self.d.get(self.pos >> 3).copied().unwrap_or(0);
-            v = (v << 1) | u32::from((byte >> (7 - (self.pos & 7))) & 1);
+            let bit = if self.little_endian { (byte >> (self.pos & 7)) & 1 } else { (byte >> (7 - (self.pos & 7))) & 1 };
+            v = if self.little_endian { v | (u32::from(bit) << i) } else { (v << 1) | u32::from(bit) };
             self.pos += 1;
         }
         v
@@ -386,6 +497,9 @@ fn ftype_of(i: usize) -> Ft {
 
 struct Decoder {
     mode: &'static Mode,
+    codec: Codec,
+    is_6kbps: bool,
+    frames_per_packet: usize,
     channels: usize,
     sample_rate: i32,
     bit_rate: i32,
@@ -409,7 +523,7 @@ struct Decoder {
 
 impl Decoder {
     fn new(s: &Stream) -> Self {
-        let mode = &MODES[s.mode];
+        let mode = mode_ref(s.mode);
         let channels = s.channels;
         let table_size = 2 * mode.size * channels;
         let norm = if channels == 1 { 2.0f64 } else { 1.0 };
@@ -431,6 +545,9 @@ impl Decoder {
         }
         let mut d = Self {
             mode,
+            codec: s.codec,
+            is_6kbps: s.is_6kbps,
+            frames_per_packet: s.frames_per_packet,
             channels,
             sample_rate: s.sample_rate as i32,
             bit_rate: s.bit_rate as i32,
@@ -473,6 +590,10 @@ impl Decoder {
         for i in 0..2 {
             bsize_no_main_cb[i] =
                 lsp_bits_per_block + n_ch * GAIN_BITS as i32 + WINDOW_TYPE_BITS as i32 + mtab.fmode[i].sub as i32 * (bse_bits[i] + n_ch * SUB_GAIN_BITS as i32);
+        }
+        if self.codec == Codec::Metasound && !self.is_6kbps {
+            bsize_no_main_cb[1] += 2;
+            bsize_no_main_cb[2] += 2;
         }
         for i in 0..4 {
             let (bit_size, vect_size) =
@@ -552,12 +673,15 @@ impl Decoder {
 
     /// One demuxed packet; `out` receives the samples once the first two packets are past.
     fn packet(&mut self, pkt: &[u8], out: &mut [Vec<f32>]) {
-        let Some(bits) = self.read_bitstream(pkt) else { return };
-        self.read_and_decode_spectrum(&bits);
-        let mut frame = if self.discarded >= 2 { Some(vec![vec![0.0f32; self.mode.size]; self.channels]) } else { None };
-        self.imdct_output(&bits, frame.as_mut());
-        std::mem::swap(&mut self.curr_frame, &mut self.prev_frame);
-        if let Some(f) = frame {
+        let Some(frames) = self.read_bitstream(pkt) else { return };
+        let size = self.mode.size;
+        let mut result = if self.discarded >= 2 { Some(vec![vec![0.0f32; size * frames.len()]; self.channels]) } else { None };
+        for (n, bits) in frames.iter().enumerate() {
+            self.read_and_decode_spectrum(bits);
+            self.imdct_output(bits, result.as_mut(), n * size);
+            std::mem::swap(&mut self.curr_frame, &mut self.prev_frame);
+        }
+        if let Some(f) = result {
             for (o, c) in out.iter_mut().zip(f) {
                 o.extend(c);
             }
@@ -575,11 +699,27 @@ impl Decoder {
         }
     }
 
-    fn read_bitstream(&self, buf: &[u8]) -> Option<FrameData> {
-        let mtab = self.mode;
-        let mut gb = Bits { d: buf, pos: 0 };
+    fn read_bitstream(&self, buf: &[u8]) -> Option<Vec<FrameData>> {
+        if self.codec == Codec::Metasound {
+            let mut gb = Bits { d: buf, pos: 0, little_endian: true };
+            let mut frames = Vec::new();
+            for _ in 0..self.frames_per_packet {
+                frames.push(self.read_frame(&mut gb)?);
+                // subframes are aligned to nibbles
+                if gb.pos & 3 != 0 {
+                    gb.skip(4 - (gb.pos & 3));
+                }
+            }
+            return Some(frames);
+        }
+        let mut gb = Bits { d: buf, pos: 0, little_endian: false };
         let skip = gb.get(8) as usize;
         gb.skip(skip);
+        Some(vec![self.read_frame(&mut gb)?])
+    }
+
+    fn read_frame(&self, gb: &mut Bits<'_>) -> Option<FrameData> {
+        let mtab = self.mode;
         let mut bits = FrameData { window_type: gb.get(WINDOW_TYPE_BITS) as usize, ..FrameData::default() };
         if bits.window_type > 8 {
             return None;
@@ -588,8 +728,11 @@ impl Decoder {
         bits.ftype = ft as usize;
         let fm = &mtab.fmode[bits.ftype];
         let sub = fm.sub;
+        if self.codec == Codec::Metasound && ft as usize != Ft::Short as usize && !self.is_6kbps {
+            gb.get(2);
+        }
         let mut main = Vec::new();
-        self.read_cb_data(&mut gb, &mut main, bits.ftype);
+        self.read_cb_data(gb, &mut main, bits.ftype);
         bits.main_coeffs = main;
         for i in 0..self.channels {
             for j in 0..sub {
@@ -624,7 +767,7 @@ impl Decoder {
         }
         if matches!(ft, Ft::Long) {
             let mut ppc = Vec::new();
-            self.read_cb_data(&mut gb, &mut ppc, 3);
+            self.read_cb_data(gb, &mut ppc, 3);
             bits.ppc_coeffs = ppc;
             for i in 0..self.channels {
                 bits.p_coef[i] = gb.get(mtab.ppc_period_bit);
@@ -696,7 +839,9 @@ impl Decoder {
     fn dec_bark_env(&mut self, bits: &FrameData, i: usize, j: usize, ftype: usize, gain: f32, out: &mut [f32]) {
         let mtab = self.mode;
         let fm = &mtab.fmode[ftype];
-        let val = [0.4f32, 0.35, 0.28][ftype];
+        let ms = self.codec == Codec::Metasound;
+        let mono = self.channels == 1;
+        let val = if ms && mono { 0.5f32 } else { [0.4f32, 0.35, 0.28][ftype] };
         let bark_n_coef = fm.bark_n_coef;
         let fw_cb_len = fm.bark_env_size / bark_n_coef;
         let use_hist = bits.bark_use_hist[i][j] != 0;
@@ -707,14 +852,20 @@ impl Decoder {
         for k in 0..fw_cb_len {
             for jj in 0..bark_n_coef {
                 let cbv = fm.bark_cb.get(fw_cb_len * usize::from(input[jj]) + k).copied().unwrap_or(0);
-                let tmp2 = (f64::from(cbv) * (1.0 / 4096.0)) as f32;
-                let mut st = if use_hist {
+                let tmp2 = (f64::from(cbv) * (1.0 / if ms { 2048.0 } else { 4096.0 })) as f32;
+                let mut st = if use_hist && !(ms && mono) {
                     ((1.0 - f64::from(val)) * f64::from(tmp2) + f64::from(val) * f64::from(hist[idx]) + 1.0) as f32
+                } else if use_hist {
+                    (f64::from(tmp2) + f64::from(val) * f64::from(hist[idx]) + 1.0) as f32
                 } else {
                     (f64::from(tmp2) + 1.0) as f32
                 };
                 hist[idx] = tmp2;
-                if st < -1.0 {
+                if ms {
+                    if f64::from(st) < 0.1 {
+                        st = 0.1;
+                    }
+                } else if st < -1.0 {
                     st = 1.0;
                 }
                 let n = usize::from(fm.bark_tab[idx]);
@@ -827,7 +978,56 @@ impl Decoder {
         }
     }
 
+    fn decode_ppc_metasound(&self, period_coef: u32, g_coef: u32, shape: &[f32], speech: &mut [f32]) {
+        let mtab = self.mode;
+        let channels = self.channels;
+        let isampf = self.sample_rate / 1000;
+        let ibps = self.bit_rate / (1000 * channels as i32);
+        let ratio = mtab.size as f32 / isampf as f32;
+        let (min_period, max_period): (f32, f32) = if channels == 1 {
+            let min = (f64::from(ratio) * 0.2).log2() as f32;
+            (min, (f64::from(min) + 6f64.log2()) as f32)
+        } else {
+            (
+                (((f64::from(ratio) * 0.2 * 400.0 + 0.5) as i32) as f64 / 400.0) as f32,
+                (((f64::from(ratio) * 0.2 * 400.0 * 6.0 + 0.5) as i32) as f64 / 400.0) as f32,
+            )
+        };
+        let period_range = max_period - min_period;
+        let mut period = min_period + period_coef as f32 * period_range / ((1i32 << mtab.ppc_period_bit) - 1) as f32;
+        if channels == 1 {
+            period = 2.0f32.powf(period);
+        } else {
+            period = (((f64::from(period) * 400.0 + 0.5) as i32) as f64 / 400.0) as f32;
+        }
+        let some_mult: f32 = match isampf {
+            8 => 2.0,
+            11 | 16 => 3.0,
+            22 => {
+                if ibps == 32 {
+                    2.0
+                } else {
+                    4.0
+                }
+            }
+            44 => 8.0,
+            _ => 4.0,
+        };
+        let mut width = (some_mult / (mtab.size as f32 / period) * mtab.ppc_shape_len as f32) as i32;
+        if isampf == 22 && ibps == 32 {
+            width = ((2.0 / f64::from(period) + 1.0) * f64::from(width) + 0.5) as i32;
+        }
+        let pgain_base: f32 = if channels == 2 { 25_000.0 } else { 20_000.0 };
+        let pgain_step = pgain_base / ((1u32 << mtab.pgain_bit) - 1) as f32;
+        let arg = pgain_step * g_coef as f32 + pgain_step / 2.0;
+        let ppc_gain = ((1.0f64 / 8192.0) * f64::from(mulawinv(arg, pgain_base, PGAIN_MU))) as f32;
+        add_peak_metasound(period, width, shape, ppc_gain, speech, mtab.ppc_shape_len as i32);
+    }
+
     fn decode_ppc(&self, period_coef: u32, g_coef: u32, shape: &[f32], speech: &mut [f32]) {
+        if self.codec == Codec::Metasound {
+            return self.decode_ppc_metasound(period_coef, g_coef, shape, speech);
+        }
         let mtab = self.mode;
         let isampf = self.sample_rate / 1000;
         let ibps = self.bit_rate / (1000 * self.channels as i32);
@@ -953,7 +1153,7 @@ impl Decoder {
         self.last_block_pos[ch] = (size + first_wsize) / 2;
     }
 
-    fn imdct_output(&mut self, bits: &FrameData, out: Option<&mut Vec<Vec<f32>>>) {
+    fn imdct_output(&mut self, bits: &FrameData, out: Option<&mut Vec<Vec<f32>>>, offset: usize) {
         let mtab = self.mode;
         let size = mtab.size;
         let prev_base = self.last_block_pos[0];
@@ -966,15 +1166,15 @@ impl Decoder {
         for c in 0..self.channels {
             let o = &mut out[c];
             for k in 0..size1 {
-                o[k] = self.prev_frame.get(prev_base + 2 * c * size + k).copied().unwrap_or(0.0);
+                o[offset + k] = self.prev_frame.get(prev_base + 2 * c * size + k).copied().unwrap_or(0.0);
             }
             for k in 0..size2 {
-                o[size1 + k] = self.curr_frame.get(2 * c * size + k).copied().unwrap_or(0.0);
+                o[offset + size1 + k] = self.curr_frame.get(2 * c * size + k).copied().unwrap_or(0.0);
             }
         }
         if self.channels == 2 {
             let (a, b) = out.split_at_mut(1);
-            for (x, y) in a[0].iter_mut().zip(b[0].iter_mut()) {
+            for (x, y) in a[0][offset..offset + size].iter_mut().zip(b[0][offset..offset + size].iter_mut()) {
                 let t = *x - *y;
                 *x += *y;
                 *y = t;
@@ -1043,6 +1243,38 @@ fn broken_table(i: usize) -> Option<(usize, &'static [u8])> {
         9 => flat(45, &t::TAB9),
         11 => flat(55, &t::TAB11),
         _ => None,
+    }
+}
+
+fn add_peak_metasound(period: f32, width: i32, shape: &[f32], ppc_gain: f32, speech: &mut [f32], len: i32) {
+    let sp = std::cell::Cell::new(0usize);
+    let add = |speech: &mut [f32], idx: i64| {
+        let v = shape.get(sp.get()).copied().unwrap_or(0.0);
+        sp.set(sp.get() + 1);
+        if let Some(e) = usize::try_from(idx).ok().and_then(|i| speech.get_mut(i)) {
+            *e += ppc_gain * v;
+        }
+    };
+    if width <= 0 {
+        return;
+    }
+    for i in 0..width / 2 {
+        add(speech, i64::from(i));
+    }
+    let centre = |i: i32| (f64::from(i as f32 * period) + 0.5) as i32;
+    let mut i = 1;
+    while i < rounded_div(len, width) {
+        let center = centre(i);
+        for j in -width / 2..(width + 1) / 2 {
+            add(speech, i64::from(j) + i64::from(center));
+        }
+        i += 1;
+    }
+    let center = centre(i);
+    let mut j = -width / 2;
+    while j < (width + 1) / 2 && (sp.get() as i32) < len {
+        add(speech, i64::from(j) + i64::from(center));
+        j += 1;
     }
 }
 
@@ -1196,8 +1428,19 @@ mod tests {
                 let m = &MODES[mode];
                 let rate = [8000, 11025, 11025, 16000, 22050, 22050, 22050, 44100, 44100][mode];
                 let kbps = [8, 8, 10, 16, 20, 24, 32, 40, 48][mode];
-                let s =
-                    Stream { channels, sample_rate: rate, bit_rate: kbps * 1000 * channels as u32, frame_samples: m.size, frame_bits: 0, data_start: 0, mode };
+                let s = Stream {
+                    channels,
+                    sample_rate: rate,
+                    bit_rate: kbps * 1000 * channels as u32,
+                    frame_samples: m.size,
+                    frame_bits: 0,
+                    data_start: 0,
+                    codec: Codec::Vqf,
+                    frames_per_packet: 1,
+                    block_align: 0,
+                    is_6kbps: false,
+                    mode,
+                };
                 let d = Decoder::new(&s);
                 for f in 0..4 {
                     assert!(d.n_div[f] > 0);

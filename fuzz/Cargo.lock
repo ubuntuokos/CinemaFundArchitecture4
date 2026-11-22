@@ -537,6 +537,7 @@ dependencies = [
  "cfa4-jxl",
  "cfa4-realaudio",
  "cfa4-time",
+ "cfa4-twinvq",
  "image",
  "log",
  "rayon",

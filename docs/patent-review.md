@@ -108,6 +108,7 @@ szabadalommal védett formátumot.
 | iLBC | dekódolás; `.lbc` fájlok olvasása | `crates/ilbc` (a WebRTC libilbc portja) | alap | függőben | | |
 | TTA (True Audio) | dekódolás; `.tta` és Matroska olvasása | `crates/tta` (a libtta portja) | alap | függőben | | |
 | NTT TwinVQ (VQF) | dekódolás; `.vqf`, `.vql`, `.vqe` fájlok olvasása | `crates/twinvq` (az FFmpeg vqf-demuxerének és TwinVQ-dekóderének portja) | alap | függőben | | |
+| Voxware MetaSound | dekódolás; WAV (0x0075) fájlok olvasása | `crates/twinvq` (az FFmpeg MetaSound-dekóderének portja) | alap | függőben | | |
 | Shorten | dekódolás; `.shn` fájlok olvasása | `crates/shorten` (az FFmpeg Shorten-dekódolójának portja) | alap | függőben | | |
 | CRI ADX | dekódolás; `.adx` fájlok olvasása | `crates/adx` (az FFmpeg ADX-dekódolójának portja) | alap | függőben | | |
 | CRI HCA | dekódolás (kulcsos titkosítással is); `.hca` fájlok olvasása | `crates/hca` (az FFmpeg HCA-dekódolójának portja) | alap | függőben | | |

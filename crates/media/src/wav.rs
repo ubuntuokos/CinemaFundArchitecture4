@@ -41,6 +41,10 @@ const G722_CHECKPOINT: u64 = 16_384;
 const ATRAC_CHECKPOINT: u64 = 64;
 /// WAVE_FORMAT_SONY_SCX (ATRAC3).
 const TAG_ATRAC3: u16 = 0x0270;
+/// WAVE format tag of Voxware MetaSound (decoded whole when the file opens; they are small).
+const TAG_METASOUND: u16 = 0x0075;
+/// Largest MetaSound data chunk decoded at open.
+const METASOUND_MAX: u64 = 64 << 20;
 /// The `WAVE_FORMAT_EXTENSIBLE` sub-format of ATRAC3plus (E923AABF-CB58-4471-A119-FFFA01E4CE62).
 const ATRAC3P_GUID: [u8; 16] = [0xBF, 0xAA, 0x23, 0xE9, 0x58, 0xCB, 0x71, 0x44, 0xA1, 0x19, 0xFF, 0xFA, 0x01, 0xE4, 0xCE, 0x62];
 /// The `WAVE_FORMAT_EXTENSIBLE` sub-format of ATRAC9 (47E142D2-36BA-4D8D-88FC-61654F8C836C).
@@ -99,6 +103,8 @@ enum Encoding {
     /// [`ATRAC_CHECKPOINT`] frames, found as reads reach them (the overlap, gain control and
     /// filter bank memories carry from frame to frame).
     Atrac { block: u64, spf: u64, checkpoints: Mutex<Vec<Atrac>> },
+    /// Decoded when the file opened (MetaSound): one plane per channel.
+    Decoded(Vec<Vec<f32>>),
 }
 
 /// A WAV file read in place: opening it reads its chunk headers (not its samples), and
@@ -229,6 +235,18 @@ impl WavSource {
                 _ => "ATRAC",
             };
             (encoding, frames, label.to_string(), None)
+        } else if tag == TAG_METASOUND {
+            let unsupported = |e: cfa4_twinvq::Error| MediaError::Unsupported(format!("{name}: {e}"));
+            if dlen > METASOUND_MAX {
+                return Err(MediaError::Unsupported(format!("{name}: MetaSound data of {dlen} bytes")));
+            }
+            let stream = cfa4_twinvq::parse_metasound(&extra, usize::from(align)).map_err(unsupported)?;
+            let raw = read_range(&*reader, off, usize::try_from(dlen).unwrap_or(0)).map_err(|e| MediaError::Io(format!("{name}: {e}")))?;
+            let d = cfa4_twinvq::decode(&raw, &stream);
+            ch = u16::try_from(stream.channels).unwrap_or(ch);
+            rate = stream.sample_rate;
+            let frames = d.channels.first().map_or(0, Vec::len) as u64;
+            (Encoding::Decoded(d.channels), frames, "Voxware MetaSound".to_string(), None)
         } else if let Some(codec) = Codec::from_wave_format(tag, align, bits, &extra) {
             let codec = codec.map_err(|e| MediaError::Unsupported(format!("{name}: {e}")))?;
             // a decoder for this layout must exist (G.722 is mono only)
@@ -325,6 +343,14 @@ impl WavSource {
                 let skip = usize::try_from(first - from * 2).unwrap_or(usize::MAX);
                 let n = usize::try_from(count).unwrap_or(usize::MAX);
                 Ok(out.iter().skip(skip).take(n).map(|&s| f32::from(s) / 32768.0).collect())
+            }
+            Encoding::Decoded(planes) => {
+                let (a, n) = (usize::try_from(first).unwrap_or(usize::MAX), usize::try_from(count).unwrap_or(usize::MAX));
+                let mut out = Vec::with_capacity(n.saturating_mul(ch).min(1 << 26));
+                for i in a..a.saturating_add(n) {
+                    out.extend(planes.iter().map(|p| p.get(i).copied().unwrap_or(0.0)));
+                }
+                Ok(out)
             }
             Encoding::Atrac { block, spf, checkpoints } => {
                 let spf = (*spf).max(1);
@@ -579,6 +605,44 @@ mod tests {
         assert_eq!(src.info().duration, Tick::from_units(100, 48000));
         assert_eq!(src.time_reference(), None);
         assert_eq!(src.info().start_timecode, None);
+    }
+
+    #[test]
+    fn metasound_wav_decodes_whole_blocks() {
+        // VX03: mono, 8 kHz, 6 kbit/s, 48-byte blocks of 512 samples (the first two blocks
+        // are the decoder's warm-up, as in FFmpeg)
+        let (block, blocks) = (48usize, 12usize);
+        let mut extra = vec![0u8; 12];
+        extra.extend_from_slice(b"VX03");
+        let mut fmt = Vec::new();
+        fmt.extend_from_slice(&0x0075u16.to_le_bytes());
+        fmt.extend_from_slice(&1u16.to_le_bytes());
+        fmt.extend_from_slice(&8000u32.to_le_bytes());
+        fmt.extend_from_slice(&750u32.to_le_bytes());
+        fmt.extend_from_slice(&(block as u16).to_le_bytes());
+        fmt.extend_from_slice(&0u16.to_le_bytes());
+        fmt.extend_from_slice(&(extra.len() as u16).to_le_bytes());
+        fmt.extend_from_slice(&extra);
+        let data = vec![0x11u8; block * blocks];
+        let mut f = b"RIFF\0\0\0\0WAVEfmt ".to_vec();
+        f.extend_from_slice(&(fmt.len() as u32).to_le_bytes());
+        f.extend_from_slice(&fmt);
+        f.extend_from_slice(b"data");
+        f.extend_from_slice(&(data.len() as u32).to_le_bytes());
+        f.extend_from_slice(&data);
+        let n = (f.len() - 8) as u32;
+        f[4..8].copy_from_slice(&n.to_le_bytes());
+        let src = WavSource::parse("t.wav", f.into()).unwrap();
+        let info = src.info().audio().unwrap().clone();
+        assert_eq!((info.channels, info.sample_rate), (1, 8000));
+        assert_eq!(info.codec, "Voxware MetaSound");
+        assert_eq!(src.info().duration, Tick::from_units(10 * 512, 8000));
+        let a = src.audio(0, 1024, 8000).unwrap();
+        assert_eq!(a.channels[0].len(), 1024);
+        // a truncated or wrong-size layout is refused, never a panic
+        let mut bad = vec![0u8; 3];
+        bad.extend_from_slice(b"RIFF");
+        assert!(WavSource::parse("b.wav", bad.into()).is_err());
     }
 
     /// Insert a chunk before `data`.
