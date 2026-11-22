@@ -168,6 +168,35 @@ pub fn canopus(data: &[u8]) {
     }
 }
 
+/// Theora: an even first byte takes synthetic valid headers and decodes the rest as packets (a
+/// length byte, then that many bytes of packet); an odd one reads the rest as three header packets.
+pub fn theora(data: &[u8]) {
+    let Some((&pick, rest)) = data.split_first() else { return };
+    if pick & 1 == 1 {
+        let (a, b) = (rest.len() / 3, 2 * rest.len() / 3);
+        if let (Some(i), Some(c), Some(s)) = (rest.get(..a), rest.get(a..b), rest.get(b..)) {
+            if let Ok(mut d) = cfa4_theora::Decoder::new(i, c, s) {
+                std::hint::black_box(d.decode(&[]).ok());
+            }
+        }
+        return;
+    }
+    let seed = rest.iter().take(8).fold(0u64, |a, &b| a << 8 | u64::from(b));
+    let mut rng = cfa4_theora::synth::Rng::new(seed);
+    let (i, c, s) = (
+        cfa4_theora::synth::ident(48, 32, u64::from(pick >> 1) % 4 / 2 * 2 + u64::from(pick >> 3 & 1)),
+        cfa4_theora::synth::comment(),
+        cfa4_theora::synth::setup(&mut rng),
+    );
+    let Ok(mut d) = cfa4_theora::Decoder::new(&i, &c, &s) else { return };
+    let mut at = rest.get(8..).unwrap_or(&[]);
+    while let Some((&n, tail)) = at.split_first() {
+        let (packet, next) = tail.split_at(usize::from(n).min(tail.len()));
+        std::hint::black_box(d.decode(packet).ok());
+        at = next;
+    }
+}
+
 /// Dirac / VC-2: the sequence header probe and the decoder over the whole input.
 pub fn dirac(data: &[u8]) {
     std::hint::black_box((cfa4_dirac::sequence_header(data), cfa4_dirac::is_vc2(data)));
@@ -609,6 +638,22 @@ pub fn cavs(data: &[u8]) {
     let _ = d.flush();
 }
 
+pub fn bink(data: &[u8]) {
+    let _ = cfa4_bink::container::probe(data);
+    let Ok(b) = cfa4_bink::container::Bink::parse(data) else { return };
+    let Ok(mut v) = cfa4_bink::video::Decoder::new(b.width.min(256), b.height.min(256), b.tag, b.flags) else { return };
+    let mut a: Vec<_> = b.tracks.iter().filter_map(|t| cfa4_bink::audio::Decoder::new(t.sample_rate, t.channels, t.dct, b.tag[3]).ok()).collect();
+    for i in 0..b.frame_count().min(16) {
+        let Ok(f) = b.frame(i) else { continue };
+        let _ = v.decode(f.video);
+        for (t, pkt) in f.audio {
+            if let Some(d) = a.get_mut(t) {
+                let _ = d.decode(pkt);
+            }
+        }
+    }
+}
+
 pub fn lagarith(data: &[u8]) {
     let mut i = Input::new(data);
     let (w, h) = (i.side(), i.side());
@@ -644,6 +689,90 @@ pub fn musepack(data: &[u8]) {
     let _ = cfa4_musepack::decode_file(data);
 }
 
+pub fn acm(data: &[u8]) {
+    let _ = cfa4_acm::probe(data);
+    let _ = cfa4_acm::decode_file(data);
+}
+
+pub fn roq(data: &[u8]) {
+    let _ = cfa4_roq::probe(data);
+    let Ok(s) = cfa4_roq::parse(data) else { return };
+    if let Some(ch) = s.audio_channels {
+        for a in s.audio.iter().take(64) {
+            let _ = cfa4_roq::decode_audio(a.of(data), ch);
+        }
+    }
+    if s.width.saturating_mul(s.height) <= 1 << 20 {
+        if let Ok(mut d) = cfa4_roq::Decoder::new(s.width, s.height) {
+            for v in s.video.iter().take(16) {
+                let _ = d.decode(v.of(data));
+            }
+        }
+    }
+}
+
+pub fn mve(data: &[u8]) {
+    let _ = cfa4_mve::probe(data);
+    let Ok(m) = cfa4_mve::parse(data) else { return };
+    if let Some(a) = &m.audio {
+        for p in m.audio_packets.iter().take(64) {
+            let _ = cfa4_mve::decode_audio(a, p.of(data));
+        }
+    }
+    if m.width.saturating_mul(m.height) <= 1 << 20 {
+        if let Ok(mut d) = cfa4_mve::Decoder::new(m.width, m.height, m.bpp16) {
+            for v in m.video.iter().take(16) {
+                let input = cfa4_mve::Input {
+                    format: v.format,
+                    send_buffer: v.send_buffer,
+                    video: v.video.of(data),
+                    decode_map: v.decode_map.of(data),
+                    skip_map: v.skip_map.of(data),
+                    palette: v.palette.as_deref(),
+                };
+                let _ = d.decode(&input);
+            }
+        }
+    }
+}
+
+pub fn thp(data: &[u8]) {
+    let _ = cfa4_thp::probe(data);
+    let Ok(m) = cfa4_thp::parse(data) else { return };
+    for v in m.video.iter().take(4) {
+        let _ = cfa4_thp::jpeg::decode(v.of(data));
+    }
+    if let Some(a) = m.audio {
+        let mut d = cfa4_thp::AudioDecoder::new();
+        for p in m.audio_packets.iter().take(64) {
+            let _ = d.decode(p.of(data), a.channels);
+        }
+    }
+}
+
+pub fn mobiclip(data: &[u8]) {
+    let _ = cfa4_mobiclip::probe(data);
+    let Ok(m) = cfa4_mobiclip::parse(data) else { return };
+    if m.width.saturating_mul(m.height) <= 1 << 20 {
+        if let Ok(mut d) = cfa4_mobiclip::Decoder::new(m.width, m.height) {
+            for p in m.video.iter().take(8) {
+                let _ = d.decode(&p.data);
+            }
+        }
+    }
+    if let Some(a) = &m.audio {
+        let ch = a.channels as usize;
+        let mut fast = cfa4_mobiclip::FastAudio::new(ch.min(8));
+        for p in a.packets.iter().take(64) {
+            match a.codec {
+                cfa4_mobiclip::AudioCodec::FastAudio => drop(fast.decode(p)),
+                cfa4_mobiclip::AudioCodec::ImaMoflex => drop(cfa4_mobiclip::decode_ima(p, ch)),
+                cfa4_mobiclip::AudioCodec::PcmS16le => drop(cfa4_mobiclip::decode_pcm(p, ch)),
+            }
+        }
+    }
+}
+
 pub fn adx(data: &[u8]) {
     let _ = cfa4_adx::decode_file(data);
 }
@@ -651,6 +780,12 @@ pub fn adx(data: &[u8]) {
 pub fn hca(data: &[u8]) {
     let _ = cfa4_hca::decode_file(data, None);
     let _ = cfa4_hca::decode_file(data, Some(cfa4_hca::Key { key: 0xCF22_2F1F_E074_8978, subkey: 0x3B8E }));
+}
+
+pub fn nstream(data: &[u8]) {
+    if let Ok(s) = cfa4_nstream::parse(data) {
+        let _ = cfa4_nstream::decode(data, &s);
+    }
 }
 
 pub fn shorten(data: &[u8]) {
@@ -746,6 +881,7 @@ pub const TARGETS: &[(&str, &str, Target)] = &[
     ("amr", "cfa4-amr", amr),
     ("av2", "cfa4-av2", av2),
     ("canopus", "cfa4-canopus", canopus),
+    ("theora", "cfa4-theora", theora),
     ("dirac", "cfa4-dirac", dirac),
     ("speex", "cfa4-speex", speex),
     ("cfb", "cfa4-cfb", cfb),
@@ -787,12 +923,19 @@ pub const TARGETS: &[(&str, &str, Target)] = &[
     ("cavs", "cfa4-cavs", cavs),
     ("lagarith", "cfa4-lagarith", lagarith),
     ("indeo45", "cfa4-indeo45", indeo45),
+    ("bink", "cfa4-bink", bink),
     ("magicyuv", "cfa4-magicyuv", magicyuv),
     ("g729", "cfa4-g729", g729),
     ("ilbc", "cfa4-ilbc", ilbc),
     ("musepack", "cfa4-musepack", musepack),
     ("shorten", "cfa4-shorten", shorten),
     ("adx", "cfa4-adx", adx),
+    ("acm", "cfa4-acm", acm),
+    ("roq", "cfa4-roq", roq),
+    ("mve", "cfa4-mve", mve),
+    ("thp", "cfa4-thp", thp),
+    ("mobiclip", "cfa4-mobiclip", mobiclip),
+    ("nstream", "cfa4-nstream", nstream),
     ("hca", "cfa4-hca", hca),
     ("tak", "cfa4-tak", tak),
     ("smacker", "cfa4-smacker", smacker),

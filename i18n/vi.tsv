@@ -4897,3 +4897,8 @@ export.summary	Low	thấp
 	Validate DCP…	Kiểm tra DCP…
 	the engine sent no profiles	công cụ không gửi hồ sơ nào
 	{n} files checked	Đã kiểm tra {n} tệp
+
+# AS-02 export
+	Write an AS-02 bundle (the path is a folder)	Ghi gói AS-02 (đường dẫn là một thư mục)
+	AS-02	AS-02
+	AS-12	AS-12

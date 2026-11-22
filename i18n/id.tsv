@@ -4905,3 +4905,8 @@
 	Validate DCP…	Validasi DCP…
 	the engine sent no profiles	mesin tidak mengirim profil apa pun
 	{n} files checked	{n} berkas diperiksa
+
+# AS-02 export
+	Write an AS-02 bundle (the path is a folder)	Tulis paket AS-02 (jalurnya adalah folder)
+	AS-02	AS-02
+	AS-12	AS-12
