@@ -498,6 +498,10 @@ fn run_enable(s: &mut Session, p: &Value) -> Result<Value> {
     Ok(result)
 }
 
+fn run_feedback_test(s: &mut Session, p: &Value) -> Result<Value> {
+    crate::surface_feedback::cmd_test(s, p)
+}
+
 fn run_state(s: &mut Session, p: &Value) -> Result<Value> {
     crate::surface_runtime::cmd_state(s, p)
 }
@@ -534,6 +538,12 @@ pub fn commands() -> Vec<CommandSpec> {
         spec("surface.inject", "Inject Control Input", r#"{"device":str,"input":object,"raw?":[int]}"#, run_inject),
         spec("surface.clock", "Control Surface Clock", r#"{"time":int,"playing":bool,"speed":number,"monitor":str}"#, run_clock),
         spec("surface.enable", "Enable Control Surface", r#"{"device":str,"enabled":bool}"#, run_enable),
+        spec(
+            "surface.feedback.test",
+            "Test Control Surface Feedback",
+            r#"{"target":{"type":"tally","index":int},"value":{"type":"tally","value":{"program?":bool,"preview?":bool,"aux?":bool}},"device?":str,"led?":str}"#,
+            run_feedback_test,
+        ),
         spec("surface.state", "Control Surface State", r#"{"device?":str}"#, run_state),
         spec("surface.audit", "Audit Control Surface", r#"{"device?":str}"#, run_audit),
         CommandSpec {

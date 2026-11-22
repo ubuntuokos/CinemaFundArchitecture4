@@ -59,6 +59,7 @@ from .panels.export_dialogs import EXPORT_DIALOGS, ExportSettingsDialog
 from .panels.fx_editor import FxEditor, target_key
 from .panels.home import HomePage
 from .panels.info import InfoPanel, MarkersPanel, MetadataPanel, NotesPanel
+from .panels.dcp_validation import DcpValidationDialog
 from .panels.kdm_dialog import KdmDialog
 from .panels.live import LiveDialog
 from .panels.lumetri import LumetriColorPanel
@@ -315,6 +316,11 @@ class MainWindow(QMainWindow):
         self.monitor = ProgramMonitor(engine, self)
         self.source_monitor = SourceMonitor(engine, self)
         self.timeline = TimelinePanel(self)
+        # SC-3: the waveform channel mode and channel zoom are kept between sessions
+        self.timeline.canvas.restore_waveform_display(
+            self.settings.value("timeline/waveformChannels"), self.settings.value("timeline/channelZoom")
+        )
+        self.timeline.canvas.display_changed.connect(self._save_waveform_display)
         self.timeline.canvas.media.attach(engine)  # clip thumbnails and waveforms
         self.tools = ToolsPanel(self)
         self.tools.tool_selected.connect(self.timeline.set_tool)
@@ -886,6 +892,10 @@ class MainWindow(QMainWindow):
         self.load_kdm_action = QAction(tr("Load KDM…"), self)
         self.load_kdm_action.setObjectName("qt.file.loadKdm")
         self.load_kdm_action.triggered.connect(self.open_kdm)
+        self.dcp_validation_dialog: DcpValidationDialog | None = None
+        self.validate_dcp_action = QAction(tr("Validate DCP…"), self)
+        self.validate_dcp_action.setObjectName("qt.file.validateDcp")
+        self.validate_dcp_action.triggered.connect(self.open_dcp_validation)
         self.forget_keys_action = QAction(tr("Forget DCP Keys"), self)
         self.forget_keys_action.setObjectName("qt.file.forgetDcpKeys")
         self.forget_keys_action.triggered.connect(self.forget_dcp_keys)
@@ -1032,7 +1042,7 @@ class MainWindow(QMainWindow):
     def _build_menus(self) -> None:
         self.registry.build_menus(
             self.menuBar(), self, {
-                "File": [self.load_kdm_action, self.forget_keys_action, self.quit_action],
+                "File": [self.load_kdm_action, self.validate_dcp_action, self.forget_keys_action, self.quit_action],
                 "Sequence": [self.play_action, *(a for a, _k in self.shuttle_actions)],
                 "Edit": [self.shortcuts_action, self.preferences_menu.menuAction()],
                 "View": [self.fit_action, self.multicam_actions[0][0], self.dynamic_waveforms_action],
@@ -1927,6 +1937,11 @@ class MainWindow(QMainWindow):
     def _refresh_enabled(self) -> None:
         if self.engine.running:
             self.engine.call("engine.commands", on_reply=lambda r, _b: self.registry.update_enabled(r))
+
+    def _save_waveform_display(self) -> None:
+        canvas = self.timeline.canvas
+        self.settings.setValue("timeline/waveformChannels", canvas.waveform_channels)
+        self.settings.setValue("timeline/channelZoom", canvas.channel_zoom)
 
     def _on_engine_stopped(self, reason: str) -> None:
         self.status_engine.setText(tr("Engine stopped"))
@@ -3163,6 +3178,12 @@ class MainWindow(QMainWindow):
             self.kdm_dialog = KdmDialog(self.engine, self, changed=lambda: self._command_done("dcp.loadKdm"))
         self.kdm_dialog.show()
         self.kdm_dialog.raise_()
+
+    def open_dcp_validation(self) -> None:
+        """File ▸ Validate DCP…: the DCP Validation window (``dcp.validate``)."""
+        if self.dcp_validation_dialog is None:
+            self.dcp_validation_dialog = DcpValidationDialog(self.engine, self)
+        self.dcp_validation_dialog.open_for()
 
     def forget_dcp_keys(self) -> None:
         """File ▸ Forget DCP Keys: ``dcp.clearKeys``; encrypted clips go silent / black again."""

@@ -4815,6 +4815,10 @@ export.summary	Low	matala
 	Encode Resolution	Koodaustarkkuus
 	Half	Puolikas
 	Quarter	Neljännes
+# Datamosh Bloom (Glitch, DM2)
+	Datamosh Bloom	Datamosh-kukinta
+	Start Time (seconds)	Aloitusaika (sekuntia)
+	Repeats	Toistot
 
 # Recent effects, per-channel waveform, white balance selector (SC-2/SC-3/SC-4, #1419 #1420 #1421)
 	Apply a recently used effect to the selected clips	Käytä äskettäin käytettyä tehostetta valittuihin klippeihin
@@ -4867,3 +4871,27 @@ export.summary	Low	matala
 	Subtitles	Tekstitykset
 	Captions for the hearing impaired	Tekstitykset kuulovammaisille
 	Forced narrative	Pakotettu selostus (forced narrative)
+# DCP Validation window (DCP-12)
+	AS-03	AS-03
+	Choose the DCP folder.	Valitse DCP-kansio.
+	DCP Validation	DCP-validointi
+	DCP folder	DCP-kansio
+	DCP folder (the one holding ASSETMAP)	DCP-kansio (se, jossa ASSETMAP on)
+	Evidence	Todiste
+	How to fix	Korjausohje
+	Interrupted	Keskeytetty
+	Not applicable	Ei sovellettavissa
+	Report	Raportti
+	Report saved: {path}	Raportti tallennettu: {path}
+	Required	Pakollinen
+	Rule	Sääntö
+	Rules	Säännöt
+	Save JSON…	Tallenna JSON…
+	Save Markdown…	Tallenna Markdown…
+	Save report	Tallenna raportti
+	Skipped	Ohitettu
+	Standard: {standard}	Standardi: {standard}
+	Validate	Validoi
+	Validate DCP…	Validoi DCP…
+	the engine sent no profiles	moottori ei lähettänyt profiileja
+	{n} files checked	{n} tiedostoa tarkistettu

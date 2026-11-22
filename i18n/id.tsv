@@ -4821,6 +4821,10 @@
 	Encode Resolution	Resolusi Enkode
 	Half	Setengah
 	Quarter	Seperempat
+# Datamosh Bloom (Glitch, DM2)
+	Datamosh Bloom	Datamosh Mekar
+	Start Time (seconds)	Waktu Mulai (detik)
+	Repeats	Pengulangan
 
 # Recent effects, per-channel waveform, white balance selector (SC-2/SC-3/SC-4, #1419 #1420 #1421)
 	Apply a recently used effect to the selected clips	Terapkan efek yang baru dipakai ke klip terpilih
@@ -4873,3 +4877,27 @@
 	Subtitles	Subtitel
 	Captions for the hearing impaired	Teks untuk penyandang tunarungu
 	Forced narrative	Narasi paksa (forced narrative)
+# DCP Validation window (DCP-12)
+	AS-03	AS-03
+	Choose the DCP folder.	Pilih folder DCP.
+	DCP Validation	Validasi DCP
+	DCP folder	Folder DCP
+	DCP folder (the one holding ASSETMAP)	Folder DCP (yang berisi ASSETMAP)
+	Evidence	Bukti
+	How to fix	Cara memperbaiki
+	Interrupted	Terhenti
+	Not applicable	Tidak berlaku
+	Report	Laporan
+	Report saved: {path}	Laporan disimpan: {path}
+	Required	Wajib
+	Rule	Aturan
+	Rules	Aturan
+	Save JSON…	Simpan JSON…
+	Save Markdown…	Simpan Markdown…
+	Save report	Simpan laporan
+	Skipped	Dilewati
+	Standard: {standard}	Standar: {standard}
+	Validate	Validasi
+	Validate DCP…	Validasi DCP…
+	the engine sent no profiles	mesin tidak mengirim profil apa pun
+	{n} files checked	{n} berkas diperiksa

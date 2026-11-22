@@ -4813,6 +4813,10 @@ export.summary	Low	niska
 	Encode Resolution	Rozdzielczość kodowania
 	Half	Połowa
 	Quarter	Ćwiartka
+# Datamosh Bloom (Glitch, DM2)
+	Datamosh Bloom	Rozkwit datamosh
+	Start Time (seconds)	Czas rozpoczęcia (sekundy)
+	Repeats	Powtórzenia
 
 # Recent effects, per-channel waveform, white balance selector (SC-2/SC-3/SC-4, #1419 #1420 #1421)
 	Apply a recently used effect to the selected clips	Zastosuj ostatnio użyty efekt do zaznaczonych klipów
@@ -4865,3 +4869,27 @@ export.summary	Low	niska
 	Subtitles	Napisy
 	Captions for the hearing impaired	Napisy dla niesłyszących
 	Forced narrative	Narracja wymuszona (forced narrative)
+# DCP Validation window (DCP-12)
+	AS-03	AS-03
+	Choose the DCP folder.	Wybierz folder DCP.
+	DCP Validation	Walidacja DCP
+	DCP folder	Folder DCP
+	DCP folder (the one holding ASSETMAP)	Folder DCP (ten, w którym jest ASSETMAP)
+	Evidence	Dowód
+	How to fix	Jak naprawić
+	Interrupted	Przerwano
+	Not applicable	Nie dotyczy
+	Report	Raport
+	Report saved: {path}	Raport zapisany: {path}
+	Required	Wymagane
+	Rule	Reguła
+	Rules	Reguły
+	Save JSON…	Zapisz JSON…
+	Save Markdown…	Zapisz Markdown…
+	Save report	Zapisz raport
+	Skipped	Pominięto
+	Standard: {standard}	Standard: {standard}
+	Validate	Waliduj
+	Validate DCP…	Waliduj DCP…
+	the engine sent no profiles	silnik nie przysłał żadnych profili
+	{n} files checked	Sprawdzono plików: {n}

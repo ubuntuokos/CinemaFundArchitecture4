@@ -4813,6 +4813,10 @@ export.summary	Low	nízká
 	Encode Resolution	Rozlišení kódování
 	Half	Poloviční
 	Quarter	Čtvrtinové
+# Datamosh Bloom (Glitch, DM2)
+	Datamosh Bloom	Datamosh rozkvět
+	Start Time (seconds)	Čas začátku (sekundy)
+	Repeats	Opakování
 
 # Recent effects, per-channel waveform, white balance selector (SC-2/SC-3/SC-4, #1419 #1420 #1421)
 	Apply a recently used effect to the selected clips	Použít naposledy použitý efekt na vybrané klipy
@@ -4865,3 +4869,27 @@ export.summary	Low	nízká
 	Subtitles	Titulky
 	Captions for the hearing impaired	Titulky pro neslyšící a nedoslýchavé
 	Forced narrative	Vynucený komentář (forced narrative)
+# DCP Validation window (DCP-12)
+	AS-03	AS-03
+	Choose the DCP folder.	Vyberte složku DCP.
+	DCP Validation	Kontrola DCP
+	DCP folder	Složka DCP
+	DCP folder (the one holding ASSETMAP)	Složka DCP (ta, která obsahuje ASSETMAP)
+	Evidence	Důkaz
+	How to fix	Jak to opravit
+	Interrupted	Přerušeno
+	Not applicable	Netýká se
+	Report	Zpráva
+	Report saved: {path}	Zpráva uložena: {path}
+	Required	Povinné
+	Rule	Pravidlo
+	Rules	Pravidla
+	Save JSON…	Uložit JSON…
+	Save Markdown…	Uložit Markdown…
+	Save report	Uložit zprávu
+	Skipped	Přeskočeno
+	Standard: {standard}	Norma: {standard}
+	Validate	Zkontrolovat
+	Validate DCP…	Zkontrolovat DCP…
+	the engine sent no profiles	jádro neposlalo žádné profily
+	{n} files checked	Zkontrolováno souborů: {n}

@@ -4819,6 +4819,10 @@ export.summary	Low	తక్కువ
 	Encode Resolution	ఎన్‌కోడ్ రిజల్యూషన్
 	Half	సగం
 	Quarter	పావు
+# Datamosh Bloom (Glitch, DM2)
+	Datamosh Bloom	డేటామోష్ బ్లూమ్
+	Start Time (seconds)	ప్రారంభ సమయం (సెకన్లు)
+	Repeats	పునరావృత్తులు
 
 # Recent effects, per-channel waveform, white balance selector (SC-2/SC-3/SC-4, #1419 #1420 #1421)
 	Apply a recently used effect to the selected clips	ఇటీవల ఉపయోగించిన ఎఫెక్ట్‌ను ఎంచుకున్న క్లిప్‌లకు వర్తింపజేయండి
@@ -4871,3 +4875,27 @@ export.summary	Low	తక్కువ
 	Subtitles	ఉపశీర్షికలు
 	Captions for the hearing impaired	వినికిడి లోపం ఉన్నవారి కోసం క్యాప్షన్‌లు
 	Forced narrative	బలవంతపు వ్యాఖ్యానం (forced narrative)
+# DCP Validation window (DCP-12)
+	AS-03	AS-03
+	Choose the DCP folder.	DCP ఫోల్డర్‌ను ఎంచుకోండి.
+	DCP Validation	DCP ధృవీకరణ
+	DCP folder	DCP ఫోల్డర్
+	DCP folder (the one holding ASSETMAP)	DCP ఫోల్డర్ (ASSETMAP ఉన్నది)
+	Evidence	రుజువు
+	How to fix	ఎలా సరిచేయాలి
+	Interrupted	అంతరాయం కలిగింది
+	Not applicable	వర్తించదు
+	Report	నివేదిక
+	Report saved: {path}	నివేదిక సేవ్ చేయబడింది: {path}
+	Required	తప్పనిసరి
+	Rule	నియమం
+	Rules	నియమాలు
+	Save JSON…	JSON సేవ్ చేయి…
+	Save Markdown…	Markdown సేవ్ చేయి…
+	Save report	నివేదికను సేవ్ చేయి
+	Skipped	దాటవేయబడింది
+	Standard: {standard}	ప్రమాణం: {standard}
+	Validate	ధృవీకరించు
+	Validate DCP…	DCPని ధృవీకరించు…
+	the engine sent no profiles	ఇంజిన్ ఎలాంటి ప్రొఫైళ్లను పంపలేదు
+	{n} files checked	{n} ఫైళ్లు తనిఖీ చేయబడ్డాయి

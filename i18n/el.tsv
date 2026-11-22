@@ -4815,6 +4815,10 @@ export.summary	Low	χαμηλή
 	Encode Resolution	Ανάλυση κωδικοποίησης
 	Half	Μισή
 	Quarter	Τέταρτο
+# Datamosh Bloom (Glitch, DM2)
+	Datamosh Bloom	Άνθιση datamosh
+	Start Time (seconds)	Ώρα έναρξης (δευτερόλεπτα)
+	Repeats	Επαναλήψεις
 
 # Recent effects, per-channel waveform, white balance selector (SC-2/SC-3/SC-4, #1419 #1420 #1421)
 	Apply a recently used effect to the selected clips	Εφαρμογή πρόσφατα χρησιμοποιημένου εφέ στα επιλεγμένα κλιπ
@@ -4867,3 +4871,27 @@ export.summary	Low	χαμηλή
 	Subtitles	Υπότιτλοι
 	Captions for the hearing impaired	Υπότιτλοι για κωφούς και βαρήκοους
 	Forced narrative	Αναγκαστική αφήγηση (forced narrative)
+# DCP Validation window (DCP-12)
+	AS-03	AS-03
+	Choose the DCP folder.	Επιλέξτε τον φάκελο του DCP.
+	DCP Validation	Επικύρωση DCP
+	DCP folder	Φάκελος DCP
+	DCP folder (the one holding ASSETMAP)	Φάκελος DCP (αυτός που περιέχει το ASSETMAP)
+	Evidence	Τεκμήριο
+	How to fix	Πώς να διορθωθεί
+	Interrupted	Διακόπηκε
+	Not applicable	Μη εφαρμόσιμο
+	Report	Αναφορά
+	Report saved: {path}	Η αναφορά αποθηκεύτηκε: {path}
+	Required	Απαιτείται
+	Rule	Κανόνας
+	Rules	Κανόνες
+	Save JSON…	Αποθήκευση JSON…
+	Save Markdown…	Αποθήκευση Markdown…
+	Save report	Αποθήκευση αναφοράς
+	Skipped	Παραλείφθηκε
+	Standard: {standard}	Πρότυπο: {standard}
+	Validate	Επικύρωση
+	Validate DCP…	Επικύρωση DCP…
+	the engine sent no profiles	η μηχανή δεν έστειλε προφίλ
+	{n} files checked	Ελέγχθηκαν {n} αρχεία

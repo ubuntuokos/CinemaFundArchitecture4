@@ -4813,6 +4813,10 @@ export.summary	Low	thấp
 	Encode Resolution	Độ phân giải mã hóa
 	Half	Một nửa
 	Quarter	Một phần tư
+# Datamosh Bloom (Glitch, DM2)
+	Datamosh Bloom	Datamosh nở rộ
+	Start Time (seconds)	Thời gian bắt đầu (giây)
+	Repeats	Số lần lặp lại
 
 # Recent effects, per-channel waveform, white balance selector (SC-2/SC-3/SC-4, #1419 #1420 #1421)
 	Apply a recently used effect to the selected clips	Áp dụng hiệu ứng dùng gần đây cho các clip đã chọn
@@ -4865,3 +4869,27 @@ export.summary	Low	thấp
 	Subtitles	Phụ đề
 	Captions for the hearing impaired	Phụ đề cho người khiếm thính
 	Forced narrative	Thuyết minh bắt buộc (forced narrative)
+# DCP Validation window (DCP-12)
+	AS-03	AS-03
+	Choose the DCP folder.	Chọn thư mục DCP.
+	DCP Validation	Kiểm tra DCP
+	DCP folder	Thư mục DCP
+	DCP folder (the one holding ASSETMAP)	Thư mục DCP (thư mục chứa ASSETMAP)
+	Evidence	Bằng chứng
+	How to fix	Cách khắc phục
+	Interrupted	Bị gián đoạn
+	Not applicable	Không áp dụng
+	Report	Báo cáo
+	Report saved: {path}	Đã lưu báo cáo: {path}
+	Required	Bắt buộc
+	Rule	Quy tắc
+	Rules	Các quy tắc
+	Save JSON…	Lưu JSON…
+	Save Markdown…	Lưu Markdown…
+	Save report	Lưu báo cáo
+	Skipped	Đã bỏ qua
+	Standard: {standard}	Tiêu chuẩn: {standard}
+	Validate	Kiểm tra
+	Validate DCP…	Kiểm tra DCP…
+	the engine sent no profiles	công cụ không gửi hồ sơ nào
+	{n} files checked	Đã kiểm tra {n} tệp

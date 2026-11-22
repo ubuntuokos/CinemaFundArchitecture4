@@ -40,7 +40,7 @@ only). "Tested" names the evidence.
 | MXF OP1a / OP-Atom | read + write (XDCAM, AVC-Intra, P2, AS-10 / AS-11, JPEG 2000, DNx) | yes (AVC, DNx, ProRes, MPEG-2, JPEG 2000 incl. DCP X'Y'Z', PCM / AES3, IAB immersive audio, timecode; AS-11 Core, Segmentation and UK DPP metadata in OP1a, #96; AS-10 DMS metadata and shim checks, #1254) | OP1a (DNxHR, ProRes, H.264), OP-Atom | index-table seeking tests | 70% |
 | HLS (RFC 8216) / MPEG-DASH | no (Adobe Media Encoder only) | no (#235) | HLS: H.264 and AAC in separate CMAF fMP4 segments (one track per file), a media playlist each, sound as an `EXT-X-MEDIA` audio group in the multivariant playlist (#100, CHAPTERS-DASH D1). DASH: with `dashManifest` (export panel, CLI `export --dash`) a static `isoff-live` MPD (`<stem>.mpd`, `SegmentTemplate` + `SegmentTimeline`) over the same segments (#234, CHAPTERS-DASH D2–D4). ABR ladder #230, TS segments #231, I-frame playlist #232, WebVTT / alternate audio #233 | ffprobe / ffmpeg (`hls` and `dash` demuxers) | 40% |
 | MPEG TS / PS (AVCHD `.mts`, `.m2ts`, `.ts`, `.mpg`, `.vob`, `.mod`) | read; write MPEG-2 / Blu-ray / DVD | yes | **no** | fixtures | 65% |
-| Matroska / WebM | read (limited) | yes (H.264, HEVC, VP9, AV1, ProRes, MJPEG + AAC, Opus, FLAC, MP3, Vorbis, PCM); WebM black report (#432), MKV multi-audio (#601) | WebM: VP9 (own encoder) + Opus, CodecDelay / DiscardPadding (#149) | fixtures; audio sample-aligned with the encoded signal (#790) | 75% |
+| Matroska / WebM | read (limited) | yes (H.264, HEVC, VP9, AV1, ProRes, MJPEG, AVS1 `V_CAVS`, RealVideo `V_REAL/RV10`-`RV40`, JPEG 2000 `V_JPEG2000` and ffmpeg's VfW `mjp2` + AAC, Opus, FLAC, MP3, Vorbis, PCM, ALAC `A_ALAC`, RealAudio `A_REAL/*`); WebM black report (#432), MKV multi-audio (#601) | WebM: VP9 (own encoder) + Opus, CodecDelay / DiscardPadding (#149) | fixtures; audio sample-aligned with the encoded signal (#790) | 75% |
 | **AVI** | read + write | **no** (extension listed, no demuxer, #598) | no | — | 0% |
 | WMV / ASF | read; write on Windows | no | no | — | 0% |
 | FLV / F4V | read + write | no | no | — | 0% |
@@ -96,6 +96,7 @@ validation in Avid and Pro Tools, DVD / Blu-ray / DCP / broadcast MXF delivery.
 
 | Date | Change | Summary |
 |---|---|---|
+| 2026-11-21 | minor | Matroska: `V_CAVS`, `V_REAL/RV10`-`RV40`, `V_JPEG2000` (and VfW `mjp2`), `A_ALAC` and `A_REAL/*` open through the decoders that existed outside Matroska |
 | 2026-10-26 | minor | JPEG 2000 MXF import, DCP picture tracks included (#77) |
 | 2026-10-26 | minor | JPEG XL stills and sequences (`cfa4-jxl`) |
 | 2026-10-26 | minor | Native HEIF / HEIC decode incl. alpha planes (#88, #136) |

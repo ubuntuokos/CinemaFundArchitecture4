@@ -4816,6 +4816,10 @@ export.summary	Low	ниско
 	Encode Resolution	Резолюция на кодиране
 	Half	Половина
 	Quarter	Четвърт
+# Datamosh Bloom (Glitch, DM2)
+	Datamosh Bloom	Datamosh разцъфване
+	Start Time (seconds)	Начално време (секунди)
+	Repeats	Повторения
 
 # Recent effects, per-channel waveform, white balance selector (SC-2/SC-3/SC-4, #1419 #1420 #1421)
 	Apply a recently used effect to the selected clips	Прилагане на наскоро използван ефект към избраните клипове
@@ -4868,3 +4872,27 @@ export.summary	Low	ниско
 	Subtitles	Субтитри
 	Captions for the hearing impaired	Надписи за хора с увреден слух
 	Forced narrative	Принудителен разказ (forced narrative)
+# DCP Validation window (DCP-12)
+	AS-03	AS-03
+	Choose the DCP folder.	Изберете папката на DCP.
+	DCP Validation	Проверка на DCP
+	DCP folder	Папка на DCP
+	DCP folder (the one holding ASSETMAP)	Папка на DCP (тази, която съдържа ASSETMAP)
+	Evidence	Доказателство
+	How to fix	Как да се поправи
+	Interrupted	Прекъснато
+	Not applicable	Неприложимо
+	Report	Отчет
+	Report saved: {path}	Отчетът е запазен: {path}
+	Required	Задължително
+	Rule	Правило
+	Rules	Правила
+	Save JSON…	Запиши JSON…
+	Save Markdown…	Запиши Markdown…
+	Save report	Запиши отчета
+	Skipped	Пропуснато
+	Standard: {standard}	Стандарт: {standard}
+	Validate	Провери
+	Validate DCP…	Провери DCP…
+	the engine sent no profiles	машината не изпрати профили
+	{n} files checked	Проверени файлове: {n}

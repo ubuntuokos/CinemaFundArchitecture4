@@ -4796,6 +4796,10 @@
 	Encode Resolution	Роздільність кодування
 	Half	Половина
 	Quarter	Чверть
+# Datamosh Bloom (Glitch, DM2)
+	Datamosh Bloom	Datamosh-розквіт
+	Start Time (seconds)	Час початку (секунди)
+	Repeats	Повтори
 
 # Recent effects, per-channel waveform, white balance selector (SC-2/SC-3/SC-4, #1419 #1420 #1421)
 	Apply a recently used effect to the selected clips	Застосувати нещодавно використаний ефект до вибраних кліпів
@@ -4848,3 +4852,27 @@
 	Subtitles	Субтитри
 	Captions for the hearing impaired	Субтитри для людей із порушенням слуху
 	Forced narrative	Примусовий переклад (forced narrative)
+# DCP Validation window (DCP-12)
+	AS-03	AS-03
+	Choose the DCP folder.	Виберіть теку DCP.
+	DCP Validation	Перевірка DCP
+	DCP folder	Тека DCP
+	DCP folder (the one holding ASSETMAP)	Тека DCP (та, де лежить ASSETMAP)
+	Evidence	Доказ
+	How to fix	Як виправити
+	Interrupted	Перервано
+	Not applicable	Не застосовується
+	Report	Звіт
+	Report saved: {path}	Звіт збережено: {path}
+	Required	Обов'язково
+	Rule	Правило
+	Rules	Правила
+	Save JSON…	Зберегти JSON…
+	Save Markdown…	Зберегти Markdown…
+	Save report	Зберегти звіт
+	Skipped	Пропущено
+	Standard: {standard}	Стандарт: {standard}
+	Validate	Перевірити
+	Validate DCP…	Перевірити DCP…
+	the engine sent no profiles	рушій не надіслав профілів
+	{n} files checked	Перевірено файлів: {n}

@@ -1474,11 +1474,13 @@ dependencies = [
  "cfa4-color",
  "cfa4-credits",
  "cfa4-dcp",
+ "cfa4-dcp-validate",
  "cfa4-dcpomatic",
  "cfa4-dng",
  "cfa4-docpath",
  "cfa4-edit",
  "cfa4-export",
+ "cfa4-fetch-client",
  "cfa4-format",
  "cfa4-frame",
  "cfa4-geom",
@@ -1571,6 +1573,29 @@ dependencies = [
  "tempfile",
  "thiserror 2.0.21",
  "web-time",
+]
+
+[[package]]
+name = "cfa4-fetch"
+version = "0.10.0"
+dependencies = [
+ "cfa4-fetch-client",
+ "cfa4-sandbox",
+ "rustls",
+ "serde_json",
+ "sha2 0.11.1",
+ "tempfile",
+ "ureq",
+]
+
+[[package]]
+name = "cfa4-fetch-client"
+version = "0.10.0"
+dependencies = [
+ "serde",
+ "serde_json",
+ "tempfile",
+ "thiserror 2.0.21",
 ]
 
 [[package]]
@@ -1804,6 +1829,19 @@ dependencies = [
 ]
 
 [[package]]
+name = "cfa4-io-core"
+version = "0.10.0"
+dependencies = [
+ "cfa4-color",
+ "cfa4-frame",
+ "cfa4-st2110",
+ "cfa4-time",
+ "serde",
+ "serde_json",
+ "thiserror 2.0.21",
+]
+
+[[package]]
 name = "cfa4-isobmff"
 version = "0.10.0"
 dependencies = [
@@ -1948,9 +1986,17 @@ dependencies = [
 ]
 
 [[package]]
+name = "cfa4-objtrack"
+version = "0.10.0"
+dependencies = [
+ "cfa4-geom",
+]
+
+[[package]]
 name = "cfa4-obs"
 version = "0.10.0"
 dependencies = [
+ "cfa4-io-core",
  "cfa4-st2110",
  "libloading 0.9.0",
  "log",
@@ -2005,6 +2051,7 @@ dependencies = [
  "cfa4-geom",
  "cfa4-media",
  "cfa4-time",
+ "log",
  "proptest",
  "serde",
  "serde_json",
@@ -2156,13 +2203,11 @@ dependencies = [
  "cfa4-project",
  "cfa4-time",
  "rayon",
- "rustls",
  "serde",
  "serde_json",
  "sha2 0.11.1",
  "tempfile",
  "thiserror 2.0.21",
- "ureq",
 ]
 
 [[package]]

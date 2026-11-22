@@ -20,9 +20,11 @@ pub(crate) mod distort;
 pub(crate) mod glitch;
 mod immersive;
 mod lights;
+pub mod mosh;
 mod perspective;
 mod pixelate;
 mod stylize;
+mod subspace_warp;
 mod temporal;
 mod text;
 
@@ -97,7 +99,7 @@ fn resize(img: Image, w: usize, h: usize) -> Image {
 
 /// Effects that read other frames (skipped when rendering another frame for one of them).
 pub fn is_temporal(id: &str) -> bool {
-    matches!(id, "posterize_time" | "echo" | "slit_scan" | "warp_stabilizer" | "auto_reframe" | "temporal_denoise")
+    matches!(id, "posterize_time" | "echo" | "slit_scan" | "warp_stabilizer" | "auto_reframe" | "temporal_denoise" | "datamosh_bloom")
 }
 
 impl FxEnv for ItemEnv<'_> {
@@ -565,6 +567,7 @@ pub fn apply(img: &mut Image, e: &EffectInstance, cx: &FxCtx<'_>) -> bool {
         "write_on" => stylize::write_on(img, e, cx),
         "pixel_sort" => stylize::pixel_sort(img, e, cx),
         // Glitch (CFA4's own folder)
+        "datamosh_bloom" => mosh::datamosh_bloom(img, e, cx),
         // Time / analysis
         "auto_color" => auto::auto_correct(img, e, cx, auto::Mode::Color),
         "auto_contrast" => auto::auto_correct(img, e, cx, auto::Mode::Contrast),

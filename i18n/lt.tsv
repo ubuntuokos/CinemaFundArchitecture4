@@ -4816,6 +4816,10 @@ export.summary	Low	žema
 	Encode Resolution	Kodavimo raiška
 	Half	Pusė
 	Quarter	Ketvirtis
+# Datamosh Bloom (Glitch, DM2)
+	Datamosh Bloom	Datamosh žydėjimas
+	Start Time (seconds)	Pradžios laikas (sekundės)
+	Repeats	Pakartojimai
 
 # Recent effects, per-channel waveform, white balance selector (SC-2/SC-3/SC-4, #1419 #1420 #1421)
 	Apply a recently used effect to the selected clips	Taikyti neseniai naudotą efektą pasirinktiems klipams
@@ -4868,3 +4872,27 @@ export.summary	Low	žema
 	Subtitles	Subtitrai
 	Captions for the hearing impaired	Subtitrai neprigirdintiesiems
 	Forced narrative	Priverstinis pasakojimas (forced narrative)
+# DCP Validation window (DCP-12)
+	AS-03	AS-03
+	Choose the DCP folder.	Pasirinkite DCP aplanką.
+	DCP Validation	DCP patikra
+	DCP folder	DCP aplankas
+	DCP folder (the one holding ASSETMAP)	DCP aplankas (tas, kuriame yra ASSETMAP)
+	Evidence	Įrodymas
+	How to fix	Kaip ištaisyti
+	Interrupted	Nutraukta
+	Not applicable	Netaikoma
+	Report	Ataskaita
+	Report saved: {path}	Ataskaita išsaugota: {path}
+	Required	Privaloma
+	Rule	Taisyklė
+	Rules	Taisyklės
+	Save JSON…	Įrašyti JSON…
+	Save Markdown…	Įrašyti Markdown…
+	Save report	Įrašyti ataskaitą
+	Skipped	Praleista
+	Standard: {standard}	Standartas: {standard}
+	Validate	Patikrinti
+	Validate DCP…	Patikrinti DCP…
+	the engine sent no profiles	variklis nesiuntė jokių profilių
+	{n} files checked	Patikrinta failų: {n}
