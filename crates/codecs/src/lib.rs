@@ -63,6 +63,7 @@ pub mod smacker;
 pub mod sstp;
 mod stream_color;
 pub mod streams;
+pub mod svq1;
 pub mod utvideo;
 pub mod video;
 mod webm_alpha;
@@ -116,7 +117,7 @@ impl From<CodecError> for cfa4_media::MediaError {
 }
 
 /// Our own (pure-Rust) decoders, in the order they are tried.
-const BUILTIN_FACTORIES: [VideoDecoderFactory; 25] = [
+const BUILTIN_FACTORIES: [VideoDecoderFactory; 26] = [
     video::h264_factory,
     video::hevc_factory,
     video::vp8_factory,
@@ -136,6 +137,7 @@ const BUILTIN_FACTORIES: [VideoDecoderFactory; 25] = [
     dirac::dirac_factory,
     huffyuv::huffyuv_factory,
     lagarith::lagarith_factory,
+    svq1::svq1_factory,
     utvideo::utvideo_factory,
     magicyuv::magicyuv_factory,
     evc::evc_factory,

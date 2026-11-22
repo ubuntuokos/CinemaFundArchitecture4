@@ -1325,6 +1325,7 @@ dependencies = [
  "cfa4-smacker",
  "cfa4-speex",
  "cfa4-sstp",
+ "cfa4-svq1",
  "cfa4-tak",
  "cfa4-testkit",
  "cfa4-time",
@@ -2335,6 +2336,14 @@ version = "0.10.0"
 dependencies = [
  "serde",
  "serde_json",
+]
+
+[[package]]
+name = "cfa4-svq1"
+version = "0.10.0"
+dependencies = [
+ "cfa4-testkit",
+ "thiserror 2.0.21",
 ]
 
 [[package]]

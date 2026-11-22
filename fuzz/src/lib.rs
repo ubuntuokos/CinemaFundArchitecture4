@@ -618,6 +618,12 @@ pub fn lagarith(data: &[u8]) {
     }
 }
 
+pub fn svq1(data: &[u8]) {
+    let mut d = cfa4_svq1::Decoder::new(16, 16, false);
+    let _ = d.decode(data);
+    let _ = d.decode(data);
+}
+
 pub fn magicyuv(data: &[u8]) {
     let _ = cfa4_magicyuv::Decoder::new().decode(data);
 }
@@ -778,6 +784,7 @@ pub const TARGETS: &[(&str, &str, Target)] = &[
     ("evc", "cfa4-evc", evc),
     ("cavs", "cfa4-cavs", cavs),
     ("lagarith", "cfa4-lagarith", lagarith),
+    ("svq1", "cfa4-svq1", svq1),
     ("magicyuv", "cfa4-magicyuv", magicyuv),
     ("g729", "cfa4-g729", g729),
     ("ilbc", "cfa4-ilbc", ilbc),
