@@ -912,7 +912,12 @@ fn rdd9_rejects_other_essence() {
 }
 /// Three uncompressed pictures of `layout` (32×4), each a different flat colour.
 fn build_uncompressed(pattern: Pattern, layout: crate::UncompressedLayout) -> (Vec<u8>, Vec<Vec<u8>>) {
+    build_uncompressed_with(pattern, layout, &[])
+}
+
+fn build_uncompressed_with(pattern: Pattern, layout: crate::UncompressedLayout, dm_schemes: &[[u8; 16]]) -> (Vec<u8>, Vec<Vec<u8>>) {
     let mut cfg = WriterConfig::new(pattern, Rational::new(25, 1), PackageIds::from_seed("raw", "Raw Clip"));
+    cfg.dm_schemes = dm_schemes.to_vec();
     cfg.picture = Some(PictureDesc::new(PictureCoding::Uncompressed { layout }, 48, 4));
     let mut w = MxfWriter::new(Cursor::new(Vec::new()), cfg).unwrap();
     let mut pictures = Vec::new();
@@ -2002,6 +2007,66 @@ fn as03_metadata_round_trips() {
 }
 
 #[test]
+fn as12_adid_round_trips_beside_as03() {
+    use crate::as11::{ADID_SHIM_NAME, As11};
+    let kv = |v: &[(&str, &str)]| -> Vec<(String, String)> { v.iter().map(|(k, v)| (k.to_string(), v.to_string())).collect() };
+    let as03 = kv(&[
+        ("IdentifierKind", "Ad-ID"),
+        ("Identifier", "ABCD1234000H"),
+        ("ShimName", "STATION"),
+        ("SignalStandard", "1920/1080/25p/16:9"),
+        ("IntendedAFD", "1000 FullHD"),
+    ]);
+    let adid = kv(&[
+        ("adid_prefix", "ABCD"),
+        ("adid_code", "1234000H"),
+        ("ad_title", "Spot"),
+        ("Brand", "Joe's Bakery"),
+        ("Product", "Baked Goods"),
+        ("Advertiser", "Joe's Bakery"),
+        ("agency_office_location", "Agency, Budapest"),
+        ("Length", "30"),
+        ("Medium", "Television"),
+        ("sd_flag", "N"),
+        ("Parent", "Joe Holding"),
+    ]);
+    let mut cfg = op1a_config(Rational::new(25, 1), PictureCoding::ProRes { profile: 3 });
+    cfg.sound.truncate(1);
+    cfg.as11 = Some(As11 { as03: as03.clone(), as12: adid.clone(), ..Default::default() });
+    let mut w = MxfWriter::new(Cursor::new(Vec::new()), cfg).unwrap();
+    for i in 0..4 {
+        w.push_picture(&prores_like(i), FrameInfo::intra()).unwrap();
+        w.push_sound(0, &pcm16(i * 1920, 1920)).unwrap();
+    }
+    let bytes = w.finish().unwrap().into_inner();
+    let f = open(&bytes).unwrap();
+    assert_eq!(f.tracks.len(), 2, "the DM tracks are not essence tracks");
+    let a = f.as11.unwrap();
+    let sorted = |mut v: Vec<(String, String)>| {
+        v.sort();
+        v
+    };
+    assert_eq!(sorted(a.as03), sorted(as03.clone()));
+    let mut want = adid.clone();
+    want.push(("ShimName".into(), ADID_SHIM_NAME.into()));
+    assert_eq!(sorted(a.as12), sorted(want));
+    // AS-12 alone, a wrong shim name, a missing item and an over-long title are refused
+    let refuse = |a: As11| {
+        let mut cfg = op1a_config(Rational::new(25, 1), PictureCoding::ProRes { profile: 3 });
+        cfg.as11 = Some(a);
+        MxfWriter::new(Cursor::new(Vec::new()), cfg).err().unwrap().to_string()
+    };
+    assert!(refuse(As11 { as12: adid.clone(), ..Default::default() }).contains("beside"));
+    let mut wrong = adid.clone();
+    wrong.push(("ShimName".into(), "Other".into()));
+    assert!(refuse(As11 { as03: as03.clone(), as12: wrong, ..Default::default() }).contains("ShimName"));
+    assert!(refuse(As11 { as03: as03.clone(), as12: adid[1..].to_vec(), ..Default::default() }).contains("adid_prefix is required"));
+    let mut long = adid.clone();
+    long[2].1 = "x".repeat(129);
+    assert!(refuse(As11 { as03, as12: long, ..Default::default() }).contains("128"));
+}
+
+#[test]
 fn as07_baseband_shim_check() {
     use crate::as07::{baseband_problems, check_baseband};
     // uncompressed 10-bit pictures in OP1a with frame wrapping conform
@@ -2054,4 +2119,28 @@ fn as03_file_conformance_check() {
     let f = build(Some(As11 { as03, ..Default::default() }), 250_000);
     let e = file_problems(&f).join("; ");
     assert!(e.contains("50.0 Mbit/s") && e.contains("PBS NGIS HD Playout"), "{e}");
+}
+
+/// A file that lists the AS-07 core scheme claims the AS-07 shims, so the reader reports where it
+/// breaks the Baseband Shim as warnings; other files get none.
+#[test]
+fn as07_files_get_baseband_shim_warnings_on_open() {
+    use crate::as07::{CORE_SCHEME, claims_as07};
+    let layout = crate::UncompressedLayout::V210;
+    let shim = |f: &crate::MxfFile| f.warnings.iter().filter(|w| w.starts_with("AS-07 Baseband Shim")).count();
+    // OP-Atom breaks the shim; without the scheme label nothing is said
+    let (bytes, _) = build_uncompressed(Pattern::OpAtom, layout);
+    let f = open(&bytes[..]).unwrap();
+    assert!(!claims_as07(&f));
+    assert_eq!(shim(&f), 0);
+    // with the label the breaches are warnings
+    let (bytes, _) = build_uncompressed_with(Pattern::OpAtom, layout, &[CORE_SCHEME]);
+    let f = open(&bytes[..]).unwrap();
+    assert!(claims_as07(&f) && f.dm_schemes.contains(&crate::Ul(CORE_SCHEME)));
+    assert!(shim(&f) >= 2, "{:?}", f.warnings);
+    // a conforming OP1a file with the label has none
+    let (bytes, _) = build_uncompressed_with(Pattern::Op1a, layout, &[CORE_SCHEME]);
+    let f = open(&bytes[..]).unwrap();
+    assert!(claims_as07(&f));
+    assert_eq!(shim(&f), 0, "{:?}", f.warnings);
 }

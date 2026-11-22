@@ -82,7 +82,7 @@ Sávok: K1 az 1–6. hét, K2 a 7–22. hét, K3 a 23–40. hét, K4 a 40–41. 
 | 29 | 2027-05-17 | K3 | Nintendo HVQM / HVQM4 📄🔎 | Nintendo DSP ADPCM + BRSTM 📄 |
 | 30 | 2027-05-24 | K3 | BFSTM (port) + BCSTM 📄🔎 | PSP MPEG-4 AVC (PMF) 📄🔎 |
 | 31 | 2027-05-31 | K3 | Yamaha + OKI ADPCM 📄 | NTT TwinVQ 📄 |
-| 32 | 2027-06-07 | K3 | AMV Video 📄 | Cinepak 📄 |
+| 32 | 2027-06-07 | K3 | AMV Video 📄 | ✅ Cinepak |
 | 33 | 2027-06-14 | K3 | Intel Indeo 2 / 3 📄 | Intel Indeo 4 / 5 📄 |
 | 34 | 2027-06-21 | K3 | Sorenson Video 1 📄 | Sorenson Video 3 📄 |
 | 35 | 2027-06-28 | K3 | Microsoft RLE + Video 1 📄 | Autodesk FLIC / FLC |
@@ -116,6 +116,7 @@ valamelyik nem készült el, a következő hétre kell vinni a pótlással együ
 | Dátum | Változás | Összefoglaló |
 |---|---|---|
 | 2026-11-21 | minor | Matroska-lefedettségi kiegészítés (CB-M.1 és a hozzá tartozó tételek) a heti ütemen kívül; a hetek és a határidők nem változtak |
+| 2026-11-21 | patch | Pipálva (✅) a Cinepak (CB-32.2, FFmpeg n7.1.1 port, a 2026-11-14-i általános engedély alapján) |
 | 2026-11-21 | patch | Pipálva (✅) a CRI ADX és a CRI HCA (CB-26.1, CB-26.2): az FFmpeg n9.0.2 LGPL-2.1+ dekóderének portja a tulajdonos 2026-11-14-i általános engedélyével; a backlogból kikerültek |
 | 2026-11-14 | minor | Tulajdonosi döntés: a MagicYUV és a Shorten az FFmpeg LGPL-2.1+ dekóderének portjaként készül; a MagicYUV a következő tétel |
 | 2026-11-14 | minor | Tulajdonosi döntés: az OptimFROG, a Sony SR Codec és a Bink 2 kimarad; a HVQM / HVQM4, a Sofdec.Prime, a BCSTM és a PMF előbb forráskeresés (🔎); a BFSTM portként mehet. Dátumok nem változtak |

@@ -1,7 +1,8 @@
 # CFA4 helyi AI-modellképzés, finomhangolás és tanulás (CFA4-AI-MODEL-TRAINING-001)
 
-> **Állapot:** TERVEZET 1.1, a tulajdonosi döntések beépítve (István, 2026-11-07); IMPLEMENTÁCIÓ
-> NINCS ENGEDÉLYEZVE · **Utolsó átnézés:** 2026-11-07 · **Változás:** az 1.0 vázlat (István,
+> **Állapot:** JÓVÁHAGYVA 1.2 (István, 2026-11-22); a fejlesztés a 11. fejezet kapui szerint indulhat,
+> az előfeltételek teljesülése után. Egy függő pont: a D5 hivatkozás átírása a CFA4-MEDIA-INTELLIGENCE-001
+> tervre, amint az a `docs/plans`-ban van · **Utolsó átnézés:** 2026-11-22 · **Változás:** az 1.0 vázlat (István,
 > 2026-11-07) igazítása a CFA4 AI-tervéhez · **Platform:** Ubuntu 26.04, amd64 · **Kapcsolódik:**
 > [CFA4-AI_modules ADR 0008](https://github.com/ubuntuokos/CFA4-AI_modules/blob/main/docs/adr/ADR-0008-ai-processing-layer.md)
 > (AI-feldolgozó réteg, F0–F6 kapuk), [`CFA4-TASKSTORE-PG-001`](CFA4-TASKSTORE-PG-001.md)
@@ -21,6 +22,8 @@
 | D4 | A tanító worker az AI-terv F6 közös uv-környezetét bővíti? | Ellenőrizve (13. fejezet): igen, külön környezet nem kell. |
 | D5 | Media Intelligence hivatkozás | A CFA4-MEDIA-INTELLIGENCE-001 FINAL 2.0 nincs a tárolókban; a hivatkozás a [`CFA4-TASKSTORE-PG-001`](CFA4-TASKSTORE-PG-001.md) 4. pontjának `mi` sémája. |
 | D6 | Hová kerül? | Ide, a CFA4 `docs/plans` mappájába; az ADR 0008 egy hivatkozó sort kap. |
+
+A D1–D4 döntést István 2026-11-22-én a javaslat szerint megerősítette; az 1.1-es szöveg ezt már tartalmazza.
 
 ## 1. Cél és szerep
 
@@ -232,9 +235,12 @@ Center, Checkpoint Manager, Model Registry (a `cfa4-ai-models` nézete).
 CPU, RAM, GPU, VRAM, becsült hátralévő idő (nem garancia), checkpointállapot, fázis.
 
 **Vezérlés:** Pause, Resume, Stop, Cancel, Save checkpoint, Resume from checkpoint, Export
-configuration. A leállítás nem hagyhat érvényesnek jelölt félkész checkpointot. A `paused` állapot
-felvétele az ADR 0008 állapotlistájába az ACS-javaslattal együtt dől el; addig a Pause = checkpoint
-+ leállítás, a Resume = új futtatás ugyanabból a checkpointból.
+configuration. A leállítás nem hagyhat érvényesnek jelölt félkész checkpointot. A `scheduled` és a `paused`
+állapot felvétele eldőlt (2026-11-07), a főág `cfa4-tasks` sora ismeri; a Pause = checkpoint + a feladat
+`paused` állapota, a Resume = új futtatás ugyanabból a checkpointból. Az alapmodell vagy az adat
+licencelfogadására váró feladat `blocked` állapotban `awaiting: licenseAcceptance`-t kap, és elfogadásig
+nem indul. Ez az ACS-8 része, amely még az AI-tárolóban (AI #52) van, a főágon nincs: a TR-F1 előtt
+át kell vezetni.
 
 ## 10. Kapcsolat a CFA4 AI-funkcióival
 
@@ -268,6 +274,22 @@ Az előtag megkülönbözteti az AI-terv F0–F6 és az ACS kapuitól. A tanít�
 | TR-F10 | Integráció: Media Intelligence, AI Video, AI Audio, Event Fabric | AI-F4/F5 (PG-4) | Végponttól végpontig teszt |
 
 TR-F0…TR-F3 lezárása előtt nagyobb tanítóalgoritmus nem integrálható.
+
+## 11a. Megvalósítási állapot (2026-11-22, a főág és az AI-tároló alapján)
+
+| Előfeltétel | Állapot |
+| --- | --- |
+| `cfa4-tasks` (ACS-1…ACS-4, ütemezés, `paused`/`scheduled`) | A főágon (#1423, #1471). Az ACS-8 (`awaiting`, `batch_key`) még csak az AI #52 ágán |
+| `cfa4-store` (AI-F2: PG-1, PG-2, `tasks` séma) | A főágon. `train` séma nincs benne, a TR-F1 hozza |
+| `cfa4-route`, `accel` (hardverleltár) | A főágon |
+| AI-F1: `cfa4-ai-models` (modellkezelő), `cfa4-ai-jobs` | Nincs meg egyik tárolóban sem; a TR-F1 előfeltétele |
+| F6 közös uv-PyTorch-környezet, SDK worker-protokoll | A protokoll az SDK-ban van (host-jelentés v5 a #17-ben); a PyTorch-környezet nincs |
+| `mi` séma (PG-4), Media Intelligence terv | A terv még nem a `docs/plans`-ban; `mi` séma nincs |
+| Qt6 AI Model Studio alapja (Task Manager panel) | A főágon (#1172); az AI-felület nincs |
+
+Következtetés: a TR-F0 lezárt; a TR-F1 az AI-F1 megérkezéséig nem indítható, mert a `train.adapter`,
+a modellregisztráció és a modellcache a `cfa4-ai-models`-re épül. Ami előbb elvégezhető: az ACS-8
+átvezetése a főágra, és a `train` séma migrációjának terve.
 
 ## 12. Donor: átvétel
 
