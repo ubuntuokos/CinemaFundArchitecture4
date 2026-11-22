@@ -371,6 +371,11 @@ uncompressed pictures with 8, 10, 12 or 16 bit components, no clip wrapping, lin
 24 bit. DMS-AS-07 metadata, the raster subset, several timecodes, captions and content integrity are not
 covered.
 
+`as03::file_problems` checks a read file: OP1a, a timecode, the DMS-AS-03 framework and the essence
+against the general provisions and the named shim (`facts_of` takes the video bit rate from the
+stored pictures when the file runs a second or more). The partition layout, content integrity
+tracks and the other frameworks are not checked (#1485).
+
 ### AS-10 (MXF for Production)
 
 `As11::as10` holds the AMWA AS-10 v1.1 DMS_AS_10_Core framework (`ShimName` required; `Type`,

@@ -2018,3 +2018,40 @@ fn as07_baseband_shim_check() {
     let e = check_baseband(&f).unwrap_err();
     assert!(e.contains("not JPEG 2000"), "{e}");
 }
+
+#[test]
+fn as03_file_conformance_check() {
+    use crate::as03::file_problems;
+    use crate::as11::As11;
+    let kv = |v: &[(&str, &str)]| -> Vec<(String, String)> { v.iter().map(|(k, v)| (k.to_string(), v.to_string())).collect() };
+    let as03 = kv(&[
+        ("IdentifierKind", "ISAN"),
+        ("Identifier", "ISAN 0000-0001-8947-0000-8-0000-0000-D"),
+        ("ShimName", "PBS NGIS HD Playout"),
+        ("SignalStandard", "1920/1080/25i/16:9"),
+        ("IntendedAFD", "1000 FullHD"),
+    ]);
+    let rate = Rational::new(25, 1);
+    let build = |as11: Option<As11>, frame_bytes: usize| {
+        let mut cfg = rdd9_config(rate, 4);
+        cfg.as11 = as11;
+        let mut w = MxfWriter::new(Cursor::new(Vec::new()), cfg).unwrap();
+        let n = 26;
+        let mut a = 0;
+        for i in 0..n {
+            w.push_sound(0, &pcm24x4(a, 1920)).unwrap();
+            a += 1920;
+            w.push_picture(&d10_picture(i, frame_bytes), rdd9_frame(i)).unwrap();
+        }
+        open(&w.finish().unwrap().into_inner()).unwrap()
+    };
+    // MPEG-2 1080 at 25 Mbit/s with the framework: conforms
+    let f = build(Some(As11 { as03: as03.clone(), ..Default::default() }), 125_000);
+    assert_eq!(file_problems(&f), Vec::<String>::new());
+    // no framework, and a rate far from the shim's
+    let f = build(None, 125_000);
+    assert!(file_problems(&f).iter().any(|e| e.contains("no DMS-AS-03")));
+    let f = build(Some(As11 { as03, ..Default::default() }), 250_000);
+    let e = file_problems(&f).join("; ");
+    assert!(e.contains("50.0 Mbit/s") && e.contains("PBS NGIS HD Playout"), "{e}");
+}
