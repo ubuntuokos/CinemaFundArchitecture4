@@ -105,6 +105,7 @@ szabadalommal védett formátumot.
 | SMPTE LTC időkód (ST 12-1) és MIDI Timecode (MTC) | dekódolás, kódolás (hangjel, MIDI-üzenetek) | `crates/tcsync` | alap | függőben | | |
 | G.711 (µ-law, A-law), G.722, IMA ADPCM, Microsoft ADPCM | dekódolás | `crates/adpcm` | alap | függőben | | |
 | G.729, G.729 Annex B | dekódolás; nyers `.g729` fájlok olvasása | `crates/g729` (a bcg729 portja) | alap | függőben | | |
+| DSP Group TrueSpeech | dekódolás | `crates/truespeech` (az FFmpeg portja) | alap | függőben | | |
 | iLBC | dekódolás; `.lbc` fájlok olvasása | `crates/ilbc` (a WebRTC libilbc portja) | alap | függőben | | |
 | TTA (True Audio) | dekódolás; `.tta` és Matroska olvasása | `crates/tta` (a libtta portja) | alap | függőben | | |
 | Shorten | dekódolás; `.shn` fájlok olvasása | `crates/shorten` (az FFmpeg Shorten-dekódolójának portja) | alap | függőben | | |

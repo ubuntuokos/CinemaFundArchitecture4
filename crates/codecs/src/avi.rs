@@ -120,6 +120,8 @@ enum ACodec {
     },
     /// G.711, G.722, IMA or Microsoft ADPCM: whole blocks per chunk.
     Adpcm(cfa4_adpcm::Codec),
+    /// DSP Group TrueSpeech: whole 32-byte frames per chunk, one decoder state across chunks.
+    TrueSpeech,
     Unsupported(String),
 }
 
@@ -135,6 +137,7 @@ fn audio_codec(w: &WaveFormat) -> (ACodec, String) {
         0x55 => (ACodec::Framed { ts: cfa4_mpegts::Codec::MpegAudio, layer: 3 }, "MP3".into()),
         0x50 => (ACodec::Framed { ts: cfa4_mpegts::Codec::MpegAudio, layer: 2 }, "MPEG Audio".into()),
         0x2000 => (ACodec::Framed { ts: cfa4_mpegts::Codec::Ac3, layer: 0 }, "AC-3".into()),
+        0x22 if w.channels == 1 && w.sample_rate == cfa4_truespeech::SAMPLE_RATE => (ACodec::TrueSpeech, "TrueSpeech".into()),
         tag if let Some(c) = cfa4_adpcm::Codec::from_wave_format(tag, w.block_align, w.bits_per_sample, &w.extra) => match c {
             Ok(c) => {
                 let name = c.name().to_string();
@@ -157,6 +160,7 @@ struct AudioState {
     packets: HashMap<usize, Arc<Vec<Vec<f32>>>>,
     order: Vec<usize>,
     last_decoded: Option<usize>,
+    checkpoints: crate::audio::Checkpoints,
 }
 
 struct AviAudio {
@@ -465,6 +469,19 @@ impl AviSource {
                     let first = (0..pieces.len()).collect();
                     (pieces, first, starts)
                 }
+                ACodec::TrueSpeech => {
+                    let mut t = 0i64;
+                    let mut starts = Vec::with_capacity(st.chunks.len());
+                    for ch in &st.chunks {
+                        starts.push(t);
+                        t = t.saturating_add(
+                            i64::try_from(ch.size as usize / cfa4_truespeech::FRAME_BYTES * cfa4_truespeech::FRAME_SAMPLES).unwrap_or(i64::MAX),
+                        );
+                    }
+                    let pieces: Vec<Piece> = st.chunks.iter().enumerate().map(|(k, c)| (k, 0, c.size as usize)).collect();
+                    let first = (0..pieces.len()).collect();
+                    (pieces, first, starts)
+                }
                 ACodec::Unsupported(_) => (Vec::new(), Vec::new(), Vec::new()),
             };
             // a stream that starts late (dwStart, in scale / rate units)
@@ -477,7 +494,8 @@ impl AviSource {
                 bits_per_sample: (w.bits_per_sample > 0).then_some(u32::from(w.bits_per_sample)),
                 speakers: Vec::new(),
             });
-            let state = Mutex::new(AudioState { decoder: None, packets: HashMap::new(), order: Vec::new(), last_decoded: None });
+            let state =
+                Mutex::new(AudioState { decoder: None, packets: HashMap::new(), order: Vec::new(), last_decoded: None, checkpoints: Default::default() });
             audios.push(AviAudio { stream: s, codec, pieces, first, starts, state });
         }
         // type-1 DV: the sound is in the DIF frames themselves
@@ -563,6 +581,26 @@ impl AviSource {
                         }
                     }
                 }
+                let r = d.decode(&data, 0);
+                st.last_decoded = Some(i);
+                r.unwrap_or_default()
+            }
+            ACodec::TrueSpeech => {
+                if st.decoder.is_none() {
+                    st.decoder = Some(PacketDecoder::truespeech());
+                }
+                let d = st.decoder.as_mut().ok_or_else(|| CodecError::Decode("no audio decoder".into()))?;
+                // the state carries across chunks: after a jump restart from a saved one
+                if st.last_decoded.is_none_or(|l| l + 1 != i) {
+                    let from = st.checkpoints.restore(d, i).unwrap_or(0);
+                    for j in from..i {
+                        st.checkpoints.record(d, j);
+                        if let Ok(prev) = self.packet(a, j) {
+                            let _ = d.decode(&prev, 0);
+                        }
+                    }
+                }
+                st.checkpoints.record(d, i);
                 let r = d.decode(&data, 0);
                 st.last_decoded = Some(i);
                 r.unwrap_or_default()

@@ -780,6 +780,7 @@ pub const TARGETS: &[(&str, &str, Target)] = &[
     ("lagarith", "cfa4-lagarith", lagarith),
     ("magicyuv", "cfa4-magicyuv", magicyuv),
     ("g729", "cfa4-g729", g729),
+    ("truespeech", "cfa4-truespeech", truespeech),
     ("ilbc", "cfa4-ilbc", ilbc),
     ("musepack", "cfa4-musepack", musepack),
     ("shorten", "cfa4-shorten", shorten),
@@ -796,3 +797,13 @@ pub const TARGETS: &[(&str, &str, Target)] = &[
 
 #[cfg(test)]
 mod smoke;
+
+/// TrueSpeech: random packets of random sizes through one decoder.
+pub fn truespeech(data: &[u8]) {
+    let mut d = cfa4_truespeech::Decoder::new();
+    let (head, body) = data.split_at(data.len().min(1));
+    let step = 1 + head.first().map_or(0, |&b| usize::from(b)) % 96;
+    for pkt in body.chunks(step) {
+        let _ = d.decode(pkt);
+    }
+}

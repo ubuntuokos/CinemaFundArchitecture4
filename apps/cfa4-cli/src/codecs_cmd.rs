@@ -162,6 +162,7 @@ static ROWS: &[Row] = &[
     audio("TAK", &["tak"], Ported, Sw(""), NoEnc),
     audio("Interplay ACM", &["acm"], Ported, Sw(""), NoEnc),
     audio("G.729 / G.729 Annex B", &["g729"], Ported, Sw(""), NoEnc),
+    audio("DSP Group TrueSpeech", &["truespeech"], Ported, Sw("in WAV, AVI and Matroska"), NoEnc),
     audio("iLBC", &["ilbc"], Ported, Sw(""), NoEnc),
     audio("Musepack SV7 / SV8", &["musepack"], Ported, Sw(""), NoEnc),
     audio("ADPCM, G.711, G.722", &["adpcm"], Own, Sw(""), NoEnc),

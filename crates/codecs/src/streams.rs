@@ -847,6 +847,7 @@ fn wave_format_entry(format_tag: u16, bits: u16, extra: &[u8]) -> StreamEntry {
         0x0006 => "pcm_alaw".into(),
         0x0007 => "pcm_mulaw".into(),
         0x0011 => "adpcm_ima_wav".into(),
+        0x0022 => "truespeech".into(),
         0x0050 => "mp2".into(),
         0x0055 => "mp3".into(),
         0x00FF | 0x1610 | 0x706D => "aac".into(),
