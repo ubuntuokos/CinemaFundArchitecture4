@@ -49,7 +49,7 @@ from ..engine import EngineClient
 from ..i18n import N_, decimal, fmt, tr
 from .export_effects import METADATA_FORMATS, SECTION_KEYS, CaptionsSection, EffectsSection, MetadataSection, Section
 from .export_preview import PreviewColumn
-from .export_rows import ExportRows
+from .export_rows import ExportRows, _show_combo
 from .preset_manager import PresetManager
 from .qc import QcDialog
 from .smart_export import SmartExportBox
@@ -579,6 +579,13 @@ class ExportDialog(QDialog):
         video = Section("video", tr("Video"), self)
         video.setObjectName("export.video")
         fv = QFormLayout(video.body)
+        # Sequence Profile: fills the frame size, rate and pixel aspect below from a saved profile
+        self.profile_pick = QComboBox(self)
+        self.profile_pick.setObjectName("export.video.sequenceProfile")
+        self.profile_pick.addItem(tr("Custom"), None)
+        self.profile_pick.activated.connect(self._profile_picked)
+        self.profiles: list[dict[str, Any]] = []
+        fv.addRow(tr("Sequence Profile"), self.profile_pick)
         fv.addRow(tr("Frame Size"), size_row)
         fv.addRow(tr("Bitrate Encoding"), self.bitrate_mode)
         fv.addRow(tr("Target Bitrate"), self.bitrate_box)
@@ -900,6 +907,40 @@ class ExportDialog(QDialog):
         self._loading = True
         self.engine.execute("export.formats", {}, on_reply=self._on_formats, on_error=self._error)
         self.engine.execute("export.presets.list", {}, on_reply=self._on_presets, on_error=self._error)
+        self.engine.execute("sequenceProfiles.list", {}, on_reply=self._on_profiles, on_error=lambda _m: None)
+
+    def _on_profiles(self, result: Any, _b: bytes | None) -> None:
+        listed = result.get("profiles") if isinstance(result, dict) else None
+        self.profiles = [p for p in listed if isinstance(p, dict) and p.get("description")] if isinstance(listed, list) else []
+        self.profile_pick.clear()
+        self.profile_pick.addItem(tr("Custom"), None)
+        for p in self.profiles:
+            self.profile_pick.addItem(str(p["description"]), p["description"])
+
+    def _profile_picked(self, i: int) -> None:
+        """Take the picked profile's frame size, frame rate and pixel aspect (a rate or aspect the
+        export lists do not offer is left as it is)."""
+        prof = next((p for p in self.profiles if p.get("description") == self.profile_pick.itemData(i)), None)
+        if prof is None:
+            return
+        w, h = prof.get("width"), prof.get("height")
+        if all(isinstance(v, int) and not isinstance(v, bool) and 0 < v <= 16384 for v in (w, h)):
+            self.width_spin.setValue(w)
+            self.height_spin.setValue(h)
+        fps = prof.get("fps")
+        if isinstance(fps, list) and len(fps) == 2:
+            want = {"num": fps[0], "den": fps[1]}
+            if self.rows.fps.findData(want) >= 0:
+                _show_combo(self.rows.fps, want)
+                self.rows._sync_rate_shown()
+                self._touch("fps")
+        par = prof.get("pixelAspect")
+        if isinstance(par, list) and len(par) == 2:
+            want = None if par[0] == par[1] else par
+            if self.rows.aspect.findData(want) >= 0:
+                _show_combo(self.rows.aspect, want)
+                self._touch("aspect")
+        self._changed()
 
     def _on_formats(self, result: Any, _b: bytes | None) -> None:
         self.formats = {}

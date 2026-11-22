@@ -231,3 +231,31 @@ def test_real_engine_sequence_profiles(app, tmp_path: Path):
         dlg.deleteLater()
     finally:
         engine.stop()
+
+
+def test_export_takes_size_rate_and_aspect_from_a_profile(app):
+    from cfa4_qt.panels.export import ExportDialog
+
+    class Quiet:
+        running = True
+
+        def execute(self, *_a, **_k):
+            return 0
+
+    dlg = ExportDialog(Quiet())
+    try:
+        dlg._on_profiles({"profiles": [BUILTIN, USER]}, None)
+        assert dlg.profile_pick.count() == 3
+        dlg._loading = False
+        dlg.profile_pick.setCurrentIndex(2)
+        dlg._profile_picked(2)
+        assert (dlg.width_spin.value(), dlg.height_spin.value()) == (1440, 1080)
+        assert dlg.rows.fps.currentData() == {"num": 25, "den": 1}
+        assert dlg.rows.aspect.currentData() == [4, 3]
+        assert {"size", "fps", "aspect"} <= dlg.touched
+        odd = {**USER, "description": "Odd", "fps": [48, 1], "pixelAspect": [7, 5]}
+        dlg._on_profiles({"profiles": [odd]}, None)
+        dlg._profile_picked(1)  # a rate and aspect the lists lack stay as they were
+        assert dlg.rows.fps.currentData() == {"num": 25, "den": 1} and dlg.rows.aspect.currentData() == [4, 3]
+    finally:
+        dlg.deleteLater()
