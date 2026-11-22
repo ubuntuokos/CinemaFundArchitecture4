@@ -52,7 +52,6 @@ fidelity and the remaining work.
 | Hap | video | `crates/hap` | own | yes | no |
 | Huffyuv | video | `crates/huffyuv` | own | yes | no |
 | Canopus HQ / HQA / HQX | video | `crates/canopus` | ported | yes | no |
-| Theora | video | `crates/theora` | ported | yes | no |
 | RealVideo 1.0 / 2.0 / 3.0 / 4.0 | video | `crates/realvideo`, `crates/realmedia` | ported | yes: in RealMedia (.rm, .rmvb) | no |
 | Smacker Video (SMK2, SMK4) and Smacker Audio | video | `crates/smacker` | ported | yes: in Smacker (.smk) | no |
 | Ut Video | video | `crates/utvideo` | own | yes | no |
@@ -147,7 +146,6 @@ fidelity and the remaining work.
 | RealVideo 3.0 / 4.0 (RV30, RV40) | — | own decoder ([`cfa4-realvideo`](../crates/realvideo/README.md) `rv34`, backlog CB-13.2, ported from FFmpeg n7.1.1) in RealMedia: I / P / B pictures, RV30 and RV40 intra prediction (4x4, 16x16, chroma), third-pel (RV30) and quarter-pel (RV40) motion compensation, B-frame direct mode and weighted bi-prediction, both loop filters, picture size changes, sliced frames | none | the same pictures as ffmpeg (`-flags +bitexact`) on ffmpeg's FATE samples `rv30.rm` (109 frames) and `spygames-2MB.rmvb` (RV40, 521 frames), directly and through the media source with every frame reached by seeking (both local; ffmpeg has no RV30/RV40 encoder); damaged packets and random data without a panic. Damaged slices are concealed by copying from the previous picture, not with FFmpeg's error resilience | — | RealAudio not yet |
 | Smacker Video (SMK2, SMK4) | — | own decoder and demuxer ([`cfa4-smacker`](../crates/smacker/README.md), backlog CB-24.2, ported from FFmpeg n9.0.2): 8-bit paletted 4×4-block video (mono, full, skip and fill blocks; the three SMK4 full-block modes), the four header trees with their most-recent-value slots, palette updates (kept, copied and new runs), ring frames, pixel aspect from the interlace and double flags; `.smk` files | none | pixels equal to ffmpeg's `smackvid` on ffmpeg's FATE sample `wetlogo.smk` (local) and on 800 synthetic files of random syntax (every header tree, palette update, SMK2 / SMK4, ring frames, frames that run out of data midway), also through the media source in any order and after jumps (decoder snapshots); damaged files without a panic | — | — |
 | Canopus HQ, HQA, HQX | — | own decoder ([`cfa4-canopus`](../crates/canopus/README.md), backlog CB-8.2, ported from FFmpeg): HQ (every profile) and HQA (with alpha) 8-bit 4:2:2, HQX 4:2:2 / 4:4:4 with or without alpha at 12 bits, progressive and interlaced; in AVI (`CUVC`, `CHQX`) and Matroska | none | bit-exact vs ffmpeg on 22 synthetic frames (random codes of every table, every HQX format and DC precision) and on ffmpeg's 5 FATE samples (local) | parity | — |
-| Theora | — | own decoder ([`cfa4-theora`](../crates/theora/README.md), backlog Matroska supplement, ported from FFmpeg n7.1.1 `vp3.c`; the format is the open Xiph specification): 4:2:0, 4:2:2 and 4:4:4, key and inter frames, golden frame, four-vector motion, loop filter, picture cropping; in Matroska (`V_THEORA`) | none | every frame equal to ffmpeg's decode (the libtheora encoder where ffmpeg has it: 4:2:0, 4:2:2, 4:4:4, cropped, several quantizers; and in CI 36 synthetic streams with random modes, vectors and tokens, written by the test), in order, backwards and after jumps; random, truncated and damaged headers and packets without a panic | parity | Ogg `.ogv` video is not read yet (the Ogg demuxer knows only the audio codecs) |
 
 ## Audio
 
@@ -233,7 +231,6 @@ fidelity and the remaining work.
 | 2026-11-13 | minor | iLBC decode (`cfa4-ilbc`, codec backlog CB-12.1) |
 | 2026-11-12 | minor | Generated capability catalog from `cfa4-cli codecs` (CFA4-PROCODEC-002 work package 0) |
 | 2026-11-12 | minor | Canopus HQ / HQA / HQX decode (`cfa4-canopus`, codec backlog CB-8.2) |
-| 2026-11-21 | minor | Theora decode in Matroska (`cfa4-theora`) |
 | 2026-11-12 | minor | AV2 early decoder behind a feature flag: out-of-process dav2d helper and Rust adapter, bit-exact with the AVM oracle on the `Main_420_10_IP0` corpus (AV2 plan X/6) |
 | 2026-11-12 | minor | TTA decode (`cfa4-tta`, codec backlog CB-9.1) |
 | 2026-11-11 | minor | AV2 identified (Annex B, IVF, MP4 `av02`) and reported as unsupported (AV2 plan X/4) |
