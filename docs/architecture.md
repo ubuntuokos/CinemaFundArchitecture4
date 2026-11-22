@@ -74,6 +74,7 @@ Crates are named `cfa4-<dir>` (`crates/time` is `cfa4-time`); new CFA4 crates ar
 | `cavs` | L0 | AVS1-P2 (GB/T 20090.2, Chinese AVS) Jizhun profile decoder: I / P / B pictures, quarter-sample MC, 2D-VLC residuals, deblocking, ported from FFmpeg (LGPL-2.1-or-later) ([README](../crates/cavs/README.md)) |
 | `evc` | L0 | MPEG-5 EVC (ISO/IEC 23094-1) Baseline profile decoder: quad-tree coding units, the Baseline intra and inter tools, deblocking, temporal-id reference structure, 4:0:0 / 4:2:0 at 8–12 bits, ported from Samsung xevd (BSD-3-Clause) ([README](../crates/evc/README.md)) |
 | `canopus` | L0 | Canopus HQ, HQA and HQX intra video decoder (8-bit 4:2:2 with alpha, 12-bit 4:2:2 / 4:4:4 with alpha), ported from FFmpeg (LGPL-2.1-or-later) ([README](../crates/canopus/README.md)) |
+| `theora` | L0 | Theora (VP3 family) video decoder, ported from FFmpeg (LGPL-2.1-or-later), format from the open Xiph specification ([README](../crates/theora/README.md)) |
 | `apv` | L0 | Advanced Professional Video (IETF RFC 9924) decoder and encoder ([README](../crates/apv/README.md)) |
 | `jxl` | L0 | JPEG XL decoder (ISO/IEC 18181): safe port of jxl-oxide, VarDCT and Modular, all restoration filters, patches, splines, noise; first frame of a file to interleaved floats; animation, ICC colour and encoder: #138–#141 ([README](../crates/jxl/README.md)) |
 | `dng` | L0 | DNG / CinemaDNG camera RAW decoder: TIFF container, uncompressed and lossless JPEG raw data, DNG processing to linear Rec. 709 ([README](../crates/dng/README.md)) |
