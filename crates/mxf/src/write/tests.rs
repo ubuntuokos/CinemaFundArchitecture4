@@ -2055,3 +2055,83 @@ fn as03_file_conformance_check() {
     let e = file_problems(&f).join("; ");
     assert!(e.contains("50.0 Mbit/s") && e.contains("PBS NGIS HD Playout"), "{e}");
 }
+
+fn as07_sample() -> crate::as07_dms::Dms07 {
+    let kv = |p: &[(&str, &str)]| p.iter().map(|(k, v)| ((*k).to_string(), (*v).to_string())).collect::<Vec<_>>();
+    crate::as07_dms::Dms07 {
+        core: kv(&[
+            ("ShimName", "Derived from video serial interface"),
+            ("ResponsibleOrganizationName", "Cinema Fund Archive"),
+            ("WorkingTitle", "Reel 7"),
+            ("PictureFormat", "1920x1080 16:9"),
+            ("IntendedAFD", "1000 FullHD"),
+            ("Captions", "N"),
+            ("AudioTrackPrimaryLanguage", "hu"),
+            ("AudioTrackLayout", "AudioLayout2TrackUndef"),
+        ]),
+        identifiers: vec![
+            kv(&[("Value", "urn:uuid:6f3a5e44-7c0e-4b8e-9a53-0f9d2f4b9b11"), ("Role", "Main"), ("Type", "UUID")]),
+            kv(&[("Value", "SHELF 12-B"), ("Role", "Additional"), ("Type", "Other"), ("Comment", "shelf number")]),
+        ],
+        devices: vec![kv(&[("DeviceType", "Telecine"), ("DeviceManufacturer", "Example Co"), ("DeviceModel", "TK-1"), ("DeviceSerialNumber", "0042")])],
+    }
+}
+
+fn build_as07(d: Option<crate::as07_dms::Dms07>, pattern: Pattern) -> std::io::Result<Vec<u8>> {
+    let layout = crate::UncompressedLayout::V210;
+    let mut cfg = WriterConfig::new(pattern, Rational::new(25, 1), PackageIds::from_seed("raw", "Raw Clip"));
+    cfg.picture = Some(PictureDesc::new(PictureCoding::Uncompressed { layout }, 48, 4));
+    cfg.as07 = d;
+    let mut w = MxfWriter::new(Cursor::new(Vec::new()), cfg)?;
+    for i in 0..3u16 {
+        let (sx, sy) = layout.subsampling();
+        let n = (48 / sx * 4 / sy) as usize;
+        let p = layout.pack(48, 4, [&[16 + i; 192], &vec![100 + i; n], &vec![200 - i; n]]);
+        w.push_picture(&p, FrameInfo::intra())?;
+    }
+    Ok(w.finish()?.into_inner())
+}
+
+#[test]
+fn as07_core_dms_round_trips() {
+    let d = as07_sample();
+    let bytes = build_as07(Some(d.clone()), Pattern::Op1a).unwrap();
+    let f = open(&bytes[..]).unwrap();
+    assert_eq!(f.as07.as_ref(), Some(&d));
+    // the scheme label is in the header metadata, and a file without the metadata has neither
+    let label = crate::as07_dms::CORE_SCHEME;
+    assert!(bytes.windows(16).any(|w| w == label));
+    let plain = build_as07(None, Pattern::Op1a).unwrap();
+    assert!(open(&plain[..]).unwrap().as07.is_none());
+    assert!(!plain.windows(16).any(|w| w == label));
+    // the layout reads back as its name; a UL spelled out is accepted
+    let mut d2 = as07_sample();
+    d2.core.retain(|(k, _)| k != "AudioTrackLayout");
+    d2.core.push(("AudioTrackLayout".into(), "060e2b34.04010101.0d0e0101.07020420".into()));
+    let f = open(&build_as07(Some(d2), Pattern::Op1a).unwrap()[..]).unwrap();
+    let layout = f.as07.unwrap().core.into_iter().find(|(k, _)| k == "AudioTrackLayout").unwrap().1;
+    assert_eq!(layout, "AudioLayoutST377_4MCA");
+}
+
+#[test]
+fn as07_core_dms_is_checked() {
+    let err = |d: crate::as07_dms::Dms07| build_as07(Some(d), Pattern::Op1a).unwrap_err().to_string();
+    let mut d = as07_sample();
+    d.core.retain(|(k, _)| k != "IntendedAFD");
+    assert!(err(d).contains("IntendedAFD is required"));
+    let mut d = as07_sample();
+    d.identifiers.clear();
+    assert!(err(d).contains("at least one identifier"));
+    let mut d = as07_sample();
+    d.identifiers.remove(0);
+    assert!(err(d).contains("role Main"));
+    let mut d = as07_sample();
+    d.identifiers[0][1].1 = "Primary".into();
+    assert!(err(d).contains("not Main, Additional or GSP"));
+    let mut d = as07_sample();
+    d.core.retain(|(k, _)| k != "AudioTrackLayout");
+    d.core.push(("AudioTrackLayout".into(), "AudioLayoutNope".into()));
+    assert!(err(d).contains("AudioTrackLayout"));
+    let e = build_as07(Some(as07_sample()), Pattern::OpAtom).unwrap_err().to_string();
+    assert!(e.contains("OP1a"), "{e}");
+}

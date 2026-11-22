@@ -372,7 +372,11 @@ with timecodes or frame counts). Codec shims (AVC-Intra, XDCAM HD422, D-10) are 
 `as07::check_baseband` (and `baseband_problems`) checks a read file against Appendix J of AMWA AS-07
 (`specs/amwa/as-07-mxf-archive-and-preservation-spec.pdf`): OP1a, one picture track of JPEG 2000 or ST 384
 uncompressed pictures with 8, 10, 12 or 16 bit components, no clip wrapping, linear PCM sound at 48 kHz, 16 or
-24 bit. DMS-AS-07 metadata, the raster subset, several timecodes, captions and content integrity are not
+24 bit. `as07_dms::Dms07` is the AS_07_Core_DMS metadata (appendices D and E): the framework items, the
+identifier sets (at least one with the role `Main`) and the device sets, as text name / value pairs like the
+AS-11 frameworks; `WriterConfig::as07` writes it as a static DM track `AS_07_Core_DMS` of the material
+package in OP1a files and lists the scheme label in the preface, `MxfFile::as07` reads it. The audio track
+layout is a layout name of appendix E or a UL. The raster subset, several timecodes, captions and content integrity are not
 covered.
 
 `as03::file_problems` checks a read file: OP1a, a timecode, the DMS-AS-03 framework and the essence
