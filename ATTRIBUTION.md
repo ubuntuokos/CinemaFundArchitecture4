@@ -98,6 +98,7 @@ procedural demo footage (`crates/media/src/generators.rs`); no external media. R
 | Data | Author | Source | Licence |
 |---|---|---|---|
 | `crates/interchange/tests/data/kdenlive/*.otio` | Jean-Baptiste Mardelle, Eric Jiang (Kdenlive) | Kdenlive `tests/dataset/*.otio`, unchanged; details in `crates/interchange/tests/data/kdenlive/README.md` | CC0-1.0 |
+| `crates/engine/src/camera_proxies.rs` (rule table `FAMILIES`) | Kdenlive contributors | Kdenlive `data/externalproxies.rc` (camera proxy naming rules), re-expressed as a Rust table | CC0-1.0 |
 
 ## Third-party media shown in screenshots
 
