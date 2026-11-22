@@ -4,7 +4,7 @@ use std::collections::HashMap;
 
 use cfa4_time::Tick;
 
-use super::ids::{META_DICTIONARY, ROOT, cls, ddef, def, path, pid};
+use super::ids::{ROOT, cls, ddef, def, path, pid};
 use super::store::{self, Auid, Obj, Value, rational, utf16z};
 use crate::comp::{CItem, CKind, CMarker, Composition, Document, Gain, Source, ticks_to_units};
 use crate::{Error, Report, Result};
@@ -349,12 +349,9 @@ pub(crate) fn write(doc: &Document, version: cfa4_cfb::Version, report: &mut Rep
         .with(pid::CONTENT, Value::Strong(Box::new(content)))
         .with(pid::DICTIONARY, Value::Strong(Box::new(dict)))
         .with(pid::IDENTIFICATION_LIST, Value::StrongVec(vec![ident]));
-    // The meta-dictionary holds only extensions to the baseline object model, and everything written
-    // here is baseline, so its class and type definition sets are empty; readers that load them
-    // (pyaaf2) still need the sets to be there (#323).
-    let meta = Obj::new(META_DICTIONARY)
-        .with(pid::META_CLASS_DEFINITIONS, Value::StrongSet(Vec::new(), pid::META_IDENTIFICATION))
-        .with(pid::META_TYPE_DEFINITIONS, Value::StrongSet(Vec::new(), pid::META_IDENTIFICATION));
+    // The meta-dictionary carries the definitions of the built-in classes and types: readers such as
+    // the AAF SDK and pyaaf2 load it (#323, #1509).
+    let meta = super::meta::dictionary();
     let root = Obj::new(ROOT).with(pid::ROOT_META_DICTIONARY, Value::Strong(Box::new(meta))).with(pid::ROOT_HEADER, Value::Strong(Box::new(header)));
     store::write(&root, version).map_err(Error::Other)
 }

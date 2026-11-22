@@ -715,6 +715,7 @@ fn codec_label(c: &CodecConfig) -> String {
         CodecConfig::Unknown { fourcc, .. } if fourcc.0 == *b"v210" => "Uncompressed YUV 4:2:2 10-bit".into(),
         CodecConfig::Unknown { fourcc, .. } if fourcc.0 == *b"a3ds" => "Auro-CX (unsupported)".into(),
         CodecConfig::Av2 { .. } => "AV2 (unsupported)".into(),
+        CodecConfig::Unknown { fourcc, .. } if fourcc.0 == *b"cvid" => "Cinepak".into(),
         CodecConfig::Unknown { fourcc, .. } if fourcc.0 == *b"drac" => "VC-2 / Dirac".into(),
         CodecConfig::Unknown { fourcc, .. } if crate::svq3::is_svq3(&fourcc.0) => "Sorenson Video 3".into(),
         CodecConfig::Unknown { fourcc, .. } if fourcc.0 == *b"samr" => "AMR-NB".into(),

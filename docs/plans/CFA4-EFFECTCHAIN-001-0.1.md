@@ -1,5 +1,12 @@
 # CFA4-EFFECTCHAIN-001 – effektszerkesztés és -láncok, 0.1
 
+> **[MÓD-2] MÓDOSÍTÁS JÓVÁHAGYÁSRA VÁR** (egyeztetés: [`CFA4-DNEG-VFX-EGYEZTETES-001`](CFA4-DNEG-VFX-EGYEZTETES-001-0.1.md) K-2, K-10, D-2). A jóváhagyásig a 0.1 szöveg érvényes; utána:
+> - **EC-3 (skalár kifejezés-kiértékelő):** nincs saját kiértékelő. A `CFA4-VFX-001` VFX-4 **kifejezésmagját** használja (parser, kiértékelő, fuel/idő/memória-korlát, determinisztikus seed); az EC-3 csak a paraméterekhez kötést és a preset-mentést adja, és a VFX-4-re vár. Az EC-A5…A7 a VFX-4 tesztjeire hivatkozik.
+> - **Hatókör-kizárás:** a „csomópont-alapú kompozitor (külön terv)” a `CFA4-VFX-001` VFX-2/3 (`VfxGraph`, Qt6 csomópont-szerkesztő). A térbeli kifejezés a DNEG-terv N3-ja, ugyanazon a kifejezésmagon.
+> - **EC-2 (macro)** egyszerű, közvetlen kötés; a VFX-4 property-hivatkozásának elkészültekor arra képezendő (nincs külön hivatkozás-mechanizmus). Az EC-3 a VFX-4 mag eredetétől (átvétel vs. tiszta szoba, D-10) függően licencelt.
+> - **EC-0 séma:** verziózott és előre kompatibilis; ha a `VfxGraph` sémája (VFX-2) elkészül, a preset annak részgráfjává migrálható. Az EC-1/EC-2 nem várja a VfxGraphot; nincs második tartós lánc-modell.
+> - **Katalógus:** a preset a mátrixban sor (`DNEG-M7`, lásd az egyeztetési dokumentum A. mellékletét), nem külön katalógusban.
+
 > **Állapot:** JÓVÁHAGYVA (István, 2026-11-21 22:45, Europe/Budapest). **Kódolási engedélyt nem ad:** minden fázis külön tulajdonosi engedélyt igényel (coordination.md §2.10). **Dátum:** 2026-11-21 · **Kérte:** István (ubuntuokos).
 > **Alap:** CFA4 `main` @ `97d7982f`; ez a dokumentum csak dokumentáció.
 > **Értelmezés (a jóváhagyással elfogadva; változtatása tervmódosítás):** az „Effektlánc” = az **effektek összeállításának és újrahasználatának rétege**: effektláncok, felhasználói előbeállítások (preset), paraméter-kifejezések és sablonok, a meglévő effektrendszerre építve. Nem külön szerkesztő és nem új motor. A névről a `main`-ben semmi nincs, a tartalom a tulajdonos szövegéből (DNEG-terv §1.2 A. pont: „effektek és effektláncok, procedurális effektek, keyframe és expression rendszer”) és a kódból következtetett.

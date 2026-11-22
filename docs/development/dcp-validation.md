@@ -81,6 +81,29 @@ location, evidence and how to fix it), the profile rules with their result so Un
 stay visible, the Markdown report, and Save JSON / Markdown. The package browser, tree and the
 audio / video / subtitle / security detail pages of the plan's DCP-F19 follow in later steps.
 
+## Export integration (DCP-13)
+
+Plan DCP-F20. A DCP export goes through the export queue (`export.queue.add`, the Export window's Queue):
+
+- **Preflight**, before anything is queued: `dcp.preflight` (the parameters of `export.resolve`, the format
+  defaults to `dcp`) and every `export.queue.add` of a DCP return findings `DCP.PRE.nnn` with a severity
+  (`error`, `warning`, `info`) and how to fix it. An `error` refuses the whole add: invalid DCP settings, an
+  empty range, and a target folder that is not empty (the exporter would mix the new track files into the
+  package that is there, so an earlier valid export is never touched). Warnings: the frame rate is converted
+  to a DCI rate, no language, no sound. Info: picture scaled with black bars, shortened ISDCF title, and
+  that the package is unencrypted and unsigned. A format other than DCP gets one `DCP.PRE.000` info and no
+  validation.
+- **Postflight**, when the package is written: `dcpValidate` on `export.queue.add` names the profile (a
+  built-in id or a `.json` profile; default for a DCP `delivery-preflight`; `false` switches it off). The
+  result is the queue item's `dcpValidation` (`status` `notChecked`, `running`, `passed`, `failed`,
+  `incomplete`; `profile`, `report`, `error`), kept apart from the render `status` as `qc` is. The report
+  (`cfa4-dcp-report/1`) is written next to the package as `<package>.cfa4dcp.json`, never inside it, and
+  is also the latest report of `dcp.validate.report`. A failed package keeps its files; fix the cause,
+  then `export.queue.retry` validates the new render. Qt6: the queue's Quality column shows the DCP result.
+
+Not covered: a direct `file.exportMedia` of a DCP is not validated (queue only); validation does not say
+that CFA4 writes complete DCPs (encryption, signing and KDMs are other projects).
+
 ## Test data
 
 No DCP media is committed (`AGENTS.md`). Fixtures are generated into `target/fixtures/` from

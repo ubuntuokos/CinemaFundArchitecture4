@@ -55,6 +55,7 @@ cfa4-tta = { path = "../crates/tta" }
 cfa4-amr = { path = "../crates/amr" }
 cfa4-av2 = { path = "../crates/av2" }
 cfa4-canopus = { path = "../crates/canopus" }
+cfa4-theora = { path = "../crates/theora" }
 cfa4-dirac = { path = "../crates/dirac" }
 cfa4-speex = { path = "../crates/speex" }
 cfa4-opus = { path = "../crates/opus" }
@@ -72,12 +73,19 @@ cfa4-evc = { path = "../crates/evc" }
 cfa4-cavs = { path = "../crates/cavs" }
 cfa4-lagarith = { path = "../crates/lagarith" }
 cfa4-svq3 = { path = "../crates/svq3" }
+cfa4-bink = { path = "../crates/bink" }
 cfa4-magicyuv = { path = "../crates/magicyuv" }
 cfa4-g729 = { path = "../crates/g729" }
 cfa4-ilbc = { path = "../crates/ilbc" }
 cfa4-musepack = { path = "../crates/musepack" }
 cfa4-shorten = { path = "../crates/shorten" }
 cfa4-adx = { path = "../crates/adx" }
+cfa4-acm = { path = "../crates/acm" }
+cfa4-roq = { path = "../crates/roq" }
+cfa4-mve = { path = "../crates/mve" }
+cfa4-thp = { path = "../crates/thp" }
+cfa4-mobiclip = { path = "../crates/mobiclip" }
+cfa4-nstream = { path = "../crates/nstream" }
 cfa4-hca = { path = "../crates/hca" }
 cfa4-tak = { path = "../crates/tak" }
 cfa4-smacker = { path = "../crates/smacker" }
@@ -158,6 +166,13 @@ bench = false
 [[bin]]
 name = "canopus"
 path = "fuzz_targets/canopus.rs"
+test = false
+doc = false
+bench = false
+
+[[bin]]
+name = "theora"
+path = "fuzz_targets/theora.rs"
 test = false
 doc = false
 bench = false
@@ -478,6 +493,13 @@ doc = false
 bench = false
 
 [[bin]]
+name = "bink"
+path = "fuzz_targets/bink.rs"
+test = false
+doc = false
+bench = false
+
+[[bin]]
 name = "lagarith"
 path = "fuzz_targets/lagarith.rs"
 test = false
@@ -522,6 +544,43 @@ bench = false
 [[bin]]
 name = "adx"
 path = "fuzz_targets/adx.rs"
+test = false
+doc = false
+bench = false
+
+[[bin]]
+name = "acm"
+path = "fuzz_targets/acm.rs"
+test = false
+doc = false
+bench = false
+
+[[bin]]
+name = "roq"
+path = "fuzz_targets/roq.rs"
+test = false
+doc = false
+bench = false
+
+[[bin]]
+name = "mve"
+path = "fuzz_targets/mve.rs"
+test = false
+doc = false
+bench = false
+
+[[bin]]
+name = "thp"
+path = "fuzz_targets/thp.rs"
+test = false
+doc = false
+bench = false
+
+[[bin]]
+name = "mobiclip"
+path = "fuzz_targets/mobiclip.rs"
+name = "nstream"
+path = "fuzz_targets/nstream.rs"
 test = false
 doc = false
 bench = false
