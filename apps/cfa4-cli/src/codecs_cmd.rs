@@ -125,6 +125,8 @@ static ROWS: &[Row] = &[
     video("Indeo 2", &["indeo"], Ported, Sw(""), false, NoEnc),
     video("Cinepak", &["cinepak"], Ported, Sw(""), false, NoEnc),
     video("Bink video (Bink 1, with alpha) and Bink audio (RDFT, DCT)", &["bink"], Ported, Sw("in Bink (.bik)"), false, NoEnc),
+    video("Nintendo THP", &["thp"], Ported, Sw("in .thp files, JPEG pictures, with the ADPCM sound"), false, NoEnc),
+    video("Nintendo MobiClip", &["mobiclip"], Ported, Sw("in .moflex files, with the FastAudio, IMA ADPCM or PCM sound"), false, NoEnc),
     video("MagicYUV", &["magicyuv"], Ported, Sw(""), false, NoEnc),
     video("id RoQ", &["roq"], Ported, Sw("in .roq files, with the DPCM sound (22.05 kHz)"), false, NoEnc),
     video("Interplay MVE", &["mve"], Ported, Sw("in .mve files, 8-bit palette and 16-bit pictures, with the sound"), false, NoEnc),

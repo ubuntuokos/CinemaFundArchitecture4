@@ -1327,6 +1327,7 @@ dependencies = [
  "cfa4-magicyuv",
  "cfa4-matroska",
  "cfa4-media",
+ "cfa4-mobiclip",
  "cfa4-mpa",
  "cfa4-mpeg2v",
  "cfa4-mpegts",
@@ -1347,6 +1348,7 @@ dependencies = [
  "cfa4-tak",
  "cfa4-testkit",
  "cfa4-theora",
+ "cfa4-thp",
  "cfa4-time",
  "cfa4-truehd",
  "cfa4-tta",
@@ -1996,6 +1998,14 @@ dependencies = [
 ]
 
 [[package]]
+name = "cfa4-mobiclip"
+version = "0.10.0"
+dependencies = [
+ "cfa4-testkit",
+ "thiserror 2.0.21",
+]
+
+[[package]]
 name = "cfa4-mpa"
 version = "0.10.0"
 dependencies = [
@@ -2430,6 +2440,14 @@ dependencies = [
 
 [[package]]
 name = "cfa4-theora"
+version = "0.10.0"
+dependencies = [
+ "cfa4-testkit",
+ "thiserror 2.0.21",
+]
+
+[[package]]
+name = "cfa4-thp"
 version = "0.10.0"
 dependencies = [
  "cfa4-testkit",

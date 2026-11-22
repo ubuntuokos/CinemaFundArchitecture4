@@ -23,6 +23,8 @@
 //! - [`EvcSource`]: raw MPEG-5 EVC Baseline (`.evc`) streams, pictures shown in their order count.
 //! - [`CavsSource`]: raw AVS1-P2 (Chinese AVS, Jizhun profile) streams (`.avs`, `.cavs`).
 //! - [`SstpSource`]: MPEG-4 Simple Studio Profile (Sony SR) elementary streams (`.m4v`), every picture intra.
+//! - [`ThpSource`]: Nintendo THP (`.thp`) JPEG video (full range YUV) with THP ADPCM sound.
+//! - [`MobiclipSource`]: Nintendo MobiClip (`.moflex`) video with FastAudio, IMA ADPCM or PCM sound.
 //! - [`RoqSource`]: id RoQ (`.roq`) video (full range YUV 4:4:4) with DPCM sound.
 //! - [`MveSource`]: Interplay MVE (`.mve`) video (8-bit palette or RGB 5:5:5) with PCM or DPCM sound.
 //! - [`Y4mSource`]: uncompressed YUV4MPEG2 (`.y4m`) video, frames read on demand.
@@ -56,6 +58,7 @@ pub mod lagarith;
 pub mod lcevc;
 pub mod magicyuv;
 pub mod mkv;
+pub mod mobiclip;
 pub mod mp4;
 pub mod mpeg;
 pub mod mve;
@@ -68,6 +71,7 @@ pub mod sstp;
 mod stream_color;
 pub mod streams;
 pub mod theora;
+pub mod thp;
 pub mod utvideo;
 pub mod video;
 mod webm_alpha;
@@ -84,6 +88,7 @@ pub use dif::DifSource;
 pub use evc::EvcSource;
 pub use gop::{FRAME_BUDGET, GopStats, cached_bytes, gop_stats, live_decoders, release_idle};
 pub use mkv::MkvSource;
+pub use mobiclip::MobiclipSource;
 pub use mp4::Mp4Source;
 pub use mpeg::MpegSource;
 pub use mve::MveSource;
@@ -93,6 +98,7 @@ pub use realmedia::RmSource;
 pub use roq::RoqSource;
 pub use smacker::SmkSource;
 pub use sstp::SstpSource;
+pub use thp::ThpSource;
 pub use video::{DecodedFrame, VideoDecoder, VideoDecoderFactory};
 pub use y4m::Y4mSource;
 
@@ -220,6 +226,8 @@ pub fn openers() -> Vec<cfa4_media::Opener> {
         dif::opener,
         realmedia::opener,
         bink::opener,
+        thp::opener,
+        mobiclip::opener,
         smacker::opener,
         roq::opener,
         mve::opener,
