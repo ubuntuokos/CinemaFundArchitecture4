@@ -235,7 +235,8 @@ program's file format, from its documentation and published source:
 - Security advisories: the same CI step runs `cargo deny check advisories` against the RustSec
   database. A new advisory fails the build; a temporary exception goes into `deny.toml`
   `[advisories].ignore` with a reason, and is removed when the dependency moves.
-- Python: `PySide6`/Qt 6 (LGPL-3.0) is compatible. GPL-only Qt modules are compatible with CFA4's
+- Python: `psycopg` 3 (LGPL-3.0-or-later), the PostgreSQL client of the BacklotHub Python components (ADR 0006,
+  `backlot` extra), is compatible; it is used dynamically and unmodified. `PySide6`/Qt 6 (LGPL-3.0) is compatible. GPL-only Qt modules are compatible with CFA4's
   licence as well, but must be listed in `NOTICE` when shipped.
 - Packages must ship `LICENSE`, `LICENSE-MIT`, `LICENSE-APACHE`, `NOTICE` and the licences of
   bundled fonts and programs.

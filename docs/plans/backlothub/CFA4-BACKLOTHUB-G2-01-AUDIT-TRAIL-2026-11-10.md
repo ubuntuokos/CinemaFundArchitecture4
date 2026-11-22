@@ -264,3 +264,26 @@ igazodnak.
 
 **Javaslat: PASS a #48–#51 jóváhagyásával.** Utána: ADR 0006-kiegészítés (#48, #49) és az `AGENTS.md`
 #21-sora külön PR-okban, majd az AU-1 megvalósítása (G4), ha a #767 a `main`-ben van.
+
+## 14. Megvalósítási pontosítások (AU-1, 2026-11-22)
+
+Az AU-1 megvalósítása során a G2-től ezek a pontosítások kerültek be (a kód és a teszt ezt követi):
+
+- **`cfa4_audit.lock_head()`**: a 7. pont 1. lépése (`SELECT … FOR UPDATE` a `chain_head`-en) a `writer` szerepnek
+  nem lehet, mert a `FOR UPDATE` `UPDATE` jogot kér, a `writer`-nek pedig a táblához nincs joga (5. pont). Ezért egy
+  `SECURITY DEFINER` függvény (`lock_head()`) veszi el a zárat, és adja vissza a lánc végét.
+- **`recorded_at` = a zár megszerzése utáni `clock_timestamp()`**, nem a `now()`: a `now()` a tranzakció kezdete, ami
+  párhuzamos íróknál korábbi lehet, mint a már beírt utolsó esemény ideje, és a havi partíció nem lenne a lánc
+  összefüggő szakasza. A `lock_head()` ezt az időt is visszaadja (`now_utc`).
+- **`chain_head.recorded_at`** új oszlop: az `append()` ezzel utasítja el a visszalépő időt (`AUDIT_CHAIN_CONFLICT`).
+- **`personal_detail`**: új oszlopok `subject_type`, `subject_id` (a törlés tárgy szerint megy), `salt` (16 bájt);
+  a `detail` és a `salt` törlés után `NULL` (`erased_at` jelzi).
+- **Függvények**: `write_personal()`, `erase_personal()` (`SECURITY DEFINER`), `ensure_partitions(n)` (csak
+  `cfa4_audit_owner`); a `reader` a `personal_detail`-t **nem** olvashatja.
+- **Hibakód és SQLSTATE**: `AUDIT_APPEND_ONLY` = `AU001`, `AUDIT_CHAIN_BROKEN` = `AU002`, `AUDIT_CHAIN_CONFLICT` = `AU003`.
+  Új Python-oldali kódok: `AUDIT_EVENT_NOT_OBJECT`, `AUDIT_EVENT_INVALID`, `AUDIT_INVALID_VALUE`,
+  `AUDIT_SCHEMA_INSTALL_FAILED`.
+- **Mozgatás az alapértelmezett partícióból**: az `ensure_partitions` a `DEFAULT` partíciót lecsatolja, a sorokat az új
+  hónapba másolja, majd visszacsatolja; a lánc tartalma nem változik. A telepítő (`cfa4_audit.migrate.install`) a
+  migrációt és a genesis eseményt **egy tranzakcióban** futtatja.
+- **Függőség**: `psycopg` (`backlot` extra, `requirements/linux-amd64.txt`).
