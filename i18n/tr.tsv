@@ -4870,6 +4870,10 @@ export.summary	Low	düşük
 	Subtitles	Altyazılar
 	Captions for the hearing impaired	İşitme engelliler için altyazı
 	Forced narrative	Zorunlu anlatım (forced narrative)
+	Silence	Sessizlik
+	Detect Silence	Sessizliği algıla
+	Remove Silence	Sessizliği kaldır
+	Clear Silence Markers	Sessizlik işaretçilerini temizle
 # DCP Validation window (DCP-12)
 	AS-03	AS-03
 	Choose the DCP folder.	DCP klasörünü seçin.

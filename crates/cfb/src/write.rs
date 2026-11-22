@@ -62,6 +62,8 @@ fn name_key(name: &str) -> Vec<u16> {
 pub struct Writer {
     version: Version,
     nodes: Vec<Node>,
+    /// The 16 bytes after the file signature (the header CLSID, zero in plain compound files).
+    header_id: [u8; 16],
 }
 
 impl Default for Writer {
@@ -77,6 +79,7 @@ impl Writer {
     pub fn new(version: Version) -> Self {
         Writer {
             version,
+            header_id: [0; 16],
             nodes: vec![Node {
                 name: "Root Entry".into(),
                 kind: Kind::Root,
@@ -114,6 +117,12 @@ impl Writer {
     /// Add a stream below `parent`.
     pub fn stream(&mut self, parent: NodeId, name: &str, data: Vec<u8>) -> Result<NodeId> {
         self.add(parent, name, Kind::Stream, [0; 16], data)
+    }
+
+    /// Set the 16 bytes after the file signature (the header CLSID). Plain compound files keep
+    /// zero; AAF files carry a label there that readers use to recognise them.
+    pub fn set_header_id(&mut self, id: [u8; 16]) {
+        self.header_id = id;
     }
 
     /// Set the class id of a storage (or the root).
@@ -275,7 +284,7 @@ impl Writer {
         // Header.
         let mut out = Vec::with_capacity((total + 1) * ss);
         out.extend_from_slice(&SIGNATURE);
-        out.extend_from_slice(&[0; 16]);
+        out.extend_from_slice(&self.header_id);
         out.extend_from_slice(&0x003Eu16.to_le_bytes());
         out.extend_from_slice(&(if self.version == Version::V3 { 3u16 } else { 4u16 }).to_le_bytes());
         out.extend_from_slice(&0xFFFEu16.to_le_bytes());

@@ -4876,6 +4876,10 @@
 	Subtitles	Subtítulos
 	Captions for the hearing impaired	Subtítulos para personas sordas o con discapacidad auditiva
 	Forced narrative	Narración forzada (forced narrative)
+	Clear Silence Markers	Borrar marcadores de silencio
+	Detect Silence	Detectar silencio
+	Remove Silence	Eliminar silencio
+	Silence	Silencio
 # DCP Validation window (DCP-12)
 	AS-03	AS-03
 	Choose the DCP folder.	Elige la carpeta del DCP.

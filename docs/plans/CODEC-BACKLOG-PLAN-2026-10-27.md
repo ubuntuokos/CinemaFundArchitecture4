@@ -76,7 +76,7 @@ Sávok: K1 az 1–6. hét, K2 a 7–22. hét, K3 a 23–40. hét, K4 a 40–41. 
 | 23 | 2027-04-05 | K3 | Bink Video 📄 | ~~Bink 2~~ kimarad (2026-11-14) |
 | 24 | 2027-04-12 | K3 | Bink Audio 📄 | Smacker + Smacker Audio 📄 |
 | 25 | 2027-04-19 | K3 | id RoQ 📄 | Interplay MVE + ACM 📄 |
-| 26 | 2027-04-26 | K3 | CRI ADX 📄 | CRI HCA 📄 |
+| 26 | 2027-04-26 | K3 | ✅ CRI ADX | ✅ CRI HCA |
 | 27 | 2027-05-03 | K3 | Sofdec.Prime 📄🔎 | Sofdec2 (konténer) 📄 |
 | 28 | 2027-05-10 | K3 | Nintendo THP 📄 | Nintendo Mobiclip 📄 |
 | 29 | 2027-05-17 | K3 | Nintendo HVQM / HVQM4 📄🔎 | Nintendo DSP ADPCM + BRSTM 📄 |
@@ -116,6 +116,7 @@ valamelyik nem készült el, a következő hétre kell vinni a pótlással együ
 | Dátum | Változás | Összefoglaló |
 |---|---|---|
 | 2026-11-21 | minor | Matroska-lefedettségi kiegészítés (CB-M.1 és a hozzá tartozó tételek) a heti ütemen kívül; a hetek és a határidők nem változtak |
+| 2026-11-21 | patch | Pipálva (✅) a CRI ADX és a CRI HCA (CB-26.1, CB-26.2): az FFmpeg n9.0.2 LGPL-2.1+ dekóderének portja a tulajdonos 2026-11-14-i általános engedélyével; a backlogból kikerültek |
 | 2026-11-14 | minor | Tulajdonosi döntés: a MagicYUV és a Shorten az FFmpeg LGPL-2.1+ dekóderének portjaként készül; a MagicYUV a következő tétel |
 | 2026-11-14 | minor | Tulajdonosi döntés: az OptimFROG, a Sony SR Codec és a Bink 2 kimarad; a HVQM / HVQM4, a Sofdec.Prime, a BCSTM és a PMF előbb forráskeresés (🔎); a BFSTM portként mehet. Dátumok nem változtak |
 | 2026-11-13 | patch | Pipálva (✅) a beolvasztott vagy zöld CI-vel a beolvasztási gazdának (#781) átadott tételek: FFV1, Huffyuv, Ut Video, HAP, G.711 / G.722, ADPCM, WavPack, APE, Speex, AMR, Matrox MPEG-2, VC-2, Dirac, Canopus HQ / HQX, TTA, Musepack, G.729, iLBC. Nyitott: MagicYUV és Shorten (tulajdonosi döntésre vár), a 📄 tételek |

@@ -237,6 +237,9 @@ fn open_reader_plain(name: &str, reader: SharedReader, reader_openers: &[ReaderO
     if crate::oma::sniff(&head) {
         return Ok(Arc::new(crate::oma::open(name, reader)?));
     }
+    if crate::aea::sniff(&head) {
+        return Ok(Arc::new(crate::aea::open(name, reader)?));
+    }
     if reader.len() > max_whole {
         return Err(MediaError::Unsupported(format!("{name}: no streaming reader for this format, and it is too large to read whole here")));
     }

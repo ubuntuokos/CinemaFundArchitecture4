@@ -1,0 +1,22 @@
+[package]
+name = "cfa4-store"
+description = "CFA4's PostgreSQL client (PG-1/PG-2): connection pool, migrations and the typed `tasks` schema of the shared CFA4 cluster"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+rust-version.workspace = true
+
+[lints]
+workspace = true
+
+[dependencies]
+cfa4-tasks = { workspace = true }
+serde = { workspace = true }
+serde_json = { workspace = true }
+log = { workspace = true }
+tokio-postgres = { version = "0.7.18", features = ["with-serde_json-1"] }
+deadpool-postgres = "0.14.2"
+tokio = { version = "1.54.1", features = ["rt", "macros", "time"] }
+
+[dev-dependencies]
+cfa4-route = { workspace = true }

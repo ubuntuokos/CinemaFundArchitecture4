@@ -4852,6 +4852,10 @@
 	Subtitles	Субтитри
 	Captions for the hearing impaired	Субтитри для людей із порушенням слуху
 	Forced narrative	Примусовий переклад (forced narrative)
+	Silence	Тиша
+	Detect Silence	Виявити тишу
+	Remove Silence	Видалити тишу
+	Clear Silence Markers	Очистити маркери тиші
 # DCP Validation window (DCP-12)
 	AS-03	AS-03
 	Choose the DCP folder.	Виберіть теку DCP.

@@ -257,3 +257,4 @@ kódrészhez sor a [`licensing.md` §5](licensing.md) nyilvántartásban.
 - 2026-10-27: első változat (V1–V10).
 - 2026-10-27: a tulajdonos jóváhagyta; 5. pont döntésekké alakítva.
 - 2026-10-27: MI-réteg szabály: V1 és V7 az MI-réteg után; javasolt kezdés V2, V3.
+- 2026-11-21: V1-A (energiaalapú csend-eltávolítás, `CFA4-V1-SILENCE-REMOVAL-001`) megvalósítva: `audio.detectSpeech`, `silence.regions`, `silence.keep`, `silence.clear`, `clip.removeSilence`, Qt6 párbeszéd; az elfogadási teszt `v1_silence_removal_acceptance` (`crates/engine/src/silence_tests.rs`). A V1-B (Silero) az MI-réteg után marad.

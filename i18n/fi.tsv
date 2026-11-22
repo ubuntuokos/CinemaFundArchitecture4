@@ -4871,6 +4871,10 @@ export.summary	Low	matala
 	Subtitles	Tekstitykset
 	Captions for the hearing impaired	Tekstitykset kuulovammaisille
 	Forced narrative	Pakotettu selostus (forced narrative)
+	Silence	Hiljaisuus
+	Detect Silence	Tunnista hiljaisuus
+	Remove Silence	Poista hiljaisuus
+	Clear Silence Markers	Tyhjennä hiljaisuusmerkit
 # DCP Validation window (DCP-12)
 	AS-03	AS-03
 	Choose the DCP folder.	Valitse DCP-kansio.
