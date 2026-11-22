@@ -61,6 +61,7 @@ const LAYERS: &[(&str, u8)] = &[
     ("hap", 0),
     ("utvideo", 0),
     ("lagarith", 0),
+    ("indeo", 0),
     ("magicyuv", 0),
     ("huffyuv", 0),
     ("ffv1", 0),
@@ -464,7 +465,7 @@ fn cinema_oracles() -> Result<(), String> {
 }
 
 /// L0 crates that read no untrusted input (encoders only): no fuzz target needed.
-const NO_PARSER: &[&str] = &["h264enc", "flac"];
+const NO_PARSER: &[&str] = &["h264enc", "flac", "atracenc"];
 
 /// CFA4-SECURITY-001 B2: every L0 parser crate has a fuzz target, and every target is wired up.
 fn fuzz_targets() -> Result<(), String> {

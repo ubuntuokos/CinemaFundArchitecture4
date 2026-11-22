@@ -4880,3 +4880,7 @@
 	Validate DCP…	Проверить DCP…
 	the engine sent no profiles	движок не прислал профили
 	{n} files checked	Проверено файлов: {n}
+
+# AS-02 export
+	Write an AS-02 bundle (the path is a folder)	Записать пакет AS-02 (путь — это папка)
+	AS-02	AS-02

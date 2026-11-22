@@ -4900,3 +4900,7 @@ export.summary	Low	žema
 	Validate DCP…	Patikrinti DCP…
 	the engine sent no profiles	variklis nesiuntė jokių profilių
 	{n} files checked	Patikrinta failų: {n}
+
+# AS-02 export
+	Write an AS-02 bundle (the path is a folder)	Įrašyti AS-02 paketą (kelias yra aplankas)
+	AS-02	AS-02

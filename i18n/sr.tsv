@@ -4897,3 +4897,7 @@ export.summary	Low	низак
 	Validate DCP…	Провери DCP…
 	the engine sent no profiles	механизам није послао ниједан профил
 	{n} files checked	Проверено датотека: {n}
+
+# AS-02 export
+	Write an AS-02 bundle (the path is a folder)	Упиши AS-02 пакет (путања је фасцикла)
+	AS-02	AS-02

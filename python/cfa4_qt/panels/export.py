@@ -564,6 +564,9 @@ class ExportDialog(QDialog):
         # MXF OP1a: the caption track as closed captions in an ANC data track (ST 436-1, CEA-608/708)
         self.mxf_anc = QCheckBox(tr("Write the captions as ANC data (CEA-608/708)"), self)
         self.mxf_anc.setObjectName("export.video.mxfAncCaptions")
+        # MXF OP1a: an AMWA AS-02 bundle (version file, manifest, mono components under media/)
+        self.mxf_as02 = QCheckBox(tr("Write an AS-02 bundle (the path is a folder)"), self)
+        self.mxf_as02.setObjectName("export.video.mxfAs02")
         # MXF OP1a: AMWA AS-11 metadata in bmx's text forms (empty Core = no AS-11 metadata)
         self.as11_text: dict[str, QPlainTextEdit] = {}
         # the placeholders show bmx's text forms (item names and time codes, not translated)
@@ -653,6 +656,7 @@ class ExportDialog(QDialog):
         fv.addRow(tr("Alpha"), self.alpha)
         fv.addRow(tr("DASH Manifest"), self.dash_manifest)
         fv.addRow(tr("Closed Captions"), self.mxf_anc)
+        fv.addRow(tr("AS-02"), self.mxf_as02)
         for key, label in (("mxfAs11Core", N_("AS-11 Core")), ("mxfAs11Segments", N_("AS-11 Parts")), ("mxfAs11Ukdpp", N_("AS-11 UK DPP")), ("mxfAs10", N_("AS-10")), ("mxfAs03", N_("AS-03"))):
             fv.addRow(tr(label), self.as11_text[key])
         fv.addRow(tr("Quality"), self.quality)
@@ -871,7 +875,7 @@ class ExportDialog(QDialog):
         self.imf_lossless.toggled.connect(self._changed)
         for key, c in (("bitrateMode", self.bitrate_mode), ("audioCodec", self.audio_codec), ("chroma", self.chroma)):
             c.currentIndexChanged.connect(lambda _i, k=key: self._touch(k))
-        for key, b in (("hardware", self.hardware), ("audio", self.audio), ("alpha", self.alpha), ("dashManifest", self.dash_manifest), ("mxfAncCaptions", self.mxf_anc)):
+        for key, b in (("hardware", self.hardware), ("audio", self.audio), ("alpha", self.alpha), ("dashManifest", self.dash_manifest), ("mxfAncCaptions", self.mxf_anc), ("mxfAs02", self.mxf_as02)):
             b.toggled.connect(lambda _on, k=key: self._touch(k))
         for key, t in self.as11_text.items():
             t.textChanged.connect(lambda k=key: self._touch(k))
@@ -1124,6 +1128,7 @@ class ExportDialog(QDialog):
         rows["quality"] = enc in QUALITY_FORMATS
         rows["dashManifest"] = fmt == "hls"
         rows["mxfAncCaptions"] = fmt == "mxf-op1a" and self._choice("mxfVideoCodec") != "d10"
+        rows["mxfAs02"] = fmt == "mxf-op1a" and self._choice("mxfVideoCodec") not in ("d10", "xdcamHd422")
         for key in self.as11_text:
             rows[key] = fmt == "mxf-op1a"
         return rows
@@ -1170,6 +1175,7 @@ class ExportDialog(QDialog):
             "quality": self.quality,
             "dashManifest": self.dash_manifest,
             "mxfAncCaptions": self.mxf_anc,
+            "mxfAs02": self.mxf_as02,
             **self.as11_text,
         }
         for key, shown in self._format_rows().items():
@@ -1184,7 +1190,7 @@ class ExportDialog(QDialog):
                 c.blockSignals(True)
                 c.setCurrentIndex(i)
                 c.blockSignals(False)
-        for key, box in (("alpha", self.alpha), ("dashManifest", self.dash_manifest), ("mxfAncCaptions", self.mxf_anc)):
+        for key, box in (("alpha", self.alpha), ("dashManifest", self.dash_manifest), ("mxfAncCaptions", self.mxf_anc), ("mxfAs02", self.mxf_as02)):
             if key not in self.touched and isinstance(settings.get(key), bool):
                 box.blockSignals(True)
                 box.setChecked(settings[key])
@@ -1474,6 +1480,8 @@ class ExportDialog(QDialog):
             p["dashManifest"] = self.dash_manifest.isChecked()
         if rows["mxfAncCaptions"] and "mxfAncCaptions" in self.touched:
             p["mxfAncCaptions"] = self.mxf_anc.isChecked()
+        if rows["mxfAs02"] and "mxfAs02" in self.touched:
+            p["mxfAs02"] = self.mxf_as02.isChecked()
         for key, t in self.as11_text.items():
             if rows[key] and key in self.touched:
                 p[key] = t.toPlainText()

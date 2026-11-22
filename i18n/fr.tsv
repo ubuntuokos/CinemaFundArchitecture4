@@ -4902,3 +4902,7 @@
 	Validate DCP…	Valider le DCP…
 	the engine sent no profiles	le moteur n'a envoyé aucun profil
 	{n} files checked	{n} fichiers vérifiés
+
+# AS-02 export
+	Write an AS-02 bundle (the path is a folder)	Écrire un bundle AS-02 (le chemin est un dossier)
+	AS-02	AS-02
