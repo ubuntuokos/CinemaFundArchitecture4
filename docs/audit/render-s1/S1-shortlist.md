@@ -1,6 +1,7 @@
 # S1: szűkítés, javaslat a kapu-jóváhagyónak (CFA4-RENDER-INTEGRATION-PLAN-001)
 
-> **Állapot: JAVASLAT, nem döntés.** A terv szerint (S1 kilépés) a döntés a kapu-jóváhagyó aláírása. Ez a dokumentum az F0a, F0V és F1
+> **Állapot: a 4. fejezet 1. pontját István (projektgazda) 2026-11-22-én jóváhagyta** (döntéskártya: „Igen, csak minta marad”). A 4. fejezet
+> 2. és 3. pontja (Python verzió, EC-jelölt fenntartása) nyitott; a teljes S1 aláírása még nincs meg. Ez a dokumentum az F0a, F0V és F1
 > bizonyítékából állítja össze a besorolást; csak olvasott, nem mért. Referenciagépes mérés nem szerepel benne (PENDING).
 
 ## 1. Szabályok és alkalmazásuk
@@ -32,7 +33,7 @@ A többi jelölt (FFmpeg alap, MLT, MovieLite, Gausian, Dioxuscut, GStreamer, a 
 
 ## 4. Amit a jóváhagyónak el kell döntenie
 
-1. **A három F1 REFERENCE_ONLY jelölt (ReelForge, avio, rust-motion) kiesik az F2-ből.** A terv v1.1 ezeket feltételes POC-jelöltnek jelölte, és a D1 egy "ReelForge döntés" (F3 előfeltétele). Ha kiesnek, az F3 render graph saját (CFA4) megvalósítás, ReelForge mintával; a D1 ezt a döntést nem tartalmazza. Ez a terv szövegét érinti, ezért a koordinációs szabályzat §2.10 szerint tulajdonosi jóváhagyás kell, mielőtt a terv módosul.
+1. **(JÓVÁHAGYVA 2026-11-22; a terv szövege ugyanebben a PR-ban módosult.) A három F1 REFERENCE_ONLY jelölt (ReelForge, avio, rust-motion) kiesik az F2-ből.** A terv v1.1 ezeket feltételes POC-jelöltnek jelölte, és a D1 egy "ReelForge döntés" (F3 előfeltétele). Ha kiesnek, az F3 render graph saját (CFA4) megvalósítás, ReelForge mintával; a D1 ezt a döntést nem tartalmazza. Ez a terv szövegét érinti, ezért a koordinációs szabályzat §2.10 szerint tulajdonosi jóváhagyás kell, mielőtt a terv módosul.
 2. **Python verzió (4. szabály).** A VapourSynth szkriptlánca (havsfunc → vs-jetpack, MIT) Python ≥ 3.13-at kér. Ha ez nem a nyilvántartott verzió, indoklás és jóváhagyás kell; az A11 szerint nem kötelezően egy verzió, de a számuk minimális.
 3. **EC-jelölt fenntartása.** Az F2 elején el kell dönteni (MQ-1), hogy a 32 bites réteg-kvantálás nélküli út elérhető-e; ha nem, az EC-jelölt kiesik, és csak minta marad.
 
