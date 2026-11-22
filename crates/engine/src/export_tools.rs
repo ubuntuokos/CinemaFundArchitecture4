@@ -473,7 +473,14 @@ pub fn single_frame_in_out(q: &cfa4_project::Sequence, range: TimeRange) -> bool
 
 const SINGLE_FRAME_WARNING: &str = "In/Out range is 1 frame; pass range: entire for the whole sequence";
 
-fn range_with_warnings(s: &Session, project: &Project, seq: ItemId, v: Option<&Value>, p: &Value, cmd: &str) -> Result<(Option<TimeRange>, Vec<&'static str>)> {
+pub(crate) fn range_with_warnings(
+    s: &Session,
+    project: &Project,
+    seq: ItemId,
+    v: Option<&Value>,
+    p: &Value,
+    cmd: &str,
+) -> Result<(Option<TimeRange>, Vec<&'static str>)> {
     let q = project.sequence(seq).ok_or(EngineError::NoSequence)?;
     q.check_bounds().map_err(|e| bad(cmd, e))?;
     let fd = q.settings.frame_rate.frame_duration();
@@ -574,7 +581,7 @@ fn is_folder(x: &str) -> bool {
 
 /// Output path for `seq`: the `path` param (a file, or a directory ending in `/` or existing), else
 /// `<default dir>/<sequence name>.<ext>`; `suffix` distinguishes several items.
-fn output_path(s: &Session, p: &Value, seq: ItemId, settings: &ExportSettings, suffix: Option<usize>) -> String {
+pub(crate) fn output_path(s: &Session, p: &Value, seq: ItemId, settings: &ExportSettings, suffix: Option<usize>) -> String {
     let name = s.project.item(seq).map(|i| i.name.clone()).unwrap_or_else(|| "Sequence".into());
     let base = match str_p(p, "path").map(expand_home) {
         Some(x) if is_folder(&x) => Path::new(&x).join(file_safe(&name)).to_string_lossy().to_string(),
@@ -747,6 +754,9 @@ pub struct QueueItem {
     /// Media QC of the output, kept apart from `status` (the render state).
     #[serde(skip)]
     pub qc: crate::qc::ItemQc,
+    /// DCP validation of the package (DCP-13), kept apart from `status` as well.
+    #[serde(skip)]
+    pub dcp: crate::dcp_export::ItemDcp,
     /// The project as it was when the item was queued.
     #[serde(skip)]
     pub project: Arc<Project>,
@@ -857,6 +867,7 @@ fn item_json(s: &Session, it: &QueueItem) -> Value {
         "error": it.error,
         "offlineMedia": it.job.map_or_else(|| json!([]), |j| offline_media_json(s, j)),
         "qc": crate::qc::item_json(&it.qc),
+        "dcpValidation": crate::dcp_export::item_json(&it.dcp),
     })
 }
 
@@ -868,6 +879,7 @@ pub fn pump_queue(s: &mut Session, wait: bool) {
         // settle
         let mut finished_any = false;
         let mut checked = Vec::new();
+        let mut dcp_checked = Vec::new();
         for i in 0..s.export_queue.items.len() {
             let it = &s.export_queue.items[i];
             if it.status != QueueStatus::Encoding {
@@ -882,6 +894,9 @@ pub fn pump_queue(s: &mut Session, wait: bool) {
                     it.status = QueueStatus::Done;
                     if it.qc.profile.is_some() {
                         checked.push(it.id);
+                    }
+                    if it.dcp.profile.is_some() {
+                        dcp_checked.push(it.id);
                     }
                     Outcome::Succeeded
                 }
@@ -906,6 +921,10 @@ pub fn pump_queue(s: &mut Session, wait: bool) {
         // automatic QC of finished outputs (`export.queue.add` with `qc`)
         for id in checked {
             crate::qc::after_export(s, id, wait);
+        }
+        // postflight of finished DCP packages (`dcpValidate`, DCP-13)
+        for id in dcp_checked {
+            crate::dcp_export::after_export(s, id, wait);
         }
         if s.export_queue.items.iter().any(|i| i.status == QueueStatus::Encoding) || !s.export_queue.running {
             return;
@@ -1045,6 +1064,18 @@ fn queue_add(s: &mut Session, p: &Value) -> Result<Value> {
             items.push((seq, st));
         }
     }
+    // DCP preflight (DCP-13): a blocking finding refuses the whole add before anything is queued
+    let dcp_profile = crate::dcp_export::profile_param(p, settings.format, cmd)?;
+    let mut dcp_preflight = Vec::new();
+    for (seq, st) in &items {
+        if st.format == Format::Dcp {
+            let findings = crate::dcp_export::preflight(s, *seq, st);
+            if let Some(why) = crate::dcp_export::blocking(&findings) {
+                return Err(bad(cmd, format!("DCP preflight: {why}")));
+            }
+            dcp_preflight.push(json!({"path": st.path, "verdict": crate::dcp_export::verdict_word(&findings), "findings": findings}));
+        }
+    }
     for (seq, st) in items {
         s.export_queue.next_id += 1;
         let id = s.export_queue.next_id;
@@ -1059,6 +1090,7 @@ fn queue_add(s: &mut Session, p: &Value) -> Result<Value> {
             job: None,
             error: None,
             qc: crate::qc::ItemQc { profile: qc_profile.clone(), ..Default::default() },
+            dcp: crate::dcp_export::ItemDcp { profile: dcp_profile.clone(), ..Default::default() },
             project: project.clone(),
             task: None,
             waiting_for: Vec::new(),
@@ -1069,7 +1101,7 @@ fn queue_add(s: &mut Session, p: &Value) -> Result<Value> {
         s.export_queue.running = true;
         pump_queue(s, bool_p(p, "wait").unwrap_or(false));
     }
-    Ok(json!({"added": ids, "items": queue_list_json(s), "warnings": warnings}))
+    Ok(json!({"added": ids, "items": queue_list_json(s), "warnings": warnings, "dcpPreflight": dcp_preflight}))
 }
 
 fn queue_list_json(s: &Session) -> Value {
@@ -1173,6 +1205,7 @@ fn queue_retry(s: &mut Session, p: &Value) -> Result<Value> {
     it.job = None;
     let id = it.id;
     crate::qc::reset_for_retry(s, id);
+    crate::dcp_export::reset_for_retry(s, id);
     if bool_p(p, "start").unwrap_or(false) {
         s.export_queue.running = true;
         pump_queue(s, bool_p(p, "wait").unwrap_or(false));
@@ -1532,7 +1565,7 @@ pub(crate) fn commands() -> Vec<CommandSpec> {
         spec(
             "export.queue.add",
             "Send to Export Queue",
-            r#"{…settings params,"path":str|dir?,"sequences":[id]?,"ranges":[range]?,"qc":str|bool?,"start":bool?,"wait":bool?}"#,
+            r#"{…settings params,"path":str|dir?,"sequences":[id]?,"ranges":[range]?,"qc":str|bool?,"dcpValidate":str|bool?,"start":bool?,"wait":bool?}"#,
             has_seq,
             queue_add,
             true,

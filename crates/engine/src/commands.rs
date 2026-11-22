@@ -4040,6 +4040,7 @@ fn build() -> Vec<CommandSpec> {
     v.extend(crate::smart_cut::commands());
     v.extend(crate::qc::commands());
     v.extend(crate::dcp_validation::commands());
+    v.extend(crate::dcp_export::commands());
     v.extend(crate::transcript::commands());
     v.extend(crate::panels::commands());
     v.extend(crate::scopes::commands());
