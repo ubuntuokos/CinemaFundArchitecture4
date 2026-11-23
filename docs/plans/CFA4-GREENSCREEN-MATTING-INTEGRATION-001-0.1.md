@@ -2,7 +2,7 @@
 
 | Dokumentumadat | Érték |
 |---|---|
-| Állapot | **JÓVÁHAGYOTT (István, 2026-11-23; 0.2: ütközésmentes illesztési terv).** A fejlesztés a 7. pont előfeltételei szerint indul ([`coordination.md`](../coordination.md) §2.10) |
+| Állapot | **VÉGLEGES, JÓVÁHAGYOTT (István, 2026-11-23, véglegesítési utasítással; 0.2: ütközésmentes illesztési terv).** A fejlesztés a 7. pont szerint, témánként külön ágon és PR-ban folyik; a Z0/Z1a az előfeltétel nélküli fázis A fejlesztés a 7. pont előfeltételei szerint indul ([`coordination.md`](../coordination.md) §2.10) |
 | Dátum | 2026-11-23 |
 | Kérte | István (ubuntuokos) |
 | Alap | CFA4 `main` @ `bc3308f` |
@@ -205,7 +205,7 @@ Minden fázis csak jóváhagyás után indul (§2.10); „kész” csak teszt- v
 
 **Függőségi sorrend:** Z0 → Z1a ∥ Z1b → Z2 → Z3; az AI-backendek az AI-réteg kapui szerint, a Z1b matte-szerződés elfogadása után kapcsolódnak.
 
-## 8. Döntések (István, 2026-11-23, „javaslatod szerint”)
+## 8. Döntések (István, 2026-11-23, „javaslatod szerint”; véglegesítve ugyanazon a napon)
 
 A tulajdonos a hét kérdésre a dokumentumban írt javaslat szerint döntött. A terv ezzel **jóváhagyott**; a Z0 indulhat, a további fázisok a 7. pont előfeltételei szerint.
 
