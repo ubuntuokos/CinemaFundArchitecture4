@@ -801,6 +801,21 @@ fn as02_bundle_has_version_manifest_and_mono_components() {
     assert_eq!(ver.tracks.len(), 3);
     assert!(ver.tracks.iter().all(|t| t.clips.len() == 1 && t.clips[0].duration == 24));
     assert_eq!(ver.components.len(), 3);
+    // each file package copy carries the component's own file descriptor, property for property
+    for c in &ver.components {
+        let rel = c.locator.as_deref().unwrap();
+        let comp = std::fs::read(format!("{dir}/{rel}")).unwrap();
+        let mut theirs = cfa4_mxf::as02_version::copy_descriptor(&comp, Some(c.umid)).unwrap();
+        let mut ours = cfa4_mxf::as02_version::copy_descriptor(&v, Some(c.umid)).unwrap();
+        assert_eq!(ours.len(), theirs.len(), "{rel}");
+        assert!(ours[0].props.len() > 3, "{rel}: a full descriptor, not the minimal one");
+        for set in ours.iter_mut().chain(theirs.iter_mut()) {
+            set.props.sort();
+            set.uid = [0; 16];
+            set.sub.clear();
+        }
+        assert_eq!(ours, theirs, "{rel}");
+    }
     let _ = std::fs::remove_dir_all(&dir);
     // refused with the single-file frameworks and for the codecs that interleave sound
     let bad = |s: ExportSettings| s.validate().unwrap_err().to_string();
