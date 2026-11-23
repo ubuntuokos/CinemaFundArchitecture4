@@ -147,3 +147,15 @@ class LinkNotFound(BacklotError):
 
 class LinkInvalid(BacklotError):
     code = "LINK_INVALID"
+
+
+class EntityTypeInUse(BacklotError):
+    code = "ENTITY_TYPE_IN_USE"
+
+
+class StructureRuleInUse(BacklotError):
+    code = "STRUCTURE_RULE_IN_USE"
+
+
+class StructureTemplateNotFound(BacklotError):
+    code = "STRUCTURE_TEMPLATE_NOT_FOUND"

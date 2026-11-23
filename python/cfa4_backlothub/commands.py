@@ -23,7 +23,9 @@ from .production import config as cfg
 from .production import milestones as ms
 from .production import organizations as orgs
 from .production import service as prod
+from .structure import config as scfg
 from .structure import entities as ent
+from .structure import operations as ops
 
 Result = dict[str, Any]
 
@@ -209,6 +211,70 @@ def _st_link_list(engine: Engine, actor: Actor | None, p: Mapping[str, Any]) -> 
     return ent.list_links(engine, p["entity_id"], link_type=p.get("link_type"), actor=actor)
 
 
+def _st_move(engine: Engine, actor: Actor | None, p: Mapping[str, Any]) -> Any:
+    return ops.move_entity(engine, p["id"], p["row_version"], p.get("parent_id"), actor)
+
+
+def _st_reorder(engine: Engine, actor: Actor | None, p: Mapping[str, Any]) -> Any:
+    return ops.reorder_entity(engine, p["id"], p["row_version"], p["position"], actor)
+
+
+def _st_merge(engine: Engine, actor: Actor | None, p: Mapping[str, Any]) -> Any:
+    return ops.merge_entity(engine, p["source_id"], p["target_id"], actor)
+
+
+def _st_retire(engine: Engine, actor: Actor | None, p: Mapping[str, Any]) -> Any:
+    return ops.retire_entity(engine, p["id"], p["row_version"], p.get("retired", True), actor)
+
+
+def _st_delete(engine: Engine, actor: Actor | None, p: Mapping[str, Any]) -> Any:
+    return ops.delete_entity(engine, p["id"], p["row_version"], actor)
+
+
+def _st_impact(engine: Engine, actor: Actor | None, p: Mapping[str, Any]) -> Any:
+    return ops.impact(engine, p["id"], link_type=p.get("link_type"), actor=actor)
+
+
+def _et_create(engine: Engine, actor: Actor | None, p: Mapping[str, Any]) -> Any:
+    return scfg.create_entity_type(engine, p, actor)
+
+
+def _et_update(engine: Engine, actor: Actor | None, p: Mapping[str, Any]) -> Any:
+    return scfg.update_entity_type(engine, p["code"], p["row_version"], {k: v for k, v in p.items() if k not in ("code", "row_version")}, actor)
+
+
+def _et_list(engine: Engine, actor: Actor | None, p: Mapping[str, Any]) -> Any:
+    return scfg.list_entity_types(engine, bool(p.get("include_retired", False)))
+
+
+def _tpl_list(engine: Engine, actor: Actor | None, p: Mapping[str, Any]) -> Any:
+    return scfg.list_templates(engine)
+
+
+def _tpl_create(engine: Engine, actor: Actor | None, p: Mapping[str, Any]) -> Any:
+    return scfg.create_template(engine, p, actor)
+
+
+def _tpl_rule_add(engine: Engine, actor: Actor | None, p: Mapping[str, Any]) -> Any:
+    return scfg.add_template_rule(engine, p["template"], {k: v for k, v in p.items() if k != "template"}, actor)
+
+
+def _tpl_rule_remove(engine: Engine, actor: Actor | None, p: Mapping[str, Any]) -> Any:
+    return scfg.remove_template_rule(engine, p["template"], {k: v for k, v in p.items() if k != "template"}, actor)
+
+
+def _rule_list(engine: Engine, actor: Actor | None, p: Mapping[str, Any]) -> Any:
+    return scfg.list_rules(engine, p["production_id"], actor)
+
+
+def _rule_add(engine: Engine, actor: Actor | None, p: Mapping[str, Any]) -> Any:
+    return scfg.add_rule(engine, p["production_id"], {k: v for k, v in p.items() if k != "production_id"}, actor)
+
+
+def _rule_remove(engine: Engine, actor: Actor | None, p: Mapping[str, Any]) -> Any:
+    return scfg.remove_rule(engine, p["production_id"], {k: v for k, v in p.items() if k != "production_id"}, actor)
+
+
 _ORG_FIELDS = (
     Param("legal_name", "str"), Param("country", "str", help="ISO 3166-1 alpha-2"), Param("registration_no", "str"),
     Param("tax_no", "str"), Param("notes", "str"),
@@ -348,6 +414,75 @@ COMMANDS: dict[str, Command] = {
         Command(
             "backlot.structure.link.list", "command.backlot.structure.link.list", ("Structure", "Links", "List"),
             (Param("entity_id", "uuid", True), Param("link_type", "str")), _st_link_list, modifies=False,
+        ),
+        Command(
+            "backlot.structure.entity.move", "command.backlot.structure.entity.move", ("Structure", "Move element"),
+            (Param("id", "uuid", True), Param("row_version", "int", True), Param("parent_id", "uuid", help="none: the top level")), _st_move,
+        ),
+        Command(
+            "backlot.structure.entity.reorder", "command.backlot.structure.entity.reorder", ("Structure", "Reorder element"),
+            (Param("id", "uuid", True), Param("row_version", "int", True), Param("position", "int", True, "1 = first among the siblings")),
+            _st_reorder,
+        ),
+        Command(
+            "backlot.structure.entity.merge", "command.backlot.structure.entity.merge", ("Structure", "Merge elements"),
+            (Param("source_id", "uuid", True, "retired after the merge"), Param("target_id", "uuid", True)), _st_merge,
+        ),
+        Command(
+            "backlot.structure.entity.retire", "command.backlot.structure.entity.retire", ("Structure", "Retire element"),
+            (Param("id", "uuid", True), Param("row_version", "int", True), Param("retired", "bool", help="false: bring back")), _st_retire,
+        ),
+        Command(
+            "backlot.structure.entity.delete", "command.backlot.structure.entity.delete", ("Structure", "Delete element"),
+            (Param("id", "uuid", True), Param("row_version", "int", True)), _st_delete,
+        ),
+        Command(
+            "backlot.structure.impact", "command.backlot.structure.impact", ("Structure", "Impact"),
+            (Param("id", "uuid", True), Param("link_type", "str")), _st_impact, modifies=False,
+        ),
+        Command(
+            "backlot.structure.entity_type.create", "command.backlot.structure.entity_type.create", ("Settings", "Element types", "New"),
+            (Param("code", "str", True), Param("label", "str", True), Param("kind", "str", True, "structural or asset"),
+             Param("has_timing", "bool", help="structural types only"), Param("icon", "str")),
+            _et_create,
+        ),
+        Command(
+            "backlot.structure.entity_type.update", "command.backlot.structure.entity_type.update", ("Settings", "Element types", "Edit"),
+            (Param("code", "str", True), Param("row_version", "int", True), Param("label", "str"), Param("icon", "str"),
+             Param("retired", "bool", help="no new elements of this type"), Param("has_timing", "bool", help="only while no element has the type")),
+            _et_update,
+        ),
+        Command(
+            "backlot.structure.entity_type.list", "command.backlot.structure.entity_type.list", ("Settings", "Element types", "List"),
+            (Param("include_retired", "bool"),), _et_list, modifies=False,
+        ),
+        Command("backlot.structure.template.list", "command.backlot.structure.template.list", ("Settings", "Structure templates", "List"), (), _tpl_list, modifies=False),
+        Command(
+            "backlot.structure.template.create", "command.backlot.structure.template.create", ("Settings", "Structure templates", "New"),
+            (Param("code", "str", True), Param("label", "str", True), Param("production_type", "str", True, "one template per production type")),
+            _tpl_create,
+        ),
+        Command(
+            "backlot.structure.template.rule.add", "command.backlot.structure.template.rule.add", ("Settings", "Structure templates", "Add rule"),
+            (Param("template", "str", True), Param("parent", "str", help="structural type code; none: top level"), Param("child", "str", True)),
+            _tpl_rule_add,
+        ),
+        Command(
+            "backlot.structure.template.rule.remove", "command.backlot.structure.template.rule.remove", ("Settings", "Structure templates", "Remove rule"),
+            (Param("template", "str", True), Param("parent", "str"), Param("child", "str", True)), _tpl_rule_remove,
+        ),
+        Command(
+            "backlot.structure.rule.list", "command.backlot.structure.rule.list", ("Structure", "Rules", "List"),
+            (Param("production_id", "uuid", True),), _rule_list, modifies=False,
+        ),
+        Command(
+            "backlot.structure.rule.add", "command.backlot.structure.rule.add", ("Structure", "Rules", "Add"),
+            (Param("production_id", "uuid", True), Param("parent", "str", help="structural type code; none: top level"), Param("child", "str", True)),
+            _rule_add,
+        ),
+        Command(
+            "backlot.structure.rule.remove", "command.backlot.structure.rule.remove", ("Structure", "Rules", "Remove"),
+            (Param("production_id", "uuid", True), Param("parent", "str"), Param("child", "str", True)), _rule_remove,
         ),
     )
 }
