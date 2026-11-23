@@ -292,6 +292,83 @@ fn dnxhd_export_roundtrip() {
     assert!(e.contains("1920×1080"), "{e}");
 }
 
+/// Interlaced DNxHD (CIDs 1241–1243): two field coding units per frame, the top field first;
+/// the MOV carries `fiel` 1, the MXF its separate-field layout, and our decoder and ffprobe read
+/// them back. Progressive and lower-field-first requests are refused.
+#[test]
+fn dnxhd_interlaced_export_roundtrip() {
+    let (p, seq, m) = project();
+    let short = |s: &mut ExportSettings| s.range = Some(TimeRange::new(Tick::ZERO, FrameRate::FPS_24.tick_of(4)));
+    for (profile, label) in
+        [("hd1241", "DNxHD 1080i 10-bit (CID 1241)"), ("hd1242", "DNxHD 1080i 8-bit (CID 1242)"), ("hd1243", "DNxHD 1080i 8-bit (CID 1243)")]
+    {
+        let path = tmp(&format!("dnx_{profile}.mov"));
+        let mut s = ExportSettings {
+            format: Format::DnxHr,
+            path: path.clone(),
+            dnx_profile: profile.into(),
+            frame_size: Some((1920, 1080)),
+            field_order: FieldOrder::UpperFirst,
+            ..Default::default()
+        };
+        short(&mut s);
+        assert!(s.codes_interlaced() && s.dnx_interlaced());
+        export(&p, seq, &s, &m, &Progress::default()).unwrap();
+        let bytes: Arc<[u8]> = std::fs::read(&path).unwrap().into();
+        let mov = cfa4_isobmff::open(&bytes[..]).unwrap();
+        let entry = mov.tracks.iter().flat_map(|t| &t.entries).find_map(|e| e.video.as_ref()).unwrap();
+        assert_eq!(entry.field_info, Some(cfa4_isobmff::FieldInfo { fields: 2, detail: 1 }), "{profile}");
+        let src = cfa4_codecs::open_bytes("dnx.mov", bytes).unwrap();
+        let info = src.info().video.clone().unwrap();
+        assert_eq!((info.codec.as_str(), info.width, info.height), (label, 1920, 1080));
+        let f = src.video_frame(FrameRequest::full(Tick(TICKS_PER_SECOND / 8))).unwrap();
+        assert_eq!(f.layout.field_order, cfa4_frame::FieldOrder::TopFirst, "{profile}");
+        let px = f.to_rgba8();
+        let c = ((540 * 1920 + 960) * 4) as usize;
+        assert!(px[c] > 240 && px[c + 1] < 15 && px[c + 2] < 15, "{profile}: {:?}", &px[c..c + 4]);
+        if let Some(ffprobe) = cfa4_testkit::ffprobe_or_skip("DNxHD interlaced") {
+            let out = std::process::Command::new(ffprobe)
+                .args(["-v", "error", "-select_streams", "v:0", "-show_entries", "stream=codec_name,width,height,field_order", "-of", "csv=p=0", &path])
+                .output()
+                .unwrap();
+            let line = String::from_utf8_lossy(&out.stdout).trim().to_string();
+            assert!(line.starts_with("dnxhd,1920,1080,t"), "{profile}: {line}");
+        }
+    }
+    // MXF OP1a
+    let path = tmp("dnx_hd1242.mxf");
+    let mut s = ExportSettings {
+        format: Format::MxfOp1a,
+        mxf_video_codec: MxfVideoCodec::Dnxhr,
+        path: path.clone(),
+        dnx_profile: "hd1242".into(),
+        frame_size: Some((1920, 1080)),
+        field_order: FieldOrder::UpperFirst,
+        ..Default::default()
+    };
+    short(&mut s);
+    export(&p, seq, &s, &m, &Progress::default()).unwrap();
+    let src = cfa4_codecs::open_bytes("dnx.mxf", std::fs::read(&path).unwrap().into()).unwrap();
+    assert_eq!(src.info().video.clone().unwrap().codec, "DNxHD 1080i 8-bit (CID 1242)");
+    src.video_frame(FrameRequest::full(Tick(TICKS_PER_SECOND / 8))).unwrap();
+    // the picture is interlaced, top field first
+    for order in [FieldOrder::Progressive, FieldOrder::LowerFirst] {
+        let s = ExportSettings {
+            format: Format::DnxHr,
+            path: tmp("dnx_refused.mov"),
+            dnx_profile: "hd1243".into(),
+            frame_size: Some((1920, 1080)),
+            field_order: order,
+            ..Default::default()
+        };
+        let e = export(&p, seq, &s, &m, &Progress::default()).unwrap_err().to_string();
+        assert!(e.contains("upper first"), "{order:?}: {e}");
+    }
+    // a progressive ID codes no fields
+    let s = ExportSettings { format: Format::DnxHr, dnx_profile: "hd1238".into(), field_order: FieldOrder::UpperFirst, ..Default::default() };
+    assert!(!s.codes_interlaced() && s.validate().is_err());
+}
+
 /// Burn-in: an H.264 export of a dark-blue matte with a caption, decoded by ffmpeg (external test
 /// oracle only), has bright caption pixels in the lower part of the frame, and none without
 /// `burn_captions` or above the caption.

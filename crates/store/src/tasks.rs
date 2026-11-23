@@ -113,6 +113,7 @@ impl TaskStore {
                 // the row is locked, so this means someone bypassed the lock: refuse, roll back
                 return Err(StoreError::Queue { error: QueueError::Stale { id: t.id.clone(), expected: b.version, current: t.version } });
             }
+            Self::write_schedule(tx, t).await?;
             Self::log(tx, t, b.last_seq).await?;
         }
         for e in events {
@@ -122,6 +123,30 @@ impl TaskStore {
                 .await
                 .map_err(StoreError::query)?;
         }
+        Ok(())
+    }
+
+    /// Keep `tasks.schedule` equal to the task's start rule (it changes on `reschedule` and when a
+    /// missed start moves to the next slot).
+    async fn write_schedule(tx: &Transaction<'_>, t: &Task) -> Result<(), StoreError> {
+        let (mode, at) = match t.start {
+            cfa4_tasks::StartMode::Now => ("now", None),
+            cfa4_tasks::StartMode::WhenResources => ("resource", None),
+            cfa4_tasks::StartMode::At { at } => ("at", Some(ms(at))),
+            cfa4_tasks::StartMode::AtWithResources { at } => ("at_resource", Some(ms(at))),
+        };
+        let if_missed = match t.missed {
+            cfa4_tasks::MissedStart::RunLate => "delay",
+            cfa4_tasks::MissedStart::NextSlot => "next_slot",
+            cfa4_tasks::MissedStart::AskUser => "ask",
+        };
+        tx.execute(
+            "INSERT INTO tasks.schedule (task_id, mode, start_at, time_zone, if_missed) VALUES ($1, $2, to_timestamp($3::bigint / 1000.0), $4, $5) \
+             ON CONFLICT (task_id) DO UPDATE SET mode = EXCLUDED.mode, start_at = EXCLUDED.start_at, time_zone = EXCLUDED.time_zone, if_missed = EXCLUDED.if_missed",
+            &[&t.id, &mode, &at, &t.time_zone, &if_missed],
+        )
+        .await
+        .map_err(StoreError::query)?;
         Ok(())
     }
 
@@ -197,6 +222,7 @@ impl TaskStore {
         if n != 1 {
             return Err(QueueError::DuplicateId { id: task.id }.into());
         }
+        Self::write_schedule(&tx, &task).await?;
         tx.execute("SELECT pg_notify($1, $2)", &[&CHANNEL, &task.id]).await.map_err(StoreError::query)?;
         tx.commit().await.map_err(StoreError::query)?;
         Ok(task)
@@ -232,17 +258,26 @@ impl TaskStore {
 
     /// Renew a running task's lease (no state change, no new version).
     pub async fn renew(&self, id: &str, owner: &str, now: UtcMs) -> Result<UtcMs, StoreError> {
-        self.in_place(id, |q| q.renew(id, owner, now)).await
+        self.in_place(id, |q| q.renew(id, owner, now), None).await
     }
 
     /// Record a finished stage (no state change, no new version).
     pub async fn checkpoint(&self, id: &str, owner: &str, stage: u64) -> Result<(), StoreError> {
-        self.in_place(id, |q| q.checkpoint(id, owner, stage)).await
+        self.checkpoint_keyed(id, owner, stage, None).await
+    }
+
+    /// Record a finished stage together with the cache key of its result (`tasks.checkpoint`, one
+    /// row per stage; a stage recorded twice keeps its first row, so a repeated stage is harmless).
+    pub async fn checkpoint_keyed(&self, id: &str, owner: &str, stage: u64, cache_key: Option<&str>) -> Result<(), StoreError> {
+        if let Some(k) = cache_key {
+            crate::check_text("cache key", k, 1, 256)?;
+        }
+        self.in_place(id, |q| q.checkpoint(id, owner, stage), Some((stage, cache_key))).await
     }
 
     /// Run `op` on one locked task that changes neither its state nor its version, and write the
     /// task back.
-    async fn in_place<R>(&self, id: &str, op: impl FnOnce(&mut Queue) -> Result<R, QueueError>) -> Result<R, StoreError> {
+    async fn in_place<R>(&self, id: &str, op: impl FnOnce(&mut Queue) -> Result<R, QueueError>, stage: Option<(u64, Option<&str>)>) -> Result<R, StoreError> {
         let mut client = self.store.client().await?;
         let tx = client.transaction().await.map_err(StoreError::query)?;
         let tasks = Self::load(&tx, "SELECT id, doc FROM tasks.task WHERE id = $1 FOR UPDATE", &[&id]).await?;
@@ -256,6 +291,14 @@ impl TaskStore {
         )
         .await
         .map_err(StoreError::query)?;
+        if let Some((stage, cache_key)) = stage {
+            tx.execute(
+                "INSERT INTO tasks.checkpoint (task_id, stage, cache_key) VALUES ($1, $2, $3) ON CONFLICT (task_id, stage) DO NOTHING",
+                &[&id, &ms(stage), &cache_key],
+            )
+            .await
+            .map_err(StoreError::query)?;
+        }
         tx.commit().await.map_err(StoreError::query)?;
         Ok(r)
     }
@@ -303,6 +346,9 @@ fn start_at(t: &Task) -> Option<i64> {
         cfa4_tasks::StartMode::Now | cfa4_tasks::StartMode::WhenResources => None,
     }
 }
+
+mod history;
+pub use history::{EstimateBasis, EstimateRecord, RunRecord};
 
 #[cfg(test)]
 mod tests;

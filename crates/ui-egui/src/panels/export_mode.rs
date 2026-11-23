@@ -840,7 +840,7 @@ fn video_section(ui: &mut egui::Ui, reg: &mut Reg, s: &mut ExportSettings, t: &T
         }
         Format::DnxHr => {
             row(ui, t, tl!("Profile"), |ui| {
-                let keys = ["lb", "sq", "hq", "hqx", "hd1235", "hd1238", "hd1237", "hd1253", "hd1250", "hd1251", "hd1252"];
+                let keys = ["lb", "sq", "hq", "hqx", "hd1235", "hd1238", "hd1237", "hd1253", "hd1241", "hd1243", "hd1242", "hd1250", "hd1251", "hd1252"];
                 let labels = [
                     "DNxHR LB",
                     "DNxHR SQ",
@@ -850,6 +850,9 @@ fn video_section(ui: &mut egui::Ui, reg: &mut Reg, s: &mut ExportSettings, t: &T
                     "DNxHD 1080p 8-bit (CID 1238)",
                     "DNxHD 1080p 8-bit (CID 1237)",
                     "DNxHD 1080p 36 (CID 1253)",
+                    "DNxHD 1080i 10-bit (CID 1241)",
+                    "DNxHD 1080i 8-bit (CID 1243)",
+                    "DNxHD 1080i 8-bit (CID 1242)",
                     "DNxHD 720p 10-bit (CID 1250)",
                     "DNxHD 720p 8-bit (CID 1251)",
                     "DNxHD 720p 8-bit (CID 1252)",
@@ -901,6 +904,16 @@ fn video_section(ui: &mut egui::Ui, reg: &mut Reg, s: &mut ExportSettings, t: &T
                 let labels: Vec<&str> = ExrCompression::ALL.iter().map(|&c| label(c)).collect();
                 if let Some(i) = combo(ui, reg, "export.video.exrCompression", label(s.exr_compression), &opts(&labels), 220.0) {
                     s.exr_compression = ExrCompression::ALL[i];
+                }
+            });
+        }
+        Format::DpxSequence => {
+            row(ui, t, tl!("Bit Depth"), |ui| {
+                // 12 and 16 bits can carry alpha (the checkbox below appears with them)
+                let labels = ["10-bit", "12-bit", "16-bit"];
+                let cur = [10u8, 12, 16].iter().position(|&b| b == s.dpx_bit_depth).unwrap_or(0);
+                if let Some(i) = combo(ui, reg, "export.video.dpxBitDepth", labels[cur], &opts(&labels), 220.0) {
+                    s.dpx_bit_depth = [10u8, 12, 16][i];
                 }
             });
         }

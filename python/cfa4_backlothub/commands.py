@@ -1,0 +1,548 @@
+"""The BacklotHub command registry (G2-02 section 3, #51).
+
+Same descriptor fields as ``crates/engine`` commands (``id``, ``label`` as translation key, ``menu_path``, ``shortcut``,
+``params`` as JSON Schema, ``enabled``, ``run``), so the Qt6 shell, the CLI and MCP treat them like engine commands.
+Ids live in the ``backlot.`` namespace. :func:`run_command` never raises a BacklotHub or audit error: it returns
+``{"ok": false, "code": ..., "detail": ...}`` with the stable English code (the UI translates it, #16).
+"""
+
+from __future__ import annotations
+
+import uuid
+from collections.abc import Callable, Mapping
+from dataclasses import dataclass
+from typing import Any
+
+from sqlalchemy import Engine
+
+from cfa4_audit import AuditError
+
+from .db.uow import Actor
+from .errors import BacklotError, DatabaseUnavailable, InvalidInput
+from .production import config as cfg
+from .production import milestones as ms
+from .production import organizations as orgs
+from .production import service as prod
+from .structure import config as scfg
+from .structure import entities as ent
+from .structure import operations as ops
+
+Result = dict[str, Any]
+
+
+@dataclass(frozen=True)
+class Param:
+    name: str
+    kind: str  # "str" | "int" | "bool" | "uuid" | "date"
+    required: bool = False
+    help: str = ""
+
+
+_JSON_TYPES = {"str": {"type": "string"}, "int": {"type": "integer"}, "bool": {"type": "boolean"}, "uuid": {"type": "string", "format": "uuid"}, "date": {"type": "string", "format": "date"}, "json": {"type": "object"}}
+
+
+@dataclass(frozen=True)
+class Command:
+    id: str
+    label: str  # translation key
+    menu_path: tuple[str, ...]
+    params: tuple[Param, ...]
+    run: Callable[[Engine, Actor | None, Mapping[str, Any]], Any]
+    shortcut: str | None = None
+    modifies: bool = True
+
+    def enabled(self, engine: Engine) -> bool:
+        return engine is not None
+
+    def schema(self) -> dict[str, Any]:
+        """The parameters as a JSON Schema (what ``commands.list`` publishes)."""
+        return {
+            "type": "object",
+            "properties": {p.name: {**_JSON_TYPES[p.kind], **({"description": p.help} if p.help else {})} for p in self.params},
+            "required": [p.name for p in self.params if p.required],
+            "additionalProperties": True,
+        }
+
+    def describe(self) -> dict[str, Any]:
+        return {
+            "id": self.id, "label": self.label, "menu_path": list(self.menu_path), "shortcut": self.shortcut,
+            "params": self.schema(), "modifies": self.modifies,
+        }  # fmt: skip
+
+
+_PRODUCTION_FIELDS = (
+    Param("title", "str"), Param("country", "str", help="ISO 3166-1 alpha-2"), Param("currency", "str", help="ISO 4217"),
+    Param("reference_currency", "str", help="EUR or USD"), Param("fps_num", "int"), Param("fps_den", "int"),
+    Param("width", "int"), Param("height", "int"), Param("pixel_aspect_num", "int"), Param("pixel_aspect_den", "int"),
+    Param("start_timecode", "str", help="01:00:00:00"), Param("episode_count", "int"),
+    Param("planned_start", "date"), Param("planned_end", "date"), Param("description", "str"),
+)  # fmt: skip
+
+
+def _create(engine: Engine, actor: Actor | None, p: Mapping[str, Any]) -> Any:
+    return prod.create_production(engine, p, actor)
+
+
+def _update(engine: Engine, actor: Actor | None, p: Mapping[str, Any]) -> Any:
+    changes = {k: v for k, v in p.items() if k not in ("id", "row_version")}
+    return prod.update_production(engine, p["id"], p["row_version"], changes, actor)
+
+
+def _get(engine: Engine, actor: Actor | None, p: Mapping[str, Any]) -> Any:
+    return prod.get_production(engine, p["id"], actor)
+
+
+def _list(engine: Engine, actor: Actor | None, p: Mapping[str, Any]) -> Any:
+    return prod.list_productions(
+        engine, type=p.get("type"), status=p.get("status"), active=p.get("active"), limit=p.get("limit", 100),
+        offset=p.get("offset", 0), actor=actor,
+    )  # fmt: skip
+
+
+def _status_set(engine: Engine, actor: Actor | None, p: Mapping[str, Any]) -> Any:
+    return prod.set_status(engine, p["id"], p["status"], p.get("row_version"), actor)
+
+
+def _members(engine: Engine, actor: Actor | None, p: Mapping[str, Any]) -> Any:
+    return prod.list_members(engine, p["id"], actor)
+
+
+def _ms_add(engine: Engine, actor: Actor | None, p: Mapping[str, Any]) -> Any:
+    return ms.add_milestone(engine, p["production_id"], p["name"], p["due_date"], actor)
+
+
+def _ms_update(engine: Engine, actor: Actor | None, p: Mapping[str, Any]) -> Any:
+    return ms.update_milestone(engine, p["id"], p["row_version"], {k: v for k, v in p.items() if k not in ("id", "row_version")}, actor)
+
+
+def _ms_remove(engine: Engine, actor: Actor | None, p: Mapping[str, Any]) -> Any:
+    return ms.remove_milestone(engine, p["id"], p.get("row_version"), actor)
+
+
+def _ms_list(engine: Engine, actor: Actor | None, p: Mapping[str, Any]) -> Any:
+    return ms.list_milestones(engine, p["production_id"], actor)
+
+
+def _org_create(engine: Engine, actor: Actor | None, p: Mapping[str, Any]) -> Any:
+    return orgs.create_organization(engine, p, actor)
+
+
+def _org_update(engine: Engine, actor: Actor | None, p: Mapping[str, Any]) -> Any:
+    return orgs.update_organization(engine, p["id"], p["row_version"], {k: v for k, v in p.items() if k not in ("id", "row_version")}, actor)
+
+
+def _org_list(engine: Engine, actor: Actor | None, p: Mapping[str, Any]) -> Any:
+    return orgs.list_organizations(
+        engine, query=p.get("query"), include_retired=bool(p.get("include_retired", False)), limit=p.get("limit", 100), offset=p.get("offset", 0)
+    )
+
+
+def _link(engine: Engine, actor: Actor | None, p: Mapping[str, Any]) -> Any:
+    return orgs.link_organization(engine, p["production_id"], p["organization_id"], p["role"], actor)
+
+
+def _unlink(engine: Engine, actor: Actor | None, p: Mapping[str, Any]) -> Any:
+    return orgs.unlink_organization(engine, p["production_id"], p["organization_id"], p["role"], actor)
+
+
+def _linked(engine: Engine, actor: Actor | None, p: Mapping[str, Any]) -> Any:
+    return orgs.list_linked(engine, p["production_id"], actor)
+
+
+def _type_create(engine: Engine, actor: Actor | None, p: Mapping[str, Any]) -> Any:
+    return cfg.create_type(engine, p, actor)
+
+
+def _type_update(engine: Engine, actor: Actor | None, p: Mapping[str, Any]) -> Any:
+    return cfg.update_type(engine, p["code"], p["row_version"], {k: v for k, v in p.items() if k not in ("code", "row_version")}, actor)
+
+
+def _type_list(engine: Engine, actor: Actor | None, p: Mapping[str, Any]) -> Any:
+    return cfg.list_types(engine, include_retired=bool(p.get("include_retired", False)))
+
+
+def _sl_create(engine: Engine, actor: Actor | None, p: Mapping[str, Any]) -> Any:
+    return cfg.create_status_list(engine, p["code"], actor)
+
+
+def _sl_list(engine: Engine, actor: Actor | None, p: Mapping[str, Any]) -> Any:
+    return cfg.list_status_lists(engine)
+
+
+def _status_add(engine: Engine, actor: Actor | None, p: Mapping[str, Any]) -> Any:
+    return cfg.add_status(engine, p["status_list"], p, actor)
+
+
+def _status_update(engine: Engine, actor: Actor | None, p: Mapping[str, Any]) -> Any:
+    return cfg.update_status(engine, p["id"], p["row_version"], {k: v for k, v in p.items() if k not in ("id", "row_version")}, actor)
+
+
+_TIMING_PARAMS = (Param("frame_in", "int"), Param("frame_out", "int"), Param("handle_in", "int"), Param("handle_out", "int"))
+
+
+def _st_tree(engine: Engine, actor: Actor | None, p: Mapping[str, Any]) -> Any:
+    return ent.tree_level(
+        engine, p["production_id"], p.get("parent_id"), kind=p.get("kind", "structural"), type=p.get("type"),
+        include_retired=bool(p.get("include_retired", False)), limit=p.get("limit", 500), offset=p.get("offset", 0), actor=actor,
+    )  # fmt: skip
+
+
+def _st_create(engine: Engine, actor: Actor | None, p: Mapping[str, Any]) -> Any:
+    return ent.create_entity(engine, p["production_id"], {k: v for k, v in p.items() if k != "production_id"}, actor)
+
+
+def _st_update(engine: Engine, actor: Actor | None, p: Mapping[str, Any]) -> Any:
+    return ent.update_entity(engine, p["id"], p["row_version"], {k: v for k, v in p.items() if k not in ("id", "row_version")}, actor)
+
+
+def _st_get(engine: Engine, actor: Actor | None, p: Mapping[str, Any]) -> Any:
+    return ent.get_entity(engine, p["id"], actor)
+
+
+def _st_link_add(engine: Engine, actor: Actor | None, p: Mapping[str, Any]) -> Any:
+    return ent.add_link(engine, p["from_id"], p["to_id"], p["link_type"], p.get("metadata"), actor)
+
+
+def _st_link_remove(engine: Engine, actor: Actor | None, p: Mapping[str, Any]) -> Any:
+    return ent.remove_link(engine, p["id"], actor)
+
+
+def _st_link_list(engine: Engine, actor: Actor | None, p: Mapping[str, Any]) -> Any:
+    return ent.list_links(engine, p["entity_id"], link_type=p.get("link_type"), actor=actor)
+
+
+def _st_move(engine: Engine, actor: Actor | None, p: Mapping[str, Any]) -> Any:
+    return ops.move_entity(engine, p["id"], p["row_version"], p.get("parent_id"), actor)
+
+
+def _st_reorder(engine: Engine, actor: Actor | None, p: Mapping[str, Any]) -> Any:
+    return ops.reorder_entity(engine, p["id"], p["row_version"], p["position"], actor)
+
+
+def _st_merge(engine: Engine, actor: Actor | None, p: Mapping[str, Any]) -> Any:
+    return ops.merge_entity(engine, p["source_id"], p["target_id"], actor)
+
+
+def _st_retire(engine: Engine, actor: Actor | None, p: Mapping[str, Any]) -> Any:
+    return ops.retire_entity(engine, p["id"], p["row_version"], p.get("retired", True), actor)
+
+
+def _st_delete(engine: Engine, actor: Actor | None, p: Mapping[str, Any]) -> Any:
+    return ops.delete_entity(engine, p["id"], p["row_version"], actor)
+
+
+def _st_impact(engine: Engine, actor: Actor | None, p: Mapping[str, Any]) -> Any:
+    return ops.impact(engine, p["id"], link_type=p.get("link_type"), actor=actor)
+
+
+def _et_create(engine: Engine, actor: Actor | None, p: Mapping[str, Any]) -> Any:
+    return scfg.create_entity_type(engine, p, actor)
+
+
+def _et_update(engine: Engine, actor: Actor | None, p: Mapping[str, Any]) -> Any:
+    return scfg.update_entity_type(engine, p["code"], p["row_version"], {k: v for k, v in p.items() if k not in ("code", "row_version")}, actor)
+
+
+def _et_list(engine: Engine, actor: Actor | None, p: Mapping[str, Any]) -> Any:
+    return scfg.list_entity_types(engine, bool(p.get("include_retired", False)))
+
+
+def _tpl_list(engine: Engine, actor: Actor | None, p: Mapping[str, Any]) -> Any:
+    return scfg.list_templates(engine)
+
+
+def _tpl_create(engine: Engine, actor: Actor | None, p: Mapping[str, Any]) -> Any:
+    return scfg.create_template(engine, p, actor)
+
+
+def _tpl_rule_add(engine: Engine, actor: Actor | None, p: Mapping[str, Any]) -> Any:
+    return scfg.add_template_rule(engine, p["template"], {k: v for k, v in p.items() if k != "template"}, actor)
+
+
+def _tpl_rule_remove(engine: Engine, actor: Actor | None, p: Mapping[str, Any]) -> Any:
+    return scfg.remove_template_rule(engine, p["template"], {k: v for k, v in p.items() if k != "template"}, actor)
+
+
+def _rule_list(engine: Engine, actor: Actor | None, p: Mapping[str, Any]) -> Any:
+    return scfg.list_rules(engine, p["production_id"], actor)
+
+
+def _rule_add(engine: Engine, actor: Actor | None, p: Mapping[str, Any]) -> Any:
+    return scfg.add_rule(engine, p["production_id"], {k: v for k, v in p.items() if k != "production_id"}, actor)
+
+
+def _rule_remove(engine: Engine, actor: Actor | None, p: Mapping[str, Any]) -> Any:
+    return scfg.remove_rule(engine, p["production_id"], {k: v for k, v in p.items() if k != "production_id"}, actor)
+
+
+_ORG_FIELDS = (
+    Param("legal_name", "str"), Param("country", "str", help="ISO 3166-1 alpha-2"), Param("registration_no", "str"),
+    Param("tax_no", "str"), Param("notes", "str"),
+)  # fmt: skip
+
+COMMANDS: dict[str, Command] = {
+    c.id: c
+    for c in (
+        Command(
+            "backlot.production.create", "command.backlot.production.create", ("Production", "New"),
+            (Param("code", "str", True, "2..32 of A-Z 0-9 _ -"), Param("type", "str", True, "film, series, commercial, animation, vfx"),
+             Param("status", "str"), *_PRODUCTION_FIELDS),
+            _create,
+        ),
+        Command(
+            "backlot.production.update", "command.backlot.production.update", ("Production", "Edit"),
+            (Param("id", "uuid", True), Param("row_version", "int", True, "the version that was read"), *_PRODUCTION_FIELDS),
+            _update,
+        ),
+        Command("backlot.production.get", "command.backlot.production.get", ("Production", "Open"), (Param("id", "uuid", True),), _get, modifies=False),
+        Command(
+            "backlot.production.list", "command.backlot.production.list", ("Production", "List"),
+            (Param("type", "str"), Param("status", "str"), Param("active", "bool"), Param("limit", "int"), Param("offset", "int")),
+            _list, modifies=False,
+        ),
+        Command(
+            "backlot.production.status.set", "command.backlot.production.status.set", ("Production", "Status"),
+            (Param("id", "uuid", True), Param("status", "str", True), Param("row_version", "int")), _status_set,
+        ),
+        Command(
+            "backlot.production.member.list", "command.backlot.production.member.list", ("Production", "Members"),
+            (Param("id", "uuid", True),), _members, modifies=False,
+        ),
+        Command(
+            "backlot.production.type.create", "command.backlot.production.type.create", ("Settings", "Production types", "New"),
+            (Param("code", "str", True), Param("label", "str", True), Param("status_list", "str", True, "code of a status list")), _type_create,
+        ),
+        Command(
+            "backlot.production.type.update", "command.backlot.production.type.update", ("Settings", "Production types", "Edit"),
+            (Param("code", "str", True), Param("row_version", "int", True), Param("label", "str"), Param("status_list", "str"),
+             Param("retired", "bool", help="no new productions of this type")),
+            _type_update,
+        ),
+        Command(
+            "backlot.production.type.list", "command.backlot.production.type.list", ("Settings", "Production types", "List"),
+            (Param("include_retired", "bool"),), _type_list, modifies=False,
+        ),
+        Command(
+            "backlot.status_list.create", "command.backlot.status_list.create", ("Settings", "Status lists", "New"),
+            (Param("code", "str", True),), _sl_create,
+        ),
+        Command(
+            "backlot.status_list.list", "command.backlot.status_list.list", ("Settings", "Status lists", "List"), (), _sl_list, modifies=False
+        ),
+        Command(
+            "backlot.status.add", "command.backlot.status.add", ("Settings", "Status lists", "Add status"),
+            (Param("status_list", "str", True), Param("code", "str", True), Param("label", "str", True),
+             Param("category", "str", True, "planned, active, on_hold, closed, cancelled")),
+            _status_add,
+        ),
+        Command(
+            "backlot.status.update", "command.backlot.status.update", ("Settings", "Status lists", "Edit status"),
+            (Param("id", "uuid", True), Param("row_version", "int", True), Param("label", "str"), Param("category", "str"), Param("ordinal", "int")),
+            _status_update,
+        ),
+        Command(
+            "backlot.production.milestone.add", "command.backlot.production.milestone.add", ("Production", "Milestones", "Add"),
+            (Param("production_id", "uuid", True), Param("name", "str", True), Param("due_date", "date", True)), _ms_add,
+        ),
+        Command(
+            "backlot.production.milestone.update", "command.backlot.production.milestone.update", ("Production", "Milestones", "Edit"),
+            (Param("id", "uuid", True), Param("row_version", "int", True), Param("name", "str"), Param("due_date", "date"),
+             Param("done", "bool", help="mark done or open again"), Param("ordinal", "int")),
+            _ms_update,
+        ),
+        Command(
+            "backlot.production.milestone.remove", "command.backlot.production.milestone.remove", ("Production", "Milestones", "Remove"),
+            (Param("id", "uuid", True), Param("row_version", "int")), _ms_remove,
+        ),
+        Command(
+            "backlot.production.milestone.list", "command.backlot.production.milestone.list", ("Production", "Milestones", "List"),
+            (Param("production_id", "uuid", True),), _ms_list, modifies=False,
+        ),
+        Command(
+            "backlot.organization.create", "command.backlot.organization.create", ("Organization", "New"),
+            (Param("name", "str", True), *_ORG_FIELDS), _org_create,
+        ),
+        Command(
+            "backlot.organization.update", "command.backlot.organization.update", ("Organization", "Edit"),
+            (Param("id", "uuid", True), Param("row_version", "int", True), Param("name", "str"), *_ORG_FIELDS,
+             Param("retired", "bool", help="retire or bring back")),
+            _org_update,
+        ),
+        Command(
+            "backlot.organization.list", "command.backlot.organization.list", ("Organization", "List"),
+            (Param("query", "str"), Param("include_retired", "bool"), Param("limit", "int"), Param("offset", "int")), _org_list, modifies=False,
+        ),
+        Command(
+            "backlot.production.organization.link", "command.backlot.production.organization.link", ("Production", "Organizations", "Link"),
+            (Param("production_id", "uuid", True), Param("organization_id", "uuid", True), Param("role", "str", True, "client, producer, coproducer, subcontractor, distributor, other")),
+            _link,
+        ),
+        Command(
+            "backlot.production.organization.unlink", "command.backlot.production.organization.unlink", ("Production", "Organizations", "Unlink"),
+            (Param("production_id", "uuid", True), Param("organization_id", "uuid", True), Param("role", "str", True)), _unlink,
+        ),
+        Command(
+            "backlot.production.organization.list", "command.backlot.production.organization.list", ("Production", "Organizations", "List"),
+            (Param("production_id", "uuid", True),), _linked, modifies=False,
+        ),
+        Command(
+            "backlot.structure.tree", "command.backlot.structure.tree", ("Structure", "Tree"),
+            (Param("production_id", "uuid", True), Param("parent_id", "uuid", help="none: the top level"),
+             Param("kind", "str", help="structural (default) or asset"), Param("type", "str"), Param("include_retired", "bool"),
+             Param("limit", "int"), Param("offset", "int")),
+            _st_tree, modifies=False,
+        ),
+        Command(
+            "backlot.structure.entity.create", "command.backlot.structure.entity.create", ("Structure", "New element"),
+            (Param("production_id", "uuid", True), Param("type", "str", True, "entity type code"), Param("parent_id", "uuid"),
+             Param("code", "str", True), Param("name", "str", True), Param("description", "str"), Param("metadata", "json"), *_TIMING_PARAMS),
+            _st_create,
+        ),
+        Command(
+            "backlot.structure.entity.update", "command.backlot.structure.entity.update", ("Structure", "Edit element"),
+            (Param("id", "uuid", True), Param("row_version", "int", True), Param("code", "str"), Param("name", "str"),
+             Param("description", "str"), Param("metadata", "json"), *_TIMING_PARAMS),
+            _st_update,
+        ),
+        Command("backlot.structure.entity.get", "command.backlot.structure.entity.get", ("Structure", "Open element"), (Param("id", "uuid", True),), _st_get, modifies=False),
+        Command(
+            "backlot.structure.link.add", "command.backlot.structure.link.add", ("Structure", "Links", "Add"),
+            (Param("from_id", "uuid", True), Param("to_id", "uuid", True), Param("link_type", "str", True, "casting or setting"), Param("metadata", "json")),
+            _st_link_add,
+        ),
+        Command("backlot.structure.link.remove", "command.backlot.structure.link.remove", ("Structure", "Links", "Remove"), (Param("id", "uuid", True),), _st_link_remove),
+        Command(
+            "backlot.structure.link.list", "command.backlot.structure.link.list", ("Structure", "Links", "List"),
+            (Param("entity_id", "uuid", True), Param("link_type", "str")), _st_link_list, modifies=False,
+        ),
+        Command(
+            "backlot.structure.entity.move", "command.backlot.structure.entity.move", ("Structure", "Move element"),
+            (Param("id", "uuid", True), Param("row_version", "int", True), Param("parent_id", "uuid", help="none: the top level")), _st_move,
+        ),
+        Command(
+            "backlot.structure.entity.reorder", "command.backlot.structure.entity.reorder", ("Structure", "Reorder element"),
+            (Param("id", "uuid", True), Param("row_version", "int", True), Param("position", "int", True, "1 = first among the siblings")),
+            _st_reorder,
+        ),
+        Command(
+            "backlot.structure.entity.merge", "command.backlot.structure.entity.merge", ("Structure", "Merge elements"),
+            (Param("source_id", "uuid", True, "retired after the merge"), Param("target_id", "uuid", True)), _st_merge,
+        ),
+        Command(
+            "backlot.structure.entity.retire", "command.backlot.structure.entity.retire", ("Structure", "Retire element"),
+            (Param("id", "uuid", True), Param("row_version", "int", True), Param("retired", "bool", help="false: bring back")), _st_retire,
+        ),
+        Command(
+            "backlot.structure.entity.delete", "command.backlot.structure.entity.delete", ("Structure", "Delete element"),
+            (Param("id", "uuid", True), Param("row_version", "int", True)), _st_delete,
+        ),
+        Command(
+            "backlot.structure.impact", "command.backlot.structure.impact", ("Structure", "Impact"),
+            (Param("id", "uuid", True), Param("link_type", "str")), _st_impact, modifies=False,
+        ),
+        Command(
+            "backlot.structure.entity_type.create", "command.backlot.structure.entity_type.create", ("Settings", "Element types", "New"),
+            (Param("code", "str", True), Param("label", "str", True), Param("kind", "str", True, "structural or asset"),
+             Param("has_timing", "bool", help="structural types only"), Param("icon", "str")),
+            _et_create,
+        ),
+        Command(
+            "backlot.structure.entity_type.update", "command.backlot.structure.entity_type.update", ("Settings", "Element types", "Edit"),
+            (Param("code", "str", True), Param("row_version", "int", True), Param("label", "str"), Param("icon", "str"),
+             Param("retired", "bool", help="no new elements of this type"), Param("has_timing", "bool", help="only while no element has the type")),
+            _et_update,
+        ),
+        Command(
+            "backlot.structure.entity_type.list", "command.backlot.structure.entity_type.list", ("Settings", "Element types", "List"),
+            (Param("include_retired", "bool"),), _et_list, modifies=False,
+        ),
+        Command("backlot.structure.template.list", "command.backlot.structure.template.list", ("Settings", "Structure templates", "List"), (), _tpl_list, modifies=False),
+        Command(
+            "backlot.structure.template.create", "command.backlot.structure.template.create", ("Settings", "Structure templates", "New"),
+            (Param("code", "str", True), Param("label", "str", True), Param("production_type", "str", True, "one template per production type")),
+            _tpl_create,
+        ),
+        Command(
+            "backlot.structure.template.rule.add", "command.backlot.structure.template.rule.add", ("Settings", "Structure templates", "Add rule"),
+            (Param("template", "str", True), Param("parent", "str", help="structural type code; none: top level"), Param("child", "str", True)),
+            _tpl_rule_add,
+        ),
+        Command(
+            "backlot.structure.template.rule.remove", "command.backlot.structure.template.rule.remove", ("Settings", "Structure templates", "Remove rule"),
+            (Param("template", "str", True), Param("parent", "str"), Param("child", "str", True)), _tpl_rule_remove,
+        ),
+        Command(
+            "backlot.structure.rule.list", "command.backlot.structure.rule.list", ("Structure", "Rules", "List"),
+            (Param("production_id", "uuid", True),), _rule_list, modifies=False,
+        ),
+        Command(
+            "backlot.structure.rule.add", "command.backlot.structure.rule.add", ("Structure", "Rules", "Add"),
+            (Param("production_id", "uuid", True), Param("parent", "str", help="structural type code; none: top level"), Param("child", "str", True)),
+            _rule_add,
+        ),
+        Command(
+            "backlot.structure.rule.remove", "command.backlot.structure.rule.remove", ("Structure", "Rules", "Remove"),
+            (Param("production_id", "uuid", True), Param("parent", "str"), Param("child", "str", True)), _rule_remove,
+        ),
+    )
+}
+
+
+def _coerce(param: Param, raw: Any) -> Any:
+    try:
+        if param.kind == "int":
+            if isinstance(raw, bool):
+                raise ValueError("a number is expected")
+            return int(raw)
+        if param.kind == "bool":
+            if isinstance(raw, bool):
+                return raw
+            if str(raw).lower() in ("true", "1"):
+                return True
+            if str(raw).lower() in ("false", "0"):
+                return False
+            raise ValueError(str(raw))
+        if param.kind == "uuid":
+            return raw if isinstance(raw, uuid.UUID) else uuid.UUID(str(raw))
+        if param.kind == "json":
+            if not isinstance(raw, dict):
+                raise ValueError("an object is expected")
+            return raw
+        return raw if isinstance(raw, str) else str(raw)  # date strings are checked by the service
+    except (ValueError, TypeError) as exc:
+        raise InvalidInput(f"parameter {param.name!r}: {exc}") from exc
+
+
+def list_commands() -> list[dict[str, Any]]:
+    """The ``commands.list`` answer: every descriptor."""
+    return [c.describe() for c in COMMANDS.values()]
+
+
+def run_command(engine: Engine, command_id: str, params: Mapping[str, Any] | None = None, actor: Actor | None = None) -> Result:
+    """Run one command by id. Never raises a BacklotHub or audit error; it returns ``{"ok": false, "code": …}``."""
+    command = COMMANDS.get(command_id)
+    if command is None:
+        return {"ok": False, "code": "BACKLOT_UNKNOWN_COMMAND", "detail": command_id}
+    try:
+        known = {p.name: p for p in command.params}
+        given = dict(params or {})
+        extra = sorted(set(given) - set(known))
+        if extra:
+            raise InvalidInput(f"unknown parameter(s): {', '.join(extra)}")
+        missing = [p.name for p in command.params if p.required and given.get(p.name) is None]
+        if missing:
+            raise InvalidInput(f"missing parameter(s): {', '.join(missing)}")
+        coerced = {k: (None if v is None else _coerce(known[k], v)) for k, v in given.items()}
+        return {"ok": True, "result": command.run(engine, actor, coerced)}
+    except BacklotError as exc:
+        return {"ok": False, "code": exc.code, "detail": exc.detail}
+    except AuditError as exc:
+        return {"ok": False, "code": exc.code, "detail": exc.detail}
+    except Exception as exc:  # never crash the service on a bug; report it with a stable code (AGENTS.md section 0)
+        error = DatabaseUnavailable(str(exc).splitlines()[0] if str(exc) else type(exc).__name__)
+        return {"ok": False, "code": "INTERNAL_ERROR" if not _is_db(exc) else error.code, "detail": type(exc).__name__}
+
+
+def _is_db(exc: Exception) -> bool:
+    module = type(exc).__module__
+    return module.startswith(("sqlalchemy", "psycopg"))

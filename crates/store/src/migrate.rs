@@ -89,6 +89,57 @@ ALTER TABLE tasks.task ALTER COLUMN start_at TYPE bigint USING (extract(epoch fr
 ALTER TABLE tasks.task ALTER COLUMN lease_until TYPE bigint USING (extract(epoch from lease_until) * 1000)::bigint;
 ALTER TABLE tasks.transition ALTER COLUMN at TYPE bigint USING (extract(epoch from at) * 1000)::bigint;",
     },
+    Step {
+        version: 4,
+        // PG-001 §4.3: the start rule, finished stages, estimates and finished runs of a task
+        up: r#"
+CREATE TABLE tasks.schedule (
+    task_id text PRIMARY KEY REFERENCES tasks.task (id) ON DELETE CASCADE,
+    mode text NOT NULL CHECK (mode IN ('now', 'resource', 'at', 'at_resource')),
+    start_at timestamptz,
+    time_zone text CHECK (length(time_zone) <= 64),
+    if_missed text NOT NULL CHECK (if_missed IN ('delay', 'next_slot', 'ask'))
+);
+INSERT INTO tasks.schedule (task_id, mode, start_at, time_zone, if_missed)
+    SELECT id,
+           CASE doc #>> '{start,mode}' WHEN 'whenResources' THEN 'resource' WHEN 'at' THEN 'at' WHEN 'atWithResources' THEN 'at_resource' ELSE 'now' END,
+           start_at, doc ->> 'timeZone',
+           CASE doc ->> 'missed' WHEN 'nextSlot' THEN 'next_slot' WHEN 'askUser' THEN 'ask' ELSE 'delay' END
+    FROM tasks.task;
+CREATE TABLE tasks.checkpoint (
+    task_id text NOT NULL REFERENCES tasks.task (id) ON DELETE CASCADE,
+    stage bigint NOT NULL CHECK (stage >= 0),
+    cache_key text CHECK (length(cache_key) BETWEEN 1 AND 256),
+    at timestamptz NOT NULL DEFAULT now(),
+    PRIMARY KEY (task_id, stage)
+);
+CREATE TABLE tasks.estimate (
+    id bigserial PRIMARY KEY,
+    task_id text NOT NULL REFERENCES tasks.task (id) ON DELETE CASCADE,
+    min_s bigint NOT NULL CHECK (min_s >= 0),
+    max_s bigint NOT NULL CHECK (max_s >= min_s),
+    confidence text NOT NULL CHECK (confidence IN ('low', 'medium')),
+    basis text NOT NULL CHECK (basis IN ('measurement', 'history', 'manifest')),
+    at timestamptz NOT NULL DEFAULT now()
+);
+CREATE INDEX estimate_task ON tasks.estimate (task_id, id DESC);
+-- what finished runs really cost; the estimator learns from it
+CREATE TABLE tasks.run_history (
+    id bigserial PRIMARY KEY,
+    task_id text NOT NULL,
+    implementation text NOT NULL CHECK (length(implementation) BETWEEN 1 AND 128),
+    path text NOT NULL CHECK (length(path) <= 128),
+    hardware text NOT NULL CHECK (length(hardware) <= 256),
+    input_bytes bigint NOT NULL CHECK (input_bytes >= 0),
+    duration_ms bigint NOT NULL CHECK (duration_ms >= 0),
+    peak_ram_bytes bigint NOT NULL CHECK (peak_ram_bytes >= 0),
+    peak_vram_bytes bigint NOT NULL CHECK (peak_vram_bytes >= 0),
+    finished_at timestamptz NOT NULL DEFAULT now()
+);
+CREATE INDEX run_history_impl ON tasks.run_history (implementation, hardware, id DESC);
+"#,
+        down: "DROP TABLE tasks.run_history, tasks.estimate, tasks.checkpoint, tasks.schedule;",
+    },
 ];
 
 const AI: &[Step] = &[Step {

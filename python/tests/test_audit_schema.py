@@ -18,7 +18,8 @@ import psycopg.sql  # noqa: E402
 from psycopg.types.json import Jsonb  # noqa: E402
 
 from cfa4_audit import GENESIS_PREV_HASH, ActorKind, AuditEvent, Outcome, event_hash  # noqa: E402
-from cfa4_audit.migrate import SchemaInstallFailed, install, is_installed, migration_sql  # noqa: E402
+from cfa4_audit import migrate  # noqa: E402
+from cfa4_audit.migrate import SchemaInstallFailed, install, installed_version, is_installed, migration_sql  # noqa: E402
 
 from pg_throwaway import throwaway_cluster  # noqa: E402
 
@@ -82,6 +83,23 @@ def test_install_is_idempotent_and_leaves_a_genesis_event(installed: str) -> Non
         assert set(rows[0][4]) == {"cluster_id", "database_oid"}
         head = conn.execute("SELECT seq, hash FROM cfa4_audit.chain_head").fetchone()
         assert head is not None and head[0] == len(rows)
+
+
+def test_pending_migrations_are_applied_in_order(conninfo: str, monkeypatch: pytest.MonkeyPatch) -> None:
+    with psycopg.connect(conninfo, autocommit=True) as conn:
+        conn.execute("CREATE DATABASE upgrade")
+    info = conninfo.replace("dbname=postgres", "dbname=upgrade")
+    with monkeypatch.context() as m:
+        m.setattr(migrate, "MIGRATIONS", migrate.MIGRATIONS[:1])
+        with psycopg.connect(info) as conn:
+            assert install(conn) is True
+            assert installed_version(conn) == 1
+    with psycopg.connect(info) as conn:
+        assert is_installed(conn) is False, "version 1 is not the current version any more"
+        assert install(conn) is True and installed_version(conn) == 2
+        assert install(conn) is False
+        rows = conn.execute("SELECT count(*) FROM cfa4_audit.event WHERE action = 'audit.chain.genesis'").fetchone()
+        assert rows is not None and rows[0] == 1, "the genesis event is written once, with migration 1 only"
 
 
 def test_a_failed_install_rolls_back_completely(conninfo: str) -> None:
