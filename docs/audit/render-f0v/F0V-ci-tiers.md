@@ -1,7 +1,13 @@
-# F0V: CI-szintek definíciója (bekapcsolás nélkül)
+# F0V: CI-szintek definíciója és bekapcsolása
 
-A terv 9. pontja szerint a szintek itt csak **definiálva** vannak; workflow-fájlt ez a PR nem hoz. A bekapcsolás a fázis jóváhagyásával, a
-CI-felelős döntésével történik. A repó jelenlegi kapuja (`cfa4-full-validation` címke, a `full-validation-gate` címkére van kötve) változatlan.
+**Állapot (2026-11-23, István jóváhagyta a védőintézkedések alkalmazását):** a smoke és a nightly szint be van kapcsolva a
+[`.github/workflows/cfa4-render-validation.yml`](../../../.github/workflows/cfa4-render-validation.yml) fájlban; a hardware szint nincs (referenciagép kell).
+A repó jelenlegi kapuja (`cfa4-full-validation` címke, `full-validation-gate`) változatlan.
+
+**Eltérés a fenti táblától, indoklással:** a repó szabálya, hogy fordító CI-feladat nem fut minden PR-on (a `ci-linux.yml` címkéhez köti), ezért a PR-os
+**smoke fordítás nélküli**: a fixture-generátor tesztjei és a `list`. A harness cargo-tesztjei (10 futás, mutációs önteszt, A/V drift) a **nightly**-ban
+futnak, és címkével bármelyik PR-on is lefuttathatók (`workflow_dispatch`). A nightly első futása még nem történt meg: a fixture-generálás az
+`ffmpeg` kódolóitól függ, és `CFA4_REQUIRE_ORACLES=1` mellett minden kihagyás hiba, tehát egy hiányzó kódoló pirosat ad, nem csendes PASS-t.
 
 | Szint | Mikor | Mit futtat | Mit nem | Parancs (ma) | Bekapcsolási feltétel |
 |---|---|---|---|---|---|
