@@ -122,7 +122,10 @@ enum Inner {
     TrueSpeech(Box<cfa4_truespeech::Decoder>),
     /// QDesign Music 2 (`cfa4-qdm2`): one packet is one superblock; `extra` rebuilds the decoder
     /// on a reset.
-    Qdm2 { dec: Box<cfa4_qdm2::Decoder>, extra: Vec<u8> },
+    Qdm2 {
+        dec: Box<cfa4_qdm2::Decoder>,
+        extra: Vec<u8>,
+    },
 }
 
 /// Packets between two saved decoder states (see [`Checkpoints`]).
@@ -337,22 +340,19 @@ impl PacketDecoder {
         let d = cfa4_mace::Decoder::new(version, channels).map_err(|e| CodecError::Unsupported(e.to_string()))?;
         Ok(Self { inner: Inner::Mace(Box::new(d)), channels })
     }
-    /// A copy of the decoder state, for codecs that seek through [`Checkpoints`] (AMR).
-    pub fn snapshot(&self) -> Option<Self> {
-        match &self.inner {
-            Inner::Amr(d) => Some(Self { inner: Inner::Amr(d.clone()), channels: self.channels }),
-            Inner::Mace(d) => Some(Self { inner: Inner::Mace(d.clone()), channels: self.channels }),
     /// A copy of the decoder state, for codecs that seek through [`Checkpoints`] (AMR, TrueSpeech).
     pub fn snapshot(&self) -> Option<Self> {
         match &self.inner {
             Inner::Amr(d) => Some(Self { inner: Inner::Amr(d.clone()), channels: self.channels }),
             Inner::TrueSpeech(d) => Some(Self { inner: Inner::TrueSpeech(d.clone()), channels: self.channels }),
+            Inner::Mace(d) => Some(Self { inner: Inner::Mace(d.clone()), channels: self.channels }),
             _ => None,
         }
     }
     /// DSP Group TrueSpeech (8 kHz mono).
     pub fn truespeech() -> Self {
         Self { inner: Inner::TrueSpeech(Box::default()), channels: 1 }
+    }
     /// QDesign Music 2 from the QuickTime sample description (it holds the `QDCA` configuration).
     pub fn qdm2(extra: &[u8]) -> Result<Self> {
         let d = cfa4_qdm2::Decoder::new(extra).map_err(|e| CodecError::Unsupported(format!("QDM2: {e}")))?;
@@ -484,6 +484,7 @@ impl PacketDecoder {
                 let pcm = d.decode(data).map_err(|e| CodecError::Decode(e.to_string()))?;
                 self.channels = 1;
                 return Ok(vec![pcm.into_iter().map(|s| f32::from(s) / 32768.0).collect()]);
+            }
             Inner::Qdm2 { dec, .. } => {
                 let pcm = dec.decode(data).map_err(|e| CodecError::Decode(format!("QDM2: {e}")))?;
                 let ch = dec.channels.max(1);

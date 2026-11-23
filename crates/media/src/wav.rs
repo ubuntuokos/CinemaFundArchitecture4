@@ -43,12 +43,12 @@ const YO_CHECKPOINT: u64 = 16_384;
 const ATRAC_CHECKPOINT: u64 = 64;
 /// WAVE_FORMAT_SONY_SCX (ATRAC3).
 const TAG_ATRAC3: u16 = 0x0270;
+/// The WAVE format tag of DSP Group TrueSpeech.
+const TAG_TRUESPEECH: u16 = 0x0022;
 /// WAVE format tag of Voxware MetaSound (decoded whole when the file opens; they are small).
 const TAG_METASOUND: u16 = 0x0075;
 /// Largest MetaSound data chunk decoded at open.
 const METASOUND_MAX: u64 = 64 << 20;
-/// The WAVE format tag of DSP Group TrueSpeech.
-const TAG_TRUESPEECH: u16 = 0x0022;
 /// The `WAVE_FORMAT_EXTENSIBLE` sub-format of ATRAC3plus (E923AABF-CB58-4471-A119-FFFA01E4CE62).
 const ATRAC3P_GUID: [u8; 16] = [0xBF, 0xAA, 0x23, 0xE9, 0x58, 0xCB, 0x71, 0x44, 0xA1, 0x19, 0xFF, 0xFA, 0x01, 0xE4, 0xCE, 0x62];
 /// The `WAVE_FORMAT_EXTENSIBLE` sub-format of ATRAC9 (47E142D2-36BA-4D8D-88FC-61654F8C836C).
@@ -247,6 +247,18 @@ impl WavSource {
                 _ => "ATRAC",
             };
             (encoding, frames, label.to_string(), None)
+        } else if let Some(kind) = cfa4_yamaha_oki::Kind::from_wave_format(tag) {
+            let state = cfa4_yamaha_oki::State::new(kind, usize::from(ch))
+                .ok_or_else(|| MediaError::Unsupported(format!("{name}: {} with {ch} channels", kind.name())))?;
+            let frames = u64::try_from(cfa4_yamaha_oki::frames_in(usize::try_from(dlen).unwrap_or(usize::MAX), usize::from(ch))).unwrap_or(u64::MAX);
+            (Encoding::Yo { checkpoints: Mutex::new(vec![state]) }, frames, kind.name().to_string(), None)
+        } else if tag == TAG_TRUESPEECH {
+            if ch != 1 || rate != cfa4_truespeech::SAMPLE_RATE {
+                return Err(MediaError::Unsupported(format!("{name}: TrueSpeech with {ch} channels at {rate} Hz")));
+            }
+            let block = cfa4_truespeech::FRAME_BYTES as u64;
+            let (encoding, frames) = atrac_encoding(Atrac::TrueSpeech(Box::default()), block, dlen, |_, _| Vec::new());
+            (encoding, frames, "TrueSpeech".to_string(), None)
         } else if tag == TAG_METASOUND {
             let unsupported = |e: cfa4_twinvq::Error| MediaError::Unsupported(format!("{name}: {e}"));
             if dlen > METASOUND_MAX {
@@ -259,18 +271,6 @@ impl WavSource {
             rate = stream.sample_rate;
             let frames = d.channels.first().map_or(0, Vec::len) as u64;
             (Encoding::Decoded(d.channels), frames, "Voxware MetaSound".to_string(), None)
-        } else if tag == TAG_TRUESPEECH {
-            if ch != 1 || rate != cfa4_truespeech::SAMPLE_RATE {
-                return Err(MediaError::Unsupported(format!("{name}: TrueSpeech with {ch} channels at {rate} Hz")));
-            }
-            let block = cfa4_truespeech::FRAME_BYTES as u64;
-            let (encoding, frames) = atrac_encoding(Atrac::TrueSpeech(Box::default()), block, dlen, |_, _| Vec::new());
-            (encoding, frames, "TrueSpeech".to_string(), None)
-        } else if let Some(kind) = cfa4_yamaha_oki::Kind::from_wave_format(tag) {
-            let state = cfa4_yamaha_oki::State::new(kind, usize::from(ch))
-                .ok_or_else(|| MediaError::Unsupported(format!("{name}: {} with {ch} channels", kind.name())))?;
-            let frames = u64::try_from(cfa4_yamaha_oki::frames_in(usize::try_from(dlen).unwrap_or(usize::MAX), usize::from(ch))).unwrap_or(u64::MAX);
-            (Encoding::Yo { checkpoints: Mutex::new(vec![state]) }, frames, kind.name().to_string(), None)
         } else if let Some(codec) = Codec::from_wave_format(tag, align, bits, &extra) {
             let codec = codec.map_err(|e| MediaError::Unsupported(format!("{name}: {e}")))?;
             // a decoder for this layout must exist (G.722 is mono only)
@@ -368,11 +368,6 @@ impl WavSource {
                 let n = usize::try_from(count).unwrap_or(usize::MAX);
                 Ok(out.iter().skip(skip).take(n).map(|&s| f32::from(s) / 32768.0).collect())
             }
-            Encoding::Decoded(planes) => {
-                let (a, n) = (usize::try_from(first).unwrap_or(usize::MAX), usize::try_from(count).unwrap_or(usize::MAX));
-                let mut out = Vec::with_capacity(n.saturating_mul(ch).min(1 << 26));
-                for i in a..a.saturating_add(n) {
-                    out.extend(planes.iter().map(|p| p.get(i).copied().unwrap_or(0.0)));
             Encoding::Yo { checkpoints } => {
                 // `ch` frames per `ch` bytes' worth of nibbles: frame f lives in byte f·ch/2
                 let ch64 = ch as u64;
@@ -393,6 +388,14 @@ impl WavSource {
                             None => return Ok(out),
                         }
                     }
+                }
+                Ok(out)
+            }
+            Encoding::Decoded(planes) => {
+                let (a, n) = (usize::try_from(first).unwrap_or(usize::MAX), usize::try_from(count).unwrap_or(usize::MAX));
+                let mut out = Vec::with_capacity(n.saturating_mul(ch).min(1 << 26));
+                for i in a..a.saturating_add(n) {
+                    out.extend(planes.iter().map(|p| p.get(i).copied().unwrap_or(0.0)));
                 }
                 Ok(out)
             }

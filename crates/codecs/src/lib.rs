@@ -58,9 +58,9 @@ pub mod hap;
 pub mod huffyuv;
 pub mod hw;
 mod hw_frame;
-pub mod indeo45;
-pub mod indeo3;
 pub mod indeo;
+pub mod indeo3;
+pub mod indeo45;
 pub mod j2k;
 pub mod lagarith;
 pub mod lcevc;
@@ -81,11 +81,11 @@ pub mod smacker;
 pub mod sstp;
 mod stream_color;
 pub mod streams;
-pub mod svq3;
-pub mod twinvq;
 pub mod svq1;
+pub mod svq3;
 pub mod theora;
 pub mod thp;
+pub mod twinvq;
 pub mod utvideo;
 pub mod video;
 mod webm_alpha;
@@ -115,8 +115,8 @@ pub use realmedia::RmSource;
 pub use roq::RoqSource;
 pub use smacker::SmkSource;
 pub use sstp::SstpSource;
-pub use twinvq::TwinvqSource;
 pub use thp::ThpSource;
+pub use twinvq::TwinvqSource;
 pub use video::{DecodedFrame, VideoDecoder, VideoDecoderFactory};
 pub use y4m::Y4mSource;
 
@@ -146,7 +146,7 @@ impl From<CodecError> for cfa4_media::MediaError {
 }
 
 /// Our own (pure-Rust) decoders, in the order they are tried.
-const BUILTIN_FACTORIES: [VideoDecoderFactory; 29] = [
+const BUILTIN_FACTORIES: [VideoDecoderFactory; 33] = [
     video::h264_factory,
     video::hevc_factory,
     video::vp8_factory,
