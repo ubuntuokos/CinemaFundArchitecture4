@@ -7,7 +7,7 @@
 | Kérte | István (ubuntuokos) |
 | Alap | CFA4 `main` @ `bc3308f` |
 | Módszer | **Csak olvasás:** forráskód, tesztek és tervek átnézése. Nem futtattam buildet, tesztet vagy mérést, ezért ez a dokumentum **nem állít validációt**; a „kész” szó csak ott áll, ahol a repó saját tesztje vagy doksija ezt rögzíti, hivatkozással |
-| Összevetett tervek | `CFA4-AI-MATTING-ENGINE-001` v1.0 (APPROVAL BASELINE; a szövege **nincs a repóban**, lásd 9. pont), [`OBJECT-MASK-PLAN-001`](OBJECT-MASK-PLAN-001-2026-11-03.md), [`CFA4-VFX-001`](CFA4-VFX-001.md), [`CFA4-ADAPTIVE-CAPABILITY-001-OSSZEVETES`](CFA4-ADAPTIVE-CAPABILITY-001-OSSZEVETES.md), [`CFA4-AI-MODEL-TRAINING-001`](CFA4-AI-MODEL-TRAINING-001.md), [`CFA4-KDENLIVE-PLAN-001-FINAL-1.0`](CFA4-KDENLIVE-PLAN-001-FINAL-1.0.md) KDN-4, [`CFA4-DATA-PG-001-1.0`](CFA4-DATA-PG-001-1.0.md), [`CFA4-TASKSTORE-PG-001`](CFA4-TASKSTORE-PG-001.md), [`docs/gaps.md`](../gaps.md) G12/G18, [`docs/open-editors-parity.md`](../open-editors-parity.md) E7, [`docs/hardware-parity.md`](../hardware-parity.md), [`VISION.md`](../../VISION.md), [`AGENTS.md`](../../AGENTS.md) |
+| Összevetett tervek | `CFA4-AI-MATTING-ENGINE-001` v1.0 (APPROVAL BASELINE; a szövege még **nincs a `main`-ben**, PR #1789, lásd 9. pont), [`OBJECT-MASK-PLAN-001`](OBJECT-MASK-PLAN-001-2026-11-03.md), [`CFA4-VFX-001`](CFA4-VFX-001.md), [`CFA4-ADAPTIVE-CAPABILITY-001-OSSZEVETES`](CFA4-ADAPTIVE-CAPABILITY-001-OSSZEVETES.md), [`CFA4-AI-MODEL-TRAINING-001`](CFA4-AI-MODEL-TRAINING-001.md), [`CFA4-KDENLIVE-PLAN-001-FINAL-1.0`](CFA4-KDENLIVE-PLAN-001-FINAL-1.0.md) KDN-4, [`CFA4-DATA-PG-001-1.0`](CFA4-DATA-PG-001-1.0.md), [`CFA4-TASKSTORE-PG-001`](CFA4-TASKSTORE-PG-001.md), [`docs/gaps.md`](../gaps.md) G12/G18, [`docs/open-editors-parity.md`](../open-editors-parity.md) E7, [`docs/hardware-parity.md`](../hardware-parity.md), [`VISION.md`](../../VISION.md), [`AGENTS.md`](../../AGENTS.md) |
 | Nyelv | magyar |
 | Jelölés | A Kdenlive-pontok jele **KDN-n** (a nyitott PR #1774 átszámozása; a `main`-ben ez még `K<n>`). A `KDN-4` = „AI háttéreltávolítás (SAM2-szerű)”, régi jele K4. A `K1–K16` jelölés a `LOSSLESS-MEDIA-TOOLS-001` tervé, ahhoz itt nem nyúlunk |
 
@@ -223,9 +223,9 @@ A tulajdonos a hét kérdésre a dokumentumban írt javaslat szerint döntött. 
 
 **Még nyitott, nem a tulajdonosé:** az ADR 0008 és a Model Manager tényleges szerződései (külső tároló), a C0-ADR elfogadása (Z1b), a #1774, #1584, #1766 beolvasztása.
 
-## 9. Megjegyzés a mattolás-terv szövegéről
+## 9. A mattolás-terv szövege
 
-A `CFA4-AI-MATTING-ENGINE-001` v1.0 szövege **nem szerepel a repóban**. A `coordination.md` §2.11 szerint a helye a `docs/plans/`. Javaslat: jóváhagyással, **változatlan tartalommal, külön PR-ban** kerüljön oda (§2.2); ez a dokumentum erre relatív hivatkozással mutat majd.
+A `CFA4-AI-MATTING-ENGINE-001` v1.0 szövege a tulajdonos döntése szerint (8. pont, 7.) külön PR-ban kerül a repóba: PR #1789, `docs/plans/CFA4-AI-MATTING-ENGINE-001-1.0.md`, tartalmilag változatlanul. A beolvasztás után ez a dokumentum relatív hivatkozással mutat rá.
 
 ## 10. Mit nem ellenőriztem, és mit jelent itt az „ütközésmentes”
 
