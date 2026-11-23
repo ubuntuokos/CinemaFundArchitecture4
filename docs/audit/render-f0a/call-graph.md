@@ -472,7 +472,7 @@ graph LR
 | `cfa4-export/presets.rs` | `cfa4-time` | `FrameRate` |
 | `cfa4-export/raster.rs` | `cfa4-color` | `srgb_to_linear`, `srgb_u8_to_linear_table` |
 | `cfa4-export/raster.rs` | `cfa4-frame` | `PixelData` |
-| `cfa4-export/raster.rs` | `cfa4-media` | `FrameRequest`, `open_bytes`, `still` |
+| `cfa4-export/raster.rs` | `cfa4-media` | `FrameRequest`, `dpx`, `open_bytes`, `still` |
 | `cfa4-export/raster.rs` | `cfa4-testkit` | `ffmpeg_or_skip`, `ffprobe`, `fixtures` |
 | `cfa4-export/raster.rs` | `cfa4-time` | `FrameRate`, `Tick`, `frames_to_fields` |
 | `cfa4-export/settings.rs` | `cfa4-time` | `FrameRate` |
