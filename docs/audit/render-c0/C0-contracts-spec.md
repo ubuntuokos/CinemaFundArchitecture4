@@ -74,8 +74,17 @@ a timeline → média PTS leképezés és a VFR-szabály (csendes CFR-kerekíté
 
 ## 4. Konverziós mátrix
 
-Nincs explicit mátrix (GAP). Vázlat: sorok a (forrásformátum, célformátum, hely) hármasokból; oszlopok a végrehajtó (CPU/GPU), költség (másolás, átszámítás) és a hiba, ha nem támogatott.
-Nem támogatott pár **explicit hiba**, nem csendes átalakítás. Első lépés: a meglévő konverziók felsorolása (`to_rgba8`, `convert_region`, `crates/color`) és a mátrix kitöltése belőlük.
+**Megvalósítva** (`cfa4_frame::convert`, CPU): `PixelFormat` (Rgba8, RgbaF32, Yuv8, Yuv16, Rgb16), `plan(from, to) -> Result<Conversion, Unsupported>` és `convert(frame, to)`.
+A táblázatot teszt rögzíti mind a 25 párra, és egy másik teszt azt, hogy a táblázat és a tényleges átalakító párról párra egyezik.
+
+| Cél \ Forrás | bármelyik, azonos formátum | bármelyik, eltérő formátum |
+|---|---|---|
+| azonos | Share (adat megosztva, `lossy: false`) | |
+| RgbaF32 (premultiplied lineáris f32) | | Convert, `lossy: false` (`to_linear_f32`) |
+| Rgba8 (straight sRGB RGBA8) | | Convert, `lossy: true` (`to_rgba8`) |
+| Yuv8, Yuv16, Rgb16 | | **`Unsupported` hiba** (nincs közös átalakító; az enkóderek az `cfa4-export`-ban végzik) |
+
+Nem támogatott pár explicit, nevesített hiba (`Unsupported { from, to }`), nem csendes átalakítás. A GPU-sor (`Residency::Gpu`) a `crates/gpu` kötésével kerül a mátrixba (PENDING). A mátrix a színtér-átalakítást nem fedi (az a `ColorInfo` és a `crates/color` dolga).
 
 ## 5. Hiba- és capability modell, A4 szabálytábla
 
