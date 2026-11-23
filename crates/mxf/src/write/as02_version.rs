@@ -5,8 +5,9 @@
 //! relative to the version file. The file holds no essence, no Essence Container Data and no index
 //! table; the footer partition only closes the file.
 //!
-//! The file package copies here carry a minimal file descriptor (edit rate and the track id the
-//! package describes), not a copy of the component's full descriptor.
+//! The file package copies carry the component's full file descriptor when the caller gives it
+//! ([`crate::as02_version::copy_descriptor`]), else a minimal one (edit rate and the track id the
+//! package describes).
 //!
 //! ```text
 //! header partition pack (closed, complete) · primer · preface · identification · content
@@ -76,6 +77,9 @@ pub struct ComponentSpec {
     pub track_id: u32,
     /// The path of the component file relative to the version file, `/` separated.
     pub locator: String,
+    /// The component file's own file descriptor (see [`crate::as02_version::copy_descriptor`]).
+    /// Empty: the copy carries a minimal descriptor (edit rate, track id).
+    pub descriptor: Vec<crate::as02_version::CopiedSet>,
 }
 
 /// What a version file says.
@@ -195,9 +199,53 @@ fn metadata(cfg: &VersionConfig) -> Vec<u8> {
     let m = &cfg.material;
     let u = |n| uid(m, n);
     let mut out = Vec::new();
-    let primer: Vec<Vec<u8>> = PRIMER
+    // properties of copied descriptors that the base primer does not know get dynamic tags
+    let mut dyn_tags: Vec<(u16, [u8; 16])> = Vec::new();
+    let tag_of = |ul: &[u8; 16], dyn_tags: &mut Vec<(u16, [u8; 16])>| -> u16 {
+        if let Some((t, _)) = PRIMER.iter().chain(LOCATOR_PRIMER).find(|(_, x)| x == ul) {
+            return *t;
+        }
+        if let Some((t, _)) = dyn_tags.iter().find(|(_, x)| x == ul) {
+            return *t;
+        }
+        let t = 0xFFFFu16 - dyn_tags.len() as u16;
+        dyn_tags.push((t, *ul));
+        t
+    };
+    // the copied descriptor sets, written after the packages; they fill the primer first
+    let mut copied: Vec<Vec<u8>> = Vec::new();
+    for (i, c) in cfg.components.iter().enumerate() {
+        if c.descriptor.is_empty() {
+            copied.push(Vec::new());
+            continue;
+        }
+        let base = 1000 + 100 * i as u32;
+        let map: Vec<([u8; 16], [u8; 16])> =
+            c.descriptor.iter().enumerate().map(|(k, d)| (d.uid, if k == 0 { u(base + 4) } else { u(base + 10 + k as u32) })).collect();
+        let new_uid = |old: &[u8; 16]| map.iter().find(|(o, _)| o == old).map(|(_, n)| *n);
+        let mut buf = Vec::new();
+        for (k, d) in c.descriptor.iter().enumerate() {
+            let Some(me) = new_uid(&d.uid) else { continue };
+            let mut set = Set { key: d.key, v: Vec::new() };
+            set.p(0x3C0A, &me);
+            for (ul, v) in &d.props {
+                let t = tag_of(ul, &mut dyn_tags);
+                set.p(t, v);
+            }
+            let subs: Vec<[u8; 16]> = d.sub.iter().filter_map(new_uid).collect();
+            if !subs.is_empty() {
+                set.refs(0x3F01, &subs);
+            }
+            if k == 0 {
+                set.refs(0x2F01, &[u(base + 5)]);
+            }
+            set.write(&mut buf);
+        }
+        copied.push(buf);
+    }
+    let all_primer: Vec<(u16, [u8; 16])> = PRIMER.iter().chain(LOCATOR_PRIMER).copied().chain(dyn_tags.iter().copied()).collect();
+    let primer: Vec<Vec<u8>> = all_primer
         .iter()
-        .chain(LOCATOR_PRIMER)
         .map(|(t, ul)| {
             let mut e = t.to_be_bytes().to_vec();
             e.extend_from_slice(ul);
@@ -272,9 +320,13 @@ fn metadata(cfg: &VersionConfig) -> Vec<u8> {
         let mut comp = Set::new(0x11, u(base + 3));
         comp.p(0x0201, &def(c.kind)).i64(0x0202, c.duration).i64(0x1201, 0).p(0x1101, &[0u8; 32]).u32(0x1102, 0);
         track(&mut out, m, base + 1, c.track_id, number, None, c.edit_rate, def(c.kind), c.duration, &[(base + 3, comp)]);
-        let mut d = Set::new(0x25, desc);
-        d.u32(0x3006, c.track_id).rat(0x3001, c.edit_rate).i64(0x3002, c.duration).refs(0x2F01, &[loc]);
-        d.write(&mut out);
+        if copied[i].is_empty() {
+            let mut d = Set::new(0x25, desc);
+            d.u32(0x3006, c.track_id).rat(0x3001, c.edit_rate).i64(0x3002, c.duration).refs(0x2F01, &[loc]);
+            d.write(&mut out);
+        } else {
+            out.extend_from_slice(&copied[i]);
+        }
         let mut l = Set::new(0x32, loc);
         l.p(0x4001, &utf16(&c.locator));
         l.write(&mut out);
@@ -360,7 +412,15 @@ mod tests {
         let r25 = Rational::new(25, 1);
         let mut c = VersionConfig::new(Umid::from_seed(b"version"), "Version A");
         c.components = vec![
-            ComponentSpec { umid: pic, kind: VersionTrackKind::Picture, edit_rate: r25, duration: 500, track_id: 2, locator: "media/pic.mxf".into() },
+            ComponentSpec {
+                umid: pic,
+                kind: VersionTrackKind::Picture,
+                edit_rate: r25,
+                duration: 500,
+                track_id: 2,
+                locator: "media/pic.mxf".into(),
+                descriptor: Vec::new(),
+            },
             ComponentSpec {
                 umid: snd,
                 kind: VersionTrackKind::Sound,
@@ -368,6 +428,7 @@ mod tests {
                 duration: 960_000,
                 track_id: 3,
                 locator: "media/snd_1.mxf".into(),
+                descriptor: Vec::new(),
             },
         ];
         c.tracks = vec![

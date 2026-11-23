@@ -462,6 +462,12 @@ fn md5_mic(path: &str) -> Result<cfa4_mxf::as02::Mic> {
     Ok(cfa4_mxf::as02::Mic { kind: "md5".into(), scope: "entire_file".into(), value })
 }
 
+/// The file descriptor of a finished component file, for the version file's copy of its package.
+fn descriptor_of(path: &str, umid: &cfa4_mxf::Umid) -> Result<Vec<cfa4_mxf::as02_version::CopiedSet>> {
+    let bytes = std::fs::read(path).map_err(|e| ExportError::Io(format!("{path}: {e}")))?;
+    cfa4_mxf::as02_version::copy_descriptor(&bytes, Some(umid.0)).map_err(|e| ExportError::Encode(format!("AS-02 component {path}: {e}")))
+}
+
 /// Finish the component files of an AS-02 bundle, then write the version file (the material
 /// package that cuts them together, OP1b with external essence) and the manifest.
 fn finish_bundle(b: As02Bundle, video: MxfWriter<Out>, audio: Vec<(String, MxfWriter<Out>)>, settings: &ExportSettings) -> Result<(u64, Vec<String>)> {
@@ -471,10 +477,16 @@ fn finish_bundle(b: As02Bundle, video: MxfWriter<Out>, audio: Vec<(String, MxfWr
     let mut total = 0u64;
     let mut components = Vec::new();
     let mut tracks: Vec<VersionTrackSpec> = Vec::new();
-    let mut add = |kind: VersionTrackKind, umid: cfa4_mxf::Umid, rel: &str, units: u64, size: u64, mic: cfa4_mxf::as02::Mic| {
+    let mut add = |kind: VersionTrackKind,
+                   umid: cfa4_mxf::Umid,
+                   rel: &str,
+                   units: u64,
+                   size: u64,
+                   mic: cfa4_mxf::as02::Mic,
+                   descriptor: Vec<cfa4_mxf::as02_version::CopiedSet>| {
         let duration = i64::try_from(units).unwrap_or(i64::MAX);
         files.push(File { id: file_id_of_umid(&umid.0), role: Role::EssenceComponent, size, path: rel.to_string(), mic: Some(mic), annotations: Vec::new() });
-        components.push(ComponentSpec { umid, kind, edit_rate: b.rate, duration, track_id: 2, locator: rel.to_string() });
+        components.push(ComponentSpec { umid, kind, edit_rate: b.rate, duration, track_id: 2, locator: rel.to_string(), descriptor });
         let n = tracks.len() as u32;
         tracks.push(VersionTrackSpec {
             kind,
@@ -492,13 +504,13 @@ fn finish_bundle(b: As02Bundle, video: MxfWriter<Out>, audio: Vec<(String, MxfWr
     let vpath = format!("{}/{}", b.dir, b.picture.1);
     let size = video.finish().map_err(io)?.finish_path(settings, &vpath)?;
     total += size;
-    add(VersionTrackKind::Picture, b.picture.0, &b.picture.1, units, size, md5_mic(&vpath)?);
+    add(VersionTrackKind::Picture, b.picture.0, &b.picture.1, units, size, md5_mic(&vpath)?, descriptor_of(&vpath, &b.picture.0)?);
     extra.push(vpath);
     for ((path, w), (umid, rel)) in audio.into_iter().zip(&b.sound) {
         let units = w.edit_units();
         let size = w.finish().map_err(io)?.finish_path(settings, &path)?;
         total += size;
-        add(VersionTrackKind::Sound, *umid, rel, units, size, md5_mic(&path)?);
+        add(VersionTrackKind::Sound, *umid, rel, units, size, md5_mic(&path)?, descriptor_of(&path, umid)?);
         extra.push(path);
     }
     let material = cfa4_mxf::Umid::from_seed(format!("version:{}", b.seed).as_bytes());
