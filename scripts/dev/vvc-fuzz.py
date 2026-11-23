@@ -29,7 +29,8 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[2]
 PIN = ROOT / "packaging" / "vvc-decode" / "vvdec.json"
 HARNESS = ROOT / "packaging" / "vvc-decode" / "fuzz" / "vvdec_fuzz.c"
-CORPUS_SRC = ROOT / "target" / "fixtures" / "vvc-conformance"
+FIXTURES = Path(os.environ["CFA4_FIXTURES_DIR"]) if os.environ.get("CFA4_FIXTURES_DIR") else ROOT / "target" / "fixtures"
+CORPUS_SRC = FIXTURES / "vvc-conformance"
 SANITIZE = "-fsanitize=address,undefined -fno-sanitize-recover=undefined -fno-omit-frame-pointer"
 COVERAGE = "-fsanitize=fuzzer-no-link"
 

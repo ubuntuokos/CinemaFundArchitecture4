@@ -60,12 +60,14 @@ pub fn helper_version(path: &Path) -> std::result::Result<String, String> {
         .spawn()
         .map_err(|e| format!("cannot run {}: {e}", path.display()))?;
     let stdout = child.stdout.take();
-    let reader = std::thread::spawn(move || {
+    let (tx, rx) = std::sync::mpsc::channel();
+    // the reader is never joined: a grandchild that keeps stdout open must not extend the deadline
+    std::thread::spawn(move || {
         let mut buf = Vec::new();
         if let Some(out) = stdout {
             let _ = out.take(256).read_to_end(&mut buf);
         }
-        buf
+        let _ = tx.send(buf);
     });
     let deadline = std::time::Instant::now() + Duration::from_secs(2);
     let mut timed_out = false;
@@ -81,10 +83,10 @@ pub fn helper_version(path: &Path) -> std::result::Result<String, String> {
             }
         }
     }
-    let buf = reader.join().unwrap_or_default();
     if timed_out {
         return Err(format!("{} did not answer --version in time", path.display()));
     }
+    let buf = rx.recv_timeout(deadline.saturating_duration_since(std::time::Instant::now()).max(Duration::from_millis(50))).unwrap_or_default();
     let text = String::from_utf8_lossy(&buf).into_owned();
     let version = text.lines().next().unwrap_or("").trim();
     Ok(if version.is_empty() || version.len() > 64 { "unknown".into() } else { version.to_string() })

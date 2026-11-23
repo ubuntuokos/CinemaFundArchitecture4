@@ -126,10 +126,10 @@ fn the_helper_is_not_slower_than_ffmpeg() {
         .collect();
     let scratch = cfa4_testkit::fixtures_dir("vvc/perf");
     std::fs::create_dir_all(&scratch).unwrap();
-    let mut measured: Vec<String> = Vec::new();
+    let mut measured: Vec<usize> = Vec::new();
     let mut verdicts = Vec::new();
 
-    for (name, counts) in &streams {
+    for (index, (name, counts)) in streams.iter().enumerate() {
         let bit = if name.contains('/') { PathBuf::from(name) } else { corpus.join(name).join(format!("{name}.bit")) };
         let name = bit.file_stem().map_or_else(|| name.clone(), |s| s.to_string_lossy().into_owned());
         let name = name.as_str();
@@ -168,7 +168,7 @@ fn the_helper_is_not_slower_than_ffmpeg() {
         ));
         let _ = std::fs::remove_file(&cut);
         if *counts {
-            measured.push(name.to_string());
+            measured.push(index);
         }
     }
 
@@ -184,10 +184,8 @@ fn the_helper_is_not_slower_than_ffmpeg() {
 
     // every verdict stream must have both its playback and its seek result; only the
     // informational ones may be missing
-    let missing: Vec<&str> = verdict_streams
-        .split(',')
-        .filter(|n| !measured.iter().any(|m| Path::new(n).file_stem().is_some_and(|s| s.to_string_lossy() == *m) || m == n))
-        .collect();
+    // (identified by the position in the configured list, not by the file stem)
+    let missing: Vec<&str> = streams.iter().enumerate().filter(|(i, (_, counts))| *counts && !measured.contains(i)).map(|(_, (n, _))| n.as_str()).collect();
     assert!(missing.is_empty() && !measured.is_empty(), "verdict streams not measured: {missing:?} (scripts/dev/vvc-perf-fixture.py encode)");
     let failed: Vec<_> = verdicts.iter().filter(|v| !v.1).collect();
     assert!(failed.is_empty(), "the helper is slower than FFmpeg: {failed:?}");
