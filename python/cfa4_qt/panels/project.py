@@ -2584,6 +2584,7 @@ class ProjectPanel(QWidget):
             for label, cid in (
                 (N_("Create Proxies…"), "media.createProxies"),
                 (N_("Attach Proxies…"), "media.attachProxies"),
+                (N_("Find Camera Proxies"), "media.findCameraProxies"),
                 (N_("Reconnect Full Resolution Media…"), "media.reconnectFullRes"),
                 (N_("Detach Proxies"), "media.detachProxies"),
             ):
