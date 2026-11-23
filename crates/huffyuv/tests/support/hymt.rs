@@ -36,6 +36,11 @@ pub fn list(kind: &[u8; 4], data: &[u8]) -> Vec<u8> {
 
 /// A one-stream AVI of `frames` with the given `BITMAPINFOHEADER` extradata and FourCC.
 pub fn avi(w: u32, h: u32, fourcc: &[u8; 4], extra: &[u8], frames: &[Vec<u8>]) -> Vec<u8> {
+    avi_bits(w, h, 16, fourcc, extra, frames)
+}
+
+/// The same with the `biBitCount` given.
+pub fn avi_bits(w: u32, h: u32, bit_count: u16, fourcc: &[u8; 4], extra: &[u8], frames: &[Vec<u8>]) -> Vec<u8> {
     let mut avih = Vec::new();
     for v in [100_000u32, 0, 0, 0x10, frames.len() as u32, 0, 1, 0, w, h, 0, 0, 0, 0] {
         avih.extend_from_slice(&v.to_le_bytes());
@@ -51,7 +56,7 @@ pub fn avi(w: u32, h: u32, fourcc: &[u8; 4], extra: &[u8], frames: &[Vec<u8>]) -
         strf.extend_from_slice(&v.to_le_bytes());
     }
     strf.extend_from_slice(&1u16.to_le_bytes());
-    strf.extend_from_slice(&16u16.to_le_bytes());
+    strf.extend_from_slice(&bit_count.to_le_bytes());
     strf.extend_from_slice(fourcc);
     strf.extend_from_slice(&[0u8; 20]);
     strf.extend_from_slice(extra);
