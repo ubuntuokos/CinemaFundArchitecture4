@@ -3,7 +3,7 @@
 **Dátum:** 2026-11-23 · **Csak olvasó audit.** Termelőkód, függőség, címke, merge és kiadás nem változott.
 **Kódalap:** `ubuntuokos/CinemaFundArchitecture4` `main` `3cdd81bc5ad3d981295fdb1b0c9d05f1652cbddd` (2026-11-23). A `fájl:sor` hivatkozások erre vonatkoznak, ha nincs más megadva.
 **Terv:** [`CFA4-CONTROL-SURFACE-GESTURE-001-1.1.md`](../plans/CFA4-CONTROL-SURFACE-GESTURE-001-1.1.md) a `docs/cfa4-control-surface-gesture-001-plan` ágon, commit `329ff31e5ec0325274ed521db9b69f8b3d2b9fd3`. Ez a commit a `main` `3cdd81bc` leszármazottja, és **nincs a `main`-en** (`git merge-base --is-ancestor` nem teljesül). A tervsorok erre a commitra vonatkoznak. Változáslista ugyanott: `CFA4-CONTROL-SURFACE-GESTURE-001-1.1-VALTOZASOK.md`.
-**Engedély:** Horváth István 2026-11-23-án az MG0 indítását a `main` felé engedélyezte, a PostgreSQL-sorrendtől eltérve (a feladat szövege). A terv 21. fejezete szerint az implementáció ettől még nem engedélyezett (`…-1.1.md` 19. és 1042–1043. sor). Ez a dokumentum az MG1-et nem indítja.
+**Engedély:** Horváth István 2026-11-23-án az MG0 indítását a `main` felé engedélyezte, a PostgreSQL-sorrendtől eltérve (a feladat szövege). Ugyanezen a napon 10:16-kor (Europe/Budapest) a 12. fejezet javaslatait elfogadta („javaslataid elfogadva jóváhagyom”); a rögzítés a 12.1. A terv 21. fejezete szerint az implementáció ettől még nem engedélyezett (`…-1.1.md` 19. és 1042–1043. sor). Az MG1 csak a tulajdonos külön igenjével indul, és ez a dokumentum nem indítja.
 
 A terv „[MG0-ban igazolandó]” jelölése (`…-1.1.md` 27. sor) azt kéri, hogy a forrásból nem ellenőrzött állítást ez az audit döntse el. Ahol élő KDE, fizikai egér vagy GitHub-futó kellett volna, a sor **nem mért**.
 
@@ -348,9 +348,9 @@ Konkrét hely, implementáció nélkül:
 1. Motor: a `controlSurfaces` kategória `rows` tömbjében (`settings.rs` 1225–1230. sor) a `Row::Custom("controlSurfaces")` után egy `Row::Custom("controlSurfacesGesture")`. A `group` marad `"hardware"`. A `prefs.schema` így továbbra is ezt a csoportot adja.
 2. Szerkesztő: a `_control_surfaces` oszlopában (`settings.py` 1020–1026. sor) az `_assignments` után egy új csoport, objektumnév `settings.controlSurfaces.gesture`. A Learn alatt, a profilszerkesztő előtt van: a gombtanítás és a gesztustanítás egymás mellett, a MIDI-monitor alattuk marad. A `_reveal_focus` a név alapján odagörget.
 3. Ablak menü: negyedik sor a `window_menu.py` 366–369. és 397–400. táblájában, parancs `window.mouseGestures`, szakasz `settings.controlSurfaces.gesture`, ugyanaz az `open_surfaces`.
-4. A `cfa4_devtools` ablakot nem kell gesztus-szerkesztővel bővíteni: a custom szakaszt nem rajzolja. A csoportcímet a szerkesztő Preferences listája ma nem mutatja (`set_data`, 478–491. sor). A csoportfejlécek kirajzolása külön UI-változás; a besorolás adata a sémában már megvan.
+4. A `cfa4_devtools` ablakot nem kell gesztus-szerkesztővel bővíteni: a custom szakaszt nem rajzolja. A csoportcímet a szerkesztő Preferences listája ma nem mutatja (`set_data`, 478–491. sor).
 
-Új angol feliratok az `i18n/*.tsv` katalógusokba kerülnek, a „Vezérlők” / „Vezérlőfelületek” névváltás nélkül, amíg István a Q5 végrehajtását külön nem kéri.
+István 2026-11-23 10:16-kor ezt a helyet fogadta el (12.1, 8. pont): a szakasz a Hardware & Devices › Control Surfaces lapon van, magyar címe **Egérgesztusok**, objektumneve `settings.controlSurfaces.gesture`. A „Hardver” fejléc kirajzolása a Preferences listában nincs ebben a döntésben. A lap magyar neve **Vezérlőfelületek** marad (12.1, 9. pont; `i18n/hu.tsv` 4691. és 4806. sor). Új felirat az `i18n/` katalógusokba kerül, amikor a szakasz elkészül; ez a commit feliratot nem ad hozzá.
 
 ## 11. MG1 interfész- és fájltervezet
 
@@ -413,7 +413,7 @@ pub enum Recognize {
 pub fn recognize(samples: &[PointerSample], templates: &[Template], t: &Thresholds) -> Recognize;
 ```
 
-`Direction`: nyolc érték (a négy égtáj és a négy átló). `confidence_milli` 0…1000, egész. `Template::points` hossza legfeljebb **64**. A 64 javaslat, nem mért optimum: a minta bemenet, a hosszt korlátozni kell (`AGENTS.md` §0.4), és 64 pont egy egérgesztushoz elég a FlowMouse négyirányú felismerőjénél gazdagabb alakzathoz is. István a számot az MG1 előtt cserélheti. A 64 fölötti minta hiba, nem csendes vágás.
+`Direction`: nyolc érték (a négy égtáj és a négy átló). `confidence_milli` 0…1000, egész. `Template::points` hossza legfeljebb **64**. A 64 a minta felső korlátja (`AGENTS.md` §0.4); István 2026-11-23 10:16-kor elfogadta (12.1, 5. pont). A 64 fölötti minta hiba, nem csendes vágás.
 
 `SurfaceInput` új változata, a meglévő `Button` mellett:
 
@@ -437,31 +437,50 @@ A Learn az MG1-ben a felismerő mellett, a motorban, **nem** a `surface_runtime`
 - Nem módosítja a `70-cfa4-surfaces.rules` fájlt.
 - Nem ad `QGestureRecognizer` osztályt.
 - Nem ír `surfaceAction`-t gesztusra (az MG2, a `run_surface_action` úton).
-- Nem bővíti a profilsémát. A sablonok tárolása séma 2-es verziót kér (1.1 fejezet): a v1 `additionalProperties: false`, a magasabb verziót a mai olvasó békén hagyja. Ez közös döntés a CONTROL-SURFACE-001-gyel és a HW-illesztés E8 pontjával (`…-ILLESZTES.md` 28. sor). Az MG1 a sablonokat csak a teszt argumentumában látja.
+- Nem bővíti a profilsémát. A sablonok a 2-es verzióba kerülnek (12.1, 4. pont): a v1 `additionalProperties: false`, a magasabb verziót a mai olvasó békén hagyja. A sémafájl írása a CONTROL-SURFACE-001 és a HW-illesztés E8 pontjával közös lépés (`…-ILLESZTES.md` 28. sor), és nincs ebben a commitban. Az MG1 a sablonokat csak a teszt argumentumában látja.
 - Nem húz be crate-et. A `deny.toml` 39–41. sora a GPL-3.0-or-later függőséget engedi; az MG1-nek nincs rá szüksége.
 
 ### 11.5 ADR-kiegészítés szövege (még nem az ADR fájlban)
 
-Az ADR 0012 módosítása külön jóváhagyás (a kapu). Javasolt bekezdés, az ADR Revíziók táblájába, miután István igent mond:
+István 2026-11-23 10:16-kor úgy döntött, hogy a gesztusvezérlés az ADR 0012 kiegészítése lesz, nem új ADR (12.1, 2. pont). A bekezdés beírása az ADR fájlba külön lépés; ez a commit az ADR-t nem módosítja. A beírandó szöveg, változatlanul:
 
 > 2026-11-23, MG0. A `crates/engine/src/surface/` könyvtár nem készült el; a leképezés, a Learn és a profil a `control_surfaces.rs`, a `surface_runtime.rs` és a `surface_profile.rs` fájl. A gesztus felismerője az L1 `cfa4-surface-model` I/O nélküli modulja. A `SurfaceProtocol` a `Pointer` változattal bővül (Qt-mutató, eszközazonosító nélkül). A felismert gesztus `SurfaceInput::Gesture`, nem új protokoll. Az evdev-egér csak az L5-ben, alapból kikapcsolva, `unsafe` és új crate nélkül. A Qt nem ismer fel és nem képez le. A `PROTOCOL` marad 1.
 
 ## 12. Nyitott kérdések Istvánnak
 
-Ezek nélkül az MG1 nem indulhat, illetve a kapu nem zárul. A javaslatot a zárójel mondja; a döntés nem született meg ebben az auditban.
+A kérdések 2026-11-23 10:16-ig (Europe/Budapest) nyitottak voltak. A választ a 12.1 rögzíti. A 10. kérdés nyitva maradt. Az MG1 ettől a választól még nem indul.
 
-1. **Az MG0 kapu jóváhagyása.** A dokumentált architektúra, a bemeneti utak, a dinamikus gombmodell és a 11. fejezet interfésze elfogadható-e? A kapu szövege a tulajdonos igenjét kéri (`…-1.1.md` 710. sor).
-2. **ADR-kiegészítés.** A 11.5 bekezdés bekerüljön-e az ADR 0012-be, vagy új ADR készüljön? Amíg nincs igen, az ADR fájl nem változik.
-3. **Közös modell.** A Hold, a kombináció és a `Binding` bővítése megvárja-e a CFA4-CONTROL-SURFACE-001 külön igenjét (V-20)? Javaslat: igen, és az MG1 addig nem nyúl a `Triggers::press`-hez.
-4. **Profilséma.** A gesztussablon a `cfa4-surface-profile` 2-es verziója legyen, a HW-illesztés E8 közös döntésével? Javaslat: igen, 2-es verzió, nem csendes v1-bővítés.
-5. **Sablonpont-plafon.** A 64 pont felismerőnként megfelelő-e?
-6. **Köthető parancsok.** A `CommandSpec`-ben nincs destruktív jelölő (`commands.rs` 23–36. sor). Javaslat az első kiadásra: gesztushoz csak olyan parancs, amelynek azonosítója `playback.`, `playhead.` vagy `window.` előtagú, és a `needs_params` nélküli lista tagja (a Qt már ezt a listát adja a gombokhoz, `main_window.py` 2335–2341. sor). Minden más kötés a GUI-ban figyelmeztet, és a meglévő visszavonáson megy. István szűkítheti vagy bővítheti.
-7. **Kontextus-üresjárat.** A 1.1 fejezet 3. szabálya (a szűkebb üres kontextus nem esik vissza a globálisra) megfelel-e? A másik olvasat: visszaesés a globálisra, és csak annak hiánya a „nincs művelet”.
-8. **Hardver-fejléc a Preferences listában.** A séma csoportot ad, a szerkesztő nem rajzolja (10.2). A gesztus a Control Surfaces lap szakasza legyen (10.4 javaslat), vagy István külön kéri a „Hardware & Devices” / „Hardver” fejlécek kirajzolását is?
-9. **A magyar lapnév.** A Q5 „Vezérlők”, a katalógus „Vezérlőfelületek” (`hu.tsv` 4691., 4806.). A gesztusfeliratok melyik név alá kerüljenek?
-10. **Belépési feltételek a további fázisokra.** Az MG0 a PostgreSQL-sorrendtől eltérve indult. Az MG1 megvárja-e a `qt-parity.md` 1.9 / 1.10 / 5.5 ✅ állapotát, az M1–M10 kitöltését, valamint az OSC és a Mackie/HUI elkészültét? A terv 21. fejezete ezeket az MG0 elé írta; a 2–5. sor a `main`-en nem teljesül (0. fejezet).
-11. **Plasma-verzió a referenciagép leírásában.** A `reference-machine.md` 17. sora 6.6.6, a terv 13. sora István közlése szerint 6.6.7. Melyik a mérvadó, és frissüljön-e a gép leírása? Ezt az audit nem írja át: a gép adata a tulajdonos fájlja.
-12. **Evdev az első kiadásban.** A C út az MG1–MG3 alatt teljesen kimaradjon-e, és csak az A/B (Qt) út épüljön, amíg a jogosultsági döntés (6. fejezet) jóvá nem hagyott? Javaslat: igen, az evdev dekóder külön fázis, a ShuttlePRO CS-8 útja változatlan.
+1. **Az MG0 kapu tartalma.** A dokumentált architektúra, a bemeneti utak, a dinamikus gombmodell és a 11. fejezet interfésze. Döntés: elfogadva (12.1, 1. pont). A kapu ettől még nem zárult (13. fejezet).
+2. **ADR-kiegészítés.** A 11.5 bekezdés az ADR 0012-be kerül, vagy új ADR készül? Döntés: kiegészítés az ADR 0012-be, új ADR nincs. A fájl módosítása külön lépés, ez a commit nem írja meg (12.1, 2. pont).
+3. **Közös modell.** A Hold, a kombináció és a `Binding` bővítése. Döntés: megvárja a CFA4-CONTROL-SURFACE-001 külön igenjét. Addig az MG1 a mostani gombindításhoz (`Triggers::press`, `control_surfaces.rs` 232–247. sor) nem nyúl (12.1, 3. pont).
+4. **Profilséma.** Döntés: a gesztussablon a profilséma 2-es verziója, nem csendes v1-bővítés (12.1, 4. pont).
+5. **Sablonpont-plafon.** Döntés: felismerőnként 64 pont (12.1, 5. pont).
+6. **Köthető parancsok.** A `CommandSpec`-ben nincs destruktív jelölő (`commands.rs` 23–36. sor). Döntés: az első kiadásban gesztushoz csak `playback.*`, `playhead.*` és `window.*` köthető; minden más kötésnél a GUI figyelmeztet (12.1, 6. pont).
+7. **Kontextus-üresjárat.** Döntés: ha a szűkebb kontextusban nincs kötés, a gesztus nem esik vissza a globálisra, és nem történik semmi (12.1, 7. pont).
+8. **A beállítás helye.** Döntés: Hardware & Devices › Control Surfaces, új szakasz, magyar címe Egérgesztusok, objektumneve `settings.controlSurfaces.gesture`. A „Hardver” fejléc kirajzolása a Preferences listában nincs ebben a döntésben (12.1, 8. pont; 10.4).
+9. **A magyar lapnév.** Döntés: Vezérlőfelületek, ahogy a katalógus ma írja (`i18n/hu.tsv` 4691. és 4806. sor). A Q5 „Vezérlők” neve nem lép a helyére (12.1, 9. pont).
+10. **Belépési feltételek a további fázisokra.** Az MG1 megvárja-e a `qt-parity.md` 1.9 / 1.10 / 5.5 ✅ állapotát, az M1–M10 kitöltését, valamint az OSC és a Mackie/HUI elkészültét? **Nyitott.** Erre 10:16-kor nincs döntés (12.1, 10. pont). A 0. fejezet 2–4. sora a `main`-en továbbra sem teljesül.
+11. **Plasma-verzió.** Döntés: a referenciaverzió 6.6.7. A `docs/development/reference-machine.md` 17. sora még 6.6.6. A fájl frissítése külön dokumentummódosítás, csak a tulajdonos külön igenjével; ez a commit nem nyúl hozzá (12.1, 11. pont).
+12. **Evdev az MG1–MG3 alatt.** Döntés: csak a Qt-út épül. Az evdev-olvasás külön fázis, a jogosultsági döntés után. A ShuttlePRO útja nem változik (12.1, 12. pont).
+
+### 12.1 Tulajdonosi döntések (2026-11-23)
+
+Horváth István, 2026-11-23 10:16 (Europe/Budapest), a 12. fejezet javaslataira: „javaslataid elfogadva jóváhagyom”. Az MG1-et ez a mondat nem indítja. Az ADR 0012 szövege és a `reference-machine.md` nem változott.
+
+| # | Döntés | Állapot |
+|---|---|---|
+| 1 | Az MG0 tartalma (architektúra, bemeneti utak, dinamikus gombmodell, a 11. fejezet interfész-tervezete) elfogadva | Elfogadva |
+| 2 | A gesztusvezérlés az ADR 0012 kiegészítése, nem új ADR. A szöveg beírása külön lépés | Elfogadva; a fájl még a régi |
+| 3 | A Hold, a kombináció és a kötésbővítés a szülőterv külön igenjére vár. Addig az MG1 a mostani gombindításhoz nem nyúl | Elfogadva |
+| 4 | A gesztussablon a profilséma 2-es verziója, nem csendes v1-bővítés | Elfogadva |
+| 5 | Sablonpont-plafon: felismerőnként 64 pont | Elfogadva |
+| 6 | Az első kiadásban csak `playback.*`, `playhead.*` és `window.*` köthető gesztushoz. Minden más kötésnél a GUI figyelmeztet | Elfogadva |
+| 7 | Szűkebb kontextusban kötés nélkül nincs visszaesés a globálisra, és nincs művelet | Elfogadva |
+| 8 | Hely: Hardware & Devices › Control Surfaces, új „Egérgesztusok” szakasz (`settings.controlSurfaces.gesture`). A Preferences-lista „Hardver” fejléce nincs ebben a döntésben | Elfogadva |
+| 9 | A magyar lapnév: Vezérlőfelületek | Elfogadva |
+| 10 | Az MG1 megvárja-e a Qt6 nyitott sorait, az eszközös mérést, az OSC-t és a Mackie/HUI-t | **Nyitott** |
+| 11 | A Plasma referenciaverzió 6.6.7. A `reference-machine.md` frissítése külön igenre vár | Elfogadva; a gép leírása még 6.6.6 |
+| 12 | Az MG1–MG3 csak a Qt-utat építi. Az evdev-olvasás külön fázis a jogosultsági döntés után. A ShuttlePRO útja nem változik | Elfogadva |
 
 ## 13. Az MG0 kapu, pontonként
 
@@ -471,37 +490,38 @@ A kapu (`…-1.1.md` 710. sor): „az architektúra, inputhozzáférés, dinamik
 |---|---|---|
 | Meglévő motor auditja (`surface-model`, `surface`, `control_surfaces.rs`, `surface_runtime.rs`, `surface_profile.rs`, `serve_surface.rs`, `settings.py`) | Dokumentálva | 1. és 3. fejezet |
 | ADR 0012 eltérés: nincs `surface/` könyvtár | Dokumentálva | 1. fejezet, `lib.rs` 23. és 85–87. sor |
-| Leképezés és a két tengely szabálya | Javaslat, jóváhagyásra vár | 1.1, kérdés 7 |
+| Leképezés és a két tengely szabálya | Elfogadva 10:16-kor: szűkebb üres kontextusnál nincs visszaesés és nincs művelet | 1.1, 12.1 / 7. pont |
 | Parancsút `surfaceAction` → `run_surface_action` | Dokumentálva | 1. fejezet, `main_window.py` 2027–2028. és 2343–2346. sor |
 | Event Fabric: a gesztus nem kerül rá | Dokumentálva, kód nem kell | 1.4 |
 | Qt bemenet, helyi menük, középső gomb | Dokumentálva | 5. fejezet |
 | Linux-út A/B/C határai (16 / 27 / `KEY_MAX`) | Forrásból igazolva | 4. fejezet, Qt 6.10.2 és Linux `v6.12` |
-| Dinamikus gombazonosító | Javaslat: `ControlId` + bitkészlet, nincs fix tömb | 4. és 11.2 |
+| Dinamikus gombazonosító | Elfogadva a 11. fejezet tervezetével: `ControlId` + bitkészlet, nincs fix tömb | 4., 11.2, 12.1 / 1. pont |
 | Fix korlátok a kódban | Dokumentálva | 4. fejezet táblája |
 | FlowMouse csak viselkedés, GPL-3.0, négy irány | Igazolva a megnevezett commiton | 8. fejezet |
-| Saját felismerő fájljai és típusai | Tervezet, nem kód | 11. fejezet |
+| Saját felismerő fájljai és típusai | Elfogadva tervezetként, kód nincs | 11. fejezet, 12.1 / 1. pont |
 | Új függőség | Nincs, és az MG1-hez nem kell | 11.4 |
-| Evdev biztonság (udev, `uaccess`, `input` csoport, Flatpak) | Dokumentálva; a bekapcsolás István igenjére vár | 6. fejezet, kérdés 12 |
-| Profilséma v1 vagy v2 | Javaslat: v2, közös döntés | 11.4, kérdés 4 |
-| Köthető parancsok köre | Javaslat | kérdés 6 |
-| AC-küszöbök | A terv 22. fejezete kezdőértékeket ad (`…-1.1.md` 806–827. sor). Mérés nincs. A pontplafon 64 javaslat (11.2). A p95 ≤ 10 ms a F0 spec 214. sora, nem mért | kérdés 5; M1–M10 üres |
-| Beillesztés a Hardver helyére | Pontos hely: a `controlSurfaces` lap, `group: "hardware"` | 10.4 |
-| Wayland gombok a referenciagépen (KDE 6.6.6 / 6.6.7) | **Nem mért** | 14. fejezet |
+| Evdev biztonság (udev, `uaccess`, `input` csoport, Flatpak) | Dokumentálva. Az MG1–MG3 csak a Qt-utat építi; az evdev külön fázis | 6. fejezet, 12.1 / 12. pont |
+| Profilséma v1 vagy v2 | Elfogadva: 2-es verzió, nem csendes v1-bővítés | 11.4, 12.1 / 4. pont |
+| Köthető parancsok köre | Elfogadva: első kiadásban `playback.*`, `playhead.*`, `window.*`; minden más kötésnél a GUI figyelmeztet | 12.1 / 6. pont |
+| AC-küszöbök | A pontplafon 64, elfogadva (12.1 / 5. pont). A terv 22. fejezetének többi kezdőértéke (`…-1.1.md` 806–827. sor) nincs megmérve. A p95 ≤ 10 ms a F0 spec 214. sora, nem mért | M1–M10 üres |
+| Beillesztés a Hardver helyére | Elfogadva: Hardware & Devices › Control Surfaces, „Egérgesztusok” (`settings.controlSurfaces.gesture`). A lista „Hardver” fejléce nincs a döntésben | 10.4, 12.1 / 8. pont |
+| Wayland gombok a referenciagépen | **Nem mért.** A referenciaverzió 6.6.7 (12.1 / 11. pont); a `reference-machine.md` 17. sora még 6.6.6, és ez a commit nem írja át | 14. fejezet |
 | Libinput középsőgomb-emuláció a referenciagép egerein | **Nem mért.** A dokumentáció: bekapcsolva eldobja a bal és a jobb eseményt | 7.3 |
 | 8+ gombos és billentyű-interfészes egér | **Nem mért.** Eszköz nem volt | 14. fejezet |
 | HUD ablakpozíció Waylanden | **Nem mért.** A terv V-25 ezt MG0-ra hagyta (`…-1.1.md` 540. sor). A KWin forrása a gombkészletet írja, az ablakhelyezést ez az audit nem nézte | 14. fejezet |
 | `/dev/uinput` a GitHub-futón | **Nem mért.** A CI nem használja | 9. fejezet |
-| István jóváhagyása | **Nyitott** | kérdés 1 |
-| ADR-módosítás jóváhagyva | **Nyitott.** Szövegjavaslat a 11.5-ben, a fájl nem változott | kérdés 2 |
+| Az MG0 tartalmának elfogadása | Elfogadva 2026-11-23 10:16-kor | 12.1 / 1. pont |
+| ADR-módosítás | A forma elfogadva: kiegészítés az ADR 0012-be, nem új ADR. A szöveg beírása külön lépés, a fájl nem változott | 11.5, 12.1 / 2. pont |
+| Az MG1 belépési feltételei (Qt6 nyitott sorok, eszközös mérés, OSC, Mackie/HUI) | **Nyitott.** 10:16-kor nincs döntés | 12.1 / 10. pont |
 
-A kapu tehát **nem zárult**. A dokumentálandó pontok, amelyek forrásból eldönthetők, ebben a fájlban vannak. A jóváhagyás, az ADR és a fizikai mérés nincs meg.
+A kapu **nem zárult le**. A 12.1 döntései megvannak, két feltétel hiányzik: a 10. kérdésre nincs döntés, és a tulajdonos gépén nincs meg a fizikai mérés (az extra gombok eljutnak-e a Qt-ig, a középsőgomb-emuláció, a balkezes mód, a HUD helye; 14. fejezet). Az MG1 csak a tulajdonos külön igenjével indulhat. Ez a commit nem indítja.
 
 ## 14. Amit nem mértem
 
 Ez a munkamenet felhős Linux, KDE nélkül. A `plasmashell` és a `weston` nincs a `PATH`-on. A `/dev/input` és a `/dev/uinput` nincs. A felhasználó nincs az `input` csoportban. A referenciagép (Dell Precision Tower 7910, Ubuntu Studio 26.04, Wayland; `docs/development/reference-machine.md` 9–19. sor) nem ez a gép.
 
 - A KDE Plasma 6.6.7 futó példánya elnyeli-e az extra egérgombot, és mely kódok érnek el a Qt-ig. A KWin `master` forrása a 16-os sávot és az `ExtraButton24` összevonást mutatja (7.2); a 6.6.7 tagot a nyers URL nem adta, és élő munkamenet nem futott.
-- A `reference-machine.md` 6.6.6 és a terv 6.6.7 eltérése a futó gépen.
+- A futó gép Plasma-verziója. A döntött referencia 6.6.7 (12.1, 11. pont). A `reference-machine.md` 17. sora 6.6.6; a fájl frissítése külön igenre vár, és ez a commit nem végzi el. A 6.6.7 munkamenet gombjait, balkezes módját és HUD-helyét nem mértem.
 - A libinput középsőgomb-emuláció alapállapota a gép egerein.
 - Konkrét egér: mely gomb `BTN_*`, melyik `KEY_*`.
 - A GitHub `ubuntu-26.04` futó `/dev/uinput` joga. A `ci-linux.yml` nem említi.
