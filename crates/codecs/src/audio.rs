@@ -118,6 +118,8 @@ enum Inner {
     Tta(cfa4_tta::Decoder),
     /// ATRAC1 (`cfa4-realaudio`): each packet is one 212-byte sound unit per channel.
     Atrac1(Box<cfa4_realaudio::atrac1::Decoder>),
+    /// DSP Group TrueSpeech (`cfa4-truespeech`): packets hold whole 32-byte frames.
+    TrueSpeech(Box<cfa4_truespeech::Decoder>),
 }
 
 /// Packets between two saved decoder states (see [`Checkpoints`]).
@@ -337,8 +339,17 @@ impl PacketDecoder {
         match &self.inner {
             Inner::Amr(d) => Some(Self { inner: Inner::Amr(d.clone()), channels: self.channels }),
             Inner::Mace(d) => Some(Self { inner: Inner::Mace(d.clone()), channels: self.channels }),
+    /// A copy of the decoder state, for codecs that seek through [`Checkpoints`] (AMR, TrueSpeech).
+    pub fn snapshot(&self) -> Option<Self> {
+        match &self.inner {
+            Inner::Amr(d) => Some(Self { inner: Inner::Amr(d.clone()), channels: self.channels }),
+            Inner::TrueSpeech(d) => Some(Self { inner: Inner::TrueSpeech(d.clone()), channels: self.channels }),
             _ => None,
         }
+    }
+    /// DSP Group TrueSpeech (8 kHz mono).
+    pub fn truespeech() -> Self {
+        Self { inner: Inner::TrueSpeech(Box::default()), channels: 1 }
     }
     /// AMR wideband (`wide`) or narrowband, mono.
     pub fn amr(wide: bool) -> Self {
@@ -460,6 +471,11 @@ impl PacketDecoder {
                 return Ok(planes.into_iter().map(|p| p.into_iter().map(|v| info.to_f32(v)).collect()).collect());
             }
             Inner::Atrac1(d) => return d.decode(data).map_err(|e| CodecError::Decode(format!("ATRAC1: {e}"))),
+            Inner::TrueSpeech(d) => {
+                let pcm = d.decode(data).map_err(|e| CodecError::Decode(e.to_string()))?;
+                self.channels = 1;
+                return Ok(vec![pcm.into_iter().map(|s| f32::from(s) / 32768.0).collect()]);
+            }
             Inner::Amr(d) => {
                 let mut pcm = Vec::new();
                 d.decode_packet(data, &mut pcm).map_err(|e| CodecError::Decode(format!("AMR: {e}")))?;
@@ -529,6 +545,7 @@ impl PacketDecoder {
             Inner::Adpcm(d) => d.reset(),
             Inner::Mace(d) => d.reset(),
             Inner::Amr(d) => d.reset(),
+            Inner::TrueSpeech(d) => d.reset(),
             Inner::Atrac1(d) => d.reset(),
             Inner::AacPending | Inner::MpegPending(_) | Inner::Tta(_) => {}
         }

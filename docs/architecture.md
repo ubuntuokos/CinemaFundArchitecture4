@@ -98,6 +98,7 @@ Crates are named `cfa4-<dir>` (`crates/time` is `cfa4-time`); new CFA4 crates ar
 | `amr` | L0 | AMR-NB and AMR-WB speech decoders, ported from opencore-amr (Apache-2.0) ([README](../crates/amr/README.md)) |
 | `g729` | L0 | ITU-T G.729 speech decoder with Annex B comfort noise, ported from bcg729 (GPL-3.0-or-later) ([README](../crates/g729/README.md)) |
 | `mace` | L0 | Apple MACE 3:1 and 6:1 audio decoders (QuickTime), ported from FFmpeg (LGPL-2.1-or-later, owner-approved exception) ([README](../crates/mace/README.md)) |
+| `truespeech` | L0 | DSP Group TrueSpeech speech decoder (WAV, AVI, Matroska), ported from FFmpeg (LGPL-2.1-or-later, owner-approved exception) ([README](../crates/truespeech/README.md)) |
 | `ilbc` | L0 | iLBC (RFC 3951) speech decoder, ported from WebRTC's fixed-point libilbc (BSD-3-Clause) ([README](../crates/ilbc/README.md)) |
 | `tta` | L0 | TTA (True Audio) lossless audio decoder, ported from libtta (LGPL-3.0) ([README](../crates/tta/README.md)) |
 | `twinvq` | L0 | NTT TwinVQ (VQF) and Voxware MetaSound audio decoder, all nine VQF modes and the MetaSound modes, ported from FFmpeg (LGPL-2.1-or-later, owner-approved exception) ([README](../crates/twinvq/README.md)) |

@@ -958,6 +958,7 @@ pub const TARGETS: &[(&str, &str, Target)] = &[
     ("magicyuv", "cfa4-magicyuv", magicyuv),
     ("g729", "cfa4-g729", g729),
     ("mace", "cfa4-mace", mace),
+    ("truespeech", "cfa4-truespeech", truespeech),
     ("ilbc", "cfa4-ilbc", ilbc),
     ("musepack", "cfa4-musepack", musepack),
     ("shorten", "cfa4-shorten", shorten),
@@ -989,6 +990,12 @@ pub fn mace(data: &[u8]) {
     let version = if sel & 1 == 0 { cfa4_mace::Version::Mace3 } else { cfa4_mace::Version::Mace6 };
     let Ok(mut d) = cfa4_mace::Decoder::new(version, 1 + usize::from(sel >> 1 & 1)) else { return };
     for pkt in body.chunks(1 + usize::from(sel >> 2) % 64) {
+/// TrueSpeech: random packets of random sizes through one decoder.
+pub fn truespeech(data: &[u8]) {
+    let mut d = cfa4_truespeech::Decoder::new();
+    let (head, body) = data.split_at(data.len().min(1));
+    let step = 1 + head.first().map_or(0, |&b| usize::from(b)) % 96;
+    for pkt in body.chunks(step) {
         let _ = d.decode(pkt);
     }
 }

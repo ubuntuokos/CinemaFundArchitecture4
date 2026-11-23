@@ -48,6 +48,7 @@ cfa4-amv = { workspace = true }
 cfa4-mve = { workspace = true }
 cfa4-g729 = { workspace = true }
 cfa4-mace = { workspace = true }
+cfa4-truespeech = { workspace = true }
 cfa4-ilbc = { workspace = true }
 cfa4-dts = { workspace = true }
 cfa4-truehd = { workspace = true }

@@ -45,6 +45,8 @@ const TAG_ATRAC3: u16 = 0x0270;
 const TAG_METASOUND: u16 = 0x0075;
 /// Largest MetaSound data chunk decoded at open.
 const METASOUND_MAX: u64 = 64 << 20;
+/// The WAVE format tag of DSP Group TrueSpeech.
+const TAG_TRUESPEECH: u16 = 0x0022;
 /// The `WAVE_FORMAT_EXTENSIBLE` sub-format of ATRAC3plus (E923AABF-CB58-4471-A119-FFFA01E4CE62).
 const ATRAC3P_GUID: [u8; 16] = [0xBF, 0xAA, 0x23, 0xE9, 0x58, 0xCB, 0x71, 0x44, 0xA1, 0x19, 0xFF, 0xFA, 0x01, 0xE4, 0xCE, 0x62];
 /// The `WAVE_FORMAT_EXTENSIBLE` sub-format of ATRAC9 (47E142D2-36BA-4D8D-88FC-61654F8C836C).
@@ -57,6 +59,8 @@ pub(crate) enum Atrac {
     Three(Box<cfa4_realaudio::atrac3::Decoder>),
     Plus(Box<cfa4_realaudio::atrac3p::Decoder>),
     Nine(Box<cfa4_realaudio::atrac9::Decoder>),
+    /// DSP Group TrueSpeech: not an ATRAC, but a frame-based codec with memory that seeks the same way.
+    TrueSpeech(Box<cfa4_truespeech::Decoder>),
 }
 
 impl Atrac {
@@ -67,6 +71,7 @@ impl Atrac {
             Atrac::Three(d) => d.decode(f).ok(),
             Atrac::Plus(d) => d.decode(f).ok(),
             Atrac::Nine(d) => d.decode(f).ok(),
+            Atrac::TrueSpeech(d) => d.decode(f).ok().map(|p| vec![p.into_iter().map(|s| f32::from(s) / 32768.0).collect()]),
         }
     }
 
@@ -76,6 +81,7 @@ impl Atrac {
             Atrac::Three(d) => d.samples_per_channel(),
             Atrac::Plus(d) => d.samples_per_channel(),
             Atrac::Nine(d) => d.samples_per_channel(),
+            Atrac::TrueSpeech(_) => cfa4_truespeech::FRAME_SAMPLES,
         }
     }
 
@@ -85,6 +91,7 @@ impl Atrac {
             Atrac::Three(_) => "ATRAC3",
             Atrac::Plus(_) => "ATRAC3plus",
             Atrac::Nine(_) => "ATRAC9",
+            Atrac::TrueSpeech(_) => "TrueSpeech",
         }
     }
 }
@@ -247,6 +254,13 @@ impl WavSource {
             rate = stream.sample_rate;
             let frames = d.channels.first().map_or(0, Vec::len) as u64;
             (Encoding::Decoded(d.channels), frames, "Voxware MetaSound".to_string(), None)
+        } else if tag == TAG_TRUESPEECH {
+            if ch != 1 || rate != cfa4_truespeech::SAMPLE_RATE {
+                return Err(MediaError::Unsupported(format!("{name}: TrueSpeech with {ch} channels at {rate} Hz")));
+            }
+            let block = cfa4_truespeech::FRAME_BYTES as u64;
+            let (encoding, frames) = atrac_encoding(Atrac::TrueSpeech(Box::default()), block, dlen, |_, _| Vec::new());
+            (encoding, frames, "TrueSpeech".to_string(), None)
         } else if let Some(codec) = Codec::from_wave_format(tag, align, bits, &extra) {
             let codec = codec.map_err(|e| MediaError::Unsupported(format!("{name}: {e}")))?;
             // a decoder for this layout must exist (G.722 is mono only)
@@ -423,7 +437,7 @@ fn atrac_encoding(d: Atrac, block: u64, dlen: u64, tail: impl FnOnce(u64, usize)
     let spf = d.samples_per_channel() as u64;
     let frames = match &d {
         Atrac::Plus(_) => dlen.div_ceil(block.max(1)).saturating_mul(spf),
-        Atrac::One(_) | Atrac::Three(_) => (dlen / block.max(1)).saturating_mul(spf),
+        Atrac::One(_) | Atrac::Three(_) | Atrac::TrueSpeech(_) => (dlen / block.max(1)).saturating_mul(spf),
         // a short last packet: what the decoder makes of it (from the stream's start state)
         Atrac::Nine(n) => {
             let short = dlen % block.max(1);
@@ -443,12 +457,14 @@ impl WavSource {
             Atrac::Three(d) => d.channels(),
             Atrac::Plus(d) => d.channels(),
             Atrac::Nine(d) => d.channels(),
+            Atrac::TrueSpeech(_) => 1,
         };
         let block = match &d {
             Atrac::One(d) => d.block_align(),
             Atrac::Three(d) => d.block_align(),
             Atrac::Plus(d) => d.block_align(),
             Atrac::Nine(d) => d.block_align(),
+            Atrac::TrueSpeech(_) => cfa4_truespeech::FRAME_BYTES,
         } as u64;
         let codec = d.label().to_string();
         let (encoding, frames) = atrac_encoding(d, block, data_len, |at, len| read_range(&*reader, data_off.saturating_add(at), len).unwrap_or_default());

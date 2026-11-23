@@ -112,6 +112,7 @@ szabadalommal védett formátumot.
 | G.711 (µ-law, A-law), G.722, IMA ADPCM, Microsoft ADPCM | dekódolás | `crates/adpcm` | alap | függőben | | |
 | G.729, G.729 Annex B | dekódolás; nyers `.g729` fájlok olvasása | `crates/g729` (a bcg729 portja) | alap | függőben | | |
 | Apple MACE 3:1 és 6:1 | dekódolás | `crates/mace` (az FFmpeg portja) | alap | függőben | | |
+| DSP Group TrueSpeech | dekódolás | `crates/truespeech` (az FFmpeg portja) | alap | függőben | | |
 | iLBC | dekódolás; `.lbc` fájlok olvasása | `crates/ilbc` (a WebRTC libilbc portja) | alap | függőben | | |
 | TTA (True Audio) | dekódolás; `.tta` és Matroska olvasása | `crates/tta` (a libtta portja) | alap | függőben | | |
 | NTT TwinVQ (VQF) | dekódolás; `.vqf`, `.vql`, `.vqe` fájlok olvasása | `crates/twinvq` (az FFmpeg vqf-demuxerének és TwinVQ-dekóderének portja) | alap | függőben | | |

@@ -79,6 +79,7 @@ cfa4-svq3 = { path = "../crates/svq3" }
 cfa4-magicyuv = { path = "../crates/magicyuv" }
 cfa4-g729 = { path = "../crates/g729" }
 cfa4-mace = { path = "../crates/mace" }
+cfa4-truespeech = { path = "../crates/truespeech" }
 cfa4-ilbc = { path = "../crates/ilbc" }
 cfa4-musepack = { path = "../crates/musepack" }
 cfa4-shorten = { path = "../crates/shorten" }
@@ -628,6 +629,8 @@ name = "twinvq"
 path = "fuzz_targets/twinvq.rs"
 name = "mace"
 path = "fuzz_targets/mace.rs"
+name = "truespeech"
+path = "fuzz_targets/truespeech.rs"
 test = false
 doc = false
 bench = false

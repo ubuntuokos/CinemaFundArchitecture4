@@ -166,6 +166,15 @@ fn audio_starts(file: &MkvFile, bytes: &crate::Src, ti: usize, rate: i64) -> Vec
         let packets = t.samples.iter().map(|s| PacketTime { stamp: at(s.pts), stamped: own_stamp(s), samples: Some(512) });
         return contiguous_starts(packets, stamp_tolerance(t, rate));
     }
+    if truespeech_track(t) {
+        // TrueSpeech packets hold whole 32-byte frames of 240 samples
+        let packets = t.samples.iter().enumerate().map(|(i, s)| PacketTime {
+            stamp: at(s.pts),
+            stamped: own_stamp(s),
+            samples: t.sample_size(i).and_then(|b| i64::try_from(b / cfa4_truespeech::FRAME_BYTES as u64 * cfa4_truespeech::FRAME_SAMPLES as u64).ok()),
+        });
+        return contiguous_starts(packets, stamp_tolerance(t, rate));
+    }
     if let Some(Ok(c)) = acm_codec(t) {
         // G.711 / ADPCM packets hold whole frames or blocks: they run on like PCM
         let channels = t.audio.as_ref().map_or(1, |a| a.channels.max(1));
@@ -251,6 +260,10 @@ fn audio_info(t: &cfa4_matroska::Track) -> Option<AudioStreamInfo> {
         rate = if wide { cfa4_amr::wb::SAMPLE_RATE } else { cfa4_amr::nb::SAMPLE_RATE };
         channels = 1;
     }
+    if truespeech_track(t) {
+        rate = cfa4_truespeech::SAMPLE_RATE;
+        channels = 1;
+    }
     let (rate, channels) = cfa4_media::bounded_audio_dimensions(rate, channels).ok()?;
     // an `A_MS/ACM` track may leave BitDepth out: its WAVEFORMATEX has the sample size
     let bits = match &t.codec {
@@ -260,6 +273,7 @@ fn audio_info(t: &cfa4_matroska::Track) -> Option<AudioStreamInfo> {
     let codec = match (amr, acm_codec(t)) {
         (Some(wide), _) => if wide { "AMR-WB" } else { "AMR-NB" }.to_string(),
         (_, Some(Ok(c))) => c.name().to_string(),
+        _ if truespeech_track(t) => "TrueSpeech".to_string(),
         _ if real.is_some() => real.as_ref().map_or_else(String::new, |r| r.label().to_string()),
         _ => codec_label(&t.codec),
     };
@@ -295,6 +309,11 @@ fn amr_track(t: &cfa4_matroska::Track) -> Option<bool> {
         },
         _ => None,
     }
+}
+
+/// Whether the track is DSP Group TrueSpeech: an `A_MS/ACM` track with format tag 0x0022.
+fn truespeech_track(t: &cfa4_matroska::Track) -> bool {
+    matches!(&t.codec, Codec::Other(id) if id == "A_MS/ACM") && t.codec_private.get(..2).map(|b| u16::from_le_bytes([b[0], b[1]])) == Some(0x22)
 }
 
 /// The G.711 / G.722 / ADPCM codec of an `A_MS/ACM` track's `WAVEFORMATEX` (`CodecPrivate`);
@@ -765,6 +784,9 @@ impl MkvSource {
         let rate = ainfo.sample_rate;
         if let Some(wide) = amr_track(t) {
             return Ok(PacketDecoder::amr(wide));
+        }
+        if truespeech_track(t) {
+            return Ok(PacketDecoder::truespeech());
         }
         if let Some(c) = acm_codec(t) {
             let c = c.map_err(|e| CodecError::Unsupported(e.to_string()))?;

@@ -21,6 +21,7 @@ cfa4-jxl = { workspace = true, features = ["threads"] }
 cfa4-adpcm = { workspace = true }
 cfa4-realaudio = { workspace = true }
 cfa4-twinvq = { workspace = true }
+cfa4-truespeech = { workspace = true }
 log = { workspace = true }
 rayon = { workspace = true }
 serde = { workspace = true }
