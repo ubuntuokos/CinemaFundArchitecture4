@@ -120,6 +120,7 @@ Crates are named `cfa4-<dir>` (`crates/time` is `cfa4-time`); new CFA4 crates ar
 | `amv` | L0 | AMV video (JPEG variant), IMA ADPCM audio and the `.amv` chunk layout, ported from FFmpeg (LGPL-2.1-or-later, owner-approved exception) ([README](../crates/amv/README.md)) |
 | `roq` | L0 | id RoQ video and DPCM audio decoders and the `.roq` chunk layout, ported from FFmpeg (LGPL-2.1-or-later, owner-approved exception) ([README](../crates/roq/README.md)) |
 | `mve` | L0 | Interplay MVE video (8-bit palette and 16-bit) and DPCM / PCM audio decoders and the `.mve` chunk layout, ported from FFmpeg (LGPL-2.1-or-later, owner-approved exception) ([README](../crates/mve/README.md)) |
+| `qdm2` | L0 | QDesign Music 2 audio decoder, ported from FFmpeg (LGPL-2.1-or-later, owner-approved exception) ([README](../crates/qdm2/README.md)) |
 | `testkit` | L0 | test-only helpers, used only as a dev-dependency: ffmpeg/ffprobe discovery, fixture dirs, golden images ([testing.md](testing.md)) |
 | `io-core` | L1 | `cfa4-io-core`: shared media I/O core (CFA4-DECKLINK-READY-001 R1): the PTP state reader (`ptp4l` through `pmc`, TAI time, ST 2110 sender clock signalling), used by the live studio and later media I/O hosts; next the versioned frame ring ([README](../crates/io-core/README.md)) |
 | `frame` | L1 | `VideoFrame` (planar YUV / RGBA8 / linear RGBA f32, colour metadata), `AudioBuffer` |

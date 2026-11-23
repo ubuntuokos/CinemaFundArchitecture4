@@ -134,6 +134,7 @@ szabadalommal védett formátumot.
 | AMV (video, IMA ADPCM-hang) | dekódolás; `.amv` fájlok olvasása | `crates/amv` (az FFmpeg AMV-dekódolóinak portja) | alap | függőben | | |
 | id RoQ (video, DPCM-hang) | dekódolás; `.roq` fájlok olvasása | `crates/roq` (az FFmpeg id RoQ-dekódolóinak portja) | alap | függőben | | |
 | Interplay MVE (video, DPCM-hang) | dekódolás; `.mve` fájlok olvasása | `crates/mve` (az FFmpeg Interplay-dekódolóinak portja) | alap | függőben | | |
+| QDesign Music 2 (QDM2) | dekódolás; QuickTime-fájlok olvasása | `crates/qdm2` (az FFmpeg QDM2-dekódolójának portja) | alap | függőben | | |
 | AMR-NB, AMR-WB | dekódolás | `crates/amr` (az opencore-amr portja) | alap | függőben | | |
 | Musepack SV7, SV8 | dekódolás; `.mpc` fájlok olvasása | `crates/musepack` (a libmpcdec portja) | alap | függőben | | |
 

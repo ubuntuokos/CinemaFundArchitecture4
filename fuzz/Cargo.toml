@@ -53,6 +53,7 @@ cfa4-ogg = { path = "../crates/ogg" }
 cfa4-st2110 = { path = "../crates/st2110" }
 cfa4-tta = { path = "../crates/tta" }
 cfa4-twinvq = { path = "../crates/twinvq" }
+cfa4-qdm2 = { path = "../crates/qdm2" }
 cfa4-amr = { path = "../crates/amr" }
 cfa4-amv = { path = "../crates/amv" }
 cfa4-av2 = { path = "../crates/av2" }
@@ -651,6 +652,8 @@ name = "truespeech"
 path = "fuzz_targets/truespeech.rs"
 name = "yamaha_oki"
 path = "fuzz_targets/yamaha_oki.rs"
+name = "qdm2"
+path = "fuzz_targets/qdm2.rs"
 test = false
 doc = false
 bench = false
