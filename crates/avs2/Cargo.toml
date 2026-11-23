@@ -1,0 +1,16 @@
+[package]
+name = "cfa4-avs2"
+description = "Pure-Rust AVS2-P2 (IEEE 1857.4, GB/T 33475.2) video decoder: Main and Main 10 profiles"
+version.workspace = true
+edition.workspace = true
+license = "GPL-3.0-or-later"
+rust-version.workspace = true
+
+[lints]
+workspace = true
+
+[dependencies]
+thiserror = { workspace = true }
+
+[dev-dependencies]
+cfa4-testkit = { workspace = true }

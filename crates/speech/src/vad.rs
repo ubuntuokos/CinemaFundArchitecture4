@@ -21,6 +21,8 @@
 //! 2. **Silence at the edges is trimmed.** Each word's start and end are moved inward past
 //!    frames below the threshold. A word keeps at least 60 ms.
 
+pub mod silero;
+
 use cfa4_project::Word;
 use cfa4_time::Tick;
 
@@ -234,10 +236,21 @@ pub fn silence_regions_from_db(db: &[f32], samples: usize, p: &SilenceParams) ->
         _ => threshold(db),
     };
     let voiced: Vec<bool> = db.iter().map(|&v| v >= th).collect();
+    silence_regions_from_voiced(&voiced, FRAME, samples, p)
+}
+
+/// The silent regions from one voiced/unvoiced flag per frame of `frame_samples` samples (16 kHz),
+/// for `samples` samples of audio: the rules of [`silence_regions`] (minimum length, padding, no
+/// padding at the audio's edges, no region when nothing is voiced) for any detector, so the
+/// energy VAD and the Silero model share them. A `frame_samples` of zero gives no region.
+pub fn silence_regions_from_voiced(voiced: &[bool], frame_samples: usize, samples: usize, p: &SilenceParams) -> Vec<(Tick, Tick)> {
+    if frame_samples == 0 {
+        return Vec::new();
+    }
     if !voiced.iter().any(|&v| v) {
         return Vec::new();
     }
-    let frame_ticks = TICKS_PER_SAMPLE * FRAME as i64;
+    let frame_ticks = TICKS_PER_SAMPLE * frame_samples as i64;
     let frames = |t: Tick| (t.0.max(0) / frame_ticks) as usize;
     let min_frames = frames(p.min_silence).max(1);
     let pad = frames(p.padding);

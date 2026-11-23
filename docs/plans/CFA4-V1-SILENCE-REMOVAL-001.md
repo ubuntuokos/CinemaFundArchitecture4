@@ -238,3 +238,18 @@ A V1-B akkor **kész** (az MI-réteg lezárásához ennyit kell igazolni):
 
 **Mit nem tudtam elvégezni:** az MI-réteg saját zárási feltételeinek listája az MI-réteg tervében (a `CFA4-AI_modules` repó ADR 0006-ja) van, amely ebből a munkamenetből nem érhető el és nem is módosítható. Ezért a V1-B-t itt (a V1 tervében), a V1-A Gazda issue-ban (#1487) és a Gazda issue-ban (#1447) rögzítettem; **az MI-réteg saját zárási listájába a tulajdonosnak vagy az MI-réteg szálának kell felvennie**, hogy a feltétel ott is látszódjon.
 
+
+## 13. V1-B: állapot (2026-11-23)
+
+**Indítás:** István a V1-B-t kifejezetten felmentette az MI-réteg F0 kapuja alól, de **csak a GUI-független részre** (a koordinátor üzenete, 2026-11-23); az F0 kapu maga nem teljesült (az egui még a repóban van). A modellkezelő (CFA4-MODEL-MANAGER-001) külön szálon készül; ez a rész annak csatlakozási pontját adja, nem építi meg.
+
+**Kész (a 12. pont feltételeihez képest):**
+
+- 1. **igen:** `audio.detectSpeech {detector: "silero"}` a Silero-alapú régiókat adja, ugyanazzal a régióképző lépéssel (`vad::silence_regions_from_voiced`, az energiaalapú is ezt használja). Hiányzó modellnél, hiányzó `silero` featurénél és módosított modellnél hiba, **nincs csendes visszaesés** az `energy`-re (István, 2026-11-22).
+- 2. **részben:** a `crates/speech` `vad::silero` modulja (feature `silero`, `tract-onnx` 0.23, MIT OR Apache-2.0). **Nem a Venturi kódja alapján készült**: a modell nyilvános be- és kimenetéből (`input`, `state`, `sr` → `output`, `stateN`) írtam, a Venturi forrását nem olvastam, ezért nincs átvett kód és nincs `licensing.md` §5 bejegyzés. A modell nincs a repóban és a binárisban. **`cargo deny` nem futott** (nincs telepítve ebben a környezetben).
+- A modellt a felhasználó tölti le: `speech.vadModel` (forrás, licenc, méret, telepítve-e) → a gazda megmutatja a licencet → `speech.downloadVadModel {licenseAccepted: true}` (a meglévő, bezárt `cfa4-fetch`, rögzített URL és SHA-256; elfogadás nélkül elutasít). Az egyszeri, modellenkénti elfogadás tárolása a modellkezelő dolga.
+- 3. **részben:** valódi modellel (CPU) futó tesztek (`crates/speech/tests/silero_model.rs`): csend és halk zaj nem beszéd, darabokban és egyben azonos valószínűségek, NaN/végtelen minta nem töri el, a beépített formáns hang a generált elrendezéshez képest az elején 4 ablakon (128 ms), a végén 0,4 s-on belül van. **A terv ±1 ablakos (32 ms) tűrése így nincs igazolva**: a robotszerű hang kifutása nem beszéd a modellnek, ezért a végén lazább a tűrés. Valódi emberi beszédes fixture kell hozzá (nincs ilyen a gépen).
+
+**A modellről:** a tract az eredeti `silero_vad.onnx` és a `silero_vad_16k_op15.onnx` `If` csomópontján elakad (az 8 kHz-es ág alakja nem egyeztethető). A `silero_vad_op18_ifless.onnx` egyetlen legfelső szintű `If`-et tartalmaz (`sr == 16000`); a betöltő ennek a `then` (16 kHz) ágát illeszti a helyére, és eldobja az `sr` bemenetet. A rögzített URL (`snakers4/silero-vad`, `v6.2.3` címke) és SHA-256 a PyPI `silero-vad 6.2.3` kerekéből származik; **a GitHub-címkét és az ottani bájtazonosságot ebből a környezetből nem tudtam ellenőrizni** (a GitHub-letöltés tiltott), az első valódi letöltésnél kell megnézni.
+
+**Még hátra (a 12. pontból):** 4. a `v1_silence_removal_acceptance` a `silero` észlelővel (modellfájl kell a CI-hoz); 5. a Qt6 párbeszéd „Speech model” értéke (GUI, az F0 felmentés nem terjed ki rá); 6. a Whisper-előszűrő; 7. a `docs/qt-parity.md` 3.31 sora.

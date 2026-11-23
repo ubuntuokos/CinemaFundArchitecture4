@@ -1,10 +1,18 @@
 # cfa4-huffyuv
 
-Clean-room, pure-Rust (no `unsafe`) Huffyuv (`HFYU`) decoder. It is an L0 crate: it depends only
+Pure-Rust (no `unsafe`) Huffyuv (`HFYU`) decoder, clean-room except for the Huffyuv MT (`HYMT`) slice
+layout (below). It is an L0 crate: it depends only
 on `thiserror`, and builds for `wasm32-unknown-unknown`. Codec backlog item CB-1.2
 ([plan](../../docs/plans/CODEC-BACKLOG-PLAN-2026-10-27.md)).
 
 ## Sources
+
+**Huffyuv MT (`HYMT`, CB-36.1)** is the one part not clean-room: the sliced packet layout (the 16-byte
+trailer with slice count, height and table offset, independent slices, slice 0 at the bottom) is
+re-expressed from FFmpeg n9.0.2 `libavcodec/huffyuvdec.c` (LGPL-2.1-or-later, `COPYING.LGPL-2.1`; the
+owner's general FFmpeg-port approval of 2026-11-14 and the decision of 2026-11-23). Enable it with
+`Decoder::set_slices(true)`; it applies to YUY2 only (as in FFmpeg). The rest of the crate
+still rests on the public description and black-box analysis below.
 
 Huffyuv has no formal specification. The format facts come from Roberto Togni's public
 description of the bitstream (`huffyuv.txt` on multimedia.cx, kept as the MultimediaWiki
@@ -41,7 +49,12 @@ YUY2, RGB24 and RGBA, odd sizes, interlaced and tall progressive frames); the sa
 truncated and bit-flipped frames and headers to the decoder. About 40 fps for 1080p YUY2 on one
 core (release build).
 
-In the app, `cfa4-codecs` decodes Huffyuv from AVI and Matroska (`V_MS/VFW/FOURCC`); YUY2 comes
+Huffyuv MT is checked against ffmpeg's `hymt` decoder on packets assembled from ffmpeg-encoded
+slices (`tests/hymt_oracle.rs`: left and gradient prediction, four slices, plus hostile trailers);
+ffmpeg's median path ignores the slice offset, so a multi-slice median stream has no reference.
+There is no real HYMT file to test with.
+
+In the app, `cfa4-codecs` decodes Huffyuv and Huffyuv MT from AVI and Matroska (`V_MS/VFW/FOURCC`); YUY2 comes
 out as 8-bit 4:2:2, RGB as RGBA.
 
 ## API

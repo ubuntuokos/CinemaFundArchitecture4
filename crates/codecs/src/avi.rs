@@ -47,6 +47,8 @@ enum VCodec {
     Dirac,
     /// Huffyuv with its (reduced) `BITMAPINFOHEADER`.
     Huffyuv(Vec<u8>),
+    /// Huffyuv MT (`HYMT`, sliced packets) with its (reduced) `BITMAPINFOHEADER`.
+    HuffyuvMt(Vec<u8>),
     /// Lagarith with its `BITMAPINFOHEADER` bit count.
     Lagarith(u16),
     /// Sorenson Video 3 with its extradata (the sequence header).
@@ -107,6 +109,7 @@ fn video_codec(b: &BitmapInfo) -> (VCodec, String) {
         c if crate::svq3::is_svq3(c) => (VCodec::Svq3(b.extra.clone()), "Sorenson Video 3".into()),
         _ if crate::magicyuv::is_magicyuv(&b.compression) => (VCodec::MagicYuv, "MagicYUV".into()),
         b"HFYU" => (VCodec::Huffyuv(crate::huffyuv::bitmap_info_header(b.bit_count, &b.extra)), "Huffyuv".into()),
+        b"HYMT" => (VCodec::HuffyuvMt(crate::huffyuv::bitmap_info_header(b.bit_count, &b.extra)), "Huffyuv MT".into()),
         b"FFV1" => (VCodec::Ffv1(b.extra.clone()), "FFV1".into()),
         b"DRAC" => (VCodec::Dirac, "VC-2 / Dirac".into()),
         b"DIVX" | b"DX50" | b"XVID" | b"FMP4" | b"MP4V" | b"M4S2" | b"3IV2" | b"DIV3" | b"MP43" | b"MP42" => {
@@ -703,6 +706,7 @@ impl VideoSamples for AviVideo<'_> {
             VCodec::Ffv1(record) => make_video_decoder(&crate::ffv1::sample_entry(record, w, h)),
             VCodec::Dirac => make_video_decoder(&crate::dirac::sample_entry(w, h)),
             VCodec::Huffyuv(bih) => make_video_decoder(&crate::huffyuv::sample_entry(bih, w, h)),
+            VCodec::HuffyuvMt(bih) => make_video_decoder(&crate::huffyuv::sample_entry_mt(bih, w, h)),
             VCodec::Svq1 => make_video_decoder(&crate::svq1::sample_entry(w, h)),
             VCodec::Indeo45(fourcc) => make_video_decoder(&crate::indeo45::sample_entry(fourcc, w, h)),
             VCodec::Indeo3 => make_video_decoder(&crate::indeo3::sample_entry(w, h)),

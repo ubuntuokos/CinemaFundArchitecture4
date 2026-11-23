@@ -145,7 +145,7 @@ LAYOUT_VERSION = 21  # 2: Source monitor; 3: Effect Controls; 4: Properties (egu
 # commands that can change which media an item shows, done or undone
 SOURCE_COMMANDS = frozenset({
     "media.relink", "media.replaceFootage", "media.makeOffline", "media.offlineAll", "media.autoRelink", "media.linkMedia",
-    "media.findMissing", "media.refreshChanged", "media.refreshGrowingFiles", "media.attachProxies", "media.detachProxies",
+    "media.findMissing", "media.refreshChanged", "media.refreshGrowingFiles", "media.attachProxies", "media.findCameraProxies", "media.detachProxies",
     "media.toggleProxies", "media.enableProxies", "media.reconnectFullRes", "clip.interpretFootage", "edit.undo", "edit.redo",
     "dcp.loadKdm", "dcp.clearKeys",
 })

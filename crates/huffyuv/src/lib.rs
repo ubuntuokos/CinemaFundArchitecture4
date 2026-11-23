@@ -1,4 +1,11 @@
-//! Clean-room pure-Rust Huffyuv (`HFYU`) decoder.
+//! Pure-Rust Huffyuv (`HFYU`) decoder, with the sliced packets of Huffyuv MT (`HYMT`).
+//!
+//! The `HFYU` decoder is clean-room (below). The `HYMT` slice layout is the one place derived from
+//! a source reading: it follows FFmpeg n9.0.2 `huffyuvdec.c` (LGPL-2.1-or-later, the owner's
+//! general FFmpeg-port approval of 2026-11-14 and the decision of 2026-11-23); see
+//! [`Decoder::set_slices`].
+//!
+//! Clean-room part:
 //!
 //! Huffyuv has no formal specification. The format facts come from Roberto Togni's public
 //! description of the bitstream (multimedia.cx `huffyuv.txt`, also the MultimediaWiki `HuffYUV`
@@ -75,6 +82,8 @@ pub struct Decoder {
     decorrelate: bool,
     interlaced: bool,
     tables: [Table; 3],
+    /// Huffyuv MT (`HYMT`): a packet may carry a slice trailer (see [`Decoder::set_slices`]).
+    slices: bool,
 }
 
 /// Section "Huffman tables" of the description: run-length coded code lengths. Each byte holds a
@@ -149,7 +158,7 @@ impl Decoder {
         } && height.is_multiple_of(2);
         let mut pos = tables_at;
         let tables = [Table::new(&read_lengths(extra, &mut pos)?)?, Table::new(&read_lengths(extra, &mut pos)?)?, Table::new(&read_lengths(extra, &mut pos)?)?];
-        Ok(Decoder { width, height, format, predictor, decorrelate, interlaced, tables })
+        Ok(Decoder { width, height, format, predictor, decorrelate, interlaced, tables, slices: false })
     }
 
     /// The layout of the pictures this stream decodes to.
@@ -157,8 +166,22 @@ impl Decoder {
         self.format
     }
 
+    /// Huffyuv MT (`HYMT`) mode. A packet that ends in a 16-byte trailer whose first word is zero is
+    /// then sliced: the trailer holds, little-endian, at `len - 12` the slice count, at `len - 8`
+    /// the slice height and at `len - 4` the offset of a table of (offset, size) word pairs, one per
+    /// slice (a single slice takes the whole packet). Every slice is an independent bit stream of
+    /// `slice height` rows with its own raw first pair, and slice 0 is the bottom one. Packets
+    /// without the trailer decode as plain Huffyuv. Only YUY2 streams slice (RGB packets with a
+    /// trailer are rejected), as in FFmpeg n9.0.2.
+    pub fn set_slices(&mut self, on: bool) {
+        self.slices = on;
+    }
+
     /// Decode one frame (one AVI chunk).
     pub fn decode(&mut self, data: &[u8]) -> Result<Picture> {
+        if self.slices && data.len() > 32 && word(data, data.len() - 16) == Some(0) {
+            return self.decode_sliced(data);
+        }
         let mut br = BitReader::new(data);
         let planes = match self.format {
             Format::Yuv422 => self.decode_yuv(&mut br)?,
@@ -188,13 +211,51 @@ impl Decoder {
     }
 
     /// The coded picture size: (width, height) with the fields side by side when interlaced.
-    fn coded_size(&self, w: u32) -> (usize, usize) {
+    fn coded_size(&self, w: u32, rows: usize) -> (usize, usize) {
         let k = if self.interlaced { 2 } else { 1 };
-        (w as usize * k, self.height as usize / k)
+        (w as usize * k, rows / k)
+    }
+
+    /// A sliced `HYMT` packet (see [`Decoder::set_slices`]).
+    fn decode_sliced(&self, data: &[u8]) -> Result<Picture> {
+        ensure!(self.format == Format::Yuv422, "sliced Huffyuv MT packet with RGB");
+        let n = data.len();
+        let (count, slice_h, info) =
+            (word(data, n - 12).unwrap_or(0) as usize, word(data, n - 8).unwrap_or(0) as usize, word(data, n - 4).unwrap_or(0) as usize);
+        let height = self.height as usize;
+        ensure!(slice_h > 0 && count > 0 && count.checked_mul(slice_h).is_some_and(|r| r <= height), "Huffyuv MT slice geometry");
+        ensure!(count.checked_mul(8).and_then(|t| t.checked_add(info)).is_some_and(|e| e <= n - 16), "Huffyuv MT slice table");
+        ensure!(!self.interlaced || slice_h.is_multiple_of(2), "interlaced Huffyuv MT slice height {slice_h}");
+        let (w, cw) = (self.width as usize, self.width as usize / 2);
+        let mut planes = vec![vec![0u8; w * height], vec![0u8; cw * height], vec![0u8; cw * height]];
+        for slice in 0..count {
+            let (start, size, y0) = if count > 1 {
+                let at = info + slice * 8;
+                let (start, size) = (word(data, at).unwrap_or(0) as usize, word(data, at + 4).unwrap_or(0) as usize);
+                ensure!(size > 0 && start % 4 == 0 && start.checked_add(size).is_some_and(|e| e <= n), "Huffyuv MT slice {slice} bounds");
+                (start, size, height - (slice + 1) * slice_h)
+            } else {
+                (0, n, 0)
+            };
+            let part = data.get(start..start + size).ok_or_else(|| Error::Invalid("Huffyuv MT slice bounds".into()))?;
+            let mut br = BitReader::new(part);
+            let rows = self.decode_yuv_rows(&mut br, slice_h)?;
+            ensure!(!br.overrun(), "slice data ends early");
+            for (dst, (src, pw)) in planes.iter_mut().zip(rows.iter().zip([w, cw, cw])) {
+                if let Some(d) = dst.get_mut(y0 * pw..(y0 + slice_h) * pw) {
+                    d.copy_from_slice(src);
+                }
+            }
+        }
+        Ok(Picture { width: self.width, height: self.height, format: self.format, planes })
     }
 
     fn decode_yuv(&self, br: &mut BitReader<'_>) -> Result<Vec<Vec<u8>>> {
-        let (w, h) = self.coded_size(self.width);
+        self.decode_yuv_rows(br, self.height as usize)
+    }
+
+    fn decode_yuv_rows(&self, br: &mut BitReader<'_>, rows: usize) -> Result<Vec<Vec<u8>>> {
+        let (w, h) = self.coded_size(self.width, rows);
         let cw = w / 2;
         let mut y = vec![0u8; w * h];
         let mut u = vec![0u8; cw * h];
@@ -238,7 +299,7 @@ impl Decoder {
     }
 
     fn decode_rgb(&self, br: &mut BitReader<'_>) -> Result<Vec<Vec<u8>>> {
-        let (w, h) = self.coded_size(self.width);
+        let (w, h) = self.coded_size(self.width, self.height as usize);
         let n = w * h;
         let alpha = self.format == Format::Rgba;
         // planes in coding order: B, G, R, A; the coded picture is bottom row first
@@ -287,6 +348,11 @@ impl Decoder {
         }
         Ok(out)
     }
+}
+
+/// The little-endian 32-bit word at `at`.
+fn word(data: &[u8], at: usize) -> Option<u32> {
+    data.get(at..at.checked_add(4)?).and_then(|b| b.try_into().ok()).map(u32::from_le_bytes)
 }
 
 #[inline]

@@ -182,6 +182,37 @@ fn params(p: &Value) -> Result<SilenceParams> {
     Ok(sp)
 }
 
+/// What decides which frames are speech.
+#[derive(Clone)]
+enum Detector {
+    /// Level against a threshold (no model).
+    Energy,
+    /// The Silero VAD model (feature `silero`).
+    #[cfg(feature = "silero")]
+    Silero(std::sync::Arc<cfa4_speech::vad::silero::SileroVad>),
+}
+
+/// The Silero detector from the model store. Never falls back to another detector: a missing,
+/// modified or unsupported model is an error that tells the user what to do.
+fn silero_detector() -> Result<Detector> {
+    #[cfg(feature = "silero")]
+    {
+        let dir = crate::transcript::models_dir().ok_or_else(|| EngineError::Other("no data directory for speech models".into()))?;
+        match cfa4_speech::vad::silero::SileroVad::load(&dir) {
+            Ok(v) => Ok(Detector::Silero(std::sync::Arc::new(v))),
+            Err(cfa4_speech::SpeechError::NotInstalled(_)) => Err(bad(
+                CMD_DETECT,
+                "the Silero VAD model is not downloaded: see `speech.vadModel`, accept its licence and run `speech.downloadVadModel`, or use detector `energy`",
+            )),
+            Err(e) => Err(EngineError::Other(e.to_string())),
+        }
+    }
+    #[cfg(not(feature = "silero"))]
+    {
+        Err(bad(CMD_DETECT, "this build has no speech-model detector (built without the `silero` feature); use `energy`"))
+    }
+}
+
 /// What the analysis of one clip needs, so it can run on a thread that has no session.
 #[derive(Clone)]
 struct ClipRead {
@@ -213,11 +244,25 @@ fn read_info(s: &Session, c: ClipId) -> Result<ClipRead> {
 
 /// Measure one clip: its audio (16 kHz mono, 10 ms frames) is read in pieces, so a long clip is
 /// never held whole, and `cancel` is looked at between pieces. `done` counts the samples read.
-fn analyse(provider: &dyn cfa4_render::SourceProvider, r: &ClipRead, sp: &SilenceParams, cancel: &AtomicBool, done: &AtomicU64) -> Result<Analysed> {
+fn analyse(
+    provider: &dyn cfa4_render::SourceProvider,
+    r: &ClipRead,
+    sp: &SilenceParams,
+    detector: &Detector,
+    cancel: &AtomicBool,
+    done: &AtomicU64,
+) -> Result<Analysed> {
     let sr = cfa4_speech::SAMPLE_RATE;
     let src = provider.source(r.item).ok_or_else(|| EngineError::Other("the clip's media is offline".into()))?;
     let chunk = CHUNK_SECONDS * sr as usize / FRAME_SAMPLES * FRAME_SAMPLES;
     let mut db = Vec::with_capacity(r.total / FRAME_SAMPLES + 1);
+    #[cfg(feature = "silero")]
+    let mut stream = match detector {
+        Detector::Silero(v) => Some((v.stream(), Vec::<f32>::new())),
+        Detector::Energy => None,
+    };
+    #[cfg(not(feature = "silero"))]
+    let _ = detector;
     let mut at = 0usize;
     while at < r.total {
         if cancel.load(Ordering::Relaxed) {
@@ -233,11 +278,28 @@ fn analyse(provider: &dyn cfa4_render::SourceProvider, r: &ClipRead, sp: &Silenc
                 *m += *v / chans;
             }
         }
+        #[cfg(feature = "silero")]
+        if let Some((st, probs)) = stream.as_mut() {
+            probs.extend(st.push(&mono).map_err(|e| EngineError::Other(e.to_string()))?);
+        } else {
+            db.extend(vad::frame_db(&mono));
+        }
+        #[cfg(not(feature = "silero"))]
         db.extend(vad::frame_db(&mono));
         at += n;
         done.fetch_add(n as u64, Ordering::Relaxed);
     }
-    let silent = vad::silence_regions_from_db(&db, r.total, sp).iter().map(|(a, d)| (r.start + *a, r.start + *a + *d)).collect();
+    #[cfg(feature = "silero")]
+    let regions = match stream.as_mut() {
+        Some((st, probs)) => {
+            probs.extend(st.finish().map_err(|e| EngineError::Other(e.to_string()))?);
+            vad::silence_regions_from_voiced(&cfa4_speech::vad::silero::voiced(probs), cfa4_speech::vad::silero::WINDOW, r.total, sp)
+        }
+        None => vad::silence_regions_from_db(&db, r.total, sp),
+    };
+    #[cfg(not(feature = "silero"))]
+    let regions = vad::silence_regions_from_db(&db, r.total, sp);
+    let silent = regions.iter().map(|(a, d)| (r.start + *a, r.start + *a + *d)).collect();
     Ok(Analysed { id: r.id, span: (r.start, r.start + r.duration), silent })
 }
 
@@ -273,11 +335,11 @@ fn intersect(clips: &[Analysed], rate: cfa4_time::FrameRate) -> Vec<(Tick, Tick)
 }
 
 fn detect(s: &mut Session, p: &Value) -> Result<Value> {
-    match str_p(p, "detector").unwrap_or("energy") {
-        "energy" => {}
-        "silero" => return Err(bad(CMD_DETECT, "the speech-model detector (`silero`) needs the AI layer, which is not deployed yet; use `energy`")),
-        other => return Err(bad(CMD_DETECT, format!("unknown detector `{other}`: use energy"))),
-    }
+    let detector = match str_p(p, "detector").unwrap_or("energy") {
+        "energy" => Detector::Energy,
+        "silero" => silero_detector()?,
+        other => return Err(bad(CMD_DETECT, format!("unknown detector `{other}`: use energy or silero"))),
+    };
     let preview = match str_p(p, "mode").unwrap_or("preview") {
         "preview" => true,
         "query" => false,
@@ -287,11 +349,11 @@ fn detect(s: &mut Session, p: &Value) -> Result<Value> {
     let (ids, skipped) = pick_clips(s, p)?;
     let reads = ids.iter().map(|c| read_info(s, *c)).collect::<Result<Vec<_>>>()?;
     if bool_p(p, "background").unwrap_or(false) {
-        return start_job(s, reads, sp, skipped);
+        return start_job(s, reads, sp, detector, skipped);
     }
     let provider = s.media.provider(s.project.clone(), s.services.clone());
     let (never, done) = (AtomicBool::new(false), AtomicU64::new(0));
-    let analysed = reads.iter().map(|r| analyse(&provider, r, &sp, &never, &done)).collect::<Result<Vec<_>>>()?;
+    let analysed = reads.iter().map(|r| analyse(&provider, r, &sp, &detector, &never, &done)).collect::<Result<Vec<_>>>()?;
     finish(s, &analysed, preview, skipped)
 }
 
@@ -338,7 +400,7 @@ fn mailbox() -> &'static Mutex<HashMap<u64, Vec<Analysed>>> {
 /// `audio.detectSpeech` with `background: true`: the same analysis as a cancellable job
 /// (`jobs.list` shows its progress, `jobs.cancel` stops it between pieces of audio). The session
 /// is not touched; `silence.mark {job}` then puts the result on the sequence.
-fn start_job(s: &mut Session, reads: Vec<ClipRead>, sp: SilenceParams, skipped: usize) -> Result<Value> {
+fn start_job(s: &mut Session, reads: Vec<ClipRead>, sp: SilenceParams, detector: Detector, skipped: usize) -> Result<Value> {
     let id = s.jobs.iter().map(|j| j.id).max().unwrap_or(0) + 1;
     let n = reads.len();
     let job = crate::Job { id, label: format!("Detect Silence ({n} clips)"), progress: Default::default(), result: Default::default() };
@@ -349,7 +411,7 @@ fn start_job(s: &mut Session, reads: Vec<ClipRead>, sp: SilenceParams, skipped: 
     let work = move || {
         let t0 = web_time::Instant::now();
         let outcome: std::result::Result<Vec<Analysed>, String> =
-            reads.iter().map(|r| analyse(&provider, r, &sp, &prog.cancel, &prog.done).map_err(|e| e.to_string())).collect();
+            reads.iter().map(|r| analyse(&provider, r, &sp, &detector, &prog.cancel, &prog.done).map_err(|e| e.to_string())).collect();
         let r = outcome.map(|a| {
             let found = a.iter().map(|c| c.silent.len() as u64).sum();
             mailbox().lock().unwrap_or_else(PoisonError::into_inner).insert(id, a);
@@ -517,14 +579,82 @@ fn remove(s: &mut Session, p: &Value) -> Result<Value> {
     Ok(json!({"removed": n, "ticks": total.0, "seconds": total.0 as f64 / TICKS_PER_SECOND as f64, "ripple": ripple}))
 }
 
+/// `speech.vadModel`: the Silero VAD model's record (source, licence, size) and whether it is in
+/// the model store. Hosts show this, ask for the one-time licence acceptance, then run
+/// `speech.downloadVadModel`. Nothing is downloaded by any other command.
+fn vad_model(_: &mut Session, _: &Value) -> Result<Value> {
+    let m = &cfa4_speech::vad::silero::MODEL;
+    let dir = crate::transcript::models_dir();
+    Ok(json!({
+        "id": m.id, "name": m.name, "description": m.description, "author": m.author,
+        "license": m.license, "licenseUrl": m.license_url, "source": m.source, "size": m.size(),
+        "dir": dir.as_ref().map(|d| cfa4_speech::models::model_dir(d, m).to_string_lossy().to_string()),
+        "installed": dir.as_ref().is_some_and(|d| cfa4_speech::vad::silero::installed(d)),
+        "detectorAvailable": cfg!(feature = "silero"),
+        "downloadAvailable": cfg!(feature = "speech-download"),
+    }))
+}
+
+/// `speech.downloadVadModel {licenseAccepted: true}`: download the Silero VAD model into the store
+/// (confined `cfa4-fetch`, pinned URL and SHA-256). Refused unless the caller says the user has
+/// seen the licence and accepted it; the host keeps the one-time acceptance.
+fn download_vad_model(_: &mut Session, p: &Value) -> Result<Value> {
+    if bool_p(p, "licenseAccepted") != Some(true) {
+        return Err(bad(
+            "speech.downloadVadModel",
+            "the model's licence must be shown and accepted first: pass `licenseAccepted: true` after the user accepted it (see `speech.vadModel`)",
+        ));
+    }
+    let m = &cfa4_speech::vad::silero::MODEL;
+    let dir = crate::transcript::models_dir().ok_or_else(|| EngineError::Other("no data directory for speech models".into()))?;
+    #[cfg(feature = "speech-download")]
+    {
+        let files = m.files.iter().map(|f| (f.name.to_string(), f.url.to_string(), f.sha256.to_string(), f.size));
+        crate::security::download(&cfa4_speech::models::model_dir(&dir, m), files, &mut |_, _, _| true)
+            .map_err(|e| EngineError::Other(format!("downloading the Silero VAD model: {e}")))?;
+        Ok(json!({"model": m.id, "dir": cfa4_speech::models::model_dir(&dir, m).to_string_lossy()}))
+    }
+    #[cfg(not(feature = "speech-download"))]
+    {
+        let _ = (m, dir);
+        Err(EngineError::Other("model downloads are not available in this build (built without the `speech-download` feature)".into()))
+    }
+}
+
 pub fn commands() -> Vec<CommandSpec> {
     vec![
+        CommandSpec {
+            id: "speech.vadModel",
+            label: "Silero VAD Model Info",
+            menu: &[],
+            shortcut: None,
+            params: "{}",
+            enabled: |_| Ok(()),
+            run: vad_model,
+            journal: false,
+        },
+        CommandSpec {
+            id: "speech.downloadVadModel",
+            label: "Download Silero VAD Model",
+            menu: &[],
+            shortcut: None,
+            params: r#"{"licenseAccepted":bool}"#,
+            enabled: |_| {
+                if cfg!(feature = "speech-download") {
+                    Ok(())
+                } else {
+                    Err("model downloads are not available in this build (built without the `speech-download` feature)".into())
+                }
+            },
+            run: download_vad_model,
+            journal: false,
+        },
         CommandSpec {
             id: CMD_DETECT,
             label: "Detect Silence",
             menu: &[],
             shortcut: None,
-            params: r#"{"clips":[id]?,"track":id?,"scope":"selection"|"track"|"sequence"="selection","detector":"energy"="energy","thresholdDb":f?,"minSilence":ticks?,"padding":ticks?,"mode":"preview"|"query"="preview","background":bool=false}"#,
+            params: r#"{"clips":[id]?,"track":id?,"scope":"selection"|"track"|"sequence"="selection","detector":"energy"|"silero"="energy","thresholdDb":f?,"minSilence":ticks?,"padding":ticks?,"mode":"preview"|"query"="preview","background":bool=false}"#,
             enabled: has_seq,
             run: detect,
             journal: true,
