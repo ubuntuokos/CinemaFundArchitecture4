@@ -467,6 +467,7 @@ fn sample_entry(c: &Codec, private: &[u8], v: Option<&cfa4_matroska::VideoInfo>,
         Codec::Other(id) if id.starts_with("V_REAL/") => crate::realmedia::mkv_sample_entry(id, private, w, h)?,
         // Huffyuv: the VfW BITMAPINFOHEADER sets the stream up (bit count, extradata)
         Codec::VfwFourcc { fourcc, bitmap_info_header } if fourcc.eq_ignore_ascii_case(b"HFYU") => crate::huffyuv::sample_entry(bitmap_info_header, w, h),
+        Codec::VfwFourcc { fourcc, bitmap_info_header } if fourcc.eq_ignore_ascii_case(b"HYMT") => crate::huffyuv::sample_entry_mt(bitmap_info_header, w, h),
         Codec::VfwFourcc { fourcc, bitmap_info_header } if crate::svq3::is_svq3(fourcc) => {
             crate::svq3::sample_entry(w, h, bitmap_info_header.get(40..).unwrap_or(&[]))
         }
@@ -596,6 +597,7 @@ fn codec_label(c: &Codec) -> String {
         Codec::VfwFourcc { fourcc, .. } if crate::hap::is_hap(fourcc) => "Hap".into(),
         Codec::VfwFourcc { fourcc, .. } if is_dv_fourcc(fourcc) => "DV".into(),
         Codec::VfwFourcc { fourcc, .. } if fourcc.eq_ignore_ascii_case(b"HFYU") => "Huffyuv".into(),
+        Codec::VfwFourcc { fourcc, .. } if fourcc.eq_ignore_ascii_case(b"HYMT") => "Huffyuv MT".into(),
         Codec::VfwFourcc { fourcc, .. } if crate::canopus::codec(fourcc).is_some() => {
             crate::canopus::codec(fourcc).map_or("Canopus", crate::canopus::label).into()
         }
