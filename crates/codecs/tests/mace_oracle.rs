@@ -47,7 +47,8 @@ fn fate_samples() {
         if p.exists() {
             compare(n, &p);
         } else {
-            cfa4_testkit::oracle::skip(n, "FATE sample not fetched");
+            // the FATE suite is optional: CI does not fetch it (as for the Canopus samples)
+            eprintln!("SKIP: FATE sample {n} not fetched");
         }
     }
 }
