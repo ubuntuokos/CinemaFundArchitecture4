@@ -19,7 +19,16 @@ pub(super) struct Report {
     pub(super) ours_only: Vec<Vec<String>>,
 }
 
+/// [`compare_scoped`] without an extra out-of-scope list (the tests).
+#[cfg(test)]
 pub(super) fn compare(area: Area, reference: &[Vec<String>], ours: &[OurItem]) -> Report {
+    compare_scoped(area, reference, ours, &[])
+}
+
+/// [`compare`], also counting out of scope every reference item under one of the `extra` path
+/// prefixes (the schema-1 `outOfScope` list).
+pub(super) fn compare_scoped(area: Area, reference: &[Vec<String>], ours: &[OurItem], extra: &[Vec<String>]) -> Report {
+    let prefixes: Vec<Vec<String>> = extra.iter().map(|p| p.iter().map(|s| norm(s)).collect()).collect();
     let key = |p: &[String]| p.iter().map(|s| norm(s)).collect::<Vec<_>>();
     let mut by_path: HashMap<Vec<String>, usize> = HashMap::new();
     let mut by_label: HashMap<String, usize> = HashMap::new();
@@ -35,7 +44,9 @@ pub(super) fn compare(area: Area, reference: &[Vec<String>], ours: &[OurItem]) -
         if !seen.insert(key(p)) {
             continue;
         }
-        if let Some(why) = out_of_scope(area, p) {
+        let normalised: Vec<String> = p.iter().map(|s| norm(s)).collect();
+        let why = out_of_scope(area, p).or_else(|| prefixes.iter().any(|x| normalised.starts_with(x)).then_some("listed out of scope by the reference"));
+        if let Some(why) = why {
             *report.out_of_scope.entry(why).or_default() += 1;
             continue;
         }
@@ -83,20 +94,31 @@ impl Report {
         }
     }
 
-    /// Reference items found only as an automatic stub, with our item.
-    pub(super) fn stubs(&self) -> Vec<(&[String], &OurItem)> {
-        self.items.iter().filter_map(|(p, pl)| self.found(pl).filter(|it| it.stub.is_some()).map(|it| (p.as_slice(), it))).collect()
+    /// Reference items found with the given tier, with our item.
+    pub(super) fn with_tier(&self, tier: Tier) -> Vec<(&[String], &OurItem)> {
+        self.items.iter().filter_map(|(p, pl)| self.found(pl).filter(|it| it.tier == tier).map(|it| (p.as_slice(), it))).collect()
+    }
+
+    /// How many present items have each tier, in the order of [`Tier::ALL`].
+    pub(super) fn tier_counts(&self) -> [usize; 4] {
+        let mut c = [0; 4];
+        for (_, pl) in &self.items {
+            if let Some(it) = self.found(pl)
+                && let Some(n) = c.get_mut(it.tier.index())
+            {
+                *n += 1;
+            }
+        }
+        c
     }
 
     pub(super) fn summary(&self) -> String {
         let (same, elsewhere, missing) = self.counts();
         let n = self.items.len();
-        let stubs = match self.stubs().len() {
-            0 => String::new(),
-            k => format!(" (of which stub {k})"),
-        };
+        let [exact, approximate, stub, unrated] = self.tier_counts();
         format!(
-            "{}: presence {}/{n} ({:.1}%){stubs}, same place {same}/{n} ({:.1}%), elsewhere {elsewhere}, missing {missing}, out of scope {}",
+            "{}: presence {}/{n} ({:.1}%), same place {same}/{n} ({:.1}%), elsewhere {elsewhere}, missing {missing}, \
+             fidelity exact {exact} / approximate {approximate} / stub {stub} / unrated {unrated}, out of scope {}",
             self.area.name(),
             same + elsewhere,
             self.presence(),
@@ -126,7 +148,7 @@ impl Report {
             area.ours(),
             match area {
                 Area::Menus | Area::MenusEgui => "",
-                Area::Panels => " A panel is matched by its title. A panel that is only a placeholder dock, or only listed in the Window menu, is an automatic stub: present, but not the real panel (listed below).",
+                Area::Panels => " A panel is matched by its title. A panel that is only a placeholder dock, or only listed in the Window menu, is an automatic stub: present, but not the real panel.",
                 Area::Commands => " A bare name with no menu in the reference is matched by label alone; queries are left out.",
                 Area::Effects | Area::Transitions => " A bare name with no folder in the reference is matched by name alone.",
             },
@@ -169,13 +191,7 @@ impl Report {
                 s.push_str(&format!("- {} → {}\n", show(p), show(&at.path)));
             }
         }
-        let stubs = self.stubs();
-        if !stubs.is_empty() {
-            s.push_str(&format!("\n## Automatic stubs ({})\n\n", stubs.len()));
-            for (p, it) in stubs {
-                s.push_str(&format!("- {} → {}: {}\n", show(p), show(&it.path), it.stub.unwrap_or_default()));
-            }
-        }
+        s.push_str(&self.fidelity_markdown());
         s.push_str("\n## Out of scope\n\n");
         for (why, k) in &self.out_of_scope {
             s.push_str(&format!("- {why}: {k}\n"));
@@ -186,4 +202,86 @@ impl Report {
         }
         s
     }
+
+    /// The fidelity section: counts per group and tier of the items we have, and the approximate and
+    /// stub items with their notes. A tier is an annotation, not a behaviour test (gap G1).
+    fn fidelity_markdown(&self) -> String {
+        let mut s = String::from(
+            "\n## Fidelity\n\nHow faithful the items we *have* are. A tier is a committed annotation (`xtask/parity/fidelity.json`) \
+             or an automatic stub, **not a behaviour test** (docs/gaps.md G1). An item with no annotation is *unrated*, not exact: \
+             `exact` needs evidence.\n\n",
+        );
+        s.push_str("| Group | Present | Exact | Approximate | Stub | Unrated |\n|---|---|---|---|---|---|\n");
+        let mut per: BTreeMap<String, [usize; 4]> = BTreeMap::new();
+        for (p, pl) in &self.items {
+            if let Some(it) = self.found(pl)
+                && let Some(n) = per.entry(self.area.group(p)).or_default().get_mut(it.tier.index())
+            {
+                *n += 1;
+            }
+        }
+        for (group, c) in &per {
+            let [e, a, st, u] = *c;
+            s.push_str(&format!("| {group} | {} | {e} | {a} | {st} | {u} |\n", e + a + st + u));
+        }
+        let [e, a, st, u] = self.tier_counts();
+        s.push_str(&format!("| **Total** | **{}** | **{e}** | **{a}** | **{st}** | **{u}** |\n", e + a + st + u));
+        for tier in [Tier::Approximate, Tier::Stub] {
+            let items = self.with_tier(tier);
+            if items.is_empty() {
+                continue;
+            }
+            let title = if tier == Tier::Stub { "Stub" } else { "Approximate" };
+            s.push_str(&format!("\n### {title} ({})\n\n", items.len()));
+            for (p, it) in items {
+                s.push_str(&format!("- {} → {}: {}\n", show(p), show(&it.path), it.note));
+            }
+        }
+        s
+    }
+}
+
+/// The `--area all` report: a summary table of the areas, then every area's report one level down.
+pub(super) fn all_markdown(root: &Path, outcomes: &[Outcome]) -> String {
+    let mut s = String::from(
+        "# Parity report\n\nGenerated by `cargo xtask parity --area all`. Presence is a label match, not behaviour; a fidelity tier \
+         is an annotation, not a behaviour test (docs/gaps.md G1), and an item with no annotation is unrated, not exact.\n\n",
+    );
+    s.push_str(
+        "| Area | Reference | In scope | Present | Exact | Approximate | Stub | Unrated | Missing | Presence |\n|---|---|---|---|---|---|---|---|---|---|\n",
+    );
+    for o in outcomes {
+        match &o.measured {
+            Some((r, source)) => {
+                let (same, elsewhere, missing) = r.counts();
+                let [e, a, st, u] = r.tier_counts();
+                s.push_str(&format!(
+                    "| {} | {} | {} | {} | {e} | {a} | {st} | {u} | {missing} | {:.1}% |\n",
+                    o.area.name(),
+                    source.label(root),
+                    r.items.len(),
+                    same + elsewhere,
+                    r.presence()
+                ));
+            }
+            None => s.push_str(&format!("| {} | not measured (no reference) | | | | | | | | |\n", o.area.name())),
+        }
+    }
+    for o in outcomes {
+        s.push('\n');
+        match &o.measured {
+            Some((r, source)) => {
+                for line in r.markdown(&source.label(root), o.ours).lines() {
+                    // one level down, so the areas nest under the report title
+                    if line.starts_with('#') {
+                        s.push('#');
+                    }
+                    s.push_str(line);
+                    s.push('\n');
+                }
+            }
+            None => s.push_str(&format!("## {} parity\n\nNo reference: not measured.\n", o.area.name())),
+        }
+    }
+    s
 }

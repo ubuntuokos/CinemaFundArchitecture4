@@ -824,6 +824,7 @@ fn avi_video_codec(fc: [u8; 4]) -> String {
         b"DVSD" | b"DV25" | b"DV50" | b"DVHD" | b"DVSL" | b"CDVC" => "dvvideo",
         b"FFV1" => "ffv1",
         b"HFYU" => "huffyuv",
+        b"HYMT" => "hymt",
         b"FFVH" => "ffvhuff",
         b"ULRG" | b"ULRA" | b"ULY0" | b"ULY2" | b"ULY4" | b"ULH0" | b"ULH2" | b"ULH4" => "utvideo",
         b"CFHD" => "cfhd",

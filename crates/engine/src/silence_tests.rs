@@ -276,7 +276,6 @@ fn unsupported_clips_and_hostile_parameters_are_errors_not_panics() {
     assert_ne!(spd, saved(&s));
     assert_eq!(saved(&s), before);
     for bad in [
-        json!({"detector": "silero"}),
         json!({"detector": "nope"}),
         json!({"mode": "nope"}),
         json!({"scope": "nope"}),
@@ -472,4 +471,31 @@ fn a_cancelled_analysis_leaves_the_sequence_alone_and_cannot_be_marked() {
     assert!(s.execute("silence.mark", json!({"job": job})).is_err());
     assert_eq!(saved(&s), before);
     assert!(silence_markers(&s).is_empty());
+}
+
+#[test]
+fn silero_model_is_shown_first_and_downloaded_only_after_acceptance() {
+    let mut s = new_session();
+    let info = s.execute("speech.vadModel", json!({})).unwrap();
+    assert_eq!(info["id"], "silero-vad");
+    assert!(info["license"].as_str().unwrap().starts_with("MIT"));
+    assert!(info["size"].as_u64().unwrap() > 1_000_000);
+    assert!(info["source"].as_str().unwrap().starts_with("https://github.com/snakers4/silero-vad"));
+    // the licence is not accepted: no download, whatever the build, and nothing else downloads
+    for p in [json!({}), json!({"licenseAccepted": false}), json!({"licenseAccepted": "yes"})] {
+        let e = s.execute("speech.downloadVadModel", p.clone()).unwrap_err().to_string();
+        assert!(e.contains("licence") || e.contains("not available"), "{p}: {e}");
+    }
+}
+
+/// Without the model (or the feature) `silero` is an error that says what to do; it never falls
+/// back to the energy detector silently.
+#[cfg(not(feature = "silero"))]
+#[test]
+fn silero_detector_without_the_feature_is_an_error_not_a_fallback() {
+    let (mut s, c) = one_clip();
+    let before = saved(&s);
+    let e = s.execute("audio.detectSpeech", json!({"clips": [c.0], "detector": "silero"})).unwrap_err().to_string();
+    assert!(e.contains("silero"), "{e}");
+    assert_eq!(saved(&s), before);
 }

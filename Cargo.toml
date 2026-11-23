@@ -78,6 +78,8 @@ cfa4-theora = { path = "crates/theora" }
 cfa4-sstp = { path = "crates/sstp" }
 cfa4-evc = { path = "crates/evc" }
 cfa4-cavs = { path = "crates/cavs" }
+cfa4-avs2 = { path = "crates/avs2" }
+cfa4-avs3 = { path = "crates/avs3" }
 cfa4-dirac = { path = "crates/dirac" }
 cfa4-vp9 = { path = "crates/vp9" }
 cfa4-prores = { path = "crates/prores" }
@@ -283,6 +285,12 @@ opt-level = 3
 opt-level = 3
 
 [profile.dev.package.cfa4-sstp]
+opt-level = 3
+
+[profile.dev.package.cfa4-avs3]
+opt-level = 3
+
+[profile.dev.package.cfa4-avs2]
 opt-level = 3
 
 [profile.dev.package.cfa4-cavs]
