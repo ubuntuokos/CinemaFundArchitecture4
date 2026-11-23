@@ -49,6 +49,8 @@ enum VCodec {
     Huffyuv(Vec<u8>),
     /// Lagarith with its `BITMAPINFOHEADER` bit count.
     Lagarith(u16),
+    /// Sorenson Video 3 with its extradata (the sequence header).
+    Svq3(Vec<u8>),
     /// Indeo 2.
     Indeo2,
     /// Cinepak with its `BITMAPINFOHEADER` bit count and palette.
@@ -88,6 +90,7 @@ fn video_codec(b: &BitmapInfo) -> (VCodec, String) {
         b"RT21" => (VCodec::Indeo2, "Indeo 2".into()),
         b"CVID" => (VCodec::Cinepak(b.bit_count, b.extra.clone()), "Cinepak".into()),
         b"LAGS" => (VCodec::Lagarith(b.bit_count), "Lagarith".into()),
+        c if crate::svq3::is_svq3(c) => (VCodec::Svq3(b.extra.clone()), "Sorenson Video 3".into()),
         _ if crate::magicyuv::is_magicyuv(&b.compression) => (VCodec::MagicYuv, "MagicYUV".into()),
         b"HFYU" => (VCodec::Huffyuv(crate::huffyuv::bitmap_info_header(b.bit_count, &b.extra)), "Huffyuv".into()),
         b"FFV1" => (VCodec::Ffv1(b.extra.clone()), "FFV1".into()),
@@ -646,6 +649,7 @@ impl VideoSamples for AviVideo<'_> {
             VCodec::Dirac => make_video_decoder(&crate::dirac::sample_entry(w, h)),
             VCodec::Huffyuv(bih) => make_video_decoder(&crate::huffyuv::sample_entry(bih, w, h)),
             VCodec::Indeo2 => make_video_decoder(&crate::indeo::sample_entry_indeo2(w, h)),
+            VCodec::Svq3(extra) => make_video_decoder(&crate::svq3::sample_entry(w, h, extra)),
             VCodec::Cinepak(bits, pal) => make_video_decoder(&crate::cinepak::sample_entry(*bits, pal, w, h)),
             VCodec::Lagarith(bits) => make_video_decoder(&crate::lagarith::sample_entry(*bits, w, h)),
             VCodec::MagicYuv => make_video_decoder(&crate::magicyuv::sample_entry(w, h)),

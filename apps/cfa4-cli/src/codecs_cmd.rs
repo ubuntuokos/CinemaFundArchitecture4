@@ -123,6 +123,7 @@ static ROWS: &[Row] = &[
     video("Ut Video", &["utvideo"], Own, Sw(""), false, NoEnc),
     video("Lagarith", &["lagarith"], Ported, Sw(""), false, NoEnc),
     video("Indeo 2", &["indeo"], Ported, Sw(""), false, NoEnc),
+    video("Sorenson Video 3 (SVQ3)", &["svq3"], Ported, Sw(""), false, NoEnc),
     video("Cinepak", &["cinepak"], Ported, Sw(""), false, NoEnc),
     video("Bink video (Bink 1, with alpha) and Bink audio (RDFT, DCT)", &["bink"], Ported, Sw("in Bink (.bik)"), false, NoEnc),
     video("Nintendo THP", &["thp"], Ported, Sw("in .thp files, JPEG pictures, with the ADPCM sound"), false, NoEnc),

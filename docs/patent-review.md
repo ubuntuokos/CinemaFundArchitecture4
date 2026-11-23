@@ -69,6 +69,7 @@ szabadalommal védett formátumot.
 | Ut Video | dekódolás | `crates/utvideo` | alap | függőben | | |
 | Lagarith | dekódolás | `crates/lagarith` (az FFmpeg Lagarith-dekódolójának portja) | alap | függőben | | |
 | Indeo 2 | dekódolás | `crates/indeo` (az FFmpeg Indeo 2-dekódolójának portja) | alap | függőben | | |
+| Sorenson Video 3 (SVQ3) | dekódolás | `crates/svq3` (az FFmpeg portja) | alap | függőben | | |
 | Cinepak | dekódolás | `crates/cinepak` (az FFmpeg Cinepak-dekódolójának portja) | alap | függőben | | |
 | Nintendo THP (JPEG-videó, THP ADPCM-hang) | dekódolás; `.thp` fájlok olvasása | `crates/thp` (az FFmpeg THP-demuxerének, MJPEG-dekóderének és ADPCM-dekóderének portja) | alap | függőben | | |
 | Nintendo MobiClip (MOFLEX: MobiClip-videó, FastAudio, IMA ADPCM) | dekódolás; `.moflex` fájlok olvasása | `crates/mobiclip` (az FFmpeg moflex-demuxerének, MobiClip-dekóderének, FastAudio- és ADPCM-dekóderének portja) | alap | függőben | | |
