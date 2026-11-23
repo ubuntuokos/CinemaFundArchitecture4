@@ -241,8 +241,7 @@ class RemoveSilenceDialog(QDialog):
             lic = str(m.get("license", ""))
             url = str(m.get("licenseUrl", ""))
             text = fmt(
-                "The speech model ({mb} MB, {licence}) is not downloaded. CFA4 does not distribute models: "
-                "read the licence, accept it and download it yourself.",
+                "The speech model ({mb} MB, {licence}) is not downloaded: read the licence, accept it, download it.",
                 mb=mb,
                 licence=f'<a href="{url}">{lic}</a>' if url.startswith("https://") else lic,
             )
