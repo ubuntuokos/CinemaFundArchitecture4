@@ -1,7 +1,9 @@
 # CFA4-OPENUSD-3D-001 – 3D-jelenetcsere (glTF/OBJ/STL, OpenUSD), projektfüggő 3D, 1.0
 
 > **Állapot:** JÓVÁHAGYVA (István, 2026-11-22 18:01, Europe/Budapest); a §11 döntéseit István 16:55-kor zárta le. **Fázisengedélyek:** István 2026-11-22 18:03-kor megadta az U1, U2 és U3 fázisengedélyeket (`docs/coordination.md` §2.10). Ez **nem** kerüli meg a fázisok saját kapuit (§7): az U1 a tervnek a `main`-be kerülése után, friss `main`-ből indulhat; az U2-höz kell a render C0 és a G-USD-1 (most: nincs natív USD, §11 5. pont); az U3 elfogadási feltételeit az indítása előtt meg kell írni. Terv-változtatás (a fázisok lépéseinek, sorrendjének vagy feltételeinek módosítása) újra jóváhagyást kér. A 0.1 változat helyébe lép.
-> **Verzió:** 1.0 · **Dátum:** 2026-11-22 · **Kérte:** István (ubuntuokos). A 0.1 helyébe lép (a fájl átnevezve: `…-0.1.md` → `…-1.0.md`).
+> **Verzió:** 1.1 (a fájlnév marad `…-1.0.md`, a hivatkozások miatt) · **Dátum:** 2026-11-22 · **Kérte:** István (ubuntuokos). A 0.1 helyébe lép (a fájl átnevezve: `…-0.1.md` → `…-1.0.md`).
+> **1.1 (István kérésére, 2026-11-22 22:23–22:24):** az U1 `scene3d` megvalósítása közben kiderült pontosítások (séma v17, függőségek SHA-256-ja, régió/LOD helye) a 4. és 8. fejezetben, javaslat a nyitott 2. döntésre és a Qt6-felületre a **11b. fejezetben**. A §11 döntései és a fázisengedélyek változatlanok; a 11b javaslatai **döntésre várnak**.
+> **Ütközésfeloldás (2026-11-22, a `main` beolvasása után):** a `main`-ben a v17-es sémát már az `objects` (OM-A1b) foglalta el, ezért a `scene3d` **v18** (`v17_to_v18`, no-op lépés). Az alábbi „séma v17” említések erre értendők; a P-A1 tartalma változatlan.
 > **Beépítve:** a `[MÓD-6]` (két USD-út) és `[MÓD-8]` (3D projektfüggő) javaslatok a [`CFA4-DNEG-VFX-EGYEZTETES-001`](CFA4-DNEG-VFX-EGYEZTETES-001-0.1.md)-ből (K-3, K-4, K-5, D-4, D-12) és a `CFA4-VFX-001` v1.1 (§3.1, §8a; VFX-8, X-4, X-5).
 > **Alap:** CFA4 `main` @ `2ff5b412`; ez a dokumentum csak dokumentáció, a `VISION.md`-t nem módosítja.
 
@@ -47,7 +49,7 @@
 | USD (`.usd/.usda/.usdc/.usdz`) | 3D-asset hivatkozás, előnézet | A (külső EXR) | **U2** (USD-worker), feltételes |
 | Pontfelhő, `.vdb` | nem e terv tárgya | – | [`POINTCLOUD-001`](CFA4-POINTCLOUD-001-0.1.md), DNEG N1/N2 (ugyanez az elv) |
 
-2. **Projektben tárolt állapot:** a projekt additív, verziózott `scene3d` szakaszt kap, csak ha van 3D-asset: hivatkozás (**út + SHA-256**, nem beágyazás), importer-verzió, a kiválasztott út (`A`/`B`), az **unsupported-jelentés**, a tartalomtípusonként bekapcsolt képességek. Hiányzik a szakasz, ha nincs 3D-tartalom.
+2. **Projektben tárolt állapot:** a projekt additív, verziózott `scene3d` szakaszt kap, csak ha van 3D-asset: hivatkozás (**út + SHA-256**, nem beágyazás), a hivatkozott fájl **függőségei** (glTF `.bin`, OBJ `.mtl`, textúraképek: relatív URI + SHA-256, hogy ezek változása is észrevehető legyen), importer-verzió, a kiválasztott út (`A`/`B`), az **unsupported-jelentés**, a tartalomtípusonként bekapcsolt képességek. Hiányzik a szakasz, ha nincs 3D-tartalom.
 3. **Régi projekt változatlan:** 3D-tartalom nélküli projekt ugyanúgy nyílik, renderel és exportál (render-terv AC-15); a séma additív, az ismeretlen szakaszt a régi verzió megőrzi/figyelmen kívül hagyja a projekt szabálya szerint.
 4. **Út projektenként/tartalmanként:** egy 3D-asset útját a felhasználó a projektben váltja (A↔B); alapértelmezés A. Az út váltása nem veszíthet adatot: a hivatkozás és a jelentés megmarad.
 5. **Felület:** nincs globális 3D-beállítás. A 3D-panel és az importpanel akkor jelenik meg, ha a projekt tartalmaz 3D-assetet, vagy a felhasználó éppen importál ilyet. Automation-id minden elemen.
@@ -81,7 +83,7 @@
 ## 8. Elfogadási feltételek
 
 **Projektmodell (új):**
-- **P-A1:** 3D-tartalom nélküli projekt bájtazonos mentést/újranyitást ad a változás előtti viselkedéssel; nincs `scene3d` szakasz, nincs 3D-felület.
+- **P-A1:** 3D-tartalom nélküli projekt a változás előtti mentést/újranyitást adja: a projekt törzse bájtazonos, nincs `scene3d` szakasz, nincs 3D-felület. A boríték `schema_version` száma a sémabővítéssel nő (v16 → v17, István elfogadta 2026-11-22 22:23), különben a régi build csendben eldobná a szakaszt.
 - **P-A2:** a 3D-képesség bekapcsolása kizárólag a projektbe importált tartalomtól függ; nincs globális kapcsoló.
 - **P-A3:** az A/B út asset-enként választható és váltható adatvesztés nélkül; alapértelmezés A.
 - **P-A4:** régi projekt (séma a változás előtt) változatlanul nyílik és renderel (AC-15).
@@ -89,8 +91,8 @@
 **U1:**
 - **U1-A1:** minden támogatott fájl a hierarchiát, transzformot, kamerát, hálót megőrizve beolvasódik; a nem támogatott elem a jelentésben szerepel.
 - **U1-A2:** hibás/csonka/hostile fájl → `Err`, nincs összeomlás (mutációs fuzz; `AGENTS.md` §0.8).
-- **U1-A3:** nagy háló: memóriakeret betartva (ACS), régió/LOD az ARF-szabállyal.
-- **U1-A4:** a projekt csak hivatkozik a forrásfájlra (út + SHA-256); relink hiányzó fájlnál jelentéssel.
+- **U1-A3:** nagy háló: memóriakeret betartva (ACS), régió/LOD az ARF-szabállyal. *Megvalósítás:* a szabály tiszta, determinisztikus függvény (`cfa4_model3d::lod`: `(jelenet, keret) → terv`, indoklással, a minőségcsökkentés jóváhagyási kapuval); nem hoz létre ARF-leíró sémát, az ARF-2 kód létekor az ARF-leíróra képezendő (nincs második leírórendszer).
+- **U1-A4:** a projekt csak hivatkozik a forrásfájlra és függőségeire (út + SHA-256; a `scene3d.check` a főfájl és a függőségek változását is jelzi); relink hiányzó fájlnál jelentéssel, eltérő hash-nél csak kifejezett beleegyezéssel.
 - **U1-A5:** projektmentés/-betöltés round-trip; a CFA4 projektmodell a `scene3d` szakaszon kívül változatlan.
 
 **U2:**
@@ -130,6 +132,13 @@
 | 5 | G-USD-1 | **„Most”: most nincs natív USD** (c út; az A út adja az USD-támogatást). Értelmezés: „most” = a javaslatom „(c) most”-ja; ha a PyPI-kerék (a) vagy a forrásbuild (b) mérlegelését kérted, jelezd. A (a)/(b) az U2 indításakor újra előkerül. |
 | 6 | Projektfüggő értelmezés és a `VISION.md` §8 | **Megerősítve** (javaslat szerint): a 4. fejezet 1–7. pontja érvényes. A `VISION.md` §8 formális átvezetése a tulajdonos/gazda dolga, ez a PR nem módosítja. |
 
+**11b. Javaslatok (nem döntések; István kérésére, 2026-11-22 22:24):**
+
+| # | Javaslat | Indok |
+|---|---|---|
+| 2 | **A mélység felső határa (glTF/OBJ/STL, később USD is): „3D-elem az idővonalon”, nem 3D-szerkesztő.** Benne: asset-hivatkozás, kamera- és animáció-klip választás, időponttól függő előnézet és kép/EXR-kiadás (A vagy B úton) sima médiaként az idővonalra, csomópont-szintű láthatóság és transzform-felülírás a projektben (az asset fájlja érintetlen), régió/LOD-keret. Kívül marad: háló-, anyag-, csomópont-szerkesztés, saját render-motor, jelenetépítés. USD ugyanezt kapja az U2 után. | Az U1 érték a tartalom bekötése a videó-projektbe, nem a 3D-szerkesztés; a szűk határ megtartja a tervet, és később bővíthető (a szélesítés új döntés). Az U1 tapasztalata (a `scene3d.*` parancsok használata) után erősítendő meg. |
+| 5 | **Minimális Qt6 asset-panel az U1 részeként (U1-UI szelet):** a `scene3d.list` listája, út-választó (A/B), unsupported-lista, relink-gomb és hiányzó-fájl jelzés; csak akkor jelenik meg, ha a projekt tartalmaz 3D-assetet vagy éppen importálnak (4. fejezet 5. pont); automation-id minden elemen. A teljes importpanel (USD, rétegek, referencia-lista) marad az U2-A4-ben. | A motor-parancsok már megvannak, UI nélkül a funkció a felhasználónak nem elérhető; az U2-A4 túl késő lenne, és a panel kis, a parancsokra épül. A szelet új U1-A6 kaput kap: Qt6-teszt (Wayland és X11), automation-id. |
+
 **Nyitott maradt:** a 2. pont (az U1 után), az U2-hez a (a)/(b) beszerzési út, és az U3 elfogadási feltételei.
 
 ## 12. Mit nem állít ez a terv
@@ -144,4 +153,5 @@ Nem néztem meg a Rust-crate-ek forráskódját, nem futtattam `cargo deny`-t; a
 | 1.0b | 2026-11-22 | Fázisengedélyek rögzítve (István, 18:03): U1, U2, U3; a fázis-kapuk érvényesek. Tartalmi változás nincs. |
 | 1.0 (jóváhagyva) | 2026-11-22 | István jóváhagyta (18:01); további tartalmi változás nincs, a 1.0a döntései érvényesek. |
 | 1.0a | 2026-11-22 | A §11 döntései rögzítve (István, 16:55): import és export egyaránt cél (U3 bekerül), a többi a javaslat szerint; G-USD-1: most nincs natív USD. |
+| 1.1 | 2026-11-22 | István kérésére: séma v17 és a P-A1 pontosítása, a függőségek SHA-256-ja (U1-A4), a régió/LOD helye (U1-A3), 11b javaslatok a mélységi határra és a Qt6 asset-panelre (döntésre várnak). A fázisok, kapuk és a §11 döntései nem változtak. |
 | 1.0 | 2026-11-22 | Végleges javaslat: `[MÓD-6]` (két út) és `[MÓD-8]` (projektfüggő 3D) beépítve; projektfüggő modell (4. fejezet) és új `P-A1…A4` kapuk; a tények frissítve (OpenUSD v26.11.1, nincs 26.04-es csomag, `usd-core` kerék, Rust-crate-ek licence); G-USD-1 átfogalmazva; egy szerződés (C0); nyitott döntések szűkítve. |

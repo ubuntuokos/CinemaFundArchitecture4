@@ -20,6 +20,7 @@
 use std::fmt;
 
 mod gltf;
+pub mod lod;
 mod obj;
 mod stl;
 mod util;

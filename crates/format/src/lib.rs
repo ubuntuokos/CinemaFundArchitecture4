@@ -43,6 +43,8 @@
 //!   No-op step; older builds would drop them when saving.
 //! - **v17** (CFA4-OBJECT-MASK-PLAN-001 OM-A1b): tracked objects (`Project::objects`). No-op step;
 //!   older builds would drop them when saving.
+//! - **v18** (CFA4-OPENUSD-3D-001 U1): the 3D-asset references (`Project::scene3d`), present only in
+//!   projects that imported 3D content. No-op step; older builds would drop them when saving.
 
 #![cfg_attr(not(test), deny(clippy::unwrap_used, clippy::expect_used, clippy::panic, clippy::unimplemented, clippy::todo, clippy::unreachable))]
 
@@ -65,7 +67,7 @@ pub type Migration = fn(Value) -> Result<Value, String>;
 /// edit a shipped one.
 pub const MIGRATIONS: &[Migration] = &[
     v1_to_v2, v2_to_v3, v3_to_v4, v4_to_v5, v5_to_v6, v6_to_v7, v7_to_v8, v8_to_v9, v9_to_v10, v10_to_v11, v11_to_v12, v12_to_v13, v13_to_v14, v14_to_v15,
-    v15_to_v16, v16_to_v17,
+    v15_to_v16, v16_to_v17, v17_to_v18,
 ];
 
 /// The schema version this build writes (and the newest it reads).
@@ -270,6 +272,11 @@ fn validate_loaded(mut loaded: Loaded) -> Result<Loaded, FormatError> {
     if dropped > 0 {
         log::warn!("live studio: {dropped} damaged scenes or sources dropped");
     }
+    // 3D-asset references: an unusable one is dropped, never refused (the project still opens).
+    let dropped3d = loaded.project.scene3d.repair();
+    if dropped3d > 0 {
+        log::warn!("scene3d: {dropped3d} damaged 3D asset references dropped");
+    }
     // Every new id is `next_id`, read from the file as is. One that lags behind the ids in it (an
     // older build, a hand edit) would hand out an id in use, and the new item replace the old (#2809).
     let project = &mut loaded.project;
@@ -409,13 +416,18 @@ fn v16_to_v17(doc: Value) -> Result<Value, String> {
     Ok(doc)
 }
 
+/// v17 → v18: the 3D-asset references (`Project::scene3d`). Nothing to convert: older files have none.
+fn v17_to_v18(doc: Value) -> Result<Value, String> {
+    Ok(doc)
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
 
     #[test]
     fn schema_version_matches_table() {
-        assert_eq!(SCHEMA_VERSION, 17);
+        assert_eq!(SCHEMA_VERSION, 18);
     }
 
     #[test]
@@ -629,6 +641,47 @@ mod tests {
         assert!(loaded.project.next_id > 5000, "studio ids count for next_id");
     }
 
+    /// CFA4-OPENUSD-3D-001 U1: the 3D-asset references live in the project only while 3D content is
+    /// imported; a project without any writes no `scene3d` key and is unchanged (P-A1), and a damaged
+    /// reference is dropped on load instead of refusing the project.
+    #[test]
+    fn scene3d_references_round_trip_and_are_repaired() {
+        use cfa4_project::scene3d::{Asset3d, Format3d, Route};
+        let plain: Value = serde_json::from_slice(&encode(&Project::new("x"), false)).unwrap();
+        assert!(plain["project"].get("scene3d").is_none(), "no 3D content, no section");
+
+        let mut p = Project::new("3D");
+        let id = p.alloc_id();
+        let asset = |id: u64, sha: &str| Asset3d {
+            id,
+            name: "Chair".into(),
+            path: "/assets/chair.glb".into(),
+            sha256: sha.into(),
+            format: Format3d::Gltf,
+            route: Route::B,
+            importer: Some("cfa4-model3d 1".into()),
+            stats: None,
+            report: Vec::new(),
+            dependencies: Vec::new(),
+            dropped: 0,
+        };
+        p.scene3d.assets.push(asset(id, &"0a".repeat(32)));
+        p.scene3d.refresh_capabilities();
+        let loaded = decode(&encode(&p, false)).unwrap();
+        assert_eq!(loaded.project.scene3d, p.scene3d);
+
+        // a bad hash is dropped, a high id still counts for next_id, and the last asset takes the section away
+        let mut v: Value = serde_json::from_slice(&encode(&p, false)).unwrap();
+        v["project"]["scene3d"]["assets"][0]["sha256"] = Value::from("nope");
+        let loaded = decode(&serde_json::to_vec(&v).unwrap()).unwrap();
+        assert!(loaded.project.scene3d.is_empty());
+        let mut v: Value = serde_json::from_slice(&encode(&p, false)).unwrap();
+        v["project"]["scene3d"]["assets"][0]["id"] = Value::from(6000);
+        let loaded = decode(&serde_json::to_vec(&v).unwrap()).unwrap();
+        assert!(loaded.project.next_id > 6000, "3D asset ids count for next_id");
+    }
+
+    #[test]
     /// READY-V2.6: a studio source of an unknown type does not stop the project from opening.
     #[test]
     fn a_studio_source_of_an_unknown_type_leaves_the_project_openable() {

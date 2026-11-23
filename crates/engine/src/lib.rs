@@ -67,6 +67,7 @@ pub mod proxies;
 pub mod qc;
 pub mod relink;
 pub mod remix;
+pub mod scene3d;
 pub mod scene_detect;
 pub mod scopes;
 pub mod security;

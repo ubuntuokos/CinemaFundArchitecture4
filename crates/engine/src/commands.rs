@@ -4022,6 +4022,7 @@ fn build() -> Vec<CommandSpec> {
     v.extend(crate::credits::commands());
     v.extend(crate::live::commands());
     v.extend(crate::studio::commands());
+    v.extend(crate::scene3d::commands());
     v.extend(crate::dialog_defaults::commands());
     v.extend(crate::legibility::commands());
     v.extend(crate::shortcuts::commands());
