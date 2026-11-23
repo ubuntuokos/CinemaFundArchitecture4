@@ -113,6 +113,8 @@ attribution and original copyright/licence requirements remain in force.
 
 > **Always read [`docs/development/reference-machine.md`](docs/development/reference-machine.md) too** (owner decision, 2026-11-02). It records the owner's reference machine (hardware, OS, GPUs) and how to measure on it (minimum-spec limits, CPU-only runs). Take machine data from there; never ask the owner for it again.
 
+> **Skipped physical tests are recorded** (owner decision, 2026-11-22): every physical test the owner decides to skip (reference-machine measurement, real hardware, camera, display or network trial) gets a row in [`docs/development/deferred-physical-tests.md`](docs/development/deferred-physical-tests.md), with what to measure, the command, the substitute result and the reason ([`docs/coordination.md`](docs/coordination.md) §2.14).
+
 These rules apply to every human and AI contributor. `CLAUDE.md` holds the working instructions; this
 file holds the rules that must never be broken. When the two disagree, this file wins.
 

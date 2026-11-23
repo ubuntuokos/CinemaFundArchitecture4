@@ -104,6 +104,18 @@ Plan DCP-F20. A DCP export goes through the export queue (`export.queue.add`, th
 Not covered: a direct `file.exportMedia` of a DCP is not validated (queue only); validation does not say
 that CFA4 writes complete DCPs (encryption, signing and KDMs are other projects).
 
+## Repair proposals (DCP-14)
+
+`dcp.repair.plan {root}` turns the latest report of a package into `cfa4-dcp-repair/1`: every failure or
+warning gets one of five classes (plan DCP-F21) and an action, the finding's own remedy when it has one.
+`projectMetadata` (title, language, container, markers: fix in the project, export again), `reexport`
+(the content is wrong: export again, or ask the supplier of an imported package), `userDecision`
+(loudness, subtitle timing), `externalTool` (certificates, the reference engine) and `unsupported` (the rule
+did not run, so there is nothing to repair and the result is unknown). Failures come first. The plan only
+proposes: `modifiesPackage` is always `false`, and the original package is never changed. The classes are
+in `crates/dcp-validate/src/repair.rs`; applying a repair to a project or an approved working copy is not
+part of this step.
+
 ## Test data
 
 No DCP media is committed (`AGENTS.md`). Fixtures are generated into `target/fixtures/` from

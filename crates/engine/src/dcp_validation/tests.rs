@@ -113,3 +113,21 @@ fn background_validation_is_filed_by_poll() {
     assert_eq!(got["verdict"], "FAIL");
     std::fs::remove_dir_all(dir).unwrap();
 }
+
+#[test]
+fn repair_plan_sorts_the_findings_and_changes_nothing() {
+    let (mut s, _) = session();
+    let dir = temp("repair");
+    let root = dir.to_string_lossy().into_owned();
+    assert!(s.execute("dcp.repair.plan", json!({"root": root})).is_err(), "needs a report first");
+    s.execute("dcp.validate", json!({"root": root, "profile": "quick-scan", "wait": true})).unwrap();
+    let r = result(s.execute("dcp.repair.plan", json!({"root": root})).unwrap());
+    assert_eq!(r["plan"]["schema"], "cfa4-dcp-repair/1");
+    assert_eq!(r["plan"]["modifiesPackage"], false);
+    let first = &r["plan"]["proposals"][0];
+    assert_eq!(first["status"], "FAIL", "{r}");
+    assert_eq!(first["class"], "reexport");
+    assert!(r["counts"]["reexport"].as_u64().unwrap() >= 1 && r["counts"]["unsupported"].is_u64(), "{r}");
+    assert!(std::fs::read_dir(&dir).unwrap().next().is_none(), "the package folder is untouched");
+    let _ = std::fs::remove_dir_all(&dir);
+}
