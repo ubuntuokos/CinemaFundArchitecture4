@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # Regenerate the hash-pinned Python locks for Linux AMD64 (#6, F1-01; OTIO-1.3).
-# requirements/linux-amd64.txt covers the `dev` and `qt` extras of pyproject.toml; PySide6 wheels are
+# requirements/linux-amd64.txt covers the `dev`, `qt` and `backlot` extras of pyproject.toml; PySide6 wheels are
 # manylinux_2_39. requirements/otio-oracle.txt covers the `otio` extra: the OpenTimelineIO test oracle
 # only (never imported by the product), installed by the CI `otio-oracle` job next to the main lock.
 set -euo pipefail
@@ -33,5 +33,5 @@ lock() {
   echo "Wrote $out"
 }
 
-lock requirements/linux-amd64.txt "pyproject extras: dev, qt" " && python -m pip install --no-deps -e ." dev qt -- "$@"
+lock requirements/linux-amd64.txt "pyproject extras: dev, qt, backlot" " && python -m pip install --no-deps -e ." dev qt backlot -- "$@"
 lock requirements/otio-oracle.txt "pyproject extra: otio, the OpenTimelineIO test oracle only" "" otio -- "$@"

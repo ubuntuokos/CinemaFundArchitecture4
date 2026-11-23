@@ -1,0 +1,7 @@
+{
+  "name": "genesis",
+  "input": "{\"seq\":1,\"prev_hash\":\"0000000000000000000000000000000000000000000000000000000000000000\",\"action\":\"audit.chain.genesis\",\"app\":\"cfa4-audit\",\"scope\":{}}",
+  "event": true,
+  "canonical": "{\"action\":\"audit.chain.genesis\",\"app\":\"cfa4-audit\",\"prev_hash\":\"0000000000000000000000000000000000000000000000000000000000000000\",\"scope\":{},\"seq\":1}",
+  "hash": "a557612345460833419c576df5267b92c9534f2f65a5ebfc4d38c03b5b65223a"
+}
