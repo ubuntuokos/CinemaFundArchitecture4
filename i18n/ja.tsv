@@ -4911,3 +4911,10 @@
 	Write an AS-02 bundle (the path is a folder)	AS-02バンドルを書き出す(パスはフォルダー)
 	AS-02	AS-02
 	AS-12	AS-12
+
+# N1 voxel panel
+	Active voxels:	アクティブなボクセル:
+	Bounds:	境界:
+	Voxel attributes	ボクセル属性
+	Voxel size:	ボクセルサイズ:
+	points	点

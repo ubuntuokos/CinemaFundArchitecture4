@@ -4896,3 +4896,10 @@
 	Write an AS-02 bundle (the path is a folder)	AS-02 번들 쓰기(경로는 폴더)
 	AS-02	AS-02
 	AS-12	AS-12
+
+# N1 voxel panel
+	Active voxels:	활성 복셀:
+	Bounds:	경계:
+	Voxel attributes	복셀 속성
+	Voxel size:	복셀 크기:
+	points	점

@@ -4905,3 +4905,10 @@ export.summary	Low	žema
 	Write an AS-02 bundle (the path is a folder)	Įrašyti AS-02 paketą (kelias yra aplankas)
 	AS-02	AS-02
 	AS-12	AS-12
+
+# N1 voxel panel
+	Active voxels:	Aktyvūs vokseliai:
+	Bounds:	Ribos:
+	Voxel attributes	Vokselių atributai
+	Voxel size:	Vokselio dydis:
+	points	taškai
