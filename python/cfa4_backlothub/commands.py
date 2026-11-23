@@ -19,6 +19,7 @@ from cfa4_audit import AuditError
 
 from .db.uow import Actor
 from .errors import BacklotError, DatabaseUnavailable, InvalidInput
+from .production import config as cfg
 from .production import milestones as ms
 from .production import organizations as orgs
 from .production import service as prod
@@ -145,6 +146,34 @@ def _linked(engine: Engine, actor: Actor | None, p: Mapping[str, Any]) -> Any:
     return orgs.list_linked(engine, p["production_id"], actor)
 
 
+def _type_create(engine: Engine, actor: Actor | None, p: Mapping[str, Any]) -> Any:
+    return cfg.create_type(engine, p, actor)
+
+
+def _type_update(engine: Engine, actor: Actor | None, p: Mapping[str, Any]) -> Any:
+    return cfg.update_type(engine, p["code"], p["row_version"], {k: v for k, v in p.items() if k not in ("code", "row_version")}, actor)
+
+
+def _type_list(engine: Engine, actor: Actor | None, p: Mapping[str, Any]) -> Any:
+    return cfg.list_types(engine, include_retired=bool(p.get("include_retired", False)))
+
+
+def _sl_create(engine: Engine, actor: Actor | None, p: Mapping[str, Any]) -> Any:
+    return cfg.create_status_list(engine, p["code"], actor)
+
+
+def _sl_list(engine: Engine, actor: Actor | None, p: Mapping[str, Any]) -> Any:
+    return cfg.list_status_lists(engine)
+
+
+def _status_add(engine: Engine, actor: Actor | None, p: Mapping[str, Any]) -> Any:
+    return cfg.add_status(engine, p["status_list"], p, actor)
+
+
+def _status_update(engine: Engine, actor: Actor | None, p: Mapping[str, Any]) -> Any:
+    return cfg.update_status(engine, p["id"], p["row_version"], {k: v for k, v in p.items() if k not in ("id", "row_version")}, actor)
+
+
 _ORG_FIELDS = (
     Param("legal_name", "str"), Param("country", "str", help="ISO 3166-1 alpha-2"), Param("registration_no", "str"),
     Param("tax_no", "str"), Param("notes", "str"),
@@ -177,6 +206,38 @@ COMMANDS: dict[str, Command] = {
         Command(
             "backlot.production.member.list", "command.backlot.production.member.list", ("Production", "Members"),
             (Param("id", "uuid", True),), _members, modifies=False,
+        ),
+        Command(
+            "backlot.production.type.create", "command.backlot.production.type.create", ("Settings", "Production types", "New"),
+            (Param("code", "str", True), Param("label", "str", True), Param("status_list", "str", True, "code of a status list")), _type_create,
+        ),
+        Command(
+            "backlot.production.type.update", "command.backlot.production.type.update", ("Settings", "Production types", "Edit"),
+            (Param("code", "str", True), Param("row_version", "int", True), Param("label", "str"), Param("status_list", "str"),
+             Param("retired", "bool", help="no new productions of this type")),
+            _type_update,
+        ),
+        Command(
+            "backlot.production.type.list", "command.backlot.production.type.list", ("Settings", "Production types", "List"),
+            (Param("include_retired", "bool"),), _type_list, modifies=False,
+        ),
+        Command(
+            "backlot.status_list.create", "command.backlot.status_list.create", ("Settings", "Status lists", "New"),
+            (Param("code", "str", True),), _sl_create,
+        ),
+        Command(
+            "backlot.status_list.list", "command.backlot.status_list.list", ("Settings", "Status lists", "List"), (), _sl_list, modifies=False
+        ),
+        Command(
+            "backlot.status.add", "command.backlot.status.add", ("Settings", "Status lists", "Add status"),
+            (Param("status_list", "str", True), Param("code", "str", True), Param("label", "str", True),
+             Param("category", "str", True, "planned, active, on_hold, closed, cancelled")),
+            _status_add,
+        ),
+        Command(
+            "backlot.status.update", "command.backlot.status.update", ("Settings", "Status lists", "Edit status"),
+            (Param("id", "uuid", True), Param("row_version", "int", True), Param("label", "str"), Param("category", "str"), Param("ordinal", "int")),
+            _status_update,
         ),
         Command(
             "backlot.production.milestone.add", "command.backlot.production.milestone.add", ("Production", "Milestones", "Add"),

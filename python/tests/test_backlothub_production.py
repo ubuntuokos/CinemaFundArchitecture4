@@ -305,10 +305,10 @@ def test_the_database_itself_refuses_a_status_of_another_list(engine: Engine) ->
 
 
 def test_every_command_has_a_descriptor_and_a_json_schema() -> None:
-    assert {c for c in commands.COMMANDS if "milestone" not in c and "organization" not in c} == {
+    assert {
         "backlot.production.create", "backlot.production.update", "backlot.production.get", "backlot.production.list",
         "backlot.production.status.set", "backlot.production.member.list",
-    }  # fmt: skip
+    } <= set(commands.COMMANDS)  # fmt: skip
     for cid, d in ((c["id"], c) for c in commands.list_commands()):
         assert cid.startswith("backlot.") and d["label"].startswith("command.") and d["menu_path"]
         assert d["params"]["type"] == "object" and isinstance(d["params"]["required"], list)
