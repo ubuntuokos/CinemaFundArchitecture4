@@ -225,3 +225,18 @@ Save Review stores the review in the report (`qc.review.save`), and the engine r
 verdict. The window measures nothing itself and never changes the project. Playing the export at
 a flagged time code needs a preview that does not import the file into the project; it is not
 there yet. `test_real_engine_quality_check_through_the_export_window` covers the round trip.
+
+**3D assets** (CFA4-OPENUSD-3D-001 U1-A6, CFA4-OPENUSD-3D-EXPORT-001 U3a-A8; `panels/scene3d_panel.py`).
+Tools ▸ 3D Tools ▸ 3D Assets… opens the asset panel: the project's 3D assets (`scene3d.list`) with format,
+route and status (`scene3d.check`: ok, missing, changed), the selected asset's unsupported / approximated
+report, Import… (`scene3d.import`), the A / B path choice (`scene3d.route`; B is off for USD), Relink…
+(`scene3d.relink`; a changed file asks before `allowChanged`), Remove and Export…. Export 3D Asset…
+(`scene3d.export`) shows the loss report before anything is written: a lossy export waits for "Approve
+and write" (`approve`), and any change of an option takes the approval back. USD assets are not offered
+for export (U3b waits for U2). The panel appears only from that menu, so a project without 3D content
+shows nothing of it. Automation ids: `scene3d.panel`, `scene3d.assets`, `scene3d.report`,
+`scene3d.import`, `scene3d.route.A|B`, `scene3d.relink`, `scene3d.check`, `scene3d.remove`,
+`scene3d.export`, `scene3d.message`; dialog `scene3d.exportDialog` with `.asset`, `.format`, `.dir`,
+`.browse`, `.name`, `.copyTextures`, `.embedTextures`, `.overwrite`, `.report`, `.result`, `.ok`,
+`.cancel`. Tests: `python/tests/test_qt_scene3d_panel.py` (stand-in engine, offscreen). Not done yet:
+real-engine round trip and the Wayland / X11 runs (weekend validation), translations of the new strings.
