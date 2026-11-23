@@ -49,11 +49,14 @@ class Uow:
         subject_id: uuid.UUID,
         *,
         production_id: uuid.UUID | None = None,
+        entity_path: str | None = None,
         change: Mapping[str, Any] | None = None,
         command_id: str | None = None,
     ) -> None:
         """Queue one audit event (``scope = {"production_id": ...}``); it is written when the block ends."""
-        scope = {"production_id": str(production_id)} if production_id is not None else {}
+        scope: dict[str, Any] = {"production_id": str(production_id)} if production_id is not None else {}
+        if entity_path is not None:
+            scope["entity_path"] = entity_path  # a whole sequence's history can be filtered by path
         self._events.append(
             AuditEvent(
                 app="backlot",

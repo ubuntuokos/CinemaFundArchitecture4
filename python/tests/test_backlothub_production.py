@@ -48,7 +48,7 @@ def test_migration_up_down_up_and_seed_data(info: str) -> None:
     try:
         assert migrate.current(eng) is None
         migrate.upgrade(eng)
-        assert migrate.current(eng) == migrate.head() == "0002"
+        assert migrate.current(eng) == migrate.head() == "0003"
         assert (_count(eng, "production_type"), _count(eng, "status"), _count(eng, "status_list")) == (5, 8, 1)
         assert _count(eng, "country") == 249 and _count(eng, "currency") >= 150
         migrate.upgrade(eng)  # again: nothing is seeded twice

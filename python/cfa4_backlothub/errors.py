@@ -99,3 +99,51 @@ class StatusNotFound(BacklotError):
 
 class TypeInUse(BacklotError):
     code = "PRODUCTION_TYPE_IN_USE"
+
+
+class StructureRuleViolation(BacklotError):
+    code = "STRUCTURE_RULE_VIOLATION"
+
+
+class StructureCycle(BacklotError):
+    code = "STRUCTURE_CYCLE"
+
+
+class StructureCrossProduction(BacklotError):
+    code = "STRUCTURE_CROSS_PRODUCTION"
+
+
+class StructureAssetHasParent(BacklotError):
+    code = "STRUCTURE_ASSET_HAS_PARENT"
+
+
+class EntityCodeTaken(BacklotError):
+    code = "ENTITY_CODE_TAKEN"
+
+
+class EntityInUse(BacklotError):
+    code = "ENTITY_IN_USE"
+
+
+class EntityNotFound(BacklotError):
+    code = "ENTITY_NOT_FOUND"
+
+
+class EntityTypeUnknown(BacklotError):
+    code = "ENTITY_TYPE_UNKNOWN"
+
+
+class TimingInvalid(BacklotError):
+    code = "TIMING_INVALID"
+
+
+class LinkDuplicate(BacklotError):
+    code = "LINK_DUPLICATE"
+
+
+class LinkNotFound(BacklotError):
+    code = "LINK_NOT_FOUND"
+
+
+class LinkInvalid(BacklotError):
+    code = "LINK_INVALID"
