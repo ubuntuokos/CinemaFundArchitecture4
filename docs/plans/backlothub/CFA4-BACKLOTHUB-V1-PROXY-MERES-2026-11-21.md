@@ -64,3 +64,8 @@ A **CFA4 saját H.264-dekódere kb. 10× lassabb**, mint az ffmpeg (≈11 kocka/
 
 ## Döntés (István, 2026-11-21)
 REV-07 CPU-only gépen: **720p összehasonlító proxy**; REV-01 marad 1080p. A 8. lépcső G4 kapuja ezzel nem blokkolt. Hátravan: REV-05 A/V-szinkron mérés és CFA4-MIN mérés.
+
+## Döntés (István, 2026-11-22)
+A REV-05 A/V-szinkron nem mérhető a felhőben (nincs hangeszköz); lezárása a **V2-ben, a Review G5 kapunál**, valódi
+eszközön. A V1 ezzel a 8. lépcső G4 kapujához lezárt. A CFA4-MIN mérést a felhős 4 vCPU-s gép helyettesíti
+(a fejlesztés a felhőben fut).

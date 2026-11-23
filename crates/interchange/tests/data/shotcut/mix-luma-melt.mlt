@@ -1,0 +1,46 @@
+<?xml version="1.0" encoding="utf-8"?>
+<mlt LC_NUMERIC="C" version="7.22.0">
+  <profile description="automatic" width="320" height="180" progressive="1" sample_aspect_num="1" sample_aspect_den="1" display_aspect_num="16" display_aspect_den="9" frame_rate_num="25" frame_rate_den="1" colorspace="601"/>
+  <producer id="producer0" in="00:00:00.000" out="00:00:01.960">
+    <property name="length">100</property>
+    <property name="eof">pause</property>
+    <property name="resource">a.mp4</property>
+    <property name="seekable">1</property>
+    <property name="aspect_ratio">1</property>
+    <property name="format">3</property>
+    <property name="audio_index">1</property>
+    <property name="video_index">0</property>
+    <property name="mute_on_pause">0</property>
+    <property name="mlt_service">avformat</property>
+  </producer>
+  <producer id="producer1" in="00:00:00.400" out="00:00:02.360">
+    <property name="length">100</property>
+    <property name="eof">pause</property>
+    <property name="resource">b.mp4</property>
+    <property name="seekable">1</property>
+    <property name="aspect_ratio">1</property>
+    <property name="format">3</property>
+    <property name="audio_index">1</property>
+    <property name="video_index">0</property>
+    <property name="mute_on_pause">0</property>
+    <property name="mlt_service">avformat</property>
+  </producer>
+  <tractor id="tractor0" in="00:00:00.000" out="00:00:00.360">
+    <track producer="producer0" in="00:00:01.600" out="00:00:01.960"/>
+    <track producer="producer1" in="00:00:00.000" out="00:00:00.360"/>
+    <transition id="transition0" out="00:00:00.360">
+      <property name="a_track">0</property>
+      <property name="b_track">1</property>
+      <property name="factory">loader</property>
+      <property name="mlt_service">luma</property>
+    </transition>
+  </tractor>
+  <playlist id="playlist0">
+    <entry producer="producer0" in="00:00:00.000" out="00:00:01.560"/>
+    <entry producer="tractor0" in="00:00:00.000" out="00:00:00.360"/>
+    <entry producer="producer1" in="00:00:00.400" out="00:00:01.960"/>
+  </playlist>
+  <tractor id="tractor1" in="00:00:00.000" out="00:00:03.560">
+    <track producer="playlist0"/>
+  </tractor>
+</mlt>

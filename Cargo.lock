@@ -1076,6 +1076,14 @@ dependencies = [
 ]
 
 [[package]]
+name = "cfa4-amv"
+version = "0.10.0"
+dependencies = [
+ "cfa4-testkit",
+ "thiserror 2.0.21",
+]
+
+[[package]]
 name = "cfa4-apv"
 version = "0.10.0"
 dependencies = [
@@ -1292,6 +1300,7 @@ dependencies = [
  "cfa4-adpcm",
  "cfa4-adx",
  "cfa4-amr",
+ "cfa4-amv",
  "cfa4-apv",
  "cfa4-auro",
  "cfa4-av1",
@@ -1310,6 +1319,7 @@ dependencies = [
  "cfa4-dv",
  "cfa4-evc",
  "cfa4-ffv1",
+ "cfa4-flic",
  "cfa4-frame",
  "cfa4-g729",
  "cfa4-h264",
@@ -1320,10 +1330,13 @@ dependencies = [
  "cfa4-iab",
  "cfa4-ilbc",
  "cfa4-indeo",
+ "cfa4-indeo3",
+ "cfa4-indeo45",
  "cfa4-isobmff",
  "cfa4-j2k",
  "cfa4-lagarith",
  "cfa4-lcevc",
+ "cfa4-mace",
  "cfa4-magicyuv",
  "cfa4-matroska",
  "cfa4-media",
@@ -1331,6 +1344,7 @@ dependencies = [
  "cfa4-mpa",
  "cfa4-mpeg2v",
  "cfa4-mpegts",
+ "cfa4-msvideo",
  "cfa4-musepack",
  "cfa4-mve",
  "cfa4-mxf",
@@ -1338,6 +1352,7 @@ dependencies = [
  "cfa4-ogg",
  "cfa4-opus",
  "cfa4-prores",
+ "cfa4-qdm2",
  "cfa4-realaudio",
  "cfa4-realmedia",
  "cfa4-realvideo",
@@ -1346,13 +1361,17 @@ dependencies = [
  "cfa4-smacker",
  "cfa4-speex",
  "cfa4-sstp",
+ "cfa4-svq1",
+ "cfa4-svq3",
  "cfa4-tak",
  "cfa4-testkit",
  "cfa4-theora",
  "cfa4-thp",
  "cfa4-time",
  "cfa4-truehd",
+ "cfa4-truespeech",
  "cfa4-tta",
+ "cfa4-twinvq",
  "cfa4-utvideo",
  "cfa4-vp8",
  "cfa4-vp9",
@@ -1685,6 +1704,15 @@ dependencies = [
 ]
 
 [[package]]
+name = "cfa4-flic"
+version = "0.10.0"
+dependencies = [
+ "cfa4-flic",
+ "cfa4-testkit",
+ "thiserror 2.0.21",
+]
+
+[[package]]
 name = "cfa4-format"
 version = "0.10.0"
 dependencies = [
@@ -1871,6 +1899,22 @@ dependencies = [
 ]
 
 [[package]]
+name = "cfa4-indeo3"
+version = "0.10.0"
+dependencies = [
+ "cfa4-testkit",
+ "thiserror 2.0.21",
+]
+
+[[package]]
+name = "cfa4-indeo45"
+version = "0.10.0"
+dependencies = [
+ "cfa4-testkit",
+ "thiserror 2.0.21",
+]
+
+[[package]]
 name = "cfa4-interchange"
 version = "0.10.0"
 dependencies = [
@@ -1952,6 +1996,14 @@ dependencies = [
 ]
 
 [[package]]
+name = "cfa4-mace"
+version = "0.10.0"
+dependencies = [
+ "cfa4-testkit",
+ "thiserror 2.0.21",
+]
+
+[[package]]
 name = "cfa4-magicyuv"
 version = "0.10.0"
 dependencies = [
@@ -1983,6 +2035,9 @@ dependencies = [
  "cfa4-realaudio",
  "cfa4-testkit",
  "cfa4-time",
+ "cfa4-truespeech",
+ "cfa4-twinvq",
+ "cfa4-yamaha-oki",
  "image",
  "log",
  "png",
@@ -2026,6 +2081,14 @@ dependencies = [
 
 [[package]]
 name = "cfa4-mpegts"
+version = "0.10.0"
+dependencies = [
+ "cfa4-testkit",
+ "thiserror 2.0.21",
+]
+
+[[package]]
+name = "cfa4-msvideo"
 version = "0.10.0"
 dependencies = [
  "cfa4-testkit",
@@ -2170,6 +2233,14 @@ dependencies = [
  "sha2 0.11.1",
  "thiserror 2.0.21",
  "toml",
+]
+
+[[package]]
+name = "cfa4-qdm2"
+version = "0.10.0"
+dependencies = [
+ "cfa4-testkit",
+ "thiserror 2.0.21",
 ]
 
 [[package]]
@@ -2386,6 +2457,22 @@ dependencies = [
 ]
 
 [[package]]
+name = "cfa4-svq1"
+version = "0.10.0"
+dependencies = [
+ "cfa4-testkit",
+ "thiserror 2.0.21",
+]
+
+[[package]]
+name = "cfa4-svq3"
+version = "0.10.0"
+dependencies = [
+ "cfa4-testkit",
+ "thiserror 2.0.21",
+]
+
+[[package]]
 name = "cfa4-tak"
 version = "0.10.0"
 dependencies = [
@@ -2481,6 +2568,14 @@ dependencies = [
 ]
 
 [[package]]
+name = "cfa4-truespeech"
+version = "0.10.0"
+dependencies = [
+ "cfa4-testkit",
+ "thiserror 2.0.21",
+]
+
+[[package]]
 name = "cfa4-tta"
 version = "0.10.0"
 dependencies = [
@@ -2508,6 +2603,14 @@ name = "cfa4-tts-text"
 version = "0.10.0"
 dependencies = [
  "serde",
+ "thiserror 2.0.21",
+]
+
+[[package]]
+name = "cfa4-twinvq"
+version = "0.10.0"
+dependencies = [
+ "cfa4-testkit",
  "thiserror 2.0.21",
 ]
 
@@ -2582,6 +2685,13 @@ dependencies = [
  "cfa4-testkit",
  "rayon",
  "thiserror 2.0.21",
+]
+
+[[package]]
+name = "cfa4-yamaha-oki"
+version = "0.10.0"
+dependencies = [
+ "cfa4-testkit",
 ]
 
 [[package]]
