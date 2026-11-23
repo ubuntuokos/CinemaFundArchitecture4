@@ -17,7 +17,8 @@ dev = ["pytest>=8,<10", "ruff>=0.9,<1", "packaging>=24", "mypy>=1.13"]
 qt = ["PySide6>=6.10,<7"]
 # BacklotHub / audit trail (ADR 0006): PostgreSQL client for the Python components; libpq comes with the
 # Ubuntu `postgresql` package. LGPL-3.0-or-later, compatible with GPL-3.0-or-later.
-backlot = ["psycopg>=3.2,<4"]
+# SQLAlchemy 2 and Alembic (both MIT) are the BacklotHub database layer and migration chain (G2-02 section 2, #52).
+backlot = ["psycopg>=3.2,<4", "sqlalchemy>=2.0,<2.1", "alembic>=1.13,<2"]
 # Test oracle only (Apache-2.0): never imported by the product or shipped in packages.
 # docs/plans/OTIO-INTEGRATION-2026-10-24.md, OTIO-1.1.
 otio = ["opentimelineio>=0.18,<0.19"]
@@ -27,13 +28,15 @@ cfa4-doctor = "cfa4_devtools.health:main"
 cfa4-qt = "cfa4_qt.__main__:main"
 cfa4-qt-shell = "cfa4_devtools.qt_app:main"
 cfa4-audit = "cfa4_audit.__main__:main"
+cfa4-backlothub = "cfa4_backlothub.__main__:main"
 
 [tool.setuptools.packages.find]
 where = ["python"]
-include = ["cfa4_devtools*", "cfa4_qt*", "cfa4_audit*"]
+include = ["cfa4_devtools*", "cfa4_qt*", "cfa4_audit*", "cfa4_backlothub*"]
 
 [tool.setuptools.package-data]
 cfa4_audit = ["migrations/*.sql"]
+cfa4_backlothub = ["data/*.json", "migrations/*.ini", "migrations/*.mako", "migrations/versions/*.py"]
 
 [tool.ruff]
 target-version = "py312"
