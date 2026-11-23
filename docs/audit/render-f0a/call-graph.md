@@ -437,6 +437,8 @@ graph LR
 | `cfa4-export/aac_out.rs` | `cfa4-project` | `ItemId` |
 | `cfa4-export/aac_out.rs` | `cfa4-render` | `SourceProvider` |
 | `cfa4-export/aac_out.rs` | `cfa4-time` | `TimeRange` |
+| `cfa4-export/as02_share.rs` | `cfa4-project` | `ItemId` |
+| `cfa4-export/as02_share.rs` | `cfa4-time` | `FrameRate` |
 | `cfa4-export/audio_out.rs` | `cfa4-audio-dsp` | `AudioEffect`, `LoudnessMeter`, `channels`, `effects`, `normalize_gain_db` |
 | `cfa4-export/audio_out.rs` | `cfa4-project` | `ItemId` |
 | `cfa4-export/audio_out.rs` | `cfa4-render` | `SourceProvider`, `audio` |
@@ -825,7 +827,7 @@ graph LR
 
 ## 4. Nyilvános típusok osztályonként
 
-A többi 637 nyilvános típus („other” osztály) csak a `call-graph.json`-ban szerepel.
+A többi 642 nyilvános típus („other” osztály) csak a `call-graph.json`-ban szerepel.
 
 ### Képkocka, kép, pixel (31)
 
@@ -984,7 +986,7 @@ A többi 637 nyilvános típus („other” osztály) csak a `call-graph.json`-b
 | `cfa4-gpu` | `lut.rs` | struct | `GpuLut` |
 | `cfa4-project` | `lib.rs` | struct | `ProjectLut` |
 
-### Render, kompozíció, előnézet, proxy (62)
+### Render, kompozíció, előnézet, proxy (64)
 
 | Crate | Modul | Fajta | Típus |
 |---|---|---|---|
@@ -999,6 +1001,8 @@ A többi 637 nyilvános típus („other” osztály) csak a `call-graph.json`-b
 | `cfa4-engine` | `previews.rs` | struct | `PreviewStore` |
 | `cfa4-engine` | `previews.rs` | enum | `RenderMode` |
 | `cfa4-engine` | `task_host.rs` | struct | `Preview` |
+| `cfa4-export` | `as02_share.rs` | struct | `Plan` |
+| `cfa4-export` | `as02_share.rs` | struct | `VersionPlan` |
 | `cfa4-export` | `dcp_iab.rs` | struct | `IabSourceInfo` |
 | `cfa4-export` | `lib.rs` | struct | `GpuRenderStats` |
 | `cfa4-export` | `settings.rs` | struct | `ExportEffects` |

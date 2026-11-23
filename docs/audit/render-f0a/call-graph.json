@@ -3536,6 +3536,41 @@
    "class": "other",
    "crate": "cfa4-export",
    "kind": "struct",
+   "module": "as02_share.rs",
+   "name": "Comp"
+  },
+  {
+   "class": "other",
+   "crate": "cfa4-export",
+   "kind": "struct",
+   "module": "as02_share.rs",
+   "name": "Piece"
+  },
+  {
+   "class": "other",
+   "crate": "cfa4-export",
+   "kind": "struct",
+   "module": "as02_share.rs",
+   "name": "Registry"
+  },
+  {
+   "class": "other",
+   "crate": "cfa4-export",
+   "kind": "struct",
+   "module": "as02_share.rs",
+   "name": "Share"
+  },
+  {
+   "class": "other",
+   "crate": "cfa4-export",
+   "kind": "struct",
+   "module": "as02_share.rs",
+   "name": "ShareHandle"
+  },
+  {
+   "class": "other",
+   "crate": "cfa4-export",
+   "kind": "struct",
    "module": "atomic.rs",
    "name": "AtomicOutput"
   },
@@ -6380,6 +6415,20 @@
    "kind": "struct",
    "module": "task_host.rs",
    "name": "Preview"
+  },
+  {
+   "class": "render",
+   "crate": "cfa4-export",
+   "kind": "struct",
+   "module": "as02_share.rs",
+   "name": "Plan"
+  },
+  {
+   "class": "render",
+   "crate": "cfa4-export",
+   "kind": "struct",
+   "module": "as02_share.rs",
+   "name": "VersionPlan"
   },
   {
    "class": "render",
@@ -10852,6 +10901,16 @@
   {
    "from": "cfa4-export/aac_out.rs",
    "item": "TimeRange",
+   "to": "cfa4-time"
+  },
+  {
+   "from": "cfa4-export/as02_share.rs",
+   "item": "ItemId",
+   "to": "cfa4-project"
+  },
+  {
+   "from": "cfa4-export/as02_share.rs",
+   "item": "FrameRate",
    "to": "cfa4-time"
   },
   {
