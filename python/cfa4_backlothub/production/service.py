@@ -24,6 +24,7 @@ from ..errors import (
     CountryUnknown,
     CurrencyUnknown,
     DatabaseUnavailable,
+    EntityInUse,
     FpsInvalid,
     InvalidInput,
     PermissionDenied,
@@ -214,6 +215,8 @@ def _guard_db(error: Exception) -> Exception:
         text = str(error.orig)
         if "production_code_key" in text:
             return ProductionCodeTaken()
+        if state in ("23001", "23503") and ("still referenced" in text or "RESTRICT" in text):  # the wording differs by PostgreSQL version
+            return EntityInUse("another record still refers to it")
         return InvalidInput("a value violates a database rule")
     if isinstance(error, DBAPIError):
         return DatabaseUnavailable(str(error.orig).splitlines()[0] if str(error.orig) else "")
