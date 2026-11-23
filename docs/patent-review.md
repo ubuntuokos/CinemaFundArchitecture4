@@ -39,6 +39,7 @@ szabadalommal védett formátumot.
 | LCEVC (MPEG-5 Part 2, ISO/IEC 23094-2) | dekódolás (H.264 / HEVC T.35 SEI); felismerés (MP4 `lvc1`, TS 0x36) | `crates/lcevc` (az LCEVCdec 4.3.1 portja; a BSD-3-Clause-Clear licenc kifejezetten nem ad szabadalmi jogot) | alap | függőben | | |
 | MPEG-5 EVC Baseline (ISO/IEC 23094-1) | dekódolás | `crates/evc` (a xevd portja) | alap | függőben | | |
 | AVS1-P2 Jizhun (GB/T 20090.2) | dekódolás | `crates/cavs` (az FFmpeg portja) | alap | függőben | | |
+| Microsoft Video 1 (CRAM) és Microsoft RLE | dekódolás | `crates/msvideo` (az FFmpeg portja) | alap | függőben | | |
 | MPEG-1 / MPEG-2 videó (H.262) | dekódolás | `crates/mpeg2v`; FFmpeg-háttér | alap | függőben | | |
 | MPEG-4 Part 2 (Visual) | dekódolás, kódolás | FFmpeg-háttér | alap | függőben | | |
 | MPEG-4 Part 2 Simple Studio Profile (Sony SR) | dekódolás | `crates/sstp` (az FFmpeg portja) | alap | függőben | | |
@@ -68,7 +69,12 @@ szabadalommal védett formátumot.
 | Huffyuv (HFYU) | dekódolás | `crates/huffyuv` | alap | függőben | | |
 | Ut Video | dekódolás | `crates/utvideo` | alap | függőben | | |
 | Lagarith | dekódolás | `crates/lagarith` (az FFmpeg Lagarith-dekódolójának portja) | alap | függőben | | |
+| Sorenson Video 1 (SVQ1) | dekódolás | `crates/svq1` (az FFmpeg SVQ1-dekódolójának portja) | alap | függőben | | |
+| Indeo 4 / 5 | dekódolás | `crates/indeo45` (az FFmpeg Indeo 4/5-dekódolóinak portja) | alap | függőben | | |
+| Indeo 3 | dekódolás | `crates/indeo3` (az FFmpeg Indeo 3-dekódolójának portja) | alap | függőben | | |
+| Autodesk FLIC (FLI / FLC) | dekódolás | `crates/flic` (az FFmpeg FLIC-dekódolójának portja) | alap | függőben | | |
 | Indeo 2 | dekódolás | `crates/indeo` (az FFmpeg Indeo 2-dekódolójának portja) | alap | függőben | | |
+| Sorenson Video 3 (SVQ3) | dekódolás | `crates/svq3` (az FFmpeg portja) | alap | függőben | | |
 | Cinepak | dekódolás | `crates/cinepak` (az FFmpeg Cinepak-dekódolójának portja) | alap | függőben | | |
 | Nintendo THP (JPEG-videó, THP ADPCM-hang) | dekódolás; `.thp` fájlok olvasása | `crates/thp` (az FFmpeg THP-demuxerének, MJPEG-dekóderének és ADPCM-dekóderének portja) | alap | függőben | | |
 | Nintendo MobiClip (MOFLEX: MobiClip-videó, FastAudio, IMA ADPCM) | dekódolás; `.moflex` fájlok olvasása | `crates/mobiclip` (az FFmpeg moflex-demuxerének, MobiClip-dekóderének, FastAudio- és ADPCM-dekóderének portja) | alap | függőben | | |
@@ -110,8 +116,13 @@ szabadalommal védett formátumot.
 | SMPTE LTC időkód (ST 12-1) és MIDI Timecode (MTC) | dekódolás, kódolás (hangjel, MIDI-üzenetek) | `crates/tcsync` | alap | függőben | | |
 | G.711 (µ-law, A-law), G.722, IMA ADPCM, Microsoft ADPCM | dekódolás | `crates/adpcm` | alap | függőben | | |
 | G.729, G.729 Annex B | dekódolás; nyers `.g729` fájlok olvasása | `crates/g729` (a bcg729 portja) | alap | függőben | | |
+| Apple MACE 3:1 és 6:1 | dekódolás | `crates/mace` (az FFmpeg portja) | alap | függőben | | |
+| DSP Group TrueSpeech | dekódolás | `crates/truespeech` (az FFmpeg portja) | alap | függőben | | |
 | iLBC | dekódolás; `.lbc` fájlok olvasása | `crates/ilbc` (a WebRTC libilbc portja) | alap | függőben | | |
 | TTA (True Audio) | dekódolás; `.tta` és Matroska olvasása | `crates/tta` (a libtta portja) | alap | függőben | | |
+| NTT TwinVQ (VQF) | dekódolás; `.vqf`, `.vql`, `.vqe` fájlok olvasása | `crates/twinvq` (az FFmpeg vqf-demuxerének és TwinVQ-dekóderének portja) | alap | függőben | | |
+| Voxware MetaSound | dekódolás; WAV (0x0075) fájlok olvasása | `crates/twinvq` (az FFmpeg MetaSound-dekóderének portja) | alap | függőben | | |
+| Yamaha ADPCM, Dialogic OKI ADPCM | dekódolás; WAV (0x0020, 0x0010) olvasása | `crates/yamaha-oki` (az FFmpeg adpcm.c portja) | alap | függőben | | |
 | Nintendo BRSTM / BFSTM / BCSTM (PCM, DSP ADPCM) | dekódolás; `.brstm`, `.bfstm`, `.bcstm` fájlok olvasása | `crates/nstream` (az FFmpeg brstm/bfstm-demuxerének és ADPCM-dekóderének portja) | alap | függőben | | |
 | Shorten | dekódolás; `.shn` fájlok olvasása | `crates/shorten` (az FFmpeg Shorten-dekódolójának portja) | alap | függőben | | |
 | CRI ADX | dekódolás; `.adx` fájlok olvasása | `crates/adx` (az FFmpeg ADX-dekódolójának portja) | alap | függőben | | |
@@ -120,8 +131,10 @@ szabadalommal védett formátumot.
 | Smacker Audio | dekódolás | `crates/smacker` (az FFmpeg portja) | alap | függőben | | |
 | Bink Audio (RDFT, DCT) | dekódolás | `crates/bink` (az FFmpeg portja) | alap | függőben | | |
 | Interplay ACM | dekódolás; `.acm` fájlok olvasása | `crates/acm` (az FFmpeg Interplay ACM-dekódolójának portja) | alap | függőben | | |
+| AMV (video, IMA ADPCM-hang) | dekódolás; `.amv` fájlok olvasása | `crates/amv` (az FFmpeg AMV-dekódolóinak portja) | alap | függőben | | |
 | id RoQ (video, DPCM-hang) | dekódolás; `.roq` fájlok olvasása | `crates/roq` (az FFmpeg id RoQ-dekódolóinak portja) | alap | függőben | | |
 | Interplay MVE (video, DPCM-hang) | dekódolás; `.mve` fájlok olvasása | `crates/mve` (az FFmpeg Interplay-dekódolóinak portja) | alap | függőben | | |
+| QDesign Music 2 (QDM2) | dekódolás; QuickTime-fájlok olvasása | `crates/qdm2` (az FFmpeg QDM2-dekódolójának portja) | alap | függőben | | |
 | AMR-NB, AMR-WB | dekódolás | `crates/amr` (az opencore-amr portja) | alap | függőben | | |
 | Musepack SV7, SV8 | dekódolás; `.mpc` fájlok olvasása | `crates/musepack` (a libmpcdec portja) | alap | függőben | | |
 
