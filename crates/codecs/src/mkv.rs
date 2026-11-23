@@ -485,6 +485,12 @@ fn sample_entry(c: &Codec, private: &[u8], v: Option<&cfa4_matroska::VideoInfo>,
             crate::lagarith::sample_entry(bits, w, h)
         }
         Codec::VfwFourcc { fourcc, .. } if crate::magicyuv::is_magicyuv(fourcc) => crate::magicyuv::sample_entry(w, h),
+        // Microsoft Video 1 / RLE: the bit count and the palette after the VfW BITMAPINFOHEADER
+        Codec::VfwFourcc { fourcc, bitmap_info_header } if let Some(kind) = crate::msvideo::kind(fourcc) => {
+            let bits = bitmap_info_header.get(14..16).map_or(0, |b| u16::from_le_bytes([b[0], b[1]]));
+            let bih = crate::msvideo::bitmap_info_header(bits, bitmap_info_header.get(40..).unwrap_or_default());
+            crate::msvideo::sample_entry(kind, &bih, w, h)
+        }
         // Ut Video: the extradata follows the VfW BITMAPINFOHEADER
         Codec::VfwFourcc { fourcc, bitmap_info_header } if crate::utvideo::is_utvideo(fourcc) => {
             crate::utvideo::sample_entry(*fourcc, bitmap_info_header.get(40..).unwrap_or_default(), w, h)
@@ -582,6 +588,9 @@ fn codec_label(c: &Codec) -> String {
         Codec::VfwFourcc { fourcc, .. } if crate::indeo::is_indeo2(fourcc) => "Indeo 2".into(),
         Codec::VfwFourcc { fourcc, .. } if crate::cinepak::is_cinepak(fourcc) => "Cinepak".into(),
         Codec::VfwFourcc { fourcc, .. } if crate::magicyuv::is_magicyuv(fourcc) => "MagicYUV".into(),
+        Codec::VfwFourcc { fourcc, .. } if crate::msvideo::kind(fourcc).is_some() => {
+            crate::msvideo::kind(fourcc).map_or("", crate::msvideo::Kind::label).into()
+        }
         Codec::VfwFourcc { fourcc, .. } if crate::hap::is_hap(fourcc) => "Hap".into(),
         Codec::VfwFourcc { fourcc, .. } if is_dv_fourcc(fourcc) => "DV".into(),
         Codec::VfwFourcc { fourcc, .. } if fourcc.eq_ignore_ascii_case(b"HFYU") => "Huffyuv".into(),

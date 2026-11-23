@@ -61,6 +61,8 @@ enum VCodec {
     Cinepak(u16, Vec<u8>),
     /// MagicYUV (every frame carries its own header).
     MagicYuv,
+    /// Microsoft Video 1 or Microsoft RLE with its (reduced) `BITMAPINFOHEADER`: bit count and palette.
+    MsVideo(crate::msvideo::Kind, Vec<u8>),
     /// Ut Video: the FourCC and the extradata.
     UtVideo([u8; 4], Vec<u8>),
     /// Matrox MPEG-2 I-frame (`MMES`, `M701`–`M705`): intra-only MPEG-2, every chunk a picture.
@@ -82,6 +84,9 @@ fn video_codec(b: &BitmapInfo) -> (VCodec, String) {
     }
     if let Some(c) = crate::canopus::codec(&b.compression) {
         return (VCodec::Canopus(c), crate::canopus::label(c).into());
+    }
+    if let Some(k) = crate::msvideo::kind(&b.compression) {
+        return (VCodec::MsVideo(k, crate::msvideo::bitmap_info_header(b.bit_count, &b.extra)), k.label().into());
     }
     let mut f = b.compression;
     f.make_ascii_uppercase();
@@ -333,6 +338,9 @@ impl AviSource {
                         file.read_chunk(&bytes, vstream.unwrap_or(0), k).is_ok_and(|d| random_access(&d, codec == VCodec::Hevc))
                     }
                     VCodec::H264 | VCodec::Hevc => c.key,
+                    // delta pictures: a seek starts at the last flagged key frame (or the first
+                    // picture when the index flags none)
+                    VCodec::MsVideo(..) => c.key && vs.keyframes_known || k == 0,
                     _ => true,
                 };
                 vframes.push(VFrame { pts: i64::from(vs.start) + k as i64, chunk: k, key });
@@ -699,6 +707,7 @@ impl VideoSamples for AviVideo<'_> {
             VCodec::Cinepak(bits, pal) => make_video_decoder(&crate::cinepak::sample_entry(*bits, pal, w, h)),
             VCodec::Lagarith(bits) => make_video_decoder(&crate::lagarith::sample_entry(*bits, w, h)),
             VCodec::MagicYuv => make_video_decoder(&crate::magicyuv::sample_entry(w, h)),
+            VCodec::MsVideo(k, bih) => make_video_decoder(&crate::msvideo::sample_entry(*k, bih, w, h)),
             VCodec::UtVideo(fourcc, extra) => make_video_decoder(&crate::utvideo::sample_entry(*fourcc, extra, w, h)),
             VCodec::Mpeg2 => {
                 // primed with the first picture's sequence header, so any picture decodes on its own

@@ -66,6 +66,7 @@ pub mod mkv;
 pub mod mobiclip;
 pub mod mp4;
 pub mod mpeg;
+pub mod msvideo;
 pub mod mve;
 pub mod mxf;
 pub mod nstream;
@@ -165,6 +166,7 @@ const BUILTIN_FACTORIES: [VideoDecoderFactory; 29] = [
     svq3::svq3_factory,
     svq1::svq1_factory,
     indeo45::indeo45_factory,
+    msvideo::msvideo_factory,
     indeo::indeo_factory,
     cinepak::cinepak_factory,
     utvideo::utvideo_factory,

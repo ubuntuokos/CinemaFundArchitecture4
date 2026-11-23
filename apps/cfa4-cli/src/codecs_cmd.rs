@@ -132,6 +132,7 @@ static ROWS: &[Row] = &[
     video("Nintendo MobiClip", &["mobiclip"], Ported, Sw("in .moflex files, with the FastAudio, IMA ADPCM or PCM sound"), false, NoEnc),
     video("MagicYUV", &["magicyuv"], Ported, Sw(""), false, NoEnc),
     video("AMV video and IMA ADPCM audio", &["amv"], Ported, Sw("in .amv files"), false, NoEnc),
+    video("Microsoft Video 1 and Microsoft RLE", &["msvideo"], Ported, Sw("in AVI and Matroska"), false, NoEnc),
     video("id RoQ", &["roq"], Ported, Sw("in .roq files, with the DPCM sound (22.05 kHz)"), false, NoEnc),
     video("Interplay MVE", &["mve"], Ported, Sw("in .mve files, 8-bit palette and 16-bit pictures, with the sound"), false, NoEnc),
     video("DV / DVCPRO", &["dv"], Ported, Sw("DV, DVCAM, DVCPRO 25 / 50, DVCPRO HD"), false, NoEnc),

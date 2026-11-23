@@ -68,6 +68,7 @@ cfa4-indeo45 = { path = "crates/indeo45" }
 cfa4-indeo = { path = "crates/indeo" }
 cfa4-cinepak = { path = "crates/cinepak" }
 cfa4-magicyuv = { path = "crates/magicyuv" }
+cfa4-msvideo = { path = "crates/msvideo" }
 cfa4-huffyuv = { path = "crates/huffyuv" }
 cfa4-ffv1 = { path = "crates/ffv1" }
 cfa4-canopus = { path = "crates/canopus" }
@@ -299,6 +300,9 @@ opt-level = 3
 opt-level = 3
 
 [profile.dev.package.cfa4-magicyuv]
+opt-level = 3
+
+[profile.dev.package.cfa4-msvideo]
 opt-level = 3
 
 [profile.dev.package."*"]

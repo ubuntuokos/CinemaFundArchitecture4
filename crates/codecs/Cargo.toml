@@ -83,6 +83,7 @@ cfa4-indeo45 = { workspace = true }
 cfa4-indeo = { workspace = true }
 cfa4-cinepak = { workspace = true }
 cfa4-magicyuv = { workspace = true }
+cfa4-msvideo = { workspace = true }
 cfa4-ffv1 = { workspace = true }
 cfa4-dirac = { workspace = true }
 cfa4-sstp = { workspace = true }
