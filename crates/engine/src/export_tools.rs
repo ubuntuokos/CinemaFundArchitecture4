@@ -425,6 +425,12 @@ pub fn settings_from_params(s: &Session, p: &Value, cmd: &str) -> Result<(Option
     if let Some(v) = bool_p(p, "alpha") {
         settings.alpha = v;
     }
+    if let Some(v) = p.get("dpxBitDepth") {
+        // a number, or the text of one (the Qt panel sends its choices as strings)
+        let bits = v.as_u64().or_else(|| v.as_str().and_then(|t| t.parse().ok()));
+        settings.dpx_bit_depth =
+            bits.and_then(|b| u8::try_from(b).ok()).filter(|b| matches!(b, 10 | 12 | 16)).ok_or_else(|| bad(cmd, "dpxBitDepth: 10 | 12 | 16"))?;
+    }
     if let Some(v) = str_p(p, "exrCompression") {
         settings.exr_compression = serde_json::from_value(json!(v)).map_err(|_| bad(cmd, "exrCompression: none | rle | zips | zip | piz"))?;
     }

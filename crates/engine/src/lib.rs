@@ -16,6 +16,7 @@ mod atrac_convert;
 pub mod autosave;
 pub mod background;
 pub mod beat_markers;
+pub mod camera_proxies;
 pub mod captions;
 pub mod clip_ops;
 pub mod color;
@@ -1404,6 +1405,8 @@ mod avi_import_tests;
 #[cfg(test)]
 mod beat_markers_tests;
 #[cfg(test)]
+mod camera_proxies_tests;
+#[cfg(test)]
 mod clip_ops_tests;
 #[cfg(test)]
 mod color_tests;
@@ -1451,6 +1454,8 @@ mod media_test_util;
 mod media_watch_tests;
 #[cfg(test)]
 mod mixer_tests;
+#[cfg(test)]
+mod mlt_import_tests;
 #[cfg(test)]
 mod multicam_tests;
 #[cfg(test)]

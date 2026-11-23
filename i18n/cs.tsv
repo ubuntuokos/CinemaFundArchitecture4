@@ -54,6 +54,7 @@
 	Apply Video Transition	Použít obrazový přechod
 	Assembly	Sestavení
 	Attach Proxies…	Připojit proxy…
+	Find Camera Proxies	Najít proxy z kamery
 	Audio	Zvuk
 	Audio Channels…	Zvukové kanály…
 	Audio Clip Mixer	Mixér zvukových klipů
@@ -4909,3 +4910,6 @@ export.summary	Low	nízká
 	Voxel attributes	Atributy voxelů
 	Voxel size:	Velikost voxelu:
 	points	body
+
+# WP3 DPX bit depth
+	Bit Depth	Bitová hloubka

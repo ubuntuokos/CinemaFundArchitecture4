@@ -59,6 +59,7 @@
 	Arrange	Razporedi
 	Assembly	Montaža
 	Attach Proxies…	Pripni posredniške datoteke …
+	Find Camera Proxies	Poišči posredniške datoteke kamere
 	Audio	Zvok
 	Audio Channels…	Zvočni kanali …
 	Audio Clip Mixer	Mešalnik zvočnih posnetkov
@@ -4912,3 +4913,6 @@ export.summary	Low	nizka
 	Voxel attributes	Atributi vokslov
 	Voxel size:	Velikost voksla:
 	points	točke
+
+# WP3 DPX bit depth
+	Bit Depth	Bitna globina

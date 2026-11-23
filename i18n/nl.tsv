@@ -54,6 +54,7 @@
 	Apply Video Transition	Video-overgang toepassen
 	Assembly	Montage
 	Attach Proxies…	Proxy's koppelen…
+	Find Camera Proxies	Cameraproxy's zoeken
 	Audio Channels…	Audiokanalen…
 	Audio Clip Mixer	Audioclipmixer
 	Audio Effects	Audio-effecten
@@ -4909,3 +4910,6 @@ export.summary	Low	laag
 	Voxel attributes	Voxelattributen
 	Voxel size:	Voxelgrootte:
 	points	punten
+
+# WP3 DPX bit depth
+	Bit Depth	Bitdiepte

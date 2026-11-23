@@ -37,6 +37,7 @@
 	Arrange	排列
 	Assembly	组装
 	Attach Proxies…	附加代理文件…
+	Find Camera Proxies	查找相机代理文件
 	Audio Channels…	音频声道…
 	Audio Clip Mixer	音频剪辑混音器
 	Audio Gain…	音频增益…
@@ -4907,3 +4908,6 @@
 	Voxel attributes	体素属性
 	Voxel size:	体素大小:
 	points	点
+
+# WP3 DPX bit depth
+	Bit Depth	位深度

@@ -46,6 +46,7 @@
 	Arrange	Organizar
 	Assembly	Montagem
 	Attach Proxies…	Anexar proxies…
+	Find Camera Proxies	Localizar proxies da câmera
 	Audio Channels…	Canais de áudio…
 	Audio Clip Mixer	Misturador de clipes de áudio
 	Audio Gain…	Ganho de áudio…
@@ -4919,3 +4920,6 @@
 	Voxel attributes	Atributos de voxel
 	Voxel size:	Tamanho do voxel:
 	points	pontos
+
+# WP3 DPX bit depth
+	Bit Depth	Profundidade de bits

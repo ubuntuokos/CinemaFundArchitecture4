@@ -53,6 +53,7 @@
 	Apply Video Transition	Video Geçişi Uygula
 	Assembly	Kurgu
 	Attach Proxies…	Proxy Ekle…
+	Find Camera Proxies	Kamera Proxy'lerini Bul
 	Audio Channels…	Ses Kanalları…
 	Audio Clip Mixer	Ses Klibi Mikseri
 	Audio Effects	Ses Efektleri
@@ -4910,3 +4911,6 @@ export.summary	Low	düşük
 	Voxel attributes	Voksel öznitelikleri
 	Voxel size:	Voksel boyutu:
 	points	nokta
+
+# WP3 DPX bit depth
+	Bit Depth	Bit derinliği

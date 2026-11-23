@@ -4,7 +4,9 @@ the guided human review (docs/media-qc.md).
 Everything is the engine's: the check runs there (``qc.run``, followed in ``jobs.list``), the
 report is read back verified (``qc.report.get``) and the review is stored into the report by the
 engine (``qc.review.save``), which recomputes the verdict. The window never measures media and
-never changes the project.
+never changes the project. "Show Frame" looks at one picture of the file at a flagged time code
+(``mediaBrowser.thumbnail``, a read-only preview of a file outside the project): the export is not
+imported and nothing is played (CFA4-QT6-FINISH-001 Q1b).
 """
 
 from __future__ import annotations
@@ -14,7 +16,7 @@ from pathlib import Path
 from typing import Any
 
 from PySide6.QtCore import Qt, QTimer, Signal
-from PySide6.QtGui import QColor, QPixmap
+from PySide6.QtGui import QColor, QImage, QPixmap
 from PySide6.QtWidgets import (
     QAbstractItemView,
     QCheckBox,
@@ -40,6 +42,7 @@ from ..i18n import N_, fmt, tr
 from ..timecode import TICKS_PER_SECOND
 
 JOB_POLL_MS = 400
+FRAME_WIDTH = 640  # the engine's thumbnail limit
 VERDICTS = {"PASS": N_("Passed"), "WARN": N_("Passed with warnings"), "FAIL": N_("Failed"), "INCOMPLETE": N_("Incomplete")}
 STATUSES = {"PASS": N_("Pass"), "WARN": N_("Warning"), "FAIL": N_("Fail"), "NOT_RUN": N_("Not run")}
 ANSWERS = (("", N_("Not answered")), ("yes", N_("Yes")), ("no", N_("No")), ("unsure", N_("Unsure")))
@@ -140,6 +143,23 @@ def parse_position(text: str, rate: tuple[int, int] | None) -> dict[str, Any] | 
     return pos
 
 
+def position_tick(pos: Any, rate: tuple[int, int] | None) -> int | None:
+    """The engine tick of a report position (its own ``tick``, else its ``frame``, else its time
+    code read at ``rate``), or ``None`` when the position names no picture."""
+    if not isinstance(pos, dict):
+        return None
+    tick = pos.get("tick")
+    if isinstance(tick, int) and not isinstance(tick, bool) and tick >= 0:
+        return tick
+    if rate is None:
+        return None
+    frame = pos.get("frame")
+    if isinstance(frame, int) and not isinstance(frame, bool) and frame >= 0:
+        return frame * TICKS_PER_SECOND * rate[1] // rate[0]
+    parsed = parse_position(str(pos.get("timecode") or ""), rate)
+    return parsed.get("tick") if parsed else None
+
+
 class QcDialog(QDialog):
     """Non-modal: the editor stays usable while a check runs."""
 
@@ -188,12 +208,19 @@ class QcDialog(QDialog):
         to_finding = QPushButton(tr("Add as Finding"), self)
         to_finding.setObjectName("qc.eventToFinding")
         to_finding.clicked.connect(self.event_to_finding)
+        show_event = QPushButton(tr("Show Frame"), self)
+        show_event.setObjectName("qc.eventShowFrame")
+        show_event.clicked.connect(self.show_event_frame)
         auto = QWidget(self)
         av = QVBoxLayout(auto)
         av.addWidget(self.checks, 3)
         av.addWidget(QLabel(tr("Events"), auto))
         av.addWidget(self.events_table, 2)
-        av.addWidget(to_finding, 0, Qt.AlignmentFlag.AlignLeft)
+        eb = QHBoxLayout()
+        eb.addWidget(to_finding)
+        eb.addWidget(show_event)
+        eb.addStretch(1)
+        av.addLayout(eb)
 
         # contact sheet
         self.sheet = QLabel(self)
@@ -209,6 +236,23 @@ class QcDialog(QDialog):
         sv = QVBoxLayout(sheet_page)
         sv.addWidget(scroll, 1)
         sv.addWidget(self.sheet_frames)
+
+        # one picture of the file at a flagged time code
+        self.frame_label = QLabel(tr("Select an event or a finding and press Show Frame."), self)
+        self.frame_label.setObjectName("qc.framePreview")
+        self.frame_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
+        self.frame_label.setWordWrap(True)
+        self.frame_time = QLabel(self)
+        self.frame_time.setObjectName("qc.frameTime")
+        frame_scroll = QScrollArea(self)
+        frame_scroll.setWidget(self.frame_label)
+        frame_scroll.setWidgetResizable(True)
+        frame_page = self._frame_page = QWidget(self)
+        fv = QVBoxLayout(frame_page)
+        fv.addWidget(frame_scroll, 1)
+        fv.addWidget(self.frame_time)
+        self._duration: dict[str, int] = {}  # file -> duration in ticks, from mediaBrowser.probe
+        self._frame_request = 0
 
         # human review
         review = QWidget(self)
@@ -239,6 +283,10 @@ class QcDialog(QDialog):
         fb = QHBoxLayout()
         fb.addWidget(add)
         fb.addWidget(remove)
+        show_finding = QPushButton(tr("Show Frame"), self)
+        show_finding.setObjectName("qc.findingShowFrame")
+        show_finding.clicked.connect(self.show_finding_frame)
+        fb.addWidget(show_finding)
         fb.addStretch(1)
         rv.addLayout(fb)
         form = QFormLayout()
@@ -255,6 +303,7 @@ class QcDialog(QDialog):
         self.tabs.addTab(auto, tr("Automatic Checks"))
         self.tabs.addTab(sheet_page, tr("Contact Sheet"))
         self.tabs.addTab(review, tr("Human Review"))
+        self.tabs.addTab(frame_page, tr("Frame"))
 
         self.message = QLabel(self)
         self.message.setObjectName("qc.message")
@@ -310,6 +359,10 @@ class QcDialog(QDialog):
         self.findings.setRowCount(0)
         self.sheet.clear()
         self.sheet_frames.setText("")
+        self.frame_label.clear()
+        self.frame_label.setText(tr("Select an event or a finding and press Show Frame."))
+        self.frame_time.setText("")
+        self._frame_request += 1
         self.message.setText("")
 
     def _current(self, handler: Callable[..., None]) -> Callable[..., None]:
@@ -505,6 +558,86 @@ class QcDialog(QDialog):
                 self.add_finding(f"{e.get('check')}: {e.get('message')}", "minor", position_timecode(e.get("at")))
         if rows:
             self.tabs.setCurrentIndex(2)
+
+    # ----- one picture at a flagged time code (read-only; the project is not touched) -----
+    def show_event_frame(self) -> None:
+        rows = sorted({i.row() for i in self.events_table.selectedIndexes()})
+        if not rows or not 0 <= rows[0] < len(self.events):
+            self.message.setText(tr("Select an event first."))
+            return
+        self.show_frame(self.events[rows[0]].get("at"))
+
+    def show_finding_frame(self) -> None:
+        rows = sorted({i.row() for i in self.findings.selectedIndexes()})
+        if not rows:
+            self.message.setText(tr("Select a finding first."))
+            return
+        cell = self.findings.item(rows[0], 2)
+        text = cell.text() if cell else ""
+        pos = parse_position(text, frame_rate_of(self.report))
+        if pos is None:
+            self.message.setText(tr("The time code is not a time in this file (HH:MM:SS:FF)."))
+            return
+        self.show_frame(pos)
+
+    def show_frame(self, pos: Any) -> None:
+        """Show the picture of the file at ``pos`` in the Frame tab; failures are a message."""
+        if not self.media or not self.engine.running:
+            self.message.setText(tr("The engine is not running."))
+            return
+        tick = position_tick(pos, frame_rate_of(self.report))
+        if tick is None:
+            self.message.setText(tr("This entry has no time code to show."))
+            return
+        self._frame_request += 1
+        request = self._frame_request
+        media = self.media
+        generation = self._generation
+        label = position_timecode(pos) or str(tick)
+
+        def stale() -> bool:
+            return generation != self._generation or request != self._frame_request
+
+        def failed(message: str) -> None:
+            if not stale():
+                self.message.setText(message)
+
+        def draw(duration: int) -> None:
+            rate = frame_rate_of(self.report)
+            half_frame = TICKS_PER_SECOND * rate[1] // (2 * rate[0]) if rate else 0
+            # half a frame in, so the engine's rounding never picks the neighbour
+            fraction = min(1.0, max(0.0, (tick + half_frame) / duration))
+
+            def done(result: Any, data: bytes | None) -> None:
+                if stale():
+                    return
+                w, h = int((result or {}).get("w") or 0), int((result or {}).get("h") or 0)
+                if not data or w <= 0 or h <= 0 or len(data) < w * h * 4:
+                    self.message.setText(tr("The picture is unavailable."))
+                    return
+                self.frame_label.setPixmap(QPixmap.fromImage(QImage(data, w, h, w * 4, QImage.Format.Format_RGBA8888).copy()))
+                self.frame_time.setText(fmt("Time code {tc}", tc=label))
+                self.tabs.setCurrentWidget(self._frame_page)
+
+            self.engine.call("mediaBrowser.thumbnail", {"path": media, "fraction": fraction, "width": FRAME_WIDTH}, on_reply=done, on_error=failed)
+
+        known = self._duration.get(media)
+        if known:
+            draw(known)
+            return
+
+        def probed(result: Any, _b: bytes | None) -> None:
+            info = (result or {}).get("info") if isinstance(result, dict) else None
+            duration = info.get("duration") if isinstance(info, dict) else None
+            if stale():
+                return
+            if not isinstance(duration, int) or isinstance(duration, bool) or duration <= 0:
+                self.message.setText(tr("The file's length is unknown."))
+                return
+            self._duration[media] = duration
+            draw(duration)
+
+        self.engine.execute("mediaBrowser.probe", {"path": media}, on_reply=probed, on_error=failed)
 
     def review(self) -> dict[str, Any]:
         """The review as the engine stores it (``HumanReview`` in crates/qc)."""

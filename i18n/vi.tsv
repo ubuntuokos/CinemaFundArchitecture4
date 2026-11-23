@@ -51,6 +51,7 @@
 	Apply Video Transition	Áp dụng chuyển cảnh video
 	Assembly	Lắp ghép
 	Attach Proxies…	Gắn proxy…
+	Find Camera Proxies	Tìm proxy máy ảnh
 	Audio	Âm thanh
 	Audio Channels…	Kênh âm thanh…
 	Audio Clip Mixer	Bộ trộn clip âm thanh
@@ -4909,3 +4910,6 @@ export.summary	Low	thấp
 	Voxel attributes	Thuộc tính voxel
 	Voxel size:	Kích thước voxel:
 	points	điểm
+
+# WP3 DPX bit depth
+	Bit Depth	Độ sâu bit

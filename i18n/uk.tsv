@@ -37,6 +37,7 @@
 	Arrange	Упорядкувати
 	Assembly	Компонування
 	Attach Proxies…	Приєднати проксі…
+	Find Camera Proxies	Знайти проксі камери
 	Audio	Аудіо
 	Audio Channels…	Аудіоканали…
 	Audio Clip Mixer	Мікшер аудіокліпів
@@ -4892,3 +4893,6 @@
 	Voxel attributes	Атрибути вокселів
 	Voxel size:	Розмір вокселя:
 	points	точки
+
+# WP3 DPX bit depth
+	Bit Depth	Розрядність

@@ -248,6 +248,7 @@
 	At Unnumbered Markers	번호 없는 마커에
 	Att	어택
 	Attach Proxies…	프록시 연결…
+	Find Camera Proxies	카메라 프록시 찾기
 	Attack	어택
 	Attempt to force hardware to document sample rate	하드웨어를 문서 샘플 속도로 강제 시도
 	Audio	오디오
@@ -4903,3 +4904,6 @@
 	Voxel attributes	복셀 속성
 	Voxel size:	복셀 크기:
 	points	점
+
+# WP3 DPX bit depth
+	Bit Depth	비트 심도

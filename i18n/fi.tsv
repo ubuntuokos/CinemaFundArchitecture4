@@ -55,6 +55,7 @@
 	Apply Video Transition	Käytä videosiirtymää
 	Assembly	Kokoonpano
 	Attach Proxies…	Liitä välityskopiot…
+	Find Camera Proxies	Etsi kameran välityskopiot
 	Audio	Ääni
 	Audio Channels…	Äänikanavat…
 	Audio Clip Mixer	Äänileikemikseri
@@ -4911,3 +4912,6 @@ export.summary	Low	matala
 	Voxel attributes	Voksliattribuutit
 	Voxel size:	Vokselin koko:
 	points	pistettä
+
+# WP3 DPX bit depth
+	Bit Depth	Bittisyvyys

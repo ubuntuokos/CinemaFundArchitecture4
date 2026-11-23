@@ -59,6 +59,7 @@
 	Arrange	Išdėstyti
 	Assembly	Surinkimas
 	Attach Proxies…	Prijungti tarpines kopijas…
+	Find Camera Proxies	Rasti kameros tarpines kopijas
 	Audio	Garsas
 	Audio Channels…	Garso kanalai…
 	Audio Clip Mixer	Garso klipų maišiklis
@@ -4912,3 +4913,6 @@ export.summary	Low	žema
 	Voxel attributes	Vokselių atributai
 	Voxel size:	Vokselio dydis:
 	points	taškai
+
+# WP3 DPX bit depth
+	Bit Depth	Bitų gylis

@@ -58,6 +58,7 @@
 	Arrange	Реттеу
 	Assembly	Жинақтау
 	Attach Proxies…	Проксилерді тіркеу…
+	Find Camera Proxies	Камера проксилерін іздеу
 	Audio	Аудио
 	Audio Channels…	Аудио арналар…
 	Audio Clip Mixer	Аудио клиптер микшері
@@ -4911,3 +4912,6 @@ export.summary	Low	төмен
 	Voxel attributes	Воксель атрибуттары
 	Voxel size:	Воксель өлшемі:
 	points	нүкте
+
+# WP3 DPX bit depth
+	Bit Depth	Разрядтылық

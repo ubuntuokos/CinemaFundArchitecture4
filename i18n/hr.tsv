@@ -57,6 +57,7 @@
 	Apply Video Transition	Primijeni video prijelaz
 	Assembly	Montaža
 	Attach Proxies…	Priloži proxy datoteke…
+	Find Camera Proxies	Pronađi proxy datoteke kamere
 	Audio	Audio
 	Audio Channels…	Audio kanali…
 	Audio Clip Mixer	Mikser audio isječaka
@@ -4911,3 +4912,6 @@ export.summary	Low	niska
 	Voxel attributes	Atributi voksela
 	Voxel size:	Veličina voksela:
 	points	točke
+
+# WP3 DPX bit depth
+	Bit Depth	Bitna dubina

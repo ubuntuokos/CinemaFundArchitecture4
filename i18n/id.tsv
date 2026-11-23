@@ -49,6 +49,7 @@
 	Arrange	Susun
 	Assembly	Perakitan
 	Attach Proxies…	Lampirkan Proksi…
+	Find Camera Proxies	Cari Proksi Kamera
 	Audio Channels…	Kanal Audio…
 	Audio Clip Mixer	Mixer Klip Audio
 	Audio Gain…	Gain Audio…
@@ -4917,3 +4918,6 @@
 	Voxel attributes	Atribut voksel
 	Voxel size:	Ukuran voksel:
 	points	titik
+
+# WP3 DPX bit depth
+	Bit Depth	Kedalaman bit

@@ -52,6 +52,7 @@
 	Apply Video Transition	Примени видео прелаз
 	Assembly	Склапање
 	Attach Proxies…	Прикључи проксије…
+	Find Camera Proxies	Пронађи проксије камере
 	Audio	Аудио
 	Audio Channels…	Аудио канали…
 	Audio Clip Mixer	Миксер аудио клипова
@@ -4909,3 +4910,6 @@ export.summary	Low	низак
 	Voxel attributes	Атрибути воксела
 	Voxel size:	Величина воксела:
 	points	тачке
+
+# WP3 DPX bit depth
+	Bit Depth	Битна дубина

@@ -582,6 +582,10 @@ pub struct ExportSettings {
     /// Compression of OpenEXR sequences (uncompressed unless set); other formats ignore it.
     #[serde(default)]
     pub exr_compression: ExrCompression,
+    /// Bits per component of DPX sequences: 10 (default), 12 or 16; other formats ignore it.
+    /// 12 and 16 bits can carry alpha ([`ExportSettings::alpha`]).
+    #[serde(default = "default_dpx_bit_depth")]
+    pub dpx_bit_depth: u8,
     /// Output frame size (None = Match Source: the sequence size times `scale`).
     pub frame_size: Option<(u32, u32)>,
     /// Output frame rate (None = Match Source).
@@ -864,6 +868,7 @@ impl Default for ExportSettings {
             sdr: false,
             alpha: false,
             exr_compression: ExrCompression::None,
+            dpx_bit_depth: default_dpx_bit_depth(),
             frame_size: None,
             frame_rate: None,
             scaling: Scaling::default(),
@@ -914,6 +919,9 @@ impl ExportSettings {
         if let Some((width, height)) = self.frame_size {
             cfa4_project::validate_frame_size(width, height).map_err(ExportError::Unsupported)?;
         }
+        if self.format == Format::DpxSequence && !matches!(self.dpx_bit_depth, 10 | 12 | 16) {
+            return Err(ExportError::Unsupported(format!("DPX has 10, 12 or 16 bits per component, not {}", self.dpx_bit_depth)));
+        }
         if let Some(rate) = self.frame_rate
             && (rate.num <= 0
                 || rate.den <= 0
@@ -955,8 +963,14 @@ impl ExportSettings {
         }
         if self.field_order != FieldOrder::Progressive && self.has_video() && !self.codes_interlaced() {
             return Err(ExportError::Unsupported(format!(
-                "{} field order: only MPEG-2 and ProRes export (in MXF: MPEG-2, XDCAM HD422, D-10, ProRes) code interlaced video; the other encoders write progressive frames",
+                "{} field order: only MPEG-2, ProRes and the interlaced DNxHD IDs (1241–1243) export (in MXF: MPEG-2, XDCAM HD422, D-10, ProRes, DNxHD 1080i) code interlaced video; the other encoders write progressive frames",
                 self.field_order.label()
+            )));
+        }
+        if self.dnx_interlaced() && self.field_order != FieldOrder::UpperFirst {
+            return Err(ExportError::Unsupported(format!(
+                "{} codes interlaced pictures, top field first: set the field order to upper first",
+                crate::dnx_profile(&self.dnx_profile).name()
             )));
         }
         if self.field_order == FieldOrder::LowerFirst && self.format.is_mxf() && self.mxf_video_codec == MxfVideoCodec::D10 {
@@ -2141,7 +2155,8 @@ fn prores_factory(format: Format, w: u32, h: u32, rate: FrameRate, s: &ExportSet
 
 /// The DNxHR or DNxHD profile named by [`ExportSettings::dnx_profile`]: `lb`, `sq`, `hq`,
 /// `hqx`, or a 4:2:2 DNxHD compression ID as `hd1235`, `hd1237`, `hd1238`, `hd1250`, `hd1251`,
-/// `hd1252`, `hd1253` (each codes one raster).
+/// `hd1252`, `hd1253` (each codes one raster), or an interlaced one as `hd1241`, `hd1242`,
+/// `hd1243` (1080i: two field coding units per frame, top field first).
 pub fn dnx_profile(name: &str) -> cfa4_dnx::Profile {
     use cfa4_dnx::Profile;
     match name.to_ascii_lowercase().as_str() {
@@ -2151,6 +2166,9 @@ pub fn dnx_profile(name: &str) -> cfa4_dnx::Profile {
         "hd1235" => Profile::Hd1235,
         "hd1237" => Profile::Hd1237,
         "hd1238" => Profile::Hd1238,
+        "hd1241" => Profile::Hd1241,
+        "hd1242" => Profile::Hd1242,
+        "hd1243" => Profile::Hd1243,
         "hd1250" => Profile::Hd1250,
         "hd1251" => Profile::Hd1251,
         "hd1252" => Profile::Hd1252,
@@ -2169,12 +2187,17 @@ struct DnxEncoder {
     h: u32,
     rate: FrameRate,
     signal: ColorSignal,
+    /// Interlaced DNxHD ID: two woven fields per frame, the top one first (QuickTime `fiel` 1).
+    interlaced: bool,
 }
 
 impl VideoEncoder for DnxEncoder {
     fn sample_entry(&self) -> SampleEntry {
         let mut e = SampleEntry::dnx(cfa4_isobmff::FourCc(self.fourcc), self.w as u16, self.h as u16);
         self.signal.apply_to(&mut e, true);
+        if let (true, Some(v)) = (self.interlaced, e.video.as_mut()) {
+            v.field_info = Some(cfa4_isobmff::FieldInfo { fields: 2, detail: 1 });
+        }
         e
     }
     fn timescale(&self) -> u32 {
@@ -2215,7 +2238,7 @@ fn dnx_factory(format: Format, w: u32, h: u32, rate: FrameRate, s: &ExportSettin
             cfg.color_volume = cfa4_dnx::ColorVolume::Bt2020Ncl;
         }
         let enc = cfa4_dnx::Encoder::with_config(cfg).map_err(|e| ExportError::Encode(e.to_string()))?;
-        Ok(Box::new(DnxEncoder { enc, fourcc, w, h, rate, signal: s.signal }) as Box<dyn VideoEncoder>)
+        Ok(Box::new(DnxEncoder { enc, fourcc, w, h, rate, signal: s.signal, interlaced: profile.interlaced() }) as Box<dyn VideoEncoder>)
     })
 }
 
@@ -3244,6 +3267,10 @@ pub fn encode_png(rgba: Vec<u8>, w: u32, h: u32) -> Result<Vec<u8>> {
     encode_still(Format::PngSequence, rgba, w, h, true)
 }
 
+fn default_dpx_bit_depth() -> u8 {
+    10
+}
+
 /// Encode one still of an image sequence (also Export Frame). `alpha` keeps the alpha channel in
 /// PNG, TIFF, Targa and OpenEXR, which are otherwise written as RGB.
 /// JPEG uses the default export quality ([`encode_still_with_quality`] picks another).
@@ -3258,12 +3285,13 @@ pub fn encode_still_with_quality(format: Format, rgba: Vec<u8>, w: u32, h: u32, 
 
 /// [`encode_still_with_quality`] with the OpenEXR compression (ignored by the other formats).
 pub fn encode_still_with(format: Format, rgba: Vec<u8>, w: u32, h: u32, alpha: bool, quality: u8, exr: ExrCompression) -> Result<Vec<u8>> {
-    encode_still_timed(format, rgba, None, w, h, alpha, quality, exr, None)
+    encode_still_timed(format, rgba, None, w, h, alpha, quality, exr, 10, None)
 }
 
 /// [`encode_still_with`] for a frame of a sequence: OpenEXR also records its time code and the
 /// frame rate (ignored by the other formats). DPX and OpenEXR take the frame's straight sRGB
-/// R'G'B' floats (3 per pixel) from `float` when given, instead of the 8-bit `rgba`.
+/// R'G'B' floats (3 per pixel) from `float` when given, instead of the 8-bit `rgba`. `dpx_bits`
+/// (10, 12 or 16) is the DPX component depth.
 #[allow(clippy::too_many_arguments)]
 pub fn encode_still_timed(
     format: Format,
@@ -3274,6 +3302,7 @@ pub fn encode_still_timed(
     alpha: bool,
     quality: u8,
     exr: ExrCompression,
+    dpx_bits: u8,
     timing: Option<StillTiming>,
 ) -> Result<Vec<u8>> {
     let enc = |e: image::ImageError| ExportError::Encode(e.to_string());
@@ -3291,7 +3320,7 @@ pub fn encode_still_timed(
             .map_err(enc)?
         }
         Format::TgaSequence => return raster::tga(&rgba, w, h, alpha),
-        Format::DpxSequence => return raster::dpx_deep(&rgba, float, w, h, timing),
+        Format::DpxSequence => return raster::dpx_with(&rgba, float, w, h, timing, raster::DpxFormat { depth: dpx_bits, alpha: alpha && dpx_bits >= 12 }),
         Format::ExrSequence => return raster::exr_with(&rgba, float, w, h, alpha, exr, timing),
         Format::PngSequence if alpha => {
             image::ImageEncoder::write_image(image::codecs::png::PngEncoder::new(&mut out), &rgba, w, h, image::ExtendedColorType::Rgba8).map_err(enc)?
@@ -3480,6 +3509,7 @@ fn export_here(project: &Arc<Project>, seq: ItemId, settings: &ExportSettings, s
                                 settings.alpha,
                                 settings.quality,
                                 settings.exr_compression,
+                                settings.dpx_bit_depth,
                                 Some(pipe.still_timing(fi)),
                             )?;
                             write_output(settings, &pcm::image_sequence_path(&settings.path, (fi - f0) as u64, count), data)

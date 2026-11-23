@@ -51,6 +51,7 @@
 	Apply Video Transition	Zastosuj przejście wideo
 	Assembly	Montaż wstępny
 	Attach Proxies…	Dołącz pliki proxy…
+	Find Camera Proxies	Znajdź pliki proxy z kamery
 	Audio Channels…	Kanały audio…
 	Audio Clip Mixer	Mikser klipów audio
 	Audio Effects	Efekty audio
@@ -4909,3 +4910,6 @@ export.summary	Low	niska
 	Voxel attributes	Atrybuty vokseli
 	Voxel size:	Rozmiar voksela:
 	points	punkty
+
+# WP3 DPX bit depth
+	Bit Depth	Głębia bitowa
