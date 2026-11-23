@@ -35,6 +35,7 @@ cfa4-dv = { path = "../crates/dv" }
 cfa4-ffv1 = { path = "../crates/ffv1" }
 cfa4-h264 = { path = "../crates/h264" }
 cfa4-hap = { path = "../crates/hap" }
+cfa4-model3d = { path = "../crates/model3d" }
 cfa4-heif = { path = "../crates/heif" }
 cfa4-hevc = { path = "../crates/hevc" }
 cfa4-huffyuv = { path = "../crates/huffyuv" }
@@ -456,6 +457,13 @@ bench = false
 [[bin]]
 name = "graphics_template"
 path = "fuzz_targets/graphics_template.rs"
+test = false
+doc = false
+bench = false
+
+[[bin]]
+name = "model3d"
+path = "fuzz_targets/model3d.rs"
 test = false
 doc = false
 bench = false

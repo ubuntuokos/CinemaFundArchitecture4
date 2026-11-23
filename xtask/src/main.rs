@@ -38,6 +38,7 @@ const LAYERS: &[(&str, u8)] = &[
     ("matroska", 0),
     ("mxf", 0),
     ("cfb", 0),
+    ("model3d", 0),
     ("mpegts", 0),
     ("st2110", 0),
     ("mpeg2v", 0),

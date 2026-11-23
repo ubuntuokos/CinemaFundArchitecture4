@@ -387,6 +387,7 @@ dependencies = [
  "cfa4-magicyuv",
  "cfa4-matroska",
  "cfa4-mobiclip",
+ "cfa4-model3d",
  "cfa4-mpa",
  "cfa4-mpeg2v",
  "cfa4-mpegts",
@@ -612,6 +613,13 @@ name = "cfa4-mobiclip"
 version = "0.10.0"
 dependencies = [
  "thiserror",
+]
+
+[[package]]
+name = "cfa4-model3d"
+version = "0.10.0"
+dependencies = [
+ "serde_json",
 ]
 
 [[package]]

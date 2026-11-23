@@ -227,6 +227,23 @@ pub fn cfb(data: &[u8]) {
     }
 }
 
+/// glTF / GLB, OBJ (+ MTL) and STL readers (CFA4-OPENUSD-3D-001 U1-A2): every format on every input, and
+/// the format guessed from the bytes; external resources are answered with the input itself, so buffer
+/// and material-library paths are exercised too. A small memory budget keeps each call fast.
+pub fn model3d(data: &[u8]) {
+    use cfa4_model3d::{Format, Limits, read, read_as};
+    let limits = Limits { max_memory_bytes: 64 << 20, max_input_bytes: 8 << 20, ..Limits::default() };
+    let mut res = |_: &str| Some(data.to_vec());
+    if let Ok(s) = read(data, None, &mut res, &limits) {
+        std::hint::black_box(s);
+    }
+    for format in [Format::Gltf, Format::Obj, Format::Stl] {
+        if let Ok(s) = read_as(format, data, &mut res, &limits) {
+            std::hint::black_box(s);
+        }
+    }
+}
+
 pub fn heif(data: &[u8]) {
     let _ = cfa4_heif::parse(data);
 }
@@ -672,15 +689,19 @@ pub fn svq3(data: &[u8]) {
         let _ = d.decode(i.rest(), 1);
         let _ = d.flush();
     }
+}
 pub fn svq1(data: &[u8]) {
     let mut d = cfa4_svq1::Decoder::new(16, 16, false);
     let _ = d.decode(data);
     let _ = d.decode(data);
+}
 pub fn indeo45(data: &[u8]) {
     for codec in [cfa4_indeo45::Codec::Indeo4, cfa4_indeo45::Codec::Indeo5] {
         let mut d = cfa4_indeo45::Decoder::new(codec);
         let _ = d.decode(data);
         let _ = d.decode(data);
+    }
+}
 pub fn msvideo(data: &[u8]) {
     // the first bytes pick the codec and the layout, the rest is a run of packets
     let (head, body) = data.split_at(data.len().min(4));
@@ -698,6 +719,7 @@ pub fn msvideo(data: &[u8]) {
             let _ = d.decode(pkt);
         }
     }
+}
 pub fn indeo3(data: &[u8]) {
     let mut d = cfa4_indeo3::Decoder::new();
     let _ = d.decode(data);
@@ -802,6 +824,9 @@ pub fn mobiclip(data: &[u8]) {
                 cfa4_mobiclip::AudioCodec::ImaMoflex => drop(cfa4_mobiclip::decode_ima(p, ch)),
                 cfa4_mobiclip::AudioCodec::PcmS16le => drop(cfa4_mobiclip::decode_pcm(p, ch)),
             }
+        }
+    }
+}
 pub fn qdm2(data: &[u8]) {
     // a configuration, and blocks decoded with a valid one built from the first bytes
     let _ = cfa4_qdm2::Decoder::new(data);
@@ -820,6 +845,7 @@ pub fn qdm2(data: &[u8]) {
             let _ = d.decode(packet);
         }
     }
+}
 pub fn amv(data: &[u8]) {
     // a file: its chunks decode, whatever they hold
     if let Ok(a) = cfa4_amv::Amv::parse(data) {
@@ -857,6 +883,10 @@ pub fn twinvq(data: &[u8]) {
         let align = usize::from(u16::from_le_bytes([a[0], a[1]]));
         if let Ok(s) = cfa4_twinvq::parse_metasound(extra, align) {
             let _ = cfa4_twinvq::decode(data.get(18..).unwrap_or(&[]), &s);
+        }
+    }
+}
+
 pub fn yamaha_oki(data: &[u8]) {
     use cfa4_yamaha_oki::{Kind, State};
     for kind in [Kind::Yamaha, Kind::Oki] {
@@ -866,6 +896,8 @@ pub fn yamaha_oki(data: &[u8]) {
                 s.decode(data, &mut out);
             }
         }
+    }
+}
 pub fn nstream(data: &[u8]) {
     if let Ok(s) = cfa4_nstream::parse(data) {
         let _ = cfa4_nstream::decode(data, &s);
@@ -971,6 +1003,7 @@ pub const TARGETS: &[(&str, &str, Target)] = &[
     ("speex", "cfa4-speex", speex),
     ("cfb", "cfa4-cfb", cfb),
     ("heif", "cfa4-heif", heif),
+    ("model3d", "cfa4-model3d", model3d),
     ("dcp", "cfa4-dcp", dcp),
     ("iab", "cfa4-iab", iab),
     ("dv", "cfa4-dv", dv),
@@ -1050,6 +1083,9 @@ pub fn mace(data: &[u8]) {
     let version = if sel & 1 == 0 { cfa4_mace::Version::Mace3 } else { cfa4_mace::Version::Mace6 };
     let Ok(mut d) = cfa4_mace::Decoder::new(version, 1 + usize::from(sel >> 1 & 1)) else { return };
     for pkt in body.chunks(1 + usize::from(sel >> 2) % 64) {
+        let _ = d.decode(pkt);
+    }
+}
 /// TrueSpeech: random packets of random sizes through one decoder.
 pub fn truespeech(data: &[u8]) {
     let mut d = cfa4_truespeech::Decoder::new();

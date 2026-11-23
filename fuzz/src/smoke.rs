@@ -80,6 +80,12 @@ fn builtin_seeds(target: &str) -> Vec<Vec<u8>> {
         "mpegts" => &[&[0x47, 0x40, 0x00, 0x10, 0x00, 0x00, 0xb0, 0x0d, 0x00, 0x01, 0xc1, 0x00, 0x00]],
         "ogg" => &[b"OggS\0\x02\0\0\0\0\0\0\0\0\x01\0\0\0\0\0\0\0\0\0\0\0\x01\x13OpusHead\x01\x02\x38\x01\x80\xbb\0\0\0\0\0"],
         "opus" => &[b"OpusHead\x01\x02\x38\x01\x80\xbb\0\0\0\0\0", &[0x78, 0xff, 0xfe]],
+        "model3d" => &[
+            br#"{"asset":{"version":"2.0"},"scene":0,"scenes":[{"nodes":[0]}],"nodes":[{"mesh":0,"children":[1]},{"camera":0}],"cameras":[{"type":"perspective","perspective":{"yfov":0.8,"znear":0.1}}],"meshes":[{"primitives":[{"attributes":{"POSITION":0}}]}],"accessors":[{"bufferView":0,"componentType":5126,"count":3,"type":"VEC3"}],"bufferViews":[{"buffer":0,"byteLength":36}],"buffers":[{"byteLength":36,"uri":"data:application/octet-stream;base64,AAAAAAAAAAAAAAAAAACAPwAAAAAAAAAAAAAAAAAAgD8AAAAA"}]}"#,
+            b"glTF\x02\0\0\0\x1c\0\0\0\x04\0\0\0JSON{}  ",
+            b"mtllib a.mtl\no x\nv 0 0 0\nv 1 0 0\nv 0 1 0\nvn 0 0 1\nvt 0 0\nusemtl m\nf 1/1/1 2/1/1 3/1/1\nf -3 -2 -1\n",
+            b"solid s\nfacet normal 0 0 1\nouter loop\nvertex 0 0 0\nvertex 1 0 0\nvertex 0 1 0\nendloop\nendfacet\nendsolid s\n",
+        ],
         "cfb" => &[&[0xd0, 0xcf, 0x11, 0xe0, 0xa1, 0xb1, 0x1a, 0xe1]],
         "h264" => &[&[0, 0, 0, 1, 0x67, 0x42, 0xc0, 0x1e, 0xd9, 0, 0, 0, 1, 0x68, 0xce, 0x3c, 0x80, 0, 0, 0, 1, 0x65, 0x88, 0x84]],
         "hevc" => &[&[0, 0, 0, 1, 0x40, 0x01, 0x0c, 0x01, 0xff, 0xff, 0, 0, 0, 1, 0x42, 0x01, 0x01, 0, 0, 0, 1, 0x26, 0x01, 0xaf]],

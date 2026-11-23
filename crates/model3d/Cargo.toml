@@ -1,0 +1,13 @@
+[package]
+name = "cfa4-model3d"
+description = "Clean-room glTF 2.0 / OBJ / STL scene readers (no file I/O, no unsafe): hierarchy, transforms, cameras, meshes, keyframe animation, material references and an unsupported-report (CFA4-OPENUSD-3D-001 U1)"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+rust-version.workspace = true
+
+[lints]
+workspace = true
+
+[dependencies]
+serde_json = { workspace = true }
