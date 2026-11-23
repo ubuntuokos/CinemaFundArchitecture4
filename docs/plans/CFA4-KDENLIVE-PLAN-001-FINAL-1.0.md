@@ -260,6 +260,7 @@ közvetlenül Qt6-ban készül, nem egui-ban.
   áttűnések, hiányzó média. Javítva: a Kdenlive `kdenlive:SolidColor` színe (`0xRRGGBBAA`) helyesen
   jön át; a „Transition” nevű áttűnés a `transition_type` szerint képződik le; az üres `target_url`
   offline médiát ad (korábban a projektmappára mutatott).
+- **Közös MLT-mag** (tulajdonosi döntés, 2026-11-22): az MLT XML olvasó közös a Shotcut-importtal ([`CFA4-SHOTCUT-CAPABILITY-ADAPTATION-001-SC5-MLT-IMPORT.md`](CFA4-SHOTCUT-CAPABILITY-ADAPTATION-001-SC5-MLT-IMPORT.md), SC-5); egy mag, dialektusonként külön leképezési tábla, nem készül külön MLT-implementáció.
 - **Kompatibilitási jelentés:** minden elem „támogatott / átalakított / nem támogatott” osztályba
   kerül; a jelentés az import után megjelenik.
 - **Orákulum:** a `melt` (MLT) csak a tesztekben fut, a Kdenlive-renderrel való képkockás
