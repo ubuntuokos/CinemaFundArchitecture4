@@ -128,9 +128,10 @@ a `publish` gyökérben. Ütközés nem lehet, mert a verziószám egyedi; felü
 ## 6. Proxy és bélyegkép
 
 - **`proxy_profile`** (produkciós beállítás, alapérték globálisan): kodek, felbontás, GOP, hangformátum.
-  **Az alapértéket a V1 mérés dönti el** (ProRes 422 Proxy, DNxHR LB vagy H.264 rövid GOP, 1080p; ha egyik sem
-  teljesíti a REV-01/04/05-öt, István dönt a 720p-ről vagy a REV-01 enyhítéséről). Addig a mező nincs
-  kitöltve, és **a G4 nem indulhat**.
+  **Az alapértéket a V1 mérés döntötte el (István, 2026-11-21/22):** H.264 High, 1080p, yuv420p, zárt GOP ≈ 1 s,
+  ~8 Mbps, AAC 128 kbps, MP4; CPU-only gépen a két verzió összehasonlításához 720p összehasonlító profil (REV-07).
+  A REV-05 A/V-szinkron valódi hangeszközön a V2-ben (Review G5) dől el. A G4 előfeltétele a proxyszabvány
+  szempontjából teljesült; a File Services FS-1, a Media Services MS-1 és a 3–5. lépcső megléte továbbra is kell.
 - A proxy újragenerálható (pl. profilváltáskor): új `file_object`, a régi `deleted` állapotba kerül (a File
   Services kétlépcsős törlése), auditálva. Az `original` soha nem cserélhető.
 - Bélyegkép: képkocka a verzió közepéről (vagy a megadott képkockáról), PNG, a `review` gyökérben.
