@@ -802,6 +802,16 @@ pub fn hca(data: &[u8]) {
     let _ = cfa4_hca::decode_file(data, Some(cfa4_hca::Key { key: 0xCF22_2F1F_E074_8978, subkey: 0x3B8E }));
 }
 
+pub fn twinvq(data: &[u8]) {
+    if let Ok(s) = cfa4_twinvq::parse(data) {
+        let _ = cfa4_twinvq::decode(data, &s);
+    }
+    // MetaSound: the first 16 bytes stand for the format extradata, the next two for the block size
+    if let (Some(extra), Some(a)) = (data.get(..16), data.get(16..18)) {
+        let align = usize::from(u16::from_le_bytes([a[0], a[1]]));
+        if let Ok(s) = cfa4_twinvq::parse_metasound(extra, align) {
+            let _ = cfa4_twinvq::decode(data.get(18..).unwrap_or(&[]), &s);
+        }
 pub fn nstream(data: &[u8]) {
     if let Ok(s) = cfa4_nstream::parse(data) {
         let _ = cfa4_nstream::decode(data, &s);
@@ -898,6 +908,7 @@ pub const TARGETS: &[(&str, &str, Target)] = &[
     ("ogg", "cfa4-ogg", ogg),
     ("st2110", "cfa4-st2110", st2110),
     ("tta", "cfa4-tta", tta),
+    ("twinvq", "cfa4-twinvq", twinvq),
     ("amr", "cfa4-amr", amr),
     ("av2", "cfa4-av2", av2),
     ("canopus", "cfa4-canopus", canopus),

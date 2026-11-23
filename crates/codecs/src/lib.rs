@@ -28,6 +28,7 @@
 //! - [`RoqSource`]: id RoQ (`.roq`) video (full range YUV 4:4:4) with DPCM sound.
 //! - [`AmvSource`]: AMV (`.amv`) video (JPEG variant, full range YUV 4:2:0) with IMA ADPCM sound.
 //! - [`MveSource`]: Interplay MVE (`.mve`) video (8-bit palette or RGB 5:5:5) with PCM or DPCM sound.
+//! - [`TwinvqSource`]: NTT TwinVQ (`.vqf`, `.vql`, `.vqe`) audio.
 //! - [`Y4mSource`]: uncompressed YUV4MPEG2 (`.y4m`) video, frames read on demand.
 //! - [`NstreamSource`]: Nintendo BRSTM / BFSTM / BCSTM (`.brstm`, `.bfstm`, `.bcstm`) audio streams (PCM or DSP ADPCM).
 //! - [`openers`]: the openers to register with the engine's media pool.
@@ -76,6 +77,7 @@ pub mod sstp;
 mod stream_color;
 pub mod streams;
 pub mod svq3;
+pub mod twinvq;
 pub mod theora;
 pub mod thp;
 pub mod utvideo;
@@ -106,6 +108,7 @@ pub use realmedia::RmSource;
 pub use roq::RoqSource;
 pub use smacker::SmkSource;
 pub use sstp::SstpSource;
+pub use twinvq::TwinvqSource;
 pub use thp::ThpSource;
 pub use video::{DecodedFrame, VideoDecoder, VideoDecoderFactory};
 pub use y4m::Y4mSource;
@@ -244,6 +247,7 @@ pub fn openers() -> Vec<cfa4_media::Opener> {
         amv::opener,
         mve::opener,
         av2::opener,
+        twinvq::opener,
         audio::opener,
     ]
 }

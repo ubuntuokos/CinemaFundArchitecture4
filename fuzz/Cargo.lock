@@ -410,6 +410,7 @@ dependencies = [
  "cfa4-thp",
  "cfa4-truehd",
  "cfa4-tta",
+ "cfa4-twinvq",
  "cfa4-utvideo",
  "cfa4-vp8",
  "cfa4-vp9",
@@ -567,6 +568,7 @@ dependencies = [
  "cfa4-jxl",
  "cfa4-realaudio",
  "cfa4-time",
+ "cfa4-twinvq",
  "image",
  "log",
  "rayon",
@@ -787,6 +789,13 @@ dependencies = [
 
 [[package]]
 name = "cfa4-tta"
+version = "0.10.0"
+dependencies = [
+ "thiserror",
+]
+
+[[package]]
+name = "cfa4-twinvq"
 version = "0.10.0"
 dependencies = [
  "thiserror",

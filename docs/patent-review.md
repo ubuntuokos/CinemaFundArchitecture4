@@ -113,6 +113,8 @@ szabadalommal védett formátumot.
 | G.729, G.729 Annex B | dekódolás; nyers `.g729` fájlok olvasása | `crates/g729` (a bcg729 portja) | alap | függőben | | |
 | iLBC | dekódolás; `.lbc` fájlok olvasása | `crates/ilbc` (a WebRTC libilbc portja) | alap | függőben | | |
 | TTA (True Audio) | dekódolás; `.tta` és Matroska olvasása | `crates/tta` (a libtta portja) | alap | függőben | | |
+| NTT TwinVQ (VQF) | dekódolás; `.vqf`, `.vql`, `.vqe` fájlok olvasása | `crates/twinvq` (az FFmpeg vqf-demuxerének és TwinVQ-dekóderének portja) | alap | függőben | | |
+| Voxware MetaSound | dekódolás; WAV (0x0075) fájlok olvasása | `crates/twinvq` (az FFmpeg MetaSound-dekóderének portja) | alap | függőben | | |
 | Nintendo BRSTM / BFSTM / BCSTM (PCM, DSP ADPCM) | dekódolás; `.brstm`, `.bfstm`, `.bcstm` fájlok olvasása | `crates/nstream` (az FFmpeg brstm/bfstm-demuxerének és ADPCM-dekóderének portja) | alap | függőben | | |
 | Shorten | dekódolás; `.shn` fájlok olvasása | `crates/shorten` (az FFmpeg Shorten-dekódolójának portja) | alap | függőben | | |
 | CRI ADX | dekódolás; `.adx` fájlok olvasása | `crates/adx` (az FFmpeg ADX-dekódolójának portja) | alap | függőben | | |
