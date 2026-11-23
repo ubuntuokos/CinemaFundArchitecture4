@@ -93,7 +93,7 @@ impl TaskStore {
             let doc = serde_json::to_value(t).map_err(StoreError::query)?;
             let n = tx
                 .execute(
-                    "UPDATE tasks.task SET state = $2, class_rank = $3, priority = $4, start_at = $5, lease_owner = $6, lease_until = $7, version = $8, doc = $9, updated_at = now() WHERE id = $1 AND version = $10",
+                    "UPDATE tasks.task SET state = $2, class_rank = $3, priority = $4, start_at = to_timestamp($5::bigint / 1000.0), lease_owner = $6, lease_until = to_timestamp($7::bigint / 1000.0), version = $8, doc = $9, updated_at = now() WHERE id = $1 AND version = $10",
                     &[
                         &t.id,
                         &state_name(t.state),
@@ -133,7 +133,7 @@ impl TaskStore {
                 _ => String::new(),
             };
             tx.execute(
-                "INSERT INTO tasks.transition (task_id, seq, from_state, to_state, at, by_actor, reason) VALUES ($1, $2, $3, $4, $5, $6, $7)",
+                "INSERT INTO tasks.transition (task_id, seq, from_state, to_state, at, by_actor, reason) VALUES ($1, $2, $3, $4, to_timestamp($5::bigint / 1000.0), $6, $7)",
                 &[&t.id, &ms(l.seq), &from, &to, &ms(l.at), &by, &l.reason],
             )
             .await
@@ -189,7 +189,7 @@ impl TaskStore {
         let doc = serde_json::to_value(&task).map_err(StoreError::query)?;
         let n = tx
             .execute(
-                "INSERT INTO tasks.task (id, state, class_rank, priority, submitted_at, start_at, version, doc) VALUES ($1, $2, $3, $4, $5, $6, $7, $8) ON CONFLICT (id) DO NOTHING",
+                "INSERT INTO tasks.task (id, state, class_rank, priority, submitted_at, start_at, version, doc) VALUES ($1, $2, $3, $4, to_timestamp($5::bigint / 1000.0), to_timestamp($6::bigint / 1000.0), $7, $8) ON CONFLICT (id) DO NOTHING",
                 &[&task.id, &state_name(task.state), &class_rank(task.request.class), &priority_rank(task.priority), &ms(task.submitted_at), &start_at(&task), &ms(task.version), &doc],
             )
             .await
@@ -250,9 +250,12 @@ impl TaskStore {
         let r = op(&mut queue)?;
         let task = queue.get(id).ok_or_else(|| StoreError::from(QueueError::NotFound { id: id.to_owned() }))?;
         let doc = serde_json::to_value(task).map_err(StoreError::query)?;
-        tx.execute("UPDATE tasks.task SET lease_until = $2, doc = $3, updated_at = now() WHERE id = $1", &[&id, &task.lease_until.map(ms), &doc])
-            .await
-            .map_err(StoreError::query)?;
+        tx.execute(
+            "UPDATE tasks.task SET lease_until = to_timestamp($2::bigint / 1000.0), doc = $3, updated_at = now() WHERE id = $1",
+            &[&id, &task.lease_until.map(ms), &doc],
+        )
+        .await
+        .map_err(StoreError::query)?;
         tx.commit().await.map_err(StoreError::query)?;
         Ok(r)
     }

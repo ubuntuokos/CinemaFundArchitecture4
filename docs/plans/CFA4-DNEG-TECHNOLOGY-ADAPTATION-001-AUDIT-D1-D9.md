@@ -292,7 +292,7 @@ A DNEG-eredetű képességek ehhez **csak** a következőket adják hozzá, a wo
 
 | ID | Tétel | Állapot | Mi oldja fel |
 |---|---|---|---|
-| U1 | VFX Catalog, FX Authoring, ARF, OpenUSD/3D, Potree/pontfelhő terv | **jóváhagyva 2026-11-21** (`docs/plans/…-0.1.md`); a `CFA4-VFX-001`-gyel való egyeztetés `[MÓD-5]` jóváhagyásra vár | az egyeztetés jóváhagyása |
+| U1 | VFX Catalog, Effektlánc, ARF, OpenUSD/3D, Potree/pontfelhő terv | **jóváhagyva 2026-11-21** (`docs/plans/…-0.1.md`); a `CFA4-VFX-001`-gyel való egyeztetés `[MÓD-5]` jóváhagyásra vár | az egyeztetés jóváhagyása |
 | U2 | OpenVDB / AX / Points / NanoVDB licenc | **IGAZOLT: Apache-2.0** (upstream); DNEG-forkok MPL-2.0 (nem használjuk) | – |
 | U3 | DNEG-fork állapotok | **IGAZOLT** (stagnáló/deprecated; D8) | – |
 | U4 | USD fork-diff | **IGAZOLT: delta üres** (fork = upstream v23.05); Ubuntu 26.04-es build nincs próbálva | – / U6 |

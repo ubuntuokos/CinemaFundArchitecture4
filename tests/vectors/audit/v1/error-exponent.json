@@ -1,0 +1,6 @@
+{
+  "name": "error-exponent",
+  "input": "{\"a\":1e2}",
+  "event": true,
+  "error": "AUDIT_FLOAT_FORBIDDEN"
+}
