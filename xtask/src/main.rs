@@ -128,6 +128,7 @@ const LAYERS: &[(&str, u8)] = &[
     ("audio-dsp", 1),
     ("text", 1),
     ("route", 1),
+    ("audit", 1),
     ("tcsync", 1),
     ("surface-catalog", 1),
     ("tcsync-io", 5),

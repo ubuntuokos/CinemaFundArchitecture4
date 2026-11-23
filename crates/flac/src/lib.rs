@@ -37,6 +37,9 @@ mod frame;
 mod md5;
 mod predict;
 
+/// MD5 (RFC 1321), also used by the AS-02 manifest media integrity check.
+pub use md5::Md5;
+
 use frame::{FrameSpec, Stereo};
 use predict::{Effort, Subframe};
 
