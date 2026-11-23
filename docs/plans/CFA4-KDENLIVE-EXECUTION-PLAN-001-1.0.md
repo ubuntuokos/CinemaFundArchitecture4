@@ -34,7 +34,7 @@
 | Δ9 | **Objektumkövetés/maszk:** az `OBJECT-MASK-PLAN-001` végrehajtása megkezdve (2026-11-20; OM-A5, OM-A5b nyitva), a követés tiszta Rust, az MI-részek (detektálás, szegmentálás) az AI-F4 után | `docs/plans/OBJECT-MASK-PLAN-001-2026-11-03.md` | A **K4 (SAM2)** az OBJECT-MASK szegmentálási lépéseivel közös, ott él; a K4 itt hivatkozás marad |
 | Δ10 | **Feliratok:** a Subtitle Studio 1.2 F0–F7; az ASS/SSA (K9) még nincs a `crates/captions`-ben (SRT, VTT, TTML, SCC, MCC, STL, CEA-608 van) | `docs/plans/SUBTITLE-STUDIO-PLAN-001-FINAL-1.2.md` | K9, K27, K28, K29, K30 ott maradnak (alapterv 11.2) |
 | Δ11 | **Szabályok:** nincs fizetős rész (2026-11-08); GPL-2.0-only/AGPL tilos kód- és függőségi szinten, az AGPL szabályozása a #1561-ben nyitott; a „port vagy marad az eredeti nyelv” szabály (2026-11-03) | `AGENTS.md`; PR #1561 | A forkok licenc-besorolása (4. pont) ehhez igazodik |
-| Δ12 | **Névütközés:** a `LOSSLESS-MEDIA-TOOLS-001` (PR #1124, nyitva) saját K1–K7 jelölést használ | PR #1124 | Ütközik a Kdenlive K-számaival: jelezni kell a PR gazdájának (D-6) |
+| Δ12 | **Névütközés (2026-11-23-i teljes vizsgálat, 2. kiadás):** a `K<n>` jelölést más tervek is használják. **Nyitott:** `LOSSLESS-MEDIA-TOOLS-001` (PR #1124) **K1–K16** (nem csak K1–K7). **A `main`-ben:** `CODEC-BACKLOG-PLAN-2026-10-27` K1–K4 (sávok; a hivatkozások „CODEC-BACKLOG K1” alakban minősítettek), `CFA4-CODERABBIT-001` K0–K3 (lépések), `CFA4-BRANCH-OWNERSHIP-001` K1–K3 (kockázatok). Más tervek a Kdenlive-számokra hivatkoznak (K1, K4, K17, K18, K20, K22, K23, K25, K42, K43, K45, K46, K53, K55, K60): mindegyik hivatkozás a Kdenlive-terv megfelelő pontjára mutat. Azonosító-ütközés a V1–V10, E1–E15, SC-x, VFX-x, OM-, WP- jelölésekkel nincs | PR #1124; `docs/plans/` | A K-számtér szabálya a 2.1 pontban; a #1124 átnevezése D-6 |
 
 ## 2. Hatókör és szabályok, amelyek ennek a tervnek a végrehajtását kötik
 
@@ -44,6 +44,13 @@
 - Alapterv 12. pont döntései változatlanok: K1 kötelező és **nincs Kdenlive/MLT-export**; az MLT csak tesztorákulum (E11); a backend-sorrend saját motor → FFmpeg ≥ 9.0.2 → GStreamer a `cfa4-route` alatt (ADR 0005); az x264/x265/LAME a felhasználó csomagja (K62); Qt Widgets idővonal.
 - **MI-szabály:** minden MI-funkció csak az ADR 0008 megfelelő kapuja után. A K2 az egyetlen kivétel (ADR 0008 F0). A V1-A nem MI-funkció (jóváhagyva 2026-11-21).
 - Az ADR 0003, ADR 0005 és a render-terv már jóváhagyott függőségei nem nyílnak újra itt.
+
+### 2.1 A `K<n>` számtér (2026-11-23)
+
+- Minősítés nélkül a `K<n>` **mindig** a Kdenlive-terv (`CFA4-KDENLIVE-PLAN-001-FINAL`) pontja. Commit-üzenet (`K12: …`), ág (`…-k37-…`), PR-cím és a Gazda issue csak így használja.
+- Más terv saját K-jelölését (`CODEC-BACKLOG` K1–K4, `CODERABBIT-001` K0–K3, `BRANCH-OWNERSHIP-001` K1–K3, a #1124 K1–K16) mindig a terv nevével együtt írjuk (`CODEC-BACKLOG K1`, `LM-K3`), commitban és PR-címben sosem a puszta számmal.
+- Új tervnek nem szabad `K<n>` jelölést választania; a #1124 átnevezése a D-6.
+- Átfedő hatókör (nem azonosítóütközés): a #1124 K1 (több vágási tartomány egy forráson, egyenkénti export) és a K37 `export.queue.addFromMarkers` (a sorozat jelölői → exporttartományok) különböző bemenetet kezel (forrásklip-tartomány, illetve sorozatjelölő), de ugyanazt az `export.queue.add` sort használja; ha a #1124 megvalósul, a két parancs paraméterezését a gazdával egyeztetni kell (`coordination.md` §2.8).
 
 ## 3. A kiegészítő tárolók állapota (2026-11-22)
 
@@ -168,7 +175,7 @@ Minden hullám **külön tulajdonosi indítási engedélyt** igényel, és minde
 | **D-3** | **ADR-számütközés:** az AI-réteg ADR-je az ai_modules-ban 0008, a fő repóban a 0008 a `cfa4-audit`, a 0006 a BacklotHub PG | Az AI-réteg ADR-je kapjon fő-repós számot a (T3/T4) átemeléskor; az alaptervben „ADR 0008 (ai_modules)” jelölést használunk, amíg ez el nem dől |
 | **D-4** | **`gyroflow-core` licence** (K13): a licencet a `gyroflow-core` tárolójából nem ellenőriztük; ha GPL-3.0-**only**, a CFA4 „or-later” kikötésével szemben a VFX-terv Lumit-döntésének mintájára kell kezelni | A K13 indítása előtt külön licenc-ellenőrzés; a Lumit-minta (fájlszintű „only” megjegyzés) csak a tulajdonos külön döntésével |
 | **D-5** | **A forkok és a kiegészítő tárolók a „mit integrálunk” listában** (tulajdonosi szabály, 2026-10-27) | Ez a terv a forrásokat felveszi (II. pont a frissített alaptervben); a `VISION.md` §4 Kdenlive-sorának bővítése a tulajdonos dolga |
-| **D-6** | **K-számütközés:** a `LOSSLESS-MEDIA-TOOLS-001` (PR #1124) is K1–K7-et használ | A #1124 gazdája nevezze át (pl. `LM-K…`); a Kdenlive K-számok a régebbiek |
+| **D-6** | **K-számütközés:** a `LOSSLESS-MEDIA-TOOLS-001` (PR #1124) K1–K16-ot használ; a `main`-ben a `CODEC-BACKLOG`, a `CODERABBIT-001` és a `BRANCH-OWNERSHIP-001` is saját K-számú belső jelölést használ | A #1124 gazdája nevezze át (pl. `LM-K…`); a Kdenlive K-számok a régebbiek. A `main`-beli három terv jelölése marad, mert minősítve hivatkoznak rájuk; a minősítés szabálya a 2.1 pont |
 | **D-7** | **Indítás:** a lekérdezéskor 60 körüli nyitott PR volt (`coordination.md` §2.6: 30 fölött csak a tulajdonos kérésére) | A W1 indítását a tulajdonos kérje; javasolt első PR: a K1/SC-5.1 közös mag |
 
 ## 8. Mit nem ellenőriztem
@@ -184,5 +191,6 @@ Minden hullám **külön tulajdonosi indítási engedélyt** igényel, és minde
 
 | Dátum | Változás |
 |---|---|
+| 2026-11-23 | 1.2 (javaslat, István kérdésére): teljes K-számtér-vizsgálat; Δ12 és D-6 pontosítva (#1124 K1–K16; három `main`-beli terv saját K-jelölése), új 2.1 pont a számtér szabályával; a K-pontok nem változtak |
 | 2026-11-22 | 1.1 (jóváhagyva 22:44):  István kérésére az 5. pont szűrve: csak a CFA4-ben és más tervben nem szereplő képességek maradnak (5A kikerül, 5B marad); a hullámok ennek megfelelően újraszámolva |
 | 2026-11-22 | 1.0 (javaslat): K36 elvégezve; delta, tárolók és forkok állapota, K-pontonkénti állapot, hullámok, nyitott döntések |
