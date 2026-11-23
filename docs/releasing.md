@@ -139,7 +139,10 @@ Qt GUI's launcher too, no egui editor, owner decision 2026-11-14, Q4.3): the bun
 `package.sh` does, with PySide6 / Qt 6 from the wheels pinned in `requirements/linux-amd64.txt`
 (the same SHA-256 as `file` sources; bump them together). Both build MIT Kerberos first (the `krb5`
 module, a pinned and PGP-checked tarball, its NOTICE in `share/doc/cfa4/krb5`): the wheels' QtNetwork
-and QtMultimedia need `libgssapi_krb5.so.2`, which the freedesktop runtime lacks. The bundle's test
+and QtMultimedia need `libgssapi_krb5.so.2`, which the freedesktop runtime lacks. The bundle builds
+offline (`--disable-download`), so `flatpak-bundle.sh` seeds the builder's cache with the tarball from
+`CFA4_FLATPAK_SOURCES` after checking its SHA-256 (`packaging/linux/flatpak-sources.py`;
+`scripts/release/fetch-flatpak-sources.sh` fills the directory). The bundle's test
 imports every module the GUI loads and starts it with `--smoke`.
 
 ## The draft release
