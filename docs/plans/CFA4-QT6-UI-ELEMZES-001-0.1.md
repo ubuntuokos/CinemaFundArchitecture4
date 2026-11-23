@@ -1,6 +1,6 @@
 # CFA4-QT6-UI-ELEMZES-001 – A Qt6-felületi feladatok újraelemzése (0.1)
 
-> **Állapot:** JAVASLAT, jóváhagyásra vár (`docs/coordination.md` §2.10). Csak dokumentáció, kód nincs benne.
+> **Állapot:** a D-Q1…D-Q3 döntéseket István 2026-11-23 06:01-kor „javaslat szerint” elfogadta (§6); a dokumentum többi része jóváhagyásra vár (`docs/coordination.md` §2.10). Csak dokumentáció, kód nincs benne.
 > **Dátum:** 2026-11-23 · **Kérte:** István (ubuntuokos) · **Alap:** CFA4 `main` @ `e493e956`.
 > **Olvasott források:** `VISION.md`, `docs/coordination.md`, `AGENTS.md`, `docs/qt-parity.md`, `docs/development/qt-desktop-checks.md`,
 > `docs/plans/CFA4-QT6-FINISH-001.md` (1.3), a DNEG/VFX/OpenUSD/N3/EffectChain/Catalog/PointCloud tervek, a #1479 gazda-issue és a nyitott PR-ok listája.
@@ -59,7 +59,9 @@ Súly: M magas, K közepes, A alacsony. Nincs olyan ütközés, amely a VISION.m
 - **Elvben indítható, de döntés kell:** a **4.14 lezárása**. Az egyetlen hiány: a QC-ablak a jelölt időpontnál megnyitja az exportált fájlt. Ehhez az exportot be kell hozni a Source monitorba (`source.open` projekt-elemet vár), vagyis a fájlt importálni kellene a felhasználó projektjébe, ami **mellékhatás**. Két tisztább út: (a) csak olvasható „QC-előnézet” a QC-ablakban (külön képkocka-lekérés a fájlból, projekt érintetlen), (b) ideiglenes, a projektbe nem mentett Source-elem. Ez tervezési döntés, nem kódolási részlet (D-Q1).
 - **Dokumentációs javítás:** Ü-2 (audit T3 szöveg), kis docs-PR, ha engedélyezett.
 
-## 6. Döntési pontok Istvánnak (javaslattal)
+## 6. Döntési pontok Istvánnak (javaslattal) – D-Q1…D-Q3 ELDÖNTVE 2026-11-23 06:01 (javaslat szerint, mind igen)
+
+**Átvezetés:** D-Q1 → `CFA4-QT6-FINISH-001` 1.4 (Q1b, ebben a PR-ban). D-Q2 → az OpenUSD-terv 11b/5 elfogadva (U1-UI, U1-A6); a fájl a #1552 ágán van, ezért a szövegátvezetés ott, a #1552 tulajdonosáé/gazdáé (jelezve a #1479-ben). D-Q3 → külön docs-PR (audit T3). D-Q4: nem most.
 
 | # | Kérdés | Javaslat | Indok |
 |---|---|---|---|
