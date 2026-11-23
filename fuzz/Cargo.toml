@@ -72,8 +72,8 @@ cfa4-sstp = { path = "../crates/sstp" }
 cfa4-evc = { path = "../crates/evc" }
 cfa4-cavs = { path = "../crates/cavs" }
 cfa4-lagarith = { path = "../crates/lagarith" }
-cfa4-indeo3 = { path = "../crates/indeo3" }
 cfa4-bink = { path = "../crates/bink" }
+cfa4-indeo3 = { path = "../crates/indeo3" }
 cfa4-magicyuv = { path = "../crates/magicyuv" }
 cfa4-g729 = { path = "../crates/g729" }
 cfa4-ilbc = { path = "../crates/ilbc" }
@@ -493,10 +493,10 @@ doc = false
 bench = false
 
 [[bin]]
-name = "indeo3"
-path = "fuzz_targets/indeo3.rs"
 name = "bink"
 path = "fuzz_targets/bink.rs"
+name = "indeo3"
+path = "fuzz_targets/indeo3.rs"
 test = false
 doc = false
 bench = false
@@ -574,6 +574,11 @@ bench = false
 [[bin]]
 name = "mobiclip"
 path = "fuzz_targets/mobiclip.rs"
+test = false
+doc = false
+bench = false
+
+[[bin]]
 name = "nstream"
 path = "fuzz_targets/nstream.rs"
 test = false

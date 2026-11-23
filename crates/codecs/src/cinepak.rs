@@ -27,13 +27,14 @@ pub fn sample_entry(bit_count: u16, quads: &[u8], w: u16, h: u16) -> SampleEntry
 
 pub struct CinepakDecoder {
     dec: cfa4_cinepak::Decoder,
+    size: (u32, u32, u16),
 }
 
 impl CinepakDecoder {
     pub fn new(width: u32, height: u32, bit_count: u16, quads: &[u8]) -> Result<Self> {
         let mut dec = cfa4_cinepak::Decoder::new(width, height, bit_count).map_err(|e| CodecError::Unsupported(format!("Cinepak: {e}")))?;
         dec.set_palette_bgr0(quads);
-        Ok(Self { dec })
+        Ok(Self { dec, size: (width, height, bit_count) })
     }
 }
 
@@ -51,6 +52,11 @@ impl VideoDecoder for CinepakDecoder {
     }
     fn name(&self) -> &str {
         "CFA4 Cinepak"
+    }
+    // AVI marks every sample as a sync sample: only a key frame can start a run
+    fn is_random_access(&self, sample: &[u8]) -> Option<bool> {
+        let mut fresh = cfa4_cinepak::Decoder::new(self.size.0, self.size.1, self.size.2).ok()?;
+        Some(fresh.decode(sample).is_ok_and(|p| p.key))
     }
     // inter frames: a frame depends on the ones before it
     fn intra_only(&self) -> bool {
