@@ -3610,6 +3610,9 @@ mod smart_cut_tests;
 mod timeline_render_tests;
 
 #[cfg(test)]
+mod cancel_latency_tests;
+
+#[cfg(test)]
 mod determinism_tests;
 
 #[cfg(test)]
