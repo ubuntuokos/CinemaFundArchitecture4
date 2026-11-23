@@ -1330,6 +1330,7 @@ dependencies = [
  "cfa4-iab",
  "cfa4-ilbc",
  "cfa4-indeo",
+ "cfa4-indeo3",
  "cfa4-indeo45",
  "cfa4-isobmff",
  "cfa4-j2k",
@@ -1360,6 +1361,7 @@ dependencies = [
  "cfa4-smacker",
  "cfa4-speex",
  "cfa4-sstp",
+ "cfa4-svq1",
  "cfa4-svq3",
  "cfa4-tak",
  "cfa4-testkit",
@@ -1367,6 +1369,7 @@ dependencies = [
  "cfa4-thp",
  "cfa4-time",
  "cfa4-truehd",
+ "cfa4-truespeech",
  "cfa4-tta",
  "cfa4-twinvq",
  "cfa4-utvideo",
@@ -1896,6 +1899,14 @@ dependencies = [
 ]
 
 [[package]]
+name = "cfa4-indeo3"
+version = "0.10.0"
+dependencies = [
+ "cfa4-testkit",
+ "thiserror 2.0.21",
+]
+
+[[package]]
 name = "cfa4-indeo45"
 version = "0.10.0"
 dependencies = [
@@ -2024,7 +2035,9 @@ dependencies = [
  "cfa4-realaudio",
  "cfa4-testkit",
  "cfa4-time",
+ "cfa4-truespeech",
  "cfa4-twinvq",
+ "cfa4-yamaha-oki",
  "image",
  "log",
  "png",
@@ -2444,6 +2457,14 @@ dependencies = [
 ]
 
 [[package]]
+name = "cfa4-svq1"
+version = "0.10.0"
+dependencies = [
+ "cfa4-testkit",
+ "thiserror 2.0.21",
+]
+
+[[package]]
 name = "cfa4-svq3"
 version = "0.10.0"
 dependencies = [
@@ -2543,6 +2564,14 @@ version = "0.10.0"
 dependencies = [
  "cfa4-testkit",
  "log",
+ "thiserror 2.0.21",
+]
+
+[[package]]
+name = "cfa4-truespeech"
+version = "0.10.0"
+dependencies = [
+ "cfa4-testkit",
  "thiserror 2.0.21",
 ]
 
@@ -2656,6 +2685,13 @@ dependencies = [
  "cfa4-testkit",
  "rayon",
  "thiserror 2.0.21",
+]
+
+[[package]]
+name = "cfa4-yamaha-oki"
+version = "0.10.0"
+dependencies = [
+ "cfa4-testkit",
 ]
 
 [[package]]

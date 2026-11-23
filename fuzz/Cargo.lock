@@ -140,14 +140,14 @@ dependencies = [
 ]
 
 [[package]]
-name = "cfa4-amv"
+name = "cfa4-amr"
 version = "0.10.0"
 dependencies = [
  "thiserror",
 ]
 
 [[package]]
-name = "cfa4-amr"
+name = "cfa4-amv"
 version = "0.10.0"
 dependencies = [
  "thiserror",
@@ -376,11 +376,11 @@ dependencies = [
  "cfa4-iab",
  "cfa4-ilbc",
  "cfa4-indeo3",
+ "cfa4-indeo45",
  "cfa4-interchange",
  "cfa4-isobmff",
  "cfa4-j2k",
  "cfa4-jxl",
- "cfa4-indeo45",
  "cfa4-lagarith",
  "cfa4-lcevc",
  "cfa4-mace",
@@ -409,11 +409,13 @@ dependencies = [
  "cfa4-speex",
  "cfa4-sstp",
  "cfa4-st2110",
+ "cfa4-svq1",
  "cfa4-svq3",
  "cfa4-tak",
  "cfa4-theora",
  "cfa4-thp",
  "cfa4-truehd",
+ "cfa4-truespeech",
  "cfa4-tta",
  "cfa4-twinvq",
  "cfa4-utvideo",
@@ -506,6 +508,13 @@ dependencies = [
 ]
 
 [[package]]
+name = "cfa4-indeo45"
+version = "0.10.0"
+dependencies = [
+ "thiserror",
+]
+
+[[package]]
 name = "cfa4-interchange"
 version = "0.10.0"
 dependencies = [
@@ -542,13 +551,6 @@ name = "cfa4-jxl"
 version = "0.10.0"
 dependencies = [
  "rayon",
- "thiserror",
-]
-
-[[package]]
-name = "cfa4-indeo45"
-version = "0.10.0"
-dependencies = [
  "thiserror",
 ]
 
@@ -595,7 +597,9 @@ dependencies = [
  "cfa4-jxl",
  "cfa4-realaudio",
  "cfa4-time",
+ "cfa4-truespeech",
  "cfa4-twinvq",
+ "cfa4-yamaha-oki",
  "image",
  "log",
  "rayon",
@@ -774,6 +778,13 @@ dependencies = [
 ]
 
 [[package]]
+name = "cfa4-svq1"
+version = "0.10.0"
+dependencies = [
+ "thiserror",
+]
+
+[[package]]
 name = "cfa4-svq3"
 version = "0.10.0"
 dependencies = [
@@ -825,6 +836,13 @@ name = "cfa4-truehd"
 version = "0.10.0"
 dependencies = [
  "log",
+ "thiserror",
+]
+
+[[package]]
+name = "cfa4-truespeech"
+version = "0.10.0"
+dependencies = [
  "thiserror",
 ]
 

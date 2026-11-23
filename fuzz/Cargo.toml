@@ -505,10 +505,25 @@ bench = false
 [[bin]]
 name = "bink"
 path = "fuzz_targets/bink.rs"
+test = false
+doc = false
+bench = false
+
+[[bin]]
 name = "svq1"
 path = "fuzz_targets/svq1.rs"
+test = false
+doc = false
+bench = false
+
+[[bin]]
 name = "indeo45"
 path = "fuzz_targets/indeo45.rs"
+test = false
+doc = false
+bench = false
+
+[[bin]]
 name = "indeo3"
 path = "fuzz_targets/indeo3.rs"
 test = false
@@ -644,14 +659,39 @@ bench = false
 [[bin]]
 name = "amv"
 path = "fuzz_targets/amv.rs"
+test = false
+doc = false
+bench = false
+
+[[bin]]
 name = "twinvq"
 path = "fuzz_targets/twinvq.rs"
+test = false
+doc = false
+bench = false
+
+[[bin]]
 name = "mace"
 path = "fuzz_targets/mace.rs"
+test = false
+doc = false
+bench = false
+
+[[bin]]
 name = "truespeech"
 path = "fuzz_targets/truespeech.rs"
+test = false
+doc = false
+bench = false
+
+[[bin]]
 name = "yamaha_oki"
 path = "fuzz_targets/yamaha_oki.rs"
+test = false
+doc = false
+bench = false
+
+[[bin]]
 name = "qdm2"
 path = "fuzz_targets/qdm2.rs"
 test = false
