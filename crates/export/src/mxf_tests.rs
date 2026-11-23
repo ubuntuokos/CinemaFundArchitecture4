@@ -755,6 +755,43 @@ fn xdcam_hd422_as03_metadata_and_shims() {
     assert_eq!(a.len(), 6);
 }
 
+/// #1536: further sequences go into the same bundle as more versions, each with its own
+/// components and version file; one manifest and one shim file list everything.
+#[test]
+fn as02_bundle_holds_several_versions() {
+    use cfa4_mxf::as02::{Manifest, Role};
+    let (p, seq, m) = project();
+    let dir = tmp("as02_versions");
+    let _ = std::fs::remove_dir_all(&dir);
+    let s = ExportSettings { mxf_as02: true, mxf_as02_versions: vec![seq.0], ..settings(Format::MxfOp1a, MxfVideoCodec::Dnxhr, &dir) };
+    let r = export(&p, seq, &s, &m, &Progress::default()).unwrap();
+    assert_eq!(r.frames, 48, "two 24-frame versions");
+    let name = std::path::Path::new(&dir).file_name().unwrap().to_string_lossy().to_string();
+    let man = Manifest::parse(&std::fs::read_to_string(format!("{dir}/manifest.xml")).unwrap()).unwrap();
+    assert_eq!(man.check(), Vec::<String>::new());
+    assert_eq!(man.bundle_name, name);
+    assert_eq!(man.versions().count(), 2);
+    assert_eq!(man.essence_components().count(), 6, "picture + two sound channels per version");
+    assert_eq!(man.files.iter().filter(|f| f.role == Role::Shim).count(), 1);
+    for f in man.files.iter().filter(|f| f.role != Role::Folder) {
+        assert!(std::path::Path::new(&format!("{dir}/{}", f.path)).is_file(), "{}", f.path);
+    }
+    for stem in [name.clone(), format!("{name}_v2")] {
+        let v = std::fs::read(format!("{dir}/{stem}.mxf")).unwrap();
+        let ver = cfa4_mxf::as02_version::read_version(&v).unwrap();
+        assert!(ver.problems.is_empty(), "{stem}: {:?}", ver.problems);
+        assert_eq!(ver.components.len(), 3, "{stem}");
+        for c in &ver.components {
+            let rel = c.locator.as_deref().unwrap();
+            assert!(rel.contains(&stem), "{stem} uses its own components, not {rel}");
+        }
+    }
+    // a version needs the bundle switch
+    let bad = ExportSettings { mxf_as02_versions: vec![seq.0], ..settings(Format::MxfOp1a, MxfVideoCodec::Dnxhr, &dir) };
+    assert!(bad.validate().is_err());
+    let _ = std::fs::remove_dir_all(&dir);
+}
+
 /// #1477: `mxf_as02` writes a simple AS-02 bundle: the version file and `manifest.xml` in the
 /// folder, the picture and each audio channel as a mono OP1a file under `media/`.
 #[test]

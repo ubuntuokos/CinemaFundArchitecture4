@@ -172,3 +172,28 @@ fn an_exported_bundle_imports_again() {
     assert!(d["warnings"].as_array().is_none_or(Vec::is_empty), "{r}");
     let _ = std::fs::remove_dir_all(&dir);
 }
+
+/// #1536: `mxfAs02Versions` writes more sequences into the same bundle; import gives one sequence
+/// per version again.
+#[test]
+fn a_bundle_with_two_versions_imports_as_two_sequences() {
+    let mut s = Session::default();
+    let new = |s: &mut Session, name: &str| {
+        s.execute("file.newSequence", json!({"name": name, "fps": 25.0, "width": 320, "height": 180, "video": 1, "audio": 1})).unwrap();
+        s.state.active_sequence.unwrap()
+    };
+    let a = new(&mut s, "Version A");
+    let b = new(&mut s, "Version B");
+    let dir = cfa4_testkit::workspace_root().join("target").join("export-tests").join(format!("engine-as02-versions-{}", std::process::id()));
+    let _ = std::fs::remove_dir_all(&dir);
+    let out = dir.to_string_lossy().to_string();
+    let p = json!({"format": "mxf-op1a", "path": out, "sequence": a.0, "mxfAs02": true, "mxfAs02Versions": [b.0], "wait": true});
+    s.execute("file.exportMedia", p).unwrap();
+    let r = s.execute("file.import", json!({"paths": [out]})).unwrap();
+    let d = &r["documents"][0];
+    assert_eq!(d["versions"].as_array().map(Vec::len), Some(2), "{r}");
+    // an unknown sequence is refused before anything is written
+    let bad = json!({"format": "mxf-op1a", "path": out, "mxfAs02": true, "mxfAs02Versions": [999_999], "wait": true});
+    assert!(s.execute("file.exportMedia", bad).is_err());
+    let _ = std::fs::remove_dir_all(&dir);
+}

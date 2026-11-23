@@ -151,6 +151,10 @@ struct As02Bundle {
     /// The bundle folder and its name (the folder's name, also the version file's stem).
     dir: String,
     name: String,
+    /// The bundle's own name (the folder's), which differs from `name` for versions 2 and up.
+    bundle: String,
+    /// 0 for the first version, 2 and up for a version appended to an existing bundle.
+    version: u32,
     rate: Rational,
     modified: Timestamp,
     seed: String,
@@ -310,8 +314,10 @@ impl MxfMux {
             // AS-02 6.2: every essence component is a mono OP1a file under media/, with a file
             // package of its own; the version file ties them together (written in `finish`)
             let dir = settings.path.trim_end_matches(['/', '\\']).to_string();
-            let name =
+            let bundle =
                 std::path::Path::new(&dir).file_name().map(|n| n.to_string_lossy().to_string()).filter(|n| !n.is_empty()).unwrap_or_else(|| "bundle".into());
+            let version = settings.mxf_as02_version;
+            let name = if version >= 2 { format!("{bundle}_v{version}") } else { bundle.clone() };
             std::fs::create_dir_all(format!("{dir}/media")).map_err(io)?;
             let component = |tag: &str| {
                 let rel = format!("media/{name}_{tag}.mxf");
@@ -340,7 +346,7 @@ impl MxfMux {
                     sound.push((ids.file, rel));
                 }
             }
-            as02 = Some(As02Bundle { dir, name, rate, modified: cfg.modified, seed: seed.clone(), picture, sound });
+            as02 = Some(As02Bundle { dir, name, bundle, version, rate, modified: cfg.modified, seed: seed.clone(), picture, sound });
         } else if atom && let Some((sr, ch)) = s.audio {
             for (k, path) in opatom_audio_paths(&settings.path, ch).into_iter().enumerate() {
                 // Avid style: the files share the material package; each has its own file package.
@@ -534,43 +540,54 @@ fn finish_bundle(b: As02Bundle, video: MxfWriter<Out>, audio: Vec<(String, MxfWr
             annotations: Vec::new(),
         },
     );
-    // the shim file (section 10): the bundle follows the general provisions, mono essence OP1a
-    // components and a version file, with no named shim
-    let shim = cfa4_mxf::as02::Shim {
-        name: "CFA4 general AS-02 bundle".into(),
-        id: None,
-        annotations: vec!["Mono-essence OP1a components with an OP1b version file; no further constraints.".into()],
+    if b.version < 2 {
+        // the shim file (section 10): the bundle follows the general provisions, mono essence OP1a
+        // components and a version file, with no named shim
+        let shim = cfa4_mxf::as02::Shim {
+            name: "CFA4 general AS-02 bundle".into(),
+            id: None,
+            annotations: vec!["Mono-essence OP1a components with an OP1b version file; no further constraints.".into()],
+        }
+        .to_xml();
+        let shim_path = format!("{}/shim.xml", b.dir);
+        std::fs::write(&shim_path, shim.as_bytes()).map_err(|e| ExportError::Io(format!("{shim_path}: {e}")))?;
+        total += shim.len() as u64;
+        files.insert(
+            1,
+            File {
+                id: uuid_urn(&format!("shim:{}", b.seed)),
+                role: Role::Shim,
+                size: shim.len() as u64,
+                path: "shim.xml".into(),
+                mic: Some(md5_mic(&shim_path)?),
+                annotations: Vec::new(),
+            },
+        );
+        extra.push(shim_path);
     }
-    .to_xml();
-    let shim_path = format!("{}/shim.xml", b.dir);
-    std::fs::write(&shim_path, shim.as_bytes()).map_err(|e| ExportError::Io(format!("{shim_path}: {e}")))?;
-    total += shim.len() as u64;
-    files.insert(
-        1,
-        File {
-            id: uuid_urn(&format!("shim:{}", b.seed)),
-            role: Role::Shim,
-            size: shim.len() as u64,
-            path: "shim.xml".into(),
-            mic: Some(md5_mic(&shim_path)?),
+    let manifest_path = format!("{}/manifest.xml", b.dir);
+    let manifest = if b.version >= 2 {
+        // a further version: its files join the manifest of the bundle written before
+        let old = std::fs::read_to_string(&manifest_path).map_err(|e| ExportError::Io(format!("{manifest_path}: {e}")))?;
+        let mut m = Manifest::parse(&old).map_err(|e| ExportError::Encode(format!("AS-02 bundle: {manifest_path}: {e}")))?;
+        m.files.extend(files.into_iter().filter(|f| f.role != Role::Folder));
+        m
+    } else {
+        Manifest {
+            bundle_name: b.bundle.clone(),
+            bundle_id: uuid_urn(&format!("bundle:{}", b.seed)),
+            creator: "CFA4".into(),
+            creation_date: xs_date_time(b.modified),
             annotations: Vec::new(),
-        },
-    );
-    extra.push(shim_path);
-    let manifest = Manifest {
-        bundle_name: b.name.clone(),
-        bundle_id: uuid_urn(&format!("bundle:{}", b.seed)),
-        creator: "CFA4".into(),
-        creation_date: xs_date_time(b.modified),
-        annotations: Vec::new(),
-        files,
+            files,
+        }
     };
-    let problems = manifest.check_simple();
+    // one version is a simple bundle (4.3.8); with more versions only the general rules apply
+    let problems = if b.version >= 2 { manifest.check() } else { manifest.check_simple() };
     if !problems.is_empty() {
         return Err(ExportError::Encode(format!("AS-02 bundle: {}", problems.join("; "))));
     }
     let xml = manifest.to_xml();
-    let manifest_path = format!("{}/manifest.xml", b.dir);
     std::fs::write(&manifest_path, xml.as_bytes()).map_err(|e| ExportError::Io(format!("{manifest_path}: {e}")))?;
     total += xml.len() as u64;
     extra.push(version_path);
