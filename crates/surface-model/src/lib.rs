@@ -3,7 +3,8 @@
 //! Every physical input (HID, MIDI, later OSC) is normalised by the device I/O crate
 //! (`cfa4-surface`, L5) into a [`SurfaceEvent`]; the engine (L4) maps it to a command. Feedback
 //! flows the other way as [`SurfaceFeedback`]. This crate holds only the shared types and the pure
-//! [`midi`] byte-stream parser: no I/O, no clock, no threads, so L4 and L5 can both depend on it.
+//! [`midi`] byte-stream parser and the [`gesture`] recogniser: no I/O, no clock, no threads, so L4
+//! and L5 can both depend on it.
 //!
 //! Normalisation never drops what a device needs to work: MIDI channel, controller number,
 //! message kind, raw value and its resolution, press and release, the sign of a relative value and
@@ -12,6 +13,7 @@
 //!
 //! [ADR 0012]: ../../../docs/adr/ADR-0012-control-surface.md
 
+pub mod gesture;
 pub mod midi;
 
 use serde::{Deserialize, Serialize};
@@ -62,6 +64,9 @@ pub enum SurfaceProtocol {
     Hid,
     Midi,
     Osc,
+    /// Qt pointer, Wayland or X11. The device id is the fixed `pointer:seat`
+    /// ([`gesture::pointer_seat`]): a `wl_pointer` button event names no device.
+    Pointer,
 }
 
 impl SurfaceProtocol {
@@ -71,6 +76,7 @@ impl SurfaceProtocol {
             SurfaceProtocol::Hid => "hid",
             SurfaceProtocol::Midi => "midi",
             SurfaceProtocol::Osc => "osc",
+            SurfaceProtocol::Pointer => "pointer",
         }
     }
 }
@@ -193,6 +199,12 @@ pub enum SurfaceInput {
     Button {
         control: ControlId,
         pressed: bool,
+    },
+    /// A recognised pointer gesture (MG1). `id` is a direction name (`direction.right`, …) or a
+    /// template id. The engine places this on the existing `surface.inject` path; it does not run a
+    /// command until a binding exists, which is a later phase.
+    Gesture {
+        id: String,
     },
     /// An absolute value with its resolution (7 or 14 bits); `value` is the raw value.
     Absolute {
@@ -425,7 +437,7 @@ mod tests {
             assert!(stem.chars().all(|c| c.is_ascii_alphanumeric() || "-_.".contains(c)), "{stem}");
             assert!(!stem.contains('/') && !stem.contains('\\'), "{stem}");
         }
-        for p in [SurfaceProtocol::Hid, SurfaceProtocol::Midi, SurfaceProtocol::Osc] {
+        for p in [SurfaceProtocol::Hid, SurfaceProtocol::Midi, SurfaceProtocol::Osc, SurfaceProtocol::Pointer] {
             assert_eq!(serde_json::to_value(p).ok(), Some(serde_json::Value::String(p.as_str().into())));
         }
     }
