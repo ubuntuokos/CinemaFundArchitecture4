@@ -96,7 +96,6 @@ fidelity and the remaining work.
 | Speex | audio | `crates/speex` | ported | yes: Ogg Speex | no |
 | TTA (True Audio) | audio | `crates/tta` | ported | yes | no |
 | NTT TwinVQ, Voxware MetaSound | audio | `crates/twinvq` | ported | yes: in .vqf, .vql, .vqe and WAV (0x0075) files | no |
-| NTT TwinVQ | audio | `crates/twinvq` | ported | yes: in .vqf, .vql and .vqe files | no |
 | Nintendo DSP ADPCM / PCM streams | audio | `crates/nstream` | ported | yes: in .brstm, .bfstm and .bcstm files | no |
 | RealAudio Cook / SIPR / 1.0 (14.4) / 2.0 (28.8), ATRAC1, ATRAC3, ATRAC3plus, ATRAC9 | audio | `crates/realaudio`, `crates/atracenc` | ported | yes: in RealMedia (.rm, .rmvb); ATRAC1 in MiniDisc (.aea) and Matroska, ATRAC3 also in WAV (.wav, .at3), ATRAC3plus in WAV and OpenMG (.at3, .oma, .aa3), ATRAC9 in WAV (.at9) | yes: ATRAC3 (.at3) in Tools ▸ Audio Tools ▸ AT9/AT3 Converter |
 | Shorten | audio | `crates/shorten` | ported | yes | no |
