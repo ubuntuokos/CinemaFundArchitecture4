@@ -119,6 +119,13 @@ dependencies = [
 ]
 
 [[package]]
+name = "cfa4-acm"
+version = "0.10.0"
+dependencies = [
+ "thiserror",
+]
+
+[[package]]
 name = "cfa4-adpcm"
 version = "0.10.0"
 dependencies = [
@@ -134,6 +141,13 @@ dependencies = [
 
 [[package]]
 name = "cfa4-amr"
+version = "0.10.0"
+dependencies = [
+ "thiserror",
+]
+
+[[package]]
+name = "cfa4-amv"
 version = "0.10.0"
 dependencies = [
  "thiserror",
@@ -172,6 +186,13 @@ dependencies = [
 [[package]]
 name = "cfa4-avi"
 version = "0.10.0"
+
+[[package]]
+name = "cfa4-bink"
+version = "0.10.0"
+dependencies = [
+ "thiserror",
+]
 
 [[package]]
 name = "cfa4-bitstream"
@@ -320,14 +341,17 @@ version = "0.0.0"
 dependencies = [
  "cfa4-aac",
  "cfa4-ac3",
+ "cfa4-acm",
  "cfa4-adpcm",
  "cfa4-adx",
  "cfa4-amr",
+ "cfa4-amv",
  "cfa4-apv",
  "cfa4-auro",
  "cfa4-av1",
  "cfa4-av2",
  "cfa4-avi",
+ "cfa4-bink",
  "cfa4-canopus",
  "cfa4-captions",
  "cfa4-cavs",
@@ -351,37 +375,53 @@ dependencies = [
  "cfa4-huffyuv",
  "cfa4-iab",
  "cfa4-ilbc",
+ "cfa4-indeo3",
+ "cfa4-indeo45",
  "cfa4-interchange",
  "cfa4-isobmff",
  "cfa4-j2k",
  "cfa4-jxl",
  "cfa4-lagarith",
  "cfa4-lcevc",
+ "cfa4-mace",
  "cfa4-magicyuv",
  "cfa4-matroska",
+ "cfa4-mobiclip",
  "cfa4-mpa",
  "cfa4-mpeg2v",
  "cfa4-mpegts",
+ "cfa4-msvideo",
  "cfa4-musepack",
+ "cfa4-mve",
  "cfa4-mxf",
+ "cfa4-nstream",
  "cfa4-ogg",
  "cfa4-opus",
  "cfa4-project",
  "cfa4-prores",
+ "cfa4-qdm2",
  "cfa4-realaudio",
  "cfa4-realmedia",
  "cfa4-realvideo",
+ "cfa4-roq",
  "cfa4-shorten",
  "cfa4-smacker",
  "cfa4-speex",
  "cfa4-sstp",
  "cfa4-st2110",
+ "cfa4-svq1",
+ "cfa4-svq3",
  "cfa4-tak",
+ "cfa4-theora",
+ "cfa4-thp",
  "cfa4-truehd",
+ "cfa4-truespeech",
  "cfa4-tta",
+ "cfa4-twinvq",
  "cfa4-utvideo",
  "cfa4-vp8",
  "cfa4-vp9",
+ "cfa4-yamaha-oki",
  "libfuzzer-sys",
 ]
 
@@ -461,6 +501,20 @@ dependencies = [
 ]
 
 [[package]]
+name = "cfa4-indeo3"
+version = "0.10.0"
+dependencies = [
+ "thiserror",
+]
+
+[[package]]
+name = "cfa4-indeo45"
+version = "0.10.0"
+dependencies = [
+ "thiserror",
+]
+
+[[package]]
 name = "cfa4-interchange"
 version = "0.10.0"
 dependencies = [
@@ -512,6 +566,13 @@ name = "cfa4-lcevc"
 version = "0.10.0"
 
 [[package]]
+name = "cfa4-mace"
+version = "0.10.0"
+dependencies = [
+ "thiserror",
+]
+
+[[package]]
 name = "cfa4-magicyuv"
 version = "0.10.0"
 dependencies = [
@@ -536,10 +597,20 @@ dependencies = [
  "cfa4-jxl",
  "cfa4-realaudio",
  "cfa4-time",
+ "cfa4-truespeech",
+ "cfa4-twinvq",
+ "cfa4-yamaha-oki",
  "image",
  "log",
  "rayon",
  "serde",
+ "thiserror",
+]
+
+[[package]]
+name = "cfa4-mobiclip"
+version = "0.10.0"
+dependencies = [
  "thiserror",
 ]
 
@@ -567,7 +638,21 @@ dependencies = [
 ]
 
 [[package]]
+name = "cfa4-msvideo"
+version = "0.10.0"
+dependencies = [
+ "thiserror",
+]
+
+[[package]]
 name = "cfa4-musepack"
+version = "0.10.0"
+dependencies = [
+ "thiserror",
+]
+
+[[package]]
+name = "cfa4-mve"
 version = "0.10.0"
 dependencies = [
  "thiserror",
@@ -582,6 +667,13 @@ dependencies = [
  "hmac",
  "roxmltree",
  "sha1",
+]
+
+[[package]]
+name = "cfa4-nstream"
+version = "0.10.0"
+dependencies = [
+ "thiserror",
 ]
 
 [[package]]
@@ -616,6 +708,13 @@ dependencies = [
 ]
 
 [[package]]
+name = "cfa4-qdm2"
+version = "0.10.0"
+dependencies = [
+ "thiserror",
+]
+
+[[package]]
 name = "cfa4-realaudio"
 version = "0.10.0"
 dependencies = [
@@ -631,6 +730,13 @@ dependencies = [
 
 [[package]]
 name = "cfa4-realvideo"
+version = "0.10.0"
+dependencies = [
+ "thiserror",
+]
+
+[[package]]
+name = "cfa4-roq"
 version = "0.10.0"
 dependencies = [
  "thiserror",
@@ -672,6 +778,20 @@ dependencies = [
 ]
 
 [[package]]
+name = "cfa4-svq1"
+version = "0.10.0"
+dependencies = [
+ "thiserror",
+]
+
+[[package]]
+name = "cfa4-svq3"
+version = "0.10.0"
+dependencies = [
+ "thiserror",
+]
+
+[[package]]
 name = "cfa4-tak"
 version = "0.10.0"
 dependencies = [
@@ -691,6 +811,20 @@ dependencies = [
 ]
 
 [[package]]
+name = "cfa4-theora"
+version = "0.10.0"
+dependencies = [
+ "thiserror",
+]
+
+[[package]]
+name = "cfa4-thp"
+version = "0.10.0"
+dependencies = [
+ "thiserror",
+]
+
+[[package]]
 name = "cfa4-time"
 version = "0.10.0"
 dependencies = [
@@ -706,7 +840,21 @@ dependencies = [
 ]
 
 [[package]]
+name = "cfa4-truespeech"
+version = "0.10.0"
+dependencies = [
+ "thiserror",
+]
+
+[[package]]
 name = "cfa4-tta"
+version = "0.10.0"
+dependencies = [
+ "thiserror",
+]
+
+[[package]]
+name = "cfa4-twinvq"
 version = "0.10.0"
 dependencies = [
  "thiserror",
@@ -734,6 +882,10 @@ dependencies = [
  "rayon",
  "thiserror",
 ]
+
+[[package]]
+name = "cfa4-yamaha-oki"
+version = "0.10.0"
 
 [[package]]
 name = "cfg-if"

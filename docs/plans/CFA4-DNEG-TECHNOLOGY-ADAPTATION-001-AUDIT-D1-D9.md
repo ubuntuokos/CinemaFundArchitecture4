@@ -4,6 +4,7 @@
 > **Projekt:** CFA4-DNEG-TECHNOLOGY-ADAPTATION-001 · **Dátum:** 2026-11-21
 > **Alap:** CFA4 `main` @ `97d7982f` (git fetch, 2026-11-21). Kód nem módosult; csak dokumentáció.
 > **Hálózati ellenőrzés:** 2026-11-21 (a tulajdonos jelezte, hogy a hálózat elérhető). A DNEG- és upstream-repók shallow klónjai, licenc- és fejlécolvasás, `git rev-parse` összevetés; az eredmények a D7/D8-ban és a jegyzékben. Az AAF SDK **forrását nem olvastam** (clean-room), csak a licencszöveget és a README-t.
+> **[MÓD-5] Egyeztetés (2026-11-22, jóváhagyásra vár):** [`CFA4-DNEG-VFX-EGYEZTETES-001`](CFA4-DNEG-VFX-EGYEZTETES-001-0.1.md) – donor-újraellenőrzés, OpenVDB-licenc verziónként (v10.0.1/v11 MPL-2.0, v12.0.0-tól Apache-2.0), a 26.04-es csomagok és a CFA4-VFX-001-gyel való ütközések. A jelölt sorok a jóváhagyásig nem hatályosak.
 > **A végleges terv:** [`CFA4-DNEG-TECHNOLOGY-ADAPTATION-001-1.0.md`](CFA4-DNEG-TECHNOLOGY-ADAPTATION-001-1.0.md) (D10, kapuk, elfogadási feltételek).
 
 ## 0. Módszer, és ami ebből az auditból hiányzik
@@ -16,12 +17,12 @@ Minden állítás mellett ott a forrás (fájl vagy parancs). Ami nem ellenőriz
 
 ### 0.1 Kritikus megállapítás: öt hivatkozott terv nincs a `main`-ben
 
-A megbízás ezekre a „korábbi CFA4-tervekre” hivatkozik: **CFA4 VFX Catalog**, **Effektlánc**,
+A megbízás ezekre a „korábbi CFA4-tervekre” hivatkozik: **CFA4 VFX Catalog**, **FX Authoring**,
 **Adaptive Representation Fabric (ARF)**, **OpenUSD / 3D Scene Exchange / procedurális 3D**,
 **Potree-alapú point-cloud donorvizsgálat** (és Gaffer). Ellenőrzés a `main`-en:
 
 ```
-grep -rliE "Effektlánc|Adaptive Representation|VFX Catalog|Gaffer|Potree|NanoVDB|glTF" \
+grep -rliE "FX Authoring|Adaptive Representation|VFX Catalog|Gaffer|Potree|NanoVDB|glTF" \
      --include=*.md --include=*.rs --include=*.py --include=*.toml .   # (vendor/ nélkül)  → 0 találat
 grep -rliE "OpenVDB" …                                                  → csak ADR-0003
 grep -rliE "OpenUSD|\bUSD\b" …                                          → csak spec-kit/superpowers (nem média-USD)
@@ -40,7 +41,7 @@ A klónban csak a `main` ág látszik; a nyitott PR-ok (31 db a lekérdezéskor,
    a tulajdonos gépén vannak. Ezt nem tudtam ellenőrizni (a munkamenethez csak ez a tároló van
    csatolva). **Tulajdonosi teendő:** a hiányzó tervek `main`-be emelése vagy elérhetővé tétele (G0).
 
-4. **Frissítés (2026-11-21, tulajdonosi döntés):** a hiányzó tervekhez *új terv készül*, a `docs/plans/` alatt (javaslatok, jóváhagyásra várnak): [`CFA4-VFX-CATALOG-001`](CFA4-VFX-CATALOG-001-0.1.md), [`CFA4-EFFECTCHAIN-001`](CFA4-EFFECTCHAIN-001-0.1.md), [`CFA4-ARF-001`](CFA4-ARF-001-0.1.md), [`CFA4-OPENUSD-3D-001`](CFA4-OPENUSD-3D-001-0.1.md), [`CFA4-POINTCLOUD-001`](CFA4-POINTCLOUD-001-0.1.md). Amíg ezek nincsenek jóváhagyva, a D1 `?` sorai nem zárulnak (a besorolás nem változik).
+4. **Frissítés (2026-11-21, tulajdonosi döntés):** a hiányzó tervekhez *új terv készül*, a `docs/plans/` alatt (javaslatok, jóváhagyásra várnak): [`CFA4-VFX-CATALOG-001`](CFA4-VFX-CATALOG-001-0.1.md), [`CFA4-FX-AUTHORING-001`](CFA4-FX-AUTHORING-001-0.1.md), [`CFA4-ARF-001`](CFA4-ARF-001-0.1.md), [`CFA4-OPENUSD-3D-001`](CFA4-OPENUSD-3D-001-0.1.md), [`CFA4-POINTCLOUD-001`](CFA4-POINTCLOUD-001-0.1.md). Amíg ezek nincsenek jóváhagyva, a D1 `?` sorai nem zárulnak (a besorolás nem változik).
 
 ### 0.2 Ami a `main`-ben ténylegesen van (a viszonyítási alap)
 
@@ -98,7 +99,7 @@ Jelölés: **A** már elfogadott CFA4-tervben; **B** meglévő terv valódi bőv
 | # | Képesség | Besorolás | Kapcsolódó terv / tény | Új érték (DNEG) | Hely | Dup. | Döntés |
 |---|---|---|---|---|---|---|---|
 | A1 | VFX-effektkatalógus, effektláncok | **A** | M5.11 katalógus (`crates/render/src/vfx`), G18 | – | – | – | Nem fejlesztési feladat. A „CFA4 VFX Catalog” elnevezésű terv nincs a `main`-ben (0.1). |
-| A2 | Effektlánc | **A?** | nincs a `main`-ben | – | – | – | Kimarad (G0). |
+| A2 | FX Authoring | **A?** | nincs a `main`-ben | – | – | – | Kimarad (G0). |
 | A3 | Procedurális effektek (2D) | **A** | `particles`, glitch, stylize | – | – | – | Kimarad. |
 | A4 | GPU/CPU végrehajtás | **A** | wgpu, ADR-0004, ACS | – | – | – | Kimarad (D9). |
 | A5 | Kulcskocka (kifejezés: képkocka-paraméter) | **A** | Effect Controls kulcskockák | – | – | – | Kimarad. |
@@ -241,7 +242,7 @@ Az ellenőrzés a repók `LICENSE`-fájljaiból és forrásfejlécek `SPDX-Licen
 
 | Donor | Licenc (igazolt, forrás) | Állapot | Következmény |
 |---|---|---|---|
-| **ASWF OpenVDB** (core, `points`, `nanovdb`, `openvdb_ax`) | **Apache-2.0** (`LICENSE`; fejlécek: `Grid.h`, `AST.h`: `SPDX-License-Identifier: Apache-2.0`; `RE-LICENSE_NOTE.txt`: a közreműködők az MPL-2.0-ról Apache-2.0-ra relicenszelték, köztük a „Double Negative”). Verzió a klónban: CMake `14.0.0`; a klón HEAD 2026-11-20 | **IGAZOLT** | GPL-3-kompatibilis (licensing.md §3). Az előző állításom (MPL-2.0) **téves** volt: az MPL a relicenc előtti állapot. A megbízás állítása helyes. ADR-0003 táblasora („BSD-3 / Apache-2.0”) pontosítandó: **Apache-2.0**. |
+| **ASWF OpenVDB** (core, `points`, `nanovdb`, `openvdb_ax`) | **`[MÓD-5]` verziófüggő: v10.0.1 és v11.0.0 = MPL-2.0, v12.0.0-tól Apache-2.0** (a tag-ek `LICENSE`/`SPDX` fejlécei, 2026-11-22; az Ubuntu 26.04-es csomag 10.0.1 → MPL-2.0). A lenti sor a 14.0.0/HEAD állapotot írja le: **Apache-2.0** (`LICENSE`; fejlécek: `Grid.h`, `AST.h`: `SPDX-License-Identifier: Apache-2.0`; `RE-LICENSE_NOTE.txt`: a közreműködők az MPL-2.0-ról Apache-2.0-ra relicenszelték, köztük a „Double Negative”). Verzió a klónban: CMake `14.0.0`; a klón HEAD 2026-11-20 | **IGAZOLT** | GPL-3-kompatibilis (licensing.md §3). Az előző állításom (MPL-2.0) **téves** volt: az MPL a relicenc előtti állapot. A megbízás állítása helyes. ADR-0003 táblasora („BSD-3 / Apache-2.0”) pontosítandó: **Apache-2.0**. |
 | `dneg/openvdb` fork | **MPL-2.0** (`LICENSE`; fejléc: `SPDX … MPL-2.0`); utolsó commit 2020-12-24, tehát az upstream relicencelése *előtti* pillanatkép | **IGAZOLT** | MPL-2.0 megengedett, de a fork elavult; **nem használjuk** |
 | `dneg/openvdb_ax` | **MPL-2.0** (`LICENSE`); a README: „as of OpenVDB AX 1.0.0 and OpenVDB 8.0.0 this repository has been merged into the OpenVDB ASWF repository”; utolsó commit 2021-01-18 | **IGAZOLT** | AX elsődleges forrása = az ASWF-repó `openvdb_ax/` (Apache-2.0 fejlécek) |
 | `dneg/openvdb_points_dev` | a repóban **csak `README.md`** van, licencfájl nincs; a README: „This repository is deprecated … integrated into the Dreamworks Animation OpenVDB repository”; utolsó commit 2017-01-20 | **IGAZOLT** | licenc a repóban **nem megállapítható**; **nem használható**; a Points = az upstream `openvdb/points/` (a klónban megvan: AttributeArray/Set/Group, PointGroup, PointCount, PointDelete, PointMove, PointScatter, StreamCompression…) |
@@ -291,13 +292,13 @@ A DNEG-eredetű képességek ehhez **csak** a következőket adják hozzá, a wo
 
 | ID | Tétel | Állapot | Mi oldja fel |
 |---|---|---|---|
-| U1 | VFX Catalog, Effektlánc, ARF, OpenUSD/3D, Potree/pontfelhő terv | **javaslatok megírva** (`docs/plans/…-0.1.md`), tulajdonosi jóváhagyásra várnak | jóváhagyás |
+| U1 | VFX Catalog, Effektlánc, ARF, OpenUSD/3D, Potree/pontfelhő terv | **jóváhagyva 2026-11-21** (`docs/plans/…-0.1.md`); a `CFA4-VFX-001`-gyel való egyeztetés `[MÓD-5]` jóváhagyásra vár | az egyeztetés jóváhagyása |
 | U2 | OpenVDB / AX / Points / NanoVDB licenc | **IGAZOLT: Apache-2.0** (upstream); DNEG-forkok MPL-2.0 (nem használjuk) | – |
 | U3 | DNEG-fork állapotok | **IGAZOLT** (stagnáló/deprecated; D8) | – |
 | U4 | USD fork-diff | **IGAZOLT: delta üres** (fork = upstream v23.05); Ubuntu 26.04-es build nincs próbálva | – / U6 |
 | U5 | AAF SDK licence | **IGAZOLT a szöveg** (PSL 2.0); GPL-3-kompatibilitás **jogilag nem minősített** | jogi vélemény, ha egyáltalán kell |
-| U6 | Ubuntu 26.04 csomagok (libopenvdb, TBB, LLVM ≥ 18) | **ELLENŐRIZETLEN** | 26.04-es gépen/konténerben `apt-cache policy` |
+| U6 | Ubuntu 26.04 csomagok (libopenvdb, TBB, LLVM ≥ 18) | **részben igazolt `[MÓD-5]`**: `openvdb` 10.0.1-3 (Launchpad, G1, 2026-11-22; upstream MPL-2.0); `openusd`/`usd-core` forráscsomag nincs; LLVM tárgytalan (Q4); a bináris csomagok tartalma és a tényleges `copyright` fájl ELLENŐRIZETLEN | 26.04-es gépen/konténerben `apt-cache policy`, `apt-file` |
 | U7 | AX sandbox-PoC | nincs implementáció | G4 |
 | U8 | Teljesítmény- és memóriamérések | nincs implementáció | G2–G5 |
 | U9 | Transzitív licencek (TBB, zlib, Zstd, LLVM) | ismeret, fájlból nem olvasva | G1 |
-| U10 | OpenUSD upstream HEAD verziószáma | nem olvastam (csak a v23.05 tag és a 2026-11-18-i HEAD dátum) | G7 |
+| U10 | OpenUSD upstream HEAD verziószáma | **lezárva `[MÓD-5]`**: legutóbbi kiadás v26.11.1 (2026-10-21), `dev` HEAD 2026-11-18 | – |

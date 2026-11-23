@@ -17,7 +17,7 @@ pub struct Step {
 
 /// Every component and its steps, in the order they are applied.
 pub fn components() -> &'static [(&'static str, &'static [Step])] {
-    &[("tasks", TASKS)]
+    &[("tasks", TASKS), ("ai", AI), ("cache", CACHE)]
 }
 
 const TASKS: &[Step] = &[
@@ -76,7 +76,94 @@ CREATE INDEX task_open ON tasks.task (class_rank, priority DESC, submitted_at)
 CREATE INDEX task_open ON tasks.task (class_rank, priority DESC, submitted_at)
     WHERE state IN ('scheduled', 'queued', 'waiting', 'running');",
     },
+    Step {
+        version: 3,
+        // P5: wall-clock times are `timestamptz`. The task ids stay `text`: the queue's ids are chosen by
+        // its callers (`export-1`, ...) and are not UUIDs, so the uuid half of D-5 is not applied here.
+        up: "ALTER TABLE tasks.task ALTER COLUMN submitted_at TYPE timestamptz USING to_timestamp(submitted_at / 1000.0);
+ALTER TABLE tasks.task ALTER COLUMN start_at TYPE timestamptz USING to_timestamp(start_at / 1000.0);
+ALTER TABLE tasks.task ALTER COLUMN lease_until TYPE timestamptz USING to_timestamp(lease_until / 1000.0);
+ALTER TABLE tasks.transition ALTER COLUMN at TYPE timestamptz USING to_timestamp(at / 1000.0);",
+        down: "ALTER TABLE tasks.task ALTER COLUMN submitted_at TYPE bigint USING (extract(epoch from submitted_at) * 1000)::bigint;
+ALTER TABLE tasks.task ALTER COLUMN start_at TYPE bigint USING (extract(epoch from start_at) * 1000)::bigint;
+ALTER TABLE tasks.task ALTER COLUMN lease_until TYPE bigint USING (extract(epoch from lease_until) * 1000)::bigint;
+ALTER TABLE tasks.transition ALTER COLUMN at TYPE bigint USING (extract(epoch from at) * 1000)::bigint;",
+    },
 ];
+
+const AI: &[Step] = &[Step {
+    version: 1,
+    up: r#"
+CREATE SCHEMA ai;
+-- the AI part of one queue task: what was asked, which implementation ran, how the route was
+-- decided, and the project version Preview and Apply were made against (no foreign key into
+-- `tasks`: every schema has one migration owner, PG-001 §6)
+CREATE TABLE ai.job (
+    id uuid PRIMARY KEY,
+    task_id text NOT NULL UNIQUE CHECK (length(task_id) BETWEEN 1 AND 256),
+    capability text NOT NULL CHECK (length(capability) BETWEEN 1 AND 128),
+    implementation text NOT NULL CHECK (length(implementation) BETWEEN 1 AND 128),
+    route_decision jsonb NOT NULL,
+    preview_project_version text CHECK (length(preview_project_version) <= 256),
+    apply_project_version text CHECK (length(apply_project_version) <= 256),
+    created_at timestamptz NOT NULL DEFAULT now(),
+    updated_at timestamptz NOT NULL DEFAULT now()
+);
+CREATE INDEX job_capability ON ai.job (capability, created_at DESC);
+-- the one model registry (D-7); the weights are files, never rows (CFA4 does not ship models)
+CREATE TABLE ai.model (
+    id uuid PRIMARY KEY,
+    sha256 text NOT NULL UNIQUE CHECK (sha256 ~ '^[0-9a-f]{64}$'),
+    family text NOT NULL CHECK (length(family) BETWEEN 1 AND 128),
+    revision text NOT NULL CHECK (length(revision) <= 128),
+    variant text NOT NULL CHECK (length(variant) <= 128),
+    format text NOT NULL CHECK (length(format) BETWEEN 1 AND 64),
+    source text NOT NULL CHECK (length(source) <= 1024),
+    license_code text NOT NULL CHECK (length(license_code) <= 256),
+    license_weights text NOT NULL CHECK (length(license_weights) <= 256),
+    license_training_data text NOT NULL CHECK (length(license_training_data) <= 256),
+    license_output text NOT NULL CHECK (length(license_output) <= 256),
+    path text CHECK (length(path) <= 4096),
+    state text NOT NULL CHECK (state IN ('known', 'downloading', 'ready', 'broken', 'removed')),
+    created_at timestamptz NOT NULL DEFAULT now(),
+    updated_at timestamptz NOT NULL DEFAULT now()
+);
+CREATE TABLE ai.model_use (
+    model_id uuid NOT NULL REFERENCES ai.model (id) ON DELETE CASCADE,
+    capability text NOT NULL CHECK (length(capability) BETWEEN 1 AND 128),
+    PRIMARY KEY (model_id, capability)
+);
+-- the user's one-time acceptance of a model's terms; `project_ref` is empty for "everywhere"
+CREATE TABLE ai.license_acceptance (
+    id uuid PRIMARY KEY,
+    implementation text NOT NULL CHECK (length(implementation) BETWEEN 1 AND 128),
+    weight_sha256 text NOT NULL CHECK (weight_sha256 ~ '^[0-9a-f]{64}$'),
+    project_ref text NOT NULL DEFAULT '' CHECK (length(project_ref) <= 4096),
+    accepted_at timestamptz NOT NULL DEFAULT now(),
+    commercial_warning text NOT NULL DEFAULT '' CHECK (length(commercial_warning) <= 4096),
+    UNIQUE (implementation, weight_sha256, project_ref)
+);
+"#,
+    down: "DROP SCHEMA ai CASCADE;",
+}];
+
+const CACHE: &[Step] = &[Step {
+    version: 1,
+    up: r#"
+CREATE SCHEMA cache;
+-- the index of the content-addressed cache; the files stay on disk
+CREATE TABLE cache.entry (
+    key text PRIMARY KEY CHECK (length(key) BETWEEN 1 AND 256),
+    file text NOT NULL CHECK (length(file) BETWEEN 1 AND 4096),
+    size_bytes bigint NOT NULL CHECK (size_bytes >= 0),
+    tier text NOT NULL CHECK (tier IN ('preview', 'final')),
+    last_used_at timestamptz NOT NULL DEFAULT now(),
+    created_at timestamptz NOT NULL DEFAULT now()
+);
+CREATE INDEX entry_lru ON cache.entry (last_used_at, key);
+"#,
+    down: "DROP SCHEMA cache CASCADE;",
+}];
 
 const LEDGER: &str = "CREATE SCHEMA IF NOT EXISTS cfa4_store;
 CREATE TABLE IF NOT EXISTS cfa4_store.migration (

@@ -216,6 +216,9 @@ graph LR
 | `cfa4-engine/credits.rs` | `cfa4-project` | `ClipId`, `EffectKind`, `GraphicMeta`, `ItemKind`, `Label`, `Project`, `Track`, `TrackId`, `TrackItem`, `TrackKind`, `Transition`, `TransitionId`, `find_effect`, `graphic`, `graphic_design`, `gtemplate`, `vtransition` |
 | `cfa4-engine/credits.rs` | `cfa4-render` | `SourceProvider`, `audio`, `graphic_clip`, `image` |
 | `cfa4-engine/credits.rs` | `cfa4-time` | `FrameRate`, `TICKS_PER_SECOND`, `Tick`, `TimeRange` |
+| `cfa4-engine/dcp_export.rs` | `cfa4-export` | `DcpAspect`, `dcp_rate`, `export_range` |
+| `cfa4-engine/dcp_export.rs` | `cfa4-project` | `ItemId` |
+| `cfa4-engine/dcp_export.rs` | `cfa4-time` | `Tick` |
 | `cfa4-engine/dcp_import.rs` | `cfa4-project` | `BinId` |
 | `cfa4-engine/dcp_import.rs` | `cfa4-time` | `Tick` |
 | `cfa4-engine/dcp_validation.rs` | `cfa4-export` | `Report` |
@@ -315,6 +318,12 @@ graph LR
 | `cfa4-engine/narration.rs` | `cfa4-export` | `Progress`, `Report` |
 | `cfa4-engine/narration.rs` | `cfa4-project` | `ClipId` |
 | `cfa4-engine/narration.rs` | `cfa4-time` | `Tick` |
+| `cfa4-engine/objects_track.rs` | `cfa4-export` | `Report` |
+| `cfa4-engine/objects_track.rs` | `cfa4-geom` | `Affine` |
+| `cfa4-engine/objects_track.rs` | `cfa4-media` | `FrameRequest` |
+| `cfa4-engine/objects_track.rs` | `cfa4-project` | `ItemId`, `object` |
+| `cfa4-engine/objects_track.rs` | `cfa4-render` | `cftrack`, `source_size`, `track` |
+| `cfa4-engine/objects_track.rs` | `cfa4-time` | `Tick` |
 | `cfa4-engine/opatom.rs` | `cfa4-media` | `SharedReader` |
 | `cfa4-engine/panels.rs` | `cfa4-color` | `ColorSpace` |
 | `cfa4-engine/panels.rs` | `cfa4-project` | `ClipId`, `ItemId`, `find` |
@@ -811,7 +820,7 @@ graph LR
 
 ## 4. Nyilvános típusok osztályonként
 
-A többi 627 nyilvános típus („other” osztály) csak a `call-graph.json`-ban szerepel.
+A többi 631 nyilvános típus („other” osztály) csak a `call-graph.json`-ban szerepel.
 
 ### Képkocka, kép, pixel (29)
 
@@ -859,12 +868,13 @@ A többi 627 nyilvános típus („other” osztály) csak a `call-graph.json`-b
 | `cfa4-time` | `lib.rs` | enum | `TimeDisplay` |
 | `cfa4-time` | `lib.rs` | struct | `TimeRange` |
 
-### Job, sor, folyamat, megszakítás (28)
+### Job, sor, folyamat, megszakítás (29)
 
 | Crate | Modul | Fajta | Típus |
 |---|---|---|---|
 | `cfa4-engine` | `autosave.rs` | struct | `Status` |
 | `cfa4-engine` | `autosave.rs` | enum | `WorkerEvent` |
+| `cfa4-engine` | `dcp_export.rs` | enum | `DcpStatus` |
 | `cfa4-engine` | `export_tools.rs` | struct | `ExportQueue` |
 | `cfa4-engine` | `export_tools.rs` | struct | `QueueItem` |
 | `cfa4-engine` | `export_tools.rs` | enum | `QueueStatus` |

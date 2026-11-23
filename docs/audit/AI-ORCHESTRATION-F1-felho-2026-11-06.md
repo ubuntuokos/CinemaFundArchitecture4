@@ -82,25 +82,26 @@ változtat rajtuk.
 
 ## 5a. Tulajdonosi döntések (2026-11-06) és végrehajtásuk
 
-A tulajdonos mindhárom javaslatot elfogadta (D-F1-1, D-F1-2, D-F1-3).
+A tulajdonos mindhárom javaslatot elfogadta (D-F1-1, D-F1-2, D-F1-3); a D-F1-1-et 2026-11-22-én módosította (lent).
 
 | ID | Végrehajtás | Állapot |
 |---|---|---|
 | D-F1-2 | Új, személyes **„CFA4”** felhős környezet (a tulajdonos jóváhagyásával): korlátozott hálózat, csomagkezelők és MCP-szerverek engedélyezve, további hosztok: `github.com`, `api.github.com`, `codeload.github.com`, `objects.githubusercontent.com`, `static.rust-lang.org` (a `rust-toolchain.toml` toolchainje), `ffmpeg.org` (`scripts/ci/install-ffmpeg-9.0.2.sh`). A Default környezet változatlan, mert a tulajdonos többi tárolóját is kiszolgálja. | létrehozva; a CFA4-munkameneteknek ezt kell választaniuk. Működése egy új munkamenetben igazolandó (ez a munkamenet nem költöztethető át) – PENDING |
 | D-F1-3 | A nem kapcsolódó bővítmények kikapcsolása a tulajdonos claude.ai-fiókjában | a tulajdonosra vár |
-| D-F1-1 | Kötelező jóváhagyás a `main` rulesetjében | **akadály:** a munkamenetek PR-jai a tulajdonos fiókja nevén jönnek létre, a GitHub pedig nem engedi a saját PR jóváhagyását; a kötelező jóváhagyás így minden beolvasztást blokkolna. Kivétel (bypass) a tulajdonosnak a munkameneteknek is kivételt adna, mert azok ugyanazzal az azonossággal dolgoznak. Feltétele a munkamenetek külön azonossága (bot-fiók vagy GitHub App, merge-jog nélkül) – az I-01 javaslatával egyezik. Tulajdonosi döntésre vár. |
+| D-F1-1 | Kötelező jóváhagyás a `main` rulesetjében | **akadály:** a munkamenetek PR-jai a tulajdonos fiókja nevén jönnek létre, a GitHub pedig nem engedi a saját PR jóváhagyását; a kötelező jóváhagyás így minden beolvasztást blokkolna. Kivétel (bypass) a tulajdonosnak a munkameneteknek is kivételt adna, mert azok ugyanazzal az azonossággal dolgoznak. Lásd lent: a döntés 2026-11-22-én elfogadott kockázat lett. |
 
-**D-F1-1 döntés (2026-11-06):** a tulajdonos a külön bot-fiókot választotta. Lépések:
+**D-F1-1 döntés (2026-11-06, visszavonva 2026-11-22):** a tulajdonos 2026-11-06-án előbb a külön
+bot-fiókot választotta, 2026-11-22-én azonban **visszavonta**: egy másik fiók tevékenységét a
+claude.ai-ból nem látná. Az érvényes döntés:
 
-| # | Lépés | Ki |
-|---|---|---|
-| 1 | GitHub bot-fiók létrehozása saját e-mail-címmel és kétlépcsős azonosítással | tulajdonos |
-| 2 | A bot-fiók meghívása a tárolóba **Write** szerepkörrel (nem Maintain, nem Admin) | tulajdonos |
-| 3 | A claude.ai GitHub-kapcsolatának átállítása a bot-fiókra (`claude.ai/connect-github`). Ez a tulajdonos **minden** felhős munkamenetére érvényes, ezért a bot-fiókot a többi használt tárolóhoz is hozzá kell adni | tulajdonos |
-| 4 | Ruleset a `main`-en: 1 kötelező jóváhagyás, elavult jóváhagyások elvetése új pushnál, a legutóbbi push jóváhagyása, üres bypass-lista | tulajdonos, a 3. lépés után |
-| 5 | Negatív teszt (F1-G5, F3): a bot nem tud jóváhagyás nélkül beolvasztani, nem tud a `main`-re pusholni | munkamenet, külön engedéllyel |
+- a munkamenetek továbbra is a tulajdonos fiókjával dolgoznak, a PR-ok az ő nevén készülnek;
+- a beolvasztásról a tulajdonos dönt, a gazda az ő jóváhagyásával olvaszt be (`docs/coordination.md` §1, §3);
+- a `main` rulesetjében **nincs** kötelező jóváhagyás.
 
-A 4. lépés a 3. előtt minden beolvasztást blokkolna (saját PR nem hagyható jóvá).
+Az F1-G1 így **elfogadott kockázat**: a munkamenet technikailag be tud olvasztani, ezt a
+`coordination.md` szabályai (fejlesztő munkamenet nem olvaszt be), a kötelező `full-validation-gate`
+és a `cargo-check` tartják vissza. Bot-fiókos lépés nincs. Az F1-G5 negatív tesztjéből a merge-próba
+kikerül (az azonos azonosság miatt nem lenne értelmezhető); a push-korlátok tesztje az F3-ban marad.
 
 ## 6. Biztonság, költség, visszaállítás
 

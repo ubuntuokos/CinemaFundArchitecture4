@@ -166,6 +166,15 @@ fn audio_starts(file: &MkvFile, bytes: &crate::Src, ti: usize, rate: i64) -> Vec
         let packets = t.samples.iter().map(|s| PacketTime { stamp: at(s.pts), stamped: own_stamp(s), samples: Some(512) });
         return contiguous_starts(packets, stamp_tolerance(t, rate));
     }
+    if truespeech_track(t) {
+        // TrueSpeech packets hold whole 32-byte frames of 240 samples
+        let packets = t.samples.iter().enumerate().map(|(i, s)| PacketTime {
+            stamp: at(s.pts),
+            stamped: own_stamp(s),
+            samples: t.sample_size(i).and_then(|b| i64::try_from(b / cfa4_truespeech::FRAME_BYTES as u64 * cfa4_truespeech::FRAME_SAMPLES as u64).ok()),
+        });
+        return contiguous_starts(packets, stamp_tolerance(t, rate));
+    }
     if let Some(Ok(c)) = acm_codec(t) {
         // G.711 / ADPCM packets hold whole frames or blocks: they run on like PCM
         let channels = t.audio.as_ref().map_or(1, |a| a.channels.max(1));
@@ -251,6 +260,10 @@ fn audio_info(t: &cfa4_matroska::Track) -> Option<AudioStreamInfo> {
         rate = if wide { cfa4_amr::wb::SAMPLE_RATE } else { cfa4_amr::nb::SAMPLE_RATE };
         channels = 1;
     }
+    if truespeech_track(t) {
+        rate = cfa4_truespeech::SAMPLE_RATE;
+        channels = 1;
+    }
     let (rate, channels) = cfa4_media::bounded_audio_dimensions(rate, channels).ok()?;
     // an `A_MS/ACM` track may leave BitDepth out: its WAVEFORMATEX has the sample size
     let bits = match &t.codec {
@@ -260,6 +273,7 @@ fn audio_info(t: &cfa4_matroska::Track) -> Option<AudioStreamInfo> {
     let codec = match (amr, acm_codec(t)) {
         (Some(wide), _) => if wide { "AMR-WB" } else { "AMR-NB" }.to_string(),
         (_, Some(Ok(c))) => c.name().to_string(),
+        _ if truespeech_track(t) => "TrueSpeech".to_string(),
         _ if real.is_some() => real.as_ref().map_or_else(String::new, |r| r.label().to_string()),
         _ => codec_label(&t.codec),
     };
@@ -295,6 +309,11 @@ fn amr_track(t: &cfa4_matroska::Track) -> Option<bool> {
         },
         _ => None,
     }
+}
+
+/// Whether the track is DSP Group TrueSpeech: an `A_MS/ACM` track with format tag 0x0022.
+fn truespeech_track(t: &cfa4_matroska::Track) -> bool {
+    matches!(&t.codec, Codec::Other(id) if id == "A_MS/ACM") && t.codec_private.get(..2).map(|b| u16::from_le_bytes([b[0], b[1]])) == Some(0x22)
 }
 
 /// The G.711 / G.722 / ADPCM codec of an `A_MS/ACM` track's `WAVEFORMATEX` (`CodecPrivate`);
@@ -440,6 +459,7 @@ fn sample_entry(c: &Codec, private: &[u8], v: Option<&cfa4_matroska::VideoInfo>,
         }
         Codec::Other(id) if id == "V_FFV1" => crate::ffv1::sample_entry(private, w, h),
         Codec::Other(id) if id == "V_DIRAC" => crate::dirac::sample_entry(w, h),
+        Codec::Theora { private } => crate::theora::sample_entry(private, w, h),
         Codec::Other(id) if id == "V_CAVS" => crate::cavs::sample_entry(private, w, h),
         Codec::Other(id) if id == "V_JPEG2000" => crate::j2k::sample_entry(w, h),
         // ffmpeg writes JPEG 2000 as a VfW `mjp2` track
@@ -447,14 +467,31 @@ fn sample_entry(c: &Codec, private: &[u8], v: Option<&cfa4_matroska::VideoInfo>,
         Codec::Other(id) if id.starts_with("V_REAL/") => crate::realmedia::mkv_sample_entry(id, private, w, h)?,
         // Huffyuv: the VfW BITMAPINFOHEADER sets the stream up (bit count, extradata)
         Codec::VfwFourcc { fourcc, bitmap_info_header } if fourcc.eq_ignore_ascii_case(b"HFYU") => crate::huffyuv::sample_entry(bitmap_info_header, w, h),
+        Codec::VfwFourcc { fourcc, bitmap_info_header } if crate::svq3::is_svq3(fourcc) => {
+            crate::svq3::sample_entry(w, h, bitmap_info_header.get(40..).unwrap_or(&[]))
+        }
         Codec::VfwFourcc { fourcc, .. } if crate::canopus::codec(fourcc).is_some() => crate::canopus::sample_entry(crate::canopus::codec(fourcc)?, w, h),
+        Codec::VfwFourcc { fourcc, .. } if crate::svq1::is_svq1(fourcc) => crate::svq1::sample_entry(w, h),
+        Codec::VfwFourcc { fourcc, .. } if crate::indeo45::is_indeo45(fourcc) => crate::indeo45::sample_entry(fourcc, w, h),
+        Codec::VfwFourcc { fourcc, .. } if crate::indeo3::is_indeo3(fourcc) => crate::indeo3::sample_entry(w, h),
         Codec::VfwFourcc { fourcc, .. } if crate::indeo::is_indeo2(fourcc) => crate::indeo::sample_entry_indeo2(w, h),
+        // Cinepak: the VfW BITMAPINFOHEADER bit count (8: palette video) and the palette after it
+        Codec::VfwFourcc { fourcc, bitmap_info_header } if crate::cinepak::is_cinepak(fourcc) => {
+            let bits = bitmap_info_header.get(14..16).map_or(24, |b| u16::from_le_bytes([b[0], b[1]]));
+            crate::cinepak::sample_entry(bits, bitmap_info_header.get(40..).unwrap_or_default(), w, h)
+        }
         // Lagarith: the VfW BITMAPINFOHEADER bit count sets the solid-frame layout
         Codec::VfwFourcc { fourcc, bitmap_info_header } if crate::lagarith::is_lagarith(fourcc) => {
             let bits = bitmap_info_header.get(14..16).map_or(24, |b| u16::from_le_bytes([b[0], b[1]]));
             crate::lagarith::sample_entry(bits, w, h)
         }
         Codec::VfwFourcc { fourcc, .. } if crate::magicyuv::is_magicyuv(fourcc) => crate::magicyuv::sample_entry(w, h),
+        // Microsoft Video 1 / RLE: the bit count and the palette after the VfW BITMAPINFOHEADER
+        Codec::VfwFourcc { fourcc, bitmap_info_header } if let Some(kind) = crate::msvideo::kind(fourcc) => {
+            let bits = bitmap_info_header.get(14..16).map_or(0, |b| u16::from_le_bytes([b[0], b[1]]));
+            let bih = crate::msvideo::bitmap_info_header(bits, bitmap_info_header.get(40..).unwrap_or_default());
+            crate::msvideo::sample_entry(kind, &bih, w, h)
+        }
         // Ut Video: the extradata follows the VfW BITMAPINFOHEADER
         Codec::VfwFourcc { fourcc, bitmap_info_header } if crate::utvideo::is_utvideo(fourcc) => {
             crate::utvideo::sample_entry(*fourcc, bitmap_info_header.get(40..).unwrap_or_default(), w, h)
@@ -546,8 +583,16 @@ fn codec_label(c: &Codec) -> String {
         Codec::Other(id) if id == "V_MPEG1" => "MPEG-1 Video".into(),
         Codec::VfwFourcc { fourcc, .. } if crate::utvideo::is_utvideo(fourcc) => "Ut Video".into(),
         Codec::VfwFourcc { fourcc, .. } if crate::lagarith::is_lagarith(fourcc) => "Lagarith".into(),
+        Codec::VfwFourcc { fourcc, .. } if crate::svq3::is_svq3(fourcc) => "Sorenson Video 3".into(),
+        Codec::VfwFourcc { fourcc, .. } if crate::svq1::is_svq1(fourcc) => "Sorenson Video 1".into(),
+        Codec::VfwFourcc { fourcc, .. } if crate::indeo45::is_indeo45(fourcc) => crate::indeo45::label(fourcc).into(),
+        Codec::VfwFourcc { fourcc, .. } if crate::indeo3::is_indeo3(fourcc) => "Indeo 3".into(),
         Codec::VfwFourcc { fourcc, .. } if crate::indeo::is_indeo2(fourcc) => "Indeo 2".into(),
+        Codec::VfwFourcc { fourcc, .. } if crate::cinepak::is_cinepak(fourcc) => "Cinepak".into(),
         Codec::VfwFourcc { fourcc, .. } if crate::magicyuv::is_magicyuv(fourcc) => "MagicYUV".into(),
+        Codec::VfwFourcc { fourcc, .. } if crate::msvideo::kind(fourcc).is_some() => {
+            crate::msvideo::kind(fourcc).map_or("", crate::msvideo::Kind::label).into()
+        }
         Codec::VfwFourcc { fourcc, .. } if crate::hap::is_hap(fourcc) => "Hap".into(),
         Codec::VfwFourcc { fourcc, .. } if is_dv_fourcc(fourcc) => "DV".into(),
         Codec::VfwFourcc { fourcc, .. } if fourcc.eq_ignore_ascii_case(b"HFYU") => "Huffyuv".into(),
@@ -556,6 +601,7 @@ fn codec_label(c: &Codec) -> String {
         }
         Codec::Other(id) if id == "V_FFV1" => "FFV1".into(),
         Codec::Other(id) if id == "V_DIRAC" => "VC-2 / Dirac".into(),
+        Codec::Theora { .. } => "Theora".into(),
         Codec::Other(id) if id == "V_CAVS" => crate::cavs::NAME.into(),
         Codec::Other(id) if id == "V_JPEG2000" => "JPEG 2000".into(),
         Codec::VfwFourcc { fourcc, .. } if fourcc.eq_ignore_ascii_case(b"mjp2") => "JPEG 2000".into(),
@@ -753,6 +799,9 @@ impl MkvSource {
         let rate = ainfo.sample_rate;
         if let Some(wide) = amr_track(t) {
             return Ok(PacketDecoder::amr(wide));
+        }
+        if truespeech_track(t) {
+            return Ok(PacketDecoder::truespeech());
         }
         if let Some(c) = acm_codec(t) {
             let c = c.map_err(|e| CodecError::Unsupported(e.to_string()))?;

@@ -1,0 +1,22 @@
+[package]
+name = "cfa4-flic"
+description = "Pure-Rust Autodesk Animator FLI/FLC video decoder (ported from FFmpeg)"
+version.workspace = true
+edition.workspace = true
+license = "GPL-3.0-or-later AND LGPL-2.1-or-later"
+rust-version.workspace = true
+
+[lints]
+workspace = true
+
+[features]
+# the synthetic stream writer of the tests
+synth = []
+
+[dependencies]
+thiserror = { workspace = true }
+
+[dev-dependencies]
+cfa4-testkit = { workspace = true }
+# the tests use the stream writer
+cfa4-flic = { path = ".", features = ["synth"] }

@@ -25,6 +25,8 @@ type Outcome = Arc<Mutex<Option<std::result::Result<ValidationReport, String>>>>
 pub struct PendingValidation {
     pub job: u64,
     pub root: String,
+    /// The queued DCP export this check follows (DCP-13 postflight), if any.
+    pub queue_item: Option<u64>,
     outcome: Outcome,
 }
 
@@ -41,7 +43,7 @@ fn lock<T>(m: &Mutex<T>) -> std::sync::MutexGuard<'_, T> {
 }
 
 /// A built-in profile id, or a profile file (`.json`, `cfa4-dcp-profile/1`) read from disk.
-fn load_profile(cmd: &str, arg: Option<&str>) -> Result<Profile> {
+pub(crate) fn load_profile(cmd: &str, arg: Option<&str>) -> Result<Profile> {
     let arg = arg.unwrap_or("quick-scan");
     if arg.ends_with(".json") {
         return Profile::load(std::path::Path::new(arg)).map_err(|e| bad(cmd, format!("{arg}: {e}")));
@@ -89,6 +91,11 @@ fn validate(s: &mut Session, p: &Value) -> Result<Value> {
     let root = str_p(p, "root").ok_or_else(|| bad(cmd, "need `root` (the DCP folder)"))?.to_string();
     let wait = bool_p(p, "wait").unwrap_or(false);
     let profile = load_profile(cmd, str_p(p, "profile"))?;
+    start(s, cmd, root, profile, wait, None)
+}
+
+/// Start the validation job of `root`; `queue_item` is the queued export it follows.
+pub(crate) fn start(s: &mut Session, cmd: &str, root: String, profile: Profile, wait: bool, queue_item: Option<u64>) -> Result<Value> {
     if !std::path::Path::new(&root).is_dir() {
         return Err(bad(cmd, format!("{root}: not a folder")));
     }
@@ -142,7 +149,10 @@ fn validate(s: &mut Session, p: &Value) -> Result<Value> {
     };
     let run = crate::export_tools::guard_job(job.progress.clone(), job.result.clone(), run);
     s.jobs.push(job);
-    s.dcp_validation.pending.push(PendingValidation { job: id, root: root.clone(), outcome });
+    s.dcp_validation.pending.push(PendingValidation { job: id, root: root.clone(), queue_item, outcome });
+    if let Some(q) = queue_item {
+        crate::dcp_export::running(s, q);
+    }
     if wait || cfg!(target_arch = "wasm32") {
         run();
         poll(s);
@@ -169,6 +179,9 @@ pub fn poll(s: &mut Session) {
         let cancelled = is_cancelled(s, pv.job);
         match lock(&pv.outcome).take() {
             Some(Ok(report)) => {
+                if let Some(q) = pv.queue_item {
+                    crate::dcp_export::settled(s, q, Ok(&report));
+                }
                 let name = std::path::Path::new(&pv.root).file_name().map_or_else(|| pv.root.clone(), |n| n.to_string_lossy().into_owned());
                 let message = format!("DCP {name}: {}", word(report.verdict));
                 let failed = report.verdict == cfa4_dcp_validate::Verdict::Fail;
@@ -179,8 +192,19 @@ pub fn poll(s: &mut Session) {
                 reports.drain(..drop);
                 s.events.push(crate::Event::Toast { message, error: failed });
             }
-            Some(Err(e)) if !cancelled => s.error_toast("dcp.validate", format!("DCP validation: {e}")),
-            Some(Err(_)) | None => {}
+            Some(Err(e)) => {
+                if let Some(q) = pv.queue_item {
+                    crate::dcp_export::settled(s, q, Err(if cancelled { "cancelled" } else { &e }));
+                }
+                if !cancelled {
+                    s.error_toast("dcp.validate", format!("DCP validation: {e}"));
+                }
+            }
+            None => {
+                if let Some(q) = pv.queue_item {
+                    crate::dcp_export::settled(s, q, Err(if cancelled { "cancelled" } else { "the validation job stopped" }));
+                }
+            }
         }
     }
 }
@@ -224,6 +248,19 @@ fn report_save(s: &mut Session, p: &Value) -> Result<Value> {
     Ok(json!({"path": path, "bytes": text.len()}))
 }
 
+/// `dcp.repair.plan`: what to do about the findings of the latest report of a package, by repair
+/// class (`cfa4-dcp-repair/1`). Proposals only: nothing is changed, in the package or elsewhere.
+fn repair_plan(s: &mut Session, p: &Value) -> Result<Value> {
+    let cmd = "dcp.repair.plan";
+    let root = str_p(p, "root").ok_or_else(|| bad(cmd, "need `root`"))?;
+    let plan = cfa4_dcp_validate::repair::plan(find(s, cmd, root)?);
+    let counts: serde_json::Map<String, Value> = cfa4_dcp_validate::repair::RepairClass::ALL
+        .iter()
+        .map(|c| (serde_json::to_value(c).ok().and_then(|v| v.as_str().map(str::to_owned)).unwrap_or_default(), json!(plan.count(*c))))
+        .collect();
+    Ok(json!({"root": root, "counts": counts, "plan": plan}))
+}
+
 type Run = fn(&mut Session, &Value) -> Result<Value>;
 
 fn spec(id: &'static str, label: &'static str, params: &'static str, run: Run) -> CommandSpec {
@@ -235,6 +272,7 @@ pub(crate) fn commands() -> Vec<CommandSpec> {
         spec("dcp.validate", "Validate DCP Package", r#"{"root":str,"profile":str?,"wait":bool=false}"#, validate),
         spec("dcp.validate.profiles", "List DCP Validation Profiles", "{}", profiles),
         spec("dcp.validate.report", "Get DCP Validation Report", r#"{"root":str}"#, report_get),
+        spec("dcp.repair.plan", "Plan DCP Repairs", r#"{"root":str}"#, repair_plan),
         spec("dcp.validate.save", "Save DCP Validation Report", r#"{"root":str,"path":str,"format":str?}"#, report_save),
     ]
 }

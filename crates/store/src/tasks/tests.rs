@@ -4,8 +4,8 @@ use cfa4_tasks::manager::{Class, GpuRequest, Request};
 use cfa4_tasks::resources::{Current, GpuCurrent, GpuNominal, Nominal};
 use cfa4_tasks::{Manager, MissedStart, Monitor, NewTask, Priority, QueueConfig, QueueError, QueueEvent, Snapshot, StartMode, State};
 
-use crate::testdb::{self, TestDb};
-use crate::{ErrorCode, INSTALL_HINT, LOGIN_ROLE, Store, StoreConfig, StoreError};
+use crate::testdb::{self, count, setup};
+use crate::{ErrorCode, INSTALL_HINT, Store, StoreConfig, StoreError};
 
 const GIB: u64 = 1 << 30;
 
@@ -52,74 +52,6 @@ fn task(id: &str, vram_gib: u64) -> NewTask {
         time_zone: None,
         batch_key: None,
     }
-}
-
-const ROLE_SQL: &str = "\
-DO $$
-BEGIN
-  IF NOT EXISTS (SELECT 1 FROM pg_roles WHERE rolname = 'cfa4_login') THEN
-    CREATE ROLE cfa4_login LOGIN;
-  END IF;
-  IF NOT EXISTS (SELECT 1 FROM pg_roles WHERE rolname = 'cfa4_owner_tasks') THEN
-    CREATE ROLE cfa4_owner_tasks NOLOGIN;
-  END IF;
-  IF NOT EXISTS (SELECT 1 FROM pg_roles WHERE rolname = 'cfa4_app_tasks') THEN
-    CREATE ROLE cfa4_app_tasks NOLOGIN;
-  END IF;
-  IF NOT EXISTS (SELECT 1 FROM pg_roles WHERE rolname = 'cfa4_owner_cfa4_store') THEN
-    CREATE ROLE cfa4_owner_cfa4_store NOLOGIN;
-  END IF;
-  IF NOT EXISTS (SELECT 1 FROM pg_roles WHERE rolname = 'cfa4_app_cfa4_store') THEN
-    CREATE ROLE cfa4_app_cfa4_store NOLOGIN;
-  END IF;
-END $$;
-GRANT cfa4_owner_tasks TO cfa4_login;
-GRANT cfa4_app_tasks TO cfa4_login;
-GRANT cfa4_owner_cfa4_store TO cfa4_login;
-GRANT cfa4_app_cfa4_store TO cfa4_login;
-GRANT CREATE ON DATABASE postgres TO cfa4_owner_tasks;
-GRANT CREATE ON DATABASE postgres TO cfa4_owner_cfa4_store;
-";
-
-fn skip_or_fail(reason: impl std::fmt::Display) -> Option<(TestDb, Store)> {
-    if testdb::required() {
-        panic!("PostgreSQL 18 test cluster required but not usable: {reason}");
-    }
-    eprintln!("{reason}");
-    None
-}
-
-async fn setup() -> Option<(TestDb, Store)> {
-    let db = match TestDb::start() {
-        testdb::Start::Ready(db) => db,
-        testdb::Start::Skip(reason) => return skip_or_fail(reason),
-    };
-    let admin = match Store::connect(&db.admin_config()).await {
-        Ok(store) => store,
-        Err(e) => return skip_or_fail(format!("cfa4-store tests: cannot connect as the test superuser: {e}")),
-    };
-    let client = match admin.client().await {
-        Ok(client) => client,
-        Err(e) => return skip_or_fail(format!("cfa4-store tests: {e}")),
-    };
-    if let Err(e) = client.batch_execute(ROLE_SQL).await {
-        return skip_or_fail(format!("cfa4-store tests: cannot install the role model: {e}"));
-    }
-    drop(client);
-    drop(admin);
-    let store = match Store::connect(&db.config()).await {
-        Ok(store) => store,
-        Err(e) => return skip_or_fail(format!("cfa4-store tests: cannot connect as {LOGIN_ROLE}: {e}")),
-    };
-    if let Err(e) = store.migrate().await {
-        return skip_or_fail(format!("cfa4-store tests: migration failed: {e}"));
-    }
-    Some((db, store))
-}
-
-async fn count(store: &Store, sql: &str) -> i64 {
-    let Ok(client) = store.client().await else { return -1 };
-    client.query_one(sql, &[]).await.and_then(|r| r.try_get(0)).unwrap_or(-1)
 }
 
 #[tokio::test]
@@ -195,12 +127,13 @@ async fn migrations_go_up_once_and_back_one_step() {
         assert!((180000..190000).contains(&version), "CI requires PostgreSQL 18, server_version_num={version}");
     }
     assert_eq!(count(&store, "SELECT count(*) FROM tasks.task").await, 0);
+    assert_eq!(store.rollback("tasks").await.unwrap(), Some(3));
     assert_eq!(store.rollback("tasks").await.unwrap(), Some(2));
     assert_eq!(count(&store, "SELECT count(*) FROM pg_indexes WHERE indexname = 'task_open' AND indexdef LIKE '%cancelling%'").await, 0);
     assert_eq!(store.rollback("tasks").await.unwrap(), Some(1));
     assert_eq!(count(&store, "SELECT count(*) FROM information_schema.schemata WHERE schema_name = 'tasks'").await, 0);
     assert_eq!(store.rollback("tasks").await.unwrap(), None);
-    assert_eq!(store.migrate().await.unwrap(), vec![("tasks".to_owned(), 1), ("tasks".to_owned(), 2)]);
+    assert_eq!(store.migrate().await.unwrap(), vec![("tasks".to_owned(), 1), ("tasks".to_owned(), 2), ("tasks".to_owned(), 3)]);
     assert_eq!(count(&store, "SELECT count(*) FROM pg_indexes WHERE indexname = 'task_open' AND indexdef LIKE '%cancelling%'").await, 1);
     assert!(store.rollback("nope").await.is_err());
 }
@@ -335,4 +268,26 @@ async fn the_memory_backend_follows_the_contract_without_a_server() {
 async fn the_postgres_backend_follows_the_same_contract() {
     let Some((_db, store)) = setup().await else { return };
     contract(&store.tasks(QueueConfig::default())).await;
+}
+
+#[tokio::test]
+async fn the_time_columns_are_timestamptz_and_migrate_both_ways_keeping_the_milliseconds() {
+    let Some((_db, store)) = setup().await else { return };
+    let tasks = store.tasks(QueueConfig::default());
+    let t = tasks.submit(task("t-time", 1), 1_700_000_123_456).await.expect("submit");
+    assert_eq!(t.submitted_at, 1_700_000_123_456);
+    let ms = |col: &'static str| format!("SELECT (extract(epoch from {col}) * 1000)::bigint FROM tasks.task WHERE id = 't-time'");
+    assert_eq!(count(&store, &ms("submitted_at")).await, 1_700_000_123_456);
+    assert_eq!(count(&store, "SELECT count(*) FROM information_schema.columns WHERE table_schema = 'tasks' AND column_name IN ('submitted_at', 'start_at', 'lease_until', 'at') AND data_type = 'timestamp with time zone'").await, 4);
+    // back to the bigint columns of step 2 and forward again: the stored values survive
+    assert_eq!(store.rollback("tasks").await.expect("down"), Some(3));
+    assert_eq!(count(&store, "SELECT submitted_at FROM tasks.task WHERE id = 't-time'").await, 1_700_000_123_456);
+    assert_eq!(store.migrate().await.expect("up"), vec![("tasks".to_owned(), 3)]);
+    assert_eq!(count(&store, &ms("submitted_at")).await, 1_700_000_123_456);
+    // the queue still runs on the converted columns
+    let mut manager = manager();
+    let monitor = Monitor::default();
+    let events = tasks.tick(1_700_000_200_000, "w1", &mut manager, &snap(), &monitor).await.expect("tick");
+    assert!(!events.is_empty() || tasks.get("t-time").await.expect("get").is_some());
+    assert!(count(&store, "SELECT count(*) FROM tasks.transition WHERE at IS NOT NULL").await >= 0);
 }
