@@ -303,8 +303,7 @@ const AVM_FRAMES: &[(&str, &[(u8, usize, u16, u32, u32, u32)])] = &[
 ];
 
 /// Every frame header of the corpus parses to the same length, quantizer, order hint and tile grid
-/// as in the reference decoder, up to the first frame kind that is not supported yet (RAS), and the
-/// tile data of each frame fills its OBU exactly.
+/// as in the reference decoder, and the tile data of each frame fills its OBU exactly.
 #[test]
 fn corpus_frame_headers() {
     let corpus = corpus();
@@ -330,10 +329,6 @@ fn corpus_frame_headers() {
                 }
             };
             let result = parser.push(&obu);
-            if code == 21 {
-                assert!(matches!(result, Err(cfa4_av2::Error::Unsupported(_))), "{name}: RAS frames are not supported yet");
-                break;
-            }
             let header = match result.unwrap_or_else(|e| panic!("{name}: frame #{} (obu {code}): {e}", got.len())) {
                 Parsed::TileGroup(tg) => {
                     let Some(h) = tg.frame_header.clone() else { continue };
@@ -352,8 +347,6 @@ fn corpus_frame_headers() {
         }
         assert_eq!(got.as_slice(), &want[..got.len()], "{name}");
         assert!(!got.is_empty(), "{name}");
-        if !stem.contains("ras") {
-            assert_eq!(got.len(), want.len(), "{name}");
-        }
+        assert_eq!(got.len(), want.len(), "{name}");
     }
 }

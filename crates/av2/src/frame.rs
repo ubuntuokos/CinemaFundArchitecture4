@@ -170,8 +170,8 @@ pub struct InterHeader {
     pub explicit_ref_frame_map: bool,
     /// `ref_frame_idx[ i ]` for `i < NumTotalRefs`.
     pub ref_frame_idx: Vec<u8>,
-    /// `OrderHints[ i ]` for `i < NumTotalRefs`.
-    pub order_hints: Vec<u32>,
+    /// `OrderHints[ i ]` for `i < NumTotalRefs`; `None` is `RESTRICTED_OH`.
+    pub order_hints: Vec<Option<u32>>,
     pub num_past_refs: u32,
     pub num_future_refs: u32,
     pub closest_past: Option<u8>,
@@ -310,6 +310,8 @@ pub struct RefSlot {
     /// `RefCounter`: equal for slots that hold the same decoded frame.
     pub counter: u64,
     pub num_total_refs: u8,
+    /// `RefOrderHint` is `RESTRICTED_OH` (a switch frame with `restricted_prediction_switch`).
+    pub restricted: bool,
 }
 
 /// The header-level decoder state across OBUs.
@@ -403,6 +405,16 @@ struct InterCtx {
     frame_size_override: bool,
     is_tip: bool,
     sb_size: SuperblockSize,
+}
+
+/// `RESTRICTED_OH` aware `get_relative_dist( a, b )` (§ 5.18.3.1); `None` is `RESTRICTED_OH`.
+fn rel_dist_oh(a: Option<u32>, b: Option<u32>) -> i32 {
+    match (a, b) {
+        (None, None) => 0,
+        (None, _) => 127,
+        (_, None) => -127,
+        (Some(a), Some(b)) => rel_dist(a, b),
+    }
 }
 
 /// Everything `frame_header_info()` reads for an inter frame before `tile_info()`.
@@ -567,6 +579,7 @@ impl HeaderParser {
                     delta_q_v_ac: h.quant.delta_q_v_ac,
                     counter,
                     num_total_refs,
+                    restricted: false,
                 };
                 first = false;
             }
@@ -583,6 +596,7 @@ impl HeaderParser {
             .take(num_ref_frames)
             .filter(|s| {
                 s.valid
+                    && !s.restricted
                     && tmap.get(m).and_then(|x| x.get(t)).and_then(|x| x.get(usize::from(s.tlayer_id))).copied().unwrap_or(false)
                     && mmap.get(m).and_then(|x| x.get(usize::from(s.mlayer_id))).copied().unwrap_or(false)
                     && (s.implicit_output_frame || s.immediate_output_frame)
@@ -595,13 +609,14 @@ impl HeaderParser {
     fn frame_header_info(&mut self, r: &mut BitReader<'_>, obu: &Obu<'_>) -> Result<FrameHeader> {
         let obu_type = obu.header.obu_type;
         match obu_type {
-            ObuType::ClosedLoopKey | ObuType::RegularTileGroup | ObuType::RegularTip => {}
+            ObuType::ClosedLoopKey | ObuType::RegularTileGroup | ObuType::RegularTip | ObuType::Switch | ObuType::RasFrame => {}
             ObuType::OpenLoopKey => return Err(Error::Unsupported("open-loop key frames")),
-            ObuType::Switch | ObuType::RasFrame => return Err(Error::Unsupported("switch and RAS frames")),
             _ => return Err(Error::Unsupported("leading frames")),
         }
         let key = obu_type == ObuType::ClosedLoopKey;
         let is_tip = obu_type == ObuType::RegularTip;
+        let is_ras = obu_type == ObuType::RasFrame;
+        let is_switch_obu = is_ras || obu_type == ObuType::Switch;
         if key && self.first_picture_in_tu {
             // startCVS
             for s in self.refs.iter_mut() {
@@ -620,13 +635,20 @@ impl HeaderParser {
         let all_frames = (1u32 << num_ref_frames) - 1;
 
         let (frame_type, long_term_id, immediate_output_frame, implicit_output_frame);
+        let mut restricted_prediction_switch = false;
+        let mut ref_long_term_ids: Vec<i32> = Vec::new();
         if seq.single_picture_header {
             frame_type = FrameType::Key;
             long_term_id = -1;
             immediate_output_frame = true;
             implicit_output_frame = false;
         } else {
-            frame_type = if key {
+            if is_switch_obu {
+                restricted_prediction_switch = flag(r)?;
+            }
+            frame_type = if is_switch_obu {
+                FrameType::Switch
+            } else if key {
                 FrameType::Key
             } else if is_tip || flag(r)? {
                 FrameType::Inter
@@ -638,6 +660,18 @@ impl HeaderParser {
             } else {
                 -1
             };
+            if is_ras && inter.long_term_frame_id_bits != 0 {
+                let n = bits(r, 3)?;
+                for _ in 0..n {
+                    ref_long_term_ids.push(i32::try_from(bits(r, u32::from(inter.long_term_frame_id_bits))?).map_err(|_| Error::Invalid("ref_long_term_id"))?);
+                }
+            }
+            if restricted_prediction_switch {
+                // every reference becomes a restricted one (no mlayer presence map for a single embedded layer)
+                for slot in self.refs.iter_mut() {
+                    slot.restricted = true;
+                }
+            }
             immediate_output_frame = flag(r)?;
             implicit_output_frame = !immediate_output_frame && !seq.monotonic_output_order && flag(r)?;
         }
@@ -646,9 +680,9 @@ impl HeaderParser {
             SuperblockSize::Sb256 if frame_is_intra => SuperblockSize::Sb128,
             other => other,
         };
-        let frame_size_override = !seq.single_picture_header && flag(r)?;
+        let frame_size_override = frame_type == FrameType::Switch || (!seq.single_picture_header && flag(r)?);
         let order_hint_lsbs = bits(r, u32::from(inter.order_hint_bits))?;
-        let order_hint = if key {
+        let order_hint = if key || (frame_type == FrameType::Switch && restricted_prediction_switch) {
             order_hint_lsbs
         } else {
             let max_disp = self.max_disp_order_hint(&seq, obu, num_ref_frames as usize);
@@ -663,9 +697,10 @@ impl HeaderParser {
         };
 
         // signal_primary_ref_frame, disable_cross_frame_cdf_init, primary_ref_frame
-        let signal_primary_ref_frame = !frame_is_intra && flag(r)?;
+        let has_primary = !frame_is_intra && frame_type != FrameType::Switch;
+        let signal_primary_ref_frame = has_primary && flag(r)?;
         let mut disable_cross_frame_cdf_init = false;
-        if !frame_is_intra {
+        if has_primary {
             disable_cross_frame_cdf_init = !is_tip && flag(r)?;
         }
         let primary_ref_read = if signal_primary_ref_frame { bits_u8(r, 3)? } else { PRIMARY_REF_NONE };
@@ -678,6 +713,16 @@ impl HeaderParser {
             } else {
                 bits(r, num_ref_frames)?
             }
+        } else if is_ras && seq.max_mlayer_id == 0 {
+            let mut flags = 0u32;
+            for (i, slot) in self.refs.iter().enumerate().take(num_ref_frames as usize) {
+                if !slot.valid || !ref_long_term_ids.contains(&slot.long_term_id) {
+                    flags |= 1 << i;
+                }
+            }
+            flags
+        } else if frame_type == FrameType::Switch {
+            bits(r, num_ref_frames)?
         } else if inter.enable_short_refresh_frame_flags {
             if flag(r)? { 1 << bits(r, ceil_log2(num_ref_frames))? } else { 0 }
         } else {
@@ -783,7 +828,11 @@ impl HeaderParser {
 
         // set_primary_ref_frame_and_ctx( 1 )
         if let Some(ih) = inter_hdr.as_mut() {
-            self.set_primary_ref_frame(ih, base_q_idx, order_hint, signal_primary_ref_frame, primary_ref_read, disable_cross_frame_cdf_init);
+            if frame_type == FrameType::Switch {
+                ih.disable_cross_frame_cdf_init = true;
+            } else {
+                self.set_primary_ref_frame(ih, base_q_idx, order_hint, signal_primary_ref_frame, primary_ref_read, disable_cross_frame_cdf_init);
+            }
         }
         let derived_primary_none = inter_hdr.as_ref().is_none_or(|i| i.derived_primary_ref_frame.is_none());
 
@@ -950,15 +999,17 @@ impl HeaderParser {
         // frame_reference_mode(), skip_mode_params(), allow_bawp, allow_warpmv_mode
         if let Some(mut ih) = h.inter.take() {
             ih.reference_select = flag(r)?;
-            ih.skip_mode_frame = [0, u8::from(ih.ref_frame_idx.len() > 1)];
-            if let (Some(&a), Some(&b)) = (ih.order_hints.first(), ih.order_hints.get(1)) {
-                let to0 = rel_dist(order_hint, a).abs();
-                let to1 = rel_dist(order_hint, b).abs();
-                if (to0 - to1).abs() > 1 {
-                    ih.skip_mode_frame[1] = 0;
+            if frame_type != FrameType::Switch {
+                ih.skip_mode_frame = [0, u8::from(ih.ref_frame_idx.len() > 1)];
+                if let (Some(&a), Some(&b)) = (ih.order_hints.first(), ih.order_hints.get(1)) {
+                    let to0 = if a.is_none() { 0 } else { rel_dist_oh(Some(order_hint), a).abs() };
+                    let to1 = if b.is_none() { 0 } else { rel_dist_oh(Some(order_hint), b).abs() };
+                    if (to0 - to1).abs() > 1 {
+                        ih.skip_mode_frame[1] = 0;
+                    }
                 }
+                ih.skip_mode_present = flag(r)?;
             }
-            ih.skip_mode_present = flag(r)?;
             ih.allow_bawp = tools.inter.enable_bawp && flag(r)?;
             ih.allow_warpmv_mode = ih.enabled_motion_modes[DELTAWARP] && flag(r)?;
             h.inter = Some(ih);
@@ -1026,7 +1077,7 @@ impl HeaderParser {
         let mut mapped: Vec<Option<(usize, u32, i32)>> = Vec::new();
         let mut max_disp = 0u32;
         for (i, s) in self.refs.iter().enumerate().take(num_ref_frames) {
-            if self.first_slot_with_ref(i) && Self::layers_allow(seq, obu, s) {
+            if self.first_slot_with_ref(i) && !s.restricted && Self::layers_allow(seq, obu, s) {
                 if valid_size(s) {
                     mapped.push(Some((i, s.order_hint, i32::from(s.base_q_idx))));
                 }
@@ -1100,7 +1151,16 @@ impl HeaderParser {
             }
         }
         let active = usize::from(cfg.active_num_ref_frames);
-        ranked.iter().take(active).map(|x| x.idx).collect()
+        let mut out: Vec<u8> = ranked.iter().take(active).map(|x| x.idx).collect();
+        // finally, the restricted reference frames
+        if size.is_some() {
+            for (i, s) in self.refs.iter().enumerate().take(num_ref_frames) {
+                if s.valid && s.restricted && Self::layers_allow(seq, obu, s) && out.len() < active {
+                    out.push(i as u8);
+                }
+            }
+        }
+        out
     }
 
     /// `choose_primary_secondary_ref_frame()` (§ 5.18.2): the derived primary reference.
@@ -1116,7 +1176,7 @@ impl HeaderParser {
         for (i, &idx) in ref_frame_idx.iter().enumerate() {
             let idx = usize::from(idx);
             let Some(slot) = self.refs.get(idx) else { continue };
-            if slot.frame_type == Some(FrameType::Inter) && self.first_slot_with_ref(idx) {
+            if slot.frame_type == Some(FrameType::Inter) && !slot.restricted && self.first_slot_with_ref(idx) {
                 let (d, q) = (slot.order_hint, i32::from(slot.base_q_idx));
                 let ratio = floor_log2(u64::from(slot.frame_width) * u64::from(slot.frame_height));
                 let qdiff = (q - i32::from(base_q_idx)).abs();
@@ -1156,7 +1216,8 @@ impl HeaderParser {
     fn inter_syntax(&self, r: &mut BitReader<'_>, obu: &Obu<'_>, seq: &SequenceHeader, c: &InterCtx) -> Result<InterPart> {
         let cfg = &seq.tools.inter;
         let num_ref_frames = u32::from(cfg.num_ref_frames).min(NUM_REF_FRAMES as u32);
-        let explicit = cfg.explicit_ref_frame_map && flag(r)?;
+        let is_switch = c.frame_type == FrameType::Switch;
+        let explicit = is_switch || (cfg.explicit_ref_frame_map && flag(r)?);
         let mut ref_idx: Vec<u8> = if explicit {
             let n = bits(r, 3)?;
             let nb = ceil_log2(num_ref_frames);
@@ -1165,7 +1226,7 @@ impl HeaderParser {
             self.get_ref_frames(seq, obu, c.order_hint, None)
         };
         // frame_size_with_refs() / frame_size()
-        let size = if c.frame_size_override {
+        let size = if c.frame_size_override && !is_switch {
             let mut found = None;
             for &idx in &ref_idx {
                 if flag(r)? {
@@ -1180,7 +1241,7 @@ impl HeaderParser {
                 None => Self::frame_size(r, seq, true)?,
             }
         } else {
-            Self::frame_size(r, seq, false)?
+            Self::frame_size(r, seq, c.frame_size_override)?
         };
         if !explicit {
             ref_idx = self.get_ref_frames(seq, obu, c.order_hint, Some(size));
@@ -1190,12 +1251,16 @@ impl HeaderParser {
         }
         let n_refs = ref_idx.len();
         let slot = |i: usize| ref_idx.get(i).and_then(|&x| self.refs.get(usize::from(x)));
-        let order_hints: Vec<u32> = (0..n_refs).map(|i| slot(i).map_or(0, |s| s.order_hint)).collect();
+        let order_hints: Vec<Option<u32>> = (0..n_refs).map(|i| slot(i).and_then(|s| (!s.restricted).then_some(s.order_hint))).collect();
         // get_past_future_cur_ref_lists()
         let (mut num_past, mut num_future) = (0u32, 0u32);
         let (mut closest_past, mut closest_future): (Option<usize>, Option<usize>) = (None, None);
-        let dist = |i: usize| rel_dist(c.order_hint, order_hints.get(i).copied().unwrap_or(0));
+        let hint = |i: usize| order_hints.get(i).copied().flatten();
+        let dist = |i: usize| rel_dist_oh(Some(c.order_hint), order_hints.get(i).copied().flatten());
         for i in 0..n_refs {
+            if hint(i).is_none() {
+                continue;
+            }
             let d = dist(i);
             if d > 0 {
                 num_past += 1;
@@ -1204,12 +1269,12 @@ impl HeaderParser {
                 }
             } else if d < 0 {
                 num_future += 1;
-                if closest_future.is_none_or(|f| order_hints.get(i).copied().unwrap_or(0) < order_hints.get(f).copied().unwrap_or(0)) {
+                if closest_future.is_none_or(|f| hint(i) < hint(f)) {
                     closest_future = Some(i);
                 }
             }
         }
-        let use_ref_frame_mvs = cfg.enable_ref_frame_mvs && flag(r)?;
+        let use_ref_frame_mvs = !is_switch && cfg.enable_ref_frame_mvs && flag(r)?;
         let proj_step = if use_ref_frame_mvs && n_refs > 1 && c.sb_size != SuperblockSize::Sb64 && flag(r)? { 2 } else { 1 };
 
         let mut ih = InterHeader {
@@ -1294,7 +1359,7 @@ impl HeaderParser {
                 // the average of the two references the motion field estimation picks (§ 7.9):
                 // the ones just before and after the current order hint, or the last two past ones
                 let n = ih.order_hints.len();
-                let hint = |i: usize| ih.order_hints.get(i).copied().unwrap_or(0);
+                let hint = |i: usize| ih.order_hints.get(i).copied().flatten().unwrap_or(0);
                 let mut sort: Vec<usize> = (0..n).collect();
                 for i in 0..n {
                     for j in i + 1..n {
@@ -1676,7 +1741,7 @@ impl HeaderParser {
                 continue;
             }
             let (mut reuse, mut sb_reuse, mut ref_idx) = (false, false, None);
-            if let Some(ih) = h.inter.as_ref() {
+            if let Some(ih) = h.inter.as_ref().filter(|_| h.frame_type != FrameType::Switch) {
                 reuse = flag(r)?;
                 sb_reuse = flag(r)?;
                 if reuse || sb_reuse {
