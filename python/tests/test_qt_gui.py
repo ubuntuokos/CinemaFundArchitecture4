@@ -2813,6 +2813,104 @@ def test_qc_window_drops_stale_replies_and_reports_failures(app):
         dlg.close()
 
 
+def test_qc_window_shows_the_frame_at_a_flagged_time_code(app):
+    """4.14 (Q1b): Show Frame asks the engine for a read-only preview of the export at the time
+    code of the selected event or finding; the project is not touched (no import, no Source item),
+    a stale or failed answer is a message, never a crash."""
+    from cfa4_qt.panels.qc import QcDialog, position_tick
+
+    class Engine:
+        running = True
+
+        def __init__(self):
+            self.sent = []
+
+        def execute(self, command, params=None, on_reply=None, on_error=None):
+            self.sent.append(("execute", command, dict(params or {}), on_reply, on_error))
+            return 0
+
+        def call(self, method, params=None, on_reply=None, on_error=None):
+            self.sent.append(("call", method, dict(params or {}), on_reply, on_error))
+            return 0
+
+        def take(self, name):
+            for i, item in enumerate(self.sent):
+                if item[1] == name:
+                    del self.sent[i]
+                    return item
+            raise AssertionError(f"nothing sent for {name}")
+
+    assert position_tick({"tick": 7}, None) == 7
+    assert position_tick({"frame": 50}, (25, 1)) == 2 * TICKS_PER_SECOND
+    assert position_tick({"timecode": "00:00:01:00"}, (25, 1)) == TICKS_PER_SECOND
+    assert position_tick({"timecode": "00:00:01:00"}, None) is None
+    assert position_tick({"tick": -1}, (25, 1)) is None and position_tick(None, (25, 1)) is None
+
+    duration = 10 * TICKS_PER_SECOND
+    full = {"profile": {"id": "delivery-web", "version": 1}, "output": {"path": "a.mp4"},
+            "checks": [{"id": "probe.video", "status": "PASS", "detail": {"frameRate": "25/1"}},
+                       {"id": "integrity.frames", "status": "WARN",
+                        "events": [{"message": "flash", "at": {"timecode": "00:00:02:00", "frame": 50}}]}]}
+    engine = Engine()
+    dlg = QcDialog(engine)  # type: ignore[arg-type]
+    try:
+        dlg.open_for("a.mp4")
+        engine.take("qc.report.get")[3]({"full": full, "verdict": "WARN", "summary": {}, "questions": [], "report": "a.cfa4qc.json"}, None)
+
+        dlg.show_event_frame()  # nothing selected
+        assert not engine.sent and dlg.message.text() == "Select an event first."
+        dlg.events_table.selectRow(0)
+        dlg.show_event_frame()
+        _kind, _cmd, params, ok, err = engine.take("mediaBrowser.probe")
+        assert params == {"path": "a.mp4"}
+        ok({"path": "a.mp4", "media": True, "info": {"duration": duration}}, None)
+        _kind, _cmd, params, ok, err = engine.take("mediaBrowser.thumbnail")
+        assert params["path"] == "a.mp4" and params["width"] == 640
+        # 2 s of 10 s, half a frame in so the engine's rounding cannot pick the neighbour
+        assert abs(params["fraction"] - (2 * TICKS_PER_SECOND + TICKS_PER_SECOND // 50) / duration) < 1e-9
+        ok({"w": 2, "h": 1, "format": "rgba8"}, bytes([255, 0, 0, 255, 0, 255, 0, 255]))
+        assert dlg.frame_label.pixmap().width() == 2 and dlg.frame_time.text() == "Time code 00:00:02:00"
+        assert dlg.tabs.currentWidget() is dlg._frame_page
+
+        # the duration is remembered: the second request goes straight to the picture
+        dlg.show_event_frame()
+        assert [c for _k, c, *_ in engine.sent] == ["mediaBrowser.thumbnail"]
+        engine.take("mediaBrowser.thumbnail")[4]("not a readable media file")
+        assert dlg.message.text() == "not a readable media file"
+
+        # a finding is read from its (typed) time code; a time that is no picture is refused
+        dlg.add_finding("dip", "minor", "00:00:03:00")
+        dlg.findings.selectRow(0)
+        dlg.show_finding_frame()
+        assert abs(engine.take("mediaBrowser.thumbnail")[2]["fraction"] - 0.3) < 0.01
+        dlg.findings.item(0, 2).setText("00:00:03:99")
+        dlg.show_finding_frame()
+        assert not engine.sent and "HH:MM:SS:FF" in dlg.message.text()
+
+        # a late answer for the file the window showed before is dropped
+        dlg.findings.item(0, 2).setText("00:00:03:00")
+        dlg.show_finding_frame()
+        late = engine.take("mediaBrowser.thumbnail")[3]
+        dlg.open_for("b.mp4")
+        before = dlg.frame_label.text()
+        late({"w": 1, "h": 1}, bytes([1, 2, 3, 255]))
+        assert dlg.frame_label.pixmap().isNull() and dlg.frame_label.text() == before
+
+        # no probe answer, no length: a message, nothing drawn
+        dlg.report = full
+        dlg.show_frame({"tick": TICKS_PER_SECOND})
+        engine.take("mediaBrowser.probe")[3]({"path": "b.mp4", "media": False, "info": None}, None)
+        assert dlg.message.text() == "The file's length is unknown."
+        assert not [c for _k, c, *_ in engine.sent if c.startswith("mediaBrowser.")]
+
+        engine.running = False
+        dlg.show_frame({"tick": 1})
+        assert dlg.message.text() == "The engine is not running."
+    finally:
+        dlg._poll.stop()
+        dlg.close()
+
+
 @pytest.mark.skipif(REAL is None, reason="Rust engine not built (cargo build -p cfa4-cli)")
 def test_real_engine_quality_check_through_the_export_window(app, tmp_path: Path):
     """Media QC stage E: export with "Check quality after export", read the report in the QC
@@ -2867,6 +2965,11 @@ def test_real_engine_quality_check_through_the_export_window(app, tmp_path: Path
         combo.setCurrentIndex(combo.findData("no"))
         row = qc.add_finding("flash frame", "major", "00:00:00:12", "check the source")
         assert row == 0
+        # Show Frame: the finding's time code is drawn from the export itself, read-only
+        qc.findings.selectRow(0)
+        qc.show_finding_frame()
+        assert wait_until(app, lambda: qc.frame_label.pixmap() is not None and not qc.frame_label.pixmap().isNull(), 30_000), qc.message.text()
+        assert qc.frame_time.text() == "Time code 00:00:00:12" and qc.tabs.currentWidget() is qc._frame_page
         qc.reviewer.setText("QC tester")
         qc.review_done.setChecked(True)
         saved: list[str] = []

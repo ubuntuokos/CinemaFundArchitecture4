@@ -4511,6 +4511,15 @@ export.summary	Low	alacsony
 	video (tape) styles are not carried over	a videó- (szalag-) stílusok nem kerülnek át
 	the Cinecred project has {n} credits spreadsheets; “{name}” is used (choose another in the Spreadsheet field)	a Cinecred-projekt {n} stáblista-táblázatot tartalmaz; a(z) “{name}” lesz használva (válassz másikat a Táblázat mezőben)
 # Media QC: Quality Check window and the export queue's QC state (docs/media-qc.md)
+	Show Frame	Kép megjelenítése
+	Select an event or a finding and press Show Frame.	Jelölj ki egy eseményt vagy észrevételt, és nyomd meg a „Kép megjelenítése” gombot.
+	Select an event first.	Előbb jelölj ki egy eseményt.
+	Select a finding first.	Előbb jelölj ki egy észrevételt.
+	The time code is not a time in this file (HH:MM:SS:FF).	Az időkód nem létező időpont ebben a fájlban (HH:MM:SS:FF).
+	This entry has no time code to show.	Ennek a bejegyzésnek nincs megjeleníthető időkódja.
+	The picture is unavailable.	A kép nem érhető el.
+	The file's length is unknown.	A fájl hossza ismeretlen.
+	Time code {tc}	Időkód: {tc}
 	Add Finding	Észrevétel hozzáadása
 	Add as Finding	Felvétel észrevételként
 	Are colour and contrast acceptable?	Elfogadható a szín és a kontraszt?
