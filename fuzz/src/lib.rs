@@ -931,6 +931,60 @@ pub fn smacker(data: &[u8]) {
     }
 }
 
+pub fn avs2(data: &[u8]) {
+    let _ = (cfa4_avs2::probe(data), cfa4_avs2::stream_info(data));
+    let _ = cfa4_avs2::SequenceHeader::parse(data);
+    let mut d = cfa4_avs2::Decoder::new();
+    for (tag, p) in cfa4_avs2::split_packets(data).into_iter().take(16).enumerate() {
+        let _ = d.decode(p, tag as i64);
+    }
+    let _ = d.flush();
+}
+
+pub fn avs3(data: &[u8]) {
+    let _ = (cfa4_avs3::probe(data), cfa4_avs3::stream_info(data));
+    let _ = cfa4_avs3::SequenceHeader::parse(data);
+    let mut d = cfa4_avs3::Decoder::new();
+    for (tag, p) in cfa4_avs3::split_packets(data).into_iter().take(16).enumerate() {
+        let _ = d.decode(p, tag as i64);
+    }
+    let _ = d.flush();
+}
+
+pub fn cinepak(data: &[u8]) {
+    let mut i = Input::new(data);
+    let (w, h) = (i.side(), i.side());
+    let bits = [8u16, 24][usize::from(i.byte() & 1)];
+    if let Ok(mut d) = cfa4_cinepak::Decoder::new(w, h, bits) {
+        d.set_palette_bgr0(&data[..data.len().min(1024)]);
+        for pkt in packets(i.rest()) {
+            if let Ok(p) = d.decode(pkt) {
+                std::hint::black_box(p.to_rgba());
+            }
+        }
+    }
+}
+
+pub fn flic(data: &[u8]) {
+    let _ = cfa4_flic::probe(data);
+    let Ok(h) = cfa4_flic::Header::parse(data) else { return };
+    let Ok(mut d) = cfa4_flic::Decoder::new(&h) else { return };
+    for pkt in packets(data.get(128..).unwrap_or_default()) {
+        let _ = d.decode(pkt);
+        std::hint::black_box(d.rgba());
+    }
+}
+
+pub fn indeo(data: &[u8]) {
+    let mut i = Input::new(data);
+    let (w, h) = (i.side(), i.side());
+    if let Ok(mut d) = cfa4_indeo::ir2::Decoder::new(w, h) {
+        for pkt in packets(i.rest()) {
+            let _ = d.decode(pkt);
+        }
+    }
+}
+
 // ---------------------------------------------------------------- projects and interchange (B5)
 
 pub fn project(data: &[u8]) {
@@ -1048,6 +1102,11 @@ pub const TARGETS: &[(&str, &str, Target)] = &[
     ("hca", "cfa4-hca", hca),
     ("tak", "cfa4-tak", tak),
     ("smacker", "cfa4-smacker", smacker),
+    ("avs2", "cfa4-avs2", avs2),
+    ("avs3", "cfa4-avs3", avs3),
+    ("cinepak", "cfa4-cinepak", cinepak),
+    ("flic", "cfa4-flic", flic),
+    ("indeo", "cfa4-indeo", indeo),
     ("project", "cfa4-project", project),
     ("interchange", "cfa4-interchange", interchange),
     ("captions", "cfa4-captions", captions),
