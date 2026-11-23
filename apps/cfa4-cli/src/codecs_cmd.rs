@@ -125,6 +125,7 @@ static ROWS: &[Row] = &[
     video("Sorenson Video 1", &["svq1"], Ported, Sw(""), false, NoEnc),
     video("Indeo 4 / 5", &["indeo45"], Ported, Sw(""), false, NoEnc),
     video("Indeo 3", &["indeo3"], Ported, Sw(""), false, NoEnc),
+    video("Autodesk FLIC", &["flic"], Ported, Sw("8-bit FLI / FLC files"), false, NoEnc),
     video("Indeo 2", &["indeo"], Ported, Sw(""), false, NoEnc),
     video("Sorenson Video 3 (SVQ3)", &["svq3"], Ported, Sw(""), false, NoEnc),
     video("Cinepak", &["cinepak"], Ported, Sw(""), false, NoEnc),

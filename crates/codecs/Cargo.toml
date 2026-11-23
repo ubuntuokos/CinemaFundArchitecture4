@@ -81,6 +81,7 @@ cfa4-svq3 = { workspace = true }
 cfa4-svq1 = { workspace = true }
 cfa4-indeo45 = { workspace = true }
 cfa4-indeo3 = { workspace = true }
+cfa4-flic = { workspace = true }
 cfa4-indeo = { workspace = true }
 cfa4-cinepak = { workspace = true }
 cfa4-magicyuv = { workspace = true }
@@ -107,6 +108,7 @@ cfa4-ac3 = { workspace = true, features = ["test-util"] }
 cfa4-mxf = { workspace = true, features = ["test-util"] }
 cfa4-auro = { workspace = true }
 cfa4-cavs = { workspace = true, features = ["synth"] }
+cfa4-flic = { workspace = true, features = ["synth"] }
 cfa4-testkit = { workspace = true }
 serde_json = { workspace = true }
 

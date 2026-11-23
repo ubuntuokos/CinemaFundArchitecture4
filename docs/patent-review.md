@@ -72,6 +72,7 @@ szabadalommal védett formátumot.
 | Sorenson Video 1 (SVQ1) | dekódolás | `crates/svq1` (az FFmpeg SVQ1-dekódolójának portja) | alap | függőben | | |
 | Indeo 4 / 5 | dekódolás | `crates/indeo45` (az FFmpeg Indeo 4/5-dekódolóinak portja) | alap | függőben | | |
 | Indeo 3 | dekódolás | `crates/indeo3` (az FFmpeg Indeo 3-dekódolójának portja) | alap | függőben | | |
+| Autodesk FLIC (FLI / FLC) | dekódolás | `crates/flic` (az FFmpeg FLIC-dekódolójának portja) | alap | függőben | | |
 | Indeo 2 | dekódolás | `crates/indeo` (az FFmpeg Indeo 2-dekódolójának portja) | alap | függőben | | |
 | Sorenson Video 3 (SVQ3) | dekódolás | `crates/svq3` (az FFmpeg portja) | alap | függőben | | |
 | Cinepak | dekódolás | `crates/cinepak` (az FFmpeg Cinepak-dekódolójának portja) | alap | függőben | | |
