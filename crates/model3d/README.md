@@ -1,6 +1,6 @@
 # cfa4-model3d
 
-Clean-room 3D scene readers for the CFA4 project, phase **U1** of
+Clean-room 3D scene readers (and, since **U3a**, writers) for the CFA4 project, phase **U1** of
 [CFA4-OPENUSD-3D-001](../../docs/plans/CFA4-OPENUSD-3D-001-1.0.md): glTF 2.0 (`.gltf`, `.glb`),
 Wavefront OBJ (+ MTL) and STL (binary and ASCII). Layer L0: the only dependency is `serde_json`, no
 `unsafe`, no file I/O, no network. Written from the public format specifications (Khronos glTF 2.0,
@@ -48,3 +48,32 @@ bounds-checked, non-finite numbers are rejected, and external URIs with a scheme
 
 Region/LOD handling of very large meshes (U1-A3, the second half) is the ARF/`scene3d` layer's job:
 this crate bounds memory and returns whole primitives.
+
+## Writers and the loss report (U3a)
+
+Phase **U3a** of [CFA4-OPENUSD-3D-EXPORT-001](../../docs/plans/CFA4-OPENUSD-3D-EXPORT-001-1.0.md): the
+same [`Scene`] goes back out as `.glb`, `.gltf` + `.bin`, OBJ + MTL, binary or ASCII STL. Like the
+readers the writers do no file I/O: `export` returns the bytes of each file and a loss report.
+
+```rust
+use cfa4_model3d::{ExportOptions, NoResources, Target, export};
+
+let e = export(&scene, &ExportOptions::new(Target::Glb, "chair"), &mut NoResources)?;
+for item in &e.report.items { println!("{:?} {}: {}", item.severity, item.path, item.message); } // show first
+for f in &e.files { std::fs::write(out_dir.join(&f.name), &f.data)?; }                              // then write
+```
+
+| Target | Carries | Reported, never dropped silently |
+|---|---|---|
+| glTF / GLB | everything the model holds: hierarchy, TRS or matrix as stored, cameras, indexed triangles with normals and `TEXCOORD_0`, material factors and texture references (or embedded PNG/JPEG in a `.glb` on request), translation/rotation/scale keys (linear, step, cubic spline) | embedded source images, unknown texture slots, empty meshes and channels, alpha below 1 (`BLEND`), a source whose import was itself lossy |
+| OBJ + MTL | meshes with normals and texcoords, materials (`Kd`, `d`, `Ke`, texture maps), `o` per node | hierarchy (flattened, world transforms baked into the vertices), cameras, animation, PBR factors, double-sided, units |
+| STL | triangles of every instance as one solid, facet normals | everything else: materials, texcoords, names, copyright text, hierarchy, cameras, animation, smooth normals |
+
+Rules (export rules 1 to 5): the output is **deterministic** (no clock, sorted JSON keys, shortest-`f32`
+text, so an f32 survives glTF, OBJ and STL bit for bit); the source `asset.copyright` is kept and the
+`generator` is the caller's; units and axes are never converted, the report says where the conventions
+differ; an inconsistent scene (index out of range, cycle, NaN, mismatched arrays) is `Error::Invalid`,
+never a panic; the output size is estimated against `max_memory_bytes` before anything is built
+(`Error::Limit`). `sanitize_stem` turns any name into a safe file name stem. The folder, overwrite and
+atomic-write rules belong to the caller: see `scene3d.export` in `crates/engine/src/scene3d_export.rs`.
+The fuzz target `model3d` also writes every scene its readers accept and reads the result back.

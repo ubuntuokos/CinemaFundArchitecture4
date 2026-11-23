@@ -235,12 +235,30 @@ pub fn model3d(data: &[u8]) {
     let limits = Limits { max_memory_bytes: 64 << 20, max_input_bytes: 8 << 20, ..Limits::default() };
     let mut res = |_: &str| Some(data.to_vec());
     if let Ok(s) = read(data, None, &mut res, &limits) {
+        model3d_export(&s);
         std::hint::black_box(s);
     }
     for format in [Format::Gltf, Format::Obj, Format::Stl] {
         if let Ok(s) = read_as(format, data, &mut res, &limits) {
+            model3d_export(&s);
             std::hint::black_box(s);
         }
+    }
+}
+
+/// U3a: whatever a reader accepts, every writer must either write or refuse, never panic; and what a
+/// writer wrote must read back (a writer that emits a file its own reader rejects is a bug).
+fn model3d_export(scene: &cfa4_model3d::Scene) {
+    use cfa4_model3d::{ExportOptions, Limits, NoResources, Target, export, read};
+    let limits = Limits { max_memory_bytes: 64 << 20, max_input_bytes: 8 << 20, ..Limits::default() };
+    for target in [Target::Glb, Target::Gltf, Target::Obj, Target::StlBinary, Target::StlAscii] {
+        let mut o = ExportOptions::new(target, "fuzz");
+        o.max_memory_bytes = 64 << 20;
+        let Ok(e) = export(scene, &o, &mut NoResources) else { continue };
+        let Some(main) = e.files.first() else { continue };
+        let bin = e.files.get(1).map(|f| f.data.clone());
+        let mut res = |_: &str| bin.clone();
+        std::hint::black_box(read(&main.data, Some(&main.name), &mut res, &limits));
     }
 }
 
