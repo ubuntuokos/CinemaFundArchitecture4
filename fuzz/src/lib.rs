@@ -957,6 +957,7 @@ pub const TARGETS: &[(&str, &str, Target)] = &[
     ("bink", "cfa4-bink", bink),
     ("magicyuv", "cfa4-magicyuv", magicyuv),
     ("g729", "cfa4-g729", g729),
+    ("mace", "cfa4-mace", mace),
     ("ilbc", "cfa4-ilbc", ilbc),
     ("musepack", "cfa4-musepack", musepack),
     ("shorten", "cfa4-shorten", shorten),
@@ -980,3 +981,14 @@ pub const TARGETS: &[(&str, &str, Target)] = &[
 
 #[cfg(test)]
 mod smoke;
+
+/// MACE: random packets of random sizes through one decoder of each version and channel count.
+pub fn mace(data: &[u8]) {
+    let (head, body) = data.split_at(data.len().min(1));
+    let sel = head.first().copied().unwrap_or(0);
+    let version = if sel & 1 == 0 { cfa4_mace::Version::Mace3 } else { cfa4_mace::Version::Mace6 };
+    let Ok(mut d) = cfa4_mace::Decoder::new(version, 1 + usize::from(sel >> 1 & 1)) else { return };
+    for pkt in body.chunks(1 + usize::from(sel >> 2) % 64) {
+        let _ = d.decode(pkt);
+    }
+}

@@ -171,6 +171,7 @@ static ROWS: &[Row] = &[
     audio("TAK", &["tak"], Ported, Sw(""), NoEnc),
     audio("Interplay ACM", &["acm"], Ported, Sw(""), NoEnc),
     audio("G.729 / G.729 Annex B", &["g729"], Ported, Sw(""), NoEnc),
+    audio("Apple MACE 3:1 and 6:1", &["mace"], Ported, Sw("in QuickTime"), NoEnc),
     audio("iLBC", &["ilbc"], Ported, Sw(""), NoEnc),
     audio("Musepack SV7 / SV8", &["musepack"], Ported, Sw(""), NoEnc),
     audio("ADPCM, G.711, G.722", &["adpcm"], Own, Sw(""), NoEnc),

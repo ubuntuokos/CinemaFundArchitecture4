@@ -77,18 +77,28 @@ impl SymphoniaDecoder {
 enum Inner {
     /// Our own AAC-LC decoder. `up` interpolates HE-AAC's core to the output rate (see [`Upsample2x`]).
     /// Surround output is reordered to WAV/SMPTE order (see [`aac_to_wav_order`]).
-    Aac { dec: Box<cfa4_aac::Decoder>, asc: Vec<u8>, up: Option<Box<Upsample2x>> },
+    Aac {
+        dec: Box<cfa4_aac::Decoder>,
+        asc: Vec<u8>,
+        up: Option<Box<Upsample2x>>,
+    },
     /// AAC whose configuration arrives with the first frame (ADTS / LATM).
     AacPending,
     /// xHE-AAC (USAC, audio object type 42), decoded at the stream's own level: DRC and loudness
     /// normalization ([`cfa4_aac::drc`]) are a playback-side choice, not applied on import.
-    Usac { dec: Box<cfa4_aac::usac::UsacDecoder>, asc: Vec<u8> },
+    Usac {
+        dec: Box<cfa4_aac::usac::UsacDecoder>,
+        asc: Vec<u8>,
+    },
     /// MPEG audio at this rate whose layer arrives with the first frame (MP4 / QuickTime name the
     /// codec, not the layer; layers I / II go to our decoder, layer III to symphonia's).
     MpegPending(u32),
     /// Our own Opus decoder (always 48 kHz output; pre-skip is left to container timestamps).
     /// `order` maps output channel → decoded channel (Vorbis → WAV/SMPTE order for surround).
-    Opus { dec: Box<cfa4_opus::Decoder>, order: Option<&'static [usize]> },
+    Opus {
+        dec: Box<cfa4_opus::Decoder>,
+        order: Option<&'static [usize]>,
+    },
     /// Bootstrap decoders (MP3, ALAC, FLAC, HE-AAC…) via symphonia.
     Symphonia(SymphoniaDecoder),
     /// Our AC-3 and E-AC-3 decoder (ATSC A/52, Annex E).
@@ -101,6 +111,7 @@ enum Inner {
     TrueHd(Box<cfa4_truehd::cfa4::Decoder>),
     /// G.711, G.722, IMA and Microsoft ADPCM (`cfa4-adpcm`).
     Adpcm(Box<cfa4_adpcm::Decoder>),
+    Mace(Box<cfa4_mace::Decoder>),
     /// AMR-NB and AMR-WB (`cfa4-amr`): packets hold storage-format frames.
     Amr(cfa4_amr::Decoder),
     /// TTA (`cfa4-tta`): each packet is one frame with its CRC.
@@ -316,10 +327,16 @@ impl PacketDecoder {
         let d = cfa4_adpcm::Decoder::new(codec, channels).map_err(|e| CodecError::Unsupported(e.to_string()))?;
         Ok(Self { inner: Inner::Adpcm(Box::new(d)), channels })
     }
+    /// Apple MACE 3:1 or 6:1 with `channels` channels.
+    pub fn mace(version: cfa4_mace::Version, channels: usize) -> Result<Self> {
+        let d = cfa4_mace::Decoder::new(version, channels).map_err(|e| CodecError::Unsupported(e.to_string()))?;
+        Ok(Self { inner: Inner::Mace(Box::new(d)), channels })
+    }
     /// A copy of the decoder state, for codecs that seek through [`Checkpoints`] (AMR).
     pub fn snapshot(&self) -> Option<Self> {
         match &self.inner {
             Inner::Amr(d) => Some(Self { inner: Inner::Amr(d.clone()), channels: self.channels }),
+            Inner::Mace(d) => Some(Self { inner: Inner::Mace(d.clone()), channels: self.channels }),
             _ => None,
         }
     }
@@ -433,6 +450,10 @@ impl PacketDecoder {
                 let planes = d.decode(data).map_err(|e| CodecError::Decode(e.to_string()))?;
                 return Ok(planes.into_iter().map(|p| p.into_iter().map(|s| f32::from(s) / 32768.0).collect()).collect());
             }
+            Inner::Mace(d) => {
+                let planes = d.decode(data).map_err(|e| CodecError::Decode(format!("MACE: {e}")))?;
+                return Ok(planes.into_iter().map(|p| p.into_iter().map(|s| f32::from(s) / 32768.0).collect()).collect());
+            }
             Inner::Tta(d) => {
                 let planes = d.decode_packet(data).map_err(|e| CodecError::Decode(format!("TTA: {e}")))?;
                 let info = *d.info();
@@ -506,6 +527,7 @@ impl PacketDecoder {
             Inner::Dts(d) => d.reset(),
             Inner::TrueHd(d) => d.reset(),
             Inner::Adpcm(d) => d.reset(),
+            Inner::Mace(d) => d.reset(),
             Inner::Amr(d) => d.reset(),
             Inner::Atrac1(d) => d.reset(),
             Inner::AacPending | Inner::MpegPending(_) | Inner::Tta(_) => {}

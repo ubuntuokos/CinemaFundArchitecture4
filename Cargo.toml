@@ -87,6 +87,7 @@ cfa4-dcpomatic = { path = "crates/dcpomatic" }
 cfa4-apv = { path = "crates/apv" }
 cfa4-dng = { path = "crates/dng" }
 cfa4-g729 = { path = "crates/g729" }
+cfa4-mace = { path = "crates/mace" }
 cfa4-ilbc = { path = "crates/ilbc" }
 cfa4-thp = { path = "crates/thp" }
 cfa4-mobiclip = { path = "crates/mobiclip" }
@@ -204,6 +205,9 @@ opt-level = 3
 opt-level = 3
 
 [profile.dev.package.cfa4-g729]
+opt-level = 3
+
+[profile.dev.package.cfa4-mace]
 opt-level = 3
 
 [profile.dev.package.cfa4-ilbc]
