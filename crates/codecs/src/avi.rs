@@ -51,6 +51,8 @@ enum VCodec {
     Lagarith(u16),
     /// Sorenson Video 3 with its extradata (the sequence header).
     Svq3(Vec<u8>),
+    /// Sorenson Video 1.
+    Svq1,
     /// Indeo 2.
     Indeo2,
     /// Cinepak with its `BITMAPINFOHEADER` bit count and palette.
@@ -87,6 +89,7 @@ fn video_codec(b: &BitmapInfo) -> (VCodec, String) {
         b"CFHD" => (VCodec::Cineform, "GoPro CineForm".into()),
         b"HEVC" | b"H265" | b"HEV1" | b"HVC1" | b"X265" => (VCodec::Hevc, "HEVC".into()),
         _ if crate::utvideo::is_utvideo(&b.compression) => (VCodec::UtVideo(b.compression, b.extra.clone()), "Ut Video".into()),
+        c if crate::svq1::is_svq1(c) => (VCodec::Svq1, "Sorenson Video 1".into()),
         b"RT21" => (VCodec::Indeo2, "Indeo 2".into()),
         b"CVID" => (VCodec::Cinepak(b.bit_count, b.extra.clone()), "Cinepak".into()),
         b"LAGS" => (VCodec::Lagarith(b.bit_count), "Lagarith".into()),
@@ -686,6 +689,7 @@ impl VideoSamples for AviVideo<'_> {
             VCodec::Ffv1(record) => make_video_decoder(&crate::ffv1::sample_entry(record, w, h)),
             VCodec::Dirac => make_video_decoder(&crate::dirac::sample_entry(w, h)),
             VCodec::Huffyuv(bih) => make_video_decoder(&crate::huffyuv::sample_entry(bih, w, h)),
+            VCodec::Svq1 => make_video_decoder(&crate::svq1::sample_entry(w, h)),
             VCodec::Indeo2 => make_video_decoder(&crate::indeo::sample_entry_indeo2(w, h)),
             VCodec::Svq3(extra) => make_video_decoder(&crate::svq3::sample_entry(w, h, extra)),
             VCodec::Cinepak(bits, pal) => make_video_decoder(&crate::cinepak::sample_entry(*bits, pal, w, h)),

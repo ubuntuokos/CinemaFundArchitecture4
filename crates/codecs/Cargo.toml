@@ -78,6 +78,7 @@ cfa4-utvideo = { workspace = true }
 cfa4-huffyuv = { workspace = true }
 cfa4-lagarith = { workspace = true }
 cfa4-svq3 = { workspace = true }
+cfa4-svq1 = { workspace = true }
 cfa4-indeo = { workspace = true }
 cfa4-cinepak = { workspace = true }
 cfa4-magicyuv = { workspace = true }

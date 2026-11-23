@@ -122,6 +122,7 @@ static ROWS: &[Row] = &[
     video("Smacker Video (SMK2, SMK4) and Smacker Audio", &["smacker"], Ported, Sw("in Smacker (.smk)"), false, NoEnc),
     video("Ut Video", &["utvideo"], Own, Sw(""), false, NoEnc),
     video("Lagarith", &["lagarith"], Ported, Sw(""), false, NoEnc),
+    video("Sorenson Video 1", &["svq1"], Ported, Sw(""), false, NoEnc),
     video("Indeo 2", &["indeo"], Ported, Sw(""), false, NoEnc),
     video("Sorenson Video 3 (SVQ3)", &["svq3"], Ported, Sw(""), false, NoEnc),
     video("Cinepak", &["cinepak"], Ported, Sw(""), false, NoEnc),

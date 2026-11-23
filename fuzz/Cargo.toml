@@ -77,6 +77,7 @@ cfa4-cavs = { path = "../crates/cavs" }
 cfa4-lagarith = { path = "../crates/lagarith" }
 cfa4-bink = { path = "../crates/bink" }
 cfa4-svq3 = { path = "../crates/svq3" }
+cfa4-svq1 = { path = "../crates/svq1" }
 cfa4-magicyuv = { path = "../crates/magicyuv" }
 cfa4-g729 = { path = "../crates/g729" }
 cfa4-mace = { path = "../crates/mace" }
@@ -500,6 +501,8 @@ bench = false
 [[bin]]
 name = "bink"
 path = "fuzz_targets/bink.rs"
+name = "svq1"
+path = "fuzz_targets/svq1.rs"
 test = false
 doc = false
 bench = false

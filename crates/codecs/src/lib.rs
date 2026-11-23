@@ -78,6 +78,7 @@ mod stream_color;
 pub mod streams;
 pub mod svq3;
 pub mod twinvq;
+pub mod svq1;
 pub mod theora;
 pub mod thp;
 pub mod utvideo;
@@ -161,6 +162,7 @@ const BUILTIN_FACTORIES: [VideoDecoderFactory; 29] = [
     huffyuv::huffyuv_factory,
     lagarith::lagarith_factory,
     svq3::svq3_factory,
+    svq1::svq1_factory,
     indeo::indeo_factory,
     cinepak::cinepak_factory,
     utvideo::utvideo_factory,
