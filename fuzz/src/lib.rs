@@ -681,23 +681,6 @@ pub fn musepack(data: &[u8]) {
     let _ = cfa4_musepack::decode_file(data);
 }
 
-pub fn amv(data: &[u8]) {
-    // a file: its chunks decode, whatever they hold
-    if let Ok(a) = cfa4_amv::Amv::parse(data) {
-        if let Ok(d) = cfa4_amv::Decoder::new(a.width.min(64), a.height.min(64)) {
-            for c in a.video.iter().take(4) {
-                let _ = d.decode(data.get(c.offset..c.offset + c.len).unwrap_or(&[]));
-            }
-        }
-        for c in a.audio.iter().take(4) {
-            let _ = cfa4_amv::decode_audio(data.get(c.offset..c.offset + c.len).unwrap_or(&[]));
-        }
-    }
-    // a bare chunk
-    if let Ok(d) = cfa4_amv::Decoder::new(32, 24) {
-        let _ = d.decode(data);
-    }
-    let _ = cfa4_amv::decode_audio(data);
 pub fn acm(data: &[u8]) {
     let _ = cfa4_acm::probe(data);
     let _ = cfa4_acm::decode_file(data);
@@ -780,6 +763,23 @@ pub fn mobiclip(data: &[u8]) {
             }
         }
     }
+pub fn amv(data: &[u8]) {
+    // a file: its chunks decode, whatever they hold
+    if let Ok(a) = cfa4_amv::Amv::parse(data) {
+        if let Ok(d) = cfa4_amv::Decoder::new(a.width.min(64), a.height.min(64)) {
+            for c in a.video.iter().take(4) {
+                let _ = d.decode(data.get(c.offset..c.offset + c.len).unwrap_or(&[]));
+            }
+        }
+        for c in a.audio.iter().take(4) {
+            let _ = cfa4_amv::decode_audio(data.get(c.offset..c.offset + c.len).unwrap_or(&[]));
+        }
+    }
+    // a bare chunk
+    if let Ok(d) = cfa4_amv::Decoder::new(32, 24) {
+        let _ = d.decode(data);
+    }
+    let _ = cfa4_amv::decode_audio(data);
 }
 
 pub fn adx(data: &[u8]) {
@@ -938,13 +938,13 @@ pub const TARGETS: &[(&str, &str, Target)] = &[
     ("musepack", "cfa4-musepack", musepack),
     ("shorten", "cfa4-shorten", shorten),
     ("adx", "cfa4-adx", adx),
-    ("amv", "cfa4-amv", amv),
     ("acm", "cfa4-acm", acm),
     ("roq", "cfa4-roq", roq),
     ("mve", "cfa4-mve", mve),
     ("thp", "cfa4-thp", thp),
     ("mobiclip", "cfa4-mobiclip", mobiclip),
     ("nstream", "cfa4-nstream", nstream),
+    ("amv", "cfa4-amv", amv),
     ("hca", "cfa4-hca", hca),
     ("tak", "cfa4-tak", tak),
     ("smacker", "cfa4-smacker", smacker),
