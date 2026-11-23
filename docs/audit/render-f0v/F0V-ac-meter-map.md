@@ -24,4 +24,6 @@ Minden sor a meglévő elemet nevezi meg; új crate nem készül (tulajdonosi sz
 | AC-15 Projektmigráció | – | `crates/project/src/legacy.rs` (meglévő) | PENDING | nincs régi sémájú projekt-fixture |
 | AC-16 Teljesítmény | renderidő, csúcsmemória | – | PENDING | 10 futás és baseline kell |
 | AC-17 Feliratok | – | `crates/captions` (meglévő) | PENDING | a scope-döntés tulajdonosi (terv) |
-| AC-18 Mozi minőség | MQ-1–MQ-8, ΔE X'Y'Z' | `cfa4_metrics` részben | PENDING | J2K orákulum és X'Y'Z' konverzió: CINECERT |
+| AC-18 Mozi minőség (csak szoftveres referencia) | MQ-1–MQ-8, ΔE X'Y'Z' | `cfa4_metrics` részben | PENDING | J2K orákulum és X'Y'Z' konverzió: CINECERT. Nincs mozi szerver/vetítő: az állítás legfeljebb „szoftveresen igazolt, szabványkonform”, nem „moziban lejátszva” |
+
+**Hatókör (tulajdonosi döntés, 2026-11-21):** a mozi célú elfogadás (AC-12, AC-18, DCP/KDM) kizárólag szoftveres referenciával mérhető, mert nincs mozi szerver és vetítő. A riport nyelve ezért „szoftveresen igazolt, szabványkonform”; „moziban lejátszva” állítás nem tehető.
