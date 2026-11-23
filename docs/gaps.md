@@ -143,12 +143,25 @@ platforms** G4, G9, G17; **performance** G16; **ecosystem** G11; **measurement**
   `cfa4-project`) against a reference of folder paths or bare names (default the local
   `plan/premiere/effects.json` / `transitions.json`), placement by folder, Presets and the other
   area out of scope.
-- **Missing:** the other areas (commands, panels, preferences, formats), fidelity tiers (exact,
-  approximate, stub), a CI job, and a committed `docs/parity-checklist.md`.
-- **Evidence:** the 92% menu figure in this pass came from an ad hoc label-matching script; it has
-  not yet been re-measured with the tool.
-- **Estimate:** 8–17 h left (the menu snapshot is local-only, so CI needs a committed, Adobe-free
-  list of menu paths for `--reference`, or the check runs only where `plan/` exists).
+- **Also done (CFA4-PARITY-G7, [plan](plans/CFA4-PARITY-G7-2026-11-20.md)):** the menu measurement
+  reads the live Qt 6 GUI (`--area menus`; `menus-egui` keeps the frozen egui bar), plus
+  `--area commands` (the engine registry), `--area panels` (Qt docks) and `--area all` (one report,
+  summary table first, every failure listed). Fidelity tiers (exact, approximate, stub, unrated; an
+  item with no annotation is *unrated*, `exact` needs evidence) come from `xtask/parity/fidelity.json`
+  and automatic panel stubs. Committed, text-only references (schema 1, every item names the
+  `docs/**/*.md` it comes from; `--check-reference` is part of `cargo xtask ci`) exist for **panels and
+  menus**. `xtask/parity/thresholds.json` holds the least present and exact *counts* per area;
+  `cargo xtask parity --ci` fails below them and hints when one can be raised;
+  `--check-ratchet --base REF` fails when a count is lowered or removed; `docs/parity-checklist.md` is
+  generated from the committed references (`--write-checklist`; `--check-checklist` is part of
+  `cargo xtask ci`).
+- **Measured (committed references, 2026-11-23):** panels 24/28 present (1 stub, 23 unrated), menus
+  16/17 present (16 unrated); no item is rated exact yet.
+- **Missing:** committed references for **commands, effects and transitions** (they stay "not
+  measured" under `--committed` / `--ci`: the committed docs do not hold the full lists, so the owner
+  decides whether to add the names to docs or commit names-only lists), preferences and formats, the
+  `parity` CI job (next PR), and behaviour tests (G1): a tier is an annotation, not a behaviour test.
+- **Estimate:** 4–8 h left (CI job, references for the other areas).
 
 ## G8. UI fidelity: monitor handles, Effect Controls, docking
 
