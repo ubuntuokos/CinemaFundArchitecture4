@@ -136,6 +136,7 @@ const LAYERS: &[(&str, u8)] = &[
     ("cinema-pkg", 1),
     ("live", 1),
     ("sandbox", 1),
+    ("expr", 1),
     ("tasks", 2),
     ("store", 5),
     ("edit", 2),

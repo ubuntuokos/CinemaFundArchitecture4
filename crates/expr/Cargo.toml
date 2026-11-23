@@ -1,0 +1,15 @@
+[package]
+name = "cfa4-expr"
+description = "CFA4 expression engine (CFA4-VFX-001 VFX-4): After Effects-style property expressions on boa, deterministic, with explicit work budgets"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+rust-version.workspace = true
+
+[lints]
+workspace = true
+
+[dependencies]
+cfa4-time = { workspace = true }
+# Pure-Rust JavaScript engine, no default features (no Intl, no clock): the expression runtime.
+boa_engine = { version = "0.22", default-features = false }
