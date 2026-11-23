@@ -35,5 +35,6 @@ decision 2026-11-14, as DV-3 and Canopus). The ported code keeps FFmpeg's licenc
   on synthetic QCP files (ffmpeg does not encode QCELP): random packets of every rate re-rolled
   until they decode as normal frames, mixed with raw random packets (erasures), packets that claim
   another rate, packets without the rate byte, packets of an unknown size and fixed-size files.
+- `fate_sample_matches_ffmpeg` (same file): FFmpeg's FATE sample `qcp/0036580847.QCP`, a real recording, bit-exact; local only (`target/fixtures/qcelp/`, skipped when absent).
 - `src/lib.rs`: damaged and truncated input never panics.
 - `crates/codecs/tests/qcp_file.rs`: a `.qcp` file through the media source.

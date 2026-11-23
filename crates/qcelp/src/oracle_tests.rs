@@ -205,3 +205,23 @@ fn fixed_size_files_match_ffmpeg() {
     assert_same("fixed", &ours, &theirs);
     assert_same("fixed decode_file", &decode_file(&file).expect("decode"), &theirs);
 }
+
+/// FFmpeg's FATE sample `qcp/0036580847.QCP` (a real QCELP-13K recording; local only, fetched from
+/// <https://fate-suite.ffmpeg.org/qcp/> into `target/fixtures/qcelp/`; skipped when absent).
+#[test]
+fn fate_sample_matches_ffmpeg() {
+    let Some(ff) = cfa4_testkit::oracle::ffmpeg_or_skip("QCELP oracle") else { return };
+    let path = std::path::Path::new(env!("CARGO_MANIFEST_DIR")).join("../../target/fixtures/qcelp/0036580847.QCP");
+    let Ok(data) = std::fs::read(&path) else {
+        eprintln!("SKIPPED: {} not present", path.display());
+        return;
+    };
+    let ours = decode_file(&data).expect("decode");
+    let Some(theirs) = ffmpeg_decode(&ff, &data, "fate") else { panic!("ffmpeg failed") };
+    assert_same("fate 0036580847.QCP", &ours, &theirs);
+    let q = crate::parse(&data).unwrap();
+    let mut d = Decoder::new();
+    let normal = q.packets.iter().filter(|p| d.decode(p, &mut Vec::new())).count();
+    eprintln!("fate sample: {} packets, {normal} decoded as normal frames", q.packets.len());
+    assert!(normal * 10 > q.packets.len() * 8, "a real recording should be mostly normal frames");
+}
