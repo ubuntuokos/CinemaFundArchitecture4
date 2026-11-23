@@ -62,7 +62,7 @@ Kiindulás: `VISION.md` §4 (Resolve: „Fusion-szerű csomópontos kompozitál�
 | AI-modellek, model manager | `CFA4-AI_modules` ADR 0008, `AI-MODEL-TRAINING-001` | Csak interfész |
 | OpenVDB-adat, volume-előnézet, térbeli kifejezés (kontextus a közös kifejezésmagon) | `CFA4-DNEG-TECHNOLOGY-ADAPTATION-001` (N1–N3) | A kifejezésmagot (VFX-4) adja; a DNEG-munka a mátrixban `DNEG-M1…M3` |
 | Reprezentáció-réteg (mesh, pont, volume, görbe, példány, impostor) | `CFA4-ARF-001` | Csak bemenet a VFX-6-nak; nincs második részecskemotor |
-| Effektlánc-preset, macro | `CFA4-FX-AUTHORING-001` | A preset a `VfxGraph` részgráfjává migrálható; a kifejezés a VFX-4 magja |
+| Effektlánc-preset, macro | `CFA4-EFFECTCHAIN-001` | A preset a `VfxGraph` részgráfjává migrálható; a kifejezés a VFX-4 magja |
 | Jelenetcsere (glTF/OBJ/STL, natív USD-import) | `CFA4-OPENUSD-3D-001` | VFX-8 külső EXR-csere az alap; a natív import az X-4 döntés után |
 | Pontfelhő | `CFA4-POINTCLOUD-001` | Effektek (scatter) csak a VFX-6 sorain |
 | EC-donor besorolása (`PASS`/`BLOCKED`/`REFERENCE_ONLY`) | render-terv F1 (EC-jelölt #11 audit) | A VFX-1 csak leltárat és átvételi sorrendet ad, a besorolást nem ismétli |
@@ -162,7 +162,7 @@ A tesztek a render-terv harnessén és kapuin (F0V, MQ-1…8, AC-01…18) futnak
 
 ## 8a. Elfogadott egyeztetési döntések (2026-11-22, a `CFA4-DNEG-VFX-EGYEZTETES-001` D-1…D-9 szerint)
 
-D-1 egy katalógus (a `G-xx` mátrix; a VFX-CATALOG-001 szűkül); D-2 egy kifejezésmag, gazdája a VFX-4; D-3 egy worker/job-szerződés (render C0), az N1/N2 saját indítója átmeneti; D-4 USD: külső EXR-csere az alap, natív import feltételes; D-5…D-8 pontosítások (N2-3, „G” névkonvenció, OpenVDB-licenc, DNEG-donorok pillanatképe); D-9 az FX-AUTHORING név marad. Az X-4 (3D-mélység) **nem** dőlt el: az OPENUSD, ARF, POINTCLOUD és a VFX-8 addig áll.
+D-1 egy katalógus (a `G-xx` mátrix; a VFX-CATALOG-001 szűkül); D-2 egy kifejezésmag, gazdája a VFX-4; D-3 egy worker/job-szerződés (render C0), az N1/N2 saját indítója átmeneti; D-4 USD: külső EXR-csere az alap, natív import feltételes; D-5…D-8 pontosítások (N2-3, „G” névkonvenció, OpenVDB-licenc, DNEG-donorok pillanatképe); D-9 az EFFECTCHAIN név marad. Az X-4 (3D-mélység) **nem** dőlt el: az OPENUSD, ARF, POINTCLOUD és a VFX-8 addig áll.
 
 ## 9. Nyitott pontok
 
