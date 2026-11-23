@@ -180,42 +180,132 @@ fn corpus_sequence_headers() {
     }
 }
 
-/// `NumFrameHeaderBits`, `base_q_idx` and the tile grid of every closed-loop key frame, as the
-/// instrumented AVM v1.0.0 reference decoder reports them for the corpus (in stream order).
-const AVM_KEY_FRAMES: &[(&str, &[(usize, u16, u32, u32)])] = &[
-    ("400-8bit", &[(49, 39, 1, 1)]),
-    ("420-10bit-default", &[(128, 63, 1, 1)]),
-    ("420-8bit-default", &[(71, 39, 1, 1)]),
-    ("420-8bit-film-grain", &[(79, 39, 1, 1)]),
+/// `(obu_type, NumFrameHeaderBits, base_q_idx, order hint, tile cols, tile rows)` of every frame header, in stream order, as the
+/// instrumented AVM v1.0.0 reference decoder reports them for the corpus.
+const AVM_FRAMES: &[(&str, &[(u8, usize, u16, u32, u32, u32)])] = &[
+    ("400-8bit", &[(4, 49, 39, 0, 1, 1), (7, 66, 150, 1, 1, 1), (7, 144, 150, 2, 1, 1), (7, 71, 150, 3, 1, 1), (7, 91, 150, 4, 1, 1), (7, 66, 150, 5, 1, 1)]),
+    (
+        "420-10bit-default",
+        &[
+            (4, 128, 63, 0, 1, 1),
+            (7, 66, 198, 1, 1, 1),
+            (7, 135, 198, 2, 1, 1),
+            (7, 104, 198, 3, 1, 1),
+            (7, 96, 198, 4, 1, 1),
+            (7, 90, 198, 5, 1, 1),
+            (7, 92, 198, 6, 1, 1),
+            (7, 89, 198, 7, 1, 1),
+            (7, 120, 198, 8, 1, 1),
+            (7, 83, 198, 9, 1, 1),
+        ],
+    ),
+    (
+        "420-8bit-default",
+        &[
+            (4, 71, 39, 0, 1, 1),
+            (7, 64, 150, 1, 1, 1),
+            (7, 73, 150, 2, 1, 1),
+            (7, 73, 150, 3, 1, 1),
+            (7, 140, 150, 4, 1, 1),
+            (7, 73, 150, 5, 1, 1),
+            (7, 86, 150, 6, 1, 1),
+            (7, 69, 150, 7, 1, 1),
+            (7, 77, 150, 8, 1, 1),
+            (7, 65, 150, 9, 1, 1),
+        ],
+    ),
+    (
+        "420-8bit-film-grain",
+        &[
+            (4, 79, 39, 0, 1, 1),
+            (7, 109, 150, 1, 1, 1),
+            (7, 100, 150, 2, 1, 1),
+            (7, 100, 150, 3, 1, 1),
+            (7, 117, 150, 4, 1, 1),
+            (7, 144, 150, 5, 1, 1),
+            (7, 100, 150, 6, 1, 1),
+            (7, 107, 150, 7, 1, 1),
+            (7, 100, 150, 8, 1, 1),
+            (7, 110, 150, 9, 1, 1),
+        ],
+    ),
     (
         "420-8bit-intra-only",
         &[
-            (139, 150, 1, 1),
-            (152, 150, 1, 1),
-            (105, 150, 1, 1),
-            (200, 150, 1, 1),
-            (99, 150, 1, 1),
-            (110, 150, 1, 1),
-            (237, 150, 1, 1),
-            (182, 150, 1, 1),
-            (124, 150, 1, 1),
-            (125, 150, 1, 1),
+            (4, 139, 150, 0, 1, 1),
+            (4, 152, 150, 0, 1, 1),
+            (4, 105, 150, 0, 1, 1),
+            (4, 200, 150, 0, 1, 1),
+            (4, 99, 150, 0, 1, 1),
+            (4, 110, 150, 0, 1, 1),
+            (4, 237, 150, 0, 1, 1),
+            (4, 182, 150, 0, 1, 1),
+            (4, 124, 150, 0, 1, 1),
+            (4, 125, 150, 0, 1, 1),
         ],
     ),
-    ("420-8bit-kf4", &[(71, 39, 1, 1), (61, 39, 1, 1), (75, 39, 1, 1)]),
-    ("420-8bit-odd-size", &[(138, 39, 1, 1)]),
-    ("420-8bit-ras", &[(74, 39, 1, 1)]),
-    ("420-8bit-resize", &[(71, 39, 1, 1)]),
-    ("420-8bit-tiles-2x2", &[(333, 99, 2, 2)]),
-    ("422-10bit", &[(157, 63, 1, 1)]),
-    ("422-8bit", &[(67, 39, 1, 1)]),
-    ("444-8bit", &[(63, 39, 1, 1)]),
+    (
+        "420-8bit-kf4",
+        &[
+            (4, 71, 39, 0, 1, 1),
+            (7, 64, 150, 1, 1, 1),
+            (7, 73, 150, 2, 1, 1),
+            (7, 73, 150, 3, 1, 1),
+            (4, 61, 39, 0, 1, 1),
+            (7, 68, 150, 1, 1, 1),
+            (7, 73, 150, 2, 1, 1),
+            (7, 69, 150, 3, 1, 1),
+            (4, 75, 39, 0, 1, 1),
+            (7, 78, 150, 1, 1, 1),
+        ],
+    ),
+    (
+        "420-8bit-odd-size",
+        &[(4, 138, 39, 0, 1, 1), (7, 54, 150, 1, 1, 1), (14, 26, 150, 2, 1, 1), (7, 60, 150, 3, 1, 1), (7, 61, 150, 4, 1, 1), (14, 26, 150, 5, 1, 1)],
+    ),
+    (
+        "420-8bit-ras",
+        &[
+            (4, 74, 39, 0, 1, 1),
+            (7, 68, 150, 1, 1, 1),
+            (7, 77, 150, 2, 1, 1),
+            (7, 77, 150, 3, 1, 1),
+            (21, 88, 150, 4, 1, 1),
+            (7, 77, 150, 5, 1, 1),
+            (7, 77, 150, 6, 1, 1),
+            (7, 73, 150, 7, 1, 1),
+            (21, 88, 150, 8, 1, 1),
+            (7, 75, 150, 9, 1, 1),
+        ],
+    ),
+    (
+        "420-8bit-resize",
+        &[
+            (4, 71, 39, 0, 1, 1),
+            (7, 77, 127, 1, 1, 1),
+            (7, 112, 127, 2, 1, 1),
+            (7, 81, 127, 3, 1, 1),
+            (7, 85, 127, 4, 1, 1),
+            (7, 82, 127, 5, 1, 1),
+            (7, 78, 127, 6, 1, 1),
+            (7, 77, 127, 7, 1, 1),
+            (7, 74, 127, 8, 1, 1),
+            (7, 89, 127, 9, 1, 1),
+        ],
+    ),
+    ("420-8bit-tiles-2x2", &[(4, 333, 99, 0, 2, 2), (7, 224, 150, 1, 2, 2), (7, 193, 150, 2, 2, 2)]),
+    (
+        "422-10bit",
+        &[(4, 157, 63, 0, 1, 1), (7, 165, 198, 1, 1, 1), (7, 170, 198, 2, 1, 1), (7, 121, 198, 3, 1, 1), (7, 92, 198, 4, 1, 1), (7, 92, 198, 5, 1, 1)],
+    ),
+    ("422-8bit", &[(4, 67, 39, 0, 1, 1), (7, 102, 150, 1, 1, 1), (7, 100, 150, 2, 1, 1), (7, 76, 150, 3, 1, 1), (7, 76, 150, 4, 1, 1), (7, 77, 150, 5, 1, 1)]),
+    ("444-8bit", &[(4, 63, 39, 0, 1, 1), (7, 60, 150, 1, 1, 1), (7, 69, 150, 2, 1, 1), (7, 69, 150, 3, 1, 1), (7, 101, 150, 4, 1, 1), (7, 69, 150, 5, 1, 1)]),
 ];
 
-/// The frame headers of the corpus key frames parse to the same length, quantizer and tile grid
-/// as in the reference decoder, and their tile data fills the OBU exactly.
+/// Every frame header of the corpus parses to the same length, quantizer, order hint and tile grid
+/// as in the reference decoder, and the tile data of each frame fills its OBU exactly.
 #[test]
-fn corpus_key_frame_headers() {
+fn corpus_frame_headers() {
     let corpus = corpus();
     if corpus.is_empty() {
         eprintln!("skip: no AV2 corpus in fixtures av2/vectors");
@@ -223,24 +313,40 @@ fn corpus_key_frame_headers() {
     }
     for (name, data) in &corpus {
         let stem = name.trim_end_matches(".obu");
-        let want = AVM_KEY_FRAMES.iter().find(|(n, _)| *n == stem).map(|(_, w)| *w).unwrap_or_else(|| panic!("{name}: no reference values"));
+        let want = AVM_FRAMES.iter().find(|(n, _)| *n == stem).map(|(_, w)| *w).unwrap_or_else(|| panic!("{name}: no reference values"));
         let mut parser = HeaderParser::new();
         let mut got = Vec::new();
         for obu in annexb_obus(data) {
             let obu = obu.unwrap_or_else(|e| panic!("{name}: {e}"));
-            let key = obu.header.obu_type == ObuType::ClosedLoopKey;
-            match parser.push(&obu) {
-                Ok(Parsed::TileGroup(tg)) if key => {
-                    let h = tg.frame_header.as_ref().unwrap_or_else(|| panic!("{name}: key frame without header"));
-                    got.push((h.header_bits, h.quant.base_q_idx, h.tiles.tile_cols, h.tiles.tile_rows));
+            let code = match obu.header.obu_type {
+                ObuType::ClosedLoopKey => 4,
+                ObuType::RegularTileGroup => 7,
+                ObuType::RegularTip => 14,
+                ObuType::RasFrame => 21,
+                _ => {
+                    parser.push(&obu).unwrap_or_else(|e| panic!("{name}: {e}"));
+                    continue;
+                }
+            };
+            let result = parser.push(&obu);
+            let header = match result.unwrap_or_else(|e| panic!("{name}: frame #{} (obu {code}): {e}", got.len())) {
+                Parsed::TileGroup(tg) => {
+                    let Some(h) = tg.frame_header.clone() else { continue };
                     assert_eq!(tg.tiles.len() as u32, h.tiles.tile_cols * h.tiles.tile_rows, "{name}");
                     let end = tg.tiles.last().map(|(o, s)| o + s);
                     assert_eq!(end, Some(obu.payload.len()), "{name}: tile data does not end with the OBU");
+                    h
                 }
-                Ok(_) => {}
-                Err(e) => assert!(!key, "{name}: key frame #{}: {e}", got.len()),
-            }
+                Parsed::TipFrame(h) => *h,
+                other => panic!("{name}: unexpected {other:?}"),
+            };
+            // The reference decoder derives the quantizer of a TIP output frame after printing the
+            // header (the average of its two references, § 5.18.2), so it is compared for the other frames only.
+            let q = if code == 14 { want.get(got.len()).map_or(0, |w| w.2) } else { header.quant.base_q_idx };
+            got.push((code, header.header_bits, q, header.order_hint, header.tiles.tile_cols, header.tiles.tile_rows));
         }
-        assert_eq!(got, want, "{name}");
+        assert_eq!(got.as_slice(), &want[..got.len()], "{name}");
+        assert!(!got.is_empty(), "{name}");
+        assert_eq!(got.len(), want.len(), "{name}");
     }
 }
