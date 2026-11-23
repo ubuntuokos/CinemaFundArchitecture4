@@ -15,14 +15,16 @@
 //! `cfa4_tasks::plan` instead, where unknown is never enough.
 //!
 //! The queue lives in memory here: editing, playback and saving never depend on the database
-//! (`AGENTS.md` §0). The PostgreSQL store (`cfa4-store`, L5) is wired in by the application.
+//! (`AGENTS.md` §0). The PostgreSQL store (`cfa4-store`, L5) is wired in by the application as a
+//! write-behind [`TaskJournal`] ([`TaskHost::set_journal`]): every change of a task is handed to
+//! it after the fact, and the engine never waits for it.
 
 use std::sync::Arc;
 
 use cfa4_tasks::budget::{Budget, BudgetSettings};
 use cfa4_tasks::manager::{Class, Denied, Request, WaitReason};
 use cfa4_tasks::queue::class_rank;
-use cfa4_tasks::{Manager, MissedStart, Monitor, NewTask, Priority, Queue, QueueConfig, QueueEvent, Snapshot, StartMode, State};
+use cfa4_tasks::{Manager, MissedStart, Monitor, NewTask, Priority, Queue, QueueConfig, QueueEvent, Snapshot, StartMode, State, TaskJournal};
 
 /// Reads the machine's resources (tests install a fixed one).
 pub type Sampler = Arc<dyn Fn() -> Snapshot + Send + Sync>;
@@ -64,6 +66,9 @@ pub struct TaskHost {
     next: u64,
     /// What each task is, as the user knows it (the job's or the export's name).
     labels: std::collections::HashMap<String, String>,
+    /// Where changes are written behind, and what it was last told per task (version, state).
+    journal: Option<Box<dyn TaskJournal>>,
+    journaled: std::collections::HashMap<String, (u64, State)>,
 }
 
 /// What would happen to a task asked for now (ACS-5: the notice before it starts).
@@ -135,6 +140,39 @@ impl TaskHost {
             sampled: None,
             next: 0,
             labels: std::collections::HashMap::new(),
+            journal: None,
+            journaled: std::collections::HashMap::new(),
+        }
+    }
+
+    /// Write every change of every task behind to `journal` from now on (the tasks that exist now
+    /// are handed over first). A panic in the journal is caught and drops it: the queue goes on.
+    pub fn set_journal(&mut self, journal: Box<dyn TaskJournal>) {
+        self.journal = Some(journal);
+        self.journaled.clear();
+        self.sync_journal();
+    }
+
+    /// Hand the journal the tasks that changed since it was last told.
+    fn sync_journal(&mut self) {
+        let Some(journal) = self.journal.as_mut() else { return };
+        let queue = &self.queue;
+        self.journaled.retain(|id, _| queue.get(id).is_some());
+        let mut broken = false;
+        for t in queue.tasks() {
+            let now = (t.version, t.state);
+            if self.journaled.get(&t.id) == Some(&now) {
+                continue;
+            }
+            self.journaled.insert(t.id.clone(), now);
+            if std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| journal.record(t))).is_err() {
+                broken = true;
+                break;
+            }
+        }
+        if broken {
+            log::warn!("task journal failed: it is switched off for this session");
+            self.journal = None;
         }
     }
 
@@ -169,7 +207,9 @@ impl TaskHost {
             resumable: false,
             time_zone,
         };
-        self.queue.submit(new, now_ms()).map(|_| ()).map_err(|e| format!("{e:?}"))
+        let r = self.queue.submit(new, now_ms()).map(|_| ()).map_err(|e| format!("{e:?}"));
+        self.sync_journal();
+        r
     }
 
     /// Whether `id` waits for the user's decision after a missed start.
@@ -281,6 +321,12 @@ impl TaskHost {
 
     /// Renew the leases of the running tasks and run one scheduler step.
     pub fn tick(&mut self) -> Vec<QueueEvent> {
+        let events = self.step();
+        self.sync_journal();
+        events
+    }
+
+    fn step(&mut self) -> Vec<QueueEvent> {
         let busy = self.queue.tasks().iter().any(|t| matches!(t.state, State::Scheduled | State::Queued | State::Waiting | State::Running | State::Cancelling));
         if !busy {
             return Vec::new();
@@ -322,6 +368,7 @@ impl TaskHost {
         if let Err(e) = r {
             log::warn!("task {id}: could not record its end: {e:?}");
         }
+        self.sync_journal();
     }
 
     /// Withdraw every task under `prefix` that has not started, except `keep`.
@@ -523,5 +570,64 @@ mod tests {
         h.schedule("x", now + MIN, None, MissedStart::RunLate).unwrap();
         assert!(h.decide("x", "explode").is_err());
         assert!(h.schedule("tz", now, Some("Nowhere/Atlantis".into()), MissedStart::RunLate).is_err());
+    }
+
+    /// A journal that keeps what it was told.
+    #[derive(Clone, Default)]
+    struct Recorded(Arc<std::sync::Mutex<Vec<(String, State, u64)>>>);
+
+    impl TaskJournal for Recorded {
+        fn record(&mut self, task: &cfa4_tasks::Task) {
+            self.0.lock().unwrap_or_else(std::sync::PoisonError::into_inner).push((task.id.clone(), task.state, task.version));
+        }
+    }
+
+    impl Recorded {
+        fn states(&self, id: &str) -> Vec<State> {
+            self.0.lock().unwrap_or_else(std::sync::PoisonError::into_inner).iter().filter(|(i, ..)| i == id).map(|(_, s, _)| *s).collect()
+        }
+    }
+
+    #[test]
+    fn every_change_of_a_task_is_written_behind_once() {
+        let mut h = host_with(Some(14 * GIB));
+        let journal = Recorded::default();
+        h.set_journal(Box::new(journal.clone()));
+        let small = |h: &mut TaskHost| h.fit(Class::FinalRender, GIB, 1000);
+        assert_eq!(h.admit("export-1", small), Admission::Start);
+        h.end("export-1", Outcome::Succeeded);
+        let seen = journal.states("export-1");
+        assert_eq!(seen.last(), Some(&State::Succeeded), "{seen:?}");
+        assert!(seen.contains(&State::Running), "{seen:?}");
+        // nothing changed: nothing is written again
+        let n = seen.len();
+        h.tick();
+        h.end("export-1", Outcome::Succeeded);
+        assert_eq!(journal.states("export-1").len(), n);
+    }
+
+    #[test]
+    fn tasks_that_exist_when_the_journal_arrives_are_handed_over() {
+        let mut h = host_with(Some(14 * GIB));
+        h.schedule("export-9", now_ms() + 3_600_000, None, MissedStart::RunLate).expect("scheduled");
+        let journal = Recorded::default();
+        h.set_journal(Box::new(journal.clone()));
+        assert_eq!(journal.states("export-9"), vec![State::Scheduled]);
+    }
+
+    #[test]
+    fn a_journal_that_panics_is_dropped_and_the_queue_goes_on() {
+        struct Broken;
+        impl TaskJournal for Broken {
+            fn record(&mut self, _: &cfa4_tasks::Task) {
+                std::panic::resume_unwind(Box::new("journal down"));
+            }
+        }
+        let mut h = host_with(Some(14 * GIB));
+        h.set_journal(Box::new(Broken));
+        let small = |h: &mut TaskHost| h.fit(Class::FinalRender, GIB, 1000);
+        assert_eq!(h.admit("export-1", small), Admission::Start);
+        h.end("export-1", Outcome::Succeeded);
+        assert_eq!(h.state("export-1"), Some(State::Succeeded));
     }
 }

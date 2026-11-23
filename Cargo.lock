@@ -1296,6 +1296,7 @@ dependencies = [
  "cfa4-render",
  "cfa4-route",
  "cfa4-scopes",
+ "cfa4-store",
  "cfa4-surface",
  "cfa4-surface-model",
  "cfa4-tcsync",
