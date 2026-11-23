@@ -215,7 +215,7 @@ def _guard_db(error: Exception) -> Exception:
         text = str(error.orig)
         if "production_code_key" in text:
             return ProductionCodeTaken()
-        if state == "23503" and "still referenced" in text:
+        if state in ("23001", "23503") and ("still referenced" in text or "RESTRICT" in text):  # the wording differs by PostgreSQL version
             return EntityInUse("another record still refers to it")
         return InvalidInput("a value violates a database rule")
     if isinstance(error, DBAPIError):
