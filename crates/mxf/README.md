@@ -372,7 +372,11 @@ with timecodes or frame counts). Codec shims (AVC-Intra, XDCAM HD422, D-10) are 
 `as07::check_baseband` (and `baseband_problems`) checks a read file against Appendix J of AMWA AS-07
 (`specs/amwa/as-07-mxf-archive-and-preservation-spec.pdf`): OP1a, one picture track of JPEG 2000 or ST 384
 uncompressed pictures with 8, 10, 12 or 16 bit components, no clip wrapping, linear PCM sound at 48 kHz, 16 or
-24 bit. DMS-AS-07 metadata, the raster subset, several timecodes, captions and content integrity are not
+24 bit. The uncompressed OP1a exports (v210, UYVY with 24-bit PCM) keep the shim, so they are the AS-07
+master export (tested, #1366); there is no JPEG 2000 OP1a export yet. `MxfFile::dm_schemes` lists the preface's
+DMSchemes; a file that lists the AS-07 core scheme (`as07::CORE_SCHEME`, which every AS-07 file has) gets the
+breaches as `AS-07 Baseband Shim: …` warnings when it is opened, so an import logs them. DMS-AS-07 metadata, the
+raster subset, several timecodes, captions and content integrity are not
 covered.
 
 `as03::file_problems` checks a read file: OP1a, a timecode, the DMS-AS-03 framework and the essence

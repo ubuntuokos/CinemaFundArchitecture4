@@ -318,6 +318,12 @@ graph LR
 | `cfa4-engine/narration.rs` | `cfa4-export` | `Progress`, `Report` |
 | `cfa4-engine/narration.rs` | `cfa4-project` | `ClipId` |
 | `cfa4-engine/narration.rs` | `cfa4-time` | `Tick` |
+| `cfa4-engine/objects_track.rs` | `cfa4-export` | `Report` |
+| `cfa4-engine/objects_track.rs` | `cfa4-geom` | `Affine` |
+| `cfa4-engine/objects_track.rs` | `cfa4-media` | `FrameRequest` |
+| `cfa4-engine/objects_track.rs` | `cfa4-project` | `ItemId`, `object` |
+| `cfa4-engine/objects_track.rs` | `cfa4-render` | `cftrack`, `source_size`, `track` |
+| `cfa4-engine/objects_track.rs` | `cfa4-time` | `Tick` |
 | `cfa4-engine/opatom.rs` | `cfa4-media` | `SharedReader` |
 | `cfa4-engine/panels.rs` | `cfa4-color` | `ColorSpace` |
 | `cfa4-engine/panels.rs` | `cfa4-project` | `ClipId`, `ItemId`, `ItemKind`, `find` |
@@ -816,7 +822,7 @@ graph LR
 
 ## 4. Nyilvános típusok osztályonként
 
-A többi 631 nyilvános típus („other” osztály) csak a `call-graph.json`-ban szerepel.
+A többi 632 nyilvános típus („other” osztály) csak a `call-graph.json`-ban szerepel.
 
 ### Képkocka, kép, pixel (29)
 

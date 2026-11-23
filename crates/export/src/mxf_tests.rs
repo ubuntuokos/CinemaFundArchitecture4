@@ -771,6 +771,12 @@ fn as02_bundle_has_version_manifest_and_mono_components() {
     assert_eq!(man.check_simple(), Vec::<String>::new());
     assert_eq!(man.bundle_name, name);
     assert_eq!(man.essence_components().count(), 3, "picture + two audio channels");
+    // the shim file is in the root folder, listed in the manifest with its size, and reads back
+    let shim_file = man.files.iter().find(|f| f.role == cfa4_mxf::as02::Role::Shim).expect("the manifest lists the shim file");
+    assert_eq!(shim_file.path, "shim.xml");
+    let shim_xml = std::fs::read_to_string(format!("{dir}/shim.xml")).unwrap();
+    assert_eq!(shim_file.size, shim_xml.len() as u64);
+    assert!(!cfa4_mxf::as02::Shim::parse(&shim_xml).unwrap().name.is_empty());
     for f in man.files.iter().filter(|f| f.role != Role::Folder) {
         assert_eq!(std::fs::metadata(format!("{dir}/{}", f.path)).unwrap().len(), f.size, "{}", f.path);
     }
@@ -830,4 +836,19 @@ fn xdcam_hd422_as12_adid_beside_as03() {
     let a = mx.as11.unwrap().as12;
     assert_eq!(a.len(), 12, "{a:?}");
     assert!(a.contains(&("Brand".to_string(), "Joe".to_string())) && a.contains(&("ShimName".into(), cfa4_mxf::as11::ADID_SHIM_NAME.into())));
+}
+
+/// #1366: the uncompressed MXF OP1a exports (ST 384, v210 10-bit and UYVY 8-bit) with 24-bit
+/// 48 kHz PCM keep the AS-07 Baseband Shim, so they serve as the AS-07 master export; a coded
+/// picture (DNxHR) does not.
+#[test]
+fn uncompressed_op1a_exports_keep_the_as07_baseband_shim() {
+    let (p, seq, m) = project();
+    for (codec, ok) in [(MxfVideoCodec::V210, true), (MxfVideoCodec::Uyvy, true), (MxfVideoCodec::Dnxhr, false)] {
+        let path = tmp(&format!("as07_{codec:?}.mxf"));
+        export(&p, seq, &settings(Format::MxfOp1a, codec, &path), &m, &Progress::default()).unwrap();
+        let f = cfa4_mxf::open(&std::fs::read(&path).unwrap()[..]).unwrap();
+        let r = cfa4_mxf::as07::check_baseband(&f);
+        assert_eq!(r.is_ok(), ok, "{codec:?}: {r:?}");
+    }
 }

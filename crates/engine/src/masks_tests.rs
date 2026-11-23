@@ -178,7 +178,7 @@ fn texture(u: f64, v: f64) -> f64 {
 }
 
 /// Ground-truth pose of the disc at frame `k`: translation, 1.5°/frame rotation, +1 %/frame scale.
-fn truth(k: f64) -> cfa4_geom::Affine {
+pub(crate) fn truth(k: f64) -> cfa4_geom::Affine {
     cfa4_geom::Affine::motion(
         cfa4_geom::Vec2::new(120.0 + 3.0 * k, 110.0 + 1.2 * k),
         cfa4_geom::Vec2::new(1.0 + 0.01 * k, 1.0 + 0.01 * k),
@@ -216,7 +216,7 @@ impl cfa4_media::MediaSource for Moving {
     }
 }
 
-fn tracking_session() -> (Session, ClipId) {
+pub(crate) fn tracking_session() -> (Session, ClipId) {
     use cfa4_media::MediaSource;
     let rate = cfa4_time::FrameRate::FPS_24;
     let g = cfa4_media::generators::GeneratorSource::new(cfa4_media::Generator::ColorMatte { color: [0.5, 0.5, 0.5, 1.0] }, 320, 240, rate, rate.tick_of(48));

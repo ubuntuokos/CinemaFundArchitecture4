@@ -117,7 +117,7 @@ static ROWS: &[Row] = &[
     video("Hap", &["hap"], Own, Sw(""), false, NoEnc),
     video("Huffyuv", &["huffyuv"], Own, Sw(""), false, NoEnc),
     video("Canopus HQ / HQA / HQX", &["canopus"], Ported, Sw(""), false, NoEnc),
-    video("Theora", &["theora"], Ported, Sw("in Matroska (V_THEORA); Ogg video is not read yet"), false, NoEnc),
+    video("Theora", &["theora"], Ported, Sw("in Matroska (V_THEORA) and Ogg (.ogv)"), false, NoEnc),
     video("RealVideo 1.0 / 2.0 / 3.0 / 4.0", &["realvideo", "realmedia"], Ported, Sw("in RealMedia (.rm, .rmvb)"), false, NoEnc),
     video("Smacker Video (SMK2, SMK4) and Smacker Audio", &["smacker"], Ported, Sw("in Smacker (.smk)"), false, NoEnc),
     video("Ut Video", &["utvideo"], Own, Sw(""), false, NoEnc),
@@ -152,6 +152,7 @@ static ROWS: &[Row] = &[
     audio("AMR-NB / AMR-WB", &["amr"], Ported, Sw(""), NoEnc),
     audio("Speex", &["speex"], Ported, Sw("Ogg Speex"), NoEnc),
     audio("TTA (True Audio)", &["tta"], Ported, Sw(""), NoEnc),
+    audio("Nintendo DSP ADPCM / PCM streams", &["nstream"], Ported, Sw("in .brstm, .bfstm and .bcstm files"), NoEnc),
     audio(
         "RealAudio Cook / SIPR / 1.0 (14.4) / 2.0 (28.8), ATRAC1, ATRAC3, ATRAC3plus, ATRAC9",
         &["realaudio", "atracenc"],

@@ -402,7 +402,7 @@ impl MxfSource {
             let order = |codec: Codec, heads: &[Vec<u8>]| if matches!(codec, Codec::Avc { .. }) { avc_presentation_order(heads) } else { None };
             match cfa4_mxf::open_with_order(&bytes, &order) {
                 Ok(f) => {
-                    for w in &f.warnings {
+                    for w in f.warnings.iter().cloned().chain(conformance_warnings(&f)) {
                         log::warn!("{name}: {w}");
                     }
                     members.push((bytes, f));
@@ -1068,12 +1068,52 @@ pub fn reader_opener(name: &str, head: &[u8], reader: &cfa4_media::SharedReader)
     Some(MxfSource::open_reader(name, reader.clone()).map(|s| Arc::new(s) as SharedSource).map_err(Into::into))
 }
 
+/// Where a file that carries the DMS-AS-03 framework (and so says it is an AMWA AS-03 program
+/// delivery file) breaks AS-03: the import logs them next to the demuxer's own warnings.
+fn conformance_warnings(f: &MxfFile) -> Vec<String> {
+    if f.as11.as_ref().is_some_and(|a| !a.as03.is_empty()) {
+        cfa4_mxf::as03::file_problems(f).into_iter().map(|p| format!("AS-03: {p}")).collect()
+    } else {
+        Vec::new()
+    }
+}
+
 #[cfg(test)]
 mod iab_tests;
 
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    /// A file with the DMS-AS-03 framework is checked against AS-03; other files are not.
+    #[test]
+    fn as03_files_get_conformance_warnings() {
+        use cfa4_mxf::as11::As11;
+        use cfa4_mxf::{FrameInfo, MxfWriter, PackageIds, Pattern, PictureCoding, PictureDesc, Rational, UncompressedLayout, WriterConfig};
+        let kv = |v: &[(&str, &str)]| -> Vec<(String, String)> { v.iter().map(|(k, v)| ((*k).to_string(), (*v).to_string())).collect() };
+        let layout = UncompressedLayout::V210;
+        let build = |as11: Option<As11>| {
+            let mut cfg = WriterConfig::new(Pattern::Op1a, Rational::new(25, 1), PackageIds::from_seed("as03", "AS-03 clip"));
+            cfg.picture = Some(PictureDesc::new(PictureCoding::Uncompressed { layout }, 48, 4));
+            cfg.as11 = as11;
+            let mut w = MxfWriter::new(std::io::Cursor::new(Vec::new()), cfg).unwrap();
+            let (sx, sy) = layout.subsampling();
+            let n = (48 / sx * 4 / sy) as usize;
+            let p = layout.pack(48, 4, [&[16u16; 192], &vec![100u16; n], &vec![200u16; n]]);
+            w.push_picture(&p, FrameInfo::intra()).unwrap();
+            cfa4_mxf::open(&w.finish().unwrap().into_inner()[..]).unwrap()
+        };
+        let as03 = kv(&[
+            ("IdentifierKind", "ISAN"),
+            ("Identifier", "ISAN 0000-0001-8947-0000-8-0000-0000-D"),
+            ("ShimName", "PBS NGIS HD Playout"),
+            ("SignalStandard", "1920/1080/25i/16:9"),
+            ("IntendedAFD", "1000 FullHD"),
+        ]);
+        let w = conformance_warnings(&build(Some(As11 { as03, ..Default::default() })));
+        assert!(!w.is_empty() && w.iter().all(|m| m.starts_with("AS-03: ")), "{w:?}");
+        assert!(conformance_warnings(&build(None)).is_empty());
+    }
 
     #[test]
     fn timecode_frames_at_the_media_rate() {

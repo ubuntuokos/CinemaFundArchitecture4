@@ -182,6 +182,32 @@ cross-check ([AV2 plan](plans/AV2-CODEC-PLAN-2026-10-29.md) II.3, X/3).
 
 Each codec README has the full fixture matrix and the measured results.
 
+### AAF: the AAF SDK as a test oracle
+
+`crates/interchange/src/aaf/` writes the structured-storage AAF files; the reference implementation
+(github.com/dneg/aaf, the AMWA AAF SDK) opens them as an oracle. The SDK is only a test tool: it is
+compiled in a copy outside the repository, and no SDK code or header is used by CFA4 (owner decision
+2026-11-22). Its sample files are the source of `aaf/meta_model.txt` as plain data (class and type
+AUIDs, names, local ids), not of any code.
+
+```
+git clone https://github.com/dneg/aaf ~/dneg/aaf
+AAF_SDK_SRC=~/dneg/aaf AAF_ORACLE_DIR=~/aaf-oracle scripts/dev/aaf-oracle.sh
+```
+
+The script builds the SDK once (a few minutes; needs a C++ toolchain and `uuid-dev`; the 2010 sources
+need `-fpermissive -std=gnu++98 -fno-lifetime-dse -fno-strict-aliasing`, which the script sets in the
+copy), writes our export in both sector sizes (the ignored `export_for_the_sdk_oracle` test) and runs
+the SDK's `ComAAFInfo` on each. It fails when the SDK cannot open a file, crashes, or finds no mobs.
+Run it when `aaf/` changes; it is not part of CI (the build is slow). What the SDK needs that the
+standard does not spell out, learned this way: the AAF label in the compound file header (bytes 8..24);
+a meta-dictionary with the built-in class and type definitions; and storage names it looks up itself
+(a collection name longer than 21 characters is shortened to its first 8 and last 7 characters, a
+single object keeps its full name). Without these the SDK rejects the file or crashes while
+resolving a property's type. The in-tree tests (`aaf/tests.rs`: the header label, the
+definitions, every written class and property defined in the meta-dictionary) check the same rules
+without the SDK.
+
 ## 3. Rendering: CPU reference and GPU parity
 
 - The CPU compositor in `cfa4-render` is the reference. Its tests check computed values

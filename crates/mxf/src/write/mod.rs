@@ -673,6 +673,9 @@ pub struct WriterConfig {
     /// AMWA AS-11 descriptive metadata (OP1a): the Core framework, the programme parts and the UK
     /// DPP framework as DM tracks of the material package ([`crate::as11`]).
     pub as11: Option<crate::as11::As11>,
+    /// Further DM scheme labels to list in the preface's DMSchemes (e.g. the AS-07 core scheme
+    /// [`crate::as07::CORE_SCHEME`]); the AS-11 schemes are added from `as11`.
+    pub dm_schemes: Vec<[u8; 16]>,
 }
 
 /// One ST 377-4 multichannel audio label: a soundfield group (`channel` is `None`) or an audio
@@ -729,6 +732,7 @@ impl WriterConfig {
             reference_audio_alignment_level: None,
             anc: false,
             as11: None,
+            dm_schemes: Vec::new(),
         }
     }
 }
@@ -1884,7 +1888,12 @@ impl<W: Write + Seek> MxfWriter<W> {
             s.p(0x3B08, &self.uid(2000));
         }
         let ec: Vec<&[u8]> = containers.iter().map(|c| &c[..]).collect();
-        let schemes = self.as11.as_ref().map(crate::as11::Encoded::schemes).unwrap_or_default();
+        let mut schemes = self.as11.as_ref().map(crate::as11::Encoded::schemes).unwrap_or_default();
+        for l in &cfg.dm_schemes {
+            if !schemes.contains(l) {
+                schemes.push(*l);
+            }
+        }
         let schemes: Vec<&[u8]> = schemes.iter().map(|c| &c[..]).collect();
         s.p(0x3B0A, &batch(&ec, 16)).p(0x3B0B, &batch(&schemes, 16));
         s.write(&mut out);

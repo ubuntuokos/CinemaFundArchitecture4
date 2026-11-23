@@ -58,10 +58,10 @@ A 20 jelöltből 1 alap, 6 POC-jelölt, 2 külső munkafolyamat, 5 referencia, 6
 | 01 | FFmpeg 9.0.2 | decode/filter/encode/mux, export-orákulum | ALAP, MEGTARTANDÓ | nem | A7 szerint egyetlen libav ABI. |
 | 07 | OpenImageIO | EXR és képszekvencia I/O, OCIO-kapcsolat | POC-JELÖLT | nem | Erős MQ-jelölt. |
 | 04 | VapourSynth | resztauráció, deinterlace, szűrő worker | POC-JELÖLT | igen, 1 nyilvántartott verzió | Retusáláshoz szükséges; a szkriptes eszközök (pl. QTGMC) Pythont igényelnek, ez indokolt A11-igény. |
-| 09 | ReelForge | DAG, dirty-region, cache, resume algoritmus | POC-JELÖLT | nem | Képet nem érint; MSRV 1.97+ PENDING. |
-| 08 | avio / ff-* | Rust médiaréteg | POC-JELÖLT, feltételes | nem | Csak ha 10/12/16 bit és 4:4:4 torzítás nélkül átmegy. |
+| 09 | ReelForge | DAG, dirty-region, cache, resume algoritmus | REFERENCIA (S1, 2026-11-22) | nem | F1 REFERENCE_ONLY (egyetlen karbantartó); csak minta, az F3 render graph saját. |
+| 08 | avio / ff-* | Rust médiaréteg | REFERENCIA (S1, 2026-11-22) | nem | F1 REFERENCE_ONLY (egyetlen karbantartó, saját libav-kötés, A7). |
 | 11 | EC-jelölt (#11) | réteges kompozíció, kulcskockák | POC-JELÖLT, feltételes | PENDING | MQ-1/3/4/8 igazolása F2 elején. |
-| 10 | rust-motion | címek, SVG, procedurális grafika | POC-JELÖLT, feltételes | nem | Alfa- és élsimítási pontosság. |
+| 10 | rust-motion | címek, SVG, procedurális grafika | REFERENCIA (S1, 2026-11-22) | nem | F1 REFERENCE_ONLY (egyetlen karbantartó, közös upstream-eredetű kód); csak minta. |
 | 05 | Blender | 3D/VFX képszekvencia-renderjob | KÜLSŐ MUNKAFOLYAMAT | saját, beépített | EXR csere, külön folyamat, verzió pinelve. |
 | 06 | Natron | OFX node-modell minta | KÜLSŐ / REFERENCIA | saját | GPL: kódátvétel tilos. |
 | 18 | MovieLite | golden-frame módszer | REFERENCIA | – | Csak módszer, F0V-ben. |
@@ -516,7 +516,7 @@ A terv jóváhagyása önmagában nem jogosít fel repo-módosításra, PR-nyit�
 Javaslat: a célarchitektúra, az A1–A11 szabályok és az MQ kapu elfogadása, valamint az F0a, F0b/F0V és F1 engedélyezése. A többi fázis csak kapunkénti eredmény és külön jóváhagyás alapján indul.
 
 - **Alap:** meglévő CFA4 renderer + FFmpeg 9.0.2.
-- **POC-jelöltek (D1 előtt nem integrációs döntés):** OpenImageIO, VapourSynth, ReelForge; feltételesen avio ff-*, EC-jelölt (#11), rust-motion.
+- **POC-jelöltek (D1 előtt nem integrációs döntés):** OpenImageIO, VapourSynth; feltételesen az EC-jelölt (#11). (S1, István 2026-11-22: ReelForge, avio ff-* és rust-motion csak minta marad; `docs/audit/render-s1/S1-shortlist.md`.)
 - **Külső munkafolyamat:** Blender; Natron csak referencia.
 - **Referencia:** MLT, MovieLite (módszer), Gausian, Dioxuscut, GStreamer (rögzítési terv).
 - **Kizárva ebből a ciklusból:** Lumen, MoviePy, Movis, Manim, PyAV, VidGear.
