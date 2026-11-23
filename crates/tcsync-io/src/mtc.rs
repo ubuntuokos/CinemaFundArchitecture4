@@ -42,6 +42,7 @@ impl MtcReader {
                     out.push(Input::Frame(Observation { at, position }));
                 }
                 MtcEvent::Full(time) => out.push(Input::Locate(Observation { at, position: self.position(time) })),
+                MtcEvent::UserBits(u) => out.push(Input::UserBits(*u)),
             }
         }
     }

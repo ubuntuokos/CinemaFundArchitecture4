@@ -1903,6 +1903,7 @@
 	Text Animator	Текстов аниматор
 	Counter	Брояч
 	Word by Word	Дума по дума
+	Scramble	Разбъркване
 	Animator	Аниматор
 	Animator Duration	Продължителност на аниматора
 	Animator Delay	Закъснение на аниматора
@@ -2954,6 +2955,10 @@
 	Sharpen Amount	Степен на изостряне
 	Shift Center To	Преместване на центъра до
 	Show Focus Area	Показване на областта на фокуса
+	Rack Focus	Пренасочване на фокуса
+	Focus Point A	Точка на фокус A
+	Focus Point B	Точка на фокус B
+	Rack	Пренасочване
 	Show Only Noise	Показване само на шума
 	Shrink	Свиване
 	Shutter Angle	Ъгъл на затвора
@@ -4179,6 +4184,11 @@ export.summary	Low	ниско
 	Burn Size	Размер на изгарянето
 	Ember Width	Ширина на жаравата
 	Ember Color	Цвят на жаравата
+	Tear Away	Откъсване
+	Tear Roughness	Грапавост на разкъсването
+	Paper Edge Width	Ширина на хартиения ръб
+	Stamp Cut	Пощенска марка
+	Perforations	Перфорация
 	Check Text Legibility	Проверка на четливостта на текста
 	Clear Legibility Markers	Изчистване на маркерите за четливост
 	Text legibility: no problems found	Четливост на текста: не са открити проблеми
@@ -4218,6 +4228,9 @@ export.summary	Low	ниско
 	Dither	Разсейване
 	Pattern	Шарка
 	Cell Size	Размер на клетката
+	Pixelate	Пикселизация
+	Cell Shape	Форма на клетката
+	LED	LED
 	Cyan Angle	Ъгъл на синьозеленото
 	Magenta Angle	Ъгъл на пурпурното
 	Yellow Angle	Ъгъл на жълтото
@@ -4578,6 +4591,26 @@ export.summary	Low	ниско
 	Chase External Timecode	Следване на външен тайм код
 	Send LTC	Изпращане на LTC
 	Send MIDI Timecode	Изпращане на MIDI тайм код
+
+# Live studio preview (CFA4-LIVE-STUDIO-001 S0)
+	Live studio preview	Преглед на студиото на живо
+	Live studio: stopped	Студио на живо: спряно
+	Live studio: {state}	Студио на живо: {state}
+	Live studio: {error}	Студио на живо: {error}
+	restarted after {count} crashes (last: {exit})	рестартирано след {count} срива (последен: {exit})
+	software backend: {reason}	софтуерна основа: {reason}
+	Start studio	Стартиране на студиото
+	Stop studio	Спиране на студиото
+	Add Studio Scene	Добавяне на студийна сцена
+	Live	На живо
+# Credits: title, opening, chapter and lower-third pages filled from a graphics template (F10-C16)
+	Opening Credits	Начални надписи
+	Chapter Title	Заглавие на глава
+	Lower Third	Долен надпис
+	page {page}: graphics template “{template}” was not found; “{used}” is used	страница {page}: графичният шаблон „{template}“ не е намерен; използва се „{used}“
+	page {page}: graphics template “{template}” has no field for all of the block's text; the rest is left out	страница {page}: графичният шаблон „{template}“ няма поле за целия текст на блока; останалото се пропуска
+	page {page}: template field “{control}” → “{part}” is not used (no such text control, or not head, body or tail)	страница {page}: полето на шаблона „{control}“ → „{part}“ не се използва (няма такава текстова контрола или не е глава, тяло или опашка)
+	page {page}: pictures are left out on title, opening, chapter and lower-third pages	страница {page}: картините се пропускат на страниците със заглавие, начални надписи, глава и долен надпис
 # Auto Color, Auto Contrast, Auto Levels (EffectsSDK review)
 	Auto Color	Автоматичен цвят
 	Auto Contrast	Автоматичен контраст
@@ -4635,3 +4668,240 @@ export.summary	Low	ниско
 	Freewheel	Свободен ход
 	Scrubbing	Превъртане
 	Sending	Изпращане
+
+# DCP subtitle export (#938)
+	Subtitles from the first caption track	Субтитри от първата писта за надписи
+	The package language	Езикът на пакета
+	Inter Regular (built in), or an OpenType / TrueType file	Inter Regular (вграден) или файл OpenType / TrueType
+	Subtitle language	Език на субтитрите
+	Subtitle font	Шрифт на субтитрите
+	Fonts	Шрифтове
+
+# AS-11 metadata in MXF OP1a (#96)
+	AS-11 Core	AS-11 Core
+	AS-11 Parts	AS-11 части
+	AS-11 UK DPP	AS-11 UK DPP
+# Control surfaces (qt-control-surfaces-page, CFA4-CONTROL-SURFACE-001)
+	Connected	Свързано
+	Device	Устройство
+	Devices	Устройства
+	Disabled	Изключено
+	HID jog/shuttle	HID jog/shuttle
+	MIDI	MIDI
+	Not connected	Не е свързано
+	OSC	OSC
+	Use	Използване
+	{device} ({port})	{device} ({port})
+	{name}: {error}	{name}: {error}
+# Control surfaces (midi-monitor, CFA4-CONTROL-SURFACE-001)
+	MIDI Monitor	MIDI монитор
+	Press Start Monitor, then move a control.	Натиснете „Старт на монитора“, след това преместете контрола.
+	Start Monitor	Старт на монитора
+	Stop Monitor	Спиране на монитора
+	… {count} messages not shown (too many at once)	… {count} съобщения не са показани (твърде много наведнъж)
+# Control surfaces (midi-learn, CFA4-CONTROL-SURFACE-001)
+	A control surface asked for {command}, which does not exist.	Контролна повърхност поиска {command}, която не съществува.
+	Assignments	Присвоявания
+	Cancel Learn	Отказ от обучението
+	Control	Контрола
+	Learn	Обучение
+	Remove this assignment	Премахване на това присвояване
+	{control} runs {command}.	{control} изпълнява {command}.
+# Control surfaces (shuttlepro, CFA4-CONTROL-SURFACE-001)
+	Button {n}	Бутон {n}
+# Control surfaces (continuous-values, CFA4-CONTROL-SURFACE-001)
+	{strip} Pan (knob)	{strip} панорама (копче)
+	{strip} Volume (fader)	{strip} сила на звука (фейдър)
+# Control surfaces (F1 Learn and profile, CFA4-CONTROL-SURFACE-001)
+	Control Surfaces	Контролни повърхности
+	Assignments run when a button is pressed (a fader or knob counts as pressed past half way); a fader or knob assigned to a mixer strip moves its volume or pan. A ShuttlePRO's shuttle ring plays at its profile's speeds and its jog wheel steps frame by frame. Endless encoders and feedback to the controller (lights, motor faders) come in a later version.	Назначенията тръгват при натискане на бутон (фейдър или копче се брои за натиснато след половината); фейдър или копче към лента на миксера мести силата или панорамата. Пръстенът shuttle на ShuttlePRO пуска със скоростите на профила, а колелото jog стъпва по кадър. Безкрайни енкодери и отговор към контролера (лампи, моторни фейдъри) идват в по-късна версия.
+	First message (ms)	Първо съобщение (ms)
+	Silence (ms)	Тишина (ms)
+	Waiting for the control to settle…	Изчакване органът да се успокои…
+	Type: {hint}. Confirm this assignment.	Тип: {hint}. Потвърдете това назначение.
+	That control is already assigned. Confirm replaces it.	Този орган вече е назначен. Потвърждението го заменя.
+	Learn timed out.	Обучението изтече.
+	Confirm	Потвърди
+	Reject	Отхвърли
+	Shows every MIDI message from the controllers as it arrives, to check that a controller sends and what it sends. MIDI Clock, Active Sensing and MIDI Time Code are left out.	Показва всяко MIDI съобщение от контролерите при пристигане, за да се види дали контролер праща и какво. MIDI часовник, Active Sensing и MIDI времеви код се пропускат.
+	Pick a command (or a mixer strip for a fader or knob), press Learn, then press the button or move the control past half way. Confirm keeps the assignment. OK saves the assignments.	Изберете команда (или лента на миксера за фейдър или копче), натиснете Обучение, после бутона или преместете органа след половината. Потвърждението запазва назначението. OK записва назначенията.
+	All devices	Всички устройства
+	Builtin: {name}	Вграден: {name}
+	Capturing	Заснемане
+	Confirmed	Потвърдено
+	Conflict	Конфликт
+	Connect a MIDI controller or a ShuttlePRO to edit its profile.	Свържете MIDI контролер или ShuttlePRO, за да редактирате профила му.
+	Control Surfaces…	Повърхности за управление…
+	Filter messages	Филтриране на съобщения
+	Idle	В покой
+	Kernel dropped: {count}	Ядрото отхвърли: {count}
+	Learn Assignments…	Научаване на назначения…
+	Load profile	Зареждане на профил
+	MIDI Monitor…	MIDI монитор…
+	Mute shuttle sound	Заглушаване на звука на совалката
+	No conflicts.	Няма конфликти.
+	No profile warnings.	Няма предупреждения за профила.
+	No project profile is stored.	Няма записан профил на проекта.
+	OK writes the preferences and the profile file together.	OK записва настройките и файла на профила заедно.
+	Online	На линия
+	Pending	Изчаква
+	Pickup (14-bit)	Захващане (14 бита)
+	Pickup (7-bit)	Захващане (7 бита)
+	Profile warnings	Предупреждения за профила
+	Rejected	Отхвърлено
+	Show Active Sensing	Показване на Active Sensing
+	Show MIDI Clock	Показване на MIDI часовник
+	Show MIDI Time Code	Показване на MIDI времеви код
+	The profile file is damaged. Preferences and the built-in profile stay in use.	Файлът на профила е повреден. Настройките и вграденият профил остават в употреба.
+	Timed out	Времето изтече
+	Type: {hint}	Тип: {hint}
+	User profile file	Файл на потребителския профил
+	{received} received, {dispatched} dispatched, {coalesced} coalesced, {stalls} stalls, {errors} errors	{received} получени, {dispatched} изпратени, {coalesced} обединени, {stalls} изчаквания, {errors} грешки
+
+# Control Surfaces settings page (CS-1, #1187)
+	Looking for devices…	Търсене на устройства…
+	No MIDI controller or jog/shuttle device was found. Connect one and press Refresh.	Не е намерен MIDI контролер или jog/shuttle устройство. Свържете такова и натиснете „Опресняване“.
+	Use control surfaces (MIDI controllers, jog/shuttle devices)	Използване на контролни повърхности (MIDI контролери, jog/shuttle устройства)
+	Mapping controls to commands, MIDI Learn and the MIDI Monitor come in a later version; the choices here are remembered until then.	Свързването на контролите с команди, MIDI Learn и MIDI мониторът идват в по-късна версия; дотогава изборът тук се запомня.
+	CFA4 ShuttlePRO	CFA4 ShuttlePRO
+	Kdenlive-style ShuttlePRO	ShuttlePRO в стил Kdenlive
+	Generic MIDI	Общ MIDI
+# LTC timecode read from clip audio (TC-7, #1285)
+	Read from LTC Audio	Четене от LTC звук
+	Find SMPTE LTC on the clip's audio and use the timecode it gives the first frame	Търсене на SMPTE LTC в звука на клипа и използване на времевия код, който той дава на първия кадър
+	Read Timecode from LTC Audio	Четене на времеви код от LTC звук
+# Credits: voices (the Voice column) in the block's properties (F10-C16)
+	Voices	Гласове
+# Timecode sync varispeed and user bits (TC-8, #1308)
+	Varispeed: adjust the playback speed instead of seeking	Varispeed: настройване на скоростта на възпроизвеждане вместо прескачане
+	User bits	Потребителски битове
+# AS-11 programme parts and AS-10 metadata (G2, #1371, #1375)
+	{tc}  Segmentation	{tc}  Сегментиране
+	Marker Type	Тип маркер
+	Chapter	Глава
+	Segmentation (AS-11 programme part)	Сегментиране (част от програма по AS-11)
+	AS-10	AS-10
+# AT9/AT3 converter (Tools ▸ Audio Tools, AT3-2)
+	AT9/AT3 Converter	Конвертор AT9/AT3
+	AT9/AT3 Converter…	Конвертор AT9/AT3…
+	Files to convert:	Файлове за конвертиране:
+	Add Files	Добавяне на файлове
+	Add Files…	Добавяне на файлове…
+	Convert to:	Конвертиране в:
+	Bit rate:	Битрейт:
+	Sample format:	Формат на семплите:
+	Output folder:	Изходна папка:
+	Output Folder	Изходна папка
+	Next to each source file	До всеки изходен файл
+	AT9 and ATRAC3plus files convert to WAV; encoding AT9, ATRAC3plus and MP3 is not available yet.	Файловете AT9 и ATRAC3plus се конвертират в WAV; кодирането в AT9, ATRAC3plus и MP3 все още не е налично.
+	Convert	Конвертиране
+	Add the files to convert first.	Първо добавете файловете за конвертиране.
+	Done: {n} file(s) converted.	Готово: конвертирани файлове: {n}.
+	Converting {name}…	Конвертиране на {name}…
+	Stopping…	Спиране…
+	AT3 (ATRAC3, PSP / PS3)	AT3 (ATRAC3, PSP / PS3)
+	WAV (PCM)	WAV (PCM)
+	132 kbit/s (LP2)	132 kbit/s (LP2)
+	105 kbit/s	105 kbit/s
+	66 kbit/s (LP4, joint stereo)	66 kbit/s (LP4, joint stereo)
+	16-bit	16 бита
+	24-bit	24 бита
+	32-bit float	32 бита с плаваща запетая
+
+# Datamosh transition (Grunge & Distort, DM1, #1409)
+	Datamosh	Datamosh
+	Residual	Остатък
+	Motion Boost	Усилване на движението
+	Recovery	Възстановяване
+	Encode Resolution	Резолюция на кодиране
+	Half	Половина
+	Quarter	Четвърт
+# Datamosh Bloom (Glitch, DM2)
+	Datamosh Bloom	Datamosh разцъфване
+	Start Time (seconds)	Начално време (секунди)
+	Repeats	Повторения
+
+# Recent effects, per-channel waveform, white balance selector (SC-2/SC-3/SC-4, #1419 #1420 #1421)
+	Apply a recently used effect to the selected clips	Прилагане на наскоро използван ефект към избраните клипове
+	Disable all effects	Изключване на всички ефекти
+	Enable all effects	Включване на всички ефекти
+	No recent effects	Няма скорошни ефекти
+	Recent effects	Скорошни ефекти
+	Switch every effect of the selected clips off	Изключва всеки ефект на избраните клипове
+	Switch every effect of the selected clips on	Включва всеки ефект на избраните клипове
+	Merged	Обединени
+	Per Channel	По канали
+	Channel Zoom	Мащаб на каналите
+	White Balance Selector (click a neutral point in the Program monitor; Esc cancels)	Избор на баланс на бялото (щракнете върху неутрална точка в монитора Програма; Esc отказва)
+# Task Manager and subtitle kind (SC-2/3/4)
+	Task Manager	Диспечер на задачите
+	Background jobs	Фонови задачи
+	Exports	Експорти
+	Shared task queue	Споделена опашка със задачи
+	Task	Задача
+	State	Състояние
+	Details	Подробности
+	Time left	Оставащо време
+	Scheduled	Планирана
+	Queued	На опашка
+	Waiting for resources	Чака ресурси
+	Blocked	Блокирана
+	Running	Изпълнява се
+	Paused	На пауза
+	Cancelling	Отказване
+	Interactive	Интерактивна
+	Speculative	Спекулативна
+	Final render	Окончателно рендиране
+	Show finished	Показване на завършените
+	Nothing is running.	Нищо не се изпълнява.
+	Not reported by this engine yet.	Все още не се съобщава от този енджин.
+	Not available: {why}	Не е налично: {why}
+	{name} waits: {why}	{name} чака: {why}
+	{running} running · {waiting} waiting	{running} се изпълняват · {waiting} чакат
+	{n} active	{n} активни
+	{n} CPU	{n} CPU
+	{n} GiB	{n} GiB
+	{n} MiB	{n} MiB
+	Needs your decision	Чака вашето решение
+	Run now	Изпълни сега
+	Next slot	Следващ слот
+	Missed its start	Пропуснат старт
+	Missed its start at {time}	Пропуснат старт в {time}
+	Starts at {time}	Стартира в {time}
+	Subtitle kind	Вид субтитри
+	Subtitles	Субтитри
+	Captions for the hearing impaired	Надписи за хора с увреден слух
+	Forced narrative	Принудителен разказ (forced narrative)
+	Silence	Тишина
+	Detect Silence	Откриване на тишина
+	Remove Silence	Премахване на тишина
+	Clear Silence Markers	Изчистване на маркерите за тишина
+# DCP Validation window (DCP-12)
+	AS-03	AS-03
+	Choose the DCP folder.	Изберете папката на DCP.
+	DCP Validation	Проверка на DCP
+	DCP folder	Папка на DCP
+	DCP folder (the one holding ASSETMAP)	Папка на DCP (тази, която съдържа ASSETMAP)
+	Evidence	Доказателство
+	How to fix	Как да се поправи
+	Interrupted	Прекъснато
+	Not applicable	Неприложимо
+	Report	Отчет
+	Report saved: {path}	Отчетът е запазен: {path}
+	Required	Задължително
+	Rule	Правило
+	Rules	Правила
+	Save JSON…	Запиши JSON…
+	Save Markdown…	Запиши Markdown…
+	Save report	Запиши отчета
+	Skipped	Пропуснато
+	Standard: {standard}	Стандарт: {standard}
+	Validate	Провери
+	Validate DCP…	Провери DCP…
+	the engine sent no profiles	машината не изпрати профили
+	{n} files checked	Проверени файлове: {n}
+
+# AS-02 export
+	Write an AS-02 bundle (the path is a folder)	Запис на пакет AS-02 (пътят е папка)
+	AS-02	AS-02
+	AS-12	AS-12

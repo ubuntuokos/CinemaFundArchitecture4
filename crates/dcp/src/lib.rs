@@ -26,10 +26,12 @@
 mod assetmap;
 mod c14n;
 mod cpl;
+pub mod isdcf;
 pub mod kdb;
 pub mod kdm;
 mod pkl;
 pub mod sha1;
+pub mod subtitle;
 pub mod x509;
 mod xml;
 pub mod xmldsig;

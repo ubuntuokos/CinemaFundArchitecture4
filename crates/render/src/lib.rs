@@ -20,18 +20,22 @@ pub mod flow;
 pub mod gpufx;
 pub mod graphic_clip;
 pub mod graphics;
+pub mod homography;
 pub mod image;
 pub mod lumetri_presets;
 pub mod luts;
 pub mod mask;
 pub mod mixer;
+pub mod mosh;
 pub mod multicam;
 pub mod offline;
 pub mod plan;
 pub mod preview;
 pub mod remix;
 pub mod scene;
+pub mod subspace;
 pub mod track;
+pub mod trajectories;
 pub mod transitions;
 pub mod vfx;
 
@@ -260,9 +264,37 @@ fn seq_canvas(project: &Project, seq: &Sequence, t: Tick, opts: RenderOptions, s
                 (Some((_, x)), None) | (None, Some((_, x))) => *x,
                 _ => Blend::Normal,
             };
+            let both = la.is_some() && lb.is_some();
             let la = la.map(|l| l.0).unwrap_or_else(|| Image::new(w, h));
             let lb = lb.map(|l| l.0).unwrap_or_else(|| Image::new(w, h));
             let p = tr.progress(t) as f32;
+            // Datamosh reads B's earlier frames and A's frame at the start of the transition
+            // (Reverse does not apply: B's motion always moves A's picture)
+            if tr.effect.effect == "datamosh"
+                && both
+                && let (Some(ai), Some(bi)) = (a, b)
+                && !is_adjustment(project, ai)
+                && !is_adjustment(project, bi)
+            {
+                let a0 = item_layer(project, seq, ai, tr.start, opts, sources, &tc).map(|(img, op, _)| with_opacity(img, op));
+                if let Some(a0) = a0.filter(|i| (i.w, i.h) == (w, h)) {
+                    let fd = seq.settings.frame_rate.frame_duration();
+                    let frames = (tr.duration.0 / fd.0.max(1)).max(1) as u64;
+                    let f = ((t - tr.start).0 / fd.0.max(1)).max(0) as u64;
+                    let motion = tr.effect.f64_at("motion", Tick::ZERO) as f32;
+                    let (n, step) = transitions::mosh::picture_index(f, frames, motion);
+                    let mut b_at = |k: usize| {
+                        let tk = tr.start + Tick::from_seconds_f64(fd.seconds() * step * k as f64);
+                        item_layer(project, seq, bi, tk, opts, sources, &tc).map(|(img, op, _)| with_opacity(img, op))
+                    };
+                    let mut hs = std::collections::hash_map::DefaultHasher::new();
+                    std::hash::Hash::hash(&(tr.id, ti, opts.scale.to_bits(), opts.depth), &mut hs);
+                    let mut src = transitions::mosh::MoshSource { key: std::hash::Hasher::finish(&hs), a: &a0, n, b: &mut b_at };
+                    let mixed = transitions::mosh::apply_mosh(&tr.effect, &la, &lb, p, &mut src);
+                    blend::composite(canvas.get(), &mixed, 1.0, bl);
+                    continue;
+                }
+            }
             // Reverse plays the transition backwards (e.g. an iris closing on the outgoing clip)
             // while still going from A to B.
             let mixed = if tr.reverse {

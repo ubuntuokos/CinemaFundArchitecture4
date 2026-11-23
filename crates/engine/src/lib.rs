@@ -11,13 +11,20 @@
 #![cfg_attr(not(test), deny(clippy::unwrap_used, clippy::expect_used, clippy::panic, clippy::unimplemented, clippy::todo, clippy::unreachable))]
 
 pub mod aaf_omf;
+pub mod as02_import;
+mod atrac_convert;
 pub mod autosave;
+pub mod background;
 pub mod beat_markers;
 pub mod captions;
 pub mod clip_ops;
 pub mod color;
 pub mod commands;
+pub mod control_surfaces;
 pub mod credits;
+pub mod dcp_export;
+pub mod dcp_import;
+pub mod dcp_validation;
 mod dcpomatic;
 pub mod delivery_check;
 pub mod demo;
@@ -35,6 +42,7 @@ pub mod keyboard;
 mod keyframe_move;
 pub mod legibility;
 pub mod live;
+pub mod ltc_read;
 mod marker_export;
 pub mod masks;
 pub mod media_browser;
@@ -44,6 +52,7 @@ pub mod media_watch;
 pub mod mixer;
 pub mod multicam;
 pub mod narration;
+pub mod objects_track;
 mod opatom;
 pub mod panels;
 pub mod paste_media;
@@ -60,17 +69,24 @@ pub mod relink;
 pub mod remix;
 pub mod scene_detect;
 pub mod scopes;
+pub mod security;
 pub mod sequence_extras;
 pub mod sequence_tools;
 pub mod settings;
 pub mod shortcut_presets;
 pub mod shortcuts;
+pub mod silence;
 pub mod smart_cut;
 mod smart_cut_mpeg;
 mod smart_render;
 pub mod social;
 pub mod source_monitor;
+pub mod studio;
+pub mod surface_feedback;
+pub mod surface_profile;
+pub mod surface_runtime;
 pub mod sync;
+pub mod task_host;
 pub mod timecode_sync;
 pub mod transcript;
 pub mod trim;
@@ -513,6 +529,8 @@ pub struct Session {
     pub media_jobs: Vec<proxies::PendingJob>,
     /// Mask tracking jobs whose keyframes are still being written.
     pub mask_jobs: Vec<masks::PendingTrack>,
+    /// Object tracking jobs whose samples are still being written.
+    pub object_jobs: Vec<objects_track::PendingObjectTrack>,
     /// Scene Edit Detection jobs whose results are applied when they finish.
     pub scene_jobs: Vec<scene_detect::PendingScene>,
     /// Effect presets (built-in + the user's, persisted in the data directory).
@@ -521,8 +539,15 @@ pub struct Session {
     pub export_presets: export_tools::ExportPresetLibrary,
     /// The export queue (session state, not saved with the project).
     pub export_queue: export_tools::ExportQueue,
+    /// The CFA4-wide task queue and resource manager this session's heavy work goes through
+    /// (ACS-6; the export queue is its first client).
+    pub tasks: task_host::TaskHost,
+    /// Background jobs waiting for, or holding, their resources ([`background`]).
+    pub background: background::Background,
     /// Media QC jobs whose results are still to be applied (`qc.*` commands).
     pub qc: qc::QcSession,
+    /// DCP validation jobs and the latest report of each package (`dcp.validate*` commands).
+    pub dcp_validation: dcp_validation::DcpValidationSession,
     /// Exports run a batch at a time by [`Session::pump_jobs`] (hosts without threads: web).
     pub stepped: Vec<SteppedJob>,
     /// Speech recogniser for `transcript.generate` (None = the Whisper model named by the command,
@@ -622,11 +647,15 @@ impl Session {
             offline: Default::default(),
             media_jobs: Vec::new(),
             mask_jobs: Vec::new(),
+            object_jobs: Vec::new(),
             scene_jobs: Vec::new(),
             presets: Default::default(),
             export_presets: Default::default(),
             export_queue: Default::default(),
+            tasks: Default::default(),
+            background: Default::default(),
             qc: Default::default(),
+            dcp_validation: Default::default(),
             stepped: Vec::new(),
             transcriber: None,
             log: Default::default(),
@@ -641,6 +670,7 @@ impl Session {
     /// whether jobs remain. A job whose media is still loading waits for the next call.
     pub fn pump_jobs(&mut self, budget: std::time::Duration) -> bool {
         export_tools::pump_queue(self, false);
+        background::pump(self);
         let t0 = web_time::Instant::now();
         while let Some(j) = self.stepped.first_mut() {
             match j.exporter.step(&j.provider, &j.progress) {
@@ -662,7 +692,7 @@ impl Session {
                 break;
             }
         }
-        !self.stepped.is_empty() || self.export_queue.is_active() || !self.qc.pending.is_empty()
+        !self.stepped.is_empty() || self.export_queue.is_active() || !self.qc.pending.is_empty() || !self.dcp_validation.pending.is_empty()
     }
 
     /// Start auto-save and the crash-recovery journal (native frontends). Loads preferences from
@@ -671,6 +701,9 @@ impl Session {
     pub fn start_autosave(&mut self, cfg: autosave::AutosaveConfig) -> std::io::Result<()> {
         let prefs_path = cfg.data_dir.join("preferences.json");
         self.prefs = autosave::Preferences::load(&prefs_path);
+        for warning in crate::surface_profile::load_into(&mut self.prefs.control_surfaces, &crate::surface_profile::dir_for(&cfg.data_dir)) {
+            self.log.push(crate::panels::Level::Warning, "surface", warning);
+        }
         self.prefs.apply_hardware_decoding();
         self.media.set_use_proxies(self.prefs.media.enable_proxies);
         self.shortcuts.set_dir(&cfg.data_dir);
@@ -716,11 +749,14 @@ impl Session {
     /// Apply worker notifications (call regularly, e.g. once per UI frame). Also applies the
     /// results of finished proxy / ingest jobs.
     pub fn poll_persistence(&mut self) {
+        background::pump(self);
         proxies::poll(self);
         masks::poll(self);
+        objects_track::poll(self);
         scene_detect::poll(self);
         export_tools::pump_queue(self, false);
         qc::poll(self);
+        dcp_validation::poll(self);
         panels::log_jobs(self);
         let Some(p) = self.persistence.as_mut() else { return };
         for ev in p.drain_events() {
@@ -743,6 +779,7 @@ impl Session {
     /// Replace preferences (persisting them and updating the worker).
     pub fn set_prefs(&mut self, p: autosave::Preferences) -> std::io::Result<()> {
         let cache_changed = self.prefs.media_cache != p.media_cache;
+        let surfaces_changed = self.prefs.control_surfaces != p.control_surfaces;
         self.prefs = p;
         self.prefs.apply_hardware_decoding();
         if cache_changed {
@@ -755,10 +792,19 @@ impl Session {
         if let Some(w) = &self.persistence {
             w.set_prefs(self.prefs.auto_save.clone());
         }
-        match &self.prefs_path {
+        let saved = match &self.prefs_path {
             Some(path) => self.prefs.save(path),
             None => Ok(()),
+        };
+        if surfaces_changed
+            && let Some(path) = &self.prefs_path
+            && let Some(data) = path.parent()
+        {
+            for warning in crate::surface_profile::save_all(&self.prefs.control_surfaces, &crate::surface_profile::dir_for(data)) {
+                self.log.push(crate::panels::Level::Warning, "surface", warning);
+            }
         }
+        saved
     }
 
     /// Keep render previews next to the saved project (moves an unsaved project's previews).
@@ -1343,6 +1389,8 @@ mod aaf_omf_tests;
 #[cfg(test)]
 mod animated_image_tests;
 #[cfg(test)]
+mod as02_import_tests;
+#[cfg(test)]
 mod audio_effects_tests;
 #[cfg(test)]
 mod audio_placement_tests;
@@ -1358,6 +1406,10 @@ mod beat_markers_tests;
 mod clip_ops_tests;
 #[cfg(test)]
 mod color_tests;
+#[cfg(test)]
+mod dcp_import_tests;
+#[cfg(test)]
+mod effect_toggle_tests;
 #[cfg(test)]
 mod effects_inspect_tests;
 #[cfg(test)]
@@ -1389,7 +1441,7 @@ mod linked_trim_tests;
 #[cfg(test)]
 mod locked_clip_edits_tests;
 #[cfg(test)]
-mod masks_tests;
+pub(crate) mod masks_tests;
 #[cfg(test)]
 mod media_browser_tests;
 #[cfg(test)]
@@ -1409,7 +1461,11 @@ mod nest_fidelity_tests;
 #[cfg(test)]
 mod nesting_tests;
 #[cfg(test)]
+mod objects_track_tests;
+#[cfg(test)]
 mod opatom_tests;
+#[cfg(test)]
+mod otio_size_tests;
 #[cfg(test)]
 mod panels_tests;
 #[cfg(test)]
@@ -1452,6 +1508,8 @@ mod sequence_tools_tests;
 mod settings_tests;
 #[cfg(test)]
 mod shortcuts_tests;
+#[cfg(test)]
+mod silence_tests;
 #[cfg(test)]
 mod smart_cut_mpeg_tests;
 #[cfg(test)]

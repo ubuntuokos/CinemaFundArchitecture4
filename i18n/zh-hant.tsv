@@ -1837,6 +1837,7 @@
 	Text Animator	文字動畫器
 	Counter	計數器
 	Word by Word	逐詞
+	Scramble	亂碼
 	Animator	動畫器
 	Animator Duration	動畫器持續時間
 	Animator Delay	動畫器延遲
@@ -2880,6 +2881,10 @@
 	Sharpen Amount	銳利化量
 	Shift Center To	將中心偏移至
 	Show Focus Area	顯示焦點區域
+	Rack Focus	移焦
+	Focus Point A	焦點 A
+	Focus Point B	焦點 B
+	Rack	移焦進度
 	Show Only Noise	僅顯示雜訊
 	Shrink	收縮
 	Shutter Angle	快門角度
@@ -4175,6 +4180,11 @@ export.summary	Low	低
 	Burn Size	燃燒大小
 	Ember Width	餘燼寬度
 	Ember Color	餘燼色彩
+	Tear Away	撕開
+	Tear Roughness	撕裂粗糙度
+	Paper Edge Width	紙邊寬度
+	Stamp Cut	郵票剪切
+	Perforations	齒孔
 	Check Text Legibility	檢查文字易讀性
 	Clear Legibility Markers	清除易讀性標記
 	Text legibility: no problems found	文字易讀性：未發現問題
@@ -4214,6 +4224,9 @@ export.summary	Low	低
 	Dither	遞色
 	Pattern	圖樣
 	Cell Size	儲存格大小
+	Pixelate	像素化
+	Cell Shape	儲存格形狀
+	LED	LED
 	Cyan Angle	青色角度
 	Magenta Angle	洋紅色角度
 	Yellow Angle	黃色角度
@@ -4574,6 +4587,26 @@ export.summary	Low	低
 	Chase External Timecode	追隨外部時間碼
 	Send LTC	傳送 LTC
 	Send MIDI Timecode	傳送 MIDI 時間碼
+
+# Live studio preview (CFA4-LIVE-STUDIO-001 S0)
+	Live studio preview	直播攝影棚預覽
+	Live studio: stopped	直播攝影棚：已停止
+	Live studio: {state}	直播攝影棚：{state}
+	Live studio: {error}	直播攝影棚：{error}
+	restarted after {count} crashes (last: {exit})	在 {count} 次當機後已重新啟動（最近一次：{exit}）
+	software backend: {reason}	軟體後端：{reason}
+	Start studio	啟動攝影棚
+	Stop studio	停止攝影棚
+	Add Studio Scene	新增攝影棚場景
+	Live	直播
+# Credits: title, opening, chapter and lower-third pages filled from a graphics template (F10-C16)
+	Opening Credits	片頭字幕
+	Chapter Title	章節標題
+	Lower Third	下方字幕條
+	page {page}: graphics template “{template}” was not found; “{used}” is used	第 {page} 頁：找不到圖形範本「{template}」；改用「{used}」
+	page {page}: graphics template “{template}” has no field for all of the block's text; the rest is left out	第 {page} 頁：圖形範本「{template}」沒有容納該區塊全部文字的欄位；其餘部分已略過
+	page {page}: template field “{control}” → “{part}” is not used (no such text control, or not head, body or tail)	第 {page} 頁：範本欄位「{control}」→「{part}」未使用（沒有該文字控制項，或不是標題、內文或尾註）
+	page {page}: pictures are left out on title, opening, chapter and lower-third pages	第 {page} 頁：標題、片頭、章節和下方字幕條頁面上的圖片會被略過
 # Auto Color, Auto Contrast, Auto Levels (EffectsSDK review)
 	Auto Color	自動色彩
 	Auto Contrast	自動對比
@@ -4631,3 +4664,240 @@ export.summary	Low	低
 	Freewheel	自由運行
 	Scrubbing	拖曳中
 	Sending	正在傳送
+
+# DCP subtitle export (#938)
+	Subtitles from the first caption track	來自第一條字幕軌道的字幕
+	The package language	套件的語言
+	Inter Regular (built in), or an OpenType / TrueType file	Inter Regular（內建）或 OpenType / TrueType 檔案
+	Subtitle language	字幕語言
+	Subtitle font	字幕字型
+	Fonts	字型
+
+# AS-11 metadata in MXF OP1a (#96)
+	AS-11 Core	AS-11 Core
+	AS-11 Parts	AS-11 部分
+	AS-11 UK DPP	AS-11 UK DPP
+# Control surfaces (qt-control-surfaces-page, CFA4-CONTROL-SURFACE-001)
+	Connected	已連線
+	Device	裝置
+	Devices	裝置
+	Disabled	已停用
+	MIDI	MIDI
+	Not connected	未連線
+	OSC	OSC
+	Use	使用
+	{device} ({port})	{device} ({port})
+	{name}: {error}	{name}: {error}
+# Control surfaces (midi-monitor, CFA4-CONTROL-SURFACE-001)
+	MIDI Monitor	MIDI 監視器
+	Press Start Monitor, then move a control.	按「開始監視」，然後移動一個控制項。
+	Start Monitor	開始監視
+	Stop Monitor	停止監視
+	… {count} messages not shown (too many at once)	… {count} 則訊息未顯示（同時到達太多）
+# Control surfaces (midi-learn, CFA4-CONTROL-SURFACE-001)
+	A control surface asked for {command}, which does not exist.	控制台要求了不存在的 {command}。
+	Assignments	指派
+	Cancel Learn	取消學習
+	Control	控制項
+	Learn	學習
+	Remove this assignment	移除此指派
+	{control} runs {command}.	{control} 執行 {command}。
+# Control surfaces (shuttlepro, CFA4-CONTROL-SURFACE-001)
+	Button {n}	按鈕 {n}
+# Control surfaces (continuous-values, CFA4-CONTROL-SURFACE-001)
+	{strip} Pan (knob)	{strip} 聲像（旋鈕）
+	{strip} Volume (fader)	{strip} 音量（推桿）
+# Control surfaces (F1 Learn and profile, CFA4-CONTROL-SURFACE-001)
+	Assignments run when a button is pressed (a fader or knob counts as pressed past half way); a fader or knob assigned to a mixer strip moves its volume or pan. A ShuttlePRO's shuttle ring plays at its profile's speeds and its jog wheel steps frame by frame. Endless encoders and feedback to the controller (lights, motor faders) come in a later version.	指派在按下按鈕時執行（推桿或旋鈕過半即視為按下）；指派到混音軌的推桿或旋鈕會移動音量或聲像。ShuttlePRO 的穿梭環依設定檔的速度播放，飛梭輪逐格前進。無段編碼器與對控制器的回傳（指示燈、電動推桿）將在之後的版本加入。
+	First message (ms)	第一則訊息（毫秒）
+	Silence (ms)	靜音（毫秒）
+	Waiting for the control to settle…	正在等待控制停穩…
+	Type: {hint}. Confirm this assignment.	類型：{hint}。確認此指派。
+	That control is already assigned. Confirm replaces it.	此控制已有指派。確認會取代它。
+	Learn timed out.	學習已逾時。
+	Confirm	確認
+	Reject	拒絕
+	Shows every MIDI message from the controllers as it arrives, to check that a controller sends and what it sends. MIDI Clock, Active Sensing and MIDI Time Code are left out.	控制器的每則 MIDI 訊息到達時都會顯示，用來確認控制器是否在傳送以及內容。MIDI 時脈、Active Sensing 與 MIDI 時間碼預設不顯示。
+	Pick a command (or a mixer strip for a fader or knob), press Learn, then press the button or move the control past half way. Confirm keeps the assignment. OK saves the assignments.	選擇一條命令（推桿或旋鈕則選擇混音軌），按學習，再按按鈕或把控制移過一半。確認保留指派。確定儲存指派。
+	All devices	所有裝置
+	Builtin: {name}	內建：{name}
+	Capturing	擷取中
+	Confirmed	已確認
+	Conflict	衝突
+	Connect a MIDI controller or a ShuttlePRO to edit its profile.	若要編輯設定檔，請連接 MIDI 控制器或 ShuttlePRO。
+	Control Surfaces…	控制介面…
+	Filter messages	篩選訊息
+	Idle	閒置
+	Kernel dropped: {count}	核心捨棄：{count}
+	Learn Assignments…	學習指派…
+	Load profile	載入設定檔
+	MIDI Monitor…	MIDI 監視器…
+	Mute shuttle sound	將穿梭聲音靜音
+	No conflicts.	沒有衝突。
+	No profile warnings.	沒有設定檔警告。
+	No project profile is stored.	沒有儲存的專案設定檔。
+	OK writes the preferences and the profile file together.	確定會一併寫入偏好設定和設定檔。
+	Online	線上
+	Pending	待確認
+	Pickup (14-bit)	拾取（14 位元）
+	Pickup (7-bit)	拾取（7 位元）
+	Profile warnings	設定檔警告
+	Rejected	已拒絕
+	Show Active Sensing	顯示 Active Sensing
+	Show MIDI Clock	顯示 MIDI 時脈
+	Show MIDI Time Code	顯示 MIDI 時間碼
+	The profile file is damaged. Preferences and the built-in profile stay in use.	設定檔已損毀。偏好設定和內建設定檔仍會使用。
+	Timed out	已逾時
+	Type: {hint}	類型：{hint}
+	User profile file	使用者設定檔
+	{received} received, {dispatched} dispatched, {coalesced} coalesced, {stalls} stalls, {errors} errors	{received} 已接收，{dispatched} 已分派，{coalesced} 已合併，{stalls} 停滯，{errors} 錯誤
+
+# Control Surfaces settings page (CS-1, #1187)
+	HID jog/shuttle	HID 飛梭
+	Looking for devices…	正在尋找裝置…
+	No MIDI controller or jog/shuttle device was found. Connect one and press Refresh.	找不到 MIDI 控制器或飛梭裝置。請連接一個裝置，然後按「重新整理」。
+	Control Surfaces	控制台
+	Use control surfaces (MIDI controllers, jog/shuttle devices)	使用控制台（MIDI 控制器、飛梭裝置）
+	Mapping controls to commands, MIDI Learn and the MIDI Monitor come in a later version; the choices here are remembered until then.	將控制項對應到指令、MIDI Learn 與 MIDI 監視器將於後續版本提供；在此之前，這裡的選擇會被記住。
+	CFA4 ShuttlePRO	CFA4 ShuttlePRO
+	Kdenlive-style ShuttlePRO	Kdenlive 風格 ShuttlePRO
+	Generic MIDI	通用 MIDI
+# LTC timecode read from clip audio (TC-7, #1285)
+	Read from LTC Audio	從 LTC 音訊讀取
+	Find SMPTE LTC on the clip's audio and use the timecode it gives the first frame	在片段音訊中尋找 SMPTE LTC，並使用它為第一格給出的時間碼
+	Read Timecode from LTC Audio	從 LTC 音訊讀取時間碼
+# Credits: voices (the Voice column) in the block's properties (F10-C16)
+	Voices	配音
+# Timecode sync varispeed and user bits (TC-8, #1308)
+	Varispeed: adjust the playback speed instead of seeking	變速：調整播放速度而非跳轉
+	User bits	使用者位元
+# AS-11 programme parts and AS-10 metadata (G2, #1371, #1375)
+	{tc}  Segmentation	{tc}  分段
+	Marker Type	標記類型
+	Chapter	章節
+	Segmentation (AS-11 programme part)	分段（AS-11 節目部分）
+	AS-10	AS-10
+# AT9/AT3 converter (Tools ▸ Audio Tools, AT3-2)
+	AT9/AT3 Converter	AT9/AT3 轉換器
+	AT9/AT3 Converter…	AT9/AT3 轉換器…
+	Files to convert:	要轉換的檔案:
+	Add Files	加入檔案
+	Add Files…	加入檔案…
+	Convert to:	轉換為:
+	Bit rate:	位元速率:
+	Sample format:	取樣格式:
+	Output folder:	輸出資料夾:
+	Output Folder	輸出資料夾
+	Next to each source file	與各來源檔案相同位置
+	AT9 and ATRAC3plus files convert to WAV; encoding AT9, ATRAC3plus and MP3 is not available yet.	AT9 與 ATRAC3plus 檔案可轉換為 WAV；尚不支援 AT9、ATRAC3plus 與 MP3 編碼。
+	Convert	轉換
+	Add the files to convert first.	請先加入要轉換的檔案。
+	Done: {n} file(s) converted.	完成：已轉換 {n} 個檔案。
+	Converting {name}…	正在轉換 {name}…
+	Stopping…	正在停止…
+	AT3 (ATRAC3, PSP / PS3)	AT3 (ATRAC3, PSP / PS3)
+	WAV (PCM)	WAV (PCM)
+	132 kbit/s (LP2)	132 kbit/s (LP2)
+	105 kbit/s	105 kbit/s
+	66 kbit/s (LP4, joint stereo)	66 kbit/s (LP4，聯合立體聲)
+	16-bit	16 位元
+	24-bit	24 位元
+	32-bit float	32 位元浮點
+
+# Datamosh transition (Grunge & Distort, DM1, #1409)
+	Datamosh	資料損毀
+	Residual	殘差
+	Motion Boost	動態增強
+	Recovery	恢復
+	Encode Resolution	編碼解析度
+	Half	1/2
+	Quarter	1/4
+# Datamosh Bloom (Glitch, DM2)
+	Datamosh Bloom	資料損毀綻放
+	Start Time (seconds)	開始時間（秒）
+	Repeats	重複次數
+
+# Recent effects, per-channel waveform, white balance selector (SC-2/SC-3/SC-4, #1419 #1420 #1421)
+	Apply a recently used effect to the selected clips	將最近使用的效果套用到所選剪輯
+	Disable all effects	關閉所有效果
+	Enable all effects	開啟所有效果
+	No recent effects	沒有最近使用的效果
+	Recent effects	最近使用的效果
+	Switch every effect of the selected clips off	關閉所選剪輯的每個效果
+	Switch every effect of the selected clips on	開啟所選剪輯的每個效果
+	Merged	合併
+	Per Channel	依聲道
+	Channel Zoom	聲道縮放
+	White Balance Selector (click a neutral point in the Program monitor; Esc cancels)	白平衡選擇器（在節目監視器中點擊中性點；Esc 取消）
+# Task Manager and subtitle kind (SC-2/3/4)
+	Task Manager	工作管理員
+	Background jobs	背景工作
+	Exports	匯出
+	Shared task queue	共用工作佇列
+	Task	工作
+	State	狀態
+	Details	詳細資料
+	Time left	剩餘時間
+	Scheduled	已排程
+	Queued	佇列中
+	Waiting for resources	等待資源
+	Blocked	已封鎖
+	Running	執行中
+	Paused	已暫停
+	Cancelling	正在取消
+	Interactive	互動式
+	Speculative	預先執行
+	Final render	最終算圖
+	Show finished	顯示已完成
+	Nothing is running.	沒有正在執行的項目。
+	Not reported by this engine yet.	此引擎尚未回報。
+	Not available: {why}	無法使用：{why}
+	{name} waits: {why}	{name} 正在等待：{why}
+	{running} running · {waiting} waiting	{running} 個執行中 · {waiting} 個等待中
+	{n} active	{n} 個使用中
+	{n} CPU	{n} CPU
+	{n} GiB	{n} GiB
+	{n} MiB	{n} MiB
+	Needs your decision	需要您做出決定
+	Run now	立即執行
+	Next slot	下一個時段
+	Missed its start	錯過了開始時間
+	Missed its start at {time}	錯過了 {time} 的開始
+	Starts at {time}	將於 {time} 開始
+	Subtitle kind	字幕類型
+	Subtitles	字幕
+	Captions for the hearing impaired	聽障人士字幕
+	Forced narrative	強制旁白 (forced narrative)
+	Silence	靜音
+	Detect Silence	偵測靜音
+	Remove Silence	移除靜音
+	Clear Silence Markers	清除靜音標記
+# DCP Validation window (DCP-12)
+	AS-03	AS-03
+	Choose the DCP folder.	請選擇 DCP 資料夾。
+	DCP Validation	DCP 驗證
+	DCP folder	DCP 資料夾
+	DCP folder (the one holding ASSETMAP)	DCP 資料夾(包含 ASSETMAP 的資料夾)
+	Evidence	依據
+	How to fix	修正方式
+	Interrupted	已中斷
+	Not applicable	不適用
+	Report	報告
+	Report saved: {path}	報告已儲存:{path}
+	Required	必要
+	Rule	規則
+	Rules	規則
+	Save JSON…	儲存 JSON…
+	Save Markdown…	儲存 Markdown…
+	Save report	儲存報告
+	Skipped	已略過
+	Standard: {standard}	標準:{standard}
+	Validate	驗證
+	Validate DCP…	驗證 DCP…
+	the engine sent no profiles	引擎未傳送任何設定檔
+	{n} files checked	已檢查 {n} 個檔案
+
+# AS-02 export
+	Write an AS-02 bundle (the path is a folder)	寫入 AS-02 套件(路徑為資料夾)
+	AS-02	AS-02
+	AS-12	AS-12

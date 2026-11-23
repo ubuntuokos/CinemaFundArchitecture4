@@ -401,8 +401,24 @@ impl Prepared {
     }
 }
 
-/// Track the picture inside `region` (polygon in frame pixels) from `a` to `b`.
-pub fn track_step(a: &Prepared, b: &Prepared, region: &[Vec2], method: TrackMethod) -> Option<Step> {
+/// Where each of `pts` (pixels of `a`) moved to in `b`, `None` for a point that is lost: the
+/// Lucas–Kanade track failed or its backward track does not return within the forward–backward limit.
+pub fn track_points(a: &Prepared, b: &Prepared, pts: &[Vec2]) -> Vec<Option<Vec2>> {
+    pts.par_iter()
+        .map(|p| {
+            let p = [p.x as f32, p.y as f32];
+            let q = lk(&a.levels, &b.levels, p)?;
+            let back = lk(&b.levels, &a.levels, q)?;
+            let fb = ((back[0] - p[0]).powi(2) + (back[1] - p[1]).powi(2)).sqrt();
+            (fb < FB_MAX).then(|| Vec2::new(q[0] as f64, q[1] as f64))
+        })
+        .collect()
+}
+
+/// The corner features inside `region` (polygon in frame pixels) that survive tracking from `a`
+/// to `b` with the forward–backward check: matching points `(in a, in b)`, and how many features
+/// were tried. `None` when there are fewer than 3 features to try.
+pub fn track_pairs(a: &Prepared, b: &Prepared, region: &[Vec2]) -> Option<(Vec<Vec2>, Vec<Vec2>, usize)> {
     let feats = features(a.base(), region, MAX_FEATURES, 5.0);
     if feats.len() < 3 {
         return None;
@@ -417,11 +433,17 @@ pub fn track_step(a: &Prepared, b: &Prepared, region: &[Vec2], method: TrackMeth
         })
         .collect();
     let (src, dst): (Vec<Vec2>, Vec<Vec2>) = pairs.into_iter().unzip();
+    Some((src, dst, feats.len()))
+}
+
+/// Track the picture inside `region` (polygon in frame pixels) from `a` to `b`.
+pub fn track_step(a: &Prepared, b: &Prepared, region: &[Vec2], method: TrackMethod) -> Option<Step> {
+    let (src, dst, features) = track_pairs(a, b, region)?;
     let (transform, inliers) = fit_robust(method, &src, &dst)?;
     if inliers < 3 {
         return None;
     }
-    Some(Step { transform, features: feats.len(), tracked: src.len(), inliers })
+    Some(Step { transform, features, tracked: src.len(), inliers })
 }
 
 #[cfg(test)]

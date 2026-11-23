@@ -1873,6 +1873,7 @@
 	Text Animator	Metin Animatörü
 	Counter	Sayaç
 	Word by Word	Sözcük Sözcük
+	Scramble	Karıştırma
 	Animator	Animatör
 	Animator Duration	Animatör Süresi
 	Animator Delay	Animatör Gecikmesi
@@ -2903,6 +2904,10 @@
 	Sharpen Amount	Keskinleştirme Miktarı
 	Shift Center To	Merkezi Şuraya Kaydır
 	Show Focus Area	Odak Alanını Göster
+	Rack Focus	Odak Kaydırma
+	Focus Point A	Odak Noktası A
+	Focus Point B	Odak Noktası B
+	Rack	Kaydırma
 	Show Only Noise	Yalnızca Gürültüyü Göster
 	Shrink	Küçült
 	Shutter Angle	Obtüratör Açısı
@@ -4177,6 +4182,11 @@ export.summary	Low	düşük
 	Burn Size	Yanma Boyutu
 	Ember Width	Kor Genişliği
 	Ember Color	Kor Rengi
+	Tear Away	Yırtma
+	Tear Roughness	Yırtık Pürüzlülüğü
+	Paper Edge Width	Kâğıt Kenarı Genişliği
+	Stamp Cut	Pul Kesimi
+	Perforations	Delikler
 	Check Text Legibility	Metin Okunabilirliğini Denetle
 	Clear Legibility Markers	Okunabilirlik İşaretçilerini Temizle
 	Text legibility: no problems found	Metin okunabilirliği: sorun bulunamadı
@@ -4216,6 +4226,9 @@ export.summary	Low	düşük
 	Dither	Titreklik
 	Pattern	Desen
 	Cell Size	Hücre Boyutu
+	Pixelate	Pikselleştir
+	Cell Shape	Hücre Şekli
+	LED	LED
 	Cyan Angle	Camgöbeği Açısı
 	Magenta Angle	Macenta Açısı
 	Yellow Angle	Sarı Açısı
@@ -4576,6 +4589,26 @@ export.summary	Low	düşük
 	Chase External Timecode	Harici Zaman Kodunu Takip Et
 	Send LTC	LTC Gönder
 	Send MIDI Timecode	MIDI Zaman Kodu Gönder
+
+# Live studio preview (CFA4-LIVE-STUDIO-001 S0)
+	Live studio preview	Canlı stüdyo önizlemesi
+	Live studio: stopped	Canlı stüdyo: durduruldu
+	Live studio: {state}	Canlı stüdyo: {state}
+	Live studio: {error}	Canlı stüdyo: {error}
+	restarted after {count} crashes (last: {exit})	{count} çökmeden sonra yeniden başlatıldı (son: {exit})
+	software backend: {reason}	yazılım arka ucu: {reason}
+	Start studio	Stüdyoyu başlat
+	Stop studio	Stüdyoyu durdur
+	Add Studio Scene	Stüdyo sahnesi ekle
+	Live	Canlı
+# Credits: title, opening, chapter and lower-third pages filled from a graphics template (F10-C16)
+	Opening Credits	Açılış jeneriği
+	Chapter Title	Bölüm başlığı
+	Lower Third	Alt bant
+	page {page}: graphics template “{template}” was not found; “{used}” is used	sayfa {page}: “{template}” grafik şablonu bulunamadı; “{used}” kullanılıyor
+	page {page}: graphics template “{template}” has no field for all of the block's text; the rest is left out	sayfa {page}: “{template}” grafik şablonunda bloğun tüm metni için alan yok; kalanı çıkarıldı
+	page {page}: template field “{control}” → “{part}” is not used (no such text control, or not head, body or tail)	sayfa {page}: “{control}” → “{part}” şablon alanı kullanılmıyor (böyle bir metin denetimi yok ya da başlık, gövde veya kuyruk değil)
+	page {page}: pictures are left out on title, opening, chapter and lower-third pages	sayfa {page}: başlık, açılış jeneriği, bölüm ve alt bant sayfalarında resimler çıkarılır
 # Auto Color, Auto Contrast, Auto Levels (EffectsSDK review)
 	Auto Color	Otomatik Renk
 	Auto Contrast	Otomatik Kontrast
@@ -4633,3 +4666,240 @@ export.summary	Low	düşük
 	Freewheel	Serbest çalışma
 	Scrubbing	Kaydırılıyor
 	Sending	Gönderiliyor
+
+# DCP subtitle export (#938)
+	Subtitles from the first caption track	İlk altyazı izinden altyazılar
+	The package language	Paketin dili
+	Inter Regular (built in), or an OpenType / TrueType file	Inter Regular (yerleşik) veya bir OpenType / TrueType dosyası
+	Subtitle language	Altyazı dili
+	Subtitle font	Altyazı yazı tipi
+	Fonts	Yazı tipleri
+
+# AS-11 metadata in MXF OP1a (#96)
+	AS-11 Core	AS-11 Core
+	AS-11 Parts	AS-11 bölümleri
+	AS-11 UK DPP	AS-11 UK DPP
+# Control surfaces (qt-control-surfaces-page, CFA4-CONTROL-SURFACE-001)
+	Connected	Bağlı
+	Device	Aygıt
+	Devices	Aygıtlar
+	Disabled	Devre dışı
+	HID jog/shuttle	HID jog/shuttle
+	MIDI	MIDI
+	Not connected	Bağlı değil
+	OSC	OSC
+	Use	Kullan
+	{device} ({port})	{device} ({port})
+	{name}: {error}	{name}: {error}
+# Control surfaces (midi-monitor, CFA4-CONTROL-SURFACE-001)
+	MIDI Monitor	MIDI izleyici
+	Press Start Monitor, then move a control.	İzleyiciyi Başlat'a basın, ardından bir denetimi hareket ettirin.
+	Start Monitor	İzleyiciyi Başlat
+	Stop Monitor	İzleyiciyi Durdur
+	… {count} messages not shown (too many at once)	… {count} ileti gösterilmedi (aynı anda çok fazla)
+# Control surfaces (midi-learn, CFA4-CONTROL-SURFACE-001)
+	A control surface asked for {command}, which does not exist.	Bir kontrol yüzeyi var olmayan {command} komutunu istedi.
+	Assignments	Atamalar
+	Cancel Learn	Öğrenmeyi İptal Et
+	Control	Denetim
+	Learn	Öğren
+	Remove this assignment	Bu atamayı kaldır
+	{control} runs {command}.	{control}, {command} komutunu çalıştırır.
+# Control surfaces (shuttlepro, CFA4-CONTROL-SURFACE-001)
+	Button {n}	Düğme {n}
+# Control surfaces (continuous-values, CFA4-CONTROL-SURFACE-001)
+	{strip} Pan (knob)	{strip} pan (düğme)
+	{strip} Volume (fader)	{strip} ses düzeyi (fader)
+# Control surfaces (F1 Learn and profile, CFA4-CONTROL-SURFACE-001)
+	Assignments run when a button is pressed (a fader or knob counts as pressed past half way); a fader or knob assigned to a mixer strip moves its volume or pan. A ShuttlePRO's shuttle ring plays at its profile's speeds and its jog wheel steps frame by frame. Endless encoders and feedback to the controller (lights, motor faders) come in a later version.	Atamalar bir düğmeye basılınca çalışır (bir fader veya düğme yolun yarısından sonra basılmış sayılır); bir mikser şeridine atanmış fader veya düğme ses düzeyini ya da panı oynatır. Bir ShuttlePRO'nun mekik halkası profilinin hızlarında çalar, jog tekeri kare kare ilerler. Sonsuz kodlayıcılar ve denetleyiciye geri bildirim (ışıklar, motorlu faderler) sonraki bir sürümde gelir.
+	First message (ms)	İlk ileti (ms)
+	Silence (ms)	Sessizlik (ms)
+	Waiting for the control to settle…	Denetimin durulması bekleniyor…
+	Type: {hint}. Confirm this assignment.	Tür: {hint}. Bu atamayı onaylayın.
+	That control is already assigned. Confirm replaces it.	Bu denetim zaten atanmış. Onaylamak değiştirir.
+	Learn timed out.	Öğrenme zaman aşımına uğradı.
+	Confirm	Onayla
+	Reject	Reddet
+	Shows every MIDI message from the controllers as it arrives, to check that a controller sends and what it sends. MIDI Clock, Active Sensing and MIDI Time Code are left out.	Bir denetleyicinin gönderip göndermediğini ve ne gönderdiğini görmek için denetleyicilerden gelen her MIDI iletisini varır varmaz gösterir. MIDI saati, Active Sensing ve MIDI zaman kodu dışarıda bırakılır.
+	Pick a command (or a mixer strip for a fader or knob), press Learn, then press the button or move the control past half way. Confirm keeps the assignment. OK saves the assignments.	Bir komut seçin (fader veya düğme için bir mikser şeridi), Öğren'e basın, sonra düğmeye basın veya denetimi yarının ötesine taşıyın. Onay atamayı tutar. Tamam atamaları kaydeder.
+	All devices	Tüm aygıtlar
+	Builtin: {name}	Yerleşik: {name}
+	Capturing	Yakalanıyor
+	Confirmed	Onaylandı
+	Conflict	Çakışma
+	Connect a MIDI controller or a ShuttlePRO to edit its profile.	Profilini düzenlemek için bir MIDI denetleyici veya ShuttlePRO bağlayın.
+	Control Surfaces…	Denetim yüzeyleri…
+	Filter messages	İletileri süz
+	Idle	Boşta
+	Kernel dropped: {count}	Çekirdek attı: {count}
+	Learn Assignments…	Atamaları öğren…
+	Load profile	Profili yükle
+	MIDI Monitor…	MIDI izleyici…
+	Mute shuttle sound	Shuttle sesini kapat
+	No conflicts.	Çakışma yok.
+	No profile warnings.	Profil uyarısı yok.
+	No project profile is stored.	Kayıtlı proje profili yok.
+	OK writes the preferences and the profile file together.	Tamam, tercihleri ve profil dosyasını birlikte yazar.
+	Online	Çevrimiçi
+	Pending	Bekliyor
+	Pickup (14-bit)	Yakalama (14 bit)
+	Pickup (7-bit)	Yakalama (7 bit)
+	Profile warnings	Profil uyarıları
+	Rejected	Reddedildi
+	Show Active Sensing	Active Sensing göster
+	Show MIDI Clock	MIDI saati göster
+	Show MIDI Time Code	MIDI zaman kodu göster
+	The profile file is damaged. Preferences and the built-in profile stay in use.	Profil dosyası bozuk. Tercihler ve yerleşik profil kullanılmaya devam eder.
+	Timed out	Zaman aşımı
+	Type: {hint}	Tür: {hint}
+	User profile file	Kullanıcı profil dosyası
+	{received} received, {dispatched} dispatched, {coalesced} coalesced, {stalls} stalls, {errors} errors	{received} alındı, {dispatched} iletildi, {coalesced} birleştirildi, {stalls} beklemeler, {errors} hatalar
+
+# Control Surfaces settings page (CS-1, #1187)
+	Looking for devices…	Aygıtlar aranıyor…
+	No MIDI controller or jog/shuttle device was found. Connect one and press Refresh.	MIDI denetleyicisi veya jog/shuttle aygıtı bulunamadı. Birini bağlayıp Yenile'ye basın.
+	Control Surfaces	Kontrol Yüzeyleri
+	Use control surfaces (MIDI controllers, jog/shuttle devices)	Kontrol yüzeylerini kullan (MIDI denetleyicileri, jog/shuttle aygıtları)
+	Mapping controls to commands, MIDI Learn and the MIDI Monitor come in a later version; the choices here are remembered until then.	Denetimlerin komutlara atanması, MIDI Learn ve MIDI Monitörü daha sonraki bir sürümde gelecek; o zamana kadar buradaki seçimler hatırlanır.
+	CFA4 ShuttlePRO	CFA4 ShuttlePRO
+	Kdenlive-style ShuttlePRO	Kdenlive tarzı ShuttlePRO
+	Generic MIDI	Genel MIDI
+# LTC timecode read from clip audio (TC-7, #1285)
+	Read from LTC Audio	LTC sesinden oku
+	Find SMPTE LTC on the clip's audio and use the timecode it gives the first frame	Klibin sesinde SMPTE LTC bul ve ilk kareye verdiği zaman kodunu kullan
+	Read Timecode from LTC Audio	Zaman kodunu LTC sesinden oku
+# Credits: voices (the Voice column) in the block's properties (F10-C16)
+	Voices	Sesler
+# Timecode sync varispeed and user bits (TC-8, #1308)
+	Varispeed: adjust the playback speed instead of seeking	Varispeed: atlamak yerine oynatma hızını ayarla
+	User bits	Kullanıcı bitleri
+# AS-11 programme parts and AS-10 metadata (G2, #1371, #1375)
+	{tc}  Segmentation	{tc}  Bölütleme
+	Marker Type	İşaretçi Türü
+	Chapter	Bölüm
+	Segmentation (AS-11 programme part)	Bölütleme (AS-11 program bölümü)
+	AS-10	AS-10
+# AT9/AT3 converter (Tools ▸ Audio Tools, AT3-2)
+	AT9/AT3 Converter	AT9/AT3 Dönüştürücü
+	AT9/AT3 Converter…	AT9/AT3 Dönüştürücü…
+	Files to convert:	Dönüştürülecek dosyalar:
+	Add Files	Dosya Ekle
+	Add Files…	Dosya Ekle…
+	Convert to:	Dönüştürülecek biçim:
+	Bit rate:	Bit hızı:
+	Sample format:	Örnek biçimi:
+	Output folder:	Çıktı klasörü:
+	Output Folder	Çıktı Klasörü
+	Next to each source file	Her kaynak dosyanın yanına
+	AT9 and ATRAC3plus files convert to WAV; encoding AT9, ATRAC3plus and MP3 is not available yet.	AT9 ve ATRAC3plus dosyaları WAV'a dönüştürülür; AT9, ATRAC3plus ve MP3 kodlama henüz kullanılamıyor.
+	Convert	Dönüştür
+	Add the files to convert first.	Önce dönüştürülecek dosyaları ekleyin.
+	Done: {n} file(s) converted.	Tamamlandı: {n} dosya dönüştürüldü.
+	Converting {name}…	{name} dönüştürülüyor…
+	Stopping…	Durduruluyor…
+	AT3 (ATRAC3, PSP / PS3)	AT3 (ATRAC3, PSP / PS3)
+	WAV (PCM)	WAV (PCM)
+	132 kbit/s (LP2)	132 kbit/s (LP2)
+	105 kbit/s	105 kbit/s
+	66 kbit/s (LP4, joint stereo)	66 kbit/s (LP4, ortak stereo)
+	16-bit	16 bit
+	24-bit	24 bit
+	32-bit float	32 bit kayan nokta
+
+# Datamosh transition (Grunge & Distort, DM1, #1409)
+	Datamosh	Datamosh
+	Residual	Artık
+	Motion Boost	Hareket Güçlendirme
+	Recovery	Toparlanma
+	Encode Resolution	Kodlama Çözünürlüğü
+	Half	Yarım
+	Quarter	Çeyrek
+# Datamosh Bloom (Glitch, DM2)
+	Datamosh Bloom	Datamosh Çiçeklenmesi
+	Start Time (seconds)	Başlangıç Zamanı (saniye)
+	Repeats	Tekrarlar
+
+# Recent effects, per-channel waveform, white balance selector (SC-2/SC-3/SC-4, #1419 #1420 #1421)
+	Apply a recently used effect to the selected clips	Son kullanılan efekti seçili kliplere uygula
+	Disable all effects	Tüm efektleri kapat
+	Enable all effects	Tüm efektleri aç
+	No recent effects	Son efekt yok
+	Recent effects	Son efektler
+	Switch every effect of the selected clips off	Seçili klipların her efektini kapatır
+	Switch every effect of the selected clips on	Seçili klipların her efektini açar
+	Merged	Birleşik
+	Per Channel	Kanal başına
+	Channel Zoom	Kanal yakınlaştırma
+	White Balance Selector (click a neutral point in the Program monitor; Esc cancels)	Beyaz dengesi seçici (Program monitöründe nötr bir noktaya tıklayın; Esc iptal eder)
+# Task Manager and subtitle kind (SC-2/3/4)
+	Task Manager	Görev Yöneticisi
+	Background jobs	Arka plan işleri
+	Exports	Dışa aktarmalar
+	Shared task queue	Paylaşılan görev kuyruğu
+	Task	Görev
+	State	Durum
+	Details	Ayrıntılar
+	Time left	Kalan süre
+	Scheduled	Zamanlandı
+	Queued	Kuyrukta
+	Waiting for resources	Kaynaklar bekleniyor
+	Blocked	Engellendi
+	Running	Çalışıyor
+	Paused	Duraklatıldı
+	Cancelling	İptal ediliyor
+	Interactive	Etkileşimli
+	Speculative	Önceden yürütülen
+	Final render	Son render
+	Show finished	Tamamlananları göster
+	Nothing is running.	Çalışan bir şey yok.
+	Not reported by this engine yet.	Bu motor henüz bildirmiyor.
+	Not available: {why}	Kullanılamıyor: {why}
+	{name} waits: {why}	{name} bekliyor: {why}
+	{running} running · {waiting} waiting	{running} çalışıyor · {waiting} bekliyor
+	{n} active	{n} etkin
+	{n} CPU	{n} CPU
+	{n} GiB	{n} GiB
+	{n} MiB	{n} MiB
+	Needs your decision	Kararınızı bekliyor
+	Run now	Şimdi çalıştır
+	Next slot	Sonraki aralık
+	Missed its start	Başlangıç kaçırıldı
+	Missed its start at {time}	{time} başlangıcı kaçırıldı
+	Starts at {time}	Başlangıç: {time}
+	Subtitle kind	Altyazı türü
+	Subtitles	Altyazılar
+	Captions for the hearing impaired	İşitme engelliler için altyazı
+	Forced narrative	Zorunlu anlatım (forced narrative)
+	Silence	Sessizlik
+	Detect Silence	Sessizliği algıla
+	Remove Silence	Sessizliği kaldır
+	Clear Silence Markers	Sessizlik işaretçilerini temizle
+# DCP Validation window (DCP-12)
+	AS-03	AS-03
+	Choose the DCP folder.	DCP klasörünü seçin.
+	DCP Validation	DCP doğrulama
+	DCP folder	DCP klasörü
+	DCP folder (the one holding ASSETMAP)	DCP klasörü (ASSETMAP'i içeren)
+	Evidence	Kanıt
+	How to fix	Nasıl düzeltilir
+	Interrupted	Kesintiye uğradı
+	Not applicable	Uygulanamaz
+	Report	Rapor
+	Report saved: {path}	Rapor kaydedildi: {path}
+	Required	Zorunlu
+	Rule	Kural
+	Rules	Kurallar
+	Save JSON…	JSON kaydet…
+	Save Markdown…	Markdown kaydet…
+	Save report	Raporu kaydet
+	Skipped	Atlandı
+	Standard: {standard}	Standart: {standard}
+	Validate	Doğrula
+	Validate DCP…	DCP'yi doğrula…
+	the engine sent no profiles	motor hiç profil göndermedi
+	{n} files checked	{n} dosya denetlendi
+
+# AS-02 export
+	Write an AS-02 bundle (the path is a folder)	AS-02 paketi yaz (yol bir klasördür)
+	AS-02	AS-02
+	AS-12	AS-12

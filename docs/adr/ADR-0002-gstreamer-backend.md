@@ -55,7 +55,7 @@ A beépített megnyitók mindig elsők. A GStreamer csak akkor veszi át a fájl
 
 - a beépített megnyitók nem támogatottnak vagy dekódolhatatlannak jelzik (`Unsupported`, `Decode`;
   I/O-hiba és offline média változatlanul továbbmegy), vagy
-- egy videó-kiterjesztésű fájlt videó nélkül nyitnak meg (például az Ogg Theora + Vorbis fájlt
+- egy videó-kiterjesztésű fájlt videó nélkül nyitnak meg (például egy Ogg fájlt, amelynek videókodekjét a motor nem ismeri,
   csak hangként), és a GStreamer talál benne videót.
 
 Ha a GStreamer is elutasítja, a beépített eredmény marad, így a regisztráció soha nem ront el

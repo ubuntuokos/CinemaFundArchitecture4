@@ -5,7 +5,8 @@
 > [CFA4-AI_modules ADR 0008 (korábban 0006)](https://github.com/ubuntuokos/CFA4-AI_modules/blob/main/docs/adr/ADR-0008-ai-processing-layer.md) F1, F2, F4 és F5 kapu · **Kapcsolódik:** CFA4
 > [`ADR 0006`](../adr/ADR-0006-backlothub-postgresql.md) (BacklotHub: PostgreSQL, 2026-11-02),
 > [`CFA4-EVENT-FABRIC-001`](CFA4-EVENT-FABRIC-001-1.0.md) és [illesztési melléklete](CFA4-EVENT-FABRIC-001-1.0-CFA4-ILLESZTES.md),
-> CFA4-ADAPTIVE-CAPABILITY-001 (adaptív erőforrás-kezelés, tulajdonosi specifikáció, 2026-11-07)
+> CFA4-ADAPTIVE-CAPABILITY-001 (adaptív erőforrás-kezelés, tulajdonosi specifikáció, 2026-11-07;
+> [összevetése az AI-tervvel](CFA4-ADAPTIVE-CAPABILITY-001-OSSZEVETES.md))
 
 ## 1. Kiindulás
 
@@ -219,3 +220,13 @@ keverhet.
   fájlrendszeren marad, a DB-ben csak hivatkozás és SHA-256.
 - **ADR-számozás:** az AI-réteg ADR-je 2026-11-07-én 0006-ról 0008-ra változott (CFA4-AI_modules #32), mert
   itt a 0006 a BacklotHub PostgreSQL-döntése, a 0007 a Media Services.
+
+## 13. Lezárt kérdések (tulajdonosi válaszok, 2026-11-22)
+
+1. és 2. kérdés: a terv javaslata szerint, a terv szövege változatlan.
+3. kérdés: a `cfa4-store` (PG-1, PG-2) **most** kerül a CFA4 főágba, mert egyes projektek a hiánya
+   miatt állnak. Az átvétel nem várja meg az AI-workereket; a feladatok a motorban memóriában
+   maradnak (a vágás és a lejátszás nem függhet az adatbázistól), a tartós tár az adatbázis
+   mellé kerül, és az alkalmazás bekötése külön lépés.
+4. kérdés: az írási jog megvan a CFA4 repóban, de a hatékonyság miatt az átvételt **külön szál**
+   viszi, nem az AI-réteg szála.

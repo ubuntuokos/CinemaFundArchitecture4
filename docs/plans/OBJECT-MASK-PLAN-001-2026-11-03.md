@@ -2,26 +2,26 @@
 
 | Dokumentumadat | Érték |
 |---|---|
-| Állapot | **Jóváhagyva** a tulajdonos által, 2026-11-03, **elmentett terv**: a végrehajtásról (az A szakasz indításáról is) a tulajdonos később dönt |
+| Állapot | **Jóváhagyva** 2026-11-03; **végrehajtás megkezdve 2026-11-20** (A szakasz, OM-A1-gyel), a tulajdonos „haladj tovább logikusan” utasítására; a frissítés a Változások szakaszban |
 | Dátum | 2026-11-03 |
 | Tulajdonos, jóváhagyó | ubuntuokos (István) |
 | Forrás | OpenShot-fork-audit (hat repository, 2026-11-03); a munkaváltozat: [Claude Doc](https://claude.ai/artifact/68ssSH9L61i5JfDzyztRC4) |
 | Vizsgált állapot | CFA4 `main` 942d046; CFA4-AI_modules e241771; [OpenShot/libopenshot](https://github.com/OpenShot/libopenshot) `develop` 528ebb1 (2026-11-01) |
-| Kapcsolódó | [ADR 0006](https://github.com/ubuntuokos/CFA4-AI_modules/blob/main/docs/adr/ADR-0006-ai-processing-layer.md) (AI-réteg), [Kdenlive-terv](../kdenlive-parity.md) K4, [gaps](../gaps.md) G12 és G18, [ADR 0004](../adr/ADR-0004-compute-routing.md) |
+| Kapcsolódó | [ADR 0008](https://github.com/ubuntuokos/CFA4-AI_modules/blob/main/docs/adr/ADR-0008-ai-processing-layer.md) (AI-réteg), [Kdenlive-terv](../kdenlive-parity.md) K4, [gaps](../gaps.md) G12 és G18, [ADR 0004](../adr/ADR-0004-compute-routing.md) |
 
 ## 1. Összefoglaló
 
 A Premiere 26 Object Mask képességét (gaps G12) a libopenshot objektumfelismerési, -követési és
 -maszkolási lánca alapján valósítjuk meg, hat lépésre bontva. Ebből három (Tracking, Tracked Object
 Data, Effect Binding) tiszta Rust, AI nélkül, és az F0 kapu nélkül is elvégezhető, amint a tulajdonos a végrehajtásról dönt. A másik három (Detection,
-Segmentation, Mask Propagation) az ADR 0006 AI-rétegét igényli, ezért az F0 kapu után jön.
+Segmentation, Mask Propagation) az ADR 0008 AI-rétegét igényli, ezért az F0 kapu után jön.
 
 Döntések:
 
 - **Rust, ahol számít; C++ ott, ahol a port túl drága** (tulajdonosi szabály, 2026-11-03, `AGENTS.md`).
   A szerkesztő folyamatába OpenCV és protobuf nem kerül. A libopenshot EfficientSAM/Cutie lánca
   C++-ban maradhat, külön worker-folyamatban (5. pont).
-- **A modellek az ADR 0006 worker-protokollja mögött futnak**, a modellkezelő és az erőforrás-kezelő
+- **A modellek az ADR 0008 worker-protokollja mögött futnak**, a modellkezelő és az erőforrás-kezelő
   szabályai szerint. A libopenshot automatikus CUDA → OpenCL → CPU visszalépését nem vesszük át.
 - **Ultralytics YOLO (v5/v8/11) nem használható**: kód és súly is AGPL-3.0. Apache-2.0 detektor kell
   (RT-DETR, D-FINE vagy YOLOX).
@@ -38,7 +38,7 @@ Döntések:
 | Maszk-renderelés | `crates/render/src/mask.rs` (CPU-referencia), `cfa4_gpu::GpuMask` (WGSL) | Raszteres lefedési ág kell |
 | Maszkkövetés | `masks.track`, `crates/render/src/track.rs` (Shi–Tomasi, piramisos LK, RANSAC) | Nem AI-s követés és propagálás alapja |
 | Háttérjobok | `crate::Job`, `guard_job` (`catch_unwind`) | A nem AI-s lépések jobjai |
-| AI-réteg | ADR 0006 (elfogadva, kód még nincs), F0–F6 kapuk | A modellek futtatása |
+| AI-réteg | ADR 0008 (elfogadva, kód még nincs), F0–F6 kapuk | A modellek futtatása |
 | Útválasztás | `cfa4-route`, `routing.toml` | `ai.vision.*` sorok kellenek (ONNX Runtime) |
 
 ## 3. Licenc
@@ -55,7 +55,7 @@ Döntések:
 | ONNX Runtime, `ort` | MIT; MIT OR Apache-2.0 | – | – | Rendben |
 
 A modellsorokat a manifest felvétele előtt a modell saját oldaláról, rögzített revízióval igazolni
-kell (ADR 0006 §2 és §8: négy licencmező, ismeretlen mező blokkol).
+kell (ADR 0008 §2 és §8: négy licencmező, ismeretlen mező blokkol).
 
 ## 4. A hat lépés
 
@@ -71,13 +71,13 @@ kell (ADR 0006 §2 és §8: négy licencmező, ismeretlen mező blokkol).
 Kötelező szabályok:
 
 - **Adatmodell:** `ObjectTrack { id, label, class, source: Manual | Detected | Segmented,
-  samples: BTreeMap<Tick, ObjectSample>, prompts, provenance }`, `ObjectSample { bbox, score,
+  samples: Vec<ObjectSample> (idő szerint szigorúan növekvő, a JSON stabil), prompts, provenance }`, `ObjectSample { bbox, score,
   mask: Option<MaskRef> }`. Az idő médiaidő `Tick`-ben; a `provenance` a modell azonosítója és SHA-256-ja.
 - **RLE ellenséges bemenet** (AGENTS.md §0.4): a futáshosszak összege pontosan `width × height`,
   méretkorlát, `checked_*` aritmetika, mutációs fuzzteszt.
 - **Visszafelé kompatibilitás:** `Mask.source` alapértéke `Path`, `#[serde(default)]`; régi projekt teszttel.
 - **CPU-referencia, GPU gyors út:** előbb a CPU-lefedés arany képpel, utána a `GpuMask` textúrás változata, a CPU-hoz mérve.
-- **Munkafolyamat** (ADR 0006 §4): az AI eredménye javasolt `ObjectTrack`; Előnézet után egy
+- **Munkafolyamat** (ADR 0008 §4): az AI eredménye javasolt `ObjectTrack`; Előnézet után egy
   visszavonható Alkalmazás lépés teszi a klipre, projektverzió-ellenőrzéssel.
 - **Hardver:** az eszközt az erőforrás-kezelő választja; CPU-ra csak engedéllyel lép vissza.
 
@@ -90,7 +90,7 @@ Kötelező szabályok:
 | EfficientSAM-prompt és Cutie-terjesztés | C++, a libopenshot kódjából | A legdrágább port (`CVObjectMask.cpp` 1247 sor, négy ONNX-gráf); külön folyamatban nem lassít |
 | Detektálás | C++ vagy ONNX Runtime worker | AGPL-es YOLO-modell nem |
 
-A C++-worker feltételei: külön folyamat az ADR 0006 protokolljával; az LGPL-fejlécek megmaradnak és
+A C++-worker feltételei: külön folyamat az ADR 0008 protokolljával; az LGPL-fejlécek megmaradnak és
 regisztersor készül; az eszközt a `load` üzenet adja meg (nincs automatikus visszalépés); a
 referenciagépen mérve a lejátszás és a renderelés képkocka-ideje nem romlik, a worker a számítási
 kártyát használja; az OpenCV a rendszercsomagból jön, a `cargo` munkaterületet nem érinti.
@@ -100,7 +100,7 @@ kártyát használja; az OpenCV a rendszercsomagból jön, a `cargo` munkaterül
 | Szakasz | Tartalom | Kapu |
 |---|---|---|
 | A — AI nélkül | 5, 6, 2 lépés; 4 AI nélküli tartaléka | a tulajdonos végrehajtási döntése (nem felület, nem AI-crate, az F0 nem köti) |
-| B — AI-réteg alapja | ADR 0006 F1–F3: modellkezelő, jegyzék, jobtár, ONNX/C++ worker, `routing.toml` sorok | F0: Qt6 kész, egui ki |
+| B — AI-réteg alapja | ADR 0008 F1–F3: modellkezelő, jegyzék, jobtár, ONNX/C++ worker, `routing.toml` sorok | F0: Qt6 kész, egui ki |
 | C — AI-képességek | 3, 4, 1 lépés; Qt6 objektumpanel | F3: első AI-képesség |
 
 Az A szakasz feladatai (egy feladat egy commit, `OM-A1` … `OM-A7`):
@@ -113,17 +113,24 @@ Az A szakasz feladatai (egy feladat egy commit, `OM-A1` … `OM-A7`):
 6. **OM-A6** `cfa4_gpu::GpuMask`: textúrás objektummaszk, a CPU-hoz mérve.
 7. **OM-A7** `docs/licensing.md` §5 regisztersor (ha port kerül be), `docs/gaps.md` G12 frissítése.
 
-Becslés (mérés nélkül): A szakasz 60–100 óra; C szakasz modellenként 30–60 óra; a B szakasz az ADR 0006 saját költsége.
+Becslés (mérés nélkül): A szakasz 60–100 óra; C szakasz modellenként 30–60 óra; a B szakasz az ADR 0008 saját költsége.
 
-## 7. Nyitott kérdések
+## 7. Döntések a nyitott kérdésekre (2026-11-20, tulajdonos)
 
-- SAM2 egyedül, vagy EfficientSAM + Cutie (a libopenshot útja)? Javaslat: SAM2 a K4 szerint; a C++-worker indulhat EfficientSAM + Cutie párral, ha a Cutie tanítóadata rendben van.
-- Melyik Apache-2.0 detektor legyen az első? 2K-s sebesség mérése a referenciagép RTX A4000 kártyáján.
-- Az RLE-maszkok helye: javaslat a tartalomcímzett gyorsítótár, hash-hivatkozással a projektben.
-- A `routing.toml` ai családja és az ADR 0006 ONNX Runtime döntése eltér; ezt az ADR 0006 gazdája húzza össze.
+István válasza: „indulhat; SAM2; javaslatod szerint; gyorsítótár; javaslatod szerint”. A kérdésekhez rendelve:
+
+- **Indulhat:** a terv frissítése (Változások, 2026-11-20) és az A szakasz végrehajtása jóváhagyva.
+- **Modell:** **SAM2** egyedül (a K4 szerint); EfficientSAM + Cutie nem kell. A C++-worker csak akkor kerül elő, ha a SAM2 ONNX/Rust útja nem elég gyors.
+- **Első detektor** (javaslat szerint): az Apache-2.0 jelöltek (RT-DETR, D-FINE, YOLOX) közül a 2K-s sebesség mérése dönt a referenciagép RTX A4000 kártyáján, a C szakasz előtt.
+- **RLE-maszkok helye:** **tartalomcímzett gyorsítótár**, hash-hivatkozással (`MaskRef`) a projektben.
+- **`routing.toml` ai család és ADR 0008 ONNX-döntése** (javaslat szerint): az eltérést az ADR 0008 gazdája húzza össze; az A szakasz ezt nem érinti.
+
+Az idézett válasz sorrendje nem rendeli hozzá minden elemet külön kérdéshez; a „javaslatod szerint” tételek mind a tervben írt javaslatot jelentik, így a hozzárendelés sorrendje nem változtat az eredményen.
 
 ## Változások
 
 | Dátum | Változás |
 |---|---|
+| 2026-11-20 | A tulajdonos válaszolt a nyitott kérdésekre (7. szakasz), a frissítés és az A szakasz jóváhagyva. |
+| 2026-11-20 | Frissítés a végrehajtás előtt: (1) az AI-réteg ADR-je 0006 helyett **ADR 0008**; (2) a jobtár PostgreSQL (`cfa4-tasks`, `cfa4-store`, `cfa4-accel`), nem redb; (3) az objektumcímkék és -beágyazások később a Media Intelligence `mi` sémájába (F4) indexelhetők; (4) az ONNX nem kötelező, a worker lehet C++ vagy candle; (5) licenc: a súly és a tanítóadat a felhasználó felelőssége egyszeri elfogadással, nem kereskedelmi kód csak külön letöltött, esetenkénti worker; a Cutie/MOSE így nem tiltó ok, de a jegyzék négy licencmezőjében szerepelnie kell, az AGPL-es YOLO továbbra is kizárt; (6) a minták rendezett `Vec`-ben vannak `BTreeMap` helyett; (7) a `routing.toml` ai családjából még hiányoznak az ONNX-sorok; (8) az F0 még nyitott, de az A szakasz nem AI-crate. Az OM-A1 két részre válik: OM-A1 (típusok és RLE, ez a PR) és OM-A1b (`Project.objects`, sémaemelés, régi projektes teszt). |
 | 2026-11-03 | Első, jóváhagyott változat; elmentve, a végrehajtás külön tulajdonosi döntésre vár |

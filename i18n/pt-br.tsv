@@ -2376,6 +2376,10 @@
 	Show Clip Mismatch Warning dialog	Mostrar o aviso de incompatibilidade de clipe
 	Show Event Indicator	Mostrar o indicador de eventos
 	Show Focus Area	Mostrar área de foco
+	Rack Focus	Mudança de foco
+	Focus Point A	Ponto de foco A
+	Focus Point B	Ponto de foco B
+	Rack	Mudança
 	Show Home	Mostrar Início
 	Show Mask Tracker Preview	Mostrar a pré-visualização do rastreamento de máscara
 	Show Only Noise	Mostrar somente o ruído
@@ -3613,6 +3617,7 @@
 	Social Deliverables…	Entregas para redes sociais…
 	Counter	Contador
 	Word by Word	Palavra por palavra
+	Scramble	Embaralhar
 	Animator	Animador
 	Animator Duration	Duração do animador
 	Animator Delay	Atraso do animador
@@ -4186,6 +4191,11 @@
 	Burn Size	Tamanho da queima
 	Ember Width	Largura da brasa
 	Ember Color	Cor da brasa
+	Tear Away	Rasgo
+	Tear Roughness	Aspereza do rasgo
+	Paper Edge Width	Largura da borda do papel
+	Stamp Cut	Corte de selo
+	Perforations	Perfurações
 	Check Text Legibility	Verificar legibilidade do texto
 	Clear Legibility Markers	Limpar marcadores de legibilidade
 	Text legibility: no problems found	Legibilidade do texto: nenhum problema encontrado
@@ -4225,6 +4235,9 @@
 	Dither	Pontilhado
 	Pattern	Padrão
 	Cell Size	Tamanho da célula
+	Pixelate	Pixelizar
+	Cell Shape	Forma da célula
+	LED	LED
 	Cyan Angle	Ângulo do ciano
 	Magenta Angle	Ângulo do magenta
 	Yellow Angle	Ângulo do amarelo
@@ -4585,6 +4598,26 @@
 	Chase External Timecode	Seguir timecode externo
 	Send LTC	Enviar LTC
 	Send MIDI Timecode	Enviar timecode MIDI
+
+# Live studio preview (CFA4-LIVE-STUDIO-001 S0)
+	Live studio preview	Pré-visualização do estúdio ao vivo
+	Live studio: stopped	Estúdio ao vivo: parado
+	Live studio: {state}	Estúdio ao vivo: {state}
+	Live studio: {error}	Estúdio ao vivo: {error}
+	restarted after {count} crashes (last: {exit})	reiniciado após {count} falhas (última: {exit})
+	software backend: {reason}	back-end de software: {reason}
+	Start studio	Iniciar estúdio
+	Stop studio	Parar estúdio
+	Add Studio Scene	Adicionar cena de estúdio
+	Live	Ao vivo
+# Credits: title, opening, chapter and lower-third pages filled from a graphics template (F10-C16)
+	Opening Credits	Créditos iniciais
+	Chapter Title	Título de capítulo
+	Lower Third	Terço inferior
+	page {page}: graphics template “{template}” was not found; “{used}” is used	página {page}: o modelo gráfico “{template}” não foi encontrado; “{used}” é usado
+	page {page}: graphics template “{template}” has no field for all of the block's text; the rest is left out	página {page}: o modelo gráfico “{template}” não tem campo para todo o texto do bloco; o restante é omitido
+	page {page}: template field “{control}” → “{part}” is not used (no such text control, or not head, body or tail)	página {page}: o campo de modelo “{control}” → “{part}” não é usado (não existe esse controle de texto, ou não é cabeçalho, corpo ou rodapé)
+	page {page}: pictures are left out on title, opening, chapter and lower-third pages	página {page}: as imagens são omitidas nas páginas de título, créditos iniciais, capítulo e terço inferior
 # Auto Color, Auto Contrast, Auto Levels (EffectsSDK review)
 	Auto Color	Cor automática
 	Auto Contrast	Contraste automático
@@ -4642,3 +4675,240 @@
 	Freewheel	Roda livre
 	Scrubbing	Navegando
 	Sending	Enviando
+
+# DCP subtitle export (#938)
+	Subtitles from the first caption track	Legendas da primeira faixa de legendas
+	The package language	O idioma do pacote
+	Inter Regular (built in), or an OpenType / TrueType file	Inter Regular (integrada) ou um arquivo OpenType / TrueType
+	Subtitle language	Idioma das legendas
+	Subtitle font	Fonte das legendas
+	Fonts	Fontes
+
+# AS-11 metadata in MXF OP1a (#96)
+	AS-11 Core	AS-11 Core
+	AS-11 Parts	Partes AS-11
+	AS-11 UK DPP	AS-11 UK DPP
+# Control surfaces (qt-control-surfaces-page, CFA4-CONTROL-SURFACE-001)
+	Connected	Conectado
+	Device	Dispositivo
+	Devices	Dispositivos
+	Disabled	Desativado
+	MIDI	MIDI
+	Not connected	Não conectado
+	OSC	OSC
+	Use	Usar
+	{device} ({port})	{device} ({port})
+	{name}: {error}	{name}: {error}
+# Control surfaces (midi-monitor, CFA4-CONTROL-SURFACE-001)
+	MIDI Monitor	Monitor MIDI
+	Press Start Monitor, then move a control.	Pressione Iniciar monitor e mova um controle.
+	Start Monitor	Iniciar monitor
+	Stop Monitor	Parar monitor
+	… {count} messages not shown (too many at once)	… {count} mensagens não exibidas (muitas de uma vez)
+# Control surfaces (midi-learn, CFA4-CONTROL-SURFACE-001)
+	A control surface asked for {command}, which does not exist.	Uma superfície de controle pediu {command}, que não existe.
+	Assignments	Atribuições
+	Cancel Learn	Cancelar aprendizado
+	Control	Controle
+	Learn	Aprender
+	Remove this assignment	Remover esta atribuição
+	{control} runs {command}.	{control} executa {command}.
+# Control surfaces (shuttlepro, CFA4-CONTROL-SURFACE-001)
+	Button {n}	Botão {n}
+# Control surfaces (continuous-values, CFA4-CONTROL-SURFACE-001)
+	{strip} Pan (knob)	{strip} pan (botão giratório)
+	{strip} Volume (fader)	{strip} volume (fader)
+# Control surfaces (F1 Learn and profile, CFA4-CONTROL-SURFACE-001)
+	Control Surfaces	Superfícies de controle
+	Assignments run when a button is pressed (a fader or knob counts as pressed past half way); a fader or knob assigned to a mixer strip moves its volume or pan. A ShuttlePRO's shuttle ring plays at its profile's speeds and its jog wheel steps frame by frame. Endless encoders and feedback to the controller (lights, motor faders) come in a later version.	As atribuições disparam ao pressionar um botão (um fader ou knob conta como pressionado depois da metade); um fader ou knob atribuído a um canal do mixer move o volume ou o panorama. O anel shuttle de um ShuttlePRO reproduz nas velocidades do perfil e o jog avança quadro a quadro. Encoders sem fim e o retorno ao controlador (luzes, faders motorizados) vêm numa versão posterior.
+	First message (ms)	Primeira mensagem (ms)
+	Silence (ms)	Silêncio (ms)
+	Waiting for the control to settle…	Aguardando o controle assentar…
+	Type: {hint}. Confirm this assignment.	Tipo: {hint}. Confirme esta atribuição.
+	That control is already assigned. Confirm replaces it.	Esse controle já está atribuído. Confirmar substitui.
+	Learn timed out.	O aprendizado expirou.
+	Confirm	Confirmar
+	Reject	Rejeitar
+	Shows every MIDI message from the controllers as it arrives, to check that a controller sends and what it sends. MIDI Clock, Active Sensing and MIDI Time Code are left out.	Mostra cada mensagem MIDI dos controladores ao chegar, para ver se um controlador envia e o que envia. Clock MIDI, Active Sensing e timecode MIDI ficam de fora.
+	Pick a command (or a mixer strip for a fader or knob), press Learn, then press the button or move the control past half way. Confirm keeps the assignment. OK saves the assignments.	Escolha um comando (ou um canal do mixer para um fader ou knob), pressione Aprender e depois o botão, ou mova o controle além da metade. Confirmar mantém a atribuição. OK salva as atribuições.
+	All devices	Todos os dispositivos
+	Builtin: {name}	Integrado: {name}
+	Capturing	Capturando
+	Confirmed	Confirmado
+	Conflict	Conflito
+	Connect a MIDI controller or a ShuttlePRO to edit its profile.	Ligue um controlador MIDI ou um ShuttlePRO para editar o perfil.
+	Control Surfaces…	Superfícies de controle…
+	Filter messages	Filtrar mensagens
+	Idle	Ocioso
+	Kernel dropped: {count}	Descartados pelo kernel: {count}
+	Learn Assignments…	Aprender atribuições…
+	Load profile	Carregar perfil
+	MIDI Monitor…	Monitor MIDI…
+	Mute shuttle sound	Silenciar o som do shuttle
+	No conflicts.	Não há conflitos.
+	No profile warnings.	Não há avisos de perfil.
+	No project profile is stored.	Nenhum perfil de projeto está gravado.
+	OK writes the preferences and the profile file together.	OK grava as preferências e o arquivo de perfil juntos.
+	Online	Online
+	Pending	Pendente
+	Pickup (14-bit)	Pickup (14 bits)
+	Pickup (7-bit)	Pickup (7 bits)
+	Profile warnings	Avisos de perfil
+	Rejected	Rejeitado
+	Show Active Sensing	Mostrar Active Sensing
+	Show MIDI Clock	Mostrar relógio MIDI
+	Show MIDI Time Code	Mostrar código de tempo MIDI
+	The profile file is damaged. Preferences and the built-in profile stay in use.	O arquivo de perfil está danificado. As preferências e o perfil integrado continuam em uso.
+	Timed out	Tempo esgotado
+	Type: {hint}	Tipo: {hint}
+	User profile file	Arquivo de perfil do usuário
+	{received} received, {dispatched} dispatched, {coalesced} coalesced, {stalls} stalls, {errors} errors	{received} recebidos, {dispatched} despachados, {coalesced} reunidos, {stalls} esperas, {errors} erros
+
+# Control Surfaces settings page (CS-1, #1187)
+	HID jog/shuttle	HID jog/shuttle
+	Looking for devices…	Procurando dispositivos…
+	No MIDI controller or jog/shuttle device was found. Connect one and press Refresh.	Nenhum controlador MIDI ou dispositivo jog/shuttle foi encontrado. Conecte um e clique em Atualizar.
+	Use control surfaces (MIDI controllers, jog/shuttle devices)	Usar superfícies de controle (controladores MIDI, dispositivos jog/shuttle)
+	Mapping controls to commands, MIDI Learn and the MIDI Monitor come in a later version; the choices here are remembered until then.	O mapeamento de controles para comandos, o MIDI Learn e o Monitor MIDI chegam em uma versão futura; até lá, as escolhas feitas aqui ficam salvas.
+	CFA4 ShuttlePRO	CFA4 ShuttlePRO
+	Kdenlive-style ShuttlePRO	ShuttlePRO no estilo do Kdenlive
+	Generic MIDI	MIDI genérico
+# LTC timecode read from clip audio (TC-7, #1285)
+	Read from LTC Audio	Ler do áudio LTC
+	Find SMPTE LTC on the clip's audio and use the timecode it gives the first frame	Procurar SMPTE LTC no áudio do clipe e usar o timecode que ele dá ao primeiro quadro
+	Read Timecode from LTC Audio	Ler timecode do áudio LTC
+# Credits: voices (the Voice column) in the block's properties (F10-C16)
+	Voices	Vozes
+# Timecode sync varispeed and user bits (TC-8, #1308)
+	Varispeed: adjust the playback speed instead of seeking	Varispeed: ajustar a velocidade de reprodução em vez de saltar
+	User bits	Bits de usuário
+# AS-11 programme parts and AS-10 metadata (G2, #1371, #1375)
+	{tc}  Segmentation	{tc}  Segmentação
+	Marker Type	Tipo de marcador
+	Chapter	Capítulo
+	Segmentation (AS-11 programme part)	Segmentação (parte de programa AS-11)
+	AS-10	AS-10
+# AT9/AT3 converter (Tools ▸ Audio Tools, AT3-2)
+	AT9/AT3 Converter	Conversor AT9/AT3
+	AT9/AT3 Converter…	Conversor AT9/AT3…
+	Files to convert:	Arquivos a converter:
+	Add Files	Adicionar arquivos
+	Add Files…	Adicionar arquivos…
+	Convert to:	Converter para:
+	Bit rate:	Taxa de bits:
+	Sample format:	Formato de amostra:
+	Output folder:	Pasta de saída:
+	Output Folder	Pasta de saída
+	Next to each source file	Ao lado de cada arquivo de origem
+	AT9 and ATRAC3plus files convert to WAV; encoding AT9, ATRAC3plus and MP3 is not available yet.	Arquivos AT9 e ATRAC3plus são convertidos para WAV; a codificação AT9, ATRAC3plus e MP3 ainda não está disponível.
+	Convert	Converter
+	Add the files to convert first.	Adicione primeiro os arquivos a converter.
+	Done: {n} file(s) converted.	Concluído: {n} arquivo(s) convertido(s).
+	Converting {name}…	Convertendo {name}…
+	Stopping…	Parando…
+	AT3 (ATRAC3, PSP / PS3)	AT3 (ATRAC3, PSP / PS3)
+	WAV (PCM)	WAV (PCM)
+	132 kbit/s (LP2)	132 kbit/s (LP2)
+	105 kbit/s	105 kbit/s
+	66 kbit/s (LP4, joint stereo)	66 kbit/s (LP4, estéreo conjunto)
+	16-bit	16 bits
+	24-bit	24 bits
+	32-bit float	32 bits de ponto flutuante
+
+# Datamosh transition (Grunge & Distort, DM1, #1409)
+	Datamosh	Datamosh
+	Residual	Resíduo
+	Motion Boost	Reforço de movimento
+	Recovery	Recuperação
+	Encode Resolution	Resolução de codificação
+	Half	Metade
+	Quarter	Um quarto
+# Datamosh Bloom (Glitch, DM2)
+	Datamosh Bloom	Florescimento datamosh
+	Start Time (seconds)	Tempo inicial (segundos)
+	Repeats	Repetições
+
+# Recent effects, per-channel waveform, white balance selector (SC-2/SC-3/SC-4, #1419 #1420 #1421)
+	Apply a recently used effect to the selected clips	Aplicar um efeito usado recentemente aos clipes selecionados
+	Disable all effects	Desativar todos os efeitos
+	Enable all effects	Ativar todos os efeitos
+	No recent effects	Nenhum efeito recente
+	Recent effects	Efeitos recentes
+	Switch every effect of the selected clips off	Desativa todos os efeitos dos clipes selecionados
+	Switch every effect of the selected clips on	Ativa todos os efeitos dos clipes selecionados
+	Merged	Mesclado
+	Per Channel	Por canal
+	Channel Zoom	Zoom dos canais
+	White Balance Selector (click a neutral point in the Program monitor; Esc cancels)	Seletor de balanço de branco (clique em um ponto neutro no monitor de programa; Esc cancela)
+# Task Manager and subtitle kind (SC-2/3/4)
+	Task Manager	Gerenciador de tarefas
+	Background jobs	Tarefas em segundo plano
+	Exports	Exportações
+	Shared task queue	Fila de tarefas compartilhada
+	Task	Tarefa
+	State	Estado
+	Details	Detalhes
+	Time left	Tempo restante
+	Scheduled	Agendada
+	Queued	Na fila
+	Waiting for resources	Aguardando recursos
+	Blocked	Bloqueada
+	Running	Em execução
+	Paused	Em pausa
+	Cancelling	Cancelando
+	Interactive	Interativa
+	Speculative	Especulativa
+	Final render	Renderização final
+	Show finished	Mostrar concluídas
+	Nothing is running.	Nada está em execução.
+	Not reported by this engine yet.	Este mecanismo ainda não informa isso.
+	Not available: {why}	Indisponível: {why}
+	{name} waits: {why}	{name} aguarda: {why}
+	{running} running · {waiting} waiting	{running} em execução · {waiting} aguardando
+	{n} active	{n} ativas
+	{n} CPU	{n} CPU
+	{n} GiB	{n} GiB
+	{n} MiB	{n} MiB
+	Needs your decision	Precisa da sua decisão
+	Run now	Executar agora
+	Next slot	Próximo horário
+	Missed its start	Início perdido
+	Missed its start at {time}	Início perdido às {time}
+	Starts at {time}	Começa às {time}
+	Subtitle kind	Tipo de legenda
+	Subtitles	Legendas
+	Captions for the hearing impaired	Legendas para surdos e ensurdecidos
+	Forced narrative	Narração forçada (forced narrative)
+	Silence	Silêncio
+	Detect Silence	Detectar silêncio
+	Remove Silence	Remover silêncio
+	Clear Silence Markers	Limpar marcadores de silêncio
+# DCP Validation window (DCP-12)
+	AS-03	AS-03
+	Choose the DCP folder.	Escolha a pasta do DCP.
+	DCP Validation	Validação de DCP
+	DCP folder	Pasta do DCP
+	DCP folder (the one holding ASSETMAP)	Pasta do DCP (a que contém o ASSETMAP)
+	Evidence	Evidência
+	How to fix	Como corrigir
+	Interrupted	Interrompido
+	Not applicable	Não se aplica
+	Report	Relatório
+	Report saved: {path}	Relatório salvo: {path}
+	Required	Obrigatório
+	Rule	Regra
+	Rules	Regras
+	Save JSON…	Salvar JSON…
+	Save Markdown…	Salvar Markdown…
+	Save report	Salvar relatório
+	Skipped	Ignorado
+	Standard: {standard}	Padrão: {standard}
+	Validate	Validar
+	Validate DCP…	Validar DCP…
+	the engine sent no profiles	o mecanismo não enviou nenhum perfil
+	{n} files checked	{n} arquivos verificados
+
+# AS-02 export
+	Write an AS-02 bundle (the path is a folder)	Gravar um pacote AS-02 (o caminho é uma pasta)
+	AS-02	AS-02
+	AS-12	AS-12

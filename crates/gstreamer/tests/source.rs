@@ -1,7 +1,6 @@
 //! The GStreamer media source and the engine fallback (ADR 0002 step 2), against the machine's
-//! real GStreamer. Fixtures are encoded by GStreamer itself (Theora / Vorbis in Ogg, formats the
-//! engine's own openers cannot fully read) into Cargo's temporary directory; a machine without
-//! GStreamer or the needed plugins skips with a message.
+//! real GStreamer. Fixtures are encoded by GStreamer itself (Theora / Vorbis in Ogg) into Cargo's
+//! temporary directory; a machine without GStreamer or the needed plugins skips with a message.
 
 #![cfg(feature = "gstreamer")]
 
@@ -41,12 +40,12 @@ fn fixture(name: &str, args: &str) -> Option<PathBuf> {
     }
 }
 
-/// 2 s of red 320×240 Theora at 25 fps, no audio. The engine cannot open it at all.
+/// 2 s of red 320×240 Theora at 25 fps, no audio.
 fn theora() -> Option<PathBuf> {
     fixture("red.ogv", "videotestsrc pattern=red num-buffers=50 ! video/x-raw,width=320,height=240,framerate=25/1 ! theoraenc ! oggmux ! filesink location=OUT")
 }
 
-/// 2 s of Theora video plus a 440 Hz Vorbis tone. The engine opens it as audio only.
+/// 2 s of Theora video plus a 440 Hz Vorbis tone.
 fn theora_vorbis() -> Option<PathBuf> {
     fixture(
         "av.ogv",
@@ -186,14 +185,16 @@ fn registered_fallback_fills_the_engine_gaps_and_leaves_the_rest_alone() {
     assert!(cfa4_media::is_importable(Path::new("clip.ogv")));
     assert!(cfa4_media::is_importable(Path::new("song.WMA")));
 
-    // The engine cannot open Theora at all: GStreamer does.
+    // Theora in Ogg is the engine's own (`cfa4-theora`), with and without audio: the fallback
+    // stays out of it.
     let s = engine_open(&video_only);
-    assert!(s.info().video.as_ref().unwrap().codec.contains("GStreamer"));
+    assert_eq!(s.info().video.as_ref().unwrap().codec, "Theora");
+    assert!(s.video_frame(FrameRequest::full(Tick::ZERO)).is_ok());
 
-    // The engine opens Theora + Vorbis as audio only: GStreamer adds the video.
     let s = engine_open(&av);
     assert_eq!(s.info().kind, MediaKind::Movie);
     assert!(s.info().has_audio());
+    assert_eq!(s.info().video.as_ref().unwrap().codec, "Theora");
     assert!(s.video_frame(FrameRequest::full(Tick::ZERO)).is_ok());
 
     // What the engine opens itself stays with the engine.

@@ -2357,6 +2357,10 @@
 	Show Clip Mismatch Warning dialog	显示剪辑不匹配警告对话框
 	Show Event Indicator	显示事件指示器
 	Show Focus Area	显示焦点区域
+	Rack Focus	移焦
+	Focus Point A	焦点 A
+	Focus Point B	焦点 B
+	Rack	移焦进度
 	Show Home	显示主页
 	Show Mask Tracker Preview	显示遮罩跟踪器预览
 	Show Only Noise	仅显示噪点
@@ -3622,6 +3626,7 @@
 	Social Deliverables…	社交媒体交付…
 	Counter	计数器
 	Word by Word	逐词
+	Scramble	乱码
 	Animator	动画器
 	Animator Duration	动画器持续时间
 	Animator Delay	动画器延迟
@@ -4174,6 +4179,11 @@
 	Burn Size	燃烧大小
 	Ember Width	余烬宽度
 	Ember Color	余烬颜色
+	Tear Away	撕开
+	Tear Roughness	撕裂粗糙度
+	Paper Edge Width	纸边宽度
+	Stamp Cut	邮票剪切
+	Perforations	齿孔
 	Check Text Legibility	检查文本可读性
 	Clear Legibility Markers	清除可读性标记
 	Text legibility: no problems found	文本可读性：未发现问题
@@ -4213,6 +4223,9 @@
 	Dither	抖动
 	Pattern	图案
 	Cell Size	网格大小
+	Pixelate	像素化
+	Cell Shape	单元形状
+	LED	LED
 	Cyan Angle	青色角度
 	Magenta Angle	洋红角度
 	Yellow Angle	黄色角度
@@ -4573,6 +4586,26 @@
 	Chase External Timecode	追随外部时间码
 	Send LTC	发送 LTC
 	Send MIDI Timecode	发送 MIDI 时间码
+
+# Live studio preview (CFA4-LIVE-STUDIO-001 S0)
+	Live studio preview	直播演播室预览
+	Live studio: stopped	直播演播室：已停止
+	Live studio: {state}	直播演播室：{state}
+	Live studio: {error}	直播演播室：{error}
+	restarted after {count} crashes (last: {exit})	在 {count} 次崩溃后已重新启动（最近一次：{exit}）
+	software backend: {reason}	软件后端：{reason}
+	Start studio	启动演播室
+	Stop studio	停止演播室
+	Add Studio Scene	添加演播室场景
+	Live	直播
+# Credits: title, opening, chapter and lower-third pages filled from a graphics template (F10-C16)
+	Opening Credits	片头字幕
+	Chapter Title	章节标题
+	Lower Third	下方字幕条
+	page {page}: graphics template “{template}” was not found; “{used}” is used	第 {page} 页：未找到图形模板“{template}”；改用“{used}”
+	page {page}: graphics template “{template}” has no field for all of the block's text; the rest is left out	第 {page} 页：图形模板“{template}”没有容纳该块全部文本的字段；其余部分已忽略
+	page {page}: template field “{control}” → “{part}” is not used (no such text control, or not head, body or tail)	第 {page} 页：模板字段“{control}”→“{part}”未使用（没有该文本控件，或不是标题、正文或尾注）
+	page {page}: pictures are left out on title, opening, chapter and lower-third pages	第 {page} 页：标题、片头、章节和下方字幕条页面上的图片会被忽略
 # Auto Color, Auto Contrast, Auto Levels (EffectsSDK review)
 	Auto Color	自动颜色
 	Auto Contrast	自动对比度
@@ -4630,3 +4663,240 @@
 	Freewheel	自由运行
 	Scrubbing	拖动中
 	Sending	正在发送
+
+# DCP subtitle export (#938)
+	Subtitles from the first caption track	来自第一条字幕轨道的字幕
+	The package language	包的语言
+	Inter Regular (built in), or an OpenType / TrueType file	Inter Regular（内置）或 OpenType / TrueType 文件
+	Subtitle language	字幕语言
+	Subtitle font	字幕字体
+	Fonts	字体
+
+# AS-11 metadata in MXF OP1a (#96)
+	AS-11 Core	AS-11 Core
+	AS-11 Parts	AS-11 部分
+	AS-11 UK DPP	AS-11 UK DPP
+# Control surfaces (qt-control-surfaces-page, CFA4-CONTROL-SURFACE-001)
+	Connected	已连接
+	Device	设备
+	Devices	设备
+	MIDI	MIDI
+	Not connected	未连接
+	OSC	OSC
+	Use	使用
+	{device} ({port})	{device} ({port})
+	{name}: {error}	{name}: {error}
+# Control surfaces (midi-monitor, CFA4-CONTROL-SURFACE-001)
+	MIDI Monitor	MIDI 监视器
+	Press Start Monitor, then move a control.	按“开始监视”，然后移动一个控件。
+	Start Monitor	开始监视
+	Stop Monitor	停止监视
+	… {count} messages not shown (too many at once)	… {count} 条消息未显示（同时到达太多）
+# Control surfaces (midi-learn, CFA4-CONTROL-SURFACE-001)
+	A control surface asked for {command}, which does not exist.	控制台请求了不存在的 {command}。
+	Assignments	分配
+	Cancel Learn	取消学习
+	Control	控件
+	Learn	学习
+	Remove this assignment	移除此分配
+	{control} runs {command}.	{control} 运行 {command}。
+# Control surfaces (shuttlepro, CFA4-CONTROL-SURFACE-001)
+	Button {n}	按钮 {n}
+# Control surfaces (continuous-values, CFA4-CONTROL-SURFACE-001)
+	{strip} Pan (knob)	{strip} 声像（旋钮）
+	{strip} Volume (fader)	{strip} 音量（推子）
+# Control surfaces (F1 Learn and profile, CFA4-CONTROL-SURFACE-001)
+	Assignments run when a button is pressed (a fader or knob counts as pressed past half way); a fader or knob assigned to a mixer strip moves its volume or pan. A ShuttlePRO's shuttle ring plays at its profile's speeds and its jog wheel steps frame by frame. Endless encoders and feedback to the controller (lights, motor faders) come in a later version.	分配在按下按钮时执行（推子或旋钮过半即视为按下）；分配到混音条的推子或旋钮会移动音量或声像。ShuttlePRO 的穿梭环按配置的速度播放，飞梭轮逐帧步进。无极编码器和对控制器的回传（指示灯、电动推子）将在以后的版本加入。
+	First message (ms)	首条消息（毫秒）
+	Silence (ms)	静音（毫秒）
+	Waiting for the control to settle…	正在等待控件停稳…
+	Type: {hint}. Confirm this assignment.	类型：{hint}。确认此分配。
+	That control is already assigned. Confirm replaces it.	该控件已有分配。确认将替换它。
+	Learn timed out.	学习已超时。
+	Confirm	确认
+	Reject	拒绝
+	Shows every MIDI message from the controllers as it arrives, to check that a controller sends and what it sends. MIDI Clock, Active Sensing and MIDI Time Code are left out.	控制器的每条 MIDI 消息到达时都会显示，用来确认控制器是否在发送以及发送了什么。MIDI 时钟、Active Sensing 和 MIDI 时间码默认不显示。
+	Pick a command (or a mixer strip for a fader or knob), press Learn, then press the button or move the control past half way. Confirm keeps the assignment. OK saves the assignments.	选择一条命令（推子或旋钮则选择混音条），按学习，再按按钮或把控件移过一半。确认保留分配。确定保存分配。
+	All devices	所有设备
+	Builtin: {name}	内置：{name}
+	Capturing	捕获中
+	Confirmed	已确认
+	Conflict	冲突
+	Connect a MIDI controller or a ShuttlePRO to edit its profile.	要编辑配置，请连接 MIDI 控制器或 ShuttlePRO。
+	Control Surfaces…	控制界面…
+	Filter messages	筛选消息
+	Idle	空闲
+	Kernel dropped: {count}	内核丢弃：{count}
+	Learn Assignments…	学习分配…
+	Load profile	加载配置
+	MIDI Monitor…	MIDI 监视器…
+	Mute shuttle sound	静音穿梭声音
+	No conflicts.	没有冲突。
+	No profile warnings.	没有配置警告。
+	No project profile is stored.	没有保存的项目配置。
+	OK writes the preferences and the profile file together.	确定会同时写入首选项和配置文件。
+	Online	在线
+	Pending	待定
+	Pickup (14-bit)	拾取（14 位）
+	Pickup (7-bit)	拾取（7 位）
+	Profile warnings	配置警告
+	Rejected	已拒绝
+	Show Active Sensing	显示 Active Sensing
+	Show MIDI Clock	显示 MIDI 时钟
+	Show MIDI Time Code	显示 MIDI 时间码
+	The profile file is damaged. Preferences and the built-in profile stay in use.	配置文件已损坏。首选项和内置配置仍在使用。
+	Timed out	已超时
+	Type: {hint}	类型：{hint}
+	User profile file	用户配置文件
+	{received} received, {dispatched} dispatched, {coalesced} coalesced, {stalls} stalls, {errors} errors	{received} 已接收，{dispatched} 已分发，{coalesced} 已合并，{stalls} 停滞，{errors} 错误
+
+# Control Surfaces settings page (CS-1, #1187)
+	HID jog/shuttle	HID 飞梭
+	Disabled	已禁用
+	Looking for devices…	正在查找设备…
+	No MIDI controller or jog/shuttle device was found. Connect one and press Refresh.	未找到 MIDI 控制器或飞梭设备。请连接一个设备，然后按“刷新”。
+	Control Surfaces	控制台
+	Use control surfaces (MIDI controllers, jog/shuttle devices)	使用控制台（MIDI 控制器、飞梭设备）
+	Mapping controls to commands, MIDI Learn and the MIDI Monitor come in a later version; the choices here are remembered until then.	将控件映射到命令、MIDI Learn 和 MIDI 监视器将在后续版本中提供；在此之前，这里的选择会被记住。
+	CFA4 ShuttlePRO	CFA4 ShuttlePRO
+	Kdenlive-style ShuttlePRO	Kdenlive 风格 ShuttlePRO
+	Generic MIDI	通用 MIDI
+# LTC timecode read from clip audio (TC-7, #1285)
+	Read from LTC Audio	从 LTC 音频读取
+	Find SMPTE LTC on the clip's audio and use the timecode it gives the first frame	在片段音频中查找 SMPTE LTC，并使用它为第一帧给出的时间码
+	Read Timecode from LTC Audio	从 LTC 音频读取时间码
+# Credits: voices (the Voice column) in the block's properties (F10-C16)
+	Voices	配音
+# Timecode sync varispeed and user bits (TC-8, #1308)
+	Varispeed: adjust the playback speed instead of seeking	变速：调整播放速度而不是跳转
+	User bits	用户位
+# AS-11 programme parts and AS-10 metadata (G2, #1371, #1375)
+	{tc}  Segmentation	{tc}  分段
+	Marker Type	标记类型
+	Chapter	章节
+	Segmentation (AS-11 programme part)	分段（AS-11 节目部分）
+	AS-10	AS-10
+# AT9/AT3 converter (Tools ▸ Audio Tools, AT3-2)
+	AT9/AT3 Converter	AT9/AT3 转换器
+	AT9/AT3 Converter…	AT9/AT3 转换器…
+	Files to convert:	要转换的文件:
+	Add Files	添加文件
+	Add Files…	添加文件…
+	Convert to:	转换为:
+	Bit rate:	比特率:
+	Sample format:	采样格式:
+	Output folder:	输出文件夹:
+	Output Folder	输出文件夹
+	Next to each source file	与各源文件相同位置
+	AT9 and ATRAC3plus files convert to WAV; encoding AT9, ATRAC3plus and MP3 is not available yet.	AT9 和 ATRAC3plus 文件可转换为 WAV；暂不支持 AT9、ATRAC3plus 和 MP3 编码。
+	Convert	转换
+	Add the files to convert first.	请先添加要转换的文件。
+	Done: {n} file(s) converted.	完成：已转换 {n} 个文件。
+	Converting {name}…	正在转换 {name}…
+	Stopping…	正在停止…
+	AT3 (ATRAC3, PSP / PS3)	AT3 (ATRAC3, PSP / PS3)
+	WAV (PCM)	WAV (PCM)
+	132 kbit/s (LP2)	132 kbit/s (LP2)
+	105 kbit/s	105 kbit/s
+	66 kbit/s (LP4, joint stereo)	66 kbit/s (LP4，联合立体声)
+	16-bit	16 位
+	24-bit	24 位
+	32-bit float	32 位浮点
+
+# Datamosh transition (Grunge & Distort, DM1, #1409)
+	Datamosh	数据损坏
+	Residual	残差
+	Motion Boost	运动增强
+	Recovery	恢复
+	Encode Resolution	编码分辨率
+	Half	1/2
+	Quarter	1/4
+# Datamosh Bloom (Glitch, DM2)
+	Datamosh Bloom	数据损坏绽放
+	Start Time (seconds)	开始时间（秒）
+	Repeats	重复次数
+
+# Recent effects, per-channel waveform, white balance selector (SC-2/SC-3/SC-4, #1419 #1420 #1421)
+	Apply a recently used effect to the selected clips	将最近使用的效果应用到所选剪辑
+	Disable all effects	关闭所有效果
+	Enable all effects	打开所有效果
+	No recent effects	没有最近使用的效果
+	Recent effects	最近使用的效果
+	Switch every effect of the selected clips off	关闭所选剪辑的每个效果
+	Switch every effect of the selected clips on	打开所选剪辑的每个效果
+	Merged	合并
+	Per Channel	按声道
+	Channel Zoom	声道缩放
+	White Balance Selector (click a neutral point in the Program monitor; Esc cancels)	白平衡选择器（在节目监视器中点击中性点；Esc 取消）
+# Task Manager and subtitle kind (SC-2/3/4)
+	Task Manager	任务管理器
+	Background jobs	后台作业
+	Exports	导出
+	Shared task queue	共享任务队列
+	Task	任务
+	State	状态
+	Details	详细信息
+	Time left	剩余时间
+	Scheduled	已计划
+	Queued	排队中
+	Waiting for resources	等待资源
+	Blocked	已阻塞
+	Running	正在运行
+	Paused	已暂停
+	Cancelling	正在取消
+	Interactive	交互式
+	Speculative	预先执行
+	Final render	最终渲染
+	Show finished	显示已完成
+	Nothing is running.	没有正在运行的内容。
+	Not reported by this engine yet.	此引擎尚未报告。
+	Not available: {why}	不可用：{why}
+	{name} waits: {why}	{name} 正在等待：{why}
+	{running} running · {waiting} waiting	{running} 个正在运行 · {waiting} 个正在等待
+	{n} active	{n} 个活动
+	{n} CPU	{n} CPU
+	{n} GiB	{n} GiB
+	{n} MiB	{n} MiB
+	Needs your decision	需要您做出决定
+	Run now	立即运行
+	Next slot	下一时段
+	Missed its start	错过了开始时间
+	Missed its start at {time}	错过了 {time} 的开始
+	Starts at {time}	将于 {time} 开始
+	Subtitle kind	字幕类型
+	Subtitles	字幕
+	Captions for the hearing impaired	听障人士字幕
+	Forced narrative	强制旁白 (forced narrative)
+	Silence	静音
+	Detect Silence	检测静音
+	Remove Silence	移除静音
+	Clear Silence Markers	清除静音标记
+# DCP Validation window (DCP-12)
+	AS-03	AS-03
+	Choose the DCP folder.	请选择 DCP 文件夹。
+	DCP Validation	DCP 验证
+	DCP folder	DCP 文件夹
+	DCP folder (the one holding ASSETMAP)	DCP 文件夹(包含 ASSETMAP 的文件夹)
+	Evidence	依据
+	How to fix	修复方法
+	Interrupted	已中断
+	Not applicable	不适用
+	Report	报告
+	Report saved: {path}	报告已保存:{path}
+	Required	必需
+	Rule	规则
+	Rules	规则
+	Save JSON…	保存 JSON…
+	Save Markdown…	保存 Markdown…
+	Save report	保存报告
+	Skipped	已跳过
+	Standard: {standard}	标准:{standard}
+	Validate	验证
+	Validate DCP…	验证 DCP…
+	the engine sent no profiles	引擎未发送任何配置文件
+	{n} files checked	已检查 {n} 个文件
+
+# AS-02 export
+	Write an AS-02 bundle (the path is a folder)	写入 AS-02 包(路径为文件夹)
+	AS-02	AS-02
+	AS-12	AS-12

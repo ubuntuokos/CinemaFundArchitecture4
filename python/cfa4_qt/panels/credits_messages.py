@@ -21,6 +21,15 @@ def _p(pattern: str) -> re.Pattern[str]:
 
 # (engine note, template with the same named values)
 NOTES: tuple[tuple[re.Pattern[str], str], ...] = (
+    # F10-C16: title, opening, chapter and lower-third pages
+    (_p(r"page (?P<page>\d+): graphics template " + V.format("template") + " was not found; " + V.format("used") + " is used"),
+     N_("page {page}: graphics template “{template}” was not found; “{used}” is used")),
+    (_p(r"page (?P<page>\d+): graphics template " + V.format("template") + re.escape(" has no field for all of the block's text; the rest is left out")),
+     N_("page {page}: graphics template “{template}” has no field for all of the block's text; the rest is left out")),
+    (_p(r"page (?P<page>\d+): template field " + V.format("control") + " → " + V.format("part") + re.escape(" is not used (no such text control, or not head, body or tail)")),
+     N_("page {page}: template field “{control}” → “{part}” is not used (no such text control, or not head, body or tail)")),
+    (_p(r"page (?P<page>\d+): pictures are left out on title, opening, chapter and lower-third pages"),
+     N_("page {page}: pictures are left out on title, opening, chapter and lower-third pages")),
     (_p(re.escape("a picture or video tag stands alone in a body cell (or with one name, as a portrait); the other tags were removed")),
      N_("a picture or video tag stands alone in a body cell (or with one name, as a portrait); the other tags were removed")),
     (_p(re.escape("the page gap is not a duration; the page style's is used")), N_("the page gap is not a duration; the page style's is used")),

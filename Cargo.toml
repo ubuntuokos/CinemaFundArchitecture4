@@ -5,6 +5,8 @@ default-members = ["crates/*", "apps/*", "xtask"]
 # Cargo does not expand globs here: each vendored crate is named, so `--workspace` does not
 # build their tests (their dev-dependencies stay out of Cargo.lock; scripts/dev/test-vendored-ui.sh).
 exclude = [
+    # CFA4-SECURITY-001 B2: cargo-fuzz targets, their own workspace (nightly + libFuzzer; fuzz/README.md)
+    "fuzz",
     "vendor/cfa4-libs/docpath",
     "vendor/cfa4-libs/ui",
     "vendor/ffmpeg-bindings/rsmedia",
@@ -23,6 +25,7 @@ repository = "https://github.com/ubuntuokos/CinemaFundArchitecture4"
 # internal
 cfa4-time = { path = "crates/time" }
 cfa4-route = { path = "crates/route" }
+cfa4-tasks = { path = "crates/tasks" }
 cfa4-geom = { path = "crates/geom" }
 cfa4-color = { path = "crates/color" }
 cfa4-bitstream = { path = "crates/bitstream" }
@@ -33,6 +36,7 @@ cfa4-mxf = { path = "crates/mxf" }
 cfa4-cfb = { path = "crates/cfb" }
 cfa4-mpegts = { path = "crates/mpegts" }
 cfa4-st2110 = { path = "crates/st2110" }
+cfa4-io-core = { path = "crates/io-core" }
 cfa4-mpeg2v = { path = "crates/mpeg2v" }
 cfa4-dv = { path = "crates/dv" }
 cfa4-lcevc = { path = "crates/lcevc" }
@@ -41,7 +45,10 @@ cfa4-dts = { path = "crates/dts" }
 cfa4-auro = { path = "crates/auro" }
 cfa4-truehd = { path = "crates/truehd" }
 cfa4-tcsync = { path = "crates/tcsync" }
+cfa4-surface-catalog = { path = "crates/surface-catalog" }
 cfa4-tcsync-io = { path = "crates/tcsync-io" }
+cfa4-surface-model = { path = "crates/surface-model" }
+cfa4-surface = { path = "crates/surface" }
 cfa4-mpa = { path = "crates/mpa" }
 cfa4-ogg = { path = "crates/ogg" }
 cfa4-h264 = { path = "crates/h264" }
@@ -54,9 +61,20 @@ cfa4-speex = { path = "crates/speex" }
 cfa4-amr = { path = "crates/amr" }
 cfa4-hap = { path = "crates/hap" }
 cfa4-utvideo = { path = "crates/utvideo" }
+cfa4-lagarith = { path = "crates/lagarith" }
+cfa4-svq3 = { path = "crates/svq3" }
+cfa4-svq1 = { path = "crates/svq1" }
+cfa4-indeo45 = { path = "crates/indeo45" }
+cfa4-indeo3 = { path = "crates/indeo3" }
+cfa4-flic = { path = "crates/flic" }
+cfa4-indeo = { path = "crates/indeo" }
+cfa4-cinepak = { path = "crates/cinepak" }
+cfa4-magicyuv = { path = "crates/magicyuv" }
+cfa4-msvideo = { path = "crates/msvideo" }
 cfa4-huffyuv = { path = "crates/huffyuv" }
 cfa4-ffv1 = { path = "crates/ffv1" }
 cfa4-canopus = { path = "crates/canopus" }
+cfa4-theora = { path = "crates/theora" }
 cfa4-sstp = { path = "crates/sstp" }
 cfa4-evc = { path = "crates/evc" }
 cfa4-cavs = { path = "crates/cavs" }
@@ -76,11 +94,30 @@ cfa4-dcpomatic = { path = "crates/dcpomatic" }
 cfa4-apv = { path = "crates/apv" }
 cfa4-dng = { path = "crates/dng" }
 cfa4-g729 = { path = "crates/g729" }
+cfa4-mace = { path = "crates/mace" }
+cfa4-truespeech = { path = "crates/truespeech" }
 cfa4-ilbc = { path = "crates/ilbc" }
+cfa4-thp = { path = "crates/thp" }
+cfa4-mobiclip = { path = "crates/mobiclip" }
 cfa4-tta = { path = "crates/tta" }
+cfa4-twinvq = { path = "crates/twinvq" }
+cfa4-yamaha-oki = { path = "crates/yamaha-oki" }
+cfa4-nstream = { path = "crates/nstream" }
+cfa4-shorten = { path = "crates/shorten" }
+cfa4-adx = { path = "crates/adx" }
+cfa4-hca = { path = "crates/hca" }
+cfa4-tak = { path = "crates/tak" }
+cfa4-smacker = { path = "crates/smacker" }
+cfa4-acm = { path = "crates/acm" }
+cfa4-roq = { path = "crates/roq" }
+cfa4-amv = { path = "crates/amv" }
+cfa4-mve = { path = "crates/mve" }
+cfa4-qdm2 = { path = "crates/qdm2" }
 cfa4-realvideo = { path = "crates/realvideo" }
 cfa4-realmedia = { path = "crates/realmedia" }
+cfa4-bink = { path = "crates/bink" }
 cfa4-realaudio = { path = "crates/realaudio" }
+cfa4-atracenc = { path = "crates/atracenc" }
 cfa4-musepack = { path = "crates/musepack" }
 cfa4-av1 = { path = "crates/av1" }
 cfa4-av2 = { path = "crates/av2" }
@@ -105,6 +142,7 @@ cfa4-tts-text = { path = "crates/tts-text" }
 cfa4-render = { path = "crates/render" }
 cfa4-gpu = { path = "crates/gpu" }
 cfa4-scopes = { path = "crates/scopes" }
+cfa4-objtrack = { path = "crates/objtrack" }
 cfa4-qc = { path = "crates/qc" }
 cfa4-export = { path = "crates/export" }
 cfa4-smart-edit = { path = "crates/smart-edit" }
@@ -122,6 +160,8 @@ rsmedia = { version = "0.7.1", path = "vendor/ffmpeg-bindings/rsmedia", default-
 rsmpeg = { version = "0.18.1", path = "vendor/ffmpeg-bindings/rsmpeg", default-features = false, features = ["ffmpeg9", "link_system_ffmpeg"] }
 rusty_ffmpeg = { version = "0.18.1", path = "vendor/ffmpeg-bindings/rusty_ffmpeg" }
 cfa4-metrics = { path = "crates/metrics" }
+cfa4-sandbox = { path = "crates/sandbox" }
+cfa4-fetch-client = { path = "crates/fetch-client" }
 
 # foundation
 thiserror = "2"
@@ -137,8 +177,9 @@ roxmltree = "0.21"
 aes = "0.9"
 hmac = "0.13"
 sha1 = "0.11"
+sha2 = "0.11"
 rsa = { version = "0.10", default-features = false, features = ["std", "encoding", "pkcs1v15"] }
-base64 = "0.22"
+base64 = "0.23"
 cfa4-docpath = { version = "0.1.0", path = "vendor/cfa4-libs/docpath" }
 
 # ui
@@ -176,10 +217,55 @@ opt-level = 3
 [profile.dev.package.cfa4-g729]
 opt-level = 3
 
+[profile.dev.package.cfa4-mace]
+[profile.dev.package.cfa4-truespeech]
+opt-level = 3
+
 [profile.dev.package.cfa4-ilbc]
 opt-level = 3
 
+[profile.dev.package.cfa4-thp]
+opt-level = 3
+
+[profile.dev.package.cfa4-mobiclip]
+opt-level = 3
+
 [profile.dev.package.cfa4-tta]
+opt-level = 3
+
+[profile.dev.package.cfa4-twinvq]
+[profile.dev.package.cfa4-yamaha-oki]
+[profile.dev.package.cfa4-nstream]
+opt-level = 3
+
+[profile.dev.package.cfa4-shorten]
+opt-level = 3
+
+[profile.dev.package.cfa4-adx]
+opt-level = 3
+
+[profile.dev.package.cfa4-hca]
+opt-level = 3
+
+[profile.dev.package.cfa4-tak]
+opt-level = 3
+
+[profile.dev.package.cfa4-smacker]
+opt-level = 3
+
+[profile.dev.package.cfa4-acm]
+opt-level = 3
+
+[profile.dev.package.cfa4-roq]
+opt-level = 3
+
+[profile.dev.package.cfa4-amv]
+opt-level = 3
+
+[profile.dev.package.cfa4-mve]
+opt-level = 3
+
+[profile.dev.package.cfa4-qdm2]
 opt-level = 3
 
 [profile.dev.package.cfa4-realvideo]
@@ -188,7 +274,13 @@ opt-level = 3
 [profile.dev.package.cfa4-realaudio]
 opt-level = 3
 
+[profile.dev.package.cfa4-atracenc]
+opt-level = 3
+
 [profile.dev.package.cfa4-canopus]
+opt-level = 3
+
+[profile.dev.package.cfa4-theora]
 opt-level = 3
 
 [profile.dev.package.cfa4-sstp]
@@ -213,6 +305,19 @@ opt-level = 3
 opt-level = 3
 
 [profile.dev.package.cfa4-utvideo]
+opt-level = 3
+
+[profile.dev.package.cfa4-lagarith]
+opt-level = 3
+
+[profile.dev.package.cfa4-flic]
+[profile.dev.package.cfa4-cinepak]
+opt-level = 3
+
+[profile.dev.package.cfa4-magicyuv]
+opt-level = 3
+
+[profile.dev.package.cfa4-msvideo]
 opt-level = 3
 
 [profile.dev.package."*"]
