@@ -4819,6 +4819,7 @@ export.summary	Low	matala
 	Datamosh Bloom	Datamosh-kukinta
 	Start Time (seconds)	Aloitusaika (sekuntia)
 	Repeats	Toistot
+	Clean Blocks	Puhtaat lohkot
 
 # Recent effects, per-channel waveform, white balance selector (SC-2/SC-3/SC-4, #1419 #1420 #1421)
 	Apply a recently used effect to the selected clips	Käytä äskettäin käytettyä tehostetta valittuihin klippeihin

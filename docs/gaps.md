@@ -371,8 +371,8 @@ distributions are not targets.
   Shift constrains vertex and whole-mask drags to 45° steps from the press point (#1408); a real
   codec datamosh with CFA4's own H.264 encoder and decoder, as the Datamosh transition (Grunge &
   Distort: B's P pictures decoded onto A; #1409) and the Datamosh Bloom effect (Glitch: one P
-  picture repeated; #1430), with no codec changed and no FFmpeg. Not yet: an encoder switch that
-  bans intra macroblocks in P pictures, which would give a "dirtier" mosh (a codec-crate change).
+  picture repeated; #1430), and the encoder's `inter_only` switch (no intra macroblocks in P
+  pictures) behind both as Clean Blocks off, for a "dirtier" mosh; no FFmpeg.
 - **CFA4 candidates after GPL-3.0-or-later** (ADR 0003 §6): clean-room OpenFX effects with the openfx-misc capability list (keyers,
   colour, tracking, retime; ADR 0003 §14: no Natron code), Rubber Band (GPL-2.0-or-later) for audio time-stretch and pitch shift,
   frei0r effects. Candidates are not commitments: each needs its own ADR (FFI rule, own engine as fallback).
@@ -403,3 +403,4 @@ distributions are not targets.
 | 2026-10-26 | minor | G12: AI candidates from the repository reviews (word-highlight captions, low light, face detection, background matting, foley) |
 | 2026-11-11 | minor | G1: `cfa4-metrics` (CIEDE2000 ΔE, SSIM) as the harness's scoring layer |
 | 2026-11-21 | minor | G18: real codec datamosh (Datamosh transition, Datamosh Bloom effect) |
+| 2026-11-23 | minor | G18: encoder `inter_only` switch, Clean Blocks on the datamosh |

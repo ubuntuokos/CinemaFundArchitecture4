@@ -4819,6 +4819,7 @@ export.summary	Low	madal
 	Datamosh Bloom	Datamoshi õitsemine
 	Start Time (seconds)	Algusaeg (sekundites)
 	Repeats	Kordused
+	Clean Blocks	Puhtad plokid
 
 # Recent effects, per-channel waveform, white balance selector (SC-2/SC-3/SC-4, #1419 #1420 #1421)
 	Apply a recently used effect to the selected clips	Rakenda hiljuti kasutatud efekt valitud klippidele

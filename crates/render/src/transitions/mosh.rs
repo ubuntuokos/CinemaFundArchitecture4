@@ -84,12 +84,21 @@ fn num(e: &EffectInstance, id: &str) -> f32 {
     if v.is_finite() { v } else { 0.0 }
 }
 
+fn value(e: &EffectInstance, id: &str) -> Option<ParamValue> {
+    e.param(id).map(|p| p.value.clone()).or_else(|| e.def().and_then(|d| d.param(id)).map(|p| p.default.clone()))
+}
+
 fn choice(e: &EffectInstance, id: &str) -> u32 {
-    let v = e.param(id).map(|p| p.value.clone()).or_else(|| e.def().and_then(|d| d.param(id)).map(|p| p.default.clone()));
-    match v {
+    match value(e, id) {
         Some(ParamValue::Choice(c)) => c,
         _ => 0,
     }
+}
+
+/// Clean Blocks (on unless the instance or definition says otherwise): B's P pictures may refresh
+/// poorly predicted blocks with intra blocks; off, every block moves A's pixels.
+fn clean(e: &EffectInstance) -> bool {
+    !matches!(value(e, "clean"), Some(ParamValue::Bool(false)))
 }
 
 fn resized(img: &Image, w: usize, h: usize) -> Image {
@@ -161,9 +170,10 @@ fn moshed(e: &EffectInstance, a: &Image, b: &Image, src: &mut MoshSource<'_>) ->
     let d = divisor(choice(e, "resolution"));
     let (w, h) = ((a.w / d).max(2), (a.h / d).max(2));
     let qp = qp_for(num(e, "residual"));
+    let clean = clean(e);
     let a0 = resized(src.a, w, h);
     let mut hs = DefaultHasher::new();
-    (src.key, qp, w, h).hash(&mut hs);
+    (src.key, qp, clean, w, h).hash(&mut hs);
     hash_image(&a0, &mut hs);
     let key = hs.finish();
     let n = src.n.min(MAX_FRAMES - 1);
@@ -177,7 +187,7 @@ fn moshed(e: &EffectInstance, a: &Image, b: &Image, src: &mut MoshSource<'_>) ->
     };
     let mut kept = match take_kept(key) {
         Some(k) if k.session.fed() <= n + 1 || k.last.as_ref().is_some_and(|(i, _)| *i == n) => k,
-        _ => Kept { key, session: Session::new(&a0, &b_at(0), qp).ok()?, last: None },
+        _ => Kept { key, session: Session::new(&a0, &b_at(0), qp, clean).ok()?, last: None },
     };
     if let Some((i, img)) = &kept.last
         && *i == n

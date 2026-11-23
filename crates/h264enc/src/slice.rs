@@ -37,6 +37,8 @@ pub struct EncParams {
     pub adaptive_t8: bool,
     /// Always try intra in P/B frames (otherwise only when inter looks poor).
     pub always_intra: bool,
+    /// Never code intra macroblocks in P/B pictures ([`crate::EncoderConfig::inter_only`]).
+    pub no_inter_intra: bool,
     /// Maximum CAVLC level magnitude (Baseline).
     pub cavlc_clamp: bool,
 }
@@ -1655,7 +1657,7 @@ impl<'a, 'b> SliceEnc<'a, 'b> {
             return ci;
         }
         // --- intra
-        let need_intra = f.p.always_intra || best_cost > (256 * 3 + 16 * lam as u64 / 256) * 2;
+        let need_intra = !f.p.no_inter_intra && (f.p.always_intra || best_cost > (256 * 3 + 16 * lam as u64 / 256) * 2);
         if need_intra {
             let ic = self.analyse_intra(mx, my, qp, av, e, src, best_cost);
             if f.p.rd {
@@ -1968,7 +1970,7 @@ impl<'a, 'b> SliceEnc<'a, 'b> {
                 }
             }
         }
-        let need_intra = f.p.always_intra || best.cost > (256 * 3 + 16 * lam as u64 / 256) * 3;
+        let need_intra = !f.p.no_inter_intra && (f.p.always_intra || best.cost > (256 * 3 + 16 * lam as u64 / 256) * 3);
         if need_intra {
             let ic = self.analyse_intra(mx, my, qp, av, e, src, best.cost);
             if f.p.rd {

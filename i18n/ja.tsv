@@ -4826,6 +4826,7 @@
 	Datamosh Bloom	データモッシュブルーム
 	Start Time (seconds)	開始時間 (秒)
 	Repeats	繰り返し回数
+	Clean Blocks	クリーンブロック
 
 # Recent effects, per-channel waveform, white balance selector (SC-2/SC-3/SC-4, #1419 #1420 #1421)
 	Apply a recently used effect to the selected clips	最近使ったエフェクトを選択したクリップに適用

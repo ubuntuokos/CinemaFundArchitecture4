@@ -4815,6 +4815,7 @@
 	Datamosh Bloom	数据损坏绽放
 	Start Time (seconds)	开始时间（秒）
 	Repeats	重复次数
+	Clean Blocks	干净块
 
 # Recent effects, per-channel waveform, white balance selector (SC-2/SC-3/SC-4, #1419 #1420 #1421)
 	Apply a recently used effect to the selected clips	将最近使用的效果应用到所选剪辑
