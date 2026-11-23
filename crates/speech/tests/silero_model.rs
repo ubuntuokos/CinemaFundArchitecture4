@@ -121,3 +121,87 @@ fn speech_between_silences_is_found_within_a_window() {
     let r = silero::silence_regions(&v, &audio, &SilenceParams { threshold_db: None, min_silence: seconds_tick(0.5), padding: seconds_tick(0.0) }).unwrap();
     assert_eq!(r.len(), 2, "{r:?}");
 }
+
+/// Mono 16 kHz samples of a 16-bit PCM WAV file (the first channel; the rate must be 16 kHz).
+fn read_wav_16k(path: &Path) -> Result<Vec<f32>, String> {
+    let b = std::fs::read(path).map_err(|e| e.to_string())?;
+    let u16_at = |i: usize| b.get(i..i + 2).map(|x| u16::from_le_bytes([x[0], x[1]]));
+    let u32_at = |i: usize| b.get(i..i + 4).map(|x| u32::from_le_bytes([x[0], x[1], x[2], x[3]]));
+    if b.get(0..4) != Some(b"RIFF") || b.get(8..12) != Some(b"WAVE") {
+        return Err("not a WAV file".into());
+    }
+    let (mut at, mut fmt, mut data) = (12usize, None, None);
+    while let (Some(id), Some(len)) = (b.get(at..at + 4), u32_at(at + 4)) {
+        let body = at + 8;
+        match id {
+            b"fmt " => fmt = Some((u16_at(body), u16_at(body + 2), u32_at(body + 4), u16_at(body + 14))),
+            b"data" => data = b.get(body..(body + len as usize).min(b.len())),
+            _ => {}
+        }
+        at = body + len as usize + (len as usize & 1);
+    }
+    let (Some((Some(1), Some(ch), Some(rate), Some(16))), Some(data)) = (fmt, data) else { return Err("only 16-bit PCM WAV is read".into()) };
+    if rate != SAMPLE_RATE || ch == 0 {
+        return Err(format!("the fixture must be {SAMPLE_RATE} Hz (it is {rate} Hz); convert it with `ffmpeg -ar 16000`"));
+    }
+    Ok(data.chunks_exact(2 * ch as usize).map(|f| i16::from_le_bytes([f[0], f[1]]) as f32 / 32768.0).collect())
+}
+
+/// Acceptance of plan CFA4-V1-SILENCE-REMOVAL-001 (V1 point 4) on **real human speech**: the
+/// model's speech bounds against hand-labelled ones, within one window (32 ms).
+///
+/// Needs a fixture that is not in the repository (no media is committed): `CFA4_SPEECH_FIXTURE`
+/// names a 16 kHz 16-bit PCM WAV, and `<same path>.speech.tsv` lists the speech stretches, one
+/// `start_seconds<TAB>end_seconds` per line (a pause of at least 0.3 s between stretches). Without
+/// both the test prints SKIPPED. Every measured difference is printed, so a failure shows how far
+/// off the model is (run with `--nocapture`).
+#[test]
+fn real_speech_bounds_are_within_one_window() {
+    let Some(v) = vad() else { return };
+    let Some(wav) = std::env::var_os("CFA4_SPEECH_FIXTURE").map(PathBuf::from) else {
+        eprintln!("SKIPPED: CFA4_SPEECH_FIXTURE (a 16 kHz WAV of real speech with a .speech.tsv label file) is not set");
+        return;
+    };
+    let audio = read_wav_16k(&wav).expect("the fixture WAV");
+    let mut labels_path = wav.clone().into_os_string();
+    labels_path.push(".speech.tsv");
+    let labels: Vec<(f64, f64)> = std::fs::read_to_string(&labels_path)
+        .expect("the label file next to the fixture")
+        .lines()
+        .filter(|l| !l.trim().is_empty() && !l.starts_with('#'))
+        .map(|l| {
+            let mut f = l.split('\t').map(|x| x.trim().parse::<f64>().expect("seconds"));
+            (f.next().expect("start"), f.next().expect("end"))
+        })
+        .collect();
+    assert!(!labels.is_empty(), "the label file has no stretch");
+    // the model's stretches, joined across pauses shorter than 0.3 s as the labels are
+    let voiced = v.voiced(&audio).unwrap();
+    let win = WINDOW as f64 / f64::from(SAMPLE_RATE);
+    let mut found: Vec<(f64, f64)> = Vec::new();
+    let mut i = 0;
+    while i < voiced.len() {
+        if !voiced[i] {
+            i += 1;
+            continue;
+        }
+        let a = i;
+        while i < voiced.len() && voiced[i] {
+            i += 1;
+        }
+        let (s, e) = (a as f64 * win, i as f64 * win);
+        match found.last_mut() {
+            Some(l) if s - l.1 < 0.3 => l.1 = e,
+            _ => found.push((s, e)),
+        }
+    }
+    eprintln!("labelled {} stretches, the model found {}", labels.len(), found.len());
+    assert_eq!(found.len(), labels.len(), "stretches found {found:?} vs labelled {labels:?}");
+    let mut worst = 0.0f64;
+    for (f, l) in found.iter().zip(&labels) {
+        let (ds, de) = ((f.0 - l.0).abs(), (f.1 - l.1).abs());
+        eprintln!("labelled {:.3}-{:.3} s, model {:.3}-{:.3} s: start off {:.0} ms, end off {:.0} ms", l.0, l.1, f.0, f.1, ds * 1e3, de * 1e3);
+        worst = worst.max(ds).max(de);
+    }
+    assert!(worst <= win + 1e-9, "worst bound is {:.0} ms off, the tolerance is one window ({:.0} ms)", worst * 1e3, win * 1e3);
+}

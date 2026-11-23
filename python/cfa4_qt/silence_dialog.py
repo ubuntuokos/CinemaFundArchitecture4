@@ -7,6 +7,12 @@ rows of the list), every row has a check box (checked: remove, unchecked: keep, 
 The dialog holds no editing logic of its own and has no one-key binding: the removal is always a
 click on this button.
 
+The detector list offers **Energy (level)** and, when the engine was built with it, **Speech model
+(Silero VAD)** (V1-B). The model is never bundled: the dialog shows the engine's record
+(``speech.vadModel``: source, licence, size), and only after the user ticks the licence acceptance
+the **Download** button runs ``speech.downloadVadModel``. A missing model is a message that says
+so, never a silent fall back to the energy detector.
+
 Every widget has an automation id (``removeSilence.*``) and the state is readable and settable as
 JSON (``ui_state`` / ``set_ui_state``).
 """
@@ -64,6 +70,8 @@ class RemoveSilenceDialog(QDialog):
         # the regions as the engine reported them: (id, start ticks, duration ticks)
         self._regions: list[tuple[int, int, int]] = []
         self._job: int | None = None
+        # the engine's record of the speech model (``speech.vadModel``), None until asked
+        self._model: dict[str, Any] | None = None
         self._timer = QTimer(self)
         self._timer.setInterval(POLL_MS)
         self._timer.timeout.connect(self._poll)
@@ -78,7 +86,29 @@ class RemoveSilenceDialog(QDialog):
         self.detector = QComboBox()
         self.detector.setObjectName("removeSilence.detector")
         self.detector.addItem(tr("Energy (level)"), "energy")
+        self.detector.addItem(tr("Speech model (Silero VAD)"), "silero")
+        self.detector.currentIndexChanged.connect(self._detector_changed)
         form.addRow(tr("Detector:"), self.detector)
+        # the speech model: its record, the licence acceptance and the download (shown for it only)
+        self.model_box = QWidget()
+        self.model_box.setObjectName("removeSilence.modelBox")
+        mb = QVBoxLayout(self.model_box)
+        mb.setContentsMargins(0, 0, 0, 0)
+        self.model_info = QLabel("")
+        self.model_info.setObjectName("removeSilence.modelInfo")
+        self.model_info.setWordWrap(True)
+        self.model_info.setOpenExternalLinks(True)
+        mb.addWidget(self.model_info)
+        self.accept_licence = QCheckBox(tr("I have read the model's licence and accept it"))
+        self.accept_licence.setObjectName("removeSilence.acceptLicence")
+        self.accept_licence.toggled.connect(self._refresh_model_buttons)
+        mb.addWidget(self.accept_licence)
+        self.download = QPushButton(tr("Download the speech model"))
+        self.download.setObjectName("removeSilence.downloadModel")
+        self.download.clicked.connect(self.run_download)
+        mb.addWidget(self.download)
+        self.model_box.setVisible(False)
+        form.addRow("", self.model_box)
         self.auto_threshold = QCheckBox(tr("Automatic threshold"))
         self.auto_threshold.setObjectName("removeSilence.autoThreshold")
         self.auto_threshold.setChecked(True)
@@ -169,9 +199,92 @@ class RemoveSilenceDialog(QDialog):
         buttons.addWidget(self.remove)
         buttons.addWidget(close)
         root.addLayout(buttons)
+        self.refresh_model()
+
+    # ----- the speech model -----
+    def uses_model(self) -> bool:
+        return str(self.detector.currentData()) == "silero"
+
+    def model_installed(self) -> bool:
+        return bool(self._model and self._model.get("installed") is True)
+
+    def refresh_model(self) -> None:
+        """Ask the engine for the speech model's record and show what it says."""
+
+        def got(result: Any, _blob: bytes | None) -> None:
+            self._model = result if isinstance(result, dict) else None
+            self._show_model()
+
+        self.engine.execute("speech.vadModel", {}, on_reply=got, on_error=self._model_error)
+
+    def _model_error(self, message: str) -> None:
+        self._model = None
+        self.model_info.setText(message)
+        self._refresh_model_buttons()
+
+    def _show_model(self) -> None:
+        m = self._model or {}
+        silero = self.detector.findData("silero")
+        available = m.get("detectorAvailable") is True
+        item = self.detector.model().item(silero) if silero >= 0 else None  # type: ignore[attr-defined]
+        if item is not None:
+            item.setEnabled(available)
+        if not available and self.uses_model():
+            self.detector.setCurrentIndex(self.detector.findData("energy"))
+        size = m.get("size")
+        mb = f"{size / 1_000_000:.1f}" if isinstance(size, int) and not isinstance(size, bool) else "?"
+        if m.get("installed") is True:
+            text = tr("The speech model is installed.")
+        elif not available:
+            text = tr("This build has no speech-model detector.")
+        else:
+            lic = str(m.get("license", ""))
+            url = str(m.get("licenseUrl", ""))
+            text = fmt(
+                "The speech model ({mb} MB, {licence}) is not downloaded. CFA4 does not distribute models: "
+                "read the licence, accept it and download it yourself.",
+                mb=mb,
+                licence=f'<a href="{url}">{lic}</a>' if url.startswith("https://") else lic,
+            )
+        self.model_info.setText(text)
+        self._refresh_model_buttons()
+
+    def _refresh_model_buttons(self, *_args: Any) -> None:
+        m = self._model or {}
+        needs = not self.model_installed() and m.get("detectorAvailable") is True
+        self.accept_licence.setVisible(needs)
+        self.download.setVisible(needs)
+        self.download.setEnabled(needs and m.get("downloadAvailable") is True and self.accept_licence.isChecked())
+
+    def _detector_changed(self, _index: int = 0) -> None:
+        model = self.uses_model()
+        self.model_box.setVisible(model)
+        # the model decides what is speech: the level threshold does not apply to it
+        self.auto_threshold.setEnabled(not model)
+        self.threshold.setEnabled(not model and not self.auto_threshold.isChecked())
+        if model:
+            self.refresh_model()
+
+    def run_download(self) -> None:
+        """Download the model after the licence was accepted (the engine refuses without it)."""
+        if not self.accept_licence.isChecked():
+            self.status.setText(tr("Accept the licence first."))
+            return
+        self.download.setEnabled(False)
+        self.status.setText(tr("Downloading the speech model…"))
+
+        def done(_result: Any, _blob: bytes | None) -> None:
+            self.status.setText(tr("The speech model was downloaded."))
+            self.refresh_model()
+
+        def failed(message: str) -> None:
+            self.status.setText(message)
+            self._refresh_model_buttons()
+
+        self.engine.execute("speech.downloadVadModel", {"licenseAccepted": True}, on_reply=done, on_error=failed)
 
     def _auto_toggled(self, on: bool) -> None:
-        self.threshold.setEnabled(not on)
+        self.threshold.setEnabled(not on and not self.uses_model())
 
     # ----- state -----
     def params(self) -> dict[str, Any]:
@@ -183,7 +296,7 @@ class RemoveSilenceDialog(QDialog):
             "minSilence": round(self.min_silence.value() * TICKS_PER_SECOND),
             "padding": round(self.padding.value() * TICKS_PER_SECOND),
         }
-        if not self.auto_threshold.isChecked():
+        if not self.auto_threshold.isChecked() and not self.uses_model():
             p["thresholdDb"] = self.threshold.value()
         return p
 
@@ -198,6 +311,9 @@ class RemoveSilenceDialog(QDialog):
     def ui_state(self) -> dict[str, Any]:
         return {
             "scope": self.scope.currentData(),
+            "detector": self.detector.currentData(),
+            "modelInstalled": self.model_installed(),
+            "licenceAccepted": self.accept_licence.isChecked(),
             "autoThreshold": self.auto_threshold.isChecked(),
             "thresholdDb": self.threshold.value(),
             "minSilenceSeconds": self.min_silence.value(),
@@ -212,11 +328,13 @@ class RemoveSilenceDialog(QDialog):
         }
 
     def set_ui_state(self, patch: dict[str, Any]) -> None:
-        for key, box in (("scope", self.scope), ("mode", self.mode)):
+        for key, box in (("scope", self.scope), ("detector", self.detector), ("mode", self.mode)):
             if key in patch:
                 i = box.findData(patch[key])
                 if i >= 0:
                     box.setCurrentIndex(i)
+        if "licenceAccepted" in patch:
+            self.accept_licence.setChecked(bool(patch["licenceAccepted"]))
         if "autoThreshold" in patch:
             self.auto_threshold.setChecked(bool(patch["autoThreshold"]))
         if "thresholdDb" in patch:
@@ -306,6 +424,9 @@ class RemoveSilenceDialog(QDialog):
             self.analyze.setText(tr("Cancel"))
             self._timer.start()
 
+        if self.uses_model() and not self.model_installed():
+            self.status.setText(tr("The speech model is not downloaded: accept its licence and download it, or use the energy detector."))
+            return
         self.status.setText(tr("Analyzing…"))
         self.engine.execute("audio.detectSpeech", self.params(), on_reply=started, on_error=self._stop)
 

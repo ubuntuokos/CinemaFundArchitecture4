@@ -4935,3 +4935,13 @@ export.summary	Low	alacsony
 
 # WP3 DPX bit depth
 	Bit Depth	Bitmélység
+	Speech model (Silero VAD)	Beszédmodell (Silero VAD)
+	I have read the model's licence and accept it	Elolvastam a modell licencét, és elfogadom
+	Download the speech model	A beszédmodell letöltése
+	The speech model is installed.	A beszédmodell telepítve van.
+	This build has no speech-model detector.	Ez a fordítás nem tartalmaz beszédmodell-érzékelőt.
+	The speech model ({mb} MB, {licence}) is not downloaded. CFA4 does not distribute models: read the licence, accept it and download it yourself.	A beszédmodell ({mb} MB, {licence}) nincs letöltve. A CFA4 nem terjeszt modellt: olvasd el a licencet, fogadd el, és töltsd le magad.
+	Accept the licence first.	Előbb fogadd el a licencet.
+	Downloading the speech model…	A beszédmodell letöltése…
+	The speech model was downloaded.	A beszédmodell letöltve.
+	The speech model is not downloaded: accept its licence and download it, or use the energy detector.	A beszédmodell nincs letöltve: fogadd el a licencét és töltsd le, vagy használd az energiaalapú érzékelőt.

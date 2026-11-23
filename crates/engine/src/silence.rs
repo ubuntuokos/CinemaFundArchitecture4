@@ -182,6 +182,28 @@ fn params(p: &Value) -> Result<SilenceParams> {
     Ok(sp)
 }
 
+/// The voiced/unvoiced flag of every frame of `audio` (mono 16 kHz) for the Whisper pre-filter
+/// (`transcript.generate {vadFilter}`), with the frame size in samples. `detector` is `energy` or
+/// `silero`; the Silero model is never replaced by the energy detector when it is missing.
+pub(crate) fn voiced_frames(audio: &[f32], detector: &str) -> Result<(Vec<bool>, usize)> {
+    match detector {
+        "energy" => {
+            let db = vad::frame_db(audio);
+            let th = vad::threshold(&db);
+            Ok((db.iter().map(|&v| v >= th).collect(), FRAME_SAMPLES))
+        }
+        "silero" => match silero_detector()? {
+            #[cfg(feature = "silero")]
+            Detector::Silero(v) => {
+                let v = v.voiced(audio).map_err(|e| EngineError::Other(e.to_string()))?;
+                Ok((v, cfa4_speech::vad::silero::WINDOW))
+            }
+            Detector::Energy => Err(EngineError::Other("the Silero detector was expected".into())),
+        },
+        other => Err(bad("transcript.generate", format!("`vadFilter` must be \"off\", \"energy\" or \"silero\", not `{other}`"))),
+    }
+}
+
 /// What decides which frames are speech.
 #[derive(Clone)]
 enum Detector {
