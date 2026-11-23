@@ -1770,6 +1770,7 @@ version = "0.10.0"
 dependencies = [
  "cfa4-codecs",
  "cfa4-color",
+ "cfa4-format",
  "cfa4-frame",
  "cfa4-geom",
  "cfa4-gpu",
