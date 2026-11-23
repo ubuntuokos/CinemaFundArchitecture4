@@ -45,12 +45,14 @@ use std::process::{Command, Stdio};
 
 use serde_json::Value;
 
+mod fidelity;
 mod reference;
 mod report;
 mod schema;
 #[cfg(test)]
 mod tests;
 
+use fidelity::Tier;
 use reference::*;
 use report::*;
 use schema::*;
@@ -83,13 +85,16 @@ enum Area {
     Transitions,
 }
 
-/// One item on our side: its full path (menu path or folders, then the label), its id, and why
-/// it is an automatic stub, if it is one (a panel with no real content yet).
+/// One item on our side: its full path (menu path or folders, then the label), its id, and its
+/// fidelity tier with the evidence or note behind it (unrated unless annotated; a panel with no
+/// real content yet is an automatic stub).
 #[derive(Clone, Debug, Default, PartialEq)]
 struct OurItem {
     path: Vec<String>,
     id: String,
-    stub: Option<&'static str>,
+    tier: Tier,
+    evidence: String,
+    note: String,
 }
 
 impl Area {
@@ -207,10 +212,12 @@ struct Args {
     ours: Option<PathBuf>,
     out: Option<PathBuf>,
     min: Option<f64>,
+    min_exact: Option<usize>,
+    fidelity: Option<PathBuf>,
 }
 
 fn parse_args(args: &[&str]) -> Result<Args, String> {
-    let mut a = Args { check_reference: false, area: Area::Menus, reference: None, ours: None, out: None, min: None };
+    let mut a = Args { check_reference: false, area: Area::Menus, reference: None, ours: None, out: None, min: None, min_exact: None, fidelity: None };
     let mut it = args.iter();
     while let Some(flag) = it.next() {
         let mut value = || it.next().map(|v| v.to_string()).ok_or_else(|| format!("{flag} needs a value"));
@@ -220,6 +227,11 @@ fn parse_args(args: &[&str]) -> Result<Args, String> {
             "--reference" => a.reference = Some(value()?.into()),
             "--ours" => a.ours = Some(value()?.into()),
             "--out" => a.out = Some(value()?.into()),
+            "--fidelity" => a.fidelity = Some(value()?.into()),
+            "--min-exact" => {
+                let v = value()?;
+                a.min_exact = Some(v.parse().map_err(|_| format!("--min-exact {v}: not a count"))?);
+            }
             "--min" => {
                 let v = value()?;
                 let pct: f64 = v.parse().map_err(|_| format!("--min {v}: not a number"))?;
@@ -230,7 +242,7 @@ fn parse_args(args: &[&str]) -> Result<Args, String> {
             }
             other => {
                 return Err(format!(
-                    "parity: unknown argument {other} (usage: cargo xtask parity [--area menus|commands|panels|effects|transitions|menus-egui] [--reference FILE] [--ours FILE] [--out FILE] [--min PERCENT] | --check-reference)"
+                    "parity: unknown argument {other} (usage: cargo xtask parity [--area menus|commands|panels|effects|transitions|menus-egui] [--reference FILE] [--ours FILE] [--out FILE] [--min PERCENT] [--min-exact COUNT] [--fidelity FILE] | --check-reference)"
                 ));
             }
         }
@@ -250,12 +262,13 @@ pub fn run(root: &Path, args: &[&str]) -> Result<(), String> {
         None => dump_ours(root, area)?,
     };
     let ours_value: Value = serde_json::from_str(&ours_json).map_err(|e| format!("our {} dump: {e}", area.name()))?;
-    let ours = match area {
+    let mut ours = match area {
         Area::Menus | Area::MenusEgui => our_items(&ours_value)?,
         Area::Commands => our_commands(&ours_value)?,
         Area::Panels => our_panels(&ours_value)?,
         Area::Effects | Area::Transitions => our_catalog(&ours_value, area)?,
     };
+    fidelity::load(root, args.fidelity.as_deref())?.apply(area, &mut ours)?;
     let default_ref = root.join(format!("plan/premiere/{}.json", area.reference_name()));
     let reference = match &args.reference {
         Some(p) => Some(p.clone()),
@@ -264,9 +277,9 @@ pub fn run(root: &Path, args: &[&str]) -> Result<(), String> {
     let Some(reference) = reference else {
         print!("{}", inventory(area, &ours));
         println!("\nno reference list (plan/premiere/{}.json, or --reference FILE): {} parity not measured", area.reference_name(), area.name());
-        return match args.min {
-            Some(_) => Err("--min needs a reference list".into()),
-            None => Ok(()),
+        return match (args.min, args.min_exact) {
+            (None, None) => Ok(()),
+            _ => Err("--min and --min-exact need a reference list".into()),
         };
     };
     let text = read_bounded(&reference)?;
@@ -286,8 +299,13 @@ pub fn run(root: &Path, args: &[&str]) -> Result<(), String> {
     std::fs::write(&out, report.markdown(&name, ours.len())).map_err(|e| format!("{}: {e}", out.display()))?;
     println!("{}", report.summary());
     println!("report: {}", out.display());
-    match args.min {
-        Some(min) if report.presence() < min => Err(format!("{} presence {:.1}% is below --min {min}%", area.name(), report.presence())),
+    if let Some(min) = args.min.filter(|m| report.presence() < *m) {
+        return Err(format!("{} presence {:.1}% is below --min {min}%", area.name(), report.presence()));
+    }
+    match args.min_exact {
+        Some(min) if report.tier_counts()[Tier::Exact.index()] < min => {
+            Err(format!("{} has {} exact items, below --min-exact {min}", area.name(), report.tier_counts()[Tier::Exact.index()]))
+        }
         _ => Ok(()),
     }
 }
@@ -366,7 +384,7 @@ fn our_items(v: &Value) -> Result<Vec<OurItem>, String> {
             let label = it.get("label")?.as_str()?;
             let mut path = strings(it, "path")?;
             path.push(label.to_string());
-            (path.len() >= 2).then(|| OurItem { path, id: id_of(it), stub: None })
+            (path.len() >= 2).then(|| OurItem { path, id: id_of(it), ..OurItem::default() })
         })
         .collect())
 }
@@ -385,7 +403,7 @@ fn our_commands(v: &Value) -> Result<Vec<OurItem>, String> {
             }
             let mut path = strings(it, "menu")?;
             path.push(label.to_string());
-            Some(OurItem { path, id: id_of(it), stub: None })
+            Some(OurItem { path, id: id_of(it), ..OurItem::default() })
         })
         .collect())
 }
@@ -411,7 +429,14 @@ fn our_panels(v: &Value) -> Result<Vec<OurItem>, String> {
                 return None;
             }
             let status = it.get("status").and_then(Value::as_str).unwrap_or_default();
-            Some(OurItem { path: vec![title.to_string()], id: title.to_string(), stub: panel_stub(status) })
+            let stub = panel_stub(status);
+            Some(OurItem {
+                path: vec![title.to_string()],
+                id: title.to_string(),
+                tier: if stub.is_some() { Tier::Stub } else { Tier::Unrated },
+                note: stub.unwrap_or_default().to_string(),
+                ..OurItem::default()
+            })
         })
         .collect())
 }
@@ -427,7 +452,7 @@ fn our_catalog(v: &Value, area: Area) -> Result<Vec<OurItem>, String> {
             let name = it.get("name")?.as_str()?;
             let mut path = strings(it, "path")?;
             path.push(name.to_string());
-            Some(OurItem { path, id: id_of(it), stub: None })
+            Some(OurItem { path, id: id_of(it), ..OurItem::default() })
         })
         .collect())
 }
@@ -439,13 +464,13 @@ fn inventory(area: Area, ours: &[OurItem]) -> String {
         *per.entry(area.group(&it.path)).or_default() += 1;
     }
     let mut s = format!("CFA4 {}: {} items\n", area.ours(), ours.len());
-    let stubs: Vec<&OurItem> = ours.iter().filter(|it| it.stub.is_some()).collect();
+    let stubs: Vec<&OurItem> = ours.iter().filter(|it| it.tier == Tier::Stub).collect();
     let width = per.keys().map(|g| g.chars().count()).max().unwrap_or(0).max(22);
     for (group, n) in per {
         s.push_str(&format!("  {group:<width$} {n}\n"));
     }
     for it in stubs {
-        s.push_str(&format!("  stub: {} ({})\n", show(&it.path), it.stub.unwrap_or_default()));
+        s.push_str(&format!("  stub: {} ({})\n", show(&it.path), it.note));
     }
     s
 }

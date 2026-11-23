@@ -218,7 +218,7 @@ fn tracked_docs(root: &Path) -> Result<HashSet<String>, String> {
 }
 
 /// `cargo xtask parity --check-reference`: every committed reference parses as schema 1 and agrees
-/// with its source documents. No committed
+/// with its source documents, and the fidelity file, if there is one, is well formed. No committed
 /// reference is fine (the areas are then measured only against a local reference).
 pub(super) fn check_references(root: &Path) -> Result<String, String> {
     let dir = root.join(REFERENCE_DIR);
@@ -250,6 +250,15 @@ pub(super) fn check_references(root: &Path) -> Result<String, String> {
             errors.extend(check_items(&file, &r, &|s| tracked.contains(s), &mut read));
             checked += 1;
             items += r.items.len();
+        }
+    }
+    let fidelity_file = root.join(fidelity::FIDELITY_FILE);
+    if fidelity_file.exists() {
+        let res = read_bounded(&fidelity_file)
+            .and_then(|t| serde_json::from_str::<Value>(&t).map_err(|e| e.to_string()))
+            .and_then(|v| fidelity::parse(&v).map(|_| ()));
+        if let Err(e) = res {
+            errors.push(format!("{}: {e}", fidelity::FIDELITY_FILE));
         }
     }
     if errors.is_empty() {

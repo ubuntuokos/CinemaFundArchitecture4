@@ -94,20 +94,31 @@ impl Report {
         }
     }
 
-    /// Reference items found only as an automatic stub, with our item.
-    pub(super) fn stubs(&self) -> Vec<(&[String], &OurItem)> {
-        self.items.iter().filter_map(|(p, pl)| self.found(pl).filter(|it| it.stub.is_some()).map(|it| (p.as_slice(), it))).collect()
+    /// Reference items found with the given tier, with our item.
+    pub(super) fn with_tier(&self, tier: Tier) -> Vec<(&[String], &OurItem)> {
+        self.items.iter().filter_map(|(p, pl)| self.found(pl).filter(|it| it.tier == tier).map(|it| (p.as_slice(), it))).collect()
+    }
+
+    /// How many present items have each tier, in the order of [`Tier::ALL`].
+    pub(super) fn tier_counts(&self) -> [usize; 4] {
+        let mut c = [0; 4];
+        for (_, pl) in &self.items {
+            if let Some(it) = self.found(pl)
+                && let Some(n) = c.get_mut(it.tier.index())
+            {
+                *n += 1;
+            }
+        }
+        c
     }
 
     pub(super) fn summary(&self) -> String {
         let (same, elsewhere, missing) = self.counts();
         let n = self.items.len();
-        let stubs = match self.stubs().len() {
-            0 => String::new(),
-            k => format!(" (of which stub {k})"),
-        };
+        let [exact, approximate, stub, unrated] = self.tier_counts();
         format!(
-            "{}: presence {}/{n} ({:.1}%){stubs}, same place {same}/{n} ({:.1}%), elsewhere {elsewhere}, missing {missing}, out of scope {}",
+            "{}: presence {}/{n} ({:.1}%), same place {same}/{n} ({:.1}%), elsewhere {elsewhere}, missing {missing}, \
+             fidelity exact {exact} / approximate {approximate} / stub {stub} / unrated {unrated}, out of scope {}",
             self.area.name(),
             same + elsewhere,
             self.presence(),
@@ -137,7 +148,7 @@ impl Report {
             area.ours(),
             match area {
                 Area::Menus | Area::MenusEgui => "",
-                Area::Panels => " A panel is matched by its title. A panel that is only a placeholder dock, or only listed in the Window menu, is an automatic stub: present, but not the real panel (listed below).",
+                Area::Panels => " A panel is matched by its title. A panel that is only a placeholder dock, or only listed in the Window menu, is an automatic stub: present, but not the real panel.",
                 Area::Commands => " A bare name with no menu in the reference is matched by label alone; queries are left out.",
                 Area::Effects | Area::Transitions => " A bare name with no folder in the reference is matched by name alone.",
             },
@@ -180,13 +191,7 @@ impl Report {
                 s.push_str(&format!("- {} → {}\n", show(p), show(&at.path)));
             }
         }
-        let stubs = self.stubs();
-        if !stubs.is_empty() {
-            s.push_str(&format!("\n## Automatic stubs ({})\n\n", stubs.len()));
-            for (p, it) in stubs {
-                s.push_str(&format!("- {} → {}: {}\n", show(p), show(&it.path), it.stub.unwrap_or_default()));
-            }
-        }
+        s.push_str(&self.fidelity_markdown());
         s.push_str("\n## Out of scope\n\n");
         for (why, k) in &self.out_of_scope {
             s.push_str(&format!("- {why}: {k}\n"));
@@ -194,6 +199,43 @@ impl Report {
         s.push_str(&format!("\n## CFA4 only ({})\n\n", self.ours_only.len()));
         for p in &self.ours_only {
             s.push_str(&format!("- {}\n", show(p)));
+        }
+        s
+    }
+
+    /// The fidelity section: counts per group and tier of the items we have, and the approximate and
+    /// stub items with their notes. A tier is an annotation, not a behaviour test (gap G1).
+    fn fidelity_markdown(&self) -> String {
+        let mut s = String::from(
+            "\n## Fidelity\n\nHow faithful the items we *have* are. A tier is a committed annotation (`xtask/parity/fidelity.json`) \
+             or an automatic stub, **not a behaviour test** (docs/gaps.md G1). An item with no annotation is *unrated*, not exact: \
+             `exact` needs evidence.\n\n",
+        );
+        s.push_str("| Group | Present | Exact | Approximate | Stub | Unrated |\n|---|---|---|---|---|---|\n");
+        let mut per: BTreeMap<String, [usize; 4]> = BTreeMap::new();
+        for (p, pl) in &self.items {
+            if let Some(it) = self.found(pl)
+                && let Some(n) = per.entry(self.area.group(p)).or_default().get_mut(it.tier.index())
+            {
+                *n += 1;
+            }
+        }
+        for (group, c) in &per {
+            let [e, a, st, u] = *c;
+            s.push_str(&format!("| {group} | {} | {e} | {a} | {st} | {u} |\n", e + a + st + u));
+        }
+        let [e, a, st, u] = self.tier_counts();
+        s.push_str(&format!("| **Total** | **{}** | **{e}** | **{a}** | **{st}** | **{u}** |\n", e + a + st + u));
+        for tier in [Tier::Approximate, Tier::Stub] {
+            let items = self.with_tier(tier);
+            if items.is_empty() {
+                continue;
+            }
+            let title = if tier == Tier::Stub { "Stub" } else { "Approximate" };
+            s.push_str(&format!("\n### {title} ({})\n\n", items.len()));
+            for (p, it) in items {
+                s.push_str(&format!("- {} → {}: {}\n", show(p), show(&it.path), it.note));
+            }
         }
         s
     }
