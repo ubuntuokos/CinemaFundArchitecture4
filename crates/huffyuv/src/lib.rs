@@ -18,8 +18,10 @@
 //! Supported: YUY2 (4:2:2, 16 bits per pixel), RGB24 and RGBA (32 bits per pixel) with the
 //! left, gradient and median predictors, RGB with or without green decorrelation, progressive
 //! and interlaced frames, Huffman tables stored in the stream header (Huffyuv 2.x and every
-//! file ffmpeg writes). Huffyuv 1.x files that rely on the codec's built-in "classic" tables are
-//! rejected with [`Error::Unsupported`]; so is FFmpeg's own `FFVH` variant.
+//! file ffmpeg writes). Two parts are ported from FFmpeg n9.0.2 `huffyuvdec.c` (same approval as
+//! for `HYMT`): the built-in "classic" tables of Huffyuv 1.x files (no tables in the header), and
+//! 4:2:0 streams (12 bits per pixel, an ffmpeg encoder extension). FFmpeg's own `FFVH` variant is
+//! rejected with [`Error::Unsupported`].
 //!
 //! ```no_run
 //! let extra: Vec<u8> = Vec::new(); // BITMAPINFOHEADER bytes after the first 40
@@ -31,6 +33,7 @@
 
 #![cfg_attr(not(test), deny(clippy::unwrap_used, clippy::expect_used, clippy::panic, clippy::unimplemented, clippy::todo, clippy::unreachable))]
 
+mod classic;
 mod error;
 mod huffman;
 
@@ -47,6 +50,8 @@ const MAX_SIDE: u32 = 16384;
 pub enum Format {
     /// Y, U, V; U and V are `width / 2` x `height`.
     Yuv422,
+    /// Y, U, V; U and V are `width / 2` x `height / 2` (12 bits per pixel).
+    Yuv420,
     /// R, G, B, all full size.
     Rgb,
     /// R, G, B, A, all full size.
@@ -89,7 +94,7 @@ pub struct Decoder {
 /// Section "Huffman tables" of the description: run-length coded code lengths. Each byte holds a
 /// length in its low 5 bits and a repeat count in its high 3 bits; a count of 0 means the count
 /// is the next byte.
-fn read_lengths(data: &[u8], pos: &mut usize) -> Result<[u8; 256]> {
+pub(crate) fn read_lengths(data: &[u8], pos: &mut usize) -> Result<[u8; 256]> {
     let mut lens = [0u8; 256];
     let mut n = 0usize;
     while n < 256 {
@@ -115,40 +120,64 @@ impl Decoder {
     /// standard 40 (the Huffyuv extradata).
     pub fn new(width: u32, height: u32, bit_count: u16, extra: &[u8]) -> Result<Decoder> {
         ensure!(width > 0 && height > 0 && width <= MAX_SIDE && height <= MAX_SIDE, "frame size {width}x{height}");
-        let (method, bpp, interlace_flag, tables_at) = if bit_count & 7 == 0 {
-            // 2.x: method, bits per pixel, flags, reserved, then the tables
-            let method = *extra.first().ok_or_else(|| Error::Unsupported("Huffyuv 1.x classic tables".into()))?;
-            let bpp = extra.get(1).copied().filter(|&b| b != 0).map_or(bit_count, u16::from);
-            (method, bpp, extra.get(2).copied().unwrap_or(0), 4)
+        // FFmpeg's header versions: 0 no extradata and 1 (low bits of biBitCount set) use the
+        // classic tables; 2 has the tables after four bytes of extradata; 3 is FFVH
+        let version = if extra.is_empty() {
+            0
+        } else if bit_count & 7 != 0 && bit_count != 12 {
+            1
+        } else if extra.get(3) == Some(&0) {
+            2
         } else {
-            // the low bits of biBitCount select the predictor; any tables follow the header
-            let method = match bit_count & 7 {
-                1 | 2 => 0,
-                3 => 1,
-                4 => 2,
-                m => return Err(Error::Unsupported(format!("Huffyuv predictor code {m}"))),
-            } | if bit_count & 7 == 2 || bit_count & 7 == 3 { 0x40 } else { 0 };
-            (method, bit_count & !7, 0, 0)
+            3
         };
-        ensure!(extra.len() > tables_at, "Huffyuv 1.x classic tables");
-        let (predictor, decorrelate) = match method {
-            0 | 0xFE => (Predictor::Left, false),
-            1 => (Predictor::Gradient, false),
-            2 => (Predictor::Median, false),
-            0x40 => (Predictor::Left, true),
-            0x41 => (Predictor::Gradient, true),
-            0x42 => (Predictor::Median, true),
-            m => return Err(Error::Unsupported(format!("Huffyuv prediction method {m:#x}"))),
-        };
+        if version == 3 {
+            return Err(Error::Unsupported("Huffyuv FFVH extradata".into()));
+        }
+        let (predictor, decorrelate, bpp, interlace_flag);
+        if version == 2 {
+            ensure!(extra.len() >= 4, "Huffyuv extradata too short");
+            let method = extra.first().copied().unwrap_or(0);
+            (predictor, decorrelate) = match method {
+                0 | 0xFE => (Predictor::Left, false),
+                1 => (Predictor::Gradient, false),
+                2 => (Predictor::Median, false),
+                0x40 => (Predictor::Left, true),
+                0x41 => (Predictor::Gradient, true),
+                0x42 => (Predictor::Median, true),
+                m => return Err(Error::Unsupported(format!("Huffyuv prediction method {m:#x}"))),
+            };
+            bpp = extra.get(1).copied().filter(|&b| b != 0).map_or(bit_count & !7, u16::from);
+            interlace_flag = extra.get(2).copied().unwrap_or(0);
+            if interlace_flag & 0x40 != 0 {
+                return Err(Error::Unsupported("Huffyuv adaptive tables".into()));
+            }
+        } else {
+            bpp = bit_count & !7;
+            interlace_flag = 0;
+            (predictor, decorrelate) = match bit_count & 7 {
+                1 => (Predictor::Left, false),
+                2 => (Predictor::Left, true),
+                3 => (Predictor::Gradient, bit_count >= 24),
+                4 => (Predictor::Median, false),
+                _ => (Predictor::Left, false),
+            };
+        }
         let format = match bpp {
+            12 => Format::Yuv420,
             16 => Format::Yuv422,
             24 => Format::Rgb,
             32 => Format::Rgba,
             b => return Err(Error::Unsupported(format!("Huffyuv with {b} bits per pixel"))),
         };
-        if format == Format::Yuv422 {
-            ensure!(width.is_multiple_of(2), "YUY2 frame width {width} is odd");
-            ensure!(!decorrelate, "decorrelation with YUY2");
+        if matches!(format, Format::Yuv422 | Format::Yuv420) {
+            ensure!(width.is_multiple_of(2), "YUV frame width {width} is odd");
+            ensure!(format != Format::Yuv420 || height.is_multiple_of(2), "4:2:0 frame height {height} is odd");
+            // as in FFmpeg, a YUV stream ignores the decorrelation flag
+            ensure!(
+                format != Format::Yuv422 || predictor != Predictor::Median || width.is_multiple_of(4),
+                "YUY2 median frame width {width} is not a multiple of 4"
+            );
         }
         // flags: 0x10 interlaced, 0x20 progressive; neither: the 1.x rule (taller than 288)
         let interlaced = match interlace_flag & 0x30 {
@@ -156,8 +185,13 @@ impl Decoder {
             0x20 => false,
             _ => height > 288,
         } && height.is_multiple_of(2);
-        let mut pos = tables_at;
-        let tables = [Table::new(&read_lengths(extra, &mut pos)?)?, Table::new(&read_lengths(extra, &mut pos)?)?, Table::new(&read_lengths(extra, &mut pos)?)?];
+        let decorrelate = decorrelate && matches!(format, Format::Rgb | Format::Rgba);
+        let tables = if version == 2 {
+            let mut pos = 4;
+            [Table::new(&read_lengths(extra, &mut pos)?)?, Table::new(&read_lengths(extra, &mut pos)?)?, Table::new(&read_lengths(extra, &mut pos)?)?]
+        } else {
+            classic::tables(matches!(format, Format::Rgb | Format::Rgba))?
+        };
         Ok(Decoder { width, height, format, predictor, decorrelate, interlaced, tables, slices: false })
     }
 
@@ -185,6 +219,7 @@ impl Decoder {
         let mut br = BitReader::new(data);
         let planes = match self.format {
             Format::Yuv422 => self.decode_yuv(&mut br)?,
+            Format::Yuv420 => self.decode_yuv420(&mut br)?,
             Format::Rgb | Format::Rgba => self.decode_rgb(&mut br)?,
         };
         ensure!(!br.overrun(), "frame data ends early");
@@ -298,6 +333,134 @@ impl Decoder {
         Ok(vec![y, u, v])
     }
 
+    /// 4:2:0 (12 bits per pixel), as FFmpeg n9.0.2 decodes it. The first row is a row of pairs
+    /// (Y U Y V, like YUY2); after it rows of luma only alternate with rows of pairs (a row of
+    /// pairs carries the chroma of its own row and, in the left and gradient layouts, of the row
+    /// above it too). The median predictor starts differently (see the code). Rows are
+    /// predicted from the row above, or from two rows above in interlaced frames; the running
+    /// "left" values continue across rows, as in YUY2.
+    fn decode_yuv420(&self, br: &mut BitReader<'_>) -> Result<Vec<Vec<u8>>> {
+        let (w, h) = (self.width as usize, self.height as usize);
+        let (cw, ch) = (w / 2, h / 2);
+        let mut y = Plane::new(w, h);
+        let mut u = Plane::new(cw, ch);
+        let mut v = Plane::new(cw, ch);
+        let il = usize::from(self.interlaced);
+        let fake = 1 + il;
+        let [ty, tu, tv] = &self.tables;
+        // the first pair is raw, read in the stream's word order as V Y1 U Y0
+        let (rv, ry1, ru, ry0) = (br.bits(8) as u8, br.bits(8) as u8, br.bits(8) as u8, br.bits(8) as u8);
+        y.set(0, 0, ry0);
+        y.set(0, 1, ry1);
+        u.set(0, 0, ru);
+        v.set(0, 0, rv);
+        let (mut lefty, mut leftu, mut leftv) = (ry1, ru, rv);
+        // luma-only values: `count` of them; a row of pairs: `count` luma and `count / 2` each of U and V
+        let gray = |br: &mut BitReader<'_>, count: usize| -> Result<Vec<u8>> {
+            let mut d = Vec::with_capacity(count);
+            for _ in 0..count / 2 {
+                d.push(ty.decode(br));
+                d.push(ty.decode(br));
+            }
+            if br.overrun() {
+                return Err(Error::Invalid("frame data ends early".into()));
+            }
+            Ok(d)
+        };
+        let pairs = |br: &mut BitReader<'_>, count: usize| -> Result<[Vec<u8>; 3]> {
+            let (mut dy, mut du, mut dv) = (Vec::with_capacity(count), Vec::with_capacity(count / 2), Vec::with_capacity(count / 2));
+            for _ in 0..count / 2 {
+                dy.push(ty.decode(br));
+                du.push(tu.decode(br));
+                dy.push(ty.decode(br));
+                dv.push(tv.decode(br));
+            }
+            if br.overrun() {
+                return Err(Error::Invalid("frame data ends early".into()));
+            }
+            Ok([dy, du, dv])
+        };
+        // the rest of the first row
+        let [dy, du, dv] = pairs(br, w - 2)?;
+        lefty = y.left(0, 2, &dy, lefty);
+        leftu = u.left(0, 1, &du, leftu);
+        leftv = v.left(0, 1, &dv, leftv);
+        let (mut row, mut cy) = (1usize, 1usize);
+        match self.predictor {
+            Predictor::Left | Predictor::Gradient => {
+                let plane = self.predictor == Predictor::Gradient;
+                while row < h {
+                    let g = gray(br, w)?;
+                    lefty = y.left(row, 0, &g, lefty);
+                    if plane && row > il {
+                        y.add_above(row, row.checked_sub(fake), w);
+                    }
+                    row += 1;
+                    if row >= h {
+                        break;
+                    }
+                    let [dy, du, dv] = pairs(br, w)?;
+                    lefty = y.left(row, 0, &dy, lefty);
+                    leftu = u.left(cy, 0, &du, leftu);
+                    leftv = v.left(cy, 0, &dv, leftv);
+                    if plane && cy > il {
+                        y.add_above(row, row.checked_sub(fake), w);
+                        u.add_above(cy, cy.checked_sub(fake), cw);
+                        v.add_above(cy, cy.checked_sub(fake), cw);
+                    }
+                    row += 1;
+                    cy += 1;
+                }
+            }
+            Predictor::Median => {
+                if row < h {
+                    // in interlaced frames the second row is left predicted
+                    if il == 1 {
+                        let [dy, du, dv] = pairs(br, w)?;
+                        lefty = y.left(1, 0, &dy, lefty);
+                        leftu = u.left(1, 0, &du, leftu);
+                        leftv = v.left(1, 0, &dv, leftv);
+                        row += 1;
+                        cy += 1;
+                    }
+                }
+                if row < h {
+                    // the next 4 pixels (2 pairs) are left predicted too, the rest of the row is median predicted
+                    let [dy, du, dv] = pairs(br, 4)?;
+                    lefty = y.left(fake, 0, &dy, lefty);
+                    leftu = u.left(fake, 0, &du, leftu);
+                    leftv = v.left(fake, 0, &dv, leftv);
+                    let mut lefttopy = y.get(0, 3);
+                    let [dy, du, dv] = pairs(br, w - 4)?;
+                    y.median(fake, Some(0), 4, &dy, &mut lefty, &mut lefttopy);
+                    let (mut lefttopu, mut lefttopv) = (u.get(0, 1), v.get(0, 1));
+                    u.median(fake, Some(0), 2, &du, &mut leftu, &mut lefttopu);
+                    v.median(fake, Some(0), 2, &dv, &mut leftv, &mut lefttopv);
+                    row += 1;
+                    cy += 1;
+                    while row < h {
+                        // luma-only rows until the row count catches up with the chroma rows
+                        while 2 * cy > row && row < h {
+                            let g = gray(br, w)?;
+                            y.median(row, row.checked_sub(fake), 0, &g, &mut lefty, &mut lefttopy);
+                            row += 1;
+                        }
+                        if row >= h {
+                            break;
+                        }
+                        let [dy, du, dv] = pairs(br, w)?;
+                        y.median(row, row.checked_sub(fake), 0, &dy, &mut lefty, &mut lefttopy);
+                        u.median(cy, cy.checked_sub(fake), 0, &du, &mut leftu, &mut lefttopu);
+                        v.median(cy, cy.checked_sub(fake), 0, &dv, &mut leftv, &mut lefttopv);
+                        row += 1;
+                        cy += 1;
+                    }
+                }
+            }
+        }
+        Ok(vec![y.d, u.d, v.d])
+    }
+
     fn decode_rgb(&self, br: &mut BitReader<'_>) -> Result<Vec<Vec<u8>>> {
         let (w, h) = self.coded_size(self.width, self.height as usize);
         let n = w * h;
@@ -350,6 +513,59 @@ impl Decoder {
     }
 }
 
+/// A plane for the 4:2:0 decoder: rows addressed by (row, column), reads outside give 0 and
+/// writes outside are dropped.
+struct Plane {
+    d: Vec<u8>,
+    w: usize,
+}
+
+impl Plane {
+    fn new(w: usize, h: usize) -> Plane {
+        Plane { d: vec![0; w * h], w }
+    }
+
+    fn get(&self, row: usize, x: usize) -> u8 {
+        row.checked_mul(self.w).and_then(|r| r.checked_add(x)).and_then(|i| self.d.get(i)).copied().unwrap_or(0)
+    }
+
+    fn set(&mut self, row: usize, x: usize, val: u8) {
+        if let Some(e) = row.checked_mul(self.w).and_then(|r| r.checked_add(x)).and_then(|i| self.d.get_mut(i)) {
+            *e = val;
+        }
+    }
+
+    /// Left prediction of `diff` from column `x0` of `row`, starting from `acc`; the new `acc`.
+    fn left(&mut self, row: usize, x0: usize, diff: &[u8], mut acc: u8) -> u8 {
+        for (k, &d) in diff.iter().enumerate() {
+            acc = acc.wrapping_add(d);
+            self.set(row, x0 + k, acc);
+        }
+        acc
+    }
+
+    /// Add the first `n` samples of the row `above` to those of `row`.
+    fn add_above(&mut self, row: usize, above: Option<usize>, n: usize) {
+        let Some(above) = above else { return };
+        for x in 0..n {
+            let v = self.get(row, x).wrapping_add(self.get(above, x));
+            self.set(row, x, v);
+        }
+    }
+
+    /// Median prediction of `diff` from column `x0` of `row` (above: `above`, 0 without), with the
+    /// running left and left-top values.
+    fn median(&mut self, row: usize, above: Option<usize>, x0: usize, diff: &[u8], left: &mut u8, left_top: &mut u8) {
+        for (k, &d) in diff.iter().enumerate() {
+            let up = above.map_or(0, |a| self.get(a, x0 + k));
+            let grad = left.wrapping_add(up).wrapping_sub(*left_top);
+            *left = median(*left, up, grad).wrapping_add(d);
+            *left_top = up;
+            self.set(row, x0 + k, *left);
+        }
+    }
+}
+
 /// The little-endian 32-bit word at `at`.
 fn word(data: &[u8], at: usize) -> Option<u32> {
     data.get(at..at.checked_add(4)?).and_then(|b| b.try_into().ok()).map(u32::from_le_bytes)
@@ -382,7 +598,10 @@ mod tests {
 
     #[test]
     fn hostile_headers_are_errors() {
-        assert!(Decoder::new(64, 32, 16, &[]).is_err());
+        // no extradata: the classic tables of Huffyuv 1.x
+        assert!(Decoder::new(64, 32, 16, &[]).is_ok());
+        assert!(Decoder::new(64, 32, 8, &[]).is_err());
+        assert!(Decoder::new(64, 32, 16, &[0, 16, 0x20]).is_err());
         assert!(Decoder::new(0, 32, 16, &[0, 16, 0x20, 0]).is_err());
         assert!(Decoder::new(63, 32, 16, &[0, 16, 0x20, 0, 0x28, 0xFF]).is_err());
         for n in 0..80u8 {

@@ -189,6 +189,7 @@ graph LR
 | `cfa4-engine/captions.rs` | `cfa4-media` | `SharedReader` |
 | `cfa4-engine/captions.rs` | `cfa4-project` | `Caption`, `CaptionAlign`, `ItemId`, `Keyframe`, `Track`, `TrackId`, `resolve_auto_points` |
 | `cfa4-engine/captions.rs` | `cfa4-time` | `FrameRate`, `Tick`, `TimeRange` |
+| `cfa4-engine/captions_titles.rs` | `cfa4-time` | `Tick` |
 | `cfa4-engine/clip_ops.rs` | `cfa4-geom` | `Vec2` |
 | `cfa4-engine/clip_ops.rs` | `cfa4-media` | `AudioStreamInfo`, `Generator`, `MediaInfo`, `MediaKind`, `VideoStreamInfo`, `wav` |
 | `cfa4-engine/clip_ops.rs` | `cfa4-project` | `Bin`, `EffectInstance`, `Marker`, `Param`, `graphic`, `resolve_auto_points` |
@@ -286,6 +287,8 @@ graph LR
 | `cfa4-engine/ltc_read.rs` | `cfa4-time` | `FrameRate`, `fields_to_frames` |
 | `cfa4-engine/marker_export.rs` | `cfa4-project` | `ItemId`, `Label` |
 | `cfa4-engine/marker_export.rs` | `cfa4-time` | `FrameRate`, `Tick` |
+| `cfa4-engine/marker_exports.rs` | `cfa4-project` | `Marker` |
+| `cfa4-engine/marker_exports.rs` | `cfa4-time` | `Tick` |
 | `cfa4-engine/masks.rs` | `cfa4-export` | `Report` |
 | `cfa4-engine/masks.rs` | `cfa4-geom` | `Affine` |
 | `cfa4-engine/masks.rs` | `cfa4-media` | `FrameRequest` |
@@ -391,6 +394,7 @@ graph LR
 | `cfa4-engine/settings.rs` | `cfa4-project` | `Label`, `Param`, `ParamValue`, `TrackItem` |
 | `cfa4-engine/settings.rs` | `cfa4-render` | `vfx` |
 | `cfa4-engine/settings.rs` | `cfa4-time` | `FrameRate` |
+| `cfa4-engine/short_clips.rs` | `cfa4-project` | `ClipId` |
 | `cfa4-engine/shortcuts.rs` | `cfa4-project` | `legacy` |
 | `cfa4-engine/silence.rs` | `cfa4-export` | `Report` |
 | `cfa4-engine/silence.rs` | `cfa4-project` | `ClipId`, `ItemId`, `ItemKind` |
@@ -827,7 +831,7 @@ graph LR
 
 ## 4. Nyilvános típusok osztályonként
 
-A többi 642 nyilvános típus („other” osztály) csak a `call-graph.json`-ban szerepel.
+A többi 650 nyilvános típus („other” osztály) csak a `call-graph.json`-ban szerepel.
 
 ### Képkocka, kép, pixel (31)
 

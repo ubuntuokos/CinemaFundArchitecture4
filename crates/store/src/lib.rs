@@ -27,6 +27,7 @@ pub mod cache;
 pub mod dbtoml;
 pub mod listen;
 pub mod migrate;
+pub mod mirror;
 pub mod outbox;
 pub(crate) mod role;
 pub mod setup;
