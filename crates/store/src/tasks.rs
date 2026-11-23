@@ -38,7 +38,7 @@ fn priority_rank(p: Priority) -> i16 {
     }
 }
 
-fn state_name(s: State) -> String {
+pub(crate) fn state_name(s: State) -> String {
     match serde_json::to_value(s) {
         Ok(Value::String(name)) => name,
         _ => format!("{s:?}"),
