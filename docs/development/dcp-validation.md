@@ -73,7 +73,7 @@ through these commands (none writes into the package):
 | `dcp.validate.profiles` | the built-in profiles with their rules (required / optional) |
 | `dcp.validate` `{root, profile?, wait?}` | validates the DCP folder `root` (default profile `quick-scan`, or a `.json` profile file) as a job followed in `jobs.list`; `wait` returns the report |
 | `dcp.validate.report` `{root}` | the latest report of that package (`cfa4-dcp-report/1`) and its Markdown |
-| `dcp.validate.save` `{root, path, format?}` | writes the report as `json` or `md`; refuses a path inside the package |
+| `dcp.validate.save` `{root, path, format?}` | writes the report as `json`, `md` or `html` (self-contained page, no scripts, every value escaped; the format follows the file extension when not given); refuses a path inside the package |
 
 The window is **File ▸ Validate DCP…** (`python/cfa4_qt/panels/dcp_validation.py`): folder field, profile
 selector, Validate / Cancel, the verdict with its counts, the findings (worst first, with rule id,

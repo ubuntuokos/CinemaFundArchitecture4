@@ -67,6 +67,8 @@ fn broken_package_fails_and_its_report_is_saved_outside_the_package() {
     let md = String::from_utf8(files.0.lock().unwrap()["/reports/a.md"].clone()).unwrap();
     assert!(md.contains("DCP.AM.001"));
     s.execute("dcp.validate.save", json!({"root": root, "path": "/reports/a.json", "format": "json"})).unwrap();
+    s.execute("dcp.validate.save", json!({"root": root, "path": "/reports/a.html"})).unwrap();
+    assert!(String::from_utf8(files.0.lock().unwrap()["/reports/a.html"].clone()).unwrap().starts_with("<!doctype html>"), "an .html path saves HTML");
     let json_text = String::from_utf8(files.0.lock().unwrap()["/reports/a.json"].clone()).unwrap();
     assert!(json_text.contains("cfa4-dcp-report/1"));
 

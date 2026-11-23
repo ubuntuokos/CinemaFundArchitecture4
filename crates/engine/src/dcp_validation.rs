@@ -226,17 +226,24 @@ fn report_get(s: &mut Session, p: &Value) -> Result<Value> {
     Ok(json!({"root": root, "verdict": rep.verdict, "report": rep, "markdown": rep.to_markdown()}))
 }
 
-/// `dcp.validate.save`: write the latest report of a package to `path` (`format` `json` or `md`).
+/// `dcp.validate.save`: write the latest report of a package to `path` (`format` `json`, `md` or `html`).
 /// Refuses a path inside the package: the DCP is only read.
 fn report_save(s: &mut Session, p: &Value) -> Result<Value> {
     let cmd = "dcp.validate.save";
     let root = str_p(p, "root").ok_or_else(|| bad(cmd, "need `root`"))?;
     let path = str_p(p, "path").ok_or_else(|| bad(cmd, "need `path`"))?;
     let rep = find(s, cmd, root)?;
-    let text = match str_p(p, "format").unwrap_or(if path.ends_with(".md") { "md" } else { "json" }) {
+    let text = match str_p(p, "format").unwrap_or(if path.ends_with(".md") {
+        "md"
+    } else if path.ends_with(".html") || path.ends_with(".htm") {
+        "html"
+    } else {
+        "json"
+    }) {
         "json" => rep.to_json(),
         "md" | "markdown" => rep.to_markdown(),
-        other => return Err(bad(cmd, format!("`format` is `json` or `md`, not `{other}`"))),
+        "html" => rep.to_html(),
+        other => return Err(bad(cmd, format!("`format` is `json`, `md` or `html`, not `{other}`"))),
     };
     let (target, package) = (std::path::absolute(path), std::path::absolute(root));
     if let (Ok(t), Ok(r)) = (&target, &package)

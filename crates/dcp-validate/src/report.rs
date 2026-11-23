@@ -184,6 +184,76 @@ impl ValidationReport {
         s
     }
 
+    /// A self-contained HTML page (no scripts, no external files): the summary, then the findings,
+    /// failures first, with the evidence and the remedy. Every value is escaped.
+    pub fn to_html(&self) -> String {
+        let mut s = String::from(
+            "<!doctype html>\n<html lang=\"en\"><head><meta charset=\"utf-8\"><meta name=\"viewport\" content=\"width=device-width,initial-scale=1\">\n<title>DCP validation report</title>\n<style>\
+body{font:14px/1.45 system-ui,sans-serif;margin:2rem auto;max-width:72rem;padding:0 1rem;color:#1b1b1b;background:#fff}\
+table{border-collapse:collapse;width:100%;margin:1rem 0}th,td{border:1px solid #c8c8c8;padding:.3rem .5rem;text-align:left;vertical-align:top}\
+th{background:#f0f0f0}code{font-family:ui-monospace,monospace}.FAIL{background:#fde2e2}.WARNING{background:#fff3cd}.PASS{background:#e3f4e1}\
+.verdict{font-size:1.4rem;font-weight:700}@media (prefers-color-scheme:dark){body{color:#e8e8e8;background:#181818}th{background:#2a2a2a;color:#e8e8e8}td,th{border-color:#444}\
+.FAIL{background:#5a2323}.WARNING{background:#5a4a1a}.PASS{background:#1f4a1f}}\
+</style></head><body>\n",
+        );
+        let _ = writeln!(s, "<h1>DCP validation</h1>\n<p class=\"verdict {v}\">{v}</p>", v = h(&format!("{:?}", self.verdict).to_uppercase()));
+        s.push_str("<table>\n");
+        let mut row = |k: &str, v: String| {
+            let _ = writeln!(s, "<tr><th>{}</th><td>{}</td></tr>", h(k), v);
+        };
+        row("Profile", format!("{} (<code>{}</code> v{})", h(&self.profile.title), h(&self.profile.id), self.profile.version));
+        row("Backend", format!("<code>{}</code> {}", h(&self.backend.id), h(&self.backend.version)));
+        row("Package", format!("<code>{}</code>", h(&self.root)));
+        if let Some(st) = self.standard {
+            row("Standard", h(&format!("{st:?}")));
+        }
+        if let Some(id) = self.documents.asset_map {
+            row("Asset map", format!("<code>{id}</code>"));
+        }
+        for id in &self.documents.packing_lists {
+            row("Packing list", format!("<code>{id}</code>"));
+        }
+        for id in &self.documents.compositions {
+            row("Composition", format!("<code>{id}</code>"));
+        }
+        let c = &self.counts;
+        row(
+            "Results",
+            format!(
+                "{} pass, {} fail, {} warning, {} unchecked, {} skipped, {} not applicable, {} interrupted",
+                c.pass, c.fail, c.warning, c.unchecked, c.skipped, c.not_applicable, c.interrupted
+            ),
+        );
+        row("Time", format!("{} to {}", h(&self.started_at), h(&self.finished_at)));
+        s.push_str("</table>\n<table>\n<tr><th>Status</th><th>Rule</th><th>Where</th><th>Message</th><th>How to fix</th></tr>\n");
+        let mut sorted: Vec<&Finding> = self.findings.iter().collect();
+        sorted.sort_by(|a, b| b.status.cmp(&a.status).then_with(|| a.rule.cmp(&b.rule)));
+        for f in sorted {
+            let mut at = f.location.file.clone().unwrap_or_default();
+            if let Some(l) = f.location.line {
+                let _ = write!(at, ":{l}");
+            }
+            if let Some(e) = &f.location.element {
+                let _ = write!(at, " {e}");
+            }
+            let mut msg = h(&f.message);
+            if let Some(e) = &f.evidence {
+                let _ = write!(msg, " <em>({})</em>", h(e));
+            }
+            let status = h(&format!("{:?}", f.status).to_uppercase());
+            let class = if status == "FAIL" || status == "WARNING" || status == "PASS" { status.as_str() } else { "" };
+            let _ = writeln!(
+                s,
+                "<tr class=\"{class}\"><td>{status}</td><td><code>{}</code></td><td>{}</td><td>{msg}</td><td>{}</td></tr>",
+                h(&f.rule),
+                h(&at),
+                f.remedy.as_deref().map(h).unwrap_or_default()
+            );
+        }
+        s.push_str("</table>\n</body></html>\n");
+        s
+    }
+
     /// Findings grouped by rule, for the GUI and the QC mapping.
     pub fn by_rule(&self) -> BTreeMap<&str, Vec<&Finding>> {
         let mut m: BTreeMap<&str, Vec<&Finding>> = BTreeMap::new();
@@ -192,6 +262,11 @@ impl ValidationReport {
         }
         m
     }
+}
+
+/// HTML text: the five special characters escaped.
+fn h(s: &str) -> String {
+    s.replace('&', "&amp;").replace('<', "&lt;").replace('>', "&gt;").replace('"', "&quot;").replace('\'', "&#39;")
 }
 
 /// Table-cell text: no pipes, no line breaks.
