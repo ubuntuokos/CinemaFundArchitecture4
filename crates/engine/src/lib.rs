@@ -1451,6 +1451,8 @@ mod media_watch_tests;
 #[cfg(test)]
 mod mixer_tests;
 #[cfg(test)]
+mod mlt_import_tests;
+#[cfg(test)]
 mod multicam_tests;
 #[cfg(test)]
 mod narration_tests;

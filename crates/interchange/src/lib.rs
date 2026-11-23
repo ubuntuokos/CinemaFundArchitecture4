@@ -36,6 +36,7 @@ pub mod otio;
 
 mod common;
 mod comp;
+mod mlt;
 pub mod wav;
 mod xml;
 
@@ -63,10 +64,17 @@ pub enum Format {
     Aaf,
     /// OMF Interchange 2.0 (Bento container).
     Omf,
+    /// MLT XML: Kdenlive (`.kdenlive`) and Shotcut (`.mlt`) projects. Import only.
+    Mlt,
 }
 
 impl Format {
-    pub const ALL: [Format; 6] = [Format::Edl, Format::Fcp7Xml, Format::Fcpxml, Format::Otio, Format::Aaf, Format::Omf];
+    pub const ALL: [Format; 7] = [Format::Edl, Format::Fcp7Xml, Format::Fcpxml, Format::Otio, Format::Aaf, Format::Omf, Format::Mlt];
+
+    /// Whether CFA4 can write this format (MLT/Kdenlive/Shotcut projects are import only).
+    pub fn can_export(self) -> bool {
+        !matches!(self, Format::Mlt)
+    }
 
     pub fn name(self) -> &'static str {
         match self {
@@ -76,6 +84,7 @@ impl Format {
             Format::Otio => "OpenTimelineIO",
             Format::Aaf => "AAF",
             Format::Omf => "OMF",
+            Format::Mlt => "MLT XML (Kdenlive, Shotcut)",
         }
     }
 
@@ -88,6 +97,7 @@ impl Format {
             Format::Otio => "otio",
             Format::Aaf => "aaf",
             Format::Omf => "omf",
+            Format::Mlt => "kdenlive",
         }
     }
 
@@ -101,6 +111,7 @@ impl Format {
             "otio" => Some(Format::Otio),
             "aaf" => Some(Format::Aaf),
             "omf" | "omfi" => Some(Format::Omf),
+            "kdenlive" | "mlt" => Some(Format::Mlt),
             _ => None,
         }
     }
@@ -122,6 +133,9 @@ pub fn detect(bytes: &[u8], extension: Option<&str>) -> Option<Format> {
         }
         if head.contains("<fcpxml") {
             return Some(Format::Fcpxml);
+        }
+        if mlt::sniff(head) {
+            return Some(Format::Mlt);
         }
         return extension.and_then(Format::from_extension).filter(|f| matches!(f, Format::Fcp7Xml | Format::Fcpxml));
     }
@@ -277,6 +291,7 @@ pub fn import_with(bytes: &[u8], format: Format, opts: &ImportOptions) -> Result
         Format::Fcp7Xml => fcp7::import(&text, opts, &mut report)?,
         Format::Fcpxml => fcpxml::import(&text, opts, &mut report)?,
         Format::Otio => otio::import(&text, opts, &mut report)?,
+        Format::Mlt => mlt::import(&text, opts, &mut report)?,
         Format::Aaf | Format::Omf => return Err(Error::Other("AAF / OMF are binary documents".into())),
     };
     Ok((imported, report))
@@ -394,6 +409,7 @@ pub fn export(project: &Project, sequence: ItemId, format: Format, opts: &Export
         Format::Fcp7Xml => fcp7::export(project, sequence, opts, &mut report)?,
         Format::Fcpxml => fcpxml::export(project, sequence, opts, &mut report)?,
         Format::Otio => otio::export(project, sequence, opts, &mut report)?,
+        Format::Mlt => return Err(Error::Other("MLT / Kdenlive / Shotcut projects can be imported but not exported".into())),
         Format::Aaf | Format::Omf => return Err(Error::Other("AAF / OMF are binary documents".into())),
     };
     Ok((text.into_bytes(), report))
