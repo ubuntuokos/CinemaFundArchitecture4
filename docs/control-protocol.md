@@ -136,6 +136,8 @@ management commands and dialog ids: offline media and relinking (`media.findMiss
 proxies (`media.createProxies`, `media.attachProxies`, `media.findCameraProxies`, `media.toggleProxies`, `proxies.*`), ingest
 (`project.ingestSettings`) and the Project Manager (`file.projectManager`, `pm.*`).
 
+**Marker ranges**: `export.queue.addFromMarkers {markers?, sequence?, …export.queue.add params}` queues one export per range the sequence markers describe: a range marker (with a duration) is one range, point markers are zone starts that end at the next point marker (the last at the end of the sequence). `markers` keeps only markers whose colour name or name matches (case-insensitive). `ranges` and `range` are refused; no match is an error. Returns the `export.queue.add` result.
+
 **Moving clips**: `timeline.move {moves: [{clip, track, time}], insert?, linked?}` → `{moved: [clip ids]}`.
 With Linked Selection on (the default; `linked` overrides the toggle for one call) the linked
 partners of a listed clip that are not listed themselves move by the same time offset and stay on

@@ -45,6 +45,7 @@ pub mod legibility;
 pub mod live;
 pub mod ltc_read;
 mod marker_export;
+pub mod marker_exports;
 pub mod masks;
 pub mod media_browser;
 pub mod media_pool;
@@ -1444,6 +1445,8 @@ mod linked_speed_tests;
 mod linked_trim_tests;
 #[cfg(test)]
 mod locked_clip_edits_tests;
+#[cfg(test)]
+mod marker_exports_tests;
 #[cfg(test)]
 pub(crate) mod masks_tests;
 #[cfg(test)]

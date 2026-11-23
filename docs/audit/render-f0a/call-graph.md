@@ -286,6 +286,8 @@ graph LR
 | `cfa4-engine/ltc_read.rs` | `cfa4-time` | `FrameRate`, `fields_to_frames` |
 | `cfa4-engine/marker_export.rs` | `cfa4-project` | `ItemId`, `Label` |
 | `cfa4-engine/marker_export.rs` | `cfa4-time` | `FrameRate`, `Tick` |
+| `cfa4-engine/marker_exports.rs` | `cfa4-project` | `Marker` |
+| `cfa4-engine/marker_exports.rs` | `cfa4-time` | `Tick` |
 | `cfa4-engine/masks.rs` | `cfa4-export` | `Report` |
 | `cfa4-engine/masks.rs` | `cfa4-geom` | `Affine` |
 | `cfa4-engine/masks.rs` | `cfa4-media` | `FrameRequest` |
