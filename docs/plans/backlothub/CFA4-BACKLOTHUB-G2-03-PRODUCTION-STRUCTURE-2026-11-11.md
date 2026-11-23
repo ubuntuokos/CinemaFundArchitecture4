@@ -217,3 +217,25 @@ lépcsőhöz.
 
 **Javaslat: PASS.** Új döntési kérdés nincs; a hierarchiatárolás: `ltree`. A 4. lépcső (Workflow Engine
 mag) G2-je következik.
+
+## 12. Megvalósítási pontosítások (ST-1)
+
+- **Tárolás:** a `0003` migráció az `ltree` kiterjesztést használja (PostgreSQL ≥ 13-tól megbízhatónak jelölt, nem kell
+  szuperfelhasználó). A címke az elem UUID-ja kötőjel nélkül (`ltree` nem fogad el kötőjelet); a `path` a szülő útja és a
+  saját címke. A `BEFORE` trigger a szabályt, a kört és a produkcióhatárt, az `AFTER ROW` trigger az út és a `parent_id`
+  egyezését ellenőrzi, így egy egész részfa egyetlen `UPDATE`-tel mozgatható (ST-2). SQLSTATE-ok: `BL101` szabály,
+  `BL102` kör, `BL103` másik produkció, `BL104` asset szülővel, `BL105` útegyezés, `BL106` időzítés.
+- **Típus és sablon:** 7 szerkezeti (season, unit, episode, spot, sequence, scene, shot) és 6 asset típus (character, prop,
+  set, vehicle, fx, environment) a kezdő adat; csak a `shot` típusnak van időzítése. Az öt sablon (film, series,
+  commercial, animation, vfx) szabályait a produkció létrehozásakor a `production_structure_rule` kapja meg másolatban;
+  a meglévő produkciókra a migráció visszatölti. Sablonmódosítás a már létező produkciót nem érinti.
+- **Parancsok (ST-1):** `backlot.structure.tree` (egy szint, `child_count`-tal; `kind=asset` laposan listáz),
+  `.entity.create/update/get`, `.link.add/remove/list`. A kód szülőn belül és típusonként egyedi (`ENTITY_CODE_TAKEN`);
+  az asset nem lehet szülő vagy gyerek (`STRUCTURE_ASSET_HAS_PARENT`). A `casting` kapcsolat jelenet, snitt vagy
+  sorozat felől karakterre, a `setting` díszletre mutat (`LINK_INVALID` egyébként); azonos él kétszer `LINK_DUPLICATE`.
+- **Metaadat:** lebegőpontmentes JSON, legfeljebb 64 KB. Az időzítés egész képkocka (`frame_in` ≤ `frame_out`).
+- **Audit:** minden módosítás pontosan egy esemény (`structure.entity.created/updated`, `structure.link.added/removed`),
+  a hatókörben `entity_path`; a hibás kérés nem ír eseményt.
+- **Későbbre marad:** az elem státusza (4. lépcső, Workflow Engine); `ENTITY_METADATA_INVALID` (22. lépcső). Az áthelyezés,
+  átrendezés, összevonás, megszüntetés, a hatáselemzés és a típus/sablon-beállítás parancsai, valamint az L-profil mérése
+  az ST-2 feladata.

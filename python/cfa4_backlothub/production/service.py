@@ -12,7 +12,7 @@ from collections.abc import Mapping
 from datetime import date, datetime
 from typing import Any
 
-from sqlalchemy import Connection, Engine, and_, exists, func, insert, select, update
+from sqlalchemy import Connection, Engine, Uuid, and_, exists, func, insert, literal, select, update
 from sqlalchemy.exc import DBAPIError, IntegrityError
 
 from cfa4_audit import uuid7
@@ -30,6 +30,11 @@ from ..errors import (
     ProductionCodeTaken,
     ProductionNotFound,
     StatusNotInList,
+    StructureAssetHasParent,
+    StructureCrossProduction,
+    StructureCycle,
+    StructureRuleViolation,
+    TimingInvalid,
     TypeUnknown,
 )
 
@@ -195,7 +200,16 @@ def _status_id(conn: Connection, status_list_id: uuid.UUID, code: str) -> uuid.U
     return uuid.UUID(str(row[0]))
 
 
+_SQLSTATE_ERRORS = {  # the codes the structure triggers raise (migration 0003); the service checks first for a readable detail
+    "BL101": StructureRuleViolation, "BL102": StructureCycle, "BL103": StructureCrossProduction,
+    "BL104": StructureAssetHasParent, "BL105": InvalidInput, "BL106": TimingInvalid,
+}  # fmt: skip
+
+
 def _guard_db(error: Exception) -> Exception:
+    state = getattr(getattr(error, "orig", None), "sqlstate", None)
+    if state in _SQLSTATE_ERRORS:
+        return _SQLSTATE_ERRORS[state](str(error.orig).splitlines()[0] if str(error.orig) else "")  # type: ignore[attr-defined]
     if isinstance(error, IntegrityError):
         text = str(error.orig)
         if "production_code_key" in text:
@@ -260,6 +274,18 @@ def _create(u: Uow, params: Mapping[str, Any]) -> dict[str, Any]:
     conn.execute(
         insert(t.production_member).values(
             production_id=pid, actor_kind=u.actor.kind, actor_ref=u.actor.ref, role="owner", created_at=now, created_by=created_by
+        )
+    )
+    conn.execute(  # the production starts with the structure rules of its type's template (G2-03 section 4)
+        insert(t.production_structure_rule).from_select(
+            ["production_id", "parent_type_id", "child_type_id"],
+            select(literal(pid, Uuid), t.structure_template_rule.c.parent_type_id, t.structure_template_rule.c.child_type_id)
+            .select_from(
+                t.structure_template.join(
+                    t.structure_template_rule, t.structure_template_rule.c.template_id == t.structure_template.c.id
+                )
+            )
+            .where(t.structure_template.c.production_type_id == ptype[0]),
         )
     )
     view = _load(conn, pid)

@@ -16,10 +16,28 @@ from sqlalchemy import (
     Table,
     Text,
     Uuid,
+    cast,
+    func,
 )
 from sqlalchemy.dialects.postgresql import JSONB
+from sqlalchemy.types import UserDefinedType
 
 metadata = MetaData(schema="backlot")
+
+
+class Ltree(UserDefinedType[str]):
+    """PostgreSQL ``ltree`` as text on the Python side (bound with ``text2ltree``, read back with a cast to text)."""
+
+    cache_ok = True
+
+    def get_col_spec(self, **kw: Any) -> str:
+        return "ltree"
+
+    def bind_expression(self, bindvalue: Any) -> Any:
+        return func.text2ltree(bindvalue)
+
+    def column_expression(self, colexpr: Any) -> Any:
+        return cast(colexpr, Text)
 
 
 def _common() -> list[Column[Any]]:
@@ -147,4 +165,87 @@ production_organization = Table(
     Column("role", Text, primary_key=True),
     Column("created_at", TIMESTAMP(timezone=True), nullable=False),
     Column("created_by", Text, nullable=False),
+)
+
+entity_type = Table(
+    "entity_type",
+    metadata,
+    Column("id", Uuid, primary_key=True),
+    Column("code", Text, nullable=False),
+    Column("label_key", Text, nullable=False),
+    Column("kind", Text, nullable=False),
+    Column("icon", Text),
+    Column("has_timing", Boolean, nullable=False),
+    Column("status_list_id", Uuid),
+    Column("retired_at", TIMESTAMP(timezone=True)),
+    *_common(),
+)
+
+structure_template = Table(
+    "structure_template",
+    metadata,
+    Column("id", Uuid, primary_key=True),
+    Column("code", Text, nullable=False),
+    Column("label_key", Text, nullable=False),
+    Column("production_type_id", Uuid),
+    *_common(),
+)
+
+# The two rule tables have no primary key in the database (a unique constraint with NULLS NOT DISTINCT); the whole row is the key here.
+structure_template_rule = Table(
+    "structure_template_rule",
+    metadata,
+    Column("template_id", Uuid, primary_key=True),
+    Column("parent_type_id", Uuid, primary_key=True, nullable=True),
+    Column("child_type_id", Uuid, primary_key=True),
+)
+
+production_structure_rule = Table(
+    "production_structure_rule",
+    metadata,
+    Column("production_id", Uuid, primary_key=True),
+    Column("parent_type_id", Uuid, primary_key=True, nullable=True),
+    Column("child_type_id", Uuid, primary_key=True),
+)
+
+production_entity = Table(
+    "production_entity",
+    metadata,
+    Column("id", Uuid, primary_key=True),
+    Column("production_id", Uuid, nullable=False),
+    Column("entity_type_id", Uuid, nullable=False),
+    Column("parent_id", Uuid),
+    Column("path", Ltree, nullable=False),
+    Column("code", Text, nullable=False),
+    Column("name", Text, nullable=False),
+    Column("ordinal", Integer, nullable=False),
+    Column("status_id", Uuid),
+    Column("description", Text),
+    Column("metadata", JSONB, nullable=False),
+    Column("retired_at", TIMESTAMP(timezone=True)),
+    *_common(),
+)
+
+entity_timing = Table(
+    "entity_timing",
+    metadata,
+    Column("entity_id", Uuid, primary_key=True),
+    Column("frame_in", Integer, nullable=False),
+    Column("frame_out", Integer, nullable=False),
+    Column("handle_in", Integer, nullable=False),
+    Column("handle_out", Integer, nullable=False),
+    Column("otio_ref", Text),
+    Column("edit_project_ref", Uuid),
+)
+
+entity_link = Table(
+    "entity_link",
+    metadata,
+    Column("id", Uuid, primary_key=True),
+    Column("production_id", Uuid, nullable=False),
+    Column("from_id", Uuid, nullable=False),
+    Column("to_id", Uuid, nullable=False),
+    Column("link_type", Text, nullable=False),
+    Column("metadata", JSONB, nullable=False),
+    *_common(),
 )

@@ -23,6 +23,7 @@ from .production import config as cfg
 from .production import milestones as ms
 from .production import organizations as orgs
 from .production import service as prod
+from .structure import entities as ent
 
 Result = dict[str, Any]
 
@@ -35,7 +36,7 @@ class Param:
     help: str = ""
 
 
-_JSON_TYPES = {"str": {"type": "string"}, "int": {"type": "integer"}, "bool": {"type": "boolean"}, "uuid": {"type": "string", "format": "uuid"}, "date": {"type": "string", "format": "date"}}
+_JSON_TYPES = {"str": {"type": "string"}, "int": {"type": "integer"}, "bool": {"type": "boolean"}, "uuid": {"type": "string", "format": "uuid"}, "date": {"type": "string", "format": "date"}, "json": {"type": "object"}}
 
 
 @dataclass(frozen=True)
@@ -174,6 +175,40 @@ def _status_update(engine: Engine, actor: Actor | None, p: Mapping[str, Any]) ->
     return cfg.update_status(engine, p["id"], p["row_version"], {k: v for k, v in p.items() if k not in ("id", "row_version")}, actor)
 
 
+_TIMING_PARAMS = (Param("frame_in", "int"), Param("frame_out", "int"), Param("handle_in", "int"), Param("handle_out", "int"))
+
+
+def _st_tree(engine: Engine, actor: Actor | None, p: Mapping[str, Any]) -> Any:
+    return ent.tree_level(
+        engine, p["production_id"], p.get("parent_id"), kind=p.get("kind", "structural"), type=p.get("type"),
+        include_retired=bool(p.get("include_retired", False)), limit=p.get("limit", 500), offset=p.get("offset", 0), actor=actor,
+    )  # fmt: skip
+
+
+def _st_create(engine: Engine, actor: Actor | None, p: Mapping[str, Any]) -> Any:
+    return ent.create_entity(engine, p["production_id"], {k: v for k, v in p.items() if k != "production_id"}, actor)
+
+
+def _st_update(engine: Engine, actor: Actor | None, p: Mapping[str, Any]) -> Any:
+    return ent.update_entity(engine, p["id"], p["row_version"], {k: v for k, v in p.items() if k not in ("id", "row_version")}, actor)
+
+
+def _st_get(engine: Engine, actor: Actor | None, p: Mapping[str, Any]) -> Any:
+    return ent.get_entity(engine, p["id"], actor)
+
+
+def _st_link_add(engine: Engine, actor: Actor | None, p: Mapping[str, Any]) -> Any:
+    return ent.add_link(engine, p["from_id"], p["to_id"], p["link_type"], p.get("metadata"), actor)
+
+
+def _st_link_remove(engine: Engine, actor: Actor | None, p: Mapping[str, Any]) -> Any:
+    return ent.remove_link(engine, p["id"], actor)
+
+
+def _st_link_list(engine: Engine, actor: Actor | None, p: Mapping[str, Any]) -> Any:
+    return ent.list_links(engine, p["entity_id"], link_type=p.get("link_type"), actor=actor)
+
+
 _ORG_FIELDS = (
     Param("legal_name", "str"), Param("country", "str", help="ISO 3166-1 alpha-2"), Param("registration_no", "str"),
     Param("tax_no", "str"), Param("notes", "str"),
@@ -284,6 +319,36 @@ COMMANDS: dict[str, Command] = {
             "backlot.production.organization.list", "command.backlot.production.organization.list", ("Production", "Organizations", "List"),
             (Param("production_id", "uuid", True),), _linked, modifies=False,
         ),
+        Command(
+            "backlot.structure.tree", "command.backlot.structure.tree", ("Structure", "Tree"),
+            (Param("production_id", "uuid", True), Param("parent_id", "uuid", help="none: the top level"),
+             Param("kind", "str", help="structural (default) or asset"), Param("type", "str"), Param("include_retired", "bool"),
+             Param("limit", "int"), Param("offset", "int")),
+            _st_tree, modifies=False,
+        ),
+        Command(
+            "backlot.structure.entity.create", "command.backlot.structure.entity.create", ("Structure", "New element"),
+            (Param("production_id", "uuid", True), Param("type", "str", True, "entity type code"), Param("parent_id", "uuid"),
+             Param("code", "str", True), Param("name", "str", True), Param("description", "str"), Param("metadata", "json"), *_TIMING_PARAMS),
+            _st_create,
+        ),
+        Command(
+            "backlot.structure.entity.update", "command.backlot.structure.entity.update", ("Structure", "Edit element"),
+            (Param("id", "uuid", True), Param("row_version", "int", True), Param("code", "str"), Param("name", "str"),
+             Param("description", "str"), Param("metadata", "json"), *_TIMING_PARAMS),
+            _st_update,
+        ),
+        Command("backlot.structure.entity.get", "command.backlot.structure.entity.get", ("Structure", "Open element"), (Param("id", "uuid", True),), _st_get, modifies=False),
+        Command(
+            "backlot.structure.link.add", "command.backlot.structure.link.add", ("Structure", "Links", "Add"),
+            (Param("from_id", "uuid", True), Param("to_id", "uuid", True), Param("link_type", "str", True, "casting or setting"), Param("metadata", "json")),
+            _st_link_add,
+        ),
+        Command("backlot.structure.link.remove", "command.backlot.structure.link.remove", ("Structure", "Links", "Remove"), (Param("id", "uuid", True),), _st_link_remove),
+        Command(
+            "backlot.structure.link.list", "command.backlot.structure.link.list", ("Structure", "Links", "List"),
+            (Param("entity_id", "uuid", True), Param("link_type", "str")), _st_link_list, modifies=False,
+        ),
     )
 }
 
@@ -304,6 +369,10 @@ def _coerce(param: Param, raw: Any) -> Any:
             raise ValueError(str(raw))
         if param.kind == "uuid":
             return raw if isinstance(raw, uuid.UUID) else uuid.UUID(str(raw))
+        if param.kind == "json":
+            if not isinstance(raw, dict):
+                raise ValueError("an object is expected")
+            return raw
         return raw if isinstance(raw, str) else str(raw)  # date strings are checked by the service
     except (ValueError, TypeError) as exc:
         raise InvalidInput(f"parameter {param.name!r}: {exc}") from exc
