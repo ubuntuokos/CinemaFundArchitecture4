@@ -601,6 +601,7 @@ impl ExportSettings {
     pub fn supports_alpha(&self) -> bool {
         match self.format {
             Format::PngSequence | Format::TiffSequence | Format::TgaSequence | Format::ExrSequence | Format::Gif => true,
+            Format::DpxSequence => self.dpx_bit_depth >= 12,
             Format::ProRes => crate::prores_profile(&self.prores_profile).chroma() == cfa4_prores::ChromaFormat::Yuv444,
             Format::Cineform => crate::cineform_profile(&self.cineform_profile) == cfa4_cineform::EncodedFormat::Rgba4444,
             _ => false,
@@ -785,8 +786,17 @@ impl ExportSettings {
             Format::BmpSequence => px * 3.0 * 8.0 * fps,
             Format::TiffSequence => px * if self.keeps_alpha() { 4.0 } else { 3.0 } * 8.0 * fps,
             Format::TgaSequence => px * if self.keeps_alpha() { 4.0 } else { 3.0 } * 8.0 * fps,
-            // 10-bit RGB in one 32-bit word per pixel
-            Format::DpxSequence => px * 4.0 * 8.0 * fps,
+            // 10-bit RGB in one 32-bit word per pixel; 12 and 16 bits take 16-bit words
+            Format::DpxSequence => {
+                px * if self.dpx_bit_depth == 10 {
+                    4.0
+                } else if self.keeps_alpha() {
+                    8.0
+                } else {
+                    6.0
+                } * 8.0
+                    * fps
+            }
             // two bytes per half-float channel; lossless compression roughly halves it
             Format::ExrSequence => {
                 let k = if self.exr_compression == ExrCompression::None { 1.0 } else { 0.5 };
@@ -937,7 +947,7 @@ impl ExportSettings {
                     v += &format!(", {}", crate::cineform_label(f, crate::cineform_quality(&self.cineform_quality)))
                 }
                 Format::Mjpeg | Format::JpegSequence => v += &format!(", quality {}", self.quality),
-                Format::DpxSequence => v += ", 10-bit RGB",
+                Format::DpxSequence => v += &format!(", {}-bit RGB{}", self.dpx_bit_depth, if self.keeps_alpha() { "A" } else { "" }),
                 Format::Dcp => {
                     let res = if crate::DcpResolution::of(self) == crate::DcpResolution::FourK { "4K" } else { "2K" };
                     v += &format!(", JPEG 2000 DCI {res}, 12-bit X'Y'Z'");

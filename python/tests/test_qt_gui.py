@@ -2424,6 +2424,7 @@ EGUI_EXPORT_IDS: frozenset[str] = frozenset({
     "export.range.end", "export.range.start", "export.scaling", "export.sendToQueue", "export.summary",
     "export.video.alpha", "export.video.apvProfile", "export.video.aspect", "export.video.bitrateMode",
     "export.video.cineformProfile", "export.video.cineformQuality", "export.video.crf", "export.video.dashManifest", "export.video.dnxProfile",
+    "export.video.dpxBitDepth",
     "export.video.exrCompression", "export.video.fieldOrder", "export.video.fixedBitrate", "export.video.fps",
     "export.video.hardwareEncoding", "export.video.height", "export.video.keyframe", "export.video.keyframeOn",
     "export.video.level", "export.video.matchRate", "export.video.matchSize", "export.video.max",
@@ -8440,6 +8441,7 @@ def test_real_engine_export_per_format_settings_as_egui(app, tmp_path: Path):
     assert supports_alpha("exr", "", "") and supports_alpha("prores", "4444xq", "") and not supports_alpha("prores", "hq", "")
     assert supports_alpha("cineform", "", "4444") and not supports_alpha("mxf-op1a", "4444", "")
     assert supports_alpha("gif", "", ""), "GIF keeps binary transparency, as the engine says (#3423)"
+    assert supports_alpha("dpx", "", "", "16") and supports_alpha("dpx", "", "", "12") and not supports_alpha("dpx", "", "")
     settings = QtCore.QSettings(str(tmp_path / "s.ini"), QtCore.QSettings.Format.IniFormat)
     engine = EngineClient(REAL, ["--demo", "--data-dir", str(tmp_path / "data")])
     win = MainWindow(engine, settings)

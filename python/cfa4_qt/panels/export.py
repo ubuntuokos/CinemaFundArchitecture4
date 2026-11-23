@@ -132,10 +132,11 @@ FORMAT_CHOICES: tuple[tuple[str, str, str, tuple[tuple[str, str], ...]], ...] = 
         ("high", N_("High")), ("medium", N_("Medium")), ("low", N_("Low")))),
     ("exrCompression", N_("Compression"), "export.video.exrCompression", (
         ("none", N_("None")), ("rle", "RLE"), ("zips", N_("ZIP (1 scan line)")), ("zip", N_("ZIP (16 scan lines)")), ("piz", "PIZ"))),
+    ("dpxBitDepth", N_("Bit Depth"), "export.video.dpxBitDepth", (("10", "10-bit"), ("12", "12-bit"), ("16", "16-bit"))),
 )
 # what the engine encodes with when the setting is empty or unknown (`prores_profile()` & co.)
 FORMAT_DEFAULTS = {"mxfVideoCodec": "dnxhr", "proresProfile": "hq", "dnxProfile": "hq", "apvProfile": "422-10", "cineformProfile": "422",
-                   "cineformQuality": "filmscan1", "exrCompression": "none"}
+                   "cineformQuality": "filmscan1", "exrCompression": "none", "dpxBitDepth": "10"}
 MXF_FORMATS = {"mxf-op1a", "mxf-opatom"}
 # the bitrates of D-10 / IMX (ST 356), Mbit/s
 D10_MBPS = (30.0, 40.0, 50.0)
@@ -149,7 +150,7 @@ def d10_mbps(v: float) -> float:
 MXF_ENCODERS = {"dnxhr": "dnxhr", "proRes": "prores", "h264": "h264", "mpeg2": "mpeg2", "d10": "mpeg2", "xdcamHd422": "mpeg2", "v210": "mxf-op1a", "uyvy": "mxf-op1a"}
 # the encoder format each per-format row belongs to
 FORMAT_ROW_ENCODER = {"proresProfile": "prores", "dnxProfile": "dnxhr", "apvProfile": "apv", "cineformProfile": "cineform",
-                      "cineformQuality": "cineform", "exrCompression": "exr"}
+                      "cineformQuality": "cineform", "exrCompression": "exr", "dpxBitDepth": "dpx"}
 QUALITY_FORMATS = {"mjpeg", "jpg"}  # JPEG quality 1..100
 QUEUE_POLL_MS = 500
 # engine QueueStatus (crates/engine/src/export_tools.rs): ready, encoding, done, failed, cancelled
@@ -175,12 +176,15 @@ def encoder_format(fmt: str, mxf_codec: str) -> str:
     return "h264" if fmt == "hls" else fmt
 
 
-def supports_alpha(fmt: str, prores_profile: str, cineform_profile: str) -> bool:
+def supports_alpha(fmt: str, prores_profile: str, cineform_profile: str, dpx_bit_depth: str = "10") -> bool:
     """Whether the output can keep an alpha channel (the engine's ``ExportSettings::supports_alpha``).
 
-    GIF keeps binary transparency (alpha below 128 transparent, the rest opaque)."""
+    GIF keeps binary transparency (alpha below 128 transparent, the rest opaque); DPX carries
+    alpha from 12 bits on."""
     if fmt in ("png", "tiff", "tga", "exr", "gif"):
         return True
+    if fmt == "dpx":
+        return dpx_bit_depth in ("12", "16")
     if fmt == "prores":
         return prores_profile in ("4444", "4444xq")
     return fmt == "cineform" and cineform_profile == "4444"
@@ -1127,7 +1131,7 @@ class ExportDialog(QDialog):
         enc = encoder_format(fmt, self._choice("mxfVideoCodec"))
         rows = {key: enc == FORMAT_ROW_ENCODER.get(key) for key in self.format_choices}
         rows["mxfVideoCodec"] = fmt in MXF_FORMATS
-        rows["alpha"] = supports_alpha(fmt, self._choice("proresProfile"), self._choice("cineformProfile"))
+        rows["alpha"] = supports_alpha(fmt, self._choice("proresProfile"), self._choice("cineformProfile"), self._choice("dpxBitDepth"))
         rows["quality"] = enc in QUALITY_FORMATS
         rows["dashManifest"] = fmt == "hls"
         rows["mxfAncCaptions"] = fmt == "mxf-op1a" and self._choice("mxfVideoCodec") != "d10"
