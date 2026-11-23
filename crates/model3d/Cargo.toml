@@ -1,6 +1,6 @@
 [package]
 name = "cfa4-model3d"
-description = "Clean-room glTF 2.0 / OBJ / STL scene readers (no file I/O, no unsafe): hierarchy, transforms, cameras, meshes, keyframe animation, material references and an unsupported-report (CFA4-OPENUSD-3D-001 U1)"
+description = "Clean-room glTF 2.0 / OBJ / STL scene readers and writers (no file I/O, no unsafe): hierarchy, transforms, cameras, meshes, keyframe animation, material references, an unsupported-report on import and a loss report on export (CFA4-OPENUSD-3D-001 U1, CFA4-OPENUSD-3D-EXPORT-001 U3a)"
 version.workspace = true
 edition.workspace = true
 license.workspace = true

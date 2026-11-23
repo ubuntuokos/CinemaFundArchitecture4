@@ -24,11 +24,19 @@ pub mod lod;
 mod obj;
 mod stl;
 mod util;
+mod write;
+mod write_gltf;
+mod write_obj;
+mod write_stl;
+
+#[cfg(test)]
+mod write_tests;
 
 #[cfg(test)]
 mod tests;
 
 pub use util::safe_relative_uri;
+pub use write::{Export, ExportFile, ExportOptions, Target, export, sanitize_stem};
 
 /// Why a read failed.
 #[derive(Debug, Clone, PartialEq, Eq)]

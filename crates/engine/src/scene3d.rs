@@ -15,6 +15,7 @@
 //! | `scene3d.check` | `{id?}` | per asset: `ok`, `missing` (relink it) or `changed` (the file's SHA-256 differs from the import) |
 //! | `scene3d.lod` | `{id, memoryMb, maxTriangles?, region?, approve?, memoryMbRead?}` | the level-of-detail plan against the frame, with reasons; `approve` applies it (nothing is stored) |
 //! | `scene3d.remove` | `{id}` | removes the reference (the file is not touched) |
+//! | `scene3d.export` | `{id, dir, format?, name?, approve?, overwrite?, copyTextures?, embedTextures?, memoryMb?}` | U3a: writes the asset as glTF/GLB, OBJ or STL into `dir`, loss report first (see `scene3d_export.rs`) |
 
 use std::io::Read;
 use std::path::{Path, PathBuf};
@@ -445,6 +446,9 @@ fn has_assets(s: &Session) -> std::result::Result<(), String> {
     if s.project.scene3d.assets.is_empty() { Err("the project has no 3D assets".into()) } else { Ok(()) }
 }
 
+#[path = "scene3d_export.rs"]
+mod export;
+
 pub(crate) fn commands() -> Vec<CommandSpec> {
     let c = |id, label, params, enabled, run| CommandSpec { id, label, menu: &[], shortcut: None, params, enabled, run, journal: true };
     let q = |id, label, params, enabled, run| CommandSpec { id, label, menu: &[], shortcut: None, params, enabled, run, journal: false };
@@ -462,6 +466,7 @@ pub(crate) fn commands() -> Vec<CommandSpec> {
             lod,
         ),
         c("scene3d.remove", "Remove 3D Asset", r#"{"id":asset}"#, has_assets, remove),
+        export::spec(),
     ]
 }
 

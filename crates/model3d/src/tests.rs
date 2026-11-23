@@ -2,7 +2,7 @@ use std::panic::{AssertUnwindSafe, catch_unwind};
 
 use super::*;
 
-fn b64(data: &[u8]) -> String {
+pub(crate) fn b64(data: &[u8]) -> String {
     const A: &[u8; 64] = b"ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/";
     let mut s = String::new();
     for c in data.chunks(3) {
@@ -18,12 +18,12 @@ fn b64(data: &[u8]) -> String {
     s
 }
 
-fn f32s(v: &[f32]) -> Vec<u8> {
+pub(crate) fn f32s(v: &[f32]) -> Vec<u8> {
     v.iter().flat_map(|f| f.to_le_bytes()).collect()
 }
 
 /// Buffer: positions (36) | indices u16 (6 + 2 pad) | times (8) | translations (24) = 76 bytes.
-fn triangle_bin() -> Vec<u8> {
+pub(crate) fn triangle_bin() -> Vec<u8> {
     let mut b = f32s(&[0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 1.0, 0.0]);
     b.extend_from_slice(&[0, 0, 1, 0, 2, 0, 0, 0]);
     b.extend(f32s(&[0.0, 1.0]));
@@ -31,7 +31,7 @@ fn triangle_bin() -> Vec<u8> {
     b
 }
 
-fn triangle_json(buffer_uri: Option<&str>) -> String {
+pub(crate) fn triangle_json(buffer_uri: Option<&str>) -> String {
     let uri = buffer_uri.map(|u| format!(r#""uri":"{u}","#)).unwrap_or_default();
     format!(
         r#"{{
@@ -65,7 +65,7 @@ fn triangle_json(buffer_uri: Option<&str>) -> String {
     )
 }
 
-fn glb(json: &str, bin: &[u8]) -> Vec<u8> {
+pub(crate) fn glb(json: &str, bin: &[u8]) -> Vec<u8> {
     let mut j = json.as_bytes().to_vec();
     while !j.len().is_multiple_of(4) {
         j.push(b' ');
@@ -90,7 +90,7 @@ fn glb(json: &str, bin: &[u8]) -> Vec<u8> {
 const CHUNK_JSON_TEST: u32 = 0x4E4F_534A;
 const CHUNK_BIN_TEST: u32 = 0x004E_4942;
 
-fn limits() -> Limits {
+pub(crate) fn limits() -> Limits {
     Limits::default()
 }
 
@@ -291,8 +291,8 @@ fn glb_header_hostility() {
 
 // ---- OBJ -------------------------------------------------------------------------------------------
 
-const OBJ: &str = "# a quad and a triangle\nmtllib m.mtl\no quad\nv 0 0 0\nv 1 0 0\nv 1 1 0\nv 0 1 0\nvt 0 0\nvt 1 0\nvt 1 1\nvt 0 1\nvn 0 0 1\nusemtl red\nf 1/1/1 2/2/1 3/3/1 4/4/1\no tri\nusemtl blue\nf -4 -3 -2\nl 1 2\ns 1\n";
-const MTL: &str = "newmtl red\nKd 1 0 0\nd 0.5\nmap_Kd tex/red.png\nNs 10\nnewmtl blue\nKd 0 0 1\nKe 0.1 0.1 0.1\n";
+pub(crate) const OBJ: &str = "# a quad and a triangle\nmtllib m.mtl\no quad\nv 0 0 0\nv 1 0 0\nv 1 1 0\nv 0 1 0\nvt 0 0\nvt 1 0\nvt 1 1\nvt 0 1\nvn 0 0 1\nusemtl red\nf 1/1/1 2/2/1 3/3/1 4/4/1\no tri\nusemtl blue\nf -4 -3 -2\nl 1 2\ns 1\n";
+pub(crate) const MTL: &str = "newmtl red\nKd 1 0 0\nd 0.5\nmap_Kd tex/red.png\nNs 10\nnewmtl blue\nKd 0 0 1\nKe 0.1 0.1 0.1\n";
 
 #[test]
 fn obj_reads_polygons_materials_and_reports_the_rest() {
@@ -374,7 +374,7 @@ fn obj_memory_budget() {
 
 // ---- STL -------------------------------------------------------------------------------------------
 
-fn binary_stl(tris: &[[[f32; 3]; 3]], attr: u16) -> Vec<u8> {
+pub(crate) fn binary_stl(tris: &[[[f32; 3]; 3]], attr: u16) -> Vec<u8> {
     let mut b = vec![0u8; 80];
     b[..5].copy_from_slice(b"solid");
     b.extend_from_slice(&(tris.len() as u32).to_le_bytes());
@@ -388,7 +388,7 @@ fn binary_stl(tris: &[[[f32; 3]; 3]], attr: u16) -> Vec<u8> {
     b
 }
 
-const TRI: [[f32; 3]; 3] = [[0.0, 0.0, 0.0], [1.0, 0.0, 0.0], [0.0, 1.0, 0.0]];
+pub(crate) const TRI: [[f32; 3]; 3] = [[0.0, 0.0, 0.0], [1.0, 0.0, 0.0], [0.0, 1.0, 0.0]];
 
 #[test]
 fn binary_stl_even_when_the_header_says_solid() {
@@ -451,21 +451,21 @@ fn detection() {
     assert!(read(b"\x01\x02\x03", None, &mut NoResources, &limits()).is_err());
 }
 
-struct Rng(u64);
+pub(crate) struct Rng(pub u64);
 
 impl Rng {
-    fn next(&mut self) -> u64 {
+    pub(crate) fn next(&mut self) -> u64 {
         self.0 ^= self.0 >> 12;
         self.0 ^= self.0 << 25;
         self.0 ^= self.0 >> 27;
         self.0.wrapping_mul(0x2545_F491_4F6C_DD1D)
     }
-    fn below(&mut self, n: usize) -> usize {
+    pub(crate) fn below(&mut self, n: usize) -> usize {
         if n == 0 { 0 } else { (self.next() % n as u64) as usize }
     }
 }
 
-fn mutate(seed: &[u8], rng: &mut Rng) -> Vec<u8> {
+pub(crate) fn mutate(seed: &[u8], rng: &mut Rng) -> Vec<u8> {
     let mut v = seed.to_vec();
     for _ in 0..1 + rng.below(4) {
         match rng.below(5) {
