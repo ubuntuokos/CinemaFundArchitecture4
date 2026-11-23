@@ -8,7 +8,7 @@
 
 ## Közös szabályok
 
-- Jelöltek (S1, István 2026-11-22): **OpenImageIO**, **VapourSynth** (csak külön workerként), **EC-jelölt (#11)** (feltételes). A többi csak minta.
+- Jelöltek (S1, István 2026-11-22): **OpenImageIO**, **VapourSynth** (csak külön workerként), **EC-jelölt (#11)** (feltételes), **GEGL + babl** (2026-11-23). A többi csak minta.
 - Futásszám: döntéshez legalább **10 futás**, medián, p95 és bootstrap 95% konfidenciaintervallum (terv, mérési terv). Trendhez 3 meleg és 3 hideg.
 - Baseline: a meglévő CFA4 út (CPU referencia, a meglévő GPU út új backend nélkül). Egy jelölt akkor "előnyös", ha az előregisztrált metrikán a CI alsó határa is meghaladja a küszöböt.
 - MQ-kapu az első 3 munkanapon: FAIL → a jelölt kilép. Minden mérés a `cfa4_golden::validation` harnessen, mutációs önteszttel; mért hiányzó ellenőrzés sosem PASS.
@@ -48,6 +48,17 @@
 | Döntési szabály | ha az MQ-1 az első 3 munkanapban nem igazolható a jelölt módosítása nélkül, a jelölt kilép, és csak minta marad |
 | Átfedés | a donor-katalógus (VFX terv, G-33) külön szál; ez a mérés csak az MQ-kaput és a kompozíciós minőséget fedi, a katalógus-beemelést nem |
 
+## 3b. GEGL + babl (negyedik jelölt, István 2026-11-23; terv rev 119)
+
+| | |
+|---|---|
+| Hipotézis H-GEGL-1 (MQ-kapu) | a GEGL gráfja f32, lineáris fényű munkaformátumon (babl) fut, **köztes 8/16 bites kvantálás nélkül**, és a babl színtér-konverziója (sRGB, DCI-P3, X'Y'Z' felé) az F0V küszöbön belül marad. |
+| MQ-1/3/4/8 igazolás | MQ-1: ≥ 16 bit belső pontosság (f32); MQ-3: DCI-P3 és X'Y'Z' konverzió hibája ΔE2000-ben az F0V küszöbön; MQ-4: alfa straight/premultiplied megkülönböztetve, peremhiba nincs; MQ-8: lineáris fényű blend a referenciához mérve. |
+| Feladat | kompozíciós és lineáris f32 összehasonlítás az EC-jelölttel, ugyanazon a C0 szerződésen és a 4. pont közös próbáján, a Küszöb@F0 mérőkkel (PSNR, ΔE2000, alfa). |
+| Küszöbök | **PENDING**: nincs kitalált szám; az F0V-mérésből (≥ 10 futás, referenciagép) és a jóváhagyó döntéséből jönnek, mint a többi jelöltnél. |
+| Döntési szabály | MQ-1/3/4/8 FAIL az első 3 munkanapban: csak mintának marad. Az F1 kiegészítő audit feltételei ([`F1-gegl-babl-supplement.md`](../render-f1/F1-gegl-babl-supplement.md), #1688) az F2 kezdete előtt zárandók; ha a licenc-fájlaudit elbukik, a jelölt BLOCKED. |
+| Futtatás | csak külön worker folyamatban (`renderWorker` profil, PENDING jóváhagyás); a GLib/GObject-lábnyom miatt a fő folyamatba nem linkelünk. |
+
 ## 4. Közös próba és költség (terv F2/3, F2/5)
 
 - Referenciaklip: `sdr_1080p25` és `dci_4k24_12bit_p3`, 3 rétegű, időben változó effektgráf; mért: kép- és időhiba az F0V harnessen, valamint renderidő (AC-16, **küszöb PENDING a referenciagépig**).
@@ -62,5 +73,5 @@ Nincs mért eredmény. A "javasolt" küszöbök a jóváhagyóé; indoklásuk a 
 1. A "javasolt" küszöbök (OIIO ≥ 1,2×; VS ≥ 1,0 dB / SSIM +0,005) elfogadása vagy módosítása az F2 indulása előtt.
 2. ~~Python ≥ 3.13 a VapourSynth workerhez (A11)~~ **Eldöntve (István, 2026-11-23):** elfogadva, ha a VapourSynth-nek szüksége van rá; csak a külön workerben, a többi komponens nem függ tőle.
 3. ~~EC-jelölt fenntartása az F2-ben~~ **Eldöntve (István, 2026-11-23):** marad az F2 harmadik jelöltje (az upstream családdal közös geometria-, szín- és időtípusok miatt); az MQ-kapu érvényes, bukásnál csak mintának marad (H-EC-1 az első 3 napban).
-3b. **GEGL (+ babl)** (István, 2026-11-23: nem veti el): F2 POC-jelöltként kezelendő; hipotézise és küszöbe a terv élő példányának következő revíziója után kerül ide (PENDING, nincs kitalált küszöb).
+3b. ~~GEGL (+ babl) jelölt~~ **Felvéve (István, 2026-11-23, terv rev 119):** lásd 3b. szakasz; a küszöbei PENDING.
 4. Új fixture (PIZ/DWA/B44 EXR) létrehozása a `render_fixtures.py`-ban.
