@@ -33,6 +33,8 @@ A 13 jelölt közül **csak 4 kis hiány maradt**; a többi vagy már megvan a C
 
 **Tulajdonosi döntés (István, 2026-11-20):** az **SC-4 bekerül a tervbe**, és az **F6/V1 elfogadási feltételei bővülnek** a régióelőnézettel, a szerkeszthető kijelöléssel törlés előtt és a kötegelt elemzéssel (lásd 5.2). A V1 szövegét a `docs/venturi-parity.md`-ben ugyanabban a PR-ban átvezettük (V1 5. pont).
 
+**Pótlás (2026-11-22):** a Shotcut-projekt (`.mlt`) **importja** az F0-ból kimaradt; az **SC-5** tétel külön tervben szerepel: [`CFA4-SHOTCUT-CAPABILITY-ADAPTATION-001-SC5-MLT-IMPORT.md`](CFA4-SHOTCUT-CAPABILITY-ADAPTATION-001-SC5-MLT-IMPORT.md) (jóváhagyásra vár). A Shotcut-**export** explicit nem cél.
+
 **Nem tudtam ellenőrizni (részletek a 9. pontban):** a gitignore-olt, gép-lokális `plan/` mappa (STATUS.md, execution-plan.md) tartalmát, a CFA4-AI_modules külön repót, a CFA3 eredeti terveit (csak egy tervezet és idézetek vannak a repóban), valamint hogy a Qt6 idővonal valójában hogyan rajzolja a klipmarkereket.
 
 ---
