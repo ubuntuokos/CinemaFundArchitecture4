@@ -140,6 +140,24 @@ CREATE INDEX run_history_impl ON tasks.run_history (implementation, hardware, id
 "#,
         down: "DROP TABLE tasks.run_history, tasks.estimate, tasks.checkpoint, tasks.schedule;",
     },
+    Step {
+        version: 5,
+        // D-3: the outbox row carries the whole Event Fabric Canonical Envelope with a UUIDv7
+        // `event_id` that never changes on a repeat (EF §5.3); `tasks.uuid7()` makes one in SQL
+        up: r#"
+CREATE FUNCTION tasks.uuid7() RETURNS uuid LANGUAGE sql VOLATILE AS $f$
+    SELECT encode(
+        set_bit(set_bit(
+            overlay(uuid_send(gen_random_uuid()) PLACING substring(int8send((extract(epoch FROM clock_timestamp()) * 1000)::bigint) FROM 3) FROM 1 FOR 6),
+            52, 1), 53, 1),
+        'hex')::uuid
+$f$;
+ALTER TABLE tasks.outbox ADD COLUMN event_id uuid NOT NULL DEFAULT tasks.uuid7();
+ALTER TABLE tasks.outbox ADD CONSTRAINT outbox_event_id_key UNIQUE (event_id);
+"#,
+        down: "ALTER TABLE tasks.outbox DROP COLUMN event_id;
+DROP FUNCTION tasks.uuid7();",
+    },
 ];
 
 const AI: &[Step] = &[Step {
