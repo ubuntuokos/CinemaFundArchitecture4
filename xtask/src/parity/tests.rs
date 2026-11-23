@@ -301,3 +301,181 @@ fn menus_egui_still_parses() {
     assert!(r.summary().starts_with("menus-egui: presence 1/1"), "{}", r.summary());
     assert!(r.markdown("menus.json", 1).contains("frozen egui menu bar"));
 }
+
+// ---- schema 1 (G7.5) ----
+
+fn v1_file(area: &str, oos: Value, items: Value) -> Value {
+    json!({"schema": 1, "area": area, "outOfScope": oos, "items": items})
+}
+
+fn v1_items(rows: &[(&str, &str)]) -> Value {
+    json!(rows.iter().map(|(p, s)| json!({"path": p, "source": s})).collect::<Vec<_>>())
+}
+
+/// Runs the item checks against in-memory documents; `docs` are (path, text), all tracked.
+fn check(area: Area, v: &Value, docs: &[(&str, &str)]) -> Vec<String> {
+    let r = parse_v1(v, area).unwrap();
+    let tracked = |p: &str| docs.iter().any(|(d, _)| *d == p);
+    let mut read = |p: &str| docs.iter().find(|(d, _)| *d == p).map(|(_, t)| t.to_string()).ok_or_else(|| "missing".to_string());
+    check_items("menus.json", &r, &tracked, &mut read)
+}
+
+#[test]
+fn schema_v1_path_source_items() {
+    let v = v1_file("menus", json!(["Window ▸ Workspaces"]), v1_items(&[("File ▸ Export ▸ Media", "docs/a.md"), ("Edit ▸ Undo", "docs/a.md")]));
+    assert!(is_v1(&v));
+    let r = parse_v1(&v, Area::Menus).unwrap();
+    assert_eq!(r.paths(), paths(&[&["File", "Export", "Media"], &["Edit", "Undo"]]));
+    assert_eq!(r.items.first().map(|i| i.source.as_str()), Some("docs/a.md"));
+    assert_eq!(r.out_of_scope, paths(&[&["Window", "Workspaces"]]));
+    // egui menus share the menus reference; an effect may be a bare name, a menu item may not
+    assert!(parse_v1(&v1_file("menus", json!([]), v1_items(&[("Undo", "docs/a.md")])), Area::MenusEgui).is_err());
+    assert!(parse_v1(&v1_file("effects", json!([]), v1_items(&[("Gaussian Blur", "docs/a.md")])), Area::Effects).is_ok());
+    assert!(!is_v1(&json!(["File > Save"])));
+    assert!(!is_v1(&json!({"menus": []})));
+}
+
+#[test]
+fn schema_v1_out_of_scope_prefix_is_counted_out() {
+    let r = parse_v1(
+        &v1_file("menus", json!(["Window ▸ Workspaces"]), v1_items(&[("Window ▸ Workspaces ▸ Editing", "docs/a.md"), ("Window ▸ Timeline", "docs/a.md")])),
+        Area::Menus,
+    )
+    .unwrap();
+    let ours = items(&[&["Window", "Timeline"]]);
+    let rep = compare_scoped(Area::Menus, &r.paths(), &ours, &r.out_of_scope);
+    assert_eq!(rep.counts(), (1, 0, 0));
+    assert_eq!(rep.out_of_scope.get("listed out of scope by the reference"), Some(&1));
+}
+
+#[test]
+fn check_reference_accepts_a_matching_source() {
+    let v = v1_file("menus", json!([]), v1_items(&[("File ▸ Export ▸ Media", "docs/a.md")]));
+    let ok = check(Area::Menus, &v, &[("docs/a.md", "The File menu has Export, and Export has Media.")]);
+    assert!(ok.is_empty(), "{ok:?}");
+    // case, ellipsis, "&" and spacing are normalised like the labels
+    let v = v1_file("menus", json!([]), v1_items(&[("Edit ▸ Find & Replace…", "docs/a.md")]));
+    assert!(check(Area::Menus, &v, &[("docs/a.md", "EDIT: find   and\nreplace")]).is_empty());
+}
+
+#[test]
+fn check_reference_rejects_name_not_in_source() {
+    let v = v1_file("menus", json!([]), v1_items(&[("File ▸ Teleport", "docs/a.md")]));
+    let e = check(Area::Menus, &v, &[("docs/a.md", "File only")]);
+    assert_eq!(e.len(), 1);
+    assert!(e.first().is_some_and(|m| m.contains("\"Teleport\" does not appear in docs/a.md")), "{e:?}");
+}
+
+#[test]
+fn check_reference_rejects_source_under_plan() {
+    let v = v1_file("menus", json!([]), v1_items(&[("File ▸ Save", "plan/premiere/menus.md")]));
+    let e = check(Area::Menus, &v, &[("plan/premiere/menus.md", "File Save")]);
+    assert!(e.first().is_some_and(|m| m.contains("under plan/")), "{e:?}");
+    for bad in ["docs/../plan/x.md", "/docs/a.md", "docs\\a.md", "docs/a.txt", "other/a.md", "docs//a.md"] {
+        let v = v1_file("menus", json!([]), v1_items(&[("File ▸ Save", bad)]));
+        assert_eq!(check(Area::Menus, &v, &[(bad, "File Save")]).len(), 1, "{bad}");
+    }
+}
+
+#[test]
+fn check_reference_rejects_untracked_source() {
+    let v = v1_file("menus", json!([]), v1_items(&[("File ▸ Save", "docs/untracked.md")]));
+    let r = parse_v1(&v, Area::Menus).unwrap();
+    let e = check_items("menus.json", &r, &|_| false, &mut |_| Ok("File Save".into()));
+    assert!(e.first().is_some_and(|m| m.contains("not tracked by git")), "{e:?}");
+}
+
+#[test]
+fn check_reference_reports_unreadable_source_once() {
+    let v = v1_file("menus", json!([]), v1_items(&[("File ▸ Save", "docs/gone.md"), ("File ▸ Open", "docs/gone.md")]));
+    let r = parse_v1(&v, Area::Menus).unwrap();
+    let e = check_items("menus.json", &r, &|_| true, &mut |_| Err("gone".into()));
+    assert_eq!(e.len(), 1, "{e:?}");
+}
+
+#[test]
+fn check_reference_rejects_extra_fields() {
+    let mut v = v1_file("menus", json!([]), v1_items(&[("File ▸ Save", "docs/a.md")]));
+    v["note"] = json!("x");
+    assert!(parse_v1(&v, Area::Menus).unwrap_err().contains("unknown field"));
+    let v = v1_file("menus", json!([]), json!([{"path": "File ▸ Save", "source": "docs/a.md", "shortcut": "Cmd+S"}]));
+    assert!(parse_v1(&v, Area::Menus).unwrap_err().contains("unknown field"));
+}
+
+#[test]
+fn check_reference_rejects_data_uri() {
+    for bad in
+        ["data:text/plain;base64,QQ==", "see https://example.com/a", "QUJDREVGR0hJSktMTU5PUFFSU1RVVldYWVphYmNkZWZnaGlqa2xtbm9wcXJzdHV2d3h5ejAxMjM0NTY3ODk="]
+    {
+        let v = v1_file("menus", json!([]), v1_items(&[("File ▸ Save", bad)]));
+        assert!(parse_v1(&v, Area::Menus).is_err(), "{bad}");
+        let v = v1_file("menus", json!([bad]), v1_items(&[("File ▸ Save", "docs/a.md")]));
+        assert!(parse_v1(&v, Area::Menus).is_err(), "{bad}");
+        let v = v1_file("effects", json!([]), v1_items(&[(bad, "docs/a.md")]));
+        assert!(parse_v1(&v, Area::Effects).is_err(), "{bad}");
+    }
+}
+
+#[test]
+fn check_reference_rejects_non_string() {
+    for items in [
+        json!([{"path": 5, "source": "docs/a.md"}]),
+        json!([{"path": "File ▸ Save", "source": null}]),
+        json!(["File ▸ Save"]),
+        json!({"path": "x"}),
+        json!([{"path": "File ▸ Save"}]),
+    ] {
+        assert!(parse_v1(&v1_file("menus", json!([]), items.clone()), Area::Menus).is_err(), "{items}");
+    }
+    assert!(parse_v1(&v1_file("menus", json!([1]), json!([])), Area::Menus).is_err());
+    assert!(parse_v1(&v1_file("menus", json!("x"), json!([])), Area::Menus).is_err());
+    assert!(parse_v1(&json!({"schema": "1", "area": "menus", "outOfScope": [], "items": []}), Area::Menus).is_err());
+    assert!(parse_v1(&json!({"schema": 2, "area": "menus", "outOfScope": [], "items": []}), Area::Menus).is_err());
+    assert!(parse_v1(&json!({"schema": 1, "area": 7, "outOfScope": [], "items": []}), Area::Menus).is_err());
+    assert!(parse_v1(&json!({"schema": 1, "area": "menus", "items": []}), Area::Menus).is_err());
+    assert!(parse_v1(&json!([]), Area::Menus).is_err());
+    assert!(parse_v1(&v1_file("panels", json!([]), json!([])), Area::Menus).unwrap_err().contains("expected \"menus\""));
+}
+
+#[test]
+fn check_reference_rejects_duplicate() {
+    let v = v1_file("menus", json!([]), v1_items(&[("File ▸ Save", "docs/a.md"), ("file ▸ save…", "docs/b.md")]));
+    assert!(parse_v1(&v, Area::Menus).unwrap_err().contains("listed twice"));
+}
+
+#[test]
+fn hostile_v1_is_refused_not_overflowed() {
+    let many: Vec<(String, String)> = (0..MAX_ITEMS + 1).map(|i| (format!("File ▸ Item {i}"), "docs/a.md".to_string())).collect();
+    let rows: Vec<(&str, &str)> = many.iter().map(|(p, s)| (p.as_str(), s.as_str())).collect();
+    assert!(parse_v1(&v1_file("menus", json!([]), v1_items(&rows)), Area::Menus).unwrap_err().contains("more than"));
+    let deep = vec!["x"; MAX_DEPTH + 1].join(" ▸ ");
+    assert!(parse_v1(&v1_file("menus", json!([]), v1_items(&[(&deep, "docs/a.md")])), Area::Menus).unwrap_err().contains("deeper"));
+    let long = format!("File ▸ {}", "x".repeat(MAX_PATH_BYTES));
+    assert!(parse_v1(&v1_file("menus", json!([]), v1_items(&[(&long, "docs/a.md")])), Area::Menus).unwrap_err().contains("bytes"));
+    for empty in ["File ▸ ", " ▸ Save", "File ▸ … ▸ Save", ""] {
+        assert!(parse_v1(&v1_file("menus", json!([]), v1_items(&[(empty, "docs/a.md")])), Area::Menus).is_err(), "{empty:?}");
+    }
+}
+
+#[test]
+fn committed_references_dir_is_checked_on_disk() {
+    let dir = std::env::temp_dir().join(format!("cfa4-parity-ref-{}", std::process::id()));
+    let refs = dir.join(REFERENCE_DIR);
+    std::fs::create_dir_all(&refs).unwrap();
+    // no committed reference at all is fine
+    let none = std::env::temp_dir().join(format!("cfa4-parity-none-{}", std::process::id()));
+    std::fs::create_dir_all(&none).unwrap();
+    assert!(check_references(&none).unwrap().contains("0 files"));
+    // an unknown file name, bad JSON and an oversized file are errors, not panics
+    std::fs::write(refs.join("other.json"), "{}").unwrap();
+    std::fs::write(refs.join("menus.json"), "not json").unwrap();
+    let big = std::fs::File::create(refs.join("panels.json")).unwrap();
+    big.set_len(MAX_FILE_BYTES + 1).unwrap();
+    let init = Command::new("git").args(["init", "-q"]).current_dir(&dir).status().is_ok_and(|s| s.success());
+    if init {
+        let e = check_references(&dir).unwrap_err();
+        assert!(e.contains("not a reference of a known area") && e.contains("menus.json") && e.contains("larger than"), "{e}");
+    }
+    let _ = std::fs::remove_dir_all(&dir);
+    let _ = std::fs::remove_dir_all(&none);
+}

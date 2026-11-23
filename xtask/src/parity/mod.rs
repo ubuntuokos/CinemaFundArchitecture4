@@ -1,5 +1,6 @@
 //! `cargo xtask parity [--area menus|commands|panels|effects|transitions|menus-egui] [--reference FILE]
-//! [--ours FILE] [--out FILE] [--min PERCENT]`: measured parity (docs/gaps.md G7).
+//! [--ours FILE] [--out FILE] [--min PERCENT]`: measured parity (docs/gaps.md G7);
+//! `cargo xtask parity --check-reference` checks the committed references (see [`schema`]).
 //!
 //! Compares one area of what CFA4 ships with a reference list, and reports presence and
 //! placement separately: a reference item is *same place* when we have its label at the same path,
@@ -46,11 +47,13 @@ use serde_json::Value;
 
 mod reference;
 mod report;
+mod schema;
 #[cfg(test)]
 mod tests;
 
 use reference::*;
 use report::*;
+use schema::*;
 
 /// Deepest menu nesting accepted from a reference file.
 const MAX_DEPTH: usize = 16;
@@ -198,6 +201,7 @@ impl Area {
 }
 
 struct Args {
+    check_reference: bool,
     area: Area,
     reference: Option<PathBuf>,
     ours: Option<PathBuf>,
@@ -206,11 +210,12 @@ struct Args {
 }
 
 fn parse_args(args: &[&str]) -> Result<Args, String> {
-    let mut a = Args { area: Area::Menus, reference: None, ours: None, out: None, min: None };
+    let mut a = Args { check_reference: false, area: Area::Menus, reference: None, ours: None, out: None, min: None };
     let mut it = args.iter();
     while let Some(flag) = it.next() {
         let mut value = || it.next().map(|v| v.to_string()).ok_or_else(|| format!("{flag} needs a value"));
         match *flag {
+            "--check-reference" => a.check_reference = true,
             "--area" => a.area = Area::parse(&value()?)?,
             "--reference" => a.reference = Some(value()?.into()),
             "--ours" => a.ours = Some(value()?.into()),
@@ -225,7 +230,7 @@ fn parse_args(args: &[&str]) -> Result<Args, String> {
             }
             other => {
                 return Err(format!(
-                    "parity: unknown argument {other} (usage: cargo xtask parity [--area menus|commands|panels|effects|transitions|menus-egui] [--reference FILE] [--ours FILE] [--out FILE] [--min PERCENT])"
+                    "parity: unknown argument {other} (usage: cargo xtask parity [--area menus|commands|panels|effects|transitions|menus-egui] [--reference FILE] [--ours FILE] [--out FILE] [--min PERCENT] | --check-reference)"
                 ));
             }
         }
@@ -235,6 +240,10 @@ fn parse_args(args: &[&str]) -> Result<Args, String> {
 
 pub fn run(root: &Path, args: &[&str]) -> Result<(), String> {
     let args = parse_args(args)?;
+    if args.check_reference {
+        println!("{}", check_references(root)?);
+        return Ok(());
+    }
     let area = args.area;
     let ours_json = match &args.ours {
         Some(p) => std::fs::read_to_string(p).map_err(|e| format!("{}: {e}", p.display()))?,
@@ -260,11 +269,16 @@ pub fn run(root: &Path, args: &[&str]) -> Result<(), String> {
             None => Ok(()),
         };
     };
-    let text = std::fs::read_to_string(&reference).map_err(|e| format!("{}: {e}", reference.display()))?;
+    let text = read_bounded(&reference)?;
     let value: Value = serde_json::from_str(&text).map_err(|e| format!("{}: {e}", reference.display()))?;
-    let paths = reference_paths(&value, area)?;
+    let (paths, extra_out) = if is_v1(&value) {
+        let v1 = parse_v1(&value, area).map_err(|e| format!("{}: {e}", reference.display()))?;
+        (v1.paths(), v1.out_of_scope)
+    } else {
+        (reference_paths(&value, area)?, Vec::new())
+    };
     let name = reference.file_name().map(|n| n.to_string_lossy().into_owned()).unwrap_or_default();
-    let report = compare(area, &paths, &ours);
+    let report = compare_scoped(area, &paths, &ours, &extra_out);
     let out = args.out.unwrap_or_else(|| crate::target_dir().join("parity").join(area.out_file()));
     if let Some(dir) = out.parent() {
         std::fs::create_dir_all(dir).map_err(|e| format!("{}: {e}", dir.display()))?;

@@ -12,7 +12,8 @@
 //! - `parity [--area menus|commands|panels|effects|transitions|menus-egui] [--reference FILE] [--out FILE] [--min PERCENT]`:
 //!   measured parity of the Qt 6 GUI menu bar or panels (the frozen egui menu bar as
 //!   `menus-egui`), of the engine's commands, or of the effects / transitions the Effects panel lists, against a reference list (default: the local `plan/premiere/<area>.json`), presence and
-//!   placement reported separately (`parity.rs`, docs/gaps.md G7).
+//!   placement reported separately (`parity/`, docs/gaps.md G7); `parity --check-reference` (part of
+//!   `ci`) checks the committed references in `xtask/parity/reference/` against their source docs.
 //! - `fuzz-targets`: every L0 parser crate (containers and decoders; not the encoder-only ones in
 //!   `NO_PARSER`) has a fuzz target in `fuzz/src/lib.rs`, and every target has its
 //!   `fuzz/fuzz_targets/<name>.rs` and `[[bin]]` (CFA4-SECURITY-001 B2).
@@ -455,7 +456,8 @@ fn ci() -> Result<(), String> {
     run(Command::new(cargo).args(["clippy", "--workspace", "--exclude", "cfa4-ui", "--all-targets", "--release", "--", "-D", "warnings"]))?;
     // Full optimized release tests (including FFmpeg oracles) run in the dedicated CI job.
     layers()?;
-    assets()
+    assets()?;
+    parity::run(&root(), &["--check-reference"])
 }
 
 /// The headless playback benchmark (`crates/ui-egui/examples/bench_playback.rs`); extra
@@ -555,7 +557,7 @@ fn main() -> ExitCode {
             parity::run(&root(), &rest.iter().map(String::as_str).collect::<Vec<_>>())
         }
         _ => Err(
-            "usage: cargo xtask <layers|assets|wasm|fuzz-targets|fixtures [crate…]|parity [--area menus|commands|panels|effects|transitions|menus-egui] [--reference FILE] [--out FILE] [--min PERCENT]|version [set X.Y.Z]|ci|bench [args]|bench-playback [args]|cinema-oracles [--check|--install …|--corpus|--print-env]>"
+            "usage: cargo xtask <layers|assets|wasm|fuzz-targets|fixtures [crate…]|parity [--area menus|commands|panels|effects|transitions|menus-egui] [--reference FILE] [--out FILE] [--min PERCENT]|parity --check-reference|version [set X.Y.Z]|ci|bench [args]|bench-playback [args]|cinema-oracles [--check|--install …|--corpus|--print-env]>"
                 .into(),
         ),
     };

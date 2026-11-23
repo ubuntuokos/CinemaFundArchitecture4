@@ -19,7 +19,16 @@ pub(super) struct Report {
     pub(super) ours_only: Vec<Vec<String>>,
 }
 
+/// [`compare_scoped`] without an extra out-of-scope list (the tests).
+#[cfg(test)]
 pub(super) fn compare(area: Area, reference: &[Vec<String>], ours: &[OurItem]) -> Report {
+    compare_scoped(area, reference, ours, &[])
+}
+
+/// [`compare`], also counting out of scope every reference item under one of the `extra` path
+/// prefixes (the schema-1 `outOfScope` list).
+pub(super) fn compare_scoped(area: Area, reference: &[Vec<String>], ours: &[OurItem], extra: &[Vec<String>]) -> Report {
+    let prefixes: Vec<Vec<String>> = extra.iter().map(|p| p.iter().map(|s| norm(s)).collect()).collect();
     let key = |p: &[String]| p.iter().map(|s| norm(s)).collect::<Vec<_>>();
     let mut by_path: HashMap<Vec<String>, usize> = HashMap::new();
     let mut by_label: HashMap<String, usize> = HashMap::new();
@@ -35,7 +44,9 @@ pub(super) fn compare(area: Area, reference: &[Vec<String>], ours: &[OurItem]) -
         if !seen.insert(key(p)) {
             continue;
         }
-        if let Some(why) = out_of_scope(area, p) {
+        let normalised: Vec<String> = p.iter().map(|s| norm(s)).collect();
+        let why = out_of_scope(area, p).or_else(|| prefixes.iter().any(|x| normalised.starts_with(x)).then_some("listed out of scope by the reference"));
+        if let Some(why) = why {
             *report.out_of_scope.entry(why).or_default() += 1;
             continue;
         }
