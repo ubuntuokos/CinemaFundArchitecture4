@@ -1,5 +1,6 @@
-//! `cargo xtask parity [--area menus|commands|panels|effects|transitions|menus-egui] [--reference FILE]
-//! [--ours FILE] [--out FILE] [--min PERCENT]`: measured parity (docs/gaps.md G7);
+//! `cargo xtask parity [--area menus|commands|panels|effects|transitions|menus-egui|all]
+//! [--reference FILE | --committed] [--ours FILE] [--out FILE] [--min PERCENT] [--min-exact COUNT]
+//! [--fidelity FILE]`: measured parity (docs/gaps.md G7);
 //! `cargo xtask parity --check-reference` checks the committed references (see [`schema`]).
 //!
 //! Compares one area of what CFA4 ships with a reference list, and reports presence and
@@ -35,9 +36,20 @@
 //! `"File > New > Sequence…"` strings, a tree of nodes (`{"name": …, "children" | "items" |
 //! "submenu": […]}`), or nested objects keyed by label.
 //!
+//! The reference is `--reference FILE`, else the local `plan/premiere/<area>.json`, else the committed
+//! `xtask/parity/reference/<area>.json` (schema 1, see [`schema`]); `--committed` uses only the
+//! committed one. The report names which it used. A report made from a reference that is not
+//! committed can only be written under `target/` (or outside the repository): it holds a local
+//! snapshot's contents.
+//!
+//! `--area all` measures menus, commands, panels, effects and transitions in one report
+//! (`target/parity/parity-all.md`, a summary table first); it runs every area and lists every
+//! failure at the end. Each present item also has a fidelity tier ([`fidelity`]): exact,
+//! approximate, stub or unrated (the default; exact needs evidence). The tier is not a behaviour test.
+//!
 //! The report goes to `target/parity/parity-checklist.md` for menus and
 //! `target/parity/parity-<area>.md` for the other areas (or `--out`); `--min` fails when presence
-//! is below the given percentage.
+//! is below the given percentage, `--min-exact` when fewer than COUNT items are exact.
 
 use std::collections::{BTreeMap, HashMap, HashSet};
 use std::path::{Path, PathBuf};
@@ -106,7 +118,7 @@ impl Area {
             "panels" => Ok(Area::Panels),
             "effects" => Ok(Area::Effects),
             "transitions" => Ok(Area::Transitions),
-            other => Err(format!("--area {other}: expected menus, commands, panels, effects, transitions or menus-egui")),
+            other => Err(format!("--area {other}: expected menus, commands, panels, effects, transitions, menus-egui or all")),
         }
     }
 
@@ -205,8 +217,13 @@ impl Area {
     }
 }
 
+#[derive(Debug)]
 struct Args {
     check_reference: bool,
+    /// `--area all`: every area of [`ALL_AREAS`] in one report.
+    all: bool,
+    /// `--committed`: only the committed references count.
+    committed: bool,
     area: Area,
     reference: Option<PathBuf>,
     ours: Option<PathBuf>,
@@ -217,13 +234,31 @@ struct Args {
 }
 
 fn parse_args(args: &[&str]) -> Result<Args, String> {
-    let mut a = Args { check_reference: false, area: Area::Menus, reference: None, ours: None, out: None, min: None, min_exact: None, fidelity: None };
+    let mut a = Args {
+        check_reference: false,
+        all: false,
+        committed: false,
+        area: Area::Menus,
+        reference: None,
+        ours: None,
+        out: None,
+        min: None,
+        min_exact: None,
+        fidelity: None,
+    };
     let mut it = args.iter();
     while let Some(flag) = it.next() {
         let mut value = || it.next().map(|v| v.to_string()).ok_or_else(|| format!("{flag} needs a value"));
         match *flag {
             "--check-reference" => a.check_reference = true,
-            "--area" => a.area = Area::parse(&value()?)?,
+            "--committed" => a.committed = true,
+            "--area" => match value()?.as_str() {
+                "all" => a.all = true,
+                other => {
+                    a.all = false;
+                    a.area = Area::parse(other)?;
+                }
+            },
             "--reference" => a.reference = Some(value()?.into()),
             "--ours" => a.ours = Some(value()?.into()),
             "--out" => a.out = Some(value()?.into()),
@@ -242,7 +277,7 @@ fn parse_args(args: &[&str]) -> Result<Args, String> {
             }
             other => {
                 return Err(format!(
-                    "parity: unknown argument {other} (usage: cargo xtask parity [--area menus|commands|panels|effects|transitions|menus-egui] [--reference FILE] [--ours FILE] [--out FILE] [--min PERCENT] [--min-exact COUNT] [--fidelity FILE] | --check-reference)"
+                    "parity: unknown argument {other} (usage: cargo xtask parity [--area menus|commands|panels|effects|transitions|menus-egui|all] [--reference FILE | --committed] [--ours FILE] [--out FILE] [--min PERCENT] [--min-exact COUNT] [--fidelity FILE] | --check-reference)"
                 ));
             }
         }
@@ -250,15 +285,104 @@ fn parse_args(args: &[&str]) -> Result<Args, String> {
     Ok(a)
 }
 
-pub fn run(root: &Path, args: &[&str]) -> Result<(), String> {
-    let args = parse_args(args)?;
-    if args.check_reference {
-        println!("{}", check_references(root)?);
+/// The areas `--area all` measures (the frozen egui menu bar is not one of them).
+const ALL_AREAS: [Area; 5] = [Area::Menus, Area::Commands, Area::Panels, Area::Effects, Area::Transitions];
+
+/// Where a reference came from. Only a committed one may be written into the repository.
+#[derive(Clone, Debug, PartialEq)]
+enum RefSource {
+    /// `--reference FILE`.
+    Explicit(PathBuf),
+    /// The maintainers' local snapshot `plan/premiere/<area>.json` (gitignored).
+    Local(PathBuf),
+    /// `xtask/parity/reference/<area>.json`.
+    Committed(PathBuf),
+}
+
+impl RefSource {
+    fn path(&self) -> &Path {
+        match self {
+            RefSource::Explicit(p) | RefSource::Local(p) | RefSource::Committed(p) => p,
+        }
+    }
+
+    fn is_committed(&self) -> bool {
+        matches!(self, RefSource::Committed(_))
+    }
+
+    /// How the report names the reference.
+    fn label(&self, root: &Path) -> String {
+        let rel = |p: &Path| p.strip_prefix(root).unwrap_or(p).display().to_string();
+        match self {
+            RefSource::Explicit(p) => p.file_name().map(|n| n.to_string_lossy().into_owned()).unwrap_or_default(),
+            RefSource::Local(p) => format!("{} (local snapshot, not committed)", rel(p)),
+            RefSource::Committed(p) => format!("{} (committed)", rel(p)),
+        }
+    }
+}
+
+/// The reference for `area`: `--reference FILE`, else the local `plan/premiere/<area>.json`, else the
+/// committed `xtask/parity/reference/<area>.json`; with `committed_only` just the committed one.
+fn resolve_reference(root: &Path, area: Area, explicit: Option<&Path>, committed_only: bool) -> Option<RefSource> {
+    if let Some(p) = explicit {
+        return Some(RefSource::Explicit(p.to_path_buf()));
+    }
+    let name = format!("{}.json", area.reference_name());
+    let local = root.join("plan/premiere").join(&name);
+    if !committed_only && local.exists() {
+        return Some(RefSource::Local(local));
+    }
+    let committed = root.join(REFERENCE_DIR).join(&name);
+    committed.exists().then_some(RefSource::Committed(committed))
+}
+
+/// `p` made absolute against the working directory, with `.` and `..` resolved lexically.
+fn lexical_absolute(p: &Path) -> PathBuf {
+    let abs = if p.is_absolute() { p.to_path_buf() } else { std::env::current_dir().unwrap_or_default().join(p) };
+    let mut out = PathBuf::new();
+    for c in abs.components() {
+        match c {
+            std::path::Component::CurDir => {}
+            std::path::Component::ParentDir => {
+                out.pop();
+            }
+            other => out.push(other.as_os_str()),
+        }
+    }
+    out
+}
+
+/// A report made from a reference that is not committed may only be written under `target/`: it
+/// holds the contents of a local snapshot, which must never reach a commit (AGENTS.md §1.5).
+fn check_out(root: &Path, out: &Path, source: &RefSource) -> Result<(), String> {
+    if source.is_committed() {
         return Ok(());
     }
-    let area = args.area;
-    let ours_json = match &args.ours {
-        Some(p) => std::fs::read_to_string(p).map_err(|e| format!("{}: {e}", p.display()))?,
+    let (abs, repo, target) = (lexical_absolute(out), lexical_absolute(root), lexical_absolute(&crate::target_dir()));
+    if abs.starts_with(&repo) && !abs.starts_with(&target) {
+        return Err(format!(
+            "{}: a report made from a reference that is not committed ({}) can only be written under {} (or outside the repository)",
+            out.display(),
+            source.path().display(),
+            crate::target_dir().display()
+        ));
+    }
+    Ok(())
+}
+
+/// What one area's measurement produced.
+struct Outcome {
+    area: Area,
+    ours: usize,
+    inventory: String,
+    /// The report and the reference it was made from, if the area has one.
+    measured: Option<(Report, RefSource)>,
+}
+
+/// Dumps our side of `area`, applies the fidelity annotations and compares it with its reference.
+fn measure(root: &Path, args: &Args, area: Area, fidelity: &fidelity::Fidelity, explicit_ours: Option<&Path>) -> Result<Outcome, String> {
+    let ours_json = match explicit_ours {
+        Some(p) => read_bounded(p)?,
         None => dump_ours(root, area)?,
     };
     let ours_value: Value = serde_json::from_str(&ours_json).map_err(|e| format!("our {} dump: {e}", area.name()))?;
@@ -268,46 +392,112 @@ pub fn run(root: &Path, args: &[&str]) -> Result<(), String> {
         Area::Panels => our_panels(&ours_value)?,
         Area::Effects | Area::Transitions => our_catalog(&ours_value, area)?,
     };
-    fidelity::load(root, args.fidelity.as_deref())?.apply(area, &mut ours)?;
-    let default_ref = root.join(format!("plan/premiere/{}.json", area.reference_name()));
-    let reference = match &args.reference {
-        Some(p) => Some(p.clone()),
-        None => default_ref.exists().then_some(default_ref),
+    fidelity.apply(area, &mut ours)?;
+    let inventory = inventory(area, &ours);
+    let explicit = if args.all { None } else { args.reference.as_deref() };
+    let Some(source) = resolve_reference(root, area, explicit, args.committed) else {
+        return Ok(Outcome { area, ours: ours.len(), inventory, measured: None });
     };
-    let Some(reference) = reference else {
-        print!("{}", inventory(area, &ours));
-        println!("\nno reference list (plan/premiere/{}.json, or --reference FILE): {} parity not measured", area.reference_name(), area.name());
-        return match (args.min, args.min_exact) {
-            (None, None) => Ok(()),
-            _ => Err("--min and --min-exact need a reference list".into()),
-        };
-    };
-    let text = read_bounded(&reference)?;
-    let value: Value = serde_json::from_str(&text).map_err(|e| format!("{}: {e}", reference.display()))?;
+    let text = read_bounded(source.path())?;
+    let value: Value = serde_json::from_str(&text).map_err(|e| format!("{}: {e}", source.path().display()))?;
     let (paths, extra_out) = if is_v1(&value) {
-        let v1 = parse_v1(&value, area).map_err(|e| format!("{}: {e}", reference.display()))?;
+        let v1 = parse_v1(&value, area).map_err(|e| format!("{}: {e}", source.path().display()))?;
         (v1.paths(), v1.out_of_scope)
     } else {
         (reference_paths(&value, area)?, Vec::new())
     };
-    let name = reference.file_name().map(|n| n.to_string_lossy().into_owned()).unwrap_or_default();
     let report = compare_scoped(area, &paths, &ours, &extra_out);
-    let out = args.out.unwrap_or_else(|| crate::target_dir().join("parity").join(area.out_file()));
+    Ok(Outcome { area, ours: ours.len(), inventory, measured: Some((report, source)) })
+}
+
+/// The `--min` / `--min-exact` failures of one outcome.
+fn threshold_failures(args: &Args, o: &Outcome) -> Vec<String> {
+    let name = o.area.name();
+    let Some((report, _)) = &o.measured else {
+        return match (args.min, args.min_exact) {
+            (None, None) => Vec::new(),
+            _ => vec![format!("{name}: --min and --min-exact need a reference list")],
+        };
+    };
+    let mut failures = Vec::new();
+    if let Some(min) = args.min.filter(|m| report.presence() < *m) {
+        failures.push(format!("{name} presence {:.1}% is below --min {min}%", report.presence()));
+    }
+    let exact = report.tier_counts()[Tier::Exact.index()];
+    if let Some(min) = args.min_exact.filter(|m| exact < *m) {
+        failures.push(format!("{name} has {exact} exact items, below --min-exact {min}"));
+    }
+    failures
+}
+
+fn write_report(root: &Path, out: &Path, source: &RefSource, text: &str) -> Result<(), String> {
+    check_out(root, out, source)?;
     if let Some(dir) = out.parent() {
         std::fs::create_dir_all(dir).map_err(|e| format!("{}: {e}", dir.display()))?;
     }
-    std::fs::write(&out, report.markdown(&name, ours.len())).map_err(|e| format!("{}: {e}", out.display()))?;
-    println!("{}", report.summary());
-    println!("report: {}", out.display());
-    if let Some(min) = args.min.filter(|m| report.presence() < *m) {
-        return Err(format!("{} presence {:.1}% is below --min {min}%", area.name(), report.presence()));
+    std::fs::write(out, text).map_err(|e| format!("{}: {e}", out.display()))
+}
+
+pub fn run(root: &Path, args: &[&str]) -> Result<(), String> {
+    let args = parse_args(args)?;
+    if args.check_reference {
+        println!("{}", check_references(root)?);
+        return Ok(());
     }
-    match args.min_exact {
-        Some(min) if report.tier_counts()[Tier::Exact.index()] < min => {
-            Err(format!("{} has {} exact items, below --min-exact {min}", area.name(), report.tier_counts()[Tier::Exact.index()]))
+    if args.all && (args.ours.is_some() || args.reference.is_some()) {
+        return Err("--area all measures five areas: --ours and --reference name one file, so they need a single --area".into());
+    }
+    if args.committed && args.reference.is_some() {
+        return Err("--committed and --reference contradict each other".into());
+    }
+    let fidelity = fidelity::load(root, args.fidelity.as_deref())?;
+    let areas: Vec<Area> = if args.all { ALL_AREAS.to_vec() } else { vec![args.area] };
+    let mut outcomes = Vec::new();
+    let mut failures = Vec::new();
+    for area in areas {
+        match measure(root, &args, area, &fidelity, args.ours.as_deref()) {
+            Ok(o) => outcomes.push(o),
+            // a single area stops at its first error; `all` runs the other areas and lists every error at the end
+            Err(e) if !args.all => return Err(e),
+            Err(e) => failures.push(format!("{}: {e}", area.name())),
         }
-        _ => Ok(()),
     }
+    for o in &outcomes {
+        match &o.measured {
+            Some((report, _)) => println!("{}", report.summary()),
+            None => {
+                print!("{}", o.inventory);
+                println!("\nno reference list for {} ({}): parity not measured", o.area.name(), reference_hint(o.area, args.committed));
+            }
+        }
+        failures.extend(threshold_failures(&args, o));
+    }
+    if let Some(first) = outcomes.first().filter(|_| !args.all)
+        && let Some((report, source)) = &first.measured
+    {
+        let out = args.out.clone().unwrap_or_else(|| crate::target_dir().join("parity").join(first.area.out_file()));
+        write_report(root, &out, source, &report.markdown(&source.label(root), first.ours))?;
+        println!("report: {}", out.display());
+    } else if args.all && outcomes.iter().any(|o| o.measured.is_some()) {
+        let out = args.out.clone().unwrap_or_else(|| crate::target_dir().join("parity").join("parity-all.md"));
+        // the strictest source decides: one local or explicit reference keeps the whole report under target/
+        let source = outcomes
+            .iter()
+            .filter_map(|o| o.measured.as_ref().map(|(_, s)| s))
+            .find(|s| !s.is_committed())
+            .or_else(|| outcomes.iter().find_map(|o| o.measured.as_ref().map(|(_, s)| s)));
+        if let Some(source) = source {
+            write_report(root, &out, source, &all_markdown(root, &outcomes))?;
+            println!("report: {}", out.display());
+        }
+    }
+    if failures.is_empty() { Ok(()) } else { Err(failures.join("\n")) }
+}
+
+/// Where a missing reference would be looked for, for the "not measured" message.
+fn reference_hint(area: Area, committed_only: bool) -> String {
+    let name = area.reference_name();
+    if committed_only { format!("{REFERENCE_DIR}/{name}.json") } else { format!("plan/premiere/{name}.json, {REFERENCE_DIR}/{name}.json, or --reference FILE") }
 }
 
 /// How our side is dumped: a cargo example, or the Qt 6 GUI dump script.

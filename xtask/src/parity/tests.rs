@@ -588,7 +588,8 @@ fn min_exact_fails_below() {
             "--min-exact",
             min_exact,
         ];
-        run(&dir, &argv)
+        // the root only names default paths; every file is explicit, and the report goes outside it
+        run(Path::new("/nonexistent-cfa4-root"), &argv)
     };
     assert!(go("1").is_ok());
     let e = go("2").unwrap_err();
@@ -625,4 +626,123 @@ fn hostile_fidelity_is_refused() {
     let missing = std::env::temp_dir().join(format!("cfa4-no-such-fidelity-{}.json", std::process::id()));
     assert!(fidelity::load(Path::new("."), Some(&missing)).is_err());
     assert!(fidelity::load(Path::new("/nonexistent-cfa4-root"), None).unwrap().entries.is_empty());
+}
+
+// ---- --area all, reference resolution, --out guard (G7.7) ----
+
+fn temp_root(tag: &str) -> PathBuf {
+    let dir = std::env::temp_dir().join(format!("cfa4-parity-{tag}-{}", std::process::id()));
+    let _ = std::fs::remove_dir_all(&dir);
+    std::fs::create_dir_all(&dir).unwrap();
+    dir
+}
+
+fn touch(root: &Path, rel: &str) -> PathBuf {
+    let p = root.join(rel);
+    std::fs::create_dir_all(p.parent().unwrap()).unwrap();
+    std::fs::write(&p, "[]").unwrap();
+    p
+}
+
+#[test]
+fn resolution_order() {
+    let root = temp_root("resolve");
+    let explicit = Path::new("/somewhere/mine.json");
+    assert_eq!(resolve_reference(&root, Area::Menus, None, false), None);
+    let committed = touch(&root, "xtask/parity/reference/menus.json");
+    assert_eq!(resolve_reference(&root, Area::Menus, None, false), Some(RefSource::Committed(committed.clone())));
+    let local = touch(&root, "plan/premiere/menus.json");
+    // local snapshot beats the committed file; --reference beats both; --committed ignores the other two
+    assert_eq!(resolve_reference(&root, Area::Menus, None, false), Some(RefSource::Local(local)));
+    assert_eq!(resolve_reference(&root, Area::Menus, Some(explicit), false), Some(RefSource::Explicit(explicit.to_path_buf())));
+    assert_eq!(resolve_reference(&root, Area::Menus, None, true), Some(RefSource::Committed(committed.clone())));
+    // the egui menu bar uses the menus reference; other areas have their own
+    assert_eq!(resolve_reference(&root, Area::MenusEgui, None, true), Some(RefSource::Committed(committed)));
+    assert_eq!(resolve_reference(&root, Area::Panels, None, false), None);
+    let _ = std::fs::remove_dir_all(&root);
+}
+
+#[test]
+fn report_names_reference_source() {
+    let root = Path::new("/repo");
+    assert_eq!(RefSource::Committed("/repo/xtask/parity/reference/menus.json".into()).label(root), "xtask/parity/reference/menus.json (committed)");
+    assert_eq!(RefSource::Local("/repo/plan/premiere/menus.json".into()).label(root), "plan/premiere/menus.json (local snapshot, not committed)");
+    assert_eq!(RefSource::Explicit("/tmp/x/mine.json".into()).label(root), "mine.json");
+    let r = compare(Area::Commands, &paths(&[&["Undo"]]), &cmd_items(&[("edit.undo", "Undo")]));
+    let src = RefSource::Local("/repo/plan/premiere/commands.json".into());
+    assert!(r.markdown(&src.label(root), 1).contains("from `plan/premiere/commands.json (local snapshot, not committed)`"));
+}
+
+#[test]
+fn local_reference_cannot_write_into_repo() {
+    let root = temp_root("guard");
+    let local = RefSource::Local(root.join("plan/premiere/menus.json"));
+    let committed = RefSource::Committed(root.join("xtask/parity/reference/menus.json"));
+    let target = crate::target_dir();
+    // the repository's docs/ is refused for a local or explicit reference, even through `..`
+    for bad in [root.join("docs/parity-checklist.md"), root.join("target/../docs/x.md"), root.join("./docs/../README.md")] {
+        let e = check_out(&root, &bad, &local).unwrap_err();
+        assert!(e.contains("not committed") && e.contains("under"), "{e}");
+        assert!(check_out(&root, &bad, &RefSource::Explicit("/tmp/r.json".into())).is_err());
+        // a committed reference may be written anywhere
+        assert!(check_out(&root, &bad, &committed).is_ok());
+    }
+    // under target/, or outside the repository altogether, is fine
+    assert!(check_out(&root, &target.join("parity/parity-menus.md"), &local).is_ok());
+    assert!(check_out(&root, Path::new("/tmp/anywhere/report.md"), &local).is_ok());
+    let _ = std::fs::remove_dir_all(&root);
+}
+
+#[test]
+fn all_writes_five_sections() {
+    let root = Path::new("/repo");
+    let ours = cmd_items(&[("edit.undo", "Undo")]);
+    let src = RefSource::Committed("/repo/xtask/parity/reference/commands.json".into());
+    let outcome = |area: Area, measured: bool| Outcome {
+        area,
+        ours: 1,
+        inventory: String::new(),
+        measured: measured.then(|| (compare(area, &paths(&[&["Undo"], &["Redo"]]), &ours), src.clone())),
+    };
+    let outcomes: Vec<Outcome> = ALL_AREAS.iter().map(|a| outcome(*a, *a != Area::Transitions)).collect();
+    let md = all_markdown(root, &outcomes);
+    assert!(md.starts_with("# Parity report"), "{md}");
+    for a in ALL_AREAS {
+        assert!(md.contains(&format!("| {} |", a.name())), "{} row\n{md}", a.name());
+    }
+    assert!(md.contains("| transitions | not measured (no reference) |"), "{md}");
+    assert!(md.contains("| commands | xtask/parity/reference/commands.json (committed) | 2 | 1 | 0 | 0 | 0 | 1 | 1 | 50.0% |"), "{md}");
+    // each measured area's own report sits one level down; the unmeasured one says so
+    assert_eq!(md.matches("\n## Command parity checklist").count() + md.matches("\n## Menu parity checklist").count(), 2, "{md}");
+    assert!(md.contains("## transitions parity\n\nNo reference: not measured."), "{md}");
+    assert!(!md.lines().any(|l| l.starts_with("# ") && !l.starts_with("# Parity report")), "{md}");
+    assert!(ALL_AREAS.len() == 5 && !ALL_AREAS.contains(&Area::MenusEgui));
+}
+
+#[test]
+fn area_all_and_committed_arguments() {
+    let a = parse_args(&["--area", "all", "--committed"]).unwrap();
+    assert!(a.all && a.committed);
+    // a later --area names a single area again
+    let a = parse_args(&["--area", "all", "--area", "panels"]).unwrap();
+    assert!(!a.all && a.area == Area::Panels);
+    let root = Path::new("/nonexistent-cfa4-root");
+    assert!(run(root, &["--area", "all", "--ours", "x.json"]).unwrap_err().contains("single --area"));
+    assert!(run(root, &["--area", "all", "--reference", "x.json"]).unwrap_err().contains("single --area"));
+    assert!(run(root, &["--committed", "--reference", "x.json"]).unwrap_err().contains("contradict"));
+    assert!(parse_args(&["--area", "everything"]).unwrap_err().contains("or all"));
+}
+
+#[test]
+fn threshold_failures_are_listed_together() {
+    let args = parse_args(&["--min", "100", "--min-exact", "1"]).unwrap();
+    let ours = cmd_items(&[("edit.undo", "Undo")]);
+    let r = compare(Area::Commands, &paths(&[&["Undo"], &["Redo"]]), &ours);
+    let src = RefSource::Explicit("/tmp/c.json".into());
+    let measured = Outcome { area: Area::Commands, ours: 1, inventory: String::new(), measured: Some((r, src)) };
+    let f = threshold_failures(&args, &measured);
+    assert_eq!(f.len(), 2, "{f:?}");
+    let unmeasured = Outcome { area: Area::Panels, ours: 1, inventory: String::new(), measured: None };
+    assert!(threshold_failures(&args, &unmeasured).first().is_some_and(|m| m.contains("need a reference")));
+    assert!(threshold_failures(&parse_args(&[]).unwrap(), &unmeasured).is_empty());
 }
