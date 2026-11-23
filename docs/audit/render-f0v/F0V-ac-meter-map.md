@@ -21,7 +21,7 @@ Minden sor a meglévő elemet nevezi meg; új crate nem készül (tulajdonosi sz
 | AC-12 Ismert rések | `F0V-known-deviations.md`, kihagyási lista | ez a PR | MÉRŐ VAN (lista) | a géppel generált lista a riportban a következő lépés |
 | AC-13 Audio | `null_test` dBFS csatornánként; ST 428-2 paraméterek (24 bit, 48/96 kHz, 1–16 csatorna, azonos hossz, nincs teljes skála fölötti minta) | `cfa4_metrics::audio`, `cfa4_golden::validation::compare_with` (`Extras::audio_bits`) | **MÉRŐ VAN** | `audio_51/71_24bit` fixture-ök kész. A csomagszintű szabály már létezik (`DCP.AUD.001`, `cfa4-dcp-validate`): ez ugyanazt a renderkimeneten méri, nem másolja a validátort. A 6/8/16 csatorna (ST 429-2) csak tájékoztató. Az MCA-címkéket a `cfa4-mxf` még nem adja (nyitott) |
 | AC-14 Preview–export | – | – | PENDING | kell hozzá a preview-render hívása a harnessből |
-| AC-15 Projektmigráció | – | `crates/project/src/legacy.rs` (meglévő) | PENDING | nincs régi sémájú projekt-fixture |
+| AC-15 Projektmigráció | `crates/golden/tests/legacy_project.rs`: nyitás → mentés → újranyitás, a projekt-JSON egyezése és a render-hash | `crates/format` (`decode`, `encode`, `MIGRATIONS`), `crates/project/src/legacy.rs` | MÉRT (részben) | a fixture-ök a mostani projektből származnak (2..aktuális séma, a boríték előtti alak, az upstream tag); valódi, régi build által mentett fájl nincs a repóban (PENDING: a tulajdonos adjon) |
 | AC-16 Teljesítmény | renderidő, csúcsmemória | – | PENDING | 10 futás és baseline kell |
 | AC-17 Feliratok | – | `crates/captions` (meglévő) | PENDING | a scope-döntés tulajdonosi (terv) |
 | AC-18 Mozi minőség | MQ-1–MQ-8, ΔE X'Y'Z' | `cfa4_metrics` részben | PENDING | J2K orákulum és X'Y'Z' konverzió: CINECERT |
