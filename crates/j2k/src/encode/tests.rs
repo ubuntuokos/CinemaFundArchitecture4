@@ -540,8 +540,8 @@ fn htj2k_meets_byte_limits_close_to_the_part_1_coder() {
             assert!(cs.len() <= limit, "{} > {limit}", cs.len());
             let q_ht = psnr(&img, &decode(&cs).unwrap());
             let q_p1 = psnr(&img, &decode(&encode(&img, &EncodeOptions { max_bytes: Some(limit), ..opts.clone() }).unwrap()).unwrap());
-            // whole bit-planes only (no fractional passes), so a little below Part 1
-            assert!(q_ht > q_p1 - 3.0, "limit {limit} reversible {}: HT {q_ht:.2} dB, Part 1 {q_p1:.2} dB", opts.reversible);
+            // whole cleanup planes plus SigProp / MagRef of the next one, so a little below Part 1
+            assert!(q_ht > q_p1 - 1.5, "limit {limit} reversible {}: HT {q_ht:.2} dB, Part 1 {q_p1:.2} dB", opts.reversible);
             if !opts.reversible {
                 assert!(q_ht >= last, "{q_ht} after {last}");
                 last = q_ht;
