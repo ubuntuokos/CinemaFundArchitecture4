@@ -676,6 +676,12 @@ pub fn svq1(data: &[u8]) {
     let mut d = cfa4_svq1::Decoder::new(16, 16, false);
     let _ = d.decode(data);
     let _ = d.decode(data);
+pub fn indeo45(data: &[u8]) {
+    for codec in [cfa4_indeo45::Codec::Indeo4, cfa4_indeo45::Codec::Indeo5] {
+        let mut d = cfa4_indeo45::Decoder::new(codec);
+        let _ = d.decode(data);
+        let _ = d.decode(data);
+    }
 }
 
 pub fn magicyuv(data: &[u8]) {
@@ -968,6 +974,7 @@ pub const TARGETS: &[(&str, &str, Target)] = &[
     ("lagarith", "cfa4-lagarith", lagarith),
     ("svq3", "cfa4-svq3", svq3),
     ("svq1", "cfa4-svq1", svq1),
+    ("indeo45", "cfa4-indeo45", indeo45),
     ("bink", "cfa4-bink", bink),
     ("magicyuv", "cfa4-magicyuv", magicyuv),
     ("g729", "cfa4-g729", g729),
