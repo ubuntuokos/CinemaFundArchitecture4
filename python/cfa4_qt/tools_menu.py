@@ -91,6 +91,13 @@ def build_tools_menu(win: MainWindow, menu: QMenu) -> None:
         gop.setChecked(bool(win.timeline.canvas.show_gop_marks))
         gop.blockSignals(False)
 
+    video.addSeparator()
+    expression = video.addAction(tr("Expression Editor…"))
+    expression.setObjectName("tools.video.expressionEditor")
+    expression.triggered.connect(lambda _c=False: win.open_expression_editor())
+    # a running engine without the expr.* commands (an older build) leaves the entry disabled
+    expression.setEnabled("expr.check" in getattr(win.registry, "commands", {"expr.check": None}))
+
     video.aboutToShow.connect(video_shown)
     video_shown()
 
