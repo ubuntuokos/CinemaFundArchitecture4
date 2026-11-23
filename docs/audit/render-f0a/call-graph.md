@@ -391,6 +391,7 @@ graph LR
 | `cfa4-engine/settings.rs` | `cfa4-project` | `Label`, `Param`, `ParamValue`, `TrackItem` |
 | `cfa4-engine/settings.rs` | `cfa4-render` | `vfx` |
 | `cfa4-engine/settings.rs` | `cfa4-time` | `FrameRate` |
+| `cfa4-engine/short_clips.rs` | `cfa4-project` | `ClipId` |
 | `cfa4-engine/shortcuts.rs` | `cfa4-project` | `legacy` |
 | `cfa4-engine/silence.rs` | `cfa4-export` | `Report` |
 | `cfa4-engine/silence.rs` | `cfa4-project` | `ClipId`, `ItemId`, `ItemKind` |
