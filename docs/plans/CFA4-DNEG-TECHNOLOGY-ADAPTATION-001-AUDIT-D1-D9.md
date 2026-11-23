@@ -17,7 +17,7 @@ Minden állítás mellett ott a forrás (fájl vagy parancs). Ami nem ellenőriz
 
 ### 0.1 Kritikus megállapítás: öt hivatkozott terv nincs a `main`-ben
 
-A megbízás ezekre a „korábbi CFA4-tervekre” hivatkozik: **CFA4 VFX Catalog**, **FX Authoring**,
+A megbízás ezekre a „korábbi CFA4-tervekre” hivatkozik: **CFA4 VFX Catalog**, **Effektlánc**,
 **Adaptive Representation Fabric (ARF)**, **OpenUSD / 3D Scene Exchange / procedurális 3D**,
 **Potree-alapú point-cloud donorvizsgálat** (és Gaffer). Ellenőrzés a `main`-en:
 
@@ -41,7 +41,7 @@ A klónban csak a `main` ág látszik; a nyitott PR-ok (31 db a lekérdezéskor,
    a tulajdonos gépén vannak. Ezt nem tudtam ellenőrizni (a munkamenethez csak ez a tároló van
    csatolva). **Tulajdonosi teendő:** a hiányzó tervek `main`-be emelése vagy elérhetővé tétele (G0).
 
-4. **Frissítés (2026-11-21, tulajdonosi döntés):** a hiányzó tervekhez *új terv készül*, a `docs/plans/` alatt (javaslatok, jóváhagyásra várnak): [`CFA4-VFX-CATALOG-001`](CFA4-VFX-CATALOG-001-0.1.md), [`CFA4-FX-AUTHORING-001`](CFA4-FX-AUTHORING-001-0.1.md), [`CFA4-ARF-001`](CFA4-ARF-001-0.1.md), [`CFA4-OPENUSD-3D-001`](CFA4-OPENUSD-3D-001-0.1.md), [`CFA4-POINTCLOUD-001`](CFA4-POINTCLOUD-001-0.1.md). Amíg ezek nincsenek jóváhagyva, a D1 `?` sorai nem zárulnak (a besorolás nem változik).
+4. **Frissítés (2026-11-21, tulajdonosi döntés):** a hiányzó tervekhez *új terv készül*, a `docs/plans/` alatt (javaslatok, jóváhagyásra várnak): [`CFA4-VFX-CATALOG-001`](CFA4-VFX-CATALOG-001-0.1.md), [`CFA4-EFFECTCHAIN-001`](CFA4-EFFECTCHAIN-001-0.1.md), [`CFA4-ARF-001`](CFA4-ARF-001-0.1.md), [`CFA4-OPENUSD-3D-001`](CFA4-OPENUSD-3D-001-0.1.md), [`CFA4-POINTCLOUD-001`](CFA4-POINTCLOUD-001-0.1.md). Amíg ezek nincsenek jóváhagyva, a D1 `?` sorai nem zárulnak (a besorolás nem változik).
 
 ### 0.2 Ami a `main`-ben ténylegesen van (a viszonyítási alap)
 
