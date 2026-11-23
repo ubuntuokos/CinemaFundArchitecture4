@@ -136,6 +136,8 @@ management commands and dialog ids: offline media and relinking (`media.findMiss
 proxies (`media.createProxies`, `media.attachProxies`, `media.findCameraProxies`, `media.toggleProxies`, `proxies.*`), ingest
 (`project.ingestSettings`) and the Project Manager (`file.projectManager`, `pm.*`).
 
+**Short clips**: `edit.deleteShortClips {minFrames, tracks?, ripple?=true, dryRun?=true}` → `{found: [{clip, track, start, frames}], deleted, skippedLocked, ...}`. It finds the clips shorter than `minFrames` frames (locked tracks are skipped and counted). It only reports until `dryRun` is `false`; then it deletes them in one undo step, with `edit.rippleDelete` (a sync-lock conflict refuses the whole call) or, with `ripple: false`, `edit.clear`.
+
 **Moving clips**: `timeline.move {moves: [{clip, track, time}], insert?, linked?}` → `{moved: [clip ids]}`.
 With Linked Selection on (the default; `linked` overrides the toggle for one call) the linked
 partners of a listed clip that are not listed themselves move by the same time offset and stay on
