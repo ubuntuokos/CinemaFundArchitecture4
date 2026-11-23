@@ -17,7 +17,8 @@ import psycopg
 
 from .commands import COMMANDS, run_command
 
-_SHORT = {"list": "audit.list", "verify": "audit.verify", "export": "audit.export", "checkpoint": "audit.checkpoint"}
+_SHORT = {"list": "audit.list", "verify": "audit.verify", "export": "audit.export", "checkpoint": "audit.checkpoint",
+          "archive": "audit.archive", "archive-verify": "audit.archive.verify"}
 
 
 def _parser() -> argparse.ArgumentParser:
@@ -43,6 +44,10 @@ def main(argv: Sequence[str] | None = None) -> int:
         for p in COMMANDS[cid].params
         if getattr(args, p.name, None) not in (None, False)
     }
+    if COMMANDS[cid].offline:  # verifies a file: works with the database down
+        result = run_command(None, cid, params)
+        print(json.dumps(result, ensure_ascii=False, default=str))
+        return 0 if result.get("ok") else 1
     try:
         with psycopg.connect(args.conninfo, autocommit=True) as conn:
             result = run_command(conn, cid, params)

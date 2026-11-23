@@ -4,6 +4,7 @@ AU-1: canonical form, hash, the event value and the database schema; AU-2: write
 ``verify``, ``export_events``, checkpoints.
 """
 
+from .archive import ArchiveResult, archive_month, verify_archive
 from .canonical import GENESIS_PREV_HASH, HASH_DOMAIN_V1, canonical_bytes, event_hash, hash_canonical
 from .errors import AuditError, EventNotObject, FloatForbidden, InvalidEvent, InvalidValue
 from .store import (
@@ -34,6 +35,7 @@ __all__ = [
     "HASH_DOMAIN_V1",
     "SCHEMA_VER",
     "ActorKind",
+    "ArchiveResult",
     "ChainBroken",
     "ChainConflict",
     "CheckpointMismatch",
@@ -44,6 +46,7 @@ __all__ = [
     "Unit",
     "VerifyResult",
     "WriteDenied",
+    "archive_month",
     "ensure_partitions",
     "erase_personal",
     "export_events",
@@ -53,6 +56,7 @@ __all__ = [
     "take_checkpoint",
     "unit",
     "verify",
+    "verify_archive",
     "AuditError",
     "AuditEvent",
     "EventNotObject",

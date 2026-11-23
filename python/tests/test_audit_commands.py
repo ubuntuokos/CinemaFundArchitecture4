@@ -62,6 +62,8 @@ def test_every_command_has_a_descriptor() -> None:
         "audit.verify",
         "audit.export",
         "audit.checkpoint",
+        "audit.archive",
+        "audit.archive.verify",
         "audit.partition.ensure",
         "audit.personal.erase",
     }

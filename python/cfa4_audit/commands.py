@@ -12,12 +12,13 @@ import json
 import uuid
 from collections.abc import Callable, Mapping
 from dataclasses import dataclass
-from datetime import datetime
+from datetime import date, datetime
 from pathlib import Path
 from typing import Any
 
 import psycopg
 
+from .archive import archive_month, verify_archive
 from .errors import AuditError, InvalidEvent
 from .store import (
     Filters,
@@ -48,12 +49,13 @@ class Command:
     label: str
     menu_path: tuple[str, ...]
     params: tuple[Param, ...]
-    run: Callable[[psycopg.Connection, Mapping[str, Any]], Result]
+    run: Callable[[Any, Mapping[str, Any]], Result]  # the connection is None for an offline command
     shortcut: str | None = None
+    offline: bool = False  # needs no database (verifies a file)
 
     def enabled(self, conn: psycopg.Connection) -> bool:
         """Commands need only a connection; the database enforces the roles."""
-        return not conn.closed
+        return self.offline or not conn.closed
 
 
 _FILTER_PARAMS = (
@@ -142,6 +144,22 @@ def _checkpoint(conn: psycopg.Connection, p: Mapping[str, Any]) -> Result:
     return {"ok": True, "path": str(take_checkpoint(conn, root=root))}
 
 
+def _archive(conn: psycopg.Connection, p: Mapping[str, Any]) -> Result:
+    try:
+        month = date.fromisoformat(str(p["month"]) + "-01")
+    except ValueError as exc:
+        raise InvalidEvent("parameter 'month': use YYYY-MM") from exc
+    from .store import default_checkpoint_root  # same state tree as the checkpoints
+
+    root = Path(p["root"]) if p.get("root") else default_checkpoint_root().parent / "archives"
+    return {"ok": True, "path": str(archive_month(conn, month, root))}
+
+
+def _archive_verify(_conn: object, p: Mapping[str, Any]) -> Result:
+    r = verify_archive(Path(p["path"]))
+    return {"ok": r.ok, "count": r.count, "first_seq": r.first_seq, "last_seq": r.last_seq, "code": r.code, "detail": r.detail}
+
+
 def _ensure(conn: psycopg.Connection, p: Mapping[str, Any]) -> Result:
     return {"ok": True, "created": ensure_partitions(conn, p.get("months_ahead", 2))}
 
@@ -181,6 +199,21 @@ COMMANDS: dict[str, Command] = {
         ),
         Command("audit.checkpoint", "Write an audit checkpoint", ("Audit", "Checkpoint"), (Param("root", "str"),), _checkpoint),
         Command(
+            "audit.archive",
+            "Archive a closed month",
+            ("Audit", "Archive", "Create"),
+            (Param("month", "str", required=True, help="YYYY-MM, a closed month"), Param("root", "str")),
+            _archive,
+        ),
+        Command(
+            "audit.archive.verify",
+            "Verify an archive package",
+            ("Audit", "Archive", "Verify"),
+            (Param("path", "str", required=True),),
+            _archive_verify,
+            offline=True,
+        ),
+        Command(
             "audit.partition.ensure",
             "Create the audit partitions",
             ("Audit", "Maintenance", "Partitions"),
@@ -198,7 +231,7 @@ COMMANDS: dict[str, Command] = {
 }
 
 
-def run_command(conn: psycopg.Connection, command_id: str, params: Mapping[str, Any] | None = None) -> Result:
+def run_command(conn: psycopg.Connection | None, command_id: str, params: Mapping[str, Any] | None = None) -> Result:
     """Run one command by id. Never raises an audit error: it returns ``{"ok": false, "code": …}`` instead."""
     command = COMMANDS.get(command_id)
     if command is None:
@@ -213,6 +246,8 @@ def run_command(conn: psycopg.Connection, command_id: str, params: Mapping[str, 
         if missing:
             raise InvalidEvent(f"missing parameter(s): {', '.join(missing)}")
         coerced = {name: _coerce(known[name], value) for name, value in given.items() if value is not None}
+        if conn is None and not command.offline:
+            raise InvalidEvent("this command needs a database connection")
         return command.run(conn, coerced)
     except AuditError as exc:
         return {"ok": False, "code": exc.code, "detail": exc.detail}
