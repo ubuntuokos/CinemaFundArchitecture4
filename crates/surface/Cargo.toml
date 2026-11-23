@@ -13,7 +13,7 @@ workspace = true
 cfa4-surface-model = { workspace = true }
 serde = { workspace = true }
 # the ALSA sequencer; the same version cpal and cfa4-tcsync-io build on (alsa-sys `links = "alsa"`)
-alsa = "0.9"
+alsa = "0.10"
 # poll() on the hidraw node, so the reading thread can stop (already in the lockfile)
 # `event` is poll(); `fs` is inotify on /dev (D5). Same rustix already in the lockfile.
 rustix = { version = "1", default-features = false, features = ["std", "event", "fs"] }
