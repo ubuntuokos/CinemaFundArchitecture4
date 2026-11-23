@@ -4923,3 +4923,7 @@
 
 # WP3 DPX bit depth
 	Bit Depth	ビット深度
+
+# AS-02 versions
+	AS-02 Versions	AS-02バージョン
+	Tick the sequences to write as further versions in the AS-02 bundle	AS-02バンドルに追加バージョンとして書き出すシーケンスにチェックを入れます

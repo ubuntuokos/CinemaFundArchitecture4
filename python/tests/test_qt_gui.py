@@ -15773,3 +15773,38 @@ def test_export_mxf_as02_switch_only_for_op1a_without_interleaved_codecs(app):
     dlg._sync_format_rows()
     assert box.isHidden() and "mxfAs02" not in dlg.params()
     dlg.deleteLater()
+
+
+def test_export_mxf_as02_versions_list_by_name_only_with_as02_on(app):
+    """#1724: the AS-02 switch reveals a list of the project's other sequences by name; the ticked
+    ones go out as ``mxfAs02Versions`` (sequence ids) only once changed."""
+    from cfa4_qt.panels.export import ExportDialog
+
+    class Engine:
+        running = False
+
+        def execute(self, command, params=None, on_reply=None, on_error=None):
+            return 0
+
+    dlg = ExportDialog(Engine())  # type: ignore[arg-type]
+    dlg._on_formats([{"id": "mxf-op1a", "label": "MXF OP1a"}], None)
+    dlg.sequence = {"id": 7, "name": "Main"}
+    dlg.set_project_sequences([(7, "Main"), (8, "Hungarian"), (9, "German")])
+    lst = dlg.findChild(QtWidgets.QListWidget, "export.video.mxfAs02Versions")
+    assert lst is dlg.as02_versions
+    # the open sequence is not offered; the others are listed by name
+    assert [lst.item(i).text() for i in range(lst.count())] == ["Hungarian", "German"]
+    dlg.format.setCurrentIndex(dlg.format.findData("mxf-op1a"))
+    dlg._sync_format_rows()
+    assert lst.isHidden()  # AS-02 is off
+    dlg.mxf_as02.setChecked(True)
+    assert not lst.isHidden()
+    assert "mxfAs02Versions" not in dlg.params()  # nothing changed in the list yet
+    lst.item(1).setCheckState(QtCore.Qt.CheckState.Checked)
+    assert dlg.params()["mxfAs02Versions"] == [9]
+    # a refresh keeps the ticks of the sequences still there
+    dlg.set_project_sequences([(7, "Main"), (9, "German")])
+    assert dlg.params()["mxfAs02Versions"] == [9]
+    dlg.mxf_as02.setChecked(False)
+    assert lst.isHidden() and "mxfAs02Versions" not in dlg.params()
+    dlg.deleteLater()
