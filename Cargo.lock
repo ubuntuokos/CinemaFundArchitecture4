@@ -181,18 +181,6 @@ checksum = "683d7910e743518b0e34f1186f92494becacb047c7b6bf616c96772180fef923"
 
 [[package]]
 name = "alsa"
-version = "0.9.1"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "ed7572b7ba83a31e20d1b48970ee402d2e3e0537dcfe0a3ff4d6eb7508617d43"
-dependencies = [
- "alsa-sys",
- "bitflags 2.13.2",
- "cfg-if",
- "libc",
-]
-
-[[package]]
-name = "alsa"
 version = "0.10.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "7c88dbbce13b232b26250e1e2e6ac18b6a891a646b8148285036ebce260ac5c3"
@@ -2467,7 +2455,7 @@ dependencies = [
 name = "cfa4-surface"
 version = "0.10.0"
 dependencies = [
- "alsa 0.9.1",
+ "alsa",
  "cfa4-surface-model",
  "rustix 1.1.6",
  "serde",
@@ -2539,7 +2527,7 @@ dependencies = [
 name = "cfa4-tcsync-io"
 version = "0.10.0"
 dependencies = [
- "alsa 0.9.1",
+ "alsa",
  "cfa4-tcsync",
  "cfa4-time",
  "cpal",
@@ -2998,7 +2986,7 @@ version = "0.17.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "5b1f9c7312f19fc2fa12fd7acaf38de54e8320ba10d1a02dcbe21038def51ccb"
 dependencies = [
- "alsa 0.10.0",
+ "alsa",
  "coreaudio-rs",
  "dasp_sample",
  "jni 0.21.1",
