@@ -1,4 +1,4 @@
-//! Kdenlive `.kdenlive` projects (K1, shared MLT core with Shotcut SC-5.1): the CC0 test dataset of
+//! Kdenlive `.kdenlive` projects (KDN-1, shared MLT core with Shotcut SC-5.1): the CC0 test dataset of
 //! Kdenlive (`tests/data/kdenlive-mlt/README.md`). Expected values are read off the documents, not off
 //! our own output.
 

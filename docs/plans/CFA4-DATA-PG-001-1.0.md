@@ -31,14 +31,14 @@ Egyetlen helyi PostgreSQL-klaszter (`cfa4`) szolgálja ki ezeket, modulonként s
 - az AI-jobtárat;
 - a gyorsítótár-indexet;
 - a Media Intelligence indexét (pgvector);
-- a K17 nyilvántartást.
+- a KDN-17 nyilvántartást.
 
 Második adatbázismotor nincs (TASKSTORE 31–33; ADR-0006 61. sor; AI ADR-0008 197–205, 335–336). A szerkesztő adatbázis nélkül is teljes értékű marad (P12, P14; TASKSTORE 47–51, 149–157).
 
 ### 1.2 Hatókör
 
 - Klaszter, szerepkörök, sémák, migrációk, telepítés és üzemeltetés, mentés, megbízhatóság, biztonság, tesztek és CI.
-- A tasks/ai/cache/mi/K17 sémák részletesen; a backlot, cfa4_audit és cfa4_files sémák a saját ADR-jeikre hivatkozva; a train séma vázlatként.
+- A tasks/ai/cache/mi/KDN-17 sémák részletesen; a backlot, cfa4_audit és cfa4_files sémák a saját ADR-jeikre hivatkozva; a train séma vázlatként.
 - A fejlesztési sorrend: előbb az AI_modules, utána átvétel a CFA4-be (P13).
 
 ### 1.3 Nem-célok
@@ -104,7 +104,7 @@ flowchart TB
         ai[(ai)]
         cache[(cache)]
         mi[(mi + pgvector<br/>PG-4)]
-        reg[(registry – K17)]
+        reg[(registry – KDN-17)]
         train[(train – vázlat)]
         ledger[(cfa4_store.migration<br/>Rust-nyilvántartás)]
         alembic[(alembic_version<br/>backlot-nyilvántartás)]
@@ -183,7 +183,7 @@ Szerepek (minden szerep `NOLOGIN`, kivéve a bejelentkezőt):
 | `ai` | `cfa4-store` | PG-3 | AI-jobok, licencelfogadás, modellrekordok | TASKSTORE 69–71 |
 | `cache` | `cfa4-store` | PG-3 | Tartalomcímzett gyorsítótár-index | TASKSTORE 72 |
 | `mi` | `cfa4-store` | PG-4 | Media Intelligence + pgvector | TASKSTORE 80–125; P1, P2, P10 |
-| `registry` (K17, név javaslat) | `cfa4-store` | PG-K (lásd §9) | Sorozat, epizód, proxy- és modellnyilvántartás | P7; Kdenlive 287, 321–323 |
+| `registry` (KDN-17, név javaslat) | `cfa4-store` | PG-K (lásd §9) | Sorozat, epizód, proxy- és modellnyilvántartás | P7; Kdenlive 287, 321–323 |
 | `train` | `cfa4-store` | vázlat | Képzési rekordok; a súly a fájlrendszeren marad | TASKSTORE 218–220; AI #33 |
 | `cfa4_store` | `cfa4-store` | PG-1 | Migrációs nyilvántartás (`migration`) | migrate.rs 78–84 (a sématérképből eddig hiányzott) |
 
@@ -224,8 +224,8 @@ A tartalom a TASKSTORE 69–72 szerint:
 
 Mind `uuid` és `timestamptz`.
 
-> **Döntés – D-7 (István, 2026-11-15, az ajánlás szerint): egy modellnyilvántartás.** A Kdenlive K17 „modellek” és a K18 „bejegyzés a K17-be” (Kdenlive 287, 324–326) átfed az `ai.model`-lel (TASKSTORE 71) és az AI ADR-0008 közös modelltárával (64. sor). A transcripts.md a modellsúlyokat `<data dir>/models/<id>/`-ban tartja, SHA-256-tal rögzítve (67–69).
-> **Döntés:** egyetlen modellnyilvántartás legyen, az `ai.model`. A K18 oda ír; a K17 `registry` sémája csak hivatkozik rá. A fájlok helye külön döntés: [nyitott].
+> **Döntés – D-7 (István, 2026-11-15, az ajánlás szerint): egy modellnyilvántartás.** A Kdenlive KDN-17 „modellek” és a KDN-18 „bejegyzés a KDN-17-be” (Kdenlive 287, 324–326) átfed az `ai.model`-lel (TASKSTORE 71) és az AI ADR-0008 közös modelltárával (64. sor). A transcripts.md a modellsúlyokat `<data dir>/models/<id>/`-ban tartja, SHA-256-tal rögzítve (67–69).
+> **Döntés:** egyetlen modellnyilvántartás legyen, az `ai.model`. A KDN-18 oda ír; a KDN-17 `registry` sémája csak hivatkozik rá. A fájlok helye külön döntés: [nyitott].
 
 ### 4.5 `mi` séma: Media Intelligence és pgvector (PG-4, részletesen)
 
@@ -277,19 +277,19 @@ Mind `uuid` és `timestamptz`.
 
 **Hiányzó pgvector.** A vektoros keresés kezelhető hibát ad, az átiratkeresés és minden más működik (TASKSTORE 88–90). DB nélkül a meglévő `.fcproj`-alapú `transcript.search` szolgál (transcripts.md 29).
 
-### 4.6 `registry` séma: a K17 PostgreSQL-ben (P7)
+### 4.6 `registry` séma: a KDN-17 PostgreSQL-ben (P7)
 
 Kiinduló tények:
-- A K17 tartalma: sorozatok, epizódok, feliratsablonok, presetek, proxyk, modellek; P2 prioritás, 30–50 óra, előfeltétele az ADR F8 3. lépése (Kdenlive 287).
+- A KDN-17 tartalma: sorozatok, epizódok, feliratsablonok, presetek, proxyk, modellek; P2 prioritás, 30–50 óra, előfeltétele az ADR F8 3. lépése (Kdenlive 287).
 - Az eredeti terv szerint `rusqlite`, a `.fcproj` marad az igazság, az adatbázis újraépíthető (321–323). Tulajdonosi döntés: „kell” (630).
-- Az ADR-0006 a K17-et nem érintette (49–50).
-- P7: a K17 PostgreSQL-be kerül, saját sémába; ami adatbázis nélkül is kell, az projektfájlba vagy atomi JSON-ba.
+- Az ADR-0006 a KDN-17-et nem érintette (49–50).
+- P7: a KDN-17 PostgreSQL-be kerül, saját sémába; ami adatbázis nélkül is kell, az projektfájlba vagy atomi JSON-ba.
 
-> **Döntés – D-8 (István, 2026-11-15, az ajánlás szerint): a K17 tételeinek felosztása.** **Döntés:**
+> **Döntés – D-8 (István, 2026-11-15, az ajánlás szerint): a KDN-17 tételeinek felosztása.** **Döntés:**
 > - **Atomi JSON a `<data dir>`-ben, DB nélkül is működik:** feliratsablonok és presetek. Ez az `export-presets.json` mintája (architecture.md 765).
 > - **Projektfájl:** az epizód sorozat-hivatkozása, egy UUIDv7.
 > - **PostgreSQL (`registry`):** sorozat- és epizódnyilvántartás, proxy-nyilvántartás; a modelleket a D-7 szerint az `ai.model` adja.
-> - A K17 „kész” feltétele (a sorozat új epizódja egy lépésben megkapja a sablont és a preseteket; Kdenlive 322–323) DB nélkül is teljesüljön a JSON-ból; DB-vel a nyilvántartásból.
+> - A KDN-17 „kész” feltétele (a sorozat új epizódja egy lépésben megkapja a sablont és a preseteket; Kdenlive 322–323) DB nélkül is teljesüljön a JSON-ból; DB-vel a nyilvántartásból.
 
 ### 4.7 `train` séma (vázlat)
 
@@ -439,7 +439,7 @@ DB nélkül a mai memóriasor fut (P14). Az átállás a két sor között indul
 
 ## 9. Fázisok és kapuk
 
-**Sorrend (P2, P13):** PG-0 → PG-1 és PG-2 az AI_modules-ban → T (átvétel a CFA4-be, §2.8, külön döntéssel) → PG-3 (AI-F2) → PG-K (K17) → PG-4 (AI-F4, a Qt 6 átállás és az egui eltávolítása után).
+**Sorrend (P2, P13):** PG-0 → PG-1 és PG-2 az AI_modules-ban → T (átvétel a CFA4-be, §2.8, külön döntéssel) → PG-3 (AI-F2) → PG-K (KDN-17) → PG-4 (AI-F4, a Qt 6 átállás és az egui eltávolítása után).
 
 Megjegyzések:
 - A PG-1 és a PG-2 egy része az ACS-4 keretében már elkészült az F0-időszakban (AI #45, #49). Ezt az ACS-1…ACS-4 F0-beli engedélye fedezte (AI #34; AI ADR-0008 351–356).
@@ -452,7 +452,7 @@ Megjegyzések:
 | **PG-2** | AI_modules | PG-1 kész | `tasks`: UUIDv7/timestamptz-lépés (D-5); `schedule`, `checkpoint`, `estimate`, `run_history`; LISTEN/NOTIFY és relay (#52); envelope és subjectek (D-3); a render és az export feladattípus (P14) | A TASKSTORE 183–188 összes tesztje zöld CI-ben: leölés minden tranzakciós ponton → 0 kétszeres indítás; bérletlejárat; DB-újraindítás futó feladat közben; ütemezés (pontos, elmaradt, időzóna- és nyáriidő-váltás); összeomlási ablak; átrendezett kézbesítés. Mért RTO a klaszter újraindítása után ≤ 1 perc (P9). |
 | **T – átvétel** | CFA4 | PG-1 és PG-2 kész; #50 és #52 a P4–P6 szerint javítva és beolvasztva (P13) | `cfa4-tasks`, `cfa4-store`, TaskHost, `tasks.*` a CFA4 főágba; a Qt-panel valós adatot kap | Külön tulajdonosi és gazdadöntés (coordination §2.8, 37–42). A CFA4 full-validation-gate minden blokkoló jobja ténylegesen lefutott és zöld a fejen (§3.4, 99–103), plusz a PostgreSQL-es CI-futás (P15). A DB nélküli út: vágás, lejátszás, mentés és memóriasor változatlan. |
 | **PG-3** | CFA4 | AI-F0 kész (Qt 6 kész, egui kikerült; AI ADR-0008 351–353); T kész | `ai` és `cache` séma | CFA4-újraindítás után nincs elveszett vagy kétszer indult job; a licencelfogadás és minden jobállapot az adatbázisban van (TASKSTORE 203) |
-| **PG-K** | CFA4 | ADR F8 3. lépés (Kdenlive 287); D-7 és D-8 eldöntve | `registry` séma; JSON-oldal | A K17 „kész” feltétele DB-vel és DB nélkül is teljesül (§4.6) |
+| **PG-K** | CFA4 | ADR F8 3. lépés (Kdenlive 287); D-7 és D-8 eldöntve | `registry` séma; JSON-oldal | A KDN-17 „kész” feltétele DB-vel és DB nélkül is teljesül (§4.6) |
 | **PG-4** | CFA4 | AI-F4 kapu; Qt 6 átállás és egui-eltávolítás kész (P2); PG-3 kész | `mi` séma, pgvector, `pgvector` crate; első beágyazó modell méréssel (P10); átiratindexelés (AI-F5, 406–407) | (1) Az első kép- és szövegbeágyazó kimenete indexelődik és kereshető (TASKSTORE 204). (2) A TASKSTORE 190 MI-tesztjei zöldek. (3) Az elvárt szakasz a legjobb k találat között van az ismert mintakészleten; k és a küszöb [nyitott]. (4) Az indexépítés RAM-ja az ACS-kereten belül marad a 16 GB-os profilon. (5) Az újraépítés a `.fcproj`-ból bitre azonos `mi.transcript` tartalmat ad. (6) A pgvector-tesztek CI-ben futnak (P15). |
 
 ---
@@ -505,7 +505,7 @@ Megjegyzések:
    - `.deb`: `postgresql` és `postgresql-18-pgvector` Recommends (P12), a 37. sor helyett.
    - A cfa4 klasztert idempotens beállító lépés hozza létre (P12).
    - UUIDv7 + `timestamptz` minden modulra (P5).
-   - A K17 PostgreSQL-be kerül (P7); ez módosítja az 5. pontot (49–50).
+   - A KDN-17 PostgreSQL-be kerül (P7); ez módosítja az 5. pontot (49–50).
    - RPO/RTO kétszintű (P9).
 2. **TASKSTORE-PG-001 (CFA4, hiteles; P17, 216–217):**
    - §9: meghajtó (P3), L5 és a socketes OS-I/O indok (P4), a 176–178. sor helyett;
@@ -514,7 +514,7 @@ Megjegyzések:
    - §7: memóriasor DB nélkül (P14); §8: klaszter (P6);
    - §10: valódi PostgreSQL-es CI (P15), fejlesztői klaszter (P16);
    - §11: a fázissorrend (P2, P13);
-   - §12: a K17 (P7), a render feladattípus és a RENDER-F0a §7 lezárása (P14).
+   - §12: a KDN-17 (P7), a render feladattípus és a RENDER-F0a §7 lezárása (P14).
    - Az AI_modules `docs/ai/postgresql-adatreteg.md` ehhez igazodik, vagy a CFA4-példányra mutat.
 3. **AI_modules #50:** az L5-indok szövege a P4 szerinti legyen. Az ACS-terv 188–191 és a lib.rs 19–20 WASM-indoka cserélendő; a 197–200. sor „ms helyett timestamptz” eltérése a P5 szerint megszűnik.
 4. **AI_modules #52:** igazítás a P4–P6 szerint (UUIDv7/timestamptz, klaszter, INSTALL_HINT), plusz a D-3 envelope.
@@ -522,7 +522,7 @@ Megjegyzések:
    - a 137 soros `CFA4-ADAPTIVE-CAPABILITY-001-osszevetes.md` marad, a 189 soros `…-OSSZEVETES.md` beleolvad és törlődik;
    - a „kész” állításokat a beolvasztás állapotához kell igazítani (osszevetes 31, 48–51: az AI #50 és #52 még nyitott);
    - az OSSZEVETES 41. sorát (az ADR 0008 L5-ös rétege már javítva) és 23. sorát (a coordination.md hiánya) javítani kell, vagy a beolvasztáskor elhagyni.
-6. **Kdenlive-terv:** a K17 sora (287, 321–323) a P7 és a D-8 szerint; a D4/T7 (516, 673) elavult, mert az EF-terv a main-ben van (`docs/plans/CFA4-EVENT-FABRIC-001-1.0.md`).
+6. **Kdenlive-terv:** a KDN-17 sora (287, 321–323) a P7 és a D-8 szerint; a D4/T7 (516, 673) elavult, mert az EF-terv a main-ben van (`docs/plans/CFA4-EVENT-FABRIC-001-1.0.md`).
 7. **RENDER-F0a §7 (139):** lezárva, a render a `tasks` feladattípusa (P14).
 8. **AI ADR-0008:** 216. sor L5 (#50); a 197–205 szövege az egy tartós sorral és a DB nélküli memóriasorral (P14).
 9. **ADR-0009:32** („A Rust-motornak M1-ben nem kell PostgreSQL-kliens”): pontosítani, hogy ez a File Services-re vonatkozik. A motor a P13/P14 szerint a `cfa4-store`-on át kliens lesz.
@@ -541,7 +541,7 @@ Megjegyzések:
 | EF-envelope eltérés (D-3) | Biztos / közepes | PG-2 javítás; az EF még nem implementált (EF 1597) |
 | A HNSW-építés RAM-ja a 16 GB-os gépen | Közepes / magas | ACS-foglalás, mérés |
 | A kettős migrációs eszköz (Rust és Alembic) szétcsúszik | Közepes / közepes | Szigorú sémagazdaság, egy belépési pont |
-| A K17 felosztása (D-8) elhúzódik | Közepes / alacsony | A PG-K független a PG-4-től |
+| A KDN-17 felosztása (D-8) elhúzódik | Közepes / alacsony | A PG-K független a PG-4-től |
 | A MI FINAL 2.0 később eltérő követelményt hoz | Ismeretlen / közepes | Modellfüggetlen `mi` séma (P10); a PG-4 kapuja előtt felülvizsgálat |
 | A Flatpak-sandbox nem éri el a socketet | Ismeretlen / közepes | [nyitott]; DB nélküli út |
 | Két összevetés-fájl kis- és nagybetűs ütközése | Biztos / alacsony | P17 |
@@ -557,7 +557,7 @@ Megjegyzések:
 - **P4** A `cfa4-store` L5, indok: socketes OS-I/O. Az AI #50 és a TASKSTORE igazodik.
 - **P5** UUIDv7 + `timestamptz`; a média-idő Tick marad.
 - **P6** Külön `cfa4` klaszter, csak Unix socket, `peer`. A kód és az INSTALL_HINT igazodik.
-- **P7** A K17 PostgreSQL-be kerül, saját sémába; a DB nélkül is szükséges rész projektfájlba vagy atomi JSON-ba.
+- **P7** A KDN-17 PostgreSQL-be kerül, saját sémába; a DB nélkül is szükséges rész projektfájlba vagy atomi JSON-ba.
 - **P8** Az átiratok igazságforrása a `.fcproj`; a `mi.transcript` származtatott, újraépíthető.
 - **P9** Élő DB: RPO ≤ 5 s, RTO ≤ 1 perc. Napi mentés: RPO 24 óra, RTO 30 perc. A mi és a cache újraépíthető.
 - **P10** A `mi` séma modellfüggetlen; az első modellt az AI-F4 kapunál mérés dönti el.
@@ -576,8 +576,8 @@ Megjegyzések:
 - **D-4** A beállító lépést `.deb`-nél a `postinst` futtatja, a többi csomagformánál első indításkor a felület `pkexec`-kel ajánlja fel; az INSTALL_HINT erre a parancsra mutat (§5.2).
 - **D-5** Új, harmadik migrációs lépés a `text` → `uuid` és `bigint` ms → `timestamptz` átállításhoz, visszafelé lépéssel; a v1 nem íródik át (§4.3).
 - **D-6** A modellenkénti HNSW-indexépítés `tasks` feladat (P2 osztály), a `cfa4-store` `SET ROLE cfa4_owner_mi`-vel futtatja; a jogkiterjesztés csak a `mi` sémára vonatkozik (§4.5).
-- **D-7** Egyetlen modellnyilvántartás, az `ai.model`; a K18 oda ír, a K17 `registry` csak hivatkozik rá (§4.4).
-- **D-8** A K17 felosztása: feliratsablonok és presetek atomi JSON-ban, az epizód sorozat-hivatkozása a projektfájlban, a sorozat-, epizód- és proxy-nyilvántartás a `registry` sémában (§4.6).
+- **D-7** Egyetlen modellnyilvántartás, az `ai.model`; a KDN-18 oda ír, a KDN-17 `registry` csak hivatkozik rá (§4.4).
+- **D-8** A KDN-17 felosztása: feliratsablonok és presetek atomi JSON-ban, az epizód sorozat-hivatkozása a projektfájlban, a sorozat-, epizód- és proxy-nyilvántartás a `registry` sémában (§4.6).
 - **D-14** A mi és a cache benne van a napi mentésben, ha a méret engedi; a 30 perces RTO a nem származtatott sémákra vonatkozik, a mi és a cache RTO-ja „újraépítésig” (§5.6).
 
 **Korábbi jóváhagyások:**
@@ -588,7 +588,7 @@ Megjegyzések:
 - Meghajtó: 2026-11-11 (lib.rs 4–5; AI #45). Az ACS-1…4 mehet az F0-ban: 2026-11-07 (AI #34).
 - Sorrend P0, R, P1, P2: 2026-11-13 (AI #50; osszevetes 115).
 - Stáblistához nem kell adatbázis: 2026-11-14 (TITLE-CREDITS ILLESZTES 286).
-- K17 „kell”: Kdenlive 630. RAM-minimum 16 GB, ajánlott 32 GB: 2026-11-07 (AI #32).
+- KDN-17 „kell”: Kdenlive 630. RAM-minimum 16 GB, ajánlott 32 GB: 2026-11-07 (AI #32).
 
 ---
 

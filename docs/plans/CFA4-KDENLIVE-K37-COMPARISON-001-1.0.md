@@ -1,9 +1,9 @@
 # CFA4-KDENLIVE-K37-COMPARISON-001 — a Kdenlive-forkok eszközlistája a parancsregiszterrel szemben
 
-- **Állapot:** Piszkozat (K37, összevetés; kódot nem érint)
+- **Állapot:** Piszkozat (KDN-37, összevetés; kódot nem érint)
 - **Dátum:** 2026-11-23
 - **Alap:** `main@e493e956`
-- **Forrás:** `docs/plans/CFA4-KDENLIVE-EXECUTION-PLAN-001-1.0.md` (K37, 4. és 6. pont W1). Az eszköznevek a forkok nyilvános eszközlistájából valók (csak ötletként; kódot nem veszünk át).
+- **Forrás:** `docs/plans/CFA4-KDENLIVE-EXECUTION-PLAN-001-1.0.md` (KDN-37, 4. és 6. pont W1). Az eszköznevek a forkok nyilvános eszközlistájából valók (csak ötletként; kódot nem veszünk át).
 
 A parancsazonosítókat a `crates/engine/src` forrásában ellenőriztük (`cmd!("…")`, `spec("…")`, `CommandSpec { id: "…" }`); a hivatkozott fájl a „Hol” oszlopban áll. Futtatás nem történt.
 
@@ -20,7 +20,7 @@ A parancsazonosítókat a `crates/engine/src` forrásában ellenőriztük (`cmd!
 | `render_frame` | `file.exportFrame` (Shift+E; `target` source/program, `format`, `depth`); a Qt-oldali képkocka-`render` a `serve`-ön | `keyboard.rs` (~561) | megvan | – |
 | `detect_scenes` | `clip.sceneEditDetection` (`sensitivity`, `minShotFrames`, `applyCuts`, `createSubclips`, `generateMarkers`, `wait`) | `scene_detect.rs` (32) | megvan | – |
 | `import_srt_as_titles` | `captions.import` (SRT/VTT/SCC/MCC/STL/TTML/DFXP feliratsávba) | `captions.rs` (~1137; `.srt` felismerés ~102) | **részben** | Felirat igen, de **cím-/grafikai elemként** (`graphics.newText`) nem; lásd lent |
-| `set_effect_expression` | – (`effects.setParam`, `effects.setKeyframe`, `effects.apply` megvan; kifejezés-paraméter nincs) | `effects.*` a `commands.rs`-ben | **hiányzik** | A kifejezésmag a VFX-4 terv gazdája (QuickJS a D-Ogi forkban); ez nem a K-terv feladata |
+| `set_effect_expression` | – (`effects.setParam`, `effects.setKeyframe`, `effects.apply` megvan; kifejezés-paraméter nincs) | `effects.*` a `commands.rs`-ben | **hiányzik** | A kifejezésmag a VFX-4 terv gazdája (QuickJS a D-Ogi forkban); ez nem a KDN-terv feladata |
 | `timeline_close_gaps` | `sequence.closeGap` (paraméter nélkül: a kijelölt rés, vagy az In–Out közti összes rés; `track`+`time` explicit) | `commands.rs` (~2508, `close_sequence_gaps`) | megvan | Üres paraméterű alak az „összes rést” zárja |
 | `flow_delete_short_clips` | – (`clip.removeSilence`, `edit.rippleDelete` és `sequence.closeGap` van; rövid-klip szűrő nincs) | – | **hiányzik** | Lásd lent |
 | `flow_export_and_wait` | `export.quick` (`wait:true`, `preset`, `path`); `export.queue.add`/`export.queue.start` (`wait`); `export.start` | `export_tools.rs` (~1589, ~1566); `smart_cut.rs` (481) | megvan | A `wait` paraméter adja a „várj” viselkedést |
@@ -32,8 +32,8 @@ A parancsazonosítókat a `crates/engine/src` forrásában ellenőriztük (`cmd!
 |---|---|
 | `qc.contactSheet` (vagy `file.exportContactSheet`) | `{"clip"\|"sequence":id, "frames":n=12, "columns":n?, "path":str?}`; a `cfa4-qc` `picture.rs` meglévő kontaktlap-rajzolóját hívja önállóan, a `file.exportFrame` képkocka-kinyerésével és a `wait` paraméterrel |
 | `captions.importAsTitles` | `{"path":str,"style":str?,"track":id?}`; a `captions.rs` SRT-elemzőjét használja, és felirat helyett `graphics.newText` klipet vesz fel időzítve; a `captions.import` mellett marad |
-| `effects.setExpression` | `{"clip":id,"effect":id,"param":str,"expr":str}`; **nem a K-terv**: a kifejezésmotort a VFX-4 hordozza, a K37 csak a névegyeztetést adja |
+| `effects.setExpression` | `{"clip":id,"effect":id,"param":str,"expr":str}`; **nem a KDN-terv**: a kifejezésmotort a VFX-4 hordozza, a KDN-37 csak a névegyeztetést adja |
 | `edit.deleteShortClips` (vagy `sequence.removeShortClips`) | `{"minFrames":n,"tracks":[id]?,"ripple":bool=true,"dryRun":bool=true}`; a `clip.removeSilence` és az `edit.rippleDelete` kijelölés-logikáját használja, utána `sequence.closeGap` |
 | `export.queue.addFromMarkers` (vagy `ranges` bővítés `markers` forrással) | `{"markers":"color|name"?, …export.queue.add paraméterei}`; a jelölők közti tartományokat `ranges`-szé alakítja, majd `export.queue.add` fut |
 
-**Összegzés:** 14 fork-eszközből 9 megvan, 1 részben, 4 hiányzik (a hiányzókból az `effects.setExpression` a VFX-4 terv gazdájánál marad). A K37 tényleges teendője legfeljebb 4 kis parancs; az E6 MCP-felülettel egyeztetendő.
+**Összegzés:** 14 fork-eszközből 9 megvan, 1 részben, 4 hiányzik (a hiányzókból az `effects.setExpression` a VFX-4 terv gazdájánál marad). A KDN-37 tényleges teendője legfeljebb 4 kis parancs; az E6 MCP-felülettel egyeztetendő.
