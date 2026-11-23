@@ -76,6 +76,19 @@ CREATE INDEX task_open ON tasks.task (class_rank, priority DESC, submitted_at)
 CREATE INDEX task_open ON tasks.task (class_rank, priority DESC, submitted_at)
     WHERE state IN ('scheduled', 'queued', 'waiting', 'running');",
     },
+    Step {
+        version: 3,
+        // P5: wall-clock times are `timestamptz`. The task ids stay `text`: the queue's ids are chosen by
+        // its callers (`export-1`, ...) and are not UUIDs, so the uuid half of D-5 is not applied here.
+        up: "ALTER TABLE tasks.task ALTER COLUMN submitted_at TYPE timestamptz USING to_timestamp(submitted_at / 1000.0);
+ALTER TABLE tasks.task ALTER COLUMN start_at TYPE timestamptz USING to_timestamp(start_at / 1000.0);
+ALTER TABLE tasks.task ALTER COLUMN lease_until TYPE timestamptz USING to_timestamp(lease_until / 1000.0);
+ALTER TABLE tasks.transition ALTER COLUMN at TYPE timestamptz USING to_timestamp(at / 1000.0);",
+        down: "ALTER TABLE tasks.task ALTER COLUMN submitted_at TYPE bigint USING (extract(epoch from submitted_at) * 1000)::bigint;
+ALTER TABLE tasks.task ALTER COLUMN start_at TYPE bigint USING (extract(epoch from start_at) * 1000)::bigint;
+ALTER TABLE tasks.task ALTER COLUMN lease_until TYPE bigint USING (extract(epoch from lease_until) * 1000)::bigint;
+ALTER TABLE tasks.transition ALTER COLUMN at TYPE bigint USING (extract(epoch from at) * 1000)::bigint;",
+    },
 ];
 
 const AI: &[Step] = &[Step {

@@ -248,6 +248,19 @@ fn report_save(s: &mut Session, p: &Value) -> Result<Value> {
     Ok(json!({"path": path, "bytes": text.len()}))
 }
 
+/// `dcp.repair.plan`: what to do about the findings of the latest report of a package, by repair
+/// class (`cfa4-dcp-repair/1`). Proposals only: nothing is changed, in the package or elsewhere.
+fn repair_plan(s: &mut Session, p: &Value) -> Result<Value> {
+    let cmd = "dcp.repair.plan";
+    let root = str_p(p, "root").ok_or_else(|| bad(cmd, "need `root`"))?;
+    let plan = cfa4_dcp_validate::repair::plan(find(s, cmd, root)?);
+    let counts: serde_json::Map<String, Value> = cfa4_dcp_validate::repair::RepairClass::ALL
+        .iter()
+        .map(|c| (serde_json::to_value(c).ok().and_then(|v| v.as_str().map(str::to_owned)).unwrap_or_default(), json!(plan.count(*c))))
+        .collect();
+    Ok(json!({"root": root, "counts": counts, "plan": plan}))
+}
+
 type Run = fn(&mut Session, &Value) -> Result<Value>;
 
 fn spec(id: &'static str, label: &'static str, params: &'static str, run: Run) -> CommandSpec {
@@ -259,6 +272,7 @@ pub(crate) fn commands() -> Vec<CommandSpec> {
         spec("dcp.validate", "Validate DCP Package", r#"{"root":str,"profile":str?,"wait":bool=false}"#, validate),
         spec("dcp.validate.profiles", "List DCP Validation Profiles", "{}", profiles),
         spec("dcp.validate.report", "Get DCP Validation Report", r#"{"root":str}"#, report_get),
+        spec("dcp.repair.plan", "Plan DCP Repairs", r#"{"root":str}"#, repair_plan),
         spec("dcp.validate.save", "Save DCP Validation Report", r#"{"root":str,"path":str,"format":str?}"#, report_save),
     ]
 }

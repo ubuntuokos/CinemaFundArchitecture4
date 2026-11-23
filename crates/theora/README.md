@@ -30,7 +30,7 @@ FFmpeg-only-in-tests rule (owner decision 2026-11-14).
 | Repeated frames (empty packets) | done |
 | Streams before 3.2.0 (VP3 proper) | refused |
 | Matroska `V_THEORA` through `cfa4-codecs` | done |
-| Ogg `.ogv` video | not yet (the Ogg demuxer reads audio codecs only) |
+| Ogg `.ogv` video | yes (`cfa4-codecs` `ogg_video`; frame number = packet index) |
 | Damaged headers and packets: an error, never a panic | done |
 
 `synth` builds synthetic streams for tests: real headers with flat Huffman tables and random

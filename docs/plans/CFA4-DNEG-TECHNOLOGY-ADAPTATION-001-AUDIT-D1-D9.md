@@ -17,7 +17,7 @@ Minden állítás mellett ott a forrás (fájl vagy parancs). Ami nem ellenőriz
 
 ### 0.1 Kritikus megállapítás: öt hivatkozott terv nincs a `main`-ben
 
-A megbízás ezekre a „korábbi CFA4-tervekre” hivatkozik: **CFA4 VFX Catalog**, **FX Authoring**,
+A megbízás ezekre a „korábbi CFA4-tervekre” hivatkozik: **CFA4 VFX Catalog**, **Effektlánc**,
 **Adaptive Representation Fabric (ARF)**, **OpenUSD / 3D Scene Exchange / procedurális 3D**,
 **Potree-alapú point-cloud donorvizsgálat** (és Gaffer). Ellenőrzés a `main`-en:
 

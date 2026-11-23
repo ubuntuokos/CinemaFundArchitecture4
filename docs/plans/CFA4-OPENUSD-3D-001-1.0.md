@@ -117,7 +117,7 @@
 | Render-terv C0 / F3 / F5 | Egyetlen worker/job-szerződés; az EXR/AOV-t az F5 adja |
 | [`ARF-001`](CFA4-ARF-001-0.1.md) | A betöltött prim-ek leírója; nincs második leírórendszer |
 | [`POINTCLOUD-001`](CFA4-POINTCLOUD-001-0.1.md), DNEG N1/N2 | Ugyanaz a projektfüggő elv; nem 3D-jelenet, nem várja meg ezt a tervet |
-| `CFA4-FX-AUTHORING-001` | Nincs átfedés; a preset a `VfxGraph` részgráfja |
+| `CFA4-EFFECTCHAIN-001` | Nincs átfedés; a preset a `VfxGraph` részgráfja |
 | `G-xx` mátrix | Egy sor: `DNEG-M5` (ideiglenes azonosító; a végleges számot a mátrix gazdája adja, a CSV-hez e PR nem nyúl). Állapot-javaslat: `GAP_STATIC` → `GAP` (U1 indítható dokumentum-döntés után) |
 | `CFA4-RENDER-INTEGRATION-PLAN-001` | A render-motorhoz nem nyúlunk |
 

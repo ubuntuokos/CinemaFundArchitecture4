@@ -52,6 +52,7 @@ pub mod media_watch;
 pub mod mixer;
 pub mod multicam;
 pub mod narration;
+pub mod objects_track;
 mod opatom;
 pub mod panels;
 pub mod paste_media;
@@ -529,6 +530,8 @@ pub struct Session {
     pub media_jobs: Vec<proxies::PendingJob>,
     /// Mask tracking jobs whose keyframes are still being written.
     pub mask_jobs: Vec<masks::PendingTrack>,
+    /// Object tracking jobs whose samples are still being written.
+    pub object_jobs: Vec<objects_track::PendingObjectTrack>,
     /// Scene Edit Detection jobs whose results are applied when they finish.
     pub scene_jobs: Vec<scene_detect::PendingScene>,
     /// Effect presets (built-in + the user's, persisted in the data directory).
@@ -645,6 +648,7 @@ impl Session {
             offline: Default::default(),
             media_jobs: Vec::new(),
             mask_jobs: Vec::new(),
+            object_jobs: Vec::new(),
             scene_jobs: Vec::new(),
             presets: Default::default(),
             export_presets: Default::default(),
@@ -749,6 +753,7 @@ impl Session {
         background::pump(self);
         proxies::poll(self);
         masks::poll(self);
+        objects_track::poll(self);
         scene_detect::poll(self);
         export_tools::pump_queue(self, false);
         qc::poll(self);
@@ -1437,7 +1442,7 @@ mod linked_trim_tests;
 #[cfg(test)]
 mod locked_clip_edits_tests;
 #[cfg(test)]
-mod masks_tests;
+pub(crate) mod masks_tests;
 #[cfg(test)]
 mod media_browser_tests;
 #[cfg(test)]
@@ -1456,6 +1461,8 @@ mod nest_editing_tests;
 mod nest_fidelity_tests;
 #[cfg(test)]
 mod nesting_tests;
+#[cfg(test)]
+mod objects_track_tests;
 #[cfg(test)]
 mod opatom_tests;
 #[cfg(test)]
