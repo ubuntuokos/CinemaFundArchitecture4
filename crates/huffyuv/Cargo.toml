@@ -1,9 +1,9 @@
 [package]
 name = "cfa4-huffyuv"
-description = "Clean-room pure-Rust Huffyuv (HFYU) decoder"
+description = "Pure-Rust Huffyuv (HFYU) decoder, clean-room, with the Huffyuv MT (HYMT) slice layout from FFmpeg"
 version.workspace = true
 edition.workspace = true
-license.workspace = true
+license = "GPL-3.0-or-later AND LGPL-2.1-or-later"
 rust-version.workspace = true
 
 [lints]
