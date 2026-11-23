@@ -4821,6 +4821,7 @@ export.summary	Low	žema
 	Datamosh Bloom	Datamosh žydėjimas
 	Start Time (seconds)	Pradžios laikas (sekundės)
 	Repeats	Pakartojimai
+	Clean Blocks	Švarūs blokai
 
 # Recent effects, per-channel waveform, white balance selector (SC-2/SC-3/SC-4, #1419 #1420 #1421)
 	Apply a recently used effect to the selected clips	Taikyti neseniai naudotą efektą pasirinktiems klipams

@@ -144,3 +144,42 @@ fn every_parameter_changes_the_moving_picture() {
         assert!(mean_abs(&got, &reference) > 1e-4, "{id} has no visible effect");
     }
 }
+
+#[test]
+fn clean_blocks_off_keeps_a_through_new_content_in_b() {
+    // B cuts to new content (coarse random blocks) at its third picture: with Clean Blocks the
+    // encoder refreshes those blocks from B, without them they keep moving A's pixels.
+    let cut = |k: usize| {
+        if k < 2 {
+            return b_frame(k);
+        }
+        let mut img = Image::new(W, H);
+        for (i, p) in img.px.chunks_exact_mut(4).enumerate() {
+            let (x, y) = ((i % W) / 4, (i / W) / 4);
+            let s = ((x * 37 + y * 101) * 2_654_435_761usize) >> 7;
+            p.copy_from_slice(&[(s & 255) as f32 / 255.0, ((s >> 8) & 255) as f32 / 255.0, ((s >> 16) & 255) as f32 / 255.0, 1.0]);
+        }
+        img
+    };
+    let pic = |clean: bool, key: u64| {
+        let mut e = instance();
+        set(&mut e, "clean", ParamValue::Bool(clean));
+        let a0 = scene(W, H, 0, [0.9, 0.1, 0.1]);
+        let mut b = |k: usize| Some(cut(k));
+        let mut src = MoshSource { key, a: &a0, n: 3, b: &mut b };
+        apply_mosh(&e, &a0, &cut(3), 0.5, &mut src)
+    };
+    let (on, off) = (pic(true, 60), pic(false, 61));
+    let (c, d) = (mean_abs(&on, &cut(3)), mean_abs(&off, &cut(3)));
+    assert!(d > c * 1.2, "to B with clean blocks {c}, without {d}");
+    // the default is on (the mosh as before the switch existed)
+    assert_eq!(pic(true, 62), render_cut_default(&cut));
+}
+
+fn render_cut_default(cut: &dyn Fn(usize) -> Image) -> Image {
+    let e = instance();
+    let a0 = scene(W, H, 0, [0.9, 0.1, 0.1]);
+    let mut b = |k: usize| Some(cut(k));
+    let mut src = MoshSource { key: 63, a: &a0, n: 3, b: &mut b };
+    apply_mosh(&e, &a0, &cut(3), 0.5, &mut src)
+}

@@ -322,6 +322,14 @@ pub fn settings_from_params(s: &Session, p: &Value, cmd: &str) -> Result<(Option
     if let Some(v) = bool_p(p, "mxfAs02") {
         settings.mxf_as02 = v;
     }
+    if let Some(v) = p.get("mxfAs02Versions") {
+        let ids: Option<Vec<u64>> = v.as_array().and_then(|a| a.iter().map(Value::as_u64).collect());
+        let ids = ids.ok_or_else(|| bad(cmd, "mxfAs02Versions: an array of sequence ids"))?;
+        if let Some(id) = ids.iter().find(|id| s.project.sequence(ItemId(**id)).is_none()) {
+            return Err(bad(cmd, format!("mxfAs02Versions: no sequence {id}")));
+        }
+        settings.mxf_as02_versions = ids;
+    }
     if let Some(v) = bool_p(p, "mxfAncCaptions") {
         settings.mxf_anc_captions = v;
     }

@@ -76,12 +76,14 @@ pub fn datamosh_bloom(img: &mut Image, e: &EffectInstance, cx: &FxCtx<'_>) {
         return;
     }
     let qp = qp_for(fv(e, "residual", cx));
+    // Clean Blocks: the P picture may refresh poorly predicted blocks (off: a dirtier bloom)
+    let clean = bv(e, "clean");
     let mut hs = DefaultHasher::new();
-    qp.hash(&mut hs);
+    (qp, clean).hash(&mut hs);
     hash_image(&prev, &mut hs);
     hash_image(&cur, &mut hs);
     let key = hs.finish();
-    let Some(bloomed) = bloom(key, &prev, &cur, qp, j) else { return };
+    let Some(bloomed) = bloom(key, &prev, &cur, qp, clean, j) else { return };
     // Dissolve: the clip comes back over the last part of the repeats
     let d = (fv(e, "dissolve", cx) / 100.0).clamp(0.0, 1.0);
     let k = if d > 0.0 { crate::transitions::smoothstep(1.0 - d, 1.0, j as f32 / repeats as f32) } else { 0.0 };
@@ -93,10 +95,10 @@ pub fn datamosh_bloom(img: &mut Image, e: &EffectInstance, cx: &FxCtx<'_>) {
 }
 
 /// The picture after `j` repeats of the motion `prev` → `cur`, starting from `cur`.
-fn bloom(key: u64, prev: &Image, cur: &Image, qp: u8, j: usize) -> Option<Image> {
+fn bloom(key: u64, prev: &Image, cur: &Image, qp: u8, clean: bool, j: usize) -> Option<Image> {
     let mut kept = match take_kept(key) {
         Some(k) if k.last.0 <= j => k,
-        _ => Kept { key, bloom: Bloom::new(prev, cur, qp).ok()?, last: (0, cur.clone()) },
+        _ => Kept { key, bloom: Bloom::new(prev, cur, qp, clean).ok()?, last: (0, cur.clone()) },
     };
     while kept.last.0 < j {
         let next = kept.bloom.step(&kept.last.1).ok()?;

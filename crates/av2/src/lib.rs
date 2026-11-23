@@ -6,6 +6,8 @@
 
 #![cfg_attr(not(test), deny(clippy::unwrap_used, clippy::expect_used, clippy::panic, clippy::unimplemented, clippy::todo, clippy::unreachable))]
 
+#[rustfmt::skip]
+pub mod cdf_default;
 pub mod frame;
 pub mod obu;
 pub mod seq;

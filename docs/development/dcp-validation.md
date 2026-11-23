@@ -63,6 +63,16 @@ FFmpeg setup. Remove the cache directory to uninstall.
   engine's local XML catalogue.
 - The Qt GUI never talks to Ruby: it asks the Rust engine, which runs the backend.
 
+### Parity of the two engines (DCP-17)
+
+`cargo test -p cfa4-dcp-inspect --test parity -- --nocapture` runs structural cases (valid package, asset map missing or not XML, packing list missing or not XML, composition not XML, track
+file missing, changed byte, truncated file) through the native backend and through dcp_inspect with
+`full-integrity`, and writes `target/dcp-parity/report.md`: per case the two verdicts and the rules only one
+engine failed. It is a measurement: only the valid package is asserted (neither engine may fail it); a case
+where one engine fails and the other does not is a divergence to read, not a test failure. Without the engine
+(`DcpInspect::locate()` finds nothing) it says so and passes. The media cases (picture, sound) are not in it
+yet: they need the engine's asdcplib ([cinema-oracles.md](cinema-oracles.md)).
+
 ## Commands and the Qt window (DCP-12)
 
 The engine runs the native backend as a background job; the Qt6 GUI and the control channel drive it
@@ -117,6 +127,23 @@ in `crates/dcp-validate/src/repair.rs`; applying a repair to a project or an app
 part of this step.
 
 ## Test data
+
+### Known-result regression matrix (DCP-16)
+
+`crates/dcp-validate/tests/fixture_matrix.rs` writes one valid SMPTE package with CFA4's own export, copies
+it per case, damages it in one named way and states which rules must fail (and which must warn) under
+`delivery-preflight`: a broken or missing asset map, a missing or broken packing list or composition, a
+missing track file, a changed byte (hash), a truncated file (size), a duplicated asset, a path that leaves
+the package, a composition reference to an asset that is not in the package (a warning: it may be a version
+file), a reel duration that is not the track file's, a frame rate that differs from the track files', and an
+invalid JPEG 2000 header. The valid package must not fail any rule, and an empty folder must fail.
+
+The plan's §12 list is covered elsewhere for: subtitle timing, fonts and PNG resources
+(`tests/subtitles.rs`), signatures and certificate identity (`tests/signatures.rs`), audio channels and
+format (`src/tests.rs`), a cancelled run and bad paths (`src/tests.rs`), and a valid Interop package
+(`src/tests.rs`). **Not covered yet:** an encrypted DCP, a package with several composition or packing lists,
+a very large DCP, file permission errors, and the host-application, packaging and leak checks of the plan's
+second list.
 
 No DCP media is committed (`AGENTS.md`). Fixtures are generated into `target/fixtures/` from
 synthetic XML and the existing J2K / PCM MXF writers, or fetched pinned by commit and sha256.

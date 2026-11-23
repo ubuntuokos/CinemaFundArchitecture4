@@ -495,6 +495,13 @@ pub struct ExportSettings {
     /// channel as mono OP1a component files under `media/` ([`cfa4_mxf::as02`]).
     #[serde(default)]
     pub mxf_as02: bool,
+    /// AS-02: further sequences (item ids) written into the same bundle as more versions, each
+    /// with its own component files and version file (`<bundle>_v2.mxf`, `_v3`, …).
+    #[serde(default)]
+    pub mxf_as02_versions: Vec<u64>,
+    /// Internal: the number (2 and up) of the version being appended to an existing bundle.
+    #[serde(skip)]
+    pub mxf_as02_version: u32,
     /// MXF OP1a: the AMWA AS-12 (MXF Commercials Delivery) Ad-ID advertisement identification
     /// (`adid_prefix`, `adid_code`, `ad_title`, `Brand`, `Product`, `Advertiser`,
     /// `agency_office_location`, `Length`, `Medium`, `sd_flag`, `Parent`; `ShimName` optional,
@@ -847,6 +854,8 @@ impl Default for ExportSettings {
             mxf_as10: String::new(),
             mxf_as03: String::new(),
             mxf_as02: false,
+            mxf_as02_versions: Vec::new(),
+            mxf_as02_version: 0,
             mxf_as12: String::new(),
             mpeg2_container: String::new(),
             mpeg2_422: false,
@@ -1030,6 +1039,11 @@ impl ExportSettings {
             if matches!(self.mxf_video_codec, MxfVideoCodec::D10 | MxfVideoCodec::XdcamHd422) {
                 return Err(bad("D-10 and XDCAM HD422 interleave sound with the picture: AS-02 components are mono files"));
             }
+            if self.mxf_as02_versions.len() > 98 {
+                return Err(bad("a bundle holds at most 99 versions"));
+            }
+        } else if !self.mxf_as02_versions.is_empty() {
+            return Err(ExportError::Unsupported("AS-02: more versions need the AS-02 bundle switch".into()));
         }
         if !self.mxf_as03.trim().is_empty() {
             if self.format != Format::MxfOp1a || !matches!(self.video_format(), Format::Mpeg2 | Format::H264) {
@@ -3357,10 +3371,28 @@ fn capped_pool(max_threads: u32) -> Option<rayon::ThreadPool> {
 /// Run an export (blocking; call from a worker thread). With `settings.max_threads` set it runs on
 /// a pool of that many threads, so its rendering and software encoding use at most that many cores.
 pub fn export(project: &Arc<Project>, seq: ItemId, settings: &ExportSettings, sources: &dyn SourceProvider, progress: &Progress) -> Result<Report> {
-    match capped_pool(settings.max_threads) {
+    let one = |seq: ItemId, settings: &ExportSettings| match capped_pool(settings.max_threads) {
         Some(pool) => pool.install(|| export_here(project, seq, settings, sources, progress)),
         None => export_here(project, seq, settings, sources, progress),
+    };
+    let mut report = one(seq, settings)?;
+    // AS-02: every further sequence becomes one more version of the same bundle, whole sequence
+    for (i, id) in settings.mxf_as02_versions.iter().enumerate() {
+        let id = ItemId(*id);
+        if project.sequence(id).is_none() {
+            return Err(ExportError::Unsupported(format!("AS-02: version {} names a sequence that does not exist", i + 2)));
+        }
+        let mut s = settings.clone();
+        s.mxf_as02_versions.clear();
+        s.mxf_as02_version = i as u32 + 2;
+        s.range = None;
+        let r = one(id, &s)?;
+        report.frames += r.frames;
+        report.bytes += r.bytes;
+        report.seconds += r.seconds;
+        report.extra_files.extend(r.extra_files);
     }
+    Ok(report)
 }
 
 /// [`export`] on the threads it is called from.

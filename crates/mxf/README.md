@@ -344,12 +344,11 @@ essence): the material package's tracks with their clips (file package UMID, tra
 duration; fillers), each file package's network locator, and the breaches of sections 4.3.5 / 5.2
 / 5.4 in `problems`. `write_version` writes one (OP1b, material package plus a file package copy with
 a network locator per component, no essence, no Essence Container Data, no index); the file package
-copies carry a minimal file descriptor, not the component's full one. The engine imports a bundle
+copies carry the component's full file descriptor ([`as02_version::copy_descriptor`]). The engine imports a bundle
 (`file.import`). The exporter (`ExportSettings::mxf_as02`, MXF OP1a; `mxfAs02` in `file.exportMedia`)
 writes a simple bundle: the output path is the folder, the picture and each audio channel are mono
 OP1a files in `media/` with file packages of their own, then the version file and `manifest.xml`
-(checked with `check_simple` before it is written). Not written yet: `shim.xml`, media integrity
-checks and the component's full descriptor in the version file (#1477).
+(checked with `check_simple` before it is written), `shim.xml` and an MD5 media integrity check for every file. `mxfAs02Versions` (sequence ids) adds more sequences to the same bundle as further versions (`<bundle>_v2.mxf`, own components each; the manifest is then checked with the general rules). Components shared between versions are tracked in #1719.
 
 ## AS-11 descriptive metadata
 

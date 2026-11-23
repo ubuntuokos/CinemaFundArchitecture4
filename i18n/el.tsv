@@ -4820,6 +4820,7 @@ export.summary	Low	χαμηλή
 	Datamosh Bloom	Άνθιση datamosh
 	Start Time (seconds)	Ώρα έναρξης (δευτερόλεπτα)
 	Repeats	Επαναλήψεις
+	Clean Blocks	Καθαρά μπλοκ
 
 # Recent effects, per-channel waveform, white balance selector (SC-2/SC-3/SC-4, #1419 #1420 #1421)
 	Apply a recently used effect to the selected clips	Εφαρμογή πρόσφατα χρησιμοποιημένου εφέ στα επιλεγμένα κλιπ

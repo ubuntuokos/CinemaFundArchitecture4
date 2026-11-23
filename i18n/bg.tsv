@@ -4821,6 +4821,7 @@ export.summary	Low	ниско
 	Datamosh Bloom	Datamosh разцъфване
 	Start Time (seconds)	Начално време (секунди)
 	Repeats	Повторения
+	Clean Blocks	Чисти блокове
 
 # Recent effects, per-channel waveform, white balance selector (SC-2/SC-3/SC-4, #1419 #1420 #1421)
 	Apply a recently used effect to the selected clips	Прилагане на наскоро използван ефект към избраните клипове

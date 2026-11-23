@@ -4824,6 +4824,7 @@ export.summary	Low	తక్కువ
 	Datamosh Bloom	డేటామోష్ బ్లూమ్
 	Start Time (seconds)	ప్రారంభ సమయం (సెకన్లు)
 	Repeats	పునరావృత్తులు
+	Clean Blocks	శుభ్రమైన బ్లాక్‌లు
 
 # Recent effects, per-channel waveform, white balance selector (SC-2/SC-3/SC-4, #1419 #1420 #1421)
 	Apply a recently used effect to the selected clips	ఇటీవల ఉపయోగించిన ఎఫెక్ట్‌ను ఎంచుకున్న క్లిప్‌లకు వర్తింపజేయండి
