@@ -16,7 +16,7 @@ serde_json = { workspace = true }
 log = { workspace = true }
 tokio-postgres = { version = "0.7.18", features = ["with-serde_json-1"] }
 deadpool-postgres = "0.14.2"
-tokio = { version = "1.54.1", features = ["rt", "macros", "time"] }
+tokio = { version = "1.54.1", features = ["rt", "macros", "time", "sync"] }
 
 [dev-dependencies]
 cfa4-route = { workspace = true }

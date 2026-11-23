@@ -114,14 +114,16 @@ impl TaskStore {
                 return Err(StoreError::Queue { error: QueueError::Stale { id: t.id.clone(), expected: b.version, current: t.version } });
             }
             Self::write_schedule(tx, t).await?;
+            // the scheduler wakes on every state change, after the commit
+            tx.execute("SELECT pg_notify($1, $2)", &[&CHANNEL, &t.id]).await.map_err(StoreError::query)?;
             Self::log(tx, t, b.last_seq).await?;
         }
         for e in events {
             let event = serde_json::to_value(e).map_err(StoreError::query)?;
             let id = event.get("id").and_then(Value::as_str).unwrap_or_default().to_owned();
-            tx.execute("INSERT INTO tasks.outbox (task_id, subject, event) VALUES ($1, 'cfa4.execution.job.event', $2)", &[&id, &event])
-                .await
-                .map_err(StoreError::query)?;
+            // a scheduler decision (waiting, blocked, missed start, ...) is progress of the job
+            let payload = json!({ "taskId": id, "queueEvent": event });
+            crate::outbox::emit(tx, &id, "cfa4.execution.job.progress", &payload).await?;
         }
         Ok(())
     }
@@ -163,10 +165,9 @@ impl TaskStore {
             )
             .await
             .map_err(StoreError::query)?;
-            let event = json!({ "taskId": t.id, "seq": l.seq, "from": from, "to": to, "at": l.at, "version": t.version });
-            tx.execute("INSERT INTO tasks.outbox (task_id, subject, event) VALUES ($1, $2, $3)", &[&t.id, &format!("cfa4.execution.job.{to}"), &event])
-                .await
-                .map_err(StoreError::query)?;
+            // the detailed state and the task's own sequence number ride in the payload (D-3, Q10)
+            let payload = json!({ "taskId": t.id, "state": to, "from": from, "to": to, "entity_seq": l.seq, "at": l.at, "version": t.version });
+            crate::outbox::emit(tx, &t.id, crate::outbox::subject_for(&to), &payload).await?;
         }
         Ok(())
     }
@@ -223,6 +224,11 @@ impl TaskStore {
             return Err(QueueError::DuplicateId { id: task.id }.into());
         }
         Self::write_schedule(&tx, &task).await?;
+        // the job exists: `created` goes out with the commit (the task's own sequence starts at 0)
+        let state = state_name(task.state);
+        let payload =
+            json!({ "taskId": task.id, "state": state, "from": Value::Null, "to": state, "entity_seq": 0, "at": task.submitted_at, "version": task.version });
+        crate::outbox::emit(&tx, &task.id, crate::outbox::subject_for(&state), &payload).await?;
         tx.execute("SELECT pg_notify($1, $2)", &[&CHANNEL, &task.id]).await.map_err(StoreError::query)?;
         tx.commit().await.map_err(StoreError::query)?;
         Ok(task)

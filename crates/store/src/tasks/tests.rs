@@ -126,6 +126,7 @@ async fn migrations_go_up_once_and_back_one_step() {
         assert!((180000..190000).contains(&version), "CI requires PostgreSQL 18, server_version_num={version}");
     }
     assert_eq!(count(&store, "SELECT count(*) FROM tasks.task").await, 0);
+    assert_eq!(store.rollback("tasks").await.unwrap(), Some(5));
     assert_eq!(store.rollback("tasks").await.unwrap(), Some(4));
     assert_eq!(store.rollback("tasks").await.unwrap(), Some(3));
     assert_eq!(store.rollback("tasks").await.unwrap(), Some(2));
@@ -133,7 +134,10 @@ async fn migrations_go_up_once_and_back_one_step() {
     assert_eq!(store.rollback("tasks").await.unwrap(), Some(1));
     assert_eq!(count(&store, "SELECT count(*) FROM information_schema.schemata WHERE schema_name = 'tasks'").await, 0);
     assert_eq!(store.rollback("tasks").await.unwrap(), None);
-    assert_eq!(store.migrate().await.unwrap(), vec![("tasks".to_owned(), 1), ("tasks".to_owned(), 2), ("tasks".to_owned(), 3), ("tasks".to_owned(), 4)]);
+    assert_eq!(
+        store.migrate().await.unwrap(),
+        vec![("tasks".to_owned(), 1), ("tasks".to_owned(), 2), ("tasks".to_owned(), 3), ("tasks".to_owned(), 4), ("tasks".to_owned(), 5)]
+    );
     assert_eq!(count(&store, "SELECT count(*) FROM pg_indexes WHERE indexname = 'task_open' AND indexdef LIKE '%cancelling%'").await, 1);
     assert!(store.rollback("nope").await.is_err());
 }
@@ -156,7 +160,7 @@ async fn two_schedulers_start_a_task_exactly_once() {
     let t = a.get("t1").await.unwrap().unwrap();
     assert_eq!((t.state, t.attempts), (State::Running, 1));
     assert_eq!(count(&store, "SELECT count(*) FROM tasks.transition WHERE task_id = 't1'").await, 1);
-    assert_eq!(count(&store, "SELECT count(*) FROM tasks.outbox WHERE subject = 'cfa4.execution.job.running'").await, 1);
+    assert_eq!(count(&store, "SELECT count(*) FROM tasks.outbox WHERE subject = 'cfa4.execution.job.started'").await, 1);
 }
 
 #[tokio::test]
@@ -280,10 +284,11 @@ async fn the_time_columns_are_timestamptz_and_migrate_both_ways_keeping_the_mill
     assert_eq!(count(&store, &ms("submitted_at")).await, 1_700_000_123_456);
     assert_eq!(count(&store, "SELECT count(*) FROM information_schema.columns WHERE table_schema = 'tasks' AND table_name IN ('task', 'transition') AND column_name IN ('submitted_at', 'start_at', 'lease_until', 'at') AND data_type = 'timestamp with time zone'").await, 4);
     // back to the bigint columns of step 2 and forward again: the stored values survive
+    assert_eq!(store.rollback("tasks").await.expect("down"), Some(5));
     assert_eq!(store.rollback("tasks").await.expect("down"), Some(4));
     assert_eq!(store.rollback("tasks").await.expect("down"), Some(3));
     assert_eq!(count(&store, "SELECT submitted_at FROM tasks.task WHERE id = 't-time'").await, 1_700_000_123_456);
-    assert_eq!(store.migrate().await.expect("up"), vec![("tasks".to_owned(), 3), ("tasks".to_owned(), 4)]);
+    assert_eq!(store.migrate().await.expect("up"), vec![("tasks".to_owned(), 3), ("tasks".to_owned(), 4), ("tasks".to_owned(), 5)]);
     assert_eq!(count(&store, &ms("submitted_at")).await, 1_700_000_123_456);
     // the queue still runs on the converted columns
     let mut manager = manager();
