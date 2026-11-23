@@ -47,11 +47,45 @@ pub fn configured_helper() -> Option<PathBuf> {
 
 /// The VVdeC version the helper at `path` reports (`--version`), or why it cannot be used: the
 /// program must answer the protocol hello of the VVC helper, as for decoding. Starts the program
-/// for a moment; it is not the decoding path.
+/// for a moment; it is not the decoding path. The query is bounded: at most 256 bytes of output
+/// and two seconds, then the process is stopped.
 pub fn helper_version(path: &Path) -> std::result::Result<String, String> {
+    use std::io::Read;
     ExternalVvcDecoder::new(path, 1).map_err(|e| format!("{} cannot be used: {e}", path.display()))?;
-    let out = std::process::Command::new(path).arg("--version").stdin(std::process::Stdio::null()).stderr(std::process::Stdio::null()).output();
-    let text = out.map(|o| String::from_utf8_lossy(&o.stdout).into_owned()).unwrap_or_default();
+    let mut child = std::process::Command::new(path)
+        .arg("--version")
+        .stdin(std::process::Stdio::null())
+        .stdout(std::process::Stdio::piped())
+        .stderr(std::process::Stdio::null())
+        .spawn()
+        .map_err(|e| format!("cannot run {}: {e}", path.display()))?;
+    let stdout = child.stdout.take();
+    let reader = std::thread::spawn(move || {
+        let mut buf = Vec::new();
+        if let Some(out) = stdout {
+            let _ = out.take(256).read_to_end(&mut buf);
+        }
+        buf
+    });
+    let deadline = std::time::Instant::now() + Duration::from_secs(2);
+    let mut timed_out = false;
+    loop {
+        match child.try_wait() {
+            Ok(Some(_)) => break,
+            Ok(None) if std::time::Instant::now() < deadline => std::thread::sleep(Duration::from_millis(10)),
+            _ => {
+                timed_out = true;
+                let _ = child.kill();
+                let _ = child.wait();
+                break;
+            }
+        }
+    }
+    let buf = reader.join().unwrap_or_default();
+    if timed_out {
+        return Err(format!("{} did not answer --version in time", path.display()));
+    }
+    let text = String::from_utf8_lossy(&buf).into_owned();
     let version = text.lines().next().unwrap_or("").trim();
     Ok(if version.is_empty() || version.len() > 64 { "unknown".into() } else { version.to_string() })
 }
@@ -99,7 +133,8 @@ pub fn report_for(helper: Option<&Path>) -> cfa4_media::BackendReport {
     r
 }
 
-/// Registers [`report`]. The apps call it at startup whether or not a helper exists.
+/// Registers [`report`]. `cfa4-cli` calls it at startup (feature `vvc-external`) whether or not a
+/// helper exists.
 pub fn register_status() {
     cfa4_media::register_backend(cfa4_media::BackendEntry { id: BACKEND_ID, report });
 }

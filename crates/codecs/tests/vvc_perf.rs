@@ -36,14 +36,25 @@ fn helper() -> Option<PathBuf> {
     (stamp.trim() == pin.get("commit")?.as_str()? && exe.is_file()).then_some(exe)
 }
 
-fn ffmpeg() -> Option<PathBuf> {
-    let candidates = [std::env::var_os("CFA4_FFMPEG").map(PathBuf::from), Some("/opt/cfa4/ffmpeg-9.0.2/bin/ffmpeg".into()), Some("ffmpeg".into())];
-    candidates.into_iter().flatten().find(|p| {
-        Command::new(p)
-            .args(["-hide_banner", "-decoders"])
-            .output()
-            .is_ok_and(|o| String::from_utf8_lossy(&o.stdout).lines().any(|l| l.split_whitespace().nth(1) == Some("vvc")))
-    })
+fn has_native_vvc(p: &Path) -> bool {
+    Command::new(p)
+        .args(["-hide_banner", "-decoders"])
+        .output()
+        .is_ok_and(|o| String::from_utf8_lossy(&o.stdout).lines().any(|l| l.split_whitespace().nth(1) == Some("vvc")))
+}
+
+/// `CFA4_FFMPEG` when set (and then only that: a wrong path is an error, not a quiet switch to
+/// another FFmpeg), else the CFA4 build, else `ffmpeg` on the PATH.
+fn ffmpeg() -> Result<PathBuf, String> {
+    if let Some(p) = std::env::var_os("CFA4_FFMPEG").filter(|v| !v.is_empty()) {
+        let p = PathBuf::from(p);
+        return if has_native_vvc(&p) { Ok(p) } else { Err(format!("CFA4_FFMPEG={} has no native vvc decoder", p.display())) };
+    }
+    ["/opt/cfa4/ffmpeg-9.0.2/bin/ffmpeg", "ffmpeg"]
+        .into_iter()
+        .map(PathBuf::from)
+        .find(|p| has_native_vvc(p))
+        .ok_or_else(|| "no FFmpeg with the native vvc decoder".to_string())
 }
 
 fn best<T>(runs: usize, mut f: impl FnMut() -> (Duration, T)) -> (Duration, T) {
@@ -94,8 +105,11 @@ fn the_helper_is_not_slower_than_ffmpeg() {
     let Some(helper) = helper() else {
         return eprintln!("SKIPPED ({ctx}): cfa4-vvc-decode not built (scripts/dev/vvc-decoder.py build)");
     };
-    let Some(ff) = ffmpeg() else {
-        return eprintln!("SKIPPED ({ctx}): no FFmpeg with the native vvc decoder");
+    let ff = match ffmpeg() {
+        Ok(ff) => ff,
+        // an explicit wrong path is a failure; no FFmpeg at all is a skip
+        Err(e) if std::env::var_os("CFA4_FFMPEG").is_some_and(|v| !v.is_empty()) => panic!("{e}"),
+        Err(e) => return eprintln!("SKIPPED ({ctx}): {e}"),
     };
     let corpus = std::env::var_os("CFA4_VVC_CONFORMANCE_DIR").map_or_else(|| cfa4_testkit::fixtures_dir("vvc-conformance"), PathBuf::from);
     let threads: usize = std::env::var("CFA4_VVC_PERF_THREADS").ok().and_then(|v| v.parse().ok()).unwrap_or(4);
@@ -112,7 +126,7 @@ fn the_helper_is_not_slower_than_ffmpeg() {
         .collect();
     let scratch = cfa4_testkit::fixtures_dir("vvc/perf");
     std::fs::create_dir_all(&scratch).unwrap();
-    let mut tested = 0;
+    let mut measured: Vec<String> = Vec::new();
     let mut verdicts = Vec::new();
 
     for (name, counts) in &streams {
@@ -153,7 +167,9 @@ fn the_helper_is_not_slower_than_ffmpeg() {
             format!("helper {s_helper:?} vs ffmpeg {s_ff:?}"),
         ));
         let _ = std::fs::remove_file(&cut);
-        tested += usize::from(*counts);
+        if *counts {
+            measured.push(name.to_string());
+        }
     }
 
     // start-up of the helper: the hello, once, when the first VVC file is opened (nothing at CFA4 start)
@@ -166,7 +182,13 @@ fn the_helper_is_not_slower_than_ffmpeg() {
     });
     eprintln!("vvc_perf: helper start to hello: {start:?}");
 
-    assert!(tested > 0, "none of the verdict streams {verdict_streams} was found (scripts/dev/vvc-perf-fixture.py encode)");
+    // every verdict stream must have both its playback and its seek result; only the
+    // informational ones may be missing
+    let missing: Vec<&str> = verdict_streams
+        .split(',')
+        .filter(|n| !measured.iter().any(|m| Path::new(n).file_stem().is_some_and(|s| s.to_string_lossy() == *m) || m == n))
+        .collect();
+    assert!(missing.is_empty() && !measured.is_empty(), "verdict streams not measured: {missing:?} (scripts/dev/vvc-perf-fixture.py encode)");
     let failed: Vec<_> = verdicts.iter().filter(|v| !v.1).collect();
     assert!(failed.is_empty(), "the helper is slower than FFmpeg: {failed:?}");
 }

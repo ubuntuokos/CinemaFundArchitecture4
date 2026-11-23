@@ -17,6 +17,7 @@ from __future__ import annotations
 
 import argparse
 import os
+import shutil
 import subprocess
 import sys
 from pathlib import Path
@@ -25,7 +26,7 @@ ROOT = Path(__file__).resolve().parents[2]
 REPO = "https://github.com/fraunhoferhhi/vvenc.git"
 TAG, COMMIT = "v1.14.0", "9428ea8636ae7f443ecde89999d16b2dfc421524"
 WORK = ROOT / "target" / "vvc-perf"
-OUT = ROOT / "target" / "fixtures" / "vvc"
+OUT = (Path(os.environ["CFA4_FIXTURES_DIR"]) if os.environ.get("CFA4_FIXTURES_DIR") else ROOT / "target" / "fixtures") / "vvc"
 SOURCE = (
     "mandelbrot=size={w}x{h}:rate=30,format=yuv420p10le[a];testsrc2=size={w}x{h}:rate=30,format=yuv420p10le[b];"
     "[a][b]blend=all_mode=average,noise=alls=6:allf=t"
@@ -48,9 +49,13 @@ def build(jobs: int) -> None:
     src, bld, inst = WORK / "src", WORK / "build", WORK / "vvenc"
     if not src.exists():
         src.mkdir(parents=True)
-        run(["git", "init", "-q", str(src)])
-        run(["git", "-C", str(src), "fetch", "-q", "--depth", "1", REPO, COMMIT])
-        run(["git", "-C", str(src), "checkout", "-q", "FETCH_HEAD"])
+        try:
+            run(["git", "init", "-q", str(src)])
+            run(["git", "-C", str(src), "fetch", "-q", "--depth", "1", REPO, COMMIT])
+            run(["git", "-C", str(src), "checkout", "-q", "FETCH_HEAD"])
+        except SystemExit:
+            shutil.rmtree(src, ignore_errors=True)  # an unfinished checkout must not block the retry
+            raise
     head = subprocess.run(["git", "-C", str(src), "rev-parse", "HEAD"], capture_output=True, text=True).stdout.strip()
     if head != COMMIT:
         sys.exit(f"vvc-perf-fixture: {src} is at {head}, expected {COMMIT} ({TAG})")
@@ -65,8 +70,14 @@ def encode(w: int, h: int, frames: int, preset: str, qp: int, name: str) -> None
         return
     raw = WORK / f"src-{w}x{h}-{frames}.yuv"
     if not raw.is_file():
-        run(["ffmpeg", "-v", "error", "-f", "lavfi", "-i", SOURCE.format(w=w, h=h), "-frames:v", str(frames), "-pix_fmt", "yuv420p10le", "-f", "rawvideo", str(raw)])
-    run([str(app()), "-i", str(raw), "-s", f"{w}x{h}", "-c", "yuv420_10", "--fps", "30", "-f", str(frames), "--preset", preset, "-q", str(qp), "-t", "4", "-o", str(out)])
+        # written under a temporary name and renamed when complete: an interrupted run leaves no
+        # file the is_file() checks would take for a finished fixture
+        part = raw.with_suffix(".yuv.part")
+        run(["ffmpeg", "-v", "error", "-y", "-f", "lavfi", "-i", SOURCE.format(w=w, h=h), "-frames:v", str(frames), "-pix_fmt", "yuv420p10le", "-f", "rawvideo", str(part)])
+        part.rename(raw)
+    part = out.with_suffix(".266.part")
+    run([str(app()), "-i", str(raw), "-s", f"{w}x{h}", "-c", "yuv420_10", "--fps", "30", "-f", str(frames), "--preset", preset, "-q", str(qp), "-t", "4", "-o", str(part)])
+    part.rename(out)
     print(out)
 
 

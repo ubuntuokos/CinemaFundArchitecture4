@@ -376,6 +376,8 @@ async fn cli() {
     register_hardware_decoders();
     register_ffmpeg();
     register_gstreamer();
+    #[cfg(feature = "vvc-external")]
+    cfa4_codecs::vvc_external::register_status();
     register_gpu_frame_renderer();
     let Some(cmd) = a.pos(0) else { usage("missing subcommand") };
     match cmd {

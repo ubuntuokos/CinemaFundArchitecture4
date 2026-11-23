@@ -65,6 +65,7 @@ def cmd_build(args: argparse.Namespace) -> int:
         ):
             r = run(cmd)
             if r.returncode != 0:
+                shutil.rmtree(src, ignore_errors=True)  # an unfinished checkout must not block the retry
                 die(f"{' '.join(cmd[:3])} failed: {r.stderr.strip()}")
     if run(["git", "-C", str(src), "rev-parse", "HEAD"]).stdout.strip() != pin["commit"]:
         die(f"{src} is not at {pin['commit']}")

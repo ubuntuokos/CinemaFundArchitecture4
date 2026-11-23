@@ -17,6 +17,8 @@
 
 #include <vvdec/vvdec.h>
 
+/* Keeps every sample read observable, so the optimizer cannot drop the loads the sanitizer checks. */
+static volatile uint32_t g_sink;
 static vvdecDecoder *g_dec;
 static vvdecAccessUnit *g_au;
 
@@ -38,7 +40,7 @@ static uint32_t touch(const vvdecFrame *f) {
         const size_t row = (size_t)pl->width * pl->bytesPerSample;
         for (uint32_t y = 0; y < pl->height; y++) {
             const uint8_t *p = (const uint8_t *)pl->ptr + (size_t)y * pl->stride;
-            for (size_t x = 0; x < row; x += 61) sum += p[x];
+            for (size_t x = 0; x < row; x++) sum += p[x];
         }
     }
     return sum;
@@ -71,7 +73,7 @@ static void feed(const uint8_t *buf, size_t n, int64_t pts) {
     g_au->cts = (uint64_t)pts;
     g_au->ctsValid = true;
     g_au->dtsValid = false;
-    (void)drain(g_au, false);
+    g_sink += drain(g_au, false);
 }
 
 int LLVMFuzzerTestOneInput(const uint8_t *data, size_t size) {
@@ -94,7 +96,7 @@ int LLVMFuzzerTestOneInput(const uint8_t *data, size_t size) {
         }
     }
     feed(data + start, size - start, pts);
-    (void)drain(NULL, true);
+    g_sink += drain(NULL, true);
     /* a fresh decoder for the next input: the helper reopens after every flush too */
     vvdec_decoder_close(g_dec);
     g_dec = NULL;
