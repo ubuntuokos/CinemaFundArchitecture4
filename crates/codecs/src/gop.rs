@@ -765,7 +765,7 @@ impl GopCache {
             return Err(CodecError::Cancelled);
         }
         if st.intra {
-            return self.intra_frame(st, s, i, want_pts);
+            return self.intra_frame(st, s, i, want_pts, draft);
         }
         // with the lock held: see `isolated`
         let st = &mut *st;
@@ -916,7 +916,7 @@ impl GopCache {
 
     /// Intra-only streams: decode the one sample outside the lock, so several frame workers
     /// decode different frames of the same source at once.
-    fn intra_frame(&self, st: std::sync::MutexGuard<'_, State>, s: &dyn VideoSamples, i: usize, want_pts: i64) -> crate::Result<Arc<VideoFrame>> {
+    fn intra_frame(&self, st: std::sync::MutexGuard<'_, State>, s: &dyn VideoSamples, i: usize, want_pts: i64, draft: bool) -> crate::Result<Arc<VideoFrame>> {
         let mut st = st;
         let spare = st.spare.pop();
         drop(st);
@@ -924,6 +924,8 @@ impl GopCache {
             Some(d) => d,
             None => s.make_decoder()?,
         };
+        // an intra-only decoder may decode at a lower resolution in draft mode (JPEG 2000)
+        dec.set_draft(draft);
         let res = s.read(i).and_then(|data| {
             DECODED.fetch_add(1, Ordering::Relaxed);
             timed(|| dec.decode(&data, want_pts))
@@ -940,7 +942,7 @@ impl GopCache {
         for (pts, frame, draft) in res? {
             self.store_finished(&mut st, pts, frame, draft);
         }
-        st.at_or_before(want_pts, true).ok_or_else(|| CodecError::Decode("frame not produced".into()))
+        st.at_or_before(want_pts, draft).ok_or_else(|| CodecError::Decode("frame not produced".into()))
     }
 }
 
@@ -1251,6 +1253,21 @@ mod tests {
             cfa4_frame::PixelData::Rgba8(d) => d[2] == 1,
             _ => unreachable!(),
         }
+    }
+
+    #[test]
+    fn intra_draft_frames_are_served_to_draft_requests_only() {
+        // an intra-only decoder (JPEG 2000) in draft mode: its draft frames stay with draft requests
+        let s = samples(64, 1, 0, true);
+        let c = GopCache::new(None);
+        let f = cfa4_media::cancel::with_draft(true, || c.frame(&s, 5_000)).expect("frame");
+        assert!(is_draft(&f) && index_of(&f) == 5);
+        let f = c.frame(&s, 5_000).expect("frame");
+        assert!(!is_draft(&f) && index_of(&f) == 5, "an exact request decodes the frame again");
+        assert_eq!(s.decodes.load(Ordering::Relaxed), 2);
+        let f = cfa4_media::cancel::with_draft(true, || c.frame(&s, 5_000)).expect("frame");
+        assert!(!is_draft(&f), "a draft request takes the exact frame now cached");
+        assert_eq!(s.decodes.load(Ordering::Relaxed), 2);
     }
 
     #[test]

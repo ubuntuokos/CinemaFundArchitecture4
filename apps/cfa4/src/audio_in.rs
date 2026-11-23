@@ -37,7 +37,7 @@ fn host(name: &str) -> cpal::Host {
 fn device(h: &cpal::Host, name: &str) -> Option<cpal::Device> {
     if !name.is_empty()
         && let Ok(mut devs) = h.input_devices()
-        && let Some(d) = devs.find(|d| d.name().is_ok_and(|n| n == name))
+        && let Some(d) = devs.find(|d| crate::audio::device_name(d).is_some_and(|n| n == name))
     {
         return Some(d);
     }
@@ -106,7 +106,7 @@ impl AudioInput for CpalIn {
         self.host = name.to_string();
     }
     fn devices(&self) -> Vec<String> {
-        host(&self.host).input_devices().map(|d| d.filter_map(|x| x.name().ok()).collect()).unwrap_or_default()
+        host(&self.host).input_devices().map(|d| d.filter_map(|x| crate::audio::device_name(&x)).collect()).unwrap_or_default()
     }
     fn channels(&self, name: &str) -> u16 {
         device(&host(&self.host), name).and_then(|d| d.default_input_config().ok()).map(|c| c.channels()).unwrap_or(0)
@@ -133,15 +133,15 @@ impl AudioInput for CpalIn {
                             .supported_input_configs()
                             .ok()
                             .and_then(|it| {
-                                it.filter(|c| c.channels() > 0 && (c.min_sample_rate().0..=c.max_sample_rate().0).contains(&sample_rate))
+                                it.filter(|c| c.channels() > 0 && (c.min_sample_rate()..=c.max_sample_rate()).contains(&sample_rate))
                                     .max_by_key(|c| (c.channels() == default.channels(), c.sample_format() == cpal::SampleFormat::F32))
-                                    .and_then(|c| c.try_with_sample_rate(cpal::SampleRate(sample_rate)))
+                                    .and_then(|c| c.try_with_sample_rate(sample_rate))
                             })
                             .unwrap_or(default);
-                        if cfg.channels() == 0 || cfg.channels() > 256 || cfg.sample_rate().0 == 0 {
+                        if cfg.channels() == 0 || cfg.channels() > 256 || cfg.sample_rate() == 0 {
                             return Err("the input device returned an invalid format".into());
                         }
-                        let fmt = InputFormat { sample_rate: cfg.sample_rate().0, channels: cfg.channels() };
+                        let fmt = InputFormat { sample_rate: cfg.sample_rate(), channels: cfg.channels() };
                         let format = cfg.sample_format();
                         let config = cfg.into();
                         let stream = match format {

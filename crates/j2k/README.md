@@ -50,6 +50,10 @@ let dcp = cfa4_j2k::encode(&xyz12, &cfa4_j2k::EncodeOptions::cinema_2k(24))?; //
   `ojph_block_common.cpp`, `table0.h`, `table1.h`) with byte-wise readers.
 - Reversible 5/3 in integers (lossless) and irreversible 9/7 in `f32`; RCT and ICT; scalar
   derived and expounded quantization; truncated streams reconstruct at the midpoint.
+- Reduced resolution (`decode_reduced(data, levels)`, B.5): the inverse wavelet stops
+  `levels` levels short and the code-blocks of the left-out resolutions are not decoded, as
+  OpenJPEG's `-r` (same size; 5/3 bit-exact, 9/7 within ±1, with tiles and image offsets).
+  `cfa4-codecs` uses it for draft (reduced-resolution) playback.
 - Hostile input: every size and count is checked, allocations are capped (`MAX_SAMPLES`,
   code-block count), and errors are returned, never a panic.
 
@@ -78,10 +82,13 @@ and decoder cannot disagree on them.
 - Tier-2: tag trees, Lblock, Table B.4 pass counts, bit stuffing; any progression and precincts;
   one tile-part per component (and per progression change); TLM.
 - Guard bits are chosen so that every subband's largest index fits; samples outside a
-  component's range are clamped.
+  component's range are clamped. The 2K Digital Cinema profile writes 1 guard bit, as libdcp's
+  encoder and `dcpverify` expect: the rare indices beyond the band's nominal range saturate at
+  the largest value 1 guard bit carries, and `encode_with_stats` counts them.
 - `EncodeOptions::cinema_2k(fps)` / `cinema_4k(fps)`: Rsiz 3 / 4, 12-bit X'Y'Z' (the caller
-  converts), 9/7, 5 / 6 levels, 32×32 code-blocks, CPRL, precincts 128 at resolution 0 and 256
-  above, a tile-part per component (4K: the 4K resolution in its own progression by POC, so six
+  converts), 9/7, 5 / 6 levels, the ICT on the three components (MCT = 1, which libdcp's
+  `dcpverify` requires; `mct: false` is still accepted), 32×32 code-blocks, CPRL, precincts 128 at
+  resolution 0 and 256 above, a tile-part per component (4K: the 4K resolution in its own progression by POC, so six
   tile-parts), TLM; at most 250 Mbit/s per frame and 200 Mbit/s per component (1 302 083 and
   1 041 666 bytes at 24 fps). The image and options are checked against the profile.
 
@@ -166,6 +173,18 @@ development machine, a 2K DCI frame (`dci_2k.j2k`, 586 kB) decodes in about 150 
   strips, and the output planes run in parallel.
 
 Players also decode several frames at once, since every picture is intra coded.
+
+The bench also times `decode_reduced` one and two levels down. On the same 4-core machine, an
+encoder-made DCI frame (1.3 MB, filled to the 250 Mbit/s limit):
+
+| Frame | Full | 1 level down | 2 levels down |
+|---|---|---|---|
+| DCI 2K, 4 threads | 128 ms | 55 ms | 25 ms |
+| DCI 2K, 1 thread | 430 ms | 188 ms | 69 ms |
+| DCI 4K, 4 threads | 250 ms | 115 ms | 67 ms |
+
+Draft playback (`cfa4-codecs` `J2kDecoder::set_draft`) decodes down to about 960 samples
+across: 2K one level, 4K two, and repeats each sample back to the full size.
 
 `cargo run --release -p cfa4-j2k --example j2k_encode_bench -- 2k|4k` times the encoder on a
 synthetic 12-bit frame with grain: a DCI 2K frame takes about 0.75 s, a 4K frame about 3 s on

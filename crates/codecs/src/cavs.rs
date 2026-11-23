@@ -11,6 +11,7 @@ use std::sync::Arc;
 
 use cfa4_cavs::PictureType;
 use cfa4_frame::{AudioBuffer, Chroma, PixelData, VideoFrame};
+use cfa4_isobmff::{CodecConfig, FourCc, SampleEntry};
 use cfa4_media::{FrameRequest, MediaError, MediaInfo, MediaKind, MediaSource, SharedSource, VideoStreamInfo};
 use cfa4_time::{FrameRate, Tick};
 
@@ -76,6 +77,37 @@ fn decode_error(e: cfa4_cavs::Error) -> CodecError {
     }
 }
 
+/// The sample entry format of an AVS1 stream carried in Matroska (`V_CAVS`).
+pub const CAVS: FourCc = FourCc(*b"cavs");
+
+/// A sample entry for an AVS1 stream of `w` x `h`; `private` is the `CodecPrivate` (normally empty:
+/// the sequence header rides with the first I picture).
+pub fn sample_entry(private: &[u8], w: u16, h: u16) -> SampleEntry {
+    SampleEntry::video(CAVS, CodecConfig::Unknown { fourcc: CAVS, raw: private.to_vec() }, w, h)
+}
+
+/// The first sequence header (start code `B0`, up to the next start code) in `data`.
+pub fn first_sequence_header(data: &[u8]) -> Option<Vec<u8>> {
+    let at = data.windows(4).position(|w| w == [0, 0, 1, 0xb0])?;
+    let mut seq = data[at..data.len().min(at + SEQ_LEN as usize)].to_vec();
+    if let Some(end) = seq.windows(3).skip(4).position(|w| w == [0, 0, 1]) {
+        seq.truncate(end + 4);
+    }
+    Some(seq)
+}
+
+/// The decoder of a `cavs` sample entry.
+pub fn cavs_factory(e: &SampleEntry) -> Option<Result<Box<dyn VideoDecoder>>> {
+    if e.format != CAVS {
+        return None;
+    }
+    let seq = match &e.codec {
+        CodecConfig::Unknown { raw, .. } => raw.clone(),
+        _ => Vec::new(),
+    };
+    Some(Ok(Box::new(CavsDecoder::new(seq, (1, 1)))))
+}
+
 /// An AVS1 decoder primed with the stream's first sequence header. Samples are packets as
 /// [`cfa4_cavs::split_packets`] cuts them.
 pub struct CavsDecoder {
@@ -112,6 +144,9 @@ impl VideoDecoder for CavsDecoder {
 
     fn reset(&mut self) {
         self.dec = cfa4_cavs::Decoder::new();
+        if self.seq.is_empty() {
+            return;
+        }
         if let Err(e) = self.dec.decode(&self.seq) {
             log::warn!("AVS1: unreadable sequence header: {e}");
         }

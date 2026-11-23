@@ -9,6 +9,8 @@
 //!   frames and full-frame locates, in and out, on a sequencer client named `CFA4`.
 //! - **[`SyncManager`]** opens what the settings ask for, feeds the chase and returns what the
 //!   player should do.
+//! - **External sources** ([`SyncManager::external_feed`]): any other timecode producer (for
+//!   example a video input's embedded timecode) sends ready observations; see the README.
 //!
 //! The pure parts take times and sample blocks as arguments, so they are tested without devices.
 //! Device problems (missing device, no ALSA sequencer, a channel the device does not have) become
@@ -118,6 +120,8 @@ pub enum Input {
     Locate(Observation),
     /// The device stopped with an error.
     Error(String),
+    /// The LTC user bits changed (group 1 in the low nibble).
+    UserBits(u32),
 }
 
 /// The external clock's rate and timecode counting.
