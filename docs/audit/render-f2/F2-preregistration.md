@@ -74,7 +74,7 @@ Nincs mért eredmény. A "javasolt" küszöbök a jóváhagyóé; indoklásuk a 
 2. ~~Python ≥ 3.13 a VapourSynth workerhez (A11)~~ **Eldöntve (István, 2026-11-23):** elfogadva, ha a VapourSynth-nek szüksége van rá; csak a külön workerben, a többi komponens nem függ tőle.
 3. ~~EC-jelölt fenntartása az F2-ben~~ **Eldöntve (István, 2026-11-23):** marad az F2 harmadik jelöltje (az upstream családdal közös geometria-, szín- és időtípusok miatt); az MQ-kapu érvényes, bukásnál csak mintának marad (H-EC-1 az első 3 napban).
 3b. ~~GEGL (+ babl) jelölt~~ **Felvéve (István, 2026-11-23, terv rev 119):** lásd 3b. szakasz; a küszöbei PENDING.
-4. Új fixture (PIZ/DWA/B44 EXR) létrehozása a `render_fixtures.py`-ban.
+4. ~~Új fixture (PIZ/DWA/B44 EXR)~~ **Elkészült (előkészítés, nem mérés):** `python/cfa4_devtools/render_f2_exr_fixtures.py` (nem a `render_fixtures.py`, mert az `ffmpeg` EXR-kódolója csak none/RLE/ZIP-et tud). 10 tömörítés, egy 640×360 f32 kép, fix magból; kimenet a `target/fixtures/render-f2/`-be. Futtatás: OpenImageIO és numpy modul kell (F2 POC függőség, eldobható venvben); nélkülük SKIPPED. Önellenőrzés (nem F2-eredmény): a veszteségmentes tömörítések 0 eltérést adnak; a veszteséges tolerancia a baseline-ból rögzítendő, mérés előtt.
 
 ## 7. Jóváhagyás (István, 2026-11-23 20:14 Europe/Budapest)
 

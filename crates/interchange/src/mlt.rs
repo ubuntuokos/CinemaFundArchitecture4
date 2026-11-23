@@ -22,7 +22,7 @@
 use std::collections::HashMap;
 
 use cfa4_media::Generator;
-use cfa4_project::{ItemId, Sequence, TrackKind};
+use cfa4_project::{ClipId, ItemId, Label, Marker, MarkerId, MarkerKind, Sequence, TrackKind};
 use cfa4_time::{FrameRate, Tick};
 use roxmltree::Node;
 
@@ -34,6 +34,8 @@ use crate::{Error, Format, ImportOptions, Imported, Report, Result};
 const MAX_ENTRIES: usize = 200_000;
 /// Deepest producer / tractor nesting followed.
 const MAX_DEPTH: usize = 16;
+/// Most guides and groups read from one sequence.
+const MAX_GUIDES: usize = 100_000;
 
 /// Whether `text` is an MLT XML document (root element `mlt`).
 pub(crate) fn sniff(head: &str) -> bool {
@@ -95,6 +97,19 @@ struct Imp<'a, 'd, 'r> {
     /// Media items already made, by producer id.
     media: HashMap<String, Option<(ItemId, f64)>>,
     entries: usize,
+    /// The MLT track (index in the sequence tractor, the background track being 0) being read.
+    cur_mlt: usize,
+    /// Clips placed so far in the sequence being read, to resolve Kdenlive's groups.
+    placed: Vec<Placed>,
+}
+
+/// A clip placed on the sequence: where Kdenlive's group data finds it.
+struct Placed {
+    mlt: usize,
+    start: i64,
+    kind: TrackKind,
+    track: usize,
+    clip: ClipId,
 }
 
 pub(crate) fn import(text: &str, opts: &ImportOptions, report: &mut Report) -> Result<Imported> {
@@ -146,6 +161,8 @@ pub(crate) fn import(text: &str, opts: &ImportOptions, report: &mut Report) -> R
         ids,
         media: HashMap::new(),
         entries: 0,
+        cur_mlt: 0,
+        placed: Vec::new(),
     };
     imp.report.info(match dialect {
         Dialect::Kdenlive => format!("Kdenlive project (MLT {})", root.attribute("version").unwrap_or("?")),
@@ -238,7 +255,9 @@ impl<'a, 'd> Imp<'a, 'd, '_> {
         let id = self.b.reserve_sequence(name, settings_for(self.rate, width, height, false), None);
         let mut seq = crate::common::empty_sequence(settings_for(self.rate, width, height, false));
         let mut index = [0usize; 2]; // video, audio
-        for t in children(tractor, "track") {
+        self.placed.clear();
+        for (mlt, t) in children(tractor, "track").enumerate() {
+            self.cur_mlt = mlt;
             let Some(pid) = t.attribute("producer") else { continue };
             let Some(&node) = self.ids.get(pid) else {
                 self.report.warn(format!("a track refers to the missing producer {pid:?}"));
@@ -280,8 +299,72 @@ impl<'a, 'd> Imp<'a, 'd, '_> {
             }
         }
         self.transitions(tractor);
+        self.guides(tractor, &mut seq);
+        self.groups(tractor, &mut seq);
         self.b.put_sequence(id, seq);
         id
+    }
+
+    /// Kdenlive's guides (`kdenlive:sequenceproperties.guides`, older: `kdenlive:docproperties.guides`
+    /// on the bin) as sequence markers.
+    fn guides(&mut self, tractor: Node<'a, 'd>, seq: &mut Sequence) {
+        let json =
+            prop(tractor, "kdenlive:sequenceproperties.guides").or_else(|| self.ids.get("main_bin").and_then(|b| prop(*b, "kdenlive:docproperties.guides")));
+        let Some(json) = json.map(str::trim).filter(|j| !j.is_empty()) else { return };
+        let Ok(serde_json::Value::Array(list)) = serde_json::from_str::<serde_json::Value>(json) else {
+            self.report.warn("the guides could not be read");
+            return;
+        };
+        for g in list.iter().take(MAX_GUIDES) {
+            let Some(pos) = g.get("pos").and_then(serde_json::Value::as_i64).filter(|p| *p >= 0) else { continue };
+            let comment = g.get("comment").and_then(serde_json::Value::as_str).unwrap_or("").to_string();
+            seq.markers.push(Marker {
+                id: MarkerId(self.b.alloc()),
+                start: self.rate.tick_of(pos),
+                duration: Tick::ZERO,
+                name: comment,
+                comment: String::new(),
+                kind: MarkerKind::Comment,
+                color: Label::Violet,
+            });
+        }
+        seq.markers.sort_by_key(|m| m.start);
+    }
+
+    /// Kdenlive's clip groups (`kdenlive:sequenceproperties.groups`, older:
+    /// `kdenlive:docproperties.groups`): an `AVSplit` group is a picture clip with its sound (linked),
+    /// any other group is a group of clips. A leaf is `<track>:<start frame>`, the track counted
+    /// without the background track.
+    fn groups(&mut self, tractor: Node<'a, 'd>, seq: &mut Sequence) {
+        let json =
+            prop(tractor, "kdenlive:sequenceproperties.groups").or_else(|| self.ids.get("main_bin").and_then(|b| prop(*b, "kdenlive:docproperties.groups")));
+        let Some(json) = json.map(str::trim).filter(|j| !j.is_empty()) else { return };
+        let Ok(serde_json::Value::Array(list)) = serde_json::from_str::<serde_json::Value>(json) else {
+            self.report.warn("the clip groups could not be read");
+            return;
+        };
+        for g in list.iter().take(MAX_GUIDES) {
+            let mut leaves = Vec::new();
+            collect_leaves(g, &mut leaves, 0);
+            let clips: Vec<(TrackKind, usize, ClipId)> = leaves
+                .iter()
+                .filter_map(|(track, start)| self.placed.iter().find(|p| p.mlt == track + 1 && p.start == *start).map(|p| (p.kind, p.track, p.clip)))
+                .collect();
+            if clips.len() < 2 {
+                continue;
+            }
+            let av = g.get("type").and_then(serde_json::Value::as_str) == Some("AVSplit");
+            let tag = if av { self.b.link_id() } else { self.b.alloc() };
+            for (kind, at, clip) in clips {
+                if let Some(ti) = seq.tracks_mut(kind).get_mut(at).and_then(|t| t.items.iter_mut().find(|i| i.id == clip)) {
+                    if av {
+                        ti.link = Some(tag);
+                    } else {
+                        ti.group = Some(tag);
+                    }
+                }
+            }
+        }
     }
 
     fn next_track(&mut self, seq: &mut Sequence, kind: TrackKind, index: &mut [usize; 2], name: Option<String>) -> usize {
@@ -339,10 +422,15 @@ impl<'a, 'd> Imp<'a, 'd, '_> {
                         ti.speed = speed;
                     }
                     self.effects(e, prod);
+                    let clip = ti.id;
                     match self.b.place(seq, kind, at, ti) {
                         None => self.report.warn("a clip past the supported track count was not imported"),
-                        Some(placed) if placed != at => self.report.warn("clips that overlap on one track (a mix) were placed on an extra track"),
-                        Some(_) => {}
+                        Some(placed) => {
+                            if placed != at {
+                                self.report.warn("clips that overlap on one track (a mix) were placed on an extra track");
+                            }
+                            self.placed.push(Placed { mlt: self.cur_mlt, start, kind, track: placed, clip });
+                        }
                     }
                 }
                 // nested playlists are not mixes, only the entry and blank elements place clips
@@ -454,6 +542,25 @@ impl<'a, 'd> Imp<'a, 'd, '_> {
     }
 }
 
+/// The `(track, start frame)` of every clip leaf in a Kdenlive group tree.
+fn collect_leaves(g: &serde_json::Value, out: &mut Vec<(usize, i64)>, depth: usize) {
+    if depth > MAX_DEPTH {
+        return;
+    }
+    if g.get("type").and_then(serde_json::Value::as_str) == Some("Leaf") {
+        if g.get("leaf").and_then(serde_json::Value::as_str) == Some("clip")
+            && let Some((track, start)) = g.get("data").and_then(serde_json::Value::as_str).and_then(|d| d.split_once(':'))
+            && let (Ok(track), Ok(start)) = (track.trim().parse::<usize>(), start.trim().parse::<i64>())
+        {
+            out.push((track, start));
+        }
+        return;
+    }
+    for c in g.get("children").and_then(serde_json::Value::as_array).into_iter().flatten() {
+        collect_leaves(c, out, depth + 1);
+    }
+}
+
 /// A colour producer's resource (`#rrggbb`, `#aarrggbb`, `0xrrggbbaa`, a few names) as a generator.
 fn color_generator(resource: &str) -> Generator {
     let r = resource.trim();
@@ -519,6 +626,8 @@ mod tests {
             ids: HashMap::new(),
             media: HashMap::new(),
             entries: 0,
+            cur_mlt: 0,
+            placed: Vec::new(),
         };
         assert_eq!(imp.frames("00:00:01.000"), Some(30));
         assert_eq!(imp.frames("00:01:00.000"), Some(1798));

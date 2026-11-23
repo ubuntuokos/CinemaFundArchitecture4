@@ -4914,3 +4914,8 @@ export.summary	Low	laag
 
 # WP3 DPX bit depth
 	Bit Depth	Bitdiepte
+
+# AS-02 versions
+	AS-02 Versions	AS-02-versies
+	Tick the sequences to write as further versions in the AS-02 bundle	Vink de sequenties aan die als extra versies in het AS-02-pakket worden geschreven
+	Delete Short Clips	Korte clips verwijderen

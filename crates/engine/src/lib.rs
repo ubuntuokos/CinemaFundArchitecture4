@@ -18,6 +18,7 @@ pub mod background;
 pub mod beat_markers;
 pub mod camera_proxies;
 pub mod captions;
+pub mod captions_titles;
 pub mod clip_ops;
 pub mod color;
 pub mod commands;
@@ -35,6 +36,7 @@ pub mod essential_sound;
 pub mod export_tools;
 mod eyedropper;
 mod fx_editor;
+pub mod gesture_runtime;
 pub mod graphic_templates;
 pub mod graphics;
 pub mod interchange;
@@ -45,6 +47,7 @@ pub mod legibility;
 pub mod live;
 pub mod ltc_read;
 mod marker_export;
+pub mod marker_exports;
 pub mod masks;
 pub mod media_browser;
 pub mod media_pool;
@@ -74,6 +77,7 @@ pub mod security;
 pub mod sequence_extras;
 pub mod sequence_tools;
 pub mod settings;
+pub mod short_clips;
 pub mod shortcut_presets;
 pub mod shortcuts;
 pub mod silence;
@@ -1407,6 +1411,8 @@ mod beat_markers_tests;
 #[cfg(test)]
 mod camera_proxies_tests;
 #[cfg(test)]
+mod captions_titles_tests;
+#[cfg(test)]
 mod clip_ops_tests;
 #[cfg(test)]
 mod color_tests;
@@ -1444,6 +1450,8 @@ mod linked_speed_tests;
 mod linked_trim_tests;
 #[cfg(test)]
 mod locked_clip_edits_tests;
+#[cfg(test)]
+mod marker_exports_tests;
 #[cfg(test)]
 pub(crate) mod masks_tests;
 #[cfg(test)]
@@ -1512,6 +1520,8 @@ mod sequence_tabs_tests;
 mod sequence_tools_tests;
 #[cfg(test)]
 mod settings_tests;
+#[cfg(test)]
+mod short_clips_tests;
 #[cfg(test)]
 mod shortcuts_tests;
 #[cfg(test)]

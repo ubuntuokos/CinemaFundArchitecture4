@@ -112,3 +112,37 @@ fn mlt_is_import_only() {
     assert!(err.to_string().contains("not exported"), "{err}");
     let _ = Tick::ZERO;
 }
+
+#[test]
+fn av_group_links_picture_and_sound() {
+    // a picture clip and its sound on the first two tracks (audio, video; numbered without the background track), grouped by `AVSplit`; a
+    // third clip stays alone
+    let doc = r#"<mlt><profile frame_rate_num="25" frame_rate_den="1" width="1280" height="720"/>
+<producer id="c" in="0" out="249"><property name="mlt_service">avformat-novalidate</property><property name="resource">/m/a.mp4</property></producer>
+<producer id="black" in="0" out="9999"><property name="mlt_service">color</property><property name="resource">black</property></producer>
+<playlist id="pa"><entry producer="c" in="0" out="99"/><blank length="25"/><entry producer="c" in="100" out="149"/></playlist>
+<playlist id="pv"><entry producer="c" in="0" out="99"/><blank length="25"/><entry producer="c" in="100" out="149"/></playlist>
+<tractor id="ta"><property name="kdenlive:audio_track">1</property><track producer="pa"/></tractor>
+<tractor id="tv"><track producer="pv"/></tractor>
+<tractor id="main"><property name="kdenlive:sequenceproperties.groups">[{"type":"AVSplit","children":[{"data":"0:0","leaf":"clip","type":"Leaf"},{"data":"1:0","leaf":"clip","type":"Leaf"}]}]</property>
+<track producer="black"/><track producer="ta"/><track producer="tv"/></tractor></mlt>"#;
+    let (imp, _rep) = import(doc.as_bytes(), Format::Mlt, Some(BASE)).unwrap();
+    let s = seq(&imp);
+    assert_eq!((s.video_tracks.len(), s.audio_tracks.len()), (1, 1));
+    let (v, a) = (&s.video_tracks[0].items, &s.audio_tracks[0].items);
+    assert_eq!((v.len(), a.len()), (2, 2));
+    assert!(v[0].link.is_some() && v[0].link == a[0].link, "{:?} {:?}", v[0].link, a[0].link);
+    assert!(v[1].link.is_none() && a[1].link.is_none());
+}
+
+#[test]
+fn guides_become_sequence_markers() {
+    let doc = r#"<mlt><profile frame_rate_num="25" frame_rate_den="1" width="1280" height="720"/>
+<playlist id="p0"><property name="kdenlive:audio_track">1</property></playlist>
+<tractor id="t0"><property name="kdenlive:audio_track">1</property><track producer="p0"/></tractor>
+<tractor id="main"><property name="kdenlive:sequenceproperties.guides">[{"comment":"Intro","pos":50,"type":0},{"comment":"Bad","pos":-3,"type":0},{"comment":"Outro","pos":250,"type":1}]</property><track producer="t0"/></tractor></mlt>"#;
+    let (imp, _) = import(doc.as_bytes(), Format::Mlt, Some(BASE)).unwrap();
+    let s = seq(&imp);
+    let m: Vec<(String, i64)> = s.markers.iter().map(|m| (m.name.clone(), FrameRate::new(25, 1).frame_at(m.start))).collect();
+    assert_eq!(m, vec![("Intro".to_string(), 50), ("Outro".to_string(), 250)]);
+}

@@ -4913,3 +4913,8 @@ export.summary	Low	低
 
 # WP3 DPX bit depth
 	Bit Depth	位元深度
+
+# AS-02 versions
+	AS-02 Versions	AS-02 版本
+	Tick the sequences to write as further versions in the AS-02 bundle	勾選要作為附加版本寫入 AS-02 套件的序列
+	Delete Short Clips	刪除短片段

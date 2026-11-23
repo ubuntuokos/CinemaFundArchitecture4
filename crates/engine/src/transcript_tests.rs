@@ -179,3 +179,31 @@ fn generate_without_a_transcriber() {
     let r = s.execute("transcript.generate", json!({})).unwrap();
     assert!(r["items"].as_array().unwrap().len() >= 2, "{r}");
 }
+
+#[test]
+fn vad_filter_is_validated_and_the_energy_filter_keeps_the_transcript_well_formed() {
+    let (mut s, item, _) = session();
+    for bad in [json!("loud"), json!(3), json!(true)] {
+        let e = s.execute("transcript.generate", json!({"items": [item.0], "vadFilter": bad})).unwrap_err().to_string();
+        assert!(e.contains("vadFilter"), "{e}");
+    }
+    assert!(s.project.transcripts.is_empty(), "a refused call changes nothing");
+    // off (and absent) is the unfiltered path, unchanged
+    s.execute("transcript.generate", json!({"items": [item.0], "vadFilter": "off"})).unwrap();
+    assert_eq!(s.project.transcripts[&item].words.len(), 6);
+    // the energy pre-filter hands the recogniser only voiced stretches; words stay in time order
+    s.execute("transcript.generate", json!({"items": [item.0], "vadFilter": "energy"})).unwrap();
+    let t = &s.project.transcripts[&item];
+    assert!(t.words.windows(2).all(|w| w[0].start <= w[1].start && w[0].end <= w[1].start.max(w[0].end)));
+    assert_eq!(t.source, "fixed");
+}
+
+/// The Silero pre-filter never falls back to the energy detector when the model is missing.
+#[cfg(not(feature = "silero"))]
+#[test]
+fn silero_vad_filter_without_the_feature_is_an_error_not_a_fallback() {
+    let (mut s, item, _) = session();
+    let e = s.execute("transcript.generate", json!({"items": [item.0], "vadFilter": "silero"})).unwrap_err().to_string();
+    assert!(e.contains("silero"), "{e}");
+    assert!(s.project.transcripts.is_empty());
+}

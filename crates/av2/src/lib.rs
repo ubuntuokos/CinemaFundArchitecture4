@@ -8,6 +8,7 @@
 
 #[rustfmt::skip]
 pub mod cdf_default;
+pub mod cdf_set;
 pub mod frame;
 pub mod obu;
 pub mod seq;

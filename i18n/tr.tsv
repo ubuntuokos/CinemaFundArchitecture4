@@ -4915,3 +4915,8 @@ export.summary	Low	düşük
 
 # WP3 DPX bit depth
 	Bit Depth	Bit derinliği
+
+# AS-02 versions
+	AS-02 Versions	AS-02 sürümleri
+	Tick the sequences to write as further versions in the AS-02 bundle	AS-02 paketine ek sürüm olarak yazılacak dizileri işaretleyin
+	Delete Short Clips	Kısa Klipleri Sil

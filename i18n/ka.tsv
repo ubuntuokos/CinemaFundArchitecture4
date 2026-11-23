@@ -4917,3 +4917,8 @@ export.summary	Low	დაბალი
 
 # WP3 DPX bit depth
 	Bit Depth	ბიტური სიღრმე
+
+# AS-02 versions
+	AS-02 Versions	AS-02 ვერსიები
+	Tick the sequences to write as further versions in the AS-02 bundle	მონიშნეთ მიმდევრობები, რომლებიც AS-02 პაკეტში დამატებით ვერსიებად ჩაიწერება
+	Delete Short Clips	მოკლე კლიპების წაშლა

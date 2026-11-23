@@ -15,6 +15,7 @@ model handling: [docs/transcripts.md](../../docs/transcripts.md).
   file is checked against its SHA-256 on every load, and a missing model is an error, never a
   fallback to the energy detector. The record is the hand-over point for the model manager
   (CFA4-MODEL-MANAGER-001), which will own the store and the acceptance.
+- `prefilter`: the Whisper pre-filter. `speech_segments` turns one voiced flag per frame (energy or Silero) into padded, merged speech stretches; `transcribe_segments` hands only those to a `Transcriber` and shifts the words back to media time. Used by `transcript.generate {vadFilter}`.
 - `mel`, `vad`, `diarize`: log-mel front end, word-bound tightening, MFCC-clustering speaker labels.
 
 The `whisper` and `silero` features are off by default and are never enabled for wasm (`cargo xtask wasm` checks the

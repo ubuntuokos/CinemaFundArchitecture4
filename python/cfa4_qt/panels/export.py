@@ -32,6 +32,8 @@ from PySide6.QtWidgets import (
     QHeaderView,
     QLabel,
     QLineEdit,
+    QListWidget,
+    QListWidgetItem,
     QMessageBox,
     QPlainTextEdit,
     QProgressBar,
@@ -573,6 +575,12 @@ class ExportDialog(QDialog):
         # MXF OP1a: an AMWA AS-02 bundle (version file, manifest, mono components under media/)
         self.mxf_as02 = QCheckBox(tr("Write an AS-02 bundle (the path is a folder)"), self)
         self.mxf_as02.setObjectName("export.video.mxfAs02")
+        # AS-02: more sequences of the project as further versions in the same bundle (by name)
+        self.project_sequences: list[tuple[int, str]] = []
+        self.as02_versions = QListWidget(self)
+        self.as02_versions.setObjectName("export.video.mxfAs02Versions")
+        self.as02_versions.setToolTip(tr("Tick the sequences to write as further versions in the AS-02 bundle"))
+        self.as02_versions.setMaximumHeight(110)
         # MXF OP1a: AMWA AS-11 metadata in bmx's text forms (empty Core = no AS-11 metadata)
         self.as11_text: dict[str, QPlainTextEdit] = {}
         # the placeholders show bmx's text forms (item names and time codes, not translated)
@@ -664,6 +672,7 @@ class ExportDialog(QDialog):
         fv.addRow(tr("DASH Manifest"), self.dash_manifest)
         fv.addRow(tr("Closed Captions"), self.mxf_anc)
         fv.addRow(tr("AS-02"), self.mxf_as02)
+        fv.addRow(tr("AS-02 Versions"), self.as02_versions)
         for key, label in (("mxfAs11Core", N_("AS-11 Core")), ("mxfAs11Segments", N_("AS-11 Parts")), ("mxfAs11Ukdpp", N_("AS-11 UK DPP")), ("mxfAs10", N_("AS-10")), ("mxfAs03", N_("AS-03")), ("mxfAs12", N_("AS-12"))):
             fv.addRow(tr(label), self.as11_text[key])
         fv.addRow(tr("Quality"), self.quality)
@@ -884,6 +893,8 @@ class ExportDialog(QDialog):
             c.currentIndexChanged.connect(lambda _i, k=key: self._touch(k))
         for key, b in (("hardware", self.hardware), ("audio", self.audio), ("alpha", self.alpha), ("dashManifest", self.dash_manifest), ("mxfAncCaptions", self.mxf_anc), ("mxfAs02", self.mxf_as02)):
             b.toggled.connect(lambda _on, k=key: self._touch(k))
+        self.mxf_as02.toggled.connect(lambda _on: self._sync_format_rows())
+        self.as02_versions.itemChanged.connect(lambda _i: self._touch("mxfAs02Versions"))
         for key, t in self.as11_text.items():
             t.textChanged.connect(lambda k=key: self._touch(k))
         for key, c in self.format_choices.items():
@@ -903,8 +914,38 @@ class ExportDialog(QDialog):
         self._sync_size_shown()
 
     # ----- opening -----
+    def set_project_sequences(self, sequences: list[tuple[int, str]]) -> None:
+        """The project's sequences (id, name): the AS-02 version list offers the ones but the open one.
+        Ticks survive a refresh for the sequences still there."""
+        ticked = set(self.chosen_versions())
+        self.project_sequences = list(sequences)
+        self._fill_versions(ticked)
+
+    def _fill_versions(self, ticked: set[int]) -> None:
+        own = (self.sequence or {}).get("id")
+        self.as02_versions.blockSignals(True)
+        self.as02_versions.clear()
+        for sid, name in self.project_sequences:
+            if sid == own:
+                continue
+            it = QListWidgetItem(name or str(sid))
+            it.setFlags(it.flags() | Qt.ItemFlag.ItemIsUserCheckable)
+            it.setCheckState(Qt.CheckState.Checked if sid in ticked else Qt.CheckState.Unchecked)
+            it.setData(Qt.ItemDataRole.UserRole, sid)
+            self.as02_versions.addItem(it)
+        self.as02_versions.blockSignals(False)
+
+    def chosen_versions(self) -> list[int]:
+        out: list[int] = []
+        for i in range(self.as02_versions.count()):
+            it = self.as02_versions.item(i)
+            if it.checkState() == Qt.CheckState.Checked:
+                out.append(int(it.data(Qt.ItemDataRole.UserRole)))
+        return out
+
     def open_for(self, sequence: dict[str, Any] | None, project_path: str | None) -> None:
         self.sequence = sequence
+        self._fill_versions(set(self.chosen_versions()))
         self.project_path = project_path
         name = str((sequence or {}).get("name") or tr("No sequence"))
         self.sequence_label.setText(name)
@@ -1136,6 +1177,7 @@ class ExportDialog(QDialog):
         rows["dashManifest"] = fmt == "hls"
         rows["mxfAncCaptions"] = fmt == "mxf-op1a" and self._choice("mxfVideoCodec") != "d10"
         rows["mxfAs02"] = fmt == "mxf-op1a" and self._choice("mxfVideoCodec") not in ("d10", "xdcamHd422")
+        rows["mxfAs02Versions"] = rows["mxfAs02"] and self.mxf_as02.isChecked() and self.as02_versions.count() > 0
         for key in self.as11_text:
             rows[key] = fmt == "mxf-op1a"
         return rows
@@ -1183,6 +1225,7 @@ class ExportDialog(QDialog):
             "dashManifest": self.dash_manifest,
             "mxfAncCaptions": self.mxf_anc,
             "mxfAs02": self.mxf_as02,
+            "mxfAs02Versions": self.as02_versions,
             **self.as11_text,
         }
         for key, shown in self._format_rows().items():
@@ -1489,6 +1532,8 @@ class ExportDialog(QDialog):
             p["mxfAncCaptions"] = self.mxf_anc.isChecked()
         if rows["mxfAs02"] and "mxfAs02" in self.touched:
             p["mxfAs02"] = self.mxf_as02.isChecked()
+        if rows["mxfAs02Versions"] and "mxfAs02Versions" in self.touched:
+            p["mxfAs02Versions"] = self.chosen_versions()
         for key, t in self.as11_text.items():
             if rows[key] and key in self.touched:
                 p[key] = t.toPlainText()

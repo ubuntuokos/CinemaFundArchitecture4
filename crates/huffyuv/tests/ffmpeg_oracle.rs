@@ -77,7 +77,7 @@ fn make(f: &Fixture) -> (Vec<u8>, Vec<u8>) {
 /// Our picture in ffmpeg's layout: planar Y U V and G B R, interleaved B G R A.
 fn to_raw(p: &Picture) -> Vec<u8> {
     match p.format {
-        Format::Yuv422 => p.planes.concat(),
+        Format::Yuv422 | Format::Yuv420 => p.planes.concat(),
         Format::Rgb => [&p.planes[1], &p.planes[2], &p.planes[0]].iter().flat_map(|pl| pl.iter().copied()).collect(),
         // ffmpeg's bgra to gbrap conversion does not keep alpha exactly: compare interleaved
         Format::Rgba => (0..p.planes[0].len()).flat_map(|i| [p.planes[2][i], p.planes[1][i], p.planes[0][i], p.planes[3][i]]).collect(),

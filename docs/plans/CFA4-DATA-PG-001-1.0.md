@@ -382,6 +382,7 @@ DB nélkül a mai memóriasor fut (P14). Az átállás a két sor között indul
   1. Az eszközök egymás sémájához nem nyúlnak.
   2. Sémák közötti idegen kulcs nincs. A hivatkozás UUID, az épséget alkalmazásszintű ellenőrzés adja. Kivétel lehet a `backlot` → `cfa4_audit` irány, ha a BacklotHub terve kéri: [nyitott].
   3. Egy belépési pont, a `cfa4-db-setup migrate`, rögzített sorrendben futtat: audit → files → backlot → Rust-komponensek.
+- **Motorbekötés (PG-4):** a motor feladatsora memóriában marad, a szerkesztés, a lejátszás és a mentés nem vár az adatbázisra (AGENTS.md §0). Az alkalmazás (`cfa4-cli serve`) egy író naplót (`TaskJournal`, `cfa4-tasks`) köt a `TaskHost`-ba: minden feladatváltozás korlátos csatornán át a `cfa4-store` hátszálához kerül, az a `tasks.session_task` táblába írja (munkamenetenként és feladatonként egy sor, az adatbázis ütemezője nem olvassa). A halott munkamenet nyitott sorait a következő indítás `interrupted` állapotra zárja (`/proc/<pid>`), a 30 napnál régebbit törli. Ha nincs szerver, egyszer kiírja, és minden marad a régi (`--no-db` kihagyja). A feladat-azonosítók szövegek maradnak, az UUIDv7 később jön.
 - **Visszalépés:** a `down` csak a legutolsó lépésre (migrate.rs 118–139). Az újabb CFA4 által alkalmazott lépést a régebbi nem bontja vissza, hanem hibát ad (131. sor).
 - **Futtatási jog:** migráció csak tulajdonosi szereppel (`SET ROLE cfa4_owner_<séma>`), az alkalmazásszerep nem végezhet DDL-t (a D-6 kivételével).
 
