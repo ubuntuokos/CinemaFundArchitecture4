@@ -756,14 +756,14 @@ fn xdcam_hd422_as03_metadata_and_shims() {
 }
 
 /// #1536: further sequences go into the same bundle as more versions, each with its own
-/// components and version file; one manifest and one shim file list everything.
+/// components (sharing off; #1719 covers the shared case) and version file; one manifest and one shim file list everything.
 #[test]
 fn as02_bundle_holds_several_versions() {
     use cfa4_mxf::as02::{Manifest, Role};
     let (p, seq, m) = project();
     let dir = tmp("as02_versions");
     let _ = std::fs::remove_dir_all(&dir);
-    let s = ExportSettings { mxf_as02: true, mxf_as02_versions: vec![seq.0], ..settings(Format::MxfOp1a, MxfVideoCodec::Dnxhr, &dir) };
+    let s = ExportSettings { mxf_as02: true, mxf_as02_share: false, mxf_as02_versions: vec![seq.0], ..settings(Format::MxfOp1a, MxfVideoCodec::Dnxhr, &dir) };
     let r = export(&p, seq, &s, &m, &Progress::default()).unwrap();
     assert_eq!(r.frames, 48, "two 24-frame versions");
     let name = std::path::Path::new(&dir).file_name().unwrap().to_string_lossy().to_string();
@@ -790,6 +790,88 @@ fn as02_bundle_holds_several_versions() {
     let bad = ExportSettings { mxf_as02_versions: vec![seq.0], ..settings(Format::MxfOp1a, MxfVideoCodec::Dnxhr, &dir) };
     assert!(bad.validate().is_err());
     let _ = std::fs::remove_dir_all(&dir);
+}
+
+/// A second sequence over the media of [`project`]: the first `shared` frames of the leader and
+/// the tone as in the first sequence, then `tail` frames of the leader from frame 30 on.
+fn add_cut(p: &mut Project, first: ItemId, shared: i64, tail: i64) -> ItemId {
+    let r = FrameRate::FPS_24;
+    let (v, a) = {
+        let q = p.sequence(first).unwrap();
+        (q.video_tracks[0].items[0].item, q.audio_tracks[0].items[0].item)
+    };
+    let seq = p.new_sequence("Cut", SequenceSettings { width: 320, height: 180, frame_rate: r, ..Default::default() }, 1, 1, None);
+    let len = shared + tail;
+    let v1 = p.make_track_item(v, TrackKind::Video, Tick::ZERO, TimeRange::new(Tick::ZERO, r.tick_of(shared)), r).unwrap();
+    let mut items = vec![v1];
+    if tail > 0 {
+        items.push(p.make_track_item(v, TrackKind::Video, r.tick_of(shared), TimeRange::new(r.tick_of(30), r.tick_of(tail)), r).unwrap());
+    }
+    let ai = p.make_track_item(a, TrackKind::Audio, Tick::ZERO, TimeRange::new(Tick::ZERO, r.tick_of(len)), r).unwrap();
+    let q = p.sequence_mut(seq).unwrap();
+    q.video_tracks[0].items.extend(items);
+    q.audio_tracks[0].items.push(ai);
+    seq
+}
+
+/// #1719: versions that cut the same material the same way share component files: the common
+/// frames are encoded once, and the version files point at them.
+#[test]
+fn as02_versions_share_components() {
+    use cfa4_mxf::as02::{Manifest, Role};
+    let (p, seq, m) = project();
+    let mut p = Arc::try_unwrap(p).ok().unwrap();
+    // the same first 12 frames and the same sound, then a different second half
+    let cut = add_cut(&mut p, seq, 12, 12);
+    // a short version that is entirely a part of the first: nothing of its own
+    let short = add_cut(&mut p, seq, 6, 0);
+    let p = Arc::new(p);
+    let dir = tmp("as02_shared");
+    let _ = std::fs::remove_dir_all(&dir);
+    let s = ExportSettings { mxf_as02: true, mxf_as02_versions: vec![cut.0, short.0], ..settings(Format::MxfOp1a, MxfVideoCodec::Dnxhr, &dir) };
+    let r = export(&p, seq, &s, &m, &Progress::default()).unwrap();
+    assert_eq!(r.frames, 24 + 12, "the first version, and the 12 frames only the second has");
+    let name = std::path::Path::new(&dir).file_name().unwrap().to_string_lossy().to_string();
+    let man = Manifest::parse(&std::fs::read_to_string(format!("{dir}/manifest.xml")).unwrap()).unwrap();
+    assert_eq!(man.check(), Vec::<String>::new());
+    assert_eq!(man.versions().count(), 3);
+    assert_eq!(man.essence_components().count(), 6, "picture + two sound channels, twice (the short version has none)");
+    assert_eq!(man.files.iter().filter(|f| f.role == Role::Shim).count(), 1);
+    for f in man.files.iter().filter(|f| f.role != Role::Folder) {
+        assert!(std::path::Path::new(&format!("{dir}/{}", f.path)).is_file(), "{}", f.path);
+    }
+    let read = |stem: &str| cfa4_mxf::as02_version::read_version(&std::fs::read(format!("{dir}/{stem}.mxf")).unwrap()).unwrap();
+    let v1 = read(&name);
+    let v2 = read(&format!("{name}_v2"));
+    let v3 = read(&format!("{name}_v3"));
+    for v in [&v1, &v2, &v3] {
+        assert!(v.problems.is_empty(), "{:?}", v.problems);
+    }
+    let clips = |v: &cfa4_mxf::as02_version::VersionFile| -> Vec<Vec<(i64, i64)>> {
+        v.tracks.iter().map(|t| t.clips.iter().map(|c| (c.start, c.duration)).collect()).collect()
+    };
+    assert_eq!(clips(&v1), vec![vec![(0, 24)]; 3]);
+    // the second version: 12 frames of the first version's files, then 12 of its own
+    assert_eq!(clips(&v2), vec![vec![(0, 12), (0, 12)]; 3]);
+    let first_files: Vec<_> = v1.components.iter().map(|c| c.umid).collect();
+    for t in &v2.tracks {
+        assert!(first_files.contains(&t.clips[0].package.unwrap()), "the common frames come from the first version");
+        assert!(!first_files.contains(&t.clips[1].package.unwrap()), "the rest is the version's own");
+    }
+    assert_eq!(v2.components.len(), 6);
+    // the short version is cut from the first version's files alone
+    assert_eq!(clips(&v3), vec![vec![(0, 6)]; 3]);
+    assert!(v3.components.iter().all(|c| first_files.contains(&c.umid)));
+    // the own run of the second version is 12 frames long
+    let own = std::fs::read(format!("{dir}/media/{name}_v2_V.mxf")).unwrap();
+    assert_eq!(cfa4_mxf::open(&own).unwrap().tracks[0].samples.len(), 12);
+    // switching sharing off writes whole components for every version
+    let dir2 = tmp("as02_unshared");
+    let _ = std::fs::remove_dir_all(&dir2);
+    let off = ExportSettings { mxf_as02_share: false, path: dir2.clone(), ..s.clone() };
+    assert_eq!(export(&p, seq, &off, &m, &Progress::default()).unwrap().frames, 24 + 24 + 6);
+    let _ = std::fs::remove_dir_all(&dir);
+    let _ = std::fs::remove_dir_all(&dir2);
 }
 
 /// #1477: `mxf_as02` writes a simple AS-02 bundle: the version file and `manifest.xml` in the

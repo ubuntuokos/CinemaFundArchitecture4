@@ -4935,3 +4935,7 @@ export.summary	Low	alacsony
 
 # WP3 DPX bit depth
 	Bit Depth	Bitmélység
+
+# AS-02 versions
+	AS-02 Versions	AS-02 verziók
+	Tick the sequences to write as further versions in the AS-02 bundle	Jelölje be azokat a szekvenciákat, amelyek további verzióként kerülnek az AS-02 csomagba

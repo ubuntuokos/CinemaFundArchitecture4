@@ -126,10 +126,14 @@ and decoder cannot disagree on them.
   `max_component_bytes`) each code-block is also coded with its `s` lowest bit-planes dropped,
   for every `s` up to its most significant one (missing MSBs Mb - 1 - s, the decoder puts the
   magnitudes back at plane `s`); those codings are the block's truncation points, and the same
-  convex-hull rate control as Part 1 picks one per block. Whole planes only (no SigProp / MagRef
-  passes), so at equal size it is a little below the Part 1 coder (≤ 1.7 dB in the tests).
+  convex-hull rate control as Part 1 picks one per block. Besides those, each plane `s ≥ 1` also
+  has the cleanup pass at plane `s + 1` followed by the SigProp pass, and by SigProp and MagRef,
+  of plane `s` (`encode_refined`, a mirror of the decoder's refinement; the refinement segment
+  is SigProp bytes, then the MagRef bytes reversed, and the packet header codes the cleanup
+  pass and the refinement passes as two codeword segments); at equal size the coder is then
+  within about 1 dB of the Part 1 coder in the tests (1.7 dB with whole planes only).
 
-Not yet (#117): several quality layers, tiles, HT refinement passes, other code-block styles, SOP /
+Not yet (#117): several quality layers, tiles, refinement passes in the unlimited (lossless) mode, other code-block styles, SOP /
 EPH / PLT, broadcast profiles. DCP / MXF export is #115, speed #116.
 
 In MXF the decoder runs through `cfa4-codecs` (`j2k.rs`): Y'CbCr, R'G'B' and gray components

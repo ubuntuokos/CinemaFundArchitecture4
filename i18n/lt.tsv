@@ -4917,3 +4917,7 @@ export.summary	Low	žema
 
 # WP3 DPX bit depth
 	Bit Depth	Bitų gylis
+
+# AS-02 versions
+	AS-02 Versions	AS-02 versijos
+	Tick the sequences to write as further versions in the AS-02 bundle	Pažymėkite sekas, kurios bus įrašytos kaip papildomos AS-02 paketo versijos

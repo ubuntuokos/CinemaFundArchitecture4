@@ -229,3 +229,61 @@ fn damage_never_panics_or_passes_in_the_quick_scan_of_nothing() {
     assert_eq!(r.verdict, Verdict::Fail);
     let _ = std::fs::remove_dir_all(&d);
 }
+
+// DCP-19: release-gate checks of the plan's §14 acceptance criteria that need a real package.
+
+/// Every file's name, size, modification time and bytes.
+fn snapshot(d: &Path) -> Vec<(String, u64, Option<std::time::SystemTime>, Vec<u8>)> {
+    let mut out: Vec<_> = std::fs::read_dir(d)
+        .unwrap()
+        .flatten()
+        .map(|e| {
+            let m = e.metadata().unwrap();
+            (e.file_name().to_string_lossy().into_owned(), m.len(), m.modified().ok(), std::fs::read(e.path()).unwrap())
+        })
+        .collect();
+    out.sort_by(|a, b| a.0.cmp(&b.0));
+    out
+}
+
+#[test]
+fn validation_never_changes_the_package_under_any_profile() {
+    // criterion 10: the original DCP files stay as they were, and nothing is written next to them
+    let d = copy("unchanged");
+    let before = snapshot(&d);
+    for p in Profile::all() {
+        let id = p.id.clone();
+        let r = NativeValidator.validate(&ValidationRequest::new(&d, p), &ValidationControl::new()).unwrap();
+        assert_ne!(r.verdict, Verdict::Interrupted, "{id}");
+        assert!(snapshot(&d) == before, "profile {id} changed the package");
+    }
+    let _ = std::fs::remove_dir_all(&d);
+}
+
+#[test]
+fn the_report_names_the_profile_version_and_standard_and_survives_json() {
+    // criterion 16: the profile and the standard that were applied can be looked up afterwards
+    let d = copy("traceable");
+    let r = validate(&d);
+    assert_eq!(r.profile.id, PROFILE);
+    assert!(r.profile.version >= 1);
+    assert_eq!(r.standard, Some(cfa4_dcp::Standard::Smpte));
+    let back = ValidationReport::from_json(&r.to_json()).expect("report schema");
+    assert_eq!((back.profile.id, back.profile.version, back.standard), (r.profile.id, r.profile.version, r.standard));
+    let _ = std::fs::remove_dir_all(&d);
+}
+
+#[test]
+fn unchecked_properties_never_count_as_a_pass() {
+    // criterion 7: a package with an unchecked or skipped rule is never reported as a plain pass
+    let d = copy("unchecked");
+    for p in Profile::all() {
+        let id = p.id.clone();
+        let r = NativeValidator.validate(&ValidationRequest::new(&d, p), &ValidationControl::new()).unwrap();
+        let open = r.findings.iter().any(|f| matches!(f.status, Status::Unchecked | Status::Skipped));
+        if open {
+            assert_ne!(r.verdict, Verdict::Pass, "{id}: unchecked or skipped rules but a pass");
+        }
+    }
+    let _ = std::fs::remove_dir_all(&d);
+}
