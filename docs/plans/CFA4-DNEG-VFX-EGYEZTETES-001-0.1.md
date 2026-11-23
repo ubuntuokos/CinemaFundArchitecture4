@@ -108,7 +108,9 @@ A korábbi „a VISION §8 döntéséig áll” blokk így **szűkül**: az OPEN
 
 ## 7. Jóváhagyandó döntések és az érintett munka
 
-**Állapot (2026-11-22 08:30):** a `CFA4-VFX-001` v1.1 §8a a **D-1…D-9-et elfogadottként rögzíti**, és István utasítása szerint a VFX-001 a mérvadó; a DNEG-oldali módosításokat (`[MÓD-n]`) ennek megfelelően igazítottam. A DNEG-oldali dokumentumokra (DNEG-terv, audit, OPENUSD, ARF, POINTCLOUD, EFFECTCHAIN, VFX-CATALOG) a formális tulajdonosi jóváhagyás a #1550-en marad, és a D-10, D-11 új. Az X-4 (VISION §8) továbbra is nyitott.
+**Állapot (2026-11-23 07:37): István „a javaslataimat elfogadom, jóváhagyom” (2026-11-23 07:37) – a D-10, D-11 és D-12 LEZÁRVA a fenti javaslat szerint; a D-12 értelmezése (projektszintű, tartalom szerinti 3D-bekapcsolás, projektben tárolt állapot, A/B út projektenként, típusonkénti mélység) elfogadva. A [MÓD-8] ezzel jóváhagyott. A többi DNEG-oldali `[MÓD-n]` formális megerősítése változatlanul a #1550-en marad, hacsak István szavai azokat is fedik (a koordinátor szűkebben, D-10…D-12-re értelmezte).**
+
+**Korábbi állapot (2026-11-22 08:30):** a `CFA4-VFX-001` v1.1 §8a a **D-1…D-9-et elfogadottként rögzíti**, és István utasítása szerint a VFX-001 a mérvadó; a DNEG-oldali módosításokat (`[MÓD-n]`) ennek megfelelően igazítottam. A DNEG-oldali dokumentumokra (DNEG-terv, audit, OPENUSD, ARF, POINTCLOUD, EFFECTCHAIN, VFX-CATALOG) a formális tulajdonosi jóváhagyás a #1550-en marad, és a D-10, D-11 új. Az X-4 (VISION §8) továbbra is nyitott.
 
 | # | Döntés | Javaslat | Az érintett munka a jóváhagyásig |
 |---|---|---|---|
@@ -121,9 +123,9 @@ A korábbi „a VISION §8 döntéséig áll” blokk így **szűkül**: az OPEN
 | D-7 | OpenVDB-licenc és ADR-0003 sor pontosítása (K-12) | igen (külön kis PR) | ADR-0003 sor |
 | D-8 | A DNEG-donorok pillanatképe (§5) | a VFX-0a mintájára igen | – |
 | D-9 | **Átnevezés (K-14):** **EFFECTCHAIN a végleges név** (István, 2026-11-23); az FX-AUTHORING-javaslat elavult | igen | #1528 |
-| D-10 | **A közös kifejezésmag eredete és licence (K-15):** átvétel (Lumit, `GPL-3.0-only`) vagy tiszta szoba; döntés a VFX-1 auditban, N3 előtt | a döntés a VFX-1 audité; a DNEG-oldal a fájlszintű licencet követi | N3, EC-3 |
-| D-12 | **3D projektfüggő (tulajdonosi döntés, 2026-11-22 15:36):** a javasolt értelmezés a §6-ban (projektszintű bekapcsolás tartalom alapján, projektben tárolt állapot, A/B út projektenként, típusonkénti mélység) | a döntés a tulajdonosé és már megszületett; az értelmezés megerősítése és a `VISION.md` §8 átvezetése kérendő | OPENUSD U0, ARF-0/1, PC-0 dokumentumszint indulhat; kód nem |
-| D-11 | **Duplikátum-szabály (K-16):** azonos `id` tilos, azonos név csak deklarált aliasszal | igen | VC-konzisztencia-ellenőrzés |
+| D-10 | **A közös kifejezésmag eredete és licence (K-15):** átvétel (Lumit, `GPL-3.0-only`) vagy tiszta szoba; döntés a VFX-1 auditban, N3 előtt | a döntés a VFX-1 audité; a DNEG-oldal a fájlszintű licencet követi | N3, EC-3 — **LEZÁRVA: István elfogadta (2026-11-23 07:37).** |
+| D-12 | **3D projektfüggő (tulajdonosi döntés, 2026-11-22 15:36):** a javasolt értelmezés a §6-ban (projektszintű bekapcsolás tartalom alapján, projektben tárolt állapot, A/B út projektenként, típusonkénti mélység) | az értelmezés elfogadva; a `VISION.md` §8 formális átvezetése és a VFX-001 X-4 szűkítése a tulajdonos/gazda dolga | OPENUSD U0, ARF-0/1, PC-0 dokumentumszint indulhat; kód nem — **LEZÁRVA: István elfogadta (2026-11-23 07:37).** |
+| D-11 | **Duplikátum-szabály (K-16):** azonos `id` tilos, azonos név csak deklarált aliasszal | igen | VC-konzisztencia-ellenőrzés — **LEZÁRVA: István elfogadta (2026-11-23 07:37).** |
 
 ## 8. Ami ellenőrizetlen maradt
 
