@@ -193,6 +193,7 @@ static ROWS: &[Row] = &[
 #[cfg(test)]
 const NOT_CODECS: &[&str] = &[
     "audio-dsp",
+    "audit",
     "automation",
     "avi",
     "bitstream",

@@ -33,3 +33,5 @@ ne kérdezze meg újra a tulajdonostól. Ha a gép változik, ezt a fájlt kell 
   RTX A1000-es auditok (R0, F7, F9) bizonyítékai érvényesek maradnak.
 - Minden mérési jegyzőkönyv rögzítse az `lscpu` kimenetét, a rögzített magokat és a terhelést
   ([`VISION.md`](../../VISION.md) 2.5, [`docs/performance.md`](../performance.md)).
+- A tulajdonos döntésével kihagyott fizikai teszteket a
+  [`deferred-physical-tests.md`](deferred-physical-tests.md) lista tartja számon (2026-11-22).

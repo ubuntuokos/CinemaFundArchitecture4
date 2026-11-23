@@ -1,0 +1,7 @@
+{
+  "name": "nested-sorted",
+  "input": "{\"b\":[3,1,{\"z\":null,\"a\":true}],\"a\":{\"y\":false,\"x\":-7},\"c\":\"s\"}",
+  "event": true,
+  "canonical": "{\"a\":{\"x\":-7,\"y\":false},\"b\":[3,1,{\"a\":true,\"z\":null}],\"c\":\"s\"}",
+  "hash": "3ba7c7f5ccb20494500ba275022c6bc6d5bdace4e6ef5cdf2587dc2603dca4c8"
+}
