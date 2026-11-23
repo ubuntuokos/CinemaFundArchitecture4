@@ -365,6 +365,24 @@ fn report_json_and_markdown() {
 }
 
 #[test]
+fn report_html_is_escaped_and_self_contained() {
+    let d = dir("report-html");
+    package(&d, ["pkl.xml", "cpl.xml", "a.mxf"]);
+    let mut r = validate(&d, "full-integrity");
+    r.findings[0].message = "a<b>&\"x\".mxf".into();
+    r.findings[0].status = Status::Fail;
+    let html = r.to_html();
+    assert!(html.starts_with("<!doctype html>") && html.trim_end().ends_with("</html>"));
+    assert!(html.contains("a&lt;b&gt;&amp;&quot;x&quot;.mxf"), "the message is escaped");
+    assert!(!html.contains("a<b>"), "no raw markup from the package");
+    assert!(!html.contains("<script") && !html.contains("http://") && !html.contains("https://"), "no scripts, no external files");
+    assert!(html.contains("class=\"verdict FAIL\">FAIL"));
+    let fail = html.find("<tr class=\"FAIL\">").unwrap();
+    let pass = html.find("<tr class=\"PASS\">").unwrap();
+    assert!(fail < pass, "failures first");
+}
+
+#[test]
 fn timestamps() {
     assert_eq!(report::rfc3339(0), "1970-01-01T00:00:00Z");
     assert_eq!(report::rfc3339(951_782_400), "2000-02-29T00:00:00Z");

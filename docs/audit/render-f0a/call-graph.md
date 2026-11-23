@@ -501,6 +501,8 @@ graph LR
 | `cfa4-frame/lib.rs` | `cfa4-time` | `Tick` |
 | `cfa4-frame/pool.rs` | `cfa4-color` | `ColorInfo` |
 | `cfa4-frame/pool.rs` | `cfa4-time` | `Tick` |
+| `cfa4-frame/side.rs` | `cfa4-color` | `ColorInfo`, `HdrMetadata` |
+| `cfa4-frame/side.rs` | `cfa4-time` | `Tick` |
 | `cfa4-golden/validation.rs` | `cfa4-metrics` | `MetricError` |
 | `cfa4-gpu/export_renderer.rs` | `cfa4-export` | `FrameRenderer` |
 | `cfa4-gpu/export_renderer.rs` | `cfa4-geom` | `Vec2` |
@@ -822,9 +824,9 @@ graph LR
 
 ## 4. Nyilvános típusok osztályonként
 
-A többi 632 nyilvános típus („other” osztály) csak a `call-graph.json`-ban szerepel.
+A többi 634 nyilvános típus („other” osztály) csak a `call-graph.json`-ban szerepel.
 
-### Képkocka, kép, pixel (29)
+### Képkocka, kép, pixel (30)
 
 | Crate | Modul | Fajta | Típus |
 |---|---|---|---|
@@ -844,6 +846,7 @@ A többi 632 nyilvános típus („other” osztály) csak a `call-graph.json`-b
 | `cfa4-frame` | `lib.rs` | enum | `PixelData` |
 | `cfa4-frame` | `lib.rs` | struct | `Region` |
 | `cfa4-frame` | `lib.rs` | struct | `VideoFrame` |
+| `cfa4-frame` | `side.rs` | struct | `FrameSideData` |
 | `cfa4-golden` | `validation.rs` | struct | `FrameCapture` |
 | `cfa4-media` | `cache.rs` | struct | `FrameCache` |
 | `cfa4-media` | `lib.rs` | struct | `FrameRequest` |

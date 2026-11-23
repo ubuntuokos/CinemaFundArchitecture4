@@ -59,13 +59,13 @@ Alap: `cfa4_frame::VideoFrame` (`width`, `height`, `data: PixelData`, `color: Co
 | field order, chroma siting | megvan (`FrameLayout`) | – |
 | PTS | megvan (`Tick`) | időalap-szabály rögzítendő |
 | stride | **nincs** (sűrű planeek `Arc<Vec<_>>`) | döntés: marad a sűrű csomagolás, ezt a szerződés kimondja; külső (worker) határon külön leírás |
-| forrás-azonosító | nincs | új opcionális mező |
-| forgatás / display matrix | nincs a frame-en | új opcionális mező |
-| HDR side data (mastering display, MaxCLL/MaxFALL) | nincs a frame-en (ellenőrizendő a `ColorInfo`-ban) | új opcionális mező |
+| forrás-azonosító | **megvalósítva** (`FrameSideData.source`, `cfa4_frame::side`) | a frame mellett utazik, nem benne |
+| forgatás / display matrix | **megvalósítva** (`Rotation`: 0/90/180/270; más mátrix nem ábrázolható, `None`) | |
+| HDR side data (mastering display, MaxCLL/MaxFALL) | a típus megvan: `cfa4_color::HdrMetadata` (nem a `ColorInfo`-ban); **megvalósítva** `FrameSideData.hdr` | |
 | ownership (saját, kölcsönzött, megosztott) | `Arc` = megosztott; kölcsönzés nincs | a szerződés kimondja: az ABI értéktípus, megosztás `Arc`-kal |
-| CPU/GPU hely, fence | nincs | `crates/gpu` típusaihoz kötendő; C0 csak a mezőt rögzíti |
+| CPU/GPU hely, fence | **megvalósítva** (`Residency::{Cpu, Gpu{device, fence}}`, leíró; a `crates/gpu` típusaihoz kötés később) | |
 
-**Elv:** csak új, opcionális mezők, hogy a meglévő hívók ne törjenek; szerződésteszt rögzíti a mezőkészletet.
+**Elv:** csak új, opcionális mezők, hogy a meglévő hívók ne törjenek. A `VideoFrame` struct-literállal épül 54 fájlban (95 helyen), ezért az új mezők **nem a `VideoFrame`-ben**, hanem mellette, egy `FrameSideData` értékben utaznak (a 9/4. nyitott pont eldőlt). A `VideoFrame` mezőkészletét szerződésteszt rögzíti (kimerítő destrukturálás: mező hozzáadása/átnevezése nem fordul, amíg a lista és a spec nem frissül).
 
 ## 3. Audio ABI és időmodell
 
@@ -101,4 +101,4 @@ Szemantikus verziózás; a mezőkészletet és az állapotleképezést szerződ�
 1. A `cfa4-tasks` osztálya (`Class`) a renderhez: van-e megfelelő, vagy kell új (ellenőrizendő a `manager.rs`-ben).
 2. Layering: a render-kliens helye a `cargo xtask layers` szabályai szerint.
 3. A parancsnevek a vezérlőcsatornán.
-4. A mezőkészlet-bővítés hatása a meglévő hívókra (a `cfa4-frame` sok crate függősége).
+4. ~~A mezőkészlet-bővítés hatása a meglévő hívókra~~ eldőlt: a bővítés a `VideoFrame` mellett (`FrameSideData`), a hívók nem változnak.
