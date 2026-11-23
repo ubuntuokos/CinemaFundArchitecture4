@@ -2,7 +2,7 @@
 
 | Dokumentumadat | Érték |
 |---|---|
-| Állapot | **JAVASLAT (0.2: ütközésmentes illesztési terv), tulajdonosi jóváhagyásra vár.** Fejlesztés nem indul belőle jóváhagyás nélkül ([`coordination.md`](../coordination.md) §2.10) |
+| Állapot | **JÓVÁHAGYOTT (István, 2026-11-23; 0.2: ütközésmentes illesztési terv).** A fejlesztés a 7. pont előfeltételei szerint indul ([`coordination.md`](../coordination.md) §2.10) |
 | Dátum | 2026-11-23 |
 | Kérte | István (ubuntuokos) |
 | Alap | CFA4 `main` @ `bc3308f` |
@@ -17,7 +17,7 @@
 2. **Az AI-mattolás (BMV2, RVM) a repóban még nincs.** Sem kód, sem a terv szövege. Az RVM csak jelöltként szerepel (`docs/gaps.md` G12, `docs/open-editors-parity.md` E7, KDN-4). Az építőelemek közül hiányzik az **AI Model Manager** és az **AI Video Tools** is: az előbbit csak hivatkozások nevezik (`CFA4-MODEL-MANAGER-001`, „will own the store”), az utóbbi csak kategóriaként szerepel az `AI-MODEL-TRAINING-001` §10-ben. Az ADR 0008 és az ACS az **AI-modulok külön tárolójában** él, amelyet ez a munkamenet nem érhetett el.
 3. **A határ:** a kulcsoló **effekt** marad (VFX ▸ Keying), az AI-mattolás **matte-forrás**. A kettő közös pontja: **a matte mint érték**, amelyet a Compositor már ma is fogyaszt (Track Matte Key, klip-alfa), valamint a háttércsere-munkafolyamat, a szegély-/spill-tisztítás és az alfa-export. Ezekben egyszer kell megépíteni, nem kétszer.
 4. **A legfontosabb új lelet:** az Object Mask terv maszkmodellje (`MaskRle`, `MaskRef`) **bináris** (0/1 futáshossz). A mattolás **folytonos alfát** ad, finom hajszálakkal. Ezért az Object Mask tárolója **nem használható** matte-nek; külön, tartalomcímzett alfa-matte eszköz kell (4a. pont).
-5. **Javaslat (0.2):** a terv nem új alrendszer. Tizenhét ütközésmentességi szabály (5. pont) és egy tervenkénti illesztési mátrix (6. pont) rögzíti, mit birtokol ki; a Z0–Z3 fázisok (7. pont) a gazdaprojektek kapuihoz kötöttek. Ahol két terv átfed, ott a döntés a tulajdonosé és a gazdáé (8. pont).
+5. **Javaslat (0.2):** a terv nem új alrendszer. Tizenhét ütközésmentességi szabály (5. pont) és egy tervenkénti illesztési mátrix (6. pont) rögzíti, mit birtokol ki; a Z0–Z3 fázisok (7. pont) a gazdaprojektek kapuihoz kötöttek. A tulajdonosi döntések a 8. pontban vannak.
 
 ## 1. Szabályok, amelyeket a terv betart
 
@@ -205,16 +205,23 @@ Minden fázis csak jóváhagyás után indul (§2.10); „kész” csak teszt- v
 
 **Függőségi sorrend:** Z0 → Z1a ∥ Z1b → Z2 → Z3; az AI-backendek az AI-réteg kapui szerint, a Z1b matte-szerződés elfogadása után kapcsolódnak.
 
-## 8. Nyitott kérdések (tulajdonosi döntést kérnek)
+## 8. Döntések (István, 2026-11-23, „javaslatod szerint”)
 
-1. **Projekthatár (§2.8):** elfogadod-e az S1–S17 szabályokat és a 6. pont határait (kulcsoló = effekt; AI-matte = `ai.matting.*` feladat; közös: matte-szerződés a C0-ban, háttér-munkafolyamat, alfa-QC)? A gazdával együtt rögzítendő.
-2. **KDN-4 átfedés:** a tulajdonosi irány (S17) szerint egy közös „Háttér eltávolítása/cseréje” munkafolyamat, módszerválasztóval. Marad a kérdés: a Kdenlive-terv KDN-4 sorának átírása a gazdája által (a KDN-4 külön menüpontként is megmaradhat-e).
-3. **MODNet (G12):** maradjon „jelölt, nem jóváhagyott”, vagy a mattolás csak BMV2 + RVM?
-4. **CPU-s mattolás:** `VISION.md` §5 („önálló GPU nélküli AI-út nincs”) és az ADR 0004 `candle-cpu` sora, illetve a mattolás-terv „CPU-tartalék” szabálya ütközik. Melyik érvényes a mattolásra?
-5. **AI Video Tools:** a mattolás-terv „meglévő” rétegnek tekinti, a repóban nincs. Az AI-réteg része lesz, vagy külön terv kell?
-6. **Z0 felvételek:** nyílt licencű zöldháttéres felvételek (forrásmegjelöléssel), vagy saját felvételek? Fizikai mérés kimaradása esetén §2.14 sor.
-7. **Ultra Key halott ága:** törölhető-e az `effects.rs`-ből (törlés tulajdonosi jóváhagyást igényelhet, `VISION.md` §2.1 szellemében)?
-8. **Z2 clean-plate kulcsoló:** a VFX-5/G-33 leltár előtt csak hiánylista-sorként kerüljön fel (javaslat), vagy kérsz saját megvalósítást?
+A tulajdonos a hét kérdésre a dokumentumban írt javaslat szerint döntött. A terv ezzel **jóváhagyott**; a Z0 indulhat, a további fázisok a 7. pont előfeltételei szerint.
+
+| # | Kérdés | Döntés |
+|---|---|---|
+| 1 | A terv, az S1–S17 szabályok és a határok (kulcsolás = effekt; AI-matte = `ai.matting.*` feladat; módszerválasztás a felhasználónál) | **Jóváhagyva** |
+| 2 | CPU-s mattolás | **A `VISION.md` §5 szabálya marad:** önálló, GPU nélküli AI-út nincs. A kulcsolás GPU nélkül is működik. A kérdés újranyitható mért CPU-útvonallal és tulajdonosi döntéssel |
+| 3 | MODNet | **„Jelölt, nem jóváhagyott”** marad a `gaps.md`-ben; a mattolás csak BMV2 + RVM |
+| 4 | AI Video Tools | **Az AI-réteg (ADR 0008) része**, nem külön terv; az AI-réteg gazdája egyezteti |
+| 5 | Z0 mérési felvételek | **Nyílt licencű, forrásmegjelölt felvételek** a méréshez; a tulajdonos saját felvételei a referenciagépes méréshez később (kimaradáskor `deferred-physical-tests.md` sor, §2.14) |
+| 6 | Kódtisztítás | **Az `effects.rs` Ultra-ága törölhető** (a Z1a külön PR-ban, hostile-teszttel); a clean-plate kulcsoló **csak hiánylista-sor** a VFX-katalógusban |
+| 7 | A mattolás-terv szövege | **Kerüljön a `docs/plans/`-ba**, külön PR-ban, változatlan tartalommal (§2.2, §2.11) |
+
+**Nem tulajdonosi döntés:** a KDN-4 sor átírása a Kdenlive-tervek gazdájáé (az átszámozást a #1774 végzi).
+
+**Még nyitott, nem a tulajdonosé:** az ADR 0008 és a Model Manager tényleges szerződései (külső tároló), a C0-ADR elfogadása (Z1b), a #1774, #1584, #1766 beolvasztása.
 
 ## 9. Megjegyzés a mattolás-terv szövegéről
 
@@ -222,7 +229,7 @@ A `CFA4-AI-MATTING-ENGINE-001` v1.0 szövege **nem szerepel a repóban**. A `coo
 
 ## 10. Mit nem ellenőriztem, és mit jelent itt az „ütközésmentes”
 
-- Az „ütközésmentes” itt azt jelenti: **a repóban lévő tervek szövegével** (6. pont) összevetve nincs olyan lépés, amely másik terv hatáskörébe nyúlna; ahol átfedés van, a mátrix „Döntés kell” jelzést ad, és a terv nem old fel. Teljes (100%-os) ütközésmentesség **nem bizonyítható** olyan tervekkel, amelyek szövege nincs a repóban.
+- Az „ütközésmentes” itt azt jelenti: **a repóban lévő tervek szövegével** (6. pont) összevetve nincs olyan lépés, amely másik terv hatáskörébe nyúlna; ahol átfedés van, a mátrix „Döntés kell” jelzést ad, és a terv nem old fel (a 8. pont döntései után is a gazdák hatásköre marad). Teljes (100%-os) ütközésmentesség **nem bizonyítható** olyan tervekkel, amelyek szövege nincs a repóban.
 - A CFA4-AI_modules tárolót (ADR 0008, ACS-terv, `CFA4-MODEL-MANAGER-001`) és a cfa4-sdk-t nem olvastam; az ezekhez fűződő sorok **feltételesek**.
 - Nem futtattam buildet, tesztet, mérést; „kész” csak a repó saját dokumentációja szerint áll.
 - A BMV2 és az RVM kód-, súly- és tanítóadat-licencét, valamint hivatalos súlyformátumát a forrásnál nem ellenőriztem; az F0 kapu és az S9 szabály feladata.
