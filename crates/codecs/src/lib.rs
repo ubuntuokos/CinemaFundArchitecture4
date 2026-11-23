@@ -28,6 +28,7 @@
 //! - [`RoqSource`]: id RoQ (`.roq`) video (full range YUV 4:4:4) with DPCM sound.
 //! - [`MveSource`]: Interplay MVE (`.mve`) video (8-bit palette or RGB 5:5:5) with PCM or DPCM sound.
 //! - [`Y4mSource`]: uncompressed YUV4MPEG2 (`.y4m`) video, frames read on demand.
+//! - [`NstreamSource`]: Nintendo BRSTM / BFSTM / BCSTM (`.brstm`, `.bfstm`, `.bcstm`) audio streams (PCM or DSP ADPCM).
 //! - [`openers`]: the openers to register with the engine's media pool.
 
 #![cfg_attr(not(test), deny(clippy::unwrap_used, clippy::expect_used, clippy::panic, clippy::unimplemented, clippy::todo, clippy::unreachable))]
@@ -63,7 +64,9 @@ pub mod mp4;
 pub mod mpeg;
 pub mod mve;
 pub mod mxf;
+pub mod nstream;
 pub mod ogg;
+pub mod ogg_video;
 pub mod realmedia;
 pub mod roq;
 pub mod smacker;
@@ -93,6 +96,7 @@ pub use mp4::Mp4Source;
 pub use mpeg::MpegSource;
 pub use mve::MveSource;
 pub use mxf::MxfSource;
+pub use nstream::NstreamSource;
 pub use ogg::OggSource;
 pub use realmedia::RmSource;
 pub use roq::RoqSource;
@@ -207,7 +211,7 @@ pub fn software_video_decoder(entry: &cfa4_isobmff::SampleEntry) -> Result<Box<d
     Err(no_decoder(entry))
 }
 
-/// Openers for the engine's media pool (MP4/MOV, Matroska/WebM, MXF, Ogg Opus/Vorbis, MPEG TS/PS and
+/// Openers for the engine's media pool (MP4/MOV, Matroska/WebM, MXF, Ogg Opus/Vorbis, Ogg Theora, MPEG TS/PS and
 /// MPEG-1/2, MPEG-4 Simple Studio Profile, MPEG-5 EVC and AVS1 video elementary streams, APV raw bitstreams, YUV4MPEG2, raw DV, RealMedia, Smacker, standalone audio).
 /// AV2 Annex B / IVF files are recognised and answered as unsupported ([`av2`]).
 pub fn openers() -> Vec<cfa4_media::Opener> {
@@ -216,6 +220,7 @@ pub fn openers() -> Vec<cfa4_media::Opener> {
         mkv::opener,
         mxf::opener,
         ogg::opener,
+        ogg_video::opener,
         sstp::opener,
         evc::opener,
         cavs::opener,
@@ -228,6 +233,7 @@ pub fn openers() -> Vec<cfa4_media::Opener> {
         bink::opener,
         thp::opener,
         mobiclip::opener,
+        nstream::opener,
         smacker::opener,
         roq::opener,
         mve::opener,
@@ -244,6 +250,7 @@ fn reader_registry() -> &'static RwLock<Vec<cfa4_media::ReaderOpener>> {
             mkv::reader_opener,
             mxf::reader_opener,
             ogg::reader_opener,
+            ogg_video::reader_opener,
             sstp::reader_opener,
             evc::reader_opener,
             cavs::reader_opener,
