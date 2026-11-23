@@ -330,6 +330,9 @@ pub fn settings_from_params(s: &Session, p: &Value, cmd: &str) -> Result<(Option
         }
         settings.mxf_as02_versions = ids;
     }
+    if let Some(v) = bool_p(p, "mxfAs02Share") {
+        settings.mxf_as02_share = v;
+    }
     if let Some(v) = bool_p(p, "mxfAncCaptions") {
         settings.mxf_anc_captions = v;
     }
