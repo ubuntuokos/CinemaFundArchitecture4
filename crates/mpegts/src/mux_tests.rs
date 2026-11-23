@@ -422,3 +422,141 @@ fn mpeg_audio_and_ac3_round_trip_in_transport_and_program_streams() {
         assert_eq!(pts[..3], [0, 2880, 5760].map(|t| Muxer::<Vec<u8>>::DELAY + t), "{format:?}");
     }
 }
+
+/// What a P-STD check found in a program stream.
+struct PstdReport {
+    /// Largest occupancy of any buffer relative to its size (1.0: full).
+    peak: f64,
+    overflows: usize,
+    underflows: usize,
+}
+
+/// Replay a program stream through the P-STD (H.222.0 §2.5.2.4): the payload of every PES packet
+/// arrives at the end of its pack (`rate` bytes per second after the SCR) and an access unit
+/// leaves at its decode time. `size(stream_id)` is the buffer size in bytes; private stream 1 is
+/// one buffer.
+fn pstd_check(data: &[u8], rate: u64, size: impl Fn(u8) -> usize) -> PstdReport {
+    // (arrival 27 MHz, removal 27 MHz, bytes, buffer id, first packet of its unit)
+    let mut events: Vec<(i64, i64, usize, u8)> = Vec::new();
+    let mut removal: std::collections::HashMap<u8, i64> = std::collections::HashMap::new();
+    let mut at = 0;
+    let mut scr = 0i64;
+    let mut pack_start = 0;
+    while at + 4 <= data.len() {
+        let id = data[at + 3];
+        if data[at..at + 3] != [0, 0, 1] {
+            panic!("no start code at {at}");
+        }
+        match id {
+            0xBA => {
+                let b = &data[at + 4..at + 14];
+                let base = (i64::from(b[0] >> 3 & 7) << 30)
+                    | (i64::from(b[0] & 3) << 28)
+                    | (i64::from(b[1]) << 20)
+                    | (i64::from(b[2] >> 3) << 15)
+                    | (i64::from(b[2] & 3) << 13)
+                    | (i64::from(b[3]) << 5)
+                    | i64::from(b[4] >> 3);
+                let ext = i64::from(b[4] & 3) << 7 | i64::from(b[5] >> 1);
+                scr = base * 300 + ext;
+                pack_start = at;
+                at += 14 + usize::from(b[9] & 7);
+            }
+            0xB9 => break,
+            _ => {
+                let len = usize::from(data[at + 4]) << 8 | usize::from(data[at + 5]);
+                if id != 0xBB {
+                    let hdl = usize::from(data[at + 8]);
+                    let flags = data[at + 7];
+                    let ts = |o: usize| {
+                        let d = &data[at + o..at + o + 5];
+                        (i64::from(d[0] >> 1 & 7) << 30)
+                            | (i64::from(d[1]) << 22)
+                            | (i64::from(d[2] >> 1) << 15)
+                            | (i64::from(d[3]) << 7)
+                            | i64::from(d[4] >> 1)
+                    };
+                    if flags & 0xC0 != 0 {
+                        // video units leave at their DTS, audio at its PTS
+                        let t = if flags & 0x40 != 0 { ts(14) } else { ts(9) };
+                        removal.insert(id, t * 300);
+                    }
+                    let end = at + 6 + len;
+                    let arrival = scr + ((end - pack_start) as i64) * 27_000_000 / rate as i64;
+                    let buffer = if id == 0xBD { 0xBD } else { id };
+                    events.push((arrival, removal.get(&id).copied().unwrap_or(0), len - 3 - hdl, buffer));
+                }
+                at += 6 + len;
+            }
+        }
+    }
+    let mut report = PstdReport { peak: 0.0, overflows: 0, underflows: 0 };
+    // last arrival per unit (buffer, removal)
+    let mut last: std::collections::HashMap<(u8, i64), i64> = std::collections::HashMap::new();
+    for (arrival, rem, _, buffer) in &events {
+        let e = last.entry((*buffer, *rem)).or_insert(0);
+        *e = (*e).max(*arrival);
+    }
+    report.underflows = last.iter().filter(|((_, rem), arrival)| *arrival > rem).count();
+    for (k, (arrival, _, _, buffer)) in events.iter().enumerate() {
+        let held: usize = events[..=k].iter().filter(|e| e.3 == *buffer && e.1 > *arrival).map(|e| e.2).sum();
+        let size = size(*buffer);
+        report.peak = report.peak.max(held as f64 / size as f64);
+        if held > size {
+            report.overflows += 1;
+        }
+    }
+    report
+}
+
+fn pstd_sizes(id: u8) -> usize {
+    match id {
+        0xE0..=0xEF => Muxer::<Vec<u8>>::DEFAULT_VIDEO_BUFFER,
+        0xBD => 58 * 128,
+        _ => 32 * 128,
+    }
+}
+
+/// 60 big pictures (≈ 4 Mbit/s at 25 fps) with AC-3 beside them, sent into a program stream.
+fn big_picture_program_stream(video_buffer: Option<usize>) -> Vec<u8> {
+    let mut m = Muxer::new(Vec::new(), MuxFormat::Ps, &[MuxCodec::Mpeg2Video, MuxCodec::Ac3], 10_080_000).unwrap();
+    if let Some(b) = video_buffer {
+        m.set_video_buffer(b);
+    }
+    let mut a = 0i64;
+    for k in 0..60i64 {
+        let p = mpeg2_frame(if k % 12 == 0 { 1 } else { 2 }, (k % 5) as u16, false, 20_000);
+        m.write(0, &p, k * FRAME, None, k % 12 == 0).unwrap();
+        while a * 2880 < (k + 1) * FRAME {
+            m.write(1, &ac3_frame(a as u8), a * 2880, None, true).unwrap();
+            a += 1;
+        }
+    }
+    m.finish().unwrap()
+}
+
+#[test]
+fn program_stream_keeps_the_p_std_buffers() {
+    let data = big_picture_program_stream(None);
+    let r = pstd_check(&data, 10_080_000 / 8, pstd_sizes);
+    assert_eq!(r.overflows, 0, "peak {}", r.peak);
+    assert_eq!(r.underflows, 0);
+    // 20 KB pictures sent up to 0.7 s early would have filled far more than 232 KB
+    assert!(r.peak > 0.5, "the buffer is used: {}", r.peak);
+    // the stream still demuxes to the same pictures
+    let f = open(&data).unwrap();
+    let v = f.find(Kind::Video, |c| *c == Codec::Mpeg2Video).unwrap();
+    assert_eq!(f.streams[v].units.len(), 60);
+}
+
+#[test]
+fn a_larger_video_buffer_is_announced_and_used() {
+    let data = big_picture_program_stream(Some(1194 * 1024));
+    // the system header announces 1194 × 1024 bytes: scale bit 1, 13-bit size
+    let sys = data.windows(4).position(|w| w == [0, 0, 1, 0xBB]).unwrap();
+    let e = &data[sys + 12..sys + 15];
+    assert_eq!(e[0], 0xE0);
+    assert_eq!(usize::from(e[1] & 0x1F) << 8 | usize::from(e[2]), 1194);
+    let r = pstd_check(&data, 10_080_000 / 8, |id| if id == 0xE0 { 1194 * 1024 } else { pstd_sizes(id) });
+    assert_eq!((r.overflows, r.underflows), (0, 0));
+}

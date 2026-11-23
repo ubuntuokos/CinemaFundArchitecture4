@@ -3174,6 +3174,7 @@ class MainWindow(QMainWindow):
             self.export_dialog = ExportDialog(self.engine, self)
             self.export_dialog.finished_export.connect(self._export_finished)
         path = (self.project or {}).get("path")
+        self.export_dialog.set_project_sequences(sequences_of((self.project or {}).get("root")))
         self.export_dialog.open_for(self.sequence, path if isinstance(path, str) else None)
 
     def _media_backends(self) -> MediaBackendsDialog:

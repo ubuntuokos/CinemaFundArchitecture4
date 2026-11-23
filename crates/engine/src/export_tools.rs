@@ -330,6 +330,9 @@ pub fn settings_from_params(s: &Session, p: &Value, cmd: &str) -> Result<(Option
         }
         settings.mxf_as02_versions = ids;
     }
+    if let Some(v) = bool_p(p, "mxfAs02Share") {
+        settings.mxf_as02_share = v;
+    }
     if let Some(v) = bool_p(p, "mxfAncCaptions") {
         settings.mxf_anc_captions = v;
     }
@@ -1027,7 +1030,7 @@ fn queue_item_p(s: &Session, p: &Value, cmd: &str) -> Result<usize> {
     s.export_queue.items.iter().position(|i| i.id == id).ok_or_else(|| bad(cmd, format!("no queued export {id}")))
 }
 
-fn queue_add(s: &mut Session, p: &Value) -> Result<Value> {
+pub(crate) fn queue_add(s: &mut Session, p: &Value) -> Result<Value> {
     let cmd = "export.queue.add";
     let (preset, settings) = settings_from_params(s, p, cmd)?;
     let seqs: Vec<ItemId> = match p.get("sequences").and_then(Value::as_array) {

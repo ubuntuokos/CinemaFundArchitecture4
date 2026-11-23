@@ -4921,3 +4921,8 @@
 
 # WP3 DPX bit depth
 	Bit Depth	Profundidad de bits
+
+# AS-02 versions
+	AS-02 Versions	Versiones AS-02
+	Tick the sequences to write as further versions in the AS-02 bundle	Marque las secuencias que se escribirán como versiones adicionales en el paquete AS-02
+	Delete Short Clips	Eliminar clips cortos

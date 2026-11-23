@@ -126,6 +126,20 @@ proposes: `modifiesPackage` is always `false`, and the original package is never
 in `crates/dcp-validate/src/repair.rs`; applying a repair to a project or an approved working copy is not
 part of this step.
 
+## Linux packages (DCP-18)
+
+The `.deb`, the Flatpak and the AppImage all ship `cfa4-cli`, the engine that serves `dcp.validate*`,
+`dcp.repair.plan` and the export checks, so the native validator (`cfa4-dcp-validate`, pure Rust) works in
+every package with no extra step. Nothing in the packages bundles Ruby, gems or the reference engine
+(dcp_inspect): that stays the optional, user-installed `scripts/dev/setup-dcp-inspect.sh` setup, which keeps
+its own gems in `~/.cache/cfa4/dcp-inspect` and never touches system or global gems. The Flatpak sandbox has
+no Ruby either, so the reference engine is available there only through a host-side install that CFA4 is
+pointed to; without it the validator reports the engine as unavailable and the native result stands.
+
+Flatpak permissions that matter for DCPs: `--filesystem=home`, `/media`, `/run/media` and `/mnt` (exports and
+imported packages live there; a DCP on an external drive is reachable) and **no** network and no host-wide
+filesystem access. `packaging/linux/test_dcp_validation.py` checks these rules statically.
+
 ## Test data
 
 ### Known-result regression matrix (DCP-16)
@@ -136,13 +150,14 @@ it per case, damages it in one named way and states which rules must fail (and w
 missing track file, a changed byte (hash), a truncated file (size), a duplicated asset, a path that leaves
 the package, a composition reference to an asset that is not in the package (a warning: it may be a version
 file), a reel duration that is not the track file's, a frame rate that differs from the track files', and an
-invalid JPEG 2000 header. The valid package must not fail any rule, and an empty folder must fail.
+invalid JPEG 2000 header, and a track file that cannot be read (DCP-20: a directory stands in, since permission bits do not stop root). The valid package must not fail any rule, and an empty folder must fail.
 
 The plan's §12 list is covered elsewhere for: subtitle timing, fonts and PNG resources
 (`tests/subtitles.rs`), signatures and certificate identity (`tests/signatures.rs`), audio channels and
 format (`src/tests.rs`), a cancelled run and bad paths (`src/tests.rs`), and a valid Interop package
-(`src/tests.rs`). **Not covered yet:** an encrypted DCP, a package with several composition or packing lists,
-a very large DCP, file permission errors, and the host-application, packaging and leak checks of the plan's
+(`src/tests.rs`). **Not covered yet:** an encrypted DCP, a package with several composition or packing lists
+(a stray PKL and CPL the asset map does not list change nothing in the result; whether that should be a finding is open),
+a very large DCP, and the host-application, packaging and leak checks of the plan's
 second list.
 
 No DCP media is committed (`AGENTS.md`). Fixtures are generated into `target/fixtures/` from

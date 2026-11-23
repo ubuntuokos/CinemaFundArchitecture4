@@ -4897,3 +4897,8 @@
 
 # WP3 DPX bit depth
 	Bit Depth	Разрядность
+
+# AS-02 versions
+	AS-02 Versions	Версии AS-02
+	Tick the sequences to write as further versions in the AS-02 bundle	Отметьте последовательности, которые будут записаны как дополнительные версии в пакете AS-02
+	Delete Short Clips	Удалить короткие клипы

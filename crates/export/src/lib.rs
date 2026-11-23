@@ -19,6 +19,8 @@
 use std::io::Write;
 
 mod aac_out;
+#[doc(hidden)]
+pub mod as02_share;
 pub mod atomic;
 pub mod audio_copy;
 mod audio_out;
@@ -502,6 +504,21 @@ pub struct ExportSettings {
     /// Internal: the number (2 and up) of the version being appended to an existing bundle.
     #[serde(skip)]
     pub mxf_as02_version: u32,
+    /// AS-02 with several versions: let versions that cut the same material the same way share
+    /// their component files, encoding the common frames once (#1719). On by default.
+    #[serde(default = "default_true")]
+    pub mxf_as02_share: bool,
+    /// Internal: the bundle plan and the registry of the component files written for it.
+    #[serde(skip)]
+    #[doc(hidden)]
+    pub as02_share: as02_share::ShareHandle,
+    /// Internal: which own run of the version this export writes, and whether more follow.
+    #[serde(skip)]
+    #[doc(hidden)]
+    pub as02_run: u32,
+    #[serde(skip)]
+    #[doc(hidden)]
+    pub as02_more_runs: bool,
     /// MXF OP1a: the AMWA AS-12 (MXF Commercials Delivery) Ad-ID advertisement identification
     /// (`adid_prefix`, `adid_code`, `ad_title`, `Brand`, `Product`, `Advertiser`,
     /// `agency_office_location`, `Length`, `Medium`, `sd_flag`, `Parent`; `ShimName` optional,
@@ -886,6 +903,10 @@ impl Default for ExportSettings {
             mxf_as02: false,
             mxf_as02_versions: Vec::new(),
             mxf_as02_version: 0,
+            mxf_as02_share: true,
+            as02_share: Default::default(),
+            as02_run: 0,
+            as02_more_runs: false,
             mxf_as12: String::new(),
             mpeg2_container: String::new(),
             mpeg2_422: false,
@@ -3311,6 +3332,10 @@ pub fn encode_png(rgba: Vec<u8>, w: u32, h: u32) -> Result<Vec<u8>> {
     encode_still(Format::PngSequence, rgba, w, h, true)
 }
 
+fn default_true() -> bool {
+    true
+}
+
 fn default_dpx_bit_depth() -> u8 {
     10
 }
@@ -3405,13 +3430,18 @@ pub fn export(project: &Arc<Project>, seq: ItemId, settings: &ExportSettings, so
         Some(pool) => pool.install(|| export_here(project, seq, settings, sources, progress)),
         None => export_here(project, seq, settings, sources, progress),
     };
-    let mut report = one(seq, settings)?;
     // AS-02: every further sequence becomes one more version of the same bundle, whole sequence
     for (i, id) in settings.mxf_as02_versions.iter().enumerate() {
-        let id = ItemId(*id);
-        if project.sequence(id).is_none() {
+        if project.sequence(ItemId(*id)).is_none() {
             return Err(ExportError::Unsupported(format!("AS-02: version {} names a sequence that does not exist", i + 2)));
         }
+    }
+    if let Some(plan) = as02_plan(project, seq, settings)? {
+        return export_shared_bundle(plan, settings, &one);
+    }
+    let mut report = one(seq, settings)?;
+    for (i, id) in settings.mxf_as02_versions.iter().enumerate() {
+        let id = ItemId(*id);
         let mut s = settings.clone();
         s.mxf_as02_versions.clear();
         s.mxf_as02_version = i as u32 + 2;
@@ -3423,6 +3453,65 @@ pub fn export(project: &Arc<Project>, seq: ItemId, settings: &ExportSettings, so
         report.extra_files.extend(r.extra_files);
     }
     Ok(report)
+}
+
+/// The component sharing plan of an AS-02 bundle with several versions, or `None` when nothing
+/// can be shared (the bundle is then written version by version, each with its own components).
+fn as02_plan(project: &Project, seq: ItemId, settings: &ExportSettings) -> Result<Option<as02_share::Plan>> {
+    if !settings.mxf_as02 || settings.mxf_as02_versions.is_empty() || !settings.mxf_as02_share {
+        return Ok(None);
+    }
+    let mut versions = vec![(seq, export_range(project, seq, settings)?)];
+    for id in &settings.mxf_as02_versions {
+        let id = ItemId(*id);
+        let own = ExportSettings { range: None, ..settings.clone() };
+        versions.push((id, export_range(project, id, &own)?));
+    }
+    let q = project.sequence(seq).ok_or(ExportError::NoSequence)?;
+    let audio = (settings.audio.channels > 0).then(|| settings.audio.sample_rate.unwrap_or(q.settings.sample_rate));
+    let plan = as02_share::plan(project, &versions, audio, settings.burn_captions);
+    Ok((!plan.is_trivial()).then_some(plan))
+}
+
+/// Write an AS-02 bundle whose versions share component files: every version encodes only the
+/// runs of frames no earlier version has, then writes its version file.
+fn export_shared_bundle(plan: as02_share::Plan, settings: &ExportSettings, one: &dyn Fn(ItemId, &ExportSettings) -> Result<Report>) -> Result<Report> {
+    let share = Arc::new(as02_share::Share { plan, registry: Default::default() });
+    let mut report: Option<Report> = None;
+    for (v, vp) in share.plan.versions.iter().enumerate() {
+        let rate = vp.range_rate;
+        if vp.runs.is_empty() {
+            // nothing of its own: the version file and the manifest only
+            let mut s = settings.clone();
+            s.mxf_as02_version = if v == 0 { 0 } else { v as u32 + 1 };
+            s.as02_share = as02_share::ShareHandle(Some(share.clone()));
+            let (bytes, extra_files) = mxf_out::finish_shared_version(&s, rate, settings.audio.channels as usize)?;
+            let t = report.as_mut().ok_or(ExportError::NoSequence)?;
+            t.bytes += bytes;
+            t.extra_files.extend(extra_files);
+            continue;
+        }
+        for run in 0..vp.runs.len() {
+            let mut s = settings.clone();
+            s.mxf_as02_versions.clear();
+            s.mxf_as02_version = if v == 0 { 0 } else { v as u32 + 1 };
+            s.range = Some(vp.run_range(rate, run));
+            s.as02_share = as02_share::ShareHandle(Some(share.clone()));
+            s.as02_run = run as u32;
+            s.as02_more_runs = run + 1 < vp.runs.len();
+            let r = one(vp.seq, &s)?;
+            match &mut report {
+                None => report = Some(r),
+                Some(t) => {
+                    t.frames += r.frames;
+                    t.bytes += r.bytes;
+                    t.seconds += r.seconds;
+                    t.extra_files.extend(r.extra_files);
+                }
+            }
+        }
+    }
+    report.ok_or(ExportError::NoSequence)
 }
 
 /// [`export`] on the threads it is called from.

@@ -158,6 +158,24 @@ ALTER TABLE tasks.outbox ADD CONSTRAINT outbox_event_id_key UNIQUE (event_id);
         down: "ALTER TABLE tasks.outbox DROP COLUMN event_id;
 DROP FUNCTION tasks.uuid7();",
     },
+    Step {
+        version: 6,
+        // the engine's in-memory queue, written behind by the application: one row per task of a
+        // session, never read by the scheduler (`tasks.task` stays the queue of the database)
+        up: r#"
+CREATE TABLE tasks.session_task (
+    session text NOT NULL CHECK (length(session) BETWEEN 1 AND 64),
+    id text NOT NULL CHECK (length(id) BETWEEN 1 AND 256),
+    state text NOT NULL CHECK (length(state) BETWEEN 1 AND 32),
+    version bigint NOT NULL CHECK (version >= 0),
+    doc jsonb NOT NULL,
+    updated_at timestamptz NOT NULL DEFAULT now(),
+    PRIMARY KEY (session, id)
+);
+CREATE INDEX session_task_updated ON tasks.session_task (updated_at);
+"#,
+        down: "DROP TABLE tasks.session_task;",
+    },
 ];
 
 const AI: &[Step] = &[Step {
