@@ -20,8 +20,10 @@ Minden sor a meglévő elemet nevezi meg; új crate nem készül (tulajdonosi sz
 | AC-11c Sandbox | worker-teszt | `crates/sandbox` (meglévő) | PENDING | a sandbox még nincs alkalmazva (SECURITY-001 B3/B4) |
 | AC-12 Ismert rések | `F0V-known-deviations.md`, kihagyási lista | ez a PR | MÉRŐ VAN (lista) | a géppel generált lista a riportban a következő lépés |
 | AC-13 Audio | `null_test` dBFS csatornánként; ST 428-2 paraméterek (24 bit, 48/96 kHz, 1–16 csatorna, azonos hossz, nincs teljes skála fölötti minta) | `cfa4_metrics::audio`, `cfa4_golden::validation::compare_with` (`Extras::audio_bits`) | **MÉRŐ VAN** | `audio_51/71_24bit` fixture-ök kész. A csomagszintű szabály már létezik (`DCP.AUD.001`, `cfa4-dcp-validate`): ez ugyanazt a renderkimeneten méri, nem másolja a validátort. A 6/8/16 csatorna (ST 429-2) csak tájékoztató. Az MCA-címkéket a `cfa4-mxf` még nem adja (nyitott) |
-| AC-14 Preview–export | – | – | PENDING | kell hozzá a preview-render hívása a harnessből |
-| AC-15 Projektmigráció | – | `crates/project/src/legacy.rs` (meglévő) | PENDING | nincs régi sémájú projekt-fixture |
+| AC-14 Preview–export | `crates/golden/tests/preview_export_parity.rs` (CPU: PASS, max ΔE₀₀ 0,0000 ≤ 1,0; 3 jelenet × 3 képkocka; mutáció: a limiter bekapcsolása → FAIL) | – | PENDING (GPU) | a GPU-ág nincs mérve (nincs adapter a felhőben); a CPU-eredmény ugyanazon a renderúton alapul, ezért a 0 vártható, a mérő értéke a regresszió-fogás. GPU-mérés a referenciagépen |
+| AC-15 Projektmigráció | `crates/golden/tests/legacy_project.rs`: nyitás → mentés → újranyitás, a projekt-JSON egyezése és a render-hash | `crates/format` (`decode`, `encode`, `MIGRATIONS`), `crates/project/src/legacy.rs` | MÉRT (részben) | a fixture-ök a mostani projektből származnak (2..aktuális séma, a boríték előtti alak, az upstream tag); valódi, régi build által mentett fájl nincs a repóban (PENDING: a tulajdonos adjon) |
 | AC-16 Teljesítmény | renderidő, csúcsmemória | – | PENDING | 10 futás és baseline kell |
 | AC-17 Feliratok | – | `crates/captions` (meglévő) | PENDING | a scope-döntés tulajdonosi (terv) |
-| AC-18 Mozi minőség | MQ-1–MQ-8, ΔE X'Y'Z' | `cfa4_metrics` részben | PENDING | J2K orákulum és X'Y'Z' konverzió: CINECERT |
+| AC-18 Mozi minőség (csak szoftveres referencia) | MQ-1–MQ-8, ΔE X'Y'Z' | `cfa4_metrics` részben | PENDING | J2K orákulum és X'Y'Z' konverzió: CINECERT. Nincs mozi szerver/vetítő: az állítás legfeljebb „szoftveresen igazolt, szabványkonform”, nem „moziban lejátszva” |
+
+**Hatókör (tulajdonosi döntés, 2026-11-21):** a mozi célú elfogadás (AC-12, AC-18, DCP/KDM) kizárólag szoftveres referenciával mérhető, mert nincs mozi szerver és vetítő. A riport nyelve ezért „szoftveresen igazolt, szabványkonform”; „moziban lejátszva” állítás nem tehető.

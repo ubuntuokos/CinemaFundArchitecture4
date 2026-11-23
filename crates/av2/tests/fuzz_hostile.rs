@@ -3,7 +3,8 @@
 
 use std::panic::{AssertUnwindSafe, catch_unwind};
 
-use cfa4_av2::obu::{ObuHeader, annexb_obus};
+use cfa4_av2::frame::{HeaderParser, Parsed};
+use cfa4_av2::obu::{ObuHeader, ObuType, annexb_obus};
 use cfa4_av2::probe_annexb;
 use cfa4_av2::seq::SequenceHeader;
 use cfa4_bitstream::BitWriter;
@@ -64,10 +65,16 @@ fn sequence_payload(tool_bits: usize) -> Vec<u8> {
 
 /// Everything a hostile stream can reach in this crate.
 fn exercise(data: &[u8]) {
+    let mut parser = HeaderParser::new();
     for obu in annexb_obus(data).take(10_000) {
         let Ok(obu) = obu else { break };
         let _ = ObuHeader::parse(obu.payload);
         let _ = SequenceHeader::parse(obu.payload).map(|h| h.cropped_size());
+        if let Ok(Parsed::TileGroup(tg)) = parser.push(&obu)
+            && let Some(h) = &tg.frame_header
+        {
+            let _ = (h.mi_col_starts(), h.mi_row_starts());
+        }
     }
     let _ = probe_annexb(data);
 }
@@ -170,5 +177,70 @@ fn corpus_sequence_headers() {
             // the sequence header keeps the full size; the frames are coded at half of it
             assert_eq!((h.max_frame_width, h.max_frame_height), (352, 288), "{name}");
         }
+    }
+}
+
+/// `NumFrameHeaderBits`, `base_q_idx` and the tile grid of every closed-loop key frame, as the
+/// instrumented AVM v1.0.0 reference decoder reports them for the corpus (in stream order).
+const AVM_KEY_FRAMES: &[(&str, &[(usize, u16, u32, u32)])] = &[
+    ("400-8bit", &[(49, 39, 1, 1)]),
+    ("420-10bit-default", &[(128, 63, 1, 1)]),
+    ("420-8bit-default", &[(71, 39, 1, 1)]),
+    ("420-8bit-film-grain", &[(79, 39, 1, 1)]),
+    (
+        "420-8bit-intra-only",
+        &[
+            (139, 150, 1, 1),
+            (152, 150, 1, 1),
+            (105, 150, 1, 1),
+            (200, 150, 1, 1),
+            (99, 150, 1, 1),
+            (110, 150, 1, 1),
+            (237, 150, 1, 1),
+            (182, 150, 1, 1),
+            (124, 150, 1, 1),
+            (125, 150, 1, 1),
+        ],
+    ),
+    ("420-8bit-kf4", &[(71, 39, 1, 1), (61, 39, 1, 1), (75, 39, 1, 1)]),
+    ("420-8bit-odd-size", &[(138, 39, 1, 1)]),
+    ("420-8bit-ras", &[(74, 39, 1, 1)]),
+    ("420-8bit-resize", &[(71, 39, 1, 1)]),
+    ("420-8bit-tiles-2x2", &[(333, 99, 2, 2)]),
+    ("422-10bit", &[(157, 63, 1, 1)]),
+    ("422-8bit", &[(67, 39, 1, 1)]),
+    ("444-8bit", &[(63, 39, 1, 1)]),
+];
+
+/// The frame headers of the corpus key frames parse to the same length, quantizer and tile grid
+/// as in the reference decoder, and their tile data fills the OBU exactly.
+#[test]
+fn corpus_key_frame_headers() {
+    let corpus = corpus();
+    if corpus.is_empty() {
+        eprintln!("skip: no AV2 corpus in fixtures av2/vectors");
+        return;
+    }
+    for (name, data) in &corpus {
+        let stem = name.trim_end_matches(".obu");
+        let want = AVM_KEY_FRAMES.iter().find(|(n, _)| *n == stem).map(|(_, w)| *w).unwrap_or_else(|| panic!("{name}: no reference values"));
+        let mut parser = HeaderParser::new();
+        let mut got = Vec::new();
+        for obu in annexb_obus(data) {
+            let obu = obu.unwrap_or_else(|e| panic!("{name}: {e}"));
+            let key = obu.header.obu_type == ObuType::ClosedLoopKey;
+            match parser.push(&obu) {
+                Ok(Parsed::TileGroup(tg)) if key => {
+                    let h = tg.frame_header.as_ref().unwrap_or_else(|| panic!("{name}: key frame without header"));
+                    got.push((h.header_bits, h.quant.base_q_idx, h.tiles.tile_cols, h.tiles.tile_rows));
+                    assert_eq!(tg.tiles.len() as u32, h.tiles.tile_cols * h.tiles.tile_rows, "{name}");
+                    let end = tg.tiles.last().map(|(o, s)| o + s);
+                    assert_eq!(end, Some(obu.payload.len()), "{name}: tile data does not end with the OBU");
+                }
+                Ok(_) => {}
+                Err(e) => assert!(!key, "{name}: key frame #{}: {e}", got.len()),
+            }
+        }
+        assert_eq!(got, want, "{name}");
     }
 }

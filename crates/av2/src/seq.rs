@@ -132,6 +132,8 @@ pub struct SequenceHeader {
     pub max_frame_width: u32,
     /// `max_frame_height_minus_1 + 1`.
     pub max_frame_height: u32,
+    /// `frame_width_bits_minus_1 + 1`, `frame_height_bits_minus_1 + 1`.
+    pub frame_size_bits: (u32, u32),
     pub cropping: CroppingWindow,
     /// Everything after the cropping window.
     pub tools: SequenceTools,
@@ -242,6 +244,7 @@ impl SequenceHeader {
             monotonic_output_order,
             max_frame_width,
             max_frame_height,
+            frame_size_bits: (width_bits, height_bits),
             cropping,
             tools,
         })

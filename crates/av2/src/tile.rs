@@ -67,7 +67,7 @@ pub fn tile_log2(blk_size: u64, target: u64) -> u32 {
 }
 
 /// `uniform_spacing( tileLog2, mis, sbSize )`.
-fn uniform_spacing(tile_log2: u32, mis: u32, sb: SuperblockSize) -> Result<Vec<u32>> {
+pub(crate) fn uniform_spacing(tile_log2: u32, mis: u32, sb: SuperblockSize) -> Result<Vec<u32>> {
     let shift = sb.mi_log2();
     let sbs = (mis + (1 << shift) - 1) >> shift;
     let full_sbs = mis >> shift;
