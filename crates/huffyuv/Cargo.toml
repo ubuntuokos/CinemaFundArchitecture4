@@ -1,6 +1,6 @@
 [package]
 name = "cfa4-huffyuv"
-description = "Pure-Rust Huffyuv (HFYU) decoder, clean-room, with the Huffyuv MT (HYMT) slice layout from FFmpeg"
+description = "Pure-Rust Huffyuv (HFYU) decoder, clean-room except the Huffyuv MT (HYMT) slices, the 1.x classic tables and 4:2:0 (ported from FFmpeg)"
 version.workspace = true
 edition.workspace = true
 license = "GPL-3.0-or-later AND LGPL-2.1-or-later"

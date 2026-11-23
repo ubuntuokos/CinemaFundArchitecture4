@@ -63,6 +63,12 @@ pub(crate) fn convert(p: cfa4_huffyuv::Picture) -> Result<VideoFrame> {
             let data = PixelData::Yuv8 { planes: [Arc::new(y), Arc::new(u), Arc::new(v)], chroma: Chroma::C422, alpha: None };
             Ok(VideoFrame { width: p.width, height: p.height, data, color, par: (1, 1), pts: cfa4_time::Tick::ZERO, layout: Default::default() })
         }
+        cfa4_huffyuv::Format::Yuv420 => {
+            let (y, u, v) = (next()?, next()?, next()?);
+            let color = crate::stream_color::resolve(p.width, p.height, &[]);
+            let data = PixelData::Yuv8 { planes: [Arc::new(y), Arc::new(u), Arc::new(v)], chroma: Chroma::C420, alpha: None };
+            Ok(VideoFrame { width: p.width, height: p.height, data, color, par: (1, 1), pts: cfa4_time::Tick::ZERO, layout: Default::default() })
+        }
         cfa4_huffyuv::Format::Rgb | cfa4_huffyuv::Format::Rgba => {
             let (r, g, b) = (next()?, next()?, next()?);
             let a = planes.next();
@@ -110,8 +116,12 @@ mod tests {
     use super::*;
 
     #[test]
-    fn header_without_tables_is_unsupported() {
+    fn header_without_tables_uses_the_classic_tables() {
+        // Huffyuv 1.x: no extradata, the built-in tables
         let bih = bitmap_info_header(16, &[]);
+        assert!(HuffyuvDecoder::new(64, 32, &bih, false).is_ok());
+        // a bit depth Huffyuv does not have
+        let bih = bitmap_info_header(8, &[]);
         assert!(matches!(HuffyuvDecoder::new(64, 32, &bih, false), Err(CodecError::Unsupported(_))));
         assert!(HuffyuvDecoder::new(64, 32, &[], true).is_err());
     }
