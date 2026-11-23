@@ -220,3 +220,18 @@ A megvalósítás során a G2-től ezek a pontosítások kerültek be (a kód é
 - **Jogosultság M1-ben:** a tulajdonos/producer/koordinátor módosíthat, csak a tulajdonos/producer válthat státuszt,
   a nem tag `PERMISSION_DENIED`-et kap (a lista csak a saját produkciókat adja).
 - **Mérés (SC-02, 4 vCPU stand-in, 52 produkció):** lista 3,4 ms medián (p95 4,3 ms), egy produkció megnyitása 3,1 ms, létrehozás 7,6 ms (audittal).
+
+## 12. Megvalósítási pontosítások (PM-2, 2026-11-23)
+
+- **Mérföldkő:** a `milestone.list` olvasó parancs is bekerült. A kész (`done`) mérföldkő tény, **nem törölhető**
+  (`MILESTONE_DONE`); a nem kész törölhető, auditálva az utolsó értékeivel. A sorrend: esedékesség, majd pozíció.
+- **Szervezet:** közös a produkciók között, ezért M1-ben bármely OS-felhasználó létrehozhatja és szerkesztheti; a
+  produkcióhoz kapcsolás írási szerepet kíván. Nincs törlés: a `retired` jelzés visszavonja a használatot, és
+  `ORGANIZATION_IN_USE` jelzi, ha nyitott (tervezett, aktív, szüneteltetett) produkcióhoz még kapcsolódik; visszahozható.
+  A kapcsolat szerepenként egyedi (`ORGANIZATION_ALREADY_LINKED`, `ORGANIZATION_NOT_LINKED`), a visszavont szervezet nem
+  kapcsolható (`ORGANIZATION_RETIRED`).
+- **Típus és státuszlista:** `backlot.production.type.create/update/list`, `backlot.status_list.create/list`,
+  `backlot.status.add/update`. A saját típus és státusz nevét `text:<név>` címke tárolja (a mintaadatok fordítási
+  kulcsok). A típus státuszlistája csak addig cserélhető, amíg nincs a típusnak produkciója (`PRODUCTION_TYPE_IN_USE`);
+  a visszavont típusra nem jön létre új produkció. Státusz nem törölhető. M1-ben a beállítás bármely OS-felhasználóé (egy
+  felhasználó van, #42); M2-től szerepellenőrzés lép a helyére. Auditesemények: `config.*`, produkcióhatókör nélkül.

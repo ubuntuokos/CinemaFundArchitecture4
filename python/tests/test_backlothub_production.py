@@ -4,7 +4,6 @@ from __future__ import annotations
 
 import threading
 import uuid
-from collections.abc import Iterator
 from typing import Any
 
 import pytest
@@ -17,12 +16,10 @@ import psycopg  # noqa: E402
 import psycopg.sql  # noqa: E402
 from sqlalchemy import Engine, text  # noqa: E402
 
-from cfa4_audit import list_events, verify  # noqa: E402
-from cfa4_audit.migrate import install  # noqa: E402
+from cfa4_audit import verify  # noqa: E402
 from cfa4_backlothub import commands, migrate  # noqa: E402
 from cfa4_backlothub.db import schema as t  # noqa: E402
 from cfa4_backlothub.db.engine import make_engine  # noqa: E402
-from cfa4_backlothub.db.uow import Actor  # noqa: E402
 from cfa4_backlothub.errors import (  # noqa: E402
     BacklotError,
     ConflictStaleVersion,
@@ -37,71 +34,11 @@ from cfa4_backlothub.errors import (  # noqa: E402
     TypeUnknown,
 )
 from cfa4_backlothub.production import service as svc  # noqa: E402
-from pg_throwaway import throwaway_cluster  # noqa: E402
-
-ME = Actor("os_user", "uid:1000/istvan")
-OTHER = Actor("os_user", "uid:1001/anna")
-
-
-@pytest.fixture(scope="module")
-def cluster() -> Iterator[str]:
-    with throwaway_cluster() as info:
-        with psycopg.connect(info, autocommit=True) as conn:
-            for role in ("cfa4_audit_owner", "cfa4_audit_writer", "cfa4_audit_reader"):
-                conn.execute(psycopg.sql.SQL("CREATE ROLE {} NOLOGIN").format(psycopg.sql.Identifier(role)))
-            conn.execute("CREATE ROLE cfa4_test_app LOGIN IN ROLE cfa4_audit_writer, cfa4_audit_reader")
-        yield info
-
-
-def _new_db(cluster: str) -> str:
-    name = "t" + uuid.uuid4().hex[:12]
-    with psycopg.connect(cluster, autocommit=True) as conn:
-        conn.execute(psycopg.sql.SQL("CREATE DATABASE {}").format(psycopg.sql.Identifier(name)))
-        conn.execute(
-            psycopg.sql.SQL("GRANT CREATE ON DATABASE {} TO cfa4_test_app").format(psycopg.sql.Identifier(name))
-        )
-    info = cluster.replace("dbname=postgres", f"dbname={name}")
-    with psycopg.connect(info) as conn:
-        install(conn)
-    return info
-
-
-@pytest.fixture
-def info(cluster: str) -> str:
-    return _new_db(cluster)
-
-
-@pytest.fixture
-def engine(info: str) -> Iterator[Engine]:
-    eng = make_engine(info.replace("user=postgres", "user=cfa4_test_app"))
-    migrate.upgrade(eng)
-    yield eng
-    eng.dispose()
-
-
-def _params(**changes: Any) -> dict[str, Any]:
-    base: dict[str, Any] = {
-        "code": "FILM-1", "title": "A film", "type": "film", "country": "HU", "currency": "HUF",
-        "reference_currency": "EUR", "fps_num": 24000, "fps_den": 1001,
-    }  # fmt: skip
-    base.update(changes)
-    return base
-
-
-def _audit(engine: Engine) -> list[Any]:
-    with engine.connect() as conn:
-        raw = conn.connection.driver_connection
-        return list_events(raw, None, limit=1000)  # type: ignore[arg-type]
-
-
-def _backlot_events(engine: Engine) -> list[dict[str, Any]]:
-    return [e.as_export() for e in _audit(engine) if e.hashable["app"] == "backlot"]
-
-
-def _count(engine: Engine, table: str) -> int:
-    with engine.connect() as conn:
-        return int(conn.execute(text(f"SELECT count(*) FROM backlot.{table}")).scalar_one())  # noqa: S608
-
+from backlot_helpers import ME, OTHER, new_db  # noqa: E402
+from backlot_helpers import audit_events as _audit  # noqa: E402
+from backlot_helpers import backlot_events as _backlot_events  # noqa: E402
+from backlot_helpers import count as _count  # noqa: E402
+from backlot_helpers import params as _params  # noqa: E402
 
 # ---------------------------------------------------------------- migration
 
@@ -111,7 +48,7 @@ def test_migration_up_down_up_and_seed_data(info: str) -> None:
     try:
         assert migrate.current(eng) is None
         migrate.upgrade(eng)
-        assert migrate.current(eng) == migrate.head() == "0001"
+        assert migrate.current(eng) == migrate.head() == "0002"
         assert (_count(eng, "production_type"), _count(eng, "status"), _count(eng, "status_list")) == (5, 8, 1)
         assert _count(eng, "country") == 249 and _count(eng, "currency") >= 150
         migrate.upgrade(eng)  # again: nothing is seeded twice
@@ -368,10 +305,10 @@ def test_the_database_itself_refuses_a_status_of_another_list(engine: Engine) ->
 
 
 def test_every_command_has_a_descriptor_and_a_json_schema() -> None:
-    assert set(commands.COMMANDS) == {
+    assert {
         "backlot.production.create", "backlot.production.update", "backlot.production.get", "backlot.production.list",
         "backlot.production.status.set", "backlot.production.member.list",
-    }  # fmt: skip
+    } <= set(commands.COMMANDS)  # fmt: skip
     for cid, d in ((c["id"], c) for c in commands.list_commands()):
         assert cid.startswith("backlot.") and d["label"].startswith("command.") and d["menu_path"]
         assert d["params"]["type"] == "object" and isinstance(d["params"]["required"], list)
@@ -414,11 +351,11 @@ def test_the_command_line_migrates_lists_and_runs(cluster: str, capsys: pytest.C
 
     from cfa4_backlothub.__main__ import main
 
-    conninfo = _new_db(cluster).replace("user=postgres", "user=cfa4_test_app")
+    conninfo = new_db(cluster).replace("user=postgres", "user=cfa4_test_app")
     capsys.readouterr()
-    assert main(["commands"]) == 0 and len(json.loads(capsys.readouterr().out)["commands"]) == 6
+    assert main(["commands"]) == 0 and len(json.loads(capsys.readouterr().out)["commands"]) == len(commands.COMMANDS)
     assert main(["--conninfo", conninfo, "migrate"]) == 0
-    assert json.loads(capsys.readouterr().out) == {"ok": True, "revision": "0001"}
+    assert json.loads(capsys.readouterr().out) == {"ok": True, "revision": migrate.head()}
     created = json.dumps(_params())
     assert main(["--conninfo", conninfo, "run", "backlot.production.create", "--params", created]) == 0
     assert json.loads(capsys.readouterr().out)["result"]["code"] == "FILM-1"
