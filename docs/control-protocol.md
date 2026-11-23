@@ -136,6 +136,8 @@ management commands and dialog ids: offline media and relinking (`media.findMiss
 proxies (`media.createProxies`, `media.attachProxies`, `media.findCameraProxies`, `media.toggleProxies`, `proxies.*`), ingest
 (`project.ingestSettings`) and the Project Manager (`file.projectManager`, `pm.*`).
 
+**Contact sheet**: `qc.contactSheet {sequence?|item?, frames?=12 (1–64), columns?=4 (1–16), thumb?=160 (16–640 px), path?}` writes a PNG contact sheet of `frames` evenly spaced frames (the middle of each equal part) of the sequence (default: the active one) or a clip item, drawn by the same code as the QC report sheet. `path` must end in `.png`; the default is `<name>.ContactSheet.png` next to the saved project. Changes nothing in the project. Returns `{path, width, height, columns, frames: [{frame, time}]}`.
+
 **Moving clips**: `timeline.move {moves: [{clip, track, time}], insert?, linked?}` → `{moved: [clip ids]}`.
 With Linked Selection on (the default; `linked` overrides the toggle for one call) the linked
 partners of a listed clip that are not listed themselves move by the same time offset and stay on

@@ -21,6 +21,7 @@ pub mod captions;
 pub mod clip_ops;
 pub mod color;
 pub mod commands;
+pub mod contact_sheet;
 pub mod control_surfaces;
 pub mod credits;
 pub mod dcp_export;
@@ -1410,6 +1411,8 @@ mod camera_proxies_tests;
 mod clip_ops_tests;
 #[cfg(test)]
 mod color_tests;
+#[cfg(test)]
+mod contact_sheet_tests;
 #[cfg(test)]
 mod dcp_import_tests;
 #[cfg(test)]
