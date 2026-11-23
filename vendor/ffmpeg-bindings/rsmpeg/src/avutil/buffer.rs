@@ -29,7 +29,9 @@ impl AVBufferRef {
     pub fn realloc(&mut self, size: usize) {
         let mut ptr = self.as_mut_ptr();
         // Safety: Implementation checked, this function only fail on OOM.
-        unsafe { ffi::av_buffer_realloc(&mut ptr, size) }.upgrade().unwrap();
+        unsafe { ffi::av_buffer_realloc(&mut ptr, size) }
+            .upgrade()
+            .unwrap();
         // Safety: only fail on OOM.
         let ptr = ptr.upgrade().unwrap();
         unsafe { self.set_ptr(ptr) }
@@ -55,7 +57,9 @@ impl AVBufferRef {
     pub fn make_writable(&mut self) {
         let mut ptr = self.as_mut_ptr();
         // Safety: Implementation checked, this function only fails on OOM.
-        unsafe { ffi::av_buffer_make_writable(&mut ptr) }.upgrade().unwrap();
+        unsafe { ffi::av_buffer_make_writable(&mut ptr) }
+            .upgrade()
+            .unwrap();
         // Safety: only fail on OOM.
         let ptr = ptr.upgrade().unwrap();
         unsafe { self.set_ptr(ptr) }
@@ -64,7 +68,9 @@ impl AVBufferRef {
 
 impl Clone for AVBufferRef {
     fn clone(&self) -> Self {
-        let raw = unsafe { ffi::av_buffer_ref(self.as_ptr()) }.upgrade().unwrap();
+        let raw = unsafe { ffi::av_buffer_ref(self.as_ptr()) }
+            .upgrade()
+            .unwrap();
         unsafe { Self::from_raw(raw) }
     }
 }

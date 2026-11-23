@@ -39,7 +39,9 @@ impl AVDictionary {
         // Without a new macro `wrap_nullable`, we cannot new a Self containing
         // null pointer.
         let mut dict = ptr::null_mut();
-        unsafe { ffi::av_dict_set(&mut dict, key.as_ptr(), value.as_ptr(), safe_flags(flags)) }.upgrade().unwrap();
+        unsafe { ffi::av_dict_set(&mut dict, key.as_ptr(), value.as_ptr(), safe_flags(flags)) }
+            .upgrade()
+            .unwrap();
         unsafe { Self::from_raw(NonNull::new(dict).unwrap()) }
     }
 
@@ -47,7 +49,9 @@ impl AVDictionary {
     /// stored as its decimal representation.
     pub fn new_int(key: &CStr, value: i64, flags: u32) -> Self {
         let mut dict = ptr::null_mut();
-        unsafe { ffi::av_dict_set_int(&mut dict, key.as_ptr(), value, safe_flags(flags)) }.upgrade().unwrap();
+        unsafe { ffi::av_dict_set_int(&mut dict, key.as_ptr(), value, safe_flags(flags)) }
+            .upgrade()
+            .unwrap();
         unsafe { Self::from_raw(NonNull::new(dict).unwrap()) }
     }
 
@@ -60,9 +64,24 @@ impl AVDictionary {
     ///
     /// A string holding no pairs has no representation to produce, see
     /// [`Self::parse_string()`] to merge into a dictionary that exists.
-    pub fn from_string(str: &CStr, key_val_sep: &CStr, pairs_sep: &CStr, flags: u32) -> Option<Self> {
+    pub fn from_string(
+        str: &CStr,
+        key_val_sep: &CStr,
+        pairs_sep: &CStr,
+        flags: u32,
+    ) -> Option<Self> {
         let mut dict = ptr::null_mut();
-        unsafe { ffi::av_dict_parse_string(&mut dict, str.as_ptr(), key_val_sep.as_ptr(), pairs_sep.as_ptr(), safe_flags(flags)) }.upgrade().ok()?;
+        unsafe {
+            ffi::av_dict_parse_string(
+                &mut dict,
+                str.as_ptr(),
+                key_val_sep.as_ptr(),
+                pairs_sep.as_ptr(),
+                safe_flags(flags),
+            )
+        }
+        .upgrade()
+        .ok()?;
         // Parsing a string that holds no pairs succeeds without allocating a
         // dictionary, so there may be nothing to wrap.
         Some(unsafe { Self::from_raw(NonNull::new(dict)?) })
@@ -77,7 +96,9 @@ impl AVDictionary {
     pub fn set(mut self, key: &CStr, value: &CStr, flags: u32) -> Self {
         let mut dict = self.as_mut_ptr();
         // Only error on AVERROR_ENOMEM, so unwrap
-        unsafe { ffi::av_dict_set(&mut dict, key.as_ptr(), value.as_ptr(), safe_flags(flags)) }.upgrade().unwrap();
+        unsafe { ffi::av_dict_set(&mut dict, key.as_ptr(), value.as_ptr(), safe_flags(flags)) }
+            .upgrade()
+            .unwrap();
         self
     }
 
@@ -85,7 +106,9 @@ impl AVDictionary {
     pub fn set_int(mut self, key: &CStr, value: i64, flags: u32) -> Self {
         let mut dict = self.as_mut_ptr();
         // Only error on AVERROR_ENOMEM, so unwrap
-        unsafe { ffi::av_dict_set_int(&mut dict, key.as_ptr(), value, safe_flags(flags)) }.upgrade().unwrap();
+        unsafe { ffi::av_dict_set_int(&mut dict, key.as_ptr(), value, safe_flags(flags)) }
+            .upgrade()
+            .unwrap();
         self
     }
 
@@ -100,7 +123,9 @@ impl AVDictionary {
         // nothing to write back afterwards.
         let mut dict = self.as_mut_ptr();
         // Only error on AVERROR_ENOMEM, so unwrap
-        unsafe { ffi::av_dict_set(&mut dict, key.as_ptr(), value.as_ptr(), 0) }.upgrade().unwrap();
+        unsafe { ffi::av_dict_set(&mut dict, key.as_ptr(), value.as_ptr(), 0) }
+            .upgrade()
+            .unwrap();
     }
 
     /// Same as [`Self::insert()`], with `value` stored as its decimal
@@ -108,13 +133,30 @@ impl AVDictionary {
     pub fn insert_int(&mut self, key: &CStr, value: i64) {
         let mut dict = self.as_mut_ptr();
         // Only error on AVERROR_ENOMEM, so unwrap
-        unsafe { ffi::av_dict_set_int(&mut dict, key.as_ptr(), value, 0) }.upgrade().unwrap();
+        unsafe { ffi::av_dict_set_int(&mut dict, key.as_ptr(), value, 0) }
+            .upgrade()
+            .unwrap();
     }
 
     /// Parse `str` on top of this dictionary, see [`Self::from_string()`].
-    pub fn parse_string(mut self, str: &CStr, key_val_sep: &CStr, pairs_sep: &CStr, flags: u32) -> Result<Self> {
+    pub fn parse_string(
+        mut self,
+        str: &CStr,
+        key_val_sep: &CStr,
+        pairs_sep: &CStr,
+        flags: u32,
+    ) -> Result<Self> {
         let mut dict = self.as_mut_ptr();
-        unsafe { ffi::av_dict_parse_string(&mut dict, str.as_ptr(), key_val_sep.as_ptr(), pairs_sep.as_ptr(), safe_flags(flags)) }.upgrade()?;
+        unsafe {
+            ffi::av_dict_parse_string(
+                &mut dict,
+                str.as_ptr(),
+                key_val_sep.as_ptr(),
+                pairs_sep.as_ptr(),
+                safe_flags(flags),
+            )
+        }
+        .upgrade()?;
         Ok(self)
     }
 
@@ -125,7 +167,9 @@ impl AVDictionary {
     pub fn copy(mut self, another: &AVDictionary, flags: u32) -> Self {
         let mut dict = self.as_mut_ptr();
         // Only error on AVERROR_ENOMEM, so unwrap
-        unsafe { ffi::av_dict_copy(&mut dict, another.as_ptr(), safe_flags(flags)) }.upgrade().unwrap();
+        unsafe { ffi::av_dict_copy(&mut dict, another.as_ptr(), safe_flags(flags)) }
+            .upgrade()
+            .unwrap();
         self
     }
 
@@ -195,7 +239,8 @@ impl AVDictionary {
     /// Such string may be passed back to `Self::parse_string()`.
     pub fn get_string(&self, key_val_sep: u8, pairs_sep: u8) -> Result<CString> {
         let mut s = ptr::null_mut();
-        unsafe { ffi::av_dict_get_string(self.as_ptr(), &mut s, key_val_sep as _, pairs_sep as _) }.upgrade()?;
+        unsafe { ffi::av_dict_get_string(self.as_ptr(), &mut s, key_val_sep as _, pairs_sep as _) }
+            .upgrade()?;
         let result = unsafe { CStr::from_ptr(s).to_owned() };
         unsafe {
             ffi::av_freep(&mut s as *mut _ as *mut c_void);
@@ -218,7 +263,10 @@ impl AVDictionary {
 /// always rebound to memory this side owns, whether the call succeeded or not.
 /// That rebinding happens *before* the call's return value is checked, and the
 /// ordering is the whole point — do not fold it into an early return.
-pub(crate) fn with_copied_options<T>(options: &mut Option<AVDictionary>, call: impl FnOnce(&mut *mut ffi::AVDictionary) -> T) -> Result<T> {
+pub(crate) fn with_copied_options<T>(
+    options: &mut Option<AVDictionary>,
+    call: impl FnOnce(&mut *mut ffi::AVDictionary) -> T,
+) -> Result<T> {
     let mut options_ptr = match options.as_ref() {
         Some(dict) => dict.duplicate_raw(0)?,
         None => ptr::null_mut(),
@@ -229,7 +277,9 @@ pub(crate) fn with_copied_options<T>(options: &mut Option<AVDictionary>, call: i
     // The dictionary the caller passed in was copied rather than handed over,
     // so it is still ours: rebinding `options` releases it here instead of
     // leaking it.
-    *options = options_ptr.upgrade().map(|x| unsafe { AVDictionary::from_raw(x) });
+    *options = options_ptr
+        .upgrade()
+        .map(|x| unsafe { AVDictionary::from_raw(x) });
 
     Ok(output)
 }
@@ -242,17 +292,28 @@ impl<'dict> AVDictionary {
     ///
     /// To iterate through all the dictionary entries, you can set the matching key
     /// to the null string "" and set the AV_DICT_IGNORE_SUFFIX flag.
-    pub fn get(&'dict self, key: &CStr, prev: Option<AVDictionaryEntryRef>, flags: u32) -> Option<AVDictionaryEntryRef<'dict>> {
+    pub fn get(
+        &'dict self,
+        key: &CStr,
+        prev: Option<AVDictionaryEntryRef>,
+        flags: u32,
+    ) -> Option<AVDictionaryEntryRef<'dict>> {
         let prev_ptr = match prev {
             Some(entry) => entry.as_ptr(),
             None => ptr::null(),
         };
-        unsafe { ffi::av_dict_get(self.as_ptr(), key.as_ptr(), prev_ptr, flags as i32) }.upgrade().map(|ptr| unsafe { AVDictionaryEntryRef::from_raw(ptr) })
+        unsafe { ffi::av_dict_get(self.as_ptr(), key.as_ptr(), prev_ptr, flags as i32) }
+            .upgrade()
+            .map(|ptr| unsafe { AVDictionaryEntryRef::from_raw(ptr) })
     }
 
     /// Iterates through all entries in the dictionary by reference.
     pub fn iter(&'dict self) -> AVDictionaryIter<'dict> {
-        AVDictionaryIter { dict: self, ptr: ptr::null(), _phantom: std::marker::PhantomData }
+        AVDictionaryIter {
+            dict: self,
+            ptr: ptr::null(),
+            _phantom: std::marker::PhantomData,
+        }
     }
 }
 
@@ -260,7 +321,9 @@ impl Clone for AVDictionary {
     /// Similar to `Self::copy()`, while set the copy flag to `0`.
     fn clone(&self) -> Self {
         let mut newer = ptr::null_mut();
-        unsafe { ffi::av_dict_copy(&mut newer, self.as_ptr(), 0) }.upgrade().unwrap();
+        unsafe { ffi::av_dict_copy(&mut newer, self.as_ptr(), 0) }
+            .upgrade()
+            .unwrap();
         unsafe { Self::from_raw(NonNull::new(newer).unwrap()) }
     }
 }
@@ -311,7 +374,9 @@ impl<'dict> Iterator for AVDictionaryIter<'dict> {
     type Item = AVDictionaryEntryRef<'dict>;
     fn next(&mut self) -> Option<Self::Item> {
         self.ptr = unsafe { ffi::av_dict_iterate(self.dict.as_ptr(), self.ptr) };
-        self.ptr.upgrade().map(|x| unsafe { AVDictionaryEntryRef::from_raw(x) })
+        self.ptr
+            .upgrade()
+            .map(|x| unsafe { AVDictionaryEntryRef::from_raw(x) })
     }
 }
 
@@ -357,7 +422,10 @@ mod test {
     #[test]
     fn set_int() {
         let dict = AVDictionary::new_int(c"bob", 2233, 0).set_int(c"foo", 123456789123456789, 0);
-        assert_eq!(c"123456789123456789", dict.get(c"foo", None, 0).unwrap().value());
+        assert_eq!(
+            c"123456789123456789",
+            dict.get(c"foo", None, 0).unwrap().value()
+        );
     }
 
     #[test]
@@ -365,7 +433,11 @@ mod test {
         let dict = AVDictionary::new(c"bob", c"alice", 0);
         assert_eq!(c"alice", dict.get(c"bob", None, 0).unwrap().value());
 
-        let dict = AVDictionary::new(c"bob", c"alice", 0).set(c"bob", c"alice", 0).set(c"bob", c"alice", 0).set(c"bob", c"alice", 0).set(c"bob", c"alice", 0);
+        let dict = AVDictionary::new(c"bob", c"alice", 0)
+            .set(c"bob", c"alice", 0)
+            .set(c"bob", c"alice", 0)
+            .set(c"bob", c"alice", 0)
+            .set(c"bob", c"alice", 0);
         assert_eq!(c"alice", dict.get(c"bob", None, 0).unwrap().value());
 
         let dict = AVDictionary::new(c"foo", c"bar", 0).set(c"bob", c"alice", 0);
@@ -378,8 +450,11 @@ mod test {
         assert!(dict.get(c"foo", Some(entry), 0).is_none());
 
         // Shadowing.
-        let dict =
-            AVDictionary::new(c"bob", c"alice0", 0).set(c"bob", c"alice1", 0).set(c"bob", c"alice2", 0).set(c"bob", c"alice3", 0).set(c"bob", c"alice4", 0);
+        let dict = AVDictionary::new(c"bob", c"alice0", 0)
+            .set(c"bob", c"alice1", 0)
+            .set(c"bob", c"alice2", 0)
+            .set(c"bob", c"alice3", 0)
+            .set(c"bob", c"alice4", 0);
 
         let entry = dict.get(c"bob", None, 0).unwrap();
         assert_eq!(c"alice4", entry.value());
@@ -394,8 +469,13 @@ mod test {
         let dictc = dicta.clone();
         assert_eq!(c"a:b-c:d", dictc.get_string(b':', b'-').unwrap().as_c_str());
 
-        let dictb = AVDictionary::new(c"foo", c"bar", 0).set(c"alice", c"bob", 0).copy(&dictc, 0);
-        assert_eq!(c"foo:bar-alice:bob-a:b-c:d", dictb.get_string(b':', b'-').unwrap().as_c_str(),);
+        let dictb = AVDictionary::new(c"foo", c"bar", 0)
+            .set(c"alice", c"bob", 0)
+            .copy(&dictc, 0);
+        assert_eq!(
+            c"foo:bar-alice:bob-a:b-c:d",
+            dictb.get_string(b':', b'-').unwrap().as_c_str(),
+        );
 
         let dicta = dicta.set(c"e", c"f", 0);
 
@@ -410,16 +490,29 @@ mod test {
 
     #[test]
     fn serialization() {
-        let dict = AVDictionary::new(c"a", c"b", 0).set(c"c", c"d", 0).set(c"foo", c"bar", 0).set(c"bob", c"alice", 0);
-        assert_eq!(c"a:b-c:d-foo:bar-bob:alice", dict.get_string(b':', b'-').unwrap().as_c_str());
+        let dict = AVDictionary::new(c"a", c"b", 0)
+            .set(c"c", c"d", 0)
+            .set(c"foo", c"bar", 0)
+            .set(c"bob", c"alice", 0);
+        assert_eq!(
+            c"a:b-c:d-foo:bar-bob:alice",
+            dict.get_string(b':', b'-').unwrap().as_c_str()
+        );
         let dict = dict.set(c"rust", c"c", 0);
-        assert_eq!(c"a:b-c:d-foo:bar-bob:alice-rust:c", dict.get_string(b':', b'-').unwrap().as_c_str());
+        assert_eq!(
+            c"a:b-c:d-foo:bar-bob:alice-rust:c",
+            dict.get_string(b':', b'-').unwrap().as_c_str()
+        );
     }
 
     #[test]
     fn deserialization() {
-        let dict = AVDictionary::from_string(c"a:b-c:d-foo:bar-bob:alice-rust:c", c":", c"-", 0).unwrap();
-        assert_eq!(c"a:b-c:d-foo:bar-bob:alice-rust:c", dict.get_string(b':', b'-').unwrap().as_c_str());
+        let dict =
+            AVDictionary::from_string(c"a:b-c:d-foo:bar-bob:alice-rust:c", c":", c"-", 0).unwrap();
+        assert_eq!(
+            c"a:b-c:d-foo:bar-bob:alice-rust:c",
+            dict.get_string(b':', b'-').unwrap().as_c_str()
+        );
     }
 
     /// The `AV_DICT_DONT_STRDUP_*` flags hand the ownership of the key and value
@@ -440,11 +533,17 @@ mod test {
         drop(value);
 
         let mut dict = dict.set(c"k2", c"v2", flags);
-        assert_eq!(c"k:v-k2:v2", dict.get_string(b':', b'-').unwrap().as_c_str());
+        assert_eq!(
+            c"k:v-k2:v2",
+            dict.get_string(b':', b'-').unwrap().as_c_str()
+        );
 
         let other = AVDictionary::new(c"k3", c"v3", 0);
         dict = dict.copy(&other, flags);
-        assert_eq!(c"k:v-k2:v2-k3:v3", dict.get_string(b':', b'-').unwrap().as_c_str());
+        assert_eq!(
+            c"k:v-k2:v2-k3:v3",
+            dict.get_string(b':', b'-').unwrap().as_c_str()
+        );
     }
 
     /// A string holding no pairs parses successfully without producing a
@@ -492,7 +591,17 @@ mod test {
         assert_eq!(dict.len(), 3);
 
         // Insertion order is preserved as long as no key is overwritten.
-        let rendered = dict.iter().map(|entry| format!("{}={}", entry.key().to_string_lossy(), entry.value().to_string_lossy())).collect::<Vec<_>>().join(",");
+        let rendered = dict
+            .iter()
+            .map(|entry| {
+                format!(
+                    "{}={}",
+                    entry.key().to_string_lossy(),
+                    entry.value().to_string_lossy()
+                )
+            })
+            .collect::<Vec<_>>()
+            .join(",");
         assert_eq!(rendered, "first=1,second=2,third=3");
         assert_eq!((&dict).into_iter().count(), dict.len());
 
@@ -505,7 +614,9 @@ mod test {
     /// `from_string()`.
     #[test]
     fn parse_string_merges() {
-        let dict = AVDictionary::new(c"a", c"1", 0).parse_string(c"b:2-c:3", c":", c"-", 0).unwrap();
+        let dict = AVDictionary::new(c"a", c"1", 0)
+            .parse_string(c"b:2-c:3", c":", c"-", 0)
+            .unwrap();
 
         assert_eq!(dict.len(), 3);
         assert_eq!(dict.get_value(c"a").unwrap(), c"1");

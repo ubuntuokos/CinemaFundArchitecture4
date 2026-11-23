@@ -341,7 +341,9 @@ fn is_bad_char(c: char) -> bool {
 fn has_scheme(s: &str) -> bool {
     let Some((scheme, _)) = s.split_once(':') else { return false };
     let mut chars = scheme.chars();
-    chars.next().is_some_and(|c| c.is_ascii_alphabetic()) && scheme.len() >= 2 && chars.all(|c| c.is_ascii_alphanumeric() || matches!(c, '+' | '-' | '.'))
+    chars.next().is_some_and(|c| c.is_ascii_alphabetic())
+        && scheme.len() >= 2
+        && chars.all(|c| c.is_ascii_alphanumeric() || matches!(c, '+' | '-' | '.'))
 }
 
 /// The path of a `file:` URL (the part after `file:`).
@@ -418,8 +420,8 @@ fn percent_decode(s: &str) -> String {
 /// Bytes 0x81, 0x8D, 0x8F, 0x90 and 0x9D are unassigned and map to C1 controls, which are refused.
 fn windows_1252(b: u8) -> char {
     const HIGH: [char; 32] = [
-        '€', '\u{81}', '‚', 'ƒ', '„', '…', '†', '‡', 'ˆ', '‰', 'Š', '‹', 'Œ', '\u{8D}', 'Ž', '\u{8F}', '\u{90}', '‘', '’', '“', '”', '•', '–', '—', '˜', '™',
-        'š', '›', 'œ', '\u{9D}', 'ž', 'Ÿ',
+        '€', '\u{81}', '‚', 'ƒ', '„', '…', '†', '‡', 'ˆ', '‰', 'Š', '‹', 'Œ', '\u{8D}', 'Ž', '\u{8F}', '\u{90}', '‘', '’', '“', '”', '•', '–', '—',
+        '˜', '™', 'š', '›', 'œ', '\u{9D}', 'ž', 'Ÿ',
     ];
     match b {
         0x80..=0x9F => HIGH.get(usize::from(b - 0x80)).copied().unwrap_or(char::REPLACEMENT_CHARACTER),
@@ -484,7 +486,9 @@ fn parse_verbatim(v: &str, check: bool) -> Result<Parsed, Refused> {
     let mut drive = first.chars();
     match (drive.next(), drive.next(), drive.next(), rest) {
         // `\\?\C:` without a separator is the volume, not its root folder.
-        (Some(l), Some(':'), None, Some(rest)) if l.is_ascii_alphabetic() => Ok(Parsed { root: Root::VerbatimDrive(l), comps: verbatim_comps(rest, check)? }),
+        (Some(l), Some(':'), None, Some(rest)) if l.is_ascii_alphabetic() => {
+            Ok(Parsed { root: Root::VerbatimDrive(l), comps: verbatim_comps(rest, check)? })
+        }
         _ if first.eq_ignore_ascii_case("UNC") && rest.is_some() => parse_share(rest.unwrap_or_default(), true, check),
         _ => Err(Refused::Device),
     }
@@ -564,7 +568,8 @@ fn is_dos_device(comp: &str) -> bool {
     }
     let Some(head) = stem.get(..3) else { return false };
     let mut tail = stem.get(3..).unwrap_or_default().chars();
-    (head.eq_ignore_ascii_case("COM") || head.eq_ignore_ascii_case("LPT")) && matches!((tail.next(), tail.next()), (Some('0'..='9' | '¹' | '²' | '³'), None))
+    (head.eq_ignore_ascii_case("COM") || head.eq_ignore_ascii_case("LPT"))
+        && matches!((tail.next(), tail.next()), (Some('0'..='9' | '¹' | '²' | '³'), None))
 }
 
 /// Fold `.` and `..`. A rooted path may not climb above its root; a relative one keeps leading `..`.

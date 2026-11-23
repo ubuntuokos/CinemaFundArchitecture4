@@ -1,8 +1,8 @@
 use crate::{
     avcodec::{AVCodecID, AVCodecParameters, AVPacket},
     avutil::{
-        AVChannelLayoutRef, AVDictionary, AVFrame, AVHWDeviceContext, AVHWFramesContext, AVHWFramesContextMut, AVHWFramesContextRef, AVPixelFormat, AVRational,
-        AVSampleFormat,
+        AVChannelLayoutRef, AVDictionary, AVFrame, AVHWDeviceContext, AVHWFramesContext,
+        AVHWFramesContextMut, AVHWFramesContextRef, AVPixelFormat, AVRational, AVSampleFormat,
     },
     error::{Result, RsmpegError},
     ffi,
@@ -22,22 +22,30 @@ wrap_ref!(AVCodec: ffi::AVCodec);
 impl AVCodec {
     /// Find a static decoder instance with [`AVCodecID`]
     pub fn find_decoder(id: AVCodecID) -> Option<AVCodecRef<'static>> {
-        unsafe { ffi::avcodec_find_decoder(id) }.upgrade().map(|x| unsafe { AVCodecRef::from_raw(x) })
+        unsafe { ffi::avcodec_find_decoder(id) }
+            .upgrade()
+            .map(|x| unsafe { AVCodecRef::from_raw(x) })
     }
 
     /// Find a static encoder instance with [`AVCodecID`]
     pub fn find_encoder(id: AVCodecID) -> Option<AVCodecRef<'static>> {
-        unsafe { ffi::avcodec_find_encoder(id) }.upgrade().map(|x| unsafe { AVCodecRef::from_raw(x) })
+        unsafe { ffi::avcodec_find_encoder(id) }
+            .upgrade()
+            .map(|x| unsafe { AVCodecRef::from_raw(x) })
     }
 
     /// Find a static decoder instance with it short name.
     pub fn find_decoder_by_name(name: &CStr) -> Option<AVCodecRef<'static>> {
-        unsafe { ffi::avcodec_find_decoder_by_name(name.as_ptr()) }.upgrade().map(|x| unsafe { AVCodecRef::from_raw(x) })
+        unsafe { ffi::avcodec_find_decoder_by_name(name.as_ptr()) }
+            .upgrade()
+            .map(|x| unsafe { AVCodecRef::from_raw(x) })
     }
 
     /// Find a static encoder instance with it short name.
     pub fn find_encoder_by_name(name: &CStr) -> Option<AVCodecRef<'static>> {
-        unsafe { ffi::avcodec_find_encoder_by_name(name.as_ptr()) }.upgrade().map(|x| unsafe { AVCodecRef::from_raw(x) })
+        unsafe { ffi::avcodec_find_encoder_by_name(name.as_ptr()) }
+            .upgrade()
+            .map(|x| unsafe { AVCodecRef::from_raw(x) })
     }
 
     /// Get name of the codec.
@@ -52,12 +60,16 @@ impl AVCodec {
 
     /// Iterate over all registered codecs.
     pub fn iterate() -> AVCodecIter {
-        AVCodecIter { opaque: std::ptr::null_mut() }
+        AVCodecIter {
+            opaque: std::ptr::null_mut(),
+        }
     }
 
     /// Retrieve supported hardware configurations for a codec.
     pub fn hw_config(&self, index: usize) -> Option<ffi::AVCodecHWConfig> {
-        unsafe { ffi::avcodec_get_hw_config(self.as_ptr(), index as i32) }.upgrade().map(|x| unsafe { *x.as_ptr() })
+        unsafe { ffi::avcodec_get_hw_config(self.as_ptr(), index as i32) }
+            .upgrade()
+            .map(|x| unsafe { *x.as_ptr() })
     }
 }
 
@@ -135,7 +147,9 @@ impl AVCodecContext {
     /// initialize defaults for the given [`AVCodec`].
     pub fn new(codec: &AVCodec) -> Self {
         // ATTENTION here we restrict the usage of avcodec_alloc_context3() by only put in non-null pointers.
-        let codec_context = unsafe { ffi::avcodec_alloc_context3(codec.as_ptr()) }.upgrade().unwrap();
+        let codec_context = unsafe { ffi::avcodec_alloc_context3(codec.as_ptr()) }
+            .upgrade()
+            .unwrap();
         unsafe { Self::from_raw(codec_context) }
     }
 
@@ -152,14 +166,20 @@ impl AVCodecContext {
             let dict_ptr = {
                 // Doesn't use into_raw or we will drop the dict when error occurs.
                 let mut dict_ptr = dict.as_mut_ptr();
-                unsafe { ffi::avcodec_open2(self.as_mut_ptr(), ptr::null_mut(), &mut dict_ptr as *mut _) }.upgrade()?;
+                unsafe {
+                    ffi::avcodec_open2(self.as_mut_ptr(), ptr::null_mut(), &mut dict_ptr as *mut _)
+                }
+                .upgrade()?;
                 dict_ptr
             };
             // If no error, dict's inner pointer is dangling, here we manually drop it by using into_raw().
             let _ = dict.into_raw();
-            Ok(dict_ptr.upgrade().map(|dict_ptr| unsafe { AVDictionary::from_raw(dict_ptr) }))
+            Ok(dict_ptr
+                .upgrade()
+                .map(|dict_ptr| unsafe { AVDictionary::from_raw(dict_ptr) }))
         } else {
-            unsafe { ffi::avcodec_open2(self.as_mut_ptr(), ptr::null_mut(), ptr::null_mut()) }.upgrade()?;
+            unsafe { ffi::avcodec_open2(self.as_mut_ptr(), ptr::null_mut(), ptr::null_mut()) }
+                .upgrade()?;
             Ok(None)
         }
     }
@@ -181,7 +201,8 @@ impl AVCodecContext {
     /// Trying to pull a frame from current decoding_context([`AVCodecContext`]).
     pub fn receive_frame(&mut self) -> Result<AVFrame> {
         let mut frame = AVFrame::new();
-        match unsafe { ffi::avcodec_receive_frame(self.as_mut_ptr(), frame.as_mut_ptr()) }.upgrade() {
+        match unsafe { ffi::avcodec_receive_frame(self.as_mut_ptr(), frame.as_mut_ptr()) }.upgrade()
+        {
             Ok(_) => Ok(frame),
             Err(AVERROR_EAGAIN) => Err(RsmpegError::DecoderDrainError),
             Err(ffi::AVERROR_EOF) => Err(RsmpegError::DecoderFlushedError),
@@ -206,7 +227,9 @@ impl AVCodecContext {
     /// Trying to pull a packet from current encoding_context([`AVCodecContext`]).
     pub fn receive_packet(&mut self) -> Result<AVPacket> {
         let mut packet = AVPacket::new();
-        match unsafe { ffi::avcodec_receive_packet(self.as_mut_ptr(), packet.as_mut_ptr()) }.upgrade() {
+        match unsafe { ffi::avcodec_receive_packet(self.as_mut_ptr(), packet.as_mut_ptr()) }
+            .upgrade()
+        {
             Ok(_) => Ok(packet),
             Err(AVERROR_EAGAIN) => Err(RsmpegError::EncoderDrainError),
             Err(ffi::AVERROR_EOF) => Err(RsmpegError::EncoderFlushedError),
@@ -243,7 +266,15 @@ impl AVCodecContext {
             }
         };
 
-        let _ = unsafe { ffi::avcodec_decode_subtitle2(self.as_mut_ptr(), subtitle.as_mut_ptr(), &mut got_sub, packet) }.upgrade()?;
+        let _ = unsafe {
+            ffi::avcodec_decode_subtitle2(
+                self.as_mut_ptr(),
+                subtitle.as_mut_ptr(),
+                &mut got_sub,
+                packet,
+            )
+        }
+        .upgrade()?;
 
         if got_sub == 0 {
             return Ok(None);
@@ -258,7 +289,15 @@ impl AVCodecContext {
     /// exactly one buffer content. The caller is responsible for building the
     /// `AVPacket` (pts/duration/stream_index) from the returned byte count.
     pub fn encode_subtitle(&mut self, subtitle: &AVSubtitle, buf: &mut [u8]) -> Result<usize> {
-        let len = unsafe { ffi::avcodec_encode_subtitle(self.as_mut_ptr(), buf.as_mut_ptr(), buf.len() as i32, subtitle.as_ptr()) }.upgrade()?;
+        let len = unsafe {
+            ffi::avcodec_encode_subtitle(
+                self.as_mut_ptr(),
+                buf.as_mut_ptr(),
+                buf.len() as i32,
+                subtitle.as_ptr(),
+            )
+        }
+        .upgrade()?;
         Ok(len as usize)
     }
 
@@ -301,7 +340,8 @@ impl AVCodecContext {
     /// `AVCodecContext` that do not have a counterpart in given `codecpar` are
     /// not touched.
     pub fn apply_codecpar(&mut self, codecpar: &AVCodecParameters) -> Result<()> {
-        unsafe { ffi::avcodec_parameters_to_context(self.as_mut_ptr(), codecpar.as_ptr()) }.upgrade()?;
+        unsafe { ffi::avcodec_parameters_to_context(self.as_mut_ptr(), codecpar.as_ptr()) }
+            .upgrade()?;
         Ok(())
     }
 
@@ -309,7 +349,9 @@ impl AVCodecContext {
     pub fn extract_codecpar(&self) -> AVCodecParameters {
         let mut parameters = AVCodecParameters::new();
         // Only fails on no memory, so unwrap.
-        unsafe { ffi::avcodec_parameters_from_context(parameters.as_mut_ptr(), self.as_ptr()) }.upgrade().unwrap();
+        unsafe { ffi::avcodec_parameters_from_context(parameters.as_mut_ptr(), self.as_ptr()) }
+            .upgrade()
+            .unwrap();
         parameters
     }
 
@@ -374,12 +416,29 @@ impl AVCodecContext {
     /// # Safety
     /// `config` should matches `T`
     #[cfg(feature = "ffmpeg7_1")]
-    pub unsafe fn get_supported_config<T>(&self, codec: Option<&AVCodec>, config: AVCodecConfig) -> Result<&[T]> {
+    pub unsafe fn get_supported_config<T>(
+        &self,
+        codec: Option<&AVCodec>,
+        config: AVCodecConfig,
+    ) -> Result<&[T]> {
         let mut data = ptr::null();
         let mut num = 0;
-        unsafe { ffi::avcodec_get_supported_config(self.as_ptr(), codec.map(|x| x.as_ptr()).unwrap_or_else(ptr::null), config, 0, &mut data, &mut num) }
-            .upgrade()?;
-        Ok(if data.is_null() { &[] } else { unsafe { slice::from_raw_parts(data.cast(), num as usize) } })
+        unsafe {
+            ffi::avcodec_get_supported_config(
+                self.as_ptr(),
+                codec.map(|x| x.as_ptr()).unwrap_or_else(ptr::null),
+                config,
+                0,
+                &mut data,
+                &mut num,
+            )
+        }
+        .upgrade()?;
+        Ok(if data.is_null() {
+            &[]
+        } else {
+            unsafe { slice::from_raw_parts(data.cast(), num as usize) }
+        })
     }
 
     /// Is hardware accelaration enabled in this codec context.
@@ -437,7 +496,14 @@ impl Default for AVSubtitle {
 impl AVSubtitle {
     /// Create a new [`AVSubtitle`].
     pub fn new() -> Self {
-        let subtitle = ffi::AVSubtitle { format: 0, start_display_time: 0, end_display_time: 0, num_rects: 0, rects: ptr::null_mut(), pts: 0 };
+        let subtitle = ffi::AVSubtitle {
+            format: 0,
+            start_display_time: 0,
+            end_display_time: 0,
+            num_rects: 0,
+            rects: ptr::null_mut(),
+            pts: 0,
+        };
         let subtitle = Box::leak(Box::new(subtitle));
         // Shouldn't be null, so unwrap here.
         let subtitle = NonNull::new(subtitle).unwrap();
@@ -454,7 +520,8 @@ impl AVSubtitle {
     /// `avsubtitle_free` when this subtitle is dropped.
     pub fn push_ass_rect(&mut self, ass: &CStr) -> Result<()> {
         unsafe {
-            let rect = ffi::av_mallocz(std::mem::size_of::<ffi::AVSubtitleRect>()) as *mut ffi::AVSubtitleRect;
+            let rect = ffi::av_mallocz(std::mem::size_of::<ffi::AVSubtitleRect>())
+                as *mut ffi::AVSubtitleRect;
             if rect.is_null() {
                 return Err(RsmpegError::AVError(AVERROR_ENOMEM));
             }
@@ -468,8 +535,10 @@ impl AVSubtitle {
 
             let sub = self.as_mut_ptr();
             let old_count = (*sub).num_rects as usize;
-            let new_rects =
-                ffi::av_realloc((*sub).rects.cast(), (old_count + 1) * std::mem::size_of::<*mut ffi::AVSubtitleRect>()) as *mut *mut ffi::AVSubtitleRect;
+            let new_rects = ffi::av_realloc(
+                (*sub).rects.cast(),
+                (old_count + 1) * std::mem::size_of::<*mut ffi::AVSubtitleRect>(),
+            ) as *mut *mut ffi::AVSubtitleRect;
             if new_rects.is_null() {
                 ffi::av_freep(std::ptr::addr_of_mut!((*rect).ass).cast());
                 ffi::av_free(rect.cast());
@@ -494,8 +563,11 @@ impl AVSubtitle {
     /// or verify encoded ones.
     pub fn rect_iter(&self) -> impl Iterator<Item = AVSubtitleRectRef<'_>> {
         let sub = unsafe { &*self.as_ptr() };
-        let rects: &[*mut ffi::AVSubtitleRect] =
-            if sub.num_rects == 0 || sub.rects.is_null() { &[] } else { unsafe { std::slice::from_raw_parts(sub.rects, sub.num_rects as usize) } };
+        let rects: &[*mut ffi::AVSubtitleRect] = if sub.num_rects == 0 || sub.rects.is_null() {
+            &[]
+        } else {
+            unsafe { std::slice::from_raw_parts(sub.rects, sub.num_rects as usize) }
+        };
         rects.iter().map(|&rect| AVSubtitleRectRef {
             // SAFETY: FFmpeg guarantees `rects[0..num_rects]` to be valid,
             // non-null rect pointers (`push_ass_rect` upholds this too).
@@ -519,12 +591,20 @@ impl AVSubtitleRectRef<'_> {
     /// Returns the ASS-formatted payload (`Dialogue:` line) for
     /// `SUBTITLE_ASS` rects.
     pub fn ass(&self) -> Option<&CStr> {
-        if self.raw.ass.is_null() { None } else { Some(unsafe { CStr::from_ptr(self.raw.ass) }) }
+        if self.raw.ass.is_null() {
+            None
+        } else {
+            Some(unsafe { CStr::from_ptr(self.raw.ass) })
+        }
     }
 
     /// Returns the plain-text payload for `SUBTITLE_TEXT` rects.
     pub fn text(&self) -> Option<&CStr> {
-        if self.raw.text.is_null() { None } else { Some(unsafe { CStr::from_ptr(self.raw.text) }) }
+        if self.raw.text.is_null() {
+            None
+        } else {
+            Some(unsafe { CStr::from_ptr(self.raw.text) })
+        }
     }
 }
 
@@ -550,7 +630,10 @@ mod tests {
         let iter = AVCodec::iterate();
         for codec in iter {
             if codec.name() == c"h264" {
-                assert_eq!(codec.long_name(), c"H.264 / AVC / MPEG-4 AVC / MPEG-4 part 10");
+                assert_eq!(
+                    codec.long_name(),
+                    c"H.264 / AVC / MPEG-4 AVC / MPEG-4 part 10"
+                );
             }
             if codec.name() == c"vnull" {
                 assert_eq!(codec.long_name(), c"null video");
@@ -588,7 +671,9 @@ mod tests {
         ctx.open(None).unwrap();
 
         let mut subtitle = AVSubtitle::new();
-        subtitle.push_ass_rect(c"Dialogue: 0,0:00:00.00,0:00:02.00,Default,,0,0,0,,Hello World").unwrap();
+        subtitle
+            .push_ass_rect(c"Dialogue: 0,0:00:00.00,0:00:02.00,Default,,0,0,0,,Hello World")
+            .unwrap();
         assert_eq!(subtitle.num_rects(), 1);
 
         // Borrowed iteration sees the pushed rect with its ASS payload.
@@ -596,7 +681,10 @@ mod tests {
         assert_eq!(rects.len(), 1);
         assert_eq!(rects[0].type_(), ffi::SUBTITLE_ASS);
         assert!(rects[0].text().is_none(), "ASS rect has no plain text");
-        assert_eq!(rects[0].ass(), Some(c"Dialogue: 0,0:00:00.00,0:00:02.00,Default,,0,0,0,,Hello World"),);
+        assert_eq!(
+            rects[0].ass(),
+            Some(c"Dialogue: 0,0:00:00.00,0:00:02.00,Default,,0,0,0,,Hello World"),
+        );
 
         let mut buf = vec![0u8; 8192];
         let len = ctx.encode_subtitle(&subtitle, &mut buf).unwrap();

@@ -14,8 +14,15 @@ wrap_ref!(AVChannelLayout: ffi::AVChannelLayout);
 
 impl std::fmt::Debug for AVChannelLayout {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        let desc = self.describe().map(|x| x.to_string_lossy().into_owned()).unwrap_or_else(|e| format!("Error describing channel layout: {}", e));
-        f.debug_struct("AVChannelLayout").field("description", &desc).field("nb_channels", &self.nb_channels).field("order", &self.order).finish()
+        let desc = self
+            .describe()
+            .map(|x| x.to_string_lossy().into_owned())
+            .unwrap_or_else(|e| format!("Error describing channel layout: {}", e));
+        f.debug_struct("AVChannelLayout")
+            .field("description", &desc)
+            .field("nb_channels", &self.nb_channels)
+            .field("order", &self.order)
+            .finish()
     }
 }
 
@@ -35,7 +42,9 @@ impl Clone for AVChannelLayout {
         // uninitialised memory (valgrind: "Conditional jump ... uninitialised value").
         let mut layout = MaybeUninit::<ffi::AVChannelLayout>::zeroed();
         // unwrap: this function only fail on OOM.
-        unsafe { ffi::av_channel_layout_copy(layout.as_mut_ptr(), self.as_ptr()) }.upgrade().unwrap();
+        unsafe { ffi::av_channel_layout_copy(layout.as_mut_ptr(), self.as_ptr()) }
+            .upgrade()
+            .unwrap();
         let layout = unsafe { layout.assume_init() };
         unsafe { Self::from_raw(NonNull::new(Box::into_raw(Box::new(layout))).unwrap()) }
     }
@@ -103,7 +112,9 @@ impl AVChannelLayout {
     /// in that it allocates and copies the map for AV_CHANNEL_ORDER_CUSTOM.
     pub fn copy(&mut self, src: &Self) {
         // unwrap: this function only fail on OOM.
-        unsafe { ffi::av_channel_layout_copy(self.as_mut_ptr(), src.as_ptr()) }.upgrade().unwrap();
+        unsafe { ffi::av_channel_layout_copy(self.as_mut_ptr(), src.as_ptr()) }
+            .upgrade()
+            .unwrap();
     }
 
     /// Get a human-readable string describing the channel layout properties.
@@ -115,7 +126,14 @@ impl AVChannelLayout {
         let mut buf = vec![0u8; BUF_SIZE];
 
         loop {
-            let len = unsafe { ffi::av_channel_layout_describe(self.as_ptr(), buf.as_mut_ptr() as *mut std::ffi::c_char, buf.len()) }.upgrade()? as usize;
+            let len = unsafe {
+                ffi::av_channel_layout_describe(
+                    self.as_ptr(),
+                    buf.as_mut_ptr() as *mut std::ffi::c_char,
+                    buf.len(),
+                )
+            }
+            .upgrade()? as usize;
 
             // FFmpeg <= 6.0 returns here the length of the string *excluding*
             // its terminating null character, while FFmpeg >= 6.1 accounts for
@@ -144,18 +162,25 @@ impl AVChannelLayout {
     ///
     /// Return `None` when channel is not present in channel_layout
     pub fn index_from_channel(&self, channel: ffi::AVChannel) -> Option<u32> {
-        unsafe { ffi::av_channel_layout_index_from_channel(self.as_ptr(), channel) }.upgrade().ok().map(|x| x as u32)
+        unsafe { ffi::av_channel_layout_index_from_channel(self.as_ptr(), channel) }
+            .upgrade()
+            .ok()
+            .map(|x| x as u32)
     }
 
     /// Get the index in a channel layout of a channel described by the given string.
     /// In case multiple channels are found, only the first match will be returned.
     pub fn index_from_string(&self, name: &CStr) -> Option<u32> {
-        unsafe { ffi::av_channel_layout_index_from_string(self.as_ptr(), name.as_ptr()) }.upgrade().ok().map(|x| x as u32)
+        unsafe { ffi::av_channel_layout_index_from_string(self.as_ptr(), name.as_ptr()) }
+            .upgrade()
+            .ok()
+            .map(|x| x as u32)
     }
 
     /// Get a channel described by the given string.
     pub fn channel_from_string(&self, name: &CStr) -> Option<ffi::AVChannel> {
-        let channel = unsafe { ffi::av_channel_layout_channel_from_string(self.as_ptr(), name.as_ptr()) };
+        let channel =
+            unsafe { ffi::av_channel_layout_channel_from_string(self.as_ptr(), name.as_ptr()) };
         (channel != ffi::AV_CHAN_NONE).then_some(channel)
     }
 
@@ -180,7 +205,8 @@ impl AVChannelLayout {
     /// not, they are considered to be unequal. If both are AV_CHANNEL_ORDER_UNSPEC,
     /// they are considered equal iff the channel counts are the same in both.
     pub fn equal(&self, other: &Self) -> Result<bool> {
-        let ret = unsafe { ffi::av_channel_layout_compare(self.as_ptr(), other.as_ptr()) }.upgrade()?;
+        let ret =
+            unsafe { ffi::av_channel_layout_compare(self.as_ptr(), other.as_ptr()) }.upgrade()?;
         Ok(ret == 0)
     }
 }
@@ -192,7 +218,9 @@ pub struct AVChannelLayoutIter {
 
 impl Default for AVChannelLayoutIter {
     fn default() -> Self {
-        Self { opaque: std::ptr::null_mut() }
+        Self {
+            opaque: std::ptr::null_mut(),
+        }
     }
 }
 
@@ -200,7 +228,9 @@ impl Iterator for AVChannelLayoutIter {
     type Item = AVChannelLayoutRef<'static>;
 
     fn next(&mut self) -> Option<Self::Item> {
-        unsafe { ffi::av_channel_layout_standard(&mut self.opaque) }.upgrade().map(|ptr| unsafe { AVChannelLayoutRef::from_raw(ptr) })
+        unsafe { ffi::av_channel_layout_standard(&mut self.opaque) }
+            .upgrade()
+            .map(|ptr| unsafe { AVChannelLayoutRef::from_raw(ptr) })
     }
 }
 
@@ -226,7 +256,10 @@ mod tests {
     /// [`AVChannelLayout::describe()`].
     #[test]
     fn describe_long_layout_test() {
-        let layout = AVChannelLayout::from_string(c"FL+FR+FC+LFE+BL+BR+FLC+FRC+BC+SL+SR+TC+TFL+TFC+TFR+TBL+TBC+TBR").unwrap();
+        let layout = AVChannelLayout::from_string(
+            c"FL+FR+FC+LFE+BL+BR+FLC+FRC+BC+SL+SR+TC+TFL+TFC+TFR+TBL+TBC+TBR",
+        )
+        .unwrap();
         assert_eq!(
             layout.describe().unwrap().to_str().unwrap(),
             // Way longer than the 32 bytes buffer `describe()` starts with.

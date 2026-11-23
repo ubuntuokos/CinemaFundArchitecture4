@@ -93,7 +93,9 @@ impl SwrContext {
     ///
     /// returns the delay in `1 / base` base units.
     pub fn get_delay(&self, base: usize) -> usize {
-        unsafe { ffi::swr_get_delay(self.as_ptr() as *mut _, base.try_into().unwrap()) }.try_into().unwrap()
+        unsafe { ffi::swr_get_delay(self.as_ptr() as *mut _, base.try_into().unwrap()) }
+            .try_into()
+            .unwrap()
     }
 
     /// Convert audio.
@@ -115,7 +117,13 @@ impl SwrContext {
     /// # Safety
     ///
     /// Only safe when the `in_buffer` is valid.
-    pub unsafe fn convert(&mut self, out_buffer: *mut *mut u8, out_count: i32, in_buffer: *const *const u8, in_count: i32) -> Result<i32> {
+    pub unsafe fn convert(
+        &mut self,
+        out_buffer: *mut *mut u8,
+        out_count: i32,
+        in_buffer: *const *const u8,
+        in_count: i32,
+    ) -> Result<i32> {
         // ATTENTION: We can confidently use immutable reference here because we
         // ensure the safety on SwrContext's the api level (Cannot take inner
         // reference of the SwrContext, and also no Send & Sync implementations).
@@ -123,7 +131,16 @@ impl SwrContext {
         // The swr_convert's documentation states: out_count is the amount of
         // space available for output in samples per channel, rather than being
         // the number of the output samples per channel.
-        let ret = unsafe { ffi::swr_convert(self.as_mut_ptr(), out_buffer, out_count, in_buffer as *mut _, in_count) }.upgrade()?;
+        let ret = unsafe {
+            ffi::swr_convert(
+                self.as_mut_ptr(),
+                out_buffer,
+                out_count,
+                in_buffer as *mut _,
+                in_count,
+            )
+        }
+        .upgrade()?;
         Ok(ret)
     }
 
@@ -149,7 +166,14 @@ impl SwrContext {
     /// If the `SwrContext` configuration does not match the output and input AVFrame
     /// settings, the conversion does not take place and error is returned.
     pub fn convert_frame(&self, input: Option<&AVFrame>, output: &mut AVFrame) -> Result<()> {
-        unsafe { ffi::swr_convert_frame(self.as_ptr() as *mut _, output.as_mut_ptr(), input.map(|x| x.as_ptr()).unwrap_or_else(ptr::null)) }.upgrade()?;
+        unsafe {
+            ffi::swr_convert_frame(
+                self.as_ptr() as *mut _,
+                output.as_mut_ptr(),
+                input.map(|x| x.as_ptr()).unwrap_or_else(ptr::null),
+            )
+        }
+        .upgrade()?;
         Ok(())
     }
 }

@@ -11,7 +11,9 @@ wrap_ref_mut!(AVCodecParameters: ffi::AVCodecParameters);
 impl AVCodecParameters {
     /// The constructor.
     pub fn new() -> Self {
-        let ptr = unsafe { ffi::avcodec_parameters_alloc() }.upgrade().unwrap();
+        let ptr = unsafe { ffi::avcodec_parameters_alloc() }
+            .upgrade()
+            .unwrap();
         unsafe { Self::from_raw(ptr) }
     }
 
@@ -20,7 +22,9 @@ impl AVCodecParameters {
     /// replaced with duplicates of the corresponding fields in codec.
     pub fn from_context(&mut self, context: &AVCodecContext) {
         // only fails when no memory, so wrap.
-        unsafe { ffi::avcodec_parameters_from_context(self.as_mut_ptr(), context.as_ptr()) }.upgrade().unwrap();
+        unsafe { ffi::avcodec_parameters_from_context(self.as_mut_ptr(), context.as_ptr()) }
+            .upgrade()
+            .unwrap();
     }
 
     /// Copy the contents from another [`AVCodecParameters`]. Any allocated fields in dst are freed
@@ -31,7 +35,9 @@ impl AVCodecParameters {
         // dropped, so we can legally set `self.raw` here.
         //
         // Copy fails only on no memory, so unwrap.
-        unsafe { ffi::avcodec_parameters_copy(self.as_mut_ptr(), from.as_ptr()) }.upgrade().unwrap();
+        unsafe { ffi::avcodec_parameters_copy(self.as_mut_ptr(), from.as_ptr()) }
+            .upgrade()
+            .unwrap();
     }
 
     /// Get the codec type.
