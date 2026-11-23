@@ -150,6 +150,12 @@ Gazdát csak a tulajdonos jelölhet ki vagy válthat le. Fejlesztő munkamenet n
       PR-ra máshol szükség van. Ilyenkor a javítás előtt beírja: `Gazda javítja tulajdonosi
       kérésre: <ok>, ÉÉÉÉ-HH-NN`; kockázatos PR-on a javítás után ő kéri a CodeRabbitet, és ő
       kezeli a megállapításait. A PR így is csak hibátlanul olvasztható be.
+14. **Kihagyott fizikai teszt feljegyzése** (tulajdonosi döntés, 2026-11-22). Ha egy fizikai tesztet
+    (referenciagépes mérés, valódi hardveres, kamerás, kijelzős vagy hálózati próba) a tulajdonos
+    döntése alapján kihagysz, ugyanabban a munkamenetben vegyél fel róla egy sort a
+    [`docs/development/deferred-physical-tests.md`](development/deferred-physical-tests.md)
+    listába: mit kell mérni, a parancsot, a helyettesítő (pl. felhős) eredményt és az okot. A
+    pótlólagos futtatás után az állapotot írd át, a sort ne töröld.
 
 ## 3. A gazda munkamódja (minden `/gazda` hívásnál)
 

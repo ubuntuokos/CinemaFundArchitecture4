@@ -4905,3 +4905,10 @@ export.summary	Low	nizka
 	Write an AS-02 bundle (the path is a folder)	Zapiši paket AS-02 (pot je mapa)
 	AS-02	AS-02
 	AS-12	AS-12
+
+# N1 voxel panel
+	Active voxels:	Aktivni vokslji:
+	Bounds:	Meje:
+	Voxel attributes	Atributi vokslov
+	Voxel size:	Velikost voksla:
+	points	točke

@@ -192,7 +192,9 @@ static ROWS: &[Row] = &[
 /// other crate must be a row's crate (the `every_codec_crate_is_in_the_catalog` test).
 #[cfg(test)]
 const NOT_CODECS: &[&str] = &[
+    "vdb",
     "audio-dsp",
+    "audit",
     "automation",
     "avi",
     "bitstream",

@@ -4910,3 +4910,10 @@
 	Write an AS-02 bundle (the path is a folder)	Tulis paket AS-02 (jalurnya adalah folder)
 	AS-02	AS-02
 	AS-12	AS-12
+
+# N1 voxel panel
+	Active voxels:	Voksel aktif:
+	Bounds:	Batas:
+	Voxel attributes	Atribut voksel
+	Voxel size:	Ukuran voksel:
+	points	titik

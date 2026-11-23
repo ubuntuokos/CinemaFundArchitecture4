@@ -12,6 +12,13 @@
 - **Nem vehető át:** GPL-2.0-only kód (pl. HandBrake), AGPL, nem szabad licencű vagy ismeretlen
   licencű kód, és bármely zárt program (Adobe Premiere, DaVinci Resolve) kódja vagy eszközei.
   Ezeknek a képességét saját kóddal vagy külső programként hívva kell megvalósítani.
+- **AGPL választható workerként (tulajdonosi döntés, 2026-11-22; feloldja az általános
+  AGPL-tilalmat):** AGPL-3.0 licencű kód és modell (pl. Ultralytics YOLO) külön letöltött,
+  választható workerként futhat, saját, homokozóba zárt folyamatban, a nem kereskedelmi workerek
+  mintájára (CFA4-AI_modules ADR 0008 §8). A CFA4 folyamatába nem töltődik be, a CFA4 kódjába nem
+  másolható és nem portolható, és nem lehet alapértelmezés. A worker licence a jegyzékben
+  szerepel, és a worker, valamint minden AGPL-es modell- vagy adatkészlet-komponens megfelelő
+  forrása vele együtt elérhető (AGPL-3.0 13. pont), és a felület megnevezi a licencet.
 - **Nincs fizetős rész** (a tulajdonos döntése, 2026-11-08; felváltja a 2026-10-24-i „ingyenes
   alap, fizetős kiegészítők” modellt): a CFA4 minden része ingyenes és szabadon terjeszthető.
   Nincs fizetős kiegészítő, fizetős LTS-ág vagy csomag, licenckulcs, vízjel, próbaidő vagy
@@ -96,10 +103,21 @@ Not allowed:
 | Source | Why | Alternative |
 |---|---|---|
 | GPL-2.0-only (e.g. HandBrake, parts of the Linux kernel) | incompatible with GPL-3.0 | call the program as an external process, or reimplement |
-| AGPL-3.0 | network-use obligations we do not want on the whole product | reimplement |
+| AGPL-3.0, in CFA4's own code or process | network-use obligations we do not want on the whole product | reimplement; or run it as an optional AGPL worker (below) |
 | GPL code linked with GPL-incompatible libraries | cannot be distributed | — |
 | Proprietary software (Adobe Premiere, DaVinci Resolve, …) | no licence | reimplement the behaviour from public documentation and observation; never copy code, icons, presets, LUTs or fonts |
 | Unknown / no licence | all rights reserved | ask the author or leave it out |
+
+**AGPL-3.0 optional workers** (owner decision 2026-11-22, lifts the blanket AGPL ban; no paid or
+closed part exists since 2026-11-08, so GPL-3.0 §13 combination is no obstacle): AGPL-3.0 code or
+models may be offered as a separately downloaded, optional worker that runs in its own sandboxed
+process (CFA4-SECURITY-001), as non-commercial workers are (CFA4-AI_modules ADR 0008 §8). Never
+loaded into the CFA4 process, never copied or ported into CFA4's code, never a default. The model
+manifest records each component's licence in its own field (`code`, `dependencies`, `weights`,
+`dataset`; e.g. AGPL weights under an MIT worker: `weights` = AGPL-3.0), the
+worker's source, and the corresponding source of each AGPL-licensed model or dataset component, is
+offered with it (AGPL-3.0 §13), and the UI names the licence when the worker is
+chosen. `deny.toml` keeps refusing AGPL crates as dependencies of CFA4's own code.
 
 A project's overall licence is not enough: **check the header of every file you take**, because
 large projects mix licences (some Kdenlive or Krita files are GPL-2.0-only, some FFmpeg parts are
@@ -249,7 +267,8 @@ program's file format, from its documentation and published source:
 - Security advisories: the same CI step runs `cargo deny check advisories` against the RustSec
   database. A new advisory fails the build; a temporary exception goes into `deny.toml`
   `[advisories].ignore` with a reason, and is removed when the dependency moves.
-- Python: `PySide6`/Qt 6 (LGPL-3.0) is compatible. GPL-only Qt modules are compatible with CFA4's
+- Python: `psycopg` 3 (LGPL-3.0-or-later), the PostgreSQL client of the BacklotHub Python components (ADR 0006,
+  `backlot` extra), is compatible; it is used dynamically and unmodified. `PySide6`/Qt 6 (LGPL-3.0) is compatible. GPL-only Qt modules are compatible with CFA4's
   licence as well, but must be listed in `NOTICE` when shipped.
 - Packages must ship `LICENSE`, `LICENSE-MIT`, `LICENSE-APACHE`, `NOTICE` and the licences of
   bundled fonts and programs.

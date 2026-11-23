@@ -4902,3 +4902,10 @@ export.summary	Low	низак
 	Write an AS-02 bundle (the path is a folder)	Упиши AS-02 пакет (путања је фасцикла)
 	AS-02	AS-02
 	AS-12	AS-12
+
+# N1 voxel panel
+	Active voxels:	Активни воксел:
+	Bounds:	Границе:
+	Voxel attributes	Атрибути воксела
+	Voxel size:	Величина воксела:
+	points	тачке

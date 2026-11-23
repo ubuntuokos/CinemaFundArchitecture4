@@ -1110,6 +1110,15 @@ dependencies = [
 ]
 
 [[package]]
+name = "cfa4-audit"
+version = "0.10.0"
+dependencies = [
+ "serde_json",
+ "sha2 0.11.1",
+ "thiserror 2.0.21",
+]
+
+[[package]]
 name = "cfa4-auro"
 version = "0.10.0"
 dependencies = [
@@ -1578,6 +1587,7 @@ dependencies = [
  "cfa4-text",
  "cfa4-time",
  "cfa4-tts",
+ "cfa4-vdb",
  "chrono",
  "image",
  "log",
@@ -2666,6 +2676,16 @@ name = "cfa4-utvideo"
 version = "0.10.0"
 dependencies = [
  "cfa4-avi",
+ "thiserror 2.0.21",
+]
+
+[[package]]
+name = "cfa4-vdb"
+version = "0.10.0"
+dependencies = [
+ "cfa4-sandbox",
+ "serde",
+ "serde_json",
  "thiserror 2.0.21",
 ]
 

@@ -326,7 +326,7 @@ graph LR
 | `cfa4-engine/objects_track.rs` | `cfa4-time` | `Tick` |
 | `cfa4-engine/opatom.rs` | `cfa4-media` | `SharedReader` |
 | `cfa4-engine/panels.rs` | `cfa4-color` | `ColorSpace` |
-| `cfa4-engine/panels.rs` | `cfa4-project` | `ClipId`, `ItemId`, `find` |
+| `cfa4-engine/panels.rs` | `cfa4-project` | `ClipId`, `ItemId`, `ItemKind`, `find` |
 | `cfa4-engine/panels.rs` | `cfa4-time` | `FrameRate`, `Tick` |
 | `cfa4-engine/paste_media.rs` | `cfa4-project` | `BinId` |
 | `cfa4-engine/paste_media.rs` | `cfa4-time` | `Tick` |
@@ -430,6 +430,8 @@ graph LR
 | `cfa4-engine/trim.rs` | `cfa4-project` | `ClipId`, `Track` |
 | `cfa4-engine/trim.rs` | `cfa4-time` | `Tick` |
 | `cfa4-engine/variants.rs` | `cfa4-project` | `ItemId`, `Sequence`, `graphic`, `graphic_design` |
+| `cfa4-engine/vdb.rs` | `cfa4-media` | `sequence` |
+| `cfa4-engine/vdb.rs` | `cfa4-project` | `BinId`, `ItemId` |
 | `cfa4-engine/voiceover.rs` | `cfa4-project` | `ItemId`, `Sequence`, `gtemplate` |
 | `cfa4-engine/voiceover.rs` | `cfa4-time` | `Tick` |
 | `cfa4-export/aac_out.rs` | `cfa4-project` | `ItemId` |
@@ -820,7 +822,7 @@ graph LR
 
 ## 4. Nyilvános típusok osztályonként
 
-A többi 631 nyilvános típus („other” osztály) csak a `call-graph.json`-ban szerepel.
+A többi 632 nyilvános típus („other” osztály) csak a `call-graph.json`-ban szerepel.
 
 ### Képkocka, kép, pixel (29)
 
