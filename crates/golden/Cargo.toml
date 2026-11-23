@@ -33,3 +33,4 @@ cfa4-render = { workspace = true }
 cfa4-gpu = { workspace = true }
 pollster = "0.4"
 wgpu = { version = "30", features = ["wgsl", "vulkan", "gles"] }
+cfa4-export = { workspace = true }
