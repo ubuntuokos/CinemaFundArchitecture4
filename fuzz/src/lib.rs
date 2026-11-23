@@ -301,10 +301,15 @@ pub fn vp8(data: &[u8]) {
     }
 }
 
+/// A key frame larger than `MAX_SIDE` is skipped, as for VP8: an 824-byte packet may ask for a
+/// 3841 × 12336 picture, valid but slow to decode (a 10 s timeout under the sanitizer, not a bug).
 pub fn vp9(data: &[u8]) {
     let _ = cfa4_vp9::keyframe_info(data);
     let mut dec = cfa4_vp9::Decoder::new();
     for p in packets(data) {
+        if cfa4_vp9::keyframe_info(p).is_some_and(|k| k.width > MAX_SIDE || k.height > MAX_SIDE) {
+            continue;
+        }
         let _ = dec.decode(p, 0);
     }
 }
