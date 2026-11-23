@@ -1539,6 +1539,13 @@
   },
   {
    "class": "frame",
+   "crate": "cfa4-frame",
+   "kind": "struct",
+   "module": "side.rs",
+   "name": "FrameSideData"
+  },
+  {
+   "class": "frame",
    "crate": "cfa4-golden",
    "kind": "struct",
    "module": "validation.rs",
@@ -4021,6 +4028,20 @@
    "kind": "struct",
    "module": "pool.rs",
    "name": "PoolStats"
+  },
+  {
+   "class": "other",
+   "crate": "cfa4-frame",
+   "kind": "enum",
+   "module": "side.rs",
+   "name": "Residency"
+  },
+  {
+   "class": "other",
+   "crate": "cfa4-frame",
+   "kind": "enum",
+   "module": "side.rs",
+   "name": "Rotation"
   },
   {
    "class": "other",
@@ -11437,6 +11458,21 @@
   },
   {
    "from": "cfa4-frame/pool.rs",
+   "item": "Tick",
+   "to": "cfa4-time"
+  },
+  {
+   "from": "cfa4-frame/side.rs",
+   "item": "ColorInfo",
+   "to": "cfa4-color"
+  },
+  {
+   "from": "cfa4-frame/side.rs",
+   "item": "HdrMetadata",
+   "to": "cfa4-color"
+  },
+  {
+   "from": "cfa4-frame/side.rs",
    "item": "Tick",
    "to": "cfa4-time"
   },
