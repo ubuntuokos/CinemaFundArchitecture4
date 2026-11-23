@@ -14,9 +14,21 @@ A márkaszűrő (`python/tests/test_independence.py`) miatt a donor-repók neve 
 | Gaffer-donor, C++/Python | `14c1a3f22599423fa48d5328f54d1393eb0ac25f` | 2026-11-20 | BSD-3-Clause (`LICENSE`: © 2011-2019 John Haddon, Image Engine Design Inc.) | Átvételnél a licencszöveg és a szerzői jogi fejléc megtartandó |
 | Lumit-donor, Rust+wgpu+Flutter | `5567ef97dbbf19cb58ccdb5f119c799eae70592c` | 2026-11-21 | `GPL-3.0-only` (`Cargo.toml`, `LICENSE`) | A tulajdonos elfogadta (2026-11-22): az átvett fájl `GPL-3.0-only` marad (SPDX-fejléc + regisztersor). A Flutter UI nem használható |
 
+## Elágazási pont és szülő-licencfájlok (EC-donor, rögzítve 2026-11-22)
+
+Statikus olvasással (a donor és a szülő története anonim lekéréssel, fordítás és futtatás nélkül; a donorba nem írtunk):
+
+| Mérés | Eredmény |
+|---|---|
+| Elágazási pont (a donor `HEAD` és a szülő `main` közös őse) | `171e92b0772019357fa3bea724067a32c5875ad7`, azonos a donor `HEAD`-jével: a donornak **nincs saját commitja** a szülő fölött, a `HEAD` maga a szülő egyik commitja |
+| A szülő azóta | 3 újabb commit (a donor befagyasztott, nem frissül) |
+| Szülő licencfájljai az elágazási ponton | `LICENSE-MIT` (blob `86fac326…`), `LICENSE-APACHE` (`ade750b1…`), `NOTICE` (`efb0eb7c…`), `ATTRIBUTION.md` (`74dbce1f…`) |
+| Különbség a donor és a szülő licencfájljai között | **nincs**: a négy blob azonos az elágazási ponton, a donor `HEAD`-jén és a szülő mai `main`-jén is |
+
+Következmény: az EC-donor eredet-regiszterébe (`docs/licensing.md` §5, VFX-0b) a szülő és a donor azonos állapota írható; a szülő `NOTICE`-a (márkajelek nem nyílt licencűek, harmadik fél anyagai külön licencűek) változatlanul érvényes. A szülő márkaneve a márkaszűrő miatt itt nincs kiírva.
+
 ## Nem rögzített (nyitott)
-- **Elágazási pont SHA** (a szülővel közös utolsó commit) az EC-donornál és a Gaffer-donornál: a szülő története nem lett beolvasva. Átvétel előtt (VFX-0b) pótolni kell, ha az eredet-regiszterhez szükséges.
-- A szülők `LICENSE`/`NOTICE` fájljának külön másolata: a donor-repók saját fájljai megfelelnek rá, de a szülő állapotát nem ellenőriztük.
+- Elágazási pont SHA a **Gaffer-donornál** és a Lumit-donornál: nem lett beolvasva (az átvételük külön VFX-0b/VFX-1 lépés; az EC-donor expr átvétele ezektől független).
 
 ## Következő lépés
 VFX-0b: a donor-licencregiszter és a fájlszintű eredetfejléc szabálya, `cargo deny` és `docs/licensing.md` §5 illesztése (külön PR, a gazdával egyeztetve).

@@ -663,6 +663,47 @@ pub fn lagarith(data: &[u8]) {
     }
 }
 
+pub fn svq3(data: &[u8]) {
+    let mut i = Input::new(data);
+    let n = usize::from(i.byte() % 64);
+    let extra: Vec<u8> = (0..n).map(|_| i.byte()).collect();
+    if let Ok(mut d) = cfa4_svq3::Decoder::new(0, 0, &extra) {
+        let _ = d.decode(i.rest(), 0);
+        let _ = d.decode(i.rest(), 1);
+        let _ = d.flush();
+    }
+pub fn svq1(data: &[u8]) {
+    let mut d = cfa4_svq1::Decoder::new(16, 16, false);
+    let _ = d.decode(data);
+    let _ = d.decode(data);
+pub fn indeo45(data: &[u8]) {
+    for codec in [cfa4_indeo45::Codec::Indeo4, cfa4_indeo45::Codec::Indeo5] {
+        let mut d = cfa4_indeo45::Decoder::new(codec);
+        let _ = d.decode(data);
+        let _ = d.decode(data);
+pub fn msvideo(data: &[u8]) {
+    // the first bytes pick the codec and the layout, the rest is a run of packets
+    let (head, body) = data.split_at(data.len().min(4));
+    let &[sel, w, h, pal] = head else { return };
+    let (w, h) = (4 + u32::from(w) % 60, 4 + u32::from(h) % 60);
+    let palette: Vec<u8> = (0..1024).map(|i| (i as u8).wrapping_mul(pal | 1)).collect();
+    let (bits1, bits2) = ([8u16, 16][usize::from(sel & 1)], [1u16, 4, 8, 24][usize::from(sel >> 1 & 3)]);
+    let mut v1 = cfa4_msvideo::video1::Decoder::new(w, h, bits1, &palette);
+    let mut rle = cfa4_msvideo::rle::Decoder::new(w, h, bits2, &palette);
+    for pkt in body.chunks(1 + usize::from(sel >> 3) * 8 + 24) {
+        if let Ok(d) = &mut v1 {
+            let _ = d.decode(pkt);
+        }
+        if let Ok(d) = &mut rle {
+            let _ = d.decode(pkt);
+        }
+    }
+pub fn indeo3(data: &[u8]) {
+    let mut d = cfa4_indeo3::Decoder::new();
+    let _ = d.decode(data);
+    let _ = d.decode(data);
+}
+
 pub fn magicyuv(data: &[u8]) {
     let _ = cfa4_magicyuv::Decoder::new().decode(data);
 }
@@ -761,8 +802,41 @@ pub fn mobiclip(data: &[u8]) {
                 cfa4_mobiclip::AudioCodec::ImaMoflex => drop(cfa4_mobiclip::decode_ima(p, ch)),
                 cfa4_mobiclip::AudioCodec::PcmS16le => drop(cfa4_mobiclip::decode_pcm(p, ch)),
             }
+pub fn qdm2(data: &[u8]) {
+    // a configuration, and blocks decoded with a valid one built from the first bytes
+    let _ = cfa4_qdm2::Decoder::new(data);
+    let [ch, fft, block, rest @ ..] = data else { return };
+    let mut e = Vec::new();
+    e.extend_from_slice(&12u32.to_be_bytes());
+    e.extend_from_slice(b"frmaQDM2");
+    e.extend_from_slice(&44u32.to_be_bytes());
+    e.extend_from_slice(b"QDCA");
+    let fft = 128u32 << (fft % 3);
+    for v in [1, u32::from(ch % 2) + 1, 44100, 48000, fft * 16, fft, 256 + u32::from(*block) * 8] {
+        e.extend_from_slice(&v.to_be_bytes());
+    }
+    if let Ok(mut d) = cfa4_qdm2::Decoder::new(&e) {
+        for packet in rest.chunks(2048).take(4) {
+            let _ = d.decode(packet);
         }
     }
+pub fn amv(data: &[u8]) {
+    // a file: its chunks decode, whatever they hold
+    if let Ok(a) = cfa4_amv::Amv::parse(data) {
+        if let Ok(d) = cfa4_amv::Decoder::new(a.width.min(64), a.height.min(64)) {
+            for c in a.video.iter().take(4) {
+                let _ = d.decode(data.get(c.offset..c.offset + c.len).unwrap_or(&[]));
+            }
+        }
+        for c in a.audio.iter().take(4) {
+            let _ = cfa4_amv::decode_audio(data.get(c.offset..c.offset + c.len).unwrap_or(&[]));
+        }
+    }
+    // a bare chunk
+    if let Ok(d) = cfa4_amv::Decoder::new(32, 24) {
+        let _ = d.decode(data);
+    }
+    let _ = cfa4_amv::decode_audio(data);
 }
 
 pub fn adx(data: &[u8]) {
@@ -774,6 +848,24 @@ pub fn hca(data: &[u8]) {
     let _ = cfa4_hca::decode_file(data, Some(cfa4_hca::Key { key: 0xCF22_2F1F_E074_8978, subkey: 0x3B8E }));
 }
 
+pub fn twinvq(data: &[u8]) {
+    if let Ok(s) = cfa4_twinvq::parse(data) {
+        let _ = cfa4_twinvq::decode(data, &s);
+    }
+    // MetaSound: the first 16 bytes stand for the format extradata, the next two for the block size
+    if let (Some(extra), Some(a)) = (data.get(..16), data.get(16..18)) {
+        let align = usize::from(u16::from_le_bytes([a[0], a[1]]));
+        if let Ok(s) = cfa4_twinvq::parse_metasound(extra, align) {
+            let _ = cfa4_twinvq::decode(data.get(18..).unwrap_or(&[]), &s);
+pub fn yamaha_oki(data: &[u8]) {
+    use cfa4_yamaha_oki::{Kind, State};
+    for kind in [Kind::Yamaha, Kind::Oki] {
+        for channels in 1..=2 {
+            if let Some(mut s) = State::new(kind, channels) {
+                let mut out = vec![Vec::new(); channels];
+                s.decode(data, &mut out);
+            }
+        }
 pub fn nstream(data: &[u8]) {
     if let Ok(s) = cfa4_nstream::parse(data) {
         let _ = cfa4_nstream::decode(data, &s);
@@ -870,6 +962,7 @@ pub const TARGETS: &[(&str, &str, Target)] = &[
     ("ogg", "cfa4-ogg", ogg),
     ("st2110", "cfa4-st2110", st2110),
     ("tta", "cfa4-tta", tta),
+    ("twinvq", "cfa4-twinvq", twinvq),
     ("amr", "cfa4-amr", amr),
     ("av2", "cfa4-av2", av2),
     ("canopus", "cfa4-canopus", canopus),
@@ -887,6 +980,7 @@ pub const TARGETS: &[(&str, &str, Target)] = &[
     ("mpeg2v", "cfa4-mpeg2v", mpeg2v),
     ("vp8", "cfa4-vp8", vp8),
     ("vp9", "cfa4-vp9", vp9),
+    ("yamaha_oki", "cfa4-yamaha-oki", yamaha_oki),
     ("av1", "cfa4-av1", av1),
     ("prores", "cfa4-prores", prores),
     ("dnx", "cfa4-dnx", dnx),
@@ -914,22 +1008,28 @@ pub const TARGETS: &[(&str, &str, Target)] = &[
     ("evc", "cfa4-evc", evc),
     ("cavs", "cfa4-cavs", cavs),
     ("lagarith", "cfa4-lagarith", lagarith),
+    ("svq3", "cfa4-svq3", svq3),
+    ("svq1", "cfa4-svq1", svq1),
+    ("indeo45", "cfa4-indeo45", indeo45),
+    ("indeo3", "cfa4-indeo3", indeo3),
     ("bink", "cfa4-bink", bink),
     ("magicyuv", "cfa4-magicyuv", magicyuv),
+    ("msvideo", "cfa4-msvideo", msvideo),
     ("g729", "cfa4-g729", g729),
+    ("mace", "cfa4-mace", mace),
+    ("truespeech", "cfa4-truespeech", truespeech),
     ("ilbc", "cfa4-ilbc", ilbc),
     ("musepack", "cfa4-musepack", musepack),
     ("shorten", "cfa4-shorten", shorten),
     ("adx", "cfa4-adx", adx),
-<<<<<<< HEAD
     ("acm", "cfa4-acm", acm),
     ("roq", "cfa4-roq", roq),
     ("mve", "cfa4-mve", mve),
     ("thp", "cfa4-thp", thp),
     ("mobiclip", "cfa4-mobiclip", mobiclip),
-=======
     ("nstream", "cfa4-nstream", nstream),
->>>>>>> r1570
+    ("amv", "cfa4-amv", amv),
+    ("qdm2", "cfa4-qdm2", qdm2),
     ("hca", "cfa4-hca", hca),
     ("tak", "cfa4-tak", tak),
     ("smacker", "cfa4-smacker", smacker),
@@ -942,3 +1042,20 @@ pub const TARGETS: &[(&str, &str, Target)] = &[
 
 #[cfg(test)]
 mod smoke;
+
+/// MACE: random packets of random sizes through one decoder of each version and channel count.
+pub fn mace(data: &[u8]) {
+    let (head, body) = data.split_at(data.len().min(1));
+    let sel = head.first().copied().unwrap_or(0);
+    let version = if sel & 1 == 0 { cfa4_mace::Version::Mace3 } else { cfa4_mace::Version::Mace6 };
+    let Ok(mut d) = cfa4_mace::Decoder::new(version, 1 + usize::from(sel >> 1 & 1)) else { return };
+    for pkt in body.chunks(1 + usize::from(sel >> 2) % 64) {
+/// TrueSpeech: random packets of random sizes through one decoder.
+pub fn truespeech(data: &[u8]) {
+    let mut d = cfa4_truespeech::Decoder::new();
+    let (head, body) = data.split_at(data.len().min(1));
+    let step = 1 + head.first().map_or(0, |&b| usize::from(b)) % 96;
+    for pkt in body.chunks(step) {
+        let _ = d.decode(pkt);
+    }
+}
