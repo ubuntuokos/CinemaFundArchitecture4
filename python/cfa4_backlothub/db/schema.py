@@ -112,3 +112,39 @@ production_member = Table(
     Column("created_at", TIMESTAMP(timezone=True), nullable=False),
     Column("created_by", Text, nullable=False),
 )
+
+milestone = Table(
+    "milestone",
+    metadata,
+    Column("id", Uuid, primary_key=True),
+    Column("production_id", Uuid, nullable=False),
+    Column("name", Text, nullable=False),
+    Column("due_date", Date, nullable=False),
+    Column("done_at", TIMESTAMP(timezone=True)),
+    Column("ordinal", SmallInteger, nullable=False),
+    *_common(),
+)
+
+organization = Table(
+    "organization",
+    metadata,
+    Column("id", Uuid, primary_key=True),
+    Column("name", Text, nullable=False),
+    Column("legal_name", Text),
+    Column("country", CHAR(2)),
+    Column("registration_no", Text),
+    Column("tax_no", Text),
+    Column("notes", Text),
+    Column("retired_at", TIMESTAMP(timezone=True)),
+    *_common(),
+)
+
+production_organization = Table(
+    "production_organization",
+    metadata,
+    Column("production_id", Uuid, primary_key=True),
+    Column("organization_id", Uuid, primary_key=True),
+    Column("role", Text, primary_key=True),
+    Column("created_at", TIMESTAMP(timezone=True), nullable=False),
+    Column("created_by", Text, nullable=False),
+)

@@ -55,3 +55,47 @@ class PermissionDenied(BacklotError):
 
 class DatabaseUnavailable(BacklotError):
     code = "DB_UNAVAILABLE"
+
+
+class MilestoneNotFound(BacklotError):
+    code = "MILESTONE_NOT_FOUND"
+
+
+class MilestoneDone(BacklotError):
+    code = "MILESTONE_DONE"
+
+
+class OrganizationNotFound(BacklotError):
+    code = "ORGANIZATION_NOT_FOUND"
+
+
+class OrganizationInUse(BacklotError):
+    code = "ORGANIZATION_IN_USE"
+
+
+class OrganizationRetired(BacklotError):
+    code = "ORGANIZATION_RETIRED"
+
+
+class OrganizationAlreadyLinked(BacklotError):
+    code = "ORGANIZATION_ALREADY_LINKED"
+
+
+class OrganizationNotLinked(BacklotError):
+    code = "ORGANIZATION_NOT_LINKED"
+
+
+class ConfigCodeTaken(BacklotError):
+    code = "CONFIG_CODE_TAKEN"
+
+
+class StatusListNotFound(BacklotError):
+    code = "STATUS_LIST_NOT_FOUND"
+
+
+class StatusNotFound(BacklotError):
+    code = "STATUS_NOT_FOUND"
+
+
+class TypeInUse(BacklotError):
+    code = "PRODUCTION_TYPE_IN_USE"

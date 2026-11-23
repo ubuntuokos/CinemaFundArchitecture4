@@ -19,6 +19,8 @@ from cfa4_audit import AuditError
 
 from .db.uow import Actor
 from .errors import BacklotError, DatabaseUnavailable, InvalidInput
+from .production import milestones as ms
+from .production import organizations as orgs
 from .production import service as prod
 
 Result = dict[str, Any]
@@ -101,6 +103,53 @@ def _members(engine: Engine, actor: Actor | None, p: Mapping[str, Any]) -> Any:
     return prod.list_members(engine, p["id"], actor)
 
 
+def _ms_add(engine: Engine, actor: Actor | None, p: Mapping[str, Any]) -> Any:
+    return ms.add_milestone(engine, p["production_id"], p["name"], p["due_date"], actor)
+
+
+def _ms_update(engine: Engine, actor: Actor | None, p: Mapping[str, Any]) -> Any:
+    return ms.update_milestone(engine, p["id"], p["row_version"], {k: v for k, v in p.items() if k not in ("id", "row_version")}, actor)
+
+
+def _ms_remove(engine: Engine, actor: Actor | None, p: Mapping[str, Any]) -> Any:
+    return ms.remove_milestone(engine, p["id"], p.get("row_version"), actor)
+
+
+def _ms_list(engine: Engine, actor: Actor | None, p: Mapping[str, Any]) -> Any:
+    return ms.list_milestones(engine, p["production_id"], actor)
+
+
+def _org_create(engine: Engine, actor: Actor | None, p: Mapping[str, Any]) -> Any:
+    return orgs.create_organization(engine, p, actor)
+
+
+def _org_update(engine: Engine, actor: Actor | None, p: Mapping[str, Any]) -> Any:
+    return orgs.update_organization(engine, p["id"], p["row_version"], {k: v for k, v in p.items() if k not in ("id", "row_version")}, actor)
+
+
+def _org_list(engine: Engine, actor: Actor | None, p: Mapping[str, Any]) -> Any:
+    return orgs.list_organizations(
+        engine, query=p.get("query"), include_retired=bool(p.get("include_retired", False)), limit=p.get("limit", 100), offset=p.get("offset", 0)
+    )
+
+
+def _link(engine: Engine, actor: Actor | None, p: Mapping[str, Any]) -> Any:
+    return orgs.link_organization(engine, p["production_id"], p["organization_id"], p["role"], actor)
+
+
+def _unlink(engine: Engine, actor: Actor | None, p: Mapping[str, Any]) -> Any:
+    return orgs.unlink_organization(engine, p["production_id"], p["organization_id"], p["role"], actor)
+
+
+def _linked(engine: Engine, actor: Actor | None, p: Mapping[str, Any]) -> Any:
+    return orgs.list_linked(engine, p["production_id"], actor)
+
+
+_ORG_FIELDS = (
+    Param("legal_name", "str"), Param("country", "str", help="ISO 3166-1 alpha-2"), Param("registration_no", "str"),
+    Param("tax_no", "str"), Param("notes", "str"),
+)  # fmt: skip
+
 COMMANDS: dict[str, Command] = {
     c.id: c
     for c in (
@@ -128,6 +177,51 @@ COMMANDS: dict[str, Command] = {
         Command(
             "backlot.production.member.list", "command.backlot.production.member.list", ("Production", "Members"),
             (Param("id", "uuid", True),), _members, modifies=False,
+        ),
+        Command(
+            "backlot.production.milestone.add", "command.backlot.production.milestone.add", ("Production", "Milestones", "Add"),
+            (Param("production_id", "uuid", True), Param("name", "str", True), Param("due_date", "date", True)), _ms_add,
+        ),
+        Command(
+            "backlot.production.milestone.update", "command.backlot.production.milestone.update", ("Production", "Milestones", "Edit"),
+            (Param("id", "uuid", True), Param("row_version", "int", True), Param("name", "str"), Param("due_date", "date"),
+             Param("done", "bool", help="mark done or open again"), Param("ordinal", "int")),
+            _ms_update,
+        ),
+        Command(
+            "backlot.production.milestone.remove", "command.backlot.production.milestone.remove", ("Production", "Milestones", "Remove"),
+            (Param("id", "uuid", True), Param("row_version", "int")), _ms_remove,
+        ),
+        Command(
+            "backlot.production.milestone.list", "command.backlot.production.milestone.list", ("Production", "Milestones", "List"),
+            (Param("production_id", "uuid", True),), _ms_list, modifies=False,
+        ),
+        Command(
+            "backlot.organization.create", "command.backlot.organization.create", ("Organization", "New"),
+            (Param("name", "str", True), *_ORG_FIELDS), _org_create,
+        ),
+        Command(
+            "backlot.organization.update", "command.backlot.organization.update", ("Organization", "Edit"),
+            (Param("id", "uuid", True), Param("row_version", "int", True), Param("name", "str"), *_ORG_FIELDS,
+             Param("retired", "bool", help="retire or bring back")),
+            _org_update,
+        ),
+        Command(
+            "backlot.organization.list", "command.backlot.organization.list", ("Organization", "List"),
+            (Param("query", "str"), Param("include_retired", "bool"), Param("limit", "int"), Param("offset", "int")), _org_list, modifies=False,
+        ),
+        Command(
+            "backlot.production.organization.link", "command.backlot.production.organization.link", ("Production", "Organizations", "Link"),
+            (Param("production_id", "uuid", True), Param("organization_id", "uuid", True), Param("role", "str", True, "client, producer, coproducer, subcontractor, distributor, other")),
+            _link,
+        ),
+        Command(
+            "backlot.production.organization.unlink", "command.backlot.production.organization.unlink", ("Production", "Organizations", "Unlink"),
+            (Param("production_id", "uuid", True), Param("organization_id", "uuid", True), Param("role", "str", True)), _unlink,
+        ),
+        Command(
+            "backlot.production.organization.list", "command.backlot.production.organization.list", ("Production", "Organizations", "List"),
+            (Param("production_id", "uuid", True),), _linked, modifies=False,
         ),
     )
 }
