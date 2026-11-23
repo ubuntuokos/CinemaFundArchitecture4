@@ -200,3 +200,23 @@ M1-ben a nem tag OS-felhasználóra), valamint az audit hibakódjai (G2-01, 10.)
 
 **Javaslat: PASS a #48, #49, #51 és #52 jóváhagyásával.** A 3. lépcső (Production Structure) G2-je erre a
 vázra épül.
+
+## 11. Megvalósítási pontosítások (PM-1, 2026-11-23)
+
+A megvalósítás során a G2-től ezek a pontosítások kerültek be (a kód és a teszt ezt követi):
+
+- **Lépcsőzés:** PM-1 = váz (csomag, Alembic-lánc, tranzakció-egység auditeseménnyel, parancsregiszter), a
+  `production.create/update/get/list/status.set` és a `member.list`; PM-2 = mérföldkő, szervezet, szervezet-kapcsolat,
+  típus- és státuszlista-beállítás (külön migrációk ugyanabban a láncban).
+- **Országlista és pénznemlista forrása** (a G3 ISO 4217 feltétele): `scripts/dev/gen-backlot-data.py` generálja a
+  rendszerből: ország = IANA `tzdata` `iso3166.tab` (közkincs), pénznem = Debian `iso-codes` (LGPL-2.1-or-later), a kitevőt
+  (0/2/3 tizedes) a CFA4 adja hozzá. A migráció ezeket tölti a `backlot.country` és `backlot.currency` táblába; a
+  `production.country` is idegen kulcs. Az ISO közzétevőjének saját használati feltétele ebből a környezetből nem
+  ellenőrizhető; a két forrás a saját licencét adja.
+- **Az `delivered` státusz kategóriája `closed`** (a `closed` is `closed`), így az „aktív" szűrő (`planned`/`active`/`on_hold`)
+  a leszállított produkciót már nem tartalmazza.
+- **`production.production_id`** generált oszlop (`= id`), hogy minden üzleti tábla egységesen szűrhető legyen; az alkalmazás nem írja.
+- **A státusz a típus listájából való**: a szolgáltatás `STATUS_NOT_IN_LIST`-tel utasítja el, és egy adatbázis-trigger is megköveteli.
+- **Jogosultság M1-ben:** a tulajdonos/producer/koordinátor módosíthat, csak a tulajdonos/producer válthat státuszt,
+  a nem tag `PERMISSION_DENIED`-et kap (a lista csak a saját produkciókat adja).
+- **Mérés (SC-02, 4 vCPU stand-in, 52 produkció):** lista 3,4 ms medián (p95 4,3 ms), egy produkció megnyitása 3,1 ms, létrehozás 7,6 ms (audittal).
