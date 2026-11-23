@@ -326,6 +326,61 @@ fn imf_codestreams_follow_the_profile() {
     assert!(!bad(&img, &EncodeOptions::imf(p, 64, 64, 25, 1)));
 }
 
+/// IMF App 2E HTJ2K (ST 2067-21 Annex I): Rsiz is the Part 15 flag alone, Ccap15 carries the
+/// constrained MAGBP set of Tables I.2 / I.3 and the HTIRV bit, and the rest of the codestream
+/// follows the IMF profile layout (one tile, CPRL, 32 × 32 blocks, one tile-part per component,
+/// TLM).
+#[test]
+fn imf_htj2k_codestreams_follow_annex_i() {
+    let ccap15 = |cs: &[u8]| {
+        let cap = 4 + usize::from(u16::from_be_bytes([cs[4], cs[5]]));
+        assert_eq!(&cs[cap..cap + 8], &[0xFF, 0x50, 0, 8, 0, 2, 0, 0], "CAP: Part 15 only");
+        u16::from_be_bytes([cs[cap + 8], cs[cap + 9]])
+    };
+    // APP2.HT.REV, 10-bit 4:4:4, 5 levels with the RCT: B = 13 + 1 = 14 (Table I.2), Bp = 6
+    let img = picture(256, 144, &[(10, false, 1, 1); 3], 41);
+    let p = ImfProfile::select(256, 144, 3, 24, 1, true, 0).unwrap();
+    let opts = EncodeOptions::imf_ht(p, 256, 144, 24, 1);
+    let cs = encode(&img, &opts).unwrap();
+    assert_eq!(u16::from_be_bytes([cs[6], cs[7]]), 0x4000, "Rsiz");
+    assert_eq!(ccap15(&cs), 6, "HTREV, MAGBP for B = 14");
+    let h = crate::parse_header(&cs).unwrap();
+    assert_eq!((h.levels, h.layers, h.reversible, h.progression), (5, 1, true, 4));
+    let parts = tile_parts(&cs);
+    assert_eq!(parts.len(), 3);
+    assert_eq!(tlm(&cs), parts);
+    assert!(cs.windows(2).all(|w| w != [0xFF, 0x5F]), "no POC");
+    assert_eq!(decode(&cs).unwrap().components, img.components);
+    // Table I.2: 16-bit without the transform, more than 5 levels (4K class): B = 19 + 1
+    let wide = picture(2100, 8, &[(16, false, 1, 1); 3], 5);
+    let p4 = ImfProfile::select(2100, 8, 3, 24, 1, true, 0).unwrap();
+    let no_mct = EncodeOptions { mct: false, ..EncodeOptions::imf_ht(p4, 2100, 8, 24, 1) };
+    assert_eq!(no_mct.levels, 3, "the picture is 8 lines high");
+    let no_mct = EncodeOptions { levels: 6, ..no_mct };
+    let cs = encode(&wide, &no_mct).unwrap();
+    assert_eq!(ccap15(&cs), 20 - 8, "MAGBP for B = 20");
+    assert_eq!(decode(&cs).unwrap().components, wide.components);
+    // APP2.HT.IRV, 8-bit 4:4:4: B = 9, the HTIRV bit; subband bits stay within it
+    let img = picture(320, 180, &[(8, false, 1, 1); 3], 43);
+    let p = ImfProfile::select(320, 180, 3, 25, 1, false, 100_000_000).unwrap();
+    let opts = EncodeOptions::imf_ht(p, 320, 180, 25, 1);
+    let cs = encode(&img, &opts).unwrap();
+    assert_eq!(ccap15(&cs), 0x20 | 1, "HTIRV, MAGBP for B = 9");
+    assert!(qcd_guard(&cs) >= 1);
+    assert!(psnr(&img, &decode(&cs).unwrap()) > 35.0);
+    // 12-bit 4:2:2 (no component transform): B = 13
+    let img = picture(320, 180, &[(12, false, 1, 1), (12, false, 2, 1), (12, false, 2, 1)], 44);
+    let cs = encode(&img, &opts).unwrap();
+    assert_eq!(ccap15(&cs), 0x20 | 5, "HTIRV, MAGBP for B = 13");
+    assert!(psnr(&img, &decode(&cs).unwrap()) > 40.0);
+    // the sublevel's byte limit still applies, and what the profile forbids is refused
+    let tight = EncodeOptions { max_bytes: Some(6_000), ..opts.clone() };
+    assert!(encode(&img, &tight).unwrap().len() <= 6_000);
+    let bad = |o: &EncodeOptions| encode(&img, o).is_err();
+    assert!(bad(&EncodeOptions { code_block: (6, 6), ..opts.clone() }));
+    assert!(bad(&EncodeOptions { progression: Progression::Lrcp, ..opts.clone() }));
+}
+
 #[test]
 fn bad_input_is_an_error() {
     let img = picture(16, 16, &[(8, false, 1, 1)], 1);
