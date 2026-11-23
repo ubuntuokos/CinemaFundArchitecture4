@@ -23,16 +23,20 @@
 //! - [`EvcSource`]: raw MPEG-5 EVC Baseline (`.evc`) streams, pictures shown in their order count.
 //! - [`CavsSource`]: raw AVS1-P2 (Chinese AVS, Jizhun profile) streams (`.avs`, `.cavs`).
 //! - [`SstpSource`]: MPEG-4 Simple Studio Profile (Sony SR) elementary streams (`.m4v`), every picture intra.
+//! - [`FlicSource`]: Autodesk Animator FLI / FLC (`.fli`, `.flc`) 8-bit animations.
 //! - [`ThpSource`]: Nintendo THP (`.thp`) JPEG video (full range YUV) with THP ADPCM sound.
 //! - [`MobiclipSource`]: Nintendo MobiClip (`.moflex`) video with FastAudio, IMA ADPCM or PCM sound.
 //! - [`RoqSource`]: id RoQ (`.roq`) video (full range YUV 4:4:4) with DPCM sound.
+//! - [`AmvSource`]: AMV (`.amv`) video (JPEG variant, full range YUV 4:2:0) with IMA ADPCM sound.
 //! - [`MveSource`]: Interplay MVE (`.mve`) video (8-bit palette or RGB 5:5:5) with PCM or DPCM sound.
+//! - [`TwinvqSource`]: NTT TwinVQ (`.vqf`, `.vql`, `.vqe`) audio.
 //! - [`Y4mSource`]: uncompressed YUV4MPEG2 (`.y4m`) video, frames read on demand.
 //! - [`NstreamSource`]: Nintendo BRSTM / BFSTM / BCSTM (`.brstm`, `.bfstm`, `.bcstm`) audio streams (PCM or DSP ADPCM).
 //! - [`openers`]: the openers to register with the engine's media pool.
 
 #![cfg_attr(not(test), deny(clippy::unwrap_used, clippy::expect_used, clippy::panic, clippy::unimplemented, clippy::todo, clippy::unreachable))]
 
+pub mod amv;
 pub mod apv;
 pub mod audio;
 pub mod av2;
@@ -48,12 +52,15 @@ pub mod dif;
 pub mod dirac;
 pub mod evc;
 pub mod ffv1;
+pub mod flic;
 pub mod gop;
 pub mod hap;
 pub mod huffyuv;
 pub mod hw;
 mod hw_frame;
 pub mod indeo;
+pub mod indeo3;
+pub mod indeo45;
 pub mod j2k;
 pub mod lagarith;
 pub mod lcevc;
@@ -62,6 +69,7 @@ pub mod mkv;
 pub mod mobiclip;
 pub mod mp4;
 pub mod mpeg;
+pub mod msvideo;
 pub mod mve;
 pub mod mxf;
 pub mod nstream;
@@ -73,8 +81,11 @@ pub mod smacker;
 pub mod sstp;
 mod stream_color;
 pub mod streams;
+pub mod svq1;
+pub mod svq3;
 pub mod theora;
 pub mod thp;
+pub mod twinvq;
 pub mod utvideo;
 pub mod video;
 mod webm_alpha;
@@ -82,6 +93,7 @@ pub mod y4m;
 
 use std::sync::{Arc, RwLock};
 
+pub use amv::AmvSource;
 pub use apv::ApvSource;
 pub use audio::AudioFileSource;
 pub use avi::AviSource;
@@ -89,6 +101,7 @@ pub use bink::BinkSource;
 pub use cavs::CavsSource;
 pub use dif::DifSource;
 pub use evc::EvcSource;
+pub use flic::FlicSource;
 pub use gop::{FRAME_BUDGET, GopStats, cached_bytes, gop_stats, live_decoders, release_idle};
 pub use mkv::MkvSource;
 pub use mobiclip::MobiclipSource;
@@ -103,6 +116,7 @@ pub use roq::RoqSource;
 pub use smacker::SmkSource;
 pub use sstp::SstpSource;
 pub use thp::ThpSource;
+pub use twinvq::TwinvqSource;
 pub use video::{DecodedFrame, VideoDecoder, VideoDecoderFactory};
 pub use y4m::Y4mSource;
 
@@ -132,7 +146,7 @@ impl From<CodecError> for cfa4_media::MediaError {
 }
 
 /// Our own (pure-Rust) decoders, in the order they are tried.
-const BUILTIN_FACTORIES: [VideoDecoderFactory; 28] = [
+const BUILTIN_FACTORIES: [VideoDecoderFactory; 33] = [
     video::h264_factory,
     video::hevc_factory,
     video::vp8_factory,
@@ -153,6 +167,11 @@ const BUILTIN_FACTORIES: [VideoDecoderFactory; 28] = [
     theora::theora_factory,
     huffyuv::huffyuv_factory,
     lagarith::lagarith_factory,
+    svq3::svq3_factory,
+    svq1::svq1_factory,
+    indeo45::indeo45_factory,
+    msvideo::msvideo_factory,
+    indeo3::indeo3_factory,
     indeo::indeo_factory,
     cinepak::cinepak_factory,
     utvideo::utvideo_factory,
@@ -227,6 +246,7 @@ pub fn openers() -> Vec<cfa4_media::Opener> {
         mpeg::opener,
         apv::opener,
         avi::opener,
+        flic::opener,
         y4m::opener,
         dif::opener,
         realmedia::opener,
@@ -236,8 +256,10 @@ pub fn openers() -> Vec<cfa4_media::Opener> {
         nstream::opener,
         smacker::opener,
         roq::opener,
+        amv::opener,
         mve::opener,
         av2::opener,
+        twinvq::opener,
         audio::opener,
     ]
 }
@@ -256,6 +278,7 @@ fn reader_registry() -> &'static RwLock<Vec<cfa4_media::ReaderOpener>> {
             cavs::reader_opener,
             mpeg::reader_opener,
             apv::reader_opener,
+            flic::reader_opener,
             y4m::reader_opener,
             avi::reader_opener,
             dif::reader_opener,
