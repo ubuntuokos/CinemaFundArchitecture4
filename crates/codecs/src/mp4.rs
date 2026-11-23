@@ -89,6 +89,16 @@ fn audio_starts(file: &Mp4File, bytes: &crate::Src, ti: usize, rate: u32) -> Vec
             i64::try_from(at).unwrap_or(i64::MAX)
         })
         .collect();
+    // QDM2 packets all decode to the same length, and files exist whose sample table counts the
+    // packets (FATE's `subpacket12.mov`: one `stts` run of one sample): place them end to end
+    if let Some(CodecConfig::Unknown { fourcc, raw }) = t.entries.first().map(|e| &e.codec)
+        && fourcc.0 == *b"QDM2"
+        && let Ok(d) = cfa4_qdm2::Decoder::new(raw)
+        && d.sample_rate == rate
+    {
+        let n = d.samples_per_packet() as i64;
+        return (0..t.samples.len() as i64).map(|k| k.saturating_mul(n)).collect();
+    }
     let first = || file.read_sample(bytes, ti, 0).unwrap_or_default();
     let frame = match t.entries.first().map(|e| &e.codec) {
         Some(CodecConfig::Aac(a)) => fixed_packet_samples(FixedFrames::Aac(&a.asc), &[], rate),
@@ -468,9 +478,10 @@ impl Mp4Source {
             CodecConfig::Pcm(p) => (decode_pcm(&data, p), false),
             c => {
                 if st.decoder.is_none() {
-                    st.decoder = Some(match qt_adpcm(c) {
-                        Some(codec) => PacketDecoder::adpcm(codec, ainfo.channels as usize)?,
-                        None => PacketDecoder::for_isobmff(c, ainfo.sample_rate)?,
+                    st.decoder = Some(match (qt_adpcm(c), qt_mace(c)) {
+                        (Some(codec), _) => PacketDecoder::adpcm(codec, ainfo.channels as usize)?,
+                        (None, Some(v)) => PacketDecoder::mace(v, ainfo.channels as usize)?,
+                        (None, None) => PacketDecoder::for_isobmff(c, ainfo.sample_rate)?,
                     });
                 }
                 // Non-sequential access: reset and prime with the preceding packets (codec pre-roll:
@@ -663,6 +674,10 @@ fn audio_stream_info(t: &cfa4_isobmff::Track, bytes: &crate::Src) -> Option<Audi
         CodecConfig::Pcm(p) => (p.sample_rate as u32, p.channels, Some(p.bits as u32)),
         CodecConfig::Opus(o) => (crate::audio::OPUS_RATE, (o.output_channels as u32).max(1), None),
         // 3GPP TS 26.244 writes 2 channels into AMR sample entries; the codec is mono
+        CodecConfig::Unknown { fourcc, raw } if fourcc.0 == *b"QDM2" => match cfa4_qdm2::Decoder::new(raw) {
+            Ok(d) => (d.sample_rate, d.channels as u32, None),
+            Err(_) => (ap.sample_rate as u32, ap.channels, None),
+        },
         CodecConfig::Unknown { fourcc, .. } if fourcc.0 == *b"samr" => (cfa4_amr::nb::SAMPLE_RATE, 1, None),
         CodecConfig::Unknown { fourcc, .. } if fourcc.0 == *b"sawb" => (cfa4_amr::wb::SAMPLE_RATE, 1, None),
         _ => (if ap.sample_rate > 0.0 { ap.sample_rate as u32 } else { t.timescale }, ap.channels.max(1), None),
@@ -690,9 +705,20 @@ fn qt_adpcm(c: &CodecConfig) -> Option<cfa4_adpcm::Codec> {
     }
 }
 
+/// QuickTime Apple MACE 3:1 / 6:1 (`MAC3`, `MAC6`) sample descriptions.
+fn qt_mace(c: &CodecConfig) -> Option<cfa4_mace::Version> {
+    match c {
+        CodecConfig::Unknown { fourcc, .. } => cfa4_mace::Version::from_fourcc(&fourcc.0),
+        _ => None,
+    }
+}
+
 fn codec_label(c: &CodecConfig) -> String {
     if let Some(a) = qt_adpcm(c) {
         return a.name().into();
+    }
+    if let Some(v) = qt_mace(c) {
+        return v.name().into();
     }
     match c {
         CodecConfig::Avc(a) => format!(
@@ -717,6 +743,8 @@ fn codec_label(c: &CodecConfig) -> String {
         CodecConfig::Av2 { .. } => "AV2 (unsupported)".into(),
         CodecConfig::Unknown { fourcc, .. } if fourcc.0 == *b"cvid" => "Cinepak".into(),
         CodecConfig::Unknown { fourcc, .. } if fourcc.0 == *b"drac" => "VC-2 / Dirac".into(),
+        CodecConfig::Unknown { fourcc, .. } if crate::svq3::is_svq3(&fourcc.0) => "Sorenson Video 3".into(),
+        CodecConfig::Unknown { fourcc, .. } if fourcc.0 == *b"QDM2" => "QDesign Music 2".into(),
         CodecConfig::Unknown { fourcc, .. } if fourcc.0 == *b"samr" => "AMR-NB".into(),
         CodecConfig::Unknown { fourcc, .. } if fourcc.0 == *b"sawb" => "AMR-WB".into(),
         CodecConfig::Av1(c) => format!("AV1 ({} Profile)", ["Main", "High", "Professional"].get(c.seq_profile as usize).unwrap_or(&"Main")),

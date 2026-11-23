@@ -110,3 +110,25 @@ fn fate_samples_match_ffmpeg() {
     }
     eprintln!("{seen} FATE cinepak samples compared");
 }
+
+/// A cold seek (AVI marks every sample as a sync sample) gives the picture a sequential run does.
+#[test]
+fn cinepak_cold_seek_equals_sequential_decoding() {
+    let path = cfa4_testkit::fixtures::fixtures_root().join("fate").join("cvid/pcitva15.avi");
+    let Ok(bytes) = std::fs::read(&path) else {
+        eprintln!("no FATE sample, skipping");
+        return;
+    };
+    let frame = |src: &dyn cfa4_media::MediaSource, i: usize| {
+        let v = src.info().video.clone().unwrap();
+        let f = src.video_frame(cfa4_media::FrameRequest::full(v.frame_rate.tick_of(i as i64))).unwrap();
+        let cfa4_frame::PixelData::Rgba8(px) = &f.data else { panic!("RGBA8 frame") };
+        px.to_vec()
+    };
+    let cold = cfa4_codecs::open_bytes("a.avi", bytes.clone().into()).unwrap();
+    let warm = cfa4_codecs::open_bytes("b.avi", bytes.into()).unwrap();
+    for i in 0..=40 {
+        frame(&*warm, i);
+    }
+    assert!(frame(&*cold, 40) == frame(&*warm, 40), "cold seek differs");
+}

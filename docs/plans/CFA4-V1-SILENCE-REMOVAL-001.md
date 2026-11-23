@@ -109,7 +109,7 @@ A `vad.rs` keretszint- és küszöbszámítását önálló, régiót visszaadó
 
 ### V1-B (Silero, az MI-réteg után)
 
-- `crates/speech`: `vad::silero` modul `tract-onnx`-szel a Venturi `vv-vad` alapján (fejléc + nyilvántartás a `licensing.md` §5-ben), 16 kHz-re fagyasztott modell `.attribution` fájllal (MIT), `cargo xtask assets` sorral.
+- `crates/speech`: `vad::silero` modul `tract-onnx`-szel a Venturi `vv-vad` alapján (fejléc + nyilvántartás a `licensing.md` §5-ben). **A modellfájl nem kerül a repóba és a binárisba** (tulajdonosi szabály: a CFA4 modellt nem terjeszt): a felhasználó az első használatkor, a licenc (MIT) megmutatása és egyszeri elfogadása után tölti le a közös modelltárba (CFA4-AI_modules ADR 0008, F5), a hash ellenőrzése után. Ha a modell hiányzik, a `detector: "silero"` érthető hibát ad (letöltési felajánlással), az `energy` változatlanul működik. A modellt igénylő tesztek kihagyják magukat, ha a modell nincs a modelltárban (mint a betűtípus-tesztek); a csővezeték (előfeldolgozás, ablakolás, régióképzés) egy generált kis ONNX-gráffal modell nélkül is tesztelhető.
 - A modell kimenetét ugyanaz a régióképző lépés fogja össze, mint az energiaalapút.
 - Whisper-előszűrő (V1 3. pont): külön tétel a V1-B-ben, **nem** része a csend-eltávolítás parancsainak.
 - **Tűrés (V1 4. pont):** a VAD-határok eltérése a generált fixture-hez képest ±1 ablak (32 ms).
@@ -187,7 +187,7 @@ V1-A összesen kb. 34–56 óra, V1-B kb. 20–30 óra.
 ## 8. Licenc, függőség, kockázat
 
 - **V1-A:** új függőség nincs (a meglévő `crates/speech`, `crates/edit`, `crates/engine`).
-- **V1-B:** a Silero VAD modell MIT, a `tract-onnx` MIT OR Apache-2.0 (`docs/venturi-parity.md` 1. pont); a Venturi kódja GPL-3.0-or-later, átvehető, a fájlokban az eredet-fejlécet (repó + commit, szerző, licenc) **mi írjuk**, a nyilvántartásba a `licensing.md` §5-be ugyanabban a commitban. `cargo deny` ellenőrzés.
+- **V1-B:** a Silero VAD modell MIT (a felhasználó tölti le, nem terjesztjük), a `tract-onnx` MIT OR Apache-2.0 (`docs/venturi-parity.md` 1. pont); a Venturi kódja GPL-3.0-or-later, átvehető, a fájlokban az eredet-fejlécet (repó + commit, szerző, licenc) **mi írjuk**, a nyilvántartásba a `licensing.md` §5-be ugyanabban a commitban. `cargo deny` ellenőrzés.
 - **Kockázatok:** (1) az energiaalapú észlelő zajos felvételen téves régiót adhat, ezért az előnézet és a szerkeszthető kijelölés kötelező (R3–R5); (2) a metszet-mód többsávos köteg esetén a vártnál kevesebb régiót ad, ez szándékos és a felületen magyarázandó; (3) a régiómarkerek tömege hosszú anyagon lassíthatja az idővonalat, ezért a markerek száma korlátozandó (javaslat: legfeljebb néhány ezer, fölötte hibaüzenet és a paraméterek szigorítása).
 
 ---
@@ -227,12 +227,14 @@ Minden fázis lezárásához kötelező: CI-napló (`cargo xtask ci` + tesztek),
 A V1-B akkor **kész** (az MI-réteg lezárásához ennyit kell igazolni):
 
 1. a `detector: "silero"` kiválasztható, az `audio.detectSpeech` a Silero-alapú régiókat adja ugyanazzal a parancsfelülettel és ugyanazzal a régióképző lépéssel, mint az energiaalapú (a V1-A-ban ez ma hibaüzenet);
-2. a Silero modul a Venturi `vv-vad` alapján, a 16 kHz-re fagyasztott modell `.attribution` fájllal (MIT), az eredet-fejléc és a `licensing.md` §5 nyilvántartás ugyanabban a commitban, `cargo deny` zöld;
+2. a Silero modul a Venturi `vv-vad` alapján, az eredet-fejléc és a `licensing.md` §5 nyilvántartás ugyanabban a commitban, `cargo deny` zöld; a modellt a felhasználó tölti le a licenc elfogadása után (nincs modellfájl a repóban vagy a binárisban), hiányzó modellnél a `silero` érthető hibát ad;
 3. a VAD-határok a generált fixture-hez képest ±1 ablakon (32 ms) belül vannak (a V1 4. pontja), CPU-n;
 4. a `v1_silence_removal_acceptance` mindhárom ellenőrzése (a, b, c) a `silero` észlelővel is zöld, és a 6.2 táblázat sorai a `silero` esetre is le vannak fedve;
 5. a Qt6 párbeszéd Detector listája a „Speech model” értéket is kínálja (a V1-A-ban csak az „Energy”);
 6. a Whisper-előszűrő (V1 3. pont) külön tételként kész, vagy a tulajdonos kifejezetten kiveszi a V1-B-ből;
 7. a `docs/venturi-parity.md` V1 sora és a `docs/qt-parity.md` 3.31 sora frissítve.
+
+**Frissítés (2026-11-22):** a V1-B felvétele az MI-réteg tervébe megtörtént: CFA4-AI_modules ADR 0008 (F5 kapu és a „Lezárás” rész), a CFA4-AI_modules #57 PR-ben. A modell letöltési szabálya (nincs fagyasztott modell a repóban) ebben a tervben is érvényes.
 
 **Mit nem tudtam elvégezni:** az MI-réteg saját zárási feltételeinek listája az MI-réteg tervében (a `CFA4-AI_modules` repó ADR 0006-ja) van, amely ebből a munkamenetből nem érhető el és nem is módosítható. Ezért a V1-B-t itt (a V1 tervében), a V1-A Gazda issue-ban (#1487) és a Gazda issue-ban (#1447) rögzítettem; **az MI-réteg saját zárási listájába a tulajdonosnak vagy az MI-réteg szálának kell felvennie**, hogy a feltétel ott is látszódjon.
 

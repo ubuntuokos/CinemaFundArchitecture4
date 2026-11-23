@@ -52,7 +52,10 @@ cfa4-mxf = { path = "../crates/mxf" }
 cfa4-ogg = { path = "../crates/ogg" }
 cfa4-st2110 = { path = "../crates/st2110" }
 cfa4-tta = { path = "../crates/tta" }
+cfa4-twinvq = { path = "../crates/twinvq" }
+cfa4-qdm2 = { path = "../crates/qdm2" }
 cfa4-amr = { path = "../crates/amr" }
+cfa4-amv = { path = "../crates/amv" }
 cfa4-av2 = { path = "../crates/av2" }
 cfa4-canopus = { path = "../crates/canopus" }
 cfa4-theora = { path = "../crates/theora" }
@@ -65,6 +68,7 @@ cfa4-truehd = { path = "../crates/truehd" }
 cfa4-utvideo = { path = "../crates/utvideo" }
 cfa4-vp8 = { path = "../crates/vp8" }
 cfa4-vp9 = { path = "../crates/vp9" }
+cfa4-yamaha-oki = { path = "../crates/yamaha-oki" }
 cfa4-realmedia = { path = "../crates/realmedia" }
 cfa4-realaudio = { path = "../crates/realaudio" }
 cfa4-realvideo = { path = "../crates/realvideo" }
@@ -73,8 +77,15 @@ cfa4-evc = { path = "../crates/evc" }
 cfa4-cavs = { path = "../crates/cavs" }
 cfa4-lagarith = { path = "../crates/lagarith" }
 cfa4-bink = { path = "../crates/bink" }
+cfa4-svq3 = { path = "../crates/svq3" }
+cfa4-svq1 = { path = "../crates/svq1" }
+cfa4-indeo45 = { path = "../crates/indeo45" }
+cfa4-indeo3 = { path = "../crates/indeo3" }
 cfa4-magicyuv = { path = "../crates/magicyuv" }
+cfa4-msvideo = { path = "../crates/msvideo" }
 cfa4-g729 = { path = "../crates/g729" }
+cfa4-mace = { path = "../crates/mace" }
+cfa4-truespeech = { path = "../crates/truespeech" }
 cfa4-ilbc = { path = "../crates/ilbc" }
 cfa4-musepack = { path = "../crates/musepack" }
 cfa4-shorten = { path = "../crates/shorten" }
@@ -500,6 +511,27 @@ doc = false
 bench = false
 
 [[bin]]
+name = "svq1"
+path = "fuzz_targets/svq1.rs"
+test = false
+doc = false
+bench = false
+
+[[bin]]
+name = "indeo45"
+path = "fuzz_targets/indeo45.rs"
+test = false
+doc = false
+bench = false
+
+[[bin]]
+name = "indeo3"
+path = "fuzz_targets/indeo3.rs"
+test = false
+doc = false
+bench = false
+
+[[bin]]
 name = "lagarith"
 path = "fuzz_targets/lagarith.rs"
 test = false
@@ -507,8 +539,22 @@ doc = false
 bench = false
 
 [[bin]]
+name = "svq3"
+path = "fuzz_targets/svq3.rs"
+test = false
+doc = false
+bench = false
+
+[[bin]]
 name = "magicyuv"
 path = "fuzz_targets/magicyuv.rs"
+test = false
+doc = false
+bench = false
+
+[[bin]]
+name = "msvideo"
+path = "fuzz_targets/msvideo.rs"
 test = false
 doc = false
 bench = false
@@ -614,6 +660,48 @@ bench = false
 [[bin]]
 name = "expr"
 path = "fuzz_targets/expr.rs"
+test = false
+doc = false
+bench = false
+
+[[bin]]
+name = "amv"
+path = "fuzz_targets/amv.rs"
+test = false
+doc = false
+bench = false
+
+[[bin]]
+name = "twinvq"
+path = "fuzz_targets/twinvq.rs"
+test = false
+doc = false
+bench = false
+
+[[bin]]
+name = "mace"
+path = "fuzz_targets/mace.rs"
+test = false
+doc = false
+bench = false
+
+[[bin]]
+name = "truespeech"
+path = "fuzz_targets/truespeech.rs"
+test = false
+doc = false
+bench = false
+
+[[bin]]
+name = "yamaha_oki"
+path = "fuzz_targets/yamaha_oki.rs"
+test = false
+doc = false
+bench = false
+
+[[bin]]
+name = "qdm2"
+path = "fuzz_targets/qdm2.rs"
 test = false
 doc = false
 bench = false

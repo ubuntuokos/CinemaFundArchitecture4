@@ -1,0 +1,7 @@
+{
+  "name": "hash-field-excluded",
+  "input": "{\"seq\":2,\"prev_hash\":\"abababababababababababababababababababababababababababababababab\",\"action\":\"x.y\",\"hash\":\"ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff\"}",
+  "event": true,
+  "canonical": "{\"action\":\"x.y\",\"prev_hash\":\"abababababababababababababababababababababababababababababababab\",\"seq\":2}",
+  "hash": "55bc3ec271f7c40c184c222f93eafb3fc682c2c3bd974975c58c8869baf527ab"
+}
