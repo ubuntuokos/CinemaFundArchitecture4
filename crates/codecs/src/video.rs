@@ -1425,7 +1425,8 @@ impl RawFormat {
             (b"raw ", 24) => Some(RawFormat::Rgb24),
             (b"2vuy", _) => Some(RawFormat::Uyvy),
             (b"v210", _) => Some(RawFormat::V210),
-            _ => None,
+            // the YUV FourCCs of a Matroska `V_UNCOMPRESSED` track (`UncompressedFourCC`)
+            _ => Self::from_avi(fourcc, 0).filter(|f| !matches!(f, RawFormat::Bgr24 | RawFormat::Bgrx32)),
         }
     }
 
