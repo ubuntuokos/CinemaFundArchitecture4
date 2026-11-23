@@ -47,7 +47,8 @@ fn fate_samples() {
         if p.exists() {
             compare(n, &p);
         } else {
-            cfa4_testkit::oracle::skip(n, "FATE sample not fetched");
+            // local-only samples (never committed, not fetched in CI): not an oracle skip
+            eprintln!("no FATE sample {n}, skipping");
         }
     }
 }
