@@ -32,7 +32,7 @@ let stats = program.run(&mut vm, DEFAULT_FUEL, &env, &[], &inputs, &mut outputs)
 
 ## Not in X1
 
-Reading and writing real voxel data (the worker tile bridge is X2), engine commands and project
+Reading and writing real voxel data: done in X2 (`cfa4-vdb` `Worker::apply_expression`, engine `expr.run_preview`). Not yet: the remaining engine commands and project
 storage (X3), the Qt editor (X4), neighbour access (v2, decision Q-X1). The VM's speed is **not yet
 measured** (plan §7, X1/X2 on the reference machine).
 

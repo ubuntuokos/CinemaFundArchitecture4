@@ -36,3 +36,24 @@ Without the worker the real-worker tests return early and the engine works as be
 | N2-3 plain clip, no new render path | done: the PNG is imported with `file.import` and placed with `timeline.place` (tested). Note: N1 added `Volume` arms to three exhaustive `match`es in `crates/render` (no new path, but the literal "git diff of crates/render is 0" does not hold) |
 | N2-4 cancel, time limit, OOM → error | done at the host: `Worker::render` kills the worker on cancel (<5 s) and on the time limit; the worker's address-space cap turns an out-of-memory render into an error (tested). The `vdb.render` command runs synchronously and has no cancel from the GUI yet |
 | N2-5 background, GUI responsive | **open**: needs the engine's background-job queue (ACS-6, PR #1471, not on `main`); `vdb.render` currently blocks the engine command loop for the length of the render |
+
+## X2: the CFX bridge (plan CFA4-AX-INTERPRETER-001)
+`export-tiles <in> <grid> <out.tiles>` writes one float or `vec3s` grid as leaf tiles (active tiles become leaves first);
+`import-tiles <ref.vdb> <ref-grid> <out.vdb> (<name> <tiles>)...` writes `ref.vdb`'s grids plus new grids made from tiles,
+with the transform of `ref-grid` (a new grid replaces an old one of the same name). The tile layout is documented in
+`crates/vdb/src/tiles.rs`; the Rust side checks every length against the file size, the worker does the same on import.
+`Worker::apply_expression` (`crates/vdb/src/expr_run.rs`) evaluates a CFX program on every active voxel of a *domain*
+grid with a thread pool and writes the result; `expr.run_preview` (engine) imports the result as a new volume item and,
+with `render: true`, renders a preview of the written grid through `vdb.render`.
+
+| Criterion | State |
+|---|---|
+| N3-S1′/N3-S2′ results independent of thread count | done: 1, 2, 7 and 16 threads give byte-identical output tiles (tested, incl. NaN and `noise`/`hash`); every leaf has its own result slot and the first error (lowest leaf) is the one reported |
+| fuel interrupts and errors | done: `R-FUEL` (and `R-INT`) stop the run, name the voxel, import nothing; leaves are claimed in increasing order so the reported error does not depend on timing |
+| Q-X2 limits: 30 s and 1 GiB for a preview | done as limits: a time limit of 30 s for the whole run (`Error::Timeout`), 1 GiB of active voxel data (`Error::Limit`); a caller can only lower them. **Measured once here** (4 vCPU cloud container, not the reference machine): 650³ = 274 625 000 voxels (1.02 GiB), `@o = @big * 2.0 + P.x`, 4 threads, **26.9 s**. The reference-machine figure is a phase X5 task |
+| cancel | done: a cancel flag stops the evaluation between 16 voxels and kills a running worker step; temporary files are removed on every exit |
+| hostile tile files | done: unit tests with truncation, every header byte mutated, absurd leaf count (no allocation before the size check) |
+
+Not yet: integer and bool grids, points context, grids with a rotation or translation (a voxel's world position is
+`ijk * voxelSize`), partial (incremental) re-evaluation, a GUI cancel (the command is synchronous, like `vdb.render`; N2-5/ACS-6).
+Attributes that are both read and written start from the existing value, so a path that does not assign leaves it as it was.
