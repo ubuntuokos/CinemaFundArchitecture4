@@ -229,3 +229,17 @@ fn damage_never_panics_or_passes_in_the_quick_scan_of_nothing() {
     assert_eq!(r.verdict, Verdict::Fail);
     let _ = std::fs::remove_dir_all(&d);
 }
+
+#[test]
+fn an_unreadable_track_file_fails_without_panicking() {
+    // DCP-20: a read error (here a directory where the file should be; permission bits do not stop root,
+    // so the test does not rely on them) is a failed asset check, never a panic or a pass
+    let d = copy("unreadable");
+    let p = file(&d, "pcm_");
+    std::fs::remove_file(&p).unwrap();
+    std::fs::create_dir(&p).unwrap();
+    let r = validate(&d);
+    assert_eq!(r.verdict, Verdict::Fail);
+    assert!(failed(&r).contains(&"DCP.AM.005"), "{:?}", failed(&r));
+    let _ = std::fs::remove_dir_all(&d);
+}
