@@ -18,7 +18,7 @@ qt = ["PySide6>=6.10,<7"]
 # BacklotHub / audit trail (ADR 0006): PostgreSQL client for the Python components; libpq comes with the
 # Ubuntu `postgresql` package. LGPL-3.0-or-later, compatible with GPL-3.0-or-later.
 # SQLAlchemy 2 and Alembic (both MIT) are the BacklotHub database layer and migration chain (G2-02 section 2, #52).
-backlot = ["psycopg>=3.2,<4", "sqlalchemy>=2.0,<2.1", "alembic>=1.13,<2"]
+backlot = ["psycopg>=3.2,<4", "sqlalchemy>=2.0,<2.2", "alembic>=1.13,<2"]
 # Test oracle only (Apache-2.0): never imported by the product or shipped in packages.
 # docs/plans/OTIO-INTEGRATION-2026-10-24.md, OTIO-1.1.
 otio = ["opentimelineio>=0.18,<0.19"]
