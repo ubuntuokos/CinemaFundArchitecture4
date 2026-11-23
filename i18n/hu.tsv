@@ -4857,6 +4857,7 @@ export.summary	Low	alacsony
 	Datamosh Bloom	Datamosh-virágzás
 	Start Time (seconds)	Kezdőidő (másodperc)
 	Repeats	Ismétlések
+	Clean Blocks	Tiszta blokkok
 # SC-4: effect bulk switch and recent effects
 	Enable all effects	Összes effekt bekapcsolása
 	Disable all effects	Összes effekt kikapcsolása

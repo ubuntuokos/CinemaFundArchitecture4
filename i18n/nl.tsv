@@ -4818,6 +4818,7 @@ export.summary	Low	laag
 	Datamosh Bloom	Datamosh-bloei
 	Start Time (seconds)	Begintijd (seconden)
 	Repeats	Herhalingen
+	Clean Blocks	Schone blokken
 
 # Recent effects, per-channel waveform, white balance selector (SC-2/SC-3/SC-4, #1419 #1420 #1421)
 	Apply a recently used effect to the selected clips	Een onlangs gebruikt effect toepassen op de geselecteerde clips

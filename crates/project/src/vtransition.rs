@@ -229,6 +229,7 @@ pub(crate) fn video_transition_defs() -> Vec<EffectDef> {
                 range("motion", "Motion Boost", 100.0, 25.0, 400.0, "%"),
                 num("recovery", "Recovery", 25.0, 100.0, "%"),
                 ch("resolution", "Encode Resolution", MOSH_RES_OPTS, 0),
+                b("clean", "Clean Blocks", true),
             ],
         ),
         // ---- Immersive Video (flat equirectangular approximations; see the render crate) ----
