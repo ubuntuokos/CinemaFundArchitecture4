@@ -57,6 +57,7 @@ pub mod huffyuv;
 pub mod hw;
 mod hw_frame;
 pub mod indeo45;
+pub mod indeo3;
 pub mod indeo;
 pub mod j2k;
 pub mod lagarith;
@@ -167,6 +168,7 @@ const BUILTIN_FACTORIES: [VideoDecoderFactory; 29] = [
     svq1::svq1_factory,
     indeo45::indeo45_factory,
     msvideo::msvideo_factory,
+    indeo3::indeo3_factory,
     indeo::indeo_factory,
     cinepak::cinepak_factory,
     utvideo::utvideo_factory,

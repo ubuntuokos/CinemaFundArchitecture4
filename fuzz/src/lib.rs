@@ -698,6 +698,10 @@ pub fn msvideo(data: &[u8]) {
             let _ = d.decode(pkt);
         }
     }
+pub fn indeo3(data: &[u8]) {
+    let mut d = cfa4_indeo3::Decoder::new();
+    let _ = d.decode(data);
+    let _ = d.decode(data);
 }
 
 pub fn magicyuv(data: &[u8]) {
@@ -991,6 +995,7 @@ pub const TARGETS: &[(&str, &str, Target)] = &[
     ("svq3", "cfa4-svq3", svq3),
     ("svq1", "cfa4-svq1", svq1),
     ("indeo45", "cfa4-indeo45", indeo45),
+    ("indeo3", "cfa4-indeo3", indeo3),
     ("bink", "cfa4-bink", bink),
     ("magicyuv", "cfa4-magicyuv", magicyuv),
     ("msvideo", "cfa4-msvideo", msvideo),

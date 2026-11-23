@@ -473,6 +473,7 @@ fn sample_entry(c: &Codec, private: &[u8], v: Option<&cfa4_matroska::VideoInfo>,
         Codec::VfwFourcc { fourcc, .. } if crate::canopus::codec(fourcc).is_some() => crate::canopus::sample_entry(crate::canopus::codec(fourcc)?, w, h),
         Codec::VfwFourcc { fourcc, .. } if crate::svq1::is_svq1(fourcc) => crate::svq1::sample_entry(w, h),
         Codec::VfwFourcc { fourcc, .. } if crate::indeo45::is_indeo45(fourcc) => crate::indeo45::sample_entry(fourcc, w, h),
+        Codec::VfwFourcc { fourcc, .. } if crate::indeo3::is_indeo3(fourcc) => crate::indeo3::sample_entry(w, h),
         Codec::VfwFourcc { fourcc, .. } if crate::indeo::is_indeo2(fourcc) => crate::indeo::sample_entry_indeo2(w, h),
         // Cinepak: the VfW BITMAPINFOHEADER bit count (8: palette video) and the palette after it
         Codec::VfwFourcc { fourcc, bitmap_info_header } if crate::cinepak::is_cinepak(fourcc) => {
@@ -585,6 +586,7 @@ fn codec_label(c: &Codec) -> String {
         Codec::VfwFourcc { fourcc, .. } if crate::svq3::is_svq3(fourcc) => "Sorenson Video 3".into(),
         Codec::VfwFourcc { fourcc, .. } if crate::svq1::is_svq1(fourcc) => "Sorenson Video 1".into(),
         Codec::VfwFourcc { fourcc, .. } if crate::indeo45::is_indeo45(fourcc) => crate::indeo45::label(fourcc).into(),
+        Codec::VfwFourcc { fourcc, .. } if crate::indeo3::is_indeo3(fourcc) => "Indeo 3".into(),
         Codec::VfwFourcc { fourcc, .. } if crate::indeo::is_indeo2(fourcc) => "Indeo 2".into(),
         Codec::VfwFourcc { fourcc, .. } if crate::cinepak::is_cinepak(fourcc) => "Cinepak".into(),
         Codec::VfwFourcc { fourcc, .. } if crate::magicyuv::is_magicyuv(fourcc) => "MagicYUV".into(),

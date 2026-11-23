@@ -55,6 +55,8 @@ enum VCodec {
     Svq1,
     /// Indeo 4 or 5 (the FourCC).
     Indeo45([u8; 4]),
+    /// Indeo 3.
+    Indeo3,
     /// Indeo 2.
     Indeo2,
     /// Cinepak with its `BITMAPINFOHEADER` bit count and palette.
@@ -98,6 +100,7 @@ fn video_codec(b: &BitmapInfo) -> (VCodec, String) {
         _ if crate::utvideo::is_utvideo(&b.compression) => (VCodec::UtVideo(b.compression, b.extra.clone()), "Ut Video".into()),
         c if crate::svq1::is_svq1(c) => (VCodec::Svq1, "Sorenson Video 1".into()),
         c if crate::indeo45::is_indeo45(c) => (VCodec::Indeo45(*c), crate::indeo45::label(c).into()),
+        b"IV31" | b"IV32" => (VCodec::Indeo3, "Indeo 3".into()),
         b"RT21" => (VCodec::Indeo2, "Indeo 2".into()),
         b"CVID" => (VCodec::Cinepak(b.bit_count, b.extra.clone()), "Cinepak".into()),
         b"LAGS" => (VCodec::Lagarith(b.bit_count), "Lagarith".into()),
@@ -702,6 +705,7 @@ impl VideoSamples for AviVideo<'_> {
             VCodec::Huffyuv(bih) => make_video_decoder(&crate::huffyuv::sample_entry(bih, w, h)),
             VCodec::Svq1 => make_video_decoder(&crate::svq1::sample_entry(w, h)),
             VCodec::Indeo45(fourcc) => make_video_decoder(&crate::indeo45::sample_entry(fourcc, w, h)),
+            VCodec::Indeo3 => make_video_decoder(&crate::indeo3::sample_entry(w, h)),
             VCodec::Indeo2 => make_video_decoder(&crate::indeo::sample_entry_indeo2(w, h)),
             VCodec::Svq3(extra) => make_video_decoder(&crate::svq3::sample_entry(w, h, extra)),
             VCodec::Cinepak(bits, pal) => make_video_decoder(&crate::cinepak::sample_entry(*bits, pal, w, h)),
