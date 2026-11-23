@@ -1499,6 +1499,13 @@
    "class": "frame",
    "crate": "cfa4-frame",
    "kind": "enum",
+   "module": "convert.rs",
+   "name": "PixelFormat"
+  },
+  {
+   "class": "frame",
+   "crate": "cfa4-frame",
+   "kind": "enum",
    "module": "lib.rs",
    "name": "Chroma"
   },
@@ -4014,6 +4021,27 @@
    "kind": "enum",
    "module": "lib.rs",
    "name": "StreamKind"
+  },
+  {
+   "class": "other",
+   "crate": "cfa4-frame",
+   "kind": "struct",
+   "module": "convert.rs",
+   "name": "Conversion"
+  },
+  {
+   "class": "other",
+   "crate": "cfa4-frame",
+   "kind": "enum",
+   "module": "convert.rs",
+   "name": "Cost"
+  },
+  {
+   "class": "other",
+   "crate": "cfa4-frame",
+   "kind": "struct",
+   "module": "convert.rs",
+   "name": "Unsupported"
   },
   {
    "class": "other",
@@ -11425,6 +11453,11 @@
    "from": "cfa4-ffmpeg/source.rs",
    "item": "FrameRate",
    "to": "cfa4-time"
+  },
+  {
+   "from": "cfa4-frame/convert.rs",
+   "item": "ColorInfo",
+   "to": "cfa4-color"
   },
   {
    "from": "cfa4-frame/lib.rs",

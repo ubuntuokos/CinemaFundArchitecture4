@@ -497,6 +497,7 @@ graph LR
 | `cfa4-ffmpeg/source.rs` | `cfa4-frame` | `AudioBuffer` |
 | `cfa4-ffmpeg/source.rs` | `cfa4-media` | `AudioStreamInfo`, `Result` |
 | `cfa4-ffmpeg/source.rs` | `cfa4-time` | `FrameRate` |
+| `cfa4-frame/convert.rs` | `cfa4-color` | `ColorInfo` |
 | `cfa4-frame/lib.rs` | `cfa4-color` | `ColorInfo`, `DecodeTable`, `Primaries`, `Transfer` |
 | `cfa4-frame/lib.rs` | `cfa4-time` | `Tick` |
 | `cfa4-frame/pool.rs` | `cfa4-color` | `ColorInfo` |
@@ -824,9 +825,9 @@ graph LR
 
 ## 4. Nyilvános típusok osztályonként
 
-A többi 634 nyilvános típus („other” osztály) csak a `call-graph.json`-ban szerepel.
+A többi 637 nyilvános típus („other” osztály) csak a `call-graph.json`-ban szerepel.
 
-### Képkocka, kép, pixel (30)
+### Képkocka, kép, pixel (31)
 
 | Crate | Modul | Fajta | Típus |
 |---|---|---|---|
@@ -840,6 +841,7 @@ A többi 634 nyilvános típus („other” osztály) csak a `call-graph.json`-b
 | `cfa4-export` | `lib.rs` | type | `FrameRendererFactory` |
 | `cfa4-export` | `settings.rs` | struct | `ImageOverlay` |
 | `cfa4-export` | `timeline_render.rs` | trait | `RenderedFrames` |
+| `cfa4-frame` | `convert.rs` | enum | `PixelFormat` |
 | `cfa4-frame` | `lib.rs` | enum | `Chroma` |
 | `cfa4-frame` | `lib.rs` | enum | `ChromaLocation` |
 | `cfa4-frame` | `lib.rs` | struct | `FrameLayout` |
