@@ -4914,3 +4914,7 @@ export.summary	Low	thấp
 
 # WP3 DPX bit depth
 	Bit Depth	Độ sâu bit
+
+# AS-02 versions
+	AS-02 Versions	Phiên bản AS-02
+	Tick the sequences to write as further versions in the AS-02 bundle	Chọn các chuỗi sẽ được ghi thành phiên bản bổ sung trong gói AS-02

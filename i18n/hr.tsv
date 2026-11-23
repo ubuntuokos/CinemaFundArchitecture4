@@ -4916,3 +4916,7 @@ export.summary	Low	niska
 
 # WP3 DPX bit depth
 	Bit Depth	Bitna dubina
+
+# AS-02 versions
+	AS-02 Versions	AS-02 verzije
+	Tick the sequences to write as further versions in the AS-02 bundle	Označite sekvence koje će se zapisati kao dodatne verzije u AS-02 paketu

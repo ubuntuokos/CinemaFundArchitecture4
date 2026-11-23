@@ -4914,3 +4914,7 @@ export.summary	Low	nízká
 
 # WP3 DPX bit depth
 	Bit Depth	Bitová hloubka
+
+# AS-02 versions
+	AS-02 Versions	Verze AS-02
+	Tick the sequences to write as further versions in the AS-02 bundle	Zaškrtněte sekvence, které se zapíší jako další verze v balíčku AS-02
