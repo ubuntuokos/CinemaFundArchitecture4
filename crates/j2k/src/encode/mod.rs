@@ -344,13 +344,23 @@ struct Job {
     limit: u32,
 }
 
+/// One HTJ2K coding of a block: its cleanup segment, the refinement segment (SigProp, and with
+/// three `passes` MagRef) when it has one. `zero` is the number of planes its cleanup pass codes
+/// until the block's Mb turns it into the missing MSBs of the packet header.
+struct HtCoding {
+    zero: u32,
+    cleanup: Vec<u8>,
+    refine: Vec<u8>,
+    passes: u32,
+}
+
 /// A coded code-block and its rate-distortion hull: (passes, bytes, slope), slopes falling.
 struct Coded {
     c: usize,
     zero: u32,
     /// HTJ2K with a byte limit: one independent coding per truncation point of `enc.passes`
-    /// (missing MSBs, cleanup pass); a selection of `n` passes means the `n`-th coding.
-    ht: Vec<(u32, Vec<u8>)>,
+    /// (missing MSBs, cleanup pass and refinement passes); a selection of `n` passes means the `n`-th coding.
+    ht: Vec<HtCoding>,
     enc: t1::Encoded,
     hull: Vec<(u32, usize, f64)>,
     /// Coefficients whose index was clipped to the block's `limit`.
@@ -522,7 +532,7 @@ fn encode_inner(image: &Image, opts: &EncodeOptions, early: bool) -> Result<(Vec
         let mb = comps.get(j.c).and_then(|tc| tc.res.get(j.r)).and_then(|res| res.bands.get(j.bi)).map_or(0, |b| b.mb);
         let w = weight(j);
         let (enc, alts, saturated) = code_block(cf, j, opts.ht, limited, if stop.is_finite() && stop > 0.0 { stop / w.max(1e-30) } else { 0.0 })?;
-        let ht = alts.into_iter().map(|(planes, data)| (mb.saturating_sub(planes), data)).collect();
+        let ht = alts.into_iter().map(|a| HtCoding { zero: mb.saturating_sub(a.zero), ..a }).collect();
         Ok(Coded { c: j.c, zero: mb.saturating_sub(enc.planes), hull: hull(&enc.passes, w), enc, ht, saturated })
     };
     let mut coded = if !early || (opts.max_bytes.is_none() && opts.max_component_bytes.is_none()) {
@@ -973,7 +983,7 @@ fn component_weights(n: usize, mct: bool, reversible: bool) -> Vec<f64> {
 /// per coarser plane it could stop at, returned as (coded planes, codeword), coarsest first, the
 /// passes of the [`t1::Encoded`] being their truncation points.
 /// Also returns how many of the block's indices saturated at `j.limit`.
-fn code_block(cf: &Coeffs, j: &Job, ht: bool, limited: bool, stop: f64) -> Result<(t1::Encoded, Vec<(u32, Vec<u8>)>, u64)> {
+fn code_block(cf: &Coeffs, j: &Job, ht: bool, limited: bool, stop: f64) -> Result<(t1::Encoded, Vec<HtCoding>, u64)> {
     let (w, h) = (j.rect.w(), j.rect.h());
     let mut q = Vec::with_capacity(w * h);
     let mut exact = Vec::with_capacity(w * h);
@@ -1031,35 +1041,71 @@ fn code_block(cf: &Coeffs, j: &Job, ht: bool, limited: bool, stop: f64) -> Resul
     Ok((t1::encode(&q, &exact, w, h, j.orient, stop), Vec::new(), saturated))
 }
 
-/// The HTJ2K codings of a block for rate control: for each plane `s` from the most significant
-/// non-zero one down to 0, the cleanup pass of the indices with their `s` lowest bits dropped (the
-/// decoder then takes Mb - 1 - s missing MSBs and puts each magnitude back at plane `s`, in the
-/// middle of its interval), and the squared error it removes from the all-zero block.
-fn ht_codings(q: &[i32], exact: &[f32], w: usize, h: usize) -> Result<(t1::Encoded, Vec<(u32, Vec<u8>)>)> {
+/// The HTJ2K codings of a block for rate control, with the squared error each removes from the
+/// all-zero block. For each plane `s` from the most significant non-zero one down to 0: the
+/// cleanup pass of the indices with their `s` lowest bits dropped (the decoder then takes
+/// Mb - 1 - s missing MSBs and puts each magnitude back at plane `s`, in the middle of its
+/// interval); and, from plane 1 up, the cleanup pass at plane `s + 1` with the SigProp pass, and
+/// with the SigProp and MagRef passes, of plane `s`. They are ordered by size, the truncation
+/// points of rate control.
+fn ht_codings(q: &[i32], exact: &[f32], w: usize, h: usize) -> Result<(t1::Encoded, Vec<HtCoding>)> {
     let top = 32 - q.iter().map(|v| v.unsigned_abs()).max().unwrap_or(0).leading_zeros();
     let energy: f64 = exact.iter().map(|&x| f64::from(x).powi(2)).sum();
-    let (mut passes, mut alts) = (Vec::new(), Vec::new());
+    // the squared error of reconstructing sample `i` as `half / 2` (the decoder's half units)
+    let err = |half: &dyn Fn(usize) -> u64| -> f64 { exact.iter().enumerate().map(|(i, &x)| (f64::from(x).abs() - half(i) as f64 / 2.0).powi(2)).sum() };
+    let mut points: Vec<(usize, f64, HtCoding)> = Vec::new();
     let mut coarse = vec![0i32; q.len()];
     for s in (0..top).rev() {
         for (o, &v) in coarse.iter_mut().zip(q) {
             let m = (v.unsigned_abs() >> s) as i32;
             *o = if v < 0 { -m } else { m };
         }
-        let Some(data) = ht::encode(&coarse, w, h)? else { continue };
-        let scale = f64::from(1u32 << s);
-        let error: f64 = coarse
-            .iter()
-            .zip(exact)
-            .map(|(&m, &x)| {
-                let r = if m == 0 { 0.0 } else { (f64::from(m.unsigned_abs()) + 0.5) * scale };
-                (f64::from(x).abs() - r).powi(2)
-            })
-            .sum();
-        passes.push(t1::Pass { len: data.len(), dist: energy - error });
-        alts.push((1 + s, data));
+        if let Some(data) = ht::encode(&coarse, w, h)? {
+            let error = err(&|i| {
+                let m = u64::from(coarse[i].unsigned_abs());
+                if m == 0 { 0 } else { (2 * m + 1) << s }
+            });
+            points.push((data.len(), energy - error, HtCoding { zero: 1 + s, cleanup: data, refine: Vec::new(), passes: 1 }));
+        }
+        if s == 0 || s + 1 > top {
+            continue;
+        }
+        let Some(r) = ht::encode_refined(q, w, h, s)? else { continue };
+        let mag = |i: usize| u64::from(q[i].unsigned_abs());
+        let sig = |i: usize| mag(i) >> (s + 1);
+        if !r.spp.is_empty() {
+            let error = err(&|i| {
+                if sig(i) > 0 {
+                    (2 * sig(i) + 1) << (s + 1)
+                } else if r.newly[i] {
+                    3 << s
+                } else {
+                    0
+                }
+            });
+            let len = r.cleanup.len() + r.spp.len();
+            points.push((len, energy - error, HtCoding { zero: 2 + s, cleanup: r.cleanup.clone(), refine: r.spp.clone(), passes: 2 }));
+        }
+        if !r.mrp.is_empty() {
+            let error = err(&|i| {
+                if sig(i) > 0 {
+                    (4 * sig(i) + 2 * (mag(i) >> s & 1) + 1) << s
+                } else if r.newly[i] {
+                    3 << s
+                } else {
+                    0
+                }
+            });
+            let mut refine = r.spp.clone();
+            refine.extend_from_slice(&r.mrp);
+            let len = r.cleanup.len() + refine.len();
+            points.push((len, energy - error, HtCoding { zero: 2 + s, cleanup: r.cleanup, refine, passes: 3 }));
+        }
     }
-    let enc = t1::Encoded { passes, data: Vec::new(), planes: 1, truncated: false };
-    Ok((enc, alts))
+    points.sort_by(|a, b| a.0.cmp(&b.0).then(a.1.total_cmp(&b.1)));
+    let passes = points.iter().map(|p| t1::Pass { len: p.0, dist: p.1 }).collect();
+    let alts = points.into_iter().map(|p| p.2).collect();
+    Ok((t1::Encoded { passes, data: Vec::new(), planes: 1, truncated: false }, alts))
 }
 
 /// The convex hull of a block's truncation points (0, 0), (len_k, w·dist_k): (passes, bytes,
@@ -1309,11 +1355,11 @@ fn assemble(
                     let (b, &n) = (coded.get(i)?, sel.get(i)?);
                     let k = (n as usize).checked_sub(1)?;
                     if !b.ht.is_empty() {
-                        let (zero, data) = b.ht.get(k)?;
-                        return Some(Contribution { zero: *zero, passes: 1, data });
+                        let a = b.ht.get(k)?;
+                        return Some(Contribution { zero: a.zero, passes: a.passes, data: &a.cleanup, refine: &a.refine });
                     }
                     let len = b.enc.passes.get(k)?.len;
-                    Some(Contribution { zero: b.zero, passes: n, data: b.enc.data.get(..len)? })
+                    Some(Contribution { zero: b.zero, passes: n, data: b.enc.data.get(..len)?, refine: &[] })
                 })
                 .collect();
             bands.push((pb.cw, blocks));
