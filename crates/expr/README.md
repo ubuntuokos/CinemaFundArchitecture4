@@ -32,8 +32,8 @@ let stats = program.run(&mut vm, DEFAULT_FUEL, &env, &[], &inputs, &mut outputs)
 
 ## Not in X1
 
-Reading and writing real voxel data: done in X2 (`cfa4-vdb` `Worker::apply_expression`, engine `expr.run_preview`). Not yet: the remaining engine commands and project
-storage (X3), the Qt editor (X4), neighbour access (v2, decision Q-X1). The VM's speed is **not yet
+Reading and writing real voxel data: done in X2 (`cfa4-vdb` `Worker::apply_expression`, engine `expr.run_preview`). Engine commands and project storage: done in X3 (`expr.check/save/list/get/delete/approve/revoke/bake/export/import`,
+project schema v18, approval per machine and never in the project file). Not yet: the Qt editor (X4), neighbour access (v2, decision Q-X1). The VM's speed is **not yet
 measured** (plan §7, X1/X2 on the reference machine).
 
 ## Tests

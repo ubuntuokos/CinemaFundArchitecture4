@@ -12,6 +12,7 @@
 pub mod caption;
 pub mod effect;
 pub mod essential;
+pub mod expression;
 pub mod find;
 pub mod graphic;
 pub mod graphic_design;
@@ -1361,6 +1362,10 @@ pub struct Project {
     /// sample times are media time. Schema v17.
     #[serde(default, skip_serializing_if = "BTreeMap::is_empty")]
     pub objects: BTreeMap<ItemId, Vec<object::ObjectTrack>>,
+    /// Saved CFX expressions (`expr.save`): source text, hash and run settings. Whether this machine trusts a text
+    /// is kept by the engine per machine, never here. Schema v18.
+    #[serde(default, skip_serializing_if = "BTreeMap::is_empty")]
+    pub expressions: BTreeMap<expression::ExprId, expression::Expression>,
 }
 
 /// How a sequence is shown in the Timeline panel: its zoom, scroll position and track heights.
@@ -1468,6 +1473,7 @@ impl Project {
             credits_templates: Vec::new(),
             studio: LiveStudio::default(),
             objects: BTreeMap::new(),
+            expressions: BTreeMap::new(),
         }
     }
 
@@ -1499,6 +1505,7 @@ impl Project {
         // deleting an item leaves these entries behind: a new item taking that id would inherit them
         self.transcripts.keys().chain(self.source_graphics.keys()).chain(self.narrations.keys()).chain(self.objects.keys()).for_each(|i| see(i.0));
         self.objects.values().flatten().for_each(|t| see(t.id.0));
+        self.expressions.keys().for_each(|e| see(e.0));
         // `lut.import` names LUTs `lut<id>`
         self.luts.iter().filter_map(|l| l.id.strip_prefix("lut")?.parse().ok()).for_each(&mut see);
         fn mixer(m: &MixerStrip) -> impl Iterator<Item = u64> + '_ {
