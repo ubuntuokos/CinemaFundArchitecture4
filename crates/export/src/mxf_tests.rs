@@ -779,6 +779,12 @@ fn as02_bundle_has_version_manifest_and_mono_components() {
     assert!(!cfa4_mxf::as02::Shim::parse(&shim_xml).unwrap().name.is_empty());
     for f in man.files.iter().filter(|f| f.role != Role::Folder) {
         assert_eq!(std::fs::metadata(format!("{dir}/{}", f.path)).unwrap().len(), f.size, "{}", f.path);
+        // every file carries an MD5 over the whole file (9.2.5), checked against md5sum
+        let mic = f.mic.as_ref().unwrap_or_else(|| panic!("{} has no MIC", f.path));
+        assert_eq!((mic.kind.as_str(), mic.scope.as_str()), ("md5", "entire_file"), "{}", f.path);
+        if let Ok(o) = std::process::Command::new("md5sum").arg(format!("{dir}/{}", f.path)).output() {
+            assert_eq!(String::from_utf8_lossy(&o.stdout).split_whitespace().next(), Some(mic.value.as_str()), "{}", f.path);
+        }
     }
     // the components are mono OP1a files with one 24-frame track each
     for (tag, kind) in [("V", cfa4_mxf::TrackKind::Picture), ("A1", cfa4_mxf::TrackKind::Sound), ("A2", cfa4_mxf::TrackKind::Sound)] {
