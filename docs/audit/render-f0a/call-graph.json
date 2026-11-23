@@ -4974,6 +4974,13 @@
    "class": "other",
    "crate": "cfa4-project",
    "kind": "struct",
+   "module": "lib.rs",
+   "name": "VolumeAsset"
+  },
+  {
+   "class": "other",
+   "crate": "cfa4-project",
+   "kind": "struct",
    "module": "mask.rs",
    "name": "Mask"
   },
@@ -9631,6 +9638,11 @@
   },
   {
    "from": "cfa4-engine/panels.rs",
+   "item": "ItemKind",
+   "to": "cfa4-project"
+  },
+  {
+   "from": "cfa4-engine/panels.rs",
    "item": "find",
    "to": "cfa4-project"
   },
@@ -10737,6 +10749,21 @@
   {
    "from": "cfa4-engine/variants.rs",
    "item": "graphic_design",
+   "to": "cfa4-project"
+  },
+  {
+   "from": "cfa4-engine/vdb.rs",
+   "item": "sequence",
+   "to": "cfa4-media"
+  },
+  {
+   "from": "cfa4-engine/vdb.rs",
+   "item": "BinId",
+   "to": "cfa4-project"
+  },
+  {
+   "from": "cfa4-engine/vdb.rs",
+   "item": "ItemId",
    "to": "cfa4-project"
   },
   {

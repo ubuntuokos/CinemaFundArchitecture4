@@ -2744,6 +2744,7 @@ class MainWindow(QMainWindow):
             self.metadata.set_fields(it, data)
             self.item_info = data
             self.info.update_info(data, self.sequence, self.monitor.playhead)
+            self._update_voxels(it, data)
 
         if item is None:
             got(None, None)
@@ -2757,6 +2758,23 @@ class MainWindow(QMainWindow):
         self.update_clip_mixer()
         for editor in list(self.fx_editors.values()):
             editor.refresh()
+
+    def _update_voxels(self, item: int | None, data: dict[str, Any] | None) -> None:
+        """N1-10: a selected OpenVDB volume shows its grids in the Info panel (``vdb.inspect``)."""
+        volume = (data or {}).get("volume")
+        if item is None or not isinstance(volume, dict) or not volume.get("path"):
+            self.info.update_voxels(None)
+            return
+
+        def got(result: Any, _b: bytes | None) -> None:
+            if item == self.target_item and isinstance(result, dict):
+                self.info.update_voxels(result.get("inspection"))
+
+        def failed(message: str) -> None:
+            if item == self.target_item:
+                self.info.update_voxels(None, str(message))
+
+        self.engine.execute("vdb.inspect", {"path": volume["path"]}, on_reply=got, on_error=failed)
 
     def show_error(self, summary: str) -> None:
         """egui's error window: playback stops, the error is shown with its log file, the

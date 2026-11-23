@@ -484,7 +484,7 @@ pub fn merge_into_sized(target: &mut Project, fragment: Imported, bin: Option<Bi
                     mk.id = MarkerId(target.alloc_id());
                 }
             }
-            ItemKind::AdjustmentLayer { .. } | ItemKind::Graphic { .. } => {}
+            ItemKind::AdjustmentLayer { .. } | ItemKind::Graphic { .. } | ItemKind::Volume(_) => {}
         }
         new_items.insert(it.id, it);
     }
