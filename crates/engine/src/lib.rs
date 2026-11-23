@@ -18,6 +18,7 @@ pub mod background;
 pub mod beat_markers;
 pub mod camera_proxies;
 pub mod captions;
+pub mod captions_titles;
 pub mod clip_ops;
 pub mod color;
 pub mod commands;
@@ -1406,6 +1407,8 @@ mod avi_import_tests;
 mod beat_markers_tests;
 #[cfg(test)]
 mod camera_proxies_tests;
+#[cfg(test)]
+mod captions_titles_tests;
 #[cfg(test)]
 mod clip_ops_tests;
 #[cfg(test)]

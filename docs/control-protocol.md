@@ -136,6 +136,8 @@ management commands and dialog ids: offline media and relinking (`media.findMiss
 proxies (`media.createProxies`, `media.attachProxies`, `media.findCameraProxies`, `media.toggleProxies`, `proxies.*`), ingest
 (`project.ingestSettings`) and the Project Manager (`file.projectManager`, `pm.*`).
 
+**Captions as titles**: `captions.importAsTitles {path, offsetTime|offsetSeconds|offsetFrame|offsetTimecode?, track?, size?, font?, fontStyle?, position?, box?}` reads a caption file (any format `captions.import` reads) and places each cue as a `graphics.newText` clip at the cue time, as long as the cue, in one undo step. Inline markup is stripped; cues without text or duration are skipped and counted. `track` is the video track index of `graphics.newText`. No caption track is touched. Returns `{clips, cues, skipped, warnings}`.
+
 **Moving clips**: `timeline.move {moves: [{clip, track, time}], insert?, linked?}` → `{moved: [clip ids]}`.
 With Linked Selection on (the default; `linked` overrides the toggle for one call) the linked
 partners of a listed clip that are not listed themselves move by the same time offset and stay on

@@ -189,6 +189,7 @@ graph LR
 | `cfa4-engine/captions.rs` | `cfa4-media` | `SharedReader` |
 | `cfa4-engine/captions.rs` | `cfa4-project` | `Caption`, `CaptionAlign`, `ItemId`, `Keyframe`, `Track`, `TrackId`, `resolve_auto_points` |
 | `cfa4-engine/captions.rs` | `cfa4-time` | `FrameRate`, `Tick`, `TimeRange` |
+| `cfa4-engine/captions_titles.rs` | `cfa4-time` | `Tick` |
 | `cfa4-engine/clip_ops.rs` | `cfa4-geom` | `Vec2` |
 | `cfa4-engine/clip_ops.rs` | `cfa4-media` | `AudioStreamInfo`, `Generator`, `MediaInfo`, `MediaKind`, `VideoStreamInfo`, `wav` |
 | `cfa4-engine/clip_ops.rs` | `cfa4-project` | `Bin`, `EffectInstance`, `Marker`, `Param`, `graphic`, `resolve_auto_points` |
