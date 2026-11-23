@@ -168,6 +168,7 @@ impl TaskHost {
             missed,
             resumable: false,
             time_zone,
+            batch_key: None,
         };
         self.queue.submit(new, now_ms()).map(|_| ()).map_err(|e| format!("{e:?}"))
     }
@@ -261,6 +262,7 @@ impl TaskHost {
                 missed: MissedStart::RunLate,
                 resumable: false,
                 time_zone: None,
+                batch_key: None,
             };
             if let Err(e) = self.queue.submit(new, now_ms()) {
                 return Admission::Refused(format!("{e:?}"));

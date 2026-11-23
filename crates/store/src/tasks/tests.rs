@@ -50,6 +50,7 @@ fn task(id: &str, vram_gib: u64) -> NewTask {
         missed: MissedStart::RunLate,
         resumable: true,
         time_zone: None,
+        batch_key: None,
     }
 }
 
