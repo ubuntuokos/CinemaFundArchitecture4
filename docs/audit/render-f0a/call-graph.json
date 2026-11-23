@@ -2703,6 +2703,62 @@
    "class": "other",
    "crate": "cfa4-engine",
    "kind": "struct",
+   "module": "gesture_runtime.rs",
+   "name": "ButtonView"
+  },
+  {
+   "class": "other",
+   "crate": "cfa4-engine",
+   "kind": "struct",
+   "module": "gesture_runtime.rs",
+   "name": "Combination"
+  },
+  {
+   "class": "other",
+   "crate": "cfa4-engine",
+   "kind": "struct",
+   "module": "gesture_runtime.rs",
+   "name": "GestureRuntime"
+  },
+  {
+   "class": "other",
+   "crate": "cfa4-engine",
+   "kind": "enum",
+   "module": "gesture_runtime.rs",
+   "name": "InputPath"
+  },
+  {
+   "class": "other",
+   "crate": "cfa4-engine",
+   "kind": "enum",
+   "module": "gesture_runtime.rs",
+   "name": "LogicalRole"
+  },
+  {
+   "class": "other",
+   "crate": "cfa4-engine",
+   "kind": "enum",
+   "module": "gesture_runtime.rs",
+   "name": "Motion"
+  },
+  {
+   "class": "other",
+   "crate": "cfa4-engine",
+   "kind": "enum",
+   "module": "gesture_runtime.rs",
+   "name": "PhysicalCode"
+  },
+  {
+   "class": "other",
+   "crate": "cfa4-engine",
+   "kind": "enum",
+   "module": "gesture_runtime.rs",
+   "name": "RolePath"
+  },
+  {
+   "class": "other",
+   "crate": "cfa4-engine",
+   "kind": "struct",
    "module": "graphic_templates.rs",
    "name": "LibraryEntry"
   },
