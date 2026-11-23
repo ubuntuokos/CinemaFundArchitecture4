@@ -102,6 +102,7 @@ from .panels.voiceover import VoiceOverRecorder, VoiceOverSettingsDialog
 from .status_bar import JobStatus, tool_hint
 from .timecode_sync import TimecodeSyncLink
 from .timecode import TICKS_PER_SECOND
+from .panels.expression_editor import ExpressionEditor
 from .tools_menu import build_tools_menu
 from .window_menu import Workspaces, bind_free, build_window_menu, window_commands
 
@@ -297,6 +298,7 @@ class MainWindow(QMainWindow):
         self.revision = -1
         self.source_state: dict[str, Any] | None = None
         self.export_dialog: ExportDialog | None = None
+        self.expression_editor: ExpressionEditor | None = None
         self.media_backends_dialog: MediaBackendsDialog | None = None
         # the header mode (egui's ``ui.mode``): Import shows the Home page over the panels
         self.mode = "Edit"
@@ -3169,6 +3171,14 @@ class MainWindow(QMainWindow):
             self.text_panel.set_playhead(ticks)
 
     # ----- export -----
+    def open_expression_editor(self) -> None:
+        """The CFX expression editor (X4): the volume selected now is the one Preview and Bake run on."""
+        if self.expression_editor is None:
+            self.expression_editor = ExpressionEditor(self.engine, self.selected_item, self)
+        self.expression_editor.refresh()
+        self.expression_editor.show()
+        self.expression_editor.raise_()
+
     def open_export(self) -> None:
         if self.export_dialog is None:
             self.export_dialog = ExportDialog(self.engine, self)

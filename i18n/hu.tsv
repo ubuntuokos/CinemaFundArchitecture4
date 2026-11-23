@@ -4921,3 +4921,19 @@ export.summary	Low	alacsony
 	Voxel attributes	Voxel-attribútumok
 	Voxel size:	Voxelméret:
 	points	pont
+	Approve	Jóváhagyás
+	Approved on this machine	Jóváhagyva ezen a gépen
+	Bake	Kisütés
+	Compiles: reads {reads}; writes {writes}	Lefordul: olvas: {reads}; ír: {writes}
+	Expression Editor	Kifejezésszerkesztő
+	Expression Editor…	Kifejezésszerkesztő…
+	Functions	Függvények
+	Grid:	Rács:
+	Not approved on this machine	Nincs jóváhagyva ezen a gépen
+	Outputs are written name:float or name:vec3, separated by commas.	A kimenetek név:float vagy név:vec3 alakúak, vesszővel elválasztva.
+	Outputs:	Kimenetek:
+	Running…	Fut…
+	Saved	Mentve
+	Saved expressions	Mentett kifejezések
+	Select a volume in the Project panel first.	Előbb válassz egy térfogatot a Projekt panelen.
+	{voxels} voxels in {ms} ms	{voxels} voxel, {ms} ms

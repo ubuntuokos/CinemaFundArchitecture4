@@ -67,7 +67,7 @@ Blokkos végrehajtás: egy voxel kiértékelése tiszta függvény a bemeneti bl
 | **X1** | `cfa4-expr`: lexer, parser, típusellenőrzés, bájtkód, VM, fuel, determinisztikus zaj | lásd N3-1′…N3-4′ lent; `cargo xtask ci` + `cargo test -p cfa4-expr` zöld; fuzz 0 összeomlás |
 | **X2** | Volume-híd (worker tile-parancsok + `cfa4-vdb` API) és `expr.run_preview` | a N2 előnézeti útvonalon látható eredmény; 1 és N szál bitazonos; megszakítás ≤ 1 blokk idő |
 | **X3** | Engine-parancsok, projektmentés, jóváhagyási jelző, `expr.bake` | N3-5′, N3-7′; **készül (István engedélye 2026-11-23 16:56)**: `expr.check/save/list/get/delete/approve/revoke/bake/export/import`, projektséma v18 (`Project::expressions`: forrás + SHA-256), gépenkénti jóváhagyás (`<adatkönyvtár>/expression-approvals.json`, nem a projektfájlban); `expr.cancel` nem része X3-nak (a bake szinkron parancs; megszakítás a háttérfeladatos futtatással jön, ACS-6 #1471, X4-ben, ha a szerkesztő kéri) |
-| **X4** | Qt6 szerkesztő | N3-6′; `--smoke --screenshot` ellenőrzés |
+| **X4** | Qt6 szerkesztő | N3-6′; `--smoke --screenshot` ellenőrzés; **készül (István engedélye 2026-11-23)**: `python/cfa4_qt/panels/expression_editor.py`, Tools ▸ Video Tools ▸ Expression Editor… (`tools.video.expressionEditor`): szintaxiskiemelés, függvénylista, validálás gépelés közben (`expr.check`, hibahely aláhúzva), compile-állapot, mentett kifejezések + jóváhagyás, Preview (`expr.run_preview`) és Bake (`expr.bake`, csak jóváhagyott szövegre) |
 | **X5** | Kiszökési- és erőforrás-tesztcsomag (hostile kifejezések), mérés a referenciagépen | N3-S1′…S3′ |
 
 **Az N3 sorok pontosítása az interpreterre** (a szülő terv N3-S és N3-1…7 sorai helyett/mellé; a szülő terv szövegének módosítása tulajdonosi jóváhagyást kér):
