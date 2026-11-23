@@ -746,3 +746,17 @@ fn threshold_failures_are_listed_together() {
     assert!(threshold_failures(&args, &unmeasured).first().is_some_and(|m| m.contains("need a reference")));
     assert!(threshold_failures(&parse_args(&[]).unwrap(), &unmeasured).is_empty());
 }
+
+#[test]
+fn check_reference_rejects_substring_only() {
+    // "Info" only inside "information", "Push" only inside "pushed": not a mention of the name
+    let v = v1_file("panels", json!([]), v1_items(&[("Info", "docs/a.md")]));
+    let e = check(Area::Panels, &v, &[("docs/a.md", "More information is pushed here.")]);
+    assert!(e.first().is_some_and(|m| m.contains("\"Info\" does not appear in docs/a.md")), "{e:?}");
+    assert!(check(Area::Panels, &v, &[("docs/a.md", "The Info panel shows media details.")]).is_empty());
+    assert!(contains_phrase("a | info | b", "info") && contains_phrase("info", "info") && contains_phrase("x info.", "info"));
+    assert!(!contains_phrase("information", "info") && !contains_phrase("an info2", "info") && !contains_phrase("x", ""));
+    // a hit inside a word does not hide a later whole-word hit; non-ASCII text is not split mid-character
+    assert!(contains_phrase("information, then info", "info") && contains_phrase("é info é", "info"));
+    assert!(!contains_phrase("éinfo", "info"));
+}
