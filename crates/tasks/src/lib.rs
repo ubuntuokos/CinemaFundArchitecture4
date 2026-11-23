@@ -40,6 +40,7 @@ pub mod manager;
 pub mod monitor;
 pub mod plan;
 pub mod queue;
+pub mod render;
 pub mod resources;
 pub mod schedule;
 mod system;
@@ -50,5 +51,6 @@ pub use manager::{Class, Denied, GpuRequest, Grant, Manager, Request, Reservatio
 pub use monitor::{Event, Level, Monitor, MonitorConfig, NominalChange, Signal};
 pub use plan::{Assessment, Confidence, Decision, Estimate, ExecutionPath, Fit, Job, Metric, Plan, Provider, Tolerance, plan};
 pub use queue::{Actor, MissedStart, NewTask, Priority, Queue, QueueConfig, QueueError, QueueEvent, StartMode, State, Task, Transition, UtcMs};
+pub use render::{RenderEvent, RenderEventKind, RenderFallback, RenderProgress, RenderState};
 pub use resources::{Current, GpuCurrent, GpuNominal, Nominal, Snapshot, sample, sample_root};
 pub use system::Pressure;
