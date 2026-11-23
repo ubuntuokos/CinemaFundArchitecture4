@@ -4885,3 +4885,10 @@
 	Write an AS-02 bundle (the path is a folder)	Записати пакет AS-02 (шлях — це тека)
 	AS-02	AS-02
 	AS-12	AS-12
+
+# N1 voxel panel
+	Active voxels:	Активні воксели:
+	Bounds:	Межі:
+	Voxel attributes	Атрибути вокселів
+	Voxel size:	Розмір вокселя:
+	points	точки

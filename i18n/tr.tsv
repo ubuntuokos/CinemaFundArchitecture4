@@ -4903,3 +4903,10 @@ export.summary	Low	düşük
 	Write an AS-02 bundle (the path is a folder)	AS-02 paketi yaz (yol bir klasördür)
 	AS-02	AS-02
 	AS-12	AS-12
+
+# N1 voxel panel
+	Active voxels:	Etkin vokseller:
+	Bounds:	Sınırlar:
+	Voxel attributes	Voksel öznitelikleri
+	Voxel size:	Voksel boyutu:
+	points	nokta

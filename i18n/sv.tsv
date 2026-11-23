@@ -4904,3 +4904,10 @@ export.summary	Low	låg
 	Write an AS-02 bundle (the path is a folder)	Skriv ett AS-02-paket (sökvägen är en mapp)
 	AS-02	AS-02
 	AS-12	AS-12
+
+# N1 voxel panel
+	Active voxels:	Aktiva voxlar:
+	Bounds:	Gränser:
+	Voxel attributes	Voxelattribut
+	Voxel size:	Voxelstorlek:
+	points	punkter

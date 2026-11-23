@@ -4902,3 +4902,10 @@ export.summary	Low	laag
 	Write an AS-02 bundle (the path is a folder)	Een AS-02-bundel schrijven (het pad is een map)
 	AS-02	AS-02
 	AS-12	AS-12
+
+# N1 voxel panel
+	Active voxels:	Actieve voxels:
+	Bounds:	Grenzen:
+	Voxel attributes	Voxelattributen
+	Voxel size:	Voxelgrootte:
+	points	punten

@@ -23,6 +23,9 @@ Ubuntu 26.04 (`resolute`) „Published" forráscsomagjai a Launchpad API-n (`get
 4. **ADR-0003 táblasor:** „BSD-3 / Apache-2.0" → „Apache-2.0" (Q2) – külön kis PR, még nincs megcsinálva.
 5. **SBOM/`cargo deny` terv:** a C++ worker nem Cargo-függőség, ezért az SBOM-ba kézzel vezetett „rendszerfüggőség" sor kerül (név, 26.04-es verzió, licenc, fent); `cargo deny` a Rust-oldali kötéseket (ha lesz) fedi.
 
+## 3b. G2 közben kiderült (2026-11-21)
+A `libopenvdb-dev` (10.0.1) fordításhoz **Boost** is kell (`libboost-iostreams-dev`, `libboost-system-dev`; Boost Software License 1.0, GPL-kompatibilis). A CMake-hez a Debian `FindOpenVDB.cmake`-et kell használni (nincs config-fájl). Ez a worker build-előfeltétele; a G1 csomaglistája ezzel bővül. A 24.04-es csomag verziója (10.0.1) megegyezik a 26.04-essel, ezen a gépen a worker build és teszt zöld.
+
 ## 4. Ellenőrizetlen (nem „kész")
 - U-G1-1: fájl-szintű licenc-hozzárendelés (openvdb, onetbb).
 - U-G1-2: NanoVDB/AX/Points modulok a 26.04-es bináris csomagban (`apt-file`-szintű lista).

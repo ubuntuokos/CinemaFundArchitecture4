@@ -45,9 +45,17 @@ attribution and original copyright/licence requirements remain in force.
     FFmpeg (LGPL-2.1-or-later, optional GPL-2.0-or-later parts) and x264/x265 (GPL-2.0-or-later)
     still need a per-file header check before anything is reused.
   - NEVER reuse GPL-2.0-only (e.g. HandBrake), AGPL, unlicensed or proprietary code (Adobe,
-    DaVinci Resolve). Reimplement the capability or call the program as an external process.
+    DaVinci Resolve) in CFA4's own code. Reimplement the capability or call the program as an external process.
+  - **AGPL-3.0 as an optional worker** (owner decision 2026-11-22, lifts the blanket AGPL ban):
+    AGPL-3.0 code and models (e.g. Ultralytics YOLO) may run as a separately downloaded, optional
+    worker in its own sandboxed process, like non-commercial workers (CFA4-AI_modules ADR 0008 §8).
+    Never in the CFA4 process, never copied or ported into CFA4's code, and never a default.
+    The worker records its licence; its source, and the corresponding source of each AGPL-licensed
+    model or dataset component, is offered with it (AGPL-3.0 §13); the UI names
+    the licence. Details: [`docs/licensing.md`](docs/licensing.md) §3.
   - Dependencies must use GPL-3.0-compatible licences and pass `cargo deny check licenses`
-    (`deny.toml`); GPL-2.0-only and AGPL dependencies are not allowed.
+    (`deny.toml`); GPL-2.0-only and AGPL dependencies are not allowed in CFA4's own crates
+    (an AGPL worker is a separate program, not a dependency).
   - **No paid or commercial part** (owner decision 2026-11-08, replaces the 2026-10-24 paid-extras
     model): never add paid extras or editions, licence keys, trials, usage or resolution limits,
     watermarks or paid support tiers, in the core, AI workers, packages or plans. CFA4 is supported

@@ -91,6 +91,7 @@ pub mod timecode_sync;
 pub mod transcript;
 pub mod trim;
 pub mod variants;
+pub mod vdb;
 pub mod voiceover;
 
 use std::sync::Arc;
@@ -1375,7 +1376,7 @@ pub fn media_duration(p: &Project, _pool: &MediaPool, id: ItemId) -> Option<Tick
                 id = *parent;
                 continue;
             }
-            cfa4_project::ItemKind::AdjustmentLayer { .. } | cfa4_project::ItemKind::Graphic { .. } => None,
+            cfa4_project::ItemKind::AdjustmentLayer { .. } | cfa4_project::ItemKind::Graphic { .. } | cfa4_project::ItemKind::Volume(_) => None,
         };
     }
     None
@@ -1532,6 +1533,8 @@ mod track_params_tests;
 mod transcript_tests;
 #[cfg(test)]
 mod trim_tests;
+#[cfg(test)]
+mod vdb_tests;
 #[cfg(test)]
 mod vfx_tests;
 #[cfg(test)]

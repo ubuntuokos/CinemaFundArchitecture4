@@ -4914,3 +4914,10 @@ export.summary	Low	alacsony
 	the engine sent no profiles	a motor nem küldött profilokat
 	{n} files checked	{n} fájl ellenőrizve
 	AS-12	AS-12
+
+# N1 voxel panel
+	Active voxels:	Aktív voxelek:
+	Bounds:	Határok:
+	Voxel attributes	Voxel-attribútumok
+	Voxel size:	Voxelméret:
+	points	pont

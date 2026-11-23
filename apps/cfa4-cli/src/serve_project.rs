@@ -30,6 +30,7 @@ fn kind_icon(it: &ProjectItem) -> &'static str {
         ItemKind::Sequence(_) => "sequence",
         ItemKind::Subclip { .. } => "film",
         ItemKind::AdjustmentLayer { .. } | ItemKind::Graphic { .. } => "adjust",
+        ItemKind::Volume(_) => "grid",
     }
 }
 

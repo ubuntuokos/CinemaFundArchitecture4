@@ -4904,3 +4904,10 @@ export.summary	Low	χαμηλή
 	Write an AS-02 bundle (the path is a folder)	Εγγραφή πακέτου AS-02 (η διαδρομή είναι φάκελος)
 	AS-02	AS-02
 	AS-12	AS-12
+
+# N1 voxel panel
+	Active voxels:	Ενεργά voxel:
+	Bounds:	Όρια:
+	Voxel attributes	Ιδιότητες voxel
+	Voxel size:	Μέγεθος voxel:
+	points	σημεία
