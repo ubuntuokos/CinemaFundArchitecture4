@@ -219,19 +219,13 @@ impl DecoderBuilder {
 
     /// 某个仅对视频解码器生效的配置项被用于其它媒体类型时构造的错误。
     fn option_only_for(opt: &'static str, value: String, media_type: MediaType) -> RsmediaError {
-        RsmediaError::msg(format!(
-            "{opt}({value}) is only valid for {} decoders, got media type: {media_type:?}",
-            media_type.get_media_name()
-        ))
+        RsmediaError::msg(format!("{opt}({value}) is only valid for {} decoders, got media type: {media_type:?}", media_type.get_media_name()))
     }
 
     fn setup_codec_context(&self, decoder: &mut AVCodecContext, input: &AVStream) -> Result<()> {
         let media_type = self.media_type;
         if media_type as ffi::AVMediaType != decoder.codec_type {
-            return Err(RsmediaError::msg(format!(
-                "Decoder codec type not supported: {:?} vs. {:?}",
-                media_type, decoder.codec_type
-            )));
+            return Err(RsmediaError::msg(format!("Decoder codec type not supported: {:?} vs. {:?}", media_type, decoder.codec_type)));
         }
 
         decoder.apply_codecpar(&input.codecpar())?;
@@ -266,27 +260,17 @@ impl DecoderBuilder {
     pub fn build_from_reader<R: Reader>(self, reader: &R) -> Result<Decoder> {
         let media_type = self.media_type;
         let (stream_index, codec_name) = reader.find_best_stream(media_type)?;
-        let input_stream = reader
-            .input()
-            .streams()
-            .get(stream_index)
-            .ok_or(RsmediaError::msg(format!(
-                "stream: {stream_index} not found!"
-            )))?;
+        let input_stream = reader.input().streams().get(stream_index).ok_or(RsmediaError::msg(format!("stream: {stream_index} not found!")))?;
 
         // 优先用调用方指定的解码器名，否则用流自带的名字（`find_best_stream`
         // 的返回值）。这两个名字来自不同来源，不要写在同名绑定里——那样两个分支
         // 看起来一模一样，实际解析到不同的变量。
         let codec_name = self.codec_name.as_deref().unwrap_or(&codec_name);
-        let codec = AVCodec::find_decoder_by_name(&strutils::str_to_cstring(codec_name))
-            .context(format!("Failed to find decoder by name: '{codec_name}'"))?;
+        let codec = AVCodec::find_decoder_by_name(&strutils::str_to_cstring(codec_name)).context(format!("Failed to find decoder by name: '{codec_name}'"))?;
 
         let duration = Time::new(Some(input_stream.duration), input_stream.time_base);
         let nb_frames = input_stream.nb_frames;
-        let frame_rate = (
-            avutil::av_q2d(input_stream.r_frame_rate) as f32,
-            avutil::av_q2d(input_stream.avg_frame_rate) as f32,
-        );
+        let frame_rate = (avutil::av_q2d(input_stream.r_frame_rate) as f32, avutil::av_q2d(input_stream.avg_frame_rate) as f32);
 
         let mut decode_ctx = AVCodecContext::new(&codec);
         self.setup_codec_context(&mut decode_ctx, input_stream)?;
@@ -303,22 +287,12 @@ impl DecoderBuilder {
             })
             .map(|cfg| {
                 // codec support or not for hardware acceleration
-                let hw_pixel = cfg
-                    .device_type
-                    .find_hw_pixel_format_with_codec(&codec)
-                    .ok_or_else(|| {
-                        let codec_name = strutils::cstr_to_string(codec.name()).unwrap();
-                        RsmediaError::msg(format!(
-                            "Decoder with HW acceleration is not supported for codec: {codec_name}"
-                        ))
-                    })?;
+                let hw_pixel = cfg.device_type.find_hw_pixel_format_with_codec(&codec).ok_or_else(|| {
+                    let codec_name = strutils::cstr_to_string(codec.name()).unwrap();
+                    RsmediaError::msg(format!("Decoder with HW acceleration is not supported for codec: {codec_name}"))
+                })?;
 
-                log::info!(
-                    "Video decoder with HW acceleration codec: {:?}, hw_pixel: {:?}, config: {:#?}",
-                    codec.name(),
-                    PixelFormat::from(hw_pixel),
-                    cfg
-                );
+                log::info!("Video decoder with HW acceleration codec: {:?}, hw_pixel: {:?}, config: {:#?}", codec.name(), PixelFormat::from(hw_pixel), cfg);
 
                 // create hardware context
                 HWContext::new(cfg)
@@ -332,9 +306,7 @@ impl DecoderBuilder {
             .transpose()?;
 
         let dict = self.codec_opts.and_then(|opts| opts.into_dict());
-        decode_ctx
-            .open(dict)
-            .context("Failed to open decoder for stream")?;
+        decode_ctx.open(dict).context("Failed to open decoder for stream")?;
 
         let stream_info = StreamInfo::from_stream(input_stream)?;
         log::info!("{stream_info}");
@@ -351,11 +323,7 @@ impl DecoderBuilder {
             }
             (_, None) => PixelFormat::YUV420P,
             (media_type, Some(fmt)) => {
-                return Err(Self::option_only_for(
-                    "with_pix_fmt",
-                    format!("{fmt:?}"),
-                    media_type,
-                ));
+                return Err(Self::option_only_for("with_pix_fmt", format!("{fmt:?}"), media_type));
             }
         };
 
@@ -366,16 +334,10 @@ impl DecoderBuilder {
             (MediaType::AUDIO, None) => None,
             (MediaType::AUDIO, Some(fmt)) if fmt != SampleFormat::NONE => Some(fmt),
             (MediaType::AUDIO, Some(fmt)) => {
-                return Err(RsmediaError::msg(format!(
-                    "Unsupported output sample format: {fmt:?}"
-                )));
+                return Err(RsmediaError::msg(format!("Unsupported output sample format: {fmt:?}")));
             }
             (media_type, Some(fmt)) => {
-                return Err(Self::option_only_for(
-                    "with_sample_fmt",
-                    format!("{fmt:?}"),
-                    media_type,
-                ));
+                return Err(Self::option_only_for("with_sample_fmt", format!("{fmt:?}"), media_type));
             }
             (_, None) => None,
         };
@@ -398,34 +360,23 @@ impl DecoderBuilder {
                     // 帧在进图之前已转换（见 `receive_frame_from_decoder`），因此
                     // 这里用目标格式而非编解码器原生格式。
                     format: output_sample_fmt.unwrap_or(SampleFormat::from(decode_ctx.sample_fmt)),
-                    src_format: output_sample_fmt
-                        .unwrap_or(SampleFormat::from(decode_ctx.sample_fmt)),
+                    src_format: output_sample_fmt.unwrap_or(SampleFormat::from(decode_ctx.sample_fmt)),
                     time_base: decode_ctx.time_base,
                 }),
                 _ => {
-                    return Err(RsmediaError::msg(format!(
-                        "Unsupported filter for media type: {media_type:?}"
-                    )));
+                    return Err(RsmediaError::msg(format!("Unsupported filter for media type: {media_type:?}")));
                 }
             };
 
             let mut graph = FilterGraph::new();
             // 验证 Filter 链的媒体类型是否与当前流匹配
             if !filters.iter().all(|f| f.media_type() == media_type) {
-                return Err(RsmediaError::msg(format!(
-                    "Filter media type mismatch for stream type {media_type:?}"
-                )));
+                return Err(RsmediaError::msg(format!("Filter media type mismatch for stream type {media_type:?}")));
             }
-            graph
-                .init(&filter_params, filters.as_slice())
-                .context("Failed to initialize filter graph")?;
+            graph.init(&filter_params, filters.as_slice()).context("Failed to initialize filter graph")?;
 
             // 参数随图一起留下：重启流水线时必须重建一张新图。
-            Some(DecodeFilterChain {
-                graph,
-                params: filter_params,
-                filters,
-            })
+            Some(DecodeFilterChain { graph, params: filter_params, filters })
         } else {
             None
         };
@@ -440,8 +391,7 @@ impl DecoderBuilder {
             filter_graph,
             context: decode_ctx,
             state: CodecContextState::Normal,
-            scaler: Scaler::new_with_options(self.scale_algorithm, self.scale_quality)
-                .with_buffer_pool(self.scale_pool),
+            scaler: Scaler::new_with_options(self.scale_algorithm, self.scale_quality).with_buffer_pool(self.scale_pool),
             resize: self.resize,
             output_pix_fmt,
             output_sample_fmt,
@@ -562,8 +512,7 @@ impl Decoder {
     /// actually arrive.
     #[inline]
     pub fn sample_fmt(&self) -> SampleFormat {
-        self.output_sample_fmt
-            .unwrap_or_else(|| SampleFormat::from(self.context.sample_fmt))
+        self.output_sample_fmt.unwrap_or_else(|| SampleFormat::from(self.context.sample_fmt))
     }
 
     #[inline]
@@ -668,12 +617,7 @@ impl Decoder {
     where
         T: ElementType,
     {
-        decode_stream(
-            self,
-            reader,
-            Decoder::decode_packet::<T>,
-            Decoder::drain::<T>,
-        )
+        decode_stream(self, reader, Decoder::decode_packet::<T>, Decoder::drain::<T>)
     }
 
     /// Decode a single frame as a `MediaFrame<u8>`.
@@ -719,13 +663,8 @@ impl Decoder {
     /// 返回的 [`AVSubtitle`] 可通过
     /// [`SubtitleSegment::from_avsubtitle`](crate::subtitle::SubtitleSegment::from_avsubtitle)
     /// 转换为纯文本段落，或经 `rect_iter` 自行处理。
-    pub fn decode_subtitle_packet(
-        &mut self,
-        packet: Option<&mut AVPacket>,
-    ) -> Result<Option<AVSubtitle>> {
-        self.context
-            .decode_subtitle(packet)
-            .context("Failed to decode subtitle packet")
+    pub fn decode_subtitle_packet(&mut self, packet: Option<&mut AVPacket>) -> Result<Option<AVSubtitle>> {
+        self.context.decode_subtitle(packet).context("Failed to decode subtitle packet")
     }
 
     /// 解码下一条字幕段落（仅字幕解码器，推荐入口）。
@@ -752,15 +691,10 @@ impl Decoder {
         R: Reader,
     {
         if self.media_type != MediaType::SUBTITLE {
-            return Err(RsmediaError::msg(format!(
-                "decode_subtitle_segment requires a subtitle decoder, got media type: {:?}",
-                self.media_type
-            )));
+            return Err(RsmediaError::msg(format!("decode_subtitle_segment requires a subtitle decoder, got media type: {:?}", self.media_type)));
         }
         if self.is_flushed() {
-            return Err(RsmediaError::invalid_config(
-                "Decoder cannot decode after flushed. Call reset().",
-            ));
+            return Err(RsmediaError::invalid_config("Decoder cannot decode after flushed. Call reset()."));
         }
 
         let mut read_exhausted = false;
@@ -839,9 +773,7 @@ impl Decoder {
         // 与 `decode`/`decode_raw` 同一阶段守卫：解码器 flush 之后再送包，FFmpeg
         // 只会回一句 "Decoder is already flushed"，调用方看不出该怎么办。
         if self.is_finished() {
-            return Err(RsmediaError::invalid_config(
-                "Decoder cannot decode after flushed. Call reset().",
-            ));
+            return Err(RsmediaError::invalid_config("Decoder cannot decode after flushed. Call reset()."));
         }
         self.send_packet_to_decoder(Some(packet))?;
         self.receive_normalized_frame()
@@ -934,22 +866,14 @@ impl Decoder {
         let Some(chain) = self.filter_graph.as_mut() else {
             return Ok(());
         };
-        let DecodeFilterChain {
-            graph,
-            params,
-            filters,
-        } = chain;
-        graph
-            .rebuild(params, filters)
-            .context("Failed to rebuild the filter graph")
+        let DecodeFilterChain { graph, params, filters } = chain;
+        graph.rebuild(params, filters).context("Failed to rebuild the filter graph")
     }
 
     /// Send packet to decoder.
     /// Ensure rescaling timestamps accordingly before sending to decoder.
     fn send_packet_to_decoder(&mut self, packet: Option<&AVPacket>) -> Result<()> {
-        self.context
-            .send_packet(packet)
-            .context("Failed to send packet to decoder")?;
+        self.context.send_packet(packet).context("Failed to send packet to decoder")?;
         Ok(())
     }
 
@@ -997,9 +921,7 @@ impl Decoder {
         let sw_frame = match &self.hw_context {
             Some(hw_ctx) if hw_ctx.is_hw_frame(&decoded_frame) => {
                 // hw_frame -> sw_frame
-                hw_ctx
-                    .hw_download(&decoded_frame)
-                    .context("Failed HW frame download")?
+                hw_ctx.hw_download(&decoded_frame).context("Failed HW frame download")?
             }
             _ => {
                 // 已经是 CPU 帧或无 HWaccel
@@ -1019,38 +941,22 @@ impl Decoder {
                 let target_sw_pix_fmt = self.output_pix_fmt;
                 // 计算目标尺寸：无 resize 时保持源尺寸，有 resize 时按策略计算
                 let (out_w, out_h) = match self.resize {
-                    Some(resize) => resize
-                        .compute_for((sw_frame.width as u32, sw_frame.height as u32))
-                        .ok_or_else(|| {
-                            let (w, h) = (sw_frame.width, sw_frame.height);
-                            RsmediaError::msg(format!(
-                                "Cannot resize frame {w}x{h} into {resize:?}"
-                            ))
-                        })?,
+                    Some(resize) => resize.compute_for((sw_frame.width as u32, sw_frame.height as u32)).ok_or_else(|| {
+                        let (w, h) = (sw_frame.width, sw_frame.height);
+                        RsmediaError::msg(format!("Cannot resize frame {w}x{h} into {resize:?}"))
+                    })?,
                     None => (sw_frame.width as u32, sw_frame.height as u32),
                 };
-                self.scaler.scale_if_needed(
-                    sw_frame,
-                    out_w as i32,
-                    out_h as i32,
-                    target_sw_pix_fmt,
-                )?
+                self.scaler.scale_if_needed(sw_frame, out_w as i32, out_h as i32, target_sw_pix_fmt)?
             }
             MediaType::AUDIO => match self.output_sample_fmt {
                 // 统一音频输出格式（由 `with_sample_fmt` 配置）。与视频侧一样在
                 // 进滤镜图之前完成，图内因此按目标格式声明输入（见 build_from_reader）。
                 // 只在格式真的不同、且帧确实带样本时转换：默认（未指定目标）与
                 // 「目标 == 原生」两种情况都零开销，空帧也无从转换。
-                Some(target)
-                    if target != SampleFormat::from(sw_frame.format) && sw_frame.nb_samples > 0 =>
-                {
-                    resample::convert_frame(
-                        &sw_frame,
-                        sw_frame.ch_layout,
-                        target.into(),
-                        sw_frame.sample_rate,
-                    )
-                    .context("Failed to convert decoded audio to the output sample format")?
+                Some(target) if target != SampleFormat::from(sw_frame.format) && sw_frame.nb_samples > 0 => {
+                    resample::convert_frame(&sw_frame, sw_frame.ch_layout, target.into(), sw_frame.sample_rate)
+                        .context("Failed to convert decoded audio to the output sample format")?
                 }
                 _ => sw_frame,
             },
@@ -1069,11 +975,7 @@ impl Decoder {
                 // `Flushed`（EOF）之后才返回 `None`，因此这里没有第三种情况：
                 // 返回 `None` 让外层循环继续驱动解码器，或就此收尾。
                 None => {
-                    log::debug!(
-                        "Filter graph produced no frame (drained: {}, flushed: {})",
-                        chain.graph.is_drained(),
-                        chain.graph.is_flushed()
-                    );
+                    log::debug!("Filter graph produced no frame (drained: {}, flushed: {})", chain.graph.is_drained(), chain.graph.is_flushed());
                     Ok(None)
                 }
             }
@@ -1113,20 +1015,13 @@ impl Decoder {
 /// 驱动“读 packet → 解码 → EOF 排空”的通用状态机，供 [`Decoder::decode`] 与
 /// [`Decoder::decode_raw`] 复用。`on_packet` 处理单个输入包，`on_drain` 处理 EOF
 /// 阶段的排空；二者共用同一套“忽略非目标流 / 报错即返回 / 排空到底”的语义。
-fn decode_stream<O, OP, OD>(
-    decoder: &mut Decoder,
-    reader: &mut impl Reader,
-    mut on_packet: OP,
-    mut on_drain: OD,
-) -> Result<Option<O>>
+fn decode_stream<O, OP, OD>(decoder: &mut Decoder, reader: &mut impl Reader, mut on_packet: OP, mut on_drain: OD) -> Result<Option<O>>
 where
     OP: FnMut(&mut Decoder, &AVPacket) -> Result<Option<O>>,
     OD: FnMut(&mut Decoder) -> Result<Option<O>>,
 {
     if decoder.is_finished() {
-        return Err(RsmediaError::invalid_config(
-            "Decoder cannot decode after flushed. Call reset().",
-        ));
+        return Err(RsmediaError::invalid_config("Decoder cannot decode after flushed. Call reset()."));
     }
 
     let mut read_exhausted = false;
@@ -1205,10 +1100,7 @@ impl Drop for Decoder {
             match chain.graph.flush() {
                 Ok(frames) => {
                     if !frames.is_empty() {
-                        log::warn!(
-                            "{} frames dropped during Decoder drop filter flush.",
-                            frames.len()
-                        );
+                        log::warn!("{} frames dropped during Decoder drop filter flush.", frames.len());
                     }
                     log::debug!("Filter graph flushed during Decoder drop.");
                 }
@@ -1223,10 +1115,7 @@ impl Drop for Decoder {
                 let mut iterations = 0usize;
                 loop {
                     if iterations >= crate::MAX_DRAIN_ITERATIONS {
-                        log::warn!(
-                            "Decoder drain exceeded {} iterations, forcing EOF.",
-                            crate::MAX_DRAIN_ITERATIONS
-                        );
+                        log::warn!("Decoder drain exceeded {} iterations, forcing EOF.", crate::MAX_DRAIN_ITERATIONS);
                         break;
                     }
                     iterations += 1;
@@ -1291,11 +1180,7 @@ unsafe impl Send for Decoder {}
 /// println!("thumbnail: {}x{}", img.width(), img.height());
 /// img.save("thumbnail.png").unwrap();
 /// ```
-pub fn thumbnail(
-    source: impl Into<Location>,
-    timestamp_ms: Option<i64>,
-    max_dims: (u32, u32),
-) -> Result<image::DynamicImage> {
+pub fn thumbnail(source: impl Into<Location>, timestamp_ms: Option<i64>, max_dims: (u32, u32)) -> Result<image::DynamicImage> {
     let mut reader = StreamReader::new(source).context("Failed to open thumbnail source")?;
     let mut decoder = DecoderBuilder::new(MediaType::VIDEO)
         .with_pix_fmt(PixelFormat::RGB24)
@@ -1340,12 +1225,7 @@ mod tests {
         // 默认取流中点，Fit 缩放保持纵横比
         let img = thumbnail(video_path, None, (320, 240))?;
         assert!(img.width() > 0 && img.height() > 0);
-        assert!(
-            img.width() <= 320 && img.height() <= 240,
-            "thumbnail dims {}x{} exceed 320x240",
-            img.width(),
-            img.height()
-        );
+        assert!(img.width() <= 320 && img.height() <= 240, "thumbnail dims {}x{} exceed 320x240", img.width(), img.height());
         assert_eq!(img.color().channel_count(), 3, "expected RGB output");
 
         // 指定时间点
@@ -1369,11 +1249,8 @@ mod tests {
             println!("SKIP drawtext (libfreetype not available)");
             vec![scale]
         };
-        let build_decoder = |filters: Vec<Filter>| -> Result<Decoder> {
-            DecoderBuilder::new(MediaType::VIDEO)
-                .with_filters(filters)
-                .build_from_reader(&reader)
-        };
+        let build_decoder =
+            |filters: Vec<Filter>| -> Result<Decoder> { DecoderBuilder::new(MediaType::VIDEO).with_filters(filters).build_from_reader(&reader) };
         let mut decoder = build_decoder(filters)?;
 
         loop {
@@ -1399,15 +1276,10 @@ mod tests {
     fn test_decode_audio() -> Result<()> {
         let audio_path = std::path::Path::new("assets/wav.wav");
 
-        let filters = vec![
-            filter::audio::resample(2, 48000, SampleFormat::FLTP),
-            filter::audio::volume(1.5),
-        ];
+        let filters = vec![filter::audio::resample(2, 48000, SampleFormat::FLTP), filter::audio::volume(1.5)];
 
         let mut reader = StreamReader::new(audio_path)?;
-        let mut decoder = DecoderBuilder::new(MediaType::AUDIO)
-            .with_filters(filters)
-            .build_from_reader(&reader)?;
+        let mut decoder = DecoderBuilder::new(MediaType::AUDIO).with_filters(filters).build_from_reader(&reader)?;
 
         loop {
             match decoder.decode_raw(&mut reader) {
@@ -1438,9 +1310,7 @@ mod tests {
 
         // 统一到 FLTP：decode::<f32> 全程可用，且每帧的格式都是目标格式。
         let mut reader = StreamReader::new(audio_path)?;
-        let mut decoder = DecoderBuilder::new(MediaType::AUDIO)
-            .with_sample_fmt(SampleFormat::FLTP)
-            .build_from_reader(&reader)?;
+        let mut decoder = DecoderBuilder::new(MediaType::AUDIO).with_sample_fmt(SampleFormat::FLTP).build_from_reader(&reader)?;
         let mut unified_samples = 0u64;
         while let Some(frame) = decoder.decode::<f32>(&mut reader)? {
             assert_eq!(
@@ -1467,10 +1337,7 @@ mod tests {
             native_samples += frame.nb_samples as u64;
         }
         assert_eq!(native_format, SampleFormat::S16);
-        assert_eq!(
-            native_samples, unified_samples,
-            "format conversion changed the decoded sample count"
-        );
+        assert_eq!(native_samples, unified_samples, "format conversion changed the decoded sample count");
 
         Ok(())
     }
@@ -1479,15 +1346,11 @@ mod tests {
     #[test]
     fn test_decode_builder_sample_fmt_validation() -> Result<()> {
         let reader = StreamReader::new("assets/mp4.mp4")?;
-        let video = DecoderBuilder::new(MediaType::VIDEO)
-            .with_sample_fmt(SampleFormat::FLTP)
-            .build_from_reader(&reader);
+        let video = DecoderBuilder::new(MediaType::VIDEO).with_sample_fmt(SampleFormat::FLTP).build_from_reader(&reader);
         assert!(video.is_err(), "with_sample_fmt must be rejected for video");
 
         let reader = StreamReader::new("assets/wav.wav")?;
-        let none = DecoderBuilder::new(MediaType::AUDIO)
-            .with_sample_fmt(SampleFormat::NONE)
-            .build_from_reader(&reader);
+        let none = DecoderBuilder::new(MediaType::AUDIO).with_sample_fmt(SampleFormat::NONE).build_from_reader(&reader);
         assert!(none.is_err(), "SampleFormat::NONE is not a valid target");
 
         Ok(())
@@ -1500,9 +1363,7 @@ mod tests {
         let video_path = std::path::Path::new("assets/mp4.mp4");
 
         let mut reader = StreamReader::new(video_path)?;
-        let mut decoder = DecoderBuilder::new(MediaType::VIDEO)
-            .with_resize(Resize::Exact(320, 240))
-            .build_from_reader(&reader)?;
+        let mut decoder = DecoderBuilder::new(MediaType::VIDEO).with_resize(Resize::Exact(320, 240)).build_from_reader(&reader)?;
 
         let mut frames = 0usize;
         while let Some(frame) = decoder.decode_raw(&mut reader)? {
@@ -1522,9 +1383,7 @@ mod tests {
         let video_path = std::path::Path::new("assets/mp4.mp4");
 
         let mut reader = StreamReader::new(video_path)?;
-        let mut decoder = DecoderBuilder::new(MediaType::VIDEO)
-            .with_pix_fmt(PixelFormat::RGB24)
-            .build_from_reader(&reader)?;
+        let mut decoder = DecoderBuilder::new(MediaType::VIDEO).with_pix_fmt(PixelFormat::RGB24).build_from_reader(&reader)?;
 
         let mut frames = 0usize;
         while let Some(frame) = decoder.decode_raw(&mut reader)? {
@@ -1547,9 +1406,7 @@ mod tests {
             PixelFormat::VAAPI,     // 硬件格式：没有主机端样本
         ] {
             let reader = StreamReader::new(video_path).unwrap();
-            let result = DecoderBuilder::new(MediaType::VIDEO)
-                .with_pix_fmt(fmt)
-                .build_from_reader(&reader);
+            let result = DecoderBuilder::new(MediaType::VIDEO).with_pix_fmt(fmt).build_from_reader(&reader);
             assert!(result.is_err(), "{fmt:?} should be rejected");
         }
     }
@@ -1561,9 +1418,7 @@ mod tests {
         let video_path = std::path::Path::new("assets/mp4.mp4");
         for fmt in [PixelFormat::NV12, PixelFormat::YUV422P, PixelFormat::GBRP] {
             let reader = StreamReader::new(video_path).unwrap();
-            let result = DecoderBuilder::new(MediaType::VIDEO)
-                .with_pix_fmt(fmt)
-                .build_from_reader(&reader);
+            let result = DecoderBuilder::new(MediaType::VIDEO).with_pix_fmt(fmt).build_from_reader(&reader);
             assert!(result.is_ok(), "{fmt:?} should be accepted");
         }
     }
@@ -1573,9 +1428,7 @@ mod tests {
     fn test_decode_audio_with_pix_fmt_fails() {
         let video_path = std::path::Path::new("assets/mp4.mp4");
         let reader = StreamReader::new(video_path).unwrap();
-        let result = DecoderBuilder::new(MediaType::AUDIO)
-            .with_pix_fmt(PixelFormat::YUV420P)
-            .build_from_reader(&reader);
+        let result = DecoderBuilder::new(MediaType::AUDIO).with_pix_fmt(PixelFormat::YUV420P).build_from_reader(&reader);
         assert!(result.is_err());
     }
 
@@ -1590,9 +1443,7 @@ mod tests {
         // A) 仅 with_resize
         eprintln!("[A] with_resize only");
         let mut reader_a = StreamReader::new(video_path)?;
-        let mut dec_a = DecoderBuilder::new(MediaType::VIDEO)
-            .with_resize(Resize::Exact(320, 240))
-            .build_from_reader(&reader_a)?;
+        let mut dec_a = DecoderBuilder::new(MediaType::VIDEO).with_resize(Resize::Exact(320, 240)).build_from_reader(&reader_a)?;
         let mut a_dims = HashSet::new();
         while let Some(f) = dec_a.decode_raw(&mut reader_a)? {
             a_dims.insert((f.width, f.height));
@@ -1601,19 +1452,14 @@ mod tests {
         // B) 仅 scale filter
         eprintln!("[B] filter only");
         let mut reader_b = StreamReader::new(video_path)?;
-        let mut dec_b = DecoderBuilder::new(MediaType::VIDEO)
-            .with_filters(vec![filter::video::scale(320, 240, None)])
-            .build_from_reader(&reader_b)?;
+        let mut dec_b = DecoderBuilder::new(MediaType::VIDEO).with_filters(vec![filter::video::scale(320, 240, None)]).build_from_reader(&reader_b)?;
         let mut b_dims = HashSet::new();
         while let Some(f) = dec_b.decode_raw(&mut reader_b)? {
             b_dims.insert((f.width, f.height));
         }
 
         // A 与 B 应得到完全相同的尺寸集合
-        assert_eq!(
-            a_dims, b_dims,
-            "with_resize and filter scale produced different dimensions"
-        );
+        assert_eq!(a_dims, b_dims, "with_resize and filter scale produced different dimensions");
         assert_eq!(a_dims.len(), 1, "expected a single uniform output size");
 
         // C) 同时使用：resize(320x240) -> filter scale(640x480)，输出应为 filter 尺寸
@@ -1627,11 +1473,7 @@ mod tests {
         while let Some(f) = dec_c.decode_raw(&mut reader_c)? {
             c_dims.insert((f.width, f.height));
         }
-        assert_eq!(
-            c_dims,
-            HashSet::from([(640i32, 480i32)]),
-            "resize+filter should compose to the filter size"
-        );
+        assert_eq!(c_dims, HashSet::from([(640i32, 480i32)]), "resize+filter should compose to the filter size");
 
         Ok(())
     }
@@ -1642,17 +1484,11 @@ mod tests {
     fn test_builder_scale_pool_reaches_decoder_scaler() -> Result<()> {
         let video_path = std::path::Path::new("assets/mp4.mp4");
 
-        let decoder = DecoderBuilder::new(MediaType::VIDEO)
-            .build_from_reader(&StreamReader::new(video_path)?)?;
+        let decoder = DecoderBuilder::new(MediaType::VIDEO).build_from_reader(&StreamReader::new(video_path)?)?;
         assert!(!decoder.scaler.pool_enabled(), "池化默认关闭");
 
-        let decoder = DecoderBuilder::new(MediaType::VIDEO)
-            .with_scale_pool(true)
-            .build_from_reader(&StreamReader::new(video_path)?)?;
-        assert!(
-            decoder.scaler.pool_enabled(),
-            "with_scale_pool 应进入 Scaler"
-        );
+        let decoder = DecoderBuilder::new(MediaType::VIDEO).with_scale_pool(true).build_from_reader(&StreamReader::new(video_path)?)?;
+        assert!(decoder.scaler.pool_enabled(), "with_scale_pool 应进入 Scaler");
         Ok(())
     }
 
@@ -1667,22 +1503,13 @@ mod tests {
         let mut decoded = 0usize;
         while decoder.decode::<u8>(&mut reader)?.is_some() {
             decoded += 1;
-            assert!(
-                !decoder.is_finished(),
-                "reported finished after {decoded} frames, with more still arriving"
-            );
+            assert!(!decoder.is_finished(), "reported finished after {decoded} frames, with more still arriving");
         }
 
         assert!(decoded > 0, "decoded nothing from {}", video_path.display());
         assert!(decoder.is_flushed(), "EOF must leave the decoder flushed");
-        assert!(
-            decoder.is_finished(),
-            "decoder and its (absent) filter graph must both be finished at EOF"
-        );
-        assert!(
-            decoder.decode::<u8>(&mut reader).is_err(),
-            "decoding after the end must error, not silently return None"
-        );
+        assert!(decoder.is_finished(), "decoder and its (absent) filter graph must both be finished at EOF");
+        assert!(decoder.decode::<u8>(&mut reader).is_err(), "decoding after the end must error, not silently return None");
 
         // `reset` 之后可以重新解码（用于 seek 后的复用）。
         decoder.reset()?;
@@ -1702,9 +1529,7 @@ mod tests {
         let path = std::path::Path::new("assets/mp4.mp4");
 
         let mut reader = StreamReader::new(path)?;
-        let mut decoder = DecoderBuilder::new(MediaType::VIDEO)
-            .with_filters(vec![crate::filter::video::fps(10.0)])
-            .build_from_reader(&reader)?;
+        let mut decoder = DecoderBuilder::new(MediaType::VIDEO).with_filters(vec![crate::filter::video::fps(10.0)]).build_from_reader(&reader)?;
 
         let mut first_pass = 0usize;
         while decoder.decode::<u8>(&mut reader)?.is_some() {
@@ -1722,10 +1547,7 @@ mod tests {
         while decoder.decode::<u8>(&mut reader)?.is_some() {
             second_pass += 1;
         }
-        assert_eq!(
-            second_pass, first_pass,
-            "a restarted pipeline must decode the same stream again"
-        );
+        assert_eq!(second_pass, first_pass, "a restarted pipeline must decode the same stream again");
         Ok(())
     }
 
@@ -1753,19 +1575,14 @@ mod tests {
 
         {
             let mut muxer = crate::Muxer::new(&path)?;
-            let encoder = crate::EncoderBuilder::new_video(64, 64)
-                .with_fps(FPS as f32)
-                .with_gop_size(GOP_FRAMES)
-                .build()?;
+            let encoder = crate::EncoderBuilder::new_video(64, 64).with_fps(FPS as f32).with_gop_size(GOP_FRAMES).build()?;
             let index = muxer.add_encoder(encoder)?;
             for frame_index in 0..FRAMES {
                 let mut frame = AVFrame::new();
                 frame.set_width(64);
                 frame.set_height(64);
                 frame.set_format(i32::from(PixelFormat::YUV420P));
-                frame
-                    .alloc_buffer()
-                    .context("Failed to allocate frame buffer")?;
+                frame.alloc_buffer().context("Failed to allocate frame buffer")?;
                 frame.set_pts(frame_index);
                 muxer.mux(frame, index)?;
             }
@@ -1773,9 +1590,7 @@ mod tests {
         }
 
         let mut reader = StreamReader::new(&path)?;
-        let mut decoder = DecoderBuilder::new(MediaType::VIDEO)
-            .with_filters(vec![crate::filter::video::fps(FILTER_FPS as f32)])
-            .build_from_reader(&reader)?;
+        let mut decoder = DecoderBuilder::new(MediaType::VIDEO).with_filters(vec![crate::filter::video::fps(FILTER_FPS as f32)]).build_from_reader(&reader)?;
 
         // 从头解几帧，让滤镜图里真正开始有缓冲
         let mut decoded_before_seek = 0i64;
@@ -1784,17 +1599,12 @@ mod tests {
                 decoded_before_seek += 1;
             }
         }
-        assert!(
-            decoded_before_seek > 0,
-            "the filter graph must have produced frames before the seek for this test to mean anything"
-        );
+        assert!(decoded_before_seek > 0, "the filter graph must have produced frames before the seek for this test to mean anything");
 
         reader.seek_to_timestamp(SEEK_MS)?;
         decoder.flush_buffers()?;
 
-        let first = decoder
-            .decode_raw(&mut reader)?
-            .ok_or_else(|| RsmediaError::msg("no frame decoded after the seek"))?;
+        let first = decoder.decode_raw(&mut reader)?.ok_or_else(|| RsmediaError::msg("no frame decoded after the seek"))?;
 
         // 滤镜图输出帧的 pts 以 `1/fps` 为时间基（解码器不填 AVFrame.time_base）。
         // 落点最多比目标早一个 GOP；再放宽一帧输出网格的取整。泄漏帧（seek 前的位置，

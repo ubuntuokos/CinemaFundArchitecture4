@@ -21,19 +21,7 @@ impl AVImage {
         let mut linesizes = [0; AV_NUM_DATA_POINTERS];
         let mut linear = vec![0u8; num_of_bytes as usize];
 
-        match unsafe {
-            ffi::av_image_fill_arrays(
-                data.as_mut_ptr(),
-                linesizes.as_mut_ptr(),
-                linear.as_mut_ptr(),
-                pix_fmt,
-                width,
-                height,
-                align,
-            )
-        }
-        .upgrade()
-        {
+        match unsafe { ffi::av_image_fill_arrays(data.as_mut_ptr(), linesizes.as_mut_ptr(), linear.as_mut_ptr(), pix_fmt, width, height, align) }.upgrade() {
             Ok(_) => {}
             Err(AVERROR_ENOMEM) => panic!(),
             // Won't leak memory here, since Self will be dropped
@@ -56,9 +44,7 @@ impl AVImage {
     /// with the given parameters.
     /// Return None when invalid.
     pub fn get_buffer_size(fmt: AVPixelFormat, width: i32, height: i32, align: i32) -> Option<i32> {
-        unsafe { ffi::av_image_get_buffer_size(fmt, width, height, align) }
-            .upgrade()
-            .ok()
+        unsafe { ffi::av_image_get_buffer_size(fmt, width, height, align) }.upgrade().ok()
     }
 
     pub fn data(&self) -> &[*mut u8; AV_NUM_DATA_POINTERS] {

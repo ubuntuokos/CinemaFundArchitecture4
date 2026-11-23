@@ -535,6 +535,8 @@ pub struct Session {
     pub object_jobs: Vec<objects_track::PendingObjectTrack>,
     /// Scene Edit Detection jobs whose results are applied when they finish.
     pub scene_jobs: Vec<scene_detect::PendingScene>,
+    /// Saved CFX expressions this machine's user approved, by source hash (never in the project file; X3).
+    pub expr_approvals: expr::Approvals,
     /// Effect presets (built-in + the user's, persisted in the data directory).
     pub presets: presets::PresetLibrary,
     /// Export presets (built-in + the user's, persisted in the data directory) and favourites.
@@ -651,6 +653,7 @@ impl Session {
             mask_jobs: Vec::new(),
             object_jobs: Vec::new(),
             scene_jobs: Vec::new(),
+            expr_approvals: Default::default(),
             presets: Default::default(),
             export_presets: Default::default(),
             export_queue: Default::default(),
@@ -710,6 +713,7 @@ impl Session {
         self.media.set_use_proxies(self.prefs.media.enable_proxies);
         self.shortcuts.set_dir(&cfg.data_dir);
         self.presets.set_dir(&cfg.data_dir);
+        self.expr_approvals.set_dir(&cfg.data_dir);
         self.export_presets.set_dir(&cfg.data_dir);
         self.prefs_path = Some(prefs_path);
         self.apply_media_cache();
@@ -1420,6 +1424,8 @@ mod essential_sound_tests;
 mod explicit_targets_tests;
 #[cfg(test)]
 mod export_tests;
+#[cfg(test)]
+mod expr_tests;
 #[cfg(test)]
 mod file_tests;
 #[cfg(test)]

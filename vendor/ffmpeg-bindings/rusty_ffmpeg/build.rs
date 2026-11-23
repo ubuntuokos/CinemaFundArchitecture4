@@ -5,17 +5,7 @@ use once_cell::sync::Lazy;
 use std::{collections::HashSet, env, fs};
 
 /// All the libs that FFmpeg has
-static LIBS: Lazy<[&str; 7]> = Lazy::new(|| {
-    [
-        "avcodec",
-        "avdevice",
-        "avfilter",
-        "avformat",
-        "avutil",
-        "swresample",
-        "swscale",
-    ]
-});
+static LIBS: Lazy<[&str; 7]> = Lazy::new(|| ["avcodec", "avdevice", "avfilter", "avformat", "avutil", "swresample", "swscale"]);
 
 /// Whitelist of the headers we want to generate bindings
 static HEADERS: Lazy<Vec<PathBuf>> = Lazy::new(|| {
@@ -199,11 +189,7 @@ impl FilterCargoCallbacks {
 
 impl callbacks::ParseCallbacks for FilterCargoCallbacks {
     fn will_parse_macro(&self, name: &str) -> callbacks::MacroParsingBehavior {
-        if self.emitted_macro.contains(name) {
-            callbacks::MacroParsingBehavior::Ignore
-        } else {
-            callbacks::MacroParsingBehavior::Default
-        }
+        if self.emitted_macro.contains(name) { callbacks::MacroParsingBehavior::Ignore } else { callbacks::MacroParsingBehavior::Default }
     }
 }
 
@@ -250,11 +236,7 @@ fn use_prebuilt_binding(from: &Path, to: &Path) {
 /// 2. `FFMPEG_INCLUDE_DIR` — generate bindings from the user-provided include dir.
 /// 3. `fallback_include_dir` — generate bindings from a dir discovered by the
 ///    chosen linking method (e.g. pkg-config / vcpkg).
-fn write_bindings(
-    env_vars: &EnvVars,
-    output_binding_path: &Path,
-    fallback_include_dir: Option<&Path>,
-) {
+fn write_bindings(env_vars: &EnvVars, output_binding_path: &Path, fallback_include_dir: Option<&Path>) {
     if let Some(ffmpeg_binding_path) = env_vars.ffmpeg_binding_path.as_ref() {
         use_prebuilt_binding(ffmpeg_binding_path, output_binding_path);
     } else if let Some(ffmpeg_include_dir) = env_vars.ffmpeg_include_dir.as_ref() {
@@ -267,30 +249,15 @@ fn write_bindings(
 }
 
 fn write_bindings_from_include_dir(ffmpeg_include_dir: &Path, output_binding_path: &Path) {
-    generate_bindings(ffmpeg_include_dir, &HEADERS)
-        .write_to_file(output_binding_path)
-        .expect("Cannot write binding to file.");
+    generate_bindings(ffmpeg_include_dir, &HEADERS).write_to_file(output_binding_path).expect("Cannot write binding to file.");
 }
 
 fn generate_bindings(ffmpeg_include_dir: &Path, headers: &[PathBuf]) -> Bindings {
     if !Path::new(ffmpeg_include_dir).exists() {
-        panic!(
-            "FFmpeg include dir: `{:?}` doesn't exits",
-            ffmpeg_include_dir
-        );
+        panic!("FFmpeg include dir: `{:?}` doesn't exits", ffmpeg_include_dir);
     }
     // Because of the strange `FP_*` in `math.h` https://github.com/rust-lang/rust-bindgen/issues/687
-    let filter_callback = FilterCargoCallbacks::new(
-        [
-            "FP_NAN",
-            "FP_INFINITE",
-            "FP_ZERO",
-            "FP_SUBNORMAL",
-            "FP_NORMAL",
-        ]
-        .into_iter()
-        .collect(),
-    );
+    let filter_callback = FilterCargoCallbacks::new(["FP_NAN", "FP_INFINITE", "FP_ZERO", "FP_SUBNORMAL", "FP_NORMAL"].into_iter().collect());
 
     let builder = bindgen::builder()
         // Force impl Debug if possible(for `AVCodecParameters`)
@@ -371,11 +338,7 @@ impl EnvVars {
 
 /// clang doesn't support -I{verbatim path} on windows, so we need to remove it if possible.
 fn remove_verbatim(path: String) -> PathBuf {
-    let path = if let Some(path) = path.strip_prefix(r#"\\?\"#) {
-        path.to_string()
-    } else {
-        path
-    };
+    let path = if let Some(path) = path.strip_prefix(r#"\\?\"#) { path.to_string() } else { path };
     PathBuf::from(path)
 }
 
@@ -386,10 +349,7 @@ mod pkg_config_linking {
     /// Returns error when some library are missing. Otherwise, returns the paths of the libraries.
     ///
     /// Note: no side effect if this function errors.
-    pub fn linking_with_pkg_config(
-        library_names: &[&str],
-        statik: bool,
-    ) -> Result<Vec<PathBuf>, pkg_config::Error> {
+    pub fn linking_with_pkg_config(library_names: &[&str], statik: bool) -> Result<Vec<PathBuf>, pkg_config::Error> {
         // dry run for library linking
         for libname in library_names {
             pkg_config::Config::new()
@@ -404,11 +364,8 @@ mod pkg_config_linking {
         // real linking
         let mut paths = HashSet::new();
         for libname in library_names {
-            let new_paths = pkg_config::Config::new()
-                .statik(statik)
-                .probe(&format!("lib{}", libname))
-                .unwrap_or_else(|_| panic!("{} not found!", libname))
-                .include_paths;
+            let new_paths =
+                pkg_config::Config::new().statik(statik).probe(&format!("lib{}", libname)).unwrap_or_else(|_| panic!("{} not found!", libname)).include_paths;
             for new_path in new_paths {
                 let new_path = new_path.to_str().unwrap().to_string();
                 paths.insert(new_path);
@@ -422,22 +379,11 @@ mod pkg_config_linking {
 mod vcpkg_linking {
     use super::*;
 
-    fn linking_with_vcpkg(
-        _env_vars: &EnvVars,
-        _library_names: &[&str],
-    ) -> Result<Vec<PathBuf>, vcpkg::Error> {
-        Ok(vcpkg::Config::new()
-            .find_package("ffmpeg")?
-            .include_paths
-            .into_iter()
-            .map(|x| PathBuf::from_path_buf(x).unwrap())
-            .collect())
+    fn linking_with_vcpkg(_env_vars: &EnvVars, _library_names: &[&str]) -> Result<Vec<PathBuf>, vcpkg::Error> {
+        Ok(vcpkg::Config::new().find_package("ffmpeg")?.include_paths.into_iter().map(|x| PathBuf::from_path_buf(x).unwrap()).collect())
     }
 
-    pub fn linking_with_vcpkg_and_bindgen(
-        env_vars: &EnvVars,
-        output_binding_path: &Path,
-    ) -> Result<(), vcpkg::Error> {
+    pub fn linking_with_vcpkg_and_bindgen(env_vars: &EnvVars, output_binding_path: &Path) -> Result<(), vcpkg::Error> {
         let include_paths = linking_with_vcpkg(env_vars, &*LIBS)?;
         write_bindings(env_vars, output_binding_path, Some(&include_paths[0]));
         Ok(())
@@ -452,19 +398,10 @@ fn dynamic_linking(env_vars: EnvVars) {
         let (lib_name, ffmpeg_dll_dir) = (
             ffmpeg_dll_path
                 .file_stem()
-                .map(|stem| {
-                    if cfg!(target_os = "windows") {
-                        stem
-                    } else {
-                        stem.trim_start_matches("lib")
-                    }
-                })
+                .map(|stem| if cfg!(target_os = "windows") { stem } else { stem.trim_start_matches("lib") })
                 .expect("FFMPEG_DLL_PATH does not point to a valid file. Ensure the path includes a filename.")
                 .to_string(),
-            ffmpeg_dll_path
-                .parent()
-                .expect("FFMPEG_DLL_PATH has no parent directory. Please provide a full path including the directory.")
-                .to_path_buf(),
+            ffmpeg_dll_path.parent().expect("FFMPEG_DLL_PATH has no parent directory. Please provide a full path including the directory.").to_path_buf(),
         );
         linking_with_single_lib(&lib_name, &ffmpeg_dll_dir, FFmpegLinkMode::Dynamic);
     }
@@ -479,40 +416,23 @@ fn linking(env_vars: EnvVars) {
 
     #[cfg(not(target_os = "windows"))]
     {
-        fn linking_with_pkg_config_and_bindgen(
-            env_vars: &EnvVars,
-            output_binding_path: &Path,
-        ) -> Result<(), pkg_config::Error> {
+        fn linking_with_pkg_config_and_bindgen(env_vars: &EnvVars, output_binding_path: &Path) -> Result<(), pkg_config::Error> {
             // Probe libraries(enable emitting cargo metadata)
-            let include_paths = pkg_config_linking::linking_with_pkg_config(
-                &*LIBS,
-                env_vars
-                    .ffmpeg_link_mode
-                    .map(|x| x.is_static())
-                    .unwrap_or_default(),
-            )?;
+            let include_paths = pkg_config_linking::linking_with_pkg_config(&*LIBS, env_vars.ffmpeg_link_mode.map(|x| x.is_static()).unwrap_or_default())?;
             write_bindings(env_vars, output_binding_path, Some(&include_paths[0]));
             Ok(())
         }
         // Hint: set PKG_CONFIG_PATH to some placeholder value will let pkg_config probing system library.
         if let Some(ffmpeg_pkg_config_path) = env_vars.ffmpeg_pkg_config_path.as_ref() {
             if !Path::new(ffmpeg_pkg_config_path).exists() {
-                panic!(
-                    "error: FFMPEG_PKG_CONFIG_PATH is set to `{}`, which does not exist.",
-                    ffmpeg_pkg_config_path
-                );
+                panic!("error: FFMPEG_PKG_CONFIG_PATH is set to `{}`, which does not exist.", ffmpeg_pkg_config_path);
             }
             // `env::set_var` is `unsafe` since edition 2024 (not thread-safe).
             // The build script is single-threaded here, so this is sound.
             unsafe { env::set_var("PKG_CONFIG_PATH", ffmpeg_pkg_config_path) };
-            linking_with_pkg_config_and_bindgen(&env_vars, output_binding_path)
-                .expect("Static linking with pkg-config failed.");
+            linking_with_pkg_config_and_bindgen(&env_vars, output_binding_path).expect("Static linking with pkg-config failed.");
         } else if let Some(ffmpeg_libs_dir) = env_vars.ffmpeg_libs_dir.as_ref() {
-            linking_with_libs_dir(
-                &*LIBS,
-                ffmpeg_libs_dir,
-                env_vars.ffmpeg_link_mode.unwrap_or(FFmpegLinkMode::Static),
-            );
+            linking_with_libs_dir(&*LIBS, ffmpeg_libs_dir, env_vars.ffmpeg_link_mode.unwrap_or(FFmpegLinkMode::Static));
             write_bindings(&env_vars, output_binding_path, None);
         } else {
             #[cfg(not(any(feature = "link_system_ffmpeg", feature = "link_vcpkg_ffmpeg")))]
@@ -530,9 +450,7 @@ Enable `link_vcpkg_ffmpeg` feature if you want to link ffmpeg libraries installe
                 let mut error = String::new();
                 #[cfg(feature = "link_system_ffmpeg")]
                 if !success {
-                    if let Err(e) =
-                        linking_with_pkg_config_and_bindgen(&env_vars, output_binding_path)
-                    {
+                    if let Err(e) = linking_with_pkg_config_and_bindgen(&env_vars, output_binding_path) {
                         error.push('\n');
                         error.push_str(&format!("Link system FFmpeg failed: {:?}", e));
                     } else {
@@ -542,10 +460,7 @@ Enable `link_vcpkg_ffmpeg` feature if you want to link ffmpeg libraries installe
                 }
                 #[cfg(feature = "link_vcpkg_ffmpeg")]
                 if !success {
-                    if let Err(e) = vcpkg_linking::linking_with_vcpkg_and_bindgen(
-                        &env_vars,
-                        output_binding_path,
-                    ) {
+                    if let Err(e) = vcpkg_linking::linking_with_vcpkg_and_bindgen(&env_vars, output_binding_path) {
                         error.push('\n');
                         error.push_str(&format!("Link vcpkg FFmpeg failed: {:?}", e));
                     } else {
@@ -562,16 +477,11 @@ Enable `link_vcpkg_ffmpeg` feature if you want to link ffmpeg libraries installe
     #[cfg(target_os = "windows")]
     {
         if let Some(ffmpeg_libs_dir) = env_vars.ffmpeg_libs_dir.as_ref() {
-            linking_with_libs_dir(
-                &*LIBS,
-                ffmpeg_libs_dir,
-                env_vars.ffmpeg_link_mode.unwrap_or(FFmpegLinkMode::Static),
-            );
+            linking_with_libs_dir(&*LIBS, ffmpeg_libs_dir, env_vars.ffmpeg_link_mode.unwrap_or(FFmpegLinkMode::Static));
             write_bindings(&env_vars, output_binding_path, None);
         } else {
             #[cfg(feature = "link_vcpkg_ffmpeg")]
-            vcpkg_linking::linking_with_vcpkg_and_bindgen(&env_vars, output_binding_path)
-                .expect("Linking FFmpeg with vcpkg failed.");
+            vcpkg_linking::linking_with_vcpkg_and_bindgen(&env_vars, output_binding_path).expect("Linking FFmpeg with vcpkg failed.");
             #[cfg(not(feature = "link_vcpkg_ffmpeg"))]
             panic!(
                 "

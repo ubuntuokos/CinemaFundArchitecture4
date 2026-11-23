@@ -43,6 +43,8 @@
 //!   No-op step; older builds would drop them when saving.
 //! - **v17** (CFA4-OBJECT-MASK-PLAN-001 OM-A1b): tracked objects (`Project::objects`). No-op step;
 //!   older builds would drop them when saving.
+//! - **v18** (CFA4-AX-INTERPRETER-001 X3): saved CFX expressions (`Project::expressions`). No-op step; older
+//!   builds would drop them when saving. The "approved on this machine" flag is never in the file.
 
 #![cfg_attr(not(test), deny(clippy::unwrap_used, clippy::expect_used, clippy::panic, clippy::unimplemented, clippy::todo, clippy::unreachable))]
 
@@ -65,7 +67,7 @@ pub type Migration = fn(Value) -> Result<Value, String>;
 /// edit a shipped one.
 pub const MIGRATIONS: &[Migration] = &[
     v1_to_v2, v2_to_v3, v3_to_v4, v4_to_v5, v5_to_v6, v6_to_v7, v7_to_v8, v8_to_v9, v9_to_v10, v10_to_v11, v11_to_v12, v12_to_v13, v13_to_v14, v14_to_v15,
-    v15_to_v16, v16_to_v17,
+    v15_to_v16, v16_to_v17, v17_to_v18,
 ];
 
 /// The schema version this build writes (and the newest it reads).
@@ -409,13 +411,18 @@ fn v16_to_v17(doc: Value) -> Result<Value, String> {
     Ok(doc)
 }
 
+/// v17 → v18: saved CFX expressions (`Project::expressions`). Nothing to convert: older files have none.
+fn v17_to_v18(doc: Value) -> Result<Value, String> {
+    Ok(doc)
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
 
     #[test]
     fn schema_version_matches_table() {
-        assert_eq!(SCHEMA_VERSION, 17);
+        assert_eq!(SCHEMA_VERSION, 18);
     }
 
     #[test]
@@ -589,6 +596,47 @@ mod tests {
         // a track whose JSON breaks the rules (label too long) refuses to load
         let mut v: Value = serde_json::from_slice(&encode(&p, false)).unwrap();
         v["project"]["objects"][item.to_string()][0]["label"] = Value::from("x".repeat(10_000));
+        assert!(decode(&serde_json::to_vec(&v).unwrap()).is_err());
+    }
+
+    /// CFA4-AX-INTERPRETER-001 X3 (N3-5′, N3-7′): saved expressions round-trip with their hash, an empty map writes
+    /// no key, a v17 file loads and is upgraded, nothing in the file says "approved", and a text whose hash does not
+    /// match (or a damaged value) refuses to load.
+    #[test]
+    fn saved_expressions_round_trip_and_old_files_load() {
+        use cfa4_project::expression::{ExprId, Expression};
+        let mut p = Project::new("Expressions");
+        let id = p.alloc_id();
+        let e = Expression::new(
+            ExprId(id),
+            "Hot",
+            "reads @density; writes @hot; @hot = @density;",
+            "density",
+            vec![("hot".into(), "float".into())],
+            Default::default(),
+            Some(500),
+        )
+        .unwrap();
+        p.expressions.insert(e.id, e.clone());
+        let bytes = encode(&p, false);
+        let loaded = decode(&bytes).unwrap();
+        assert_eq!(loaded.project.expressions.get(&ExprId(id)), Some(&e));
+        let text = String::from_utf8_lossy(&bytes).to_ascii_lowercase();
+        assert!(!text.contains("approv") && !text.contains("trusted"), "the file never records an approval");
+        let plain: Value = serde_json::from_slice(&encode(&Project::new("x"), false)).unwrap();
+        assert!(plain["project"].get("expressions").is_none());
+        let mut v: Value = serde_json::from_slice(&encode(&Project::new("Old"), false)).unwrap();
+        v["schema_version"] = Value::from(17);
+        let old = decode(&serde_json::to_vec(&v).unwrap()).unwrap();
+        assert!(old.project.expressions.is_empty());
+        assert!(old.migrated());
+        // the source is changed but the hash is not: the file is refused
+        let mut v: Value = serde_json::from_slice(&bytes).unwrap();
+        v["project"]["expressions"][id.to_string()]["source"] = Value::from("writes @hot; @hot = 1.0;");
+        assert!(decode(&serde_json::to_vec(&v).unwrap()).is_err());
+        // a damaged value (output type) is refused
+        let mut v: Value = serde_json::from_slice(&bytes).unwrap();
+        v["project"]["expressions"][id.to_string()]["outputs"][0][1] = Value::from("int");
         assert!(decode(&serde_json::to_vec(&v).unwrap()).is_err());
     }
 

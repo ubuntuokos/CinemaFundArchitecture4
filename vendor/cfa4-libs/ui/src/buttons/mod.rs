@@ -79,8 +79,7 @@ impl<'a> IconButton<'a> {
     /// large dimensions (over 4096 points) produce an inert zero-size response without painting.
     pub fn show(self, ui: &mut Ui, paint_icon: impl FnOnce(&Ui, Rect, Color32)) -> Response {
         let valid = self.size.is_finite() && self.size.x > 0.0 && self.size.y > 0.0 && self.size.x <= 4096.0 && self.size.y <= 4096.0;
-        let (rect, response) =
-            ui.allocate_exact_size(if valid { self.size } else { Vec2::ZERO }, if valid { Sense::click() } else { Sense::hover() });
+        let (rect, response) = ui.allocate_exact_size(if valid { self.size } else { Vec2::ZERO }, if valid { Sense::click() } else { Sense::hover() });
         response.widget_info(|| egui::WidgetInfo::selected(egui::WidgetType::Button, valid && ui.is_enabled(), self.selected, self.label));
         if !valid {
             return response;

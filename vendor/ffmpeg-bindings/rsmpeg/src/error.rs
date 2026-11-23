@@ -102,10 +102,7 @@ impl RsmpegError {
             | Self::BitstreamDrainError
             | Self::EncoderDrainError => Some(AVERROR_EAGAIN),
 
-            Self::BufferSinkEofError
-            | Self::DecoderFlushedError
-            | Self::EncoderFlushedError
-            | Self::BitstreamFlushedError => Some(ffi::AVERROR_EOF),
+            Self::BufferSinkEofError | Self::DecoderFlushedError | Self::EncoderFlushedError | Self::BitstreamFlushedError => Some(ffi::AVERROR_EOF),
 
             Self::AVFrameDoubleAllocatingError | Self::TryFromIntError(_) | Self::Unknown => None,
         }

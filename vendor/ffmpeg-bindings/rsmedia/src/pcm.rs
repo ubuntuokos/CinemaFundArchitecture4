@@ -67,10 +67,7 @@ pub struct PcmSpec {
 
 impl PcmSpec {
     pub fn new(sample_rate: u32, channels: u16) -> Self {
-        Self {
-            sample_rate,
-            channels,
-        }
+        Self { sample_rate, channels }
     }
 }
 
@@ -116,46 +113,23 @@ impl<W: Writer> PcmSink<W> {
     /// * `spec` - 输入 PCM 的采样率与声道数（写入方法决定采样格式）。
     pub fn new(muxer: Muxer<W>, stream_index: usize, spec: PcmSpec) -> Result<Self> {
         if spec.sample_rate == 0 || spec.channels == 0 {
-            return Err(RsmediaError::invalid_config(format!(
-                "invalid PCM spec: sample_rate={}, channels={}",
-                spec.sample_rate, spec.channels
-            )));
+            return Err(RsmediaError::invalid_config(format!("invalid PCM spec: sample_rate={}, channels={}", spec.sample_rate, spec.channels)));
         }
         let (encoder_format, encoder_layout, encoder_sample_rate) = {
             let mux_stream = muxer.get_stream(stream_index)?;
             if mux_stream.media_type != MediaType::AUDIO {
-                return Err(RsmediaError::invalid_config(format!(
-                    "stream {stream_index} is {:?}, not AUDIO",
-                    mux_stream.media_type
-                )));
+                return Err(RsmediaError::invalid_config(format!("stream {stream_index} is {:?}, not AUDIO", mux_stream.media_type)));
             }
-            let encoder = mux_stream.encoder.as_ref().ok_or_else(|| {
-                RsmediaError::msg(format!(
-                    "stream {stream_index} is a copy stream; PCM playback requires an encoder stream"
-                ))
-            })?;
+            let encoder = mux_stream
+                .encoder
+                .as_ref()
+                .ok_or_else(|| RsmediaError::msg(format!("stream {stream_index} is a copy stream; PCM playback requires an encoder stream")))?;
             if encoder.sample_rate() <= 0 {
-                return Err(RsmediaError::invalid_config(
-                    "audio encoder has invalid sample rate",
-                ));
+                return Err(RsmediaError::invalid_config("audio encoder has invalid sample rate"));
             }
-            (
-                encoder.sample_fmt() as _,
-                encoder.ch_layout().clone().into_inner(),
-                encoder.sample_rate(),
-            )
+            (encoder.sample_fmt() as _, encoder.ch_layout().clone().into_inner(), encoder.sample_rate())
         };
-        Ok(Self {
-            muxer,
-            stream_index,
-            spec,
-            encoder_format,
-            encoder_layout,
-            encoder_sample_rate,
-            resampler: None,
-            input_samples: 0,
-            output_samples: 0,
-        })
+        Ok(Self { muxer, stream_index, spec, encoder_format, encoder_layout, encoder_sample_rate, resampler: None, input_samples: 0, output_samples: 0 })
     }
 
     /// 写入交错 `f32` PCM 块（如 cpal `SampleFormat::F32` 回调数据）。
@@ -194,18 +168,10 @@ impl<W: Writer> PcmSink<W> {
         self.spec
     }
 
-    fn write_chunks<T: Copy>(
-        &mut self,
-        interleaved: &[T],
-        sample_format: ffi::AVSampleFormat,
-    ) -> Result<Option<W::Out>> {
+    fn write_chunks<T: Copy>(&mut self, interleaved: &[T], sample_format: ffi::AVSampleFormat) -> Result<Option<W::Out>> {
         let channels = self.spec.channels as usize;
         if !interleaved.len().is_multiple_of(channels) {
-            return Err(RsmediaError::invalid_config(format!(
-                "interleaved PCM length {} is not a multiple of {} channels",
-                interleaved.len(),
-                channels
-            )));
+            return Err(RsmediaError::invalid_config(format!("interleaved PCM length {} is not a multiple of {} channels", interleaved.len(), channels)));
         }
         let samples_per_channel = interleaved.len() / channels;
         if samples_per_channel == 0 {
@@ -223,11 +189,7 @@ impl<W: Writer> PcmSink<W> {
         Ok(collected)
     }
 
-    fn write_chunk<T: Copy>(
-        &mut self,
-        interleaved: &[T],
-        sample_format: ffi::AVSampleFormat,
-    ) -> Result<Option<W::Out>> {
+    fn write_chunk<T: Copy>(&mut self, interleaved: &[T], sample_format: ffi::AVSampleFormat) -> Result<Option<W::Out>> {
         let nb_samples = (interleaved.len() / self.spec.channels as usize) as i32;
 
         // 输入帧：packed（交错）样本，全部位于 data[0]
@@ -235,24 +197,17 @@ impl<W: Writer> PcmSink<W> {
         src.set_format(sample_format);
         src.set_nb_samples(nb_samples);
         src.set_sample_rate(self.spec.sample_rate as i32);
-        src.set_ch_layout(
-            AVChannelLayout::from_nb_channels(self.spec.channels as i32).into_inner(),
-        );
-        src.alloc_buffer()
-            .context("Failed to allocate PCM input frame buffer")?;
+        src.set_ch_layout(AVChannelLayout::from_nb_channels(self.spec.channels as i32).into_inner());
+        src.alloc_buffer().context("Failed to allocate PCM input frame buffer")?;
         unsafe {
-            let dst = std::slice::from_raw_parts_mut(
-                (*src.as_mut_ptr()).data[0] as *mut T,
-                interleaved.len(),
-            );
+            let dst = std::slice::from_raw_parts_mut((*src.as_mut_ptr()).data[0] as *mut T, interleaved.len());
             dst.copy_from_slice(interleaved);
         }
         self.input_samples += nb_samples as u64;
 
         // 转换到编码器规格并按实际输出样本数累计 pts
         let mut dst = self.alloc_encoder_frame(self.encoder_sample_rate)?;
-        self.ensure_resampler(sample_format)?
-            .convert_frame(&src, &mut dst)?;
+        self.ensure_resampler(sample_format)?.convert_frame(&src, &mut dst)?;
         let out_nb = dst.nb_samples;
         if out_nb <= 0 {
             // 重采样器内部缓冲（滤波延迟），随后续输入/flush 输出
@@ -266,16 +221,9 @@ impl<W: Writer> PcmSink<W> {
     /// 惰性创建持久重采样器；后续写入必须使用同一输入采样格式。
     fn ensure_resampler(&mut self, sample_format: ffi::AVSampleFormat) -> Result<&mut Resampler> {
         if self.resampler.is_none() {
-            let in_layout =
-                AVChannelLayout::from_nb_channels(self.spec.channels as i32).into_inner();
-            let resampler = Resampler::new(
-                in_layout,
-                sample_format,
-                self.spec.sample_rate as i32,
-                self.encoder_layout,
-                self.encoder_format,
-                self.encoder_sample_rate,
-            )?;
+            let in_layout = AVChannelLayout::from_nb_channels(self.spec.channels as i32).into_inner();
+            let resampler =
+                Resampler::new(in_layout, sample_format, self.spec.sample_rate as i32, self.encoder_layout, self.encoder_format, self.encoder_sample_rate)?;
             self.resampler = Some((sample_format, resampler));
         }
         let (created_format, resampler) = self.resampler.as_mut().expect("just created");
@@ -296,9 +244,7 @@ impl<W: Writer> PcmSink<W> {
         frame.set_sample_rate(self.encoder_sample_rate);
         frame.set_ch_layout(self.encoder_layout);
         frame.set_time_base(time::new_rational(1, self.encoder_sample_rate));
-        frame
-            .alloc_buffer()
-            .context("Failed to allocate encoder-format frame buffer")?;
+        frame.alloc_buffer().context("Failed to allocate encoder-format frame buffer")?;
         Ok(frame)
     }
 
@@ -352,12 +298,7 @@ mod tests {
     use crate::{SampleFormat, test_support};
 
     /// 生成交错 f32 正弦 PCM（amplitude 0.3，单声道/多声道相同相位）。
-    fn sine_samples(
-        start_sample: u64,
-        len_per_channel: usize,
-        channels: u16,
-        rate: u32,
-    ) -> Vec<f32> {
+    fn sine_samples(start_sample: u64, len_per_channel: usize, channels: u16, rate: u32) -> Vec<f32> {
         let mut samples = Vec::with_capacity(len_per_channel * channels as usize);
         for i in 0..len_per_channel {
             let t = (start_sample + i as u64) as f32 / rate as f32;
@@ -373,16 +314,8 @@ mod tests {
     fn decode_audio_stream(path: &std::path::Path) -> Result<(usize, u32, u16)> {
         let demuxer = Demuxer::new(path)?;
         let (audio_stream_index, sample_rate, channels) = {
-            let s = demuxer
-                .streams()
-                .iter()
-                .find(|s| s.media_type == MediaType::AUDIO)
-                .expect("no audio stream in output");
-            (
-                s.stream_index,
-                s.stream_info.sample_rate as u32,
-                s.stream_info.channel_layout.nb_channels as u16,
-            )
+            let s = demuxer.streams().iter().find(|s| s.media_type == MediaType::AUDIO).expect("no audio stream in output");
+            (s.stream_index, s.stream_info.sample_rate as u32, s.stream_info.channel_layout.nb_channels as u16)
         };
 
         let mut total_samples = 0usize;
@@ -435,10 +368,7 @@ mod tests {
         assert_eq!(out_channels, channels);
         // AAC 编码有 priming/padding，允许 ±一个 frame_size 的误差
         let encoder_frame = 1024usize;
-        assert!(
-            (samples as i64 - total_in as i64).abs() <= encoder_frame as i64,
-            "decoded {samples} samples, expected ~{total_in}"
-        );
+        assert!((samples as i64 - total_in as i64).abs() <= encoder_frame as i64, "decoded {samples} samples, expected ~{total_in}");
 
         Ok(())
     }
@@ -473,10 +403,7 @@ mod tests {
         assert_eq!(decoded_channels, out_channels);
         // 重采样 48k→44.1k 后应得到 ~44100 样本（± 1 帧）
         let expected = in_total as f64 * out_rate as f64 / in_rate as f64;
-        assert!(
-            (samples as f64 - expected).abs() <= 1024.0,
-            "decoded {samples} samples, expected ~{expected}"
-        );
+        assert!((samples as f64 - expected).abs() <= 1024.0, "decoded {samples} samples, expected ~{expected}");
 
         Ok(())
     }
@@ -514,10 +441,7 @@ mod tests {
         let (samples, out_rate, out_channels) = decode_audio_stream(&output_path)?;
         assert_eq!(out_rate, in_rate);
         assert_eq!(out_channels, channels);
-        assert!(
-            (samples as i64 - total_in as i64).abs() <= 1024,
-            "decoded {samples} samples, expected ~{total_in}"
-        );
+        assert!((samples as i64 - total_in as i64).abs() <= 1024, "decoded {samples} samples, expected ~{total_in}");
 
         Ok(())
     }
@@ -553,10 +477,7 @@ mod tests {
         let (samples, out_rate, out_channels) = decode_audio_stream(&output_path)?;
         assert_eq!(out_rate, in_rate);
         assert_eq!(out_channels, channels);
-        assert!(
-            (samples as i64 - total_in as i64).abs() <= 1024,
-            "decoded {samples} samples, expected ~{total_in}"
-        );
+        assert!((samples as i64 - total_in as i64).abs() <= 1024, "decoded {samples} samples, expected ~{total_in}");
 
         Ok(())
     }
@@ -572,16 +493,8 @@ mod tests {
         let (in_rate, channels) = (44_100u32, 2u16);
         let total_in = 22_050usize; // 0.5 秒
 
-        let filter = crate::filter::Filter::new(
-            "aformat",
-            MediaType::AUDIO,
-            "aformat=sample_fmts=fltp".to_string(),
-        )
-        .with_input_format(SampleFormat::FLT);
-        let encoder =
-            EncoderBuilder::new_audio(128_000, channels as i32, in_rate as i32, SampleFormat::FLTP)
-                .with_filters(vec![filter])
-                .build()?;
+        let filter = crate::filter::Filter::new("aformat", MediaType::AUDIO, "aformat=sample_fmts=fltp".to_string()).with_input_format(SampleFormat::FLT);
+        let encoder = EncoderBuilder::new_audio(128_000, channels as i32, in_rate as i32, SampleFormat::FLTP).with_filters(vec![filter]).build()?;
         let mut muxer = Muxer::new(&output_path)?;
         let audio_index = muxer.add_encoder(encoder)?;
         let mut sink = PcmSink::new(muxer, audio_index, PcmSpec::new(in_rate, channels))?;
@@ -597,10 +510,7 @@ mod tests {
         let (samples, out_rate, out_channels) = decode_audio_stream(&output_path)?;
         assert_eq!(out_rate, in_rate);
         assert_eq!(out_channels, channels);
-        assert!(
-            (samples as i64 - total_in as i64).abs() <= 1024,
-            "decoded {samples} samples, expected ~{total_in}"
-        );
+        assert!((samples as i64 - total_in as i64).abs() <= 1024, "decoded {samples} samples, expected ~{total_in}");
 
         Ok(())
     }

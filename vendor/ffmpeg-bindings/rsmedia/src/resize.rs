@@ -59,11 +59,7 @@ fn calculate_fit_dims(dims: (u32, u32), fit_dims: (u32, u32)) -> Option<(u32, u3
         let hf = h_max as f32 / h as f32;
         let f = wf.min(hf);
         let (w_out, h_out) = ((w as f32 * f) as u32, (h as f32 * f) as u32);
-        if (w_out > 0) && (h_out > 0) {
-            Some((w_out, h_out))
-        } else {
-            None
-        }
+        if (w_out > 0) && (h_out > 0) { Some((w_out, h_out)) } else { None }
     }
 }
 
@@ -124,10 +120,7 @@ mod tests {
                     (input_dim_zero && output_dim_zero) || (!input_dim_zero && !output_dim_zero),
                     "computed dims are never zero unless the inputs dims were",
                 );
-                assert!(
-                    (out_w <= fit_w) && (out_h <= fit_h),
-                    "computed dims fit inside provided dims",
-                );
+                assert!((out_w <= fit_w) && (out_h <= fit_h), "computed dims fit inside provided dims",);
             }
         }
     }
@@ -144,30 +137,18 @@ mod tests {
                     (input_dim_zero && output_dim_zero) || (!input_dim_zero && !output_dim_zero),
                     "computed dims are never zero unless the inputs dims were",
                 );
-                assert!(
-                    (out_w % 2 == 0) && (out_h % 2 == 0),
-                    "computed dims are even",
-                );
-                assert!(
-                    (out_w <= fit_w) && (out_h <= fit_h),
-                    "computed dims fit inside provided dims",
-                );
+                assert!((out_w % 2 == 0) && (out_h % 2 == 0), "computed dims are even",);
+                assert!((out_w <= fit_w) && (out_h <= fit_h), "computed dims fit inside provided dims",);
             }
         }
     }
 
     fn generate_testset() -> Vec<((u32, u32), (u32, u32))> {
         let testing_dims = generate_testing_dims();
-        testing_dims
-            .iter()
-            .flat_map(|dims| testing_dims.iter().map(|fit_dims| (*dims, *fit_dims)))
-            .collect()
+        testing_dims.iter().flat_map(|dims| testing_dims.iter().map(|fit_dims| (*dims, *fit_dims))).collect()
     }
 
     fn generate_testing_dims() -> Vec<(u32, u32)> {
-        TESTING_DIM_CANDIDATES
-            .iter()
-            .flat_map(|a| TESTING_DIM_CANDIDATES.iter().map(|b| (*a, *b)))
-            .collect()
+        TESTING_DIM_CANDIDATES.iter().flat_map(|a| TESTING_DIM_CANDIDATES.iter().map(|b| (*a, *b))).collect()
     }
 }

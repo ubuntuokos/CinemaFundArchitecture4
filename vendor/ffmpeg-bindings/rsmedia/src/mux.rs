@@ -5,9 +5,7 @@ use crate::io::{Reader, Writer};
 use crate::options::Metadata;
 use crate::stream::{MediaType, StreamInfo};
 use crate::subtitle::SubtitleSegment;
-use crate::{
-    Decoder, DecoderBuilder, Encoder, EncoderBuilder, Location, StreamReader, StreamWriter,
-};
+use crate::{Decoder, DecoderBuilder, Encoder, EncoderBuilder, Location, StreamReader, StreamWriter};
 
 use rsmpeg::avcodec::AVPacket;
 use rsmpeg::avutil::AVFrame;
@@ -35,12 +33,7 @@ pub struct Chapter {
 impl Chapter {
     /// Creates a chapter with an auto-assigned id.
     pub fn new(title: impl Into<String>, start: f64, end: f64) -> Self {
-        Self {
-            id: 0,
-            title: title.into(),
-            start,
-            end,
-        }
+        Self { id: 0, title: title.into(), start, end }
     }
 
     /// Returns the chapter duration in seconds.
@@ -111,26 +104,14 @@ impl MuxerStream {
     pub fn new_encoded(encoder: Encoder, stream_info: StreamInfo) -> Self {
         let media_type = encoder.media_type();
         let stream_index = stream_info.index;
-        Self {
-            encoder: Some(encoder),
-            media_type,
-            stream_info,
-            stream_index,
-            src_time_base: None,
-        }
+        Self { encoder: Some(encoder), media_type, stream_info, stream_index, src_time_base: None }
     }
 
     /// 透传流：直接拷贝源的编解码参数，`src_time_base` 用于时间戳换算。
     pub fn new_copy(stream_info: StreamInfo, src_time_base: ffi::AVRational) -> Self {
         let media_type = stream_info.media_type;
         let stream_index = stream_info.index;
-        Self {
-            encoder: None,
-            media_type,
-            stream_info,
-            stream_index,
-            src_time_base: Some(src_time_base),
-        }
+        Self { encoder: None, media_type, stream_info, stream_index, src_time_base: Some(src_time_base) }
     }
 }
 
@@ -183,12 +164,9 @@ impl<W: Writer> Muxer<W> {
     }
 
     pub fn add_encoder(&mut self, encoder: Encoder) -> Result<usize> {
-        let stream_idx = self
-            .writer
-            .add_stream(encoder.codecpar(), encoder.time_base());
+        let stream_idx = self.writer.add_stream(encoder.codecpar(), encoder.time_base());
         let stream_info = StreamInfo::from_writer(&self.writer, stream_idx)?;
-        self.streams
-            .push(MuxerStream::new_encoded(encoder, stream_info));
+        self.streams.push(MuxerStream::new_encoded(encoder, stream_info));
         Ok(stream_idx)
     }
 
@@ -202,9 +180,7 @@ impl<W: Writer> Muxer<W> {
     /// 与 `Muxer::add_copy_stream` 输入的源流一一对应。
     pub fn add_copy_stream(&mut self, src_info: &StreamInfo) -> Result<usize> {
         let src_time_base = src_info.time_base;
-        let stream_idx = self
-            .writer
-            .add_stream(src_info.codec_parameters.clone(), src_info.time_base);
+        let stream_idx = self.writer.add_stream(src_info.codec_parameters.clone(), src_info.time_base);
         // 拷贝的 codec_parameters 携带源容器专属的 codec_tag（如 `mp4a`
         // /`avc1`）。跨容器 remux（mp4→mkv 等）时这些 tag 与目标 muxer 不
         // 兼容，清空后由目标 muxer 在 write_header 时自行指派正确 tag。
@@ -215,34 +191,23 @@ impl<W: Writer> Muxer<W> {
             (*(*stream).codecpar).codec_tag = 0;
         }
         let stream_info = StreamInfo::from_writer(&self.writer, stream_idx)?;
-        self.streams
-            .push(MuxerStream::new_copy(stream_info, src_time_base));
+        self.streams.push(MuxerStream::new_copy(stream_info, src_time_base));
         Ok(stream_idx)
     }
 
     pub fn get_stream(&self, index: usize) -> Result<&MuxerStream> {
-        self.streams
-            .iter()
-            .find(|s| s.stream_index == index)
-            .ok_or_else(|| RsmediaError::msg(format!("Stream index: {index} not found")))
+        self.streams.iter().find(|s| s.stream_index == index).ok_or_else(|| RsmediaError::msg(format!("Stream index: {index} not found")))
     }
 
     pub fn get_stream_mut(&mut self, index: usize) -> Result<&mut MuxerStream> {
-        self.streams
-            .iter_mut()
-            .find(|s| s.stream_index == index)
-            .ok_or_else(|| RsmediaError::msg(format!("Stream index: {index} not found")))
+        self.streams.iter_mut().find(|s| s.stream_index == index).ok_or_else(|| RsmediaError::msg(format!("Stream index: {index} not found")))
     }
 
     /// Sets a container-level metadata entry, e.g. `title`, `artist`,
     /// `comment`. Applied when the container header is written, i.e. before
     /// the first [`Self::mux`] call; entries set after the header is written
     /// are ignored (with a warning).
-    pub fn set_metadata(
-        &mut self,
-        key: impl Into<String>,
-        value: impl Into<String>,
-    ) -> Result<&mut Self> {
+    pub fn set_metadata(&mut self, key: impl Into<String>, value: impl Into<String>) -> Result<&mut Self> {
         if self.have_written_header {
             log::warn!("set_metadata after header write has no effect");
         }
@@ -257,28 +222,16 @@ impl<W: Writer> Muxer<W> {
     ///
     /// Applied when the container header is written; entries containing
     /// interior NUL bytes are skipped with a warning at that point.
-    pub fn set_stream_metadata(
-        &mut self,
-        stream_index: usize,
-        key: impl Into<String>,
-        value: impl Into<String>,
-    ) -> Result<&mut Self> {
+    pub fn set_stream_metadata(&mut self, stream_index: usize, key: impl Into<String>, value: impl Into<String>) -> Result<&mut Self> {
         let (key, value) = (key.into(), value.into());
         let nb_streams = self.writer.output().nb_streams as usize;
         if stream_index >= nb_streams {
-            return Err(RsmediaError::invalid_config(format!(
-                "stream index {stream_index} out of range (nb_streams={nb_streams})"
-            )));
+            return Err(RsmediaError::invalid_config(format!("stream index {stream_index} out of range (nb_streams={nb_streams})")));
         }
         if self.have_written_header {
-            log::warn!(
-                "set_stream_metadata({stream_index}, {key:?}) after header write has no effect"
-            );
+            log::warn!("set_stream_metadata({stream_index}, {key:?}) after header write has no effect");
         }
-        self.stream_metadata
-            .entry(stream_index)
-            .or_default()
-            .insert(key, value);
+        self.stream_metadata.entry(stream_index).or_default().insert(key, value);
         Ok(self)
     }
 
@@ -301,14 +254,10 @@ impl<W: Writer> Muxer<W> {
         // context; `write_into_raw_dict` replaces it with our entries.
         unsafe { self.metadata.write_into_raw_dict(&mut ctx.metadata) };
 
-        let streams =
-            unsafe { std::slice::from_raw_parts_mut(ctx.streams, ctx.nb_streams as usize) };
+        let streams = unsafe { std::slice::from_raw_parts_mut(ctx.streams, ctx.nb_streams as usize) };
         for (idx, entries) in &self.stream_metadata {
             let Some(stream) = streams.get_mut(*idx) else {
-                log::warn!(
-                    "stream metadata: index {idx} out of range (nb_streams={})",
-                    ctx.nb_streams
-                );
+                log::warn!("stream metadata: index {idx} out of range (nb_streams={})", ctx.nb_streams);
                 continue;
             };
             // SAFETY: `(**stream).metadata` is a live dictionary slot owned by the
@@ -325,29 +274,15 @@ impl<W: Writer> Muxer<W> {
     /// Requires a container with chapter support (MP4, MKV, ...).
     pub fn add_chapter(&mut self, chapter: Chapter) -> Result<&mut Self> {
         if self.have_written_header {
-            log::warn!(
-                "add_chapter({:?}) after header write has no effect",
-                chapter.title
-            );
+            log::warn!("add_chapter({:?}) after header write has no effect", chapter.title);
         }
         if chapter.start < 0.0 {
-            return Err(RsmediaError::invalid_config(format!(
-                "chapter start must be >= 0, got {}",
-                chapter.start
-            )));
+            return Err(RsmediaError::invalid_config(format!("chapter start must be >= 0, got {}", chapter.start)));
         }
         if chapter.end <= chapter.start {
-            return Err(RsmediaError::invalid_config(format!(
-                "chapter end ({}) must be greater than start ({})",
-                chapter.end, chapter.start
-            )));
+            return Err(RsmediaError::invalid_config(format!("chapter end ({}) must be greater than start ({})", chapter.end, chapter.start)));
         }
-        self.chapters.push(Chapter {
-            id: chapter.id,
-            title: chapter.title,
-            start: chapter.start,
-            end: chapter.end,
-        });
+        self.chapters.push(Chapter { id: chapter.id, title: chapter.title, start: chapter.start, end: chapter.end });
         Ok(self)
     }
 
@@ -359,9 +294,7 @@ impl<W: Writer> Muxer<W> {
     pub fn add_cover_art(&mut self, cover_frame: AVFrame) -> Result<usize> {
         let width = cover_frame.width as usize;
         let height = cover_frame.height as usize;
-        let encoder = EncoderBuilder::new_video(width, height)
-            .with_codec_name("mjpeg".to_string())
-            .build()?;
+        let encoder = EncoderBuilder::new_video(width, height).with_codec_name("mjpeg".to_string()).build()?;
         self.add_cover_art_with(encoder, cover_frame)
     }
 
@@ -376,9 +309,7 @@ impl<W: Writer> Muxer<W> {
     /// output stream index of the cover stream.
     pub fn add_cover_art_with(&mut self, encoder: Encoder, cover_frame: AVFrame) -> Result<usize> {
         if self.have_written_header {
-            return Err(RsmediaError::invalid_config(
-                "add_cover_art after header write is not supported",
-            ));
+            return Err(RsmediaError::invalid_config("add_cover_art after header write is not supported"));
         }
         let stream_idx = self.add_encoder(encoder)?;
 
@@ -387,13 +318,9 @@ impl<W: Writer> Muxer<W> {
         // here instead; sound because the writer exclusively owns the context
         // and the disposition must be set before `write_header`.
         let ctx = unsafe { &mut *self.writer.output_mut().as_mut_ptr() };
-        let streams =
-            unsafe { std::slice::from_raw_parts_mut(ctx.streams, ctx.nb_streams as usize) };
+        let streams = unsafe { std::slice::from_raw_parts_mut(ctx.streams, ctx.nb_streams as usize) };
         let Some(stream) = streams.get_mut(stream_idx) else {
-            return Err(RsmediaError::msg(format!(
-                "cover art stream index {stream_idx} out of range (nb_streams={})",
-                ctx.nb_streams
-            )));
+            return Err(RsmediaError::msg(format!("cover art stream index {stream_idx} out of range (nb_streams={})", ctx.nb_streams)));
         };
         unsafe {
             (**stream).disposition |= ffi::AV_DISPOSITION_ATTACHED_PIC as i32;
@@ -433,37 +360,26 @@ impl<W: Writer> Muxer<W> {
             // Millisecond time base: times are stored as whole milliseconds.
             let start_ms = (chapter.start * 1000.0).round() as i64;
             let end_ms = (chapter.end * 1000.0).round() as i64;
-            let chapter_ptr = unsafe {
-                ffi::av_mallocz(std::mem::size_of::<ffi::AVChapter>()) as *mut ffi::AVChapter
-            };
+            let chapter_ptr = unsafe { ffi::av_mallocz(std::mem::size_of::<ffi::AVChapter>()) as *mut ffi::AVChapter };
             if chapter_ptr.is_null() {
                 log::error!("av_mallocz for chapter {i} failed; chapters are dropped");
                 Self::free_chapter_nodes(&mut chapter_nodes);
                 return;
             }
             unsafe {
-                (*chapter_ptr).id = if chapter.id != 0 {
-                    chapter.id
-                } else {
-                    i as i64
-                };
+                (*chapter_ptr).id = if chapter.id != 0 { chapter.id } else { i as i64 };
                 (*chapter_ptr).time_base = ffi::AVRational { num: 1, den: 1000 };
                 (*chapter_ptr).start = start_ms;
                 (*chapter_ptr).end = end_ms;
                 // SAFETY: `(*chapter_ptr).metadata` starts out NULL and the chapter
                 // node is exclusively owned here (already inside an `unsafe` block).
-                Metadata::new()
-                    .insert("title", &chapter.title)
-                    .write_into_raw_dict(&mut (*chapter_ptr).metadata);
+                Metadata::new().insert("title", &chapter.title).write_into_raw_dict(&mut (*chapter_ptr).metadata);
             }
             chapter_nodes.push(chapter_ptr);
         }
 
         // 2) 分配连续指针数组。
-        let chapters_ptr = unsafe {
-            ffi::av_calloc(count, std::mem::size_of::<*mut ffi::AVChapter>())
-                as *mut *mut ffi::AVChapter
-        };
+        let chapters_ptr = unsafe { ffi::av_calloc(count, std::mem::size_of::<*mut ffi::AVChapter>()) as *mut *mut ffi::AVChapter };
         if chapters_ptr.is_null() {
             log::error!("av_calloc for {count} chapters failed; chapters are dropped");
             Self::free_chapter_nodes(&mut chapter_nodes);
@@ -503,8 +419,8 @@ impl<W: Writer> Muxer<W> {
     fn refresh_stream_info(&mut self) -> Result<()> {
         for mux_stream in self.streams.iter_mut() {
             let stream_info = StreamInfo::from_writer(&self.writer, mux_stream.stream_index)?;
-            let tb_changed = stream_info.time_base.num != mux_stream.stream_info.time_base.num
-                || stream_info.time_base.den != mux_stream.stream_info.time_base.den;
+            let tb_changed =
+                stream_info.time_base.num != mux_stream.stream_info.time_base.num || stream_info.time_base.den != mux_stream.stream_info.time_base.den;
             if tb_changed {
                 log::debug!(
                     "Muxer changed stream {} time_base: {:?} -> {:?}",
@@ -546,11 +462,7 @@ impl<W: Writer> Muxer<W> {
     /// 交错，B 帧乱序也安全）或 `write_frame`（顺序直写）。三条 mux 路径
     /// （编码流 / 字幕流 / 复制流）收尾共用这一个出口，交错与否只在这一处判断。
     fn write_packet(&mut self, packet: &mut AVPacket) -> Result<W::Out> {
-        if self.interleaved {
-            self.writer.write_interleaved(packet)
-        } else {
-            self.writer.write_frame(packet)
-        }
+        if self.interleaved { self.writer.write_interleaved(packet) } else { self.writer.write_frame(packet) }
     }
 
     /// Mux a single frame through an encoder stream.
@@ -566,11 +478,8 @@ impl<W: Writer> Muxer<W> {
         let mut collected = self.ensure_header_written()?;
 
         let mux_stream = self.get_stream_mut(stream_idx)?;
-        let encoder = mux_stream.encoder.as_mut().ok_or_else(|| {
-            RsmediaError::msg(format!(
-                "Stream {stream_idx} is a copy stream: use mux_packet() instead of mux()"
-            ))
-        })?;
+        let encoder =
+            mux_stream.encoder.as_mut().ok_or_else(|| RsmediaError::msg(format!("Stream {stream_idx} is a copy stream: use mux_packet() instead of mux()")))?;
         let enc_time_base = encoder.time_base();
         let out_time_base = mux_stream.stream_info.time_base;
         let packets = encoder.encode_raw(frame)?;
@@ -614,26 +523,18 @@ impl<W: Writer> Muxer<W> {
     /// * `segment`   - The text cue with start/end times in milliseconds.
     /// * `stream_idx` - Index of the subtitle stream created by
     ///   [`Self::add_encoder`] with a subtitle [`Encoder`].
-    pub fn mux_subtitle_segment(
-        &mut self,
-        segment: &SubtitleSegment,
-        stream_idx: usize,
-    ) -> Result<Option<W::Out>> {
+    pub fn mux_subtitle_segment(&mut self, segment: &SubtitleSegment, stream_idx: usize) -> Result<Option<W::Out>> {
         // header 的输出要并入返回值（见 `ensure_header_written`），且必须在
         // 借出 `mux_stream` 之前调用。
         let mut collected = self.ensure_header_written()?;
 
         let mux_stream = self.get_stream_mut(stream_idx)?;
-        let encoder = mux_stream.encoder.as_mut().ok_or_else(|| {
-            RsmediaError::msg(format!(
-                "Stream {stream_idx} is a copy stream: subtitle segments require an encoder stream"
-            ))
-        })?;
+        let encoder = mux_stream
+            .encoder
+            .as_mut()
+            .ok_or_else(|| RsmediaError::msg(format!("Stream {stream_idx} is a copy stream: subtitle segments require an encoder stream")))?;
         if encoder.media_type() != MediaType::SUBTITLE {
-            return Err(RsmediaError::invalid_config(format!(
-                "mux_subtitle_segment requires a subtitle encoder, got {}",
-                encoder.media_type()
-            )));
+            return Err(RsmediaError::invalid_config(format!("mux_subtitle_segment requires a subtitle encoder, got {}", encoder.media_type())));
         }
         let enc_time_base = encoder.time_base();
         let out_time_base = mux_stream.stream_info.time_base;
@@ -662,20 +563,14 @@ impl<W: Writer> Muxer<W> {
     /// * `packet`   - 来自 [`Demuxer::demux_packet`] 的原始包；其 `stream_index`
     ///   会在写入前被改写为输出流 index。
     /// * `stream_idx` - [`Self::add_copy_stream`] 返回的输出流 index。
-    pub fn mux_packet(
-        &mut self,
-        packet: &mut AVPacket,
-        stream_idx: usize,
-    ) -> Result<Option<W::Out>> {
+    pub fn mux_packet(&mut self, packet: &mut AVPacket, stream_idx: usize) -> Result<Option<W::Out>> {
         let mut collected = self.ensure_header_written()?;
 
         let (src_time_base, out_time_base) = {
             let mux_stream = self.get_stream(stream_idx)?;
-            let src_time_base = mux_stream.src_time_base.ok_or_else(|| {
-                RsmediaError::msg(format!(
-                    "Stream {stream_idx} is not a copy stream: use mux() instead of mux_packet()"
-                ))
-            })?;
+            let src_time_base = mux_stream
+                .src_time_base
+                .ok_or_else(|| RsmediaError::msg(format!("Stream {stream_idx} is not a copy stream: use mux() instead of mux_packet()")))?;
             // 输出流时间基取缓存值：`refresh_stream_info` 已在写 header 之后
             // 把它刷成 muxer 的实际值，所有写包路径共用同一来源。
             let out_time_base = mux_stream.stream_info.time_base;
@@ -712,12 +607,7 @@ impl<W: Writer> Muxer<W> {
             };
             let out_stream_index = mux_stream.stream_index;
             let out_stream_time_base = mux_stream.stream_info.time_base;
-            let flushed = encoder.flush(
-                &mut self.writer,
-                self.interleaved,
-                out_stream_index,
-                out_stream_time_base,
-            )?;
+            let flushed = encoder.flush(&mut self.writer, self.interleaved, out_stream_index, out_stream_time_base)?;
             if let Some(out) = flushed {
                 W::fold_out(&mut collected, out);
             }
@@ -799,12 +689,7 @@ impl DemuxerStream {
     pub fn new(decoder: Decoder, stream_info: StreamInfo) -> Self {
         let media_type = decoder.media_type();
         let stream_index = stream_info.index;
-        Self {
-            decoder,
-            media_type,
-            stream_info,
-            stream_index,
-        }
+        Self { decoder, media_type, stream_info, stream_index }
     }
 }
 
@@ -842,13 +727,10 @@ impl Demuxer<StreamReader> {
 /// `Demuxer::new_from_reader` 与 `Demuxer::new_single_stream` 需要的分组完全
 /// 相同，抽到这里以免两处各改一遍。
 fn group_filters(filters: Option<Vec<Filter>>) -> HashMap<MediaType, Vec<Filter>> {
-    filters.unwrap_or_default().into_iter().fold(
-        HashMap::<MediaType, Vec<Filter>>::new(),
-        |mut map, filter| {
-            map.entry(filter.media_type()).or_default().push(filter);
-            map
-        },
-    )
+    filters.unwrap_or_default().into_iter().fold(HashMap::<MediaType, Vec<Filter>>::new(), |mut map, filter| {
+        map.entry(filter.media_type()).or_default().push(filter);
+        map
+    })
 }
 
 impl<R: Reader> Demuxer<R> {
@@ -862,10 +744,7 @@ impl<R: Reader> Demuxer<R> {
         let media_type = stream_info.media_type;
         let device_type = device_config.as_ref().map(|c| c.device_type);
         let Some(codec_name) = stream_info.find_decoder_name(device_type) else {
-            return Err(RsmediaError::msg(format!(
-                "No decoder found for codec_id {:#x} (stream {})",
-                stream_info.codec_id, stream_info.index
-            )));
+            return Err(RsmediaError::msg(format!("No decoder found for codec_id {:#x} (stream {})", stream_info.codec_id, stream_info.index)));
         };
         match DecoderBuilder::new(media_type)
             .with_codec_name(codec_name.clone())
@@ -881,9 +760,7 @@ impl<R: Reader> Demuxer<R> {
                     "HW decoder '{codec_name}' failed to build: {e:#}; \
                      falling back to software decoder"
                 );
-                let software_name = stream_info
-                    .find_decoder_name(None)
-                    .unwrap_or_else(|| codec_name.clone());
+                let software_name = stream_info.find_decoder_name(None).unwrap_or_else(|| codec_name.clone());
                 DecoderBuilder::new(media_type)
                     .with_codec_name(software_name)
                     .with_filters(filters.get(&media_type).cloned())
@@ -895,11 +772,7 @@ impl<R: Reader> Demuxer<R> {
     }
 
     /// 全流解码模式：为容器中所有可解码的流构建解码器。
-    pub fn new_from_reader(
-        reader: R,
-        filters: Option<Vec<Filter>>,
-        device_config: Option<HWDeviceConfig>,
-    ) -> Result<Demuxer<R>> {
+    pub fn new_from_reader(reader: R, filters: Option<Vec<Filter>>, device_config: Option<HWDeviceConfig>) -> Result<Demuxer<R>> {
         let nb_streams = reader.input().nb_streams as usize;
         let filter_map = group_filters(filters);
 
@@ -912,21 +785,14 @@ impl<R: Reader> Demuxer<R> {
                 // Streams without a registered decoder (chapter tracks,
                 // attached pictures, binary data, ...) are skipped instead of
                 // failing the whole demuxer.
-                log::debug!(
-                    "Skipping stream {stream_idx}: no decoder for codec_id {:#x}",
-                    stream_info.codec_id
-                );
+                log::debug!("Skipping stream {stream_idx}: no decoder for codec_id {:#x}", stream_info.codec_id);
                 continue;
             }
             let decoder = Self::build_decoder(&reader, &stream_info, &device_config, &filter_map)?;
             streams.push(DemuxerStream::new(decoder, stream_info));
         }
 
-        Ok(Self {
-            reader,
-            streams,
-            passthrough: false,
-        })
+        Ok(Self { reader, streams, passthrough: false })
     }
 
     /// 单流解码模式：只为 `media_type` 的**最佳流**构建解码器，其余流的 packet
@@ -937,23 +803,14 @@ impl<R: Reader> Demuxer<R> {
     /// 找不到该类型的流时返回错误。早先这里取的是"该类型的第一个流"，而容器里的
     /// 流顺序并不保证最佳流排在最前——`Demuxer::new` 走 `find_best_stream`，
     /// 两者因此可能选中不同的流。
-    pub fn new_single_stream(
-        reader: R,
-        media_type: MediaType,
-        filters: Option<Vec<Filter>>,
-        device_config: Option<HWDeviceConfig>,
-    ) -> Result<Demuxer<R>> {
+    pub fn new_single_stream(reader: R, media_type: MediaType, filters: Option<Vec<Filter>>, device_config: Option<HWDeviceConfig>) -> Result<Demuxer<R>> {
         let filter_map = group_filters(filters);
 
         let (stream_index, _codec_name) = reader.find_best_stream(media_type)?;
         let stream_info = StreamInfo::from_reader(&reader, stream_index)?;
         let decoder = Self::build_decoder(&reader, &stream_info, &device_config, &filter_map)?;
 
-        Ok(Self {
-            reader,
-            streams: vec![DemuxerStream::new(decoder, stream_info)],
-            passthrough: false,
-        })
+        Ok(Self { reader, streams: vec![DemuxerStream::new(decoder, stream_info)], passthrough: false })
     }
 
     /// 透传模式（remux）：不构建任何解码器，仅通过
@@ -964,11 +821,7 @@ impl<R: Reader> Demuxer<R> {
     /// [`Muxer::add_copy_stream`](crate::mux::Muxer::add_copy_stream) 和
     /// [`Muxer::mux_packet`](crate::mux::Muxer::mux_packet) 可原样搬运码流。
     pub fn new_passthrough(reader: R) -> Result<Demuxer<R>> {
-        Ok(Self {
-            reader,
-            streams: Vec::new(),
-            passthrough: true,
-        })
+        Ok(Self { reader, streams: Vec::new(), passthrough: true })
     }
 
     /// Decoders for the selected streams, in container stream order.
@@ -998,35 +851,21 @@ impl<R: Reader> Demuxer<R> {
             }
             unsafe {
                 // SAFETY: `(*c).metadata` is valid for as long as `input` is borrowed.
-                let title = Metadata::from_raw_dict((*c).metadata)
-                    .get("title")
-                    .unwrap_or_default()
-                    .to_string();
+                let title = Metadata::from_raw_dict((*c).metadata).get("title").unwrap_or_default().to_string();
                 let tb = (*c).time_base;
                 let tb_secs = tb.num as f64 / tb.den as f64;
-                chapters.push(Chapter {
-                    id: (*c).id,
-                    title,
-                    start: (*c).start as f64 * tb_secs,
-                    end: (*c).end as f64 * tb_secs,
-                });
+                chapters.push(Chapter { id: (*c).id, title, start: (*c).start as f64 * tb_secs, end: (*c).end as f64 * tb_secs });
             }
         }
         chapters
     }
 
     pub fn get_stream(&self, index: usize) -> Result<&DemuxerStream> {
-        self.streams
-            .iter()
-            .find(|s| s.stream_index == index)
-            .ok_or_else(|| RsmediaError::msg(format!("Stream index: {index} not found")))
+        self.streams.iter().find(|s| s.stream_index == index).ok_or_else(|| RsmediaError::msg(format!("Stream index: {index} not found")))
     }
 
     pub fn get_stream_mut(&mut self, index: usize) -> Result<&mut DemuxerStream> {
-        self.streams
-            .iter_mut()
-            .find(|s| s.stream_index == index)
-            .ok_or_else(|| RsmediaError::msg(format!("Stream index: {index} not found")))
+        self.streams.iter_mut().find(|s| s.stream_index == index).ok_or_else(|| RsmediaError::msg(format!("Stream index: {index} not found")))
     }
 
     /// 返回输入容器第 `index` 个流的 [`StreamInfo`]（从 reader 实时读取）。
@@ -1089,21 +928,14 @@ impl<R: Reader> Demuxer<R> {
 
     pub fn demux(&mut self) -> Result<Option<(usize, AVFrame)>> {
         if self.is_passthrough() {
-            return Err(RsmediaError::invalid_config(
-                "Demuxer is in passthrough mode: use demux_packet()/packets() instead of demux()"
-                    .to_string(),
-            ));
+            return Err(RsmediaError::invalid_config("Demuxer is in passthrough mode: use demux_packet()/packets() instead of demux()".to_string()));
         }
         let mut read_exhausted = false;
         loop {
             if !read_exhausted {
                 match self.reader.read_packet() {
                     Ok(Some((stream_idx, packet))) => {
-                        let Some(demux_stream) = self
-                            .streams
-                            .iter_mut()
-                            .find(|s| s.stream_index == stream_idx)
-                        else {
+                        let Some(demux_stream) = self.streams.iter_mut().find(|s| s.stream_index == stream_idx) else {
                             // Packets of skipped streams (chapter tracks,
                             // unselected streams in single-stream mode, ...)
                             // are dropped.
@@ -1204,10 +1036,7 @@ mod tests {
         frame.set_width(width as i32);
         frame.set_height(height as i32);
         frame.set_format(PixelFormat::YUV420P.into());
-        frame
-            .alloc_buffer()
-            .context("Failed to allocate buffer for frame")
-            .unwrap();
+        frame.alloc_buffer().context("Failed to allocate buffer for frame").unwrap();
 
         // 获取各平面参数 (YUV420P布局)
         let y_plane = frame.data_mut()[0];
@@ -1258,20 +1087,13 @@ mod tests {
     }
 
     /// 生成FLTP格式的正弦波音频帧
-    fn generate_audio_sine_wave_frame(
-        freq: f32,
-        channels: usize,
-        nb_samples: usize,
-        sample_rate: i32,
-    ) -> Result<AVFrame> {
+    fn generate_audio_sine_wave_frame(freq: f32, channels: usize, nb_samples: usize, sample_rate: i32) -> Result<AVFrame> {
         let mut frame = AVFrame::new();
         frame.set_format(SampleFormat::FLTP as _);
         frame.set_ch_layout(AVChannelLayout::from_nb_channels(channels as i32).into_inner());
         frame.set_sample_rate(sample_rate);
         frame.set_nb_samples(nb_samples as i32);
-        frame
-            .alloc_buffer()
-            .context("Failed to allocate buffer for frame")?;
+        frame.alloc_buffer().context("Failed to allocate buffer for frame")?;
 
         let sample_interval = 1.0 / sample_rate as f32;
         let two_pi_f = 2.0 * std::f32::consts::PI * freq;
@@ -1314,10 +1136,7 @@ mod tests {
             frame.set_pts(index * encoder_time_base.den as i64);
             frame.set_time_base(encoder_time_base);
 
-            println!(
-                "encode video frame:{:?}, time_base:{:?}, encoder_time_base:{:?}",
-                frame, frame.time_base, encoder_time_base
-            );
+            println!("encode video frame:{:?}, time_base:{:?}, encoder_time_base:{:?}", frame, frame.time_base, encoder_time_base);
             muxer.mux(frame, video_index)?;
         }
 
@@ -1336,10 +1155,7 @@ mod tests {
         for res in demuxer {
             match res {
                 Ok((index, frame)) => {
-                    println!(
-                        "stream index:{}, {:?}, timebase:{:?}",
-                        index, frame, frame.time_base
-                    );
+                    println!("stream index:{}, {:?}, timebase:{:?}", index, frame, frame.time_base);
                 }
                 Err(e) => {
                     println!("Error decoding frame: {}", e)
@@ -1352,8 +1168,7 @@ mod tests {
 
     #[test]
     fn test_mux_demux_audio_aac() -> Result<()> {
-        let output_path =
-            crate::test_support::test_output_path("mux", "test_mux_demux_audio_aac.aac");
+        let output_path = crate::test_support::test_output_path("mux", "test_mux_demux_audio_aac.aac");
         let sample_rate = 44_100;
         let nb_samples = 1024;
         let channels = 2;
@@ -1370,21 +1185,13 @@ mod tests {
 
         // 生成测试音频帧 // 5秒音频 440Hz
         for _ in 0..(sample_rate * 5 / nb_samples) {
-            let mut sine_frame = generate_audio_sine_wave_frame(
-                440.0,
-                channels as usize,
-                nb_samples as usize,
-                sample_rate,
-            )?;
+            let mut sine_frame = generate_audio_sine_wave_frame(440.0, channels as usize, nb_samples as usize, sample_rate)?;
 
             // 设置正确的PTS和时间基
             sine_frame.set_pts(total_samples);
             sine_frame.set_time_base(encoder_time_base);
 
-            println!(
-                "audio frame: {:?}, time_base={:?}",
-                sine_frame, encoder_time_base
-            );
+            println!("audio frame: {:?}, time_base={:?}", sine_frame, encoder_time_base);
 
             muxer.mux(sine_frame, audio_index)?;
 
@@ -1406,10 +1213,7 @@ mod tests {
         for res in demuxer {
             match res {
                 Ok((index, frame)) => {
-                    println!(
-                        "stream index:{}, {:?}, time_base:{:?}",
-                        index, frame, frame.time_base
-                    )
+                    println!("stream index:{}, {:?}, time_base:{:?}", index, frame, frame.time_base)
                 }
                 Err(e) => {
                     println!("Error decoding frame: {}", e)
@@ -1456,8 +1260,7 @@ mod tests {
         }
         let mut total_samples = 0i64;
         for _ in 0..(sample_rate / nb_samples) {
-            let mut frame =
-                generate_audio_sine_wave_frame(440.0, 2, nb_samples as usize, sample_rate)?;
+            let mut frame = generate_audio_sine_wave_frame(440.0, 2, nb_samples as usize, sample_rate)?;
             frame.set_pts(total_samples);
             frame.set_time_base(audio_time_base);
             muxer.mux(frame, audio_index)?;
@@ -1472,26 +1275,17 @@ mod tests {
         let get_str = |dict: *mut ffi::AVDictionary, key: &str| -> Option<String> {
             // SAFETY: `dict` points at a live `AVDictionary` owned by the input
             // format context / stream, which outlives this call.
-            unsafe { Metadata::from_raw_dict(dict) }
-                .get(key)
-                .map(String::from)
+            unsafe { Metadata::from_raw_dict(dict) }.get(key).map(String::from)
         };
 
         let title = get_str(input.metadata, "title");
-        assert_eq!(
-            title.as_deref(),
-            Some("rsmedia metadata test"),
-            "container title metadata mismatch"
-        );
+        assert_eq!(title.as_deref(), Some("rsmedia metadata test"), "container title metadata mismatch");
 
         let artist = get_str(input.metadata, "artist");
         assert_eq!(artist.as_deref(), Some("rsmedia"));
 
         let streams = input.streams();
-        let raw_or_null = |d: Option<rsmpeg::avutil::AVDictionaryRef>| {
-            d.map(|d| d.as_ptr() as *mut _)
-                .unwrap_or(std::ptr::null_mut())
-        };
+        let raw_or_null = |d: Option<rsmpeg::avutil::AVDictionaryRef>| d.map(|d| d.as_ptr() as *mut _).unwrap_or(std::ptr::null_mut());
         let video_lang = get_str(raw_or_null(streams[video_index].metadata()), "language");
         assert_eq!(video_lang.as_deref(), Some("und"));
 
@@ -1503,19 +1297,17 @@ mod tests {
 
     #[test]
     fn test_mux_demux_audio_mp3() -> Result<()> {
-        let output_path =
-            crate::test_support::test_output_path("mux", "test_mux_demux_audio_mp3.mp3");
+        let output_path = crate::test_support::test_output_path("mux", "test_mux_demux_audio_mp3.mp3");
         let sample_rate = 44_100;
         let bit_rate = 128_000;
         let nb_samples = 1152; // libmp3lame 要求的 frame_size 为 1152
         let channels = 2;
 
         // 修改音频编码器为MP3
-        let audio_encoder =
-            EncoderBuilder::new_audio(bit_rate, channels, sample_rate, SampleFormat::FLTP)
-                // 使用LAME MP3编码器
-                .with_codec_name("libmp3lame".to_string())
-                .build()?;
+        let audio_encoder = EncoderBuilder::new_audio(bit_rate, channels, sample_rate, SampleFormat::FLTP)
+            // 使用LAME MP3编码器
+            .with_codec_name("libmp3lame".to_string())
+            .build()?;
 
         let mut muxer = Muxer::new(output_path)?;
 
@@ -1527,21 +1319,13 @@ mod tests {
 
         // 生成测试音频帧 // 5秒音频 440Hz
         for _ in 0..(sample_rate * 5 / nb_samples) {
-            let mut sine_frame = generate_audio_sine_wave_frame(
-                440.0,
-                channels as usize,
-                nb_samples as usize,
-                sample_rate,
-            )?;
+            let mut sine_frame = generate_audio_sine_wave_frame(440.0, channels as usize, nb_samples as usize, sample_rate)?;
 
             // 设置正确的PTS和时间基
             sine_frame.set_pts(total_samples);
             sine_frame.set_time_base(encoder_time_base);
 
-            println!(
-                "audio frame: {:?}, time_base={:?}",
-                sine_frame, encoder_time_base
-            );
+            println!("audio frame: {:?}, time_base={:?}", sine_frame, encoder_time_base);
 
             muxer.mux(sine_frame, audio_index)?;
 
@@ -1569,12 +1353,9 @@ mod tests {
 
         let output_path = crate::test_support::test_output_path("mux", "test_multiple_streams.mp4");
 
-        let video_encoder = EncoderBuilder::new_video(VIDEO_WIDTH, VIDEO_HEIGHT)
-            .with_fps(VIDEO_FPS)
-            .build()?;
+        let video_encoder = EncoderBuilder::new_video(VIDEO_WIDTH, VIDEO_HEIGHT).with_fps(VIDEO_FPS).build()?;
 
-        let audio_encoder =
-            Encoder::new_audio(AUDIO_CHANNELS, AUDIO_SAMPLE_RATE, SampleFormat::FLTP)?;
+        let audio_encoder = Encoder::new_audio(AUDIO_CHANNELS, AUDIO_SAMPLE_RATE, SampleFormat::FLTP)?;
 
         let mut muxer = Muxer::new(&output_path)?;
 
@@ -1604,10 +1385,7 @@ mod tests {
             video_frame.set_pts(video_pts);
             video_frame.set_time_base(video_time_base);
 
-            println!(
-                "Video frame: {}, pts: {}, timebase: {:?}",
-                frame_idx, video_pts, video_time_base
-            );
+            println!("Video frame: {}, pts: {}, timebase: {:?}", frame_idx, video_pts, video_time_base);
             muxer.mux(video_frame, video_idx)?;
 
             // 视频和音频帧不一对一写入,为什么需要这样计算？
@@ -1627,8 +1405,7 @@ mod tests {
             // - 但1个帧只能容纳1024个样本，剩余576个样本会被丢弃
             // - 使用向上取整：(1600 + 1024 - 1) / 1024 = 2，确保所有样本都被处理
             // 这就是为什么在计算音频帧数时使用这个向上取整除法公式的原因
-            let audio_frames_needed =
-                (audio_samples_per_video_frame as u32).div_ceil(SAMPLES_PER_FRAME);
+            let audio_frames_needed = (audio_samples_per_video_frame as u32).div_ceil(SAMPLES_PER_FRAME);
             for _ in 0..audio_frames_needed {
                 // 使用新的音频帧生成函数
                 let mut audio_frame = generate_audio_sine_wave_frame(
@@ -1641,10 +1418,7 @@ mod tests {
                 audio_frame.set_pts(audio_pts);
                 audio_frame.set_time_base(audio_time_base);
 
-                println!(
-                    "Audio frame: pts: {}, samples: {}, timebase: {:?}",
-                    audio_pts, SAMPLES_PER_FRAME, audio_time_base
-                );
+                println!("Audio frame: pts: {}, samples: {}, timebase: {:?}", audio_pts, SAMPLES_PER_FRAME, audio_time_base);
 
                 muxer.mux(audio_frame, audio_idx)?;
 
@@ -1702,8 +1476,7 @@ mod tests {
                 .iter()
                 .map(|stream| {
                     let codec_type = stream.codecpar().codec_type();
-                    if !codec_type.is_video() && !codec_type.is_audio() && !codec_type.is_subtitle()
-                    {
+                    if !codec_type.is_video() && !codec_type.is_audio() && !codec_type.is_subtitle() {
                         None
                     } else {
                         output.new_stream().set_codecpar(stream.codecpar().clone());
@@ -1714,17 +1487,11 @@ mod tests {
                 .collect()
         };
 
-        output
-            .dump(0, strutils::str_to_cstring(output_path).as_c_str())
-            .context("Dump output format context failed.")?;
+        output.dump(0, strutils::str_to_cstring(output_path).as_c_str()).context("Dump output format context failed.")?;
 
-        output
-            .write_header(&mut None)
-            .context("Writer header failed.")?;
+        output.write_header(&mut None).context("Writer header failed.")?;
 
-        while let Some((input_stream_index, mut packet)) =
-            input_reader.read_packet().context("Read packet failed.")?
-        {
+        while let Some((input_stream_index, mut packet)) = input_reader.read_packet().context("Read packet failed.")? {
             let Some(output_stream_index) = stream_mapping[input_stream_index] else {
                 continue;
             };
@@ -1735,9 +1502,7 @@ mod tests {
                 packet.set_stream_index(output_stream_index as i32);
                 packet.set_pos(-1);
             }
-            output
-                .interleaved_write_frame(&mut packet)
-                .context("Interleaved write frame failed.")?;
+            output.interleaved_write_frame(&mut packet).context("Interleaved write frame failed.")?;
         }
 
         output.write_trailer().context("Write trailer failed.")
@@ -1756,8 +1521,7 @@ mod tests {
     /// 2. 重复调用 `finish()` 是幂等的：第二次返回 `Ok(None)`，不会重复写 trailer。
     #[test]
     fn test_finish_without_mux_and_idempotent() -> Result<()> {
-        let output_path =
-            crate::test_support::test_output_path("mux", "test_finish_without_mux.mp4");
+        let output_path = crate::test_support::test_output_path("mux", "test_finish_without_mux.mp4");
 
         let encoder = Encoder::new_video(320, 240)?;
         let mut muxer = Muxer::new(output_path)?;
@@ -1765,10 +1529,7 @@ mod tests {
 
         // 未 mux 任何帧，直接 finish：应为空操作，返回 None
         let first = muxer.finish()?;
-        assert!(
-            first.is_none(),
-            "finish() on an empty muxer should be a no-op"
-        );
+        assert!(first.is_none(), "finish() on an empty muxer should be a no-op");
         assert!(!muxer.have_written_header, "header should not be written");
 
         // 第二次 finish 应幂等，返回 None，不重复写 trailer
@@ -1782,8 +1543,7 @@ mod tests {
     /// 生成的容器文件依旧可以被 Demuxer 正常读取（不损坏）。
     #[test]
     fn test_drop_flush_without_explicit_finish() -> Result<()> {
-        let output_path =
-            crate::test_support::test_output_path("mux", "test_drop_flush_no_finish.mp4");
+        let output_path = crate::test_support::test_output_path("mux", "test_drop_flush_no_finish.mp4");
 
         let (width, height) = (320, 240);
         let video_encoder = Encoder::new_video(width, height)?;
@@ -1805,10 +1565,7 @@ mod tests {
         let demuxer = Demuxer::new(&output_path)?;
         // 能成功创建 demuxer 且能读到帧即证明容器完整（有 header + trailer）
         let decoded = demuxer.filter_map(|res| res.ok().map(|_| ())).count();
-        assert!(
-            decoded > 0,
-            "expected at least one decoded frame, got {decoded}"
-        );
+        assert!(decoded > 0, "expected at least one decoded frame, got {decoded}");
 
         Ok(())
     }
@@ -1822,18 +1579,14 @@ mod tests {
         use crate::MediaType;
         use crate::subtitle::SubtitleSegment;
 
-        let output_path =
-            crate::test_support::test_output_path("mux", "test_mux_subtitle_segment.mp4");
+        let output_path = crate::test_support::test_output_path("mux", "test_mux_subtitle_segment.mp4");
         crate::test_support::remove_test_output(&output_path);
 
         let header = "[Script Info]\nScriptType: v4.00+\n\n[V4+ Styles]\nFormat: Name, Fontname, Fontsize, PrimaryColour, SecondaryColour, OutlineColour, BackColour, Bold, Italic, Underline, StrikeOut, ScaleX, ScaleY, Spacing, Angle, BorderStyle, Outline, Shadow, Alignment, MarginL, MarginR, MarginV, Encoding\nStyle: Default,Arial,16,&Hffffff,&Hffffff,&H0,&H0,0,0,0,0,100,100,0,0,1,1,0,2,10,10,10,1\n\n[Events]\nFormat: Layer, Start, End, Style, Name, MarginL, MarginR, MarginV, Effect, Text\n";
 
         let video_encoder = Encoder::new_video(320, 240)?;
         let video_tb = video_encoder.time_base();
-        let subtitle_encoder = EncoderBuilder::new_subtitle()
-            .with_codec_name(Some("mov_text".to_string()))
-            .with_subtitle_header(header)
-            .build()?;
+        let subtitle_encoder = EncoderBuilder::new_subtitle().with_codec_name(Some("mov_text".to_string())).with_subtitle_header(header).build()?;
 
         let mut muxer = Muxer::new(&output_path)?;
         let video_index = muxer.add_encoder(video_encoder)?;
@@ -1861,9 +1614,7 @@ mod tests {
 
         // 回读：字幕解码通道逐段无损还原。
         let mut reader = StreamReader::new(&output_path)?;
-        let mut decoder = DecoderBuilder::new(MediaType::SUBTITLE)
-            .with_codec_name(Some("mov_text".to_string()))
-            .build_from_reader(&reader)?;
+        let mut decoder = DecoderBuilder::new(MediaType::SUBTITLE).with_codec_name(Some("mov_text".to_string())).build_from_reader(&reader)?;
         let mut decoded = Vec::new();
         while let Some(segment) = decoder.decode_subtitle_segment(&mut reader)? {
             decoded.push(segment);
@@ -1934,11 +1685,7 @@ mod tests {
 
         let demuxer = Demuxer::new(&mkv_path)?;
         let chapters = demuxer.chapters();
-        assert_eq!(
-            chapters.len(),
-            1,
-            "expected 1 mkv chapter, got {chapters:?}"
-        );
+        assert_eq!(chapters.len(), 1, "expected 1 mkv chapter, got {chapters:?}");
         assert_eq!(chapters[0].title, "MKV Intro");
         assert!((chapters[0].end - 1.0).abs() < 1e-6);
 
@@ -1982,12 +1729,7 @@ mod tests {
         // 回读验证：帧数 ~20（fps=10 x 2s），codec 为 GIF，尺寸不变
         let demuxer = Demuxer::new(&output_path)?;
         let frames: Vec<_> = demuxer.filter_map(|res| res.ok()).collect();
-        assert_eq!(
-            frames.len(),
-            20,
-            "expected 20 gif frames (60 in @30fps -> 10fps), got {}",
-            frames.len()
-        );
+        assert_eq!(frames.len(), 20, "expected 20 gif frames (60 in @30fps -> 10fps), got {}", frames.len());
         let (_, frame) = &frames[0];
         assert_eq!(frame.width as usize, width);
         assert_eq!(frame.height as usize, height);
@@ -2004,15 +1746,8 @@ mod tests {
         // 若 pts 未按最终流时间基重缩放，时长会缩短 10 倍（0.2s）。
         let tb = stream.time_base;
         let duration_secs = stream.duration as f64 * tb.num as f64 / tb.den as f64;
-        assert!(
-            (duration_secs - frame_count / out_fps as f64).abs() < 0.1,
-            "stream duration should be ~{frame_count} / {out_fps}s, got {duration_secs}s"
-        );
-        assert_eq!(
-            (stream.avg_frame_rate.num, stream.avg_frame_rate.den),
-            (out_fps as i32, 1),
-            "container frame rate should be {out_fps}"
-        );
+        assert!((duration_secs - frame_count / out_fps as f64).abs() < 0.1, "stream duration should be ~{frame_count} / {out_fps}s, got {duration_secs}s");
+        assert_eq!((stream.avg_frame_rate.num, stream.avg_frame_rate.den), (out_fps as i32, 1), "container frame rate should be {out_fps}");
 
         Ok(())
     }
@@ -2064,22 +1799,10 @@ mod tests {
         // 回读验证：封面流存在且带 attached_pic 标记，编码为 mjpeg
         let reader = StreamReader::new(&output_path)?;
         let streams = reader.input().streams();
-        assert_eq!(
-            streams.len(),
-            2,
-            "expected 2 streams (video + cover), got {}",
-            streams.len()
-        );
+        assert_eq!(streams.len(), 2, "expected 2 streams (video + cover), got {}", streams.len());
         let cover_stream = &streams[cover_index];
-        assert!(
-            cover_stream.disposition & ffi::AV_DISPOSITION_ATTACHED_PIC as i32 != 0,
-            "cover stream must be marked with AV_DISPOSITION_ATTACHED_PIC"
-        );
-        assert_eq!(
-            cover_stream.codecpar().codec_id,
-            ffi::AV_CODEC_ID_MJPEG,
-            "cover stream must be mjpeg-encoded"
-        );
+        assert!(cover_stream.disposition & ffi::AV_DISPOSITION_ATTACHED_PIC as i32 != 0, "cover stream must be marked with AV_DISPOSITION_ATTACHED_PIC");
+        assert_eq!(cover_stream.codecpar().codec_id, ffi::AV_CODEC_ID_MJPEG, "cover stream must be mjpeg-encoded");
 
         Ok(())
     }
@@ -2097,10 +1820,7 @@ mod tests {
 
     impl CountingWriter {
         fn new(format: &str) -> Result<Self> {
-            Ok(Self {
-                inner: crate::io::BufferWriter::new(format)?,
-                total: 0,
-            })
+            Ok(Self { inner: crate::io::BufferWriter::new(format)?, total: 0 })
         }
 
         /// 计入本次写出的字节数，并把同样的大小作为本次的 `Out`。
@@ -2186,8 +1906,7 @@ mod tests {
         {
             let mut muxer = Muxer::new(&path)?;
             let video_index = muxer.add_encoder(Encoder::new_video(64, 64)?)?;
-            let audio_index =
-                muxer.add_encoder(Encoder::new_audio(2, 44_100, SampleFormat::FLTP)?)?;
+            let audio_index = muxer.add_encoder(Encoder::new_audio(2, 44_100, SampleFormat::FLTP)?)?;
             for frame_index in 0..5i64 {
                 let mut frame = generate_video_frame(64, 64, frame_index);
                 frame.set_pts(frame_index);
@@ -2205,11 +1924,7 @@ mod tests {
         let reader = StreamReader::new(&path)?;
         let (expected_index, _) = reader.find_best_stream(MediaType::VIDEO)?;
         let mut demuxer = Demuxer::new_single_stream(reader, MediaType::VIDEO, None, None)?;
-        assert_eq!(
-            demuxer.streams().len(),
-            1,
-            "single-stream mode must build exactly one decoder"
-        );
+        assert_eq!(demuxer.streams().len(), 1, "single-stream mode must build exactly one decoder");
         assert_eq!(demuxer.streams()[0].stream_index, expected_index);
 
         let mut decoded = 0usize;
@@ -2218,10 +1933,7 @@ mod tests {
             decoded += 1;
         }
         assert!(decoded > 0, "single-stream mode decoded nothing");
-        assert!(
-            !demuxer.is_passthrough(),
-            "single-stream mode decodes, it is not a passthrough demuxer"
-        );
+        assert!(!demuxer.is_passthrough(), "single-stream mode decodes, it is not a passthrough demuxer");
 
         crate::test_support::remove_test_output(&path);
         Ok(())
@@ -2244,12 +1956,8 @@ mod tests {
         }
 
         let mut via_iterator = Demuxer::new_passthrough(StreamReader::new(&path)?)?;
-        let iterator_items: Vec<(usize, i64)> = via_iterator
-            .packets()
-            .collect::<Result<Vec<_>>>()?
-            .into_iter()
-            .map(|(index, packet)| (index, packet.pts))
-            .collect();
+        let iterator_items: Vec<(usize, i64)> =
+            via_iterator.packets().collect::<Result<Vec<_>>>()?.into_iter().map(|(index, packet)| (index, packet.pts)).collect();
 
         let mut via_loop = Demuxer::new_passthrough(StreamReader::new(&path)?)?;
         let mut loop_items = Vec::new();
@@ -2258,10 +1966,7 @@ mod tests {
         }
 
         assert!(!iterator_items.is_empty(), "no packets read back");
-        assert_eq!(
-            iterator_items, loop_items,
-            "packets() and demux_packet() disagree"
-        );
+        assert_eq!(iterator_items, loop_items, "packets() and demux_packet() disagree");
 
         crate::test_support::remove_test_output(&path);
         Ok(())
@@ -2331,16 +2036,10 @@ mod tests {
         }
 
         // 第一次：写 trailer，回传字节
-        assert!(
-            muxer.finish()?.is_some(),
-            "the first finish() must write (and return) the trailer"
-        );
+        assert!(muxer.finish()?.is_some(), "the first finish() must write (and return) the trailer");
         // 之后每次：幂等 no-op，绝不报错
         for round in 2..=3 {
-            assert!(
-                muxer.finish()?.is_none(),
-                "finish() #{round} must be a no-op"
-            );
+            assert!(muxer.finish()?.is_none(), "finish() #{round} must be a no-op");
         }
 
         // 容器本身仍然完好：能打开、能解出帧
@@ -2376,14 +2075,8 @@ mod tests {
             Ok(_) => panic!("encoding into a finished muxer must fail"),
             Err(e) => e,
         };
-        assert!(
-            err.is_invalid_config(),
-            "the phase error must be classified as invalid configuration: {err}"
-        );
-        assert!(
-            err.to_string().contains("cannot encode"),
-            "unexpected message: {err}"
-        );
+        assert!(err.is_invalid_config(), "the phase error must be classified as invalid configuration: {err}");
+        assert!(err.to_string().contains("cannot encode"), "unexpected message: {err}");
 
         crate::test_support::remove_test_output(&path);
         Ok(())

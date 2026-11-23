@@ -96,11 +96,7 @@ impl SampleFormat {
         if self.is_planar() {
             DataLayout::Planar(vec![(1, samples); channels])
         } else {
-            DataLayout::Interleaved {
-                rows: 1,
-                cols: samples,
-                components: channels,
-            }
+            DataLayout::Interleaved { rows: 1, cols: samples, components: channels }
         }
     }
 
@@ -109,9 +105,7 @@ impl SampleFormat {
     }
 
     pub fn get_sample_fmt_name(&self) -> String {
-        avutil::get_sample_fmt_name(*self as _).map_or("Unknown".to_string(), |s| {
-            strutils::cstr_to_string(s).unwrap()
-        })
+        avutil::get_sample_fmt_name(*self as _).map_or("Unknown".to_string(), |s| strutils::cstr_to_string(s).unwrap())
     }
 
     pub fn get_packed_sample_fmt(&self) -> Option<SampleFormat> {
@@ -175,11 +169,7 @@ impl DataLayout {
     /// separate axis).
     pub fn plane_row_extent(&self, plane: usize) -> Option<(usize, usize)> {
         match self {
-            Self::Interleaved {
-                rows,
-                cols,
-                components,
-            } => (plane == 0).then(|| (*rows, cols * components)),
+            Self::Interleaved { rows, cols, components } => (plane == 0).then(|| (*rows, cols * components)),
             Self::Planar(planes) => planes.get(plane).copied(),
         }
     }
@@ -196,9 +186,7 @@ impl DataLayout {
 
     /// Every plane's shape, for diagnostics.
     pub fn shapes(&self) -> Vec<(usize, usize)> {
-        (0..self.num_planes())
-            .filter_map(|plane| self.plane_shape(plane))
-            .collect()
+        (0..self.num_planes()).filter_map(|plane| self.plane_shape(plane)).collect()
     }
 }
 

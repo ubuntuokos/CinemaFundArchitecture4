@@ -66,7 +66,7 @@ Blokkos végrehajtás: egy voxel kiértékelése tiszta függvény a bemeneti bl
 | **X0** | Nyelvleírás ([`docs/expr-language.md`](../expr-language.md)), nyelvtan, hiba-katalógus, példák | a tulajdonos átnézte a nyelvet; a 3. szakasz minden eleme példával; nincs kód |
 | **X1** | `cfa4-expr`: lexer, parser, típusellenőrzés, bájtkód, VM, fuel, determinisztikus zaj | lásd N3-1′…N3-4′ lent; `cargo xtask ci` + `cargo test -p cfa4-expr` zöld; fuzz 0 összeomlás |
 | **X2** | Volume-híd (worker tile-parancsok + `cfa4-vdb` API) és `expr.run_preview` | a N2 előnézeti útvonalon látható eredmény; 1 és N szál bitazonos; megszakítás ≤ 1 blokk idő |
-| **X3** | Engine-parancsok, projektmentés, jóváhagyási jelző, `expr.bake` | N3-5′, N3-7′ |
+| **X3** | Engine-parancsok, projektmentés, jóváhagyási jelző, `expr.bake` | N3-5′, N3-7′; **készül (István engedélye 2026-11-23 16:56)**: `expr.check/save/list/get/delete/approve/revoke/bake/export/import`, projektséma v18 (`Project::expressions`: forrás + SHA-256), gépenkénti jóváhagyás (`<adatkönyvtár>/expression-approvals.json`, nem a projektfájlban); `expr.cancel` nem része X3-nak (a bake szinkron parancs; megszakítás a háttérfeladatos futtatással jön, ACS-6 #1471, X4-ben, ha a szerkesztő kéri) |
 | **X4** | Qt6 szerkesztő | N3-6′; `--smoke --screenshot` ellenőrzés |
 | **X5** | Kiszökési- és erőforrás-tesztcsomag (hostile kifejezések), mérés a referenciagépen | N3-S1′…S3′ |
 

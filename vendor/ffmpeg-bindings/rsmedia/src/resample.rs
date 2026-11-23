@@ -17,15 +17,8 @@ fn setup_resampler(
     out_sample_fmt: ffi::AVSampleFormat,
     out_sample_rate: i32,
 ) -> Result<SwrContext> {
-    let mut swr_ctx = SwrContext::new(
-        &out_ch_layout,
-        out_sample_fmt,
-        out_sample_rate,
-        &in_ch_layout,
-        in_sample_fmt,
-        in_sample_rate,
-    )
-    .context("Could not allocate resample context")?;
+    let mut swr_ctx = SwrContext::new(&out_ch_layout, out_sample_fmt, out_sample_rate, &in_ch_layout, in_sample_fmt, in_sample_rate)
+        .context("Could not allocate resample context")?;
 
     swr_ctx.init().context("Could not open resample context")?;
 
@@ -35,9 +28,7 @@ fn setup_resampler(
 /// 校验重采样输入帧：不支持硬件帧，且采样率/样本数必须有效。
 fn check_resampler_input(src_frame: &AVFrame) -> Result<()> {
     if !src_frame.hw_frames_ctx.is_null() {
-        return Err(RsmediaError::unsupported(
-            "Hardware frames are not supported in this software re-sampler",
-        ));
+        return Err(RsmediaError::unsupported("Hardware frames are not supported in this software re-sampler"));
     }
 
     if src_frame.sample_rate < 1 || src_frame.nb_samples < 1 {
@@ -57,18 +48,14 @@ fn check_resampler_input(src_frame: &AVFrame) -> Result<()> {
 /// unspecified layout as the default one is what FFmpeg itself does; this is the
 /// one place that decision is made, for input frames and output layouts alike.
 fn default_layout_for(layout: ffi::AVChannelLayout) -> Option<ffi::AVChannelLayout> {
-    (layout.order == ffi::AV_CHANNEL_ORDER_UNSPEC && layout.nb_channels > 0)
-        .then(|| AVChannelLayout::from_nb_channels(layout.nb_channels).into_inner())
+    (layout.order == ffi::AV_CHANNEL_ORDER_UNSPEC && layout.nb_channels > 0).then(|| AVChannelLayout::from_nb_channels(layout.nb_channels).into_inner())
 }
 
 /// Runs `convert` with `frame`'s unspecified channel layout filled in.
 ///
 /// The clone only happens in that one case; a frame whose layout is specified is
 /// passed through untouched, samples and all.
-fn with_normalized_layout<R>(
-    frame: &AVFrame,
-    convert: impl FnOnce(&AVFrame) -> Result<R>,
-) -> Result<R> {
+fn with_normalized_layout<R>(frame: &AVFrame, convert: impl FnOnce(&AVFrame) -> Result<R>) -> Result<R> {
     let normalized;
     let frame = match default_layout_for(frame.ch_layout) {
         Some(layout) => {
@@ -101,12 +88,7 @@ fn with_normalized_layout<R>(
 /// * `out_ch_layout` - Channel layout of the output.
 /// * `out_sample_fmt` - Sample format of the output.
 /// * `out_sample_rate` - Sample rate of the output.
-pub fn convert_frame(
-    src_frame: &AVFrame,
-    out_ch_layout: ffi::AVChannelLayout,
-    out_sample_fmt: ffi::AVSampleFormat,
-    out_sample_rate: i32,
-) -> Result<AVFrame> {
+pub fn convert_frame(src_frame: &AVFrame, out_ch_layout: ffi::AVChannelLayout, out_sample_fmt: ffi::AVSampleFormat, out_sample_rate: i32) -> Result<AVFrame> {
     check_resampler_input(src_frame)?;
 
     let normalized = with_normalized_layout(src_frame, |frame| Ok(frame.clone()))?;
@@ -116,14 +98,7 @@ pub fn convert_frame(
     // 未指定的 order 会触发 `AVERROR_OUTPUT_CHANGED`。
     let out_ch_layout = default_layout_for(out_ch_layout).unwrap_or(out_ch_layout);
 
-    let mut resampler = Resampler::new(
-        src_frame.ch_layout,
-        src_frame.format,
-        src_frame.sample_rate,
-        out_ch_layout,
-        out_sample_fmt,
-        out_sample_rate,
-    )?;
+    let mut resampler = Resampler::new(src_frame.ch_layout, src_frame.format, src_frame.sample_rate, out_ch_layout, out_sample_fmt, out_sample_rate)?;
 
     let mut dst_frame = AVFrame::new();
     // copy props
@@ -139,18 +114,14 @@ pub fn convert_frame(
     dst_frame.set_nb_samples(out_samples);
     dst_frame.set_sample_rate(out_sample_rate);
     dst_frame.set_time_base(time::new_rational(1, out_sample_rate));
-    dst_frame
-        .alloc_buffer()
-        .context("Failed to allocate destination frame buffer")?;
+    dst_frame.alloc_buffer().context("Failed to allocate destination frame buffer")?;
 
     // 转换输入 AVFrame 中的样本并将其写入输出 AVFrame。
     // 输入和输出 AVFrame 必须设置通道布局、采样率和格式。
     // 如果输出 AVFrame 没有分配数据指针，则将在调用 av_frame_get_buffer() 分配帧时设置 nb_samples 字段。
     // 输出的 AVFrame 可以是 NULL，或者分配的样本少于所需的数量。在这种情况下，未写入输出的剩余样本将被添加到内部 FIFO 缓冲区，在下次调用此函数时返回。
     // 如果转换采样率，内部重采样延迟缓冲区中可能会有剩余数据。要以输出方式获取这些数据，请调用此函数，并输入 NULL。
-    resampler
-        .convert_frame(src_frame, &mut dst_frame)
-        .context("Failed to convert frame.")?;
+    resampler.convert_frame(src_frame, &mut dst_frame).context("Failed to convert frame.")?;
 
     log::debug!(
         "Swr convert_frame from src:[{}, {:?}, {}] to dst:[{}, {:?}, {}]",
@@ -186,16 +157,7 @@ impl Resampler {
         out_sample_fmt: ffi::AVSampleFormat,
         out_sample_rate: i32,
     ) -> Result<Self> {
-        Ok(Self {
-            swr: setup_resampler(
-                in_ch_layout,
-                in_sample_fmt,
-                in_sample_rate,
-                out_ch_layout,
-                out_sample_fmt,
-                out_sample_rate,
-            )?,
-        })
+        Ok(Self { swr: setup_resampler(in_ch_layout, in_sample_fmt, in_sample_rate, out_ch_layout, out_sample_fmt, out_sample_rate)? })
     }
 
     /// Upper bound estimate of the number of output samples for the given number of input samples.
@@ -211,11 +173,7 @@ impl Resampler {
     /// call `alloc_buffer`; after conversion, `dst.nb_samples` is the actual
     /// number of output samples.
     pub fn convert_frame(&mut self, src: &AVFrame, dst: &mut AVFrame) -> Result<()> {
-        with_normalized_layout(src, |src| {
-            self.swr
-                .convert_frame(Some(src), dst)
-                .context("Failed to convert frame with streaming resampler")
-        })
+        with_normalized_layout(src, |src| self.swr.convert_frame(Some(src), dst).context("Failed to convert frame with streaming resampler"))
     }
 
     /// Raw sample conversion (a direct `swr_convert`), for caller-managed sample
@@ -233,29 +191,17 @@ impl Resampler {
     ///   (possible whenever the sample rate changes).
     ///
     /// A negative `swr_convert` result becomes an error, never a count.
-    pub fn convert(
-        &mut self,
-        src_frame: &AVFrame,
-        out_ch_layout: ffi::AVChannelLayout,
-        out_sample_fmt: ffi::AVSampleFormat,
-    ) -> Result<(AVSamples, i32)> {
+    pub fn convert(&mut self, src_frame: &AVFrame, out_ch_layout: ffi::AVChannelLayout, out_sample_fmt: ffi::AVSampleFormat) -> Result<(AVSamples, i32)> {
         let out_ch_layout = default_layout_for(out_ch_layout).unwrap_or(out_ch_layout);
 
         with_normalized_layout(src_frame, |src_frame| {
             // 容量按输出样本数的上界分配，避免上采样（in < out）时尾部样本被丢弃。
             let capacity = self.get_out_samples(src_frame.nb_samples);
-            let mut out_samples =
-                AVSamples::new(out_ch_layout.nb_channels, capacity, out_sample_fmt, 0)
-                    .context("Create samples buffer failed.")?;
+            let mut out_samples = AVSamples::new(out_ch_layout.nb_channels, capacity, out_sample_fmt, 0).context("Create samples buffer failed.")?;
 
             let converted = unsafe {
                 self.swr
-                    .convert(
-                        out_samples.audio_data.as_mut_ptr(),
-                        capacity,
-                        src_frame.extended_data as *const _,
-                        src_frame.nb_samples,
-                    )
+                    .convert(out_samples.audio_data.as_mut_ptr(), capacity, src_frame.extended_data as *const _, src_frame.nb_samples)
                     .context("Could not convert input samples")?
             };
 
@@ -271,9 +217,7 @@ impl Resampler {
     /// `dst.nb_samples` is the actual number of samples (possibly 0).
     /// Repeat until 0 samples are returned to fully drain.
     pub fn flush(&mut self, dst: &mut AVFrame) -> Result<()> {
-        self.swr
-            .convert_frame(None, dst)
-            .context("Failed to flush streaming resampler")
+        self.swr.convert_frame(None, dst).context("Failed to flush streaming resampler")
     }
 }
 
@@ -301,66 +245,18 @@ mod tests {
 
     /// 定义所有支持的音频格式
     const AUDIO_FORMATS: &[AudioFormatDesc] = &[
-        AudioFormatDesc {
-            format: ffi::AV_SAMPLE_FMT_U8,
-            name: "U8",
-            bytes_per_sample: 1,
-        },
-        AudioFormatDesc {
-            format: ffi::AV_SAMPLE_FMT_U8P,
-            name: "U8P",
-            bytes_per_sample: 1,
-        },
-        AudioFormatDesc {
-            format: ffi::AV_SAMPLE_FMT_S16,
-            name: "S16",
-            bytes_per_sample: 2,
-        },
-        AudioFormatDesc {
-            format: ffi::AV_SAMPLE_FMT_S16P,
-            name: "S16P",
-            bytes_per_sample: 2,
-        },
-        AudioFormatDesc {
-            format: ffi::AV_SAMPLE_FMT_S32,
-            name: "S32",
-            bytes_per_sample: 4,
-        },
-        AudioFormatDesc {
-            format: ffi::AV_SAMPLE_FMT_S32P,
-            name: "S32P",
-            bytes_per_sample: 4,
-        },
-        AudioFormatDesc {
-            format: ffi::AV_SAMPLE_FMT_FLT,
-            name: "FLT",
-            bytes_per_sample: 4,
-        },
-        AudioFormatDesc {
-            format: ffi::AV_SAMPLE_FMT_FLTP,
-            name: "FLTP",
-            bytes_per_sample: 4,
-        },
-        AudioFormatDesc {
-            format: ffi::AV_SAMPLE_FMT_DBL,
-            name: "DBL",
-            bytes_per_sample: 8,
-        },
-        AudioFormatDesc {
-            format: ffi::AV_SAMPLE_FMT_DBLP,
-            name: "DBLP",
-            bytes_per_sample: 8,
-        },
-        AudioFormatDesc {
-            format: ffi::AV_SAMPLE_FMT_S64,
-            name: "S64",
-            bytes_per_sample: 8,
-        },
-        AudioFormatDesc {
-            format: ffi::AV_SAMPLE_FMT_S64P,
-            name: "S64P",
-            bytes_per_sample: 8,
-        },
+        AudioFormatDesc { format: ffi::AV_SAMPLE_FMT_U8, name: "U8", bytes_per_sample: 1 },
+        AudioFormatDesc { format: ffi::AV_SAMPLE_FMT_U8P, name: "U8P", bytes_per_sample: 1 },
+        AudioFormatDesc { format: ffi::AV_SAMPLE_FMT_S16, name: "S16", bytes_per_sample: 2 },
+        AudioFormatDesc { format: ffi::AV_SAMPLE_FMT_S16P, name: "S16P", bytes_per_sample: 2 },
+        AudioFormatDesc { format: ffi::AV_SAMPLE_FMT_S32, name: "S32", bytes_per_sample: 4 },
+        AudioFormatDesc { format: ffi::AV_SAMPLE_FMT_S32P, name: "S32P", bytes_per_sample: 4 },
+        AudioFormatDesc { format: ffi::AV_SAMPLE_FMT_FLT, name: "FLT", bytes_per_sample: 4 },
+        AudioFormatDesc { format: ffi::AV_SAMPLE_FMT_FLTP, name: "FLTP", bytes_per_sample: 4 },
+        AudioFormatDesc { format: ffi::AV_SAMPLE_FMT_DBL, name: "DBL", bytes_per_sample: 8 },
+        AudioFormatDesc { format: ffi::AV_SAMPLE_FMT_DBLP, name: "DBLP", bytes_per_sample: 8 },
+        AudioFormatDesc { format: ffi::AV_SAMPLE_FMT_S64, name: "S64", bytes_per_sample: 8 },
+        AudioFormatDesc { format: ffi::AV_SAMPLE_FMT_S64P, name: "S64P", bytes_per_sample: 8 },
     ];
 
     /// 安全地填充测试数据
@@ -373,25 +269,15 @@ mod tests {
             ($type:ty, $max_val:expr) => {
                 if is_planar {
                     for ch in 0..nb_channels {
-                        let data = unsafe {
-                            std::slice::from_raw_parts_mut(frame.data[ch] as *mut $type, nb_samples)
-                        };
+                        let data = unsafe { std::slice::from_raw_parts_mut(frame.data[ch] as *mut $type, nb_samples) };
                         for (i, sample) in data.iter_mut().enumerate() {
-                            *sample = ((i * nb_channels + ch) as f64
-                                / (nb_samples * nb_channels) as f64
-                                * $max_val as f64) as $type;
+                            *sample = ((i * nb_channels + ch) as f64 / (nb_samples * nb_channels) as f64 * $max_val as f64) as $type;
                         }
                     }
                 } else {
-                    let data = unsafe {
-                        std::slice::from_raw_parts_mut(
-                            frame.data[0] as *mut $type,
-                            nb_samples * nb_channels,
-                        )
-                    };
+                    let data = unsafe { std::slice::from_raw_parts_mut(frame.data[0] as *mut $type, nb_samples * nb_channels) };
                     for i in 0..(nb_samples * nb_channels) {
-                        data[i] = (i as f64 / (nb_samples * nb_channels) as f64 * $max_val as f64)
-                            as $type;
+                        data[i] = (i as f64 / (nb_samples * nb_channels) as f64 * $max_val as f64) as $type;
                     }
                 }
             };
@@ -421,12 +307,7 @@ mod tests {
         Ok(())
     }
 
-    fn create_test_frame(
-        format_desc: &AudioFormatDesc,
-        sample_rate: i32,
-        nb_channels: i32,
-        nb_samples: i32,
-    ) -> Result<AVFrame> {
+    fn create_test_frame(format_desc: &AudioFormatDesc, sample_rate: i32, nb_channels: i32, nb_samples: i32) -> Result<AVFrame> {
         let mut frame = AVFrame::new();
 
         frame.set_format(format_desc.format);
@@ -435,9 +316,7 @@ mod tests {
         frame.set_sample_rate(sample_rate);
         frame.set_time_base(time::new_rational(1, sample_rate));
 
-        frame
-            .alloc_buffer()
-            .context("Failed to allocate frame buffer")?;
+        frame.alloc_buffer().context("Failed to allocate frame buffer")?;
 
         unsafe {
             fill_test_data(&mut frame, format_desc).context("Failed to fill test data")?;
@@ -458,12 +337,7 @@ mod tests {
         frame.set_ch_layout(unspec);
 
         // 输入与输出布局都按 UNSPEC 传入：两侧都要被归一化。
-        let out = convert_frame(
-            &frame,
-            AVChannelLayout::from_nb_channels(2).into_inner(),
-            ffi::AV_SAMPLE_FMT_FLTP,
-            44100,
-        )?;
+        let out = convert_frame(&frame, AVChannelLayout::from_nb_channels(2).into_inner(), ffi::AV_SAMPLE_FMT_FLTP, 44100)?;
         assert_eq!(out.format, ffi::AV_SAMPLE_FMT_FLTP);
         assert_eq!(out.ch_layout.order, ffi::AV_CHANNEL_ORDER_NATIVE);
         assert_eq!(out.ch_layout.nb_channels, 2);
@@ -480,28 +354,18 @@ mod tests {
         for in_fmt in AUDIO_FORMATS {
             println!("\nTesting input format: {:?}", in_fmt);
 
-            let src_frame = create_test_frame(in_fmt, sample_rate, nb_channels, nb_samples)
-                .with_context(|| format!("Failed to create source frame for {:?}", in_fmt))?;
+            let src_frame =
+                create_test_frame(in_fmt, sample_rate, nb_channels, nb_samples).with_context(|| format!("Failed to create source frame for {:?}", in_fmt))?;
 
             for out_fmt in AUDIO_FORMATS {
                 let ch_layout = AVChannelLayout::from_nb_channels(nb_channels).into_inner();
 
                 let result = convert_frame(&src_frame, ch_layout, out_fmt.format, sample_rate)
-                    .with_context(|| {
-                        format!("Failed to convert from {:?} to {:?}", in_fmt, out_fmt)
-                    })?;
+                    .with_context(|| format!("Failed to convert from {:?} to {:?}", in_fmt, out_fmt))?;
 
                 // 验证转换结果
-                assert_eq!(
-                    result.format, out_fmt.format,
-                    "Format mismatch converting from {:?} to {:?}",
-                    in_fmt, out_fmt
-                );
-                assert_eq!(
-                    result.nb_samples, src_frame.nb_samples,
-                    "Sample count mismatch converting from {:?} to {:?}",
-                    in_fmt, out_fmt
-                );
+                assert_eq!(result.format, out_fmt.format, "Format mismatch converting from {:?} to {:?}", in_fmt, out_fmt);
+                assert_eq!(result.nb_samples, src_frame.nb_samples, "Sample count mismatch converting from {:?} to {:?}", in_fmt, out_fmt);
                 assert_eq!(
                     result.ch_layout.nb_channels, src_frame.ch_layout.nb_channels,
                     "Channel count mismatch converting from {:?} to {:?}",
@@ -529,15 +393,11 @@ mod tests {
                             continue;
                         }
 
-                        println!(
-                            "Converting {:?} @{}Hz to {:?} @{}Hz",
-                            in_fmt, in_rate, out_fmt, out_rate
-                        );
+                        println!("Converting {:?} @{}Hz to {:?} @{}Hz", in_fmt, in_rate, out_fmt, out_rate);
 
                         let ch_layout = AVChannelLayout::from_nb_channels(nb_channels).into_inner();
 
-                        let result =
-                            convert_frame(&src_frame, ch_layout, out_fmt.format, out_rate)?;
+                        let result = convert_frame(&src_frame, ch_layout, out_fmt.format, out_rate)?;
 
                         assert_eq!(result.format, out_fmt.format);
                         assert_eq!(result.sample_rate, out_rate);
@@ -559,10 +419,7 @@ mod tests {
         for in_fmt in AUDIO_FORMATS {
             for &in_rate in sample_rates {
                 for &in_channels in channel_layouts {
-                    println!(
-                        "\nSource: format={:?}, rate={}Hz, channels={}",
-                        in_fmt, in_rate, in_channels
-                    );
+                    println!("\nSource: format={:?}, rate={}Hz, channels={}", in_fmt, in_rate, in_channels);
 
                     let src_frame = create_test_frame(in_fmt, in_rate, in_channels, nb_samples)?;
 
@@ -572,24 +429,13 @@ mod tests {
                         for &out_rate in sample_rates {
                             for &out_channels in channel_layouts {
                                 // 跳过相同的配置
-                                if in_fmt.format == out_fmt.format
-                                    && in_rate == out_rate
-                                    && in_channels == out_channels
-                                {
+                                if in_fmt.format == out_fmt.format && in_rate == out_rate && in_channels == out_channels {
                                     continue;
                                 }
 
-                                println!(
-                                    "Converting to: format={:?}, rate={}Hz, channels={}",
-                                    out_fmt, out_rate, out_channels
-                                );
+                                println!("Converting to: format={:?}, rate={}Hz, channels={}", out_fmt, out_rate, out_channels);
 
-                                let result = convert_frame(
-                                    &src_frame,
-                                    AVChannelLayout::from_nb_channels(out_channels).into_inner(),
-                                    out_fmt.format,
-                                    out_rate,
-                                )?;
+                                let result = convert_frame(&src_frame, AVChannelLayout::from_nb_channels(out_channels).into_inner(), out_fmt.format, out_rate)?;
 
                                 // 验证基本参数
                                 assert_eq!(result.format, out_fmt.format);
@@ -600,39 +446,20 @@ mod tests {
                                 unsafe {
                                     if SampleFormat::from(out_fmt.format).is_planar() {
                                         for ch in 0..out_channels as usize {
-                                            assert!(
-                                                !result.data[ch].is_null(),
-                                                "Channel {} data pointer is null",
-                                                ch
-                                            );
+                                            assert!(!result.data[ch].is_null(), "Channel {} data pointer is null", ch);
 
-                                            let data = std::slice::from_raw_parts(
-                                                result.data[ch],
-                                                result.nb_samples as usize
-                                                    * out_fmt.bytes_per_sample,
-                                            );
+                                            let data = std::slice::from_raw_parts(result.data[ch], result.nb_samples as usize * out_fmt.bytes_per_sample);
 
-                                            assert!(
-                                                data.iter().any(|&x| x != 0),
-                                                "Channel {} contains all zeros (total size: {})",
-                                                ch,
-                                                data.len()
-                                            );
+                                            assert!(data.iter().any(|&x| x != 0), "Channel {} contains all zeros (total size: {})", ch, data.len());
                                         }
                                     } else {
                                         assert!(!result.data[0].is_null(), "Data pointer is null");
                                         let data = std::slice::from_raw_parts(
                                             result.data[0],
-                                            result.nb_samples as usize
-                                                * out_channels as usize
-                                                * out_fmt.bytes_per_sample,
+                                            result.nb_samples as usize * out_channels as usize * out_fmt.bytes_per_sample,
                                         );
 
-                                        assert!(
-                                            data.iter().any(|&x| x != 0),
-                                            "Output buffer contains all zeros (total size: {})",
-                                            data.len()
-                                        );
+                                        assert!(data.iter().any(|&x| x != 0), "Output buffer contains all zeros (total size: {})", data.len());
                                     }
                                 }
                             }
@@ -654,23 +481,13 @@ mod tests {
         let (channels, in_samples, chunks) = (2, 1024, 5);
         let layout = || AVChannelLayout::from_nb_channels(channels).into_inner();
 
-        let mut resampler = Resampler::new(
-            layout(),
-            ffi::AV_SAMPLE_FMT_FLTP,
-            in_rate,
-            layout(),
-            ffi::AV_SAMPLE_FMT_FLTP,
-            out_rate,
-        )?;
+        let mut resampler = Resampler::new(layout(), ffi::AV_SAMPLE_FMT_FLTP, in_rate, layout(), ffi::AV_SAMPLE_FMT_FLTP, out_rate)?;
 
         let mut produced = 0i64;
         for chunk in 0..chunks {
             let src = create_test_frame(&AUDIO_FORMATS[7], in_rate, channels, in_samples)?;
             let (_, converted) = resampler.convert(&src, layout(), ffi::AV_SAMPLE_FMT_FLTP)?;
-            assert!(
-                converted >= 0,
-                "chunk {chunk}: swr_convert returned {converted}"
-            );
+            assert!(converted >= 0, "chunk {chunk}: swr_convert returned {converted}");
             produced += i64::from(converted);
         }
 
@@ -680,20 +497,13 @@ mod tests {
         tail.set_ch_layout(layout());
         tail.set_sample_rate(out_rate);
         tail.set_nb_samples(resampler.get_out_samples(in_samples));
-        tail.alloc_buffer()
-            .context("Failed to allocate flush frame")?;
+        tail.alloc_buffer().context("Failed to allocate flush frame")?;
         resampler.flush(&mut tail)?;
-        assert!(
-            tail.nb_samples > 0,
-            "flush produced nothing: the delay line was never drained"
-        );
+        assert!(tail.nb_samples > 0, "flush produced nothing: the delay line was never drained");
         produced += i64::from(tail.nb_samples);
 
         let expected = f64::from(in_samples * chunks) * f64::from(out_rate) / f64::from(in_rate);
-        assert!(
-            (produced as f64 - expected).abs() <= 2.0,
-            "expected ~{expected:.0} samples across {chunks} chunks + flush, got {produced}"
-        );
+        assert!((produced as f64 - expected).abs() <= 2.0, "expected ~{expected:.0} samples across {chunks} chunks + flush, got {produced}");
         Ok(())
     }
 }

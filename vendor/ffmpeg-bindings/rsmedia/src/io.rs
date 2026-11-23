@@ -6,8 +6,7 @@ use crate::{strutils, time};
 
 use rsmpeg::avcodec::{AVCodecParameters, AVPacket};
 use rsmpeg::avformat::{
-    AVFormatContextInput, AVFormatContextOutput, AVIOContextContainer, AVIOContextCustom,
-    AVInputFormat, ReadPacketCallback, SeekCallback, WritePacketCallback,
+    AVFormatContextInput, AVFormatContextOutput, AVIOContextContainer, AVIOContextCustom, AVInputFormat, ReadPacketCallback, SeekCallback, WritePacketCallback,
 };
 use rsmpeg::avutil::{AVDictionary, AVMem};
 use rsmpeg::ffi;
@@ -61,9 +60,7 @@ pub trait Reader {
         self.input()
             .find_best_stream(media_type as _)?
             .map(|(index, codec)| (index, strutils::cstr_to_string_lossy(codec.name())))
-            .ok_or(RsmediaError::msg(format!(
-                "No stream found for MediaType:{media_type:?}"
-            )))
+            .ok_or(RsmediaError::msg(format!("No stream found for MediaType:{media_type:?}")))
     }
 }
 
@@ -148,14 +145,7 @@ pub trait Seekable: Reader {
         // 若区间完全对称则恰好平局，会退化为 FORWARD seek——当 ts 之后没有
         // 关键帧时 seek 直接失败。这里让 min 侧留出 1μs 余量，保证始终
         // BACKWARD（定位到 ts 之前最近的关键帧，语义同 `av_seek_frame`）。
-        seek_file(
-            self.input_mut(),
-            -1,
-            timestamp - LEEWAY,
-            timestamp,
-            timestamp + LEEWAY - 1,
-        )
-        .context("Failed to seek timestamp in reader")?;
+        seek_file(self.input_mut(), -1, timestamp - LEEWAY, timestamp, timestamp + LEEWAY - 1).context("Failed to seek timestamp in reader")?;
         Ok(())
     }
 
@@ -164,8 +154,7 @@ pub trait Seekable: Reader {
     fn seek_to_start(&mut self) -> Result<()> {
         // min=ts=INT64_MIN、max=INT64_MAX：目标即"最早可定位点"，
         // 强制 BACKWARD 回退到容器开头（best effort，不支持 seek 的源会报错）。
-        seek_file(self.input_mut(), -1, i64::MIN, i64::MIN, i64::MAX)
-            .context("Failed to seek to start of reader")?;
+        seek_file(self.input_mut(), -1, i64::MIN, i64::MIN, i64::MAX).context("Failed to seek to start of reader")?;
         Ok(())
     }
 
@@ -209,32 +198,17 @@ pub trait Seekable: Reader {
     ///   `AVSeekFlag::ANY` `| 2`); [`AVSeekFlag::FRAME`] seeks by frame index,
     ///   [`AVSeekFlag::BYTE`] seeks by byte position, and [`AVSeekFlag::ANY`]
     ///   allows landing on a non-keyframe.
-    fn seek_to_frame(
-        &mut self,
-        stream_index: usize,
-        frame_ts: i64,
-        flags: AVSeekFlag,
-    ) -> Result<()> {
+    fn seek_to_frame(&mut self, stream_index: usize, frame_ts: i64, flags: AVSeekFlag) -> Result<()> {
         // 越界的流索引必须先拦下：`av_seek_frame` 会直接按索引取 `AVStream` 并
         // 读它的时间基，越界即未定义行为（实测 segfault），而不是返回错误码。
         let nb_streams = self.input().nb_streams as usize;
         if stream_index >= nb_streams {
-            return Err(RsmediaError::msg(format!(
-                "Cannot seek stream {stream_index}: the input has {nb_streams} stream(s)"
-            )));
+            return Err(RsmediaError::msg(format!("Cannot seek stream {stream_index}: the input has {nb_streams} stream(s)")));
         }
         unsafe {
-            let res = ffi::av_seek_frame(
-                self.input_mut().as_mut_ptr(),
-                stream_index as i32,
-                frame_ts,
-                flags.into(),
-            );
+            let res = ffi::av_seek_frame(self.input_mut().as_mut_ptr(), stream_index as i32, frame_ts, flags.into());
             if res < 0 {
-                return Err(RsmediaError::msg(format!(
-                    "Seek to frame failed: stream={stream_index}, ts={frame_ts}, flags={:?}, err={res}",
-                    flags
-                )));
+                return Err(RsmediaError::msg(format!("Seek to frame failed: stream={stream_index}, ts={frame_ts}, flags={:?}, err={res}", flags)));
             }
             Ok(())
         }
@@ -254,13 +228,7 @@ pub trait Seekable: Reader {
 /// of the interval instead (see [`Seekable::seek_to_timestamp`]). Use
 /// [`Seekable::seek_to_frame`] when `AVSeekFlag` values such as `FRAME` / `BYTE`
 /// are needed.
-fn seek_file(
-    input: &mut AVFormatContextInput,
-    stream_index: i32,
-    min: i64,
-    ts: i64,
-    max: i64,
-) -> Result<()> {
+fn seek_file(input: &mut AVFormatContextInput, stream_index: i32, min: i64, ts: i64, max: i64) -> Result<()> {
     let res = unsafe { ffi::avformat_seek_file(input.as_mut_ptr(), stream_index, min, ts, max, 0) };
     if res < 0 {
         // >=0 on success, error code otherwise
@@ -321,8 +289,7 @@ fn open_input_custom(
     if let Some(interrupt) = interrupt {
         install_interrupt(&mut ctx, interrupt);
     }
-    ctx.dump(0, dump_name)
-        .context("Dump input format context failed.")?;
+    ctx.dump(0, dump_name).context("Dump input format context failed.")?;
     Ok(ctx)
 }
 
@@ -331,10 +298,7 @@ fn open_input_custom(
 /// 构建阶段的 muxer 私有选项不会在此消费（FFmpeg 在
 /// `avformat_write_header` 时才读取），由各 Writer 的 `write_header`
 /// 经 [`write_header_with_options`] 透传。
-fn build_output_custom(
-    io_context: AVIOContextCustom,
-    format: &str,
-) -> Result<AVFormatContextOutput> {
+fn build_output_custom(io_context: AVIOContextCustom, format: &str) -> Result<AVFormatContextOutput> {
     let format_cstr = strutils::str_to_cstring(format);
     AVFormatContextOutput::builder()
         .format_name(&format_cstr)
@@ -369,12 +333,7 @@ struct InterruptData {
 impl Interrupt {
     /// 创建一个未触发、无超时的中断句柄。
     pub fn new() -> Self {
-        Self {
-            data: Arc::new(InterruptData {
-                abort: AtomicBool::new(false),
-                deadline: Mutex::new(None),
-            }),
-        }
+        Self { data: Arc::new(InterruptData { abort: AtomicBool::new(false), deadline: Mutex::new(None) }) }
     }
 
     /// 立即中止所有阻塞操作（可跨线程调用）。
@@ -385,8 +344,7 @@ impl Interrupt {
     /// 设置超时：从现在起 `timeout` 后自动触发中断。
     /// 对每次"打开 reader → 读取"的生命周期只生效一次，需要复用时重新设置。
     pub fn set_timeout(&self, timeout: std::time::Duration) {
-        *self.data.deadline.lock().unwrap_or_else(|e| e.into_inner()) =
-            Some(std::time::Instant::now() + timeout);
+        *self.data.deadline.lock().unwrap_or_else(|e| e.into_inner()) = Some(std::time::Instant::now() + timeout);
     }
 
     /// 是否已触发（abort 或超时到期）。
@@ -394,11 +352,7 @@ impl Interrupt {
         if self.data.abort.load(Ordering::Relaxed) {
             return true;
         }
-        self.data
-            .deadline
-            .lock()
-            .map(|d| d.is_some_and(|t| std::time::Instant::now() >= t))
-            .unwrap_or(false)
+        self.data.deadline.lock().map(|d| d.is_some_and(|t| std::time::Instant::now() >= t)).unwrap_or(false)
     }
 }
 
@@ -415,11 +369,7 @@ impl Default for Interrupt {
 unsafe extern "C" fn interrupt_callback(opaque: *mut std::ffi::c_void) -> std::ffi::c_int {
     let data = unsafe { &*(opaque as *const InterruptData) };
     let aborted = data.abort.load(Ordering::Relaxed);
-    let timed_out = data
-        .deadline
-        .lock()
-        .map(|d| d.is_some_and(|t| std::time::Instant::now() >= t))
-        .unwrap_or(false);
+    let timed_out = data.deadline.lock().map(|d| d.is_some_and(|t| std::time::Instant::now() >= t)).unwrap_or(false);
     i32::from(aborted || timed_out)
 }
 
@@ -432,10 +382,8 @@ fn install_interrupt(ctx: &mut AVFormatContextInput, interrupt: &Interrupt) {
     // SAFETY: context 独占；opaque 指向的 Arc 目标由 Reader 的
     // `interrupt` 字段保活，context drop 后不会再有回调。
     unsafe {
-        (*ctx.as_mut_ptr()).interrupt_callback = ffi::AVIOInterruptCB {
-            callback: Some(interrupt_callback),
-            opaque: Arc::as_ptr(&interrupt.data) as *mut std::ffi::c_void,
-        };
+        (*ctx.as_mut_ptr()).interrupt_callback =
+            ffi::AVIOInterruptCB { callback: Some(interrupt_callback), opaque: Arc::as_ptr(&interrupt.data) as *mut std::ffi::c_void };
     }
 }
 
@@ -473,12 +421,7 @@ impl<'a> StreamReaderBuilder<'a> {
     ///
     /// * `source` - Source to read.
     pub fn new(source: impl Into<Location>) -> Self {
-        Self {
-            source: source.into(),
-            format: None,
-            options: None,
-            interrupt: None,
-        }
+        Self { source: source.into(), format: None, options: None, interrupt: None }
     }
 
     /// Specify a custom format for the reader.
@@ -513,20 +456,11 @@ impl<'a> StreamReaderBuilder<'a> {
         let filename = strutils::path_to_cstring(&self.source.as_path());
         let protocol = unsafe { ffi::avio_find_protocol_name(filename.as_ptr()) };
         if protocol.is_null() {
-            return Err(RsmediaError::msg(format!(
-                "Unsupported input source protocol: {}",
-                self.source
-            )));
+            return Err(RsmediaError::msg(format!("Unsupported input source protocol: {}", self.source)));
         }
-        log::debug!(
-            "Using input protocol: [{}], source: {}",
-            unsafe { strutils::c_char_to_str(protocol) },
-            self.source
-        );
+        log::debug!("Using input protocol: [{}], source: {}", unsafe { strutils::c_char_to_str(protocol) }, self.source);
 
-        let fmt_opt = self
-            .format
-            .and_then(|str| AVInputFormat::find(&strutils::str_to_cstring(str)));
+        let fmt_opt = self.format.and_then(|str| AVInputFormat::find(&strutils::str_to_cstring(str)));
         let mut dict = self.options.and_then(|opts| opts.into_dict());
         let mut ctx_input = AVFormatContextInput::builder()
             .url(&filename)
@@ -537,14 +471,8 @@ impl<'a> StreamReaderBuilder<'a> {
         if let Some(interrupt) = &self.interrupt {
             install_interrupt(&mut ctx_input, interrupt);
         }
-        ctx_input
-            .dump(0, &filename)
-            .context("Dump input format context failed.")?;
-        Ok(StreamReader {
-            source: self.source,
-            input: ctx_input,
-            interrupt: self.interrupt,
-        })
+        ctx_input.dump(0, &filename).context("Dump input format context failed.")?;
+        Ok(StreamReader { source: self.source, input: ctx_input, interrupt: self.interrupt })
     }
 }
 
@@ -618,12 +546,7 @@ impl<'a> BufferReaderBuilder<'a> {
     ///
     /// * `data` - Media file contents to read.
     pub fn new(data: Vec<u8>) -> Self {
-        Self {
-            data,
-            format: None,
-            options: None,
-            interrupt: None,
-        }
+        Self { data, format: None, options: None, interrupt: None }
     }
 
     /// Specify a custom format for the reader.
@@ -670,29 +593,11 @@ impl<'a> BufferReaderBuilder<'a> {
 
         let seek_data = data.clone();
         let seek_pos = pos.clone();
-        let seek: SeekCallback = Box::new(move |_opaque, offset, whence| {
-            memory_seek(&seek_pos, seek_data.len(), offset, whence)
-        });
+        let seek: SeekCallback = Box::new(move |_opaque, offset, whence| memory_seek(&seek_pos, seek_data.len(), offset, whence));
 
-        let io_context = AVIOContextCustom::alloc_context(
-            AVMem::new(AVIO_BUFFER_SIZE),
-            false,
-            Vec::new(),
-            Some(read_packet),
-            None,
-            Some(seek),
-        );
-        let ctx_input = open_input_custom(
-            io_context,
-            self.format,
-            self.options,
-            self.interrupt.as_ref(),
-            c"memory",
-        )?;
-        Ok(BufferReader {
-            input: ctx_input,
-            interrupt: self.interrupt,
-        })
+        let io_context = AVIOContextCustom::alloc_context(AVMem::new(AVIO_BUFFER_SIZE), false, Vec::new(), Some(read_packet), None, Some(seek));
+        let ctx_input = open_input_custom(io_context, self.format, self.options, self.interrupt.as_ref(), c"memory")?;
+        Ok(BufferReader { input: ctx_input, interrupt: self.interrupt })
     }
 }
 
@@ -754,12 +659,7 @@ impl<'a, R: std::io::Read + Send + 'static> IoReaderBuilder<'a, R> {
     ///
     /// * `reader` - Source stream to read from (e.g. socket, pipe, decryptor).
     pub fn new(reader: R) -> Self {
-        Self {
-            reader,
-            format: None,
-            options: None,
-            interrupt: None,
-        }
+        Self { reader, format: None, options: None, interrupt: None }
     }
 
     /// Specify a custom format for the reader.
@@ -806,25 +706,9 @@ impl<'a, R: std::io::Read + Send + 'static> IoReaderBuilder<'a, R> {
             }
         });
 
-        let io_context = AVIOContextCustom::alloc_context(
-            AVMem::new(AVIO_BUFFER_SIZE),
-            false,
-            Vec::new(),
-            Some(read_packet),
-            None,
-            None,
-        );
-        let ctx_input = open_input_custom(
-            io_context,
-            self.format,
-            self.options,
-            self.interrupt.as_ref(),
-            c"stream",
-        )?;
-        Ok(IoReader {
-            input: ctx_input,
-            interrupt: self.interrupt,
-        })
+        let io_context = AVIOContextCustom::alloc_context(AVMem::new(AVIO_BUFFER_SIZE), false, Vec::new(), Some(read_packet), None, None);
+        let ctx_input = open_input_custom(io_context, self.format, self.options, self.interrupt.as_ref(), c"stream")?;
+        Ok(IoReader { input: ctx_input, interrupt: self.interrupt })
     }
 }
 
@@ -927,12 +811,7 @@ pub trait Writer {
             .streams()
             .get(stream_index)
             .map(|stream| stream.time_base)
-            .ok_or_else(|| {
-                RsmediaError::msg(format!(
-                    "Output stream {stream_index} does not exist ({} streams)",
-                    self.output().nb_streams
-                ))
-            })
+            .ok_or_else(|| RsmediaError::msg(format!("Output stream {stream_index} does not exist ({} streams)", self.output().nb_streams)))
     }
 
     /// Folds one more write's output into an accumulator.
@@ -966,13 +845,8 @@ pub trait Writer {
 ///
 /// FFmpeg 的 muxer 私有选项（如 `movflags`）在 `avformat_write_header` 时
 /// 才被消费，构建阶段传入的 options 若不透传到这里会被静默丢弃。
-fn write_header_with_options(
-    output: &mut AVFormatContextOutput,
-    options: &mut Option<AVDictionary>,
-) -> Result<()> {
-    output
-        .write_header(options)
-        .context("Failed to write header")
+fn write_header_with_options(output: &mut AVFormatContextOutput, options: &mut Option<AVDictionary>) -> Result<()> {
+    output.write_header(options).context("Failed to write header")
 }
 
 /// Flush avio 内部缓冲，确保字节立即送达 write 回调（内存/流式 Writer 用）。
@@ -1003,11 +877,7 @@ impl<'a> StreamWriterBuilder<'a> {
     ///
     /// * `destination` - Destination to write to.
     pub fn new(destination: impl Into<Location>) -> Self {
-        Self {
-            destination: destination.into(),
-            format: None,
-            options: None,
-        }
+        Self { destination: destination.into(), format: None, options: None }
     }
 
     /// Specify a container format for the writer.
@@ -1059,11 +929,7 @@ impl<'a> StreamWriterBuilder<'a> {
             .options(&mut dict)
             .build()
             .context("Create output format context failed.")?;
-        Ok(StreamWriter {
-            destination: self.destination,
-            output: output_ctx,
-            options: dict,
-        })
+        Ok(StreamWriter { destination: self.destination, output: output_ctx, options: dict })
     }
 }
 
@@ -1123,9 +989,7 @@ impl Writer for StreamWriter {
     }
 
     fn write_trailer(&mut self) -> Result<()> {
-        self.output
-            .write_trailer()
-            .context("Failed to write trailer")?;
+        self.output.write_trailer().context("Failed to write trailer")?;
         Ok(())
     }
 
@@ -1198,10 +1062,7 @@ impl<'a> BufferWriterBuilder<'a> {
     ///
     /// * `format` - Container format to use.
     pub fn new(format: &'a str) -> Self {
-        Self {
-            format,
-            options: None,
-        }
+        Self { format, options: None }
     }
 
     /// Specify options for the backend.
@@ -1219,29 +1080,16 @@ impl<'a> BufferWriterBuilder<'a> {
         let state = Arc::new(Mutex::new(MemWriterState::default()));
 
         let write_state = state.clone();
-        let write_packet: WritePacketCallback =
-            Box::new(move |_opaque, buf: &[u8]| mem_write(&write_state, buf));
+        let write_packet: WritePacketCallback = Box::new(move |_opaque, buf: &[u8]| mem_write(&write_state, buf));
 
         let seek_state = state.clone();
-        let seek: SeekCallback =
-            Box::new(move |_opaque, offset, whence| mem_seek(&seek_state, offset, whence));
+        let seek: SeekCallback = Box::new(move |_opaque, offset, whence| mem_seek(&seek_state, offset, whence));
 
         // 持久且可 seek 的内存 IO：avio 的 pos 跨 write_* 调用连续，
         // 支持 mp4 等 muxer 在 trailer 阶段回写 header 区域。
-        let io_context = AVIOContextCustom::alloc_context(
-            AVMem::new(AVIO_BUFFER_SIZE),
-            true,
-            Vec::new(),
-            None,
-            Some(write_packet),
-            Some(seek),
-        );
+        let io_context = AVIOContextCustom::alloc_context(AVMem::new(AVIO_BUFFER_SIZE), true, Vec::new(), None, Some(write_packet), Some(seek));
         let output = build_output_custom(io_context, self.format)?;
-        Ok(BufferWriter {
-            output,
-            state,
-            options: self.options.and_then(|opts| opts.into_dict()),
-        })
+        Ok(BufferWriter { output, state, options: self.options.and_then(|opts| opts.into_dict()) })
     }
 }
 
@@ -1288,11 +1136,7 @@ impl BufferWriter {
     /// 回写的字节，必须用本方法获取最终完整结果。应在 `write_trailer` 之后
     /// 调用。
     pub fn into_bytes(self) -> Vec<u8> {
-        let Self {
-            output,
-            state,
-            options: _,
-        } = self;
+        let Self { output, state, options: _ } = self;
         // 先释放 format context（连带 IO 回调释放其持有的 state 引用）
         drop(output);
         match Arc::try_unwrap(state) {
@@ -1366,10 +1210,7 @@ impl<'a> PacketizedBufWriterBuilder<'a> {
     ///
     /// * `format` - Container format to use.
     pub fn new(format: &'a str) -> Self {
-        Self {
-            format,
-            options: None,
-        }
+        Self { format, options: None }
     }
 
     /// Specify options for the backend.
@@ -1388,35 +1229,23 @@ impl<'a> PacketizedBufWriterBuilder<'a> {
 
         // 回调在 FFI 调用栈中执行，严禁 panic：锁中毒返回 AVERROR(EIO)。
         let write_buffers = buffers.clone();
-        let write_packet: WritePacketCallback =
-            Box::new(move |_opaque, buf: &[u8]| match write_buffers.lock() {
-                Ok(mut guard) => {
-                    guard.push(buf.to_vec());
-                    buf.len() as i32
-                }
-                Err(_) => AVERROR_EIO,
-            });
+        let write_packet: WritePacketCallback = Box::new(move |_opaque, buf: &[u8]| match write_buffers.lock() {
+            Ok(mut guard) => {
+                guard.push(buf.to_vec());
+                buf.len() as i32
+            }
+            Err(_) => AVERROR_EIO,
+        });
 
         // avio 缓冲大小与 max_packet_size 一致（分包写出的前提）
-        let mut io_context = AVIOContextCustom::alloc_context(
-            AVMem::new(PacketizedBufWriter::PACKET_SIZE),
-            true,
-            Vec::new(),
-            None,
-            Some(write_packet),
-            None,
-        );
+        let mut io_context = AVIOContextCustom::alloc_context(AVMem::new(PacketizedBufWriter::PACKET_SIZE), true, Vec::new(), None, Some(write_packet), None);
         // rsmpeg 未暴露可变字段访问，经裸指针设置 max_packet_size。
         // SAFETY: io_context 独占持有该 context，此处处于挂载前的初始化阶段。
         unsafe {
             (*io_context.as_mut_ptr()).max_packet_size = PacketizedBufWriter::PACKET_SIZE as _;
         }
         let output = build_output_custom(io_context, self.format)?;
-        Ok(PacketizedBufWriter {
-            output,
-            buffers,
-            options: self.options.and_then(|opts| opts.into_dict()),
-        })
+        Ok(PacketizedBufWriter { output, buffers, options: self.options.and_then(|opts| opts.into_dict()) })
     }
 }
 
@@ -1520,11 +1349,7 @@ impl<'a, W: std::io::Write + Send + 'static> CustomIoWriterBuilder<'a, W> {
     /// * `format` - Container format to use.
     /// * `writer` - Destination stream to write to (e.g. socket, pipe, encryptor).
     pub fn new(format: &'a str, writer: W) -> Self {
-        Self {
-            writer,
-            format,
-            options: None,
-        }
+        Self { writer, format, options: None }
     }
 
     /// Specify options for the backend.
@@ -1557,20 +1382,9 @@ impl<'a, W: std::io::Write + Send + 'static> CustomIoWriterBuilder<'a, W> {
             }
         });
 
-        let io_context = AVIOContextCustom::alloc_context(
-            AVMem::new(AVIO_BUFFER_SIZE),
-            true,
-            Vec::new(),
-            None,
-            Some(write_packet),
-            None,
-        );
+        let io_context = AVIOContextCustom::alloc_context(AVMem::new(AVIO_BUFFER_SIZE), true, Vec::new(), None, Some(write_packet), None);
         let output = build_output_custom(io_context, self.format)?;
-        Ok(CustomIoWriter {
-            output,
-            inner,
-            options: self.options.and_then(|opts| opts.into_dict()),
-        })
+        Ok(CustomIoWriter { output, inner, options: self.options.and_then(|opts| opts.into_dict()) })
     }
 }
 
@@ -1597,22 +1411,14 @@ impl<W: std::io::Write + Send + 'static> CustomIoWriter<W> {
 
     /// 消耗 writer 并取回底层 [`std::io::Write`] 实现（应在 `write_trailer` 之后调用）。
     pub fn into_inner(self) -> std::io::Result<W> {
-        let Self {
-            output,
-            inner,
-            options: _,
-        } = self;
+        let Self { output, inner, options: _ } = self;
         // 先释放 format context（连带 IO 回调释放其持有的 inner 引用）
         drop(output);
         match Arc::try_unwrap(inner) {
             // 锁中毒（回调 panic 过）时仍取回 writer 本体
-            Ok(w) => Ok(w
-                .into_inner()
-                .unwrap_or_else(|poisoned| poisoned.into_inner())),
+            Ok(w) => Ok(w.into_inner().unwrap_or_else(|poisoned| poisoned.into_inner())),
             // 理论不可达：output 已释放，唯一引用在此
-            Err(_) => Err(std::io::Error::other(
-                "custom io writer still has live references",
-            )),
+            Err(_) => Err(std::io::Error::other("custom io writer still has live references")),
         }
     }
 }
@@ -1710,15 +1516,7 @@ unsafe extern "C" fn log_callback(
         let mut print_prefix: std::ffi::c_int = 1;
         // Use the ffmpeg default formatting.
         let ret = unsafe {
-            ffi::av_log_format_line2(
-                avcl,
-                level_no,
-                fmt,
-                vl,
-                line.as_mut_ptr(),
-                (line.len()) as std::ffi::c_int,
-                (&mut print_prefix) as *mut std::ffi::c_int,
-            )
+            ffi::av_log_format_line2(avcl, level_no, fmt, vl, line.as_mut_ptr(), (line.len()) as std::ffi::c_int, (&mut print_prefix) as *mut std::ffi::c_int)
         };
         // Simply discard the log message if formatting fails.
         if ret > 0
@@ -1763,23 +1561,18 @@ fn log_filter_hacks(line: &str) -> bool {
 /// 可用于构建前探测能力：URL 的协议不在列表中时，`avformat_open_input` 必然
 /// 失败。列表内容取决于 FFmpeg 编译配置。
 pub fn input_protocols() -> Vec<String> {
-    rsmpeg::avformat::AVIOProtocol::inputs()
-        .map(|p| p.to_string_lossy().into_owned())
-        .collect()
+    rsmpeg::avformat::AVIOProtocol::inputs().map(|p| p.to_string_lossy().into_owned()).collect()
 }
 
 /// 当前 FFmpeg 构建支持的**输出**协议名。
 pub fn output_protocols() -> Vec<String> {
-    rsmpeg::avformat::AVIOProtocol::outputs()
-        .map(|p| p.to_string_lossy().into_owned())
-        .collect()
+    rsmpeg::avformat::AVIOProtocol::outputs().map(|p| p.to_string_lossy().into_owned()).collect()
 }
 
 /// 返回将处理该 URL 的协议名（如 `"file"`、`"http"`），无匹配协议时为 `None`。
 pub fn find_protocol_name(url: &str) -> Option<String> {
     let url_c = strutils::str_to_cstring(url);
-    rsmpeg::avformat::AVIOProtocol::find_protocol_name(&url_c)
-        .map(|p| p.to_string_lossy().into_owned())
+    rsmpeg::avformat::AVIOProtocol::find_protocol_name(&url_c).map(|p| p.to_string_lossy().into_owned())
 }
 
 #[cfg(test)]
@@ -1797,18 +1590,12 @@ mod tests {
     fn test_avseek_flag_bitops() {
         // 注意：rsmpeg 侧的 AVSEEK_FLAG_* 常量类型为 u32，断言时归一化到 i32。
         let combined = AVSeekFlag::BACKWARD | AVSeekFlag::ANY;
-        assert_eq!(
-            combined,
-            ffi::AVSEEK_FLAG_BACKWARD as i32 | ffi::AVSEEK_FLAG_ANY as i32
-        );
+        assert_eq!(combined, ffi::AVSEEK_FLAG_BACKWARD as i32 | ffi::AVSEEK_FLAG_ANY as i32);
 
         // 与 rsmpeg 的 u32 常量混合时需显式 `as i32`（宏只实现 BitOr<i32>，
         // 以免 repr=u32 的旗标枚举生成重复 impl）。
         let mixed = AVSeekFlag::FRAME | (ffi::AVSEEK_FLAG_BYTE as i32);
-        assert_eq!(
-            mixed,
-            ffi::AVSEEK_FLAG_FRAME as i32 | ffi::AVSEEK_FLAG_BYTE as i32
-        );
+        assert_eq!(mixed, ffi::AVSEEK_FLAG_FRAME as i32 | ffi::AVSEEK_FLAG_BYTE as i32);
 
         let raw: i32 = AVSeekFlag::FRAME.into();
         assert_eq!(raw, ffi::AVSEEK_FLAG_FRAME as i32);
@@ -1849,14 +1636,10 @@ mod tests {
         let pattern = crate::test_support::test_output_path("images_write", "img_%03d.png");
         let n_frames = 8;
 
-        let writer = StreamWriterBuilder::new(&pattern)
-            .with_format("image2")
-            .build()?;
+        let writer = StreamWriterBuilder::new(&pattern).with_format("image2").build()?;
         let mut muxer = Muxer::new_from_writer(writer);
 
-        let encoder = EncoderBuilder::new_video(64, 48)
-            .with_codec_name("png".to_string())
-            .build()?;
+        let encoder = EncoderBuilder::new_video(64, 48).with_codec_name("png".to_string()).build()?;
         let video_index = muxer.add_encoder(encoder)?;
 
         for i in 0..n_frames {
@@ -1870,9 +1653,7 @@ mod tests {
         let dir = pattern.parent().unwrap();
         for i in 1..=n_frames {
             let file = dir.join(format!("img_{i:03}.png"));
-            let meta = std::fs::metadata(&file).map_err(|e| {
-                RsmediaError::msg(format!("expected sequence file {}: {e}", file.display()))
-            })?;
+            let meta = std::fs::metadata(&file).map_err(|e| RsmediaError::msg(format!("expected sequence file {}: {e}", file.display())))?;
             assert!(meta.len() > 0, "sequence file {} is empty", file.display());
         }
         // 未写入的下一个编号不应存在
@@ -1890,13 +1671,9 @@ mod tests {
     fn test_read_image_sequence() -> Result<()> {
         let pattern = crate::test_support::test_output_path("images_read", "img_%03d.png");
         {
-            let writer = StreamWriterBuilder::new(&pattern)
-                .with_format("image2")
-                .build()?;
+            let writer = StreamWriterBuilder::new(&pattern).with_format("image2").build()?;
             let mut muxer = Muxer::new_from_writer(writer);
-            let encoder = EncoderBuilder::new_video(64, 48)
-                .with_codec_name("png".to_string())
-                .build()?;
+            let encoder = EncoderBuilder::new_video(64, 48).with_codec_name("png".to_string()).build()?;
             let video_index = muxer.add_encoder(encoder)?;
             for i in 0..8 {
                 let mut frame = generate_rgb_frame(64, 48, i);
@@ -1906,21 +1683,12 @@ mod tests {
             muxer.finish()?;
         }
 
-        let reader = StreamReaderBuilder::new(&pattern)
-            .with_format("image2")
-            .with_options(Options::from_iter([(
-                "framerate".to_string(),
-                "5".to_string(),
-            )]))
-            .build()?;
+        let reader =
+            StreamReaderBuilder::new(&pattern).with_format("image2").with_options(Options::from_iter([("framerate".to_string(), "5".to_string())])).build()?;
 
         let demuxer = Demuxer::new_from_reader(reader, None, None)?;
         let decoded: Vec<_> = demuxer.filter_map(|res| res.ok()).collect();
-        assert_eq!(
-            decoded.len(),
-            8,
-            "expected 8 decoded frames from image sequence"
-        );
+        assert_eq!(decoded.len(), 8, "expected 8 decoded frames from image sequence");
         for (_, frame) in &decoded {
             assert_eq!(frame.width, 64);
             assert_eq!(frame.height, 48);
@@ -1935,10 +1703,7 @@ mod tests {
     fn test_read_single_image() -> Result<()> {
         let demuxer = Demuxer::new(std::path::Path::new("assets/cat.jpg"))?;
         let decoded: Vec<_> = demuxer.filter_map(|res| res.ok()).collect();
-        assert!(
-            !decoded.is_empty(),
-            "expected at least one decoded frame from a single image"
-        );
+        assert!(!decoded.is_empty(), "expected at least one decoded frame from a single image");
         let (_, frame) = &decoded[0];
         assert!(frame.width > 0 && frame.height > 0);
 
@@ -1967,10 +1732,7 @@ mod tests {
         muxer.finish()?;
         let bytes = muxer.into_writer().into_bytes();
         assert!(!bytes.is_empty(), "buffer writer produced no output");
-        assert!(
-            bytes.len() >= total,
-            "into_bytes should contain at least all incremental chunks"
-        );
+        assert!(bytes.len() >= total, "into_bytes should contain at least all incremental chunks");
 
         // 2. BufferReader 读回并解码全部帧
         let mut reader = BufferReader::new(bytes)?;
@@ -2000,9 +1762,7 @@ mod tests {
         let mut reader = BufferReader::new(source)?;
         let mut decoder = DecoderBuilder::new(MediaType::VIDEO).build_from_reader(&reader)?;
         reader.seek_to_start()?;
-        let frame = decoder
-            .decode_raw(&mut reader)?
-            .expect("expected a frame after seek to start");
+        let frame = decoder.decode_raw(&mut reader)?.expect("expected a frame after seek to start");
         assert!(frame.width > 0 && frame.height > 0);
 
         Ok(())
@@ -2013,10 +1773,7 @@ mod tests {
     #[test]
     fn test_stream_reader_local_is_byte_seekable() -> Result<()> {
         let mut reader = StreamReader::new(std::path::Path::new("assets/mp4.mp4"))?;
-        assert!(
-            reader.is_byte_seekable(),
-            "local file IO should report byte-seekable"
-        );
+        assert!(reader.is_byte_seekable(), "local file IO should report byte-seekable");
         reader.seek_to_start()?;
         Ok(())
     }
@@ -2027,10 +1784,7 @@ mod tests {
     fn test_buffer_reader_is_byte_seekable() -> Result<()> {
         let data = std::fs::read("assets/mp4.mp4")?;
         let mut reader = BufferReader::new(data)?;
-        assert!(
-            reader.is_byte_seekable(),
-            "in-memory reader with a seek callback should report byte-seekable"
-        );
+        assert!(reader.is_byte_seekable(), "in-memory reader with a seek callback should report byte-seekable");
         reader.seek_to_start()?;
         Ok(())
     }
@@ -2093,20 +1847,14 @@ mod tests {
     #[test]
     fn test_input_protocols_contain_file() {
         let protocols = input_protocols();
-        assert!(
-            protocols.iter().any(|p| p == "file"),
-            "protocols: {protocols:?}"
-        );
+        assert!(protocols.iter().any(|p| p == "file"), "protocols: {protocols:?}");
     }
 
     /// URL 的协议识别与枚举结果一致。
     #[test]
     fn test_find_protocol_name() {
         assert_eq!(find_protocol_name("/tmp/a.mp4").as_deref(), Some("file"));
-        assert_eq!(
-            find_protocol_name("http://example.com/a.mp4").as_deref(),
-            Some("http")
-        );
+        assert_eq!(find_protocol_name("http://example.com/a.mp4").as_deref(), Some("http"));
     }
 
     /// `seek_to_timestamp` 真的把读位置前移了：从 2s 处续读得到的帧数，必须明显
@@ -2119,19 +1867,14 @@ mod tests {
         let path = crate::test_support::test_output_path("io", "test_seek_advances.mp4");
         {
             let mut muxer = crate::Muxer::new(&path)?;
-            let encoder = EncoderBuilder::new_video(64, 64)
-                .with_fps(25.0)
-                .with_gop_size(10)
-                .build()?;
+            let encoder = EncoderBuilder::new_video(64, 64).with_fps(25.0).with_gop_size(10).build()?;
             let index = muxer.add_encoder(encoder)?;
             for frame_index in 0..100i64 {
                 let mut frame = AVFrame::new();
                 frame.set_width(64);
                 frame.set_height(64);
                 frame.set_format(PixelFormat::YUV420P.into());
-                frame
-                    .alloc_buffer()
-                    .context("Failed to allocate frame buffer")?;
+                frame.alloc_buffer().context("Failed to allocate frame buffer")?;
                 frame.set_pts(frame_index);
                 muxer.mux(frame, index)?;
             }
@@ -2159,10 +1902,7 @@ mod tests {
             "seeking to 2s then reading gave the same frame count as reading from the start \
              ({from_two_seconds} vs {all}): the seek did not move the read position"
         );
-        assert!(
-            from_two_seconds > 0,
-            "the second half of the stream must still decode"
-        );
+        assert!(from_two_seconds > 0, "the second half of the stream must still decode");
 
         crate::test_support::remove_test_output(&path);
         Ok(())
@@ -2173,10 +1913,7 @@ mod tests {
     #[test]
     fn test_seek_to_frame_rejects_an_unknown_stream() -> Result<()> {
         let mut reader = StreamReader::new(std::path::Path::new("assets/mp4.mp4"))?;
-        assert!(
-            reader.seek_to_frame(99, 0, AVSeekFlag::BACKWARD).is_err(),
-            "seeking a stream that does not exist must fail"
-        );
+        assert!(reader.seek_to_frame(99, 0, AVSeekFlag::BACKWARD).is_err(), "seeking a stream that does not exist must fail");
         Ok(())
     }
 
@@ -2198,18 +1935,13 @@ mod tests {
 
         // 句柄可以挂到 reader 上（`abort` 是取消**阻塞**读取的途径；本地文件不会
         // 阻塞，所以这里只验证装配成功，无法验证中止效果）。
-        StreamReaderBuilder::new("assets/mp4.mp4")
-            .with_interrupt(aborted)
-            .build()?;
+        StreamReaderBuilder::new("assets/mp4.mp4").with_interrupt(aborted).build()?;
         Ok(())
     }
 
     /// 输出协议枚举与输入协议对称（至少都包含 `file`）。
     #[test]
     fn test_output_protocols_contain_file() {
-        assert!(
-            output_protocols().iter().any(|name| name == "file"),
-            "the `file` output protocol must be available"
-        );
+        assert!(output_protocols().iter().any(|name| name == "file"), "the `file` output protocol must be available");
     }
 }
