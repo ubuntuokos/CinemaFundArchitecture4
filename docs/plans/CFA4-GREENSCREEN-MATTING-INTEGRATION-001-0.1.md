@@ -2,7 +2,7 @@
 
 | Dokumentumadat | Érték |
 |---|---|
-| Állapot | **JAVASLAT, tulajdonosi jóváhagyásra vár.** Fejlesztés nem indul belőle jóváhagyás nélkül ([`coordination.md`](../coordination.md) §2.10) |
+| Állapot | **JAVASLAT (0.2: ütközésmentes illesztési terv), tulajdonosi jóváhagyásra vár.** Fejlesztés nem indul belőle jóváhagyás nélkül ([`coordination.md`](../coordination.md) §2.10) |
 | Dátum | 2026-11-23 |
 | Kérte | István (ubuntuokos) |
 | Alap | CFA4 `main` @ `bc3308f` |
@@ -15,8 +15,8 @@
 1. **A klasszikus zöldháttér-kulcsolás megvan, de csak CPU-n, és vékonyan bizonyítva.** A kulcsoló az **Ultra Key** (`crates/render/src/vfx/color.rs`, `ultra_key`) és az egyszerűbb **Color Key**. Van hozzájuk egységteszt, arany kép és Qt6-os parancsteszt (2. pont). Mérést valódi zöldháttéres felvételen, GPU-s utat és önálló despill-effektet a repóban nem találtam.
 2. **Az AI-mattolás (BMV2, RVM) a repóban még nincs.** Sem kód, sem a terv szövege. Az RVM csak jelöltként szerepel (`docs/gaps.md` G12, `docs/open-editors-parity.md` E7, K4). Az építőelemek közül hiányzik az **AI Model Manager** és az **AI Video Tools** is: az előbbit csak hivatkozások nevezik (`CFA4-MODEL-MANAGER-001`, „will own the store”), az utóbbi csak kategóriaként szerepel az `AI-MODEL-TRAINING-001` §10-ben. Az ADR 0008 és az ACS az **AI-modulok külön tárolójában** él, amelyet ez a munkamenet nem érhetett el.
 3. **A határ:** a kulcsoló **effekt** marad (VFX ▸ Keying), az AI-mattolás **matte-forrás**. A kettő közös pontja: **a matte mint érték**, amelyet a Compositor már ma is fogyaszt (Track Matte Key, klip-alfa), valamint a háttércsere-munkafolyamat, a szegély-/spill-tisztítás és az alfa-export. Ezekben egyszer kell megépíteni, nem kétszer.
-4. **A legfontosabb új lelet:** az Object Mask terv maszkmodellje (`MaskRle`, `MaskRef`) **bináris** (0/1 futáshossz). A mattolás **folytonos alfát** ad, finom hajszálakkal. Ezért az Object Mask tárolója **nem használható** matte-nek; külön, tartalomcímzett alfa-matte eszköz kell (5. pont).
-5. **Javaslat:** négy lépés (Z0–Z3), amely az AI-mattolás F0–F8 fázisaival egymásba illeszthető (7. pont). A Z0–Z2 AI nélkül is elvégezhető, és az AI-mattolás nyereségét is előkészíti. Nyitott döntések: 8. pont.
+4. **A legfontosabb új lelet:** az Object Mask terv maszkmodellje (`MaskRle`, `MaskRef`) **bináris** (0/1 futáshossz). A mattolás **folytonos alfát** ad, finom hajszálakkal. Ezért az Object Mask tárolója **nem használható** matte-nek; külön, tartalomcímzett alfa-matte eszköz kell (4a. pont).
+5. **Javaslat (0.2):** a terv nem új alrendszer. Tizenhat ütközésmentességi szabály (5. pont) és egy tervenkénti illesztési mátrix (6. pont) rögzíti, mit birtokol ki; a Z0–Z3 fázisok (7. pont) a gazdaprojektek kapuihoz kötöttek. Ahol két terv átfed, ott a döntés a tulajdonosé és a gazdáé (8. pont).
 
 ## 1. Szabályok, amelyeket a terv betart
 
@@ -26,7 +26,7 @@
 | `VISION.md` §5 | Helyi AI, **nincs letöltés a felhasználó tudta nélkül**; modellenként licenc és forrás rögzítve. Az AI alsó határa 12 GB-os GPU és 16 GB RAM; **önálló, GPU nélküli AI-út nincs** (2026-11-07) |
 | `AGENTS.md` | Gyártófüggetlen gyorsítás (nem csak CUDA); „never crash” (§0); nincs `unsafe`; más nyelven írt komponens csak külön folyamatban, ADR 0008 worker-protokollal; nincs fizetős rész |
 | `coordination.md` §2.10, §2.11 | Fejlesztés csak jóváhagyott terv alapján; minden terv Markdownként a `docs/plans/`-ba |
-| `coordination.md` §2.8 | Átfedésnél a projekthatárt a tulajdonos és a gazda együtt dönti el: ezért a 6. pont **javaslat**, nem végleges döntés |
+| `coordination.md` §2.8 | Átfedésnél a projekthatárt a tulajdonos és a gazda együtt dönti el: ezért az 5–6. pont **javaslat**, nem végleges döntés |
 | Márkaszűrő (`python/tests/test_independence.py`) | A forrásprojekt neve nem szerepelhet; a szövegben „szülőprojekt” áll |
 
 ## 2. Ami a zöldháttér-funkcióból ma létezik (kódolvasás alapján)
@@ -87,13 +87,13 @@ A tábla a mattolás-terv szakaszai szerint halad. „Gap-only” = valóban hi�
 | Háttércsere-munkafolyamat | `gaps.md` G12: háttér-elmosás/csere RVM-mel, MODNet tartalékkal, átlátszó háttér, képernyőfelvétel háttérnek; Portrait Lighting. Munkafolyamat-kód nincs | **Gap-only**, és **ütközik:** `gaps.md` MODNet-et nevez tartaléknak, a mattolás-terv szerint RVM nem cserélhető csendben jóváhagyatlan alternatívára (8. pont) |
 | Alfa-export validáció „csak validált codec/konténer” | `supports_alpha` lista a kódban (2. pont) | **Van** a deklaráció; a **validációs jelentés gap-only** (H8) |
 | Qt6 AI Matting munkaterület | A Qt6 UI-ban nincs AI-munkaterület; az effektpanel és a Lumetri a minta (`python/cfa4_qt/panels/`) | **Gap-only** |
-| „Kizárva: chroma key csere” | Chroma key = Ultra Key/Color Key (VFX ▸ Keying), kész kódként | **Összhangban**, de a határt ki kell mondani (6. pont) |
-| „Kizárva: rotoszkóp, tracking, általános szegmentálás” | Az `OBJECT-MASK-PLAN-001` a (nem AI) követést, az objektummaszkolást és a SAM2-t már birtokolja | **Átfedés kezelve:** a mattolás ezt nem veszi át; az Object Mask maszk **bináris**, a matte folytonos (4. pont, 5. pont) |
+| „Kizárva: chroma key csere” | Chroma key = Ultra Key/Color Key (VFX ▸ Keying), kész kódként | **Összhangban**, de a határt ki kell mondani (4a. pont) |
+| „Kizárva: rotoszkóp, tracking, általános szegmentálás” | Az `OBJECT-MASK-PLAN-001` a (nem AI) követést, az objektummaszkolást és a SAM2-t már birtokolja | **Átfedés kezelve:** a mattolás ezt nem veszi át; az Object Mask maszk **bináris**, a matte folytonos (4a. pont) |
 | Licenckapu (RVM GPL-3.0) | A CFA4 GPL-3.0-or-later; AGPL-worker szabály 2026-11-22; `licensing.md` | **Pontosítandó:** a kapu kimenete itt valószínűleg „jóváhagyva feltételekkel”, de a döntés az F0 feladata, nem ezé a dokumentumé |
 | Linux/Ubuntu 26.04/amd64, helyi, offline | `VISION.md`, `AGENTS.md` | **Összhangban** |
 | „CPU-s tartalék, ha a backend támogatja; lassabb elfogadható” | `VISION.md` §5: GPU nélküli önálló AI-út nincs (2026-11-07); az ACS-összevetés a CPU-t „elfogadható” útnak tekinti | **Ütközik/Pontosítandó:** tulajdonosi döntés kell, hogy a mattolás CPU-úttal fut-e (8. pont) |
 
-## 5. Közös pontok és határ: chroma key ↔ AI matting
+## 4a. Közös pontok és határ: chroma key ↔ AI matting
 
 ```
  zöldháttér-felvétel ─► Ultra Key / Color Key ─┐                      ┌─► Track Matte Key (alfa/luma)
@@ -116,13 +116,13 @@ A tábla a mattolás-terv szakaszai szerint halad. „Gap-only” = valóban hi�
 
 **A matte-szerződés minimuma (javaslat, jóváhagyásra):** egyetlen alfa-sík képkockánként, 8 vagy 16 bit (vagy f32), `Tick` időbélyeggel (nem képkockaszámmal), felbontás és szín-/alfa-formátum rögzítve, a tartalom SHA-256-tal címezve a tartalomcímzett gyorsítótárban, a projektben csak hash-hivatkozás + származás (forrás, tartomány, backend/effekt, modell és verzió, paraméterek). A kulcsolóra is ugyanez vonatkozik, ha a felhasználó a matte-et „kisüti” (bake). Az Ultra Key „Alpha Channel” kimenete már most is a matte-et adja, csak nem menthető eszközként.
 
-## 6. Átfedések és kockázatok
+## 4b. Kockázatok
 
 | # | Kockázat / átfedés | Hatás | Teendő |
 |---|---|---|---|
 | R1 | Az AI-mattolás terve olyan „meglévő” rétegekre épít (AI Video Tools, AI Model Manager), amelyek nincsenek a repóban | A terv F3/F4/F5 fázisai nem indulhatnak; a „gap-only” hatókör nagyobb a feltételezettnél | A függőségek tisztázása a Model Manager / ADR 0008 projektjével (nem itt) |
 | R2 | A matte-tisztítás duplikálódik (Ultra Key vs. új megosztott utófeldolgozó) | Két, eltérő viselkedésű choke/soften | Z1: közös sík-művelet kiemelése, mindkét fogyasztó azt hívja, regressziós teszttel |
-| R3 | A bináris Object Mask-tár matte-nek használása | Minőségvesztés (hajszál), félrevezető alfa | Külön alfa-matte eszköz (5. pont) |
+| R3 | A bináris Object Mask-tár matte-nek használása | Minőségvesztés (hajszál), félrevezető alfa | Külön alfa-matte eszköz (4a. pont) |
 | R4 | `gaps.md` MODNet-tartaléka vs. „RVM nem cserélhető csendben” | Tervek közti ellentmondás | Tulajdonosi döntés: a MODNet külön, jóváhagyott másodlagos backend legyen-e, vagy kikerül a `gaps.md`-ből |
 | R5 | CPU vs. „nincs GPU nélküli AI-út” (VISION §5) | A mattolás elérhetősége alacsonyabb hardveren | Tulajdonosi döntés (8. pont) |
 | R6 | Az RVM rekurrens állapota és a CFA4 job-/seek-modellje | Elavult állapotú hibás matte; az előnézet és a teljes render ütközése | F4 előtt tervezett állapot-életciklus; **mérés és teszt nélkül nem állítható helyesnek** |
@@ -131,38 +131,96 @@ A tábla a mattolás-terv szakaszai szerint halad. „Gap-only” = valóban hi�
 | R9 | A mattolás-terv szövege nem a repóban van (§2.11) | A terv a beszélgetésben marad | 9. pont, külön PR |
 | R10 | Az alfa-export mátrix nincs kodekenként mérve | Hamis alfa-állítás kockázata | Z2: mérési jelentés (alfa megőrzése konténerenként) |
 
-## 7. Fázisolt beépítési terv
+## 5. Ütközésmentességi szabályok (a terv kötelező keretei)
 
-Minden fázis **csak jóváhagyás után** indul (§2.10), „kész” csak teszt- vagy mérési bizonyítékkal. Az „AI-mattolás” oszlop azt mutatja, melyik F-fázissal fonódik össze.
+Ez a terv **nem új alrendszer**, hanem a meglévő tervek gazdaprojektjeibe illeszkedő igény- és munkajegyzék. Minden szabály mellett ott a forrás, amely miatt kötelező. „Egy képességnek egy elsődleges megvalósítása van” ([`CFA4-VFX-001`](CFA4-VFX-001.md) §5).
 
-| Fázis | Tartalom | AI nélkül elvégezhető? | AI-mattolás fázis | Átvételi feltétel (bizonyíték) |
-|---|---|---|---|---|
-| **Z0 · Alap és döntések** | (a) A 8. pont döntései; (b) a **mérési alap**: Ultra Key/Color Key minőség és sebesség szintetikus + valódi (nyílt licencű, forrásmegjelölt) zöldháttéres felvételeken a referenciagépen (CPU-idők, matte-jellemzők); ha fizikai teszt kimarad, sor a `deferred-physical-tests.md`-ben (§2.14); (c) az átfedés-döntés rögzítése a `coordination-log.md`-ben | igen | F0 (audit) | Mérési jelentés `docs/audit/`-ban; döntések a naplóban |
-| **Z1 · Hygiene és közös matte-szerződés** | (a) Az `effects.rs` Ultra-ágának egységesítése/eltávolítása (H3); (b) Color Key `thin`: megvalósítás **vagy** elrejtés (H3); (c) közös sík-műveletek (choke, soften, kontraszt) kiemelése (R2); (d) **matte-eszköz** adatmodell és tartalomcímzett tár (5. pont), hostile-input teszttel (AGENTS §0.4), régi projekttel kompatibilisen | igen | F1–F2 (architektúra, matte-csővezeték) | Egységtesztek, régi projekt megnyitása, `cargo xtask layers`, `cargo deny check licenses`; a teljes validáció azon a fejen zöld |
-| **Z2 · Kulcsolói mélység és alfa-export** | (a) Despill önálló effektként; (b) referencia-háttéres (clean plate) különbségi kulcsolás **klasszikus**, nem AI (a BMV2 AI-útjának nem helyettesítője); (c) garbage-matte munkafolyamat a meglévő maszkokkal; (d) opcionális időbeli simítás (H5), mérés alapján; (e) alfa-export mérési jelentés konténerenként (R10); (f) WGSL kulcsoló **csak ha Z0 mérése indokolja**, CPU-referenciával és paritástesztekkel | igen | F2, F6 (export) | Arany képek, valódi felvételes elfogadási küszöbök, alfa-megőrzési jelentés, GPU/CPU paritás, ha van GPU-út |
-| **Z3 · Háttércsere-munkafolyamat** | Egy munkafolyamat, két matte-forrással (kulcsoló vagy AI-matte): forrás → matte → háttér → szín/fény (meglévő Lumetri) → előnézet → export; nem romboló; Qt6 felület az Effect Controls/projektpanel mintájára | részben (a kulcsolós út igen; az AI-s út F4 után) | F5–F6 (UI, integráció) | E2E: import → kulcs → háttér → render → alfás export → projekt újranyitása |
-| *(F3–F4 az AI-mattolás saját terve)* | BMV2 és RVM backend, Model Manager, ütemező | **nem** | F3–F4, F7–F8 | Az AI-mattolás saját kapui (licenckapu, hardverérvényesítés, csomagolás) |
+| # | Szabály | Forrás |
+|---|---|---|
+| S1 | **Nincs új kiértékelő, sor, ütemező, cache, adatbázis, Model Manager, Compositor vagy VFX-rendszer.** A kulcsolók effektek maradnak a render-gráfban; az AI-matte egy feladat (`Task`) a meglévő feladatsorban | VFX-001 X-1 és §3.1; `RENDER-INTEGRATION-PLAN-001` F3; `TASKSTORE-PG-001`; `ADR-0007`; mattolás-terv §2 |
+| S2 | **A kulcsolók effektazonosítói és paraméterazonosítói befagyasztottak:** csak hozzáfűzés (`extend_core` minta, régi példány az alapértékre esik). Nem törlünk és nem nevezünk át paramétert (pl. Color Key `thin`) | MLT-import leképezés (`SC5-MLT-IMPORT` „kulcsolás → a CFA4 megfelelő effektje”), régi projektek; `coordination.md` §2.5 |
+| S3 | **Új képesség csak a közös katalógus saját sorával** (`F0-capability-gap-matrix.csv`, `G-xx`), az effektlistába csak a saját sor kerül | VFX-001 X-3; `coordination.md` §2.5 |
+| S4 | **Új kulcsolót nem építünk a VFX-katalógus hiánylistája és a VFX-5 (EC-donor effektek, G-33) nélkül.** A donor leltára még `NOT_AUDITED`: lehet, hogy a despill vagy a clean-plate kulcsoló ott már szerepel | VFX-001 VFX-1/VFX-5, G-33; `VFX-CATALOG-001` hiánylista („kulcsolók”) |
+| S5 | **A matte-szerződés a render-szerződések (C0) része, nem külön formátum.** Alfa-mód (straight / premultiplied) és belső ábrázolás (premultiplikált lineáris f32) az `A2 – Egységes Frame ABI` és az MQ-4 szerint; a szerződés változtatása csak ADR-rel | `RENDER-INTEGRATION-PLAN-001` A2, MQ-4, `C0-contracts-spec.md` |
+| S6 | **A matte-gyorsítótár a render-gráf csomópont-gyorsítótára** (hash-ellenőrzés, a gyorsítótár kikapcsolásával is PASS), a lemezes tár a meglévő **tartalomcímzett** tár; nincs külön matte-cache-motor | `RENDER-INTEGRATION-PLAN-001` F3 (scheduler, cache); `object.rs` `MaskRef`; `CFA4-DATA-PG-001` (maszkok lemezen) |
+| S7 | **A matte-feladat a `cfa4-tasks`/`cfa4-store` feladatsorába kerül** (család: `ai`, feladat: `ai.matting.<backend>`), a `routing.toml` `ai` családjának soraival; a job-állapot PostgreSQL, nem SQLite vagy redb | `ADR-0004` (család, `routing.toml`), `ADR-0007`, ACS-összevetés, OBJECT-MASK Változások (2) |
+| S8 | **A modellek az AI-réteg modellkezelőjén át jönnek** (`CFA4-MODEL-MANAGER-001`, ADR 0008, `models/manifest.toml`, négy licencmező: `code`, `dependencies`, `weights`, `dataset`); letöltés csak felhasználói művelettel, a `cfa4-fetch` folyamatban | `VISION.md` §5; `AGENTS.md`; `threat-model.md` P6; OBJECT-MASK §3 |
+| S9 | **Csak biztonságos modellformátum: safetensors / ONNX / GGUF.** A pickle-alapú PyTorch-súlyfájl (`.pth`, `.ckpt`) betöltése tilos; csak elszigetelt átalakítóval vihető át | `threat-model.md` T4, P6, B7/D7 |
+| S10 | **Az inferencia külön worker-folyamat** az ADR 0008 protokollal, `cfa4-sandbox` profillal (új folyamattípus csak a SECURITY-001 gazdájával egyeztetve); a Python/C++ megtartása indoklással, referenciagépen mért „nem lassít” feltétellel | `AGENTS.md` (Port or keep), `CFA4-SECURITY-001`, G-25 |
+| S11 | **Gyártófüggetlenség:** az inferencia útja nem lehet csak CUDA; NVIDIA-út csak AMD/Intel/NPU vagy CPU-út mellett | `VISION.md` §2.4; `ADR-0004` |
+| S12 | **A szubjektum-kijelölés (objektummaszk, SAM2, követés) az OBJECT-MASK és a Kdenlive K4 hatásköre.** A mattolás ezt nem építi újra; bemenetként használhatja (lásd 6. pont) | OBJECT-MASK §1, VFX-001 §3.1, G-34 |
+| S13 | **Az ellenőrzés a meglévő F0V-eszközökön fut** (`cfa4-golden`, `cfa4-metrics`, `cfa4-testkit`), a küszöb mért (*Küszöb@F0*), nem előre választott szám. A determinisztikus CPU-kulcsoló az F0V-küszöbön (RGB- és alfa-eltérés 0) marad; az AI-matte nem determinisztikus gépek között, ezért külön, méréssel meghatározott küszöböt kap | `RENDER-INTEGRATION-PLAN-001` F0V; `F0V-thresholds.md`; G-06, G-28 |
+| S14 | **Alfa-export csak validált konténeren, a meglévő QC-vel.** A `supports_alpha` lista a kiindulás; a validációt a `crates/qc` bővítése adja, nem új ellenőrző | G-11, G-22; mattolás-terv §18 |
+| S15 | **Az élő stúdió és a DeckLink a saját útján marad.** Az élő chroma/color/luma key szűrő a `cfa4-studio-host` (libobs) szűrője; a DeckLink hardveres key/fill a LIVE S4 után. Ez a terv ezeket nem érinti | `LIVE-STUDIO-001` (IV. 3., V.), `DECKLINK-001` F7 |
+| S16 | **Folyamat:** egy PR = egy téma; fejlesztés csak jóváhagyott terv alapján, és tervmódosításnál a munka megáll; nincs beolvasztás saját kézzel; kockázatos PR-on CodeRabbit; a fizikai teszt kihagyása sort kap a `deferred-physical-tests.md`-ben | `coordination.md` §2.2, §2.3, §2.9, §2.10, §2.14 |
 
-**Függőségi sorrend:** Z0 → Z1 → (Z2 ∥ az AI-mattolás F0–F2) → Z3. A Model Manager (R1) nélkül az AI-s backendek nem indulhatnak, de a Z0–Z2 igen.
+## 6. Illesztési mátrix: minden érintett terv
+
+Oszlopok: **mit birtokol** az a terv; **mit teszünk** ennek tiszteletben tartásával; **állapot** = a viszony ellenőrzöttsége. „Rögzített” = a repó szövege alapján egyértelmű. „Döntés kell” = tulajdonos és gazda együtt dönt (`coordination.md` §2.8), ezt a terv nem old fel.
+
+| Terv / dokumentum | Mit birtokol | Mit teszünk | Állapot |
+|---|---|---|---|
+| `VISION.md`, `AGENTS.md`, `coordination.md` | Cél, szabályok, folyamat | S1–S16; a VISION §4 nem bővül | Rögzített |
+| `CFA4-RENDER-INTEGRATION-PLAN-001` (F0V, C0, F3 render-gráf és cache, F4 GPU, F5 I/O, G-xx mátrix) | Render-gráf, ütemező, cache, szerződések, validációs küszöb | A kulcsolók és a matte-csomópont a gráfban; a matte a C0 Frame ABI része; küszöb az F0V-ből; GPU-kulcsoló csak F4 után, CPU-referenciával | Rögzített; a C0-változtatás ADR-t kér |
+| `CFA4-VFX-001` (+ `VFX-CATALOG-001`, `DNEG-VFX-EGYEZTETES`) | `VfxGraph` (szerkesztési adat), T2 „kép és matte” család, effekt-katalógus, kulcsoló-hiánylista | Kulcsoló-igények a hiánylistára; VFX-5/G-33 előz meg; nincs saját csomópontszerkesztő vagy kiértékelő | Rögzített |
+| `OBJECT-MASK-PLAN-001` | Objektumkövetés, bináris objektummaszk (`MaskRle`, `MaskRef`), SAM2, `Mask.source` | Nem használjuk a bináris RLE-t matte-nek; a SAM2-maszk bemenet lehet; a tartalomcímzett tár közös | Rögzített |
+| `CFA4-KDENLIVE-PLAN-001` K4 („AI háttéreltávolítás, SAM2”), `kdenlive-parity.md` | SAM2-alapú háttéreltávolítás | **Átfedés:** a K4 „háttéreltávolítás” és a mattolás „háttércsere” ugyanazt a felhasználói célt fedi. A javaslat: **egy** „Háttér eltávolítása/cseréje” munkafolyamat, amely forrásként a kulcsolót, a K4 maszkját vagy az AI-mattét veszi (7. pont, Z3). A K4 sorának átírása a Kdenlive-terv gazdájáé | **Döntés kell** |
+| `CFA4-AI_modules` ADR 0008, ACS-terv, `CFA4-MODEL-MANAGER-001`, `AI-MODEL-TRAINING-001`, `ACS-0 összevetés` | AI-réteg, modellkezelő, erőforrás-kezelő, worker-protokoll, licenc-elfogadás | Csak interfész; S7–S11. **Az ADR 0008 és a Model Manager szövegét nem láttam** | **Feltételes** (külső tároló) |
+| `TASKSTORE-PG-001`, `DATA-PG-001`, `ADR-0006/0007`, Event Fabric, `crates/tasks`, `crates/store` | Feladatsor, jobtár, PostgreSQL, eseménycsatorna | Matte-job a meglévő sorban; nincs második adatbázis | Rögzített |
+| `ADR-0004` compute routing, `ADR-0005` media backends | Útválasztás, `ai` család, `routing.toml` | `ai.matting.*` sorok felvétele az AI-réteg gazdájával; nincs közvetlen backend-hívás | Rögzített (a `routing.toml` ONNX-sorai még hiányoznak, OBJECT-MASK Változások 7) |
+| `CFA4-SECURITY-001`, `threat-model.md`, `crates/sandbox` | Folyamatprofilok, modellformátum-szabály, letöltés a `cfa4-fetch`-ben | S9, S10; új worker-profil egyeztetve | Rögzített |
+| `CFA4-ADAPTIVE-CAPABILITY-001` (ACS) | Erőforrás-költségvetés, prioritás, CPU/GPU szabályok | Az RVM rekurrens állapotának memóriája a költségvetésbe kerül; a CPU-út kérdése nyitott (8. pont) | **Döntés kell** (CPU vs. `VISION.md` §5) |
+| `CFA4-LIVE-STUDIO-001` (+ ST2110) | Élő jelenet, libobs-szűrők (chroma/color/luma key), Rust-cseréjük | Nem érintjük. Ha a libobs-szűrőt Rust kódra cserélik, az Ultra Key-t kell hívni (egy elsődleges megvalósítás). Élő mattolás nincs a tervben | Rögzített; a későbbi csere **jegyzendő** |
+| `CFA4-DECKLINK-001` F7 (hardveres keyer, key/fill) | Kártyás key/fill | A key/fill alfa-bemenete a program alfa-síkja; nem érintjük | Rögzített |
+| `CFA4-SHOTCUT-CAPABILITY-ADAPTATION-001` (+ SC5 MLT-import) | MLT/Shotcut leképezés, pipetta | S2: az effekt- és paraméterazonosítók maradnak; a pipetta (`effects.eyedropper`) újrahasznosítandó | Rögzített |
+| `CFA4-EFFECTCHAIN-001` | Effektlánc-preset, macro | Kulcsoló-preset (pl. Ultra Key Setting) az EC-ben is használható; nincs külön preset-tár | Rögzített |
+| `CFA4-TITLE-CREDITS-001`, `LINEART-001`, `docs/graphics.md` | Grafika, Lottie | Háttérként használható grafika; nem érintjük | Rögzített |
+| `SMART-CUT-RENDER-R1`, `SMART-RENDER`, `SCE-001` | Smart render, stream copy | Kulcsolt/matte-os klip nem lehet stream-copy; **a meglévő szabály ellenőrzendő** Z0-ban | **Ellenőrizendő** |
+| `MEDIA-QC`, `crates/qc` | Médiaellenőrzés | Alfa-ellenőrzés itt bővül (S14) | Rögzített |
+| `CFA4-MEDIA-INTELLIGENCE-001` | Metaadat, keresés (`mi` séma, pgvector) | A matte-metaadat opcionálisan indexelhető később; nem függőség | Rögzített |
+| `CFA4-DNEG-TECHNOLOGY-ADAPTATION-001` | VDB, volume, AX | Nem érintett (a track matte/blend „Kimarad”, D1–D9 A7) | Rögzített |
+| `CFA4-AI-MODEL-TRAINING-001` | Tréning, licenc-elfogadás (`awaiting: licenseAcceptance`) | Modelltréning kizárt a mattolásból; a licenc-elfogadás szemantikája újrahasznosítandó | Rögzített |
+| `docs/gaps.md` G12, G18; `target-app-parity.md`, `qt-parity.md`, `open-editors-parity.md` E7 | Paritás- és hiánylisták | Csak saját sor. **Ütközés:** G12 a MODNet-et tartaléknak nevezi, a mattolás-terv szerint RVM nem cserélhető csendben jóváhagyatlan alternatívára → a MODNet „jelölt, nem jóváhagyott” marad | **Döntés kell** |
+| `CFA4-DEV-AI-ORCHESTRATION-001` | Fejlesztési AI-koordináció (fejlesztői eszköz) | Nem termékfunkció, nem érintett | Rögzített |
+| `ADR-0001` (FFI), `licensing.md` | `unsafe`/FFI szabály, licencek | Nincs `unsafe` a CFA4 saját kódjában; RVM/BMV2 licence F0-ban, regisztersorral | Rögzített |
+| `CFA4-AI-MATTING-ENGINE-001` v1.0 | Mattolás (nincs a repóban) | Minden fázisa a fenti gazdák kapuihoz igazodik (7. pont); a szövege külön PR-ban kerüljön a repóba (9. pont) | **Döntés kell** (§2.11) |
+
+**Szubjektum-kijelölés és matte, egy mondatban (S12):** az objektummaszk (bináris, SAM2) a „*mi* a téma”, a matte (folytonos alfa) a „*mennyire* áttetsző a széle”. A SAM2-maszk lehet az RVM/BMV2 bemenete vagy durva előzetese, a matte-et viszont nem helyettesíti.
+
+## 7. Fázisolt beépítési terv (mindegyik a gazdaprojekt kapujához kötve)
+
+Minden fázis csak jóváhagyás után indul (§2.10); „kész” csak teszt- vagy mérési bizonyítékkal. A fázis nem előzheti meg a gazdaprojekt előfeltételét.
+
+| Fázis | Tartalom | Előfeltétel (gazdaprojekt kapuja) | Átvételi feltétel (bizonyíték) |
+|---|---|---|---|
+| **Z0 · Alap, döntések, ellenőrzések** | (a) A 8. pont döntései és a §2.8 átfedés-döntés a `coordination-log.md`-ben; (b) mérés az **F0V-eszközökön**: Ultra Key/Color Key idő és matte-jellemzők szintetikus és nyílt licencű valódi zöldháttéres felvételen; fizikai mérés kimaradásakor §2.14 sor; (c) kiderítendő: kulcsolt klip kihagyja-e a smart render / stream copy utat; (d) G12/G18 és `G-xx` saját sorok | A jóváhagyott terv | Mérési jelentés `docs/audit/`-ban; golden/metrikák az F0V-harnessen |
+| **Z1a · Kulcsoló-hygiene** | Az `effects.rs` `key` Ultra-ágának egységesítése (kódolvasás: elérhetetlen); a Color Key `thin` megvalósítása **a paraméterazonosító megtartásával** (S2); hostile-paraméter teszt | Z0 | Egységteszt, golden változatlan, régi projekt megnyitható, MLT-import teszt zöld |
+| **Z1b · Matte mint érték (ADR-javaslat)** | ADR-javaslat a C0 gazdájának: egycsatornás matte-sík a Frame ABI-ban (alfa-mód, 8/16 bit/f32, `Tick` időbélyeg, adat- és nem szín-átvitel), hash-hivatkozás a tartalomcímzett tárban; kulcsoló és AI-matte ugyanazt használja. A kulcsoló „Alpha Channel” kimenete a belépő (jelenleg sRGB→lineáris átalakítással jelenítődik meg, ezt a szerződésnek tisztáznia kell) | C0 v0 elfogadott; render F3 (render-gráf) | Elfogadott ADR; hostile-input és régi-projekt teszt; `cargo xtask layers` |
+| **Z2 · Kulcsolói mélység** | A despill, clean-plate (referencia-háttéres) és garbage-matte igények **hiánylista-sorként** a VFX-katalógusba; megvalósítás csak a VFX-1 donorleltár és a VFX-5 sorrendje szerint, ha a leltár nem fedi; opcionális időbeli simítás mérés alapján; alfa-export QC-bővítés (S14); WGSL kulcsoló csak mért igényre, F4 után, CPU-referenciával | VFX-1, VFX-5, render F3/F4 | Golden, valódi felvételes küszöb (mért), alfa-megőrzési jelentés, CPU–GPU paritás (ha van GPU-út) |
+| **Z3 · Egységes háttér-munkafolyamat** | Egy munkafolyamat három matte-forrással (kulcsoló, K4/Object Mask maszk, AI-matte): forrás → matte → háttér → szín/fény (Lumetri) → előnézet → export; nem romboló; Qt6-os felület a meglévő panelek mintájára; a K4 átfedés feloldása a 6. pont szerinti döntéssel | Z1b; Kdenlive K4 és OBJECT-MASK C szakasz; AI-réteg F-kapuk a mattolás-terv szerint | E2E: import → matte → háttér → render → alfás export → projekt újranyitása |
+| *AI-matte backendek (BMV2, RVM)* | A mattolás-terv F0–F8 fázisai, a fenti S7–S11 szabályokkal | ADR 0008 kapuk, Model Manager, licenckapu | A mattolás-terv saját kapui |
+
+**Függőségi sorrend:** Z0 → Z1a ∥ Z1b → Z2 → Z3; az AI-backendek az AI-réteg kapui szerint, a Z1b matte-szerződés elfogadása után kapcsolódnak.
 
 ## 8. Nyitott kérdések (tulajdonosi döntést kérnek)
 
-1. **A projekthatár (§2.8):** elfogadod-e az 5. pont szerinti határt (kulcsoló = effekt; AI-mattolás = matte-forrás; közös: matte-szerződés, utófeldolgozó, háttércsere, alfa-export)? A gazdával együtt kell rögzíteni.
-2. **Matte-eszköz:** külön alfa-matte eszköz legyen-e (javaslat), nem az Object Mask bináris RLE-je?
-3. **MODNet:** a `gaps.md` MODNet-tartaléka maradjon-e külön, jóváhagyott másodlagos backendként, vagy a mattolás csak BMV2 + RVM?
-4. **CPU-s mattolás:** a mattolás elérhető legyen-e GPU nélkül (a mattolás-terv szerint igen; `VISION.md` §5 szerint önálló GPU nélküli AI-út nincs)?
-5. **AI Video Tools és Model Manager:** ki és mikor hozza létre őket? A mattolás-terv „meglévőnek” tekinti őket.
-6. **Z0 mérési felvételek:** használhatók-e nyílt licencű zöldháttéres felvételek (forrásmegjelöléssel), vagy a tulajdonos saját felvételeit adja? A fizikai (referenciagépes) mérés kimaradása esetén a §2.14 feljegyzés kötelező.
-7. **Ultra Key halott ága (H3):** az `effects.rs`-beli Ultra-ág törölhető-e (törlés tulajdonosi jóváhagyást igényelhet)?
-8. **Bővítés:** a Z2 (b) klasszikus clean-plate kulcsolót kéred-e, vagy az csak a BMV2 F3-mal együtt jöjjön?
+1. **Projekthatár (§2.8):** elfogadod-e az S1–S16 szabályokat és a 6. pont határait (kulcsoló = effekt; AI-matte = `ai.matting.*` feladat; közös: matte-szerződés a C0-ban, háttér-munkafolyamat, alfa-QC)? A gazdával együtt rögzítendő.
+2. **K4 átfedés:** egy közös „Háttér eltávolítása/cseréje” munkafolyamat legyen-e (javaslat), a Kdenlive-terv K4 sorának átírásával a gazdája által?
+3. **MODNet (G12):** maradjon „jelölt, nem jóváhagyott”, vagy a mattolás csak BMV2 + RVM?
+4. **CPU-s mattolás:** `VISION.md` §5 („önálló GPU nélküli AI-út nincs”) és az ADR 0004 `candle-cpu` sora, illetve a mattolás-terv „CPU-tartalék” szabálya ütközik. Melyik érvényes a mattolásra?
+5. **AI Video Tools:** a mattolás-terv „meglévő” rétegnek tekinti, a repóban nincs. Az AI-réteg része lesz, vagy külön terv kell?
+6. **Z0 felvételek:** nyílt licencű zöldháttéres felvételek (forrásmegjelöléssel), vagy saját felvételek? Fizikai mérés kimaradása esetén §2.14 sor.
+7. **Ultra Key halott ága:** törölhető-e az `effects.rs`-ből (törlés tulajdonosi jóváhagyást igényelhet, `VISION.md` §2.1 szellemében)?
+8. **Z2 clean-plate kulcsoló:** a VFX-5/G-33 leltár előtt csak hiánylista-sorként kerüljön fel (javaslat), vagy kérsz saját megvalósítást?
 
 ## 9. Megjegyzés a mattolás-terv szövegéről
 
-A `CFA4-AI-MATTING-ENGINE-001` v1.0 szövege **nem szerepel a repóban**. A `coordination.md` §2.11 szerint minden terv helye a `docs/plans/`. Javaslat: a tulajdonos jóváhagyásával a terv **változatlan tartalommal, külön PR-ban** kerüljön oda (egy PR = egy téma, §2.2); ez a dokumentum erre relatív hivatkozással mutat majd.
+A `CFA4-AI-MATTING-ENGINE-001` v1.0 szövege **nem szerepel a repóban**. A `coordination.md` §2.11 szerint a helye a `docs/plans/`. Javaslat: jóváhagyással, **változatlan tartalommal, külön PR-ban** kerüljön oda (§2.2); ez a dokumentum erre relatív hivatkozással mutat majd.
 
-## 10. Mit nem ellenőriztem
+## 10. Mit nem ellenőriztem, és mit jelent itt az „ütközésmentes”
 
-- A CFA4-AI_modules tárolót (ADR 0008, ACS-terv, `crates/accel`) és a cfa4-sdk-t nem olvastam: ezek az AI-réteg tényleges szerződéseit tartalmazzák, ezért a 4. pont „Van” besorolásai az ACS-összevetésre és a `crates/tasks` felületére támaszkodnak, nem az AI-modul kódjára.
-- Nem futtattam buildet, tesztet, mérést; a „kész” csak a repó saját dokumentációja szerint áll.
-- A BMV2 és az RVM kód-, súly- és tanítóadat-licencét a forrásnál nem ellenőriztem; az F0 kapu feladata.
+- Az „ütközésmentes” itt azt jelenti: **a repóban lévő tervek szövegével** (6. pont) összevetve nincs olyan lépés, amely másik terv hatáskörébe nyúlna; ahol átfedés van, a mátrix „Döntés kell” jelzést ad, és a terv nem old fel. Teljes (100%-os) ütközésmentesség **nem bizonyítható** olyan tervekkel, amelyek szövege nincs a repóban.
+- A CFA4-AI_modules tárolót (ADR 0008, ACS-terv, `CFA4-MODEL-MANAGER-001`) és a cfa4-sdk-t nem olvastam; az ezekhez fűződő sorok **feltételesek**.
+- Nem futtattam buildet, tesztet, mérést; „kész” csak a repó saját dokumentációja szerint áll.
+- A BMV2 és az RVM kód-, súly- és tanítóadat-licencét, valamint hivatalos súlyformátumát a forrásnál nem ellenőriztem; az F0 kapu és az S9 szabály feladata.
 - Nem néztem meg, hány PR nyitott (a §2.6 küszöb).
