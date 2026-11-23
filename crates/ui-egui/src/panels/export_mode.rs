@@ -904,6 +904,16 @@ fn video_section(ui: &mut egui::Ui, reg: &mut Reg, s: &mut ExportSettings, t: &T
                 }
             });
         }
+        Format::DpxSequence => {
+            row(ui, t, tl!("Bit Depth"), |ui| {
+                // 12 and 16 bits can carry alpha (the checkbox below appears with them)
+                let labels = ["10-bit", "12-bit", "16-bit"];
+                let cur = [10u8, 12, 16].iter().position(|&b| b == s.dpx_bit_depth).unwrap_or(0);
+                if let Some(i) = combo(ui, reg, "export.video.dpxBitDepth", labels[cur], &opts(&labels), 220.0) {
+                    s.dpx_bit_depth = [10u8, 12, 16][i];
+                }
+            });
+        }
         Format::Mjpeg | Format::JpegSequence => {
             row(ui, t, tl!("Quality"), |ui| {
                 let mut q = s.quality as f64;
