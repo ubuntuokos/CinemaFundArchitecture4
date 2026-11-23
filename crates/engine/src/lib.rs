@@ -74,6 +74,7 @@ pub mod security;
 pub mod sequence_extras;
 pub mod sequence_tools;
 pub mod settings;
+pub mod short_clips;
 pub mod shortcut_presets;
 pub mod shortcuts;
 pub mod silence;
@@ -1512,6 +1513,8 @@ mod sequence_tabs_tests;
 mod sequence_tools_tests;
 #[cfg(test)]
 mod settings_tests;
+#[cfg(test)]
+mod short_clips_tests;
 #[cfg(test)]
 mod shortcuts_tests;
 #[cfg(test)]

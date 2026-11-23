@@ -4032,6 +4032,7 @@ fn build() -> Vec<CommandSpec> {
     v.extend(crate::dcpomatic::commands());
     v.extend(crate::proxies::commands());
     v.extend(crate::camera_proxies::commands());
+    v.extend(crate::short_clips::commands());
     v.extend(crate::project_manager::commands());
     v.extend(crate::masks::commands());
     v.extend(crate::objects_track::commands());
