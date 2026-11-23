@@ -99,6 +99,7 @@ cfa4-tak = { path = "crates/tak" }
 cfa4-smacker = { path = "crates/smacker" }
 cfa4-acm = { path = "crates/acm" }
 cfa4-roq = { path = "crates/roq" }
+cfa4-amv = { path = "crates/amv" }
 cfa4-mve = { path = "crates/mve" }
 cfa4-realvideo = { path = "crates/realvideo" }
 cfa4-realmedia = { path = "crates/realmedia" }
@@ -238,6 +239,9 @@ opt-level = 3
 opt-level = 3
 
 [profile.dev.package.cfa4-roq]
+opt-level = 3
+
+[profile.dev.package.cfa4-amv]
 opt-level = 3
 
 [profile.dev.package.cfa4-mve]

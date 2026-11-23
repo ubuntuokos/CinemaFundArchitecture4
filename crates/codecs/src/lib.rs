@@ -26,6 +26,7 @@
 //! - [`ThpSource`]: Nintendo THP (`.thp`) JPEG video (full range YUV) with THP ADPCM sound.
 //! - [`MobiclipSource`]: Nintendo MobiClip (`.moflex`) video with FastAudio, IMA ADPCM or PCM sound.
 //! - [`RoqSource`]: id RoQ (`.roq`) video (full range YUV 4:4:4) with DPCM sound.
+//! - [`AmvSource`]: AMV (`.amv`) video (JPEG variant, full range YUV 4:2:0) with IMA ADPCM sound.
 //! - [`MveSource`]: Interplay MVE (`.mve`) video (8-bit palette or RGB 5:5:5) with PCM or DPCM sound.
 //! - [`Y4mSource`]: uncompressed YUV4MPEG2 (`.y4m`) video, frames read on demand.
 //! - [`NstreamSource`]: Nintendo BRSTM / BFSTM / BCSTM (`.brstm`, `.bfstm`, `.bcstm`) audio streams (PCM or DSP ADPCM).
@@ -33,6 +34,7 @@
 
 #![cfg_attr(not(test), deny(clippy::unwrap_used, clippy::expect_used, clippy::panic, clippy::unimplemented, clippy::todo, clippy::unreachable))]
 
+pub mod amv;
 pub mod apv;
 pub mod audio;
 pub mod av2;
@@ -83,6 +85,7 @@ pub mod y4m;
 
 use std::sync::{Arc, RwLock};
 
+pub use amv::AmvSource;
 pub use apv::ApvSource;
 pub use audio::AudioFileSource;
 pub use avi::AviSource;
@@ -238,6 +241,7 @@ pub fn openers() -> Vec<cfa4_media::Opener> {
         nstream::opener,
         smacker::opener,
         roq::opener,
+        amv::opener,
         mve::opener,
         av2::opener,
         audio::opener,

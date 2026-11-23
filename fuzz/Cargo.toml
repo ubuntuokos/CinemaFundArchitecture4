@@ -53,6 +53,7 @@ cfa4-ogg = { path = "../crates/ogg" }
 cfa4-st2110 = { path = "../crates/st2110" }
 cfa4-tta = { path = "../crates/tta" }
 cfa4-amr = { path = "../crates/amr" }
+cfa4-amv = { path = "../crates/amv" }
 cfa4-av2 = { path = "../crates/av2" }
 cfa4-canopus = { path = "../crates/canopus" }
 cfa4-theora = { path = "../crates/theora" }
@@ -614,6 +615,13 @@ bench = false
 [[bin]]
 name = "smacker"
 path = "fuzz_targets/smacker.rs"
+test = false
+doc = false
+bench = false
+
+[[bin]]
+name = "amv"
+path = "fuzz_targets/amv.rs"
 test = false
 doc = false
 bench = false

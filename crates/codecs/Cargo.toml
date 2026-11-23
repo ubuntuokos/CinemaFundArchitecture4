@@ -43,6 +43,7 @@ cfa4-tak = { workspace = true }
 cfa4-smacker = { workspace = true }
 cfa4-acm = { workspace = true }
 cfa4-roq = { workspace = true }
+cfa4-amv = { workspace = true }
 cfa4-mve = { workspace = true }
 cfa4-g729 = { workspace = true }
 cfa4-ilbc = { workspace = true }

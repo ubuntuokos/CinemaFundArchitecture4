@@ -107,6 +107,7 @@ Crates are named `cfa4-<dir>` (`crates/time` is `cfa4-time`); new CFA4 crates ar
 | `smacker` | L0 | Smacker (`.smk`, SMK2 and SMK4) demuxer, paletted 4×4-block video decoder and packed Huffman audio decoder, ported from FFmpeg (LGPL-2.1-or-later, owner-approved exception) ([README](../crates/smacker/README.md)) |
 | `musepack` | L0 | Musepack SV7 and SV8 audio decoder, ported from the reference library libmpcdec (BSD-3-Clause) in its floating-point build ([README](../crates/musepack/README.md)) |
 | `acm` | L0 | Interplay ACM audio decoder, ported from FFmpeg (ISC and LGPL-2.1-or-later, owner-approved exception) ([README](../crates/acm/README.md)) |
+| `amv` | L0 | AMV video (JPEG variant), IMA ADPCM audio and the `.amv` chunk layout, ported from FFmpeg (LGPL-2.1-or-later, owner-approved exception) ([README](../crates/amv/README.md)) |
 | `roq` | L0 | id RoQ video and DPCM audio decoders and the `.roq` chunk layout, ported from FFmpeg (LGPL-2.1-or-later, owner-approved exception) ([README](../crates/roq/README.md)) |
 | `mve` | L0 | Interplay MVE video (8-bit palette and 16-bit) and DPCM / PCM audio decoders and the `.mve` chunk layout, ported from FFmpeg (LGPL-2.1-or-later, owner-approved exception) ([README](../crates/mve/README.md)) |
 | `testkit` | L0 | test-only helpers, used only as a dev-dependency: ffmpeg/ffprobe discovery, fixture dirs, golden images ([testing.md](testing.md)) |
