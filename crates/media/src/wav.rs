@@ -36,6 +36,8 @@ const MAX_SPAN_BYTES: u64 = 4 << 20;
 const FMT_MAX: u64 = 1024;
 /// G.722 data bytes between two decoder checkpoints (2 s at 64 kbit/s).
 const G722_CHECKPOINT: u64 = 16_384;
+/// Bytes between Yamaha / OKI ADPCM decoder checkpoints.
+const YO_CHECKPOINT: u64 = 16_384;
 /// ATRAC packets between two decoder checkpoints (about 1.5 s of ATRAC3, 3 s of ATRAC3plus,
 /// 0.3 to 1.4 s of ATRAC9).
 const ATRAC_CHECKPOINT: u64 = 64;
@@ -106,6 +108,9 @@ enum Encoding {
     /// G.722 (mono, two frames per byte): decoder states at every [`G722_CHECKPOINT`] bytes,
     /// found as reads reach them.
     G722 { checkpoints: Mutex<Vec<cfa4_adpcm::g722::Decoder>> },
+    /// Yamaha or Dialogic OKI ADPCM (two frames per byte over the channels): decoder states at
+    /// every [`YO_CHECKPOINT`] bytes.
+    Yo { checkpoints: Mutex<Vec<cfa4_yamaha_oki::State>> },
     /// ATRAC3, ATRAC3plus or ATRAC9 packets of `block` bytes (`spf` frames each): decoder states at every
     /// [`ATRAC_CHECKPOINT`] frames, found as reads reach them (the overlap, gain control and
     /// filter bank memories carry from frame to frame).
@@ -261,6 +266,11 @@ impl WavSource {
             let block = cfa4_truespeech::FRAME_BYTES as u64;
             let (encoding, frames) = atrac_encoding(Atrac::TrueSpeech(Box::default()), block, dlen, |_, _| Vec::new());
             (encoding, frames, "TrueSpeech".to_string(), None)
+        } else if let Some(kind) = cfa4_yamaha_oki::Kind::from_wave_format(tag) {
+            let state = cfa4_yamaha_oki::State::new(kind, usize::from(ch))
+                .ok_or_else(|| MediaError::Unsupported(format!("{name}: {} with {ch} channels", kind.name())))?;
+            let frames = u64::try_from(cfa4_yamaha_oki::frames_in(usize::try_from(dlen).unwrap_or(usize::MAX), usize::from(ch))).unwrap_or(u64::MAX);
+            (Encoding::Yo { checkpoints: Mutex::new(vec![state]) }, frames, kind.name().to_string(), None)
         } else if let Some(codec) = Codec::from_wave_format(tag, align, bits, &extra) {
             let codec = codec.map_err(|e| MediaError::Unsupported(format!("{name}: {e}")))?;
             // a decoder for this layout must exist (G.722 is mono only)
@@ -363,6 +373,26 @@ impl WavSource {
                 let mut out = Vec::with_capacity(n.saturating_mul(ch).min(1 << 26));
                 for i in a..a.saturating_add(n) {
                     out.extend(planes.iter().map(|p| p.get(i).copied().unwrap_or(0.0)));
+            Encoding::Yo { checkpoints } => {
+                // `ch` frames per `ch` bytes' worth of nibbles: frame f lives in byte f·ch/2
+                let ch64 = ch as u64;
+                let (b0, b1) = (first.saturating_mul(ch64) / 2, last.saturating_mul(ch64) / 2 + 1);
+                let k = b0 / YO_CHECKPOINT;
+                let mut state = self.yo_checkpoint(checkpoints, k)?;
+                let from = k * YO_CHECKPOINT;
+                let raw = self.read_data(from, b1)?;
+                let mut planes = vec![Vec::new(); ch];
+                state.decode(&raw, &mut planes);
+                let skip = usize::try_from(first.saturating_sub(from.saturating_mul(2) / ch64)).unwrap_or(usize::MAX);
+                let n = usize::try_from(count).unwrap_or(usize::MAX);
+                let mut out = Vec::with_capacity(n.min(1 << 26).saturating_mul(ch));
+                for i in skip..skip.saturating_add(n) {
+                    for p in &planes {
+                        match p.get(i) {
+                            Some(&v) => out.push(f32::from(v) / 32768.0),
+                            None => return Ok(out),
+                        }
+                    }
                 }
                 Ok(out)
             }
@@ -410,6 +440,22 @@ impl WavSource {
             cps.push(d);
         }
         cps.get(k).or(cps.last()).cloned().ok_or_else(|| MediaError::Decode(format!("{}: ATRAC state", self.info.name)))
+    }
+
+    /// The Yamaha / OKI decoder state at checkpoint `k` (byte `k · YO_CHECKPOINT`).
+    fn yo_checkpoint(&self, checkpoints: &Mutex<Vec<cfa4_yamaha_oki::State>>, k: u64) -> Result<cfa4_yamaha_oki::State> {
+        let k = usize::try_from(k).map_err(|_| MediaError::Decode(format!("{}: ADPCM position", self.info.name)))?;
+        let mut cps = checkpoints.lock().unwrap_or_else(PoisonError::into_inner);
+        while cps.len() <= k {
+            let i = cps.len() - 1;
+            let Some(mut d) = cps.last().cloned() else { break };
+            let from = i as u64 * YO_CHECKPOINT;
+            let raw = self.read_data(from, from + YO_CHECKPOINT)?;
+            let mut sink = vec![Vec::new(); d.channels()];
+            d.decode(&raw, &mut sink);
+            cps.push(d);
+        }
+        cps.get(k).or(cps.last()).cloned().ok_or_else(|| MediaError::Decode(format!("{}: ADPCM state", self.info.name)))
     }
 
     /// The G.722 decoder state at checkpoint `k` (byte `k · G722_CHECKPOINT`), decoding forward
@@ -762,6 +808,34 @@ mod tests {
             assert_eq!(&part[..n], &whole[start..start + n], "from {start}");
             assert!(part[n..].iter().all(|&s| s == 0.0), "silence past the end");
         }
+    }
+
+    /// Yamaha / OKI ADPCM read from the middle (from a checkpoint) gives what a read from the
+    /// start does, mono and stereo.
+    #[test]
+    fn yamaha_oki_random_access_matches_sequential() {
+        for (tag, channels) in [(0x20u16, 1u16), (0x10, 1), (0x20, 2), (0x10, 2)] {
+            let data = noise(3 * YO_CHECKPOINT as usize + 1001);
+            let mk = || {
+                let mut w = compressed_wav(tag, 22_050, 1, &data);
+                w[22..24].copy_from_slice(&channels.to_le_bytes());
+                WavSource::parse("y.wav", w.into()).unwrap()
+            };
+            let total = data.len() * 2 / usize::from(channels);
+            assert_eq!(mk().info().duration, Tick::from_units(total as i64, 22_050));
+            let whole = mk().audio(0, total, 22_050).unwrap().channels;
+            for start in [total - 10, total / 2 + 3, 2 * YO_CHECKPOINT as usize + 1, 1] {
+                let part = mk().audio(start as i64, 600, 22_050).unwrap().channels;
+                let n = 600.min(total - start);
+                for c in 0..usize::from(channels) {
+                    assert_eq!(&part[c][..n], &whole[c][start..start + n], "tag {tag:#x} {channels}ch from {start}");
+                }
+            }
+        }
+        // more than two channels is refused
+        let mut w = compressed_wav(0x20, 22_050, 1, &[0; 64]);
+        w[22..24].copy_from_slice(&3u16.to_le_bytes());
+        assert!(WavSource::parse("y3.wav", w.into()).is_err());
     }
 
     /// Damaged ADPCM headers are refused at open; random blocks decode without failing.

@@ -811,6 +811,14 @@ pub fn twinvq(data: &[u8]) {
         let align = usize::from(u16::from_le_bytes([a[0], a[1]]));
         if let Ok(s) = cfa4_twinvq::parse_metasound(extra, align) {
             let _ = cfa4_twinvq::decode(data.get(18..).unwrap_or(&[]), &s);
+pub fn yamaha_oki(data: &[u8]) {
+    use cfa4_yamaha_oki::{Kind, State};
+    for kind in [Kind::Yamaha, Kind::Oki] {
+        for channels in 1..=2 {
+            if let Some(mut s) = State::new(kind, channels) {
+                let mut out = vec![Vec::new(); channels];
+                s.decode(data, &mut out);
+            }
         }
 pub fn nstream(data: &[u8]) {
     if let Ok(s) = cfa4_nstream::parse(data) {
@@ -926,6 +934,7 @@ pub const TARGETS: &[(&str, &str, Target)] = &[
     ("mpeg2v", "cfa4-mpeg2v", mpeg2v),
     ("vp8", "cfa4-vp8", vp8),
     ("vp9", "cfa4-vp9", vp9),
+    ("yamaha_oki", "cfa4-yamaha-oki", yamaha_oki),
     ("av1", "cfa4-av1", av1),
     ("prores", "cfa4-prores", prores),
     ("dnx", "cfa4-dnx", dnx),

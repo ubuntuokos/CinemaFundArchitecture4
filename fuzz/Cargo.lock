@@ -415,6 +415,7 @@ dependencies = [
  "cfa4-utvideo",
  "cfa4-vp8",
  "cfa4-vp9",
+ "cfa4-yamaha-oki",
  "libfuzzer-sys",
 ]
 
@@ -831,6 +832,10 @@ dependencies = [
  "rayon",
  "thiserror",
 ]
+
+[[package]]
+name = "cfa4-yamaha-oki"
+version = "0.10.0"
 
 [[package]]
 name = "cfg-if"

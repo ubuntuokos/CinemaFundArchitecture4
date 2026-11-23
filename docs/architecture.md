@@ -103,6 +103,7 @@ Crates are named `cfa4-<dir>` (`crates/time` is `cfa4-time`); new CFA4 crates ar
 | `tta` | L0 | TTA (True Audio) lossless audio decoder, ported from libtta (LGPL-3.0) ([README](../crates/tta/README.md)) |
 | `twinvq` | L0 | NTT TwinVQ (VQF) and Voxware MetaSound audio decoder, all nine VQF modes and the MetaSound modes, ported from FFmpeg (LGPL-2.1-or-later, owner-approved exception) ([README](../crates/twinvq/README.md)) |
 | `twinvq` | L0 | NTT TwinVQ (VQF) audio decoder, all nine VQF modes, ported from FFmpeg (LGPL-2.1-or-later, owner-approved exception) ([README](../crates/twinvq/README.md)) |
+| `yamaha-oki` | L0 | Yamaha ADPCM (WAV 0x0020) and Dialogic OKI ADPCM (WAV 0x0010) decoders, ported from FFmpeg (LGPL-2.1-or-later, owner-approved exception) ([README](../crates/yamaha-oki/README.md)) |
 | `nstream` | L0 | Nintendo BRSTM / BFSTM / BCSTM audio streams: header, block walk, PCM and DSP ADPCM sound, ported from FFmpeg (LGPL-2.1-or-later, owner-approved exception) ([README](../crates/nstream/README.md)) |
 | `adx` | L0 | CRI ADX (`.adx`) ADPCM audio decoder, ported from FFmpeg (LGPL-2.1-or-later, owner-approved exception) ([README](../crates/adx/README.md)) |
 | `hca` | L0 | CRI HCA (`.hca`) MDCT audio decoder with the keyed cipher, ported from FFmpeg (LGPL-2.1-or-later, owner-approved exception) ([README](../crates/hca/README.md)) |

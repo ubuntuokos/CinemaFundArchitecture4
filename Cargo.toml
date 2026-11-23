@@ -94,6 +94,7 @@ cfa4-thp = { path = "crates/thp" }
 cfa4-mobiclip = { path = "crates/mobiclip" }
 cfa4-tta = { path = "crates/tta" }
 cfa4-twinvq = { path = "crates/twinvq" }
+cfa4-yamaha-oki = { path = "crates/yamaha-oki" }
 cfa4-nstream = { path = "crates/nstream" }
 cfa4-shorten = { path = "crates/shorten" }
 cfa4-adx = { path = "crates/adx" }
@@ -225,6 +226,7 @@ opt-level = 3
 opt-level = 3
 
 [profile.dev.package.cfa4-twinvq]
+[profile.dev.package.cfa4-yamaha-oki]
 [profile.dev.package.cfa4-nstream]
 opt-level = 3
 
