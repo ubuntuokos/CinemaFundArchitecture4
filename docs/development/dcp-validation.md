@@ -63,6 +63,16 @@ FFmpeg setup. Remove the cache directory to uninstall.
   engine's local XML catalogue.
 - The Qt GUI never talks to Ruby: it asks the Rust engine, which runs the backend.
 
+### Parity of the two engines (DCP-17)
+
+`cargo test -p cfa4-dcp-inspect --test parity -- --nocapture` runs structural cases (valid package, asset map missing or not XML, packing list missing or not XML, composition not XML, track
+file missing, changed byte, truncated file) through the native backend and through dcp_inspect with
+`full-integrity`, and writes `target/dcp-parity/report.md`: per case the two verdicts and the rules only one
+engine failed. It is a measurement: only the valid package is asserted (neither engine may fail it); a case
+where one engine fails and the other does not is a divergence to read, not a test failure. Without the engine
+(`DcpInspect::locate()` finds nothing) it says so and passes. The media cases (picture, sound) are not in it
+yet: they need the engine's asdcplib ([cinema-oracles.md](cinema-oracles.md)).
+
 ## Commands and the Qt window (DCP-12)
 
 The engine runs the native backend as a background job; the Qt6 GUI and the control channel drive it
