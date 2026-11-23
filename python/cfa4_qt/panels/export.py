@@ -121,6 +121,8 @@ FORMAT_CHOICES: tuple[tuple[str, str, str, tuple[tuple[str, str], ...]], ...] = 
         ("lb", "DNxHR LB"), ("sq", "DNxHR SQ"), ("hq", "DNxHR HQ"), ("hqx", "DNxHR HQX (10-bit)"),
         ("hd1235", "DNxHD 1080p 10-bit (CID 1235)"), ("hd1238", "DNxHD 1080p 8-bit (CID 1238)"),
         ("hd1237", "DNxHD 1080p 8-bit (CID 1237)"), ("hd1253", "DNxHD 1080p 36 (CID 1253)"),
+        ("hd1241", "DNxHD 1080i 10-bit (CID 1241)"), ("hd1243", "DNxHD 1080i 8-bit (CID 1243)"),
+        ("hd1242", "DNxHD 1080i 8-bit (CID 1242)"),
         ("hd1250", "DNxHD 720p 10-bit (CID 1250)"), ("hd1251", "DNxHD 720p 8-bit (CID 1251)"),
         ("hd1252", "DNxHD 720p 8-bit (CID 1252)"))),
     ("apvProfile", N_("Profile"), "export.video.apvProfile", (("422-10", "APV 422-10"), ("422-12", "APV 422-12"), ("444-10", "APV 444-10"), ("444-12", "APV 444-12"))),

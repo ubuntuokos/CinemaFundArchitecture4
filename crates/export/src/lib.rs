@@ -955,8 +955,14 @@ impl ExportSettings {
         }
         if self.field_order != FieldOrder::Progressive && self.has_video() && !self.codes_interlaced() {
             return Err(ExportError::Unsupported(format!(
-                "{} field order: only MPEG-2 and ProRes export (in MXF: MPEG-2, XDCAM HD422, D-10, ProRes) code interlaced video; the other encoders write progressive frames",
+                "{} field order: only MPEG-2, ProRes and the interlaced DNxHD IDs (1241–1243) export (in MXF: MPEG-2, XDCAM HD422, D-10, ProRes, DNxHD 1080i) code interlaced video; the other encoders write progressive frames",
                 self.field_order.label()
+            )));
+        }
+        if self.dnx_interlaced() && self.field_order != FieldOrder::UpperFirst {
+            return Err(ExportError::Unsupported(format!(
+                "{} codes interlaced pictures, top field first: set the field order to upper first",
+                crate::dnx_profile(&self.dnx_profile).name()
             )));
         }
         if self.field_order == FieldOrder::LowerFirst && self.format.is_mxf() && self.mxf_video_codec == MxfVideoCodec::D10 {
@@ -2141,7 +2147,8 @@ fn prores_factory(format: Format, w: u32, h: u32, rate: FrameRate, s: &ExportSet
 
 /// The DNxHR or DNxHD profile named by [`ExportSettings::dnx_profile`]: `lb`, `sq`, `hq`,
 /// `hqx`, or a 4:2:2 DNxHD compression ID as `hd1235`, `hd1237`, `hd1238`, `hd1250`, `hd1251`,
-/// `hd1252`, `hd1253` (each codes one raster).
+/// `hd1252`, `hd1253` (each codes one raster), or an interlaced one as `hd1241`, `hd1242`,
+/// `hd1243` (1080i: two field coding units per frame, top field first).
 pub fn dnx_profile(name: &str) -> cfa4_dnx::Profile {
     use cfa4_dnx::Profile;
     match name.to_ascii_lowercase().as_str() {
@@ -2151,6 +2158,9 @@ pub fn dnx_profile(name: &str) -> cfa4_dnx::Profile {
         "hd1235" => Profile::Hd1235,
         "hd1237" => Profile::Hd1237,
         "hd1238" => Profile::Hd1238,
+        "hd1241" => Profile::Hd1241,
+        "hd1242" => Profile::Hd1242,
+        "hd1243" => Profile::Hd1243,
         "hd1250" => Profile::Hd1250,
         "hd1251" => Profile::Hd1251,
         "hd1252" => Profile::Hd1252,
@@ -2169,12 +2179,17 @@ struct DnxEncoder {
     h: u32,
     rate: FrameRate,
     signal: ColorSignal,
+    /// Interlaced DNxHD ID: two woven fields per frame, the top one first (QuickTime `fiel` 1).
+    interlaced: bool,
 }
 
 impl VideoEncoder for DnxEncoder {
     fn sample_entry(&self) -> SampleEntry {
         let mut e = SampleEntry::dnx(cfa4_isobmff::FourCc(self.fourcc), self.w as u16, self.h as u16);
         self.signal.apply_to(&mut e, true);
+        if let (true, Some(v)) = (self.interlaced, e.video.as_mut()) {
+            v.field_info = Some(cfa4_isobmff::FieldInfo { fields: 2, detail: 1 });
+        }
         e
     }
     fn timescale(&self) -> u32 {
@@ -2215,7 +2230,7 @@ fn dnx_factory(format: Format, w: u32, h: u32, rate: FrameRate, s: &ExportSettin
             cfg.color_volume = cfa4_dnx::ColorVolume::Bt2020Ncl;
         }
         let enc = cfa4_dnx::Encoder::with_config(cfg).map_err(|e| ExportError::Encode(e.to_string()))?;
-        Ok(Box::new(DnxEncoder { enc, fourcc, w, h, rate, signal: s.signal }) as Box<dyn VideoEncoder>)
+        Ok(Box::new(DnxEncoder { enc, fourcc, w, h, rate, signal: s.signal, interlaced: profile.interlaced() }) as Box<dyn VideoEncoder>)
     })
 }
 
