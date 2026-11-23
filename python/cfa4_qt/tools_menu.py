@@ -114,6 +114,16 @@ def build_tools_menu(win: MainWindow, menu: QMenu) -> None:
         a.setObjectName(oid)
         a.triggered.connect(lambda _c=False, n=name: _show_dock(win, n))
 
+    if "scene3d.list" in getattr(win.registry, "commands", {"scene3d.list": None}):
+        three_d = menu.addMenu(tr("3D Tools"))
+        three_d.setObjectName("menu.Tools.3D")
+        assets = three_d.addAction(tr("3D Assets…"))
+        assets.setObjectName("tools.3d.assets")
+        assets.triggered.connect(lambda _c=False: win.open_scene3d_panel())
+        export_3d = three_d.addAction(tr("Export 3D Asset…"))
+        export_3d.setObjectName("tools.3d.export")
+        export_3d.triggered.connect(lambda _c=False: win.open_scene3d_panel(export=True))
+
     publication = menu.addMenu(tr("Publication Tools"))
     publication.setObjectName("menu.Tools.Publication")
     export = QAction(tr("Export Media…"), publication)
@@ -126,7 +136,9 @@ def build_tools_menu(win: MainWindow, menu: QMenu) -> None:
     # the popup opens below the header's Quick Export button
     quick.setEnabled(getattr(win, "quick_export_button", None) is not None)
     publication.aboutToShow.connect(
-        lambda: quick.setEnabled(getattr(win, "quick_export_button", None) is not None and win.quick_export_button.isVisible())
+        lambda: quick.setEnabled(
+            getattr(win, "quick_export_button", None) is not None and win.quick_export_button.isVisible()
+        )
     )
     publication.addSeparator()
     _engine_actions(win, publication, PUBLICATION_COMMANDS)

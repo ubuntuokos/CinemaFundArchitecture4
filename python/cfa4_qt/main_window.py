@@ -64,6 +64,7 @@ from .panels.kdm_dialog import KdmDialog
 from .panels.live import LiveDialog
 from .panels.lumetri import LumetriColorPanel
 from .panels.media_browser import MediaBrowserPanel
+from .panels.scene3d_panel import Scene3dPanel
 from .panels.media_dialogs import (
     CreateProxiesDialog,
     LinkMediaDialog,
@@ -1623,6 +1624,22 @@ class MainWindow(QMainWindow):
             d.open()
 
         self.engine.execute("media.linkMedia", {}, on_reply=got, on_error=lambda m: self._command_failed("media.linkMedia", m))
+
+    def open_scene3d_panel(self, export: bool = False) -> None:
+        """The 3D asset panel (Tools ▸ 3D Tools); ``export`` also opens the export dialog for the
+        selected asset once the list arrived. One panel at a time."""
+        panel = getattr(self, "scene3d_panel", None)
+        if panel is None:
+            panel = Scene3dPanel(self, self.engine, changed=self._media_changed)
+            panel.setAttribute(Qt.WidgetAttribute.WA_DeleteOnClose)
+            panel.finished.connect(lambda _r: setattr(self, "scene3d_panel", None))
+            self.scene3d_panel = panel
+        self.last_dialog = panel
+        panel.show()
+        panel.raise_()
+        if export:
+            panel.export_when_listed = True
+            panel.refresh()
 
     def _media_status(self, text: str) -> None:
         self.statusBar().showMessage(text, 6000)
