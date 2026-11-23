@@ -37,7 +37,7 @@ fn exists(s: &Session, path: &str) -> bool {
     s.services.file_size(path).is_ok()
 }
 
-fn volume_p(s: &Session, p: &Value, cmd: &str) -> Result<(ItemId, VolumeAsset)> {
+pub(crate) fn volume_p(s: &Session, p: &Value, cmd: &str) -> Result<(ItemId, VolumeAsset)> {
     let id = match item_p(p, "item") {
         Some(id) => id,
         None => match s.state.project_selection.as_slice() {

@@ -672,15 +672,19 @@ pub fn svq3(data: &[u8]) {
         let _ = d.decode(i.rest(), 1);
         let _ = d.flush();
     }
+}
 pub fn svq1(data: &[u8]) {
     let mut d = cfa4_svq1::Decoder::new(16, 16, false);
     let _ = d.decode(data);
     let _ = d.decode(data);
+}
 pub fn indeo45(data: &[u8]) {
     for codec in [cfa4_indeo45::Codec::Indeo4, cfa4_indeo45::Codec::Indeo5] {
         let mut d = cfa4_indeo45::Decoder::new(codec);
         let _ = d.decode(data);
         let _ = d.decode(data);
+    }
+}
 pub fn msvideo(data: &[u8]) {
     // the first bytes pick the codec and the layout, the rest is a run of packets
     let (head, body) = data.split_at(data.len().min(4));
@@ -698,6 +702,7 @@ pub fn msvideo(data: &[u8]) {
             let _ = d.decode(pkt);
         }
     }
+}
 pub fn indeo3(data: &[u8]) {
     let mut d = cfa4_indeo3::Decoder::new();
     let _ = d.decode(data);
@@ -802,6 +807,9 @@ pub fn mobiclip(data: &[u8]) {
                 cfa4_mobiclip::AudioCodec::ImaMoflex => drop(cfa4_mobiclip::decode_ima(p, ch)),
                 cfa4_mobiclip::AudioCodec::PcmS16le => drop(cfa4_mobiclip::decode_pcm(p, ch)),
             }
+        }
+    }
+}
 pub fn qdm2(data: &[u8]) {
     // a configuration, and blocks decoded with a valid one built from the first bytes
     let _ = cfa4_qdm2::Decoder::new(data);
@@ -820,6 +828,7 @@ pub fn qdm2(data: &[u8]) {
             let _ = d.decode(packet);
         }
     }
+}
 pub fn amv(data: &[u8]) {
     // a file: its chunks decode, whatever they hold
     if let Ok(a) = cfa4_amv::Amv::parse(data) {
@@ -843,6 +852,34 @@ pub fn adx(data: &[u8]) {
     let _ = cfa4_adx::decode_file(data);
 }
 
+/// CFX expressions: the bytes as source text, compiled for a volume and a point schema, and the
+/// programs that compile are run on a few elements with a small fuel budget.
+pub fn expr(data: &[u8]) {
+    use cfa4_expr::{Context, Env, Schema, Ty, Value};
+    let src = String::from_utf8_lossy(data);
+    for context in [Context::Volume, Context::Points] {
+        let schema = Schema {
+            context,
+            attrs: vec![
+                ("density".into(), Ty::Float),
+                ("temperature".into(), Ty::Float),
+                ("color".into(), Ty::Vec3),
+                ("mask".into(), Ty::Float),
+                ("n".into(), Ty::Int),
+                ("flag".into(), Ty::Bool),
+            ],
+        };
+        let Ok(program) = cfa4_expr::compile(&src, &schema) else { continue };
+        let mut vm = program.new_vm();
+        let inputs: Vec<Value> = schema.attrs.iter().map(|(_, t)| Value::zero(*t)).collect();
+        for k in 0..3 {
+            let env = Env { p: [k as f32 * 3.7, -1.5, 1e30], ijk: [k, -k, i32::MAX], voxel_size: 0.1, id: k };
+            let mut outputs = inputs.clone();
+            let _ = program.run(&mut vm, 2_000, &env, &[], &inputs, &mut outputs);
+        }
+    }
+}
+
 pub fn hca(data: &[u8]) {
     let _ = cfa4_hca::decode_file(data, None);
     let _ = cfa4_hca::decode_file(data, Some(cfa4_hca::Key { key: 0xCF22_2F1F_E074_8978, subkey: 0x3B8E }));
@@ -857,6 +894,10 @@ pub fn twinvq(data: &[u8]) {
         let align = usize::from(u16::from_le_bytes([a[0], a[1]]));
         if let Ok(s) = cfa4_twinvq::parse_metasound(extra, align) {
             let _ = cfa4_twinvq::decode(data.get(18..).unwrap_or(&[]), &s);
+        }
+    }
+}
+
 pub fn yamaha_oki(data: &[u8]) {
     use cfa4_yamaha_oki::{Kind, State};
     for kind in [Kind::Yamaha, Kind::Oki] {
@@ -866,6 +907,8 @@ pub fn yamaha_oki(data: &[u8]) {
                 s.decode(data, &mut out);
             }
         }
+    }
+}
 pub fn nstream(data: &[u8]) {
     if let Ok(s) = cfa4_nstream::parse(data) {
         let _ = cfa4_nstream::decode(data, &s);
@@ -1022,6 +1065,7 @@ pub const TARGETS: &[(&str, &str, Target)] = &[
     ("musepack", "cfa4-musepack", musepack),
     ("shorten", "cfa4-shorten", shorten),
     ("adx", "cfa4-adx", adx),
+    ("expr", "cfa4-expr", expr),
     ("acm", "cfa4-acm", acm),
     ("roq", "cfa4-roq", roq),
     ("mve", "cfa4-mve", mve),
@@ -1050,6 +1094,9 @@ pub fn mace(data: &[u8]) {
     let version = if sel & 1 == 0 { cfa4_mace::Version::Mace3 } else { cfa4_mace::Version::Mace6 };
     let Ok(mut d) = cfa4_mace::Decoder::new(version, 1 + usize::from(sel >> 1 & 1)) else { return };
     for pkt in body.chunks(1 + usize::from(sel >> 2) % 64) {
+        let _ = d.decode(pkt);
+    }
+}
 /// TrueSpeech: random packets of random sizes through one decoder.
 pub fn truespeech(data: &[u8]) {
     let mut d = cfa4_truespeech::Decoder::new();

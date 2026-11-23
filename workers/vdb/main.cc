@@ -2,6 +2,8 @@
 //   inspect <file>          -> {"grids":[...]}                       (N1-1)
 //   copy <in> <out>         -> {"ok":true}  read, write (round trip) (N1-4)
 //   render <in> <grid|-> <out.png> <w> <h> <preview|standard|high> [az el]  density preview, RGBA PNG (N2)
+//   export-tiles <in> <grid> <out.tiles>      one float or vec3s grid as leaf tiles for the CFX bridge (X2)
+//   import-tiles <ref.vdb> <ref-grid> <out.vdb> (<name> <tiles>)...   ref.vdb's grids plus new grids made from tiles (X2)
 //   selftest-write-big <out> <n>  n^3 dense voxels (size tests)
 //   selftest-write <out>    -> {"ok":true}  writes a small synthetic VDB for tests (no binary fixtures in the repo)
 // Every failure is {"error":"..."} on stdout and exit code 2; the host treats a crash as an error too.
@@ -14,6 +16,8 @@
 #include <zlib.h>
 #include <cmath>
 #include <cstdint>
+#include <map>
+#include <fstream>
 #include <vector>
 #include <sys/resource.h>
 #include <cstdio>
@@ -192,6 +196,168 @@ static std::string render(const std::string& in, const std::string& gridName, co
     return o.str();
 }
 
+
+// ---------- tiles: the bridge to the CFX interpreter (X2) ----------
+// A tile file is little-endian: a 48 byte header (magic "CFXT", version 1, channels 1|3, leaf count, voxel size,
+// background value of up to 3 channels), then per leaf: origin (3 x i32), active mask (8 x u64), 512 x channels
+// f32 values in OpenVDB leaf order (x slowest). Active tiles are made into leaves first, so the host only ever
+// sees leaves. The Rust side (crates/vdb/src/tiles.rs) reads and writes the same layout and checks every length.
+static const size_t LEAF_VOXELS = 512;
+static const size_t TILE_HEADER = 48;
+
+template <class T> static void putv(std::vector<unsigned char>& v, T x) {
+    unsigned char b[sizeof(T)];
+    std::memcpy(b, &x, sizeof(T));  // the host is little-endian (Linux amd64)
+    v.insert(v.end(), b, b + sizeof(T));
+}
+template <class T> static T getv(const std::vector<unsigned char>& v, size_t& at) {
+    T x;
+    if (at + sizeof(T) > v.size()) throw std::runtime_error("truncated tile file");
+    std::memcpy(&x, v.data() + at, sizeof(T));
+    at += sizeof(T);
+    return x;
+}
+
+static openvdb::GridBase::Ptr readOneGrid(const std::string& path, const std::string& name) {
+    openvdb::io::File file(path);
+    file.setCopyMaxBytes(0);
+    file.open();
+    if (!file.hasGrid(name)) throw std::runtime_error("no grid named '" + name + "'");
+    openvdb::GridBase::Ptr g = file.readGrid(name);
+    file.close();
+    return g;
+}
+
+static float comp(float v, int) { return v; }
+static float comp(const openvdb::Vec3f& v, int c) { return v[c]; }
+static float makeVal(float a, float, float, float*) { return a; }
+static openvdb::Vec3f makeVal(float a, float b, float c, openvdb::Vec3f*) { return openvdb::Vec3f(a, b, c); }
+
+template <class GridT> static uint64_t writeTiles(GridT& grid, int channels, FILE* f) {
+    using ValueT = typename GridT::ValueType;
+    grid.tree().voxelizeActiveTiles();
+    std::vector<const typename GridT::TreeType::LeafNodeType*> leaves;
+    for (auto it = grid.tree().cbeginLeaf(); it; ++it) leaves.push_back(&*it);
+    std::vector<unsigned char> head;
+    head.insert(head.end(), {'C', 'F', 'X', 'T'});
+    putv<uint32_t>(head, 1);
+    putv<uint32_t>(head, (uint32_t)channels);
+    putv<uint32_t>(head, 0);
+    putv<uint64_t>(head, (uint64_t)leaves.size());
+    putv<double>(head, grid.voxelSize()[0]);
+    const ValueT bg = grid.background();
+    for (int c = 0; c < 3; ++c) putv<float>(head, channels == 1 ? (c == 0 ? comp(bg, 0) : 0.0f) : comp(bg, c));
+    putv<uint32_t>(head, 0);
+    if (std::fwrite(head.data(), 1, head.size(), f) != head.size()) throw std::runtime_error("short write");
+    std::vector<unsigned char> buf;
+    for (const auto* leaf : leaves) {
+        buf.clear();
+        const openvdb::Coord o = leaf->origin();
+        putv<int32_t>(buf, o.x());
+        putv<int32_t>(buf, o.y());
+        putv<int32_t>(buf, o.z());
+        const auto& m = leaf->valueMask();
+        for (int w = 0; w < 8; ++w) putv<uint64_t>(buf, m.template getWord<uint64_t>(w));
+        for (size_t i = 0; i < LEAF_VOXELS; ++i) {
+            const ValueT v = leaf->getValue((openvdb::Index)i);
+            for (int c = 0; c < channels; ++c) putv<float>(buf, comp(v, c));
+        }
+        if (std::fwrite(buf.data(), 1, buf.size(), f) != buf.size()) throw std::runtime_error("short write");
+    }
+    return leaves.size();
+}
+
+static std::string exportTiles(const std::string& in, const std::string& gridName, const std::string& outPath) {
+    openvdb::GridBase::Ptr g = readOneGrid(in, gridName);
+    FILE* f = std::fopen(outPath.c_str(), "wb");
+    if (!f) throw std::runtime_error("cannot write " + outPath);
+    uint64_t n = 0;
+    int channels = 0;
+    try {
+        if (g->isType<openvdb::FloatGrid>()) { channels = 1; n = writeTiles(*openvdb::gridPtrCast<openvdb::FloatGrid>(g), 1, f); }
+        else if (g->isType<openvdb::Vec3SGrid>()) { channels = 3; n = writeTiles(*openvdb::gridPtrCast<openvdb::Vec3SGrid>(g), 3, f); }
+        else throw std::runtime_error("grid '" + gridName + "' has type " + g->valueType() + "; only float and vec3s grids are supported");
+    } catch (...) { std::fclose(f); throw; }
+    if (std::fclose(f) != 0) throw std::runtime_error("short write " + outPath);
+    std::ostringstream o;
+    o << "{\"ok\":true,\"leaves\":" << n << ",\"channels\":" << channels << ",\"voxelSize\":" << g->voxelSize()[0]
+      << ",\"activeVoxels\":" << g->activeVoxelCount() << ",\"peakRssKb\":" << peakRssKb() << "}";
+    return o.str();
+}
+
+static std::vector<unsigned char> slurp(const std::string& path) {
+    std::ifstream f(path, std::ios::binary);
+    if (!f) throw std::runtime_error("cannot read " + path);
+    return std::vector<unsigned char>((std::istreambuf_iterator<char>(f)), std::istreambuf_iterator<char>());
+}
+
+template <class GridT> static typename GridT::Ptr gridFromTiles(const std::vector<unsigned char>& d, int channels, const openvdb::math::Transform::Ptr& xf, const std::string& name, uint64_t nleaves, size_t at, const float* bg) {
+    using ValueT = typename GridT::ValueType;
+    const ValueT background = makeVal(bg[0], bg[1], bg[2], (ValueT*)nullptr);
+    typename GridT::Ptr grid = GridT::create(background);
+    grid->setTransform(xf->copy());
+    grid->setName(name);
+    for (uint64_t l = 0; l < nleaves; ++l) {
+        const int32_t x = getv<int32_t>(d, at), y = getv<int32_t>(d, at), z = getv<int32_t>(d, at);
+        if ((x & 7) || (y & 7) || (z & 7)) throw std::runtime_error("tile origin is not a leaf origin");
+        uint64_t words[8];
+        for (int w = 0; w < 8; ++w) words[w] = getv<uint64_t>(d, at);
+        auto* leaf = new typename GridT::TreeType::LeafNodeType(openvdb::Coord(x, y, z), background, false);
+        for (size_t i = 0; i < LEAF_VOXELS; ++i) {
+            float a = getv<float>(d, at), b = 0, c = 0;
+            if (channels == 3) { b = getv<float>(d, at); c = getv<float>(d, at); }
+            const ValueT v = makeVal(a, b, c, (ValueT*)nullptr);
+            if (words[i >> 6] & (uint64_t(1) << (i & 63))) leaf->setValueOn((openvdb::Index)i, v);
+            else leaf->setValueOnly((openvdb::Index)i, v);
+        }
+        grid->tree().addLeaf(leaf);
+    }
+    return grid;
+}
+
+static std::string importTiles(const std::string& ref, const std::string& refGrid, const std::string& outPath, const std::vector<std::pair<std::string, std::string>>& tiles) {
+    openvdb::io::File in(ref);
+    in.setCopyMaxBytes(0);
+    in.open();
+    openvdb::GridPtrVecPtr grids = in.getGrids();
+    openvdb::MetaMap::Ptr meta = in.getMetadata();
+    in.close();
+    openvdb::math::Transform::Ptr xf;
+    for (const auto& g : *grids) if (g->getName() == refGrid) xf = g->transformPtr();
+    if (!xf) throw std::runtime_error("no reference grid named '" + refGrid + "'");
+    // a new grid replaces an existing one of the same name
+    for (const auto& t : tiles)
+        for (auto it = grids->begin(); it != grids->end();)
+            if ((*it)->getName() == t.first) it = grids->erase(it); else ++it;
+    uint64_t total = 0;
+    for (const auto& t : tiles) {
+        const std::vector<unsigned char> d = slurp(t.second);
+        size_t at = 0;
+        if (d.size() < TILE_HEADER || std::memcmp(d.data(), "CFXT", 4) != 0) throw std::runtime_error("not a tile file: " + t.second);
+        at = 4;
+        if (getv<uint32_t>(d, at) != 1) throw std::runtime_error("unsupported tile file version");
+        const uint32_t channels = getv<uint32_t>(d, at);
+        getv<uint32_t>(d, at);
+        const uint64_t n = getv<uint64_t>(d, at);
+        getv<double>(d, at);
+        float bg[3];
+        for (int c = 0; c < 3; ++c) bg[c] = getv<float>(d, at);
+        getv<uint32_t>(d, at);
+        if (channels != 1 && channels != 3) throw std::runtime_error("bad channel count");
+        const uint64_t per = 12 + 64 + (uint64_t)LEAF_VOXELS * channels * 4;
+        if (n > (d.size() - TILE_HEADER) / per || d.size() - TILE_HEADER != n * per) throw std::runtime_error("tile file size does not match its header");
+        total += n;
+        if (channels == 1) grids->push_back(gridFromTiles<openvdb::FloatGrid>(d, 1, xf, t.first, n, at, bg));
+        else grids->push_back(gridFromTiles<openvdb::Vec3SGrid>(d, 3, xf, t.first, n, at, bg));
+    }
+    openvdb::io::File out(outPath);
+    out.write(*grids, *meta);
+    out.close();
+    std::ostringstream o;
+    o << "{\"ok\":true,\"leaves\":" << total << ",\"peakRssKb\":" << peakRssKb() << "}";
+    return o.str();
+}
+
 // A hostile file can ask for absurd allocations: cap the address space (CFA4_VDB_MEM_LIMIT_MB, default 4096) so
 // the worker fails with std::bad_alloc, reported as an error, instead of starving the machine (N1-3).
 static void limitMemory() {
@@ -250,6 +416,16 @@ int main(int argc, char** argv) {
             // render <in.vdb> <grid|-> <out.png> <width> <height> <quality> [azimuth elevation]
             const double az = argc == 10 ? std::atof(argv[8]) : 30.0, el = argc == 10 ? std::atof(argv[9]) : 20.0;
             std::cout << render(argv[2], std::strcmp(argv[3], "-") ? argv[3] : "", argv[4], std::atoi(argv[5]), std::atoi(argv[6]), argv[7], az, el) << "\n";
+            return 0;
+        }
+        if (argc == 5 && !std::strcmp(argv[1], "export-tiles")) {
+            std::cout << exportTiles(argv[2], argv[3], argv[4]) << "\n";
+            return 0;
+        }
+        if (argc >= 7 && (argc - 5) % 2 == 0 && !std::strcmp(argv[1], "import-tiles")) {
+            std::vector<std::pair<std::string, std::string>> tl;
+            for (int i = 5; i + 1 < argc; i += 2) tl.emplace_back(argv[i], argv[i + 1]);
+            std::cout << importTiles(argv[2], argv[3], argv[4], tl) << "\n";
             return 0;
         }
         if (argc == 4 && !std::strcmp(argv[1], "selftest-write-big")) {

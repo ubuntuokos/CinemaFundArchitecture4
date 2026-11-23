@@ -134,3 +134,54 @@ fn a_volume_preview_is_a_plain_still_the_timeline_takes() {
     s.execute("timeline.place", json!({"item": still, "videoTrack": "V1", "seconds": 0.0})).unwrap();
     assert_eq!(r["info"]["grid"], "density");
 }
+
+#[test]
+fn expr_run_preview_checks_parameters_before_any_worker() {
+    let mut s = Session::default();
+    assert!(matches!(s.execute("expr.run_preview", json!({})), Err(EngineError::BadParams { .. })));
+    assert!(matches!(s.execute("expr.run_preview", json!({"source": "writes @a; @a = 1.0;"})), Err(EngineError::BadParams { .. })));
+    // no volume selected
+    assert!(matches!(s.execute("expr.run_preview", json!({"source": "x", "domain": "d"})), Err(EngineError::BadParams { .. })));
+}
+
+#[test]
+fn an_expression_makes_a_new_volume_and_a_preview() {
+    // needs a built worker; returns early without one
+    let Ok(w) = cfa4_vdb::Worker::discover() else { return };
+    let d = dir("expr");
+    let vdb = d.join("t.vdb");
+    w.write_selftest(&vdb).unwrap();
+    let mut s = Session::default();
+    let r = s.execute("vdb.import", json!({"paths": [vdb.to_string_lossy()]})).unwrap();
+    let vol = r["items"][0]["item"].as_u64().unwrap();
+    let before = s.project.items.len();
+    let ok = json!({"item": vol, "domain": "density", "outputs": {"hot": "float"}, "source": "reads @density; writes @hot; param float gain = 1.0; @hot = @density * gain;"});
+    // bad parameters and bad expressions are errors that name the code, and leave the project unchanged
+    let mut bad_out = ok.clone();
+    bad_out["outputs"] = json!({"hot": "int"});
+    assert!(matches!(s.execute("expr.run_preview", bad_out), Err(EngineError::BadParams { .. })));
+    let mut bad_src = ok.clone();
+    bad_src["source"] = json!("reads @density; writes @hot; @hot = @missing;");
+    let e = s.execute("expr.run_preview", bad_src).unwrap_err().to_string();
+    assert!(e.contains("E-ATTR"), "{e}");
+    let mut fuel = ok.clone();
+    fuel["fuel"] = json!(2);
+    let e = s.execute("expr.run_preview", fuel).unwrap_err().to_string();
+    assert!(e.contains("R-FUEL"), "{e}");
+    assert_eq!(s.project.items.len(), before);
+    // a good run: a new volume item (one undo step) and, on request, a preview still of the written grid
+    let mut run = ok.clone();
+    run["params"] = json!({"gain": 3});
+    run["render"] = json!(true);
+    run["width"] = json!(64);
+    run["height"] = json!(36);
+    let r = s.execute("expr.run_preview", run).unwrap();
+    assert_eq!(r["report"]["voxels"], 8000);
+    assert_eq!(r["report"]["written"], json!(["hot"]));
+    let new_vol = r["item"].as_u64().expect("the result is a new volume item");
+    assert_ne!(new_vol, vol);
+    assert!(matches!(s.project.item(cfa4_project::ItemId(new_vol)).map(|i| &i.kind), Some(cfa4_project::ItemKind::Volume(_))));
+    assert_eq!(r["render"]["info"]["grid"], "hot");
+    let info = w.inspect(std::path::Path::new(r["vdb"].as_str().unwrap())).unwrap();
+    assert_eq!(info.grids.len(), 3);
+}

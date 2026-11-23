@@ -116,6 +116,10 @@ fn builtin_seeds(target: &str) -> Vec<Vec<u8>> {
     // mutations reach the block decoding.
     match target {
         "adx" => seeds.push(adx_seed()),
+        "expr" => {
+            seeds.push(b"reads @density; writes @mask; @mask = @density > 0.5 ? 1.0 : 0.0;".to_vec());
+            seeds.push(b"writes @color; param float s = 2.0; float a = 0.0; for i in 0..8 { a = a + noise(P * 0.1 + vec3(float(i))); } @color = vec3(a) * s;".to_vec());
+        }
         "hca" => seeds.push(hca_seed()),
         _ => {}
     }

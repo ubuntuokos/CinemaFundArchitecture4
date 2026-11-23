@@ -56,6 +56,7 @@ cfa4-tcsync = { workspace = true }
 cfa4-qc = { workspace = true }
 cfa4-sandbox = { workspace = true }
 cfa4-vdb = { workspace = true }
+cfa4-expr = { workspace = true }
 serde = { workspace = true }
 serde_json = { workspace = true }
 thiserror = { workspace = true }

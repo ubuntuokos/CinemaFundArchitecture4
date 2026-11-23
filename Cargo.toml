@@ -160,6 +160,7 @@ rusty_ffmpeg = { version = "0.18.1", path = "vendor/ffmpeg-bindings/rusty_ffmpeg
 cfa4-metrics = { path = "crates/metrics" }
 cfa4-sandbox = { path = "crates/sandbox" }
 cfa4-vdb = { path = "crates/vdb" }
+cfa4-expr = { path = "crates/expr" }
 cfa4-fetch-client = { path = "crates/fetch-client" }
 
 # foundation

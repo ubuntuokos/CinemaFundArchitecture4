@@ -111,6 +111,7 @@ Crates are named `cfa4-<dir>` (`crates/time` is `cfa4-time`); new CFA4 crates ar
 | `yamaha-oki` | L0 | Yamaha ADPCM (WAV 0x0020) and Dialogic OKI ADPCM (WAV 0x0010) decoders, ported from FFmpeg (LGPL-2.1-or-later, owner-approved exception) ([README](../crates/yamaha-oki/README.md)) |
 | `nstream` | L0 | Nintendo BRSTM / BFSTM / BCSTM audio streams: header, block walk, PCM and DSP ADPCM sound, ported from FFmpeg (LGPL-2.1-or-later, owner-approved exception) ([README](../crates/nstream/README.md)) |
 | `adx` | L0 | CRI ADX (`.adx`) ADPCM audio decoder, ported from FFmpeg (LGPL-2.1-or-later, owner-approved exception) ([README](../crates/adx/README.md)) |
+| `expr` | L0 | CFX restricted spatial expression language: parser, type checker, bytecode compiler, fuel-limited VM; pure Rust, no I/O in the language ([README](../crates/expr/README.md); plan `CFA4-AX-INTERPRETER-001`) |
 | `hca` | L0 | CRI HCA (`.hca`) MDCT audio decoder with the keyed cipher, ported from FFmpeg (LGPL-2.1-or-later, owner-approved exception) ([README](../crates/hca/README.md)) |
 | `shorten` | L0 | Shorten (`.shn`) lossless audio decoder, ported from FFmpeg (LGPL-2.1-or-later, owner-approved exception) ([README](../crates/shorten/README.md)) |
 | `tak` | L0 | TAK (Tom's lossless Audio Kompressor) decoder, ported from FFmpeg (LGPL-2.1-or-later, owner-approved exception) ([README](../crates/tak/README.md)) |

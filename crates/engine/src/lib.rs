@@ -32,6 +32,7 @@ pub mod dialog_defaults;
 pub mod doc_path;
 pub mod essential_sound;
 pub mod export_tools;
+pub mod expr;
 mod eyedropper;
 mod fx_editor;
 pub mod graphic_templates;

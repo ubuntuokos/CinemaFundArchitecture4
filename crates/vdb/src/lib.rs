@@ -5,6 +5,11 @@
 //! A worker that is missing, crashes, hangs, prints garbage or reports an error becomes an [`Error`]; nothing
 //! here can panic on worker output (AGENTS.md §0). No `unsafe`, no OpenVDB linkage in any Rust crate.
 
+mod expr_run;
+pub mod tiles;
+
+pub use expr_run::{ExprReport, ExprRequest, PREVIEW_MAX_BYTES, PREVIEW_TIMEOUT};
+
 use std::io::Read;
 use std::path::{Path, PathBuf};
 use std::process::{Command, Stdio};
@@ -53,6 +58,12 @@ pub enum Error {
     /// The worker reported an error (bad or truncated file, missing file, ...).
     #[error("OpenVDB: {0}")]
     Reported(String),
+    /// The expression does not compile or failed at run time (the diagnostic code and place are in the text).
+    #[error("expression: {0}")]
+    Expression(String),
+    /// The run would exceed a size limit.
+    #[error("limit: {0}")]
+    Limit(String),
 }
 
 /// One grid of a `.vdb` file.
@@ -306,7 +317,14 @@ impl Worker {
         self.run_with(args, reads, outs, self.timeout, None)
     }
 
-    fn run_with(&self, args: &[&std::ffi::OsStr], reads: &[&Path], outs: &[&Path], timeout: Duration, cancel: Option<&AtomicBool>) -> Result<String, Error> {
+    pub(crate) fn run_with(
+        &self,
+        args: &[&std::ffi::OsStr],
+        reads: &[&Path],
+        outs: &[&Path],
+        timeout: Duration,
+        cancel: Option<&AtomicBool>,
+    ) -> Result<String, Error> {
         if !self.exe.is_file() {
             return Err(Error::Unavailable);
         }

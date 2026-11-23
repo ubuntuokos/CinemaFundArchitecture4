@@ -1558,6 +1558,7 @@ dependencies = [
  "cfa4-docpath",
  "cfa4-edit",
  "cfa4-export",
+ "cfa4-expr",
  "cfa4-fetch-client",
  "cfa4-format",
  "cfa4-frame",
@@ -1654,6 +1655,10 @@ dependencies = [
  "thiserror 2.0.21",
  "web-time",
 ]
+
+[[package]]
+name = "cfa4-expr"
+version = "0.10.0"
 
 [[package]]
 name = "cfa4-fetch"
@@ -2683,6 +2688,7 @@ dependencies = [
 name = "cfa4-vdb"
 version = "0.10.0"
 dependencies = [
+ "cfa4-expr",
  "cfa4-sandbox",
  "serde",
  "serde_json",
