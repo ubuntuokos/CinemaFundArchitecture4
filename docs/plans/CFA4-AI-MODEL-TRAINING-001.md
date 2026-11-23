@@ -1,8 +1,7 @@
 # CFA4 helyi AI-modellképzés, finomhangolás és tanulás (CFA4-AI-MODEL-TRAINING-001)
 
 > **Állapot:** JÓVÁHAGYVA 1.2 (István, 2026-11-22); a fejlesztés a 11. fejezet kapui szerint indulhat,
-> az előfeltételek teljesülése után. Egy függő pont: a D5 hivatkozás átírása a CFA4-MEDIA-INTELLIGENCE-001
-> tervre, amint az a `docs/plans`-ban van · **Utolsó átnézés:** 2026-11-22 · **Változás:** az 1.0 vázlat (István,
+> az előfeltételek teljesülése után · **Utolsó átnézés:** 2026-11-22 · **Változás:** az 1.0 vázlat (István,
 > 2026-11-07) igazítása a CFA4 AI-tervéhez · **Platform:** Ubuntu 26.04, amd64 · **Kapcsolódik:**
 > [CFA4-AI_modules ADR 0008](https://github.com/ubuntuokos/CFA4-AI_modules/blob/main/docs/adr/ADR-0008-ai-processing-layer.md)
 > (AI-feldolgozó réteg, F0–F6 kapuk), [`CFA4-TASKSTORE-PG-001`](CFA4-TASKSTORE-PG-001.md)
@@ -20,7 +19,7 @@
 | D2 | CPU-s tanítás csak adat-előkészítésre és CI-tesztmodellre? | Igen. Nincs GPU nélküli felhasználói tanítási út. |
 | D3 | Adat- és modelllicenc: rögzítés és megjelenítés tiltás helyett? | Igen, ugyanúgy, mint a letöltött modelleknél. |
 | D4 | A tanító worker az AI-terv F6 közös uv-környezetét bővíti? | Ellenőrizve (13. fejezet): igen, külön környezet nem kell. |
-| D5 | Media Intelligence hivatkozás | A CFA4-MEDIA-INTELLIGENCE-001 FINAL 2.0 nincs a tárolókban; a hivatkozás a [`CFA4-TASKSTORE-PG-001`](CFA4-TASKSTORE-PG-001.md) 4. pontjának `mi` sémája. |
+| D5 | Media Intelligence hivatkozás | [`CFA4-MEDIA-INTELLIGENCE-001`](CFA4-MEDIA-INTELLIGENCE-001-FINAL-2.0.md) (FINAL 2.0, igazítva 2026-11-22). A fizikai séma a `mi` séma ([`CFA4-TASKSTORE-PG-001`](CFA4-TASKSTORE-PG-001.md) 4. pont), a terv 6. pontja szerint; az arcbeágyazás projektenkénti bekapcsolású (`mi.face_consent`). |
 | D6 | Hová kerül? | Ide, a CFA4 `docs/plans` mappájába; az ADR 0008 egy hivatkozó sort kap. |
 
 A D1–D4 döntést István 2026-11-22-én a javaslat szerint megerősítette; az 1.1-es szöveg ezt már tartalmazza.
@@ -271,7 +270,7 @@ Az előtag megkülönbözteti az AI-terv F0–F6 és az ACS kapuitól. A tanít�
 | TR-F7 | PPO, GRPO, Dr. GRPO, DAPO, GSPO, RLVR | TR-F5 | Ellenőrizhető jutalom, regressziómérés |
 | TR-F8 | Evaluation, regisztráció | TR-F5 | Reprodukálható, jóváhagyható modellkiadás |
 | TR-F9 | Qt6 AI Model Studio | Qt6 migráció kész, egui ki | GUI–Core–Worker együttműködés |
-| TR-F10 | Integráció: Media Intelligence, AI Video, AI Audio, Event Fabric | AI-F4/F5 (PG-4) | Végponttól végpontig teszt |
+| TR-F10 | Integráció: Media Intelligence ([terv](CFA4-MEDIA-INTELLIGENCE-001-FINAL-2.0.md)), AI Video, AI Audio, Event Fabric | AI-F4/F5 (PG-4) | Végponttól végpontig teszt |
 
 TR-F0…TR-F3 lezárása előtt nagyobb tanítóalgoritmus nem integrálható.
 
@@ -284,7 +283,7 @@ TR-F0…TR-F3 lezárása előtt nagyobb tanítóalgoritmus nem integrálható.
 | `cfa4-route`, `accel` (hardverleltár) | A főágon |
 | AI-F1: `cfa4-ai-models` (modellkezelő), `cfa4-ai-jobs` | Nincs meg egyik tárolóban sem; a TR-F1 előfeltétele |
 | F6 közös uv-PyTorch-környezet, SDK worker-protokoll | A protokoll az SDK-ban van (host-jelentés v5 a #17-ben); a PyTorch-környezet nincs |
-| `mi` séma (PG-4), Media Intelligence terv | A terv még nem a `docs/plans`-ban; `mi` séma nincs |
+| `mi` séma (PG-4), Media Intelligence terv | A terv a `docs/plans`-ban van (FINAL 2.0), megvalósítása nincs engedélyezve; `mi` séma nincs |
 | Qt6 AI Model Studio alapja (Task Manager panel) | A főágon (#1172); az AI-felület nincs |
 
 Következtetés: a TR-F0 lezárt; a TR-F1 az AI-F1 megérkezéséig nem indítható, mert a `train.adapter`,
