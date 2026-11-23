@@ -14,7 +14,7 @@ use std::path::{Path, PathBuf};
 use std::process::Command;
 use std::sync::Arc;
 
-use cfa4_golden::validation::{Capture, Extras, FrameCapture, Status, SyncSpec, Thresholds, compare_with};
+use cfa4_golden::validation::{Capture, Extras, FrameCapture, Metadata, Report, Status, SyncSpec, Thresholds, compare_with};
 use cfa4_media::SharedSource;
 use cfa4_project::{ItemKind, Label, MediaClip, MediaRef, Project, SequenceSettings, TrackKind};
 use cfa4_render::audio::mix_sequence;
@@ -118,6 +118,20 @@ fn sync_of(cap: &Capture) -> (Status, String, String) {
     (c.status, c.value.clone(), c.limit.clone())
 }
 
+/// Writes the report of this scene next to the procedural scene's (`target/f0v-report/`), so one
+/// directory holds the whole F0V run: the procedural scene measures picture, timing and audio, this
+/// one measures A/V drift.
+fn write_report(cap: &Capture) {
+    let t = thresholds();
+    let x = Extras { sync: Some(spec()), audio_bits: None };
+    let checks = compare_with(cap, cap, &t, &x);
+    let r = Report::new("sync_flash_beep, engine render, run 1 against itself", Metadata::collect(cap, &t), checks);
+    let dir = cfa4_testkit::workspace_root().join("target/f0v-report");
+    let _ = std::fs::create_dir_all(&dir);
+    let _ = std::fs::write(dir.join("sync-flash-beep.json"), r.to_json());
+    let _ = std::fs::write(dir.join("sync-flash-beep.md"), r.to_markdown());
+}
+
 #[test]
 fn the_engine_render_of_the_flash_and_beep_fixture_stays_in_sync() {
     let Some(path) = fixture() else {
@@ -126,6 +140,7 @@ fn the_engine_render_of_the_flash_and_beep_fixture_stays_in_sync() {
         return;
     };
     let first = render(&path);
+    write_report(&first);
     let (status, value, limit) = sync_of(&first);
     eprintln!("sync.av_drift: {status:?} value={value} limit={limit}");
     assert_eq!(status, Status::Pass, "A/V sync of the engine render: {value} (limit {limit})");
