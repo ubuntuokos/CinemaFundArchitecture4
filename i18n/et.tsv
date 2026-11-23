@@ -4904,3 +4904,10 @@ export.summary	Low	madal
 	Write an AS-02 bundle (the path is a folder)	Kirjuta AS-02 pakett (tee on kaust)
 	AS-02	AS-02
 	AS-12	AS-12
+
+# N1 voxel panel
+	Active voxels:	Aktiivsed vokslid:
+	Bounds:	Piirid:
+	Voxel attributes	Voksli atribuudid
+	Voxel size:	Voksli suurus:
+	points	punkti

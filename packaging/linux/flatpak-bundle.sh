@@ -8,7 +8,9 @@
 # TARBALL defaults to $DIST/cfa4-<version>-linux-x86_64.tar.gz from package.sh.
 # Only Ubuntu 26.04 x86_64 (AMD64) build hosts are supported.
 # Needs preinstalled flatpak, flatpak-builder, OSTree, Platform+SDK 25.08, and CFA4_PYSIDE6_WHEELS
-# (the pinned PySide6 wheels the Qt GUI runs on inside the sandbox; stage-pyside6.py).
+# (the pinned PySide6 wheels the Qt GUI runs on inside the sandbox; stage-pyside6.py) and
+# CFA4_FLATPAK_SOURCES (a local directory with the manifest's downloaded sources, the krb5 tarball,
+# SHA-256-checked and seeded into the builder's cache by flatpak-sources.py).
 # No remote-add, dependency download or automatic app installation.
 # --test requires CFA4_ALLOW_FLATPAK_INSTALL_TEST=1, and uses --no-pull.
 # Manifest: packaging/linux/flatpak/io.github.ubuntuokos.cfa4.bundle.yml.
@@ -29,7 +31,7 @@ while [ $# -gt 0 ]; do
   case "$1" in
     --no-test) TEST=0; shift ;;
     --test) TEST=1; shift ;;
-    -h | --help) sed -n '2,14p' "$0"; exit 0 ;;
+    -h | --help) sed -n '2,16p' "$0"; exit 0 ;;
     -*) echo "unknown argument: $1" >&2; exit 2 ;;
     *) TARBALL="$1"; shift ;;
   esac
@@ -70,6 +72,10 @@ fi
 python3 "$HERE/stage-pyside6.py" --wheels "${CFA4_PYSIDE6_WHEELS:?set CFA4_PYSIDE6_WHEELS to the local PySide6 wheelhouse}" \
   --dest "$WORK/stage/lib/cfa4/pyside6" --doc "$WORK/stage/share/doc/cfa4/pyside6"
 cp "$HERE/flatpak/$APP_ID.bundle.yml" "$WORK/$APP_ID.yml"
+# --disable-download only reads the builder's download cache: put the manifest's pinned sources
+# (the krb5 tarball) there from the reviewed local copies, after checking their SHA-256.
+python3 "$HERE/flatpak-sources.py" seed "$WORK/$APP_ID.yml" \
+  "${CFA4_FLATPAK_SOURCES:?set CFA4_FLATPAK_SOURCES to the local Flatpak source directory}" "$WORK/state"
 
 # Never fetch source or runtime dependencies. The SDK is already present.
 # --disable-rofiles-fuse also supports runners without FUSE.

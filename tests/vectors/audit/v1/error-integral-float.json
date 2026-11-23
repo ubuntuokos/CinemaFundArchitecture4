@@ -1,0 +1,6 @@
+{
+  "name": "error-integral-float",
+  "input": "{\"a\":1.0}",
+  "event": true,
+  "error": "AUDIT_FLOAT_FORBIDDEN"
+}

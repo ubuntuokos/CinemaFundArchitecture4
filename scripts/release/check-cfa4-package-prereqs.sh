@@ -97,6 +97,15 @@ if has flatpak; then
       fi
     done
   fi
+  # flatpak-builder runs with --disable-download: the bundle manifest's pinned sources (the krb5
+  # tarball) come from a local directory and must match their SHA-256 (flatpak-sources.py).
+  sources="${CFA4_FLATPAK_SOURCES:-}"
+  if [[ -z "$sources" || ! -d "$sources" ]]; then
+    fail "CFA4_FLATPAK_SOURCES must name a local directory with the Flatpak manifest's sources (krb5)"
+  elif ! python3 "$ROOT/packaging/linux/flatpak-sources.py" check \
+      "$ROOT/packaging/linux/flatpak/io.github.ubuntuokos.cfa4.bundle.yml" "$sources"; then
+    fail "Flatpak manifest sources missing or not matching their SHA-256 in $sources"
+  fi
 fi
 if has appimage; then
   # verify_cfa4_packages.py lists the AppImage's squashfs without running it

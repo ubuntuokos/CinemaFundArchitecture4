@@ -4904,3 +4904,10 @@ export.summary	Low	తక్కువ
 	Write an AS-02 bundle (the path is a folder)	AS-02 బండిల్ రాయండి (మార్గం ఒక ఫోల్డర్)
 	AS-02	AS-02
 	AS-12	AS-12
+
+# N1 voxel panel
+	Active voxels:	క్రియాశీల వాక్సెల్‌లు:
+	Bounds:	సరిహద్దులు:
+	Voxel attributes	వాక్సెల్ లక్షణాలు
+	Voxel size:	వాక్సెల్ పరిమాణం:
+	points	బిందువులు

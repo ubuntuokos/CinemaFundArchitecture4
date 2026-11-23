@@ -236,8 +236,9 @@ distributions are not targets.
   narration (#278), scene edit detection, colour match.
 - **Candidates from the glitch-effect review (2026-10-30):** a subject-masked glitch (Pixel Sort,
   Block Glitch or Databend only on a person or object) needs the same segmentation model as Object
-  Mask; the reviewed example, h43lb1t0/PixelSorter, uses YOLOv8 (AGPL-3.0), which CFA4 cannot ship,
-  so it needs an openly licensed model. Beat-synced glitch bursts (keyframing the Glitch effects on
+  Mask; the reviewed example, h43lb1t0/PixelSorter, uses YOLOv8 (AGPL-3.0), which CFA4 can offer
+  only as an optional AGPL worker in its own process (owner decision 2026-11-22, `docs/licensing.md`
+  §3); the default needs an openly licensed model. Beat-synced glitch bursts (keyframing the Glitch effects on
   music onsets) need no model beyond beat detection.
 - **Needs:** openly licensed models we can ship. **150–300 h.**
 - **Candidates from the marketing-video review (2026-10-26)** (ideas only, for the AI plan; the

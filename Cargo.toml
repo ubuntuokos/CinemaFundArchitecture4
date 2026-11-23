@@ -62,9 +62,15 @@ cfa4-amr = { path = "crates/amr" }
 cfa4-hap = { path = "crates/hap" }
 cfa4-utvideo = { path = "crates/utvideo" }
 cfa4-lagarith = { path = "crates/lagarith" }
+cfa4-svq3 = { path = "crates/svq3" }
+cfa4-svq1 = { path = "crates/svq1" }
+cfa4-indeo45 = { path = "crates/indeo45" }
+cfa4-indeo3 = { path = "crates/indeo3" }
+cfa4-flic = { path = "crates/flic" }
 cfa4-indeo = { path = "crates/indeo" }
 cfa4-cinepak = { path = "crates/cinepak" }
 cfa4-magicyuv = { path = "crates/magicyuv" }
+cfa4-msvideo = { path = "crates/msvideo" }
 cfa4-huffyuv = { path = "crates/huffyuv" }
 cfa4-ffv1 = { path = "crates/ffv1" }
 cfa4-canopus = { path = "crates/canopus" }
@@ -86,10 +92,14 @@ cfa4-dcpomatic = { path = "crates/dcpomatic" }
 cfa4-apv = { path = "crates/apv" }
 cfa4-dng = { path = "crates/dng" }
 cfa4-g729 = { path = "crates/g729" }
+cfa4-mace = { path = "crates/mace" }
+cfa4-truespeech = { path = "crates/truespeech" }
 cfa4-ilbc = { path = "crates/ilbc" }
 cfa4-thp = { path = "crates/thp" }
 cfa4-mobiclip = { path = "crates/mobiclip" }
 cfa4-tta = { path = "crates/tta" }
+cfa4-twinvq = { path = "crates/twinvq" }
+cfa4-yamaha-oki = { path = "crates/yamaha-oki" }
 cfa4-nstream = { path = "crates/nstream" }
 cfa4-shorten = { path = "crates/shorten" }
 cfa4-adx = { path = "crates/adx" }
@@ -98,7 +108,9 @@ cfa4-tak = { path = "crates/tak" }
 cfa4-smacker = { path = "crates/smacker" }
 cfa4-acm = { path = "crates/acm" }
 cfa4-roq = { path = "crates/roq" }
+cfa4-amv = { path = "crates/amv" }
 cfa4-mve = { path = "crates/mve" }
+cfa4-qdm2 = { path = "crates/qdm2" }
 cfa4-realvideo = { path = "crates/realvideo" }
 cfa4-realmedia = { path = "crates/realmedia" }
 cfa4-bink = { path = "crates/bink" }
@@ -204,6 +216,10 @@ opt-level = 3
 [profile.dev.package.cfa4-g729]
 opt-level = 3
 
+[profile.dev.package.cfa4-mace]
+[profile.dev.package.cfa4-truespeech]
+opt-level = 3
+
 [profile.dev.package.cfa4-ilbc]
 opt-level = 3
 
@@ -216,6 +232,8 @@ opt-level = 3
 [profile.dev.package.cfa4-tta]
 opt-level = 3
 
+[profile.dev.package.cfa4-twinvq]
+[profile.dev.package.cfa4-yamaha-oki]
 [profile.dev.package.cfa4-nstream]
 opt-level = 3
 
@@ -240,7 +258,13 @@ opt-level = 3
 [profile.dev.package.cfa4-roq]
 opt-level = 3
 
+[profile.dev.package.cfa4-amv]
+opt-level = 3
+
 [profile.dev.package.cfa4-mve]
+opt-level = 3
+
+[profile.dev.package.cfa4-qdm2]
 opt-level = 3
 
 [profile.dev.package.cfa4-realvideo]
@@ -279,10 +303,14 @@ opt-level = 3
 [profile.dev.package.cfa4-lagarith]
 opt-level = 3
 
+[profile.dev.package.cfa4-flic]
 [profile.dev.package.cfa4-cinepak]
 opt-level = 3
 
 [profile.dev.package.cfa4-magicyuv]
+opt-level = 3
+
+[profile.dev.package.cfa4-msvideo]
 opt-level = 3
 
 [profile.dev.package."*"]

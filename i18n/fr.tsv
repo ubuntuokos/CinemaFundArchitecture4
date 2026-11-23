@@ -4907,3 +4907,10 @@
 	Write an AS-02 bundle (the path is a folder)	Écrire un bundle AS-02 (le chemin est un dossier)
 	AS-02	AS-02
 	AS-12	AS-12
+
+# N1 voxel panel
+	Active voxels:	Voxels actifs :
+	Bounds:	Limites :
+	Voxel attributes	Attributs de voxel
+	Voxel size:	Taille du voxel :
+	points	points
