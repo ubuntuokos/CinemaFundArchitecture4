@@ -68,7 +68,7 @@ Blokkos végrehajtás: egy voxel kiértékelése tiszta függvény a bemeneti bl
 | **X2** | Volume-híd (worker tile-parancsok + `cfa4-vdb` API) és `expr.run_preview` | a N2 előnézeti útvonalon látható eredmény; 1 és N szál bitazonos; megszakítás ≤ 1 blokk idő |
 | **X3** | Engine-parancsok, projektmentés, jóváhagyási jelző, `expr.bake` | N3-5′, N3-7′; **készül (István engedélye 2026-11-23 16:56)**: `expr.check/save/list/get/delete/approve/revoke/bake/export/import`, projektséma v18 (`Project::expressions`: forrás + SHA-256), gépenkénti jóváhagyás (`<adatkönyvtár>/expression-approvals.json`, nem a projektfájlban); `expr.cancel` nem része X3-nak (a bake szinkron parancs; megszakítás a háttérfeladatos futtatással jön, ACS-6 #1471, X4-ben, ha a szerkesztő kéri) |
 | **X4** | Qt6 szerkesztő | N3-6′; `--smoke --screenshot` ellenőrzés |
-| **X5** | Kiszökési- és erőforrás-tesztcsomag (hostile kifejezések), mérés a referenciagépen | N3-S1′…S3′ |
+| **X5** | Kiszökési- és erőforrás-tesztcsomag (hostile kifejezések), mérés a referenciagépen | N3-S1′…S3′; **kész (2026-11-23), lásd 10. szakasz „X5 eredmények”** |
 
 **Az N3 sorok pontosítása az interpreterre** (a szülő terv N3-S és N3-1…7 sorai helyett/mellé; a szülő terv szövegének módosítása tulajdonosi jóváhagyást kér):
 
@@ -122,3 +122,16 @@ A Q-X2 számszerű határa még nem ismert (a javaslat: háttérfeladat, perc na
 1. Ez a terv (0.1) jóváhagyása → X0 indulhat (nyelvleírás).
 2. Külön tulajdonosi engedély kell X1-re (kód); minden további fázisra a coordination §2.10 szerint.
 3. A szülő terv G4 sora és az N3-S/N3 sorok módosítása (§6 táblázat) külön jóváhagyás tárgya.
+
+## 11a. X5 eredmények (2026-11-23)
+
+Tesztcsomag: `crates/expr/tests/hostile.rs` (`cargo test -p cfa4-expr --release --test hostile`).
+
+| Sor | Eredmény |
+|---|---|
+| N3-S1′ | 50+ elutasítandó szintaxis (fájl-, hálózat-, folyamat-, idő-, környezet-, sztring-, shell-, escape-kísérletek, `while`/rekurzió/`goto`) mind `E-*` fordítási hiba; zárt függvénylista (ismeretlen név nem hívható); a worker sandbox profilja változatlan: `git diff origin/main..HEAD -- crates/sandbox crates/vdb/src/bin` üres (a `workers/vdb/main.cc` csak a tile-parancsokkal bővült, a sandbox a launcherben van) |
+| N3-S2′ | a legrosszabb legális program (1 048 576 iteráció `sin`/`cos`-szal) `R-FUEL`-lel áll meg: alapfuel 10 000-nél ≈ 0,07 ms, a kemény felső határnál (1 000 000; `u32::MAX` kérésnél is) ≈ 6 ms; ciklushatár/szorzat/mélység/forrásméret/lokálisok korlátai hibával állnak meg; `int` túlcsordulás/nullával osztás `R-INT`; a rezidens memória 400 kör (hostile fordítás + futtatás) után 4324 → 4332 kB, egymillió voxel után nem nő |
+| N3-S3′ | a fuzz-cél (`fuzz/fuzz_targets/expr.rs`) X1 óta él; a „0 összeomlás” kapu a CI `fuzz-targets` jobjában fut |
+| N3-S4′ | az interpreter új külső függőséget nem hozott; a projekt-crate a már workspace-szintű `sha2`-t használja (X3); a `cargo deny` itt nem volt telepítve, a CI futtassa |
+
+**Sebesség (egy szál, ebben a felhő-konténerben, NEM a referenciagépen; ellenőrizendő a gépen, §7):** küszöbölés ≈ 39–47 M voxel/s, zajmező (3×`noise`) ≈ 3,2 M voxel/s, 64 lépéses ciklus `sin`-nal ≈ 0,25 M voxel/s. Az X2-ben mért 1 GiB (274 M voxel, 4 szál) 26,9 s ezzel összhangban van. A referenciagépes mérés a tulajdonos futtatása: `cargo test -p cfa4-expr --release --test hostile -- --nocapture speed`.
