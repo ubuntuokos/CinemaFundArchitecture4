@@ -31,4 +31,5 @@ A teszt a fenti szabályokat kódolja, az elutasított folyamok listáját rögz
 ## G2 állapota
 
 * Konformancia (6. fejezet): teljesül a vállalt profilon.
-* Hátra: hibatűrés és fuzz (VVC-TEST-017), teljesítményfeltétel és UI-szál (3.4, VVC-TEST-021), hiányzó extras csomag viselkedése (VVC-TEST-022), FFmpeg-tartalékút és router-sorok.
+* Hibatűrés, teljesítmény és a hiányzó extras csomag: [`CFA4-VVC-02-G2-2026-11-23.md`](CFA4-VVC-02-G2-2026-11-23.md).
+* Hátra: FFmpeg-tartalékút és router-sorok (G2 PASS után).

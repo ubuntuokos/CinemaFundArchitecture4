@@ -7,7 +7,8 @@
  * crates/codecs/src/external_decoder.rs, which documents the protocol. A crash, hang or bad
  * output of this program is an error for the engine, never a crash of CFA4.
  *
- *   cfa4-vvc-decode [--threads N]          protocol mode (stdin requests, stdout replies)
+ *   cfa4-vvc-decode [--threads N] [--memory-mb N]   protocol mode (stdin requests, stdout replies); the
+ *                                          address space is capped at 8 GiB unless --memory-mb says otherwise (0: no cap)
  *   cfa4-vvc-decode --version              prints the VVdeC version and exits
  *
  * Every integer is little-endian. Messages are TAG[4] LEN[u32] PAYLOAD[LEN].
@@ -29,6 +30,8 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+
+#include <sys/resource.h>
 
 #include <vvdec/vvdec.h>
 
@@ -114,33 +117,37 @@ static int write_picture(const vvdecFrame *f) {
     hdr[15] = f->frameFormat == VVDEC_FF_TOP_FIELD ? 1 : f->frameFormat == VVDEC_FF_BOT_FIELD ? 2 : 0;
     put_i64(hdr + 16, f->ctsValid ? (int64_t)f->cts : 0);
     if (write_msg_header("FRME", (uint32_t)(size + sizeof hdr)) || write_exact(hdr, sizeof hdr)) return -1;
-    for (uint32_t pl = 0; pl < planes; pl++) {
+    /* One write per row: samples are packed into a row buffer first (a write per sample made
+     * 10-bit output ~10x slower than the decoder, VVC-TEST-021). */
+    uint8_t *packed = malloc((size_t)w * bps);
+    if (!packed) return -1;
+    int rc = 0;
+    for (uint32_t pl = 0; pl < planes && !rc; pl++) {
         const vvdecPlane *p = &f->planes[pl];
         const uint32_t pw = pl ? cw : w, ph = pl ? ch : h;
         const unsigned char *row = p->ptr;
-        for (uint32_t y = 0; y < ph; y++, row += p->stride) {
+        for (uint32_t y = 0; y < ph && !rc; y++, row += p->stride) {
             if (p->bytesPerSample == bps && bps == 1) {
-                if (write_exact(row, pw)) return -1;
+                rc = write_exact(row, pw);
             } else if (p->bytesPerSample == 1) {
-                return -1; /* excluded above */
+                rc = -1; /* excluded above */
             } else {
                 /* 16-bit samples in host order; little-endian on the wire, one byte at 8 bits */
                 const uint16_t *s = (const uint16_t *)(const void *)row;
-                for (uint32_t x = 0; x < pw; x++) {
-                    int r;
-                    if (bps == 1) {
-                        uint8_t b = (uint8_t)s[x];
-                        r = write_exact(&b, 1);
-                    } else {
-                        uint8_t b[2] = { (uint8_t)s[x], (uint8_t)(s[x] >> 8) };
-                        r = write_exact(b, 2);
+                if (bps == 1) {
+                    for (uint32_t x = 0; x < pw; x++) packed[x] = (uint8_t)s[x];
+                } else {
+                    for (uint32_t x = 0; x < pw; x++) {
+                        packed[2 * x] = (uint8_t)s[x];
+                        packed[2 * x + 1] = (uint8_t)(s[x] >> 8);
                     }
-                    if (r) return -1;
                 }
+                rc = write_exact(packed, (size_t)pw * bps);
             }
         }
     }
-    return 0;
+    free(packed);
+    return rc ? -1 : 0;
 }
 
 typedef struct {
@@ -306,8 +313,19 @@ static int run(int threads) {
     return status;
 }
 
+/* Cap the address space of this process (default 8 GiB, `--memory-mb N`; 0 = no cap): a stream
+ * that claims huge pictures makes VVdeC fail to allocate, which is an error reply, instead of
+ * taking the memory of the machine. */
+static void limit_memory(unsigned long mb) {
+    if (mb == 0) return;
+    struct rlimit rl;
+    rl.rlim_cur = rl.rlim_max = (rlim_t)mb << 20;
+    if (setrlimit(RLIMIT_AS, &rl)) fprintf(stderr, "cfa4-vvc-decode: no memory limit (%s)\n", "setrlimit failed");
+}
+
 int main(int argc, char **argv) {
     int threads = 0;
+    unsigned long memory_mb = 8192;
     for (int i = 1; i < argc; i++) {
         if (!strcmp(argv[i], "--version")) {
             printf("%s\n", vvdec_get_version());
@@ -315,10 +333,13 @@ int main(int argc, char **argv) {
         } else if (!strcmp(argv[i], "--threads") && i + 1 < argc) {
             threads = atoi(argv[++i]);
             if (threads < 0 || threads > 256) threads = 0;
+        } else if (!strcmp(argv[i], "--memory-mb") && i + 1 < argc) {
+            memory_mb = strtoul(argv[++i], NULL, 10);
         } else {
-            fprintf(stderr, "usage: cfa4-vvc-decode [--threads N] | --version\n");
+            fprintf(stderr, "usage: cfa4-vvc-decode [--threads N] [--memory-mb N] | --version\n");
             return 2;
         }
     }
+    limit_memory(memory_mb);
     return run(threads);
 }

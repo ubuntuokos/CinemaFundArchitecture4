@@ -146,6 +146,18 @@ cross-check ([AV2 plan](plans/AV2-CODEC-PLAN-2026-10-29.md) II.3, X/3).
   random-access units) with FFmpeg's. VVdeC and `libvvenc` are restricted components
   (`cfa4-restricted-extras`), so without them the tests print `SKIPPED`, also under
   `CFA4_REQUIRE_ORACLES`. The JVET conformance run against VTM is the G2 entry condition.
+  VVC gate G2 (VVC-TEST-017, -021, -022; report `docs/plans/CFA4-VVC-02-G2-2026-11-23.md`):
+  `--test vvc_hostile` damages real JVET streams (bit flips, inserted and overwritten bytes,
+  damaged start codes, truncation, dropped, repeated and swapped units, empty, oversized and
+  garbage units) for `CFA4_VVC_HOSTILE_SECONDS` (default 20) through the real helper, checks every
+  picture that comes out and that a clean stream still decodes; it also runs fake helpers that
+  crash, hang or write garbage, and a helper under a memory cap. `scripts/dev/vvc-fuzz.py`
+  (`build`, `seeds`, `run`) fuzzes VVdeC itself with clang, ASan, UBSan and libFuzzer.
+  `--test vvc_perf` (only with `CFA4_VVC_PERF=1`; fixtures from `scripts/dev/vvc-perf-fixture.py
+  encode`) compares the helper with FFmpeg's native `vvc` decoder (pictures per second, time to
+  the first picture after a seek). `--test vvc_missing_extras` needs nothing: it checks that
+  without the helper the VVC backend report stays visible, unavailable, with the package name,
+  and that opening a VVC track is a clear error.
   Interlaced streams (`field_seq_flag`, JVET `FIELD_A_4` and `FIELD_B_2`) code every field as its
   own picture. The helper tags each picture as a frame or a top/bottom field, and the adapter
   weaves the two fields of a pair into one frame (the output VTM writes); the unit tests of

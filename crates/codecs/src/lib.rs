@@ -153,9 +153,9 @@ pub fn make_video_decoder(entry: &cfa4_isobmff::SampleEntry) -> Result<Box<dyn V
     Err(no_decoder(entry))
 }
 
-/// Why VVC does not decode: the VVdeC helper is a restricted component and its router
-/// registration waits for the G2 gate (ADR 0013).
-pub const VVC_UNSUPPORTED: &str = "H.266/VVC video is recognised, but decoding it needs the VVdeC helper (cfa4-restricted-extras), which is not enabled yet";
+/// Why VVC does not decode: the VVdeC helper belongs to the restricted-extras package (ADR 0013,
+/// licensing.md section 7) and is not installed, or this build has no VVC route.
+pub const VVC_UNSUPPORTED: &str = "H.266/VVC video is recognised, but decoding it needs the VVdeC decoder from the cfa4-restricted-extras package, which is not installed (sudo apt install cfa4-restricted-extras)";
 
 /// The error for a sample entry no factory takes: AV2 is named as recognised (AV2 plan X/4).
 fn no_decoder(entry: &cfa4_isobmff::SampleEntry) -> CodecError {

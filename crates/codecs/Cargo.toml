@@ -95,3 +95,15 @@ required-features = ["vvc-external"]
 [[test]]
 name = "vvc_mp4_source"
 required-features = ["vvc-external"]
+
+[[test]]
+name = "vvc_hostile"
+required-features = ["vvc-external"]
+
+[[test]]
+name = "vvc_missing_extras"
+required-features = ["vvc-external"]
+
+[[test]]
+name = "vvc_perf"
+required-features = ["vvc-external"]
