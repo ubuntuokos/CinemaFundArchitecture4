@@ -35,7 +35,7 @@
 | Metrikák | deinterlace: PSNR/SSIM az ismert progresszív forráshoz képest (a fixture-ből generálható referencia); IVTC: helyreállított 24p kocka-sorrend hibaszáma (0 = tökéletes) és PSNR; zajcsökkentés: PSNR/SSIM-nyereség a zajmentes mintához; debanding: sávosodási metrika (**javasolt: a baseline-on rögzítendő definíció**) |
 | Küszöb | **javasolt:** PSNR nyereség ≥ 1,0 dB (SSIM ≥ +0,005) az FFmpeg legjobb szűrőjéhez képest, CI alsó határán; IVTC: kocka-sorrend hibája 0 |
 | Szűrő round-trip | a worker átmeneti formátuma (Frame ABI, C0) veszteségmentes: RGB eltérés 0 a küszöbön (F0V) |
-| Kezdeti feltételek | Python ≥ 3.13 igény (vs-jetpack lánc) **jóváhagyandó (A11)**; a QTGMC-motor licence PENDING; a neo_f3kdb GPL-3.0, tehát csak workerben; sandbox profil (`renderWorker`) még nincs alkalmazva |
+| Kezdeti feltételek | Python ≥ 3.13 igény (vs-jetpack lánc): **elfogadva (István, 2026-11-23): ha a VapourSynth-nek kell, igen; A11 szerint a lehető legkevesebb Python-verzióval, kizárólag a külön worker folyamatban**; a QTGMC-motor licence PENDING; a neo_f3kdb GPL-3.0, tehát csak workerben; sandbox profil (`renderWorker`) még nincs alkalmazva |
 | Kilépés | MQ PASS, helyesség nem rosszabb a baseline-nál, egy előregisztrált előny |
 
 ## 3. EC-jelölt (#11), feltételes
@@ -60,6 +60,6 @@ Nincs mért eredmény. A "javasolt" küszöbök a jóváhagyóé; indoklásuk a 
 ## 6. Nyitott a jóváhagyóhoz
 
 1. A "javasolt" küszöbök (OIIO ≥ 1,2×; VS ≥ 1,0 dB / SSIM +0,005) elfogadása vagy módosítása az F2 indulása előtt.
-2. Python ≥ 3.13 a VapourSynth workerhez (A11): jóváhagyás, indoklás.
+2. ~~Python ≥ 3.13 a VapourSynth workerhez (A11)~~ **Eldöntve (István, 2026-11-23):** elfogadva, ha a VapourSynth-nek szüksége van rá; csak a külön workerben, a többi komponens nem függ tőle.
 3. EC-jelölt fenntartása az F2-ben (H-EC-1 az első 3 napban).
 4. Új fixture (PIZ/DWA/B44 EXR) létrehozása a `render_fixtures.py`-ban.
