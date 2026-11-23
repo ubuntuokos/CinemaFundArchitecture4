@@ -3,7 +3,7 @@
 **Dátum:** 2026-11-23 · **Csak olvasó audit.** Termelőkód, függőség, címke, merge és kiadás nem változott.
 **Kódalap:** `ubuntuokos/CinemaFundArchitecture4` `main` `3cdd81bc5ad3d981295fdb1b0c9d05f1652cbddd` (2026-11-23). A `fájl:sor` hivatkozások erre vonatkoznak, ha nincs más megadva.
 **Terv:** [`CFA4-CONTROL-SURFACE-GESTURE-001-1.1.md`](../plans/CFA4-CONTROL-SURFACE-GESTURE-001-1.1.md) a `docs/cfa4-control-surface-gesture-001-plan` ágon, commit `329ff31e5ec0325274ed521db9b69f8b3d2b9fd3`. Ez a commit a `main` `3cdd81bc` leszármazottja, és **nincs a `main`-en** (`git merge-base --is-ancestor` nem teljesül). A tervsorok erre a commitra vonatkoznak. Változáslista ugyanott: `CFA4-CONTROL-SURFACE-GESTURE-001-1.1-VALTOZASOK.md`.
-**Engedély:** Horváth István 2026-11-23-án az MG0 indítását a `main` felé engedélyezte, a PostgreSQL-sorrendtől eltérve (a feladat szövege). Ugyanezen a napon 10:16-kor (Europe/Budapest) a 12. fejezet javaslatait elfogadta („javaslataid elfogadva jóváhagyom”); a rögzítés a 12.1. A terv 21. fejezete szerint az implementáció ettől még nem engedélyezett (`…-1.1.md` 19. és 1042–1043. sor). Az MG1 csak a tulajdonos külön igenjével indul, és ez a dokumentum nem indítja.
+**Engedély:** Horváth István 2026-11-23-án az MG0 indítását a `main` felé engedélyezte, a PostgreSQL-sorrendtől eltérve (a feladat szövege). Ugyanezen a napon 10:16-kor (Europe/Budapest) a 12. fejezet javaslatait elfogadta („javaslataid elfogadva jóváhagyom”); 10:52-kor a 10. kérdésre is döntött (12.1). A terv 21. fejezete szerint az implementáció ettől még nem engedélyezett (`…-1.1.md` 19. és 1042–1043. sor). Az MG1 a 12.1 / 10. pont előfeltételei után, és csak a tulajdonos külön igenjével indul. Ez a dokumentum nem indítja.
 
 A terv „[MG0-ban igazolandó]” jelölése (`…-1.1.md` 27. sor) azt kéri, hogy a forrásból nem ellenőrzött állítást ez az audit döntse el. Ahol élő KDE, fizikai egér vagy GitHub-futó kellett volna, a sor **nem mért**.
 
@@ -448,7 +448,7 @@ István 2026-11-23 10:16-kor úgy döntött, hogy a gesztusvezérlés az ADR 001
 
 ## 12. Nyitott kérdések Istvánnak
 
-A kérdések 2026-11-23 10:16-ig (Europe/Budapest) nyitottak voltak. A választ a 12.1 rögzíti. A 10. kérdés nyitva maradt. Az MG1 ettől a választól még nem indul.
+A kérdések 2026-11-23 10:16-ig (Europe/Budapest) nyitottak voltak. A választ a 12.1 rögzíti. A 10. kérdésre a döntés 10:52-kor született meg. Az MG1 ettől még nem indul.
 
 1. **Az MG0 kapu tartalma.** A dokumentált architektúra, a bemeneti utak, a dinamikus gombmodell és a 11. fejezet interfésze. Döntés: elfogadva (12.1, 1. pont). A kapu ettől még nem zárult (13. fejezet).
 2. **ADR-kiegészítés.** A 11.5 bekezdés az ADR 0012-be kerül, vagy új ADR készül? Döntés: kiegészítés az ADR 0012-be, új ADR nincs. A fájl módosítása külön lépés, ez a commit nem írja meg (12.1, 2. pont).
@@ -459,13 +459,13 @@ A kérdések 2026-11-23 10:16-ig (Europe/Budapest) nyitottak voltak. A választ 
 7. **Kontextus-üresjárat.** Döntés: ha a szűkebb kontextusban nincs kötés, a gesztus nem esik vissza a globálisra, és nem történik semmi (12.1, 7. pont).
 8. **A beállítás helye.** Döntés: Hardware & Devices › Control Surfaces, új szakasz, magyar címe Egérgesztusok, objektumneve `settings.controlSurfaces.gesture`. A „Hardver” fejléc kirajzolása a Preferences listában nincs ebben a döntésben (12.1, 8. pont; 10.4).
 9. **A magyar lapnév.** Döntés: Vezérlőfelületek, ahogy a katalógus ma írja (`i18n/hu.tsv` 4691. és 4806. sor). A Q5 „Vezérlők” neve nem lép a helyére (12.1, 9. pont).
-10. **Belépési feltételek a további fázisokra.** Az MG1 megvárja-e a `qt-parity.md` 1.9 / 1.10 / 5.5 ✅ állapotát, az M1–M10 kitöltését, valamint az OSC és a Mackie/HUI elkészültét? **Nyitott.** Erre 10:16-kor nincs döntés (12.1, 10. pont). A 0. fejezet 2–4. sora a `main`-en továbbra sem teljesül.
+10. **Belépési feltételek a további fázisokra.** Az MG1 megvárja-e a `qt-parity.md` 1.9 / 1.10 / 5.5 ✅ állapotát, az M1–M10 kitöltését, valamint az OSC és a Mackie/HUI elkészültét? Döntés, 2026-11-23 10:52 (Europe/Budapest): igen, mind a hármat megvárja (12.1, 10. pont). A 0. fejezet 2–4. sora a `main`-en továbbra sem teljesül.
 11. **Plasma-verzió.** Döntés: a referenciaverzió 6.6.7. A `docs/development/reference-machine.md` 17. sora még 6.6.6. A fájl frissítése külön dokumentummódosítás, csak a tulajdonos külön igenjével; ez a commit nem nyúl hozzá (12.1, 11. pont).
 12. **Evdev az MG1–MG3 alatt.** Döntés: csak a Qt-út épül. Az evdev-olvasás külön fázis, a jogosultsági döntés után. A ShuttlePRO útja nem változik (12.1, 12. pont).
 
 ### 12.1 Tulajdonosi döntések (2026-11-23)
 
-Horváth István, 2026-11-23 10:16 (Europe/Budapest), a 12. fejezet javaslataira: „javaslataid elfogadva jóváhagyom”. Az MG1-et ez a mondat nem indítja. Az ADR 0012 szövege és a `reference-machine.md` nem változott.
+Horváth István, 2026-11-23 10:16 (Europe/Budapest), a 12. fejezet javaslataira: „javaslataid elfogadva jóváhagyom”. A 10. pontra 2026-11-23 10:52-kor (Europe/Budapest) döntött. Az MG1-et egyik mondat sem indítja. Az ADR 0012 szövege és a `reference-machine.md` nem változott.
 
 | # | Döntés | Állapot |
 |---|---|---|
@@ -478,7 +478,7 @@ Horváth István, 2026-11-23 10:16 (Europe/Budapest), a 12. fejezet javaslataira
 | 7 | Szűkebb kontextusban kötés nélkül nincs visszaesés a globálisra, és nincs művelet | Elfogadva |
 | 8 | Hely: Hardware & Devices › Control Surfaces, új „Egérgesztusok” szakasz (`settings.controlSurfaces.gesture`). A Preferences-lista „Hardver” fejléce nincs ebben a döntésben | Elfogadva |
 | 9 | A magyar lapnév: Vezérlőfelületek | Elfogadva |
-| 10 | Az MG1 megvárja-e a Qt6 nyitott sorait, az eszközös mérést, az OSC-t és a Mackie/HUI-t | **Nyitott** |
+| 10 | 2026-11-23 10:52 (Europe/Budapest): igen, az MG1 megvárja a Qt6 nyitott sorait (`qt-parity.md` 1.9, 1.10, 5.5), a fizikai eszközmérést, valamint az OSC és a Mackie/HUI elkészültét | Elfogadva |
 | 11 | A Plasma referenciaverzió 6.6.7. A `reference-machine.md` frissítése külön igenre vár | Elfogadva; a gép leírása még 6.6.6 |
 | 12 | Az MG1–MG3 csak a Qt-utat építi. Az evdev-olvasás külön fázis a jogosultsági döntés után. A ShuttlePRO útja nem változik | Elfogadva |
 
@@ -512,9 +512,9 @@ A kapu (`…-1.1.md` 710. sor): „az architektúra, inputhozzáférés, dinamik
 | `/dev/uinput` a GitHub-futón | **Nem mért.** A CI nem használja | 9. fejezet |
 | Az MG0 tartalmának elfogadása | Elfogadva 2026-11-23 10:16-kor | 12.1 / 1. pont |
 | ADR-módosítás | A forma elfogadva: kiegészítés az ADR 0012-be, nem új ADR. A szöveg beírása külön lépés, a fájl nem változott | 11.5, 12.1 / 2. pont |
-| Az MG1 belépési feltételei (Qt6 nyitott sorok, eszközös mérés, OSC, Mackie/HUI) | **Nyitott.** 10:16-kor nincs döntés | 12.1 / 10. pont |
+| Az MG1 belépési feltételei (Qt6 nyitott sorok, eszközös mérés, OSC, Mackie/HUI) | Elfogadva 2026-11-23 10:52-kor: az MG1 mindet megvárja. A sorok a `main`-en még nem teljesülnek (0. fejezet, 2–4. sor) | 12.1 / 10. pont |
 
-A kapu **nem zárult le**. A 12.1 döntései megvannak, két feltétel hiányzik: a 10. kérdésre nincs döntés, és a tulajdonos gépén nincs meg a fizikai mérés (az extra gombok eljutnak-e a Qt-ig, a középsőgomb-emuláció, a balkezes mód, a HUD helye; 14. fejezet). Az MG1 csak a tulajdonos külön igenjével indulhat. Ez a commit nem indítja.
+A kapu **nem zárult le**. A 12.1 döntései megvannak, a fizikai mérés a tulajdonos gépén még hiányzik (az extra gombok eljutnak-e a Qt-ig, a középsőgomb-emuláció, a balkezes mód, a HUD helye; 14. fejezet). Az MG1 csak a 12.1 / 10. pont előfeltételeinek teljesülése után, és csak a tulajdonos külön igenjével indulhat. Ez a commit nem indítja.
 
 ## 14. Amit nem mértem
 
