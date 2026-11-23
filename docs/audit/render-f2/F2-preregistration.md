@@ -61,5 +61,6 @@ Nincs mért eredmény. A "javasolt" küszöbök a jóváhagyóé; indoklásuk a 
 
 1. A "javasolt" küszöbök (OIIO ≥ 1,2×; VS ≥ 1,0 dB / SSIM +0,005) elfogadása vagy módosítása az F2 indulása előtt.
 2. ~~Python ≥ 3.13 a VapourSynth workerhez (A11)~~ **Eldöntve (István, 2026-11-23):** elfogadva, ha a VapourSynth-nek szüksége van rá; csak a külön workerben, a többi komponens nem függ tőle.
-3. EC-jelölt fenntartása az F2-ben (H-EC-1 az első 3 napban).
+3. ~~EC-jelölt fenntartása az F2-ben~~ **Eldöntve (István, 2026-11-23):** marad az F2 harmadik jelöltje (az upstream családdal közös geometria-, szín- és időtípusok miatt); az MQ-kapu érvényes, bukásnál csak mintának marad (H-EC-1 az első 3 napban).
+3b. **GEGL (+ babl)** (István, 2026-11-23: nem veti el): F2 POC-jelöltként kezelendő; hipotézise és küszöbe a terv élő példányának következő revíziója után kerül ide (PENDING, nincs kitalált küszöb).
 4. Új fixture (PIZ/DWA/B44 EXR) létrehozása a `render_fixtures.py`-ban.
