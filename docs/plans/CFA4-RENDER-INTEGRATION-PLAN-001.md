@@ -3,14 +3,15 @@
 2026-10-31 · ubuntuokos
 
 > **Repó-példány.** A terv élő példánya a tulajdonos Claude Docs dokumentuma
-> (<https://claude.ai/artifact/LU4M9conuPpCpHp4JLWbW1>, 83. revízió, 2026-11-22); ez a fájl annak a
+> (<https://claude.ai/artifact/LU4M9conuPpCpHp4JLWbW1>, 92. revízió, 2026-11-23, a tulajdonos jóváhagyta); ez a fájl annak a
 > `main`-re hozott másolata (`VISION.md` 2.6). Eltérés a forrástól: az upstream- és a #11-es jelölt
-> márkanevét a `python/tests/test_independence.py` szűrője miatt semleges megnevezés váltja; az S1 döntés
-> (2026-11-22: ReelForge, avio, rust-motion csak minta) a 08/09/10 sorban és a POC-listában már szerepel.
+> márkanevét a `python/tests/test_independence.py` szűrője miatt semleges megnevezés váltja. A szöveg egyébként szó szerint a forrás;
+> belső ellentmondásai (a 3. fejezet 08/09/10 sora és a 14. fejezet POC-listája még a régi besorolást mutatja, a 2b szakasz az újat) a forrásban
+> vannak, itt nem javítottam.
 > **Végrehajtási állapot:** az F0a eredménye és a tervet érintő helyesbítések:
 > [`docs/audit/RENDER-F0a-BASELINE-2026-11-14.md`](../audit/RENDER-F0a-BASELINE-2026-11-14.md).
 
-Videórenderelési alrendszer célzott fejlesztési és integrációs terve. Célplatform: Ubuntu 26.04 LTS, amd64. Állapot: FINAL 1.1, JÓVÁHAGYVA (Horváth H. István, 2026-11-21; a kritika javaslataival, az ADR 0003 §14-gyel és az ST 428 csomaggal kiegészített végleges változat jóváhagyva 2026-11-22). A repo-ban lévő másolat régebbi, szinkronizálása a végrehajtó szál feladata. A végrehajtás az F0b/F0V és F1 fázissal indul, külön végrehajtó szálakban, a repo szabályai szerint (PR, "Gazda: …" issue, nincs merge). Kizárva: OxiMedia, Vercel, HandBrake.
+Videórenderelési alrendszer célzott fejlesztési és integrációs terve. Célplatform: Ubuntu 26.04 LTS, amd64. Állapot: FINAL 1.1, JÓVÁHAGYVA (Horváth H. István, 2026-11-21; a kritika javaslataival, az ADR 0003 §14-gyel és az ST 428 csomaggal kiegészített végleges változat jóváhagyva 2026-11-22). A 2b szakasz (2026-11-23: S1, F0V, F1 és C0 leltár hatása) is jóváhagyva (István, 2026-11-23). A repo-ban lévő másolat szinkronizálása a végrehajtó szál feladata (PR, "Gazda: …" issue). A végrehajtás az F0b/F0V és F1 fázissal indul, külön végrehajtó szálakban, a repo szabályai szerint (PR, "Gazda: …" issue, nincs merge). Kizárva: OxiMedia, Vercel, HandBrake.
 
 ## 1. Vezetői összefoglaló
 
@@ -73,19 +74,30 @@ Forrás: a `ubuntuokos/CinemaFundArchitecture4` `main` ága, `5d5cd4c` (#1422 be
 
 A leltár `F0-existing-plans-inventory.md` formában az F0a feladata marad; ez a táblázat az első, kézi ellenőrzésen alapuló változata. A capture, a DeckLink és az élő stúdió terveit (`CFA4-LIVE-STUDIO-001`, `CFA4-DECKLINK-001`) nem néztem át részletesen: PENDING.
 
+### 2b. Végrehajtási állapot és tervmódosítások (2026-11-23)
+
+Forrás: a `main` ág `e493e95` (#1640 beolvasztása) és a #1650 PR (C0 leltár, még nincs beolvasztva), csak olvasással. A FINAL 1.1 szerkezete és az A12 megmarad; az alábbi pontok a végrehajtás bizonyítékából adódó módosítások.
+
+- **F0V kész (mérő és küszöb):** a Küszöb@F0 a mért zajból származik (CPU-út, egy gép, Ubuntu 24.04 konténer): RGB és alfa eltérés 0, PSNR ≥ 96 dB, SSIM ≥ 0,9999, ΔE2000 0, PTS-hiba 0 tick, hang null-teszt ≤ −200 dBFS, A/V drift ≤ 0,1 ms. Gép- és GPU-közötti zaj, AC-07, AC-09 és AC-16 küszöbe PENDING a referenciagépig. Az ismert eltérések (KD-01–KD-08) és a CI-szintek (smoke, nightly, hardware) definiálva vannak, bekapcsolásuk nincs. A J2K orákulum (KD-01) továbbra is blokkoló mozi kiadáshoz.
+- **F1 kész, S1 javaslat jóváhagyva (István, 2026-11-22):** F2-be 3 jelölt megy: OpenImageIO, VapourSynth (csak külön workerként), EC-jelölt (feltételesen, MQ-1: 32 bites réteg-kvantálás nélkül). A ReelForge, az avio/ff-\* és a rust-motion F1 REFERENCE\_ONLY (egyetlen karbantartó), ezért csak minták. Következmény: a D1-ben nincs ReelForge-döntés, az F3 render graph a CFA4 sajátja. Az S1 teljes aláírása még nincs meg.
+- **F1 sandbox-döntés:** a meglévő `cfa4-sandbox` (Landlock és seccomp), a CFA4-SECURITY-001 D3 szerint, nem döntjük újra. Erőforrás-korlát: `systemd-run --user` cgroup v2. A render-workerekhez két új profilfajta kell (`renderWorker`, `externalRender`), ezt a SECURITY-001 felelőse veszi fel. A sandbox még egyik folyamatban sincs alkalmazva, ezért a worker-POC csak kísérleti.
+- **C0 leltár (#1650):** a `cfa4-render-job-service` nagyrésze már létezik a `cfa4-tasks` crate-ben (ADR-0008: Queue állapotgép, sorrend, lease, Manager, Budget, Monitor). Ezért a job-service v0 egy render-osztályú kliens, nem újabb sor és állapotgép. Valóban új csak: Frame ABI kiegészítések a `cfa4-frame`-ben, explicit konverziós mátrix, render-eseménytípus, cancel-latencia és SIGKILL-mérés (AC-08, AC-09), worker protokoll v0, vékony adapter és CLI kliens. A `cfa4-render-contracts` és a `-job-service` név vékony crate-ként maradhat, a típusok forrása a meglévő crate-ekben marad. A rétegezést (`cargo xtask layers`) a megvalósítás előtt ellenőrizni kell. A TASKSTORE-PG-001 PG-store most külön szálon kerül a főágba, ez a job API v0-t nem érinti.
+- **Nyitott döntések:** (1) Python-verzió a VapourSynth szkriptlánchoz (vs-jetpack: Python ≥ 3.13), indoklás és jóváhagyás az A11 szerint; (2) EC-jelölt fenntartása az F2 elején; (3) a C0 crate-név és a terv szövegének tulajdonosi jóváhagyása (coordination §2.10); (4) a QTGMC-motor és a Blender licence és verzió-pin: PENDING.
+- **Hatás a sorrendre:** a F2 határa 3 jelölt, ez a 10 munkanapos F2-ben csökkenti a terhet; az F3 előfeltétele (ReelForge) megszűnt, az F3 a C0 v0-n és a meglévő `cfa4-tasks`/`cfa4-render::plan` bővítésén indulhat.
+
 ## 3. Jelöltjegyzék a mozi-minőségi szűkítés után
 
-A 20 jelöltből 1 alap, 6 POC-jelölt, 2 külső munkafolyamat, 5 referencia, 6 kizárt. A besorolás előzetes; véglegesítése az S1 döntési pont (F1 eredménye alapján). A táblázat nem bizonyítja, hogy egy képesség hiányzik a CFA4-ből; azt F0 mutatja ki.
+A 20 jelöltből 1 alap, 3 F2-jelölt (S1, 2026-11-22: OpenImageIO, VapourSynth, EC-jelölt), 2 külső munkafolyamat, 8 referencia (ReelForge, avio és rust-motion csak mintának), 6 kizárt. A besorolás előzetes; véglegesítése az S1 döntési pont (F1 eredménye alapján). A táblázat nem bizonyítja, hogy egy képesség hiányzik a CFA4-ből; azt F0 mutatja ki.
 
 | # | Jelölt | Szerep a CFA4-ben | Státusz | Python | Megjegyzés |
 | --- | --- | --- | --- | --- | --- |
 | 01 | FFmpeg 9.0.2 | decode/filter/encode/mux, export-orákulum | ALAP, MEGTARTANDÓ | nem | A7 szerint egyetlen libav ABI. |
 | 07 | OpenImageIO | EXR és képszekvencia I/O, OCIO-kapcsolat | POC-JELÖLT | nem | Erős MQ-jelölt. |
 | 04 | VapourSynth | resztauráció, deinterlace, szűrő worker | POC-JELÖLT | igen, 1 nyilvántartott verzió | Retusáláshoz szükséges; a szkriptes eszközök (pl. QTGMC) Pythont igényelnek, ez indokolt A11-igény. |
-| 09 | ReelForge | DAG, dirty-region, cache, resume algoritmus | REFERENCIA (S1, 2026-11-22) | nem | F1 REFERENCE_ONLY (egyetlen karbantartó); csak minta, az F3 render graph saját. |
-| 08 | avio / ff-\* | Rust médiaréteg | REFERENCIA (S1, 2026-11-22) | nem | F1 REFERENCE_ONLY (egyetlen karbantartó, saját libav-kötés, A7). |
+| 09 | ReelForge | DAG, dirty-region, cache, resume algoritmus | POC-JELÖLT | nem | Képet nem érint; MSRV 1.97+ PENDING. |
+| 08 | avio / ff-\* | Rust médiaréteg | POC-JELÖLT, feltételes | nem | Csak ha 10/12/16 bit és 4:4:4 torzítás nélkül átmegy. |
 | 11 | EC-jelölt (#11) | réteges kompozíció, kulcskockák | POC-JELÖLT, feltételes | PENDING | MQ-1/3/4/8 igazolása F2 elején. |
-| 10 | rust-motion | címek, SVG, procedurális grafika | REFERENCIA (S1, 2026-11-22) | nem | F1 REFERENCE_ONLY (egyetlen karbantartó, közös upstream-eredetű kód); csak minta. |
+| 10 | rust-motion | címek, SVG, procedurális grafika | POC-JELÖLT, feltételes | nem | Alfa- és élsimítási pontosság. |
 | 05 | Blender | 3D/VFX képszekvencia-renderjob | KÜLSŐ MUNKAFOLYAMAT | saját, beépített | EXR csere, külön folyamat, verzió pinelve. |
 | 06 | Natron | OFX node-modell minta | KÜLSŐ / REFERENCIA | saját | A projektgazda szerint kódja korábbi Qt-ra épül, nem kompatibilis a CFA4-gyel; az ADR 0003 §14 (2026-11-21) szerint az openfx-misc csak képesség-referencia, az első OFX-csomag clean-room; a Natron orákulumnak sem használható (Qt4 összeomlik Kubuntu 26.04-en). |
 | 18 | MovieLite | golden-frame módszer | REFERENCIA | – | Csak módszer, F0V-ben. |
@@ -265,7 +277,7 @@ Minden fázis egységes sablont követ. A kilépési feltételek mind kötelező
 5. Worker protokoll v0: külön folyamat, verzió-handshake, képkocka-csere (megosztott memória vagy fájl), timeout, erőforrás-limit, cancel, útvonal-korlátozás.
 6. Capture I/O interfész (a v1.0 F7 interfészrésze), implementáció nélkül.
 
-**Feladatok – cfa4-render-job-service**
+**Feladatok – cfa4-render-job-service (a C0 leltár szerint a cfa4-tasks render-osztályú kliense, nincs saját sor és állapotgép)**
 
 1. Állapotgép: Queued → Running → Completed / Failed / Cancelled, Cancelling köztes állapottal; tiltott átmenetek.
 2. Események: progress (képkockaindex, %, ETA), log, figyelmeztetés, fallback-jelzés.
@@ -296,7 +308,7 @@ Minden fázis egységes sablont követ. A kilépési feltételek mind kötelező
 **Feladatok**
 
 1. Előregisztráció F2 indulása előtt, jelöltenként: hipotézis, metrika, küszöb, futásszám (`F2-preregistration.md`, utólag nem módosítható).
-2. MQ igazolás az első 3 munkanapon (feltételes jelöltek: avio, EC-jelölt (#11), rust-motion); FAIL esetén a jelölt kilép a POC-ból.
+2. MQ igazolás az első 3 munkanapon (az S1 után csak az EC-jelölt feltételes); FAIL esetén a jelölt kilép a POC-ból.
 3. Közös próba: egy referenciaklip + 3 rétegű, időben változó effektgráf, CPU-n és a meglévő GPU úton (új GPU backend nélkül).
 4. Jelöltenkénti mérés: OpenImageIO (EXR I/O pontosság, metaadat, sebesség); VapourSynth (retusáló szűrők: deinterlace, zajcsökkentés, debanding, IVTC minősége az FFmpeg szűrőihez képest; szűrő round-trip); ReelForge (DAG, dirty-region, resume helyessége és gyorsulása); avio (ff-render/ff-preview/ff-pipeline vs. baseline); EC-jelölt (#11) (kompozíció MQ-1/3/4/8); rust-motion (címek, SVG, alfa).
 5. Erőforrás- és másolási költség (CPU↔GPU, Frame ABI konverzió).
@@ -335,7 +347,7 @@ Az implementációs fázisok időkerete kezdeti plafon; pontos becslés a D1 ut�
 
 ### F3 – Render graph, scheduler, CPU backend és audio
 
-**Cél:** CFA4 timeline → validált DAG, erőforrás-kezelt ütemezés, megszakítható és folytatható render, bit-azonos CPU referencia, audio renderút. **Plafon:** 30 munkanap. **Előfeltétel:** D1 (ReelForge döntés), C0 v0.
+**Cél:** CFA4 timeline → validált DAG, erőforrás-kezelt ütemezés, megszakítható és folytatható render, bit-azonos CPU referencia, audio renderút. **Plafon:** 30 munkanap. **Előfeltétel:** D1 (a ReelForge-döntés az S1-ben megszűnt: az F3 render graph a CFA4 saját megvalósítása, a ReelForge csak mintának), C0 v0.
 
 **Feladatok**
 
@@ -456,7 +468,7 @@ A feltöltött dokumentumokat átnéztem (a szöveget nem másolom a repo-ba, cs
 
 **Feladatok**
 
-1. rust-motion adapter (a D1 szerint): címek, SVG, procedurális mozgógrafika, átlátszó képkockák, MQ-4 alfa.
+1. rust-motion adapter: az S1 (2026-11-22) szerint nincs adapter, csak minta; a cél (a G-19 alfa/élsimítás) a CFA4-ben valósul meg: címek, SVG, procedurális mozgógrafika, átlátszó képkockák, MQ-4 alfa.
 2. VapourSynth worker: a retusáló szkriptek (pl. QTGMC) miatt nyilvántartott Python verzión, izolált venv-ben. Szigorú CPU-, RAM- és időkorlát, útvonal-korlátozás, szűrő round-trip.
 3. Worker-izolációs tesztek: írás a projektmappán kívül, hálózat, túlfutás, összeomlás.
 4. Fallback: hiányzó vagy hibás adapternél az A4 szabálytábla szerinti viselkedés.
@@ -612,7 +624,7 @@ A terv jóváhagyása önmagában nem jogosít fel repo-módosításra, PR-nyit�
 Javaslat: a célarchitektúra, az A1–A11 szabályok és az MQ kapu elfogadása, valamint az F0a, F0b/F0V és F1 engedélyezése. A többi fázis csak kapunkénti eredmény és külön jóváhagyás alapján indul.
 
 - **Alap:** meglévő CFA4 renderer + FFmpeg 9.0.2.
-- **POC-jelöltek (D1 előtt nem integrációs döntés):** OpenImageIO, VapourSynth; feltételesen az EC-jelölt (#11). (S1, István 2026-11-22: ReelForge, avio ff-\* és rust-motion csak minta marad; `docs/audit/render-s1/S1-shortlist.md`.)
+- **POC-jelöltek (D1 előtt nem integrációs döntés):** OpenImageIO, VapourSynth, ReelForge; feltételesen avio ff-\*, EC-jelölt (#11), rust-motion.
 - **Külső munkafolyamat:** Blender; Natron csak referencia.
 - **Referencia:** MLT, MovieLite (módszer), Gausian, Dioxuscut, GStreamer (rögzítési terv).
 - **Kizárva ebből a ciklusból:** Lumen, MoviePy, Movis, Manim, PyAV, VidGear.
