@@ -3,13 +3,13 @@
 2026-10-31 · ubuntuokos
 
 > **Repó-példány.** A terv élő példánya a tulajdonos Claude Docs dokumentuma
-> (<https://claude.ai/artifact/LU4M9conuPpCpHp4JLWbW1>, 117. revízió, 2026-11-23, a tulajdonos által jóváhagyott végleges változat); ez a fájl annak a
+> (<https://claude.ai/artifact/LU4M9conuPpCpHp4JLWbW1>, 119. revízió, 2026-11-23, a tulajdonos által jóváhagyott végleges változat); ez a fájl annak a
 > `main`-re hozott másolata (`VISION.md` 2.6). Eltérés a forrástól: az upstream- és a #11-es jelölt
 > márkanevét a `python/tests/test_independence.py` szűrője miatt semleges megnevezés váltja. A szöveg egyébként szó szerint a forrás.
 > **Végrehajtási állapot:** az F0a eredménye és a tervet érintő helyesbítések:
 > [`docs/audit/RENDER-F0a-BASELINE-2026-11-14.md`](../audit/RENDER-F0a-BASELINE-2026-11-14.md).
 
-Videórenderelési alrendszer célzott fejlesztési és integrációs terve. Célplatform: Ubuntu 26.04 LTS, amd64. Állapot: FINAL 1.1, JÓVÁHAGYVA (Horváth H. István, 2026-11-21; a kritika javaslataival, az ADR 0003 §14-gyel és az ST 428 csomaggal kiegészített végleges változat jóváhagyva 2026-11-22). A 2b szakasz (2026-11-23: S1, F0V, F1 és C0 leltár hatása) is jóváhagyva (István, 2026-11-23); a végleges, egységesített változat (rev 102: az S1 szerinti 3 F2-jelölt mindenhol, AC-14 PASS-definíció, kritikai hiányzárás) jóváhagyva 2026-11-23; ugyanezen a napon jóváhagyva: az EC-jelölt marad MQ-kapuval, a VapourSynth Python ≥ 3.13 igenénye a külön workerben, a GEGL csak feltételes összehasonlítási pont (rev 110); a GEGL és a babl 2026-11-23-án továbbépült tényleges F2 POC-jelöltté (rev 117). A repo-ban lévő másolat szinkronizálása a végrehajtó szál feladata (PR, "Gazda: …" issue). A végrehajtás az F0b/F0V és F1 fázissal indul, külön végrehajtó szálakban, a repo szabályai szerint (PR, "Gazda: …" issue, nincs merge). Kizárva: OxiMedia, Vercel, HandBrake.
+Videórenderelési alrendszer célzott fejlesztési és integrációs terve. Célplatform: Ubuntu 26.04 LTS, amd64. Állapot: FINAL 1.1, JÓVÁHAGYVA (Horváth H. István, 2026-11-21; a kritika javaslataival, az ADR 0003 §14-gyel és az ST 428 csomaggal kiegészített végleges változat jóváhagyva 2026-11-22). A 2b szakasz (2026-11-23: S1, F0V, F1 és C0 leltár hatása) is jóváhagyva (István, 2026-11-23); a végleges, egységesített változat (rev 102: az S1 szerinti 3 F2-jelölt mindenhol, AC-14 PASS-definíció, kritikai hiányzárás) jóváhagyva 2026-11-23; ugyanezen a napon jóváhagyva: az EC-jelölt marad MQ-kapuval, a VapourSynth Python ≥ 3.13 igenénye a külön workerben, a GEGL csak feltételes összehasonlítási pont (rev 110); a GEGL és a babl 2026-11-23-án továbbépült tényleges F2 POC-jelöltté (rev 117); a GEGL+babl-lel bővített végleges terv, 4 F2-jelölttel (OpenImageIO, VapourSynth, EC-jelölt, GEGL+babl), jóváhagyva 2026-11-23 (végső rev 119). A repo-ban lévő másolat szinkronizálása a végrehajtó szál feladata (PR, "Gazda: …" issue). A végrehajtás az F0b/F0V és F1 fázissal indul, külön végrehajtó szálakban, a repo szabályai szerint (PR, "Gazda: …" issue, nincs merge). Kizárva: OxiMedia, Vercel, HandBrake.
 
 ## 1. Vezetői összefoglaló
 
