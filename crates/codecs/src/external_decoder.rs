@@ -191,7 +191,7 @@ impl RawPicture {
             }
             planes.push(out);
         }
-        RawPicture {
+        let mut frame = RawPicture {
             width: top.width,
             height: top.height * 2,
             layout: top.layout,
@@ -205,7 +205,14 @@ impl RawPicture {
             structure: Structure::Frame,
             field_order,
             planes,
+        };
+        // Two fields of an odd height give one chroma row too many for a 4:2:0 frame (its chroma
+        // height is the rounded half of the frame height): keep the packed frame layout.
+        let sizes = frame.plane_rows();
+        for (plane, (row, rows)) in frame.planes.iter_mut().zip(sizes) {
+            plane.truncate(row * rows);
         }
+        frame
     }
 
     /// A field without its partner as a full-height frame (every line twice), so that the frame
@@ -514,7 +521,11 @@ impl ExternalDecoder {
                 }
                 Ok(frames.into_iter().map(RawPicture::into_decoded).collect())
             }
-            Ok((_, Some(e))) => Err(CodecError::Decode(format!("{label}: {e}"))),
+            Ok((_, Some(e))) => {
+                // pictures before the error cannot pair with the ones after it
+                self.fields.clear();
+                Err(CodecError::Decode(format!("{label}: {e}")))
+            }
             Err(e) => {
                 self.helper = None;
                 self.fields.clear();
@@ -656,6 +667,19 @@ mod tests {
         pairer.clear();
         pairer.finish(&mut out);
         assert_eq!(out.len(), 1);
+    }
+
+    #[test]
+    fn odd_height_fields_keep_the_packed_chroma_size() {
+        // 4x3 4:2:0 fields: luma 12, chroma 2 * 2 rows of 2 -> 4 each
+        let field = |structure: u8| {
+            let mut f = frame(4, 3, 1, 8, 12 + 8);
+            f[15] = structure;
+            RawPicture::parse(&f).unwrap()
+        };
+        let mut pairer = FieldPairer::default();
+        let out = feed(&mut pairer, [field(1), field(2)]);
+        assert_eq!((out[0].height, out[0].planes[0].len(), out[0].planes[1].len()), (6, 24, 6));
     }
 
     #[test]
