@@ -12,6 +12,7 @@ Clean-room AV2 bitstream parsing from the AV2 Bitstream & Decoding Process Speci
 | Sequence header tool syntax: decoder model, layer dependency maps, partition, segment, intra, inter, screen content, transform/quantizer/entropy, filter and tile configuration, film grain flag, extension flag and trailing bits (§ 5.4.1–5.4.13) | done; all 13 AVM corpus headers end exactly at their trailing bits |
 | Tile layout `tile_params()` (§ 5.18.7.3–5.18.7.7) | done (used by the sequence header; the frame header will reuse it) |
 | Stream scope check (`probe_annexb`: no MSDO, no extended or embedded layers) | done |
+| Symbol decoder (§ 8.2: init, read_symbol with CDF adaptation, read_bool, read_literal, exit checks) | implemented from the spec text; unit-tested only, bit-exactness is proven once tiles decode against the AVM oracle |
 | Frame header, operating point, tile decoding | not started |
 
 Tests: unit tests per module; `tests/fuzz_hostile.rs` truncates and mutates a synthetic stream and,

@@ -9,6 +9,7 @@
 pub mod obu;
 pub mod seq;
 pub mod seq_tools;
+pub mod symbol;
 pub mod tile;
 
 use obu::{GLOBAL_XLAYER_ID, ObuType, annexb_obus};
