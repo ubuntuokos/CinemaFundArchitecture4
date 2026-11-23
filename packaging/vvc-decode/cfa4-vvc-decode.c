@@ -17,8 +17,9 @@
  *   "RSET"   <- forget all state (before a seek)
  *   replies  -> zero or more "FRME", at most one "ERRO" (UTF-8 message), then "DONE"
  *   "FRME"   -> u32 w, u32 h, u8 layout (0 4:0:0, 1 4:2:0, 2 4:2:2, 3 4:4:4), u8 bit depth,
- *               u8 matrix, u8 transfer, u8 primaries, u8 full range, u8 colour present, u8 0,
- *               i64 pts, then the planes (Y, U, V; Y only for 4:0:0) without padding,
+ *               u8 matrix, u8 transfer, u8 primaries, u8 full range, u8 colour present,
+ *               u8 structure (0 frame, 1 top field, 2 bottom field; a field_seq_flag stream gives one
+ *               picture per field, the engine side weaves the pairs), i64 pts, then the planes (Y, U, V; Y only for 4:0:0) without padding,
  *               1 byte per sample at 8 bits, otherwise 2 bytes little-endian.
  *
  * SPDX-License-Identifier: GPL-3.0-or-later
@@ -110,7 +111,7 @@ static int write_picture(const vvdecFrame *f) {
     hdr[12] = colour ? (uint8_t)vui->colourPrimaries : 2;
     hdr[13] = vui && vui->videoSignalTypePresentFlag && vui->videoFullRangeFlag;
     hdr[14] = (uint8_t)colour;
-    hdr[15] = 0;
+    hdr[15] = f->frameFormat == VVDEC_FF_TOP_FIELD ? 1 : f->frameFormat == VVDEC_FF_BOT_FIELD ? 2 : 0;
     put_i64(hdr + 16, f->ctsValid ? (int64_t)f->cts : 0);
     if (write_msg_header("FRME", (uint32_t)(size + sizeof hdr)) || write_exact(hdr, sizeof hdr)) return -1;
     for (uint32_t pl = 0; pl < planes; pl++) {

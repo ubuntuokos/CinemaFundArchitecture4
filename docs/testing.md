@@ -146,6 +146,12 @@ cross-check ([AV2 plan](plans/AV2-CODEC-PLAN-2026-10-29.md) II.3, X/3).
   random-access units) with FFmpeg's. VVdeC and `libvvenc` are restricted components
   (`cfa4-restricted-extras`), so without them the tests print `SKIPPED`, also under
   `CFA4_REQUIRE_ORACLES`. The JVET conformance run against VTM is the G2 entry condition.
+  Interlaced streams (`field_seq_flag`, JVET `FIELD_A_4` and `FIELD_B_2`) code every field as its
+  own picture. The helper tags each picture as a frame or a top/bottom field, and the adapter
+  weaves the two fields of a pair into one frame (the output VTM writes); the unit tests of
+  `external_decoder` cover the pairing, and the two JVET streams match their `.yuv.md5`. The
+  `STILL_B_1` and `STILL444_B_1` `.yuv.md5` files hash only the first picture (a Still Picture
+  profile decoder has to decode only that one), so compare the first picture, not the whole output.
 - CI: `.github/workflows/cfa4-av2-oracle.yml` (Ubuntu 26.04) runs only on `workflow_dispatch` or
   on a `cfa4-full-validation` label event of a PR that touches the harness or the decoder. It is
   not a required check.
