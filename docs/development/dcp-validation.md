@@ -126,6 +126,20 @@ proposes: `modifiesPackage` is always `false`, and the original package is never
 in `crates/dcp-validate/src/repair.rs`; applying a repair to a project or an approved working copy is not
 part of this step.
 
+## Linux packages (DCP-18)
+
+The `.deb`, the Flatpak and the AppImage all ship `cfa4-cli`, the engine that serves `dcp.validate*`,
+`dcp.repair.plan` and the export checks, so the native validator (`cfa4-dcp-validate`, pure Rust) works in
+every package with no extra step. Nothing in the packages bundles Ruby, gems or the reference engine
+(dcp_inspect): that stays the optional, user-installed `scripts/dev/setup-dcp-inspect.sh` setup, which keeps
+its own gems in `~/.cache/cfa4/dcp-inspect` and never touches system or global gems. The Flatpak sandbox has
+no Ruby either, so the reference engine is available there only through a host-side install that CFA4 is
+pointed to; without it the validator reports the engine as unavailable and the native result stands.
+
+Flatpak permissions that matter for DCPs: `--filesystem=home`, `/media`, `/run/media` and `/mnt` (exports and
+imported packages live there; a DCP on an external drive is reachable) and **no** network and no host-wide
+filesystem access. `packaging/linux/test_dcp_validation.py` checks these rules statically.
+
 ## Test data
 
 ### Known-result regression matrix (DCP-16)
