@@ -4059,6 +4059,7 @@ fn build() -> Vec<CommandSpec> {
     v.extend(crate::dcp_export::commands());
     v.extend(crate::transcript::commands());
     v.extend(crate::panels::commands());
+    v.extend(crate::render_job::commands());
     v.extend(crate::scopes::commands());
     v.extend(crate::remix::commands());
     v.extend(crate::beat_markers::commands());
