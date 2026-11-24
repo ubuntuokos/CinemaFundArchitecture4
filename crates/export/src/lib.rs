@@ -699,7 +699,7 @@ enum Out {
     File(std::io::BufWriter<std::fs::File>),
     /// The main output file: written to a temp file next to it and published by [`Out::finish`]
     /// (`atomic::AtomicOutput`), so a cancel, an error or a kill never leaves a partial file under
-    /// the final name. Package outputs (`create_path`: DCP, IMF, MXF, OP-Atom) still write in place.
+    /// the final name. Package outputs (`create_path`: DCP, IMF, MXF, OP-Atom) are staged per file the same way.
     Atomic(std::io::BufWriter<atomic::AtomicOutput>),
     Mem(std::io::Cursor<Vec<u8>>),
 }
@@ -730,14 +730,12 @@ impl Out {
             let file = file.try_clone().map_err(|e| ExportError::Io(e.to_string()))?;
             return Ok(Out::File(std::io::BufWriter::new(file)));
         }
-        let f = std::fs::OpenOptions::new()
-            .read(settings.format.is_mp4_with(settings.multiplexer))
-            .write(true)
-            .create(true)
-            .truncate(true)
-            .open(path)
-            .map_err(|e| ExportError::Io(format!("{path}: {e}")))?;
-        Ok(Out::File(std::io::BufWriter::new(f)))
+        // Every file of a package is staged and published on its own, so no track file ever
+        // appears under its final name half written (C0 v0.1 spec, D6). The CPL, PKL and asset map
+        // are written after the track files, so a package that was cut short has none of them.
+        let staged =
+            atomic::AtomicOutput::create(std::path::Path::new(path), atomic::Overwrite::Replace).map_err(|e| ExportError::Io(format!("{path}: {e}")))?;
+        Ok(Out::Atomic(std::io::BufWriter::new(staged)))
     }
 
     /// Flush (and hand in-memory output to the sink); returns the file size.
@@ -773,10 +771,15 @@ impl Out {
 fn write_output(settings: &ExportSettings, path: &str, data: Vec<u8>) -> Result<u64> {
     let n = data.len() as u64;
     match &settings.sink {
-        Some(sink) => (sink.0)(path, data),
-        None => std::fs::write(path, &data),
+        Some(sink) => (sink.0)(path, data).map_err(|e| ExportError::Io(e.to_string()))?,
+        None => {
+            use std::io::Write as _;
+            let mut staged =
+                atomic::AtomicOutput::create(std::path::Path::new(path), atomic::Overwrite::Replace).map_err(|e| ExportError::Io(format!("{path}: {e}")))?;
+            staged.write_all(&data).map_err(|e| ExportError::Io(format!("{path}: {e}")))?;
+            staged.commit().map_err(|e| ExportError::Io(format!("{path}: {e}")))?;
+        }
     }
-    .map_err(|e| ExportError::Io(e.to_string()))?;
     Ok(n)
 }
 
