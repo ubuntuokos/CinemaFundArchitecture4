@@ -140,6 +140,8 @@ pub struct Muxer<W: Write> {
     pstd: Vec<Pstd>,
     /// The video P-STD buffer size in bytes (a multiple of 1024).
     video_buffer: usize,
+    /// DVD-Video VOB layout (see [`Muxer::new_dvd`]).
+    dvd: bool,
 }
 
 impl<W: Write> Muxer<W> {
@@ -205,8 +207,25 @@ impl<W: Write> Muxer<W> {
             packs: 0,
             pstd: Vec::new(),
             video_buffer: Self::DEFAULT_VIDEO_BUFFER,
+            dvd: false,
         };
         m.build_pstd();
+        Ok(m)
+    }
+
+    /// A DVD-Video VOB (program stream, 10.08 Mbit/s): every pack is exactly 2048 bytes (short
+    /// ones padded with PES header stuffing or a padding packet), the system header is only in the
+    /// navigation packs, and an empty navigation pack (private stream 2: a PCI and a DSI packet of
+    /// zeros) starts every video unit written with `key` (the first picture of a GOP, which must
+    /// carry its sequence header): that is where a VOBU begins. The caller fills the packets in
+    /// afterwards (`cfa4-dvd`). No program end code. `streams[0]` is the video, the others AC-3,
+    /// DVD LPCM or MPEG audio.
+    pub fn new_dvd(out: W, streams: &[MuxCodec]) -> MuxResult<Self> {
+        if streams.first() != Some(&MuxCodec::Mpeg2Video) || streams.iter().skip(1).any(|c| c.is_video() || *c == MuxCodec::AacAdts) || streams.len() > 9 {
+            return Err(MuxError::Unsupported("a DVD-Video VOB has one MPEG-2 video stream and up to 8 AC-3, LPCM or MPEG audio streams".into()));
+        }
+        let mut m = Self::new(out, MuxFormat::Ps, streams, 10_080_000)?;
+        m.dvd = true;
         Ok(m)
     }
 
@@ -298,7 +317,7 @@ impl<W: Write> Muxer<W> {
     /// Write everything still queued (and the program end code of a program stream).
     pub fn finish(mut self) -> MuxResult<W> {
         self.flush_until(i64::MAX, true)?;
-        if self.format == MuxFormat::Ps {
+        if self.format == MuxFormat::Ps && !self.dvd {
             self.out.write_all(&[0, 0, 1, 0xB9])?;
         }
         self.out.flush()?;
@@ -363,7 +382,7 @@ impl<W: Write> Muxer<W> {
         }
         let Some(st) = self.streams.get(u.stream) else { return Ok(()) };
         let (pid, codec) = (st.pid, st.codec);
-        let pes = pes_packet(stream_id(codec), u, true, &[]);
+        let pes = pes_packet(stream_id(codec), u, true, &[], 0);
         let pcr_pid = self.pcr_pid();
         let mut at = 0;
         let mut first = true;
@@ -501,10 +520,13 @@ impl<W: Write> Muxer<W> {
         let video_index = self.streams.iter().take(u.stream).filter(|s| s.codec == MuxCodec::Mpeg2Video).count() as u8;
         let mpa_index = self.streams.iter().take(u.stream).filter(|s| s.codec == MuxCodec::MpegAudio).count() as u8;
         let ac3_index = self.streams.iter().take(u.stream).filter(|s| s.codec == MuxCodec::Ac3).count() as u8;
+        if self.dvd && u.key && codec.is_video() {
+            self.write_nav_pack()?;
+        }
         let mut at = 0;
         let mut first = true;
         while at < u.data.len() || first {
-            let system = self.packs == 0;
+            let system = self.packs == 0 && !self.dvd;
             let fixed = 14 + if system { self.system_header_len() } else { 0 };
             // PES header: 6 + 3 + PTS (5) or PTS + DTS (10)
             let ts_len = if first { if u.dts != u.pts { 10 } else { 5 } } else { 0 };
@@ -525,7 +547,12 @@ impl<W: Write> Muxer<W> {
             // the payload (sub-stream header included) arrives with the pack and leaves when the
             // unit is decoded (video: DTS; audio: PTS)
             let removal = (if codec.is_video() { u.dts } else { u.pts }) * SYS_PER_90K;
-            let pack_len = fixed + 9 + ts_len + sub_len + take;
+            // a DVD pack is a whole sector: a gap of 6 bytes or more becomes a padding packet,
+            // a smaller one stuffing bytes in the PES header
+            let fill = if self.dvd { room - take } else { 0 };
+            let (stuffing, padding) = if fill >= 6 { (0, fill) } else { (fill, 0) };
+            // the payload is in by the end of its PES packet; padding behind it only takes time
+            let pack_len = fixed + 9 + ts_len + sub_len + take + stuffing;
             self.pstd_admit(u.stream, removal, sub_len + take, self.ticks(pack_len));
             let mut pack = Vec::with_capacity(PACK_SIZE);
             self.pack_header(&mut pack);
@@ -551,7 +578,11 @@ impl<W: Write> Muxer<W> {
                 _ => sid,
             };
             // continuation packets carry no timestamps
-            pack.extend_from_slice(&pes_packet(id, &unit, first, &sub));
+            pack.extend_from_slice(&pes_packet(id, &unit, first, &sub, stuffing));
+            if padding > 0 {
+                pack.extend_from_slice(&[0, 0, 1, 0xBE, ((padding - 6) >> 8) as u8, (padding - 6) as u8]);
+                pack.resize(pack.len() + padding - 6, 0xFF);
+            }
             self.out.write_all(&pack)?;
             self.clock += self.ticks(pack.len());
             self.packs += 1;
@@ -561,6 +592,25 @@ impl<W: Write> Muxer<W> {
                 break;
             }
         }
+        Ok(())
+    }
+
+    /// An empty DVD navigation pack: pack header, system header, a PCI and a DSI packet of zeros.
+    fn write_nav_pack(&mut self) -> MuxResult<()> {
+        let mut p = Vec::with_capacity(PACK_SIZE);
+        self.pack_header(&mut p);
+        let bound = (self.rate / 50) as u32;
+        // the system header of every DVD navigation pack: video 232 KB, MPEG audio 4 KB, private
+        // stream 1 (AC-3, LPCM, subpictures) 58 KB, private stream 2 2 KB
+        p.extend_from_slice(&[0, 0, 1, 0xBB, 0, 0x12, 0x80 | (bound >> 15) as u8, (bound >> 7) as u8, ((bound << 1) & 0xFE) as u8 | 1, 0x04, 0xE1, 0x7F]);
+        p.extend_from_slice(&[0xE0, 0xE0, 0xE8, 0xC0, 0xC0, 0x20, 0xBD, 0xE0, 0x3A, 0xBF, 0xE0, 0x02]);
+        p.extend_from_slice(&[0, 0, 1, 0xBF, 0x03, 0xD4, 0x00]);
+        p.resize(0x400, 0);
+        p.extend_from_slice(&[0, 0, 1, 0xBF, 0x03, 0xFA, 0x01]);
+        p.resize(PACK_SIZE, 0);
+        self.out.write_all(&p)?;
+        self.clock += self.ticks(PACK_SIZE);
+        self.packs += 1;
         Ok(())
     }
 
@@ -679,7 +729,7 @@ fn timestamp(prefix: u8, t: i64) -> [u8; 5] {
 
 /// A PES packet of `u` (its timestamps when `stamped`), `prefix` bytes before the payload. The
 /// length field is 0 (unbounded) for a video packet too long for it.
-fn pes_packet(id: u8, u: &Unit, stamped: bool, prefix: &[u8]) -> Vec<u8> {
+fn pes_packet(id: u8, u: &Unit, stamped: bool, prefix: &[u8], stuffing: usize) -> Vec<u8> {
     let mut h = Vec::with_capacity(19);
     let both = stamped && u.dts != u.pts;
     // data_alignment_indicator: a video packet starting a picture
@@ -691,19 +741,23 @@ fn pes_packet(id: u8, u: &Unit, stamped: bool, prefix: &[u8]) -> Vec<u8> {
     } else {
         0
     });
-    h.push(if both {
-        10
-    } else if stamped {
-        5
-    } else {
-        0
-    });
+    h.push(
+        stuffing as u8
+            + if both {
+                10
+            } else if stamped {
+                5
+            } else {
+                0
+            },
+    );
     if both {
         h.extend_from_slice(&timestamp(3, u.pts));
         h.extend_from_slice(&timestamp(1, u.dts));
     } else if stamped {
         h.extend_from_slice(&timestamp(2, u.pts));
     }
+    h.extend(std::iter::repeat_n(0xFF, stuffing));
     let len = h.len() + prefix.len() + u.data.len();
     let len = if len > 0xFFFF { 0 } else { len as u16 };
     let mut p = Vec::with_capacity(6 + h.len() + prefix.len() + u.data.len());
