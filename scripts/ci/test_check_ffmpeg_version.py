@@ -43,6 +43,14 @@ class CheckFfmpegVersionTests(unittest.TestCase):
         self.write("crates/x/src/lib.rs", 'const FFMPEG_MIN: &str = "7.6.4";\n')
         self.assertEqual(self.run_check(), 1)
 
+    def test_version_value_without_ffmpeg_on_the_line_fails(self) -> None:
+        self.write("scripts/b.sh", "# the oracle\nVERSION=\"7.6.5\"\n")
+        self.assertEqual(self.run_check(), 1)
+
+    def test_bare_assignment_fails(self) -> None:
+        self.write("scripts/c.sh", "version=7.6.4\n")
+        self.assertEqual(self.run_check(), 1)
+
     def test_longer_numbers_are_not_the_version(self) -> None:
         self.write("scripts/a.sh", "ffmpeg_a=17.6.5\nffmpeg_b=7.6.51\nffmpeg_c=7.6.5.1\n")
         self.assertEqual(self.run_check(), 0)
@@ -54,7 +62,7 @@ class CheckFfmpegVersionTests(unittest.TestCase):
         self.assertEqual(self.run_check(), 1)
 
     def test_other_meanings_and_plan_ids_pass(self) -> None:
-        self.write("crates/x/src/mix.rs", '// Auro-3D 7.6.5 bed\nconst LAYOUT: &str = "7.6.5";\n')
+        self.write("crates/x/src/mix.rs", '// Auro-3D 7.6.5 bed, see §7.6.5\nlet layout = auro(7.6);\n')
         self.write("docs/c.md", "See CFA4-FFMPEG-7.6.5-001 (the FFmpeg plan).\n")
         self.assertEqual(self.run_check(), 0)
 

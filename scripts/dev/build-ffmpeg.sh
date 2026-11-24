@@ -156,6 +156,8 @@ if [[ ! -w "$(dirname "$prefix")" && "$(id -u)" != 0 ]]; then
   install_cmd=(sudo "${install_cmd[@]}")
   sudo mkdir -p "$(dirname "$prefix")"
 fi
+# An earlier BUILDINFO would make this prefix look complete while the checks below have not passed.
+if [[ "${install_cmd[0]}" == sudo ]]; then sudo rm -f "${prefix}/share/doc/ffmpeg/BUILDINFO"; else rm -f "${prefix}/share/doc/ffmpeg/BUILDINFO"; fi
 "${install_cmd[@]}" >"${tmp}/install.log"
 
 # Licence and source information next to the libraries: packaging/linux/stage-ffmpeg.sh ships this
@@ -178,12 +180,6 @@ git -C "$amf" show HEAD:LICENSE.txt >"${doc}/AMF-LICENSE.txt"
   echo "configure flags:"
   printf '  %s\n' "${flags[@]}"
 } >"${doc}/BUILDINFO"
-docdir="${prefix}/share/doc/ffmpeg"
-if [[ "${install_cmd[0]}" == sudo ]]; then
-  sudo mkdir -p "$docdir" && sudo cp "$doc"/* "$docdir/"
-else
-  mkdir -p "$docdir" && cp "$doc"/* "$docdir/"
-fi
 
 ffmpeg="${prefix}/bin/ffmpeg"
 actual="$("$ffmpeg" -version | awk 'NR==1 {print $3}')"
@@ -203,6 +199,14 @@ if (( ! restricted )) && [[ -n "$restricted_found" ]]; then
   exit 1
 fi
 
+# BUILDINFO marks a complete, accepted installation (fetch-ffmpeg.sh's installed() requires it):
+# written only after every check above passed, so a refused build is rebuilt, never reused.
+docdir="${prefix}/share/doc/ffmpeg"
+if [[ "${install_cmd[0]}" == sudo ]]; then
+  sudo mkdir -p "$docdir" && sudo cp "$doc"/* "$docdir/"
+else
+  mkdir -p "$docdir" && cp "$doc"/* "$docdir/"
+fi
 echo "FFmpeg ${version} installed in ${prefix} (GPL-3 or later, shared libraries)."
 printf '  %s\n' "${found[@]}"
 echo "Hardware acceleration methods: $("$ffmpeg" -hide_banner -hwaccels | tail -n +2 | tr '\n' ' ')"
