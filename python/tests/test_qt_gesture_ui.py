@@ -9,14 +9,17 @@ from __future__ import annotations
 
 import os
 from pathlib import Path
-from typing import Any
+from typing import TYPE_CHECKING, Any
 
 import pytest
 
 os.environ.setdefault("QT_QPA_PLATFORM", "offscreen")
-QtCore = pytest.importorskip("PySide6.QtCore", exc_type=ImportError)
-QtGui = pytest.importorskip("PySide6.QtGui", exc_type=ImportError)
-QtWidgets = pytest.importorskip("PySide6.QtWidgets", exc_type=ImportError)
+if TYPE_CHECKING:
+    from PySide6 import QtCore, QtGui, QtWidgets
+else:
+    QtCore = pytest.importorskip("PySide6.QtCore", exc_type=ImportError)
+    QtGui = pytest.importorskip("PySide6.QtGui", exc_type=ImportError)
+    QtWidgets = pytest.importorskip("PySide6.QtWidgets", exc_type=ImportError)
 
 from cfa4_qt.gesture_hud import GestureHud, GestureLayer  # noqa: E402
 from cfa4_qt.panels.settings import PreferencesDialog  # noqa: E402
