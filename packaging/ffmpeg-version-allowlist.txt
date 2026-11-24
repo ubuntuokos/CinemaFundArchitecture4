@@ -21,6 +21,7 @@ crates/acm/tests/oracle.rs
 crates/adpcm/*
 crates/adx/*
 crates/captions/README.md
+crates/dnx/README.md                        # the FFmpeg release that fixed the CID 1271 weights
 crates/hca/*
 crates/huffyuv/*
 crates/mace/*
