@@ -746,3 +746,209 @@ fn threshold_failures_are_listed_together() {
     assert!(threshold_failures(&args, &unmeasured).first().is_some_and(|m| m.contains("need a reference")));
     assert!(threshold_failures(&parse_args(&[]).unwrap(), &unmeasured).is_empty());
 }
+
+#[test]
+fn check_reference_rejects_substring_only() {
+    // "Info" only inside "information", "Push" only inside "pushed": not a mention of the name
+    let v = v1_file("panels", json!([]), v1_items(&[("Info", "docs/a.md")]));
+    let e = check(Area::Panels, &v, &[("docs/a.md", "More information is pushed here.")]);
+    assert!(e.first().is_some_and(|m| m.contains("\"Info\" does not appear in docs/a.md")), "{e:?}");
+    assert!(check(Area::Panels, &v, &[("docs/a.md", "The Info panel shows media details.")]).is_empty());
+    assert!(contains_phrase("a | info | b", "info") && contains_phrase("info", "info") && contains_phrase("x info.", "info"));
+    assert!(!contains_phrase("information", "info") && !contains_phrase("an info2", "info") && !contains_phrase("x", ""));
+    // a hit inside a word does not hide a later whole-word hit; non-ASCII text is not split mid-character
+    assert!(contains_phrase("information, then info", "info") && contains_phrase("é info é", "info"));
+    assert!(!contains_phrase("éinfo", "info"));
+}
+
+fn th(v: Value) -> Result<thresholds::Thresholds, String> {
+    thresholds::parse(&json!({"schema": 1, "areas": v}))
+}
+
+/// An outcome of `area` with two reference items, one of which we have (and rate `tier`).
+fn measured_outcome(area: Area, tier: Tier) -> Outcome {
+    let mut ours = cmd_items(&[("edit.undo", "Undo")]);
+    ours[0].tier = tier;
+    let src = RefSource::Committed("/repo/xtask/parity/reference/x.json".into());
+    Outcome { area, ours: 1, inventory: String::new(), measured: Some((compare(area, &paths(&[&["Undo"], &["Redo"]]), &ours), src)) }
+}
+
+#[test]
+fn threshold_check_fails_below_and_hints_above() {
+    let t = th(json!({"commands": {"present": 2, "exact": 1}, "panels": {"present": 0}})).unwrap();
+    let outcomes = [measured_outcome(Area::Commands, Tier::Unrated), measured_outcome(Area::Panels, Tier::Unrated)];
+    let (failures, hints) = thresholds::check(&t, &outcomes);
+    assert_eq!(failures.len(), 2, "{failures:?}");
+    assert!(failures.iter().any(|f| f.contains("present 1 is below the threshold 2")), "{failures:?}");
+    assert!(failures.iter().any(|f| f.contains("exact 0 is below the threshold 1")), "{failures:?}");
+    assert!(hints.first().is_some_and(|h| h.contains("panels: present is 1, above the threshold 0: raise it")), "{hints:?}");
+}
+
+#[test]
+fn raise_hint_when_above_threshold() {
+    let t = th(json!({"commands": {"present": 0, "exact": 0}})).unwrap();
+    let (failures, hints) = thresholds::check(&t, &[measured_outcome(Area::Commands, Tier::Exact)]);
+    assert!(failures.is_empty(), "{failures:?}");
+    assert_eq!(hints.len(), 2, "{hints:?}");
+    // equal is neither a failure nor a hint
+    let t = th(json!({"commands": {"present": 1, "exact": 1}})).unwrap();
+    assert_eq!(thresholds::check(&t, &[measured_outcome(Area::Commands, Tier::Exact)]), (Vec::new(), Vec::new()));
+}
+
+#[test]
+fn threshold_without_measurement_is_a_failure() {
+    let t = th(json!({"effects": {"present": 1}, "menus": {"present": 1}})).unwrap();
+    let unmeasured = Outcome { area: Area::Effects, ours: 0, inventory: String::new(), measured: None };
+    let (failures, _) = thresholds::check(&t, &[unmeasured]);
+    assert!(failures.iter().any(|f| f.starts_with("effects:") && f.contains("no committed reference")), "{failures:?}");
+    assert!(failures.iter().any(|f| f.starts_with("menus:") && f.contains("not measured")), "{failures:?}");
+}
+
+#[test]
+fn ci_mode_reports_all_failing_areas() {
+    let root = temp_root("ci-all");
+    for area in ["menus", "panels"] {
+        let file = root.join(format!("{REFERENCE_DIR}/{area}.json"));
+        std::fs::create_dir_all(file.parent().unwrap()).unwrap();
+        std::fs::write(
+            &file,
+            format!(
+                r#"{{"schema":1,"area":"{area}","outOfScope":[],"items":[{{"path":"{}","source":"docs/a.md"}}]}}"#,
+                if area == "menus" { "File ▸ Save" } else { "Info" }
+            ),
+        )
+        .unwrap();
+    }
+    let file = root.join(thresholds::THRESHOLDS_FILE);
+    std::fs::write(&file, r#"{"schema":1,"areas":{"menus":{"present":1},"panels":{"present":1}}}"#).unwrap();
+    let e = run(&root, &["--ci"]).unwrap_err();
+    // no Python environment in the temporary root: both areas fail, and each is listed once
+    assert_eq!(e.matches("menus: ").count(), 1, "{e}");
+    assert_eq!(e.matches("panels: ").count(), 1, "{e}");
+    assert!(e.contains("missing"), "{e}");
+    // no thresholds file: an error, not a pass
+    std::fs::remove_file(&file).unwrap();
+    assert!(run(&root, &["--ci"]).unwrap_err().contains("thresholds.json: missing"));
+    assert!(run(&root, &["--ci", "--ours", "x.json"]).unwrap_err().contains("not allowed"));
+}
+
+#[test]
+fn missing_python_is_error_not_panic() {
+    let root = temp_root("no-python");
+    let e = run(&root, &["--area", "panels", "--committed"]).unwrap_err();
+    assert!(e.contains("python") && e.contains("--ours FILE"), "{e}");
+}
+
+#[test]
+fn ratchet_decrease_fails() {
+    let base = th(json!({"menus": {"present": 16, "exact": 2}})).unwrap();
+    let e = thresholds::ratchet(&base, &th(json!({"menus": {"present": 15, "exact": 2}})).unwrap());
+    assert_eq!(e.len(), 1, "{e:?}");
+    assert!(e[0].contains("menus.present: lowered from 16 to 15"), "{e:?}");
+}
+
+#[test]
+fn ratchet_increase_ok() {
+    let base = th(json!({"menus": {"present": 16}})).unwrap();
+    assert!(thresholds::ratchet(&base, &th(json!({"menus": {"present": 17}, "panels": {"present": 1}})).unwrap()).is_empty());
+    assert!(thresholds::ratchet(&base, &base).is_empty());
+}
+
+#[test]
+fn ratchet_removed_area_fails() {
+    let base = th(json!({"menus": {"present": 16}, "panels": {"present": 3}})).unwrap();
+    let e = thresholds::ratchet(&base, &th(json!({"menus": {"present": 16}})).unwrap());
+    assert!(e.first().is_some_and(|m| m.contains("panels: area removed")), "{e:?}");
+}
+
+#[test]
+fn ratchet_removed_key_fails() {
+    let base = th(json!({"menus": {"present": 16, "exact": 1}})).unwrap();
+    let e = thresholds::ratchet(&base, &th(json!({"menus": {"present": 16}})).unwrap());
+    assert!(e.first().is_some_and(|m| m.contains("menus.exact: removed")), "{e:?}");
+}
+
+fn git_in(root: &Path, args: &[&str]) {
+    let out = Command::new("git")
+        .args(["-c", "user.name=t", "-c", "user.email=t@example.com", "-c", "commit.gpgsign=false"])
+        .args(args)
+        .current_dir(root)
+        .output()
+        .unwrap();
+    assert!(out.status.success(), "git {args:?}: {}", String::from_utf8_lossy(&out.stderr));
+}
+
+#[test]
+fn ratchet_missing_base_ok() {
+    let root = temp_root("ratchet-git");
+    git_in(&root, &["init", "-q"]);
+    std::fs::write(root.join("a.txt"), "x").unwrap();
+    git_in(&root, &["add", "a.txt"]);
+    git_in(&root, &["commit", "-q", "-m", "one"]);
+    // the base has no thresholds file: fine, whatever the working tree holds
+    let ok = thresholds::check_ratchet(&root, "HEAD").unwrap();
+    assert!(ok.contains("no xtask/parity/thresholds.json at HEAD"), "{ok}");
+    // commit a file, then lower it in the working tree: the ratchet fails against HEAD
+    let file = root.join(thresholds::THRESHOLDS_FILE);
+    std::fs::create_dir_all(file.parent().unwrap()).unwrap();
+    std::fs::write(&file, r#"{"schema":1,"areas":{"menus":{"present":5}}}"#).unwrap();
+    git_in(&root, &["add", "."]);
+    git_in(&root, &["commit", "-q", "-m", "two"]);
+    assert!(thresholds::check_ratchet(&root, "HEAD").unwrap().contains("ok"));
+    std::fs::write(&file, r#"{"schema":1,"areas":{"menus":{"present":4}}}"#).unwrap();
+    assert!(thresholds::check_ratchet(&root, "HEAD").unwrap_err().contains("lowered from 5 to 4"));
+    // a bad ref or an option-looking ref is an error, not a pass
+    assert!(thresholds::check_ratchet(&root, "no-such-ref").unwrap_err().contains("not a commit"));
+    assert!(thresholds::check_ratchet(&root, "--output=x").unwrap_err().contains("not a git ref"));
+    assert!(run(&root, &["--check-ratchet"]).unwrap_err().contains("--base"));
+}
+
+#[test]
+fn checklist_is_deterministic() {
+    let root = temp_root("checklist");
+    let file = root.join(format!("{REFERENCE_DIR}/panels.json"));
+    std::fs::create_dir_all(file.parent().unwrap()).unwrap();
+    let write = |items: &str| std::fs::write(&file, format!(r#"{{"schema":1,"area":"panels","outOfScope":[],"items":[{items}]}}"#)).unwrap();
+    write(r#"{"path":"Zeta","source":"docs/a.md"},{"path":"Alpha","source":"docs/a.md"}"#);
+    let a = thresholds::checklist(&root).unwrap();
+    write(r#"{"path":"Alpha","source":"docs/a.md"},{"path":"Zeta","source":"docs/a.md"}"#);
+    let b = thresholds::checklist(&root).unwrap();
+    assert_eq!(a, b, "item order in the reference must not matter");
+    assert!(a.find("- Alpha").unwrap() < a.find("- Zeta").unwrap(), "{a}");
+    assert!(a.contains("## panels (2)") && a.ends_with("\n") && !a.ends_with("\n\n"), "{a}");
+    // no date, no commit hash
+    assert!(!a.contains("202") && !a.bytes().collect::<Vec<_>>().windows(7).any(|w| w.iter().all(u8::is_ascii_hexdigit)), "{a}");
+}
+
+#[test]
+fn checklist_drift_fails() {
+    let root = temp_root("checklist-drift");
+    std::fs::create_dir_all(root.join("docs")).unwrap();
+    assert!(thresholds::check_checklist(&root, false).unwrap_err().contains("--write-checklist"));
+    thresholds::check_checklist(&root, true).unwrap();
+    assert!(thresholds::check_checklist(&root, false).unwrap().contains("ok"));
+    std::fs::write(root.join(thresholds::CHECKLIST_FILE), "edited by hand\n").unwrap();
+    assert!(thresholds::check_checklist(&root, false).unwrap_err().contains("out of date"));
+}
+
+#[test]
+fn hostile_thresholds_are_refused() {
+    for (v, why) in [
+        (json!([]), "not an object"),
+        (json!({"schema": 2, "areas": {}}), "schema must be"),
+        (json!({"schema": 1}), "areas is missing"),
+        (json!({"schema": 1, "areas": {}, "extra": 1}), "unknown field"),
+        (json!({"schema": 1, "areas": {"sounds": {"present": 1}}}), "unknown area"),
+        (json!({"schema": 1, "areas": {"menus": {"percent": 1}}}), "unknown key"),
+        (json!({"schema": 1, "areas": {"menus": {"present": -1}}}), "whole number"),
+        (json!({"schema": 1, "areas": {"menus": {"present": 1.5}}}), "whole number"),
+        (json!({"schema": 1, "areas": {"menus": {"present": "3"}}}), "whole number"),
+        (json!({"schema": 1, "areas": {"menus": {"present": MAX_ITEMS + 1}}}), "whole number"),
+        (json!({"schema": 1, "areas": {"menus": 3}}), "not an object"),
+    ] {
+        let e = thresholds::parse(&v).unwrap_err();
+        assert!(e.contains(why), "{v}: {e}");
+    }
+    // the frozen egui menu bar is not a measured area
+    assert!(th(json!({"menus-egui": {"present": 1}})).unwrap_err().contains("unknown area"));
+}
