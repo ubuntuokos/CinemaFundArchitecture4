@@ -838,4 +838,6 @@ mod region_tests;
 mod par_tests;
 
 #[cfg(test)]
+mod key_measure_tests;
+#[cfg(test)]
 mod key_tests;
