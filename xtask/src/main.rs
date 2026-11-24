@@ -13,7 +13,9 @@
 //!   measured parity of the Qt 6 GUI menu bar or panels (the frozen egui menu bar as
 //!   `menus-egui`), of the engine's commands, or of the effects / transitions the Effects panel lists, against a reference list (default: the local `plan/premiere/<area>.json`), presence and
 //!   placement reported separately (`parity/`, docs/gaps.md G7); `parity --check-reference` (part of
-//!   `ci`) checks the committed references in `xtask/parity/reference/` against their source docs.
+//!   `ci`) checks the committed references in `xtask/parity/reference/` against their source docs;
+//!   `parity --ci` adds the thresholds, `--check-ratchet --base REF` forbids lowering them and `--check-checklist`
+//!   keeps `docs/parity-checklist.md` current (`parity/thresholds.rs`).
 //! - `fuzz-targets`: every L0 parser crate (containers and decoders; not the encoder-only ones in
 //!   `NO_PARSER`) has a fuzz target in `fuzz/src/lib.rs`, and every target has its
 //!   `fuzz/fuzz_targets/<name>.rs` and `[[bin]]` (CFA4-SECURITY-001 B2).
@@ -461,7 +463,8 @@ fn ci() -> Result<(), String> {
     // Full optimized release tests (including FFmpeg oracles) run in the dedicated CI job.
     layers()?;
     assets()?;
-    parity::run(&root(), &["--check-reference"])
+    parity::run(&root(), &["--check-reference"])?;
+    parity::run(&root(), &["--check-checklist"])
 }
 
 /// The headless playback benchmark (`crates/ui-egui/examples/bench_playback.rs`); extra
@@ -561,7 +564,7 @@ fn main() -> ExitCode {
             parity::run(&root(), &rest.iter().map(String::as_str).collect::<Vec<_>>())
         }
         _ => Err(
-            "usage: cargo xtask <layers|assets|wasm|fuzz-targets|fixtures [crate…]|parity [--area menus|commands|panels|effects|transitions|menus-egui] [--reference FILE] [--out FILE] [--min PERCENT] [--min-exact COUNT]|parity --area all [--committed]|parity --check-reference|version [set X.Y.Z]|ci|bench [args]|bench-playback [args]|cinema-oracles [--check|--install …|--corpus|--print-env]>"
+            "usage: cargo xtask <layers|assets|wasm|fuzz-targets|fixtures [crate…]|parity [--area menus|commands|panels|effects|transitions|menus-egui] [--reference FILE] [--out FILE] [--min PERCENT] [--min-exact COUNT]|parity --area all [--committed]|parity --ci|parity --check-reference|parity --check-ratchet --base REF|parity --check-checklist|parity --write-checklist|version [set X.Y.Z]|ci|bench [args]|bench-playback [args]|cinema-oracles [--check|--install …|--corpus|--print-env]>"
                 .into(),
         ),
     };

@@ -1,7 +1,7 @@
 # Kdenlive project test data (`.kdenlive`)
 
 Kdenlive documents from Kdenlive's own test dataset, used by
-`crates/interchange/tests/mlt_kdenlive.rs` (Kdenlive plan K1, shared MLT reader core with Shotcut SC-5.1).
+`crates/interchange/tests/mlt_kdenlive.rs` (Kdenlive plan KDN-1, shared MLT reader core with Shotcut SC-5.1).
 The media they name is not included; missing media is part of what the tests check.
 
 - **Source:** `tests/dataset/{av,test-mix,test-missing,test-keyframes,test-nesting}.kdenlive` in Kdenlive

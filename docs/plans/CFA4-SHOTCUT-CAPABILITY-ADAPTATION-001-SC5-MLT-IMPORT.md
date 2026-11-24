@@ -1,7 +1,7 @@
 # CFA4-SHOTCUT-CAPABILITY-ADAPTATION-001 / SC-5: Shotcut-projekt (`.mlt`) import, tervpótlás
 
 **Állapot:** **a tervet a tulajdonos jóváhagyta (István, 2026-11-22), a D1 döntéssel (közös MLT-mag) és a D2–D6 javasolt alapértelmezéseivel; az SC-5.0 jelentés C1–C7 pontosításait is elfogadta, ezek átvezetve (13. pont).** A jóváhagyás **nem indít megvalósítást**: az SC-5.0…SC-5.6 fázisok mindegyike külön tulajdonosi indítási engedélyt igényel (7. pont). (Korábbi állapot: jóváhagyásra várt.)
-**Dátum:** 2026-11-22 · **Alap:** `main` @ `bd84c4d` · **Módszer:** csak olvasás: `VISION.md`, `AGENTS.md`, `docs/coordination.md`, a [`CFA4-SHOTCUT-CAPABILITY-ADAPTATION-001`](CFA4-SHOTCUT-CAPABILITY-ADAPTATION-001.md) F0-terv, a [`CFA4-V1-SILENCE-REMOVAL-001`](CFA4-V1-SILENCE-REMOVAL-001.md) terv (formai minta), a Kdenlive-terv K1/K20/K25/K42 pontjai, a `crates/interchange` fejléce és `Report` típusa. A kódot nem futtattam, a Shotcut forrását és fájlformátum-leírását nem vizsgáltam.
+**Dátum:** 2026-11-22 · **Alap:** `main` @ `bd84c4d` · **Módszer:** csak olvasás: `VISION.md`, `AGENTS.md`, `docs/coordination.md`, a [`CFA4-SHOTCUT-CAPABILITY-ADAPTATION-001`](CFA4-SHOTCUT-CAPABILITY-ADAPTATION-001.md) F0-terv, a [`CFA4-V1-SILENCE-REMOVAL-001`](CFA4-V1-SILENCE-REMOVAL-001.md) terv (formai minta), a Kdenlive-terv KDN-1/KDN-20/KDN-25/KDN-42 pontjai, a `crates/interchange` fejléce és `Report` típusa. A kódot nem futtattam, a Shotcut forrását és fájlformátum-leírását nem vizsgáltam.
 **Nyelv:** magyar.
 **Forrás és előzmények:** a tulajdonos 2026-11-22-i észrevétele az F0-tervről: kimaradt, hogy a Shotcut projektfájl importálható legyen a CFA4-be; az **exportálás szándékosan kimarad**, mert a CFA4 funkciói sokkal összetettebbek a Shotcutnál, ezért az export értelmetlen lenne. Az F0-terv F4 sora csak az MLT/Kdenlive-importot és a „nincs MLT-export” döntést említi (2026-11-03, E10/E11); a **Shotcut-projekt importja** nem szerepelt benne, és más terv sem fedi.
 
@@ -15,11 +15,11 @@
 
 **Az export nem cél** (5. pont): a CFA4-projekt nem írható vissza Shotcut-formátumba.
 
-**Fontos átfedés (9. pont, D1, eldöntve):** a Kdenlive-terv **K1/K42/K20/K25** ugyanazt a fájlcsaládot (MLT XML) olvassa. A Shotcut és a Kdenlive ugyanarra az MLT-szerkezetre épül, csak a saját tulajdonságaik és szűrőazonosítóik különböznek. A `main`-en jelenleg **nincs MLT-olvasó** (ellenőrizve: a `crates/interchange` modullistájában nincs, a repóban `.mlt` kezelés nem található). **Döntés (István, 2026-11-22, D1): egy közös MLT-mag, két dialektus** (Kdenlive és Shotcut); nem készül két vagy több külön MLT-implementáció, mert azok karbantartása értelmetlen. Az SC-5 a K1 magjára épül, vagy a mag közös PR-sorozatban készül.
+**Fontos átfedés (9. pont, D1, eldöntve):** a Kdenlive-terv **KDN-1/KDN-42/KDN-20/KDN-25** ugyanazt a fájlcsaládot (MLT XML) olvassa. A Shotcut és a Kdenlive ugyanarra az MLT-szerkezetre épül, csak a saját tulajdonságaik és szűrőazonosítóik különböznek. A `main`-en jelenleg **nincs MLT-olvasó** (ellenőrizve: a `crates/interchange` modullistájában nincs, a repóban `.mlt` kezelés nem található). **Döntés (István, 2026-11-22, D1): egy közös MLT-mag, két dialektus** (Kdenlive és Shotcut); nem készül két vagy több külön MLT-implementáció, mert azok karbantartása értelmetlen. Az SC-5 a KDN-1 magjára épül, vagy a mag közös PR-sorozatban készül.
 
 | Tétel | Tartalom | Prioritás | Becslés* |
 |---|---|---|---|
-| **SC-5** | Shotcut `.mlt` import: timeline, klipek, trimmelés, átmenetek, szűrők, jelentés | B | 66–116 ó önállóan; a K1 közös magjával kb. 40–75 ó (lásd 7. pont) |
+| **SC-5** | Shotcut `.mlt` import: timeline, klipek, trimmelés, átmenetek, szűrők, jelentés | B | 66–116 ó önállóan; a KDN-1 közös magjával kb. 40–75 ó (lásd 7. pont) |
 
 \* A becslés az enyém, nem mért (a CFA4 „Opus 5.5 ügynökórában” adja, `docs/roadmap.md`).
 
@@ -35,10 +35,10 @@
 | XML | `crates/interchange/src/xml.rs` | A meglévő XML-olvasó (FCP7, FCPXML) | Hogy az MLT-hez újrahasznosítható-e, az SC-5.0 első lépése |
 | Átmenetek, szűrők | `crates/render/src/transitions/`, `crates/render/src/effects.rs`, `sequence.applyVideoTransition`, `effects.apply` | ~30 saját átmenet; Gaussian Blur, Lumetri Color, Fade In/Out, Volume, Panner, Invert stb. | A Shotcut-szűrő → CFA4-effekt tábla nincs |
 | Sebesség | `clip.speedDuration` | Sebességváltás, visszafelé játszás | – |
-| Kdenlive-import | K1, K20, K25, K42 (Kdenlive-terv, jóváhagyva 2026-11-03; K1 „kötelező”, 2026-10-25) | Terv szerint: MLT XML olvasó, szolgáltatás → parancs tábla, kompatibilitási jelentés | **Még nem készült el**, a `main`-en nincs kód |
+| Kdenlive-import | KDN-1, KDN-20, KDN-25, KDN-42 (Kdenlive-terv, jóváhagyva 2026-11-03; KDN-1 „kötelező”, 2026-10-25) | Terv szerint: MLT XML olvasó, szolgáltatás → parancs tábla, kompatibilitási jelentés | **Még nem készült el**, a `main`-en nincs kód |
 | MLT mint motor | Kdenlive-terv E11 (2026-11-03) | A saját Rust-motor az alap; az MLT (`melt`) csak **tesztorákulum** | – |
 
-**Következmény:** az SC-5 nagy része az MLT XML szerkezetének olvasása (profil, producer, playlist, tractor, entry, blank, transition, filter), ami **a K1-gyel azonos**. A Shotcut-specifikus rész a `shotcut:` tulajdonságok, a Shotcut által használt szolgáltatásnevek és szűrőazonosítók táblája, valamint a Shotcut időzítési és sávszerkezeti szokásai.
+**Következmény:** az SC-5 nagy része az MLT XML szerkezetének olvasása (profil, producer, playlist, tractor, entry, blank, transition, filter), ami **a KDN-1-gyel azonos**. A Shotcut-specifikus rész a `shotcut:` tulajdonságok, a Shotcut által használt szolgáltatásnevek és szűrőazonosítók táblája, valamint a Shotcut időzítési és sávszerkezeti szokásai.
 
 ---
 
@@ -101,7 +101,7 @@ A Shotcut klipek közti átmenete **nem sávon belüli átfedés, hanem külön 
 
 ### 3.4 Szűrők és effektek (R7, R8)
 
-A tábla a **célt** írja le; az azonosítók az SC-5.0-ban igazolandók (a Kdenlive-terv K20-ához hasonló tábla: azonosító → CFA4-effekt, paraméternevek, tartományok, alapértékek).
+A tábla a **célt** írja le; az azonosítók az SC-5.0-ban igazolandók (a Kdenlive-terv KDN-20-ához hasonló tábla: azonosító → CFA4-effekt, paraméternevek, tartományok, alapértékek).
 
 | Shotcut-oldali csoport | CFA4 megfelelő | Besorolás (cél) |
 |---|---|---|
@@ -115,7 +115,7 @@ A tábla a **célt** írja le; az azonosítók az SC-5.0-ban igazolandók (a Kde
 | sebességváltás, visszafelé (`timewarp`) | `clip.speedDuration` | támogatott |
 | kulcskockák (animált paraméter) | a CFA4 kulcskocka-modellje; az interpoláció típusa (lineáris/sima/ugrás) megőrzendő, ahol van megfelelője | átalakított |
 | LUT, maszk, kulcsolás (chroma/luma key) | a CFA4 megfelelő effektje, ahol van | átalakított / nem támogatott |
-| `frei0r.*`, `avfilter.*`, `movit.*`, `webvfx`/QML, `ladspa`/`lv2` | – (külső bővítmény, nincs saját megfelelő; a K5/K44 terv szerint később) | nem támogatott: kihagyva, jelentve névvel |
+| `frei0r.*`, `avfilter.*`, `movit.*`, `webvfx`/QML, `ladspa`/`lv2` | – (külső bővítmény, nincs saját megfelelő; a KDN-5/KDN-44 terv szerint később) | nem támogatott: kihagyva, jelentve névvel |
 | Shotcut-specifikus „Text”, „Subtitles”, „Overlay HTML” | CFA4-cím (`graphics.*`), ahol tartalom és stílus kinyerhető | átalakított / nem támogatott (SC-5.4) |
 
 **Leképezési kulcs (C4):** a tábla kulcsa a (`shotcut:filter` név, MLT-szolgáltatás) pár, mert egy szolgáltatásnév több Shotcut-szűrőt takar (a `volume` az erősítés, a fade és a némítás; a `brightness` a fényerő, az átlátszóság és a fade; a `lift_gamma_gain` a szín és a kontraszt); a GPU-változatok (`movit.*`) ugyanabba a sorba tartoznak; név nélkül a szolgáltatás és a paraméterek döntenek. A Shotcut-szűrőnevek és szolgáltatások listája: az SC-5.0 jelentés 8. pontja.
@@ -149,7 +149,7 @@ A `.mlt` fájl nem megbízható bemenet. Kötelező:
 - **XML-biztonság:** külső entitás (XXE) és DTD-feloldás **tiltva**; entitás-bővítési korlát; a fájlméret, az elemmélység, az elemszám és az attribútumhossz korlátos.
 - **Hivatkozási ciklus:** a producer/tractor/playlist hivatkozások egymásra mutathatnak; a bejárás látott-halmazzal és mélységkorláttal (a beágyazás mélysége korlátos, `nest_cycle`-védelem a projektmodellben).
 - **Számok:** képkockasebesség 0 vagy negatív, `out < in`, óriási hossz/blank, túlcsordulás, NaN a kulcskockákban → hibajelentés, nem pánik, nem osztás nullával (AGENTS.md §0.4).
-- **Utak:** a médiahivatkozás nem léphet ki a megengedett gyökérből csendben (a meglévő `resolve_path`/relink szabályai szerint), és az olvasó **nem nyit meg** hálózati erőforrást (a távoli hivatkozás figyelmeztetés, K46 mintájára).
+- **Utak:** a médiahivatkozás nem léphet ki a megengedett gyökérből csendben (a meglévő `resolve_path`/relink szabályai szerint), és az olvasó **nem nyit meg** hálózati erőforrást (a távoli hivatkozás figyelmeztetés, KDN-46 mintájára).
 - **Mutációs fuzz-teszt** (csonkolás, bitfordítás, hibás méretek, `catch_unwind` alatt), a talált hibák regressziós tesztté válnak (AGENTS.md §0.8). Az importer a `fuzz/` mappa meglévő mintájához csatlakozik.
 
 ---
@@ -160,7 +160,7 @@ A `.mlt` fájl nem megbízható bemenet. Kötelező:
 
 **Indoklás (a tulajdonos döntése, 2026-11-22):** a CFA4 funkciói sokkal összetettebbek a Shotcutnál (többsávos Premiere-modell, kulcskockás Lumetri-színkezelés, csomópontos színkorrekció és VFX, beágyazott szekvenciák, multicam, MI-funkciók, saját átmenet- és effektkatalógus, Tick-pontos idő). Egy CFA4-projekt tartalma ezért **jelentős részben nem fejezhető ki** Shotcut-projektben; az export csak veszteséggel menne, és a veszteség a felhasználó számára nehezen látható. Az import fordított irányban értelmes: a Shotcut a szűkebb forrásmodell, ennek tartalma leképezhető a CFA4-be.
 
-Ez összhangban van a korábbi döntésekkel: **MLT-be/Kdenlive-be exportálás nem lesz** (tulajdonosi döntés 2026-11-03, E10/E11; Kdenlive-terv K1: „Kdenlive-be exportálás nem lesz, mert csak veszteséggel menne”).
+Ez összhangban van a korábbi döntésekkel: **MLT-be/Kdenlive-be exportálás nem lesz** (tulajdonosi döntés 2026-11-03, E10/E11; Kdenlive-terv KDN-1: „Kdenlive-be exportálás nem lesz, mert csak veszteséggel menne”).
 
 Következmények, amelyek a tervben rögzítettek:
 
@@ -207,19 +207,19 @@ Következmények, amelyek a tervben rögzítettek:
 
 ## 7. Szállítási bontás és becslés
 
-Minden fázis **külön tulajdonosi engedélyt** igényel, és csak a terv jóváhagyása után indulhat. A becslés tájékoztató, nem mért. A fázisok sorrendje a K1-gyel való egyeztetéstől függ (D1).
+Minden fázis **külön tulajdonosi engedélyt** igényel, és csak a terv jóváhagyása után indulhat. A becslés tájékoztató, nem mért. A fázisok sorrendje a KDN-1-gyel való egyeztetéstől függ (D1).
 
 | Fázis | Tartalom | Becslés |
 |---|---|---|
-| **SC-5.0** | Tényellenőrzés: 3–4 saját Shotcut-projekt (a Shotcut legfrissebb stabil kiadásával, D4) + az MLT XML-dokumentáció; a fájlszerkezet, a `shotcut:` tulajdonságok, az `out` jelentése, az időformátumok, a szűrő- és átmenetazonosítók valódi listája; fixture-generátor; a 3. pont táblájainak igazolása vagy javítása; egyeztetés a K1/K42-vel; a meglévő `xml.rs` alkalmasságának eldöntése | 4–8 ó |
-| **SC-5.1** | Olvasó mag (vagy a K1 közös magja): profil, producerek, playlistek, tractor, sávok, klipek, `blank`, trimmelés; `file.import` felismerés; `Report` elem-szintű bővítése; offline média | 14–24 ó |
+| **SC-5.0** | Tényellenőrzés: 3–4 saját Shotcut-projekt (a Shotcut legfrissebb stabil kiadásával, D4) + az MLT XML-dokumentáció; a fájlszerkezet, a `shotcut:` tulajdonságok, az `out` jelentése, az időformátumok, a szűrő- és átmenetazonosítók valódi listája; fixture-generátor; a 3. pont táblájainak igazolása vagy javítása; egyeztetés a KDN-1/KDN-42-vel; a meglévő `xml.rs` alkalmasságának eldöntése | 4–8 ó |
+| **SC-5.1** | Olvasó mag (vagy a KDN-1 közös magja): profil, producerek, playlistek, tractor, sávok, klipek, `blank`, trimmelés; `file.import` felismerés; `Report` elem-szintű bővítése; offline média | 14–24 ó |
 | **SC-5.2** | Sebesség, átmenetek (a playlist „mix”-bejegyzés felismerése és egy átmenetté alakítása, C1; a mix B-oldalának forrástartománya a `melt`-összevetéssel), hang-keresztáttűnés, fade | 10–16 ó |
-| **SC-5.3** | Szűrőleképezési tábla (K20-mintájú) és a gyakori szűrők, kulcskockák, interpoláció | 14–26 ó |
+| **SC-5.3** | Szűrőleképezési tábla (KDN-20-mintájú) és a gyakori szűrők, kulcskockák, interpoláció | 14–26 ó |
 | **SC-5.4** | Markerek, szöveg/generátor, képsorozat, beágyazott tractor, proxy | 8–14 ó |
 | **SC-5.5** | Qt6 import párbeszéd és jelentésablak, i18n (`i18n/<code>.tsv`), klipmarker a hiányzó szűrőhöz | 8–14 ó |
 | **SC-5.6** | `sc5_shotcut_import_acceptance`, a 6.2 tesztjei, `melt`-összevetés, fuzz, dokumentáció (`qt-parity.md`, `docs/interop`-jellegű leírás, F0-terv állapota) | 8–14 ó |
 
-Összesen kb. **66–116 óra** önállóan. Ha a K1 közös MLT-magja elkészül vagy együtt épül, az SC-5.1 és a szűrőtábla egy része közös (a K20/K42 költségét nem kell kétszer fizetni), és az SC-5 saját terhe kb. **40–75 óra**; ennek elosztása a D1 döntéstől függ.
+Összesen kb. **66–116 óra** önállóan. Ha a KDN-1 közös MLT-magja elkészül vagy együtt épül, az SC-5.1 és a szűrőtábla egy része közös (a KDN-20/KDN-42 költségét nem kell kétszer fizetni), és az SC-5 saját terhe kb. **40–75 óra**; ennek elosztása a D1 döntéstől függ.
 
 ---
 
@@ -228,7 +228,7 @@ Minden fázis **külön tulajdonosi engedélyt** igényel, és csak a terv jóv�
 - **Függőség:** új függőség nem kell; az olvasó tiszta Rust, a meglévő XML-eszközökre vagy a `crates/interchange`-ben már használt megoldásra épül (SC-5.0 dönti el). MLT-könyvtár nem kerül a termékbe (R13, E11).
 - **Licenc:** a CFA4 GPL-3.0-or-later. A Shotcut (GPL-3.0) és az MLT (LGPL-2.1-or-later) kódja az `AGENTS.md` szerint átvehető volna fájlonkénti fejlécellenőrzéssel és a `docs/licensing.md` §5 nyilvántartás sorával, **de a javaslat: CFA4-natív megvalósítás**, a Shotcut/MLT csak viselkedési és formátum-referencia (az F0-terv 8. pontjával egyezően). Ha mégis átvételre kerülne sor, az külön döntés: fájl, fejléc, SPDX, nyilvántartási sor ugyanabban a commitban.
 - **Tesztminták:** csak saját készítésű, általunk kiadott (CC0) projektfájlok és generált média; idegen vagy jogilag nem tisztázott Shotcut-projektet nem teszünk a repóba (AGENTS.md §1: ha a licenc nem tiszta, nem kerül be).
-- **Kockázatok:** (1) a formátum szerkezete az SC-5.0-ban igazolt, de a több sávos, vágott, szűrős valódi minták még hiányoznak, ezért a szűrőtábla és a mix B-oldalának forrástartománya feltételes; (2) a mix-bejegyzés és az `out` jelentése képkocka-eltolódást okozhat, ha rosszul kezeljük, ezért az elfogadás (a) pontja `melt`-orákulummal ellenőriz; (3) a Shotcut új verziói új szűrőket és tulajdonságokat hozhatnak, ezért a tábla bővíthető és az ismeretlen elem mindig jelentés, soha nem hiba; (4) a szűrőskálák (fényerő, kontraszt, telítettség) nem egyeznek a Lumetri skáláival, a leképezés közelítő, ezért a jelentés „átalakított” minősítése kötelező; (5) a K1-gyel való átfedés kettős munkát okozna, ha nem egyeztetjük (D1).
+- **Kockázatok:** (1) a formátum szerkezete az SC-5.0-ban igazolt, de a több sávos, vágott, szűrős valódi minták még hiányoznak, ezért a szűrőtábla és a mix B-oldalának forrástartománya feltételes; (2) a mix-bejegyzés és az `out` jelentése képkocka-eltolódást okozhat, ha rosszul kezeljük, ezért az elfogadás (a) pontja `melt`-orákulummal ellenőriz; (3) a Shotcut új verziói új szűrőket és tulajdonságokat hozhatnak, ezért a tábla bővíthető és az ismeretlen elem mindig jelentés, soha nem hiba; (4) a szűrőskálák (fényerő, kontraszt, telítettség) nem egyeznek a Lumetri skáláival, a leképezés közelítő, ezért a jelentés „átalakított” minősítése kötelező; (5) a KDN-1-gyel való átfedés kettős munkát okozna, ha nem egyeztetjük (D1).
 
 ---
 
@@ -236,12 +236,12 @@ Minden fázis **külön tulajdonosi engedélyt** igényel, és csak a terv jóv�
 
 | # | Kérdés | Javaslatom |
 |---|---|---|
-| **D1** | Az MLT XML olvasó legyen-e **közös** a Kdenlive-terv K1/K42/K20/K25 tételével? | **ELDÖNTVE (István, 2026-11-22): igen.** Egyetlen közös MLT-mag a `crates/interchange`-ben, a dialektusonkénti tábla (Kdenlive, Shotcut) külön; további MLT-alapú formátum is ugyanerre a magra épül. Az SC-5 a K1 magjára épül, vagy a mag közös PR-sorozatban készül. A Kdenlive-terv K1 sora erre hivatkozik |
+| **D1** | Az MLT XML olvasó legyen-e **közös** a Kdenlive-terv KDN-1/KDN-42/KDN-20/KDN-25 tételével? | **ELDÖNTVE (István, 2026-11-22): igen.** Egyetlen közös MLT-mag a `crates/interchange`-ben, a dialektusonkénti tábla (Kdenlive, Shotcut) külön; további MLT-alapú formátum is ugyanerre a magra épül. Az SC-5 a KDN-1 magjára épül, vagy a mag közös PR-sorozatban készül. A Kdenlive-terv KDN-1 sora erre hivatkozik |
 | **D2** | A modul helye és neve: új `Format` változat (`Mlt`) a `crates/interchange`-ben, a `file.import` automatikus felismerésével? | **Alapértelmezés: igen**, egyetlen `Mlt` formátum, a dialektust a fájl tartalma dönti el. *Indoklás:* a D1 közös magot ír elő; a Shotcut- és a Kdenlive-fájl is `.mlt`/MLT XML lehet, a kiterjesztésből nem dönthető el, a tartalomból (`shotcut:` / `kdenlive:` tulajdonságok) igen, így a felhasználónak nem kell formátumot választania |
 | **D3** | A nem támogatott szűrő/átmenet kezelése: **jelentés + klipmarker** a klipen, vagy csak jelentés? (Helyettesítő „hasonló” effekt nincs.) | **Alapértelmezés: jelentés és klipmarker.** *Indoklás:* a jelentés külön ablak, amit könnyű elfelejteni; a marker az idővonalon mutatja, hol hiányzik szűrő vagy átmenet. A „hasonló” helyettesítő effekt csendes tartalmi hibát adna, ezért nincs |
 | **D4** | Melyik Shotcut-verzió(k)kel készüljenek a fixture-ek és melyik legkorábbi verzió projektjét kell olvasnia az importernek? | **Alapértelmezés: a legfrissebb stabil Shotcut-kiadás és egy régebbi, István által megnevezett verzió** (ha nem nevez meg, az SC-5.0 a kiadási előzményekből választ és jelzi). *Indoklás:* a felhasználók régi projektjeit is meg akarják nyitni, de a régi verzió összes eltérésének vállalása határtalan; amit a régebbi nem teljesít, az az SC-5.0 jelentésében áll |
 | **D5** | A fade be/ki szűrők: a CFA4 **Fade In/Out effektjére** képezzük, ahol a minta felismerhető, egyébként kulcskockás Opacity/Volume-ra? | **Alapértelmezés: igen.** *Indoklás:* a Fade In/Out a CFA4-ben már létező, ismert effekt, a felhasználó így a megszokott kezelőt kapja; ahol a minta nem ismerhető fel, a kulcskockás Opacity/Volume pontos marad |
-| **D6** | Az eredeti `.mlt` fájl **megőrzése** a projekt mappájában import után (a K22 „az eredeti megőrzése” mintájára), hogy később újraimportálható és összevethető legyen? | **Alapértelmezés: igen**, csak olvasott másolat, a CFA4-projekt nem hivatkozik rá élőben. *Indoklás:* a jelentés és az importált szekvencia később is összevethető az eredetivel, és a bővülő leképezés mellett újraimportálható; élő hivatkozás nem készül (F0 F12 döntésével egyező) |
+| **D6** | Az eredeti `.mlt` fájl **megőrzése** a projekt mappájában import után (a KDN-22 „az eredeti megőrzése” mintájára), hogy később újraimportálható és összevethető legyen? | **Alapértelmezés: igen**, csak olvasott másolat, a CFA4-projekt nem hivatkozik rá élőben. *Indoklás:* a jelentés és az importált szekvencia később is összevethető az eredetivel, és a bővülő leképezés mellett újraimportálható; élő hivatkozás nem készül (F0 F12 döntésével egyező) |
 
 ---
 
@@ -251,7 +251,7 @@ Minden fázis **külön tulajdonosi engedélyt** igényel, és csak a terv jóv�
 2. **Valódi Shotcut-projektből egyet láttam** (Shotcut 26.2.16: egy klip, egy sáv, `mix` és `qtblend` transition); a több sávos, vágott, átmenetes és szűrős minták még hiányoznak.
 3. **Kódot nem futtattam**; a `crates/interchange` felépítése és a `Report` típus a kód olvasásából következik.
 4. Hogy a meglévő `crates/interchange/src/xml.rs` biztonságosan (XXE-tiltás, korlátok) használható-e az MLT-hez, nem néztem meg; az SC-5.0 első lépése.
-5. Hogy a **K1/K42/K20/K25 elkezdődött-e** valamelyik nyitott PR-ban vagy ágon, nem ellenőriztem teljesen: a `main`-en kódja nincs, a nyitott PR-ok címei között `mlt`/`kdenlive`/`shotcut` olvasóra utalót nem találtam, de a tartalmukat nem néztem át. Az SC-5.0 előtt a Kdenlive-terv IV. pontja szerinti újraelemzés kötelező.
+5. Hogy a **KDN-1/KDN-42/KDN-20/KDN-25 elkezdődött-e** valamelyik nyitott PR-ban vagy ágon, nem ellenőriztem teljesen: a `main`-en kódja nincs, a nyitott PR-ok címei között `mlt`/`kdenlive`/`shotcut` olvasóra utalót nem találtam, de a tartalmukat nem néztem át. Az SC-5.0 előtt a Kdenlive-terv IV. pontja szerinti újraelemzés kötelező.
 6. A **`plan/` mappát** (STATUS.md, execution-plan.md) nem láttam (gép-lokális, gitignore-olt).
 7. A becslések sajátok, nem mértek.
 8. A Qt6 Open/Import útvonal pontos helyét és a menüszerkezetet a megvalósításkor kell a meglévőhöz igazítani.
@@ -266,7 +266,7 @@ Minden fázis lezárásához kötelező: CI-napló (`cargo xtask ci` + tesztek),
 
 ## 12. Kapcsolat az F0-tervvel
 
-- Az F0-terv 1. pont táblájának **F4** sora és a 2. pont F4 szakasza az MLT-**importot** a K1/K42-re bízza és az exportot elveti. Ez a pótlás az **F4 Shotcut-specifikus részét** nyitja meg önálló tételként (SC-5), az export elvetése változatlan (5. pont).
+- Az F0-terv 1. pont táblájának **F4** sora és a 2. pont F4 szakasza az MLT-**importot** a KDN-1/KDN-42-re bízza és az exportot elveti. Ez a pótlás az **F4 Shotcut-specifikus részét** nyitja meg önálló tételként (SC-5), az export elvetése változatlan (5. pont).
 - Az SC-1…SC-4 tételeket, sorrendjüket és jóváhagyásukat ez a pótlás nem érinti.
 - A meglévő CFA4-ütemezés (`docs/roadmap.md` „Current focus”) nem változik; az SC-5 nem kerül be az ütemezésbe, csak jóváhagyás és külön indítási engedély után indulhat.
 

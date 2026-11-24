@@ -63,6 +63,7 @@ mod report;
 mod schema;
 #[cfg(test)]
 mod tests;
+mod thresholds;
 
 use fidelity::Tier;
 use reference::*;
@@ -220,6 +221,13 @@ impl Area {
 #[derive(Debug)]
 struct Args {
     check_reference: bool,
+    /// `--ci`: `--area all --committed`, then the committed thresholds.
+    ci: bool,
+    /// `--check-ratchet --base REF`.
+    check_ratchet: bool,
+    base: Option<String>,
+    check_checklist: bool,
+    write_checklist: bool,
     /// `--area all`: every area of [`ALL_AREAS`] in one report.
     all: bool,
     /// `--committed`: only the committed references count.
@@ -236,6 +244,11 @@ struct Args {
 fn parse_args(args: &[&str]) -> Result<Args, String> {
     let mut a = Args {
         check_reference: false,
+        ci: false,
+        check_ratchet: false,
+        base: None,
+        check_checklist: false,
+        write_checklist: false,
         all: false,
         committed: false,
         area: Area::Menus,
@@ -252,6 +265,15 @@ fn parse_args(args: &[&str]) -> Result<Args, String> {
         match *flag {
             "--check-reference" => a.check_reference = true,
             "--committed" => a.committed = true,
+            "--ci" => {
+                a.ci = true;
+                a.all = true;
+                a.committed = true;
+            }
+            "--check-ratchet" => a.check_ratchet = true,
+            "--base" => a.base = Some(value()?),
+            "--check-checklist" => a.check_checklist = true,
+            "--write-checklist" => a.write_checklist = true,
             "--area" => match value()?.as_str() {
                 "all" => a.all = true,
                 other => {
@@ -277,7 +299,7 @@ fn parse_args(args: &[&str]) -> Result<Args, String> {
             }
             other => {
                 return Err(format!(
-                    "parity: unknown argument {other} (usage: cargo xtask parity [--area menus|commands|panels|effects|transitions|menus-egui|all] [--reference FILE | --committed] [--ours FILE] [--out FILE] [--min PERCENT] [--min-exact COUNT] [--fidelity FILE] | --check-reference)"
+                    "parity: unknown argument {other} (usage: cargo xtask parity [--area menus|commands|panels|effects|transitions|menus-egui|all] [--reference FILE | --committed] [--ours FILE] [--out FILE] [--min PERCENT] [--min-exact COUNT] [--fidelity FILE] | --ci | --check-reference | --check-ratchet --base REF | --check-checklist | --write-checklist)"
                 ));
             }
         }
@@ -381,6 +403,10 @@ struct Outcome {
 
 /// Dumps our side of `area`, applies the fidelity annotations and compares it with its reference.
 fn measure(root: &Path, args: &Args, area: Area, fidelity: &fidelity::Fidelity, explicit_ours: Option<&Path>) -> Result<Outcome, String> {
+    if args.ci && resolve_reference(root, area, None, true).is_none() {
+        // nothing to measure against, so no dump (the engine examples are slow to build)
+        return Ok(Outcome { area, ours: 0, inventory: String::new(), measured: None });
+    }
     let ours_json = match explicit_ours {
         Some(p) => read_bounded(p)?,
         None => dump_ours(root, area)?,
@@ -444,6 +470,19 @@ pub fn run(root: &Path, args: &[&str]) -> Result<(), String> {
         println!("{}", check_references(root)?);
         return Ok(());
     }
+    if args.check_ratchet {
+        let base = args.base.as_deref().ok_or("--check-ratchet needs --base REF")?;
+        println!("{}", thresholds::check_ratchet(root, base)?);
+        return Ok(());
+    }
+    if args.check_checklist || args.write_checklist {
+        println!("{}", thresholds::check_checklist(root, args.write_checklist)?);
+        return Ok(());
+    }
+    if args.ci && (args.ours.is_some() || args.reference.is_some()) {
+        return Err("--ci measures every area against the committed references: --ours and --reference are not allowed".into());
+    }
+    let committed_thresholds = if args.ci { Some(thresholds::load(root)?) } else { None };
     if args.all && (args.ours.is_some() || args.reference.is_some()) {
         return Err("--area all measures five areas: --ours and --reference name one file, so they need a single --area".into());
     }
@@ -471,6 +510,16 @@ pub fn run(root: &Path, args: &[&str]) -> Result<(), String> {
             }
         }
         failures.extend(threshold_failures(&args, o));
+    }
+    if let Some(t) = &committed_thresholds {
+        let (found, hints) = thresholds::check(t, &outcomes);
+        // an area that failed to run is already listed; do not list it a second time
+        let known = failures.clone();
+        let listed = |f: &str| f.split(':').next().is_some_and(|n| known.iter().any(|e| e.starts_with(&format!("{n}: "))));
+        failures.extend(found.into_iter().filter(|f| !listed(f)));
+        for h in hints {
+            println!("hint: {h}");
+        }
     }
     if let Some(first) = outcomes.first().filter(|_| !args.all)
         && let Some((report, source)) = &first.measured

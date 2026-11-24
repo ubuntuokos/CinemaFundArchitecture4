@@ -856,7 +856,7 @@ impl Decoder {
                     self.hl_decode_mb()?;
                 }
                 if self.pict_type != PicType::B && !self.low_delay {
-                    let t = if self.pict_type == PicType::P && mb_type < 8 { mb_type - 1 } else { u32::MAX };
+                    let t = if self.pict_type == PicType::P && mb_type < 8 { mb_type.wrapping_sub(1) } else { u32::MAX };
                     self.frames[cur].mb_type[self.mb_xy] = t;
                 }
                 self.mb_x += 1;
