@@ -210,6 +210,11 @@ graph LR
 | `cfa4-engine/commands.rs` | `cfa4-render` | `luts`, `source_size` |
 | `cfa4-engine/commands.rs` | `cfa4-route` | `report` |
 | `cfa4-engine/commands.rs` | `cfa4-time` | `FrameRate`, `TICKS_PER_SECOND`, `TimeRange` |
+| `cfa4-engine/contact_sheet.rs` | `cfa4-media` | `pending` |
+| `cfa4-engine/contact_sheet.rs` | `cfa4-project` | `ItemId`, `ItemKind` |
+| `cfa4-engine/contact_sheet.rs` | `cfa4-qc` | `picture` |
+| `cfa4-engine/contact_sheet.rs` | `cfa4-render` | `RenderOptions`, `render_item`, `render_sequence` |
+| `cfa4-engine/contact_sheet.rs` | `cfa4-time` | `Tick` |
 | `cfa4-engine/credits.rs` | `cfa4-audio-dsp` | `remix` |
 | `cfa4-engine/credits.rs` | `cfa4-export` | `encode_png` |
 | `cfa4-engine/credits.rs` | `cfa4-geom` | `Affine`, `Vec2` |

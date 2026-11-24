@@ -4035,6 +4035,7 @@ fn build() -> Vec<CommandSpec> {
     v.extend(crate::short_clips::commands());
     v.extend(crate::marker_exports::commands());
     v.extend(crate::captions_titles::commands());
+    v.extend(crate::contact_sheet::commands());
     v.extend(crate::project_manager::commands());
     v.extend(crate::masks::commands());
     v.extend(crate::objects_track::commands());

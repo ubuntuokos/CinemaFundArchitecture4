@@ -1,4 +1,4 @@
-//! `captions.importAsTitles` (Kdenlive plan K37): read a caption file (SRT, WebVTT, …) and place
+//! `captions.importAsTitles` (Kdenlive plan KDN-37): read a caption file (SRT, WebVTT, …) and place
 //! every cue as a timed `graphics.newText` clip instead of a caption. `captions.import` stays the
 //! way to get real captions. All the clips are one undo step.
 
