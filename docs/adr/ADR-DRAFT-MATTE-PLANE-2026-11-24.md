@@ -2,6 +2,7 @@
 
 **Dátum:** 2026-11-24 · **Állapot:** JAVASLAT, nem elfogadott; sorszámot a C0 gazdája ad az elfogadáskor ·
 **Terv:** [`CFA4-GREENSCREEN-MATTING-INTEGRATION-001-0.1`](../plans/CFA4-GREENSCREEN-MATTING-INTEGRATION-001-0.1.md) 7. pont (Z1b), S3–S6 ·
+**Igazítva:** a C0 v0.1 szerződés- és job API specifikáció javaslat 4. pontjához (jóváhagyásra vár; a szöveg a tulajdonos projektfájljai között van, a jóváhagyás után kerül a repóba); eltérés esetén a jóváhagyott C0-spec az érvényes ·
 **Címzett:** a `cfa4-render-contracts` (C0) gazdája, [`CFA4-RENDER-INTEGRATION-PLAN-001`](../plans/CFA4-RENDER-INTEGRATION-PLAN-001.md) A2 és C0 ·
 **Érintett rész:** a C0 Frame ABI v0 mezőkészlete; ez a javaslat kódot nem változtat, crate-et nem hoz létre.
 
@@ -22,7 +23,7 @@ A Frame ABI v0 (A2) kapjon **matte-sík** értéktípust. Ez nem párhuzamos tí
 | Alfa-mód | a matte **mindig straight** (nem premultiplikált); a premultiplikálás a kompozitor lépése | a C0 A2 alfa-mód mezőjével egyező szemantika, kétértelműség nélkül |
 | Méret | szélesség × magasság, stride; azonos a forráskép méretével, vagy explicit skálázási szabály | a konverziós mátrix nem támogatott párja explicit hiba |
 | Időbélyeg | `Tick` (racionális időalap), a forrás képkockájához kötve; VFR esetén nincs csendes kerekítés | A2 időmodell |
-| Forrás-azonosító | a forrás (klip, képkocka, timecode) azonosítója, hogy a proxy–eredeti megfeleltetés megmaradjon | A2 kiegészítés (2026-11-23) |
+| Forrás-azonosító, timecode | mint a `FrameSideData`-ban (`cfa4-frame`), hogy a proxy–eredeti megfeleltetés megmaradjon | A2 kiegészítés (2026-11-23) |
 | Eredet (provenance) | módszer (`key.ultra`, `key.color`, `key.luma`, `ai.matting.*`), paraméter-hash, AI esetén modell-azonosító és SHA-256 | a `ObjectTrack` provenance mintájára; S6 |
 | Hivatkozás | tartalomcímzett: `MatteRef { sha256, width, height, depth }`, a tár a meglévő lemezes gyorsítótár; **nem** új adatbázis | S4; PostgreSQL a job-állapotra, nem a matte-re |
 
@@ -42,10 +43,8 @@ A `MaskRef` (bináris RLE) **változatlan marad**; a matte-sík és a maszk kül
 - Régi-projekt teszt: a meglévő projektek (matte nélkül) változatlanul megnyílnak, a golden változatlan.
 - `cargo xtask layers` zöld (a matte-típus a megfelelő rétegben van, nincs fordított függőség).
 
-## 5. Döntésre vár (a C0 gazdájánál, nem a tulajdonosnál)
+## 5. Döntésre vár
 
-1. A matte-sík a `cfa4-render-contracts` típusa legyen-e, vagy a C0 elfogadásáig a `cfa4-project` marad a gazdája.
-2. Egy vagy három elemtípus (`u8`/`u16`/`f32`) szerepeljen-e a v0-ban.
-3. A matte-tár kulcsa: csak tartalom-hash, vagy hash + módszer + paraméter-hash (verziózott matte-ek, Z3).
+A három nyitott kérdésre a C0 v0.1 specifikáció javaslata: (1) a matte-sík a v0 Frame ABI része, a típus a `cfa4-render-contracts` vékony crate-ben (újraexportál, amit a `cfa4-frame` már tartalmaz); (2) mindhárom elemtípus (`u8`/`u16`/`f32`) szerepel; (3) a matte-tár kulcsa a tartalom-hash, a módszer és a paraméter-hash az eredet-mezőben utazik, így a verziózott matte-ek (Z3) nem ütköznek. A döntés a tulajdonosé a C0-spec jóváhagyásakor (D2, D3).
 
 **Nem része:** AI-modellek, licenc, a Model Manager szerződése (külső tároló), a kulcsolók kódja.
