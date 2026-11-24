@@ -1,6 +1,6 @@
-# F2: előregisztráció (VÁZLAT, jóváhagyásra)
+# F2: előregisztráció (JÓVÁHAGYVA, 2026-11-23 20:14 Europe/Budapest)
 
-> **Állapot: vázlat.** A terv szerint az előregisztráció az F2 indulása előtt készül, és **utólag nem módosítható**; ezért ez a fájl csak akkor válik
+> **Állapot: jóváhagyva (István, 2026-11-23 20:14 Europe/Budapest; lásd a 7. szakaszt).** A jóváhagyás előtti vázlatszöveg: a terv szerint az előregisztráció az F2 indulása előtt készül, és **utólag nem módosítható**; ezért ez a fájl csak akkor válik
 > érvényessé, ha a kapu-jóváhagyó (István) elfogadja, és a commit-ja a mérések kezdete előtt rögzül. A küszöbök két fajtája: **F0V-ből átvett** (mért zajból, `F0V-thresholds.json`)
 > és **javasolt** (nincs rá mért zaj; az F2 első napjaiban a baseline futásaiból kellene származnia, ezért ezek "javasolt, mérés után rögzítendő" jelzésűek, és a
 > rögzítés a mérés előtt, a baseline-futásokra történik, nem a jelölt eredményére). Előfeltétel: C0 lezárva (a spec vázlata: `docs/audit/render-c0/`), S1 aláírva.
@@ -70,8 +70,17 @@ Nincs mért eredmény. A "javasolt" küszöbök a jóváhagyóé; indoklásuk a 
 
 ## 6. Nyitott a jóváhagyóhoz
 
-1. A "javasolt" küszöbök (OIIO ≥ 1,2×; VS ≥ 1,0 dB / SSIM +0,005) elfogadása vagy módosítása az F2 indulása előtt.
+1. ~~A "javasolt" küszöbök (OIIO ≥ 1,2×; VS ≥ 1,0 dB / SSIM +0,005) elfogadása~~ **Elfogadva (István, 2026-11-23 20:14), lásd 7.**
 2. ~~Python ≥ 3.13 a VapourSynth workerhez (A11)~~ **Eldöntve (István, 2026-11-23):** elfogadva, ha a VapourSynth-nek szüksége van rá; csak a külön workerben, a többi komponens nem függ tőle.
 3. ~~EC-jelölt fenntartása az F2-ben~~ **Eldöntve (István, 2026-11-23):** marad az F2 harmadik jelöltje (az upstream családdal közös geometria-, szín- és időtípusok miatt); az MQ-kapu érvényes, bukásnál csak mintának marad (H-EC-1 az első 3 napban).
 3b. ~~GEGL (+ babl) jelölt~~ **Felvéve (István, 2026-11-23, terv rev 119):** lásd 3b. szakasz; a küszöbei PENDING.
 4. ~~Új fixture (PIZ/DWA/B44 EXR)~~ **Elkészült (előkészítés, nem mérés):** `python/cfa4_devtools/render_f2_exr_fixtures.py` (nem a `render_fixtures.py`, mert az `ffmpeg` EXR-kódolója csak none/RLE/ZIP-et tud). 10 tömörítés, egy 640×360 f32 kép, fix magból; kimenet a `target/fixtures/render-f2/`-be. Futtatás: OpenImageIO és numpy modul kell (F2 POC függőség, eldobható venvben); nélkülük SKIPPED. Önellenőrzés (nem F2-eredmény): a veszteségmentes tömörítések 0 eltérést adnak; a veszteséges tolerancia a baseline-ból rögzítendő, mérés előtt.
+
+## 7. Jóváhagyás (István, 2026-11-23 20:14 Europe/Budapest)
+
+István a koordinátor javaslatait együtt hagyta jóvá („jóváhagyva, 2026.11.23. 20.14-kor”). Ettől a committól az előregisztráció érvényes; a mérések kezdete előtt rögzült, és utólag nem módosítható (módosítás csak új, jelölt verziójú melléklettel, a mérés előtt).
+
+1. **OpenImageIO és VapourSynth:** a fenti javasolt küszöbök érvényesek (OIIO olvasás ≥ 1,2×, a bootstrap CI alsó határa ≥ 1,0×; VapourSynth ≥ 1,0 dB PSNR és SSIM +0,005 az FFmpeg legjobb szűrőjéhez képest, a CI alsó határán; IVTC kocka-sorrend hibája 0).
+2. **GEGL + babl:** a küszöbök PENDING maradnak, de ugyanabban a szerkezetben (sebesség, minőség) rögzítendők, és a rögzítés commitja a GEGL első mérése előtt készül el.
+3. **Veszteséges EXR (DWA, B44, PXR24):** a tűrés a veszteségmentes baseline-ból jön, tömörítésenként külön határral, a mérés előtt rögzítve. A veszteségmentes tömörítéseknél az elvárás bitazonos (eltérés 0).
+4. **Sorrend:** az F2 indulásához a C0 lezárása kell; előbb az exportút atomikus kimenete (a C0 rése, lásd `docs/audit/render-c0/C0-cancel-latency.md`).
