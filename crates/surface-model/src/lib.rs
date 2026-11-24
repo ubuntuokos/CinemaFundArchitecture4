@@ -139,6 +139,12 @@ pub enum ControlId {
     Osc {
         path: String,
     },
+    /// A recognised pointer gesture. `id` is a direction (`direction.right`) or a template id.
+    /// Bindings use this control. The input itself stays [`SurfaceInput::Gesture`], which has no
+    /// control of its own.
+    Gesture {
+        id: String,
+    },
 }
 
 impl ControlId {
@@ -201,10 +207,14 @@ pub enum SurfaceInput {
         pressed: bool,
     },
     /// A recognised pointer gesture (MG1). `id` is a direction name (`direction.right`, …) or a
-    /// template id. The engine places this on the existing `surface.inject` path; it does not run a
-    /// command until a binding exists, which is a later phase.
+    /// template id. `context` is the panel the gesture was made in (`global` when empty). The
+    /// engine dispatches a bound gesture on the existing `surface.inject` path (MG2). This variant
+    /// has no [`ControlId`] of its own: the binding key is [`ControlId::Gesture`].
     Gesture {
         id: String,
+        /// Empty means the global context. Omitted from JSON when empty, so an MG1 gesture still parses.
+        #[serde(default, skip_serializing_if = "String::is_empty")]
+        context: String,
     },
     /// An absolute value with its resolution (7 or 14 bits); `value` is the raw value.
     Absolute {

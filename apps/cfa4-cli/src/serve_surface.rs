@@ -592,7 +592,7 @@ mod tests {
         assert!(!r.wants_reader(&prefs));
         prefs.devices.push(DeviceSetting {
             device: "midi:k:p".into(),
-            bindings: vec![Binding { control: cc41.clone(), command: "playback.toggle".into(), params: Value::Null }],
+            bindings: vec![Binding { control: cc41.clone(), command: "playback.toggle".into(), params: Value::Null, context: String::new() }],
             ..Default::default()
         });
         assert!(r.wants_reader(&prefs), "an assignment keeps the controllers read");
@@ -669,7 +669,7 @@ mod tests {
         let mut prefs = ControlSurfacePrefs::default();
         prefs.devices.push(DeviceSetting {
             device: "midi:k:p".into(),
-            bindings: vec![Binding { control: fader.clone(), command: "mixer.stripPan".into(), params: json!({"strip": "Mix"}) }],
+            bindings: vec![Binding { control: fader.clone(), command: "mixer.stripPan".into(), params: json!({"strip": "Mix"}), context: String::new() }],
             ..Default::default()
         });
         let mut r = Router::default();
@@ -705,6 +705,7 @@ mod tests {
                 control: ControlId::Midi { channel: 0, kind: MidiKind::Note, number: 60 },
                 command: "edit.undo".into(),
                 params: Value::Null,
+                context: String::new(),
             }],
             ..Default::default()
         });

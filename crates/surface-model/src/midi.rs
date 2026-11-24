@@ -92,6 +92,7 @@ pub fn control_label(c: &ControlId) -> String {
         ControlId::Hid { name, .. } => name.clone(),
         ControlId::Evdev { ev_type, code } => format!("evdev {ev_type}:{code}"),
         ControlId::Osc { path } => path.clone(),
+        ControlId::Gesture { id } => format!("gesture {id}"),
     }
 }
 

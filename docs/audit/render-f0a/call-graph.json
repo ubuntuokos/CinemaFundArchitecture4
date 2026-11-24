@@ -2641,6 +2641,13 @@
    "crate": "cfa4-engine",
    "kind": "struct",
    "module": "control_surfaces.rs",
+   "name": "StoredGesture"
+  },
+  {
+   "class": "other",
+   "crate": "cfa4-engine",
+   "kind": "struct",
+   "module": "control_surfaces.rs",
    "name": "Triggers"
   },
   {
@@ -2747,6 +2754,13 @@
    "kind": "enum",
    "module": "gesture_runtime.rs",
    "name": "PhysicalCode"
+  },
+  {
+   "class": "other",
+   "crate": "cfa4-engine",
+   "kind": "struct",
+   "module": "gesture_runtime.rs",
+   "name": "PointerAdapter"
   },
   {
    "class": "other",
