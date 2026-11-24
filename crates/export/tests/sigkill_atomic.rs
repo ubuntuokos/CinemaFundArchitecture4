@@ -3,9 +3,9 @@
 //! test binary run again) using `cfa4_export::atomic::AtomicOutput`; the parent kills it at random
 //! and at fixed moments and inspects the destination.
 //!
-//! What is measured: files with the *final name* are absent or complete, in every cycle. What is
-//! reported, not hidden: the staged `.cfa4-export-*` temp file of a killed writer stays in the
-//! destination directory (no destructor runs on SIGKILL); a sweep of those is a separate item.
+//! What is measured: files with the *final name* are absent or complete, in every cycle, and the
+//! staged `.cfa4-export-*` temp file of a killed writer (no destructor runs on SIGKILL) is removed
+//! by `sweep_orphans`, leaving nothing behind.
 //! The mutation check writes straight to the final name and must be caught.
 #![cfg(unix)]
 
@@ -16,7 +16,7 @@ use std::process::{Command, Stdio};
 use std::thread::sleep;
 use std::time::{Duration, Instant};
 
-use cfa4_export::atomic::{AtomicOutput, Overwrite};
+use cfa4_export::atomic::{AtomicOutput, Overwrite, sweep_orphans};
 
 const TOTAL: usize = 6 * 1024 * 1024;
 const CHUNK: usize = 64 * 1024;
@@ -106,7 +106,12 @@ fn killed_at_the_half_way_mark_leaves_no_final_file() {
     c.kill().expect("SIGKILL");
     c.wait().expect("wait");
     assert_eq!(final_state(d.path()), Ok(false), "the final name must not exist");
-    eprintln!("AC-08 fixed kill: final absent; orphan staged temp files: {}", temps(d.path()));
+    let orphans = temps(d.path());
+    assert_eq!(orphans, 1, "a killed writer leaves exactly its staged file");
+    let swept = sweep_orphans(d.path(), Duration::ZERO).expect("sweep");
+    assert_eq!(swept.len(), 1);
+    assert_eq!(temps(d.path()), 0, "the sweep leaves no staged file");
+    eprintln!("AC-08 fixed kill: final absent; orphan staged temp files {orphans}, swept {}", swept.len());
 }
 
 #[test]
@@ -127,8 +132,10 @@ fn random_time_kills_never_leave_a_truncated_final_file() {
             Err(e) => panic!("cycle {cycle}: {e}"),
         }
         orphans += temps(d.path());
+        sweep_orphans(d.path(), Duration::ZERO).expect("sweep");
+        assert_eq!(temps(d.path()), 0, "cycle {cycle}: the sweep must leave no staged file");
     }
-    eprintln!("AC-08 random kills: {CYCLES} cycles, final absent {absent}, complete {complete}, truncated 0; orphan staged temp files {orphans}");
+    eprintln!("AC-08 random kills: {CYCLES} cycles, final absent {absent}, complete {complete}, truncated 0; orphan staged temp files {orphans}, all swept");
     assert_eq!(absent + complete, CYCLES);
 }
 

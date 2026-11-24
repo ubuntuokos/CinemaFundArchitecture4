@@ -1,4 +1,4 @@
-//! `file.import` of a Kdenlive project (`.kdenlive`, K1): detected by content and extension, merged
+//! `file.import` of a Kdenlive project (`.kdenlive`, KDN-1): detected by content and extension, merged
 //! as a sequence with its clips, the report lists what is not imported yet.
 
 use serde_json::json;

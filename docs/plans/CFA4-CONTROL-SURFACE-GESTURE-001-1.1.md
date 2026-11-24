@@ -312,7 +312,7 @@ A normál egérfunkciók megőrzése kötelező.
 
 [ÚJ: V-12, V-13] Ismert ütközések a mai Qt GUI-ban, amelyeket az aktiválásnak kezelnie kell:
 - Az idővonal a jobb gomb **lenyomásakor** azonnal helyi menüt nyit (`python/cfa4_qt/panels/timeline.py` 2373–2378. sor). Jobb gombos gesztushoz a menünek a felengedéskor, mozgási küszöb alatt kell megnyílnia, különben a gesztus nem indulhat. Ez a meglévő viselkedés változása, ezért külön jóváhagyást és regressziós tesztet kér. [ÚJ: V-35] A helyi menü a logikai másodlagos gombhoz kötődik. A Qt-úton a `Qt.MouseButton.RightButton` már a rendszer kezességét követi (Qt-dokumentáció, `qnamespace.qdoc` 299–301. sor: „The left button may be the right button on left-handed mice”), így a mai idővonal-kód balkezes rendszeren is a másodlagos gombra nyit menüt. A gesztus-aktiválás ugyanezt a logikai gombot használja; evdev-úton a 8.4 leképezése adja.
-- A középső gomb ma pásztáz a monitorban (`panels/monitor.py` 439. sor), és bezárja a szekvencia fülét (`panels/timeline.py` 3386. sor). A Kdenlive-terv K53 pontja középső gombos görgetést tervez az idővonalra (`docs/plans/CFA4-KDENLIVE-PLAN-001-FINAL-1.0.md` 150., 595. sor).
+- A középső gomb ma pásztáz a monitorban (`panels/monitor.py` 439. sor), és bezárja a szekvencia fülét (`panels/timeline.py` 3386. sor). A Kdenlive-terv KDN-53 pontja középső gombos görgetést tervez az idővonalra (`docs/plans/CFA4-KDENLIVE-PLAN-001-FINAL-1.0.md` 150., 595. sor).
 - Alapértelmezésben ezért egyetlen aktiválási mód sincs bekapcsolva. A felhasználó kapcsolja be, és a GUI jelzi az ütközést.
 
 8. GESTURE MAPPING ÉS PROFILE RENDSZER

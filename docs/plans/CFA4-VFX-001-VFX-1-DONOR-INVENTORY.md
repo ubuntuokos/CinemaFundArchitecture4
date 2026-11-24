@@ -41,10 +41,10 @@ Sorok száma crate-enként (`wc -l`, csak méretrend, nem minőség):
 | `lumit-script` | 8 400 | scripting (T16) | vizsgálandó |
 | `lumit-flow` | 4 100 | csomópontgráf (VFX-2/3) | az adatmodell-döntés (X-1) szerint illesztendő |
 | `lumit-roto`, `lumit-track` | 2 400 / 11 500 | roto, követés (OBJECT-MASK gazda) | csak hiánylista a gazdának (VFX-7) |
-| `lumit-lottie` | 14 000 | Lottie (TITLE-CREDITS/K43 gazda) | csak hiánylista (X-7) |
+| `lumit-lottie` | 14 000 | Lottie (TITLE-CREDITS/KDN-43 gazda) | csak hiánylista (X-7) |
 | `lumit-ofx` (+ `-broker`) | 18 300 / 1 300 | OpenFX-host (ADR 0003 A4, G-18 gazda) | a render-terv F6 hatáskörében |
 | `lumit-scene` | 4 400 | 3D-jelenet (T9) | **felfüggesztve** az X-4 döntésig |
-| `lumit-import` | 23 000 | AE-projekt import (T12) | vizsgálandó (OTIO-terv és K43 átfedés) |
+| `lumit-import` | 23 000 | AE-projekt import (T12) | vizsgálandó (OTIO-terv és KDN-43 átfedés) |
 | `lumit-colour` | 9 600 | színkezelés (ADR 0003 A2 gazda) | csak referencia |
 | `lumit-gpu`, `lumit-render` | 63 400 / 101 900 | GPU-effektek (176 `.wgsl` shader) | effekt-szintű átvétel a F1/F2 szerint; a CFA4 GPU-ja (`G-07`) a gazda |
 | `lumit-ml` | 10 300 | helyi AI | a külön AI-terv hatásköre, nem tervezzük |

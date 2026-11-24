@@ -8,9 +8,12 @@
 
 #[rustfmt::skip]
 pub mod cdf_default;
+#[rustfmt::skip]
+pub mod block_tables;
 pub mod cdf_set;
 pub mod frame;
 pub mod obu;
+pub mod partition;
 pub mod seq;
 pub mod seq_tools;
 pub mod symbol;

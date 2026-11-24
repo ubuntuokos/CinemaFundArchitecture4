@@ -6,6 +6,7 @@ cargo test -p cfa4-h264                    # one crate
 cargo test --release -p cfa4-hevc          # codec tests are much faster in release
 cargo xtask ci                                  # gates fmt, clippy, layers, assets (not tests, not wasm)
 cargo xtask fixtures                            # pre-generate the ffmpeg fixture matrix
+cargo xtask parity --ci                         # measured parity vs the committed references and thresholds (needs a built cfa4-cli and .venv); `--check-ratchet --base REF`, `--check-checklist`
 CFA4_REQUIRE_ORACLES=1 cargo test --workspace   # CI: missing ffmpeg fails instead of skipping
 ```
 

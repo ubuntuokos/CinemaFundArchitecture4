@@ -83,6 +83,11 @@ cfa4-indeo45 = { path = "../crates/indeo45" }
 cfa4-indeo3 = { path = "../crates/indeo3" }
 cfa4-magicyuv = { path = "../crates/magicyuv" }
 cfa4-msvideo = { path = "../crates/msvideo" }
+cfa4-avs2 = { path = "../crates/avs2" }
+cfa4-avs3 = { path = "../crates/avs3" }
+cfa4-cinepak = { path = "../crates/cinepak" }
+cfa4-flic = { path = "../crates/flic" }
+cfa4-indeo = { path = "../crates/indeo" }
 cfa4-g729 = { path = "../crates/g729" }
 cfa4-mace = { path = "../crates/mace" }
 cfa4-truespeech = { path = "../crates/truespeech" }
@@ -694,6 +699,41 @@ bench = false
 [[bin]]
 name = "qdm2"
 path = "fuzz_targets/qdm2.rs"
+test = false
+doc = false
+bench = false
+
+[[bin]]
+name = "avs2"
+path = "fuzz_targets/avs2.rs"
+test = false
+doc = false
+bench = false
+
+[[bin]]
+name = "avs3"
+path = "fuzz_targets/avs3.rs"
+test = false
+doc = false
+bench = false
+
+[[bin]]
+name = "cinepak"
+path = "fuzz_targets/cinepak.rs"
+test = false
+doc = false
+bench = false
+
+[[bin]]
+name = "flic"
+path = "fuzz_targets/flic.rs"
+test = false
+doc = false
+bench = false
+
+[[bin]]
+name = "indeo"
+path = "fuzz_targets/indeo.rs"
 test = false
 doc = false
 bench = false

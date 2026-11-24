@@ -188,6 +188,20 @@ name = "cfa4-avi"
 version = "0.10.0"
 
 [[package]]
+name = "cfa4-avs2"
+version = "0.10.0"
+dependencies = [
+ "thiserror",
+]
+
+[[package]]
+name = "cfa4-avs3"
+version = "0.10.0"
+dependencies = [
+ "thiserror",
+]
+
+[[package]]
 name = "cfa4-bink"
 version = "0.10.0"
 dependencies = [
@@ -234,6 +248,13 @@ version = "0.10.0"
 dependencies = [
  "cfa4-bitstream",
  "rayon",
+ "thiserror",
+]
+
+[[package]]
+name = "cfa4-cinepak"
+version = "0.10.0"
+dependencies = [
  "thiserror",
 ]
 
@@ -326,6 +347,13 @@ dependencies = [
 ]
 
 [[package]]
+name = "cfa4-flic"
+version = "0.10.0"
+dependencies = [
+ "thiserror",
+]
+
+[[package]]
 name = "cfa4-frame"
 version = "0.10.0"
 dependencies = [
@@ -351,12 +379,15 @@ dependencies = [
  "cfa4-av1",
  "cfa4-av2",
  "cfa4-avi",
+ "cfa4-avs2",
+ "cfa4-avs3",
  "cfa4-bink",
  "cfa4-canopus",
  "cfa4-captions",
  "cfa4-cavs",
  "cfa4-cfb",
  "cfa4-cineform",
+ "cfa4-cinepak",
  "cfa4-credits",
  "cfa4-dcp",
  "cfa4-dirac",
@@ -366,6 +397,7 @@ dependencies = [
  "cfa4-dv",
  "cfa4-evc",
  "cfa4-ffv1",
+ "cfa4-flic",
  "cfa4-g729",
  "cfa4-h264",
  "cfa4-hap",
@@ -375,6 +407,7 @@ dependencies = [
  "cfa4-huffyuv",
  "cfa4-iab",
  "cfa4-ilbc",
+ "cfa4-indeo",
  "cfa4-indeo3",
  "cfa4-indeo45",
  "cfa4-interchange",
@@ -495,6 +528,13 @@ dependencies = [
 
 [[package]]
 name = "cfa4-ilbc"
+version = "0.10.0"
+dependencies = [
+ "thiserror",
+]
+
+[[package]]
+name = "cfa4-indeo"
 version = "0.10.0"
 dependencies = [
  "thiserror",

@@ -7,7 +7,7 @@
 //!
 //! Text only: every item names the committed document it comes from, and `--check-reference` (part
 //! of `cargo xtask ci`) verifies that the document is tracked by git, is not under `plan/`, and
-//! contains every path segment of the item. The file is read as hostile input: a fixed schema, only
+//! contains every path segment of the item as whole words. The file is read as hostile input: a fixed schema, only
 //! strings, bounded size, no `data:` / URL / base64 values and no duplicates.
 
 use super::*;
@@ -184,11 +184,32 @@ pub(super) fn check_items(file: &str, r: &RefV1, tracked: &dyn Fn(&str) -> bool,
             }
         });
         let Some(text) = text else { continue };
-        if let Some(part) = it.path.iter().find(|p| !text.contains(&norm(p))) {
+        if let Some(part) = it.path.iter().find(|p| !contains_phrase(text, &norm(p))) {
             errors.push(format!("{at}: {part:?} does not appear in {}", it.source));
         }
     }
     errors
+}
+
+/// Whether `phrase` occurs in the normalised `text` as whole words: not inside a longer word, so
+/// "info" is not found in "information" and "push" not in "pushed". An empty phrase never occurs.
+pub(super) fn contains_phrase(text: &str, phrase: &str) -> bool {
+    if phrase.is_empty() {
+        return false;
+    }
+    let mut from = 0;
+    while let Some(rel) = text.get(from..).and_then(|t| t.find(phrase)) {
+        let start = from + rel;
+        let end = start + phrase.len();
+        let before = text.get(..start).and_then(|t| t.chars().next_back());
+        let after = text.get(end..).and_then(|t| t.chars().next());
+        if !before.is_some_and(char::is_alphanumeric) && !after.is_some_and(char::is_alphanumeric) {
+            return true;
+        }
+        // step past the first character of this hit (on a character boundary)
+        from = start + text.get(start..).and_then(|t| t.chars().next()).map_or(1, char::len_utf8);
+    }
+    false
 }
 
 /// The area a committed reference file name stands for (`menus.json` → menus).

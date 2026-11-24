@@ -173,7 +173,9 @@ impl Pop {
         let mut value = 0u32;
         for _ in 0..n {
             let b = self.pop(r)?;
-            if b > i32::MAX as u32 - value - value {
+            // ffmpeg's `b > INT_MAX - value - value` in signed arithmetic: the right side goes
+            // negative once `value` passes 2^30
+            if i64::from(b) > i64::from(i32::MAX) - 2 * i64::from(value) {
                 return Err(Stop::Bad);
             }
             value = 2 * value + b;
