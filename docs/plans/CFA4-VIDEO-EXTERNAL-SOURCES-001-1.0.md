@@ -13,7 +13,7 @@ A CFA4 háromféleképpen kaphat külső videóforrásról adatot. A forrás min
 
 - **S0 – offline import:** a felhasználó saját fájlja (felirat, átirat, oEmbed-JSON). Nincs hálózat, és a PG-től független (V-8).
 - **S1 – oEmbed-metaadat:** csak a `cfa4-fetch` folyamaton át. Alapból kikapcsolva, minden kérés előtt jóváhagyó ablak jelenik meg, és minden kérés naplózódik (V-5).
-- **ÁSZF-engedélyes letöltés:** csak ott, ahol a platform ÁSZF-je kifejezetten megengedi. Ugyanazon az úton fut, mint az S1, a K18 közös letöltőre épül, és a motor csak a helyi fájlt kapja meg (V-9, V-11).
+- **ÁSZF-engedélyes letöltés:** csak ott, ahol a platform ÁSZF-je kifejezetten megengedi. Ugyanazon az úton fut, mint az S1, a KDN-18 közös letöltőre épül, és a motor csak a helyi fájlt kapja meg (V-9, V-11).
 
 Harmadik fél scraperei (S2) teljesen ki vannak zárva (V-2). A donorkatalógust a terv nem veszi át (V-1).
 
@@ -32,7 +32,7 @@ Harmadik fél scraperei (S2) teljesen ki vannak zárva (V-2). A donorkatalógust
   - `transcript.set` (docs/transcripts.md:26)
   - `ProjectItem::metadata` (crates/project/src/lib.rs:310–312)
 - `.fcproj` v17 az `external` mezővel, `v16_to_v17` migrációval és `repair()`-rel.
-- `cfa4-external` (L2) crate és `cfa4-fetch` (L6) program, a szolgáltatóleíró adatfájllal (K18).
+- `cfa4-external` (L2) crate és `cfa4-fetch` (L6) program, a szolgáltatóleíró adatfájllal (KDN-18).
 - Qt6 felület: importpanel, jóváhagyó ablak, Beállítások ▸ Külső források, naplónézet. Az egui be van fagyasztva, abba nem kerül új funkció (VISION.md 37–39).
 - A speech modellletöltésének átköltözése a `cfa4-fetch`-be (V-12).
 - A `mi.external_ref` származtatott tábla, csak a PG-4 után (V-7).
@@ -67,8 +67,8 @@ Harmadik fél scraperei (S2) teljesen ki vannak zárva (V-2). A donorkatalógust
 | Licenc nélküli forrás = „all rights reserved” | licensing.md:12–13 és 102 | Donor: V-1 |
 | Külön folyamatként futó külső program nem érinti a CFA4 licencét | licensing.md:108–111 | `cfa4-fetch` saját kód, GPL-3.0-or-later |
 | Tulajdonosi minta: kapcsolható külső szolgáltatás | docs/plans/SUBTITLE-STUDIO-PLAN-001-FINAL-1.2.md:220–222 és 253 (D3) | Külön folyamat, alapból KI, kifejezett bekapcsolás |
-| Tulajdonosi minta: K18 közös letöltő | docs/plans/CFA4-KDENLIVE-PLAN-001-FINAL-1.0.md:288, 324–326, 631 | Adatfájlban leírt szolgáltatók; letöltés előtt látszik a forrás, a méret és a licenc; jóváhagyás, hash, folytatás |
-| Figyelmeztetés távoli erőforrásra | KDENLIVE:129 és 585 (K46) | A motor URL-t nem nyit meg |
+| Tulajdonosi minta: KDN-18 közös letöltő | docs/plans/CFA4-KDENLIVE-PLAN-001-FINAL-1.0.md:288, 324–326, 631 | Adatfájlban leírt szolgáltatók; letöltés előtt látszik a forrás, a méret és a licenc; jóváhagyás, hash, folytatás |
+| Figyelmeztetés távoli erőforrásra | KDENLIVE:129 és 585 (KDN-46) | A motor URL-t nem nyit meg |
 | Online frissítés csak kézi paranccsal | docs/plans/CFA4-CINECERT-001-v2.3.md:298 és 303 | Nincs háttérkérés |
 | Titok csak a keyringben | crates/project/src/studio.rs:13; docs/plans/CFA4-LIVE-STUDIO-001.md:104–106; CINECERT:189, 311, 316 | A v1.0-ban nincs titok (V-3, V-4) |
 | Online táblázatok „a cfa4-fetch-re várnak” | docs/credits-plan.md:330–331; docs/plans/CFA4-TITLE-CREDITS-001-1.0-CFA4-ILLESZTES.md:246 | Más tervek is a `cfa4-fetch`-re várnak |
@@ -76,7 +76,7 @@ Harmadik fél scraperei (S2) teljesen ki vannak zárva (V-2). A donorkatalógust
 | Hálózati URL automatikusan nem futhat; az első kör helyi fájl | docs/plans/CFA4-FFMPEG-BACKEND-R1.md:109 és 181 | A motor és a médiaháttér csak helyi fájlt kap |
 | Külső folyamat mintája (tulajdonos által jóváhagyva) | docs/plans/CFA4-DCPOMATIC-001-FINAL-1.0.md:4 (végleges, jóváhagyva 2026-11-13), 42 (D2), 71 és 74; megvalósítva: crates/dcpomatic/src/process.rs:1–3, 28–68, 99–132, crates/dcpomatic/README.md:44–56; ugyanez a minta: crates/dcp-inspect/README.md:51–61; az ADR-0011:37–43 és 79–80 ugyanezt írja le, de az ADR státusza még „javasolt” (3–5) | Argumentumtömb, shell nélkül, saját folyamatcsoport, kiürített környezet, privát 0700-s HOME/TMPDIR/munkakönyvtár, SIGINT, majd 5 s után SIGKILL, időtúllépés, ellenőrzés indulás előtt, a program keresése sosem a PATH-on. Eltérés: 5.1 |
 | Helyi ellenőrzés internet nélkül; külső folyamat argumentumai biztonságosan; ideiglenes fájlok törlése | docs/plans/DCP-VALIDATION-2026-10-27.md:53, 526, 528 | Ugyanaz az elv: S0 hálózat nélkül, 5.1 |
-| MI: csak a K18-on át, jóváhagyással; felhős MI csak külön ADR-rel | AI_modules ADR-0008:117–119 és 331–332 (@`fc8b7335`) | V-4: kulcsos API csak külön ADR-rel |
+| MI: csak a KDN-18-on át, jóváhagyással; felhős MI csak külön ADR-rel | AI_modules ADR-0008:117–119 és 331–332 (@`fc8b7335`) | V-4: kulcsos API csak külön ADR-rel |
 | Az igazságforrás a `.fcproj`; a mi származtatott | DATA-PG terv:48, 400, 561 (P8, I5) | V-6, V-7 |
 | Offline-first; az adat nem hagyja el a gépet | DATA-PG terv:78–79 és 435 (R1, R2) | S0 hálózat nélkül; S1 kérésenként |
 | A terv a `main`-en él | VISION.md:56–57 | F0: a jóváhagyott terv a `main`-re kerül |
@@ -221,7 +221,7 @@ fn v16_to_v17(doc: Value) -> Result<Value, String> {
 - **URL-mezők** (`author_url`, `provider_url`, `thumbnail_url`) csak `https://` sémával maradnak meg (oembed.com §3). Szövegként tárolódnak, a CFA4 nem nyitja meg őket.
 - **S0** fájlnév, nyelv és formátum mezőket tárol.
 
-### 4.5 A szolgáltatóleíró adatfájl (K18, V-11)
+### 4.5 A szolgáltatóleíró adatfájl (KDN-18, V-11)
 
 - Hely: `data/external-providers/<id>.toml`.
 - A csomag a validátoron átment, F2-ben jóváhagyott leírókat viszi.
@@ -480,9 +480,9 @@ Kötelező CI-kapuk:
 | **F0** Szabály és dokumentum | A terv a `main`-re kerül (VISION.md:56–57). VISION §8 bejegyzés: „Külső videóforrás: oEmbed-metaadat és ÁSZF-engedélyes letöltés kapcsolhatóan, külön folyamatban (`cfa4-fetch`), alapból kikapcsolva, kérésenkénti jóváhagyással és naplózással (CFA4-VIDEO-EXTERNAL-SOURCES-001)”. Ez a VISION.md:186 kérdést erre a területre zárja le, a SUBTITLE D3 mintájára (SUBTITLE-1.2:253). SECURITY D5 kiegészítés: a `cfa4-fetch` céljai közé felkerül az „F2-ben jóváhagyott oEmbed- és letöltési szolgáltatók, a leíró host-engedélylistájával” | A tulajdonos jóváhagyja ezt a tervet | A VISION és a SECURITY-001 módosítása egyesítve, a tulajdonos jóváhagyásával | – |
 | **F1** Adatmodell | 4.1–4.3: `ExternalRecord`, v17, `v16_to_v17`, `repair_external()`; a `cfa4-external` váza a validátorral és a tiltólistával (4.5, 6.), még szolgáltató nélkül | F0 | 7. fejezet project-, format- és external-tesztjei zöldek; `cargo xtask layers` PASS | F0 |
 | **F2** Jogi kapu | Szolgáltatónként ÁSZF-ellenőrzés (`tos_source`, `tos_date`, `tos_quote`, `tos_permits`), GDPR-értékelés (`author_name`, napló), licencszöveg; döntési bejegyzés (`legal_gate`); YouTube-letöltés nincs | F0 | Minden felvett leíró validátoron átment, és tulajdonosi bejegyzés tartozik hozzá. Nulla leíró is érvényes kimenet | F0 (az F1-gyel párhuzamos) |
-| **F3** `cfa4-fetch` és a K18-mag | 5.1–5.7: folyamat, önlezárás, host-engedélylista, három kapcsolószint, jóváhagyó ablak, napló; a speech-letöltés átköltöztetése (V-12) | F1; a `cfa4-sandbox` önlezárása használható a `fetch` profilhoz (sandbox/README.md:6: ma még egyik folyamat sem alkalmazza) | 7. fejezet fetch-, sandbox-, kapcsoló-, napló- és speech-tesztjei zöldek; a motorban nincs `ureq`; threat-model P6 lezárva (threat-model.md:50, 57) | F1, SECURITY-001 B-fázisai (CFA4-SECURITY-001.md:125, D8) |
+| **F3** `cfa4-fetch` és a KDN-18-mag | 5.1–5.7: folyamat, önlezárás, host-engedélylista, három kapcsolószint, jóváhagyó ablak, napló; a speech-letöltés átköltöztetése (V-12) | F1; a `cfa4-sandbox` önlezárása használható a `fetch` profilhoz (sandbox/README.md:6: ma még egyik folyamat sem alkalmazza) | 7. fejezet fetch-, sandbox-, kapcsoló-, napló- és speech-tesztjei zöldek; a motorban nincs `ureq`; threat-model P6 lezárva (threat-model.md:50, 57) | F1, SECURITY-001 B-fázisai (CFA4-SECURITY-001.md:125, D8) |
 | **F4** S0 Qt6-import | Importpanel: SRT/VTT/átirat-JSON/oEmbed-JSON fájlból, `ExternalRecord` `UserFile`-lal; a forrás látszik a Project panel metaadatában | F1 | Qt6 valódi motoros teszt; hálózat nélkül teljes | F1 (az F2-től és F3-tól független, V-8) |
-| **F5** S1 és engedélyes letöltés | Az F2 leírói élesben, mindhárom kapcsolóval és jóváhagyással; letöltés a K18-on át, hash-ellenőrzéssel, helyi importtal | F2 legalább egy leíróval; F3; F4 | 10. fejezet AC-1–AC-16 PASS; kézi futás valódi szolgáltatással | F2, F3, F4 |
+| **F5** S1 és engedélyes letöltés | Az F2 leírói élesben, mindhárom kapcsolóval és jóváhagyással; letöltés a KDN-18-on át, hash-ellenőrzéssel, helyi importtal | F2 legalább egy leíróval; F3; F4 | 10. fejezet AC-1–AC-16 PASS; kézi futás valódi szolgáltatással | F2, F3, F4 |
 | **F6** `mi.external_ref` | 4.7 DDL, újraépítés, keresés | A DATA-PG PG-4 kész (DATA-PG terv:442) | mi-tesztek zöldek; újraépítés bizonyítva | PG-4, F1 |
 
 ## 9. Kockázatok
@@ -499,7 +499,7 @@ Kötelező CI-kapuk:
 | A céges proxy nem használható | Szándékos (6. fejezet, 4. pont); a „nem elérhető” állapotot a GUI kiírja |
 | Szerzői jog a letöltött és importált tartalomra | `licence` és `tos` a rekordban; licenc nélkül a felhasználónak kell döntenie (licensing.md:12–13) |
 | Személyes adat a metaadatban (`author_name`) | Csak helyben; nem kerül a PG-be (4.7); a kommentek kizárva |
-| A K18-at a KDENLIVE P2 prioritással tervezi (KDENLIVE:288); ma nincs kódja | A K18-magot ennek a tervnek az F3-a készíti el; a további K18-szolgáltatók (Hugging Face, Freesound, Pixabay) erre épülnek |
+| A KDN-18-at a KDENLIVE P2 prioritással tervezi (KDENLIVE:288); ma nincs kódja | A KDN-18-magot ennek a tervnek az F3-a készíti el; a további KDN-18-szolgáltatók (Hugging Face, Freesound, Pixabay) erre épülnek |
 | Az ADR-0011 státusza még „javasolt” (ADR-0011:3–5), pedig a CFA4-DCPOMATIC-001 szerint az 1. fázis PR-jének kellett volna hozzáigazítania (CFA4-DCPOMATIC-001:6 és 65) | A folyamatminta tulajdonosi jóváhagyása a CFA4-DCPOMATIC-001-ből jön (4. és 42. sor), és a minta megvalósítva is van (process.rs). Ez a terv az ADR-0011-et csak leíró forrásként használja |
 
 ## 10. Elfogadási kritériumok
@@ -533,9 +533,9 @@ Kötelező CI-kapuk:
 | V-6 | Az igazságforrás a `.fcproj` v17: külön `external` mező, `v16_to_v17` migráció. |
 | V-7 | A `mi.external_ref` származtatott tábla a mi sémában, csak a PG-4 után. |
 | V-8 | Az S0 a PG-től függetlenül indulhat. |
-| V-9 | Videóletöltés URL-ről csak ott, ahol a platform ÁSZF-je kifejezetten engedi. Szolgáltatónkénti adatfájlban az ÁSZF-forrással és dátummal; ellenőrzés az F2 jogi kapuban; csak a `cfa4-fetch`-en és a K18-on át; alapból kikapcsolva; jóváhagyó ablakkal (forrás, méret, licenc); hash-ellenőrzéssel; soha nem automatikusan (FFMPEG-R1:109, 181). A motor csak a helyi fájlt kapja meg. ÁSZF-engedély nélkül (pl. YouTube) nincs letöltés. |
+| V-9 | Videóletöltés URL-ről csak ott, ahol a platform ÁSZF-je kifejezetten engedi. Szolgáltatónkénti adatfájlban az ÁSZF-forrással és dátummal; ellenőrzés az F2 jogi kapuban; csak a `cfa4-fetch`-en és a KDN-18-on át; alapból kikapcsolva; jóváhagyó ablakkal (forrás, méret, licenc); hash-ellenőrzéssel; soha nem automatikusan (FFMPEG-R1:109, 181). A motor csak a helyi fájlt kapja meg. ÁSZF-engedély nélkül (pl. YouTube) nincs letöltés. |
 | V-10 | A hét tiltott kategória bekerül a tervbe: vízjel-eltávolítás, nézettség-generálás, cookie-alapú hozzáférés, residential proxy, email- és telefonszám-gyűjtés, felnőtt tartalom, kommentek tömeges gyűjtése. |
-| V-11 | A közös letöltő a K18-ra épül, szolgáltatóleíró adatfájllal. |
+| V-11 | A közös letöltő a KDN-18-ra épül, szolgáltatóleíró adatfájllal. |
 | V-12 | A speech `ureq`-letöltés átköltözése a `cfa4-fetch`-be az S1 előfeltétele. |
 | V-13 | A `cfa4-fetch` programszinten kikényszerített host-engedélylistát kap. |
 | V-14 | A project-files.md csúszása (v13 a v16 helyett) külön dokumentációs javítás; a terv csak említi. |

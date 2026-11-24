@@ -7,7 +7,7 @@
 | Tulajdonos, jóváhagyó | ubuntuokos (István) |
 | Forrás | OpenShot-fork-audit (hat repository, 2026-11-03); a munkaváltozat: [Claude Doc](https://claude.ai/artifact/68ssSH9L61i5JfDzyztRC4) |
 | Vizsgált állapot | CFA4 `main` 942d046; CFA4-AI_modules e241771; [OpenShot/libopenshot](https://github.com/OpenShot/libopenshot) `develop` 528ebb1 (2026-11-01) |
-| Kapcsolódó | [ADR 0008](https://github.com/ubuntuokos/CFA4-AI_modules/blob/main/docs/adr/ADR-0008-ai-processing-layer.md) (AI-réteg), [Kdenlive-terv](../kdenlive-parity.md) K4, [gaps](../gaps.md) G12 és G18, [ADR 0004](../adr/ADR-0004-compute-routing.md) |
+| Kapcsolódó | [ADR 0008](https://github.com/ubuntuokos/CFA4-AI_modules/blob/main/docs/adr/ADR-0008-ai-processing-layer.md) (AI-réteg), [Kdenlive-terv](../kdenlive-parity.md) KDN-4, [gaps](../gaps.md) G12 és G18, [ADR 0004](../adr/ADR-0004-compute-routing.md) |
 
 ## 1. Összefoglaló
 
@@ -49,7 +49,7 @@ Döntések:
 | SORT Hungarian-rész | BSD-3-Clause (Cong Ma) | – | – | Rustban újraírjuk |
 | Ultralytics YOLO | AGPL-3.0 | AGPL-3.0 | COCO | **Tilos** |
 | RT-DETR, D-FINE, YOLOX | Apache-2.0 | Apache-2.0 | COCO | Detektorjelöltek |
-| SAM2 | Apache-2.0 | Apache-2.0 | SA-V, SA-1B | A K4 célmodellje |
+| SAM2 | Apache-2.0 | Apache-2.0 | SA-V, SA-1B | A KDN-4 célmodellje |
 | EfficientSAM | Apache-2.0 | Apache-2.0 | SA-1B | Használható, ha a SA-1B feltételei megfelelnek |
 | Cutie | MIT | MIT (repó szerint) | többek közt MOSE | Tisztázandó: a MOSE nem kereskedelmi |
 | ONNX Runtime, `ort` | MIT; MIT OR Apache-2.0 | – | – | Rendben |
@@ -120,7 +120,7 @@ Becslés (mérés nélkül): A szakasz 60–100 óra; C szakasz modellenként 30
 István válasza: „indulhat; SAM2; javaslatod szerint; gyorsítótár; javaslatod szerint”. A kérdésekhez rendelve:
 
 - **Indulhat:** a terv frissítése (Változások, 2026-11-20) és az A szakasz végrehajtása jóváhagyva.
-- **Modell:** **SAM2** egyedül (a K4 szerint); EfficientSAM + Cutie nem kell. A C++-worker csak akkor kerül elő, ha a SAM2 ONNX/Rust útja nem elég gyors.
+- **Modell:** **SAM2** egyedül (a KDN-4 szerint); EfficientSAM + Cutie nem kell. A C++-worker csak akkor kerül elő, ha a SAM2 ONNX/Rust útja nem elég gyors.
 - **Első detektor** (javaslat szerint): az Apache-2.0 jelöltek (RT-DETR, D-FINE, YOLOX) közül a 2K-s sebesség mérése dönt a referenciagép RTX A4000 kártyáján, a C szakasz előtt.
 - **RLE-maszkok helye:** **tartalomcímzett gyorsítótár**, hash-hivatkozással (`MaskRef`) a projektben.
 - **`routing.toml` ai család és ADR 0008 ONNX-döntése** (javaslat szerint): az eltérést az ADR 0008 gazdája húzza össze; az A szakasz ezt nem érinti.

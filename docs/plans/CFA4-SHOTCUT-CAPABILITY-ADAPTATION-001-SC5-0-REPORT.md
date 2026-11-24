@@ -73,7 +73,7 @@
 
 ## 5. Hogyan használható a közös MLT-mag (D1)
 
-A Kdenlive-terv K1/K42 ugyanezt a szerkezetet olvassa (`kdenlive:` tulajdonságokkal). A közös mag felelőssége a T1–T5, T8, T12–T14 szerinti, dialektusfüggetlen rész (profil, idő, producer/chain, playlist, tractor, transition, szűrő és animáció); a dialektusonkénti rész a `shotcut:*`/`kdenlive:*` tulajdonságok és a szűrőtáblák. Az SC-5.1 és a K1 első szállítása ezért **egy közös PR-sorozat** legyen; ennek ütemezése a tulajdonos és a gazda döntése (§2.8).
+A Kdenlive-terv KDN-1/KDN-42 ugyanezt a szerkezetet olvassa (`kdenlive:` tulajdonságokkal). A közös mag felelőssége a T1–T5, T8, T12–T14 szerinti, dialektusfüggetlen rész (profil, idő, producer/chain, playlist, tractor, transition, szűrő és animáció); a dialektusonkénti rész a `shotcut:*`/`kdenlive:*` tulajdonságok és a szűrőtáblák. Az SC-5.1 és a KDN-1 első szállítása ezért **egy közös PR-sorozat** legyen; ennek ütemezése a tulajdonos és a gazda döntése (§2.8).
 
 ---
 
@@ -91,7 +91,7 @@ A Kdenlive-terv K1/K42 ugyanezt a szerkezetet olvassa (`kdenlive:` tulajdonságo
 
 1. **Egyetlen valódi Shotcut-projektet láttam** (T16: egy klip, egy sáv, nincs vágás, szűrő vagy klipek közti mix, nincs hang). A cloud-környezetben nincs Shotcut (grafikus alkalmazás). A lezáráshoz még kellene **2–3 valódi `.mlt`** a tulajdonos Shotcutjából: (a) két videósáv + egy hangsáv, vágott és trimmelt klipekkel, üres résszel; (b) két szomszédos klip köztes átmenettel (a T8 mix-bejegyzés valódi alakja) és hang-keresztáttűnéssel; (c) néhány szűrő (fade be/ki, fényerő, vágás, hangerő), egy sebességváltás és egy klipmarker. Idegen vagy jogilag nem tisztázott projektfájl nem kerül a repóba.
 2. A D4 szerinti „legfrissebb stabil” a mintából **26.2.16**; a **régebbi verzió** neve még nincs megadva.
-3. A **teljes szűrő- és paraméter-táblát** (K20-minta) nem készítettem el; a 8. pont melléklete csak a szolgáltatás-leképezés kiindulópontja. A paraméternevek és skálák (fényerő, kontraszt, telítettség) és a Lumetri-megfeleltetés az SC-5.3 dolga.
+3. A **teljes szűrő- és paraméter-táblát** (KDN-20-minta) nem készítettem el; a 8. pont melléklete csak a szolgáltatás-leképezés kiindulópontja. A paraméternevek és skálák (fényerő, kontraszt, telítettség) és a Lumetri-megfeleltetés az SC-5.3 dolga.
 4. A `shotcut:transition` további értékeit (az `lumaMix`-en kívül) nem soroltam fel.
 5. A mix B-oldalának forrástartománya (3. pont).
 6. A Shotcut `Subtitles`, `Overlay HTML` és `Text` szűrők tartalom- és stílusmezőit nem vizsgáltam részletesen.
@@ -109,4 +109,4 @@ Formátum: `shotcut:filter név → MLT-szolgáltatás`. Hang: (h). A név nélk
 
 **Név nélküli sorok (csak szolgáltatás):** avfilter.chromahold, fspp, hflip, hue, lut3d, random, smartblur, tmix, vflip, vibrance · charcoal · choppy · dropshadow · dust · frei0r.alphaspot, bluescreen0r, c0rners, cairoimagegrid, defish0r, distort0r, glitch0r, hqdn3d, keyspillm0pup, lenscorrection, levels, pixeliz0r, premultiply, rgbsplit0r, select0r, spillsupress · gpsgraphic · gpstext · grain · hslprimaries · hslrange · invert · lines · mask_apply · movit.diffusion · oldfilm · opencv.tracker · openfx.wtf.vala^NtscRs · outline · sepia · strobe · tcolor · threshold · timeremap · vidstab · wave · brightness · lift_gamma_gain
 
-**Következtetés a leképezéshez:** a CFA4 megfelelője most is megvan a fényerőre, színkorrekcióra (Lumetri), vágásra és méretezésre (Crop, Transform), elmosásra (Gaussian Blur), invertálásra, hangerőre/fade-re/panorámára és a sebességre; a **frei0r/avfilter/ladspa/vst/opencv/openfx** csoport külső bővítmény, ezek a tervben „nem támogatott, jelentve” osztályba esnek (K5/K44 később nyithatja meg).
+**Következtetés a leképezéshez:** a CFA4 megfelelője most is megvan a fényerőre, színkorrekcióra (Lumetri), vágásra és méretezésre (Crop, Transform), elmosásra (Gaussian Blur), invertálásra, hangerőre/fade-re/panorámára és a sebességre; a **frei0r/avfilter/ladspa/vst/opencv/openfx** csoport külső bővítmény, ezek a tervben „nem támogatott, jelentve” osztályba esnek (KDN-5/KDN-44 később nyithatja meg).

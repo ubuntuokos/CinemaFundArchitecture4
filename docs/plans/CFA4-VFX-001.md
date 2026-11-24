@@ -40,7 +40,7 @@ Kiindulás: `VISION.md` §4 (Resolve: „Fusion-szerű csomópontos kompozitál�
 | **X-4** | A 3D/VFX mélysége (`VISION.md` §8) | A VFX-8 munkacsomag **felfüggesztve a tulajdonos §8-as döntéséig**. Az ajánlott első lépés a render-terv szerinti külső EXR-csere, a natív 3D-szerkesztés később. A `VISION.md`-t ez a terv nem módosítja. |
 | **X-5** | Külső 3D-backend | Egy közös EXR/USD-job-szerződés; az első implementáció a render-terv G-26 szerint PASS-minősítésű Blender (külső folyamat), a Gaffer ugyanazon szerződés másik backendje, a render-terv A6/A7/A11 szabályai alatt (külön nyilvántartott Python, host coexistence). |
 | **X-6** | `VISION.md` §4 bővítése | Javaslat a tulajdonosnak: az After Effects (viselkedési referencia) és a VFX-donorok felvétele. Amíg nem történik meg, a terv nem hivatkozik a VISION felhatalmazására ezekre. |
-| **X-7** | Lottie | Egyetlen gazda: a `CFA4-TITLE-CREDITS-001` főcímgenerátor (Kdenlive-terv K43). A VFX-projekt nem készít Lottie-értelmezőt. |
+| **X-7** | Lottie | Egyetlen gazda: a `CFA4-TITLE-CREDITS-001` főcímgenerátor (Kdenlive-terv KDN-43). A VFX-projekt nem készít Lottie-értelmezőt. |
 | **X-8** | WASM-plugin-host | Nem része a tervnek. Ha később szükséges: külön ADR a `cfa4-sandbox` (`CFA4-SECURITY-001`) szabályai szerint. |
 
 ### 3.1 Projekthatár-táblázat (mit nem építünk újra)
@@ -50,15 +50,15 @@ Kiindulás: `VISION.md` §4 (Resolve: „Fusion-szerű csomópontos kompozitál�
 | Render-DAG, scheduler, cache, CPU/GPU backend, job API | `CFA4-RENDER-INTEGRATION-PLAN-001` (F3, F4, C0) | Igényt ad át; a `VfxGraph`-ot az F3 fordítja |
 | OCIO, OpenImageIO, OpenEXR, képszekvencia-I/O, AOV | ADR 0003 A2/A3, render-terv F5 | Függőség; csatorna-igények (depth, motion, cryptomatte) átadása |
 | OpenFX-host | ADR 0003 A4 (cél: 2026-11-21) | Nincs; a Natron csak képességminta, `openfx-misc` plugin |
-| Objektumkövetés, maszkforrás, objektummaszk, SAM2 | `OBJECT-MASK-PLAN-001`, Kdenlive K4, AI-terv | Csak hiánylista (planar/camera track, finomítás, paint) |
-| Szöveg, alakzat, text animator, címek, stáblista, vonalrajz, Lottie | `TITLE-CREDITS-001`, `LINEART-001`, K43, `docs/graphics.md` | Csak a nem lefedett igények (repeater, trim path), egyeztetve |
+| Objektumkövetés, maszkforrás, objektummaszk, SAM2 | `OBJECT-MASK-PLAN-001`, Kdenlive KDN-4, AI-terv | Csak hiánylista (planar/camera track, finomítás, paint) |
+| Szöveg, alakzat, text animator, címek, stáblista, vonalrajz, Lottie | `TITLE-CREDITS-001`, `LINEART-001`, KDN-43, `docs/graphics.md` | Csak a nem lefedett igények (repeater, trim path), egyeztetve |
 | Feladatsor, ütemezés, erőforrás-kezelés, render queue | `TASKSTORE-PG-001`, ACS, ADR 0007, Event Fabric, render C0 | Nincs új sor |
 | Sandbox | `CFA4-SECURITY-001` (`cfa4-sandbox`) | Szabályokat követ |
 | OTIO, EDL, FCPXML, AAF | `OTIO-INTEGRATION` | Nincs; megvan |
 | Validációs alap, golden, metrikák | render-terv F0V (`cfa4-golden`, `cfa4-metrics`, `cfa4-qc`, `cfa4-testkit`) | Ezen fut; küszöb: *Küszöb@F0* |
 | Smart Render, render bar | `SMART-CUT-RENDER-R1`, `SMART-RENDER` | Nincs |
 | Élő grafika | `LIVE-STUDIO-001` (C10) | A közös grafikus réteget nem törheti |
-| Kdenlive/MLT | Külön projekt (K1, K20, K43) | Nincs; a K20 táblát a katalógus hivatkozza |
+| Kdenlive/MLT | Külön projekt (KDN-1, KDN-20, KDN-43) | Nincs; a KDN-20 táblát a katalógus hivatkozza |
 | AI-modellek, model manager | `CFA4-AI_modules` ADR 0008, `AI-MODEL-TRAINING-001` | Csak interfész |
 | OpenVDB-adat, volume-előnézet, térbeli kifejezés (kontextus a közös kifejezésmagon) | `CFA4-DNEG-TECHNOLOGY-ADAPTATION-001` (N1–N3) | A kifejezésmagot (VFX-4) adja; a DNEG-munka a mátrixban `DNEG-M1…M3` |
 | Reprezentáció-réteg (mesh, pont, volume, görbe, példány, impostor) | `CFA4-ARF-001` | Csak bemenet a VFX-6-nak; nincs második részecskemotor |
@@ -90,7 +90,7 @@ Jelölés: a **render-terv fázisai (F3, F4, F5, C0, F9)**, az **OBJECT-MASK** �
 | **VFX-4** | Kifejezésmotor | determinisztikus motor, sandbox-profil | VFX-2; `cfa4-sandbox` | seedelt `wiggle` azonos képkockát ad lineáris és véletlen elérésnél; fuel/idő/memória korlát; fuzz |
 | **VFX-5** | EC-donor effektek átvétele (P0 → P1 → P2) | effektek a regiszterben (csak hozzáfűzés), CPU-referencia, majd GPU | VFX-1, render F3/F4 | golden a F0V-harnessen; `ec.*`-alias, a CFA4-azonosító nem íródik felül; MQ-1…8 |
 | **VFX-6** | Részecskék kiterjesztése | bővített `particles` | VFX-1, render F3/F4 | 1000+ frame véletlen elérés, azonos hash; CPU/GPU a F0V-küszöbön |
-| **VFX-7** | Hiánylisták átadása | dokumentum a gazdaprojekteknek: OBJECT-MASK (planar/camera track, paint), grafikai tervek (repeater, trim path), K43 (Lottie-export) | VFX-1 | a gazdaprojekt visszaigazolta; nincs párhuzamos kód |
+| **VFX-7** | Hiánylisták átadása | dokumentum a gazdaprojekteknek: OBJECT-MASK (planar/camera track, paint), grafikai tervek (repeater, trim path), KDN-43 (Lottie-export) | VFX-1 | a gazdaprojekt visszaigazolta; nincs párhuzamos kód |
 | **VFX-8** | 3D és külső 3D-backend | EXR/USD-job-szerződés, Blender-, majd Gaffer-backend | **tulajdonosi döntés (X-4, X-5)**; render F5, C0 | USD→EXR AOV→CFA4 export; timeout/crash tartalék; A6/A7/A11 |
 | **VFX-9** | E2E és kiadási igazolás | a 7. fejezet tesztjei a render-terv F9/AC-kapukon | VFX-2…VFX-6 | `PASS` csak mért eredménnyel |
 | **VFX-X1** | Folyamatos: forrás- és referencia-drift | donor-SHA-frissítés, Adobe stabil/béta delta | VFX-1 | nem módosítja automatikusan a stabil baseline-t |
@@ -108,7 +108,7 @@ Jelölés: a **render-terv fázisai (F3, F4, F5, C0, F9)**, az **OBJECT-MASK** �
 | `parity_level` | `NAME_MATCH_UNVERIFIED`, `API_PARITY`, `PARAM_PARITY`, `VISUAL_PARITY_TESTED`, `DIFFERENT`, `UNKNOWABLE` |
 | `integration_decision` | a repó szótára (6.2) |
 | `owner_project` | melyik projekt gazdája a képességnek (3.1 szerint) |
-| `aliases` | régi azonosítók: `ec.*`, AE-neve, K20-azonosító |
+| `aliases` | régi azonosítók: `ec.*`, AE-neve, KDN-20-azonosító |
 | `license_status` | `PENDING`, `APPROVED`, `APPROVED_WITH_NOTICE`, `REJECTED`, `NOT_APPLICABLE` |
 | `verification` | CPU, GPU, Qt6, export, E2E: `UNTESTED`/`PASS`/`FAIL`/`NOT_APPLICABLE` + bizonyíték |
 
@@ -118,7 +118,7 @@ Szabály: egy képességnek egy elsődleges megvalósítása van; a név nem kul
 
 T1 VFX alaprendszer · T2 kép és matte · T3 szín és finishing · T4 2D motion graphics · T5 animáció és vezérlés (itt van az expression) · T6 tracking, stabilizálás, roto · T7 warp, deform, paint · T8 részecskék, szimuláció · T9 2.5D/3D · T10 3D lookdev és render · T11 immersive és sztereó · T12 plugin és interchange · T13 lokális AI VFX · T14 legacy és kapcsolódó (audio) · **T15 render, cache, ütemezés** (gazda: render- és TASKSTORE-terv) · **T16 munkaterület, automatizálás, scripting** (gazda: meglévő Qt6/parancsrendszer).
 
-Az AE-01…AE-19 hozzárendelése (elsődleges család → hely): AE-01 T1 → meglévő `Sequence`/`AdjustmentLayer`; AE-02 T5 → VFX-4; AE-03 T1 → meglévő Effect Controls; AE-04 T2 → meglévő kompozitor; AE-05 T2 → VFX-5, MI-rész OBJECT-MASK; AE-06/07 T6 → OBJECT-MASK; AE-08 T4 → grafikai tervek; AE-09 T5 → VFX-4; AE-10 T9 → VFX-8; AE-11 T8 → VFX-6; AE-12 T3 → ADR 0003 A2; AE-13 T15 → render/TASKSTORE; AE-14 T12 → OTIO-terv, K43; AE-15 T12 → ADR 0003 A4; AE-16 T16 → meglévő MCP/vezérlőcsatorna; AE-17 T16 → VFX-3; AE-18 T13 → AI-terv; AE-19 béta → `reference_status = BETA`, P3, VFX-X1.
+Az AE-01…AE-19 hozzárendelése (elsődleges család → hely): AE-01 T1 → meglévő `Sequence`/`AdjustmentLayer`; AE-02 T5 → VFX-4; AE-03 T1 → meglévő Effect Controls; AE-04 T2 → meglévő kompozitor; AE-05 T2 → VFX-5, MI-rész OBJECT-MASK; AE-06/07 T6 → OBJECT-MASK; AE-08 T4 → grafikai tervek; AE-09 T5 → VFX-4; AE-10 T9 → VFX-8; AE-11 T8 → VFX-6; AE-12 T3 → ADR 0003 A2; AE-13 T15 → render/TASKSTORE; AE-14 T12 → OTIO-terv, KDN-43; AE-15 T12 → ADR 0003 A4; AE-16 T16 → meglévő MCP/vezérlőcsatorna; AE-17 T16 → VFX-3; AE-18 T13 → AI-terv; AE-19 béta → `reference_status = BETA`, P3, VFX-X1.
 
 ### 6.2 Státuszszótár (a repó szótárával összehangolva)
 
