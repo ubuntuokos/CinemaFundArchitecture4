@@ -1,6 +1,6 @@
 # CFA4-FFMPEG-9.1-001 – Átállás a CFA4 saját FFmpeg-buildjében 9.0.2-ről 9.1-re
 
-**Verzió:** 1.2 (a D1–D7 eldöntve; a hivatalos forrással összevetve; a D8 nyitott)
+**Verzió:** 1.3 (a D1–D7 és a D9 eldöntve; a hivatalos forrással összevetve; a D8 nyitott)
 **Dátum:** 2026-11-24
 **Projekt:** CinemaFundArchitecture4 (CFA4)
 **Állapot:** a tulajdonos (`ubuntuokos`) 2026-11-24-én az irányt jóváhagyta („az irányt jóváhagyom”);
@@ -48,7 +48,7 @@ Az FFmpeg továbbra is kiegészítő háttér a `cfa4-route` mögött.
 | AMF Video Quality Enhancer (`vf_vqe_amf`) | `vqe_amf_filter_deps="amf windows_h"`: **csak Windowson** épül; a `frc_amf` is. Linuxon az AMF-ből a H.264 / HEVC / AV1 kódoló és dekódoló (`*_amf`), az `sr_amf` (felskálázás) és a `vpp_amf` (skálázás, színtér) érhető el. | Az F2e eredeti tartalma Linuxon nem valósítható meg; helyette D8. |
 | ASTC | külső könyvtárral: `--enable-libastcenc`, **libastcenc 5.4 vagy újabb** (ARM astc-encoder, Apache-2.0, GPL-3-kompatibilis); `.astc` és KTX 1.0 muxer/demuxer is jön. | F2j hátralékban (D7); bekerülésekor új build-függőség. |
 | NVIDIA optikai folyamos interpoláció | `vf_fruc_vulkan`: Vulkan-szűrő, de a `VK_NV_optical_flow` NVIDIA-bővítményre épül; Vulkan-fejléc ≥ 1.4.317 és SPIR-V fordító kell. | A D6 változatlanul érvényes (csak gyártófüggetlen úttal együtt). |
-| APV Vulkan-kódoló | `vulkan` + `spirv_compiler`: a buildhez `glslc` vagy `glslangValidator` program kell. A mai CFA4-build ezt nem biztosítja. | F1: új build-eszköz (`glslang-tools` vagy `glslc`). |
+| APV Vulkan-kódoló | `vulkan` + `spirv_compiler`: a buildhez `glslc` vagy `glslangValidator` program kell. A mai CFA4-build ezt nem biztosítja. | F1: a `glslc` kötelező build-eszköz lesz (D9). |
 | NVDEC CUARRAY | `ffnvcodec_cuarray`: az nv-codec-headers-nek ismernie kell a `CUDA_ARRAY3D_VIDEO_ENCODE_DECODE`-ot. | F1: ellenőrizni, hogy az Ubuntu 26.04 `libffmpeg-nvenc-dev` elég új-e; ha nem, rögzített nv-codec-headers checksummal. |
 | `libcurl` | `--enable-libcurl` autodetect; a CFA4 `--disable-autodetect`-tel épít, így magától kimarad. | R11 változatlan, az ellenőrzés marad. |
 | xHE-AAC (`libfdk-xhe-aac`) | az `EXTERNAL_LIBRARY_NONFREE_LIST` tagja. | Megerősíti, hogy kimarad (V.). |
@@ -69,6 +69,7 @@ Az FFmpeg továbbra is kiegészítő háttér a `cfa4-route` mögött.
 | R8 | ADR 0005 és a doksik a 9.1-et írják, az i18n-szöveg „FFmpeg 9.1 vagy újabb” (D5). | Doksi-átnézés; az `i18n` kulcs minden nyelven frissítve. |
 | R9 | Hardveres gyorsítás felmérése a 9.1-gyel (`scripts/dev/audit-ffmpeg-hwaccel.sh`), az NVDEC CUDA Array hatása a referenciagépen (RTX A1000). | Mérési jelentés a `docs/audit/` alatt; ha a fizikai mérés kimarad, sor a [`deferred-physical-tests.md`](../development/deferred-physical-tests.md) listában (§2.14). |
 | R10 | Az F2 minden új képessége a `cfa4-route` mögött, kötelező CPU-tartalékkal (a 2026-10-25-i router-döntés szerint), és csak ott, ahol a saját motor még nem tudja. | Router-tesztek: GPU nélkül a CPU-út fut; a képesség-tábla (`available(format)`) helyesen jelez. |
+| R12 | A buildben a `glslc` a SPIR-V fordító (D9); hiányában a `build-ffmpeg` szkript hibával leáll. | A szkript függőség-ellenőrzése; a BUILDINFO rögzíti a `glslc` verzióját; `ffmpeg -encoders` listázza az `apv_vulkan` kódolót. |
 | R11 | A biztonsági terv érvényes marad: az FFmpeg hálózat nélkül, külön sandboxolt folyamatban fut; az új `libcurl` protokoll nincs bekapcsolva. | `ffmpeg -protocols` nem listáz `libcurl`-t; a `-buildconf` nem tartalmaz `--enable-libcurl`-t (build-szkript ellenőrzés). |
 
 ## IV. Fázisok
@@ -90,7 +91,7 @@ A fázisok csak a függőségeket rögzítik. A sorrendről és az időzítésr�
 ### F1 – Átállás 9.1-re – R3–R9, R11
 
 1. Forrás: a hivatalos tarball letöltése, aláírás és SHA-256 ellenőrzése, a `Changelog` összevetése a
-   cikkel (R3). A build-flagek változatlanok, egy kivétellel: bekerül az `--enable-amf` (D2) és a build-eszközök közé a SPIR-V fordító (`glslc` vagy `glslangValidator`), a Vulkan-fejléc minimuma pedig 1.4.317-re nő (II/a). Az AMF-fejlécek forrása: Ubuntu 26.04-csomag, ha van; ha nincs, rögzített forrás SHA-256-tal. Az AMD AMF-runtime-ot futáskor tölti be; hiányában a VA-API, a Vulkan vagy a CPU út fut.
+   cikkel (R3). A build-flagek változatlanok, egy kivétellel: bekerül az `--enable-amf` (D2) a Vulkan-fejléc minimuma 1.4.317-re nő (II/a), és a **`glslc` kötelező build-eszköz** lesz (D9): az Ubuntu `glslc` csomagja (forrás: shaderc; Ubuntu 24.04-en 2023.8-1build1, a 26.04-es meglétét a self-hosted runneren kell igazolni). Bekerül a `build-ffmpeg` szkript függőség-ellenőrzésébe (hiányában a build hibával leáll, nem épül csendben Vulkan-shader nélkül), a `cfa4-ffmpeg-prebuilt.yml`, a `ci-cache-warm.yml` és a többi FFmpeg-építő workflow csomaglistájába, valamint a [`docs/development/linux.md`](../development/linux.md) függőséglistájába. Az AMF-fejlécek forrása: Ubuntu 26.04-csomag, ha van; ha nincs, rögzített forrás SHA-256-tal. Az AMD AMF-runtime-ot futáskor tölti be; hiányában a VA-API, a Vulkan vagy a CPU út fut.
 2. Az alap- és a restricted build helyi és CI-futtatása. Az előre fordított kiadás (`ffmpeg-9.1-cfa4-1`)
    a `cfa4-ffmpeg-prebuilt.yml`-lel készül.
 3. A Rust-kötések újragenerálása, a `crates/ffmpeg` API-igazítása, a minimumverzió 9.1 (D5).
@@ -149,6 +150,7 @@ formátumok közül az, amelyről a tulajdonos saját kódot kér.
 | D6 | NVIDIA optikai folyamos interpoláció (F2k): kell-e, ha nincs vele egyenértékű nem-NVIDIA út? | **Csak akkor**, ha mellé kerül egy gyártófüggetlen (Vulkan vagy CPU) interpoláció is; különben kimarad. | a javaslat szerint |
 | D7 | ASTC (F2j) bekerüljön-e most? | **Hátralékba** a 3D/animációs tervekhez. | a javaslat szerint: hátralékba (a tulajdonos pontosítása, 2026-11-24) |
 | D8 | Az F2e (AMF VQE) Linuxon nem épül. Mi kerüljön a helyére? | **AMF H.264 / HEVC / AV1 hardveres kódolás és dekódolás, plusz `sr_amf` és `vpp_amf`** a routerben, CPU-tartalékkal; így a D2 (AMF bekerül) Linuxon is hasznot hoz. | nyitott |
+| D9 | Melyik SPIR-V fordító kerüljön a CFA4-buildbe? | – | a tulajdonos döntése (2026-11-24): **a `glslc`**, kötelező build-eszközként |
 
 ## VII. PR-bontás
 
@@ -175,3 +177,4 @@ formátumok közül az, amelyről a tulajdonos saját kódot kér.
 | R9 | hwaccel audit, referenciagépes mérés | F1 / P3 |
 | R10 | router-tesztek CPU-tartalékkal | F2 / P4… |
 | R11 | `-protocols` / `-buildconf` ellenőrzés | F1 / P2 |
+| R12 | függőség-ellenőrzés, `-encoders` | F1 / P2 |
