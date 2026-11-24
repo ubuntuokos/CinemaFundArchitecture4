@@ -20,7 +20,7 @@
 | Állapotgép | `cfa4_tasks::queue::State` + `transition`; `RenderState` nézet (Queued, Running, Paused, Cancelling, Completed, Failed, Cancelled) | – |
 | Render-esemény | `RenderEvent`, `RenderEventKind`, `RenderProgress`, `RenderFallback` (`cfa4-tasks/src/render.rs`) | az adapter, amely az `Exporter` haladását ebbe tölti (a kliens rétege) |
 | Cancel | `Queue::cancel`, `Progress.cancel`; mérés: 20/20 megszakítás, medián ≈ 5–7 ms (`render-c0/C0-cancel-latency.md`) | Küszöb@F0 PENDING (referenciagép) |
-| Atomikus kimenet | `AtomicOutput` a `copy/` modulban, SIGKILL-mérés a #1738-ban | **a fő exportút még nem használja:** 20 megszakításból 4 hagyott fájlt a végleges néven; a kikényszerítő teszt `#[ignore]` (nyitott, külön PR) |
+| Atomikus kimenet | `AtomicOutput` (`atomic.rs`), SIGKILL-mérés a #1738-ban; a fő exportút (`Out::Atomic`) már használja, a megszakítás utáni fájlmentességet teszt kényszeríti ki (`cancel_latency_tests.rs`) | **a csomag-kimenetek (DCP, IMF, MXF, OP-Atom: `Out::create_path`) még helyben írnak**; ezek átállítása nyitott |
 | Frame ABI | `VideoFrame` + `FrameSideData` (forrás-azonosító, forgatás, HDR, `Residency`); matte-sík (`MatteFrame`, `MatteRef`) a #1823-ban | timecode a `FrameSideData`-ban (a matte már hordozza) |
 | Konverziós mátrix | `cfa4_frame::convert::plan/convert`, 25 pár tesztelve, `Unsupported` explicit | GPU-sor (PENDING, `crates/gpu` kötés) |
 | Audio ABI | `AudioBuffer` (planáris f32, `sample_rate`); `ChannelLayout` és `AudioFormat` a #1823-ban | 24 bit és 48/96 kHz mérése az F0V-harnessen (MQ-7) |
@@ -35,7 +35,7 @@
 - **Parancsok a vezérlőcsatornán** (`cfa4-cli serve`, a meglévő parancskészlet bővítése, minden parancsnak id és címke): `render.submit`, `render.status`, `render.cancel`, `render.list`, `render.events`. A hívó szálon semmi nem blokkol; a Qt6 és a CLI ugyanezt hívja (A8).
 - **Esemény:** a `RenderEvent` JSON-alakja a szerződés része (`camelCase`), `kind` = `progress` / `log` / `warning` / `fallback`; `is_consistent()` a szerződésteszt tárgya.
 - **Cancel:** kooperatív; a kérés és a leállás közti idő mért érték (AC-09), nem előre rögzített küszöb, amíg a referenciagépes Küszöb@F0 nincs meg.
-- **Atomikus kimenet:** minden render a végleges néven csak sikeres lezárás után jelenik meg (ideiglenes név + rename, `AtomicOutput`). **Kilépési feltétel:** 20 véletlen idejű cancel és SIGKILL után végleges néven 0 csonka fájl. Ehhez a fő exportút átállítása kell (külön PR, a `cfa4-export` gazdájával).
+- **Atomikus kimenet:** minden render a végleges néven csak sikeres lezárás után jelenik meg (ideiglenes név + rename, `AtomicOutput`). **Kilépési feltétel:** 20 véletlen idejű cancel és SIGKILL után végleges néven 0 csonka fájl. A fő exportútra ez teljesül; a csomag-kimenetekre (DCP, IMF, MXF, OP-Atom) az átállítás nyitott, külön PR-ban, a DCP/IMF-export gazdáival egyeztetve.
 - **Retry:** csak idempotens lépésre; a `checkpoint` és a lease a meglévő sor szerint.
 - **Backendválasztás:** `cfa4_route::Router`, alapértelmezés a meglévő CPU-renderer; egyetlen feature flag. Render-család bejegyzése: **döntés kell** (D4).
 
@@ -84,7 +84,7 @@ Szemantikus verzió (`ContractVersion { major, minor }`). Szerződésteszt: (1) 
 | Feltétel | Állás |
 |---|---|
 | A meglévő renderer a szerződésen át bit-azonos a golden halmazzal, PTS-diff 0 | NYITOTT: az adapter még nincs |
-| Cancel latencia ≤ Küszöb@F0; 20 cancel/SIGKILL után 0 csonka fájl | RÉSZBEN: a latencia mért, a csonka fájl 4/20 (a fő exportút nem atomikus) |
+| Cancel latencia ≤ Küszöb@F0; 20 cancel/SIGKILL után 0 csonka fájl | RÉSZBEN: a latencia mért; a fő exportúton a csonka végleges fájl 0, a csomag-kimeneteken (DCP, IMF, MXF, OP-Atom) nyitott |
 | Minden S1 jelölt leképezhető, BLOCKED, vagy ADR-rel módosul | NYITOTT: F2 előtt |
 | A Qt6 felelőse írásban elfogadja a job API-t | NYITOTT |
 
@@ -97,7 +97,7 @@ Szemantikus verzió (`ContractVersion { major, minor }`). Szerződésteszt: (1) 
 | D3 | A matte elemtípusa: egy (`f32`) vagy három (`u8`/`u16`/`f32`)? | **Elfogadva:** három: 8 bit előnézet/gyorsítótár, 16 bit alfa-export, f32 belső munka |
 | D4 | Kerüljön-e `Family::Render` a `cfa4-route` táblájába, vagy a meglévő `Display`/`Compute` maradjon? | **Elfogadva:** maradjon a meglévő a v0-ban; új család csak mért igényre, a `route` gazdájának egyetértésével |
 | D5 | A képkocka-csere módja a worker protokollban | **Elfogadva:** később, az F2 POC mérése alapján; a v0 csak az interfészt rögzíti |
-| D6 | A fő exportút `AtomicOutput`-ra állítása a C0 kilépési feltétele, külön PR-ban az `cfa4-export` gazdájával | **Elfogadva:** igen; külön PR, az `cfa4-export` gazdájával, a C0 kilépési feltétele |
+| D6 | Az exportút `AtomicOutput`-ra állítása a C0 kilépési feltétele (a fő útvonal már kész, a csomag-kimenetek hátra vannak), külön PR-ban az érintett gazdákkal | **Elfogadva:** igen; külön PR, az érintett gazdákkal, a C0 kilépési feltétele |
 
 ## 12. Mit nem ellenőriztem
 
