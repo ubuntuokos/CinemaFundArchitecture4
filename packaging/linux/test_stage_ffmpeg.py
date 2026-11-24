@@ -93,7 +93,7 @@ class StageFfmpegTests(unittest.TestCase):
         ffmpeg.chmod(0o755)
         doc = build / "share/doc/ffmpeg"
         doc.mkdir(parents=True)
-        for file in ("LICENSE.md", "COPYING.GPLv3", "BUILDINFO"):
+        for file in ("LICENSE.md", "COPYING.GPLv3", "BUILDINFO", "AMF-LICENSE.txt"):
             (doc / file).write_text("fixture\n")
         return build
 

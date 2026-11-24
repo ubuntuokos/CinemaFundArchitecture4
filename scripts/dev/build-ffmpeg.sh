@@ -9,7 +9,8 @@
 #
 # Licence: GPL-3 build only (--enable-gpl --enable-version3), never --enable-nonfree, so no
 # libfdk-aac, libnpp or CUDA NVCC. NVIDIA encode/decode goes through the MIT nv-codec-headers and
-# is loaded at run time; AMD AMF is left out (ADR 0003 §5: closed runtime; AMD encodes via VA-API).
+# is loaded at run time; AMD AMF likewise: MIT SDK headers at build time, AMD's driver runtime loaded
+# at run time (CFA4-FFMPEG-9.1-001 D2; ADR 0003 §5), next to the VA-API path.
 #
 # Ubuntu model (docs/licensing.md §7): the base build has no patent-restricted codecs. The
 # restricted build is the same FFmpeg plus x264 and x265, for the `cfa4-restricted-extras`
@@ -41,7 +42,7 @@ restricted=0
 for arg in "$@"; do
   case "$arg" in
     --restricted) restricted=1 ;;
-    -h|--help) sed -n '2,22p' "$0"; exit 0 ;;
+    -h|--help) sed -n '2,23p' "$0"; exit 0 ;;
     *) echo "unknown option: $arg (use --restricted or --help)" >&2; exit 2 ;;
   esac
 done
@@ -66,9 +67,11 @@ if (( ! restricted )) && [[ "$prefix" == "/opt/cfa4/ffmpeg-${version}" && "${CFA
   echo "no prebuilt FFmpeg ${version} for this host; building from source" >&2
 fi
 
-need=(nasm pkg-config)
+# glslc (shaderc) compiles FFmpeg's Vulkan shaders (APV/FFv1/ProRes Vulkan encoders and hwaccels): a
+# required build tool (CFA4-FFMPEG-9.1-001 D9, R12), never left out silently.
+need=(nasm pkg-config glslc git)
 for tool in "${need[@]}" curl tar make cc; do
-  command -v "$tool" >/dev/null || { echo "missing build tool: $tool (sudo apt install build-essential nasm pkg-config curl)" >&2; exit 1; }
+  command -v "$tool" >/dev/null || { echo "missing build tool: $tool (sudo apt install build-essential nasm pkg-config curl git glslc)" >&2; exit 1; }
 done
 
 tmp="$(mktemp -d)"
@@ -92,12 +95,29 @@ case "${CFA4_FFMPEG_SOURCE:-tarball}" in
   *) echo "CFA4_FFMPEG_SOURCE must be tarball or git" >&2; exit 2 ;;
 esac
 
+# AMD AMF SDK headers (MIT; plan D2): not packaged in Ubuntu 26.04, so the pinned tag of the SDK
+# repository, checked against its commit. Headers only; the AMF runtime ships with AMD's driver and
+# FFmpeg loads it at run time (without it the VA-API, Vulkan or CPU path runs).
+amf_url="https://github.com/GPUOpen-LibrariesAndSDKs/AMF"
+amf="${tmp}/amf"
+git clone --quiet --depth 1 --filter=blob:none --sparse --branch "$CFA4_AMF_HEADERS_TAG" "$amf_url" "$amf"
+git -C "$amf" sparse-checkout set amf/public/include >/dev/null
+actual="$(git -C "$amf" rev-parse HEAD)"
+if [[ "$actual" != "$CFA4_AMF_HEADERS_COMMIT" ]]; then
+  echo "the AMF ${CFA4_AMF_HEADERS_TAG} tag points to ${actual}, expected ${CFA4_AMF_HEADERS_COMMIT}; refusing to build" >&2
+  exit 1
+fi
+mkdir -p "${tmp}/amf-include"
+cp -R "${amf}/amf/public/include" "${tmp}/amf-include/AMF"
+
 # Optional libraries: each is used when its development package is installed, and the build says
 # which ones it found. Missing ones only remove that codec or accelerator.
 has() { pkg-config --exists "$1"; }
 flags=(--prefix="$prefix" --enable-gpl --enable-version3 --enable-shared --disable-static
   --disable-doc --disable-debug --disable-ffplay --disable-autodetect
-  --enable-pthreads --enable-zlib --extra-ldflags="-Wl,--enable-new-dtags,-rpath,${prefix}/lib")
+  --enable-pthreads --enable-zlib --extra-ldflags="-Wl,--enable-new-dtags,-rpath,${prefix}/lib"
+  --enable-amf --extra-cflags=-I${tmp}/amf-include)
+found+=("AMD AMF (headers ${CFA4_AMF_HEADERS_TAG}; runtime from AMD's driver)")
 found=()
 opt() { if has "$1"; then flags+=("$2"); found+=("$3"); fi; }
 opt libva --enable-vaapi "VA-API (Intel, AMD, NVIDIA via nvidia-vaapi-driver)"
@@ -109,8 +129,15 @@ opt vpx --enable-libvpx "libvpx (VP8/VP9)"
 opt opus --enable-libopus "Opus"
 opt libwebp --enable-libwebp "WebP"
 if [[ -e /usr/include/lame/lame.h ]]; then flags+=(--enable-libmp3lame); found+=("LAME (MP3)"); fi
-# Vulkan Video needs headers at least as new as FFmpeg 9 expects; older ones are reported, not fatal.
-if has vulkan && pkg-config --atleast-version=1.4.300 vulkan; then flags+=(--enable-vulkan); found+=("Vulkan Video"); else found+=("(no Vulkan Video: vulkan headers older than 1.4.300 or missing)"); fi
+# Vulkan needs headers of at least 1.4.317 (FFmpeg's vulkan_1_4 check; Ubuntu 26.04 has them); older
+# ones are reported, not fatal (development containers). Its shaders are compiled with glslc.
+vulkan=0
+if has vulkan && pkg-config --atleast-version=1.4.317 vulkan; then
+  vulkan=1
+  flags+=(--enable-vulkan --glslc=glslc); found+=("Vulkan Video and Vulkan encoders (APV, FFv1, ProRes; shaders by glslc)")
+else
+  found+=("(no Vulkan: vulkan headers older than 1.4.317 or missing)")
+fi
 if (( restricted )); then
   has x264 || { echo "the restricted build needs libx264-dev" >&2; exit 1; }
   has x265 || { echo "the restricted build needs libx265-dev" >&2; exit 1; }
@@ -137,6 +164,7 @@ fi
 doc="${tmp}/doc"
 mkdir -p "$doc"
 cp "$src"/LICENSE.md "$src"/COPYING.* "$doc/"
+git -C "$amf" show HEAD:LICENSE.txt >"${doc}/AMF-LICENSE.txt"
 {
   echo "FFmpeg ${version}, built for CFA4 by scripts/dev/build-ffmpeg.sh (ADR 0005)."
   echo "Licence: GPL version 3 or later (--enable-gpl --enable-version3, never --enable-nonfree)."
@@ -144,6 +172,8 @@ cp "$src"/LICENSE.md "$src"/COPYING.* "$doc/"
     tarball) echo "Source: ${source_url} (SHA-256 ${sha256}), unmodified." ;;
     git) echo "Source: ${git_url} tag ${git_tag}, commit ${git_commit}, unmodified." ;;
   esac
+  echo "AMF headers: ${amf_url} tag ${CFA4_AMF_HEADERS_TAG}, commit ${CFA4_AMF_HEADERS_COMMIT} (MIT, AMF-LICENSE.txt)."
+  echo "SPIR-V compiler: $( (( vulkan )) && glslc --version 2>/dev/null | head -1 || echo 'not used (no Vulkan)')"
   echo "Build: $( (( restricted )) && echo 'restricted (x264, x265; cfa4-restricted-extras)' || echo 'base (no patent-restricted codecs)')"
   echo "configure flags:"
   printf '  %s\n' "${flags[@]}"
@@ -160,6 +190,11 @@ actual="$("$ffmpeg" -version | awk 'NR==1 {print $3}')"
 [[ "$actual" == "$version" || "$actual" == "n$version" ]] || { echo "built ${actual}, expected ${version}" >&2; exit 1; }
 if "$ffmpeg" -hide_banner -buildconf | grep -q -- '--enable-nonfree'; then
   echo "refusing: a non-free build cannot be distributed" >&2
+  exit 1
+fi
+# R12: with Vulkan the SPIR-V shaders must have been built (glslc), so the APV Vulkan encoder exists.
+if (( vulkan )) && ! "$ffmpeg" -hide_banner -encoders | awk '{print $2}' | grep -qx apv_vulkan; then
+  echo "refusing: Vulkan is enabled but the apv_vulkan encoder is missing (glslc shader build failed?)" >&2
   exit 1
 fi
 restricted_found="$("$ffmpeg" -hide_banner -encoders | awk '$2 == "libx264" || $2 == "libx265" {print $2}' | tr '\n' ' ')"

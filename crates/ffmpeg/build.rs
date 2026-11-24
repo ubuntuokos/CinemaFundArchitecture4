@@ -35,8 +35,14 @@ fn pinned(key: &str) -> String {
 /// `pub const MIN_VERSION: (u32, u32, u32)` for `src/lib.rs`.
 fn write_min_version() {
     let min = pinned("CFA4_FFMPEG_MIN_VERSION");
-    let parts: Vec<u32> = min.split('.').map(|p| p.parse().unwrap_or_else(|_| panic!("CFA4_FFMPEG_MIN_VERSION is not MAJOR.MINOR.PATCH: {min}"))).collect();
-    let [a, b, c] = parts[..] else { panic!("CFA4_FFMPEG_MIN_VERSION is not MAJOR.MINOR.PATCH: {min}") };
+    // MAJOR.MINOR or MAJOR.MINOR.PATCH (FFmpeg names x.y releases without a patch number).
+    let bad = || -> ! { panic!("CFA4_FFMPEG_MIN_VERSION is not MAJOR.MINOR[.PATCH]: {min}") };
+    let parts: Vec<u32> = min.split('.').map(|p| p.parse().unwrap_or_else(|_| bad())).collect();
+    let (a, b, c) = match parts[..] {
+        [a, b] => (a, b, 0),
+        [a, b, c] => (a, b, c),
+        _ => bad(),
+    };
     let out = std::path::Path::new(&std::env::var("OUT_DIR").expect("OUT_DIR")).join("ffmpeg_version.rs");
     let code = format!(
         "/// Lowest FFmpeg release the backend accepts (ADR 0005; `CFA4_FFMPEG_MIN_VERSION` of\n\

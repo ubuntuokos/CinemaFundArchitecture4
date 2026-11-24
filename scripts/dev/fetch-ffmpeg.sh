@@ -41,6 +41,11 @@ case "$host_id" in
     exit 3
     ;;
 esac
+if [[ -z "$sha256" ]]; then
+  # packaging/ffmpeg-version.env pins no hash yet: the prerelease of this version is not published.
+  echo "No prebuilt FFmpeg ${version} published for ${host_id} yet; build it with scripts/dev/build-ffmpeg.sh." >&2
+  exit 3
+fi
 
 installed() {
   [[ -x "$prefix/bin/ffmpeg" && -s "$prefix/lib/pkgconfig/libavcodec.pc" && -s "$prefix/share/doc/ffmpeg/BUILDINFO" ]] \

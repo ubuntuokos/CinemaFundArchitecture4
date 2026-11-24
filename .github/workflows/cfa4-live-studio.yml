@@ -40,7 +40,7 @@ jobs:
             libxcb-xfixes0-dev libxcb-composite0-dev libxcb-shm0-dev libglib2.0-dev libpulse-dev \
             libwayland-dev libxkbcommon-dev libdrm-dev libegl-dev libgl-dev libopengl-dev \
             libva-dev libdav1d-dev libopus-dev libvpx-dev libwebp-dev libmp3lame-dev libvpl-dev \
-            libvulkan-dev libffmpeg-nvenc-dev xz-utils \
+            libvulkan-dev libffmpeg-nvenc-dev xz-utils glslc git \
             xvfb libegl-mesa0 libgl1-mesa-dri
       # The prebuilt FFmpeg (scripts/dev/fetch-ffmpeg.sh) loads the libraries of the packages above.
       - name: Install CFA4 FFmpeg (prebuilt, else built; shared, GPL-3)

@@ -3588,7 +3588,7 @@
 	Six-Point Pin	Καρφίτσωμα έξι σημείων
 	Upper Center	Πάνω κέντρο
 	Lower Center	Κάτω κέντρο
-	Use FFmpeg for files the CFA4 engine cannot open (FFmpeg 9.0.2 or later, GPL-3 build)	Χρήση FFmpeg για αρχεία που δεν μπορεί να ανοίξει η μηχανή CFA4 (FFmpeg 9.0.2 ή νεότερο, έκδοση GPL-3)
+	Use FFmpeg for files the CFA4 engine cannot open (FFmpeg 9.1 or later, GPL-3 build)	Χρήση FFmpeg για αρχεία που δεν μπορεί να ανοίξει η μηχανή CFA4 (FFmpeg 9.1 ή νεότερο, έκδοση GPL-3)
 	Use the system's GStreamer for files neither the engine nor FFmpeg can open	Χρήση του GStreamer του συστήματος για αρχεία που δεν μπορούν να ανοίξουν ούτε η μηχανή ούτε το FFmpeg
 	Analyze Source for Smart Cut	Ανάλυση πηγής για έξυπνη αποκοπή
 	Plan Smart Cut	Σχεδιασμός έξυπνης αποκοπής

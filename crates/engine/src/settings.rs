@@ -1329,7 +1329,7 @@ static CATEGORIES: &[Category] = &[
         group: "media",
         title: "Media Backends",
         rows: &[
-            b("mediaBackends.ffmpeg", "Use FFmpeg for files the CFA4 engine cannot open (FFmpeg 9.0.2 or later, GPL-3 build)", true),
+            b("mediaBackends.ffmpeg", "Use FFmpeg for files the CFA4 engine cannot open (FFmpeg 9.1 or later, GPL-3 build)", true),
             b("mediaBackends.gstreamer", "Use the system's GStreamer for files neither the engine nor FFmpeg can open", true),
         ],
     },

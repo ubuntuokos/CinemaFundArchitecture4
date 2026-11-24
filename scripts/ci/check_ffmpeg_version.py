@@ -10,12 +10,11 @@ test data), and when the old versioned script names still exist.
 
     python3 scripts/ci/check_ffmpeg_version.py [--root DIR]
 
-What counts as a use of the version:
-  - in code and configuration (shell, workflows, YAML, Python, Rust, TOML…): the version as a
-    token of its own (not part of a longer number: X.Y.Z does not match 1X.Y.Z or X.Y.Z1);
-  - in prose (Markdown, translation catalogues, plain text): the version within 40 characters
-    after "ffmpeg" on the same line (`FFmpeg X.Y.Z`, `ffmpeg-X.Y.Z`, `FFmpeg (≥ X.Y.Z`), so that
-    section numbers such as "§9.1" are not mistaken for it.
+What counts as a use of the version: a line that mentions FFmpeg (any case, also in names such
+as `ffmpeg-X.Y.Z`, `CFA4_FFMPEG_…`) and has the version as a token of its own (not part of a longer
+number: X.Y.Z does not match 1X.Y.Z or X.Y.Z1). Short versions such as 9.1 are common in other
+meanings (section numbers, Auro-3D channel layouts), so lines without FFmpeg are not checked; plan ids such
+as CFA4-FFMPEG-9.1-001 are not versions.
 """
 
 from __future__ import annotations
@@ -29,7 +28,7 @@ from pathlib import Path
 
 VERSION_FILE = "packaging/ffmpeg-version.env"
 ALLOWLIST_FILE = "packaging/ffmpeg-version-allowlist.txt"
-PROSE_SUFFIXES = {".md", ".tsv", ".txt", ".rst", ".html", ".xml", ".json", ".csv"}
+PLAN_ID = re.compile(r"CFA4-FFMPEG-[0-9][0-9.]*-[0-9]+")
 OLD_SCRIPTS = (
     "scripts/dev/fetch-ffmpeg-*.sh",
     "scripts/dev/build-ffmpeg-[0-9]*.sh",
@@ -66,15 +65,18 @@ def tracked_files(root: Path) -> list[str]:
     return [p for p in out.decode("utf-8").split("\0") if p]
 
 
-def patterns_for(versions: list[str]) -> tuple[re.Pattern[str], re.Pattern[str]]:
+def pattern_for(versions: list[str]) -> re.Pattern[str]:
     alt = "|".join(re.escape(v) for v in versions)
-    token = re.compile(rf"(?<![\w.])n?(?:{alt})(?![\w]|\.\d)")
-    prose = re.compile(rf"ffmpeg.{{0,40}}?(?<![\w.])n?(?:{alt})(?![\w]|\.\d)", re.IGNORECASE)
-    return token, prose
+    return re.compile(rf"(?<![\w.§])n?(?:{alt})(?![\w]|\.\d)")
+
+
+def uses_version(line: str, token: re.Pattern[str]) -> bool:
+    line = PLAN_ID.sub("", line)
+    return "ffmpeg" in line.lower() and token.search(line) is not None
 
 
 def scan(root: Path, files: list[str], versions: list[str], patterns: list[str]) -> list[str]:
-    token, prose = patterns_for(versions)
+    token = pattern_for(versions)
     found = []
     for path in files:
         if path in (VERSION_FILE, ALLOWLIST_FILE) or allowed(path, patterns):
@@ -86,9 +88,8 @@ def scan(root: Path, files: list[str], versions: list[str], patterns: list[str])
             text = full.read_text(encoding="utf-8")
         except (UnicodeDecodeError, OSError):
             continue
-        rx = prose if Path(path).suffix.lower() in PROSE_SUFFIXES else token
         for number, line in enumerate(text.splitlines(), 1):
-            if rx.search(line):
+            if uses_version(line, token):
                 found.append(f"{path}:{number}: {line.strip()[:160]}")
     return found
 

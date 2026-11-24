@@ -3661,7 +3661,7 @@
 	Six-Point Pin	Закачване в шест точки
 	Upper Center	Горе в центъра
 	Lower Center	Долу в центъра
-	Use FFmpeg for files the CFA4 engine cannot open (FFmpeg 9.0.2 or later, GPL-3 build)	Използване на FFmpeg за файлове, които двигателят на CFA4 не може да отвори (FFmpeg 9.0.2 или по-нов, GPL-3 компилация)
+	Use FFmpeg for files the CFA4 engine cannot open (FFmpeg 9.1 or later, GPL-3 build)	Използване на FFmpeg за файлове, които двигателят на CFA4 не може да отвори (FFmpeg 9.1 или по-нов, GPL-3 компилация)
 	Use the system's GStreamer for files neither the engine nor FFmpeg can open	Използване на системния GStreamer за файлове, които нито двигателят, нито FFmpeg могат да отворят
 	Analyze Source for Smart Cut	Анализиране на източника за интелигентен срез
 	Plan Smart Cut	Планиране на интелигентен срез

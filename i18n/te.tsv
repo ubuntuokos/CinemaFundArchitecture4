@@ -3918,7 +3918,7 @@
 	Six-Point Pin	ఆరు-బిందువుల పిన్
 	Upper Center	పైన మధ్య
 	Lower Center	కింద మధ్య
-	Use FFmpeg for files the CFA4 engine cannot open (FFmpeg 9.0.2 or later, GPL-3 build)	CFA4 ఇంజిన్ తెరవలేని ఫైల్‌ల కోసం FFmpeg ఉపయోగించు (FFmpeg 9.0.2 లేదా తర్వాతి, GPL-3 బిల్డ్)
+	Use FFmpeg for files the CFA4 engine cannot open (FFmpeg 9.1 or later, GPL-3 build)	CFA4 ఇంజిన్ తెరవలేని ఫైల్‌ల కోసం FFmpeg ఉపయోగించు (FFmpeg 9.1 లేదా తర్వాతి, GPL-3 బిల్డ్)
 	Use the system's GStreamer for files neither the engine nor FFmpeg can open	ఇంజిన్ లేదా FFmpeg తెరవలేని ఫైల్‌ల కోసం సిస్టమ్ GStreamer ఉపయోగించు
 	Analyze Source for Smart Cut	స్మార్ట్ కట్ కోసం సోర్స్‌ను విశ్లేషించు
 	Plan Smart Cut	స్మార్ట్ కట్ ప్రణాళిక

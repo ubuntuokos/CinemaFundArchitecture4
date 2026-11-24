@@ -3588,7 +3588,7 @@
 	Six-Point Pin	六點定位
 	Upper Center	上中
 	Lower Center	下中
-	Use FFmpeg for files the CFA4 engine cannot open (FFmpeg 9.0.2 or later, GPL-3 build)	對 CFA4 引擎無法開啟的檔案使用 FFmpeg（FFmpeg 9.0.2 或更高版本，GPL-3 建置）
+	Use FFmpeg for files the CFA4 engine cannot open (FFmpeg 9.1 or later, GPL-3 build)	對 CFA4 引擎無法開啟的檔案使用 FFmpeg（FFmpeg 9.1 或更高版本，GPL-3 建置）
 	Use the system's GStreamer for files neither the engine nor FFmpeg can open	對引擎和 FFmpeg 都無法開啟的檔案使用系統的 GStreamer
 	Analyze Source for Smart Cut	分析來源以進行智慧剪下
 	Plan Smart Cut	規劃智慧剪下

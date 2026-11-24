@@ -3687,7 +3687,7 @@
 	Six-Point Pin	Sexpunktsfästning
 	Upper Center	Uppe i mitten
 	Lower Center	Nere i mitten
-	Use FFmpeg for files the CFA4 engine cannot open (FFmpeg 9.0.2 or later, GPL-3 build)	Använd FFmpeg för filer som CFA4-motorn inte kan öppna (FFmpeg 9.0.2 eller senare, GPL-3-version)
+	Use FFmpeg for files the CFA4 engine cannot open (FFmpeg 9.1 or later, GPL-3 build)	Använd FFmpeg för filer som CFA4-motorn inte kan öppna (FFmpeg 9.1 eller senare, GPL-3-version)
 	Use the system's GStreamer for files neither the engine nor FFmpeg can open	Använd systemets GStreamer för filer som varken motorn eller FFmpeg kan öppna
 	Analyze Source for Smart Cut	Analysera källan för smart klippning
 	Plan Smart Cut	Planera smart klippning

@@ -80,6 +80,7 @@ class FourFormatArtifactTests(unittest.TestCase):
             f"{audit.FFMPEG_DIR}/share/doc/ffmpeg/BUILDINFO": f"FFmpeg {audit.FFMPEG_VERSION}".encode(),
             f"{audit.FFMPEG_DIR}/share/doc/ffmpeg/COPYING.GPLv3": b"GPL",
             f"{audit.FFMPEG_DIR}/share/doc/ffmpeg/LICENSE.md": b"licence",
+            f"{audit.FFMPEG_DIR}/share/doc/ffmpeg/AMF-LICENSE.txt": b"MIT",
             **doc_entries(DOC),
             **{name: b"fixture" for name in extra},
         }
