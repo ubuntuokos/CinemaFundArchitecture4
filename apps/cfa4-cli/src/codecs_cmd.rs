@@ -239,6 +239,7 @@ const NOT_CODECS: &[&str] = &[
     "project",
     "qc",
     "render",
+    "render-contracts",
     "route",
     "sandbox",
     "scopes",
