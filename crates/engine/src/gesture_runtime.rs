@@ -355,6 +355,43 @@ impl GestureRuntime {
         Combination { roles, modifiers: self.modifiers }
     }
 
+    /// Modifier bits for the next sample. The Qt path passes the event's modifiers.
+    pub fn set_modifiers(&mut self, modifiers: u8) {
+        self.modifiers = modifiers;
+    }
+
+    /// Role indexes that have been down for at least `hold_ms`.
+    pub fn held_roles(&self) -> Vec<u32> {
+        let mut roles = Vec::new();
+        for rec in self.buttons.values() {
+            if rec.pressed
+                && rec.hold
+                && let Some(role) = rec.role
+            {
+                roles.push(role.index());
+            }
+        }
+        roles.sort_unstable();
+        roles.dedup();
+        roles
+    }
+
+    /// The open stroke has left the slop box around its first sample. No samples is not travel.
+    pub fn moved_past_slop(&self) -> bool {
+        let Some(first) = self.samples.first() else { return false };
+        let slop = i64::from(self.thresholds.slop_px);
+        self.samples.iter().any(|sample| {
+            let dx = i64::from(sample.x_px).saturating_sub(i64::from(first.x_px)).saturating_abs();
+            let dy = i64::from(sample.y_px).saturating_sub(i64::from(first.y_px)).saturating_abs();
+            dx > slop || dy > slop
+        })
+    }
+
+    /// Count one gesture-path `surfaceAction`. Does not touch MIDI or HID triggers.
+    pub fn note_dispatched(&mut self) {
+        self.commands = self.commands.saturating_add(1);
+    }
+
     /// Known buttons, sorted by Qt code. Order does not follow the map's hash order.
     pub fn buttons(&self) -> Vec<ButtonView> {
         let mut views = Vec::new();

@@ -226,7 +226,6 @@ class GesturePage(QGroupBox):
         box = QGroupBox(tr("Combination editor"), self)
         box.setObjectName("settings.controlSurfaces.gesture.combinations")
         layout = QVBoxLayout(box)
-        layout.addWidget(self._note(box, tr("A stored combination does not run a command yet.")))
         self._combo_list = QListWidget(box)
         self._combo_list.setObjectName("settings.controlSurfaces.gesture.combos")
         layout.addWidget(self._combo_list)
@@ -234,8 +233,11 @@ class GesturePage(QGroupBox):
         self._combo_roles = QLineEdit(box)
         self._combo_roles.setObjectName("settings.controlSurfaces.gesture.comboRoles")
         self._combo_roles.setPlaceholderText(tr("Roles"))
+        self._combo_hold = QCheckBox(tr("Hold"), box)
+        self._combo_hold.setObjectName("settings.controlSurfaces.gesture.comboHold")
         self._combo_command = self._commands(box, "settings.controlSurfaces.gesture.comboCommand")
         row.addWidget(self._combo_roles)
+        row.addWidget(self._combo_hold)
         row.addWidget(self._combo_command, 1)
         row.addWidget(self._button(box, "settings.controlSurfaces.gesture.comboAdd", tr("Add combination"), self._add_combo))
         row.addWidget(self._button(box, "settings.controlSurfaces.gesture.comboRemove", tr("Remove"), self._remove_combo))
@@ -375,13 +377,30 @@ class GesturePage(QGroupBox):
                 if isinstance(template, dict):
                     self._templates.addItem(f"{template.get('id')} ({len(template.get('points') or [])})")
             self._maps.clear()
+            seen: set[tuple[str, str]] = set()
             for mapping in state.get("mappings") or []:
                 if isinstance(mapping, dict):
-                    self._maps.addItem(f"{mapping.get('id')} → {mapping.get('command')} [{mapping.get('context')}]")
+                    ident = str(mapping.get("id") or "")
+                    context = str(mapping.get("context") or "global")
+                    seen.add((ident, context))
+                    self._maps.addItem(f"{ident} → {mapping.get('command')} [{context}]")
+            for profile in state.get("profiles") or []:
+                if not isinstance(profile, dict):
+                    continue
+                context = str(profile.get("context") or "")
+                for mapping in profile.get("mappings") or []:
+                    if not isinstance(mapping, dict) or mapping.get("source") != "builtin":
+                        continue
+                    ident = str(mapping.get("id") or "")
+                    if (ident, context) in seen:
+                        continue
+                    self._maps.addItem(f"{ident} → {mapping.get('command')} [{context}]")
             self._combo_list.clear()
             for combo in state.get("combinations") or []:
                 if isinstance(combo, dict):
-                    self._combo_list.addItem(f"{combo.get('key')} → {combo.get('command')}")
+                    suffix = " · hold" if combo.get("trigger") == "hold" else ""
+                    context = str(combo.get("context") or "global")
+                    self._combo_list.addItem(f"{combo.get('key')} → {combo.get('command')}{suffix} [{context}]")
             self._button_list.clear()
             buttons = [row for row in state.get("buttons") or [] if isinstance(row, dict)]
             for button in buttons:
@@ -492,9 +511,18 @@ class GesturePage(QGroupBox):
         for part in self._combo_roles.text().replace(" ", "").split(","):
             if part.isdigit():
                 roles.append(int(part))
+        trigger = "hold" if self._combo_hold.isChecked() else "chord"
+        context = self._map_context.text().strip() or "global"
         self._ask(
             "surface.gesture.combo",
-            {"op": "set", "roles": roles, "modifiers": 0, "command": str(self._combo_command.currentData() or ""), "context": "global"},
+            {
+                "op": "set",
+                "roles": roles,
+                "modifiers": 0,
+                "command": str(self._combo_command.currentData() or ""),
+                "context": context,
+                "trigger": trigger,
+            },
             self._edited,
         )
 
@@ -503,13 +531,21 @@ class GesturePage(QGroupBox):
         key = text.split(" ", 1)[0]
         roles: list[int] = []
         modifiers = 0
+        trigger = "hold" if "· hold" in text else "chord"
+        context = "global"
+        if "[" in text and text.endswith("]"):
+            context = text[text.rfind("[") + 1 : -1] or "global"
         if "+" in key:
             left, right = key.split("+", 1)
             roles = [int(part) for part in left.split(",") if part.isdigit()]
             if right.isdigit():
                 modifiers = int(right)
-        if len(roles) >= 2:
-            self._ask("surface.gesture.combo", {"op": "remove", "roles": roles, "modifiers": modifiers, "context": "global"}, self._edited)
+        if (trigger == "hold" and len(roles) == 1) or len(roles) >= 2:
+            self._ask(
+                "surface.gesture.combo",
+                {"op": "remove", "roles": roles, "modifiers": modifiers, "context": context, "trigger": trigger},
+                self._edited,
+            )
 
     def _profile(self, op: str) -> None:
         self._ask("surface.gesture.profile", {"op": op}, self._edited)

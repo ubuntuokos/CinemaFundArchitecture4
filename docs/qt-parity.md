@@ -134,3 +134,8 @@ The list of buttons is whatever the engine reports.
 | 6.11 | Threshold configuration | ✅ | length, slop, time, angle, hold (`surface.gesture.configure`) |
 | 6.12 | Import / export | ✅ | `surface.gesture.profile` import and export (`settings.controlSurfaces.gesture.import` / `.export`) |
 | 6.13 | Input access | ✅ | Qt path shown, evdev stored with a warning and not opened (`settings.controlSurfaces.gesture.input.evdev`; engine `evdev: "not-opened"`) |
+| 6.14 | Timeline profile | ✅ | context `Timeline` (the shortcut panel). Built-in spatial directions call existing `playhead.*` / `playback.*` commands. A user mapping replaces one row; removing that mapping brings the built-in back; removing the built-in hides it (`gesture_ui` `timeline_profile_follows_the_widget_and_does_not_fall_back`) |
+| 6.15 | Media Browser profile | ✅ | context `MediaBrowser` for the shortcut panel Media Browser. The resolver names `mediaBrowser.*` widgets. `mediaBrowser.navigate` / `.select` / `.favorite` stay unbound (MG0 decision 6 allows only `playback.*`, `playhead.*`, `window.*`) |
+| 6.16 | Context resolver | ✅ | a configured widget context, otherwise the Timeline or Media Browser module, otherwise global. A narrower context does not fall back (`activeContext` on `surface.gesture.sample`) |
+| 6.17 | Input conflict protection | ✅ | the window filter never accepts the event. Right button, middle button, double-click, a text field, a scrollbar, a splitter, a dialog and a modifier keep the gesture from dispatching (`test_the_timeline_keeps_its_mouse_and_names_the_panel`) |
+| 6.18 | Multi-button mapping | ✅ | a stored chord or hold in `gesture-ui.json` is one `surfaceAction`. Hold is `settings.controlSurfaces.gesture.comboHold`. MIDI and HID lookup are unchanged |

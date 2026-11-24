@@ -7,7 +7,12 @@
 //!
 //! HUD, thresholds, handedness, input access and combinations are not fields of the version-2
 //! profile (`additionalProperties: false`). They live in `gesture-ui.json` beside the profiles.
-//! Combinations are stored and are not dispatched.
+//! A stored combination or hold dispatches one `surfaceAction` from here. MIDI and HID lookup
+//! and [`crate::control_surfaces::Triggers`] stay on the press edge.
+//!
+//! Timeline and Media Browser are contexts (plan §8.1), not a second profile schema. The
+//! Timeline context has a built-in spatial map. A narrower context that the user configured
+//! does not fall back to a wider one.
 
 use std::collections::HashMap;
 use std::path::PathBuf;
@@ -66,11 +71,24 @@ impl Default for Hud {
     }
 }
 
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+enum Trigger {
+    Chord,
+    Hold,
+}
+
 #[derive(Clone, Debug, PartialEq, Eq)]
 struct Combo {
     roles: Vec<u32>,
     modifiers: u8,
     command: String,
+    context: String,
+    trigger: Trigger,
+}
+
+#[derive(Clone, Debug, PartialEq, Eq)]
+struct Suppressed {
+    id: String,
     context: String,
 }
 
@@ -86,6 +104,12 @@ struct UiState {
     evdev_device: String,
     names: HashMap<u32, String>,
     combos: Vec<Combo>,
+    suppressed: Vec<Suppressed>,
+    active_context: String,
+    blocked: bool,
+    latched: bool,
+    fired_chords: Vec<String>,
+    hold_sent: Vec<u32>,
     learn_points: Vec<(i32, i32)>,
     learn_down: bool,
     trail: Vec<(i32, i32)>,
@@ -107,6 +131,12 @@ impl Default for UiState {
             evdev_device: String::new(),
             names: HashMap::new(),
             combos: Vec::new(),
+            suppressed: Vec::new(),
+            active_context: "global".into(),
+            blocked: false,
+            latched: false,
+            fired_chords: Vec::new(),
+            hold_sent: Vec::new(),
             learn_points: Vec::new(),
             learn_down: false,
             trail: Vec::new(),
@@ -156,7 +186,7 @@ pub fn commands() -> Vec<CommandSpec> {
         spec(
             "surface.gesture.sample",
             "Mouse Gesture Sample",
-            r#"{"op":"press"|"move"|"release"|"cancel"|"focus"|"tick","code?":int,"x?":int,"y?":int,"tNs?":int,"modifiers?":int,"from?":"editor"|"window","context?":str}"#,
+            r#"{"op":"press"|"move"|"release"|"cancel"|"focus"|"tick","code?":int,"x?":int,"y?":int,"tNs?":int,"modifiers?":int,"from?":"editor"|"window","context?":str,"widget?":str,"conflict?":bool}"#,
             sample,
         ),
         spec(
@@ -170,7 +200,7 @@ pub fn commands() -> Vec<CommandSpec> {
         spec(
             "surface.gesture.combo",
             "Mouse Gesture Combination",
-            r#"{"op":"set"|"remove","roles":[int],"modifiers?":int,"command?":str,"context?":str}"#,
+            r#"{"op":"set"|"remove","roles":[int],"modifiers?":int,"command?":str,"context?":str,"trigger?":"chord"|"hold"}"#,
             combo,
         ),
         spec("surface.gesture.profile", "Mouse Gesture Profile", r#"{"op":"export"|"import"|"save"|"load"|"delete","document?":object}"#, profile),
@@ -203,10 +233,7 @@ fn configure(s: &mut Session, p: &Value) -> Result<Value> {
         ui.hand = hand.to_string();
     }
     if let Some(context) = p.get("context").and_then(Value::as_str) {
-        if gesture_context_key(context) != "global" && !gesture_id_ok(context.trim()) {
-            return Err(bad("context is not usable"));
-        }
-        ui.context = gesture_context_key(context).to_string();
+        ui.context = take_context(context)?;
     }
     if let Some(thresholds) = p.get("thresholds") {
         ui.thresholds = read_thresholds(thresholds)?;
@@ -258,6 +285,14 @@ fn sample(s: &mut Session, p: &Value) -> Result<Value> {
     let modifiers = u8_field(p, "modifiers")?;
     let given = p.get("tNs").map(|_| u64_field(p, "tNs")).transpose()?;
     let context = p.get("context").and_then(Value::as_str).map(str::to_string);
+    if let Some(context) = context.as_deref() {
+        let _ = take_context(context)?;
+    }
+    let widget = p.get("widget").and_then(Value::as_str).unwrap_or("");
+    if widget.chars().any(|c| c.is_control()) || widget.len() > 128 {
+        return Err(bad("widget is not usable"));
+    }
+    let conflict = p.get("conflict").and_then(Value::as_bool).unwrap_or(false);
     let prefs = s.prefs.control_surfaces.clone();
     let reply = with_ui(|ui| {
         ui.runtime.set_enabled(pointer_enabled(&prefs));
@@ -266,10 +301,7 @@ fn sample(s: &mut Session, p: &Value) -> Result<Value> {
             return Ok(view(ui, &prefs));
         }
         if let Some(context) = context.as_deref() {
-            if gesture_context_key(context) != "global" && !gesture_id_ok(context.trim()) {
-                return Err(bad("context is not usable"));
-            }
-            ui.context = gesture_context_key(context).to_string();
+            ui.context = take_context(context)?;
         }
         let t_ns = match given {
             Some(t) => {
@@ -281,7 +313,8 @@ fn sample(s: &mut Session, p: &Value) -> Result<Value> {
                 ui.clock
             }
         };
-        feed(ui, &prefs, op, code, x, y, modifiers, t_ns)
+        let sample = PointerSampleIn { op, code, x, y, modifiers, t_ns, conflict, widget, explicit: context.as_deref() };
+        feed(ui, &prefs, &sample)
     })?;
     Ok(reply)
 }
@@ -326,15 +359,15 @@ fn map_gesture(s: &mut Session, p: &Value) -> Result<Value> {
     ensure_loaded(s);
     let op = p.get("op").and_then(Value::as_str).unwrap_or("");
     let id = required_id(p)?;
-    let context = p.get("context").and_then(Value::as_str).unwrap_or("global");
-    if gesture_context_key(context) != "global" && !gesture_id_ok(context.trim()) {
-        return Err(bad("context is not usable"));
-    }
-    let context = gesture_context_key(context).to_string();
+    let context = take_context(p.get("context").and_then(Value::as_str).unwrap_or("global"))?;
     let device = pointer_mut(&mut s.prefs.control_surfaces);
     match op {
         "remove" => {
+            let had_user = device.bindings.iter().any(|binding| gesture_key_is(binding, &id, &context));
             device.bindings.retain(|binding| !gesture_key_is(binding, &id, &context));
+            if !had_user && builtin_command(&context, &id).is_some() {
+                with_ui(|ui| suppress(ui, &id, &context));
+            }
         }
         "set" => {
             let command = p.get("command").and_then(Value::as_str).unwrap_or("").trim().to_string();
@@ -343,7 +376,8 @@ fn map_gesture(s: &mut Session, p: &Value) -> Result<Value> {
             }
             let params = p.get("params").cloned().unwrap_or(Value::Null);
             device.bindings.retain(|binding| !gesture_key_is(binding, &id, &context));
-            device.bindings.push(Binding { control: ControlId::Gesture { id }, command, params, context });
+            device.bindings.push(Binding { control: ControlId::Gesture { id: id.clone() }, command, params, context: context.clone() });
+            with_ui(|ui| ui.suppressed.retain(|row| row.id != id || row.context != context));
         }
         _ => return Err(bad("op is set or remove")),
     }
@@ -356,16 +390,16 @@ fn map_gesture(s: &mut Session, p: &Value) -> Result<Value> {
 fn combo(s: &mut Session, p: &Value) -> Result<Value> {
     ensure_loaded(s);
     let op = p.get("op").and_then(Value::as_str).unwrap_or("");
-    let roles = read_roles(p.get("roles"))?;
+    let trigger = read_trigger(p.get("trigger").and_then(Value::as_str))?;
+    let roles = match trigger {
+        Trigger::Hold => read_hold_roles(p.get("roles"))?,
+        Trigger::Chord => read_roles(p.get("roles"))?,
+    };
     let modifiers = u8_field(p, "modifiers")?;
-    let context = p.get("context").and_then(Value::as_str).unwrap_or("global");
-    if gesture_context_key(context) != "global" && !gesture_id_ok(context.trim()) {
-        return Err(bad("context is not usable"));
-    }
-    let context = gesture_context_key(context).to_string();
+    let context = take_context(p.get("context").and_then(Value::as_str).unwrap_or("global"))?;
     with_ui(|ui| match op {
         "remove" => {
-            ui.combos.retain(|combo| combo.roles != roles || combo.modifiers != modifiers || combo.context != context);
+            ui.combos.retain(|combo| !same_combo(combo, &roles, modifiers, &context, trigger));
             Ok(())
         }
         "set" => {
@@ -373,12 +407,11 @@ fn combo(s: &mut Session, p: &Value) -> Result<Value> {
             if !gesture_command_allowed(&command) {
                 return Err(bad("command is not playback, playhead or window"));
             }
-            if ui.combos.len() >= MAX_COMBOS && !ui.combos.iter().any(|combo| combo.roles == roles && combo.modifiers == modifiers && combo.context == context)
-            {
+            if ui.combos.len() >= MAX_COMBOS && !ui.combos.iter().any(|combo| same_combo(combo, &roles, modifiers, &context, trigger)) {
                 return Err(bad("too many combinations"));
             }
-            ui.combos.retain(|combo| combo.roles != roles || combo.modifiers != modifiers || combo.context != context);
-            ui.combos.push(Combo { roles, modifiers, command, context });
+            ui.combos.retain(|combo| !same_combo(combo, &roles, modifiers, &context, trigger));
+            ui.combos.push(Combo { roles, modifiers, command, context, trigger });
             Ok(())
         }
         _ => Err(bad("op is set or remove")),
@@ -424,7 +457,12 @@ fn profile(s: &mut Session, p: &Value) -> Result<Value> {
             device.mirror_ergonomic = false;
             with_ui(|ui| {
                 ui.combos.clear();
+                ui.suppressed.clear();
                 ui.names.clear();
+                ui.fired_chords.clear();
+                ui.hold_sent.clear();
+                ui.latched = false;
+                ui.blocked = false;
                 ui.mode = Mode::Off;
                 ui.status = "idle".into();
             });
@@ -561,46 +599,68 @@ fn begin_learn(ui: &mut UiState, mode: &str, phase: &str, id: &str, spatial: boo
     }
 }
 
-fn feed(ui: &mut UiState, prefs: &ControlSurfacePrefs, op: &str, code: Option<u32>, x: i32, y: i32, modifiers: u8, t_ns: u64) -> Result<Value> {
+struct PointerSampleIn<'a> {
+    op: &'a str,
+    code: Option<u32>,
+    x: i32,
+    y: i32,
+    modifiers: u8,
+    t_ns: u64,
+    conflict: bool,
+    widget: &'a str,
+    explicit: Option<&'a str>,
+}
+
+fn feed(ui: &mut UiState, prefs: &ControlSurfacePrefs, sample: &PointerSampleIn<'_>) -> Result<Value> {
     let capturing = !matches!(ui.mode, Mode::Off);
-    match op {
+    begin_sample(ui, prefs, sample.conflict, sample.widget, sample.explicit);
+    match sample.op {
         "press" => {
-            let code = code.ok_or_else(|| bad("code is required"))?;
-            let view = ui.runtime.press(code, t_ns);
+            let code = sample.code.ok_or_else(|| bad("code is required"))?;
+            ui.runtime.set_modifiers(sample.modifiers);
+            let view = ui.runtime.press(code, sample.t_ns);
             if ui.mode == Mode::GestureLearn {
                 ui.learn_down = true;
                 ui.learn_points.clear();
-                ui.learn_points.push((x, y));
+                ui.learn_points.push((sample.x, sample.y));
             }
             ui.trail.clear();
-            ui.trail.push((x, y));
+            ui.trail.push((sample.x, sample.y));
             ui.status = status_of(ui, Some(&view));
-            Ok(view_with_button(ui, prefs, &view, None))
+            let delivered = dispatch_buttons(ui, prefs, capturing)?;
+            finish_flags(ui);
+            Ok(view_with_button(ui, prefs, &view, Some((delivered, ui.runtime.hold_count()))))
         }
         "move" => {
-            let motion = ui.runtime.move_to(x, y, t_ns, modifiers);
-            if ui.mode == Mode::GestureLearn && ui.learn_down && ui.learn_points.last().is_none_or(|last| *last != (x, y)) {
-                ui.learn_points.push((x, y));
+            let motion = ui.runtime.move_to(sample.x, sample.y, sample.t_ns, sample.modifiers);
+            if ui.mode == Mode::GestureLearn && ui.learn_down && ui.learn_points.last().is_none_or(|last| *last != (sample.x, sample.y)) {
+                ui.learn_points.push((sample.x, sample.y));
                 ui.learn_points.truncate(4_096);
             }
-            if ui.trail.last().is_none_or(|last| *last != (x, y)) {
-                ui.trail.push((x, y));
+            if ui.trail.last().is_none_or(|last| *last != (sample.x, sample.y)) {
+                ui.trail.push((sample.x, sample.y));
                 ui.trail.truncate(64);
             }
             if motion == Motion::Ended {
                 ui.status = "cancelled".into();
             }
-            Ok(view_with_button(ui, prefs, &held_view(ui, code), None))
+            let delivered = dispatch_buttons(ui, prefs, capturing)?;
+            let button = held_view(ui, sample.code);
+            finish_flags(ui);
+            Ok(view_with_button(ui, prefs, &button, Some((delivered, ui.runtime.hold_count()))))
         }
         "release" => {
-            let code = code.ok_or_else(|| bad("code is required"))?;
+            let code = sample.code.ok_or_else(|| bad("code is required"))?;
             let hold = ui.runtime.hold_count();
+            let blocked = ui.blocked;
+            let latched = ui.latched;
             let templates = crate::gesture_runtime::templates_from_profile(prefs);
-            let input = ui.runtime.release(code, t_ns, &templates).map_err(|e| bad(&e.to_string()))?;
+            let input = ui.runtime.release(code, sample.t_ns, &templates).map_err(|e| bad(&e.to_string()))?;
             if ui.mode == Mode::GestureLearn {
                 ui.learn_down = false;
             }
-            let delivered = deliver_if_live(ui, prefs, input, capturing)?;
+            let delivered = if blocked || latched { None } else { deliver_if_live(ui, prefs, input, capturing)? };
+            finish_flags(ui);
             ui.status = status_of(ui, None);
             Ok(view_with_button(ui, prefs, &held_view(ui, Some(code)), Some((delivered, hold))))
         }
@@ -608,11 +668,15 @@ fn feed(ui: &mut UiState, prefs: &ControlSurfacePrefs, op: &str, code: Option<u3
             let cancelled = ui.runtime.cancel();
             ui.learn_down = false;
             ui.status = if cancelled { "cancelled".into() } else { ui.status.clone() };
-            Ok(view_with_button(ui, prefs, &held_view(ui, code), None))
+            Ok(view_with_button(ui, prefs, &held_view(ui, sample.code), None))
         }
         "focus" => {
             let released = ui.runtime.release_stuck();
             ui.learn_down = false;
+            ui.blocked = false;
+            ui.latched = false;
+            ui.fired_chords.clear();
+            ui.hold_sent.clear();
             ui.status = "idle".into();
             let mut body = view(ui, prefs);
             if let Some(obj) = body.as_object_mut() {
@@ -621,21 +685,40 @@ fn feed(ui: &mut UiState, prefs: &ControlSurfacePrefs, op: &str, code: Option<u3
             Ok(body)
         }
         "tick" => {
-            let _ = ui.runtime.move_to(x, y, t_ns, modifiers);
-            Ok(view_with_button(ui, prefs, &held_view(ui, code), None))
+            let _ = ui.runtime.move_to(sample.x, sample.y, sample.t_ns, sample.modifiers);
+            let delivered = dispatch_buttons(ui, prefs, capturing)?;
+            let button = held_view(ui, sample.code);
+            finish_flags(ui);
+            Ok(view_with_button(ui, prefs, &button, Some((delivered, ui.runtime.hold_count()))))
         }
         _ => Err(bad("op is press, move, release, cancel, focus or tick")),
     }
 }
 
 fn deliver_if_live(ui: &mut UiState, prefs: &ControlSurfacePrefs, input: Option<SurfaceInput>, capturing: bool) -> Result<Option<Value>> {
-    if capturing || !ui.runtime.enabled() {
+    if capturing || ui.blocked || ui.latched || !ui.runtime.enabled() || !prefs.enabled {
         return Ok(None);
     }
     let Some(input) = input else { return Ok(None) };
-    let context = ui.context.clone();
+    let SurfaceInput::Gesture { id, .. } = &input else { return Ok(None) };
+    let context = ui.active_context.clone();
+    let id = id.clone();
     let value = crate::surface_runtime::with(|surfaces| ui.runtime.deliver_in(surfaces, prefs, &input, &context, Instant::now()))?;
-    Ok(Some(value))
+    let status = value.pointer("/feedback/status").and_then(Value::as_str).unwrap_or("");
+    if status != "unbound" {
+        return Ok(Some(value));
+    }
+    if ui.suppressed.iter().any(|row| row.id == id && row.context == context) {
+        return Ok(Some(value));
+    }
+    let Some(command) = builtin_command(&context, &id) else { return Ok(Some(value)) };
+    if !gestures_live(prefs) {
+        return Ok(Some(value));
+    }
+    let control = ControlId::Gesture { id };
+    let emitted = crate::surface_runtime::with(|surfaces| surfaces.emit_gesture_action(gesture::POINTER_SEAT, control, command, Value::Null, &context));
+    ui.runtime.note_dispatched();
+    Ok(Some(emitted))
 }
 
 fn held_view(ui: &UiState, code: Option<u32>) -> ButtonView {
@@ -701,6 +784,8 @@ fn view(ui: &UiState, prefs: &ControlSurfacePrefs) -> Value {
         "hand": ui.hand,
         "mirror": device.mirror_ergonomic,
         "context": ui.context,
+        "activeContext": ui.active_context,
+        "profiles": profiles_json(ui, prefs),
         "path": "qt",
         "evdevRequested": ui.evdev_requested,
         "evdevDevice": ui.evdev_device,
@@ -731,16 +816,13 @@ fn view(ui: &UiState, prefs: &ControlSurfacePrefs) -> Value {
 
 fn hud_frame(ui: &UiState, device: &DeviceSetting) -> Value {
     let outcome = ui.runtime.last_outcome();
-    let hint = outcome.and_then(|item| match item {
-        Recognize::Direction(direction) => device.bindings.iter().find_map(|binding| match &binding.control {
-            ControlId::Gesture { id } if id == direction.as_id() && gesture_context_key(&binding.context) == ui.context => Some(binding.command.clone()),
-            _ => None,
-        }),
-        Recognize::Match { id, .. } => device.bindings.iter().find_map(|binding| match &binding.control {
-            ControlId::Gesture { id: bound } if bound == id && gesture_context_key(&binding.context) == ui.context => Some(binding.command.clone()),
-            _ => None,
-        }),
-        _ => None,
+    let hint = outcome.and_then(|item| {
+        let id = match item {
+            Recognize::Direction(direction) => direction.as_id(),
+            Recognize::Match { id, .. } => id.as_str(),
+            Recognize::None | Recognize::Cancelled => return None,
+        };
+        command_for(ui, device, id, &ui.active_context)
     });
     json!({
         "show": ui.hud.show,
@@ -788,6 +870,7 @@ fn sidecar_of(ui: &UiState) -> Value {
         "evdevDevice": ui.evdev_device,
         "buttonNames": names,
         "combinations": ui.combos.iter().map(combo_json).collect::<Vec<_>>(),
+        "suppressed": ui.suppressed.iter().map(|row| json!({"id": row.id, "context": row.context})).collect::<Vec<_>>(),
     })
 }
 
@@ -884,11 +967,7 @@ fn apply_sidecar_to(ui: &mut UiState, document: &Value) -> Result<()> {
         return Err(bad("hand is follow, right or left"));
     }
     let hand = hand.to_string();
-    let context = document.get("context").and_then(Value::as_str).unwrap_or("global");
-    if gesture_context_key(context) != "global" && !gesture_id_ok(context.trim()) {
-        return Err(bad("context is not usable"));
-    }
-    let context = gesture_context_key(context).to_string();
+    let context = take_context(document.get("context").and_then(Value::as_str).unwrap_or("global"))?;
     let mut names = HashMap::new();
     for row in document.get("buttonNames").and_then(Value::as_array).into_iter().flatten() {
         let Some(code) = row.get("code").and_then(Value::as_u64).and_then(|n| u32::try_from(n).ok()) else { continue };
@@ -906,6 +985,18 @@ fn apply_sidecar_to(ui: &mut UiState, document: &Value) -> Result<()> {
         let Some(combo) = combo_of(row) else { continue };
         combos.push(combo);
     }
+    let mut suppressed = Vec::new();
+    for row in document.get("suppressed").and_then(Value::as_array).into_iter().flatten() {
+        if suppressed.len() >= MAX_COMBOS {
+            break;
+        }
+        let Some(id) = row.get("id").and_then(Value::as_str) else { continue };
+        if !gesture_id_ok(id) {
+            continue;
+        }
+        let Ok(context) = take_context(row.get("context").and_then(Value::as_str).unwrap_or("global")) else { continue };
+        suppressed.push(Suppressed { id: id.to_string(), context });
+    }
     let armed = document.get("armed").and_then(Value::as_bool).unwrap_or(false);
     let evdev_requested = document.get("evdevRequested").and_then(Value::as_bool).unwrap_or(false);
     let evdev_device = document.get("evdevDevice").and_then(Value::as_str).unwrap_or("").to_string();
@@ -916,6 +1007,7 @@ fn apply_sidecar_to(ui: &mut UiState, document: &Value) -> Result<()> {
     ui.context = context;
     ui.names = names;
     ui.combos = combos;
+    ui.suppressed = suppressed;
     ui.armed = armed;
     ui.evdev_requested = evdev_requested;
     ui.evdev_device = evdev_device;
@@ -986,18 +1078,29 @@ fn button_json(ui: &UiState, button: &ButtonView) -> Value {
 
 fn combo_json(combo: &Combo) -> Value {
     let key = combo.roles.iter().map(|role| role.to_string()).collect::<Vec<_>>().join(",");
-    json!({"roles": combo.roles, "modifiers": combo.modifiers, "command": combo.command, "context": combo.context, "key": format!("{key}+{}", combo.modifiers)})
+    json!({
+        "roles": combo.roles,
+        "modifiers": combo.modifiers,
+        "command": combo.command,
+        "context": combo.context,
+        "trigger": trigger_name(combo.trigger),
+        "key": format!("{key}+{}", combo.modifiers),
+    })
 }
 
 fn combo_of(row: &Value) -> Option<Combo> {
-    let roles = read_roles(row.get("roles")).ok()?;
+    let trigger = read_trigger(row.get("trigger").and_then(Value::as_str)).ok()?;
+    let roles = match trigger {
+        Trigger::Hold => read_hold_roles(row.get("roles")).ok()?,
+        Trigger::Chord => read_roles(row.get("roles")).ok()?,
+    };
     let modifiers = u8::try_from(row.get("modifiers").and_then(Value::as_u64).unwrap_or(0)).ok()?;
     let command = row.get("command").and_then(Value::as_str)?.trim().to_string();
     if !gesture_command_allowed(&command) {
         return None;
     }
-    let context = gesture_context_key(row.get("context").and_then(Value::as_str).unwrap_or("global")).to_string();
-    Some(Combo { roles, modifiers, command, context })
+    let context = take_context(row.get("context").and_then(Value::as_str).unwrap_or("global")).ok()?;
+    Some(Combo { roles, modifiers, command, context, trigger })
 }
 
 fn stored_of(row: &Value) -> Option<StoredGesture> {
@@ -1029,8 +1132,221 @@ fn control_binding(row: &Value) -> Option<Binding> {
         return None;
     }
     let params = row.get("params").cloned().unwrap_or(Value::Null);
-    let context = row.get("context").and_then(Value::as_str).unwrap_or("").to_string();
+    let context = take_context(row.get("context").and_then(Value::as_str).unwrap_or("global")).ok()?;
     Some(Binding { control, command, params, context })
+}
+
+/// Spatial directions on the Timeline. Time runs left to right, so these ids are not mirrored.
+const TIMELINE_PROFILE: &[(&str, &str)] = &[
+    ("direction.right", "playhead.nextEdit"),
+    ("direction.left", "playhead.prevEdit"),
+    ("direction.up-right", "playhead.end"),
+    ("direction.down-left", "playhead.start"),
+    ("direction.up", "playback.forward"),
+    ("direction.down", "playback.reverse"),
+    ("direction.up-left", "playback.toggle"),
+    ("direction.down-right", "playback.stop"),
+];
+
+/// Media Browser examples that MG0 decision 6 does not allow on a gesture (`mediaBrowser.*`).
+const MEDIA_BROWSER_DEFERRED: &[&str] = &["mediaBrowser.navigate", "mediaBrowser.select", "mediaBrowser.favorite"];
+
+fn take_context(context: &str) -> Result<String> {
+    let canonical = canonical_context(context);
+    if canonical != "global" && !gesture_id_ok(&canonical) {
+        return Err(bad("context is not usable"));
+    }
+    Ok(canonical)
+}
+
+fn canonical_context(context: &str) -> String {
+    let key = gesture_context_key(context.trim());
+    match key.to_ascii_lowercase().as_str() {
+        "timeline" => "Timeline".into(),
+        "mediabrowser" | "media-browser" | "media browser" => "MediaBrowser".into(),
+        _ => key.to_string(),
+    }
+}
+
+fn builtin_command<'a>(context: &str, id: &str) -> Option<&'a str> {
+    if context != "Timeline" {
+        return None;
+    }
+    TIMELINE_PROFILE.iter().find(|(gesture, _)| *gesture == id).map(|(_, command)| *command)
+}
+
+fn gestures_live(prefs: &ControlSurfacePrefs) -> bool {
+    prefs.enabled && prefs.devices.iter().any(|device| device.device == gesture::POINTER_SEAT && device.enabled)
+}
+
+fn same_combo(combo: &Combo, roles: &[u32], modifiers: u8, context: &str, trigger: Trigger) -> bool {
+    combo.roles == roles && combo.modifiers == modifiers && combo.context == context && combo.trigger == trigger
+}
+
+fn read_trigger(value: Option<&str>) -> Result<Trigger> {
+    match value.unwrap_or("chord") {
+        "chord" => Ok(Trigger::Chord),
+        "hold" => Ok(Trigger::Hold),
+        _ => Err(bad("trigger is chord or hold")),
+    }
+}
+
+fn trigger_name(trigger: Trigger) -> &'static str {
+    match trigger {
+        Trigger::Chord => "chord",
+        Trigger::Hold => "hold",
+    }
+}
+
+fn suppress(ui: &mut UiState, id: &str, context: &str) {
+    if ui.suppressed.iter().any(|row| row.id == id && row.context == context) {
+        return;
+    }
+    if ui.suppressed.len() >= MAX_COMBOS {
+        return;
+    }
+    ui.suppressed.push(Suppressed { id: id.to_string(), context: context.to_string() });
+}
+
+fn context_configured(ui: &UiState, prefs: &ControlSurfacePrefs, context: &str) -> bool {
+    if context.is_empty() {
+        return false;
+    }
+    if ui.combos.iter().any(|combo| combo.context == context) || ui.suppressed.iter().any(|row| row.context == context) {
+        return true;
+    }
+    let device = prefs.device(gesture::POINTER_SEAT);
+    device.bindings.iter().any(|binding| matches!(&binding.control, ControlId::Gesture { .. } if gesture_context_key(&binding.context) == context))
+}
+
+fn module_of(widget: &str) -> Option<&'static str> {
+    let widget = widget.trim();
+    if widget == "panel.Timeline" || widget.starts_with("timeline.") || widget.starts_with("panel.menu.Timeline") {
+        return Some("Timeline");
+    }
+    if widget == "panel.MediaBrowser" || widget.starts_with("mediaBrowser.") || widget.starts_with("panel.menu.MediaBrowser") {
+        return Some("MediaBrowser");
+    }
+    None
+}
+
+fn resolve_context(ui: &UiState, prefs: &ControlSurfacePrefs, widget: &str, explicit: Option<&str>) -> String {
+    if let Some(explicit) = explicit
+        && let Ok(context) = take_context(explicit)
+    {
+        return context;
+    }
+    let widget = widget.trim();
+    if context_configured(ui, prefs, widget)
+        && let Ok(context) = take_context(widget)
+    {
+        return context;
+    }
+    if let Some(module) = module_of(widget) {
+        return module.to_string();
+    }
+    if widget.is_empty() { ui.context.clone() } else { "global".into() }
+}
+
+fn begin_sample(ui: &mut UiState, prefs: &ControlSurfacePrefs, conflict: bool, widget: &str, explicit: Option<&str>) {
+    if conflict {
+        ui.blocked = true;
+    }
+    ui.active_context = resolve_context(ui, prefs, widget, explicit);
+}
+
+fn finish_flags(ui: &mut UiState) {
+    if !ui.runtime.buttons().iter().any(|button| button.pressed) {
+        ui.blocked = false;
+        ui.latched = false;
+        ui.fired_chords.clear();
+        ui.hold_sent.clear();
+        return;
+    }
+    let down = ui.runtime.combination().roles;
+    ui.hold_sent.retain(|role| down.contains(role));
+}
+
+fn command_for(ui: &UiState, device: &DeviceSetting, id: &str, context: &str) -> Option<String> {
+    if ui.suppressed.iter().any(|row| row.id == id && row.context == context) {
+        return None;
+    }
+    if let Some(binding) = device.bindings.iter().find(|binding| gesture_key_is(binding, id, context)) {
+        return Some(binding.command.clone());
+    }
+    builtin_command(context, id).map(str::to_string)
+}
+
+fn profiles_json(ui: &UiState, prefs: &ControlSurfacePrefs) -> Vec<Value> {
+    let device = prefs.device(gesture::POINTER_SEAT);
+    let timeline: Vec<Value> = TIMELINE_PROFILE
+        .iter()
+        .map(|(id, builtin)| {
+            let source = if ui.suppressed.iter().any(|row| row.id == *id && row.context == "Timeline") {
+                "off"
+            } else if device.bindings.iter().any(|binding| gesture_key_is(binding, id, "Timeline")) {
+                "user"
+            } else {
+                "builtin"
+            };
+            json!({"id": id, "command": command_for(ui, &device, id, "Timeline").unwrap_or_default(), "context": "Timeline", "source": source, "builtinCommand": builtin})
+        })
+        .collect();
+    vec![
+        json!({"context": "Timeline", "panel": "Timeline", "builtin": true, "mappings": timeline}),
+        json!({"context": "MediaBrowser", "panel": "Media Browser", "builtin": true, "mappings": [], "deferred": MEDIA_BROWSER_DEFERRED}),
+    ]
+}
+
+fn dispatch_buttons(ui: &mut UiState, prefs: &ControlSurfacePrefs, capturing: bool) -> Result<Option<Value>> {
+    if capturing || ui.blocked || !ui.runtime.enabled() || !prefs.enabled || ui.runtime.moved_past_slop() {
+        return Ok(None);
+    }
+    let live = ui.runtime.combination();
+    let chord = if live.roles.len() >= 2 { find_combo(ui, &live.roles, live.modifiers, Trigger::Chord) } else { None };
+    if let Some(combo) = chord {
+        let key = chord_key(&combo);
+        if !ui.fired_chords.iter().any(|fired| fired == &key) {
+            ui.fired_chords.push(key);
+            ui.latched = true;
+            return Ok(Some(emit_combo(ui, combo)));
+        }
+    }
+    let held = ui.runtime.held_roles();
+    if held.len() == 1 && live.roles == held {
+        let role = held[0];
+        let hold = if ui.hold_sent.contains(&role) { None } else { find_combo(ui, &held, live.modifiers, Trigger::Hold) };
+        if let Some(combo) = hold {
+            ui.hold_sent.push(role);
+            ui.latched = true;
+            return Ok(Some(emit_combo(ui, combo)));
+        }
+    }
+    Ok(None)
+}
+
+fn find_combo(ui: &UiState, roles: &[u32], modifiers: u8, trigger: Trigger) -> Option<Combo> {
+    let context = ui.active_context.as_str();
+    ui.combos.iter().find(|combo| combo.trigger == trigger && combo.roles == roles && combo.modifiers == modifiers && combo.context == context).cloned()
+}
+
+fn chord_key(combo: &Combo) -> String {
+    let roles = combo.roles.iter().map(|role| role.to_string()).collect::<Vec<_>>().join(".");
+    format!("{}:{}:{roles}:{}", combo.context, trigger_name(combo.trigger), combo.modifiers)
+}
+
+fn emit_combo(ui: &mut UiState, combo: Combo) -> Value {
+    let control = ControlId::Gesture { id: combo_control_id(&combo) };
+    let context = combo.context.clone();
+    let command = combo.command.clone();
+    let value = crate::surface_runtime::with(|surfaces| surfaces.emit_gesture_action(gesture::POINTER_SEAT, control, &command, Value::Null, &context));
+    ui.runtime.note_dispatched();
+    value
+}
+
+fn combo_control_id(combo: &Combo) -> String {
+    let roles = combo.roles.iter().map(|role| role.to_string()).collect::<Vec<_>>().join(".");
+    format!("{}.{roles}.m{}", trigger_name(combo.trigger), combo.modifiers)
 }
 
 fn read_points(value: Option<&Value>) -> Result<Vec<(i32, i32)>> {
@@ -1049,6 +1365,24 @@ fn read_points(value: Option<&Value>) -> Result<Vec<(i32, i32)>> {
         points.push((i32::try_from(x).map_err(|_| bad("a point is out of range"))?, i32::try_from(y).map_err(|_| bad("a point is out of range"))?));
     }
     Ok(points)
+}
+
+fn read_hold_roles(value: Option<&Value>) -> Result<Vec<u32>> {
+    let Some(rows) = value.and_then(Value::as_array) else { return Err(bad("roles are required")) };
+    if rows.is_empty() || rows.len() > 8 {
+        return Err(bad("a hold needs one role"));
+    }
+    let mut roles = Vec::new();
+    for row in rows {
+        let role = row.as_u64().and_then(|n| u32::try_from(n).ok()).ok_or_else(|| bad("a role is not a number"))?;
+        roles.push(role);
+    }
+    roles.sort_unstable();
+    roles.dedup();
+    if roles.len() != 1 {
+        return Err(bad("a hold needs one role"));
+    }
+    Ok(roles)
 }
 
 fn read_roles(value: Option<&Value>) -> Result<Vec<u32>> {
@@ -1244,7 +1578,7 @@ fn bad(msg: &str) -> EngineError {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::gesture_runtime::{QT_LEFT, QT_RIGHT};
+    use crate::gesture_runtime::{QT_LEFT, QT_MIDDLE, QT_RIGHT};
     use cfa4_surface_model::MidiKind;
 
     fn session() -> Session {
@@ -1335,8 +1669,15 @@ mod tests {
     }
 
     #[test]
-    fn twelve_buttons_stay_a_list_and_a_combination_is_not_dispatched() {
+    fn twelve_buttons_stay_a_list_and_a_combination_dispatches_once() {
         let mut s = session();
+        let midi = "midi:nano:1";
+        let control = ControlId::Midi { channel: 0, kind: MidiKind::Cc, number: 41 };
+        s.prefs.control_surfaces.devices.push(DeviceSetting {
+            device: midi.into(),
+            bindings: vec![Binding { control: control.clone(), command: "edit.undo".into(), params: Value::Null, context: String::new() }],
+            ..DeviceSetting::default()
+        });
         s.execute("surface.gesture.configure", json!({"enabled": true})).unwrap();
         for code in 0..12u32 {
             s.execute("surface.gesture.sample", json!({"op": "press", "code": 32 + code, "tNs": code, "from": "editor"})).unwrap();
@@ -1345,11 +1686,21 @@ mod tests {
         assert!(view["buttons"].as_array().unwrap().len() >= 12);
         s.execute("surface.gesture.combo", json!({"op": "set", "roles": [0, 1], "modifiers": 0, "command": "playback.stop", "context": "global"})).unwrap();
         s.execute("surface.gesture.sample", json!({"op": "press", "code": QT_LEFT, "tNs": 10_000, "from": "editor"})).unwrap();
-        s.execute("surface.gesture.sample", json!({"op": "press", "code": QT_RIGHT, "tNs": 11_000, "from": "editor"})).unwrap();
-        let release = s.execute("surface.gesture.sample", json!({"op": "release", "code": QT_LEFT, "tNs": 12_000, "from": "editor"})).unwrap();
-        assert!(release["combinations"].as_array().unwrap().iter().any(|combo| combo["command"] == "playback.stop"));
+        let press = s.execute("surface.gesture.sample", json!({"op": "press", "code": QT_RIGHT, "tNs": 11_000, "from": "editor"})).unwrap();
+        assert!(press["combinations"].as_array().unwrap().iter().any(|combo| combo["command"] == "playback.stop" && combo["trigger"] == "chord"));
+        assert_eq!(press["injected"]["feedback"]["command"], "playback.stop");
+        let again = s.execute("surface.gesture.sample", json!({"op": "tick", "code": QT_RIGHT, "tNs": 12_000, "from": "editor"})).unwrap();
+        assert!(again.get("injected").is_none());
+        let release = s.execute("surface.gesture.sample", json!({"op": "release", "code": QT_LEFT, "tNs": 13_000, "from": "editor"})).unwrap();
         assert!(release.get("injected").is_none());
-        assert!(crate::surface_runtime::with(|rt| no_action(&rt.events)));
+        let events = crate::surface_runtime::with(|rt| rt.take_events());
+        assert_eq!(events.len(), 1);
+        assert_eq!(events[0]["event"], "surfaceAction");
+        assert_eq!(events[0]["command"], "playback.stop");
+        let midi_in = json!({"device": midi, "input": {"type": "button", "control": {"midi": {"channel": 0, "kind": "cc", "number": 41}}, "pressed": true}});
+        crate::surface_runtime::with(|rt| crate::surface_runtime::inject(rt, &s.prefs.control_surfaces, &midi_in, Instant::now())).unwrap();
+        let midi_events = crate::surface_runtime::with(|rt| rt.take_events());
+        assert_eq!(midi_events[0]["command"], "edit.undo");
     }
 
     #[test]
@@ -1440,5 +1791,167 @@ mod tests {
         assert_eq!(back["enabled"], false);
         assert_eq!(back["hand"], "follow");
         assert!(back["mappings"].as_array().unwrap().is_empty());
+    }
+
+    fn line(s: &mut Session, code: u32, dx: i32, widget: &str, conflict: bool, from: &str, t0: u64) -> Value {
+        s.execute(
+            "surface.gesture.sample",
+            json!({"op": "press", "code": code, "x": 0, "y": 0, "tNs": t0, "from": from, "widget": widget, "conflict": conflict}),
+        )
+        .unwrap();
+        for step in 1..=3 {
+            let x = dx / 3 * step;
+            s.execute(
+                "surface.gesture.sample",
+                json!({"op": "move", "x": x, "y": 0, "tNs": t0 + 40_000_000 * step as u64, "from": from, "widget": widget, "conflict": conflict}),
+            )
+            .unwrap();
+        }
+        s.execute(
+            "surface.gesture.sample",
+            json!({"op": "release", "code": code, "x": dx, "y": 0, "tNs": t0 + 200_000_000, "from": from, "widget": widget, "conflict": conflict}),
+        )
+        .unwrap()
+    }
+
+    fn action_commands(events: &[Value]) -> Vec<&str> {
+        events
+            .iter()
+            .filter(|event| event.get("event").and_then(Value::as_str) == Some("surfaceAction"))
+            .filter_map(|event| event.get("command").and_then(Value::as_str))
+            .collect()
+    }
+
+    #[test]
+    fn timeline_profile_follows_the_widget_and_does_not_fall_back() {
+        let mut s = session();
+        s.execute("surface.gesture.configure", json!({"enabled": true, "mirror": true})).unwrap();
+        s.execute("surface.gesture.map", json!({"op": "set", "id": "direction.right", "command": "playback.toggle", "context": "global"})).unwrap();
+        let view = s.execute("surface.gesture.inspect", json!({})).unwrap();
+        assert_eq!(view["profiles"][0]["context"], "Timeline");
+        assert_eq!(view["profiles"][1]["context"], "MediaBrowser");
+        assert_eq!(view["profiles"][1]["panel"], "Media Browser");
+        assert!(view["profiles"][1]["deferred"].as_array().unwrap().iter().any(|row| row == "mediaBrowser.navigate"));
+        assert!(view["profiles"][0]["mappings"].as_array().unwrap().iter().any(|row| row["id"] == "direction.right" && row["source"] == "builtin"));
+        let timeline = line(&mut s, QT_RIGHT, 120, "timeline.canvas", false, "editor", 9_000_000_000);
+        assert_eq!(timeline["activeContext"], "Timeline");
+        assert_eq!(timeline["injected"]["feedback"]["command"], "playhead.nextEdit");
+        let conflict = line(&mut s, QT_RIGHT, 120, "timeline.canvas", true, "editor", 10_000_000_000);
+        assert!(conflict.get("injected").is_none());
+        let click = s
+            .execute(
+                "surface.gesture.sample",
+                json!({"op": "press", "code": QT_RIGHT, "x": 0, "y": 0, "tNs": 11_000_000_000u64, "widget": "timeline.canvas", "from": "editor"}),
+            )
+            .unwrap();
+        let click = s
+            .execute(
+                "surface.gesture.sample",
+                json!({"op": "release", "code": QT_RIGHT, "x": 0, "y": 0, "tNs": 11_050_000_000u64, "widget": "timeline.canvas", "from": "editor"}),
+            )
+            .unwrap_or(click);
+        assert!(click.get("injected").is_none() || click["injected"]["feedback"]["status"] != "dispatched");
+        s.execute("surface.gesture.map", json!({"op": "set", "id": "direction.right", "command": "playback.stop", "context": "timeline.canvas"})).unwrap();
+        let widget = line(&mut s, QT_RIGHT, 120, "timeline.canvas", false, "editor", 12_000_000_000);
+        assert_eq!(widget["activeContext"], "timeline.canvas");
+        assert_eq!(widget["injected"]["feedback"]["command"], "playback.stop");
+        let tabs = line(&mut s, QT_RIGHT, 120, "timeline.tabs", false, "editor", 13_000_000_000);
+        assert_eq!(tabs["activeContext"], "Timeline");
+        assert_eq!(tabs["injected"]["feedback"]["command"], "playhead.nextEdit");
+        s.execute("surface.gesture.map", json!({"op": "remove", "id": "direction.right", "context": "Timeline"})).unwrap();
+        let hidden = line(&mut s, QT_RIGHT, 120, "timeline.tabs", false, "editor", 14_000_000_000);
+        assert!(hidden.get("injected").is_none() || hidden["injected"]["feedback"]["status"] != "dispatched");
+        let elsewhere = line(&mut s, QT_RIGHT, 120, "program.monitor", false, "editor", 15_000_000_000);
+        assert_eq!(elsewhere["activeContext"], "global");
+        assert_eq!(elsewhere["injected"]["feedback"]["command"], "playback.toggle");
+        let events = crate::surface_runtime::with(|rt| rt.take_events());
+        let commands = action_commands(&events);
+        assert!(commands.contains(&"playhead.nextEdit"));
+        assert!(!commands.iter().any(|command| command.starts_with("mediaBrowser")));
+    }
+
+    #[test]
+    fn media_browser_context_uses_only_its_own_mapping() {
+        let mut s = session();
+        s.execute("surface.gesture.configure", json!({"enabled": true})).unwrap();
+        s.execute("surface.gesture.map", json!({"op": "set", "id": "direction.left", "command": "playhead.stepBack", "context": "Media Browser"})).unwrap();
+        let browser = line(&mut s, QT_RIGHT, -120, "mediaBrowser.list", false, "editor", 9_000_000_000);
+        assert_eq!(browser["activeContext"], "MediaBrowser");
+        assert_eq!(browser["injected"]["feedback"]["command"], "playhead.stepBack");
+        let timeline = line(&mut s, QT_RIGHT, -120, "timeline.canvas", false, "editor", 10_000_000_000);
+        assert_eq!(timeline["activeContext"], "Timeline");
+        assert_eq!(timeline["injected"]["feedback"]["command"], "playhead.prevEdit");
+        let armed = s.execute("surface.gesture.configure", json!({"armed": true})).unwrap();
+        assert_eq!(armed["armed"], true);
+        let window = line(&mut s, QT_RIGHT, -120, "mediaBrowser.tree", false, "window", 11_000_000_000);
+        assert_eq!(window["injected"]["feedback"]["command"], "playhead.stepBack");
+    }
+
+    #[test]
+    fn hold_and_a_three_button_chord_dispatch_once_each() {
+        let mut s = session();
+        s.execute("surface.gesture.configure", json!({"enabled": true})).unwrap();
+        s.execute("surface.gesture.combo", json!({"op": "set", "trigger": "hold", "roles": [0], "command": "playback.stop", "context": "global"})).unwrap();
+        s.execute("surface.gesture.sample", json!({"op": "press", "code": QT_LEFT, "x": 4, "y": 4, "tNs": 2_000_000_000u64, "from": "editor"})).unwrap();
+        let held =
+            s.execute("surface.gesture.sample", json!({"op": "tick", "code": QT_LEFT, "x": 4, "y": 4, "tNs": 2_400_000_000u64, "from": "editor"})).unwrap();
+        assert_eq!(held["injected"]["feedback"]["command"], "playback.stop");
+        let again =
+            s.execute("surface.gesture.sample", json!({"op": "tick", "code": QT_LEFT, "x": 4, "y": 4, "tNs": 2_500_000_000u64, "from": "editor"})).unwrap();
+        assert!(again.get("injected").is_none());
+        s.execute("surface.gesture.sample", json!({"op": "release", "code": QT_LEFT, "x": 4, "y": 4, "tNs": 2_600_000_000u64, "from": "editor"})).unwrap();
+        s.execute("surface.gesture.combo", json!({"op": "set", "roles": [0, 1], "command": "playback.toggle", "context": "global"})).unwrap();
+        s.execute("surface.gesture.combo", json!({"op": "set", "roles": [0, 1, 2], "command": "playhead.end", "context": "global"})).unwrap();
+        s.execute("surface.gesture.sample", json!({"op": "press", "code": QT_LEFT, "tNs": 3_000_000_000u64, "from": "editor"})).unwrap();
+        let two = s.execute("surface.gesture.sample", json!({"op": "press", "code": QT_RIGHT, "tNs": 3_010_000_000u64, "from": "editor"})).unwrap();
+        assert_eq!(two["injected"]["feedback"]["command"], "playback.toggle");
+        let three = s.execute("surface.gesture.sample", json!({"op": "press", "code": QT_MIDDLE, "tNs": 3_020_000_000u64, "from": "editor"})).unwrap();
+        assert_eq!(three["injected"]["feedback"]["command"], "playhead.end");
+        s.execute("surface.gesture.sample", json!({"op": "release", "code": QT_MIDDLE, "tNs": 3_030_000_000u64, "from": "editor"})).unwrap();
+        let repeat = s.execute("surface.gesture.sample", json!({"op": "tick", "tNs": 3_040_000_000u64, "from": "editor"})).unwrap();
+        assert!(repeat.get("injected").is_none() || repeat["injected"]["feedback"]["command"] != "playhead.end");
+        let events = crate::surface_runtime::with(|rt| rt.take_events());
+        let commands = action_commands(&events);
+        assert_eq!(commands.iter().filter(|command| **command == "playback.stop").count(), 1);
+        assert_eq!(commands.iter().filter(|command| **command == "playhead.end").count(), 1);
+    }
+
+    #[test]
+    fn a_learned_side_button_runs_the_timeline_profile_and_a_chord() {
+        let mut s = session();
+        s.execute("surface.gesture.configure", json!({"enabled": true})).unwrap();
+        s.execute("surface.gesture.learn", json!({"mode": "button", "phase": "begin"})).unwrap();
+        s.execute("surface.gesture.sample", json!({"op": "press", "code": 8, "tNs": 1_000, "from": "editor"})).unwrap();
+        s.execute("surface.gesture.sample", json!({"op": "press", "code": 16, "tNs": 2_000, "from": "editor"})).unwrap();
+        s.execute("surface.gesture.learn", json!({"mode": "off", "phase": "end"})).unwrap();
+        s.execute("surface.gesture.sample", json!({"op": "release", "code": 8, "tNs": 3_000, "from": "editor"})).unwrap();
+        s.execute("surface.gesture.sample", json!({"op": "release", "code": 16, "tNs": 4_000, "from": "editor"})).unwrap();
+        let drawn = line(&mut s, 8, 120, "timeline.canvas", false, "editor", 9_000_000_000);
+        assert_eq!(drawn["injected"]["feedback"]["command"], "playhead.nextEdit");
+        s.execute("surface.gesture.combo", json!({"op": "set", "roles": [3, 4], "command": "playback.stop", "context": "Timeline"})).unwrap();
+        s.execute("surface.gesture.sample", json!({"op": "press", "code": 8, "tNs": 10_000_000_000u64, "widget": "timeline.canvas", "from": "editor"}))
+            .unwrap();
+        let chord = s
+            .execute("surface.gesture.sample", json!({"op": "press", "code": 16, "tNs": 10_010_000_000u64, "widget": "timeline.canvas", "from": "editor"}))
+            .unwrap();
+        assert_eq!(chord["activeContext"], "Timeline");
+        assert_eq!(chord["injected"]["feedback"]["command"], "playback.stop");
+        s.execute("surface.gesture.sample", json!({"op": "release", "code": 16, "tNs": 10_020_000_000u64, "widget": "timeline.canvas", "from": "editor"}))
+            .unwrap();
+        s.execute("surface.gesture.sample", json!({"op": "release", "code": 8, "tNs": 10_030_000_000u64, "widget": "timeline.canvas", "from": "editor"}))
+            .unwrap();
+        let blocked = s
+            .execute(
+                "surface.gesture.sample",
+                json!({"op": "press", "code": 8, "tNs": 11_000_000_000u64, "widget": "timeline.canvas", "conflict": true, "from": "editor"}),
+            )
+            .unwrap();
+        let blocked = s
+            .execute(
+                "surface.gesture.sample",
+                json!({"op": "press", "code": 16, "tNs": 11_010_000_000u64, "widget": "timeline.canvas", "conflict": true, "from": "editor"}),
+            )
+            .unwrap_or(blocked);
+        assert!(blocked.get("injected").is_none());
     }
 }

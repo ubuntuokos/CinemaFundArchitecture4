@@ -408,6 +408,15 @@ impl Runtime {
         });
         GestureOutcome { events: vec![event], feedback }
     }
+
+    /// One `surfaceAction` from the gesture path (a stored combination, a hold, or a built-in
+    /// context profile). [`Triggers`] is not updated. MIDI and HID lookup are not consulted.
+    pub fn emit_gesture_action(&mut self, device: &str, control: ControlId, command: &str, params: Value, context: &str) -> Value {
+        let seq = self.next_seq(device);
+        let event = action_event(device, &control, Action { command: command.to_string(), params }, seq);
+        self.events.push(event);
+        json!({"seq": seq, "feedback": {"status": "dispatched", "command": command, "context": context}})
+    }
 }
 
 impl GestureOutcome {

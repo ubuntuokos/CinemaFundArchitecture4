@@ -167,7 +167,16 @@ def test_enabling_thresholds_evdev_mapping_and_combinations_send_commands(app: A
     assert 80 in thresholds
     assert any(p.get("evdevRequested") is True for name, p in sent if name == "surface.gesture.configure")
     assert {"op": "set", "id": "direction.right", "command": "playback.toggle", "context": "global"} in [p for name, p in sent if name == "surface.gesture.map"]
-    assert {"op": "set", "roles": [0, 1], "modifiers": 0, "command": "playback.toggle", "context": "global"} in [p for name, p in sent if name == "surface.gesture.combo"]
+    assert {"op": "set", "roles": [0, 1], "modifiers": 0, "command": "playback.toggle", "context": "global", "trigger": "chord"} in [
+        p for name, p in sent if name == "surface.gesture.combo"
+    ]
+    find(dialog, QtWidgets.QCheckBox, "settings.controlSurfaces.gesture.comboHold").setChecked(True)
+    find(dialog, QtWidgets.QLineEdit, "settings.controlSurfaces.gesture.comboRoles").setText("0")
+    find(dialog, QtWidgets.QPushButton, "settings.controlSurfaces.gesture.comboAdd").click()
+    sent = engine.sent
+    assert {"op": "set", "roles": [0], "modifiers": 0, "command": "playback.toggle", "context": "global", "trigger": "hold"} in [
+        p for name, p in sent if name == "surface.gesture.combo"
+    ]
     assert {"mode": "gesture", "phase": "begin"} in [p for name, p in sent if name == "surface.gesture.learn"]
     assert {"mode": "button", "phase": "begin"} in [p for name, p in sent if name == "surface.gesture.learn"]
     assert {"mode": "test", "phase": "begin"} in [p for name, p in sent if name == "surface.gesture.learn"]
@@ -244,4 +253,73 @@ def test_the_hud_does_not_take_the_pointer(app: Any) -> None:
     hud.repaint()
     image = hud.grab()
     assert not image.isNull()
+    window.close()
+
+
+def test_the_timeline_keeps_its_mouse_and_names_the_panel(app: Any) -> None:
+    """Right and left clicks stay with the timeline. A side button is only reported."""
+    from cfa4_qt.panels.timeline import TimelineCanvas
+
+    window = QtWidgets.QWidget()
+    window.resize(480, 320)
+    class SpyCanvas(TimelineCanvas):
+        def __init__(self, parent: QtWidgets.QWidget) -> None:
+            super().__init__(parent)
+            self.menus = 0
+
+        def context_menu(self, _pos: QtCore.QPoint, _global: QtCore.QPoint) -> None:
+            self.menus += 1
+
+    canvas = SpyCanvas(window)
+    canvas.setGeometry(0, 0, 480, 320)
+    canvas.sequence = {"tracks": []}
+
+    class Engine:
+        def __init__(self) -> None:
+            self.sent: list[tuple[str, dict[str, Any]]] = []
+
+        def execute(self, command: str, params: dict[str, Any] | None = None, on_reply: Any = None, on_error: Any = None) -> int:
+            self.sent.append((command, params or {}))
+            if on_reply is not None and command == "surface.gesture.inspect":
+                on_reply({"armed": True, "hudFrame": {"show": False}}, None)
+            return 0
+
+    engine = Engine()
+    window.show()
+    layer = GestureLayer(window, engine)
+    app.processEvents()
+    assert layer._armed is True
+
+    def send(target: QtWidgets.QWidget, button: QtCore.Qt.MouseButton) -> None:
+        event = QtGui.QMouseEvent(
+            QtCore.QEvent.Type.MouseButtonPress,
+            QtCore.QPointF(90, 90),
+            QtCore.QPointF(90, 90),
+            button,
+            button,
+            QtCore.Qt.KeyboardModifier.NoModifier,
+        )
+        QtWidgets.QApplication.sendEvent(target, event)
+
+    send(canvas, QtCore.Qt.MouseButton.RightButton)
+    assert canvas.menus == 1
+    right = [params for name, params in engine.sent if name == "surface.gesture.sample"]
+    assert right[-1]["op"] == "press"
+    assert right[-1]["conflict"] is True
+    assert right[-1]["widget"] == "timeline.canvas"
+    marked = len(engine.sent)
+    send(canvas, QtCore.Qt.MouseButton.LeftButton)
+    assert [params for name, params in engine.sent[marked:] if name == "surface.gesture.sample" and params.get("op") == "press"] == []
+    send(canvas, QtCore.Qt.MouseButton.ExtraButton1)
+    extra = [params for name, params in engine.sent if name == "surface.gesture.sample"]
+    assert extra[-1]["conflict"] is False
+    assert extra[-1]["widget"] == "timeline.canvas"
+    field = QtWidgets.QLineEdit(window)
+    field.setObjectName("mediaBrowser.path")
+    field.setGeometry(0, 0, 120, 24)
+    field.show()
+    send(field, QtCore.Qt.MouseButton.ExtraButton1)
+    text = [params for name, params in engine.sent if name == "surface.gesture.sample"]
+    assert text[-1]["widget"] == "mediaBrowser.path"
+    assert text[-1]["conflict"] is True
     window.close()

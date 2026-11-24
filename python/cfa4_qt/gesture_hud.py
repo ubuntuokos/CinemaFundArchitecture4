@@ -11,7 +11,18 @@ from typing import Any
 
 from PySide6.QtCore import QEvent, QObject, Qt
 from PySide6.QtGui import QColor, QMouseEvent, QPainter, QPen
-from PySide6.QtWidgets import QApplication, QWidget
+from PySide6.QtWidgets import (
+    QAbstractSpinBox,
+    QApplication,
+    QDialog,
+    QLineEdit,
+    QMenu,
+    QPlainTextEdit,
+    QScrollBar,
+    QSplitterHandle,
+    QTextEdit,
+    QWidget,
+)
 
 from .i18n import tr
 
@@ -74,6 +85,44 @@ class GestureHud(QWidget):
         painter.end()
 
 
+def _panel_widget(name: str) -> bool:
+    return name.startswith(("timeline.", "mediaBrowser.", "panel.menu.Timeline", "panel.menu.MediaBrowser")) or name in {
+        "panel.Timeline",
+        "panel.MediaBrowser",
+    }
+
+
+def _widget_name(watched: QObject) -> str:
+    widget: QWidget | None = watched if isinstance(watched, QWidget) else None
+    names: list[str] = []
+    while widget is not None:
+        name = widget.objectName()
+        if name:
+            names.append(name)
+        widget = widget.parentWidget()
+    for name in names:
+        if _panel_widget(name):
+            return name
+    return names[0] if names else ""
+
+
+def _conflicts(watched: QObject, event: QMouseEvent, code: int) -> bool:
+    if event.type() == QEvent.Type.MouseButtonDblClick:
+        return True
+    if code in (qt_int(Qt.MouseButton.RightButton), qt_int(Qt.MouseButton.MiddleButton)):
+        return True
+    app = QApplication.instance()
+    if isinstance(app, QApplication) and (app.activeModalWidget() is not None or app.activePopupWidget() is not None):
+        return True
+    widget: QWidget | None = watched if isinstance(watched, QWidget) else None
+    protected = (QScrollBar, QSplitterHandle, QLineEdit, QTextEdit, QPlainTextEdit, QAbstractSpinBox, QDialog, QMenu)
+    while widget is not None:
+        if isinstance(widget, protected):
+            return True
+        widget = widget.parentWidget()
+    return False
+
+
 def _lines(frame: dict[str, Any]) -> list[str]:
     lines: list[str] = []
     if frame.get("cancelled"):
@@ -121,16 +170,21 @@ class GestureLayer(QObject):
         self._hud.set_frame(frame)
 
     def eventFilter(self, watched: QObject, event: QEvent) -> bool:
-        if watched is self._window and event.type() == QEvent.Type.Resize:
-            self._hud.setGeometry(self._window.rect())
+        # Qt can deliver this while the object is being constructed or destroyed.
+        window = getattr(self, "_window", None)
+        hud = getattr(self, "_hud", None)
+        if window is None or hud is None or not hasattr(self, "_down"):
+            return False
+        if watched is window and event.type() == QEvent.Type.Resize:
+            hud.setGeometry(window.rect())
             return False
         if not self._armed:
             return False
-        if event.type() == QEvent.Type.WindowDeactivate and watched is self._window:
+        if event.type() == QEvent.Type.WindowDeactivate and watched is window:
             self._send({"op": "focus", "from": "window", "tNs": time.monotonic_ns()})
             self._down.clear()
             return False
-        if event.type() == QEvent.Type.KeyPress and watched is self._window and self._down:
+        if event.type() == QEvent.Type.KeyPress and watched is window and self._down:
             key = getattr(event, "key", lambda: None)()
             if key == Qt.Key.Key_Escape:
                 self._send({"op": "cancel", "from": "window", "tNs": time.monotonic_ns()})
@@ -138,23 +192,43 @@ class GestureLayer(QObject):
             return False
         if not isinstance(event, QMouseEvent):
             return False
-        kind = event.type()
-        code = qt_int(event.button())
-        # The primary button stays with the panels. A gesture uses another button.
-        if kind == QEvent.Type.MouseButtonPress and code not in (0, qt_int(Qt.MouseButton.LeftButton)):
-            self._down.add(code)
-            self._send(self._sample("press", event, code))
-        elif kind == QEvent.Type.MouseButtonRelease and code in self._down:
-            self._down.discard(code)
-            self._send(self._sample("release", event, code))
-        elif kind == QEvent.Type.MouseMove and self._down:
-            self._send(self._sample("move", event, 0))
+        self._observe(watched, event)
         return False
 
-    def _sample(self, op: str, event: QMouseEvent, code: int) -> dict[str, Any]:
+    def _observe(self, watched: QObject, event: QMouseEvent) -> None:
+        kind = event.type()
+        code = qt_int(event.button())
+        # A double-click, the menu button and the middle button stay with the panels.
+        # The sample is only a report: this filter never accepts the event.
+        if kind == QEvent.Type.MouseButtonDblClick:
+            self._send(self._sample("cancel", event, code, watched))
+            self._down.clear()
+            return
+        primary = qt_int(Qt.MouseButton.LeftButton)
+        if kind == QEvent.Type.MouseButtonPress and code not in (0, primary):
+            self._down.add(code)
+            self._send(self._sample("press", event, code, watched))
+        elif kind == QEvent.Type.MouseButtonRelease and code in self._down:
+            self._down.discard(code)
+            self._send(self._sample("release", event, code, watched))
+        elif kind == QEvent.Type.MouseMove and self._down:
+            self._send(self._sample("move", event, 0, watched))
+
+    def _sample(self, op: str, event: QMouseEvent, code: int, watched: QObject) -> dict[str, Any]:
         pos = event.position()
-        body: dict[str, Any] = {"op": op, "x": int(pos.x()), "y": int(pos.y()), "tNs": time.monotonic_ns(), "from": "window", "modifiers": qt_int(event.modifiers())}
-        if op != "move":
+        # Qt's modifier flags do not fit the engine's u8. A modified click stays with the widget.
+        modified = qt_int(event.modifiers()) != 0
+        body: dict[str, Any] = {
+            "op": op,
+            "x": int(pos.x()),
+            "y": int(pos.y()),
+            "tNs": time.monotonic_ns(),
+            "from": "window",
+            "modifiers": 0,
+            "widget": _widget_name(watched),
+            "conflict": _conflicts(watched, event, code) or modified,
+        }
+        if op not in ("move", "cancel"):
             body["code"] = code
         return body
 
