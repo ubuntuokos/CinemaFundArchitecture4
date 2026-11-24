@@ -2,8 +2,9 @@
 //!
 //! The recogniser in `cfa4-surface-model` is called from here. This module does not read a device,
 //! does not open `/dev/input`, and does not call [`crate::Session::execute`]. A finished gesture
-//! is a [`SurfaceInput::Gesture`] placed on the existing `surface.inject` path. That path does not
-//! emit `surfaceAction` for it: bindings are a later phase, and [`Triggers::press`] is unchanged.
+//! is a [`SurfaceInput::Gesture`] placed on the existing `surface.inject` path. A binding emits
+//! one `surfaceAction` there (MG2). [`Triggers::press`] is unchanged, and nothing is published to
+//! the event fabric.
 //!
 //! Learn lives here, not in the MIDI Learn machine. While it is on, no gesture is injected.
 //!
@@ -13,7 +14,7 @@
 use std::collections::HashMap;
 
 use cfa4_surface_model::gesture::{self, GestureError, MAX_SAMPLES, PointerSample, Recognize, Template, Thresholds};
-use cfa4_surface_model::{ControlId, SurfaceInput};
+use cfa4_surface_model::{ControlId, MonoNs, SurfaceEvent, SurfaceInput, SurfaceProtocol};
 use serde_json::{Value, json};
 use web_time::Instant;
 
@@ -166,7 +167,8 @@ pub struct GestureRuntime {
     modifiers: u8,
     last_outcome: Option<Recognize>,
     injected: u64,
-    /// Stays 0. This module never calls [`crate::Session::execute`].
+    /// How many `surfaceAction` events this session has handed to the surface runtime.
+    /// This module never calls [`crate::Session::execute`].
     commands: u64,
 }
 
@@ -370,15 +372,32 @@ impl GestureRuntime {
         json!({ "device": gesture::pointer_seat().to_string(), "input": input })
     }
 
-    /// Put `input` on the existing `surface.inject` path. Learn refuses the call, and the counter
-    /// of dispatched commands is not touched. `now` is only what `surface.inject` already requires;
-    /// gesture timing uses the sample timestamps.
+    /// Put `input` on the existing `surface.inject` path, in the global context. Learn refuses
+    /// the call. `now` is only what `surface.inject` already requires; gesture timing uses the
+    /// sample timestamps.
     pub fn deliver(&mut self, surfaces: &mut SurfaceRuntime, prefs: &ControlSurfacePrefs, input: &SurfaceInput, now: Instant) -> crate::Result<Value> {
+        self.deliver_in(surfaces, prefs, input, "global", now)
+    }
+
+    /// [`deliver`] in one context. A narrower context does not fall back to global.
+    pub fn deliver_in(
+        &mut self,
+        surfaces: &mut SurfaceRuntime,
+        prefs: &ControlSurfacePrefs,
+        input: &SurfaceInput,
+        context: &str,
+        now: Instant,
+    ) -> crate::Result<Value> {
         if self.learning {
             return Ok(json!({ "injected": false }));
         }
+        let input = with_context(input, context);
         self.injected = self.injected.saturating_add(1);
-        crate::surface_runtime::inject(surfaces, prefs, &Self::inject_body(input), now)
+        let value = crate::surface_runtime::inject(surfaces, prefs, &Self::inject_body(&input), now)?;
+        if value.pointer("/feedback/status").and_then(Value::as_str) == Some("dispatched") {
+            self.commands = self.commands.saturating_add(1);
+        }
+        Ok(value)
     }
 
     fn finish(&mut self, t_ns: u64, templates: &[Template]) -> std::result::Result<Option<SurfaceInput>, GestureError> {
@@ -458,7 +477,54 @@ fn input_of(outcome: &Recognize) -> Option<SurfaceInput> {
         Recognize::Match { id, .. } => id.clone(),
         Recognize::None | Recognize::Cancelled => return None,
     };
-    Some(SurfaceInput::Gesture { id })
+    Some(SurfaceInput::Gesture { id, context: String::new() })
+}
+
+fn with_context(input: &SurfaceInput, context: &str) -> SurfaceInput {
+    match input {
+        SurfaceInput::Gesture { id, context: existing } if existing.is_empty() => SurfaceInput::Gesture { id: id.clone(), context: context.to_string() },
+        other => other.clone(),
+    }
+}
+
+/// Templates stored on the pointer profile. Ergonomic templates are mirrored only when the
+/// profile asks for it. Spatial templates keep their direction.
+pub fn templates_from_profile(prefs: &ControlSurfacePrefs) -> Vec<Template> {
+    let device = prefs.device(gesture::POINTER_SEAT);
+    device
+        .gestures
+        .iter()
+        .filter(|template| !template.points.is_empty() && template.points.len() <= gesture::MAX_TEMPLATE_POINTS)
+        .map(|template| {
+            let built = Template { id: template.id.clone(), points: template.points.clone(), spatial: template.spatial };
+            if device.mirror_ergonomic { gesture::mirror_template(&built) } else { built }
+        })
+        .collect()
+}
+
+/// The pointer as a [`SurfaceEvent`]. No device is opened. The recognised gesture is the input.
+pub struct PointerAdapter;
+
+impl PointerAdapter {
+    pub fn input(id: &str, context: &str) -> SurfaceInput {
+        SurfaceInput::Gesture { id: id.to_string(), context: context.to_string() }
+    }
+
+    pub fn event(id: &str, context: &str, seq: u64, at: MonoNs) -> SurfaceEvent {
+        SurfaceEvent { device: gesture::pointer_seat(), at, protocol: SurfaceProtocol::Pointer, input: Self::input(id, context), seq, raw: Vec::new() }
+    }
+
+    /// Recognise nothing here: `id` is already a gesture. Dispatch goes through `surface.inject`.
+    pub fn submit(
+        runtime: &mut GestureRuntime,
+        surfaces: &mut SurfaceRuntime,
+        prefs: &ControlSurfacePrefs,
+        id: &str,
+        context: &str,
+        now: Instant,
+    ) -> crate::Result<Value> {
+        runtime.deliver_in(surfaces, prefs, &Self::input(id, context), context, now)
+    }
 }
 
 fn qt_control(code: u32) -> ControlId {
@@ -567,7 +633,8 @@ mod tests {
         assert_eq!(rt.move_to(10, 10, 30_000_000, 0), Motion::Idle);
         assert!(rt.release(QT_LEFT, 40_000_000, &[hook()]).unwrap().is_none());
         assert!(rt.release(0x40, 50_000_000, &[hook()]).unwrap().is_none());
-        let refused = rt.deliver(&mut surfaces, &prefs, &SurfaceInput::Gesture { id: "direction.right".into() }, Instant::now()).unwrap();
+        let refused =
+            rt.deliver(&mut surfaces, &prefs, &SurfaceInput::Gesture { id: "direction.right".into(), context: String::new() }, Instant::now()).unwrap();
         assert_eq!(refused["injected"], false);
         rt.learn_end();
         assert_eq!(rt.learned().len(), 2);
@@ -696,10 +763,10 @@ mod tests {
         let prefs = ControlSurfacePrefs::default();
         let now = Instant::now();
         for id in &ids_right {
-            right_hand.deliver(&mut surfaces_right, &prefs, &SurfaceInput::Gesture { id: id.clone() }, now).unwrap();
+            right_hand.deliver(&mut surfaces_right, &prefs, &SurfaceInput::Gesture { id: id.clone(), context: String::new() }, now).unwrap();
         }
         for id in &ids_left {
-            left_hand.deliver(&mut surfaces_left, &prefs, &SurfaceInput::Gesture { id: id.clone() }, now).unwrap();
+            left_hand.deliver(&mut surfaces_left, &prefs, &SurfaceInput::Gesture { id: id.clone(), context: String::new() }, now).unwrap();
         }
         assert!(no_action(&surfaces_right.events));
         assert!(no_action(&surfaces_left.events));
@@ -716,7 +783,7 @@ mod tests {
         let mut surfaces = SurfaceRuntime::default();
         let prefs = ControlSurfacePrefs::default();
         let input = stroke(&mut rt, &[(0, 0), (40, 0), (80, 0), (120, 0)], &[hook()]).expect("direction");
-        assert_eq!(input, SurfaceInput::Gesture { id: Direction::Right.as_id().into() });
+        assert_eq!(input, SurfaceInput::Gesture { id: Direction::Right.as_id().into(), context: String::new() });
         let body = GestureRuntime::inject_body(&input);
         assert_eq!(body["device"], "pointer:seat");
         assert_eq!(body["input"]["type"], "gesture");
@@ -728,6 +795,93 @@ mod tests {
         assert!(no_action(&surfaces.events));
         assert_eq!(rt.injected(), 2);
         assert_eq!(rt.commands_dispatched(), 0);
+        assert_eq!(first["feedback"]["status"], "unbound");
+    }
+
+    /// AC-02: a bound gesture is one surfaceAction on the common path, and nowhere else.
+    #[test]
+    fn ac02_a_bound_gesture_is_a_surface_action() {
+        let mut rt = runtime();
+        rt.set_enabled(true);
+        let mut surfaces = SurfaceRuntime::default();
+        let hook = crate::control_surfaces::StoredGesture { id: "hook".into(), points: vec![(0, 0), (0, 40), (40, 40)], spatial: false };
+        let mut prefs = ControlSurfacePrefs {
+            devices: vec![crate::control_surfaces::DeviceSetting {
+                device: gesture::POINTER_SEAT.into(),
+                bindings: vec![
+                    crate::control_surfaces::Binding {
+                        control: cfa4_surface_model::ControlId::Gesture { id: "direction.right".into() },
+                        command: "playback.toggle".into(),
+                        params: serde_json::json!({}),
+                        context: String::new(),
+                    },
+                    crate::control_surfaces::Binding {
+                        control: cfa4_surface_model::ControlId::Gesture { id: "direction.right".into() },
+                        command: "playhead.start".into(),
+                        params: serde_json::Value::Null,
+                        context: "timeline".into(),
+                    },
+                    crate::control_surfaces::Binding {
+                        control: cfa4_surface_model::ControlId::Gesture { id: "direction.left".into() },
+                        command: "edit.undo".into(),
+                        params: serde_json::Value::Null,
+                        context: String::new(),
+                    },
+                ],
+                gestures: vec![hook.clone()],
+                mirror_ergonomic: true,
+                ..crate::control_surfaces::DeviceSetting::default()
+            }],
+            ..ControlSurfacePrefs::default()
+        };
+        let templates = templates_from_profile(&prefs);
+        assert_eq!(templates.len(), 1);
+        assert_ne!(templates[0].points, hook.points, "an ergonomic template is mirrored");
+        assert!(
+            templates_from_profile(&{
+                prefs.devices[0].mirror_ergonomic = false;
+                prefs.clone()
+            })[0]
+                .points
+                == hook.points
+        );
+
+        let event = PointerAdapter::event("direction.right", "global", 1, cfa4_surface_model::MonoNs(0));
+        assert_eq!(event.protocol, cfa4_surface_model::SurfaceProtocol::Pointer);
+        assert_eq!(event.device.0, "pointer:seat");
+        assert!(event.raw.is_empty());
+        assert!(matches!(event.input, SurfaceInput::Gesture { .. }));
+
+        let now = Instant::now();
+        let global = PointerAdapter::submit(&mut rt, &mut surfaces, &prefs, "direction.right", "global", now).unwrap();
+        assert_eq!(global["feedback"]["status"], "dispatched");
+        assert_eq!(global["feedback"]["command"], "playback.toggle");
+        assert_eq!(surfaces.events.len(), 1);
+        assert_eq!(surfaces.events[0]["event"], "surfaceAction");
+        assert_eq!(surfaces.events[0]["command"], "playback.toggle");
+        assert_eq!(surfaces.events[0]["device"], "pointer:seat");
+        assert_eq!(surfaces.events[0]["control"]["gesture"]["id"], "direction.right");
+        assert_eq!(rt.commands_dispatched(), 1);
+
+        let narrower =
+            rt.deliver_in(&mut surfaces, &prefs, &SurfaceInput::Gesture { id: "direction.up".into(), context: String::new() }, "timeline", now).unwrap();
+        assert_eq!(narrower["feedback"]["status"], "unbound");
+        assert_eq!(surfaces.events.len(), 1, "a timeline stroke does not use the global binding");
+
+        let timeline = PointerAdapter::submit(&mut rt, &mut surfaces, &prefs, "direction.right", "timeline", now).unwrap();
+        assert_eq!(timeline["feedback"]["command"], "playhead.start");
+        assert_eq!(surfaces.events[1]["command"], "playhead.start");
+
+        let refused = PointerAdapter::submit(&mut rt, &mut surfaces, &prefs, "direction.left", "global", now).unwrap();
+        assert_eq!(refused["feedback"]["status"], "refused");
+        assert_eq!(surfaces.events.len(), 2, "a command outside playback, playhead and window does not run");
+        assert!(surfaces.events.iter().all(|event| event["event"] == "surfaceAction"));
+        assert_eq!(rt.commands_dispatched(), 2);
+
+        prefs.enabled = false;
+        let off = PointerAdapter::submit(&mut rt, &mut surfaces, &prefs, "direction.right", "global", now).unwrap();
+        assert_eq!(off["feedback"]["status"], "disabled");
+        assert_eq!(surfaces.events.len(), 2);
     }
 
     #[test]
@@ -759,10 +913,10 @@ mod tests {
 
     fn ids_of(rt: &mut GestureRuntime, line: &[(i32, i32)], shape: &[(i32, i32)], template: &Template) -> Vec<String> {
         let mut ids = Vec::new();
-        if let Some(SurfaceInput::Gesture { id }) = stroke(rt, line, std::slice::from_ref(template)) {
+        if let Some(SurfaceInput::Gesture { id, .. }) = stroke(rt, line, std::slice::from_ref(template)) {
             ids.push(id);
         }
-        if let Some(SurfaceInput::Gesture { id }) = stroke(rt, shape, std::slice::from_ref(template)) {
+        if let Some(SurfaceInput::Gesture { id, .. }) = stroke(rt, shape, std::slice::from_ref(template)) {
             ids.push(id);
         }
         ids

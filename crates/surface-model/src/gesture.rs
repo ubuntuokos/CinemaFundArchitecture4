@@ -817,11 +817,14 @@ mod tests {
         assert_eq!(pointer_seat().to_string(), "pointer:seat");
         assert_eq!(SurfaceProtocol::Pointer.as_str(), "pointer");
         assert_eq!(serde_json::to_value(SurfaceProtocol::Pointer).unwrap(), serde_json::json!("pointer"));
-        let gesture = SurfaceInput::Gesture { id: "direction.right".into() };
+        let gesture = SurfaceInput::Gesture { id: "direction.right".into(), context: String::new() };
         let value = serde_json::to_value(&gesture).unwrap();
         assert_eq!(value["type"], "gesture");
         assert_eq!(value["id"], "direction.right");
+        assert!(value.get("context").is_none(), "an empty context stays out of the JSON");
         assert_eq!(serde_json::from_value::<SurfaceInput>(value).unwrap(), gesture);
+        let old = serde_json::json!({"type": "gesture", "id": "direction.right"});
+        assert_eq!(serde_json::from_value::<SurfaceInput>(old).unwrap(), gesture);
         assert!(gesture.is_trigger());
         assert!(gesture.control().is_none());
         let button = SurfaceInput::Button { control: ControlId::hid_named("button1"), pressed: true };

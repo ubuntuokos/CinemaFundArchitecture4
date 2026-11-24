@@ -1,0 +1,108 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/ubuntuokos/CinemaFundArchitecture4/schemas/cfa4-surface-profile-2-pointer.json",
+  "title": "CFA4 pointer-gesture profile, version 2",
+  "description": "CFA4-CONTROL-SURFACE-GESTURE-001 MG2. A cfa4-surface-profile document with version 2 and driver pointer. Version 1 stays the MIDI and HID profile (CFA4-CONTROL-SURFACE-PROFILE-SCHEMA.json) and is not extended. A version-2 file whose driver is not pointer stays read-only. A version above 2 stays read-only.",
+  "type": "object",
+  "required": ["format", "version", "id", "name", "driver", "match", "controls", "gestures"],
+  "additionalProperties": false,
+  "properties": {
+    "format": { "const": "cfa4-surface-profile" },
+    "version": { "const": 2 },
+    "id": {
+      "type": "string",
+      "pattern": "^[A-Za-z0-9][A-Za-z0-9._-]{0,63}$"
+    },
+    "name": { "type": "string", "minLength": 1, "maxLength": 128 },
+    "builtin": { "type": "boolean" },
+    "modified": { "type": "boolean" },
+    "basedOn": { "type": ["string", "null"] },
+    "driver": { "const": "pointer" },
+    "match": {
+      "type": "object",
+      "required": ["midiPortName"],
+      "properties": {
+        "midiPortName": {
+          "type": "string",
+          "pattern": "^pointer:",
+          "description": "The pointer device id. The Qt seat is pointer:seat. The key name is the one version 1 already uses for the device id."
+        }
+      }
+    },
+    "pickup": { "type": "object" },
+    "feedback": { "type": "object" },
+    "shuttle": { "type": "object" },
+    "contexts": { "type": "object" },
+    "device": { "type": "object" },
+    "banks": { "type": "object" },
+    "mirrorErgonomic": {
+      "type": "boolean",
+      "default": false,
+      "description": "When true, ergonomic templates are mirrored as they are read. Spatial templates are not. Default off."
+    },
+    "controls": {
+      "type": "array",
+      "maxItems": 512,
+      "items": { "$ref": "#/$defs/gestureControl" }
+    },
+    "gestures": {
+      "type": "array",
+      "maxItems": 128,
+      "items": { "$ref": "#/$defs/template" }
+    }
+  },
+  "$defs": {
+    "gestureControl": {
+      "type": "object",
+      "required": ["control", "mode", "command"],
+      "additionalProperties": false,
+      "properties": {
+        "control": {
+          "type": "object",
+          "required": ["gesture"],
+          "additionalProperties": false,
+          "properties": {
+            "gesture": {
+              "type": "object",
+              "required": ["id"],
+              "additionalProperties": false,
+              "properties": {
+                "id": { "type": "string", "pattern": "^[A-Za-z0-9][A-Za-z0-9._-]{0,63}$" }
+              }
+            }
+          }
+        },
+        "mode": { "const": "trigger" },
+        "command": {
+          "type": "string",
+          "pattern": "^(playback|playhead|window)\\.[A-Za-z0-9]+(\\.[A-Za-z0-9]+)*$"
+        },
+        "params": { "type": "object" },
+        "context": {
+          "type": "string",
+          "description": "Omitted, empty, or global is the global context. Any other token does not fall back to global."
+        }
+      }
+    },
+    "template": {
+      "type": "object",
+      "required": ["id", "spatial", "points"],
+      "additionalProperties": false,
+      "properties": {
+        "id": { "type": "string", "pattern": "^[A-Za-z0-9][A-Za-z0-9._-]{0,63}$" },
+        "spatial": { "type": "boolean" },
+        "points": {
+          "type": "array",
+          "minItems": 1,
+          "maxItems": 64,
+          "items": {
+            "type": "array",
+            "minItems": 2,
+            "maxItems": 2,
+            "items": { "type": "integer" }
+          }
+        }
+      }
+    }
+  }
+}
