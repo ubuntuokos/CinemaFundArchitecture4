@@ -211,6 +211,7 @@ const NOT_CODECS: &[&str] = &[
     "dcp-inspect",
     "dcpomatic",
     "dcp-validate",
+    "dvd",
     "edit",
     "engine",
     "export",

@@ -465,7 +465,7 @@ fn pstd_check(data: &[u8], rate: u64, size: impl Fn(u8) -> usize) -> PstdReport 
             0xB9 => break,
             _ => {
                 let len = usize::from(data[at + 4]) << 8 | usize::from(data[at + 5]);
-                if id != 0xBB {
+                if id != 0xBB && id != 0xBE && id != 0xBF {
                     let hdl = usize::from(data[at + 8]);
                     let flags = data[at + 7];
                     let ts = |o: usize| {
@@ -559,4 +559,68 @@ fn a_larger_video_buffer_is_announced_and_used() {
     assert_eq!(usize::from(e[1] & 0x1F) << 8 | usize::from(e[2]), 1194);
     let r = pstd_check(&data, 10_080_000 / 8, |id| if id == 0xE0 { 1194 * 1024 } else { pstd_sizes(id) });
     assert_eq!((r.overflows, r.underflows), (0, 0));
+}
+
+/// Walk a DVD VOB sector by sector: every sector is one pack whose packets end exactly at the
+/// sector's end. Returns the (sector, kind) of the navigation packs.
+fn dvd_sectors(data: &[u8]) -> Vec<usize> {
+    assert_eq!(data.len() % 2048, 0, "whole sectors");
+    let mut navs = Vec::new();
+    for (n, sector) in data.chunks(2048).enumerate() {
+        assert_eq!(&sector[..4], &[0, 0, 1, 0xBA], "sector {n} starts with a pack header");
+        assert_eq!(sector[13] & 7, 0, "no pack stuffing");
+        let mut at = 14;
+        if sector[at..at + 4] == [0, 0, 1, 0xBB] {
+            assert_eq!(&sector[at + 4..at + 6], &[0, 0x12]);
+            at += 24;
+        }
+        let mut nav = false;
+        while at < 2048 {
+            assert_eq!(&sector[at..at + 3], &[0, 0, 1], "sector {n} offset {at}");
+            let id = sector[at + 3];
+            let len = usize::from(sector[at + 4]) << 8 | usize::from(sector[at + 5]);
+            nav |= id == 0xBF;
+            at += 6 + len;
+        }
+        assert_eq!(at, 2048, "sector {n}: packets end with the sector");
+        if nav {
+            assert_eq!(&sector[0x26..0x2D], &[0, 0, 1, 0xBF, 3, 0xD4, 0]);
+            assert_eq!(&sector[0x400..0x407], &[0, 0, 1, 0xBF, 3, 0xFA, 1]);
+            navs.push(n);
+        }
+    }
+    navs
+}
+
+#[test]
+fn dvd_vob_has_whole_sectors_and_a_navigation_pack_per_gop() {
+    let lpcm = MuxCodec::LpcmDvd { sample_rate: 48_000, channels: 1, bits: 16 };
+    let mut m = Muxer::new_dvd(Vec::new(), &[MuxCodec::Mpeg2Video, MuxCodec::Ac3, lpcm]).unwrap();
+    let mut pics = Vec::new();
+    let mut a = 0i64;
+    for k in 0..45i64 {
+        let p = mpeg2_frame(if k % 15 == 0 { 1 } else { 2 }, (k % 5) as u16, false, 1_000 + 37 * k as usize);
+        m.write(0, &p, k * FRAME, None, k % 15 == 0).unwrap();
+        pics.push(p);
+        while a * 2880 < (k + 1) * FRAME {
+            m.write(1, &ac3_frame(a as u8), a * 2880, None, true).unwrap();
+            a += 1;
+        }
+        // 10 ms blocks (480 mono samples), the first of every third picture eight samples longer
+        for j in 0..4i64 {
+            m.write(2, &vec![k as u8; 960 + usize::from(k % 3 == 0 && j == 0) * 16], k * FRAME + j * 900, None, true).unwrap();
+        }
+    }
+    let data = m.finish().unwrap();
+    let navs = dvd_sectors(&data);
+    assert_eq!(navs.len(), 3, "one per GOP");
+    assert_eq!(navs[0], 0, "the first sector is a navigation pack");
+    let f = open(&data).unwrap();
+    let v = f.find(Kind::Video, |c| *c == Codec::Mpeg2Video).unwrap();
+    for (k, p) in pics.iter().enumerate() {
+        assert_eq!(&f.read_unit(&data, v, k).unwrap(), p, "picture {k}");
+    }
+    let r = pstd_check(&data, 10_080_000 / 8, pstd_sizes);
+    assert_eq!((r.overflows, r.underflows), (0, 0));
+    assert!(Muxer::new_dvd(Vec::new(), &[MuxCodec::Mpeg2Video, MuxCodec::AacAdts]).is_err());
 }
