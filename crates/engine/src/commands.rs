@@ -834,7 +834,16 @@ pub fn import_image_sequence(s: &mut Session, path: &str, bin: Option<cfa4_proje
     let missing: Vec<usize> = frames.iter().enumerate().filter(|(_, f)| f.is_none()).map(|(i, _)| i).collect();
     let src = crate::media_pool::open_image_sequence(path, &*s.services, rate, &name)?;
     let identity = crate::relink::identity_of(&*s.services, path).map_err(|e| EngineError::Other(format!("{path}: {e}")))?;
-    let id = import_source(s, path, name, src, identity, bin)?;
+    let id = import_source(s, path, name.clone(), src, identity, bin)?;
+    if !missing.is_empty() {
+        // numbers are shown 1-based from the first frame, a long list cut short
+        let shown: Vec<String> = missing.iter().take(8).map(|i| (i + 1).to_string()).collect();
+        let more = if missing.len() > shown.len() { ", …" } else { "" };
+        s.warn_toast(
+            "import",
+            format!("{name}: {} missing frame(s) of {} (no. {}{more}); the previous frame is held", missing.len(), frames.len(), shown.join(", ")),
+        );
+    }
     Ok((id, frames.len(), missing))
 }
 
