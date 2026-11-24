@@ -92,7 +92,7 @@ graph LR
 | `cfa4-color` | `crates/color` |  |
 | `cfa4-engine` | `crates/engine` | CFA4 engine façade: session, command registry, history, media pool |
 | `cfa4-export` | `crates/export` | Export pipeline: parallel render → encode → mux, presets, progress/cancel |
-| `cfa4-ffmpeg` | `crates/ffmpeg` | FFmpeg (>= 9.0.2) supplementary media backend for CFA4 (layer L5): probes the FFmpeg the build links, opens media the Rust engine cannot open and decodes it at its native bit depth, as a fallback behind the own engine (ADR 0005) |
+| `cfa4-ffmpeg` | `crates/ffmpeg` | FFmpeg supplementary media backend for CFA4 (layer L5): probes the FFmpeg the build links, opens media the Rust engine cannot open and decodes it at its native bit depth, as a fallback behind the own engine (ADR 0005) |
 | `cfa4-frame` | `crates/frame` | Video frames and audio buffers with explicit colour metadata |
 | `cfa4-geom` | `crates/geom` |  |
 | `cfa4-golden` | `crates/golden` | Golden-image tests for the CPU renderer/compositor and GPU-vs-CPU parity (test-only crate) |

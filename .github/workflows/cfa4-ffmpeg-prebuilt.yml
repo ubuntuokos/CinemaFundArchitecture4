@@ -87,7 +87,6 @@ jobs:
         if: steps.existing.outputs.published != 'true'
         run: |
           . packaging/ffmpeg-version.env
-          RELEASE_TAG="$CFA4_FFMPEG_PREBUILT_TAG"
           ASSET="cfa4-ffmpeg-$CFA4_FFMPEG_VERSION-$HOST-x86_64.tar.xz"
           prefix="/opt/cfa4/ffmpeg-$CFA4_FFMPEG_VERSION"
           test -s "$prefix/share/doc/ffmpeg/BUILDINFO"
