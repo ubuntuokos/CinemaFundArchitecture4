@@ -1,8 +1,8 @@
 //! DNxHR and DNxHD encoder (RI and progressive HD profiles, CBR).
 //!
 //! Every macroblock is transformed once (orthonormal 8×8 FDCT). Quantisation follows equation
-//! 8.2 exactly (`X̂ = ⌊p·|X| / (qsf·W)⌋`, which the decoder reconstructs at the interval
-//! midpoint). Rate control: a binary search finds the smallest uniform quantisation scale factor
+//! 8.2 exactly (`X̂ = ⌊p·|X| / (qsf·W)⌋`, which equation (8.1) reconstructs near the interval
+//! midpoint); with `ffmpeg_compat` the amplitude nearest to FFmpeg's `(A + ¾)` reconstruction. Rate control: a binary search finds the smallest uniform quantisation scale factor
 //! whose frame fits the CBR payload, then macroblocks get one finer step in scan order while the
 //! budget allows.
 //!
@@ -27,6 +27,10 @@ pub struct EncoderConfig {
     pub color_volume: ColorVolume,
     /// Pixel aspect ratio to signal (0/0 = not signalled).
     pub par: (u16, u16),
+    /// Write what FFmpeg's decoder expects instead of SMPTE ST 2019-1: amplitudes for its
+    /// `(A + ¾)` reconstruction and its 4:4:4 signalling (RGB with CLF = 0 in G, B, R order;
+    /// Y′CbCr with CLF = 1 and ACF = 1). Default false: the standard (CFA4-DNX-SPEC-001).
+    pub ffmpeg_compat: bool,
 }
 
 impl EncoderConfig {
@@ -36,7 +40,7 @@ impl EncoderConfig {
             None if matches!(profile, Profile::Hqx | Profile::R444) => 10,
             None => 8,
         };
-        EncoderConfig { profile, width, height, bit_depth, color_volume: ColorVolume::Bt709, par: (0, 0) }
+        EncoderConfig { profile, width, height, bit_depth, color_volume: ColorVolume::Bt709, par: (0, 0), ffmpeg_compat: false }
     }
 
     pub fn chroma(&self) -> ChromaFormat {
@@ -169,11 +173,14 @@ impl Encoder {
         let p = self.info.p as f32;
         let w = self.info.weights;
         let cmbw = if cfg.chroma() == ChromaFormat::Yuv444 { 16 } else { 8 };
-        let planes: [(&[u16], usize, usize, usize); 3] = [
-            (&f.y, f.width as usize, f.height as usize, 16),
-            (&f.cb, f.chroma_width() as usize, f.chroma_height() as usize, cmbw),
-            (&f.cr, f.chroma_width() as usize, f.chroma_height() as usize, cmbw),
-        ];
+        // coded channels Ch1/Ch2/Ch3: the Frame's G, B, R planes go out as R, G, B by the standard
+        // (§6.3) and as G, B, R in FFmpeg's order; Y'CbCr as Y, Cb, Cr
+        let (fw, fh, cw, ch) = (f.width as usize, f.height as usize, f.chroma_width() as usize, f.chroma_height() as usize);
+        let planes: [(&[u16], usize, usize, usize); 3] = if f.rgb && !cfg.ffmpeg_compat {
+            [(&f.cr, fw, fh, 16), (&f.y, fw, fh, 16), (&f.cb, fw, fh, 16)]
+        } else {
+            [(&f.y, fw, fh, 16), (&f.cb, cw, ch, cmbw), (&f.cr, cw, ch, cmbw)]
+        };
         let sample = |pl: usize, x: usize, y: usize| -> f32 {
             let (d, pw, ph, _) = planes[pl];
             let v = d[y.min(ph - 1) * pw + x.min(pw - 1)] as i32;
@@ -240,10 +247,11 @@ impl Encoder {
         let p_bits = if self.cfg.bit_depth == 8 { 4 } else { 6 };
         let max_amp = if p_bits == 4 { 1024 } else { 4096 };
         let nmb = prep.nw * prep.ns;
+        let bias = quant_bias(&self.cfg);
         let mb_bits = |mb: usize, q: u32| -> u32 {
             let mut bits = 12 + prep.dc_bits[mb];
             for k in 0..prep.nblk {
-                bits += ac_bits(&prep.t[mb * prep.nblk + k], q as f32, vlc, p_bits, max_amp);
+                bits += ac_bits(&prep.t[mb * prep.nblk + k], q as f32, vlc, p_bits, max_amp, bias);
             }
             bits
         };
@@ -314,9 +322,12 @@ impl Encoder {
         let p_bits = if cfg.bit_depth == 8 { 4 } else { 6 };
         let max_amp = if p_bits == 4 { 1024 } else { 4096 };
         let layout = self.mb_layout();
-        // 4:4:4 signalling as ffmpeg writes and reads it (see `FrameHeader::rgb_planes`): RGB is
-        // CLF = 0 with ACF = 0; Y'CbCr is CLF = 1 with ACF = 1 on every macroblock.
-        let ycbcr444 = cfg.chroma() == ChromaFormat::Yuv444 && !rgb;
+        // 4:4:4 signalling. The standard (§7.2, §7.3.1.1): RGB is CLF = 1, Y'CbCr is CLF = 0, every
+        // macroblock ACF = 0. FFmpeg (compat; see `FrameHeader::rgb_planes`): RGB is CLF = 0 with
+        // ACF = 0, Y'CbCr is CLF = 1 with ACF = 1 on every macroblock.
+        let is444 = cfg.chroma() == ChromaFormat::Yuv444;
+        let (clf, acf) = if cfg.ffmpeg_compat { (is444 && !rgb, is444 && !rgb) } else { (is444 && rgb, false) };
+        let bias = quant_bias(cfg);
         let write_row = |s: usize| -> Vec<u8> {
             let mut w = Writer::new();
             let mut pred = [0i32; 3];
@@ -324,7 +335,7 @@ impl Encoder {
                 let m = s * prep.nw + mb;
                 let q = qs[m];
                 w.put(q, 11);
-                w.put(ycbcr444 as u32, 1);
+                w.put(acf as u32, 1);
                 for (k, &(pl, _, _)) in layout.iter().enumerate() {
                     let t = &prep.t[m * prep.nblk + k];
                     let dc = t[0] as i32;
@@ -337,7 +348,7 @@ impl Encoder {
                         let rho = if e > 0 { e } else { e + (1 << eta) - 1 };
                         w.put(rho as u32, eta);
                     }
-                    write_ac(&mut w, t, q as f32, vlc, p_bits, max_amp);
+                    write_ac(&mut w, t, q as f32, vlc, p_bits, max_amp, bias);
                 }
             }
             w.finish_aligned(4)
@@ -369,7 +380,7 @@ impl Encoder {
             interlaced: field != FieldCode::Frame,
             frame_encoding: field == FieldCode::Frame,
             chroma: cfg.chroma(),
-            rgb: ycbcr444,
+            rgb: clf,
             color_volume: cfg.color_volume,
             timecode: None,
             mb_rows: prep.ns as u32,
@@ -426,16 +437,22 @@ fn dc_eta(e: i32) -> u32 {
     if e == 0 { 0 } else { 32 - e.unsigned_abs().leading_zeros() }
 }
 
-/// Quantised amplitude (≥ 1) of a pre-divided magnitude `|t| ≥ q`: the nearest reconstruction
-/// level for decoders that reconstruct at `(A + 3/4)·step` (ffmpeg and ours by default).
+/// Subtracted from `|t|/q` before truncation: 0 gives equation 8.2 (`⌊p·|X| / (qsf·W)⌋`), whose
+/// interval equation (8.1) reconstructs near its midpoint; ¼ gives the amplitude nearest to
+/// FFmpeg's `(A + 3/4)·step` reconstruction.
+fn quant_bias(cfg: &EncoderConfig) -> f32 {
+    if cfg.ffmpeg_compat { 0.25 } else { 0.0 }
+}
+
+/// Quantised amplitude (≥ 1) of a pre-divided magnitude `|t| ≥ q`.
 #[inline(always)]
-fn quant(t: f32, q: f32, max_amp: u32) -> u32 {
-    ((t.abs() / q - 0.25) as u32).clamp(1, max_amp)
+fn quant(t: f32, q: f32, max_amp: u32, bias: f32) -> u32 {
+    ((t.abs() / q - bias) as u32).clamp(1, max_amp)
 }
 
 /// Bits of a block's AC coefficients plus EOB at quantiser `q`.
 #[inline]
-fn ac_bits(t: &[f32; 64], q: f32, v: &VlcSet, p_bits: u32, max_amp: u32) -> u32 {
+fn ac_bits(t: &[f32; 64], q: f32, v: &VlcSet, p_bits: u32, max_amp: u32, bias: f32) -> u32 {
     let mut bits = v.eob.1 as u32;
     let mut run = 0usize;
     for &x in &t[1..] {
@@ -443,7 +460,7 @@ fn ac_bits(t: &[f32; 64], q: f32, v: &VlcSet, p_bits: u32, max_amp: u32) -> u32 
             run += 1;
             continue;
         }
-        let a = quant(x, q, max_amp);
+        let a = quant(x, q, max_amp, bias);
         let p = (a - 1) >> 6;
         let base = ((a - 1) & 63) as usize;
         let frun = (run > 0) as usize;
@@ -460,14 +477,14 @@ fn ac_bits(t: &[f32; 64], q: f32, v: &VlcSet, p_bits: u32, max_amp: u32) -> u32 
     bits
 }
 
-fn write_ac(w: &mut Writer, t: &[f32; 64], q: f32, v: &VlcSet, p_bits: u32, max_amp: u32) {
+fn write_ac(w: &mut Writer, t: &[f32; 64], q: f32, v: &VlcSet, p_bits: u32, max_amp: u32, bias: f32) {
     let mut run = 0usize;
     for &x in &t[1..] {
         if x.abs() < q {
             run += 1;
             continue;
         }
-        let a = quant(x, q, max_amp);
+        let a = quant(x, q, max_amp, bias);
         let p = (a - 1) >> 6;
         let base = ((a - 1) & 63) as usize;
         let frun = (run > 0) as usize;

@@ -63,10 +63,10 @@ pub struct FrameHeader {
 impl FrameHeader {
     /// Whether the 4:4:4 planes carry R′G′B′ (macroblocks with ACF = 1 carry Y′CbCr).
     ///
-    /// The standard ties RGB to `CLF = 1`. ffmpeg's encoder, the most common source of DNxHR 444
-    /// files, writes RGB with `CLF = 0` (and Y′CbCr with `CLF = 1`, `ACF = 1` everywhere), and
-    /// its decoder reads them that way; we follow that interpretation: every 4:4:4 stream is RGB
-    /// except macroblocks flagged ACF = 1.
+    /// This is FFmpeg's interpretation, used only with `DecodeOptions::ffmpeg_compat`: FFmpeg writes
+    /// RGB with `CLF = 0` (and Y′CbCr with `CLF = 1`, `ACF = 1` everywhere), so every 4:4:4 stream
+    /// is RGB except macroblocks flagged ACF = 1. The standard ties RGB to `CLF = 1` alone
+    /// (the `rgb` field), which the decoder uses by default (CFA4-DNX-SPEC-001).
     pub fn rgb_planes(&self) -> bool {
         self.rgb || self.chroma == ChromaFormat::Yuv444
     }

@@ -552,7 +552,16 @@ impl VideoSamples for Mp4Video<'_> {
         self.src.read(self.track, i)
     }
     fn make_decoder(&self) -> crate::Result<Box<dyn VideoDecoder>> {
-        Ok(crate::lcevc::LcevcDecoder::wrap(make_video_decoder(&self.src.file.tracks[self.track].entries[0])?, self.src.lcevc))
+        let entry = &self.src.file.tracks[self.track].entries[0];
+        // DNx written by FFmpeg follows FFmpeg's conventions (CFA4-DNX-SPEC-001 R5)
+        // (`©too` is left out of bit-exact files; the sample entry's compressor name then says `Lavc…`)
+        let compressor = entry.video.as_ref().map(|v| v.compressor_name.as_str());
+        if matches!(entry.codec, cfa4_isobmff::CodecConfig::Dnx { .. })
+            && crate::video::written_by_ffmpeg(self.src.file.metadata.get("©too").into_iter().chain(compressor))
+        {
+            return Ok(Box::new(crate::video::DnxDecoder { ffmpeg_compat: true }));
+        }
+        Ok(crate::lcevc::LcevcDecoder::wrap(make_video_decoder(entry)?, self.src.lcevc))
     }
 }
 
