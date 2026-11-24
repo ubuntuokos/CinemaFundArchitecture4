@@ -1,10 +1,10 @@
 # CFA4-FFMPEG-9.1-001 – Átállás a CFA4 saját FFmpeg-buildjében 9.0.2-ről 9.1-re
 
-**Verzió:** 1.3 (a D1–D7 és a D9 eldöntve; a hivatalos forrással összevetve; a D8 nyitott)
+**Verzió:** 1.4 (minden döntés meghozva, végleges jóváhagyásra kész)
 **Dátum:** 2026-11-24
 **Projekt:** CinemaFundArchitecture4 (CFA4)
 **Állapot:** a tulajdonos (`ubuntuokos`) 2026-11-24-én az irányt jóváhagyta („az irányt jóváhagyom”);
-ez a terv a részleteket rögzíti. A D1–D7 döntéseket a tulajdonos 2026-11-24-én meghozta (VI. fejezet). Fejlesztés csak a terv jóváhagyása után indul
+ez a terv a részleteket rögzíti. A D1–D9 döntéseket a tulajdonos 2026-11-24-én meghozta (VI. fejezet); a terv végleges jóváhagyásra kész. Fejlesztés csak a terv jóváhagyása után indul
 ([`coordination.md`](../coordination.md) §2.10).
 **Forrás:** a hivatalos FFmpeg-tároló (<https://github.com/FFmpeg/FFmpeg>): az `n9.1` tag
 (`74e4393595cf2b5857f0da925c4e0dd74ea306e5`, 2026-11-19), a `release/9.1` ág, a `Changelog` „version 9.1”
@@ -45,7 +45,7 @@ Az FFmpeg továbbra is kiegészítő háttér a `cfa4-route` mögött.
 
 | Téma | A hivatalos forrás szerint | Hatás a tervre |
 |------|----------------------------|----------------|
-| AMF Video Quality Enhancer (`vf_vqe_amf`) | `vqe_amf_filter_deps="amf windows_h"`: **csak Windowson** épül; a `frc_amf` is. Linuxon az AMF-ből a H.264 / HEVC / AV1 kódoló és dekódoló (`*_amf`), az `sr_amf` (felskálázás) és a `vpp_amf` (skálázás, színtér) érhető el. | Az F2e eredeti tartalma Linuxon nem valósítható meg; helyette D8. |
+| AMF Video Quality Enhancer (`vf_vqe_amf`) | `vqe_amf_filter_deps="amf windows_h"`: **csak Windowson** épül; a `frc_amf` is. Linuxon az AMF-ből a H.264 / HEVC / AV1 kódoló és dekódoló (`*_amf`), az `sr_amf` (felskálázás) és a `vpp_amf` (skálázás, színtér) érhető el. | Az F2e eredeti tartalma Linuxon nem valósítható meg; helyette a D8 szerinti AMF-képességek. |
 | ASTC | külső könyvtárral: `--enable-libastcenc`, **libastcenc 5.4 vagy újabb** (ARM astc-encoder, Apache-2.0, GPL-3-kompatibilis); `.astc` és KTX 1.0 muxer/demuxer is jön. | F2j hátralékban (D7); bekerülésekor új build-függőség. |
 | NVIDIA optikai folyamos interpoláció | `vf_fruc_vulkan`: Vulkan-szűrő, de a `VK_NV_optical_flow` NVIDIA-bővítményre épül; Vulkan-fejléc ≥ 1.4.317 és SPIR-V fordító kell. | A D6 változatlanul érvényes (csak gyártófüggetlen úttal együtt). |
 | APV Vulkan-kódoló | `vulkan` + `spirv_compiler`: a buildhez `glslc` vagy `glslangValidator` program kell. A mai CFA4-build ezt nem biztosítja. | F1: a `glslc` kötelező build-eszköz lesz (D9). |
@@ -110,7 +110,7 @@ A fázisok csak a függőségeket rögzítik. A sorrendről és az időzítésr�
 | F2b | APV kódolás (orákulum) | Második független APV-forrás a `crates/apv` oda-vissza tesztjéhez (az OpenAPV mellett, [ADR 0003](../adr/ADR-0003-aswf-and-conversion-sources.md) A1). | R6 |
 | F2c | LCEVC payload-merge BSF, LCEVC az MPEG-TS muxerben | Tesztanyag-előállítás a `crates/lcevc` hátralékához (`lvc1` sáv és TS 0x36 hordozás, ma csak felismerve, 10–20 óra, [`codec-parity.md`](../codec-parity.md)); az `ffmpeg` CLI kétsávos LCEVC-kezelése a kétsávos minták előállításához. Csak orákulum; a dekódolás saját marad. | R6 |
 | F2d | Panasonic RW2 dekódolás | Az első kamera-RAW, amit a CFA4 megnyit (#345, #383), az FFmpeg-háttéren át. A saját dekóder kérdése D3. | R10 |
-| F2e | ~~AMF Video Quality Enhancer~~ | **Linuxon nem épül** (`windows_h`, II/a). A tartalmát a D8 dönti el; javaslat: AMF H.264 / HEVC / AV1 hardveres kódolás és dekódolás, valamint az `sr_amf` és `vpp_amf` AMD-n, a routerben, CPU-tartalékkal. | R10 |
+| F2e | AMF-képességek AMD-n (az AMF VQE helyett, amely Linuxon nem épül, II/a) | H.264 / HEVC / AV1 hardveres kódolás és dekódolás (`*_amf`), `sr_amf` (felskálázás) és `vpp_amf` (skálázás, színtér) a routerben, CPU-tartalékkal; a VA-API és a Vulkan út egyenrangú marad (D2, D8). | R10 |
 | F2f | NVDEC CUDA Array | Dekódolási gyorsítás NVIDIA-n a meglévő NVDEC-útvonalon; a VA-API és a Vulkan útvonal egyenrangú marad. | R9, R10 |
 | F2g | gainmap szűrő, JPEG MPF muxer/demuxer | HDR gain map képek (Ultra HDR / MPF) be- és kivitele. | R10 |
 | F2h | DVD-Audio LPCM dekódolás, DSD kódolás | A hiányzó DVD- és hi-fi audioútvonal ([`target-app-parity.md`](../target-app-parity.md): MPEG-2 / DVD hiányzik). | R10 |
@@ -138,7 +138,7 @@ formátumok közül az, amelyről a tulajdonos saját kódot kér.
 | iTerm2 inline image muxer | Nincs CFA4-haszna. |
 | Az UbuntuHandbook PPA (`ppa:ubuntuhandbook1/ffmpeg9`) | Lecseréli az Ubuntu rendszer-FFmpegjét (ellentétes a 2026-10-24-i döntéssel: a rendszer-komponensek maradnak, a CFA4 izolált `/opt/cfa4` buildet használ). A készítője szerint „nincs jól tesztelve”. |
 
-## VI. Tulajdonosi döntések (meghozva 2026-11-24)
+## VI. Tulajdonosi döntések (mind meghozva, 2026-11-24)
 
 | # | Kérdés | Javaslat | Döntés (2026-11-24) |
 |---|--------|----------|---------------------|
@@ -149,7 +149,7 @@ formátumok közül az, amelyről a tulajdonos saját kódot kér.
 | D5 | Emelkedjen-e a `crates/ffmpeg` minimumverziója 9.0.2-ről 9.1-re? | **Igen.** | igen (a minimum 9.1) |
 | D6 | NVIDIA optikai folyamos interpoláció (F2k): kell-e, ha nincs vele egyenértékű nem-NVIDIA út? | **Csak akkor**, ha mellé kerül egy gyártófüggetlen (Vulkan vagy CPU) interpoláció is; különben kimarad. | a javaslat szerint |
 | D7 | ASTC (F2j) bekerüljön-e most? | **Hátralékba** a 3D/animációs tervekhez. | a javaslat szerint: hátralékba (a tulajdonos pontosítása, 2026-11-24) |
-| D8 | Az F2e (AMF VQE) Linuxon nem épül. Mi kerüljön a helyére? | **AMF H.264 / HEVC / AV1 hardveres kódolás és dekódolás, plusz `sr_amf` és `vpp_amf`** a routerben, CPU-tartalékkal; így a D2 (AMF bekerül) Linuxon is hasznot hoz. | nyitott |
+| D8 | Az F2e (AMF VQE) Linuxon nem épül. Mi kerüljön a helyére? | **AMF H.264 / HEVC / AV1 hardveres kódolás és dekódolás, plusz `sr_amf` és `vpp_amf`** a routerben, CPU-tartalékkal; így a D2 (AMF bekerül) Linuxon is hasznot hoz. | a javaslat szerint, jóváhagyva |
 | D9 | Melyik SPIR-V fordító kerüljön a CFA4-buildbe? | – | a tulajdonos döntése (2026-11-24): **a `glslc`**, kötelező build-eszközként |
 
 ## VII. PR-bontás
