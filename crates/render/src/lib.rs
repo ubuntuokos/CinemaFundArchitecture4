@@ -840,4 +840,6 @@ mod par_tests;
 #[cfg(test)]
 mod key_measure_tests;
 #[cfg(test)]
+mod key_synth;
+#[cfg(test)]
 mod key_tests;
