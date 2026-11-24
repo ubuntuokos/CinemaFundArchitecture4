@@ -71,6 +71,7 @@ pub mod proxies;
 pub mod qc;
 pub mod relink;
 pub mod remix;
+pub mod render_events;
 pub mod scene_detect;
 pub mod scopes;
 pub mod security;

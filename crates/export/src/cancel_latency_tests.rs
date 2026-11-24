@@ -7,9 +7,9 @@
 //! `Cancelled` and an uncancelled one still completes.
 //!
 //! Measured finding, not hidden: `export` writes straight to the final path (`Out::create_path`);
-//! only `copy/` uses `AtomicOutput`. A cancelled export therefore leaves a partial file under the
-//! final name. The test that demands none is `#[ignore]`d with that reason until the export path
-//! is moved onto `AtomicOutput` (a separate C0 step); the meter prints how many were left.
+//! only `copy/` uses `AtomicOutput`. A cancelled export used to leave a partial file under the
+//! final name; `export` now removes it (`remove_cancelled_partial`) until the writers move onto
+//! `AtomicOutput`. The meter prints how many were left (must be 0).
 
 use std::sync::atomic::Ordering;
 use std::time::{Duration, Instant};
@@ -66,6 +66,7 @@ fn cancel_latency_is_measured() {
     let (max, median, p95) = (latencies[19], latencies[10], latencies[18]);
     // run with --nocapture to read the measurement
     println!("AC-09 cancel latency over 20 runs ({cancelled} cancelled, {left} left a file under the final name): median {median:?}, p95 {p95:?}, max {max:?}");
+    assert_eq!(left, 0, "{left} cancelled exports left a file under the final name");
     assert!(cancelled >= 10, "only {cancelled} of 20 exports were cancelled: the meter did not hit a running export");
 }
 
@@ -80,7 +81,6 @@ fn an_uncancelled_export_still_completes() {
 }
 
 #[test]
-#[ignore = "known gap (C0): export writes to the final path, only copy/ is atomic; enable when export uses AtomicOutput"]
 fn a_cancelled_export_leaves_no_file_under_its_final_name() {
     for i in 0..20u64 {
         let (_, was_cancelled, path) = cancelled_at(1 + i % 10, &format!("n{i}.mov"));
