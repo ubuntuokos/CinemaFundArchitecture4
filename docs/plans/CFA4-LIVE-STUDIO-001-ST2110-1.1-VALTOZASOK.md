@@ -1,7 +1,6 @@
-# CFA4-LIVE-STUDIO-001-ST2110 – változáslista (1.0 → 1.1 JAVASLAT)
+# CFA4-LIVE-STUDIO-001-ST2110 – változáslista (1.0 → 1.1, jóváhagyva 2026-11-24)
 
-**Állapot:** javaslat. A tulajdonos jóváhagyásáig az 1.0 marad érvényben, és a T1b/T4b nem indulhat
-(`docs/coordination.md` §2.10). A T2–T7 fázisok előfeltételei és sorrendje nem változnak.
+**Állapot:** a tulajdonos 2026-11-24-én jóváhagyta; a T1b indítható, a T4b a T4 után indul (`docs/coordination.md` §2.10). A T2–T7 fázisok előfeltételei és sorrendje nem változnak.
 
 **Készült:** 2026-11-24, a tulajdonos kérésére („vedd bele a tervbe a projektnek hasznosakat”).
 **Összevetés alapja:** `main` `19ad4e24` (#1798); a `crates/st2110` T0/T1 állapota (README) is ellenőrizve.
@@ -52,3 +51,8 @@ a gép 2,5 GbE-s.
   β = 1,10, lineáris olvasás) és a -22 `TP` jelzés az 1.0-ban helyesek; a `crates/st2110` README ezekkel egyezik.
 - A 1080p50/59,94 sávszélesség-becslések rendje (1080p59,94 4:2:2 10 bit nem fér a 2,5 GbE-re) helyes; csak a
   vonali érték pontosodott (V-16).
+
+## 1.2 (2026-11-24): állapot a `main`-hez igazítva
+
+Nincs új szabványi tétel (V-01–V-20 változatlan). Az 1.2 csak az állapotot és a hivatkozásokat frissíti: a T0 és a T1 kész, a C10 a
+`main`-ben van, a T1b/T4b indítását és a D7 pontosítását (D7a) a tulajdonos 2026-11-24-én jóváhagyta (fő terv 1.5, XI. fejezet).
