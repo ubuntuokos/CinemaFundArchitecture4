@@ -62,8 +62,6 @@ fn make(scene: Scene) -> (Image, Vec<f32>) {
                 Scene::Hair => {
                     if x % 6 == 3 && (24..104).contains(&y) {
                         1.0
-                    } else if x % 6 == 2 || x % 6 == 4 {
-                        0.0
                     } else {
                         0.0
                     }
