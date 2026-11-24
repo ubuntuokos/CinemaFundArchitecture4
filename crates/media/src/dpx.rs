@@ -11,7 +11,8 @@
 //! [`decode_deep`] keeps 10, 12 and 16-bit components as stored (planar R'G'B' or Y'CbCr, with
 //! the time code and frame rate of the television / film headers); [`decode`] maps RGB and luma
 //! code values linearly onto 8 bits (full range). A logarithmic (printing density) transfer is
-//! shown as stored, without a film-log conversion. Y'CbCr is converted with the matrix the
+//! shown as stored, without a film-log conversion, and tagged in the media info's pixel format
+//! ("RGB 10-bit, printing density" / "..., log"): the Cineon Converter effect converts it. Y'CbCr is converted with the matrix the
 //! colorimetric field names (BT.709, or BT.601 for the 601 and composite video codes; by picture
 //! size when unspecified), in video range unless the reference low / high data codes span the
 //! whole code range; 4:2:2 chroma is shared by the two pixels of a pair.
@@ -189,6 +190,8 @@ struct Element<'a> {
     flip_y: bool,
     stride: usize,
     data: &'a [u8],
+    /// Tag of a logarithmic transfer characteristic (header codes 1 and 3), for the media info.
+    log: Option<&'static str>,
 }
 
 impl Element<'_> {
@@ -225,6 +228,7 @@ fn element<'a>(name: &str, bytes: &'a [u8]) -> Result<Element<'a>> {
     let low_code = order.u32(bytes, el + 4);
     let high_code = order.u32(bytes, el + 12);
     let descriptor = bytes.get(el + 20).copied().unwrap_or(0);
+    let transfer = bytes.get(el + 21).copied().unwrap_or(0);
     let colorimetric = bytes.get(el + 22).copied().unwrap_or(0);
     let bits = bytes.get(el + 23).copied().unwrap_or(0);
     let packing = order.u16(bytes, el + 24);
@@ -286,7 +290,13 @@ fn element<'a>(name: &str, bytes: &'a [u8]) -> Result<Element<'a>> {
     // the last line needs no end-of-line padding
     let size = stride.checked_mul(h - 1).and_then(|s| s.checked_add(stride - pad)).ok_or_else(|| err(name, "picture too large"))?;
     let data = offset.checked_add(size).and_then(|end| bytes.get(offset..end)).ok_or_else(|| err(name, "truncated image data"))?;
-    Ok(Element { order, w, h, bits: u32::from(bits), layout, components, flip_x, flip_y, stride, data })
+    // printing density (1) and logarithmic (3) transfers hold film-log codes, not display codes
+    let log = match transfer {
+        1 => Some("printing density"),
+        3 => Some("log"),
+        _ => None,
+    };
+    Ok(Element { order, w, h, bits: u32::from(bits), layout, components, flip_x, flip_y, stride, data, log })
 }
 
 /// Decode the first image element of a DPX file to straight-alpha RGBA8, top row first.
@@ -322,7 +332,10 @@ pub fn decode_deep(name: &str, bytes: &[u8]) -> Result<Decoded> {
     let timing = timing(e.order, bytes);
     if e.bits <= 8 {
         let r = decode(name, bytes)?;
-        let pixel_format = if r.has_alpha { "RGBA 8-bit" } else { "RGB 8-bit" }.to_string();
+        let mut pixel_format = if r.has_alpha { "RGBA 8-bit" } else { "RGB 8-bit" }.to_string();
+        if let Some(log) = e.log {
+            pixel_format = format!("{pixel_format}, {log}");
+        }
         return Ok(Decoded { frame: VideoFrame::rgba8(r.width, r.height, r.rgba), has_alpha: r.has_alpha, pixel_format, timing });
     }
     let (w, h, n) = (e.w, e.h, e.w * e.h);
@@ -376,7 +389,11 @@ pub fn decode_deep(name: &str, bytes: &[u8]) -> Result<Decoded> {
         }
     };
     let frame = VideoFrame { width: w as u32, height: h as u32, data, color, par: (1, 1), pts: cfa4_time::Tick::ZERO, layout: Default::default() };
-    Ok(Decoded { frame, has_alpha, pixel_format: format!("{label} {}-bit", e.bits), timing })
+    let mut pixel_format = format!("{label} {}-bit", e.bits);
+    if let Some(log) = e.log {
+        pixel_format = format!("{pixel_format}, {log}");
+    }
+    Ok(Decoded { frame, has_alpha, pixel_format, timing })
 }
 
 /// The time code (television header) and frame rate (television header, else film header) of a
@@ -496,6 +513,24 @@ mod tests {
     }
 
     /// The time code (television header) and frame rate (television, else film header).
+    #[test]
+    fn log_transfers_are_tagged_in_the_pixel_format() {
+        let px = [0u8; 16];
+        let mut f = file(true, 2, 2, 50, 8, 0, 0, &px);
+        assert_eq!(decode_deep("a.dpx", &f).unwrap().pixel_format, "RGB 8-bit");
+        f[ELEMENT + 21] = 1;
+        assert_eq!(decode_deep("a.dpx", &f).unwrap().pixel_format, "RGB 8-bit, printing density");
+        f[ELEMENT + 21] = 3;
+        assert_eq!(decode_deep("a.dpx", &f).unwrap().pixel_format, "RGB 8-bit, log");
+        f[ELEMENT + 21] = 6;
+        assert_eq!(decode_deep("a.dpx", &f).unwrap().pixel_format, "RGB 8-bit");
+        // deep pictures too, the codes themselves untouched
+        let words = [0u8; 4 * 2 * 2];
+        let mut g = file(true, 2, 2, 50, 10, 1, 0, &words);
+        g[ELEMENT + 21] = 1;
+        assert_eq!(decode_deep("b.dpx", &g).unwrap().pixel_format, "RGB 10-bit, printing density");
+    }
+
     #[test]
     fn time_code_and_frame_rate() {
         let mut f = file(true, 1, 1, 50, 8, 0, 0, &[0; 4]);
