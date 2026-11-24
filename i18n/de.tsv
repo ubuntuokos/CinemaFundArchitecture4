@@ -4977,3 +4977,8 @@
 	Thresholds	Schwellen
 	Trail	Spur
 	Use gestures in the window	Gesten im Fenster verwenden
+	DVD-Video folder (VIDEO_TS)	DVD-Video-Ordner (VIDEO_TS)
+	DVD-Video PAL 16:9	DVD-Video PAL 16:9
+	DVD-Video folder (VIDEO_TS): MPEG-2 720×576 at 25 fps, 16:9 anamorphic, 6 Mbps, GOP 15, AC-3 192 kbps, chapters from the sequence's Chapter markers	DVD-Video-Ordner (VIDEO_TS): MPEG-2 720×576, 25 fps, 16:9 anamorph, 6 Mbps, GOP 15, AC-3 192 kbps, Kapitel aus den Kapitelmarkern der Sequenz
+	DVD-Video NTSC 16:9	DVD-Video NTSC 16:9
+	DVD-Video folder (VIDEO_TS): MPEG-2 720×480 at 29.97 fps, 16:9 anamorphic, 6 Mbps, GOP 18, AC-3 192 kbps, chapters from the sequence's Chapter markers	DVD-Video-Ordner (VIDEO_TS): MPEG-2 720×480, 29.97 fps, 16:9 anamorph, 6 Mbps, GOP 18, AC-3 192 kbps, Kapitel aus den Kapitelmarkern der Sequenz

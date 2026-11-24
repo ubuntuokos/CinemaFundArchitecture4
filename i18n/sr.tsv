@@ -4970,3 +4970,8 @@ export.summary	Low	низак
 	Thresholds	Прагови
 	Trail	Траг
 	Use gestures in the window	Користи покрете у прозору
+	DVD-Video folder (VIDEO_TS)	DVD-Video фасцикла (VIDEO_TS)
+	DVD-Video PAL 16:9	DVD-Video PAL 16:9
+	DVD-Video folder (VIDEO_TS): MPEG-2 720×576 at 25 fps, 16:9 anamorphic, 6 Mbps, GOP 15, AC-3 192 kbps, chapters from the sequence's Chapter markers	DVD-Video фасцикла (VIDEO_TS): MPEG-2 720×576, 25 fps, 16:9 анаморфно, 6 Mbps, GOP 15, AC-3 192 kbps, поглавља из маркера поглавља секвенце
+	DVD-Video NTSC 16:9	DVD-Video NTSC 16:9
+	DVD-Video folder (VIDEO_TS): MPEG-2 720×480 at 29.97 fps, 16:9 anamorphic, 6 Mbps, GOP 18, AC-3 192 kbps, chapters from the sequence's Chapter markers	DVD-Video фасцикла (VIDEO_TS): MPEG-2 720×480, 29.97 fps, 16:9 анаморфно, 6 Mbps, GOP 18, AC-3 192 kbps, поглавља из маркера поглавља секвенце
