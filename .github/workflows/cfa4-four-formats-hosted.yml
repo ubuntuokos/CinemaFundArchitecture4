@@ -17,7 +17,7 @@ name: CFA4 four-format build on a hosted Ubuntu 26.04 runner (no publication)
 #     scripts/release/fetch-flatpak-sources.sh), since flatpak-builder runs with --disable-download;
 #   - the PySide6 6.12.0 wheels pinned in requirements/linux-amd64.txt (pip download; their
 #     SHA-256 is checked against the pins when packaging/linux/stage-pyside6.py stages them);
-#   - CFA4's FFmpeg 9.0.2 prebuilt by cfa4-ffmpeg-prebuilt.yml (scripts/dev/fetch-ffmpeg-9.0.2.sh).
+#   - CFA4's FFmpeg (packaging/ffmpeg-version.env) prebuilt by cfa4-ffmpeg-prebuilt.yml (scripts/dev/fetch-ffmpeg.sh).
 #
 # RELEASE HOLD: no package leaves the runner. The job publishes only the SHA256SUMS and the F5
 # staged runtime report in the job summary; nothing is uploaded, released or signed.
@@ -28,7 +28,8 @@ on:
   pull_request:
     paths:
       - '.github/workflows/cfa4-four-formats-hosted.yml'
-      - 'scripts/dev/fetch-ffmpeg-9.0.2.sh'
+      - 'scripts/dev/fetch-ffmpeg.sh'
+      - 'packaging/ffmpeg-version.env'
       - 'scripts/release/install-nfpm.sh'
       # the staged runtime audit, with the Smart Cut smoke of every package (WP-10)
       - 'scripts/release/f5_staged_runtime.py'
@@ -59,7 +60,6 @@ jobs:
       APPIMAGETOOL: ${{ github.workspace }}/../tools/appimagetool-x86_64.AppImage
       # The hosted runner has no FUSE; the AppImage runtime extracts itself instead.
       APPIMAGE_EXTRACT_AND_RUN: '1'
-      CFA4_FFMPEG_BUILD: /opt/cfa4/ffmpeg-9.0.2
       # AppImage and Flatpak carry the Qt GUI's PySide6 (docs/development/linux.md, 2026-11-09).
       CFA4_PYSIDE6_WHEELS: ${{ github.workspace }}/../wheels
       # The Flatpak bundle manifest's pinned sources (krb5), seeded into flatpak-builder's cache.
@@ -117,8 +117,8 @@ jobs:
           rustup show
           rustc --version
           cargo --version
-      - name: Install CFA4 FFmpeg 9.0.2 (prebuilt, SHA-256 pinned; GPL-3 base build)
-        run: bash scripts/dev/fetch-ffmpeg-9.0.2.sh
+      - name: Install CFA4 FFmpeg (prebuilt, SHA-256 pinned; GPL-3 base build)
+        run: bash scripts/dev/fetch-ffmpeg.sh
       - name: Fill the PySide6 wheelhouse (pinned wheels; stage-pyside6.py checks their SHA-256)
         run: |
           python3 -m pip download --no-deps --only-binary=:all: --platform manylinux_2_34_x86_64 \

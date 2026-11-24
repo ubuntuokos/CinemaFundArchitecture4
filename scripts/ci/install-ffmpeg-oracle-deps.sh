@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Ubuntu 26.04 packages for the pinned FFmpeg 9.0.2 test oracle build and the
+# Ubuntu 26.04 packages for the pinned FFmpeg test oracle build and the
 # Rust release tests that call it. Shared by ci-linux.yml (rust-release-tests)
 # and ci-cache-warm.yml, so both build FFmpeg and the Rust dependencies the
 # same way and the caches they write and read stay identical.

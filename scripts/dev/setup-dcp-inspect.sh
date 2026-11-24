@@ -15,7 +15,7 @@
 #
 # Environment:
 #   CFA4_DCP_INSPECT_DIR   cache root (default: ${XDG_CACHE_HOME:-~/.cache}/cfa4/dcp-inspect)
-#   CFA4_FFMPEG_CACHE_DIR  pinned FFmpeg 9.0.2 oracle (scripts/ci/install-ffmpeg-9.0.2.sh)
+#   CFA4_FFMPEG_CACHE_DIR  pinned FFmpeg oracle (version in packaging/ffmpeg-version.env) (scripts/ci/install-ffmpeg.sh)
 #   CFA4_ASDCPLIB_PREFIX   optional asdcplib install prefix (bin/asdcp-info, bin/asdcp-unwrap)
 set -euo pipefail
 
@@ -33,7 +33,9 @@ GEM_BASE64="base64 0.2.0"
 # The engine's own test suite (--verify) needs rake and minitest. They go to a separate gem
 # directory, so the engine's runtime GEM_HOME keeps exactly the set above.
 TEST_GEMS=("rake 13.1.0" "minitest 5.20.0")
-FFMPEG_VERSION="9.0.2"
+# shellcheck source=packaging/ffmpeg-version.env
+. "$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)/packaging/ffmpeg-version.env"
+FFMPEG_VERSION="$CFA4_FFMPEG_VERSION"
 
 root="${CFA4_DCP_INSPECT_DIR:-${XDG_CACHE_HOME:-${HOME}/.cache}/cfa4/dcp-inspect}"
 prefix="${root}/${COMMIT}"
@@ -41,7 +43,7 @@ src="${prefix}/src"
 gems="${prefix}/gems"
 test_gems="${prefix}/test-gems"
 wrapper="${prefix}/bin/cfa4-dcp-inspect"
-ffmpeg_bin="${CFA4_FFMPEG_CACHE_DIR:-${HOME}/.cache/cfa4/ffmpeg-9.0.2-linux-x86_64-v6}/bin"
+ffmpeg_bin="${CFA4_FFMPEG_CACHE_DIR:-${HOME}/.cache/cfa4/ffmpeg-${FFMPEG_VERSION}-linux-x86_64-${CFA4_FFMPEG_CACHE_REV}}/bin"
 asdcp_bin="${CFA4_ASDCPLIB_PREFIX:+${CFA4_ASDCPLIB_PREFIX}/bin}"
 
 # PATH the engine runs with: the pinned FFmpeg oracle and an optional asdcplib prefix go first,
@@ -98,10 +100,10 @@ check() {
     local v
     v="$("$ff" -version 2>/dev/null | awk 'NR==1 {print $3}')"
     if [[ "$v" == "$FFMPEG_VERSION" ]]; then ok "ffmpeg ${v} (${ff})"; else
-      miss "ffmpeg ${FFMPEG_VERSION} oracle (found ${v:-unknown} at ${ff}): bash scripts/ci/install-ffmpeg-9.0.2.sh"
+      miss "ffmpeg ${FFMPEG_VERSION} oracle (found ${v:-unknown} at ${ff}): bash scripts/ci/install-ffmpeg.sh"
     fi
   else
-    miss "ffmpeg ${FFMPEG_VERSION} oracle: bash scripts/ci/install-ffmpeg-9.0.2.sh"
+    miss "ffmpeg ${FFMPEG_VERSION} oracle: bash scripts/ci/install-ffmpeg.sh"
   fi
   for t in asdcp-info asdcp-unwrap; do
     if PATH="$p" command -v "$t" >/dev/null 2>&1; then ok "$t ($(PATH="$p" command -v "$t"))"; else

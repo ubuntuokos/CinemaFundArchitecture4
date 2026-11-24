@@ -22,9 +22,20 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[2]
 APP_ID = "io.github.ubuntuokos.cfa4"
 FORMATS = ("deb", "AppImage", "flatpak", "tar.gz")
-# CFA4's FFmpeg 9.0.2 (ADR 0005 step 4): in /opt/cfa4 in the .deb, beside the binaries elsewhere.
-FFMPEG_DIR = "lib/cfa4/ffmpeg-9.0.2"
-FFMPEG_DEB_DIR = "opt/cfa4/ffmpeg-9.0.2"
+def pinned_ffmpeg_version(root: Path = Path(__file__).resolve().parents[2]) -> str:
+    """CFA4_FFMPEG_VERSION from packaging/ffmpeg-version.env, the one place it is set (CFA4-FFMPEG-9.1-001 R1)."""
+    path = root / "packaging" / "ffmpeg-version.env"
+    for line in path.read_text(encoding="utf-8").splitlines():
+        name, sep, value = line.partition("=")
+        if sep and name.strip() == "CFA4_FFMPEG_VERSION":
+            return value.strip()
+    raise KeyError(f"CFA4_FFMPEG_VERSION is not set in {path}")
+
+
+# CFA4's FFmpeg (ADR 0005 step 4): in /opt/cfa4 in the .deb, beside the binaries elsewhere.
+FFMPEG_VERSION = pinned_ffmpeg_version()
+FFMPEG_DIR = f"lib/cfa4/ffmpeg-{FFMPEG_VERSION}"
+FFMPEG_DEB_DIR = f"opt/cfa4/ffmpeg-{FFMPEG_VERSION}"
 FFMPEG_REQUIRED = ("lib/libavcodec.so.", "lib/libavformat.so.", "lib/libavutil.so.")
 FFMPEG_DOCS = ("share/doc/ffmpeg/BUILDINFO", "share/doc/ffmpeg/COPYING.GPLv3", "share/doc/ffmpeg/LICENSE.md")
 # Patent-restricted libraries belong only in cfa4-restricted-extras (docs/licensing.md §7).
@@ -95,10 +106,10 @@ def verify_checksums(dist: Path, names: tuple[str, ...]) -> dict[str, str]:
 
 
 def verify_ffmpeg(names: set[str], base: str, package: str) -> None:
-    """The FFmpeg 9.0.2 libraries and their licences under `base`, and no restricted codec."""
+    """The FFmpeg libraries (FFMPEG_VERSION) and their licences under `base`, and no restricted codec."""
     for prefix in FFMPEG_REQUIRED:
         if not any(name.startswith(f"{base}/{prefix}") for name in names):
-            raise AuditError(f"{package} lacks FFmpeg 9.0.2 {prefix}* in {base}")
+            raise AuditError(f"{package} lacks FFmpeg {FFMPEG_VERSION} {prefix}* in {base}")
     for doc in FFMPEG_DOCS:
         if f"{base}/{doc}" not in names:
             raise AuditError(f"{package} lacks the FFmpeg licence/source file {base}/{doc}")

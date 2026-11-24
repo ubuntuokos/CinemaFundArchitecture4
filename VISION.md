@@ -37,7 +37,7 @@ támogatási idő. A CFA4 **önkéntes adománnyal** támogatható. A licencszab
    nem tudja ugyanazt, amit az egui (lista és bizonyítékok: `docs/qt-parity.md`). Addig az egui
    befagyasztva: csak hibajavítás kerülhet bele, új funkció csak a Qt6-os felületbe
    (tulajdonosi döntés, 2026-10-24). Törölni csak a tulajdonos kifejezett jóváhagyásával lehet.
-   A **saját Rust-motor az alap**. Mellette kiegészítő háttérmotorok: az **FFmpeg** (legalább 9.0.2)
+   A **saját Rust-motor az alap**. Mellette kiegészítő háttérmotorok: az **FFmpeg** (legalább a `packaging/ffmpeg-version.env` `CFA4_FFMPEG_MIN_VERSION` értéke)
    és a **GStreamer** (hardveres kódolás nem NVIDIA GPU-n, VP9/AV1 hardveres dekódolás,
    Qt6-előnézet, felvétel, egyéb formátumok), később további motorok is. Alapértelmezés az Ubuntu
    tárolóiból telepített rendszer-GStreamer; elkülönített, CFA4 saját futtatókörnyezete csak akkor

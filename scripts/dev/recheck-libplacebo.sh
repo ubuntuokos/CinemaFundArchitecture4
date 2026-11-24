@@ -22,10 +22,12 @@ done
 FFMPEG="${CFA4_FFMPEG_BIN:-$(command -v ffmpeg)}"
 FFPROBE="${CFA4_FFPROBE_BIN:-$(dirname -- "$FFMPEG")/ffprobe}"
 [[ -x "$FFMPEG" && -x "$FFPROBE" ]] || die "FFmpeg and matching FFprobe executable required"
-[[ "$("$FFMPEG" -version | awk 'NR == 1 { print $3 }')" == 9.0.2 ]] ||
-    die "FFmpeg 9.0.2 required"
-[[ "$("$FFPROBE" -version | awk 'NR == 1 { print $3 }')" == 9.0.2 ]] ||
-    die "FFprobe 9.0.2 required"
+# shellcheck source=packaging/ffmpeg-version.env
+. "$ROOT/packaging/ffmpeg-version.env"
+[[ "$("$FFMPEG" -version | awk 'NR == 1 { print $3 }')" == "$CFA4_FFMPEG_VERSION" ]] ||
+    die "FFmpeg $CFA4_FFMPEG_VERSION required"
+[[ "$("$FFPROBE" -version | awk 'NR == 1 { print $3 }')" == "$CFA4_FFMPEG_VERSION" ]] ||
+    die "FFprobe $CFA4_FFMPEG_VERSION required"
 
 # Pin the exact original binary, not merely its version number, so the
 # isolated retest can be compared directly with the successful media oracles.

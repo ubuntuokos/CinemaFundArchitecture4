@@ -1,15 +1,18 @@
 #!/usr/bin/env bash
-# Pinned FFmpeg 9.0.2 CLI test oracles, isolated from Ubuntu FFmpeg shared libraries.
+# Pinned FFmpeg CLI test oracles (version in packaging/ffmpeg-version.env), isolated from Ubuntu
+# FFmpeg shared libraries.
 set -euo pipefail
 if [[ "$(uname -s)" != "Linux" || "$(uname -m)" != "x86_64" ]]; then
   echo "CFA4 FFmpeg CI oracle is supported on Linux x86_64 (AMD64) only." >&2
   exit 2
 fi
-version=9.0.2
+# shellcheck source=packaging/ffmpeg-version.env
+. "$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)/packaging/ffmpeg-version.env"
+version="$CFA4_FFMPEG_VERSION"
 archive="ffmpeg-${version}.tar.xz"
 source_url="https://ffmpeg.org/releases/${archive}"
-sha256=8c3850283eb25fa026482078a04051e0be17347b09ef81a0849bec15a96e002e
-prefix="${CFA4_FFMPEG_CACHE_DIR:-${HOME}/.cache/cfa4/ffmpeg-9.0.2-linux-x86_64-v7}"
+sha256="$CFA4_FFMPEG_SOURCE_SHA256"
+prefix="${CFA4_FFMPEG_CACHE_DIR:-${HOME}/.cache/cfa4/ffmpeg-${version}-linux-x86_64-${CFA4_FFMPEG_CACHE_REV}}"
 if [[ ! -x "${prefix}/bin/ffmpeg" || ! -x "${prefix}/bin/ffprobe" ]]; then
   tmp="$(mktemp -d)"
   trap 'rm -rf "$tmp"' EXIT

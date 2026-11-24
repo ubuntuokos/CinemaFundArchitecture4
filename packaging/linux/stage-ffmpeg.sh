@@ -1,11 +1,11 @@
 #!/usr/bin/env bash
 # SPDX-License-Identifier: GPL-3.0-or-later
-# Stage CFA4's own FFmpeg 9.0.2 build (scripts/dev/build-ffmpeg-9.0.2.sh, ADR 0005 step 4) for a
+# Stage CFA4's own FFmpeg build (scripts/dev/build-ffmpeg.sh, ADR 0005 step 4) for a
 # package. Called by package.sh; it never builds, downloads or installs anything.
 #
 #   stage-ffmpeg.sh --build DIR --dest DIR [--restricted] [--bundle] [--depends-out FILE]
 #
-#   --build DIR        the installed FFmpeg prefix (default build: /opt/cfa4/ffmpeg-9.0.2)
+#   --build DIR        the installed FFmpeg prefix (default build: /opt/cfa4/ffmpeg-VERSION)
 #   --dest DIR         where DIR/lib and DIR/share/doc are written
 #   --restricted       the cfa4-restricted-extras build (x264 and x265 required); without it the
 #                      build must not contain any patent-restricted encoder (docs/licensing.md §7)
@@ -18,10 +18,12 @@
 #
 # Only the run-time libraries are staged, each under its SONAME (no development symlinks, headers,
 # pkg-config files or programs), with RUNPATH `$ORIGIN`, so the libraries find each other in
-# /opt/cfa4/ffmpeg-9.0.2/lib as well as in a relocated bundle.
+# /opt/cfa4/ffmpeg-VERSION/lib as well as in a relocated bundle. VERSION: packaging/ffmpeg-version.env.
 set -euo pipefail
 
-version=9.0.2
+# shellcheck source=packaging/ffmpeg-version.env
+. "$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)/packaging/ffmpeg-version.env"
+version="$CFA4_FFMPEG_VERSION"
 build="" dest="" restricted=0 bundle=0 depends_out=""
 while [ $# -gt 0 ]; do
   case "$1" in
@@ -40,7 +42,7 @@ for tool in readelf patchelf ldd dpkg-query; do
   command -v "$tool" >/dev/null || fail "$tool is required to stage FFmpeg (apt: binutils patchelf libc-bin dpkg)"
 done
 
-kind=base rebuild="build it with scripts/dev/build-ffmpeg-9.0.2.sh"
+kind=base rebuild="build it with scripts/dev/build-ffmpeg.sh"
 if (( restricted )); then kind=restricted rebuild+=" --restricted"; fi
 [ -d "$build/lib" ] || fail "no FFmpeg build in $build; $rebuild"
 ffmpeg="$build/bin/ffmpeg"

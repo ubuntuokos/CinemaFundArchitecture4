@@ -38,7 +38,7 @@ What `--install` does, and nothing more:
 - installs exactly `racc 1.8.1`, `nokogiri 1.19.4`, `bigdecimal 3.3.1`, `ttfunk 1.8.0` (and
   `base64 0.2.0` on Ruby ≥ 3.4) into `<commit>/gems` with `--ignore-dependencies`;
 - writes the wrapper `<commit>/bin/cfa4-dcp-inspect`, which clears `RUBYOPT`, `RUBYLIB` and
-  `BUNDLE_GEMFILE`, uses only that gem directory, and puts the pinned FFmpeg 9.0.2 oracle and an
+  `BUNDLE_GEMFILE`, uses only that gem directory, and puts the pinned FFmpeg oracle and an
   optional asdcplib prefix first on its own `PATH`.
 
 It never runs `apt`, `sudo` or a global `gem install`, and never changes the user's Ruby, gem or
@@ -50,7 +50,7 @@ FFmpeg setup. Remove the cache directory to uninstall.
 |---|---|---|
 | Ruby ≥ 3.0 and headers | `sudo apt install ruby ruby-dev build-essential` | `racc` and `bigdecimal` build native extensions |
 | git, sha256sum, mkfifo | base system | |
-| FFmpeg 9.0.2 | `bash scripts/ci/install-ffmpeg-9.0.2.sh` | the existing pinned oracle in `~/.cache/cfa4/`; the system FFmpeg stays untouched |
+| FFmpeg (version: `packaging/ffmpeg-version.env`) | `bash scripts/ci/install-ffmpeg.sh` | the existing pinned oracle in `~/.cache/cfa4/`; the system FFmpeg stays untouched |
 | asdcplib CLI (`asdcp-info`, `asdcp-unwrap`) | `cargo xtask cinema-oracles --install asdcplib` builds the pinned 2.13.2 into its own prefix ([cinema-oracles.md](cinema-oracles.md)); `--print-env` gives `CFA4_ASDCPLIB_PREFIX` | BSD-3-Clause (CineCert). Without it the engine's deep MXF and audio checks report missing tools |
 | fd (optional) | `sudo apt install fd-find` | faster discovery; the engine has a Ruby fallback |
 

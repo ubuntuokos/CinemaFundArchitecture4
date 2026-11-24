@@ -3,7 +3,7 @@
 **Dátum:** 2026-10-24 · **Állapot:** elfogadva (a tulajdonos, `ubuntuokos` jóváhagyta) ·
 **Érintett crate:** `crates/gstreamer` (`cfa4-gstreamer`, L5 réteg) ·
 **Kiegészítette:** [ADR 0005](ADR-0005-media-backends.md) (2026-10-25): a GStreamer az Ubuntu tárolóiból
-telepített rendszercsomag (alapértelmezés; elkülönített futtatókörnyezet csak újabb verziót igénylő funkcióhoz, lásd „GStreamer-verzió és frissítés”); az FFmpeg (≥ 9.0.2) is kiegészítő háttér; a hátterek között az
+telepített rendszercsomag (alapértelmezés; elkülönített futtatókörnyezet csak újabb verziót igénylő funkcióhoz, lásd „GStreamer-verzió és frissítés”); az FFmpeg (≥ `CFA4_FFMPEG_MIN_VERSION`, `packaging/ffmpeg-version.env`) is kiegészítő háttér; a hátterek között az
 automatikus útválasztó (`cfa4-route`, ADR 0004) választ, alapsorrend: saját → FFmpeg → GStreamer
 
 ## Háttér

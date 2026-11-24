@@ -20,6 +20,8 @@ from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any
 
+from cfa4_devtools import ffmpeg_version
+
 
 def run(argv: list[str], *, timeout: int = 120, env: dict[str, str] | None = None) -> subprocess.CompletedProcess[str]:
     return subprocess.run(argv, text=True, capture_output=True, timeout=timeout, check=False, env=env)
@@ -117,11 +119,12 @@ def preflight(cli: Path, editor: Path, sources: Path, out: Path, ffprobe: str) -
     if nv.returncode or "RTX A1000" not in nv.stdout:
         raise RuntimeError(f"missing physical NVIDIA RTX A1000: {nv.stderr}")
     ff = run(["ffmpeg", "-version"], timeout=10)
-    if ff.returncode or "ffmpeg version 9.0.2" not in ff.stdout.splitlines()[0]:
-        raise RuntimeError("the FFmpeg 9.0.2 oracle executable is required")
+    pinned = ffmpeg_version.pinned_version()
+    if ff.returncode or f"ffmpeg version {pinned}" not in ff.stdout.splitlines()[0]:
+        raise RuntimeError(f"the FFmpeg {pinned} oracle executable is required")
     probe = run([ffprobe, "-version"], timeout=10)
-    if probe.returncode or "ffprobe version 9.0.2" not in probe.stdout.splitlines()[0]:
-        raise RuntimeError("ffprobe 9.0.2 is required")
+    if probe.returncode or f"ffprobe version {pinned}" not in probe.stdout.splitlines()[0]:
+        raise RuntimeError(f"ffprobe {pinned} is required")
     import_path = Path(__file__).resolve().parents[2]
     qt_env = dict(os.environ, PYTHONPATH=str(import_path / "python"), QT_QPA_PLATFORM="wayland")
     qt_versions = run(
