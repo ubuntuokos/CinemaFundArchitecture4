@@ -3396,6 +3396,27 @@ fn capped_pool(max_threads: u32) -> Option<rayon::ThreadPool> {
 /// Run an export (blocking; call from a worker thread). With `settings.max_threads` set it runs on
 /// a pool of that many threads, so its rendering and software encoding use at most that many cores.
 pub fn export(project: &Arc<Project>, seq: ItemId, settings: &ExportSettings, sources: &dyn SourceProvider, progress: &Progress) -> Result<Report> {
+    let r = export_all(project, seq, settings, sources, progress);
+    if matches!(r, Err(ExportError::Cancelled)) {
+        remove_cancelled_partial(settings);
+    }
+    r
+}
+
+/// AC-09: a cancelled export leaves no partial file under the final name. Only a plain single
+/// output file is removed: never a caller-supplied handle or sink, and never a directory (DCP,
+/// IMF and sequence bundles are directories). Moving the writers onto `AtomicOutput` replaces this.
+fn remove_cancelled_partial(settings: &ExportSettings) {
+    if settings.sink.is_some() || settings.output_file.is_some() || settings.path.is_empty() {
+        return;
+    }
+    let p = std::path::Path::new(&settings.path);
+    if std::fs::symlink_metadata(p).is_ok_and(|m| m.is_file()) {
+        let _ = std::fs::remove_file(p);
+    }
+}
+
+fn export_all(project: &Arc<Project>, seq: ItemId, settings: &ExportSettings, sources: &dyn SourceProvider, progress: &Progress) -> Result<Report> {
     let one = |seq: ItemId, settings: &ExportSettings| match capped_pool(settings.max_threads) {
         Some(pool) => pool.install(|| export_here(project, seq, settings, sources, progress)),
         None => export_here(project, seq, settings, sources, progress),
