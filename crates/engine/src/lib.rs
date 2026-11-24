@@ -22,6 +22,7 @@ pub mod captions_titles;
 pub mod clip_ops;
 pub mod color;
 pub mod commands;
+pub mod contact_sheet;
 pub mod control_surfaces;
 pub mod credits;
 pub mod dcp_export;
@@ -72,6 +73,7 @@ pub mod proxies;
 pub mod qc;
 pub mod relink;
 pub mod remix;
+pub mod render_job;
 pub mod scene_detect;
 pub mod scopes;
 pub mod security;
@@ -1424,6 +1426,8 @@ mod captions_titles_tests;
 mod clip_ops_tests;
 #[cfg(test)]
 mod color_tests;
+#[cfg(test)]
+mod contact_sheet_tests;
 #[cfg(test)]
 mod dcp_import_tests;
 #[cfg(test)]

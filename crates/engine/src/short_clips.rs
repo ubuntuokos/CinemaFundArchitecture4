@@ -1,4 +1,4 @@
-//! `edit.deleteShortClips` (Kdenlive plan K37): find the clips shorter than a given number of
+//! `edit.deleteShortClips` (Kdenlive plan KDN-37): find the clips shorter than a given number of
 //! frames (typically leftovers of razor cuts or of `clip.removeSilence`) and delete them, closing
 //! the gaps by default. Nothing is deleted unless `dryRun` is `false`; the default only reports.
 

@@ -8161,6 +8161,46 @@
    "to": "cfa4-time"
   },
   {
+   "from": "cfa4-engine/contact_sheet.rs",
+   "item": "pending",
+   "to": "cfa4-media"
+  },
+  {
+   "from": "cfa4-engine/contact_sheet.rs",
+   "item": "ItemId",
+   "to": "cfa4-project"
+  },
+  {
+   "from": "cfa4-engine/contact_sheet.rs",
+   "item": "ItemKind",
+   "to": "cfa4-project"
+  },
+  {
+   "from": "cfa4-engine/contact_sheet.rs",
+   "item": "picture",
+   "to": "cfa4-qc"
+  },
+  {
+   "from": "cfa4-engine/contact_sheet.rs",
+   "item": "RenderOptions",
+   "to": "cfa4-render"
+  },
+  {
+   "from": "cfa4-engine/contact_sheet.rs",
+   "item": "render_item",
+   "to": "cfa4-render"
+  },
+  {
+   "from": "cfa4-engine/contact_sheet.rs",
+   "item": "render_sequence",
+   "to": "cfa4-render"
+  },
+  {
+   "from": "cfa4-engine/contact_sheet.rs",
+   "item": "Tick",
+   "to": "cfa4-time"
+  },
+  {
    "from": "cfa4-engine/credits.rs",
    "item": "remix",
    "to": "cfa4-audio-dsp"
@@ -10324,6 +10364,21 @@
    "from": "cfa4-engine/remix.rs",
    "item": "parse_timecode",
    "to": "cfa4-time"
+  },
+  {
+   "from": "cfa4-engine/render_job.rs",
+   "item": "ExportError",
+   "to": "cfa4-export"
+  },
+  {
+   "from": "cfa4-engine/render_job.rs",
+   "item": "Progress",
+   "to": "cfa4-export"
+  },
+  {
+   "from": "cfa4-engine/render_job.rs",
+   "item": "Report",
+   "to": "cfa4-export"
   },
   {
    "from": "cfa4-engine/scene_detect.rs",

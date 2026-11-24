@@ -85,7 +85,11 @@ coefficient, decoded by FFmpeg, measured with a forward DCT) pinned down FFmpeg'
    both modes. FFmpeg up to 9.0.x decoded and encoded CID 1271 with Table D.4 (the CID 1241
    weights; fitted RMS error 0.65 against D.4, > 2.6 against every other table) and fixed that in
    FFmpeg 9.1 (commit a598cc99). HQX files written by FFmpeg 9.0.x or older therefore decode
-   slightly differently here than in those FFmpeg versions — the same as in FFmpeg 9.1.
+   slightly differently here than in those FFmpeg versions — the same as in FFmpeg 9.1. The same
+   holds for DNxHR HQX exported by CFA4 before CFA4-FFMPEG-9.1-001 (the encoder used D.4 then):
+   those files decode slightly differently than before, in CFA4 and in FFmpeg 9.1 alike. The
+   difference is a change of quantisation weights only (no decode error, frame size or timing
+   change).
 3. **4:4:4 signalling (§6.3, §7.2 CLF, §7.3.1.1 ACF, §8.1.1).** The standard: `CLF = 0` is
    Y′CbCr (Ch1 = Y′), `CLF = 1` is R′G′B′ with Ch1 = R, Ch2 = G, Ch3 = B; a macroblock with
    `ACF = 1` (only allowed with `CLF = 1` and an in-band colour volume) holds Y′CbCr that the
