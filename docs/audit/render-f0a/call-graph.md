@@ -168,7 +168,7 @@ graph LR
 | `cfa4-cli/serve_text.rs` | `cfa4-time` | `Tick` |
 | `cfa4-cli/serve_tts.rs` | `cfa4-engine` | `Session` |
 | `cfa4-cli/settings_cmd.rs` | `cfa4-engine` | `Session`, `autosave` |
-| `cfa4-cli/settings_cmd.rs` | `cfa4-media` | `backend_enabled`, `set_backend_enabled` |
+| `cfa4-cli/settings_cmd.rs` | `cfa4-media` | `set_backend_enabled` |
 | `cfa4-cli/settings_cmd.rs` | `cfa4-route` | `Backend`, `DeviceId`, `Error`, `Preferences`, `catalog`, `coverage`, `probe` |
 | `cfa4-cli/studio_feeds.rs` | `cfa4-media` | `FrameRequest`, `MediaSource` |
 | `cfa4-cli/studio_feeds.rs` | `cfa4-time` | `FrameRate`, `TICKS_PER_SECOND`, `Tick` |

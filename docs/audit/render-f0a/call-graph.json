@@ -7482,11 +7482,6 @@
   },
   {
    "from": "cfa4-cli/settings_cmd.rs",
-   "item": "backend_enabled",
-   "to": "cfa4-media"
-  },
-  {
-   "from": "cfa4-cli/settings_cmd.rs",
    "item": "set_backend_enabled",
    "to": "cfa4-media"
   },
