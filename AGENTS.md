@@ -70,14 +70,14 @@ attribution and original copyright/licence requirements remain in force.
   (`python/tests/test_independence.py` guards this). Retain the upstream MIT/Apache copyright
   notices in `LICENSE-MIT`, `NOTICE`, `vendor/*/*/NOTICE` and the `ATTRIBUTION.md` author columns.
 - **Media backends** ([ADR 0005](docs/adr/ADR-0005-media-backends.md)): our own Rust engine is the base. Supplementary
-  backends (FFmpeg ≥ 9.0.2, linked and shipped only through the `cfa4-ffmpeg` crate (`crates/ffmpeg`, no `unsafe`),
+  backends (FFmpeg ≥ `CFA4_FFMPEG_MIN_VERSION` (`packaging/ffmpeg-version.env`), linked and shipped only through the `cfa4-ffmpeg` crate (`crates/ffmpeg`, no `unsafe`),
   GPL-3 build only, never `--enable-nonfree`, no copied FFmpeg source; the GStreamer that Ubuntu ships in its repositories as the default, plus an
   isolated CFA4-owned runtime (`cfa4-gstreamer-runtime`, `/opt/cfa4/gstreamer`, no patent-restricted
   elements) only when a feature needs a newer version, never replacing the system one; further engines later)
   are registered with the automatic task router (`cfa4-route`, ADR 0004) and picked by its table,
   default order own hardware paths → own software codecs → FFmpeg → GStreamer (`crates/route/routing.toml`). Callers use only the engine's
   interfaces through the router, never a backend directly; order changes need tests and measurement.
-  The pinned ffmpeg/ffprobe 9.0.2 CLI stays a separate external test oracle and fixture generator.
+  The pinned ffmpeg/ffprobe CLI (version in `packaging/ffmpeg-version.env`) stays a separate external test oracle and fixture generator.
 - **GStreamer** ([ADR 0002](docs/adr/ADR-0002-gstreamer-backend.md)) is an optional supplementary
   backend in `crates/gstreamer` (`cfa4-gstreamer`, feature `gstreamer`, off by default in dev builds;
   release packages build with it and depend on Ubuntu's GStreamer packages: Depends for the core

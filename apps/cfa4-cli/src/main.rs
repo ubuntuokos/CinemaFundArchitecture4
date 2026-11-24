@@ -315,7 +315,7 @@ fn register_gpu_frame_renderer() {
 /// Make GStreamer the fallback media backend (ADR 0002) when this build has the `gstreamer`
 /// feature and the system has GStreamer; otherwise the built-in openers work alone, as before.
 /// Make FFmpeg the first fallback media backend (ADR 0005), before GStreamer, when this build has
-/// the `ffmpeg` feature and a GPL-3 FFmpeg 9.0.2 or later is linked; otherwise the built-in openers
+/// the `ffmpeg` feature and a GPL-3 FFmpeg of at least `cfa4_ffmpeg::MIN_VERSION` is linked; otherwise the built-in openers
 /// (and GStreamer) work as before. Its report is registered either way, for Settings ▸ Media
 /// Backends.
 fn register_ffmpeg() {

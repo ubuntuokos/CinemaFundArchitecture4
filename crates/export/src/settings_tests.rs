@@ -2187,7 +2187,7 @@ fn dash_manifest_matches_the_hls_playlists() {
     }
 
     // ffprobe opens the manifest: one H.264 and one AAC stream, about 13 seconds. ffmpeg's DASH
-    // demuxer needs libxml2; the CI's FFmpeg 9.0.2 is built without it (--disable-autodetect),
+    // demuxer needs libxml2; the CI's pinned FFmpeg is built without it (--disable-autodetect),
     // so this part is skipped there even with CFA4_REQUIRE_ORACLES=1: the timelines above are
     // the check that counts, and the local ffprobe (distribution builds have libxml2) adds this one.
     let Some(ffprobe) = cfa4_testkit::ffprobe_or_skip("export settings") else { return };

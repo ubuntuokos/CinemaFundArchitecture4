@@ -26,7 +26,7 @@ import tarfile
 import tempfile
 from pathlib import Path
 
-from verify_cfa4_packages import APP_ID, AuditError, repo_version, verify_package_set
+from verify_cfa4_packages import APP_ID, AuditError, pinned_ffmpeg_version, repo_version, verify_package_set
 
 MAX_OUTPUT = 64000
 
@@ -92,8 +92,9 @@ FRAME_ACCURATE_MIN_PSNR = 30.0
 
 
 def fixture_ffmpeg() -> str:
-    """FFmpeg makes the Smart Cut fixture: CFA4's own 9.0.2 build, else the one on PATH."""
-    build = Path(os.environ.get("CFA4_FFMPEG_BUILD", "/opt/cfa4/ffmpeg-9.0.2")) / "bin/ffmpeg"
+    """FFmpeg makes the Smart Cut fixture: CFA4's own pinned build, else the one on PATH."""
+    default = f"/opt/cfa4/ffmpeg-{pinned_ffmpeg_version()}"
+    build = Path(os.environ.get("CFA4_FFMPEG_BUILD", default)) / "bin/ffmpeg"
     if build.is_file() and os.access(build, os.X_OK):
         return str(build)
     found = shutil.which("ffmpeg")

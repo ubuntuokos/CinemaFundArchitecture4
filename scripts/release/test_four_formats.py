@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 import hashlib
+import re
 import shutil
 import subprocess
 import sys
@@ -76,7 +77,7 @@ class FourFormatArtifactTests(unittest.TestCase):
             f"{audit.FFMPEG_DIR}/lib/libavformat.so.62": b"\x7fELF fixture",
             f"{audit.FFMPEG_DIR}/lib/libavutil.so.60": b"\x7fELF fixture",
             f"{audit.FFMPEG_DIR}/lib/libdav1d.so.7": b"\x7fELF fixture",
-            f"{audit.FFMPEG_DIR}/share/doc/ffmpeg/BUILDINFO": b"FFmpeg 9.0.2",
+            f"{audit.FFMPEG_DIR}/share/doc/ffmpeg/BUILDINFO": f"FFmpeg {audit.FFMPEG_VERSION}".encode(),
             f"{audit.FFMPEG_DIR}/share/doc/ffmpeg/COPYING.GPLv3": b"GPL",
             f"{audit.FFMPEG_DIR}/share/doc/ffmpeg/LICENSE.md": b"licence",
             **doc_entries(DOC),
@@ -222,7 +223,7 @@ class FourFormatArtifactTests(unittest.TestCase):
         for missing, message in (
             (f"usr/{DOC}/LICENSE", "licence/attribution.*'LICENSE'"),
             (f"usr/{DOC}/pyside6/LICENSE.LGPL-3.0", "PySide6 / Qt licences"),
-            (f"usr/{audit.FFMPEG_DIR}/lib/libavutil.so.60", "lacks FFmpeg 9.0.2 lib/libavutil"),
+            (f"usr/{audit.FFMPEG_DIR}/lib/libavutil.so.60", f"lacks FFmpeg {audit.FFMPEG_VERSION} lib/libavutil"),
             ("usr/bin/cfa4-qt", "AppImage missing usr/bin/cfa4-qt"),
         ):
             with self.subTest(missing=missing):
@@ -286,7 +287,7 @@ class FourFormatArtifactTests(unittest.TestCase):
     def test_reject_tarball_without_ffmpeg(self):
         path = self.dist / self.names[3]
         self.make_tar(path, remove={f"{audit.FFMPEG_DIR}/lib/libavcodec.so.62"})
-        with self.assertRaisesRegex(audit.AuditError, "lacks FFmpeg 9.0.2 lib/libavcodec"):
+        with self.assertRaisesRegex(audit.AuditError, f"lacks FFmpeg {re.escape(audit.FFMPEG_VERSION)} lib/libavcodec"):
             audit.verify_tarball(path, VERSION)
 
     def test_reject_tarball_without_ffmpeg_licence(self):
@@ -306,7 +307,7 @@ class FourFormatArtifactTests(unittest.TestCase):
             "lib/libavcodec.so.62", "lib/libavformat.so.62", "lib/libavutil.so.60", *audit.FFMPEG_DOCS)}
         audit.verify_ffmpeg(names, audit.FFMPEG_DEB_DIR, ".deb")
         with self.assertRaisesRegex(audit.AuditError, "patent-restricted"):
-            audit.verify_ffmpeg(names | {"opt/cfa4/ffmpeg-9.0.2-restricted/lib/libavcodec.so.62"},
+            audit.verify_ffmpeg(names | {f"{audit.FFMPEG_DEB_DIR}-restricted/lib/libavcodec.so.62"},
                                 audit.FFMPEG_DEB_DIR, ".deb")
 
     def test_reject_other_cpu_architecture_in_appimage(self):

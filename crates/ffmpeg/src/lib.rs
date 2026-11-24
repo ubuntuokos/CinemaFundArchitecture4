@@ -1,6 +1,6 @@
 //! FFmpeg supplementary media backend for CFA4 (layer L5).
 //!
-//! CFA4's own Rust media engine is the base. FFmpeg (at least 9.0.2, GPL-3 build) supplements it
+//! CFA4's own Rust media engine is the base. FFmpeg (at least [`MIN_VERSION`], GPL-3 build) supplements it
 //! where the engine does not decode a format yet: 10-bit and 4:2:2 H.264 / HEVC camera media
 //! without hardware (`docs/gaps.md` G3), AVI, DV / DVCPRO, WMV / ASF, MPEG-4 Part 2 and other
 //! containers and codecs (G10). The decision and its rules are in
@@ -61,8 +61,7 @@ pub enum Error {
     Internal(String),
 }
 
-/// Lowest FFmpeg release the backend accepts (ADR 0005).
-pub const MIN_VERSION: (u32, u32, u32) = (9, 0, 2);
+include!(concat!(env!("OUT_DIR"), "/ffmpeg_version.rs"));
 
 /// A patent-restricted component of the Ubuntu model (`docs/licensing.md` §7): never in the base
 /// package, installed on request with `cfa4-restricted-extras`.
@@ -96,7 +95,7 @@ pub struct RestrictedStatus {
 #[derive(Debug, Clone, PartialEq, Eq, Serialize)]
 #[serde(rename_all = "camelCase")]
 pub struct Status {
-    /// FFmpeg version of the libraries actually loaded (`9.0.2`, or a git description).
+    /// FFmpeg version of the libraries actually loaded (e.g. `9.0.2`, or a git description).
     pub version: String,
     /// The version as numbers, when it can be read.
     pub version_numbers: Option<(u32, u32, u32)>,

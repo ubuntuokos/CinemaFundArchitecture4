@@ -20,13 +20,14 @@ git checkout cfa4/ffmpeg-backend
 VA-API-hoz a GPU meghajtója: Intel `intel-media-va-driver`, AMD `mesa-va-drivers`. A `vainfo`
 kimenetében a `VAProfileH264…` és `VAProfileHEVC…` sorok jelzik, mit tud a hardver.
 
-## 2. Az FFmpeg 9.0.2 lefordítása
+## 2. A rögzített FFmpeg lefordítása
 
 ```sh
-scripts/dev/build-ffmpeg-9.0.2.sh            # alap: /opt/cfa4/ffmpeg-9.0.2 (sudo-t kérhet; Ubuntu 24.04/26.04-en az előre megépítettet tölti le, scripts/dev/fetch-ffmpeg-9.0.2.sh)
+. packaging/ffmpeg-version.env         # CFA4_FFMPEG_VERSION: a rögzített verzió (egyetlen helye)
+scripts/dev/build-ffmpeg.sh            # alap: /opt/cfa4/ffmpeg-$CFA4_FFMPEG_VERSION (sudo-t kérhet; Ubuntu 24.04/26.04-en az előre megépítettet tölti le, scripts/dev/fetch-ffmpeg.sh)
 ```
 
-**Elvárt:** a végén `FFmpeg 9.0.2 installed in /opt/cfa4/ffmpeg-9.0.2 (GPL-3 or later, shared
+**Elvárt:** a végén `FFmpeg <VERZIÓ> installed in /opt/cfa4/ffmpeg-<VERZIÓ> (GPL-3 or later, shared
 libraries)`, a listában `VA-API`, `NVENC/NVDEC`, `Vulkan Video` (26.04-en a Vulkan-fejlécek elég
 újak), `Intel Quick Sync` ha a `libvpl-dev` telepítve van. A szkript hibával leáll, ha a build
 nem GPL-3-as, ha nonfree, vagy ha az alapbuildben x264 vagy x265 van.
@@ -34,12 +35,12 @@ nem GPL-3-as, ha nonfree, vagy ha az alapbuildben x264 vagy x265 van.
 ## 3. A CFA4 lefordítása FFmpeg-gel
 
 ```sh
-export PKG_CONFIG_PATH=/opt/cfa4/ffmpeg-9.0.2/lib/pkgconfig
+export PKG_CONFIG_PATH=/opt/cfa4/ffmpeg-$CFA4_FFMPEG_VERSION/lib/pkgconfig
 cargo build --release -p cfa4 -p cfa4-cli --features cfa4/ffmpeg,cfa4-cli/ffmpeg
 readelf -d target/release/cfa4-cli | grep RUNPATH
 ```
 
-**Elvárt:** `RUNPATH … [/opt/cfa4/ffmpeg-9.0.2-restricted/lib:/opt/cfa4/ffmpeg-9.0.2/lib:$ORIGIN/../lib/cfa4/ffmpeg-9.0.2/lib]`
+**Elvárt:** `RUNPATH … [/opt/cfa4/ffmpeg-$CFA4_FFMPEG_VERSION-restricted/lib:/opt/cfa4/ffmpeg-$CFA4_FFMPEG_VERSION/lib:$ORIGIN/../lib/cfa4/ffmpeg-$CFA4_FFMPEG_VERSION/lib]`
 (a harmadik a hordozható csomagok – tarball, AppImage, Flatpak – saját másolata).
 
 ## 4. A hátterek állapota
@@ -49,7 +50,7 @@ target/release/cfa4-cli media-backends
 ```
 
 **Elvárt:** három háttér ebben a sorrendben: `builtin` (CFA4-motor), `ffmpeg`
-(`"available": true`, `"version": "n9.0.2"`, `"license": "GPL version 3 or later"`), `gstreamer`.
+(`"available": true`, `"version"`: a rögzített verzió, `"license": "GPL version 3 or later"`), `gstreamer`.
 A `restricted` listában `libx264` és `libx265` `"available": false`. Az útválasztó döntése a
 `route` mezőben: a `media.fallback` lánc `software` → `ffmpeg` → `gstreamer` (a saját motor mindig
 elöl), az `ffmpeg` `"tried": 1`, a `gstreamer` `"tried": 2` (vagy `null`, ha nincs a buildben).
@@ -69,7 +70,7 @@ routing table*. A próba után töröld a sort a `routing.toml`-ból.
 ## 5. Dekódolás – a tesztkészlet
 
 ```sh
-PATH=/opt/cfa4/ffmpeg-9.0.2/bin:$PATH cargo test --release -p cfa4-ffmpeg --features ffmpeg
+PATH=/opt/cfa4/ffmpeg-$CFA4_FFMPEG_VERSION/bin:$PATH cargo test --release -p cfa4-ffmpeg --features ffmpeg
 ```
 
 **Elvárt:** 16 + 7 teszt zöld, köztük a 10 bites 4:2:2 H.264 és HEVC bitpontossága, a DV, a
@@ -96,7 +97,7 @@ lépkedj és ugorj benne: a kép ne csússzon el egy képkockával, a hang legye
 Az FFmpeg-build saját eszközeivel, a CFA4-től függetlenül:
 
 ```sh
-F=/opt/cfa4/ffmpeg-9.0.2/bin/ffmpeg
+F=/opt/cfa4/ffmpeg-$CFA4_FFMPEG_VERSION/bin/ffmpeg
 $F -hide_banner -hwaccels
 # nem NVIDIA GPU (Intel / AMD), VA-API kódolás:
 $F -hide_banner -vaapi_device /dev/dri/renderD128 -f lavfi -i testsrc2=size=1920x1080:rate=25 -t 5 \
@@ -134,14 +135,14 @@ kodekek…** menüpontból érhető el, magyarul.
 
 ```sh
 sudo apt install libx264-dev libx265-dev
-scripts/dev/build-ffmpeg-9.0.2.sh --restricted   # → /opt/cfa4/ffmpeg-9.0.2-restricted
+scripts/dev/build-ffmpeg.sh --restricted   # → /opt/cfa4/ffmpeg-$CFA4_FFMPEG_VERSION-restricted
 ldd target/release/cfa4-cli | grep avcodec
 target/release/cfa4-cli media-backends
 ```
 
 **Elvárt:** az `ldd` most a `…-restricted/lib`-et mutatja, a `restricted` listában `libx264` és
 `libx265` `"available": true`, a Beállítások oldalon *Installed: Yes*. Ezután nevezd át a
-`/opt/cfa4/ffmpeg-9.0.2-restricted` könyvtárat: a program újraindítás után az alapbuildet tölti
+`/opt/cfa4/ffmpeg-$CFA4_FFMPEG_VERSION-restricted` könyvtárat: a program újraindítás után az alapbuildet tölti
 be, és a két kodek újra *No* – a program nem omlik össze, csak a funkció inaktív.
 
 ## Mit küldj vissza

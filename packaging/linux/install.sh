@@ -65,10 +65,20 @@ install -m755 -- "$source_dir/bin/cfa4-qt" "$prefix/bin/cfa4-qt"
 rm -rf -- "$prefix/lib/cfa4/python/cfa4_qt"
 mkdir -p -- "$prefix/lib/cfa4/python"
 cp -R -- "$source_dir/lib/cfa4/python/cfa4_qt" "$prefix/lib/cfa4/python/"
-# CFA4's FFmpeg 9.0.2 (ADR 0005): the binaries find it in ../lib/cfa4/ffmpeg-9.0.2 ($ORIGIN RUNPATH)
-# when /opt/cfa4 has none. Replaced as a whole, so no library of an older release stays behind.
-ffmpeg_dir=lib/cfa4/ffmpeg-9.0.2
-if [ -d "$source_dir/$ffmpeg_dir/lib" ]; then
+# CFA4's FFmpeg (ADR 0005): the binaries find it in ../lib/cfa4/ffmpeg-VERSION ($ORIGIN RUNPATH)
+# when /opt/cfa4 has none. The tarball carries exactly one such directory (package.sh, the version
+# of packaging/ffmpeg-version.env). Replaced as a whole, so no library of an older build stays behind.
+ffmpeg_dir=
+for candidate in "$source_dir"/lib/cfa4/ffmpeg-*; do
+  if [ -d "$candidate/lib" ]; then
+    if [ -n "$ffmpeg_dir" ]; then
+      echo "error: more than one FFmpeg in $source_dir/lib/cfa4" >&2
+      exit 1
+    fi
+    ffmpeg_dir="lib/cfa4/${candidate##*/}"
+  fi
+done
+if [ -n "$ffmpeg_dir" ]; then
   rm -rf -- "${prefix:?}/$ffmpeg_dir"
   mkdir -p -- "$prefix/lib/cfa4"
   cp -R -- "$source_dir/$ffmpeg_dir" "$prefix/$ffmpeg_dir"

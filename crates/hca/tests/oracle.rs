@@ -210,7 +210,7 @@ fn rel_error(ours: &[f32], theirs: &[f32]) -> f64 {
 }
 
 /// ffmpeg before 8.0 skips the two reserved bytes of the `comp` chunk wrongly and so never sees
-/// the `ath` and `ciph` chunks that follow (fixed in n8.0; CFA4's oracle is 9.0.2).
+/// the `ath` and `ciph` chunks that follow (fixed in n8.0; CFA4's oracle is newer, packaging/ffmpeg-version.env).
 fn needs_fixed_ffmpeg(ff: &Path, context: &str) -> bool {
     let ok = cfa4_testkit::oracle::ffmpeg_at_least(ff, 8, 0);
     if !ok {

@@ -2,7 +2,7 @@
 //!
 //! FFmpeg decodes on the CPU in this first step; its hardware paths (VA-API, Vulkan) come with
 //! measurements later. It takes codec decoding when it is compiled in, registered (a GPL-3
-//! FFmpeg >= 9.0.2 was found) and switched on; encoding through FFmpeg is not wired yet.
+//! FFmpeg >= `MIN_VERSION` was found) and switched on; encoding through FFmpeg is not wired yet.
 
 use std::sync::Arc;
 
@@ -32,7 +32,8 @@ impl Backend for FfmpegRoute {
             return Err("this build of CFA4 was made without the FFmpeg backend".into());
         }
         if !crate::registered() {
-            return Err("no usable FFmpeg (GPL-3 build, 9.0.2 or later) was found".into());
+            let (a, b, c) = crate::MIN_VERSION;
+            return Err(format!("no usable FFmpeg (GPL-3 build, {a}.{b}.{c} or later) was found"));
         }
         if !crate::enabled() {
             return Err("the FFmpeg backend is switched off in Settings ▸ Media Backends".into());

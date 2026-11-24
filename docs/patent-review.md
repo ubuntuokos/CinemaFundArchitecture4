@@ -162,5 +162,5 @@ szabadalommal védett formátumot.
 
 | Formátum | Irány | Komponens | Csomag | Eredmény | Dátum | Vizsgáló / forrás |
 |---|---|---|---|---|---|---|
-| FFmpeg-háttér: a fenti sorok „FFmpeg-háttér” bejegyzései és a csak FFmpeg-gel megnyitható formátumok | dekódolás (tartalékút a saját motor mögött, ADR 0005) | `crates/ffmpeg` (FFmpeg 9.0.2 alap-build); x264 / x265: `--restricted` build | alap; `--restricted` build: kiegészítő | függőben | | |
+| FFmpeg-háttér: a fenti sorok „FFmpeg-háttér” bejegyzései és a csak FFmpeg-gel megnyitható formátumok | dekódolás (tartalékút a saját motor mögött, ADR 0005) | `crates/ffmpeg` (a CFA4 FFmpeg alap-buildje); x264 / x265: `--restricted` build | alap; `--restricted` build: kiegészítő | függőben | | |
 | Smart Cut / Smart Render: H.264, HEVC, AV1, MPEG-2 videó | bitfolyam-elemzés (GOP-index), csomagmásolás, határ-újrakódolás (`crates/h264enc`) | `crates/smart-edit` | alap | függőben | | |

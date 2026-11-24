@@ -54,15 +54,18 @@ if has tar || has deb || has appimage; then
     fi
   done
 fi
-# CFA4's FFmpeg 9.0.2 (ADR 0005 step 4) ships in every format; it is built beforehand by
-# scripts/dev/build-ffmpeg-9.0.2.sh (never here) and staged by packaging/linux/stage-ffmpeg.sh.
-ffmpeg_build="${CFA4_FFMPEG_BUILD:-/opt/cfa4/ffmpeg-9.0.2}"
+# CFA4's FFmpeg (ADR 0005 step 4; version in packaging/ffmpeg-version.env) ships in every format; it
+# is built beforehand by scripts/dev/build-ffmpeg.sh (never here) and staged by
+# packaging/linux/stage-ffmpeg.sh.
+# shellcheck source=packaging/ffmpeg-version.env
+. "$ROOT/packaging/ffmpeg-version.env"
+ffmpeg_build="${CFA4_FFMPEG_BUILD:-/opt/cfa4/ffmpeg-$CFA4_FFMPEG_VERSION}"
 check_ffmpeg_build() {
   local build="$1" hint="$2"
   if [[ -x "$build/bin/ffmpeg" && -s "$build/lib/pkgconfig/libavcodec.pc" && -s "$build/share/doc/ffmpeg/BUILDINFO" ]]; then
     echo "OK: FFmpeg build $build"
   else
-    fail "FFmpeg 9.0.2 build missing or incomplete in $build (run scripts/dev/build-ffmpeg-9.0.2.sh$hint)"
+    fail "FFmpeg $CFA4_FFMPEG_VERSION build missing or incomplete in $build (run scripts/dev/build-ffmpeg.sh$hint)"
   fi
 }
 if has tar || has deb || has appimage || has restricted; then

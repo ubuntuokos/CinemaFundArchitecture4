@@ -1,10 +1,11 @@
 #!/usr/bin/env bash
 # SPDX-License-Identifier: GPL-3.0-or-later
-# Builds the FFmpeg 9.0.2 that CFA4's supplementary FFmpeg backend links (ADR 0005), on Ubuntu
-# Linux AMD64, as shared libraries in an isolated prefix that never replaces Ubuntu's FFmpeg.
+# Builds the FFmpeg that CFA4's supplementary FFmpeg backend links (ADR 0005; the version, source
+# SHA-256 and tag commit are pinned in packaging/ffmpeg-version.env), on Ubuntu Linux AMD64, as
+# shared libraries in an isolated prefix that never replaces Ubuntu's FFmpeg.
 #
-#   scripts/dev/build-ffmpeg-9.0.2.sh              base build      → /opt/cfa4/ffmpeg-9.0.2
-#   scripts/dev/build-ffmpeg-9.0.2.sh --restricted restricted build → /opt/cfa4/ffmpeg-9.0.2-restricted
+#   scripts/dev/build-ffmpeg.sh                    base build      → /opt/cfa4/ffmpeg-VERSION
+#   scripts/dev/build-ffmpeg.sh --restricted       restricted build → /opt/cfa4/ffmpeg-VERSION-restricted
 #
 # Licence: GPL-3 build only (--enable-gpl --enable-version3), never --enable-nonfree, so no
 # libfdk-aac, libnpp or CUDA NVCC. NVIDIA encode/decode goes through the MIT nv-codec-headers and
@@ -18,7 +19,7 @@
 #
 # Environment: CFA4_FFMPEG_PREFIX (base prefix), CFA4_FFMPEG_JOBS (make -j), CFA4_FFMPEG_SOURCE
 # (`tarball`, the default, or `git` for the GitHub mirror when ffmpeg.org is not reachable),
-# CFA4_FFMPEG_FROM_SOURCE=1 (compile even where scripts/dev/fetch-ffmpeg-9.0.2.sh has a prebuilt one).
+# CFA4_FFMPEG_FROM_SOURCE=1 (compile even where scripts/dev/fetch-ffmpeg.sh has a prebuilt one).
 set -euo pipefail
 
 if [[ "$(uname -s)" != "Linux" || "$(uname -m)" != "x86_64" ]]; then
@@ -26,13 +27,15 @@ if [[ "$(uname -s)" != "Linux" || "$(uname -m)" != "x86_64" ]]; then
   exit 2
 fi
 
-version=9.0.2
+# shellcheck source=packaging/ffmpeg-version.env
+. "$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)/packaging/ffmpeg-version.env"
+version="$CFA4_FFMPEG_VERSION"
 archive="ffmpeg-${version}.tar.xz"
 source_url="https://ffmpeg.org/releases/${archive}"
-sha256=8c3850283eb25fa026482078a04051e0be17347b09ef81a0849bec15a96e002e
+sha256="$CFA4_FFMPEG_SOURCE_SHA256"
 git_url="https://github.com/FFmpeg/FFmpeg"
 git_tag="n${version}"
-git_commit=946fcce07b6dcd0331c8cc609192aeff5e1924f8
+git_commit="$CFA4_FFMPEG_GIT_COMMIT"
 
 restricted=0
 for arg in "$@"; do
@@ -48,12 +51,12 @@ prefix="$base"
 (( restricted )) && prefix="${base}-restricted"
 jobs="${CFA4_FFMPEG_JOBS:-$(nproc)}"
 
-# The base build in its default prefix is published prebuilt (scripts/dev/fetch-ffmpeg-9.0.2.sh,
+# The base build in its default prefix is published prebuilt (scripts/dev/fetch-ffmpeg.sh,
 # GitHub prerelease, SHA-256 pinned): install that instead of compiling, unless
 # CFA4_FFMPEG_FROM_SOURCE=1 (the prebuilt workflow itself) or the host has no prebuilt archive.
 if (( ! restricted )) && [[ "$prefix" == "/opt/cfa4/ffmpeg-${version}" && "${CFA4_FFMPEG_FROM_SOURCE:-0}" != 1 ]]; then
   status=0
-  bash "$(dirname "${BASH_SOURCE[0]}")/fetch-ffmpeg-9.0.2.sh" || status=$?
+  bash "$(dirname "${BASH_SOURCE[0]}")/fetch-ffmpeg.sh" || status=$?
   if (( status == 0 )); then
     exit 0
   elif (( status != 3 )); then
@@ -135,7 +138,7 @@ doc="${tmp}/doc"
 mkdir -p "$doc"
 cp "$src"/LICENSE.md "$src"/COPYING.* "$doc/"
 {
-  echo "FFmpeg ${version}, built for CFA4 by scripts/dev/build-ffmpeg-9.0.2.sh (ADR 0005)."
+  echo "FFmpeg ${version}, built for CFA4 by scripts/dev/build-ffmpeg.sh (ADR 0005)."
   echo "Licence: GPL version 3 or later (--enable-gpl --enable-version3, never --enable-nonfree)."
   case "${CFA4_FFMPEG_SOURCE:-tarball}" in
     tarball) echo "Source: ${source_url} (SHA-256 ${sha256}), unmodified." ;;

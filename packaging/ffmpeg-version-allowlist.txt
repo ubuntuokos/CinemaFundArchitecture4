@@ -1,0 +1,40 @@
+# SPDX-License-Identifier: GPL-3.0-or-later
+# Files that may name the pinned FFmpeg version although packaging/ffmpeg-version.env is the one
+# place it is set (docs/plans/CFA4-FFMPEG-9.1-001.md, F0, R1; checked by
+# scripts/ci/check_ffmpeg_version.py). One glob per line (fnmatch: `*` also crosses `/`), each with
+# its reason. Add a file only when the number is a record of the past, a provenance or test data,
+# never when it is what a script, workflow or build uses.
+
+# Historical records: they say what was true when they were written.
+docs/audit/*
+docs/plans/*
+docs/development/ai-orchestration/*
+docs/coordination-log.md
+docs/adr/ADR-0010-av2-external-decoder.md   # survey of 2026-11-07 (which FFmpeg had AV2)
+docs/adr/ADR-0013-vvc-integration.md        # VVC measurements made with that FFmpeg
+
+# Provenance: the FFmpeg tag a port or a table was taken from, and the oracle a result was measured
+# against. A port's source tag does not change when the pinned build does.
+docs/licensing.md                           # reuse register: source tag of each port
+docs/codec-parity.md                        # "ported from FFmpeg nX" per codec
+crates/acm/tests/oracle.rs
+crates/adpcm/*
+crates/adx/*
+crates/captions/README.md
+crates/hca/*
+crates/huffyuv/*
+crates/mace/*
+crates/msvideo/*
+crates/realaudio/*
+crates/smacker/*
+crates/truespeech/*
+
+# Test data: version strings the parsers and fakes are tested with, not the version CFA4 uses.
+crates/ffmpeg/src/lib.rs                    # parse_version / refusal tests ("9.0.2", "n9.0.2")
+crates/testkit/src/oracle.rs                # version_at_least test
+python/tests/test_media_backends_settings.py
+
+# The user-facing minimum-version text and its translations (the English text is the catalogue
+# key): changed together with CFA4_FFMPEG_MIN_VERSION in F1 (D5), not read at run time.
+crates/engine/src/settings.rs
+i18n/*.tsv
