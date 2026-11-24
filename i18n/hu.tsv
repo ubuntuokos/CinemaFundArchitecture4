@@ -4950,3 +4950,54 @@ export.summary	Low	alacsony
 	Downloading the speech model…	A beszédmodell letöltése…
 	The speech model was downloaded.	A beszédmodell letöltve.
 	The speech model is not downloaded: accept its licence and download it, or use the energy detector.	A beszédmodell nincs letöltve: fogadd el a licencét és töltsd le, vagy használd az energiaalapú érzékelőt.
+	A stored combination does not run a command yet.	A tárolt kombináció még nem indít parancsot.
+	Action hint	Műveletjelzés
+	Add combination	Kombináció hozzáadása
+	Add mapping	Hozzárendelés hozzáadása
+	Button Learn	Gombtanulás
+	Button Test	Gombpróba
+	Button name	Gomb neve
+	Cancel feedback	Megszakítás visszajelzése
+	Combination editor	Kombinációszerkesztő
+	Context	Kontextus
+	Delete profile	Profil törlése
+	Detected buttons	Észlelt gombok
+	Draw the gesture with a button held.	Rajzolja meg a gesztust lenyomott gombbal.
+	Error feedback	Hiba visszajelzése
+	Evdev device	Evdev-eszköz
+	Evdev reads the selected device only, and only after a later phase turns it on. This version keeps the Qt path.	Az evdev csak a kiválasztott eszközt olvassa, és csak egy későbbi fázis kapcsolja be. Ez a változat a Qt-utat használja.
+	Execution feedback	Végrehajtás visszajelzése
+	Follow the system	A rendszer követése
+	Gesture	Gesztus
+	Gesture Learn	Gesztustanulás
+	Gesture editor	Gesztusszerkesztő
+	Gesture profiles	Gesztusprofilok
+	Gestures stay off until you turn them on. Turning them on does not block the panel menu.	A gesztusok kikapcsolva maradnak, amíg be nem kapcsolja őket. A bekapcsolás nem tiltja a panelmenüt.
+	HUD	HUD
+	Hand	Kéz
+	High contrast	Nagy kontraszt
+	Hold time	Tartási idő
+	Input access	Bemeneti hozzáférés
+	Left-handed	Balkezes
+	Mapping	Hozzárendelés
+	Maximum length	Legnagyobb hossz
+	Maximum time	Legnagyobb idő
+	Minimum length	Legkisebb hossz
+	Mirror ergonomic gestures	Ergonomikus gesztusok tükrözése
+	Mouse Gestures	Egérgesztusok
+	Mouse Gestures…	Egérgesztusok…
+	No buttons yet. Press one in Button Learn or Button Test.	Még nincs gomb. Nyomjon meg egyet a gombtanulásban vagy a gombpróbában.
+	Press	Lenyomás
+	Qt pointer (this application)	Qt-mutató (ez az alkalmazás)
+	Recognition preview	Felismerés előnézete
+	Reduced animation	Csökkentett animáció
+	Right-handed	Jobbkezes
+	Roles	Szerepek
+	Save gesture	Gesztus mentése
+	Save profile	Profil mentése
+	Show the gesture HUD	Gesztus-HUD megjelenítése
+	Slop	Holtjáték
+	Spatial gesture	Térbeli gesztus
+	Thresholds	Küszöbök
+	Trail	Nyomvonal
+	Use gestures in the window	Gesztusok használata az ablakban

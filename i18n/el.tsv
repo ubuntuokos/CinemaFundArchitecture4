@@ -4921,3 +4921,54 @@ export.summary	Low	χαμηλή
 	AS-02 Versions	Εκδόσεις AS-02
 	Tick the sequences to write as further versions in the AS-02 bundle	Επιλέξτε τις ακολουθίες που θα γραφτούν ως επιπλέον εκδόσεις στο πακέτο AS-02
 	Delete Short Clips	Διαγραφή σύντομων κλιπ
+	A stored combination does not run a command yet.	Ένας αποθηκευμένος συνδυασμός δεν εκτελεί ακόμη εντολή.
+	Action hint	Υπόδειξη ενέργειας
+	Add combination	Προσθήκη συνδυασμού
+	Add mapping	Προσθήκη αντιστοίχισης
+	Button Learn	Εκμάθηση κουμπιού
+	Button Test	Δοκιμή κουμπιού
+	Button name	Όνομα κουμπιού
+	Cancel feedback	Ένδειξη ακύρωσης
+	Combination editor	Επεξεργαστής συνδυασμών
+	Context	Πλαίσιο
+	Delete profile	Διαγραφή προφίλ
+	Detected buttons	Εντοπισμένα κουμπιά
+	Draw the gesture with a button held.	Σχεδιάστε την κίνηση κρατώντας πατημένο ένα κουμπί.
+	Error feedback	Ένδειξη σφάλματος
+	Evdev device	Συσκευή evdev
+	Evdev reads the selected device only, and only after a later phase turns it on. This version keeps the Qt path.	Το evdev διαβάζει μόνο την επιλεγμένη συσκευή, και μόνο όταν μια επόμενη φάση το ενεργοποιήσει. Αυτή η έκδοση μένει στη διαδρομή Qt.
+	Execution feedback	Ένδειξη εκτέλεσης
+	Follow the system	Ακολούθησε το σύστημα
+	Gesture	Κίνηση
+	Gesture Learn	Εκμάθηση κίνησης
+	Gesture editor	Επεξεργαστής κινήσεων
+	Gesture profiles	Προφίλ κινήσεων
+	Gestures stay off until you turn them on. Turning them on does not block the panel menu.	Οι κινήσεις μένουν κλειστές ώσπου να τις ανοίξετε. Το άνοιγμα δεν μπλοκάρει το μενού του πίνακα.
+	HUD	HUD
+	Hand	Χέρι
+	High contrast	Υψηλή αντίθεση
+	Hold time	Χρόνος κράτησης
+	Input access	Πρόσβαση εισόδου
+	Left-handed	Αριστερόχειρας
+	Mapping	Αντιστοίχιση
+	Maximum length	Μέγιστο μήκος
+	Maximum time	Μέγιστος χρόνος
+	Minimum length	Ελάχιστο μήκος
+	Mirror ergonomic gestures	Κατοπτρισμός εργονομικών κινήσεων
+	Mouse Gestures	Κινήσεις ποντικιού
+	Mouse Gestures…	Κινήσεις ποντικιού…
+	No buttons yet. Press one in Button Learn or Button Test.	Δεν υπάρχει ακόμη κουμπί. Πατήστε ένα στην εκμάθηση ή στη δοκιμή.
+	Press	Πάτημα
+	Qt pointer (this application)	Δείκτης Qt (αυτή η εφαρμογή)
+	Recognition preview	Προεπισκόπηση αναγνώρισης
+	Reduced animation	Μειωμένη κίνηση
+	Right-handed	Δεξιόχειρας
+	Roles	Ρόλοι
+	Save gesture	Αποθήκευση κίνησης
+	Save profile	Αποθήκευση προφίλ
+	Show the gesture HUD	Εμφάνιση του HUD κινήσεων
+	Slop	Ανοχή κίνησης
+	Spatial gesture	Χωρική κίνηση
+	Thresholds	Κατώφλια
+	Trail	Ίχνος
+	Use gestures in the window	Χρήση κινήσεων στο παράθυρο

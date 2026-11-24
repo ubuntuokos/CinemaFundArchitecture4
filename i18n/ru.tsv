@@ -4902,3 +4902,54 @@
 	AS-02 Versions	Версии AS-02
 	Tick the sequences to write as further versions in the AS-02 bundle	Отметьте последовательности, которые будут записаны как дополнительные версии в пакете AS-02
 	Delete Short Clips	Удалить короткие клипы
+	A stored combination does not run a command yet.	Сохранённая комбинация пока не запускает команду.
+	Action hint	Подсказка действия
+	Add combination	Добавить комбинацию
+	Add mapping	Добавить назначение
+	Button Learn	Обучение кнопки
+	Button Test	Проверка кнопки
+	Button name	Имя кнопки
+	Cancel feedback	Сигнал отмены
+	Combination editor	Редактор комбинаций
+	Context	Контекст
+	Delete profile	Удалить профиль
+	Detected buttons	Обнаруженные кнопки
+	Draw the gesture with a button held.	Нарисуйте жест, удерживая кнопку.
+	Error feedback	Сигнал ошибки
+	Evdev device	Устройство evdev
+	Evdev reads the selected device only, and only after a later phase turns it on. This version keeps the Qt path.	Evdev читает только выбранное устройство и только после того, как более поздний этап его включит. Эта версия остаётся на пути Qt.
+	Execution feedback	Сигнал выполнения
+	Follow the system	Как в системе
+	Gesture	Жест
+	Gesture Learn	Обучение жеста
+	Gesture editor	Редактор жестов
+	Gesture profiles	Профили жестов
+	Gestures stay off until you turn them on. Turning them on does not block the panel menu.	Жесты выключены, пока вы их не включите. Включение не блокирует меню панели.
+	HUD	HUD
+	Hand	Рука
+	High contrast	Высокий контраст
+	Hold time	Время удержания
+	Input access	Доступ к вводу
+	Left-handed	Левша
+	Mapping	Назначение
+	Maximum length	Наибольшая длина
+	Maximum time	Наибольшее время
+	Minimum length	Наименьшая длина
+	Mirror ergonomic gestures	Отразить эргономичные жесты
+	Mouse Gestures	Жесты мыши
+	Mouse Gestures…	Жесты мыши…
+	No buttons yet. Press one in Button Learn or Button Test.	Кнопок пока нет. Нажмите одну в обучении или в проверке.
+	Press	Нажатие
+	Qt pointer (this application)	Указатель Qt (это приложение)
+	Recognition preview	Предпросмотр распознавания
+	Reduced animation	Уменьшенная анимация
+	Right-handed	Правша
+	Roles	Роли
+	Save gesture	Сохранить жест
+	Save profile	Сохранить профиль
+	Show the gesture HUD	Показывать HUD жестов
+	Slop	Люфт
+	Spatial gesture	Пространственный жест
+	Thresholds	Пороги
+	Trail	След
+	Use gestures in the window	Жесты в окне

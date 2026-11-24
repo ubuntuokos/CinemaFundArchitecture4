@@ -4919,3 +4919,54 @@ export.summary	Low	laag
 	AS-02 Versions	AS-02-versies
 	Tick the sequences to write as further versions in the AS-02 bundle	Vink de sequenties aan die als extra versies in het AS-02-pakket worden geschreven
 	Delete Short Clips	Korte clips verwijderen
+	A stored combination does not run a command yet.	Een opgeslagen combinatie voert nog geen opdracht uit.
+	Action hint	Actiehint
+	Add combination	Combinatie toevoegen
+	Add mapping	Toewijzing toevoegen
+	Button Learn	Knop leren
+	Button Test	Knoptest
+	Button name	Knopnaam
+	Cancel feedback	Annuleringsmelding
+	Combination editor	Combinatiebewerker
+	Context	Context
+	Delete profile	Profiel verwijderen
+	Detected buttons	Gevonden knoppen
+	Draw the gesture with a button held.	Teken het gebaar met een ingedrukte knop.
+	Error feedback	Foutmelding
+	Evdev device	Evdev-apparaat
+	Evdev reads the selected device only, and only after a later phase turns it on. This version keeps the Qt path.	Evdev leest alleen het gekozen apparaat, en pas als een latere fase het aanzet. Deze versie blijft op het Qt-pad.
+	Execution feedback	Uitvoeringsmelding
+	Follow the system	Het systeem volgen
+	Gesture	Gebaar
+	Gesture Learn	Gebaar leren
+	Gesture editor	Gebarenbewerker
+	Gesture profiles	Gebaarprofielen
+	Gestures stay off until you turn them on. Turning them on does not block the panel menu.	Gebaren blijven uit tot u ze aanzet. Aanzetten blokkeert het paneelmenu niet.
+	HUD	HUD
+	Hand	Hand
+	High contrast	Hoog contrast
+	Hold time	Vasthoudtijd
+	Input access	Ingangstoegang
+	Left-handed	Linkshandig
+	Mapping	Toewijzing
+	Maximum length	Grootste lengte
+	Maximum time	Grootste tijd
+	Minimum length	Kleinste lengte
+	Mirror ergonomic gestures	Ergonomische gebaren spiegelen
+	Mouse Gestures	Muisgebaren
+	Mouse Gestures…	Muisgebaren…
+	No buttons yet. Press one in Button Learn or Button Test.	Nog geen knop. Druk er een in Knop leren of Knoptest.
+	Press	Indrukken
+	Qt pointer (this application)	Qt-aanwijzer (deze toepassing)
+	Recognition preview	Herkenningsvoorbeeld
+	Reduced animation	Minder animatie
+	Right-handed	Rechtshandig
+	Roles	Rollen
+	Save gesture	Gebaar opslaan
+	Save profile	Profiel opslaan
+	Show the gesture HUD	Gebaren-HUD tonen
+	Slop	Speling
+	Spatial gesture	Ruimtelijk gebaar
+	Thresholds	Drempels
+	Trail	Spoor
+	Use gestures in the window	Gebaren in het venster gebruiken
