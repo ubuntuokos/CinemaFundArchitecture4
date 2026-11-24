@@ -4921,3 +4921,54 @@ export.summary	Low	matala
 	AS-02 Versions	AS-02-versiot
 	Tick the sequences to write as further versions in the AS-02 bundle	Valitse sekvenssit, jotka kirjoitetaan AS-02-pakettiin lisäversioina
 	Delete Short Clips	Poista lyhyet leikkeet
+	A stored combination does not run a command yet.	Tallennettu yhdistelmä ei vielä suorita komentoa.
+	Action hint	Toimintovihje
+	Add combination	Lisää yhdistelmä
+	Add mapping	Lisää määritys
+	Button Learn	Opettele painike
+	Button Test	Painikekoe
+	Button name	Painikkeen nimi
+	Cancel feedback	Peruutuksen palaute
+	Combination editor	Yhdistelmäeditori
+	Context	Konteksti
+	Delete profile	Poista profiili
+	Detected buttons	Havaitut painikkeet
+	Draw the gesture with a button held.	Piirrä ele painike painettuna.
+	Error feedback	Virheen palaute
+	Evdev device	Evdev-laite
+	Evdev reads the selected device only, and only after a later phase turns it on. This version keeps the Qt path.	Evdev lukee vain valitun laitteen, ja vasta kun myöhempi vaihe kytkee sen. Tämä versio pysyy Qt-polulla.
+	Execution feedback	Suorituksen palaute
+	Follow the system	Seuraa järjestelmää
+	Gesture	Ele
+	Gesture Learn	Opettele ele
+	Gesture editor	Ele-editori
+	Gesture profiles	Eleprofiilit
+	Gestures stay off until you turn them on. Turning them on does not block the panel menu.	Eleet pysyvät pois päältä, kunnes kytket ne. Kytkeminen ei estä paneelin valikkoa.
+	HUD	HUD
+	Hand	Käsi
+	High contrast	Suuri kontrasti
+	Hold time	Pitoaika
+	Input access	Syötteen käyttö
+	Left-handed	Vasenkätinen
+	Mapping	Määritys
+	Maximum length	Suurin pituus
+	Maximum time	Suurin aika
+	Minimum length	Pienin pituus
+	Mirror ergonomic gestures	Peilaa ergonomiset eleet
+	Mouse Gestures	Hiirieleet
+	Mouse Gestures…	Hiirieleet…
+	No buttons yet. Press one in Button Learn or Button Test.	Ei vielä painikkeita. Paina yhtä opetellessa tai kokeessa.
+	Press	Painallus
+	Qt pointer (this application)	Qt-osoitin (tämä sovellus)
+	Recognition preview	Tunnistuksen esikatselu
+	Reduced animation	Vähennetty animaatio
+	Right-handed	Oikeakätinen
+	Roles	Roolit
+	Save gesture	Tallenna ele
+	Save profile	Tallenna profiili
+	Show the gesture HUD	Näytä ele-HUD
+	Slop	Välys
+	Spatial gesture	Tilallinen ele
+	Thresholds	Kynnykset
+	Trail	Jälki
+	Use gestures in the window	Käytä eleitä ikkunassa

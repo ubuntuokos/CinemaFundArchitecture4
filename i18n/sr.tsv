@@ -4919,3 +4919,54 @@ export.summary	Low	низак
 	AS-02 Versions	AS-02 верзије
 	Tick the sequences to write as further versions in the AS-02 bundle	Означите секвенце које ће бити уписане као додатне верзије у AS-02 пакету
 	Delete Short Clips	Обриши кратке клипове
+	A stored combination does not run a command yet.	Сачувана комбинација још не покреће наредбу.
+	Action hint	Наговештај радње
+	Add combination	Додај комбинацију
+	Add mapping	Додај доделу
+	Button Learn	Учење тастера
+	Button Test	Проба тастера
+	Button name	Име тастера
+	Cancel feedback	Сигнал отказивања
+	Combination editor	Уређивач комбинација
+	Context	Контекст
+	Delete profile	Обриши профил
+	Detected buttons	Откривени тастери
+	Draw the gesture with a button held.	Нацртајте покрет док држите тастер.
+	Error feedback	Сигнал грешке
+	Evdev device	Evdev уређај
+	Evdev reads the selected device only, and only after a later phase turns it on. This version keeps the Qt path.	Evdev чита само изабрани уређај, и тек кад га каснија фаза укључи. Ова верзија остаје на Qt путу.
+	Execution feedback	Сигнал извршења
+	Follow the system	Прати систем
+	Gesture	Покрет
+	Gesture Learn	Учење покрета
+	Gesture editor	Уређивач покрета
+	Gesture profiles	Профили покрета
+	Gestures stay off until you turn them on. Turning them on does not block the panel menu.	Покрети остају искључени док их не укључите. Укључивање не блокира мени панела.
+	HUD	HUD
+	Hand	Рука
+	High contrast	Висок контраст
+	Hold time	Време држања
+	Input access	Приступ улазу
+	Left-handed	Леворук
+	Mapping	Додела
+	Maximum length	Највећа дужина
+	Maximum time	Највеће време
+	Minimum length	Најмања дужина
+	Mirror ergonomic gestures	Пресликај ергономске покрете
+	Mouse Gestures	Покрети миша
+	Mouse Gestures…	Покрети миша…
+	No buttons yet. Press one in Button Learn or Button Test.	Још нема тастера. Притисните један у учењу или у проби.
+	Press	Притисак
+	Qt pointer (this application)	Qt показивач (ова апликација)
+	Recognition preview	Преглед препознавања
+	Reduced animation	Смањена анимација
+	Right-handed	Деснорук
+	Roles	Улоге
+	Save gesture	Сачувај покрет
+	Save profile	Сачувај профил
+	Show the gesture HUD	Прикажи HUD покрета
+	Slop	Зазор
+	Spatial gesture	Просторни покрет
+	Thresholds	Прагови
+	Trail	Траг
+	Use gestures in the window	Користи покрете у прозору

@@ -4922,3 +4922,54 @@ export.summary	Low	nizka
 	AS-02 Versions	Različice AS-02
 	Tick the sequences to write as further versions in the AS-02 bundle	Označite zaporedja, ki se zapišejo kot dodatne različice v paketu AS-02
 	Delete Short Clips	Izbriši kratke posnetke
+	A stored combination does not run a command yet.	Shranjena kombinacija še ne zažene ukaza.
+	Action hint	Namig dejanja
+	Add combination	Dodaj kombinacijo
+	Add mapping	Dodaj preslikavo
+	Button Learn	Učenje gumba
+	Button Test	Preizkus gumba
+	Button name	Ime gumba
+	Cancel feedback	Signal preklica
+	Combination editor	Urejevalnik kombinacij
+	Context	Kontekst
+	Delete profile	Izbriši profil
+	Detected buttons	Zaznani gumbi
+	Draw the gesture with a button held.	Narišite potezo z držanim gumbom.
+	Error feedback	Signal napake
+	Evdev device	Evdev naprava
+	Evdev reads the selected device only, and only after a later phase turns it on. This version keeps the Qt path.	Evdev bere samo izbrano napravo in šele, ko jo poznejša faza vklopi. Ta različica ostane na poti Qt.
+	Execution feedback	Signal izvedbe
+	Follow the system	Sledi sistemu
+	Gesture	Poteza
+	Gesture Learn	Učenje poteze
+	Gesture editor	Urejevalnik potez
+	Gesture profiles	Profili potez
+	Gestures stay off until you turn them on. Turning them on does not block the panel menu.	Poteze ostanejo izklopljene, dokler jih ne vklopite. Vklop ne blokira menija pulta.
+	HUD	HUD
+	Hand	Roka
+	High contrast	Visok kontrast
+	Hold time	Čas držanja
+	Input access	Dostop do vhoda
+	Left-handed	Levičar
+	Mapping	Preslikava
+	Maximum length	Največja dolžina
+	Maximum time	Najdaljši čas
+	Minimum length	Najmanjša dolžina
+	Mirror ergonomic gestures	Zrcali ergonomske poteze
+	Mouse Gestures	Poteze miške
+	Mouse Gestures…	Poteze miške…
+	No buttons yet. Press one in Button Learn or Button Test.	Še ni gumbov. Pritisnite enega pri učenju ali preizkusu.
+	Press	Pritisk
+	Qt pointer (this application)	Kazalec Qt (ta program)
+	Recognition preview	Predogled prepoznave
+	Reduced animation	Zmanjšana animacija
+	Right-handed	Desničar
+	Roles	Vloge
+	Save gesture	Shrani potezo
+	Save profile	Shrani profil
+	Show the gesture HUD	Pokaži HUD potez
+	Slop	Ohlap
+	Spatial gesture	Prostorska poteza
+	Thresholds	Pragi
+	Trail	Sled
+	Use gestures in the window	Uporabi poteze v oknu

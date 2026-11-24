@@ -4920,3 +4920,54 @@ export.summary	Low	düşük
 	AS-02 Versions	AS-02 sürümleri
 	Tick the sequences to write as further versions in the AS-02 bundle	AS-02 paketine ek sürüm olarak yazılacak dizileri işaretleyin
 	Delete Short Clips	Kısa Klipleri Sil
+	A stored combination does not run a command yet.	Kayıtlı bir kombinasyon henüz komut çalıştırmaz.
+	Action hint	Eylem ipucu
+	Add combination	Kombinasyon ekle
+	Add mapping	Eşleme ekle
+	Button Learn	Düğme öğrenme
+	Button Test	Düğme denemesi
+	Button name	Düğme adı
+	Cancel feedback	İptal bildirimi
+	Combination editor	Kombinasyon düzenleyici
+	Context	Bağlam
+	Delete profile	Profili sil
+	Detected buttons	Algılanan düğmeler
+	Draw the gesture with a button held.	Bir düğmeyi basılı tutarak hareketi çizin.
+	Error feedback	Hata bildirimi
+	Evdev device	Evdev aygıtı
+	Evdev reads the selected device only, and only after a later phase turns it on. This version keeps the Qt path.	Evdev yalnızca seçilen aygıtı okur ve ancak sonraki bir aşama onu açınca. Bu sürüm Qt yolunda kalır.
+	Execution feedback	Yürütme bildirimi
+	Follow the system	Sistemi izle
+	Gesture	Hareket
+	Gesture Learn	Hareket öğrenme
+	Gesture editor	Hareket düzenleyici
+	Gesture profiles	Hareket profilleri
+	Gestures stay off until you turn them on. Turning them on does not block the panel menu.	Hareketler siz açana kadar kapalı kalır. Açmak panel menüsünü engellemez.
+	HUD	HUD
+	Hand	El
+	High contrast	Yüksek karşıtlık
+	Hold time	Basılı tutma süresi
+	Input access	Giriş erişimi
+	Left-handed	Solak
+	Mapping	Eşleme
+	Maximum length	En büyük uzunluk
+	Maximum time	En büyük süre
+	Minimum length	En küçük uzunluk
+	Mirror ergonomic gestures	Ergonomik hareketleri aynala
+	Mouse Gestures	Fare hareketleri
+	Mouse Gestures…	Fare hareketleri…
+	No buttons yet. Press one in Button Learn or Button Test.	Henüz düğme yok. Düğme öğrenmede veya düğme denemesinde birine basın.
+	Press	Basma
+	Qt pointer (this application)	Qt işaretçisi (bu uygulama)
+	Recognition preview	Tanıma önizlemesi
+	Reduced animation	Azaltılmış canlandırma
+	Right-handed	Sağlak
+	Roles	Roller
+	Save gesture	Hareketi kaydet
+	Save profile	Profili kaydet
+	Show the gesture HUD	Hareket HUD'unu göster
+	Slop	Boşluk
+	Spatial gesture	Uzamsal hareket
+	Thresholds	Eşikler
+	Trail	İz
+	Use gestures in the window	Pencerede hareketleri kullan
