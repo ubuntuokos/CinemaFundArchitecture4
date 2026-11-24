@@ -42,6 +42,29 @@ pub struct DeviceSetting {
     pub pickup_threshold14: u16,
     /// `mute` silences the shuttle ring; empty follows the Qt playback rule (N-01).
     pub shuttle_sound: String,
+    /// Gesture templates for a pointer device. Empty on a MIDI or HID device, and omitted from
+    /// its preferences. A template longer than [`cfa4_surface_model::gesture::MAX_TEMPLATE_POINTS`]
+    /// is dropped by [`ControlSurfacePrefs::clamp`], not shortened.
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    pub gestures: Vec<StoredGesture>,
+    /// When set, ergonomic templates are mirrored as they are read. Spatial templates are not.
+    /// Default off (MG0). Omitted from MIDI and HID preferences.
+    #[serde(default, skip_serializing_if = "is_false")]
+    pub mirror_ergonomic: bool,
+}
+
+fn is_false(value: &bool) -> bool {
+    !value
+}
+
+/// A gesture template stored with a pointer profile. Points are logical pixels.
+#[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct StoredGesture {
+    pub id: String,
+    pub points: Vec<(i32, i32)>,
+    #[serde(default)]
+    pub spatial: bool,
 }
 
 impl Default for DeviceSetting {
@@ -55,6 +78,8 @@ impl Default for DeviceSetting {
             pickup_threshold7: PICKUP_THRESHOLD7,
             pickup_threshold14: PICKUP_THRESHOLD14,
             shuttle_sound: String::new(),
+            gestures: Vec::new(),
+            mirror_ergonomic: false,
         }
     }
 }
@@ -62,7 +87,20 @@ impl Default for DeviceSetting {
 impl DeviceSetting {
     /// One line per assignment that is loaded disabled, for `surface.profile.warnings`.
     pub fn warnings(&self) -> Vec<String> {
-        self.unsupported.iter().map(|u| format!("assignment of {} is disabled: {}", u.control_kind(), u.reason)).collect()
+        let mut out: Vec<String> = self.unsupported.iter().map(|u| format!("assignment of {} is disabled: {}", u.control_kind(), u.reason)).collect();
+        for binding in &self.bindings {
+            if let ControlId::Gesture { id } = &binding.control
+                && !gesture_command_allowed(&binding.command)
+            {
+                out.push(format!("assignment of gesture {id} is disabled: command is not playback, playhead or window"));
+            }
+        }
+        for template in &self.gestures {
+            if template.points.len() > cfa4_surface_model::gesture::MAX_TEMPLATE_POINTS {
+                out.push(format!("gesture template {} is disabled: more than {} points", template.id, cfa4_surface_model::gesture::MAX_TEMPLATE_POINTS));
+            }
+        }
+        out
     }
 }
 
@@ -105,6 +143,10 @@ struct RawDeviceSetting {
     pickup_threshold14: u16,
     #[serde(default, skip_serializing_if = "String::is_empty")]
     shuttle_sound: String,
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    gestures: Vec<StoredGesture>,
+    #[serde(default, skip_serializing_if = "is_false")]
+    mirror_ergonomic: bool,
 }
 
 fn default_threshold7() -> u16 {
@@ -133,6 +175,8 @@ impl Default for RawDeviceSetting {
             pickup_threshold7: PICKUP_THRESHOLD7,
             pickup_threshold14: PICKUP_THRESHOLD14,
             shuttle_sound: String::new(),
+            gestures: Vec::new(),
+            mirror_ergonomic: false,
         }
     }
 }
@@ -156,6 +200,8 @@ impl From<RawDeviceSetting> for DeviceSetting {
             pickup_threshold7: r.pickup_threshold7,
             pickup_threshold14: r.pickup_threshold14,
             shuttle_sound: r.shuttle_sound,
+            gestures: r.gestures,
+            mirror_ergonomic: r.mirror_ergonomic,
         }
     }
 }
@@ -171,12 +217,39 @@ impl From<DeviceSetting> for RawDeviceSetting {
             pickup_threshold7: d.pickup_threshold7,
             pickup_threshold14: d.pickup_threshold14,
             shuttle_sound: d.shuttle_sound,
+            gestures: d.gestures,
+            mirror_ergonomic: d.mirror_ergonomic,
         }
     }
 }
 
 /// Most assignments one device keeps.
 pub const MAX_BINDINGS: usize = 512;
+
+/// Most gesture templates one pointer profile keeps.
+pub const MAX_GESTURE_TEMPLATES: usize = 128;
+
+/// A gesture id or a context name: a short token, not a path.
+pub(crate) fn gesture_id_ok(id: &str) -> bool {
+    let mut chars = id.chars();
+    let Some(first) = chars.next() else { return false };
+    id.len() <= 64 && first.is_ascii_alphanumeric() && chars.all(|c| c.is_ascii_alphanumeric() || "._-".contains(c))
+}
+
+/// Empty and `global` are the global context. Anything else is that context alone.
+pub(crate) fn gesture_context_key(context: &str) -> &str {
+    let trimmed = context.trim();
+    if trimmed.is_empty() || trimmed == "global" { "global" } else { trimmed }
+}
+
+/// First-release gesture commands (MG0 decision 6): `playback.*`, `playhead.*`, `window.*`.
+pub(crate) fn gesture_command_allowed(command: &str) -> bool {
+    let Some((head, rest)) = command.split_once('.') else { return false };
+    if !matches!(head, "playback" | "playhead" | "window") || rest.is_empty() {
+        return false;
+    }
+    rest.split('.').all(|part| !part.is_empty() && part.chars().all(|c| c.is_ascii_alphanumeric()))
+}
 
 /// One assignment: pressing `control` runs `command` (a command id of the engine or of the GUI,
 /// such as `playback.toggle`) with `params`.
@@ -187,6 +260,10 @@ pub struct Binding {
     pub command: String,
     #[serde(default, skip_serializing_if = "Value::is_null")]
     pub params: Value,
+    /// Panel context. Empty is global. MIDI and HID lookup ignores it, so an old assignment
+    /// keeps firing. Gesture lookup uses it and does not fall back from a narrower context.
+    #[serde(default, skip_serializing_if = "String::is_empty")]
+    pub context: String,
 }
 
 // `params` is JSON; equality of JSON values is total for what a preference file holds
@@ -296,6 +373,21 @@ impl ControlSurfacePrefs {
     /// The settings of `device` (the defaults when the user never changed them).
     pub fn device(&self, device: &str) -> DeviceSetting {
         self.devices.iter().find(|d| d.device == device).cloned().unwrap_or_else(|| DeviceSetting { device: device.into(), ..Default::default() })
+    }
+
+    /// The gesture binding for `id` in `context`. A narrower context does not fall back to global.
+    /// MIDI and HID assignments are not considered. `None` when surfaces are off, the device is
+    /// off, or this context has no assignment.
+    pub fn gesture_binding(&self, device: &str, id: &str, context: &str) -> Option<&Binding> {
+        if !self.enabled {
+            return None;
+        }
+        let setting = self.devices.iter().find(|d| d.device == device && d.enabled)?;
+        let want = gesture_context_key(context);
+        setting.bindings.iter().find(|binding| match &binding.control {
+            ControlId::Gesture { id: bound } if bound == id => gesture_context_key(&binding.context) == want,
+            _ => false,
+        })
     }
 
     /// What pressing `control` on `device` runs: `None` when control surfaces are off, the device
@@ -414,13 +506,37 @@ impl ControlSurfacePrefs {
                 d.profile.clear();
             }
             let mut controls: Vec<ControlId> = Vec::new();
+            let mut gesture_keys: Vec<(String, String)> = Vec::new();
             d.bindings.retain(|b| {
-                if b.command.trim().is_empty() || controls.contains(&b.control) {
+                if b.command.trim().is_empty() {
+                    return false;
+                }
+                if let ControlId::Gesture { id } = &b.control {
+                    let key = (id.clone(), gesture_context_key(&b.context).to_string());
+                    if gesture_keys.contains(&key) {
+                        return false;
+                    }
+                    gesture_keys.push(key);
+                    return true;
+                }
+                if controls.contains(&b.control) {
                     return false;
                 }
                 controls.push(b.control.clone());
                 true
             });
+            d.gestures.retain(|template| {
+                gesture_id_ok(&template.id) && !template.points.is_empty() && template.points.len() <= cfa4_surface_model::gesture::MAX_TEMPLATE_POINTS
+            });
+            let mut seen_templates: Vec<String> = Vec::new();
+            d.gestures.retain(|template| {
+                if seen_templates.iter().any(|id| id == &template.id) {
+                    return false;
+                }
+                seen_templates.push(template.id.clone());
+                true
+            });
+            d.gestures.truncate(MAX_GESTURE_TEMPLATES);
             d.bindings.truncate(MAX_BINDINGS);
             d.unsupported.truncate(MAX_BINDINGS - d.bindings.len());
             d.pickup_threshold7 = d.pickup_threshold7.min(127);
@@ -677,7 +793,7 @@ mod tests {
     }
 
     fn bind(control: ControlId, command: &str) -> Binding {
-        Binding { control, command: command.into(), params: Value::Null }
+        Binding { control, command: command.into(), params: Value::Null, context: String::new() }
     }
 
     #[test]
@@ -700,6 +816,8 @@ mod tests {
         assert_eq!(t.press("d", &SurfaceInput::PitchBend { channel: 0, value: 16000 }), None);
         let wide = SurfaceInput::Absolute { control: cc(7), value: 9000, bits: 14 };
         assert_eq!(t.press("d", &wide), Some(cc(7)), "14-bit: half is 8192");
+        let gesture = SurfaceInput::Gesture { id: "direction.right".into(), context: String::new() };
+        assert_eq!(t.press("pointer:seat", &gesture), None, "a gesture is not a button press");
     }
 
     #[test]
@@ -768,7 +886,7 @@ mod tests {
             devices: vec![DeviceSetting {
                 device: dev.into(),
                 bindings: vec![
-                    Binding { control: cc(0), command: "mixer.stripVolume".into(), params: json!({"strip": "A1"}) },
+                    Binding { control: cc(0), command: "mixer.stripVolume".into(), params: json!({"strip": "A1"}), context: String::new() },
                     bind(cc(41), "playback.toggle"),
                 ],
                 ..Default::default()
@@ -796,9 +914,19 @@ mod tests {
             devices: vec![DeviceSetting {
                 device: dev.into(),
                 bindings: vec![
-                    Binding { control: cc(16), command: "mixer.stripPan".into(), params: json!({"strip": "Mix", "encoding": "twos-complement"}) },
-                    Binding { control: cc(17), command: "mixer.stripVolume".into(), params: json!({"strip": "A2", "encoding": "nonsense"}) },
-                    Binding { control: cc(0), command: "mixer.stripVolume".into(), params: json!({"strip": "A1"}) },
+                    Binding {
+                        control: cc(16),
+                        command: "mixer.stripPan".into(),
+                        params: json!({"strip": "Mix", "encoding": "twos-complement"}),
+                        context: String::new(),
+                    },
+                    Binding {
+                        control: cc(17),
+                        command: "mixer.stripVolume".into(),
+                        params: json!({"strip": "A2", "encoding": "nonsense"}),
+                        context: String::new(),
+                    },
+                    Binding { control: cc(0), command: "mixer.stripVolume".into(), params: json!({"strip": "A1"}), context: String::new() },
                 ],
                 ..Default::default()
             }],
@@ -825,6 +953,39 @@ mod tests {
         let back = serde_json::to_value(&d).unwrap_or_default();
         assert_eq!(back["bindings"][0]["control"]["midi"]["number"], 41);
         assert!(back["bindings"][0].get("params").is_none());
+    }
+
+    #[test]
+    fn a_gesture_binding_stays_in_its_context_and_a_midi_binding_ignores_context() {
+        let gesture = |context: &str, command: &str| Binding {
+            control: ControlId::Gesture { id: "direction.right".into() },
+            command: command.into(),
+            params: Value::Null,
+            context: context.into(),
+        };
+        let mut midi = bind(cc(41), "edit.undo");
+        midi.context = "timeline".into();
+        let mut prefs = ControlSurfacePrefs {
+            devices: vec![DeviceSetting {
+                device: "pointer:seat".into(),
+                bindings: vec![gesture("", "playback.toggle"), gesture("timeline", "playhead.start"), midi.clone()],
+                ..DeviceSetting::default()
+            }],
+            ..ControlSurfacePrefs::default()
+        };
+        assert_eq!(prefs.gesture_binding("pointer:seat", "direction.right", "global").map(|b| b.command.as_str()), Some("playback.toggle"));
+        assert_eq!(prefs.gesture_binding("pointer:seat", "direction.right", "").map(|b| b.command.as_str()), Some("playback.toggle"));
+        assert_eq!(prefs.gesture_binding("pointer:seat", "direction.right", "timeline").map(|b| b.command.as_str()), Some("playhead.start"));
+        assert_eq!(prefs.gesture_binding("pointer:seat", "direction.right", "media"), None, "no fallback to global");
+        assert_eq!(prefs.action("pointer:seat", &cc(41)).map(|a| a.command), Some("edit.undo".into()), "MIDI lookup ignores context");
+        let stored = serde_json::to_value(&midi).unwrap_or_default();
+        assert_eq!(stored["context"], "timeline");
+        let bare = serde_json::to_value(bind(cc(41), "edit.undo")).unwrap_or_default();
+        assert!(bare.get("context").is_none(), "an empty context is not written");
+        prefs.devices[0].bindings.push(gesture("timeline", "playhead.end"));
+        prefs.clamp();
+        let timeline = prefs.devices[0].bindings.iter().filter(|b| b.context == "timeline" && matches!(b.control, ControlId::Gesture { .. })).count();
+        assert_eq!(timeline, 1, "the first gesture binding of a context wins");
     }
 
     #[test]
