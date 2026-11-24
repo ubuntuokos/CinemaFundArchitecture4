@@ -5,8 +5,8 @@
 //! The core reads the dialect-independent part of the format: profile, clock-time values,
 //! producers and chains, playlists (`entry` and `blank`), tractors and their tracks. The
 //! dialect parts (`kdenlive:*`, `shotcut:*` properties) only decide how tracks are typed. What
-//! the importer does not map yet (effects, compositions, nested sequences, unknown generators)
-//! is listed in the [`Report`]; it never makes the import fail.
+//! the importer does not map yet (effects other than Kdenlive's Volume, compositions, nested
+//! sequences, unknown generators) is listed in the [`Report`]; it never makes the import fail.
 //!
 //! Facts about the format are those confirmed in
 //! `docs/plans/CFA4-SHOTCUT-CAPABILITY-ADAPTATION-001-SC5-0-REPORT.md`:
@@ -22,7 +22,7 @@
 use std::collections::HashMap;
 
 use cfa4_media::Generator;
-use cfa4_project::{ClipId, ItemId, Label, Marker, MarkerId, MarkerKind, Sequence, TrackKind};
+use cfa4_project::{ClipId, Interpolation, ItemId, Keyframe, Label, Marker, MarkerId, MarkerKind, Param, ParamValue, Sequence, TrackItem, TrackKind};
 use cfa4_time::{FrameRate, Tick};
 use roxmltree::Node;
 
@@ -421,7 +421,7 @@ impl<'a, 'd> Imp<'a, 'd, '_> {
                     if (speed - 1.0).abs() > 1e-9 {
                         ti.speed = speed;
                     }
-                    self.effects(e, prod);
+                    self.effects(e, prod, &mut ti);
                     let clip = ti.id;
                     match self.b.place(seq, kind, at, ti) {
                         None => self.report.warn("a clip past the supported track count was not imported"),
@@ -516,15 +516,82 @@ impl<'a, 'd> Imp<'a, 'd, '_> {
         resolve_path(resource, base)
     }
 
-    /// Report the effects of a clip: none are mapped yet.
-    fn effects(&mut self, entry: Node<'a, 'd>, prod: Node<'a, 'd>) {
+    /// The effects of a clip: Kdenlive's Volume is mapped ([`Self::volume`]), the rest is reported.
+    fn effects(&mut self, entry: Node<'a, 'd>, prod: Node<'a, 'd>, ti: &mut TrackItem) {
         for f in children(entry, "filter").chain(children(prod, "filter")) {
             if prop(f, "disable") == Some("1") || prop(f, "internal_added").is_some() {
                 continue;
             }
             let service = prop(f, "kdenlive_id").or_else(|| prop(f, "shotcut:filter")).or_else(|| prop(f, "mlt_service")).unwrap_or("?");
+            if self.dialect == Dialect::Kdenlive && service == "volume" && self.volume(f, ti) {
+                continue;
+            }
             self.report.warn(format!("the effect {service:?} is not imported yet"));
         }
+    }
+
+    /// Kdenlive's Volume effect (`kdenlive_id` `volume`, animated `level` in dB; the effect
+    /// description is `data/effects/volume.xml`, CC0) as the audio clip's Volume level. `false`
+    /// when it cannot be mapped (the caller reports it).
+    fn volume(&mut self, f: Node<'a, 'd>, ti: &mut TrackItem) -> bool {
+        if ti.effect("volume").is_none() {
+            return false;
+        }
+        let Some(level) = prop(f, "level") else { return false };
+        let Some(keys) = self.animation(level) else { return false };
+        // CFA4's Volume level runs from -287.5 to +15 dB
+        let clamp = |v: f64| v.clamp(-287.5, 15.0);
+        if keys.iter().any(|(_, v, _)| *v > 15.0) {
+            self.report.warn("a Volume gain above +15 dB was limited to +15 dB");
+        }
+        let first = keys.first().map(|k| clamp(k.1)).unwrap_or(0.0);
+        let mut param = Param::new(ParamValue::Float(first));
+        if keys.len() > 1 {
+            for (frame, v, interp) in &keys {
+                let mut kf = Keyframe::new(self.rate.tick_of(*frame), ParamValue::Float(clamp(*v)));
+                kf.interp = *interp;
+                param.keyframes.push(kf);
+            }
+            param.keyframes.sort_by_key(|k| k.time);
+        }
+        crate::common::set_param(ti, "volume", "level", param);
+        true
+    }
+
+    /// An MLT animation string (`0=1;00:00:01.000~=2;50|=0`: a position (frames or a clock value),
+    /// the operator and the value, separated by `;`) or a plain number, as `(frame, value,
+    /// interpolation)` in position order. `=` is linear, `|=` a hold, `~=` a smooth curve; other
+    /// operators read as linear. `None` for anything else, a negative position (counted from the
+    /// end) included, or more than 10 000 keyframes.
+    fn animation(&mut self, s: &str) -> Option<Vec<(i64, f64, Interpolation)>> {
+        let num = |v: &str| v.trim().trim_end_matches("dB").trim().parse::<f64>().ok().filter(|f| f.is_finite());
+        if let Some(v) = num(s) {
+            return Some(vec![(0, v, Interpolation::Linear)]);
+        }
+        let mut out = Vec::new();
+        for part in s.split(';').map(str::trim).filter(|p| !p.is_empty()) {
+            if out.len() >= 10_000 {
+                return None;
+            }
+            let (pos, interp, value) = if let Some((p, v)) = part.split_once("~=") {
+                (p, Interpolation::AutoBezier, v)
+            } else if let Some((p, v)) = part.split_once("|=") {
+                (p, Interpolation::Hold, v)
+            } else if let Some((p, v)) = part.split_once('=') {
+                // an operator other than `=` (`$=`, `-=`, …) ends the position with that character
+                let p = p.trim_end_matches(['$', '-', '+', '*', '/', '%']);
+                (p, Interpolation::Linear, v)
+            } else {
+                return None;
+            };
+            let frame = self.frames(pos.trim())?;
+            if frame < 0 {
+                return None;
+            }
+            out.push((frame, num(value)?, interp));
+        }
+        out.sort_by_key(|k| k.0);
+        (!out.is_empty()).then_some(out)
     }
 
     /// Report the compositions and transitions of a sequence: none are mapped yet.

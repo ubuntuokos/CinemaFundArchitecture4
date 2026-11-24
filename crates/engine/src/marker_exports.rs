@@ -1,4 +1,4 @@
-//! `export.queue.addFromMarkers` (Kdenlive plan K37): turn the sequence markers into export ranges
+//! `export.queue.addFromMarkers` (Kdenlive plan KDN-37): turn the sequence markers into export ranges
 //! and queue them with `export.queue.add`.
 //!
 //! A range marker (it has a duration) is one range. Point markers are zone boundaries: each one

@@ -137,8 +137,12 @@ proxies (`media.createProxies`, `media.attachProxies`, `media.findCameraProxies`
 (`project.ingestSettings`) and the Project Manager (`file.projectManager`, `pm.*`).
 
 **Short clips**: `edit.deleteShortClips {minFrames, tracks?, ripple?=true, dryRun?=true}` → `{found: [{clip, track, start, frames}], deleted, skippedLocked, ...}`. It finds the clips shorter than `minFrames` frames (locked tracks are skipped and counted). It only reports until `dryRun` is `false`; then it deletes them in one undo step, with `edit.rippleDelete` (a sync-lock conflict refuses the whole call) or, with `ripple: false`, `edit.clear`.
+
 **Marker ranges**: `export.queue.addFromMarkers {markers?, sequence?, …export.queue.add params}` queues one export per range the sequence markers describe: a range marker (with a duration) is one range, point markers are zone starts that end at the next point marker (the last at the end of the sequence). `markers` keeps only markers whose colour name or name matches (case-insensitive). `ranges` and `range` are refused; no match is an error. Returns the `export.queue.add` result.
+
 **Captions as titles**: `captions.importAsTitles {path, offsetTime|offsetSeconds|offsetFrame|offsetTimecode?, track?, size?, font?, fontStyle?, position?, box?}` reads a caption file (any format `captions.import` reads) and places each cue as a `graphics.newText` clip at the cue time, as long as the cue, in one undo step. Inline markup is stripped; cues without text or duration are skipped and counted. `track` is the video track index of `graphics.newText`. No caption track is touched. Returns `{clips, cues, skipped, warnings}`.
+
+**Contact sheet**: `qc.contactSheet {sequence?|item?, frames?=12 (1–64), columns?=4 (1–16), thumb?=160 (16–640 px), path?}` writes a PNG contact sheet of `frames` evenly spaced frames (the middle of each equal part) of the sequence (default: the active one) or a clip item, drawn by the same code as the QC report sheet. `path` must end in `.png`; the default is `<name>.ContactSheet.png` next to the saved project. Changes nothing in the project. Returns `{path, width, height, columns, frames: [{frame, time}]}`.
 
 **Moving clips**: `timeline.move {moves: [{clip, track, time}], insert?, linked?}` → `{moved: [clip ids]}`.
 With Linked Selection on (the default; `linked` overrides the toggle for one call) the linked

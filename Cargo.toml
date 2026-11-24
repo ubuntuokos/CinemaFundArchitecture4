@@ -36,6 +36,7 @@ cfa4-matroska = { path = "crates/matroska" }
 cfa4-mxf = { path = "crates/mxf" }
 cfa4-cfb = { path = "crates/cfb" }
 cfa4-mpegts = { path = "crates/mpegts" }
+cfa4-dvd = { path = "crates/dvd" }
 cfa4-st2110 = { path = "crates/st2110" }
 cfa4-io-core = { path = "crates/io-core" }
 cfa4-mpeg2v = { path = "crates/mpeg2v" }

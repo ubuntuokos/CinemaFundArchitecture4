@@ -1540,6 +1540,14 @@ dependencies = [
 ]
 
 [[package]]
+name = "cfa4-dvd"
+version = "0.10.0"
+dependencies = [
+ "cfa4-mpegts",
+ "thiserror 2.0.21",
+]
+
+[[package]]
 name = "cfa4-edit"
 version = "0.10.0"
 dependencies = [
