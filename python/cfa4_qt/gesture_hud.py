@@ -173,7 +173,7 @@ class GestureLayer(QObject):
         # Qt can deliver this while the object is being constructed or destroyed.
         window = getattr(self, "_window", None)
         hud = getattr(self, "_hud", None)
-        if window is None or hud is None or not hasattr(self, "_down"):
+        if not isinstance(window, QWidget) or not isinstance(hud, GestureHud) or not hasattr(self, "_down"):
             return False
         if watched is window and event.type() == QEvent.Type.Resize:
             hud.setGeometry(window.rect())
