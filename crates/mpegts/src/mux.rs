@@ -142,6 +142,8 @@ pub struct Muxer<W: Write> {
     video_buffer: usize,
     /// DVD-Video VOB layout (see [`Muxer::new_dvd`]).
     dvd: bool,
+    /// DVD: video has been written since the last navigation pack.
+    nav_has_video: bool,
 }
 
 impl<W: Write> Muxer<W> {
@@ -208,6 +210,7 @@ impl<W: Write> Muxer<W> {
             pstd: Vec::new(),
             video_buffer: Self::DEFAULT_VIDEO_BUFFER,
             dvd: false,
+            nav_has_video: false,
         };
         m.build_pstd();
         Ok(m)
@@ -216,8 +219,8 @@ impl<W: Write> Muxer<W> {
     /// A DVD-Video VOB (program stream, 10.08 Mbit/s): every pack is exactly 2048 bytes (short
     /// ones padded with PES header stuffing or a padding packet), the system header is only in the
     /// navigation packs, and an empty navigation pack (private stream 2: a PCI and a DSI packet of
-    /// zeros) starts every video unit written with `key` (the first picture of a GOP, which must
-    /// carry its sequence header): that is where a VOBU begins. The caller fills the packets in
+    /// zeros) starts the VOB and every video unit written with `key` (the first picture of a GOP,
+    /// which must carry its sequence header): that is where a VOBU begins. The caller fills the packets in
     /// afterwards (`cfa4-dvd`). No program end code. `streams[0]` is the video, the others AC-3,
     /// DVD LPCM or MPEG audio.
     pub fn new_dvd(out: W, streams: &[MuxCodec]) -> MuxResult<Self> {
@@ -520,8 +523,14 @@ impl<W: Write> Muxer<W> {
         let video_index = self.streams.iter().take(u.stream).filter(|s| s.codec == MuxCodec::Mpeg2Video).count() as u8;
         let mpa_index = self.streams.iter().take(u.stream).filter(|s| s.codec == MuxCodec::MpegAudio).count() as u8;
         let ac3_index = self.streams.iter().take(u.stream).filter(|s| s.codec == MuxCodec::Ac3).count() as u8;
-        if self.dvd && u.key && codec.is_video() {
-            self.write_nav_pack()?;
+        if self.dvd {
+            // the VOB starts with a navigation pack, and a GOP's first picture follows one
+            // (audio that precedes the first picture stays in the first VOBU)
+            if self.packs == 0 || (u.key && codec.is_video() && self.nav_has_video) {
+                self.write_nav_pack()?;
+                self.nav_has_video = false;
+            }
+            self.nav_has_video |= codec.is_video();
         }
         let mut at = 0;
         let mut first = true;

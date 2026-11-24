@@ -1,0 +1,16 @@
+[package]
+name = "cfa4-dvd"
+description = "DVD-Video authoring: navigation packs (PCI / DSI) of a VOB, and the VIDEO_TS / VTS IFO and BUP files of a one-title disc"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+rust-version.workspace = true
+
+[lints]
+workspace = true
+
+[dependencies]
+thiserror = { workspace = true }
+
+[dev-dependencies]
+cfa4-mpegts = { workspace = true }
