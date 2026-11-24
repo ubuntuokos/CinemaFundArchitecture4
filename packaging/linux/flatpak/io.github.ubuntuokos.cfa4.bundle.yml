@@ -86,8 +86,8 @@ modules:
       - mkdir -p /app/share/icons /app/share/doc && cp -R share/icons/hicolor /app/share/icons/ && cp -R share/doc/cfa4 /app/share/doc/
       # CFA4's FFmpeg (ADR 0005 step 4) with the libraries it loads that the runtime lacks and
       # their licences: the binaries find it in ../lib/cfa4/ffmpeg-VERSION ($ORIGIN RUNPATH; the
-      # tarball carries exactly one, the version of packaging/ffmpeg-version.env, which
-      # flatpak-bundle.sh checks). No patent-restricted encoder: x264/x265 exist only in the
+      # tarball carries exactly one, the version of packaging/ffmpeg-version.env: flatpak-bundle.sh
+      # refuses a tarball with any other or with more than one). No patent-restricted encoder: x264/x265 exist only in the
       # cfa4-restricted-extras .deb.
       - mkdir -p /app/lib/cfa4 && cp -R lib/cfa4/ffmpeg-* /app/lib/cfa4/
       # The Qt 6 GUI (docs/qt-parity.md 1.10), the bundle's command: `flatpak run io.github.ubuntuokos.cfa4`.

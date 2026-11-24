@@ -69,6 +69,10 @@ fi
 . "$ROOT/packaging/ffmpeg-version.env"
 [ -f "$WORK/stage/lib/cfa4/ffmpeg-$CFA4_FFMPEG_VERSION/share/doc/ffmpeg/BUILDINFO" ] \
   || { echo "error: $TARBALL has no lib/cfa4/ffmpeg-$CFA4_FFMPEG_VERSION (build it with package.sh, not --without-ffmpeg)" >&2; exit 1; }
+# The manifest copies lib/cfa4/ffmpeg-*: exactly one FFmpeg build may be there.
+ffmpeg_dirs=("$WORK"/stage/lib/cfa4/ffmpeg-*)
+[ "${#ffmpeg_dirs[@]}" -eq 1 ] \
+  || { echo "error: $TARBALL carries ${#ffmpeg_dirs[@]} FFmpeg builds in lib/cfa4, expected only ffmpeg-$CFA4_FFMPEG_VERSION" >&2; exit 1; }
 [ -x "$WORK/stage/bin/cfa4-qt" ] && [ -d "$WORK/stage/lib/cfa4/python/cfa4_qt" ] \
   || { echo "error: $TARBALL has no Qt GUI (bin/cfa4-qt, lib/cfa4/python)" >&2; exit 1; }
 # The Qt GUI's own PySide6 / Qt 6: the runtime has Python 3 but no PySide6 (docs/qt-parity.md 1.10).
