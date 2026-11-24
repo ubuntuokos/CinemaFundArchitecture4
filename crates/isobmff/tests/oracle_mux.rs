@@ -212,30 +212,36 @@ fn aac_priming_edit() {
     let data = std::fs::read(&src).unwrap();
     let f = open(data.as_slice()).unwrap();
     let t = &f.tracks[0];
-    // the movie timescale of the media, so the edit's length is exact (in milliseconds it would
-    // be rounded)
-    let mut opts = WriterOptions::new(Brand::Mp4);
-    opts.movie_timescale = t.timescale;
-    let mut w = Mp4Writer::new(Cursor::new(Vec::new()), opts).unwrap();
-    let mut cfg = TrackConfig::new(t.entries[0].clone(), t.timescale);
-    cfg.media_start = Some(1024);
-    let k = w.add_track(cfg).unwrap();
-    for (i, s) in t.samples.iter().enumerate() {
-        let d = f.read_sample(data.as_slice(), 0, i).unwrap();
-        w.write_sample(k, WriteSample { data: &d, duration: s.duration, composition_offset: 0, is_sync: true }).unwrap();
+    let ts = u64::from(t.timescale);
+    let total: u64 = t.samples.iter().map(|s| u64::from(s.duration)).sum();
+    // the movie timescale of the media (the edit's length is exact) and the default milliseconds
+    // (the length is rounded down to whole movie ticks and read back in the media timescale)
+    for (name, movie_ts) in [("aac_priming.mp4", t.timescale), ("aac_priming_ms.mp4", 1000)] {
+        let mut opts = WriterOptions::new(Brand::Mp4);
+        opts.movie_timescale = movie_ts;
+        let mut w = Mp4Writer::new(Cursor::new(Vec::new()), opts).unwrap();
+        let mut cfg = TrackConfig::new(t.entries[0].clone(), t.timescale);
+        cfg.media_start = Some(1024);
+        let k = w.add_track(cfg).unwrap();
+        for (i, s) in t.samples.iter().enumerate() {
+            let d = f.read_sample(data.as_slice(), 0, i).unwrap();
+            w.write_sample(k, WriteSample { data: &d, duration: s.duration, composition_offset: 0, is_sync: true }).unwrap();
+        }
+        let out = out_dir().join(name);
+        std::fs::write(&out, w.finish().unwrap().into_inner()).unwrap();
+        decode_clean(&out);
+        let pk = packets(&out);
+        assert_eq!(int(&pk[0]["pts"]), Some(-1024), "{name}");
+        // `media_start` makes one edit from the priming to the end of the media (ISO/IEC 14496-12
+        // §8.6.6; segment_duration in the movie timescale): the samples' total duration less the
+        // priming. Not the source's duration: older FFmpeg trimmed the encoder's padding by
+        // shortening the last sample (then the two were equal), the pinned one keeps every AAC
+        // frame at 1024 and trims the padding with the edit list's length only, which
+        // `media_start` does not copy.
+        let edit = (total - 1024) * u64::from(movie_ts) / ts;
+        let expected = edit * ts / u64::from(movie_ts);
+        assert_eq!(int(&streams(&out)[0]["duration_ts"]), i64::try_from(expected).ok(), "{name}");
     }
-    let out = out_dir().join("aac_priming.mp4");
-    std::fs::write(&out, w.finish().unwrap().into_inner()).unwrap();
-    decode_clean(&out);
-    let pk = packets(&out);
-    assert_eq!(int(&pk[0]["pts"]), Some(-1024));
-    // `media_start` makes one edit from the priming to the end of the media (ISO/IEC 14496-12
-    // §8.6.6): the samples' total duration less the priming. Not the source's duration: older
-    // FFmpeg trimmed the encoder's padding by shortening the last sample (then the two were
-    // equal), the pinned one keeps every AAC frame at 1024 and trims the padding with the edit
-    // list's length only, which `media_start` does not copy.
-    let total: i64 = t.samples.iter().map(|s| i64::from(s.duration)).sum();
-    assert_eq!(int(&streams(&out)[0]["duration_ts"]), Some(total - 1024));
 }
 
 #[test]

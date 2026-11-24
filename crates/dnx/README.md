@@ -81,7 +81,10 @@ its behaviour, and we match it by default:
    (owner decision 2026-11-24). FFmpeg up to 9.0.x decoded and encoded CID 1271 with Table D.4 (the
    CID 1241 weights; fitted RMS error 0.65 against D.4, > 2.6 against every other table) and fixed
    that in FFmpeg 9.1 (commit a598cc99). HQX files written by FFmpeg 9.0.x or older therefore decode
-   slightly differently here than in those FFmpeg versions — the same as in FFmpeg 9.1.
+   slightly differently here than in those FFmpeg versions — the same as in FFmpeg 9.1. The same
+   holds for DNxHR HQX exported by CFA4 before this change (the encoder used D.4 then): those files
+   decode slightly differently than before, in CFA4 and in FFmpeg 9.1 alike. The difference is a
+   change of quantisation weights only (no decode error, frame size or timing change).
 3. **4:4:4 signalling.** ffmpeg writes RGB DNxHR 444 with `CLF = 0`, and Y′CbCr 444 with `CLF = 1`
    plus `ACF = 1` on every macroblock; its channel order is G, B, R (Ch1 = G). The decoder treats
    every 4:4:4 stream as RGB except macroblocks flagged `ACF = 1` (a stream that is entirely
