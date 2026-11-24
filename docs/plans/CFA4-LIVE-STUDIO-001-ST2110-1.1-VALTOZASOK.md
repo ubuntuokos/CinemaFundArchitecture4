@@ -52,3 +52,8 @@ a gép 2,5 GbE-s.
   β = 1,10, lineáris olvasás) és a -22 `TP` jelzés az 1.0-ban helyesek; a `crates/st2110` README ezekkel egyezik.
 - A 1080p50/59,94 sávszélesség-becslések rendje (1080p59,94 4:2:2 10 bit nem fér a 2,5 GbE-re) helyes; csak a
   vonali érték pontosodott (V-16).
+
+## 1.2 (2026-11-24): állapot a `main`-hez igazítva
+
+Nincs új szabványi tétel (V-01–V-20 változatlan). Az 1.2 csak az állapotot és a hivatkozásokat frissíti: a T0 és a T1 kész, a C10 a
+`main`-ben van, a T1b/T4b indítására és a D7 pontosítására (D7a) javaslat van a fő terv 1.5 változatának XI. fejezetében.
