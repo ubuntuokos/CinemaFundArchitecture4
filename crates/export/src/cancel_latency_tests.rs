@@ -176,3 +176,87 @@ fn a_package_file_appears_under_its_final_name_only_when_published() {
     assert_eq!(std::fs::read(dir.join("ASSETMAP.xml")).unwrap(), b"<AssetMap/>");
     assert_eq!(temp_files(&path), 0);
 }
+
+/// C0 v0.1 spec exit condition, "20 cancel/SIGKILL cycles leave 0 partial files": the real kill. The
+/// test binary starts itself as a child that exports DCP packages in a loop (`child_dcp_export_loop`,
+/// active only with `CFA4_SIGKILL_ROOT` set), the parent SIGKILLs it after a different delay each
+/// cycle and inspects what is left. A killed process cannot clean up, so `.cfa4-export-*` temp files
+/// may remain (they are swept by `atomic::sweep_orphans`), but nothing under a final name may be
+/// partial: every `.mxf` must open without warnings, and an asset map exists only next to complete tracks.
+/// Limit of the meter: the track writers hand the file over in few large writes, so a kill rarely lands inside
+/// one; with staging switched off the same 20 cycles also found no partial file. The test therefore measures
+/// the crash behaviour (orphans, sweep, no asset map without tracks); the guarantee itself is shown by
+/// `a_package_file_appears_under_its_final_name_only_when_published`.
+#[test]
+fn child_dcp_export_loop() {
+    let Ok(root) = std::env::var("CFA4_SIGKILL_ROOT") else { return };
+    let root = std::path::PathBuf::from(root);
+    for n in 0.. {
+        let dir = root.join(format!("pkg{n}"));
+        std::fs::create_dir_all(&dir).unwrap();
+        let settings = ExportSettings {
+            format: Format::Dcp,
+            path: dir.to_string_lossy().to_string(),
+            range: Some(cfa4_time::TimeRange::new(cfa4_time::Tick::ZERO, cfa4_time::FrameRate::new(25, 1).tick_of(40))),
+            dcp_content_kind: "test".into(),
+            dcp_language: "hu-HU".into(),
+            ..Default::default()
+        };
+        let (p, seq, m) = project();
+        let _ = export(&p, seq, &settings, &m, &Progress::default());
+    }
+}
+
+#[test]
+fn sigkill_cycles_leave_no_partial_file_under_a_final_name() {
+    if std::env::var("CFA4_SIGKILL_ROOT").is_ok() {
+        return; // this is the child process
+    }
+    let root = std::env::temp_dir().join(format!("fc-export-sigkill-{}", std::process::id()));
+    let _ = std::fs::remove_dir_all(&root);
+    let exe = std::env::current_exe().unwrap();
+    let (mut orphans, mut finals, mut packages_done, mut mid_write) = (0usize, 0usize, 0usize, 0usize);
+    const CYCLES: u64 = 20;
+    for cycle in 0..CYCLES {
+        let dir = root.join(format!("cycle{cycle}"));
+        std::fs::create_dir_all(&dir).unwrap();
+        let mut child = std::process::Command::new(&exe)
+            .args(["--exact", "cancel_latency_tests::child_dcp_export_loop", "--nocapture", "--test-threads=1"])
+            .env("CFA4_SIGKILL_ROOT", &dir)
+            .stdout(std::process::Stdio::null())
+            .stderr(std::process::Stdio::null())
+            .spawn()
+            .unwrap();
+        // 0.3 s .. 4.8 s: a package takes about 4 s, so the kill lands before, during and after the track files
+        std::thread::sleep(Duration::from_millis(300 + (cycle * 237) % 4500));
+        child.kill().unwrap(); // SIGKILL on unix
+        child.wait().unwrap();
+
+        for pkg in std::fs::read_dir(&dir).unwrap().flatten().filter(|e| e.path().is_dir()) {
+            let names: Vec<String> = std::fs::read_dir(pkg.path()).unwrap().flatten().map(|e| e.file_name().to_string_lossy().to_string()).collect();
+            let temps = names.iter().filter(|n| n.starts_with(".cfa4-export-")).count();
+            orphans += temps;
+            mid_write += usize::from(temps > 0);
+            let mxfs: Vec<&String> = names.iter().filter(|n| n.ends_with(".mxf")).collect();
+            for n in &mxfs {
+                let bytes = std::fs::read(pkg.path().join(n)).unwrap();
+                let mxf = cfa4_mxf::open(&bytes).unwrap_or_else(|e| panic!("cycle {cycle}: {n} is partial under its final name: {e:?}"));
+                assert!(mxf.warnings.is_empty(), "cycle {cycle}: {n}: {:?}", mxf.warnings);
+                finals += 1;
+            }
+            if names.iter().any(|n| n.starts_with("ASSETMAP")) {
+                packages_done += 1;
+                assert!(names.iter().any(|n| n.starts_with("PKL") || n.contains("pkl")), "cycle {cycle}: asset map without a PKL: {names:?}");
+                assert!(!mxfs.is_empty(), "cycle {cycle}: asset map without track files: {names:?}");
+            }
+            // the sweep removes what the kill left behind, and only that
+            let swept = atomic::sweep_orphans(&pkg.path(), Duration::ZERO).unwrap();
+            assert_eq!(swept.len(), temps, "cycle {cycle}: sweep removed {} of {temps} orphans", swept.len());
+        }
+    }
+    println!(
+        "C0 SIGKILL: {CYCLES} cycles; {finals} track files under final names, all complete; {packages_done} complete packages; {orphans} orphan temp files in {mid_write} packages (swept)"
+    );
+    assert!(finals + orphans > 0, "no cycle reached a file write: the kill came too early to measure anything");
+    let _ = std::fs::remove_dir_all(&root);
+}
