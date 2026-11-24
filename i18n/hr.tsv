@@ -4921,3 +4921,54 @@ export.summary	Low	niska
 	AS-02 Versions	AS-02 verzije
 	Tick the sequences to write as further versions in the AS-02 bundle	Označite sekvence koje će se zapisati kao dodatne verzije u AS-02 paketu
 	Delete Short Clips	Izbriši kratke isječke
+	A stored combination does not run a command yet.	Spremljena kombinacija još ne pokreće naredbu.
+	Action hint	Natuknica radnje
+	Add combination	Dodaj kombinaciju
+	Add mapping	Dodaj pridruživanje
+	Button Learn	Učenje tipke
+	Button Test	Proba tipke
+	Button name	Naziv tipke
+	Cancel feedback	Signal odustajanja
+	Combination editor	Uređivač kombinacija
+	Context	Kontekst
+	Delete profile	Obriši profil
+	Detected buttons	Otkrivene tipke
+	Draw the gesture with a button held.	Nacrtajte gestu držeći tipku.
+	Error feedback	Signal greške
+	Evdev device	Evdev uređaj
+	Evdev reads the selected device only, and only after a later phase turns it on. This version keeps the Qt path.	Evdev čita samo odabrani uređaj, i tek kad ga kasnija faza uključi. Ova inačica ostaje na Qt putu.
+	Execution feedback	Signal izvršenja
+	Follow the system	Slijedi sustav
+	Gesture	Gesta
+	Gesture Learn	Učenje geste
+	Gesture editor	Uređivač gesti
+	Gesture profiles	Profili gesti
+	Gestures stay off until you turn them on. Turning them on does not block the panel menu.	Geste ostaju isključene dok ih ne uključite. Uključivanje ne blokira izbornik panela.
+	HUD	HUD
+	Hand	Ruka
+	High contrast	Visoki kontrast
+	Hold time	Vrijeme držanja
+	Input access	Pristup ulazu
+	Left-handed	Ljevoruk
+	Mapping	Pridruživanje
+	Maximum length	Najveća duljina
+	Maximum time	Najveće vrijeme
+	Minimum length	Najmanja duljina
+	Mirror ergonomic gestures	Zrcali ergonomske geste
+	Mouse Gestures	Geste miša
+	Mouse Gestures…	Geste miša…
+	No buttons yet. Press one in Button Learn or Button Test.	Još nema tipke. Pritisnite jednu u učenju ili u probi.
+	Press	Pritisak
+	Qt pointer (this application)	Qt pokazivač (ovaj program)
+	Recognition preview	Pretpregled prepoznavanja
+	Reduced animation	Smanjena animacija
+	Right-handed	Dešnjak
+	Roles	Uloge
+	Save gesture	Spremi gestu
+	Save profile	Spremi profil
+	Show the gesture HUD	Prikaži HUD gesti
+	Slop	Zazor
+	Spatial gesture	Prostorna gesta
+	Thresholds	Pragovi
+	Trail	Trag
+	Use gestures in the window	Koristi geste u prozoru

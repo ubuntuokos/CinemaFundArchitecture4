@@ -4918,3 +4918,54 @@ export.summary	Low	低
 	AS-02 Versions	AS-02 版本
 	Tick the sequences to write as further versions in the AS-02 bundle	勾選要作為附加版本寫入 AS-02 套件的序列
 	Delete Short Clips	刪除短片段
+	A stored combination does not run a command yet.	已儲存的組合尚不執行命令。
+	Action hint	操作提示
+	Add combination	新增組合
+	Add mapping	新增對應
+	Button Learn	按鈕學習
+	Button Test	按鈕測試
+	Button name	按鈕名稱
+	Cancel feedback	取消回饋
+	Combination editor	組合編輯器
+	Context	內容脈絡
+	Delete profile	刪除設定檔
+	Detected buttons	偵測到的按鈕
+	Draw the gesture with a button held.	按住按鈕畫出手勢。
+	Error feedback	錯誤回饋
+	Evdev device	evdev 裝置
+	Evdev reads the selected device only, and only after a later phase turns it on. This version keeps the Qt path.	evdev 只讀取所選裝置，而且要到後續階段才會開啟。這一版仍走 Qt 路徑。
+	Execution feedback	執行回饋
+	Follow the system	跟隨系統
+	Gesture	手勢
+	Gesture Learn	手勢學習
+	Gesture editor	手勢編輯器
+	Gesture profiles	手勢設定檔
+	Gestures stay off until you turn them on. Turning them on does not block the panel menu.	手勢在開啟之前保持關閉。開啟它不會擋住面板選單。
+	HUD	HUD
+	Hand	用手
+	High contrast	高對比
+	Hold time	按住時間
+	Input access	輸入存取
+	Left-handed	左手
+	Mapping	對應
+	Maximum length	最大長度
+	Maximum time	最長時間
+	Minimum length	最小長度
+	Mirror ergonomic gestures	鏡像人因手勢
+	Mouse Gestures	滑鼠手勢
+	Mouse Gestures…	滑鼠手勢…
+	No buttons yet. Press one in Button Learn or Button Test.	還沒有按鈕。請在按鈕學習或按鈕測試中按一個。
+	Press	按下
+	Qt pointer (this application)	Qt 指標（此應用程式）
+	Recognition preview	辨識預覽
+	Reduced animation	減少動畫
+	Right-handed	右手
+	Roles	角色
+	Save gesture	儲存手勢
+	Save profile	儲存設定檔
+	Show the gesture HUD	顯示手勢 HUD
+	Slop	餘量
+	Spatial gesture	空間手勢
+	Thresholds	閾值
+	Trail	軌跡
+	Use gestures in the window	在視窗中使用手勢

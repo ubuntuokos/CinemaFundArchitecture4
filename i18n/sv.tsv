@@ -4921,3 +4921,54 @@ export.summary	Low	låg
 	AS-02 Versions	AS-02-versioner
 	Tick the sequences to write as further versions in the AS-02 bundle	Markera de sekvenser som ska skrivas som ytterligare versioner i AS-02-paketet
 	Delete Short Clips	Ta bort korta klipp
+	A stored combination does not run a command yet.	En sparad kombination kör inget kommando ännu.
+	Action hint	Åtgärdstips
+	Add combination	Lägg till kombination
+	Add mapping	Lägg till tilldelning
+	Button Learn	Lär knapp
+	Button Test	Knapptest
+	Button name	Knappnamn
+	Cancel feedback	Avbrottsåterkoppling
+	Combination editor	Kombinationsredigerare
+	Context	Sammanhang
+	Delete profile	Ta bort profil
+	Detected buttons	Upptäckta knappar
+	Draw the gesture with a button held.	Rita gesten med en knapp nedtryckt.
+	Error feedback	Felåterkoppling
+	Evdev device	Evdev-enhet
+	Evdev reads the selected device only, and only after a later phase turns it on. This version keeps the Qt path.	Evdev läser bara den valda enheten, och först när en senare fas slår på den. Den här versionen stannar på Qt-vägen.
+	Execution feedback	Körningsåterkoppling
+	Follow the system	Följ systemet
+	Gesture	Gest
+	Gesture Learn	Lär gest
+	Gesture editor	Gestredigerare
+	Gesture profiles	Gestprofiler
+	Gestures stay off until you turn them on. Turning them on does not block the panel menu.	Gester är av tills du slår på dem. Att slå på dem blockerar inte panelmenyn.
+	HUD	HUD
+	Hand	Hand
+	High contrast	Hög kontrast
+	Hold time	Hålltid
+	Input access	Ingångsåtkomst
+	Left-handed	Vänsterhänt
+	Mapping	Tilldelning
+	Maximum length	Största längd
+	Maximum time	Största tid
+	Minimum length	Minsta längd
+	Mirror ergonomic gestures	Spegla ergonomiska gester
+	Mouse Gestures	Musgester
+	Mouse Gestures…	Musgester…
+	No buttons yet. Press one in Button Learn or Button Test.	Inga knappar ännu. Tryck på en i Lär knapp eller Knapptest.
+	Press	Tryck
+	Qt pointer (this application)	Qt-pekare (detta program)
+	Recognition preview	Igenkänningsförhandsvisning
+	Reduced animation	Minskad animering
+	Right-handed	Högerhänt
+	Roles	Roller
+	Save gesture	Spara gest
+	Save profile	Spara profil
+	Show the gesture HUD	Visa gest-HUD
+	Slop	Dödgång
+	Spatial gesture	Rumslig gest
+	Thresholds	Trösklar
+	Trail	Spår
+	Use gestures in the window	Använd gester i fönstret

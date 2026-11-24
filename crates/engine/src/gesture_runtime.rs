@@ -198,6 +198,16 @@ impl GestureRuntime {
         }
     }
 
+    /// Replace the thresholds. Buttons and an open stroke stay. The caller has already rejected
+    /// a zero or inverted range.
+    pub fn set_thresholds(&mut self, thresholds: Thresholds) {
+        self.thresholds = thresholds;
+    }
+
+    pub fn thresholds(&self) -> Thresholds {
+        self.thresholds
+    }
+
     pub fn enabled(&self) -> bool {
         self.enabled
     }
