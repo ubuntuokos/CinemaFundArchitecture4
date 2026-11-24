@@ -1,11 +1,12 @@
 # CFA4-FFMPEG-9.1-001 – Átállás a CFA4 saját FFmpeg-buildjében 9.0.2-ről 9.1-re
 
-**Verzió:** 1.4 (minden döntés meghozva, végleges jóváhagyásra kész)
+**Verzió:** FINAL 1.4 (jóváhagyva 2026-11-24)
 **Dátum:** 2026-11-24
 **Projekt:** CinemaFundArchitecture4 (CFA4)
 **Állapot:** a tulajdonos (`ubuntuokos`) 2026-11-24-én az irányt jóváhagyta („az irányt jóváhagyom”);
-ez a terv a részleteket rögzíti. A D1–D9 döntéseket a tulajdonos 2026-11-24-én meghozta (VI. fejezet); a terv végleges jóváhagyásra kész. Fejlesztés csak a terv jóváhagyása után indul
-([`coordination.md`](../coordination.md) §2.10).
+ez a terv a részleteket rögzíti. A D1–D9 döntéseket a tulajdonos 2026-11-24-én meghozta (VI. fejezet), és a tervet 2026-11-24-én véglegesen
+jóváhagyta („A tervet jóváhagyom véglegesítsd”). A fejlesztés ennek alapján indulhat
+([`coordination.md`](../coordination.md) §2.10); az F2 részei a IV. fejezet szerint külön jóváhagyáshoz kötöttek.
 **Forrás:** a hivatalos FFmpeg-tároló (<https://github.com/FFmpeg/FFmpeg>): az `n9.1` tag
 (`74e4393595cf2b5857f0da925c4e0dd74ea306e5`, 2026-11-19), a `release/9.1` ág, a `Changelog` „version 9.1”
 szakasza és a `configure` függőségei, 2026-11-24-én átnézve. Az első forrás az UbuntuHandbook cikke volt
