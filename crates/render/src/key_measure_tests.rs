@@ -6,11 +6,9 @@
 use cfa4_project::{ParamValue, find_effect};
 use cfa4_time::Tick;
 
-use crate::effects::{FxCtx, apply, dec};
+use crate::effects::{FxCtx, apply};
 use crate::image::Image;
-
-const W: usize = 192;
-const H: usize = 128;
+use crate::key_synth::{FPS, H, Scene, W, frame};
 
 fn cx() -> FxCtx<'static> {
     FxCtx {
@@ -24,75 +22,6 @@ fn cx() -> FxCtx<'static> {
         frame_rate: 24.0,
         working: cfa4_color::WorkingSpace::Rec709,
     }
-}
-
-#[derive(Clone, Copy)]
-enum Scene {
-    /// Soft-edged disc, even screen.
-    Disc,
-    /// Same, screen brightness varies ±25 % across the frame.
-    Uneven,
-    /// Same, with 2 % sensor noise on every channel.
-    Noisy,
-    /// One-pixel vertical stripes (hair) over the screen.
-    Hair,
-}
-
-struct Rng(u64);
-impl Rng {
-    fn next(&mut self) -> f32 {
-        self.0 ^= self.0 << 13;
-        self.0 ^= self.0 >> 7;
-        self.0 ^= self.0 << 17;
-        ((self.0 >> 40) as f32 / (1u64 << 24) as f32) - 0.5
-    }
-}
-
-/// Returns the keyed-source picture (display-encoded composite, linear premultiplied) and the true alpha.
-fn make(scene: Scene) -> (Image, Vec<f32>) {
-    let mut rng = Rng(0x9E3779B97F4A7C15);
-    let mut truth = vec![0.0f32; W * H];
-    let mut img = Image::new(W, H);
-    let fg = [0.45f32, 0.40, 0.38]; // muted subject, so that spill makes green the dominant channel
-    for y in 0..H {
-        for x in 0..W {
-            let (dx, dy) = (x as f32 - 96.0, y as f32 - 64.0);
-            let d = (dx * dx + dy * dy).sqrt();
-            let mut a = match scene {
-                Scene::Hair => {
-                    if x % 6 == 3 && (24..104).contains(&y) {
-                        1.0
-                    } else {
-                        0.0
-                    }
-                }
-                _ => ((46.0 - d) / 6.0).clamp(0.0, 1.0), // 6 px soft edge
-            };
-            a = a.clamp(0.0, 1.0);
-            let k = match scene {
-                Scene::Uneven => 0.75 + 0.5 * (x as f32 / W as f32),
-                _ => 1.0,
-            };
-            let screen = [0.05 * k, 0.72 * k, 0.18 * k];
-            // spill: foreground picks up green, strongest near the edge
-            let spill = if a > 0.0 { 0.30 * (1.0 - ((46.0 - d) / 30.0).clamp(0.0, 1.0)) } else { 0.0 };
-            let mut c = [0.0f32; 3];
-            for i in 0..3 {
-                let f = if i == 1 { fg[i] + spill } else { fg[i] - spill * 0.2 };
-                c[i] = a * f + (1.0 - a) * screen[i];
-            }
-            if matches!(scene, Scene::Noisy) {
-                for v in &mut c {
-                    *v += rng.next() * 0.04;
-                }
-            }
-            let l = dec([c[0].clamp(0.0, 1.0), c[1].clamp(0.0, 1.0), c[2].clamp(0.0, 1.0)]);
-            let o = (y * W + x) * 4;
-            img.px[o..o + 4].copy_from_slice(&[l[0], l[1], l[2], 1.0]);
-            truth[y * W + x] = a;
-        }
-    }
-    (img, truth)
 }
 
 struct Score {
@@ -147,54 +76,95 @@ fn run(name: &str, tune: impl Fn(&mut cfa4_project::EffectInstance), img: &Image
     o
 }
 
+fn keyers(key: [f32; 4], img: &Image) -> Vec<(&'static str, Image)> {
+    vec![
+        ("ultra default", run("ultra_key", |e| set(e, "key_color", ParamValue::Color(key)), img)),
+        (
+            "ultra relaxed",
+            run(
+                "ultra_key",
+                |e| {
+                    set(e, "key_color", ParamValue::Color(key));
+                    set(e, "setting", ParamValue::Choice(1));
+                },
+                img,
+            ),
+        ),
+        (
+            "ultra aggressive",
+            run(
+                "ultra_key",
+                |e| {
+                    set(e, "key_color", ParamValue::Color(key));
+                    set(e, "setting", ParamValue::Choice(2));
+                },
+                img,
+            ),
+        ),
+        (
+            "color key tol 40",
+            run(
+                "color_key",
+                |e| {
+                    set(e, "color", ParamValue::Color(key));
+                    set(e, "tolerance", ParamValue::Float(40.0));
+                    set(e, "feather", ParamValue::Float(10.0));
+                },
+                img,
+            ),
+        ),
+    ]
+}
+
+const KEY: [f32; 4] = [0.05, 0.72, 0.18, 1.0];
+
 #[test]
 fn key_measure_synthetic_green_screens() {
-    let key = [0.05f32, 0.72, 0.18, 1.0];
-    let names = [(Scene::Disc, "disc"), (Scene::Uneven, "uneven"), (Scene::Noisy, "noisy"), (Scene::Hair, "hair")];
+    let scenes = [(Scene::Disc, "disc"), (Scene::Uneven, "uneven"), (Scene::Noisy, "noisy"), (Scene::Hair, "hair"), (Scene::Smoke, "smoke")];
     println!("scene   | keyer            |   MAE  | edgeMAE |  leak  |  hole  |  spill");
-    for (sc, sn) in names {
-        let (img, truth) = make(sc);
-        let runs: Vec<(&str, Image)> = vec![
-            ("ultra default", run("ultra_key", |e| set(e, "key_color", ParamValue::Color(key)), &img)),
-            (
-                "ultra relaxed",
-                run(
-                    "ultra_key",
-                    |e| {
-                        set(e, "key_color", ParamValue::Color(key));
-                        set(e, "setting", ParamValue::Choice(1));
-                    },
-                    &img,
-                ),
-            ),
-            (
-                "ultra aggressive",
-                run(
-                    "ultra_key",
-                    |e| {
-                        set(e, "key_color", ParamValue::Color(key));
-                        set(e, "setting", ParamValue::Choice(2));
-                    },
-                    &img,
-                ),
-            ),
-            (
-                "color key tol 40",
-                run(
-                    "color_key",
-                    |e| {
-                        set(e, "color", ParamValue::Color(key));
-                        set(e, "tolerance", ParamValue::Float(40.0));
-                        set(e, "feather", ParamValue::Float(10.0));
-                    },
-                    &img,
-                ),
-            ),
-        ];
-        for (n, out) in runs {
+    for (sc, sn) in scenes {
+        let (img, truth) = frame(sc, 0);
+        for (n, out) in keyers(KEY, &img) {
             let s = score(&out, &truth);
             assert!(s.mae.is_finite() && s.mae <= 1.0, "{sn}/{n}: matte error is not a probability");
             println!("{sn:<7} | {n:<16} | {:.4} | {:.4}  | {:.4} | {:.4} | {:.4}", s.mae, s.edge_mae, s.leak, s.hole, s.spill);
         }
+    }
+}
+
+/// Moving subject with noise over 12 frames (half a second): mean error per keyer, and temporal flicker of the matte
+/// (mean absolute alpha change between consecutive frames, against the change in the truth).
+#[test]
+fn key_measure_motion_and_flicker() {
+    const FRAMES: usize = 12;
+    let names = ["ultra default", "ultra relaxed", "ultra aggressive", "color key tol 40"];
+    let mut mae = [0.0f32; 4];
+    let mut flicker = [0.0f32; 4];
+    let mut prev: Option<Vec<Vec<f32>>> = None;
+    let mut prev_truth: Option<Vec<f32>> = None;
+    let mut truth_change = 0.0f32;
+    for f in 0..FRAMES {
+        let (img, truth) = frame(Scene::Motion, f);
+        let alphas: Vec<Vec<f32>> = keyers(KEY, &img)
+            .into_iter()
+            .enumerate()
+            .map(|(i, (_, out))| {
+                mae[i] += score(&out, &truth).mae / FRAMES as f32;
+                out.px.chunks(4).map(|p| p[3]).collect()
+            })
+            .collect();
+        if let (Some(pa), Some(pt)) = (&prev, &prev_truth) {
+            for i in 0..4 {
+                flicker[i] += alphas[i].iter().zip(&pa[i]).map(|(a, b)| (a - b).abs()).sum::<f32>() / (W * H) as f32 / (FRAMES - 1) as f32;
+            }
+            truth_change += truth.iter().zip(pt).map(|(a, b)| (a - b).abs()).sum::<f32>() / (W * H) as f32 / (FRAMES - 1) as f32;
+        }
+        prev = Some(alphas);
+        prev_truth = Some(truth);
+    }
+    println!("motion ({FRAMES} frames at {FPS} fps) | keyer            |  MAE  | mean |dAlpha| between frames (truth: {truth_change:.4})");
+    for i in 0..4 {
+        assert!(mae[i].is_finite() && flicker[i].is_finite());
+        println!("motion  | {:<16} | {:.4} | {:.4}", names[i], mae[i], flicker[i]);
     }
 }
