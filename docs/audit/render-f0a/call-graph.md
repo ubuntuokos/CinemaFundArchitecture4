@@ -382,6 +382,7 @@ graph LR
 | `cfa4-engine/remix.rs` | `cfa4-project` | `ClipId`, `ItemKind` |
 | `cfa4-engine/remix.rs` | `cfa4-render` | `SourceProvider`, `remix` |
 | `cfa4-engine/remix.rs` | `cfa4-time` | `Tick`, `parse_timecode` |
+| `cfa4-engine/render_job.rs` | `cfa4-export` | `ExportError`, `Progress`, `Report` |
 | `cfa4-engine/scene_detect.rs` | `cfa4-export` | `Report` |
 | `cfa4-engine/scene_detect.rs` | `cfa4-media` | `FrameRequest`, `SharedSource` |
 | `cfa4-engine/scene_detect.rs` | `cfa4-project` | `ClipId`, `Project` |

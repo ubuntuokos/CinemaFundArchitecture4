@@ -10361,6 +10361,21 @@
    "to": "cfa4-time"
   },
   {
+   "from": "cfa4-engine/render_job.rs",
+   "item": "ExportError",
+   "to": "cfa4-export"
+  },
+  {
+   "from": "cfa4-engine/render_job.rs",
+   "item": "Progress",
+   "to": "cfa4-export"
+  },
+  {
+   "from": "cfa4-engine/render_job.rs",
+   "item": "Report",
+   "to": "cfa4-export"
+  },
+  {
    "from": "cfa4-engine/scene_detect.rs",
    "item": "Report",
    "to": "cfa4-export"

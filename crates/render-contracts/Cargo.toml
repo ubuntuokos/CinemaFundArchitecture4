@@ -1,0 +1,23 @@
+[package]
+name = "cfa4-render-contracts"
+description = "CFA4 render contracts v0 (layer L3, phase C0 of CFA4-RENDER-INTEGRATION-PLAN-001): one place that names the Frame ABI, job API and conversion types the render stack shares, plus the new thin types (matte plane, capability, audio layout, worker protocol, capture trait)"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+rust-version.workspace = true
+
+[lints]
+workspace = true
+
+[dependencies]
+cfa4-frame = { workspace = true }
+cfa4-route = { workspace = true }
+cfa4-tasks = { workspace = true }
+cfa4-time = { workspace = true }
+serde = { workspace = true }
+sha2 = { workspace = true }
+thiserror = { workspace = true }
+
+[dev-dependencies]
+serde_json = { workspace = true }
+cfa4-color = { workspace = true }
