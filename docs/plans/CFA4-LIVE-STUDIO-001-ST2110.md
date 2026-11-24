@@ -1,9 +1,9 @@
 # CFA4-LIVE-STUDIO-001 kiegészítés – SMPTE ST 2110 az élő stúdióban
 
-**Verzió:** 1.2 (**JAVASLAT**, a tulajdonos jóváhagyására vár; az 1.0 jóváhagyása az 1.0 szövegére marad érvényes; az 1.2 az 1.1 javaslatra épül, #1806, és az állapotot a `main`-hez igazítja)
+**Verzió:** 1.2 (a tulajdonos 2026-11-24-én jóváhagyta; az 1.1 (#1806) tartalmát is, és az állapotot a `main`-hez igazítja)
 **Dátum:** 2026-11-24 (1.0: 2026-11-11)
 **Projekt:** CinemaFundArchitecture4 (CFA4)
-**Kiegészíti:** [CFA4-LIVE-STUDIO-001](CFA4-LIVE-STUDIO-001.md) (v1.5 javaslat; a nyitott döntések a fő terv XI. fejezetében), D4 (csak nyílt protokollok)
+**Kiegészíti:** [CFA4-LIVE-STUDIO-001](CFA4-LIVE-STUDIO-001.md) (v1.5; a döntések a fő terv XI. fejezetében), D4 (csak nyílt protokollok)
 **Változásnapló:** [CFA4-LIVE-STUDIO-001-ST2110-1.1-VALTOZASOK.md](CFA4-LIVE-STUDIO-001-ST2110-1.1-VALTOZASOK.md)
 (V-01–V-20; a szakaszok végén zárójelben a tételazonosító).
 **Állapot:** a tulajdonos (`ubuntuokos`) 2026-11-11-én megerősítette, hogy az ST 2110 nyílt
@@ -204,11 +204,10 @@ kapukkal. A fő terv fázisaihoz kötve (VI. fejezet a fő tervben):
 | **T6** – Tömörített kép (-22) | VC-2 (D10), CBR, 90 kHz, `b=AS`, N vagy W forgalom | T4, D10 | egy -22 folyam be és ki a referenciagépen, bitsebesség és késleltetés mérve |
 | **T7** – Kezelés és felület | NMOS IS-04/IS-05 (D11); Élő munkaterület: folyamok, SDP, PTP-állapot, hibaszámlálók (Qt6, a D7 szerint a Qt6 befejezése után) | T4, D7 | egy NMOS-vezérlő felderíti és bekapcsolja a CFA4 küldőit és vevőit |
 
-**Megvalósítási állapot (2026-11-24):** T0 kész (#1002, 2026-11-13), T1 kész (#1128, 2026-11-15); T1b és T4b javasolt,
-jóváhagyásra vár; a többi fázis nincs elkezdve. A C10 előfeltétele (`crates/live`) a `main`-ben van, így a T4b-nek csak a T4
-hiányzik. **Javaslat a T1b/T4b-re** (fő terv XI.2): a T1b jóváhagyása és indítása (CodeRabbit kell, `crates/st2110`); a
-T4b elvi jóváhagyása, indítása a T4 után. **A T7 Qt6-oldala** a D7 szerint vár; a motor- és parancsoldalra a D7a
-javaslat (fő terv XI.1) vonatkozna.
+**Megvalósítási állapot (2026-11-24):** T0 kész (#1002, 2026-11-13), T1 kész (#1128, 2026-11-15); T1b jóváhagyva (2026-11-24), indítható;
+T4b elvileg jóváhagyva; a többi fázis nincs elkezdve. A C10 előfeltétele (`crates/live`) a `main`-ben van, így a T4b-nek csak a T4
+hiányzik. **Döntés (fő terv XI.2):** a T1b indítható (CodeRabbit kell, `crates/st2110`); a T4b a T4 után indul.
+**A T7 Qt6-oldala** a D7 szerint vár; a motor- és parancsoldalra a D7a (fő terv XI.1) vonatkozik.
 
 **Ütemezés (v1.1):** a T1b a T2 előtt, a T4b a T4 és a C10 után jön; mindkettő a tulajdonos jóváhagyását
 kéri (§2.10). **Ütemezés (1.0):** a T0 és a T1 nem érinti a Qt6 fájljait és a libobs-ot, ezért az S0-hoz hasonlóan

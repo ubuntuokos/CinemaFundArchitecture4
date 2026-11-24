@@ -1,10 +1,10 @@
 # CFA4-LIVE-STUDIO-001 – Az OBS Studio képességei a CFA4-ben
 
-**Verzió:** 1.5 (a 1.5 **JAVASLAT**: a tulajdonos jóváhagyására vár; az 1.4 jóváhagyott szövege a nyitott döntések kivételével érvényes)
+**Verzió:** 1.5 (a tulajdonos 2026-11-24-én jóváhagyta: D7a, T1b, T4b elvi jóváhagyás, #1212 lezárása)
 **Dátum:** 2026-11-24 (1.4: 2026-11-21, 1.3: 2026-11-11, 1.2: 2026-11-11, 1.1: 2026-11-10, 1.0: 2026-11-09)
 **Projekt:** CinemaFundArchitecture4 (CFA4)
 **Állapot:** a tulajdonos (`ubuntuokos`) 2026-11-09-én lépésenként egyeztette és jóváhagyta; az **S0
-fázis indítását is jóváhagyta** (2026-11-09). Az S1-től a Qt6-munkaterület a Qt6 felület befejezése után készül (D7; az 1.5 javaslata szerint a motor- és hostoldal nem várja meg, D7a).
+fázis indítását is jóváhagyta** (2026-11-09). Az S1-től a Qt6-munkaterület a Qt6 felület befejezése után készül (D7; a D7a szerint a motor- és hostoldal nem várja meg).
 Az 1.1-ben a D3 újra nyitott (a WPE WebKit nincs az Ubuntu 26.04-ben), és rögzítve, hogy a C10 a
 terv előfeltétele; az 1.2-ben a tulajdonos a D3-at a Qt WebEngine-nel döntötte el (2026-11-11). Az 1.3-ban
 a D4 kiegészítve: az SMPTE ST 2110 is nyílt protokoll ([kiegészítés](CFA4-LIVE-STUDIO-001-ST2110.md), a
@@ -12,7 +12,7 @@ tulajdonos 2026-11-11-i megerősítésével). Az 1.4-ben az S5 a közös rögzí
 (CFA4-DECKLINK-READY-001 V3, R2; a tulajdonos jóváhagyta 2026-11-21-én; lásd a X. mellékletet). Az 1.5
 (2026-11-24, javaslat) a tervet a megvalósult állapothoz igazítja: új a VI.a (megvalósítási állapot) és a XI
 (nyitott döntések) fejezet, javított II. fejezet (a C10 és az S0–S1b már a `main`-ben van), és a D7
-pontosítására tett javaslat (D7a, XI. fejezet). Az ST 2110 kiegészítés 1.1 javaslata ([#1806]) és az 1.2 ezzel
+pontosítása (D7a, XI. fejezet; a tulajdonos jóváhagyta 2026-11-24-én). Az ST 2110 kiegészítés 1.1 ([#1806]) és 1.2 ezzel
 egységes; a két dokumentum együtt a teljes terv.
 **Kapcsolódik:** [`VISION.md`](../../VISION.md) 4. és 8. pont (élő adás), `docs/credits-plan.md`
 C10 (élő grafika, `crates/live`; a `main`-ben, az előfeltétel teljesült), [ADR 0001](../adr/0001-platform-ffi.md) (FFI),
@@ -39,7 +39,7 @@ C10 (élő grafika, `crates/live`; a `main`-ben, az előfeltétel teljesült), [
    az ST 2110: [kiegészítés](CFA4-LIVE-STUDIO-001-ST2110.md)).
 9. **Önálló „Élő” munkaterület** a Qt6 felületen; a C10 Élő grafika ablaka beleolvad (D5).
 10. **Műsorterv (rundown)** a terv része, az S4a fázisban (D6).
-11. **Ütemezés:** az S0 most indulhat, az S1-től minden a Qt6 befejezése után (D7; a gyakorlat és a D7a javaslat: XI. fejezet).
+11. **Ütemezés:** az S0 most indulhat, az S1-től minden a Qt6 befejezése után (D7; pontosítva a D7a-val: XI. fejezet).
 12. **Bemenetek, kép és hang, stúdió mód, kimenetek, kódolók, vezérlés, átállás, mérés:** az
    egyeztetés szerinti felsorolással (IV. fejezet).
 
@@ -145,12 +145,13 @@ munkával ütközésnél a Qt6 megy előre. Az állapot (mi kész, mi hátra) a 
 | S2–S12+ | **hátra** | nincs elkezdve |
 | T0 | **kész** | #1002 (`crates/st2110`: RTP, SDP, -20 csomagolás), 2026-11-13 |
 | T1 | **kész** | #1128 (SMPTE Epoch médiaóra, PTP-állapot, SDP-órák), 2026-11-15 |
-| T1b, T4b | **javasolt, jóváhagyásra vár** | [ST 2110 kiegészítés](CFA4-LIVE-STUDIO-001-ST2110.md) v1.1/1.2, XI.2 |
+| T1b | **jóváhagyva (2026-11-24), indítható** | [ST 2110 kiegészítés](CFA4-LIVE-STUDIO-001-ST2110.md) v1.2, XI.2 |
+| T4b | **elvileg jóváhagyva, indítás a T4 után** | ugyanott, XI.2 |
 | T2–T7 | **hátra** | előfeltételeik az S-fázisok |
 
 **Mi a következő?** Az S1c és az S2 (rögzítő bemenetek) a Qt6-munkához kötött (D7). Qt6-tól független, azonnal
-indítható (jóváhagyás után): T1b (kicsi, a kész T1 pontosítása). Az S3 (hangkeverő), S5 (felvétel), S6 (streamelés) és
-S7 (kódolók) motor- és hostoldali része a D7a elfogadása esetén indulhat; a T2 az S3-ra, a T3 az S2-re vár.
+indítható: T1b (kicsi, a kész T1 pontosítása). Az S3 (hangkeverő), S5 (felvétel), S6 (streamelés) és
+S7 (kódolók) motor- és hostoldali része a D7a szerint indulhat; a T2 az S3-ra, a T3 az S2-re vár.
 A fázisok sorrendje és előfeltételei változatlanok.
 
 ## VII. Döntések (2026-11-09-én lépésenként egyeztetve, mind eldöntve; a D3 2026-11-11-én újra)
@@ -163,7 +164,7 @@ A fázisok sorrendje és előfeltételei változatlanok.
 | D4 | Zárt protokollok | **Eldöntve (2026-11-09): csak nyílt protokollok** (SRT, RIST, WHIP/WebRTC, RTMP); NDI és más zárt SDK-t igénylő protokoll nincs. **Kiegészítve (2026-11-11):** az SMPTE ST 2110 is a nyílt protokollok közé tartozik; fázisai (T0–T7) és döntései (D8–D12) a [kiegészítésben](CFA4-LIVE-STUDIO-001-ST2110.md) |
 | D5 | Az élő stúdió helye | **Eldöntve (2026-11-09): önálló „Élő” munkaterület** a szerkesztés, szín, hang mellett (középen előnézet és program, lent jelenetek, források, hangkeverő, oldalt átmenetek és vezérlés); a C10 Élő grafika ablaka ide kerül át; közös projekt |
 | D6 | Műsorterv (rundown) | **Eldöntve (2026-11-09): a terv része**, az S4a fázisban (az S4 stúdió mód után); a `VISION.md` 8. pontjának nyitott kérdését ezzel a tulajdonos lezárta |
-| D7 | Ütemezés | **Eldöntve (2026-11-09): az S0 most indulhat** (nem érinti a Qt6 fájljait), **az S1-től minden a Qt6 befejezése után**. **Pontosítás javasolva (1.5, nyitott): D7a, lásd XI.1.** A szöveg szó szerint az S1-et is a Qt6 utánra teszi, a motor- és hostoldali S1a/S1b (2026-11-13/14) mégis a `main`-ben van; a javaslat ezt rendezi, a Qt6 elsőbbségét nem érinti |
+| D7 | Ütemezés | **Eldöntve (2026-11-09): az S0 most indulhat** (nem érinti a Qt6 fájljait), **az S1-től minden a Qt6 befejezése után**. **Pontosítva (D7a, 1.5, eldöntve 2026-11-24): lásd XI.1.** A szöveg szó szerint az S1-et is a Qt6 utánra teszi, a motor- és hostoldali S1a/S1b (2026-11-13/14) mégis a `main`-ben van; a D7a ezt rendezi, a Qt6 elsőbbségét nem érinti |
 
 ## VIII. Kockázatok
 
@@ -239,10 +240,9 @@ RecordReport {
 - Döntés (István, 2026-11-21): az `Mxf` az első S5 körben nem kötelező, csak a natív (DeckLink)
   háttérnél.
 
-## XI. Nyitott döntések (1.5 javaslat; a tulajdonos dönt)
+## XI. Döntések az 1.5-ben (a tulajdonos 2026-11-24-én mindhármat a javaslat szerint jóváhagyta)
 
-A terv eddigi döntései (D1–D12) érvényben maradnak. Az alábbiak a megvalósítás során kiderült hiányok; mindegyiknél
-javaslat van, döntés nincs, és a tervváltozás a jóváhagyásig nem lép életbe (`docs/coordination.md` §2.10).
+A terv eddigi döntései (D1–D12) érvényben maradnak. Az alábbiak a megvalósítás során kiderült hiányok és az eldöntésük.
 
 ### XI.1 D7a: mit jelent az „S1-től a Qt6 után”
 
@@ -250,7 +250,7 @@ javaslat van, döntés nincs, és a tervváltozás a jóváhagyásig nem lép é
 (parancsok, jelenetmodell, host, nincs Qt6-fájl érintve) viszont már a `main`-ben van; a Qt6-munkaterület még nincs, a
 Qt6–egui paritás sem teljes (`docs/qt-parity.md`).
 
-**Javaslat (ajánlott): D7a.** A D7 hatálya a **Qt6 felület fájljaira** terjed ki: az „Élő” munkaterület (S1c és
+**Eldöntve (2026-11-24): D7a.** A D7 hatálya a **Qt6 felület fájljaira** terjed ki: az „Élő” munkaterület (S1c és
 minden későbbi UI) a Qt6 befejezése után készül. A **motor-, host- és parancsoldal** (`crates/obs`, `crates/engine`,
 `apps/cfa4-studio-host`, `crates/st2110`, a `live.studio.*` parancsok) a Qt6-tól függetlenül haladhat, mert nem ütközik vele, és
 minden parancs a vezérlőcsatornán és a CLI-n át használható és tesztelhető. Az S1a/S1b ezt az olvasatot követte, és a tulajdonos
@@ -258,17 +258,17 @@ beolvasztotta.
 - *Mellette:* az adás-kritikus motor- és hostmunka (mérés, never-crash) nem vár a felületre; az ügynökök és az MCP már használják.
 - *Ellene:* a felület nélkül nincs végfelhasználói próba; a terv szerinti sorrendtől eltérés. Ezt enyhíti, hogy az S0b ablak mutatja a programképet.
 
-**Alternatíva:** a D7 szó szerint: az S1-től minden megáll a Qt6 befejezéséig, az S1a/S1b kivétel utólagos jóváhagyással.
+**Elvetett alternatíva:** a D7 szó szerint (az S1-től minden megáll a Qt6 befejezéséig).
 
 ### XI.2 T1b és T4b indítása
 
-- **T1b** (kicsi, a kész T1 pontosítása: V-03–V-07, V-10): javaslat: **jóváhagyás és indítás**. Kockázatos terület
+- **T1b** (kicsi, a kész T1 pontosítása: V-03–V-07, V-10): **jóváhagyva, indítható**. Kockázatos terület
   (`crates/st2110`), ezért CodeRabbit kell.
-- **T4b** (fill + key): javaslat: **elvi jóváhagyás, indítás a T4 után**. A C10 előfeltétele (`crates/live`) már teljesült;
+- **T4b** (fill + key): **elvileg jóváhagyva, indítás a T4 után**. A C10 előfeltétele (`crates/live`) már teljesült;
   a T4 még nincs elkezdve.
 
 ### XI.3 A #1212 „Gazda:” issue lezárása
 
-A #1212 által várt PR-ok (#1129, #1189, #1128) a `main`-ben vannak (#1189 tartalma az `738b03ae3`-ban, nem a #1189 PR-ral). Javaslat: az issue lezárása.
+A #1212 által várt PR-ok (#1129, #1189, #1128) a `main`-ben vannak (#1189 tartalma az `738b03ae3`-ban, nem a #1189 PR-ral). Döntés: az issue lezárható a #1808 beolvasztása után.
 
 [#1806]: https://github.com/ubuntuokos/CinemaFundArchitecture4/pull/1806
