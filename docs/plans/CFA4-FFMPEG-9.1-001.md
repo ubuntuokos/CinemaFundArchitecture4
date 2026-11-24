@@ -1,10 +1,10 @@
 # CFA4-FFMPEG-9.1-001 – Átállás a CFA4 saját FFmpeg-buildjében 9.0.2-ről 9.1-re
 
-**Verzió:** 1.0 (tervezet, jóváhagyásra vár)
+**Verzió:** 1.1 (a D1–D7 eldöntve, végleges jóváhagyásra vár)
 **Dátum:** 2026-11-24
 **Projekt:** CinemaFundArchitecture4 (CFA4)
 **Állapot:** a tulajdonos (`ubuntuokos`) 2026-11-24-én az irányt jóváhagyta („az irányt jóváhagyom”);
-ez a terv a részleteket rögzíti. Fejlesztés csak a terv jóváhagyása után indul
+ez a terv a részleteket rögzíti. A D1–D7 döntéseket a tulajdonos 2026-11-24-én meghozta (VI. fejezet). Fejlesztés csak a terv jóváhagyása után indul
 ([`coordination.md`](../coordination.md) §2.10).
 **Forrás:** UbuntuHandbook, „FFmpeg 9.1 Released with Several New Audio/Video Codec Support”
 (2026-11-21). A változáslistát az F1 elején a hivatalos `Changelog`-gal és a forrás-tarball
@@ -47,10 +47,10 @@ Az FFmpeg továbbra is kiegészítő háttér a `cfa4-route` mögött.
 | R2 | Az F0 viselkedést nem változtat: továbbra is 9.0.2 épül, ugyanazokra az útvonalakra. | Teljes validáció (`cfa4-full-validation`) zöld; a `package.sh` négy formátuma ugyanazt a BUILDINFO-t adja, mint előtte. |
 | R3 | A 9.1-es forrás hitelesítve van (a hivatalos tarball aláírása és SHA-256-ja), és a változáslista megerősítve. | A fetch/build szkript ellenőrzi az aláírást és a checksumot; a BUILDINFO rögzíti őket; a III/IV. táblák eltérései a PR-ban jelezve. |
 | R4 | A 9.1-es alapbuild és a `--restricted` változat GPL-3, nonfree nélkül; az előre fordított kiadás (`ffmpeg-9.1-cfa4-1`) elkészül. | A `build-ffmpeg` szkript licencellenőrzése; `cfa4-ffmpeg-prebuilt.yml` sikeres; a `fetch` szkript az új SHA-256-ot ellenőrzi. |
-| R5 | A `crates/ffmpeg` a 9.1-gyel fordul és fut. A Rust-kötések újragenerálva (`scripts/dev/vendor_ffmpeg_bindings.py`), a minimumverzió a D5 szerint. | `cargo test -p cfa4-ffmpeg --features ffmpeg` zöld; a 9.0.2-nél régebbi, LGPL-es vagy nonfree build elutasítva (meglévő tesztek). |
+| R5 | A `crates/ffmpeg` a 9.1-gyel fordul és fut. A Rust-kötések újragenerálva (`scripts/dev/vendor_ffmpeg_bindings.py`), a minimumverzió 9.1 (D5). | `cargo test -p cfa4-ffmpeg --features ffmpeg` zöld; a 9.1-nél régebbi, LGPL-es vagy nonfree build elutasítva (meglévő tesztek). |
 | R6 | Minden FFmpeg-orákulum és fuzz-seed a 9.1-gyel fut; a bitpontos összevetések nem romlanak. | `ci-linux.yml`, `cfa4-fuzz.yml`, `cfa4-av2-oracle.yml` zöld; ha egy orákulum eredménye 9.0.2-höz képest változik, az okát a PR rögzíti. |
 | R7 | A csomagok (.deb, tar.gz, AppImage, Flatpak, restricted extras) a 9.1-et szállítják, és a régi `/opt/cfa4/ffmpeg-9.0.2` telepítés frissítéskor nem marad árván. | `package.sh` négy formátuma; `cfa4-cli` a 9.1-et jelzi elérhetőnek; .deb frissítési próba 9.0.2-ről (a régi könyvtár eltávolítva vagy a csomagkezelő által kezelve). |
-| R8 | ADR 0005 és a doksik a 9.1-et írják, az i18n-szöveg verziója a D5 szerint. | Doksi-átnézés; az `i18n` kulcs minden nyelven frissítve. |
+| R8 | ADR 0005 és a doksik a 9.1-et írják, az i18n-szöveg „FFmpeg 9.1 vagy újabb” (D5). | Doksi-átnézés; az `i18n` kulcs minden nyelven frissítve. |
 | R9 | Hardveres gyorsítás felmérése a 9.1-gyel (`scripts/dev/audit-ffmpeg-hwaccel.sh`), az NVDEC CUDA Array hatása a referenciagépen (RTX A1000). | Mérési jelentés a `docs/audit/` alatt; ha a fizikai mérés kimarad, sor a [`deferred-physical-tests.md`](../development/deferred-physical-tests.md) listában (§2.14). |
 | R10 | Az F2 minden új képessége a `cfa4-route` mögött, kötelező CPU-tartalékkal (a 2026-10-25-i router-döntés szerint), és csak ott, ahol a saját motor még nem tudja. | Router-tesztek: GPU nélkül a CPU-út fut; a képesség-tábla (`available(format)`) helyesen jelez. |
 | R11 | A biztonsági terv érvényes marad: az FFmpeg hálózat nélkül, külön sandboxolt folyamatban fut; az új `libcurl` protokoll nincs bekapcsolva. | `ffmpeg -protocols` nem listáz `libcurl`-t; a `-buildconf` nem tartalmaz `--enable-libcurl`-t (build-szkript ellenőrzés). |
@@ -74,10 +74,10 @@ A fázisok csak a függőségeket rögzítik. A sorrendről és az időzítésr�
 ### F1 – Átállás 9.1-re – R3–R9, R11
 
 1. Forrás: a hivatalos tarball letöltése, aláírás és SHA-256 ellenőrzése, a `Changelog` összevetése a
-   cikkel (R3). A build-flagek változatlanok, kivéve a D2 szerinti AMF-et.
+   cikkel (R3). A build-flagek változatlanok, egy kivétellel: bekerül az `--enable-amf` (D2). Az AMF-fejlécek forrása: Ubuntu 26.04-csomag, ha van; ha nincs, rögzített forrás SHA-256-tal. Az AMD AMF-runtime-ot futáskor tölti be; hiányában a VA-API, a Vulkan vagy a CPU út fut.
 2. Az alap- és a restricted build helyi és CI-futtatása. Az előre fordított kiadás (`ffmpeg-9.1-cfa4-1`)
    a `cfa4-ffmpeg-prebuilt.yml`-lel készül.
-3. A Rust-kötések újragenerálása, a `crates/ffmpeg` API-igazítása, a minimumverzió a D5 szerint.
+3. A Rust-kötések újragenerálása, a `crates/ffmpeg` API-igazítása, a minimumverzió 9.1 (D5).
 4. A cache-kulcs cseréje (`…-9.1-…-v8`); az orákulumok és fuzz-seedek újragenerálása; az eltérések
    kivizsgálása (R6). Számolni kell egy kb. 2 órás egyszeri FFmpeg-újraépítéssel.
 5. Csomagolás: új útvonal (`/opt/cfa4/ffmpeg-9.1`, `lib/cfa4/ffmpeg-9.1`), RUNPATH, a régi könyvtár
@@ -93,13 +93,13 @@ A fázisok csak a függőségeket rögzítik. A sorrendről és az időzítésr�
 | F2b | APV kódolás (orákulum) | Második független APV-forrás a `crates/apv` oda-vissza tesztjéhez (az OpenAPV mellett, [ADR 0003](../adr/ADR-0003-aswf-and-conversion-sources.md) A1). | R6 |
 | F2c | LCEVC payload-merge BSF, LCEVC az MPEG-TS muxerben | Tesztanyag-előállítás a `crates/lcevc` hátralékához (`lvc1` sáv és TS 0x36 hordozás, ma csak felismerve, 10–20 óra, [`codec-parity.md`](../codec-parity.md)). Csak orákulum; a dekódolás saját marad. | R6 |
 | F2d | Panasonic RW2 dekódolás | Az első kamera-RAW, amit a CFA4 megnyit (#345, #383), az FFmpeg-háttéren át. A saját dekóder kérdése D3. | R10 |
-| F2e | AMF Video Quality Enhancer | AMD-n futó minőségjavító szűrő a routerben. Csak D2 = igen esetén. | R10 |
+| F2e | AMF Video Quality Enhancer | AMD-n futó minőségjavító szűrő a routerben (D2: az AMF bekerül). | R10 |
 | F2f | NVDEC CUDA Array | Dekódolási gyorsítás NVIDIA-n a meglévő NVDEC-útvonalon; a VA-API és a Vulkan útvonal egyenrangú marad. | R9, R10 |
 | F2g | gainmap szűrő, JPEG MPF muxer/demuxer | HDR gain map képek (Ultra HDR / MPF) be- és kivitele. | R10 |
 | F2h | DVD-Audio LPCM dekódolás, DSD kódolás | A hiányzó DVD- és hi-fi audioútvonal ([`target-app-parity.md`](../target-app-parity.md): MPEG-2 / DVD hiányzik). | R10 |
 | F2i | Rhetorex ADPCM, ADPCM IMA Citrix, Infinity IMM6, MVR demuxer | Ritka formátumok megnyitása az FFmpeg-háttéren át; bekerülnek a kodek-hátralékba ([`codec-parity.md`](../codec-parity.md)) a szokásos döntéshez (saját kód vagy csak FFmpeg). | R10 |
-| F2j | ASTC kódolás/dekódolás | Textúra-export a 3D/animációs munkákhoz; alacsony prioritás (D7). | R10 |
-| F2k | NVIDIA optikai folyamos interpoláció | Képkocka-interpoláció NVIDIA-n, kötelező CPU-tartalékkal és egyenértékű nem-NVIDIA úttal (D6). | R10 |
+| F2j | ASTC kódolás/dekódolás | Textúra-kódolás és -dekódolás a 3D/animációs munkákhoz; most bekerül (D7). | R10 |
+| F2k | NVIDIA optikai folyamos interpoláció | Képkocka-interpoláció NVIDIA-n, de csak akkor, ha mellé egy gyártófüggetlen (Vulkan vagy CPU) interpoláció is kerül; különben kimarad (D6). | R10 |
 | F2l | `trim` és `side_data` BSF | Smart Cut segédeszköz. **A Smart Cut munka a Qt6 befejezéséig vár** (tulajdonosi döntés, 2026-10-27), ezért ez a rész is. | – |
 
 ### F3 – Saját kód (külön tervekben, a kodek-szabályok szerint)
@@ -119,17 +119,17 @@ formátumok közül az, amelyről a tulajdonos saját kódot kér.
 | iTerm2 inline image muxer | Nincs CFA4-haszna. |
 | Az UbuntuHandbook PPA (`ppa:ubuntuhandbook1/ffmpeg9`) | Lecseréli az Ubuntu rendszer-FFmpegjét (ellentétes a 2026-10-24-i döntéssel: a rendszer-komponensek maradnak, a CFA4 izolált `/opt/cfa4` buildet használ). A készítője szerint „nincs jól tesztelve”. |
 
-## VI. Nyitott tulajdonosi döntések
+## VI. Tulajdonosi döntések (meghozva 2026-11-24)
 
-| # | Kérdés | Javaslat |
-|---|--------|----------|
-| D1 | Az F0 külön PR-ként, a 9.1 előtt kerüljön be? | **Igen.** Így a 9.1-es PR kicsi lesz, és minden későbbi FFmpeg-frissítés is. |
-| D2 | Bekerüljön az AMF (`--enable-amf`) a buildbe? A fejlécek MIT-licencesek, de futáskor az AMD saját (zárt) AMF-runtime-ját tölti be, ahogy az NVENC is az NVIDIA-meghajtóét. | **Igen**, futásidőben betöltve, hiányában a VA-API/Vulkan/CPU út fut. Előbb ellenőrizni kell, hogy van-e Ubuntu 26.04-csomag a fejlécekhez; ha nincs, rögzített forrás checksummal. |
-| D3 | RW2: csak FFmpeg-háttér, vagy saját dekóder is? | **Előbb FFmpeg-háttér (F2d)**; saját dekóder a kamera-RAW hátralékkal együtt, külön tervben. |
-| D4 | Mikor induljon az F1? A CI-terhelés ütközhet a Qt6 teszteléssel. | Az F0 bármikor mehet (kicsi, viselkedést nem változtat); az F1 a tulajdonos által megadott időpontban, a gazda kötegén kívül, saját teljes validációval. |
-| D5 | Emelkedjen-e a `crates/ffmpeg` minimumverziója 9.0.2-ről 9.1-re? | **Igen**, ha az F2 bármelyik része 9.1-es képességre épül. Addig maradhat 9.0.2, és a képesség futásidőben jelez. |
-| D6 | NVIDIA optikai folyamos interpoláció (F2k): kell-e, ha nincs vele egyenértékű nem-NVIDIA út? | **Csak akkor**, ha mellé kerül egy gyártófüggetlen (Vulkan vagy CPU) interpoláció is; különben kimarad. |
-| D7 | ASTC (F2j) bekerüljön-e most? | **Hátralékba** a 3D/animációs tervekhez. |
+| # | Kérdés | Javaslat | Döntés (2026-11-24) |
+|---|--------|----------|---------------------|
+| D1 | Az F0 külön PR-ként, a 9.1 előtt kerüljön be? | **Igen.** Így a 9.1-es PR kicsi lesz, és minden későbbi FFmpeg-frissítés is. | igen (külön PR, a 9.1 előtt) |
+| D2 | Bekerüljön az AMF (`--enable-amf`) a buildbe? A fejlécek MIT-licencesek, de futáskor az AMD saját (zárt) AMF-runtime-ját tölti be, ahogy az NVENC is az NVIDIA-meghajtóét. | **Igen**, futásidőben betöltve, hiányában a VA-API/Vulkan/CPU út fut. Előbb ellenőrizni kell, hogy van-e Ubuntu 26.04-csomag a fejlécekhez; ha nincs, rögzített forrás checksummal. | bekerül |
+| D3 | RW2: csak FFmpeg-háttér, vagy saját dekóder is? | **Előbb FFmpeg-háttér (F2d)**; saját dekóder a kamera-RAW hátralékkal együtt, külön tervben. | a javaslat szerint |
+| D4 | Mikor induljon az F1? A CI-terhelés ütközhet a Qt6 teszteléssel. | Az F0 bármikor mehet (kicsi, viselkedést nem változtat); az F1 a tulajdonos által megadott időpontban, a gazda kötegén kívül, saját teljes validációval. | a javaslat szerint |
+| D5 | Emelkedjen-e a `crates/ffmpeg` minimumverziója 9.0.2-ről 9.1-re? | **Igen.** | igen (a minimum 9.1) |
+| D6 | NVIDIA optikai folyamos interpoláció (F2k): kell-e, ha nincs vele egyenértékű nem-NVIDIA út? | **Csak akkor**, ha mellé kerül egy gyártófüggetlen (Vulkan vagy CPU) interpoláció is; különben kimarad. | a javaslat szerint |
+| D7 | ASTC (F2j) bekerüljön-e most? | **Hátralékba** a 3D/animációs tervekhez. | igen, most bekerül |
 
 ## VII. PR-bontás
 
