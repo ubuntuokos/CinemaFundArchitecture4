@@ -32,7 +32,7 @@
 ## 3. Job API v0 (a `cfa4-tasks`-on)
 
 - **Osztály:** a render `Class::FinalRender` (export) vagy az előnézeti osztály; a prioritás „előnézet előzi az exportot” a meglévő `class_rank` szerint (leképezés ellenőrizendő tesztet kap).
-- **Parancsok a vezérlőcsatornán** (`cfa4-cli serve`, a meglévő parancskészlet bővítése, minden parancsnak id és címke): `render.submit`, `render.status`, `render.cancel`, `render.list`, `render.events`. A hívó szálon semmi nem blokkol; a Qt6 és a CLI ugyanezt hívja (A8).
+- **Parancsok a vezérlőcsatornán** (`cfa4-cli serve`, a meglévő parancskészlet bővítése, minden parancsnak id és címke): `render.status {job}`, `render.list`, `render.cancel {job}` (az adapter megvalósítása, külön PR). A beküldés (submit) a meglévő export-parancsok (pl. `file.exportMedia`), amelyek `job` azonosítót adnak; az események (events) a `render.status` `event` mezőjében jönnek. A hívó szálon semmi nem blokkol; a Qt6 és a CLI ugyanezt hívja (A8).
 - **Esemény:** a `RenderEvent` JSON-alakja a szerződés része (`camelCase`), `kind` = `progress` / `log` / `warning` / `fallback`; `is_consistent()` a szerződésteszt tárgya.
 - **Cancel:** kooperatív; a kérés és a leállás közti idő mért érték (AC-09), nem előre rögzített küszöb, amíg a referenciagépes Küszöb@F0 nincs meg.
 - **Atomikus kimenet:** minden render a végleges néven csak sikeres lezárás után jelenik meg (ideiglenes név + rename, `AtomicOutput`). **Kilépési feltétel:** 20 véletlen idejű cancel és SIGKILL után végleges néven 0 csonka fájl. A fő exportútra ez teljesül; a csomag-kimenetekre (DCP, IMF, MXF, OP-Atom) az átállítás nyitott, külön PR-ban, a DCP/IMF-export gazdáival egyeztetve.
@@ -83,10 +83,10 @@ Szemantikus verzió (`ContractVersion { major, minor }`). Szerződésteszt: (1) 
 
 | Feltétel | Állás |
 |---|---|
-| A meglévő renderer a szerződésen át bit-azonos a golden halmazzal, PTS-diff 0 | NYITOTT: az adapter még nincs |
-| Cancel latencia ≤ Küszöb@F0; 20 cancel/SIGKILL után 0 csonka fájl | RÉSZBEN: a latencia mért; a fő exportúton a csonka végleges fájl 0, a csomag-kimeneteken (DCP, IMF, MXF, OP-Atom) nyitott |
+| A meglévő renderer a szerződésen át bit-azonos a golden halmazzal, PTS-diff 0 | RÉSZBEN: az adapter (`render_job.rs`) a meglévő jobokon nézetet ad, a renderelést nem érinti; a golden/PTS-diff összevetés még nincs mérve |
+| Cancel latencia ≤ Küszöb@F0; 20 cancel/SIGKILL után 0 csonka fájl | RÉSZBEN: a latencia mért; a fő exportúton a csonka végleges fájl 0, a csomag-kimeneteken (DCP, IMF, MXF, OP-Atom) a fájlonkénti atomi írás megvan (PR #1825), a SIGKILL-ciklusos mérés még nyitott |
 | Minden S1 jelölt leképezhető, BLOCKED, vagy ADR-rel módosul | NYITOTT: F2 előtt |
-| A Qt6 felelőse írásban elfogadja a job API-t | NYITOTT |
+| A Qt6 felelőse írásban elfogadja a job API-t | ELFOGADVA: István mint a Qt6 felelőse elfogadta (2026-11-24, „elfogadom”; ez a job API-t is fedi) |
 
 ## 11. Döntések (István, 2026-11-24: mind a hat javaslat elfogadva)
 
