@@ -196,4 +196,37 @@ mod command_tests {
         assert!(s.execute("render.status", json!({})).is_err());
         assert!(s.execute("render.cancel", json!({"job": 99_999_u64})).is_err());
     }
+
+    /// C0 exit condition "the renderer through the contract is bit-identical to the golden set, PTS diff 0":
+    /// the golden here is the waited export (the existing synchronous path); the same export run as a job and
+    /// followed through `render.status` must produce the same bytes, so the job view changes nothing in the
+    /// render. Video (MJPEG in MOV) and audio (WAV) over the demo project; synthetic, own material.
+    #[test]
+    fn a_job_export_is_byte_identical_to_the_waited_export() {
+        let dir = std::env::temp_dir().join(format!("cfa4-render-job-golden-{}", std::process::id()));
+        std::fs::create_dir_all(&dir).unwrap();
+        for (format, ext) in [("mjpeg", "mov"), ("wav", "wav")] {
+            let mut s = Session::default();
+            s.execute("file.openDemoProject", json!({})).unwrap();
+            let golden = dir.join(format!("golden.{ext}"));
+            let viajob = dir.join(format!("job.{ext}"));
+            let p = |path: &std::path::Path| json!({"path": path.to_string_lossy(), "format": format, "range": "custom", "startSeconds": 0, "endSeconds": 0.5});
+            let mut waited = p(&golden);
+            waited["wait"] = json!(true);
+            s.execute("file.exportMedia", waited).unwrap();
+            let job = s.execute("file.exportMedia", p(&viajob)).unwrap()["job"].as_u64().unwrap();
+            let mut last = json!(null);
+            for _ in 0..2400 {
+                last = state(&mut s, job);
+                if last["state"] != "running" {
+                    break;
+                }
+                std::thread::sleep(std::time::Duration::from_millis(25));
+            }
+            assert_eq!(last["state"], "completed", "{format}: {last}");
+            let (a, b) = (std::fs::read(&golden).unwrap(), std::fs::read(&viajob).unwrap());
+            assert!(!a.is_empty(), "{format}: empty golden");
+            assert_eq!(a, b, "{format}: the job export differs from the waited export ({} vs {} bytes)", a.len(), b.len());
+        }
+    }
 }
