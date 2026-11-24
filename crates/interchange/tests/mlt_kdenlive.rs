@@ -146,3 +146,38 @@ fn guides_become_sequence_markers() {
     let m: Vec<(String, i64)> = s.markers.iter().map(|m| (m.name.clone(), FrameRate::new(25, 1).frame_at(m.start))).collect();
     assert_eq!(m, vec![("Intro".to_string(), 50), ("Outro".to_string(), 250)]);
 }
+
+#[test]
+fn volume_effect_becomes_the_audio_clips_volume_level() {
+    // Kdenlive's Volume effect (`level` in dB, animated; data/effects/volume.xml): the first clip
+    // has keyframes (a linear, a smooth and a hold one, the last above CFA4's +15 dB limit), the
+    // second a plain number, the third a position counted from the end, which is not mapped
+    let doc = r#"<mlt><profile frame_rate_num="25" frame_rate_den="1" width="1280" height="720"/>
+<producer id="c" in="0" out="249"><property name="mlt_service">avformat-novalidate</property><property name="resource">/m/a.mp4</property></producer>
+<producer id="black" in="0" out="9999"><property name="mlt_service">color</property><property name="resource">black</property></producer>
+<playlist id="pa">
+<entry producer="c" in="0" out="99"><filter><property name="mlt_service">volume</property><property name="kdenlive_id">volume</property><property name="level">0=-6;00:00:01.000~=0;50|=20</property></filter></entry>
+<entry producer="c" in="100" out="149"><filter><property name="mlt_service">volume</property><property name="kdenlive_id">volume</property><property name="level">-12</property></filter></entry>
+<entry producer="c" in="150" out="199"><filter><property name="mlt_service">volume</property><property name="kdenlive_id">volume</property><property name="level">0=0;-1=-20</property></filter></entry>
+</playlist>
+<tractor id="ta"><property name="kdenlive:audio_track">1</property><track producer="pa"/></tractor>
+<tractor id="main"><track producer="black"/><track producer="ta"/></tractor></mlt>"#;
+    let (imp, rep) = import(doc.as_bytes(), Format::Mlt, Some(BASE)).unwrap();
+    let a = &seq(&imp).audio_tracks[0].items;
+    assert_eq!(a.len(), 3);
+    let r = FrameRate::new(25, 1);
+    let level = |i: usize| a[i].effect("volume").and_then(|e| e.param("level")).cloned().unwrap();
+    let first = level(0);
+    let keys: Vec<(i64, f64)> = first.keyframes.iter().map(|k| (r.frame_at(k.time), k.value.as_f64().unwrap())).collect();
+    assert_eq!(keys, vec![(0, -6.0), (25, 0.0), (50, 15.0)], "{first:?}");
+    assert_eq!(first.keyframes[1].interp, cfa4_project::Interpolation::AutoBezier);
+    assert_eq!(first.keyframes[2].interp, cfa4_project::Interpolation::Hold);
+    let second = level(1);
+    assert!(second.keyframes.is_empty());
+    assert_eq!(second.value.as_f64(), Some(-12.0));
+    // the third is left at the default and reported
+    assert!(level(2).keyframes.is_empty() && level(2).value.as_f64() == Some(0.0));
+    let warnings = format!("{rep:?}");
+    assert!(warnings.contains("+15 dB"), "{warnings}");
+    assert_eq!(warnings.matches("is not imported yet").count(), 1, "{warnings}");
+}
