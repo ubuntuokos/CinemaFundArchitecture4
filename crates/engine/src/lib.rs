@@ -37,6 +37,7 @@ pub mod export_tools;
 mod eyedropper;
 mod fx_editor;
 pub mod gesture_runtime;
+pub mod gesture_ui;
 pub mod graphic_templates;
 pub mod graphics;
 pub mod interchange;
@@ -1205,6 +1206,13 @@ impl Session {
     pub fn toast(&mut self, msg: impl Into<String>) {
         let message = msg.into();
         self.log.push(panels::Level::Info, "app", message.clone());
+        self.events.push(Event::Toast { message, error: false });
+    }
+
+    /// A warning for the user (a toast, and a warning entry in the Events panel from `source`).
+    pub fn warn_toast(&mut self, source: &str, msg: impl Into<String>) {
+        let message = msg.into();
+        self.log.push(panels::Level::Warning, source, message.clone());
         self.events.push(Event::Toast { message, error: false });
     }
 

@@ -4919,3 +4919,54 @@ export.summary	Low	nízká
 	AS-02 Versions	Verze AS-02
 	Tick the sequences to write as further versions in the AS-02 bundle	Zaškrtněte sekvence, které se zapíší jako další verze v balíčku AS-02
 	Delete Short Clips	Smazat krátké klipy
+	A stored combination does not run a command yet.	Uložená kombinace zatím nespouští příkaz.
+	Action hint	Nápověda akce
+	Add combination	Přidat kombinaci
+	Add mapping	Přidat přiřazení
+	Button Learn	Naučit tlačítko
+	Button Test	Zkouška tlačítka
+	Button name	Název tlačítka
+	Cancel feedback	Ohlas zrušení
+	Combination editor	Editor kombinací
+	Context	Kontext
+	Delete profile	Smazat profil
+	Detected buttons	Zjištěná tlačítka
+	Draw the gesture with a button held.	Nakreslete gesto při drženém tlačítku.
+	Error feedback	Ohlas chyby
+	Evdev device	Zařízení evdev
+	Evdev reads the selected device only, and only after a later phase turns it on. This version keeps the Qt path.	Evdev čte jen zvolené zařízení a teprve až ho pozdější fáze zapne. Tato verze zůstává na cestě Qt.
+	Execution feedback	Ohlas provedení
+	Follow the system	Podle systému
+	Gesture	Gesto
+	Gesture Learn	Naučit gesto
+	Gesture editor	Editor gest
+	Gesture profiles	Profily gest
+	Gestures stay off until you turn them on. Turning them on does not block the panel menu.	Gesta zůstanou vypnutá, dokud je nezapnete. Zapnutí neblokuje nabídku panelu.
+	HUD	HUD
+	Hand	Ruka
+	High contrast	Vysoký kontrast
+	Hold time	Doba držení
+	Input access	Přístup ke vstupu
+	Left-handed	Levák
+	Mapping	Přiřazení
+	Maximum length	Největší délka
+	Maximum time	Největší čas
+	Minimum length	Nejmenší délka
+	Mirror ergonomic gestures	Zrcadlit ergonomická gesta
+	Mouse Gestures	Gesta myši
+	Mouse Gestures…	Gesta myši…
+	No buttons yet. Press one in Button Learn or Button Test.	Zatím žádné tlačítko. Stiskněte je v učení nebo ve zkoušce.
+	Press	Stisk
+	Qt pointer (this application)	Ukazatel Qt (tato aplikace)
+	Recognition preview	Náhled rozpoznání
+	Reduced animation	Omezená animace
+	Right-handed	Pravák
+	Roles	Role
+	Save gesture	Uložit gesto
+	Save profile	Uložit profil
+	Show the gesture HUD	Zobrazit HUD gest
+	Slop	Vůle
+	Spatial gesture	Prostorové gesto
+	Thresholds	Prahy
+	Trail	Stopa
+	Use gestures in the window	Používat gesta v okně

@@ -112,3 +112,25 @@ The Qt Inspector is named Properties, as in egui (3.22). Task Manager (3.30) is 
 | 5.6 | Trim monitor, dynamic trimming | ✅ | `panels/trim_monitor.py`: with edit points selected the Program monitor is egui's two-up Trim Monitor from `trim.monitor` (both frames, clip names, Out/In timecodes and shift counters, −N/−1/+1/+N, Apply Default Transitions, Play Around, ✕ exits); drags trim the outgoing / incoming side or roll between them (6 px a frame, Escape abandons); J/L/Shift+J/L trim dynamically, K commits one undo step, Escape cancels, Space loops around the edit (`test_real_engine_trim_monitor_and_dynamic_trimming_as_egui`, `test_shift_and_dynamic_texts_as_egui`) |
 
 A physical Contour ShuttlePRO or ShuttleXpress uses the same sound rule as the J/K/L keys (`SHUTTLE_SOUND`, forward 0.5–4×). The ring calls `Monitor.shuttle_to`; the jog steps one frame. In trim mode (as J/K/L) the ring trims dynamically at its speed (`trim.shuttle {speed}`, 0 commits with `trim.shuttleStop`) and a jog click nudges the edit point a frame (`trim.nudge`). That is the control-surface path (ADR 0012), not a second shuttle implementation.
+
+## 6. Mouse gestures (CFA4-CONTROL-SURFACE-GESTURE-001, MG3)
+
+Settings ▸ Control Surfaces ▸ Mouse Gestures, and Window ▸ Mouse Gestures…. The widgets call
+`surface.gesture.*`. The engine recognises the stroke and emits `surfaceAction` on the MG2 path.
+The list of buttons is whatever the engine reports.
+
+| # | Point | Qt 6 | Evidence / missing |
+|---|---|---|---|
+| 6.1 | Gesture editor | ✅ | template list, spatial flag, remove (`settings.controlSurfaces.gesture.editor`; `test_every_gesture_section_is_on_the_control_surfaces_page`) |
+| 6.2 | Gesture Learn | ✅ | pad, start, name, save (`settings.controlSurfaces.gesture.learn`; `test_the_learn_pad_sends_samples_and_cancel_restores`) |
+| 6.3 | Button Learn | ✅ | start and stop, name (`settings.controlSurfaces.gesture.buttonLearn`; `test_enabling_thresholds_evdev_mapping_and_combinations_send_commands`) |
+| 6.4 | Button Test | ✅ | press / release / hold status and its own pad (`settings.controlSurfaces.gesture.test`; the same test) |
+| 6.5 | Detected buttons | ✅ | the engine's list, not a fixed 3/5/8 (`test_the_button_list_follows_the_engine_and_is_not_a_fixed_set`) |
+| 6.6 | Dynamic button list | ✅ | twelve learned codes render as twelve rows (the same test) |
+| 6.7 | Combination editor | ✅ | roles, command, add / remove (`settings.controlSurfaces.gesture.combinations`; `surface.gesture.combo`) |
+| 6.8 | Profile management | ✅ | hand, mirror, save / load / delete (`settings.controlSurfaces.gesture.profiles`) |
+| 6.9 | Mapping | ✅ | gesture, context, command limited to playback / playhead / window (`surface.gesture.map`) |
+| 6.10 | HUD | ✅ | in-window overlay, mouse events pass through, trail and hint (`gesture.hud`; `test_the_hud_does_not_take_the_pointer`) |
+| 6.11 | Threshold configuration | ✅ | length, slop, time, angle, hold (`surface.gesture.configure`) |
+| 6.12 | Import / export | ✅ | `surface.gesture.profile` import and export (`settings.controlSurfaces.gesture.import` / `.export`) |
+| 6.13 | Input access | ✅ | Qt path shown, evdev stored with a warning and not opened (`settings.controlSurfaces.gesture.input.evdev`; engine `evdev: "not-opened"`) |

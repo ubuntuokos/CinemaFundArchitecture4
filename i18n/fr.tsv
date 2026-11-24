@@ -4924,3 +4924,54 @@
 	AS-02 Versions	Versions AS-02
 	Tick the sequences to write as further versions in the AS-02 bundle	Cochez les séquences à écrire comme versions supplémentaires dans le paquet AS-02
 	Delete Short Clips	Supprimer les clips courts
+	A stored combination does not run a command yet.	Une combinaison enregistrée n'exécute pas encore de commande.
+	Action hint	Indication d'action
+	Add combination	Ajouter une combinaison
+	Add mapping	Ajouter une affectation
+	Button Learn	Apprentissage du bouton
+	Button Test	Essai du bouton
+	Button name	Nom du bouton
+	Cancel feedback	Retour d'annulation
+	Combination editor	Éditeur de combinaisons
+	Context	Contexte
+	Delete profile	Supprimer le profil
+	Detected buttons	Boutons détectés
+	Draw the gesture with a button held.	Tracez le geste en maintenant un bouton.
+	Error feedback	Retour d'erreur
+	Evdev device	Périphérique evdev
+	Evdev reads the selected device only, and only after a later phase turns it on. This version keeps the Qt path.	Evdev ne lit que l'appareil choisi, et seulement quand une phase ultérieure l'active. Cette version reste sur la voie Qt.
+	Execution feedback	Retour d'exécution
+	Follow the system	Suivre le système
+	Gesture	Geste
+	Gesture Learn	Apprentissage du geste
+	Gesture editor	Éditeur de gestes
+	Gesture profiles	Profils de gestes
+	Gestures stay off until you turn them on. Turning them on does not block the panel menu.	Les gestes restent arrêtés tant que vous ne les activez pas. Les activer ne bloque pas le menu du panneau.
+	HUD	HUD
+	Hand	Main
+	High contrast	Contraste élevé
+	Hold time	Durée de maintien
+	Input access	Accès à l'entrée
+	Left-handed	Gaucher
+	Mapping	Affectation
+	Maximum length	Longueur maximale
+	Maximum time	Durée maximale
+	Minimum length	Longueur minimale
+	Mirror ergonomic gestures	Miroir des gestes ergonomiques
+	Mouse Gestures	Gestes de souris
+	Mouse Gestures…	Gestes de souris…
+	No buttons yet. Press one in Button Learn or Button Test.	Pas encore de bouton. Appuyez-en un dans l'apprentissage ou l'essai.
+	Press	Appui
+	Qt pointer (this application)	Pointeur Qt (cette application)
+	Recognition preview	Aperçu de la reconnaissance
+	Reduced animation	Animation réduite
+	Right-handed	Droitier
+	Roles	Rôles
+	Save gesture	Enregistrer le geste
+	Save profile	Enregistrer le profil
+	Show the gesture HUD	Afficher le HUD des gestes
+	Slop	Jeu
+	Spatial gesture	Geste spatial
+	Thresholds	Seuils
+	Trail	Traînée
+	Use gestures in the window	Utiliser les gestes dans la fenêtre

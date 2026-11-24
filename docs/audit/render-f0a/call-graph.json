@@ -5684,6 +5684,13 @@
   {
    "class": "other",
    "crate": "cfa4-render",
+   "kind": "enum",
+   "module": "key_synth.rs",
+   "name": "Scene"
+  },
+  {
+   "class": "other",
+   "crate": "cfa4-render",
    "kind": "struct",
    "module": "lumetri_presets.rs",
    "name": "LumetriPreset"

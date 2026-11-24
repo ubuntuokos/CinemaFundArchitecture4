@@ -4902,3 +4902,54 @@
 	AS-02 Versions	Версії AS-02
 	Tick the sequences to write as further versions in the AS-02 bundle	Позначте послідовності, які буде записано як додаткові версії в пакеті AS-02
 	Delete Short Clips	Видалити короткі кліпи
+	A stored combination does not run a command yet.	Збережена комбінація ще не запускає команду.
+	Action hint	Підказка дії
+	Add combination	Додати комбінацію
+	Add mapping	Додати призначення
+	Button Learn	Навчання кнопки
+	Button Test	Перевірка кнопки
+	Button name	Назва кнопки
+	Cancel feedback	Сигнал скасування
+	Combination editor	Редактор комбінацій
+	Context	Контекст
+	Delete profile	Видалити профіль
+	Detected buttons	Виявлені кнопки
+	Draw the gesture with a button held.	Намалюйте жест, утримуючи кнопку.
+	Error feedback	Сигнал помилки
+	Evdev device	Пристрій evdev
+	Evdev reads the selected device only, and only after a later phase turns it on. This version keeps the Qt path.	Evdev читає лише вибраний пристрій і лише після того, як пізніший етап його увімкне. Ця версія лишається на шляху Qt.
+	Execution feedback	Сигнал виконання
+	Follow the system	Як у системі
+	Gesture	Жест
+	Gesture Learn	Навчання жесту
+	Gesture editor	Редактор жестів
+	Gesture profiles	Профілі жестів
+	Gestures stay off until you turn them on. Turning them on does not block the panel menu.	Жести вимкнені, доки ви їх не увімкнете. Увімкнення не блокує меню панелі.
+	HUD	HUD
+	Hand	Рука
+	High contrast	Високий контраст
+	Hold time	Час утримання
+	Input access	Доступ до введення
+	Left-handed	Лівша
+	Mapping	Призначення
+	Maximum length	Найбільша довжина
+	Maximum time	Найбільший час
+	Minimum length	Найменша довжина
+	Mirror ergonomic gestures	Віддзеркалити ергономічні жести
+	Mouse Gestures	Жести миші
+	Mouse Gestures…	Жести миші…
+	No buttons yet. Press one in Button Learn or Button Test.	Кнопок ще немає. Натисніть одну в навчанні або в перевірці.
+	Press	Натискання
+	Qt pointer (this application)	Вказівник Qt (ця програма)
+	Recognition preview	Попередній перегляд розпізнавання
+	Reduced animation	Зменшена анімація
+	Right-handed	Правша
+	Roles	Ролі
+	Save gesture	Зберегти жест
+	Save profile	Зберегти профіль
+	Show the gesture HUD	Показувати HUD жестів
+	Slop	Люфт
+	Spatial gesture	Просторовий жест
+	Thresholds	Пороги
+	Trail	Слід
+	Use gestures in the window	Жести у вікні

@@ -4913,3 +4913,54 @@
 	AS-02 Versions	AS-02 버전
 	Tick the sequences to write as further versions in the AS-02 bundle	AS-02 번들에 추가 버전으로 쓸 시퀀스를 선택하세요
 	Delete Short Clips	짧은 클립 삭제
+	A stored combination does not run a command yet.	저장된 조합은 아직 명령을 실행하지 않습니다.
+	Action hint	동작 힌트
+	Add combination	조합 추가
+	Add mapping	매핑 추가
+	Button Learn	버튼 학습
+	Button Test	버튼 시험
+	Button name	버튼 이름
+	Cancel feedback	취소 표시
+	Combination editor	조합 편집기
+	Context	컨텍스트
+	Delete profile	프로필 삭제
+	Detected buttons	감지된 버튼
+	Draw the gesture with a button held.	버튼을 누른 채 제스처를 그립니다.
+	Error feedback	오류 표시
+	Evdev device	evdev 장치
+	Evdev reads the selected device only, and only after a later phase turns it on. This version keeps the Qt path.	evdev는 고른 장치만 읽으며, 나중 단계가 켤 때까지 쓰이지 않습니다. 이 판은 Qt 경로를 유지합니다.
+	Execution feedback	실행 표시
+	Follow the system	시스템을 따름
+	Gesture	제스처
+	Gesture Learn	제스처 학습
+	Gesture editor	제스처 편집기
+	Gesture profiles	제스처 프로필
+	Gestures stay off until you turn them on. Turning them on does not block the panel menu.	제스처는 켜기 전까지 꺼져 있습니다. 켜도 패널 메뉴는 막지 않습니다.
+	HUD	HUD
+	Hand	손
+	High contrast	고대비
+	Hold time	누름 시간
+	Input access	입력 접근
+	Left-handed	왼손잡이
+	Mapping	매핑
+	Maximum length	최대 길이
+	Maximum time	최대 시간
+	Minimum length	최소 길이
+	Mirror ergonomic gestures	인체공학 제스처 좌우 반전
+	Mouse Gestures	마우스 제스처
+	Mouse Gestures…	마우스 제스처…
+	No buttons yet. Press one in Button Learn or Button Test.	아직 버튼이 없습니다. 버튼 학습이나 버튼 시험에서 누르십시오.
+	Press	누름
+	Qt pointer (this application)	Qt 포인터(이 응용 프로그램)
+	Recognition preview	인식 미리보기
+	Reduced animation	애니메이션 줄이기
+	Right-handed	오른손잡이
+	Roles	역할
+	Save gesture	제스처 저장
+	Save profile	프로필 저장
+	Show the gesture HUD	제스처 HUD 표시
+	Slop	유격
+	Spatial gesture	공간 제스처
+	Thresholds	임계값
+	Trail	궤적
+	Use gestures in the window	창에서 제스처 사용

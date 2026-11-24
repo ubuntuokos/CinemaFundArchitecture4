@@ -4921,3 +4921,54 @@ export.summary	Low	madal
 	AS-02 Versions	AS-02 versioonid
 	Tick the sequences to write as further versions in the AS-02 bundle	Märkige järjestused, mis kirjutatakse AS-02 paketti lisaversioonidena
 	Delete Short Clips	Kustuta lühikesed klipid
+	A stored combination does not run a command yet.	Salvestatud kombinatsioon ei käivita veel käsku.
+	Action hint	Tegevuse vihje
+	Add combination	Lisa kombinatsioon
+	Add mapping	Lisa vastendus
+	Button Learn	Nupu õppimine
+	Button Test	Nupu proov
+	Button name	Nupu nimi
+	Cancel feedback	Tühistuse teade
+	Combination editor	Kombinatsiooniredaktor
+	Context	Kontekst
+	Delete profile	Kustuta profiil
+	Detected buttons	Tuvastatud nupud
+	Draw the gesture with a button held.	Joonistage žest nuppu all hoides.
+	Error feedback	Vea teade
+	Evdev device	Evdev-seade
+	Evdev reads the selected device only, and only after a later phase turns it on. This version keeps the Qt path.	Evdev loeb ainult valitud seadet ja alles siis, kui hilisem etapp selle sisse lülitab. See versioon jääb Qt teele.
+	Execution feedback	Täitmise teade
+	Follow the system	Järgi süsteemi
+	Gesture	Žest
+	Gesture Learn	Žesti õppimine
+	Gesture editor	Žestiredaktor
+	Gesture profiles	Žestiprofiilid
+	Gestures stay off until you turn them on. Turning them on does not block the panel menu.	Žestid jäävad välja, kuni need sisse lülitate. Sisselülitamine ei blokeeri paneeli menüüd.
+	HUD	HUD
+	Hand	Käsi
+	High contrast	Suur kontrast
+	Hold time	Hoidmisaeg
+	Input access	Sisendi juurdepääs
+	Left-handed	Vasakukäeline
+	Mapping	Vastendus
+	Maximum length	Suurim pikkus
+	Maximum time	Suurim aeg
+	Minimum length	Väikseim pikkus
+	Mirror ergonomic gestures	Peegelda ergonoomilised žestid
+	Mouse Gestures	Hiirežestid
+	Mouse Gestures…	Hiirežestid…
+	No buttons yet. Press one in Button Learn or Button Test.	Nuppe veel pole. Vajutage üht õppimisel või proovil.
+	Press	Vajutus
+	Qt pointer (this application)	Qt kursor (see rakendus)
+	Recognition preview	Tuvastuse eelvaade
+	Reduced animation	Vähendatud animatsioon
+	Right-handed	Paremakäeline
+	Roles	Rollid
+	Save gesture	Salvesta žest
+	Save profile	Salvesta profiil
+	Show the gesture HUD	Näita žesti HUD-i
+	Slop	Lõtk
+	Spatial gesture	Ruumiline žest
+	Thresholds	Läved
+	Trail	Jälg
+	Use gestures in the window	Kasuta žeste aknas

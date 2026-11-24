@@ -4928,3 +4928,54 @@
 	AS-02 Versions	AS-02バージョン
 	Tick the sequences to write as further versions in the AS-02 bundle	AS-02バンドルに追加バージョンとして書き出すシーケンスにチェックを入れます
 	Delete Short Clips	短いクリップを削除
+	A stored combination does not run a command yet.	保存した組み合わせは、まだコマンドを実行しません。
+	Action hint	操作のヒント
+	Add combination	組み合わせを追加
+	Add mapping	割り当てを追加
+	Button Learn	ボタン学習
+	Button Test	ボタン試験
+	Button name	ボタン名
+	Cancel feedback	キャンセルの表示
+	Combination editor	組み合わせエディター
+	Context	コンテキスト
+	Delete profile	プロファイルを削除
+	Detected buttons	検出したボタン
+	Draw the gesture with a button held.	ボタンを押したままジェスチャーを描きます。
+	Error feedback	エラーの表示
+	Evdev device	evdev デバイス
+	Evdev reads the selected device only, and only after a later phase turns it on. This version keeps the Qt path.	evdev は選んだ装置だけを読み、後の段階がオンにするまで使いません。この版は Qt の経路のままです。
+	Execution feedback	実行の表示
+	Follow the system	システムに合わせる
+	Gesture	ジェスチャー
+	Gesture Learn	ジェスチャー学習
+	Gesture editor	ジェスチャーエディター
+	Gesture profiles	ジェスチャープロファイル
+	Gestures stay off until you turn them on. Turning them on does not block the panel menu.	ジェスチャーはオンにするまで無効です。オンにしてもパネルメニューは止まりません。
+	HUD	HUD
+	Hand	利き手
+	High contrast	高コントラスト
+	Hold time	長押し時間
+	Input access	入力アクセス
+	Left-handed	左利き
+	Mapping	割り当て
+	Maximum length	最大の長さ
+	Maximum time	最大時間
+	Minimum length	最小の長さ
+	Mirror ergonomic gestures	人間工学ジェスチャーを左右反転
+	Mouse Gestures	マウスジェスチャー
+	Mouse Gestures…	マウスジェスチャー…
+	No buttons yet. Press one in Button Learn or Button Test.	ボタンはまだありません。ボタン学習かボタン試験で押してください。
+	Press	押下
+	Qt pointer (this application)	Qt ポインタ（このアプリケーション）
+	Recognition preview	認識のプレビュー
+	Reduced animation	アニメーションを減らす
+	Right-handed	右利き
+	Roles	役割
+	Save gesture	ジェスチャーを保存
+	Save profile	プロファイルを保存
+	Show the gesture HUD	ジェスチャー HUD を表示
+	Slop	遊び
+	Spatial gesture	空間ジェスチャー
+	Thresholds	しきい値
+	Trail	軌跡
+	Use gestures in the window	ウィンドウでジェスチャーを使う

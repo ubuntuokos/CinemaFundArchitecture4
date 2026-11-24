@@ -831,7 +831,7 @@ graph LR
 
 ## 4. Nyilvános típusok osztályonként
 
-A többi 652 nyilvános típus („other” osztály) csak a `call-graph.json`-ban szerepel.
+A többi 653 nyilvános típus („other” osztály) csak a `call-graph.json`-ban szerepel.
 
 ### Képkocka, kép, pixel (31)
 

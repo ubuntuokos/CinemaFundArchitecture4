@@ -36,6 +36,7 @@ from PySide6.QtWidgets import (
 )
 
 from . import __version__, crash, dock_commands, theme
+from .gesture_hud import GestureLayer
 from .commands import Command, CommandRegistry, qt_shortcut
 from .dialogs import ErrorDialog, InterpretFootageDialog, ParamDialog, path_params
 from .dock_gutters import DockGutters
@@ -575,6 +576,7 @@ class MainWindow(QMainWindow):
 
         engine.started.connect(self._on_started)
         engine.event.connect(self._on_event)
+        self.gestures = GestureLayer(self, engine)
         engine.job.connect(self._job_started)
         engine.failure.connect(lambda m: self.events.log(m, error=True))
         engine.stopped.connect(self._on_engine_stopped)

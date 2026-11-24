@@ -367,6 +367,7 @@ def build_window_menu(
         ("window.controlSurfaces", "Control Surfaces…", "settings.controlSurfaces.devices"),
         ("window.midiMonitor", "MIDI Monitor…", "settings.controlSurfaces.monitor"),
         ("window.surfaceAssignments", "Learn Assignments…", "settings.controlSurfaces.assign"),
+        ("window.mouseGestures", "Mouse Gestures…", "settings.controlSurfaces.gesture"),
     ):
         action = QAction(tr(label), window)
         action.setObjectName(object_name)
@@ -398,6 +399,7 @@ def window_commands() -> list[tuple[str, str, list[str], str]]:
         ("window.controlSurfaces", N_("Control Surfaces…"), ["Window"], ""),
         ("window.midiMonitor", N_("MIDI Monitor…"), ["Window"], ""),
         ("window.surfaceAssignments", N_("Learn Assignments…"), ["Window"], ""),
+        ("window.mouseGestures", N_("Mouse Gestures…"), ["Window"], ""),
     ]
     return out
 

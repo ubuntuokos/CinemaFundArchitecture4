@@ -697,6 +697,10 @@ enum AudioWriter {
 /// An export's output file: on disk, or in memory for an [`OutputSink`].
 enum Out {
     File(std::io::BufWriter<std::fs::File>),
+    /// The main output file: written to a temp file next to it and published by [`Out::finish`]
+    /// (`atomic::AtomicOutput`), so a cancel, an error or a kill never leaves a partial file under
+    /// the final name. Package outputs (`create_path`: DCP, IMF, MXF, OP-Atom) still write in place.
+    Atomic(std::io::BufWriter<atomic::AtomicOutput>),
     Mem(std::io::Cursor<Vec<u8>>),
 }
 
@@ -706,7 +710,13 @@ impl Out {
             let file = file.try_clone().map_err(|e| ExportError::Io(e.to_string()))?;
             return Ok(Out::File(std::io::BufWriter::new(file)));
         }
-        Out::create_path(settings, &settings.path)
+        if settings.sink.is_some() {
+            return Out::create_path(settings, &settings.path);
+        }
+        // An export replaced an existing file before this too (the caller asked for the path).
+        let staged = atomic::AtomicOutput::create(std::path::Path::new(&settings.path), atomic::Overwrite::Replace)
+            .map_err(|e| ExportError::Io(format!("{}: {e}", settings.path)))?;
+        Ok(Out::Atomic(std::io::BufWriter::new(staged)))
     }
 
     /// An output file at `path` (OP-Atom exports write several).
@@ -735,12 +745,25 @@ impl Out {
         self.finish_path(settings, &settings.path)
     }
 
+    /// Flush a file output and, when it is atomic, publish it under `path`; the caller reads the
+    /// finished file from `path` next. Nothing to do for in-memory output.
+    pub(crate) fn publish(self, path: &str) -> Result<()> {
+        match self {
+            Out::File(mut w) => w.flush().map_err(|e| ExportError::Io(e.to_string())),
+            Out::Atomic(w) => {
+                w.into_inner().map_err(|e| ExportError::Io(e.to_string()))?.commit().map(drop).map_err(|e| ExportError::Io(format!("{path}: {e}")))
+            }
+            Out::Mem(_) => Ok(()),
+        }
+    }
+
     fn finish_path(self, settings: &ExportSettings, path: &str) -> Result<u64> {
         match self {
             Out::File(mut w) => {
                 w.flush().map_err(|e| ExportError::Io(e.to_string()))?;
                 Ok(std::fs::metadata(path).map(|m| m.len()).unwrap_or(0))
             }
+            Out::Atomic(w) => w.into_inner().map_err(|e| ExportError::Io(e.to_string()))?.commit().map_err(|e| ExportError::Io(format!("{path}: {e}"))),
             Out::Mem(c) => write_output(settings, path, c.into_inner()),
         }
     }
@@ -761,12 +784,14 @@ impl Write for Out {
     fn write(&mut self, buf: &[u8]) -> std::io::Result<usize> {
         match self {
             Out::File(w) => w.write(buf),
+            Out::Atomic(w) => w.write(buf),
             Out::Mem(w) => w.write(buf),
         }
     }
     fn flush(&mut self) -> std::io::Result<()> {
         match self {
             Out::File(w) => w.flush(),
+            Out::Atomic(w) => w.flush(),
             Out::Mem(w) => w.flush(),
         }
     }
@@ -781,6 +806,10 @@ impl std::io::Read for Out {
                 w.flush()?;
                 std::io::Read::read(w.get_mut(), buf)
             }
+            Out::Atomic(w) => {
+                w.flush()?;
+                std::io::Read::read(w.get_mut(), buf)
+            }
             Out::Mem(w) => std::io::Read::read(w, buf),
         }
     }
@@ -790,6 +819,7 @@ impl std::io::Seek for Out {
     fn seek(&mut self, pos: std::io::SeekFrom) -> std::io::Result<u64> {
         match self {
             Out::File(w) => w.seek(pos),
+            Out::Atomic(w) => w.seek(pos),
             Out::Mem(w) => w.seek(pos),
         }
     }

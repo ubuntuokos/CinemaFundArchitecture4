@@ -4922,3 +4922,54 @@ export.summary	Low	დაბალი
 	AS-02 Versions	AS-02 ვერსიები
 	Tick the sequences to write as further versions in the AS-02 bundle	მონიშნეთ მიმდევრობები, რომლებიც AS-02 პაკეტში დამატებით ვერსიებად ჩაიწერება
 	Delete Short Clips	მოკლე კლიპების წაშლა
+	A stored combination does not run a command yet.	შენახული კომბინაცია ჯერ არ ასრულებს ბრძანებას.
+	Action hint	მოქმედების მინიშნება
+	Add combination	კომბინაციის დამატება
+	Add mapping	მინიჭების დამატება
+	Button Learn	ღილაკის სწავლა
+	Button Test	ღილაკის შემოწმება
+	Button name	ღილაკის სახელი
+	Cancel feedback	გაუქმების შეტყობინება
+	Combination editor	კომბინაციების რედაქტორი
+	Context	კონტექსტი
+	Delete profile	პროფილის წაშლა
+	Detected buttons	აღმოჩენილი ღილაკები
+	Draw the gesture with a button held.	დახატეთ ჟესტი ღილაკის დაჭერით.
+	Error feedback	შეცდომის შეტყობინება
+	Evdev device	Evdev მოწყობილობა
+	Evdev reads the selected device only, and only after a later phase turns it on. This version keeps the Qt path.	Evdev კითხულობს მხოლოდ არჩეულ მოწყობილობას და მხოლოდ მას შემდეგ, რაც შემდეგი ფაზა ჩართავს. ეს ვერსია Qt გზაზე რჩება.
+	Execution feedback	შესრულების შეტყობინება
+	Follow the system	სისტემის მიყოლა
+	Gesture	ჟესტი
+	Gesture Learn	ჟესტის სწავლა
+	Gesture editor	ჟესტების რედაქტორი
+	Gesture profiles	ჟესტის პროფილები
+	Gestures stay off until you turn them on. Turning them on does not block the panel menu.	ჟესტები გამორთული რჩება, სანამ არ ჩართავთ. ჩართვა პანელის მენიუს არ ბლოკავს.
+	HUD	HUD
+	Hand	ხელი
+	High contrast	მაღალი კონტრასტი
+	Hold time	დაჭერის დრო
+	Input access	შეყვანის წვდომა
+	Left-handed	მემარცხენე
+	Mapping	მინიჭება
+	Maximum length	უდიდესი სიგრძე
+	Maximum time	უდიდესი დრო
+	Minimum length	უმცირესი სიგრძე
+	Mirror ergonomic gestures	ერგონომიული ჟესტების სარკე
+	Mouse Gestures	მაუსის ჟესტები
+	Mouse Gestures…	მაუსის ჟესტები…
+	No buttons yet. Press one in Button Learn or Button Test.	ღილაკი ჯერ არ არის. დააჭირეთ ერთს სწავლაში ან შემოწმებაში.
+	Press	დაჭერა
+	Qt pointer (this application)	Qt მაჩვენებელი (ეს პროგრამა)
+	Recognition preview	ამოცნობის გადახედვა
+	Reduced animation	შემცირებული ანიმაცია
+	Right-handed	მემარჯვენე
+	Roles	როლები
+	Save gesture	ჟესტის შენახვა
+	Save profile	პროფილის შენახვა
+	Show the gesture HUD	ჟესტის HUD-ის ჩვენება
+	Slop	თავისუფალი სვლა
+	Spatial gesture	სივრცითი ჟესტი
+	Thresholds	ზღურბლები
+	Trail	კვალი
+	Use gestures in the window	ჟესტები ფანჯარაში

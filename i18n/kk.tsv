@@ -4921,3 +4921,54 @@ export.summary	Low	төмен
 	AS-02 Versions	AS-02 нұсқалары
 	Tick the sequences to write as further versions in the AS-02 bundle	AS-02 бумасына қосымша нұсқа ретінде жазылатын реттіліктерді белгілеңіз
 	Delete Short Clips	Қысқа клиптерді жою
+	A stored combination does not run a command yet.	Сақталған тіркесім әлі пәрменді орындамайды.
+	Action hint	Әрекет ишарасы
+	Add combination	Тіркесім қосу
+	Add mapping	Сәйкестікті қосу
+	Button Learn	Түймені үйрету
+	Button Test	Түйме сынағы
+	Button name	Түйме атауы
+	Cancel feedback	Бас тарту белгісі
+	Combination editor	Тіркесім өңдегіші
+	Context	Мәнмәтін
+	Delete profile	Профильді жою
+	Detected buttons	Табылған түймелер
+	Draw the gesture with a button held.	Түймені басып тұрып қимылды сызыңыз.
+	Error feedback	Қате белгісі
+	Evdev device	Evdev құрылғысы
+	Evdev reads the selected device only, and only after a later phase turns it on. This version keeps the Qt path.	Evdev тек таңдалған құрылғыны оқиды және оны кейінгі кезең қосқанда ғана. Бұл нұсқа Qt жолында қалады.
+	Execution feedback	Орындау белгісі
+	Follow the system	Жүйені қуу
+	Gesture	Қимыл
+	Gesture Learn	Қимылды үйрету
+	Gesture editor	Қимыл өңдегіші
+	Gesture profiles	Қимыл профильдері
+	Gestures stay off until you turn them on. Turning them on does not block the panel menu.	Қимылдар сіз қосқанша өшірулі қалады. Қосу панель мәзірін бөгемейді.
+	HUD	HUD
+	Hand	Қол
+	High contrast	Жоғары контраст
+	Hold time	Ұстау уақыты
+	Input access	Кіріс қатынасы
+	Left-handed	Солақай
+	Mapping	Сәйкестік
+	Maximum length	Ең үлкен ұзындық
+	Maximum time	Ең үлкен уақыт
+	Minimum length	Ең кіші ұзындық
+	Mirror ergonomic gestures	Эргономикалық қимылдарды айнадау
+	Mouse Gestures	Тінтуір қимылдары
+	Mouse Gestures…	Тінтуір қимылдары…
+	No buttons yet. Press one in Button Learn or Button Test.	Әлі түйме жоқ. Үйретуде немесе сынақта біреуін басыңыз.
+	Press	Басу
+	Qt pointer (this application)	Qt нұсқағыш (осы бағдарлама)
+	Recognition preview	Тану алдын ала көрінісі
+	Reduced animation	Азайтылған анимация
+	Right-handed	Оңқай
+	Roles	Рөлдер
+	Save gesture	Қимылды сақтау
+	Save profile	Профильді сақтау
+	Show the gesture HUD	Қимыл HUD көрсету
+	Slop	Люфт
+	Spatial gesture	Кеңістіктік қимыл
+	Thresholds	Шектер
+	Trail	Із
+	Use gestures in the window	Терезені қимылмен басқару
