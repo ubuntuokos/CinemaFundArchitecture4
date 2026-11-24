@@ -353,7 +353,7 @@ pub fn settings_from_params(s: &Session, p: &Value, cmd: &str) -> Result<(Option
         }
     }
     if let Some(v) = str_p(p, "mpeg2Container") {
-        let c = cfa4_export::Mpeg2Container::from_name(v).ok_or_else(|| bad(cmd, "mpeg2Container: ps | ts | m2ts | es"))?;
+        let c = cfa4_export::Mpeg2Container::from_name(v).ok_or_else(|| bad(cmd, "mpeg2Container: ps | ts | m2ts | es | dvd"))?;
         settings.mpeg2_container = c.id().to_string();
     }
     if let Some(v) = str_p(p, "mpeg2Chroma") {
@@ -561,7 +561,9 @@ pub fn file_safe(n: &str) -> String {
 /// `path` with the settings' extension (added when missing; image sequences keep theirs).
 fn with_extension(path: &str, settings: &ExportSettings) -> String {
     // a DCP or IMF package and an AS-02 bundle are folders
-    if matches!(settings.format, Format::Dcp | Format::Imf) || settings.mxf_as02 {
+    // and so is a DVD-Video disc
+    let dvd = settings.format == Format::Mpeg2 && cfa4_export::Mpeg2Container::of(settings) == cfa4_export::Mpeg2Container::Dvd;
+    if matches!(settings.format, Format::Dcp | Format::Imf) || settings.mxf_as02 || dvd {
         return path.to_string();
     }
     let ext = settings.extension();

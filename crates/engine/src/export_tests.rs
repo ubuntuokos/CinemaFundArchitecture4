@@ -417,6 +417,19 @@ fn every_builtin_preset_exports_and_ffprobe_confirms() {
             }
             continue;
         }
+        if fmt == "mpeg2" && settings["mpeg2Container"] == "dvd" {
+            // a folder: VIDEO_TS with the IFO and BUP files and the VOB
+            assert_eq!(out, path, "{name}: the folder keeps its name");
+            let files = files_in(&Path::new(&out).join("VIDEO_TS"));
+            assert_eq!(files, ["VIDEO_TS.BUP", "VIDEO_TS.IFO", "VTS_01_0.BUP", "VTS_01_0.IFO", "VTS_01_1.VOB"], "{name}");
+            if let Some(j) = probe(&Path::new(&out).join("VIDEO_TS/VTS_01_1.VOB").to_string_lossy()) {
+                let v = stream(&j, "video").unwrap();
+                assert_eq!(v["codec_name"], "mpeg2video", "{name}");
+                assert_eq!((v["width"].as_u64().unwrap(), v["height"].as_u64().unwrap()), (w, h), "{name}");
+                assert_eq!(stream(&j, "audio").unwrap()["codec_name"], "ac3", "{name}");
+            }
+            continue;
+        }
         assert!(Path::new(&out).exists(), "{name}: {out}");
         let Some(j) = probe(&out) else { continue };
         let fmt_name = j["format"]["format_name"].as_str().unwrap();
