@@ -23,7 +23,7 @@ struct Case {
 }
 
 /// Encoders a case may lack and still pass when oracles are required: the CI ffmpeg is built
-/// without them (`scripts/ci/install-ffmpeg-9.0.2.sh`), and another case covers the container.
+/// without them (`scripts/ci/install-ffmpeg.sh`), and another case covers the container.
 const OPTIONAL_ENCODERS: &[&str] = &["libtheora"];
 
 const V: &str = "-f lavfi -i testsrc2=size=320x240:rate=25:duration=1";

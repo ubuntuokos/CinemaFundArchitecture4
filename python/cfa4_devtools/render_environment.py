@@ -1,7 +1,7 @@
 """CFA4-RENDER-INTEGRATION-PLAN-001 F0a: read-only snapshot of the render toolchain and host.
 
 Records what the plan's A10 rule (reproducibility) needs next to every benchmark and release test:
-source revision and lockfile hashes, Rust toolchain and MSRV, FFmpeg (CFA4's own 9.0.2 build and
+source revision and lockfile hashes, Rust toolchain and MSRV, FFmpeg (CFA4's own pinned build and
 the system one), Qt / PySide6, kernel, distribution, CPU, NVIDIA driver, Vulkan, display server
 and the system Python. It only reads files and runs ``--version``-style queries: no root, no
 installs, no GPU work, no network. A missing tool is reported as ``null``, never as an error::
@@ -27,9 +27,11 @@ import tomllib
 from pathlib import Path
 from typing import Any
 
+from cfa4_devtools import ffmpeg_version
+
 ROOT = Path(__file__).resolve().parents[2]
 LOCKFILES = ("Cargo.lock", "requirements/linux-amd64.txt", "requirements/otio-oracle.txt")
-CFA4_FFMPEG = Path("/opt/cfa4/ffmpeg-9.0.2")
+CFA4_FFMPEG = ffmpeg_version.pinned_prefix()
 
 
 def run(cmd: list[str], timeout: float = 20.0) -> str | None:

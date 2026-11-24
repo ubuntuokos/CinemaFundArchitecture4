@@ -55,7 +55,7 @@ fn ffmpeg_audio(ff: &Path, input: &Path, k: usize, b16: bool) -> Result<Vec<i32>
 }
 
 /// Whether the ffmpeg at `ff` checks that a packed audio chunk holds its first samples (n8 and
-/// later; the CI oracle is n9.0.2, a local one may be older).
+/// later; the CI oracle is the version of packaging/ffmpeg-version.env, a local one may be older).
 fn ffmpeg_checks_first_samples(ff: &Path) -> bool {
     static CHECKS: std::sync::OnceLock<bool> = std::sync::OnceLock::new();
     *CHECKS.get_or_init(|| ffmpeg_checks_first_samples_now(ff))

@@ -82,7 +82,7 @@ scene keeps up with 60 fps. Measured by the ignored perf test
 ## Building libobs
 
 ```sh
-scripts/dev/build-ffmpeg-9.0.2.sh      # libobs 33 needs FFmpeg >= 8.0: CFA4's own 9.0.2
+scripts/dev/build-ffmpeg.sh      # libobs 33 needs FFmpeg >= 8.0: CFA4's own
 scripts/dev/build-libobs-33.0.1.sh     # → /opt/cfa4/libobs-33.0.1 (licence, source SHA-256, checksums in share/doc/libobs)
 ```
 

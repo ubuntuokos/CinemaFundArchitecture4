@@ -26,8 +26,8 @@ for script in \
   scripts/dev/test-vendored-ui.sh \
   scripts/ci/check-package-docs.sh \
   scripts/ci/install-ffmpeg-oracle-deps.sh \
-  scripts/ci/install-ffmpeg-9.0.2.sh \
-  scripts/dev/fetch-ffmpeg-9.0.2.sh \
+  scripts/ci/install-ffmpeg.sh \
+  scripts/dev/fetch-ffmpeg.sh \
   scripts/release/fetch-flatpak-sources.sh; do
   bash -n "$script"
 done
@@ -40,6 +40,9 @@ bash scripts/ci/check-package-docs.sh
 python3 -m py_compile python/cfa4_devtools/native_media_e2e.py python/tests/test_native_media_e2e.py
 PYTHONPATH=python python3 -m unittest discover -s python/tests -p 'test_native_media_e2e.py' -v
 python3 -m unittest discover -s scripts/ci -p 'test_cfa4_xdg.py' -v
+# CFA4-FFMPEG-9.1-001 R1: the pinned FFmpeg version is written only in packaging/ffmpeg-version.env.
+python3 -m unittest discover -s scripts/ci -p 'test_check_ffmpeg_version.py' -v
+python3 scripts/ci/check_ffmpeg_version.py
 python3 - <<'PY'
 from pathlib import Path
 import ast

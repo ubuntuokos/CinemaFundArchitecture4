@@ -63,9 +63,16 @@ tar -xzf "$TARBALL" -C "$WORK/stage" --strip-components=1
 if [ "$(head -c 4 -- "$WORK/stage/bin/cfa4" | od -An -c | tr -d ' ')" = '177ELF' ]; then
   echo "error: $TARBALL carries the egui editor as bin/cfa4 (build it with the current package.sh)" >&2; exit 1
 fi
-# ADR 0005 step 4: a release bundle carries CFA4's FFmpeg 9.0.2 (package.sh without --without-ffmpeg)
-[ -f "$WORK/stage/lib/cfa4/ffmpeg-9.0.2/share/doc/ffmpeg/BUILDINFO" ] \
-  || { echo "error: $TARBALL has no lib/cfa4/ffmpeg-9.0.2 (build it with package.sh, not --without-ffmpeg)" >&2; exit 1; }
+# ADR 0005 step 4: a release bundle carries CFA4's FFmpeg (package.sh without --without-ffmpeg), in
+# lib/cfa4/ffmpeg-VERSION with the version pinned in packaging/ffmpeg-version.env
+# shellcheck source=packaging/ffmpeg-version.env
+. "$ROOT/packaging/ffmpeg-version.env"
+[ -f "$WORK/stage/lib/cfa4/ffmpeg-$CFA4_FFMPEG_VERSION/share/doc/ffmpeg/BUILDINFO" ] \
+  || { echo "error: $TARBALL has no lib/cfa4/ffmpeg-$CFA4_FFMPEG_VERSION (build it with package.sh, not --without-ffmpeg)" >&2; exit 1; }
+# The manifest copies lib/cfa4/ffmpeg-*: exactly one FFmpeg build may be there.
+ffmpeg_dirs=("$WORK"/stage/lib/cfa4/ffmpeg-*)
+[ "${#ffmpeg_dirs[@]}" -eq 1 ] \
+  || { echo "error: $TARBALL carries ${#ffmpeg_dirs[@]} FFmpeg builds in lib/cfa4, expected only ffmpeg-$CFA4_FFMPEG_VERSION" >&2; exit 1; }
 [ -x "$WORK/stage/bin/cfa4-qt" ] && [ -d "$WORK/stage/lib/cfa4/python/cfa4_qt" ] \
   || { echo "error: $TARBALL has no Qt GUI (bin/cfa4-qt, lib/cfa4/python)" >&2; exit 1; }
 # The Qt GUI's own PySide6 / Qt 6: the runtime has Python 3 but no PySide6 (docs/qt-parity.md 1.10).

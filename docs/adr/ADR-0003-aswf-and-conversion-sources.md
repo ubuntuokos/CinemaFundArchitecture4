@@ -78,7 +78,7 @@ A VISION.md táblázatában a HandBrake helyét két GPL-3.0 licencű program ve
   profilkezelővel. A logikája a Python/Qt6 rétegbe átemelhető, a wxPython-felületet Qt6-ban újra
   kell írni.
 
-A konvertálás **motorja** a saját Rust-motor, kiegészítve az FFmpeggel (legalább 9.0.2) és a
+A konvertálás **motorja** a saját Rust-motor, kiegészítve az FFmpeggel (legalább `CFA4_FFMPEG_MIN_VERSION`, `packaging/ffmpeg-version.env`) és a
 GStreamerrel; köztük az automatikus útválasztó választ ([ADR 0005](ADR-0005-media-backends.md)).
 Ezek adják a gyártófüggetlen hardveres kódolást (VA-API AMD- és Intel-GPU-n). Az FFmpeg csak
 GPL-3-as builddel használható (`--enable-gpl --enable-version3`, soha `--enable-nonfree`).
@@ -226,7 +226,7 @@ A PR összevonásával a tulajdonos ezeket hagyja jóvá:
    változik, nem ezzel a PR-ral.
 3. A bővítmény-hostok (OpenFX, LV2) külön folyamatban futnak.
 4. Az FFmpeg a termékbe csak saját ADR-rel kerülhet. **Teljesült:** [ADR 0005](ADR-0005-media-backends.md)
-   (kiegészítő háttér, legalább 9.0.2); a CI-orákulum külön marad.
+   (kiegészítő háttér, legalább `CFA4_FFMPEG_MIN_VERSION`, `packaging/ffmpeg-version.env`); a CI-orákulum külön marad.
 5. Az x264 és az x265 kiadása előtt szabadalmi, az NVENC kiadása előtt licencjogi vizsgálat kell.
 6. Az A1 (tesztorákulumok) az összevonás után azonnal indulhat.
 
