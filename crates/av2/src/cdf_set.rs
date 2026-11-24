@@ -83,6 +83,27 @@ impl CdfSet {
         self.arrays.get(index).map(Vec::as_slice)
     }
 
+    /// The mutable CDF of `table` selected by `idx` (the leading indices; the last dimension is
+    /// the CDF itself), as the spec's `TileXxxCdf[ i ][ j ]`.
+    pub fn cdf_mut(&mut self, table: &'static CdfTable, idx: &[usize]) -> crate::Result<&mut [u16]> {
+        let pos = ALL.iter().position(|t| std::ptr::eq(*t, table)).ok_or(crate::Error::Invalid("cdf table"))?;
+        // Coefficient tables lose their leading quantizer dimension in the set.
+        let dims = if is_coeff(table) { &table.dims[1..] } else { table.dims };
+        if idx.len() + 1 != dims.len() {
+            return Err(crate::Error::Invalid("cdf index depth"));
+        }
+        let n1 = cdf_len(table);
+        let mut flat = 0usize;
+        for (i, d) in idx.iter().zip(dims.iter()) {
+            if i >= d {
+                return Err(crate::Error::Invalid("cdf index"));
+            }
+            flat = flat * d + i;
+        }
+        let arr = self.arrays.get_mut(pos).ok_or(crate::Error::Invalid("cdf table"))?;
+        arr.get_mut(flat * n1..(flat + 1) * n1).ok_or(crate::Error::Invalid("cdf index"))
+    }
+
     /// Mutable array by index, for the symbol decoder.
     pub fn array_mut(&mut self, index: usize) -> Option<&mut [u16]> {
         self.arrays.get_mut(index).map(Vec::as_mut_slice)
