@@ -10,7 +10,7 @@ pub struct ContractVersion {
 }
 
 /// The version this crate implements.
-pub const CONTRACT_VERSION: ContractVersion = ContractVersion { major: 0, minor: 1 };
+pub const CONTRACT_VERSION: ContractVersion = ContractVersion { major: 0, minor: 2 };
 
 impl ContractVersion {
     /// Whether a peer that speaks `other` can work with this version: the same major version
