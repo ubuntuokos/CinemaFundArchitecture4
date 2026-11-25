@@ -65,31 +65,40 @@ every code distinct.
 - Robustness: every offset and size is validated, run lengths past coefficient 63 are rejected,
   and corrupted or truncated streams return `Err` without panicking (`tests/roundtrip.rs`).
 
-### Where we follow ffmpeg rather than the letter of the standard
+### The standard by default, FFmpeg's reading on request
 
-ffmpeg's decoder is the reference everyone interoperates with (and the oracle of our tests). In
-three places it differs from the text of ST 2019-1:2016; black-box probes (`src/ffmpeg_probe.rs`:
-streams with a single coefficient, decoded by ffmpeg, measured with a forward DCT) pinned down
-its behaviour, and we match it by default:
+The decoder and the encoder follow SMPTE ST 2019-1:2016 (with Amendment 1:2023) by default
+(owner decision 2026-11-24, [CFA4-DNX-SPEC-001](../../docs/plans/CFA4-DNX-SPEC-001.md)). FFmpeg, the
+oracle of our tests, differs from the standard in the places below; `DecodeOptions::ffmpeg_compat`
+and `EncoderConfig::ffmpeg_compat` select its behaviour, for files FFmpeg wrote and for files meant
+for FFmpeg-based tools. The engine (`cfa4-codecs`) switches the decoder to it by itself for files
+whose container names FFmpeg as the writer (`©too` / compressor name `Lavf…`/`Lavc…`, MXF
+Identification `FFmpeg`). Black-box probes (`src/ffmpeg_probe.rs`: streams with a single
+coefficient, decoded by FFmpeg, measured with a forward DCT) pinned down FFmpeg's behaviour.
 
-1. **Reconstruction offset.** Equation 8.1 reconstructs a quantised amplitude `A` at
-   ≈ `(A + ½)·W·qsf/p`. ffmpeg reconstructs at `(A + ¾)·W·qsf/p` (fitted intercept 0.750 ± 0.01
-   steps for every CID family and step size). The decoder does the same;
-   `DecodeOptions::spec_dequant` selects equation 8.1 instead. The encoder picks the amplitude
-   nearest to the `(A + ¾)` reconstruction.
-2. **CID 1271 (DNxHR HQX) weights.** Table C.2 assigns Table D.1 to CID 1271, and we use D.1
-   (owner decision 2026-11-24). FFmpeg up to 9.0.x decoded and encoded CID 1271 with Table D.4 (the
-   CID 1241 weights; fitted RMS error 0.65 against D.4, > 2.6 against every other table) and fixed
-   that in FFmpeg 9.1 (commit a598cc99). HQX files written by FFmpeg 9.0.x or older therefore decode
+1. **Inverse quantisation (§8.2.7).** Equation (8.1) reconstructs a quantised amplitude `A` near
+   `(A + ½)·W·qsf/p` (integer arithmetic, `+ p/2` when `W ≠ p`); the encoder quantises by
+   equation 8.2, `⌊p·|X| / (qsf·W)⌋`. FFmpeg reconstructs at `(A + ¾)·W·qsf/p` (fitted intercept
+   0.750 ± 0.01 steps for every CID family and step size); in compat mode the decoder does the
+   same and the encoder picks the amplitude nearest to that level.
+2. **CID 1271 (DNxHR HQX) weights.** Table C.2 assigns Table D.1 to CID 1271, and we use D.1 in
+   both modes. FFmpeg up to 9.0.x decoded and encoded CID 1271 with Table D.4 (the CID 1241
+   weights; fitted RMS error 0.65 against D.4, > 2.6 against every other table) and fixed that in
+   FFmpeg 9.1 (commit a598cc99). HQX files written by FFmpeg 9.0.x or older therefore decode
    slightly differently here than in those FFmpeg versions — the same as in FFmpeg 9.1. The same
-   holds for DNxHR HQX exported by CFA4 before this change (the encoder used D.4 then): those files
-   decode slightly differently than before, in CFA4 and in FFmpeg 9.1 alike. The difference is a
-   change of quantisation weights only (no decode error, frame size or timing change).
-3. **4:4:4 signalling.** ffmpeg writes RGB DNxHR 444 with `CLF = 0`, and Y′CbCr 444 with `CLF = 1`
-   plus `ACF = 1` on every macroblock; its channel order is G, B, R (Ch1 = G). The decoder treats
-   every 4:4:4 stream as RGB except macroblocks flagged `ACF = 1` (a stream that is entirely
-   ACF = 1 is returned as Y′CbCr; mixed streams are converted to RGB macroblock by macroblock as
-   §8.1.1 describes), and the encoder writes the same signalling.
+   holds for DNxHR HQX exported by CFA4 before CFA4-FFMPEG-9.1-001 (the encoder used D.4 then):
+   those files decode slightly differently than before, in CFA4 and in FFmpeg 9.1 alike. The
+   difference is a change of quantisation weights only (no decode error, frame size or timing
+   change).
+3. **4:4:4 signalling (§6.3, §7.2 CLF, §7.3.1.1 ACF, §8.1.1).** The standard: `CLF = 0` is
+   Y′CbCr (Ch1 = Y′), `CLF = 1` is R′G′B′ with Ch1 = R, Ch2 = G, Ch3 = B; a macroblock with
+   `ACF = 1` (only allowed with `CLF = 1` and an in-band colour volume) holds Y′CbCr that the
+   decoder converts to R′G′B′ (BT.709). FFmpeg writes RGB with `CLF = 0` in the order G, B, R and
+   Y′CbCr with `CLF = 1` plus `ACF = 1` on every macroblock, and returns such a stream as Y′CbCr.
+   FFmpeg 9.1 does not support standard RGB (`CLF = 1`, `ACF = 0`): it reports "Unsupported:
+   variable ACT flag" and decodes the channels as Y′CbCr, so FFmpeg-based tools show wrong colours
+   (`tests/oracle_encode.rs` pins this). Standard Y′CbCr 4:4:4 decodes there without error. In
+   every mode a [`Frame`]'s RGB planes are G, B, R in `y`, `cb`, `cr`.
 
 Also noted: the RLE alpha pseudo code (Figure 50) tests the header bit the opposite way from
 the prose of §7.3.1.2; we follow the prose (normative text takes precedence).

@@ -1004,3 +1004,15 @@ fn mp4_colour_comes_from_the_sps_without_colr() {
         assert_eq!(color(&s).primaries, Primaries::Bt601_525);
     }
 }
+
+/// CFA4-DNX-SPEC-001 R5: which writing-application tags mark a file as FFmpeg's.
+#[test]
+fn ffmpeg_written_files_are_recognised() {
+    use crate::video::written_by_ffmpeg;
+    assert!(written_by_ffmpeg(["Lavf62.3.100"]));
+    assert!(written_by_ffmpeg(["Lavc62.11.100 dnxhd"]));
+    assert!(written_by_ffmpeg(["FFmpeg", "OP1a Muxer"]));
+    assert!(!written_by_ffmpeg(["Avid Media Composer", "Avid MXF"]));
+    assert!(!written_by_ffmpeg(["CFA4 0.10.0"]));
+    assert!(!written_by_ffmpeg(std::iter::empty::<&str>()));
+}

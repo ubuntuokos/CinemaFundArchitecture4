@@ -48,7 +48,7 @@ fn run(d: &[u8], label: &str) {
     cfa4_testkit::set_progress(label);
     let res = catch_unwind(AssertUnwindSafe(|| {
         let _ = probe(d);
-        for opts in [DecodeOptions::default(), DecodeOptions { threads: true, spec_dequant: true }] {
+        for opts in [DecodeOptions::default(), DecodeOptions { threads: true, ffmpeg_compat: true }] {
             let _ = decode_frame_with(d, &opts);
         }
     }));
