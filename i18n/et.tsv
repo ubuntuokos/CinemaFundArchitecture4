@@ -3934,7 +3934,7 @@
 	Six-Point Pin	Kuuepunktiline kinnitus
 	Upper Center	Keskel ülal
 	Lower Center	Keskel all
-	Use FFmpeg for files the CFA4 engine cannot open (FFmpeg 9.0.2 or later, GPL-3 build)	Kasuta FFmpegi failide jaoks, mida CFA4 mootor avada ei suuda (FFmpeg 9.0.2 või uuem, GPL-3 versioon)
+	Use FFmpeg for files the CFA4 engine cannot open (FFmpeg 9.1 or later, GPL-3 build)	Kasuta FFmpegi failide jaoks, mida CFA4 mootor avada ei suuda (FFmpeg 9.1 või uuem, GPL-3 versioon)
 	Use the system's GStreamer for files neither the engine nor FFmpeg can open	Kasuta süsteemi GStreamerit failide jaoks, mida ei mootor ega FFmpeg avada ei suuda
 	Analyze Source for Smart Cut	Analüüsi allikat nutika lõikamise jaoks
 	Plan Smart Cut	Planeeri nutikas lõikamine

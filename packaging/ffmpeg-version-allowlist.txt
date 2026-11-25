@@ -21,6 +21,7 @@ crates/acm/tests/oracle.rs
 crates/adpcm/*
 crates/adx/*
 crates/captions/README.md
+crates/dnx/README.md                        # the FFmpeg release that fixed the CID 1271 weights
 crates/hca/*
 crates/huffyuv/*
 crates/mace/*
@@ -38,3 +39,10 @@ python/tests/test_media_backends_settings.py
 # key): changed together with CFA4_FFMPEG_MIN_VERSION in F1 (D5), not read at run time.
 crates/engine/src/settings.rs
 i18n/*.tsv
+
+# Other meanings of a short version number: "9.1" as a 9.1 surround channel layout (Auro-3D, IAB),
+# not an FFmpeg version.
+crates/auro/src/layout.rs
+crates/codecs/tests/auro_oracle.rs
+crates/engine/src/mixer_tests.rs
+crates/iab/src/tests.rs

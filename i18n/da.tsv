@@ -3760,7 +3760,7 @@
 	Six-Point Pin	Sekspunkts fastgørelse
 	Upper Center	Øverst i midten
 	Lower Center	Nederst i midten
-	Use FFmpeg for files the CFA4 engine cannot open (FFmpeg 9.0.2 or later, GPL-3 build)	Brug FFmpeg til filer, som CFA4-motoren ikke kan åbne (FFmpeg 9.0.2 eller nyere, GPL-3-build)
+	Use FFmpeg for files the CFA4 engine cannot open (FFmpeg 9.1 or later, GPL-3 build)	Brug FFmpeg til filer, som CFA4-motoren ikke kan åbne (FFmpeg 9.1 eller nyere, GPL-3-build)
 	Use the system's GStreamer for files neither the engine nor FFmpeg can open	Brug systemets GStreamer til filer, som hverken motoren eller FFmpeg kan åbne
 	Analyze Source for Smart Cut	Analyser kilde til Smart Cut
 	Plan Smart Cut	Planlæg Smart Cut

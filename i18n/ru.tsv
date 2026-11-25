@@ -3704,7 +3704,7 @@
 	MPEG-2 video (Main Profile 4:2:0, 0.4 bits per pixel) at the sequence's frame size and rate, 16-bit 48 kHz LPCM, .mpg	Видео MPEG-2 (Main Profile 4:2:0, 0,4 бита на пиксель) с размером кадра и частотой секвенции, LPCM 16 бит 48 кГц, .mpg
 	MPEG-2 video 1920×1080, 18 Mbps average, AAC 192 kbps, .ts	Видео MPEG-2 1920×1080, в среднем 18 Мбит/с, AAC 192 кбит/с, .ts
 	Media Backends	Медиабэкенды
-	Use FFmpeg for files the CFA4 engine cannot open (FFmpeg 9.0.2 or later, GPL-3 build)	Использовать FFmpeg для файлов, которые движок CFA4 не открывает (FFmpeg 9.0.2 или новее, сборка GPL-3)
+	Use FFmpeg for files the CFA4 engine cannot open (FFmpeg 9.1 or later, GPL-3 build)	Использовать FFmpeg для файлов, которые движок CFA4 не открывает (FFmpeg 9.1 или новее, сборка GPL-3)
 	Use the system's GStreamer for files neither the engine nor FFmpeg can open	Использовать системный GStreamer для файлов, которые не открывают ни движок, ни FFmpeg
 	Analyze Source for Smart Cut	Анализ источника для Smart Cut
 	Plan Smart Cut	Спланировать Smart Cut

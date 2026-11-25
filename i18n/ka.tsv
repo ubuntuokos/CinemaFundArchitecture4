@@ -3705,7 +3705,7 @@
 	Six-Point Pin	ექვსწერტილიანი მიმაგრება
 	Upper Center	ზედა ცენტრი
 	Lower Center	ქვედა ცენტრი
-	Use FFmpeg for files the CFA4 engine cannot open (FFmpeg 9.0.2 or later, GPL-3 build)	FFmpeg-ის გამოყენება ფაილებისთვის, რომლებსაც CFA4-ის ძრავა ვერ ხსნის (FFmpeg 9.0.2 ან უფრო ახალი, GPL-3 აწყობა)
+	Use FFmpeg for files the CFA4 engine cannot open (FFmpeg 9.1 or later, GPL-3 build)	FFmpeg-ის გამოყენება ფაილებისთვის, რომლებსაც CFA4-ის ძრავა ვერ ხსნის (FFmpeg 9.1 ან უფრო ახალი, GPL-3 აწყობა)
 	Use the system's GStreamer for files neither the engine nor FFmpeg can open	სისტემის GStreamer-ის გამოყენება ფაილებისთვის, რომლებსაც ვერც ძრავა და ვერც FFmpeg ვერ ხსნის
 	Analyze Source for Smart Cut	წყაროს ანალიზი ჭკვიანი ჭრისთვის
 	Plan Smart Cut	ჭკვიანი ჭრის დაგეგმვა

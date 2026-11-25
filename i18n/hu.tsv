@@ -4147,7 +4147,7 @@ export.summary	Low	alacsony
 	Six-Point Pin	Hatpontos rögzítés
 	Upper Center	Felül középen
 	Lower Center	Alul középen
-	Use FFmpeg for files the CFA4 engine cannot open (FFmpeg 9.0.2 or later, GPL-3 build)	FFmpeg használata azokhoz a fájlokhoz, amelyeket a CFA4 motorja nem tud megnyitni (FFmpeg 9.0.2 vagy újabb, GPL-3 build)
+	Use FFmpeg for files the CFA4 engine cannot open (FFmpeg 9.1 or later, GPL-3 build)	FFmpeg használata azokhoz a fájlokhoz, amelyeket a CFA4 motorja nem tud megnyitni (FFmpeg 9.1 vagy újabb, GPL-3 build)
 	Use the system's GStreamer for files neither the engine nor FFmpeg can open	A rendszer GStreamerének használata azokhoz a fájlokhoz, amelyeket sem a motor, sem az FFmpeg nem tud megnyitni
 	Analyze Source for Smart Cut	Forrás elemzése a Smart Cuthoz
 	Plan Smart Cut	Smart Cut megtervezése

@@ -3548,7 +3548,7 @@
 	Six-Point Pin	Ghim sáu điểm
 	Upper Center	Giữa trên
 	Lower Center	Giữa dưới
-	Use FFmpeg for files the CFA4 engine cannot open (FFmpeg 9.0.2 or later, GPL-3 build)	Dùng FFmpeg cho các tệp engine CFA4 không mở được (FFmpeg 9.0.2 trở lên, bản dựng GPL-3)
+	Use FFmpeg for files the CFA4 engine cannot open (FFmpeg 9.1 or later, GPL-3 build)	Dùng FFmpeg cho các tệp engine CFA4 không mở được (FFmpeg 9.1 trở lên, bản dựng GPL-3)
 	Use the system's GStreamer for files neither the engine nor FFmpeg can open	Dùng GStreamer của hệ thống cho các tệp mà cả engine lẫn FFmpeg đều không mở được
 	Analyze Source for Smart Cut	Phân tích nguồn để cắt thông minh
 	Plan Smart Cut	Lập kế hoạch cắt thông minh

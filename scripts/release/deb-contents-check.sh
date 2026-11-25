@@ -39,7 +39,7 @@ ffmpeg="$FFMPEG_DEB/opt/cfa4/ffmpeg-$CFA4_FFMPEG_VERSION"
 install -d "$ffmpeg/lib" "$ffmpeg/share/doc/ffmpeg"
 for lib in libavcodec.so.62 libavformat.so.62 libavutil.so.60; do echo stand-in >"$ffmpeg/lib/$lib"; done
 ln -s libavcodec.so.62 "$ffmpeg/lib/libavcodec.so"
-for doc in BUILDINFO COPYING.GPLv3 LICENSE.md; do echo "FFmpeg $CFA4_FFMPEG_VERSION $doc (stand-in)" >"$ffmpeg/share/doc/ffmpeg/$doc"; done
+for doc in BUILDINFO COPYING.GPLv3 LICENSE.md AMF-LICENSE.txt; do echo "FFmpeg $CFA4_FFMPEG_VERSION $doc (stand-in)" >"$ffmpeg/share/doc/ffmpeg/$doc"; done
 printf 'CFA4 - third-party licence notices (deb-contents-check stand-in)\n' >"$work/THIRD-PARTY-LICENSES.txt"
 printf '{"bomFormat": "CycloneDX", "specVersion": "1.6"}\n' >"$work/cfa4.cdx.json"
 printf 'libzstd1\n' >"$work/ffmpeg-depends.txt"

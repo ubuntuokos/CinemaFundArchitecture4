@@ -41,7 +41,7 @@ FFmpeg and every entry point returns `Error::Unavailable`.
 
 ```sh
 sudo apt install build-essential nasm pkg-config libva-dev libdrm-dev libdav1d-dev libvpx-dev \
-  libopus-dev libwebp-dev libmp3lame-dev libvulkan-dev libffmpeg-nvenc-dev libvpl-dev
+  libopus-dev libwebp-dev libmp3lame-dev libvulkan-dev libffmpeg-nvenc-dev libvpl-dev glslc git
 scripts/dev/build-ffmpeg.sh                 # → /opt/cfa4/ffmpeg-$CFA4_FFMPEG_VERSION (base; on Ubuntu 24.04/26.04 it downloads the prebuilt one, scripts/dev/fetch-ffmpeg.sh)
 . packaging/ffmpeg-version.env                # CFA4_FFMPEG_VERSION, the pinned version
 export PKG_CONFIG_PATH=/opt/cfa4/ffmpeg-$CFA4_FFMPEG_VERSION/lib/pkgconfig

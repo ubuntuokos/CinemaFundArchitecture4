@@ -57,7 +57,7 @@ if grep -q -- '--enable-nonfree' <<<"$buildconf"; then
   fail "$build is a non-free FFmpeg build, which cannot be distributed"
 fi
 doc="$build/share/doc/ffmpeg"
-for file in LICENSE.md COPYING.GPLv3 BUILDINFO; do
+for file in LICENSE.md COPYING.GPLv3 BUILDINFO AMF-LICENSE.txt; do
   [ -s "$doc/$file" ] || fail "$doc/$file is missing (licence and source information); $rebuild"
 done
 

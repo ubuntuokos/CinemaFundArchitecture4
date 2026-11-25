@@ -3539,7 +3539,7 @@
 	Six-Point Pin	Przypięcie sześciopunktowe
 	Upper Center	Górny środek
 	Lower Center	Dolny środek
-	Use FFmpeg for files the CFA4 engine cannot open (FFmpeg 9.0.2 or later, GPL-3 build)	Używaj FFmpeg dla plików, których silnik CFA4 nie otwiera (FFmpeg 9.0.2 lub nowszy, kompilacja GPL-3)
+	Use FFmpeg for files the CFA4 engine cannot open (FFmpeg 9.1 or later, GPL-3 build)	Używaj FFmpeg dla plików, których silnik CFA4 nie otwiera (FFmpeg 9.1 lub nowszy, kompilacja GPL-3)
 	Use the system's GStreamer for files neither the engine nor FFmpeg can open	Używaj systemowego GStreamera dla plików, których nie otwiera ani silnik, ani FFmpeg
 	Analyze Source for Smart Cut	Analizuj źródło do inteligentnego cięcia
 	Plan Smart Cut	Zaplanuj inteligentne cięcie

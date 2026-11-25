@@ -12,7 +12,7 @@ Beállítások ablakot képernyővel. Minden lépés végén ott áll, mit kell 
 ```sh
 sudo apt install build-essential nasm pkg-config clang libclang-dev git curl \
   libva-dev libdrm-dev libdav1d-dev libvpx-dev libopus-dev libwebp-dev libmp3lame-dev \
-  libvulkan-dev libffmpeg-nvenc-dev libvpl-dev vainfo
+  libvulkan-dev libffmpeg-nvenc-dev libvpl-dev glslc git vainfo
 git clone https://github.com/ubuntuokos/CinemaFundArchitecture4 && cd CinemaFundArchitecture4
 git checkout cfa4/ffmpeg-backend
 ```

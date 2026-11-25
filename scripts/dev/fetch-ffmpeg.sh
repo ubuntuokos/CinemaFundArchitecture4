@@ -41,10 +41,21 @@ case "$host_id" in
     exit 3
     ;;
 esac
+if [[ -z "$sha256" ]]; then
+  # packaging/ffmpeg-version.env pins no hash yet: the prerelease of this version is not published.
+  echo "No prebuilt FFmpeg ${version} published for ${host_id} yet; build it with scripts/dev/build-ffmpeg.sh." >&2
+  exit 3
+fi
 
 installed() {
   [[ -x "$prefix/bin/ffmpeg" && -s "$prefix/lib/pkgconfig/libavcodec.pc" && -s "$prefix/share/doc/ffmpeg/BUILDINFO" ]] \
-    && [[ "$("$prefix/bin/ffmpeg" -version 2>/dev/null | awk 'NR==1 {print $3}')" == "$version" ]]
+    && [[ "$("$prefix/bin/ffmpeg" -version 2>/dev/null | awk 'NR==1 {print $3}')" == "$version" ]] \
+    && vulkan_shaders_ok
+}
+# R12 (CFA4-FFMPEG-9.1-001): a build with Vulkan must have its glslc-built shaders, i.e. apv_vulkan.
+vulkan_shaders_ok() {
+  ! "$prefix/bin/ffmpeg" -hide_banner -buildconf 2>/dev/null | grep -q -- '--enable-vulkan' \
+    || "$prefix/bin/ffmpeg" -hide_banner -encoders 2>/dev/null | awk '{print $2}' | grep -qx apv_vulkan
 }
 if installed; then
   echo "FFmpeg ${version} is already installed in ${prefix}."
