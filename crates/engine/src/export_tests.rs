@@ -1575,3 +1575,34 @@ fn mxf_op1a_writes_as11_metadata() {
         assert!(e.contains("AS-11"), "{key}: {e}");
     }
 }
+
+#[test]
+fn queue_import_puts_the_finished_file_into_the_project() {
+    // KDN-47: `import: true` adds the finished file to the Project panel; the default does not
+    let mut s = demo();
+    let dir = Scratch::new("queue-import");
+    let items_before = s.project.items.len();
+    let plain = s
+        .execute(
+            "export.queue.add",
+            json!({"path": dir.path("plain.wav"), "format": "wav", "range": "custom", "startSeconds": 0, "endSeconds": 0.25, "start": true, "wait": true}),
+        )
+        .unwrap();
+    assert_eq!(plain["items"][0]["status"], "done", "{plain}");
+    assert_eq!(plain["items"][0]["import"], json!(false));
+    assert_eq!(s.project.items.len(), items_before, "nothing is imported unless asked");
+    let r = s
+        .execute(
+            "export.queue.add",
+            json!({"path": dir.path("imported.wav"), "format": "wav", "range": "custom", "startSeconds": 0, "endSeconds": 0.25, "import": true, "start": true, "wait": true}),
+        )
+        .unwrap();
+    let item = &r["items"][1];
+    assert_eq!(item["status"], "done", "{r}");
+    assert_eq!(item["import"], json!(true));
+    let imported = s.execute("export.queue.list", json!({})).unwrap();
+    let imported = imported.get("result").unwrap_or(&imported)["items"][1]["imported"].as_array().map(Vec::len).unwrap_or(0);
+    assert!(imported >= 1, "the file became a project item: {r}");
+    assert_eq!(s.project.items.len(), items_before + imported);
+    assert!(s.execute("export.queue.add", json!({"path": dir.path("x.wav"), "format": "wav", "import": "yes"})).is_err());
+}
