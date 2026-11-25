@@ -106,6 +106,9 @@ jobs:
       # this binary, so the gate does not wait for them (owner decision 2026-11-24).
       - name: Keep the engine for the Qt GUI tests
         uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        # an upload failure only costs the non-blocking qt-gui-real-engine job its binary: it
+        # must not fail this job, which the gate needs
+        continue-on-error: true
         with:
           name: cfa4-cli-release
           path: target/release/cfa4-cli
