@@ -645,7 +645,14 @@ impl ExportSettings {
             BitrateMode::Cbr => target,
             _ => self.max_bitrate_kbps.filter(|m| *m >= target).unwrap_or_else(|| (u64::from(target) * 3 / 2).min(u64::from(u32::MAX)) as u32),
         };
-        let keyint = self.keyframe_distance.filter(|k| *k > 0).unwrap_or_else(|| (fps * 2.0).round().max(1.0) as u32);
+        let keyint = self.keyframe_distance.filter(|k| *k > 0).unwrap_or_else(|| {
+            // a DVD-Video GOP is 0.6 s at most: 15 pictures at 25 fps, 18 at 29.97
+            if self.format == Format::Mpeg2 && crate::Mpeg2Container::of(self) == crate::Mpeg2Container::Dvd {
+                (fps * 0.6).round().max(1.0) as u32
+            } else {
+                (fps * 2.0).round().max(1.0) as u32
+            }
+        });
         // the Opus encoder codes 48 kHz mono or stereo only
         let opus = self.audio_codec() == AudioCodec::Opus;
         let channels = match self.audio.channels {
@@ -685,6 +692,7 @@ impl ExportSettings {
             (Format::Opus | Format::WebM, _) => AudioCodec::Opus,
             (Format::Wav | Format::Aiff | Format::MxfOp1a | Format::MxfOpAtom, _) => AudioCodec::Pcm,
             (Format::Aac | Format::Hls, _) => AudioCodec::Aac,
+            (Format::Mpeg2, AudioCodec::Auto) if crate::Mpeg2Container::of(self) == crate::Mpeg2Container::Dvd => AudioCodec::Ac3,
             (Format::Mpeg2, AudioCodec::Ac3) if crate::Mpeg2Container::of(self).has_audio() => AudioCodec::Ac3,
             (Format::Mpeg2, AudioCodec::Mp2) => AudioCodec::Mp2,
             (Format::Mpeg2, _) if crate::Mpeg2Container::of(self).is_transport() => AudioCodec::Aac,
@@ -1001,6 +1009,7 @@ impl ExportSettings {
                 crate::Mpeg2Container::Ts => "Transport Stream",
                 crate::Mpeg2Container::M2ts => "BDAV Transport Stream",
                 crate::Mpeg2Container::Es => "Elementary Stream",
+                crate::Mpeg2Container::Dvd => "DVD-Video folder",
             },
             Format::Dcp => match crate::DcpAspect::of(self) {
                 crate::DcpAspect::Flat => "SMPTE, Flat 1.85:1",
