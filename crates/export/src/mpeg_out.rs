@@ -5,7 +5,7 @@
 
 use std::io::Write;
 
-use cfa4_mpegts::{MuxCodec, MuxFormat, Muxer};
+use cfa4_mpegts::{MuxCodec, MuxFormat, Muxer, VideoBuffers};
 use cfa4_time::FrameRate;
 
 use crate::aac_out::AdtsHeader;
@@ -161,7 +161,9 @@ fn to_90k(n: i64, num: i64, den: i64) -> i64 {
 }
 
 impl MpegMux {
-    pub fn new(settings: &ExportSettings, rate: FrameRate, audio: Option<MpegAudio>, mux_rate: u64) -> Result<Self> {
+    /// `video` are the encoder's parameters: its VBV is the video buffer of the transport stream
+    /// (T-STD) and of a program stream (P-STD).
+    pub fn new(settings: &ExportSettings, rate: FrameRate, audio: Option<MpegAudio>, mux_rate: u64, video: Option<crate::MpegVideoInfo>) -> Result<Self> {
         let out = Out::create(settings)?;
         let container = Mpeg2Container::of(settings);
         let sink = match container {
@@ -182,7 +184,24 @@ impl MpegMux {
                     Mpeg2Container::M2ts => MuxFormat::M2ts,
                     _ => MuxFormat::Ps,
                 };
-                Sink::Mux(Box::new(Muxer::new(out, format, &streams, mux_rate).map_err(mux_err)?))
+                let mut mux = Muxer::new(out, format, &streams, mux_rate).map_err(mux_err)?;
+                if let Some(v) = video {
+                    match format {
+                        // the P-STD buffer is at least the VBV and the muxer's default
+                        MuxFormat::Ps => {
+                            mux.set_video_buffer(usize::try_from(v.vbv_buffer_bits / 8).unwrap_or(usize::MAX).max(Muxer::<Out>::DEFAULT_VIDEO_BUFFER))
+                        }
+                        _ => {
+                            if let Some(b) = VideoBuffers::mpeg2(v.profile_and_level, v.vbv_buffer_bits, v.bit_rate) {
+                                mux.set_video_buffers(b);
+                            }
+                        }
+                    }
+                }
+                if let Some(MpegAudio::Aac { header, .. }) = &audio {
+                    mux.set_audio_channels(1, header.channels());
+                }
+                Sink::Mux(Box::new(mux))
             }
         };
         let audio = if container.has_audio() { audio } else { None };

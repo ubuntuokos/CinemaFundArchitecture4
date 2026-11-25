@@ -631,7 +631,7 @@ impl Exporter {
                 _ => 0,
             };
             let peak = self.settings.max_bitrate_kbps.unwrap_or(self.settings.bitrate_kbps);
-            self.mpeg = Some(MpegMux::new(&self.settings, self.pipe.rate, audio, crate::mpeg_out::mux_rate(peak, audio_bps))?);
+            self.mpeg = Some(MpegMux::new(&self.settings, self.pipe.rate, audio, crate::mpeg_out::mux_rate(peak, audio_bps), self.venc.mpeg_video())?);
             return Ok(());
         }
         if self.settings.format.is_mxf() {

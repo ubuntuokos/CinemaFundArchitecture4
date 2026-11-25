@@ -17,8 +17,13 @@
 //! - The muxer is payload-opaque: the bytes of an access unit go out unchanged. H.264 / HEVC
 //!   units must already be Annex B with their access unit delimiter, AAC already ADTS framed
 //!   (CFA4-SCE-001 §12.3/3: any conversion happens before, in a bitstream adapter).
-//! - Transport streams: the T-STD buffer model is not enforced: every stream may be sent up to
-//!   [`Muxer::DELAY`] early, which overruns the small audio buffers of a strict T-STD reading.
+//! - Transport streams keep the T-STD model (H.222.0 §2.4.2): every elementary stream has a
+//!   transport buffer TB (512 bytes, drained at Rx), audio a main buffer B (3584 bytes, AC-3
+//!   3360), video, once [`Muxer::set_video_buffers`] gave its parameters, MB and EB. The units
+//!   are cut into transport packets that are sent interleaved, the most urgent decode time
+//!   first, each as early as the buffers of its stream allow; a packet that would overfill a
+//!   buffer waits until earlier units have been decoded (the clock jumps ahead; PCR and BDAV
+//!   arrival times follow it, PCR-only packets keep the PCRs under 40 ms apart).
 //! - Program streams keep the P-STD model (H.222.0 §2.5.2.4): each stream id has a buffer of the
 //!   size its system header bound announces (video [`Muxer::DEFAULT_VIDEO_BUFFER`], audio 4 KB,
 //!   private stream 1 shared by its sub-streams 7424 bytes); a pack's payload arrives at the end
@@ -27,9 +32,13 @@
 //! - Program streams: 2048-byte packs at most (a pack header before every PES packet, the system
 //!   header in the first), the program end code at the end; DVD LPCM in private stream 1.
 
+use std::collections::VecDeque;
 use std::io::Write;
 
 use crate::ts::crc32_mpeg;
+
+mod tstd;
+pub use tstd::VideoBuffers;
 
 /// What a stream carries.
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
@@ -91,6 +100,9 @@ const FIRST_ES_PID: u16 = 0x100;
 const SYS_PER_90K: i64 = 300;
 /// Largest program stream pack.
 const PACK_SIZE: usize = 2048;
+/// The longest the PCR PID may go without a PCR when the muxer waits (27 MHz: 40 ms; H.222.0
+/// allows 100 ms).
+const PCR_GAP: i64 = 40 * 27_000;
 /// Most queued bytes before the oldest unit goes out regardless of the other streams.
 const MAX_QUEUED: usize = 64 << 20;
 
@@ -112,6 +124,20 @@ struct StreamState {
     last_dts: Option<i64>,
     /// Program streams: the P-STD buffer this stream fills (streams of one PES stream id share).
     pstd: usize,
+    /// Transport streams: its T-STD buffers.
+    model: tstd::Model,
+}
+
+/// A PES packet being sent as transport packets.
+struct Pending {
+    pes: Vec<u8>,
+    at: usize,
+    first: bool,
+    key: bool,
+    /// Earliest start (27 MHz): the decode time less [`Muxer::DELAY`].
+    release: i64,
+    /// When the decoder removes the unit (27 MHz): DTS for video, PTS for audio.
+    removal: i64,
 }
 
 /// One P-STD buffer: its size and what it holds as (removal time in 27 MHz ticks, bytes).
@@ -144,6 +170,10 @@ pub struct Muxer<W: Write> {
     dvd: bool,
     /// DVD: video has been written since the last navigation pack.
     nav_has_video: bool,
+    /// Transport streams: units cut into packets, waiting for their turn, per stream.
+    pending: Vec<VecDeque<Pending>>,
+    /// `finish` was called: no unit will follow, so the muxer may idle to the end.
+    finishing: bool,
 }
 
 impl<W: Write> Muxer<W> {
@@ -188,7 +218,15 @@ impl<W: Write> Muxer<W> {
                 Some(g) => states.get(g).map_or(0, |s| s.pstd),
                 None => states.iter().map(|s| s.pstd + 1).max().unwrap_or(0),
             };
-            states.push(StreamState { codec, pid: FIRST_ES_PID + k as u16, cc: 0, last_dts: None, pstd });
+            let model = match codec {
+                // AAC with one or two channels (see `set_audio_channels`), MPEG audio
+                MuxCodec::AacAdts | MuxCodec::MpegAudio => tstd::Model::audio(2_000_000, 3584),
+                // 736 bytes of multiplexing, 64 of padding and the largest frame (640 kbit/s)
+                MuxCodec::Ac3 => tstd::Model::audio(2_000_000, 736 + 64 + 2560),
+                // video joins the model with `set_video_buffers`
+                _ => tstd::Model::free(),
+            };
+            states.push(StreamState { codec, pid: FIRST_ES_PID + k as u16, cc: 0, last_dts: None, pstd, model });
         }
         if video > 16 || lpcm > 8 || mpa > 16 || ac3 > 8 {
             return Err(MuxError::Unsupported("too many streams of one kind".into()));
@@ -211,6 +249,8 @@ impl<W: Write> Muxer<W> {
             video_buffer: Self::DEFAULT_VIDEO_BUFFER,
             dvd: false,
             nav_has_video: false,
+            pending: (0..streams.len()).map(|_| VecDeque::new()).collect(),
+            finishing: false,
         };
         m.build_pstd();
         Ok(m)
@@ -230,6 +270,26 @@ impl<W: Write> Muxer<W> {
         let mut m = Self::new(out, MuxFormat::Ps, streams, 10_080_000)?;
         m.dvd = true;
         Ok(m)
+    }
+
+    /// The T-STD buffers of every video stream of a transport stream (without them video is not
+    /// held back: the encoder's VBV is not known). Call before the first `write`.
+    pub fn set_video_buffers(&mut self, buffers: VideoBuffers) {
+        for s in self.streams.iter_mut().filter(|s| s.codec.is_video()) {
+            s.model = tstd::Model::video(buffers);
+        }
+    }
+
+    /// The channel count of an AAC stream (§2.4.2.3: 3 to 8 channels have a larger buffer and a
+    /// faster transport buffer). Call before the first `write`.
+    pub fn set_audio_channels(&mut self, stream: usize, channels: u32) {
+        let Some(s) = self.streams.get_mut(stream).filter(|s| s.codec == MuxCodec::AacAdts) else { return };
+        s.model = match channels {
+            0..=2 => tstd::Model::audio(2_000_000, 3584),
+            3..=8 => tstd::Model::audio(5_529_600, 8976),
+            9..=12 => tstd::Model::audio(8_294_400, 12_804),
+            _ => tstd::Model::audio(33_177_600, 51_216),
+        };
     }
 
     /// The video P-STD buffer of a program stream, in bytes (rounded up to 1024; the system
@@ -319,6 +379,7 @@ impl<W: Write> Muxer<W> {
 
     /// Write everything still queued (and the program end code of a program stream).
     pub fn finish(mut self) -> MuxResult<W> {
+        self.finishing = true;
         self.flush_until(i64::MAX, true)?;
         if self.format == MuxFormat::Ps && !self.dvd {
             self.out.write_all(&[0, 0, 1, 0xB9])?;
@@ -361,12 +422,17 @@ impl<W: Write> Muxer<W> {
         let ready: Vec<Unit> = self.queue.drain(..n).collect();
         for u in ready {
             self.queued_bytes = self.queued_bytes.saturating_sub(u.data.len());
-            // out as early as the rate allows, not more than the delay before the decode time
-            self.clock = self.clock.max((u.dts - Self::DELAY) * SYS_PER_90K);
             match self.format {
-                MuxFormat::Ps => self.write_ps(&u)?,
-                _ => self.write_ts(&u)?,
+                MuxFormat::Ps => {
+                    // out as early as the rate allows, not more than the delay before the decode time
+                    self.clock = self.clock.max((u.dts - Self::DELAY) * SYS_PER_90K);
+                    self.write_ps(&u)?
+                }
+                _ => self.enqueue_ts(&u),
             }
+        }
+        if self.format != MuxFormat::Ps {
+            self.drain_ts()?;
         }
         Ok(n > 0)
     }
@@ -378,69 +444,177 @@ impl<W: Write> Muxer<W> {
 
     // ---- transport streams -------------------------------------------------------------------
 
-    fn write_ts(&mut self, u: &Unit) -> MuxResult<()> {
-        let video = self.streams.get(u.stream).is_some_and(|s| s.codec.is_video());
-        if self.last_psi.is_none_or(|t| self.clock - t >= 100 * 27_000) || (video && u.key) {
+    /// Cut `u` into a PES packet and queue it for [`Muxer::drain_ts`].
+    fn enqueue_ts(&mut self, u: &Unit) {
+        let Some(st) = self.streams.get(u.stream) else { return };
+        let video = st.codec.is_video();
+        let pes = pes_packet(stream_id(st.codec), u, true, &[], 0);
+        let removal = tstd::sys(if video { u.dts } else { u.pts });
+        let release = tstd::sys(u.dts - Self::DELAY);
+        if let Some(q) = self.pending.get_mut(u.stream) {
+            q.push_back(Pending { pes, at: 0, first: true, key: u.key, release, removal });
+        }
+    }
+
+    /// Send everything queued, packet by packet: of the streams that can send now the one whose
+    /// next unit is decoded first, else the one that can send soonest.
+    fn drain_ts(&mut self) -> MuxResult<()> {
+        let wire = if self.format == MuxFormat::M2ts { 192 } else { 188 };
+        let wire_ticks = self.ticks(wire);
+        loop {
+            // (stream, start, removal, ready now)
+            let mut best: Option<(usize, i64, i64, bool)> = None;
+            for (i, q) in self.pending.iter().enumerate() {
+                let (Some(p), Some(st)) = (q.front(), self.streams.get(i)) else { continue };
+                let payload = (p.pes.len() - p.at).min(184);
+                let plan = st.model.plan(self.clock.max(p.release), wire_ticks, payload, p.removal);
+                let ready = plan.start <= self.clock;
+                let better = match best {
+                    None => true,
+                    Some((_, s, r, rd)) => match (ready, rd) {
+                        (true, false) => true,
+                        (false, true) => false,
+                        (true, true) => p.removal < r,
+                        (false, false) => (plan.start, p.removal) < (s, r),
+                    },
+                };
+                if better {
+                    best = Some((i, plan.start, p.removal, ready));
+                }
+            }
+            let Some((i, start, _, ready)) = best else { return Ok(()) };
+            if !ready && !self.finishing {
+                // Idling moves the clock; a unit still to come may be due before that. Its release
+                // is no earlier than the decode time of the stream that is furthest behind.
+                let Some(h) = self.streams.iter().map(|s| s.last_dts).min().flatten() else { return Ok(()) };
+                if start > tstd::sys(h - Self::DELAY) {
+                    return Ok(());
+                }
+            }
+            self.advance_to(start, wire_ticks)?;
+            self.send_ts_packet(i, wire_ticks)?;
+        }
+    }
+
+    /// The next transport packet of stream `i`'s first queued unit.
+    fn send_ts_packet(&mut self, i: usize, wire_ticks: i64) -> MuxResult<()> {
+        let Some((first, key)) = self.pending.get(i).and_then(|q| q.front()).map(|p| (p.first, p.key)) else { return Ok(()) };
+        let Some(st) = self.streams.get(i) else { return Ok(()) };
+        let (pid, video) = (st.pid, st.codec.is_video());
+        let pcr_pid = self.pcr_pid();
+        if first && (self.last_psi.is_none_or(|t| self.clock - t >= 100 * 27_000) || (video && key)) {
             self.write_psi()?;
         }
-        let Some(st) = self.streams.get(u.stream) else { return Ok(()) };
-        let (pid, codec) = (st.pid, st.codec);
-        let pes = pes_packet(stream_id(codec), u, true, &[], 0);
-        let pcr_pid = self.pcr_pid();
-        let mut at = 0;
-        let mut first = true;
-        while at < pes.len() {
-            let pcr = (Some(pid) == pcr_pid && (first || self.last_pcr.is_none_or(|t| self.clock - t >= 30 * 27_000))).then_some(self.clock);
-            let random = first && u.key;
-            // adaptation field: length byte + flags (+ PCR)
-            let mut af = Vec::new();
-            if pcr.is_some() || random {
-                af.push(u8::from(random) << 6 | u8::from(pcr.is_some()) << 4);
-                if let Some(t) = pcr {
-                    let (base, ext) = (t / SYS_PER_90K, t % SYS_PER_90K);
-                    af.extend_from_slice(&[
-                        (base >> 25) as u8,
-                        (base >> 17) as u8,
-                        (base >> 9) as u8,
-                        (base >> 1) as u8,
-                        ((base & 1) << 7) as u8 | 0x7E | (ext >> 8) as u8,
-                        ext as u8,
-                    ]);
-                    self.last_pcr = Some(t);
+        let (Some(p), Some(st)) = (self.pending.get(i).and_then(|q| q.front()), self.streams.get(i)) else { return Ok(()) };
+        let (at, removal, release) = (p.at, p.removal, p.release);
+        let payload_max = (p.pes.len() - at).min(184);
+        // the PSI and PCR packets only delayed this one
+        let plan = st.model.plan(self.clock.max(release), wire_ticks, payload_max, removal);
+        self.clock = self.clock.max(plan.start);
+        let pcr = (Some(pid) == pcr_pid && (first || self.last_pcr.is_none_or(|t| self.clock - t >= 30 * 27_000))).then_some(self.clock);
+        let random = first && key;
+        // adaptation field: length byte + flags (+ PCR)
+        let mut af = Vec::new();
+        if pcr.is_some() || random {
+            af.push(u8::from(random) << 6 | u8::from(pcr.is_some()) << 4);
+            if let Some(t) = pcr {
+                af.extend_from_slice(&pcr_field(t));
+                self.last_pcr = Some(t);
+            }
+        }
+        let Some(p) = self.pending.get(i).and_then(|q| q.front()) else { return Ok(()) };
+        let room = 184 - if af.is_empty() { 0 } else { 1 + af.len() };
+        let take = room.min(p.pes.len() - at);
+        if take < room {
+            // stuffing: the adaptation field grows to fill the packet
+            let fill = room - take;
+            if af.is_empty() {
+                if fill > 1 {
+                    af.push(0);
+                    af.extend(std::iter::repeat_n(0xFF, fill - 2));
                 }
+                // fill == 1: an adaptation field of length 0
+            } else {
+                af.extend(std::iter::repeat_n(0xFF, fill));
             }
-            let room = 184 - if af.is_empty() { 0 } else { 1 + af.len() };
-            let take = room.min(pes.len() - at);
-            if take < room {
-                // stuffing: the adaptation field grows to fill the packet
-                let fill = room - take;
-                if af.is_empty() {
-                    if fill > 1 {
-                        af.push(0);
-                        af.extend(std::iter::repeat_n(0xFF, fill - 2));
-                    }
-                    // fill == 1: an adaptation field of length 0
-                } else {
-                    af.extend(std::iter::repeat_n(0xFF, fill));
+        }
+        let has_af = !af.is_empty() || take < room;
+        let mut pk = Vec::with_capacity(188);
+        pk.push(0x47);
+        pk.push(u8::from(first) << 6 | (pid >> 8) as u8 & 0x1F);
+        pk.push(pid as u8);
+        pk.push(if has_af { 0x30 } else { 0x10 });
+        if has_af {
+            pk.push(af.len() as u8);
+            pk.extend_from_slice(&af);
+        }
+        pk.extend_from_slice(p.pes.get(at..at + take).unwrap_or(&[]));
+        let cc = self.next_cc(i);
+        pk[3] |= cc;
+        if let Some(st) = self.streams.get_mut(i) {
+            st.model.commit(&plan, take, removal);
+        }
+        self.packet(&pk)?;
+        if let Some(q) = self.pending.get_mut(i) {
+            let done = match q.front_mut() {
+                Some(p) => {
+                    p.at += take;
+                    p.first = false;
+                    p.at >= p.pes.len()
                 }
+                None => false,
+            };
+            if done {
+                q.pop_front();
             }
-            let has_af = !af.is_empty() || take < room;
-            let cc = self.next_cc(u.stream);
-            let mut p = Vec::with_capacity(188);
-            p.push(0x47);
-            p.push(u8::from(first) << 6 | (pid >> 8) as u8 & 0x1F);
-            p.push(pid as u8);
-            p.push(if has_af { 0x30 } else { 0x10 } | cc);
-            if has_af {
-                p.push(af.len() as u8);
-                p.extend_from_slice(&af);
-            }
-            p.extend_from_slice(pes.get(at..at + take).unwrap_or(&[]));
-            self.packet(&p)?;
-            at += take;
-            first = false;
         }
         Ok(())
+    }
+
+    /// Move the clock to `start`. A wait longer than [`PCR_GAP`] is broken up by PCR-only packets
+    /// (a stream held back by its buffers would leave the PCR PID silent).
+    fn advance_to(&mut self, start: i64, wire_ticks: i64) -> MuxResult<()> {
+        let Some(k) = self.pcr_pid().and_then(|pid| self.streams.iter().position(|s| s.pid == pid)) else {
+            self.clock = self.clock.max(start);
+            return Ok(());
+        };
+        // an idle stretch is bracketed by PCRs, so the PCRs' interpolation over the packets
+        // between them stays exact: the packets before it end at a PCR, those after start at one
+        let idle = start - self.clock > 2 * wire_ticks;
+        if idle && self.last_pcr.is_some() {
+            self.send_pcr_packet(k, wire_ticks)?;
+        }
+        while let Some(last) = self.last_pcr
+            && start - last > PCR_GAP
+        {
+            self.clock = self.clock.max(last + PCR_GAP);
+            self.send_pcr_packet(k, wire_ticks)?;
+        }
+        if idle && self.last_pcr.is_some() {
+            // the PCR that opens the packets after the stretch ends exactly at `start`
+            self.clock = self.clock.max(start - wire_ticks);
+            self.send_pcr_packet(k, wire_ticks)?;
+        }
+        self.clock = self.clock.max(start);
+        Ok(())
+    }
+
+    /// A transport packet that only carries a PCR on stream `k`'s PID (an adaptation field, no
+    /// payload: the continuity counter stays).
+    fn send_pcr_packet(&mut self, k: usize, wire_ticks: i64) -> MuxResult<()> {
+        let Some(st) = self.streams.get(k) else { return Ok(()) };
+        let pid = st.pid;
+        let plan = st.model.plan(self.clock, wire_ticks, 0, i64::MAX);
+        self.clock = self.clock.max(plan.start);
+        let cc = st.cc.wrapping_sub(1) & 15;
+        let mut pk = vec![0x47, (pid >> 8) as u8 & 0x1F, pid as u8, 0x20 | cc, 183, 0x10];
+        pk.extend_from_slice(&pcr_field(self.clock));
+        pk.resize(188, 0xFF);
+        self.last_pcr = Some(self.clock);
+        if let Some(st) = self.streams.get_mut(k) {
+            st.model.commit(&plan, 0, i64::MAX);
+        }
+        self.packet(&pk)
     }
 
     /// The PCR goes on the first video stream (its large random-access units would otherwise hold
@@ -775,4 +949,10 @@ fn pes_packet(id: u8, u: &Unit, stamped: bool, prefix: &[u8], stuffing: usize) -
     p.extend_from_slice(prefix);
     p.extend_from_slice(&u.data);
     p
+}
+
+/// The 6 bytes of a program_clock_reference at 27 MHz time `t`.
+fn pcr_field(t: i64) -> [u8; 6] {
+    let (base, ext) = (t / SYS_PER_90K, t % SYS_PER_90K);
+    [(base >> 25) as u8, (base >> 17) as u8, (base >> 9) as u8, (base >> 1) as u8, ((base & 1) << 7) as u8 | 0x7E | (ext >> 8) as u8, ext as u8]
 }
