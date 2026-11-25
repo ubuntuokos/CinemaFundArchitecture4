@@ -451,6 +451,67 @@ jobs:
           python -m unittest discover -s packaging/linux -p 'test_*.py' -v
           python -m cfa4_devtools.dependency_audit
 
+  # Measured parity (docs/plans/CFA4-PARITY-G7-2026-11-20.md, G7.10): the Qt 6 GUI's menus and
+  # panels against the committed references and xtask/parity/thresholds.json. The ratchet fails when
+  # a threshold is lowered or removed compared with the base; `--ci` fails below a threshold. The
+  # Qt dump needs the built engine and the Python environment (.venv, which `cargo xtask parity`
+  # looks for). The report is kept as an artifact.
+  parity:
+    if: github.event_name == 'workflow_dispatch' || github.event_name == 'merge_group' || (github.event_name == 'pull_request' && github.event.action == 'labeled' && github.event.label.name == 'cfa4-full-validation')
+    needs: platform-scope
+    name: Measured parity (G7)
+    runs-on: ubuntu-26.04
+    timeout-minutes: 150
+    env:
+      QT_QPA_PLATFORM: offscreen
+      # the ratchet's base: the PR's base, or the commit the merge queue builds on; none for a manual run
+      PARITY_BASE_SHA: ${{ github.event.pull_request.base.sha || github.event.merge_group.base_sha }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - name: Install native build dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends \
+            build-essential pkg-config clang cmake ninja-build \
+            libasound2-dev libudev-dev libxkbcommon-dev libwayland-dev \
+            libx11-dev libx11-xcb-dev libxi-dev libxcursor-dev libxrandr-dev \
+            libvulkan-dev libegl1-mesa-dev libgl1-mesa-dev nasm curl xz-utils \
+            libegl1 libgl1 libopengl0 libxkbcommon0 libxcb-cursor0 libpulse0 libpulse-mainloop-glib0
+      - name: Rust toolchain from rust-toolchain.toml
+        run: |
+          rustup show
+          rustc --version
+          cargo --version
+      - name: Python
+        uses: actions/setup-python@6d4fd22b20465ccc0f7354476588e8df7c9ca0e0 # v7.1.0
+        with:
+          python-version: "3.13"
+      - name: Python environment in .venv (the Qt dump runs .venv/bin/python)
+        run: |
+          python -m venv .venv
+          .venv/bin/python -m pip install --upgrade pip
+          .venv/bin/python -m pip install --require-hashes -r requirements/linux-amd64.txt
+          .venv/bin/python -m pip install --no-deps -e .
+      - name: Thresholds never go down (ratchet against the base)
+        if: env.PARITY_BASE_SHA != ''
+        run: |
+          git fetch --no-tags --depth=1 origin "$PARITY_BASE_SHA"
+          cargo run --locked -q -p xtask -- parity --check-ratchet --base "$PARITY_BASE_SHA"
+      - name: Build the engine the Qt dump starts
+        run: cargo build --locked --release -p cfa4-cli
+      - name: Measure menus and panels against the committed references and thresholds
+        run: cargo run --locked -q -p xtask -- parity --ci
+      - name: Keep the parity report
+        if: always()
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: parity-report
+          path: target/parity/
+          if-no-files-found: warn
+
   # Required status check for main (owner decision 2026-10-31, docs/coordination.md §3.4):
   # green only if every blocking full-validation job really ran and succeeded on this head.
   # A skipped job (no `cfa4-full-validation` label / no workflow_dispatch) fails the gate.
@@ -468,6 +529,7 @@ jobs:
       - rust-release-tests
       - python-qt6-linux
       - otio-oracle
+      - parity
     name: full-validation-gate
     runs-on: ubuntu-26.04
     timeout-minutes: 5
