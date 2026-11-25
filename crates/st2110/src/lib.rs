@@ -1,5 +1,5 @@
 //! Clean-room SMPTE ST 2110 essence formats for the CFA4 live studio (CFA4-LIVE-STUDIO-001 ST 2110
-//! addendum, phases T0 and T1).
+//! addendum, phases T0, T1 and T1b).
 //!
 //! - [`rtp`]: the RTP fixed header (RFC 3550) with ST 2110's constraints.
 //! - [`sdp`]: session descriptions (RFC 4566 / 8866) with `ts-refclk`, `mediaclk` and `fmtp`.
@@ -8,6 +8,8 @@
 //! - [`clock`]: PTP (TAI) time, the media clock and RTP timestamps aligned to the SMPTE Epoch,
 //!   frame and field timestamps (59.94 Hz steps 1501/1502 exactly), `ptp4l` state from `pmc`, and
 //!   the sender's `ts-refclk` / `mediaclk` with and without a PTP lock.
+//! - [`validate`]: the network rules of ST 2110-10:2022 as a checker over a parsed SDP (reserved
+//!   multicast ranges, one RTP session per stream, ST 2022-7 pairs, `MAXUDP`, no JPEG XS).
 //! - [`pack`]: ST 2110-20 packetization (General and Block Packing Mode) and reassembly, and
 //!   conversion between sample planes and pgroup rows.
 //!
@@ -21,6 +23,7 @@ pub mod format;
 pub mod pack;
 pub mod rtp;
 pub mod sdp;
+pub mod validate;
 pub mod video;
 
 pub use format::VideoFormat;

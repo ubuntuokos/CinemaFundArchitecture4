@@ -55,14 +55,55 @@ pub struct PtpReport {
     /// The SDP attributes a sender uses now: `a=ts-refclk:` and `a=mediaclk:` values.
     pub ts_refclk: String,
     pub mediaclk: String,
+    /// `ptp4l` runs with `slaveOnly 1` (ST 2110-10:2022 §7.2: CFA4 is never the PTP leader).
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub slave_only: Option<bool>,
+    /// The grandmaster is traceable (PTP timescale, `timeTraceable`, accuracy of 250 ns or
+    /// better; ST 2110-10:2022 §8.2). The SDP names the grandmaster either way unless the
+    /// traceable form is asked for.
+    pub traceable: bool,
+    /// What the operator should fix, e.g. a `ptp4l` that may become the leader.
+    #[serde(skip_serializing_if = "Vec::is_empty")]
+    pub warnings: Vec<String>,
 }
+
+/// What the report does about a `ptp4l` that is not `slaveOnly`.
+#[derive(Debug, Clone, Copy, Default, PartialEq, Eq)]
+pub struct Policy {
+    /// Refuse to count the clock as usable when `ptp4l` reports `slaveOnly 0`: the sender then
+    /// signals its own timebase. Off by default (only a warning); `CFA4_PTP_REQUIRE_SLAVE_ONLY=1`.
+    pub require_slave_only: bool,
+}
+
+impl Policy {
+    /// From the environment (`CFA4_PTP_REQUIRE_SLAVE_ONLY`: `1` or `true`).
+    pub fn from_env() -> Self {
+        Policy { require_slave_only: std::env::var("CFA4_PTP_REQUIRE_SLAVE_ONLY").is_ok_and(|v| matches!(v.as_str(), "1" | "true")) }
+    }
+}
+
+const LEADER_WARNING: &str = "ptp4l may become the PTP leader (slaveOnly 0): set `slaveOnly 1` in ptp4l.conf (docs/live-studio-ptp.md)";
 
 /// Build the report from `pmc`'s answer (or why there is none), the system time and the
 /// sender's MAC. Pure, for tests.
 pub fn report_from(pmc: Result<String, String>, now: SystemTime, mac: [u8; 6]) -> PtpReport {
+    report_from_with(pmc, now, mac, Policy::default())
+}
+
+/// [`report_from`] with a [`Policy`].
+pub fn report_from_with(pmc: Result<String, String>, now: SystemTime, mac: [u8; 6], policy: Policy) -> PtpReport {
+    let mut warnings = Vec::new();
     let (status, reason) = match pmc {
         Ok(text) => match PtpStatus::parse_pmc(&text) {
-            Ok(s) if s.port_state.is_some() => (Some(s), None),
+            Ok(s) if s.port_state.is_some() && s.may_become_leader() && policy.require_slave_only => {
+                (None, Some("ptp4l may become the PTP leader (slaveOnly 0) and CFA4_PTP_REQUIRE_SLAVE_ONLY is set".to_string()))
+            }
+            Ok(s) if s.port_state.is_some() => {
+                if s.may_become_leader() {
+                    warnings.push(LEADER_WARNING.to_string());
+                }
+                (Some(s), None)
+            }
             Ok(_) => (None, Some("ptp4l did not answer (not running, or another domain)".to_string())),
             Err(e) => (None, Some(format!("unreadable pmc answer: {e}"))),
         },
@@ -85,6 +126,9 @@ pub fn report_from(pmc: Result<String, String>, now: SystemTime, mac: [u8; 6]) -
         tai_nanos: tai.map(|t| t.nanos),
         ts_refclk: refclk.to_value(),
         mediaclk: mediaclk.to_value(),
+        slave_only: s.slave_only,
+        traceable: s.traceable(),
+        warnings,
     }
 }
 
@@ -99,7 +143,7 @@ pub fn find_pmc() -> Option<PathBuf> {
 pub fn run_pmc(pmc: &Path, domain: u8, timeout: Duration) -> Result<String, String> {
     let mut child = Command::new(pmc)
         .args(["-u", "-b", "0", "-d", &domain.to_string()])
-        .args(["GET TIME_STATUS_NP", "GET DEFAULT_DATA_SET", "GET PORT_DATA_SET", "GET TIME_PROPERTIES_DATA_SET"])
+        .args(["GET TIME_STATUS_NP", "GET DEFAULT_DATA_SET", "GET PARENT_DATA_SET", "GET PORT_DATA_SET", "GET TIME_PROPERTIES_DATA_SET"])
         .stdin(Stdio::null())
         .stdout(Stdio::piped())
         .stderr(Stdio::null())
@@ -164,7 +208,7 @@ fn query_with_pmc(pmc: Option<&Path>, domain: u8, timeout: Duration) -> PtpRepor
         Some(pmc) => run_pmc(pmc, domain, timeout),
         None => Err("pmc not found (install linuxptp)".into()),
     };
-    report_from(answer, SystemTime::now(), local_mac())
+    report_from_with(answer, SystemTime::now(), local_mac(), Policy::from_env())
 }
 
 #[cfg(test)]
@@ -206,6 +250,44 @@ mod tests {
         let r = report_from(Ok(LOCKED.replace("SLAVE", "MASTER")), now, MAC);
         assert!(r.available && !r.locked);
         assert_eq!(r.mediaclk, "sender");
+    }
+
+    #[test]
+    fn traceable_and_slave_only_in_the_report() {
+        let now = UNIX_EPOCH + Duration::from_secs(1_762_905_600);
+        let extra = "\t\tslaveOnly 1\n\t\tptpTimescale 1\n\t\ttimeTraceable 1\n\t\tgm.ClockAccuracy 0x21\n";
+        let r = report_from(Ok(format!("{LOCKED}{extra}")), now, MAC);
+        assert!(r.locked && r.traceable && r.warnings.is_empty());
+        assert_eq!(r.slave_only, Some(true));
+        let j = serde_json::to_value(&r).unwrap();
+        assert_eq!((&j["traceable"], &j["slaveOnly"]), (&serde_json::json!(true), &serde_json::json!(true)));
+        assert!(j.get("warnings").is_none());
+        // Accuracy 1 µs: locked, not traceable.
+        let r = report_from(Ok(format!("{LOCKED}{}", extra.replace("0x21", "0x23"))), now, MAC);
+        assert!(r.locked && !r.traceable);
+        // No grandmaster properties at all: locked as before, not traceable, nothing to warn about.
+        let r = report_from(Ok(LOCKED.into()), now, MAC);
+        assert!(r.locked && !r.traceable && r.slave_only.is_none() && r.warnings.is_empty());
+    }
+
+    #[test]
+    fn a_leader_capable_ptp4l_warns_or_is_refused() {
+        let now = UNIX_EPOCH + Duration::from_secs(1_762_905_600);
+        let text = format!("{LOCKED}\t\tslaveOnly 0\n");
+        let r = report_from(Ok(text.clone()), now, MAC);
+        assert!(r.available && r.locked);
+        assert_eq!(r.warnings.len(), 1);
+        assert!(r.warnings[0].contains("slaveOnly 1"));
+        assert_eq!(serde_json::to_value(&r).unwrap()["warnings"].as_array().map(Vec::len), Some(1));
+        // Enforced: the clock is not used, the sender signals its own timebase.
+        let r = report_from_with(Ok(text), now, MAC, Policy { require_slave_only: true });
+        assert!(!r.available && !r.locked);
+        assert_eq!((r.ts_refclk.as_str(), r.mediaclk.as_str()), ("localmac=02-11-22-33-44-55", "sender"));
+        assert!(r.reason.is_some_and(|w| w.contains("slaveOnly 0")));
+        // Enforcement does not touch a slaveOnly or an unknown ptp4l.
+        for t in [format!("{LOCKED}\t\tslaveOnly 1\n"), LOCKED.to_string()] {
+            assert!(report_from_with(Ok(t), now, MAC, Policy { require_slave_only: true }).locked);
+        }
     }
 
     #[test]

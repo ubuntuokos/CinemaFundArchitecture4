@@ -105,6 +105,7 @@ fn mangled_sdp_never_panics() {
                 let _ = m.rtpmap(96);
                 let _ = m.ts_refclk();
                 let _ = m.mediaclk();
+                let _ = cfa4_st2110::validate::check(&s);
                 if let Some(f) = m.fmtp(96) {
                     let _ = VideoFormat::from_fmtp(&f);
                 }

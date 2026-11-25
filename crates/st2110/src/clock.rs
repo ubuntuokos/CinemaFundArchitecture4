@@ -16,7 +16,7 @@
 
 use crate::Error;
 use crate::sdp::{MediaClock, RefClock};
-use crate::video::FrameRate;
+use crate::video::{FrameRate, TsMode};
 
 const NANOS: u128 = 1_000_000_000;
 
@@ -175,6 +175,50 @@ pub struct PtpStatus {
     /// TIME_PROPERTIES_DATA_SET`), and whether it is valid.
     pub utc_offset: Option<i32>,
     pub utc_offset_valid: Option<bool>,
+    /// `slaveOnly` of `DEFAULT_DATA_SET`: the clock never becomes a time transmitter
+    /// (ST 2110-10:2022 §7.2: CFA4 is never the PTP leader, plan V-05).
+    pub slave_only: Option<bool>,
+    /// `ptpTimescale` of `TIME_PROPERTIES_DATA_SET`: the grandmaster uses the PTP timescale.
+    pub ptp_timescale: Option<bool>,
+    /// `timeTraceable` of `TIME_PROPERTIES_DATA_SET`: the time is traceable to a primary reference.
+    pub time_traceable: Option<bool>,
+    /// The grandmaster's `clockAccuracy` code (`gm.ClockAccuracy` of `PARENT_DATA_SET`,
+    /// IEEE 1588-2008 Table 6): `0x20` is within 25 ns, `0x21` 100 ns, `0x22` 250 ns.
+    pub gm_clock_accuracy: Option<u8>,
+}
+
+/// The largest `clockAccuracy` code that is 250 ns or better (IEEE 1588-2008 Table 6).
+pub const CLOCK_ACCURACY_250_NS: u8 = 0x22;
+/// The smallest `clockAccuracy` code with a time bound (within 25 ns); lower codes are reserved.
+pub const CLOCK_ACCURACY_25_NS: u8 = 0x20;
+
+/// The three conditions that allow the `traceable` form of `ts-refclk` (ST 2110-10:2022 §8.2,
+/// plan V-04). `None` means the grandmaster's answer did not say, which counts as not met.
+#[derive(Debug, Clone, Copy, Default, PartialEq, Eq)]
+pub struct TraceableConditions {
+    /// The PTP timescale is in use.
+    pub ptp_timescale: Option<bool>,
+    /// The grandmaster's `timeTraceable` is true.
+    pub time_traceable: Option<bool>,
+    /// The grandmaster's `clockAccuracy` is 250 ns or better.
+    pub accuracy_250_ns: Option<bool>,
+}
+
+impl TraceableConditions {
+    /// All three conditions are known and met.
+    pub fn all_met(&self) -> bool {
+        self.ptp_timescale == Some(true) && self.time_traceable == Some(true) && self.accuracy_250_ns == Some(true)
+    }
+}
+
+/// How the sender names the PTP reference in `ts-refclk`.
+#[derive(Debug, Clone, Copy, Default, PartialEq, Eq)]
+pub enum RefClockForm {
+    /// Always the grandmaster's identity and the domain (the default: it says more).
+    #[default]
+    Grandmaster,
+    /// `ptp=IEEE1588-2008:traceable` when the three conditions hold, otherwise the grandmaster.
+    TraceableWhenAllowed,
 }
 
 impl PtpStatus {
@@ -197,6 +241,13 @@ impl PtpStatus {
                 "portState" => s.port_state = Some(PortState::parse(value).ok_or_else(bad)?),
                 "currentUtcOffset" => s.utc_offset = Some(value.parse().map_err(|_| bad())?),
                 "currentUtcOffsetValid" => s.utc_offset_valid = Some(matches!(value, "1" | "true")),
+                "slaveOnly" => s.slave_only = Some(parse_flag(value).ok_or_else(bad)?),
+                "ptpTimescale" => s.ptp_timescale = Some(parse_flag(value).ok_or_else(bad)?),
+                "timeTraceable" => s.time_traceable = Some(parse_flag(value).ok_or_else(bad)?),
+                "gm.ClockAccuracy" => {
+                    let hex = value.strip_prefix("0x").or_else(|| value.strip_prefix("0X")).ok_or_else(bad)?;
+                    s.gm_clock_accuracy = Some(u8::from_str_radix(hex, 16).map_err(|_| bad())?);
+                }
                 _ => {}
             }
         }
@@ -211,6 +262,27 @@ impl PtpStatus {
         }
     }
 
+    /// The three conditions for the `traceable` form of `ts-refclk` (plan V-04).
+    pub fn traceable_conditions(&self) -> TraceableConditions {
+        TraceableConditions {
+            ptp_timescale: self.ptp_timescale,
+            time_traceable: self.time_traceable,
+            accuracy_250_ns: self.gm_clock_accuracy.map(|a| (CLOCK_ACCURACY_25_NS..=CLOCK_ACCURACY_250_NS).contains(&a)),
+        }
+    }
+
+    /// True when the grandmaster is traceable in the sense of ST 2110-10:2022 §8.2: PTP
+    /// timescale, `timeTraceable`, and `clockAccuracy` of 250 ns or better.
+    pub fn traceable(&self) -> bool {
+        self.traceable_conditions().all_met()
+    }
+
+    /// `ptp4l` reports that it may become the PTP leader (`slaveOnly 0`). ST 2110-10:2022 §7.2
+    /// says a CFA4 sender is never the leader; the fix is `slaveOnly 1` in `ptp4l.conf`.
+    pub fn may_become_leader(&self) -> bool {
+        self.slave_only == Some(false)
+    }
+
     /// Locked to a grandmaster: a slave port with a grandmaster present, its identity and
     /// domain known, and the offset within `max_offset_ns`.
     pub fn locked(&self, max_offset_ns: u64) -> bool {
@@ -219,6 +291,14 @@ impl PtpStatus {
             && self.grandmaster.is_some()
             && self.domain.is_some()
             && self.master_offset_ns.is_some_and(|o| o.unsigned_abs() <= max_offset_ns)
+    }
+}
+
+fn parse_flag(v: &str) -> Option<bool> {
+    match v {
+        "1" | "true" => Some(true),
+        "0" | "false" => Some(false),
+        _ => None,
     }
 }
 
@@ -242,13 +322,29 @@ pub const DEFAULT_LOCK_LIMIT_NS: u64 = 1_000;
 /// The SDP clock signalling for a sender: the grandmaster and `direct=0` when locked, otherwise
 /// the sender's own timebase named by its MAC (ST 2110-10:2022).
 pub fn sender_clocks(status: Option<&PtpStatus>, local_mac: [u8; 6], max_offset_ns: u64) -> (RefClock, MediaClock) {
+    sender_clocks_with(status, local_mac, max_offset_ns, RefClockForm::Grandmaster)
+}
+
+/// [`sender_clocks`] with the choice of the `ts-refclk` form: `traceable` is signalled only with
+/// [`RefClockForm::TraceableWhenAllowed`] and only when all three conditions of V-04 hold; in
+/// every other locked case the grandmaster and the domain are named.
+pub fn sender_clocks_with(status: Option<&PtpStatus>, local_mac: [u8; 6], max_offset_ns: u64, form: RefClockForm) -> (RefClock, MediaClock) {
     match status {
         Some(s) if s.locked(max_offset_ns) => match (s.grandmaster, s.domain) {
+            (Some(_), Some(_)) if form == RefClockForm::TraceableWhenAllowed && s.traceable() => (RefClock::PtpTraceable, MediaClock::Direct(0)),
             (Some(grandmaster), Some(domain)) => (RefClock::Ptp { grandmaster, domain }, MediaClock::Direct(0)),
             _ => (RefClock::LocalMac(local_mac), MediaClock::Sender),
         },
         _ => (RefClock::LocalMac(local_mac), MediaClock::Sender),
     }
+}
+
+/// The `TSMODE` a sender of synthetic (composited) content signals (ST 2110-10:2022 §7.6.3, §8.7;
+/// plan V-03). With the frame clock locked to PTP and the sender's media clock `direct=0`, the
+/// timestamp is N × T<sub>FRAME</sub> within ±T<sub>FRAME</sub>, which is the `SAMP` accuracy for
+/// synthetic content. Without a lock the sender stamps its own time: `NEW`.
+pub fn sender_ts_mode(status: Option<&PtpStatus>, max_offset_ns: u64, frame_clock_locked_to_ptp: bool) -> TsMode {
+    if frame_clock_locked_to_ptp && status.is_some_and(|s| s.locked(max_offset_ns)) { TsMode::Samp } else { TsMode::New }
 }
 
 #[cfg(test)]
@@ -377,8 +473,87 @@ sending: GET TIME_PROPERTIES_DATA_SET
         assert_eq!(sender_clocks(None, mac, DEFAULT_LOCK_LIMIT_NS).1, MediaClock::Sender);
     }
 
+    // Built for these tests in the layout `pmc` prints for the two data sets the V-04 check reads.
+    const PMC_TRACEABLE: &str = "\t\tslaveOnly               1
+\t\tptpTimescale            1
+\t\ttimeTraceable           1
+\t\tgm.ClockAccuracy        0x21
+";
+
+    #[test]
+    fn traceable_needs_all_three_conditions() {
+        let base = format!("{PMC}{PMC_TRACEABLE}");
+        let s = PtpStatus::parse_pmc(&base).unwrap();
+        assert_eq!((s.slave_only, s.ptp_timescale, s.time_traceable, s.gm_clock_accuracy), (Some(true), Some(true), Some(true), Some(0x21)));
+        assert!(s.traceable() && s.traceable_conditions().all_met() && !s.may_become_leader());
+        // Every combination of the three conditions: only the full set is traceable.
+        for timescale in [false, true] {
+            for time_traceable in [false, true] {
+                for accuracy in [0x21u8, 0x22, 0x23, 0xfe, 0x20, 0x10] {
+                    let text = format!(
+                        "{PMC}\t\tptpTimescale {}\n\t\ttimeTraceable {}\n\t\tgm.ClockAccuracy 0x{accuracy:02x}\n",
+                        u8::from(timescale),
+                        u8::from(time_traceable)
+                    );
+                    let s = PtpStatus::parse_pmc(&text).unwrap();
+                    let want = timescale && time_traceable && (0x20..=0x22).contains(&accuracy);
+                    assert_eq!(s.traceable(), want, "{timescale} {time_traceable} {accuracy:#x}");
+                }
+            }
+        }
+        // A grandmaster that did not answer a condition is not traceable.
+        for drop in ["ptpTimescale", "timeTraceable", "gm.ClockAccuracy"] {
+            let text: String = base.lines().filter(|l| !l.contains(drop)).map(|l| format!("{l}\n")).collect();
+            let s = PtpStatus::parse_pmc(&text).unwrap();
+            assert!(!s.traceable(), "without {drop}");
+        }
+        assert!(!PtpStatus::default().traceable());
+    }
+
+    #[test]
+    fn traceable_form_only_on_request_and_only_when_allowed() {
+        let mac = [0x02, 0, 0, 0, 0, 1];
+        let ok = PtpStatus::parse_pmc(&format!("{PMC}{PMC_TRACEABLE}")).unwrap();
+        let named = RefClock::Ptp { grandmaster: [0x0c, 0x4f, 0x5a, 0xff, 0xfe, 0x10, 0xe2, 0xd4], domain: 127 };
+        // The default names the grandmaster even when it is traceable.
+        assert_eq!(sender_clocks(Some(&ok), mac, DEFAULT_LOCK_LIMIT_NS).0, named);
+        let form = RefClockForm::TraceableWhenAllowed;
+        assert_eq!(sender_clocks_with(Some(&ok), mac, DEFAULT_LOCK_LIMIT_NS, form), (RefClock::PtpTraceable, MediaClock::Direct(0)));
+        // One condition missing: back to the grandmaster and the domain.
+        let bad = PtpStatus::parse_pmc(&format!("{PMC}{}", PMC_TRACEABLE.replace("0x21", "0x23"))).unwrap();
+        assert_eq!(sender_clocks_with(Some(&bad), mac, DEFAULT_LOCK_LIMIT_NS, form).0, named);
+        let unknown = PtpStatus::parse_pmc(PMC).unwrap();
+        assert_eq!(sender_clocks_with(Some(&unknown), mac, DEFAULT_LOCK_LIMIT_NS, form).0, named);
+        // Not locked: never traceable, always the sender's own timebase.
+        let unlocked = PtpStatus::parse_pmc(&format!("{PMC}{PMC_TRACEABLE}").replace("SLAVE", "LISTENING")).unwrap();
+        assert_eq!(sender_clocks_with(Some(&unlocked), mac, DEFAULT_LOCK_LIMIT_NS, form), (RefClock::LocalMac(mac), MediaClock::Sender));
+    }
+
+    #[test]
+    fn leader_capable_ptp4l_is_reported() {
+        let s = PtpStatus::parse_pmc("\t\tslaveOnly 0\n").unwrap();
+        assert!(s.may_become_leader());
+        assert!(!PtpStatus::parse_pmc("\t\tslaveOnly 1\n").unwrap().may_become_leader());
+        // Unknown is not reported as a problem.
+        assert!(!PtpStatus::default().may_become_leader());
+    }
+
+    #[test]
+    fn ts_mode_follows_the_frame_clock_lock() {
+        let locked = PtpStatus::parse_pmc(PMC).unwrap();
+        let listening = PtpStatus::parse_pmc(&PMC.replace("SLAVE", "LISTENING")).unwrap();
+        assert_eq!(sender_ts_mode(Some(&locked), DEFAULT_LOCK_LIMIT_NS, true), TsMode::Samp);
+        // PTP lock without a frame clock locked to it, no lock, no PTP at all: NEW.
+        assert_eq!(sender_ts_mode(Some(&locked), DEFAULT_LOCK_LIMIT_NS, false), TsMode::New);
+        assert_eq!(sender_ts_mode(Some(&listening), DEFAULT_LOCK_LIMIT_NS, true), TsMode::New);
+        assert_eq!(sender_ts_mode(None, DEFAULT_LOCK_LIMIT_NS, true), TsMode::New);
+    }
+
     #[test]
     fn garbled_pmc_is_an_error() {
+        assert!(PtpStatus::parse_pmc("\t\tslaveOnly maybe").is_err());
+        assert!(PtpStatus::parse_pmc("\t\tgm.ClockAccuracy 33").is_err());
+        assert!(PtpStatus::parse_pmc("\t\tgm.ClockAccuracy 0x1ff").is_err());
         assert!(PtpStatus::parse_pmc("\t\tgmIdentity 0c4f5a.fffe").is_err());
         assert!(PtpStatus::parse_pmc("\t\tdomainNumber 300").is_err());
         assert!(PtpStatus::parse_pmc("\t\tmaster_offset x").is_err());
