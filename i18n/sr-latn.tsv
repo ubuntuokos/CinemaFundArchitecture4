@@ -3629,7 +3629,7 @@
 	Six-Point Pin	Kačenje u šest tačaka
 	Upper Center	Gore u sredini
 	Lower Center	Dole u sredini
-	Use FFmpeg for files the CFA4 engine cannot open (FFmpeg 9.0.2 or later, GPL-3 build)	Koristi FFmpeg za datoteke koje CFA4 mašina ne može da otvori (FFmpeg 9.0.2 ili noviji, GPL-3 verzija)
+	Use FFmpeg for files the CFA4 engine cannot open (FFmpeg 9.1 or later, GPL-3 build)	Koristi FFmpeg za datoteke koje CFA4 mašina ne može da otvori (FFmpeg 9.1 ili noviji, GPL-3 verzija)
 	Use the system's GStreamer for files neither the engine nor FFmpeg can open	Koristi sistemski GStreamer za datoteke koje ne mogu da otvore ni mašina ni FFmpeg
 	Analyze Source for Smart Cut	Analiziraj izvor za pametni rez
 	Plan Smart Cut	Planiraj pametni rez

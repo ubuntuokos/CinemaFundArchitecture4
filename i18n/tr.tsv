@@ -3610,7 +3610,7 @@
 	Six-Point Pin	Altı Noktalı İğne
 	Upper Center	Üst Orta
 	Lower Center	Alt Orta
-	Use FFmpeg for files the CFA4 engine cannot open (FFmpeg 9.0.2 or later, GPL-3 build)	CFA4 motorunun açamadığı dosyalar için FFmpeg kullan (FFmpeg 9.0.2 veya üstü, GPL-3 derlemesi)
+	Use FFmpeg for files the CFA4 engine cannot open (FFmpeg 9.1 or later, GPL-3 build)	CFA4 motorunun açamadığı dosyalar için FFmpeg kullan (FFmpeg 9.1 veya üstü, GPL-3 derlemesi)
 	Use the system's GStreamer for files neither the engine nor FFmpeg can open	Ne motorun ne de FFmpeg'in açabildiği dosyalar için sistemin GStreamer'ını kullan
 	Analyze Source for Smart Cut	Akıllı Kesim için Kaynağı Analiz Et
 	Plan Smart Cut	Akıllı Kesimi Planla

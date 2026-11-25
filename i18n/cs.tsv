@@ -3543,7 +3543,7 @@
 	Six-Point Pin	Šestibodové připnutí
 	Upper Center	Nahoře uprostřed
 	Lower Center	Dole uprostřed
-	Use FFmpeg for files the CFA4 engine cannot open (FFmpeg 9.0.2 or later, GPL-3 build)	Použít FFmpeg pro soubory, které engine CFA4 neotevře (FFmpeg 9.0.2 nebo novější, sestavení GPL-3)
+	Use FFmpeg for files the CFA4 engine cannot open (FFmpeg 9.1 or later, GPL-3 build)	Použít FFmpeg pro soubory, které engine CFA4 neotevře (FFmpeg 9.1 nebo novější, sestavení GPL-3)
 	Use the system's GStreamer for files neither the engine nor FFmpeg can open	Použít systémový GStreamer pro soubory, které neotevře engine ani FFmpeg
 	Analyze Source for Smart Cut	Analyzovat zdroj pro chytrý střih
 	Plan Smart Cut	Naplánovat chytrý střih

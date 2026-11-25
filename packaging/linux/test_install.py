@@ -278,6 +278,20 @@ class InstallTests(unittest.TestCase):
         self.assertTrue((installed / "share/doc/ffmpeg/BUILDINFO").is_file())
         self.assertFalse(stale.exists(), "a library of an older release stays behind")
 
+    def test_an_older_bundled_ffmpeg_is_removed_on_upgrade(self):
+        ffmpeg = self.bundle / f"lib/cfa4/ffmpeg-{FFMPEG_VERSION}"
+        (ffmpeg / "lib").mkdir(parents=True)
+        (ffmpeg / "lib/libavcodec.so.63").write_text("new\n")
+        prefix = self.root / "destination"
+        older = prefix / "lib/cfa4/ffmpeg-0.0.1"
+        (older / "lib").mkdir(parents=True)
+        (older / "lib/libavcodec.so.62").write_text("old\n")
+        result = self.install("--prefix", prefix)
+        self.assertEqual(result.returncode, 0, result.stderr)
+        self.assertTrue((prefix / f"lib/cfa4/ffmpeg-{FFMPEG_VERSION}/lib/libavcodec.so.63").is_file())
+        self.assertFalse(older.exists(), "the FFmpeg of an earlier release stays behind")
+        self.assertTrue((prefix / "lib/cfa4/python/cfa4_qt").is_dir())
+
     def test_a_tarball_with_two_ffmpeg_builds_is_refused(self):
         for name in (f"ffmpeg-{FFMPEG_VERSION}", "ffmpeg-0.0.1"):
             (self.bundle / "lib/cfa4" / name / "lib").mkdir(parents=True)

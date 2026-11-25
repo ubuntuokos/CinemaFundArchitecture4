@@ -119,7 +119,7 @@ igényelnek. Ezért minden gyártónak saját útja van, közös felület mögö
 | GPU | Hardveres kódolás útja | Megjegyzés |
 |---|---|---|
 | NVIDIA | NVENC (`crates/platform`, ma is megvan) | a meghajtó zárt könyvtárát futáskor tölti be; opcionális |
-| AMD | VA-API (Mesa `radeonsi`), GStreamer `va*enc` elemekkel (ADR 0002 3. lépés) | nyílt meghajtó; az AMD AMF nem kell, mert zárt futtatókörnyezetet igényel |
+| AMD | VA-API (Mesa `radeonsi`), GStreamer `va*enc` elemekkel (ADR 0002 3. lépés); kiegészítésként az FFmpeg AMF-útja (H.264 / HEVC / AV1 kódolás-dekódolás, `sr_amf`, `vpp_amf`) | nyílt meghajtó az alapút; az AMF zárt futtatókörnyezetét a meghajtó adja, és csak futáskor töltődik be, ahogy az NVENC-é (tulajdonosi döntés 2026-11-24, [CFA4-FFMPEG-9.1-001](../plans/CFA4-FFMPEG-9.1-001.md) D2, D8) |
 | Intel | VA-API (`iHD` meghajtó), ugyanígy | a oneVPL/Quick Sync csak akkor, ha a VA-API mérhetően kevés |
 | bármely Vulkan-képes GPU | Vulkan Video (GStreamer `vulkan*enc`, ahol a meghajtó tudja) | gyártófüggetlen jövőbeli út |
 | nincs GPU vagy hiba | a saját szoftveres kódolók (pl. `crates/h264enc`) | mindig elérhető tartalék |

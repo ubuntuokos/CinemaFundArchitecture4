@@ -4135,7 +4135,7 @@
 	MPEG-2 720×576 at 25 fps, 16:9 anamorphic, 6 Mbps, GOP 15, 16-bit 48 kHz LPCM, .mpg (DVD-ready stream; no VIDEO_TS authoring)	MPEG-2 720×576 a 25 fps, 16:9 anamórfico, 6 Mbps, GOP 15, LPCM 16 bits 48 kHz, .mpg (fluxo pronto para DVD; sem autoria de VIDEO_TS)
 	MPEG-2 video (Main Profile 4:2:0, 0.4 bits per pixel) at the sequence's frame size and rate, 16-bit 48 kHz LPCM, .mpg	Vídeo MPEG-2 (Main Profile 4:2:0, 0,4 bit por pixel) no tamanho e na taxa de quadros da sequência, LPCM 16 bits 48 kHz, .mpg
 	MPEG-2 video 1920×1080, 18 Mbps average, AAC 192 kbps, .ts	Vídeo MPEG-2 1920×1080, 18 Mbps em média, AAC 192 kbps, .ts
-	Use FFmpeg for files the CFA4 engine cannot open (FFmpeg 9.0.2 or later, GPL-3 build)	Usar o FFmpeg para arquivos que o mecanismo do CFA4 não consegue abrir (FFmpeg 9.0.2 ou posterior, compilação GPL-3)
+	Use FFmpeg for files the CFA4 engine cannot open (FFmpeg 9.1 or later, GPL-3 build)	Usar o FFmpeg para arquivos que o mecanismo do CFA4 não consegue abrir (FFmpeg 9.1 ou posterior, compilação GPL-3)
 	Use the system's GStreamer for files neither the engine nor FFmpeg can open	Usar o GStreamer do sistema para arquivos que nem o mecanismo nem o FFmpeg conseguem abrir
 
 # Language names in the language menu: the English variants keep their English names.

@@ -82,6 +82,13 @@ if [ -n "$ffmpeg_dir" ]; then
   rm -rf -- "${prefix:?}/$ffmpeg_dir"
   mkdir -p -- "$prefix/lib/cfa4"
   cp -R -- "$source_dir/$ffmpeg_dir" "$prefix/$ffmpeg_dir"
+  # An FFmpeg of an earlier CFA4 release (another lib/cfa4/ffmpeg-VERSION) is no longer used by the
+  # binaries just installed: remove it (CFA4-FFMPEG-9.1-001 R7).
+  for old in "$prefix"/lib/cfa4/ffmpeg-*; do
+    if [ -d "$old" ] && [ "$old" != "$prefix/$ffmpeg_dir" ]; then
+      rm -rf -- "$old"
+    fi
+  done
 fi
 
 # Use an absolute path so launching from the application menu does not depend on PATH.

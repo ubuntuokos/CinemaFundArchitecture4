@@ -3954,7 +3954,7 @@
 	Six-Point Pin	Šešių taškų prisegimas
 	Upper Center	Viršuje centre
 	Lower Center	Apačioje centre
-	Use FFmpeg for files the CFA4 engine cannot open (FFmpeg 9.0.2 or later, GPL-3 build)	Naudoti FFmpeg failams, kurių CFA4 variklis negali atidaryti (FFmpeg 9.0.2 ar naujesnis, GPL-3 versija)
+	Use FFmpeg for files the CFA4 engine cannot open (FFmpeg 9.1 or later, GPL-3 build)	Naudoti FFmpeg failams, kurių CFA4 variklis negali atidaryti (FFmpeg 9.1 ar naujesnis, GPL-3 versija)
 	Use the system's GStreamer for files neither the engine nor FFmpeg can open	Naudoti sistemos GStreamer failams, kurių negali atidaryti nei variklis, nei FFmpeg
 	Analyze Source for Smart Cut	Analizuoti šaltinį išmaniajam karpymui
 	Plan Smart Cut	Planuoti išmanųjį karpymą

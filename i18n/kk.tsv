@@ -3967,7 +3967,7 @@
 	Six-Point Pin	Алты нүктелі бекіту
 	Upper Center	Жоғарғы ортада
 	Lower Center	Төменгі ортада
-	Use FFmpeg for files the CFA4 engine cannot open (FFmpeg 9.0.2 or later, GPL-3 build)	CFA4 қозғалтқышы аша алмайтын файлдар үшін FFmpeg пайдалану (FFmpeg 9.0.2 немесе жаңарағы, GPL-3 нұсқасы)
+	Use FFmpeg for files the CFA4 engine cannot open (FFmpeg 9.1 or later, GPL-3 build)	CFA4 қозғалтқышы аша алмайтын файлдар үшін FFmpeg пайдалану (FFmpeg 9.1 немесе жаңарағы, GPL-3 нұсқасы)
 	Use the system's GStreamer for files neither the engine nor FFmpeg can open	Қозғалтқыш та, FFmpeg те аша алмайтын файлдар үшін жүйенің GStreamer-ін пайдалану
 	Analyze Source for Smart Cut	Ақылды кесу үшін көзді талдау
 	Plan Smart Cut	Ақылды кесуді жоспарлау
