@@ -34,7 +34,7 @@ const TRANSFORMERS: &[&str] = &["Video Transitions", "Transformers"];
 const WIPE: &[&str] = &["Video Transitions", "Wipe"];
 
 /// CFA4's own transitions (not in Premiere's bin), shown in Premiere's folders beside its own.
-pub const CFA4_OWN_TRANSITIONS: &[&str] = &["keyhole", "burn_away", "tear_away", "stamp_cut"];
+pub const CFA4_OWN_TRANSITIONS: &[&str] = &["keyhole", "burn_away", "tear_away", "stamp_cut", "datamosh"];
 
 /// Direction choices (index 3, "From West", moves left → right).
 pub const DIR_OPTS: &[&str] = &["From North", "From East", "From South", "From West"];
@@ -48,6 +48,8 @@ pub const CORNER_OPTS: &[&str] = &["Top Left", "Top Right", "Bottom Right", "Bot
 pub const SHAPE_OPTS: &[&str] = &["Circle", "Square", "Diamond", "Star", "Heart", "Triangle", "Hexagon"];
 pub const SPIN_OPTS: &[&str] = &["Clockwise", "Counter-clockwise"];
 pub const ORDER_OPTS: &[&str] = &["Random", "Left to Right", "Center Out"];
+/// Datamosh encode resolution (the block size grows as the resolution drops).
+pub const MOSH_RES_OPTS: &[&str] = &["Full", "Half", "Quarter"];
 
 /// Not animatable (transition parameters have no stopwatch in Premiere).
 fn fixed(mut p: ParamDef) -> ParamDef {
@@ -213,6 +215,21 @@ pub(crate) fn video_transition_defs() -> Vec<EffectDef> {
                 colour("border_color", "Ember Color", [1.0, 0.45, 0.08, 1.0]),
                 feather(2.0),
                 seed(),
+            ],
+        ),
+        // CFA4's own: a real codec datamosh. B's P pictures (motion vectors and residuals from
+        // CFA4's H.264 encoder) are decoded onto A's last picture instead of B's key frame.
+        tr(
+            "datamosh",
+            "Datamosh",
+            GRUNGE,
+            m,
+            vec![
+                num("residual", "Residual", 40.0, 100.0, "%"),
+                range("motion", "Motion Boost", 100.0, 25.0, 400.0, "%"),
+                num("recovery", "Recovery", 25.0, 100.0, "%"),
+                ch("resolution", "Encode Resolution", MOSH_RES_OPTS, 0),
+                b("clean", "Clean Blocks", true),
             ],
         ),
         // ---- Immersive Video (flat equirectangular approximations; see the render crate) ----
@@ -491,6 +508,7 @@ mod tests {
         assert_eq!(at("burn_away"), &["Video Transitions", "Grunge & Distort"]);
         assert_eq!(at("tear_away"), &["Video Transitions", "Slide"]);
         assert_eq!(at("stamp_cut"), &["Video Transitions", "Wipe"]);
+        assert_eq!(at("datamosh"), &["Video Transitions", "Grunge & Distort"]);
         for id in CFA4_OWN_TRANSITIONS {
             assert!(tree.iter().any(|(_, v)| v.contains(id)), "{id} is not in the transition tree");
         }

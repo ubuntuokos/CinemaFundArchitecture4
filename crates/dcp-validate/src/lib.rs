@@ -19,15 +19,18 @@ mod audio;
 mod codestream;
 mod integrity;
 mod media;
+mod naming;
 mod native;
 pub mod package;
 pub mod profile;
+pub mod repair;
 pub mod report;
 pub mod rules;
+mod signatures;
 mod subtitles;
 
 pub use native::NativeValidator;
-pub use profile::{Profile, ProfileRule};
+pub use profile::{Profile, ProfileError, ProfileRule};
 pub use report::{Counts, DocumentIds, ValidationReport, Verdict};
 
 use std::path::PathBuf;

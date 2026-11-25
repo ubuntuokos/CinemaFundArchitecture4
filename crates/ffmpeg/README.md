@@ -1,7 +1,7 @@
 # cfa4-ffmpeg
 
 Optional FFmpeg backend for CFA4 (layer L5). CFA4's own Rust media engine stays the base;
-FFmpeg (at least 9.0.2, GPL-3 build) supplements it for files the engine does not decode yet.
+FFmpeg (at least `MIN_VERSION`, GPL-3 build) supplements it for files the engine does not decode yet.
 Decision and rules: [ADR 0005](../../docs/adr/ADR-0005-media-backends.md).
 
 ## What it does
@@ -9,7 +9,7 @@ Decision and rules: [ADR 0005](../../docs/adr/ADR-0005-media-backends.md).
 - `probe()`: the FFmpeg this process linked: version, licence, configuration, hardware
   acceleration methods, and whether the patent-restricted encoders of the Ubuntu model
   (`libx264`, `libx265`; [`docs/licensing.md`](../../docs/licensing.md) §7) are present. A build
-  older than 9.0.2, without GPL-3, or with `--enable-nonfree` is refused.
+  older than `MIN_VERSION` (`CFA4_FFMPEG_MIN_VERSION` in `packaging/ffmpeg-version.env`), without GPL-3, or with `--enable-nonfree` is refused.
 - `discover(path)`: container, duration and streams.
 - `open(path)`: an engine `MediaSource` decoded by FFmpeg at the stream's **native** layout and
   bit depth (8-bit and 9–16-bit planar Y'CbCr go to the engine as `Yuv8` / `Yuv16`, other layouts
@@ -41,24 +41,25 @@ FFmpeg and every entry point returns `Error::Unavailable`.
 
 ```sh
 sudo apt install build-essential nasm pkg-config libva-dev libdrm-dev libdav1d-dev libvpx-dev \
-  libopus-dev libwebp-dev libmp3lame-dev libvulkan-dev libffmpeg-nvenc-dev libvpl-dev
-scripts/dev/build-ffmpeg-9.0.2.sh                 # → /opt/cfa4/ffmpeg-9.0.2 (base; on Ubuntu 24.04/26.04 it downloads the prebuilt one, scripts/dev/fetch-ffmpeg-9.0.2.sh)
-export PKG_CONFIG_PATH=/opt/cfa4/ffmpeg-9.0.2/lib/pkgconfig
+  libopus-dev libwebp-dev libmp3lame-dev libvulkan-dev libffmpeg-nvenc-dev libvpl-dev glslc git
+scripts/dev/build-ffmpeg.sh                 # → /opt/cfa4/ffmpeg-$CFA4_FFMPEG_VERSION (base; on Ubuntu 24.04/26.04 it downloads the prebuilt one, scripts/dev/fetch-ffmpeg.sh)
+. packaging/ffmpeg-version.env                # CFA4_FFMPEG_VERSION, the pinned version
+export PKG_CONFIG_PATH=/opt/cfa4/ffmpeg-$CFA4_FFMPEG_VERSION/lib/pkgconfig
 cargo test -p cfa4-ffmpeg --features ffmpeg
 cargo build --release -p cfa4 -p cfa4-cli --features cfa4/ffmpeg,cfa4-cli/ffmpeg
 ```
 
 The apps link FFmpeg dynamically and look for it at run time in
-`/opt/cfa4/ffmpeg-9.0.2-restricted/lib` first, `/opt/cfa4/ffmpeg-9.0.2/lib` second and
-`$ORIGIN/../lib/cfa4/ffmpeg-9.0.2/lib` third, the copy the tarball, AppImage and Flatpak carry
+`/opt/cfa4/ffmpeg-$CFA4_FFMPEG_VERSION-restricted/lib` first, `/opt/cfa4/ffmpeg-$CFA4_FFMPEG_VERSION/lib` second and
+`$ORIGIN/../lib/cfa4/ffmpeg-$CFA4_FFMPEG_VERSION/lib` third, the copy the tarball, AppImage and Flatpak carry
 next to the binary (`apps/*/build.rs`, `CFA4_FFMPEG_PREFIX` moves the first two). The release
 packages ship this build (ADR 0005 step 4, `packaging/linux/stage-ffmpeg.sh`): the `.deb` installs
-it into `/opt/cfa4/ffmpeg-9.0.2`. The restricted build, the same FFmpeg with
+it into `/opt/cfa4/ffmpeg-$CFA4_FFMPEG_VERSION`. The restricted build, the same FFmpeg with
 x264 and x265, is what the `cfa4-restricted-extras` package installs:
 
 ```sh
 sudo apt install libx264-dev libx265-dev
-scripts/dev/build-ffmpeg-9.0.2.sh --restricted   # → /opt/cfa4/ffmpeg-9.0.2-restricted
+scripts/dev/build-ffmpeg.sh --restricted   # → /opt/cfa4/ffmpeg-$CFA4_FFMPEG_VERSION-restricted
 ```
 
 ## Not measured yet

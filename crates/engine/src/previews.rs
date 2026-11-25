@@ -726,7 +726,7 @@ pub fn render(s: &mut Session, mode: RenderMode, p: &Value) -> Result<Value> {
     if wait || cfg!(target_arch = "wasm32") {
         run();
     } else {
-        std::thread::Builder::new().name("cfa4-render-previews".into()).spawn(run).map_err(|e| EngineError::Other(e.to_string()))?;
+        crate::background::start(s, id, crate::background::Need::background(1024, 2), "cfa4-render-previews", run)?;
     }
     Ok(json!({"job": id, "segments": nseg, "frames": frames}))
 }
@@ -812,7 +812,7 @@ pub fn render_audio(s: &mut Session, p: &Value) -> Result<Value> {
     if p.get("wait").and_then(Value::as_bool).unwrap_or(false) || cfg!(target_arch = "wasm32") {
         run();
     } else {
-        std::thread::Builder::new().name("cfa4-render-audio".into()).spawn(run).map_err(|e| EngineError::Other(e.to_string()))?;
+        crate::background::start(s, id, crate::background::Need::background(256, 1), "cfa4-render-audio", run)?;
     }
     Ok(json!({"job": id, "segments": nseg, "samples": total}))
 }

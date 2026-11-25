@@ -12,7 +12,7 @@ toolchain and a C++ compiler, which the quality gates do not.
 ## Run
 
 ```sh
-fuzz/seeds.sh                                  # seed corpus into fuzz/corpus/ (FFmpeg 9.0.2 oracle; gitignored)
+fuzz/seeds.sh                                  # seed corpus into fuzz/corpus/ (pinned FFmpeg oracle; gitignored)
 cargo +nightly fuzz run isobmff fuzz/corpus/isobmff -- -max_total_time=300
 fuzz/run.sh 60                                 # every target, 60 s each
 fuzz/run.sh 300 h264 hevc av1                  # some targets
@@ -20,14 +20,15 @@ fuzz/run.sh 300 h264 hevc av1                  # some targets
 ```
 
 Tools: `rustup toolchain install nightly`, `cargo +nightly install cargo-fuzz --locked`, and the
-pinned FFmpeg 9.0.2 test oracle for the seeds (`scripts/ci/install-ffmpeg-9.0.2.sh`; `seeds.sh` refuses
+pinned FFmpeg test oracle for the seeds (version: `packaging/ffmpeg-version.env`) (`scripts/ci/install-ffmpeg.sh`; `seeds.sh` refuses
 any other version). Builds use
 debug assertions (overflow checks), so an arithmetic overflow is a finding even where the release build
 would wrap.
 
-The nightly workflow [`cfa4-fuzz.yml`](../.github/workflows/cfa4-fuzz.yml) runs every target for 5
-minutes in six shards and keeps the growing corpus in the Actions cache; `cargo xtask fuzz-targets`
-(its first job) fails when an L0 parser crate has no target.
+The workflow [`cfa4-fuzz.yml`](../.github/workflows/cfa4-fuzz.yml) runs every 4th night (owner decision
+2026-11-21; the UTC day number divisible by 4, manual runs any time) every target for 5 minutes in six shards and keeps the growing corpus in the Actions cache; `cargo xtask fuzz-targets`
+(its coverage job) fails when an L0 parser crate has no target; the shards run regardless, so a new
+crate without a target never stops the fuzzing of the others.
 
 ## A finding
 

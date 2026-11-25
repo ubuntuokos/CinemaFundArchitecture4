@@ -77,18 +77,28 @@ impl SymphoniaDecoder {
 enum Inner {
     /// Our own AAC-LC decoder. `up` interpolates HE-AAC's core to the output rate (see [`Upsample2x`]).
     /// Surround output is reordered to WAV/SMPTE order (see [`aac_to_wav_order`]).
-    Aac { dec: Box<cfa4_aac::Decoder>, asc: Vec<u8>, up: Option<Box<Upsample2x>> },
+    Aac {
+        dec: Box<cfa4_aac::Decoder>,
+        asc: Vec<u8>,
+        up: Option<Box<Upsample2x>>,
+    },
     /// AAC whose configuration arrives with the first frame (ADTS / LATM).
     AacPending,
     /// xHE-AAC (USAC, audio object type 42), decoded at the stream's own level: DRC and loudness
     /// normalization ([`cfa4_aac::drc`]) are a playback-side choice, not applied on import.
-    Usac { dec: Box<cfa4_aac::usac::UsacDecoder>, asc: Vec<u8> },
+    Usac {
+        dec: Box<cfa4_aac::usac::UsacDecoder>,
+        asc: Vec<u8>,
+    },
     /// MPEG audio at this rate whose layer arrives with the first frame (MP4 / QuickTime name the
     /// codec, not the layer; layers I / II go to our decoder, layer III to symphonia's).
     MpegPending(u32),
     /// Our own Opus decoder (always 48 kHz output; pre-skip is left to container timestamps).
     /// `order` maps output channel → decoded channel (Vorbis → WAV/SMPTE order for surround).
-    Opus { dec: Box<cfa4_opus::Decoder>, order: Option<&'static [usize]> },
+    Opus {
+        dec: Box<cfa4_opus::Decoder>,
+        order: Option<&'static [usize]>,
+    },
     /// Bootstrap decoders (MP3, ALAC, FLAC, HE-AAC…) via symphonia.
     Symphonia(SymphoniaDecoder),
     /// Our AC-3 and E-AC-3 decoder (ATSC A/52, Annex E).
@@ -101,10 +111,21 @@ enum Inner {
     TrueHd(Box<cfa4_truehd::cfa4::Decoder>),
     /// G.711, G.722, IMA and Microsoft ADPCM (`cfa4-adpcm`).
     Adpcm(Box<cfa4_adpcm::Decoder>),
+    Mace(Box<cfa4_mace::Decoder>),
     /// AMR-NB and AMR-WB (`cfa4-amr`): packets hold storage-format frames.
     Amr(cfa4_amr::Decoder),
     /// TTA (`cfa4-tta`): each packet is one frame with its CRC.
     Tta(cfa4_tta::Decoder),
+    /// ATRAC1 (`cfa4-realaudio`): each packet is one 212-byte sound unit per channel.
+    Atrac1(Box<cfa4_realaudio::atrac1::Decoder>),
+    /// DSP Group TrueSpeech (`cfa4-truespeech`): packets hold whole 32-byte frames.
+    TrueSpeech(Box<cfa4_truespeech::Decoder>),
+    /// QDesign Music 2 (`cfa4-qdm2`): one packet is one superblock; `extra` rebuilds the decoder
+    /// on a reset.
+    Qdm2 {
+        dec: Box<cfa4_qdm2::Decoder>,
+        extra: Vec<u8>,
+    },
 }
 
 /// Packets between two saved decoder states (see [`Checkpoints`]).
@@ -314,12 +335,29 @@ impl PacketDecoder {
         let d = cfa4_adpcm::Decoder::new(codec, channels).map_err(|e| CodecError::Unsupported(e.to_string()))?;
         Ok(Self { inner: Inner::Adpcm(Box::new(d)), channels })
     }
-    /// A copy of the decoder state, for codecs that seek through [`Checkpoints`] (AMR).
+    /// Apple MACE 3:1 or 6:1 with `channels` channels.
+    pub fn mace(version: cfa4_mace::Version, channels: usize) -> Result<Self> {
+        let d = cfa4_mace::Decoder::new(version, channels).map_err(|e| CodecError::Unsupported(e.to_string()))?;
+        Ok(Self { inner: Inner::Mace(Box::new(d)), channels })
+    }
+    /// A copy of the decoder state, for codecs that seek through [`Checkpoints`] (AMR, TrueSpeech).
     pub fn snapshot(&self) -> Option<Self> {
         match &self.inner {
             Inner::Amr(d) => Some(Self { inner: Inner::Amr(d.clone()), channels: self.channels }),
+            Inner::TrueSpeech(d) => Some(Self { inner: Inner::TrueSpeech(d.clone()), channels: self.channels }),
+            Inner::Mace(d) => Some(Self { inner: Inner::Mace(d.clone()), channels: self.channels }),
             _ => None,
         }
+    }
+    /// DSP Group TrueSpeech (8 kHz mono).
+    pub fn truespeech() -> Self {
+        Self { inner: Inner::TrueSpeech(Box::default()), channels: 1 }
+    }
+    /// QDesign Music 2 from the QuickTime sample description (it holds the `QDCA` configuration).
+    pub fn qdm2(extra: &[u8]) -> Result<Self> {
+        let d = cfa4_qdm2::Decoder::new(extra).map_err(|e| CodecError::Unsupported(format!("QDM2: {e}")))?;
+        let channels = d.channels;
+        Ok(Self { inner: Inner::Qdm2 { dec: Box::new(d), extra: extra.to_vec() }, channels })
     }
     /// AMR wideband (`wide`) or narrowband, mono.
     pub fn amr(wide: bool) -> Self {
@@ -330,6 +368,12 @@ impl PacketDecoder {
         let info = cfa4_tta::Info { format: cfa4_tta::FORMAT_SIMPLE, channels, bits, sample_rate, samples: u32::MAX };
         let d = cfa4_tta::Decoder::new(info, None).map_err(|e| CodecError::Unsupported(format!("TTA: {e}")))?;
         Ok(Self { inner: Inner::Tta(d), channels: usize::from(channels) })
+    }
+    /// ATRAC1 (Matroska `A_ATRAC/AT1`) with the track's channel count.
+    pub fn atrac1(channels: usize) -> Result<Self> {
+        let d = cfa4_realaudio::atrac1::Decoder::new(channels, cfa4_realaudio::atrac1::SU_SIZE.saturating_mul(channels))
+            .map_err(|e| CodecError::Unsupported(format!("ATRAC1: {e}")))?;
+        Ok(Self { inner: Inner::Atrac1(Box::new(d)), channels })
     }
     /// Whether this decodes Opus (which needs [`OPUS_PRE_ROLL`] of pre-roll after a seek).
     pub fn is_opus(&self) -> bool {
@@ -347,6 +391,7 @@ impl PacketDecoder {
             // the decoder needs the STREAMINFO body: `dfLa` holds it after the 4-byte block header
             C::Flac(f) => Self::new(CODEC_ID_FLAC, rate, f.metadata_blocks.get(4..38).map(<[u8]>::to_vec)),
             C::Opus(o) => Self::opus(cfa4_opus::OpusHead::from_dops(&o.to_bytes()).map_err(|e| CodecError::Unsupported(format!("Opus: {e}")))?),
+            C::Unknown { fourcc, raw } if fourcc.0 == *b"QDM2" => Self::qdm2(raw),
             C::Unknown { fourcc, .. } if fourcc.0 == *b"samr" => Ok(Self::amr(false)),
             C::Unknown { fourcc, .. } if fourcc.0 == *b"sawb" => Ok(Self::amr(true)),
             C::Unknown { fourcc, .. } if fourcc.0 == *b"a3ds" => Err(CodecError::Unsupported(AURO_CX_UNSUPPORTED.into())),
@@ -425,10 +470,30 @@ impl PacketDecoder {
                 let planes = d.decode(data).map_err(|e| CodecError::Decode(e.to_string()))?;
                 return Ok(planes.into_iter().map(|p| p.into_iter().map(|s| f32::from(s) / 32768.0).collect()).collect());
             }
+            Inner::Mace(d) => {
+                let planes = d.decode(data).map_err(|e| CodecError::Decode(format!("MACE: {e}")))?;
+                return Ok(planes.into_iter().map(|p| p.into_iter().map(|s| f32::from(s) / 32768.0).collect()).collect());
+            }
             Inner::Tta(d) => {
                 let planes = d.decode_packet(data).map_err(|e| CodecError::Decode(format!("TTA: {e}")))?;
                 let info = *d.info();
                 return Ok(planes.into_iter().map(|p| p.into_iter().map(|v| info.to_f32(v)).collect()).collect());
+            }
+            Inner::Atrac1(d) => return d.decode(data).map_err(|e| CodecError::Decode(format!("ATRAC1: {e}"))),
+            Inner::TrueSpeech(d) => {
+                let pcm = d.decode(data).map_err(|e| CodecError::Decode(e.to_string()))?;
+                self.channels = 1;
+                return Ok(vec![pcm.into_iter().map(|s| f32::from(s) / 32768.0).collect()]);
+            }
+            Inner::Qdm2 { dec, .. } => {
+                let pcm = dec.decode(data).map_err(|e| CodecError::Decode(format!("QDM2: {e}")))?;
+                let ch = dec.channels.max(1);
+                self.channels = ch;
+                let mut out = vec![Vec::with_capacity(pcm.len() / ch); ch];
+                for (i, v) in pcm.into_iter().enumerate() {
+                    out[i % ch].push(f32::from(v) / 32768.0);
+                }
+                return Ok(out);
             }
             Inner::Amr(d) => {
                 let mut pcm = Vec::new();
@@ -497,7 +562,15 @@ impl PacketDecoder {
             Inner::Dts(d) => d.reset(),
             Inner::TrueHd(d) => d.reset(),
             Inner::Adpcm(d) => d.reset(),
+            Inner::Mace(d) => d.reset(),
             Inner::Amr(d) => d.reset(),
+            Inner::TrueSpeech(d) => d.reset(),
+            Inner::Qdm2 { dec, extra } => {
+                if let Ok(fresh) = cfa4_qdm2::Decoder::new(extra) {
+                    **dec = fresh;
+                }
+            }
+            Inner::Atrac1(d) => d.reset(),
             Inner::AacPending | Inner::MpegPending(_) | Inner::Tta(_) => {}
         }
     }
@@ -1100,6 +1173,76 @@ impl AudioFileSource {
             };
             return Ok(Self { info, rate, samples });
         }
+        if ext == "shn" {
+            let (shn, planes) = cfa4_shorten::decode_file(&bytes).map_err(|e| CodecError::Decode(format!("{name}: {e}")))?;
+            let samples: Vec<Vec<f32>> = planes.into_iter().map(|p| p.into_iter().map(|v| shn.to_f32(v)).collect()).collect();
+            let frames = samples.first().map_or(0, Vec::len);
+            let rate = shn.sample_rate.max(1);
+            let info = MediaInfo {
+                name: name.to_string(),
+                kind: MediaKind::AudioOnly,
+                duration: Tick::from_units(frames as i64, i64::from(rate)),
+                video: None,
+                audio_streams: vec![AudioStreamInfo {
+                    sample_rate: rate,
+                    channels: samples.len() as u32,
+                    codec: "Shorten".into(),
+                    bits_per_sample: Some(u32::from(shn.bits_per_sample)),
+                    ..AudioStreamInfo::default()
+                }],
+                container: "Shorten".into(),
+                start_timecode: None,
+                file_size: Some(bytes.len() as u64),
+            };
+            return Ok(Self { info, rate, samples });
+        }
+        if ext == "acm" {
+            let (acm, pcm) = cfa4_acm::decode_file(&bytes).map_err(|e| CodecError::Decode(format!("{name}: {e}")))?;
+            let ch = acm.channels as usize;
+            let samples: Vec<Vec<f32>> = (0..ch).map(|c| pcm.iter().skip(c).step_by(ch).map(|&v| f32::from(v) / 32768.0).collect()).collect();
+            let frames = samples.first().map_or(0, Vec::len);
+            let rate = acm.sample_rate.max(1);
+            let info = MediaInfo {
+                name: name.to_string(),
+                kind: MediaKind::AudioOnly,
+                duration: Tick::from_units(frames as i64, i64::from(rate)),
+                video: None,
+                audio_streams: vec![AudioStreamInfo {
+                    sample_rate: rate,
+                    channels: acm.channels,
+                    codec: "Interplay ACM".into(),
+                    bits_per_sample: Some(16),
+                    ..AudioStreamInfo::default()
+                }],
+                container: "Interplay ACM".into(),
+                start_timecode: None,
+                file_size: Some(bytes.len() as u64),
+            };
+            return Ok(Self { info, rate, samples });
+        }
+        if ext == "tak" {
+            let (tak, planes) = cfa4_tak::decode_file(&bytes).map_err(|e| CodecError::Decode(format!("{name}: {e}")))?;
+            let samples: Vec<Vec<f32>> = planes.into_iter().map(|p| p.into_iter().map(|v| tak.to_f32(v)).collect()).collect();
+            let frames = samples.first().map_or(0, Vec::len);
+            let rate = tak.sample_rate.max(1);
+            let info = MediaInfo {
+                name: name.to_string(),
+                kind: MediaKind::AudioOnly,
+                duration: Tick::from_units(frames as i64, i64::from(rate)),
+                video: None,
+                audio_streams: vec![AudioStreamInfo {
+                    sample_rate: rate,
+                    channels: samples.len() as u32,
+                    codec: "TAK".into(),
+                    bits_per_sample: Some(u32::from(tak.bits_per_sample)),
+                    ..AudioStreamInfo::default()
+                }],
+                container: "TAK".into(),
+                start_timecode: None,
+                file_size: Some(bytes.len() as u64),
+            };
+            return Ok(Self { info, rate, samples });
+        }
         if ext == "g729" {
             let pcm = cfa4_g729::decode_file(&bytes).map_err(|e| CodecError::Decode(format!("{name}: {e}")))?;
             let rate = cfa4_g729::SAMPLE_RATE;
@@ -1155,6 +1298,48 @@ impl AudioFileSource {
                 file_size: Some(bytes.len() as u64),
             };
             return Ok(Self { info, rate: tta.sample_rate, samples });
+        }
+        if ext == "adx" {
+            let (adx, planes) = cfa4_adx::decode_file(&bytes).map_err(|e| CodecError::Decode(format!("{name}: {e}")))?;
+            let samples: Vec<Vec<f32>> = planes.into_iter().map(|p| p.into_iter().map(cfa4_adx::Header::to_f32).collect()).collect();
+            let frames = samples.first().map_or(0, Vec::len);
+            let info = MediaInfo {
+                name: name.to_string(),
+                kind: MediaKind::AudioOnly,
+                duration: Tick::from_units(frames as i64, i64::from(adx.sample_rate)),
+                video: None,
+                audio_streams: vec![AudioStreamInfo {
+                    sample_rate: adx.sample_rate,
+                    channels: samples.len() as u32,
+                    codec: "CRI ADX".into(),
+                    ..AudioStreamInfo::default()
+                }],
+                container: "CRI ADX".into(),
+                start_timecode: None,
+                file_size: Some(bytes.len() as u64),
+            };
+            return Ok(Self { info, rate: adx.sample_rate, samples });
+        }
+        if ext == "hca" {
+            // An encrypted stream needs its key, which this opener has no way to take: it is refused.
+            let (hca, samples, _damaged) = cfa4_hca::decode_file(&bytes, None).map_err(|e| CodecError::Decode(format!("{name}: {e}")))?;
+            let frames = samples.first().map_or(0, Vec::len);
+            let info = MediaInfo {
+                name: name.to_string(),
+                kind: MediaKind::AudioOnly,
+                duration: Tick::from_units(frames as i64, i64::from(hca.sample_rate)),
+                video: None,
+                audio_streams: vec![AudioStreamInfo {
+                    sample_rate: hca.sample_rate,
+                    channels: samples.len() as u32,
+                    codec: "CRI HCA".into(),
+                    ..AudioStreamInfo::default()
+                }],
+                container: "CRI HCA".into(),
+                start_timecode: None,
+                file_size: Some(bytes.len() as u64),
+            };
+            return Ok(Self { info, rate: hca.sample_rate, samples });
         }
         if ext == "mpc" {
             let (mpc, samples) = cfa4_musepack::decode_file(&bytes).map_err(|e| CodecError::Decode(format!("{name}: {e}")))?;
@@ -1486,7 +1671,28 @@ pub fn opener(name: &str, bytes: Arc<[u8]>) -> Option<std::result::Result<Shared
     let ext = name.rsplit('.').next().unwrap_or("").to_ascii_lowercase();
     if !matches!(
         ext.as_str(),
-        "mp3" | "mp2" | "aac" | "dts" | "dtshd" | "flac" | "ogg" | "oga" | "aif" | "aiff" | "aifc" | "amr" | "awb" | "tta" | "g729" | "lbc" | "mpc"
+        "mp3"
+            | "mp2"
+            | "aac"
+            | "dts"
+            | "dtshd"
+            | "flac"
+            | "ogg"
+            | "oga"
+            | "aif"
+            | "aiff"
+            | "aifc"
+            | "amr"
+            | "awb"
+            | "tta"
+            | "tak"
+            | "acm"
+            | "g729"
+            | "lbc"
+            | "mpc"
+            | "shn"
+            | "adx"
+            | "hca"
     ) {
         return None;
     }

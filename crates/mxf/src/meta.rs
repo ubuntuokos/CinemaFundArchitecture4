@@ -33,6 +33,7 @@ pub mod set_type {
     pub const ESSENCE_CONTAINER_DATA: u8 = 0x23;
     pub const MATERIAL_PACKAGE: u8 = 0x36;
     pub const SOURCE_PACKAGE: u8 = 0x37;
+    pub const NETWORK_LOCATOR: u8 = 0x32;
     pub const TIMELINE_TRACK: u8 = 0x3B;
     pub const EVENT_TRACK: u8 = 0x39;
     pub const STATIC_TRACK: u8 = 0x3A;
@@ -172,6 +173,11 @@ pub mod tag {
     pub const DROP_FRAME: u16 = 0x1503;
     // Preface / identification / content storage
     pub const OPERATIONAL_PATTERN: u16 = 0x3B09;
+    /// The preface's DMSchemes (batch of ULs).
+    pub const DM_SCHEMES: u16 = 0x3B0B;
+    /// GenericDescriptor locators (batch of strong references) and a network locator's URL.
+    pub const LOCATORS: u16 = 0x2F01;
+    pub const URL_STRING: u16 = 0x4001;
     pub const PRODUCT_NAME: u16 = 0x3C02;
     pub const COMPANY_NAME: u16 = 0x3C01;
     pub const ESSENCE_CONTAINER_DATA_LINKED_PACKAGE: u16 = 0x2701;

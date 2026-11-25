@@ -24,6 +24,8 @@ const TIMED_TEXT_RESOURCE_SUB_DESCRIPTOR: u8 = 0x65;
 const RESOURCE_ID: [u8; 8] = [0x01, 0x01, 0x15, 0x12, 0, 0, 0, 0];
 const UCS_ENCODING: [u8; 8] = [0x04, 0x09, 0x05, 0x00, 0, 0, 0, 0];
 const NAMESPACE_URI: [u8; 8] = [0x01, 0x02, 0x01, 0x05, 0x01, 0, 0, 0];
+/// RFC 5646 Language Tag List (ST 2067-2 Annex H).
+const LANGUAGE_TAG_LIST: [u8; 8] = [0x03, 0x01, 0x01, 0x02, 0x02, 0x16, 0, 0];
 const ANCILLARY_RESOURCE_ID: [u8; 8] = [0x01, 0x01, 0x15, 0x13, 0, 0, 0, 0];
 const MIME_MEDIA_TYPE: [u8; 8] = [0x04, 0x09, 0x02, 0x01, 0, 0, 0, 0];
 const ESSENCE_STREAM_ID: [u8; 8] = [0x01, 0x03, 0x04, 0x04, 0, 0, 0, 0];
@@ -68,6 +70,9 @@ pub struct TimedText {
     /// Namespace (or profile) of the document's root element, e.g.
     /// `http://www.smpte-ra.org/schemas/428-7/2010/DCST` or `http://www.w3.org/ns/ttml`.
     pub namespace: Option<String>,
+    /// The RFC 5646 language tags of an IMF timed text track file (ST 2067-2 Annex H), comma
+    /// separated.
+    pub languages: Option<String>,
     /// The XML document.
     pub document: Region,
     pub resources: Vec<AncillaryResource>,
@@ -184,6 +189,7 @@ pub fn open_timed_text(src: &(impl ByteSource + ?Sized)) -> Result<TimedText> {
         resource_id: desc.dynamic_item(&RESOURCE_ID).and_then(uuid),
         ucs_encoding: desc.dynamic_item(&UCS_ENCODING).and_then(text),
         namespace: desc.dynamic_item(&NAMESPACE_URI).and_then(text),
+        languages: desc.dynamic_item(&LANGUAGE_TAG_LIST).and_then(text),
         document: Region { offset: element.value_offset, size: element.size, plain: element.plain },
         resources,
         encryption,

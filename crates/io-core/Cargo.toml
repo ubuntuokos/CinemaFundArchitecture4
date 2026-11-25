@@ -1,0 +1,21 @@
+[package]
+name = "cfa4-io-core"
+description = "Shared media I/O core (layer L1): the PTP state reader (ptp4l through pmc) and, next, the versioned shared-memory frame ring, used by the live studio host and later media I/O hosts (CFA4-DECKLINK-READY-001 R1)"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+rust-version.workspace = true
+
+[lints]
+workspace = true
+
+[dependencies]
+cfa4-color = { workspace = true }
+cfa4-frame = { workspace = true }
+cfa4-st2110 = { workspace = true }
+cfa4-time = { workspace = true }
+serde = { workspace = true }
+thiserror = { workspace = true }
+
+[dev-dependencies]
+serde_json = { workspace = true }

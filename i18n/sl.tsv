@@ -59,6 +59,7 @@
 	Arrange	Razporedi
 	Assembly	Montaža
 	Attach Proxies…	Pripni posredniške datoteke …
+	Find Camera Proxies	Poišči posredniške datoteke kamere
 	Audio	Zvok
 	Audio Channels…	Zvočni kanali …
 	Audio Clip Mixer	Mešalnik zvočnih posnetkov
@@ -3967,7 +3968,7 @@
 	Six-Point Pin	Šesttočkovna pripenjalka
 	Upper Center	Zgoraj na sredini
 	Lower Center	Spodaj na sredini
-	Use FFmpeg for files the CFA4 engine cannot open (FFmpeg 9.0.2 or later, GPL-3 build)	Za datoteke, ki jih pogon CFA4 ne more odpreti, uporabi FFmpeg (FFmpeg 9.0.2 ali novejši, različica GPL-3)
+	Use FFmpeg for files the CFA4 engine cannot open (FFmpeg 9.1 or later, GPL-3 build)	Za datoteke, ki jih pogon CFA4 ne more odpreti, uporabi FFmpeg (FFmpeg 9.1 ali novejši, različica GPL-3)
 	Use the system's GStreamer for files neither the engine nor FFmpeg can open	Za datoteke, ki jih ne more odpreti niti pogon niti FFmpeg, uporabi sistemski GStreamer
 	Analyze Source for Smart Cut	Analiziraj vir za pametni rez
 	Plan Smart Cut	Načrtuj pametni rez
@@ -4658,6 +4659,16 @@ export.summary	Low	nizka
 	software backend: {reason}	programsko zaledje: {reason}
 	Start studio	Zaženi studio
 	Stop studio	Ustavi studio
+	Add Studio Scene	Dodaj studijsko sceno
+	Live	V živo
+# Credits: title, opening, chapter and lower-third pages filled from a graphics template (F10-C16)
+	Opening Credits	Uvodna špica
+	Chapter Title	Naslov poglavja
+	Lower Third	Spodnji napis
+	page {page}: graphics template “{template}” was not found; “{used}” is used	stran {page}: grafične predloge „{template}“ ni mogoče najti; uporabi se „{used}“
+	page {page}: graphics template “{template}” has no field for all of the block's text; the rest is left out	stran {page}: grafična predloga „{template}“ nima polja za vse besedilo bloka; ostalo je izpuščeno
+	page {page}: template field “{control}” → “{part}” is not used (no such text control, or not head, body or tail)	stran {page}: polje predloge „{control}“ → „{part}“ ni uporabljeno (takega besedilnega kontrolnika ni ali pa ni glava, telo ali rep)
+	page {page}: pictures are left out on title, opening, chapter and lower-third pages	stran {page}: na straneh naslova, uvodne špice, poglavja in spodnjega napisa so slike izpuščene
 # Auto Color, Auto Contrast, Auto Levels (EffectsSDK review)
 	Auto Color	Samodejna barva
 	Auto Contrast	Samodejni kontrast
@@ -4728,3 +4739,294 @@ export.summary	Low	nizka
 	AS-11 Core	AS-11 Core
 	AS-11 Parts	Deli AS-11
 	AS-11 UK DPP	AS-11 UK DPP
+# Control surfaces (qt-control-surfaces-page, CFA4-CONTROL-SURFACE-001)
+	Connected	Povezano
+	Device	Naprava
+	Devices	Naprave
+	Disabled	Onemogočeno
+	HID jog/shuttle	HID jog/shuttle
+	MIDI	MIDI
+	Not connected	Ni povezano
+	OSC	OSC
+	Use	Uporabi
+	{device} ({port})	{device} ({port})
+	{name}: {error}	{name}: {error}
+# Control surfaces (midi-monitor, CFA4-CONTROL-SURFACE-001)
+	MIDI Monitor	MIDI-nadzornik
+	Press Start Monitor, then move a control.	Pritisnite Zaženi nadzornik, nato premaknite kontrolnik.
+	Start Monitor	Zaženi nadzornik
+	Stop Monitor	Ustavi nadzornik
+	… {count} messages not shown (too many at once)	… {count} sporočil ni prikazanih (preveč naenkrat)
+# Control surfaces (midi-learn, CFA4-CONTROL-SURFACE-001)
+	A control surface asked for {command}, which does not exist.	Nadzorna površina je zahtevala {command}, ki ne obstaja.
+	Assignments	Dodelitve
+	Cancel Learn	Prekliči učenje
+	Control	Kontrolnik
+	Learn	Nauči
+	Remove this assignment	Odstrani to dodelitev
+	{control} runs {command}.	{control} zažene {command}.
+# Control surfaces (shuttlepro, CFA4-CONTROL-SURFACE-001)
+	Button {n}	Gumb {n}
+# Control surfaces (continuous-values, CFA4-CONTROL-SURFACE-001)
+	{strip} Pan (knob)	{strip} panorama (vrtljivi gumb)
+	{strip} Volume (fader)	{strip} glasnost (drsnik)
+# Control surfaces (F1 Learn and profile, CFA4-CONTROL-SURFACE-001)
+	Assignments run when a button is pressed (a fader or knob counts as pressed past half way); a fader or knob assigned to a mixer strip moves its volume or pan. A ShuttlePRO's shuttle ring plays at its profile's speeds and its jog wheel steps frame by frame. Endless encoders and feedback to the controller (lights, motor faders) come in a later version.	Dodelitve stečejo ob pritisku gumba (fader ali gumb šteje kot pritisnjen po polovici); fader ali gumb, dodeljen traku mešalne mize, premika glasnost ali panoramo. Obroč shuttle na ShuttlePRO predvaja s hitrostmi profila, kolo jog pa stopa po sličici. Neskončni kodirniki in odziv krmilniku (lučke, motorni faderji) pridejo v poznejši različici.
+	First message (ms)	Prvo sporočilo (ms)
+	Silence (ms)	Tišina (ms)
+	Waiting for the control to settle…	Čakanje, da se kontrola umiri…
+	Type: {hint}. Confirm this assignment.	Vrsta: {hint}. Potrdite to dodelitev.
+	That control is already assigned. Confirm replaces it.	Ta kontrola je že dodeljena. Potrditev jo zamenja.
+	Learn timed out.	Učenje je poteklo.
+	Confirm	Potrdi
+	Reject	Zavrni
+	Shows every MIDI message from the controllers as it arrives, to check that a controller sends and what it sends. MIDI Clock, Active Sensing and MIDI Time Code are left out.	Pokaže vsako MIDI sporočilo s krmilnikov, ko prispe, da se vidi, ali krmilnik pošilja in kaj. MIDI ura, Active Sensing in MIDI časovna koda so izpuščeni.
+	Pick a command (or a mixer strip for a fader or knob), press Learn, then press the button or move the control past half way. Confirm keeps the assignment. OK saves the assignments.	Izberite ukaz (ali trak mešalne mize za fader ali gumb), pritisnite Uči, nato gumb ali premaknite kontrolo čez polovico. Potrditev obdrži dodelitev. V redu shrani dodelitve.
+	All devices	Vse naprave
+	Builtin: {name}	Vgrajeno: {name}
+	Capturing	Zajemanje
+	Confirmed	Potrjeno
+	Conflict	Spor
+	Connect a MIDI controller or a ShuttlePRO to edit its profile.	Za urejanje profila priključite MIDI-krmilnik ali ShuttlePRO.
+	Control Surfaces…	Krmilne površine…
+	Filter messages	Filtriraj sporočila
+	Idle	Nedejaven
+	Kernel dropped: {count}	Jedro je zavrglo: {count}
+	Learn Assignments…	Učenje dodelitev…
+	Load profile	Naloži profil
+	MIDI Monitor…	Nadzor MIDI…
+	Mute shuttle sound	Utišaj zvok shuttle
+	No conflicts.	Ni sporov.
+	No profile warnings.	Ni opozoril profila.
+	No project profile is stored.	Profil projekta ni shranjen.
+	OK writes the preferences and the profile file together.	V redu skupaj zapiše nastavitve in datoteko profila.
+	Online	Povezano
+	Pending	V čakanju
+	Pickup (14-bit)	Zajem (14 bitov)
+	Pickup (7-bit)	Zajem (7 bitov)
+	Profile warnings	Opozorila profila
+	Rejected	Zavrnjeno
+	Show Active Sensing	Pokaži Active Sensing
+	Show MIDI Clock	Pokaži uro MIDI
+	Show MIDI Time Code	Pokaži časovno kodo MIDI
+	The profile file is damaged. Preferences and the built-in profile stay in use.	Datoteka profila je poškodovana. Nastavitve in vgrajeni profil ostaneta v uporabi.
+	Timed out	Čas je potekel
+	Type: {hint}	Vrsta: {hint}
+	User profile file	Datoteka profila uporabnika
+	{received} received, {dispatched} dispatched, {coalesced} coalesced, {stalls} stalls, {errors} errors	{received} prejeto, {dispatched} posredovano, {coalesced} združeno, {stalls} čakanja, {errors} napak
+
+# Control Surfaces settings page (CS-1, #1187)
+	Looking for devices…	Iskanje naprav …
+	No MIDI controller or jog/shuttle device was found. Connect one and press Refresh.	Ni bilo najdenega krmilnika MIDI ali naprave jog/shuttle. Priključite eno in pritisnite Osveži.
+	Control Surfaces	Nadzorne površine
+	Use control surfaces (MIDI controllers, jog/shuttle devices)	Uporabi nadzorne površine (krmilniki MIDI, naprave jog/shuttle)
+	Mapping controls to commands, MIDI Learn and the MIDI Monitor come in a later version; the choices here are remembered until then.	Dodeljevanje kontrolnikov ukazom, MIDI Learn in monitor MIDI pridejo v poznejši različici; do takrat se izbire tukaj shranijo.
+	CFA4 ShuttlePRO	CFA4 ShuttlePRO
+	Kdenlive-style ShuttlePRO	ShuttlePRO v slogu Kdenlive
+	Generic MIDI	Splošni MIDI
+# LTC timecode read from clip audio (TC-7, #1285)
+	Read from LTC Audio	Preberi iz zvoka LTC
+	Find SMPTE LTC on the clip's audio and use the timecode it gives the first frame	Poišči SMPTE LTC v zvoku posnetka in uporabi časovno kodo, ki jo da prvi sličici
+	Read Timecode from LTC Audio	Preberi časovno kodo iz zvoka LTC
+# Credits: voices (the Voice column) in the block's properties (F10-C16)
+	Voices	Glasovi
+# Timecode sync varispeed and user bits (TC-8, #1308)
+	Varispeed: adjust the playback speed instead of seeking	Varispeed: prilagodi hitrost predvajanja namesto preskoka
+	User bits	Uporabniški biti
+# AS-11 programme parts and AS-10 metadata (G2, #1371, #1375)
+	{tc}  Segmentation	{tc}  Segmentacija
+	Marker Type	Vrsta označevalca
+	Chapter	Poglavje
+	Segmentation (AS-11 programme part)	Segmentacija (del programa AS-11)
+	AS-10	AS-10
+# AT9/AT3 converter (Tools ▸ Audio Tools, AT3-2)
+	AT9/AT3 Converter	Pretvornik AT9/AT3
+	AT9/AT3 Converter…	Pretvornik AT9/AT3…
+	Files to convert:	Datoteke za pretvorbo:
+	Add Files	Dodaj datoteke
+	Add Files…	Dodaj datoteke…
+	Convert to:	Pretvori v:
+	Bit rate:	Bitna hitrost:
+	Sample format:	Oblika vzorcev:
+	Output folder:	Izhodna mapa:
+	Output Folder	Izhodna mapa
+	Next to each source file	Poleg vsake izvorne datoteke
+	AT9 and ATRAC3plus files convert to WAV; encoding AT9, ATRAC3plus and MP3 is not available yet.	Datoteke AT9 in ATRAC3plus se pretvorijo v WAV; kodiranje AT9, ATRAC3plus in MP3 še ni na voljo.
+	Convert	Pretvori
+	Add the files to convert first.	Najprej dodajte datoteke za pretvorbo.
+	Done: {n} file(s) converted.	Končano: pretvorjenih datotek: {n}.
+	Converting {name}…	Pretvarjanje {name}…
+	Stopping…	Ustavljanje…
+	AT3 (ATRAC3, PSP / PS3)	AT3 (ATRAC3, PSP / PS3)
+	WAV (PCM)	WAV (PCM)
+	132 kbit/s (LP2)	132 kbit/s (LP2)
+	105 kbit/s	105 kbit/s
+	66 kbit/s (LP4, joint stereo)	66 kbit/s (LP4, združeni stereo)
+	16-bit	16-bitno
+	24-bit	24-bitno
+	32-bit float	32-bitno s plavajočo vejico
+
+# Datamosh transition (Grunge & Distort, DM1, #1409)
+	Datamosh	Datamosh
+	Residual	Ostanek
+	Motion Boost	Ojačitev gibanja
+	Recovery	Obnova
+	Encode Resolution	Ločljivost kodiranja
+	Half	Polovica
+	Quarter	Četrtina
+# Datamosh Bloom (Glitch, DM2)
+	Datamosh Bloom	Datamosh razcvet
+	Start Time (seconds)	Začetni čas (sekunde)
+	Repeats	Ponovitve
+	Clean Blocks	Čisti bloki
+
+# Recent effects, per-channel waveform, white balance selector (SC-2/SC-3/SC-4, #1419 #1420 #1421)
+	Apply a recently used effect to the selected clips	Uporabi nedavno uporabljen učinek na izbranih posnetkih
+	Disable all effects	Izklopi vse učinke
+	Enable all effects	Vklopi vse učinke
+	No recent effects	Ni nedavnih učinkov
+	Recent effects	Nedavni učinki
+	Switch every effect of the selected clips off	Izklopi vse učinke izbranih posnetkov
+	Switch every effect of the selected clips on	Vklopi vse učinke izbranih posnetkov
+	Merged	Združeno
+	Per Channel	Po kanalih
+	Channel Zoom	Povečava kanalov
+	White Balance Selector (click a neutral point in the Program monitor; Esc cancels)	Izbirnik ravnovesja beline (kliknite nevtralno točko v programskem monitorju; Esc prekliče)
+# Task Manager and subtitle kind (SC-2/3/4)
+	Task Manager	Upravitelj opravil
+	Background jobs	Opravila v ozadju
+	Exports	Izvozi
+	Shared task queue	Skupna čakalna vrsta opravil
+	Task	Opravilo
+	State	Stanje
+	Details	Podrobnosti
+	Time left	Preostali čas
+	Scheduled	Načrtovano
+	Queued	V čakalni vrsti
+	Waiting for resources	Čaka na vire
+	Blocked	Blokirano
+	Running	Teče
+	Paused	Začasno ustavljeno
+	Cancelling	Preklic
+	Interactive	Interaktivno
+	Speculative	Špekulativno
+	Final render	Končno upodabljanje
+	Show finished	Pokaži dokončana
+	Nothing is running.	Nič ne teče.
+	Not reported by this engine yet.	Ta pogon tega še ne poroča.
+	Not available: {why}	Ni na voljo: {why}
+	{name} waits: {why}	{name} čaka: {why}
+	{running} running · {waiting} waiting	{running} teče · {waiting} čaka
+	{n} active	{n} aktivnih
+	{n} CPU	{n} CPU
+	{n} GiB	{n} GiB
+	{n} MiB	{n} MiB
+	Needs your decision	Potrebuje vašo odločitev
+	Run now	Zaženi zdaj
+	Next slot	Naslednji termin
+	Missed its start	Zamujen začetek
+	Missed its start at {time}	Zamujen začetek ob {time}
+	Starts at {time}	Začne se ob {time}
+	Subtitle kind	Vrsta podnapisov
+	Subtitles	Podnapisi
+	Captions for the hearing impaired	Podnapisi za naglušne
+	Forced narrative	Prisilna pripoved (forced narrative)
+	Silence	Tišina
+	Detect Silence	Zaznaj tišino
+	Remove Silence	Odstrani tišino
+	Clear Silence Markers	Počisti oznake tišine
+# DCP Validation window (DCP-12)
+	AS-03	AS-03
+	Choose the DCP folder.	Izberite mapo DCP.
+	DCP Validation	Preverjanje DCP
+	DCP folder	Mapa DCP
+	DCP folder (the one holding ASSETMAP)	Mapa DCP (tista z datoteko ASSETMAP)
+	Evidence	Dokaz
+	How to fix	Kako popraviti
+	Interrupted	Prekinjeno
+	Not applicable	Ni relevantno
+	Report	Poročilo
+	Report saved: {path}	Poročilo shranjeno: {path}
+	Required	Obvezno
+	Rule	Pravilo
+	Rules	Pravila
+	Save JSON…	Shrani JSON…
+	Save Markdown…	Shrani Markdown…
+	Save report	Shrani poročilo
+	Skipped	Preskočeno
+	Standard: {standard}	Standard: {standard}
+	Validate	Preveri
+	Validate DCP…	Preveri DCP…
+	the engine sent no profiles	pogon ni poslal nobenih profilov
+	{n} files checked	Preverjenih datotek: {n}
+
+# AS-02 export
+	Write an AS-02 bundle (the path is a folder)	Zapiši paket AS-02 (pot je mapa)
+	AS-02	AS-02
+	AS-12	AS-12
+
+# N1 voxel panel
+	Active voxels:	Aktivni vokslji:
+	Bounds:	Meje:
+	Voxel attributes	Atributi vokslov
+	Voxel size:	Velikost voksla:
+	points	točke
+
+# WP3 DPX bit depth
+	Bit Depth	Bitna globina
+
+# AS-02 versions
+	AS-02 Versions	Različice AS-02
+	Tick the sequences to write as further versions in the AS-02 bundle	Označite zaporedja, ki se zapišejo kot dodatne različice v paketu AS-02
+	Delete Short Clips	Izbriši kratke posnetke
+	A stored combination does not run a command yet.	Shranjena kombinacija še ne zažene ukaza.
+	Action hint	Namig dejanja
+	Add combination	Dodaj kombinacijo
+	Add mapping	Dodaj preslikavo
+	Button Learn	Učenje gumba
+	Button Test	Preizkus gumba
+	Button name	Ime gumba
+	Cancel feedback	Signal preklica
+	Combination editor	Urejevalnik kombinacij
+	Context	Kontekst
+	Delete profile	Izbriši profil
+	Detected buttons	Zaznani gumbi
+	Draw the gesture with a button held.	Narišite potezo z držanim gumbom.
+	Error feedback	Signal napake
+	Evdev device	Evdev naprava
+	Evdev reads the selected device only, and only after a later phase turns it on. This version keeps the Qt path.	Evdev bere samo izbrano napravo in šele, ko jo poznejša faza vklopi. Ta različica ostane na poti Qt.
+	Execution feedback	Signal izvedbe
+	Follow the system	Sledi sistemu
+	Gesture	Poteza
+	Gesture Learn	Učenje poteze
+	Gesture editor	Urejevalnik potez
+	Gesture profiles	Profili potez
+	Gestures stay off until you turn them on. Turning them on does not block the panel menu.	Poteze ostanejo izklopljene, dokler jih ne vklopite. Vklop ne blokira menija pulta.
+	HUD	HUD
+	Hand	Roka
+	High contrast	Visok kontrast
+	Hold time	Čas držanja
+	Input access	Dostop do vhoda
+	Left-handed	Levičar
+	Mapping	Preslikava
+	Maximum length	Največja dolžina
+	Maximum time	Najdaljši čas
+	Minimum length	Najmanjša dolžina
+	Mirror ergonomic gestures	Zrcali ergonomske poteze
+	Mouse Gestures	Poteze miške
+	Mouse Gestures…	Poteze miške…
+	No buttons yet. Press one in Button Learn or Button Test.	Še ni gumbov. Pritisnite enega pri učenju ali preizkusu.
+	Press	Pritisk
+	Qt pointer (this application)	Kazalec Qt (ta program)
+	Recognition preview	Predogled prepoznave
+	Reduced animation	Zmanjšana animacija
+	Right-handed	Desničar
+	Roles	Vloge
+	Save gesture	Shrani potezo
+	Save profile	Shrani profil
+	Show the gesture HUD	Pokaži HUD potez
+	Slop	Ohlap
+	Spatial gesture	Prostorska poteza
+	Thresholds	Pragi
+	Trail	Sled
+	Use gestures in the window	Uporabi poteze v oknu

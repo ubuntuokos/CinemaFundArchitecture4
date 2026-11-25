@@ -23,16 +23,21 @@ fn host(name: &str) -> cpal::Host {
     cpal::default_host()
 }
 
+/// The device's human-readable name: what cpal 0.16's `name()` returned and what the settings store.
+fn device_name(d: &cpal::Device) -> Option<String> {
+    d.description().ok().map(|desc| desc.name().to_string())
+}
+
 fn find(devices: Result<impl Iterator<Item = cpal::Device>, cpal::DevicesError>, name: &str) -> Option<cpal::Device> {
-    devices.ok()?.find(|d| d.name().is_ok_and(|n| n == name))
+    devices.ok()?.find(|d| device_name(d).is_some_and(|n| n == name))
 }
 
 /// The input and output device names of `host` ("" = default host), as the LTC settings name them.
 pub fn device_names(host_name: &str) -> (Vec<String>, Vec<String>) {
     let run = || {
         let h = host(host_name);
-        let inputs: Vec<String> = h.input_devices().map(|it| it.filter_map(|d| d.name().ok()).collect()).unwrap_or_default();
-        let outputs: Vec<String> = h.output_devices().map(|it| it.filter_map(|d| d.name().ok()).collect()).unwrap_or_default();
+        let inputs: Vec<String> = h.input_devices().map(|it| it.filter_map(|d| device_name(&d)).collect()).unwrap_or_default();
+        let outputs: Vec<String> = h.output_devices().map(|it| it.filter_map(|d| device_name(&d)).collect()).unwrap_or_default();
         (inputs, outputs)
     };
     std::panic::catch_unwind(run).unwrap_or_default()
@@ -111,10 +116,11 @@ where
     f32: FromSample<T>,
 {
     let channels = usize::from(config.channels);
-    let sr = config.sample_rate.0;
+    let sr = config.sample_rate;
     let (mut all, mut mono, mut obs) = (Vec::new(), Vec::new(), Vec::new());
     let stream_error = error.clone();
     let data_tx = tx.clone();
+    let mut user_bits_sent = None;
     dev.build_input_stream(
         config,
         move |data: &[T], info: &cpal::InputCallbackInfo| {
@@ -130,6 +136,12 @@ where
             reader.push(&mono, end, &mut obs);
             for o in &obs {
                 let _ = data_tx.send(Input::Frame(*o));
+            }
+            if let Some(ub) = reader.user_bits()
+                && user_bits_sent != Some(ub)
+            {
+                user_bits_sent = Some(ub);
+                let _ = data_tx.send(Input::UserBits(ub));
             }
         },
         move |e| {
@@ -153,7 +165,7 @@ pub fn open_ltc_input(cfg: &LtcInputConfig, tx: Sender<Input>) -> Result<Box<dyn
         let dev = dev.ok_or_else(|| format!("LTC input: no {label}"))?;
         let sc = dev.default_input_config().map_err(|e| format!("LTC input: {e}"))?;
         check_channel(cfg.channel, sc.channels(), &label)?;
-        let sr = sc.sample_rate().0;
+        let sr = sc.sample_rate();
         let reader = LtcReader::new(sr, cfg.rate).map_err(|e| format!("LTC input: {e}"))?;
         let format = sc.sample_format();
         let config: cpal::StreamConfig = sc.into();
@@ -225,7 +237,7 @@ pub fn open_ltc_output(cfg: &LtcOutputConfig, transport: SharedTransport) -> Res
         let dev = dev.ok_or_else(|| format!("LTC output: no {label}"))?;
         let sc = dev.default_output_config().map_err(|e| format!("LTC output: {e}"))?;
         check_channel(cfg.channel, sc.channels(), &label)?;
-        let generator = LtcGenerator::new(sc.sample_rate().0, cfg.rate, cfg.level_dbfs, cfg.offset, cfg.latency).map_err(|e| format!("LTC output: {e}"))?;
+        let generator = LtcGenerator::new(sc.sample_rate(), cfg.rate, cfg.level_dbfs, cfg.offset, cfg.latency).map_err(|e| format!("LTC output: {e}"))?;
         let format = sc.sample_format();
         let config: cpal::StreamConfig = sc.into();
         let (ch, clock, tr, err) = (cfg.channel, cfg.clock, transport, stream_error);

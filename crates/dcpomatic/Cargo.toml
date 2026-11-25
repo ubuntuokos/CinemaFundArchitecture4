@@ -10,8 +10,8 @@ rust-version.workspace = true
 workspace = true
 
 [dependencies]
-# Process-group signals (SIGINT on cancel, SIGKILL on timeout); already in the tree via dcp-inspect.
-rustix = { version = "1", default-features = false, features = ["std", "process"] }
+# Process-group signals (SIGINT on cancel, SIGKILL on timeout) and O_NONBLOCK; already in the tree via dcp-inspect.
+rustix = { version = "1", default-features = false, features = ["std", "process", "fs"] }
 serde = { workspace = true }
 thiserror = { workspace = true }
 

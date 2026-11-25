@@ -205,6 +205,24 @@ pub(crate) fn marker_color_p(p: &Value, cmd: &str) -> Result<Option<Label>> {
         bad(cmd, format!("unknown marker color {v}; use one of: {}", names.join(", ")))
     })
 }
+/// The marker `kind` parameter (`comment`, `chapter`, `segmentation`, `webLink`, `flashCue`, any
+/// case); `None` when absent. Segmentation markers with a duration are the AS-11 programme parts
+/// of an MXF export (#1254).
+pub(crate) fn marker_kind_p(p: &Value, cmd: &str) -> Result<Option<MarkerKind>> {
+    let v = match p.get("kind") {
+        None | Some(Value::Null) => return Ok(None),
+        Some(v) => v,
+    };
+    let kind = match v.as_str().map(str::to_ascii_lowercase).as_deref() {
+        Some("comment") => MarkerKind::Comment,
+        Some("chapter") => MarkerKind::Chapter,
+        Some("segmentation") => MarkerKind::Segmentation,
+        Some("weblink") => MarkerKind::WebLink,
+        Some("flashcue") => MarkerKind::FlashCue,
+        _ => return Err(bad(cmd, format!("unknown marker kind {v}; use one of: comment, chapter, segmentation, webLink, flashCue"))),
+    };
+    Ok(Some(kind))
+}
 pub(crate) fn str_p<'a>(p: &'a Value, k: &str) -> Option<&'a str> {
     p.get(k).and_then(Value::as_str)
 }
@@ -825,7 +843,16 @@ pub fn import_image_sequence(s: &mut Session, path: &str, bin: Option<cfa4_proje
     let missing: Vec<usize> = frames.iter().enumerate().filter(|(_, f)| f.is_none()).map(|(i, _)| i).collect();
     let src = crate::media_pool::open_image_sequence(path, &*s.services, rate, &name)?;
     let identity = crate::relink::identity_of(&*s.services, path).map_err(|e| EngineError::Other(format!("{path}: {e}")))?;
-    let id = import_source(s, path, name, src, identity, bin)?;
+    let id = import_source(s, path, name.clone(), src, identity, bin)?;
+    if !missing.is_empty() {
+        // numbers are shown 1-based from the first frame, a long list cut short
+        let shown: Vec<String> = missing.iter().take(8).map(|i| (i + 1).to_string()).collect();
+        let more = if missing.len() > shown.len() { ", …" } else { "" };
+        s.warn_toast(
+            "import",
+            format!("{name}: {} missing frame(s) of {} (no. {}{more}); the previous frame is held", missing.len(), frames.len(), shown.join(", ")),
+        );
+    }
     Ok((id, frames.len(), missing))
 }
 
@@ -1548,6 +1575,28 @@ fn build() -> Vec<CommandSpec> {
                     }
                     continue;
                 }
+                // A DCP folder, asset map or composition playlist: one sequence per playlist.
+                if let Some(r) = crate::dcp_import::import_package(s, &path, bin) {
+                    match r {
+                        Ok(r) => {
+                            sequences.extend(r["sequences"].as_array().cloned().unwrap_or_default());
+                            reports.push(r);
+                        }
+                        Err(e) => errors.push(format!("{path}: {e}")),
+                    }
+                    continue;
+                }
+                // An AMWA AS-02 bundle: one sequence per version file.
+                if let Some(r) = crate::as02_import::import_package(s, &path, bin) {
+                    match r {
+                        Ok(r) => {
+                            sequences.extend(r["sequences"].as_array().cloned().unwrap_or_default());
+                            reports.push(r);
+                        }
+                        Err(e) => errors.push(format!("{path}: {e}")),
+                    }
+                    continue;
+                }
                 // DCP / IMF subtitles: timed text track files are caption tracks, not media.
                 if let Some(r) = crate::captions::import_timed_text_mxf(s, &path) {
                     match r {
@@ -1852,11 +1901,39 @@ fn build() -> Vec<CommandSpec> {
             "Media…",
             ["File", "Export"],
             None,
-            r#"{"path":str,"preset":str?,"settings":ExportSettings?,"format":"h264|hevc|prores|dnxhr|apv|cineform|mjpeg|mxf-op1a|mxf-opatom|mpeg2|dcp|imf|png|tiff|bmp|jpg|tga|dpx|exr|gif|wav|aiff|aac|flac"?,"audioCodec":"auto|aac|pcm|flac|opus|ac3|mp2"?,"flacLevel":0..8=5,"width":u32?,"height":u32?,"fps":f64?,"bitrateKbps":u32?,"bitrateMode":"cbr|vbr1Pass|vbr2Pass|crf"?,"crf":0..51=23,"hardwareEncoding":"off|auto"?,"scale":f32=1,"audio":bool=true,"quality":0..100,"burnCaptions":bool=false,"dashManifest":bool=false,"alpha":bool=false,"exrCompression":"none|rle|zips|zip|piz"?,"captionSidecar":"srt|vtt"?,"loudnessLufs":f64?,"proresProfile":"proxy|lt|standard|hq|4444|4444xq"?,"dnxProfile":"lb|sq|hq|hqx"?,"apvProfile":"422-10|422-12|444-10|444-12"?,"cineformProfile":"422|444|4444"?,"cineformQuality":"filmscan3|filmscan2|filmscan1|high|medium|low"?,"mxfVideoCodec":"dnxhr|proRes|h264|mpeg2|d10|xdcamHd422|v210|uyvy"?,"mxfAncCaptions":bool=false,"mxfAs11Core":str?,"mxfAs11Segments":str?,"mxfAs11Ukdpp":str?,"mpeg2Container":"ps|ts|m2ts|es"?,"mpeg2Chroma":"420|422"?,"mpeg2Quantizer":1..31?,"mpeg2BFrames":0..7?,"dcpResolution":"2k|4k"?,"dcpAspect":"flat|scope|full"?,"dcpContentKind":"feature|trailer|teaser|short|advertisement|test|transitional|rating|policy|psa"?,"dcpImmersive":"off|bed|file"?,"dcpIabSource":str?,"dcpIabFallback":"5.1|mix|none"?,"dcpLanguage":str?,"dcpSubtitles":bool?,"dcpSubtitleLanguage":str?,"dcpSubtitleFont":str?,"imfLossless":bool?,"imfContentKind":"feature|trailer|teaser|short|advertisement|test|transitional|rating|psa|episode|highlights|event"?,"fieldOrder":"progressive|upperFirst|lowerFirst"?,"sequence":id?,"range":"entire|inOut|workArea|custom"?,"startSeconds":f64?,"endSeconds":f64?,"wait":bool=false}"#,
+            r#"{"path":str,"preset":str?,"settings":ExportSettings?,"format":"h264|hevc|prores|dnxhr|apv|cineform|mjpeg|mxf-op1a|mxf-opatom|mpeg2|dcp|imf|png|tiff|bmp|jpg|tga|dpx|exr|gif|wav|aiff|aac|flac"?,"audioCodec":"auto|aac|pcm|flac|opus|ac3|mp2"?,"flacLevel":0..8=5,"width":u32?,"height":u32?,"fps":f64?,"bitrateKbps":u32?,"bitrateMode":"cbr|vbr1Pass|vbr2Pass|crf"?,"crf":0..51=23,"hardwareEncoding":"off|auto"?,"scale":f32=1,"audio":bool=true,"quality":0..100,"burnCaptions":bool=false,"dashManifest":bool=false,"alpha":bool=false,"exrCompression":"none|rle|zips|zip|piz"?,"captionSidecar":"srt|vtt"?,"loudnessLufs":f64?,"proresProfile":"proxy|lt|standard|hq|4444|4444xq"?,"dnxProfile":"lb|sq|hq|hqx|hd1235|hd1241|hd1242|hd1243|hd1237|hd1238|hd1250|hd1251|hd1252|hd1253"?,"dpxBitDepth":"10|12|16"?,"apvProfile":"422-10|422-12|444-10|444-12"?,"cineformProfile":"422|444|4444"?,"cineformQuality":"filmscan3|filmscan2|filmscan1|high|medium|low"?,"mxfVideoCodec":"dnxhr|proRes|h264|mpeg2|d10|xdcamHd422|v210|uyvy"?,"mxfAncCaptions":bool=false,"mxfAs02":bool=false,"mxfAs02Versions":[id]?,"mxfAs02Share":bool=true,"mxfAs11Core":str?,"mxfAs11Segments":str?,"mxfAs11Ukdpp":str?,"mxfAs03":str?,"mxfAs12":str?,"mxfAs10":str?,"mpeg2Container":"ps|ts|m2ts|es"?,"mpeg2Chroma":"420|422"?,"mpeg2Quantizer":1..31?,"mpeg2BFrames":0..7?,"dcpResolution":"2k|4k"?,"dcpAspect":"flat|scope|full"?,"dcpContentKind":"feature|trailer|teaser|short|advertisement|test|transitional|rating|policy|psa"?,"dcpImmersive":"off|bed|file"?,"dcpIabSource":str?,"dcpIabFallback":"5.1|mix|none"?,"dcpLanguage":str?,"dcpSubtitles":bool?,"dcpSubtitleLanguage":str?,"dcpSubtitleFont":str?,"imfLossless":bool?,"imfContentKind":"feature|trailer|teaser|short|advertisement|test|transitional|rating|psa|episode|highlights|event"?,"imfTimedTextKind":"subtitles|captions|forcedNarrative"?,"fieldOrder":"progressive|upperFirst|lowerFirst"?,"sequence":id?,"range":"entire|inOut|workArea|custom"?,"startSeconds":f64?,"endSeconds":f64?,"wait":bool=false}"#,
             has_seq,
             crate::export_tools::export_media
         ),
         query!("jobs.list", "List Jobs", "{}", |s, _| Ok(Value::Array(s.jobs.iter().map(|j| crate::export_tools::job_json(s, j)).collect()))),
+        // ACS-6: the CFA4 task queue the heavy work goes through (state, request, why it waits)
+        query!("tasks.list", "List Tasks", "{}", |s, _| Ok(s.tasks.to_json())),
+        // ACS-5: the user's decision on a task that has not started, e.g. after a missed start
+        cmd!("tasks.decide", "Decide on a Task", [], None, r#"{"id":str,"action":"runNow|nextSlot|cancel"}"#, always, |s, p| {
+            let id = str_p(p, "id").ok_or_else(|| bad("tasks.decide", "need `id`"))?;
+            let action = str_p(p, "action").ok_or_else(|| bad("tasks.decide", "need `action` (runNow, nextSlot, cancel)"))?;
+            let state = s.tasks.decide(id, action).map_err(|e| bad("tasks.decide", e))?;
+            crate::export_tools::pump_queue(s, false);
+            Ok(serde_json::json!({"id": id, "state": state}))
+        }),
+        // ACS-5: would a task asked for now start, wait (and why) or not run here? Nothing is reserved.
+        query!(
+            "tasks.check",
+            "Check Task Resources",
+            r#"{"class":"interactive|background|speculative|finalRender"=background,"ramBytes":u64=0,"cpuMilli":u64=0}"#,
+            |s, p| {
+                use cfa4_tasks::manager::Class;
+                let class = match str_p(p, "class").unwrap_or("background") {
+                    "interactive" => Class::Interactive,
+                    "background" => Class::Background,
+                    "speculative" => Class::Speculative,
+                    "finalRender" => Class::FinalRender,
+                    other => return Err(bad("tasks.check", format!("unknown class `{other}`"))),
+                };
+                let v = s.tasks.preview(class, u64_p(p, "ramBytes").unwrap_or(0), u64_p(p, "cpuMilli").unwrap_or(0));
+                Ok(serde_json::json!({"verdict": v.verdict, "reasons": v.reasons, "ahead": v.ahead}))
+            }
+        ),
         query!("perf.stats", "Performance Statistics", "{}", |s, _| Ok(crate::perf::stats(s))),
         query!("security.status", "Security Status", "{}", |s, _| Ok(crate::security::status(s))),
         cmd!("jobs.cancel", "Cancel Job", [], None, r#"{"job":id}"#, always, |s, p| {
@@ -2753,7 +2830,7 @@ fn build() -> Vec<CommandSpec> {
             "Add Marker",
             ["Markers"],
             Some("M"),
-            r#"{"target":"program|source","time":ticks?,"name":str?,"comment":str?,"color":label?,"durationFrames":i64?}"#,
+            r#"{"target":"program|source","time":ticks?,"name":str?,"comment":str?,"color":label?,"durationFrames":i64?,"kind":"comment|chapter|segmentation|webLink|flashCue"?}"#,
             always,
             |s, p| {
                 if let Some(v) = crate::source_monitor::route(s, "markers.add", p)? {
@@ -2765,9 +2842,10 @@ fn build() -> Vec<CommandSpec> {
                 let comment = str_p(p, "comment").unwrap_or("").to_string();
                 let color = marker_color_p(p, "markers.add")?.unwrap_or(Label::Green);
                 let dur = p.get("durationFrames").and_then(Value::as_i64).map(|f| s.sequence_rate().tick_of(f)).unwrap_or_default();
+                let kind = marker_kind_p(p, "markers.add")?.unwrap_or(MarkerKind::Comment);
                 let id = s.edit_sequence("Add Marker", |q, ctx, _| {
                     let id = MarkerId(ctx.alloc());
-                    q.markers.push(Marker { id, start: t, duration: dur, name, comment, kind: MarkerKind::Comment, color });
+                    q.markers.push(Marker { id, start: t, duration: dur, name, comment, kind, color });
                     q.markers.sort_by_key(|m| m.start);
                     Ok(id)
                 })?;
@@ -2858,7 +2936,7 @@ fn build() -> Vec<CommandSpec> {
             "Edit Marker…",
             [],
             None,
-            r#"{"target":"program|source","marker":id,"name":str?,"comment":str?,"color":label?,"durationFrames":i64?}"#,
+            r#"{"target":"program|source","marker":id,"name":str?,"comment":str?,"color":label?,"durationFrames":i64?,"kind":"comment|chapter|segmentation|webLink|flashCue"?}"#,
             always,
             |s, p| {
                 if let Some(v) = crate::source_monitor::route(s, "markers.edit", p)? {
@@ -2867,6 +2945,7 @@ fn build() -> Vec<CommandSpec> {
                 let id = u64_p(p, "marker").map(MarkerId).ok_or_else(|| bad("markers.edit", "need `marker`"))?;
                 let rate = s.sequence_rate();
                 let color = marker_color_p(p, "markers.edit")?;
+                let kind = marker_kind_p(p, "markers.edit")?;
                 let p = p.clone();
                 s.edit_sequence("Edit Marker", |q, _, _| {
                     let m = q.markers.iter_mut().find(|m| m.id == id).ok_or_else(|| bad("markers.edit", "no such marker"))?;
@@ -2878,6 +2957,9 @@ fn build() -> Vec<CommandSpec> {
                     }
                     if let Some(c) = color {
                         m.color = c;
+                    }
+                    if let Some(k) = kind {
+                        m.kind = k;
                     }
                     if let Some(f) = p.get("durationFrames").and_then(Value::as_i64) {
                         m.duration = rate.tick_of(f);
@@ -3151,9 +3233,15 @@ fn build() -> Vec<CommandSpec> {
         cmd!("trim.applyDefaultTransition", "Apply Default Transitions to Selection", ["Sequence"], None, "{}", has_edit_points, |s, _| {
             crate::trim::apply_default_transitions(s)
         }),
-        cmd!("trim.shuttle", "Dynamic Trim (Shuttle)", [], None, r#"{"direction":"forward|reverse","slow":bool?,"clock":seconds}"#, has_edit_points, |s, p| {
-            crate::trim::shuttle(s, p)
-        }),
+        cmd!(
+            "trim.shuttle",
+            "Dynamic Trim (Shuttle)",
+            [],
+            None,
+            r#"{"direction":"forward|reverse","slow":bool?,"speed":f64?,"clock":seconds}"#,
+            has_edit_points,
+            |s, p| { crate::trim::shuttle(s, p) }
+        ),
         cmd!("trim.shuttleStop", "Dynamic Trim Stop", [], None, r#"{"clock":seconds?}"#, has_seq, |s, p| crate::trim::stop(s, p)),
         cmd!("trim.cancelDynamic", "Cancel Dynamic Trim", [], None, "{}", has_seq, |s, _| crate::trim::cancel(s)),
         cmd!("trim.playAround", "Play Around Edit", [], None, r#"{"clock":seconds,"loop":bool=true,"toggle":bool?}"#, has_seq, |s, p| {
@@ -3598,18 +3686,97 @@ fn build() -> Vec<CommandSpec> {
             })?;
             Ok(Value::Null)
         }),
-        cmd!("effects.toggleEnabled", "Toggle Effect", [], None, r#"{"clip":id,"index":n}"#, has_seq, |s, p| {
-            let c = clip_p(p, "clip").ok_or_else(|| bad("effects.toggleEnabled", "need `clip`"))?;
-            let idx = u64_p(p, "index").unwrap_or(0) as usize;
-            s.edit_sequence("Toggle Effect", |q, _, _| {
-                let (_, it) = q.find_item_mut(c).ok_or(cfa4_edit::EditError::NoItem(c))?;
-                if let Some(e) = it.effects.get_mut(idx) {
-                    e.enabled = !e.enabled;
+        cmd!(
+            "effects.toggleEnabled",
+            "Toggle Effect",
+            [],
+            None,
+            r#"{"clip":id|"clips":[id],"index":n|"indices":[n]?,"effect":str?,"all":bool?,"enabled":bool?}"#,
+            has_seq,
+            |s, p| {
+                // SC-4: one or many clips (default: the selection) and one or many effects, one undo
+                // step. Without `enabled` every matched effect gets the opposite of "all enabled"
+                // (so one effect flips as before and a mixed set is switched on). The params text lists
+                // `clip`/`clips` as required on purpose: the command then stays out of the bindable
+                // shortcut list (and its i18n catalog rows).
+                const CMD: &str = "effects.toggleEnabled";
+                let clips = match target_clips_p(s, p, CMD)? {
+                    Some(c) => c,
+                    None => s.state.selection.clone(),
+                };
+                let indices: Vec<usize> = match (p.get("index"), p.get("indices")) {
+                    (Some(_), Some(_)) => return Err(bad(CMD, "give either `index` or `indices`, not both")),
+                    (None, Some(a)) => a
+                        .as_array()
+                        .ok_or_else(|| bad(CMD, "`indices` must be an array of effect indices"))?
+                        .iter()
+                        .map(|v| v.as_u64().and_then(|n| usize::try_from(n).ok()).ok_or_else(|| bad(CMD, "`indices` elements must be non-negative integers")))
+                        .collect::<Result<_>>()?,
+                    (Some(v), None) => {
+                        vec![v.as_u64().and_then(|n| usize::try_from(n).ok()).ok_or_else(|| bad(CMD, "`index` must be a non-negative integer"))?]
+                    }
+                    (None, None) => {
+                        if p.get("effect").is_some() || p.get("all").is_some_and(|v| v.as_bool() == Some(true)) {
+                            Vec::new()
+                        } else {
+                            vec![0]
+                        }
+                    }
+                };
+                let by_id = match p.get("effect") {
+                    None | Some(Value::Null) => None,
+                    Some(v) => Some(v.as_str().ok_or_else(|| bad(CMD, "`effect` must be an effect id string"))?.to_string()),
+                };
+                let forced = match p.get("enabled") {
+                    None | Some(Value::Null) => None,
+                    Some(v) => Some(v.as_bool().ok_or_else(|| bad(CMD, "`enabled` must be true or false"))?),
+                };
+                // `all`: every applied (non-intrinsic) effect of each clip, whatever its stack
+                let all = match p.get("all") {
+                    None | Some(Value::Null) => false,
+                    Some(v) => v.as_bool().ok_or_else(|| bad(CMD, "`all` must be true or false"))?,
+                };
+                let indices = if all && p.get("index").is_none() && p.get("indices").is_none() { Vec::new() } else { indices };
+                let matches = |it: &cfa4_project::TrackItem| -> Vec<usize> {
+                    let mut m: Vec<usize> = (0..it.effects.len())
+                        .filter(|i| {
+                            indices.contains(i)
+                                || (all && it.effects.get(*i).is_some_and(|e| !e.def().is_some_and(|d| d.intrinsic)))
+                                || by_id.as_deref().is_some_and(|id| it.effects.get(*i).is_some_and(|e| e.effect == id))
+                        })
+                        .collect();
+                    m.dedup();
+                    m
+                };
+                let (mut total, mut all_on) = (0usize, true);
+                if let Some(q) = s.active_sequence() {
+                    for c in &clips {
+                        if let Some((_, it)) = q.find_item(*c) {
+                            for i in matches(it) {
+                                total += 1;
+                                all_on &= it.effects.get(i).is_some_and(|e| e.enabled);
+                            }
+                        }
+                    }
                 }
-                Ok(())
-            })?;
-            Ok(Value::Null)
-        }),
+                if total == 0 {
+                    return Ok(json!({"changed": 0, "enabled": Value::Null}));
+                }
+                let target = forced.unwrap_or(!all_on);
+                s.edit_sequence("Toggle Effect", |q, _, _| {
+                    for c in &clips {
+                        let (_, it) = q.find_item_mut(*c).ok_or(cfa4_edit::EditError::NoItem(*c))?;
+                        for i in matches(it) {
+                            if let Some(e) = it.effects.get_mut(i) {
+                                e.enabled = target;
+                            }
+                        }
+                    }
+                    Ok(())
+                })?;
+                Ok(json!({"changed": total, "enabled": target}))
+            }
+        ),
         cmd!("effects.reset", "Reset Effect", [], None, r#"{"clip":id,"index":n}"#, has_seq, |s, p| {
             let c = clip_p(p, "clip").ok_or_else(|| bad("effects.reset", "need `clip`"))?;
             let idx = u64_p(p, "index").unwrap_or(0) as usize;
@@ -3891,23 +4058,35 @@ fn build() -> Vec<CommandSpec> {
     v.extend(crate::captions::commands());
     v.extend(crate::settings::commands());
     v.extend(crate::timecode_sync::commands());
+    v.extend(crate::control_surfaces::commands());
+    v.extend(crate::gesture_ui::commands());
+    v.extend(crate::ltc_read::commands());
     v.extend(crate::mixer::commands());
     v.extend(crate::multicam::commands());
     v.extend(crate::essential_sound::commands());
+    v.extend(crate::vdb::commands());
     v.extend(crate::color::commands());
     v.extend(crate::graphics::commands());
     v.extend(crate::graphic_templates::commands());
     v.extend(crate::credits::commands());
     v.extend(crate::live::commands());
+    v.extend(crate::studio::commands());
     v.extend(crate::dialog_defaults::commands());
     v.extend(crate::legibility::commands());
     v.extend(crate::shortcuts::commands());
     v.extend(crate::relink::commands());
     v.extend(crate::kdm::commands());
+    v.extend(crate::atrac_convert::commands());
     v.extend(crate::dcpomatic::commands());
     v.extend(crate::proxies::commands());
+    v.extend(crate::camera_proxies::commands());
+    v.extend(crate::short_clips::commands());
+    v.extend(crate::marker_exports::commands());
+    v.extend(crate::captions_titles::commands());
+    v.extend(crate::contact_sheet::commands());
     v.extend(crate::project_manager::commands());
     v.extend(crate::masks::commands());
+    v.extend(crate::objects_track::commands());
     v.extend(crate::program_overlay::commands());
     v.extend(crate::eyedropper::commands());
     v.extend(crate::fx_editor::commands());
@@ -3917,11 +4096,15 @@ fn build() -> Vec<CommandSpec> {
     v.extend(crate::segments::commands());
     v.extend(crate::segment_detect::commands());
     v.extend(crate::qc::commands());
+    v.extend(crate::dcp_validation::commands());
+    v.extend(crate::dcp_export::commands());
     v.extend(crate::transcript::commands());
     v.extend(crate::panels::commands());
+    v.extend(crate::render_job::commands());
     v.extend(crate::scopes::commands());
     v.extend(crate::remix::commands());
     v.extend(crate::beat_markers::commands());
+    v.extend(crate::silence::commands());
     v.extend(crate::social::commands());
     v.extend(crate::delivery_check::commands());
     v.extend(crate::variants::commands());

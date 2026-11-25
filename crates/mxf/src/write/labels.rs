@@ -260,7 +260,7 @@ pub const MCA_PRIMER: &[(u16, [u8; 16])] = &[
 ];
 
 /// A property label: 06 0E 2B 34 followed by `rest`, zero padded.
-const fn ul(rest: &[u8]) -> [u8; 16] {
+pub(super) const fn ul(rest: &[u8]) -> [u8; 16] {
     let mut k = [0u8; 16];
     k[0] = 0x06;
     k[1] = 0x0E;
@@ -293,4 +293,6 @@ pub const TIMED_TEXT_PRIMER: &[(u16, [u8; 16])] = &[
     (TAG_TIMED_TEXT + 3, ul(&[0x01, 0x01, 0x01, 0x0C, 0x01, 0x01, 0x15, 0x13])),
     (TAG_TIMED_TEXT + 4, ul(&[0x01, 0x01, 0x01, 0x07, 0x04, 0x09, 0x02, 0x01])),
     (TAG_TIMED_TEXT + 5, ul(&[0x01, 0x01, 0x01, 0x04, 0x01, 0x03, 0x04, 0x04])),
+    // RFC 5646 Language Tag List of an IMF timed text descriptor (ST 2067-2 Annex H)
+    (TAG_TIMED_TEXT + 6, ul(&[0x01, 0x01, 0x01, 0x0E, 0x03, 0x01, 0x01, 0x02, 0x02, 0x16])),
 ];

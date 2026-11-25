@@ -49,6 +49,7 @@
 	Arrange	Susun
 	Assembly	Perakitan
 	Attach Proxies…	Lampirkan Proksi…
+	Find Camera Proxies	Cari Proksi Kamera
 	Audio Channels…	Kanal Audio…
 	Audio Clip Mixer	Mixer Klip Audio
 	Audio Gain…	Gain Audio…
@@ -4132,7 +4133,7 @@
 	MPEG-2 720×576 at 25 fps, 16:9 anamorphic, 6 Mbps, GOP 15, 16-bit 48 kHz LPCM, .mpg (DVD-ready stream; no VIDEO_TS authoring)	MPEG-2 720×576 pada 25 fps, 16:9 anamorfik, 6 Mbps, GOP 15, LPCM 16-bit 48 kHz, .mpg (aliran siap DVD; tanpa authoring VIDEO_TS)
 	MPEG-2 video (Main Profile 4:2:0, 0.4 bits per pixel) at the sequence's frame size and rate, 16-bit 48 kHz LPCM, .mpg	Video MPEG-2 (Main Profile 4:2:0, 0,4 bit per piksel) dengan ukuran dan laju bingkai sekuens, LPCM 16-bit 48 kHz, .mpg
 	MPEG-2 video 1920×1080, 18 Mbps average, AAC 192 kbps, .ts	Video MPEG-2 1920×1080, rata-rata 18 Mbps, AAC 192 kbps, .ts
-	Use FFmpeg for files the CFA4 engine cannot open (FFmpeg 9.0.2 or later, GPL-3 build)	Gunakan FFmpeg untuk berkas yang tidak bisa dibuka mesin CFA4 (FFmpeg 9.0.2 atau lebih baru, build GPL-3)
+	Use FFmpeg for files the CFA4 engine cannot open (FFmpeg 9.1 or later, GPL-3 build)	Gunakan FFmpeg untuk berkas yang tidak bisa dibuka mesin CFA4 (FFmpeg 9.1 atau lebih baru, build GPL-3)
 	Use the system's GStreamer for files neither the engine nor FFmpeg can open	Gunakan GStreamer sistem untuk berkas yang tidak bisa dibuka mesin maupun FFmpeg
 
 # Language names in the language menu: the English variants keep their English names.
@@ -4663,6 +4664,16 @@
 	software backend: {reason}	backend perangkat lunak: {reason}
 	Start studio	Mulai studio
 	Stop studio	Hentikan studio
+	Add Studio Scene	Tambah Adegan Studio
+	Live	Langsung
+# Credits: title, opening, chapter and lower-third pages filled from a graphics template (F10-C16)
+	Opening Credits	Kredit pembuka
+	Chapter Title	Judul bab
+	Lower Third	Lower third
+	page {page}: graphics template “{template}” was not found; “{used}” is used	halaman {page}: templat grafis “{template}” tidak ditemukan; “{used}” dipakai
+	page {page}: graphics template “{template}” has no field for all of the block's text; the rest is left out	halaman {page}: templat grafis “{template}” tidak punya bidang untuk seluruh teks blok; sisanya dihilangkan
+	page {page}: template field “{control}” → “{part}” is not used (no such text control, or not head, body or tail)	halaman {page}: bidang templat “{control}” → “{part}” tidak dipakai (tidak ada kontrol teks itu, atau bukan kepala, badan, atau ekor)
+	page {page}: pictures are left out on title, opening, chapter and lower-third pages	halaman {page}: gambar dihilangkan pada halaman judul, kredit pembuka, bab, dan lower third
 # Auto Color, Auto Contrast, Auto Levels (EffectsSDK review)
 	Auto Color	Warna Otomatis
 	Auto Contrast	Kontras Otomatis
@@ -4733,3 +4744,294 @@
 	AS-11 Core	AS-11 Core
 	AS-11 Parts	Bagian AS-11
 	AS-11 UK DPP	AS-11 UK DPP
+# Control surfaces (qt-control-surfaces-page, CFA4-CONTROL-SURFACE-001)
+	Connected	Terhubung
+	Device	Perangkat
+	Devices	Perangkat
+	Disabled	Dinonaktifkan
+	MIDI	MIDI
+	Not connected	Tidak terhubung
+	OSC	OSC
+	Use	Gunakan
+	{device} ({port})	{device} ({port})
+	{name}: {error}	{name}: {error}
+# Control surfaces (midi-monitor, CFA4-CONTROL-SURFACE-001)
+	MIDI Monitor	Monitor MIDI
+	Press Start Monitor, then move a control.	Tekan Mulai Monitor, lalu gerakkan sebuah kontrol.
+	Start Monitor	Mulai Monitor
+	Stop Monitor	Hentikan Monitor
+	… {count} messages not shown (too many at once)	… {count} pesan tidak ditampilkan (terlalu banyak sekaligus)
+# Control surfaces (midi-learn, CFA4-CONTROL-SURFACE-001)
+	A control surface asked for {command}, which does not exist.	Sebuah permukaan kontrol meminta {command}, yang tidak ada.
+	Assignments	Penetapan
+	Cancel Learn	Batalkan Pembelajaran
+	Control	Kontrol
+	Learn	Pelajari
+	Remove this assignment	Hapus penetapan ini
+	{control} runs {command}.	{control} menjalankan {command}.
+# Control surfaces (shuttlepro, CFA4-CONTROL-SURFACE-001)
+	Button {n}	Tombol {n}
+# Control surfaces (continuous-values, CFA4-CONTROL-SURFACE-001)
+	{strip} Pan (knob)	{strip} pan (kenop)
+	{strip} Volume (fader)	{strip} volume (fader)
+# Control surfaces (F1 Learn and profile, CFA4-CONTROL-SURFACE-001)
+	Assignments run when a button is pressed (a fader or knob counts as pressed past half way); a fader or knob assigned to a mixer strip moves its volume or pan. A ShuttlePRO's shuttle ring plays at its profile's speeds and its jog wheel steps frame by frame. Endless encoders and feedback to the controller (lights, motor faders) come in a later version.	Penetapan berjalan saat tombol ditekan (fader atau kenop dihitung ditekan setelah lewat setengah); fader atau kenop yang ditetapkan ke jalur mixer menggerakkan volume atau pan. Cincin shuttle ShuttlePRO memutar pada kecepatan profilnya dan roda jog melangkah per bingkai. Encoder tanpa ujung dan umpan balik ke pengontrol (lampu, fader bermotor) menyusul di versi berikutnya.
+	First message (ms)	Pesan pertama (ms)
+	Silence (ms)	Senyap (ms)
+	Waiting for the control to settle…	Menunggu kendali menetap…
+	Type: {hint}. Confirm this assignment.	Jenis: {hint}. Konfirmasi penetapan ini.
+	That control is already assigned. Confirm replaces it.	Kendali itu sudah ditetapkan. Konfirmasi menggantinya.
+	Learn timed out.	Belajar kehabisan waktu.
+	Confirm	Konfirmasi
+	Reject	Tolak
+	Shows every MIDI message from the controllers as it arrives, to check that a controller sends and what it sends. MIDI Clock, Active Sensing and MIDI Time Code are left out.	Menampilkan setiap pesan MIDI dari pengontrol saat tiba, untuk memeriksa apakah pengontrol mengirim dan apa yang dikirim. Jam MIDI, Active Sensing, dan kode waktu MIDI dihilangkan.
+	Pick a command (or a mixer strip for a fader or knob), press Learn, then press the button or move the control past half way. Confirm keeps the assignment. OK saves the assignments.	Pilih perintah (atau jalur mixer untuk fader atau kenop), tekan Pelajari, lalu tombol, atau gerakkan kendali melewati setengah. Konfirmasi menyimpan penetapan. OK menyimpan penetapan.
+	All devices	Semua perangkat
+	Builtin: {name}	Bawaan: {name}
+	Capturing	Merekam
+	Confirmed	Dikonfirmasi
+	Conflict	Konflik
+	Connect a MIDI controller or a ShuttlePRO to edit its profile.	Hubungkan pengontrol MIDI atau ShuttlePRO untuk menyunting profilnya.
+	Control Surfaces…	Permukaan kontrol…
+	Filter messages	Saring pesan
+	Idle	Diam
+	Kernel dropped: {count}	Dibuang kernel: {count}
+	Learn Assignments…	Pelajari penetapan…
+	Load profile	Muat profil
+	MIDI Monitor…	Monitor MIDI…
+	Mute shuttle sound	Bisukan suara shuttle
+	No conflicts.	Tidak ada konflik.
+	No profile warnings.	Tidak ada peringatan profil.
+	No project profile is stored.	Tidak ada profil proyek yang tersimpan.
+	OK writes the preferences and the profile file together.	OK menulis preferensi dan berkas profil bersama-sama.
+	Online	Daring
+	Pending	Menunggu
+	Pickup (14-bit)	Pickup (14 bit)
+	Pickup (7-bit)	Pickup (7 bit)
+	Profile warnings	Peringatan profil
+	Rejected	Ditolak
+	Show Active Sensing	Tampilkan Active Sensing
+	Show MIDI Clock	Tampilkan jam MIDI
+	Show MIDI Time Code	Tampilkan kode waktu MIDI
+	The profile file is damaged. Preferences and the built-in profile stay in use.	Berkas profil rusak. Preferensi dan profil bawaan tetap dipakai.
+	Timed out	Waktu habis
+	Type: {hint}	Jenis: {hint}
+	User profile file	Berkas profil pengguna
+	{received} received, {dispatched} dispatched, {coalesced} coalesced, {stalls} stalls, {errors} errors	{received} diterima, {dispatched} dikirim, {coalesced} digabung, {stalls} antrean, {errors} kesalahan
+
+# Control Surfaces settings page (CS-1, #1187)
+	HID jog/shuttle	HID jog/shuttle
+	Looking for devices…	Mencari perangkat…
+	No MIDI controller or jog/shuttle device was found. Connect one and press Refresh.	Tidak ditemukan pengontrol MIDI atau perangkat jog/shuttle. Hubungkan salah satu lalu tekan Segarkan.
+	Control Surfaces	Permukaan Kontrol
+	Use control surfaces (MIDI controllers, jog/shuttle devices)	Gunakan permukaan kontrol (pengontrol MIDI, perangkat jog/shuttle)
+	Mapping controls to commands, MIDI Learn and the MIDI Monitor come in a later version; the choices here are remembered until then.	Pemetaan kontrol ke perintah, MIDI Learn, dan Monitor MIDI hadir di versi berikutnya; pilihan di sini diingat sampai saat itu.
+	CFA4 ShuttlePRO	CFA4 ShuttlePRO
+	Kdenlive-style ShuttlePRO	ShuttlePRO gaya Kdenlive
+	Generic MIDI	MIDI umum
+# LTC timecode read from clip audio (TC-7, #1285)
+	Read from LTC Audio	Baca dari Audio LTC
+	Find SMPTE LTC on the clip's audio and use the timecode it gives the first frame	Cari SMPTE LTC pada audio klip dan gunakan timecode yang diberikannya untuk frame pertama
+	Read Timecode from LTC Audio	Baca Timecode dari Audio LTC
+# Credits: voices (the Voice column) in the block's properties (F10-C16)
+	Voices	Suara
+# Timecode sync varispeed and user bits (TC-8, #1308)
+	Varispeed: adjust the playback speed instead of seeking	Varispeed: sesuaikan kecepatan putar alih-alih melompat
+	User bits	Bit pengguna
+# AS-11 programme parts and AS-10 metadata (G2, #1371, #1375)
+	{tc}  Segmentation	{tc}  Segmentasi
+	Marker Type	Jenis Penanda
+	Chapter	Bab
+	Segmentation (AS-11 programme part)	Segmentasi (bagian program AS-11)
+	AS-10	AS-10
+# AT9/AT3 converter (Tools ▸ Audio Tools, AT3-2)
+	AT9/AT3 Converter	Konverter AT9/AT3
+	AT9/AT3 Converter…	Konverter AT9/AT3…
+	Files to convert:	Berkas yang akan dikonversi:
+	Add Files	Tambah Berkas
+	Add Files…	Tambah Berkas…
+	Convert to:	Konversi ke:
+	Bit rate:	Laju bit:
+	Sample format:	Format sampel:
+	Output folder:	Folder keluaran:
+	Output Folder	Folder Keluaran
+	Next to each source file	Di samping setiap berkas sumber
+	AT9 and ATRAC3plus files convert to WAV; encoding AT9, ATRAC3plus and MP3 is not available yet.	Berkas AT9 dan ATRAC3plus dikonversi ke WAV; enkode AT9, ATRAC3plus, dan MP3 belum tersedia.
+	Convert	Konversi
+	Add the files to convert first.	Tambahkan dulu berkas yang akan dikonversi.
+	Done: {n} file(s) converted.	Selesai: {n} berkas dikonversi.
+	Converting {name}…	Mengonversi {name}…
+	Stopping…	Menghentikan…
+	AT3 (ATRAC3, PSP / PS3)	AT3 (ATRAC3, PSP / PS3)
+	WAV (PCM)	WAV (PCM)
+	132 kbit/s (LP2)	132 kbit/s (LP2)
+	105 kbit/s	105 kbit/s
+	66 kbit/s (LP4, joint stereo)	66 kbit/s (LP4, joint stereo)
+	16-bit	16-bit
+	24-bit	24-bit
+	32-bit float	32-bit float
+
+# Datamosh transition (Grunge & Distort, DM1, #1409)
+	Datamosh	Datamosh
+	Residual	Residu
+	Motion Boost	Penguatan Gerak
+	Recovery	Pemulihan
+	Encode Resolution	Resolusi Enkode
+	Half	Setengah
+	Quarter	Seperempat
+# Datamosh Bloom (Glitch, DM2)
+	Datamosh Bloom	Datamosh Mekar
+	Start Time (seconds)	Waktu Mulai (detik)
+	Repeats	Pengulangan
+	Clean Blocks	Blok bersih
+
+# Recent effects, per-channel waveform, white balance selector (SC-2/SC-3/SC-4, #1419 #1420 #1421)
+	Apply a recently used effect to the selected clips	Terapkan efek yang baru dipakai ke klip terpilih
+	Disable all effects	Nonaktifkan semua efek
+	Enable all effects	Aktifkan semua efek
+	No recent effects	Tidak ada efek terbaru
+	Recent effects	Efek terbaru
+	Switch every effect of the selected clips off	Menonaktifkan setiap efek pada klip terpilih
+	Switch every effect of the selected clips on	Mengaktifkan setiap efek pada klip terpilih
+	Merged	Gabungan
+	Per Channel	Per Kanal
+	Channel Zoom	Zoom Kanal
+	White Balance Selector (click a neutral point in the Program monitor; Esc cancels)	Pemilih Keseimbangan Putih (klik titik netral di monitor Program; Esc membatalkan)
+# Task Manager and subtitle kind (SC-2/3/4)
+	Task Manager	Pengelola Tugas
+	Background jobs	Tugas latar belakang
+	Exports	Ekspor
+	Shared task queue	Antrean tugas bersama
+	Task	Tugas
+	State	Status
+	Details	Detail
+	Time left	Sisa waktu
+	Scheduled	Dijadwalkan
+	Queued	Dalam antrean
+	Waiting for resources	Menunggu sumber daya
+	Blocked	Terblokir
+	Running	Berjalan
+	Paused	Dijeda
+	Cancelling	Membatalkan
+	Interactive	Interaktif
+	Speculative	Spekulatif
+	Final render	Render akhir
+	Show finished	Tampilkan yang selesai
+	Nothing is running.	Tidak ada yang berjalan.
+	Not reported by this engine yet.	Belum dilaporkan oleh mesin ini.
+	Not available: {why}	Tidak tersedia: {why}
+	{name} waits: {why}	{name} menunggu: {why}
+	{running} running · {waiting} waiting	{running} berjalan · {waiting} menunggu
+	{n} active	{n} aktif
+	{n} CPU	{n} CPU
+	{n} GiB	{n} GiB
+	{n} MiB	{n} MiB
+	Needs your decision	Memerlukan keputusan Anda
+	Run now	Jalankan sekarang
+	Next slot	Slot berikutnya
+	Missed its start	Awal terlewat
+	Missed its start at {time}	Awal pukul {time} terlewat
+	Starts at {time}	Mulai pukul {time}
+	Subtitle kind	Jenis subtitel
+	Subtitles	Subtitel
+	Captions for the hearing impaired	Teks untuk penyandang tunarungu
+	Forced narrative	Narasi paksa (forced narrative)
+	Silence	Hening
+	Detect Silence	Deteksi hening
+	Remove Silence	Hapus hening
+	Clear Silence Markers	Hapus penanda hening
+# DCP Validation window (DCP-12)
+	AS-03	AS-03
+	Choose the DCP folder.	Pilih folder DCP.
+	DCP Validation	Validasi DCP
+	DCP folder	Folder DCP
+	DCP folder (the one holding ASSETMAP)	Folder DCP (yang berisi ASSETMAP)
+	Evidence	Bukti
+	How to fix	Cara memperbaiki
+	Interrupted	Terhenti
+	Not applicable	Tidak berlaku
+	Report	Laporan
+	Report saved: {path}	Laporan disimpan: {path}
+	Required	Wajib
+	Rule	Aturan
+	Rules	Aturan
+	Save JSON…	Simpan JSON…
+	Save Markdown…	Simpan Markdown…
+	Save report	Simpan laporan
+	Skipped	Dilewati
+	Standard: {standard}	Standar: {standard}
+	Validate	Validasi
+	Validate DCP…	Validasi DCP…
+	the engine sent no profiles	mesin tidak mengirim profil apa pun
+	{n} files checked	{n} berkas diperiksa
+
+# AS-02 export
+	Write an AS-02 bundle (the path is a folder)	Tulis paket AS-02 (jalurnya adalah folder)
+	AS-02	AS-02
+	AS-12	AS-12
+
+# N1 voxel panel
+	Active voxels:	Voksel aktif:
+	Bounds:	Batas:
+	Voxel attributes	Atribut voksel
+	Voxel size:	Ukuran voksel:
+	points	titik
+
+# WP3 DPX bit depth
+	Bit Depth	Kedalaman bit
+
+# AS-02 versions
+	AS-02 Versions	Versi AS-02
+	Tick the sequences to write as further versions in the AS-02 bundle	Centang sekuens yang akan ditulis sebagai versi tambahan dalam paket AS-02
+	Delete Short Clips	Hapus Klip Pendek
+	A stored combination does not run a command yet.	Kombinasi yang tersimpan belum menjalankan perintah.
+	Action hint	Petunjuk tindakan
+	Add combination	Tambah kombinasi
+	Add mapping	Tambah pemetaan
+	Button Learn	Pelajari tombol
+	Button Test	Uji tombol
+	Button name	Nama tombol
+	Cancel feedback	Umpan batal
+	Combination editor	Penyunting kombinasi
+	Context	Konteks
+	Delete profile	Hapus profil
+	Detected buttons	Tombol terdeteksi
+	Draw the gesture with a button held.	Gambar gestur sambil menahan tombol.
+	Error feedback	Umpan galat
+	Evdev device	Perangkat evdev
+	Evdev reads the selected device only, and only after a later phase turns it on. This version keeps the Qt path.	Evdev hanya membaca perangkat yang dipilih, dan hanya setelah fase berikutnya menyalakannya. Versi ini tetap di jalur Qt.
+	Execution feedback	Umpan eksekusi
+	Follow the system	Ikuti sistem
+	Gesture	Gestur
+	Gesture Learn	Pelajari gestur
+	Gesture editor	Penyunting gestur
+	Gesture profiles	Profil gestur
+	Gestures stay off until you turn them on. Turning them on does not block the panel menu.	Gestur tetap mati sampai Anda menyalakannya. Menyalakannya tidak memblokir menu panel.
+	HUD	HUD
+	Hand	Tangan
+	High contrast	Kontras tinggi
+	Hold time	Waktu tahan
+	Input access	Akses masukan
+	Left-handed	Kidal
+	Mapping	Pemetaan
+	Maximum length	Panjang maksimum
+	Maximum time	Waktu maksimum
+	Minimum length	Panjang minimum
+	Mirror ergonomic gestures	Cerminkan gestur ergonomis
+	Mouse Gestures	Gestur tetikus
+	Mouse Gestures…	Gestur tetikus…
+	No buttons yet. Press one in Button Learn or Button Test.	Belum ada tombol. Tekan satu di Pelajari tombol atau Uji tombol.
+	Press	Tekan
+	Qt pointer (this application)	Penunjuk Qt (aplikasi ini)
+	Recognition preview	Pratinjau pengenalan
+	Reduced animation	Animasi dikurangi
+	Right-handed	Tangan kanan
+	Roles	Peran
+	Save gesture	Simpan gestur
+	Save profile	Simpan profil
+	Show the gesture HUD	Tampilkan HUD gestur
+	Slop	Kelonggaran
+	Spatial gesture	Gestur spasial
+	Thresholds	Ambang
+	Trail	Jejak
+	Use gestures in the window	Gunakan gestur di jendela

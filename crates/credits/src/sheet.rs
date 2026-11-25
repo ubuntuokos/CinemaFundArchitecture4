@@ -12,6 +12,8 @@
 //! - **Content Style** applies to this and every following block until another is named.
 //! - **Spine Position**: horizontal offset (pixels from the frame centre) of the following blocks;
 //!   on a card page also a vertical one, with `Below` / `Above` (see [`CardPoint`]).
+//! - **Voice** (`Hang`, `Szinkronhang`): who dubs the character on that row; it stands beside
+//!   the body cell of its row in its own column (content style `voice*` fields).
 //! - **Page Style** starts a new page with that style.
 //! - **Page Runtime** sets the current page's duration; **Page Gap** the empty time after it.
 //!   Durations are timecodes (`00:00:12:00`), seconds (`12s`, `1.5s`) or frames (`300f`).
@@ -43,7 +45,72 @@ pub enum Column {
     Page,
     Runtime,
     PageGap,
+    /// The voice: who dubs the character (F10-C16, `Voice` / `Hang`).
+    Voice,
 }
+
+/// The `Voice` column's name in CFA4's languages (lower case, without spaces, `-` and `_`).
+const VOICE_HEADERS: &[&str] = &[
+    "voice",
+    "voices",
+    "voiceactor",
+    "dubbing",
+    "hang",
+    "szinkronhang",
+    "szinkron",
+    "stimme",
+    "synchronstimme",
+    "sprecher",
+    "voix",
+    "doublage",
+    "voz",
+    "doblaje",
+    "voce",
+    "doppiaggio",
+    "dublagem",
+    "stem",
+    "röst",
+    "dubbning",
+    "ääni",
+    "hääl",
+    "balsas",
+    "głos",
+    "dubbingowanie",
+    "hlas",
+    "dabing",
+    "glas",
+    "sinhronizacija",
+    "глас",
+    "синхронизация",
+    "голос",
+    "озвучка",
+    "озвучування",
+    "дубляж",
+    "дублювання",
+    "дауыс",
+    "ხმა",
+    "φωνή",
+    "μεταγλώττιση",
+    "ses",
+    "seslendirme",
+    "dublaj",
+    "suara",
+    "sulihsuara",
+    "giọng",
+    "lồngtiếng",
+    "声",
+    "声優",
+    "吹き替え",
+    "吹替",
+    "목소리",
+    "성우",
+    "더빙",
+    "配音",
+    "声音",
+    "聲音",
+    "గొంతు",
+    "డబ్బింగ్",
+];
 
 impl Column {
     /// Recognise a header cell.
@@ -59,6 +126,7 @@ impl Column {
             "pagestyle" | "page" | "oldal" | "oldalstílus" => Column::Page,
             "pageruntime" | "runtime" | "játékidő" | "oldalhossz" => Column::Runtime,
             "pagegap" | "oldalköz" => Column::PageGap,
+            v if VOICE_HEADERS.contains(&v) => Column::Voice,
             // Cinecred's names in its other languages
             _ => return crate::cinecred::column(cell),
         })
@@ -128,6 +196,8 @@ pub struct Block {
     pub body: Vec<String>,
     /// Tails with the index of the body cell they stand beside (row by row).
     pub tails: Vec<(usize, String)>,
+    /// Voices (the `Voice` column: who dubs the character) with the index of their body cell.
+    pub voices: Vec<(usize, String)>,
     /// Pictures shown in place of a body (a body cell holding only `{{Pic …}}` tags).
     pub pictures: Vec<Picture>,
     /// A portrait beside each body cell (a cell with a picture tag and a name), or `None`;
@@ -430,6 +500,7 @@ pub fn read_sheet(rows: &[Vec<String>], default_page: &str, default_content: &st
         let (head, body, tail) = (cell(Column::Head), cell(Column::Body), cell(Column::Tail));
         let (gap, cstyle, spine_s) = (cell(Column::Gap), cell(Column::Style), cell(Column::Spine));
         let (pstyle, runtime, pgap) = (cell(Column::Page), cell(Column::Runtime), cell(Column::PageGap));
+        let voice = cell(Column::Voice);
         let body_blank = raw_body.trim().strip_prefix("{{").and_then(|x| x.strip_suffix("}}")).is_some_and(crate::cinecred::is_blank_word);
 
         // a new page
@@ -497,7 +568,8 @@ pub fn read_sheet(rows: &[Vec<String>], default_page: &str, default_content: &st
         let has_pics = !pics.is_empty();
         let has_body = (!body.trim().is_empty() || body_blank) && !has_pics;
         let has_tail = !tail.trim().is_empty();
-        if !has_head && !has_body && !has_tail && !has_pics {
+        let has_voice = !voice.trim().is_empty();
+        if !has_head && !has_body && !has_tail && !has_voice && !has_pics {
             // an empty row (or one with only settings): ends the block; empty rows add a unit
             let settings_only = [&gap, &cstyle, &spine_s, &pstyle, &runtime, &pgap].iter().any(|v| !v.trim().is_empty());
             if !settings_only {
@@ -521,6 +593,7 @@ pub fn read_sheet(rows: &[Vec<String>], default_page: &str, default_content: &st
                 body: if has_body { vec![body_text] } else { vec![] },
                 body_rows: if has_body { vec![rowno] } else { vec![] },
                 tails: vec![],
+                voices: vec![],
                 portraits: if has_body && portrait.is_some() { vec![portrait.clone()] } else { vec![] },
                 pictures: pics,
                 parallel: std::mem::take(&mut parallel_next),
@@ -544,6 +617,10 @@ pub fn read_sheet(rows: &[Vec<String>], default_page: &str, default_content: &st
         if has_tail && let Some(b) = page.blocks.last_mut() {
             let at = b.body.len().saturating_sub(1);
             b.tails.push((at, tail.trim().to_string()));
+        }
+        if has_voice && let Some(b) = page.blocks.last_mut() {
+            let at = b.body.len().saturating_sub(1);
+            b.voices.push((at, voice.trim().to_string()));
         }
     }
     if !page.blocks.is_empty() || out.pages.is_empty() {

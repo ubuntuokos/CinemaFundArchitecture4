@@ -78,6 +78,12 @@ fn analyze_reports_the_access_points_and_the_registry_decision() {
     assert_eq!(points, [0, 10, 20, 30]);
     assert!(r["accessPoints"].as_array().unwrap().iter().all(|p| p["clean"] == true));
     assert_eq!(r["smartCut"]["allowed"], true, "{}", r["smartCut"]);
+    // K13: every stream of the source, as ffprobe lists them
+    assert_eq!(
+        r["streams"],
+        json!([{"index": 0, "type": "video", "codec": "h264", "id": "0x1", "codecTag": "avc1", "width": 64, "height": 48, "default": true}])
+    );
+    assert_eq!(r["chapters"], json!([]));
 }
 
 #[test]

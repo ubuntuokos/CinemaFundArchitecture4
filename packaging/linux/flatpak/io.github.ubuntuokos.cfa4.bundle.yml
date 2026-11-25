@@ -15,7 +15,7 @@ runtime: org.freedesktop.Platform
 runtime-version: '25.08'
 sdk: org.freedesktop.Sdk
 # The Qt 6 GUI is what `flatpak run` and the menu entry start (owner decision 2026-11-12), as in the
-# from-source manifest; the frozen egui editor: `flatpak run --command=cfa4 io.github.ubuntuokos.cfa4`.
+# from-source manifest. No egui: `cfa4` is the Qt GUI's launcher too (Q4.3, owner 2026-11-14).
 command: cfa4-qt
 finish-args:
   # X11 shared memory (MIT-SHM). Without it the X11 fallback is slow or fails.
@@ -74,6 +74,7 @@ modules:
     buildsystem: simple
     build-commands:
       - test "$(uname -s)" = Linux && test "$(uname -m)" = x86_64
+      # the tarball's bin/cfa4 is a copy of the Qt GUI's launcher, not the egui editor (Q4.3)
       - install -Dm755 bin/cfa4 /app/bin/cfa4
       - install -Dm755 bin/cfa4-cli /app/bin/cfa4-cli
       - install -Dm644 share/applications/io.github.ubuntuokos.cfa4.desktop /app/share/applications/io.github.ubuntuokos.cfa4.desktop
@@ -83,10 +84,12 @@ modules:
       # Already has the release's version and date substituted by package.sh.
       - install -Dm644 share/metainfo/io.github.ubuntuokos.cfa4.metainfo.xml /app/share/metainfo/io.github.ubuntuokos.cfa4.metainfo.xml
       - mkdir -p /app/share/icons /app/share/doc && cp -R share/icons/hicolor /app/share/icons/ && cp -R share/doc/cfa4 /app/share/doc/
-      # CFA4's FFmpeg 9.0.2 (ADR 0005 step 4) with the libraries it loads that the runtime lacks and
-      # their licences: the binaries find it in ../lib/cfa4/ffmpeg-9.0.2 ($ORIGIN RUNPATH). No
-      # patent-restricted encoder: x264/x265 exist only in the cfa4-restricted-extras .deb.
-      - mkdir -p /app/lib/cfa4 && cp -R lib/cfa4/ffmpeg-9.0.2 /app/lib/cfa4/
+      # CFA4's FFmpeg (ADR 0005 step 4) with the libraries it loads that the runtime lacks and
+      # their licences: the binaries find it in ../lib/cfa4/ffmpeg-VERSION ($ORIGIN RUNPATH; the
+      # tarball carries exactly one, the version of packaging/ffmpeg-version.env: flatpak-bundle.sh
+      # refuses a tarball with any other or with more than one). No patent-restricted encoder: x264/x265 exist only in the
+      # cfa4-restricted-extras .deb.
+      - mkdir -p /app/lib/cfa4 && cp -R lib/cfa4/ffmpeg-* /app/lib/cfa4/
       # The Qt 6 GUI (docs/qt-parity.md 1.10), the bundle's command: `flatpak run io.github.ubuntuokos.cfa4`.
       # Its Python package, and the PySide6 / Qt 6 that flatpak-bundle.sh staged from the pinned
       # wheels (the runtime's python3 runs it; the licences went to share/doc/cfa4/pyside6 above).

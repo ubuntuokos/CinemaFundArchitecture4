@@ -62,7 +62,7 @@ see `docs/qt-parity.md` 1.11 for the methods it has so far):
 | `ui.resize`, `app.quit` | `{width,height}` / `{}` | resize or close the native window; `app.quit` quits without the save prompt (unsaved changes stay in the recovery journal), while the command `app.quit` asks first |
 | `ui.focus` | `{}` / `{id}` | empty parameters activate the native window; a widget ID requests egui focus without OS activation |
 | `perf.stats` | – | performance counters (also the command `perf.stats`, so `engine.execute` and MCP `command_run` reach it; headless sessions return the engine part). `decode`: GOP-cache requests / hits / `cacheHitRate`, decoder seeks, samples decoded and skipped while catching up, `draftFrames` (decoded in draft mode), `h264Threads` (frame-threading workers per H.264 decoder), `liveDecoders` (sources holding a decoder now), `cacheMB` / `cacheBudgetMB` (decoded frames all sources hold, and the shared budget), `planePoolMB` / `planesReused` (idle buffers of the frame pool, the planes of evicted frames and the compositor's float images, which a standalone export frees when it ends; and buffers taken from it instead of allocated), decoder ms (total and per sample), `framesDecoded`, `hardware` (Settings ▸ Playback ▸ Hardware decoding: `enabled`, pictures from hardware decoders `frames` vs `softwareFrames`, `sessions`, `declined` streams, mid-stream `fallbacks`); `playback`: playing, shown / dropped frames and `dropRate` of the current or last play, resolution, `draftDecode` (Settings ▸ Playback ▸ Draft decoding), `present` (Qt GUI: how the picture is drawn, `path` `gl` or `raster`, and `frames`, `meanMs`, `maxMs` drawing it since playback started), `audio` (desktop: sound is mixed 200 ms ahead of the device; device `callbacks`, `underruns` and `missingFrames` played as silence because the mixer fell behind, `minLeadMs` the least sound left buffered); `frames`: frame-worker jobs, cancelled, `requestHitRate`, `decodeMs` / `renderMs` (mean, p50, p95 of the last 256 jobs), queue, render-cost estimate, cache use; `monitor`: the `frame` and `revision` of the picture the Program monitor shows against `playheadFrame` and `projectRevision` (how far a drag or a scrub is ahead of the picture); `ui`: fps and frame ms; `process`: CPU seconds; `route` (compute router, ADR 0004): `chains` (per routed task, e.g. `video.decode`, `video.encode.h264` and `video.encode.hevc`: the routes in the order they run, the chosen one first and the CPU path last, and every route passed over with its reason), `inventory` (the GPUs and NPUs found, `null` before the platform registered its backends), `coverage` (per family: implemented vendor-neutral and vendor-locked accelerators, planned ones, `vendor_neutral`); `media`, `jobs`. Counters are cumulative: diff two readings to measure an interval ([performance.md](performance.md)) |
-| `security.status` | – | engine command (through `engine.execute` and MCP `command_run`), read-only, without a project too: the run-time security layer's report ([CFA4-SECURITY-001](plans/CFA4-SECURITY-001.md) B1, `crates/sandbox`). `support`: `kernel`, `landlockAbi` (0: none; 6 means 6 or newer, the real one is in `self.enforcement`), `seccomp`, `apparmor`, `usernsRestricted`, and the calling thread's `selfSeccompMode` / `selfNoNewPrivs`; `processes`: for each process kind (`qtGui`, `engine`, `mediaHost`, `studioHost`, `browserSource`, `fetch`, `pluginHost`, `modelConverter`) its `read` / `write` paths, `outputs` (single files, only the file is granted), `exec` paths, `network`, `gpu`, and under plan D4 `canStart` with the `missing` protections; `self`: this process's own confinement (`kind`, `mode`, `enforcement`; null until a process confines itself, phase B3); `unsupported`: running without a needed protection by the user's choice |
+| `security.status` | – | engine command (through `engine.execute` and MCP `command_run`), read-only, without a project too: the run-time security layer's report ([CFA4-SECURITY-001](plans/CFA4-SECURITY-001.md) B1, `crates/sandbox`). `support`: `kernel`, `landlockAbi` (0: none; 6 means 6 or newer, the real one is in `self.enforcement`), `seccomp`, `apparmor`, `usernsRestricted`, and the calling thread's `selfSeccompMode` / `selfNoNewPrivs`; `processes`: for each process kind (`qtGui`, `engine`, `mediaHost`, `studioHost`, `ioHost`, `browserSource`, `fetch`, `pluginHost`, `modelConverter`) its `read` / `write` paths, `outputs` (single files, only the file is granted), `exec` paths, `network`, `devices` (character devices opened read-write with device ioctls), `gpu`, and under plan D4 `canStart` with the `missing` protections; `self`: this process's own confinement (`kind`, `mode`, `enforcement`; null until a process confines itself, phase B3); `unsupported`: running without a needed protection by the user's choice |
 
 **Timeline thumbnails.** `ui.set {timeline: {thumbnails}}` sets the Timeline wrench menu's Show Video
 Thumbnails: `off`, `head`, `headAndTail` or `continuous`.
@@ -113,6 +113,8 @@ record|soloSafe|output|input|fx.<n>|send.<n>|meter|name>` (popup entries below t
 `clipMixer.A1.<fader|pan|mute|solo|keyframe|value>`, `timeline.track.A1.keyframes[.<lane>|.clip]`,
 `timeline.track.A1.lane[.kf.<n>]`, `audioGain.<set|adjust|normalizeMax|normalizeAll|ok|cancel|peak>`.
 
+OpenVDB: `vdb.inspect {path}` returns `{path, inspection: {grids: [{name, type, gridClass, voxelSize, activeVoxels, bbox, isPoints, meta}], fileMetaCount}}`, read by the separate `cfa4-vdb-worker` process; without the worker it is a plain error (`workers/vdb/README.md`). `vdb.import {paths, sequence?: false, bin?}` adds a `.vdb` file or a numbered sequence (`name.0001.vdb`, gaps reported as `missing` indices) to the Project panel as a volume item (no timeline), `vdb.check {item?}` lists the files missing on disk, `vdb.relink {item?, path}` points the item at another first file (one undo step).
+
 Essential Sound: `essentialSound.inspect`, `essentialSound.setType {type: dialogue|music|sfx|ambience}`,
 `essentialSound.clearType`, `essentialSound.set {key, value}` or `{values: {key: value}}` (keys such as
 `repair.noise.on`, `repair.noise.amount` (0–10), `repair.humHz`, `clarity.eqPreset`, `clarity.enhanceTone`,
@@ -131,8 +133,16 @@ Project files, auto-save, crash recovery and preferences commands (`file.recover
 automation ids are listed in [project-files.md](project-files.md). That file also lists the media
 management commands and dialog ids: offline media and relinking (`media.findMissing`,
 `media.relink`, `media.autoRelink`, `media.search`, `media.makeOffline`, `media.status`, `linkMedia.*`),
-proxies (`media.createProxies`, `media.attachProxies`, `media.toggleProxies`, `proxies.*`), ingest
+proxies (`media.createProxies`, `media.attachProxies`, `media.findCameraProxies`, `media.toggleProxies`, `proxies.*`), ingest
 (`project.ingestSettings`) and the Project Manager (`file.projectManager`, `pm.*`).
+
+**Short clips**: `edit.deleteShortClips {minFrames, tracks?, ripple?=true, dryRun?=true}` → `{found: [{clip, track, start, frames}], deleted, skippedLocked, ...}`. It finds the clips shorter than `minFrames` frames (locked tracks are skipped and counted). It only reports until `dryRun` is `false`; then it deletes them in one undo step, with `edit.rippleDelete` (a sync-lock conflict refuses the whole call) or, with `ripple: false`, `edit.clear`.
+
+**Marker ranges**: `export.queue.addFromMarkers {markers?, sequence?, …export.queue.add params}` queues one export per range the sequence markers describe: a range marker (with a duration) is one range, point markers are zone starts that end at the next point marker (the last at the end of the sequence). `markers` keeps only markers whose colour name or name matches (case-insensitive). `ranges` and `range` are refused; no match is an error. Returns the `export.queue.add` result.
+
+**Captions as titles**: `captions.importAsTitles {path, offsetTime|offsetSeconds|offsetFrame|offsetTimecode?, track?, size?, font?, fontStyle?, position?, box?}` reads a caption file (any format `captions.import` reads) and places each cue as a `graphics.newText` clip at the cue time, as long as the cue, in one undo step. Inline markup is stripped; cues without text or duration are skipped and counted. `track` is the video track index of `graphics.newText`. No caption track is touched. Returns `{clips, cues, skipped, warnings}`.
+
+**Contact sheet**: `qc.contactSheet {sequence?|item?, frames?=12 (1–64), columns?=4 (1–16), thumb?=160 (16–640 px), path?}` writes a PNG contact sheet of `frames` evenly spaced frames (the middle of each equal part) of the sequence (default: the active one) or a clip item, drawn by the same code as the QC report sheet. `path` must end in `.png`; the default is `<name>.ContactSheet.png` next to the saved project. Changes nothing in the project. Returns `{path, width, height, columns, frames: [{frame, time}]}`.
 
 **Moving clips**: `timeline.move {moves: [{clip, track, time}], insert?, linked?}` → `{moved: [clip ids]}`.
 With Linked Selection on (the default; `linked` overrides the toggle for one call) the linked
@@ -156,7 +166,8 @@ corresponding In/Out edges. Rolls include only matching linked cuts at the same 
 audio cuts separate. Each linked group moves once and shares its tightest trim limit; turning
 Linked Selection off allows individual edges to be selected and edited.
 Dynamic trimming takes an explicit clock (seconds) so it is deterministic: `trim.shuttle
-{direction, slow?, clock}` (J/L), `trim.tick {clock}`, `trim.shuttleStop {clock?}` (K, one undo step),
+{direction, slow?, speed?, clock}` (J/L; `speed` is a jog/shuttle ring position's speed, set
+outright up to 8× instead of doubling), `trim.tick {clock}`, `trim.shuttleStop {clock?}` (K, one undo step),
 `trim.cancelDynamic` (Esc), `trim.playAround {clock, loop?}` (Space / Shift+K).
 
 **Replace With Clip**: `clip.replaceFromSource`, `clip.replaceFromSourceMatchFrame` and
@@ -230,3 +241,34 @@ resizes the root split; path entries use `false` for the first child and `true` 
 the second. `{"action":{"MoveFloating":{"panel":"Info","rect":[45,65,420,320]}}}`
 repositions and resizes the floating group containing Info. Invalid actions leave the
 layout unchanged. Pointer gestures dispatch through this same catalog command.
+
+## Control surfaces (`surface.*`)
+
+`PROTOCOL` stays 1. A server that can list devices adds `"surface"` to `hello.features`; the
+monitor adds `surfaceMonitor` and Learn adds `surfaceLearn`. The Qt GUI calls these as methods
+on `cfa4-cli serve` (the same names are engine commands, so `engine.execute` reaches them too).
+The field-by-field contract is
+[`docs/plans/CFA4-CONTROL-SURFACE-PROTOCOL-CONTRACT.md`](plans/CFA4-CONTROL-SURFACE-PROTOCOL-CONTRACT.md).
+An error reply may add `"code"` next to `"error"` (`invalid_params`, `alsa_unavailable`,
+`learn_busy`, `learn_idle`, `permission_denied`, `overload`, `internal`).
+
+| Method | Params | Result |
+|---|---|---|
+| `surface.devices` | `{}` | `{enabled, devices: [{device, name, protocol, state, enabled, profile, error?}], problems}` |
+| `surface.monitor` | `{enabled, device?, filter?: {clock?, sense?, mtc?}}` | `{enabled}`. Events `surfaceMonitor` at most 20 Hz. Clock, Active Sensing and MTC are left out unless the filter asks |
+| `surface.learn` | `{target?: {command, params?}, device?, firstMs?, silenceMs?}` | `{state: "learning"}`. One Learn at a time (`learn_busy`). First-message wait defaults to 7 s, silence to 1.5 s; both are preferences (`controlSurfaces.learnFirstMs`, `learnSilenceMs`) |
+| `surface.learnCancel` | `{}` | `{state: "cancelled"}`, also when Learn is idle |
+| `surface.learnConfirm` | `{accept: bool}` | `{state: "confirmed", device, control, mode, encoding?, command, params}` or `{state: "rejected"}` |
+| `surface.inject` | `{device, input, raw?}` | `{seq}`. Same mapping as a device. Events follow on the session loop |
+| `surface.clock` | `{time: ticks, playing, speed, monitor: "program"\|"source"\|"trim"}` | `{}`. A clock older than 500 ms is not valid (`surface.state` `clockValid`) |
+| `surface.enable` | `{device, enabled}` | `{device, enabled}`. `enabled: true` clears a reader that stopped after five faults |
+| `surface.state` | `{device?}` | `{learn, devices: [{device, state, received, dispatched, coalesced, stalls, gaps, errors}], kernelDropped, clockValid}` |
+| `surface.audit` | `{device?}` | `[{device, control, problem, detail}]` |
+| `surface.profile.warnings` | `{}` | `{devices: [{device, warnings}]}` for assignments this version cannot read |
+| `surface.feedback.test` | `{target: {type: "tally", index}, value: {type: "tally", value: {program?, preview?, aux?}}, device?, led?}` | `{feedback, dominant, led, output}`: the tally feedback the engine would send and what the device's LED shows, without hardware (READY-V4.2). `led` (`"color"` or `"onOff"`) overrides the LED the device's active profile names in `feedback.tally.led` (default on/off). Colour LED: program red, preview green, aux yellow, none off; on/off LED: on for program only; program beats preview beats aux. Only tally can be tested yet; sending to devices is not implemented |
+
+Events: `surfaceAction` `{command, params, device, control, seq}`, `surfaceLearn` `{state, device?, count?, captured?, conflict?}`, `surfaceMonitor`, `surfaceError` `{device?, code, error}` (the same text at most once a second).
+
+Learn states: `learning`, `capturing`, `pending`, `conflict`, `timeout`, `confirmed`, `rejected`, `cancelled`. A binding is stored by the GUI only after confirm; OK writes preferences and the schema-checked file `active-<device>.json` under `$XDG_DATA_HOME/cfa4/Control Surfaces/`.
+
+Trigger inputs are not dropped when the lane is full (the reader waits and `stalls` grows). Continuous values keep the last one (`coalesced`). The lane starts at 256. The final size is not measured yet (N-08).

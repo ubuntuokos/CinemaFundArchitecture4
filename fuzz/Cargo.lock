@@ -39,9 +39,9 @@ checksum = "fd307490d624467aa6f74b0eabb77633d1f758a7b25f12bceb0b22e08d9726f6"
 
 [[package]]
 name = "base64"
-version = "0.22.1"
+version = "0.23.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "72b3254f16251a8381aa12e40e3c4d2f0199f8c6508fbecb9d91f575e0fbb8c6"
+checksum = "ac07cdecf99051d9a5238b80f35af32cdeba5b336e55d957b318b50137e18da5"
 
 [[package]]
 name = "base64ct"
@@ -119,6 +119,13 @@ dependencies = [
 ]
 
 [[package]]
+name = "cfa4-acm"
+version = "0.10.0"
+dependencies = [
+ "thiserror",
+]
+
+[[package]]
 name = "cfa4-adpcm"
 version = "0.10.0"
 dependencies = [
@@ -126,7 +133,21 @@ dependencies = [
 ]
 
 [[package]]
+name = "cfa4-adx"
+version = "0.10.0"
+dependencies = [
+ "thiserror",
+]
+
+[[package]]
 name = "cfa4-amr"
+version = "0.10.0"
+dependencies = [
+ "thiserror",
+]
+
+[[package]]
+name = "cfa4-amv"
 version = "0.10.0"
 dependencies = [
  "thiserror",
@@ -167,6 +188,27 @@ name = "cfa4-avi"
 version = "0.10.0"
 
 [[package]]
+name = "cfa4-avs2"
+version = "0.10.0"
+dependencies = [
+ "thiserror",
+]
+
+[[package]]
+name = "cfa4-avs3"
+version = "0.10.0"
+dependencies = [
+ "thiserror",
+]
+
+[[package]]
+name = "cfa4-bink"
+version = "0.10.0"
+dependencies = [
+ "thiserror",
+]
+
+[[package]]
 name = "cfa4-bitstream"
 version = "0.10.0"
 
@@ -190,6 +232,13 @@ dependencies = [
 ]
 
 [[package]]
+name = "cfa4-cavs"
+version = "0.10.0"
+dependencies = [
+ "thiserror",
+]
+
+[[package]]
 name = "cfa4-cfb"
 version = "0.10.0"
 
@@ -199,6 +248,13 @@ version = "0.10.0"
 dependencies = [
  "cfa4-bitstream",
  "rayon",
+ "thiserror",
+]
+
+[[package]]
+name = "cfa4-cinepak"
+version = "0.10.0"
+dependencies = [
  "thiserror",
 ]
 
@@ -277,7 +333,21 @@ dependencies = [
 ]
 
 [[package]]
+name = "cfa4-evc"
+version = "0.10.0"
+dependencies = [
+ "thiserror",
+]
+
+[[package]]
 name = "cfa4-ffv1"
+version = "0.10.0"
+dependencies = [
+ "thiserror",
+]
+
+[[package]]
+name = "cfa4-flic"
 version = "0.10.0"
 dependencies = [
  "thiserror",
@@ -299,17 +369,25 @@ version = "0.0.0"
 dependencies = [
  "cfa4-aac",
  "cfa4-ac3",
+ "cfa4-acm",
  "cfa4-adpcm",
+ "cfa4-adx",
  "cfa4-amr",
+ "cfa4-amv",
  "cfa4-apv",
  "cfa4-auro",
  "cfa4-av1",
  "cfa4-av2",
  "cfa4-avi",
+ "cfa4-avs2",
+ "cfa4-avs3",
+ "cfa4-bink",
  "cfa4-canopus",
  "cfa4-captions",
+ "cfa4-cavs",
  "cfa4-cfb",
  "cfa4-cineform",
+ "cfa4-cinepak",
  "cfa4-credits",
  "cfa4-dcp",
  "cfa4-dirac",
@@ -317,35 +395,74 @@ dependencies = [
  "cfa4-dnx",
  "cfa4-dts",
  "cfa4-dv",
+ "cfa4-evc",
  "cfa4-ffv1",
+ "cfa4-flic",
+ "cfa4-g729",
  "cfa4-h264",
  "cfa4-hap",
+ "cfa4-hca",
  "cfa4-heif",
  "cfa4-hevc",
  "cfa4-huffyuv",
  "cfa4-iab",
+ "cfa4-ilbc",
+ "cfa4-indeo",
+ "cfa4-indeo3",
+ "cfa4-indeo45",
  "cfa4-interchange",
  "cfa4-isobmff",
  "cfa4-j2k",
  "cfa4-jxl",
+ "cfa4-lagarith",
  "cfa4-lcevc",
+ "cfa4-mace",
+ "cfa4-magicyuv",
  "cfa4-matroska",
+ "cfa4-mobiclip",
  "cfa4-mpa",
  "cfa4-mpeg2v",
  "cfa4-mpegts",
+ "cfa4-msvideo",
+ "cfa4-musepack",
+ "cfa4-mve",
  "cfa4-mxf",
+ "cfa4-nstream",
  "cfa4-ogg",
  "cfa4-opus",
  "cfa4-project",
  "cfa4-prores",
+ "cfa4-qdm2",
+ "cfa4-realaudio",
+ "cfa4-realmedia",
+ "cfa4-realvideo",
+ "cfa4-roq",
+ "cfa4-shorten",
+ "cfa4-smacker",
  "cfa4-speex",
+ "cfa4-sstp",
  "cfa4-st2110",
+ "cfa4-svq1",
+ "cfa4-svq3",
+ "cfa4-tak",
+ "cfa4-theora",
+ "cfa4-thp",
  "cfa4-truehd",
+ "cfa4-truespeech",
  "cfa4-tta",
+ "cfa4-twinvq",
  "cfa4-utvideo",
  "cfa4-vp8",
  "cfa4-vp9",
+ "cfa4-yamaha-oki",
  "libfuzzer-sys",
+]
+
+[[package]]
+name = "cfa4-g729"
+version = "0.10.0"
+dependencies = [
+ "thiserror",
 ]
 
 [[package]]
@@ -366,6 +483,13 @@ dependencies = [
 
 [[package]]
 name = "cfa4-hap"
+version = "0.10.0"
+dependencies = [
+ "thiserror",
+]
+
+[[package]]
+name = "cfa4-hca"
 version = "0.10.0"
 dependencies = [
  "thiserror",
@@ -399,6 +523,34 @@ name = "cfa4-iab"
 version = "0.10.0"
 dependencies = [
  "cfa4-bitstream",
+ "thiserror",
+]
+
+[[package]]
+name = "cfa4-ilbc"
+version = "0.10.0"
+dependencies = [
+ "thiserror",
+]
+
+[[package]]
+name = "cfa4-indeo"
+version = "0.10.0"
+dependencies = [
+ "thiserror",
+]
+
+[[package]]
+name = "cfa4-indeo3"
+version = "0.10.0"
+dependencies = [
+ "thiserror",
+]
+
+[[package]]
+name = "cfa4-indeo45"
+version = "0.10.0"
+dependencies = [
  "thiserror",
 ]
 
@@ -443,8 +595,29 @@ dependencies = [
 ]
 
 [[package]]
+name = "cfa4-lagarith"
+version = "0.10.0"
+dependencies = [
+ "thiserror",
+]
+
+[[package]]
 name = "cfa4-lcevc"
 version = "0.10.0"
+
+[[package]]
+name = "cfa4-mace"
+version = "0.10.0"
+dependencies = [
+ "thiserror",
+]
+
+[[package]]
+name = "cfa4-magicyuv"
+version = "0.10.0"
+dependencies = [
+ "thiserror",
+]
 
 [[package]]
 name = "cfa4-matroska"
@@ -462,11 +635,22 @@ dependencies = [
  "cfa4-heif",
  "cfa4-hevc",
  "cfa4-jxl",
+ "cfa4-realaudio",
  "cfa4-time",
+ "cfa4-truespeech",
+ "cfa4-twinvq",
+ "cfa4-yamaha-oki",
  "image",
  "log",
  "rayon",
  "serde",
+ "thiserror",
+]
+
+[[package]]
+name = "cfa4-mobiclip"
+version = "0.10.0"
+dependencies = [
  "thiserror",
 ]
 
@@ -494,13 +678,42 @@ dependencies = [
 ]
 
 [[package]]
+name = "cfa4-msvideo"
+version = "0.10.0"
+dependencies = [
+ "thiserror",
+]
+
+[[package]]
+name = "cfa4-musepack"
+version = "0.10.0"
+dependencies = [
+ "thiserror",
+]
+
+[[package]]
+name = "cfa4-mve"
+version = "0.10.0"
+dependencies = [
+ "thiserror",
+]
+
+[[package]]
 name = "cfa4-mxf"
 version = "0.10.0"
 dependencies = [
  "aes",
  "chrono",
  "hmac",
+ "roxmltree",
  "sha1",
+]
+
+[[package]]
+name = "cfa4-nstream"
+version = "0.10.0"
+dependencies = [
+ "thiserror",
 ]
 
 [[package]]
@@ -519,6 +732,7 @@ dependencies = [
  "cfa4-geom",
  "cfa4-media",
  "cfa4-time",
+ "log",
  "serde",
  "serde_json",
  "thiserror",
@@ -534,6 +748,55 @@ dependencies = [
 ]
 
 [[package]]
+name = "cfa4-qdm2"
+version = "0.10.0"
+dependencies = [
+ "thiserror",
+]
+
+[[package]]
+name = "cfa4-realaudio"
+version = "0.10.0"
+dependencies = [
+ "thiserror",
+]
+
+[[package]]
+name = "cfa4-realmedia"
+version = "0.10.0"
+dependencies = [
+ "thiserror",
+]
+
+[[package]]
+name = "cfa4-realvideo"
+version = "0.10.0"
+dependencies = [
+ "thiserror",
+]
+
+[[package]]
+name = "cfa4-roq"
+version = "0.10.0"
+dependencies = [
+ "thiserror",
+]
+
+[[package]]
+name = "cfa4-shorten"
+version = "0.10.0"
+dependencies = [
+ "thiserror",
+]
+
+[[package]]
+name = "cfa4-smacker"
+version = "0.10.0"
+dependencies = [
+ "thiserror",
+]
+
+[[package]]
 name = "cfa4-speex"
 version = "0.10.0"
 dependencies = [
@@ -541,7 +804,35 @@ dependencies = [
 ]
 
 [[package]]
+name = "cfa4-sstp"
+version = "0.10.0"
+dependencies = [
+ "thiserror",
+]
+
+[[package]]
 name = "cfa4-st2110"
+version = "0.10.0"
+dependencies = [
+ "thiserror",
+]
+
+[[package]]
+name = "cfa4-svq1"
+version = "0.10.0"
+dependencies = [
+ "thiserror",
+]
+
+[[package]]
+name = "cfa4-svq3"
+version = "0.10.0"
+dependencies = [
+ "thiserror",
+]
+
+[[package]]
+name = "cfa4-tak"
 version = "0.10.0"
 dependencies = [
  "thiserror",
@@ -560,6 +851,20 @@ dependencies = [
 ]
 
 [[package]]
+name = "cfa4-theora"
+version = "0.10.0"
+dependencies = [
+ "thiserror",
+]
+
+[[package]]
+name = "cfa4-thp"
+version = "0.10.0"
+dependencies = [
+ "thiserror",
+]
+
+[[package]]
 name = "cfa4-time"
 version = "0.10.0"
 dependencies = [
@@ -575,7 +880,21 @@ dependencies = [
 ]
 
 [[package]]
+name = "cfa4-truespeech"
+version = "0.10.0"
+dependencies = [
+ "thiserror",
+]
+
+[[package]]
 name = "cfa4-tta"
+version = "0.10.0"
+dependencies = [
+ "thiserror",
+]
+
+[[package]]
+name = "cfa4-twinvq"
 version = "0.10.0"
 dependencies = [
  "thiserror",
@@ -603,6 +922,10 @@ dependencies = [
  "rayon",
  "thiserror",
 ]
+
+[[package]]
+name = "cfa4-yamaha-oki"
+version = "0.10.0"
 
 [[package]]
 name = "cfg-if"
@@ -862,9 +1185,9 @@ dependencies = [
 
 [[package]]
 name = "harfrust"
-version = "0.15.0"
+version = "0.16.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "865dcc4105d51c323d8fedbb2d75b5e9c8ecddf5613f74c82f851d0afbc97114"
+checksum = "0690f8c81dfeca8987d8518cf1c861d7b58d43ad0cedae9184d41af236effb9c"
 dependencies = [
  "bitflags",
  "bytemuck",
@@ -1140,9 +1463,9 @@ dependencies = [
 
 [[package]]
 name = "read-fonts"
-version = "0.46.0"
+version = "0.47.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "bdaa4fffe9ff3ca2c353fa9729792805b9b3e324695ff5a081f860612e81b330"
+checksum = "a39d2f8f681030a7bcbbcf3e8568775ac2393afd51401a2e2133ee89e3953897"
 dependencies = [
  "bytemuck",
  "foldhash",
@@ -1290,9 +1613,9 @@ checksum = "3a219298ac11a56ea9a6d2120044824d6f01aeb034955e7af7bc16858527deea"
 
 [[package]]
 name = "skrifa"
-version = "0.49.0"
+version = "0.50.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "a7459fb60888ad9a5f367dd293fa2fb9df142cb451aa6bfd6cd66a7d6a9b739d"
+checksum = "e85ba678a6023a063d0a78c8770f1c166674ef46af13523d05eff67430f79dfe"
 dependencies = [
  "bytemuck",
  "once_cell",

@@ -1,6 +1,8 @@
 //! Image fidelity metrics for comparing our renders with a reference: CIEDE2000 colour difference
 //! (ΔE₀₀) and SSIM. These are the building blocks of the output-comparison harness of
-//! docs/gaps.md G1 (per-effect PSNR / ΔE scores).
+//! docs/gaps.md G1 (per-effect PSNR / ΔE scores). The plane difference ([`PlaneDiff`]), the audio
+//! null test ([`audio`]) and the timing metrics ([`timing`]) are the measurements of the render
+//! validation harness (CFA4-RENDER-INTEGRATION-PLAN-001, F0V).
 //!
 //! Provenance: the CIEDE2000 formula and the Gaussian SSIM window follow
 //! `oximedia-quality` (`ciede2000.rs`, `ssim.rs`) of OxiMedia 0.2.1 (Apache-2.0), rewritten for
@@ -10,12 +12,17 @@
 
 #![cfg_attr(not(test), deny(clippy::unwrap_used, clippy::expect_used, clippy::panic, clippy::unimplemented, clippy::todo, clippy::unreachable))]
 
+pub mod audio;
 mod ciede2000;
 mod lab;
+mod psnr;
+pub mod resource;
 mod ssim;
+pub mod timing;
 
 pub use ciede2000::{DeltaEParams, DeltaEStats, ciede2000, ciede2000_with, delta_e_srgb8};
 pub use lab::{Lab, linear_rgb_to_lab, srgb8_to_lab, xyz_to_lab};
+pub use psnr::{PlaneDiff, diff_f32, diff_u8, diff_u16};
 pub use ssim::{SSIM_WINDOW, ssim, ssim_u8, ssim_u16};
 
 /// Why a metric could not be computed.

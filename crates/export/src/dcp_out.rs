@@ -21,7 +21,7 @@
 //! The composition edit rate is the DCI rate nearest the export's (24, 25, 30, 48, 50 or 60; 4K
 //! 24, 25 or 30).
 
-use std::io::{Read, Write};
+use std::io::Read;
 
 use cfa4_mxf::{FrameInfo, MxfWriter, PackageIds, Pattern, PictureDesc, Rational, SoundDesc, StartTimecode, Timestamp, Umid, WriterConfig};
 use cfa4_time::FrameRate;
@@ -361,7 +361,7 @@ impl DcpEncoder {
             Pixels::Float(rgb) => rgbf_to_xyz12(rgb, w as usize, h as usize),
         });
         let plane = |data: Vec<i32>| cfa4_j2k::Plane { width: w, height: h, precision: 12, signed: false, dx: 1, dy: 1, data };
-        let image = cfa4_j2k::Image { width: w, height: h, components: vec![plane(x), plane(y), plane(z)], mct: false };
+        let image = cfa4_j2k::Image { width: w, height: h, components: vec![plane(x), plane(y), plane(z)], mct: true };
         cfa4_j2k::encode(&image, &self.opts).map_err(|e| ExportError::Encode(format!("JPEG 2000: {e}")))
     }
 
@@ -549,9 +549,8 @@ fn finish_hashed(out: Out, settings: &ExportSettings, path: &str) -> Result<(u64
             let hash = sha1(&data);
             Ok((crate::write_output(settings, path, data)?, hash))
         }
-        Out::File(mut w) => {
-            w.flush().map_err(io)?;
-            drop(w);
+        file @ (Out::File(_) | Out::Atomic(_)) => {
+            file.publish(path)?;
             let mut f = std::fs::File::open(path).map_err(|e| io(format!("{path}: {e}")))?;
             let mut s = Sha1::new();
             let mut buf = vec![0u8; 1 << 20];

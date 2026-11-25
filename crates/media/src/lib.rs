@@ -9,6 +9,7 @@
 
 #![cfg_attr(not(test), deny(clippy::unwrap_used, clippy::expect_used, clippy::panic, clippy::unimplemented, clippy::todo, clippy::unreachable))]
 
+pub mod aea;
 pub mod animated;
 mod animated_webp;
 pub mod auro;
@@ -19,6 +20,7 @@ pub mod digits;
 pub mod dpx;
 pub mod fallback;
 pub mod generators;
+pub mod oma;
 pub mod pending;
 pub mod reader;
 pub mod sequence;
@@ -248,11 +250,14 @@ pub type SharedSource = Arc<dyn MediaSource>;
 /// File extensions we recognise at import (the media browser filters on these).
 pub const STILL_EXTENSIONS: &[&str] =
     &["png", "jpg", "jpeg", "gif", "webp", "heic", "heif", "hif", "tif", "tiff", "bmp", "tga", "dpx", "exr", "hdr", "jxl", "dng"];
-pub const AUDIO_EXTENSIONS: &[&str] =
-    &["wav", "wave", "bwf", "aif", "aiff", "mp3", "mp2", "m4a", "aac", "dts", "dtshd", "flac", "ogg", "opus", "spx", "amr", "awb", "tta", "g729", "lbc", "mpc"];
+pub const AUDIO_EXTENSIONS: &[&str] = &[
+    "wav", "wave", "bwf", "aif", "aiff", "mp3", "mp2", "m4a", "aac", "dts", "dtshd", "flac", "ogg", "opus", "spx", "amr", "awb", "tta", "at3", "at9", "oma",
+    "omg", "aa3", "aea", "tak", "acm", "g729", "lbc", "mpc", "shn", "adx", "hca", "vqf", "vql", "vqe", "omg", "aa3", "aea", "tak", "acm", "g729", "lbc", "mpc",
+    "shn", "adx", "hca", "brstm", "bfstm", "bcstm",
+];
 pub const VIDEO_EXTENSIONS: &[&str] = &[
     "mp4", "m4v", "mov", "mkv", "webm", "avi", "mxf", "mts", "m2ts", "m2t", "ts", "mpg", "mpeg", "vob", "mod", "tod", "m2v", "m1v", "mpv", "3gp", "y4m", "apv",
-    "dv", "dif", "obu", "ivf",
+    "dv", "dif", "obu", "ivf", "rm", "rmvb", "bik", "thp", "moflex", "smk", "roq", "mve", "amv",
 ];
 
 pub use backends::{BackendEntry, BackendReport, RestrictedItem, backend_enabled, backend_reports, register_backend, set_backend_enabled};
@@ -301,6 +306,12 @@ pub(crate) fn open_bytes_plain(name: &str, bytes: Arc<[u8]>, extra: &[Opener]) -
     }
     if wav::sniff(&bytes) {
         return Ok(Arc::new(wav::WavSource::parse(name, bytes)?));
+    }
+    if oma::sniff(&bytes) {
+        return Ok(Arc::new(oma::open(name, Arc::new(reader::MemReader(bytes)))?));
+    }
+    if aea::sniff(&bytes) {
+        return Ok(Arc::new(aea::open(name, Arc::new(reader::MemReader(bytes)))?));
     }
     // APNG, animated GIF and animated WebP play as movies (#402, #87); single-frame files fall through to the stills
     if let Some(r) = animated::open(name, &bytes) {

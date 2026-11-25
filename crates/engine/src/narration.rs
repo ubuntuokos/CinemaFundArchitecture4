@@ -388,7 +388,7 @@ fn spawn(s: &mut Session, job: crate::Job, wait: bool, name: &str, run: impl FnO
     if wait || cfg!(target_arch = "wasm32") {
         run();
     } else {
-        std::thread::Builder::new().name(name.into()).spawn(run).map_err(|e| EngineError::Other(e.to_string()))?;
+        crate::background::start(s, id, crate::background::Need::background(512, 1), name, run)?;
     }
     Ok(id)
 }
@@ -472,15 +472,14 @@ fn download_voices(s: &mut Session, p: &Value) -> Result<Value> {
 #[cfg(feature = "neural-voices")]
 fn download_package(dir: &std::path::Path, prog: &cfa4_export::Progress) -> std::result::Result<(), String> {
     use std::sync::atomic::Ordering;
-    let files: Vec<cfa4_speech::models::ModelFile> =
-        tts::catalog::FILES.iter().map(|f| cfa4_speech::models::ModelFile { name: f.name, url: f.url, sha256: f.sha256, size: f.size }).collect();
+    let files = tts::catalog::FILES.iter().map(|f| (f.name.to_string(), f.url.to_string(), f.sha256.to_string(), f.size));
     let mut progress = |done: u64, total: u64, file: &str| {
         prog.done.store(done, Ordering::Relaxed);
         prog.total.store(total, Ordering::Relaxed);
         *prog.status.lock().unwrap_or_else(PoisonError::into_inner) = format!("Downloading {file}");
         !prog.cancel.load(Ordering::Relaxed)
     };
-    cfa4_speech::models::download_files(&tts::catalog::package_dir(dir), &files, &mut progress).map_err(|e| e.to_string())
+    crate::security::download(&tts::catalog::package_dir(dir), files, &mut progress)
 }
 
 #[cfg(not(feature = "neural-voices"))]
