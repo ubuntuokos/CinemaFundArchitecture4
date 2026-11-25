@@ -254,9 +254,9 @@ fn sigkill_cycles_leave_no_partial_file_under_a_final_name() {
         std::fs::create_dir_all(&dir).unwrap();
         let mut child = spawn(&dir);
         wait_for(&dir.join("pkg0"));
-        // 6 % .. 100 % of a package (0.3 s .. 4.8 s of a 4.8 s one), so the kill lands before,
-        // during and after the track files
-        let permille = 60 + (cycle * 49) % 940;
+        // 6 % .. 130 % of a package, so the kill lands before, during and after the track files,
+        // and some cycles in the next package
+        let permille = 60 + (cycle * 67) % 1240;
         std::thread::sleep(package.mul_f64(permille as f64 / 1000.0));
         child.kill().unwrap(); // SIGKILL on unix
         child.wait().unwrap();
