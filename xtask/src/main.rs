@@ -148,6 +148,7 @@ const LAYERS: &[(&str, u8)] = &[
     ("store", 5),
     ("edit", 2),
     ("objtrack", 2),
+    ("mi", 2),
     ("codecs", 2),
     ("keyframe", 2),
     ("effects", 2),
