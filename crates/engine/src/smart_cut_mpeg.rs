@@ -46,6 +46,11 @@ impl ByteSource for Reader {
 
 /// Whether `path` is an MPEG program or transport stream (MP4 / MOV names are never sniffed).
 pub(crate) fn is_mpeg(s: &Session, path: &str) -> bool {
+    // a batch asks for every range: the answer is kept for the batch like the opened source
+    crate::source_cache::opened(&format!("\0mpeg?{path}"), || Ok(sniff_mpeg(s, path))).is_ok_and(|b| *b)
+}
+
+fn sniff_mpeg(s: &Session, path: &str) -> bool {
     let lower = path.to_ascii_lowercase();
     if [".mp4", ".m4v", ".mov"].iter().any(|e| lower.ends_with(e)) {
         return false;
@@ -59,11 +64,9 @@ pub(crate) fn is_mpeg(s: &Session, path: &str) -> bool {
             head
         }
         Some(Err(_)) => return false,
-        None => match s.services.read_file(path) {
-            Ok(mut b) => {
-                b.truncate(4096);
-                b
-            }
+        // only the head, on hosts that can read part of a file
+        None => match s.services.read_range(path, 0, 4096) {
+            Ok(b) => b,
             Err(_) => return false,
         },
     };
@@ -194,9 +197,9 @@ pub(crate) fn analyze(s: &mut Session, _p: &Value, path: &str, view: Option<&Sou
 }
 
 /// The plan of the range named in `p`, and the output stream format.
-fn plan_of(s: &Session, p: &Value, cmd: &str) -> Result<(Source, SmartCutPlan, MuxFormat)> {
+fn plan_of(s: &Session, p: &Value, cmd: &str) -> Result<(std::rc::Rc<Source>, SmartCutPlan, MuxFormat)> {
     let (path, view) = source_p(s, p, cmd)?;
-    let src = open_source(s, &path, cmd)?;
+    let src = crate::source_cache::opened(&path, || open_source(s, &path, cmd))?;
     let map = |t: Tick| src.stream_time(t);
     let (mut in_point, mut out_point) = range_p(p, cmd, &CutSource { path: &path, view: view.as_ref(), rate: src.rate(), stream_time: &map })?;
     if view.is_none() {
@@ -265,7 +268,7 @@ pub(crate) fn start(s: &mut Session, p: &Value) -> Result<Value> {
     let output = str_p(p, "output").filter(|o| !o.is_empty()).map(str::to_string).ok_or_else(|| bad(cmd, "`output` (the file to write) is required"))?;
     let encoding = encoding_p(p, cmd)?;
     let (src, plan, format) = plan_of(s, p, cmd)?;
-    if output == src.path {
+    if crate::smart_cut::path_key(s, &output) == crate::smart_cut::path_key(s, &src.path) {
         return Err(bad(cmd, "the output must not be the source file"));
     }
     let reencodes = plan.plan.requires_confirmation();
@@ -285,8 +288,12 @@ pub(crate) fn start(s: &mut Session, p: &Value) -> Result<Value> {
     let source = src.copy_source(bool_p(p, "audio").unwrap_or(true));
     let other = |e: SmartCutError| EngineError::Other(e.to_string());
     let read_back = || EngineError::Other("Smart Cut verification read back another file than was written".into());
+    // the file is built in memory: it stops growing at `maxBytes`, as the MP4 path does
+    let cap = crate::smart_cut::max_bytes_p(p, cmd)?;
+    let capped = || crate::smart_cut::Capped::new(cap);
     let (bytes, audio, dropped, report) = if reencodes {
-        let (bytes, report) = execute_mpeg_boundary_reencode(&plan.plan, stream, &source, format, &encoding, Vec::new()).map_err(other)?;
+        let (out, report) = execute_mpeg_boundary_reencode(&plan.plan, stream, &source, format, &encoding, capped()).map_err(other)?;
+        let bytes = out.into_inner();
         let verified = verify_mpeg_boundary_reencode(&plan.plan, stream, &source, format, &encoding, &bytes).map_err(other)?;
         if (verified.samples, verified.copied, verified.reencoded, &verified.audio) != (report.samples, report.copied, report.reencoded, &report.audio) {
             return Err(read_back());
@@ -295,7 +302,8 @@ pub(crate) fn start(s: &mut Session, p: &Value) -> Result<Value> {
         let value = serde_json::to_value(&verified).map_err(|e| EngineError::Other(e.to_string()))?;
         (bytes, verified.audio, verified.dropped, value)
     } else {
-        let (bytes, report) = execute_mpeg_copy(&plan.plan, stream, &source, format, Vec::new()).map_err(other)?;
+        let (out, report) = execute_mpeg_copy(&plan.plan, stream, &source, format, capped()).map_err(other)?;
+        let bytes = out.into_inner();
         let verified = verify_mpeg_copy(&plan.plan, stream, &source, format, &bytes).map_err(other)?;
         if verified != report {
             return Err(read_back());

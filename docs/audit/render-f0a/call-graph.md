@@ -294,6 +294,8 @@ graph LR
 | `cfa4-engine/marker_export.rs` | `cfa4-time` | `FrameRate`, `Tick` |
 | `cfa4-engine/marker_exports.rs` | `cfa4-project` | `Marker` |
 | `cfa4-engine/marker_exports.rs` | `cfa4-time` | `Tick` |
+| `cfa4-engine/marker_import.rs` | `cfa4-project` | `ItemId`, `ItemKind` |
+| `cfa4-engine/marker_import.rs` | `cfa4-time` | `FrameRate` |
 | `cfa4-engine/masks.rs` | `cfa4-export` | `Report` |
 | `cfa4-engine/masks.rs` | `cfa4-geom` | `Affine` |
 | `cfa4-engine/masks.rs` | `cfa4-media` | `FrameRequest` |
@@ -390,6 +392,13 @@ graph LR
 | `cfa4-engine/scene_detect.rs` | `cfa4-time` | `Tick` |
 | `cfa4-engine/scopes.rs` | `cfa4-render` | `RenderOptions`, `render_sequence` |
 | `cfa4-engine/scopes.rs` | `cfa4-time` | `Tick` |
+| `cfa4-engine/segment_detect.rs` | `cfa4-export` | `Report` |
+| `cfa4-engine/segment_detect.rs` | `cfa4-media` | `FrameRequest`, `SharedSource` |
+| `cfa4-engine/segment_detect.rs` | `cfa4-project` | `ItemId` |
+| `cfa4-engine/segment_detect.rs` | `cfa4-render` | `scene` |
+| `cfa4-engine/segment_detect.rs` | `cfa4-time` | `FrameRate` |
+| `cfa4-engine/segments.rs` | `cfa4-project` | `ItemId` |
+| `cfa4-engine/segments.rs` | `cfa4-time` | `Tick` |
 | `cfa4-engine/sequence_extras.rs` | `cfa4-project` | `ClipId`, `Project`, `TrackItem`, `graphic` |
 | `cfa4-engine/sequence_extras.rs` | `cfa4-render` | `audio` |
 | `cfa4-engine/sequence_extras.rs` | `cfa4-time` | `Tick` |
@@ -806,6 +815,7 @@ graph LR
 | `cfa4-export` | `lib.rs` | `reset_export_lock_wait` |
 | `cfa4-export` | `pcm.rs` | `encode` |
 | `cfa4-export` | `still.rs` | `encode` |
+| `cfa4-export` | `still.rs` | `encode_with` |
 | `cfa4-export` | `timeline_audio.rs` | `encode_sequence_audio` |
 | `cfa4-media` | `generators.rs` | `render` |
 | `cfa4-media` | `still/heif.rs` | `encode_png` |
@@ -837,7 +847,7 @@ graph LR
 
 ## 4. Nyilvános típusok osztályonként
 
-A többi 653 nyilvános típus („other” osztály) csak a `call-graph.json`-ban szerepel.
+A többi 657 nyilvános típus („other” osztály) csak a `call-graph.json`-ban szerepel.
 
 ### Képkocka, kép, pixel (31)
 

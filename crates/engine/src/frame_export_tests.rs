@@ -151,3 +151,44 @@ fn an_earlier_deferred_read_does_not_fail_the_export() {
     assert!(!cfa4_media::pending::is_set());
     std::fs::remove_file(path).unwrap();
 }
+
+/// K7 of CFA4-LOSSLESS-MEDIA-TOOLS-001: WebP, JPEG quality and the output size.
+#[test]
+fn frame_export_writes_webp_and_chooses_quality_and_size() {
+    let (mut s, _item) = session();
+    let dir = std::env::temp_dir().join(format!("fc-frame-k7-{}", std::process::id()));
+    std::fs::create_dir_all(&dir).unwrap();
+    let p = |n: &str| dir.join(n).to_string_lossy().into_owned();
+    let r = s.execute("file.exportFrame", json!({"target":"source","format":"webp","path":p("a.webp")})).unwrap();
+    assert_eq!((r["width"].as_u64(), r["height"].as_u64()), (Some(128), Some(72)));
+    let webp = image::load_from_memory(&std::fs::read(p("a.webp")).unwrap()).unwrap();
+    let png_r = s.execute("file.exportFrame", json!({"target":"source","path":p("a.png")})).unwrap();
+    assert_eq!(png_r["time"], r["time"]);
+    let png = image::load_from_memory(&std::fs::read(p("a.png")).unwrap()).unwrap();
+    assert_eq!(webp.to_rgba8().into_raw(), png.to_rgba8().into_raw(), "WebP is lossless");
+    // one side keeps the aspect ratio
+    let r = s.execute("file.exportFrame", json!({"target":"source","format":"png","width":64,"path":p("half.png")})).unwrap();
+    assert_eq!((r["width"].as_u64(), r["height"].as_u64()), (Some(64), Some(36)));
+    assert_eq!(image::load_from_memory(&std::fs::read(p("half.png")).unwrap()).unwrap().width(), 64);
+    // a lower JPEG quality writes a smaller file
+    s.execute("file.exportFrame", json!({"target":"source","format":"jpeg","quality":10,"path":p("lo.jpg")})).unwrap();
+    s.execute("file.exportFrame", json!({"target":"source","format":"jpeg","quality":100,"path":p("hi.jpg")})).unwrap();
+    assert!(std::fs::metadata(p("lo.jpg")).unwrap().len() < std::fs::metadata(p("hi.jpg")).unwrap().len());
+    for params in [
+        json!({"target":"source","format":"jpeg","quality":0}),
+        json!({"target":"source","format":"jpeg","quality":101}),
+        json!({"target":"source","format":"png","quality":50}),
+        json!({"target":"source","format":"webp","depth":16}),
+        json!({"target":"source","width":0}),
+        json!({"target":"source","height":-5}),
+        json!({"target":"source","width":"big"}),
+        json!({"target":"source","width":u64::MAX}),
+        json!({"target":"source","width":1_000_000,"height":1_000_000}),
+    ] {
+        let mut q = params.clone();
+        q["path"] = json!(p("bad.png"));
+        assert!(s.execute("file.exportFrame", q).is_err(), "{params}");
+    }
+    drop(s);
+    std::fs::remove_dir_all(dir).unwrap();
+}

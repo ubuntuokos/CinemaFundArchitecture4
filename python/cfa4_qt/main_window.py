@@ -115,6 +115,13 @@ EXPORT_SAVES = {
     "file.exportOtio": ("OpenTimelineIO", "otio"),
     "file.exportAle": (N_("Avid Log Exchange"), "ale"),
     "file.exportSelectionProject": ("CFA4 Project", "fcproj"),
+    "markers.exportEdl": ("EDL", "edl"),
+}
+
+# marker imports that ask for the file to read (CFA4-LOSSLESS-MEDIA-TOOLS-001 K6)
+IMPORT_OPENS = {
+    "markers.importCsv": (N_("Marker report (CSV)"), "csv"),
+    "markers.importEdl": ("EDL", "edl"),
 }
 
 # egui's rulers and guides UI commands (menus.rs), run on the focused monitor
@@ -518,7 +525,7 @@ class MainWindow(QMainWindow):
         self.multicam.refresh.connect(self.schedule_refresh)
         self.monitor.multicam_command.connect(self.multicam.view_command)
         self.monitor.multicam_record.connect(self.multicam.toggle_record)
-        self.markers.command.connect(lambda c, p: self._seek_program(p["time"]) if c == "playhead.set" else self.execute(c, p))
+        self.markers.command.connect(self._marker_command)
         self.effect_controls.seek.connect(self._seek_program)
         self.monitor.overlay.pen_finished.connect(self.effect_controls.pen_done)
         self.effect_controls.eyedropper_armed.connect(self.monitor.overlay.arm_eyedropper)
@@ -1571,6 +1578,11 @@ class MainWindow(QMainWindow):
         File Properties for ▸ File… asks for the file and shows its Properties."""
         if cid == "file.mediaPropertiesFile":
             path, _f = QFileDialog.getOpenFileName(self, tr("Media"), "", tr("All files") + " (*)")
+        elif cid in IMPORT_OPENS:
+            cmd = self.registry.commands.get(cid)
+            label, suffix = IMPORT_OPENS[cid]
+            filt = f"{tr(label)} (*.{suffix});;{tr('All files')} (*)"
+            path, _f = QFileDialog.getOpenFileName(self, tr(cmd.label if cmd is not None else cid), "", filt)
         else:
             cmd = self.registry.commands.get(cid)
             if cmd is not None and not cmd.enabled:
@@ -1591,6 +1603,8 @@ class MainWindow(QMainWindow):
                 path += ext
         if not path:
             return
+        if cid == "markers.importCsv":
+            params = self.marker_import_params(params)
 
         def got(r: Any, _b: bytes | None) -> None:
             self.schedule_refresh()
@@ -1598,6 +1612,16 @@ class MainWindow(QMainWindow):
                 self._show_menu_dialog({"command": "file.mediaProperties", "params": {}, "info": [r]})
 
         self.engine.execute(cid, {**params, "path": path}, on_reply=got, on_error=lambda m: self._command_failed(cid, m))
+
+    def marker_import_params(self, params: dict[str, Any]) -> dict[str, Any]:
+        """Import Markers from CSV goes to the focused monitor's holder: the Source clip (its
+        segments) when the Source monitor is focused and shows one, else the active sequence. A
+        target or item the caller named is kept."""
+        if "target" in params or "item" in params:
+            return params
+        if self.focused_monitor() is self.source_monitor:
+            return {**params, "target": "source"}
+        return params
 
     # ----- media management dialogs (egui's media_dialogs) -----
     def _link_media_open(self) -> bool:
@@ -2097,9 +2121,20 @@ class MainWindow(QMainWindow):
         self.text_panel.set_sequence(self.sequence, self.monitor.playhead)
         self.update_inspectors()
 
+    def _marker_command(self, command: str, params: dict[str, Any]) -> None:
+        """The Markers panel's commands: a jump stops the monitor it moves (playing, the jump would
+        be dropped) and goes through that monitor; the rest run as they are."""
+        if command == "playhead.set":
+            self._seek_program(params["time"])
+        elif command == "source.setPlayhead":
+            self.source_monitor.seek(params["time"])
+        else:
+            self.execute(command, params)
+
     def _on_source(self, result: Any, _b: bytes | None) -> None:
         self.source_state = result if isinstance(result, dict) else None
         self.source_monitor.set_source(self.source_state, self.revision)
+        self.markers.set_source(self.source_state)
         if self.source_monitor.source is None and self.active_monitor == "source":
             self.active_monitor = "program"
 
@@ -2259,7 +2294,7 @@ class MainWindow(QMainWindow):
             self.open_originals(cid, dict(params or {}))
         elif cid == "clip.generateAudioWaveform":
             self.generate_waveforms(dict(params or {}))
-        elif (cid in EXPORT_SAVES or cid == "file.mediaPropertiesFile") and not (params or {}).get("path"):
+        elif (cid in EXPORT_SAVES or cid in IMPORT_OPENS or cid == "file.mediaPropertiesFile") and not (params or {}).get("path"):
             self.pick_and_run(cid, dict(params or {}))
         elif cid == "dcp.loadKdm" and not params:
             self.open_kdm()

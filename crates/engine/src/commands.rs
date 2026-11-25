@@ -403,6 +403,15 @@ pub(crate) fn item_p(p: &Value, k: &str) -> Option<ItemId> {
     u64_p(p, k).map(ItemId)
 }
 
+/// An item id that must be exact: a whole, non-negative number (`7.0` is 7), never a fraction or a
+/// negative number rounded to another item.
+pub(crate) fn exact_item_p(p: &Value, k: &str) -> Option<ItemId> {
+    let v = p.get(k)?;
+    v.as_u64()
+        .or_else(|| v.as_f64().filter(|f| f.is_finite() && f.fract() == 0.0 && *f >= 0.0 && *f < 18_446_744_073_709_551_616.0).map(|f| f as u64))
+        .map(ItemId)
+}
+
 /// `timeline.move`: move the listed clips to (track, time). With Linked Selection on (or
 /// `linked: true`) the linked partners of a listed clip that are not listed themselves follow by
 /// the same time offset on their own tracks, so picture and sound stay in sync; a partner on a
@@ -1333,6 +1342,7 @@ fn build() -> Vec<CommandSpec> {
         cmd!("file.newProject", "Project…", ["File", "New"], Some("Cmd+Alt+N"), r#"{"name":str}"#, always, |s, p| {
             let name = str_p(p, "name").unwrap_or("Untitled").to_string();
             s.project = std::sync::Arc::new(cfa4_project::Project::new(&name));
+            crate::segment_detect::forget_scans(s);
             s.history = Default::default();
             s.voiceover.abandon();
             s.history.limit = 200;
@@ -1349,6 +1359,7 @@ fn build() -> Vec<CommandSpec> {
         cmd!("file.openDemoProject", "Demo Project", ["File", "New"], None, "{}", always, |s, _| {
             let (p, seq) = crate::demo::demo_project(&s.media);
             s.project = std::sync::Arc::new(p);
+            crate::segment_detect::forget_scans(s);
             s.history = Default::default();
             s.voiceover.abandon();
             s.history.limit = 200;
@@ -2879,9 +2890,36 @@ fn build() -> Vec<CommandSpec> {
             "Export Markers as CSV…",
             ["Markers"],
             None,
-            r#"{"path":str} (all markers in the active sequence)"#,
-            has_seq,
+            r#"{"path":str,"target":"program|source"?,"item":id?} (all markers of the active sequence, or of a media item: its segments)"#,
+            crate::marker_import::has_target,
             crate::marker_export::export
+        ),
+        cmd!(
+            "markers.importCsv",
+            "Import Markers from CSV…",
+            ["Markers"],
+            None,
+            r#"{"path":str,"target":"program|source"?,"item":id?,"allowRateChange":bool=false} → {sequence|item, markers:[id], skipped} (the columns markers.exportCsv writes; a different frame rate is refused unless allowed; one undo step)"#,
+            always,
+            crate::marker_import::import_csv
+        ),
+        cmd!(
+            "markers.importEdl",
+            "Import Segments from EDL…",
+            ["Markers"],
+            None,
+            r#"{"path":str,"item":id? (default: the Source clip)} → {item, markers:[id], skipped} (each CMX 3600 event's source in/out as a range marker; one undo step)"#,
+            always,
+            crate::marker_import::import_edl
+        ),
+        cmd!(
+            "markers.exportEdl",
+            "Export Segments as EDL…",
+            ["Markers"],
+            None,
+            r#"{"path":str,"item":id? (default: the Source clip)} → {item, path, events} (the range markers of a media item as a CMX 3600 EDL that markers.importEdl reads back)"#,
+            always,
+            crate::marker_import::export_edl
         ),
         cmd!("markers.clearAll", "Clear Markers", ["Markers"], Some("Cmd+Alt+Shift+M"), r#"{"target":"program|source"}"#, always, |s, p| {
             if let Some(v) = crate::source_monitor::route(s, "markers.clearAll", p)? {
@@ -4055,6 +4093,8 @@ fn build() -> Vec<CommandSpec> {
     v.extend(crate::presets::commands());
     v.extend(crate::export_tools::commands());
     v.extend(crate::smart_cut::commands());
+    v.extend(crate::segments::commands());
+    v.extend(crate::segment_detect::commands());
     v.extend(crate::qc::commands());
     v.extend(crate::dcp_validation::commands());
     v.extend(crate::dcp_export::commands());
@@ -5669,6 +5709,7 @@ fn install_project(s: &mut Session, proj: cfa4_project::Project, path: Option<St
     s.media = std::sync::Arc::new(crate::MediaPool::default());
     s.media.set_use_proxies(proxies);
     s.offline = Default::default();
+    crate::segment_detect::forget_scans(s);
     let first = proj.sequences().next().map(|i| i.id);
     s.media.add_stored(&proj, path.as_deref());
     s.project = std::sync::Arc::new(proj);

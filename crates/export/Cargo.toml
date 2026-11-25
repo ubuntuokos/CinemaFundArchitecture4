@@ -52,7 +52,7 @@ thiserror = { workspace = true }
 tempfile = "3.27"
 rayon = { workspace = true }
 web-time = "1"
-image = { version = "0.25", default-features = false, features = ["png", "jpeg", "gif", "tiff", "bmp"] }
+image = { version = "0.25", default-features = false, features = ["png", "jpeg", "gif", "webp", "tiff", "bmp"] }
 
 [dev-dependencies]
 cfa4-testkit = { workspace = true }

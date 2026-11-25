@@ -136,7 +136,7 @@ pub(crate) fn close(s: &mut Session, all: bool) -> Result<Value> {
     Ok(json!({"item": next.map(|i| i.0)}))
 }
 
-fn marker_list(p: &mut Project, item: ItemId) -> Result<&mut Vec<Marker>> {
+pub(crate) fn marker_list(p: &mut Project, item: ItemId) -> Result<&mut Vec<Marker>> {
     let it = p.item_mut(item).ok_or_else(|| EngineError::Other("Source item is unavailable".into()))?;
     match &mut it.kind {
         cfa4_project::ItemKind::Media(m) => Ok(&mut m.markers),
