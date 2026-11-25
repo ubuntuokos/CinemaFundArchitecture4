@@ -5,6 +5,14 @@
 //! from a decoded mode index to the prediction mode and angle delta.
 
 use crate::block_tables::{BLOCK_8X8, NUM_4X4_HIGH, NUM_4X4_WIDE};
+use crate::cdf_default::{
+    DEFAULT_DPCM_MODE_UV_CDF, DEFAULT_DPCM_MODE_Y_CDF, DEFAULT_FSC_MODE_CDF, DEFAULT_IS_CFL_CDF, DEFAULT_MRL_INDEX_CDF, DEFAULT_MRL_SEC_INDEX_CDF,
+    DEFAULT_USE_DPCM_UV_CDF, DEFAULT_USE_DPCM_Y_CDF, DEFAULT_UV_MODE_CFL_NOT_ALLOWED_CDF, DEFAULT_Y_MODE_INDEX_CDF, DEFAULT_Y_MODE_OFFSET_CDF,
+    DEFAULT_Y_MODE_SET_CDF,
+};
+use crate::cdf_set::CdfSet;
+use crate::symbol::SymbolDecoder;
+use crate::{Error, Result};
 
 pub const DC_PRED: u8 = 0;
 pub const V_PRED: u8 = 1;
@@ -176,6 +184,113 @@ pub fn neg_deinterleave(diff: i32, reference: i32, max: i32) -> Option<i32> {
     Some(max - (diff + 1))
 }
 
+/// `Fsc_Bsize_Groups` (CDF selection of `fsc_mode`, §8.3.2).
+pub const FSC_BSIZE_GROUPS: [u8; 29] = [0, 1, 1, 2, 3, 3, 4, 5, 5, 5, 6, 6, 6, 6, 6, 6, 6, 6, 6, 3, 3, 4, 4, 6, 6, 4, 4, 6, 6];
+
+/// Inputs of `read_intra_y_mode` that come from the neighbourhood and the tool flags.
+#[derive(Debug, Clone, Copy)]
+pub struct YModeInputs {
+    pub lossless: bool,
+    pub mi_size: u8,
+    /// `get_joint_mode(0)` and `get_joint_mode(1)` (DC_PRED when outside the tile).
+    pub joint: [u8; 2],
+    /// `allow_fsc_intra()`.
+    pub allow_fsc: bool,
+    /// `TreeType == CHROMA_PART`.
+    pub chroma_tree: bool,
+    /// `fsc_mode` context (sum of neighbouring `FscModes` for intra frames, 3 otherwise).
+    pub fsc_ctx: usize,
+    pub enable_mrls: bool,
+    /// Neighbours with `UsesMrls > 0` and `== 2`.
+    pub mrl_ctx: usize,
+    pub mrl_sec_ctx: usize,
+}
+
+/// Everything `read_intra_y_mode` produces.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub struct YModeRead {
+    pub mode: YModeInfo,
+    pub fsc_mode: u8,
+    pub mrl_index: u8,
+    pub mrl_sec_index: u8,
+}
+
+/// `read_intra_y_mode` (§5.20.5.5).
+pub fn read_intra_y_mode(sym: &mut SymbolDecoder<'_>, cdfs: &mut CdfSet, p: &YModeInputs) -> Result<YModeRead> {
+    let group = usize::from(*FSC_BSIZE_GROUPS.get(usize::from(p.mi_size)).ok_or(Error::Invalid("block size"))?);
+    let use_dpcm = p.lossless && sym.read_symbol(cdfs.cdf_mut(&DEFAULT_USE_DPCM_Y_CDF, &[])?)? != 0;
+    if use_dpcm {
+        let h = sym.read_symbol(cdfs.cdf_mut(&DEFAULT_DPCM_MODE_Y_CDF, &[])?)? != 0;
+        let (y_mode, joint_mode) = if h { (H_PRED, 50) } else { (V_PRED, 22) };
+        let fsc_mode = if p.allow_fsc { sym.read_symbol(cdfs.cdf_mut(&DEFAULT_FSC_MODE_CDF, &[p.fsc_ctx, group])?)? as u8 } else { 0 };
+        return Ok(YModeRead { mode: YModeInfo { y_mode, angle_delta: 0, joint_mode }, fsc_mode, mrl_index: 0, mrl_sec_index: 0 });
+    }
+    let ctx = p.joint.iter().filter(|&&m| u32::from(m) >= NON_DIRECTIONAL_MODES_COUNT).count();
+    let y_mode_set = sym.read_symbol(cdfs.cdf_mut(&DEFAULT_Y_MODE_SET_CDF, &[])?)?;
+    let mode_idx = if y_mode_set == 0 {
+        let mut idx = sym.read_symbol(cdfs.cdf_mut(&DEFAULT_Y_MODE_INDEX_CDF, &[ctx])?)?;
+        if idx == MODE_INDEX_COUNT - 1 {
+            idx += sym.read_symbol(cdfs.cdf_mut(&DEFAULT_Y_MODE_OFFSET_CDF, &[ctx])?)?;
+        }
+        idx
+    } else {
+        let second = sym.read_literal(4);
+        FIRST_MODE_COUNT + (y_mode_set - 1) * SECOND_MODE_COUNT + second
+    };
+    let delta = get_intra_y_mode_set(mode_idx, p.mi_size, p.joint).ok_or(Error::Invalid("intra y mode index"))?;
+    let mode = y_mode_from_delta(delta).ok_or(Error::Invalid("intra y mode"))?;
+    let fsc_mode = if !p.chroma_tree && p.allow_fsc { sym.read_symbol(cdfs.cdf_mut(&DEFAULT_FSC_MODE_CDF, &[p.fsc_ctx, group])?)? as u8 } else { 0 };
+    let (mut mrl_index, mut mrl_sec_index) = (0u8, 0u8);
+    if p.enable_mrls && is_directional_mode(mode.y_mode) {
+        mrl_index = sym.read_symbol(cdfs.cdf_mut(&DEFAULT_MRL_INDEX_CDF, &[p.mrl_ctx])?)? as u8;
+        if mrl_index > 0 {
+            mrl_sec_index = sym.read_symbol(cdfs.cdf_mut(&DEFAULT_MRL_SEC_INDEX_CDF, &[p.mrl_sec_ctx])?)? as u8;
+        }
+    }
+    Ok(YModeRead { mode, fsc_mode, mrl_index, mrl_sec_index })
+}
+
+/// Inputs of `read_intra_uv_mode`.
+#[derive(Debug, Clone, Copy)]
+pub struct UvModeInputs {
+    pub lossless: bool,
+    pub y_mode: u8,
+    pub angle_delta_y: i32,
+    /// The `cflAllowed` condition.
+    pub cfl_allowed: bool,
+    /// `is_mhccp_allowed()`.
+    pub mhccp_allowed: bool,
+    /// `is_cfl` context: number of available neighbours that use CFL.
+    pub is_cfl_ctx: usize,
+}
+
+/// `(UVMode, AngleDeltaUV)`.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub struct UvModeRead {
+    pub uv_mode: u8,
+    pub angle_delta: i32,
+}
+
+/// `read_intra_uv_mode` (§5.20.5.6).
+pub fn read_intra_uv_mode(sym: &mut SymbolDecoder<'_>, cdfs: &mut CdfSet, p: &UvModeInputs) -> Result<UvModeRead> {
+    let angle_for = |uv: u8| if uv == p.y_mode { p.angle_delta_y } else { 0 };
+    if p.lossless && sym.read_symbol(cdfs.cdf_mut(&DEFAULT_USE_DPCM_UV_CDF, &[])?)? != 0 {
+        let h = sym.read_symbol(cdfs.cdf_mut(&DEFAULT_DPCM_MODE_UV_CDF, &[])?)? != 0;
+        let uv_mode = if h { H_PRED } else { V_PRED };
+        return Ok(UvModeRead { uv_mode, angle_delta: angle_for(uv_mode) });
+    }
+    if (p.cfl_allowed || p.mhccp_allowed) && sym.read_symbol(cdfs.cdf_mut(&DEFAULT_IS_CFL_CDF, &[p.is_cfl_ctx])?)? != 0 {
+        return Ok(UvModeRead { uv_mode: UV_CFL_PRED, angle_delta: 0 });
+    }
+    let ctx = usize::from(is_directional_mode(p.y_mode));
+    let mut idx = sym.read_symbol(cdfs.cdf_mut(&DEFAULT_UV_MODE_CFL_NOT_ALLOWED_CDF, &[ctx])?)?;
+    if idx == CHROMA_MODE_COUNT - 1 {
+        idx += sym.read_literal(3);
+    }
+    let uv_mode = get_intra_uv_mode_set(idx, p.y_mode).ok_or(Error::Invalid("intra uv mode index"))?;
+    Ok(UvModeRead { uv_mode, angle_delta: angle_for(uv_mode) })
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -253,5 +368,52 @@ mod tests {
         let mut s = got.clone();
         s.sort();
         assert_eq!(s, (0..8).collect::<Vec<_>>());
+    }
+
+    #[test]
+    fn reads_stay_in_range_on_arbitrary_data() {
+        let data: Vec<u8> = (0..64u32).map(|i| (i * 73 + 11) as u8).collect();
+        for seed in 0..32usize {
+            let mut sym = SymbolDecoder::new(&data[seed..], false).unwrap();
+            let mut cdfs = CdfSet::new(100);
+            for _ in 0..40 {
+                let y = read_intra_y_mode(
+                    &mut sym,
+                    &mut cdfs,
+                    &YModeInputs {
+                        lossless: seed % 2 == 0,
+                        mi_size: BLOCK_16X16,
+                        joint: [22, 3],
+                        allow_fsc: true,
+                        chroma_tree: false,
+                        fsc_ctx: 1,
+                        enable_mrls: true,
+                        mrl_ctx: 1,
+                        mrl_sec_ctx: 0,
+                    },
+                );
+                let Ok(y) = y else { continue };
+                assert!(usize::from(y.mode.y_mode) < INTRA_MODES);
+                assert!((-MAX_ANGLE_DELTA..=MAX_ANGLE_DELTA).contains(&y.mode.angle_delta));
+                let uv = read_intra_uv_mode(
+                    &mut sym,
+                    &mut cdfs,
+                    &UvModeInputs {
+                        lossless: seed % 3 == 0,
+                        y_mode: y.mode.y_mode,
+                        angle_delta_y: y.mode.angle_delta,
+                        cfl_allowed: true,
+                        mhccp_allowed: false,
+                        is_cfl_ctx: 2,
+                    },
+                );
+                match uv {
+                    Ok(uv) => assert!(uv.uv_mode <= UV_CFL_PRED),
+                    // uv_mode_idx > 5 is a conformance violation
+                    Err(Error::Invalid(_)) => {}
+                    Err(e) => panic!("{e:?}"),
+                }
+            }
+        }
     }
 }
