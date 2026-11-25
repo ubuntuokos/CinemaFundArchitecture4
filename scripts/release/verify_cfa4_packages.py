@@ -37,7 +37,9 @@ FFMPEG_VERSION = pinned_ffmpeg_version()
 FFMPEG_DIR = f"lib/cfa4/ffmpeg-{FFMPEG_VERSION}"
 FFMPEG_DEB_DIR = f"opt/cfa4/ffmpeg-{FFMPEG_VERSION}"
 FFMPEG_REQUIRED = ("lib/libavcodec.so.", "lib/libavformat.so.", "lib/libavutil.so.")
-FFMPEG_DOCS = ("share/doc/ffmpeg/BUILDINFO", "share/doc/ffmpeg/COPYING.GPLv3", "share/doc/ffmpeg/LICENSE.md")
+# AMF-LICENSE.txt: the MIT licence of the AMD AMF SDK headers the build uses (CFA4-FFMPEG-9.1-001 D2).
+FFMPEG_DOCS = ("share/doc/ffmpeg/BUILDINFO", "share/doc/ffmpeg/COPYING.GPLv3", "share/doc/ffmpeg/LICENSE.md",
+               "share/doc/ffmpeg/AMF-LICENSE.txt")
 # Patent-restricted libraries belong only in cfa4-restricted-extras (docs/licensing.md §7).
 RESTRICTED = re.compile(r"(^|/)libx26[45]\.so")
 # The AppImage's and the Flatpak's own PySide6 / Qt 6 (stage-pyside6.py) and its licences.

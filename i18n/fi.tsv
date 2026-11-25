@@ -3736,7 +3736,7 @@
 	Six-Point Pin	Kuuden pisteen kiinnitys
 	Upper Center	Ylhäällä keskellä
 	Lower Center	Alhaalla keskellä
-	Use FFmpeg for files the CFA4 engine cannot open (FFmpeg 9.0.2 or later, GPL-3 build)	Käytä FFmpegiä tiedostoille, joita CFA4-moottori ei voi avata (FFmpeg 9.0.2 tai uudempi, GPL-3-käännös)
+	Use FFmpeg for files the CFA4 engine cannot open (FFmpeg 9.1 or later, GPL-3 build)	Käytä FFmpegiä tiedostoille, joita CFA4-moottori ei voi avata (FFmpeg 9.1 tai uudempi, GPL-3-käännös)
 	Use the system's GStreamer for files neither the engine nor FFmpeg can open	Käytä järjestelmän GStreameria tiedostoille, joita moottori tai FFmpeg ei voi avata
 	Analyze Source for Smart Cut	Analysoi lähde Smart Cutia varten
 	Plan Smart Cut	Suunnittele Smart Cut

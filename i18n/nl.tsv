@@ -3606,7 +3606,7 @@
 	Six-Point Pin	Zespuntsbevestiging
 	Upper Center	Midden boven
 	Lower Center	Midden onder
-	Use FFmpeg for files the CFA4 engine cannot open (FFmpeg 9.0.2 or later, GPL-3 build)	FFmpeg gebruiken voor bestanden die de CFA4-engine niet kan openen (FFmpeg 9.0.2 of later, GPL-3-build)
+	Use FFmpeg for files the CFA4 engine cannot open (FFmpeg 9.1 or later, GPL-3 build)	FFmpeg gebruiken voor bestanden die de CFA4-engine niet kan openen (FFmpeg 9.1 of later, GPL-3-build)
 	Use the system's GStreamer for files neither the engine nor FFmpeg can open	De GStreamer van het systeem gebruiken voor bestanden die de engine en FFmpeg niet kunnen openen
 	Analyze Source for Smart Cut	Bron analyseren voor slim knippen
 	Plan Smart Cut	Slim knippen plannen

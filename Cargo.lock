@@ -1540,6 +1540,14 @@ dependencies = [
 ]
 
 [[package]]
+name = "cfa4-dvd"
+version = "0.10.0"
+dependencies = [
+ "cfa4-mpegts",
+ "thiserror 2.0.21",
+]
+
+[[package]]
 name = "cfa4-edit"
 version = "0.10.0"
 dependencies = [
@@ -2314,6 +2322,21 @@ dependencies = [
  "rustix 1.1.6",
  "serde",
  "serde_json",
+]
+
+[[package]]
+name = "cfa4-render-contracts"
+version = "0.10.0"
+dependencies = [
+ "cfa4-color",
+ "cfa4-frame",
+ "cfa4-route",
+ "cfa4-tasks",
+ "cfa4-time",
+ "serde",
+ "serde_json",
+ "sha2 0.11.1",
+ "thiserror 2.0.21",
 ]
 
 [[package]]

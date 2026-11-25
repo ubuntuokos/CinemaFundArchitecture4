@@ -76,7 +76,7 @@ jobs:
           sudo apt-get install -y --no-install-recommends \
             build-essential pkg-config nasm curl xz-utils zlib1g-dev \
             libva-dev libdrm-dev libffmpeg-nvenc-dev libvpl-dev \
-            libdav1d-dev libvpx-dev libopus-dev libwebp-dev libmp3lame-dev libvulkan-dev
+            libdav1d-dev libvpx-dev libopus-dev libwebp-dev libmp3lame-dev libvulkan-dev glslc git
       - name: Build the pinned FFmpeg into /opt/cfa4/ffmpeg-VERSION
         if: steps.existing.outputs.published != 'true'
         run: |

@@ -4045,6 +4045,7 @@ fn build() -> Vec<CommandSpec> {
     v.extend(crate::short_clips::commands());
     v.extend(crate::marker_exports::commands());
     v.extend(crate::captions_titles::commands());
+    v.extend(crate::contact_sheet::commands());
     v.extend(crate::project_manager::commands());
     v.extend(crate::masks::commands());
     v.extend(crate::objects_track::commands());
@@ -4059,6 +4060,7 @@ fn build() -> Vec<CommandSpec> {
     v.extend(crate::dcp_export::commands());
     v.extend(crate::transcript::commands());
     v.extend(crate::panels::commands());
+    v.extend(crate::render_job::commands());
     v.extend(crate::scopes::commands());
     v.extend(crate::remix::commands());
     v.extend(crate::beat_markers::commands());

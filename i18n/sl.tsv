@@ -3968,7 +3968,7 @@
 	Six-Point Pin	Šesttočkovna pripenjalka
 	Upper Center	Zgoraj na sredini
 	Lower Center	Spodaj na sredini
-	Use FFmpeg for files the CFA4 engine cannot open (FFmpeg 9.0.2 or later, GPL-3 build)	Za datoteke, ki jih pogon CFA4 ne more odpreti, uporabi FFmpeg (FFmpeg 9.0.2 ali novejši, različica GPL-3)
+	Use FFmpeg for files the CFA4 engine cannot open (FFmpeg 9.1 or later, GPL-3 build)	Za datoteke, ki jih pogon CFA4 ne more odpreti, uporabi FFmpeg (FFmpeg 9.1 ali novejši, različica GPL-3)
 	Use the system's GStreamer for files neither the engine nor FFmpeg can open	Za datoteke, ki jih ne more odpreti niti pogon niti FFmpeg, uporabi sistemski GStreamer
 	Analyze Source for Smart Cut	Analiziraj vir za pametni rez
 	Plan Smart Cut	Načrtuj pametni rez

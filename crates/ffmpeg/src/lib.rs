@@ -63,6 +63,14 @@ pub enum Error {
 
 include!(concat!(env!("OUT_DIR"), "/ffmpeg_version.rs"));
 
+/// [`MIN_VERSION`] as FFmpeg names releases: `9.1` for 9.1.0, `9.0.2` for 9.0.2.
+pub fn min_version_text() -> String {
+    match MIN_VERSION {
+        (a, b, 0) => format!("{a}.{b}"),
+        (a, b, c) => format!("{a}.{b}.{c}"),
+    }
+}
+
 /// A patent-restricted component of the Ubuntu model (`docs/licensing.md` §7): never in the base
 /// package, installed on request with `cfa4-restricted-extras`.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize)]
@@ -127,8 +135,7 @@ impl Status {
             return Some(format!("CFA4 needs a GPL version 3 build of FFmpeg, this one is '{}'", self.license));
         }
         if !self.meets_minimum {
-            let (a, b, c) = MIN_VERSION;
-            return Some(format!("CFA4 needs FFmpeg {a}.{b}.{c} or later, this one is '{}'", self.version));
+            return Some(format!("CFA4 needs FFmpeg {} or later, this one is '{}'", min_version_text(), self.version));
         }
         None
     }
@@ -425,17 +432,38 @@ mod tests {
     }
 
     #[test]
-    fn only_gpl3_builds_from_9_0_2_without_nonfree_are_accepted() {
-        let good = st("9.0.2", "GPL version 3 or later", "--prefix=/opt/cfa4/ffmpeg-9.0.2 --enable-gpl --enable-version3");
+    fn min_version_text_drops_a_zero_patch() {
+        let text = min_version_text();
+        assert_eq!(parse_version(&text), Some(MIN_VERSION));
+        assert!(!(text.ends_with(".0") && text.matches('.').count() == 2), "{text}");
+    }
+
+    #[test]
+    fn only_gpl3_builds_from_the_minimum_without_nonfree_are_accepted() {
+        let min = min_version_text();
+        let (a, b, c) = MIN_VERSION;
+        let older = if c > 0 {
+            format!("{a}.{b}.{}", c - 1)
+        } else if b > 0 {
+            format!("{a}.{}.99", b - 1)
+        } else {
+            format!("{}.99.99", a - 1)
+        };
+        let newer = format!("{a}.{}", b + 1);
+        let prefix = format!("/opt/cfa4/ffmpeg-{min}");
+        let good = st(&min, "GPL version 3 or later", &format!("--prefix={prefix} --enable-gpl --enable-version3"));
         assert_eq!(good.refusal(), None);
-        assert_eq!(good.prefix.as_deref(), Some("/opt/cfa4/ffmpeg-9.0.2"));
-        assert!(st("9.0.1", "GPL version 3 or later", "").refusal().is_some());
+        assert_eq!(good.prefix.as_deref(), Some(prefix.as_str()));
+        assert_eq!(st(&newer, "GPL version 3 or later", "").refusal(), None);
+        assert_eq!(st(&format!("n{min}"), "GPL version 3 or later", "").refusal(), None);
+        let refused = st(&older, "GPL version 3 or later", "").refusal().expect("an older FFmpeg is refused");
+        assert!(refused.contains(&format!("FFmpeg {min} or later")), "{refused}");
         assert!(st("8.1", "GPL version 3 or later", "").refusal().is_some());
         // Ubuntu 26.04's own FFmpeg is 8.x and LGPL/GPL-2: refused, the engine works without it
         assert!(st("8.0.1", "GPL version 2 or later", "").refusal().is_some());
-        assert!(st("9.0.2", "LGPL version 2.1 or later", "").refusal().is_some());
-        assert!(st("9.0.2", "nonfree and unredistributable", "--enable-nonfree").refusal().is_some());
-        assert!(st("9.0.2", "GPL version 3 or later", "--enable-gpl --enable-version3 --enable-nonfree").refusal().is_some());
+        assert!(st(&min, "LGPL version 2.1 or later", "").refusal().is_some());
+        assert!(st(&min, "nonfree and unredistributable", "--enable-nonfree").refusal().is_some());
+        assert!(st(&min, "GPL version 3 or later", "--enable-gpl --enable-version3 --enable-nonfree").refusal().is_some());
         assert!(st("N-1-gabc", "GPL version 3 or later", "").refusal().is_some());
     }
 

@@ -32,8 +32,7 @@ impl Backend for FfmpegRoute {
             return Err("this build of CFA4 was made without the FFmpeg backend".into());
         }
         if !crate::registered() {
-            let (a, b, c) = crate::MIN_VERSION;
-            return Err(format!("no usable FFmpeg (GPL-3 build, {a}.{b}.{c} or later) was found"));
+            return Err(format!("no usable FFmpeg (GPL-3 build, {} or later) was found", crate::min_version_text()));
         }
         if !crate::enabled() {
             return Err("the FFmpeg backend is switched off in Settings ▸ Media Backends".into());
