@@ -1143,7 +1143,7 @@ impl ExportSettings {
                 return Err(ExportError::Unsupported("MPEG-2 export encodes to an average bitrate: choose CBR or VBR, 1 pass".into()));
             }
             if self.format == Format::Mpeg2 && !self.mpeg2_container.trim().is_empty() && Mpeg2Container::from_name(&self.mpeg2_container).is_none() {
-                return Err(ExportError::Unsupported(format!("unknown MPEG-2 container {:?}: choose ps, ts, m2ts or es", self.mpeg2_container)));
+                return Err(ExportError::Unsupported(format!("unknown MPEG-2 container {:?}: choose ps, ts, m2ts, es or dvd", self.mpeg2_container)));
             }
             if self.format == Format::Mpeg2
                 && self.has_audio()
@@ -1883,6 +1883,10 @@ impl VideoEncoder for D10Encoder {
     }
 }
 
+/// Most kbit/s of DVD-Video video: the disc's 9.8 Mbit/s limit less room for the audio and the
+/// navigation packs in the 10.08 Mbit/s multiplex.
+const DVD_MAX_VIDEO_KBPS: u32 = 9_000;
+
 fn mpeg2_factory(format: Format, w: u32, h: u32, rate: FrameRate, s: &ExportSettings) -> Option<Result<Box<dyn VideoEncoder>>> {
     if format != Format::Mpeg2 {
         return None;
@@ -1897,6 +1901,21 @@ fn mpeg2_factory(format: Format, w: u32, h: u32, rate: FrameRate, s: &ExportSett
         let (Ok(w16), Ok(h16)) = (u16::try_from(w), u16::try_from(h)) else {
             return Err(ExportError::Unsupported(format!("MPEG-2 video has no {w}x{h} pictures")));
         };
+        let dvd = Mpeg2Container::of(s) == Mpeg2Container::Dvd;
+        if dvd {
+            mpeg_out::dvd_picture(w, h, rate)?;
+            if s.mpeg2_422 {
+                return Err(ExportError::Unsupported("DVD-Video is MPEG-2 Main Profile 4:2:0".into()));
+            }
+            if s.mpeg2_quantizer.is_some() {
+                return Err(ExportError::Unsupported("DVD-Video video needs a bit rate (at most 9000 kbps), not a fixed quantiser".into()));
+            }
+            if s.bitrate_kbps > DVD_MAX_VIDEO_KBPS || s.max_bitrate_kbps.is_some_and(|m| m > DVD_MAX_VIDEO_KBPS) {
+                return Err(ExportError::Unsupported(format!(
+                    "DVD-Video video is at most {DVD_MAX_VIDEO_KBPS} kbps (the disc's 9.8 Mbit/s video limit leaves room for the audio and navigation packs)"
+                )));
+            }
+        }
         let mut cfg = cfa4_mpeg2v::encode::Config::new(w, h, rate.num as u32, rate.den as u32);
         cfg.rate = match s.mpeg2_quantizer {
             Some(q) => cfa4_mpeg2v::encode::Rate::Quantizer(q.clamp(1, 31)),
@@ -1908,6 +1927,7 @@ fn mpeg2_factory(format: Format, w: u32, h: u32, rate: FrameRate, s: &ExportSett
                     BitrateMode::Cbr => cfa4_mpeg2v::encode::Rate::Cbr { bits_per_second: bps, buffer_bits: 0 },
                     _ => {
                         let max = s.max_bitrate_kbps.filter(|m| *m >= kbps).map_or(bps * 3 / 2, |m| u64::from(m) * 1000);
+                        let max = if dvd { max.min(u64::from(DVD_MAX_VIDEO_KBPS) * 1000) } else { max };
                         cfa4_mpeg2v::encode::Rate::ConstrainedVbr { bits_per_second: bps, max_bits_per_second: max, buffer_bits: 0 }
                     }
                 }
@@ -1918,14 +1938,24 @@ fn mpeg2_factory(format: Format, w: u32, h: u32, rate: FrameRate, s: &ExportSett
         if yuv422 {
             cfg.chroma = cfa4_mpeg2v::ChromaFormat::Yuv422;
         }
-        cfg.gop = s.keyframe_distance.filter(|k| *k > 0).unwrap_or(15).min(1000);
+        cfg.gop = if dvd {
+            // a GOP is at most 0.6 s on a DVD (15 PAL, 18 NTSC pictures): a VOBU holds one
+            let max = if rate.num == 25 { 15 } else { 18 };
+            let gop = s.keyframe_distance.filter(|k| *k > 0).unwrap_or(max);
+            if gop > max {
+                return Err(ExportError::Unsupported(format!("DVD-Video GOPs are at most {max} pictures at this frame rate, not {gop}")));
+            }
+            gop
+        } else {
+            s.keyframe_distance.filter(|k| *k > 0).unwrap_or(15).min(1000)
+        };
         cfg.b_frames = u32::from(s.mpeg2_b_frames.unwrap_or(2).min(7));
         cfg.interlaced = match s.field_order {
             FieldOrder::Progressive => None,
             FieldOrder::UpperFirst => Some(cfa4_mpeg2v::FieldOrder::TopFirst),
             FieldOrder::LowerFirst => Some(cfa4_mpeg2v::FieldOrder::BottomFirst),
         };
-        cfg.aspect = mpeg2_aspect(w, h, s.pixel_aspect);
+        cfg.aspect = if dvd { mpeg_out::dvd_aspect(w, h, s.pixel_aspect) } else { mpeg2_aspect(w, h, s.pixel_aspect) };
         // BT.709 primaries, transfer and matrix, as `rgba_to_yuv420_8` converts
         cfg.colour = Some((1, 1, 1));
         cfg.adaptive_quantization = true;
@@ -3223,7 +3253,9 @@ fn av1_factory(format: Format, w: u32, h: u32, rate: FrameRate, s: &ExportSettin
 ///
 /// [`MarkerKind::Chapter`]: cfa4_project::MarkerKind::Chapter
 pub fn export_chapters(project: &Project, seq: ItemId, settings: &ExportSettings, range: TimeRange) -> Vec<cfa4_isobmff::Chapter> {
-    let Some(q) = project.sequence(seq).filter(|_| settings.chapters) else { return Vec::new() };
+    // a DVD-Video title always has its chapters
+    let dvd = settings.format == Format::Mpeg2 && Mpeg2Container::of(settings) == Mpeg2Container::Dvd;
+    let Some(q) = project.sequence(seq).filter(|_| settings.chapters || dvd) else { return Vec::new() };
     let end = range.start.0.saturating_add(range.duration.0);
     let mut marks: Vec<&cfa4_project::Marker> =
         q.markers.iter().filter(|m| m.kind == cfa4_project::MarkerKind::Chapter && m.start.0 >= range.start.0 && m.start.0 < end).collect();
