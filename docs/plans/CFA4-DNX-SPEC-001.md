@@ -20,7 +20,7 @@ FFmpeg-gel írt fájlokhoz) kapcsoló mögé kerül.
 
 | # | Téma | Szabvány | Addig (FFmpeg szerint) |
 |---|------|----------|-------------------------|
-| E1 | Inverz kvantálás (§8.2.7, (8.1)) | `X = sgn(X̂)·⌊(|X̂|·W·qsf + ⌊W·qsf/2⌋ [+ p/2]) / p⌋`, ≈ `(A + ½)` | `(A + ¾)`; a szabványos út csak a `spec_dequant` kapcsolóval |
+| E1 | Inverz kvantálás (§8.2.7, (8.1)) | `X = sgn(X̂)·⌊(\|X̂\|·W·qsf + ⌊W·qsf/2⌋ [+ p/2]) / p⌋`, ≈ `(A + ½)` | `(A + ¾)`; a szabványos út csak a `spec_dequant` kapcsolóval |
 | E2 | 4:4:4 jelzés (§6.3, §7.2 CLF, §7.3.1.1 ACF, §8.1.1) | CLF = 0: Y′CbCr (Ch1 = Y); CLF = 1: RGB, Ch1 = R, Ch2 = G, Ch3 = B; ACF = 1 csak CLF = 1 és CLV ≠ 11b mellett, a makroblokk dekódoláskor BT.709 szerint RGB-re alakul | RGB: CLF = 0, G, B, R sorrend; Y′CbCr: CLF = 1 + ACF = 1 minden makroblokkon, Y′CbCr-ként visszaadva |
 | E3 | CID 1271 súlytábla (C.2) | D.1 | javítva a CFA4-FFMPEG-9.1-001 F1-ben |
 | – | RLE alfa (§7.3.1.2 és 50. ábra ellentmond) | a normatív szöveg | így van, marad |

@@ -124,6 +124,10 @@ impl Encoder {
         if f.chroma != cfg.chroma() {
             return Err(Error::Input(format!("{:?} input for {}", f.chroma, cfg.profile.name())));
         }
+        // R'G'B' is only defined for 4:4:4 (§6.3, CLF): a 4:2:2 RGB frame is wrong input
+        if f.rgb && f.chroma != ChromaFormat::Yuv444 {
+            return Err(Error::Input("RGB input requires 4:4:4 chroma".into()));
+        }
         if !(8..=16).contains(&f.bit_depth) {
             return Err(Error::Input(format!("unsupported input depth {}", f.bit_depth)));
         }

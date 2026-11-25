@@ -167,3 +167,15 @@ fn acf_with_an_out_of_band_colour_volume_is_refused() {
     assert!(decode_frame_with(&data, &STD).is_err(), "§7.3.1.1: ACF = 1 needs CLV != 11b");
     assert!(decode_frame_with(&data, &FFMPEG).is_ok());
 }
+
+#[test]
+fn rgb_needs_4_4_4() {
+    // R'G'B' exists only for 4:4:4 (§6.3): a 4:2:2 frame flagged RGB is refused, not encoded
+    let mut f = Frame::new(256, 128, ChromaFormat::Yuv422, 10, false);
+    f.rgb = true;
+    for compat in [false, true] {
+        let mut cfg = EncoderConfig::new(Profile::Hqx, 256, 128);
+        cfg.ffmpeg_compat = compat;
+        assert!(Encoder::with_config(cfg).unwrap().encode(&f).is_err(), "compat {compat}");
+    }
+}
