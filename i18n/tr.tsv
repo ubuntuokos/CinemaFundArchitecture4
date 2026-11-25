@@ -4971,3 +4971,19 @@ export.summary	Low	düşük
 	Thresholds	Eşikler
 	Trail	İz
 	Use gestures in the window	Pencerede hareketleri kullan
+
+# DCP package views (DCP-23)
+	Package	Paket
+	Composition	Kompozisyon
+	Security	Güvenlik
+	Save HTML…	HTML olarak kaydet…
+	Asset map	Varlık haritası
+	Packing list	Paketleme listesi
+	Track file	İz dosyası
+	Not a file	Dosya değil
+	Unsafe path	Güvensiz yol
+	Reel {n}	Makara {n}
+	Signed documents	İmzalı belgeler
+	Encrypted assets	Şifreli varlıklar
+	Key ID: {id}	Anahtar kimliği: {id}
+	Package structure unavailable: {error}	Paket yapısı kullanılamıyor: {error}

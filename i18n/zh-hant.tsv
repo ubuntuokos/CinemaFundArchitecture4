@@ -4969,3 +4969,19 @@ export.summary	Low	低
 	Thresholds	閾值
 	Trail	軌跡
 	Use gestures in the window	在視窗中使用手勢
+
+# DCP package views (DCP-23)
+	Package	套件
+	Composition	合成
+	Security	安全性
+	Save HTML…	儲存 HTML…
+	Asset map	資產對應表
+	Packing list	裝箱清單
+	Track file	軌道檔案
+	Not a file	不是檔案
+	Unsafe path	不安全的路徑
+	Reel {n}	捲 {n}
+	Signed documents	已簽署的文件
+	Encrypted assets	已加密的資產
+	Key ID: {id}	金鑰 ID：{id}
+	Package structure unavailable: {error}	無法取得套件結構：{error}

@@ -4978,3 +4978,19 @@
 	Thresholds	Ambang
 	Trail	Jejak
 	Use gestures in the window	Gunakan gestur di jendela
+
+# DCP package views (DCP-23)
+	Package	Paket
+	Composition	Komposisi
+	Security	Keamanan
+	Save HTML…	Simpan HTML…
+	Asset map	Peta aset
+	Packing list	Daftar kemasan
+	Track file	File trek
+	Not a file	Bukan file
+	Unsafe path	Jalur tidak aman
+	Reel {n}	Gulungan {n}
+	Signed documents	Dokumen bertanda tangan
+	Encrypted assets	Aset terenkripsi
+	Key ID: {id}	ID kunci: {id}
+	Package structure unavailable: {error}	Struktur paket tidak tersedia: {error}

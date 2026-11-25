@@ -4973,3 +4973,19 @@ export.summary	Low	žema
 	Thresholds	Slenksčiai
 	Trail	Pėdsakas
 	Use gestures in the window	Naudoti gestus lange
+
+# DCP package views (DCP-23)
+	Package	Paketas
+	Composition	Kompozicija
+	Security	Sauga
+	Save HTML…	Įrašyti HTML…
+	Asset map	Išteklių žemėlapis
+	Packing list	Pakavimo sąrašas
+	Track file	Takelio failas
+	Not a file	Nėra failas
+	Unsafe path	Nesaugus kelias
+	Reel {n}	Ritė {n}
+	Signed documents	Pasirašyti dokumentai
+	Encrypted assets	Užšifruoti ištekliai
+	Key ID: {id}	Rakto ID: {id}
+	Package structure unavailable: {error}	Paketo struktūra nepasiekiama: {error}

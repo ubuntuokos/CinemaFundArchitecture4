@@ -4977,3 +4977,19 @@
 	Thresholds	Schwellen
 	Trail	Spur
 	Use gestures in the window	Gesten im Fenster verwenden
+
+# DCP package views (DCP-23)
+	Package	Paket
+	Composition	Komposition
+	Security	Sicherheit
+	Save HTML…	HTML speichern…
+	Asset map	Asset-Map
+	Packing list	Packliste
+	Track file	Trackdatei
+	Not a file	Keine Datei
+	Unsafe path	Unsicherer Pfad
+	Reel {n}	Rolle {n}
+	Signed documents	Signierte Dokumente
+	Encrypted assets	Verschlüsselte Assets
+	Key ID: {id}	Schlüssel-ID: {id}
+	Package structure unavailable: {error}	Paketstruktur nicht verfügbar: {error}

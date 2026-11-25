@@ -5001,3 +5001,19 @@ export.summary	Low	alacsony
 	Thresholds	Küszöbök
 	Trail	Nyomvonal
 	Use gestures in the window	Gesztusok használata az ablakban
+
+# DCP package views (DCP-23)
+	Package	Csomag
+	Composition	Kompozíció
+	Security	Biztonság
+	Save HTML…	HTML mentése…
+	Asset map	Eszköztérkép
+	Packing list	Csomaglista
+	Track file	Sávfájl
+	Not a file	Nem fájl
+	Unsafe path	Nem biztonságos útvonal
+	Reel {n}	{n}. tekercs
+	Signed documents	Aláírt dokumentumok
+	Encrypted assets	Titkosított eszközök
+	Key ID: {id}	Kulcsazonosító: {id}
+	Package structure unavailable: {error}	A csomag szerkezete nem érhető el: {error}

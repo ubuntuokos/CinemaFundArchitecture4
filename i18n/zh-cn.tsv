@@ -4968,3 +4968,19 @@
 	Thresholds	阈值
 	Trail	轨迹
 	Use gestures in the window	在窗口中使用手势
+
+# DCP package views (DCP-23)
+	Package	包
+	Composition	合成
+	Security	安全
+	Save HTML…	保存 HTML…
+	Asset map	资产映射
+	Packing list	装箱清单
+	Track file	轨道文件
+	Not a file	不是文件
+	Unsafe path	不安全的路径
+	Reel {n}	卷 {n}
+	Signed documents	已签名的文档
+	Encrypted assets	已加密的资产
+	Key ID: {id}	密钥 ID：{id}
+	Package structure unavailable: {error}	无法获取包结构：{error}

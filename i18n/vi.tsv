@@ -4970,3 +4970,19 @@ export.summary	Low	thấp
 	Thresholds	Ngưỡng
 	Trail	Vệt
 	Use gestures in the window	Dùng cử chỉ trong cửa sổ
+
+# DCP package views (DCP-23)
+	Package	Gói
+	Composition	Bản dựng
+	Security	Bảo mật
+	Save HTML…	Lưu HTML…
+	Asset map	Bản đồ tài sản
+	Packing list	Danh sách đóng gói
+	Track file	Tệp track
+	Not a file	Không phải tệp
+	Unsafe path	Đường dẫn không an toàn
+	Reel {n}	Cuộn {n}
+	Signed documents	Tài liệu đã ký
+	Encrypted assets	Tài sản đã mã hóa
+	Key ID: {id}	ID khóa: {id}
+	Package structure unavailable: {error}	Không có cấu trúc gói: {error}

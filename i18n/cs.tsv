@@ -4970,3 +4970,19 @@ export.summary	Low	nízká
 	Thresholds	Prahy
 	Trail	Stopa
 	Use gestures in the window	Používat gesta v okně
+
+# DCP package views (DCP-23)
+	Package	Balíček
+	Composition	Kompozice
+	Security	Zabezpečení
+	Save HTML…	Uložit HTML…
+	Asset map	Mapa aktiv
+	Packing list	Balicí seznam
+	Track file	Soubor stopy
+	Not a file	Není soubor
+	Unsafe path	Nebezpečná cesta
+	Reel {n}	Role {n}
+	Signed documents	Podepsané dokumenty
+	Encrypted assets	Šifrovaná aktiva
+	Key ID: {id}	ID klíče: {id}
+	Package structure unavailable: {error}	Struktura balíčku není k dispozici: {error}

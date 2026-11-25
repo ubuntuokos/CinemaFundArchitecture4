@@ -4972,3 +4972,19 @@ export.summary	Low	χαμηλή
 	Thresholds	Κατώφλια
 	Trail	Ίχνος
 	Use gestures in the window	Χρήση κινήσεων στο παράθυρο
+
+# DCP package views (DCP-23)
+	Package	Πακέτο
+	Composition	Σύνθεση
+	Security	Ασφάλεια
+	Save HTML…	Αποθήκευση HTML…
+	Asset map	Χάρτης στοιχείων
+	Packing list	Λίστα συσκευασίας
+	Track file	Αρχείο κομματιού
+	Not a file	Δεν είναι αρχείο
+	Unsafe path	Μη ασφαλής διαδρομή
+	Reel {n}	Καρούλι {n}
+	Signed documents	Υπογεγραμμένα έγγραφα
+	Encrypted assets	Κρυπτογραφημένα στοιχεία
+	Key ID: {id}	Αναγνωριστικό κλειδιού: {id}
+	Package structure unavailable: {error}	Η δομή του πακέτου δεν είναι διαθέσιμη: {error}

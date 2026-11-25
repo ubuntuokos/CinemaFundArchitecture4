@@ -4972,3 +4972,19 @@ export.summary	Low	lav
 	Thresholds	Tærskler
 	Trail	Spor
 	Use gestures in the window	Brug gestusser i vinduet
+
+# DCP package views (DCP-23)
+	Package	Pakke
+	Composition	Komposition
+	Security	Sikkerhed
+	Save HTML…	Gem HTML…
+	Asset map	Aktivoversigt
+	Packing list	Pakkeliste
+	Track file	Sporfil
+	Not a file	Ikke en fil
+	Unsafe path	Usikker sti
+	Reel {n}	Rulle {n}
+	Signed documents	Signerede dokumenter
+	Encrypted assets	Krypterede aktiver
+	Key ID: {id}	Nøgle-id: {id}
+	Package structure unavailable: {error}	Pakkestrukturen er ikke tilgængelig: {error}

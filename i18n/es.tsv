@@ -4977,3 +4977,19 @@
 	Thresholds	Umbrales
 	Trail	Rastro
 	Use gestures in the window	Usar gestos en la ventana
+
+# DCP package views (DCP-23)
+	Package	Paquete
+	Composition	Composición
+	Security	Seguridad
+	Save HTML…	Guardar HTML…
+	Asset map	Mapa de activos
+	Packing list	Lista de empaquetado
+	Track file	Archivo de pista
+	Not a file	No es un archivo
+	Unsafe path	Ruta insegura
+	Reel {n}	Rollo {n}
+	Signed documents	Documentos firmados
+	Encrypted assets	Activos cifrados
+	Key ID: {id}	ID de clave: {id}
+	Package structure unavailable: {error}	Estructura del paquete no disponible: {error}

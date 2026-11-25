@@ -4972,3 +4972,19 @@ export.summary	Low	låg
 	Thresholds	Trösklar
 	Trail	Spår
 	Use gestures in the window	Använd gester i fönstret
+
+# DCP package views (DCP-23)
+	Package	Paket
+	Composition	Komposition
+	Security	Säkerhet
+	Save HTML…	Spara HTML…
+	Asset map	Tillgångskarta
+	Packing list	Paketlista
+	Track file	Spårfil
+	Not a file	Inte en fil
+	Unsafe path	Osäker sökväg
+	Reel {n}	Rulle {n}
+	Signed documents	Signerade dokument
+	Encrypted assets	Krypterade tillgångar
+	Key ID: {id}	Nyckel-ID: {id}
+	Package structure unavailable: {error}	Paketstrukturen är inte tillgänglig: {error}

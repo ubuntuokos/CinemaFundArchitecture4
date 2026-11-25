@@ -4972,3 +4972,19 @@ export.summary	Low	madal
 	Thresholds	Läved
 	Trail	Jälg
 	Use gestures in the window	Kasuta žeste aknas
+
+# DCP package views (DCP-23)
+	Package	Pakett
+	Composition	Kompositsioon
+	Security	Turvalisus
+	Save HTML…	Salvesta HTML…
+	Asset map	Varade kaart
+	Packing list	Pakkimisnimekiri
+	Track file	Rajafail
+	Not a file	Pole fail
+	Unsafe path	Ebaturvaline tee
+	Reel {n}	Rull {n}
+	Signed documents	Allkirjastatud dokumendid
+	Encrypted assets	Krüpteeritud varad
+	Key ID: {id}	Võtme ID: {id}
+	Package structure unavailable: {error}	Paketi struktuur pole saadaval: {error}

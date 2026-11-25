@@ -4953,3 +4953,19 @@
 	Thresholds	Пороги
 	Trail	Слід
 	Use gestures in the window	Жести у вікні
+
+# DCP package views (DCP-23)
+	Package	Пакет
+	Composition	Композиція
+	Security	Безпека
+	Save HTML…	Зберегти HTML…
+	Asset map	Карта ресурсів
+	Packing list	Пакувальний список
+	Track file	Файл доріжки
+	Not a file	Не файл
+	Unsafe path	Небезпечний шлях
+	Reel {n}	Бобіна {n}
+	Signed documents	Підписані документи
+	Encrypted assets	Зашифровані ресурси
+	Key ID: {id}	ID ключа: {id}
+	Package structure unavailable: {error}	Структура пакета недоступна: {error}

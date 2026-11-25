@@ -4970,3 +4970,19 @@
 	Thresholds	Soglie
 	Trail	Scia
 	Use gestures in the window	Usa i gesti nella finestra
+
+# DCP package views (DCP-23)
+	Package	Pacchetto
+	Composition	Composizione
+	Security	Sicurezza
+	Save HTML…	Salva HTML…
+	Asset map	Mappa degli asset
+	Packing list	Lista di impacchettamento
+	Track file	File di traccia
+	Not a file	Non è un file
+	Unsafe path	Percorso non sicuro
+	Reel {n}	Rullo {n}
+	Signed documents	Documenti firmati
+	Encrypted assets	Asset cifrati
+	Key ID: {id}	ID chiave: {id}
+	Package structure unavailable: {error}	Struttura del pacchetto non disponibile: {error}

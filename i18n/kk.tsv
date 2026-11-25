@@ -4972,3 +4972,19 @@ export.summary	Low	төмен
 	Thresholds	Шектер
 	Trail	Із
 	Use gestures in the window	Терезені қимылмен басқару
+
+# DCP package views (DCP-23)
+	Package	Пакет
+	Composition	Композиция
+	Security	Қауіпсіздік
+	Save HTML…	HTML сақтау…
+	Asset map	Ресурстар картасы
+	Packing list	Қаптама тізімі
+	Track file	Трек файлы
+	Not a file	Файл емес
+	Unsafe path	Қауіпті жол
+	Reel {n}	{n}-орам
+	Signed documents	Қол қойылған құжаттар
+	Encrypted assets	Шифрланған ресурстар
+	Key ID: {id}	Кілт идентификаторы: {id}
+	Package structure unavailable: {error}	Пакет құрылымы қолжетімсіз: {error}

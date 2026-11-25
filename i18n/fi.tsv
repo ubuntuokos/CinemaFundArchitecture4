@@ -4972,3 +4972,19 @@ export.summary	Low	matala
 	Thresholds	Kynnykset
 	Trail	Jälki
 	Use gestures in the window	Käytä eleitä ikkunassa
+
+# DCP package views (DCP-23)
+	Package	Paketti
+	Composition	Sisältö
+	Security	Suojaus
+	Save HTML…	Tallenna HTML…
+	Asset map	Resurssikartta
+	Packing list	Pakkausluettelo
+	Track file	Raitatiedosto
+	Not a file	Ei ole tiedosto
+	Unsafe path	Vaarallinen polku
+	Reel {n}	Rulla {n}
+	Signed documents	Allekirjoitetut asiakirjat
+	Encrypted assets	Salatut resurssit
+	Key ID: {id}	Avaimen tunnus: {id}
+	Package structure unavailable: {error}	Paketin rakenne ei ole saatavilla: {error}

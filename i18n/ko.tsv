@@ -4964,3 +4964,19 @@
 	Thresholds	임계값
 	Trail	궤적
 	Use gestures in the window	창에서 제스처 사용
+
+# DCP package views (DCP-23)
+	Package	패키지
+	Composition	컴포지션
+	Security	보안
+	Save HTML…	HTML 저장…
+	Asset map	에셋 맵
+	Packing list	패킹 리스트
+	Track file	트랙 파일
+	Not a file	파일이 아님
+	Unsafe path	안전하지 않은 경로
+	Reel {n}	릴 {n}
+	Signed documents	서명된 문서
+	Encrypted assets	암호화된 에셋
+	Key ID: {id}	키 ID: {id}
+	Package structure unavailable: {error}	패키지 구조를 사용할 수 없음: {error}

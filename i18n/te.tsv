@@ -4972,3 +4972,19 @@ export.summary	Low	తక్కువ
 	Thresholds	ప్రవేశాలు
 	Trail	జాడ
 	Use gestures in the window	విండోలో సంజ్ఞలు వాడు
+
+# DCP package views (DCP-23)
+	Package	ప్యాకేజీ
+	Composition	కంపోజిషన్
+	Security	భద్రత
+	Save HTML…	HTML సేవ్ చేయండి…
+	Asset map	ఆస్తుల మ్యాప్
+	Packing list	ప్యాకింగ్ జాబితా
+	Track file	ట్రాక్ ఫైల్
+	Not a file	ఫైల్ కాదు
+	Unsafe path	సురక్షితం కాని మార్గం
+	Reel {n}	రీల్ {n}
+	Signed documents	సంతకం చేసిన పత్రాలు
+	Encrypted assets	ఎన్‌క్రిప్ట్ చేసిన ఆస్తులు
+	Key ID: {id}	కీ ID: {id}
+	Package structure unavailable: {error}	ప్యాకేజీ నిర్మాణం అందుబాటులో లేదు: {error}

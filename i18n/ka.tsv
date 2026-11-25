@@ -4973,3 +4973,19 @@ export.summary	Low	დაბალი
 	Thresholds	ზღურბლები
 	Trail	კვალი
 	Use gestures in the window	ჟესტები ფანჯარაში
+
+# DCP package views (DCP-23)
+	Package	პაკეტი
+	Composition	კომპოზიცია
+	Security	უსაფრთხოება
+	Save HTML…	HTML-ის შენახვა…
+	Asset map	რესურსების რუკა
+	Packing list	შეფუთვის სია
+	Track file	ტრეკის ფაილი
+	Not a file	არ არის ფაილი
+	Unsafe path	სახიფათო გზა
+	Reel {n}	რგოლი {n}
+	Signed documents	ხელმოწერილი დოკუმენტები
+	Encrypted assets	დაშიფრული რესურსები
+	Key ID: {id}	გასაღების ID: {id}
+	Package structure unavailable: {error}	პაკეტის სტრუქტურა მიუწვდომელია: {error}

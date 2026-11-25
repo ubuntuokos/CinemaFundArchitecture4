@@ -4970,3 +4970,19 @@ export.summary	Low	laag
 	Thresholds	Drempels
 	Trail	Spoor
 	Use gestures in the window	Gebaren in het venster gebruiken
+
+# DCP package views (DCP-23)
+	Package	Pakket
+	Composition	Compositie
+	Security	Beveiliging
+	Save HTML…	HTML opslaan…
+	Asset map	Assetmap
+	Packing list	Paklijst
+	Track file	Trackbestand
+	Not a file	Geen bestand
+	Unsafe path	Onveilig pad
+	Reel {n}	Rol {n}
+	Signed documents	Ondertekende documenten
+	Encrypted assets	Versleutelde assets
+	Key ID: {id}	Sleutel-ID: {id}
+	Package structure unavailable: {error}	Pakketstructuur niet beschikbaar: {error}

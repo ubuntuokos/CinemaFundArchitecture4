@@ -4973,3 +4973,19 @@ export.summary	Low	ниско
 	Thresholds	Прагове
 	Trail	Следа
 	Use gestures in the window	Жестове в прозореца
+
+# DCP package views (DCP-23)
+	Package	Пакет
+	Composition	Композиция
+	Security	Сигурност
+	Save HTML…	Запазване на HTML…
+	Asset map	Карта на ресурсите
+	Packing list	Опис на пакета
+	Track file	Файл на тракa
+	Not a file	Не е файл
+	Unsafe path	Опасен път
+	Reel {n}	Ролка {n}
+	Signed documents	Подписани документи
+	Encrypted assets	Криптирани ресурси
+	Key ID: {id}	Идентификатор на ключ: {id}
+	Package structure unavailable: {error}	Структурата на пакета не е налична: {error}

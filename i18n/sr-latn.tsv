@@ -4972,3 +4972,19 @@ export.summary	Low	nizak
 	Thresholds	Pragovi
 	Trail	Trag
 	Use gestures in the window	Koristi pokrete u prozoru
+
+# DCP package views (DCP-23)
+	Package	Paket
+	Composition	Kompozicija
+	Security	Bezbednost
+	Save HTML…	Sačuvaj HTML…
+	Asset map	Mapa resursa
+	Packing list	Spisak paketa
+	Track file	Datoteka zapisa
+	Not a file	Nije datoteka
+	Unsafe path	Nebezbedna putanja
+	Reel {n}	Kolut {n}
+	Signed documents	Potpisani dokumenti
+	Encrypted assets	Šifrovani resursi
+	Key ID: {id}	ID ključa: {id}
+	Package structure unavailable: {error}	Struktura paketa nije dostupna: {error}

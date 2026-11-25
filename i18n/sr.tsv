@@ -4970,3 +4970,19 @@ export.summary	Low	низак
 	Thresholds	Прагови
 	Trail	Траг
 	Use gestures in the window	Користи покрете у прозору
+
+# DCP package views (DCP-23)
+	Package	Пакет
+	Composition	Композиција
+	Security	Безбедност
+	Save HTML…	Сачувај HTML…
+	Asset map	Мапа ресурса
+	Packing list	Списак пакета
+	Track file	Датотека записа
+	Not a file	Није датотека
+	Unsafe path	Небезбедна путања
+	Reel {n}	Колут {n}
+	Signed documents	Потписани документи
+	Encrypted assets	Шифровани ресурси
+	Key ID: {id}	ИД кључа: {id}
+	Package structure unavailable: {error}	Структура пакета није доступна: {error}
