@@ -904,15 +904,22 @@ pub struct DnxDecoder {
     pub ffmpeg_compat: bool,
 }
 
-/// Did FFmpeg (libavformat) write this file? From the container's writing-application tags: the
-/// QuickTime / MP4 `©too` (`Lavf…`) or sample-entry compressor name (`Lavc…`), and the MXF
-/// Identification set's company / product (`FFmpeg`, `Lavf…`). Such DNx streams follow FFmpeg's conventions, not SMPTE ST 2019-1
-/// (CFA4-DNX-SPEC-001 R5).
+/// Did FFmpeg write this MXF file? From the Identification set's company / product (`FFmpeg`,
+/// `Lavf…`). FFmpeg's MXF muxer records no encoder, so this cannot tell FFmpeg-encoded essence
+/// from essence FFmpeg only rewrapped (CFA4-DNX-SPEC-001 R5, owner decision 2026-11-25).
 pub fn written_by_ffmpeg<'a>(tags: impl IntoIterator<Item = &'a str>) -> bool {
     tags.into_iter().any(|t| {
         let t = t.trim();
-        t.starts_with("Lavf") || t.starts_with("Lavc") || t.eq_ignore_ascii_case("FFmpeg") || t.starts_with("FFmpeg ")
+        t.starts_with("Lavf") || t.eq_ignore_ascii_case("FFmpeg") || t.starts_with("FFmpeg ")
     })
+}
+
+/// Did FFmpeg (libavcodec) encode this QuickTime / MP4 stream? From the sample entry's compressor
+/// name, which FFmpeg sets to `Lavc… <encoder>` (`Lavc <encoder>` when bit-exact) and keeps on a
+/// stream copy. The muxer's `©too` (`Lavf…`) is not enough: FFmpeg writes it on every file, also on
+/// a rewrapped standard stream (CFA4-DNX-SPEC-001 R5, owner decision 2026-11-25).
+pub fn encoded_by_ffmpeg(compressor_name: &str) -> bool {
+    compressor_name.trim().starts_with("Lavc")
 }
 
 /// Convert a decoded VC-3 frame to a [`VideoFrame`]. RGB (4:4:4) frames stay R'G'B': their

@@ -72,8 +72,10 @@ The decoder and the encoder follow SMPTE ST 2019-1:2016 (with Amendment 1:2023) 
 oracle of our tests, differs from the standard in the places below; `DecodeOptions::ffmpeg_compat`
 and `EncoderConfig::ffmpeg_compat` select its behaviour, for files FFmpeg wrote and for files meant
 for FFmpeg-based tools. The engine (`cfa4-codecs`) switches the decoder to it by itself for files
-whose container names FFmpeg as the writer (`©too` / compressor name `Lavf…`/`Lavc…`, MXF
-Identification `FFmpeg`). Black-box probes (`src/ffmpeg_probe.rs`: streams with a single
+FFmpeg encoded or wrote (MOV/MP4: the sample entry's compressor name `Lavc…`, which a stream
+copy keeps; the muxer's `©too` alone is not enough, it is on rewrapped standard streams too; MXF:
+the Identification set `FFmpeg`, since FFmpeg records no encoder there, so a standard 4:4:4
+Y′CbCr stream that FFmpeg rewrapped into MXF needs the manual switch). Black-box probes (`src/ffmpeg_probe.rs`: streams with a single
 coefficient, decoded by FFmpeg, measured with a forward DCT) pinned down FFmpeg's behaviour.
 
 1. **Inverse quantisation (§8.2.7).** Equation (8.1) reconstructs a quantised amplitude `A` near
