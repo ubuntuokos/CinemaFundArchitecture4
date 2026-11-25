@@ -1,6 +1,7 @@
 # CFA4-AIQT-PROFILE-001 – az AIQT 1.0.6 alkalmazási profilja a CFA4-ben
 
 **Állapot:** TERVEZET – tulajdonosi felülvizsgálatra (a PR beolvasztása a jóváhagyás). **Dátum:** 2026-11-25.
+**Tulajdonosi döntés (2026-11-25, István):** a 6. pont P-1…P-5 javaslatait jóváhagyta. Ez a profil leképezését nem változtatja; a P-1 szabályfájl-pontosítása és a P-3 hook-javítás (WP4, D-F2-3) továbbra is külön, jóváhagyott lépés, külön PR-ban.
 **Feladat:** CFA4-DEV-AI-ORCHESTRATION-001, F2 / WP1 ([F2 terv](#14-források)). **Típus:** csak dokumentum; kód-, szabályfájl- és
 konfigurációváltozás nincs benne.
 
