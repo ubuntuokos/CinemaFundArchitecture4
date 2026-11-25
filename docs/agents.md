@@ -339,7 +339,7 @@ with one owner ([contributing.md §5](contributing.md#5-parallel-work-several-ag
 
 ## 6. Decision rules
 
-Don't block on choices you can make yourself:
+Inside your owner-approved plan, don't block on choices you can make yourself. A change to the plan itself is never one of them: it stops the work until the owner approves it ([coordination.md](coordination.md) §2.10).
 
 - **Behaviour.** Match the publicly documented and observable behaviour of professional editors
   (help pages, published shortcut lists, using the app). Never inspect application internals
