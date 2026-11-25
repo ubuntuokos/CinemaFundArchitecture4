@@ -1,7 +1,7 @@
 {
   "schema": 1,
   "areas": {
-    "menus": { "present": 16, "exact": 0 },
+    "menus": { "present": 99, "exact": 0 },
     "panels": { "present": 24, "exact": 0 }
   }
 }
