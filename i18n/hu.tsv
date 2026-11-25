@@ -4658,7 +4658,6 @@ export.summary	Low	alacsony
 	Shortest black (s):	Legrövidebb fekete (mp):
 	Silence below (dBFS):	Csend e szint alatt (dBFS):
 	Shortest silence (s):	Legrövidebb csend (mp):
-	Analyzing…	Elemzés folyamatban…
 	First frame	Első képkocka
 	Last frame	Utolsó képkocka
 	Add as Segments	Hozzáadás szegmensként
@@ -4954,7 +4953,6 @@ export.summary	Low	alacsony
 	Analysis cancelled.	Az elemzés megszakítva.
 	Clear Silence Markers	Csendmarkerek törlése
 	Detect Silence	Csend észlelése
-	Silence	Csend
 # DCP Validation window (DCP-12)
 	AS-03	AS-03
 	AS-02	AS-02

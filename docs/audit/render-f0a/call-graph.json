@@ -804,6 +804,11 @@
   },
   {
    "crate": "cfa4-export",
+   "fn": "encode_with",
+   "module": "still.rs"
+  },
+  {
+   "crate": "cfa4-export",
    "fn": "encode_sequence_audio",
    "module": "timeline_audio.rs"
   },
@@ -3214,6 +3219,27 @@
    "class": "other",
    "crate": "cfa4-engine",
    "kind": "struct",
+   "module": "segment_detect.rs",
+   "name": "Found"
+  },
+  {
+   "class": "other",
+   "crate": "cfa4-engine",
+   "kind": "struct",
+   "module": "segment_detect.rs",
+   "name": "Scan"
+  },
+  {
+   "class": "other",
+   "crate": "cfa4-engine",
+   "kind": "enum",
+   "module": "segment_detect.rs",
+   "name": "ScanKind"
+  },
+  {
+   "class": "other",
+   "crate": "cfa4-engine",
+   "kind": "struct",
    "module": "sequence_extras.rs",
    "name": "SimplifyOptions"
   },
@@ -4077,6 +4103,13 @@
    "kind": "enum",
    "module": "still.rs",
    "name": "StillFormat"
+  },
+  {
+   "class": "other",
+   "crate": "cfa4-export",
+   "kind": "struct",
+   "module": "still.rs",
+   "name": "StillOptions"
   },
   {
    "class": "other",
@@ -9376,6 +9409,21 @@
    "to": "cfa4-time"
   },
   {
+   "from": "cfa4-engine/marker_import.rs",
+   "item": "ItemId",
+   "to": "cfa4-project"
+  },
+  {
+   "from": "cfa4-engine/marker_import.rs",
+   "item": "ItemKind",
+   "to": "cfa4-project"
+  },
+  {
+   "from": "cfa4-engine/marker_import.rs",
+   "item": "FrameRate",
+   "to": "cfa4-time"
+  },
+  {
    "from": "cfa4-engine/masks.rs",
    "item": "Report",
    "to": "cfa4-export"
@@ -10422,6 +10470,46 @@
   },
   {
    "from": "cfa4-engine/scopes.rs",
+   "item": "Tick",
+   "to": "cfa4-time"
+  },
+  {
+   "from": "cfa4-engine/segment_detect.rs",
+   "item": "Report",
+   "to": "cfa4-export"
+  },
+  {
+   "from": "cfa4-engine/segment_detect.rs",
+   "item": "FrameRequest",
+   "to": "cfa4-media"
+  },
+  {
+   "from": "cfa4-engine/segment_detect.rs",
+   "item": "SharedSource",
+   "to": "cfa4-media"
+  },
+  {
+   "from": "cfa4-engine/segment_detect.rs",
+   "item": "ItemId",
+   "to": "cfa4-project"
+  },
+  {
+   "from": "cfa4-engine/segment_detect.rs",
+   "item": "scene",
+   "to": "cfa4-render"
+  },
+  {
+   "from": "cfa4-engine/segment_detect.rs",
+   "item": "FrameRate",
+   "to": "cfa4-time"
+  },
+  {
+   "from": "cfa4-engine/segments.rs",
+   "item": "ItemId",
+   "to": "cfa4-project"
+  },
+  {
+   "from": "cfa4-engine/segments.rs",
    "item": "Tick",
    "to": "cfa4-time"
   },

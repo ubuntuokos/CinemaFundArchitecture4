@@ -4604,7 +4604,6 @@ export.summary	Low	төмен
 	These files already exist and will be replaced: {files}. Continue?	Бұл файлдар бұрыннан бар және ауыстырылады: {files}. Жалғастыру керек пе?
 	{count} subclips made from the segments	Сегменттерден жасалған ішкі клиптер: {count}
 	Segment	Сегмент
-	Silence	Тыныштық
 	Analyzing…	Талдау…
 	Analyzing… {percent}%	Талдау… {percent}%
 	Silence below (dBFS):	Тыныштық деңгейі төмен (dBFS):

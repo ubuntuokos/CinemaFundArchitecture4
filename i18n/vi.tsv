@@ -4602,7 +4602,6 @@ export.summary	Low	thấp
 	These files already exist and will be replaced: {files}. Continue?	Các tệp này đã tồn tại và sẽ bị thay thế: {files}. Tiếp tục?
 	{count} subclips made from the segments	Đã tạo {count} clip con từ các phân đoạn
 	Segment	Phân đoạn
-	Silence	Khoảng lặng
 	Analyzing…	Đang phân tích…
 	Analyzing… {percent}%	Đang phân tích… {percent}%
 	Silence below (dBFS):	Khoảng lặng dưới (dBFS):

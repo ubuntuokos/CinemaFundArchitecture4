@@ -4604,7 +4604,6 @@ export.summary	Low	χαμηλή
 	These files already exist and will be replaced: {files}. Continue?	Αυτά τα αρχεία υπάρχουν ήδη και θα αντικατασταθούν: {files}. Συνέχεια;
 	{count} subclips made from the segments	Δημιουργήθηκαν υποκλίπ από τα τμήματα: {count}
 	Segment	Τμήμα
-	Silence	Σιγή
 	Analyzing…	Ανάλυση…
 	Analyzing… {percent}%	Ανάλυση… {percent}%
 	Silence below (dBFS):	Σιγή κάτω από (dBFS):
