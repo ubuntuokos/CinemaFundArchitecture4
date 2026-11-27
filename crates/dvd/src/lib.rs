@@ -18,6 +18,8 @@
 mod hli;
 mod ifo;
 mod nav;
+#[allow(dead_code)]
+mod spu;
 // the menu authoring (D1) builds on these; the encoders are used from the next commits on
 #[allow(dead_code)]
 mod vm;
