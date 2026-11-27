@@ -17,6 +17,8 @@
 #[allow(dead_code)]
 mod hli;
 mod ifo;
+#[allow(dead_code)]
+mod menu;
 mod nav;
 #[allow(dead_code)]
 mod spu;

@@ -61,6 +61,8 @@ impl ColorSet {
 /// The HLI of a menu: one button group, the same for every VOBU of the menu.
 #[derive(Clone, Debug)]
 pub(crate) struct Hli {
+    /// `hli_ss`: 1 new highlight information, 2 the same as in the previous VOBU.
+    pub status: u16,
     /// Start and end of the highlight in 90 kHz PTM units (the VOBU's own start and end).
     pub start_ptm: u32,
     pub end_ptm: u32,
@@ -106,7 +108,7 @@ pub(crate) fn write(sector: &mut [u8], hli: &Hli) -> Result<()> {
     let region = sector.get_mut(base..end).ok_or_else(|| Error::Vob("navigation sector too short".into()))?;
     region.fill(0);
     // hl_gi
-    region[0..2].copy_from_slice(&1u16.to_be_bytes()); // hli_ss: new highlight information
+    region[0..2].copy_from_slice(&hli.status.to_be_bytes());
     put32(region, 2, hli.start_ptm)?;
     put32(region, 6, hli.end_ptm)?;
     put32(region, 10, hli.end_ptm)?; // buttons stay selectable to the end
@@ -161,6 +163,7 @@ mod tests {
         let set = |i: u8| ColorSet { index: [i, i + 1, i + 2, i + 3], alpha: [0, 15, 15, 15] };
         let btn = |x0, y0, x1, y1, up, down, cmd| Button { rect: (x0, y0, x1, y1), color: 1, auto_action: false, up, down, left: 0, right: 0, cmd };
         Hli {
+            status: 1,
             start_ptm: 0x1111_2222,
             end_ptm: 0x3333_4444,
             wide: true,
