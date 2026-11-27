@@ -14,6 +14,8 @@
 
 #![cfg_attr(not(test), deny(clippy::unwrap_used, clippy::expect_used, clippy::panic, clippy::unimplemented, clippy::todo, clippy::unreachable))]
 
+#[allow(dead_code)]
+mod hli;
 mod ifo;
 mod nav;
 // the menu authoring (D1) builds on these; the encoders are used from the next commits on
