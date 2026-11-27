@@ -1,0 +1,532 @@
+kdenlive_id,kind,group,mlt_service,kdenlive_type,kdenlive_name,source_file,params,cfa4_id,cfa4_name,match,parity_level,note
+audiobalance,effect,root,panner,audio,Balance,audiobalance.xml,"start,split",panner,Panner,CLOSE,NAME_MATCH_UNVERIFIED,"panner.balance, a Kdenlive 'split' 0..1 -> -1..1"
+audiolevel,effect,root,audiolevel,hidden,Audio levels,audiolevel.xml,iec_scale,,,NA,,"belső hangszintmérő (UI), nem effekt-import"
+audiolevelgraph,effect,root,audiolevelgraph,video,Audio Level Visualization Filter,audiolevelgraph.xml,"type,bgcolor,color.1,color.2,color.3,thickness,angle,rect,mirror,reverse,gorient,channels,segment_gap",,,NA,,"vizualizációs szűrő, a CFA4 saját hangmérője a Qt panel"
+audiomap,effect,root,audiomap,audio,audiomap,audiomap.xml,"0,1,2,3,4,5",,,NA,,"belső, a csatornaleképezés a hangsáv-útvonal"
+audiopan,effect,root,panner,audio,Pan,audiopan.xml,"channel,start",panner,Panner,SAME,NAME_MATCH_UNVERIFIED,pan
+audiospectrum,effect,root,audiospectrum,,Audio Spectrum Filter,audiospectrum.xml,"type,bgcolor,color.1,thickness,angle,rect,fill,mirror,reverse,tension,bands,frequency_low,frequency_high,threshold,window_size",,,NA,,analizátor megjelenítés
+audiowave,effect,root,audiowave,,Audio Wave,audiowave.xml,,,,NA,,hanghullám-rajzoló szűrő
+audiowaveform,effect,root,audiowaveform,video,Audio Waveform Filter,audiowaveform.xml,"bgcolor,color.1,thickness,angle,rect,fill,show_channel",,,NA,,hanghullám-rajzoló szűrő
+avfilter.acompressor,effect,avfilter,avfilter.acompressor,audio,Compressor (avfilter),avfilter/acompressor.xml,"av.level_in,av.threshold,av.ratio,av.attack,av.release,av.makeup,av.knee,av.link,av.detection,av.level_sc,av.mix",single_band_compressor,Single-band Compressor,CLOSE,NAME_MATCH_UNVERIFIED,hangkompresszor
+avfilter.aecho,effect,avfilter,avfilter.aecho,audio,Echo (avfilter),avfilter/aecho.xml,"av.in_gain,av.out_gain,av.delays,av.decays",echo,Echo,CLOSE,NAME_MATCH_UNVERIFIED,visszhang
+avfilter.agate,effect,avfilter,avfilter.agate,audio,Gate (avfilter),avfilter/agate.xml,"av.level_in,av.range,av.threshold,av.ratio,av.attack,av.release,av.makeup,av.knee,av.detection,av.link",dynamics,Dynamics Processing,CLOSE,NAME_MATCH_UNVERIFIED,zajkapu (Dynamics Processing gate)
+avfilter.acontrast,effect,avfilter,avfilter.acontrast,audio,Simple Compressor/Expander,avfilter/avfilter_acontrast.xml,av.contrast,dynamics,Dynamics Processing,CLOSE,NAME_MATCH_UNVERIFIED,egyszerű kompresszor/expander
+avfilter.acrusher,effect,avfilter,avfilter.acrusher,audio,Crusher,avfilter/avfilter_acrusher.xml,"av.level_in,av.level_out,av.limit,av.bits,av.mix,av.mode,av.dc,av.aa,av.samples,av.lfo,av.lforange,av.lforate",bit_crush,Bit Crush,SAME,NAME_MATCH_UNVERIFIED,bit crusher
+avfilter.alimiter,effect,avfilter,avfilter.alimiter,audio,Limiter,avfilter/avfilter_alimiter.xml,"av.level_in,av.level_out,av.limit,av.attack,av.release,av.asc,av.asc_level,av.level",hard_limiter,Hard Limiter,SAME,NAME_MATCH_UNVERIFIED,limiter
+avfilter.allpass,effect,avfilter,avfilter.allpass,audio,Allpass,avfilter/avfilter_allpass.xml,"av.f,av.t,av.w,av.m,av.n,av.o,av.a,av.r",,,NONE,,allpass szűrő; nincs
+avfilter.aphaser,effect,avfilter,avfilter.aphaser,audio,Phaser,avfilter/avfilter_aphaser.xml,"av.in_gain,av.out_gain,av.delay,av.decay,av.speed,av.type",phaser,Phaser,SAME,NAME_MATCH_UNVERIFIED,phaser
+avfilter.apulsator,effect,avfilter,avfilter.apulsator,audio,Pulsator,avfilter/avfilter_apulsator.xml,"av.level_in,av.level_out,av.mode,av.amount,av.offset_l,av.offset_r,av.width,av.timing,av.bpm,av.ms,av.hz",,,NONE,,pulzátor (tremolo-szerű); nincs
+avfilter.atadenoise,effect,avfilter,avfilter.atadenoise,,Adaptive Temporal Averaging Denoiser,avfilter/avfilter_atadenoise.xml,"av.0a,av.0b,av.1a,av.1b,av.2a,av.2b,av.s",temporal_denoise,Temporal Denoise,CLOSE,NAME_MATCH_UNVERIFIED,időbeli zajszűrés
+avfilter.avgblur,effect,avfilter,avfilter.avgblur,,Average Blur,avfilter/avfilter_avgblur.xml,"av.sizeX,av.sizeY,av.planes",gaussian_blur,Gaussian Blur,CLOSE,NAME_MATCH_UNVERIFIED,átlag-elmosás
+avfilter.backgroundkey,effect,avfilter,avfilter.backgroundkey,video,Background Key,avfilter/avfilter_backgroundkey.xml,"av.threshold,av.similarity,av.blend",,,NONE,,háttérkulcs; nincs
+avfilter.bandpass,effect,avfilter,avfilter.bandpass,audio,Band-pass,avfilter/avfilter_bandpass.xml,"av.f,av.csg,av.t,av.w,av.m,av.n,av.a,av.r",bandpass,Bandpass,SAME,NAME_MATCH_UNVERIFIED,sáváteresztő
+avfilter.bandreject,effect,avfilter,avfilter.bandreject,audio,Band-Reject,avfilter/avfilter_bandreject.xml,"av.f,av.t,av.w,av.m,av.n,av.a,av.r",notch,Notch Filter,CLOSE,NAME_MATCH_UNVERIFIED,sávzáró (notch)
+avfilter.bass,effect,avfilter,avfilter.bass,audio,Bass,avfilter/avfilter_bass.xml,"av.g,av.f,av.t,av.w,av.p,av.m,av.n,av.a,av.r",bass,Bass,SAME,NAME_MATCH_UNVERIFIED,mély
+avfilter.bilateral,effect,avfilter,avfilter.bilateral,,Bilateral,avfilter/avfilter_bilateral.xml,"av.sigmaS,av.sigmaR,av.planes",skin_smoothing,Skin Smoothing,CLOSE,NAME_MATCH_UNVERIFIED,bilaterális elmosás; zajszűrés/bőrsimítás
+avfilter.boxblur,effect,avfilter,avfilter.boxblur,,Planes Blur,avfilter/avfilter_boxblur.xml,"av.lr,av.lp,av.cr,av.cp,av.ar,av.ap",gaussian_blur,Gaussian Blur,CLOSE,NAME_MATCH_UNVERIFIED,doboz-elmosás
+avfilter.bs2b,effect,avfilter,avfilter.bs2b,audio,Stereo to binaural,avfilter/avfilter_bs2b.xml,"av.profile,av.fcut,av.feed",binauralizer,Binauralizer - Ambisonics,CLOSE,NAME_MATCH_UNVERIFIED,sztereó→binaurális
+avfilter.bwdif,effect,avfilter,avfilter.bwdif,,Bob Weaver Deinterlacer,avfilter/avfilter_bwdif.xml,"av.mode,av.parity,av.deint",,,NA,,deinterlace: klip-értelmezés
+avfilter.cas,effect,avfilter,avfilter.cas,,Contrast Adaptive Sharpen,avfilter/avfilter_cas.xml,"av.strength,av.planes",sharpen,Sharpen,CLOSE,NAME_MATCH_UNVERIFIED,kontrasztadaptív élesítés
+avfilter.chromahold,effect,avfilter,avfilter.chromahold,,Chroma Hold,avfilter/avfilter_chromahold.xml,"av.color,av.similarity,av.blend,av.yuv",leave_color,Leave Color,CLOSE,NAME_MATCH_UNVERIFIED,színmegtartás
+avfilter.chromanr,effect,avfilter,avfilter.chromanr,,Chroma Noise Reduction,avfilter/avfilter_chromanr.xml,"av.thres,av.sizew,av.sizeh,av.stepw,av.threy,av.threu,av.threv,av.distance",temporal_denoise,Temporal Denoise,CLOSE,NAME_MATCH_UNVERIFIED,krominancia-zaj
+avfilter.chromashift,effect,avfilter,avfilter.chromashift,,Chroma Shift,avfilter/avfilter_chromashift.xml,"av.cbh,av.cbv,av.crh,av.crv,av.edge",rgb_split,RGB Split,CLOSE,NAME_MATCH_UNVERIFIED,kroma eltolás
+avfilter.ciescope,effect,avfilter,avfilter.ciescope,,CIE Scope,avfilter/avfilter_ciescope.xml,"av.system,av.cie,av.gamuts,av.size,av.intensity,av.contrast,av.corrgamma,av.showwhite,av.gamma,av.fill",,,NA,,analizátor (scope)
+avfilter.colorbalance,effect,avfilter,avfilter.colorbalance,,Color balance,avfilter/avfilter_colorbalance.xml,"av.rs,av.gs,av.bs,av.rm,av.gm,av.bm,av.rh,av.gh,av.bh,av.pl",color_balance,Color Balance,SAME,NAME_MATCH_UNVERIFIED,színegyensúly
+avfilter.colorchannelmixer,effect,avfilter,avfilter.colorchannelmixer,,Color Channel Mixer,avfilter/avfilter_colorchannelmixer.xml,"av.rr,av.rg,av.rb,av.gr,av.gg,av.gb,av.br,av.bg,av.bb",channel_mix,Channel Mix,SAME,NAME_MATCH_UNVERIFIED,színcsatorna-keverő
+avfilter.colorcontrast,effect,avfilter,avfilter.colorcontrast,,Color Contrast,avfilter/avfilter_colorcontrast.xml,"av.rc,av.gm,av.by,av.rcw,av.gmw,av.byw,av.pl",lumetri,Lumetri Color,CLOSE,NAME_MATCH_UNVERIFIED,színkontraszt
+avfilter.colorcorrect,effect,avfilter,avfilter.colorcorrect,,Color Correct,avfilter/avfilter_colorcorrect.xml,"av.rl,av.bl,av.rh,av.bh,av.saturation,av.analyze",lumetri,Lumetri Color,CLOSE,NAME_MATCH_UNVERIFIED,színkorrekció
+avfilter.colorhold,effect,avfilter,avfilter.colorhold,,Color Hold,avfilter/avfilter_colorhold.xml,"av.color,av.similarity,av.blend",leave_color,Leave Color,CLOSE,NAME_MATCH_UNVERIFIED,színmegtartás
+avfilter.colorize,effect,avfilter,avfilter.colorize,,Color Overlay,avfilter/avfilter_colorize.xml,"av.hue,av.saturation,av.lightness,av.mix",tint,Tint,CLOSE,NAME_MATCH_UNVERIFIED,színezés
+avfilter.colorlevels,effect,avfilter,avfilter.colorlevels,,Color levels,avfilter/avfilter_colorlevels.xml,"av.rimin,av.rimax,av.romin,av.romax,av.gimin,av.gimax,av.gomin,av.gomax,av.bimin,av.bimax,av.bomin,av.bomax",levels,Levels,SAME,NAME_MATCH_UNVERIFIED,színszintek
+avfilter.colormatrix,effect,avfilter,avfilter.colormatrix,,Color Matrix,avfilter/avfilter_colormatrix.xml,"av.src,av.dst",,,NONE,,színmátrix; nincs közvetlen
+avfilter.colorspace,effect,avfilter,avfilter.colorspace,,Color Space,avfilter/avfilter_colorspace.xml,"av.all,av.space,av.trc,av.primaries,av.range,av.format,av.fast,av.dither,av.wpadapt,av.iall,av.ispace,av.iprimaries,av.itrc,av.irange",,,NA,,színtér-konverzió: a CFA4 színkezelése (OCIO/ACES) végzi
+avfilter.colortemperature,effect,avfilter,avfilter.colortemperature,,Color Temperature,avfilter/avfilter_colortemperature.xml,"av.temperature,av.mix,av.saturation,av.pl",lumetri,Lumetri Color,CLOSE,NAME_MATCH_UNVERIFIED,színhőmérséklet
+avfilter.compand,effect,avfilter,avfilter.compand,audio,Compressor/Expander,avfilter/avfilter_compand.xml,"av.attacks,av.decays,av.soft-knee,av.gain,av.volume",dynamics,Dynamics Processing,CLOSE,NAME_MATCH_UNVERIFIED,kompresszor/expander
+avfilter.compensationdelay,effect,avfilter,avfilter.compensationdelay,audio,Compensation Delay,avfilter/avfilter_compensationdelay.xml,"av.mm,av.cm,av.m,av.dry,av.wet,av.temp",delay,Delay,CLOSE,NAME_MATCH_UNVERIFIED,késleltetés
+avfilter.crossfeed,effect,avfilter,avfilter.crossfeed,audio,Crossfeed,avfilter/avfilter_crossfeed.xml,"av.strength,av.range,av.level_in,av.level_out",binauralizer,Binauralizer - Ambisonics,CLOSE,NAME_MATCH_UNVERIFIED,crossfeed
+avfilter.crystalizer,effect,avfilter,avfilter.crystalizer,audio,Crystalizer,avfilter/avfilter_crystalizer.xml,"av.i,av.c",vocal_enhancer,Vocal Enhancer,CLOSE,NAME_MATCH_UNVERIFIED,hangélénkítés
+avfilter.curves,effect,avfilter,avfilter.curves,,Curves (avfilter),avfilter/avfilter_curves.xml,"av.master,av.r,av.g,av.b",lumetri,Lumetri Color,CLOSE,NAME_MATCH_UNVERIFIED,görbék a Lumetri görbéiben
+avfilter.datascope,effect,avfilter,avfilter.datascope,,Data Scope,avfilter/avfilter_datascope.xml,"av.s,av.x,av.y,av.components,av.m,av.axis,av.o,av.f",,,NA,,analizátor (scope)
+avfilter.dblur,effect,avfilter,avfilter.dblur,,Directional Blur,avfilter/avfilter_dblur.xml,"av.angle,av.radius,av.planes",directional_blur,Directional Blur,SAME,NAME_MATCH_UNVERIFIED,irányított elmosás
+avfilter.dcshift,effect,avfilter,avfilter.dcshift,audio,DC shift,avfilter/avfilter_dcshift.xml,"av.shift,av.limitergain",,,NONE,,DC-eltolás
+avfilter.dctdnoiz,effect,avfilter,avfilter.dctdnoiz,,DCT Denoiser,avfilter/avfilter_dctdnoiz.xml,"av.s,av.overlap,av.n",temporal_denoise,Temporal Denoise,CLOSE,NAME_MATCH_UNVERIFIED,DCT zajszűrő
+avfilter.deband,effect,avfilter,avfilter.deband,,Deband,avfilter/avfilter_deband.xml,"av.1thr,av.2thr,av.3thr,av.4thr,av.r,av.d,av.b,av.c",,,NONE,,sávosodás-eltávolítás
+avfilter.deblock,effect,avfilter,avfilter.deblock,,DeBlock,avfilter/avfilter_deblock.xml,"av.filter,av.block,av.alpha,av.beta,av.gamma,av.delta,av.planes",,,NONE,,blokk-eltávolítás
+avfilter.dedot,effect,avfilter,avfilter.dedot,,DeDot,avfilter/avfilter_dedot.xml,"av.m,av.lt,av.tl,av.tc,av.ct",,,NONE,,nincs megfelelő; VFX-katalógus jelölt
+avfilter.deesser,effect,avfilter,avfilter.deesser,audio,Deesser,avfilter/avfilter_deesser.xml,"av.i,av.m,av.f,av.s",deesser,DeEsser,SAME,NAME_MATCH_UNVERIFIED,de-esser
+avfilter.deflate,effect,avfilter,avfilter.deflate,,Deflate,avfilter/avfilter_deflate.xml,"av.threshold0,av.threshold1,av.threshold2,av.threshold3",,,NONE,,nincs megfelelő; VFX-katalógus jelölt
+avfilter.delogo,effect,avfilter,avfilter.delogo,,DeLogo,avfilter/avfilter_delogo.xml,"kdenlive:fakerect,av.show",logo_cutout,Logo Cutout,CLOSE,NAME_MATCH_UNVERIFIED,logó-eltávolítás
+avfilter.derain,effect,avfilter,avfilter.derain,,AI Rain removal,avfilter/avfilter_derain.xml,"av.dnn_backend,av.model",,,NA,,MI eső-eltávolítás: csak az MI-réteg után
+avfilter.despill,effect,avfilter,avfilter.despill,,Despill,avfilter/avfilter_despill.xml,"av.type,av.mix,av.expand,av.red,av.green,av.blue,av.brightness",,,NONE,,zöld/kék szivárgás-eltávolítás; nincs önálló effekt
+avfilter.dilation,effect,avfilter,avfilter.dilation,,Dilation,avfilter/avfilter_dilation.xml,"av.threshold0,av.threshold1,av.threshold2,av.threshold3,av.coordinates",,,NONE,,morfológiai dilation
+avfilter.doubleweave,effect,avfilter,avfilter.doubleweave,,Doubleweave,avfilter/avfilter_doubleweave.xml,av.first_field,,,NA,,mezőkezelés: klip-értelmezés
+avfilter.drawbox,effect,avfilter,avfilter.drawbox,,Draw Box,avfilter/avfilter_drawbox.xml,"kdenlive:fakerect,av.color,av.t,av.replace",,,NONE,,doboz rajzolás; Shape réteg
+avfilter.drawgrid,effect,avfilter,avfilter.drawgrid,,Draw Grid,avfilter/avfilter_drawgrid.xml,"av.x,av.y,av.w,av.h,av.color,av.t,av.replace",grid,Grid,SAME,NAME_MATCH_UNVERIFIED,rács
+avfilter.edgedetect,effect,avfilter,avfilter.edgedetect,,Edge detection,avfilter/avfilter_edgedetect.xml,"av.low,av.high,av.mode,av.planes",find_edges,Find Edges,SAME,NAME_MATCH_UNVERIFIED,élkeresés
+avfilter.elbg,effect,avfilter,avfilter.elbg,,Posterize (ELBG),avfilter/avfilter_elbg.xml,"av.l,av.n,av.pal8,av.use_alpha",,,NONE,,nincs megfelelő; VFX-katalógus jelölt
+avfilter.epx,effect,avfilter,avfilter.epx,,EPX Scaler,avfilter/avfilter_epx.xml,av.n,,,NONE,,nincs megfelelő; VFX-katalógus jelölt
+avfilter.eq,effect,avfilter,avfilter.eq,,Video Equalizer,avfilter/avfilter_eq.xml,"av.contrast,av.brightness,av.saturation,av.gamma,av.gamma_r,av.gamma_g,av.gamma_b,av.gamma_weight",proc_amp,ProcAmp,CLOSE,NAME_MATCH_UNVERIFIED,videó EQ (fényerő/kontraszt/telítettség/gamma)
+avfilter.equalizer,effect,avfilter,avfilter.equalizer,audio,Audio Equalizer (avfilter),avfilter/avfilter_equalizer.xml,"av.f,av.t,av.w,av.g,av.m,av.n,av.a,av.r",parametric_eq,Parametric Equalizer,SAME,NAME_MATCH_UNVERIFIED,hang EQ
+avfilter.erosion,effect,avfilter,avfilter.erosion,,Erosion,avfilter/avfilter_erosion.xml,"av.threshold0,av.threshold1,av.threshold2,av.threshold3,av.coordinates",,,NONE,,morfológiai erosion
+avfilter.exposure,effect,avfilter,avfilter.exposure,,Exposure,avfilter/avfilter_exposure.xml,"av.exposure,av.black",lumetri,Lumetri Color,CLOSE,NAME_MATCH_UNVERIFIED,expozíció
+avfilter.extrastereo,effect,avfilter,avfilter.extrastereo,audio,Extrastereo,avfilter/avfilter_extrastereo.xml,"av.m,av.c",stereo_width,Stereo Width,CLOSE,NAME_MATCH_UNVERIFIED,sztereó szélesítés
+avfilter.fftdnoiz,effect,avfilter,avfilter.fftdnoiz,,3D FFT Denoiser,avfilter/avfilter_fftdnoiz.xml,"av.sigma,av.amount,av.block,av.overlap,av.method,av.prev,av.next,av.planes",temporal_denoise,Temporal Denoise,CLOSE,NAME_MATCH_UNVERIFIED,3D FFT zajszűrés
+avfilter.fftfilt,effect,avfilter,avfilter.fftfilt,,FTT-based FIR,avfilter/avfilter_fftfilt.xml,"av.dc_Y,av.dc_U,av.dc_V,av.weight_Y,av.weight_U,av.weight_V,av.eval",fft_filter,FFT Filter,CLOSE,NAME_MATCH_UNVERIFIED,FFT-szűrő
+avfilter.field,effect,avfilter,avfilter.field,,Field Extractor,avfilter/avfilter_field.xml,av.type,,,NA,,mezőkezelés: klip-értelmezés
+avfilter.fieldorder,effect,avfilter,avfilter.fieldorder,,Interlace field order,avfilter/avfilter_fieldorder.xml,av.order,,,NA,,mezősorrend: klip-értelmezés
+avfilter.fillborders,effect,avfilter,avfilter.fillborders,,Fill Borders,avfilter/avfilter_fillborders.xml,"av.mode,av.color,kdenlive:fakerect",,,NONE,,szegélykitöltés
+avfilter.flanger,effect,avfilter,avfilter.flanger,audio,Flanger,avfilter/avfilter_flanger.xml,"av.delay,av.depth,av.regen,av.width,av.speed,av.shape,av.phase,av.interp",flanger,Flanger,SAME,NAME_MATCH_UNVERIFIED,flanger
+avfilter.framestep,effect,avfilter,avfilter.framestep,,Framestep,avfilter/avfilter_framestep.xml,av.step,posterize_time,Posterize Time,CLOSE,NAME_MATCH_UNVERIFIED,képkocka-léptetés
+avfilter.fspp,effect,avfilter,avfilter.fspp,,fspp,avfilter/avfilter_fspp.xml,"av.quality,av.qp,av.strength,av.use_bframe_qp",,,NONE,,nincs megfelelő; VFX-katalógus jelölt
+avfilter.gblur,effect,avfilter,avfilter.gblur,,Gaussian Blur,avfilter/avfilter_gblur.xml,"av.steps,av.planes,av.sigma,av.sigmaV",gaussian_blur,Gaussian Blur,SAME,NAME_MATCH_UNVERIFIED,Gauss
+avfilter.gradfun,effect,avfilter,avfilter.gradfun,,Gradfun,avfilter/avfilter_gradfun.xml,"av.strength,av.radius",,,NONE,,nincs megfelelő; VFX-katalógus jelölt
+avfilter.graphmonitor,effect,avfilter,avfilter.graphmonitor,,Graph Monitor,avfilter/avfilter_graphmonitor.xml,"av.s,av.o,av.m,av.f,av.r",,,NA,,analizátor
+avfilter.grayworld,effect,avfilter,avfilter.grayworld,video,Grayworld,avfilter/avfilter_grayworld.xml,,auto_color,Auto Color,CLOSE,NAME_MATCH_UNVERIFIED,szürkevilág fehéregyensúly
+avfilter.haas,effect,avfilter,avfilter.haas,audio,Haas Stereo Enhancer,avfilter/avfilter_haas.xml,"av.level_in,av.level_out,av.side_gain,av.middle_source,av.middle_phase,av.left_delay,av.left_balance,av.left_gain,av.left_phase,av.right_delay,av.right_balance,av.right_gain,av.right_phase",stereo_expander,Stereo Expander,CLOSE,NAME_MATCH_UNVERIFIED,Haas
+avfilter.hflip,effect,avfilter,avfilter.hflip,,Flip Horizontally,avfilter/avfilter_hflip.xml,,horizontal_flip,Horizontal Flip,SAME,NAME_MATCH_UNVERIFIED,vízszintes tükrözés
+avfilter.highpass,effect,avfilter,avfilter.highpass,audio,High-pass,avfilter/avfilter_highpass.xml,"av.f,av.t,av.w,av.p,av.m,av.n,av.a,av.r",highpass,Highpass,SAME,NAME_MATCH_UNVERIFIED,felüláteresztő
+avfilter.highshelf,effect,avfilter,avfilter.highshelf,audio,High-shelf,avfilter/avfilter_highshelf.xml,"av.f,av.t,av.w,av.g,av.p,av.m,av.n,av.a,av.r",treble,Treble,CLOSE,NAME_MATCH_UNVERIFIED,magas polc
+avfilter.histeq,effect,avfilter,avfilter.histeq,,Histogram Equalizer,avfilter/avfilter_histeq.xml,"av.strength,av.intensity,av.antibanding",auto_contrast,Auto Contrast,CLOSE,NAME_MATCH_UNVERIFIED,hisztogram-kiegyenlítés
+avfilter.histogram,effect,avfilter,avfilter.histogram,,Histogram,avfilter/avfilter_histogram.xml,"av.level_height,av.scale_height,av.display_mode,av.m,av.c,av.f,av.b,av.colors_mode",,,NA,,analizátor (CFA4: Qt scope panel)
+avfilter.hqdn3d,effect,avfilter,avfilter.hqdn3d,,HQ 3D Denoiser (avfilter),avfilter/avfilter_hqdn3d.xml,"av.luma_spatial,av.chroma_spatial,av.luma_tmp,av.chroma_tmp",temporal_denoise,Temporal Denoise,CLOSE,NAME_MATCH_UNVERIFIED,HQ 3D zajszűrő
+avfilter.hqx,effect,avfilter,avfilter.hqx,,Hq*x Interpolator,avfilter/avfilter_hqx.xml,av.n,,,NONE,,nincs megfelelő; VFX-katalógus jelölt
+avfilter.hsvhold,effect,avfilter,avfilter.hsvhold,,HSV Hold,avfilter/avfilter_hsvhold.xml,"av.hue,av.sat,av.val,av.similarity,av.blend",leave_color,Leave Color,CLOSE,NAME_MATCH_UNVERIFIED,HSV színmegtartás
+avfilter.hsvkey,effect,avfilter,avfilter.hsvkey,,HSV Key,avfilter/avfilter_hsvkey.xml,"av.hue,av.sat,av.val,av.similarity,av.blend",color_key,Color Key,CLOSE,NAME_MATCH_UNVERIFIED,HSV kulcs
+avfilter.huesaturation,effect,avfilter,avfilter.huesaturation,,Hue Saturation Intensity,avfilter/avfilter_huesaturation.xml,"av.colors,av.hue,av.sat,av.intensity,av.strength,av.lightness,av.rw,av.gw,av.bw",proc_amp,ProcAmp,CLOSE,NAME_MATCH_UNVERIFIED,árnyalat/telítettség
+avfilter.il,effect,avfilter,avfilter.il,,Interleave - Deinterleave,avfilter/avfilter_il.xml,"av.l,av.c,av.a,av.ls,av.cs,av.as",,,NA,,mezőkezelés: klip-értelmezés
+avfilter.inflate,effect,avfilter,avfilter.inflate,,Inflate,avfilter/avfilter_inflate.xml,"av.threshold0,av.threshold1,av.threshold2,av.threshold3",,,NONE,,nincs megfelelő; VFX-katalógus jelölt
+avfilter.kerndeint,effect,avfilter,avfilter.kerndeint,,Kernel Deinterlacer,avfilter/avfilter_kerneldeint.xml,"av.thresh,av.map,av.order,av.sharp,av.twoway",,,NA,,deinterlace: klip-értelmezés
+avfilter.kirsch,effect,avfilter,avfilter.kirsch,,Kirsch,avfilter/avfilter_kirsch.xml,"av.scale,av.delta,av.planes",find_edges,Find Edges,CLOSE,NAME_MATCH_UNVERIFIED,élkeresés
+avfilter.lagfun,effect,avfilter,avfilter.lagfun,,Lag Fun,avfilter/avfilter_lagfun.xml,"av.planes,av.decay",echo,Echo,CLOSE,NAME_MATCH_UNVERIFIED,utókép (lag)
+avfilter.lenscorrection,effect,avfilter,avfilter.lenscorrection,,Lens Correction (avfilter),avfilter/avfilter_lenscorrection.xml,"av.i,av.fc,av.cx,av.cy,av.k1,av.k2",lens_distortion,Lens Distortion,SAME,NAME_MATCH_UNVERIFIED,lencsetorzítás korrekció
+avfilter.limiter,effect,avfilter,avfilter.limiter,,Limiter,avfilter/avfilter_limiter.xml,"av.min,av.max,av.planes",video_limiter,Video Limiter,CLOSE,NAME_MATCH_UNVERIFIED,videó-limiter (szintkorlát)
+avfilter.loudnorm,effect,avfilter,avfilter.loudnorm,audio,Loudness normalization,avfilter/avfilter_loudnorm.xml,"av.l,av.LRA,av.TP,av.measured_I,av.measured_LRA,av.measured_TP,av.measured_thresh,av.offset,av.linear,av.dual_mono",loudness_radar,Loudness Meter,CLOSE,NAME_MATCH_UNVERIFIED,hangosság-normalizálás
+avfilter.lowpass,effect,avfilter,avfilter.lowpass,audio,Low-pass,avfilter/avfilter_lowpass.xml,"av.f,av.t,av.w,av.p,av.m,av.n,av.a,av.r",lowpass,Lowpass,SAME,NAME_MATCH_UNVERIFIED,aluláteresztő
+avfilter.lowshelf,effect,avfilter,avfilter.lowshelf,audio,Low-shelf,avfilter/avfilter_lowshelf.xml,"av.f,av.t,av.w,av.g,av.p,av.m,av.n,av.a,av.r",bass,Bass,CLOSE,NAME_MATCH_UNVERIFIED,mély polc
+avfilter.lut3d,effect,avfilter,avfilter.lut3d,,Apply LUT,avfilter/avfilter_lut3d.xml,"av.file,av.interp",lumetri,Lumetri Color,CLOSE,NAME_MATCH_UNVERIFIED,3D LUT alkalmazása (Lumetri Creative/LUT)
+avfilter.mcdeint,effect,avfilter,avfilter.mcdeint,,Motion compensation deinterlacer,avfilter/avfilter_mcdeint.xml,"av.mode,av.parity,av.qp",,,NA,,deinterlace: klip-értelmezés
+avfilter.median,effect,avfilter,avfilter.median,,Median,avfilter/avfilter_median.xml,"av.radius,av.radiusV,av.percentile,av.planes",median,Median,SAME,NAME_MATCH_UNVERIFIED,medián
+avfilter.monochrome,effect,avfilter,avfilter.monochrome,,Monochrome,avfilter/avfilter_monochrome.xml,"av.cb,av.cr,av.size,av.high",black_white,Black & White,CLOSE,NAME_MATCH_UNVERIFIED,monokróm
+avfilter.negate,effect,avfilter,avfilter.negate,,Negate,avfilter/avfilter_negate.xml,av.negate_alpha,invert,Invert,SAME,NAME_MATCH_UNVERIFIED,negatív
+avfilter.noise,effect,avfilter,avfilter.noise,video,Video Noise Generator,avfilter/avfilter_noise.xml,"av.all_seed,av.alls,av.allf,av.c0_seed,av.c0s,av.c0f,av.c1_seed,av.c1s,av.c1f,av.c2_seed,av.c2s,av.c2f,av.c3_seed,av.c3s,av.c3f",noise,Noise,SAME,NAME_MATCH_UNVERIFIED,zaj
+avfilter.normalize,effect,avfilter,avfilter.normalize,,Normalize RGB video,avfilter/avfilter_normalize.xml,"av.blackpt,av.whitept,av.smoothing,av.independence,av.strength",auto_levels,Auto Levels,CLOSE,NAME_MATCH_UNVERIFIED,RGB-normalizálás
+avfilter.oscilloscope,effect,avfilter,avfilter.oscilloscope,,Oscilloscope (simple),avfilter/avfilter_oscilloscope.xml,"av.x,av.y,av.s,av.t,av.o,av.tx,av.ty,av.tw,av.th,av.c,av.g,av.st,av.sc",,,NA,,analizátor (scope)
+avfilter.phase,effect,avfilter,avfilter.phase,,Phase,avfilter/avfilter_phase.xml,av.mode,,,NONE,,nincs megfelelő; VFX-katalógus jelölt
+avfilter.photosensitivity,effect,avfilter,avfilter.photosensitivity,,Photosensitivity Filter,avfilter/avfilter_photosensitivity.xml,"av.f,av.t,av.skip,av.bypass",,,NONE,,nincs megfelelő; VFX-katalógus jelölt
+avfilter.pixelize,effect,avfilter,avfilter.pixelize,,Pixelize (advanced),avfilter/avfilter_pixelize.xml,"av.width,av.height,av.mode,av.planes",pixelate,Pixelate,SAME,NAME_MATCH_UNVERIFIED,pixelesítés
+avfilter.prewitt,effect,avfilter,avfilter.prewitt,,Prewitt,avfilter/avfilter_prewitt.xml,"av.planes,av.scale,av.delta",find_edges,Find Edges,CLOSE,NAME_MATCH_UNVERIFIED,élkeresés
+avfilter.pseudocolor,effect,avfilter,avfilter.pseudocolor,,Pseudocolor,avfilter/avfilter_pseudocolor.xml,"av.index,av.preset,av.opacity",,,NONE,,áltszín
+avfilter.random,effect,avfilter,avfilter.random,,Random,avfilter/avfilter_random.xml,"av.frames,av.seed",,,NONE,,nincs megfelelő; VFX-katalógus jelölt
+avfilter.removegrain,effect,avfilter,avfilter.removegrain,,Grain Removal,avfilter/avfilter_removegrain.xml,"av.m0,av.m1,av.m2,av.m3",median,Median,CLOSE,NAME_MATCH_UNVERIFIED,szemcsetelenítés
+avfilter.rgbashift,effect,avfilter,avfilter.rgbashift,,RGBA Shift,avfilter/avfilter_rgbashift.xml,"av.rh,av.rv,av.gh,av.gv,av.bh,av.bv,av.ah,av.av,av.edge",rgb_split,RGB Split,SAME,NAME_MATCH_UNVERIFIED,RGBA eltolás
+avfilter.roberts,effect,avfilter,avfilter.roberts,,Roberts,avfilter/avfilter_roberts.xml,"av.planes,av.scale,av.delta",find_edges,Find Edges,CLOSE,NAME_MATCH_UNVERIFIED,élkeresés
+avfilter.sab,effect,avfilter,avfilter.sab,,Shape Adaptive Blur,avfilter/avfilter_sab.xml,"av.lr,av.lpfr,av.ls,av.cr,av.cpfr,av.cs",gaussian_blur,Gaussian Blur,CLOSE,NAME_MATCH_UNVERIFIED,alakadaptív elmosás
+avfilter.scharr,effect,avfilter,avfilter.scharr,,Scharr,avfilter/avfilter_scharr.xml,"av.planes,av.angle,av.radius",find_edges,Find Edges,CLOSE,NAME_MATCH_UNVERIFIED,élkeresés
+avfilter.scroll,effect,avfilter,avfilter.scroll,,Scroll,avfilter/avfilter_scroll.xml,"av.h,av.v,av.hpos,av.vpos",offset,Offset,CLOSE,NAME_MATCH_UNVERIFIED,görgetés (Offset)
+avfilter.selectivecolor,effect,avfilter,avfilter.selectivecolor,,CMYK adjust,avfilter/avfilter_selectivecolor.xml,"av.correction_method,av.reds,av.yellows,av.greens,av.cyans,av.blues,av.magentas,av.whites,av.neutrals,av.blacks",lumetri,Lumetri Color,CLOSE,NAME_MATCH_UNVERIFIED,szelektív szín (CMYK)
+avfilter.separatefields,effect,avfilter,avfilter.separatefields,,Separate field,avfilter/avfilter_separatefields.xml,,,,NA,,mezőkezelés: klip-értelmezés
+avfilter.setrange,effect,avfilter,avfilter.setrange,,Set Range,avfilter/avfilter_setrange.xml,av.range,,,NA,,tartomány-jelölés: színkezelés (OCIO)
+avfilter.shear,effect,avfilter,avfilter.shear,,Shear,avfilter/avfilter_shear.xml,"av.shx,av.shy,av.c,av.interp",transform,Transform,CLOSE,NAME_MATCH_UNVERIFIED,nyírás (Transform skew)
+avfilter.shufflepixels,effect,avfilter,avfilter.shufflepixels,video,Shuffle Pixels,avfilter/avfilter_shufflepixels.xml,"av.direction,av.mode,av.width,av.height,av.seed",,,NONE,,nincs megfelelő; VFX-katalógus jelölt
+avfilter.shuffleplanes,effect,avfilter,avfilter.shuffleplanes,,Shuffle planes,avfilter/avfilter_shuffleplanes.xml,"av.map0,av.map1,av.map2,av.map3",,,NONE,,nincs megfelelő; VFX-katalógus jelölt
+avfilter.smartblur,effect,avfilter,avfilter.smartblur,,Smartblur,avfilter/avfilter_smartblur.xml,"av.lr,av.ls,av.lt,av.cr,av.cs,av.ct,av.ar,av.as,av.at",gaussian_blur,Gaussian Blur,CLOSE,NAME_MATCH_UNVERIFIED,intelligens elmosás
+avfilter.sobel,effect,avfilter,avfilter.sobel,,Sobel with planes,avfilter/avfilter_sobel.xml,"av.planes,av.scale,av.delta",find_edges,Find Edges,CLOSE,NAME_MATCH_UNVERIFIED,Sobel
+avfilter.sofalizer,effect,avfilter,avfilter.sofalizer,audio,SOFAlizer,avfilter/avfilter_sofalizer.xml,"av.sofa,av.gain,av.rotation,av.elevation,av.radius,av.type,av.lfegain,av.framesize,av.normalize,av.interpolate,av.minphase,av.anglestep,av.radstep",binauralizer,Binauralizer - Ambisonics,CLOSE,NAME_MATCH_UNVERIFIED,SOFA binaurális
+avfilter.sr,effect,avfilter,avfilter.sr,,AI Super resolution,avfilter/avfilter_sr.xml,"av.dnn_backend,av.model,av.scale_factor",,,NA,,MI szuperfelbontás: csak az MI-réteg után
+avfilter.stereo3d,effect,avfilter,avfilter.stereo3d,,Stereoscopic 3D,avfilter/avfilter_stereo3D.xml,"av.in,av.out",stereo_to_2d,Stereo to 2D,CLOSE,NAME_MATCH_UNVERIFIED,sztereó 3D konverzió
+avfilter.stereotools,effect,avfilter,avfilter.stereotools,audio,Stereo tools,avfilter/avfilter_stereotools.xml,"av.level_in,av.level_out,av.balance_in,av.balance_out,av.softclip,av.mutel,av.muter,av.phasel,av.phaser,av.mode,av.slevel,av.sbalance,av.mlev,av.mpan,av.base,av.delay,av.sclevel,av.phase,av.bmode_in,av.bmode_out",stereo_width,Stereo Width,CLOSE,NAME_MATCH_UNVERIFIED,sztereó eszközök
+avfilter.stereowiden,effect,avfilter,avfilter.stereowiden,audio,Stereo widener,avfilter/avfilter_stereowiden.xml,"av.delay,av.feedback,av.crossfeed,av.drymix",stereo_width,Stereo Width,CLOSE,NAME_MATCH_UNVERIFIED,sztereó szélesítés
+avfilter.swapuv,effect,avfilter,avfilter.swapuv,video,Swap UV,avfilter/avfilter_swapuv.xml,,,,NONE,,UV csere; nincs
+avfilter.tmix,effect,avfilter,avfilter.tmix,,Temporal frames Mixer,avfilter/avfilter_tmix.xml,av.frames,,,NONE,,nincs megfelelő; VFX-katalógus jelölt
+avfilter.transpose,effect,avfilter,avfilter.transpose,,Transpose,avfilter/avfilter_transpose.xml,"av.dir,av.passthrough",transform,Transform,CLOSE,NAME_MATCH_UNVERIFIED,elforgatás 90°
+avfilter.unsharp,effect,avfilter,avfilter.unsharp,,Sharp/Unsharp,avfilter/avfilter_unsharp.xml,"av.lx,av.ly,av.la,av.cx,av.cy,av.ca,av.ax,av.ay,av.aa",unsharp_mask,Unsharp Mask,SAME,NAME_MATCH_UNVERIFIED,élesítés
+avfilter.vaguedenoiser,effect,avfilter,avfilter.vaguedenoiser,,Wavelet Denoiser,avfilter/avfilter_vaguedenoiser.xml,"av.method,av.type,av.threshold,av.nsteps,av.percent,av.planes",temporal_denoise,Temporal Denoise,CLOSE,NAME_MATCH_UNVERIFIED,wavelet zajszűrés
+avfilter.vectorscope,effect,avfilter,avfilter.vectorscope,,Vectorscope (advanced),avfilter/avfilter_vectorscope.xml,"av.m,av.t0,av.t1,av.x,av.y,av.i,av.e,av.g,av.o,av.f,av.b,av.l,av.h,av.c",,,NA,,analizátor (scope)
+avfilter.vflip,effect,avfilter,avfilter.vflip,,Flip Vertically,avfilter/avfilter_vflip.xml,,vertical_flip,Vertical Flip,SAME,NAME_MATCH_UNVERIFIED,függőleges tükrözés
+avfilter.vibrance,effect,avfilter,avfilter.vibrance,,Vibrance,avfilter/avfilter_vibrance.xml,"av.intensity,av.rbal,av.gbal,av.bbal,av.rlum,av.glum,av.blum,av.alternate",proc_amp,ProcAmp,CLOSE,NAME_MATCH_UNVERIFIED,vibrance
+avfilter.vibrato,effect,avfilter,avfilter.vibrato,audio,Vibrato,avfilter/avfilter_vibrato.xml,"av.f,av.d",,,NONE,,vibrato; nincs
+avfilter.w3fdif,effect,avfilter,avfilter.w3fdif,,w3fdif Deinterlacer,avfilter/avfilter_w3fdif.xml,"av.filter,av.deint",,,NA,,deinterlace: klip-értelmezés
+avfilter.waveform,effect,avfilter,avfilter.waveform,,Video Waveform Monitor,avfilter/avfilter_waveform.xml,"av.m,av.i,av.r,av.d,av.c,av.e,av.f,av.g,av.o,av.fl,av.s,av.b,av.t0,av.t1,av.fm,av.input",,,NA,,analizátor (scope)
+avfilter.weave,effect,avfilter,avfilter.weave,,Weave interlacer,avfilter/avfilter_weave.xml,av.first_field,,,NA,,mezőkezelés: klip-értelmezés
+avfilter.xbr,effect,avfilter,avfilter.xbr,,xBR Interpolator,avfilter/avfilter_xbr.xml,av.n,,,NONE,,nincs megfelelő; VFX-katalógus jelölt
+avfilter.yadif,effect,avfilter,avfilter.yadif,,Yadif Deinterlacer,avfilter/avfilter_yadif.xml,"av.mode,av.parity,av.deint",,,NA,,"deinterlace: a CFA4-ben klip-értelmezési beállítás (Interpret Footage), nem effekt"
+avfilter.zoompan,effect,avfilter,avfilter.zoompan,,Zoom Pan,avfilter/avfilter_zoompan.xml,"av.z,av.x,av.y,av.d",transform,Transform,CLOSE,NAME_MATCH_UNVERIFIED,zoom/pásztázás kulcskockákkal
+avfilter.subtitles,effect,avfilter,avfilter.subtitles,hidden,Subtitles,avfilter/subtitles.xml,av.filename,,,NONE,,feliratégetés; a CFA4-ben captions burn-in export-beállítás
+box_blur,effect,root,box_blur,,BoxBlur,box_blur.xml,"hradius,vradius,preserve_alpha",gaussian_blur,Gaussian Blur,CLOSE,NAME_MATCH_UNVERIFIED,"doboz-elmosás ≠ Gauss; a sugár átvehető, a mag nem azonos"
+boxblur,effect,root,boxblur,,Box Blur,boxblur.xml,"hori,vert,blur",gaussian_blur,Gaussian Blur,CLOSE,NAME_MATCH_UNVERIFIED,doboz-elmosás ≠ Gauss
+brightness,effect,root,brightness,,Intensity (Brightness),brightness.xml,level,brightness_contrast,Brightness & Contrast,CLOSE,NAME_MATCH_UNVERIFIED,"MLT 'brightness' szorzó, a CFA4 brightness eltolás; nincs pontos átváltás (lásd KDN-1 jegyzet)"
+BurningTV,effect,root,BurningTV,,Burning TV,burningtv.xml,"foreground,threshold",,,NONE,,képi effekt
+channelcopy,effect,root,channelcopy,audio,Stereo to mono,channelcopy.xml,"from,to,swap",channel_mixer_a,Channel Mixer,CLOSE,NAME_MATCH_UNVERIFIED,sztereó → mono; a csatornakeverő hanghoz
+charcoal,effect,root,charcoal,,Charcoal,charcoal.xml,"x_scatter,y_scatter,scale,mix,invert",find_edges,Find Edges,CLOSE,NAME_MATCH_UNVERIFIED,szénrajz-hatás; élkeresés + invert közelítés
+chroma,effect,root,chroma,,Chroma Key: Basic,chroma.xml,"key,variance",ultra_key,Ultra Key,CLOSE,NAME_MATCH_UNVERIFIED,alap chroma key; paraméterek nem 1:1
+chroma_hold,effect,root,chroma_hold,,Chroma Keep,chroma_hold.xml,"key,variance",leave_color,Leave Color,CLOSE,NAME_MATCH_UNVERIFIED,színmegtartás
+channelswap,effect,root,channelswap,audio,Copy Channels to Stereo,copychannelstostereo.xml,"from,to,swap",swap_channels,Swap Channels,SAME,NAME_MATCH_UNVERIFIED,hangcsatornák cseréje
+crop,effect,root,crop,,Edge Crop,crop.xml,"top,left,bottom,right,center,center_bias,use_profile",crop,Crop,SAME,NAME_MATCH_UNVERIFIED,szélvágás
+dance,effect,root,dance,video,Dance,dance.xml,"frequency_low,frequency_high,threshold,osc,initial_zoom,zoom,left,right,up,down,clockwise,counterclockwise,window_size",,,NONE,,mozgásos játék-effekt
+dropshadow,effect,root,dropshadow,,Drop Shadow,dropshadow.xml,"radius,x,y,color",drop_shadow,Drop Shadow,SAME,NAME_MATCH_UNVERIFIED,vetett árnyék
+dust,effect,root,dust,video,Dust,dust.xml,"maxdiameter,maxcount",film_grain,Film Grain,CLOSE,NAME_MATCH_UNVERIFIED,por/karc; 'old film' család
+dynamic_loudness,effect,root,dynamic_loudness,audio,Normalize,dynamic_loudness.xml,"target_loudness,window,max_gain,min_gain,max_rate",loudness_radar,Loudness Meter,CLOSE,NAME_MATCH_UNVERIFIED,hangosság-normalizálás (mérés + erősítés); az 'amplify'/'mastering' kombinálható
+dynamictext,effect,root,dynamictext,,Dynamic Text,dynamictext.xml,"geometry,family,size,style,weight,fgcolour,bgcolour,olcolour,outline,underline,strikethrough,pad,halign,valign,opacity,argument",simple_text,Simple Text,CLOSE,NAME_MATCH_UNVERIFIED,dinamikus szöveg; a változós szöveg a címgenerátoré
+fade_from_black,effect,root,brightness,video,Fade in,fade_from_black.xml,"out,in,level",dip_to_black,Dip to Black,CLOSE,NAME_MATCH_UNVERIFIED,Kdenlive 'fade in' video = brightness-kulcskocka; CFA4: opacity-fade / dip_to_black átmenet
+fade_to_black,effect,root,brightness,video,Fade out,fade_to_black.xml,"in,out,level",dip_to_black,Dip to Black,CLOSE,NAME_MATCH_UNVERIFIED,lásd fade_from_black
+fadein,effect,root,volume,audio,Fade in,fadein.xml,"in,out,gain,end",constant_power,Constant Power,CLOSE,NAME_MATCH_UNVERIFIED,hang fade-in = volume-kulcskocka; CFA4: hangátmenet / volume
+fadeout,effect,root,volume,audio,Fade out,fadeout.xml,"in,out,gain,end",constant_power,Constant Power,CLOSE,NAME_MATCH_UNVERIFIED,hang fade-out
+freeze,effect,root,freeze,,Freeze,freeze.xml,"frame,freeze_before,freeze_after",time_remap,Time Remapping,CLOSE,NAME_MATCH_UNVERIFIED,kimerevítés = time_remap (hold)
+frei0r.3dflippo,effect,frei0r,frei0r.3dflippo,video,3dflippo,frei0r/frei0r_3dflippo.xml,"Xaxisrotation,Yaxisrotation,Zaxisrotation,Xaxisrotationrate,Yaxisrotationrate,Zaxisrotationrate,CenterpositionX,CenterpositionY,Invertrotationassignment,Dontblankmask,Fillwithimageorblack",rotate_3d,3D Rotate,CLOSE,NAME_MATCH_UNVERIFIED,3D forgatás
+frei0r.3dperspective,effect,frei0r,frei0r.3dperspective,,3D Perspective,frei0r/frei0r_3dperspective.xml,"0,1,2,3,4,5,6",corner_pin,Corner Pin,CLOSE,NAME_MATCH_UNVERIFIED,3D perspektíva
+frei0r.B,effect,frei0r,frei0r.B,,Channel Extractor BLUE,frei0r/frei0r_B.xml,,extract,Extract,CLOSE,NAME_MATCH_UNVERIFIED,csatorna kivonás (kék)
+frei0r.G,effect,frei0r,frei0r.G,,Channel Extractor GREEN,frei0r/frei0r_G.xml,,extract,Extract,CLOSE,NAME_MATCH_UNVERIFIED,csatorna kivonás (zöld)
+frei0r.R,effect,frei0r,frei0r.R,,Channel Extractor RED,frei0r/frei0r_R.xml,,extract,Extract,CLOSE,NAME_MATCH_UNVERIFIED,csatorna kivonás (piros)
+frei0r.aech0r,effect,frei0r,frei0r.aech0r,video,Analog Video Echo,frei0r/frei0r_aech0r.xml,"0,1,2,3,4,5",echo,Echo,CLOSE,NAME_MATCH_UNVERIFIED,analóg videó-visszhang
+frei0r.alpha0ps,effect,frei0r,frei0r.alpha0ps,,Alpha Operations (SUPERSEDED),frei0r/frei0r_alpha0ps.xml,"Display,Display input alpha,Operation,Threshold,Shrink/grow amount,Invert",alpha_adjust,Alpha Adjust,CLOSE,NAME_MATCH_UNVERIFIED,alfa műveletek (elavult változat)
+frei0r.alpha0ps_alpha0ps,effect,frei0r,frei0r.alpha0ps_alpha0ps,,Alpha Operations,frei0r/frei0r_alpha0ps_alpha0ps.xml,"Display,Display input alpha,Operation,Threshold,Shrink/Grow/Blur amount,Invert",alpha_adjust,Alpha Adjust,CLOSE,NAME_MATCH_UNVERIFIED,alfa műveletek
+frei0r.alpha0ps_alphagrad,effect,frei0r,frei0r.alpha0ps_alphagrad,,Alpha Gradient,frei0r/frei0r_alpha0ps_alphagrad.xml,"Position,Transition width,Tilt,Min,Max,Operation",gradient,Gradient,CLOSE,NAME_MATCH_UNVERIFIED,alfa gradiens
+frei0r.alpha0ps_alphaspot,effect,frei0r,frei0r.alpha0ps_alphaspot,,Alpha Shapes,frei0r/frei0r_alpha0ps_alphaspot.xml,"Shape,Position X,Position Y,Size X,Size Y,Tilt,Transition width,Min,Max,Operation",,,NA,,alfa alakzat maszk; CFA4: Mask
+frei0r.alphagrad,effect,frei0r,frei0r.alphagrad,,Alpha Gradient (SUPERSEDED),frei0r/frei0r_alphagrad.xml,"Position,Transition width,Tilt,Min,Max,Operation",gradient,Gradient,CLOSE,NAME_MATCH_UNVERIFIED,alfa gradiens (elavult)
+frei0r.alphaspot,effect,frei0r,frei0r.alphaspot,,Alpha Shapes (SUPERSEDED),frei0r/frei0r_alphaspot.xml,"Shape,Position X,Position Y,Size X,Size Y,Tilt,Transition width,Min,Max,Operation",,,NA,,alfa alakzat maszk; CFA4: Mask
+frei0r.autothresh0ld,effect,frei0r,frei0r.autothresh0ld,video,Auto Threshold,frei0r/frei0r_autothresh0ld.xml,0,,,NONE,,auto küszöb
+frei0r.balanc0r,effect,frei0r,frei0r.balanc0r,,White Balance,frei0r/frei0r_balanc0r.xml,"Neutral Color,Green Tint",color_balance,Color Balance,CLOSE,NAME_MATCH_UNVERIFIED,fehéregyensúly
+frei0r.baltan,effect,frei0r,frei0r.baltan,,Baltan,frei0r/frei0r_baltan.xml,,echo,Echo,CLOSE,NAME_MATCH_UNVERIFIED,Baltan
+frei0r.bezier_curves,effect,frei0r,frei0r.curves,,Bézier Curves,frei0r/frei0r_bezier_curves.xml,"0,4,5",lumetri,Lumetri Color,CLOSE,NAME_MATCH_UNVERIFIED,Bézier-görbék
+frei0r.bgsubtract0r,effect,frei0r,frei0r.bgsubtract0r,,Background Subtractor,frei0r/frei0r_bgsubtract0r.xml,"threshold,denoise,blur",,,NONE,,háttér-kivonás
+frei0r.bigsh0t_eq_cap,effect,frei0r,frei0r.bigsh0t_eq_cap,,VR360 Cap Top and Bottom,frei0r/frei0r_bigsh0t_eq_cap.xml,"20,0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19",,,NONE,,VR360 sapka
+frei0r.bigsh0t_eq_mask,effect,frei0r,frei0r.bigsh0t_eq_mask,,VR360 Equirectangular Mask,frei0r/frei0r_bigsh0t_eq_mask.xml,"vfov0,vfov1,hfov0,hfov1,interpolation",,,NONE,,VR360 maszk
+frei0r.bigsh0t_eq_to_rect,effect,frei0r,frei0r.bigsh0t_eq_to_rect,,VR360 Equirectangular to Rectilinear,frei0r/frei0r_bigsh0t_eq_to_rect.xml,"yaw,pitch,roll,fov,fisheye,interpolation",vr_projection,VR Projection,CLOSE,NAME_MATCH_UNVERIFIED,VR360
+frei0r.bigsh0t_eq_to_stereo,effect,frei0r,frei0r.bigsh0t_eq_to_stereo,,VR360 Equirectangular to Stereo,frei0r/frei0r_bigsh0t_eq_to_stereo.xml,"0,1,2,3,4,5",vr_projection,VR Projection,CLOSE,NAME_MATCH_UNVERIFIED,VR360
+frei0r.bigsh0t_eq_wrap,effect,frei0r,frei0r.bigsh0t_eq_wrap,,VR360 Wrap,frei0r/frei0r_bigsh0t_eq_wrap.xml,"interpolation,0,1,2,3,4,5",vr_projection,VR Projection,CLOSE,NAME_MATCH_UNVERIFIED,VR360
+frei0r.bigsh0t_hemi_to_eq,effect,frei0r,frei0r.bigsh0t_hemi_to_eq,,VR360 Hemispherical to Equirectangular,frei0r/frei0r_bigsh0t_hemi_to_eq.xml,"yaw,pitch,roll,projection,fov,radius,frontX,frontY,frontUp,backX,backY,backUp,nadirRadius,nadirCorrectionStart,distortionA,distortionB,distortionC,distortionRadius,vignettingA,vignettingB,vignettingC,vignettingD,vignettingRadius,emorEnabled,emorH1,emorH2,emorH3,emorH4,emorH5,interpolation",vr_projection,VR Projection,CLOSE,NAME_MATCH_UNVERIFIED,VR360
+frei0r.bigsh0t_rect_to_eq,effect,frei0r,frei0r.bigsh0t_rect_to_eq,,VR360 Rectilinear to Equirectangular,frei0r/frei0r_bigsh0t_rect_to_eq.xml,"hfov,vfov,interpolation",vr_projection,VR Projection,CLOSE,NAME_MATCH_UNVERIFIED,VR360
+frei0r.bigsh0t_stabilize_360,effect,frei0r,frei0r.bigsh0t_stabilize_360,,VR360 Stabilize,frei0r/frei0r_bigsh0t_stabilize_360.xml,"analyze,analysisFile,clipOffset,sampleRadius,searchRadius,offset,useBackTrackpoints,stabilizeYaw,smoothYaw,timeBiasYaw,stabilizePitch,smoothPitch,timeBiasPitch,stabilizeRoll,smoothRoll,timeBiasRoll,interpolation",warp_stabilizer,Warp Stabilizer,CLOSE,NAME_MATCH_UNVERIFIED,VR360 stabilizálás (nem azonos)
+frei0r.bigsh0t_transform_360,effect,frei0r,frei0r.bigsh0t_transform_360,,VR360 Transform,frei0r/frei0r_bigsh0t_transform_360.xml,"yaw,pitch,roll,interpolation",vr_rotate_sphere,VR Rotate Sphere,CLOSE,NAME_MATCH_UNVERIFIED,VR360
+frei0r.bluescreen0r,effect,frei0r,frei0r.bluescreen0r,,Blue Screen (Color to Alpha),frei0r/frei0r_bluescreen0r.xml,"Invert,Color,Distance",color_key,Color Key,CLOSE,NAME_MATCH_UNVERIFIED,kék háttér kulcs
+frei0r.brightness,effect,frei0r,frei0r.brightness,,Brightness,frei0r/frei0r_brightness.xml,Brightness,brightness_contrast,Brightness & Contrast,CLOSE,NAME_MATCH_UNVERIFIED,fényerő
+frei0r.bw0r,effect,frei0r,frei0r.bw0r,video,BW0r,frei0r/frei0r_bw0r.xml,,black_white,Black & White,SAME,NAME_MATCH_UNVERIFIED,fekete-fehér
+frei0r.c0rners,effect,frei0r,frei0r.c0rners,,Corners,frei0r/frei0r_c0rners.xml,"0,1,2,3,4,5,6,7,9,10,13,8,11,12,14",corner_pin,Corner Pin,SAME,NAME_MATCH_UNVERIFIED,sarokpont
+frei0r.cairogradient,effect,frei0r,frei0r.cairogradient,video,Cairogradient,frei0r/frei0r_cairogradient.xml,"0,1,2,3,4,5,6,7,8,9,10",gradient,Gradient,CLOSE,NAME_MATCH_UNVERIFIED,gradiens
+frei0r.cairoimagegrid,effect,frei0r,frei0r.cairoimagegrid,video,Video grid,frei0r/frei0r_cairoimagegrid.xml,"rows,columns",grid,Grid,CLOSE,NAME_MATCH_UNVERIFIED,képrács
+frei0r.camerashake,effect,frei0r,frei0r.camerashake,,Camera Shake Ultimate,frei0r/frei0r_camerashake.xml,"0,1,2,3,4,5,6,7",camera_shake,Camera Shake,SAME,NAME_MATCH_UNVERIFIED,kamerarázkódás
+frei0r.cartoon,effect,frei0r,frei0r.cartoon,video,Cartoon,frei0r/frei0r_cartoon.xml,"triplevel,diffspace",,,NONE,,rajzfilm-hatás; VFX katalógus (T2/T14)
+frei0r.cluster,effect,frei0r,frei0r.cluster,video,K-Means Clustering (ABANDONED),frei0r/frei0r_cluster.xml,"Num,Dist weight",,,NONE,,elhagyott effekt
+frei0r.colgate,effect,frei0r,frei0r.colgate,,White Balance (LMS space),frei0r/frei0r_colgate.xml,"Neutral Color,Color Temperature",color_balance,Color Balance,CLOSE,NAME_MATCH_UNVERIFIED,fehéregyensúly (LMS)
+frei0r.coloradj_RGB,effect,frei0r,frei0r.coloradj_RGB,,RGB Adjustment,frei0r/frei0r_coloradj_rgb.xml,"R,G,B,Action,Keep luma,Alpha controlled,Luma formula",channel_mix,Channel Mix,CLOSE,NAME_MATCH_UNVERIFIED,RGB-beállítás
+frei0r.colordistance,effect,frei0r,frei0r.colordistance,,Color Distance,frei0r/frei0r_colordistance.xml,Color,,,NONE,,színtávolság
+frei0r.colorenhance,effect,frei0r,frei0r.colorenhance,,Color Enhance,frei0r/frei0r_colorenhance.xml,"a_base,b_base,a_slope,b_slope",auto_color,Auto Color,CLOSE,NAME_MATCH_UNVERIFIED,színjavítás
+frei0r.colorize,effect,frei0r,frei0r.colorize,,Colorize,frei0r/frei0r_colorize.xml,"hue,saturation,lightness",tint,Tint,CLOSE,NAME_MATCH_UNVERIFIED,színezés
+frei0r.colortap,effect,frei0r,frei0r.colortap,,Color Effect,frei0r/frei0r_colortap.xml,table,,,NONE,,színhatás (LUT-szerű)
+frei0r.contrast0r,effect,frei0r,frei0r.contrast0r,,Contrast,frei0r/frei0r_contrast0r.xml,Contrast,brightness_contrast,Brightness & Contrast,CLOSE,NAME_MATCH_UNVERIFIED,kontraszt
+frei0r.curves,effect,frei0r,frei0r.curves,,Curves,frei0r/frei0r_curves.xml,"Channel,4,curve,3,6,7,8,9,10,11,12,13,14,15,1,2",lumetri,Lumetri Color,CLOSE,NAME_MATCH_UNVERIFIED,görbék
+frei0r.d90stairsteppingfix,effect,frei0r,frei0r.d90stairsteppingfix,,Nikon D90 Stairstepping fix,frei0r/frei0r_d90stairsteppingfix.xml,,,,NONE,,kamera-specifikus javítás
+frei0r.defish0r,effect,frei0r,frei0r.defish0r,,Defish,frei0r/frei0r_defish0r.xml,"Amount,DeFish,Type,Scaling,Crop,Non-Linear scale,Y Scale,Manual Scale,Interpolator,Aspect type,Manual Aspect",lens_distortion,Lens Distortion,CLOSE,NAME_MATCH_UNVERIFIED,halszem-korrekció
+frei0r.delay0r,effect,frei0r,frei0r.delay0r,video,delay0r,frei0r/frei0r_delay0r.xml,DelayTime,echo,Echo,CLOSE,NAME_MATCH_UNVERIFIED,késleltetés
+frei0r.delaygrab,effect,frei0r,frei0r.delaygrab,,Delay grab,frei0r/frei0r_delaygrab.xml,,echo,Echo,CLOSE,NAME_MATCH_UNVERIFIED,késleltetett képfogás
+frei0r.denoise_hqdn3d,effect,frei0r,frei0r.denoise_hqdn3d,,HQ 3D Denoiser (frei0r),frei0r/frei0r_denoise_hqdn3d.xml,"Spatial,Temporal",temporal_denoise,Temporal Denoise,CLOSE,NAME_MATCH_UNVERIFIED,zajszűrő
+frei0r.distort0r,effect,frei0r,frei0r.distort0r,,Distort,frei0r/frei0r_distort0r.xml,"Amplitude,Frequency,Use Velocity,Velocity",wave_warp,Wave Warp,CLOSE,NAME_MATCH_UNVERIFIED,torzítás
+frei0r.dither,effect,frei0r,frei0r.dither,,Dither,frei0r/frei0r_dither.xml,"levels,matrixid",dither,Dither,SAME,NAME_MATCH_UNVERIFIED,dither
+frei0r.edgeglow,effect,frei0r,frei0r.edgeglow,video,Edge Glow,frei0r/frei0r_edgeglow.xml,"lthresh,lupscale,lredscale",edge_glow,Edge Glow,SAME,NAME_MATCH_UNVERIFIED,élfény
+frei0r.elastic_scale,effect,frei0r,frei0r.elastic_scale,,Elastic Scale,frei0r/frei0r_elastic_scale.xml,"0,1,2,3",,,NONE,,rugalmas méretezés
+frei0r.emboss,effect,frei0r,frei0r.emboss,,Emboss,frei0r/frei0r_emboss.xml,"azimuth,elevation,width45",emboss,Emboss,SAME,NAME_MATCH_UNVERIFIED,dombornyomás
+frei0r.equaliz0r,effect,frei0r,frei0r.equaliz0r,video,Equaliz0r,frei0r/frei0r_equaliz0r.xml,,auto_contrast,Auto Contrast,CLOSE,NAME_MATCH_UNVERIFIED,hisztogram-kiegyenlítés
+frei0r.facebl0r,effect,frei0r,frei0r.facebl0r,,Face blur,frei0r/frei0r_facebl0r.xml,"Search scale,Neighbors,Smallest,Largest,Recheck,Ellipse",,,NA,,arcelmosás = MI; csak az MI-réteg után
+frei0r.facedetect,effect,frei0r,frei0r.facedetect,,Face detect,frei0r/frei0r_facedetect.xml,"Search scale,Neighbors,Smallest,Recheck,Shape,Stroke,Alpha,Antialias",,,NA,,arcfelismerés = MI-szolgáltatás; csak az MI-réteg után
+frei0r.filmgrain,effect,frei0r,frei0r.filmgrain,,Film Grain,frei0r/frei0r_filmgrain.xml,"0,1,2,3,4,5,6",film_grain,Film Grain,SAME,NAME_MATCH_UNVERIFIED,filmszemcse
+frei0r.flarefx,effect,frei0r,frei0r.flarefx,,FlareFX,frei0r/frei0r_flarefx.xml,"0,1,2,3,4,5",lens_flare,Lens Flare,CLOSE,NAME_MATCH_UNVERIFIED,lencsecsillanás
+frei0r.flippo,effect,frei0r,frei0r.flippo,,Flippo,frei0r/frei0r_flippo.xml,"X axis,Y axis",horizontal_flip,Horizontal Flip,CLOSE,NAME_MATCH_UNVERIFIED,tükrözés
+frei0r.gateweave,effect,frei0r,frei0r.gateweave,,Gate Weave,frei0r/frei0r_gateweave.xml,"0,1,2",film_gate,Film Gate,CLOSE,NAME_MATCH_UNVERIFIED,film-ablak remegés
+frei0r.glitch0r,effect,frei0r,frei0r.glitch0r,video,Glitching (rows and color),frei0r/frei0r_glitch0r.xml,"0,1,2,3",block_glitch,Block Glitch,CLOSE,NAME_MATCH_UNVERIFIED,glitch
+frei0r.glow,effect,frei0r,frei0r.glow,,Glow,frei0r/frei0r_glow.xml,Blur,wonder_glow,Wonder Glow,CLOSE,NAME_MATCH_UNVERIFIED,ragyogás
+frei0r.harris0r,effect,frei0r,frei0r.harris0r,,Harris Shutter Effect,frei0r/frei0r_harris0r.xml,"0,1",,,NONE,,zsalu-effekt
+frei0r.heatmap0r,effect,frei0r,frei0r.heatmap0r,video,Heatmap0r,frei0r/frei0r_heatmap0r.xml,"0,1,2,3",,,NONE,,hőtérkép
+frei0r.hqdn3d,effect,frei0r,frei0r.hqdn3d,,Denoiser (SUPERSEDED),frei0r/frei0r_hqdn3d.xml,"Spatial,Temporal",temporal_denoise,Temporal Denoise,CLOSE,NAME_MATCH_UNVERIFIED,zajszűrő (elavult)
+frei0r.hueshift0r,effect,frei0r,frei0r.hueshift0r,,Hue shift,frei0r/frei0r_hueshift0r.xml,Hue,proc_amp,ProcAmp,CLOSE,NAME_MATCH_UNVERIFIED,árnyalat-eltolás
+frei0r.IIRblur,effect,frei0r,frei0r.IIRblur,,Blur,frei0r/frei0r_iirblur.xml,"Amount,Type,Edge",gaussian_blur,Gaussian Blur,CLOSE,NAME_MATCH_UNVERIFIED,elmosás
+frei0r.invert0r,effect,frei0r,frei0r.invert0r,video,Invert0r,frei0r/frei0r_invert0r.xml,,invert,Invert,SAME,NAME_MATCH_UNVERIFIED,invertálás
+frei0r.kaleid0sc0pe,effect,frei0r,frei0r.kaleid0sc0pe,,Kaleidoscope,frei0r/frei0r_kaleid0sc0pe.xml,"origin_x,origin_y,segmentation,specify_source,source_segment,segmentation_direction,reflect_edges,edge_threshold,preferred_corner,corner_search,bg_color,bg_alpha",kaleidoscope,Kaleidoscope,SAME,NAME_MATCH_UNVERIFIED,kaleidoszkóp
+frei0r.keyspillm0pup,effect,frei0r,frei0r.keyspillm0pup,,Key Spill Mop Up,frei0r/frei0r_keyspillm0pup.xml,"Key color,Target color,Mask type,Tolerance,Slope,Hue gate,Saturation threshold,Operation 1,Amount 1,Operation 2,Amount 2,Show mask,Mask to Alpha",,,NONE,,kulcs-szivárgás eltávolítás
+frei0r.lenscorrection,effect,frei0r,frei0r.lenscorrection,,Lens Correction (frei0r),frei0r/frei0r_lenscorrection.xml,"xcenter,ycenter,correctionnearcenter,correctionnearedges,brightness",lens_distortion,Lens Distortion,SAME,NAME_MATCH_UNVERIFIED,lencsekorrekció
+frei0r.letterb0xed,effect,frei0r,frei0r.letterb0xed,video,Letter-boxing,frei0r/frei0r_letterb0xed.xml,"Border Width,Transparency",crop,Crop,CLOSE,NAME_MATCH_UNVERIFIED,képarány-sáv
+frei0r.levels,effect,frei0r,frei0r.levels,,Levels,frei0r/frei0r_levels.xml,"Channel,Input black level,Input white level,Gamma,Black output,White output,Show histogram,Histogram position",levels,Levels,SAME,NAME_MATCH_UNVERIFIED,szintek
+frei0r.lightgraffiti,effect,frei0r,frei0r.lightgraffiti,,Light Graffiti,frei0r/frei0r_lightgraffiti.xml,"thresholdBrightness,thresholdDifference,thresholdDiffSum,sensitivity,lowerOverexposure,dim,backgroundWeight,longAlpha,saturation,statsBrightness,statsDifference,statsDiffSum,transparentBackground,nonlinearDim,reset",,,NONE,,fényfestés
+frei0r.luminance,effect,frei0r,frei0r.luminance,video,Luminance,frei0r/frei0r_luminance.xml,,black_white,Black & White,CLOSE,NAME_MATCH_UNVERIFIED,fénysűrűség (szürkeskála)
+frei0r.mask0mate,effect,frei0r,frei0r.mask0mate,video,Rectangular Alpha mask,frei0r/frei0r_mask0mate.xml,"kdenlive:fakerect,Invert,Blur",,,NA,,alfa maszk; CFA4: Mask
+frei0r.measure_pr0be,effect,frei0r,frei0r.measure_pr0be,,Video Values,frei0r/frei0r_measure_pr0be.xml,"Measurement,X,Y,X size,Y size,256 scale,Show alpha,Big window",,,NA,,analizátor
+frei0r.measure_pr0file,effect,frei0r,frei0r.measure_pr0file,,Oscilloscope (advanced),frei0r/frei0r_measure_pr0file.xml,"X,Y,Tilt,Length,Channel,Marker 1,Marker 2,R trace,G trace,B trace,Y trace,Pr trace,Pb trace,Alpha trace,Display average,Display RMS,Display minimum,Display maximum,256 scale,Color,Crosshair color",,,NA,,analizátor
+frei0r.medians,effect,frei0r,frei0r.medians,,Medians,frei0r/frei0r_medians.xml,"Type,Size",median,Median,SAME,NAME_MATCH_UNVERIFIED,medián
+frei0r.mirr0r,effect,frei0r,frei0r.mirr0r,video,Mirr0r,frei0r/frei0r_mirr0r.xml,"0,1,2,3",mirror,Mirror,SAME,NAME_MATCH_UNVERIFIED,tükrözés
+frei0r.motiondiff0r,effect,frei0r,frei0r.motiondiff0r,video,Motion Extraction,frei0r/frei0r_motiondiff0r.xml,"1,0,2,3,4,5",,,NONE,,mozgás-kivonás
+frei0r.ndvi,effect,frei0r,frei0r.ndvi,,NDVI,frei0r/frei0r_ndvi.xml,"0,1,2,3,4,5,6,7,8,9",,,NONE,,NDVI
+frei0r.nervous,effect,frei0r,frei0r.nervous,,Nervous,frei0r/frei0r_nervous.xml,,,,NONE,,idegesség-effekt
+frei0r.normaliz0r,effect,frei0r,frei0r.normaliz0r,,Normaliz0r,frei0r/frei0r_normaliz0r.xml,"BlackPt,WhitePt,Smoothing,Independence,Strength",auto_levels,Auto Levels,CLOSE,NAME_MATCH_UNVERIFIED,normalizálás
+frei0r.nosync0r,effect,frei0r,frei0r.nosync0r,video,nosync0r,frei0r/frei0r_nosync0r.xml,"HSync,VSync",,,NONE,,szinkronvesztés-effekt
+frei0r.ntsc,effect,frei0r,frei0r.ntsc,,NTSC,frei0r/frei0r_ntsc.xml,"0,1,2",vhs,VHS,CLOSE,NAME_MATCH_UNVERIFIED,NTSC/VHS hatás
+frei0r.pixeliz0r,effect,frei0r,frei0r.pixeliz0r,,Pixelize (basic),frei0r/frei0r_pixeliz0r.xml,"0,1,2",pixelate,Pixelate,SAME,NAME_MATCH_UNVERIFIED,pixelesítés
+frei0r.pixels0rt,effect,frei0r,frei0r.pixels0rt,video,Pixels0rt,frei0r/frei0r_pixels0rt.xml,"0,1,2,3",pixel_sort,Pixel Sort,SAME,NAME_MATCH_UNVERIFIED,pixel-rendezés
+frei0r.pixs0r,effect,frei0r,frei0r.pixs0r,,Glitching (rows only),frei0r/frei0r_pixs0r.xml,"shift_intensity,block_height,block_height_min,block_height_max",scan_line_jitter,Scan Line Jitter,CLOSE,NAME_MATCH_UNVERIFIED,glitch (sorok)
+frei0r.posterize,effect,frei0r,frei0r.posterize,,Posterize,frei0r/frei0r_posterize.xml,0,posterize,Posterize,SAME,NAME_MATCH_UNVERIFIED,posterizálás
+frei0r.pr0be,effect,frei0r,frei0r.pr0be,,Video Values (SUPERSEDED),frei0r/frei0r_pr0be.xml,"Measurement,X,Y,X size,Y size,256 scale,Show alpha,Big window",,,NA,,analizátor
+frei0r.pr0file,effect,frei0r,frei0r.pr0file,,Oscilloscope (advanced) (SUPERSEDED),frei0r/frei0r_pr0file.xml,"X,Y,Tilt,Length,Channel,Marker 1,Marker 2,R trace,G trace,B trace,Y trace,Pr trace,Pb trace,Alpha trace,Display average,Display RMS,Display minimum,Display maximum,256 scale,Color,Crosshair color",,,NA,,analizátor
+frei0r.premultiply,effect,frei0r,frei0r.premultiply,video,Premultiply or Unpremultiply,frei0r/frei0r_premultiply.xml,0,alpha_adjust,Alpha Adjust,CLOSE,NAME_MATCH_UNVERIFIED,premultiply/unpremultiply
+frei0r.primaries,effect,frei0r,frei0r.primaries,,Primaries,frei0r/frei0r_primaries.xml,Factor,,,NONE,,primerek
+frei0r.rgbnoise,effect,frei0r,frei0r.rgbnoise,,RGB Noise,frei0r/frei0r_rgbnoise.xml,noise,noise,Noise,CLOSE,NAME_MATCH_UNVERIFIED,RGB zaj
+frei0r.rgbparade,effect,frei0r,frei0r.rgbparade,,RGB Parade,frei0r/frei0r_rgbparade.xml,,,,NA,,scope
+frei0r.rgbsplit0r,effect,frei0r,frei0r.rgbsplit0r,,RGB Splitter,frei0r/frei0r_rgbsplit0r.xml,"1,0",rgb_split,RGB Split,SAME,NAME_MATCH_UNVERIFIED,RGB eltolás
+frei0r.saturat0r,effect,frei0r,frei0r.saturat0r,,Saturation,frei0r/frei0r_saturat0r.xml,Saturation,proc_amp,ProcAmp,CLOSE,NAME_MATCH_UNVERIFIED,telítettség
+frei0r.scale0tilt,effect,frei0r,frei0r.scale0tilt,,"Crop, Scale, and Tilt",frei0r/frei0r_scale0tilt.xml,"Clip left,Clip right,Clip top,Clip bottom,Scale X,Scale Y,Tilt X,Tilt Y",transform,Transform,CLOSE,NAME_MATCH_UNVERIFIED,"vágás, méretezés, dőlés"
+frei0r.scanline0r,effect,frei0r,frei0r.scanline0r,video,scanline0r,frei0r/frei0r_scanline0r.xml,,crt,CRT,CLOSE,NAME_MATCH_UNVERIFIED,pásztázósorok
+frei0r.select0r,effect,frei0r,frei0r.select0r,,Chroma Key: Advanced (Color Selection),frei0r/frei0r_select0r.xml,"Color to select,Invert selection,Delta R / A / Hue,Delta G / B / Chroma,Delta B / I / I,Selection subspace,Subspace shape,Edge mode,Operation",color_key,Color Key,CLOSE,NAME_MATCH_UNVERIFIED,kiválasztott színtartomány
+frei0r.shadert0y,effect,frei0r,frei0r.shadert0y,,Shadert0y,frei0r/frei0r_shadert0y.xml,"0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23",,,NONE,,shader-játék
+frei0r.shake0scillate,effect,frei0r,frei0r.shake0scillate,,Shake0scillate,frei0r/frei0r_shake0scillate.xml,"movement_amount_x,movement_speed_x,movement_amount_y,movement_speed_y,rotation_amount,rotation_speed,scale,phase,mirrored",camera_shake,Camera Shake,CLOSE,NAME_MATCH_UNVERIFIED,remegés
+frei0r.sharpness,effect,frei0r,frei0r.sharpness,,Sharpen,frei0r/frei0r_sharpness.xml,"Amount,Size",sharpen,Sharpen,SAME,NAME_MATCH_UNVERIFIED,élesítés
+frei0r.sigmoidaltransfer,effect,frei0r,frei0r.sigmoidaltransfer,,Sigmoidal Transfer,frei0r/frei0r_sigmoidaltransfer.xml,"0,1",lumetri,Lumetri Color,CLOSE,NAME_MATCH_UNVERIFIED,szigmoid átviteli görbe
+frei0r.slitscan0r,effect,frei0r,frei0r.slitscan0r,video,Slit Scan,frei0r/frei0r_slitscan0r.xml,"0,1,2,3,4,5,6",slit_scan,Slit Scan,SAME,NAME_MATCH_UNVERIFIED,résmásolás
+frei0r.sobel,effect,frei0r,frei0r.sobel,video,Sobel,frei0r/frei0r_sobel.xml,,find_edges,Find Edges,SAME,NAME_MATCH_UNVERIFIED,élkeresés
+frei0r.softglow,effect,frei0r,frei0r.softglow,,Soft Glow,frei0r/frei0r_softglow.xml,"blurblend,blur,brightness,sharpness",wonder_glow,Wonder Glow,CLOSE,NAME_MATCH_UNVERIFIED,lágy ragyogás
+frei0r.sopsat,effect,frei0r,frei0r.sopsat,,SOP/Sat,frei0r/frei0r_sopsat.xml,"rSlope,gSlope,bSlope,aSlope,rOffset,gOffset,bOffset,aOffset,rPower,gPower,bPower,aPower,saturation",asc_cdl,ASC CDL,CLOSE,NAME_MATCH_UNVERIFIED,SOP/Sat ≈ ASC CDL (slope/offset/power/sat)
+frei0r.spillsupress,effect,frei0r,frei0r.spillsupress,video,Spill Suppress,frei0r/frei0r_spillsupress.xml,0,,,NONE,,kulcs-szivárgás eltávolítás; nincs önálló
+frei0r.squareblur,effect,frei0r,frei0r.squareblur,,Square Blur,frei0r/frei0r_squareblur.xml,Kernel size,gaussian_blur,Gaussian Blur,CLOSE,NAME_MATCH_UNVERIFIED,négyzetes elmosás
+frei0r.squigglevision,effect,frei0r,frei0r.squigglevision,,Squigglevision,frei0r/frei0r_squigglevision.xml,"0,1,2",wave_warp,Wave Warp,CLOSE,NAME_MATCH_UNVERIFIED,hullámzó kontúr
+frei0r.tehRoxx0r,effect,frei0r,frei0r.tehRoxx0r,video,TehRoxx0r,frei0r/frei0r_tehroxx0r.xml,0,,,NONE,,mozaik-kísérlet
+frei0r.three_point_balance,effect,frei0r,frei0r.three_point_balance,,3-Point Balance,frei0r/frei0r_three_point_balance.xml,"0,1,2,3,4",color_balance,Color Balance,CLOSE,NAME_MATCH_UNVERIFIED,3 pontos egyensúly
+frei0r.threelay0r,effect,frei0r,frei0r.threelay0r,,3-level Threshold,frei0r/frei0r_threelay0r.xml,,posterize,Posterize,CLOSE,NAME_MATCH_UNVERIFIED,3 szintű küszöb
+frei0r.threshold0r,effect,frei0r,frei0r.threshold0r,,Threshold,frei0r/frei0r_threshold0r.xml,Threshold,,,NONE,,küszöb; nincs önálló
+frei0r.timeout,effect,frei0r,frei0r.timeout,,Timeout Indicator,frei0r/frei0r_timeout.xml,"color,time,transparency",,,NONE,,időjelző
+frei0r.tint0r,effect,frei0r,frei0r.tint0r,,Tint,frei0r/frei0r_tint0r.xml,"Map black to,Map white to,Tint amount",tint,Tint,SAME,NAME_MATCH_UNVERIFIED,színezés
+frei0r.transparency,effect,frei0r,frei0r.transparency,video,Transparency,frei0r/frei0r_transparency.xml,0,alpha_adjust,Alpha Adjust,CLOSE,NAME_MATCH_UNVERIFIED,átlátszóság
+frei0r.twolay0r,effect,frei0r,frei0r.twolay0r,,Binarize dynamically,frei0r/frei0r_twolay0r.xml,,,,NONE,,dinamikus bináris küszöb
+frei0r.vectorscope,effect,frei0r,frei0r.vectorscope,,Vectorscope,frei0r/frei0r_vectorscope.xml,,,,NA,,scope
+frei0r.vertigo,effect,frei0r,frei0r.vertigo,,Vertigo,frei0r/frei0r_vertigo.xml,"PhaseIncrement,Zoomrate",,,NONE,,szédülés-effekt
+frei0r.vignette,effect,frei0r,frei0r.vignette,,Vignette,frei0r/frei0r_vignette.xml,"aspect,clearCenter,soft",vignette,Vignette,SAME,NAME_MATCH_UNVERIFIED,vinyetta
+frei0r.whirlpinch0r,effect,frei0r,frei0r.whirlpinch0r,,Whirl and Pinch,frei0r/frei0r_whirlpinch0r.xml,"0,1,2,3,4",twirl,Twirl,CLOSE,NAME_MATCH_UNVERIFIED,csavarás/csippentés
+mask_start-frei0r.alphaspot,effect,frei0r,mask_start,,Alpha Shapes (Mask),frei0r/mask_start_frei0r_alphaspot.xml,"filter.Shape,filter.Position X,filter.Position Y,filter.Size X,filter.Size Y,filter.Tilt,filter.Transition width,filter.Min,filter.Max,filter.Operation",,,NA,,"maszk-lánc, alakzat; CFA4: Mask"
+gain,effect,root,volume,audio,Gain,gain.xml,gain,volume,Volume,SAME,NAME_MATCH_UNVERIFIED,volume.level dB-ben (a KDN-1 importer már leképezi)
+gamma,effect,root,gamma,,Gamma (keyframable),gamma.xml,gamma,gamma_correction,Gamma Correction,SAME,NAME_MATCH_UNVERIFIED,gamma
+gpsgraphic,effect,root,gpsgraphic,,GPS Graphic,gpsgraphic.xml,"resource,time_offset,smoothing_value,speed_multiplier,graph_data_source,graph_type,trim_start_p,trim_end_p,crop_mode_h,crop_left_p,crop_right_p,crop_mode_v,crop_bot_p,crop_top_p,color_style,color.1,color.2,color.3,color.4,color.5,show_now_dot,now_dot_color,show_now_text,angle,thickness,show_grid,legend_unit,draw_individual_dots,rect,bg_img_path,bg_scale_w,bg_opacity,gps_start_text,video_start_text,auto_gps_offset_start,auto_gps_offset_now,map_coords_hint",,,NONE,,GPS adatgrafika; nincs megfelelő
+gpstext,effect,root,gpstext,,GPS Text,gpstext.xml,"argument,resource,time_offset,smoothing_value,gps_processing_start_time,speed_multiplier,updates_per_second,gps_start_text,video_start_text,auto_gps_offset_start,auto_gps_offset_now,auto_gps_processing_start_now,geometry,family,size,weight,style,fgcolour,bgcolour,olcolour,outline,underline,strikethrough,pad,halign,valign,opacity",metadata_burnin,Metadata & Timecode Burn-in,CLOSE,NAME_MATCH_UNVERIFIED,GPS szöveg a metaadat-feliratban
+gradientmap,effect,root,gradientmap,,Gradient Map,gradientmap.xml,gradient,,,NONE,,színátmenet-térkép nincs; jelölt: lumetri/ramp kombináció
+grain,effect,root,grain,video,Grain,grain.xml,"noise,contrast,brightness",film_grain,Film Grain,SAME,NAME_MATCH_UNVERIFIED,filmszemcse
+avfilter.greyedge,effect,root,avfilter.greyedge,,Grey Edge,greyedge.xml,"av.difford,av.minknorm,av.sigma",auto_color,Auto Color,CLOSE,NAME_MATCH_UNVERIFIED,grey-edge fehéregyensúly
+greyscale,effect,root,greyscale,,Greyscale,greyscale.xml,,black_white,Black & White,SAME,NAME_MATCH_UNVERIFIED,fekete-fehér
+hslprimaries,effect,root,hslprimaries,,HSL Primaries,hsl_primaries.xml,"overlap,h_shift_red,h_shift_yellow,h_shift_green,h_shift_cyan,h_shift_blue,h_shift_magenta,s_scale_red,s_scale_yellow,s_scale_green,s_scale_cyan,s_scale_blue,s_scale_magenta,l_scale_red,l_scale_yellow,l_scale_green,l_scale_cyan,l_scale_blue,l_scale_magenta",lumetri,Lumetri Color,CLOSE,NAME_MATCH_UNVERIFIED,HSL-primerek a Lumetri HSL-másodlagos részével
+hslrange,effect,root,hslrange,,HSL Range,hsl_range.xml,"hue_center,hue_range,blend,h_shift,s_scale,l_scale",lumetri,Lumetri Color,CLOSE,NAME_MATCH_UNVERIFIED,HSL-tartomány (másodlagos korrekció)
+invert,effect,root,invert,,Invert,invert.xml,,invert,Invert,SAME,NAME_MATCH_UNVERIFIED,invertálás
+ladspa.1185,effect,ladspa,ladspa.1185,audio,Diode Processor,ladspa/ladspa_1185.xml,"0,wetness",,,NONE,,hang; nincs megfelelő CFA4 hangeffekt
+ladspa.1190,effect,ladspa,ladspa.1190,audio,Comb Filter,ladspa/ladspa_1190.xml,"0,1,wetness",,,NONE,,hang; nincs megfelelő CFA4 hangeffekt
+ladspa.1191,effect,ladspa,ladspa.1191,audio,Flanger,ladspa/ladspa_1191.xml,"0,1,2,3,wetness",flanger,Flanger,CLOSE,NAME_MATCH_UNVERIFIED,flanger
+ladspa.1192,effect,ladspa,ladspa.1192,audio,Fractionally Addressed Delay Line,ladspa/ladspa_1192.xml,"0,1,wetness",,,NONE,,hang; nincs megfelelő CFA4 hangeffekt
+ladspa.1195,effect,ladspa,ladspa.1195,audio,Declipper,ladspa/ladspa_1195.xml,wetness,declicker,Automatic Click Remover,CLOSE,NAME_MATCH_UNVERIFIED,declipper
+ladspa.1196,effect,ladspa,ladspa.1196,audio,Fast Overdrive,ladspa/ladspa_1196.xml,"0,wetness",distortion,Distortion,CLOSE,NAME_MATCH_UNVERIFIED,overdrive
+ladspa.1202,effect,ladspa,ladspa.1202,audio,Decimator,ladspa/ladspa_1202.xml,"0,1,wetness",bit_crush,Bit Crush,CLOSE,NAME_MATCH_UNVERIFIED,decimator
+ladspa.1203,effect,ladspa,ladspa.1203,audio,Single Band Parametric,ladspa/ladspa_1203.xml,"0,1,2,wetness",parametric_eq,Parametric Equalizer,CLOSE,NAME_MATCH_UNVERIFIED,egysávos EQ
+ladspa.1207,effect,ladspa,ladspa.1207,audio,DC Offset Remover,ladspa/ladspa_1207.xml,wetness,highpass,Highpass,CLOSE,NAME_MATCH_UNVERIFIED,DC-eltávolító (szűrőként)
+ladspa.1213,effect,ladspa,ladspa.1213,audio,Foldover Distortion,ladspa/ladspa_1213.xml,"0,1,wetness",distortion,Distortion,CLOSE,NAME_MATCH_UNVERIFIED,torzítás
+ladspa.1218,effect,ladspa,ladspa.1218,audio,4x4 Pole Allpass,ladspa/ladspa_1218.xml,"0,1,2,3,4,5,6,7,wetness",,,NONE,,hang; nincs megfelelő CFA4 hangeffekt
+ladspa.1219,effect,ladspa,ladspa.1219,audio,Auto Phaser,ladspa/ladspa_1219.xml,"0,1,2,3,4,wetness",phaser,Phaser,CLOSE,NAME_MATCH_UNVERIFIED,phaser
+ladspa.1402,effect,ladspa,ladspa.1402,audio,Delayorama,ladspa/ladspa_1402.xml,"0,1,2,3,4,5,6,7,8,9,10,wetness",multitap_delay,Multitap Delay,CLOSE,NAME_MATCH_UNVERIFIED,delayorama
+ladspa.1403,effect,ladspa,ladspa.1403,audio,Dyson Compressor,ladspa/ladspa_1403.xml,"0,1,2,3,wetness",dynamics_rack,Dynamics,CLOSE,NAME_MATCH_UNVERIFIED,kompresszor
+ladspa.1404,effect,ladspa,ladspa.1404,audio,Crossover Distortion,ladspa/ladspa_1404.xml,"0,1,wetness",distortion,Distortion,CLOSE,NAME_MATCH_UNVERIFIED,torzítás
+ladspa.1407,effect,ladspa,ladspa.1407,audio,Aliasing,ladspa/ladspa_1407.xml,"0,wetness",bit_crush,Bit Crush,CLOSE,NAME_MATCH_UNVERIFIED,aliasing
+ladspa.1408,effect,ladspa,ladspa.1408,audio,Barry's Satan Maximiser,ladspa/ladspa_1408.xml,"0,1,wetness",mastering,Mastering,CLOSE,NAME_MATCH_UNVERIFIED,maximizer
+ladspa.1410,effect,ladspa,ladspa.1410,audio,Gate,ladspa/ladspa_1410.xml,"0,1,2,3,4,5,6,7,wetness",dynamics,Dynamics Processing,CLOSE,NAME_MATCH_UNVERIFIED,zajkapu
+ladspa.1411,effect,ladspa,ladspa.1411,audio,Comb Splitter,ladspa/ladspa_1411.xml,"0,wetness",,,NONE,,hang; nincs megfelelő CFA4 hangeffekt
+ladspa.1415,effect,ladspa,ladspa.1415,audio,FM Oscillator,ladspa/ladspa_1415.xml,"0,wetness",,,NONE,,hang; nincs megfelelő CFA4 hangeffekt
+ladspa.1423,effect,ladspa,ladspa.1423,audio,SWH Plate Reverb,ladspa/ladspa_1423.xml,"0,1,2,wetness",studio_reverb,Studio Reverb,CLOSE,NAME_MATCH_UNVERIFIED,zengető
+ladspa.1430,effect,ladspa,ladspa.1430,audio,Chebyshev Distortion,ladspa/ladspa_1430.xml,"0,wetness",distortion,Distortion,CLOSE,NAME_MATCH_UNVERIFIED,torzítás
+ladspa.1431,effect,ladspa,ladspa.1431,audio,Bode Frequency Shifter,ladspa/ladspa_1431.xml,"0,wetness",,,NONE,,hang; nincs megfelelő CFA4 hangeffekt
+ladspa.1432,effect,ladspa,ladspa.1432,audio,Bode Frequency Shifter (CV),ladspa/ladspa_1432.xml,"0,1,3,4,wetness",,,NONE,,hang; nincs megfelelő CFA4 hangeffekt
+ladspa.1433,effect,ladspa,ladspa.1433,audio,AM Pitch Shifter,ladspa/ladspa_1433.xml,"0,1,wetness",pitch_shifter,Pitch Shifter,CLOSE,NAME_MATCH_UNVERIFIED,AM pitch shifter
+ladspa.1438,effect,ladspa,ladspa.1438,audio,DJ Flanger,ladspa/ladspa_1438.xml,"0,1,2,3,wetness",flanger,Flanger,CLOSE,NAME_MATCH_UNVERIFIED,flanger
+ladspa.1886,effect,ladspa,ladspa.1886,audio,Exponential Signal Decay,ladspa/ladspa_1886.xml,"2,wetness",,,NONE,,hang; nincs megfelelő CFA4 hangeffekt
+ladspa.1887,effect,ladspa,ladspa.1887,audio,Comb Delay Line (linear interpolation),ladspa/ladspa_1887.xml,"2,3,4,wetness",,,NONE,,hang; nincs megfelelő CFA4 hangeffekt
+ladspa.1888,effect,ladspa,ladspa.1888,audio,Comb Delay Line (cubic spline interpolation),ladspa/ladspa_1888.xml,"2,3,4,wetness",,,NONE,,hang; nincs megfelelő CFA4 hangeffekt
+ladspa.1889,effect,ladspa,ladspa.1889,audio,Comb Delay Line (non-interpolating),ladspa/ladspa_1889.xml,"2,3,4,wetness",,,NONE,,hang; nincs megfelelő CFA4 hangeffekt
+ladspa.1890,effect,ladspa,ladspa.1890,audio,GLAME Highpass,ladspa/ladspa_1890.xml,"0,1,wetness",highpass,Highpass,CLOSE,NAME_MATCH_UNVERIFIED,felüláteresztő
+ladspa.1891,effect,ladspa,ladspa.1891,audio,GLAME Lowpass,ladspa/ladspa_1891.xml,"0,1,wetness",lowpass,Lowpass,CLOSE,NAME_MATCH_UNVERIFIED,aluláteresztő
+ladspa.1892,effect,ladspa,ladspa.1892,audio,GLAME Bandpass,ladspa/ladspa_1892.xml,"0,1,2,wetness",bandpass,Bandpass,CLOSE,NAME_MATCH_UNVERIFIED,sáváteresztő
+ladspa.1893,effect,ladspa,ladspa.1893,audio,GLAME Bandpass Analog,ladspa/ladspa_1893.xml,"0,1,wetness",bandpass,Bandpass,CLOSE,NAME_MATCH_UNVERIFIED,sáváteresztő
+ladspa.1895,effect,ladspa,ladspa.1895,audio,Allpass Delay Line (Non-interpolating),ladspa/ladspa_1895.xml,"2,3,4,wetness",,,NONE,,hang; nincs megfelelő CFA4 hangeffekt
+ladspa.1896,effect,ladspa,ladspa.1896,audio,Allpass Delay Line (Linear Interpolation),ladspa/ladspa_1896.xml,"2,3,4,wetness",,,NONE,,hang; nincs megfelelő CFA4 hangeffekt
+ladspa.1897,effect,ladspa,ladspa.1897,audio,Allpass Delay Line (Cubic Spline Interpolation),ladspa/ladspa_1897.xml,"2,3,4,wetness",,,NONE,,hang; nincs megfelelő CFA4 hangeffekt
+ladspa.1900,effect,ladspa,ladspa.1900,audio,Simple Delay Line (Cubic Spline Interpolation),ladspa/ladspa_1900.xml,"2,3,wetness",delay,Delay,CLOSE,NAME_MATCH_UNVERIFIED,késleltetés
+ladspa.1901,effect,ladspa,ladspa.1901,audio,DJ EQ,ladspa/ladspa_1901.xml,"0,1,2,wetness",simple_eq,Simple Parametric EQ,CLOSE,NAME_MATCH_UNVERIFIED,DJ EQ
+ladspa.1902,effect,ladspa,ladspa.1902,audio,GLAME Butterworth X-Over,ladspa/ladspa_1902.xml,"0,1,wetness",,,NONE,,hang; nincs megfelelő CFA4 hangeffekt
+ladspa.1903,effect,ladspa,ladspa.1903,audio,GLAME Butterworth Lowpass,ladspa/ladspa_1903.xml,"0,1,wetness",lowpass,Lowpass,CLOSE,NAME_MATCH_UNVERIFIED,Butterworth
+ladspa.1904,effect,ladspa,ladspa.1904,audio,GLAME Butterworth Highpass,ladspa/ladspa_1904.xml,"0,1,wetness",highpass,Highpass,CLOSE,NAME_MATCH_UNVERIFIED,Butterworth
+ladspa.1905,effect,ladspa,ladspa.1905,audio,VyNil (Vinyl Effect),ladspa/ladspa_1905.xml,"0,1,2,3,4,wetness",,,NONE,,bakelit-effekt
+ladspa.1907,effect,ladspa,ladspa.1907,audio,DJ EQ (mono),ladspa/ladspa_1907.xml,"0,1,2,wetness",simple_eq,Simple Parametric EQ,CLOSE,NAME_MATCH_UNVERIFIED,DJ EQ (mono)
+ladspa.1913,effect,ladspa,ladspa.1913,audio,Fast Lookahead Limiter,ladspa/ladspa_1913.xml,"0,1,2,3,wetness",hard_limiter,Hard Limiter,CLOSE,NAME_MATCH_UNVERIFIED,limiter
+ladspa.2141,effect,ladspa,ladspa.2141,audio,TAP Equalizer,ladspa/ladspa_2141.xml,"8,0,9,1,10,2,11,3,12,4,13,5,14,6,15,7,wetness",graphic_eq,Graphic Equalizer (10 Bands),CLOSE,NAME_MATCH_UNVERIFIED,TAP EQ
+ladspa.2142,effect,ladspa,ladspa.2142,audio,TAP Reverberator,ladspa/ladspa_2142.xml,"0,1,2,3,4,5,6,7,wetness",studio_reverb,Studio Reverb,CLOSE,NAME_MATCH_UNVERIFIED,zengető
+ladspa.2143,effect,ladspa,ladspa.2143,audio,TAP Stereo Echo,ladspa/ladspa_2143.xml,"7,8,9,0,1,2,3,4,5,6,wetness",analog_delay,Analog Delay,CLOSE,NAME_MATCH_UNVERIFIED,sztereó echo
+ladspa.2144,effect,ladspa,ladspa.2144,audio,TAP Tremolo,ladspa/ladspa_2144.xml,"0,1,2,wetness",,,NONE,,tremolo
+ladspa.2145,effect,ladspa,ladspa.2145,audio,TAP Scaling Limiter,ladspa/ladspa_2145.xml,"0,1,wetness",hard_limiter,Hard Limiter,CLOSE,NAME_MATCH_UNVERIFIED,limiter
+ladspa.2146,effect,ladspa,ladspa.2146,audio,TAP AutoPanner,ladspa/ladspa_2146.xml,"0,1,2,wetness",panner,Panner,CLOSE,NAME_MATCH_UNVERIFIED,autopanner (automatizált pan)
+ladspa.2147,effect,ladspa,ladspa.2147,audio,TAP DeEsser,ladspa/ladspa_2147.xml,"0,1,2,3,wetness",deesser,DeEsser,SAME,NAME_MATCH_UNVERIFIED,de-esser
+ladspa.2148,effect,ladspa,ladspa.2148,audio,TAP Vibrato,ladspa/ladspa_2148.xml,"0,1,2,3,wetness",,,NONE,,hang; nincs megfelelő CFA4 hangeffekt
+ladspa.2149,effect,ladspa,ladspa.2149,audio,TAP Rotary Speaker,ladspa/ladspa_2149.xml,"0,1,2,3,wetness",,,NONE,,hang; nincs megfelelő CFA4 hangeffekt
+ladspa.2150,effect,ladspa,ladspa.2150,audio,TAP Pitch Shifter,ladspa/ladspa_2150.xml,"0,1,2,3,wetness",pitch_shifter,Pitch Shifter,CLOSE,NAME_MATCH_UNVERIFIED,hangmagasság
+ladspa.2151,effect,ladspa,ladspa.2151,audio,TAP Equalizer/BW,ladspa/ladspa_2151.xml,"8,0,16,9,1,17,10,2,18,11,3,19,12,4,20,13,5,21,14,6,22,15,7,23,wetness",parametric_eq,Parametric Equalizer,CLOSE,NAME_MATCH_UNVERIFIED,TAP EQ
+ladspa.2152,effect,ladspa,ladspa.2152,audio,TAP Dynamics (M),ladspa/ladspa_2152.xml,"0,1,2,3,6,wetness",dynamics_rack,Dynamics,CLOSE,NAME_MATCH_UNVERIFIED,dinamika
+ladspa.2153,effect,ladspa,ladspa.2153,audio,TAP Dynamics (St),ladspa/ladspa_2153.xml,"0,1,2,3,8,9,wetness",dynamics_rack,Dynamics,CLOSE,NAME_MATCH_UNVERIFIED,dinamika
+ladspa.2154,effect,ladspa,ladspa.2154,audio,TAP Reflector,ladspa/ladspa_2154.xml,"0,1,2,wetness",,,NONE,,hang; nincs megfelelő CFA4 hangeffekt
+ladspa.2155,effect,ladspa,ladspa.2155,audio,TAP Pink/Fractal Noise,ladspa/ladspa_2155.xml,"0,1,2,wetness",,,NONE,,hang; nincs megfelelő CFA4 hangeffekt
+ladspa.2156,effect,ladspa,ladspa.2156,audio,TAP Fractal Doubler,ladspa/ladspa_2156.xml,"0,1,2,3,4,5,6,7,wetness",,,NONE,,hang; nincs megfelelő CFA4 hangeffekt
+ladspa.2157,effect,ladspa,ladspa.2157,audio,TAP Sigmoid Booster,ladspa/ladspa_2157.xml,"0,1,wetness",,,NONE,,hang; nincs megfelelő CFA4 hangeffekt
+ladspa.2158,effect,ladspa,ladspa.2158,audio,TAP TubeWarmth,ladspa/ladspa_2158.xml,"0,1,wetness",,,NONE,,hang; nincs megfelelő CFA4 hangeffekt
+ladspa.2159,effect,ladspa,ladspa.2159,audio,TAP Chorus/Flange,ladspa/ladspa_2159.xml,"0,1,2,3,4,5,6,wetness",chorus_flanger,Chorus/Flanger,SAME,NAME_MATCH_UNVERIFIED,chorus/flanger
+declipper,effect,ladspa,ladspa,audio,Declipper,ladspa/ladspa_declipper.xml,,declicker,Automatic Click Remover,CLOSE,NAME_MATCH_UNVERIFIED,declipper
+equalizer,effect,ladspa,ladspa,audio,Equalizer,ladspa/ladspa_equalizer.xml,"logain,midgain,higain",parametric_eq,Parametric Equalizer,CLOSE,NAME_MATCH_UNVERIFIED,EQ
+equalizer_15,effect,ladspa,ladspa,audio,15 Band Equalizer,ladspa/ladspa_equalizer_15.xml,"1,2,3,4,5,6,7,8,9,10,11,12,13,14,15",graphic_eq,Graphic Equalizer (10 Bands),CLOSE,NAME_MATCH_UNVERIFIED,15 sávos EQ
+ladspa.9354877,effect,ladspa,ladspa.9354877,audio,Noise Suppressor for Voice,ladspa/ladspa_librnnoise.xml,"2,3,4",denoise,DeNoise,CLOSE,NAME_MATCH_UNVERIFIED,zajszűrő beszédre
+limiter,effect,ladspa,ladspa,audio,Limiter,ladspa/ladspa_limiter.xml,"gain,limit,release",hard_limiter,Hard Limiter,CLOSE,NAME_MATCH_UNVERIFIED,limiter
+phaser,effect,ladspa,ladspa,audio,Phaser,ladspa/ladspa_phaser.xml,"rate,depth,feedback,spread",phaser,Phaser,SAME,NAME_MATCH_UNVERIFIED,phaser
+pitch_shift,effect,ladspa,ladspa,audio,Pitch Shift,ladspa/ladspa_pitch.xml,pitch,pitch_shifter,Pitch Shifter,CLOSE,NAME_MATCH_UNVERIFIED,hangmagasság
+pitch_scale,effect,ladspa,ladspa,audio,Pitch Scaler,ladspa/ladspa_pitch_scale.xml,coef,pitch_shifter,Pitch Shifter,CLOSE,NAME_MATCH_UNVERIFIED,hangmagasság
+rate_scale,effect,ladspa,ladspa,audio,Rate Scaler,ladspa/ladspa_rate_scale.xml,rate,,,NONE,,tempó (sebesség) szűrő; klip-sebesség pitch-korrekcióval
+reverb,effect,ladspa,ladspa,audio,Reverb,ladspa/ladspa_reverb.xml,"room,damp",studio_reverb,Studio Reverb,CLOSE,NAME_MATCH_UNVERIFIED,zengető
+room_reverb,effect,ladspa,ladspa,audio,Room Reverb,ladspa/ladspa_room_reverb.xml,"room,delay,damp",studio_reverb,Studio Reverb,CLOSE,NAME_MATCH_UNVERIFIED,zengető
+vinyl,effect,ladspa,ladspa,audio,Vinyl,ladspa/ladspa_vinyl.xml,"year,rpm,warping,crackle,wear",,,NONE,,bakelit-effekt
+lift_gamma_gain,effect,root,lift_gamma_gain,,Lift/gamma/gain,lift_gamma_gain.xml,"lift_r,lift_g,lift_b,gamma_r,gamma_g,gamma_b,gain_r,gain_g,gain_b",color_balance,Color Balance,CLOSE,NAME_MATCH_UNVERIFIED,"lift/gamma/gain: Color Balance (3-way) szerkezete közel, értékleképezés vizsgálandó"
+lightshow,effect,root,lightshow,,Light Show,lightshow.xml,"frequency_low,frequency_high,threshold,osc,color.1,color.2,rect",,,NONE,,zenére reagáló fényjáték
+loudness,effect,root,loudness,audio,Normalize (2 pass),loudness.xml,"program,results,filterjob",loudness_radar,Loudness Meter,CLOSE,NAME_MATCH_UNVERIFIED,két menetes hangosság-normalizálás
+luma,effect,root,luma,hidden,Luma,luma.xml,,gradient_wipe,Gradient Wipe,CLOSE,NAME_MATCH_UNVERIFIED,luma-maszkos átmenet (CC0 lumák: KDN-21)
+lumakey,effect,root,lumakey,video,Lumakey,lumakey.xml,"threshold,slope,prelevel,postlevel",luma_key,Luma Key,SAME,NAME_MATCH_UNVERIFIED,luma kulcs
+lumaliftgaingamma,effect,root,lumaliftgaingamma,,Luma LiftGainGamma,lumaliftgaingamma.xml,"lift,gain,gamma",color_balance,Color Balance,CLOSE,NAME_MATCH_UNVERIFIED,luma lift/gain/gamma
+mask_apply,effect,root,mask_apply,,Mask Apply,mask_apply.xml,transition,,,NA,,maszk-lánc rész; a CFA4 effekt-maszkja (EffectInstance.masks) váltja ki
+mask_start,effect,root,mask_start,hidden,Mask Start,mask_start.xml,,,,NA,,maszk-lánc eleje; lásd mask_apply
+mask_start-frei0r.alphaspot,effect,root,mask_start,,Alpha shapes (Mask),mask_start_frei0r_alphaspot.xml,"filter.Shape,filter.Position X,filter.Position Y,filter.Size X,filter.Size Y,filter.Tilt,filter.Transition width,filter.Min,filter.Max,filter.Operation",,,NA,,"maszk-lánc, alakzat; CFA4: Mask"
+mask_start-frei0r.select0r,effect,root,mask_start,,Secondary Color Correction Area Selection (Mask),mask_start_frei0r_select0r.xml,"filter,filter.Color to select,filter.Invert selection,filter.Selection subspace,filter.Subspace shape,filter.Edge mode,filter.Delta R / A / Hue,filter.Delta G / B / Chroma,filter.Delta B / I / I,filter.Slope,filter.Operation",color_key,Color Key,CLOSE,NAME_MATCH_UNVERIFIED,színtartomány-kiválasztás maszkként
+mask_start-rotoscoping,effect,root,mask_start,,Rotoscoping (Mask),mask_start_rotoscoping.xml,"filter,filter.spline,filter.mode,filter.alpha_operation,filter.invert,filter.feather,filter.feather_passes",,,NA,,maszk-lánc; CFA4: Mask (roto-spline)
+mask_start-shape,effect,root,mask_start,,Shape Alpha (Mask),mask_start_shape.xml,"filter,filter.resource,filter.mix,filter.softness,filter.invert,filter.use_luminance,filter.use_mix,in,out,filter.audio_match",,,NA,,maszk-lánc; CFA4: Mask (alakzat)
+mirror,effect,root,mirror,,Mirror,mirror.xml,"mirror,reverse",mirror,Mirror,SAME,NAME_MATCH_UNVERIFIED,tükrözés
+mono,effect,root,mono,audio,Mixdown,mono.xml,channels,channel_mixer_a,Channel Mixer,CLOSE,NAME_MATCH_UNVERIFIED,lekeverés monóra
+movit.blur,effect,movit,movit.blur,,Blur (GPU),movit/movit_blur.xml,radius,gaussian_blur,Gaussian Blur,SAME,NAME_MATCH_UNVERIFIED,GPU blur
+movit.sharpen,effect,movit,movit.sharpen,,Deconvolution sharpen (GPU),movit/movit_deconvolution_sharpen.xml,"matrix_size,circle_radius,gaussian_radius,correlation,noise",sharpen,Sharpen,SAME,NAME_MATCH_UNVERIFIED,GPU élesítés
+movit.diffusion,effect,movit,movit.diffusion,,Diffusion (GPU),movit/movit_diffusion.xml,"radius,mix",wonder_glow,Wonder Glow,CLOSE,NAME_MATCH_UNVERIFIED,diffúzió
+movit.flip,effect,movit,movit.flip,,Flip (GPU),movit/movit_flip.xml,,horizontal_flip,Horizontal Flip,CLOSE,NAME_MATCH_UNVERIFIED,flip (irányfüggő)
+movit.glow,effect,movit,movit.glow,,Glow (GPU),movit/movit_glow.xml,"radius,blur_mix,highlight_cutoff",wonder_glow,Wonder Glow,CLOSE,NAME_MATCH_UNVERIFIED,ragyogás
+movit.lift_gamma_gain,effect,movit,movit.lift_gamma_gain,,Lift/gamma/gain (GPU),movit/movit_lift_gamma_gain.xml,"lift_r,lift_g,lift_b,gamma_r,gamma_g,gamma_b,gain_r,gain_g,gain_b",color_balance,Color Balance,CLOSE,NAME_MATCH_UNVERIFIED,lift/gamma/gain
+movit.lift_gamma_gain2,effect,movit,movit.lift_gamma_gain,,Movit: Lift/gamma/gain (colors),movit/movit_lift_gamma_gain2.xml,"lift_r,lift_g,lift_b,gamma_r,gamma_g,gamma_b,gain_r,gain_g,gain_b",color_balance,Color Balance,CLOSE,NAME_MATCH_UNVERIFIED,lift/gamma/gain színekkel
+movit.mirror,effect,movit,movit.mirror,,Mirror (GPU),movit/movit_mirror.xml,,mirror,Mirror,SAME,NAME_MATCH_UNVERIFIED,tükrözés
+movit.opacity,effect,movit,movit.opacity,,Opacity (GPU),movit/movit_opacity.xml,opacity,opacity,Opacity,SAME,NAME_MATCH_UNVERIFIED,átlátszóság
+movit.rect,effect,movit,movit.rect,,Pan and Zoom (GPU),movit/movit_rect.xml,"rect,fill",transform,Transform,SAME,NAME_MATCH_UNVERIFIED,pan & zoom
+movit.saturation,effect,movit,movit.saturation,,Saturation (GPU),movit/movit_saturation.xml,saturation,proc_amp,ProcAmp,CLOSE,NAME_MATCH_UNVERIFIED,telítettség a ProcAmp-ban
+movit.unsharp_mask,effect,movit,movit.unsharp_mask,,Unsharp mask (GPU),movit/movit_unsharp_mask.xml,"radius,radius",unsharp_mask,Unsharp Mask,SAME,NAME_MATCH_UNVERIFIED,unsharp
+movit.vignette,effect,movit,movit.vignette,,Vignette (GPU),movit/movit_vignette.xml,"radius,inner_radius",vignette,Vignette,SAME,NAME_MATCH_UNVERIFIED,vinyetta
+movit.white_balance,effect,movit,movit.white_balance,,White Balance (GPU),movit/movit_white_balance.xml,"neutral_color,color_temperature",color_balance,Color Balance,CLOSE,NAME_MATCH_UNVERIFIED,fehéregyensúly; lumetri temperatúra
+mute,effect,root,volume,audio,Mute,mute.xml,gain,mute,Mute,SAME,NAME_MATCH_UNVERIFIED,némítás
+normalise,effect,root,volume,audio,Normalise (deprecated),normalise.xml,"normalise,max_gain,window",amplify,Amplify,CLOSE,NAME_MATCH_UNVERIFIED,elavult normalizálás
+obscure,effect,root,obscure,,Obscure,obscure.xml,start,mosaic,Mosaic,CLOSE,NAME_MATCH_UNVERIFIED,kitakarás / pixeles elmosás
+oldfilm,effect,root,oldfilm,video,Old Film Simulator,oldfilm.xml,"delta,every,brightnessdelta_up,brightnessdelta_down,brightnessdelta_every,unevendevelop_up,unevendevelop_down,unevendevelop_duration",film_grain,Film Grain,CLOSE,NAME_MATCH_UNVERIFIED,öreg film (szemcse+karc+villogás): több CFA4 effekt együtt
+pan_zoom,effect,root,affine,video,Position and Zoom,pan_zoom.xml,"transition.rect,transition.distort,use_normalised,producer.resource,transition.repeat_off,transition.mirror_off",transform,Transform,SAME,NAME_MATCH_UNVERIFIED,pozíció és nagyítás (affine) → Transform
+pillar_echo,effect,root,pillar_echo,,Pillar Echo,pillar_echo.xml,"rect,blur",,,NONE,,oldalsó visszhangsáv a 16:9→4:3 kitöltéshez; nincs
+qtblend,effect,root,qtblend,,Transform,qtblend.xml,"rect,rotation,compositing,distort",transform,Transform,SAME,NAME_MATCH_UNVERIFIED,kompozit+transzformáció
+qtcrop,effect,root,qtcrop,video,Crop by Padding,qtcrop.xml,"rect,radius,circle,color",rounded_crop,Rounded Crop,CLOSE,NAME_MATCH_UNVERIFIED,kerek vágás + paddinges vágás
+rboctaveshift,effect,root,rbpitch,audio,Rubberband Octave Shift,rboctaveshift.xml,"octaveshift,stretch,latency",pitch_shifter,Pitch Shifter,SAME,NAME_MATCH_UNVERIFIED,hangmagasság
+rbpitch,effect,root,rbpitch,audio,Rubberband Pitch Scale,rbpitchscale.xml,"pitchscale,stretch,latency",pitch_shifter,Pitch Shifter,SAME,NAME_MATCH_UNVERIFIED,hangmagasság
+3wayrotate,effect,root,affine,,3-way Rotate,rotate-3-way.xml,"transition.keyed,transition.repeat_off,transition.mirror_off,transition.invert_scale,producer.resource,transition.rotate_x,transition.rotate_y,transition.rotate_z,transition.ox,transition.oy,transition.scale_x,transition.scale_y",transform,Transform,CLOSE,NAME_MATCH_UNVERIFIED,forgatás
+affine,effect,root,affine,,Rotate and Shear (deprecated),rotation.xml,"transition.fix_rotate_x,transition.fix_rotate_y,transition.fix_rotate_z,transition.rotate_x,transition.rotate_y,transition.rotate_z,transition.fix_shear_x,transition.fix_shear_y,transition.shear_x,transition.shear_y,transition.rect,producer.resource,transition.repeat_off,transition.mirror_off",transform,Transform,SAME,NAME_MATCH_UNVERIFIED,"klip-tulajdonság, nem átmenet; Transform"
+affinerotate,effect,root,affine,,Rotate (deprecated),rotation_keyframable.xml,"transition.rotate_x,transition.rotate_y,transition.rotate_z,transition.ox,transition.oy,producer.resource,transition.keyed,transition.repeat_off,transition.mirror_off",transform,Transform,SAME,NAME_MATCH_UNVERIFIED,forgatás
+rotoscoping,effect,root,rotoscoping,,Rotoscoping,rotoscoping.xml,"spline,mode,alpha_operation,invert,feather,feather_passes",,,NA,,maszk; CFA4: Mask
+lines,effect,root,lines,video,Scratch Lines,scratchlines.xml,"line_width,num,darker,lighter",film_grain,Film Grain,CLOSE,NAME_MATCH_UNVERIFIED,karcvonalak
+sepia,effect,root,sepia,,Sepia,sepia.xml,"u,v",tint,Tint,CLOSE,NAME_MATCH_UNVERIFIED,szépia = Tint + szín
+shape,effect,root,shape,,Shape Alpha,shape.xml,"resource,mix,softness,invert,use_luminance,use_mix,in,out,audio_match",,,NA,,alfa-alakzat maszk; CFA4: Mask
+affineshear,effect,root,affine,,Shear,shear.xml,"keyed,transition.repeat_off,transition.mirror_off,transition.invert_scale,transition.fix_shear_x,transition.fix_shear_y,transition.fix_shear_z,transition.ox,transition.oy,transition.scale_x,transition.scale_y",transform,Transform,CLOSE,NAME_MATCH_UNVERIFIED,nyírás; a Transform 'skew' paramétere
+sox,effect,sox,sox,hidden,SoX,sox/sox.xml,"effect,analysis_level,gain,use_peak,normalise,window,max_gain",,,NA,,SoX burkoló: hang
+sox_band,effect,sox,sox,audio,Sox Band,sox/sox_band.xml,"frequency,width",bandpass,Bandpass,CLOSE,NAME_MATCH_UNVERIFIED,SoX sávszűrő
+sox_bass,effect,sox,sox,audio,Sox Bass,sox/sox_bass.xml,"gain,frequency",bass,Bass,SAME,NAME_MATCH_UNVERIFIED,mély
+sox_echo,effect,sox,sox,audio,Sox Echo,sox/sox_echo.xml,"gain-in,gain-out,delay,decay",echo,Echo,CLOSE,NAME_MATCH_UNVERIFIED,visszhang
+sox_flanger,effect,sox,sox,audio,Sox Flanger,sox/sox_flanger.xml,"delay,depth,regen,width,speed,shape,phase,interp",flanger,Flanger,SAME,NAME_MATCH_UNVERIFIED,flanger
+sox_gain,effect,sox,sox,audio,Sox Gain,sox/sox_gain.xml,"gain,filterjob",volume,Volume,SAME,NAME_MATCH_UNVERIFIED,erősítés
+sox_phaser,effect,sox,sox,audio,Sox Phaser,sox/sox_phaser.xml,"gainin,gainout,delay,decay,speed",phaser,Phaser,SAME,NAME_MATCH_UNVERIFIED,phaser
+sox_pitch,effect,sox,sox,hidden,Sox Pitch Shift,sox/sox_pitch.xml,"shift,window",pitch_shifter,Pitch Shifter,SAME,NAME_MATCH_UNVERIFIED,hangmagasság
+sox_reverb,effect,sox,sox,hidden,Sox Reverb,sox/sox_reverb.xml,"reverberance,hf_damping,room_scale,stereo_depth,pre_delay_ms,wet_gain_dB",studio_reverb,Studio Reverb,CLOSE,NAME_MATCH_UNVERIFIED,zengetés
+sox_stretch,effect,sox,sox,audio,Sox Stretch,sox/sox_stretch.xml,"factor,window",,,NONE,,időnyújtás hangmagasság-tartással: klip sebesség pitch-correct
+speed,effect,root,timewarp,av,Speed,speed.xml,speed,time_remap,Time Remapping,CLOSE,NAME_MATCH_UNVERIFIED,"sebesség; klip-szintű (clip speed), nem effekt"
+spot_remover,effect,root,spot_remover,,Spot Remover,spot_remover.xml,rect,clone,Clone,CLOSE,NAME_MATCH_UNVERIFIED,folt-eltávolítás
+strobe,effect,root,strobe,,Alpha Strobing,strobe.xml,"strobe_invert,interval",strobe,Strobe Light,SAME,NAME_MATCH_UNVERIFIED,stroboszkóp
+swapchannels,effect,root,channelswap,audio,Swap channels,swapchannels.xml,,swap_channels,Swap Channels,SAME,NAME_MATCH_UNVERIFIED,csatornacsere
+tcolor,effect,root,tcolor,video,Technicolor,tcolor.xml,"oversaturate_cr,oversaturate_cb",tint,Tint,CLOSE,NAME_MATCH_UNVERIFIED,Technicolor-hatás
+Secondary color correction,effect,templates,,,,templates/secondary_color_correction.xml,,lumetri,Lumetri Color,CLOSE,NAME_MATCH_UNVERIFIED,sablon: select0r + blur + transparency + alpha0ps + mask_apply → CFA4: Lumetri HSL másodlagos vagy színmaszkos effekt
+mask_start-frei0r.select0r,effect,templates,,,,templates/secondary_color_correction.xml,,color_key,Color Key,CLOSE,NAME_MATCH_UNVERIFIED,színtartomány-kiválasztás maszkként
+avfilter.gblur,effect,templates,,,,templates/secondary_color_correction.xml,,gaussian_blur,Gaussian Blur,SAME,NAME_MATCH_UNVERIFIED,Gauss
+frei0r.transparency,effect,templates,,,,templates/secondary_color_correction.xml,,alpha_adjust,Alpha Adjust,CLOSE,NAME_MATCH_UNVERIFIED,átlátszóság
+frei0r.alpha0ps,effect,templates,,,,templates/secondary_color_correction.xml,,alpha_adjust,Alpha Adjust,CLOSE,NAME_MATCH_UNVERIFIED,alfa műveletek (elavult változat)
+mask_apply,effect,templates,,,,templates/secondary_color_correction.xml,,,,NA,,maszk-lánc rész; a CFA4 effekt-maszkja (EffectInstance.masks) váltja ki
+secondary-color-correction-v2,effect,templates,,,,templates/secondary_color_correction_v2.xml,,lumetri,Lumetri Color,CLOSE,NAME_MATCH_UNVERIFIED,sablon v2: lásd fent
+mask_start-frei0r.select0r,effect,templates,,,,templates/secondary_color_correction_v2.xml,,color_key,Color Key,CLOSE,NAME_MATCH_UNVERIFIED,színtartomány-kiválasztás maszkként
+avfilter.gblur,effect,templates,,,,templates/secondary_color_correction_v2.xml,,gaussian_blur,Gaussian Blur,SAME,NAME_MATCH_UNVERIFIED,Gauss
+frei0r.transparency,effect,templates,,,,templates/secondary_color_correction_v2.xml,,alpha_adjust,Alpha Adjust,CLOSE,NAME_MATCH_UNVERIFIED,átlátszóság
+frei0r.alpha0ps_alpha0ps,effect,templates,,,,templates/secondary_color_correction_v2.xml,,alpha_adjust,Alpha Adjust,CLOSE,NAME_MATCH_UNVERIFIED,alfa műveletek
+mask_apply,effect,templates,,,,templates/secondary_color_correction_v2.xml,,,,NA,,maszk-lánc rész; a CFA4 effekt-maszkja (EffectInstance.masks) váltja ki
+Shut-off,effect,templates,,,,templates/shut_off.xml,,tv_power,TV Power,CLOSE,NAME_MATCH_UNVERIFIED,sablon: lencsekorr.+RGB split+levels+... → TV Power átmenet-hatás közelítés
+frei0r.lenscorrection,effect,templates,,,,templates/shut_off.xml,,lens_distortion,Lens Distortion,SAME,NAME_MATCH_UNVERIFIED,lencsekorrekció
+frei0r.rgbsplit0r,effect,templates,,,,templates/shut_off.xml,,rgb_split,RGB Split,SAME,NAME_MATCH_UNVERIFIED,RGB eltolás
+frei0r.levels,effect,templates,,,,templates/shut_off.xml,,levels,Levels,SAME,NAME_MATCH_UNVERIFIED,szintek
+boxblur,effect,templates,,,,templates/shut_off.xml,,gaussian_blur,Gaussian Blur,CLOSE,NAME_MATCH_UNVERIFIED,doboz-elmosás ≠ Gauss
+frei0r.scanline0r,effect,templates,,,,templates/shut_off.xml,,crt,CRT,CLOSE,NAME_MATCH_UNVERIFIED,pásztázósorok
+qtblend,effect,templates,,,,templates/shut_off.xml,,transform,Transform,SAME,NAME_MATCH_UNVERIFIED,kompozit+transzformáció
+frei0r.softglow,effect,templates,,,,templates/shut_off.xml,,wonder_glow,Wonder Glow,CLOSE,NAME_MATCH_UNVERIFIED,lágy ragyogás
+threshold,effect,root,threshold,,Binarize,threshold.xml,"midpoint,use_alpha",,,NONE,,bináris küszöb (Binarize); nincs közvetlen
+timer,effect,root,timer,,Timer,timer.xml,"geometry,family,size,style,weight,fgcolour,bgcolour,olcolour,outline,underline,strikethrough,pad,halign,valign,opacity,format,start,duration,offset,speed,direction",timecode,Timecode,CLOSE,NAME_MATCH_UNVERIFIED,időzítő/időkód kiírás
+opencv.tracker,effect,root,opencv.tracker,,Motion Tracker,tracker.xml,"results,algo,steps,shape,shape_width,shape_color,blur,blur_type,modelsfolder,rect,filterjob",,,NONE,,mozgáskövetés; ADR: tracking VFX-6 terv
+typewriter,effect,root,typewriter,text,TypeWriter (for title clips),typewriter.xml,"step_length,step_sigma,random_seed,macro_type",typewriter,Typewriter,SAME,NAME_MATCH_UNVERIFIED,írógép szöveganimáció
+vidstab,effect,root,vidstab,hidden,Stabilize,vidstab.xml,"accuracy,shakiness,stepsize,mincontrast,smoothing,maxshift,maxangle,crop,zoom,optzoom,zoomspeed,sharpen,show,tripod,reload,analyse",warp_stabilizer,Warp Stabilizer,CLOSE,NAME_MATCH_UNVERIFIED,stabilizálás (CFA4 saját; gyroflow külön KDN)
+vignette,effect,root,vignette,,Vignette Effect,vignette.xml,"mode,kdenlive:point,radius,smooth,opacity",vignette,Vignette,SAME,NAME_MATCH_UNVERIFIED,vinyetta
+volume,effect,root,volume,audio,Volume,volume.xml,level,volume,Volume,SAME,NAME_MATCH_UNVERIFIED,volume.level dB (importer kész)
+wave,effect,root,wave,,Wave,wave.xml,"wave,speed,deformX,deformY",wave_warp,Wave Warp,SAME,NAME_MATCH_UNVERIFIED,hullám torzítás
+affine,transition,transition,affine,,Transform,affine.xml,"rect,rotate_x,rotate_y,rotate_z,distort,keyed,transition.repeat_off,transition.mirror_off",transform,Transform,SAME,NAME_MATCH_UNVERIFIED,"klip-tulajdonság, nem átmenet; Transform"
+autoduck,transition,transition,mix,audiotransition,Auto Duck,autoduck.xml,"duck_threshold,duck_attenuation,duck_fade_in,duck_fade_out,sum",,,NONE,,automatikus hangvisszavétel; nincs megfelelő (a CFA4-ben ducking sidechain terv szerint)
+composite,transition,transition,composite,,Composite,composite.xml,"geometry,distort,crop_to_fill,aligned,halign,valign,luma,softness,progressive",transform,Transform,SAME,NAME_MATCH_UNVERIFIED,kompozit + keverési mód
+dissolve,transition,transition,luma,videotransition,Dissolve,dissolve.xml,"resource,softness,reverse,alpha_over,fix_background_alpha",cross_dissolve,Cross Dissolve,SAME,NAME_MATCH_UNVERIFIED,átúsztatás (luma átmenet)
+frei0r.addition,transition,transition-frei0r,frei0r.addition,,Addition,frei0r/frei0r_addition.xml,,,keverési mód: Linear Dodge (Add),BLEND,,keverési mód: Add
+frei0r.addition_alpha,transition,transition-frei0r,frei0r.addition_alpha,,addition_alpha,frei0r/frei0r_addition_alpha.xml,,,keverési mód: Linear Dodge (Add),BLEND,,keverési mód: Add (alfa)
+frei0r.alphaatop,transition,transition-frei0r,frei0r.alphaatop,,Alpha ATOP,frei0r/frei0r_alphaatop.xml,,,keverési mód: (nincs azonos),BLEND,,alfa-művelet (ATOP) — keverési mód/alfa
+frei0r.alphain,transition,transition-frei0r,frei0r.alphain,,Alpha IN,frei0r/frei0r_alphain.xml,,,keverési mód: (nincs azonos),BLEND,,alfa-művelet (IN)
+frei0r.alphaout,transition,transition-frei0r,frei0r.alphaout,,Alpha OUT,frei0r/frei0r_alphaout.xml,,,keverési mód: (nincs azonos),BLEND,,alfa-művelet (OUT)
+frei0r.alphaover,transition,transition-frei0r,frei0r.alphaover,,Alpha OVER,frei0r/frei0r_alphaover.xml,,,keverési mód: Normal,BLEND,,alfa-művelet (OVER) = normál kompozit
+frei0r.alphaxor,transition,transition-frei0r,frei0r.alphaxor,,Alpha XOR,frei0r/frei0r_alphaxor.xml,,,keverési mód: (nincs azonos),BLEND,,alfa-művelet (XOR)
+frei0r.burn,transition,transition-frei0r,frei0r.burn,,Burn,frei0r/frei0r_burn.xml,,,keverési mód: Color Burn,BLEND,,keverési mód: Color Burn
+frei0r.cairoaffineblend,transition,transition-frei0r,frei0r.cairoaffineblend,,Cairo Affine Blend,frei0r/frei0r_cairoaffineblend.xml,"0,1,2,3,4,5,6,7,8",,keverési mód: (nincs azonos),BLEND,,kompozit + transzformáció
+frei0r.cairoblend,transition,transition-frei0r,frei0r.cairoblend,,Cairo Blend,frei0r/frei0r_cairoblend.xml,"0,1",,keverési mód: (nincs azonos),BLEND,,keverési mód (cairo)
+frei0r.color_only,transition,transition-frei0r,frei0r.color_only,,Color Only,frei0r/frei0r_color_only.xml,,,keverési mód: Color,BLEND,,keverési mód: Color
+frei0r.darken,transition,transition-frei0r,frei0r.darken,,Darken,frei0r/frei0r_darken.xml,,,keverési mód: Darken,BLEND,,keverési mód: Darken
+frei0r.difference,transition,transition-frei0r,frei0r.difference,,Difference,frei0r/frei0r_difference.xml,,,keverési mód: Difference,BLEND,,keverési mód: Difference
+frei0r.divide,transition,transition-frei0r,frei0r.divide,,Divide,frei0r/frei0r_divide.xml,,,keverési mód: Divide,BLEND,,keverési mód: Divide
+frei0r.dodge,transition,transition-frei0r,frei0r.dodge,,Dodge,frei0r/frei0r_dodge.xml,,,keverési mód: Color Dodge,BLEND,,keverési mód: Color Dodge
+frei0r.euclid_eraser,transition,transition-frei0r,frei0r.euclid_eraser,,Euclid Eraser,frei0r/frei0r_euclid_eraser.xml,0,,,NONE,,törlő keverés
+frei0r.grain_extract,transition,transition-frei0r,frei0r.grain_extract,,Grain Extract,frei0r/frei0r_grain_extract.xml,,,keverési mód: (nincs azonos),BLEND,,keverési mód: Grain Extract
+frei0r.grain_merge,transition,transition-frei0r,frei0r.grain_merge,,Grain Merge,frei0r/frei0r_grain_merge.xml,,,keverési mód: (nincs azonos),BLEND,,keverési mód: Grain Merge
+frei0r.hardlight,transition,transition-frei0r,frei0r.hardlight,,Hardlight,frei0r/frei0r_hardlight.xml,,,keverési mód: Hard Light,BLEND,,keverési mód: Hard Light
+frei0r.hue,transition,transition-frei0r,frei0r.hue,,Hue,frei0r/frei0r_hue.xml,,,keverési mód: Hue,BLEND,,keverési mód: Hue
+frei0r.lighten,transition,transition-frei0r,frei0r.lighten,,Lighten,frei0r/frei0r_lighten.xml,,,keverési mód: Lighten,BLEND,,keverési mód: Lighten
+frei0r.multiply,transition,transition-frei0r,frei0r.multiply,,Multiply,frei0r/frei0r_multiply.xml,,,keverési mód: Multiply,BLEND,,keverési mód: Multiply
+frei0r.overlay,transition,transition-frei0r,frei0r.overlay,,Overlay,frei0r/frei0r_overlay.xml,,,keverési mód: Overlay,BLEND,,keverési mód: Overlay
+frei0r.sleid0r_push-down,transition,transition-frei0r,frei0r.sleid0r_push-down,videotransition,Push Down,frei0r/frei0r_push-down.xml,position,push,Push,CLOSE,NAME_MATCH_UNVERIFIED,tolás le
+frei0r.sleid0r_push-left,transition,transition-frei0r,frei0r.sleid0r_push-left,videotransition,Push Left,frei0r/frei0r_push-left.xml,position,push,Push,CLOSE,NAME_MATCH_UNVERIFIED,tolás balra
+frei0r.sleid0r_push-right,transition,transition-frei0r,frei0r.sleid0r_push-right,videotransition,Push Right,frei0r/frei0r_push-right.xml,position,push,Push,CLOSE,NAME_MATCH_UNVERIFIED,tolás jobbra
+frei0r.sleid0r_push-up,transition,transition-frei0r,frei0r.sleid0r_push-up,videotransition,Push Up,frei0r/frei0r_push-up.xml,position,push,Push,CLOSE,NAME_MATCH_UNVERIFIED,tolás fel
+frei0r.saturation,transition,transition-frei0r,frei0r.saturation,,Saturation,frei0r/frei0r_saturation.xml,,,keverési mód: Saturation,BLEND,,keverési mód: Saturation
+frei0r.screen,transition,transition-frei0r,frei0r.screen,,Screen,frei0r/frei0r_screen.xml,,,keverési mód: Screen,BLEND,,keverési mód: Screen
+frei0r.sleid0r_slide-down,transition,transition-frei0r,frei0r.sleid0r_slide-down,videotransition,Slide Down,frei0r/frei0r_slide-down.xml,position,slide,Slide,CLOSE,NAME_MATCH_UNVERIFIED,csúsztatás le
+frei0r.sleid0r_slide-left,transition,transition-frei0r,frei0r.sleid0r_slide-left,videotransition,Slide Left,frei0r/frei0r_slide-left.xml,position,slide,Slide,CLOSE,NAME_MATCH_UNVERIFIED,csúsztatás balra
+frei0r.sleid0r_slide-up,transition,transition-frei0r,frei0r.sleid0r_slide-up,videotransition,Slide Up,frei0r/frei0r_slide-right.xml,position,slide,Slide,CLOSE,NAME_MATCH_UNVERIFIED,csúsztatás fel
+frei0r.sleid0r_slide-right,transition,transition-frei0r,frei0r.sleid0r_slide-right,videotransition,Slide Right,frei0r/frei0r_slide-up.xml,position,slide,Slide,CLOSE,NAME_MATCH_UNVERIFIED,csúsztatás jobbra
+frei0r.softlight,transition,transition-frei0r,frei0r.softlight,,Softlight,frei0r/frei0r_softlight.xml,,,keverési mód: Soft Light,BLEND,,keverési mód: Soft Light
+frei0r.subtract,transition,transition-frei0r,frei0r.subtract,,Subtract,frei0r/frei0r_subtract.xml,,,keverési mód: Subtract,BLEND,,keverési mód: Subtract
+frei0r.uvmap,transition,transition-frei0r,frei0r.uvmap,,UV Map,frei0r/frei0r_uvmap.xml,,,,NONE,,UV-leképezés
+frei0r.value,transition,transition-frei0r,frei0r.value,,Value,frei0r/frei0r_value.xml,,,keverési mód: Luminosity,BLEND,,keverési mód: Value
+frei0r.sleid0r_wipe-barn-door-h,transition,transition-frei0r,frei0r.sleid0r_wipe-barn-door-h,videotransition,Horizontal Barn Door Wipe,frei0r/frei0r_wipe-barn-door-h.xml,position,barn_doors,Barn Doors,CLOSE,NAME_MATCH_UNVERIFIED,vízszintes pajtaajtó
+frei0r.sleid0r_wipe-barn-door-v,transition,transition-frei0r,frei0r.sleid0r_wipe-barn-door-v,videotransition,Vertical Barn Door Wipe,frei0r/frei0r_wipe-barn-door-v.xml,position,barn_doors,Barn Doors,CLOSE,NAME_MATCH_UNVERIFIED,függőleges pajtaajtó
+frei0r.sleid0r_wipe-circle,transition,transition-frei0r,frei0r.sleid0r_wipe-circle,videotransition,Circle Wipe,frei0r/frei0r_wipe-circle.xml,position,iris_round,Iris Round,CLOSE,NAME_MATCH_UNVERIFIED,körkitakarás
+frei0r.sleid0r_wipe-down,transition,transition-frei0r,frei0r.sleid0r_wipe-down,videotransition,Wipe Down,frei0r/frei0r_wipe-down.xml,position,wipe,Wipe,CLOSE,NAME_MATCH_UNVERIFIED,törlés le
+frei0r.sleid0r_wipe-left,transition,transition-frei0r,frei0r.sleid0r_wipe-left,videotransition,Wipe Left,frei0r/frei0r_wipe-left.xml,position,wipe,Wipe,CLOSE,NAME_MATCH_UNVERIFIED,törlés balra
+frei0r.sleid0r_wipe-rect,transition,transition-frei0r,frei0r.sleid0r_wipe-rect,videotransition,Rectangular Wipe,frei0r/frei0r_wipe-rect.xml,position,iris_box,Iris Box,CLOSE,NAME_MATCH_UNVERIFIED,négyszög-törlés
+frei0r.sleid0r_wipe-right,transition,transition-frei0r,frei0r.sleid0r_wipe-right,videotransition,Wipe Right,frei0r/frei0r_wipe-right.xml,position,wipe,Wipe,CLOSE,NAME_MATCH_UNVERIFIED,törlés jobbra
+frei0r.sleid0r_wipe-up,transition,transition-frei0r,frei0r.sleid0r_wipe-up,videotransition,Wipe Up,frei0r/frei0r_wipe-up.xml,position,wipe,Wipe,CLOSE,NAME_MATCH_UNVERIFIED,törlés fel
+luma,transition,transition,luma,,Luma,luma.xml,"resource,softness,alpha_over,fix_background_alpha,invert,reverse",gradient_wipe,Gradient Wipe,CLOSE,NAME_MATCH_UNVERIFIED,luma-maszkos átmenet (CC0 lumák: KDN-21)
+matte,transition,transition,matte,,Matte,matte.xml,,track_matte,Track Matte Key,CLOSE,NAME_MATCH_UNVERIFIED,matte-kulcs
+mix,transition,transition,mix,audiotransition,Audio Mix,mix.xml,reverse,constant_power,Constant Power,CLOSE,NAME_MATCH_UNVERIFIED,hang-keresztáttűnés
+qtblend,transition,transition,qtblend,,Composite and transform,qtblend.xml,"rect,rotation,compositing,distort,rotate_center",transform,Transform,SAME,NAME_MATCH_UNVERIFIED,kompozit+transzformáció
+region,transition,transition,region,,Regionalize,region.xml,"resource,composite.geometry,composite.operator,composite.aligned,composite.fill,composite.distort,composite.luma,composite.softness,luma_invert,composite.progressive,composite.deinterlace",,,NA,,régió-maszkolás; CFA4: Mask
+slide,transition,transition,affine,videotransition,Slide,slide.xml,rect,slide,Slide,SAME,NAME_MATCH_UNVERIFIED,csúsztatás
+vqm,transition,transition,vqm,,Video Quality Measurement,vqm.xml,render,,,NA,,minőségmérés; QC modul
+wipe,transition,transition,composite,short,Wipe,wipe.xml,"luma,softness,luma_invert,geometry,aligned,fill",wipe,Wipe,SAME,NAME_MATCH_UNVERIFIED,törlés

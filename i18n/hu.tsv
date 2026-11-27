@@ -2186,6 +2186,7 @@
 	BDAV Transport Stream (.m2ts, AAC audio)	BDAV transzportfolyam (.m2ts, AAC hang)
 	Chroma	Króma
 	Elementary Stream (.m2v, no audio)	Elemi folyam (.m2v, hang nélkül)
+	DVD-Video folder (VIDEO_TS)	DVD-Video mappa (VIDEO_TS)
 	Key Frame Distance	Kulcskockák távolsága
 	None (I and P only)	Nincs (csak I és P)
 	Off (target bitrate)	Ki (célbitráta)
@@ -5001,6 +5002,11 @@ export.summary	Low	alacsony
 	Thresholds	Küszöbök
 	Trail	Nyomvonal
 	Use gestures in the window	Gesztusok használata az ablakban
+	DVD-Video PAL 16:9	DVD-Video PAL 16:9
+	DVD-Video folder (VIDEO_TS): MPEG-2 720×576 at 25 fps, 16:9 anamorphic, 6 Mbps, GOP 15, AC-3 192 kbps, chapters from the sequence's Chapter markers	DVD-Video mappa (VIDEO_TS): MPEG-2 720×576, 25 fps, 16:9 anamorf, 6 Mbps, GOP 15, AC-3 192 kbps, fejezetek a szekvencia Fejezet jelölőiből
+	DVD-Video NTSC 16:9	DVD-Video NTSC 16:9
+	DVD-Video folder (VIDEO_TS): MPEG-2 720×480 at 29.97 fps, 16:9 anamorphic, 6 Mbps, GOP 18, AC-3 192 kbps, chapters from the sequence's Chapter markers	DVD-Video mappa (VIDEO_TS): MPEG-2 720×480, 29,97 fps, 16:9 anamorf, 6 Mbps, GOP 18, AC-3 192 kbps, fejezetek a szekvencia Fejezet jelölőiből
+	DVD-Video folder	DVD-Video mappa
 
 # DCP package views (DCP-23)
 	Package	Csomag

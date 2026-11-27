@@ -4972,6 +4972,11 @@ export.summary	Low	matala
 	Thresholds	Kynnykset
 	Trail	Jälki
 	Use gestures in the window	Käytä eleitä ikkunassa
+	DVD-Video folder (VIDEO_TS)	DVD-Video-kansio (VIDEO_TS)
+	DVD-Video PAL 16:9	DVD-Video PAL 16:9
+	DVD-Video folder (VIDEO_TS): MPEG-2 720×576 at 25 fps, 16:9 anamorphic, 6 Mbps, GOP 15, AC-3 192 kbps, chapters from the sequence's Chapter markers	DVD-Video-kansio (VIDEO_TS): MPEG-2 720×576, 25 fps, 16:9 anamorfinen, 6 Mbps, GOP 15, AC-3 192 kbps, luvut sekvenssin lukumerkeistä
+	DVD-Video NTSC 16:9	DVD-Video NTSC 16:9
+	DVD-Video folder (VIDEO_TS): MPEG-2 720×480 at 29.97 fps, 16:9 anamorphic, 6 Mbps, GOP 18, AC-3 192 kbps, chapters from the sequence's Chapter markers	DVD-Video-kansio (VIDEO_TS): MPEG-2 720×480, 29.97 fps, 16:9 anamorfinen, 6 Mbps, GOP 18, AC-3 192 kbps, luvut sekvenssin lukumerkeistä
 
 # DCP package views (DCP-23)
 	Package	Paketti
