@@ -2,14 +2,30 @@
 //! decodes them as the oracle. TrueHD is lossless, so the samples must be equal (24-bit integers
 //! in f32 are exact), and a window read on a fresh source (random access, which pre-rolls to a
 //! major sync) must give the same samples as the continuous read.
+//!
+//! ffmpeg's encoder stops at 5.1, so the 8-channel (7.1) cases use a real TrueHD 7.1 track from the
+//! sample folder (#111): set `CFA4_SAMPLES` to it (default `/mnt/project-files/samples`); those
+//! tests are skipped when the sample is absent.
 
 mod common;
+
+use std::path::PathBuf;
 
 use cfa4_media::MediaSource;
 use common::*;
 
 const SURROUND: &str =
     "aevalsrc=exprs=0.3*sin(2*PI*300*t)|0.3*sin(2*PI*400*t)|0.3*sin(2*PI*500*t)|0.3*sin(2*PI*60*t)|0.2*sin(2*PI*700*t)|0.2*sin(2*PI*800*t):s=48000:c=5.1(side)";
+/// The real TrueHD 7.1 sample (Dolby test file, not part of the repository), if present.
+fn sample_71() -> Option<PathBuf> {
+    let root = std::env::var_os("CFA4_SAMPLES").map(PathBuf::from).unwrap_or_else(|| PathBuf::from("/mnt/project-files/samples"));
+    let p = root.join("dolby-testfiles").join("Dolby TrueHD 7.1.mkv");
+    p.is_file().then_some(p)
+}
+
+/// Seconds of the real sample the 7.1 tests decode.
+const SAMPLE_SECONDS: usize = 6;
+
 const STEREO: &str = "anoisesrc=color=pink:sample_rate=96000:amplitude=0.3:seed=5,pan=stereo|c0=c0|c1=-0.5*c0";
 
 #[test]
@@ -50,7 +66,7 @@ fn truehd_in_matroska_and_mp4_is_bit_exact() {
 /// TrueHD as Blu-ray carries it: a BDAV transport stream (192-byte packets) whose TrueHD PID
 /// interleaves the AC-3 core frames between the access units. The units must be the TrueHD ones
 /// only, decoding bit-exact to ffmpeg's decode of the raw stream, with random access exact.
-/// ffmpeg's encoder stops at 5.1, so this is 5.1 (7.1 needs a disc sample).
+/// ffmpeg's encoder stops at 5.1, so this is 5.1; the 7.1 case with a real sample follows below.
 #[test]
 fn truehd_in_bdav_with_an_ac3_core_is_bit_exact() {
     let ff = cfa4_testkit::require_ffmpeg!();
@@ -99,6 +115,93 @@ fn truehd_in_bdav_with_an_ac3_core_is_bit_exact() {
         }
     }
     println!("{name}: {} TrueHD access units and {} AC-3 core frames, {n} samples bit-exact", aus.len(), frames.len());
+}
+
+/// A real TrueHD 7.1 track in Matroska (8 channels, which ffmpeg's encoder cannot write): the
+/// channel count, the samples against ffmpeg's decode, and random access on a fresh source.
+#[test]
+fn truehd_7_1_real_sample_in_matroska_is_bit_exact() {
+    let ff = cfa4_testkit::require_ffmpeg!();
+    let Some(path) = sample_71() else {
+        eprintln!("skipped: the TrueHD 7.1 sample is not found");
+        return;
+    };
+    let data = bytes(&path);
+    let src = cfa4_codecs::open_bytes("Dolby TrueHD 7.1.mkv", data.clone()).unwrap();
+    let a = src.info().audio().cloned().unwrap();
+    assert_eq!((a.codec.as_str(), a.sample_rate, a.channels), ("Dolby TrueHD", 48_000, 8));
+    let n = SAMPLE_SECONDS * 48_000;
+    let t = SAMPLE_SECONDS.to_string();
+    let want = ffmpeg_audio_f32(&ff, &path, &["-t", &t]);
+    assert_eq!(want.len(), n * 8, "ffmpeg decoded {} samples", want.len() / 8);
+    let ours = src.audio(0, n, 48_000).unwrap().channels;
+    assert_eq!(ours.len(), 8);
+    let bad: usize = (0..8).map(|c| (0..n).filter(|&i| ours[c][i] != want[i * 8 + c]).count()).sum();
+    assert_eq!(bad, 0, "{bad} of {} samples differ from ffmpeg", n * 8);
+    for at in [n / 2 + 11, 9] {
+        let fresh = cfa4_codecs::open_bytes("Dolby TrueHD 7.1.mkv", data.clone()).unwrap();
+        let win = fresh.audio(at as i64, 4800, 48_000).unwrap().channels;
+        for c in 0..8 {
+            assert!(win[c].iter().zip(&ours[c][at..]).all(|(x, y)| x == y), "random access at {at}, channel {c}");
+        }
+    }
+    println!("Dolby TrueHD 7.1.mkv: 8 ch, {n} samples bit-exact, random access exact");
+}
+
+/// The real TrueHD 7.1 access units as Blu-ray carries them: a BDAV stream whose TrueHD PID
+/// interleaves AC-3 core frames between the access units. The core is the 5.1 AC-3 ffmpeg encodes
+/// (a disc's core is the 5.1 downmix of the 7.1), the TrueHD side the sample's own units.
+#[test]
+fn truehd_7_1_real_sample_in_bdav_with_an_ac3_core_is_bit_exact() {
+    let ff = cfa4_testkit::require_ffmpeg!();
+    let Some(path) = sample_71() else {
+        eprintln!("skipped: the TrueHD 7.1 sample is not found");
+        return;
+    };
+    let t = SAMPLE_SECONDS.to_string();
+    let thd_args = ["-i", path.to_str().unwrap(), "-map", "0:a:0", "-t", &t, "-c:a", "copy", "-f", "truehd"];
+    let thd = fixture(&ff, "truehd_71_real.thd", &thd_args).expect("could not extract the TrueHD 7.1 units");
+    let ac3_args = ["-f", "lavfi", "-i", SURROUND, "-t", &t, "-c:a", "ac3", "-b:a", "640k", "-f", "ac3"];
+    let ac3 = fixture(&ff, "truehd_71_real_core.ac3", &ac3_args).expect("could not write the AC-3 core");
+    let (thd_bytes, ac3_bytes) = (std::fs::read(&thd).unwrap(), std::fs::read(&ac3).unwrap());
+    let aus = split(&thd_bytes, |b| ((usize::from(b[0] & 0x0F) << 8) | usize::from(b[1])) * 2);
+    let frames = split(&ac3_bytes, |b| cfa4_mpegts::frame_bytes(&cfa4_mpegts::Codec::Ac3, b).unwrap());
+    let mut pes = Vec::new();
+    let (mut a, mut f) = (0, 0);
+    while a < aus.len() {
+        if f < frames.len() && f * 1536 <= a * 40 {
+            pes.push((f as u64 * 2880, frames[f].to_vec()));
+            f += 1;
+        } else {
+            let first = a;
+            let mut data = Vec::new();
+            while a < aus.len() && !(f < frames.len() && f * 1536 <= a * 40) && data.len() < 4000 {
+                data.extend_from_slice(aus[a]);
+                a += 1;
+            }
+            pes.push((first as u64 * 75, data));
+        }
+    }
+    let m2ts = bdav(&pes);
+    let name = "truehd_71_real_ac3_core.m2ts";
+    let src = cfa4_codecs::MpegSource::open(name, m2ts.clone().into()).unwrap();
+    let info = src.info().audio().cloned().unwrap();
+    assert_eq!((info.codec.as_str(), info.sample_rate, info.channels), ("Dolby TrueHD", 48_000, 8));
+    let want = ffmpeg_audio_f32(&ff, &thd, &[]);
+    let n = want.len() / 8;
+    let (start, len) = src.audio_extent().unwrap();
+    assert_eq!(len as usize, n, "TrueHD samples only, the AC-3 core left out");
+    let ours = src.audio(start, n, 48_000).unwrap().channels;
+    let bad: usize = (0..8).map(|c| (0..n).filter(|&i| ours[c][i] != want[i * 8 + c]).count()).sum();
+    assert_eq!(bad, 0, "{bad} of {} samples differ from ffmpeg", n * 8);
+    for at in [n / 2 + 13, 5] {
+        let fresh = cfa4_codecs::open_bytes(name, m2ts.clone().into()).unwrap();
+        let win = fresh.audio(start + at as i64, 4800, 48_000).unwrap().channels;
+        for c in 0..8 {
+            assert!(win[c].iter().zip(&ours[c][at..]).all(|(x, y)| x == y), "random access at {at}, channel {c}");
+        }
+    }
+    println!("{name}: {} TrueHD 7.1 access units and {} AC-3 core frames, {n} samples bit-exact", aus.len(), frames.len());
 }
 
 /// `data` cut into the frames `len` gives from each one's header.
