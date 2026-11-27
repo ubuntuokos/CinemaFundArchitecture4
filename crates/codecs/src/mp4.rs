@@ -575,7 +575,8 @@ impl VideoSamples for Mp4Video<'_> {
     fn make_decoder(&self) -> crate::Result<Box<dyn VideoDecoder>> {
         let entry = &self.src.file.tracks[self.track].entries[0];
         if let Some(detected) = dnx_detected(entry) {
-            return Ok(Box::new(crate::video::DnxDecoder { ffmpeg_compat: self.src.dnx.ffmpeg(detected) }));
+            let dnx = Box::new(crate::video::DnxDecoder { ffmpeg_compat: self.src.dnx.ffmpeg(detected) });
+            return Ok(crate::lcevc::LcevcDecoder::wrap(dnx, self.src.lcevc));
         }
         Ok(crate::lcevc::LcevcDecoder::wrap(make_video_decoder(entry)?, self.src.lcevc))
     }

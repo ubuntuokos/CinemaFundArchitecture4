@@ -74,9 +74,10 @@ and `EncoderConfig::ffmpeg_compat` select its behaviour, for files FFmpeg wrote 
 for FFmpeg-based tools. The engine (`cfa4-codecs`) switches the decoder to it by itself for files
 FFmpeg encoded or wrote (MOV/MP4: the sample entry's compressor name `Lavc…`, which a stream
 copy keeps; the muxer's `©too` alone is not enough, it is on rewrapped standard streams too; MXF:
-the Identification set `FFmpeg`, since FFmpeg records no encoder there, so a standard 4:4:4
-Y′CbCr stream that FFmpeg rewrapped into MXF needs the manual switch). Black-box probes (`src/ffmpeg_probe.rs`: streams with a single
-coefficient, decoded by FFmpeg, measured with a forward DCT) pinned down FFmpeg's behaviour.
+the Identification set's company / product `FFmpeg` or `Lavf…`, since FFmpeg records no encoder
+there, so a standard 4:4:4 Y′CbCr stream that FFmpeg rewrapped into MXF needs the manual switch).
+Black-box probes (`src/ffmpeg_probe.rs`: streams with a single coefficient, decoded by FFmpeg,
+measured with a forward DCT) pinned down FFmpeg's behaviour.
 
 1. **Inverse quantisation (§8.2.7).** Equation (8.1) reconstructs a quantised amplitude `A` near
    `(A + ½)·W·qsf/p` (integer arithmetic, `+ p/2` when `W ≠ p`); the encoder quantises by
@@ -167,4 +168,5 @@ lower bounds by a factor of roughly 4–10:
 - Encoder: no thin-raster DNxHD (1244, 1258–1260), alpha or VBR output; no RDO/trellis.
 - CIDs 1256/1260 and alpha decoding are implemented from the standard but have no oracle
   fixtures, because no available encoder produces them.
-- No MXF; DNx in MOV only (via `cfa4-isobmff` / `cfa4-codecs`).
+- Containers: DNx is read and written in QuickTime/MP4 (`cfa4-isobmff` / `cfa4-codecs`) and in
+  MXF (OP1a / OP-Atom, `cfa4-mxf`); this crate itself handles the bare coded frames only.
