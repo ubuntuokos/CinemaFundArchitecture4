@@ -26,7 +26,8 @@ Usage:
     python3 scripts/dev/av2-oracle.py hash NAME... [--allow-no-cross-check]
 
 Then: CFA4_REQUIRE_AV2_ORACLE=1 cargo test -p cfa4-testkit av2
-Requirements: git, cmake, ninja, nasm, a C/C++ compiler, ffmpeg (sources only).
+Requirements: git, cmake, ninja, nasm, a C/C++ compiler, and for the sources only CFA4's pinned
+FFmpeg (packaging/ffmpeg-version.env; docs/testing.md §2; scripts/dev/fetch-ffmpeg.sh), never the Ubuntu ffmpeg.
 """
 
 from __future__ import annotations
@@ -56,6 +57,33 @@ def run(cmd: list[str], **kw) -> subprocess.CompletedProcess:
 
 def die(msg: str) -> None:
     sys.exit(f"av2-oracle: {msg}")
+
+
+def pinned_ffmpeg_version(root: Path = Path(__file__).resolve().parents[2]) -> str:
+    """CFA4_FFMPEG_VERSION from packaging/ffmpeg-version.env, the one place it is set (CFA4-FFMPEG-9.1-001 R1)."""
+    path = root / "packaging" / "ffmpeg-version.env"
+    for line in path.read_text(encoding="utf-8").splitlines():
+        name, sep, value = line.partition("=")
+        if sep and name.strip() == "CFA4_FFMPEG_VERSION":
+            return value.strip()
+    raise KeyError(f"CFA4_FFMPEG_VERSION is not set in {path}")
+
+
+FFMPEG_VERSION = pinned_ffmpeg_version()
+
+
+def require_pinned_ffmpeg() -> None:
+    """The corpus sources come only from CFA4's pinned FFmpeg (docs/testing.md §2)."""
+    if shutil.which("ffmpeg") is None:
+        die(f"ffmpeg not found; install FFmpeg {FFMPEG_VERSION} with scripts/dev/fetch-ffmpeg.sh")
+    r = run(["ffmpeg", "-version"])
+    words = r.stdout.split()
+    got = words[2] if r.returncode == 0 and len(words) > 2 else "unknown"
+    if got != FFMPEG_VERSION:
+        die(
+            f"the ffmpeg on PATH is {got}, not the pinned {FFMPEG_VERSION}: put "
+            f"/opt/cfa4/ffmpeg-{FFMPEG_VERSION}/bin first on PATH (scripts/dev/fetch-ffmpeg.sh)"
+        )
 
 
 def pin(manifest: dict, ref: str) -> dict:
@@ -133,9 +161,13 @@ def cmd_corpus(args: argparse.Namespace) -> int:
     sources_dir.mkdir(parents=True, exist_ok=True)
 
     sources = {}
+    ffmpeg_checked = False
     for name, s in manifest["sources"].items():
         path = sources_dir / f"{name}.y4m"
         if not path.exists():
+            if not ffmpeg_checked:
+                require_pinned_ffmpeg()
+                ffmpeg_checked = True
             tmp = path.with_suffix(".tmp.y4m")
             r = run(
                 [

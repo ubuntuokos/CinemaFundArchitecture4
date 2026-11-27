@@ -37,6 +37,7 @@
 	Arrange	Упорядочить
 	Assembly	Сборка
 	Attach Proxies…	Прикрепить прокси…
+	Find Camera Proxies	Найти прокси камеры
 	Audio	Аудио
 	Audio Channels…	Аудиоканалы…
 	Audio Clip Mixer	Микшер аудиоклипов
@@ -2394,6 +2395,10 @@
 	Show Clip Mismatch Warning dialog	Показывать предупреждение о несоответствии клипа
 	Show Event Indicator	Показывать индикатор событий
 	Show Focus Area	Показывать область фокуса
+	Rack Focus	Перевод фокуса
+	Focus Point A	Точка фокуса A
+	Focus Point B	Точка фокуса B
+	Rack	Перевод
 	Show Home	Показывать главную страницу
 	Show Mask Tracker Preview	Показывать предпросмотр трекинга маски
 	Show Only Noise	Показывать только шум
@@ -3634,6 +3639,7 @@
 	Social Deliverables…	Материалы для соцсетей…
 	Counter	Счётчик
 	Word by Word	По словам
+	Scramble	Перемешивание
 	Animator	Аниматор
 	Animator Duration	Длительность аниматора
 	Animator Delay	Задержка аниматора
@@ -3698,7 +3704,7 @@
 	MPEG-2 video (Main Profile 4:2:0, 0.4 bits per pixel) at the sequence's frame size and rate, 16-bit 48 kHz LPCM, .mpg	Видео MPEG-2 (Main Profile 4:2:0, 0,4 бита на пиксель) с размером кадра и частотой секвенции, LPCM 16 бит 48 кГц, .mpg
 	MPEG-2 video 1920×1080, 18 Mbps average, AAC 192 kbps, .ts	Видео MPEG-2 1920×1080, в среднем 18 Мбит/с, AAC 192 кбит/с, .ts
 	Media Backends	Медиабэкенды
-	Use FFmpeg for files the CFA4 engine cannot open (FFmpeg 9.0.2 or later, GPL-3 build)	Использовать FFmpeg для файлов, которые движок CFA4 не открывает (FFmpeg 9.0.2 или новее, сборка GPL-3)
+	Use FFmpeg for files the CFA4 engine cannot open (FFmpeg 9.1 or later, GPL-3 build)	Использовать FFmpeg для файлов, которые движок CFA4 не открывает (FFmpeg 9.1 или новее, сборка GPL-3)
 	Use the system's GStreamer for files neither the engine nor FFmpeg can open	Использовать системный GStreamer для файлов, которые не открывают ни движок, ни FFmpeg
 	Analyze Source for Smart Cut	Анализ источника для Smart Cut
 	Plan Smart Cut	Спланировать Smart Cut
@@ -4161,6 +4167,11 @@
 	Burn Size	Размер прожога
 	Ember Width	Ширина тлеющей кромки
 	Ember Color	Цвет тлеющей кромки
+	Tear Away	Отрыв
+	Tear Roughness	Неровность разрыва
+	Paper Edge Width	Ширина бумажного края
+	Stamp Cut	Почтовая марка
+	Perforations	Перфорация
 	Check Text Legibility	Проверить читаемость текста
 	Clear Legibility Markers	Удалить маркеры читаемости
 	Text legibility: no problems found	Читаемость текста: проблем не найдено
@@ -4200,6 +4211,9 @@
 	Dither	Дизеринг
 	Pattern	Узор
 	Cell Size	Размер ячейки
+	Pixelate	Пикселизация
+	Cell Shape	Форма ячейки
+	LED	LED
 	Cyan Angle	Угол голубого
 	Magenta Angle	Угол пурпурного
 	Yellow Angle	Угол жёлтого
@@ -4521,6 +4535,13 @@
 	The keys stay in memory only, until Forget DCP Keys or the end of the session.	Ключи хранятся только в памяти, до команды «Забыть ключи DCP» или конца сеанса.
 	DCP keys forgotten	Ключи DCP забыты
 	Choose the KDM file and the private key.	Выберите файл KDM и закрытый ключ.
+	Load even if the certificate chain is not verified	Загружать и с непроверенной цепочкой сертификатов
+	Bundle: {loaded} of {total} KDMs loaded, {other} for other recipients	Пакет: загружено {loaded} из {total} KDM, {other} для других получателей
+	Not loaded: {path}: {problem}	Не загружено: {path}: {problem}
+	Signature verified: {chain}	Подпись проверена: {chain}
+	Signature not verified: {problem}	Подпись не проверена: {problem}
+	KDM required	Требуется KDM
+	Encrypted: load the KDM with content key {keys}	Зашифровано: загрузите KDM с ключом содержимого {keys}
 
 # Settings ▸ Timecode Sync (TC-4)
 	Timecode Sync	Синхронизация тайм-кода
@@ -4529,6 +4550,8 @@
 	Follow external timecode during playback	Следовать за внешним тайм-кодом при воспроизведении
 	Lock after	Захват после
 	Keep playing without signal for	Продолжать без сигнала в течение
+	Varispeed: adjust the playback speed instead of seeking	Varispeed: подстраивать скорость воспроизведения вместо перехода
+	User bits	Пользовательские биты
 	External frame rate	Внешняя частота кадров
 	Offset (added to the external timecode)	Смещение (прибавляется к внешнему тайм-коду)
 	LTC	LTC
@@ -4553,3 +4576,380 @@
 	Chase External Timecode	Следовать за внешним тайм-кодом
 	Send LTC	Передавать LTC
 	Send MIDI Timecode	Передавать MIDI тайм-код
+
+# Live studio preview (CFA4-LIVE-STUDIO-001 S0)
+	Live studio preview	Предпросмотр студии прямого эфира
+	Live studio: stopped	Студия прямого эфира: остановлена
+	Live studio: {state}	Студия прямого эфира: {state}
+	Live studio: {error}	Студия прямого эфира: {error}
+	restarted after {count} crashes (last: {exit})	перезапущена после {count} сбоев (последний: {exit})
+	software backend: {reason}	программный бэкенд: {reason}
+	Start studio	Запустить студию
+	Stop studio	Остановить студию
+	Add Studio Scene	Добавить сцену студии
+	Live	Прямой эфир
+# Credits: title, opening, chapter and lower-third pages filled from a graphics template (F10-C16)
+	Opening Credits	Начальные титры
+	Chapter Title	Название главы
+	Lower Third	Плашка
+	page {page}: graphics template “{template}” was not found; “{used}” is used	страница {page}: графический шаблон “{template}” не найден; используется “{used}”
+	page {page}: graphics template “{template}” has no field for all of the block's text; the rest is left out	страница {page}: в графическом шаблоне “{template}” нет поля для всего текста блока; остальное пропущено
+	page {page}: template field “{control}” → “{part}” is not used (no such text control, or not head, body or tail)	страница {page}: поле шаблона “{control}” → “{part}” не используется (нет такого текстового элемента или это не заголовок, основной текст или подпись)
+	page {page}: pictures are left out on title, opening, chapter and lower-third pages	страница {page}: на страницах заглавия, начальных титров, главы и плашки изображения пропускаются
+# Auto Color, Auto Contrast, Auto Levels (EffectsSDK review)
+	Auto Color	Автоцвет
+	Auto Contrast	Автоконтраст
+	Auto Levels	Автоуровни
+	Temporal Smoothing (seconds)	Временное сглаживание (секунды)
+	Scene Detect	Обнаружение сцен
+	Black Clip	Отсечение чёрного
+	White Clip	Отсечение белого
+	Snap Neutral Midtones	Нейтральные средние тона
+# Layout presets: PiP corners, split screen (EffectsSDK review)
+	PiP 35% Upper Left	«Картинка в картинке» 35% слева вверху
+	Picture-in-picture: 35 % scale in the upper left	«Картинка в картинке»: масштаб 35 % в левом верхнем углу
+	PiP 35% Lower Left	«Картинка в картинке» 35% слева внизу
+	Picture-in-picture: 35 % scale in the lower left	«Картинка в картинке»: масштаб 35 % в левом нижнем углу
+	PiP 35% Lower Right	«Картинка в картинке» 35% справа внизу
+	Picture-in-picture: 35 % scale in the lower right	«Картинка в картинке»: масштаб 35 % в правом нижнем углу
+	Split Screen Left	Разделённый экран слева
+	Split screen: the middle half of the picture fills the left half of the frame	Разделённый экран: средняя половина изображения заполняет левую половину кадра
+	Split Screen Right	Разделённый экран справа
+	Split screen: the middle half of the picture fills the right half of the frame	Разделённый экран: средняя половина изображения заполняет правую половину кадра
+# Creative Looks: CRT (P3)
+	CRT	CRT
+	Scanline Strength	Сила строк
+	Line Count	Число строк
+	Mask	Маска
+	Mask Strength	Сила маски
+	Corner Darkening	Затемнение углов
+	Aperture Grille	Апертурная решётка
+	Shadow Mask	Теневая маска
+	Slot Mask	Щелевая маска
+# Creative Looks: Oil Paint (P4)
+	Oil Paint	Масляная живопись
+	Detail	Детализация
+	Texture	Текстура
+	Facet	Грани
+	Daubs	Мазки
+	Dry Brush	Сухая кисть
+	Fresco	Фреска
+	Knife	Мастихин
+	Sponge	Губка
+# Creative Looks: Pixel Sort (P5)
+	Pixel Sort	Сортировка пикселей
+	Sort By	Сортировать по
+	Lower Threshold	Нижний порог
+	Upper Threshold	Верхний порог
+	Ascending	По возрастанию
+# Temporal Denoise (EffectsSDK review)
+	Temporal Denoise	Временное шумоподавление
+	Frames Each Side	Кадров с каждой стороны
+	Motion Threshold	Порог движения
+	Show Motion	Показать движение
+	No signal	Нет сигнала
+	Locating	Поиск
+	Locked	Синхронизировано
+	Freewheel	Свободный ход
+	Scrubbing	Прокрутка
+	Sending	Отправка
+
+# DCP subtitle export (#938)
+	Subtitles from the first caption track	Субтитры из первой дорожки субтитров
+	The package language	Язык пакета
+	Inter Regular (built in), or an OpenType / TrueType file	Inter Regular (встроенный) или файл OpenType / TrueType
+	Subtitle language	Язык субтитров
+	Subtitle font	Шрифт субтитров
+	Fonts	Шрифты
+
+# AS-11 metadata in MXF OP1a (#96)
+	AS-11 Core	AS-11 Core
+	AS-11 Parts	Части AS-11
+	AS-11 UK DPP	AS-11 UK DPP
+# Control surfaces (qt-control-surfaces-page, CFA4-CONTROL-SURFACE-001)
+	Connected	Подключено
+	Device	Устройство
+	Devices	Устройства
+	Disabled	Отключено
+	HID jog/shuttle	HID jog/shuttle
+	MIDI	MIDI
+	Not connected	Не подключено
+	OSC	OSC
+	Use	Использовать
+	{device} ({port})	{device} ({port})
+	{name}: {error}	{name}: {error}
+# Control surfaces (midi-monitor, CFA4-CONTROL-SURFACE-001)
+	MIDI Monitor	MIDI-монитор
+	Press Start Monitor, then move a control.	Нажмите «Запустить монитор», затем подвигайте элемент управления.
+	Start Monitor	Запустить монитор
+	Stop Monitor	Остановить монитор
+	… {count} messages not shown (too many at once)	… {count} сообщений не показано (слишком много сразу)
+# Control surfaces (midi-learn, CFA4-CONTROL-SURFACE-001)
+	A control surface asked for {command}, which does not exist.	Поверхность управления запросила {command}, которой не существует.
+	Assignments	Назначения
+	Cancel Learn	Отменить обучение
+	Control	Элемент управления
+	Learn	Обучить
+	Remove this assignment	Удалить это назначение
+	{control} runs {command}.	{control} выполняет {command}.
+# Control surfaces (shuttlepro, CFA4-CONTROL-SURFACE-001)
+	Button {n}	Кнопка {n}
+# Control surfaces (continuous-values, CFA4-CONTROL-SURFACE-001)
+	{strip} Pan (knob)	{strip} панорама (ручка)
+	{strip} Volume (fader)	{strip} громкость (фейдер)
+# Control surfaces (F1 Learn and profile, CFA4-CONTROL-SURFACE-001)
+	Assignments run when a button is pressed (a fader or knob counts as pressed past half way); a fader or knob assigned to a mixer strip moves its volume or pan. A ShuttlePRO's shuttle ring plays at its profile's speeds and its jog wheel steps frame by frame. Endless encoders and feedback to the controller (lights, motor faders) come in a later version.	Назначения срабатывают по нажатию кнопки (фейдер или ручка считаются нажатыми за серединой); фейдер или ручка, назначенные на полосу микшера, двигают громкость или панораму. Кольцо shuttle ShuttlePRO играет со скоростями профиля, а колесо jog шагает по кадру. Бесконечные энкодеры и отклик на пульт (лампы, моторные фейдеры) появятся в следующей версии.
+	First message (ms)	Первое сообщение (мс)
+	Silence (ms)	Тишина (мс)
+	Waiting for the control to settle…	Ожидание, пока орган успокоится…
+	Type: {hint}. Confirm this assignment.	Тип: {hint}. Подтвердите это назначение.
+	That control is already assigned. Confirm replaces it.	Этот орган уже назначен. Подтверждение заменит его.
+	Learn timed out.	Время обучения истекло.
+	Confirm	Подтвердить
+	Reject	Отклонить
+	Shows every MIDI message from the controllers as it arrives, to check that a controller sends and what it sends. MIDI Clock, Active Sensing and MIDI Time Code are left out.	Показывает каждое MIDI-сообщение с пультов по мере прихода, чтобы проверить, что пульт шлёт и что именно. MIDI Clock, Active Sensing и MIDI-таймкод скрыты.
+	Pick a command (or a mixer strip for a fader or knob), press Learn, then press the button or move the control past half way. Confirm keeps the assignment. OK saves the assignments.	Выберите команду (или полосу микшера для фейдера или ручки), нажмите Обучить, затем кнопку или сдвиньте орган за середину. Подтверждение сохраняет назначение. ОК записывает назначения.
+	All devices	Все устройства
+	Builtin: {name}	Встроенный: {name}
+	Capturing	Захват
+	Confirmed	Подтверждено
+	Conflict	Конфликт
+	Connect a MIDI controller or a ShuttlePRO to edit its profile.	Подключите MIDI-контроллер или ShuttlePRO, чтобы править его профиль.
+	Control Surfaces…	Поверхности управления…
+	Filter messages	Фильтр сообщений
+	Idle	Ожидание
+	Kernel dropped: {count}	Отброшено ядром: {count}
+	Learn Assignments…	Обучение назначениям…
+	Load profile	Загрузить профиль
+	MIDI Monitor…	Монитор MIDI…
+	Mute shuttle sound	Заглушить звук шаттла
+	No conflicts.	Конфликтов нет.
+	No profile warnings.	Предупреждений профиля нет.
+	No project profile is stored.	Профиль проекта не сохранён.
+	OK writes the preferences and the profile file together.	OK записывает настройки и файл профиля вместе.
+	Online	В сети
+	Pending	Ожидает
+	Pickup (14-bit)	Подхват (14 бит)
+	Pickup (7-bit)	Подхват (7 бит)
+	Profile warnings	Предупреждения профиля
+	Rejected	Отклонено
+	Show Active Sensing	Показывать Active Sensing
+	Show MIDI Clock	Показывать MIDI-часы
+	Show MIDI Time Code	Показывать временной код MIDI
+	The profile file is damaged. Preferences and the built-in profile stay in use.	Файл профиля повреждён. Настройки и встроенный профиль остаются в работе.
+	Timed out	Время истекло
+	Type: {hint}	Тип: {hint}
+	User profile file	Файл профиля пользователя
+	{received} received, {dispatched} dispatched, {coalesced} coalesced, {stalls} stalls, {errors} errors	{received} получено, {dispatched} передано, {coalesced} объединено, {stalls} ожиданий, {errors} ошибок
+
+# Control Surfaces settings page (CS-1, #1187)
+	Looking for devices…	Поиск устройств…
+	No MIDI controller or jog/shuttle device was found. Connect one and press Refresh.	MIDI-контроллер или устройство jog/shuttle не найдено. Подключите его и нажмите «Обновить».
+	Control Surfaces	Панели управления
+	Use control surfaces (MIDI controllers, jog/shuttle devices)	Использовать панели управления (MIDI-контроллеры, устройства jog/shuttle)
+	Mapping controls to commands, MIDI Learn and the MIDI Monitor come in a later version; the choices here are remembered until then.	Назначение элементов управления командам, MIDI Learn и MIDI-монитор появятся в более поздней версии; до тех пор выбранные здесь параметры сохраняются.
+	CFA4 ShuttlePRO	CFA4 ShuttlePRO
+	Kdenlive-style ShuttlePRO	ShuttlePRO в стиле Kdenlive
+	Generic MIDI	Универсальный MIDI
+	Read from LTC Audio	Считать из звука LTC
+	Find SMPTE LTC on the clip's audio and use the timecode it gives the first frame	Найти SMPTE LTC в звуке клипа и взять тайм-код, который он даёт первому кадру
+	Read Timecode from LTC Audio	Считать тайм-код из звука LTC
+# Credits: voices (the Voice column) in the block's properties (F10-C16)
+	Voices	Голоса
+# AS-11 programme parts and AS-10 metadata (G2, #1371, #1375)
+	{tc}  Segmentation	{tc}  Сегментация
+	Marker Type	Тип маркера
+	Chapter	Глава
+	Segmentation (AS-11 programme part)	Сегментация (часть программы AS-11)
+	AS-10	AS-10
+# AT9/AT3 converter (Tools ▸ Audio Tools, AT3-2)
+	AT9/AT3 Converter	Конвертер AT9/AT3
+	AT9/AT3 Converter…	Конвертер AT9/AT3…
+	Files to convert:	Файлы для преобразования:
+	Add Files	Добавить файлы
+	Add Files…	Добавить файлы…
+	Convert to:	Преобразовать в:
+	Bit rate:	Битрейт:
+	Sample format:	Формат сэмплов:
+	Output folder:	Папка вывода:
+	Output Folder	Папка вывода
+	Next to each source file	Рядом с каждым исходным файлом
+	AT9 and ATRAC3plus files convert to WAV; encoding AT9, ATRAC3plus and MP3 is not available yet.	Файлы AT9 и ATRAC3plus преобразуются в WAV; кодирование в AT9, ATRAC3plus и MP3 пока недоступно.
+	Convert	Преобразовать
+	Add the files to convert first.	Сначала добавьте файлы для преобразования.
+	Done: {n} file(s) converted.	Готово: преобразовано файлов: {n}.
+	Converting {name}…	Преобразование {name}…
+	Stopping…	Остановка…
+	AT3 (ATRAC3, PSP / PS3)	AT3 (ATRAC3, PSP / PS3)
+	WAV (PCM)	WAV (PCM)
+	132 kbit/s (LP2)	132 кбит/с (LP2)
+	105 kbit/s	105 кбит/с
+	66 kbit/s (LP4, joint stereo)	66 кбит/с (LP4, joint stereo)
+	16-bit	16 бит
+	24-bit	24 бит
+	32-bit float	32 бит с плавающей точкой
+
+# Datamosh transition (Grunge & Distort, DM1, #1409)
+	Datamosh	Datamosh
+	Residual	Остаток
+	Motion Boost	Усиление движения
+	Recovery	Восстановление
+	Encode Resolution	Разрешение кодирования
+	Half	Половина
+	Quarter	Четверть
+# Datamosh Bloom (Glitch, DM2)
+	Datamosh Bloom	Datamosh-расцвет
+	Start Time (seconds)	Время начала (секунды)
+	Repeats	Повторы
+	Clean Blocks	Чистые блоки
+
+# Recent effects, per-channel waveform, white balance selector (SC-2/SC-3/SC-4, #1419 #1420 #1421)
+	Apply a recently used effect to the selected clips	Применить недавно использованный эффект к выбранным клипам
+	Disable all effects	Отключить все эффекты
+	Enable all effects	Включить все эффекты
+	No recent effects	Нет недавних эффектов
+	Recent effects	Недавние эффекты
+	Switch every effect of the selected clips off	Отключает каждый эффект выбранных клипов
+	Switch every effect of the selected clips on	Включает каждый эффект выбранных клипов
+	Merged	Объединённо
+	Per Channel	По каналам
+	Channel Zoom	Масштаб каналов
+	White Balance Selector (click a neutral point in the Program monitor; Esc cancels)	Выбор баланса белого (щёлкните нейтральную точку в мониторе «Программа»; Esc — отмена)
+# Task Manager and subtitle kind (SC-2/3/4)
+	Task Manager	Диспетчер задач
+	Background jobs	Фоновые задания
+	Exports	Экспорт
+	Shared task queue	Общая очередь задач
+	Task	Задача
+	State	Состояние
+	Details	Подробности
+	Time left	Осталось времени
+	Scheduled	Запланировано
+	Queued	В очереди
+	Waiting for resources	Ожидает ресурсы
+	Blocked	Заблокировано
+	Running	Выполняется
+	Paused	Приостановлено
+	Cancelling	Отмена
+	Interactive	Интерактивная
+	Speculative	Упреждающая
+	Final render	Финальный рендер
+	Show finished	Показать завершённые
+	Nothing is running.	Ничего не выполняется.
+	Not reported by this engine yet.	Этот движок пока не сообщает.
+	Not available: {why}	Недоступно: {why}
+	{name} waits: {why}	{name} ожидает: {why}
+	{running} running · {waiting} waiting	{running} выполняется · {waiting} ожидает
+	{n} active	{n} активных
+	{n} CPU	{n} CPU
+	{n} GiB	{n} ГиБ
+	{n} MiB	{n} МиБ
+	Needs your decision	Требуется ваше решение
+	Run now	Запустить сейчас
+	Next slot	Следующий слот
+	Missed its start	Пропущен запуск
+	Missed its start at {time}	Пропущен запуск в {time}
+	Starts at {time}	Запуск в {time}
+	Subtitle kind	Тип субтитров
+	Subtitles	Субтитры
+	Captions for the hearing impaired	Субтитры для людей с нарушением слуха
+	Forced narrative	Принудительный дубляж (forced narrative)
+	Silence	Тишина
+	Detect Silence	Обнаружить тишину
+	Remove Silence	Удалить тишину
+	Clear Silence Markers	Очистить маркеры тишины
+# DCP Validation window (DCP-12)
+	AS-03	AS-03
+	Choose the DCP folder.	Выберите папку DCP.
+	DCP Validation	Проверка DCP
+	DCP folder	Папка DCP
+	DCP folder (the one holding ASSETMAP)	Папка DCP (та, где лежит ASSETMAP)
+	Evidence	Доказательство
+	How to fix	Как исправить
+	Interrupted	Прервано
+	Not applicable	Неприменимо
+	Report	Отчёт
+	Report saved: {path}	Отчёт сохранён: {path}
+	Required	Обязательно
+	Rule	Правило
+	Rules	Правила
+	Save JSON…	Сохранить JSON…
+	Save Markdown…	Сохранить Markdown…
+	Save report	Сохранить отчёт
+	Skipped	Пропущено
+	Standard: {standard}	Стандарт: {standard}
+	Validate	Проверить
+	Validate DCP…	Проверить DCP…
+	the engine sent no profiles	движок не прислал профили
+	{n} files checked	Проверено файлов: {n}
+
+# AS-02 export
+	Write an AS-02 bundle (the path is a folder)	Записать пакет AS-02 (путь — это папка)
+	AS-02	AS-02
+	AS-12	AS-12
+
+# N1 voxel panel
+	Active voxels:	Активные воксели:
+	Bounds:	Границы:
+	Voxel attributes	Атрибуты вокселей
+	Voxel size:	Размер вокселя:
+	points	точки
+
+# WP3 DPX bit depth
+	Bit Depth	Разрядность
+
+# AS-02 versions
+	AS-02 Versions	Версии AS-02
+	Tick the sequences to write as further versions in the AS-02 bundle	Отметьте последовательности, которые будут записаны как дополнительные версии в пакете AS-02
+	Delete Short Clips	Удалить короткие клипы
+	A stored combination does not run a command yet.	Сохранённая комбинация пока не запускает команду.
+	Action hint	Подсказка действия
+	Add combination	Добавить комбинацию
+	Add mapping	Добавить назначение
+	Button Learn	Обучение кнопки
+	Button Test	Проверка кнопки
+	Button name	Имя кнопки
+	Cancel feedback	Сигнал отмены
+	Combination editor	Редактор комбинаций
+	Context	Контекст
+	Delete profile	Удалить профиль
+	Detected buttons	Обнаруженные кнопки
+	Draw the gesture with a button held.	Нарисуйте жест, удерживая кнопку.
+	Error feedback	Сигнал ошибки
+	Evdev device	Устройство evdev
+	Evdev reads the selected device only, and only after a later phase turns it on. This version keeps the Qt path.	Evdev читает только выбранное устройство и только после того, как более поздний этап его включит. Эта версия остаётся на пути Qt.
+	Execution feedback	Сигнал выполнения
+	Follow the system	Как в системе
+	Gesture	Жест
+	Gesture Learn	Обучение жеста
+	Gesture editor	Редактор жестов
+	Gesture profiles	Профили жестов
+	Gestures stay off until you turn them on. Turning them on does not block the panel menu.	Жесты выключены, пока вы их не включите. Включение не блокирует меню панели.
+	HUD	HUD
+	Hand	Рука
+	High contrast	Высокий контраст
+	Hold time	Время удержания
+	Input access	Доступ к вводу
+	Left-handed	Левша
+	Mapping	Назначение
+	Maximum length	Наибольшая длина
+	Maximum time	Наибольшее время
+	Minimum length	Наименьшая длина
+	Mirror ergonomic gestures	Отразить эргономичные жесты
+	Mouse Gestures	Жесты мыши
+	Mouse Gestures…	Жесты мыши…
+	No buttons yet. Press one in Button Learn or Button Test.	Кнопок пока нет. Нажмите одну в обучении или в проверке.
+	Press	Нажатие
+	Qt pointer (this application)	Указатель Qt (это приложение)
+	Recognition preview	Предпросмотр распознавания
+	Reduced animation	Уменьшенная анимация
+	Right-handed	Правша
+	Roles	Роли
+	Save gesture	Сохранить жест
+	Save profile	Сохранить профиль
+	Show the gesture HUD	Показывать HUD жестов
+	Slop	Люфт
+	Spatial gesture	Пространственный жест
+	Thresholds	Пороги
+	Trail	След
+	Use gestures in the window	Жесты в окне

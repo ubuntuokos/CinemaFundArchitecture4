@@ -77,7 +77,7 @@ fn make(f: &Fixture) -> (Vec<u8>, Vec<u8>) {
 /// Our picture in ffmpeg's layout: planar Y U V and G B R, interleaved B G R A.
 fn to_raw(p: &Picture) -> Vec<u8> {
     match p.format {
-        Format::Yuv422 => p.planes.concat(),
+        Format::Yuv422 | Format::Yuv420 => p.planes.concat(),
         Format::Rgb => [&p.planes[1], &p.planes[2], &p.planes[0]].iter().flat_map(|pl| pl.iter().copied()).collect(),
         // ffmpeg's bgra to gbrap conversion does not keep alpha exactly: compare interleaved
         Format::Rgba => (0..p.planes[0].len()).flat_map(|i| [p.planes[2][i], p.planes[1][i], p.planes[0][i], p.planes[3][i]]).collect(),
@@ -167,4 +167,35 @@ fn damaged_streams_never_panic() {
             }
         }
     }
+}
+
+/// Huffyuv MT (the multi-threaded VfW build) writes the same `HFYU` bitstream as Huffyuv 2.x, so
+/// the decoder covers it (codec backlog CB-36.1). Decoding the same stream on several threads at
+/// once, each with its own decoder, gives the same pictures as a single thread.
+#[test]
+fn threaded_decoding_is_identical() {
+    if !have_ffmpeg() {
+        eprintln!("ffmpeg not installed: skipped");
+        return;
+    }
+    let f = &FIXTURES[2];
+    let (avi, raw) = make(f);
+    let decode_all = || {
+        let (mut dec, chunks) = open(&avi);
+        let mut out = Vec::new();
+        for c in &chunks {
+            if let Ok(p) = dec.decode(c) {
+                out.extend(to_raw(&p));
+            }
+        }
+        out
+    };
+    let single = decode_all();
+    assert_eq!(single, raw);
+    let results: Vec<Vec<u8>> = std::thread::scope(|s| {
+        let hs: Vec<_> = (0..4).map(|_| s.spawn(decode_all)).collect();
+        hs.into_iter().filter_map(|h| h.join().ok()).collect()
+    });
+    assert_eq!(results.len(), 4);
+    assert!(results.iter().all(|r| *r == single));
 }

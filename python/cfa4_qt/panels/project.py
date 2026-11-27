@@ -1523,6 +1523,10 @@ class BinView(QWidget):
                 if row.get("offline"):
                     it.setForeground(0, OFFLINE)
                     it.setToolTip(0, tr(str(row.get("offline"))))
+                keys = [k for k in row.get("needsKey") or [] if isinstance(k, str)]
+                if keys:
+                    # an encrypted clip waiting for its KDM (#1053): which content keys it needs
+                    it.setToolTip(0, fmt("Encrypted: load the KDM with content key {keys}", keys=", ".join(keys)))
                 it.setFlags((it.flags() | Qt.ItemFlag.ItemIsEditable | Qt.ItemFlag.ItemIsDragEnabled) & ~Qt.ItemFlag.ItemIsDropEnabled)
                 if row.get("item") in selection:
                     reselect.append(it)
@@ -2580,6 +2584,7 @@ class ProjectPanel(QWidget):
             for label, cid in (
                 (N_("Create Proxies…"), "media.createProxies"),
                 (N_("Attach Proxies…"), "media.attachProxies"),
+                (N_("Find Camera Proxies"), "media.findCameraProxies"),
                 (N_("Reconnect Full Resolution Media…"), "media.reconnectFullRes"),
                 (N_("Detach Proxies"), "media.detachProxies"),
             ):

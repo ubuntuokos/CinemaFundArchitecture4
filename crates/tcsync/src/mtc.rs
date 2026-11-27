@@ -7,6 +7,8 @@
 //!   In reverse play the pieces come 7 → 0.
 //! - **Full frame** (universal real-time SysEx) `F0 7F 7F 01 01 hr mn sc fr F7`, `hr = 0rrhhhhh`:
 //!   a locate, also sent while stopped.
+//! - **User bits** (universal real-time SysEx) `F0 7F 7F 01 02 u1 … u8 u9 F7`: `u1 … u8` = binary
+//!   groups 1 … 8 (one nibble each, as in LTC), `u9` = the two binary group flags (ignored).
 //!
 //! Rate codes: 0 = 24, 1 = 25, 2 = 29.97 drop-frame, 3 = 30 fps. 23.976 and other rates have no
 //! code; [`MtcRate::nearest`] picks the one with the same timecode base and the caller warns.
@@ -144,6 +146,8 @@ pub enum MtcEvent {
     Time { time: MtcTime, reverse: bool },
     /// A full-frame message: locate to this time.
     Full(MtcTime),
+    /// A user-bits message (group 1 in the low nibble, as [`crate::ltc::LtcFrame::user_bits`]).
+    UserBits(u32),
 }
 
 /// Longest SysEx the parser buffers; longer ones are skipped (they are not MTC).
@@ -193,6 +197,8 @@ impl MtcParser {
                         self.run = 0;
                         self.last_piece = None;
                         out.push(MtcEvent::Full(t));
+                    } else if let Some(u) = parse_user_bits(&data) {
+                        out.push(MtcEvent::UserBits(u));
                     }
                 } else {
                     self.sysex = None;
@@ -292,6 +298,15 @@ fn parse_full_frame(d: &[u8]) -> Option<MtcTime> {
     t.is_valid().then_some(t)
 }
 
+/// `7F <dev> 01 02 u1 … u9` (the bytes between F0 and F7).
+fn parse_user_bits(d: &[u8]) -> Option<u32> {
+    let [0x7F, _dev, 0x01, 0x02, ref groups @ .., _flags] = *d else {
+        return None;
+    };
+    let groups: &[u8; 8] = groups.try_into().ok()?;
+    Some(groups.iter().enumerate().fold(0u32, |u, (i, g)| u | (u32::from(g & 0x0F) << (4 * i))))
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -374,6 +389,14 @@ mod tests {
             bytes.push(0xFE); // active sensing inside the SysEx
         }
         assert_eq!(parse(&bytes), vec![MtcEvent::Full(t)]);
+    }
+
+    #[test]
+    fn user_bits_message() {
+        let bytes = [0xF0, 0x7F, 0x7F, 0x01, 0x02, 0x1, 0x2, 0x3, 0x4, 0x5, 0x6, 0x7, 0x8, 0x00, 0xF7];
+        assert_eq!(parse(&bytes), vec![MtcEvent::UserBits(0x8765_4321)]);
+        // one group short: not a user-bits message
+        assert!(parse(&[0xF0, 0x7F, 0x7F, 0x01, 0x02, 0x1, 0x2, 0x3, 0x4, 0x5, 0x6, 0x7, 0x00, 0xF7]).is_empty());
     }
 
     #[test]

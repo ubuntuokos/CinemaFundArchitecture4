@@ -225,9 +225,12 @@ stream is cut into blocks (there are tests for this).
 
 ### A codec or container crate
 
-1. **Spec first.** Work only from the public specification (ITU-T, ISO/IEC, IETF RFCs, SMPTE,
-   published container specs) by default. Porting another implementation is allowed only under
-   AGENTS.md §2 (a licence permitted by docs/licensing.md §3, recorded in the reused-code register). Name the spec edition in the crate README.
+1. **Spec first.** Work from the public specification (ITU-T, ISO/IEC, IETF RFCs, SMPTE,
+   published container specs) by default. Porting an existing implementation is allowed when its
+   licence is permitted by [licensing.md](licensing.md) §3 (GPL-3.0-compatible, file headers
+   checked) and the port is recorded in the reused-code register (§5) in the same commit
+   ([AGENTS.md](../AGENTS.md) §2). Name the spec edition, or the ported source and revision, in
+   the crate README.
 2. Create `crates/<name>` as an L0 crate that depends only on `cfa4-bitstream` (plus
    `thiserror` and optional `rayon` behind a `threads` feature). Add `[lints] workspace = true`, add
    it to `[workspace.dependencies]`, and add it to `LAYERS` in `xtask/src/main.rs`. Building for

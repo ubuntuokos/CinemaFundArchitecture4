@@ -17,9 +17,9 @@ default = []
 # Optional GStreamer fallback media backend (ADR 0002; needs libgstreamer1.0-dev and
 # libgstreamer-plugins-base1.0-dev to build). Without it the app behaves exactly as before.
 gstreamer = ["cfa4-gstreamer/gstreamer"]
-# FFmpeg (>= 9.0.2, GPL-3 build) supplementary media backend (ADR 0005; needs the FFmpeg development
-# files, e.g. PKG_CONFIG_PATH=/opt/cfa4/ffmpeg-9.0.2/lib/pkgconfig from
-# scripts/dev/build-ffmpeg-9.0.2.sh). Without it the app behaves exactly as before.
+# FFmpeg (GPL-3 build, at least CFA4_FFMPEG_MIN_VERSION of packaging/ffmpeg-version.env) supplementary media backend (ADR 0005; needs the FFmpeg development
+# files, e.g. PKG_CONFIG_PATH=/opt/cfa4/ffmpeg-VERSION/lib/pkgconfig from
+# scripts/dev/build-ffmpeg.sh). Without it the app behaves exactly as before.
 ffmpeg = ["cfa4-ffmpeg/ffmpeg"]
 # H.266/VVC decoding through the VVdeC helper (ADR 0013): only its Settings ▸ Media Backends report is
 # registered until the G2 router step; without the feature the app behaves exactly as before.
@@ -30,6 +30,7 @@ whisper = ["cfa4-engine/whisper", "cfa4-engine/speech-download"]
 [dependencies]
 cfa4-route = { workspace = true }
 cfa4-engine = { workspace = true }
+cfa4-store = { workspace = true }
 cfa4-export = { workspace = true }
 cfa4-project = { workspace = true }
 cfa4-render = { workspace = true }
@@ -52,6 +53,8 @@ cfa4-ogg = { workspace = true }
 cfa4-automation = { workspace = true }
 cfa4-tcsync = { workspace = true }
 cfa4-tcsync-io = { workspace = true }
+cfa4-surface = { workspace = true }
+cfa4-surface-model = { workspace = true }
 serde_json = { workspace = true }
 tokio = { version = "1", features = ["rt-multi-thread", "macros"] }
 # the GPU compositor's backends, so `frame.render` composites on the GPU when this binary is built

@@ -80,7 +80,9 @@ pub(crate) const CIDS: [CidInfo; 20] = [
     hd(1259, 1440, 1080, false, 8, 417792, &W_D_2, 1),
     hd(1260, 1440, 1080, true, 8, 417792, &W_D_7, 1),
     ri(1270, 1835008, &W_D_11, 0),
-    ri(1271, 917504, &W_D_4, 0),
+    // Table D.1, as Table C.2 assigns it (owner decision 2026-11-24): FFmpeg up to 9.0.x used the
+    // CID 1241 weights (D.4) here and fixed it in 9.1 (a598cc99, CFA4-FFMPEG-9.1-001).
+    ri(1271, 917504, &W_D_1, 0),
     ri(1272, 917504, &W_D_3, 2),
     ri(1273, 606208, &W_D_2, 1),
     ri(1274, 188416, &W_D_2, 1),

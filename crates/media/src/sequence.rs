@@ -37,11 +37,16 @@ impl Numbered {
     /// Split `path` at the last run of digits in its file stem. `None` when the stem has no digits
     /// or the file is not a still image.
     pub fn parse(path: &str) -> Option<Numbered> {
+        Self::parse_with(path, crate::STILL_EXTENSIONS)
+    }
+
+    /// [`Numbered::parse`] for another kind of numbered file (`extensions` lower case, e.g. `["vdb"]`).
+    pub fn parse_with(path: &str, extensions: &[&str]) -> Option<Numbered> {
         let cut = path.rfind(['/', '\\']).map_or(0, |i| i + 1);
         let (dir, name) = path.split_at(cut);
         let ext_at = name.rfind('.').filter(|&i| i > 0)?;
         let ext = name[ext_at + 1..].to_ascii_lowercase();
-        if !crate::STILL_EXTENSIONS.contains(&ext.as_str()) {
+        if !extensions.contains(&ext.as_str()) {
             return None;
         }
         let stem = &name[..ext_at];
@@ -219,7 +224,8 @@ impl MediaSource for ImageSequenceSource {
 }
 
 /// Decode one frame file: OpenEXR, Radiance HDR, JPEG XL and DNG camera raw as linear floats (DNG with its metadata, for
-/// the sequence's timing), every other format through the still decoders as RGBA8. Returns the
+/// the sequence's timing), DPX at its stored depth with its time code and frame rate, every other
+/// format through the still decoders as RGBA8. Returns the
 /// frame, whether it has alpha, and its pixel format for the media info.
 fn decode_frame(name: &str, bytes: &[u8]) -> Result<(VideoFrame, bool, String, crate::still::Timing)> {
     if crate::still::exr::sniff(bytes) {
@@ -237,6 +243,10 @@ fn decode_frame(name: &str, bytes: &[u8]) -> Result<(VideoFrame, bool, String, c
     if crate::still::dng::sniff(bytes) {
         let d = crate::still::dng::decode(name, bytes)?;
         return Ok((d.frame, false, d.pixel_format, crate::still::Timing { frame_rate: d.info.frame_rate, timecode: d.info.timecode }));
+    }
+    if crate::dpx::sniff(bytes) {
+        let d = crate::dpx::decode_deep(name, bytes)?;
+        return Ok((d.frame, d.has_alpha, d.pixel_format, d.timing));
     }
     let img = crate::still::decode_raster(name, bytes)?;
     let pixel_format = if img.has_alpha { "RGBA 8-bit" } else { "RGB 8-bit" }.to_string();

@@ -67,11 +67,20 @@ def swatch(color: str | QColor, size: int = 12) -> QIcon:
 
 
 # ----- Markers -----
+# (markers.edit `kind`, the engine's MarkerKind name, menu text)
+MARKER_KINDS = (
+    ("comment", "Comment", N_("Comment")),
+    ("chapter", "Chapter", N_("Chapter")),
+    ("segmentation", "Segmentation", N_("Segmentation (AS-11 programme part)")),
+)
+
+
 class MarkerList(QWidget):
     """The sequence's markers, one 38 px row each: colour bar, name, start (and duration)."""
 
     go = Signal(object)  # marker start, ticks
     recolor = Signal(object, str)  # marker id, label
+    retype = Signal(object, str)  # marker id, kind (markers.edit `kind`)
 
     ROW = 38
 
@@ -114,6 +123,8 @@ class MarkerList(QWidget):
             tc += f"  ({format_timecode(int(m['duration']), self.frame)})"
         if m.get("kind") == "Chapter":
             tc = fmt("{tc}  Chapter", tc=tc)
+        elif m.get("kind") == "Segmentation":
+            tc = fmt("{tc}  Segmentation", tc=tc)
         return tc
 
     def paintEvent(self, _e: QPaintEvent) -> None:
@@ -177,6 +188,15 @@ class MarkerList(QWidget):
             a.setCheckable(True)
             a.setChecked(m.get("color") == name)
             a.triggered.connect(lambda _c=False, mid=marker_id, n=name: self.recolor.emit(mid, n))
+        # the marker type: segmentation markers with a duration are the AS-11 programme parts of an MXF export
+        kinds = menu.addMenu(tr("Marker Type"))
+        kinds.setObjectName("markers.menu.kind")
+        for kind, engine_name, text in MARKER_KINDS:
+            a = kinds.addAction(tr(text))
+            a.setObjectName(f"markers.menu.kind.{kind}")
+            a.setCheckable(True)
+            a.setChecked(m.get("kind") == engine_name)
+            a.triggered.connect(lambda _c=False, mid=marker_id, k=kind: self.retype.emit(mid, k))
         return menu
 
 
@@ -209,6 +229,7 @@ class MarkersPanel(QWidget):
         self.list = MarkerList(self)
         self.list.go.connect(lambda t: self.command.emit("playhead.set", {"time": t}))
         self.list.recolor.connect(lambda mid, n: self.command.emit("markers.edit", {"target": "program", "marker": mid, "color": n}))
+        self.list.retype.connect(lambda mid, k: self.command.emit("markers.edit", {"target": "program", "marker": mid, "kind": k}))
         scroll = QScrollArea(self)
         scroll.setWidgetResizable(True)
         scroll.setFrameShape(QFrame.Shape.NoFrame)
@@ -369,9 +390,12 @@ class InfoPanel(QWidget):
         # header are one rich-text label
         self.item_header = self._header("info.item")
         self.item_lines = self._lines("info.details")
+        # N1-10: the grids of a selected OpenVDB volume (``vdb.inspect``), one block per grid
+        self.voxel_header = self._header("info.voxel")
+        self.voxel_lines = self._lines("info.voxel.grids")
         self.sequence_header = self._header("info.sequence")
         self.text = self._lines("info.text")
-        for w in (self.item_header, self.item_lines, self.sequence_header, self.text):
+        for w in (self.item_header, self.item_lines, self.voxel_header, self.voxel_lines, self.sequence_header, self.text):
             col.addWidget(w)
         col.addStretch(1)
         scroll = QScrollArea(self)
@@ -417,6 +441,39 @@ class InfoPanel(QWidget):
         except (TypeError, ValueError, ZeroDivisionError):
             return "?"
         return f"{v:.3f}".rstrip("0").rstrip(".")
+
+    def update_voxels(self, inspection: dict[str, Any] | None, error: str = "") -> None:
+        """Show the voxel attributes of the selected volume (the answer of ``vdb.inspect``), or the error
+        (worker missing, bad file), or nothing for any other item."""
+        if inspection is None and not error:
+            self.voxel_header.hide()
+            self.voxel_lines.hide()
+            return
+        T = theme.current()
+        self.voxel_header.setText(tr("Voxel attributes"))
+        self.voxel_header.show()
+        self.voxel_lines.show()
+        if inspection is None:
+            self.voxel_lines.setText(f"<span style='color:{T.text_faint}'>{_esc(error)}</span>")
+            return
+        blocks = []
+        for g in inspection.get("grids") or []:
+            if not isinstance(g, dict):
+                continue
+            vs = g.get("voxelSize") or [0, 0, 0]
+            bb = g.get("bbox") or {}
+            rows = [
+                (tr("Type:"), f"{g.get('type', '')}" + (f" ({tr('points')})" if g.get("isPoints") else "")),
+                (tr("Voxel size:"), " × ".join(f"{float(v):g}" for v in vs)),
+                (tr("Active voxels:"), f"{int(g.get('activeVoxels') or 0):,}"),
+                (tr("Bounds:"), f"{bb.get('min')} … {bb.get('max')}"),
+                *((str(k), str(v)) for k, v in sorted((g.get("meta") or {}).items())),
+            ]
+            body = "".join(
+                f"<tr><td width=90 style='color:{T.text_dim}'>{_esc(k)}</td><td>{_esc(v)}</td></tr>" for k, v in rows
+            )
+            blocks.append(f"<b>{_esc(str(g.get('name') or ''))}</b><table cellspacing=0 cellpadding=0>{body}</table>")
+        self.voxel_lines.setText(f"<hr style='border-color:{T.separator}'>".join(blocks))
 
     def update_info(self, item: dict[str, Any] | None, sequence: dict[str, Any] | None, playhead: int) -> None:
         item_lines: list[tuple[str, str]] = []

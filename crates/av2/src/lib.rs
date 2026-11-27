@@ -1,13 +1,24 @@
 //! Clean-room AV2 bitstream parsing, implemented from the AV2 Bitstream & Decoding Process
 //! Specification v1.0.0 (AOMediaCodec/av2-spec).
 //!
-//! This is the skeleton of the native track (plan AV2-04): OBU framing (Annex B), OBU headers,
-//! the leading fields of the sequence header and a stream-scope check. It decodes no pictures yet.
+//! This is the native track (plan AV2-04): OBU framing (Annex B), OBU headers, the complete
+//! sequence header (with its tile layout) and a stream-scope check. It decodes no pictures yet.
 
 #![cfg_attr(not(test), deny(clippy::unwrap_used, clippy::expect_used, clippy::panic, clippy::unimplemented, clippy::todo, clippy::unreachable))]
 
+#[rustfmt::skip]
+pub mod cdf_default;
+#[rustfmt::skip]
+pub mod block_tables;
+pub mod cdf_set;
+pub mod frame;
+pub mod intra_mode;
 pub mod obu;
+pub mod partition;
 pub mod seq;
+pub mod seq_tools;
+pub mod symbol;
+pub mod tile;
 
 use obu::{GLOBAL_XLAYER_ID, ObuType, annexb_obus};
 use seq::SequenceHeader;

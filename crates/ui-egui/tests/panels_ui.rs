@@ -762,19 +762,23 @@ fn effects_are_indented_under_their_folders() {
     let mut d = Driver::demo();
     d.ok("ui.panel.show", json!({"panel": "Effects"}));
     d.frames(3);
-    for folder in ["Video Effects", "Video Effects/Blur & Sharpen", "Presets", "Lumetri Presets", "Lumetri Presets/Monochrome"] {
+    // in two passes: with every folder open the Presets list pushes the Lumetri folders past the
+    // bottom of the panel, where they are neither drawn nor registered
+    for folder in ["Video Effects", "Video Effects/Blur & Sharpen", "Presets"] {
         d.click(&format!("effects.folder.{folder}"));
     }
     d.frames(2);
     let preset = d.app().session.presets.all()[0].name.clone();
+    for (outer, inner) in [("Video Effects", "Blur & Sharpen"), ("Blur & Sharpen", "Gaussian Blur"), ("Presets", preset.as_str())] {
+        let (a, b) = (text_x(&mut d, outer), text_x(&mut d, inner));
+        assert!(b >= a + 12.0, "`{inner}` ({b}) is not indented under `{outer}` ({a})");
+    }
+    for folder in ["Presets", "Video Effects", "Lumetri Presets", "Lumetri Presets/Monochrome"] {
+        d.click(&format!("effects.folder.{folder}"));
+    }
+    d.frames(2);
     let lumetri = cfa4_render::lumetri_presets::presets().into_iter().find(|p| p.folder == "Monochrome").unwrap().name;
-    for (outer, inner) in [
-        ("Video Effects", "Blur & Sharpen"),
-        ("Blur & Sharpen", "Gaussian Blur"),
-        ("Presets", preset.as_str()),
-        ("Lumetri Presets", "Monochrome"),
-        ("Monochrome", lumetri),
-    ] {
+    for (outer, inner) in [("Lumetri Presets", "Monochrome"), ("Monochrome", lumetri)] {
         let (a, b) = (text_x(&mut d, outer), text_x(&mut d, inner));
         assert!(b >= a + 12.0, "`{inner}` ({b}) is not indented under `{outer}` ({a})");
     }

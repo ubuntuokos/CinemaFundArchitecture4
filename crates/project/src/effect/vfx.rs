@@ -29,6 +29,8 @@ pub const SLIT_DIRECTIONS: &[&str] = &["Top", "Bottom", "Left", "Right"];
 pub const GLITCH_AXES: &[&str] = &["Horizontal", "Vertical"];
 /// Glitch effects: always on, or pulsing on and off at the Frequency.
 pub const GLITCH_INTERVALS: &[&str] = &["Infinite", "Periodic"];
+/// Pixelate cell shapes (`cfa4_render` `vfx::pixelate`, in this order).
+pub const PIXELATE_SHAPES: &[&str] = &["Square", "Hexagon", "Circle", "Diamond", "Triangle", "LED"];
 pub const ECHO_OPERATORS: &[&str] = &["Add", "Maximum", "Minimum", "Screen", "Composite In Back", "Composite In Front", "Blend"];
 pub const SIMPLE_BLEND: &[&str] = &["Normal", "Add", "Screen", "Multiply", "Overlay"];
 
@@ -42,6 +44,22 @@ pub const LIGHT_IDS: [[&str; 8]; 5] = [
     ["l5_type", "l5_color", "l5_center", "l5_major", "l5_minor", "l5_angle", "l5_intensity", "l5_focus"],
 ];
 const LIGHT_GROUPS: [&str; 5] = ["Light 1", "Light 2", "Light 3", "Light 4", "Light 5"];
+
+/// The shared controls of Auto Color, Auto Contrast and Auto Levels (`snap`: Auto Color's Snap
+/// Neutral Midtones switch).
+fn auto_params(snap: bool) -> Vec<ParamDef> {
+    let mut v = vec![
+        fs("smoothing", "Temporal Smoothing (seconds)", 0.0, (0.0, 10.0), (0.0, 10.0), "", 2),
+        b("scene_detect", "Scene Detect", false),
+        fs("black_clip", "Black Clip", 0.1, (0.0, 10.0), (0.0, 10.0), "%", 2),
+        fs("white_clip", "White Clip", 0.1, (0.0, 10.0), (0.0, 10.0), "%", 2),
+    ];
+    if snap {
+        v.push(b("snap_neutral", "Snap Neutral Midtones", false));
+    }
+    v.push(blend_orig());
+    v
+}
 
 fn pct(id: &'static str, label: &'static str, def: f64) -> ParamDef {
     f(id, label, def, 0.0, 100.0, "%")
@@ -80,6 +98,8 @@ pub fn auto_point(effect: &str, param: &str) -> Option<(f64, f64)> {
         ("checkerboard", "anchor") => (0.0, 0.0),
         ("write_on", "brush") => (0.5, 0.5),
         ("volumetric_rays", "center") => (0.5, 0.25),
+        ("rack_focus", "focus_a") => (1.0 / 3.0, 0.5),
+        ("rack_focus", "focus_b") => (2.0 / 3.0, 0.5),
         _ => return None,
     })
 }
@@ -271,6 +291,23 @@ pub(super) fn defs() -> Vec<EffectDef> {
                 b("show", "Show Focus Area", false),
             ],
         ),
+        // CFA4's own: focus pulls from point A to point B as Rack goes 0 → 100 %.
+        video(
+            "rack_focus",
+            "Rack Focus",
+            BLUR,
+            vec![
+                ch("shape", "Focus Shape", &["Radial", "Linear"], 0),
+                pt("focus_a", "Focus Point A", f64::NAN, f64::NAN),
+                pt("focus_b", "Focus Point B", f64::NAN, f64::NAN),
+                pct("rack", "Rack", 0.0),
+                ang("angle", "Angle", 0.0),
+                px("size", "Focus Size", 150.0, 4000.0, 1000.0),
+                px("feather", "Feather", 300.0, 4000.0, 1000.0),
+                px("amount", "Blur Amount", 25.0, 500.0, 100.0),
+                b("show", "Show Focus Area", false),
+            ],
+        ),
         video("reduce_interlace_flicker", "Reduce Interlace Flicker", BLUR, vec![fs("softness", "Softness", 0.0, (0.0, 10.0), (0.0, 10.0), "", 2)]),
         // ---- Enhance (CFA4's own folder) ----
         video(
@@ -298,6 +335,17 @@ pub(super) fn defs() -> Vec<EffectDef> {
                 px("radius", "Radius", 15.0, 500.0, 60.0),
                 fs("max_gain", "Max Brightening", 400.0, (100.0, 2000.0), (100.0, 1000.0), "%", 0),
                 b("show_illumination", "Show Illumination", false),
+            ],
+        ),
+        video(
+            "temporal_denoise",
+            "Temporal Denoise",
+            ENHANCE,
+            vec![
+                pct("amount", "Amount", 80.0),
+                fs("frames", "Frames Each Side", 2.0, (1.0, 4.0), (1.0, 4.0), "", 0),
+                fs("threshold", "Motion Threshold", 8.0, (0.1, 100.0), (0.1, 30.0), "%", 1),
+                b("show_motion", "Show Motion", false),
             ],
         ),
         // ---- Color Correction ----
@@ -781,6 +829,31 @@ pub(super) fn defs() -> Vec<EffectDef> {
                 fs("frequency", "Frequency", 1.0, (0.0, 25.0), (0.0, 25.0), "", 2),
             ],
         ),
+        // A real codec datamosh: one P picture of CFA4's H.264 encoder decoded again and again.
+        video(
+            "datamosh_bloom",
+            "Datamosh Bloom",
+            GLITCH,
+            vec![
+                fs("start", "Start Time (seconds)", 1.0, (0.0, 3600.0), (0.0, 30.0), "", 2),
+                fs("repeats", "Repeats", 12.0, (1.0, 120.0), (1.0, 60.0), "", 0),
+                pct("residual", "Residual", 20.0),
+                pct("dissolve", "Dissolve", 30.0),
+                b("clean", "Clean Blocks", true),
+            ],
+        ),
+        video(
+            "pixelate",
+            "Pixelate",
+            GLITCH,
+            vec![
+                ch("shape", "Cell Shape", PIXELATE_SHAPES, 1),
+                px("size", "Cell Size", 24.0, 1024.0, 200.0),
+                pct("gap", "Gap", 10.0),
+                col("background", "Background", [0.0, 0.0, 0.0, 1.0]),
+                pct("blend", "Blend With Original", 0.0),
+            ],
+        ),
         // ---- Time ----
         video("posterize_time", "Posterize Time", TIME, vec![fs("rate", "Frame Rate", 12.0, (0.1, 99.0), (1.0, 60.0), "", 2)]),
         // CFA4's own (not in Premiere's bin): time displacement along one axis of the frame.
@@ -1092,6 +1165,10 @@ pub(super) fn defs() -> Vec<EffectDef> {
                 ch("style", "Paint Style", &["On Original Image", "On Transparent", "Reveal Original Image"], 0),
             ],
         ),
+        // Auto Color / Auto Contrast / Auto Levels: histogram-driven automatic corrections
+        video("auto_color", "Auto Color", OBSOLETE, auto_params(true)),
+        video("auto_contrast", "Auto Contrast", OBSOLETE, auto_params(false)),
+        video("auto_levels", "Auto Levels", OBSOLETE, auto_params(false)),
         // ---- Legacy bin ----
         video(
             "alpha_glow",
@@ -1335,7 +1412,8 @@ pub(super) fn apply_badges(v: &mut [EffectDef]) {
         let accel = match e.category.first().copied() {
             Some("Legacy") => !matches!(id, "camera_blur"),
             _ if folder == "Obsolete" => false,
-            _ => !matches!(id, "clone" | "stroke"),
+            // CFA4's own CPU-only effects get no badge
+            _ => !matches!(id, "clone" | "stroke" | "temporal_denoise"),
         };
         e.accelerated = accel;
         e.float32 = a32;

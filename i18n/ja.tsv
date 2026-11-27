@@ -44,6 +44,7 @@
 	Arrange	重ね順
 	Assembly	アセンブリ
 	Attach Proxies…	プロキシを関連付け…
+	Find Camera Proxies	カメラのプロキシを検索
 	Audio Channels…	オーディオチャンネル…
 	Audio Clip Mixer	オーディオクリップミキサー
 	Audio Gain…	オーディオゲイン…
@@ -2363,6 +2364,10 @@
 	Show Clip Mismatch Warning dialog	クリップの不一致警告ダイアログを表示
 	Show Event Indicator	イベントインジケーターを表示
 	Show Focus Area	フォーカス範囲を表示
+	Rack Focus	ラックフォーカス
+	Focus Point A	フォーカスポイント A
+	Focus Point B	フォーカスポイント B
+	Rack	ラック
 	Show Home	ホームを表示
 	Show Mask Tracker Preview	マスクトラッカーのプレビューを表示
 	Show Only Noise	ノイズのみ表示
@@ -3653,6 +3658,7 @@
 	Social Deliverables…	SNS 用書き出しセット…
 	Counter	カウンター
 	Word by Word	単語ごと
+	Scramble	スクランブル
 	Animator	アニメーター
 	Animator Duration	アニメーターのデュレーション
 	Animator Delay	アニメーターの遅延
@@ -3698,7 +3704,7 @@
 	Show Duplicate Frame Markers	重複フレームマーカーを表示
 # Settings ▸ Media & Playback ▸ Media Backends (ADR 0005)
 	Media Backends	メディアバックエンド
-	Use FFmpeg for files the CFA4 engine cannot open (FFmpeg 9.0.2 or later, GPL-3 build)	CFA4 エンジンで開けないファイルに FFmpeg を使用（FFmpeg 9.0.2 以降、GPL-3 ビルド）
+	Use FFmpeg for files the CFA4 engine cannot open (FFmpeg 9.1 or later, GPL-3 build)	CFA4 エンジンで開けないファイルに FFmpeg を使用（FFmpeg 9.1 以降、GPL-3 ビルド）
 	Use the system's GStreamer for files neither the engine nor FFmpeg can open	エンジンでも FFmpeg でも開けないファイルにシステムの GStreamer を使用
 	Work Area Bar	ワークエリアバー
 	Set Work Area Bar In Point	ワークエリアバーのインポイントを設定
@@ -4185,6 +4191,11 @@
 	Burn Size	焼けのサイズ
 	Ember Width	残り火の幅
 	Ember Color	残り火の色
+	Tear Away	破り取り
+	Tear Roughness	破れ目の粗さ
+	Paper Edge Width	紙の縁の幅
+	Stamp Cut	切手カット
+	Perforations	ミシン目
 	Check Text Legibility	テキストの読みやすさをチェック
 	Clear Legibility Markers	読みやすさマーカーを消去
 	Text legibility: no problems found	テキストの読みやすさ: 問題は見つかりませんでした
@@ -4224,6 +4235,9 @@
 	Dither	ディザ
 	Pattern	パターン
 	Cell Size	セルサイズ
+	Pixelate	ピクセレート
+	Cell Shape	セルの形
+	LED	LED
 	Cyan Angle	シアンの角度
 	Magenta Angle	マゼンタの角度
 	Yellow Angle	イエローの角度
@@ -4545,6 +4559,13 @@
 	The keys stay in memory only, until Forget DCP Keys or the end of the session.	キーはメモリ上にのみ保持され、「DCP キーを破棄」またはセッション終了まで残ります。
 	DCP keys forgotten	DCP キーを破棄しました
 	Choose the KDM file and the private key.	KDM ファイルと秘密鍵を選択してください。
+	Load even if the certificate chain is not verified	証明書チェーンが未検証でも読み込む
+	Bundle: {loaded} of {total} KDMs loaded, {other} for other recipients	バンドル: {total} 件中 {loaded} 件の KDM を読み込み、{other} 件は他の受信者用
+	Not loaded: {path}: {problem}	読み込まれていません: {path}: {problem}
+	Signature verified: {chain}	署名を検証済み: {chain}
+	Signature not verified: {problem}	署名は未検証: {problem}
+	KDM required	KDM が必要
+	Encrypted: load the KDM with content key {keys}	暗号化済み: コンテンツキー {keys} を含む KDM を読み込んでください
 
 # Settings ▸ Timecode Sync (TC-4)
 	Timecode Sync	タイムコード同期
@@ -4577,3 +4598,384 @@
 	Chase External Timecode	外部タイムコードにチェイス
 	Send LTC	LTC を送信
 	Send MIDI Timecode	MIDI タイムコードを送信
+
+# Live studio preview (CFA4-LIVE-STUDIO-001 S0)
+	Live studio preview	ライブスタジオのプレビュー
+	Live studio: stopped	ライブスタジオ: 停止中
+	Live studio: {state}	ライブスタジオ: {state}
+	Live studio: {error}	ライブスタジオ: {error}
+	restarted after {count} crashes (last: {exit})	{count} 回のクラッシュ後に再起動しました(最後: {exit})
+	software backend: {reason}	ソフトウェアバックエンド: {reason}
+	Start studio	スタジオを開始
+	Stop studio	スタジオを停止
+	Add Studio Scene	スタジオシーンを追加
+	Live	ライブ
+# Credits: title, opening, chapter and lower-third pages filled from a graphics template (F10-C16)
+	Opening Credits	オープニングクレジット
+	Chapter Title	チャプタータイトル
+	Lower Third	ローワーサード
+	page {page}: graphics template “{template}” was not found; “{used}” is used	ページ {page}: グラフィックテンプレート“{template}”が見つかりません。“{used}”を使用します
+	page {page}: graphics template “{template}” has no field for all of the block's text; the rest is left out	ページ {page}: グラフィックテンプレート“{template}”にはブロックの全テキスト用のフィールドがありません。残りは省略します
+	page {page}: template field “{control}” → “{part}” is not used (no such text control, or not head, body or tail)	ページ {page}: テンプレートフィールド“{control}”→“{part}”は使用されません（そのテキストコントロールがないか、ヘッド・本文・テールではありません）
+	page {page}: pictures are left out on title, opening, chapter and lower-third pages	ページ {page}: タイトル、オープニング、チャプター、ローワーサードのページでは画像を省略します
+# Auto Color, Auto Contrast, Auto Levels (EffectsSDK review)
+	Auto Color	自動カラー
+	Auto Contrast	自動コントラスト
+	Auto Levels	自動レベル補正
+	Temporal Smoothing (seconds)	時間的スムージング（秒）
+	Scene Detect	シーン検出
+	Black Clip	黒のクリップ
+	White Clip	白のクリップ
+	Snap Neutral Midtones	中間色をニュートラルに
+# Layout presets: PiP corners, split screen (EffectsSDK review)
+	PiP 35% Upper Left	PiP 35% 左上
+	Picture-in-picture: 35 % scale in the upper left	ピクチャーインピクチャー: スケール 35 % で左上に配置
+	PiP 35% Lower Left	PiP 35% 左下
+	Picture-in-picture: 35 % scale in the lower left	ピクチャーインピクチャー: スケール 35 % で左下に配置
+	PiP 35% Lower Right	PiP 35% 右下
+	Picture-in-picture: 35 % scale in the lower right	ピクチャーインピクチャー: スケール 35 % で右下に配置
+	Split Screen Left	分割画面 左
+	Split screen: the middle half of the picture fills the left half of the frame	分割画面: 映像の中央半分をフレームの左半分に配置
+	Split Screen Right	分割画面 右
+	Split screen: the middle half of the picture fills the right half of the frame	分割画面: 映像の中央半分をフレームの右半分に配置
+# Creative Looks: CRT (P3)
+	CRT	CRT
+	Scanline Strength	走査線の強さ
+	Line Count	走査線の数
+	Mask	マスク
+	Mask Strength	マスクの強さ
+	Corner Darkening	四隅の減光
+	Aperture Grille	アパーチャーグリル
+	Shadow Mask	シャドウマスク
+	Slot Mask	スロットマスク
+# Creative Looks: Oil Paint (P4)
+	Oil Paint	油絵
+	Detail	ディテール
+	Texture	テクスチャ
+	Facet	ファセット
+	Daubs	厚塗り
+	Dry Brush	ドライブラシ
+	Fresco	フレスコ
+	Knife	ペインティングナイフ
+	Sponge	スポンジ
+# Creative Looks: Pixel Sort (P5)
+	Pixel Sort	ピクセルソート
+	Sort By	並べ替えの基準
+	Lower Threshold	下限しきい値
+	Upper Threshold	上限しきい値
+	Ascending	昇順
+# Temporal Denoise (EffectsSDK review)
+	Temporal Denoise	時間的ノイズ除去
+	Frames Each Side	片側のフレーム数
+	Motion Threshold	動きのしきい値
+	Show Motion	動きを表示
+	No signal	信号なし
+	Locating	位置合わせ中
+	Locked	ロック
+	Freewheel	フリーホイール
+	Scrubbing	スクラブ中
+	Sending	送信中
+
+# DCP subtitle export (#938)
+	Subtitles from the first caption track	最初のキャプショントラックからの字幕
+	The package language	パッケージの言語
+	Inter Regular (built in), or an OpenType / TrueType file	Inter Regular (組み込み)、または OpenType / TrueType ファイル
+	Subtitle language	字幕の言語
+	Subtitle font	字幕のフォント
+	Fonts	フォント
+
+# AS-11 metadata in MXF OP1a (#96)
+	AS-11 Core	AS-11 Core
+	AS-11 Parts	AS-11 パート
+	AS-11 UK DPP	AS-11 UK DPP
+# Control surfaces (qt-control-surfaces-page, CFA4-CONTROL-SURFACE-001)
+	Connected	接続済み
+	Device	デバイス
+	Devices	デバイス
+	Disabled	無効
+	HID jog/shuttle	HID ジョグ/シャトル
+	MIDI	MIDI
+	Not connected	未接続
+	OSC	OSC
+	Use	使用
+	{device} ({port})	{device} ({port})
+	{name}: {error}	{name}: {error}
+# Control surfaces (midi-monitor, CFA4-CONTROL-SURFACE-001)
+	MIDI Monitor	MIDI モニター
+	Press Start Monitor, then move a control.	「モニター開始」を押してから、コントロールを動かしてください。
+	Start Monitor	モニター開始
+	Stop Monitor	モニター停止
+	… {count} messages not shown (too many at once)	… {count} 件のメッセージは表示されていません（一度に多すぎます）
+# Control surfaces (midi-learn, CFA4-CONTROL-SURFACE-001)
+	A control surface asked for {command}, which does not exist.	コントロールサーフェスが存在しない {command} を要求しました。
+	Assignments	割り当て
+	Cancel Learn	学習をキャンセル
+	Control	コントロール
+	Learn	学習
+	Remove this assignment	この割り当てを削除
+	{control} runs {command}.	{control} は {command} を実行します。
+# Control surfaces (shuttlepro, CFA4-CONTROL-SURFACE-001)
+	Button {n}	ボタン {n}
+# Control surfaces (continuous-values, CFA4-CONTROL-SURFACE-001)
+	{strip} Pan (knob)	{strip} パン（ノブ）
+	{strip} Volume (fader)	{strip} 音量（フェーダー）
+# Control surfaces (F1 Learn and profile, CFA4-CONTROL-SURFACE-001)
+	Control Surfaces	コントロールサーフェス
+	Assignments run when a button is pressed (a fader or knob counts as pressed past half way); a fader or knob assigned to a mixer strip moves its volume or pan. A ShuttlePRO's shuttle ring plays at its profile's speeds and its jog wheel steps frame by frame. Endless encoders and feedback to the controller (lights, motor faders) come in a later version.	割り当てはボタンを押したときに実行されます（フェーダーやノブは半分を超えると押された扱いになります）。ミキサーのストリップに割り当てたフェーダーやノブは音量またはパンを動かします。ShuttlePRO のシャトルリングはプロファイルの速度で再生し、ジョグホイールはフレームごとに進みます。エンドレスエンコーダーとコントローラーへの返答（ランプ、モーターフェーダー）は後の版で追加します。
+	First message (ms)	最初のメッセージ（ミリ秒）
+	Silence (ms)	無音（ミリ秒）
+	Waiting for the control to settle…	コントロールが落ち着くのを待っています…
+	Type: {hint}. Confirm this assignment.	種類: {hint}。この割り当てを確定します。
+	That control is already assigned. Confirm replaces it.	そのコントロールは既に割り当てられています。確定すると置き換わります。
+	Learn timed out.	学習が時間切れになりました。
+	Confirm	確定
+	Reject	却下
+	Shows every MIDI message from the controllers as it arrives, to check that a controller sends and what it sends. MIDI Clock, Active Sensing and MIDI Time Code are left out.	コントローラーからの MIDI メッセージを届いた順に表示し、送っているかと内容を確認します。MIDI クロック、アクティブセンシング、MIDI タイムコードは表示しません。
+	Pick a command (or a mixer strip for a fader or knob), press Learn, then press the button or move the control past half way. Confirm keeps the assignment. OK saves the assignments.	コマンド（フェーダーやノブならミキサーのストリップ）を選び、学習を押してからボタンを押すか、コントロールを半分より先へ動かします。確定で割り当てを残します。OK で保存します。
+	All devices	すべてのデバイス
+	Builtin: {name}	組み込み: {name}
+	Capturing	取り込み中
+	Confirmed	確認済み
+	Conflict	競合
+	Connect a MIDI controller or a ShuttlePRO to edit its profile.	プロファイルを編集するには MIDI コントローラまたは ShuttlePRO を接続してください。
+	Control Surfaces…	コントロールサーフェス…
+	Filter messages	メッセージを絞り込む
+	Idle	待機
+	Kernel dropped: {count}	カーネルが破棄: {count}
+	Learn Assignments…	ラーニングと割り当て…
+	Load profile	プロファイルを読み込む
+	MIDI Monitor…	MIDI モニタ…
+	Mute shuttle sound	シャトル音をミュート
+	No conflicts.	競合はありません。
+	No profile warnings.	プロファイルの警告はありません。
+	No project profile is stored.	プロジェクトのプロファイルは保存されていません。
+	OK writes the preferences and the profile file together.	OK は環境設定とプロファイルファイルを一緒に書き込みます。
+	Online	オンライン
+	Pending	保留
+	Pickup (14-bit)	ピックアップ（14 ビット）
+	Pickup (7-bit)	ピックアップ（7 ビット）
+	Profile warnings	プロファイルの警告
+	Rejected	却下
+	Show Active Sensing	アクティブセンシングを表示
+	Show MIDI Clock	MIDI クロックを表示
+	Show MIDI Time Code	MIDI タイムコードを表示
+	The profile file is damaged. Preferences and the built-in profile stay in use.	プロファイルファイルが壊れています。環境設定と組み込みプロファイルを使い続けます。
+	Timed out	時間切れ
+	Type: {hint}	種類: {hint}
+	User profile file	ユーザーのプロファイルファイル
+	{received} received, {dispatched} dispatched, {coalesced} coalesced, {stalls} stalls, {errors} errors	{received} 受信、{dispatched} 配送、{coalesced} 統合、{stalls} 停滞、{errors} エラー
+
+# Control Surfaces settings page (CS-1, #1187)
+	Looking for devices…	デバイスを検索しています…
+	No MIDI controller or jog/shuttle device was found. Connect one and press Refresh.	MIDI コントローラーまたはジョグ/シャトル デバイスが見つかりません。接続してから［更新］を押してください。
+	Use control surfaces (MIDI controllers, jog/shuttle devices)	コントロールサーフェスを使用する（MIDI コントローラー、ジョグ/シャトル デバイス）
+	Mapping controls to commands, MIDI Learn and the MIDI Monitor come in a later version; the choices here are remembered until then.	コントロールへのコマンド割り当て、MIDI Learn、MIDI モニターは今後のバージョンで提供されます。それまではここでの選択が保存されます。
+	CFA4 ShuttlePRO	CFA4 ShuttlePRO
+	Kdenlive-style ShuttlePRO	Kdenlive 風 ShuttlePRO
+	Generic MIDI	汎用 MIDI
+# LTC timecode read from clip audio (TC-7, #1285)
+	Read from LTC Audio	LTC オーディオから読み取り
+	Find SMPTE LTC on the clip's audio and use the timecode it gives the first frame	クリップのオーディオから SMPTE LTC を探し、最初のフレームに対応するタイムコードを使用します
+	Read Timecode from LTC Audio	LTC オーディオからタイムコードを読み取り
+# Credits: voices (the Voice column) in the block's properties (F10-C16)
+	Voices	声の出演
+# Timecode sync varispeed and user bits (TC-8, #1308)
+	Varispeed: adjust the playback speed instead of seeking	バリスピード：シークせずに再生速度を調整する
+	User bits	ユーザービット
+# AS-11 programme parts and AS-10 metadata (G2, #1371, #1375)
+	{tc}  Segmentation	{tc}  セグメンテーション
+	Marker Type	マーカーの種類
+	Chapter	チャプター
+	Segmentation (AS-11 programme part)	セグメンテーション（AS-11 番組パート）
+	AS-10	AS-10
+# AT9/AT3 converter (Tools ▸ Audio Tools, AT3-2)
+	AT9/AT3 Converter	AT9/AT3 コンバーター
+	AT9/AT3 Converter…	AT9/AT3 コンバーター…
+	Files to convert:	変換するファイル:
+	Add Files	ファイルを追加
+	Add Files…	ファイルを追加…
+	Convert to:	変換先:
+	Bit rate:	ビットレート:
+	Sample format:	サンプル形式:
+	Output folder:	出力フォルダー:
+	Output Folder	出力フォルダー
+	Next to each source file	各ソースファイルと同じ場所
+	AT9 and ATRAC3plus files convert to WAV; encoding AT9, ATRAC3plus and MP3 is not available yet.	AT9 と ATRAC3plus のファイルは WAV に変換できます。AT9、ATRAC3plus、MP3 へのエンコードはまだ使用できません。
+	Convert	変換
+	Add the files to convert first.	先に変換するファイルを追加してください。
+	Done: {n} file(s) converted.	完了: {n} 個のファイルを変換しました。
+	Converting {name}…	{name} を変換中…
+	Stopping…	停止中…
+	AT3 (ATRAC3, PSP / PS3)	AT3 (ATRAC3, PSP / PS3)
+	WAV (PCM)	WAV (PCM)
+	132 kbit/s (LP2)	132 kbit/s (LP2)
+	105 kbit/s	105 kbit/s
+	66 kbit/s (LP4, joint stereo)	66 kbit/s (LP4, ジョイントステレオ)
+	16-bit	16 ビット
+	24-bit	24 ビット
+	32-bit float	32 ビット浮動小数点
+
+# Datamosh transition (Grunge & Distort, DM1, #1409)
+	Datamosh	データモッシュ
+	Residual	残差
+	Motion Boost	モーション増幅
+	Recovery	回復
+	Encode Resolution	エンコード解像度
+	Half	1/2
+	Quarter	1/4
+# Datamosh Bloom (Glitch, DM2)
+	Datamosh Bloom	データモッシュブルーム
+	Start Time (seconds)	開始時間 (秒)
+	Repeats	繰り返し回数
+	Clean Blocks	クリーンブロック
+
+# Recent effects, per-channel waveform, white balance selector (SC-2/SC-3/SC-4, #1419 #1420 #1421)
+	Apply a recently used effect to the selected clips	最近使ったエフェクトを選択したクリップに適用
+	Disable all effects	すべてのエフェクトをオフ
+	Enable all effects	すべてのエフェクトをオン
+	No recent effects	最近のエフェクトはありません
+	Recent effects	最近のエフェクト
+	Switch every effect of the selected clips off	選択したクリップのすべてのエフェクトをオフにします
+	Switch every effect of the selected clips on	選択したクリップのすべてのエフェクトをオンにします
+	Merged	統合
+	Per Channel	チャンネル別
+	Channel Zoom	チャンネルズーム
+	White Balance Selector (click a neutral point in the Program monitor; Esc cancels)	ホワイトバランスセレクター（プログラムモニターの無彩色の点をクリック。Esc でキャンセル）
+# Task Manager and subtitle kind (SC-2/3/4)
+	Task Manager	タスクマネージャー
+	Background jobs	バックグラウンドジョブ
+	Exports	書き出し
+	Shared task queue	共有タスクキュー
+	Task	タスク
+	State	状態
+	Details	詳細
+	Time left	残り時間
+	Scheduled	予約済み
+	Queued	待機中
+	Waiting for resources	リソース待ち
+	Blocked	ブロック中
+	Running	実行中
+	Paused	一時停止中
+	Cancelling	キャンセル中
+	Interactive	対話型
+	Speculative	先行実行
+	Final render	最終レンダリング
+	Show finished	完了したものを表示
+	Nothing is running.	実行中のものはありません。
+	Not reported by this engine yet.	このエンジンはまだ報告していません。
+	Not available: {why}	利用できません: {why}
+	{name} waits: {why}	{name} は待機中: {why}
+	{running} running · {waiting} waiting	{running} 件実行中 · {waiting} 件待機中
+	{n} active	{n} 件が実行中
+	{n} CPU	{n} CPU
+	{n} GiB	{n} GiB
+	{n} MiB	{n} MiB
+	Needs your decision	判断が必要です
+	Run now	今すぐ実行
+	Next slot	次のスロット
+	Missed its start	開始時刻を逃しました
+	Missed its start at {time}	{time} の開始を逃しました
+	Starts at {time}	{time} に開始
+	Subtitle kind	字幕の種類
+	Subtitles	字幕
+	Captions for the hearing impaired	聴覚障害者向けキャプション
+	Forced narrative	強制ナレーション (forced narrative)
+	Clear Silence Markers	無音マーカーを消去
+	Detect Silence	無音を検出
+	Remove Silence	無音を削除
+	Silence	無音
+# DCP Validation window (DCP-12)
+	AS-03	AS-03
+	Choose the DCP folder.	DCPフォルダーを選択してください。
+	DCP Validation	DCP検証
+	DCP folder	DCPフォルダー
+	DCP folder (the one holding ASSETMAP)	DCPフォルダー(ASSETMAPがあるもの)
+	Evidence	根拠
+	How to fix	修正方法
+	Interrupted	中断
+	Not applicable	該当なし
+	Report	レポート
+	Report saved: {path}	レポートを保存しました: {path}
+	Required	必須
+	Rule	ルール
+	Rules	ルール
+	Save JSON…	JSONを保存…
+	Save Markdown…	Markdownを保存…
+	Save report	レポートを保存
+	Skipped	スキップ
+	Standard: {standard}	規格: {standard}
+	Validate	検証
+	Validate DCP…	DCPを検証…
+	the engine sent no profiles	エンジンからプロファイルが送られませんでした
+	{n} files checked	{n} 個のファイルを確認しました
+
+# AS-02 export
+	Write an AS-02 bundle (the path is a folder)	AS-02バンドルを書き出す(パスはフォルダー)
+	AS-02	AS-02
+	AS-12	AS-12
+
+# N1 voxel panel
+	Active voxels:	アクティブなボクセル:
+	Bounds:	境界:
+	Voxel attributes	ボクセル属性
+	Voxel size:	ボクセルサイズ:
+	points	点
+
+# WP3 DPX bit depth
+	Bit Depth	ビット深度
+
+# AS-02 versions
+	AS-02 Versions	AS-02バージョン
+	Tick the sequences to write as further versions in the AS-02 bundle	AS-02バンドルに追加バージョンとして書き出すシーケンスにチェックを入れます
+	Delete Short Clips	短いクリップを削除
+	A stored combination does not run a command yet.	保存した組み合わせは、まだコマンドを実行しません。
+	Action hint	操作のヒント
+	Add combination	組み合わせを追加
+	Add mapping	割り当てを追加
+	Button Learn	ボタン学習
+	Button Test	ボタン試験
+	Button name	ボタン名
+	Cancel feedback	キャンセルの表示
+	Combination editor	組み合わせエディター
+	Context	コンテキスト
+	Delete profile	プロファイルを削除
+	Detected buttons	検出したボタン
+	Draw the gesture with a button held.	ボタンを押したままジェスチャーを描きます。
+	Error feedback	エラーの表示
+	Evdev device	evdev デバイス
+	Evdev reads the selected device only, and only after a later phase turns it on. This version keeps the Qt path.	evdev は選んだ装置だけを読み、後の段階がオンにするまで使いません。この版は Qt の経路のままです。
+	Execution feedback	実行の表示
+	Follow the system	システムに合わせる
+	Gesture	ジェスチャー
+	Gesture Learn	ジェスチャー学習
+	Gesture editor	ジェスチャーエディター
+	Gesture profiles	ジェスチャープロファイル
+	Gestures stay off until you turn them on. Turning them on does not block the panel menu.	ジェスチャーはオンにするまで無効です。オンにしてもパネルメニューは止まりません。
+	HUD	HUD
+	Hand	利き手
+	High contrast	高コントラスト
+	Hold time	長押し時間
+	Input access	入力アクセス
+	Left-handed	左利き
+	Mapping	割り当て
+	Maximum length	最大の長さ
+	Maximum time	最大時間
+	Minimum length	最小の長さ
+	Mirror ergonomic gestures	人間工学ジェスチャーを左右反転
+	Mouse Gestures	マウスジェスチャー
+	Mouse Gestures…	マウスジェスチャー…
+	No buttons yet. Press one in Button Learn or Button Test.	ボタンはまだありません。ボタン学習かボタン試験で押してください。
+	Press	押下
+	Qt pointer (this application)	Qt ポインタ（このアプリケーション）
+	Recognition preview	認識のプレビュー
+	Reduced animation	アニメーションを減らす
+	Right-handed	右利き
+	Roles	役割
+	Save gesture	ジェスチャーを保存
+	Save profile	プロファイルを保存
+	Show the gesture HUD	ジェスチャー HUD を表示
+	Slop	遊び
+	Spatial gesture	空間ジェスチャー
+	Thresholds	しきい値
+	Trail	軌跡
+	Use gestures in the window	ウィンドウでジェスチャーを使う

@@ -6,7 +6,7 @@
 //! Timing tests are noisy, so this one runs only with `CFA4_VVC_PERF=1` (otherwise SKIPPED); the
 //! numbers go to stderr and the verdict is asserted with a tolerance. Needs the helper
 //! (`scripts/dev/vvc-decoder.py build`), the corpus (`scripts/dev/vvc-conformance.py fetch`) and an
-//! FFmpeg with the native `vvc` decoder (7.1 or later; `CFA4_FFMPEG`, else `/opt/cfa4/ffmpeg-9.0.2`,
+//! FFmpeg with the native `vvc` decoder (7.1 or later; `CFA4_FFMPEG`, else `/opt/cfa4/ffmpeg-<CFA4_FFMPEG_VERSION>`,
 //! else `ffmpeg`). Two kinds of stream: the realistic-bitrate VVenC fixtures
 //! (`scripts/dev/vvc-perf-fixture.py encode`, `target/fixtures/vvc/perf-*.266`), which carry the
 //! verdict, and the JVET conformance streams `LFNST_D_3` (1080p) and `TRANS_A_2` (720p), stress
@@ -43,6 +43,14 @@ fn has_native_vvc(p: &Path) -> bool {
         .is_ok_and(|o| String::from_utf8_lossy(&o.stdout).lines().any(|l| l.split_whitespace().nth(1) == Some("vvc")))
 }
 
+/// The CFA4 FFmpeg build, `/opt/cfa4/ffmpeg-VERSION/bin/ffmpeg`, with the pinned version of
+/// `packaging/ffmpeg-version.env` (the one place it is set), if that file can be read.
+fn pinned_ffmpeg() -> Option<PathBuf> {
+    let env = std::fs::read_to_string(Path::new(env!("CARGO_MANIFEST_DIR")).join("../../packaging/ffmpeg-version.env")).ok()?;
+    let version = env.lines().find_map(|l| l.trim().strip_prefix("CFA4_FFMPEG_VERSION="))?.trim().trim_matches('"');
+    Some(PathBuf::from(format!("/opt/cfa4/ffmpeg-{version}/bin/ffmpeg")))
+}
+
 /// `CFA4_FFMPEG` when set (and then only that: a wrong path is an error, not a quiet switch to
 /// another FFmpeg), else the CFA4 build, else `ffmpeg` on the PATH.
 fn ffmpeg() -> Result<PathBuf, String> {
@@ -50,11 +58,7 @@ fn ffmpeg() -> Result<PathBuf, String> {
         let p = PathBuf::from(p);
         return if has_native_vvc(&p) { Ok(p) } else { Err(format!("CFA4_FFMPEG={} has no native vvc decoder", p.display())) };
     }
-    ["/opt/cfa4/ffmpeg-9.0.2/bin/ffmpeg", "ffmpeg"]
-        .into_iter()
-        .map(PathBuf::from)
-        .find(|p| has_native_vvc(p))
-        .ok_or_else(|| "no FFmpeg with the native vvc decoder".to_string())
+    pinned_ffmpeg().into_iter().chain([PathBuf::from("ffmpeg")]).find(|p| has_native_vvc(p)).ok_or_else(|| "no FFmpeg with the native vvc decoder".to_string())
 }
 
 fn best<T>(runs: usize, mut f: impl FnMut() -> (Duration, T)) -> (Duration, T) {
