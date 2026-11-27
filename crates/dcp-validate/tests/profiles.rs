@@ -2,7 +2,7 @@
 
 use cfa4_dcp::Standard;
 use cfa4_dcp_validate::profile::{BUILTIN, HISTORY, MAX_PROFILE_BYTES, PROFILE_FORMAT};
-use cfa4_dcp_validate::rules::{AUD_LOUDNESS, MARK_MARKERS, NAME_ISDCF, PIC_FORMAT, PKL_HASH, SUB_DOCUMENTS};
+use cfa4_dcp_validate::rules::{AM_UNLISTED, AUD_LOUDNESS, MARK_MARKERS, NAME_ISDCF, PIC_FORMAT, PKL_HASH, SUB_DOCUMENTS};
 use cfa4_dcp_validate::{Profile, ProfileError};
 
 #[test]
@@ -30,10 +30,24 @@ fn every_builtin_profile_has_a_history_and_checks_out() {
 fn cinema_profiles_gained_the_picture_format_in_version_2() {
     for id in ["smpte-cinema", "interop-cinema", "delivery-preflight"] {
         let v1 = Profile::builtin_version(id, 1).unwrap();
-        let v2 = Profile::builtin(id).unwrap();
-        assert_eq!(v2.version, 2);
+        let v2 = Profile::builtin_version(id, 2).unwrap();
         assert!(!v1.contains(PIC_FORMAT) && v2.contains(PIC_FORMAT), "{id}");
         assert_eq!(v1.rules.len() + 1, v2.rules.len(), "{id}");
+        assert!(!v1.contains(AM_UNLISTED) && !v2.contains(AM_UNLISTED), "{id}: older versions stay as they were");
+    }
+}
+
+#[test]
+fn unlisted_documents_rule_came_with_the_next_profile_versions() {
+    for (id, old, new) in [("full-integrity", 1, 2), ("smpte-cinema", 2, 3), ("interop-cinema", 2, 3), ("delivery-preflight", 2, 3)] {
+        let before = Profile::builtin_version(id, old).unwrap();
+        let after = Profile::builtin(id).unwrap();
+        assert_eq!(after.version, new, "{id}");
+        assert!(!before.contains(AM_UNLISTED) && after.contains(AM_UNLISTED), "{id}");
+        assert_eq!(before.rules.len() + 1, after.rules.len(), "{id}");
+    }
+    for id in ["quick-scan", "security", "audio-quality", "subtitle-accessibility"] {
+        assert!(!Profile::builtin(id).unwrap().contains(AM_UNLISTED), "{id}");
     }
 }
 

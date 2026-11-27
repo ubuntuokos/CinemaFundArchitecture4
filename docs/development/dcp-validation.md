@@ -171,7 +171,7 @@ The plan's §12 list is covered elsewhere for: subtitle timing, fonts and PNG re
 (`tests/subtitles.rs`), signatures and certificate identity (`tests/signatures.rs`), audio channels and
 format (`src/tests.rs`), a cancelled run and bad paths (`src/tests.rs`), and a valid Interop package
 (`src/tests.rs`). **Not covered yet:** an encrypted DCP, a package with several composition or packing lists
-(a stray PKL and CPL the asset map does not list change nothing in the result; whether that should be a finding is open),
+(a stray PKL or CPL the asset map does not list is now a warning, `DCP.AM.007`, in `full-integrity` v2 and the cinema and preflight profiles v3; older versions stay as they were),
 a very large DCP, and the host-application, packaging and leak checks of the plan's
 second list.
 
