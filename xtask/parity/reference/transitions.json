@@ -1,0 +1,355 @@
+{
+  "schema": 1,
+  "area": "transitions",
+  "outOfScope": [],
+  "items": [
+    {
+      "path": "Video Transitions ▸ Animation ▸ Block Motion",
+      "source": "docs/target-effects-reference.md"
+    },
+    {
+      "path": "Video Transitions ▸ Animation ▸ Flip Motion",
+      "source": "docs/target-effects-reference.md"
+    },
+    {
+      "path": "Video Transitions ▸ Animation ▸ Fold Motion",
+      "source": "docs/target-effects-reference.md"
+    },
+    {
+      "path": "Video Transitions ▸ Animation ▸ Pop Motion",
+      "source": "docs/target-effects-reference.md"
+    },
+    {
+      "path": "Video Transitions ▸ Animation ▸ Pull Motion",
+      "source": "docs/target-effects-reference.md"
+    },
+    {
+      "path": "Video Transitions ▸ Animation ▸ Spin Motion",
+      "source": "docs/target-effects-reference.md"
+    },
+    {
+      "path": "Video Transitions ▸ Animation ▸ Spring Motion",
+      "source": "docs/target-effects-reference.md"
+    },
+    {
+      "path": "Video Transitions ▸ Animation ▸ Travel Motion",
+      "source": "docs/target-effects-reference.md"
+    },
+    {
+      "path": "Video Transitions ▸ Dissolve ▸ Additive Dissolve",
+      "source": "docs/target-effects-reference.md"
+    },
+    {
+      "path": "Video Transitions ▸ Dissolve ▸ Blur Dissolve",
+      "source": "docs/target-effects-reference.md"
+    },
+    {
+      "path": "Video Transitions ▸ Dissolve ▸ Burn Alpha",
+      "source": "docs/target-effects-reference.md"
+    },
+    {
+      "path": "Video Transitions ▸ Dissolve ▸ Cross Dissolve",
+      "source": "docs/target-effects-reference.md"
+    },
+    {
+      "path": "Video Transitions ▸ Dissolve ▸ Dip to Black",
+      "source": "docs/target-effects-reference.md"
+    },
+    {
+      "path": "Video Transitions ▸ Dissolve ▸ Dip to Color",
+      "source": "docs/target-effects-reference.md"
+    },
+    {
+      "path": "Video Transitions ▸ Dissolve ▸ Dip to White",
+      "source": "docs/target-effects-reference.md"
+    },
+    {
+      "path": "Video Transitions ▸ Dissolve ▸ Film Dissolve",
+      "source": "docs/target-effects-reference.md"
+    },
+    {
+      "path": "Video Transitions ▸ Dissolve ▸ Luma Fade",
+      "source": "docs/target-effects-reference.md"
+    },
+    {
+      "path": "Video Transitions ▸ Dissolve ▸ Morph Cut",
+      "source": "docs/target-effects-reference.md"
+    },
+    {
+      "path": "Video Transitions ▸ Dissolve ▸ Mosaic",
+      "source": "docs/target-effects-reference.md"
+    },
+    {
+      "path": "Video Transitions ▸ Grunge & Distort ▸ Chaos",
+      "source": "docs/target-effects-reference.md"
+    },
+    {
+      "path": "Video Transitions ▸ Grunge & Distort ▸ Earthquake",
+      "source": "docs/target-effects-reference.md"
+    },
+    {
+      "path": "Video Transitions ▸ Grunge & Distort ▸ Flicker",
+      "source": "docs/target-effects-reference.md"
+    },
+    {
+      "path": "Video Transitions ▸ Grunge & Distort ▸ Glass",
+      "source": "docs/target-effects-reference.md"
+    },
+    {
+      "path": "Video Transitions ▸ Grunge & Distort ▸ Glitch",
+      "source": "docs/target-effects-reference.md"
+    },
+    {
+      "path": "Video Transitions ▸ Grunge & Distort ▸ Grunge",
+      "source": "docs/target-effects-reference.md"
+    },
+    {
+      "path": "Video Transitions ▸ Grunge & Distort ▸ Kaleidoscope",
+      "source": "docs/target-effects-reference.md"
+    },
+    {
+      "path": "Video Transitions ▸ Grunge & Distort ▸ Liquid Distortion",
+      "source": "docs/target-effects-reference.md"
+    },
+    {
+      "path": "Video Transitions ▸ Grunge & Distort ▸ TV Power",
+      "source": "docs/target-effects-reference.md"
+    },
+    {
+      "path": "Video Transitions ▸ Grunge & Distort ▸ VHS Damage",
+      "source": "docs/target-effects-reference.md"
+    },
+    {
+      "path": "Video Transitions ▸ Immersive Video ▸ VR Chroma Leaks",
+      "source": "docs/target-effects-reference.md"
+    },
+    {
+      "path": "Video Transitions ▸ Immersive Video ▸ VR Gradient Wipe",
+      "source": "docs/target-effects-reference.md"
+    },
+    {
+      "path": "Video Transitions ▸ Immersive Video ▸ VR Iris Wipe",
+      "source": "docs/target-effects-reference.md"
+    },
+    {
+      "path": "Video Transitions ▸ Immersive Video ▸ VR Light Leaks",
+      "source": "docs/target-effects-reference.md"
+    },
+    {
+      "path": "Video Transitions ▸ Immersive Video ▸ VR Light Rays",
+      "source": "docs/target-effects-reference.md"
+    },
+    {
+      "path": "Video Transitions ▸ Immersive Video ▸ VR Mobius Zoom",
+      "source": "docs/target-effects-reference.md"
+    },
+    {
+      "path": "Video Transitions ▸ Immersive Video ▸ VR Random Blocks",
+      "source": "docs/target-effects-reference.md"
+    },
+    {
+      "path": "Video Transitions ▸ Immersive Video ▸ VR Spherical Blur",
+      "source": "docs/target-effects-reference.md"
+    },
+    {
+      "path": "Video Transitions ▸ Lights & Blurs ▸ Burn Chroma",
+      "source": "docs/target-effects-reference.md"
+    },
+    {
+      "path": "Video Transitions ▸ Lights & Blurs ▸ Chroma Leak",
+      "source": "docs/target-effects-reference.md"
+    },
+    {
+      "path": "Video Transitions ▸ Lights & Blurs ▸ Cross Zoom",
+      "source": "docs/target-effects-reference.md"
+    },
+    {
+      "path": "Video Transitions ▸ Lights & Blurs ▸ Directional Blur",
+      "source": "docs/target-effects-reference.md"
+    },
+    {
+      "path": "Video Transitions ▸ Lights & Blurs ▸ Flare",
+      "source": "docs/target-effects-reference.md"
+    },
+    {
+      "path": "Video Transitions ▸ Lights & Blurs ▸ Flash",
+      "source": "docs/target-effects-reference.md"
+    },
+    {
+      "path": "Video Transitions ▸ Lights & Blurs ▸ Glow",
+      "source": "docs/target-effects-reference.md"
+    },
+    {
+      "path": "Video Transitions ▸ Lights & Blurs ▸ Lens Blur",
+      "source": "docs/target-effects-reference.md"
+    },
+    {
+      "path": "Video Transitions ▸ Lights & Blurs ▸ Light Leak",
+      "source": "docs/target-effects-reference.md"
+    },
+    {
+      "path": "Video Transitions ▸ Lights & Blurs ▸ Light Sweep",
+      "source": "docs/target-effects-reference.md"
+    },
+    {
+      "path": "Video Transitions ▸ Lights & Blurs ▸ Phosphor",
+      "source": "docs/target-effects-reference.md"
+    },
+    {
+      "path": "Video Transitions ▸ Lights & Blurs ▸ Radial Blur",
+      "source": "docs/target-effects-reference.md"
+    },
+    {
+      "path": "Video Transitions ▸ Lights & Blurs ▸ Ray",
+      "source": "docs/target-effects-reference.md"
+    },
+    {
+      "path": "Video Transitions ▸ Lights & Blurs ▸ Solarize",
+      "source": "docs/target-effects-reference.md"
+    },
+    {
+      "path": "Video Transitions ▸ Lights & Blurs ▸ Stripe",
+      "source": "docs/target-effects-reference.md"
+    },
+    {
+      "path": "Video Transitions ▸ Lights & Blurs ▸ Zoom Blur",
+      "source": "docs/target-effects-reference.md"
+    },
+    {
+      "path": "Video Transitions ▸ Slide ▸ 3D Roll",
+      "source": "docs/target-effects-reference.md"
+    },
+    {
+      "path": "Video Transitions ▸ Slide ▸ Film Roll",
+      "source": "docs/target-effects-reference.md"
+    },
+    {
+      "path": "Video Transitions ▸ Slide ▸ Push",
+      "source": "docs/target-effects-reference.md"
+    },
+    {
+      "path": "Video Transitions ▸ Slide ▸ Roll",
+      "source": "docs/target-effects-reference.md"
+    },
+    {
+      "path": "Video Transitions ▸ Slide ▸ Slide",
+      "source": "docs/target-effects-reference.md"
+    },
+    {
+      "path": "Video Transitions ▸ Slide ▸ Split",
+      "source": "docs/target-effects-reference.md"
+    },
+    {
+      "path": "Video Transitions ▸ Slide ▸ Stretch",
+      "source": "docs/target-effects-reference.md"
+    },
+    {
+      "path": "Video Transitions ▸ Slide ▸ Whip",
+      "source": "docs/target-effects-reference.md"
+    },
+    {
+      "path": "Video Transitions ▸ Smart Tools ▸ Motion Camera",
+      "source": "docs/target-effects-reference.md"
+    },
+    {
+      "path": "Video Transitions ▸ Smart Tools ▸ Motion Tween",
+      "source": "docs/target-effects-reference.md"
+    },
+    {
+      "path": "Video Transitions ▸ Smart Tools ▸ Shape Dissolve",
+      "source": "docs/target-effects-reference.md"
+    },
+    {
+      "path": "Video Transitions ▸ Smart Tools ▸ Shape Flow",
+      "source": "docs/target-effects-reference.md"
+    },
+    {
+      "path": "Video Transitions ▸ Text ▸ Text Animator",
+      "source": "docs/target-effects-reference.md"
+    },
+    {
+      "path": "Video Transitions ▸ Text ▸ Typewriter",
+      "source": "docs/target-effects-reference.md"
+    },
+    {
+      "path": "Video Transitions ▸ Transformers ▸ 3D Spin",
+      "source": "docs/target-effects-reference.md"
+    },
+    {
+      "path": "Video Transitions ▸ Transformers ▸ 3D Spinback",
+      "source": "docs/target-effects-reference.md"
+    },
+    {
+      "path": "Video Transitions ▸ Transformers ▸ Frame",
+      "source": "docs/target-effects-reference.md"
+    },
+    {
+      "path": "Video Transitions ▸ Transformers ▸ Louver",
+      "source": "docs/target-effects-reference.md"
+    },
+    {
+      "path": "Video Transitions ▸ Transformers ▸ Mirror",
+      "source": "docs/target-effects-reference.md"
+    },
+    {
+      "path": "Video Transitions ▸ Transformers ▸ Page Peel",
+      "source": "docs/target-effects-reference.md"
+    },
+    {
+      "path": "Video Transitions ▸ Transformers ▸ Slice",
+      "source": "docs/target-effects-reference.md"
+    },
+    {
+      "path": "Video Transitions ▸ Transformers ▸ Wave",
+      "source": "docs/target-effects-reference.md"
+    },
+    {
+      "path": "Video Transitions ▸ Wipe ▸ Clock Wipe",
+      "source": "docs/target-effects-reference.md"
+    },
+    {
+      "path": "Video Transitions ▸ Wipe ▸ Linear Wipe",
+      "source": "docs/target-effects-reference.md"
+    },
+    {
+      "path": "Video Transitions ▸ Wipe ▸ Neon Wipe",
+      "source": "docs/target-effects-reference.md"
+    },
+    {
+      "path": "Video Transitions ▸ Wipe ▸ Panel Wipe",
+      "source": "docs/target-effects-reference.md"
+    },
+    {
+      "path": "Video Transitions ▸ Wipe ▸ Plateau Wipe",
+      "source": "docs/target-effects-reference.md"
+    },
+    {
+      "path": "Video Transitions ▸ Wipe ▸ Radial Wipe",
+      "source": "docs/target-effects-reference.md"
+    },
+    {
+      "path": "Video Transitions ▸ Wipe ▸ Soft Wipe",
+      "source": "docs/target-effects-reference.md"
+    },
+    {
+      "path": "Video Transitions ▸ Wipe ▸ Star Wipe",
+      "source": "docs/target-effects-reference.md"
+    },
+    {
+      "path": "Video Transitions ▸ Wipe ▸ Stretch Wipe",
+      "source": "docs/target-effects-reference.md"
+    },
+    {
+      "path": "Audio Transitions ▸ Crossfade ▸ Constant Power",
+      "source": "docs/target-effects-reference.md"
+    },
+    {
+      "path": "Audio Transitions ▸ Crossfade ▸ Constant Gain",
+      "source": "docs/target-effects-reference.md"
+    },
+    {
+      "path": "Audio Transitions ▸ Crossfade ▸ Exponential Fade",
+      "source": "docs/target-effects-reference.md"
+    }
+  ]
+}
