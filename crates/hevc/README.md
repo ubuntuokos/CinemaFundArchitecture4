@@ -226,10 +226,15 @@ context-coded bins are branch-free. Single-threaded 4K now splits into CABAC res
 
 ## Known gaps
 
-- Range extension coding tools (implicit / explicit RDPCM, cross-component prediction, extended
-  precision, persistent Rice adaptation, bypass alignment, chroma QP offset lists), bit depths above
-  12 and separate colour planes are rejected with `Error::Unsupported` (#167). libx265 emits none of
-  them, so they need hand-built streams or the JCT-VC RExt conformance bitstreams.
+- Range extension coding tools (transform skip up to 32x32 with rotation and its own contexts,
+  implicit / explicit RDPCM, cross-component prediction, chroma QP offset lists, extended
+  precision, persistent Rice adaptation, CABAC bypass alignment, SAO offset scaling,
+  high-precision weighted-prediction offsets, intra smoothing switch) and bit depths up to 16 are
+  decoded; inter prediction above 12 bits and `separate_colour_plane_flag` are rejected with
+  `Error::Unsupported`. The hardware paths (`Sps::check_supported`) still refuse every range
+  extension. libx265 emits none of them: `tests/rext_conformance.rs` checks the JCT-VC RExt
+  conformance streams (`CFA4_HEVC_REXT_DIR`, skipped without them) bit-exactly against the
+  reference decoder's md5; the extension-free paths are covered by unit tests.
 - Tiles and WPP substreams are decoded sequentially (entry points are parsed but the decoder finds
   substream starts itself); parallelism is at the picture level.
 - Error concealment is minimal: missing references are replaced by grey pictures, undecodable

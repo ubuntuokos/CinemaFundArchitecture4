@@ -101,7 +101,15 @@ pub fn filter(r: &mut Refs, mode: u32, n: usize, strong_enabled: bool, is_luma: 
 
 /// Predict an n x n block with `mode` into `out` (stride `os`). `edge_filters`: DC / horizontal /
 /// vertical boundary smoothing (luma blocks smaller than 32x32).
+#[cfg(test)]
 pub fn predict<S: Sample>(r: &Refs, mode: u32, n: usize, edge_filters: bool, bit_depth: u32, out: &mut [S], os: usize) {
+    predict_ext(r, mode, n, edge_filters, false, bit_depth, out, os)
+}
+
+/// [`predict`] with `disableIntraBoundaryFilter` (8.4.4.2.6; implicit RDPCM with transquant
+/// bypass): the horizontal / vertical boundary smoothing is skipped, the DC one stays.
+#[allow(clippy::too_many_arguments)]
+pub fn predict_ext<S: Sample>(r: &Refs, mode: u32, n: usize, edge_filters: bool, no_boundary: bool, bit_depth: u32, out: &mut [S], os: usize) {
     let max = (1i32 << bit_depth) - 1;
     match mode {
         0 => {
@@ -175,7 +183,7 @@ pub fn predict<S: Sample>(r: &Refs, mode: u32, n: usize, edge_filters: bool, bit
                     }
                 }
             }
-            if edge_filters && n < 32 {
+            if edge_filters && !no_boundary && n < 32 {
                 if mode == 26 {
                     for y in 0..n {
                         let v = r.top[1] as i32 + ((r.left[1 + y] as i32 - r.left[0] as i32) >> 1);

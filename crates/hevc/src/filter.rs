@@ -533,14 +533,24 @@ fn sao_ctb<S: Sample>(
     }
 }
 
-/// Lanes of the SAO loops (16-bit arithmetic: samples are at most 12 bits, offsets 7 bits).
+/// Lanes of the SAO loops (16-bit arithmetic: samples up to 14 bits, offsets up to 31 << 4).
 const SAO_LANES: usize = 16;
+/// Largest sample value handled by the 16-bit lanes; deeper pictures use 32-bit arithmetic.
+const WIDE_SAMPLE_MAX: i32 = 16383;
 
 /// Edge offset of a run of samples whose two neighbours (`na`, `nb`) are all usable: per lane
 /// the sum of the two neighbour signs selects the offset (no table lookup), so the loop
 /// vectorises; bit-exact with the per-sample form.
 #[inline(always)]
 fn sao_edge_run<S: Sample>(cur: &[S], na: &[S], nb: &[S], out: &mut [S], by_sum: &[i32; 5], max: i32) {
+    if max > WIDE_SAMPLE_MAX {
+        // above 14 bits the 16-bit lanes would overflow: 32-bit arithmetic
+        for i in 0..cur.len() {
+            let (v, a, b) = (cur[i].to_i32(), na[i].to_i32(), nb[i].to_i32());
+            out[i] = S::from_i32((v + by_sum[(2 + (v - a).signum() + (v - b).signum()) as usize]).clamp(0, max));
+        }
+        return;
+    }
     let o = by_sum.map(|v| v as i16);
     let max = max as i16;
     let lane = |v: i16, a: i16, b: i16| -> S {
@@ -579,6 +589,14 @@ fn lanes_mut<S>(s: &mut [S], i: usize) -> Option<&mut [S; SAO_LANES]> {
 /// four offsets per lane.
 #[inline(always)]
 fn sao_band_run<S: Sample>(src: &[S], out: &mut [S], shift: u32, (band_pos, offs): (i32, [i32; 4]), max: i32) {
+    if max > WIDE_SAMPLE_MAX {
+        for i in 0..src.len() {
+            let v = src[i].to_i32();
+            let k = (((v >> shift) - band_pos) & 31) as usize;
+            out[i] = S::from_i32((v + offs.get(k).copied().unwrap_or(0)).clamp(0, max));
+        }
+        return;
+    }
     let o = offs.map(|v| v as i16);
     let (bp, max) = (band_pos as i16, max as i16);
     let lane = |v: i16| -> S {
@@ -752,5 +770,58 @@ mod luma_filter_tests {
             }
         }
         assert!(filtered > 1000, "only {filtered} edges filtered");
+    }
+}
+
+#[cfg(test)]
+mod sao_tests {
+    use super::*;
+
+    fn xorshift(mut s: u64) -> impl FnMut() -> u64 {
+        move || {
+            s ^= s << 13;
+            s ^= s >> 7;
+            s ^= s << 17;
+            s
+        }
+    }
+
+    /// Edge and band offset on samples of every depth up to 16 bits match the per-sample formulas
+    /// (the 16-bit lanes are used up to 14 bits, 32-bit arithmetic above).
+    #[test]
+    fn edge_and_band_offsets_are_exact_up_to_16_bits() {
+        let mut next = xorshift(0x1234_5678_9abc_def1);
+        for bd in [8u32, 10, 12, 14, 15, 16] {
+            let max = (1i32 << bd) - 1;
+            let scale = bd.saturating_sub(10);
+            for _ in 0..200 {
+                let n = 37;
+                let near = |next: &mut dyn FnMut() -> u64, v: &[u16]| -> Vec<u16> {
+                    v.iter().map(|&x| (x as i64 + (next() % 5) as i64 - 2).clamp(0, max as i64) as u16).collect()
+                };
+                let cur: Vec<u16> = (0..n).map(|_| (next() % (max as u64 + 1)) as u16).collect();
+                let na = near(&mut next, &cur);
+                let nb = near(&mut next, &cur);
+                let offs: [i32; 4] = std::array::from_fn(|_| ((next() % 63) as i32 - 31) << scale);
+                // edge offset
+                let by_sum = [offs[0], offs[1], 0, offs[2], offs[3]];
+                let mut out = vec![0u16; n];
+                sao_edge_run(&cur, &na, &nb, &mut out, &by_sum, max);
+                for i in 0..n {
+                    let (v, a, b) = (cur[i] as i32, na[i] as i32, nb[i] as i32);
+                    let s = (v - a).signum() + (v - b).signum();
+                    assert_eq!(out[i] as i32, (v + by_sum[(2 + s) as usize]).clamp(0, max), "edge bd {bd}");
+                }
+                // band offset
+                let band_pos = (next() % 32) as i32;
+                let mut out = vec![0u16; n];
+                sao_band_run(&cur, &mut out, bd - 5, (band_pos, offs), max);
+                for i in 0..n {
+                    let v = cur[i] as i32;
+                    let k = (((v >> (bd - 5)) - band_pos) & 31) as usize;
+                    assert_eq!(out[i] as i32, (v + offs.get(k).copied().unwrap_or(0)).clamp(0, max), "band bd {bd}");
+                }
+            }
+        }
     }
 }

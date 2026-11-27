@@ -33,7 +33,7 @@ fidelity and the remaining work.
 | Codec | Kind | Crates | Origin | Decode (import) | Encode (export) |
 |---|---|---|---|---|---|
 | H.264 / AVC | video | `crates/h264`, `crates/h264enc` | own | yes: 4:2:0 / 4:2:2 / 4:4:4, 8-14 bit, MBAFF / PAFF, lossless; encoder 8-bit 4:2:0 | yes: H.264 |
-| HEVC / H.265 | video | `crates/hevc` | own | yes: up to 12-bit 4:4:4; no RExt coding tools; encoder Main / Main 10 4:2:0 | yes: H.265 (HEVC) |
+| HEVC / H.265 | video | `crates/hevc` | own | yes: up to 16-bit 4:4:4, all range-extension coding tools (inter prediction up to 12 bits; no separate colour planes); encoder Main / Main 10 4:2:0 | yes: H.265 (HEVC) |
 | MPEG-5 EVC | video | `crates/evc` | ported | yes: Baseline profile: raw .evc streams and MP4 evc1 | no |
 | AVS1-P2 | video | `crates/cavs` | ported | yes: Jizhun profile (AVS1, not AVS+): raw .avs / .cavs streams | no |
 | AVS2-P2 | video | `crates/avs2` | ported | yes: Main / Main 10 profiles (8- and 10-bit): raw .avs2 streams | no |
@@ -121,7 +121,7 @@ fidelity and the remaining work.
 
 | Codec | Premiere | Our decode | Our encode | Fidelity and tests | % | Est. |
 |---|---|---|---|---|---|---|
-| HEVC / H.265 | decode Main, Main 10, 4:2:2 10 (XAVC HS); encode 8/10-bit, HDR | own decoder Main / Main 10 / Main 12 / Main Still Picture, monochrome 4:0:0, 4:2:2 and 4:4:4 up to 12-bit, bit-exact on 60 fixtures, ~225 fps 1080p; RExt coding tools not yet (#167) | own encoder Main / Main 10 4:2:0 (I / P, CRF / CBR / VBR, HDR10 SEI, parallel slices; no B pictures, SAO, 2-pass, 4:2:2 yet, #171–#180), 1080p ~2.3 fps on 4 cores; hardware first where present (NVENC 8-bit and Main 10 HDR) | own encoder: round trips through our decoder, bit-exact agreement of our decoder and ffmpeg on its output, ffprobe HDR signalling; NVENC round trip 48.9 dB (8-bit), 71.1 dB (10-bit) | 70% | 25–50 h |
+| HEVC / H.265 | decode Main, Main 10, 4:2:2 10 (XAVC HS); encode 8/10-bit, HDR | own decoder Main / Main 10 / Main 12 / Main Still Picture, monochrome 4:0:0, 4:2:2 and 4:4:4 up to 12-bit, bit-exact on 60 fixtures and on all 49 JCT-VC range-extension conformance streams (transform skip up to 32x32 with rotation and context, implicit / explicit RDPCM, cross-component prediction, chroma QP offset lists, extended precision, persistent Rice adaptation, CABAC bypass alignment, SAO offset scaling, high-precision weighted-prediction offsets, intra smoothing switch, 8 to 16 bits), ~225 fps 1080p; inter prediction above 12 bits and `separate_colour_plane` refused | own encoder Main / Main 10 4:2:0 (I / P, CRF / CBR / VBR, HDR10 SEI, parallel slices; no B pictures, SAO, 2-pass, 4:2:2 yet, #171–#180), 1080p ~2.3 fps on 4 cores; hardware first where present (NVENC 8-bit and Main 10 HDR) | own encoder: round trips through our decoder, bit-exact agreement of our decoder and ffmpeg on its output, ffprobe HDR signalling; NVENC round trip 48.9 dB (8-bit), 71.1 dB (10-bit) | 70% | 25–50 h |
 | H.264 / AVC | decode all common profiles incl. High 10, 4:2:2 (XAVC S-I, AVC-Intra); encode 8/10-bit | own decoder, **4:2:0 / 4:2:2 / 4:4:4, 8 to 14 bits** (Baseline / Main / High / High 10 / High 4:2:2 / High 4:4:4 Predictive, CABAC / CAVLC; bit-exact with ffmpeg, incl. 16 4:2:2 / 4:4:4 fixtures); no interlaced field / MBAFF (#162), lossless (#163); monochrome 4:0:0 decodes (#279) | own encoder (High / Main / Baseline, B-frames, CBR / VBR / 2-pass); 8-bit 4:2:0 only; hardware NVENC | decode bit-exact on 37+ conformance streams, 500–600 fps 1080p; encode ffprobe-checked, byte-identical across machines | 65% | 20–35 h |
 | ProRes 422 family / 4444 / XQ | decode + encode all | own decode + encode, all six profiles, alpha; interlaced export (two field pictures) in MOV (`fiel`) and MXF (separate-fields descriptor, field dominance) | yes (export UI exposes 422 flavours; 4444 / XQ request #342) | ±1 LSB, 318 fps | 85% | 3–6 h |
 | ProRes RAW | decode | none (#345) | — | — | 0% | 30–50 h (spec availability uncertain) |
@@ -237,6 +237,7 @@ fidelity and the remaining work.
 |---|---|---|
 | 2026-11-21 | minor | Autodesk FLIC decode (`cfa4-flic`, codec backlog CB-35.2) |
 | 2026-11-21 | minor | Bink 1 video and audio decode in Bink files (`cfa4-bink`, codec backlog CB-23.1, CB-24.1) |
+| 2026-11-27 | minor | HEVC range-extension coding tools (#167): all 49 JCT-VC RExt conformance streams bit-exact |
 | 2026-11-23 | minor | Huffyuv MT (`HYMT`) sliced packets in AVI and Matroska (`cfa4-huffyuv`, codec backlog CB-36.1) |
 | 2026-11-23 | minor | Huffyuv 1.x classic tables and 4:2:0 streams (`cfa4-huffyuv`, FFmpeg port) |
 | 2026-11-22 | minor | Nintendo MobiClip video and sound decode (`cfa4-mobiclip`, codec backlog CB-28.2) |

@@ -115,7 +115,8 @@ pub struct Picture {
     pub chroma_height: u32,
     /// Geometry of the chroma planes as `chroma_format_idc`: 1 = 4:2:0, 2 = 4:2:2, 3 = 4:4:4.
     pub chroma_format: u32,
-    /// Luma bit depth (chroma uses the same storage type).
+    /// Luma bit depth (chroma uses the same storage type: 16-bit words when luma or chroma
+    /// exceeds 8 bits).
     pub bit_depth: u32,
     pub y: Plane,
     pub u: Plane,

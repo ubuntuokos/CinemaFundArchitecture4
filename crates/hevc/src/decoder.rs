@@ -351,8 +351,8 @@ impl Decoder {
             },
             prev,
         )?;
-        sps.check_supported()?;
-        pps.check_supported()?;
+        sps.check_decodable()?;
+        pps.check_decodable()?;
         // `start_picture` creates the frame and DPB state. Do not allocate those for a NAL that
         // contains only a syntactically valid slice header and no CABAC payload.
         ensure!(sh.data_offset < rbsp.len(), "empty slice segment data");
@@ -626,7 +626,8 @@ fn make_picture(o: &Output<FrameRef>) -> Picture {
     let (sx, sy) = (o.frame.sx, o.frame.sy);
     let (ccw, cch) = (cw.div_ceil(1 << sx), ch.div_ceil(1 << sy));
     let bd = o.meta.bit_depth;
-    let (y, u, v) = o.frame.cropped_planes((cx, cy, cw, ch), bd <= 8);
+    // 16-bit planes as soon as luma or chroma is deeper than 8 bits (the picture has one sample type)
+    let (y, u, v) = o.frame.cropped_planes((cx, cy, cw, ch), stores_u8(o.frame.bit_depth, o.frame.bit_depth_c));
     Picture {
         width: cw as u32,
         height: ch as u32,
