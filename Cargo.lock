@@ -2713,6 +2713,16 @@ dependencies = [
 ]
 
 [[package]]
+name = "cfa4-usd-probe"
+version = "0.10.0"
+dependencies = [
+ "cfa4-sandbox",
+ "serde",
+ "serde_json",
+ "thiserror 2.0.21",
+]
+
+[[package]]
 name = "cfa4-utvideo"
 version = "0.10.0"
 dependencies = [

@@ -1,0 +1,56 @@
+name: CFA4 OpenUSD source build (manual)
+
+# docs/plans/CFA4-OPENUSD-SOURCEBUILD-001-0.1.md, S3. Manual only: nothing in CFA4's normal CI calls it.
+# Fetches the pinned OpenUSD and oneTBB sources (scripts/dev/fetch-usd-source.sh, which checks the pinned
+# commit, the SHA-256 of the git archive and the tag signature against packaging/usd-allowed-signers),
+# builds them twice with scripts/dev/build-usd.sh --check-repro (SB-G3: identical file hashes), and keeps
+# BUILDINFO.json and SHA256SUMS of the result as an artifact. It builds no CFA4 release and publishes nothing.
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: cfa4-usd-build
+  cancel-in-progress: false
+
+jobs:
+  build:
+    name: OpenUSD build (${{ matrix.os }})
+    if: ${{ github.repository == 'ubuntuokos/CinemaFundArchitecture4' }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-26.04, ubuntu-24.04]
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 150
+    steps:
+      - name: Checkout CFA4 repository
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - name: Install build tools
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends cmake ninja-build g++ binutils openssh-client git python3
+      - name: Fetch the pinned sources
+        run: |
+          scripts/dev/fetch-usd-source.sh onetbb --yes
+          scripts/dev/fetch-usd-source.sh usd --yes
+      - name: Build twice and compare (SB-G3)
+        run: scripts/dev/build-usd.sh --check-repro --jobs "$(nproc)"
+      - name: Show the build record
+        run: |
+          cat target/usd-install/BUILDINFO.json
+          wc -l target/usd-install/SHA256SUMS
+          du -sh target/usd-install
+      - name: Keep the build record
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: usd-buildinfo-${{ matrix.os }}
+          path: |
+            target/usd-install/BUILDINFO.json
+            target/usd-install/SHA256SUMS
+          retention-days: 30

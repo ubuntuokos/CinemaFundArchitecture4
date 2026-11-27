@@ -144,6 +144,7 @@ const LAYERS: &[(&str, u8)] = &[
     ("live", 1),
     ("sandbox", 1),
     ("vdb", 1),
+    ("usd-probe", 1),
     ("tasks", 2),
     ("store", 5),
     ("edit", 2),
@@ -193,6 +194,7 @@ const L0_FOUNDATION: &[&str] = &["time", "geom", "color", "bitstream", "testkit"
 const SAME_LAYER: &[(&str, &str)] = &[
     ("dcp-inspect", "dcp-validate"),
     ("vdb", "sandbox"),
+    ("usd-probe", "sandbox"),
     ("media", "frame"),
     ("io-core", "frame"),
     ("project", "media"),

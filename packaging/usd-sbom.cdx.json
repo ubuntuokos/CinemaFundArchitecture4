@@ -1,0 +1,158 @@
+{
+  "bomFormat": "CycloneDX",
+  "specVersion": "1.5",
+  "version": 1,
+  "metadata": {
+    "component": {
+      "type": "application",
+      "name": "cfa4-openusd-worker",
+      "version": "26.11.1"
+    },
+    "properties": [
+      {
+        "name": "note",
+        "value": "hand-written from packaging/usd-version.env and the S2 audit; the build-bound SBOM is S3"
+      }
+    ]
+  },
+  "components": [
+    {
+      "type": "library",
+      "name": "OpenUSD",
+      "version": "26.11.1",
+      "licenses": [
+        {
+          "license": {
+            "name": "TOST-1.0"
+          }
+        }
+      ],
+      "purl": "pkg:github/PixarAnimationStudios/OpenUSD@v26.11.1",
+      "hashes": [
+        {
+          "alg": "SHA-256",
+          "content": "6577d11be76d0413645fa7913aa66f2ab345ccd38c54176b28bf2ba6c314b9c0"
+        }
+      ],
+      "properties": [
+        {
+          "name": "git-commit",
+          "value": "96c1989167d2aaab5bd34627f32a321a6b79866b"
+        },
+        {
+          "name": "sha256-of",
+          "value": "git archive --format=tar"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "name": "oneTBB",
+      "version": "2021.12.0",
+      "licenses": [
+        {
+          "license": {
+            "name": "Apache-2.0"
+          }
+        }
+      ],
+      "purl": "pkg:github/oneapi-src/oneTBB@v2021.12.0",
+      "hashes": [
+        {
+          "alg": "SHA-256",
+          "content": "bf14f05ed3cf4954cd46bdb3ba24045c61157379b841692a4927e9a5beb8a052"
+        }
+      ],
+      "properties": [
+        {
+          "name": "git-commit",
+          "value": "9afd759b72c0c233cd5ea3c3c06b0894c9da9c54"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "name": "RapidJSON (bundled in OpenUSD)",
+      "version": "unknown",
+      "licenses": [
+        {
+          "license": {
+            "name": "MIT"
+          }
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "name": "LZ4 (bundled in OpenUSD)",
+      "version": "unknown",
+      "licenses": [
+        {
+          "license": {
+            "name": "BSD-2-Clause"
+          }
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "name": "CLI11 (bundled in OpenUSD)",
+      "version": "2.3.1",
+      "licenses": [
+        {
+          "license": {
+            "name": "BSD-3-Clause"
+          }
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "name": "tsl::robin-map (bundled in OpenUSD)",
+      "version": "unknown",
+      "licenses": [
+        {
+          "license": {
+            "name": "MIT"
+          }
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "name": "double-conversion (bundled in OpenUSD)",
+      "version": "unknown",
+      "licenses": [
+        {
+          "license": {
+            "name": "BSD-3-Clause"
+          }
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "name": "IlmBase half (bundled in OpenUSD)",
+      "version": "2.5.3",
+      "licenses": [
+        {
+          "license": {
+            "name": "BSD-3-Clause"
+          }
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "name": "PEGTL (bundled in OpenUSD)",
+      "version": "3.2.7",
+      "licenses": [
+        {
+          "license": {
+            "name": "MIT"
+          }
+        }
+      ]
+    }
+  ]
+}

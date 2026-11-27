@@ -1,0 +1,7 @@
+# SPDX-License-Identifier: GPL-3.0-or-later
+# git allowed_signers file for the OpenUSD release tags (D-SB-4, accepted by the owner 2026-11-27).
+# Trust level: first use + GitHub "Verified" (NOT officially authenticated by Pixar): the key is the one the
+# v26.08, v26.11.0 and v26.11.1 tags and the release commits are signed with, and GitHub shows account pixar-oss
+# with this fingerprint. Fingerprint: SHA256:qwkmpTioL2use1ERFDXTRPH1ucQs7E2tRG+RjzQh+k8
+# See docs/plans/CFA4-OPENUSD-SOURCEBUILD-001-D-SB-4-JELOLT.md.
+pixar-oss@users.noreply.github.com namespaces="git" ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIN0/sNQWlhXoYlVI+NcN91YwVL/Z2h1qV8vV0cDiJc8x

@@ -43,6 +43,9 @@ python3 -m unittest discover -s scripts/ci -p 'test_cfa4_xdg.py' -v
 # CFA4-FFMPEG-9.1-001 R1: the pinned FFmpeg version is written only in packaging/ffmpeg-version.env.
 python3 -m unittest discover -s scripts/ci -p 'test_check_ffmpeg_version.py' -v
 python3 scripts/ci/check_ffmpeg_version.py
+# G-USD-1 SB-G1/SB-G8: the 3D donor source pins and the manual fetch script (offline test, no download).
+python3 -I -m unittest discover -s scripts/ci -p 'test_fetch_usd_source.py' -v
+python3 -I -m unittest discover -s packaging/linux -p 'test_stage_usd.py' -v
 python3 - <<'PY'
 from pathlib import Path
 import ast

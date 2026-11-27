@@ -1,0 +1,16 @@
+[package]
+name = "cfa4-usd-probe"
+description = "Host side of the OpenUSD probe worker (layer L1): runs workers/usd-probe as a separate process under Landlock and seccomp, parses its answer, never lets a worker failure reach the engine (plan CFA4-OPENUSD-SOURCEBUILD-001, S5, SB-G6)"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+rust-version.workspace = true
+
+[lints]
+workspace = true
+
+[dependencies]
+serde = { workspace = true }
+serde_json = { workspace = true }
+thiserror = { workspace = true }
+cfa4-sandbox = { workspace = true }
