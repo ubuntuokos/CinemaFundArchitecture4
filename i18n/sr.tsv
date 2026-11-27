@@ -4975,3 +4975,19 @@ export.summary	Low	низак
 	DVD-Video folder (VIDEO_TS): MPEG-2 720×576 at 25 fps, 16:9 anamorphic, 6 Mbps, GOP 15, AC-3 192 kbps, chapters from the sequence's Chapter markers	DVD-Video фасцикла (VIDEO_TS): MPEG-2 720×576, 25 fps, 16:9 анаморфно, 6 Mbps, GOP 15, AC-3 192 kbps, поглавља из маркера поглавља секвенце
 	DVD-Video NTSC 16:9	DVD-Video NTSC 16:9
 	DVD-Video folder (VIDEO_TS): MPEG-2 720×480 at 29.97 fps, 16:9 anamorphic, 6 Mbps, GOP 18, AC-3 192 kbps, chapters from the sequence's Chapter markers	DVD-Video фасцикла (VIDEO_TS): MPEG-2 720×480, 29.97 fps, 16:9 анаморфно, 6 Mbps, GOP 18, AC-3 192 kbps, поглавља из маркера поглавља секвенце
+
+# DCP package views (DCP-23)
+	Package	Пакет
+	Composition	Композиција
+	Security	Безбедност
+	Save HTML…	Сачувај HTML…
+	Asset map	Мапа ресурса
+	Packing list	Списак пакета
+	Track file	Датотека записа
+	Not a file	Није датотека
+	Unsafe path	Небезбедна путања
+	Reel {n}	Колут {n}
+	Signed documents	Потписани документи
+	Encrypted assets	Шифровани ресурси
+	Key ID: {id}	ИД кључа: {id}
+	Package structure unavailable: {error}	Структура пакета није доступна: {error}

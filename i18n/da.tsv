@@ -4977,3 +4977,19 @@ export.summary	Low	lav
 	DVD-Video folder (VIDEO_TS): MPEG-2 720×576 at 25 fps, 16:9 anamorphic, 6 Mbps, GOP 15, AC-3 192 kbps, chapters from the sequence's Chapter markers	DVD-Video-mappe (VIDEO_TS): MPEG-2 720×576, 25 fps, 16:9 anamorfisk, 6 Mbps, GOP 15, AC-3 192 kbps, kapitler fra sekvensens kapitelmarkører
 	DVD-Video NTSC 16:9	DVD-Video NTSC 16:9
 	DVD-Video folder (VIDEO_TS): MPEG-2 720×480 at 29.97 fps, 16:9 anamorphic, 6 Mbps, GOP 18, AC-3 192 kbps, chapters from the sequence's Chapter markers	DVD-Video-mappe (VIDEO_TS): MPEG-2 720×480, 29.97 fps, 16:9 anamorfisk, 6 Mbps, GOP 18, AC-3 192 kbps, kapitler fra sekvensens kapitelmarkører
+
+# DCP package views (DCP-23)
+	Package	Pakke
+	Composition	Komposition
+	Security	Sikkerhed
+	Save HTML…	Gem HTML…
+	Asset map	Aktivoversigt
+	Packing list	Pakkeliste
+	Track file	Sporfil
+	Not a file	Ikke en fil
+	Unsafe path	Usikker sti
+	Reel {n}	Rulle {n}
+	Signed documents	Signerede dokumenter
+	Encrypted assets	Krypterede aktiver
+	Key ID: {id}	Nøgle-id: {id}
+	Package structure unavailable: {error}	Pakkestrukturen er ikke tilgængelig: {error}
