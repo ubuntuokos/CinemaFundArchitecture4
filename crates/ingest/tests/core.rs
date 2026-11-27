@@ -132,3 +132,16 @@ fn events_serialize_with_provisional_names() {
     let j = serde_json::to_string(&r.events()[0]).unwrap();
     assert!(j.contains("\"kind\""));
 }
+
+#[test]
+fn manual_quarantine_and_release_are_journaled() {
+    let mut r = testsrc::TestRecorder::new();
+    let h = r.start(job()).unwrap();
+    r.push_frames(h, 5, 0).unwrap();
+    r.stop(h).unwrap();
+    assert!(r.transition(h, Trigger::Quarantine, " ").is_err());
+    assert_eq!(r.transition(h, Trigger::Quarantine, "checksum differs").unwrap(), State::Quarantined);
+    assert_eq!(r.transition(h, Trigger::Release, "checked by hand").unwrap(), State::Recoverable);
+    assert!(r.events().iter().any(|e| e.name() == "ingest.media.quarantined"));
+    assert!(matches!(r.transition(RecordHandle(77), Trigger::Quarantine, "x"), Err(IngestError::UnknownHandle(77))));
+}

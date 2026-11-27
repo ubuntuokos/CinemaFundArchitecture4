@@ -85,6 +85,20 @@ impl TestRecorder {
         Ok(())
     }
 
+    /// A manual transition of a session (quarantine, release, ...): it is journaled and published like
+    /// any other. `reason` is required where the state machine says so.
+    pub fn transition(&mut self, h: RecordHandle, trigger: Trigger, reason: &str) -> Result<State, IngestError> {
+        let a = match self.active.as_mut().filter(|a| a.id == h.0) {
+            Some(a) => a,
+            None => self.done.get_mut(&h.0).ok_or(IngestError::UnknownHandle(h.0))?,
+        };
+        let at = a.extent.view().available;
+        let ev = a.session.apply(trigger, at, reason)?;
+        let state = a.session.state();
+        self.events.push(ev);
+        Ok(state)
+    }
+
     /// Inject a fault: the recording is interrupted, its readable part is kept (`Recoverable`).
     pub fn inject_fault(&mut self, h: RecordHandle, reason: &str) -> Result<(), IngestError> {
         let a = self.active_mut(h)?;
