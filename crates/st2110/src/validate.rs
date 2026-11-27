@@ -6,10 +6,11 @@
 //! Rules checked:
 //! - `N1` no `jxsv` (JPEG XS) `rtpmap` anywhere (plan D10).
 //! - `N2` an IPv4 multicast destination is not in 224.0.0.0/24 or 224.0.1.0/24 (§6.2, §8.4).
-//! - `N3` one payload type per `m=` section: no RTP session multiplexing (§6.5).
+//! - `N3` one payload type per `m=` section, and no two sections (other than the legs of a DUP pair) sending
+//!   the same source to the same address and port: no RTP session multiplexing (§6.5).
 //! - `N4` `MAXUDP`, when given, is a number from 1461 to 8960 (§6.2; the standard limit is 1460).
-//! - `N5` `ts-refclk` and `mediaclk` are present (media or session level) and readable; with a PTP
-//!   reference the media clock is `direct=0` (§8.2, §8.3).
+//! - `N5` `ts-refclk` is present (media level, or inherited from the session) and `mediaclk` is present in each
+//!   media section; both are readable, and the media clock offset is 0 (§8.2, §8.3).
 //! - `N6` an ST 2022-7 pair (`a=group:DUP`) names two existing media sections that agree on
 //!   everything the receiver merges on, and the two flows do not share both source and
 //!   destination address (§8.5).
@@ -55,6 +56,7 @@ pub fn check(session: &Session) -> Vec<Finding> {
     for (i, m) in session.media.iter().enumerate() {
         check_media(session, i, m, &mut out);
     }
+    check_endpoints(session, &mut out);
     check_pairs(session, &mut out);
     out
 }
@@ -73,8 +75,8 @@ fn check_media(session: &Session, i: usize, m: &Media, out: &mut Vec<Finding>) {
             find(out, "N1", Some(i), e.to_string());
         }
     }
-    // N2: destinations.
-    for c in session.connections.iter().chain(&m.connections) {
+    // N2: the effective destinations: a media-level c= replaces the session-level one.
+    for c in effective_connections(session, m) {
         if let Some(ip) = connection_address(c)
             && let Some(why) = reserved_multicast(ip)
         {
@@ -88,36 +90,45 @@ fn check_media(session: &Session, i: usize, m: &Media, out: &mut Vec<Finding>) {
     // N4.
     for a in m.attributes.iter().filter(|a| a.name == "fmtp") {
         let Some(v) = a.value.as_deref() else { continue };
-        let params = v.split_once(' ').map_or("", |(_, p)| p);
-        let Some(max) = crate::sdp::FmtpParams::parse(params).get("MAXUDP").map(str::to_string) else { continue };
+        let params = crate::sdp::FmtpParams::parse(v.split_once(' ').map_or("", |(_, p)| p));
+        if !params.has("MAXUDP") {
+            continue; // genuinely absent: the standard limit applies
+        }
+        // Present without a value is as wrong as present with a bad one.
+        let max = params.get("MAXUDP").unwrap_or("").to_string();
         match max.parse::<usize>() {
             Ok(n) if n > STANDARD_UDP_LIMIT && n <= EXTENDED_UDP_LIMIT => {}
             _ => find(out, "N4", Some(i), format!("MAXUDP={max} must be a number above {STANDARD_UDP_LIMIT} and at most {EXTENDED_UDP_LIMIT}")),
         }
     }
     // N5.
-    let attr = |name: &str| m.attribute(name).or_else(|| session.attributes.iter().find(|a| a.name == name).and_then(|a| a.value.as_deref()));
-    let refclk = match attr("ts-refclk") {
-        None => {
-            find(out, "N5", Some(i), "a=ts-refclk is missing");
-            None
-        }
-        Some(v) => match RefClock::parse(v) {
-            Ok(r) => Some(r),
-            Err(e) => {
+    match effective_attribute(session, m, "ts-refclk") {
+        None => find(out, "N5", Some(i), "a=ts-refclk is missing"),
+        Some(v) => {
+            if let Err(e) = RefClock::parse(v) {
                 find(out, "N5", Some(i), e.to_string());
-                None
             }
-        },
-    };
-    match attr("mediaclk").map(MediaClock::parse) {
-        None => find(out, "N5", Some(i), "a=mediaclk is missing"),
+        }
+    }
+    // The media clock is a media-level attribute (§8.3); only ts-refclk may be inherited.
+    match m.attribute("mediaclk").map(MediaClock::parse) {
+        None => find(out, "N5", Some(i), "a=mediaclk is missing from the media section"),
         Some(Err(e)) => find(out, "N5", Some(i), e.to_string()),
-        Some(Ok(MediaClock::Direct(o))) if o != 0 && matches!(refclk, Some(RefClock::Ptp { .. } | RefClock::PtpTraceable)) => {
-            find(out, "N5", Some(i), format!("mediaclk direct={o}: ST 2110-10 requires direct=0 with a PTP reference"));
+        Some(Ok(MediaClock::Direct(o))) if o != 0 => {
+            find(out, "N5", Some(i), format!("mediaclk direct={o}: ST 2110-10 requires an offset of 0"));
         }
         Some(Ok(_)) => {}
     }
+}
+
+/// The `c=` lines that apply to `m`: its own, or the session's when it has none.
+fn effective_connections<'a>(session: &'a Session, m: &'a Media) -> &'a [String] {
+    if m.connections.is_empty() { &session.connections } else { &m.connections }
+}
+
+/// A single-valued attribute of `m`, from the session level when the media section has none.
+fn effective_attribute<'a>(session: &'a Session, m: &'a Media, name: &str) -> Option<&'a str> {
+    m.attribute(name).or_else(|| session.attributes.iter().find(|a| a.name == name).and_then(|a| a.value.as_deref()))
 }
 
 /// The address of a `c=` line (`IN IP4 239.1.1.1/32`), without the TTL or count.
@@ -146,8 +157,38 @@ fn source_address(m: &Media) -> Option<IpAddr> {
     f.next()?.parse().ok()
 }
 
-fn destination(m: &Media) -> Option<IpAddr> {
-    m.connections.first().and_then(|c| connection_address(c))
+fn destination(session: &Session, m: &Media) -> Option<IpAddr> {
+    effective_connections(session, m).first().and_then(|c| connection_address(c))
+}
+
+/// Two `m=` sections that send the same source to the same address and port are one RTP
+/// session carrying two streams (multiplexing, §6.5), unless they are the legs of a DUP pair.
+fn check_endpoints(session: &Session, out: &mut Vec<Finding>) {
+    let dup_legs: Vec<(usize, usize)> = session
+        .attributes
+        .iter()
+        .filter(|a| a.name == "group")
+        .filter_map(|g| {
+            let mut f = g.value.as_deref()?.split_whitespace();
+            (f.next() == Some("DUP")).then_some(())?;
+            let pos = |mid: &str| session.media.iter().position(|m| m.attribute("mid") == Some(mid));
+            Some((pos(f.next()?)?, pos(f.next()?)?))
+        })
+        .collect();
+    for (b, mb) in session.media.iter().enumerate() {
+        for (a, ma) in session.media.iter().enumerate().take(b) {
+            let paired = dup_legs.iter().any(|&(x, y)| (x, y) == (a, b) || (x, y) == (b, a));
+            let (da, db) = (destination(session, ma), destination(session, mb));
+            if !paired && da.is_some() && da == db && ma.port == mb.port && source_address(ma) == source_address(mb) {
+                find(
+                    out,
+                    "N3",
+                    Some(b),
+                    format!("media {a} and {b} send the same source to the same address and port: RTP session multiplexing is not allowed"),
+                );
+            }
+        }
+    }
 }
 
 fn check_pairs(session: &Session, out: &mut Vec<Finding>) {
@@ -175,12 +216,13 @@ fn check_pairs(session: &Session, out: &mut Vec<Finding>) {
         // What the receiver merges on must be identical: payload description and clocks.
         let describe = |m: &Media| {
             let pick = |name: &str| m.attributes.iter().filter(|x| x.name == name).map(|x| x.value.clone().unwrap_or_default()).collect::<Vec<_>>();
-            (m.media.clone(), m.formats.clone(), pick("rtpmap"), pick("fmtp"), pick("ptime"), pick("ts-refclk"), pick("mediaclk"))
+            let refclk = effective_attribute(session, m, "ts-refclk").map(str::to_string);
+            (m.media.clone(), m.formats.clone(), pick("rtpmap"), pick("fmtp"), pick("ptime"), refclk, pick("mediaclk"))
         };
         if describe(ma) != describe(mb) {
             find(out, "N6", Some(b), format!("the two streams of the pair differ in payload, rtpmap, fmtp, ptime or clock attributes (media {a} and {b})"));
         }
-        let (da, db) = (destination(ma), destination(mb));
+        let (da, db) = (destination(session, ma), destination(session, mb));
         let (sa, sb) = (source_address(ma), source_address(mb));
         if da.is_some() && da == db && sa == sb {
             find(
@@ -294,9 +336,62 @@ a=ts-refclk:ptp=IEEE1588-2008:00-1B-21-FF-FE-12-34-56:127\r\na=mediaclk:direct=0
         assert!(rules(&t.replace("mediaclk:direct=0", "mediaclk:direct=5")).iter().all(|r| *r == "N5"));
         assert!(rules(&t.replace("mediaclk:direct=0", "mediaclk:sender")).is_empty());
         assert!(rules(&t.replace("mediaclk:direct=0", "mediaclk:what")).iter().all(|r| *r == "N5"));
-        // A session-level pair of clock lines serves every media section.
-        let s = "v=0\r\no=- 1 1 IN IP4 1.2.3.4\r\ns=t\r\nt=0 0\r\na=ts-refclk:localmac=00-11-22-33-44-55\r\na=mediaclk:sender\r\nm=audio 5004 RTP/AVP 97\r\nc=IN IP4 239.1.1.1/32\r\na=rtpmap:97 L24/48000/2\r\n";
+        // ts-refclk may come from the session; mediaclk must be in the media section (§8.3).
+        let s = "v=0\r\no=- 1 1 IN IP4 1.2.3.4\r\ns=t\r\nt=0 0\r\na=ts-refclk:localmac=00-11-22-33-44-55\r\nm=audio 5004 RTP/AVP 97\r\nc=IN IP4 239.1.1.1/32\r\na=rtpmap:97 L24/48000/2\r\na=mediaclk:sender\r\n";
         assert!(rules(s).is_empty());
+        assert_eq!(rules(&s.replace("a=mediaclk:sender\r\n", "")), vec!["N5"]);
+        assert_eq!(
+            rules(
+                &s.replace("t=0 0\r\n", "t=0 0\r\na=mediaclk:sender\r\n")
+                    .replace("a=mediaclk:sender\r\nm=audio", "m=audio")
+                    .replace("a=rtpmap:97 L24/48000/2\r\na=mediaclk:sender\r\n", "a=rtpmap:97 L24/48000/2\r\n")
+            ),
+            vec!["N5"]
+        );
+        // A non-zero offset is wrong with any reference.
+        assert_eq!(rules(&s.replace("mediaclk:sender", "mediaclk:direct=7")), vec!["N5"]);
+    }
+
+    #[test]
+    fn maxudp_without_a_value_is_an_error() {
+        let t = pair("239.20.1.1", "239.21.1.1").replace("TP=2110TPW", "TP=2110TPW; MAXUDP");
+        assert_eq!(rules(&t), vec!["N4", "N4"]);
+    }
+
+    #[test]
+    fn session_level_destination_and_clock_count_for_the_pair() {
+        // Both legs inherit the session's c= and ts-refclk.
+        let leg = |mid: &str, src: &str| {
+            format!(
+                "m=video 20000 RTP/AVP 98\r\na=source-filter: incl IN IP4 239.20.1.1 {src}\r\na=rtpmap:98 raw/90000\r\na=mediaclk:direct=0\r\na=mid:{mid}\r\n"
+            )
+        };
+        let t = |src_b: &str| {
+            format!(
+                "v=0\r\no=- 1 1 IN IP4 10.20.0.5\r\ns=t\r\nc=IN IP4 239.20.1.1/32\r\nt=0 0\r\na=ts-refclk:localmac=00-11-22-33-44-55\r\na=group:DUP red blue\r\n{}{}",
+                leg("red", "10.20.0.5"),
+                leg("blue", src_b)
+            )
+        };
+        assert_eq!(rules(&t("10.20.0.5")), vec!["N6"], "same source and inherited destination");
+        assert!(rules(&t("10.21.0.5")).is_empty());
+        // A media-level c= replaces the session's: only the effective address is judged.
+        let over = "v=0\r\no=- 1 1 IN IP4 1.2.3.4\r\ns=t\r\nc=IN IP4 224.0.0.9/32\r\nt=0 0\r\na=ts-refclk:localmac=00-11-22-33-44-55\r\nm=video 5000 RTP/AVP 96\r\nc=IN IP4 239.1.1.1/32\r\na=rtpmap:96 raw/90000\r\na=mediaclk:sender\r\n";
+        assert!(rules(over).is_empty());
+        assert_eq!(rules(&over.replace("c=IN IP4 239.1.1.1/32\r\n", "")), vec!["N2"]);
+    }
+
+    #[test]
+    fn two_sections_on_one_endpoint_are_multiplexing() {
+        let one = |pt: u8, port: u16| {
+            format!(
+                "m=video {port} RTP/AVP {pt}\r\nc=IN IP4 239.1.1.1/32\r\na=source-filter: incl IN IP4 239.1.1.1 10.0.0.1\r\na=rtpmap:{pt} raw/90000\r\na=ts-refclk:localmac=00-11-22-33-44-55\r\na=mediaclk:sender\r\n"
+            )
+        };
+        let head = "v=0\r\no=- 1 1 IN IP4 10.0.0.1\r\ns=t\r\nt=0 0\r\n";
+        assert_eq!(rules(&format!("{head}{}{}", one(96, 5000), one(97, 5000))), vec!["N3"]);
+        // Another port is another RTP session.
+        assert!(rules(&format!("{head}{}{}", one(96, 5000), one(97, 5002))).is_empty());
     }
 
     #[test]

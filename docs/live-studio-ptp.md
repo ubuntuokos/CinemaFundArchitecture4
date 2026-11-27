@@ -12,20 +12,25 @@ work, CFA4 only reads their state through `pmc` ([`crates/io-core`](../crates/io
 # Never become the PTP leader (ST 2110-10:2022 7.2). Without this line a CFA4 machine with the best
 # clock on the network would take over and move every other device.
 slaveOnly               1
-domainNumber            127          # ST 2059-2 default; CFA4_PTP_DOMAIN must match
-logAnnounceInterval     -2           # ST 2059-2: 4 announce messages per second
-logSyncInterval         -3           # 8 sync messages per second
+# ST 2059-2 default domain; CFA4_PTP_DOMAIN must match.
+domainNumber            127
+# ST 2059-2: 4 announce messages per second, 8 sync messages per second.
+logAnnounceInterval     -2
+logSyncInterval         -3
 logMinDelayReqInterval  -3
 announceReceiptTimeout  3
 delay_mechanism         E2E
 network_transport       UDPv4
-# time_stamping         hardware     # only with a NIC that supports it; software otherwise
+# time_stamping         hardware
+# (hardware time stamping only with a NIC that supports it; software otherwise)
 
-[enp5s0]                              # the interface that carries the ST 2110 streams
+# The interface that carries the ST 2110 streams.
+[enp5s0]
 ```
 
-`phc2sys -s enp5s0 -c CLOCK_REALTIME -w -O 0` keeps the system clock on the PTP time (UTC with the
-grandmaster's offset; CFA4 adds `currentUtcOffset` to get TAI). For AES67 equipment the message rates must
+`phc2sys -s enp5s0 -c CLOCK_REALTIME -w -n 127` keeps the system clock on UTC: `-w` waits for `ptp4l` and applies the
+grandmaster's `currentUtcOffset` (do not add `-O 0`, which would put TAI into `CLOCK_REALTIME`), and `-n` must be the same
+domain as `ptp4l`. CFA4 adds `currentUtcOffset` to the UTC system time to get TAI. For AES67 equipment the message rates must
 stay inside the AES67 Media Profile limits (AES-R16-2016); the T2 phase checks this.
 
 ## What CFA4 reports and does

@@ -70,7 +70,7 @@ if let Some(image) = rx.pop() { /* image.data, image.complete */ }
     and `ptp4l` is locked, otherwise `NEW`.
   - `validate::check` / `validate` apply the network rules to a parsed SDP and name each broken rule:
     reserved multicast ranges (224.0.0.0/24, 224.0.1.0/24), one payload type per `m=` section,
-    `MAXUDP` range, `ts-refclk`/`mediaclk` present and `direct=0` with PTP, ST 2022-7 pairs (two
+    `MAXUDP` range, `ts-refclk` present (media or session level) and `mediaclk` in each media section with offset 0, one RTP endpoint per stream, ST 2022-7 pairs (two
     existing legs, identical payload and clock lines, not the same source and destination).
   - `RtpMap::parse` refuses `jxsv` (JPEG XS) with a reason (plan D10).
 - **Packing** (`pack`):
