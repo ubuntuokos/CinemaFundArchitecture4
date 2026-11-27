@@ -59,7 +59,7 @@ fn decode_matches_ffmpeg() {
         let mut off = 0;
         for (i, p) in pk.iter().enumerate() {
             let f =
-                decode_frame_with(p, &DecodeOptions { threads: i % 2 == 0, ..Default::default() }).unwrap_or_else(|e| panic!("{} frame {i}: {e}", spec.name));
+                decode_frame_with(p, &DecodeOptions { threads: i % 2 == 0, ffmpeg_compat: true }).unwrap_or_else(|e| panic!("{} frame {i}: {e}", spec.name));
             let ours = planes(&f, spec.pix_fmt);
             let n = frame_samples(&f);
             st.add(&ours, &raw[off..off + n]);
