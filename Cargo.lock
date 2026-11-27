@@ -1948,6 +1948,16 @@ dependencies = [
 ]
 
 [[package]]
+name = "cfa4-ingest"
+version = "0.10.0"
+dependencies = [
+ "cfa4-time",
+ "serde",
+ "serde_json",
+ "thiserror 2.0.21",
+]
+
+[[package]]
 name = "cfa4-interchange"
 version = "0.10.0"
 dependencies = [
