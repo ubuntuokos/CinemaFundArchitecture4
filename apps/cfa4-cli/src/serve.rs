@@ -862,7 +862,8 @@ pub fn handle(s: &mut Session, id: Value, method: &str, params: Value) -> Option
                 // additive capabilities (the protocol number stays): `surface` = `surface.devices`,
                 // `surfaceMonitor` = `surface.monitor` and its `surfaceMonitor` events,
                 // `surfaceLearn` = `surface.learn` and the assignments' `surfaceAction` events
-                "features": ["surface", "surfaceMonitor", "surfaceLearn"],
+                // `hardware` = `hardware.inventory` and `codecs.capabilities`
+                "features": ["surface", "surfaceMonitor", "surfaceLearn", "hardware"],
             }),
         ),
         "engine.execute" => {
@@ -1032,10 +1033,33 @@ pub fn handle(s: &mut Session, id: Value, method: &str, params: Value) -> Option
             Err(e) => Reply::err(id, e),
         },
         "timecodeSync.devices" => Reply::ok(id, crate::serve_tcsync::devices(s)),
+        // Settings ▸ Hardware & Devices ▸ Accelerators and Media & Playback ▸ Decoding & Encoding
+        // (CFA4-SETTINGS-HW-002): the same JSON as `cfa4-cli hardware` / `cfa4-cli codecs`
+        "hardware.inventory" => Reply::ok(id, hardware_report(&params, &HARDWARE, crate::settings_cmd::hardware)),
+        "codecs.capabilities" => Reply::ok(id, hardware_report(&params, &CODECS, crate::codecs_cmd::codecs)),
         "app.quit" => return None,
         other => Reply::err(id, format!("unknown method `{other}`")),
     };
     Some(reply)
+}
+
+/// The last `hardware.inventory` and `codecs.capabilities` reports of this session. Probing
+/// registers the hardware decoder and asks GStreamer, which can take a moment, so a report is made
+/// once and again only on `{"refresh": true}` (the Settings page's Detect Again).
+static HARDWARE: std::sync::Mutex<Option<Value>> = std::sync::Mutex::new(None);
+static CODECS: std::sync::Mutex<Option<Value>> = std::sync::Mutex::new(None);
+
+fn hardware_report(params: &Value, cache: &std::sync::Mutex<Option<Value>>, probe: fn() -> Value) -> Value {
+    let refresh = params.get("refresh").and_then(Value::as_bool).unwrap_or(false);
+    let mut cached = cache.lock().unwrap_or_else(std::sync::PoisonError::into_inner);
+    match &*cached {
+        Some(v) if !refresh => v.clone(),
+        _ => {
+            let v = probe();
+            *cached = Some(v.clone());
+            v
+        }
+    }
 }
 
 /// Serves until stdin closes or `app.quit` arrives.
@@ -1154,6 +1178,29 @@ mod tests {
         // the id is kept on a request with a bad method, so the client can match the error
         let r = parse_request(br#"{"id":"a","method":1}"#).expect_err("error reply");
         assert_eq!(r.json["id"], json!("a"));
+    }
+
+    #[test]
+    fn hardware_reports_are_probed_once_until_refresh() {
+        static PROBES: std::sync::atomic::AtomicU32 = std::sync::atomic::AtomicU32::new(0);
+        fn probe() -> Value {
+            json!({"probe": PROBES.fetch_add(1, std::sync::atomic::Ordering::SeqCst) + 1})
+        }
+        let cache = std::sync::Mutex::new(None);
+        assert_eq!(hardware_report(&json!({}), &cache, probe), json!({"probe": 1}));
+        assert_eq!(hardware_report(&json!({}), &cache, probe), json!({"probe": 1}));
+        assert_eq!(hardware_report(&json!({"refresh": true}), &cache, probe), json!({"probe": 2}));
+        assert_eq!(hardware_report(&json!({"refresh": "yes"}), &cache, probe), json!({"probe": 2}));
+    }
+
+    #[test]
+    fn serve_answers_the_hardware_and_codec_reports() {
+        let mut s = Session::default();
+        for (method, key) in [("hardware.inventory", "inventory"), ("codecs.capabilities", "codecs")] {
+            let r = handle(&mut s, json!(1), method, json!({})).expect("reply");
+            assert_eq!(r.json["ok"], json!(true), "{method}: {}", r.json);
+            assert!(r.json["result"].get(key).is_some(), "{method}: {}", r.json);
+        }
     }
 
     #[test]
