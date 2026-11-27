@@ -1004,3 +1004,21 @@ fn mp4_colour_comes_from_the_sps_without_colr() {
         assert_eq!(color(&s).primaries, Primaries::Bt601_525);
     }
 }
+
+/// CFA4-DNX-SPEC-001 R5: which writing-application tags mark a file as FFmpeg's.
+#[test]
+fn ffmpeg_written_files_are_recognised() {
+    use crate::video::{encoded_by_ffmpeg, written_by_ffmpeg};
+    // MOV / MP4: only the encoder's compressor name, not the muxer's `©too`
+    assert!(encoded_by_ffmpeg("Lavc63.24.100 dnxhd"));
+    assert!(encoded_by_ffmpeg("Lavc dnxhd"));
+    assert!(!encoded_by_ffmpeg("Lavf63.16.100"));
+    assert!(!encoded_by_ffmpeg("DNxHR"));
+    assert!(!encoded_by_ffmpeg(""));
+    // MXF: the Identification set
+    assert!(written_by_ffmpeg(["Lavf62.3.100"]));
+    assert!(written_by_ffmpeg(["FFmpeg", "OP1a Muxer"]));
+    assert!(!written_by_ffmpeg(["Avid Media Composer", "Avid MXF"]));
+    assert!(!written_by_ffmpeg(["CFA4 0.10.0"]));
+    assert!(!written_by_ffmpeg(std::iter::empty::<&str>()));
+}

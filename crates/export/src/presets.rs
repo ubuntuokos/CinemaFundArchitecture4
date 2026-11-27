@@ -99,6 +99,14 @@ fn dvd(size: (u32, u32), rate: FrameRate, par: (u32, u32), gop: u32) -> ExportSe
     }
 }
 
+/// A DVD-Video disc folder (`VIDEO_TS`): the DVD stream of [`dvd`] with 192 kbps AC-3 audio.
+fn dvd_video(size: (u32, u32), rate: FrameRate, par: (u32, u32), gop: u32) -> ExportSettings {
+    let mut s = dvd(size, rate, par, gop);
+    s.mpeg2_container = "dvd".into();
+    s.audio.bitrate_kbps = 192;
+    s
+}
+
 fn mxf(format: Format, codec: MxfVideoCodec, profile: &str) -> ExportSettings {
     let mut s = ExportSettings { mxf_video_codec: codec, ..mov(format, profile) };
     match codec {
@@ -300,6 +308,18 @@ pub fn builtin_presets() -> Vec<ExportPreset> {
             bc,
             "MPEG-2 720×480 at 29.97 fps, 16:9 anamorphic, 6 Mbps, GOP 18, 16-bit 48 kHz LPCM, .mpg (DVD-ready stream; no VIDEO_TS authoring)",
             dvd((720, 480), FrameRate::new(30000, 1001), (32, 27), 18),
+        ),
+        p(
+            "DVD-Video PAL 16:9",
+            bc,
+            "DVD-Video folder (VIDEO_TS): MPEG-2 720×576 at 25 fps, 16:9 anamorphic, 6 Mbps, GOP 15, AC-3 192 kbps, chapters from the sequence's Chapter markers",
+            dvd_video((720, 576), FrameRate::new(25, 1), (64, 45), 15),
+        ),
+        p(
+            "DVD-Video NTSC 16:9",
+            bc,
+            "DVD-Video folder (VIDEO_TS): MPEG-2 720×480 at 29.97 fps, 16:9 anamorphic, 6 Mbps, GOP 18, AC-3 192 kbps, chapters from the sequence's Chapter markers",
+            dvd_video((720, 480), FrameRate::new(30000, 1001), (32, 27), 18),
         ),
         p("MPEG-2 Transport Stream HD 1080", bc, "MPEG-2 video 1920×1080, 18 Mbps average, AAC 192 kbps, .ts", mpeg2("ts", Some((1920, 1080)), 18_000, 192)),
         p("DCP 2K Flat", "Digital Cinema", "SMPTE DCP folder: JPEG 2000 1998×1080 (1.85:1), 5.1 24-bit 48 kHz PCM", dcp("2k", "flat")),
