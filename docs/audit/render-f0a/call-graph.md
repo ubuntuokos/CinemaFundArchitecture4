@@ -837,9 +837,9 @@ graph LR
 
 ## 4. Nyilvános típusok osztályonként
 
-A többi 653 nyilvános típus („other” osztály) csak a `call-graph.json`-ban szerepel.
+A többi 655 nyilvános típus („other” osztály) csak a `call-graph.json`-ban szerepel.
 
-### Képkocka, kép, pixel (31)
+### Képkocka, kép, pixel (32)
 
 | Crate | Modul | Fajta | Típus |
 |---|---|---|---|
@@ -861,6 +861,7 @@ A többi 653 nyilvános típus („other” osztály) csak a `call-graph.json`-b
 | `cfa4-frame` | `lib.rs` | struct | `Region` |
 | `cfa4-frame` | `lib.rs` | struct | `VideoFrame` |
 | `cfa4-frame` | `side.rs` | struct | `FrameSideData` |
+| `cfa4-golden` | `range_meter.rs` | struct | `RangeFrame` |
 | `cfa4-golden` | `validation.rs` | struct | `FrameCapture` |
 | `cfa4-media` | `cache.rs` | struct | `FrameCache` |
 | `cfa4-media` | `lib.rs` | struct | `FrameRequest` |
