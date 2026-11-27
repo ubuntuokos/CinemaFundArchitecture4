@@ -126,7 +126,8 @@ impl StudioBackend for LibObsBackend {
     }
 
     fn source_types(&self) -> Vec<String> {
-        self.api.input_types()
+        // after `shutdown` libobs has freed its state: enumerating would dereference it
+        if self.started { self.api.input_types() } else { Vec::new() }
     }
 
     fn show_empty_scene(&mut self) -> Result<()> {
