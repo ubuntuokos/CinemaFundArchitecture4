@@ -42,6 +42,7 @@
 	Arrange	Disponi
 	Assembly	Assemblaggio
 	Attach Proxies…	Associa proxy…
+	Find Camera Proxies	Trova proxy della fotocamera
 	Audio Channels…	Canali audio…
 	Audio Clip Mixer	Mixer clip audio
 	Audio Gain…	Guadagno audio…
@@ -4124,7 +4125,7 @@
 	MPEG-2 720×576 at 25 fps, 16:9 anamorphic, 6 Mbps, GOP 15, 16-bit 48 kHz LPCM, .mpg (DVD-ready stream; no VIDEO_TS authoring)	MPEG-2 720×576 a 25 fps, 16:9 anamorfico, 6 Mbps, GOP 15, LPCM 16 bit 48 kHz, .mpg (flusso pronto per DVD; senza authoring VIDEO_TS)
 	MPEG-2 video (Main Profile 4:2:0, 0.4 bits per pixel) at the sequence's frame size and rate, 16-bit 48 kHz LPCM, .mpg	Video MPEG-2 (Main Profile 4:2:0, 0,4 bit per pixel) alle dimensioni e alla frequenza dei fotogrammi della sequenza, LPCM 16 bit 48 kHz, .mpg
 	MPEG-2 video 1920×1080, 18 Mbps average, AAC 192 kbps, .ts	Video MPEG-2 1920×1080, 18 Mbps medi, AAC 192 kbps, .ts
-	Use FFmpeg for files the CFA4 engine cannot open (FFmpeg 9.0.2 or later, GPL-3 build)	Usa FFmpeg per i file che il motore di CFA4 non può aprire (FFmpeg 9.0.2 o successivo, build GPL-3)
+	Use FFmpeg for files the CFA4 engine cannot open (FFmpeg 9.1 or later, GPL-3 build)	Usa FFmpeg per i file che il motore di CFA4 non può aprire (FFmpeg 9.1 o successivo, build GPL-3)
 	Use the system's GStreamer for files neither the engine nor FFmpeg can open	Usa il GStreamer di sistema per i file che né il motore né FFmpeg possono aprire
 
 # Language names in the language menu: the English variants keep their English names.
@@ -4817,6 +4818,7 @@
 	Datamosh Bloom	Fioritura datamosh
 	Start Time (seconds)	Tempo di inizio (secondi)
 	Repeats	Ripetizioni
+	Clean Blocks	Blocchi puliti
 
 # Recent effects, per-channel waveform, white balance selector (SC-2/SC-3/SC-4, #1419 #1420 #1421)
 	Apply a recently used effect to the selected clips	Applica un effetto usato di recente alle clip selezionate
@@ -4902,3 +4904,69 @@
 	Write an AS-02 bundle (the path is a folder)	Scrivi un bundle AS-02 (il percorso è una cartella)
 	AS-02	AS-02
 	AS-12	AS-12
+
+# N1 voxel panel
+	Active voxels:	Voxel attivi:
+	Bounds:	Limiti:
+	Voxel attributes	Attributi voxel
+	Voxel size:	Dimensione voxel:
+	points	punti
+
+# WP3 DPX bit depth
+	Bit Depth	Profondità di bit
+
+# AS-02 versions
+	AS-02 Versions	Versioni AS-02
+	Tick the sequences to write as further versions in the AS-02 bundle	Spunta le sequenze da scrivere come versioni aggiuntive nel pacchetto AS-02
+	Delete Short Clips	Elimina clip brevi
+	A stored combination does not run a command yet.	Una combinazione salvata non esegue ancora un comando.
+	Action hint	Suggerimento azione
+	Add combination	Aggiungi combinazione
+	Add mapping	Aggiungi assegnazione
+	Button Learn	Apprendimento pulsante
+	Button Test	Prova pulsante
+	Button name	Nome del pulsante
+	Cancel feedback	Segnale di annullamento
+	Combination editor	Editor combinazioni
+	Context	Contesto
+	Delete profile	Elimina profilo
+	Detected buttons	Pulsanti rilevati
+	Draw the gesture with a button held.	Traccia il gesto tenendo premuto un pulsante.
+	Error feedback	Segnale di errore
+	Evdev device	Dispositivo evdev
+	Evdev reads the selected device only, and only after a later phase turns it on. This version keeps the Qt path.	Evdev legge solo il dispositivo scelto, e solo quando una fase successiva lo attiva. Questa versione resta sulla via Qt.
+	Execution feedback	Segnale di esecuzione
+	Follow the system	Segui il sistema
+	Gesture	Gesto
+	Gesture Learn	Apprendimento gesto
+	Gesture editor	Editor gesti
+	Gesture profiles	Profili gesto
+	Gestures stay off until you turn them on. Turning them on does not block the panel menu.	I gesti restano spenti finché non li attivi. Attivarli non blocca il menu del pannello.
+	HUD	HUD
+	Hand	Mano
+	High contrast	Contrasto alto
+	Hold time	Tempo di tenuta
+	Input access	Accesso all'ingresso
+	Left-handed	Mancino
+	Mapping	Assegnazione
+	Maximum length	Lunghezza massima
+	Maximum time	Tempo massimo
+	Minimum length	Lunghezza minima
+	Mirror ergonomic gestures	Specchia i gesti ergonomici
+	Mouse Gestures	Gesti del mouse
+	Mouse Gestures…	Gesti del mouse…
+	No buttons yet. Press one in Button Learn or Button Test.	Nessun pulsante ancora. Premine uno nell'apprendimento o nella prova.
+	Press	Pressione
+	Qt pointer (this application)	Puntatore Qt (questa applicazione)
+	Recognition preview	Anteprima del riconoscimento
+	Reduced animation	Animazione ridotta
+	Right-handed	Destrimano
+	Roles	Ruoli
+	Save gesture	Salva gesto
+	Save profile	Salva profilo
+	Show the gesture HUD	Mostra l'HUD dei gesti
+	Slop	Gioco
+	Spatial gesture	Gesto spaziale
+	Thresholds	Soglie
+	Trail	Scia
+	Use gestures in the window	Usa i gesti nella finestra

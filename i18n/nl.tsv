@@ -54,6 +54,7 @@
 	Apply Video Transition	Video-overgang toepassen
 	Assembly	Montage
 	Attach Proxies…	Proxy's koppelen…
+	Find Camera Proxies	Cameraproxy's zoeken
 	Audio Channels…	Audiokanalen…
 	Audio Clip Mixer	Audioclipmixer
 	Audio Effects	Audio-effecten
@@ -3605,7 +3606,7 @@
 	Six-Point Pin	Zespuntsbevestiging
 	Upper Center	Midden boven
 	Lower Center	Midden onder
-	Use FFmpeg for files the CFA4 engine cannot open (FFmpeg 9.0.2 or later, GPL-3 build)	FFmpeg gebruiken voor bestanden die de CFA4-engine niet kan openen (FFmpeg 9.0.2 of later, GPL-3-build)
+	Use FFmpeg for files the CFA4 engine cannot open (FFmpeg 9.1 or later, GPL-3 build)	FFmpeg gebruiken voor bestanden die de CFA4-engine niet kan openen (FFmpeg 9.1 of later, GPL-3-build)
 	Use the system's GStreamer for files neither the engine nor FFmpeg can open	De GStreamer van het systeem gebruiken voor bestanden die de engine en FFmpeg niet kunnen openen
 	Analyze Source for Smart Cut	Bron analyseren voor slim knippen
 	Plan Smart Cut	Slim knippen plannen
@@ -4817,6 +4818,7 @@ export.summary	Low	laag
 	Datamosh Bloom	Datamosh-bloei
 	Start Time (seconds)	Begintijd (seconden)
 	Repeats	Herhalingen
+	Clean Blocks	Schone blokken
 
 # Recent effects, per-channel waveform, white balance selector (SC-2/SC-3/SC-4, #1419 #1420 #1421)
 	Apply a recently used effect to the selected clips	Een onlangs gebruikt effect toepassen op de geselecteerde clips
@@ -4902,3 +4904,69 @@ export.summary	Low	laag
 	Write an AS-02 bundle (the path is a folder)	Een AS-02-bundel schrijven (het pad is een map)
 	AS-02	AS-02
 	AS-12	AS-12
+
+# N1 voxel panel
+	Active voxels:	Actieve voxels:
+	Bounds:	Grenzen:
+	Voxel attributes	Voxelattributen
+	Voxel size:	Voxelgrootte:
+	points	punten
+
+# WP3 DPX bit depth
+	Bit Depth	Bitdiepte
+
+# AS-02 versions
+	AS-02 Versions	AS-02-versies
+	Tick the sequences to write as further versions in the AS-02 bundle	Vink de sequenties aan die als extra versies in het AS-02-pakket worden geschreven
+	Delete Short Clips	Korte clips verwijderen
+	A stored combination does not run a command yet.	Een opgeslagen combinatie voert nog geen opdracht uit.
+	Action hint	Actiehint
+	Add combination	Combinatie toevoegen
+	Add mapping	Toewijzing toevoegen
+	Button Learn	Knop leren
+	Button Test	Knoptest
+	Button name	Knopnaam
+	Cancel feedback	Annuleringsmelding
+	Combination editor	Combinatiebewerker
+	Context	Context
+	Delete profile	Profiel verwijderen
+	Detected buttons	Gevonden knoppen
+	Draw the gesture with a button held.	Teken het gebaar met een ingedrukte knop.
+	Error feedback	Foutmelding
+	Evdev device	Evdev-apparaat
+	Evdev reads the selected device only, and only after a later phase turns it on. This version keeps the Qt path.	Evdev leest alleen het gekozen apparaat, en pas als een latere fase het aanzet. Deze versie blijft op het Qt-pad.
+	Execution feedback	Uitvoeringsmelding
+	Follow the system	Het systeem volgen
+	Gesture	Gebaar
+	Gesture Learn	Gebaar leren
+	Gesture editor	Gebarenbewerker
+	Gesture profiles	Gebaarprofielen
+	Gestures stay off until you turn them on. Turning them on does not block the panel menu.	Gebaren blijven uit tot u ze aanzet. Aanzetten blokkeert het paneelmenu niet.
+	HUD	HUD
+	Hand	Hand
+	High contrast	Hoog contrast
+	Hold time	Vasthoudtijd
+	Input access	Ingangstoegang
+	Left-handed	Linkshandig
+	Mapping	Toewijzing
+	Maximum length	Grootste lengte
+	Maximum time	Grootste tijd
+	Minimum length	Kleinste lengte
+	Mirror ergonomic gestures	Ergonomische gebaren spiegelen
+	Mouse Gestures	Muisgebaren
+	Mouse Gestures…	Muisgebaren…
+	No buttons yet. Press one in Button Learn or Button Test.	Nog geen knop. Druk er een in Knop leren of Knoptest.
+	Press	Indrukken
+	Qt pointer (this application)	Qt-aanwijzer (deze toepassing)
+	Recognition preview	Herkenningsvoorbeeld
+	Reduced animation	Minder animatie
+	Right-handed	Rechtshandig
+	Roles	Rollen
+	Save gesture	Gebaar opslaan
+	Save profile	Profiel opslaan
+	Show the gesture HUD	Gebaren-HUD tonen
+	Slop	Speling
+	Spatial gesture	Ruimtelijk gebaar
+	Thresholds	Drempels
+	Trail	Spoor
+	Use gestures in the window	Gebaren in het venster gebruiken

@@ -78,7 +78,7 @@ A VISION.md táblázatában a HandBrake helyét két GPL-3.0 licencű program ve
   profilkezelővel. A logikája a Python/Qt6 rétegbe átemelhető, a wxPython-felületet Qt6-ban újra
   kell írni.
 
-A konvertálás **motorja** a saját Rust-motor, kiegészítve az FFmpeggel (legalább 9.0.2) és a
+A konvertálás **motorja** a saját Rust-motor, kiegészítve az FFmpeggel (legalább `CFA4_FFMPEG_MIN_VERSION`, `packaging/ffmpeg-version.env`) és a
 GStreamerrel; köztük az automatikus útválasztó választ ([ADR 0005](ADR-0005-media-backends.md)).
 Ezek adják a gyártófüggetlen hardveres kódolást (VA-API AMD- és Intel-GPU-n). Az FFmpeg csak
 GPL-3-as builddel használható (`--enable-gpl --enable-version3`, soha `--enable-nonfree`).
@@ -119,7 +119,7 @@ igényelnek. Ezért minden gyártónak saját útja van, közös felület mögö
 | GPU | Hardveres kódolás útja | Megjegyzés |
 |---|---|---|
 | NVIDIA | NVENC (`crates/platform`, ma is megvan) | a meghajtó zárt könyvtárát futáskor tölti be; opcionális |
-| AMD | VA-API (Mesa `radeonsi`), GStreamer `va*enc` elemekkel (ADR 0002 3. lépés) | nyílt meghajtó; az AMD AMF nem kell, mert zárt futtatókörnyezetet igényel |
+| AMD | VA-API (Mesa `radeonsi`), GStreamer `va*enc` elemekkel (ADR 0002 3. lépés); kiegészítésként az FFmpeg AMF-útja (H.264 / HEVC / AV1 kódolás-dekódolás, `sr_amf`, `vpp_amf`) | nyílt meghajtó az alapút; az AMF zárt futtatókörnyezetét a meghajtó adja, és csak futáskor töltődik be, ahogy az NVENC-é (tulajdonosi döntés 2026-11-24, [CFA4-FFMPEG-9.1-001](../plans/CFA4-FFMPEG-9.1-001.md) D2, D8) |
 | Intel | VA-API (`iHD` meghajtó), ugyanígy | a oneVPL/Quick Sync csak akkor, ha a VA-API mérhetően kevés |
 | bármely Vulkan-képes GPU | Vulkan Video (GStreamer `vulkan*enc`, ahol a meghajtó tudja) | gyártófüggetlen jövőbeli út |
 | nincs GPU vagy hiba | a saját szoftveres kódolók (pl. `crates/h264enc`) | mindig elérhető tartalék |
@@ -226,7 +226,7 @@ A PR összevonásával a tulajdonos ezeket hagyja jóvá:
    változik, nem ezzel a PR-ral.
 3. A bővítmény-hostok (OpenFX, LV2) külön folyamatban futnak.
 4. Az FFmpeg a termékbe csak saját ADR-rel kerülhet. **Teljesült:** [ADR 0005](ADR-0005-media-backends.md)
-   (kiegészítő háttér, legalább 9.0.2); a CI-orákulum külön marad.
+   (kiegészítő háttér, legalább `CFA4_FFMPEG_MIN_VERSION`, `packaging/ffmpeg-version.env`); a CI-orákulum külön marad.
 5. Az x264 és az x265 kiadása előtt szabadalmi, az NVENC kiadása előtt licencjogi vizsgálat kell.
 6. Az A1 (tesztorákulumok) az összevonás után azonnal indulhat.
 

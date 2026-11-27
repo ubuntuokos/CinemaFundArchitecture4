@@ -26,6 +26,7 @@ repository = "https://github.com/ubuntuokos/CinemaFundArchitecture4"
 cfa4-time = { path = "crates/time" }
 cfa4-route = { path = "crates/route" }
 cfa4-tasks = { path = "crates/tasks" }
+cfa4-store = { path = "crates/store" }
 cfa4-geom = { path = "crates/geom" }
 cfa4-color = { path = "crates/color" }
 cfa4-bitstream = { path = "crates/bitstream" }
@@ -35,6 +36,7 @@ cfa4-matroska = { path = "crates/matroska" }
 cfa4-mxf = { path = "crates/mxf" }
 cfa4-cfb = { path = "crates/cfb" }
 cfa4-mpegts = { path = "crates/mpegts" }
+cfa4-dvd = { path = "crates/dvd" }
 cfa4-st2110 = { path = "crates/st2110" }
 cfa4-io-core = { path = "crates/io-core" }
 cfa4-mpeg2v = { path = "crates/mpeg2v" }
@@ -78,6 +80,8 @@ cfa4-theora = { path = "crates/theora" }
 cfa4-sstp = { path = "crates/sstp" }
 cfa4-evc = { path = "crates/evc" }
 cfa4-cavs = { path = "crates/cavs" }
+cfa4-avs2 = { path = "crates/avs2" }
+cfa4-avs3 = { path = "crates/avs3" }
 cfa4-dirac = { path = "crates/dirac" }
 cfa4-vp9 = { path = "crates/vp9" }
 cfa4-prores = { path = "crates/prores" }
@@ -159,6 +163,7 @@ rsmpeg = { version = "0.18.1", path = "vendor/ffmpeg-bindings/rsmpeg", default-f
 rusty_ffmpeg = { version = "0.18.1", path = "vendor/ffmpeg-bindings/rusty_ffmpeg" }
 cfa4-metrics = { path = "crates/metrics" }
 cfa4-sandbox = { path = "crates/sandbox" }
+cfa4-vdb = { path = "crates/vdb" }
 cfa4-fetch-client = { path = "crates/fetch-client" }
 
 # foundation
@@ -282,6 +287,12 @@ opt-level = 3
 opt-level = 3
 
 [profile.dev.package.cfa4-sstp]
+opt-level = 3
+
+[profile.dev.package.cfa4-avs3]
+opt-level = 3
+
+[profile.dev.package.cfa4-avs2]
 opt-level = 3
 
 [profile.dev.package.cfa4-cavs]

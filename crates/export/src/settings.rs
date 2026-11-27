@@ -582,10 +582,17 @@ impl ExportSettings {
     }
 
     /// Whether the export codes interlaced video ([`ExportSettings::field_order`]): MPEG-2 files
-    /// and ProRes ([`Format::codes_interlaced`]); in MXF MPEG-2 (also XDCAM HD422 and D-10), whose
+    /// and ProRes ([`Format::codes_interlaced`]), the interlaced DNxHD IDs; in MXF MPEG-2 (also XDCAM HD422 and D-10), whose
     /// separate-field layout the writer has, and ProRes field pictures.
     pub fn codes_interlaced(&self) -> bool {
-        if self.format.is_mxf() { matches!(self.video_format(), Format::Mpeg2 | Format::ProRes) } else { self.format.codes_interlaced() }
+        let format = if self.format.is_mxf() { matches!(self.video_format(), Format::Mpeg2 | Format::ProRes) } else { self.format.codes_interlaced() };
+        format || self.dnx_interlaced()
+    }
+
+    /// An interlaced DNxHD compression ID (`hd1241`, `hd1242`, `hd1243`) is selected: each frame
+    /// is coded as two field coding units, top field first.
+    pub fn dnx_interlaced(&self) -> bool {
+        self.has_video() && self.video_format() == Format::DnxHr && crate::dnx_profile(&self.dnx_profile).interlaced()
     }
 
     /// Whether the output can carry an alpha channel ([`ExportSettings::alpha`]): PNG, TIFF,
@@ -594,6 +601,7 @@ impl ExportSettings {
     pub fn supports_alpha(&self) -> bool {
         match self.format {
             Format::PngSequence | Format::TiffSequence | Format::TgaSequence | Format::ExrSequence | Format::Gif => true,
+            Format::DpxSequence => self.dpx_bit_depth >= 12,
             Format::ProRes => crate::prores_profile(&self.prores_profile).chroma() == cfa4_prores::ChromaFormat::Yuv444,
             Format::Cineform => crate::cineform_profile(&self.cineform_profile) == cfa4_cineform::EncodedFormat::Rgba4444,
             _ => false,
@@ -778,8 +786,17 @@ impl ExportSettings {
             Format::BmpSequence => px * 3.0 * 8.0 * fps,
             Format::TiffSequence => px * if self.keeps_alpha() { 4.0 } else { 3.0 } * 8.0 * fps,
             Format::TgaSequence => px * if self.keeps_alpha() { 4.0 } else { 3.0 } * 8.0 * fps,
-            // 10-bit RGB in one 32-bit word per pixel
-            Format::DpxSequence => px * 4.0 * 8.0 * fps,
+            // 10-bit RGB in one 32-bit word per pixel; 12 and 16 bits take 16-bit words
+            Format::DpxSequence => {
+                px * if self.dpx_bit_depth == 10 {
+                    4.0
+                } else if self.keeps_alpha() {
+                    8.0
+                } else {
+                    6.0
+                } * 8.0
+                    * fps
+            }
             // two bytes per half-float channel; lossless compression roughly halves it
             Format::ExrSequence => {
                 let k = if self.exr_compression == ExrCompression::None { 1.0 } else { 0.5 };
@@ -930,7 +947,7 @@ impl ExportSettings {
                     v += &format!(", {}", crate::cineform_label(f, crate::cineform_quality(&self.cineform_quality)))
                 }
                 Format::Mjpeg | Format::JpegSequence => v += &format!(", quality {}", self.quality),
-                Format::DpxSequence => v += ", 10-bit RGB",
+                Format::DpxSequence => v += &format!(", {}-bit RGB{}", self.dpx_bit_depth, if self.keeps_alpha() { "A" } else { "" }),
                 Format::Dcp => {
                     let res = if crate::DcpResolution::of(self) == crate::DcpResolution::FourK { "4K" } else { "2K" };
                     v += &format!(", JPEG 2000 DCI {res}, 12-bit X'Y'Z'");

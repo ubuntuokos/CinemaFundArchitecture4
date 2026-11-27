@@ -92,7 +92,7 @@ fn empty_reference_measures_zero_without_dividing_by_zero() {
 #[test]
 fn our_dump_and_arguments_are_checked() {
     let ours = our_items(&json!([{"id": "file.save", "label": "Save", "path": ["File"]}, {"id": "x", "label": "Orphan", "path": []}, {"bad": 1}])).unwrap();
-    assert_eq!(ours, vec![OurItem { path: paths(&[&["File", "Save"]]).remove(0), id: "file.save".into(), stub: None }]);
+    assert_eq!(ours, vec![OurItem { path: paths(&[&["File", "Save"]]).remove(0), id: "file.save".into(), ..OurItem::default() }]);
     assert!(our_items(&json!({})).is_err());
     assert!(parse_args(&["--min", "101"]).is_err());
     assert!(parse_args(&["--min", "x"]).is_err());
@@ -177,8 +177,8 @@ fn effects_reference_of_bare_names_and_folders_is_measured() {
 #[test]
 fn compare_points_at_our_item_for_same_and_elsewhere() {
     let ours = vec![
-        OurItem { path: paths(&[&["File", "Save"]]).remove(0), id: "file.save".into(), stub: None },
-        OurItem { path: paths(&[&["File", "Export", "Export Frame"]]).remove(0), id: "export.frame".into(), stub: None },
+        OurItem { path: paths(&[&["File", "Save"]]).remove(0), id: "file.save".into(), ..OurItem::default() },
+        OurItem { path: paths(&[&["File", "Export", "Export Frame"]]).remove(0), id: "export.frame".into(), ..OurItem::default() },
     ];
     let r = compare(Area::Menus, &paths(&[&["File", "Save"], &["File", "Export Frame"], &["Edit", "Undo"]]), &ours);
     let ids: Vec<Option<&str>> = r.items.iter().map(|(_, pl)| r.found(pl).map(|it| it.id.as_str())).collect();
@@ -243,9 +243,9 @@ fn panel_dump() -> Value {
 #[test]
 fn panels_status_maps_to_stub() {
     let ours = our_panels(&panel_dump()).unwrap();
-    let stubs: Vec<(&str, bool)> = ours.iter().map(|it| (it.id.as_str(), it.stub.is_some())).collect();
+    let stubs: Vec<(&str, bool)> = ours.iter().map(|it| (it.id.as_str(), it.tier == Tier::Stub)).collect();
     assert_eq!(stubs, vec![("Program", false), ("Timeline", false), ("Effect Controls", false), ("Libraries", true), ("Reference Monitor", true)]);
-    assert_eq!(ours.get(3).and_then(|it| it.stub), Some("placeholder dock: no content yet"));
+    assert_eq!(ours.get(3).map(|it| it.note.as_str()), Some("placeholder dock: no content yet"));
     assert!(our_panels(&json!({"panels": []})).is_err());
     let inv = inventory(Area::Panels, &ours);
     assert!(inv.starts_with("CFA4 Qt 6 GUI panels: 5 items"), "{inv}");
@@ -259,12 +259,17 @@ fn panels_reference_bare_names() {
     let r = compare(Area::Panels, &reference, &our_panels(&panel_dump()).unwrap());
     // bare names have no place to compare: all found are "same"; stubs still count as present
     assert_eq!(r.counts(), (4, 0, 1), "{}", r.summary());
-    assert!(r.summary().starts_with("panels: presence 4/5 (80.0%) (of which stub 2)"), "{}", r.summary());
+    assert!(
+        r.summary()
+            .starts_with("panels: presence 4/5 (80.0%), same place 4/5 (80.0%), elsewhere 0, missing 1, fidelity exact 0 / approximate 0 / stub 2 / unrated 2"),
+        "{}",
+        r.summary()
+    );
     assert_eq!(r.ours_only, paths(&[&["Effect Controls"]]));
     let md = r.markdown("panels.json", 5);
     assert!(md.starts_with("# Panel parity checklist"), "{md}");
     assert!(md.contains("| Panels | 5 | 4 | 0 | 1 | 80.0% |"), "{md}");
-    assert!(md.contains("## Automatic stubs (2)"), "{md}");
+    assert!(md.contains("### Stub (2)"), "{md}");
     assert!(md.contains("- Reference Monitor → Reference Monitor: not yet in the Qt GUI"), "{md}");
     assert!(md.contains("- [ ] Essential Graphics"), "{md}");
     assert!(parse_args(&["--area", "panels"]).is_ok_and(|a| a.area == Area::Panels));
@@ -300,4 +305,650 @@ fn menus_egui_still_parses() {
     assert_eq!(r.counts(), (1, 0, 0));
     assert!(r.summary().starts_with("menus-egui: presence 1/1"), "{}", r.summary());
     assert!(r.markdown("menus.json", 1).contains("frozen egui menu bar"));
+}
+
+// ---- schema 1 (G7.5) ----
+
+fn v1_file(area: &str, oos: Value, items: Value) -> Value {
+    json!({"schema": 1, "area": area, "outOfScope": oos, "items": items})
+}
+
+fn v1_items(rows: &[(&str, &str)]) -> Value {
+    json!(rows.iter().map(|(p, s)| json!({"path": p, "source": s})).collect::<Vec<_>>())
+}
+
+/// Runs the item checks against in-memory documents; `docs` are (path, text), all tracked.
+fn check(area: Area, v: &Value, docs: &[(&str, &str)]) -> Vec<String> {
+    let r = parse_v1(v, area).unwrap();
+    let tracked = |p: &str| docs.iter().any(|(d, _)| *d == p);
+    let mut read = |p: &str| docs.iter().find(|(d, _)| *d == p).map(|(_, t)| t.to_string()).ok_or_else(|| "missing".to_string());
+    check_items("menus.json", &r, &tracked, &mut read)
+}
+
+#[test]
+fn schema_v1_path_source_items() {
+    let v = v1_file("menus", json!(["Window ▸ Workspaces"]), v1_items(&[("File ▸ Export ▸ Media", "docs/a.md"), ("Edit ▸ Undo", "docs/a.md")]));
+    assert!(is_v1(&v));
+    let r = parse_v1(&v, Area::Menus).unwrap();
+    assert_eq!(r.paths(), paths(&[&["File", "Export", "Media"], &["Edit", "Undo"]]));
+    assert_eq!(r.items.first().map(|i| i.source.as_str()), Some("docs/a.md"));
+    assert_eq!(r.out_of_scope, paths(&[&["Window", "Workspaces"]]));
+    // egui menus share the menus reference; an effect may be a bare name, a menu item may not
+    assert!(parse_v1(&v1_file("menus", json!([]), v1_items(&[("Undo", "docs/a.md")])), Area::MenusEgui).is_err());
+    assert!(parse_v1(&v1_file("effects", json!([]), v1_items(&[("Gaussian Blur", "docs/a.md")])), Area::Effects).is_ok());
+    assert!(!is_v1(&json!(["File > Save"])));
+    assert!(!is_v1(&json!({"menus": []})));
+}
+
+#[test]
+fn schema_v1_out_of_scope_prefix_is_counted_out() {
+    let r = parse_v1(
+        &v1_file("menus", json!(["Window ▸ Workspaces"]), v1_items(&[("Window ▸ Workspaces ▸ Editing", "docs/a.md"), ("Window ▸ Timeline", "docs/a.md")])),
+        Area::Menus,
+    )
+    .unwrap();
+    let ours = items(&[&["Window", "Timeline"]]);
+    let rep = compare_scoped(Area::Menus, &r.paths(), &ours, &r.out_of_scope);
+    assert_eq!(rep.counts(), (1, 0, 0));
+    assert_eq!(rep.out_of_scope.get("listed out of scope by the reference"), Some(&1));
+}
+
+#[test]
+fn check_reference_accepts_a_matching_source() {
+    let v = v1_file("menus", json!([]), v1_items(&[("File ▸ Export ▸ Media", "docs/a.md")]));
+    let ok = check(Area::Menus, &v, &[("docs/a.md", "The File menu has Export, and Export has Media.")]);
+    assert!(ok.is_empty(), "{ok:?}");
+    // case, ellipsis, "&" and spacing are normalised like the labels
+    let v = v1_file("menus", json!([]), v1_items(&[("Edit ▸ Find & Replace…", "docs/a.md")]));
+    assert!(check(Area::Menus, &v, &[("docs/a.md", "EDIT: find   and\nreplace")]).is_empty());
+}
+
+#[test]
+fn check_reference_rejects_name_not_in_source() {
+    let v = v1_file("menus", json!([]), v1_items(&[("File ▸ Teleport", "docs/a.md")]));
+    let e = check(Area::Menus, &v, &[("docs/a.md", "File only")]);
+    assert_eq!(e.len(), 1);
+    assert!(e.first().is_some_and(|m| m.contains("\"Teleport\" does not appear in docs/a.md")), "{e:?}");
+}
+
+#[test]
+fn check_reference_rejects_source_under_plan() {
+    let v = v1_file("menus", json!([]), v1_items(&[("File ▸ Save", "plan/premiere/menus.md")]));
+    let e = check(Area::Menus, &v, &[("plan/premiere/menus.md", "File Save")]);
+    assert!(e.first().is_some_and(|m| m.contains("under plan/")), "{e:?}");
+    for bad in ["docs/../plan/x.md", "/docs/a.md", "docs\\a.md", "docs/a.txt", "other/a.md", "docs//a.md"] {
+        let v = v1_file("menus", json!([]), v1_items(&[("File ▸ Save", bad)]));
+        assert_eq!(check(Area::Menus, &v, &[(bad, "File Save")]).len(), 1, "{bad}");
+    }
+}
+
+#[test]
+fn check_reference_rejects_untracked_source() {
+    let v = v1_file("menus", json!([]), v1_items(&[("File ▸ Save", "docs/untracked.md")]));
+    let r = parse_v1(&v, Area::Menus).unwrap();
+    let e = check_items("menus.json", &r, &|_| false, &mut |_| Ok("File Save".into()));
+    assert!(e.first().is_some_and(|m| m.contains("not tracked by git")), "{e:?}");
+}
+
+#[test]
+fn check_reference_reports_unreadable_source_once() {
+    let v = v1_file("menus", json!([]), v1_items(&[("File ▸ Save", "docs/gone.md"), ("File ▸ Open", "docs/gone.md")]));
+    let r = parse_v1(&v, Area::Menus).unwrap();
+    let e = check_items("menus.json", &r, &|_| true, &mut |_| Err("gone".into()));
+    assert_eq!(e.len(), 1, "{e:?}");
+}
+
+#[test]
+fn check_reference_rejects_extra_fields() {
+    let mut v = v1_file("menus", json!([]), v1_items(&[("File ▸ Save", "docs/a.md")]));
+    v["note"] = json!("x");
+    assert!(parse_v1(&v, Area::Menus).unwrap_err().contains("unknown field"));
+    let v = v1_file("menus", json!([]), json!([{"path": "File ▸ Save", "source": "docs/a.md", "shortcut": "Cmd+S"}]));
+    assert!(parse_v1(&v, Area::Menus).unwrap_err().contains("unknown field"));
+}
+
+#[test]
+fn check_reference_rejects_data_uri() {
+    for bad in
+        ["data:text/plain;base64,QQ==", "see https://example.com/a", "QUJDREVGR0hJSktMTU5PUFFSU1RVVldYWVphYmNkZWZnaGlqa2xtbm9wcXJzdHV2d3h5ejAxMjM0NTY3ODk="]
+    {
+        let v = v1_file("menus", json!([]), v1_items(&[("File ▸ Save", bad)]));
+        assert!(parse_v1(&v, Area::Menus).is_err(), "{bad}");
+        let v = v1_file("menus", json!([bad]), v1_items(&[("File ▸ Save", "docs/a.md")]));
+        assert!(parse_v1(&v, Area::Menus).is_err(), "{bad}");
+        let v = v1_file("effects", json!([]), v1_items(&[(bad, "docs/a.md")]));
+        assert!(parse_v1(&v, Area::Effects).is_err(), "{bad}");
+    }
+}
+
+#[test]
+fn check_reference_rejects_non_string() {
+    for items in [
+        json!([{"path": 5, "source": "docs/a.md"}]),
+        json!([{"path": "File ▸ Save", "source": null}]),
+        json!(["File ▸ Save"]),
+        json!({"path": "x"}),
+        json!([{"path": "File ▸ Save"}]),
+    ] {
+        assert!(parse_v1(&v1_file("menus", json!([]), items.clone()), Area::Menus).is_err(), "{items}");
+    }
+    assert!(parse_v1(&v1_file("menus", json!([1]), json!([])), Area::Menus).is_err());
+    assert!(parse_v1(&v1_file("menus", json!("x"), json!([])), Area::Menus).is_err());
+    assert!(parse_v1(&json!({"schema": "1", "area": "menus", "outOfScope": [], "items": []}), Area::Menus).is_err());
+    assert!(parse_v1(&json!({"schema": 2, "area": "menus", "outOfScope": [], "items": []}), Area::Menus).is_err());
+    assert!(parse_v1(&json!({"schema": 1, "area": 7, "outOfScope": [], "items": []}), Area::Menus).is_err());
+    assert!(parse_v1(&json!({"schema": 1, "area": "menus", "items": []}), Area::Menus).is_err());
+    assert!(parse_v1(&json!([]), Area::Menus).is_err());
+    assert!(parse_v1(&v1_file("panels", json!([]), json!([])), Area::Menus).unwrap_err().contains("expected \"menus\""));
+}
+
+#[test]
+fn check_reference_rejects_duplicate() {
+    let v = v1_file("menus", json!([]), v1_items(&[("File ▸ Save", "docs/a.md"), ("file ▸ save…", "docs/b.md")]));
+    assert!(parse_v1(&v, Area::Menus).unwrap_err().contains("listed twice"));
+}
+
+#[test]
+fn hostile_v1_is_refused_not_overflowed() {
+    let many: Vec<(String, String)> = (0..MAX_ITEMS + 1).map(|i| (format!("File ▸ Item {i}"), "docs/a.md".to_string())).collect();
+    let rows: Vec<(&str, &str)> = many.iter().map(|(p, s)| (p.as_str(), s.as_str())).collect();
+    assert!(parse_v1(&v1_file("menus", json!([]), v1_items(&rows)), Area::Menus).unwrap_err().contains("more than"));
+    let deep = vec!["x"; MAX_DEPTH + 1].join(" ▸ ");
+    assert!(parse_v1(&v1_file("menus", json!([]), v1_items(&[(&deep, "docs/a.md")])), Area::Menus).unwrap_err().contains("deeper"));
+    let long = format!("File ▸ {}", "x".repeat(MAX_PATH_BYTES));
+    assert!(parse_v1(&v1_file("menus", json!([]), v1_items(&[(&long, "docs/a.md")])), Area::Menus).unwrap_err().contains("bytes"));
+    for empty in ["File ▸ ", " ▸ Save", "File ▸ … ▸ Save", ""] {
+        assert!(parse_v1(&v1_file("menus", json!([]), v1_items(&[(empty, "docs/a.md")])), Area::Menus).is_err(), "{empty:?}");
+    }
+}
+
+#[test]
+fn committed_references_dir_is_checked_on_disk() {
+    let dir = std::env::temp_dir().join(format!("cfa4-parity-ref-{}", std::process::id()));
+    let refs = dir.join(REFERENCE_DIR);
+    std::fs::create_dir_all(&refs).unwrap();
+    // no committed reference at all is fine
+    let none = std::env::temp_dir().join(format!("cfa4-parity-none-{}", std::process::id()));
+    std::fs::create_dir_all(&none).unwrap();
+    assert!(check_references(&none).unwrap().contains("0 files"));
+    // an unknown file name, bad JSON and an oversized file are errors, not panics
+    std::fs::write(refs.join("other.json"), "{}").unwrap();
+    std::fs::write(refs.join("menus.json"), "not json").unwrap();
+    let big = std::fs::File::create(refs.join("panels.json")).unwrap();
+    big.set_len(MAX_FILE_BYTES + 1).unwrap();
+    let init = Command::new("git").args(["init", "-q"]).current_dir(&dir).status().is_ok_and(|s| s.success());
+    if init {
+        let e = check_references(&dir).unwrap_err();
+        assert!(e.contains("not a reference of a known area") && e.contains("menus.json") && e.contains("larger than"), "{e}");
+    }
+    let _ = std::fs::remove_dir_all(&dir);
+    let _ = std::fs::remove_dir_all(&none);
+}
+
+// ---- fidelity tiers (G7.6) ----
+
+fn fid(entries: Value) -> Result<fidelity::Fidelity, String> {
+    fidelity::parse(&json!({"schema": 1, "items": entries}))
+}
+
+fn cmd_items(ids: &[(&str, &str)]) -> Vec<OurItem> {
+    ids.iter().map(|(id, label)| OurItem { path: vec![label.to_string()], id: id.to_string(), ..OurItem::default() }).collect()
+}
+
+#[test]
+fn unrated_is_not_exact() {
+    let ours = cmd_items(&[("edit.undo", "Undo"), ("edit.redo", "Redo")]);
+    let r = compare(Area::Commands, &paths(&[&["Undo"], &["Redo"], &["Nope"]]), &ours);
+    // no annotation at all: present items are unrated, none is exact, the missing one counts nowhere
+    assert_eq!(r.tier_counts(), [0, 0, 0, 2]);
+    assert!(r.summary().contains("fidelity exact 0 / approximate 0 / stub 0 / unrated 2"), "{}", r.summary());
+    assert_eq!(Tier::default(), Tier::Unrated);
+    assert!(fidelity::Fidelity::default().entries.is_empty());
+}
+
+#[test]
+fn exact_needs_evidence() {
+    let e = fid(json!([{"area": "commands", "id": "edit.undo", "tier": "exact"}])).unwrap_err();
+    assert!(e.contains("exact but has no evidence"), "{e}");
+    assert!(fid(json!([{"area": "commands", "id": "edit.undo", "tier": "exact", "evidence": "  "}])).is_err());
+    let ok = fid(json!([{"area": "commands", "id": "edit.undo", "tier": "exact", "evidence": "engine tests::undo_roundtrip"}])).unwrap();
+    assert_eq!(ok.entries.first().map(|e| e.tier), Some(Tier::Exact));
+    // a claim of `unrated` is not an annotation: leave the entry out
+    assert!(fid(json!([{"area": "commands", "id": "x", "tier": "unrated", "note": "n"}])).unwrap_err().contains("unrated"));
+}
+
+#[test]
+fn note_required_for_non_exact() {
+    for tier in ["approximate", "stub"] {
+        let e = fid(json!([{"area": "effects", "id": "warp", "tier": tier}])).unwrap_err();
+        assert!(e.contains("has no note"), "{tier}: {e}");
+        assert!(fid(json!([{"area": "effects", "id": "warp", "tier": tier, "note": "2-D only"}])).is_ok());
+    }
+}
+
+#[test]
+fn unknown_fidelity_id_is_error() {
+    let f = fid(json!([{"area": "commands", "id": "gone.command", "tier": "stub", "note": "n"}])).unwrap();
+    let mut ours = cmd_items(&[("edit.undo", "Undo")]);
+    let e = f.apply(Area::Commands, &mut ours).unwrap_err();
+    assert!(e.contains("gone.command") && e.contains("stale"), "{e}");
+    // an entry of another area is not checked against this one
+    assert!(f.apply(Area::Effects, &mut ours).is_ok());
+    // an annotation that contradicts an automatic stub is refused
+    let f = fid(json!([{"area": "panels", "id": "Libraries", "tier": "exact", "evidence": "x"}])).unwrap();
+    let mut panels = our_panels(&json!([{"title": "Libraries", "status": "placeholder"}])).unwrap();
+    assert!(f.apply(Area::Panels, &mut panels).unwrap_err().contains("automatic stub"));
+}
+
+#[test]
+fn approximate_and_stub_listed_with_note() {
+    let f = fid(json!([
+        {"area": "commands", "id": "edit.undo", "tier": "exact", "evidence": "engine tests::undo_roundtrip"},
+        {"area": "commands", "id": "fx.warp", "tier": "approximate", "note": "2-D only"},
+        {"area": "commands", "id": "fx.morph", "tier": "stub", "note": "dissolve instead of morph"}
+    ]))
+    .unwrap();
+    let mut ours = cmd_items(&[("edit.undo", "Undo"), ("fx.warp", "Warp Stabilizer"), ("fx.morph", "Morph Cut"), ("fx.plain", "Plain")]);
+    f.apply(Area::Commands, &mut ours).unwrap();
+    let r = compare(Area::Commands, &paths(&[&["Undo"], &["Warp Stabilizer"], &["Morph Cut"], &["Plain"], &["Missing One"]]), &ours);
+    assert_eq!(r.tier_counts(), [1, 1, 1, 1]);
+    let md = r.markdown("commands.json", 4);
+    assert!(md.contains("### Approximate (1)") && md.contains("- Warp Stabilizer → Warp Stabilizer: 2-D only"), "{md}");
+    assert!(md.contains("### Stub (1)") && md.contains("- Morph Cut → Morph Cut: dissolve instead of morph"), "{md}");
+    assert!(md.contains("| **Total** | **4** | **1** | **1** | **1** | **1** |"), "{md}");
+    assert!(md.contains("not a behaviour test") && md.contains("*unrated*, not exact"), "{md}");
+}
+
+#[test]
+fn min_exact_fails_below() {
+    let dir = std::env::temp_dir().join(format!("cfa4-parity-minexact-{}", std::process::id()));
+    std::fs::create_dir_all(&dir).unwrap();
+    let write = |name: &str, text: &str| {
+        let p = dir.join(name);
+        std::fs::write(&p, text).unwrap();
+        p
+    };
+    let ours = write("ours.json", r#"[{"id":"edit.undo","label":"Undo","menu":[],"journal":true},{"id":"edit.redo","label":"Redo","menu":[],"journal":true}]"#);
+    let reference = write("ref.json", r#"["Undo","Redo"]"#);
+    let fidelity_file =
+        write("fid.json", r#"{"schema":1,"items":[{"area":"commands","id":"edit.undo","tier":"exact","evidence":"engine tests::undo_roundtrip"}]}"#);
+    let out = dir.join("report.md");
+    let go = |min_exact: &str| {
+        let argv = [
+            "--area",
+            "commands",
+            "--ours",
+            ours.to_str().unwrap_or(""),
+            "--reference",
+            reference.to_str().unwrap_or(""),
+            "--fidelity",
+            fidelity_file.to_str().unwrap_or(""),
+            "--out",
+            out.to_str().unwrap_or(""),
+            "--min-exact",
+            min_exact,
+        ];
+        // the root only names default paths; every file is explicit, and the report goes outside it
+        run(Path::new("/nonexistent-cfa4-root"), &argv)
+    };
+    assert!(go("1").is_ok());
+    let e = go("2").unwrap_err();
+    assert!(e.contains("1 exact items, below --min-exact 2"), "{e}");
+    assert!(go("x").unwrap_err().contains("not a count"));
+    let _ = std::fs::remove_dir_all(&dir);
+}
+
+#[test]
+fn hostile_fidelity_is_refused() {
+    let note = "x".repeat(1025);
+    for bad in [
+        json!([{"area": "commands", "id": "a", "tier": "stub", "note": note}]),
+        json!([{"area": "commands", "id": "a", "tier": "exact", "evidence": "data:text/plain,x"}]),
+        json!([{"area": "commands", "id": "a", "tier": "stub", "note": 5}]),
+        json!([{"area": "commands", "id": "a", "tier": "stub", "note": "n", "extra": 1}]),
+        json!([{"area": "nowhere", "id": "a", "tier": "stub", "note": "n"}]),
+        json!([{"area": "commands", "id": "", "tier": "stub", "note": "n"}]),
+        json!([{"area": "commands", "id": 7, "tier": "stub", "note": "n"}]),
+        json!([{"area": "commands", "id": "a", "tier": "great", "note": "n"}]),
+        json!([{"area": "commands", "id": "a", "tier": "stub", "note": "n"}, {"area": "commands", "id": "a", "tier": "stub", "note": "m"}]),
+        json!(["a"]),
+        json!({"a": 1}),
+    ] {
+        assert!(fid(bad.clone()).is_err(), "{bad}");
+    }
+    let many: Vec<Value> = (0..MAX_ITEMS + 1).map(|i| json!({"area": "commands", "id": format!("c{i}"), "tier": "stub", "note": "n"})).collect();
+    assert!(fid(json!(many)).unwrap_err().contains("more than"));
+    assert!(fidelity::parse(&json!({"schema": 2, "items": []})).is_err());
+    assert!(fidelity::parse(&json!({"schema": 1})).is_err());
+    assert!(fidelity::parse(&json!({"schema": 1, "items": [], "x": 1})).is_err());
+    assert!(fidelity::parse(&json!([])).is_err());
+    // an oversized or non-regular file is an error, not a read
+    let missing = std::env::temp_dir().join(format!("cfa4-no-such-fidelity-{}.json", std::process::id()));
+    assert!(fidelity::load(Path::new("."), Some(&missing)).is_err());
+    assert!(fidelity::load(Path::new("/nonexistent-cfa4-root"), None).unwrap().entries.is_empty());
+}
+
+// ---- --area all, reference resolution, --out guard (G7.7) ----
+
+fn temp_root(tag: &str) -> PathBuf {
+    let dir = std::env::temp_dir().join(format!("cfa4-parity-{tag}-{}", std::process::id()));
+    let _ = std::fs::remove_dir_all(&dir);
+    std::fs::create_dir_all(&dir).unwrap();
+    dir
+}
+
+fn touch(root: &Path, rel: &str) -> PathBuf {
+    let p = root.join(rel);
+    std::fs::create_dir_all(p.parent().unwrap()).unwrap();
+    std::fs::write(&p, "[]").unwrap();
+    p
+}
+
+#[test]
+fn resolution_order() {
+    let root = temp_root("resolve");
+    let explicit = Path::new("/somewhere/mine.json");
+    assert_eq!(resolve_reference(&root, Area::Menus, None, false), None);
+    let committed = touch(&root, "xtask/parity/reference/menus.json");
+    assert_eq!(resolve_reference(&root, Area::Menus, None, false), Some(RefSource::Committed(committed.clone())));
+    let local = touch(&root, "plan/premiere/menus.json");
+    // local snapshot beats the committed file; --reference beats both; --committed ignores the other two
+    assert_eq!(resolve_reference(&root, Area::Menus, None, false), Some(RefSource::Local(local)));
+    assert_eq!(resolve_reference(&root, Area::Menus, Some(explicit), false), Some(RefSource::Explicit(explicit.to_path_buf())));
+    assert_eq!(resolve_reference(&root, Area::Menus, None, true), Some(RefSource::Committed(committed.clone())));
+    // the egui menu bar uses the menus reference; other areas have their own
+    assert_eq!(resolve_reference(&root, Area::MenusEgui, None, true), Some(RefSource::Committed(committed)));
+    assert_eq!(resolve_reference(&root, Area::Panels, None, false), None);
+    let _ = std::fs::remove_dir_all(&root);
+}
+
+#[test]
+fn report_names_reference_source() {
+    let root = Path::new("/repo");
+    assert_eq!(RefSource::Committed("/repo/xtask/parity/reference/menus.json".into()).label(root), "xtask/parity/reference/menus.json (committed)");
+    assert_eq!(RefSource::Local("/repo/plan/premiere/menus.json".into()).label(root), "plan/premiere/menus.json (local snapshot, not committed)");
+    assert_eq!(RefSource::Explicit("/tmp/x/mine.json".into()).label(root), "mine.json");
+    let r = compare(Area::Commands, &paths(&[&["Undo"]]), &cmd_items(&[("edit.undo", "Undo")]));
+    let src = RefSource::Local("/repo/plan/premiere/commands.json".into());
+    assert!(r.markdown(&src.label(root), 1).contains("from `plan/premiere/commands.json (local snapshot, not committed)`"));
+}
+
+#[test]
+fn local_reference_cannot_write_into_repo() {
+    let root = temp_root("guard");
+    let local = RefSource::Local(root.join("plan/premiere/menus.json"));
+    let committed = RefSource::Committed(root.join("xtask/parity/reference/menus.json"));
+    let target = crate::target_dir();
+    // the repository's docs/ is refused for a local or explicit reference, even through `..`
+    for bad in [root.join("docs/parity-checklist.md"), root.join("target/../docs/x.md"), root.join("./docs/../README.md")] {
+        let e = check_out(&root, &bad, &local).unwrap_err();
+        assert!(e.contains("not committed") && e.contains("under"), "{e}");
+        assert!(check_out(&root, &bad, &RefSource::Explicit("/tmp/r.json".into())).is_err());
+        // a committed reference may be written anywhere
+        assert!(check_out(&root, &bad, &committed).is_ok());
+    }
+    // under target/, or outside the repository altogether, is fine
+    assert!(check_out(&root, &target.join("parity/parity-menus.md"), &local).is_ok());
+    assert!(check_out(&root, Path::new("/tmp/anywhere/report.md"), &local).is_ok());
+    let _ = std::fs::remove_dir_all(&root);
+}
+
+#[test]
+fn all_writes_five_sections() {
+    let root = Path::new("/repo");
+    let ours = cmd_items(&[("edit.undo", "Undo")]);
+    let src = RefSource::Committed("/repo/xtask/parity/reference/commands.json".into());
+    let outcome = |area: Area, measured: bool| Outcome {
+        area,
+        ours: 1,
+        inventory: String::new(),
+        measured: measured.then(|| (compare(area, &paths(&[&["Undo"], &["Redo"]]), &ours), src.clone())),
+    };
+    let outcomes: Vec<Outcome> = ALL_AREAS.iter().map(|a| outcome(*a, *a != Area::Transitions)).collect();
+    let md = all_markdown(root, &outcomes);
+    assert!(md.starts_with("# Parity report"), "{md}");
+    for a in ALL_AREAS {
+        assert!(md.contains(&format!("| {} |", a.name())), "{} row\n{md}", a.name());
+    }
+    assert!(md.contains("| transitions | not measured (no reference) |"), "{md}");
+    assert!(md.contains("| commands | xtask/parity/reference/commands.json (committed) | 2 | 1 | 0 | 0 | 0 | 1 | 1 | 50.0% |"), "{md}");
+    // each measured area's own report sits one level down; the unmeasured one says so
+    assert_eq!(md.matches("\n## Command parity checklist").count() + md.matches("\n## Menu parity checklist").count(), 2, "{md}");
+    assert!(md.contains("## transitions parity\n\nNo reference: not measured."), "{md}");
+    assert!(!md.lines().any(|l| l.starts_with("# ") && !l.starts_with("# Parity report")), "{md}");
+    assert!(ALL_AREAS.len() == 5 && !ALL_AREAS.contains(&Area::MenusEgui));
+}
+
+#[test]
+fn area_all_and_committed_arguments() {
+    let a = parse_args(&["--area", "all", "--committed"]).unwrap();
+    assert!(a.all && a.committed);
+    // a later --area names a single area again
+    let a = parse_args(&["--area", "all", "--area", "panels"]).unwrap();
+    assert!(!a.all && a.area == Area::Panels);
+    let root = Path::new("/nonexistent-cfa4-root");
+    assert!(run(root, &["--area", "all", "--ours", "x.json"]).unwrap_err().contains("single --area"));
+    assert!(run(root, &["--area", "all", "--reference", "x.json"]).unwrap_err().contains("single --area"));
+    assert!(run(root, &["--committed", "--reference", "x.json"]).unwrap_err().contains("contradict"));
+    assert!(parse_args(&["--area", "everything"]).unwrap_err().contains("or all"));
+}
+
+#[test]
+fn threshold_failures_are_listed_together() {
+    let args = parse_args(&["--min", "100", "--min-exact", "1"]).unwrap();
+    let ours = cmd_items(&[("edit.undo", "Undo")]);
+    let r = compare(Area::Commands, &paths(&[&["Undo"], &["Redo"]]), &ours);
+    let src = RefSource::Explicit("/tmp/c.json".into());
+    let measured = Outcome { area: Area::Commands, ours: 1, inventory: String::new(), measured: Some((r, src)) };
+    let f = threshold_failures(&args, &measured);
+    assert_eq!(f.len(), 2, "{f:?}");
+    let unmeasured = Outcome { area: Area::Panels, ours: 1, inventory: String::new(), measured: None };
+    assert!(threshold_failures(&args, &unmeasured).first().is_some_and(|m| m.contains("need a reference")));
+    assert!(threshold_failures(&parse_args(&[]).unwrap(), &unmeasured).is_empty());
+}
+
+#[test]
+fn check_reference_rejects_substring_only() {
+    // "Info" only inside "information", "Push" only inside "pushed": not a mention of the name
+    let v = v1_file("panels", json!([]), v1_items(&[("Info", "docs/a.md")]));
+    let e = check(Area::Panels, &v, &[("docs/a.md", "More information is pushed here.")]);
+    assert!(e.first().is_some_and(|m| m.contains("\"Info\" does not appear in docs/a.md")), "{e:?}");
+    assert!(check(Area::Panels, &v, &[("docs/a.md", "The Info panel shows media details.")]).is_empty());
+    assert!(contains_phrase("a | info | b", "info") && contains_phrase("info", "info") && contains_phrase("x info.", "info"));
+    assert!(!contains_phrase("information", "info") && !contains_phrase("an info2", "info") && !contains_phrase("x", ""));
+    // a hit inside a word does not hide a later whole-word hit; non-ASCII text is not split mid-character
+    assert!(contains_phrase("information, then info", "info") && contains_phrase("é info é", "info"));
+    assert!(!contains_phrase("éinfo", "info"));
+}
+
+fn th(v: Value) -> Result<thresholds::Thresholds, String> {
+    thresholds::parse(&json!({"schema": 1, "areas": v}))
+}
+
+/// An outcome of `area` with two reference items, one of which we have (and rate `tier`).
+fn measured_outcome(area: Area, tier: Tier) -> Outcome {
+    let mut ours = cmd_items(&[("edit.undo", "Undo")]);
+    ours[0].tier = tier;
+    let src = RefSource::Committed("/repo/xtask/parity/reference/x.json".into());
+    Outcome { area, ours: 1, inventory: String::new(), measured: Some((compare(area, &paths(&[&["Undo"], &["Redo"]]), &ours), src)) }
+}
+
+#[test]
+fn threshold_check_fails_below_and_hints_above() {
+    let t = th(json!({"commands": {"present": 2, "exact": 1}, "panels": {"present": 0}})).unwrap();
+    let outcomes = [measured_outcome(Area::Commands, Tier::Unrated), measured_outcome(Area::Panels, Tier::Unrated)];
+    let (failures, hints) = thresholds::check(&t, &outcomes);
+    assert_eq!(failures.len(), 2, "{failures:?}");
+    assert!(failures.iter().any(|f| f.contains("present 1 is below the threshold 2")), "{failures:?}");
+    assert!(failures.iter().any(|f| f.contains("exact 0 is below the threshold 1")), "{failures:?}");
+    assert!(hints.first().is_some_and(|h| h.contains("panels: present is 1, above the threshold 0: raise it")), "{hints:?}");
+}
+
+#[test]
+fn raise_hint_when_above_threshold() {
+    let t = th(json!({"commands": {"present": 0, "exact": 0}})).unwrap();
+    let (failures, hints) = thresholds::check(&t, &[measured_outcome(Area::Commands, Tier::Exact)]);
+    assert!(failures.is_empty(), "{failures:?}");
+    assert_eq!(hints.len(), 2, "{hints:?}");
+    // equal is neither a failure nor a hint
+    let t = th(json!({"commands": {"present": 1, "exact": 1}})).unwrap();
+    assert_eq!(thresholds::check(&t, &[measured_outcome(Area::Commands, Tier::Exact)]), (Vec::new(), Vec::new()));
+}
+
+#[test]
+fn threshold_without_measurement_is_a_failure() {
+    let t = th(json!({"effects": {"present": 1}, "menus": {"present": 1}})).unwrap();
+    let unmeasured = Outcome { area: Area::Effects, ours: 0, inventory: String::new(), measured: None };
+    let (failures, _) = thresholds::check(&t, &[unmeasured]);
+    assert!(failures.iter().any(|f| f.starts_with("effects:") && f.contains("no committed reference")), "{failures:?}");
+    assert!(failures.iter().any(|f| f.starts_with("menus:") && f.contains("not measured")), "{failures:?}");
+}
+
+#[test]
+fn ci_mode_reports_all_failing_areas() {
+    let root = temp_root("ci-all");
+    for area in ["menus", "panels"] {
+        let file = root.join(format!("{REFERENCE_DIR}/{area}.json"));
+        std::fs::create_dir_all(file.parent().unwrap()).unwrap();
+        std::fs::write(
+            &file,
+            format!(
+                r#"{{"schema":1,"area":"{area}","outOfScope":[],"items":[{{"path":"{}","source":"docs/a.md"}}]}}"#,
+                if area == "menus" { "File ▸ Save" } else { "Info" }
+            ),
+        )
+        .unwrap();
+    }
+    let file = root.join(thresholds::THRESHOLDS_FILE);
+    std::fs::write(&file, r#"{"schema":1,"areas":{"menus":{"present":1},"panels":{"present":1}}}"#).unwrap();
+    let e = run(&root, &["--ci"]).unwrap_err();
+    // no Python environment in the temporary root: both areas fail, and each is listed once
+    assert_eq!(e.matches("menus: ").count(), 1, "{e}");
+    assert_eq!(e.matches("panels: ").count(), 1, "{e}");
+    assert!(e.contains("missing"), "{e}");
+    // no thresholds file: an error, not a pass
+    std::fs::remove_file(&file).unwrap();
+    assert!(run(&root, &["--ci"]).unwrap_err().contains("thresholds.json: missing"));
+    assert!(run(&root, &["--ci", "--ours", "x.json"]).unwrap_err().contains("not allowed"));
+}
+
+#[test]
+fn missing_python_is_error_not_panic() {
+    let root = temp_root("no-python");
+    let e = run(&root, &["--area", "panels", "--committed"]).unwrap_err();
+    assert!(e.contains("python") && e.contains("--ours FILE"), "{e}");
+}
+
+#[test]
+fn ratchet_decrease_fails() {
+    let base = th(json!({"menus": {"present": 16, "exact": 2}})).unwrap();
+    let e = thresholds::ratchet(&base, &th(json!({"menus": {"present": 15, "exact": 2}})).unwrap());
+    assert_eq!(e.len(), 1, "{e:?}");
+    assert!(e[0].contains("menus.present: lowered from 16 to 15"), "{e:?}");
+}
+
+#[test]
+fn ratchet_increase_ok() {
+    let base = th(json!({"menus": {"present": 16}})).unwrap();
+    assert!(thresholds::ratchet(&base, &th(json!({"menus": {"present": 17}, "panels": {"present": 1}})).unwrap()).is_empty());
+    assert!(thresholds::ratchet(&base, &base).is_empty());
+}
+
+#[test]
+fn ratchet_removed_area_fails() {
+    let base = th(json!({"menus": {"present": 16}, "panels": {"present": 3}})).unwrap();
+    let e = thresholds::ratchet(&base, &th(json!({"menus": {"present": 16}})).unwrap());
+    assert!(e.first().is_some_and(|m| m.contains("panels: area removed")), "{e:?}");
+}
+
+#[test]
+fn ratchet_removed_key_fails() {
+    let base = th(json!({"menus": {"present": 16, "exact": 1}})).unwrap();
+    let e = thresholds::ratchet(&base, &th(json!({"menus": {"present": 16}})).unwrap());
+    assert!(e.first().is_some_and(|m| m.contains("menus.exact: removed")), "{e:?}");
+}
+
+fn git_in(root: &Path, args: &[&str]) {
+    let out = Command::new("git")
+        .args(["-c", "user.name=t", "-c", "user.email=t@example.com", "-c", "commit.gpgsign=false"])
+        .args(args)
+        .current_dir(root)
+        .output()
+        .unwrap();
+    assert!(out.status.success(), "git {args:?}: {}", String::from_utf8_lossy(&out.stderr));
+}
+
+#[test]
+fn ratchet_missing_base_ok() {
+    let root = temp_root("ratchet-git");
+    git_in(&root, &["init", "-q"]);
+    std::fs::write(root.join("a.txt"), "x").unwrap();
+    git_in(&root, &["add", "a.txt"]);
+    git_in(&root, &["commit", "-q", "-m", "one"]);
+    // the base has no thresholds file: fine, whatever the working tree holds
+    let ok = thresholds::check_ratchet(&root, "HEAD").unwrap();
+    assert!(ok.contains("no xtask/parity/thresholds.json at HEAD"), "{ok}");
+    // commit a file, then lower it in the working tree: the ratchet fails against HEAD
+    let file = root.join(thresholds::THRESHOLDS_FILE);
+    std::fs::create_dir_all(file.parent().unwrap()).unwrap();
+    std::fs::write(&file, r#"{"schema":1,"areas":{"menus":{"present":5}}}"#).unwrap();
+    git_in(&root, &["add", "."]);
+    git_in(&root, &["commit", "-q", "-m", "two"]);
+    assert!(thresholds::check_ratchet(&root, "HEAD").unwrap().contains("ok"));
+    std::fs::write(&file, r#"{"schema":1,"areas":{"menus":{"present":4}}}"#).unwrap();
+    assert!(thresholds::check_ratchet(&root, "HEAD").unwrap_err().contains("lowered from 5 to 4"));
+    // a bad ref or an option-looking ref is an error, not a pass
+    assert!(thresholds::check_ratchet(&root, "no-such-ref").unwrap_err().contains("not a commit"));
+    assert!(thresholds::check_ratchet(&root, "--output=x").unwrap_err().contains("not a git ref"));
+    assert!(run(&root, &["--check-ratchet"]).unwrap_err().contains("--base"));
+}
+
+#[test]
+fn checklist_is_deterministic() {
+    let root = temp_root("checklist");
+    let file = root.join(format!("{REFERENCE_DIR}/panels.json"));
+    std::fs::create_dir_all(file.parent().unwrap()).unwrap();
+    let write = |items: &str| std::fs::write(&file, format!(r#"{{"schema":1,"area":"panels","outOfScope":[],"items":[{items}]}}"#)).unwrap();
+    write(r#"{"path":"Zeta","source":"docs/a.md"},{"path":"Alpha","source":"docs/a.md"}"#);
+    let a = thresholds::checklist(&root).unwrap();
+    write(r#"{"path":"Alpha","source":"docs/a.md"},{"path":"Zeta","source":"docs/a.md"}"#);
+    let b = thresholds::checklist(&root).unwrap();
+    assert_eq!(a, b, "item order in the reference must not matter");
+    assert!(a.find("- Alpha").unwrap() < a.find("- Zeta").unwrap(), "{a}");
+    assert!(a.contains("## panels (2)") && a.ends_with("\n") && !a.ends_with("\n\n"), "{a}");
+    // no date, no commit hash
+    assert!(!a.contains("202") && !a.bytes().collect::<Vec<_>>().windows(7).any(|w| w.iter().all(u8::is_ascii_hexdigit)), "{a}");
+}
+
+#[test]
+fn checklist_drift_fails() {
+    let root = temp_root("checklist-drift");
+    std::fs::create_dir_all(root.join("docs")).unwrap();
+    assert!(thresholds::check_checklist(&root, false).unwrap_err().contains("--write-checklist"));
+    thresholds::check_checklist(&root, true).unwrap();
+    assert!(thresholds::check_checklist(&root, false).unwrap().contains("ok"));
+    std::fs::write(root.join(thresholds::CHECKLIST_FILE), "edited by hand\n").unwrap();
+    assert!(thresholds::check_checklist(&root, false).unwrap_err().contains("out of date"));
+}
+
+#[test]
+fn hostile_thresholds_are_refused() {
+    for (v, why) in [
+        (json!([]), "not an object"),
+        (json!({"schema": 2, "areas": {}}), "schema must be"),
+        (json!({"schema": 1}), "areas is missing"),
+        (json!({"schema": 1, "areas": {}, "extra": 1}), "unknown field"),
+        (json!({"schema": 1, "areas": {"sounds": {"present": 1}}}), "unknown area"),
+        (json!({"schema": 1, "areas": {"menus": {"percent": 1}}}), "unknown key"),
+        (json!({"schema": 1, "areas": {"menus": {"present": -1}}}), "whole number"),
+        (json!({"schema": 1, "areas": {"menus": {"present": 1.5}}}), "whole number"),
+        (json!({"schema": 1, "areas": {"menus": {"present": "3"}}}), "whole number"),
+        (json!({"schema": 1, "areas": {"menus": {"present": MAX_ITEMS + 1}}}), "whole number"),
+        (json!({"schema": 1, "areas": {"menus": 3}}), "not an object"),
+    ] {
+        let e = thresholds::parse(&v).unwrap_err();
+        assert!(e.contains(why), "{v}: {e}");
+    }
+    // the frozen egui menu bar is not a measured area
+    assert!(th(json!({"menus-egui": {"present": 1}})).unwrap_err().contains("unknown area"));
 }

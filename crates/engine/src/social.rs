@@ -120,7 +120,7 @@ fn is_picture(kind: &ItemKind) -> bool {
     match kind {
         ItemKind::Media(m) => m.info.has_video(),
         ItemKind::Subclip { .. } | ItemKind::Sequence(_) => true,
-        ItemKind::AdjustmentLayer { .. } | ItemKind::Graphic { .. } => false,
+        ItemKind::AdjustmentLayer { .. } | ItemKind::Graphic { .. } | ItemKind::Volume(_) => false,
     }
 }
 

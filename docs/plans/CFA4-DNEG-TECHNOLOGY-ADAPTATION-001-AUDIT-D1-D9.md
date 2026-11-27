@@ -17,7 +17,7 @@ Minden állítás mellett ott a forrás (fájl vagy parancs). Ami nem ellenőriz
 
 ### 0.1 Kritikus megállapítás: öt hivatkozott terv nincs a `main`-ben
 
-A megbízás ezekre a „korábbi CFA4-tervekre” hivatkozik: **CFA4 VFX Catalog**, **FX Authoring**,
+A megbízás ezekre a „korábbi CFA4-tervekre” hivatkozik: **CFA4 VFX Catalog**, **Effektlánc**,
 **Adaptive Representation Fabric (ARF)**, **OpenUSD / 3D Scene Exchange / procedurális 3D**,
 **Potree-alapú point-cloud donorvizsgálat** (és Gaffer). Ellenőrzés a `main`-en:
 
@@ -41,7 +41,7 @@ A klónban csak a `main` ág látszik; a nyitott PR-ok (31 db a lekérdezéskor,
    a tulajdonos gépén vannak. Ezt nem tudtam ellenőrizni (a munkamenethez csak ez a tároló van
    csatolva). **Tulajdonosi teendő:** a hiányzó tervek `main`-be emelése vagy elérhetővé tétele (G0).
 
-4. **Frissítés (2026-11-21, tulajdonosi döntés):** a hiányzó tervekhez *új terv készül*, a `docs/plans/` alatt (javaslatok, jóváhagyásra várnak): [`CFA4-VFX-CATALOG-001`](CFA4-VFX-CATALOG-001-0.1.md), [`CFA4-FX-AUTHORING-001`](CFA4-FX-AUTHORING-001-0.1.md), [`CFA4-ARF-001`](CFA4-ARF-001-0.1.md), [`CFA4-OPENUSD-3D-001`](CFA4-OPENUSD-3D-001-0.1.md), [`CFA4-POINTCLOUD-001`](CFA4-POINTCLOUD-001-0.1.md). Amíg ezek nincsenek jóváhagyva, a D1 `?` sorai nem zárulnak (a besorolás nem változik).
+4. **Frissítés (2026-11-21, tulajdonosi döntés):** a hiányzó tervekhez *új terv készül*, a `docs/plans/` alatt (javaslatok, jóváhagyásra várnak): [`CFA4-VFX-CATALOG-001`](CFA4-VFX-CATALOG-001-0.1.md), [`CFA4-EFFECTCHAIN-001`](CFA4-EFFECTCHAIN-001-0.1.md), [`CFA4-ARF-001`](CFA4-ARF-001-0.1.md), [`CFA4-OPENUSD-3D-001`](CFA4-OPENUSD-3D-001-0.1.md), [`CFA4-POINTCLOUD-001`](CFA4-POINTCLOUD-001-0.1.md). Amíg ezek nincsenek jóváhagyva, a D1 `?` sorai nem zárulnak (a besorolás nem változik).
 
 ### 0.2 Ami a `main`-ben ténylegesen van (a viszonyítási alap)
 
@@ -86,7 +86,7 @@ Jelölés: **A** már elfogadott CFA4-tervben; **B** meglévő terv valódi bőv
 |---|---|---|---|---|---|---|---|
 | T1 | **DNEG OpenVDB fork** (`dneg/openvdb`) | **D** | ADR-0003 §2 (OpenVDB = ASWF-projekt, A7) | nincs külön: az ADR az **ASWF upstreamet** nevezi meg | – | magas (fork-függés) | A fork nem kerül be; csak az ASWF upstream OpenVDB (14.0.0, Apache-2.0) a jelölt. A fork 2020-12-i, MPL-2.0 pillanatkép (igazolt, D8). |
 | T2 | **ASWF OpenVDB core** (ritka voxelrács, I/O, transzform, grid típusok) | **B** (a donor az A7-ben megnevezett, integrációs terv nincs) | ADR-0003 A7 | Volumetrikus adat tárolása/olvasása (`.vdb`): CFA4-ben nincs volume-adat sem terv, sem kód | külön folyamatú worker + média-eszköz típus (D10 N1) | közepes: ne legyen második render/timeline | **Scope** (N1), csak adat+inspekció+renderelt kimenet; a 0.1 szerint ha az ARF-terv már fedi, a mapping csak annak kiegészítése. |
-| T3 | **OpenVDB AX** (JIT kifejezésnyelv) | **C** | – (CFA4 kulcskocka-/kifejezésrendszere képkocka-paraméter, nem térbeli; `grep expression` nem ad térbeli kifejezésnyelvet) | Pozíciófüggő, voxel/pont-szintű programozható módosítás | N1 workerben; GUI: a meglévő effekt-szerkesztő panel (Qt6) | alacsony, **de** biztonsági kockázat (LLVM JIT) | **Feltételes scope** (N3): csak sandbox-PoC kapu (G4) után. Alternatíva: Rust-oldali korlátozott interpreter. |
+| T3 | **OpenVDB AX** (JIT kifejezésnyelv) | **C** | – (CFA4 kulcskocka-/kifejezésrendszere képkocka-paraméter, nem térbeli; `grep expression` nem ad térbeli kifejezésnyelvet) | Pozíciófüggő, voxel/pont-szintű programozható módosítás | N1 workerben; GUI: **új** AX-szerkesztő panel a `python/cfa4_qt/panels/`-ben (N3-6′, `CFA4-AX-INTERPRETER-001`); a `panels/fx_editor.py` az audio-effektek grafikus szerkesztője, nem ezt bővítjük | alacsony, **de** biztonsági kockázat (LLVM JIT) | **Feltételes scope** (N3): csak sandbox-PoC kapu (G4) után. Alternatíva: Rust-oldali korlátozott interpreter. |
 | T4 | **DNEG openvdb_points_dev** (archivált, béta) | **D** | – | A koncepció az upstream OpenVDB `openvdb/points/` moduljában él (igazolt: a klónban megvan; a DNEG-repó README-je deprecated-nek jelöli) | – | magas | Nem kerül be; csak az upstream points modul a jelölt. |
 | T5 | **OpenVDB Points** (attribútum, group, iteráció, régiószűrés) | **B?** | ARF (hivatkozott, nincs a `main`-ben) | Típusos attribútumok, point group, régió-lekérdezés, tömörítés | N1 worker; ARF-ra képezve | magas, ha az ARF létezik | **Nincs önálló scope**; D4 szerint csak a *leképezési specifikáció* készül, ha az ARF-terv elérhető (G0). |
 | T6 | **NanoVDB** (GPU/CPU csak-olvasható VDB) | **B?** | wgpu-s GPU út (`crates/gpu`), ADR-0004 | gyors, csak-olvasható mintavétel | opcionális gyorsító a workerben | alacsony | **Nincs scope**: a CUDA-út csak vendor-párral lenne engedélyezett (AGENTS); CPU-útvonal az alap. Későbbi, mérésen alapuló döntés. |
@@ -292,7 +292,7 @@ A DNEG-eredetű képességek ehhez **csak** a következőket adják hozzá, a wo
 
 | ID | Tétel | Állapot | Mi oldja fel |
 |---|---|---|---|
-| U1 | VFX Catalog, FX Authoring, ARF, OpenUSD/3D, Potree/pontfelhő terv | **jóváhagyva 2026-11-21** (`docs/plans/…-0.1.md`); a `CFA4-VFX-001`-gyel való egyeztetés `[MÓD-5]` jóváhagyásra vár | az egyeztetés jóváhagyása |
+| U1 | VFX Catalog, Effektlánc, ARF, OpenUSD/3D, Potree/pontfelhő terv | **jóváhagyva 2026-11-21** (`docs/plans/…-0.1.md`); a `CFA4-VFX-001`-gyel való egyeztetés `[MÓD-5]` jóváhagyásra vár | az egyeztetés jóváhagyása |
 | U2 | OpenVDB / AX / Points / NanoVDB licenc | **IGAZOLT: Apache-2.0** (upstream); DNEG-forkok MPL-2.0 (nem használjuk) | – |
 | U3 | DNEG-fork állapotok | **IGAZOLT** (stagnáló/deprecated; D8) | – |
 | U4 | USD fork-diff | **IGAZOLT: delta üres** (fork = upstream v23.05); Ubuntu 26.04-es build nincs próbálva | – / U6 |

@@ -57,6 +57,7 @@
 	Apply Video Transition	Primijeni video prijelaz
 	Assembly	Montaža
 	Attach Proxies…	Priloži proxy datoteke…
+	Find Camera Proxies	Pronađi proxy datoteke kamere
 	Audio	Audio
 	Audio Channels…	Audio kanali…
 	Audio Clip Mixer	Mikser audio isječaka
@@ -3961,7 +3962,7 @@
 	Six-Point Pin	Pričvršćivanje u šest točaka
 	Upper Center	Gore u sredini
 	Lower Center	Dolje u sredini
-	Use FFmpeg for files the CFA4 engine cannot open (FFmpeg 9.0.2 or later, GPL-3 build)	Koristi FFmpeg za datoteke koje pogon CFA4 ne može otvoriti (FFmpeg 9.0.2 ili noviji, GPL-3 verzija)
+	Use FFmpeg for files the CFA4 engine cannot open (FFmpeg 9.1 or later, GPL-3 build)	Koristi FFmpeg za datoteke koje pogon CFA4 ne može otvoriti (FFmpeg 9.1 ili noviji, GPL-3 verzija)
 	Use the system's GStreamer for files neither the engine nor FFmpeg can open	Koristi GStreamer sustava za datoteke koje ne mogu otvoriti ni pogon ni FFmpeg
 	Analyze Source for Smart Cut	Analiziraj izvor za pametni rez
 	Plan Smart Cut	Planiraj pametni rez
@@ -4819,6 +4820,7 @@ export.summary	Low	niska
 	Datamosh Bloom	Datamosh cvat
 	Start Time (seconds)	Vrijeme početka (sekunde)
 	Repeats	Ponavljanja
+	Clean Blocks	Čisti blokovi
 
 # Recent effects, per-channel waveform, white balance selector (SC-2/SC-3/SC-4, #1419 #1420 #1421)
 	Apply a recently used effect to the selected clips	Primijeni nedavno korišteni efekt na odabrane klipove
@@ -4904,3 +4906,69 @@ export.summary	Low	niska
 	Write an AS-02 bundle (the path is a folder)	Zapiši paket AS-02 (putanja je mapa)
 	AS-02	AS-02
 	AS-12	AS-12
+
+# N1 voxel panel
+	Active voxels:	Aktivni voksel:
+	Bounds:	Granice:
+	Voxel attributes	Atributi voksela
+	Voxel size:	Veličina voksela:
+	points	točke
+
+# WP3 DPX bit depth
+	Bit Depth	Bitna dubina
+
+# AS-02 versions
+	AS-02 Versions	AS-02 verzije
+	Tick the sequences to write as further versions in the AS-02 bundle	Označite sekvence koje će se zapisati kao dodatne verzije u AS-02 paketu
+	Delete Short Clips	Izbriši kratke isječke
+	A stored combination does not run a command yet.	Spremljena kombinacija još ne pokreće naredbu.
+	Action hint	Natuknica radnje
+	Add combination	Dodaj kombinaciju
+	Add mapping	Dodaj pridruživanje
+	Button Learn	Učenje tipke
+	Button Test	Proba tipke
+	Button name	Naziv tipke
+	Cancel feedback	Signal odustajanja
+	Combination editor	Uređivač kombinacija
+	Context	Kontekst
+	Delete profile	Obriši profil
+	Detected buttons	Otkrivene tipke
+	Draw the gesture with a button held.	Nacrtajte gestu držeći tipku.
+	Error feedback	Signal greške
+	Evdev device	Evdev uređaj
+	Evdev reads the selected device only, and only after a later phase turns it on. This version keeps the Qt path.	Evdev čita samo odabrani uređaj, i tek kad ga kasnija faza uključi. Ova inačica ostaje na Qt putu.
+	Execution feedback	Signal izvršenja
+	Follow the system	Slijedi sustav
+	Gesture	Gesta
+	Gesture Learn	Učenje geste
+	Gesture editor	Uređivač gesti
+	Gesture profiles	Profili gesti
+	Gestures stay off until you turn them on. Turning them on does not block the panel menu.	Geste ostaju isključene dok ih ne uključite. Uključivanje ne blokira izbornik panela.
+	HUD	HUD
+	Hand	Ruka
+	High contrast	Visoki kontrast
+	Hold time	Vrijeme držanja
+	Input access	Pristup ulazu
+	Left-handed	Ljevoruk
+	Mapping	Pridruživanje
+	Maximum length	Najveća duljina
+	Maximum time	Najveće vrijeme
+	Minimum length	Najmanja duljina
+	Mirror ergonomic gestures	Zrcali ergonomske geste
+	Mouse Gestures	Geste miša
+	Mouse Gestures…	Geste miša…
+	No buttons yet. Press one in Button Learn or Button Test.	Još nema tipke. Pritisnite jednu u učenju ili u probi.
+	Press	Pritisak
+	Qt pointer (this application)	Qt pokazivač (ovaj program)
+	Recognition preview	Pretpregled prepoznavanja
+	Reduced animation	Smanjena animacija
+	Right-handed	Dešnjak
+	Roles	Uloge
+	Save gesture	Spremi gestu
+	Save profile	Spremi profil
+	Show the gesture HUD	Prikaži HUD gesti
+	Slop	Zazor
+	Spatial gesture	Prostorna gesta
+	Thresholds	Pragovi
+	Trail	Trag
+	Use gestures in the window	Koristi geste u prozoru

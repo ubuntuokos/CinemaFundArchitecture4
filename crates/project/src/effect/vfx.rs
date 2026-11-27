@@ -839,6 +839,7 @@ pub(super) fn defs() -> Vec<EffectDef> {
                 fs("repeats", "Repeats", 12.0, (1.0, 120.0), (1.0, 60.0), "", 0),
                 pct("residual", "Residual", 20.0),
                 pct("dissolve", "Dissolve", 30.0),
+                b("clean", "Clean Blocks", true),
             ],
         ),
         video(

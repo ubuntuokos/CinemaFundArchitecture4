@@ -1,14 +1,16 @@
 #!/usr/bin/env bash
 # SPDX-License-Identifier: GPL-3.0-or-later
-# Builds the FFmpeg 9.0.2 that CFA4's supplementary FFmpeg backend links (ADR 0005), on Ubuntu
-# Linux AMD64, as shared libraries in an isolated prefix that never replaces Ubuntu's FFmpeg.
+# Builds the FFmpeg that CFA4's supplementary FFmpeg backend links (ADR 0005; the version, source
+# SHA-256 and tag commit are pinned in packaging/ffmpeg-version.env), on Ubuntu Linux AMD64, as
+# shared libraries in an isolated prefix that never replaces Ubuntu's FFmpeg.
 #
-#   scripts/dev/build-ffmpeg-9.0.2.sh              base build      → /opt/cfa4/ffmpeg-9.0.2
-#   scripts/dev/build-ffmpeg-9.0.2.sh --restricted restricted build → /opt/cfa4/ffmpeg-9.0.2-restricted
+#   scripts/dev/build-ffmpeg.sh                    base build      → /opt/cfa4/ffmpeg-VERSION
+#   scripts/dev/build-ffmpeg.sh --restricted       restricted build → /opt/cfa4/ffmpeg-VERSION-restricted
 #
 # Licence: GPL-3 build only (--enable-gpl --enable-version3), never --enable-nonfree, so no
 # libfdk-aac, libnpp or CUDA NVCC. NVIDIA encode/decode goes through the MIT nv-codec-headers and
-# is loaded at run time; AMD AMF is left out (ADR 0003 §5: closed runtime; AMD encodes via VA-API).
+# is loaded at run time; AMD AMF likewise: MIT SDK headers at build time, AMD's driver runtime loaded
+# at run time (CFA4-FFMPEG-9.1-001 D2; ADR 0003 §5), next to the VA-API path.
 #
 # Ubuntu model (docs/licensing.md §7): the base build has no patent-restricted codecs. The
 # restricted build is the same FFmpeg plus x264 and x265, for the `cfa4-restricted-extras`
@@ -18,7 +20,7 @@
 #
 # Environment: CFA4_FFMPEG_PREFIX (base prefix), CFA4_FFMPEG_JOBS (make -j), CFA4_FFMPEG_SOURCE
 # (`tarball`, the default, or `git` for the GitHub mirror when ffmpeg.org is not reachable),
-# CFA4_FFMPEG_FROM_SOURCE=1 (compile even where scripts/dev/fetch-ffmpeg-9.0.2.sh has a prebuilt one).
+# CFA4_FFMPEG_FROM_SOURCE=1 (compile even where scripts/dev/fetch-ffmpeg.sh has a prebuilt one).
 set -euo pipefail
 
 if [[ "$(uname -s)" != "Linux" || "$(uname -m)" != "x86_64" ]]; then
@@ -26,19 +28,21 @@ if [[ "$(uname -s)" != "Linux" || "$(uname -m)" != "x86_64" ]]; then
   exit 2
 fi
 
-version=9.0.2
+# shellcheck source=packaging/ffmpeg-version.env
+. "$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)/packaging/ffmpeg-version.env"
+version="$CFA4_FFMPEG_VERSION"
 archive="ffmpeg-${version}.tar.xz"
 source_url="https://ffmpeg.org/releases/${archive}"
-sha256=8c3850283eb25fa026482078a04051e0be17347b09ef81a0849bec15a96e002e
+sha256="$CFA4_FFMPEG_SOURCE_SHA256"
 git_url="https://github.com/FFmpeg/FFmpeg"
 git_tag="n${version}"
-git_commit=946fcce07b6dcd0331c8cc609192aeff5e1924f8
+git_commit="$CFA4_FFMPEG_GIT_COMMIT"
 
 restricted=0
 for arg in "$@"; do
   case "$arg" in
     --restricted) restricted=1 ;;
-    -h|--help) sed -n '2,22p' "$0"; exit 0 ;;
+    -h|--help) sed -n '2,23p' "$0"; exit 0 ;;
     *) echo "unknown option: $arg (use --restricted or --help)" >&2; exit 2 ;;
   esac
 done
@@ -48,12 +52,12 @@ prefix="$base"
 (( restricted )) && prefix="${base}-restricted"
 jobs="${CFA4_FFMPEG_JOBS:-$(nproc)}"
 
-# The base build in its default prefix is published prebuilt (scripts/dev/fetch-ffmpeg-9.0.2.sh,
+# The base build in its default prefix is published prebuilt (scripts/dev/fetch-ffmpeg.sh,
 # GitHub prerelease, SHA-256 pinned): install that instead of compiling, unless
 # CFA4_FFMPEG_FROM_SOURCE=1 (the prebuilt workflow itself) or the host has no prebuilt archive.
 if (( ! restricted )) && [[ "$prefix" == "/opt/cfa4/ffmpeg-${version}" && "${CFA4_FFMPEG_FROM_SOURCE:-0}" != 1 ]]; then
   status=0
-  bash "$(dirname "${BASH_SOURCE[0]}")/fetch-ffmpeg-9.0.2.sh" || status=$?
+  bash "$(dirname "${BASH_SOURCE[0]}")/fetch-ffmpeg.sh" || status=$?
   if (( status == 0 )); then
     exit 0
   elif (( status != 3 )); then
@@ -63,9 +67,11 @@ if (( ! restricted )) && [[ "$prefix" == "/opt/cfa4/ffmpeg-${version}" && "${CFA
   echo "no prebuilt FFmpeg ${version} for this host; building from source" >&2
 fi
 
-need=(nasm pkg-config)
+# glslc (shaderc) compiles FFmpeg's Vulkan shaders (APV/FFv1/ProRes Vulkan encoders and hwaccels): a
+# required build tool (CFA4-FFMPEG-9.1-001 D9, R12), never left out silently.
+need=(nasm pkg-config glslc git)
 for tool in "${need[@]}" curl tar make cc; do
-  command -v "$tool" >/dev/null || { echo "missing build tool: $tool (sudo apt install build-essential nasm pkg-config curl)" >&2; exit 1; }
+  command -v "$tool" >/dev/null || { echo "missing build tool: $tool (sudo apt install build-essential nasm pkg-config curl git glslc)" >&2; exit 1; }
 done
 
 tmp="$(mktemp -d)"
@@ -89,12 +95,29 @@ case "${CFA4_FFMPEG_SOURCE:-tarball}" in
   *) echo "CFA4_FFMPEG_SOURCE must be tarball or git" >&2; exit 2 ;;
 esac
 
+# AMD AMF SDK headers (MIT; plan D2): not packaged in Ubuntu 26.04, so the pinned tag of the SDK
+# repository, checked against its commit. Headers only; the AMF runtime ships with AMD's driver and
+# FFmpeg loads it at run time (without it the VA-API, Vulkan or CPU path runs).
+amf_url="https://github.com/GPUOpen-LibrariesAndSDKs/AMF"
+amf="${tmp}/amf"
+git clone --quiet --depth 1 --filter=blob:none --sparse --branch "$CFA4_AMF_HEADERS_TAG" "$amf_url" "$amf"
+git -C "$amf" sparse-checkout set amf/public/include >/dev/null
+actual="$(git -C "$amf" rev-parse HEAD)"
+if [[ "$actual" != "$CFA4_AMF_HEADERS_COMMIT" ]]; then
+  echo "the AMF ${CFA4_AMF_HEADERS_TAG} tag points to ${actual}, expected ${CFA4_AMF_HEADERS_COMMIT}; refusing to build" >&2
+  exit 1
+fi
+mkdir -p "${tmp}/amf-include"
+cp -R "${amf}/amf/public/include" "${tmp}/amf-include/AMF"
+
 # Optional libraries: each is used when its development package is installed, and the build says
 # which ones it found. Missing ones only remove that codec or accelerator.
 has() { pkg-config --exists "$1"; }
 flags=(--prefix="$prefix" --enable-gpl --enable-version3 --enable-shared --disable-static
   --disable-doc --disable-debug --disable-ffplay --disable-autodetect
-  --enable-pthreads --enable-zlib --extra-ldflags="-Wl,--enable-new-dtags,-rpath,${prefix}/lib")
+  --enable-pthreads --enable-zlib --extra-ldflags="-Wl,--enable-new-dtags,-rpath,${prefix}/lib"
+  --enable-amf --extra-cflags=-I${tmp}/amf-include)
+found+=("AMD AMF (headers ${CFA4_AMF_HEADERS_TAG}; runtime from AMD's driver)")
 found=()
 opt() { if has "$1"; then flags+=("$2"); found+=("$3"); fi; }
 opt libva --enable-vaapi "VA-API (Intel, AMD, NVIDIA via nvidia-vaapi-driver)"
@@ -106,8 +129,15 @@ opt vpx --enable-libvpx "libvpx (VP8/VP9)"
 opt opus --enable-libopus "Opus"
 opt libwebp --enable-libwebp "WebP"
 if [[ -e /usr/include/lame/lame.h ]]; then flags+=(--enable-libmp3lame); found+=("LAME (MP3)"); fi
-# Vulkan Video needs headers at least as new as FFmpeg 9 expects; older ones are reported, not fatal.
-if has vulkan && pkg-config --atleast-version=1.4.300 vulkan; then flags+=(--enable-vulkan); found+=("Vulkan Video"); else found+=("(no Vulkan Video: vulkan headers older than 1.4.300 or missing)"); fi
+# Vulkan needs headers of at least 1.4.317 (FFmpeg's vulkan_1_4 check; Ubuntu 26.04 has them); older
+# ones are reported, not fatal (development containers). Its shaders are compiled with glslc.
+vulkan=0
+if has vulkan && pkg-config --atleast-version=1.4.317 vulkan; then
+  vulkan=1
+  flags+=(--enable-vulkan --glslc=glslc); found+=("Vulkan Video and Vulkan encoders (APV, FFv1, ProRes; shaders by glslc)")
+else
+  found+=("(no Vulkan: vulkan headers older than 1.4.317 or missing)")
+fi
 if (( restricted )); then
   has x264 || { echo "the restricted build needs libx264-dev" >&2; exit 1; }
   has x265 || { echo "the restricted build needs libx265-dev" >&2; exit 1; }
@@ -126,6 +156,8 @@ if [[ ! -w "$(dirname "$prefix")" && "$(id -u)" != 0 ]]; then
   install_cmd=(sudo "${install_cmd[@]}")
   sudo mkdir -p "$(dirname "$prefix")"
 fi
+# An earlier BUILDINFO would make this prefix look complete while the checks below have not passed.
+if [[ "${install_cmd[0]}" == sudo ]]; then sudo rm -f "${prefix}/share/doc/ffmpeg/BUILDINFO"; else rm -f "${prefix}/share/doc/ffmpeg/BUILDINFO"; fi
 "${install_cmd[@]}" >"${tmp}/install.log"
 
 # Licence and source information next to the libraries: packaging/linux/stage-ffmpeg.sh ships this
@@ -134,23 +166,20 @@ fi
 doc="${tmp}/doc"
 mkdir -p "$doc"
 cp "$src"/LICENSE.md "$src"/COPYING.* "$doc/"
+git -C "$amf" show HEAD:LICENSE.txt >"${doc}/AMF-LICENSE.txt"
 {
-  echo "FFmpeg ${version}, built for CFA4 by scripts/dev/build-ffmpeg-9.0.2.sh (ADR 0005)."
+  echo "FFmpeg ${version}, built for CFA4 by scripts/dev/build-ffmpeg.sh (ADR 0005)."
   echo "Licence: GPL version 3 or later (--enable-gpl --enable-version3, never --enable-nonfree)."
   case "${CFA4_FFMPEG_SOURCE:-tarball}" in
     tarball) echo "Source: ${source_url} (SHA-256 ${sha256}), unmodified." ;;
     git) echo "Source: ${git_url} tag ${git_tag}, commit ${git_commit}, unmodified." ;;
   esac
+  echo "AMF headers: ${amf_url} tag ${CFA4_AMF_HEADERS_TAG}, commit ${CFA4_AMF_HEADERS_COMMIT} (MIT, AMF-LICENSE.txt)."
+  echo "SPIR-V compiler: $( (( vulkan )) && glslc --version 2>/dev/null | head -1 || echo 'not used (no Vulkan)')"
   echo "Build: $( (( restricted )) && echo 'restricted (x264, x265; cfa4-restricted-extras)' || echo 'base (no patent-restricted codecs)')"
   echo "configure flags:"
   printf '  %s\n' "${flags[@]}"
 } >"${doc}/BUILDINFO"
-docdir="${prefix}/share/doc/ffmpeg"
-if [[ "${install_cmd[0]}" == sudo ]]; then
-  sudo mkdir -p "$docdir" && sudo cp "$doc"/* "$docdir/"
-else
-  mkdir -p "$docdir" && cp "$doc"/* "$docdir/"
-fi
 
 ffmpeg="${prefix}/bin/ffmpeg"
 actual="$("$ffmpeg" -version | awk 'NR==1 {print $3}')"
@@ -159,12 +188,25 @@ if "$ffmpeg" -hide_banner -buildconf | grep -q -- '--enable-nonfree'; then
   echo "refusing: a non-free build cannot be distributed" >&2
   exit 1
 fi
+# R12: with Vulkan the SPIR-V shaders must have been built (glslc), so the APV Vulkan encoder exists.
+if (( vulkan )) && ! "$ffmpeg" -hide_banner -encoders | awk '{print $2}' | grep -qx apv_vulkan; then
+  echo "refusing: Vulkan is enabled but the apv_vulkan encoder is missing (glslc shader build failed?)" >&2
+  exit 1
+fi
 restricted_found="$("$ffmpeg" -hide_banner -encoders | awk '$2 == "libx264" || $2 == "libx265" {print $2}' | tr '\n' ' ')"
 if (( ! restricted )) && [[ -n "$restricted_found" ]]; then
   echo "refusing: the base build contains patent-restricted encoders: ${restricted_found}" >&2
   exit 1
 fi
 
+# BUILDINFO marks a complete, accepted installation (fetch-ffmpeg.sh's installed() requires it):
+# written only after every check above passed, so a refused build is rebuilt, never reused.
+docdir="${prefix}/share/doc/ffmpeg"
+if [[ "${install_cmd[0]}" == sudo ]]; then
+  sudo mkdir -p "$docdir" && sudo cp "$doc"/* "$docdir/"
+else
+  mkdir -p "$docdir" && cp "$doc"/* "$docdir/"
+fi
 echo "FFmpeg ${version} installed in ${prefix} (GPL-3 or later, shared libraries)."
 printf '  %s\n' "${found[@]}"
 echo "Hardware acceleration methods: $("$ffmpeg" -hide_banner -hwaccels | tail -n +2 | tr '\n' ' ')"

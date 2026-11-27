@@ -3,7 +3,7 @@
 # and the repository's real licence, attribution, desktop and Qt GUI files, then audit its
 # contents with verify_cfa4_packages.verify_deb (dpkg-deb). Only the binaries, the FFmpeg
 # libraries and the crate notices are stand-ins: building them needs the release toolchain and the
-# FFmpeg 9.0.2 build, which the self-hosted four-formats job has (it audits the real ones too).
+# FFmpeg build, which the self-hosted four-formats job has (it audits the real ones too).
 #   deb-contents-check.sh [--keep DIR]    keep the staged tree and the .deb in DIR
 # Needs: the pinned nfpm (scripts/release/install-nfpm.sh), dpkg-deb, python3.
 set -euo pipefail
@@ -33,11 +33,13 @@ rm -rf "$STAGE" "$FFMPEG_DEB"
 install -d "$STAGE/usr/bin"
 printf '#!/bin/sh\necho "cfa4-cli %s (deb-contents-check stand-in)"\n' "$VERSION" >"$STAGE/usr/bin/cfa4-cli"
 chmod 755 "$STAGE/usr/bin/cfa4-cli"
-ffmpeg="$FFMPEG_DEB/opt/cfa4/ffmpeg-9.0.2"
+# shellcheck source=packaging/ffmpeg-version.env
+. "$ROOT/packaging/ffmpeg-version.env"
+ffmpeg="$FFMPEG_DEB/opt/cfa4/ffmpeg-$CFA4_FFMPEG_VERSION"
 install -d "$ffmpeg/lib" "$ffmpeg/share/doc/ffmpeg"
 for lib in libavcodec.so.62 libavformat.so.62 libavutil.so.60; do echo stand-in >"$ffmpeg/lib/$lib"; done
 ln -s libavcodec.so.62 "$ffmpeg/lib/libavcodec.so"
-for doc in BUILDINFO COPYING.GPLv3 LICENSE.md; do echo "FFmpeg 9.0.2 $doc (stand-in)" >"$ffmpeg/share/doc/ffmpeg/$doc"; done
+for doc in BUILDINFO COPYING.GPLv3 LICENSE.md AMF-LICENSE.txt; do echo "FFmpeg $CFA4_FFMPEG_VERSION $doc (stand-in)" >"$ffmpeg/share/doc/ffmpeg/$doc"; done
 printf 'CFA4 - third-party licence notices (deb-contents-check stand-in)\n' >"$work/THIRD-PARTY-LICENSES.txt"
 printf '{"bomFormat": "CycloneDX", "specVersion": "1.6"}\n' >"$work/cfa4.cdx.json"
 printf 'libzstd1\n' >"$work/ffmpeg-depends.txt"

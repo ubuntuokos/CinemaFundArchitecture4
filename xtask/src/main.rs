@@ -9,10 +9,13 @@
 //! - `fixtures [crate…]`: pre-generate the ffmpeg fixture matrix of the oracle tests (runs each
 //!   crate's ignored `generate_fixtures` test, i.e. the same generators the tests use) and print
 //!   what was made, reused or skipped.
-//! - `parity [--area menus|commands|panels|effects|transitions|menus-egui] [--reference FILE] [--out FILE] [--min PERCENT]`:
+//! - `parity [--area menus|commands|panels|effects|transitions|menus-egui|all] [--reference FILE|--committed] [--out FILE] [--min PERCENT] [--min-exact COUNT]`:
 //!   measured parity of the Qt 6 GUI menu bar or panels (the frozen egui menu bar as
 //!   `menus-egui`), of the engine's commands, or of the effects / transitions the Effects panel lists, against a reference list (default: the local `plan/premiere/<area>.json`), presence and
-//!   placement reported separately (`parity.rs`, docs/gaps.md G7).
+//!   placement reported separately (`parity/`, docs/gaps.md G7); `parity --check-reference` (part of
+//!   `ci`) checks the committed references in `xtask/parity/reference/` against their source docs;
+//!   `parity --ci` adds the thresholds, `--check-ratchet --base REF` forbids lowering them and `--check-checklist`
+//!   keeps `docs/parity-checklist.md` current (`parity/thresholds.rs`).
 //! - `fuzz-targets`: every L0 parser crate (containers and decoders; not the encoder-only ones in
 //!   `NO_PARSER`) has a fuzz target in `fuzz/src/lib.rs`, and every target has its
 //!   `fuzz/fuzz_targets/<name>.rs` and `[[bin]]` (CFA4-SECURITY-001 B2).
@@ -39,6 +42,7 @@ const LAYERS: &[(&str, u8)] = &[
     ("mxf", 0),
     ("cfb", 0),
     ("mpegts", 0),
+    ("dvd", 0),
     ("st2110", 0),
     ("mpeg2v", 0),
     ("dv", 0),
@@ -103,6 +107,8 @@ const LAYERS: &[(&str, u8)] = &[
     ("sstp", 0),
     ("evc", 0),
     ("cavs", 0),
+    ("avs2", 0),
+    ("avs3", 0),
     ("musepack", 0),
     ("vp9", 0),
     ("prores", 0),
@@ -128,6 +134,7 @@ const LAYERS: &[(&str, u8)] = &[
     ("audio-dsp", 1),
     ("text", 1),
     ("route", 1),
+    ("audit", 1),
     ("tcsync", 1),
     ("surface-catalog", 1),
     ("tcsync-io", 5),
@@ -137,6 +144,7 @@ const LAYERS: &[(&str, u8)] = &[
     ("live", 1),
     ("sandbox", 1),
     ("expr", 1),
+    ("vdb", 1),
     ("tasks", 2),
     ("store", 5),
     ("edit", 2),
@@ -152,6 +160,7 @@ const LAYERS: &[(&str, u8)] = &[
     ("tts-text", 2),
     ("interchange", 2),
     ("render", 3),
+    ("render-contracts", 3),
     ("gpu", 3),
     ("golden", 3),
     ("cinema-acceptance", 3),
@@ -184,6 +193,7 @@ const L0_FOUNDATION: &[&str] = &["time", "geom", "color", "bitstream", "testkit"
 /// Allowed same-layer edges (from, to).
 const SAME_LAYER: &[(&str, &str)] = &[
     ("dcp-inspect", "dcp-validate"),
+    ("vdb", "sandbox"),
     ("media", "frame"),
     ("io-core", "frame"),
     ("project", "media"),
@@ -455,7 +465,9 @@ fn ci() -> Result<(), String> {
     run(Command::new(cargo).args(["clippy", "--workspace", "--exclude", "cfa4-ui", "--all-targets", "--release", "--", "-D", "warnings"]))?;
     // Full optimized release tests (including FFmpeg oracles) run in the dedicated CI job.
     layers()?;
-    assets()
+    assets()?;
+    parity::run(&root(), &["--check-reference"])?;
+    parity::run(&root(), &["--check-checklist"])
 }
 
 /// The headless playback benchmark (`crates/ui-egui/examples/bench_playback.rs`); extra
@@ -555,7 +567,7 @@ fn main() -> ExitCode {
             parity::run(&root(), &rest.iter().map(String::as_str).collect::<Vec<_>>())
         }
         _ => Err(
-            "usage: cargo xtask <layers|assets|wasm|fuzz-targets|fixtures [crate…]|parity [--area menus|commands|panels|effects|transitions|menus-egui] [--reference FILE] [--out FILE] [--min PERCENT]|version [set X.Y.Z]|ci|bench [args]|bench-playback [args]|cinema-oracles [--check|--install …|--corpus|--print-env]>"
+            "usage: cargo xtask <layers|assets|wasm|fuzz-targets|fixtures [crate…]|parity [--area menus|commands|panels|effects|transitions|menus-egui] [--reference FILE] [--out FILE] [--min PERCENT] [--min-exact COUNT]|parity --area all [--committed]|parity --ci|parity --check-reference|parity --check-ratchet --base REF|parity --check-checklist|parity --write-checklist|version [set X.Y.Z]|ci|bench [args]|bench-playback [args]|cinema-oracles [--check|--install …|--corpus|--print-env]>"
                 .into(),
         ),
     };

@@ -36,6 +36,7 @@ from PySide6.QtWidgets import (
 )
 
 from . import __version__, crash, dock_commands, theme
+from .gesture_hud import GestureLayer
 from .commands import Command, CommandRegistry, qt_shortcut
 from .dialogs import ErrorDialog, InterpretFootageDialog, ParamDialog, path_params
 from .dock_gutters import DockGutters
@@ -145,7 +146,7 @@ LAYOUT_VERSION = 21  # 2: Source monitor; 3: Effect Controls; 4: Properties (egu
 # commands that can change which media an item shows, done or undone
 SOURCE_COMMANDS = frozenset({
     "media.relink", "media.replaceFootage", "media.makeOffline", "media.offlineAll", "media.autoRelink", "media.linkMedia",
-    "media.findMissing", "media.refreshChanged", "media.refreshGrowingFiles", "media.attachProxies", "media.detachProxies",
+    "media.findMissing", "media.refreshChanged", "media.refreshGrowingFiles", "media.attachProxies", "media.findCameraProxies", "media.detachProxies",
     "media.toggleProxies", "media.enableProxies", "media.reconnectFullRes", "clip.interpretFootage", "edit.undo", "edit.redo",
     "dcp.loadKdm", "dcp.clearKeys",
 })
@@ -575,6 +576,7 @@ class MainWindow(QMainWindow):
 
         engine.started.connect(self._on_started)
         engine.event.connect(self._on_event)
+        self.gestures = GestureLayer(self, engine)
         engine.job.connect(self._job_started)
         engine.failure.connect(lambda m: self.events.log(m, error=True))
         engine.stopped.connect(self._on_engine_stopped)
@@ -2744,6 +2746,7 @@ class MainWindow(QMainWindow):
             self.metadata.set_fields(it, data)
             self.item_info = data
             self.info.update_info(data, self.sequence, self.monitor.playhead)
+            self._update_voxels(it, data)
 
         if item is None:
             got(None, None)
@@ -2757,6 +2760,23 @@ class MainWindow(QMainWindow):
         self.update_clip_mixer()
         for editor in list(self.fx_editors.values()):
             editor.refresh()
+
+    def _update_voxels(self, item: int | None, data: dict[str, Any] | None) -> None:
+        """N1-10: a selected OpenVDB volume shows its grids in the Info panel (``vdb.inspect``)."""
+        volume = (data or {}).get("volume")
+        if item is None or not isinstance(volume, dict) or not volume.get("path"):
+            self.info.update_voxels(None)
+            return
+
+        def got(result: Any, _b: bytes | None) -> None:
+            if item == self.target_item and isinstance(result, dict):
+                self.info.update_voxels(result.get("inspection"))
+
+        def failed(message: str) -> None:
+            if item == self.target_item:
+                self.info.update_voxels(None, str(message))
+
+        self.engine.execute("vdb.inspect", {"path": volume["path"]}, on_reply=got, on_error=failed)
 
     def show_error(self, summary: str) -> None:
         """egui's error window: playback stops, the error is shown with its log file, the
@@ -3156,6 +3176,7 @@ class MainWindow(QMainWindow):
             self.export_dialog = ExportDialog(self.engine, self)
             self.export_dialog.finished_export.connect(self._export_finished)
         path = (self.project or {}).get("path")
+        self.export_dialog.set_project_sequences(sequences_of((self.project or {}).get("root")))
         self.export_dialog.open_for(self.sequence, path if isinstance(path, str) else None)
 
     def _media_backends(self) -> MediaBackendsDialog:

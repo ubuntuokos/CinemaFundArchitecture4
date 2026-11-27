@@ -301,10 +301,15 @@ pub fn vp8(data: &[u8]) {
     }
 }
 
+/// A key frame larger than `MAX_SIDE` is skipped, as for VP8: an 824-byte packet may ask for a
+/// 3841 × 12336 picture, valid but slow to decode (a 10 s timeout under the sanitizer, not a bug).
 pub fn vp9(data: &[u8]) {
     let _ = cfa4_vp9::keyframe_info(data);
     let mut dec = cfa4_vp9::Decoder::new();
     for p in packets(data) {
+        if cfa4_vp9::keyframe_info(p).is_some_and(|k| k.width > MAX_SIDE || k.height > MAX_SIDE) {
+            continue;
+        }
         let _ = dec.decode(p, 0);
     }
 }
@@ -672,15 +677,19 @@ pub fn svq3(data: &[u8]) {
         let _ = d.decode(i.rest(), 1);
         let _ = d.flush();
     }
+}
 pub fn svq1(data: &[u8]) {
     let mut d = cfa4_svq1::Decoder::new(16, 16, false);
     let _ = d.decode(data);
     let _ = d.decode(data);
+}
 pub fn indeo45(data: &[u8]) {
     for codec in [cfa4_indeo45::Codec::Indeo4, cfa4_indeo45::Codec::Indeo5] {
         let mut d = cfa4_indeo45::Decoder::new(codec);
         let _ = d.decode(data);
         let _ = d.decode(data);
+    }
+}
 pub fn msvideo(data: &[u8]) {
     // the first bytes pick the codec and the layout, the rest is a run of packets
     let (head, body) = data.split_at(data.len().min(4));
@@ -698,6 +707,7 @@ pub fn msvideo(data: &[u8]) {
             let _ = d.decode(pkt);
         }
     }
+}
 pub fn indeo3(data: &[u8]) {
     let mut d = cfa4_indeo3::Decoder::new();
     let _ = d.decode(data);
@@ -802,6 +812,9 @@ pub fn mobiclip(data: &[u8]) {
                 cfa4_mobiclip::AudioCodec::ImaMoflex => drop(cfa4_mobiclip::decode_ima(p, ch)),
                 cfa4_mobiclip::AudioCodec::PcmS16le => drop(cfa4_mobiclip::decode_pcm(p, ch)),
             }
+        }
+    }
+}
 pub fn qdm2(data: &[u8]) {
     // a configuration, and blocks decoded with a valid one built from the first bytes
     let _ = cfa4_qdm2::Decoder::new(data);
@@ -820,6 +833,7 @@ pub fn qdm2(data: &[u8]) {
             let _ = d.decode(packet);
         }
     }
+}
 pub fn amv(data: &[u8]) {
     // a file: its chunks decode, whatever they hold
     if let Ok(a) = cfa4_amv::Amv::parse(data) {
@@ -857,6 +871,10 @@ pub fn twinvq(data: &[u8]) {
         let align = usize::from(u16::from_le_bytes([a[0], a[1]]));
         if let Ok(s) = cfa4_twinvq::parse_metasound(extra, align) {
             let _ = cfa4_twinvq::decode(data.get(18..).unwrap_or(&[]), &s);
+        }
+    }
+}
+
 pub fn yamaha_oki(data: &[u8]) {
     use cfa4_yamaha_oki::{Kind, State};
     for kind in [Kind::Yamaha, Kind::Oki] {
@@ -866,6 +884,8 @@ pub fn yamaha_oki(data: &[u8]) {
                 s.decode(data, &mut out);
             }
         }
+    }
+}
 pub fn nstream(data: &[u8]) {
     if let Ok(s) = cfa4_nstream::parse(data) {
         let _ = cfa4_nstream::decode(data, &s);
@@ -912,6 +932,60 @@ pub fn smacker(data: &[u8]) {
                 let _ = d.update_palette(p);
             }
             _ => {}
+        }
+    }
+}
+
+pub fn avs2(data: &[u8]) {
+    let _ = (cfa4_avs2::probe(data), cfa4_avs2::stream_info(data));
+    let _ = cfa4_avs2::SequenceHeader::parse(data);
+    let mut d = cfa4_avs2::Decoder::new();
+    for (tag, p) in cfa4_avs2::split_packets(data).into_iter().take(16).enumerate() {
+        let _ = d.decode(p, tag as i64);
+    }
+    let _ = d.flush();
+}
+
+pub fn avs3(data: &[u8]) {
+    let _ = (cfa4_avs3::probe(data), cfa4_avs3::stream_info(data));
+    let _ = cfa4_avs3::SequenceHeader::parse(data);
+    let mut d = cfa4_avs3::Decoder::new();
+    for (tag, p) in cfa4_avs3::split_packets(data).into_iter().take(16).enumerate() {
+        let _ = d.decode(p, tag as i64);
+    }
+    let _ = d.flush();
+}
+
+pub fn cinepak(data: &[u8]) {
+    let mut i = Input::new(data);
+    let (w, h) = (i.side(), i.side());
+    let bits = [8u16, 24][usize::from(i.byte() & 1)];
+    if let Ok(mut d) = cfa4_cinepak::Decoder::new(w, h, bits) {
+        d.set_palette_bgr0(&data[..data.len().min(1024)]);
+        for pkt in packets(i.rest()) {
+            if let Ok(p) = d.decode(pkt) {
+                std::hint::black_box(p.to_rgba());
+            }
+        }
+    }
+}
+
+pub fn flic(data: &[u8]) {
+    let _ = cfa4_flic::probe(data);
+    let Ok(h) = cfa4_flic::Header::parse(data) else { return };
+    let Ok(mut d) = cfa4_flic::Decoder::new(&h) else { return };
+    for pkt in packets(data.get(128..).unwrap_or_default()) {
+        let _ = d.decode(pkt);
+        std::hint::black_box(d.rgba());
+    }
+}
+
+pub fn indeo(data: &[u8]) {
+    let mut i = Input::new(data);
+    let (w, h) = (i.side(), i.side());
+    if let Ok(mut d) = cfa4_indeo::ir2::Decoder::new(w, h) {
+        for pkt in packets(i.rest()) {
+            let _ = d.decode(pkt);
         }
     }
 }
@@ -1033,6 +1107,11 @@ pub const TARGETS: &[(&str, &str, Target)] = &[
     ("hca", "cfa4-hca", hca),
     ("tak", "cfa4-tak", tak),
     ("smacker", "cfa4-smacker", smacker),
+    ("avs2", "cfa4-avs2", avs2),
+    ("avs3", "cfa4-avs3", avs3),
+    ("cinepak", "cfa4-cinepak", cinepak),
+    ("flic", "cfa4-flic", flic),
+    ("indeo", "cfa4-indeo", indeo),
     ("project", "cfa4-project", project),
     ("interchange", "cfa4-interchange", interchange),
     ("captions", "cfa4-captions", captions),
@@ -1050,6 +1129,9 @@ pub fn mace(data: &[u8]) {
     let version = if sel & 1 == 0 { cfa4_mace::Version::Mace3 } else { cfa4_mace::Version::Mace6 };
     let Ok(mut d) = cfa4_mace::Decoder::new(version, 1 + usize::from(sel >> 1 & 1)) else { return };
     for pkt in body.chunks(1 + usize::from(sel >> 2) % 64) {
+        let _ = d.decode(pkt);
+    }
+}
 /// TrueSpeech: random packets of random sizes through one decoder.
 pub fn truespeech(data: &[u8]) {
     let mut d = cfa4_truespeech::Decoder::new();

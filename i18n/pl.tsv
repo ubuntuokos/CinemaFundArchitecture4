@@ -51,6 +51,7 @@
 	Apply Video Transition	Zastosuj przejście wideo
 	Assembly	Montaż wstępny
 	Attach Proxies…	Dołącz pliki proxy…
+	Find Camera Proxies	Znajdź pliki proxy z kamery
 	Audio Channels…	Kanały audio…
 	Audio Clip Mixer	Mikser klipów audio
 	Audio Effects	Efekty audio
@@ -3538,7 +3539,7 @@
 	Six-Point Pin	Przypięcie sześciopunktowe
 	Upper Center	Górny środek
 	Lower Center	Dolny środek
-	Use FFmpeg for files the CFA4 engine cannot open (FFmpeg 9.0.2 or later, GPL-3 build)	Używaj FFmpeg dla plików, których silnik CFA4 nie otwiera (FFmpeg 9.0.2 lub nowszy, kompilacja GPL-3)
+	Use FFmpeg for files the CFA4 engine cannot open (FFmpeg 9.1 or later, GPL-3 build)	Używaj FFmpeg dla plików, których silnik CFA4 nie otwiera (FFmpeg 9.1 lub nowszy, kompilacja GPL-3)
 	Use the system's GStreamer for files neither the engine nor FFmpeg can open	Używaj systemowego GStreamera dla plików, których nie otwiera ani silnik, ani FFmpeg
 	Analyze Source for Smart Cut	Analizuj źródło do inteligentnego cięcia
 	Plan Smart Cut	Zaplanuj inteligentne cięcie
@@ -4817,6 +4818,7 @@ export.summary	Low	niska
 	Datamosh Bloom	Rozkwit datamosh
 	Start Time (seconds)	Czas rozpoczęcia (sekundy)
 	Repeats	Powtórzenia
+	Clean Blocks	Czyste bloki
 
 # Recent effects, per-channel waveform, white balance selector (SC-2/SC-3/SC-4, #1419 #1420 #1421)
 	Apply a recently used effect to the selected clips	Zastosuj ostatnio użyty efekt do zaznaczonych klipów
@@ -4902,3 +4904,69 @@ export.summary	Low	niska
 	Write an AS-02 bundle (the path is a folder)	Zapisz pakiet AS-02 (ścieżka to folder)
 	AS-02	AS-02
 	AS-12	AS-12
+
+# N1 voxel panel
+	Active voxels:	Aktywne woksele:
+	Bounds:	Granice:
+	Voxel attributes	Atrybuty vokseli
+	Voxel size:	Rozmiar voksela:
+	points	punkty
+
+# WP3 DPX bit depth
+	Bit Depth	Głębia bitowa
+
+# AS-02 versions
+	AS-02 Versions	Wersje AS-02
+	Tick the sequences to write as further versions in the AS-02 bundle	Zaznacz sekwencje, które zostaną zapisane jako dodatkowe wersje w pakiecie AS-02
+	Delete Short Clips	Usuń krótkie klipy
+	A stored combination does not run a command yet.	Zapisana kombinacja nie uruchamia jeszcze polecenia.
+	Action hint	Podpowiedź działania
+	Add combination	Dodaj kombinację
+	Add mapping	Dodaj przypisanie
+	Button Learn	Nauka przycisku
+	Button Test	Test przycisku
+	Button name	Nazwa przycisku
+	Cancel feedback	Sygnał anulowania
+	Combination editor	Edytor kombinacji
+	Context	Kontekst
+	Delete profile	Usuń profil
+	Detected buttons	Wykryte przyciski
+	Draw the gesture with a button held.	Narysuj gest przy wciśniętym przycisku.
+	Error feedback	Sygnał błędu
+	Evdev device	Urządzenie evdev
+	Evdev reads the selected device only, and only after a later phase turns it on. This version keeps the Qt path.	Evdev czyta tylko wybrane urządzenie i dopiero, gdy późniejsza faza je włączy. Ta wersja zostaje na ścieżce Qt.
+	Execution feedback	Sygnał wykonania
+	Follow the system	Zgodnie z systemem
+	Gesture	Gest
+	Gesture Learn	Nauka gestu
+	Gesture editor	Edytor gestów
+	Gesture profiles	Profile gestów
+	Gestures stay off until you turn them on. Turning them on does not block the panel menu.	Gesty pozostają wyłączone, dopóki ich nie włączysz. Włączenie nie blokuje menu panelu.
+	HUD	HUD
+	Hand	Ręka
+	High contrast	Wysoki kontrast
+	Hold time	Czas przytrzymania
+	Input access	Dostęp do wejścia
+	Left-handed	Leworęczny
+	Mapping	Przypisanie
+	Maximum length	Największa długość
+	Maximum time	Największy czas
+	Minimum length	Najmniejsza długość
+	Mirror ergonomic gestures	Odbij gesty ergonomiczne
+	Mouse Gestures	Gesty myszy
+	Mouse Gestures…	Gesty myszy…
+	No buttons yet. Press one in Button Learn or Button Test.	Nie ma jeszcze przycisku. Naciśnij jeden w nauce lub w teście.
+	Press	Naciśnięcie
+	Qt pointer (this application)	Wskaźnik Qt (ta aplikacja)
+	Recognition preview	Podgląd rozpoznania
+	Reduced animation	Ograniczona animacja
+	Right-handed	Praworęczny
+	Roles	Role
+	Save gesture	Zapisz gest
+	Save profile	Zapisz profil
+	Show the gesture HUD	Pokaż HUD gestów
+	Slop	Luz
+	Spatial gesture	Gest przestrzenny
+	Thresholds	Progi
+	Trail	Ślad
+	Use gestures in the window	Używaj gestów w oknie

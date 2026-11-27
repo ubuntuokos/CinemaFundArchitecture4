@@ -76,6 +76,106 @@ CREATE INDEX task_open ON tasks.task (class_rank, priority DESC, submitted_at)
 CREATE INDEX task_open ON tasks.task (class_rank, priority DESC, submitted_at)
     WHERE state IN ('scheduled', 'queued', 'waiting', 'running');",
     },
+    Step {
+        version: 3,
+        // P5: wall-clock times are `timestamptz`. The task ids stay `text`: the queue's ids are chosen by
+        // its callers (`export-1`, ...) and are not UUIDs, so the uuid half of D-5 is not applied here.
+        up: "ALTER TABLE tasks.task ALTER COLUMN submitted_at TYPE timestamptz USING to_timestamp(submitted_at / 1000.0);
+ALTER TABLE tasks.task ALTER COLUMN start_at TYPE timestamptz USING to_timestamp(start_at / 1000.0);
+ALTER TABLE tasks.task ALTER COLUMN lease_until TYPE timestamptz USING to_timestamp(lease_until / 1000.0);
+ALTER TABLE tasks.transition ALTER COLUMN at TYPE timestamptz USING to_timestamp(at / 1000.0);",
+        down: "ALTER TABLE tasks.task ALTER COLUMN submitted_at TYPE bigint USING (extract(epoch from submitted_at) * 1000)::bigint;
+ALTER TABLE tasks.task ALTER COLUMN start_at TYPE bigint USING (extract(epoch from start_at) * 1000)::bigint;
+ALTER TABLE tasks.task ALTER COLUMN lease_until TYPE bigint USING (extract(epoch from lease_until) * 1000)::bigint;
+ALTER TABLE tasks.transition ALTER COLUMN at TYPE bigint USING (extract(epoch from at) * 1000)::bigint;",
+    },
+    Step {
+        version: 4,
+        // PG-001 §4.3: the start rule, finished stages, estimates and finished runs of a task
+        up: r#"
+CREATE TABLE tasks.schedule (
+    task_id text PRIMARY KEY REFERENCES tasks.task (id) ON DELETE CASCADE,
+    mode text NOT NULL CHECK (mode IN ('now', 'resource', 'at', 'at_resource')),
+    start_at timestamptz,
+    time_zone text CHECK (length(time_zone) <= 64),
+    if_missed text NOT NULL CHECK (if_missed IN ('delay', 'next_slot', 'ask'))
+);
+INSERT INTO tasks.schedule (task_id, mode, start_at, time_zone, if_missed)
+    SELECT id,
+           CASE doc #>> '{start,mode}' WHEN 'whenResources' THEN 'resource' WHEN 'at' THEN 'at' WHEN 'atWithResources' THEN 'at_resource' ELSE 'now' END,
+           start_at, doc ->> 'timeZone',
+           CASE doc ->> 'missed' WHEN 'nextSlot' THEN 'next_slot' WHEN 'askUser' THEN 'ask' ELSE 'delay' END
+    FROM tasks.task;
+CREATE TABLE tasks.checkpoint (
+    task_id text NOT NULL REFERENCES tasks.task (id) ON DELETE CASCADE,
+    stage bigint NOT NULL CHECK (stage >= 0),
+    cache_key text CHECK (length(cache_key) BETWEEN 1 AND 256),
+    at timestamptz NOT NULL DEFAULT now(),
+    PRIMARY KEY (task_id, stage)
+);
+CREATE TABLE tasks.estimate (
+    id bigserial PRIMARY KEY,
+    task_id text NOT NULL REFERENCES tasks.task (id) ON DELETE CASCADE,
+    min_s bigint NOT NULL CHECK (min_s >= 0),
+    max_s bigint NOT NULL CHECK (max_s >= min_s),
+    confidence text NOT NULL CHECK (confidence IN ('low', 'medium')),
+    basis text NOT NULL CHECK (basis IN ('measurement', 'history', 'manifest')),
+    at timestamptz NOT NULL DEFAULT now()
+);
+CREATE INDEX estimate_task ON tasks.estimate (task_id, id DESC);
+-- what finished runs really cost; the estimator learns from it
+CREATE TABLE tasks.run_history (
+    id bigserial PRIMARY KEY,
+    task_id text NOT NULL,
+    implementation text NOT NULL CHECK (length(implementation) BETWEEN 1 AND 128),
+    path text NOT NULL CHECK (length(path) <= 128),
+    hardware text NOT NULL CHECK (length(hardware) <= 256),
+    input_bytes bigint NOT NULL CHECK (input_bytes >= 0),
+    duration_ms bigint NOT NULL CHECK (duration_ms >= 0),
+    peak_ram_bytes bigint NOT NULL CHECK (peak_ram_bytes >= 0),
+    peak_vram_bytes bigint NOT NULL CHECK (peak_vram_bytes >= 0),
+    finished_at timestamptz NOT NULL DEFAULT now()
+);
+CREATE INDEX run_history_impl ON tasks.run_history (implementation, hardware, id DESC);
+"#,
+        down: "DROP TABLE tasks.run_history, tasks.estimate, tasks.checkpoint, tasks.schedule;",
+    },
+    Step {
+        version: 5,
+        // D-3: the outbox row carries the whole Event Fabric Canonical Envelope with a UUIDv7
+        // `event_id` that never changes on a repeat (EF §5.3); `tasks.uuid7()` makes one in SQL
+        up: r#"
+CREATE FUNCTION tasks.uuid7() RETURNS uuid LANGUAGE sql VOLATILE AS $f$
+    SELECT encode(
+        set_bit(set_bit(
+            overlay(uuid_send(gen_random_uuid()) PLACING substring(int8send((extract(epoch FROM clock_timestamp()) * 1000)::bigint) FROM 3) FROM 1 FOR 6),
+            52, 1), 53, 1),
+        'hex')::uuid
+$f$;
+ALTER TABLE tasks.outbox ADD COLUMN event_id uuid NOT NULL DEFAULT tasks.uuid7();
+ALTER TABLE tasks.outbox ADD CONSTRAINT outbox_event_id_key UNIQUE (event_id);
+"#,
+        down: "ALTER TABLE tasks.outbox DROP COLUMN event_id;
+DROP FUNCTION tasks.uuid7();",
+    },
+    Step {
+        version: 6,
+        // the engine's in-memory queue, written behind by the application: one row per task of a
+        // session, never read by the scheduler (`tasks.task` stays the queue of the database)
+        up: r#"
+CREATE TABLE tasks.session_task (
+    session text NOT NULL CHECK (length(session) BETWEEN 1 AND 64),
+    id text NOT NULL CHECK (length(id) BETWEEN 1 AND 256),
+    state text NOT NULL CHECK (length(state) BETWEEN 1 AND 32),
+    version bigint NOT NULL CHECK (version >= 0),
+    doc jsonb NOT NULL,
+    updated_at timestamptz NOT NULL DEFAULT now(),
+    PRIMARY KEY (session, id)
+);
+CREATE INDEX session_task_updated ON tasks.session_task (updated_at);
+"#,
+        down: "DROP TABLE tasks.session_task;",
+    },
 ];
 
 const AI: &[Step] = &[Step {

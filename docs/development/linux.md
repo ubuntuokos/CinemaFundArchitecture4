@@ -11,7 +11,7 @@ Historical sources and target-specific transitive entries in Cargo.lock may rema
 - **Python 3.12+:** developer tooling and orchestration. Project CI exercises Python 3.13, and Python 3.14 in a non-blocking job (`python-3-14`, owner decision 2026-11-14); newer Linux distributions can use a supported version.
 - **Qt 6 / PySide6:** the CFA4 editor GUI (`cfa4-qt`, `python/cfa4_qt/`), driving the Rust engine through `cfa4-cli serve` ([docs/qt-gui.md](../qt-gui.md)). All new UI work goes here. What it already does compared with egui: [docs/qt-parity.md](../qt-parity.md).
 - **Existing egui desktop app:** still the complete editor, **frozen** (bug and security fixes only). It is deleted only when the Qt 6 GUI does point by point everything it does and the owner approves.
-- **FFmpeg (≥ 9.0.2):** a supplementary media backend next to the own Rust engine, chosen by the automatic task router (`cfa4-ffmpeg` crate, `crates/ffmpeg`, GPL-3 build, [ADR 0005](../adr/ADR-0005-media-backends.md)). The pinned FFmpeg/ffprobe 9.0.2 CLI (`scripts/ci/install-ffmpeg-9.0.2.sh`) remains a separate test oracle.
+- **FFmpeg (≥ `CFA4_FFMPEG_MIN_VERSION` (`packaging/ffmpeg-version.env`)):** a supplementary media backend next to the own Rust engine, chosen by the automatic task router (`cfa4-ffmpeg` crate, `crates/ffmpeg`, GPL-3 build, [ADR 0005](../adr/ADR-0005-media-backends.md)). CFA4's own build (`scripts/dev/build-ffmpeg.sh`, or prebuilt by `scripts/dev/fetch-ffmpeg.sh`) needs `glslc` (Vulkan shaders) and `git` (the pinned AMD AMF SDK headers) besides the `-dev` packages listed in [`crates/ffmpeg/README.md`](../../crates/ffmpeg/README.md). The pinned FFmpeg/ffprobe CLI (version in `packaging/ffmpeg-version.env`; `scripts/ci/install-ffmpeg.sh`) remains a separate test oracle.
 - **Python-to-Rust integration:** `cfa4-cli` subprocess, JSON command interfaces or documented local control protocol. Do not silently replace the engine with Python implementations.
 
 ## Bootstrap (Ubuntu 26.04 AMD64)
@@ -87,7 +87,7 @@ does not qualify as full CI validation. An unrun, skipped, or failing job is
 
 GitHub Actions caches are branch-scoped: a run sees only caches saved on its own
 ref and on `main`. The full jobs never run on `main`, so the cache they saved was
-never reused, and the pinned FFmpeg 9.0.2 oracle and the Rust release
+never reused, and the pinned FFmpeg oracle and the Rust release
 dependencies were rebuilt in every full validation. `.github/workflows/ci-cache-warm.yml`
 builds both on `main` (when the FFmpeg scripts, `Cargo.lock`, a `Cargo.toml` or
 `rust-toolchain.toml` change, weekly against the 7-day cache eviction, or by
@@ -198,6 +198,16 @@ python3 -m pip download --no-deps --only-binary=:all: --platform manylinux_2_34_
   --python-version 3.13 --implementation cp -d /path/to/wheels \
   pyside6-essentials==6.12.0 pyside6-addons==6.12.0 shiboken6==6.12.0
 export CFA4_PYSIDE6_WHEELS=/path/to/wheels
+```
+
+The Flatpak bundle also builds MIT Kerberos (`krb5`) from a tarball pinned in its manifest, and
+`flatpak-builder` runs with `--disable-download`: `flatpak-bundle.sh` takes the tarball from a local
+directory (`CFA4_FLATPAK_SOURCES`), checks its SHA-256 against the manifest and seeds the builder's
+cache with it (`packaging/linux/flatpak-sources.py`). To fill that directory once:
+
+```bash
+bash scripts/release/fetch-flatpak-sources.sh /path/to/flatpak-sources
+export CFA4_FLATPAK_SOURCES=/path/to/flatpak-sources
 ```
 
 No package carries or starts the egui editor (owner decisions 2026-11-12 and 2026-11-14,

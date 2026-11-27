@@ -332,6 +332,45 @@ fn image_sequences_are_numbered_like_premiere() {
     }
 }
 
+/// DPX at 12 and 16 bits (CFA4-PROCODEC-002 WP3): `dpx_bit_depth` sets the component size, alpha is
+/// kept from 12 bits on (straight, descriptor 51), other depths are refused; ffmpeg (external
+/// oracle) decodes every still.
+#[test]
+fn dpx_sequence_bit_depths_and_alpha() {
+    let (p, seq, m) = matte([0.0, 0.0, 1.0, 0.5], 64, 36, None);
+    for (depth, alpha) in [(12u8, false), (16, false), (12, true), (16, true)] {
+        let dir = Scratch::new(&format!("dpxdeep-{depth}-{alpha}"));
+        let mut s = ExportSettings { format: Format::DpxSequence, path: dir.path("D.dpx"), alpha, dpx_bit_depth: depth, ..Default::default() };
+        s.range = Some(TimeRange::new(Tick::ZERO, FrameRate::FPS_24.tick_of(2)));
+        assert!(s.supports_alpha(), "{depth}-bit");
+        assert_eq!(s.keeps_alpha(), alpha);
+        let video = s.summary(160, 90, FrameRate::FPS_24, 48_000, Tick(TICKS_PER_SECOND)).video;
+        assert!(video.contains(&format!("{depth}-bit RGB{}", if alpha { "A" } else { "" })), "{video}");
+        export(&p, seq, &s, &m, &Progress::default()).unwrap();
+        let first = dir.0.join("D000.dpx");
+        let bytes = std::fs::read(&first).unwrap();
+        let comps = if alpha { 4 } else { 3 };
+        assert_eq!(bytes.len(), 2048 + 64 * 36 * comps * 2, "{depth}-bit alpha {alpha}");
+        assert_eq!((bytes[800], bytes[803]), (if alpha { 51 } else { 50 }, depth));
+        let Some(ffmpeg) = cfa4_testkit::ffmpeg_or_skip("DPX bit depths") else { continue };
+        let first = first.to_string_lossy().to_string();
+        let out = std::process::Command::new(ffmpeg).args(["-v", "error", "-i", &first, "-f", "rawvideo", "-pix_fmt", "rgba", "-"]).output().unwrap();
+        assert!(out.status.success(), "{first}: {}", String::from_utf8_lossy(&out.stderr));
+        let at = (18 * 64 + 32) * 4;
+        let px = &out.stdout[at..at + 4];
+        if alpha {
+            assert!((100..=160).contains(&px[3]) && px[2] > 200 && px[0] < 15, "{first} straight alpha: {px:?}");
+        } else {
+            assert!(px[3] == 255 && px[2] > 100 && px[0] < 20, "{first}: {px:?}");
+        }
+    }
+    // 10 bits carries no alpha; other depths are refused
+    let ten = ExportSettings { format: Format::DpxSequence, alpha: true, ..Default::default() };
+    assert!(!ten.supports_alpha() && !ten.keeps_alpha());
+    let bad = ExportSettings { format: Format::DpxSequence, dpx_bit_depth: 14, ..Default::default() };
+    assert!(bad.validate().is_err());
+}
+
 /// JPEG, Targa and DPX sequences (#779): numbered like the others, JPEG at the export quality,
 /// Targa with alpha when asked; every still decoded by ffmpeg (external test oracle).
 #[test]
@@ -2148,7 +2187,7 @@ fn dash_manifest_matches_the_hls_playlists() {
     }
 
     // ffprobe opens the manifest: one H.264 and one AAC stream, about 13 seconds. ffmpeg's DASH
-    // demuxer needs libxml2; the CI's FFmpeg 9.0.2 is built without it (--disable-autodetect),
+    // demuxer needs libxml2; the CI's pinned FFmpeg is built without it (--disable-autodetect),
     // so this part is skipped there even with CFA4_REQUIRE_ORACLES=1: the timelines above are
     // the check that counts, and the local ffprobe (distribution builds have libxml2) adds this one.
     let Some(ffprobe) = cfa4_testkit::ffprobe_or_skip("export settings") else { return };

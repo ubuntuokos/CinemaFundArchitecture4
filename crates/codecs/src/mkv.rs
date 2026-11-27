@@ -461,12 +461,19 @@ fn sample_entry(c: &Codec, private: &[u8], v: Option<&cfa4_matroska::VideoInfo>,
         Codec::Other(id) if id == "V_DIRAC" => crate::dirac::sample_entry(w, h),
         Codec::Theora { private } => crate::theora::sample_entry(private, w, h),
         Codec::Other(id) if id == "V_CAVS" => crate::cavs::sample_entry(private, w, h),
+        // Matroska uncompressed video: the `UncompressedFourCC` names the layout
+        Codec::Other(id) if id == "V_UNCOMPRESSED" => {
+            let fourcc = v?.colour_space?;
+            crate::video::RawFormat::from_mov(fourcc, 0)?;
+            SampleEntry::video(FourCc(fourcc), CodecConfig::Unknown { fourcc: FourCc(fourcc), raw: Vec::new() }, w, h)
+        }
         Codec::Other(id) if id == "V_JPEG2000" => crate::j2k::sample_entry(w, h),
         // ffmpeg writes JPEG 2000 as a VfW `mjp2` track
         Codec::VfwFourcc { fourcc, .. } if fourcc.eq_ignore_ascii_case(b"mjp2") => crate::j2k::sample_entry(w, h),
         Codec::Other(id) if id.starts_with("V_REAL/") => crate::realmedia::mkv_sample_entry(id, private, w, h)?,
         // Huffyuv: the VfW BITMAPINFOHEADER sets the stream up (bit count, extradata)
         Codec::VfwFourcc { fourcc, bitmap_info_header } if fourcc.eq_ignore_ascii_case(b"HFYU") => crate::huffyuv::sample_entry(bitmap_info_header, w, h),
+        Codec::VfwFourcc { fourcc, bitmap_info_header } if fourcc.eq_ignore_ascii_case(b"HYMT") => crate::huffyuv::sample_entry_mt(bitmap_info_header, w, h),
         Codec::VfwFourcc { fourcc, bitmap_info_header } if crate::svq3::is_svq3(fourcc) => {
             crate::svq3::sample_entry(w, h, bitmap_info_header.get(40..).unwrap_or(&[]))
         }
@@ -557,6 +564,12 @@ fn color_of(v: &cfa4_matroska::VideoInfo, w: u32, h: u32, stream: Option<ColorCo
     (crate::stream_color::resolve(w, h, &sources), explicit)
 }
 
+/// The label of a `V_UNCOMPRESSED` track, by its `UncompressedFourCC`.
+fn uncompressed_label(t: &cfa4_matroska::Track, v: &cfa4_matroska::VideoInfo) -> Option<String> {
+    matches!(&t.codec, Codec::Other(id) if id == "V_UNCOMPRESSED").then_some(())?;
+    v.colour_space.and_then(|f| crate::video::RawFormat::from_mov(f, 0)).map(|f| f.label().to_string())
+}
+
 fn codec_label(c: &Codec) -> String {
     match c {
         Codec::Avc { .. } => "H.264".into(),
@@ -596,6 +609,7 @@ fn codec_label(c: &Codec) -> String {
         Codec::VfwFourcc { fourcc, .. } if crate::hap::is_hap(fourcc) => "Hap".into(),
         Codec::VfwFourcc { fourcc, .. } if is_dv_fourcc(fourcc) => "DV".into(),
         Codec::VfwFourcc { fourcc, .. } if fourcc.eq_ignore_ascii_case(b"HFYU") => "Huffyuv".into(),
+        Codec::VfwFourcc { fourcc, .. } if fourcc.eq_ignore_ascii_case(b"HYMT") => "Huffyuv MT".into(),
         Codec::VfwFourcc { fourcc, .. } if crate::canopus::codec(fourcc).is_some() => {
             crate::canopus::codec(fourcc).map_or("Canopus", crate::canopus::label).into()
         }
@@ -603,6 +617,7 @@ fn codec_label(c: &Codec) -> String {
         Codec::Other(id) if id == "V_DIRAC" => "VC-2 / Dirac".into(),
         Codec::Theora { .. } => "Theora".into(),
         Codec::Other(id) if id == "V_CAVS" => crate::cavs::NAME.into(),
+        Codec::Other(id) if id == "V_UNCOMPRESSED" => "Uncompressed video".into(),
         Codec::Other(id) if id == "V_JPEG2000" => "JPEG 2000".into(),
         Codec::VfwFourcc { fourcc, .. } if fourcc.eq_ignore_ascii_case(b"mjp2") => "JPEG 2000".into(),
         Codec::Other(id) if id == "A_TTA1" => "TTA".into(),
@@ -700,7 +715,7 @@ impl MkvSource {
                 height: h,
                 frame_rate: rate,
                 par,
-                codec: codec_label(&t.codec),
+                codec: uncompressed_label(t, &v).unwrap_or_else(|| codec_label(&t.codec)),
                 pixel_format: String::new(),
                 color,
                 has_alpha: v.alpha_mode != 0,

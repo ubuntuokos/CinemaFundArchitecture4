@@ -55,6 +55,7 @@
 	Apply Video Transition	Käytä videosiirtymää
 	Assembly	Kokoonpano
 	Attach Proxies…	Liitä välityskopiot…
+	Find Camera Proxies	Etsi kameran välityskopiot
 	Audio	Ääni
 	Audio Channels…	Äänikanavat…
 	Audio Clip Mixer	Äänileikemikseri
@@ -3735,7 +3736,7 @@
 	Six-Point Pin	Kuuden pisteen kiinnitys
 	Upper Center	Ylhäällä keskellä
 	Lower Center	Alhaalla keskellä
-	Use FFmpeg for files the CFA4 engine cannot open (FFmpeg 9.0.2 or later, GPL-3 build)	Käytä FFmpegiä tiedostoille, joita CFA4-moottori ei voi avata (FFmpeg 9.0.2 tai uudempi, GPL-3-käännös)
+	Use FFmpeg for files the CFA4 engine cannot open (FFmpeg 9.1 or later, GPL-3 build)	Käytä FFmpegiä tiedostoille, joita CFA4-moottori ei voi avata (FFmpeg 9.1 tai uudempi, GPL-3-käännös)
 	Use the system's GStreamer for files neither the engine nor FFmpeg can open	Käytä järjestelmän GStreameria tiedostoille, joita moottori tai FFmpeg ei voi avata
 	Analyze Source for Smart Cut	Analysoi lähde Smart Cutia varten
 	Plan Smart Cut	Suunnittele Smart Cut
@@ -4819,6 +4820,7 @@ export.summary	Low	matala
 	Datamosh Bloom	Datamosh-kukinta
 	Start Time (seconds)	Aloitusaika (sekuntia)
 	Repeats	Toistot
+	Clean Blocks	Puhtaat lohkot
 
 # Recent effects, per-channel waveform, white balance selector (SC-2/SC-3/SC-4, #1419 #1420 #1421)
 	Apply a recently used effect to the selected clips	Käytä äskettäin käytettyä tehostetta valittuihin klippeihin
@@ -4904,3 +4906,69 @@ export.summary	Low	matala
 	Write an AS-02 bundle (the path is a folder)	Kirjoita AS-02-paketti (polku on kansio)
 	AS-02	AS-02
 	AS-12	AS-12
+
+# N1 voxel panel
+	Active voxels:	Aktiiviset vokselit:
+	Bounds:	Rajat:
+	Voxel attributes	Voksliattribuutit
+	Voxel size:	Vokselin koko:
+	points	pistettä
+
+# WP3 DPX bit depth
+	Bit Depth	Bittisyvyys
+
+# AS-02 versions
+	AS-02 Versions	AS-02-versiot
+	Tick the sequences to write as further versions in the AS-02 bundle	Valitse sekvenssit, jotka kirjoitetaan AS-02-pakettiin lisäversioina
+	Delete Short Clips	Poista lyhyet leikkeet
+	A stored combination does not run a command yet.	Tallennettu yhdistelmä ei vielä suorita komentoa.
+	Action hint	Toimintovihje
+	Add combination	Lisää yhdistelmä
+	Add mapping	Lisää määritys
+	Button Learn	Opettele painike
+	Button Test	Painikekoe
+	Button name	Painikkeen nimi
+	Cancel feedback	Peruutuksen palaute
+	Combination editor	Yhdistelmäeditori
+	Context	Konteksti
+	Delete profile	Poista profiili
+	Detected buttons	Havaitut painikkeet
+	Draw the gesture with a button held.	Piirrä ele painike painettuna.
+	Error feedback	Virheen palaute
+	Evdev device	Evdev-laite
+	Evdev reads the selected device only, and only after a later phase turns it on. This version keeps the Qt path.	Evdev lukee vain valitun laitteen, ja vasta kun myöhempi vaihe kytkee sen. Tämä versio pysyy Qt-polulla.
+	Execution feedback	Suorituksen palaute
+	Follow the system	Seuraa järjestelmää
+	Gesture	Ele
+	Gesture Learn	Opettele ele
+	Gesture editor	Ele-editori
+	Gesture profiles	Eleprofiilit
+	Gestures stay off until you turn them on. Turning them on does not block the panel menu.	Eleet pysyvät pois päältä, kunnes kytket ne. Kytkeminen ei estä paneelin valikkoa.
+	HUD	HUD
+	Hand	Käsi
+	High contrast	Suuri kontrasti
+	Hold time	Pitoaika
+	Input access	Syötteen käyttö
+	Left-handed	Vasenkätinen
+	Mapping	Määritys
+	Maximum length	Suurin pituus
+	Maximum time	Suurin aika
+	Minimum length	Pienin pituus
+	Mirror ergonomic gestures	Peilaa ergonomiset eleet
+	Mouse Gestures	Hiirieleet
+	Mouse Gestures…	Hiirieleet…
+	No buttons yet. Press one in Button Learn or Button Test.	Ei vielä painikkeita. Paina yhtä opetellessa tai kokeessa.
+	Press	Painallus
+	Qt pointer (this application)	Qt-osoitin (tämä sovellus)
+	Recognition preview	Tunnistuksen esikatselu
+	Reduced animation	Vähennetty animaatio
+	Right-handed	Oikeakätinen
+	Roles	Roolit
+	Save gesture	Tallenna ele
+	Save profile	Tallenna profiili
+	Show the gesture HUD	Näytä ele-HUD
+	Slop	Välys
+	Spatial gesture	Tilallinen ele
+	Thresholds	Kynnykset
+	Trail	Jälki
+	Use gestures in the window	Käytä eleitä ikkunassa

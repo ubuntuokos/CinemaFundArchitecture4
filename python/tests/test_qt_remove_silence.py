@@ -38,6 +38,15 @@ class FakeEngine:
         self.calls: list[tuple[str, dict[str, Any]]] = []
         self.polls = 0
         self.fail: str | None = None
+        self.model: dict[str, Any] = {
+            "id": "silero-vad",
+            "license": "MIT (Silero VAD, model and code)",
+            "licenseUrl": "https://github.com/snakers4/silero-vad/blob/master/LICENSE",
+            "size": 2_845_718,
+            "installed": False,
+            "detectorAvailable": True,
+            "downloadAvailable": True,
+        }
         self.regions: list[Any] = [
             {"id": 11, "start": 0, "duration": TICKS_PER_SECOND, "keep": False},
             {"id": 12, "start": 3 * TICKS_PER_SECOND, "duration": TICKS_PER_SECOND // 2, "keep": True},
@@ -56,6 +65,14 @@ class FakeEngine:
             done = self.polls >= 2
             result = {"error": self.fail} if done and self.fail else ({"path": "x"} if done else None)
             reply = [{"id": 7, "progress": 1.0 if done else 0.4, "finished": done, "result": result}]
+        elif command == "speech.vadModel":
+            reply = dict(self.model)
+        elif command == "speech.downloadVadModel":
+            if not (params or {}).get("licenseAccepted"):
+                if on_error:
+                    on_error("the model's licence must be shown and accepted first")
+                return 0
+            self.model["installed"] = True
         elif command == "silence.mark":
             reply = {"regions": self.regions, "ticks": 1.5 * TICKS_PER_SECOND}
         elif command == "clip.removeSilence":
@@ -100,7 +117,7 @@ def test_the_dialog_sends_ticks_and_never_deletes_on_analyze(app: Any, win: Fake
     d = RemoveSilenceDialog(win, win)
     d.set_ui_state({"minSilenceSeconds": 0.75, "paddingSeconds": 0.2, "scope": "sequence"})
     analyze(d)
-    cmd, p = win.engine.calls[0]
+    cmd, p = next(c for c in win.engine.calls if c[0] == "audio.detectSpeech")
     assert cmd == "audio.detectSpeech"
     assert p == {
         "scope": "sequence",
@@ -177,6 +194,57 @@ def test_mark_mode_and_hostile_replies(app: Any, win: FakeWindow) -> None:
     analyze(d)
     assert d.ui_state()["regions"] == []
     assert seconds(True) == 0.0 and seconds("x") == 0.0 and seconds(TICKS_PER_SECOND) == 1.0
+
+
+def test_the_speech_model_is_offered_but_downloaded_only_after_the_licence_is_accepted(app: Any, win: FakeWindow) -> None:
+    d = RemoveSilenceDialog(win, win)
+    assert [d.detector.itemData(i) for i in range(d.detector.count())] == ["energy", "silero"]
+    assert d.params()["detector"] == "energy" and not d.model_box.isVisibleTo(d)
+    d.set_ui_state({"detector": "silero"})
+    assert d.model_box.isVisibleTo(d), "the model's record is shown for it"
+    assert "MIT" in d.model_info.text() and "2.8 MB" in d.model_info.text()
+    assert not d.threshold.isEnabled() and not d.auto_threshold.isEnabled(), "the model decides what is speech"
+    assert "thresholdDb" not in d.params() and d.params()["detector"] == "silero"
+    # not downloaded: Analyze says so and asks the engine nothing, there is no fall back to energy
+    n = len(win.engine.calls)
+    d.run_analyze()
+    assert len(win.engine.calls) == n and "not downloaded" in d.status.text()
+    assert not d.running()
+    # the download needs the acceptance, in the dialog and in the engine
+    assert not d.download.isEnabled()
+    d.run_download()
+    assert [c for c, _ in win.engine.calls if c == "speech.downloadVadModel"] == []
+    assert d.status.text() == "Accept the licence first."
+    d.accept_licence.setChecked(True)
+    assert d.download.isEnabled()
+    d.download.click()
+    assert win.engine.calls[-2] == ("speech.downloadVadModel", {"licenseAccepted": True})
+    assert d.model_installed() and not d.download.isVisibleTo(d) and not d.accept_licence.isVisibleTo(d)
+    assert d.ui_state()["modelInstalled"] is True and d.ui_state()["detector"] == "silero"
+    # installed: the analysis runs with the model detector
+    analyze(d)
+    detect = [p for c, p in win.engine.calls if c == "audio.detectSpeech"][-1]
+    assert detect["detector"] == "silero" and "thresholdDb" not in detect
+    assert len(d.ui_state()["regions"]) == 2
+    d.set_ui_state({"detector": "energy"})
+    assert d.auto_threshold.isEnabled() and not d.model_box.isVisibleTo(d)
+
+
+def test_a_build_without_the_detector_keeps_energy_and_a_failed_download_is_shown(app: Any, win: FakeWindow) -> None:
+    win.engine.model["detectorAvailable"] = False
+    d = RemoveSilenceDialog(win, win)
+    item = d.detector.model().item(d.detector.findData("silero"))  # type: ignore[attr-defined]
+    assert item is not None and not item.isEnabled()
+    d.set_ui_state({"detector": "silero"})
+    d.refresh_model()
+    assert d.detector.currentData() == "energy", "a build without the model detector never selects it"
+    win.engine.model.update({"detectorAvailable": True, "downloadAvailable": False})
+    d.set_ui_state({"detector": "silero", "licenceAccepted": True})
+    assert not d.download.isEnabled(), "no download in a build without the download feature"
+    # a hostile engine answer is not an exception
+    win.engine.model = {"size": True, "licenseUrl": 5, "detectorAvailable": True}
+    d.refresh_model()
+    assert "? MB" in d.model_info.text()
 
 
 def test_selecting_a_row_moves_the_playhead_and_the_dialog_is_one_per_window(app: Any, win: FakeWindow) -> None:

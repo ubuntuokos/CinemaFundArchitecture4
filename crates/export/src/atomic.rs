@@ -93,6 +93,37 @@ impl AtomicOutput {
     }
 }
 
+/// Prefix of the staged temp files of [`AtomicOutput`].
+pub const STAGED_PREFIX: &str = ".cfa4-export-";
+
+/// Remove staged temp files a killed writer left in `dir` (a SIGKILL runs no destructor).
+///
+/// Only regular files whose name starts with [`STAGED_PREFIX`] and whose last write is at least
+/// `min_age` ago are removed; symlinks, directories and everything else are left alone. A live
+/// writer keeps touching its temp file, so a conservative `min_age` (an hour or more) never takes
+/// one from under it; call this for a directory with no export running when in doubt. Returns the
+/// removed paths. A file that cannot be removed is skipped, not an error.
+pub fn sweep_orphans(dir: &Path, min_age: std::time::Duration) -> io::Result<Vec<PathBuf>> {
+    let now = std::time::SystemTime::now();
+    let mut removed = Vec::new();
+    for entry in std::fs::read_dir(dir)? {
+        let entry = entry?;
+        if !entry.file_name().to_string_lossy().starts_with(STAGED_PREFIX) {
+            continue;
+        }
+        let Ok(meta) = std::fs::symlink_metadata(entry.path()) else { continue };
+        if !meta.is_file() {
+            continue;
+        }
+        let age = meta.modified().ok().and_then(|m| now.duration_since(m).ok());
+        if age.is_some_and(|a| a >= min_age) && std::fs::remove_file(entry.path()).is_ok() {
+            removed.push(entry.path());
+        }
+    }
+    removed.sort();
+    Ok(removed)
+}
+
 impl Write for AtomicOutput {
     fn write(&mut self, buf: &[u8]) -> io::Result<usize> {
         self.staged.as_file_mut().write(buf)
@@ -193,5 +224,39 @@ mod tests {
     fn a_missing_directory_is_an_error_not_a_panic() {
         let d = tmpdir("missing");
         assert!(AtomicOutput::create(&d.join("no/such/dir/out.mp4"), Overwrite::Refuse).is_err());
+    }
+
+    #[test]
+    fn the_sweep_removes_only_old_staged_files() {
+        use std::time::{Duration, SystemTime};
+        let d = tmpdir("sweep");
+        let old = d.join(format!("{STAGED_PREFIX}old"));
+        let fresh = d.join(format!("{STAGED_PREFIX}fresh"));
+        let other = d.join("keep.mp4");
+        let dir_like = d.join(format!("{STAGED_PREFIX}dir"));
+        for p in [&old, &fresh, &other] {
+            std::fs::write(p, b"x").unwrap();
+        }
+        std::fs::create_dir(&dir_like).unwrap();
+        let two_hours_ago = SystemTime::now() - Duration::from_secs(2 * 3600);
+        std::fs::File::options().write(true).open(&old).unwrap().set_modified(two_hours_ago).unwrap();
+        let removed = sweep_orphans(&d, Duration::from_secs(3600)).unwrap();
+        assert_eq!(removed, vec![old.clone()]);
+        assert!(!old.exists() && fresh.exists() && other.exists() && dir_like.exists());
+        // a second sweep finds nothing; a zero age takes the remaining staged file too
+        assert!(sweep_orphans(&d, Duration::from_secs(3600)).unwrap().is_empty());
+        assert_eq!(sweep_orphans(&d, Duration::ZERO).unwrap(), vec![fresh.clone()]);
+    }
+
+    #[cfg(unix)]
+    #[test]
+    fn the_sweep_never_follows_a_symlink() {
+        use std::time::Duration;
+        let d = tmpdir("sweep-link");
+        let target = d.join("precious.mp4");
+        std::fs::write(&target, b"keep").unwrap();
+        std::os::unix::fs::symlink(&target, d.join(format!("{STAGED_PREFIX}link"))).unwrap();
+        assert!(sweep_orphans(&d, Duration::ZERO).unwrap().is_empty());
+        assert_eq!(std::fs::read(&target).unwrap(), b"keep");
     }
 }

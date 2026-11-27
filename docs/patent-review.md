@@ -39,6 +39,8 @@ szabadalommal védett formátumot.
 | LCEVC (MPEG-5 Part 2, ISO/IEC 23094-2) | dekódolás (H.264 / HEVC T.35 SEI); felismerés (MP4 `lvc1`, TS 0x36) | `crates/lcevc` (az LCEVCdec 4.3.1 portja; a BSD-3-Clause-Clear licenc kifejezetten nem ad szabadalmi jogot) | alap | függőben | | |
 | MPEG-5 EVC Baseline (ISO/IEC 23094-1) | dekódolás | `crates/evc` (a xevd portja) | alap | függőben | | |
 | AVS1-P2 Jizhun (GB/T 20090.2) | dekódolás | `crates/cavs` (az FFmpeg portja) | alap | függőben | | |
+| AVS2-P2 Main / Main 10 (IEEE 1857.4, GB/T 33475.2) | dekódolás | `crates/avs2` (a davs2 1.7 portja; a GPL-2.0-or-later licenc kifejezett szabadalmi engedélyt nem ad) | alap | függőben | | |
+| AVS3-P2 baseline (IEEE 1857.10, GB/T 33475.2) | dekódolás | `crates/avs3` (az uavs3d 1.2 portja; a BSD-3-Clause licenc kifejezett szabadalmi engedélyt nem ad) | alap | függőben | | |
 | Microsoft Video 1 (CRAM) és Microsoft RLE | dekódolás | `crates/msvideo` (az FFmpeg portja) | alap | függőben | | |
 | MPEG-1 / MPEG-2 videó (H.262) | dekódolás | `crates/mpeg2v`; FFmpeg-háttér | alap | függőben | | |
 | MPEG-4 Part 2 (Visual) | dekódolás, kódolás | FFmpeg-háttér | alap | függőben | | |
@@ -160,5 +162,5 @@ szabadalommal védett formátumot.
 
 | Formátum | Irány | Komponens | Csomag | Eredmény | Dátum | Vizsgáló / forrás |
 |---|---|---|---|---|---|---|
-| FFmpeg-háttér: a fenti sorok „FFmpeg-háttér” bejegyzései és a csak FFmpeg-gel megnyitható formátumok | dekódolás (tartalékút a saját motor mögött, ADR 0005) | `crates/ffmpeg` (FFmpeg 9.0.2 alap-build); x264 / x265: `--restricted` build | alap; `--restricted` build: kiegészítő | függőben | | |
+| FFmpeg-háttér: a fenti sorok „FFmpeg-háttér” bejegyzései és a csak FFmpeg-gel megnyitható formátumok | dekódolás (tartalékút a saját motor mögött, ADR 0005) | `crates/ffmpeg` (a CFA4 FFmpeg alap-buildje); x264 / x265: `--restricted` build | alap; `--restricted` build: kiegészítő | függőben | | |
 | Smart Cut / Smart Render: H.264, HEVC, AV1, MPEG-2 videó | bitfolyam-elemzés (GOP-index), csomagmásolás, határ-újrakódolás (`crates/h264enc`) | `crates/smart-edit` | alap | függőben | | |

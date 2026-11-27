@@ -1,0 +1,119 @@
+{
+  "schema": 1,
+  "area": "panels",
+  "outOfScope": [],
+  "items": [
+    {
+      "path": "Audio Clip Mixer",
+      "source": "docs/qt-parity.md"
+    },
+    {
+      "path": "Audio Meters",
+      "source": "docs/qt-parity.md"
+    },
+    {
+      "path": "Audio Track Mixer",
+      "source": "docs/qt-parity.md"
+    },
+    {
+      "path": "Captions",
+      "source": "docs/captions.md"
+    },
+    {
+      "path": "Comparison View",
+      "source": "docs/monitors.md"
+    },
+    {
+      "path": "Effect Controls",
+      "source": "docs/ui-parity.md"
+    },
+    {
+      "path": "Effects",
+      "source": "docs/target-app-parity.md"
+    },
+    {
+      "path": "Essential Graphics",
+      "source": "docs/qt-parity.md"
+    },
+    {
+      "path": "Essential Sound",
+      "source": "docs/qt-parity.md"
+    },
+    {
+      "path": "Events",
+      "source": "docs/qt-parity.md"
+    },
+    {
+      "path": "History",
+      "source": "docs/qt-parity.md"
+    },
+    {
+      "path": "Info",
+      "source": "docs/qt-parity.md"
+    },
+    {
+      "path": "Libraries",
+      "source": "docs/qt-parity.md"
+    },
+    {
+      "path": "Lumetri Color",
+      "source": "docs/qt-parity.md"
+    },
+    {
+      "path": "Lumetri Scopes",
+      "source": "docs/qt-parity.md"
+    },
+    {
+      "path": "Markers",
+      "source": "docs/qt-parity.md"
+    },
+    {
+      "path": "Media Browser",
+      "source": "docs/qt-parity.md"
+    },
+    {
+      "path": "Metadata",
+      "source": "docs/qt-parity.md"
+    },
+    {
+      "path": "Program",
+      "source": "docs/qt-parity.md"
+    },
+    {
+      "path": "Progress",
+      "source": "docs/qt-parity.md"
+    },
+    {
+      "path": "Project",
+      "source": "docs/qt-parity.md"
+    },
+    {
+      "path": "Reference Monitor",
+      "source": "docs/qt-parity.md"
+    },
+    {
+      "path": "Source Monitor",
+      "source": "docs/monitors.md"
+    },
+    {
+      "path": "Text",
+      "source": "docs/target-app-parity.md"
+    },
+    {
+      "path": "Timecode",
+      "source": "docs/qt-parity.md"
+    },
+    {
+      "path": "Timeline",
+      "source": "docs/qt-parity.md"
+    },
+    {
+      "path": "Tools",
+      "source": "docs/qt-parity.md"
+    },
+    {
+      "path": "Workspaces",
+      "source": "docs/qt-parity.md"
+    }
+  ]
+}

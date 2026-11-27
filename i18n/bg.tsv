@@ -54,6 +54,7 @@
 	Apply Video Transition	Прилагане на видео преход
 	Assembly	Монтаж
 	Attach Proxies…	Прикачване на проксита…
+	Find Camera Proxies	Търсене на проксита на камерата
 	Audio	Аудио
 	Audio Channels…	Аудио канали…
 	Audio Clip Mixer	Миксер на аудио клипове
@@ -3660,7 +3661,7 @@
 	Six-Point Pin	Закачване в шест точки
 	Upper Center	Горе в центъра
 	Lower Center	Долу в центъра
-	Use FFmpeg for files the CFA4 engine cannot open (FFmpeg 9.0.2 or later, GPL-3 build)	Използване на FFmpeg за файлове, които двигателят на CFA4 не може да отвори (FFmpeg 9.0.2 или по-нов, GPL-3 компилация)
+	Use FFmpeg for files the CFA4 engine cannot open (FFmpeg 9.1 or later, GPL-3 build)	Използване на FFmpeg за файлове, които двигателят на CFA4 не може да отвори (FFmpeg 9.1 или по-нов, GPL-3 компилация)
 	Use the system's GStreamer for files neither the engine nor FFmpeg can open	Използване на системния GStreamer за файлове, които нито двигателят, нито FFmpeg могат да отворят
 	Analyze Source for Smart Cut	Анализиране на източника за интелигентен срез
 	Plan Smart Cut	Планиране на интелигентен срез
@@ -4820,6 +4821,7 @@ export.summary	Low	ниско
 	Datamosh Bloom	Datamosh разцъфване
 	Start Time (seconds)	Начално време (секунди)
 	Repeats	Повторения
+	Clean Blocks	Чисти блокове
 
 # Recent effects, per-channel waveform, white balance selector (SC-2/SC-3/SC-4, #1419 #1420 #1421)
 	Apply a recently used effect to the selected clips	Прилагане на наскоро използван ефект към избраните клипове
@@ -4905,3 +4907,69 @@ export.summary	Low	ниско
 	Write an AS-02 bundle (the path is a folder)	Запис на пакет AS-02 (пътят е папка)
 	AS-02	AS-02
 	AS-12	AS-12
+
+# N1 voxel panel
+	Active voxels:	Активни воксели:
+	Bounds:	Граници:
+	Voxel attributes	Атрибути на воксела
+	Voxel size:	Размер на воксела:
+	points	точки
+
+# WP3 DPX bit depth
+	Bit Depth	Битова дълбочина
+
+# AS-02 versions
+	AS-02 Versions	AS-02 версии
+	Tick the sequences to write as further versions in the AS-02 bundle	Отбележете секвенциите, които да се запишат като допълнителни версии в AS-02 пакета
+	Delete Short Clips	Изтриване на кратки клипове
+	A stored combination does not run a command yet.	Запазената комбинация все още не пуска команда.
+	Action hint	Подсказка за действие
+	Add combination	Добавяне на комбинация
+	Add mapping	Добавяне на назначение
+	Button Learn	Научаване на бутон
+	Button Test	Проба на бутон
+	Button name	Име на бутона
+	Cancel feedback	Сигнал за отказ
+	Combination editor	Редактор на комбинации
+	Context	Контекст
+	Delete profile	Изтриване на профил
+	Detected buttons	Открити бутони
+	Draw the gesture with a button held.	Начертайте жеста при натиснат бутон.
+	Error feedback	Сигнал за грешка
+	Evdev device	Evdev устройство
+	Evdev reads the selected device only, and only after a later phase turns it on. This version keeps the Qt path.	Evdev чете само избраното устройство и едва когато по-късна фаза го включи. Тази версия остава по пътя на Qt.
+	Execution feedback	Сигнал за изпълнение
+	Follow the system	Следвай системата
+	Gesture	Жест
+	Gesture Learn	Научаване на жест
+	Gesture editor	Редактор на жестове
+	Gesture profiles	Профили на жестове
+	Gestures stay off until you turn them on. Turning them on does not block the panel menu.	Жестовете остават изключени, докато не ги включите. Включването не блокира менюто на панела.
+	HUD	HUD
+	Hand	Ръка
+	High contrast	Висок контраст
+	Hold time	Време на задържане
+	Input access	Достъп до входа
+	Left-handed	Левичар
+	Mapping	Назначение
+	Maximum length	Най-голяма дължина
+	Maximum time	Най-голямо време
+	Minimum length	Най-малка дължина
+	Mirror ergonomic gestures	Огледални ергономични жестове
+	Mouse Gestures	Жестове с мишка
+	Mouse Gestures…	Жестове с мишка…
+	No buttons yet. Press one in Button Learn or Button Test.	Още няма бутон. Натиснете един при научаване или при проба.
+	Press	Натискане
+	Qt pointer (this application)	Qt показалец (това приложение)
+	Recognition preview	Преглед на разпознаването
+	Reduced animation	Намалена анимация
+	Right-handed	Десничар
+	Roles	Роли
+	Save gesture	Запазване на жеста
+	Save profile	Запазване на профил
+	Show the gesture HUD	Показване на HUD за жестове
+	Slop	Луфт
+	Spatial gesture	Пространствен жест
+	Thresholds	Прагове
+	Trail	Следа
+	Use gestures in the window	Жестове в прозореца

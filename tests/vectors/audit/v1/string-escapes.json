@@ -1,0 +1,7 @@
+{
+  "name": "string-escapes",
+  "input": "{\"s\":\"a\\\"b\\\\c\\/d\\b\\t\\n\\f\\r\\u0001\\u001f\\u007f\\u00e9\\u20ac\"}",
+  "event": true,
+  "canonical": "{\"s\":\"a\\\"b\\\\c/d\\b\\t\\n\\f\\r\\u0001\\u001fé€\"}",
+  "hash": "419787c0178fc4b4489dfcbb9336663ac8be113dd63000b30d9f9067f76c94ed"
+}

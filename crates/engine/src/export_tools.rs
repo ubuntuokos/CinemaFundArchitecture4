@@ -322,6 +322,17 @@ pub fn settings_from_params(s: &Session, p: &Value, cmd: &str) -> Result<(Option
     if let Some(v) = bool_p(p, "mxfAs02") {
         settings.mxf_as02 = v;
     }
+    if let Some(v) = p.get("mxfAs02Versions") {
+        let ids: Option<Vec<u64>> = v.as_array().and_then(|a| a.iter().map(Value::as_u64).collect());
+        let ids = ids.ok_or_else(|| bad(cmd, "mxfAs02Versions: an array of sequence ids"))?;
+        if let Some(id) = ids.iter().find(|id| s.project.sequence(ItemId(**id)).is_none()) {
+            return Err(bad(cmd, format!("mxfAs02Versions: no sequence {id}")));
+        }
+        settings.mxf_as02_versions = ids;
+    }
+    if let Some(v) = bool_p(p, "mxfAs02Share") {
+        settings.mxf_as02_share = v;
+    }
     if let Some(v) = bool_p(p, "mxfAncCaptions") {
         settings.mxf_anc_captions = v;
     }
@@ -424,6 +435,12 @@ pub fn settings_from_params(s: &Session, p: &Value, cmd: &str) -> Result<(Option
     }
     if let Some(v) = bool_p(p, "alpha") {
         settings.alpha = v;
+    }
+    if let Some(v) = p.get("dpxBitDepth") {
+        // a number, or the text of one (the Qt panel sends its choices as strings)
+        let bits = v.as_u64().or_else(|| v.as_str().and_then(|t| t.parse().ok()));
+        settings.dpx_bit_depth =
+            bits.and_then(|b| u8::try_from(b).ok()).filter(|b| matches!(b, 10 | 12 | 16)).ok_or_else(|| bad(cmd, "dpxBitDepth: 10 | 12 | 16"))?;
     }
     if let Some(v) = str_p(p, "exrCompression") {
         settings.exr_compression = serde_json::from_value(json!(v)).map_err(|_| bad(cmd, "exrCompression: none | rle | zips | zip | piz"))?;
@@ -1013,7 +1030,7 @@ fn queue_item_p(s: &Session, p: &Value, cmd: &str) -> Result<usize> {
     s.export_queue.items.iter().position(|i| i.id == id).ok_or_else(|| bad(cmd, format!("no queued export {id}")))
 }
 
-fn queue_add(s: &mut Session, p: &Value) -> Result<Value> {
+pub(crate) fn queue_add(s: &mut Session, p: &Value) -> Result<Value> {
     let cmd = "export.queue.add";
     let (preset, settings) = settings_from_params(s, p, cmd)?;
     let seqs: Vec<ItemId> = match p.get("sequences").and_then(Value::as_array) {

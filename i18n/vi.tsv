@@ -51,6 +51,7 @@
 	Apply Video Transition	Áp dụng chuyển cảnh video
 	Assembly	Lắp ghép
 	Attach Proxies…	Gắn proxy…
+	Find Camera Proxies	Tìm proxy máy ảnh
 	Audio	Âm thanh
 	Audio Channels…	Kênh âm thanh…
 	Audio Clip Mixer	Bộ trộn clip âm thanh
@@ -3547,7 +3548,7 @@
 	Six-Point Pin	Ghim sáu điểm
 	Upper Center	Giữa trên
 	Lower Center	Giữa dưới
-	Use FFmpeg for files the CFA4 engine cannot open (FFmpeg 9.0.2 or later, GPL-3 build)	Dùng FFmpeg cho các tệp engine CFA4 không mở được (FFmpeg 9.0.2 trở lên, bản dựng GPL-3)
+	Use FFmpeg for files the CFA4 engine cannot open (FFmpeg 9.1 or later, GPL-3 build)	Dùng FFmpeg cho các tệp engine CFA4 không mở được (FFmpeg 9.1 trở lên, bản dựng GPL-3)
 	Use the system's GStreamer for files neither the engine nor FFmpeg can open	Dùng GStreamer của hệ thống cho các tệp mà cả engine lẫn FFmpeg đều không mở được
 	Analyze Source for Smart Cut	Phân tích nguồn để cắt thông minh
 	Plan Smart Cut	Lập kế hoạch cắt thông minh
@@ -4817,6 +4818,7 @@ export.summary	Low	thấp
 	Datamosh Bloom	Datamosh nở rộ
 	Start Time (seconds)	Thời gian bắt đầu (giây)
 	Repeats	Số lần lặp lại
+	Clean Blocks	Khối sạch
 
 # Recent effects, per-channel waveform, white balance selector (SC-2/SC-3/SC-4, #1419 #1420 #1421)
 	Apply a recently used effect to the selected clips	Áp dụng hiệu ứng dùng gần đây cho các clip đã chọn
@@ -4902,3 +4904,69 @@ export.summary	Low	thấp
 	Write an AS-02 bundle (the path is a folder)	Ghi gói AS-02 (đường dẫn là một thư mục)
 	AS-02	AS-02
 	AS-12	AS-12
+
+# N1 voxel panel
+	Active voxels:	Voxel hoạt động:
+	Bounds:	Giới hạn:
+	Voxel attributes	Thuộc tính voxel
+	Voxel size:	Kích thước voxel:
+	points	điểm
+
+# WP3 DPX bit depth
+	Bit Depth	Độ sâu bit
+
+# AS-02 versions
+	AS-02 Versions	Phiên bản AS-02
+	Tick the sequences to write as further versions in the AS-02 bundle	Chọn các chuỗi sẽ được ghi thành phiên bản bổ sung trong gói AS-02
+	Delete Short Clips	Xóa clip ngắn
+	A stored combination does not run a command yet.	Tổ hợp đã lưu chưa chạy lệnh.
+	Action hint	Gợi ý thao tác
+	Add combination	Thêm tổ hợp
+	Add mapping	Thêm ánh xạ
+	Button Learn	Học nút
+	Button Test	Thử nút
+	Button name	Tên nút
+	Cancel feedback	Báo hủy
+	Combination editor	Trình sửa tổ hợp
+	Context	Ngữ cảnh
+	Delete profile	Xóa hồ sơ
+	Detected buttons	Nút đã nhận
+	Draw the gesture with a button held.	Vẽ cử chỉ trong khi giữ một nút.
+	Error feedback	Báo lỗi
+	Evdev device	Thiết bị evdev
+	Evdev reads the selected device only, and only after a later phase turns it on. This version keeps the Qt path.	Evdev chỉ đọc thiết bị đã chọn, và chỉ sau khi giai đoạn sau bật nó. Bản này vẫn đi theo đường Qt.
+	Execution feedback	Báo thực hiện
+	Follow the system	Theo hệ thống
+	Gesture	Cử chỉ
+	Gesture Learn	Học cử chỉ
+	Gesture editor	Trình sửa cử chỉ
+	Gesture profiles	Hồ sơ cử chỉ
+	Gestures stay off until you turn them on. Turning them on does not block the panel menu.	Cử chỉ vẫn tắt cho đến khi bạn bật. Bật chúng không chặn menu của bảng.
+	HUD	HUD
+	Hand	Tay
+	High contrast	Tương phản cao
+	Hold time	Thời gian giữ
+	Input access	Truy cập đầu vào
+	Left-handed	Thuận tay trái
+	Mapping	Ánh xạ
+	Maximum length	Độ dài tối đa
+	Maximum time	Thời gian tối đa
+	Minimum length	Độ dài tối thiểu
+	Mirror ergonomic gestures	Phản chiếu cử chỉ công thái học
+	Mouse Gestures	Cử chỉ chuột
+	Mouse Gestures…	Cử chỉ chuột…
+	No buttons yet. Press one in Button Learn or Button Test.	Chưa có nút. Nhấn một nút trong Học nút hoặc Thử nút.
+	Press	Nhấn
+	Qt pointer (this application)	Con trỏ Qt (ứng dụng này)
+	Recognition preview	Xem trước nhận dạng
+	Reduced animation	Giảm hoạt ảnh
+	Right-handed	Thuận tay phải
+	Roles	Vai trò
+	Save gesture	Lưu cử chỉ
+	Save profile	Lưu hồ sơ
+	Show the gesture HUD	Hiện HUD cử chỉ
+	Slop	Độ rơ
+	Spatial gesture	Cử chỉ không gian
+	Thresholds	Ngưỡng
+	Trail	Vệt
+	Use gestures in the window	Dùng cử chỉ trong cửa sổ

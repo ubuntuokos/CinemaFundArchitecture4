@@ -38,7 +38,7 @@ fn priority_rank(p: Priority) -> i16 {
     }
 }
 
-fn state_name(s: State) -> String {
+pub(crate) fn state_name(s: State) -> String {
     match serde_json::to_value(s) {
         Ok(Value::String(name)) => name,
         _ => format!("{s:?}"),
@@ -93,7 +93,7 @@ impl TaskStore {
             let doc = serde_json::to_value(t).map_err(StoreError::query)?;
             let n = tx
                 .execute(
-                    "UPDATE tasks.task SET state = $2, class_rank = $3, priority = $4, start_at = $5, lease_owner = $6, lease_until = $7, version = $8, doc = $9, updated_at = now() WHERE id = $1 AND version = $10",
+                    "UPDATE tasks.task SET state = $2, class_rank = $3, priority = $4, start_at = to_timestamp($5::bigint / 1000.0), lease_owner = $6, lease_until = to_timestamp($7::bigint / 1000.0), version = $8, doc = $9, updated_at = now() WHERE id = $1 AND version = $10",
                     &[
                         &t.id,
                         &state_name(t.state),
@@ -113,15 +113,42 @@ impl TaskStore {
                 // the row is locked, so this means someone bypassed the lock: refuse, roll back
                 return Err(StoreError::Queue { error: QueueError::Stale { id: t.id.clone(), expected: b.version, current: t.version } });
             }
+            Self::write_schedule(tx, t).await?;
+            // the scheduler wakes on every state change, after the commit
+            tx.execute("SELECT pg_notify($1, $2)", &[&CHANNEL, &t.id]).await.map_err(StoreError::query)?;
             Self::log(tx, t, b.last_seq).await?;
         }
         for e in events {
             let event = serde_json::to_value(e).map_err(StoreError::query)?;
             let id = event.get("id").and_then(Value::as_str).unwrap_or_default().to_owned();
-            tx.execute("INSERT INTO tasks.outbox (task_id, subject, event) VALUES ($1, 'cfa4.execution.job.event', $2)", &[&id, &event])
-                .await
-                .map_err(StoreError::query)?;
+            // a scheduler decision (waiting, blocked, missed start, ...) is progress of the job
+            let payload = json!({ "taskId": id, "queueEvent": event });
+            crate::outbox::emit(tx, &id, "cfa4.execution.job.progress", &payload).await?;
         }
+        Ok(())
+    }
+
+    /// Keep `tasks.schedule` equal to the task's start rule (it changes on `reschedule` and when a
+    /// missed start moves to the next slot).
+    async fn write_schedule(tx: &Transaction<'_>, t: &Task) -> Result<(), StoreError> {
+        let (mode, at) = match t.start {
+            cfa4_tasks::StartMode::Now => ("now", None),
+            cfa4_tasks::StartMode::WhenResources => ("resource", None),
+            cfa4_tasks::StartMode::At { at } => ("at", Some(ms(at))),
+            cfa4_tasks::StartMode::AtWithResources { at } => ("at_resource", Some(ms(at))),
+        };
+        let if_missed = match t.missed {
+            cfa4_tasks::MissedStart::RunLate => "delay",
+            cfa4_tasks::MissedStart::NextSlot => "next_slot",
+            cfa4_tasks::MissedStart::AskUser => "ask",
+        };
+        tx.execute(
+            "INSERT INTO tasks.schedule (task_id, mode, start_at, time_zone, if_missed) VALUES ($1, $2, to_timestamp($3::bigint / 1000.0), $4, $5) \
+             ON CONFLICT (task_id) DO UPDATE SET mode = EXCLUDED.mode, start_at = EXCLUDED.start_at, time_zone = EXCLUDED.time_zone, if_missed = EXCLUDED.if_missed",
+            &[&t.id, &mode, &at, &t.time_zone, &if_missed],
+        )
+        .await
+        .map_err(StoreError::query)?;
         Ok(())
     }
 
@@ -133,15 +160,14 @@ impl TaskStore {
                 _ => String::new(),
             };
             tx.execute(
-                "INSERT INTO tasks.transition (task_id, seq, from_state, to_state, at, by_actor, reason) VALUES ($1, $2, $3, $4, $5, $6, $7)",
+                "INSERT INTO tasks.transition (task_id, seq, from_state, to_state, at, by_actor, reason) VALUES ($1, $2, $3, $4, to_timestamp($5::bigint / 1000.0), $6, $7)",
                 &[&t.id, &ms(l.seq), &from, &to, &ms(l.at), &by, &l.reason],
             )
             .await
             .map_err(StoreError::query)?;
-            let event = json!({ "taskId": t.id, "seq": l.seq, "from": from, "to": to, "at": l.at, "version": t.version });
-            tx.execute("INSERT INTO tasks.outbox (task_id, subject, event) VALUES ($1, $2, $3)", &[&t.id, &format!("cfa4.execution.job.{to}"), &event])
-                .await
-                .map_err(StoreError::query)?;
+            // the detailed state and the task's own sequence number ride in the payload (D-3, Q10)
+            let payload = json!({ "taskId": t.id, "state": to, "from": from, "to": to, "entity_seq": l.seq, "at": l.at, "version": t.version });
+            crate::outbox::emit(tx, &t.id, crate::outbox::subject_for(&to), &payload).await?;
         }
         Ok(())
     }
@@ -189,7 +215,7 @@ impl TaskStore {
         let doc = serde_json::to_value(&task).map_err(StoreError::query)?;
         let n = tx
             .execute(
-                "INSERT INTO tasks.task (id, state, class_rank, priority, submitted_at, start_at, version, doc) VALUES ($1, $2, $3, $4, $5, $6, $7, $8) ON CONFLICT (id) DO NOTHING",
+                "INSERT INTO tasks.task (id, state, class_rank, priority, submitted_at, start_at, version, doc) VALUES ($1, $2, $3, $4, to_timestamp($5::bigint / 1000.0), to_timestamp($6::bigint / 1000.0), $7, $8) ON CONFLICT (id) DO NOTHING",
                 &[&task.id, &state_name(task.state), &class_rank(task.request.class), &priority_rank(task.priority), &ms(task.submitted_at), &start_at(&task), &ms(task.version), &doc],
             )
             .await
@@ -197,6 +223,12 @@ impl TaskStore {
         if n != 1 {
             return Err(QueueError::DuplicateId { id: task.id }.into());
         }
+        Self::write_schedule(&tx, &task).await?;
+        // the job exists: `created` goes out with the commit (the task's own sequence starts at 0)
+        let state = state_name(task.state);
+        let payload =
+            json!({ "taskId": task.id, "state": state, "from": Value::Null, "to": state, "entity_seq": 0, "at": task.submitted_at, "version": task.version });
+        crate::outbox::emit(&tx, &task.id, crate::outbox::subject_for(&state), &payload).await?;
         tx.execute("SELECT pg_notify($1, $2)", &[&CHANNEL, &task.id]).await.map_err(StoreError::query)?;
         tx.commit().await.map_err(StoreError::query)?;
         Ok(task)
@@ -232,17 +264,26 @@ impl TaskStore {
 
     /// Renew a running task's lease (no state change, no new version).
     pub async fn renew(&self, id: &str, owner: &str, now: UtcMs) -> Result<UtcMs, StoreError> {
-        self.in_place(id, |q| q.renew(id, owner, now)).await
+        self.in_place(id, |q| q.renew(id, owner, now), None).await
     }
 
     /// Record a finished stage (no state change, no new version).
     pub async fn checkpoint(&self, id: &str, owner: &str, stage: u64) -> Result<(), StoreError> {
-        self.in_place(id, |q| q.checkpoint(id, owner, stage)).await
+        self.checkpoint_keyed(id, owner, stage, None).await
+    }
+
+    /// Record a finished stage together with the cache key of its result (`tasks.checkpoint`, one
+    /// row per stage; a stage recorded twice keeps its first row, so a repeated stage is harmless).
+    pub async fn checkpoint_keyed(&self, id: &str, owner: &str, stage: u64, cache_key: Option<&str>) -> Result<(), StoreError> {
+        if let Some(k) = cache_key {
+            crate::check_text("cache key", k, 1, 256)?;
+        }
+        self.in_place(id, |q| q.checkpoint(id, owner, stage), Some((stage, cache_key))).await
     }
 
     /// Run `op` on one locked task that changes neither its state nor its version, and write the
     /// task back.
-    async fn in_place<R>(&self, id: &str, op: impl FnOnce(&mut Queue) -> Result<R, QueueError>) -> Result<R, StoreError> {
+    async fn in_place<R>(&self, id: &str, op: impl FnOnce(&mut Queue) -> Result<R, QueueError>, stage: Option<(u64, Option<&str>)>) -> Result<R, StoreError> {
         let mut client = self.store.client().await?;
         let tx = client.transaction().await.map_err(StoreError::query)?;
         let tasks = Self::load(&tx, "SELECT id, doc FROM tasks.task WHERE id = $1 FOR UPDATE", &[&id]).await?;
@@ -250,9 +291,20 @@ impl TaskStore {
         let r = op(&mut queue)?;
         let task = queue.get(id).ok_or_else(|| StoreError::from(QueueError::NotFound { id: id.to_owned() }))?;
         let doc = serde_json::to_value(task).map_err(StoreError::query)?;
-        tx.execute("UPDATE tasks.task SET lease_until = $2, doc = $3, updated_at = now() WHERE id = $1", &[&id, &task.lease_until.map(ms), &doc])
+        tx.execute(
+            "UPDATE tasks.task SET lease_until = to_timestamp($2::bigint / 1000.0), doc = $3, updated_at = now() WHERE id = $1",
+            &[&id, &task.lease_until.map(ms), &doc],
+        )
+        .await
+        .map_err(StoreError::query)?;
+        if let Some((stage, cache_key)) = stage {
+            tx.execute(
+                "INSERT INTO tasks.checkpoint (task_id, stage, cache_key) VALUES ($1, $2, $3) ON CONFLICT (task_id, stage) DO NOTHING",
+                &[&id, &ms(stage), &cache_key],
+            )
             .await
             .map_err(StoreError::query)?;
+        }
         tx.commit().await.map_err(StoreError::query)?;
         Ok(r)
     }
@@ -300,6 +352,9 @@ fn start_at(t: &Task) -> Option<i64> {
         cfa4_tasks::StartMode::Now | cfa4_tasks::StartMode::WhenResources => None,
     }
 }
+
+mod history;
+pub use history::{EstimateBasis, EstimateRecord, RunRecord};
 
 #[cfg(test)]
 mod tests;

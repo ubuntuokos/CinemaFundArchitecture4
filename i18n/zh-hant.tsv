@@ -50,6 +50,7 @@
 	Apply Video Transition	套用影片轉場
 	Assembly	組裝
 	Attach Proxies…	附加代理檔案…
+	Find Camera Proxies	尋找相機代理檔案
 	Audio	音訊
 	Audio Channels…	音訊聲道…
 	Audio Clip Mixer	音訊剪輯混音器
@@ -3587,7 +3588,7 @@
 	Six-Point Pin	六點定位
 	Upper Center	上中
 	Lower Center	下中
-	Use FFmpeg for files the CFA4 engine cannot open (FFmpeg 9.0.2 or later, GPL-3 build)	對 CFA4 引擎無法開啟的檔案使用 FFmpeg（FFmpeg 9.0.2 或更高版本，GPL-3 建置）
+	Use FFmpeg for files the CFA4 engine cannot open (FFmpeg 9.1 or later, GPL-3 build)	對 CFA4 引擎無法開啟的檔案使用 FFmpeg（FFmpeg 9.1 或更高版本，GPL-3 建置）
 	Use the system's GStreamer for files neither the engine nor FFmpeg can open	對引擎和 FFmpeg 都無法開啟的檔案使用系統的 GStreamer
 	Analyze Source for Smart Cut	分析來源以進行智慧剪下
 	Plan Smart Cut	規劃智慧剪下
@@ -4816,6 +4817,7 @@ export.summary	Low	低
 	Datamosh Bloom	資料損毀綻放
 	Start Time (seconds)	開始時間（秒）
 	Repeats	重複次數
+	Clean Blocks	乾淨區塊
 
 # Recent effects, per-channel waveform, white balance selector (SC-2/SC-3/SC-4, #1419 #1420 #1421)
 	Apply a recently used effect to the selected clips	將最近使用的效果套用到所選剪輯
@@ -4901,3 +4903,69 @@ export.summary	Low	低
 	Write an AS-02 bundle (the path is a folder)	寫入 AS-02 套件(路徑為資料夾)
 	AS-02	AS-02
 	AS-12	AS-12
+
+# N1 voxel panel
+	Active voxels:	作用中體素:
+	Bounds:	邊界:
+	Voxel attributes	體素屬性
+	Voxel size:	體素大小:
+	points	點
+
+# WP3 DPX bit depth
+	Bit Depth	位元深度
+
+# AS-02 versions
+	AS-02 Versions	AS-02 版本
+	Tick the sequences to write as further versions in the AS-02 bundle	勾選要作為附加版本寫入 AS-02 套件的序列
+	Delete Short Clips	刪除短片段
+	A stored combination does not run a command yet.	已儲存的組合尚不執行命令。
+	Action hint	操作提示
+	Add combination	新增組合
+	Add mapping	新增對應
+	Button Learn	按鈕學習
+	Button Test	按鈕測試
+	Button name	按鈕名稱
+	Cancel feedback	取消回饋
+	Combination editor	組合編輯器
+	Context	內容脈絡
+	Delete profile	刪除設定檔
+	Detected buttons	偵測到的按鈕
+	Draw the gesture with a button held.	按住按鈕畫出手勢。
+	Error feedback	錯誤回饋
+	Evdev device	evdev 裝置
+	Evdev reads the selected device only, and only after a later phase turns it on. This version keeps the Qt path.	evdev 只讀取所選裝置，而且要到後續階段才會開啟。這一版仍走 Qt 路徑。
+	Execution feedback	執行回饋
+	Follow the system	跟隨系統
+	Gesture	手勢
+	Gesture Learn	手勢學習
+	Gesture editor	手勢編輯器
+	Gesture profiles	手勢設定檔
+	Gestures stay off until you turn them on. Turning them on does not block the panel menu.	手勢在開啟之前保持關閉。開啟它不會擋住面板選單。
+	HUD	HUD
+	Hand	用手
+	High contrast	高對比
+	Hold time	按住時間
+	Input access	輸入存取
+	Left-handed	左手
+	Mapping	對應
+	Maximum length	最大長度
+	Maximum time	最長時間
+	Minimum length	最小長度
+	Mirror ergonomic gestures	鏡像人因手勢
+	Mouse Gestures	滑鼠手勢
+	Mouse Gestures…	滑鼠手勢…
+	No buttons yet. Press one in Button Learn or Button Test.	還沒有按鈕。請在按鈕學習或按鈕測試中按一個。
+	Press	按下
+	Qt pointer (this application)	Qt 指標（此應用程式）
+	Recognition preview	辨識預覽
+	Reduced animation	減少動畫
+	Right-handed	右手
+	Roles	角色
+	Save gesture	儲存手勢
+	Save profile	儲存設定檔
+	Show the gesture HUD	顯示手勢 HUD
+	Slop	餘量
+	Spatial gesture	空間手勢
+	Thresholds	閾值
+	Trail	軌跡
+	Use gestures in the window	在視窗中使用手勢

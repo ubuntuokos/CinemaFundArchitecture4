@@ -54,6 +54,7 @@
 	Apply Video Transition	Použít obrazový přechod
 	Assembly	Sestavení
 	Attach Proxies…	Připojit proxy…
+	Find Camera Proxies	Najít proxy z kamery
 	Audio	Zvuk
 	Audio Channels…	Zvukové kanály…
 	Audio Clip Mixer	Mixér zvukových klipů
@@ -3542,7 +3543,7 @@
 	Six-Point Pin	Šestibodové připnutí
 	Upper Center	Nahoře uprostřed
 	Lower Center	Dole uprostřed
-	Use FFmpeg for files the CFA4 engine cannot open (FFmpeg 9.0.2 or later, GPL-3 build)	Použít FFmpeg pro soubory, které engine CFA4 neotevře (FFmpeg 9.0.2 nebo novější, sestavení GPL-3)
+	Use FFmpeg for files the CFA4 engine cannot open (FFmpeg 9.1 or later, GPL-3 build)	Použít FFmpeg pro soubory, které engine CFA4 neotevře (FFmpeg 9.1 nebo novější, sestavení GPL-3)
 	Use the system's GStreamer for files neither the engine nor FFmpeg can open	Použít systémový GStreamer pro soubory, které neotevře engine ani FFmpeg
 	Analyze Source for Smart Cut	Analyzovat zdroj pro chytrý střih
 	Plan Smart Cut	Naplánovat chytrý střih
@@ -4817,6 +4818,7 @@ export.summary	Low	nízká
 	Datamosh Bloom	Datamosh rozkvět
 	Start Time (seconds)	Čas začátku (sekundy)
 	Repeats	Opakování
+	Clean Blocks	Čisté bloky
 
 # Recent effects, per-channel waveform, white balance selector (SC-2/SC-3/SC-4, #1419 #1420 #1421)
 	Apply a recently used effect to the selected clips	Použít naposledy použitý efekt na vybrané klipy
@@ -4902,3 +4904,69 @@ export.summary	Low	nízká
 	Write an AS-02 bundle (the path is a folder)	Zapsat balíček AS-02 (cesta je složka)
 	AS-02	AS-02
 	AS-12	AS-12
+
+# N1 voxel panel
+	Active voxels:	Aktivní voxely:
+	Bounds:	Hranice:
+	Voxel attributes	Atributy voxelů
+	Voxel size:	Velikost voxelu:
+	points	body
+
+# WP3 DPX bit depth
+	Bit Depth	Bitová hloubka
+
+# AS-02 versions
+	AS-02 Versions	Verze AS-02
+	Tick the sequences to write as further versions in the AS-02 bundle	Zaškrtněte sekvence, které se zapíší jako další verze v balíčku AS-02
+	Delete Short Clips	Smazat krátké klipy
+	A stored combination does not run a command yet.	Uložená kombinace zatím nespouští příkaz.
+	Action hint	Nápověda akce
+	Add combination	Přidat kombinaci
+	Add mapping	Přidat přiřazení
+	Button Learn	Naučit tlačítko
+	Button Test	Zkouška tlačítka
+	Button name	Název tlačítka
+	Cancel feedback	Ohlas zrušení
+	Combination editor	Editor kombinací
+	Context	Kontext
+	Delete profile	Smazat profil
+	Detected buttons	Zjištěná tlačítka
+	Draw the gesture with a button held.	Nakreslete gesto při drženém tlačítku.
+	Error feedback	Ohlas chyby
+	Evdev device	Zařízení evdev
+	Evdev reads the selected device only, and only after a later phase turns it on. This version keeps the Qt path.	Evdev čte jen zvolené zařízení a teprve až ho pozdější fáze zapne. Tato verze zůstává na cestě Qt.
+	Execution feedback	Ohlas provedení
+	Follow the system	Podle systému
+	Gesture	Gesto
+	Gesture Learn	Naučit gesto
+	Gesture editor	Editor gest
+	Gesture profiles	Profily gest
+	Gestures stay off until you turn them on. Turning them on does not block the panel menu.	Gesta zůstanou vypnutá, dokud je nezapnete. Zapnutí neblokuje nabídku panelu.
+	HUD	HUD
+	Hand	Ruka
+	High contrast	Vysoký kontrast
+	Hold time	Doba držení
+	Input access	Přístup ke vstupu
+	Left-handed	Levák
+	Mapping	Přiřazení
+	Maximum length	Největší délka
+	Maximum time	Největší čas
+	Minimum length	Nejmenší délka
+	Mirror ergonomic gestures	Zrcadlit ergonomická gesta
+	Mouse Gestures	Gesta myši
+	Mouse Gestures…	Gesta myši…
+	No buttons yet. Press one in Button Learn or Button Test.	Zatím žádné tlačítko. Stiskněte je v učení nebo ve zkoušce.
+	Press	Stisk
+	Qt pointer (this application)	Ukazatel Qt (tato aplikace)
+	Recognition preview	Náhled rozpoznání
+	Reduced animation	Omezená animace
+	Right-handed	Pravák
+	Roles	Role
+	Save gesture	Uložit gesto
+	Save profile	Uložit profil
+	Show the gesture HUD	Zobrazit HUD gest
+	Slop	Vůle
+	Spatial gesture	Prostorové gesto
+	Thresholds	Prahy
+	Trail	Stopa
+	Use gestures in the window	Používat gesta v okně

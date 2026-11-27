@@ -67,6 +67,8 @@ fn broken_package_fails_and_its_report_is_saved_outside_the_package() {
     let md = String::from_utf8(files.0.lock().unwrap()["/reports/a.md"].clone()).unwrap();
     assert!(md.contains("DCP.AM.001"));
     s.execute("dcp.validate.save", json!({"root": root, "path": "/reports/a.json", "format": "json"})).unwrap();
+    s.execute("dcp.validate.save", json!({"root": root, "path": "/reports/a.html"})).unwrap();
+    assert!(String::from_utf8(files.0.lock().unwrap()["/reports/a.html"].clone()).unwrap().starts_with("<!doctype html>"), "an .html path saves HTML");
     let json_text = String::from_utf8(files.0.lock().unwrap()["/reports/a.json"].clone()).unwrap();
     assert!(json_text.contains("cfa4-dcp-report/1"));
 
@@ -112,4 +114,22 @@ fn background_validation_is_filed_by_poll() {
     let got = result(s.execute("dcp.validate.report", json!({"root": root})).unwrap());
     assert_eq!(got["verdict"], "FAIL");
     std::fs::remove_dir_all(dir).unwrap();
+}
+
+#[test]
+fn repair_plan_sorts_the_findings_and_changes_nothing() {
+    let (mut s, _) = session();
+    let dir = temp("repair");
+    let root = dir.to_string_lossy().into_owned();
+    assert!(s.execute("dcp.repair.plan", json!({"root": root})).is_err(), "needs a report first");
+    s.execute("dcp.validate", json!({"root": root, "profile": "quick-scan", "wait": true})).unwrap();
+    let r = result(s.execute("dcp.repair.plan", json!({"root": root})).unwrap());
+    assert_eq!(r["plan"]["schema"], "cfa4-dcp-repair/1");
+    assert_eq!(r["plan"]["modifiesPackage"], false);
+    let first = &r["plan"]["proposals"][0];
+    assert_eq!(first["status"], "FAIL", "{r}");
+    assert_eq!(first["class"], "reexport");
+    assert!(r["counts"]["reexport"].as_u64().unwrap() >= 1 && r["counts"]["unsupported"].is_u64(), "{r}");
+    assert!(std::fs::read_dir(&dir).unwrap().next().is_none(), "the package folder is untouched");
+    let _ = std::fs::remove_dir_all(&dir);
 }

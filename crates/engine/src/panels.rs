@@ -275,7 +275,12 @@ fn metadata_get(s: &mut Session, p: &Value) -> Result<Value> {
     let id = metadata_target(s, p).ok_or_else(|| bad("metadata.get", "no item: pass `item` or `clip`, or select one"))?;
     let it = s.project.item(id).ok_or_else(|| bad("metadata.get", "no such item"))?;
     let fields = metadata_fields(&s.project, id);
-    Ok(json!({"item": id.0, "name": it.name, "fields": fields, "metadata": it.metadata}))
+    let mut out = json!({"item": id.0, "name": it.name, "fields": fields, "metadata": it.metadata});
+    // a volume: the Qt "Voxel attributes" section asks `vdb.inspect` for this path
+    if let cfa4_project::ItemKind::Volume(v) = &it.kind {
+        out["volume"] = json!({"path": v.path, "frames": v.frames.len()});
+    }
+    Ok(out)
 }
 
 /// `metadata.set {item?, field, value}` or `{item?, fields: {name: value}}`: one undo step.

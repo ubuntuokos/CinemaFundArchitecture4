@@ -101,6 +101,8 @@ static ROWS: &[Row] = &[
     video("HEVC / H.265", &["hevc"], Own, Sw("up to 12-bit 4:4:4; no RExt coding tools; encoder Main / Main 10 4:2:0"), true, Fmt(Format::Hevc)),
     video("MPEG-5 EVC", &["evc"], Ported, Sw("Baseline profile: raw .evc streams and MP4 evc1"), false, NoEnc),
     video("AVS1-P2", &["cavs"], Ported, Sw("Jizhun profile (AVS1, not AVS+): raw .avs / .cavs streams"), false, NoEnc),
+    video("AVS2-P2", &["avs2"], Ported, Sw("Main / Main 10 profiles (8- and 10-bit): raw .avs2 streams"), false, NoEnc),
+    video("AVS3-P2", &["avs3"], Ported, Sw("baseline profiles (8- and 10-bit): raw .avs3 streams"), false, NoEnc),
     video("AV1", &["av1"], Own, Sw("Main 8/10-bit"), false, Fmt(Format::Av1)),
     video("AV2", &["av2"], Own, Detect("bitstream parsing only"), false, NoEnc),
     video("VP8", &["vp8"], Own, Sw("RFC 6386"), false, NoEnc),
@@ -192,7 +194,9 @@ static ROWS: &[Row] = &[
 /// other crate must be a row's crate (the `every_codec_crate_is_in_the_catalog` test).
 #[cfg(test)]
 const NOT_CODECS: &[&str] = &[
+    "vdb",
     "audio-dsp",
+    "audit",
     "automation",
     "avi",
     "bitstream",
@@ -207,6 +211,7 @@ const NOT_CODECS: &[&str] = &[
     "dcp-inspect",
     "dcpomatic",
     "dcp-validate",
+    "dvd",
     "edit",
     "engine",
     "export",
@@ -234,6 +239,7 @@ const NOT_CODECS: &[&str] = &[
     "project",
     "qc",
     "render",
+    "render-contracts",
     "route",
     "sandbox",
     "scopes",

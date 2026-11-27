@@ -79,9 +79,47 @@ pub(crate) struct Table {
     /// Per length: first code and the symbols of that length in code order.
     first: [u32; 32],
     syms: Vec<Vec<u8>>,
+    /// Tables with explicit codes (the "classic" ones): (length, code, symbol) of every code longer
+    /// than `FAST_BITS`; empty for tables built from lengths.
+    long: Vec<(u32, u32, u8)>,
 }
 
 impl Table {
+    /// A table of explicit prefix codes (Huffyuv 1.x "classic" tables, which do not follow the
+    /// code assignment of [`Table::new`]): symbol `s` has the `lens[s]`-bit code `codes[s]`
+    /// (0 length: absent). The codes must be a prefix code.
+    pub fn with_codes(lens: &[u8; 256], codes: &[u32; 256]) -> Result<Table> {
+        let mut fast = vec![(0u8, 0u8); 1 << FAST_BITS];
+        let mut long = Vec::new();
+        let mut kraft: u64 = 0;
+        for (s, (&l, &c)) in lens.iter().zip(codes).enumerate() {
+            let l = u32::from(l);
+            if l == 0 {
+                continue;
+            }
+            if l > 31 || u64::from(c) >= 1u64 << l {
+                return Err(Error::Invalid("Huffman code out of range".into()));
+            }
+            kraft += 1u64 << (32 - l);
+            if l <= FAST_BITS {
+                let shift = FAST_BITS - l;
+                let start = (c << shift) as usize;
+                for e in fast.iter_mut().skip(start).take(1 << shift) {
+                    if e.1 != 0 {
+                        return Err(Error::Invalid("Huffman codes overlap".into()));
+                    }
+                    *e = (s as u8, l as u8);
+                }
+            } else {
+                long.push((l, c, s as u8));
+            }
+        }
+        if kraft > 1u64 << 32 {
+            return Err(Error::Invalid("Huffman code lengths oversubscribed".into()));
+        }
+        Ok(Table { fast, first: [0; 32], syms: Vec::new(), long })
+    }
+
     /// Codes are assigned from the longest length down; within a length in increasing symbol
     /// order, each code one more than the last; moving to the next shorter length halves the
     /// running code.
@@ -115,7 +153,7 @@ impl Table {
                 }
             }
         }
-        Ok(Table { fast, first, syms })
+        Ok(Table { fast, first, syms, long: Vec::new() })
     }
 
     /// Decode one symbol; an invalid code marks the reader bad and gives 0.
@@ -127,6 +165,16 @@ impl Table {
             return s;
         }
         let bits = br.peek(31);
+        if !self.long.is_empty() {
+            for &(len, code, s) in &self.long {
+                if bits >> (31 - len) == code {
+                    br.skip(len);
+                    return s;
+                }
+            }
+            br.bad = true;
+            return 0;
+        }
         for len in FAST_BITS + 1..32 {
             let c = bits >> (31 - len);
             let Some(k) = c.checked_sub(self.first[len as usize]) else { continue };

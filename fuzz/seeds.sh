@@ -4,24 +4,28 @@
 # Each target's seeds use the byte layout its harness expects (fuzz/src/lib.rs): raw streams for the
 # elementary-stream decoders, parameter bytes first where a decoder needs them, and 2-byte
 # big-endian lengths before each packet for the packet-fed decoders.
-# Usage: fuzz/seeds.sh  (needs python3 and the pinned FFmpeg 9.0.2 test oracle; formats it cannot
-# write are skipped). The oracle is found as the tests find it (docs/testing.md §2): CFA4_FFMPEG,
-# then the scripts/ci/install-ffmpeg-9.0.2.sh cache, then the prebuilt /opt/cfa4/ffmpeg-9.0.2
-# (scripts/dev/fetch-ffmpeg-9.0.2.sh), then PATH; any other version is refused.
+# Usage: fuzz/seeds.sh  (needs python3 and the pinned FFmpeg test oracle, version in
+# packaging/ffmpeg-version.env; formats it cannot write are skipped). The oracle is found as the
+# tests find it (docs/testing.md §2): CFA4_FFMPEG, then the scripts/ci/install-ffmpeg.sh cache,
+# then the prebuilt /opt/cfa4/ffmpeg-VERSION (scripts/dev/fetch-ffmpeg.sh), then PATH; any other
+# version is refused.
 set -uo pipefail
 HERE="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)"
 C="$HERE/corpus"
+# shellcheck source=packaging/ffmpeg-version.env
+. "$HERE/../packaging/ffmpeg-version.env"
+V_FF="$CFA4_FFMPEG_VERSION"
 FFMPEG="${CFA4_FFMPEG:-}"
 if [[ -z "$FFMPEG" ]]; then
-    cached="${CFA4_FFMPEG_CACHE_DIR:-$HOME/.cache/cfa4/ffmpeg-9.0.2-linux-x86_64-v7}/bin/ffmpeg"
-    prebuilt=/opt/cfa4/ffmpeg-9.0.2/bin/ffmpeg   # scripts/dev/fetch-ffmpeg-9.0.2.sh (cloud and dev machines)
+    cached="${CFA4_FFMPEG_CACHE_DIR:-$HOME/.cache/cfa4/ffmpeg-$V_FF-linux-x86_64-$CFA4_FFMPEG_CACHE_REV}/bin/ffmpeg"
+    prebuilt="/opt/cfa4/ffmpeg-$V_FF/bin/ffmpeg"   # scripts/dev/fetch-ffmpeg.sh (cloud and dev machines)
     if [[ -x "$cached" ]]; then FFMPEG="$cached"
     elif [[ -x "$prebuilt" ]]; then FFMPEG="$prebuilt"
     else FFMPEG="$(command -v ffmpeg || true)"; fi
 fi
-[[ -n "$FFMPEG" && -x "$FFMPEG" ]] || { echo "FFmpeg 9.0.2 not found: run scripts/dev/fetch-ffmpeg-9.0.2.sh or set CFA4_FFMPEG" >&2; exit 2; }
+[[ -n "$FFMPEG" && -x "$FFMPEG" ]] || { echo "FFmpeg $V_FF not found: run scripts/dev/fetch-ffmpeg.sh or set CFA4_FFMPEG" >&2; exit 2; }
 have="$("$FFMPEG" -version | awk 'NR==1 {print $3}')"
-[[ "$have" == "9.0.2" ]] || { echo "$FFMPEG is FFmpeg $have; the seeds need the pinned 9.0.2 oracle (scripts/ci/install-ffmpeg-9.0.2.sh)" >&2; exit 2; }
+[[ "$have" == "$V_FF" ]] || { echo "$FFMPEG is FFmpeg $have; the seeds need the pinned $V_FF oracle (scripts/ci/install-ffmpeg.sh)" >&2; exit 2; }
 T="$(mktemp -d)"
 trap 'rm -rf "$T"' EXIT
 mkdir -p "$C"

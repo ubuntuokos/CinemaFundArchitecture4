@@ -30,7 +30,8 @@
 
 ## FFmpeg
 
-- **Minimális verzió: FFmpeg 9.0.2.** Régebbi FFmpeg-et a háttér nem fogad el; a `probe()` ezt
+- **Minimális verzió:** a `packaging/ffmpeg-version.env` `CFA4_FFMPEG_MIN_VERSION` értéke (a verzió egyetlen helye,
+  [CFA4-FFMPEG-9.1-001](../plans/CFA4-FFMPEG-9.1-001.md) R1). Régebbi FFmpeg-et a háttér nem fogad el; a `probe()` ezt
   futáskor ellenőrzi és jelenti.
 - **Licenc:** csak GPL-3-mal kompatibilis build (`--enable-gpl --enable-version3`), **soha**
   `--enable-nonfree`, és nem kerülhet bele GPL-3-mal össze nem férő külső könyvtár (pl.
@@ -42,11 +43,11 @@
 - **Szabadalmilag korlátozott részek** (pl. x264, x265): az Ubuntu-modell szerint, külön, kérésre
   telepíthető csomagban (#57); az alapcsomag nélkülük is működik.
 - **Szállítás (tulajdonosi döntés, 2026-10-25):** az Ubuntu 26.04 tárolóiban 8.x van, ezért a CFA4
-  saját FFmpeg 9.0.2-buildet szállít, megosztott könyvtárakként **`/opt/cfa4` alá** telepítve (a
+  saját FFmpeg-buildet szállít (a verzió: `packaging/ffmpeg-version.env` `CFA4_FFMPEG_VERSION`), megosztott könyvtárakként **`/opt/cfa4` alá** telepítve (a
   rendszer FFmpeg-jét nem cseréli): GPL v3, `nonfree` nélkül, x264 és x265 nélkül (azok a #57
   szerinti külön csomagban), VA-API-val. Az rsmedia erre a buildre fordul.
-- **A tesztorákulum külön marad:** a CI rögzített FFmpeg 9.0.2 CLI-je
-  (`scripts/ci/install-ffmpeg-9.0.2.sh`) a saját kodekek független ellenőrzője, nem a termék része.
+- **A tesztorákulum külön marad:** a CI rögzített FFmpeg CLI-je
+  (`scripts/ci/install-ffmpeg.sh`) a saját kodekek független ellenőrzője, nem a termék része.
 
 ## GStreamer
 
@@ -79,11 +80,11 @@
 
 | Lépés | Tartalom | Állapot |
 |---|---|---|
-| 1 | `cfa4-ffmpeg` crate: kötés (vendorozott rsmedia → rsmpeg → rusty_ffmpeg, `vendor/ffmpeg-bindings/`), `probe()` (verzió ≥ 9.0.2, GPL-3-as build, nonfree tiltva, korlátozott kodekek), `discover()`, `open()` natív bitmélységgel, első tartalék a GStreamer előtt; FFmpeg nélkül is fordul | kész (a buildpróba 2026-10-26: bitpontos a G3- és G10-esetekre) |
+| 1 | `cfa4-ffmpeg` crate: kötés (vendorozott rsmedia → rsmpeg → rusty_ffmpeg, `vendor/ffmpeg-bindings/`), `probe()` (verzió ≥ `CFA4_FFMPEG_MIN_VERSION`, GPL-3-as build, nonfree tiltva, korlátozott kodekek), `discover()`, `open()` natív bitmélységgel, első tartalék a GStreamer előtt; FFmpeg nélkül is fordul | kész (a buildpróba 2026-10-26: bitpontos a G3- és G10-esetekre) |
 | 1a | Beállítások ▸ Média és lejátszás ▸ Médiahátterek (kapcsolók, állapot, korlátozott kodekek), `media.backends`, `cfa4-cli media-backends`; menü: Szerkesztés ▸ Médiahátterek…, Súgó ▸ Korlátozott kodekek… | kész |
 | 2 | FFmpeg- és GStreamer-háttér regisztrálása a `cfa4-route`-ban (ADR 0004 1. fázisa után): a `media.fallback` feladat lánca (`crates/engine/src/media_route.rs`) adja a `cfa4_media::set_fallback_order` sorrendjét; a felhasználói `[compute.task."media.fallback"]` sor felcserélheti vagy kihagyhatja őket | kész (2026-10-27) |
 | 3 | Feladatsorok a táblában (pl. felvétel, konvertálás) mérés alapján | tervezett |
-| 4 | Csomagolás: a CFA4 saját FFmpeg 9.0.2-buildje (`scripts/dev/build-ffmpeg-9.0.2.sh`, GPL-3, `nonfree` nélkül) minden kiadott csomagban, a licenceivel és a forrás leírásával (`share/doc/ffmpeg/BUILDINFO`): a `.deb` elkülönítve `/opt/cfa4/ffmpeg-9.0.2` alá telepíti, a betöltött könyvtárai `Depends`-ként jönnek az Ubuntu archívumából; a tarball, az AppImage és a Flatpak a programok mellett, `lib/cfa4/ffmpeg-9.0.2` alatt hozza, a betöltött külső könyvtárakkal és azok licenceivel (`packaging/linux/stage-ffmpeg.sh`). A programok futásidejű keresési útja: `…-restricted/lib` → `/opt/cfa4/ffmpeg-9.0.2/lib` → `$ORIGIN/../lib/cfa4/ffmpeg-9.0.2/lib` (`apps/*/build.rs`). A `cfa4-restricted-extras` külön `.deb` (csak kérésre: `package.sh --formats "… restricted"`) ugyanazt az FFmpeg-et x264-gyel és x265-tel `/opt/cfa4/ffmpeg-9.0.2-restricted` alá teszi, és pontosan az azonos verziójú `cfa4`-re épül; a hordozható formátumokból kimarad. GStreamer `Depends`/`Recommends` az Ubuntu archívumából | a csomagolás elkészült (2026-11-08); a kiadási munka az SK-F2 után jön (tulajdonosi döntés, 2026-11-01). A terjesztést továbbra is a márka- és licencellenőrzés kapuja tartja vissza (`CFA4_ALLOW_LOCAL_PACKAGING`) |
+| 4 | Csomagolás: a CFA4 saját FFmpeg-buildje (`scripts/dev/build-ffmpeg.sh`, GPL-3, `nonfree` nélkül) minden kiadott csomagban, a licenceivel és a forrás leírásával (`share/doc/ffmpeg/BUILDINFO`): a `.deb` elkülönítve `/opt/cfa4/ffmpeg-VERSION` alá telepíti, a betöltött könyvtárai `Depends`-ként jönnek az Ubuntu archívumából; a tarball, az AppImage és a Flatpak a programok mellett, `lib/cfa4/ffmpeg-VERSION` alatt hozza, a betöltött külső könyvtárakkal és azok licenceivel (`packaging/linux/stage-ffmpeg.sh`). A programok futásidejű keresési útja: `…-restricted/lib` → `/opt/cfa4/ffmpeg-VERSION/lib` → `$ORIGIN/../lib/cfa4/ffmpeg-VERSION/lib` (`apps/*/build.rs`). A `cfa4-restricted-extras` külön `.deb` (csak kérésre: `package.sh --formats "… restricted"`) ugyanazt az FFmpeg-et x264-gyel és x265-tel `/opt/cfa4/ffmpeg-VERSION-restricted` alá teszi, és pontosan az azonos verziójú `cfa4`-re épül; a hordozható formátumokból kimarad. GStreamer `Depends`/`Recommends` az Ubuntu archívumából | a csomagolás elkészült (2026-11-08); a kiadási munka az SK-F2 után jön (tulajdonosi döntés, 2026-11-01). A terjesztést továbbra is a márka- és licencellenőrzés kapuja tartja vissza (`CFA4_ALLOW_LOCAL_PACKAGING`) |
 
 ## Számozás
 

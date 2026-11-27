@@ -320,7 +320,7 @@
    "package": "cfa4-export"
   },
   {
-   "description": "FFmpeg (>= 9.0.2) supplementary media backend for CFA4 (layer L5): probes the FFmpeg the build links, opens media the Rust engine cannot open and decodes it at its native bit depth, as a fallback behind the own engine (ADR 0005)",
+   "description": "FFmpeg supplementary media backend for CFA4 (layer L5): probes the FFmpeg the build links, opens media the Rust engine cannot open and decodes it at its native bit depth, as a fallback behind the own engine (ADR 0005)",
    "directory": "crates/ffmpeg",
    "package": "cfa4-ffmpeg"
   },
@@ -419,6 +419,10 @@
   {
    "from": "cfa4-golden",
    "to": "cfa4-color"
+  },
+  {
+   "from": "cfa4-golden",
+   "to": "cfa4-export"
   },
   {
    "from": "cfa4-golden",
@@ -1495,6 +1499,13 @@
    "class": "frame",
    "crate": "cfa4-frame",
    "kind": "enum",
+   "module": "convert.rs",
+   "name": "PixelFormat"
+  },
+  {
+   "class": "frame",
+   "crate": "cfa4-frame",
+   "kind": "enum",
    "module": "lib.rs",
    "name": "Chroma"
   },
@@ -1532,6 +1543,13 @@
    "kind": "struct",
    "module": "lib.rs",
    "name": "VideoFrame"
+  },
+  {
+   "class": "frame",
+   "crate": "cfa4-frame",
+   "kind": "struct",
+   "module": "side.rs",
+   "name": "FrameSideData"
   },
   {
    "class": "frame",
@@ -2623,6 +2641,13 @@
    "crate": "cfa4-engine",
    "kind": "struct",
    "module": "control_surfaces.rs",
+   "name": "StoredGesture"
+  },
+  {
+   "class": "other",
+   "crate": "cfa4-engine",
+   "kind": "struct",
+   "module": "control_surfaces.rs",
    "name": "Triggers"
   },
   {
@@ -2680,6 +2705,69 @@
    "kind": "struct",
    "module": "export_tools.rs",
    "name": "ExportPresetLibrary"
+  },
+  {
+   "class": "other",
+   "crate": "cfa4-engine",
+   "kind": "struct",
+   "module": "gesture_runtime.rs",
+   "name": "ButtonView"
+  },
+  {
+   "class": "other",
+   "crate": "cfa4-engine",
+   "kind": "struct",
+   "module": "gesture_runtime.rs",
+   "name": "Combination"
+  },
+  {
+   "class": "other",
+   "crate": "cfa4-engine",
+   "kind": "struct",
+   "module": "gesture_runtime.rs",
+   "name": "GestureRuntime"
+  },
+  {
+   "class": "other",
+   "crate": "cfa4-engine",
+   "kind": "enum",
+   "module": "gesture_runtime.rs",
+   "name": "InputPath"
+  },
+  {
+   "class": "other",
+   "crate": "cfa4-engine",
+   "kind": "enum",
+   "module": "gesture_runtime.rs",
+   "name": "LogicalRole"
+  },
+  {
+   "class": "other",
+   "crate": "cfa4-engine",
+   "kind": "enum",
+   "module": "gesture_runtime.rs",
+   "name": "Motion"
+  },
+  {
+   "class": "other",
+   "crate": "cfa4-engine",
+   "kind": "enum",
+   "module": "gesture_runtime.rs",
+   "name": "PhysicalCode"
+  },
+  {
+   "class": "other",
+   "crate": "cfa4-engine",
+   "kind": "struct",
+   "module": "gesture_runtime.rs",
+   "name": "PointerAdapter"
+  },
+  {
+   "class": "other",
+   "crate": "cfa4-engine",
+   "kind": "enum",
+   "module": "gesture_runtime.rs",
+   "name": "RolePath"
   },
   {
    "class": "other",
@@ -3518,6 +3606,41 @@
    "class": "other",
    "crate": "cfa4-export",
    "kind": "struct",
+   "module": "as02_share.rs",
+   "name": "Comp"
+  },
+  {
+   "class": "other",
+   "crate": "cfa4-export",
+   "kind": "struct",
+   "module": "as02_share.rs",
+   "name": "Piece"
+  },
+  {
+   "class": "other",
+   "crate": "cfa4-export",
+   "kind": "struct",
+   "module": "as02_share.rs",
+   "name": "Registry"
+  },
+  {
+   "class": "other",
+   "crate": "cfa4-export",
+   "kind": "struct",
+   "module": "as02_share.rs",
+   "name": "Share"
+  },
+  {
+   "class": "other",
+   "crate": "cfa4-export",
+   "kind": "struct",
+   "module": "as02_share.rs",
+   "name": "ShareHandle"
+  },
+  {
+   "class": "other",
+   "crate": "cfa4-export",
+   "kind": "struct",
    "module": "atomic.rs",
    "name": "AtomicOutput"
   },
@@ -4007,6 +4130,27 @@
   {
    "class": "other",
    "crate": "cfa4-frame",
+   "kind": "struct",
+   "module": "convert.rs",
+   "name": "Conversion"
+  },
+  {
+   "class": "other",
+   "crate": "cfa4-frame",
+   "kind": "enum",
+   "module": "convert.rs",
+   "name": "Cost"
+  },
+  {
+   "class": "other",
+   "crate": "cfa4-frame",
+   "kind": "struct",
+   "module": "convert.rs",
+   "name": "Unsupported"
+  },
+  {
+   "class": "other",
+   "crate": "cfa4-frame",
    "kind": "enum",
    "module": "lib.rs",
    "name": "FieldOrder"
@@ -4017,6 +4161,20 @@
    "kind": "struct",
    "module": "pool.rs",
    "name": "PoolStats"
+  },
+  {
+   "class": "other",
+   "crate": "cfa4-frame",
+   "kind": "enum",
+   "module": "side.rs",
+   "name": "Residency"
+  },
+  {
+   "class": "other",
+   "crate": "cfa4-frame",
+   "kind": "enum",
+   "module": "side.rs",
+   "name": "Rotation"
   },
   {
    "class": "other",
@@ -4974,6 +5132,13 @@
    "class": "other",
    "crate": "cfa4-project",
    "kind": "struct",
+   "module": "lib.rs",
+   "name": "VolumeAsset"
+  },
+  {
+   "class": "other",
+   "crate": "cfa4-project",
+   "kind": "struct",
    "module": "mask.rs",
    "name": "Mask"
   },
@@ -5515,6 +5680,13 @@
    "kind": "struct",
    "module": "homography.rs",
    "name": "Homography"
+  },
+  {
+   "class": "other",
+   "crate": "cfa4-render",
+   "kind": "enum",
+   "module": "key_synth.rs",
+   "name": "Scene"
   },
   {
    "class": "other",
@@ -6320,6 +6492,20 @@
    "kind": "struct",
    "module": "task_host.rs",
    "name": "Preview"
+  },
+  {
+   "class": "render",
+   "crate": "cfa4-export",
+   "kind": "struct",
+   "module": "as02_share.rs",
+   "name": "Plan"
+  },
+  {
+   "class": "render",
+   "crate": "cfa4-export",
+   "kind": "struct",
+   "module": "as02_share.rs",
+   "name": "VersionPlan"
   },
   {
    "class": "render",
@@ -7296,11 +7482,6 @@
   },
   {
    "from": "cfa4-cli/settings_cmd.rs",
-   "item": "backend_enabled",
-   "to": "cfa4-media"
-  },
-  {
-   "from": "cfa4-cli/settings_cmd.rs",
    "item": "set_backend_enabled",
    "to": "cfa4-media"
   },
@@ -7527,6 +7708,11 @@
   {
    "from": "cfa4-engine/captions.rs",
    "item": "TimeRange",
+   "to": "cfa4-time"
+  },
+  {
+   "from": "cfa4-engine/captions_titles.rs",
+   "item": "Tick",
    "to": "cfa4-time"
   },
   {
@@ -7967,6 +8153,46 @@
   {
    "from": "cfa4-engine/commands.rs",
    "item": "TimeRange",
+   "to": "cfa4-time"
+  },
+  {
+   "from": "cfa4-engine/contact_sheet.rs",
+   "item": "pending",
+   "to": "cfa4-media"
+  },
+  {
+   "from": "cfa4-engine/contact_sheet.rs",
+   "item": "ItemId",
+   "to": "cfa4-project"
+  },
+  {
+   "from": "cfa4-engine/contact_sheet.rs",
+   "item": "ItemKind",
+   "to": "cfa4-project"
+  },
+  {
+   "from": "cfa4-engine/contact_sheet.rs",
+   "item": "picture",
+   "to": "cfa4-qc"
+  },
+  {
+   "from": "cfa4-engine/contact_sheet.rs",
+   "item": "RenderOptions",
+   "to": "cfa4-render"
+  },
+  {
+   "from": "cfa4-engine/contact_sheet.rs",
+   "item": "render_item",
+   "to": "cfa4-render"
+  },
+  {
+   "from": "cfa4-engine/contact_sheet.rs",
+   "item": "render_sequence",
+   "to": "cfa4-render"
+  },
+  {
+   "from": "cfa4-engine/contact_sheet.rs",
+   "item": "Tick",
    "to": "cfa4-time"
   },
   {
@@ -9140,6 +9366,16 @@
    "to": "cfa4-time"
   },
   {
+   "from": "cfa4-engine/marker_exports.rs",
+   "item": "Marker",
+   "to": "cfa4-project"
+  },
+  {
+   "from": "cfa4-engine/marker_exports.rs",
+   "item": "Tick",
+   "to": "cfa4-time"
+  },
+  {
    "from": "cfa4-engine/masks.rs",
    "item": "Report",
    "to": "cfa4-export"
@@ -9627,6 +9863,11 @@
   {
    "from": "cfa4-engine/panels.rs",
    "item": "ItemId",
+   "to": "cfa4-project"
+  },
+  {
+   "from": "cfa4-engine/panels.rs",
+   "item": "ItemKind",
    "to": "cfa4-project"
   },
   {
@@ -10120,6 +10361,21 @@
    "to": "cfa4-time"
   },
   {
+   "from": "cfa4-engine/render_job.rs",
+   "item": "ExportError",
+   "to": "cfa4-export"
+  },
+  {
+   "from": "cfa4-engine/render_job.rs",
+   "item": "Progress",
+   "to": "cfa4-export"
+  },
+  {
+   "from": "cfa4-engine/render_job.rs",
+   "item": "Report",
+   "to": "cfa4-export"
+  },
+  {
    "from": "cfa4-engine/scene_detect.rs",
    "item": "Report",
    "to": "cfa4-export"
@@ -10288,6 +10544,11 @@
    "from": "cfa4-engine/settings.rs",
    "item": "FrameRate",
    "to": "cfa4-time"
+  },
+  {
+   "from": "cfa4-engine/short_clips.rs",
+   "item": "ClipId",
+   "to": "cfa4-project"
   },
   {
    "from": "cfa4-engine/shortcuts.rs",
@@ -10740,6 +11001,21 @@
    "to": "cfa4-project"
   },
   {
+   "from": "cfa4-engine/vdb.rs",
+   "item": "sequence",
+   "to": "cfa4-media"
+  },
+  {
+   "from": "cfa4-engine/vdb.rs",
+   "item": "BinId",
+   "to": "cfa4-project"
+  },
+  {
+   "from": "cfa4-engine/vdb.rs",
+   "item": "ItemId",
+   "to": "cfa4-project"
+  },
+  {
    "from": "cfa4-engine/voiceover.rs",
    "item": "ItemId",
    "to": "cfa4-project"
@@ -10772,6 +11048,16 @@
   {
    "from": "cfa4-export/aac_out.rs",
    "item": "TimeRange",
+   "to": "cfa4-time"
+  },
+  {
+   "from": "cfa4-export/as02_share.rs",
+   "item": "ItemId",
+   "to": "cfa4-project"
+  },
+  {
+   "from": "cfa4-export/as02_share.rs",
+   "item": "FrameRate",
    "to": "cfa4-time"
   },
   {
@@ -11096,6 +11382,11 @@
   },
   {
    "from": "cfa4-export/raster.rs",
+   "item": "dpx",
+   "to": "cfa4-media"
+  },
+  {
+   "from": "cfa4-export/raster.rs",
    "item": "open_bytes",
    "to": "cfa4-media"
   },
@@ -11370,6 +11661,11 @@
    "to": "cfa4-time"
   },
   {
+   "from": "cfa4-frame/convert.rs",
+   "item": "ColorInfo",
+   "to": "cfa4-color"
+  },
+  {
    "from": "cfa4-frame/lib.rs",
    "item": "ColorInfo",
    "to": "cfa4-color"
@@ -11401,6 +11697,21 @@
   },
   {
    "from": "cfa4-frame/pool.rs",
+   "item": "Tick",
+   "to": "cfa4-time"
+  },
+  {
+   "from": "cfa4-frame/side.rs",
+   "item": "ColorInfo",
+   "to": "cfa4-color"
+  },
+  {
+   "from": "cfa4-frame/side.rs",
+   "item": "HdrMetadata",
+   "to": "cfa4-color"
+  },
+  {
+   "from": "cfa4-frame/side.rs",
    "item": "Tick",
    "to": "cfa4-time"
   },

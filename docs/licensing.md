@@ -12,6 +12,13 @@
 - **Nem vehető át:** GPL-2.0-only kód (pl. HandBrake), AGPL, nem szabad licencű vagy ismeretlen
   licencű kód, és bármely zárt program (Adobe Premiere, DaVinci Resolve) kódja vagy eszközei.
   Ezeknek a képességét saját kóddal vagy külső programként hívva kell megvalósítani.
+- **AGPL választható workerként (tulajdonosi döntés, 2026-11-22; feloldja az általános
+  AGPL-tilalmat):** AGPL-3.0 licencű kód és modell (pl. Ultralytics YOLO) külön letöltött,
+  választható workerként futhat, saját, homokozóba zárt folyamatban, a nem kereskedelmi workerek
+  mintájára (CFA4-AI_modules ADR 0008 §8). A CFA4 folyamatába nem töltődik be, a CFA4 kódjába nem
+  másolható és nem portolható, és nem lehet alapértelmezés. A worker licence a jegyzékben
+  szerepel, és a worker, valamint minden AGPL-es modell- vagy adatkészlet-komponens megfelelő
+  forrása vele együtt elérhető (AGPL-3.0 13. pont), és a felület megnevezi a licencet.
 - **Nincs fizetős rész** (a tulajdonos döntése, 2026-11-08; felváltja a 2026-10-24-i „ingyenes
   alap, fizetős kiegészítők” modellt): a CFA4 minden része ingyenes és szabadon terjeszthető.
   Nincs fizetős kiegészítő, fizetős LTS-ág vagy csomag, licenckulcs, vízjel, próbaidő vagy
@@ -96,10 +103,21 @@ Not allowed:
 | Source | Why | Alternative |
 |---|---|---|
 | GPL-2.0-only (e.g. HandBrake, parts of the Linux kernel) | incompatible with GPL-3.0 | call the program as an external process, or reimplement |
-| AGPL-3.0 | network-use obligations we do not want on the whole product | reimplement |
+| AGPL-3.0, in CFA4's own code or process | network-use obligations we do not want on the whole product | reimplement; or run it as an optional AGPL worker (below) |
 | GPL code linked with GPL-incompatible libraries | cannot be distributed | — |
 | Proprietary software (Adobe Premiere, DaVinci Resolve, …) | no licence | reimplement the behaviour from public documentation and observation; never copy code, icons, presets, LUTs or fonts |
 | Unknown / no licence | all rights reserved | ask the author or leave it out |
+
+**AGPL-3.0 optional workers** (owner decision 2026-11-22, lifts the blanket AGPL ban; no paid or
+closed part exists since 2026-11-08, so GPL-3.0 §13 combination is no obstacle): AGPL-3.0 code or
+models may be offered as a separately downloaded, optional worker that runs in its own sandboxed
+process (CFA4-SECURITY-001), as non-commercial workers are (CFA4-AI_modules ADR 0008 §8). Never
+loaded into the CFA4 process, never copied or ported into CFA4's code, never a default. The model
+manifest records each component's licence in its own field (`code`, `dependencies`, `weights`,
+`dataset`; e.g. AGPL weights under an MIT worker: `weights` = AGPL-3.0), the
+worker's source, and the corresponding source of each AGPL-licensed model or dataset component, is
+offered with it (AGPL-3.0 §13), and the UI names the licence when the worker is
+chosen. `deny.toml` keeps refusing AGPL crates as dependencies of CFA4's own code.
 
 A project's overall licence is not enough: **check the header of every file you take**, because
 large projects mix licences (some Kdenlive or Krita files are GPL-2.0-only, some FFmpeg parts are
@@ -166,6 +184,8 @@ that adds them names the source and revision.
 | `crates/sstp/src/` (`lib.rs` re-expressed in Rust; `tables.rs` generated from the data files) | FFmpeg n7.1.1, <https://ffmpeg.org/>, tag `n7.1.1`, `libavcodec/mpeg4videodec.c`, `mpeg4data.h`, `mpegvideodata.c`, `h263dec.c`, `ituh263dec.c`, `simple_idct_template.c`, `vlc.c` | the FFmpeg developers | LGPL-2.1-or-later (`crates/sstp/COPYING.LGPL-2.1`); CFA4 changes GPL-3.0-or-later. FFmpeg-derived code, an owner-approved exception as above (codec backlog CB-16.2) |
 | `crates/evc/src/` (`*.rs` re-expressed in Rust; `tables.rs` generated from `xevd_tbl.c`), `crates/evc/tests/synth/mod.rs` (the arithmetic encoder of `xeve_eco.c`) | xevd v0.8.0, <https://github.com/mpeg5/xevd>, commit `8fa744e865e9bdb94a5d5da6a4ab18268cdc4bb4`, `src_base/xevd.c`, `xevd_eco.c`, `xevd_util.c`, `xevd_itdq.c`, `xevd_ipred.c`, `xevd_mc.c`, `xevd_df.c`, `xevd_picman.c`, `xevd_recon.c`, `xevd_tbl.c`; xeve v0.7.1, <https://github.com/mpeg5/xeve>, commit `fe229fec19e14907c60d65626ebd59f41517d9b3`, `src_base/xeve_eco.c` | Samsung Electronics Co., Ltd. | BSD-3-Clause (`crates/evc/COPYING.BSD-3`); CFA4 changes GPL-3.0-or-later (codec backlog CB-17.1) |
 | `crates/cavs/src/` (`*.rs` re-expressed in Rust; `tables.rs` generated from the C definitions) | FFmpeg n7.1.1, <https://ffmpeg.org/>, tag `n7.1.1`, `libavcodec/cavs.c`, `cavsdec.c`, `cavsdsp.c`, `cavsdata.c`, `cavs_parser.c`, `libavformat/cavsvideodec.c` (the probe) | the FFmpeg developers (Stefan Gehrer) | LGPL-2.1-or-later (`crates/cavs/COPYING.LGPL-2.1`); CFA4 changes GPL-3.0-or-later. FFmpeg-derived code, an owner-approved exception as above (codec backlog CB-18.1) |
+| `crates/avs2/src/` (`*.rs` re-expressed in Rust, tables copied) | davs2 1.7, <https://github.com/pkuvcl/davs2>, commit `b41cf117452e2d73d827f02d3e30aa20f1c721ac`, `source/common/` (`davs2.cc`, `decoder.cc`, `header.cc`, `bitstream.cc`, `aec.cc`, `cu.cc`, `predict.cc`, `block_info.cc`, `intra.cc`, `transform.cc`, `quant.h`, `mc.cc`, `deblock.cc`, `sao.cc`, `alf.cc`, `vlc.h`), the C code paths | VCL, NELVT, Peking University (Falei Luo et al.) | GPL-2.0-or-later, used under GPL-3.0-or-later (codec backlog CB-18.2). The test oracles davs2 and xavs2 1.4 (<https://github.com/pkuvcl/xavs2>, commit `eae1e8b9d12468059bdd7dee893508e470fa83d8`, GPL-2.0-or-later) are built by `scripts/ci/install-avs2-oracle.sh` and never linked or shipped |
+| `crates/avs3/src/` (`*.rs` re-expressed in Rust, tables copied) | uavs3d 1.2, <https://github.com/uavs3/uavs3d>, commit `0e20d2c291853f196c68922a264bcd8471d75b68`, `source/decoder/` and `source/common/` (`uavs3d.c`, `com_*`, `dec_*`, `bitstream`, `lbac`, `intra`, `inter`, `mv`, `itrans`, `deblock`, `sao`, `alf`), the C code paths | Peking University Shenzhen Graduate School, Peng Cheng Laboratory, Guangdong Bohua UHD Innovation Corporation | BSD-3-Clause (GPL-3.0-compatible; the upstream notice is kept in the file headers; codec backlog CB-19.1). The test oracles uavs3d and uavs3e (<https://github.com/uavs3/uavs3e>, commit `e1ff0f37a8d67814e1d650f6b49d495c49dde946`, BSD-4-Clause, test tool only) are built by `scripts/ci/install-avs3-oracle.sh` and never linked or shipped |
 | `crates/lcevc/src/bits.rs`, `config.rs`, `entropy.rs`, `residual.rs`, `decoder.rs` (re-expressed in Rust; tables copied) | LCEVCdec 4.3.1, <https://github.com/v-novaltd/LCEVCdec>, tag `4.3.1` (commit `e295d8438ba554bc541fb269baa9cbd567b626a8`), `src/enhancement/src/config_parser.c`, `chunk_parser.c`, `huffman.c`, `entropy.c`, `dequant.c`, `transform.c`, `transform_unit.c`, `decode.c`, `src/common/src/ln_fp_scaled.c`, `src/pipeline_cpu/src/tasks_cpu.cpp`, `src/pixel_processing/src/` (scalar upscale and conversion) | V-Nova International Limited (2014-2026) | BSD-3-Clause-Clear (`crates/lcevc/LICENSE.LCEVCdec`): no patent licence is granted, and LCEVCdec requires the ported files to keep its licence rather than the incorporating project's, so they stay BSD-3-Clause-Clear (GPL-3.0-compatible); codec backlog CB-17.2 |
 | `crates/canopus/src/` (`hq.rs`, `hqx.rs`, `bits.rs` re-expressed in Rust; `tables.rs` generated from the data files) | FFmpeg n7.1.1, <https://ffmpeg.org/>, tag `n7.1.1`, `libavcodec/hq_hqa.c`, `hq_hqadsp.c`, `hq_hqadata.h`, `hqx.c`, `hqxdsp.c`, `hqxvlc.c` | the FFmpeg developers | LGPL-2.1-or-later (`crates/canopus/COPYING.LGPL-2.1`). FFmpeg-derived code, an owner-approved exception to the FFmpeg-only-in-tests rule (owner decision 2026-11-12, CB-8.2; as DV-3, #83) |
 | `crates/theora/src/` (`header.rs`, `frame.rs`, `dsp.rs`, `vlc.rs` re-expressed in Rust; the tables copied) | FFmpeg n7.1.1, <https://ffmpeg.org/>, tag `n7.1.1`, `libavcodec/vp3.c`, `vp3dsp.c`, `vp3data.h`, `xiph.c` | Mike Melanson, Ronald S. Bultje, Michael Niedermayer, Aurelien Jacobs, Sebastian Dröge and the FFmpeg developers | LGPL-2.1-or-later (`crates/theora/COPYING.LGPL-2.1`); CFA4 changes GPL-3.0-or-later. FFmpeg-derived code, an owner-approved exception as above (owner decision 2026-11-14, Matroska supplement, Theora); the format is the open Theora specification (Xiph.Org, BSD-style) |
@@ -207,6 +227,7 @@ that adds them names the source and revision.
 | `crates/qdm2/src/` (the QDM2 decoder, its tables, the MPEG audio synthesis filter and the 32-point DCT re-expressed in Rust) | FFmpeg n7.1.1, <https://ffmpeg.org/>, tag `n7.1.1`, `libavcodec/qdm2.c`, `qdm2data.h`, `qdm2_tablegen.h`, `mpegaudiodsp_template.c`, `dct32_template.c`, `mpegaudiodata.c` | Roberto Togni, Benjamin Larsson, The FFmpeg project | LGPL-2.1-or-later (`crates/qdm2/COPYING.LGPL-2.1`); CFA4 changes GPL-3.0-or-later. FFmpeg-derived code under the owner's general permission for FFmpeg ports (2026-11-14; codec backlog CB-36.2) |
 | `crates/g729/src/` (the decoder re-expressed in Rust; `tables.rs` holds the codebooks as data) | bcg729 1.1.2, <https://github.com/BelledonneCommunications/bcg729>, tag `1.1.2` (commit `fb195811fe630415c9bf433c0c0bebde14314ff2`), `src/decoder.c`, `decodeLSP.c`, `interpolateqLSP.c`, `qLSP2LP.c`, `decodeAdaptativeCodeVector.c`, `decodeFixedCodeVector.c`, `decodeGains.c`, `LPSynthesisFilter.c`, `postFilter.c`, `postProcessing.c`, `cng.c`, `utils.c`, `codebooks.c`, `fixedPointMacros.h`, `g729FixedPointMath.h` | Belledonne Communications SARL (2011-2019) | GPL-3.0-or-later (same licence as CFA4; headers kept in the ported files) |
 | `crates/mace/src/` (the MACE 3:1 and 6:1 decoders re-expressed in Rust; `tables.rs` holds the tables as data) | FFmpeg n9.0.2, <https://ffmpeg.org/>, tag `n9.0.2`, `libavcodec/mace.c` | Francois Revol, Konstantin Shishkov and the FFmpeg developers | LGPL-2.1-or-later (`crates/mace/COPYING.LGPL-2.1`); CFA4 changes GPL-3.0-or-later. FFmpeg-derived code, an owner-approved exception to the FFmpeg-only-in-tests rule (CB-38.1) |
+| `crates/huffyuv/src/lib.rs` (`Decoder::set_slices` and `decode_sliced`: the Huffyuv MT slice layout re-expressed in Rust; the rest of the crate is clean-room) | FFmpeg n9.0.2, <https://ffmpeg.org/>, tag `n9.0.2`, `libavcodec/huffyuvdec.c` | the FFmpeg developers | LGPL-2.1-or-later (`crates/huffyuv/COPYING.LGPL-2.1`); CFA4 changes GPL-3.0-or-later. FFmpeg-derived code, an owner-approved exception to the FFmpeg-only-in-tests rule (CB-36.1) |
 | `crates/truespeech/src/` (the DSP Group TrueSpeech decoder re-expressed in Rust; `tables.rs` holds the tables as data) | FFmpeg n9.0.2, <https://ffmpeg.org/>, tag `n9.0.2`, `libavcodec/truespeech.c`, `truespeech_data.h` | Konstantin Shishkov and the FFmpeg developers | LGPL-2.1-or-later (`crates/truespeech/COPYING.LGPL-2.1`); CFA4 changes GPL-3.0-or-later. FFmpeg-derived code, an owner-approved exception to the FFmpeg-only-in-tests rule (CB-37.2) |
 | `crates/ilbc/src/` (the decoder re-expressed in Rust; `tables.rs` holds the codebooks as data) | WebRTC iLBC as packaged by libilbc v3.0.4, <https://github.com/TimothyGu/libilbc>, tag `v3.0.4` (commit `cd064edf2c6c104a4e1fd87b34fd24cfa6dbe401`), `modules/audio_coding/codecs/ilbc/` (`decode.c`, `decode_residual.c`, `do_plc.c`, `unpack_bits.c` and the helpers named in the file headers), `common_audio/signal_processing/` (filters, dot product, min/max, division) | The WebRTC project authors (2011-2013) | BSD-3-Clause with the WebRTC patent grant (`crates/ilbc/LICENSE.webrtc`, `crates/ilbc/PATENTS.webrtc`; GPL-3.0-compatible) |
 | `crates/amr/src/` (except `lib.rs`; each file names its sources) | opencore-amr 0.1.6, <https://sourceforge.net/projects/opencore-amr/>, tag `v0.1.6`, commit `7dba8c32238418ce0b316a852b2224df586ca896`, `opencore/codecs_v2/audio/gsm_amr/amr_nb/{common,dec}/`, `opencore/codecs_v2/audio/gsm_amr/amr_wb/dec/` and the `amrnb/wrapper.cpp`, `amrwb/wrapper.cpp` frame interfaces (decoders, basic operations, tables) | PacketVideo; 3GPP Organizational Partners (ARIB, ATIS, CCSA, ETSI, TTA, TTC; 3GPP TS 26.073, 26.173) | Apache-2.0 (`crates/amr/LICENSE.opencore-amr`, `crates/amr/NOTICE.opencore-amr`); CFA4 changes GPL-3.0-or-later |
@@ -240,6 +261,7 @@ program's file format, from its documentation and published source:
 | CFA4 path | Format (project, URL, revision) | Licence of the source consulted |
 |---|---|---|
 | `crates/credits/src/cinecred.rs` | Cinecred project: `Styling.toml` keys and values, credits-sheet column and tag names in its languages ([LoadingByte/cinecred](https://github.com/LoadingByte/cinecred), 1.9.1, `24e5083`) | GPL-3.0-or-later |
+| `crates/av2/src/cdf_default.rs` (generated by `scripts/dev/av2-cdf-tables.py`; the default CDF probability tables of spec §9.3 as data) | AV2 Bitstream & Decoding Process Specification v1.0.0 (2026-05-28), <https://github.com/AOMediaCodec/av2-spec>, `v1.0.0/attachments/default_*_cdf.h` (180 files) | The Alliance for Open Media | AOMedia specification licence (<http://aomedia.org/license/>); the use of normative spec tables to implement the spec is covered by plan AV2-04, the patent review (LIC-03) is still open |
 
 ## 6. Dependency checks
 
@@ -250,7 +272,12 @@ program's file format, from its documentation and published source:
 - Security advisories: the same CI step runs `cargo deny check advisories` against the RustSec
   database. A new advisory fails the build; a temporary exception goes into `deny.toml`
   `[advisories].ignore` with a reason, and is removed when the dependency moves.
-- Python: `PySide6`/Qt 6 (LGPL-3.0) is compatible. GPL-only Qt modules are compatible with CFA4's
+- Python: `psycopg` 3 (LGPL-3.0-or-later), the PostgreSQL client of the BacklotHub Python components (ADR 0006,
+  `backlot` extra), is compatible; it is used dynamically and unmodified. `SQLAlchemy` 2 and `Alembic` (both MIT, with their
+  MIT/BSD dependencies `greenlet`, `Mako`, `MarkupSafe`; `typing-extensions` PSF-2.0) are the BacklotHub database layer (G2-02, #52). The
+  country and currency lists of the BacklotHub (`python/cfa4_backlothub/data/`) are generated by
+  `scripts/dev/gen-backlot-data.py` from the Debian `iso-codes` package (LGPL-2.1-or-later) and the IANA `tzdata` `iso3166.tab`
+  (public domain); the source and date are in each file. `PySide6`/Qt 6 (LGPL-3.0) is compatible. GPL-only Qt modules are compatible with CFA4's
   licence as well, but must be listed in `NOTICE` when shipped.
 - Packages must ship `LICENSE`, `LICENSE-MIT`, `LICENSE-APACHE`, `NOTICE` and the licences of
   bundled fonts and programs.
@@ -286,7 +313,7 @@ Current classification:
 
 | Component | Package |
 |---|---|
-| x264, x265 (software H.264 / HEVC encoders, through the FFmpeg backend) | `cfa4-restricted-extras` (FFmpeg 9.0.2 `--restricted` build in `/opt/cfa4/ffmpeg-9.0.2-restricted`; `packaging/linux/package.sh --formats "deb restricted"`, ADR 0005 step 4) |
+| x264, x265 (software H.264 / HEVC encoders, through the FFmpeg backend) | `cfa4-restricted-extras` (CFA4's FFmpeg `--restricted` build in `/opt/cfa4/ffmpeg-VERSION-restricted`; `packaging/linux/package.sh --formats "deb restricted"`, ADR 0005 step 4) |
 | CFA4's own codecs (H.264, HEVC, AAC, AC-3 and the other decoders, the H.264 encoder) | base package (owner decision, 2026-10-25) |
 | H.266/VVC: VVdeC decoder, VVenC and uvg266 encoders, FFmpeg `libvvenc` (all VVC components, decoding included; [CFA4-VVC-PLAN-001](plans/CFA4-VVC-PLAN-001-2026-11-07.md)) | `cfa4-restricted-extras` (owner decision, 2026-11-07) |
 

@@ -151,12 +151,21 @@ struct As02Bundle {
     /// The bundle folder and its name (the folder's name, also the version file's stem).
     dir: String,
     name: String,
+    /// The bundle's own name (the folder's), which differs from `name` for versions 2 and up.
+    bundle: String,
+    /// 0 for the first version, 2 and up for a version appended to an existing bundle.
+    version: u32,
     rate: Rational,
     modified: Timestamp,
     seed: String,
     /// File package UMID and bundle-relative path of the picture component and of every sound one.
     picture: (cfa4_mxf::Umid, String),
     sound: Vec<(cfa4_mxf::Umid, String)>,
+    /// Component sharing between versions: the bundle plan, this version's index in it, which of
+    /// its own runs this export writes and whether more runs follow (#1719).
+    share: Option<(std::sync::Arc<crate::as02_share::Share>, usize)>,
+    run: u32,
+    more_runs: bool,
 }
 
 /// A UUID URN from a seed (version 4 layout).
@@ -310,14 +319,19 @@ impl MxfMux {
             // AS-02 6.2: every essence component is a mono OP1a file under media/, with a file
             // package of its own; the version file ties them together (written in `finish`)
             let dir = settings.path.trim_end_matches(['/', '\\']).to_string();
-            let name =
+            let bundle =
                 std::path::Path::new(&dir).file_name().map(|n| n.to_string_lossy().to_string()).filter(|n| !n.is_empty()).unwrap_or_else(|| "bundle".into());
+            let version = settings.mxf_as02_version;
+            let name = if version >= 2 { format!("{bundle}_v{version}") } else { bundle.clone() };
             std::fs::create_dir_all(format!("{dir}/media")).map_err(io)?;
+            let run = settings.as02_run;
+            // the first run keeps the plain names; later runs of a version are numbered pieces
+            let piece = if run == 0 { String::new() } else { format!("_p{}", run + 1) };
             let component = |tag: &str| {
-                let rel = format!("media/{name}_{tag}.mxf");
+                let rel = format!("media/{name}{piece}_{tag}.mxf");
                 let ids = PackageIds {
-                    material: cfa4_mxf::Umid::from_seed(format!("material:{seed}:{tag}").as_bytes()),
-                    file: cfa4_mxf::Umid::from_seed(format!("file:{seed}:{tag}").as_bytes()),
+                    material: cfa4_mxf::Umid::from_seed(format!("material:{seed}:{run}:{tag}").as_bytes()),
+                    file: cfa4_mxf::Umid::from_seed(format!("file:{seed}:{run}:{tag}").as_bytes()),
                     material_name: format!("{} {tag}", s.name),
                     file_name: format!("{} {tag}", s.name),
                 };
@@ -340,7 +354,21 @@ impl MxfMux {
                     sound.push((ids.file, rel));
                 }
             }
-            as02 = Some(As02Bundle { dir, name, rate, modified: cfg.modified, seed: seed.clone(), picture, sound });
+            let share = settings.as02_share.0.clone().map(|sh| (sh, version.max(1) as usize - 1));
+            as02 = Some(As02Bundle {
+                dir,
+                name,
+                bundle,
+                version,
+                rate,
+                modified: cfg.modified,
+                seed: seed.clone(),
+                picture,
+                sound,
+                share,
+                run,
+                more_runs: settings.as02_more_runs,
+            });
         } else if atom && let Some((sr, ch)) = s.audio {
             for (k, path) in opatom_audio_paths(&settings.path, ch).into_iter().enumerate() {
                 // Avid style: the files share the material package; each has its own file package.
@@ -433,7 +461,7 @@ impl MxfMux {
     /// Finish every file; returns (total bytes, extra files written besides `settings.path`).
     pub fn finish(self, settings: &ExportSettings) -> Result<(u64, Vec<String>)> {
         if let Some(b) = self.as02 {
-            return finish_bundle(b, self.video, self.audio, settings);
+            return finish_bundle(b, Some(self.video), self.audio, settings);
         }
         let mut total = self.video.finish().map_err(io)?.finish_path(settings, &settings.path)?;
         let mut extra = Vec::new();
@@ -445,20 +473,59 @@ impl MxfMux {
     }
 }
 
+/// The AS-02 media integrity check (9.2.5) of a whole file: MD5 over every byte, in hex.
+fn md5_mic(path: &str) -> Result<cfa4_mxf::as02::Mic> {
+    use std::io::Read;
+    let mut f = std::fs::File::open(path).map_err(|e| ExportError::Io(format!("{path}: {e}")))?;
+    let mut h = cfa4_flac::Md5::default();
+    let mut buf = vec![0u8; 1 << 20];
+    loop {
+        let n = f.read(&mut buf).map_err(|e| ExportError::Io(format!("{path}: {e}")))?;
+        if n == 0 {
+            break;
+        }
+        h.update(&buf[..n]);
+    }
+    let value = h.digest().iter().map(|b| format!("{b:02x}")).collect();
+    Ok(cfa4_mxf::as02::Mic { kind: "md5".into(), scope: "entire_file".into(), value })
+}
+
+/// The file descriptor of a finished component file, for the version file's copy of its package.
+fn descriptor_of(path: &str, umid: &cfa4_mxf::Umid) -> Result<Vec<cfa4_mxf::as02_version::CopiedSet>> {
+    let bytes = std::fs::read(path).map_err(|e| ExportError::Io(format!("{path}: {e}")))?;
+    cfa4_mxf::as02_version::copy_descriptor(&bytes, Some(umid.0)).map_err(|e| ExportError::Encode(format!("AS-02 component {path}: {e}")))
+}
+
 /// Finish the component files of an AS-02 bundle, then write the version file (the material
 /// package that cuts them together, OP1b with external essence) and the manifest.
-fn finish_bundle(b: As02Bundle, video: MxfWriter<Out>, audio: Vec<(String, MxfWriter<Out>)>, settings: &ExportSettings) -> Result<(u64, Vec<String>)> {
+fn finish_bundle(b: As02Bundle, video: Option<MxfWriter<Out>>, audio: Vec<(String, MxfWriter<Out>)>, settings: &ExportSettings) -> Result<(u64, Vec<String>)> {
     use cfa4_mxf::as02::{File, Manifest, Role, file_id_of_umid};
     let mut files: Vec<File> = vec![File { id: String::new(), role: Role::Folder, size: 0, path: "media".into(), mic: None, annotations: Vec::new() }];
     let mut extra = Vec::new();
     let mut total = 0u64;
+    // the component files this export wrote: (channel: 0 = picture, 1.. = sound, component)
+    let mut written: Vec<(usize, crate::as02_share::Comp)> = Vec::new();
+    let mut finish = |chan: usize, w: MxfWriter<Out>, path: String, umid: cfa4_mxf::Umid, rel: &str| -> Result<()> {
+        let units = w.edit_units();
+        let size = w.finish().map_err(io)?.finish_path(settings, &path)?;
+        total += size;
+        let mic = md5_mic(&path)?;
+        files.push(File { id: file_id_of_umid(&umid.0), role: Role::EssenceComponent, size, path: rel.to_string(), mic: Some(mic), annotations: Vec::new() });
+        let descriptor = descriptor_of(&path, &umid)?;
+        written.push((chan, crate::as02_share::Comp { umid, rel: rel.to_string(), units, descriptor }));
+        extra.push(path);
+        Ok(())
+    };
+    if let Some(video) = video {
+        finish(0, video, format!("{}/{}", b.dir, b.picture.1), b.picture.0, &b.picture.1)?;
+    }
+    for (k, ((path, w), (umid, rel))) in audio.into_iter().zip(&b.sound).enumerate() {
+        finish(k + 1, w, path, *umid, rel)?;
+    }
     let mut components = Vec::new();
     let mut tracks: Vec<VersionTrackSpec> = Vec::new();
-    let mut add = |kind: VersionTrackKind, umid: cfa4_mxf::Umid, rel: &str, units: u64, size: u64| {
-        let duration = i64::try_from(units).unwrap_or(i64::MAX);
-        files.push(File { id: file_id_of_umid(&umid.0), role: Role::EssenceComponent, size, path: rel.to_string(), mic: None, annotations: Vec::new() });
-        components.push(ComponentSpec { umid, kind, edit_rate: b.rate, duration, track_id: 2, locator: rel.to_string() });
-        let n = tracks.len() as u32;
+    let mut track = |kind: VersionTrackKind, n: usize, clips: Vec<VersionClipSpec>| {
+        let n = n as u32;
         tracks.push(VersionTrackSpec {
             kind,
             track_id: 10 + n,
@@ -468,21 +535,53 @@ fn finish_bundle(b: As02Bundle, video: MxfWriter<Out>, audio: Vec<(String, MxfWr
                 VersionTrackKind::Sound => format!("A{n}"),
             },
             edit_rate: b.rate,
-            clips: vec![VersionClipSpec { package: Some(umid), source_track: 2, start: 0, duration }],
+            clips,
         });
     };
-    let units = video.edit_units();
-    let vpath = format!("{}/{}", b.dir, b.picture.1);
-    let size = video.finish().map_err(io)?.finish_path(settings, &vpath)?;
-    total += size;
-    add(VersionTrackKind::Picture, b.picture.0, &b.picture.1, units, size);
-    extra.push(vpath);
-    for ((path, w), (umid, rel)) in audio.into_iter().zip(&b.sound) {
-        let units = w.edit_units();
-        let size = w.finish().map_err(io)?.finish_path(settings, &path)?;
-        total += size;
-        add(VersionTrackKind::Sound, *umid, rel, units, size);
-        extra.push(path);
+    let spec = |kind: VersionTrackKind, c: &crate::as02_share::Comp| ComponentSpec {
+        umid: c.umid,
+        kind,
+        edit_rate: b.rate,
+        duration: i64::try_from(c.units).unwrap_or(i64::MAX),
+        track_id: 2,
+        locator: c.rel.clone(),
+        descriptor: c.descriptor.clone(),
+    };
+    let kind_of = |chan: usize| if chan == 0 { VersionTrackKind::Picture } else { VersionTrackKind::Sound };
+    if let Some((share, index)) = &b.share {
+        // component sharing: the runs of this version are in the registry beside those of the
+        // versions before it; the timeline of this version cuts them together
+        let mut reg = share.registry.lock().unwrap_or_else(|e| e.into_inner());
+        for (chan, c) in written {
+            reg.comps.insert((*index, b.run, chan), c);
+        }
+        reg.files.extend(files.drain(1..));
+        if b.more_runs {
+            return Ok((total, extra));
+        }
+        files.extend(std::mem::take(&mut reg.files));
+        let pieces = &share.plan.versions[*index].pieces;
+        let mut used = std::collections::BTreeSet::new();
+        for chan in 0..=b.sound.len() {
+            let mut clips = Vec::new();
+            for p in pieces {
+                let c = reg.comps.get(&(p.version, p.run, chan)).ok_or_else(|| ExportError::Encode("AS-02 bundle: a shared component is missing".into()))?;
+                if p.offset < 0 || u64::try_from(p.offset + p.len).unwrap_or(u64::MAX) > c.units {
+                    return Err(ExportError::Encode(format!("AS-02 bundle: {} is shorter than the cut that uses it", c.rel)));
+                }
+                if used.insert((p.version, p.run, chan)) {
+                    components.push(spec(kind_of(chan), c));
+                }
+                clips.push(VersionClipSpec { package: Some(c.umid), source_track: 2, start: p.offset, duration: p.len });
+            }
+            track(kind_of(chan), chan, clips);
+        }
+    } else {
+        for (chan, c) in written {
+            let units = i64::try_from(c.units).unwrap_or(i64::MAX);
+            components.push(spec(kind_of(chan), &c));
+            track(kind_of(chan), chan, vec![VersionClipSpec { package: Some(c.umid), source_track: 2, start: 0, duration: units }]);
+        }
     }
     let material = cfa4_mxf::Umid::from_seed(format!("version:{}", b.seed).as_bytes());
     let mut v = VersionConfig::new(material, &b.name);
@@ -493,51 +592,97 @@ fn finish_bundle(b: As02Bundle, video: MxfWriter<Out>, audio: Vec<(String, MxfWr
     let version_rel = format!("{}.mxf", b.name);
     let version_path = format!("{}/{version_rel}", b.dir);
     total += bytes.len() as u64;
+    std::fs::write(&version_path, &bytes).map_err(|e| ExportError::Io(format!("{version_path}: {e}")))?;
     files.insert(
         0,
-        File { id: file_id_of_umid(&material.0), role: Role::Version, size: bytes.len() as u64, path: version_rel, mic: None, annotations: Vec::new() },
-    );
-    std::fs::write(&version_path, &bytes).map_err(|e| ExportError::Io(format!("{version_path}: {e}")))?;
-    // the shim file (section 10): the bundle follows the general provisions, mono essence OP1a
-    // components and a version file, with no named shim
-    let shim = cfa4_mxf::as02::Shim {
-        name: "CFA4 general AS-02 bundle".into(),
-        id: None,
-        annotations: vec!["Mono-essence OP1a components with an OP1b version file; no further constraints.".into()],
-    }
-    .to_xml();
-    let shim_path = format!("{}/shim.xml", b.dir);
-    std::fs::write(&shim_path, shim.as_bytes()).map_err(|e| ExportError::Io(format!("{shim_path}: {e}")))?;
-    total += shim.len() as u64;
-    files.insert(
-        1,
         File {
-            id: uuid_urn(&format!("shim:{}", b.seed)),
-            role: Role::Shim,
-            size: shim.len() as u64,
-            path: "shim.xml".into(),
-            mic: None,
+            id: file_id_of_umid(&material.0),
+            role: Role::Version,
+            size: bytes.len() as u64,
+            path: version_rel,
+            mic: Some(md5_mic(&version_path)?),
             annotations: Vec::new(),
         },
     );
-    extra.push(shim_path);
-    let manifest = Manifest {
-        bundle_name: b.name.clone(),
-        bundle_id: uuid_urn(&format!("bundle:{}", b.seed)),
-        creator: "CFA4".into(),
-        creation_date: xs_date_time(b.modified),
-        annotations: Vec::new(),
-        files,
+    if b.version < 2 {
+        // the shim file (section 10): the bundle follows the general provisions, mono essence OP1a
+        // components and a version file, with no named shim
+        let shim = cfa4_mxf::as02::Shim {
+            name: "CFA4 general AS-02 bundle".into(),
+            id: None,
+            annotations: vec!["Mono-essence OP1a components with an OP1b version file; no further constraints.".into()],
+        }
+        .to_xml();
+        let shim_path = format!("{}/shim.xml", b.dir);
+        std::fs::write(&shim_path, shim.as_bytes()).map_err(|e| ExportError::Io(format!("{shim_path}: {e}")))?;
+        total += shim.len() as u64;
+        files.insert(
+            1,
+            File {
+                id: uuid_urn(&format!("shim:{}", b.seed)),
+                role: Role::Shim,
+                size: shim.len() as u64,
+                path: "shim.xml".into(),
+                mic: Some(md5_mic(&shim_path)?),
+                annotations: Vec::new(),
+            },
+        );
+        extra.push(shim_path);
+    }
+    let manifest_path = format!("{}/manifest.xml", b.dir);
+    let manifest = if b.version >= 2 {
+        // a further version: its files join the manifest of the bundle written before
+        let old = std::fs::read_to_string(&manifest_path).map_err(|e| ExportError::Io(format!("{manifest_path}: {e}")))?;
+        let mut m = Manifest::parse(&old).map_err(|e| ExportError::Encode(format!("AS-02 bundle: {manifest_path}: {e}")))?;
+        m.files.extend(files.into_iter().filter(|f| f.role != Role::Folder));
+        m
+    } else {
+        Manifest {
+            bundle_name: b.bundle.clone(),
+            bundle_id: uuid_urn(&format!("bundle:{}", b.seed)),
+            creator: "CFA4".into(),
+            creation_date: xs_date_time(b.modified),
+            annotations: Vec::new(),
+            files,
+        }
     };
-    let problems = manifest.check_simple();
+    // one version is a simple bundle (4.3.8); with more versions only the general rules apply
+    let problems = if b.version >= 2 { manifest.check() } else { manifest.check_simple() };
     if !problems.is_empty() {
         return Err(ExportError::Encode(format!("AS-02 bundle: {}", problems.join("; "))));
     }
     let xml = manifest.to_xml();
-    let manifest_path = format!("{}/manifest.xml", b.dir);
     std::fs::write(&manifest_path, xml.as_bytes()).map_err(|e| ExportError::Io(format!("{manifest_path}: {e}")))?;
     total += xml.len() as u64;
     extra.push(version_path);
     extra.push(manifest_path);
     Ok((total, extra))
+}
+
+/// Finish a version of a shared-component bundle that encodes nothing itself (every frame comes
+/// from earlier versions): write its version file and add it to the manifest.
+pub(crate) fn finish_shared_version(settings: &ExportSettings, rate: FrameRate, channels: usize) -> Result<(u64, Vec<String>)> {
+    let share = settings.as02_share.0.clone().ok_or_else(|| ExportError::Encode("AS-02 bundle: no sharing plan".into()))?;
+    let now = web_time::SystemTime::now().duration_since(web_time::UNIX_EPOCH).map(|d| d.as_nanos()).unwrap_or(0);
+    let seed = format!("{}|{now}", settings.path);
+    let dir = settings.path.trim_end_matches(['/', '\\']).to_string();
+    let bundle = std::path::Path::new(&dir).file_name().map(|n| n.to_string_lossy().to_string()).filter(|n| !n.is_empty()).unwrap_or_else(|| "bundle".into());
+    let version = settings.mxf_as02_version;
+    let name = if version >= 2 { format!("{bundle}_v{version}") } else { bundle.clone() };
+    let none = cfa4_mxf::Umid::from_seed(b"unused");
+    let b = As02Bundle {
+        dir,
+        name,
+        bundle,
+        version,
+        rate: Rational::new(rate.num as i32, rate.den as i32),
+        modified: Timestamp::from_unix((now / 1_000_000_000) as i64),
+        seed,
+        picture: (none, String::new()),
+        sound: vec![(none, String::new()); channels],
+        share: Some((share, version.max(1) as usize - 1)),
+        run: 0,
+        more_runs: false,
+    };
+    finish_bundle(b, None, Vec::new(), settings)
 }
