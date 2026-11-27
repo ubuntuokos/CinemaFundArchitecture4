@@ -45,6 +45,22 @@ def make_tar(files: dict[str, bytes], extra: list[tarfile.TarInfo] | None = None
     return buf.getvalue()
 
 
+class SignerTests(unittest.TestCase):
+    def test_allowed_signers_matches_the_pinned_fingerprint(self) -> None:
+        import base64
+
+        pins = read_pins(PINS)
+        self.assertEqual(pins["CFA4_USD_SIGNATURE_VERIFIED"], "tofu")
+        signers = ROOT / pins["CFA4_USD_ALLOWED_SIGNERS"]
+        lines = [ln for ln in signers.read_text(encoding="utf-8").splitlines() if ln and not ln.startswith("#")]
+        self.assertEqual(len(lines), 1)
+        fields = lines[0].split()
+        self.assertEqual(fields[1:3], ['namespaces="git"', "ssh-ed25519"])
+        blob = base64.b64decode(fields[3])
+        digest = base64.b64encode(hashlib.sha256(blob).digest()).decode().rstrip("=")
+        self.assertEqual("SHA256:" + digest, pins["CFA4_USD_SIGNING_KEY_SHA256"])
+
+
 class PinFileTests(unittest.TestCase):
     def test_every_source_is_fully_pinned(self) -> None:
         pins = read_pins(PINS)
@@ -54,7 +70,7 @@ class PinFileTests(unittest.TestCase):
                 self.assertRegex(pins[f"CFA4_{name}_SOURCE_SHA256"], r"^[0-9a-f]{64}$")
                 self.assertRegex(pins[f"CFA4_{name}_LICENSE_SHA256"], r"^[0-9a-f]{64}$")
                 self.assertRegex(pins[f"CFA4_{name}_GIT_URL"], r"^https://[A-Za-z0-9._/-]+$")
-                self.assertIn(pins[f"CFA4_{name}_SIGNATURE_VERIFIED"], ("yes", "no"))
+                self.assertIn(pins[f"CFA4_{name}_SIGNATURE_VERIFIED"], ("yes", "tofu", "no"))
                 self.assertTrue(pins[f"CFA4_{name}_VERSION"])
 
     def test_lines_are_plain_key_value(self) -> None:
