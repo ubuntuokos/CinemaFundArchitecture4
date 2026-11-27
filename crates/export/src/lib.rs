@@ -1298,6 +1298,9 @@ pub struct MpegVideoInfo {
     pub closed_gop: bool,
     /// The bit rate the sequence header signals (bit/s).
     pub bit_rate: u64,
+    /// The vbv_buffer_size the sequence header signals (bits): the decoder's EB in the T-STD,
+    /// the P-STD buffer of a program stream.
+    pub vbv_buffer_bits: u64,
 }
 
 /// Audio encoder (AAC) plugged in by codec crates; PCM is built in.
@@ -1679,6 +1682,7 @@ impl VideoEncoder for Mpeg2Encoder {
             b_frames: self.gop.1,
             closed_gop: self.gop.2,
             bit_rate: self.enc.signalled_bit_rate(),
+            vbv_buffer_bits: self.enc.signalled_buffer(),
         })
     }
     fn encode(&mut self, f: &EncoderFrame<'_>) -> Result<Vec<EncodedPacket>> {

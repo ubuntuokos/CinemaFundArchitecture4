@@ -613,6 +613,10 @@ pub(super) fn check_arrival(out: &File, size: u64, pids: &[u16]) -> Result<(), C
     scan(&mut |i, p| {
         let pid = u16::from(p[1] & 0x1F) << 8 | u16::from(p[2]);
         let Some(k) = pids.iter().position(|&x| x == pid) else { return Ok(()) };
+        // a PCR-only packet carries no PES bytes: nothing is due by its arrival
+        if p[3] & 0x10 == 0 {
+            return Ok(());
+        }
         if p[1] & 0x40 != 0 {
             let start = 4 + adaptation(p).map_or(0, |af| 1 + af.len());
             let pes = p.get(start..).unwrap_or(&[]);

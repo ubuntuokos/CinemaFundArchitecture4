@@ -64,6 +64,15 @@ pub(crate) struct AdtsHeader {
 }
 
 impl AdtsHeader {
+    /// Full-bandwidth channels of the channel configuration (§2.4.2.3 counts these: the LFE not).
+    pub(crate) fn channels(&self) -> u32 {
+        match self.channel_config {
+            7 => 7,
+            6 => 5,
+            c => u32::from(c),
+        }
+    }
+
     /// Read the object type, sampling frequency index and channel configuration from an
     /// AudioSpecificConfig; ADTS can carry only object types 1–4 with an indexed rate and a
     /// channel configuration of 1–7.

@@ -624,3 +624,163 @@ fn dvd_vob_has_whole_sectors_and_a_navigation_pack_per_gop() {
     assert_eq!((r.overflows, r.underflows), (0, 0));
     assert!(Muxer::new_dvd(Vec::new(), &[MuxCodec::Mpeg2Video, MuxCodec::AacAdts]).is_err());
 }
+
+/// What a T-STD check found in a BDAV transport stream.
+#[derive(Debug, Default)]
+struct TstdReport {
+    tb_overflows: usize,
+    /// Audio main buffer or video EB over their size.
+    overflows: usize,
+    mb_overflows: usize,
+    /// Units whose last byte reached the buffer after their decode time.
+    underflows: usize,
+    /// Largest occupancy of the main buffer / EB relative to its size.
+    peak: f64,
+    /// Longest gap between PCRs on the PCR PID (27 MHz).
+    pcr_gap: i64,
+}
+
+/// Replay a BDAV `.m2ts` through the T-STD (H.222.0 §2.4.2.3), reading only the bytes: a packet
+/// has arrived `192` bytes after its arrival time stamp (`rate` bytes per second); TB is drained
+/// at `rx` bit/s, its bytes then are in B (`audio`: size) or MB and, leaking at Rbx, EB (`video`).
+/// Returns the report for the stream with `pid`.
+fn tstd_check(data: &[u8], rate: u64, pid: u16, rx: u64, audio: Option<usize>, video: Option<VideoBuffers>) -> TstdReport {
+    let ticks = |bytes: usize, bps: u64| (bytes as i128 * 8 * 27_000_000 / bps as i128) as i64;
+    let mut report = TstdReport::default();
+    let (mut tb_free, mut mb_free) = (0i64, 0i64);
+    let mut ats_wrap = 0i64;
+    let mut last_ats = 0i64;
+    // (removal, bytes) in B / EB; (leaves MB, bytes)
+    let mut held: Vec<(i64, usize)> = Vec::new();
+    let mut mb: Vec<(i64, usize)> = Vec::new();
+    // per unit: removal and the arrival of its last byte in B / EB
+    let mut unit_removal = 0i64;
+    let mut last_arrival: std::collections::HashMap<i64, i64> = std::collections::HashMap::new();
+    let mut last_pcr: Option<i64> = None;
+    for pk in data.chunks_exact(192) {
+        let raw = i64::from(u32::from_be_bytes([pk[0], pk[1], pk[2], pk[3]]) & 0x3FFF_FFFF);
+        if raw < last_ats - (1 << 29) {
+            ats_wrap += 1 << 30;
+        }
+        last_ats = raw;
+        let start = ats_wrap + raw;
+        let p = &pk[4..];
+        assert_eq!(p[0], 0x47);
+        if u16::from(p[1] & 0x1F) << 8 | u16::from(p[2]) != pid {
+            continue;
+        }
+        let arrived = start + ticks(192, rate * 8);
+        let (af, mut at) = if p[3] & 0x20 != 0 { (true, 5 + usize::from(p[4])) } else { (false, 4) };
+        if af && p[4] > 6 && p[5] & 0x10 != 0 {
+            let base = i64::from(p[6]) << 25 | i64::from(p[7]) << 17 | i64::from(p[8]) << 9 | i64::from(p[9]) << 1 | i64::from(p[10] >> 7);
+            let t = base * 300 + (i64::from(p[10] & 1) << 8 | i64::from(p[11]));
+            if let Some(l) = last_pcr {
+                report.pcr_gap = report.pcr_gap.max(t - l);
+            }
+            last_pcr = Some(t);
+        }
+        // TB: whole packets, 512 bytes
+        if (tb_free - arrived).max(0) * rx as i64 / 27_000_000 / 8 + 188 > 512 + 1 {
+            report.tb_overflows += 1;
+        }
+        let left = arrived.max(tb_free) + ticks(188, rx);
+        tb_free = left;
+        if p[3] & 0x10 == 0 || at >= 188 {
+            continue;
+        }
+        if p[1] & 0x40 != 0 {
+            // a PES packet starts: its decode time (video DTS, audio PTS)
+            assert_eq!(p[at..at + 3], [0, 0, 1]);
+            let flags = p[at + 7];
+            let ts = |o: usize| {
+                let d = &p[at + o..at + o + 5];
+                (i64::from(d[0] >> 1 & 7) << 30) | (i64::from(d[1]) << 22) | (i64::from(d[2] >> 1) << 15) | (i64::from(d[3]) << 7) | i64::from(d[4] >> 1)
+            };
+            unit_removal = if flags & 0x40 != 0 { ts(14) } else { ts(9) } * 300;
+        }
+        let bytes = 188 - at;
+        at = 0;
+        let _ = at;
+        let (arrival, size) = match (&video, audio) {
+            (Some(v), _) => {
+                mb.retain(|e| e.0 > left);
+                if mb.iter().map(|e| e.1).sum::<usize>() + bytes > v.mbs {
+                    report.mb_overflows += 1;
+                }
+                let mut in_eb = left.max(mb_free) + ticks(bytes, v.rbx);
+                loop {
+                    let used: usize = held.iter().filter(|e| e.0 > in_eb).map(|e| e.1).sum();
+                    if used + bytes <= v.ebs {
+                        break;
+                    }
+                    match held.iter().map(|e| e.0).filter(|&t| t > in_eb && t < unit_removal).min() {
+                        Some(t) => in_eb = t,
+                        None => break,
+                    }
+                }
+                mb.push((in_eb, bytes));
+                mb_free = in_eb;
+                (in_eb, v.ebs)
+            }
+            (None, Some(bs)) => (left, bs),
+            (None, None) => continue,
+        };
+        held.retain(|e| e.0 > arrival);
+        held.push((unit_removal, bytes));
+        let used: usize = held.iter().map(|e| e.1).sum();
+        report.peak = report.peak.max(used as f64 / size as f64);
+        if used > size {
+            report.overflows += 1;
+        }
+        let e = last_arrival.entry(unit_removal).or_insert(0);
+        *e = (*e).max(arrival);
+    }
+    report.underflows = last_arrival.iter().filter(|(rem, arrival)| *arrival > *rem).count();
+    report
+}
+
+/// 100 pictures of about 24 KB (I pictures 60 KB, ≈ 5 Mbit/s) and AAC beside them, in a BDAV
+/// stream whose decoder has the Main Level buffers.
+fn t_std_stream(video_buffers: Option<VideoBuffers>) -> Vec<u8> {
+    let mut m = Muxer::new(Vec::new(), MuxFormat::M2ts, &[MuxCodec::Mpeg2Video, MuxCodec::AacAdts], 12_000_000).unwrap();
+    if let Some(b) = video_buffers {
+        m.set_video_buffers(b);
+    }
+    let mut a = 0i64;
+    for k in 0..100i64 {
+        let key = k % 12 == 0;
+        let p = mpeg2_frame(if key { 1 } else { 2 }, (k % 5) as u16, false, if key { 60_000 } else { 24_000 });
+        m.write(0, &p, k * FRAME, None, key).unwrap();
+        while -1920 + a * 1920 < (k + 1) * FRAME {
+            m.write(1, &adts_frame(a as u8), -1920 + a * 1920, None, true).unwrap();
+            a += 1;
+        }
+    }
+    m.finish().unwrap()
+}
+
+#[test]
+fn transport_stream_keeps_the_t_std_buffers() {
+    let vb = VideoBuffers::mpeg2(0x48, 1_835_008, 6_000_000).unwrap();
+    // MP@ML: Rx 18 Mbit/s, MB 12.5 KB, EB 224 KB
+    assert_eq!((vb.rx, vb.rbx, vb.ebs), (18_000_000, 15_000_000, 229_376));
+    assert_eq!(vb.mbs, (15_000_000 * 4 / 1000 + 15_000_000 / 750) / 8);
+    let data = t_std_stream(Some(vb));
+    let audio = tstd_check(&data, 12_000_000 / 8, 0x101, 2_000_000, Some(3584), None);
+    assert_eq!((audio.tb_overflows, audio.overflows, audio.underflows), (0, 0, 0), "{audio:?}");
+    let video = tstd_check(&data, 12_000_000 / 8, 0x100, vb.rx, None, Some(vb));
+    assert_eq!((video.tb_overflows, video.mb_overflows, video.overflows, video.underflows), (0, 0, 0, 0), "{video:?}");
+    // the buffers are really used, and the PCR never pauses long
+    assert!(audio.peak > 0.4 && video.peak > 0.3, "{audio:?} {video:?}");
+    assert!(video.pcr_gap <= 40 * 27_000 + 27_000, "PCR gap {} ms", video.pcr_gap / 27_000);
+    // the same units come back out
+    let f = open(&data).unwrap();
+    assert!(f.warnings.is_empty(), "{:?}", f.warnings);
+    let v = f.find(Kind::Video, |c| *c == Codec::Mpeg2Video).unwrap();
+    assert_eq!(f.streams[v].units.len(), 100);
+    // the audio buffers are kept without video parameters too (with the audio model removed, this
+    // stream overfills B 154 times)
+    let loose = t_std_stream(None);
+    let audio = tstd_check(&loose, 12_000_000 / 8, 0x101, 2_000_000, Some(3584), None);
+    assert_eq!((audio.tb_overflows, audio.overflows), (0, 0), "audio is modelled whatever the video: {audio:?}");
+}

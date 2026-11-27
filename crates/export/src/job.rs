@@ -638,7 +638,7 @@ impl Exporter {
             } else {
                 None
             };
-            self.mpeg = Some(MpegMux::new(&self.settings, self.pipe.rate, audio, crate::mpeg_out::mux_rate(peak, audio_bps), dvd)?);
+            self.mpeg = Some(MpegMux::new(&self.settings, self.pipe.rate, audio, crate::mpeg_out::mux_rate(peak, audio_bps), dvd, self.venc.mpeg_video())?);
             return Ok(());
         }
         if self.settings.format.is_mxf() {
