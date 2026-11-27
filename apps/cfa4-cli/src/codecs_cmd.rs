@@ -206,6 +206,7 @@ const NOT_CODECS: &[&str] = &[
     "cinema-pkg",
     "codecs",
     "color",
+    "ingest",
     "credits",
     "dcp",
     "dcp-inspect",
