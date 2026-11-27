@@ -340,6 +340,10 @@ dependencies = [
 ]
 
 [[package]]
+name = "cfa4-expr"
+version = "0.10.0"
+
+[[package]]
 name = "cfa4-ffv1"
 version = "0.10.0"
 dependencies = [
@@ -396,6 +400,7 @@ dependencies = [
  "cfa4-dts",
  "cfa4-dv",
  "cfa4-evc",
+ "cfa4-expr",
  "cfa4-ffv1",
  "cfa4-flic",
  "cfa4-g729",

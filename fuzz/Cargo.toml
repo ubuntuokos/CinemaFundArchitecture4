@@ -95,6 +95,7 @@ cfa4-ilbc = { path = "../crates/ilbc" }
 cfa4-musepack = { path = "../crates/musepack" }
 cfa4-shorten = { path = "../crates/shorten" }
 cfa4-adx = { path = "../crates/adx" }
+cfa4-expr = { path = "../crates/expr" }
 cfa4-acm = { path = "../crates/acm" }
 cfa4-roq = { path = "../crates/roq" }
 cfa4-mve = { path = "../crates/mve" }
@@ -657,6 +658,13 @@ bench = false
 [[bin]]
 name = "smacker"
 path = "fuzz_targets/smacker.rs"
+test = false
+doc = false
+bench = false
+
+[[bin]]
+name = "expr"
+path = "fuzz_targets/expr.rs"
 test = false
 doc = false
 bench = false
