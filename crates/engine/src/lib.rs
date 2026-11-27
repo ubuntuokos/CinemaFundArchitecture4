@@ -67,6 +67,7 @@ pub mod perf;
 pub mod presets;
 pub mod previews;
 pub mod program_overlay;
+pub mod project_archive;
 pub mod project_manager;
 pub mod project_panel;
 pub mod project_tools;
@@ -1505,6 +1506,8 @@ mod place_items_tests;
 mod presets_tests;
 #[cfg(test)]
 mod previews_tests;
+#[cfg(test)]
+mod project_archive_tests;
 #[cfg(test)]
 mod project_manager_tests;
 #[cfg(test)]

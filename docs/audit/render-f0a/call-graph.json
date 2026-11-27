@@ -3066,6 +3066,13 @@
   {
    "class": "other",
    "crate": "cfa4-engine",
+   "kind": "enum",
+   "module": "project_archive.rs",
+   "name": "Format"
+  },
+  {
+   "class": "other",
+   "crate": "cfa4-engine",
    "kind": "struct",
    "module": "project_panel.rs",
    "name": "Card"
