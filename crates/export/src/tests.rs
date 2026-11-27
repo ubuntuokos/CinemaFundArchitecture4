@@ -762,3 +762,28 @@ fn h264_input_converted_ahead_encodes_to_the_same_packets() {
     assert!(!plain.is_empty());
     assert!(plain == encode_all(true), "converting ahead changed the packets");
 }
+
+#[test]
+fn a_paused_job_waits_until_it_is_resumed_or_cancelled() {
+    // KDN-61: `wait_while_paused` returns at once when not paused, holds while paused, and a cancel ends the hold
+    use std::sync::Arc;
+    use std::sync::atomic::Ordering;
+    let p = Arc::new(Progress::default());
+    p.wait_while_paused();
+    p.pause.store(true, Ordering::Relaxed);
+    let (q, done) = (p.clone(), Arc::new(std::sync::atomic::AtomicBool::new(false)));
+    let flag = done.clone();
+    let h = std::thread::spawn(move || {
+        q.wait_while_paused();
+        flag.store(true, Ordering::Relaxed);
+    });
+    std::thread::sleep(std::time::Duration::from_millis(150));
+    assert!(!done.load(Ordering::Relaxed), "still held while paused");
+    p.pause.store(false, Ordering::Relaxed);
+    assert!(h.join().is_ok());
+    assert!(done.load(Ordering::Relaxed), "released by resume");
+    // paused, then cancelled: the wait must end so the job can stop
+    p.pause.store(true, Ordering::Relaxed);
+    p.cancel.store(true, Ordering::Relaxed);
+    p.wait_while_paused();
+}

@@ -894,6 +894,7 @@ fn item_json(s: &Session, it: &QueueItem) -> Value {
         "offlineMedia": it.job.map_or_else(|| json!([]), |j| offline_media_json(s, j)),
         "qc": crate::qc::item_json(&it.qc),
         "dcpValidation": crate::dcp_export::item_json(&it.dcp),
+        "paused": job.is_some_and(|j| j.progress.pause.load(Ordering::Relaxed)) && it.status == QueueStatus::Encoding,
         "import": it.import_when_done,
         "imported": it.imported,
     })
@@ -1257,6 +1258,40 @@ fn queue_cancel(s: &mut Session, p: &Value) -> Result<Value> {
         }
     }
     Ok(json!({"items": queue_list_json(s)}))
+}
+
+/// Pause or resume the encoding items (KDN-61): the one named by `id`, or every encoding one.
+fn set_paused(s: &mut Session, p: &Value, paused: bool) -> Result<Value> {
+    let cmd = if paused { "export.queue.pause" } else { "export.queue.resume" };
+    let only = if p.get("id").is_some() { Some(queue_item_p(s, p, cmd)?) } else { None };
+    let mut changed = Vec::new();
+    for (i, it) in s.export_queue.items.iter().enumerate() {
+        if only.is_some_and(|o| o != i) || it.status != QueueStatus::Encoding {
+            continue;
+        }
+        if paused && !cfa4_export::stepped(it.settings.format) {
+            if only.is_some() {
+                return Err(bad(cmd, format!("{} export cannot be paused (it is not written batch by batch)", it.settings.format.label())));
+            }
+            continue;
+        }
+        if let Some(j) = it.job.and_then(|id| s.jobs.iter().find(|j| j.id == id)) {
+            j.progress.pause.store(paused, Ordering::Relaxed);
+            changed.push(it.id);
+        }
+    }
+    if only.is_some() && changed.is_empty() && paused {
+        return Err(bad(cmd, "only an export that is encoding can be paused"));
+    }
+    Ok(json!({"changed": changed, "items": queue_list_json(s)}))
+}
+
+fn queue_pause(s: &mut Session, p: &Value) -> Result<Value> {
+    set_paused(s, p, true)
+}
+
+fn queue_resume(s: &mut Session, p: &Value) -> Result<Value> {
+    set_paused(s, p, false)
 }
 
 fn queue_retry(s: &mut Session, p: &Value) -> Result<Value> {
@@ -1647,6 +1682,8 @@ pub(crate) fn commands() -> Vec<CommandSpec> {
         ),
         spec("export.queue.stop", "Stop Export Queue", "{}", always, queue_stop, true),
         spec("export.queue.cancel", "Cancel Queued Export", r#"{"id":id?,"wait":bool?}"#, always, queue_cancel, true),
+        spec("export.queue.pause", "Pause Queued Export", r#"{"id":id?}"#, always, queue_pause, true),
+        spec("export.queue.resume", "Resume Queued Export", r#"{"id":id?}"#, always, queue_resume, true),
         spec("export.queue.retry", "Retry Queued Export", r#"{"id":id,"start":bool?,"wait":bool?}"#, always, queue_retry, true),
         spec("export.queue.remove", "Remove Queued Export", r#"{"id":id}"#, always, queue_remove, true),
         spec("export.queue.move", "Reorder Queued Export", r#"{"id":id,"to":index?,"by":int?}"#, always, queue_move, true),

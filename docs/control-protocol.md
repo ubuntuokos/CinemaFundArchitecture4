@@ -146,6 +146,8 @@ proxies (`media.createProxies`, `media.attachProxies`, `media.findCameraProxies`
 
 **Import the render**: `export.queue.add … "import": true` (default `false`) adds the finished output file to the Project panel (`file.import`) when its queue item is done. Only a single file is imported; a folder output (image sequence, DCP, IMF) or a missing file is left alone and a toast says so. A failed import never changes the item's render state. The queue list shows `import` and the project item ids in `imported`.
 
+**Pause and resume a render** (KDN-61): `export.queue.pause {"id"?}` holds an encoding export between batches and `export.queue.resume {"id"?}` lets it continue; with no `id` every encoding export is affected (`changed` lists the ids). Only formats written batch by batch can pause (a named item of another format, or one that is not encoding, is an error; without an `id` those are skipped). Cancelling a paused export stops it. The queue list shows `paused`.
+
 **Moving clips**: `timeline.move {moves: [{clip, track, time}], insert?, linked?}` → `{moved: [clip ids]}`.
 With Linked Selection on (the default; `linked` overrides the toggle for one call) the linked
 partners of a listed clip that are not listed themselves move by the same time offset and stay on

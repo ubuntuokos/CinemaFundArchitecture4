@@ -1183,6 +1183,8 @@ pub struct Progress {
     pub done: AtomicU64,
     pub total: AtomicU64,
     pub cancel: AtomicBool,
+    /// Set to hold the job between batches (KDN-61); cleared to continue. Cancelling ends a pause.
+    pub pause: AtomicBool,
     pub finished: AtomicBool,
     pub status: Mutex<String>,
     pub error: Mutex<Option<String>>,
@@ -1193,6 +1195,15 @@ pub struct Progress {
 }
 
 impl Progress {
+    /// Blocks while the job is paused (checked between batches), until it is resumed or cancelled.
+    /// Never blocks on wasm32, which has no threads or clock: the host drives the steps there.
+    pub fn wait_while_paused(&self) {
+        #[cfg(not(target_arch = "wasm32"))]
+        while self.pause.load(Ordering::Relaxed) && !self.cancel.load(Ordering::Relaxed) {
+            std::thread::sleep(std::time::Duration::from_millis(25));
+        }
+    }
+
     pub fn fraction(&self) -> f32 {
         let t = self.total.load(Ordering::Relaxed).max(1);
         self.done.load(Ordering::Relaxed) as f32 / t as f32

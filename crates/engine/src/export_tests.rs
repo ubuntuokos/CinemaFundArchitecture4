@@ -1619,3 +1619,22 @@ fn queue_import_puts_the_finished_file_into_the_project() {
     assert_eq!(s.project.items.len(), items_before + imported);
     assert!(s.execute("export.queue.add", json!({"path": dir.path("x.wav"), "format": "wav", "import": "yes"})).is_err());
 }
+
+#[test]
+fn pause_and_resume_only_touch_encoding_exports() {
+    // KDN-61: nothing is encoding here, so there is nothing to change; a named item that is not encoding says so
+    let mut s = demo();
+    let dir = Scratch::new("queue-pause");
+    let r = s.execute("export.queue.pause", json!({})).unwrap();
+    assert_eq!(r["changed"], json!([]), "{r}");
+    let r = s.execute("export.queue.resume", json!({})).unwrap();
+    assert_eq!(r["changed"], json!([]), "{r}");
+    let added =
+        s.execute("export.queue.add", json!({"path": dir.path("p.wav"), "format": "wav", "range": "custom", "startSeconds": 0, "endSeconds": 0.25})).unwrap();
+    let id = added["items"].as_array().and_then(|a| a.last()).map(|i| i["id"].clone()).unwrap_or(json!(0));
+    assert!(s.execute("export.queue.pause", json!({"id": id})).is_err(), "a waiting item cannot be paused");
+    assert!(s.execute("export.queue.pause", json!({"id": 999_999})).is_err(), "an unknown id is an error");
+    let listed = s.execute("export.queue.list", json!({})).unwrap();
+    let listed = listed.get("result").unwrap_or(&listed);
+    assert_eq!(listed["items"].as_array().and_then(|a| a.last()).map(|i| i["paused"].clone()), Some(json!(false)));
+}
